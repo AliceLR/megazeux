@@ -34,7 +34,7 @@ $~Aศออออออออออออออออออออออออออออออออออออผ
 >#MEGAZEUX.HLP:1st:MegaZeux Limitations
 >#IFYOUFIN.HLP:1st:If You Find a Bug...
 >Please:Registration Info- MegaZeux is Not Free
->#NEWINVER.HLP:1st:NEW in Version 2.51s3.1! (Changes Since Version 1.03)
+>#NEWINVER.HLP:1st:NEW in Version 2.51s3.2! (Changes Since Version 1.03)
 
 $** Credits and Acknowledgments **
 
@@ -147,7 +147,7 @@ $~EWelcome to MegaZeux! Use the arrow keys to Scroll
 $~Ethis text, and ESC when you are done reading.
 
 $~BPress END to learn about the NEW FEATURES in
-$~BMegaZeux 2.51s3.1!
+$~BMegaZeux 2.51s3.2!
 
 As you may already know, MegaZeux is a game system which
 allows you to play almost limitless worlds in EGA graphics
@@ -181,7 +181,7 @@ ESC now to exit to the game.
 >#CONTROLS.HLP:091:Controls
 >#THEWORLD.HLP:1st:The World Editor
 
->#NEWINVER.HLP:1st:WHAT'S NEW in version 2.51s3.1!
+>#NEWINVER.HLP:1st:WHAT'S NEW in version 2.51s3.2!
 #CONTROLS.HLP
 :091:Controls
 
@@ -605,13 +605,15 @@ ammo to your supplies. The amount may be different for
 different piles. Some worlds or sections of worlds may have
 weapons with infinite ammunition.
 
-~BBomb            ~0
+~BBomb            ~0
+
 
 Each bomb you grab adds another to your supply. The sound made
 when you grab the bomb will be high-pitched for a high strength
 bomb, and low-pitched for a low strength bomb.
 
-~BKey             ~A
+~BKey             ~A
+
 
 Collect keys to open locks, doors, and gates later on. The key
 and the lock/etc. must match colors, and a key will only work
@@ -5275,6 +5277,47 @@ effects.
 The direction the player is facing- 0 1 2 3 for N S E W. Used to
 determine which player character to display.
 
+~BMOUSEX
+~BMOUSEY
+
+The position of the mouse cursor on the screen.
+
+~BMBOARDX
+~BMBOARDY
+
+The position of the mouse cursor on the board.
+
+~BBUTTONS
+
+The mouse buttons.
+0 - No button pressed
+1 - Left button pressed
+2 - Right button pressed
+3 - Left and Right button pressed
+4-7 - As 0-3 with Middle button pressed
+
+~BCURSORSTATE
+
+Turns the hardware mouse cursor on/off
+0 - Off
+1 - On
+
+~BSCROLLEDX
+~BSCROLLEDY
+
+The position of the left corner of the screen
+
+~BPLAYERX
+~BPLAYERY
+
+The player's position
+
+~BBIMESG
+
+Turns the built-in messages (such as "Ouch!") on/off.
+0 - Off
+1 - On(default)
+
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #USINGTHE.HLP
@@ -5895,7 +5938,7 @@ Formatting' section for more advanced programming.
 #NEWINVER.HLP
 :1st:NEW in Version 2.51! (Changes Since Version 1.03)
 
-For information on mzx s3.1, read readme.1st.
+For information on mzx s3.2, read readme.1st.
 
 $~ENEW in version 2.51- ALL NEW music/sound code! 32-channels;
 $~Ebug-free; support for stereo, 16-bit, GUS, and PAS-16;
@@ -5911,6 +5954,11 @@ Sound System' for details on the NEW music system.
 Note- This is a direct translation from the file WHATSNEW.251,
 included with MegaZeux. If you haven't used version 1.03 or
 before, you probably won't understand much of this list.
+
+~E2.51s3.2 release:
+
+ + Removed password protection
+ + Added new counter BIMesg to turn off built-in messages (Such as "Ouch!")
 
 ~E2.51s3.1 release:
 

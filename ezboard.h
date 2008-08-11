@@ -35,5 +35,6 @@ void clear_current(char adopt_settings=0);
 void clear_world(char clear_curr_file=1);
 void clear_game_params(void);
 void clear_zero_objects(void);
+extern int built_in_messages; // Stupid place to put this, as it belongs to data.h
 
 #endif

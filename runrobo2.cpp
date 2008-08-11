@@ -56,6 +56,9 @@ extern int topindex,backindex;
 
 #pragma warn -sig
 
+void set_built_in_messages(int param);
+int get_built_in_messages(void);
+
 // side-effects: mangles the input string
 // bleah; this is so unreadable; just a very quick dirty hack
 static void magic_load_mod(char far *filename) {
@@ -81,6 +84,7 @@ void run_robot(int id,int x,int y) {
 	char gotoed;//Set to 1 if we shouldn't advance cmd since we went to a lbl
 	int old_pos;//Old position to verify gotos DID something
 	int _bl[4]={ 0,0,0,0 };//Whether blocked in a given direction (2=OUR bullet)
+	int t12; // New * "" command (changes Built_In_Messages to be sure to display the messages)
 	unsigned char far *robot;
 	unsigned char far *cmd_ptr;//Points to current command
 	char done=0;//Set to 1 on a finishing command
@@ -1289,7 +1293,10 @@ redone:
                                 move_dir(x,y,t1);
                                 goto breaker;
                         case 102://Mesg
+					  t12 = get_built_in_messages();
+					  set_built_in_messages(1);
                                 set_mesg(tr_msg(&cmd_ptr[2],id));
+					  set_built_in_messages(t12);
                                 break;
                         case 103:
                         case 104:

@@ -67,6 +67,8 @@
 #include "blink.h"
 #include "cursor.h"
 
+int get_built_in_messages(void);
+
 char far *main_menu=	"F1/H - Help\n"
 							"Enter- Menu\n"
 							"Esc  - Exit to DOS\n"
@@ -592,13 +594,15 @@ void update_variables(char slowed) {
 
 void set_mesg(char far *str) {
 	enter_func("set_mesg");
-	//Sets the current message
-	if(str_len(str)>80) {
-		mem_cpy(bottom_mesg,str,80);
-		bottom_mesg[80]=0;
+	if (get_built_in_messages()){
+		//Sets the current message
+		if(str_len(str)>80) {
+			mem_cpy(bottom_mesg,str,80);
+			bottom_mesg[80]=0;
+			}
+		else str_cpy(bottom_mesg,str);
+		b_mesg_timer=160;
 		}
-	else str_cpy(bottom_mesg,str);
-	b_mesg_timer=160;
 	exit_func();
 }
 

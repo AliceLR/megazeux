@@ -39,6 +39,10 @@
 #include "game.h"
 #include "counter.h"
 
+void set_built_in_messages(int param);
+
+int built_in_messages;
+
 // The way boards work-
 // There is the current board, in memory, and all other boards, in memory.
 // They are stored in conventional, EMS, or temp files. The current board
@@ -265,6 +269,7 @@ void clear_world(char clear_curr_file) {
 	//Clear global robot
 	clear_robot(GLOBAL_ROBOT);
 	robots[GLOBAL_ROBOT].used=1;
+	set_built_in_messages(1);
 	//Clear all other global parameters
 	mem_cpy((char far *)id_chars,(char far *)def_id_chars,324);
 	mem_cpy((char far *)bullet_color,(char far *)def_id_chars+324,3);
@@ -349,4 +354,14 @@ void clear_zero_objects(void) {
 	clear_robot(0);
 	clear_scroll(0);
 	clear_sensor(0);
+}
+
+void set_built_in_messages(int param)
+{
+	built_in_messages = param;
+}
+
+int get_built_in_messages(void)
+{
+	return (built_in_messages);
 }

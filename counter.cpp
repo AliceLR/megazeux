@@ -36,8 +36,11 @@
 #include "game.h"
 #include "game2.h"
 
+void set_built_in_messages(int param);
+
 int player_restart_x=0,player_restart_y=0,gridxsize=1,gridysize=1;
 int myscrolledx=0,myscrolledy=0;
+
 char was_zapped=0;
 extern char mid_prefix;
 void prefix_xy(int&fx,int&fy,int&mx,int&my,int&lx,int&ly,int robotx,
@@ -159,6 +162,10 @@ void set_counter(char far *name,int value,unsigned char id) {
 		// This should PROBABLY be a variable, instead of a counter,
 		// but I DID have a reason for using a counter, if I ever
 		// remember it. Spid
+      if(!str_cmp(name,"BIMESG")) {
+		if (value==1)  set_built_in_messages(1);
+		if (value==0)  set_built_in_messages(0);
+		}   //Don't return! Spid
       if(!str_cmp(name,"MOUSEX")) {
             if(value>79) value=79;
             if(value<0) value=0;

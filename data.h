@@ -137,6 +137,7 @@ extern unsigned char lazwall_start;//Local
 extern int scroll_x;//Local   // Something is SERIOUSLY wrong with these two, counter.cpp
 extern int scroll_y;//Local   // can't even see them! Spid
 
+
 extern unsigned int locked_x;//Local (-1 or 65535 for none)
 extern unsigned int locked_y;//Local (-1 or 65535 for none)
 extern unsigned char protection_method;
@@ -173,6 +174,7 @@ extern Robot far *robots;
 extern Scroll far *scrolls;
 extern Counter far *counters;
 extern Sensor far *sensors;
+
 
 extern char far *music_devices[NUM_DEVICES+1];
 extern char far *music_MSEs[NUM_DEVICES];

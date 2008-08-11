@@ -112,7 +112,7 @@ unsigned char get_pw_xor_code(void) {
 //and returns non-0 if wrong.
 char check_pw(void) {
 	char temp[16]="";
-	if(protection_method==0) return 0;
+	return 0;
 	if(password[0]==0) return 0;
 	set_context(95);
 retry:
@@ -155,8 +155,8 @@ retry:
 char pdi_types[4]={ DE_RADIO,DE_INPUT,DE_BUTTON,DE_BUTTON };
 char pdi_xs[4]={ 2,2,7,20 };
 char pdi_ys[4]={ 2,7,9,9 };
-char far *pdi_strs[4]={ "No protection\nNo-save protection (anti-ripoff)\n\
-No-edit protection\nNo-play protection","Password: ","OK","Cancel" };
+char far *pdi_strs[4]={ "No protection\nNo protection                   \n\
+No protection     \nNo protection     ","Password: ","OK","Cancel" };
 int pdi_p1s[4]={ 4,15,0,-1 };
 int pdi_p2s[2]={ 32,0 };
 void far *pdi_storage[2]={ NULL,NULL };
