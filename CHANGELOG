@@ -1,3 +1,9 @@
+2.51s3.1 release:
++ Fixed damage table, now works correctly
++ Fixed unworking alt+s
++ Fixed screenshot name
++ Fixed strange missile color when firing
+
 2.51s3 release:
 
 + Fixed bug involving savegame name being overwritten by mod name

@@ -39,12 +39,12 @@ void dump_screen(char far *filename) {
 	int t1, t2, t3, t4, t5, t7, t8, snum;
 	unsigned char *scrn = (unsigned char*)MK_FP(current_pg_seg,0);
 	char r,g,b;
-	for (snum = 0;snum++;snum <= 9) {
+	for (snum = 0;snum <= 9;snum++) {
 	  sprintf(fname,"screen%d.pcx",snum);
-	  break;
-	  //if (!(access(fname,0) == 0)) break;
+	  //break;
+	  if (!(access(fname,0) == 0)) break;
 	}
-	fp=fopen("foo.pcx","wb");
+	fp=fopen(fname,"wb");
 	//header
 	fputc(10,fp);
 	fputc(5,fp);

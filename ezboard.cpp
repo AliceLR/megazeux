@@ -266,10 +266,11 @@ void clear_world(char clear_curr_file) {
 	clear_robot(GLOBAL_ROBOT);
 	robots[GLOBAL_ROBOT].used=1;
 	//Clear all other global parameters
-	mem_cpy((char far *)id_chars,(char far *)def_id_chars,455);
-	bullet_color[0] = 15;
-	bullet_color[1] = 15;
-	bullet_color[2] = 15;
+	mem_cpy((char far *)id_chars,(char far *)def_id_chars,324);
+	mem_cpy((char far *)bullet_color,(char far *)def_id_chars+324,3);
+	mem_cpy((char far *)id_dmg,(char far *)(def_id_chars+327),128);
+	missile_color = 8;
+
 	first_board=clear_on_exit=endgame_x=endgame_y=death_x=
 		death_y=only_from_swap=protection_method=password[0]=
 		enemy_hurt_enemy=0;

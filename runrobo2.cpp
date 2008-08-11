@@ -1749,7 +1749,7 @@ redone:
                                                 bullet_color[t1]);
                                 break;
                         case 138:// missile color
-				*missile_color=fix_color(parse_param(&cmd_ptr[1],id),*missile_color);
+				missile_color=fix_color(parse_param(&cmd_ptr[1],id),missile_color);
                                 break;
                         case 139://message row
                                 b_mesg_row=parse_param(&cmd_ptr[1],id);
@@ -1763,16 +1763,19 @@ redone:
                                 lines_run--;
                                 goto next_cmd_prefix;
                         case 143://set id char # to 'c'
-                                t1=parse_param(&cmd_ptr[1],id);
-                                if((t1>=0)&&(t1<=454))
-                                        id_chars[t1]=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
+				t1=parse_param(&cmd_ptr[1],id);
+				if((t1>=0)&&(t1<=454))
+					if (t1==323) missile_color = parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
+					else if ((t1>=324) && (t1<=326))bullet_color[t1-324]=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
+					else if ((t1>=327))id_dmg[t1-327]=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
+					else id_chars[t1]=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
                                 break;
                         case 144://jump mod order #
                                 jump_mod(parse_param(&cmd_ptr[1],id));
-                                break;
+				break;
                         case 145://ask yes/no
                                 if(fad) {
-                                        clear_screen(1824,current_pg_seg);
+					clear_screen(1824,current_pg_seg);
                                         insta_fadein();
                                         }
                                 if(!ask_yes_no(tr_msg(&cmd_ptr[2],id))) send_robot_id(id,"YES",1);
@@ -1783,14 +1786,14 @@ redone:
                         case 146://fill health
                                 set_counter("HEALTH",health_limit);
                                 break;
-                        case 147://thick arrow dir char
-                                t1=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-                                if((t1<1)||(t1>4)) break;
+			case 147://thick arrow dir char
+				t1=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
+				if((t1<1)||(t1>4)) break;
                                 id_chars[249+t1]=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
                                 break;
                         case 148://thin arrow dir char
-                                t1=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-                                if((t1<1)||(t1>4)) break;
+				t1=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
+				if((t1<1)||(t1>4)) break;
                                 id_chars[253+t1]=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
                                 break;
                         case 149://set max health

@@ -1026,7 +1026,8 @@ int char_values[8][24]={ {
 
 //Chars #1-8
 void global_chars(void) {
-	int t1,t2;
+	int t1,t2,t3;
+
 	int curr_scr=0;
 	int temp[24];
 	set_context(89);
@@ -1038,7 +1039,10 @@ void global_chars(void) {
 			else if(char_values[curr_scr][t1]>127) cdi_p1s[t1+3]=1;
 			cdi_strs[t1+3]=char_strs[curr_scr][t1];
 			cdi_storage[t1+3]=&temp[t1];
-			temp[t1]=id_chars[char_values[curr_scr][t1]&511];
+			t3 = char_values[curr_scr][t1]&511;
+			if (t3 == 323) temp[t1] = missile_color;
+			else if ((t3>=324) && (t3<=326)) temp[t1] = bullet_color[t3-324];
+			else temp[t1]=id_chars[t3];
 			cdi_xs[t1+3]+=(25-str_len(char_strs[curr_scr][t1]));
 			}
 		//Run
@@ -1048,8 +1052,12 @@ void global_chars(void) {
 			return;
 			}
 		//Get from storage
-		for(t2=0;t2<24;t2++)
-			id_chars[char_values[curr_scr][t2]&511]=temp[t2];
+		for(t2=0;t2<24;t2++) {
+			t3 = char_values[curr_scr][t2]&511;
+			if (t3 == 323) missile_color = temp[t2];
+			else if ((t3>=324) && (t3<=326)) bullet_color[t3 - 324] = temp[t2];
+			else id_chars[t3]=temp[t2];
+		}
 		//Setup lit bomb sequence or doors
 		if(curr_scr==2) {
 			//Lit bomb

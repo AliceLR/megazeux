@@ -33,7 +33,7 @@
    MZSV2 - Ver 2.x MegaZeux
    MZXSA - Ver 2.51S1 MegaZeux
    MZS\002\011 - 2.5.1spider2+, 2.9.x
- 
+
  All others are unchanged.
 
 */
@@ -189,12 +189,22 @@ void save_world(char far *file,char savegame,char faded) {
 	fwrite(curr_set,1,3584,fp);
 	if(xor) mem_xor((char far *)curr_set,3584,xor);
 	//Idchars array...
-	id_chars[323] = bullet_color[0];
+	/*id_chars[323] = bullet_color[0];
 	id_chars[324] = bullet_color[1];
-	id_chars[325] = bullet_color[2];
+	id_chars[325] = bullet_color[2];*/
 	if(xor) mem_xor((char far *)id_chars,455,xor);
-	fwrite(id_chars,1,455,fp);
+	if(xor) mem_xor((char far *)bullet_color,3,xor);
+	if(xor) missile_color^=xor;
+	if(xor) mem_xor((char far *)id_dmg,128,xor);
+	fwrite(id_chars,1,323,fp);
+	fwrite(&missile_color,1,1,fp);
+	fwrite(bullet_color,1,3,fp);
+	fwrite(id_dmg,1,128,fp);
 	if(xor) mem_xor((char far *)id_chars,455,xor);
+	if(xor) mem_xor((char far *)bullet_color,3,xor);
+	if(xor) missile_color^=xor;
+	if(xor) mem_xor((char far *)id_dmg,128,xor);
+
 	//Status counters...
 	if(xor) mem_xor(status_shown_counters,NUM_STATUS_CNTRS*COUNTER_NAME_SIZE,
 		xor);
@@ -511,11 +521,17 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 	if(xor) mem_xor((char far *)curr_set,3584,xor);
 	ec_update_set();
 	//Idchars array...
-	fread(id_chars,1,455,fp);
+	fread(id_chars,1,323,fp);
+	fread(&missile_color,1,1,fp);
+	fread(bullet_color,1,3,fp);
+	fread(id_dmg,1,128,fp);
 	if(xor) mem_xor((char far *)id_chars,455,xor);
-	bullet_color[0] = id_chars[323];
+	if(xor) mem_xor((char far *)bullet_color,3,xor);
+	if(xor) missile_color^=xor;
+	if(xor) mem_xor((char far *)id_dmg,128,xor);
+	/*bullet_color[0] = id_chars[323];
 	bullet_color[1] = id_chars[324];
-	bullet_color[2] = id_chars[325];
+	bullet_color[2] = id_chars[325];*/
 	//Status counters...
 	fread(status_shown_counters,COUNTER_NAME_SIZE,NUM_STATUS_CNTRS,fp);
 	if(xor) mem_xor(status_shown_counters,NUM_STATUS_CNTRS*COUNTER_NAME_SIZE,

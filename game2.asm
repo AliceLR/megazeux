@@ -3366,7 +3366,9 @@ arg _x:word,_y:word,dir:word
 	call _arraydir2          		; Get loc in dir
 											; cx/dx=X/Y
 	mov ax,[dir]  						; AX==dir (param)
-	mov bh,[ds:missile_color]		; BX=color
+	;mov [ds:323],0
+	;mov bh,[ds:323]		; BX=color used to be missile_color
+	mov bh, [missile_color]
 	mov bl,62             			;    id
 	call id_place_asm,cx,dx,bx,ax
 @@done:

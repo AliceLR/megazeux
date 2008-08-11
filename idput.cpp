@@ -68,9 +68,7 @@ unsigned char id_chars[455];
 	unsigned char *bullet_char = (unsigned char *)whirlpool_glow+4;
 	unsigned char *player_char = bullet_char+12;
 	unsigned char *player_color = player_char+4;
-	unsigned char *missile_color = player_color+1;
-	unsigned char *_bullet_color = missile_color+1;
-unsigned char *id_dmg = _bullet_color+3;
+	unsigned char missile_color = 8;
 
 unsigned char def_id_chars[455] = {
 /* id_chars */
@@ -182,7 +180,7 @@ unsigned char def_id_chars[455] = {
 	0,0,0,0,0,0 /* 122-127 */
 };
 unsigned char bullet_color[3] = {15,15,15};
-
+unsigned char id_dmg[128];
 
 unsigned char get_special_id_char(unsigned char cell_id,
 					 int offset) {
@@ -401,6 +399,10 @@ void _id_put(unsigned char x_pos, unsigned char y_pos, int array_x,
 		}
 		c = overlay[overlay_offset];
 		color = overlay_color[overlay_offset];
+		if (overlay_mode & 64) {
+		   draw_char(c, color, x_pos, y_pos, (unsigned int)vid_seg);
+		   return;
+		}
 		if ( c == 32 ) {
 			c = get_id_char(array_offset);
 			color = get_id_color(array_offset);

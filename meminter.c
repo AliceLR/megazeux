@@ -62,9 +62,9 @@ void  *cdecl malloc(unsigned __nbytes) {
 	return(MK_FP(seg,0));
 }
 
-void  *cdecl realloc(void *__block,unsigned __size) {
+/*void  *cdecl realloc(void *__block,unsigned __size) {
 	error2("Error accessing boards",2,24,current_pg_seg,0x0702);
-}
+}*/
 
 unsigned long cdecl coreleft (void) {
 	unsigned tmp;

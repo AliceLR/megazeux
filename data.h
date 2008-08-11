@@ -29,12 +29,13 @@
 
 /* This first section is from IDPUT.ASM */
 extern unsigned char id_chars[455];
-extern unsigned char *id_dmg; /* was [128] */
+/*extern unsigned char id_chars[128];*/
+extern unsigned char id_dmg[128];
 extern unsigned char def_id_chars[455];
 extern unsigned char *player_color;
 extern unsigned char *player_char; /* was [4]*/
 extern unsigned char bullet_color[3]; /* was [3]*/
-extern unsigned char *missile_color;
+extern unsigned char missile_color;
 /*extern unsigned char bullet_char[12];*/
 extern unsigned char *bullet_char;
 extern char refresh_mod_playing;
