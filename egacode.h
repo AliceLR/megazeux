@@ -43,8 +43,7 @@ void ec_read_char(int chr,unsigned char far *matrix);
 void ec_mem_load_set(unsigned char far *chars);
 void ec_load_ascii(void);
 void ec_load_mzx(void);
-char ec_save_set(char far *filename);
-char ec_save_set_partial(char far *filename, int size);
+char ec_save_set(char far *filename, int offset, int size);
 char ec_load_set(char far *filename);
 
 //Functions that DON'T auto update
@@ -54,6 +53,7 @@ char ec_load_set_nou(char far *filename);
 char ec_load_set_nou_var(char far *filename, int pos);
 void ec_update_set_if_needed(void);
 void ec_update_set(void);
+void ec_need_update();
 
 //The current set (14*256 bytes)
 extern unsigned char far *curr_set;

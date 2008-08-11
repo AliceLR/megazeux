@@ -1,8 +1,6 @@
 /* $Id: idput.h,v 1.2 1999/01/17 20:35:41 mental Exp $
  * MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  * Copyright (C) 2002 Gilead Kutnick - exophase@adelphia.net
  *
  * This program is free software; you can redistribute it and/or
@@ -24,30 +22,44 @@
 #include "mzm.h"
 #include "idput.h"
 #include "data.h"
+#include "vlayer.h"
+#include "roballoc.h"
 
 void save_mzm(char far *name, int x, int y, int w, int h, int mode, 
  int mode2)
 {
   int i, i2;
+  int bwidth, bheight;
+
+  if((mode == 1) && !overlay_mode) return;
+
+  if(mode == 2)
+  {
+    map_vlayer();
+    bwidth = vlayer_width;
+    bheight = vlayer_height;
+  }
+  else
+  {
+    bwidth = max_bxsiz;
+    bheight = max_bysiz;
+  }
 
   // No attempt is made to clip it.. if it runs off the board, it just
   // doesn't do it.
-  if((x < 0) | (y < 0) | ((x + w) > max_bxsiz) | ((y + h) > max_bysiz))
+  if(!((x < 0) | (y < 0) | ((x + w) > bwidth) | ((y + h) > bheight)))
   {
-    return;
-  }
-
-  FILE *fp = fopen(name, "wb");
-  fprintf(fp, "MZMX");
-  fputc(w, fp);
-  fputc(h, fp);
-  fseek(fp, 16, SEEK_SET);
-
-  // mode 0 = from board
-  // mode 1 = from overlay
-  switch(mode)
-  {
-    case 0:
+    FILE *fp = fopen(name, "wb");
+    fprintf(fp, "MZMX");
+    fputc(w, fp);
+    fputc(h, fp);
+    fseek(fp, 16, SEEK_SET);
+  
+    // mode 0 = from board
+    // mode 1 = from overlay
+    // mode 2 = from vlayer
+  
+    if(mode == 0)
     {
       char far *src_id = level_id + (y * max_bxsiz) + x;
       int src_id2 = (y * max_bxsiz) + x;
@@ -58,7 +70,7 @@ void save_mzm(char far *name, int x, int y, int w, int h, int mode,
       char far *src_ucolor = level_under_color + (y * max_bxsiz) + x;
       int edge_skip = max_bxsiz - w;
       char id;
-  
+    
       for(i = 0; i < h; i++)
       {
         for(i2 = 0; i2 < w; i2++)
@@ -105,15 +117,27 @@ void save_mzm(char far *name, int x, int y, int w, int h, int mode,
         src_uparam += edge_skip;
         src_ucolor += edge_skip;
       }
-      break;
+      fclose(fp);
+      return;
     }
 
-    case 1:
-    {
-      char far *src_char = overlay + (y * max_bxsiz) + x;
-      char far *src_color = overlay_color + (y * max_bxsiz) + x;
-      int edge_skip = max_bxsiz - w;
+    char far *src_char;
+    char far *src_color;
+    int edge_skip = bwidth - w;
   
+    if((unsigned int)mode <= 2);
+    {
+      if(mode == 1)
+      {
+        src_char = overlay + (y * max_bxsiz) + x;
+        src_color = overlay_color + (y * max_bxsiz) + x;
+      }
+      if(mode == 2)
+      {
+        src_char = vlayer_chars + (y * vlayer_width) + x;
+        src_color = vlayer_colors + (y * vlayer_width) + x;
+      }    
+    
       for(i = 0; i < h; i++)
       {
         for(i2 = 0; i2 < w; i2++)
@@ -129,23 +153,19 @@ void save_mzm(char far *name, int x, int y, int w, int h, int mode,
         }
         src_char += edge_skip;
         src_color += edge_skip;
-      }
-      break;
+      }   
     }
- 
-    default:
-    {
-      break;
-    }
+    fclose(fp);
   }
-
-  fclose(fp);
+  if(mode == 2) unmap_vlayer();
 }
 
 void load_mzm(char far *name, int x, int y, int mode)
 {
   int i, i2;
   int w, h;
+
+  if((mode == 1) && !overlay_mode) return;
 
   FILE *fp = fopen(name, "rb");
   if((fgetc(fp) == 'M') && (fgetc(fp) == 'Z') && (fgetc(fp) == 'M') &&
@@ -156,18 +176,28 @@ void load_mzm(char far *name, int x, int y, int mode)
     w = fgetc(fp);
     h = fgetc(fp);
     fseek(fp, 16, SEEK_SET);
+    int bwidth, bheight;
 
-    if((x < 0) | (y < 0) | ((x + w) > max_bxsiz) | ((y + h) > max_bysiz))
+    if(mode == 2)
     {
-      fclose(fp);
-      return;
+      map_vlayer();
+      bwidth = vlayer_width;
+      bheight = vlayer_height;
     }
-
-    // mode 0 = to board
-    // mode 1 = to overlay
-    switch(mode)
+    else
     {
-      case 0:
+      bwidth = max_bxsiz;
+      bheight = max_bysiz;
+    }
+    // No attempt is made to clip it.. if it runs off the board, it just
+    // doesn't do it.
+    if(!((x < 0) | (y < 0) | ((x + w) > bwidth) | ((y + h) > bheight)))
+    {
+      // mode 0 = to board
+      // mode 1 = to overlay
+      // mode 2 = to vlayer
+
+      if(mode == 0)
       {
         char far *dest_id = level_id + (y * max_bxsiz) + x;
         char far *dest_param = level_param + (y * max_bxsiz) + x;
@@ -176,12 +206,11 @@ void load_mzm(char far *name, int x, int y, int mode)
         char far *dest_uparam = level_under_param + (y * max_bxsiz) + x;
         char far *dest_ucolor = level_under_color + (y * max_bxsiz) + x;
         int edge_skip = max_bxsiz - w;
-    
+      
         for(i = 0; i < h; i++)
         {
           for(i2 = 0; i2 < w; i2++)
-          {
-            
+          {            
             // Don't overwrite the player!
             if(*dest_id != 127)
             {
@@ -210,15 +239,27 @@ void load_mzm(char far *name, int x, int y, int mode)
           dest_uparam += edge_skip;
           dest_ucolor += edge_skip;
         }
-        break;
+        fclose(fp);
+        return;
       }
   
-      case 1:
-      {
-        char far *dest_char = overlay + (y * max_bxsiz) + x;
-        char far *dest_color = overlay_color + (y * max_bxsiz) + x;
-        int edge_skip = max_bxsiz - w;
-    
+      if((unsigned)mode <= 2)
+      {     
+        char far *dest_char;
+        char far *dest_color;
+        int edge_skip = bwidth - w;
+  
+        if(mode == 1)
+        {
+          dest_char = overlay + (y * max_bxsiz) + x;
+          dest_color = overlay_color + (y * max_bxsiz) + x;
+        }
+        if(mode == 2)
+        {
+          dest_char = vlayer_chars + (y * vlayer_width) + x;
+          dest_color = vlayer_colors + (y * vlayer_width) + x;
+        }
+      
         for(i = 0; i < h; i++)
         {
           for(i2 = 0; i2 < w; i2++)
@@ -235,15 +276,12 @@ void load_mzm(char far *name, int x, int y, int mode)
           dest_char += edge_skip;
           dest_color += edge_skip;
         }
-        break;
-      }
-   
-      default:
-      {
-        break;
       }
     }
   }
+
+  if(mode == 2) unmap_vlayer();
+
   fclose(fp);
 }
 

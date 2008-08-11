@@ -130,13 +130,12 @@ void set_str_char(char far *expression, char set)
   }
 }
 
-void load_string_board(char far *expression, int x, int y, int w, 
- int h, char l, char far *src)
+void load_string_board(char far *expression, int w, int h, char l, 
+ char far *src, int width)
 {
   int str_num = strtol((expression + 7), NULL, 10);
   int i;
   int wl = w;
-  char far *src_read;
   char t_buf[64];
   t_buf[63] = '\0';
   char *t_pos = t_buf;
@@ -155,15 +154,13 @@ void load_string_board(char far *expression, int x, int y, int w,
     }
   }
   
-  src_read = src + (y * max_bxsiz) + x;
-  
   for(i = 0; i < (h - 1); i++)
   {
-    mem_cpy(t_pos, src_read, w);
+    mem_cpy(t_pos, src, w);
     t_pos += w;
-    src_read += board_xsiz;
+    src += width;
   }
-  mem_cpy(t_pos, src_read, wl);
+  mem_cpy(t_pos, src, wl);
   t_pos += wl;
   *t_pos = '\0';
   if(l)

@@ -43,6 +43,10 @@
 #define SPRITE_OVER_OVERLAY 0x04
 #define SPRITE_SRC_COLORS   0x08
 #define SPRITE_STATIC       0x10
+#define SPRITE_CHAR_CHECK2  0x20
+#define SPRITE_VLAYER       0x40
+
+#define MAX_SPRITES         256
 
 struct Sprite
 {
@@ -64,23 +68,24 @@ typedef struct Sprite Sprite;
 struct Collision_list
 {
   int num;
-  char collisions[64];
+  int collisions[MAX_SPRITES];
 };
 typedef struct Collision_list Collision_list;
 
 // functions
 
-void plot_sprite(int color, int sprite, int x, int y);
+void plot_sprite(int color, unsigned char sprite, int x, int y);
 void draw_sprites();
-int sprite_at_xy(unsigned int sprite, int x, int y);
-int sprite_colliding_xy(unsigned int sprite, int x, int y);
+int sprite_at_xy(unsigned char sprite, int x, int y);
+int sprite_colliding_xy(unsigned char sprite, int x, int y);
+int is_blank(unsigned char c);
 
 // global data types
 
-extern char sprite_num;
+extern unsigned char sprite_num;
 extern char sprite_y_order;
-extern char total_sprites;
-extern Sprite sprites[64];
+extern unsigned char total_sprites;
+extern Sprite sprites[MAX_SPRITES];
 extern Collision_list collision_list;
 
 #endif

@@ -60,6 +60,7 @@
 #include "ezboard.h"
 #include "mod.h"
 #include "palette.h"
+#include "vlayer.h"
 
 long off;
 char fileio;
@@ -193,6 +194,13 @@ int get_counter(char far *name,unsigned char id)
         fldpi
         fmulp st(1), st(0)
         fidiv word ptr c_divisions
+
+        // If compiling with Borland C/TC++ 3.0 and it doesn't get
+        // past here it's because the compiler can't normally cope with
+        // 386/387 instructions like this. To get around it, you should
+        // turn on "compile through assembler" in the compiler options.
+        // This will, however, make you unable to compile other larger
+        // modules, so you need to then turn it off when those are compiling.
         fsin
         fimul word ptr multiplier
         fistp word ptr sin_return
@@ -447,6 +455,13 @@ int get_counter(char far *name,unsigned char id)
       return 0;
     }
 
+    // Opens output_file to modify - Exo
+    if(!str_cmp(name + 6, "_MODIFY"))
+    {
+      fileio = 8;
+      return 0;
+    }
+
     //Opens output_file as APPEND. -Koji
     if(!str_cmp(name + 6,"_APPEND"))
     {
@@ -467,10 +482,16 @@ int get_counter(char far *name,unsigned char id)
     }
   }
 
-  // Save/load game - Exo
+  // Save game (.sav file)
   if(!str_cmp(name, "SAVE_GAME"))
   {
     fileio = 4;
+    return 0;
+  }
+  // Save world (.mzx file)
+  if(!str_cmp(name, "SAVE_WORLD"))
+  {
+    fileio = 7;
     return 0;
   }
   if(!str_cmp(name, "LOAD_GAME"))
@@ -496,104 +517,76 @@ int get_counter(char far *name,unsigned char id)
 
     if(!strn_cmp(name, "SPR", 3))
     {
-      int off;
-      unsigned int spr_num;
+      unsigned char spr_num;
+      char far *next = name + 3;
         
-      if(!str_cmp(name + 3, "_NUM"))
+      if(!str_cmp(next, "_NUM"))
       {
         return(sprite_num);
       }
 
-      if(!str_cmp(name + 3, "_COLLISIONS"))
+      if(!str_cmp(next, "_COLLISIONS"))
       {
         return(collision_list.num);
       }
-      if(!strn_cmp(name + 3, "_CLIST", 6))
+
+      if(!strn_cmp(next, "_CLIST", 6))
       {
-        unsigned int col;
-
-        if(name[10] == 0)
-        {
-          col = name[9] - 48;
-        }
-        else
-        {
-          col = ((name[9] - 48) * 10);
-          col += (name[10] - 48);
-        }
-
-        if(col <= 63)
-        {
-          return(collision_list.collisions[col]);
-        }
-        return(0);
+        spr_num = (int)strtol(next + 6, NULL, 10);
+        return(collision_list.collisions[spr_num]);
       }
 
-      if(name[4] == '_')
+      spr_num = (unsigned char)strtol(next, &next, 10);
+
+      if(!str_cmp(next, "_X"))
       {
-        off = 4;
-        spr_num = name[3] - 48;
-      }
-      else
-      {
-        spr_num = (name[3] - 48) * 10;
-        spr_num += (name[4] - 48);
-        off = 5;
+        return(sprites[spr_num].x);
       }
 
-      if(spr_num < 64)
+      if(!str_cmp(next, "_Y"))
       {
-        if(!str_cmp(name + off, "_X"))
-        {
-          return(sprites[spr_num].x);
-        }
+        return(sprites[spr_num].y);
+      }
 
-        if(!str_cmp(name + off, "_Y"))
-        {
-          return(sprites[spr_num].y);
-        }
+      if(!str_cmp(next, "_REFX"))
+      {
+        return(sprites[spr_num].ref_x);
+      }
 
-        if(!str_cmp(name + off, "_REFX"))
-        {
-          return(sprites[spr_num].ref_x);
-        }
-
-        if(!str_cmp(name + off, "_REFY"))
-        {
-          return(sprites[spr_num].ref_y);
-        }
+      if(!str_cmp(next, "_REFY"))
+      {
+        return(sprites[spr_num].ref_y);
+      }
     
-        if(!str_cmp(name + off, "_WIDTH"))
+      if(!str_cmp(next, "_WIDTH"))
+      {
+        return(sprites[spr_num].width);
+      }
+
+      if(!str_cmp(next, "_HEIGHT"))
+      {
+        return(sprites[spr_num].height);
+      }
+
+      if(!strn_cmp(next, "_C", 2))
+      {
+        next += 2;
+        if(!str_cmp(next, "X"))
         {
-          return(sprites[spr_num].width);
+          return(sprites[spr_num].col_x);
         }
-
-        if(!str_cmp(name + off, "_HEIGHT"))
+        if(!str_cmp(next, "Y"))
         {
-          return(sprites[spr_num].height);
+          return(sprites[spr_num].col_y);
         }
-
-
-        if(!strn_cmp(name + off, "_C", 2))
+        if(!str_cmp(next, "WIDTH"))
         {
-          off += 2;
-          if(!str_cmp(name + off, "X"))
-          {
-            return(sprites[spr_num].col_x);
-          }
-          if(!str_cmp(name + off, "Y"))
-          {
-            return(sprites[spr_num].col_y);
-          }
-          if(!str_cmp(name + off, "WIDTH"))
-          {
-            return(sprites[spr_num].col_width);
-          }
-          if(!str_cmp(name + off, "HEIGHT"))
-          {
-            return(sprites[spr_num].col_height);
-          }
-        }      
+          return(sprites[spr_num].col_width);
+        }
+        if(!str_cmp(next, "HEIGHT"))
+        {
+          return(sprites[spr_num].col_height);
+        }
       }
     }
 
@@ -838,7 +831,7 @@ int get_counter(char far *name,unsigned char id)
     int i;
     for(i = 0; i < NUM_ROBOTS; i++)
     {
-      if(!str_cmp(robots[i].robot_name, name + 9))
+      if(!str_cmp(robots[i].robot_name, name + 3))
       {
         return(i);
       }
@@ -885,6 +878,41 @@ int get_counter(char far *name,unsigned char id)
 
     if(!str_cmp(name + 8,"MODE"))
       return overlay_mode;
+  }
+
+  if(!strn_cmp(name, "VLAYER_", 7))
+  {
+    if(!str_cmp(name + 7, "WIDTH"))
+    {
+      return vlayer_width;      
+    }
+    if(!str_cmp(name + 7, "HEIGHT"))
+    {
+      return vlayer_height;
+    }
+  }
+
+  if(!strn_cmp(name, "VC", 2))
+  {
+    int x, y;
+    if(translate_coordinates(name + 3, x, y) != -1)
+    {
+      unsigned char v;
+      if(!strn_cmp(name + 2, "H", 1))
+      {
+        map_vlayer();
+        v = *(vlayer_chars + (y * vlayer_width) + x);
+        unmap_vlayer();
+        return v;
+      }
+      if(!strn_cmp(name + 2, "O", 1))
+      {
+        map_vlayer();
+        v = *(vlayer_colors + (y * vlayer_width) + x);
+        unmap_vlayer();
+        return v;
+      }
+    }
   }
 
   if(!strn_cmp(name, "BOARD_", 6))
@@ -1088,7 +1116,7 @@ void set_counter(char far *name,int value,unsigned char id)
 				//Store current
 				store_current();
 				//Save game
-				save_world(name, 1, 0);
+				save_world(name);
 				//Reload current
 				select_current(curr_board);
         break;
@@ -1128,6 +1156,33 @@ void set_counter(char far *name,int value,unsigned char id)
       case 6:
       {    
         load_smzx_palette(name);
+        break;
+      }
+      // Save world.. not .sav file.
+      case 7:
+      {
+				int temp = robots[id].cur_prog_line;
+				// First set the current line to 0
+				robots[id].cur_prog_line = 0;
+				//Store current
+				store_current();
+				//Save game
+				save_world(name, 0, 0);
+				//Reload current
+				select_current(curr_board);
+				robots[id].cur_prog_line = temp;
+        break;
+			}  
+      case 8:
+      {
+        //Append
+        if(output_file != NULL)
+        {
+          fclose(output_file);
+          file_out[0] = 0;
+        }
+        output_file = fopen(name, "r+b");
+        str_cpy(file_out, name);
         break;
       }
     }
@@ -1195,6 +1250,11 @@ void set_counter(char far *name,int value,unsigned char id)
     {
       if(!str_cmp(name + 5,"_POS"))
       {
+        if(value == -1)
+        {
+          fseek(input_file, 0, SEEK_END);
+          return;
+        }
         value &= 32767;
         fseek(input_file, ((long)get_counter("FREAD_PAGE") << 15) + value, SEEK_SET);
         return;
@@ -1215,6 +1275,11 @@ void set_counter(char far *name,int value,unsigned char id)
     {
       if(!str_cmp(name + 6,"_POS"))
       {
+        if(value == -1)
+        {
+          fseek(output_file, 0, SEEK_END);
+          return;
+        }
         value &= 32767;
         fseek(output_file, ((long)get_counter("FWRITE_PAGE") << 15) + value, SEEK_SET);
         return;
@@ -1260,6 +1325,7 @@ void set_counter(char far *name,int value,unsigned char id)
     if(!str_cmp(name + 5,"BYTE"))
     {
       *(curr_set + (get_counter("CHAR") * 14) + (get_counter("BYTE") % 14)) = value;
+      ec_need_update();
       return;
     }
   }
@@ -1302,6 +1368,7 @@ void set_counter(char far *name,int value,unsigned char id)
         break;
       }
     }
+    ec_need_update();
     return;
   }
 
@@ -1450,6 +1517,44 @@ void set_counter(char far *name,int value,unsigned char id)
     return;
   }
 
+  if(!strn_cmp(name, "VLAYER_", 7))
+  {
+    if(!str_cmp(name + 7, "WIDTH"))
+    {
+      vlayer_width = value;
+      vlayer_height = 32768 / vlayer_width;
+      return;
+    }
+    if(!str_cmp(name + 7, "HEIGHT"))
+    {
+      vlayer_height = value;
+      vlayer_width = 32768 / vlayer_height;
+      return;
+    }
+  }
+
+  if(!strn_cmp(name, "VC", 2))
+  {
+    int x, y;
+    if(translate_coordinates(name + 3, x, y) != -1)
+    {
+      if(!strn_cmp(name + 2, "H", 1))
+      {
+        map_vlayer();
+        *(vlayer_chars + (y * vlayer_width) + x) = value;
+        unmap_vlayer();
+        return;
+      }
+      if(!strn_cmp(name + 2, "O", 1))
+      {
+        map_vlayer();
+        *(vlayer_colors + (y * vlayer_width) + x) = value;
+        unmap_vlayer();
+        return;
+      }
+    }
+  }
+
   if(!strn_cmp(name, "BOARD_", 6))
   {
     if(!str_cmp(name + 6, "PARAM"))
@@ -1513,208 +1618,181 @@ void set_counter(char far *name,int value,unsigned char id)
   // Sprite stuff - Exo
   if(!strn_cmp(name, "SPR", 3))
   {
-    int off;
-    unsigned int spr_num;
+    char far *next = name + 3;
+    unsigned char spr_num;
         
-    if(!str_cmp(name + 3, "_YORDER"))
+    if(!str_cmp(next, "_YORDER"))
     {
       sprite_y_order = value;
       return;
     }
-    if(!str_cmp(name + 3, "_NUM"))
+    if(!str_cmp(next, "_NUM"))
     {
       sprite_num = value;
       return;
     }
 
-    if(name[4] == '_')
+    spr_num = (unsigned char)strtol(next, &next, 10);   
+
+    if(!str_cmp(next, "_CLIST"))
     {
-      off = 4;
-      spr_num = name[3] - 48;
+      if(value)
+      {
+        sprite_colliding_xy(spr_num, sprites[spr_num].x, sprites[spr_num].y);
+      }
+      return;
     }
-    else
+
+    if(!str_cmp(next, "_SETVIEW"))
     {
-      spr_num = (name[3] - 48) * 10;
-      spr_num += (name[4] - 48);
-      off = 5;
+      int sx, sy;
+      scroll_x=scroll_y=0;
+      calculate_xytop(sx, sy);
+      scroll_x = 
+       (sprites[spr_num].x + (sprites[spr_num].width >> 1)) - 
+       (viewport_xsiz >> 1) - sx;
+      scroll_y = 
+       (sprites[spr_num].y + (sprites[spr_num].height >> 1)) - 
+       (viewport_ysiz >> 1) - sy;
+      return;
+    }
+  
+    if(!str_cmp(next, "_SWAP"))
+    {
+      Sprite spr_temp;
+      mem_cpy((char *)&spr_temp, (char *)&(sprites[spr_num]), 
+       sizeof(Sprite));
+      mem_cpy((char *)&(sprites[spr_num]), 
+       (char *)&(sprites[value]), sizeof(Sprite));
+      mem_cpy((char *)&(sprites[value]), (char *)&spr_temp, 
+       sizeof(Sprite));
     }
 
-    if(spr_num < 64)
+    if(!str_cmp(next, "_X"))
     {
-      if(!str_cmp(name + off, "_CLIST"))
-      {
-        if(value)
-        {
-          sprite_colliding_xy(spr_num, sprites[spr_num].x, sprites[spr_num].y);
-        }
-        return;
-      }
-
-      if(!str_cmp(name + off, "_SETVIEW"))
-      {
-        int sx, sy;
-        scroll_x=scroll_y=0;
-        calculate_xytop(sx, sy);
-        scroll_x = 
-         (sprites[spr_num].x + (sprites[spr_num].width >> 1)) - 
-         (viewport_xsiz >> 1) - sx;
-        scroll_y = 
-         (sprites[spr_num].y + (sprites[spr_num].height >> 1)) - 
-         (viewport_ysiz >> 1) - sy;
-        return;
-      }
+      sprites[spr_num].x = value;
+      return;
+    }
   
-      if(!str_cmp(name + off, "_SWAP"))
-      {
-        int temp;
-        temp = sprites[spr_num].x;
-        sprites[spr_num].x = sprites[value].x;
-        sprites[value].x = temp;
-        temp = sprites[spr_num].y;
-        sprites[spr_num].y = sprites[value].y;
-        sprites[value].y = temp;
-        temp = sprites[spr_num].ref_x;
-        sprites[spr_num].ref_x = sprites[value].ref_x;
-        sprites[value].ref_x = temp;
-        temp = sprites[spr_num].ref_y;
-        sprites[spr_num].ref_y = sprites[value].ref_y;
-        sprites[value].ref_y = temp;
-        temp = sprites[spr_num].color;
-        sprites[spr_num].color = sprites[value].color;
-        sprites[value].color = temp;
-        temp = sprites[spr_num].flags;
-        sprites[spr_num].flags = sprites[value].flags;
-        sprites[value].flags = temp;
-        temp = sprites[spr_num].width;
-        sprites[spr_num].width = sprites[value].width;
-        sprites[value].width = temp;
-        temp = sprites[spr_num].height;
-        sprites[spr_num].height = sprites[value].height;
-        sprites[value].height = temp;
-        temp = sprites[spr_num].col_x;
-        sprites[spr_num].col_x = sprites[value].col_x;
-        sprites[value].col_x = temp;
-        temp = sprites[spr_num].col_y;
-        sprites[spr_num].col_y = sprites[value].col_y;
-        sprites[value].col_y = temp;
-        temp = sprites[spr_num].col_width;
-        sprites[spr_num].col_width = sprites[value].col_width;
-        sprites[value].col_width = temp;
-        temp = sprites[spr_num].col_height;
-        sprites[spr_num].col_height = sprites[value].col_height;
-        sprites[value].col_height = temp;
-        return;
-      }
-
-      if(!str_cmp(name + off, "_X"))
-      {
-        sprites[spr_num].x = value;
-        return;
-      }
+    if(!str_cmp(next, "_Y"))
+    {
+      sprites[spr_num].y = value;
+      return;
+    }
   
-      if(!str_cmp(name + off, "_Y"))
-      {
-        sprites[spr_num].y = value;
-        return;
-      }
+    if(!str_cmp(next, "_REFX"))
+    {
+      sprites[spr_num].ref_x = value;
+      return;
+    }
   
-      if(!str_cmp(name + off, "_REFX"))
-      {
-        sprites[spr_num].ref_x = value;
-        return;
-      }
-  
-      if(!str_cmp(name + off, "_REFY"))
-      {
-        sprites[spr_num].ref_y = value;
-        return;
-      }
+    if(!str_cmp(next, "_REFY"))
+    {
+      sprites[spr_num].ref_y = value;
+      return;
+    }
       
-      if(!str_cmp(name + off, "_WIDTH"))
-      {
-        sprites[spr_num].width = value;
-        return;
-      }
-  
-      if(!str_cmp(name + off, "_HEIGHT"))
-      {
-        sprites[spr_num].height = value;
-        return;
-      }
-  
-      if(!str_cmp(name + off, "_OVERLAID"))
-      {
-        if(value)
-        {
-          sprites[spr_num].flags |= SPRITE_OVER_OVERLAY;
-        }
-        else
-        {
-          sprites[spr_num].flags &= ~SPRITE_OVER_OVERLAY;
-        }
-        return;
-      }
-      
-      if(!str_cmp(name + off, "_OFF"))
-      {
-        if(value)
-        {
-          sprites[spr_num].flags &= ~SPRITE_INITIALIZED;
-        }
-        return;
-      }
-  
-      if(!str_cmp(name + off, "_CCHECK"))
-      {
-        if(value)
-        {
-          sprites[spr_num].flags |= SPRITE_CHAR_CHECK;
-        }
-        else
-        {
-          sprites[spr_num].flags &= ~SPRITE_CHAR_CHECK;
-        }
-        return;
-      }
-  
-      if(!str_cmp(name + off, "_STATIC"))
-      {
-        if(value)
-        {
-          sprites[spr_num].flags |= SPRITE_STATIC;
-        }
-        else
-        {
-          sprites[spr_num].flags &= ~SPRITE_STATIC;
-        }
-        return;
-      }
-  
-      if(!strn_cmp(name + off, "_C", 2))
-      {
-        off += 2;
-        if(!str_cmp(name + off, "X"))
-        {
-          sprites[spr_num].col_x = value;
-          return;
-        }
-        if(!str_cmp(name + off, "Y"))
-        {
-          sprites[spr_num].col_y = value;
-          return;
-        }
-        if(!str_cmp(name + off, "WIDTH"))
-        {
-          sprites[spr_num].col_width = value;
-          return;
-        }
-        if(!str_cmp(name + off, "HEIGHT"))
-        {
-          sprites[spr_num].col_height = value;
-          return;
-        }
-      }      
+    if(!str_cmp(next, "_WIDTH"))
+    {
+      sprites[spr_num].width = value;
+      return;
     }
+  
+    if(!str_cmp(next, "_HEIGHT"))
+    {
+      sprites[spr_num].height = value;
+      return;
+    }
+  
+    if((!str_cmp(next, "_OVERLAID")) || (!str_cmp(next, "_OVERLAY")))
+    {
+      if(value)
+      {
+        sprites[spr_num].flags |= SPRITE_OVER_OVERLAY;
+      }
+      else
+      {
+        sprites[spr_num].flags &= ~SPRITE_OVER_OVERLAY;
+      }
+      return;
+    }
+      
+    if(!str_cmp(next, "_OFF"))
+    {
+      if(value)
+      {
+        sprites[spr_num].flags &= ~SPRITE_INITIALIZED;
+      }
+      return;
+    }
+  
+    if(!str_cmp(next, "_CCHECK"))
+    {
+      if(value)
+      {
+        if(value == 2)
+        {
+          sprites[spr_num].flags |= SPRITE_CHAR_CHECK2;
+        }
+        sprites[spr_num].flags |= SPRITE_CHAR_CHECK;
+      }
+      else
+      {
+        sprites[spr_num].flags &= ~SPRITE_CHAR_CHECK;
+      }
+      return;
+    }
+  
+    if(!str_cmp(next, "_STATIC"))
+    {
+      if(value)
+      {
+        sprites[spr_num].flags |= SPRITE_STATIC;
+      }
+      else
+      {
+        sprites[spr_num].flags &= ~SPRITE_STATIC;
+      }
+      return;
+    }
+  
+    if(!str_cmp(next, "_VLAYER"))
+    {
+      if(value)
+      {
+        sprites[spr_num].flags |= SPRITE_VLAYER;
+      }
+      else
+      {
+        sprites[spr_num].flags &= ~SPRITE_VLAYER;
+      }
+      return;
+    }
+
+    if(!strn_cmp(next, "_C", 2))
+    {
+      next += 2;
+      if(!str_cmp(next, "X"))
+      {
+        sprites[spr_num].col_x = value;
+        return;
+      }
+      if(!str_cmp(next, "Y"))
+      {
+        sprites[spr_num].col_y = value;
+        return;
+      }
+      if(!str_cmp(next, "WIDTH"))
+      {
+        sprites[spr_num].col_width = value;
+        return;
+      }
+      if(!str_cmp(next, "HEIGHT"))
+      {
+        sprites[spr_num].col_height = value;
+        return;
+      }
+    }      
   }
 
   //Took out the Number constraints. -Koji
@@ -2046,3 +2124,20 @@ void dec_counter(char far *name,int value,unsigned char id)
   set_counter(name,(int)t,id);
 }
 
+int translate_coordinates(char far *src, int &x, int &y)
+{
+  char far *next;
+
+  if(*src == 0) return -1;  
+
+  x = strtol(src, &next, 10);
+  if(*next == ',')
+  {
+    y = strtol(next + 1, NULL, 10);
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
+}

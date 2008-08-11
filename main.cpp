@@ -63,10 +63,10 @@
 #include <time.h>
 #define SAVE_INDIVIDUAL
 
-
 //new_settings=1 if Addr IRQ or DMA was updated via CMD line so we
 //should keep them even if config is entered
 char force_ega=0,no_mouse=0,no_ems=0,new_settings=0;
+char conf_screen = 1;
 jmp_buf exit_jump;//Used in error function and nowhere else
 extern unsigned int Addr,IRQ,DMA;//Sound card parameters (-1=detect)
 
@@ -148,12 +148,79 @@ int main(int argc,char **argv) {
 	//These lines prevent a white flash onscreen
 	init_palette();
 	insta_fadeout();
+
+  // I restored the original startup palette... - Exo
+	set_rgb(1,31,31,31);
+	set_rgb(6,63,0,0);
+	set_rgb(7,21,21,21);
+	set_rgb(8,8,8,8);
+	set_rgb(9,42,42,63);
+ 	set_rgb(10,42,63,42);
+ 	set_rgb(11,42,63,63);
+ 	set_rgb(12,63,42,42);
+ 	set_rgb(13,63,42,63);
+  // Do the ATI fix thing
+  f_ati_fix = fopen("ati_fix", "rb");
+  if(f_ati_fix != NULL)
+  {
+    ati_fix = 1;
+    fclose(f_ati_fix);
+  }
+
 	//Display Megazeux startup screen
+  if(!conf_screen)
+  {
+  	//Fade in
+  	vquick_fadein();
+  	//Initialize systems and display progess at bottom
+  	//Initialize EMS systems
+  	setup_EMS();		
+  	window_cpp_entry();
+  	//Initialize mouse handler (from now on must hide/show it)
+  	if(!no_mouse) 
+    {
+  		m_init();
+  		m_hide();
+    }
+  	//Install new timer ISR
+  	install_timer();
+  	//Allocate misc. memory
+  	board_list=(char far *)farmalloc(NUM_BOARDS*BOARD_NAME_SIZE);
+  	board_offsets=(bOffset far *)farmalloc(NUM_BOARDS*sizeof(bOffset));
+  	board_sizes=(unsigned long far *)farmalloc(NUM_BOARDS*4);
+  	board_filenames=(char far *)farmalloc(NUM_BOARDS*FILENAME_SIZE);
+  	level_id=(unsigned char far *)farmalloc(MAX_ARRAY_X*MAX_ARRAY_Y);
+  	level_color=(unsigned char far *)farmalloc(MAX_ARRAY_X*MAX_ARRAY_Y);
+  	level_param=(unsigned char far *)farmalloc(MAX_ARRAY_X*MAX_ARRAY_Y);
+  	level_under_id=(unsigned char far *)farmalloc(MAX_ARRAY_X*MAX_ARRAY_Y);
+  	level_under_color=(unsigned char far *)farmalloc(MAX_ARRAY_X*MAX_ARRAY_Y);
+  	level_under_param=(unsigned char far *)farmalloc(MAX_ARRAY_X*MAX_ARRAY_Y);
+  	overlay=(unsigned char far *)farmalloc(MAX_ARRAY_X*MAX_ARRAY_Y);
+  	overlay_color=(unsigned char far *)farmalloc(MAX_ARRAY_X*MAX_ARRAY_Y);
+  	update_done=(unsigned char far *)farmalloc(MAX_ARRAY_X*MAX_ARRAY_Y);
+  	//Allocate one more for global robot
+  	robots=(Robot far *)farmalloc((NUM_ROBOTS+1)*sizeof(Robot));
+  	scrolls=(Scroll far *)farmalloc(NUM_SCROLLS*sizeof(Scroll));
+  	counters=(Counter far *)farmalloc(NUM_COUNTERS*sizeof(Counter));
+  	sensors=(Sensor far *)farmalloc(NUM_SENSORS*sizeof(Sensor));
+  	init_robot_mem();
+  	board_setup();
+  	sfx_init();
+  	//Initialize blink code, mod code, random number generator, and keyboard
+  	blink_off();
+  	random_seed();
+  	install_i09();
+  	installceh();
+    load_config_file();
+  }
+  else
+  {
+
 	draw_window_box(0,0,79,24,0xB800,127,120,113,0);
 	draw_window_box(2,1,77,3,0xB800,120,127,113,0);
 	draw_window_box(2,4,77,16,0xB800,120,127,113,0);
 	draw_window_box(2,17,77,23,0xB800,120,127,113,0);
-  write_string("MegaZeux version 2.69b",27,2,127,0xB800);
+  write_string("MegaZeux version 2.69c",27,2,127,0xB800);
 // #ifdef BETA
 	write_string("Beta; please distribute",27,17,127,0xB800);
 // #endif
@@ -174,23 +241,6 @@ int main(int argc,char **argv) {
 	write_string("Sound card IRQ:",43,21,122,0xB800);
 	write_string("Sound card DMA:",43,22,122,0xB800);
 
-  // I restored the original startup palette... - Exo
-	set_rgb(1,31,31,31);
-	set_rgb(6,63,0,0);
-	set_rgb(7,21,21,21);
-	set_rgb(8,8,8,8);
-	set_rgb(9,42,42,63);
-	set_rgb(10,42,63,42);
-	set_rgb(11,42,63,63);
-	set_rgb(12,63,42,42);
-	set_rgb(13,63,42,63);
-  // Do the ATI fix thing
-  f_ati_fix = fopen("ati_fix", "rb");
-  if(f_ati_fix != NULL)
-  {
-    ati_fix = 1;
-    fclose(f_ati_fix);
-  }
 	//Fade in
 	vquick_fadein();
 	//Initialize systems and display progess at bottom
@@ -339,10 +389,10 @@ int main(int argc,char **argv) {
 				}
 			write_string("Press C to configure, ESC to exit, or any other key to continue.",
 				3,10,127,0xB800);
-		rekey:
+		rekey2:
 			t1=getkey();
 			if(t1==27) goto escape;
-			if(t1==0) goto rekey;
+			if(t1==0) goto rekey2;
 			if((t1!='c')&&(t1!='C')) goto maingame;
 			if(!new_settings) {
 				Addr=0xFFFF;
@@ -428,6 +478,8 @@ int main(int argc,char **argv) {
 		//Done
 		save_config_file();
 		}
+  }
+
 maingame:
 	mixing_rate=mixing_rates[music_device][mixing_rate];
 	if(music_device==0) music_on=0;
@@ -527,6 +579,7 @@ char scan_options(void) {
 			else if(!str_cmp(&_argv[t1][1],"noems")) no_ems=1;
 			else if(!str_cmp(&_argv[t1][1],"ega")) force_ega=1;
 			else if(!str_cmp(&_argv[t1][1],"keyb2")) keyb_mode=1;
+      else if(!str_cmp(&_argv[t1][1],"noconfig")) conf_screen = 0;
 			//Cheat mode- use a - followed by an ALT-254.
 			else if(((unsigned char)_argv[t1][1])==254) cheats_active++;
 			else if(_argv[t1][1]=='l') {
@@ -573,7 +626,7 @@ char scan_options(void) {
 	if(help) {
 		if(help==1) puts("\a");
 		else puts("");
-		puts("MegaZeux version 2.69b\tCommand line parameters-\n");
+		puts("MegaZeux version 2.69c\tCommand line parameters-\n");
 		puts("      -?  Help with parameters.");
 		puts("-nomouse  Don't use mouse, even if found.");
 		puts("  -noems  Don't use EMS memory, even if available. (NOT RECOMMENDED)");

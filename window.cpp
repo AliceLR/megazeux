@@ -296,6 +296,7 @@ int list_menu(char far *choices,char choice_size,char far *title,int
 		m_show();
 		t1=getkey();
 		m_hide();
+      
 		//Act upon it
 		switch(t1) {
 			case MOUSE_EVENT:
@@ -367,8 +368,52 @@ int list_menu(char far *choices,char choice_size,char far *title,int
 				current=num_choices-1;
 				break;
 			default:
-				//Invalid character
-				beep();
+        // Not necessarily invalid. Might be an alphanumeric; seek the
+        // sucker.
+
+        if((t1 >= 'A') && (t1 <= 'Z'))
+        {
+          int i;
+    
+          for(i = 0; i < num_choices; i++)
+          {
+            if((choices[i * choice_size] == ' ') &&
+             (choices[(i * choice_size) + 1] == t1))
+            {
+              // It's good!
+              current = i;
+              break;
+            }
+          }
+        }          
+
+        if(((t1 >= 'a') && (t1 <= 'z')) || ((t1 >= '0') && (t1 <= '9')))
+        {
+          int i;
+
+          if((t1 >= 'a') && (t1 <= 'z'))
+          {
+            t1 -= 32;
+          }
+
+          for(i = 0; i < num_choices; i++)
+          {
+            if(choices[i * choice_size] == t1)
+            {
+              // It's good!
+              current = i;
+              break;
+            }
+          }
+        }
+
+      // I couldn't get rid of it for shift + num, besides that it
+      // annoys the hell out of me anyway. ^^ - Exo
+      /*  else
+        {
+				  //Invalid character
+				  beep();
+        } */
 			case 0:
 				break;
 			}

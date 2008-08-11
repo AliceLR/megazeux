@@ -78,11 +78,14 @@ extern int topindex,backindex;
 #include "struct.h"
 #include "conio.h"
 #include "mzm.h"
+#include "ems.h"
 
 // Sprites.. - Exo
 #include "sprite.h"
 // Strings! - Exo
 #include "mstring.h"
+// Vlayer! - Exo
+#include "vlayer.h"
 
 #define parsedir(a,b,c,d) parsedir(a,b,c,d,_bl[0],_bl[1],_bl[2],_bl[3])
 
@@ -115,104 +118,105 @@ else
 
 //Run a single robot through a single cycle.
 //If id is negative, only run it if .status is 2
-void run_robot(int id,int x,int y) {
-enter_func("run_robot");
-if(id<0) if(robots[-id].status!=2) return;
-int t1,t2,t3,t4,t5,t6,t7,t8,t9,t0,t10,t11,fad=is_faded();//Temps
-int cmd;//Command to run
-int lines_run=0,last_label=-1;//For preventing infinite loops
-char gotoed;//Set to 1 if we shouldn't advance cmd since we went to a lbl
-int old_pos;//Old position to verify gotos DID something
-int _bl[4]={ 0,0,0,0};//Whether blocked in a given direction (2=OUR bullet)
-int t12; // New * "" command (changes Built_In_Messages to be sure to display the messages)
-unsigned char far *robot;
-unsigned char far *cmd_ptr;//Points to current command
-char done=0;//Set to 1 on a finishing command
-char update_blocked=0;//Set to 1 to update the _bl[4] array
-unsigned char temp[81];
-char first_cmd=1;//It is the first cmd.
-FILE *fp;
-//Reset global prefixes
-first_prefix=mid_prefix=last_prefix=0;
-if(id<0)
+void run_robot(int id,int x,int y) 
 {
-  id=-id;
+  enter_func("run_robot");
+  if(id<0) if(robots[-id].status!=2) return;
+  int t1,t2,t3,t4,t5,t6,t7,t8,t9,t0,t10,t11,fad=is_faded();//Temps
+  int cmd;//Command to run
+  int lines_run=0,last_label=-1;//For preventing infinite loops
+  char gotoed;//Set to 1 if we shouldn't advance cmd since we went to a lbl
+  int old_pos;//Old position to verify gotos DID something
+  int _bl[4]={ 0,0,0,0};//Whether blocked in a given direction (2=OUR bullet)
+  int t12; // New * "" command (changes Built_In_Messages to be sure to display the messages)
+  unsigned char far *robot;
+  unsigned char far *cmd_ptr;//Points to current command
+  char done=0;//Set to 1 on a finishing command
+  char update_blocked=0;//Set to 1 to update the _bl[4] array
+  unsigned char temp[81];
+  char first_cmd=1;//It is the first cmd.
+  FILE *fp;
+  //Reset global prefixes
+  first_prefix=mid_prefix=last_prefix=0;
+  if(id<0)
+  {
+    id=-id;
+    robots[id].xpos=x;
+    robots[id].ypos=y;
+    robots[id].cycle_count=0;
+    goto redone;
+  }
+  //Reset x/y
   robots[id].xpos=x;
   robots[id].ypos=y;
+  //Update cycle count
+  if((++robots[id].cycle_count)<(robots[id].robot_cycle))
+  {
+    robots[id].status=1;
+    exit_func();
+    return;
+  }
   robots[id].cycle_count=0;
-  goto redone;
-}
-//Reset x/y
-robots[id].xpos=x;
-robots[id].ypos=y;
-//Update cycle count
-if((++robots[id].cycle_count)<(robots[id].robot_cycle))
-{
-  robots[id].status=1;
-  exit_func();
-  return;
-}
-robots[id].cycle_count=0;
-//Does program exist?
-if(robots[id].program_length<3)
-{
-  exit_func();
-  return;//(nope)
-}
-//Walk?
-if((robots[id].walk_dir>0)&&(robots[id].walk_dir<5))
-{
-  t2=_move(x,y,robots[id].walk_dir-1,1|2|8|16+4*robots[id].can_lavawalk);
-  if(t2==3)
-  {//Send to edge, if no response, then to thud.
-    if(send_robot_id(id,"edge",1))
-      send_robot_id(id,"thud",1);
-  }
-  else if(t2>0) send_robot_id(id,"thud",1);
-  else
+  //Does program exist?
+  if(robots[id].program_length<3)
   {
-    //Update x/y
-    switch(robots[id].walk_dir)
+    exit_func();
+    return;//(nope)
+  }
+  //Walk?
+  if((robots[id].walk_dir>0)&&(robots[id].walk_dir<5))
+  {
+    t2=_move(x,y,robots[id].walk_dir-1,1|2|8|16+4*robots[id].can_lavawalk);
+    if(t2==3)
+    {//Send to edge, if no response, then to thud.
+      if(send_robot_id(id,"edge",1))
+        send_robot_id(id,"thud",1);
+    }
+    else if(t2>0) send_robot_id(id,"thud",1);
+    else
     {
-      case 1: y--; break;
-      case 2: y++; break;
-      case 3: x++; break;
-      case 4: x--; break;
+      //Update x/y
+      switch(robots[id].walk_dir)
+      {
+        case 1: y--; break;
+        case 2: y++; break;
+        case 3: x++; break;
+        case 4: x--; break;
+      }
     }
   }
-}
-if(robots[id].cur_prog_line==0)
-{
-  robots[id].status=1;
-  goto breaker;//Inactive
-}
-redone:
-//Get program location
-prepare_robot_mem(id==NUM_ROBOTS);
-robot=&robot_mem[robots[id].program_location];
-//NOW quit if inactive (had to do walk first)
-if(robot[robots[id].cur_prog_line]==0)
-{
-  robots[id].status=1;
-  goto end_prog;
-}
-//Figure blocked vars (accurate until robot program ends OR a put
-//or change command is issued)
-if(id<NUM_ROBOTS)
-{
-  for(t1=0;t1<4;t1++)
+  if(robots[id].cur_prog_line==0)
   {
-    t4=x; t5=y;
-    if(!move_dir(t4,t5,t1))
-    {
-      //Not edge... blocked?
-      if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
-    }
-    else _bl[t1]=1;//Edge is considered blocked
+    robots[id].status=1;
+    goto breaker;//Inactive
   }
-}
-if(level_id[player_x+player_y*max_bxsiz]!=127) find_player();
-//Main robot loop
+  redone:
+  //Get program location
+  prepare_robot_mem(id==NUM_ROBOTS);
+  robot=&robot_mem[robots[id].program_location];
+  //NOW quit if inactive (had to do walk first)
+  if(robot[robots[id].cur_prog_line]==0)
+  {
+    robots[id].status=1;
+    goto end_prog;
+  }
+  //Figure blocked vars (accurate until robot program ends OR a put
+  //or change command is issued)
+  if(id<NUM_ROBOTS)
+  {
+    for(t1=0;t1<4;t1++)
+    {
+      t4=x; t5=y;
+      if(!move_dir(t4,t5,t1))
+      {
+        //Not edge... blocked?
+        if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
+      }
+      else _bl[t1]=1;//Edge is considered blocked
+    }
+  }
+  if(level_id[player_x+player_y*max_bxsiz]!=127) find_player();
+  //Main robot loop
 do
 {
   gotoed=0;
@@ -924,7 +928,8 @@ do
       if((t3<1)||(t3>4)) goto if_thing_no;
       if(move_dir(t1,t2,t3-1)) goto if_thing_no;
       if(t10 == 999) t10 = 0;
-      if_thing_at_xy:
+
+     if_thing_at_xy:
       //t3/t4 <- color (fg/bk)
       //t5 <- thing
       //t6 <- param
@@ -936,11 +941,37 @@ do
       // Check if sprite's at area
       if(t5 == 98)
       {
-        if(t6 == 256)
+        int ret;
+
+        if((t3 == 288) && (version_loaded >= 0x248))
         {
           t6 = sprite_num;
+          t3 = 0;
         }
-        int ret = sprite_at_xy(t6, t1, t2);
+
+        if(t6 == 256)
+        {
+          int i;
+          for(i = t3; i < MAX_SPRITES; i++)
+          {
+            if(sprite_at_xy(i, t1, t2)) break;
+          }
+          if(i == MAX_SPRITES)
+          {
+            i = -1;
+            ret = 0;
+          }
+          else
+          {
+            sprite_num = i;
+            ret = 1;
+          }
+        }
+        else
+        {
+          ret = sprite_at_xy(t6, t1, t2);
+        }
+
         if(ret)
         {
           send_robot_id(id,tr_msg(&cmd_ptr[t9],id),1);
@@ -1466,8 +1497,18 @@ do
       t3=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
       t4=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
       t5=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
+      // put image file
+      // Image file should be non-prefixed because it should be
+      // able to go past the board dimensions.
+      if((t2 == 100) && (l != NULL) && (*l == '@'))
+      {
+        // "Type" must be 0, 1, or 2; board, overlay, or vlayer
+        t3 %= 3;
+        tr_msg(l + 1, id, ibuff2);
+        load_mzm(ibuff2, t4, t5, t3);
+        break;
+      }         
       prefix_xy(t9,t9,t4,t5,t9,t9,x,y);
-      // put sprite
       if(t2 == 98)
       {
         if(t3 == 256)
@@ -1477,15 +1518,6 @@ do
         plot_sprite(t1, t3, t4, t5);
         break;
       }
-      // put image file
-      if((t2 == 100) && (l != NULL) && (*l == '@'))
-      {
-        // "Type" must be 0 or 1; board or overlay
-        t3 &= 1;
-        tr_msg(l + 1, id, ibuff2);
-        load_mzm(ibuff2, t4, t5, t3);
-        break;
-      }         
       goto put_at_XY;
     case 81://Send x y "label"
       t1=parse_param(&cmd_ptr[1],id);
@@ -2448,65 +2480,293 @@ do
       break;
     case 201://Copy block sx sy xsiz ysiz dx dy
     case 243://Copy overlay block sx sy xs ys dx dy
-      char far *l1 = NULL, *l2 = NULL;
+      // There are a few "special" things that can be happening here,
+      // and they all fall under one of the following generalized
+      // cases:
+      // do the default action of the command
+      // copy from board to vlayer/overlay
+      // copy from vlayer/overlay to board
+      // copy from overlay to vlayer and vice-versa
+      // copy from board/vlayer/overlay to string
+      // copy from board/vlayer/overlay to mzm
+      // And they are done with the following specifications:
+      // - copy block x y w h "#x" "#y" goes from board
+      //   to vlayer
+      // - copy block x y w h "+x" "+y" goes from board
+      //   to overlay
+      // - copy block "#x" "#x" w h x y goes from vlayer
+      //   to board
+      // - copy overlay block x y w h "+x" "+y" goes from
+      //   overlay to board
+      // - copy overlay block x y w h "#x" "#y" goes from
+      //   overlay to vlayer
+      // - copy overlay block "#x" "#y" w h x y goes from
+      //   vlayer to overlay
+      // - copy block x y w h "$stringN" p goes from
+      //   board to string
+      // - copy overlay block x y w h "$stringN" c goes from
+      //   overlay to string
+      // - copy block "#x" "#y" w h "@mzm" p goes from vlayer
+      //   to MZM
+      // - copy block x y w h "@mzm" p goes from board to MZM
+      // - copy overlay block x y w h "@mzm" p goes from overlay
+      //   to MZM
+      // Prefixes aren't applied to ANY of these cases.
+
+      int special_copy = 0;
+      int src_vlayer = 0, dest_vlayer = 0;
+      int inversion = 0;
+      char l1[15], l2[15], l3[15], l4[15];
+      char far *src_char;
+      char far *src_color;
+      char far *dest_id;
+      char far *dest_char;
+      char far *dest_color;
+      int src_bwidth = max_bxsiz;
+      int src_bheight = max_bysiz;
+      int dest_bwidth = max_bxsiz;
+      int dest_bheight = max_bysiz;
+      int src_x, src_y, dest_x, dest_y;
+      int edge_skip, edge_skip2;
+      int off_src, off_dest;
+
+      l1[0] = 0;
+      l2[0] = 0;
+      l3[0] = 0;
+      l4[0] = 0;
+
       t9=1;
-      t1=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t2=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t3=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t4=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
+      t1=parse_param(&cmd_ptr[t9],id); 
+      if(*(cmd_ptr + t9))
+      {
+        tr_msg(cmd_ptr + t9 + 1, id, l1);
+      }
+      t9=next_param(cmd_ptr,t9);
+      t2=parse_param(&cmd_ptr[t9],id);
+      if(*(cmd_ptr + t9))
+      {
+        tr_msg(cmd_ptr + t9 + 1, id, l2);
+      }
+      t9=next_param(cmd_ptr,t9);
+      t3=parse_param(&cmd_ptr[t9],id); 
+      t9=next_param(cmd_ptr,t9);
+      t4=parse_param(&cmd_ptr[t9],id); 
+      t9=next_param(cmd_ptr,t9);
       t5=parse_param(&cmd_ptr[t9],id); 
       if(*(cmd_ptr + t9))
       {
-        l1 = ibuff2;
+        tr_msg(cmd_ptr + t9 + 1, id, l3);
       }
       t9=next_param(cmd_ptr,t9);
       t6=parse_param(&cmd_ptr[t9],id);
       if(*(cmd_ptr + t9))
       {
-        l2 = ibuff2;
+        tr_msg(cmd_ptr + t9 + 1, id, l4);
       }
-      //Prefixes.
-      t7 = t6;
-      prefix_xy(t1,t2,t0,t0,t5,t6,x,y);
-      //Clip and verify parameters.
-      if(t1<0) t1=0;
-      if(t2<0) t2=0;
-      if(t5<0) t5=0;
-      if(t6<0) t6=0;
-      if(t1>=board_xsiz) t1=board_xsiz-1;
-      if(t2>=board_ysiz) t2=board_ysiz-1;
-      if(t3<1) t3=1;
-      if(t4<1) t4=1;
-      if((t1+t3)>board_xsiz) t3=board_xsiz-t1;
-      if((t2+t4)>board_ysiz) t4=board_ysiz-t2;
-      //Copy.
-      if((cmd == 243) && (l1 != NULL))
+
+      // See if the source is vlayer
+      if((*l1 == '#') && (*l2 == '#'))
       {
-        // Save portion of overlay to a string
-        if(string_type(l1) == 1)
+        map_vlayer();
+        src_vlayer = 1;
+        src_bwidth = vlayer_width;
+        src_bheight = vlayer_height;
+        src_x = strtol(l1 + 1, NULL, 10);
+        src_y = strtol(l2 + 1, NULL, 10);
+      }
+      else
+      {
+        src_x = t1;
+        src_y = t2;
+      }
+
+      dest_x = t5;
+      dest_y = t6;
+
+      // Now look at the dest
+      if(string_type(l3) == 1)
+      {
+        special_copy = 4;
+      }
+      else
+      {
+        if(*l3 == '@')
         {
-          load_string_board(l1, t1, t2, t3, t4, t7, overlay);
+          special_copy = 5;
+        }
+      }
+
+      if((*l3 == '#') && (*l4 == '#'))
+      {
+        if(!src_vlayer) map_vlayer();
+        dest_vlayer = 1;
+        dest_bwidth = vlayer_width;
+        dest_bheight = vlayer_height;
+        dest_x = strtol(l3 + 1, NULL, 10);
+        dest_y = strtol(l4 + 1, NULL, 10);
+      }
+      else
+      {
+        if((*l3 == '+') && (*l4 == '+'))
+        {
+          inversion = 1;
+          dest_x = strtol(l3 + 1, NULL, 10);
+          dest_y = strtol(l4 + 1, NULL, 10);
+        }
+      }
+
+      // Prefixes... well, actually it should only prefix
+      // if a special mode isn't being used because the dumb
+      // function clips.
+      if(!special_copy && !(src_vlayer || dest_vlayer))
+      {
+        prefix_xy(src_x, src_y, t0, t0, dest_x, dest_y, x, y);
+      }
+
+      t7 = t6;
+      // Clip and verify
+      if(src_x < 0) src_x = 0;
+      if(src_y < 0) src_y = 0;
+      if(dest_x < 0) dest_x = 0;
+      if(dest_y < 0) dest_y = 0;
+      if(src_x >= src_bwidth) src_x = src_bwidth - 1;
+      if(src_y >= src_bheight) src_y = src_bheight - 1;
+      if(t3 < 1) t3 = 1;
+      if(t4 < 1) t4 = 1;
+      if((src_x + t3) > src_bwidth) t3 = src_bwidth - src_x;
+      if((src_y + t4) > src_bheight) t4 = src_bheight - src_y;
+      if(dest_x >= dest_bwidth) dest_x = dest_bwidth - 1;
+      if(dest_y >= dest_bheight) dest_y = dest_bheight - 1;
+      if((dest_x + t3) > dest_bwidth) t3 = dest_bwidth - dest_x;
+      if((dest_y + t4) > dest_bheight) t4 = dest_bheight - dest_y;
+
+      off_src = (src_y * src_bwidth) + src_x;
+      off_dest = (dest_y * dest_bwidth) + dest_x;
+
+      if(dest_vlayer == 1)
+      {
+        dest_char = vlayer_chars + off_dest;
+        dest_color = vlayer_colors + off_dest;
+
+        // Dest is vlayer, it's going to be special copy either 1 or 4
+        // From board to vlayer
+        if(cmd == 201)
+        {
+          src_char = level_param + off_src;
+          src_color = level_color + off_src;
+          special_copy = 1;
+        }
+        // From overlay to vlayer
+        else
+        {
+          src_char = overlay + off_src;
+          src_color = overlay_color + off_src;
+          special_copy = 3;
+        }
+      }
+      
+      if(src_vlayer == 1)
+      {
+        // Source is vlayer, it's going to be special copy either 2 or 3.
+        src_char = vlayer_chars + off_src;
+        src_color = vlayer_colors + off_src;
+
+        // If the dest is already vlayer then..
+        if(dest_vlayer)
+        {
+          cmd = 244;
+          special_copy = 0;
+        }
+        else
+        {
+          // dest is "natural", can't be inversion or vlayer, so..      
+          // From vlayer to board
+          if(!special_copy)
+          {
+            if(cmd == 201)
+            {
+              dest_id = level_id + off_dest;
+              dest_char = level_param + off_dest;
+              dest_color = level_color + off_dest;
+              special_copy = 2;
+            }
+            // From vlayer to overlay
+            else
+            {
+              dest_char = overlay + off_dest;
+              dest_color = overlay_color + off_dest;
+              special_copy = 3;
+            }
+          }
+        }
+      }
+      else
+      // Only check this if the source is NOT vlayer, that prevents
+      // source vlayer to inversion combo.
+      {
+        // From board to overlay
+        if(cmd == 201)
+        {
+          src_char = level_param + off_src;
+          src_color = level_color + off_src;
+          if(inversion == 1)
+          {
+            dest_char = overlay + off_dest;
+            dest_color = overlay_color + off_dest;
+            special_copy = 1;  
+          }
+        }
+        else
+        {
+          // From overlay to board
+          src_char = overlay + off_src;
+          src_color = overlay_color + off_src;
+          if(inversion == 1)
+          {              
+            dest_id = level_id + off_dest;
+            dest_char = level_param + off_dest;
+            dest_color = level_color + off_dest;
+            special_copy = 2;
+          }
+        }
+      }
+
+      edge_skip = src_bwidth - t3;
+      edge_skip2 = dest_bwidth - t3;
+
+      switch(special_copy)
+      {
+        // Copy from board to vlayer/overlay
+        case 1:
+        {
+          int i, i2;
+          char src_ch;
+          for(i = 0; i < t4; i++)
+          {
+            for(i2 = 0; i2 < t3; i2++)
+            {
+              src_ch = get_id_char(off_src);
+              if(src_ch != 32)
+              {
+                *dest_char = src_ch;
+                *dest_color = *src_color;
+              }
+              off_src++;
+              src_color++;
+              dest_char++;
+              dest_color++;
+            }
+            off_src += edge_skip;
+            src_color += edge_skip;
+            dest_char += edge_skip2;
+            dest_color += edge_skip2;
+          }
           break;
         }
-
-        // Save overlay to file
-        if(*l1 == '@')
+        // Copy from vlayer/overlay to board
+        case 2:
         {
-          save_mzm(l1 + 1, t1, t2, t3, t4, 1, t7);
-          break;
-        }
-
-        if(!str_cmp(l1, "BOARD_X") && (l2 != NULL) &&
-         !str_cmp(l2, "BOARD_Y"))
-        {
-          // Copy from overlay to board; make customblocks.
-          // The only thing it won't overwrite is the player.
-          char far *src_char = overlay + (t2 * max_bxsiz) + t1;
-          char far *src_color = overlay_color + (t2 * max_bxsiz) + t1;
-          char far *dest_id = level_id + (t6 * max_bxsiz) + t5;
-          char far *dest_char = level_param + (t6 * max_bxsiz) + t5;
-          char far *dest_color = level_color + (t6 * max_bxsiz) + t5;
-          int edge_skip = max_bxsiz - t3;
+          char src_ch;
           int i, i2;
           for(i = 0; i < t4; i++)
           {
@@ -2514,9 +2774,13 @@ do
             {
               if(*dest_id != 127)
               {
-                *dest_id = 5;
-                *dest_char = *src_char;
-                *dest_color = *src_color;
+                src_ch = *src_char;
+                if(src_ch != 32)
+                {
+                  *dest_id = 5;
+                  *dest_char = src_ch;
+                  *dest_color = *src_color;
+                }
               }
               dest_char++;
               dest_color++;
@@ -2524,67 +2788,87 @@ do
               src_char++;
               src_color++;
             }
-            dest_char += edge_skip;
-            dest_color += edge_skip;
-            dest_id += edge_skip;
             src_char += edge_skip;
             src_color += edge_skip;
+            dest_char += edge_skip2;
+            dest_color += edge_skip2;
+            dest_id += edge_skip2;
           }
           update_blocked = 1;
           break;
         }
-      }
-
-      if((cmd == 201) && (l1 != NULL))
-      {
-        // Save portion of board to a string
-        if(string_type(l1) == 1)
+        // copy from overlay to vlayer and vice-versa
+        case 3:
         {
-          load_string_board(l1, t1, t2, t3, t4, t7, level_param);
-          break;
-        }
-
-        // Save board to file
-        if(*l1 == '@')
-        {
-          save_mzm(l1 + 1, t1, t2, t3, t4, 0, t7);
-          break;
-        }
-
-        if(!str_cmp(l1, "OVERLAY_X") && (l2 != NULL) && 
-         !str_cmp(l2, "OVERLAY_Y"))
-        {
-          // Copy from board to overlay
-          char far *dest_char = overlay + (t6 * max_bxsiz) + t5;
-          char far *dest_color = overlay_color + (t6 * max_bxsiz) + t5;
-          char far *src_color = level_color + (t2 * max_bxsiz) + t1;
-          int edge_skip = max_bxsiz - t3;
-          int i, i2, i3;
-          i3 = (t2 * max_bxsiz) + t1;
+          int i, i2;
+          char src_ch;
           for(i = 0; i < t4; i++)
           {
             for(i2 = 0; i2 < t3; i2++)
             {
-              *dest_char = get_id_char(i3);
-              *dest_color = *src_color;
-              i3++;
+              src_ch = *src_char;
+              if(src_ch != 32)
+              {
+                *dest_char = src_ch;
+                *dest_color = *src_color;
+              }
+              src_char++;
               src_color++;
               dest_char++;
               dest_color++;
             }
-            i3 += edge_skip;
-            dest_char += edge_skip;
-            dest_color += edge_skip;
+            src_char += edge_skip;
             src_color += edge_skip;
+            dest_char += edge_skip2;
+            dest_color += edge_skip2;
           }
           break;
         }
+
+        // copy from board/vlayer/overlay to string
+        case 4:
+        {
+          load_string_board(l3, t3, t4, t7, src_char, src_bwidth);
+          break;
+        }
+
+        // copy from board/vlayer/overlay to mzm
+        case 5:
+        {
+          // Save from vlayer
+          if(src_vlayer)
+          {
+            save_mzm(l3 + 1, src_x, src_y, t3, t4, 2, t7);
+            break;
+          }
+          // Save from board
+          if(cmd == 201)
+          {
+            save_mzm(l3 + 1, t1, t2, t3, t4, 0, t7);
+            break;
+          }
+          // Save from overlay
+          else
+          {
+            save_mzm(l3 + 1, t1, t2, t3, t4, 1, t7);
+            break;
+          }
+        }
       }
 
-      if(t5>=board_xsiz) t5=board_xsiz-1;
-      if(t6>=board_ysiz) t6=board_ysiz-1;
-      if((t5+t3)>board_xsiz) t3=board_xsiz-t5;
-      if((t6+t4)>board_ysiz) t4=board_ysiz-t6;
+      if(special_copy != 0)
+      {
+        if(src_vlayer || dest_vlayer)
+        {
+          unmap_vlayer();
+        }
+        break;
+      }
+
+      t1 = src_x;
+      t2 = src_y;
+      t5 = dest_x;
+      t6 = dest_y;
 
       if((t1==t5)&&(t2==t6)) break;//None to do!
       if((t5<t1)||((t5==t1)&&(t6<t2)))
@@ -2594,9 +2878,18 @@ do
         {
           for(t8=t2;t8<(t2+t4);t8++)
           {
+            if(cmd == 244)
+            {
+              t9=t7+t8*vlayer_width;
+              t0=((t7-t1)+t5)+((t8-t2)+t6)*vlayer_width;
+              vlayer_chars[t0] = vlayer_chars[t9];
+              vlayer_colors[t0] = vlayer_colors[t9];
+              continue;
+            }
             t9=t7+t8*max_bxsiz;
             t0=((t7-t1)+t5)+((t8-t2)+t6)*max_bxsiz;
             //Copy from t9 to t0
+            // Vlayer hack
             if(cmd==243)
             {
               overlay[t0]=overlay[t9];
@@ -2613,7 +2906,7 @@ do
               clear_robot(level_param[t0]);
               robot=&robot_mem[robots[id].program_location];
               cmd_ptr=&robot[robots[id].cur_prog_line+1];
-            }
+            }                        
             else if((cmd==125)||(cmd==126))
               clear_scroll(level_param[t0]);
             //Copy any robot/scroll at t9
@@ -2680,6 +2973,15 @@ do
         {
           for(t8=(t2+t4-1);t8>=t2;t8--)
           {
+            // Vlayer hack
+            if(cmd == 244)
+            {
+              t9=t7+t8*vlayer_width;
+              t0=((t7-t1)+t5)+((t8-t2)+t6)*vlayer_width;
+              vlayer_chars[t0] = vlayer_chars[t9];
+              vlayer_colors[t0] = vlayer_colors[t9];
+              continue;
+            }
             t9=t7+t8*max_bxsiz;
             t0=((t7-t1)+t5)+((t8-t2)+t6)*max_bxsiz;
             //Copy from t9 to t0
@@ -2759,8 +3061,13 @@ do
         }
         //Done (UL -> LR)
       }
+      if(cmd == 244)
+      {
+        unmap_vlayer();
+      }
       update_blocked=(cmd==201);
       break;
+
     case 202://Clip input
       //Chop up to and through first section of whitespace.
       //First, until non space or end
@@ -2907,32 +3214,26 @@ do
       char far *temp = tr_msg(&cmd_ptr[2],id);
 
       // This will load a charset to a different position - Exo
-      if(temp[0] == '+' && (((temp[1] > 47) && (temp[1] < 58)) ||
-       ((temp[1] > 96) && (temp[1] < 103))) &&
-       (((temp[2] > 47) && (temp[2] < 58)) || ((temp[2] > 96) && 
-       (temp[2] < 103))))
+      if(temp[0] == '+')
       {
-        int pos = 0;
-        if((temp[1] > 47) && (temp[1] < 58)) // is a number
-        {
-          pos += (temp[1] - 48) << 4;
-        }
-        else  // is a letter a-f
-        {
-          pos += (temp[1] - 87) << 4;
-        }
-        if((temp[2] > 47) && (temp[2] < 58)) // is a number
-        {
-          pos += (temp[2] - 48);
-        }
-        else  // is a letter a-f
-        {
-          pos += (temp[2] - 87);
-        }
-        ec_load_set_nou_var(temp + 3, pos);
+        char far *next;
+        char tempc = temp[3];
+        temp[3] = 0;
+        int pos = (int)strtol(temp + 1, &next, 16);
+        temp[3] = tempc;
+        ec_load_set_nou_var(next, pos);
       }
       else
       {
+        if(temp[0] == '@')
+        {
+          char far *next;
+          char tempc = temp[4];
+          temp[4] = 0;
+          int pos = (int)strtol(temp + 1, &next, 10);
+          temp[4] = tempc;
+          ec_load_set_nou_var(next, pos);
+        }
         ec_load_set_nou(temp);
       }
       break;
@@ -3002,21 +3303,21 @@ do
       clear_world();
       update_done[0]|=254;
       //(DON'T clear game params)
-      redo:
-      if(load_world(temp,-1))
-      {
+     redo:
+      if(load_world(temp,-1)) {
         t1=error("Error swapping to next world",1,23,current_pg_seg,0x2C01);
         if(t1==2) goto redo;
-      }
-      str_cpy(curr_file,temp);
-      select_current(first_board);
-      send_robot_def(0,10);
-      target_where=-2;
-      target_board=first_board;
-      target_x=player_x;
-      target_y=player_y;
-      exit_func();
-      return;
+		  }
+		 str_cpy(curr_file,temp);
+     select_current(first_board);
+     send_robot_def(0,10);
+     target_where=-2;
+     target_board=first_board;
+     target_x=player_x;
+     target_y=player_y;
+     exit_func();
+     return;
+
     case 227://If allignedrobot str str
       if(id==NUM_ROBOTS) break;
       tr_msg(&cmd_ptr[2],id);
@@ -3235,13 +3536,17 @@ do
     if(level_id[player_x+player_y*max_bxsiz]!=127) find_player();
   }
 } while(((++lines_run)<commands)&&(!done));
-breaker:
-//Fix char set (added to fix pixel editing. Optional) -Koji
-ec_update_set();
 
-robots[id].cycle_count=0;//In case a label changed it
-//Reset x/y (from movements)
-robots[id].xpos=x;
-robots[id].ypos=y;
-exit_func();
+breaker:
+  //Fix char set (added to fix pixel editing. Optional) -Koji
+  // WTF no! This is ruining all of the charset buffering/synchronization!
+  // Instead the pixel editing functions should be setting need_update,
+  // this shouldn't be called here of all places. - Exo
+  // ec_update_set();
+  
+  robots[id].cycle_count=0;//In case a label changed it
+  //Reset x/y (from movements)
+  robots[id].xpos=x;
+  robots[id].ypos=y;
+  exit_func();
 }

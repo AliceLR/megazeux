@@ -1,9 +1,7 @@
-                 /* $Id$
+/* $Id$
  * MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
- *
+ * Copyright (C) 2003 Gilead Kutnick
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
  * published by the Free Software Foundation; either version 2 of
@@ -19,13 +17,19 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-extern char strings[16][64];
-int string_type(char far *expression);
-char *get_string(char far *expression, char far *str_buffer);
-char get_str_char(char far *expression);
-int get_str_int(char far *expression);
-void set_string(char far *expression, char *set);
-void set_str_char(char far *expression, char set);
-void set_str_int(char far *expression, int val);
-void load_string_board(char far *expression, int w, int h, char l, 
- char far *src, int width);
+#ifndef VLAYER_H
+#define VLAYER_H
+
+extern unsigned char far *vlayer_chars;
+extern unsigned char far *vlayer_colors;
+extern int vlayer_ems;
+extern int vlayer_width;
+extern int vlayer_height;
+
+void allocate_vlayer();
+void deallocate_vlayer();
+void map_vlayer();
+void unmap_vlayer();
+void swap_size();
+
+#endif

@@ -41,6 +41,8 @@
 #include "cursor.h"
 #include "blink.h"
 #include "mstring.h"
+#include "vlayer.h"
+#include "runrobot.h"
 
 void set_built_in_messages(int param);
 
@@ -304,7 +306,7 @@ void clear_world(char clear_curr_file) {
 // are also not saved in any way in a MZX or MZB file, only SAV files.
 
 void clear_game_params(void) {
-	int t1;
+	unsigned int t1;
 	//Clear all global game parameters
 	for(t1=0;t1<NUM_KEYS;t1++) keys[t1]=NO_KEY;
 	score=quicksave_file[0]=volume_inc=volume_target=player_ns_locked=
@@ -322,7 +324,7 @@ void clear_game_params(void) {
 	for(t1=0;t1<NUM_COUNTERS;t1++)
 		counters[t1].counter_name[0]=counters[t1].counter_value=0;
   // Clear sprites. - Exo
-  for(t1 = 0; t1 < 64; t1++)
+  for(t1 = 0; t1 < MAX_SPRITES; t1++)
   {
     sprites[t1].flags = 0;
   }
@@ -365,6 +367,18 @@ void clear_game_params(void) {
 	scroll_pointer_color=128;
 	scroll_title_color=143;
 	scroll_arrow_color=142;
+  // Normalize commands
+  commands = 40;
+  // Clear the vlayer
+  map_vlayer();  
+  for(t1 = 0; t1 < 32768; t1++)
+  {
+    *((int far *)(vlayer_chars + t1)) = 0x2020;
+  }
+  unmap_vlayer();
+  // Set the vlayer dimensions to default
+  vlayer_width = 256;
+  vlayer_height = 128;
 	//Done!
 	player_restart_x=player_x;
 	player_restart_y=player_y;

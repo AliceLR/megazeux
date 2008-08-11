@@ -66,6 +66,7 @@
 #include "roballoc.h"
 #include "saveload.h"
 #include <stdio.h>
+#include <stdlib.h>
 #include "blink.h"
 #include "cursor.h"
 #include "counter.h"
@@ -1119,7 +1120,9 @@ void edit_world(void) {
 				if(t1==-1) break;
 				//Get file name
 				temp[0]=0;
+
 				if(save_file_dialog("Export","Save as: ",temp)) break;
+
 				//Export as...
 				switch(t1) {
 					case 0:
@@ -1160,39 +1163,51 @@ void edit_world(void) {
 						break;
 					case 1:
 						//Character set
-            if(temp[0] == '#' && (((temp[1] > 47) && (temp[1] < 58)) ||
-              ((temp[1] > 64) && (temp[1] < 71))) &&
-              (((temp[2] > 47) && (temp[2] < 58)) || ((temp[2] > 64) && (temp[2] < 71))))
+            if(temp[0] == '+')
             {
-              int size = 0;
-              if((temp[1] > 47) && (temp[1] < 58)) // is a number
-              {
-                size += (temp[1] - 48) << 4;
-              }
-              else  // is a letter A-F
-              {
-                size += (temp[1] - 55) << 4;
-              }
-              if((temp[2] > 47) && (temp[2] < 58)) // is a number
-              {
-                size += (temp[2] - 48);
-              }
-              else  // is a letter A-F
-              {
-                size += (temp[2] - 55);
-              }
+              char tempc = temp[4];
+              temp[4] = 0;
+              char far *next;
+              int offset = strtol(temp + 1, &next, 10);
+              temp[4] = tempc;
 
-						  add_ext(temp + 3,".CHR");
-              if(ec_save_set_partial(temp + 3, size))
+              int size = 256;
+ 
+              if(*next == '#')
+              {
+                tempc = next[4];
+                next[4] = 0;
+                char far *next2 = next;
+                size = strtol(next + 1, &next, 10);
+                next2[4] = tempc;
+              }  
+
+						  add_ext(next, ".CHR");
+              if(ec_save_set(next, offset, size))
                 error("Error exporting char. set",1,24,current_pg_seg,0x1301);
-            }
+            }              
             else
-            {
-						  add_ext(temp,".CHR");
-						  //Open file.
-						  if(ec_save_set(temp))
-							  error("Error exporting char. set",1,24,current_pg_seg,0x1301);
-            }						  
+            {  
+              if(temp[0] == '#')
+              {
+                char tempc = temp[4];
+                temp[4] = 0;
+                char far *next;
+                int size = strtol(temp + 1, &next, 10);
+                temp[4] = tempc;
+                
+  						  add_ext(next, ".CHR");
+                if(ec_save_set(next, 0, size))
+                  error("Error exporting char. set",1,24,current_pg_seg,0x1301);
+              }
+              else
+              {
+  						  add_ext(temp,".CHR");
+  						  //Open file.
+  						  if(ec_save_set(temp, 0, 256))
+  							  error("Error exporting char. set",1,24,current_pg_seg,0x1301);
+              }
+            }
             break;
 					  case 2:
 						  //Ansi file

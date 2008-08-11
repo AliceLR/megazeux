@@ -30,15 +30,18 @@
 #include "idput.h"
 #include "error.h"
 #include "game.h"
+#include "egacode.h"
+#include "vlayer.h"
 #include <dos.h>
+#include <stdlib.h>
                                                                                                           
-char sprite_num;
-char total_sprites;                                   
+unsigned char sprite_num;
+unsigned char total_sprites;                                   
 char sprite_y_order;
-Sprite sprites[64];
+Sprite sprites[MAX_SPRITES];
 Collision_list collision_list;
 
-void plot_sprite(int color, int sprite, int x, int y)
+void plot_sprite(int color, unsigned char sprite, int x, int y)
 {
   if(!((sprites[sprite].width) || (sprites[sprite].height)))
   {
@@ -61,56 +64,60 @@ void plot_sprite(int color, int sprite, int x, int y)
   total_sprites++;
 }
 
+// For the qsort.
+
+int compare_spr(const void *a, const void *b);
+
+int compare_spr(const void *a, const void *b)
+{
+  char spr_a = *((char *)a);
+  char spr_b = *((char *)b);
+  return ((sprites[spr_a].y + sprites[spr_a].col_y) -
+   (sprites[spr_b].y + sprites[spr_b].col_y));
+}
+
 void draw_sprites()
 {
   int i, i2, i3, i4, i5, i6, st_x, st_y, of_x, of_y, d;
-  int drawn = 0;
-  int skip, skip2;
+  int skip, skip2, skip3;
   int dr_w, dr_h, ref_x, ref_y, scr_x, scr_y;
-  char dr_order[64], temp, cur_y;
-  char ch, color, dcolor;
+  int bwidth, use_chars = 1;
+  int uvlayer = 0;
+  unsigned char dr_order[MAX_SPRITES];
+  unsigned char ch, color, dcolor;
+  char far *screen = (char far *)MK_FP(current_pg_seg, 0);
+  char far *src_chars;
+  char far *src_colors;
 
   // see if y sort should be done
   if(sprite_y_order)
   {
-    // This is a bad merge sort, but the set is small..
+    // Switched to stdlib qsort. Hooray!
 
-    // sort order...
-    int pos;
-
-    // first fill it with the actual orders.
-    for(i = 0; i < 64; i++)
+    // Fill it with the active sprites in the beginning
+    // and the inactive sprites in the end.
+    for(i = 0, i2 = 0, i3 = MAX_SPRITES - 1; i < MAX_SPRITES; i++)
     {
-      dr_order[i] = i;
+      if(sprites[i].flags & SPRITE_INITIALIZED)
+      {
+        dr_order[i2] = i;
+        i2++;
+      }
+      else
+      {
+        dr_order[i3] = i;
+        i3--;
+      }
     }
     
-    // Now start sort.
+    // Now sort it, using qsort.
 
-    for(pos = 0, cur_y = sprites[pos].y; pos < 64; pos++)
-    {
-      if(!(sprites[dr_order[pos]].flags & SPRITE_INITIALIZED))
-      {
-        continue;
-      }
-      cur_y = sprites[dr_order[pos]].y + sprites[dr_order[pos]].col_y;
-      for(i = pos; i < 64; i++)
-      {
-        // Did we find a smaller one?
-        if((sprites[dr_order[i]].y + sprites[dr_order[i]].col_y) < cur_y)
-        {
-          // Then swap.
-          temp = dr_order[pos];
-          dr_order[pos] = dr_order[i];
-          dr_order[i] = temp;
-        }
-      }
-    }
+    qsort(dr_order, i2, 1, compare_spr);
   }  
 
   // draw this on top of the SCREEN window.
-  for(i = 0; i < 64; i++)
+  for(i = 0; i < MAX_SPRITES; i++)
   {
-    //if(drawn == total_sprites) break;
     if(sprite_y_order)
     {
       d = dr_order[i];
@@ -122,12 +129,9 @@ void draw_sprites()
 
     if(!(sprites[d].flags & SPRITE_INITIALIZED)) continue;
 
-    drawn++;
-
     calculate_xytop(scr_x, scr_y);
     ref_x = sprites[d].ref_x;
     ref_y = sprites[d].ref_y;
-    char far *screen = (char far *)MK_FP(current_pg_seg, 0);
     of_x = 0;
     of_y = 0;
     st_x = (sprites[d].x + viewport_x);
@@ -169,8 +173,29 @@ void draw_sprites()
     {
       dr_h = viewport_y + viewport_ysiz - st_y;
     }
-      
-    i4 = ((ref_y + of_y) * max_bxsiz) + ref_x + of_x;
+
+    if(sprites[d].flags & SPRITE_VLAYER)
+    {
+      use_chars = 0;
+      if(!uvlayer)
+      {
+        map_vlayer();
+      }
+      uvlayer = 1;
+      use_chars = 1;
+      bwidth = vlayer_width;
+      src_chars = vlayer_chars;
+      src_colors = vlayer_colors;
+    }
+    else
+    {
+      use_chars = 0;
+      bwidth = max_bxsiz;
+      src_chars = level_param;
+      src_colors = level_color;
+    }
+
+    i4 = ((ref_y + of_y) * bwidth) + ref_x + of_x;
     i5 = (st_y * 80) + st_x;
 
     if(overlay_mode == 2)
@@ -182,8 +207,9 @@ void draw_sprites()
       i6 = (sprites[d].y * max_bxsiz) + sprites[d].x;
     }
 
-    skip = max_bxsiz - dr_w;
+    skip = bwidth - dr_w;
     skip2 = 80 - dr_w;
+    skip3 = max_bxsiz - dr_w;
 
     switch((sprites[d].flags & 0x0C) >> 2)
     {
@@ -194,17 +220,27 @@ void draw_sprites()
         {
           for(i3 = 0; i3 < dr_w; i3++)
           {
-            color = level_color[i4];
-            ch = get_id_char(i4);
-        
+            color = src_colors[i4];
+            if(use_chars)
+            {
+              ch = src_chars[i4];
+            }
+            else
+            {
+              ch = get_id_char(i4);
+            }
+                    
             if(!(color & 0xF0))
             {
               color = (color & 0x0F) | (screen[(i5 << 1) + 1] & 0xF0);
             }
     
-            if(ch != 32)
+            if(ch != 32) 
             {
-              draw_char_linear(color, ch, i5, current_pg_seg);
+              if(!(sprites[d].flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
+              {
+                draw_char_linear(color, ch, i5, current_pg_seg);
+              }
             }
             i4++;
             i5++;
@@ -222,8 +258,15 @@ void draw_sprites()
         {
           for(i3 = 0; i3 < dr_w; i3++)
           {
-            color = level_color[i4];
-            ch = get_id_char(i4);
+            color = src_colors[i4];
+            if(use_chars)
+            {
+              ch = src_chars[i4];
+            }
+            else
+            {
+              ch = get_id_char(i4);
+            }
 
             if(!(color & 0xF0))
             {
@@ -232,7 +275,10 @@ void draw_sprites()
     
             if((!overlay_mode || (overlay[i6] == 32)) && ch != 32)
             {
-              draw_char_linear(color, ch, i5, current_pg_seg);
+              if(!(sprites[d].flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
+              {
+                draw_char_linear(color, ch, i5, current_pg_seg);
+              }
             }
             i4++;
             i5++;
@@ -240,7 +286,7 @@ void draw_sprites()
           }
           i4 += skip;
           i5 += skip2;
-          i6 += skip;
+          i6 += skip3;
         }
         break;
       }
@@ -254,7 +300,14 @@ void draw_sprites()
         {
           for(i3 = 0; i3 < dr_w; i3++)
           {
-            ch = get_id_char(i4);
+            if(use_chars)
+            {
+              ch = src_chars[i4];
+            }
+            else
+            {
+              ch = get_id_char(i4);
+            }
         
             dcolor = color;
             if(!(color & 0xF0))
@@ -264,7 +317,10 @@ void draw_sprites()
     
             if(ch != 32)
             {
-              draw_char_linear(dcolor, ch, i5, current_pg_seg);
+              if(!(sprites[d].flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
+              {
+                draw_char_linear(dcolor, ch, i5, current_pg_seg);
+              }
             }
             i4++;
             i5++;
@@ -284,18 +340,27 @@ void draw_sprites()
         {
           for(i3 = 0; i3 < dr_w; i3++)
           {
-            ch = get_id_char(i4);
+            if(use_chars)
+            {
+              ch = src_chars[i4];
+            }
+            else
+            {
+              ch = get_id_char(i4);
+            }
 
             dcolor = color;
             if(!(color & 0xF0))
             {
-              //dcolor = (color & 0x0F) | (level_color[i6] & 0xF0);
               dcolor = (color & 0x0F) | (screen[(i5 << 1) + 1] & 0xF0);
             }
     
             if((!overlay_mode || (overlay[i6] == 32)) && ch != 32)
             {
-              draw_char_linear(dcolor, ch, i5, current_pg_seg);
+              if(!(sprites[d].flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
+              {
+                draw_char_linear(dcolor, ch, i5, current_pg_seg);
+              }
             }
             i4++;
             i5++;
@@ -303,16 +368,21 @@ void draw_sprites()
           }
           i4 += skip;
           i5 += skip2;
-          i6 += skip;
+          i6 += skip3;
         }
         break;
       }
     }
   }    
+
+  if(uvlayer)
+  {
+    unmap_vlayer();
+  }
 }
 
 
-int sprite_at_xy(unsigned int sprite, int x, int y)
+int sprite_at_xy(unsigned char sprite, int x, int y)
 {
   if((x >= sprites[sprite].x) && (x < sprites[sprite].x + sprites[sprite].width) &&
    (y >= sprites[sprite].y) && (y < sprites[sprite].y + sprites[sprite].height)
@@ -326,12 +396,14 @@ int sprite_at_xy(unsigned int sprite, int x, int y)
   }
 }
                                                             
-int sprite_colliding_xy(unsigned int sprite, int x, int y)
+int sprite_colliding_xy(unsigned char sprite, int x, int y)
 {
   int colliding = 0;
-  int skip, i, i2, i3, i4, i5;
+  int skip, skip2, i, i2, i3, i4, i5;
+  int bwidth;
   int x1, x2, y1, y2;
   int mw, mh;
+  int use_chars = 1, use_chars2 = 1;
   unsigned int x_lmask, x_gmask, y_lmask, y_gmask, xl, xg, yl, yg, wl, hl, wg, hg;
 
   if(!(sprites[sprite].flags & SPRITE_INITIALIZED)) return(-1);
@@ -339,49 +411,66 @@ int sprite_colliding_xy(unsigned int sprite, int x, int y)
   // Check against the background, will only collide against customblock for now
   //  (id 5)
 
+  if(sprites[sprite].flags & SPRITE_VLAYER)
+  {
+    map_vlayer();
+    use_chars = 0;
+    bwidth = vlayer_width;
+  }
+  else
+  {
+    bwidth = max_bxsiz;
+  }
+
   i3 = ((y + sprites[sprite].col_y) * max_bxsiz) + x + sprites[sprite].col_x;
-  i4 = ((sprites[sprite].ref_y + sprites[sprite].col_y) * max_bxsiz) +
+  i4 = ((sprites[sprite].ref_y + sprites[sprite].col_y) * bwidth) +
    sprites[sprite].ref_x + sprites[sprite].col_x;
   skip = max_bxsiz - sprites[sprite].col_width;
+  skip2 = bwidth - sprites[sprite].col_width;
 
   // Scan board area
+  int board_collide = 0;
+
   for(i = 0; i < sprites[sprite].col_height; i++)
   {
     for(i2 = 0; i2 < sprites[sprite].col_width; i2++)
     {
-      if(level_id[i3] == 5)
+      // First, if ccheck is on, it won't care if the source is 32
+      int c;
+
+      if(!use_chars)
       {
-        // found a collision...
-        // Do char based check?
-        if(sprites[sprite].flags & SPRITE_CHAR_CHECK)
+        c = vlayer_chars[i4];
+      }
+      else
+      {
+        c = get_id_char(i4);
+      }
+      if(!(sprites[sprite].flags & SPRITE_CHAR_CHECK) ||
+       (c != 32))
+      {
+        // if ccheck2 is on and the char is blank, don't trigger.
+        if(!(sprites[sprite].flags & SPRITE_CHAR_CHECK2) ||
+         (!is_blank(c)))
         {
-          // Don't mark collision if the sprite's char there is 32.
-          if(get_id_char(i4) != 32)
+          if(level_id[i3] == 5)
           {
-            colliding++;
-            collision_list.collisions[0] = -1;
-            goto next;
+            // Colliding against background
+            if(board_collide) break;
+            collision_list.collisions[colliding] = -1;
+            colliding++;              
+            board_collide = 1;
           }
-        }
-        else
-        {
-          colliding++;
-          collision_list.collisions[0] = -1;
-          goto next;
         }
       }
       i3++;
       i4++;
     }
     i3 += skip;
-    i4 += skip;
+    i4 += skip2;
   }
 
-  // Yeah, I feel dirty.
-
-  next:
-
-  for(i = 0; i < 64; i++)
+  for(i = 0; i < MAX_SPRITES; i++)
   {
     if((i == sprite) || !(sprites[i].flags & SPRITE_INITIALIZED)) continue;
     if(!(sprites[i].col_width) || !(sprites[i].col_height)) continue;
@@ -416,10 +505,10 @@ int sprite_colliding_xy(unsigned int sprite, int x, int y)
         mh = (yl + hl) - yg;
         // Reuse these.. offsets. For both you must look at PHYSICAL data, that
         // is, where the chars of the sprite itself is.
-        x1 = sprites[i].ref_x + (xg - x1);
-        y1 = sprites[i].ref_y + (yg - y1);
-        x2 = sprites[sprite].ref_x + (xg - x2);
-        y2 = sprites[sprite].ref_y + (yg - y2);
+        x1 = sprites[i].ref_x + (xg - x1) + sprites[i].col_x;
+        y1 = sprites[i].ref_y + (yg - y1) + sprites[i].col_y;
+        x2 = sprites[sprite].ref_x + (xg - x2) + sprites[sprite].col_x;
+        y2 = sprites[sprite].ref_y + (yg - y2) + sprites[sprite].col_y;
         // Check to make sure draw area doesn't go over.
         wg = (sprites[i].col_width & x_gmask) | 
          (sprites[sprite].col_width & x_lmask);
@@ -436,26 +525,104 @@ int sprite_colliding_xy(unsigned int sprite, int x, int y)
 
         // Now iterate through the rect; if both are NOT 32 then a collision is
         // flagged.
-        i4 = (y1 * max_bxsiz) + x1;
-        i5 = (y2 * max_bxsiz) + x2;
-        skip = max_bxsiz - mw;
-        for(i2 = 0; i2 < mh; i2++)
-        {
-          for(i3 = 0; i3 < mw; i3++)
-          {
-            if((get_id_char(i4) != 32) && (get_id_char(i5) != 32))
-            {
-              // Collision!
-              collision_list.collisions[colliding] = i;
-              colliding++;             
 
-              goto next_2;
+        if(sprites[i].flags & SPRITE_VLAYER)
+        {
+          if(!use_chars) map_vlayer();
+          use_chars2 = 0;
+          i4 = (y1 * vlayer_width) + x1;
+          skip = vlayer_width - mw;
+        }
+        else
+        {
+          i4 = (y1 * max_bxsiz) + x1;
+          skip = max_bxsiz - mw;
+        }
+
+        i5 = (y2 * bwidth) + x2;
+        skip2 = bwidth - mw;
+
+        // If ccheck mode 2 is on it should do a further strength check.
+        if(sprites[sprite].flags & SPRITE_CHAR_CHECK2)
+        {
+          for(i2 = 0; i2 < mh; i2++)
+          {
+            for(i3 = 0; i3 < mw; i3++)
+            {
+              unsigned char c1, c2; 
+              if(use_chars2)
+              {
+                c1 = get_id_char(i4);
+              }
+              else
+              {
+                c1 = vlayer_chars[i4];
+              }
+              if(use_chars)
+              {
+                c2 = get_id_char(i5);
+              }
+              else
+              {
+                c2 = vlayer_chars[i5];
+              }
+              if((c1 != 32) && (c2 != 32))
+              {
+                // Collision.. maybe.
+                // We still have to see if both of the chars aren't
+                // blank.  
+                if(!(is_blank(c1) || is_blank(c2)))
+                {
+                  collision_list.collisions[colliding] = i;
+                  colliding++;             
+  
+                  goto next;
+                }
+              }
+              i4++;
+              i5++;
             }
-            i4++;
-            i5++;
+            i4 += skip;
+            i5 += skip2;
           }
-          i4 += skip;
-          i5 += skip;
+        }
+        else
+        {
+          for(i2 = 0; i2 < mh; i2++)
+          {
+            for(i3 = 0; i3 < mw; i3++)
+            {
+              unsigned char c1, c2;
+              if(use_chars2)
+              {
+                c1 = get_id_char(i4);
+              }
+              else
+              {
+                c1 = vlayer_chars[i4];
+              }
+              if(use_chars)
+              {
+                c2 = get_id_char(i5);
+              }
+              else
+              {
+                c2 = vlayer_chars[i5];
+              }
+              if((c1 != 32) && (c2 != 32))
+              {
+                // Collision!
+                collision_list.collisions[colliding] = i;
+                colliding++;             
+  
+                goto next;
+              }
+              i4++;
+              i5++;
+            }
+            i4 += skip;
+            i5 += skip;
+          }
         }
       }
       else
@@ -464,13 +631,32 @@ int sprite_colliding_xy(unsigned int sprite, int x, int y)
         colliding++;
       }
 
-      next_2:
+      next:
     }
+  }
+
+  if(!(use_chars && use_chars2))
+  {
+    unmap_vlayer();
   }
 
   collision_list.num = colliding;
 
   return(colliding);
+}
+
+int is_blank(unsigned char c)
+{
+  int far *cp = (int far *)(curr_set + (c * 14));  
+  int blank = 0, i;
+
+  for(i = 0; i < 7; i++)
+  {
+    blank |= *cp;
+    cp++;
+  }
+
+  return !blank;
 }
     
 

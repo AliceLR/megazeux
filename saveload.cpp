@@ -33,6 +33,7 @@
    M\x02\x44 - MZX 2.68
    M\x02\x45 - MZX 2.69
    M\x02\x46 - MZX 2.69b
+   M\x02\x48 - MZX 2.69c
 
    .SAV files:
    MZSV2 - Ver 2.x MegaZeux
@@ -43,7 +44,7 @@
    MZS\x02\x44 - MZX 2.68
    MZS\x02\x45 - MZX 2.69
    MZS\x02\x46 - MZX 2.69b
-
+   MZS\x02\x48 - MZX 2.69c
 
  All others are unchanged.
 
@@ -74,10 +75,11 @@
 #include "counter.h"
 #include "mstring.h"
 #include "runrobot.h"
-#define VERSION 0x246
+#include "vlayer.h"
+#define VERSION 0x248
 #define SAVE_INDIVIDUAL
 
-int version_loaded = VERSION;
+unsigned int version_loaded = VERSION;
 
 char sd_types[3]={ DE_INPUT,DE_BUTTON,DE_BUTTON };
 char sd_xs[3]={ 5,15,37 };
@@ -185,7 +187,7 @@ void save_world(char far *file,char savegame,char faded) {
 	save_screen(current_pg_seg);
 	meter("Saving...",current_pg_seg,meter_curr,meter_target);
 	if (savegame) {
-		fwrite("MZS\x02\x46",1,5,fp);
+		fwrite("MZS\x02\x48",1,5,fp);
 		fputc(curr_board,fp);
 		xor=0;
 	} else {
@@ -194,7 +196,7 @@ void save_world(char far *file,char savegame,char faded) {
 		//Pw info-
 		write_password(fp);
 		//File type id-
-		fwrite("M\x02\x46",1,3,fp);
+		fwrite("M\x02\x48",1,3,fp);
 		//Get xor code...
 		xor=get_pw_xor_code();
 	}
@@ -327,9 +329,20 @@ void save_world(char far *file,char savegame,char faded) {
     // After the counters, store the sprites. - Exo
 
     // sprite data
-    for(t1 = 0; t1 < 64; t1++)
+    for(t1 = 0; t1 < MAX_SPRITES; t1++)
     {
-      fwrite(sprites + t1, 1, sizeof(Sprite), fp); 
+      fwrite(&(sprites[t1].x), 1, 2, fp);
+      fwrite(&(sprites[t1].y), 1, 2, fp);
+      fwrite(&(sprites[t1].ref_x), 1, 2, fp);
+      fwrite(&(sprites[t1].ref_y), 1, 2, fp);
+      fputc(sprites[t1].color, fp);
+      fputc(sprites[t1].flags, fp);
+      fputc(sprites[t1].width, fp);
+      fputc(sprites[t1].height, fp);
+      fputc(sprites[t1].col_x, fp);
+      fputc(sprites[t1].col_y, fp);
+      fputc(sprites[t1].col_width, fp);
+      fputc(sprites[t1].col_height, fp);
     }
     // total sprites
     fputc(total_sprites, fp);
@@ -393,6 +406,13 @@ void save_world(char far *file,char savegame,char faded) {
       }
     }
     fwrite(&commands, 1, 2, fp);
+    // Vlayer stuff
+    map_vlayer();
+    fwrite(&vlayer_width, 1, 2, fp);
+    fwrite(&vlayer_height, 1, 2, fp);
+    fwrite(vlayer_chars, 1, 32768, fp);
+    fwrite(vlayer_colors, 1, 32768, fp);
+    unmap_vlayer();
   }
 
 //            for (t1=0;t1<NUM_COUNTERS;t1++) //Write out every last counter Spid
@@ -521,10 +541,10 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 	if(savegame) {
                 fread(tempstr,1,5,fp);
 		version = save_magic(tempstr);
-		if((version > VERSION) && (version != 0x0209) && (version != 0x020B))
+		if(version != VERSION)
     {
 			restore_screen(current_pg_seg);
-			if (!version) {
+			if (version) {
 				error(".SAV files from other versions of MZX are not supported",1,24,current_pg_seg,0x2101);
 			} else {
 				error("Unrecognized magic: file may not be .SAV file",1,24,current_pg_seg,0x2101);
@@ -711,10 +731,26 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
     // Only load if version 2.65 or greater!
     if(version_loaded >= 0x241)
     {
-      // sprite data
-      for(t1 = 0; t1 < 64; t1++)
+      int spr_total = 64;
+      if(version_loaded >= 0x248)
       {
-        fread(sprites + t1, 1, sizeof(Sprite), fp);
+        spr_total = 256;
+      }
+      // sprite data
+      for(t1 = 0; t1 < spr_total; t1++)
+      {
+        fread(&(sprites[t1].x), 1, 2, fp);
+        fread(&(sprites[t1].y), 1, 2, fp);
+        fread(&(sprites[t1].ref_x), 1, 2, fp);
+        fread(&(sprites[t1].ref_y), 1, 2, fp);
+        sprites[t1].color = fgetc(fp);
+        sprites[t1].flags = fgetc(fp);
+        sprites[t1].width = fgetc(fp);
+        sprites[t1].height = fgetc(fp);
+        sprites[t1].col_x = fgetc(fp);
+        sprites[t1].col_y = fgetc(fp);
+        sprites[t1].col_width = fgetc(fp);
+        sprites[t1].col_height = fgetc(fp);
       }
       // total sprites
       total_sprites = fgetc(fp);
@@ -769,27 +805,38 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
         {
           fread(&seek, 1, 4, fp);
         }                  
-      }
 
-      // A couple things 2.69 added      
-      if(version_loaded >= 0x245)
-      {
-        fread(&smzx_mode, 1, 2, fp);
-        set_counter("SMZX_MODE", smzx_mode, 0);
-        // Also get the palette
-        if(smzx_mode == 2)
-        {
-          int i;
-          for(i = 0; i < 768; i += 3)
-          {
-            smzx_mode2_palette[i] = fgetc(fp);
-            smzx_mode2_palette[i + 1] = fgetc(fp);
-            smzx_mode2_palette[i + 2] = fgetc(fp);
-          }
-          update_smzx_palette();
-        }
-        fread(&commands, 1, 2, fp);
-      }
+				// A couple things 2.69 added      
+				if(version_loaded >= 0x245)
+				{
+					fread(&smzx_mode, 1, 2, fp);
+					set_counter("SMZX_MODE", smzx_mode, 0);
+					// Also get the palette
+					if(smzx_mode == 2)
+					{
+						int i;
+						for(i = 0; i < 768; i += 3)
+						{
+							smzx_mode2_palette[i] = fgetc(fp);
+							smzx_mode2_palette[i + 1] = fgetc(fp);
+							smzx_mode2_palette[i + 2] = fgetc(fp);
+						}
+						update_smzx_palette();
+					}
+
+					// Vlayer stuff for 2.69c
+					if(version_loaded >= 0x248)
+					{
+						fread(&commands, 1, 2, fp);
+						map_vlayer();
+						fread(&vlayer_width, 1, 2, fp);
+						fread(&vlayer_height, 1, 2, fp);
+						fread(vlayer_chars, 1, 32768, fp);
+						fread(vlayer_colors, 1, 32768, fp);
+						unmap_vlayer();
+					}
+				}
+			}
     }
   }
 	//Get position of global robot...

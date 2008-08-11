@@ -2193,7 +2193,7 @@ char update(char game,char &fadein) {
 		//visible page!
 		enter_funcn("page_flip",4);
 		page_flip(current_page);
-		ec_update_set_if_needed();
+		//ec_update_set_if_needed();
 		exit_func();
 		m_vidseg(current_pg_seg);
 		}
@@ -2203,6 +2203,7 @@ char update(char game,char &fadein) {
 		wait_retrace();
 		exit_func();
 		if(pal_update) update_palette(0);
+		ec_update_set_if_needed();
 		enter_funcn("(update delay)",6);
 		while(tcycle<(overall_speed-1)*8);
 		exit_func();

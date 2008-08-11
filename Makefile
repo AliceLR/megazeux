@@ -33,7 +33,7 @@ graphics.obj helpsys.obj hexchar.obj idarray.obj idput.obj intake.obj \
 main.obj meminter.obj meter.obj mouse.obj mstring.obj mzm.obj new_mod.obj \
 palette.obj pal_ed.obj param.obj password.obj random.obj retrace.obj \
 roballoc.obj runrobot.obj runrobo2.obj saveload.obj scrdisp.obj scrdump.obj \
-sfx.obj sfx_edit.obj sprite.obj string.obj timer.obj window.obj
+sfx.obj sfx_edit.obj sprite.obj string.obj timer.obj window.obj vlayer.obj
 
 #
 # I'd rather this wasn't necessary, but I can't think of a way either in
@@ -49,7 +49,7 @@ graphics.obj+helpsys.obj+hexchar.obj+idarray.obj+idput.obj+intake.obj+\
 main.obj+meminter.obj+meter.obj+mouse.obj+mstring.obj+mzm.obj+new_mod.obj+\
 palette.obj+pal_ed.obj+param.obj+password.obj+random.obj+retrace.obj+\
 roballoc.obj+runrobot.obj+runrobo2.obj+saveload.obj+scrdisp.obj+scrdump.obj+\
-sfx.obj+sfx_edit.obj+sprite.obj+string.obj+timer.obj+window.obj
+sfx.obj+sfx_edit.obj+sprite.obj+string.obj+timer.obj+window.obj+vlayer.obj
 
 all: megazeux.exe fix.exe getpw.exe killgbl.exe txt2hlp.exe ver1to2.exe
 

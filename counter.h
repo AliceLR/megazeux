@@ -54,6 +54,7 @@ void dec_counter(char far *name,int value=1,unsigned char id=0);
 char take_key(char color);
 //Give a key. Returns non-0 if no room.
 char give_key(char color);
+int translate_coordinates(char far *src, int &x, int &y);
 
 #ifdef __cplusplus
 }

@@ -224,9 +224,8 @@ void title_screen(void) {
 					break;
 				case 'E'://E
 				case -66://F8
-          // None of that...
-					//Editor
-					/* clear_sfx_queue();
+					// Nope!
+				/*	clear_sfx_queue();
 					vquick_fadeout();
 					for(t1=0;t1<16;t1++)
 						set_color_intensity(t1,100);
@@ -944,7 +943,6 @@ void play_game(char fadein) {
 			//Get key...
 			key = getkey();
       key_get = key;
-
 			if((key>='a')&&(key<='z')) key-=32;
 			//...and process
 		process_key:
@@ -1892,6 +1890,15 @@ char update(char game,char &fadein) {
 	enter_func("update");
 	pal_update=0;
 	tcycle=0;//For speed setting
+
+  // Update mouse motion
+  asm {
+    mov ax, 027h
+    int 33h
+    mov mmx, cx
+    mov mmy, dx
+  }
+
 	if(fadein) {
 		clear_screen(1824,current_pg_seg);
 		insta_fadein();
@@ -2186,7 +2193,7 @@ char update(char game,char &fadein) {
 		//visible page!
 		enter_funcn("page_flip",4);
 		page_flip(current_page);
-		ec_update_set_if_needed();
+		//ec_update_set_if_needed();
 		exit_func();
 		m_vidseg(current_pg_seg);
 		}
@@ -2196,6 +2203,7 @@ char update(char game,char &fadein) {
 		wait_retrace();
 		exit_func();
 		if(pal_update) update_palette(0);
+		ec_update_set_if_needed();
 		enter_funcn("(update delay)",6);
 		while(tcycle<(overall_speed-1)*8);
 		exit_func();

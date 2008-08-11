@@ -152,6 +152,13 @@ void _access_text(void) {
 	}
 }
 
+// Flags that the char set needs to be updated.
+
+void ec_need_update()
+{
+  need_update = 1;
+}
+
 //Copies the set in memory (curr_set) to the real set in graphics memory
 void ec_update_set(void) {
 	int remaining;
@@ -231,23 +238,20 @@ void ec_exit(void) {
 	if(curr_set!=NULL) farfree(curr_set);
 }
 
-//Save a character set to disk
-char ec_save_set(char far *filename) {
-	FILE *fp;
-	fp=fopen(filename,"wb");
-	if(fp==NULL) return -1;
-	fwrite(curr_set,14,256,fp);
-	fclose(fp);
-	return 0;
-}
-
-// Saves a non 256 char character set to disk - Exo
-char ec_save_set_partial(char far *filename, int size)
+// Saves a non 256 char character set to disk now,
+// also can take an offset from where it wants to start saving. - Exo
+char ec_save_set(char far *filename, int offset, int size)
 {
   FILE *fp;
   fp = fopen(filename, "wb");
   if(fp == NULL) return(-1);
-  fwrite(curr_set, 14, size, fp);  
+
+  if((offset + size) > 256)
+  {
+    size = 256 - offset;
+  }
+
+  fwrite(curr_set + (offset * 14), 14, size, fp);  
   fclose(fp);
   return(0);
 }
