@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 1999 Charles Goetzman
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -64,21 +65,34 @@ char force_ega=0,no_mouse=0,no_ems=0,new_settings=0;
 jmp_buf exit_jump;//Used in error function and nowhere else
 extern unsigned int Addr,IRQ,DMA;//Sound card parameters (-1=detect)
 
-char exit_mesg[]=
-"MegaZeux 2.51\n\n"
-" Copyright (C) 1996 Greg Janson\n"
-" Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net\n\n"
-" This program is free software; you can redistribute it and/or\n"
-" modify it under the terms of the GNU General Public License as\n"
-" published by the Free Software Foundation; either version 2 of\n"
-" the License, or (at your option) any later version.\n\n"
-" This program is distributed in the hope that it will be useful,\n"
-" but WITHOUT ANY WARRANTY; without even the implied warranty of\n"
-" MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU\n"
-" General Public License for more details.\n\n"
-" You should have received a copy of the GNU General Public License\n"
-" along with this program; if not, write to the Free Software\n"
-" Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.\n\n$";
+#ifdef UNREG
+char *unreg_exit_mesg =
+"Thank you for playing MegaZeux! If you enjoy MegaZeux, you should register it.\n"
+"Registration gets you the remaining three games in the Zeux series and pays\n"
+"for the actual MegaZeux program. When you register, you tell us that you enjoy\n"
+"getting such intellegent games at low costs. To register, send 15 dollars, plus\n"
+"2 for shipping/handling (3 outside the US) to:\n\n"
+"\tSoftware Visions\n"
+"\t4875 Sunset Ave.\n"
+"\tLa Crescenta, CA 91214\n\n"
+"Make checks and money orders payable to Gregory Janson. Include a copy of our\n"
+"order form, or a note stating your name and address and the desired product.\n\n"
+"Remember to read CONTEST.TXT about a world design contest!\n\n"
+"See README.TXT if you are having problems with EMS, memory, or bugs/support.\n"
+"See the Frequently Asked Questions section of MEGAZEUX.DOC if you have a\n"
+"problem, before contacting Software Visions.\n\n$";
+#else
+char *reg_exit_mesg =
+"Thank you for registering MegaZeux.\n\n"
+"Remember to read CONTEST.TXT about a world design contest!\n\n"
+"See README.TXT if you are having problems with EMS, memory, or bugs/support.\n"
+"See the Frequently Asked Questions section of MEGAZEUX.DOC if you have a\n"
+"problem, before contacting Software Visions.\n\n"
+" \n\n"
+" MZX2.51S1 improvements by Charles Goetzman \n\n$";
+
+#endif
+
 #pragma warn -par
 int main(int argc,char **argv) {
 	//Temp var for number->string conversion
@@ -142,7 +156,16 @@ int main(int argc,char **argv) {
 	draw_window_box(2,1,77,3,0xB800,120,127,113,0);
 	draw_window_box(2,4,77,16,0xB800,120,127,113,0);
 	draw_window_box(2,17,77,23,0xB800,120,127,113,0);
-	write_string("MegaZeux version 2.51",28,2,127,0xB800);
+	write_string("MegaZeux version 2.51S1",27,2,127,0xB800);
+// #ifdef BETA
+	write_string("BETA- PLEASE DISTRIBUTE",27,17,127,0xB800);
+// #endif
+#ifdef GAMMA
+	write_string("GAMMA- MAY CONTAIN BUGS",27,17,127,0xB800);
+#endif
+#ifdef UNREG
+	write_string("Unregistered Evaluation Copy",25,0,122,0xB800);
+#endif
 	write_string("Graphics card:",4,18,122,0xB800);
 	write_string("Processor:",8,19,122,0xB800);
 	write_string("EMS available:",4,20,122,0xB800);
@@ -253,11 +276,11 @@ int main(int argc,char **argv) {
 	install_i09();
 	installceh();
 
-	//Write up free memory (below 200 shown as bad)
+	//Write up free memory (below 100 shown as bad)
 	itoa(t1=(int)(farcoreleft()>>10),temp,10);
 	temp[str_len(temp)+1]=0;
 	temp[str_len(temp)]='k';
-	if(t1>=150) write_string(temp,19,21,121,0xB800);
+	if(t1>=100) write_string(temp,19,21,121,0xB800);
 	else write_string(temp,19,21,124,0xB800);
 	//Give error message if appropriate (including if free Kb below 20)
 	if((errors)||(t1<20)) {
@@ -461,9 +484,15 @@ escape:
 	cursor_underline();
 
 	asm push ds
-	asm mov dx,OFFSET exit_mesg
-	asm mov ax,SEG exit_mesg
-	asm mov ds,ax
+#ifdef UNREG
+	asm mov dx,SEG unreg_exit_mesg
+	asm mov ds,dx
+	asm lds dx,ds:unreg_exit_mesg
+#else
+	asm mov dx,SEG reg_exit_mesg
+	asm mov ds,dx
+	asm lds dx,ds:reg_exit_mesg
+#endif
 	asm mov ah,9
 	asm int 21h
 	asm pop ds

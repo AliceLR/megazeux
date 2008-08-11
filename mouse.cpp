@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 1999 Charles Goetzman
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -32,7 +33,7 @@ char mousehidden=0;//Is the mouse hidden? (Additive)
 unsigned int mouseinstalled=0;//Is the mouse installed?
 char driver_activated=0;//Is our driver installed?
 
-volatile int mousex,mousey;//Character position of mouse
+volatile int mousex,mousey,mybutton;//Character position of mouse
 volatile int mbufin=0,mbufout=0;//Mouse buffer pointers
 char mousefreeze=0;//Is mouse frozen in place?
 mouse_info_rec mbuf[MOUSE_BUFFERSIZE];//Mouse event buffer
@@ -72,6 +73,7 @@ static void far mousehandler(void) {
 		asm {
 			mov mousex, cx
 			mov mousey, dx
+			mov mybutton, bx //Gotta snag the mouse buttons now too. Spid
 			}
 
 		mousex>>=3;//Characters are 8 pixels wide

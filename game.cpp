@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 1999 Charles Goetzman
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,6 +19,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
+
+
+// I added a bunch of stuff here. Whenever a window is popped up, the mouse
+// cursor is re-activated, and then CURSORSTATE is checked upon closing the
+// window. If it's 1, the cursor is left on, otherwise it's hidden as normal.
+// You can find all instances by searching for CURSORSTATE. Spid
+
 
 /* Main title screen/gaming code */
 
@@ -96,6 +104,7 @@ int target_y=-1;//Or id of entrance
 int target_d_id=-1;//For RESTORE/EXCHANGE PLAYER POSITION with DUPLICATION.
 int target_d_color=-1;//For RESTORE/EXCHANGE PLAYER POSITION with DUPLICATION.
 
+
 char pal_update=0;//Whether to update a palette from robot activity
 
 void title_screen(void) {
@@ -149,6 +158,9 @@ void title_screen(void) {
 	do {
 		//Update
 		if(update(0,fadein)) continue;
+		// Update stupid variables
+	       //	mynewx= scroll_x;
+	       //	mynewy= scroll_y;
 		//Keycheck
 		if(keywaiting()) {
 			//Get key...
@@ -281,7 +293,6 @@ void title_screen(void) {
 					m_hide();
 					break;
 				case 13://Enter
-				case MOUSE_EVENT://Mouse
 					//Menu
 					//19x9
 					save_screen(current_pg_seg);
@@ -305,7 +316,7 @@ void title_screen(void) {
 							(mouse_event.cy<8)||(mouse_event.cy>17)) key=0;
 						else key=main_menu_keys[mouse_event.cy-8];
 						}
-					m_hide();
+					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					restore_screen(current_pg_seg);
 					goto process_key;
 				case 27://ESC
@@ -318,7 +329,7 @@ void title_screen(void) {
 						}
 					if(confirm("Quit to DOS- Are you sure?")) key=0;
 					if(t1) insta_fadeout();
-					m_hide();
+					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					break;
 				case 'L'://L
 				case -61://F3
@@ -334,7 +345,7 @@ void title_screen(void) {
 						if(t1) insta_fadeout();
 						break;
 						}
-					m_hide();
+					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					//Load world curr_file
 					vquick_fadeout();
 					end_mod();
@@ -353,7 +364,13 @@ void title_screen(void) {
 					fadein=1;
 					dead=0;
 				menu_mesg:
+#ifdef UNREG
+					set_mesg("** UNREGISTERED ** Press F1 for help, Enter for menu");
+#elif defined(BETA)
+					set_mesg("** BETA ** Press F1 for help, Enter for menu");
+#else
 					set_mesg("- Press F1 for help, Enter for menu -");
+#endif
 					break;
 				case 'R'://R
 				case -62://F4
@@ -373,7 +390,7 @@ void title_screen(void) {
 						fadein=0;
 						if(load_world(temp,0,1,&fadein)) {
 							vquick_fadeout();
-							m_hide();
+							if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 							switch_keyb_table(1);
 							clear_world();
 							return;
@@ -388,11 +405,11 @@ void title_screen(void) {
 						dead=0;
 						vquick_fadeout();
 						fadein^=1;
-						m_hide();
+						if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 						goto gameplay;
 						}
 					if(t1) insta_fadeout();
-					m_hide();
+					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					break;
 				case 'P'://P
 				case -63://F5
@@ -402,7 +419,7 @@ void title_screen(void) {
 						m_show();
 						error("You can only play this game via a swap from another game",
 							0,24,current_pg_seg,0x3101);
-						m_hide();
+						if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 						break;
 						}
 					//Load world curr_file
@@ -467,7 +484,7 @@ void title_screen(void) {
 					fadein=0;
 					if(load_world(curr_sav,0,1,&fadein)) {
 						vquick_fadeout();
-						m_hide();
+						if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 						clear_world();
 						fadein=1;
 						break;
@@ -480,7 +497,7 @@ void title_screen(void) {
 					dead=0;
 					vquick_fadeout();
 					fadein^=1;
-					m_hide();
+					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					goto gameplay;
 				}
 			}
@@ -492,6 +509,9 @@ void title_screen(void) {
 }
 
 void draw_viewport(void) {
+	// Sneak this biotch in here
+	//mynewx= scroll_x;
+	//mynewy= scroll_y;
 	int t1,t2;
 	enter_func("draw_viewport");
 	//Draw the current viewport on current_pg_seg
@@ -1001,10 +1021,9 @@ void play_game(char fadein) {
 					game_settings();
 					if(t1) insta_fadeout();
 					switch_keyb_table(0);
-					m_hide();
+					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					break;
 				case 13://Enter
-				case MOUSE_EVENT://Mouse
 					//Menu
 					//19x9
 					save_screen(current_pg_seg);
@@ -1029,7 +1048,7 @@ void play_game(char fadein) {
 							(mouse_event.cy<6)||(mouse_event.cy>18)) key=0;
 						else key=game_menu_keys[mouse_event.cy-6];
 						}
-					m_hide();
+					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					restore_screen(current_pg_seg);
 					if(t1) insta_fadeout();
 					goto process_key;
@@ -1045,7 +1064,7 @@ void play_game(char fadein) {
 					if(confirm("Quit playing- Are you sure?")) key=0;
 					if(t1) insta_fadeout();
 					switch_keyb_table(0);
-					m_hide();
+					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					break;
 				case -61://F3
 					//Save game
@@ -1068,7 +1087,7 @@ void play_game(char fadein) {
 							if(curr_sav[0]==0) {
 								if(t1) insta_fadeout();
 								switch_keyb_table(0);
-								m_hide();
+								if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 								break;
 								}
 							add_ext(curr_sav,".SAV");
@@ -1078,7 +1097,7 @@ void play_game(char fadein) {
 								if(confirm("File exists- Overwrite?")) {
 									if(t1) insta_fadeout();
 									switch_keyb_table(0);
-									m_hide();
+									if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 									break;
 									}
 								}
@@ -1091,7 +1110,7 @@ void play_game(char fadein) {
 							}
 						if(t1) insta_fadeout();
 						switch_keyb_table(0);
-						m_hide();
+						if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 						}
 					break;
 				case -62://F4
@@ -1112,7 +1131,7 @@ void play_game(char fadein) {
 						fadein=0;
 						if(load_world(temp,0,1,&fadein)) {
 							vquick_fadeout();
-							m_hide();
+							if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 							switch_keyb_table(1);
 							clear_world();
 							return;
@@ -1129,7 +1148,7 @@ void play_game(char fadein) {
 						}
 					if(t1) insta_fadeout();
 					switch_keyb_table(0);
-					m_hide();
+					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					break;
 				case -63://F5
 				case -82://Ins
@@ -1215,7 +1234,7 @@ void play_game(char fadein) {
 						select_current(curr_board);
 						if(t1) insta_fadeout();
 						switch_keyb_table(0);
-						m_hide();
+						if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 						}
 					break;
 				case -68://F10
@@ -1231,7 +1250,7 @@ void play_game(char fadein) {
 					fadein=0;
 					if(load_world(curr_sav,0,1,&fadein)) {
 						vquick_fadeout();
-						m_hide();
+						if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 						switch_keyb_table(1);
 						clear_world();
 						return;
@@ -1245,7 +1264,7 @@ void play_game(char fadein) {
 					vquick_fadeout();
 					fadein^=1;
 					switch_keyb_table(0);
-					m_hide();
+					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					break;
 				}
 			}
@@ -1459,7 +1478,7 @@ char grab_item(int x,int y,char dir) {//Dir is for transporter
 					t2=confirm("Inside the chest you find a potion. Drink it?");
 					if(fad) insta_fadeout();
 					switch_keyb_table(old_keyb);
-					m_hide();
+					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					if(t2) {
 						exit_func();
 						return 0;
@@ -1477,7 +1496,7 @@ char grab_item(int x,int y,char dir) {//Dir is for transporter
 					t2=confirm("Inside the chest you find a ring. Wear it?");
 					if(fad) insta_fadeout();
 					switch_keyb_table(old_keyb);
-					m_hide();
+					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					if(t2) {
 						exit_func();
 						return 0;
@@ -1812,7 +1831,7 @@ char grab_item(int x,int y,char dir) {//Dir is for transporter
 			switch_keyb_table(1);
 			m_show();
 			scroll_edit(param,id&1);
-			m_hide();
+			if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 			switch_keyb_table(old_keyb);
 			if(id==126) goto remove_item;
 			break;
@@ -1873,6 +1892,9 @@ char update(char game,char &fadein) {
 	unsigned int time;
 	static reload=0;
 	static slowed=0;//Flips between 0 and 1 during slow_time
+#ifdef BETA
+	static unsigned char cyc=0;//Debugging
+#endif
 	int tmp_x[5];
 	int tmp_y[5];
 	char tmp_str[10];
@@ -2006,6 +2028,9 @@ char update(char game,char &fadein) {
 		if(reload) reload--;
 		}
 	//Global robot BEFORE other stuff
+    //  mynewx= scroll_x;
+    //  mynewy= scroll_y;
+
 	run_robot(NUM_ROBOTS,-1,-1);
 	if(!slowed) {
 		if(flags[level_under_id[player_x+player_y*max_bxsiz]]&A_ENTRANCE) t1=0;
@@ -2118,6 +2143,10 @@ char update(char game,char &fadein) {
 			draw_game_window(t1,t2,current_pg_seg);
 			exit_func();
 			}
+#ifdef BETA
+		//Debugging
+		write_hex_byte(++cyc,15,0,0,current_pg_seg);
+#endif
 		//Add time limit
 		time=get_counter("TIME");
 		if(time) {

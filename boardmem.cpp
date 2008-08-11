@@ -64,6 +64,7 @@ char allocate_board_space(long size,unsigned char id,char conv_mem_ok) {
 		return 0;
 		}
 	//Nope.. try conventional
+	// SPIDER'S NOTE: WILL NOT USE CONVENTIONAL, DISABLED
 	if(conv_mem_ok) {
 		board_offsets[id].mem=(unsigned char *)farmalloc(size);
 		if(board_offsets[id].mem) {
@@ -82,7 +83,7 @@ char allocate_board_space(long size,unsigned char id,char conv_mem_ok) {
 			return 0;
 			}
 		}
-	//Nope.. try disk
+       //Nope.. try disk
 	//Make temporary filename
 	str_cpy(&board_filenames[id*FILENAME_SIZE],"~MZTMPXXXXXX");
 	mktemp(&board_filenames[id*FILENAME_SIZE]);

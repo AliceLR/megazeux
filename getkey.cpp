@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 1999 Charles Goetzman
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -56,11 +57,12 @@ int getkey(void) {
 			acknowledge_mouse();
 			return 0;
 			}
-		//Turn right button into ESC
+		//Turn right button into ESC (Not anymore! Spid)
 		if(mouse_event.buttonstat&RIGHTBPRESS) {
 			acknowledge_mouse();
-			return 27;
+			return 0;       // WAS 27. Spid
 			}
+
 		if(auto_pop_mouse_events) acknowledge_mouse();
 		return MOUSE_EVENT;
 		}

@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 1999 Charles Goetzman
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -20,6 +21,25 @@
  */
 
 // Saving/loading worlds- dialogs and functions
+// *** READ THIS!!!! ****
+/* New naming conventions:
+   .MZX files:
+   MZX - Ver 1.x MegaZeux
+   MZ2 - Ver 2.x MegaZeux
+   MZA - Ver 2.51S1+ Megazeux, may change to MZB,MZC, up in letters etc.. if neccesary
+
+   .SAV files:
+   MZSV2 - Ver 2.x MegaZeux
+   MZXSA - Ver 2.51S1+ MegaZeux, again, may change if necessary
+ 
+ All others are unchanged.
+
+*/
+
+
+
+
+
 
 #include "helpsys.h"
 #include "sfx.h"
@@ -99,7 +119,7 @@ void save_world(char far *file,char savegame,char faded) {
 	save_screen(current_pg_seg);
 	meter("Saving...",current_pg_seg,meter_curr,meter_target);
 	if(savegame) {
-		fwrite("MZSV2",1,6,fp);
+		fwrite("MZXSA",1,6,fp);
 		fputc(curr_board,fp);
 		xor=0;
 		}
@@ -109,7 +129,7 @@ void save_world(char far *file,char savegame,char faded) {
 		//Pw info-
 		write_password(fp);
 		//File type id-
-		fwrite("MZ2",1,3,fp);
+		fwrite("MZA",1,3,fp);
 		//Get xor code...
 		xor=get_pw_xor_code();
 		}
@@ -211,12 +231,25 @@ void save_world(char far *file,char savegame,char faded) {
 		fputc(under_player_param,fp);
 		fputc(under_player_color,fp);
 		//Counters
+      // Here I took out all the old stuff + just made megazeux save all
+      // 17k of the 1000 counters, ha ha ha. Spid
+      // Actually, the above is wrong :), I just fixed it so that the fputc(t2,fp) is now a
+      // fwrite(), and it will write out the # of counters properly (thanx ment&Kev!) Spid
+
 		t2=0;
 		for(t1=0;t1<NUM_COUNTERS;t1++)
 			if((counters[t1].counter_value)>0) t2=t1+1;
-		fputc(t2,fp);
+       //		fputc(t2,fp);
+      //      fprintf(fp, "%d", t2);
+	    fwrite(&t2, sizeof(int), 1, fp);  //THIS is the # of counters, as an int. Spid
 		for(t1=0;t1<t2;t1++)
 			fwrite(&counters[t1],1,sizeof(Counter),fp);
+
+
+
+//            for (t1=0;t1<NUM_COUNTERS;t1++) //Write out every last counter Spid
+//                  fwrite(&counters[t1],1,sizeof(Counter),fp);
+
 		}
 	//Save space for global robot pos.
 	temp3=ftell(fp);
@@ -340,7 +373,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 	meter("Loading...",current_pg_seg,meter_curr,meter_target);
 	if(savegame) {
 		fread(tempstr,1,6,fp);
-		if(str_cmp(tempstr,"MZSV2")) {
+		if(str_cmp(tempstr,"MZXSA")) {
 			restore_screen(current_pg_seg);
 			error("Error loading save game",1,24,current_pg_seg,0x2101);
 			fclose(fp);
@@ -388,7 +421,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 			str_cpy(password,tempstr);
 			fclose(fp);
 			return 1;
-			}
+		      }
 		if(fgetc(fp)!='Z') {
 			restore_screen(current_pg_seg);
 			error("Error loading world",1,24,current_pg_seg,0x0D03);
@@ -410,7 +443,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 			fclose(fp);
 			return 1;
 			}
-		else if(t1!='2') {
+		else if((t1!='2')&&(t1!='A')) {
 			restore_screen(current_pg_seg);
 			//This is not a version 2.00 file
 			error("World is from a more recent version of MegaZeux",0,24,
@@ -519,7 +552,10 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 		under_player_id=fgetc(fp);
 		under_player_color=fgetc(fp);
 		under_player_param=fgetc(fp);
-		t2=fgetc(fp);
+            //Again, it's fixed so that it will read the whole integer
+           
+       //		t2=fgetc(fp);
+	    fread(&t2, sizeof(int), 1, fp);
 		for(t1=0;t1<t2;t1++)
 			fread(&counters[t1],1,sizeof(Counter),fp);
 		if(t1<NUM_COUNTERS)

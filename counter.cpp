@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 1999 Charles Goetzman
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -25,13 +26,19 @@
 #include "runrobot.h"
 #include "idarray.h"
 #include "data.h"
+// #include <math.h> // Meant for a hypot func to find actual distance, doesnt' work. Spid
 #include "const.h"
 #include "string.h"
 #include "struct.h"
 #include <stdlib.h>
 #include "counter.h"
+#include "mouse.h"
+#include "game.h"
+#include "game2.h"
 
-int player_restart_x=0,player_restart_y=0;
+
+int player_restart_x=0,player_restart_y=0,gridxsize=1,gridysize=1;
+int myscrolledx=0,myscrolledy=0;
 char was_zapped=0;
 extern char mid_prefix;
 void prefix_xy(int&fx,int&fy,int&mx,int&my,int&lx,int&ly,int robotx,
@@ -41,6 +48,7 @@ void prefix_xy(int&fx,int&fy,int&mx,int&my,int&lx,int&ly,int robotx,
 int get_counter(char far *name,unsigned char id) {
 	int t1;
 	if(!str_cmp(name,"LOOPCOUNT")) return robots[id].loop_count;
+      if(!str_cmp(name,"LOCAL")) return robots[id].blank; //Found this, no idea if it works Spid
 	//Now search counter structs
 	for(t1=0;t1<NUM_COUNTERS;t1++)
 		if(!str_cmp(name,counters[t1].counter_name)) break;
@@ -49,6 +57,10 @@ int get_counter(char far *name,unsigned char id) {
 	if(!str_cmp(name,"BULLETTYPE")) return robots[id].bullet_type;
 	if(!str_cmp(name,"PLAYERDIST"))
 		return abs(robots[id].xpos-player_x)+abs(robots[id].ypos-player_y);
+    //	if(!str_cmp(name,"PLADIST"))
+	       //	return 34;
+      //		return sqrtl((abs(robots[id].xpos-player_x) * abs(robots[id].xpos-player_x)) +
+       //		(abs(robots[id].ypos-player_y) * abs(robots[id].ypos-player_y)));
 	if(!str_cmp(name,"HORIZPLD"))
 		return abs(robots[id].xpos-player_x);
 	if(!str_cmp(name,"VERTPLD"))
@@ -71,8 +83,35 @@ int get_counter(char far *name,unsigned char id) {
 	if(!str_cmp(name,"TIMERESET")) return time_limit;
 	if(!str_cmp(name,"PLAYERFACEDIR")) return player_last_dir>>4;
 	if(!str_cmp(name,"PLAYERLASTDIR")) return player_last_dir&15;
+      // Mouse info Spid
+	if(!str_cmp(name,"MOUSEX")) return mousex;
+	if(!str_cmp(name,"MOUSEY")) return mousey;
+	if(!str_cmp(name,"BUTTONS")) return mybutton;
+      // scroll_x and scroll_y never work, always return 0. Spid
+	if(!str_cmp(name,"SCROLLEDX")) {
+        calculate_xytop(myscrolledx,myscrolledy);
+        return myscrolledx;
+        }	
+     if(!str_cmp(name,"SCROLLEDY")) {
+        calculate_xytop(myscrolledx,myscrolledy);
+        return myscrolledy;
+        }
+      // Player position Spid
+      if(!str_cmp(name,"PLAYERX")) return player_x;
+      if(!str_cmp(name,"PLAYERY")) return player_y;
+      // This WILL be position over the game board, once scroll_ works. Spid
+      if(!str_cmp(name,"MBOARDX")) {
+        calculate_xytop(myscrolledx,myscrolledy);
+        return (mousex + myscrolledx - viewport_x);
+        }
+      if(!str_cmp(name,"MBOARDY")) {
+        calculate_xytop(myscrolledx,myscrolledy);
+        return (mousey + myscrolledy - viewport_y);
+        }
+      // viewport_x viewport_y
 	return 0;//Not found
 }
+
 
 //Sets the value of a counter. Include robot id if a robot is running.
 void set_counter(char far *name,int value,unsigned char id) {
@@ -82,12 +121,57 @@ void set_counter(char far *name,int value,unsigned char id) {
 		robots[id].loop_count=value;
 		return;
 		}
+      if(!str_cmp(name,"LOCAL")) {
+            robots[id].blank=value;
+            return;
+            }
 	if(!str_cmp(name,"BULLETTYPE")) {
 		if(value>2) value=2;
 		robots[id].bullet_type=value;
 		return;
 		}
 	//Next, check for global, non-standard counters
+
+      // SHOULD allow instant scrolling of screen, once scroll_x can be referenced
+      // As of yet, doesn't work. Spid
+      if(!str_cmp(name,"SCROLLEDX")) {
+	    scroll_x= value;
+	    return;
+	    }
+      if(!str_cmp(name,"SCROLLEDY")) {
+	    scroll_y= value;
+	    return;
+	    }
+/*	 // These Grids will be used for mouse buttons, once that is in. Spid
+	if(!str_cmp(name,"GRIDXSIZE")) {
+		gridxsize=value;
+		return;
+		}
+	if(!str_cmp(name,"GRIDYSIZE")) {
+		gridysize=value;
+		return;
+		}
+*/      // Shows or hides the hardware cursor Spid
+	if(!str_cmp(name,"CURSORSTATE")) {
+		if (value==1)  m_show();
+		if (value==0)  m_hide();
+		}   //Don't return! We need to set the counter, as well.
+		// CURSORSTATE is referenced in GAME.CPP
+		// This should PROBABLY be a variable, instead of a counter,
+		// but I DID have a reason for using a counter, if I ever
+		// remember it. Spid
+      if(!str_cmp(name,"MOUSEX")) {
+            if(value>79) value=79;
+            if(value<0) value=0;
+            m_move(value,mousey);
+            return;
+            }
+      if(!str_cmp(name,"MOUSEY")) {
+            if(value>24) value=24;
+            if(value<0) value=0;
+            m_move(mousex,value);
+            return;
+            }
 	if(!str_cmp(name,"INPUT")) {
 		num_input=value;
 		return;

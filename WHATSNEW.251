@@ -1,4 +1,26 @@
 
+2.51S1 release:
+ 
+
++ Increased counters to 1000.
++ Added following counters: (ro) is read only, (r&w) is read + write
+(r&w) MOUSEX, MOUSEY - Location of mouse cursor over the screen.
+(ro)  BUTTONS - Status of the buttons (none=0,left=1,right=2,both=3)
+(ro)  MBOARDX, MBOARDy - Location of mouse cursor over the board.
+(ro)  SCROLLEDX, SCROLLEDY - Length the screen has been scrolled in each direction.
+(ro)  PLAYERX, PLAYERY - Location of the player
+(r&w) CURSORSTATE - Turns on & off the hardware cursor (0= off, 1= on, 0 default)
+
++ Added new independant counter like LOOPCOUNT, named LOCAL, it's now possible
+  for a robot to search the screen or something without wasting a counter.
+* New .MZX and .SAV formats for MZX2.51S1.
+* .SAV files from 2.51S1 are incompatible with 2.51, and vice-versa
+* 2.51S1 is capable of loading 2.51 .MZX world files.
+* 2.51 is not capable of loading .MZX files created or opened & saved in 2.51S1
+
+
+
+
 2.51 release: (quick bug-fix release while working on 3.00)
 
  * NOTE: I HAVE decided to release a 3.00 version of MegaZeux using

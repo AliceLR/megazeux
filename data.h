@@ -128,8 +128,9 @@ extern unsigned char pl_saved_board[8];
 extern unsigned char edge_color;//Global
 extern unsigned char scroll_color;//Global, not saved
 extern unsigned char lazwall_start;//Local
-extern int scroll_x;//Local
-extern int scroll_y;//Local
+extern int scroll_x;//Local   // Something is SERIOUSLY wrong with these two, counter.cpp
+extern int scroll_y;//Local   // can't even see them! Spid
+
 extern unsigned int locked_x;//Local (-1 or 65535 for none)
 extern unsigned int locked_y;//Local (-1 or 65535 for none)
 extern unsigned char protection_method;

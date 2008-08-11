@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 1999 Charles Goetzman
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -20,7 +21,6 @@
  */
 
 /* Constants */
-
 #ifndef __CONST_H
 #define __CONST_H
 
@@ -89,9 +89,10 @@
 //"SIZE" includes terminating \0
 #define PATHNAME_SIZE		129
 #define FILENAME_SIZE		13
-#define NUM_BOARDS			150
+#define NUM_BOARDS		150 //Haven't increased this yet, over 255 causes mzx to crash on load
+                                  //Each board requires considerable amount of conventional mem Spid
 #define BOARD_NAME_SIZE		25
-#define COUNTER_NAME_SIZE	15
+#define COUNTER_NAME_SIZE	15  //Possibly decrease counter name size to gain conventional mem? Spid
 #define NUM_KEYS				16
 
 //Where something is in memory (CURRENT means it is in special variables for
@@ -144,7 +145,7 @@
 #define NUM_ROBOTS		200
 #define NUM_SCROLLS		50
 #define NUM_SENSORS		20
-#define NUM_COUNTERS		59
+#define NUM_COUNTERS		1020 // This is a decent # for now. Spid
 #define NUM_STATUS_CNTRS	6
 //The first n counters are reserved for internal use (GEMS, etc)
 #define RESERVED_COUNTERS	9

@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 1999 Charles Goetzman
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -53,7 +54,7 @@ typedef struct mouse_info_rec mouse_info_rec;
 extern char mousehidden;
 extern unsigned int mouseinstalled;
 extern char driver_activated;
-extern volatile int mousex,mousey;
+extern volatile int mousex,mousey,mybutton;
 extern int mouse_count;
 
 //Initialize the mouse routines
