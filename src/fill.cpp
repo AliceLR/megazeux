@@ -159,12 +159,13 @@ typedef struct _StackElem StackElem;
 // The stack
 #define STACK_SIZE 4096
 
-void fill_area(World *mzx_world, int id, int color, int param,
+void fill_area(World *mzx_world, mzx_thing id, int color, int param,
  int x, int y, Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor,
  int overlay_edit)
 {
   Board *src_board = mzx_world->current_board;
-  int fill_over_id, fill_over_param, fill_over_color; // What we are filling over
+  mzx_thing fill_over_id;
+  int fill_over_param, fill_over_color;
   int dir, above_match, below_match;
   int new_offset;
   int board_width = src_board->board_width;
@@ -283,7 +284,7 @@ void fill_area(World *mzx_world, int id, int color, int param,
   }
   else
   {
-    if(id == 127)
+    if(id == PLAYER)
       return;
 
     id_check = src_board->level_id;
@@ -291,7 +292,7 @@ void fill_area(World *mzx_world, int id, int color, int param,
     color_check = src_board->level_color;
 
     // 1) Initialize fill stack and record what we are filling over.
-    fill_over_id = id_check[offset];
+    fill_over_id = (mzx_thing)id_check[offset];
     fill_over_color = color_check[offset];
     fill_over_param = param_check[offset];
 
@@ -344,7 +345,9 @@ void fill_area(World *mzx_world, int id, int color, int param,
       {
         if(place_current_at_xy(mzx_world, id, color, param, x, y, copy_robot,
          copy_scroll, copy_sensor, overlay_edit) == -1)
+        {
           return;
+        }
 
         // 6) Note what is above- If it DOESN'T match, set ABOVE_MATCH to 0.
         if(y > 0)

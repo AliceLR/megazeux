@@ -830,8 +830,11 @@ int parse_argument(char *cmd_line, char **next, int *arg_translated, int *error,
       {
         cmd_line++;
         current = *cmd_line;
-        if((current == '\\') && (cmd_line[1] == '"'))
+        if((current == '\\') && ((cmd_line[1] == '"') ||
+         (cmd_line[1] == '\\')))
+        {
           cmd_line++;
+        }
 
       } while((current != '"') && current);
 
@@ -870,14 +873,17 @@ int parse_argument(char *cmd_line, char **next, int *arg_translated, int *error,
     {
       // If the first letter is a single quote then it's a character;
       // make sure there's only one constant there and a close quote.
+      char c;
+      int n = escape_chars(&c, cmd_line + 1);
 
-      if(cmd_line[2] != '\'')
+      if(cmd_line[n + 1] != '\'')
       {
         *error = ERR_BADCHARACTER;
         return -1;
       }
-      *arg_translated = (int)(cmd_line[1]);
-      *next = cmd_line + 3;
+
+      *arg_translated = (int)c;
+      *next = cmd_line + n + 2;
       *arg_short = S_CHARACTER;
       return CHARACTER;
     }
@@ -1042,32 +1048,24 @@ int is_thing(char *cmd_line, char **next)
   return -1;
 }
 
-void get_word(char *str, char *source, char t)
+int get_word(char *str, char *source, char t)
 {
   int i = 0;
   char current;
 
-  do
+  current = *source;
+
+  while((current != t) && (current != 0) && (i < 256))
   {
+    source += escape_chars(str + i, source);
     current = *source;
 
-    if((current == '\\') && (source[1] == '"'))
-    {
-      str[i] = '"';
-      source++;
-      current = 'x';
-    }
-    else
-    {
-      str[i] = current;
-    }
-
-    source++;
     i++;
+  }
 
-  } while((current != t) && (current != 0) && (i < 256));
+  str[i] = 0;
 
-  str[i - 1] = 0;
+  return i;
 }
 
 int match_command(mzx_command *cmd, char *error_buffer)
@@ -1113,7 +1111,7 @@ int match_command(mzx_command *cmd, char *error_buffer)
             default:
             {
               sprintf(error_buffer, "expected %d arguments, got %d",
-               command_list[i].parameters, cmd->parameters);
+               current_command->parameters, cmd->parameters);
               break;
             }
           }
@@ -1319,9 +1317,9 @@ int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
   {
     current_line_position = cpos;
 
-    get_word(current_command.name, current_line_position, ' ');
+    current_line_position +=
+     get_word(current_command.name, current_line_position, ' ');
     words++;
-    current_line_position += strlen(current_command.name);
     last_arg_type = 0;
 
     while(*current_line_position != 0)
@@ -1351,12 +1349,11 @@ int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
         if(current_arg_type == UNDEFINED)
         {
           // Grab the string off the command list.
-          int str_size;
+          int str_size =
+           get_word(temp, current_line_position, ' ');
 
-          get_word(temp, current_line_position, ' ');
-          str_size = strlen(temp);
           param_list[arg_count] = (void *)malloc(str_size + 1);
-          strcpy((char *)param_list[arg_count], temp);
+          memcpy((char *)param_list[arg_count], temp, str_size + 1);
           advance = 1;
           dir_modifier_buffer = 0;
         }
@@ -1365,12 +1362,11 @@ int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
         if(current_arg_type == STRING)
         {
           // Grab the string off the command list.
-          int str_size;
+          int str_size =
+           get_word(temp, current_line_position + 1, '"');
 
-          get_word(temp, current_line_position + 1, '"');
-          str_size = strlen(temp);
           param_list[arg_count] = (void *)malloc(str_size + 1);
-          strcpy((char *)param_list[arg_count], temp);
+          memcpy((char *)param_list[arg_count], temp, str_size + 1);
           advance = 1;
           dir_modifier_buffer = 0;
         }
@@ -1696,6 +1692,82 @@ int print_dir(int dir, char *dir_buffer, char *arg_types,
   return arg_place;
 }
 
+int escape_chars(char *dest, char *src)
+{
+  if(src[0] == '\\')
+  {
+    switch(src[1])
+    {
+      case '"':
+        *dest = '"';
+        return 2;
+
+      case '0':
+        *dest = 0;
+        return 2;
+
+      case 'n':
+        *dest = '\n';
+        return 2;
+
+      case 'r':
+        *dest = '\r';
+        return 2;
+
+      case 't':
+        *dest = '\t';
+        return 2;
+
+      case '\\':
+        *dest = '\\';
+        return 2;
+    }
+  }
+
+  *dest = *src;
+  return 1;
+}
+
+int unescape_char(char *dest, char c)
+{
+  switch(c)
+  {
+    case '"':
+      dest[0] = '\\';
+      dest[1] = '"';
+      return 2;
+
+    case 0:
+      dest[0] = '\\';
+      dest[1] = '0';
+      return 2;
+
+    case '\n':
+      dest[0] = '\\';
+      dest[1] = 'n';
+      return 2;
+
+    case '\r':
+      dest[0] = '\\';
+      dest[1] = 'r';
+      return 2;
+
+    case '\t':
+      dest[0] = '\\';
+      dest[1] = 't';
+      return 2;
+
+    case '\\':
+      dest[0] = '\\';
+      dest[1] = '\\';
+      return 2;
+
+    default:
+      dest[0] = c;
+      return 1;
+  }
+}
+
 int disassemble_line(char *cpos, char **next, char *output_buffer,
  char *error_buffer, int *total_bytes, int print_ignores, char *arg_types,
  int *arg_count, int base)
@@ -1815,8 +1887,14 @@ int disassemble_line(char *cpos, char **next, char *output_buffer,
               arg_types[words] = S_CHARACTER;
 
             input_position += 3;
-            sprintf(output_position, "'%c'", character);
-            output_position += 3;
+            output_position[0] = '\'';
+            output_position++;
+
+            output_position += unescape_char(output_position, character);
+
+            output_position[0] = '\'';
+            output_position++;
+
             break;
           }
 
@@ -1885,34 +1963,29 @@ int disassemble_line(char *cpos, char **next, char *output_buffer,
 
           case STRING:
           {
-            char current_char;
+            int num_chars = *input_position - 1;
+            int i;
 
             if(arg_types)
               arg_types[words] = S_STRING;
 
-            *output_position = '"';
-            output_position++;
             input_position++;
 
-            do
+            *output_position = '"';
+            output_position++;
+
+            for(i = 0; i < num_chars; i++)
             {
-              current_char = *input_position;
-              if(current_char == '"')
-              {
-                output_position[0] = '\\';
-                output_position[1] = '"';
-                output_position++;
-              }
-              else
-              {
-                *output_position = current_char;
-              }
+              output_position +=
+               unescape_char(output_position, *input_position);
 
               input_position++;
-              output_position++;
-            } while(current_char);
+            }
 
-            *(output_position - 1) = '"';
+            *output_position = '"';
+            input_position++;
+            output_position++;
+
             break;
           }
 

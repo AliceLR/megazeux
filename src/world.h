@@ -137,6 +137,25 @@ struct _World
   int player_x;
   int player_y;
 
+  // For moving the player between boards
+  mzx_board_target target_where;
+  int target_board;
+  int target_x;
+  int target_y;
+  mzx_thing target_id;
+  int target_color;
+  mzx_thing target_d_id;
+  int target_d_color;
+
+  // Indiciates if the player is dead
+  int dead;
+
+  // Current bomb type
+  int bomb_type;
+
+  // Toggle for if the screen is in slow motion
+  int slow_down;
+
   // For use in repeat delays for player movement
   int key_up_delay;
   int key_down_delay;
@@ -161,6 +180,10 @@ struct _World
 
   // Current speed of MZX world
   int mzx_speed;
+  // Default speed (as loaded by config file)
+  int default_speed;
+  // If we can change the speed from the F2 menu.
+  int lock_speed;
 
   config_info conf;
 

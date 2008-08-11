@@ -79,6 +79,7 @@ int intake(World *mzx_world, char *string, int max_len,
   char temp_char;
   int in_macro;
   int use_mask = mzx_world->conf.mask_midchars;
+  int mouse_press;
 
   if(macro != NULL)
     macro_position = 0;
@@ -214,11 +215,14 @@ int intake(World *mzx_world, char *string, int max_len,
       cur_char = get_key(keycode_unicode);
     }
 
-    if(get_mouse_press())
+    mouse_press = get_mouse_press_ext();
+
+    if(get_mouse_press_ext())
     {
       int mouse_x, mouse_y;
       get_mouse_position(&mouse_x, &mouse_y);
-      if((mouse_y == y) && (mouse_x >= x) && (mouse_x <= (x + max_len)))
+      if((mouse_y == y) && (mouse_x >= x) &&
+       (mouse_x <= (x + max_len)) && (mouse_press <= SDL_BUTTON_RIGHT))
       {
         // Yep, reposition cursor.
         currx = mouse_x - x;

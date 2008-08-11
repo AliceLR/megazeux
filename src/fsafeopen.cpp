@@ -24,6 +24,7 @@
 #include <sys/stat.h>
 
 #include "fsafeopen.h"
+#include "const.h"
 
 #ifndef __WIN32__
 

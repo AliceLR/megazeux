@@ -27,8 +27,8 @@
 // "under", then automatically clear lower no matter what. Also mark as
 // updated.
 
-void id_place(World *mzx_world, int array_x, int array_y, char id, char color,
- char param)
+void id_place(World *mzx_world, int array_x, int array_y,
+ mzx_thing id, char color, char param)
 {
   Board *src_board = mzx_world->current_board;
   // Calculate offset
@@ -38,11 +38,11 @@ void id_place(World *mzx_world, int array_x, int array_y, char id, char color,
 }
 
 // Place ID using an offset instead of coordinate
-void offs_place_id(World *mzx_world, unsigned int offset, char id,
- char color, char param)
+void offs_place_id(World *mzx_world, unsigned int offset,
+ mzx_thing id, char color, char param)
 {
   Board *src_board = mzx_world->current_board;
-  unsigned char p_id = src_board->level_id[offset];
+  mzx_thing p_id = (mzx_thing)src_board->level_id[offset];
   int p_flag = flags[p_id];
   int d_flag = flags[(int)id];
 
@@ -51,12 +51,12 @@ void offs_place_id(World *mzx_world, unsigned int offset, char id,
 
   // Is it a sensor and is the player being put on it?
   // Or, can it be moved under and can the new item not be moved under?
-  if(((p_flag & A_SPEC_STOOD) && (id == 127)) ||
+  if(((p_flag & A_SPEC_STOOD) && (id == PLAYER)) ||
    ((p_flag & A_UNDER) && !(d_flag & A_UNDER)))
   {
     // If moving the player down, move what's there underneath the player
     // into the under_player variables
-    if(id == 127)
+    if(id == PLAYER)
     {
       mzx_world->under_player_id = src_board->level_under_id[offset];
       mzx_world->under_player_param = src_board->level_under_param[offset];
@@ -77,7 +77,7 @@ void offs_place_id(World *mzx_world, unsigned int offset, char id,
   }
 
   // Put new combo
-  src_board->level_id[offset] = id;
+  src_board->level_id[offset] = (char)id;
   src_board->level_param[offset] = param;
   src_board->level_color[offset] = color;
 }
@@ -110,26 +110,26 @@ void id_remove_top(World *mzx_world, int array_x, int array_y)
 void offs_remove_id(World *mzx_world, unsigned int offset)
 {
   Board *src_board = mzx_world->current_board;
-  char id = src_board->level_id[offset];
+  mzx_thing id = (mzx_thing)src_board->level_id[offset];
 
   src_board->level_id[offset] = src_board->level_under_id[offset];
   src_board->level_param[offset] = src_board->level_under_param[offset];
   src_board->level_color[offset] = src_board->level_under_color[offset];
 
-  if(id == 127)
+  if(id == PLAYER)
   {
     // Removing the player? Then put the under_player stuff under
     src_board->level_under_id[offset] = mzx_world->under_player_id;
     src_board->level_under_param[offset] = mzx_world->under_player_param;
     src_board->level_under_color[offset] = mzx_world->under_player_color;
 
-    mzx_world->under_player_id = 0;
+    mzx_world->under_player_id = (char)SPACE;
     mzx_world->under_player_param = 0;
     mzx_world->under_player_color = 7;
   }
   else
   {
-    src_board->level_under_id[offset] = 0;
+    src_board->level_under_id[offset] = (char)SPACE;
     src_board->level_under_param[offset] = 0;
     src_board->level_under_color[offset] = 7;
   }
@@ -141,18 +141,18 @@ void id_remove_under(World *mzx_world, int array_x, int array_y)
   int offset = (array_y * src_board->board_width) + array_x;
 
   // If removing something under the player place this stuff instead
-  if(src_board->level_id[offset] == 127)
+  if((mzx_thing)src_board->level_id[offset] == PLAYER)
   {
     src_board->level_under_id[offset] = mzx_world->under_player_id;
     src_board->level_under_param[offset] = mzx_world->under_player_param;
     src_board->level_under_color[offset] = mzx_world->under_player_color;
-    mzx_world->under_player_id = 0;
+    mzx_world->under_player_id = (char)SPACE;
     mzx_world->under_player_param = 0;
     mzx_world->under_player_color = 0;
   }
   else
   {
-    src_board->level_under_id[offset] = 0;
+    src_board->level_under_id[offset] = (char)SPACE;
     src_board->level_under_param[offset] = 0;
     src_board->level_under_color[offset] = 7;
   }

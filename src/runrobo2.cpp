@@ -98,13 +98,14 @@ void save_player_position(World *mzx_world, int pos)
 
 void restore_player_position(World *mzx_world, int pos)
 {
-  target_x = mzx_world->pl_saved_x[pos];
-  target_y = mzx_world->pl_saved_y[pos];
-  target_board = mzx_world->pl_saved_board[pos];
-  target_where = 0;
+  mzx_world->target_x = mzx_world->pl_saved_x[pos];
+  mzx_world->target_y = mzx_world->pl_saved_y[pos];
+  mzx_world->target_board = mzx_world->pl_saved_board[pos];
+  mzx_world->target_where = TARGET_POSITION;
 }
 
-void calculate_blocked(World *mzx_world, int x, int y, int id, int bl[4])
+void calculate_blocked(World *mzx_world, int x, int y,
+ int id, int bl[4])
 {
   Board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
@@ -135,12 +136,13 @@ void calculate_blocked(World *mzx_world, int x, int y, int id, int bl[4])
   }
 }
 
-int place_at_xy(World *mzx_world, int id, int color, int param, int x, int y)
+int place_at_xy(World *mzx_world, mzx_thing id, int color,
+ int param, int x, int y)
 {
   Board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int offset = x + (y * board_width);
-  int new_id = src_board->level_id[offset];
+  mzx_thing new_id = (mzx_thing)src_board->level_id[offset];
 
   // Okay, I'm really stabbing at behavior here.
   // Wildcard param, use source but only if id matches and isn't
@@ -162,28 +164,28 @@ int place_at_xy(World *mzx_world, int id, int color, int param, int x, int y)
     }
   }
 
-  if(new_id == 122)
+  if(new_id == SENSOR)
   {
     int new_param = src_board->level_param[offset];
     clear_sensor_id(src_board, new_param);
   }
   else
 
-  if((new_id == 126) || (new_id == 125))
+  if(is_signscroll(new_id))
   {
     int new_param = src_board->level_param[offset];
     clear_scroll_id(src_board, new_param);
   }
   else
 
-  if((new_id == 123) || (new_id == 124))
+  if(is_robot(new_id))
   {
     int new_param = src_board->level_param[offset];
     clear_robot_id(src_board, new_param);
   }
   else
 
-  if(new_id == 127)
+  if(new_id == PLAYER)
   {
     return 0; // Don't allow the player to be overwritten
   }
@@ -199,8 +201,8 @@ int place_at_xy(World *mzx_world, int id, int color, int param, int x, int y)
   return 1;
 }
 
-int place_under_xy(Board *src_board, int id, int color, int param, int x,
- int y)
+int place_under_xy(Board *src_board, mzx_thing id, int color,
+ int param, int x, int y)
 {
   int board_width = src_board->board_width;
   char *level_under_id = src_board->level_under_id;
@@ -212,23 +214,23 @@ int place_under_xy(Board *src_board, int id, int color, int param, int x,
     param = level_under_param[offset];
 
   color = fix_color(color, level_under_color[offset]);
-  if(level_under_id[offset] == 122)
+  if(level_under_id[offset] == SENSOR)
     clear_sensor_id(src_board, level_under_param[offset]);
 
-  level_under_id[offset] = id;
+  level_under_id[offset] = (char)id;
   level_under_color[offset] = color;
   level_under_param[offset] = param;
 
   return 1;
 }
 
-int place_dir_xy(World *mzx_world, int id, int color, int param, int x, int y,
- int direction, Robot *cur_robot, int *_bl)
+int place_dir_xy(World *mzx_world, mzx_thing id, int color, int param,
+ int x, int y, mzx_dir direction, Robot *cur_robot, int *_bl)
 {
   Board *src_board = mzx_world->current_board;
 
   // Check under
-  if(direction == 11)
+  if(direction == BENEATH)
   {
     return place_under_xy(src_board, id, color, param, x, y);
   }
@@ -238,11 +240,12 @@ int place_dir_xy(World *mzx_world, int id, int color, int param, int x, int y,
     int new_y = y;
     direction = parsedir(direction, x, y, cur_robot->walk_dir);
 
-    if((direction >= 1) && (direction <= 4))
+    if(is_cardinal_dir(direction))
     {
       if(!move_dir(src_board, &new_x, &new_y, direction - 1))
       {
-        return place_at_xy(mzx_world, id, color, param, new_x, new_y);
+        return place_at_xy(mzx_world, id, color, param,
+         new_x, new_y);
       }
     }
     return 0;
@@ -258,25 +261,25 @@ int place_player_xy(World *mzx_world, int x, int y)
     int did = src_board->level_id[offset];
     int dparam = src_board->level_param[offset];
 
-    if((did == 123) || (did == 124))
+    if(is_robot(did))
     {
       clear_robot_id(src_board, dparam);
     }
     else
 
-    if((did == 125) || (did == 126))
+    if(is_signscroll(did))
     {
       clear_scroll_id(src_board, dparam);
     }
     else
 
-    if(did == 122)
+    if(did == SENSOR)
     {
       step_sensor(mzx_world, dparam);
     }
 
     id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
-    id_place(mzx_world, x, y, 127, 0, 0);
+    id_place(mzx_world, x, y, PLAYER, 0, 0);
     mzx_world->player_x = x;
     mzx_world->player_y = y;
 
@@ -286,17 +289,19 @@ int place_player_xy(World *mzx_world, int x, int y)
   return 0;
 }
 
-void send_at_xy(World *mzx_world, int id, int x, int y, char *label)
+void send_at_xy(World *mzx_world, int id, int x, int y,
+ char *label)
 {
   Board *src_board = mzx_world->current_board;
   int offset = x + (y * src_board->board_width);
-  int d_id = src_board->level_id[offset];
+  mzx_thing d_id = (mzx_thing)src_board->level_id[offset];
 
-  if((d_id == 123) || (d_id == 124))
+  if(is_robot(d_id))
   {
     char label_buffer[ROBOT_MAX_TR];
     tr_msg(mzx_world, label, id, label_buffer);
-    send_robot_id(mzx_world, src_board->level_param[offset], label_buffer, 0);
+    send_robot_id(mzx_world, src_board->level_param[offset],
+     label_buffer, 0);
   }
 }
 
@@ -376,18 +381,18 @@ void split_colors(int color, int *fg, int *bg)
   }
 }
 
-int check_at_xy(Board *src_board, int id, int fg, int bg, int param,
- int offset)
+int check_at_xy(Board *src_board, mzx_thing id, int fg, int bg,
+ int param, int offset)
 {
-  int did = src_board->level_id[offset];
+  mzx_thing d_id = (mzx_thing)src_board->level_id[offset];
   int dcolor = src_board->level_color[offset];
   int dparam = src_board->level_param[offset];
 
   // Whirlpool matches down
-  if((did > 67) && (did <= 70))
-    did = 67;
+  if(is_whirlpool(d_id))
+    d_id = WHIRLPOOL_1;
 
-  if((did == id) && (((dcolor & 0x0F) == fg) || (fg == 16)) &&
+  if((d_id == id) && (((dcolor & 0x0F) == fg) || (fg == 16)) &&
    (((dcolor >> 4) == bg) || (bg == 16)) &&
    ((dparam == param) || (param == 256)))
   {
@@ -397,10 +402,10 @@ int check_at_xy(Board *src_board, int id, int fg, int bg, int param,
   return 0;
 }
 
-int check_under_xy(Board *src_board, int id, int fg, int bg, int param,
- int offset)
+int check_under_xy(Board *src_board, mzx_thing id, int fg, int bg,
+ int param, int offset)
 {
-  int did = src_board->level_under_id[offset];
+  mzx_thing did = (mzx_thing)src_board->level_under_id[offset];
   int dcolor = src_board->level_under_color[offset];
   int dparam = src_board->level_under_param[offset];
 
@@ -412,8 +417,9 @@ int check_under_xy(Board *src_board, int id, int fg, int bg, int param,
   return 0;
 }
 
-int check_dir_xy(World *mzx_world, int id, int color, int param,
- int x, int y, int direction, Robot *cur_robot, int *_bl)
+int check_dir_xy(World *mzx_world, mzx_thing id, int color,
+ int param, int x, int y, mzx_dir direction, Robot *cur_robot,
+ int *_bl)
 {
   Board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
@@ -423,7 +429,7 @@ int check_dir_xy(World *mzx_world, int id, int color, int param,
   split_colors(color, &fg, &bg);
 
   // Check under
-  if(direction == 11)
+  if(direction == BENEATH)
   {
     offset = x + (y * board_width);
     if(check_under_xy(src_board, id, fg, bg, param, offset))
@@ -437,7 +443,7 @@ int check_dir_xy(World *mzx_world, int id, int color, int param,
     int new_y = y;
     direction = parsedir(direction, x, y, cur_robot->walk_dir);
 
-    if(!move_dir(src_board, &new_x, &new_y, direction - 1))
+    if(!move_dir(src_board, &new_x, &new_y, dir_to_int(direction)))
     {
       offset = new_x + (new_y * board_width);
 
@@ -454,15 +460,14 @@ void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
   Board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int src_offset = src_x + (src_y * board_width);
-  int src_id = src_board->level_id[src_offset];
+  mzx_thing src_id = (mzx_thing)src_board->level_id[src_offset];
 
   // Cannot copy from player to player
-  if(src_id != 127)
+  if(src_id != PLAYER)
   {
     int src_param = src_board->level_param[src_offset];
 
-    // Duplicate robot
-    if((src_id == 123) || (src_id == 124))
+    if(is_robot(src_id))
     {
       Robot *src_robot = src_board->robot_list[src_param];
       src_param = duplicate_robot(src_board, src_robot,
@@ -470,17 +475,14 @@ void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
     }
     else
 
-    // Duplicate scroll
-    if((src_id == 125) || (src_id == 126))
+    if(is_signscroll(src_id))
     {
       Scroll *src_scroll = src_board->scroll_list[src_param];
       src_param = duplicate_scroll(src_board, src_scroll);
     }
     else
 
-    // Duplicate sensor
-    // Duplicate scroll
-    if(src_id == 122)
+    if(src_id == SENSOR)
     {
       Sensor *src_sensor = src_board->sensor_list[src_param];
       src_param = duplicate_sensor(src_board, src_sensor);
@@ -491,8 +493,8 @@ void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
     // overwriting the player.
     if(src_param != -1)
     {
-      place_at_xy(mzx_world, src_id, src_board->level_color[src_offset],
-       src_param, dest_x, dest_y);
+      place_at_xy(mzx_world, src_id,
+       src_board->level_color[src_offset], src_param, dest_x, dest_y);
     }
   }
 }
@@ -512,7 +514,8 @@ void copy_board_to_board_buffer(Board *src_board, int x,
   char *level_under_id = src_board->level_under_id;
   char *level_under_param = src_board->level_under_param;
   char *level_under_color = src_board->level_under_color;
-  int src_id, src_param;
+  mzx_thing src_id;
+  int src_param;
   int i, i2;
 
   for(i = 0; i < height; i++, src_offset += src_skip)
@@ -520,10 +523,9 @@ void copy_board_to_board_buffer(Board *src_board, int x,
     for(i2 = 0; i2 < width; i2++, src_offset++,
      dest_offset++)
     {
-      src_id = level_id[src_offset];
+      src_id = (mzx_thing)level_id[src_offset];
       src_param = level_param[src_offset];
-      // Duplicate robot
-      if((src_id == 123) || (src_id == 124))
+      if(is_robot(src_id))
       {
         Robot *src_robot = src_board->robot_list[src_param];
         src_param = duplicate_robot(dest_board, src_robot,
@@ -531,17 +533,14 @@ void copy_board_to_board_buffer(Board *src_board, int x,
       }
       else
 
-      // Duplicate scroll
-      if((src_id == 125) || (src_id == 126))
+      if(is_signscroll(src_id))
       {
         Scroll *src_scroll = src_board->scroll_list[src_param];
         src_param = duplicate_scroll(dest_board, src_scroll);
       }
       else
 
-      // Duplicate sensor
-      // Duplicate scroll
-      if(src_id == 122)
+      if(src_id == SENSOR)
       {
         Sensor *src_sensor = src_board->sensor_list[src_param];
         src_param = duplicate_sensor(dest_board, src_sensor);
@@ -582,7 +581,8 @@ void copy_board_buffer_to_board(Board *src_board, int x, int y,
   char *level_under_id = src_board->level_under_id;
   char *level_under_param = src_board->level_under_param;
   char *level_under_color = src_board->level_under_color;
-  int src_id_cur, dest_id, dest_param;
+  mzx_thing src_id_cur, dest_id;
+  int dest_param;
   int i, i2;
 
   for(i = 0; i < height; i++, dest_offset += dest_skip)
@@ -590,31 +590,31 @@ void copy_board_buffer_to_board(Board *src_board, int x, int y,
     for(i2 = 0; i2 < width; i2++, src_offset++,
      dest_offset++)
     {
-      dest_id = level_id[dest_offset];
-      src_id_cur = src_id[src_offset];
+      dest_id = (mzx_thing)level_id[dest_offset];
+      src_id_cur = (mzx_thing)src_id[src_offset];
 
-      if(dest_id != 127)
+      if(dest_id != PLAYER)
       {
         dest_param = level_param[dest_offset];
 
-        if(dest_id == 122)
+        if(dest_id == SENSOR)
         {
           clear_sensor_id(src_board, dest_param);
         }
         else
 
-        if((dest_id == 126) || (dest_id == 125))
+        if(is_signscroll(dest_id))
         {
           clear_scroll_id(src_board, dest_param);
         }
         else
 
-        if((dest_id == 123) || (dest_id == 124))
+        if(is_robot(dest_id))
         {
           clear_robot_id(src_board, dest_param);
         }
 
-        if((src_id_cur == 123) || (src_id_cur == 124))
+        if(is_robot(src_id_cur))
         {
           // Fix robot x/y
           (src_board->robot_list[src_param[src_offset]])->xpos =
@@ -623,7 +623,7 @@ void copy_board_buffer_to_board(Board *src_board, int x, int y,
            y + i;
         }
 
-        if(src_id_cur != 127)
+        if(src_id_cur != PLAYER)
         {
           level_id[dest_offset] = src_id_cur;
           level_param[dest_offset] = src_param[src_offset];
@@ -726,7 +726,8 @@ void copy_board_to_layer(Board *src_board, int x, int y,
   int src_char;
   int i, i2;
 
-  for(i = 0; i < height; i++, src_offset += src_skip, dest_offset += dest_skip)
+  for(i = 0; i < height; i++, src_offset += src_skip,
+   dest_offset += dest_skip)
   {
     for(i2 = 0; i2 < width; i2++, src_offset++,
      dest_offset++)
@@ -745,7 +746,7 @@ void copy_board_to_layer(Board *src_board, int x, int y,
 
 void copy_layer_to_board(Board *src_board, int x, int y,
  int width, int height, char *src_char, char *src_color,
- int src_width, int convert_id)
+ int src_width, mzx_thing convert_id)
 {
   int board_width = src_board->board_width;
   int dest_offset = x + (y * board_width);
@@ -767,7 +768,7 @@ void copy_layer_to_board(Board *src_board, int x, int y,
       src_char_cur = src_char[src_offset];
       if(src_char_cur != 32)
       {
-        level_id[dest_offset] = convert_id;
+        level_id[dest_offset] = (char)convert_id;
         level_param[dest_offset] = src_char_cur;
         level_color[dest_offset] = src_color[src_offset];
       }
@@ -806,7 +807,8 @@ void clear_board_block(Board *src_board, int x, int y,
   char *level_under_id = src_board->level_under_id;
   char *level_under_param = src_board->level_under_param;
   char *level_under_color = src_board->level_under_color;
-  int dest_id, dest_param;
+  mzx_thing dest_id;
+  int dest_param;
   int i, i2;
 
   for(i = 0; i < height; i++, dest_offset += dest_skip)
@@ -814,34 +816,34 @@ void clear_board_block(Board *src_board, int x, int y,
     for(i2 = 0; i2 < width; i2++, src_offset++,
      dest_offset++)
     {
-      dest_id = level_id[dest_offset];
-      if(dest_id != 127)
+      dest_id = (mzx_thing)level_id[dest_offset];
+      if(dest_id != PLAYER)
       {
         dest_param = level_param[dest_offset];
 
-        if(dest_id == 122)
+        if(dest_id == SENSOR)
         {
           clear_sensor_id(src_board, dest_param);
         }
         else
 
-        if((dest_id == 126) || (dest_id == 125))
+        if(is_signscroll(dest_id))
         {
           clear_scroll_id(src_board, dest_param);
         }
         else
 
-        if((dest_id == 123) || (dest_id == 124))
+        if(is_robot(dest_id))
         {
           clear_robot_id(src_board, dest_param);
         }
 
-        level_id[dest_offset] = 0;
+        level_id[dest_offset] = (char)SPACE;
         level_param[dest_offset] = 0;
         level_color[dest_offset] = 7;
       }
 
-      level_under_id[dest_offset] = 0;
+      level_under_id[dest_offset] = (char)SPACE;
       level_under_param[dest_offset] = 0;
       level_under_color[dest_offset] = 7;
     }
@@ -886,7 +888,7 @@ void replace_player(World *mzx_world)
         // Place the player here
         mzx_world->player_x = dx;
         mzx_world->player_y = dy;
-        id_place(mzx_world, dx, dy, 127, 0, 0);
+        id_place(mzx_world, dx, dy, PLAYER, 0, 0);
         return;
       }
     }
@@ -895,7 +897,7 @@ void replace_player(World *mzx_world)
   // Place the player here
   mzx_world->player_x = 0;
   mzx_world->player_y = 0;
-  place_at_xy(mzx_world, 127, 0, 0, 0, 0);
+  place_at_xy(mzx_world, PLAYER, 0, 0, 0, 0);
 }
 
 // Run a single robot through a single cycle.
@@ -906,18 +908,17 @@ void run_robot(World *mzx_world, int id, int x, int y)
   Robot *cur_robot;
   int fade = get_fade_status();
   int cmd; // Command to run
-  int lines_run = 0; // For preventing infinite loops
-  int gotoed; // Set to 1 if we shouldn't advance cmd since we went to a lbl
+  int lines_run = 0;
+  int gotoed;
 
   int old_pos; // Old position to verify gotos DID something
   // Whether blocked in a given direction (2 = OUR bullet)
   int _bl[4] = { 0, 0, 0, 0 };
-  // New * "" command (changes Built_In_Messages to be sure to display the messages)
   char *program;
-  char *cmd_ptr; // Points to current command
-  char done = 0; // Set to 1 on a finishing command
-  char update_blocked = 0; // Set to 1 to update the _bl[4] array
-  char first_cmd = 1; // It is the first cmd.
+  char *cmd_ptr;
+  char done = 0;
+  char update_blocked = 0;
+  char first_cmd = 1;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
   char *level_color = src_board->level_color;
@@ -943,7 +944,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
   }
   else
   {
-    int walk_dir;
+    mzx_dir walk_dir;
     cur_robot = src_board->robot_list[id];
 
     walk_dir = cur_robot->walk_dir;
@@ -969,12 +970,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
     }
 
     // Walk?
-    if((walk_dir >= 1) && (walk_dir <= 4))
+    if(is_cardinal_dir(walk_dir))
     {
-      int move_status = move(mzx_world, x, y, walk_dir - 1,
-       1 | 2 | 8 | 16 + (4 * cur_robot->can_lavawalk));
+      move_status status = move(mzx_world, x, y, walk_dir - 1,
+       CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK |
+       CAN_WATERWALK | (CAN_LAVAWALK * cur_robot->can_lavawalk));
 
-      if(move_status == 3)
+      if(status == HIT_EDGE)
       {
         // Send to edge, if no response, then to thud.
         if(send_robot_id(mzx_world, id, "edge", 1))
@@ -982,7 +984,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       }
       else
 
-      if(move_status > 0)
+      if(status != NO_HIT)
       {
         send_robot_id(mzx_world, id, "thud", 1);
       }
@@ -991,17 +993,23 @@ void run_robot(World *mzx_world, int id, int x, int y)
         // Update x/y
         switch(walk_dir)
         {
-          case 1:
+          case NORTH:
             y--;
             break;
-          case 2:
+
+          case SOUTH:
             y++;
             break;
-          case 3:
+
+          case EAST:
             x++;
             break;
-          case 4:
+
+          case WEST:
             x--;
+            break;
+
+          default:
             break;
         }
       }
@@ -1046,7 +1054,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
     cmd = cmd_ptr[0];
     // Act according to command
 
-    //printf("running cmd %d (id %d) at %d\n", cmd, id, old_pos);
+    //printf("running cmd %d (id %d)\n", cmd, id);
 
     switch(cmd)
     {
@@ -1102,7 +1110,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int direction = parsedir(cmd_ptr[2], x, y, cur_robot->walk_dir);
+          mzx_dir direction =
+           parsedir((mzx_dir)cmd_ptr[2], x, y, cur_robot->walk_dir);
           char *p2 = next_param_pos(cmd_ptr + 1);
           int num = parse_param(mzx_world, p2, id);
           // Inc. pos. or break
@@ -1111,14 +1120,17 @@ void run_robot(World *mzx_world, int id, int x, int y)
             cur_robot->pos_within_line++;
             {
               // Parse dir
-              direction--;
-              if((direction >= 0) && (direction <= 3))
+              if(is_cardinal_dir(direction))
               {
-                int move_status = move(mzx_world, x, y, direction,
-                 1 | 2 | 8 | 16 | 4 * cur_robot->can_lavawalk);
-                if(!move_status)
+                move_status status;
+
+                status = move(mzx_world, x, y, dir_to_int(direction),
+                 CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK |
+                 CAN_WATERWALK | CAN_LAVAWALK * cur_robot->can_lavawalk);
+
+                if(status == NO_HIT)
                 {
-                  move_dir(src_board, &x, &y, direction);
+                  move_dir(src_board, &x, &y, dir_to_int(direction));
                 }
               }
             }
@@ -1133,13 +1145,18 @@ void run_robot(World *mzx_world, int id, int x, int y)
         if(id)
         {
           // Parse dir
-          int direction = parsedir(cmd_ptr[2], x, y, cur_robot->walk_dir);
-          direction--;
-          if((direction >= 0) && (direction <= 3))
+          mzx_dir direction = parsedir((mzx_dir)cmd_ptr[2], x, y,
+           cur_robot->walk_dir);
+
+          if(is_cardinal_dir(direction))
           {
-            int move_status = move(mzx_world, x, y, direction,
-             1 | 2 | 8 | 16 | 4 * cur_robot->can_lavawalk);
-            if(move_status)
+            move_status status;
+
+            status = move(mzx_world, x, y, dir_to_int(direction),
+             CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK | CAN_WATERWALK |
+             CAN_LAVAWALK * cur_robot->can_lavawalk);
+
+            if(status)
             {
               // blocked- send to label
               char *p2 = next_param_pos(cmd_ptr + 1);
@@ -1147,7 +1164,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             }
             else
             {
-              move_dir(src_board, &x, &y, direction);
+              move_dir(src_board, &x, &y, dir_to_int(direction));
               // not blocked- make sure only moves once!
               done = 1;
             }
@@ -1160,10 +1177,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int direction = parsedir(cmd_ptr[2], x, y, cur_robot->walk_dir);
-          if((direction < 1) || (direction > 4))
+          mzx_dir direction =
+           parsedir((mzx_dir)cmd_ptr[2], x, y, cur_robot->walk_dir);
+
+          if(!is_cardinal_dir(direction))
           {
-            cur_robot->walk_dir = 0;
+            cur_robot->walk_dir = IDLE;
           }
           else
           {
@@ -1180,25 +1199,27 @@ void run_robot(World *mzx_world, int id, int x, int y)
           int offset = x + (y * board_width);
           int color = parse_param(mzx_world, cmd_ptr + 1, id);
           char *p2 = next_param_pos(cmd_ptr + 1);
-          int new_id = parse_param(mzx_world, p2, id);
+          mzx_thing new_id = parse_param_thing(mzx_world, p2);
           int param = parse_param(mzx_world, p2 + 3, id);
           color = fix_color(color, level_color[offset]);
           level_color[offset] = color;
           level_id[offset] = new_id;
 
           // Param- Only change if not becoming a robot
-          if((new_id != 123) && (new_id != 124))
+          if(!is_robot(new_id))
           {
             level_param[offset] = param;
             clear_robot_id(src_board, id);
+
             // If became a scroll, sensor, or sign...
-            if((new_id >= 122) && (new_id <= 127))
+            if((new_id >= SENSOR) && (new_id <= PLAYER))
               id_remove_top(mzx_world, x, y);
+
             // Delete "under"? (if became another type of "under")
             if(flags[new_id] & A_UNDER)
             {
               // Became an under, so delete under.
-              src_board->level_under_param[offset] = 0;
+              src_board->level_under_param[offset] = SPACE;
               src_board->level_under_id[offset] = 0;
               src_board->level_under_color[offset] = 7;
             }
@@ -1222,7 +1243,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           int offset = x + (y * board_width);
           level_color[offset] =
-           fix_color(parse_param(mzx_world, cmd_ptr + 1, id), level_color[offset]);
+           fix_color(parse_param(mzx_world, cmd_ptr + 1, id),
+           level_color[offset]);
         }
         break;
       }
@@ -1240,7 +1262,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           {
             // delete at x y
             int offset = x + (y * board_width);
-            int new_id = level_id[offset];
+            mzx_thing new_id = (mzx_thing)level_id[offset];
             int color = level_color[offset];
             if(place_at_xy(mzx_world, new_id, color, id, new_x, new_y))
             {
@@ -1289,7 +1311,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
           else
           {
             // Set it to immediate representation
-            sprintf(src_buffer, "%d", parse_param(mzx_world, src_string, id));
+            sprintf(src_buffer, "%d", parse_param(mzx_world,
+             src_string, id));
             dest.value = src_buffer;
             dest.length = strlen(src_buffer);
           }
@@ -1395,7 +1418,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         char *dest_string = cmd_ptr + 2;
         char *p2 = next_param_pos(cmd_ptr + 1);
         char *src_string = p2 + 3;
-        int comparison = parse_param(mzx_world, p2, id);
+        mzx_equality comparison = parse_param_eq(mzx_world, p2);
         char src_buffer[ROBOT_MAX_TR];
         char dest_buffer[ROBOT_MAX_TR];
         int success = 0;
@@ -1426,7 +1449,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
           }
           else
           {
-            sprintf(src_buffer, "%d", parse_param(mzx_world, src_string, id));
+            sprintf(src_buffer, "%d", parse_param(mzx_world,
+             src_string, id));
             src.value = src_buffer;
             src.length = strlen(src_buffer);
           }
@@ -1457,42 +1481,42 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         switch(comparison)
         {
-          case 0:
+          case EQUAL:
           {
             if(!difference)
               success = 1;
             break;
           }
 
-          case 1:
+          case LESS_THAN:
           {
             if(difference < 0)
               success = 1;
             break;
           }
 
-          case 2:
+          case GREATER_THAN:
           {
             if(difference > 0)
               success = 1;
             break;
           }
 
-          case 3:
+          case GREATER_THAN_OR_EQUAL:
           {
             if(difference >= 0)
               success = 1;
             break;
           }
 
-          case 4:
+          case LESS_THAN_OR_EQUAL:
           {
             if(difference <= 0)
               success = 1;
             break;
           }
 
-          case 5:
+          case NOT_EQUAL:
           {
             if(difference)
               success = 1;
@@ -1512,17 +1536,17 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 18: // if condition label
       case 19: // if not cond. label
       {
-        int condition = parse_param(mzx_world, cmd_ptr + 1, id);
-        int direction = condition >> 8;
+        mzx_dir direction;
+        mzx_condition condition =
+         parse_param_cond(mzx_world, cmd_ptr + 1, &direction);
         int success = 0;
-        condition &= 0xFF;
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
 
         switch(condition)
         {
-          case 0: // Walking dir
+          case WALKING:
           {
-            if(direction < 5)
+            if(direction < RANDNS)
             {
               if(cur_robot->walk_dir == direction)
                 success = 1;
@@ -1530,7 +1554,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             }
             else
 
-            if(direction == 14)
+            if(direction == NODIR)
             {
               if(cur_robot->walk_dir == 0)
                 success = 1;
@@ -1543,7 +1567,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             break;
           }
 
-          case 1: // swimming
+          case SWIMMING:
           {
             if(id)
             {
@@ -1556,72 +1580,78 @@ void run_robot(World *mzx_world, int id, int x, int y)
             break;
           }
 
-          case 2: // firewalking
+          case FIRE_WALKING:
           {
             if(id)
             {
               int offset = x + (y * board_width);
-              int under = level_under_id[offset];
+              mzx_thing under = (mzx_thing)level_under_id[offset];
 
-              if((under == 26) || (under == 63))
+              if((under == LAVA) || (under == FIRE))
                 success = 1;
             }
             break;
           }
 
-            case 3: // touching dir
+          case TOUCHING:
           {
-            int new_x;
-            int new_y;
+            if(id)
+            {
+              int new_x;
+              int new_y;
 
-            if((direction >= 1) && (direction <= 4))
-            {
-              // Is player in dir t2?
-              new_x = x;
-              new_y = y;
-              if(!move_dir(src_board, &new_x, &new_y, direction - 1))
+              if(is_cardinal_dir(direction))
               {
-                if((mzx_world->player_x == new_x) &&
-                 (mzx_world->player_y == new_y))
-                  success = 1;
-              }
-            }
-            else
-            {
-              if(direction >= 12)
-              {
-                int i;
-                // either anydir or nodir
-                // is player touching at all?
-                for(i = 0; i < 4; i++)
+                new_x = x;
+                new_y = y;
+                if(!move_dir(src_board, &new_x, &new_y,
+                 dir_to_int(direction)))
                 {
-                  // try all dirs
-                  new_x = x;
-                  new_y = y;
-                  if(!move_dir(src_board, &new_x, &new_y, i))
+                  if((mzx_world->player_x == new_x) &&
+                   (mzx_world->player_y == new_y))
                   {
-                    if((mzx_world->player_x == new_x) &&
-                     (mzx_world->player_y == new_y))
-                    {
-                      success = 1;
-                    }
+                    success = 1;
                   }
                 }
-
-                // We want NODIR though, so reverse success
-                if(direction == 14)
-                  success ^= 1;
               }
               else
               {
-                success = 0;
+                if(direction >= ANYDIR)
+                {
+                  int i;
+                  // either anydir or nodir
+                  // is player touching at all?
+
+                  for(i = 0; i < 4; i++)
+                  {
+                    // try all dirs
+                    new_x = x;
+                    new_y = y;
+                    if(!move_dir(src_board, &new_x, &new_y, i))
+                    {
+                      if((mzx_world->player_x == new_x) &&
+                       (mzx_world->player_y == new_y))
+                      {
+                        success = 1;
+                      }
+                    }
+                  }
+
+                  // We want NODIR though, so reverse success
+                  if(direction == NODIR)
+                    success ^= 1;
+                }
+                else
+                {
+                  success = 0;
+                }
               }
             }
 
             break;
           }
 
-          case 4: // Blocked dir
+          case BLOCKED:
           {
             int new_bl[4];
 
@@ -1656,9 +1686,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
               }
             }
 
-            if((direction >= 1) && (direction <= 4))
+            if(is_cardinal_dir(direction))
             {
-              success = new_bl[direction - 1];
+              success = new_bl[dir_to_int(direction)];
             }
             else
             {
@@ -1669,13 +1699,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
               // We want NODIR though, so reverse success
 
-              if((direction == 14) || (direction == 0))
+              if((direction == NODIR) || (direction == IDLE))
                 success ^= 1;
             }
             break;
           }
 
-          case 5: // Aligned
+          case ALIGNED:
           {
             if(id)
             {
@@ -1685,7 +1715,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             break;
           }
 
-          case 6: // AlignedNS
+          case ALIGNED_NS:
           {
             if(id)
             {
@@ -1695,7 +1725,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             break;
           }
 
-          case 7: // AlignedEW
+          case ALIGNED_EW:
           {
             if(id)
             {
@@ -1705,11 +1735,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
             break;
           }
 
-          case 8: // LASTSHOT dir (only 1 - 4 accepted)
+          case LASTSHOT:
           {
             if(id)
             {
-              if((direction >= 1) && (direction <= 4))
+              if(is_cardinal_dir(direction))
               {
                 if(direction == cur_robot->last_shot_dir)
                   success = 1;
@@ -1718,12 +1748,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
             break;
           }
 
-          case 9: // LASTTOUCH dir (only 1 - 4 accepted)
+          case LASTTOUCH:
           {
             if(id)
             {
-              direction = parsedir(direction, x, y, cur_robot->walk_dir);
-              if((direction >= 1) && (direction <= 4))
+              direction = parsedir(direction, x, y,
+               cur_robot->walk_dir);
+              if(is_cardinal_dir(direction))
               {
                 if(direction == cur_robot->last_touch_dir)
                   success = 1;
@@ -1732,53 +1763,51 @@ void run_robot(World *mzx_world, int id, int x, int y)
             break;
           }
 
-          case 10: // RTpressed
+          case RIGHTPRESSED:
           {
             success = get_key_status(keycode_SDL, SDLK_RIGHT) > 0;
             break;
           }
 
-          case 11: // LTpressed
+          case LEFTPRESSED:
           {
             success = get_key_status(keycode_SDL, SDLK_LEFT) > 0;
             break;
           }
 
-          case 12: // UPpressed
+          case UPPRESSED:
           {
             success = get_key_status(keycode_SDL, SDLK_UP) > 0;
             break;
           }
 
-          case 13: // dnpressed
+          case DOWNPRESSED:
           {
             success = get_key_status(keycode_SDL, SDLK_DOWN) > 0;
             break;
           }
 
-          case 14: // sppressed
+          case SPACEPRESSED:
           {
             success = get_key_status(keycode_SDL, SDLK_SPACE) > 0;
             break;
           }
 
-          case 15: // delpressed
+          case DELPRESSED:
           {
             success = get_key_status(keycode_SDL, SDLK_DELETE) > 0;
             break;
           }
 
-          case 16: // musicon
+          case MUSICON:
           {
-            if(get_music_on_state())
-              success = 1;
+            success = get_music_on_state();
             break;
           }
 
-          case 17: // soundon
+          case SOUNDON:
           {
-            if(get_sfx_on_state())
-              success = 1;
+            success = get_sfx_on_state();
             break;
           }
         }
@@ -1798,10 +1827,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         // Get foreg/backg allowed in fb/bg
         int offset;
-        int color = parse_param(mzx_world, cmd_ptr + 1, id); // Color
+        int color = parse_param(mzx_world, cmd_ptr + 1, id);
         int fg, bg;
         char *p2 = next_param_pos(cmd_ptr + 1);
-        int check_id = parse_param(mzx_world, p2, id); // Thing
+        mzx_thing check_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         // Param
         int check_param = parse_param(mzx_world, p3, id);
@@ -1824,10 +1853,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         // Get foreg/backg allowed in fb/bg
         int offset;
-        int color = parse_param(mzx_world, cmd_ptr + 1, id); // Color
+        int color = parse_param(mzx_world, cmd_ptr + 1, id);
         int fg, bg;
         char *p2 = next_param_pos(cmd_ptr + 1);
-        int check_id = parse_param(mzx_world, p2, id); // Thing
+        mzx_thing check_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         // Param
         int check_param = parse_param(mzx_world, p3, id);
@@ -1855,11 +1884,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
           char *p2 = next_param_pos(cmd_ptr + 1);
-          int check_id = parse_param(mzx_world, p2, id);
+          mzx_thing check_id = parse_param_thing(mzx_world, p2);
           char *p3 = next_param_pos(p2);
           int check_param = parse_param(mzx_world, p3, id);
           char *p4 = next_param_pos(p3);
-          int direction = parse_param(mzx_world, p4, id);
+          mzx_dir direction = parse_param_dir(mzx_world, p4);
 
           if(check_dir_xy(mzx_world, check_id, check_color,
            check_param, x, y, direction, cur_robot, _bl))
@@ -1877,11 +1906,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
           char *p2 = next_param_pos(cmd_ptr + 1);
-          int check_id = parse_param(mzx_world, p2, id);
+          mzx_thing check_id = parse_param_thing(mzx_world, p2);
           char *p3 = next_param_pos(p2);
           int check_param = parse_param(mzx_world, p3, id);
           char *p4 = next_param_pos(p3);
-          int direction = parse_param(mzx_world, p4, id);
+          mzx_dir direction = parse_param_dir(mzx_world, p4);
 
           if(!check_dir_xy(mzx_world, check_id, check_color,
            check_param, x, y, direction, cur_robot, _bl))
@@ -1897,7 +1926,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
-        int check_id = parse_param(mzx_world, p2, id);
+        mzx_thing check_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         int check_param = parse_param(mzx_world, p3, id);
         char *p4 = next_param_pos(p3);
@@ -1907,7 +1936,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int fg, bg;
         int offset;
 
-        if(check_id == 98)
+        if(check_id == SPRITE)
         {
           int ret = 0;
 
@@ -1955,7 +1984,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         // Check collision detection for sprite - Exo
 
-        if(check_id == 99)
+        if(check_id == SPR_COLLISION)
         {
           Sprite *check_sprite;
 
@@ -2020,11 +2049,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 26: // if dir of player is thing, "label"
       {
-        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         char *p2 = next_param_pos(cmd_ptr + 1);
         int check_color = parse_param(mzx_world, p2, id);
         char *p3 = next_param_pos(p2);
-        int check_id = parse_param(mzx_world, p3, id);
+        mzx_thing check_id = parse_param_thing(mzx_world, p3);
         char *p4 = next_param_pos(p3);
         int check_param = parse_param(mzx_world, p4, id);
 
@@ -2083,7 +2112,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           int offset = x + (y * board_width);
           level_param[offset] =
            (parse_param(mzx_world, cmd_ptr + 1, id) - 1) * 16;
-          level_id[offset] = 38;
+          level_id[offset] = (char)EXPLOSION;
         }
         clear_robot_id(src_board, id);
 
@@ -2096,13 +2125,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           int put_color = parse_param(mzx_world, cmd_ptr + 1, id);
           char *p2 = next_param_pos(cmd_ptr + 1);
-          int put_id = parse_param(mzx_world, p2, id);
+          mzx_thing put_id = parse_param_thing(mzx_world, p2);
           char *p3 = next_param_pos(p2);
           int put_param = parse_param(mzx_world, p3, id);
           char *p4 = next_param_pos(p3);
-          int direction = parse_param(mzx_world, p4, id);
+          mzx_dir direction = parse_param_dir(mzx_world, p4);
 
-          if(put_id < 122)
+          if(put_id < SENSOR)
           {
             place_dir_xy(mzx_world, put_id, put_color, put_param, x, y,
              direction, cur_robot, _bl);
@@ -2128,7 +2157,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int item_number = *(p2 + 1);
         int success = 0;
 
-        if(get_counter(mzx_world, item_to_counter[item_number], 0) >= amount)
+        if(get_counter(mzx_world, item_to_counter[item_number], 0) >=
+         amount)
         {
           dec_counter(mzx_world, item_to_counter[item_number], amount, 0);
           success = 1;
@@ -2144,7 +2174,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int item_number = *(p2 + 1);
         int success = 0;
 
-        if(get_counter(mzx_world, item_to_counter[item_number], 0) >= amount)
+        if(get_counter(mzx_world, item_to_counter[item_number], 0) >=
+         amount)
         {
           dec_counter(mzx_world, item_to_counter[item_number], amount, 0);
           success = 1;
@@ -2278,25 +2309,27 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           parsedir(direction, x, y, cur_robot->walk_dir);
-          if((direction >= 1) & (direction <= 4))
+
+          if(is_cardinal_dir(direction))
           {
             int new_x = x;
             int new_y = y;
             if(!move_dir(src_board, &new_x, &new_y, direction - 1))
             {
               int new_offset = new_x + (new_y * board_width);
-              int new_id = level_id[new_offset];
-              if((new_id == 41) || (new_id == 47))
+              mzx_thing new_id = (mzx_thing)level_id[new_offset];
+
+              if((new_id == DOOR) || (new_id == GATE))
               {
                 // Become pushable for right now
                 int offset = x + (y * board_width);
-                int old_id = level_id[offset];
-                level_id[offset] = 123;
+                mzx_thing old_id = (mzx_thing)level_id[offset];
+                level_id[offset] = (char)ROBOT;
                 grab_item(mzx_world, new_offset, 0);
                 // Find the robot
-                if(level_id[offset] != 123)
+                if(level_id[offset] != ROBOT)
                 {
                   int i;
                   for(i = 0; i < 4; i++)
@@ -2307,7 +2340,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
                     {
                       // Not edge... robot?
                       new_offset = new_x + (new_y * board_width);
-                      if((level_id[new_offset] == 123) &&
+                      if((level_id[new_offset] == ROBOT) &&
                        (level_param[new_offset] == id))
                       {
                         offset = new_offset;
@@ -2345,11 +2378,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           int send_x = x;
           int send_y = y;
-          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           char *p2 = next_param_pos(cmd_ptr + 1);
           direction = parsedir(direction, x, y, cur_robot->walk_dir);
 
-          if((direction >= 1) && (direction <= 4))
+          if(is_cardinal_dir(direction))
           {
             if(!move_dir(src_board, &send_x, &send_y, direction - 1))
             {
@@ -2432,21 +2465,22 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 61: // move player dir
       case 62: // move pl dir "label"
       {
-        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
-        if((direction >= 1) && (direction <= 4))
+        if(is_cardinal_dir(direction))
         {
           int old_x = mzx_world->player_x;
           int old_y = mzx_world->player_y;
           int old_board = mzx_world->current_board_id;
-          int old_target = target_where;
+          int old_target = mzx_world->target_where;
           // Have to fix vars and move to next command NOW, in case player
           // is sent to another screen!
           mzx_world->first_prefix = 0;
           mzx_world->mid_prefix = 0;
           mzx_world->last_prefix = 0;
           cur_robot->pos_within_line = 0;
-          cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+          cur_robot->cur_prog_line +=
+           program[cur_robot->cur_prog_line] + 2;
 
           if(!program[cur_robot->cur_prog_line])
             cur_robot->cur_prog_line = 0;
@@ -2457,9 +2491,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           // Move player
           move_player(mzx_world, direction - 1);
-          if((mzx_world->player_x == old_x) && (mzx_world->player_y == old_y) &&
+          if((mzx_world->player_x == old_x) &&
+           (mzx_world->player_y == old_y) &&
            (mzx_world->current_board_id == old_board) && (cmd == 62) &&
-           (target_where == old_target))
+           (mzx_world->target_where == old_target))
           {
             char *p2 = next_param_pos(cmd_ptr + 1);
             gotoed = send_self_label_tr(mzx_world,  p2 + 1, id);
@@ -2496,7 +2531,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int check_y = parse_param(mzx_world, p2, id);
         prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
 
-        if((check_x == mzx_world->player_x) && (check_y == mzx_world->player_y))
+        if((check_x == mzx_world->player_x) &&
+         (check_y == mzx_world->player_y))
         {
           char *p3 = next_param_pos(p2);
           gotoed = send_self_label_tr(mzx_world, p3 + 1, id);
@@ -2506,10 +2542,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 67: // put player dir
       {
-        int put_dir = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_dir put_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
         put_dir = parsedir(put_dir, x, y, cur_robot->walk_dir);
 
-        if((put_dir >= 1) && (put_dir <= 4))
+        if(is_cardinal_dir(put_dir))
         {
           int put_x = x;
           int put_y = y;
@@ -2559,18 +2595,20 @@ void run_robot(World *mzx_world, int id, int x, int y)
           int dest_x = x;
           int src_y = y;
           int dest_y = y;
-          int dest_dir = parse_param(mzx_world, cmd_ptr + 1, id);
+          mzx_dir dest_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
           char *p2 = next_param_pos(cmd_ptr + 1);
-          int src_dir = parse_param(mzx_world, p2, id);
+          mzx_dir src_dir = parse_param_dir(mzx_world, p2);
+
           src_dir = parsedir(src_dir, x, y, cur_robot->walk_dir);
           dest_dir = parsedir(dest_dir, x, y, cur_robot->walk_dir);
 
-          if((src_dir >= 1) && (src_dir <= 4) && (dest_dir >= 1) &&
-           (dest_dir <= 4))
+          if(is_cardinal_dir(src_dir) && is_cardinal_dir(dest_dir))
           {
-            int move_status = move_dir(src_board, &src_x, &src_y, src_dir - 1);
-            move_status |= move_dir(src_board, &dest_x, &dest_y, dest_dir - 1);
-            if(!move_status)
+            int status =
+             move_dir(src_board, &src_x, &src_y, src_dir - 1);
+
+            status |= move_dir(src_board, &dest_x, &dest_y, dest_dir - 1);
+            if(!status)
             {
               // Switch src_x, src_y with dest_x, dest_y
               // The nice thing is that nothing gets deleted,
@@ -2579,7 +2617,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
               {
                 int src_offset = src_x + (src_y * board_width);
                 int dest_offset = dest_x + (dest_y * board_width);
-                int cp_id = level_id[src_offset];
+                mzx_thing cp_id = (mzx_thing)level_id[src_offset];
                 int cp_param = level_param[src_offset];
                 int cp_color = level_color[src_offset];
                 level_id[src_offset] = level_id[dest_offset];
@@ -2601,11 +2639,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int direction = parsedir(cmd_ptr[2], x, y, cur_robot->walk_dir) - 1;
-          if((direction >= 0) && (direction <= 3) && !(_bl[direction] & 2))
+          mzx_dir direction =
+           parsedir((mzx_dir)cmd_ptr[2], x, y, cur_robot->walk_dir);
+          if(is_cardinal_dir(direction) && !(_bl[direction - 1] & 2))
           {
             // Block
-            shoot(mzx_world, x, y, direction, cur_robot->bullet_type);
+            shoot(mzx_world, x, y, dir_to_int(direction),
+             cur_robot->bullet_type);
             if(_bl[direction])
               _bl[direction] = 3;
           }
@@ -2617,8 +2657,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
-          place_dir_xy(mzx_world, 37, 8, 0, x, y, direction,
+          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+          place_dir_xy(mzx_world, LIT_BOMB, 8, 0, x, y, direction,
            cur_robot, _bl);
           update_blocked = 1;
         }
@@ -2629,8 +2669,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
-          place_dir_xy(mzx_world, 37, 8, 128, x, y, direction,
+          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+          place_dir_xy(mzx_world, LIT_BOMB, 8, 128, x, y, direction,
            cur_robot, _bl);
           update_blocked = 1;
         }
@@ -2641,11 +2681,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           direction = parsedir(direction, x, y, cur_robot->walk_dir);
-          if((direction >= 1) && (direction <= 4))
+          if(is_cardinal_dir(direction))
           {
-            shoot_missile(mzx_world, x, y, direction - 1);
+            shoot_missile(mzx_world, x, y, dir_to_int(direction));
             // Figure blocked vars
             update_blocked = 1;
           }
@@ -2657,11 +2697,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           direction = parsedir(direction, x, y, cur_robot->walk_dir);
-          if((direction >= 1) && (direction <= 4))
+          if(is_cardinal_dir(direction))
           {
-            shoot_seeker(mzx_world, x, y, direction - 1);
+            shoot_seeker(mzx_world, x, y, dir_to_int(direction));
             // Figure blocked vars
             update_blocked = 1;
           }
@@ -2673,11 +2713,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           direction = parsedir(direction, x, y, cur_robot->walk_dir);
-          if((direction >= 1) && (direction <= 4))
+          if(is_cardinal_dir(direction))
           {
-            shoot_fire(mzx_world, x, y, direction - 1);
+            shoot_fire(mzx_world, x, y, dir_to_int(direction));
             // Figure blocked vars
             update_blocked = 1;
           }
@@ -2689,15 +2729,15 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           direction = parsedir(direction, x, y, cur_robot->walk_dir);
 
-          if((direction >= 1) && (direction <= 4))
+          if(is_cardinal_dir(direction))
           {
             char *p2 = next_param_pos(cmd_ptr + 1);
             int duration = parse_param(mzx_world, p2, id);
-            shoot_lazer(mzx_world, x, y, direction - 1, duration,
-             level_color[x + (y * board_width)]);
+            shoot_lazer(mzx_world, x, y, dir_to_int(direction),
+             duration, level_color[x + (y * board_width)]);
             // Figure blocked vars
             update_blocked = 1;
           }
@@ -2707,11 +2747,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 79: // put at xy
       {
-        // Defer initialization of color until later because it might be
-        // an MZM name string instead.
+        // Defer initialization of color until later because it
+        // might be an MZM name string instead.
         int put_color;
         char *p2 = next_param_pos(cmd_ptr + 1);
-        int put_id = parse_param(mzx_world, p2, id);
+        mzx_thing put_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         int put_param = parse_param(mzx_world, p3, id);
         char *p4 = next_param_pos(p3);
@@ -2720,10 +2760,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int put_y = parse_param(mzx_world, p5, id);
 
         // MZM image file
-        if((put_id == 100) && *(cmd_ptr + 1) && (*(cmd_ptr + 2) == '@'))
+        if((put_id == IMAGE_FILE) &&
+         *(cmd_ptr + 1) && (*(cmd_ptr + 2) == '@'))
         {
           int dest_width, dest_height;
           char mzm_name_buffer[ROBOT_MAX_TR];
+          char translated_name[ROBOT_MAX_TR];
           // "Type" must be 0, 1, or 2; board, overlay, or vlayer
           put_param %= 3;
 
@@ -2743,14 +2785,19 @@ void run_robot(World *mzx_world, int id, int x, int y)
            dest_width, dest_height);
 
           tr_msg(mzx_world, cmd_ptr + 3, id, mzm_name_buffer);
-          load_mzm(mzx_world, mzm_name_buffer, put_x, put_y, put_param, 1);
+
+          if(!fsafetranslate(mzm_name_buffer, translated_name))
+          {
+            load_mzm(mzx_world, translated_name, put_x, put_y,
+             put_param, 1);
+          }
 
           if(id)
           {
             int offset = x + (y * board_width);
-            int d_id = level_id[offset];
+            mzx_thing d_id = (mzx_thing)level_id[offset];
 
-            if((d_id != 123) && (d_id != 124))
+            if(!is_robot(d_id))
               return;
 
             id = level_param[offset];
@@ -2766,7 +2813,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         else
 
         // Sprite
-        if(put_id == 98)
+        if(put_id == SPRITE)
         {
           put_color = parse_param(mzx_world, cmd_ptr + 1, id);
           if(put_param == 256)
@@ -2783,11 +2830,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
         else
         {
           // Shouldn't be able to place robots, scrolls etc this way!
-          if(put_id < 122)
+          if(put_id < SENSOR)
           {
             put_color = parse_param(mzx_world, cmd_ptr + 1, id);
             prefix_mid_xy(mzx_world, &put_x, &put_y, x, y);
-            place_at_xy(mzx_world, put_id, put_color, put_param, put_x, put_y);
+            place_at_xy(mzx_world, put_id, put_color, put_param,
+             put_x, put_y);
             // Still alive?
             if((put_x == x) && (put_y == y))
               return;
@@ -2822,7 +2870,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         tr_msg(mzx_world, cmd_ptr + 2, id, robot_name_buffer);
 
         // Check the global robot
-        if(!strcasecmp(mzx_world->global_robot.robot_name, robot_name_buffer))
+        if(!strcasecmp(mzx_world->global_robot.robot_name,
+         robot_name_buffer))
         {
           replace_robot(src_board, &(mzx_world->global_robot), id);
         }
@@ -2848,13 +2897,14 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int copy_x = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
         int copy_y = parse_param(mzx_world, p2, id);
-        int offset, did;
+        int offset;
+        int d_id;
 
         prefix_mid_xy(mzx_world, &copy_x, &copy_y, x, y);
         offset = copy_x + (copy_y * board_width);
-        did = level_id[offset];
+        d_id = (mzx_thing)level_id[offset];
 
-        if((did == 123) || (did == 124))
+        if(is_robot(d_id))
         {
           replace_robot(src_board,
            src_board->robot_list[level_param[offset]], id);
@@ -2865,21 +2915,22 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 84: // copyrobot dir
       {
-        int copy_dir = parse_param(mzx_world, cmd_ptr + 1, id);
-        int offset, did;
+        mzx_dir copy_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
+        int offset;
+        mzx_thing d_id;
         int copy_x = x;
         int copy_y = y;
 
         copy_dir = parsedir(copy_dir, x, y, cur_robot->walk_dir);
 
-        if((copy_dir >= 1) && (copy_dir <= 4))
+        if(is_cardinal_dir(copy_dir))
         {
           if(!move_dir(src_board, &copy_x, &copy_y, copy_dir - 1))
           {
             offset = copy_x + (copy_y * board_width);
-            did = level_id[offset];
+            d_id = (mzx_thing)level_id[offset];
 
-            if((did == 123) || (did == 124))
+            if(is_robot(d_id))
             {
               replace_robot(src_board,
                src_board->robot_list[level_param[offset]], id);
@@ -2894,19 +2945,21 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int duplicate_dir = parse_param(mzx_world, cmd_ptr + 1, id);
+          mzx_dir duplicate_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
           int dest_id;
-          int duplicate_id, duplicate_color, offset;
+          mzx_thing duplicate_id;
+          int duplicate_color, offset;
           int duplicate_x = x;
           int duplicate_y = y;
 
-          duplicate_dir = parsedir(duplicate_dir, x, y, cur_robot->walk_dir);
+          duplicate_dir = parsedir(duplicate_dir, x, y,
+           cur_robot->walk_dir);
 
-          if((duplicate_dir >= 1) && (duplicate_dir <= 4))
+          if(is_cardinal_dir(duplicate_dir))
           {
             offset = x + (y * board_width);
             duplicate_color = level_color[offset];
-            duplicate_id = level_id[offset];
+            duplicate_id = (mzx_thing)level_id[offset];
 
             if(!move_dir(src_board, &duplicate_x, &duplicate_y,
              duplicate_dir - 1))
@@ -2929,7 +2982,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         char *p2 = next_param_pos(cmd_ptr + 1);
         int duplicate_y = parse_param(mzx_world, p2, id);
         int dest_id;
-        int duplicate_id, duplicate_color, offset;
+        mzx_thing duplicate_id;
+        int duplicate_color, offset;
 
         prefix_mid_xy(mzx_world, &duplicate_x, &duplicate_y, x, y);
 
@@ -2939,20 +2993,21 @@ void run_robot(World *mzx_world, int id, int x, int y)
           {
             offset = x + (y * board_width);
             duplicate_color = level_color[offset];
-            duplicate_id = level_id[offset];
+            duplicate_id = (mzx_thing)level_id[offset];
           }
           else
           {
             duplicate_color = 7;
-            duplicate_id = 124;
+            duplicate_id = ROBOT;
           }
 
-          dest_id = duplicate_robot(src_board, cur_robot, duplicate_x, duplicate_y);
+          dest_id = duplicate_robot(src_board, cur_robot,
+           duplicate_x, duplicate_y);
 
           if(dest_id != -1)
           {
-            place_at_xy(mzx_world, duplicate_id, duplicate_color, dest_id,
-             duplicate_x, duplicate_y);
+            place_at_xy(mzx_world, duplicate_id,
+             duplicate_color, dest_id, duplicate_x, duplicate_y);
           }
         }
         else
@@ -3108,8 +3163,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int send_x = mzx_world->player_x;
         int send_y = mzx_world->player_y;
-        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
-        direction = parsedir(direction, send_x, send_y, cur_robot->walk_dir);
+        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+        direction = parsedir(direction, send_x, send_y,
+         cur_robot->walk_dir);
 
         if(!move_dir(src_board, &send_x, &send_y, direction - 1))
         {
@@ -3126,13 +3182,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int put_color = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
-        int put_id = parse_param(mzx_world, p2, id);
+        mzx_thing put_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         int put_param = parse_param(mzx_world, p3, id);
         char *p4 = next_param_pos(p3);
-        int direction = parse_param(mzx_world, p4, id);
+        mzx_dir direction = parse_param_dir(mzx_world, p4);
 
-        if(put_id < 122)
+        if(put_id < SENSOR)
         {
           place_dir_xy(mzx_world, put_id, put_color, put_param,
            mzx_world->player_x, mzx_world->player_y, direction,
@@ -3148,7 +3204,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int current_char, direction;
+          int current_char;
+          int direction;
           char dir_str_buffer[ROBOT_MAX_TR];
 
           tr_msg(mzx_world, cmd_ptr + 2, id, dir_str_buffer);
@@ -3186,9 +3243,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
           if(direction >= 0)
           {
             if((move(mzx_world, x, y, direction,
-             1 | 2 | 8 | 16 | 4 * cur_robot->can_lavawalk)) &&
+             CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK | CAN_WATERWALK |
+             CAN_LAVAWALK * cur_robot->can_lavawalk)) &&
              (cmd == 232))
+            {
               cur_robot->pos_within_line--; // persistent...
+            }
 
             move_dir(src_board, &x, &y, direction);
           }
@@ -3232,8 +3292,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
             goto end_prog;
 
           next_cmd = program[cur_prog_line + 1];
-        } while((next_cmd == 47) || ((next_cmd >= 103) && (next_cmd <= 106))
-         || (next_cmd == 116) || (next_cmd == 117));
+        } while((next_cmd == 47) || ((next_cmd >= 103) &&
+         (next_cmd <= 106)) || (next_cmd == 116) || (next_cmd == 117));
 
         cur_robot->cur_prog_line = cur_prog_line;
 
@@ -3246,7 +3306,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         goto breaker;
       }
 
-      case 107: // comment-do nothing!
+      case 107: // comment-do nothing! Maybe.
       {
         // (unless first char is a @)
         if(cmd_ptr[2] == '@')
@@ -3289,10 +3349,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
           // And switch back
           mzx_world->current_board =
            mzx_world->board_list[current_board_id];
-          target_board = board_id;
-          target_x = teleport_x;
-          target_y = teleport_y;
-          target_where = -1;
+          mzx_world->target_board = board_id;
+          mzx_world->target_x = teleport_x;
+          mzx_world->target_y = teleport_y;
+          mzx_world->target_where = TARGET_TELEPORT;
           done = 1;
         }
 
@@ -3301,10 +3361,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 110: // scrollview dir num
       {
-        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
 
-        if((direction >= 1) && (direction <= 4))
+        if(is_cardinal_dir(direction))
         {
           char *p2 = next_param_pos(cmd_ptr + 1);
           int num = parse_param(mzx_world, p2, id);
@@ -3322,6 +3382,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
               break;
             case 4:
               src_board->scroll_x -= num;
+              break;
+
+            default:
               break;
           }
         }
@@ -3449,11 +3512,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int move_color = parse_param(mzx_world, cmd_ptr + 1, id); // Color
         char *p2 = next_param_pos(cmd_ptr + 1);
-        int move_id = parse_param(mzx_world, p2, id);
+        mzx_thing move_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         int move_param = parse_param(mzx_world, p3, id);
         char *p4 = next_param_pos(p3);
-        int move_dir = parse_param(mzx_world, p4, id);
+        mzx_dir move_dir = parse_param_dir(mzx_world, p4);
+        int int_dir;
         int lx, ly;
         int fg, bg;
         int offset;
@@ -3461,12 +3525,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
         move_dir = parsedir(move_dir, x, y, cur_robot->walk_dir);
         split_colors(move_color, &fg, &bg);
 
-        if((move_dir >= 1) && (move_dir <= 4))
+        if(is_cardinal_dir(move_dir))
         {
-          move_dir--;
+          int_dir = dir_to_int(move_dir);
           // if dir is 1 or 4, search top to bottom.
           // if dir is 2 or 3, search bottom to top.
-          if((move_dir == 0) || (move_dir == 3))
+          if((int_dir == 0) || (int_dir == 3))
           {
             for(ly = 0, offset = 0; ly < board_height; ly++)
             {
@@ -3474,11 +3538,14 @@ void run_robot(World *mzx_world, int id, int x, int y)
               {
                 int dcolor = level_color[offset];
                 if((move_id == level_id[offset]) &&
-                 ((move_param == 256) || (level_param[offset] == move_param)) &&
+                 ((move_param == 256) ||
+                 (level_param[offset] == move_param)) &&
                  ((fg == 16) || (fg == (dcolor & 0x0F))) &&
                  ((bg == 16) || (bg == (dcolor >> 4))))
                 {
-                  move(mzx_world, lx, ly, move_dir, 1 | 2 | 4 | 8 | 16);
+                  move(mzx_world, lx, ly, int_dir,
+                   CAN_PUSH | CAN_TRANSPORT | CAN_LAVAWALK |
+                   CAN_FIREWALK | CAN_WATERWALK);
                 }
               }
             }
@@ -3492,11 +3559,14 @@ void run_robot(World *mzx_world, int id, int x, int y)
               {
                 int dcolor = level_color[offset];
                 if((move_id == level_id[offset]) &&
-                 ((move_param == 256) || (level_param[offset] == move_param)) &&
+                 ((move_param == 256) ||
+                 (level_param[offset] == move_param)) &&
                  ((fg == 16) || (fg == (dcolor & 0x0F))) &&
                  ((bg == 16) || (bg == (dcolor >> 4))))
                 {
-                  move(mzx_world, lx, ly, move_dir, 1 | 2 | 4 | 8 | 16);
+                  move(mzx_world, lx, ly, int_dir,
+                   CAN_PUSH | CAN_TRANSPORT | CAN_LAVAWALK |
+                   CAN_FIREWALK | CAN_WATERWALK);
                 }
               }
             }
@@ -3536,9 +3606,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 121: // board dir
       {
-        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
-        if((direction >= 1) && (direction <= 4))
+        if(is_cardinal_dir(direction))
         {
           char *p2 = next_param_pos(cmd_ptr + 1);
           char board_name_buffer[ROBOT_MAX_TR];
@@ -3555,9 +3625,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 122: // board dir is none
       {
-        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
-        if((direction >= 1) && (direction <= 4))
+        if(is_cardinal_dir(direction))
         {
           src_board->board_dir[direction - 1] = NO_BOARD;
         }
@@ -3585,7 +3655,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          level_id[x + (y * board_width)] = 123;
+          level_id[x + (y * board_width)] = ROBOT_PUSHABLE;
         }
         break;
       }
@@ -3594,7 +3664,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          level_id[x + (y * board_width)] = 124;
+          level_id[x + (y * board_width)] = ROBOT;
         }
         break;
       }
@@ -3607,25 +3677,29 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 127: // firewalker
       {
-        mzx_world->firewalker_dur = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_world->firewalker_dur =
+         parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
       case 128: // freezetime
       {
-        mzx_world->freeze_time_dur = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_world->freeze_time_dur =
+         parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
       case 129: // slow time
       {
-        mzx_world->slow_time_dur = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_world->slow_time_dur =
+         parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
       case 130: // wind
       {
-        mzx_world->wind_dur = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_world->wind_dur =
+         parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
@@ -3645,7 +3719,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             if((d_flag & A_UNDER) && !(d_flag & A_ENTRANCE) &&
              (rand() % placement_rate) == 0)
             {
-              id_place(mzx_world, x, y, 8, 7, 0);
+              id_place(mzx_world, x, y, BOULDER, 7, 0);
             }
           }
         }
@@ -3656,19 +3730,20 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int src_dir = parse_param(mzx_world, cmd_ptr + 1, id);
+          mzx_dir src_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
           char *p2 = next_param_pos(cmd_ptr + 1);
-          int dest_dir = parse_param(mzx_world, p2, id);
+          mzx_dir dest_dir = parse_param_dir(mzx_world, p2);
+
           src_dir = parsedir(src_dir, x, y, cur_robot->walk_dir);
           dest_dir = parsedir(dest_dir, x, y, cur_robot->walk_dir);
 
-          if((src_dir >= 1) && (src_dir <= 4) && (dest_dir >= 1) &&
-           (dest_dir <= 4))
+          if(is_cardinal_dir(src_dir) && is_cardinal_dir(dest_dir))
           {
             int src_x = x;
             int src_y = y;
             int dest_x = x;
             int dest_y = y;
+
             if(!move_dir(src_board, &src_x, &src_y, src_dir - 1) &&
              !move_dir(src_board, &dest_x, &dest_y, dest_dir - 1))
             {
@@ -3699,17 +3774,18 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
-        int check_id = parse_param(mzx_world, p2, id);
+        mzx_thing check_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         int check_param = parse_param(mzx_world, p3, id);
         char *p4 = next_param_pos(p3);
         int put_color = parse_param(mzx_world, p4, id);
         char *p5 = next_param_pos(p4);
-        int put_id = parse_param(mzx_world, p5, id);
+        mzx_thing put_id = parse_param_thing(mzx_world, p5);
         char *p6 = next_param_pos(p5);
         int put_param = parse_param(mzx_world, p6, id);
         int check_fg, check_bg, put_fg, put_bg;
-        int offset, did, dparam, dcolor;
+        mzx_thing d_id;
+        int offset, d_param, d_color;
 
         split_colors(check_color, &check_fg, &check_bg);
         split_colors(put_color, &put_fg, &put_bg);
@@ -3719,78 +3795,84 @@ void run_robot(World *mzx_world, int id, int x, int y)
         // robots. The same goes for scrolls/signs and sensors.
         // Players cannot be changed at all
 
-        if(((put_id != 122) || (check_id == 122)) &&
-         (((put_id != 123) || ((check_id == 124) || (check_id == 123))) &&
-          ((put_id != 124) || ((check_id == 123) || (check_id == 124))) &&
-          ((put_id != 125) || (check_id == 126))) &&
-          ((put_id != 126) || (check_id == 125)) &&
-          ((put_id != 127) && (check_id != 127)))
+        if(((put_id != SENSOR) || (check_id == SENSOR)) &&
+         (((put_id != ROBOT_PUSHABLE) || ((check_id == ROBOT)
+         || (check_id == ROBOT_PUSHABLE))) &&
+          ((put_id != ROBOT) || ((check_id == ROBOT_PUSHABLE) ||
+          (check_id == ROBOT))) &&
+          ((put_id != SIGN) || (check_id == SCROLL))) &&
+          ((put_id != SCROLL) || (check_id == SIGN)) &&
+          ((put_id != PLAYER) && (check_id != PLAYER)))
         {
           // Clear out params for param-less objects,
           // lava, fire, ice, energizer, rotates, or life
-          if((put_id == 25) || (put_id == 26) || (put_id == 33) ||
-           (put_id == 45) || (put_id == 46) || (put_id == 63) ||
-           (put_id == 68))
+          if((put_id == ICE) || (put_id == LAVA) ||
+           (put_id == ENERGIZER) || (put_id == CW_ROTATE) ||
+           (put_id == CCW_ROTATE) || (put_id == FIRE) ||
+           (put_id == LIFE))
+          {
             put_param = 0;
+          }
 
           // Ignore upper stages for explosions
-          if(put_id == 38)
+          if(put_id == EXPLOSION)
             put_param &= 0xF3;
 
           // Open door becomes door
-          if(check_id == 42)
-            check_id = 41;
+          if(check_id == OPEN_DOOR)
+            check_id = DOOR;
 
           // Whirlpool becomes base whirlpool
-          if((check_id > 67) && (check_id <= 70))
-            check_id = 67;
+          if(is_whirlpool(check_id))
+            check_id = WHIRLPOOL_1;
 
           // Cannot change param on these
-          if(put_id > 122)
+          if(put_id > SENSOR)
             put_param = 256;
 
           for(offset = 0; offset < (board_width * board_height); offset++)
           {
-            did = level_id[offset];
-            dparam = level_param[offset];
-            dcolor = level_color[offset];
+            d_id = (mzx_thing)level_id[offset];
+            d_param = level_param[offset];
+            d_color = level_color[offset];
 
             // open door becomes door
-            if(did == 42)
-              did = 41;
-            // Whirpool becomes base one
-            if((did > 67) && (did <= 70))
-              did = 67;
+            if(d_id == OPEN_DOOR)
+              d_id = DOOR;
 
-            if((did == check_id) && (((dcolor & 0x0F) == check_fg) ||
-             (check_fg == 16)) && (((dcolor >> 4) == check_bg) ||
-             (check_bg == 16)) && ((dparam == check_param) ||
+            // Whirpool becomes base one
+            if(is_whirlpool(d_id))
+              d_id = WHIRLPOOL_1;
+
+            if((d_id == check_id) && (((d_color & 0x0F) == check_fg) ||
+             (check_fg == 16)) && (((d_color >> 4) == check_bg) ||
+             (check_bg == 16)) && ((d_param == check_param) ||
              (check_param == 256)))
             {
               // Change the color and the ID
-              level_color[offset] = fix_color(put_color, dcolor);
+              level_color[offset] = fix_color(put_color, d_color);
               level_id[offset] = put_id;
 
-              if(((did == 123) || (did == 124)) && (put_id != 123) &&
-               (put_id != 124))
+              if(((d_id == ROBOT_PUSHABLE) || (d_id == ROBOT)) &&
+               (put_id != ROBOT) && (put_id != ROBOT_PUSHABLE))
               {
                 // delete robot if not changing to a robot
-                clear_robot_id(src_board, dparam);
+                clear_robot_id(src_board, d_param);
               }
               else
 
-              if(((did == 125) || (did == 126)) && (put_id != 125) &&
-               (put_id != 126))
+              if(((d_id == SIGN) || (d_id == SCROLL)) &&
+               (put_id != SIGN) && (put_id != SCROLL))
               {
                 // delete scroll if not changing to a scroll/sign
-                clear_scroll_id(src_board, dparam);
+                clear_scroll_id(src_board, d_param);
               }
               else
 
-              if((did == 122) && (put_id != 122))
+              if((d_id == SENSOR) && (put_id != SENSOR))
               {
                 // delete sensor if not changing to a sensor
-                clear_sensor_id(src_board, dparam);
+                clear_sensor_id(src_board, d_param);
               }
 
               if(put_id == 0)
@@ -3798,7 +3880,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
                 offs_remove_id(mzx_world, offset);
                 // If this LEAVES a space, use given color
                 if(level_id[offset] == 0)
-                  level_color[offset] = fix_color(put_color, dcolor);
+                  level_color[offset] = fix_color(put_color, d_color);
               }
               else
               {
@@ -3811,10 +3893,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           if(id)
           {
-            did = level_id[x + (y * board_width)];
+            d_id = (mzx_thing)level_id[x + (y * board_width)];
 
-            if((did != 123) && (did != 124))
+            if(!is_robot(d_id))
               return;
+
             update_blocked = 1;
           }
         }
@@ -3962,11 +4045,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 147: // thick arrow dir char
       {
-        int dir = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_dir dir = parse_param_dir(mzx_world, cmd_ptr + 1);
         char *p2 = next_param_pos(cmd_ptr + 1);
         dir = parsedir(dir, x, y, cur_robot->walk_dir);
 
-        if((dir >= 1) && (dir <= 4))
+        if(is_cardinal_dir(dir))
         {
           id_chars[249 + dir] = parse_param(mzx_world, p2, id);
         }
@@ -3975,11 +4058,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 148: // thin arrow dir char
       {
-        int dir = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_dir dir = parse_param_dir(mzx_world, cmd_ptr + 1);
         char *p2 = next_param_pos(cmd_ptr + 1);
         dir = parsedir(dir, x, y, cur_robot->walk_dir);
 
-        if((dir >= 1) && (dir <= 4))
+        if(is_cardinal_dir(dir))
         {
           id_chars[253 + dir] =
            parse_param(mzx_world, p2, id);
@@ -4048,7 +4131,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         break;
       }
 
-      // FIXME - There may be no way to get this to work. It may have to be removed.
+      // FIXME - There may be no way to get this to work.
+      // It may have to be removed.
       case 157: // modsam freq num
       {
         if(get_music_on_state())
@@ -4063,31 +4147,36 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 159: // scrollbase
       {
-        mzx_world->scroll_base_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_world->scroll_base_color =
+         parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
       case 160: // scrollcorner
       {
-        mzx_world->scroll_corner_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_world->scroll_corner_color =
+         parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
       case 161: // scrolltitle
       {
-        mzx_world->scroll_title_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_world->scroll_title_color =
+         parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
       case 162: // scrollpointer
       {
-        mzx_world->scroll_pointer_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_world->scroll_pointer_color =
+         parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
       case 163: // scrollarrow
       {
-        mzx_world->scroll_arrow_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_world->scroll_arrow_color =
+         parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
@@ -4190,7 +4279,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           offset = x + (y * board_width);
           duplicate_color = level_color[offset];
-          duplicate_id = level_id[offset];
+          duplicate_id = (mzx_thing)level_id[offset];
         }
         else
         {
@@ -4199,7 +4288,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         }
 
         offset = duplicate_x + (duplicate_y * board_width);
-        dest_id = duplicate_robot(src_board, cur_robot, duplicate_x, duplicate_y);
+        dest_id =
+         duplicate_robot(src_board, cur_robot, duplicate_x, duplicate_y);
 
         if(dest_id != -1)
         {
@@ -4236,7 +4326,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           offset = x + (y * board_width);
           duplicate_color = level_color[offset];
-          duplicate_id = level_id[offset];
+          duplicate_id = (mzx_thing)level_id[offset];
         }
         else
         {
@@ -4245,7 +4335,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         }
 
         offset = duplicate_x + (duplicate_y * board_width);
-        dest_id = duplicate_robot(src_board, cur_robot, duplicate_x, duplicate_y);
+        dest_id =
+         duplicate_robot(src_board, cur_robot, duplicate_x, duplicate_y);
 
         if(dest_id != -1)
         {
@@ -4276,7 +4367,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 183: // En bullete
       case 184: // En bulletw
       {
-        // Id' make these all separate, but this is really too convenient..
+        // Id' make these all separate, but this is really too convenient
         bullet_char[cmd - 173] = parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
@@ -4426,6 +4517,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
           {
             int copy_type = parse_param(mzx_world, p6, id);
             char name_buffer[ROBOT_MAX_TR];
+            char translated_name[ROBOT_MAX_TR];
+
             tr_msg(mzx_world, p5 + 2, id, name_buffer);
             prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
              src_width, src_height);
@@ -4433,8 +4526,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
             if(copy_type && !src_type)
               src_type = 3;
 
-            save_mzm(mzx_world , name_buffer, src_x, src_y, width, height,
-             src_type, 1);
+            if(!fsafetest(name_buffer, translated_name))
+            {
+              save_mzm(mzx_world, translated_name, src_x, src_y,
+               width, height, src_type, 1);
+            }
             break;
           }
           else
@@ -4451,17 +4547,18 @@ void run_robot(World *mzx_world, int id, int x, int y)
               case 0:
               {
                 // Board to string
-                load_string_board(mzx_world, str_buffer, width, height, t_char,
-                 level_param + src_x + (src_y * board_width), board_width);
+                load_string_board(mzx_world, str_buffer, width, height,
+                 t_char, level_param + src_x + (src_y * board_width),
+                 board_width);
                 break;
               }
               case 2:
               {
                 // Vlayer to string
                 int vlayer_width = mzx_world->vlayer_width;
-                load_string_board(mzx_world, str_buffer, width, height, t_char,
-                 mzx_world->vlayer_chars + src_x + (src_y * vlayer_width),
-                 vlayer_width);
+                load_string_board(mzx_world, str_buffer, width, height,
+                 t_char, mzx_world->vlayer_chars + src_x +
+                 (src_y * vlayer_width), vlayer_width);
                 break;
               }
             }
@@ -4550,7 +4647,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
             int vlayer_offset = src_x + (src_y * vlayer_width);
             copy_layer_to_board(src_board, dest_x, dest_y, width, height,
              mzx_world->vlayer_chars + vlayer_offset,
-             mzx_world->vlayer_colors + vlayer_offset, vlayer_width, 5);
+             mzx_world->vlayer_colors + vlayer_offset, vlayer_width,
+             CUSTOM_BLOCK);
             update_blocked = 1;
             break;
           }
@@ -4599,7 +4697,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         if(id)
         {
           int offset = x + (y * board_width);
-          int d_id = level_id[offset];
+          int d_id = (mzx_thing)level_id[offset];
           int d_param = level_param[offset];
 
           if(((d_id != 123) && (d_id != 124)) || (d_param != id))
@@ -4677,12 +4775,16 @@ void run_robot(World *mzx_world, int id, int x, int y)
           if(*(p5 + 1) == '@')
           {
             char name_buffer[ROBOT_MAX_TR];
+            char translated_name[ROBOT_MAX_TR];
             tr_msg(mzx_world, p5 + 2, id, name_buffer);
             prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
              src_width, src_height);
 
-            save_mzm(mzx_world , name_buffer, src_x, src_y, width, height,
-             src_type, 1);
+            if(!fsafetest(name_buffer, translated_name))
+            {
+              save_mzm(mzx_world, translated_name, src_x, src_y,
+               width, height, src_type, 1);
+            }
             break;
           }
           else
@@ -4703,18 +4805,18 @@ void run_robot(World *mzx_world, int id, int x, int y)
                 if(!src_board->overlay_mode)
                   setup_overlay(src_board, 3);
 
-                load_string_board(mzx_world, str_buffer, width, height, t_char,
-                 src_board->overlay + src_x + (src_y * board_width),
-                 board_width);
+                load_string_board(mzx_world, str_buffer, width, height,
+                 t_char, src_board->overlay + src_x +
+                 (src_y * board_width), board_width);
                 break;
               }
               case 2:
               {
                 // Vlayer to string
                 int vlayer_width = mzx_world->vlayer_width;
-                load_string_board(mzx_world, str_buffer, width, height, t_char,
-                 mzx_world->vlayer_chars + src_x + (src_y * vlayer_width),
-                 vlayer_width);
+                load_string_board(mzx_world, str_buffer, width, height,
+                 t_char, mzx_world->vlayer_chars + src_x +
+                 (src_y * vlayer_width), vlayer_width);
                 break;
               }
             }
@@ -4783,7 +4885,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
             copy_layer_to_board(src_board, dest_x, dest_y, width, height,
              src_board->overlay + overlay_offset,
-             src_board->overlay_color + overlay_offset, board_width, 5);
+             src_board->overlay_color + overlay_offset, board_width,
+             CUSTOM_BLOCK);
             update_blocked = 1;
 
             break;
@@ -4831,8 +4934,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
             copy_layer_to_layer(src_x, src_y, dest_x, dest_y, width,
              height, src_board->overlay, src_board->overlay_color,
-             mzx_world->vlayer_chars, mzx_world->vlayer_colors, board_width,
-             vlayer_width);
+             mzx_world->vlayer_chars, mzx_world->vlayer_colors,
+             board_width, vlayer_width);
             break;
           }
 
@@ -4890,24 +4993,26 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          int push_dir = parse_param(mzx_world, cmd_ptr + 1, id);
-          push_dir = parsedir(push_dir, x, y, cur_robot->walk_dir) - 1;
+          mzx_dir push_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
+          push_dir = parsedir(push_dir, x, y, cur_robot->walk_dir);
 
-          if((push_dir >= 0) && (push_dir <= 3))
+          if(is_cardinal_dir(push_dir))
           {
             int push_x = x;
             int push_y = y;
-            if(!move_dir(src_board, &push_x, &push_y, push_dir))
+            int int_dir = dir_to_int(push_dir);
+
+            if(!move_dir(src_board, &push_x, &push_y, int_dir))
             {
               int offset = push_x + (push_y * board_width);
-              int d_id = level_id[offset];
+              int d_id = (mzx_thing)level_id[offset];
               int d_flag = flags[d_id];
 
-              if((d_id == 123) || (d_id == 127) ||
+              if((d_id == ROBOT_PUSHABLE) || (d_id == PLAYER) ||
                ((push_dir < 2) && (d_flag & A_PUSHNS)) ||
                ((push_dir >= 2) && (d_flag & A_PUSHEW)))
               {
-                push(mzx_world, x, y, push_dir, 0);
+                push(mzx_world, x, y, int_dir, 0);
                 update_blocked = 1;
               }
             }
@@ -4920,10 +5025,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int char_num = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
-        int scroll_dir = parse_param(mzx_world, p2, id);
+        mzx_dir scroll_dir = parse_param_dir(mzx_world, p2);
         scroll_dir = parsedir(scroll_dir, x, y, cur_robot->walk_dir);
 
-        if((scroll_dir >= 1) && (scroll_dir <= 4))
+        if(is_cardinal_dir(scroll_dir))
         {
           char char_buffer[14];
           int i;
@@ -4984,6 +5089,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
                   char_buffer[i] |= 1;
               }
             }
+
+            default:
+              break;
           }
 
           ec_change_char(char_num, char_buffer);
@@ -4995,14 +5103,14 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int char_num = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
-        int flip_dir = parse_param(mzx_world, p2, id);
+        mzx_dir flip_dir = parse_param_dir(mzx_world, p2);
         char char_buffer[14];
         char current_row;
         int i;
 
         flip_dir = parsedir(flip_dir, x, y, cur_robot->walk_dir);
 
-        if((flip_dir >= 1) && (flip_dir <= 4))
+        if(is_cardinal_dir(flip_dir))
         {
           ec_read_char(char_num, char_buffer);
 
@@ -5017,8 +5125,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
                 char_buffer[i] = char_buffer[13 - i];
                 char_buffer[13 - i] = current_row;
               }
+              break;
             }
-            break;
 
             case 3:
             case 4:
@@ -5036,6 +5144,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
               }
               break;
             }
+
+            default:
+              break;
           }
 
           ec_change_char(char_num, char_buffer);
@@ -5208,14 +5319,14 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 220: // Player char dir 'c'
       {
-        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         char *p2 = next_param_pos(cmd_ptr + 1);
         int new_char = parse_param(mzx_world, p2, id);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
 
-        if((direction >= 1) && (direction <= 4))
+        if(is_cardinal_dir(direction))
         {
-          player_char[direction - 1] = new_char;
+          player_char[dir_to_int(direction)] = new_char;
         }
         break;
       }
@@ -5430,7 +5541,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
           if(strlen(counter_name) >= COUNTER_NAME_SIZE)
             counter_name[COUNTER_NAME_SIZE - 1] = 0;
 
-          strcpy(mzx_world->status_counters_shown[counter_slot], counter_name);
+          strcpy(mzx_world->status_counters_shown[counter_slot],
+           counter_name);
         }
         break;
       }

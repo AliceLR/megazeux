@@ -194,6 +194,7 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
         // if there is one.
         if(where[pos - 1] == 1)
           break; // Nope.
+
         pos--;
         // Go to start of this line, COUNTING CHARACTERS.
         t1 = 0;
@@ -220,6 +221,7 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
         // ...and reallocate to one space less!
         reallocate_scroll(scroll, t3 - 1);
         where = scroll->mesg;
+
         // pos is one before this start. Fix to the start of this new
         // line. Set currx to the length of the old line this was.
         pos++;
@@ -315,7 +317,7 @@ void scroll_frame(World *mzx_world, Scroll *scroll, int pos)
 
   // Display center line
   fill_line(64, 8, 12, 32, scroll_base_color);
-  write_line(where + pos, 8, 12, scroll_base_color, 1);
+  write_line_mask(where + pos, 8, 12, scroll_base_color, 1);
   // Display lines above center line
   for(t1 = 11; t1 >= 6; t1--)
   {
@@ -332,7 +334,7 @@ void scroll_frame(World *mzx_world, Scroll *scroll, int pos)
         } while((where[pos] != '\n') && (where[pos] != 1));
         // At start of prev. line -1. Display.
         pos++;
-        write_line(where + pos, 8, t1, scroll_base_color, 1);
+        write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
       }
     }
     // Next line...
@@ -349,7 +351,7 @@ void scroll_frame(World *mzx_world, Scroll *scroll, int pos)
     pos++;
     if(where[pos])
     {
-      write_line(where + pos, 8, t1, scroll_base_color, 1);
+      write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
     }
     // Next line...
   }

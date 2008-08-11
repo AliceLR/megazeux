@@ -23,14 +23,13 @@
 #include "mzm.h"
 #include "idput.h"
 #include "world.h"
-#include "fsafeopen.h"
 
 // This is assumed to not go over the edges.
 
 void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
  int width, int height, int mode, int savegame)
 {
-  FILE *output_file = fsafeopen(name, "wb");
+  FILE *output_file = fopen(name, "wb");
 
   if(output_file)
   {
@@ -226,7 +225,7 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
 int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
  int mode, int savegame)
 {
-  FILE *input_file = fsafeopen(name, "rb");
+  FILE *input_file = fopen(name, "rb");
 
   if(input_file)
   {

@@ -4,14 +4,84 @@
 #
 ################################################################################
 
+function usage {
+	echo "usage: $0 [-b win32 | macos | linux-i686 | linux-amd64]"
+	echo
+	echo "	-b	Builds a binary distribution for the specified arch."
+	echo "	-h	Displays this help text."
+	exit 0
+}
+
+#
+# createzip /path/to/SDL.dll
+#
+function createzip {
+	#
+	# Copy SDL here temporarily.
+	#
+	cp -f $1 SDL.dll &&
+
+	#
+	# Create the binary package.
+	#
+	7za.exe a -tzip dist/$TARGET.zip \
+		$BINARY_DEPS $DOCS $TARGET.exe SDL.dll &&
+
+	#
+	# Remove SDL.
+	#
+	rm -f SDL.dll
+}
+
+#
+# createtbz tar-name-ext [extra-binary]
+#
+function createtbz {
+	#
+	# create temporary directory
+	#
+	mkdir -p dist/$TARGET/docs &&
+
+	#
+	# copy binaries into it
+	#
+	cp -f --dereference $BINARY_DEPS $TARGET $2 dist/$TARGET &&
+
+	#
+	# copy docs over
+	#
+	cp -f --dereference $DOCS dist/$TARGET/docs &&
+
+	#
+	# tar it up
+	#
+	tar -C dist -jcvf dist/$TARGET-$1.tar.bz2 $TARGET &&
+
+	#
+	# now delete temporary dir
+	#
+	rm -rf dist/$TARGET
+}
+
+#
+# in case of error; breakout CODE
+#
+function breakout {
+	echo "Error $1 occured during packaging, aborted."
+	exit $1
+}
+
 #
 # The basename for the source and binary packages.
 #
 TARGET=`cat Makefile.in | grep TARGET | cut -d " " -f6`
 
 if [ "$TARGET" == "" ]; then
-	echo Could not determine version!
-	exit 1
+	breakout 1
+fi
+
+if [ "$1" == "-h" ]; then
+	usage
 fi
 
 #
@@ -26,12 +96,7 @@ BINARY_DEPS="smzx.pal mzx_ascii.chr mzx_blank.chr mzx_default.chr \
 #
 # Documents that the binary zip should contain (pathname will be stored too).
 #
-DOCS="docs/COPYING.doc docs/changelog.txt docs/port.txt docs/macro.txt"
-
-#
-# Hack for windows
-#
-SDL="/usr/lib/SDL.dll"
+DOCS="docs/COPYING.DOC docs/changelog.txt docs/port.txt docs/macro.txt"
 
 #
 # MegaZeux's build system dependencies; these are packaged in
@@ -50,20 +115,21 @@ SUBDIRS="arch contrib docs"
 #
 SRC="src/*.cpp src/*.h src/Makefile"
 
-echo Generating sources in $TARGET and binary package with $TARGET.exe..
-
 #
 # Do source package.
 #
 ################################################################################
 
-echo Collating sources..
+echo "Generating source package for $TARGET.."
 
-if [ -e dist/$TARGET ]; then
-	rm -rf dist/$TARGET
+#
+# dist cannot safely exist prior to starting.
+#
+if [ -d dist ]; then
+	echo "Destroying dist/.."
+	rm -rf dist
 fi
 
-mkdir -p dist/$TARGET &&
 mkdir -p dist/$TARGET/src &&
 cp -pv $BINARY_DEPS $BUILD_DEPS dist/$TARGET &&
 cp -pvr $SUBDIRS dist/$TARGET &&
@@ -77,30 +143,30 @@ rm -f dist/$TARGET/contrib/libmodplug/src/{*.a,*.o} &&
 cp dist/$TARGET/arch/Makefile.dist dist/$TARGET/Makefile.platform
 
 if [ "$?" != "0" ]; then
-	echo Some error occured during source build, aborted.
-	exit 2
+	breakout 2
 fi
 
 rm -f dist/$TARGET/src/config.h
 
-echo Creating source tar ${TARGET}src.tar.gz..
+echo "Creating source (${TARGET}src.tar.bz2).."
 
 cd dist
 tar --exclude CVS -jcvf ${TARGET}src.tar.bz2 $TARGET
 cd ..
 
 if [ "$?" != "0" ]; then
-	echo Some error occured during packaging, aborted.
-	exit 3
+	breakout 3
 fi
 
 rm -rf dist/$TARGET
 
 echo Built source distribution successfully!
 
-
+#
 # no binary package is required
+#
 if [ "$1" != "-b" ]; then
+	echo "Skipping binary package build."
 	exit 0
 fi
 
@@ -109,23 +175,50 @@ fi
 #
 ################################################################################
 
+echo "Generating binary package for $2.."
+
 #
-# Remove destination, a 7zip bug means that preexisting files get updated
-# implicitly.
+# Windows, using ZIP compression via 7ZIP compressor
 #
-if [ -e dist/$TARGET.zip ]; then
-	rm -f dist/$TARGET.zip
+if [ "$2" = "win32" ]; then
+	LIBSDL="/usr/lib/SDL.dll"		# Exo's mingw install
+	createzip $LIBSDL
+	exit
 fi
 
 #
-# Create the binary package.
+# MacOS X, using tar.bz2 compression.
 #
-7za.exe a -tzip dist/$TARGET.zip $BINARY_DEPS $DOCS $TARGET.exe
+if [ "$2" = "macos" ]; then
+	LIBSDL="~/dev/lib/libSDL-1.2.0.dylib"	# burst or beige's mac
+	createtbz osx-ppc $LIBSDL
+	exit
+fi
 
 #
-# Hack for SDL inclusion (we don't want to store pathname, and 7zip is too
-# lame to have a flag for it).
+# NOTE: THE LINUX BUILDS SHOULD HAVE STDC++ STATICALLY LINKED!
+# NOTE: THEY MUST ALSO HAVE RELATIVE DIRECTORY LOOKUPS ENABLED!
 #
-cp -f $SDL .
-7za.exe u -tzip dist/$TARGET.zip SDL.dll
-rm -f SDL.dll
+
+#
+# Linux/i686, using tar.bz2 compression (NO SDL)
+#
+if [ "$2" = "linux-i686" ]; then
+	createtbz linux-i686
+	exit
+fi
+
+#
+# Linux/amd64, using tar.bz2 compression (NO SDL)
+#
+if [ "$2" = "linux-amd64" ]; then
+	createtbz linux-amd64
+	exit
+fi
+
+#
+# Unknown binary arch
+#
+echo "Unknown binary architecture.."
+echo
+usage

@@ -1,3 +1,69 @@
+November 26, 2005 - MZX 2.81b
+
++ Fixed inability to make proper .savs of worlds with strings (they'd
+  crash when loaded..)
++ Fixed PC speaker audio bug causing a constant high pitched noise to
+  be played instead of PC speaker audio sometimes.
++ Fixed some issues with long pathnames.
++ Fixed a bug causing Caverns to crash in recent versions (long story,
+  it was most likely due to an error in ver1to2)
++ Now when you set mzx_speed in a game you can no longer change the
+  speed from the F2 menu. Setting mzx_speed to 0 reallows this (and
+  doesn't set the speed)
++ When loading a game its speed is now set to the speed MZX started
+  with (whatever's in config.txt, or the default of 4)
++ Added backup_ext config.txt option to specify the extension of backup
+  files (default is .mzx).
++ Fixed backup_interval for config.txt possibly being broken.
++ Fixed a bug messing up the death board on some old MZX games
+  (like Nick Brick 2)
++ Escaped more things and made displays always in escaped form for
+  certain character sequences. It should be impossible to type
+  non-escaped forms. The following should be used:
+  \0 for 0 (this probably won't work in strings, but in chars should)
+  \t for tab (character 9)
+  \n for newline (character 10)
+  \r for carriage return (character 13)
+  \" for double quote
+  \\ for slash
++ Copy + paste on escaped character won't unescape them anymore.
++ Fixed error message for invalid lines in Robotic
++ Fixed inability to import text files from other directories.
++ Huge overhaul of the source (proper types for things, directions,
+  equalities, conditions, chest items, and potions), if anything is
+  suddenly broken now let me know.
++ Made scrolls/signs only display text (letters, numbers, etc) in the
+  default char set. That should be enough for now.
++ Added mousewheel support for robot editor and robot box display.
++ Fixed inability to load MZMs from other directories in the editor.
++ Wrapped audio stuff in proper mutex, hopefully this fixes some issues
+  (like crashing when changing mod_frequency a lot).
++ Long current directory paths no longer write out too much in the file
+  loader (instead the last bit is shown with a ... prefixing the
+  beginning)
++ Decided to be nice and make board_scan not crash. Don't use it. It's
+  only there to make one legacy game work. If you use it I will
+  personally scold you. And don't tell other people to use it (that
+  means you CJA). Use copy block x y w h "$str" t instead. If you don't
+  know what that means read the help file, it explains everything.
++ Removed ability to copy + paste after changing board dimensions of the
+  source under any circumstances (alt + R, alt + Z, import world, import
+  board)
++ Fixed appearance of ghosts in F10 menu.
++ Prevented char editor from counting moving the cursor as an undo step
+  if nothing was actually drawn.
++ Made pressing escape on initial char selection/board selection/param
+  selection for things cause it to cancel placing anything.
++ Made it impossible to set board width/height to 0 again (oops)
++ Made starting lives and starting health take effect immediately for
+  the first alt + t
++ Added ability to play OGG from alt + l (but not the other mods, don't
+  want to clutter that up)
++ Made it so if no note follows an embedded SAM in a play string it's
+  played at native frequency.
++ Accidentally made loading worlds in the editor not change the current
+  directory, fixed that.
+
 November 20, 2005 - MZX 2.81
 
 + Fixed a bug where MZX world/save names > 12 chars could cause weird

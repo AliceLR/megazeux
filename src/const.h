@@ -2,6 +2,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1999 Charles Goetzman
+ * Copyright (C) 2004 Gilead Kutnick
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -21,6 +22,11 @@
 /* Constants */
 #ifndef __CONST_H
 #define __CONST_H
+
+#ifndef __WIN32__
+#include <limits.h>
+#define MAX_PATH PATH_MAX
+#endif
 
 #define OVERLAY_OFF           0
 #define OVERLAY_ON            1

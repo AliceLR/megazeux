@@ -265,13 +265,13 @@ void config_set_sam_volume(config_info *conf, char *name, char *value,
 void config_save_file(config_info *conf, char *name, char *value,
  char *extended_data)
 {
-  strcpy(conf->default_save_name, value);
+  strncpy(conf->default_save_name, value, 256);
 }
 
 void config_startup_file(config_info *conf, char *name, char *value,
  char *extended_data)
 {
-  strcpy(conf->startup_file, value);
+  strncpy(conf->startup_file, value, 256);
 }
 
 void config_enable_oversampling(config_info *conf, char *name, char *value,
@@ -350,7 +350,13 @@ void backup_interval(config_info *conf, char *name, char *value,
 void backup_name(config_info *conf, char *name, char *value,
  char *extended_data)
 {
-  strcpy(conf->backup_name, value);
+  strncpy(conf->backup_name, value, 256);
+}
+
+void backup_ext(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  strncpy(conf->backup_ext, value, 256);
 }
 
 void joy_axis_set(config_info *conf, char *name, char *value,
@@ -442,8 +448,9 @@ config_entry config_options[] =
   { "audio_buffer", config_set_audio_buffer },
   { "audio_sample_rate", config_set_audio_freq },
   { "backup_count", backup_count },
-  { "backup_name", backup_name },
+  { "backup_ext", backup_ext },
   { "backup_interval", backup_interval },
+  { "backup_name", backup_name },
   { "ccode_colors", config_ccode_colors },
   { "ccode_commands", config_ccode_commands },
   { "ccode_conditions", config_ccode_conditions },
@@ -549,6 +556,7 @@ config_info default_options =
   3,
   60,
   "backup",
+  ".mzx",
 
   // Macro options
   0,

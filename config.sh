@@ -45,18 +45,25 @@ echo "PREFIX=$PREFIX"   >> Makefile.platform
 
 echo "#define CONFDIR  \"$SYSCONFDIR/\"" > src/config.h
 
-if [ "$ARCH" = "win32" -o "$ARCH" = "macos" ]; then
+#
+# Windows, MacOS X and Linux-Static all want to read files
+# relative to their install directory. Every other platform
+# wants to read from a /usr tree, and rename config.txt.
+#
+if [ "$ARCH" = "win32" -o "$ARCH" = "macos" -o "$ARCH" = "linux-static" ]; then
 	echo "#define SHAREDIR \"./\""         >> src/config.h
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-fi
-
-if [ "$ARCH" = "linux" ]; then
+else
 	echo "#define SHAREDIR \"$PREFIX/share/megazeux/\"" >> src/config.h
 	echo "#define CONFFILE \"megazeux-config\""         >> src/config.h
+fi
 
+#
+# linux target has "make install", which requires these features
+#
+if [ "$ARCH" = "linux" ]; then
 	echo "TARGET=`grep TARGET Makefile.in | cut -d ' ' -f 6`" \
 		>> Makefile.platform
-
 	echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 fi
 

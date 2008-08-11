@@ -22,7 +22,7 @@
 #ifndef __GAME2_H
 #define __GAME2_H
 
-void hurt_player_id(World *mzx_world, int id);
+void hurt_player_id(World *mzx_world, mzx_thing id);
 int find_seek(World *mzx_world, int x, int y);
 int inc_param(int param, int max);
 int xy2array2(Board *src_board, int x, int y);
@@ -32,16 +32,17 @@ void update_board(World *mzx_world);
 void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
  int color);
 int try_transport(World *mzx_world, int x, int y, int push_status,
- int can_push, int id, int dir);
-int transport(World *mzx_world, int x, int y, int dir, int id, int param,
- int color, int can_push);
+ int can_push, mzx_thing id, int dir);
+int transport(World *mzx_world, int x, int y, int dir, mzx_thing id,
+ int param, int color, int can_push);
 int push(World *mzx_world, int x, int y, int dir, int checking);
 void shoot(World *mzx_world, int x, int y, int dir, int type);
 void shoot_fire(World *mzx_world, int x, int y, int dir);
 void shoot_seeker(World *mzx_world, int x, int y, int dir);
 void shoot_missile(World *mzx_world, int x, int y, int dir);
-int move(World *mzx_world, int x, int y, int dir, int move_flags);
-int parsedir(World *mzx_world, int old_dir, int x, int y, int flow_dir,
- int bln, int bls, int ble, int blw);
+move_status move(World *mzx_world, int x, int y, int dir,
+ int flags);
+mzx_dir parsedir(World *mzx_world, mzx_dir old_dir, int x, int y,
+ mzx_dir flow_dir, int bln, int bls, int ble, int blw);
 
 #endif

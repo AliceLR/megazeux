@@ -975,7 +975,9 @@ int char_editor(World *mzx_world)
           x--;
           if(x < 0)
             x = buffer_width - 1;
-          draw_new = 1;
+
+          if(draw)
+            draw_new = 1;
         }
         break;
       }
@@ -1007,7 +1009,9 @@ int char_editor(World *mzx_world)
           x++;
           if(x >= buffer_width)
             x = 0;
-          draw_new = 1;
+
+          if(draw)
+            draw_new = 1;
         }
         break;
       }
@@ -1038,7 +1042,9 @@ int char_editor(World *mzx_world)
           y--;
           if(y < 0)
             y = buffer_height - 1;
-          draw_new = 1;
+
+          if(draw)
+            draw_new = 1;
         }
         break;
       }
@@ -1070,7 +1076,9 @@ int char_editor(World *mzx_world)
           y++;
           if(y >= buffer_height)
             y = 0;
-          draw_new = 1;
+
+          if(draw)
+            draw_new = 1;
         }
         break;
       }
@@ -1386,9 +1394,10 @@ int char_editor(World *mzx_world)
             draw = 2;
           else
             draw = 1;
+
+          draw_new = 1;
         }
 
-        draw_new = 1;
         break;
       }
 
@@ -1489,7 +1498,7 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_F1: // F1
+      case SDLK_F1:
       {
         m_show();
         help_system(mzx_world);

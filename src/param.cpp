@@ -68,23 +68,28 @@ int edit_param(World *mzx_world, int id, int param)
 
   if(def_params[id] == -3)
   {
-    int new_param;
+    int new_param = param;
+
+    if(new_param < 0)
+      new_param = 177;
+
     // Character
-    if(param < 0)
-      param = 177;
-    new_param = char_selection(param);
+    new_param = char_selection(new_param);
+
     if(new_param < 0)
       new_param = param;
+
     return new_param;
   }
 
   if(def_params[id] == -4)
   {
-    int new_param;
+    int new_param = param;
     // Board
-    if(param < 0)
-      param = 0;
-    new_param = choose_board(mzx_world, param,
+    if(new_param < 0)
+      new_param = 0;
+
+    new_param = choose_board(mzx_world, new_param,
      "Choose destination board", 0);
     if(new_param < 0)
       new_param = param;

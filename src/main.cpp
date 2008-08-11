@@ -103,6 +103,7 @@ int main(int argc, char **argv)
   set_sfx_on(mzx_world.conf.pc_speaker_on);
   set_sfx_volume(mzx_world.conf.pc_speaker_volume);
   mzx_world.mzx_speed = mzx_world.conf.mzx_speed;
+  mzx_world.default_speed = mzx_world.mzx_speed;
 
   memcpy(macros, mzx_world.conf.default_macros, 5 * 64);
   // Random seed..

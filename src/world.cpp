@@ -30,7 +30,7 @@
    MZX - Ver 1.x MegaZeux
    MZ2 - Ver 2.x MegaZeux
    MZA - Ver 2.51S1 Megazeux
-   M\002\011 - 2.5.1spider2+, 2.9.x
+   M\002\011 - 2.5.1spider2+
    M\x02\x3E - MZX 2.62.x
    M\x02\x41 - MZX 2.65
    M\x02\x44 - MZX 2.68
@@ -1272,6 +1272,9 @@ void clear_global_data(World *mzx_world)
   mzx_world->input_file_name[0] = 0;
 
   memset(mzx_world->custom_sfx, 0, NUM_SFX * 69);
+
+  mzx_world->bomb_type = 1;
+  mzx_world->dead = 0;
 }
 
 // After clearing the above, use this to get default values. Use
@@ -1360,8 +1363,13 @@ void default_global_data(World *mzx_world)
 
   scroll_color = 15;
 
+  mzx_world->lock_speed = 0;
+  mzx_world->mzx_speed = mzx_world->default_speed;
+
   mzx_world->input_file = NULL;
   mzx_world->output_file = NULL;
+
+  mzx_world->target_where = TARGET_NONE;
 }
 
 void default_scroll_values(World *mzx_world)
@@ -1549,7 +1557,7 @@ void optimize_null_boards(World *mzx_world)
 
     d_param = mzx_world->death_board;
 
-    if(d_param != NO_BOARD)
+    if((d_param != NO_BOARD) && (d_param != DEATH_SAME_POS))
     {
       if(d_param >= num_boards)
         d_param = num_boards - 1;

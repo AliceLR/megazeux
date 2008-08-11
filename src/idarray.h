@@ -24,10 +24,10 @@
 
 #include "world.h"
 
-void id_place(World *mzx_world, int array_x, int array_y, char id,
- char color, char param);
-void offs_place_id(World *mzx_world, unsigned int offset, char id,
- char color, char param);
+void id_place(World *mzx_world, int array_x, int array_y,
+ mzx_thing id, char color, char param);
+void offs_place_id(World *mzx_world, unsigned int offset,
+ mzx_thing id, char color, char param);
 void id_clear(Board *src_board, int array_x, int array_y);
 void id_remove_top(World *mzx_world, int array_x, int array_y);
 //"blank" is a junk byte

@@ -26,23 +26,23 @@
 
 void edit_world(World *mzx_world);
 void draw_debug_box(int ypos);
-int change_param(World *mzx_world, int id, int param, Robot *copy_robot,
- Scroll *copy_scroll, Sensor *copy_sensor);
-int change_param(World *mzx_world, int id, int param, Robot *copy_robot,
- Scroll *copy_scroll, Sensor *copy_sensor);
-int place_current_at_xy(World *mzx_world, int id, int color, int param,
- int x, int y, Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor,
- int overlay_edit);
-void grab_at_xy(World *mzx_world, int *new_id, int *new_color,
+int change_param(World *mzx_world, mzx_thing id, int param,
+ Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor);
+int change_param(World *mzx_world, mzx_thing id, int param,
+ Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor);
+int place_current_at_xy(World *mzx_world, mzx_thing id, int color,
+ int param, int x, int y, Robot *copy_robot, Scroll *copy_scroll,
+ Sensor *copy_sensor, int overlay_edit);
+void grab_at_xy(World *mzx_world, mzx_thing *new_id, int *new_color,
  int *new_param, Robot *copy_robot, Scroll *copy_scroll,
  Sensor *copy_sensor, int x, int y, int overlay_edit);
-void thing_menu(World *mzx_world, int menu_number, int *new_id,
+void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
  int *new_color, int *new_param, Robot *copy_robot, Scroll *copy_scroll,
  Sensor *copy_sensor, int x, int y);
 void flash_thing(World *mzx_world, int start, int end, int flash_one,
  int flash_two, int scroll_x, int scroll_y, int edit_screen_height);
 
-extern char tmenu_thing_ids[8][18];
+extern mzx_thing tmenu_thing_ids[8][18];
 extern char tmenu_num_choices[8];
 extern char *tmenu_titles[8];
 extern char *thing_menus[8][20];

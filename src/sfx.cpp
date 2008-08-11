@@ -79,7 +79,9 @@ void play_str(char *str, int sfx_play)
   for(t1 = 0; (unsigned int)t1 < strlen((char *)str); t1++)
   {
     chr = str[t1];
-    if((chr >= 'a') && (chr <= 'z')) chr -= 32;
+    if((chr >= 'a') && (chr <= 'z'))
+      chr -= 32;
+
     if(chr == '-')
     {
       // Octave down
@@ -142,8 +144,11 @@ void play_str(char *str, int sfx_play)
       if(digi_st > 0)
       {
         str[digi_end] = 0;
+
         play_sample(sam_freq[note - 1] >> oct, str + digi_st);
+
         str[digi_end] = '&';
+        digi_st = -1;
       }
       else
 
@@ -210,7 +215,9 @@ void play_str(char *str, int sfx_play)
       // Digitized
       t1++;
       digi_st = t1;
-      if(str[t1] == 0) break;
+
+      if(str[t1] == 0)
+        break;
 
       do
       {
@@ -220,10 +227,8 @@ void play_str(char *str, int sfx_play)
 
         if(str[t1] == '&')
           break;
-      } while(1);
 
-      if(str[t1] == 0)
-        break;
+      } while(1);
 
       digi_end = t1;
     }
@@ -235,6 +240,16 @@ void play_str(char *str, int sfx_play)
 
       digi_st = -1;
     }
+  }
+
+  // Pending digital music?
+  if(digi_st > 0)
+  {
+    str[digi_end] = 0;
+
+    play_sample(0, str + digi_st);
+
+    str[digi_end] = '&';
   }
 }
 

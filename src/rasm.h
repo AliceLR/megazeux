@@ -169,7 +169,7 @@ int get_param(char *cmd_line);
 
 int parse_argument(char *cmd_line, char **next, int *arg_translated,
  int *error, int *arg_short);
-void get_word(char *str, char *source, char t);
+int get_word(char *str, char *source, char t);
 int match_command(mzx_command *cmd, char *error_buffer);
 int assemble_text(char *input_name, char *output_name);
 int assemble_command(int command_number, mzx_command *cmd, void *params[32],
@@ -193,6 +193,8 @@ void disassemble_file(char *name, char *program, int allow_ignores,
  int base);
 search_entry *find_command(char *name);
 search_entry_short *find_argument(char *name);
+int escape_chars(char *dest, char *src);
+int unescape_char(char *dest, char c);
 
 extern mzx_command command_list[256];
 

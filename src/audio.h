@@ -40,7 +40,6 @@ struct _audio_stream
 {
   struct _audio_stream *next;
   struct _audio_stream *previous;
-  Uint32 busy;
   Uint32 volume;
   Uint32 repeat;
   Uint32 (* mix_data)(audio_stream *a_src, Sint32 *buffer,
@@ -128,6 +127,8 @@ typedef struct
   pc_speaker_stream *pcs_stream;
   audio_stream *stream_list_base;
   audio_stream *stream_list_end;
+
+  SDL_mutex *audio_mutex;
 
   Uint32 music_on;
   Uint32 sfx_on;

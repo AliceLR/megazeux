@@ -230,6 +230,11 @@ modplug_resample_mode = cubic
 
 #backup_name = backup
 
+# The extension of backup files (keep this .mzx if you want to be able
+# to easily load them)
+
+#backup_ext = .mzx
+
 
 # Joystick options
 

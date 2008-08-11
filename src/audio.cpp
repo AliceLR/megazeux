@@ -52,7 +52,7 @@
 // sound.
 
 struct _ModPlugFile
-{                               
+{
   CSoundFile mSoundFile;
 };
 
@@ -717,7 +717,7 @@ void pcs_set_volume(audio_stream *a_src, Uint32 volume)
   ((pc_speaker_stream *)a_src)->volume = volume;
 }
 
-void unlink_audio_stream(audio_stream *a_src)
+void destruct_audio_stream(audio_stream *a_src)
 {
   if(a_src == audio.stream_list_base)
     audio.stream_list_base = a_src->next;
@@ -730,39 +730,41 @@ void unlink_audio_stream(audio_stream *a_src)
 
   if(a_src->previous)
     a_src->previous->next = a_src->next;
+
+  free(a_src);
+}
+
+void sampled_destruct(audio_stream *a_src)
+{
+  sampled_stream *s_stream = (sampled_stream *)a_src;
+  free(s_stream->output_data);
+  destruct_audio_stream(a_src);
 }
 
 void mp_destruct(audio_stream *a_src)
 {
   modplug_stream *mp_stream = (modplug_stream *)a_src;
-  unlink_audio_stream(a_src);
-  free(mp_stream->s.output_data);
   ModPlug_Unload(mp_stream->module_data);
-  free(a_src);
+  sampled_destruct(a_src);
 }
 
 void vorbis_destruct(audio_stream *a_src)
 {
   vorbis_stream *v_stream = (vorbis_stream *)a_src;
-  unlink_audio_stream(a_src);
-  free(v_stream->s.output_data);
   ov_clear(&(v_stream->vorbis_file_handle));
-  free(a_src);
+  sampled_destruct(a_src);
 }
 
 void wav_destruct(audio_stream *a_src)
 {
   wav_stream *w_stream = (wav_stream *)a_src;
-  unlink_audio_stream(a_src);
-  free(w_stream->s.output_data);
   SDL_FreeWAV(w_stream->wav_data);
-  free(a_src);
+  sampled_destruct(a_src);
 }
 
 void pcs_destruct(audio_stream *a_src)
 {
-  unlink_audio_stream(a_src);
-  free(a_src);
+  destruct_audio_stream(a_src);
 }
 
 void construct_audio_stream(audio_stream *a_src,
@@ -785,7 +787,6 @@ void construct_audio_stream(audio_stream *a_src,
   a_src->get_order = get_order;
   a_src->get_position = get_position;
   a_src->destruct = destruct;
-  a_src->busy = 0;
 
   if(set_volume)
     set_volume(a_src, volume);
@@ -1107,7 +1108,11 @@ void clip_buffer(Sint16 *dest, Sint32 *src, int len)
 void audio_callback(void *userdata, Uint8 *stream, int len)
 {
   Uint32 destroy_flag;
-  audio_stream *current_astream = audio.stream_list_base;
+  audio_stream *current_astream;
+
+  SDL_LockMutex(audio.audio_mutex);
+
+  current_astream = audio.stream_list_base;
 
   if(current_astream)
   {
@@ -1115,7 +1120,6 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 
     while(current_astream != NULL)
     {
-      current_astream->busy = 1;
       destroy_flag = current_astream->mix_data(current_astream,
        audio.mix_buffer, len);
 
@@ -1123,18 +1127,18 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
       {
         audio_stream *next_astream = current_astream->next;
         current_astream->destruct(current_astream);
-        current_astream->busy = 0;
         current_astream = next_astream;
       }
       else
       {
-        current_astream->busy = 0;
         current_astream = current_astream->next;
       }
     }
 
     clip_buffer((Sint16 *)stream, audio.mix_buffer, len / 2);
   }
+
+  SDL_UnlockMutex(audio.audio_mutex);
 }
 
 void init_modplug(config_info *conf)
@@ -1207,6 +1211,8 @@ void init_audio(config_info *conf)
 
   SDL_OpenAudio(&desired_spec, &audio.audio_settings);
   audio.mix_buffer = (Sint32 *)malloc(audio.audio_settings.size * 2);
+  audio.audio_mutex = SDL_CreateMutex();
+
   SDL_PauseAudio(0);
 }
 
@@ -1216,8 +1222,12 @@ void load_mod(char *filename)
 
   if(filename && filename[0])
   {
+    SDL_LockMutex(audio.audio_mutex);
+
     audio.primary_stream = construct_stream_audio_file(filename, 0,
      audio.music_volume * 255 / 8, 1);
+
+    SDL_UnlockMutex(audio.audio_mutex);
   }
 }
 
@@ -1225,9 +1235,11 @@ void end_mod(void)
 {
   if(audio.primary_stream)
   {
-    // Makeshift mutex.. this should work well enough
-    while(audio.primary_stream->busy);
+    SDL_LockMutex(audio.audio_mutex);
+
     audio.primary_stream->destruct(audio.primary_stream);
+
+    SDL_UnlockMutex(audio.audio_mutex);
   }
 
   audio.primary_stream = NULL;
@@ -1238,6 +1250,8 @@ void play_sample(int freq, char *filename)
   audio_stream *a_src;
   Uint32 vol = 255 * audio.sound_volume / 8;
 
+  SDL_LockMutex(audio.audio_mutex);
+
   if(freq == 0)
   {
     a_src = construct_stream_audio_file(filename, 0, vol, 0);
@@ -1247,6 +1261,8 @@ void play_sample(int freq, char *filename)
     a_src = construct_stream_audio_file(filename,
      (freq_conversion / freq) / 2, vol, 0);
   }
+
+  SDL_UnlockMutex(audio.audio_mutex);
 }
 
 void end_sample()
@@ -1258,6 +1274,8 @@ void end_sample()
   audio_stream *current_astream = audio.stream_list_base;
   audio_stream *next_astream;
 
+  SDL_LockMutex(audio.audio_mutex);     
+
   while(current_astream)
   {
     next_astream = current_astream->next;
@@ -1265,13 +1283,14 @@ void end_sample()
     if((current_astream != audio.primary_stream) &&
      (current_astream != (audio_stream *)(audio.pcs_stream)))
     {
-      while(current_astream->busy);
-
       current_astream->destruct(current_astream);
     }
 
     current_astream = next_astream;
   }
+
+
+  SDL_UnlockMutex(audio.audio_mutex);     
 }
 
 void jump_mod(int order)
@@ -1281,23 +1300,41 @@ void jump_mod(int order)
   // legacy reasons; set_position rather supercedes it.
 
   if(audio.primary_stream && audio.primary_stream->set_order)
-    audio.primary_stream->set_order(audio.primary_stream, order);
+  {
+    SDL_LockMutex(audio.audio_mutex);     
+    audio.primary_stream->set_order(audio.primary_stream, order);   
+    SDL_UnlockMutex(audio.audio_mutex);     
+  }
 }
 
 int get_order()
 {
   if(audio.primary_stream && audio.primary_stream->get_order)
-    return audio.primary_stream->get_order(audio.primary_stream);
+  {
+    int order;
+
+    SDL_LockMutex(audio.audio_mutex);     
+    order = audio.primary_stream->get_order(audio.primary_stream);  
+    SDL_UnlockMutex(audio.audio_mutex);     
+
+    return order;
+  }
   else
+  {
     return 0;
+  }
 }
 
 void volume_mod(int vol)
 {
   if(audio.primary_stream)
   {
+    SDL_LockMutex(audio.audio_mutex);     
+
     audio.primary_stream->set_volume(audio.primary_stream,
      vol * audio.music_volume / 8);
+
+    SDL_UnlockMutex(audio.audio_mutex);     
   }
 }
 
@@ -1339,9 +1376,13 @@ void shift_frequency(int freq)
 
   if(audio.primary_stream && freq >= 16)
   {
+    SDL_LockMutex(audio.audio_mutex);     
+
     ((sampled_stream *)audio.primary_stream)->
      set_frequency((sampled_stream *)audio.primary_stream,
      freq);
+
+    SDL_UnlockMutex(audio.audio_mutex);     
   }
 }
 
@@ -1349,8 +1390,14 @@ int get_frequency()
 {
   if(audio.primary_stream)
   {
-    return ((sampled_stream *)audio.primary_stream)->
+    int freq;
+
+    SDL_LockMutex(audio.audio_mutex);     
+    freq = ((sampled_stream *)audio.primary_stream)->
      get_frequency((sampled_stream *)audio.primary_stream);
+    SDL_UnlockMutex(audio.audio_mutex);     
+
+    return freq;
   }
   else
   {
@@ -1364,28 +1411,46 @@ void set_position(int pos)
   // medium and what it supports.
 
   if(audio.primary_stream && audio.primary_stream->set_position)
+  {
+    SDL_LockMutex(audio.audio_mutex);     
     audio.primary_stream->set_position(audio.primary_stream, pos);
+    SDL_UnlockMutex(audio.audio_mutex);     
+  }
 }
 
 int get_position()
 {
   if(audio.primary_stream && audio.primary_stream->get_position)
-    return audio.primary_stream->get_position(audio.primary_stream);
+  {
+    int pos;
+
+    SDL_LockMutex(audio.audio_mutex);     
+    pos = audio.primary_stream->get_position(audio.primary_stream);
+    SDL_UnlockMutex(audio.audio_mutex);
+
+    return pos;
+  }
   else
+  {
     return 0;
+  }
 }
 
 void sound(int frequency, int duration)
 {
+  SDL_LockMutex(audio.audio_mutex);     
   audio.pcs_stream->playing = 1;
   audio.pcs_stream->frequency = frequency;
   audio.pcs_stream->note_duration = duration;
+  SDL_UnlockMutex(audio.audio_mutex);     
 }
 
 void nosound(int duration)
 {
+  SDL_LockMutex(audio.audio_mutex);     
   audio.pcs_stream->playing = 0;
-  audio.pcs_stream->note_duration = duration;
+  audio.pcs_stream->note_duration = duration; 
+  SDL_UnlockMutex(audio.audio_mutex);     
 }
 
 int filelength(FILE *fp)
@@ -1482,13 +1547,20 @@ void convert_sam_to_wav(char *source_name, char *dest_name)
 
 void set_music_on(int val)
 {
+  SDL_LockMutex(audio.audio_mutex);     
   audio.music_on = val;
+  SDL_UnlockMutex(audio.audio_mutex);     
 }
 
 void set_sfx_on(int val)
 {
+  SDL_LockMutex(audio.audio_mutex); 
   audio.sfx_on = val;
+  SDL_UnlockMutex(audio.audio_mutex); 
 }
+
+// These don't have to be locked because only the same thread can
+// modify them.
 
 int get_music_on_state()
 {
@@ -1517,12 +1589,16 @@ int get_sfx_volume()
 
 void set_music_volume(int volume)
 {
+  SDL_LockMutex(audio.audio_mutex);   
   audio.music_volume = volume;
+  SDL_UnlockMutex(audio.audio_mutex);   
 }
 
 void set_sound_volume(int volume)
 {
   audio_stream *current_astream = audio.stream_list_base;
+
+  SDL_LockMutex(audio.audio_mutex);
 
   audio.sound_volume = volume;
 
@@ -1537,13 +1613,17 @@ void set_sound_volume(int volume)
 
     current_astream = current_astream->next;
   }
+
+  SDL_UnlockMutex(audio.audio_mutex);
 }
 
 void set_sfx_volume(int volume)
 {
+  SDL_LockMutex(audio.audio_mutex);
   audio.sfx_volume = volume;
   audio.pcs_stream->a.set_volume((audio_stream *)audio.pcs_stream,
    volume * 255 / 8);
+  SDL_UnlockMutex(audio.audio_mutex); 
 }
 
 

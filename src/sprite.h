@@ -70,6 +70,8 @@ struct Collision_list
 
 typedef struct Collision_list Collision_list;
 
+typedef struct _World World;
+
 // functions
 
 void plot_sprite(World *mzx_world, Sprite *cur_sprite, int color,

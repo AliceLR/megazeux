@@ -22,7 +22,7 @@
 #ifndef __FILL_H
 #define __FILL_H
 
-void fill_area(World *mzx_world, int id, int color, int param,
+void fill_area(World *mzx_world, mzx_thing id, int color, int param,
  int x, int y, Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor,
  int overlay_edit);
 

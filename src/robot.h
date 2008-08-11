@@ -20,6 +20,8 @@
 #ifndef ROBOT_H
 #define ROBOT_H
 
+#include "data.h"
+
 #include <stdio.h>
 
 typedef struct _Board Board;
@@ -57,9 +59,9 @@ typedef struct
   char bullet_type;
   char is_locked;
   char can_lavawalk;              // Can always travel on fire
-  char walk_dir;                  // 1-4, of course
-  char last_touch_dir;            // 1-4, of course
-  char last_shot_dir;             // 1-4, of course
+  mzx_dir walk_dir;
+  mzx_dir last_touch_dir;
+  mzx_dir last_shot_dir;
 
   // Used for IF ALIGNED "robot", THISX/THISY, PLAYERDIST,
   // HORIZPLD, VERTPLD, and others. Keep udpated at all
@@ -71,8 +73,8 @@ typedef struct
   // rec'd message
   char status;
 
-  // This is deprecated. Probably remove.
-  char used;                      // Set to 1 if used onscreen, 0 if not
+  // This is deprecated. It's only there for legacy reasons.
+  char used;
 
   // Loop count. Loops go back to first seen LOOP
   // START, loop at first seen LOOP #, and an ABORT
@@ -86,7 +88,7 @@ typedef struct
   int stack_pointer;
   int *stack;
 
-  // Local counters - store in save file (ignore "blank" in world file)
+  // Local counters - store in save file
   int local[32];
 } Robot;
 
@@ -98,7 +100,6 @@ typedef struct
   char *mesg;
   int mesg_size;
 
-  // Set to 1 if used onscreen, 0 if not
   char used;
 } Scroll;
 
@@ -108,11 +109,8 @@ typedef struct
   char sensor_char;
   char robot_to_mesg[15];
 
-  // Set to 1 if used onscreen, 0 if not
   char used;
 } Sensor;
-
-extern int commands;
 
 Robot *load_robot_allocate(FILE *fp, int savegame);
 void load_robot(Robot *cur_robot, FILE *fp, int savegame);
@@ -165,6 +163,11 @@ int zap_label(Robot *cur_robot, char *label);
 int next_param(char *ptr, int pos);
 char *next_param_pos(char *ptr);
 int parse_param(World *mzx_world, char *robot, int id);
+mzx_thing parse_param_thing(World *mzx_world, char *program);
+mzx_dir parse_param_dir(World *mzx_world, char *program);
+mzx_equality parse_param_eq(World *mzx_world, char *program);
+mzx_condition parse_param_cond(World *mzx_world, char *program,
+ mzx_dir *direction);
 void robot_box_display(World *mzx_world, char *program,
  char *label_storage, int id);
 int robot_box_down(char *program, int pos, int count);
@@ -210,23 +213,25 @@ int get_robot_id(Board *src_board, char *name);
 void magic_load_mod(World *mzx_world, char *filename);
 void save_player_position(World *mzx_world, int pos);
 void restore_player_position(World *mzx_world, int pos);
-void calculate_blocked(World *mzx_world, int x, int y, int id, int bl[4]);
-int place_at_xy(World *mzx_world, int id, int color, int param, int x, int y);
-int place_under_xy(Board *src_board, int id, int color, int param, int x,
- int y);
-int place_dir_xy(World *mzx_world, int id, int color, int param, int x, int y,
- int direction);
+void calculate_blocked(World *mzx_world, int x, int y,
+ int id, int bl[4]);
+int place_at_xy(World *mzx_world, mzx_thing id, int color,
+ int param, int x, int y);
+int place_under_xy(Board *src_board, mzx_thing id, int color,
+ int param, int x, int y);
+int place_dir_xy(World *mzx_world, mzx_thing id, int color,
+ int param, int x, int y, mzx_dir direction);
 int place_player_xy(World *mzx_world, int x, int y);
 int get_random_range(int min_value, int max_value);
 int send_self_label_tr(World *mzx_world, char *param, int id);
 void run_robot(World *mzx_world, int id, int x, int y);
 void split_colors(int color, int *fg, int *bg);
-int check_at_xy(Board *src_board, int id, int fg, int bg, int param,
- int offset);
-int check_under_xy(Board *src_board, int id, int fg, int bg, int param,
- int offset);
-int check_dir_xy(Board *src_board, int id, int color, int param,
- int x, int y, int direction);
+int check_at_xy(Board *src_board, mzx_thing id, int fg, int bg,
+ int param, int offset);
+int check_under_xy(Board *src_board, mzx_thing id, int fg, int bg,
+ int param, int offset);
+int check_dir_xy(Board *src_board, mzx_thing id, int color,
+ int param, int x, int y, mzx_dir direction);
 void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
  int dest_x, int dest_y);
 void copy_board_to_board_buffer(Board *src_board, int x, int y,
@@ -242,7 +247,7 @@ void copy_board_to_layer(Board *src_board, int x, int y,
  int dest_width);
 void copy_layer_to_board(Board *src_board, int x, int y,
  int width, int height, char *src_char, char *src_color,
- int src_width, int convert_id);
+ int src_width, mzx_thing convert_id);
 void copy_layer_to_buffer(int x,  int y, int width, int height,
  char *src_char, char *src_color, char *dest_char,
  char *dest_color, int layer_width);

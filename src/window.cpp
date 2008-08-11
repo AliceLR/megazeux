@@ -3203,6 +3203,8 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
   struct stat file_info;
   struct dirent *current_file;
   char current_dir_name[MAX_PATH];
+  char current_dir_short[56];
+  int current_dir_length;
   char previous_dir_name[MAX_PATH];
   int total_filenames_allocated;
   int total_dirnames_allocated;
@@ -3377,6 +3379,21 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
 
     closedir(current_dir);
 
+    current_dir_length = strlen(current_dir_name);
+
+    if(current_dir_length > 55)
+    {
+      memcpy(current_dir_short, "...", 3);
+      memcpy(current_dir_short + 3,
+       current_dir_name + current_dir_length - 52, 52);
+      current_dir_short[55] = 0;
+    }
+    else
+    {
+      memcpy(current_dir_short, current_dir_name,
+       current_dir_length + 1);
+    }
+
     elements[FILESEL_FILE_LIST] =
      construct_list_box(2, 2, file_list, num_files,
      list_length, 55, 1, &chosen_file);
@@ -3391,7 +3408,7 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
     elements[FILESEL_CANCEL_BUTTON] =
      construct_button(65, list_length + 3, "Cancel", -1);
     elements[FILESEL_FILES_LABEL] =
-     construct_label(2, 1, current_dir_name);
+     construct_label(2, 1, current_dir_short);
     elements[FILESEL_DIRS_LABEL] =
      construct_label(59, 1, "Directories");
 

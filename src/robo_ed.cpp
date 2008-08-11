@@ -117,6 +117,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
   int key;
   int i;
   int line_text_length, line_bytecode_length;
+  int mouse_press;
   char arg_types[32];
   char str_buffer[32], max_size_buffer[32];
   char *current_robot_pos = cur_robot->program + 1;
@@ -394,7 +395,9 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
        &rstate.current_x, 1, rstate.active_macro);
     }
 
-    if(get_mouse_press())
+    mouse_press = get_mouse_press_ext();
+
+    if(mouse_press && (mouse_press <= SDL_BUTTON_RIGHT))
     {
       int mouse_x, mouse_y;
       get_mouse_position(&mouse_x, &mouse_y);
@@ -407,6 +410,18 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         rstate.current_x = mouse_x - 2;
         warp_mouse(mouse_x, rstate.scr_line_middle);
       }
+    }
+    else
+
+    if(mouse_press == SDL_BUTTON_WHEELUP)
+    {
+      move_and_update(&rstate, -3);
+    }
+    else
+
+    if(mouse_press == SDL_BUTTON_WHEELDOWN)
+    {
+      move_and_update(&rstate, 3);
     }
 
     rstate.active_macro = NULL;
@@ -518,8 +533,9 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         if(new_char >= 0)
         {
           char char_buffer[16];
-          last_char = new_char;
-          sprintf(char_buffer, "%c", new_char);
+          int chars_length = unescape_char(char_buffer, new_char);
+          char_buffer[chars_length] = 0;
+
           insert_string(rstate.command_buffer, char_buffer, &rstate.current_x);
         }
         break;
@@ -781,7 +797,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
           do
           {
             current_char = *in_position;
-            if(current_char == '"')
+            if((current_char == '\"') || (current_char == '\\'))
             {
               *out_position = '\\';
               out_position++;
@@ -817,6 +833,13 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
               current_char = '"';
               in_position++;
             }
+
+            if((current_char == '\\') && (in_position[1] == '\\'))
+            {
+              current_char = '\\';
+              in_position++;
+            }
+
 
             *out_position = current_char;
             out_position++;
@@ -1120,8 +1143,8 @@ void display_robot_line(robot_state *rstate, robot_line *current_rline,
   int current_color, current_arg;
   int color_code = rstate->color_code;
   char *color_codes = rstate->ccodes;
-  char temp_buffer[512];
   char temp_char;
+  char temp_buffer[512];
   char *line_pos = current_rline->line_text;
   int chars_offset = 0;
   int arg_length;
@@ -1163,8 +1186,9 @@ void display_robot_line(robot_state *rstate, robot_line *current_rline,
       if(color_code)
         current_color = combine_colors(color_codes[S_CMD + 1], bg_color);
 
-      get_word(temp_buffer, line_pos, ' ');
-      arg_length = strlen(temp_buffer) + 1;
+      arg_length = strcspn(line_pos, " ") + 1;
+      memcpy(temp_buffer, line_pos, arg_length);
+      temp_buffer[arg_length] = 0;
 
       write_string(temp_buffer, x, y, current_color, 0);
 
@@ -1177,28 +1201,37 @@ void display_robot_line(robot_state *rstate, robot_line *current_rline,
 
         if(current_arg == S_STRING)
         {
-          temp_buffer[0] = '"';
-          get_word(temp_buffer + 1, line_pos + 1, '"');
-          arg_length = strlen(temp_buffer);
-          temp_buffer[arg_length] = '"';
-          temp_buffer[arg_length + 1] = 0;
-          arg_length += 2;
+          char current;
+          arg_length = 1;
+
+          do
+          {
+            current = line_pos[arg_length];
+            if((current == '\\') && ((line_pos[arg_length + 1] == '"') ||
+             (line_pos[arg_length + 1] == '\\')))
+            {
+              arg_length++;
+            }
+            arg_length++;
+
+          } while((current != '"') && current);
+
+          arg_length++;
+
           chars_offset = 0;
+
           use_mask = rstate->mzx_world->conf.mask_midchars;
         }
         else
 
         if(current_arg == S_CHARACTER)
         {
-          memcpy(temp_buffer, line_pos, 3);
-          temp_buffer[3] = 0;
-          arg_length = 4;
+          arg_length = strcspn(line_pos + 1, "\'") + 3;
           chars_offset = 0;
         }
         else
         {
-          get_word(temp_buffer, line_pos, ' ');
-          arg_length = strlen(temp_buffer) + 1;
+          arg_length = strcspn(line_pos, " ") + 1;
           chars_offset = 256;
         }
 
@@ -1214,6 +1247,9 @@ void display_robot_line(robot_state *rstate, robot_line *current_rline,
             current_color =
              combine_colors(color_codes[current_arg + 1], bg_color);
           }
+
+          memcpy(temp_buffer, line_pos, arg_length);
+          temp_buffer[arg_length] = 0;
 
           if((x + arg_length) > 78)
           {
@@ -1240,6 +1276,7 @@ void display_robot_line(robot_state *rstate, robot_line *current_rline,
              0, chars_offset, 16);
           }
         }
+
         line_pos += arg_length;
         x += arg_length;
       }
@@ -2034,8 +2071,9 @@ void paste_buffer(robot_state *rstate)
 
       while(*src_ptr)
       {
-        get_word(line_buffer, src_ptr, '\r');
-        line_length = strlen(line_buffer);
+        line_length = strcspn(src_ptr, "\r");
+        memcpy(line_buffer, src_ptr, line_length);
+        line_buffer[line_length] = 0;
         add_line(rstate);
         src_ptr += line_length;
         if(*src_ptr)
@@ -2090,8 +2128,9 @@ void paste_buffer(robot_state *rstate)
 
         while(*src_ptr)
         {
-          get_word(line_buffer, src_ptr, '\n');
-          line_length = strlen(line_buffer);
+          line_length = strcspn(src_ptr, "\n");
+          memcpy(line_buffer, src_ptr, line_length);
+          line_buffer[line_length] = 0;
           add_line(rstate);
           src_ptr += line_length;
           if(*src_ptr)
@@ -2281,13 +2320,13 @@ void import_block(World *mzx_world, robot_state *rstate)
   char *txt_ext[] = { ".TXT", NULL };
 
   if(!choose_file(mzx_world, txt_ext, import_name,
-   "Import Robot", 0))
+   "Import Robot", 1))
   {
-    FILE *import_file = fsafeopen(import_name, "rt");
+    FILE *import_file = fopen(import_name, "rt");
     char line_buffer[256];
     rstate->command_buffer = line_buffer;
 
-    while(fgets(line_buffer, 255, import_file))
+    while(fgets(line_buffer, 255, import_file) > 0)
     {
       if(line_buffer[strlen(line_buffer) - 1] == '\n')
         line_buffer[strlen(line_buffer) - 1] = 0;

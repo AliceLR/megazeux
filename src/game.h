@@ -54,34 +54,7 @@ int take_key(World *mzx_world, int color);
 int give_key(World *mzx_world, int color);
 void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y);
 
-// The getkey key.
-extern int key_get;
-
-//For changing screens AFTER an update is done and shown
-extern int target_board; // Where to go
-extern int target_where; // 0 for x/y, 1 for entrance
-extern int target_x; // Or color of entrance
-extern int target_y; // Or id of entrance
-extern int target_d_id;
-extern int target_d_color;
-
-extern int dead;
 extern int pal_update;
 extern char *world_ext[2];
-
-extern char door_first_movement[8];
-
-#define MOVE_CAN_PUSH           0x001
-#define MOVE_CAN_TRANSPORT      0x002
-#define MOVE_CAN_LAVAWALK       0x004
-#define MOVE_CAN_FIREWALK       0x008
-#define MOVE_CAN_WATERWALK      0x010
-#define MOVE_MUST_WEB           0x020
-#define MOVE_MUST_THICKWEB      0x040
-#define MOVE_REACT_PLAYER       0x080
-#define MOVE_MUST_WATER         0x100
-#define MOVE_MUST_LAVAGOOP      0x200
-#define MOVE_CAN_GOOPWALK       0x400
-#define MOVE_SPITFIRE           0x800
 
 #endif

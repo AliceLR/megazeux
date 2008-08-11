@@ -62,9 +62,9 @@ void load_robot(Robot *cur_robot, FILE *fp, int savegame)
   cur_robot->bullet_type = fgetc(fp);
   cur_robot->is_locked = fgetc(fp);
   cur_robot->can_lavawalk = fgetc(fp);
-  cur_robot->walk_dir = fgetc(fp);
-  cur_robot->last_touch_dir = fgetc(fp);
-  cur_robot->last_shot_dir = fgetc(fp);
+  cur_robot->walk_dir = (mzx_dir)fgetc(fp);
+  cur_robot->last_touch_dir = (mzx_dir)fgetc(fp);
+  cur_robot->last_shot_dir = (mzx_dir)fgetc(fp);
   cur_robot->xpos = fgetw(fp);
   cur_robot->ypos = fgetw(fp);
   cur_robot->status = fgetc(fp);
@@ -792,22 +792,23 @@ void send_robot(World *mzx_world, char *name, char *mesg,
     send_robot_all(mzx_world, mesg);
   }
   else
-
-  // See if it's the global robot
-  if(!strcasecmp(name, mzx_world->global_robot.robot_name) &&
-   mzx_world->global_robot.used)
   {
-    send_robot_direct(&mzx_world->global_robot, mesg,
-     ignore_lock, 0);
-  }
-
-  if(find_robot(src_board, name, &first, &last))
-  {
-    while(first <= last)
+    // See if it's the global robot
+    if(!strcasecmp(name, mzx_world->global_robot.robot_name) &&
+     mzx_world->global_robot.used)
     {
-      send_robot_direct(src_board->robot_list_name_sorted[first],
-       mesg, ignore_lock, 0);
-      first++;
+      send_robot_direct(&mzx_world->global_robot, mesg,
+       ignore_lock, 0);
+    }
+
+    if(find_robot(src_board, name, &first, &last))
+    {
+      while(first <= last)
+      {
+        send_robot_direct(src_board->robot_list_name_sorted[first],
+         mesg, ignore_lock, 0);
+        first++;
+      }
     }
   }
 
@@ -882,6 +883,7 @@ void send_sensors(World *mzx_world, char *name, char *mesg)
         for(i = 1; i <= src_board->num_sensors; i++)
         {
           current_sensor = sensor_list[i];
+
           if(current_sensor)
           {
             send_sensor_command(mzx_world, i, command);
@@ -954,6 +956,13 @@ void send_sensor_command(World *mzx_world, int id, int command)
       }
     }
   }
+
+  // Okay, this means the sensor is unlinked. Due to some
+  // errors in world 1 format files or ver1to2 or something
+  // this can happen (see Caverns). It's very unpleasant.
+
+  if(y == board_height)
+    return;
 
   // Cmd
   switch(command)
@@ -1589,6 +1598,32 @@ int parse_param(World *mzx_world, char *program, int id)
   return get_counter(mzx_world, ibuff, id);
 }
 
+// These will always return numeric values
+mzx_thing parse_param_thing(World *mzx_world, char *program)
+{
+  return (mzx_thing)
+   ((int)program[1] | (int)(program[2] << 8));
+}
+
+mzx_dir parse_param_dir(World *mzx_world, char *program)
+{
+  return (mzx_dir)
+   ((int)program[1] | (int)(program[2] << 8));
+}
+
+mzx_equality parse_param_eq(World *mzx_world, char *program)
+{
+  return (mzx_equality)
+   ((int)program[1] | (int)(program[2] << 8));
+}
+
+mzx_condition parse_param_cond(World *mzx_world, char *program,
+ mzx_dir *direction)
+{
+  *direction = (mzx_dir)program[2];
+  return (mzx_condition)program[1];
+}
+
 // Returns location of next parameter (pos is loc of current parameter)
 int next_param(char *ptr, int pos)
 {
@@ -1675,10 +1710,10 @@ void robot_box_display(World *mzx_world, char *program,
 {
   Board *src_board = mzx_world->current_board;
   Robot *cur_robot = src_board->robot_list[id];
-  // Important status vars (insert kept in intake.cpp)
-  int pos = 0, old_pos; // Where IN robot?
-  int key; // Key
+  int pos = 0, old_pos;
+  int key;
   int fade_status;
+  int mouse_press;
 
   label_storage[0] = 0;
 
@@ -1759,7 +1794,9 @@ void robot_box_display(World *mzx_world, char *program,
 
     old_pos = pos;
 
-    if(get_mouse_press())
+    mouse_press = get_mouse_press_ext();
+
+    if(mouse_press && (mouse_press <= SDL_BUTTON_RIGHT))
     {
       int mouse_x, mouse_y;
       get_mouse_position(&mouse_x, &mouse_y);
@@ -1783,18 +1820,30 @@ void robot_box_display(World *mzx_world, char *program,
         }
       }
     }
+    else
+
+    if(mouse_press == SDL_BUTTON_WHEELUP)
+    {
+      pos = robot_box_up(program, pos, 3);
+    }
+    else
+
+    if(mouse_press == SDL_BUTTON_WHEELDOWN)
+    {
+      pos = robot_box_down(program, pos, 3);
+    }
 
     switch(key)
     {
-      case SDLK_UP://Up
+      case SDLK_UP:
         pos = robot_box_up(program, pos, 1);
         break;
 
-      case SDLK_DOWN://Down
+      case SDLK_DOWN:
         pos = robot_box_down(program, pos, 1);
         break;
 
-      case SDLK_RETURN: // Enter
+      case SDLK_RETURN:
       {
         key = SDLK_ESCAPE;
 
@@ -1812,19 +1861,19 @@ void robot_box_display(World *mzx_world, char *program,
         break;
       }
 
-      case SDLK_PAGEDOWN: // Pagedown (by 6 lines)
+      case SDLK_PAGEDOWN:
         pos = robot_box_down(program, pos, 6);
         break;
 
-      case SDLK_PAGEUP: // Pageup (by 6 lines)
+      case SDLK_PAGEUP:
         pos = robot_box_up(program, pos, 6);
         break;
 
-      case SDLK_HOME: // Home
+      case SDLK_HOME:
         pos = robot_box_up(program, pos, 100000);
         break;
 
-      case SDLK_END: // End
+      case SDLK_END:
         pos = robot_box_down(program, pos, 100000);
         break;
 
@@ -1833,8 +1882,6 @@ void robot_box_display(World *mzx_world, char *program,
       case 0:
         break;
     }
-
-    // Continue?
   } while(key != SDLK_ESCAPE);
 
   // Scan section and mark all invalid counter-controlled options as codes
@@ -2621,9 +2668,9 @@ int get_robot_board_offset(Board *src_board, Robot *cur_robot)
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
   Robot **robot_list = src_board->robot_list;
-  int d_id = level_id[offset];
+  mzx_thing d_id = (mzx_thing)level_id[offset];
 
-  if((d_id == 123) || (d_id == 124))
+  if(is_robot(d_id))
   {
     if(robot_list[level_param[offset]] == cur_robot)
       return offset;
@@ -2634,8 +2681,8 @@ int get_robot_board_offset(Board *src_board, Robot *cur_robot)
 
     for(offset = 0; offset < board_size; offset++)
     {
-      d_id = level_id[offset];
-      if((d_id == 123) || (d_id == 124))
+      d_id = (mzx_thing)level_id[offset];
+      if(is_robot(d_id))
       {
         if(robot_list[level_param[offset]] == cur_robot)
           return offset;
@@ -2652,13 +2699,13 @@ int get_scroll_board_offset(Board *src_board, Scroll *cur_scroll)
   char *level_param = src_board->level_param;
   Scroll **scroll_list = src_board->scroll_list;
   int offset;
-  int d_id;
+  mzx_thing d_id;
   int board_size = src_board->board_width * src_board->board_height;
 
   for(offset = 0; offset < board_size; offset++)
   {
-    d_id = level_id[offset];
-    if((d_id == 125) || (d_id == 126))
+    d_id = (mzx_thing)level_id[offset];
+    if(is_signscroll(d_id))
     {
       if(scroll_list[level_param[offset]] == cur_scroll)
         return offset;
@@ -2674,13 +2721,13 @@ int get_sensor_board_offset(Board *src_board, Sensor *cur_sensor)
   char *level_param = src_board->level_param;
   Sensor **sensor_list = src_board->sensor_list;
   int offset;
-  int d_id;
+  mzx_thing d_id;
   int board_size = src_board->board_width * src_board->board_height;
 
   for(offset = 0; offset < board_size; offset++)
   {
-    d_id = level_id[offset];
-    if(d_id == 122)
+    d_id = (mzx_thing)level_id[offset];
+    if(d_id == SENSOR)
     {
       if(sensor_list[level_param[offset]] == cur_sensor)
         return offset;
@@ -2724,7 +2771,8 @@ void optimize_null_objects(Board *src_board)
   int x, y, offset;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
-  int d_id, d_param, d_new_param;
+  mzx_thing d_id;
+  int d_param, d_new_param;
   int do_modify = 0;
 
   for(i = 1, i2 = 1; i <= num_robots; i++)
@@ -2816,9 +2864,9 @@ void optimize_null_objects(Board *src_board)
     {
       for(x = 0; x < board_width; x++, offset++)
       {
-        d_id = level_id[offset];
+        d_id = (mzx_thing)level_id[offset];
         // Is it a robot?
-        if((d_id == 123) || (d_id == 124))
+        if(is_robot(d_id))
         {
           d_param = level_param[offset];
           d_new_param = robot_id_translation_list[d_param];
@@ -2832,7 +2880,7 @@ void optimize_null_objects(Board *src_board)
         else
 
         // Is it a scoll?
-        if((d_id == 125) || (d_id == 126))
+        if(is_signscroll(d_id))
         {
           d_param = level_param[offset];
           d_new_param = scroll_id_translation_list[d_param];
@@ -2841,7 +2889,7 @@ void optimize_null_objects(Board *src_board)
         else
 
         // Is it a sensor?
-        if(d_id == 122)
+        if(d_id == SENSOR)
         {
           d_param = level_param[offset];
           d_new_param = sensor_id_translation_list[d_param];
@@ -2929,9 +2977,9 @@ int get_robot_id(Board *src_board, char *name)
     // a back-reference for ID's
     int offset = cur_robot->xpos +
      (cur_robot->ypos * src_board->board_width);
-    int d_id = src_board->level_id[offset];
+    mzx_thing d_id = (mzx_thing)src_board->level_id[offset];
 
-    if((d_id == 123) || (d_id == 124))
+    if(is_robot(d_id))
     {
       return src_board->level_param[offset];
     }
@@ -2940,7 +2988,7 @@ int get_robot_id(Board *src_board, char *name)
       int i;
       for(i = 1; i <= src_board->num_robots; i++)
       {
-        if(!strcmp(name, (src_board->robot_list[i])->robot_name))
+        if(!strcasecmp(name, (src_board->robot_list[i])->robot_name))
           return i;
       }
     }

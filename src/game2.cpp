@@ -35,12 +35,10 @@
 #include "idarray.h"
 #include "world.h"
 
-int slow_down = 0;
-
 // For missile turning (directions)
 
-char cwturndir[4] = { 2, 3, 1, 0 };
-char ccwturndir[4] = { 3, 2, 0, 1 };
+int cwturndir[4] = { 2, 3, 1, 0 };
+int ccwturndir[4] = { 3, 2, 0, 1 };
 
 // OPEN DOOR movement directions, use bits 1,2,4,8,16 to index it.
 // 0ffh=no movement.
@@ -63,7 +61,7 @@ char open_door_max_wait[] =
   32 , 32 , 32 , 32 , 32 , 32 , 32 , 32
 };
 
-void hurt_player_id(World *mzx_world, int id)
+void hurt_player_id(World *mzx_world, mzx_thing id)
 {
   int amount = id_dmg[id];
   dec_counter(mzx_world, "health", amount, 0);
@@ -140,7 +138,8 @@ int inc_param(int param, int max)
   }
 }
 
-// Function to take an x/y position and return an array offset (within the board)
+// Function to take an x/y position and return an array offset
+// (within the board)
 
 int xy2array2(Board *src_board, int x, int y)
 {
@@ -203,13 +202,15 @@ void update_board(World *mzx_world)
   char *level_under_color = src_board->level_under_color;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
-  char current_id;
+  int slow_down;
+  mzx_thing current_id;
   char current_param;
   char current_color;
-  char current_under_id;
+  mzx_thing current_under_id;
 
   // Toggle slow_down
-  slow_down ^= 1;
+  mzx_world->slow_down ^= 1;
+  slow_down = mzx_world->slow_down;
 
   // Clear the status code of all robots
   for(i = 0; i < src_board->num_robots_active; i++)
@@ -225,10 +226,11 @@ void update_board(World *mzx_world)
   {
     for(x = 0; x < board_width; x++, level_offset++)
     {
-      current_id = level_id[level_offset];
+      current_id = (mzx_thing)level_id[level_offset];
 
       // If the char's update done value is set or the id is < 25
-      // (space trough W water) then there's nothing to do here; go to the next one.
+      // (space trough W water) then there's nothing to do here;
+      // go to the next one.
 
       if((update_done[level_offset] & 1) || (current_id < 25) ||
        !(flags[(int)current_id] & A_UPDATE))
@@ -240,9 +242,8 @@ void update_board(World *mzx_world)
 
       switch(current_id)
       {
-        // Robot
-        case 123:
-        case 124:
+        case ROBOT:
+        case ROBOT_PUSHABLE:
         {
           run_robot(mzx_world, current_param, x, y);
 
@@ -253,8 +254,8 @@ void update_board(World *mzx_world)
           }
           break;
         }
-        // Ice
-        case 25:
+
+        case ICE:
         {
           // Start ice animation
           if(current_param == 0)
@@ -282,8 +283,8 @@ void update_board(World *mzx_world)
 
           break;
         }
-        // Lava
-        case 26:
+
+        case LAVA:
         {
           int r_val;
 
@@ -304,8 +305,8 @@ void update_board(World *mzx_world)
           }
           break;
         }
-        // Fire
-        case 63:
+
+        case FIRE:
         {
           // Get a random number
           int rval = rand() & 0xFF;
@@ -327,13 +328,14 @@ void update_board(World *mzx_world)
 
           // Check under for water, ice, or lava; these all kill the fire.
 
-          current_under_id = level_under_id[level_offset];
-          if((current_under_id >= 20) && (current_under_id <= 26))
+          current_under_id = (mzx_thing)level_under_id[level_offset];
+          if((current_under_id >= STILL_WATER) &&
+           (current_under_id <= LAVA))
           {
             // Ice also melts into stillwater
-            if(current_under_id == 25)
+            if(current_under_id == ICE)
             {
-              level_under_id[level_offset] = 20;
+              level_under_id[level_offset] = (char)STILL_WATER;
               level_under_color[level_offset] = 25;
             }
             id_remove_top(mzx_world, x, y);
@@ -352,7 +354,7 @@ void update_board(World *mzx_world)
           if((rval == 1) && (src_board->fire_burns != FIRE_BURNS_FOREVER))
           {
             // Fire turns into dark grey ash
-            level_id[level_offset] = 15;
+            level_id[level_offset] = (char)FLOOR;
             level_color[level_offset] = 8;
           }
 
@@ -365,51 +367,59 @@ void update_board(World *mzx_world)
               int offset = xy2array2(src_board, new_x, new_y);
               int place = 0;
               // Save ID and param there
-              char new_id = level_id[offset];
+              mzx_thing new_id = (mzx_thing)level_id[offset];
               char new_color = level_color[offset];
 
               // Fire does things to certain ID's
-              // Space
-              if((new_id == 0) && (src_board->fire_burn_space == 1))
+              if((new_id == SPACE) &&
+               (src_board->fire_burn_space == 1))
+              {
                 place = 1;
+              }
 
               // Fake
-              if((new_id >= 13) && (new_id <= 19) &&
+              if((new_id >= FAKE) && (new_id <= THICK_WEB) &&
                (src_board->fire_burn_fakes == 1))
+              {
                 place = 1;
+              }
 
-              if((new_id == 3) &&
+              if((new_id == TREE) &&
                (src_board->fire_burn_trees == 1))
+              {
                 place = 1;
+              }
 
               // Brown stuff
               // Don't burn scrolls, signs, sensors, robots, or the player
               if((new_color == 6) &&
-               (src_board->fire_burn_brown == 1) && (new_id < 122))
+               (src_board->fire_burn_brown == 1) && (new_id < SENSOR))
+              {
                 place = 1;
+              }
 
               // Player
-              if(new_id == 127)
+              if(new_id == PLAYER)
               {
                 // Make sure player can't.. walk on fire.
                 if(mzx_world->firewalker_dur == 0)
                 {
-                  hurt_player_id(mzx_world, 63);
+                  hurt_player_id(mzx_world, FIRE);
                 }
               }
 
               if(place == 1)
               {
                 // Place a new fire
-                id_place(mzx_world, new_x, new_y, 63, 0, 0);
+                id_place(mzx_world, new_x, new_y, FIRE, 0, 0);
               }
             }
           }
 
           break;
         }
-        // Bullet
-        case 61:
+
+        case BULLET:
         {
           int bullettype = current_param >> 2;
           int direction = current_param & 0x03;
@@ -420,8 +430,8 @@ void update_board(World *mzx_world)
 
           break;
         }
-        // Explosion
-        case 38:
+
+        case EXPLOSION:
         {
           int stage = current_param & 0x0F;
           // Stage zero means climb outwards
@@ -443,7 +453,7 @@ void update_board(World *mzx_world)
                   // Get offset
                   int offset = xy2array2(src_board, new_x, new_y);
                   // Save ID and param there
-                  char new_id = level_id[offset];
+                  mzx_thing new_id = (mzx_thing)level_id[offset];
                   char new_param = level_param[offset];
                   // Get the flags for that ID
                   int flag = flags[(int)new_id];
@@ -454,14 +464,15 @@ void update_board(World *mzx_world)
                   // Blow up (removed by explosion)?
                   // Slimes, ghosts, and dragons might also die if the bit isn't set
                   if((flag & A_BLOW_UP) ||
-                   ((new_id == 83) && !(new_param & 0x80)) ||
-                   ((new_id == 85) && !(new_param & 0x08)) ||
-                   ((new_id == 86) && !(new_param & 0xE0)))
+                   ((new_id == SLIMEBLOB) && !(new_param & 0x80)) ||
+                   ((new_id == GHOST) && !(new_param & 0x08)) ||
+                   ((new_id == DRAGON) && !(new_param & 0xE0)))
                   {
                     // Remove what's there
                     id_remove_top(mzx_world, new_x, new_y);
                     // Place a new explosion (one level down)
-                    id_place(mzx_world, new_x, new_y, 38, 0, current_param);
+                    id_place(mzx_world, new_x, new_y, EXPLOSION,
+                     0, current_param);
                     continue;
                   }
 
@@ -471,7 +482,7 @@ void update_board(World *mzx_world)
                     // Remove what's there
                     id_remove_top(mzx_world, new_x, new_y);
                     // Place a fresh new explosion
-                    id_place(mzx_world, new_x, new_y, 38, 0, 64);
+                    id_place(mzx_world, new_x, new_y, EXPLOSION, 0, 64);
                     continue;
                   }
 
@@ -479,31 +490,33 @@ void update_board(World *mzx_world)
                   if(flag & A_UNDER)
                   {
                     // Place a new explosion over it.
-                    id_place(mzx_world, new_x, new_y, 38, 0, current_param);
+                    id_place(mzx_world, new_x, new_y, EXPLOSION,
+                     0, current_param);
                     continue;
                   }
 
                   // Now, see if it's something that reacts to explosions
                   // Player takes damage
-                  if(new_id == 127)
+                  if(new_id == PLAYER)
                   {
-                    hurt_player_id(mzx_world, 38);
+                    hurt_player_id(mzx_world, EXPLOSION);
                     continue;
                   }
 
                   // Mine explodes
-                  if(new_id == 74)
+                  if(new_id == MINE)
                   {
                     // Take explosion radius from param
                     // Remove what's there
                     id_remove_top(mzx_world, new_x, new_y);
                     // Place a fresh new explosion
-                    id_place(mzx_world, new_x, new_y, 38, 0, new_param & 0xF0);
+                    id_place(mzx_world, new_x, new_y, EXPLOSION,
+                     0, new_param & 0xF0);
                     continue;
                   }
 
                   // Robot gets sent a label
-                  if((new_id == 123) || (new_id == 124))
+                  if((new_id == ROBOT) || (new_id == ROBOT_PUSHABLE))
                   {
                     // Send bombed label
                     send_robot_def(mzx_world, new_param, 1);
@@ -511,7 +524,7 @@ void update_board(World *mzx_world)
                   }
 
                   // Dragon takes damage, if it wasn't already killed
-                  if(new_id == 86)
+                  if(new_id == DRAGON)
                   {
                     // Decrease HP
                     level_param[offset] = new_param - 0x20;
@@ -526,10 +539,12 @@ void update_board(World *mzx_world)
           if(stage == 3)
           {
             // Get what's underneath it
-            current_under_id = level_under_id[level_offset];
+            current_under_id =
+             (mzx_thing)level_under_id[level_offset];
             // Leave space if over goop, water, lava, or ice
-            if((current_under_id == 34) ||
-             ((current_under_id >= 20) && (current_under_id <= 26)))
+            if((current_under_id == GOOP) ||
+             ((current_under_id >= STILL_WATER) &&
+             (current_under_id <= LAVA)))
             {
               // Leave space
               id_remove_top(mzx_world, x, y);
@@ -548,12 +563,12 @@ void update_board(World *mzx_world)
             if(src_board->explosions_leave == EXPL_LEAVE_ASH)
             {
               // Leave ash if the params say so
-              level_id[level_offset] = 15;
+              level_id[level_offset] = (char)FLOOR;
               level_color[level_offset] = 8;
               break;
             }
             // Otherwise leave fire
-            level_id[level_offset] = 63;
+            level_id[level_offset] = (char)FIRE;
             level_param[level_offset] = 0;
           }
           else
@@ -564,20 +579,23 @@ void update_board(World *mzx_world)
           break;
         }
         // Cw/Ccw
-        case 45:
-        case 46:
+
+        case CW_ROTATE:
+        case CCW_ROTATE:
         {
           if(slow_down)
             break;
+
           level_param[level_offset] = inc_param(current_param, 3);
-          rotate(mzx_world, x, y, current_id - 45);
+          rotate(mzx_world, x, y, current_id - CW_ROTATE);
           break;
         }
-        // Transport
-        case 49:
+
+        case TRANSPORT:
         {
           if(slow_down)
             break;
+
           // Is it still animating?
           if((current_param & 0x18) != 0x18)
           {
@@ -592,44 +610,45 @@ void update_board(World *mzx_world)
           break;
         }
 
-        // Shooting fire
-        case 78:
+        case SHOOTING_FIRE:
         {
-          int move_status;
+          move_status status;
           // Get direction
-          int direction = current_param >> 1;
+          mzx_dir direction = (mzx_dir)(current_param >> 1);
           // Flip animation and store
           current_param ^= 1;
           level_param[level_offset] = current_param;
           // Try moving
 
-          move_status = move(mzx_world, x, y, direction,
-           MOVE_CAN_LAVAWALK | MOVE_CAN_FIREWALK |
-           MOVE_CAN_WATERWALK | MOVE_REACT_PLAYER |
-           MOVE_CAN_GOOPWALK | MOVE_SPITFIRE);
+          status = move(mzx_world, x, y, direction,
+           CAN_LAVAWALK | CAN_FIREWALK | CAN_WATERWALK |
+           REACT_PLAYER | CAN_GOOPWALK | SPITFIRE);
 
-          if(move_status == 2)
+          if(status == HIT_PLAYER)
           {
             // Hit player; hurt the player and die
-            hurt_player_id(mzx_world, 78);
+            hurt_player_id(mzx_world, SHOOTING_FIRE);
             id_remove_top(mzx_world, x, y);
           }
           else
           {
-            if(move_status)
+            if(status != NO_HIT)
             {
               // Didn't hit the player.. check stuff
-              current_under_id = level_under_id[level_offset];
+              current_under_id =
+               (mzx_thing)level_under_id[level_offset];
               // See if it hit an entrance
-              if((current_under_id == 43) || (current_under_id == 44) ||
-              ((current_under_id >= 67) && (current_under_id <= 70)))
+              if((current_under_id == STAIRS) ||
+               (current_under_id == CAVE) ||
+               ((current_under_id >= WHIRLPOOL_1) &&
+               (current_under_id <= WHIRLPOOL_4)))
               {
                 id_remove_top(mzx_world, x, y);
               }
               else
               {
                 // Put fire
-                level_id[level_offset] = 63;
+                level_id[level_offset] = (char)FIRE;
                 level_param[level_offset] = 0;
               }
             }
@@ -637,49 +656,48 @@ void update_board(World *mzx_world)
 
           break;
         }
-        // Missile
-        case 62:
+
+        case MISSILE:
         {
           const int move_params =
-           MOVE_CAN_LAVAWALK | MOVE_CAN_FIREWALK |
-           MOVE_CAN_WATERWALK | MOVE_REACT_PLAYER |
-           MOVE_CAN_GOOPWALK;
+           CAN_LAVAWALK | CAN_FIREWALK | CAN_WATERWALK |
+           REACT_PLAYER | CAN_GOOPWALK;
+
           // Param is the direction
-          int move_status = move(mzx_world, x, y, current_param,
-           move_params);
+          move_status status = move(mzx_world, x, y,
+           current_param, move_params);
           // Did it hit something that's not the player?
-          if((move_status == 1) || (move_status == 3))
+          if((status == HIT) || (status == HIT_EDGE))
           {
             // Otherwise change direction; try cw then ccw
             int new_direction = cwturndir[(int)current_param];
             level_param[level_offset] = new_direction;
-            move_status = move(mzx_world, x, y, new_direction,
+            status = move(mzx_world, x, y, new_direction,
              move_params);
             // Did it hit something that's not the player? Try ccw.
-            if((move_status == 1) || (move_status == 3))
+            if((status == HIT) || (status == HIT_EDGE))
             {
               new_direction = ccwturndir[(int)current_param];
               level_param[level_offset] = new_direction;
-              move_status = move(mzx_world, x, y, new_direction,
-               move_params);
-              if(move_status)
-                move_status = 2;
+              status = move(mzx_world, x, y, new_direction, move_params);
+              if(status)
+                status = HIT_PLAYER;
             }
           }
 
           // Did it hit the player?
-          if(move_status == 2)
+          if(status == HIT_PLAYER)
           {
             // If so, leave explosion
-            level_id[level_offset] = 38;
+            level_id[level_offset] = (char)EXPLOSION;
             level_param[level_offset] = 48;
             play_sfx(mzx_world, 36);
           }
 
           break;
         }
-        // Seeker
-        case 79:
+
+        case SEEKER:
         {
           int seek_dir;
 
@@ -693,18 +711,18 @@ void update_board(World *mzx_world)
             level_param[level_offset] = current_param - 1;
             seek_dir = find_seek(mzx_world, x, y);
             if(move(mzx_world, x, y, seek_dir,
-             MOVE_CAN_PUSH | MOVE_CAN_LAVAWALK |
-             MOVE_CAN_FIREWALK | MOVE_CAN_WATERWALK |
-             MOVE_REACT_PLAYER | MOVE_CAN_GOOPWALK) == 2)
+             CAN_PUSH | CAN_LAVAWALK | CAN_FIREWALK |
+             CAN_WATERWALK | REACT_PLAYER | CAN_GOOPWALK) ==
+             HIT_PLAYER)
             {
-              hurt_player_id(mzx_world, 79);
+              hurt_player_id(mzx_world, SEEKER);
               id_remove_top(mzx_world, x, y);
             }
           }
           break;
         }
-        // "Lazer"
-        case 59:
+
+        case LAZER:
         {
           // Decrease time until death
           // If it's less than 8, kill it
@@ -730,18 +748,18 @@ void update_board(World *mzx_world)
           }
           break;
         }
-        // Pusher
-        case 56:
+
+        case PUSHER:
         {
-          if(slow_down) break;
-          move(mzx_world, x, y, current_param, MOVE_CAN_PUSH);
+          if(!slow_down)
+            move(mzx_world, x, y, current_param, CAN_PUSH);
 
           break;
         }
-        // Snake
-        case 80:
+
+        case SNAKE:
         {
-          int move_status;
+          move_status status;
 
           // Flip count and store
           current_param ^= 8;
@@ -751,19 +769,19 @@ void update_board(World *mzx_world)
           if((current_param & 0x08) || !(current_param & 0x04))
           {
             // Try move
-            move_status = move(mzx_world, x, y,
-             current_param & 0x03, MOVE_REACT_PLAYER);
+            status = move(mzx_world, x, y, current_param & 0x03,
+             REACT_PLAYER);
             // See if it hit the player
-            if(move_status == 2)
+            if(status == HIT_PLAYER)
             {
               // If so, take damage and die
-              hurt_player_id(mzx_world, 80);
+              hurt_player_id(mzx_world, SNAKE);
               id_remove_top(mzx_world, x, y);
               break;
             }
 
             // Otherwise, if it didn't move, get a new direction
-            if(move_status)
+            if(status != NO_HIT)
             {
               int m_dir;
 
@@ -791,8 +809,8 @@ void update_board(World *mzx_world)
           }
           break;
         }
-        // Eye
-        case 81:
+
+        case EYE:
         {
           // Flip count and store
           current_param ^= 0x80;
@@ -816,22 +834,21 @@ void update_board(World *mzx_world)
             }
 
             if(move(mzx_world, x, y, m_dir,
-             MOVE_CAN_LAVAWALK | MOVE_CAN_FIREWALK |
-             MOVE_CAN_WATERWALK | MOVE_REACT_PLAYER |
-             MOVE_CAN_GOOPWALK) == 2)
+             CAN_LAVAWALK | CAN_FIREWALK | CAN_WATERWALK | REACT_PLAYER |
+             CAN_GOOPWALK) == HIT_PLAYER)
             {
               // Hit the player. Get the blast radius.
               int radius = (current_param & 0x38) << 1;
               // Explode (place explosion)
-              level_id[level_offset] = 38;
+              level_id[level_offset] = EXPLOSION;
               level_param[level_offset] = radius;
               play_sfx(mzx_world, 36);
             }
           }
           break;
         }
-        // Thief
-        case 82:
+
+        case THIEF:
         {
           // Movement rate, 1-4
           int move_speed = current_param & 0x18;
@@ -860,7 +877,7 @@ void update_board(World *mzx_world)
             }
 
             // Move and see if it hit the player
-            if(move(mzx_world, x, y, m_dir, MOVE_REACT_PLAYER) == 2)
+            if(move(mzx_world, x, y, m_dir, REACT_PLAYER) == HIT_PLAYER)
             {
               // Get amount of gems to take
               int gems_take = ((current_param & 0x80) >> 7) + 1;
@@ -877,63 +894,65 @@ void update_board(World *mzx_world)
 
           break;
         }
-        // Slime
-        case 83:
+
+        case SLIMEBLOB:
         {
-          if(slow_down) break;
-
-          // This is pretty weird, but I have to go by the ASM for now
-          int spread_speed = current_param & 0x03;
-          int current_cycle = (current_param &  0x3C) >> 2;
-
-          spread_speed |= spread_speed << 1;
-
-          if(spread_speed == current_cycle)
+          if(!slow_down)
           {
-            int new_x, new_y;
-            current_color = level_color[level_offset];
-            // Clear cycle
-            current_param &= 0xC7;
+            // This is pretty weird, but I have to go by the ASM for now
+            int spread_speed = current_param & 0x03;
+            int current_cycle = (current_param &  0x3C) >> 2;
 
-            // Put slimes all around
-            for(i = 3; i >= 0; i--)
+            spread_speed |= spread_speed << 1;
+
+            if(spread_speed == current_cycle)
             {
-              if(!arraydir2(src_board, x, y, &new_x, &new_y, i))
+              int new_x, new_y;
+              current_color = level_color[level_offset];
+              // Clear cycle
+              current_param &= 0xC7;
+
+              // Put slimes all around
+              for(i = 3; i >= 0; i--)
               {
-                // Get offset
-                int offset = xy2array2(src_board, new_x, new_y);
-                // Save ID and param there
-                char new_id = level_id[offset];
-                // See if it hits a fake
-                if((new_id == 0) || ((new_id >= 13) && (new_id <= 19)))
+                if(!arraydir2(src_board, x, y, &new_x, &new_y, i))
                 {
-                  // Put a slime
-                  id_place(mzx_world, new_x, new_y, 83, current_color, current_param);
-                }
-                else
-                {
-                  // See if it hits the player and hurts the player
-                  if((new_id == 127) && (current_param & 0x40))
+                  // Get offset
+                  int offset = xy2array2(src_board, new_x, new_y);
+                  // Save ID and param there
+                  mzx_thing new_id = (mzx_thing)level_id[offset];
+
+                  // See if it hits a fake
+                  if(is_fake(new_id))
                   {
-                    // Take damage
-                    hurt_player_id(mzx_world, 83);
+                    // Put a slime
+                    id_place(mzx_world, new_x, new_y, SLIMEBLOB,
+                     current_color, current_param);
                   }
+                  else
+                  {
+                    // See if it hits the player and hurts the player
+                    if((new_id == PLAYER) && (current_param & 0x40))
+                    {
+                      // Take damage
+                      hurt_player_id(mzx_world, SLIMEBLOB);
+                    }
+                  }
+                  // Put a breakaway
+                  id_place(mzx_world, x, y, BREAKAWAY, current_color, 0);
                 }
-                // Put a breakaway
-                id_place(mzx_world, x, y, 6, current_color, 0);
               }
             }
+            else
+            {
+              // Increase cycle
+              level_param[level_offset] = current_param + 4;
+            }
           }
-          else
-          {
-            // Increase cycle
-            level_param[level_offset] = current_param + 4;
-          }
-
           break;
         }
-        // Runner
-        case 84:
+
+        case RUNNER:
         {
           int speed = current_param & 0x0C;
           int cycle = (current_param & 0x30) >> 2;
@@ -942,20 +961,20 @@ void update_board(World *mzx_world)
           {
             // Get direction
             int direction = current_param & 0x03;
-            int move_status;
+            move_status status;
             // Clear cycle
             level_param[level_offset] = current_param & 0xCF;
 
-            move_status = move(mzx_world, x, y, direction,
-             MOVE_CAN_PUSH | MOVE_CAN_TRANSPORT | MOVE_REACT_PLAYER);
+            status = move(mzx_world, x, y, direction,
+             CAN_PUSH | CAN_TRANSPORT | REACT_PLAYER);
             // Did the move not go through?
-            if(move_status)
+            if(status != NO_HIT)
             {
               // Did it hit the player?
-              if(move_status == 2)
+              if(status == HIT_PLAYER)
               {
                 // Hurt the player and die
-                hurt_player_id(mzx_world, 84);
+                hurt_player_id(mzx_world, RUNNER);
                 id_remove_top(mzx_world, x, y);
                 break;
               }
@@ -974,8 +993,8 @@ void update_board(World *mzx_world)
 
           break;
         }
-        // Ghost
-        case 85:
+
+        case GHOST:
         {
           int speed = current_param & 0x30;
           int cycle = (current_param & 0xC0) >> 2;
@@ -1001,12 +1020,11 @@ void update_board(World *mzx_world)
 
             // Try move, did it hit the player?
             if(move(mzx_world, x, y, m_dir,
-             MOVE_CAN_LAVAWALK | MOVE_CAN_FIREWALK |
-             MOVE_CAN_WATERWALK | MOVE_REACT_PLAYER |
-             MOVE_CAN_GOOPWALK) == 2)
+             CAN_LAVAWALK | CAN_FIREWALK | CAN_WATERWALK |
+             REACT_PLAYER | CAN_GOOPWALK) == HIT_PLAYER)
             {
               // Take damage
-              hurt_player_id(mzx_world, 85);
+              hurt_player_id(mzx_world, GHOST);
               // Only die if not invincible
               if(!(current_param & 0x08))
               {
@@ -1023,8 +1041,8 @@ void update_board(World *mzx_world)
 
           break;
         }
-        // Dragon
-        case 86:
+
+        case DRAGON:
         {
           int fire_rate;
           int rval = -1;
@@ -1036,7 +1054,7 @@ void update_board(World *mzx_world)
             if(cycle == 0x18)
             {
               int m_dir;
-              int move_status;
+              move_status status;
               // Zero out movement
               level_param[level_offset] = current_param & 0xE7;
 
@@ -1052,18 +1070,17 @@ void update_board(World *mzx_world)
                 m_dir = find_seek(mzx_world, x, y);
               }
 
-              move_status = move(mzx_world, x, y, m_dir,
-               MOVE_CAN_LAVAWALK | MOVE_CAN_FIREWALK |
-               MOVE_REACT_PLAYER);
+              status = move(mzx_world, x, y, m_dir,
+               CAN_LAVAWALK | CAN_FIREWALK | REACT_PLAYER);
 
               // Is it blocked?
-              if(move_status)
+              if(status != NO_HIT)
               {
                 // Did it hit the player?
-                if(move_status == 2)
+                if(status == HIT_PLAYER)
                 {
                   // Dragons don't die when hit by the player
-                  hurt_player_id(mzx_world, 86);
+                  hurt_player_id(mzx_world, DRAGON);
                 }
 
                 // Can't shoot, so get out of here
@@ -1091,8 +1108,8 @@ void update_board(World *mzx_world)
 
           break;
         }
-        // Fish
-        case 87:
+
+        case FISH:
         {
           unsigned int m_dir;
 
@@ -1121,11 +1138,11 @@ void update_board(World *mzx_world)
 
             // Move. Did it hit the player and does the
             // player hurt fish?
-            if((move(mzx_world, x, y, m_dir, MOVE_CAN_WATERWALK |
-             MOVE_REACT_PLAYER | MOVE_MUST_WATER) == 2) &&
+            if((move(mzx_world, x, y, m_dir, CAN_WATERWALK |
+             REACT_PLAYER | MUST_WATER) == HIT_PLAYER) &&
              (current_param & 0x40))
             {
-              hurt_player_id(mzx_world, 87);
+              hurt_player_id(mzx_world, FISH);
               id_remove_top(mzx_world, x, y);
             }
           }
@@ -1137,13 +1154,13 @@ void update_board(World *mzx_world)
 
           break;
         }
-        // Shark
-        case 88:
+
+        case SHARK:
         {
           int intelligence;
           int rval;
           int m_dir;
-          int move_status;
+          move_status status;
           int new_x, new_y;
           int fire_rate;
           int shoot_type;
@@ -1163,13 +1180,12 @@ void update_board(World *mzx_world)
           }
 
           // Hit player and die
-          move_status = move(mzx_world, x, y, m_dir,
-           MOVE_MUST_LAVAGOOP | MOVE_REACT_PLAYER |
-           MOVE_CAN_LAVAWALK);
+          status = move(mzx_world, x, y, m_dir,
+           MUST_LAVAGOOP | REACT_PLAYER | CAN_LAVAWALK);
 
-          if(move_status == 2)
+          if(status == HIT_PLAYER)
           {
-            hurt_player_id(mzx_world, 88);
+            hurt_player_id(mzx_world, SHARK);
             id_remove_top(mzx_world, x, y);
             break;
           }
@@ -1177,7 +1193,7 @@ void update_board(World *mzx_world)
           // Should shoot in the direction it moved.
 
           // If blocked, keep old x/y, otherwise update
-          if(move_status)
+          if(status != NO_HIT)
           {
             new_x = x;
             new_y = y;
@@ -1219,8 +1235,8 @@ void update_board(World *mzx_world)
 
           break;
         }
-        // Spider
-        case 89:
+
+        case SPIDER:
         {
           // Toggle cycle flipflop
           current_param ^= 0x40;
@@ -1245,17 +1261,17 @@ void update_board(World *mzx_world)
             }
             flags |= ((current_param & 0x18) << 2) + 32;
 
-            if(move(mzx_world, x, y, m_dir, flags) == 2)
+            if(move(mzx_world, x, y, m_dir, flags) == HIT_PLAYER)
             {
-              hurt_player_id(mzx_world, 89);
+              hurt_player_id(mzx_world, SPIDER);
               id_remove_top(mzx_world, x, y);
             }
           }
 
           break;
         }
-        // Goblin
-        case 90:
+
+        case GOBLIN:
         {
           int move_rate;
           int move_cycle;
@@ -1306,23 +1322,23 @@ void update_board(World *mzx_world)
             }
 
             // Try to move, does it hit the player, etc.
-            if(move(mzx_world, x, y, m_dir, MOVE_CAN_WATERWALK |
-             MOVE_REACT_PLAYER) == 2)
+            if(move(mzx_world, x, y, m_dir, CAN_WATERWALK |
+             REACT_PLAYER) == HIT_PLAYER)
             {
-              hurt_player_id(mzx_world, 90);
+              hurt_player_id(mzx_world, GOBLIN);
               id_remove_top(mzx_world, x, y);
             }
           }
 
           break;
         }
-        // Tiger
-        case 91:
+
+        case SPITTING_TIGER:
         {
           int intelligence;
           int rval;
           int m_dir;
-          int move_status;
+          move_status status;
           int new_x, new_y;
           int fire_rate;
           int shoot_type;
@@ -1342,12 +1358,12 @@ void update_board(World *mzx_world)
           }
 
           // Hit player and die
-          move_status = move(mzx_world, x, y, m_dir,
-           MOVE_CAN_WATERWALK | MOVE_REACT_PLAYER);
+          status = move(mzx_world, x, y, m_dir,
+           CAN_WATERWALK | REACT_PLAYER);
 
-          if(move_status == 2)
+          if(status == HIT_PLAYER)
           {
-            hurt_player_id(mzx_world, 91);
+            hurt_player_id(mzx_world, SPITTING_TIGER);
             id_remove_top(mzx_world, x, y);
             break;
           }
@@ -1355,7 +1371,7 @@ void update_board(World *mzx_world)
           // Should shoot in the direction it moved.
 
           // If blocked, keep old x/y, otherwise update
-          if(move_status)
+          if(status)
           {
             new_x = x;
             new_y = y;
@@ -1396,12 +1412,13 @@ void update_board(World *mzx_world)
 
           break;
         }
-        // Spinning gun
-        case 93:
+
+        case SPINNING_GUN:
         {
-          // A spinnning gun is a bulletgun that spins. So it can fall through for
-          // now, but this might get changed with refactoring..
-          if(slow_down) break;
+          // A spinnning gun is a bulletgun that spins. So it can fall
+          // through for now, but this might get changed with refactoring..
+          if(slow_down)
+            break;
 
           // Update animation and direction
 
@@ -1418,13 +1435,14 @@ void update_board(World *mzx_world)
 
           // Fall through
         }
-        // Bulletgun
-        case 92:
+
+        case BULLET_GUN:
         {
           int shoot_rate;
           int rval;
 
-          if(slow_down) break;
+          if(slow_down)
+            break;
 
           shoot_rate = current_param & 0x07;
           rval = rand() & 0x0F;
@@ -1468,8 +1486,8 @@ void update_board(World *mzx_world)
 
           break;
         }
-        // Bear
-        case 94:
+
+        case BEAR:
         {
           int move_rate = current_param & 0x18;
           int move_cycle = (current_param & 0x60) >> 2;
@@ -1492,9 +1510,9 @@ void update_board(World *mzx_world)
             {
               // Move in the player's direction, always
               if(move(mzx_world, x, y, find_seek(mzx_world, x, y),
-               MOVE_CAN_WATERWALK | MOVE_REACT_PLAYER) == 2)
+               CAN_WATERWALK | REACT_PLAYER) == HIT_PLAYER)
               {
-                hurt_player_id(mzx_world, 94);
+                hurt_player_id(mzx_world, BEAR);
                 id_remove_top(mzx_world, x, y);
               }
             }
@@ -1506,8 +1524,8 @@ void update_board(World *mzx_world)
 
           break;
         }
-        // Cub
-        case 95:
+
+        case BEAR_CUB:
         {
           int switch_rate;
           int switch_cycle;
@@ -1554,48 +1572,50 @@ void update_board(World *mzx_world)
             m_dir = flip_dir(m_dir);
           }
 
-          if(move(mzx_world, x, y, m_dir, MOVE_CAN_WATERWALK |
-           MOVE_REACT_PLAYER) == 2)
+          if(move(mzx_world, x, y, m_dir, CAN_WATERWALK |
+           REACT_PLAYER) == HIT_PLAYER)
           {
-            hurt_player_id(mzx_world, 95);
+            hurt_player_id(mzx_world, BEAR_CUB);
             id_remove_top(mzx_world, x, y);
           }
 
           break;
         }
-        // Energizer:
-        case 33:
+
+        case ENERGIZER:
         {
           level_param[level_offset] = inc_param(current_param, 7);
           break;
         }
-        // Litbomb
-        case 37:
+
+        case LIT_BOMB:
         {
-          if(slow_down) break;
-          if((current_param & 6) == 6)
+          if(!slow_down)
           {
-            // Is it a highbomb?
-            if(current_param & 0x80)
+            if((current_param & 6) == 6)
             {
-              level_param[level_offset] = 0x40;
+              // Is it a highbomb?
+              if(current_param & 0x80)
+              {
+                level_param[level_offset] = 0x40;
+              }
+              else
+              {
+                level_param[level_offset] = 0x20;
+              }
+
+              level_id[level_offset] = 38;
+              play_sfx(mzx_world, 36);
             }
             else
             {
-              level_param[level_offset] = 0x20;
+              level_param[level_offset] = current_param + 1;
             }
-
-            level_id[level_offset] = 38;
-            play_sfx(mzx_world, 36);
-          }
-          else
-          {
-            level_param[level_offset] = current_param + 1;
           }
           break;
         }
-        // Opendoor
-        case 42:
+
+        case OPEN_DOOR:
         {
           int curr_wait = current_param & 0xE0;
           // Get the door stage
@@ -1610,7 +1630,7 @@ void update_board(World *mzx_world)
             {
               // Turn into a regular door
               level_param[level_offset] = current_param & 0x07;
-              level_id[level_offset] = 41;
+              level_id[level_offset] = (char)DOOR;
             }
             else
             {
@@ -1621,12 +1641,11 @@ void update_board(World *mzx_world)
             // Only do this if movement is possible
             if(door_move != 0xFF)
             {
-              if(move(mzx_world, x, y, door_move,
-               MOVE_CAN_PUSH | MOVE_CAN_LAVAWALK |
-               MOVE_CAN_FIREWALK | MOVE_CAN_WATERWALK))
+              if(move(mzx_world, x, y, door_move, CAN_PUSH |
+               CAN_LAVAWALK | CAN_FIREWALK | CAN_WATERWALK) != NO_HIT)
               {
                 // Reset the param and make the door open
-                level_id[level_offset] = 42;
+                level_id[level_offset] = OPEN_DOOR;
                 level_param[level_offset] = current_param;
               }
             }
@@ -1637,14 +1656,14 @@ void update_board(World *mzx_world)
           }
           break;
         }
-        // Opengate
-        case 48:
+
+        case OPEN_GATE:
         {
           // End of wait? Close it.
           if(current_param == 0)
           {
             // Make it closed gate
-            level_id[level_offset] = 47;
+            level_id[level_offset] = (char)GATE;
             play_sfx(mzx_world, 25);
           }
           else
@@ -1655,26 +1674,27 @@ void update_board(World *mzx_world)
 
           break;
         }
-        // Moving wall
-        case 51:
-        case 52:
-        case 53:
-        case 54:
+
+        case N_MOVING_WALL:
+        case S_MOVING_WALL:
+        case E_MOVING_WALL:
+        case W_MOVING_WALL:
         {
           // Get direction
-          current_id -= 51;
+          current_id = (mzx_thing)((int)current_id - N_MOVING_WALL);
           // Try the move
-          if(move(mzx_world, x, y, current_id,
-           MOVE_CAN_PUSH | MOVE_CAN_TRANSPORT | MOVE_CAN_LAVAWALK |
-           MOVE_CAN_FIREWALK | MOVE_CAN_WATERWALK))
+          if(move(mzx_world, x, y, current_id, CAN_PUSH |
+           CAN_TRANSPORT | CAN_LAVAWALK | CAN_FIREWALK |
+           CAN_WATERWALK) != NO_HIT)
           {
             // Can't move; try other direction
-            level_id[level_offset] = flip_dir(current_id) + 51;
+            level_id[level_offset] =
+             ((int)flip_dir(current_id) + N_MOVING_WALL);
           }
           break;
         }
-        // "Lazer" gun
-        case 60:
+
+        case LAZER_GUN:
         {
           // Look at the param
           int start_time = (current_param & 0x1C) >> 2;
@@ -1688,36 +1708,40 @@ void update_board(World *mzx_world)
           }
           break;
         }
-        // Life
-        case 66:
+
+        case LIFE:
         {
-          if(slow_down) break;
-          level_param[level_offset] = inc_param(current_param, 3);
+          if(!slow_down)
+            level_param[level_offset] = inc_param(current_param, 3);
+
           break;
         }
+
         // Whirlpool
-        case 67:
-        case 68:
-        case 69:
-        case 70:
+        case WHIRLPOOL_1:
+        case WHIRLPOOL_2:
+        case WHIRLPOOL_3:
+        case WHIRLPOOL_4:
         {
-          if(slow_down) break;
-          // Is it the last phase?
-          if(current_id == 70)
+          if(!slow_down)
           {
-            // Loop back
-            level_id[level_offset] = 67;
-          }
-          else
-          {
-            // Increase "frame"
-            level_id[level_offset] = current_id + 1;
+            // Is it the last phase?
+            if(current_id == WHIRLPOOL_4)
+            {
+              // Loop back
+              level_id[level_offset] = WHIRLPOOL_1;
+            }
+            else
+            {
+              // Increase "frame"
+              level_id[level_offset] = current_id + 1;
+            }
           }
 
           break;
         }
-        // Mine
-        case 74:
+
+        case MINE:
         {
           // Should it go to the next phase?
           if((current_param & 0x0E) != 0x0E)
@@ -1731,8 +1755,8 @@ void update_board(World *mzx_world)
           }
           break;
         }
-        // Missile gun
-        case 97:
+
+        case MISSILE_GUN:
         {
           // Apparently, missile guns have intelligence, but this
           // doesn't even affect anything. Hrm...
@@ -1741,25 +1765,31 @@ void update_board(World *mzx_world)
           int m_dir;
           int rval;
 
-          if(slow_down) break;
-
-          fire_rate = current_param & 0x07;
-          rval = rand() & 0x20;
-          m_dir = find_seek(mzx_world, x, y);
-
-          // Fire rate of seven means always shoot
-          // Only shoot if the gun is facing the player
-          if(((rval < fire_rate) || (fire_rate == 7)) &&
-           (m_dir == ((current_param >> 3) & 0x03)))
+          if(!slow_down)
           {
-            shoot_missile(mzx_world, x, y, m_dir);
-            // Should it die now?
-            if(!(current_param & 0x80))
+            fire_rate = current_param & 0x07;
+            rval = rand() & 0x20;
+            m_dir = find_seek(mzx_world, x, y);
+
+            // Fire rate of seven means always shoot
+            // Only shoot if the gun is facing the player
+            if(((rval < fire_rate) || (fire_rate == 7)) &&
+             (m_dir == ((current_param >> 3) & 0x03)))
             {
-              id_remove_top(mzx_world, x, y);
+              shoot_missile(mzx_world, x, y, m_dir);
+              // Should it die now?
+              if(!(current_param & 0x80))
+              {
+                id_remove_top(mzx_world, x, y);
+              }
             }
           }
 
+          break;
+        }
+
+        default:
+        {
           break;
         }
       }
@@ -1773,8 +1803,8 @@ void update_board(World *mzx_world)
   {
     for(x = board_width - 1; x >= 0; x--)
     {
-      current_id = level_id[level_offset];
-      if((current_id == 123) || (current_id == 124))
+      current_id = (mzx_thing)level_id[level_offset];
+      if(is_robot(current_id))
       {
         current_param = level_param[level_offset];
         // May change the source board (with swap world or load game)
@@ -1803,7 +1833,7 @@ void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
   int lx = x;
   int ly = y;
   int offset;
-  char id;
+  mzx_thing id;
   char param;
 
   while(1)
@@ -1815,12 +1845,11 @@ void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
     }
 
     offset = xy2array2(src_board, lx, ly);
-    id = level_id[offset];
+    id = (mzx_thing)level_id[offset];
 
-    // Player
-    if(id == 127)
+    if(id == PLAYER)
     {
-      hurt_player_id(mzx_world, 59);
+      hurt_player_id(mzx_world, LAZER);
 
       // Restart if zapped?
       if(src_board->restart_if_zapped != 1)
@@ -1830,7 +1859,7 @@ void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
         {
           // Move the player in the opposite direction
           move(mzx_world, lx, ly, flip_dir((p_dir - 1)),
-           MOVE_CAN_PUSH | MOVE_CAN_TRANSPORT | MOVE_CAN_WATERWALK);
+           CAN_PUSH | CAN_TRANSPORT | CAN_WATERWALK);
         }
       }
 
@@ -1839,7 +1868,7 @@ void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
     else
 
     // Robot
-    if((id == 123) || (id == 124))
+    if(is_robot(id))
     {
       param = level_param[offset];
       // Send the robot the lazer label
@@ -1864,7 +1893,7 @@ void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
         n_param |= 1;
       }
 
-      id_place(mzx_world, lx, ly, 59, color, n_param);
+      id_place(mzx_world, lx, ly, LAZER, color, n_param);
     }
   }
 }
@@ -1879,14 +1908,14 @@ void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
 // Returns 1 if successful, 0 if not
 
 int try_transport(World *mzx_world, int x, int y, int push_status,
- int can_push, int id, int dir)
+ int can_push, mzx_thing id, int dir)
 {
   Board *src_board = mzx_world->current_board;
   int d_offset = xy2array2(src_board, x, y);
-  int d_id = src_board->level_id[d_offset];
+  mzx_thing d_id = (mzx_thing)src_board->level_id[d_offset];
 
   // Not gonna be happening with goop or a transport
-  if((d_id != 34) && (d_id != 49))
+  if((d_id != GOOP) && (d_id != TRANSPORT))
   {
     // Get flags for the ID
     int d_flag = flags[d_id];
@@ -1900,7 +1929,7 @@ int try_transport(World *mzx_world, int x, int y, int push_status,
     {
       // Player can move onto sensor.. sensor is not under
       // but pushable.
-      if((d_id == 122) && (id == 127))
+      if((d_id == SENSOR) && (id == PLAYER))
       {
         return 1;
       }
@@ -1922,8 +1951,8 @@ int try_transport(World *mzx_world, int x, int y, int push_status,
   return 0;
 }
 
-int transport(World *mzx_world, int x, int y, int dir, int id, int param,
- int color, int can_push)
+int transport(World *mzx_world, int x, int y, int dir, mzx_thing id,
+ int param, int color, int can_push)
 {
   Board *src_board = mzx_world->current_board;
   char *level_id = src_board->level_id;
@@ -1952,7 +1981,8 @@ int transport(World *mzx_world, int x, int y, int dir, int id, int param,
 
   // See if the first one will work
 
-  found = try_transport(mzx_world, dx, dy, push_status, can_push, id, dir);
+  found = try_transport(mzx_world, dx, dy, push_status,
+   can_push, id, dir);
 
   // Until found or exited, loop on
   while(!found)
@@ -1964,19 +1994,20 @@ int transport(World *mzx_world, int x, int y, int dir, int id, int param,
     if(arraydir2(src_board, dx, dy, &dx, &dy, dir))
       return 1;
 
-    if(level_id[d_offset] == 49)
+    if(level_id[d_offset] == TRANSPORT)
     {
       t_dir = level_param[d_offset] & 0x07;
       if((t_dir == 4) || (t_dir == flip_dir(dir)))
       {
         // Try the new location, after the transport
-        found = try_transport(mzx_world, dx, dy, push_status, can_push, id, dir);
+        found = try_transport(mzx_world, dx, dy,
+         push_status, can_push, id, dir);
       }
     }
   }
 
   // Okay, can put it at dx, dy.. if we're not just checking
-  if(id != 0)
+  if(id != SPACE)
   {
     // Place it
     play_sfx(mzx_world, 27);
@@ -2006,7 +2037,7 @@ void push_player_sensor(World *mzx_world, int p_offset,
   mzx_world->under_player_param = level_under_param[d_offset];
 
   // Move the sensor under the player
-  level_under_id[d_offset] = 122;
+  level_under_id[d_offset] = (char)SENSOR;
   level_under_color[d_offset] = color;
   level_under_param[d_offset] = param;
 
@@ -2025,9 +2056,13 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
 
   int push_status = A_PUSHEW;
   int dx = x, dy = y, d_offset, d_flag;
-  char d_id = 0xFF, d_param, d_color, d_under_id;
-  char p_id = 0xFF, p_param = 0xFF, p_color = 0xFF;
-  char p_under_id = 0xFF, sensor_param = 0xFF, sensor_color = 0xFF;
+  mzx_thing d_id = NO_ID;
+  char d_param, d_color;
+  mzx_thing d_under_id;
+  mzx_thing p_id = NO_ID;
+  char p_param = 0xFF, p_color = 0xFF;
+  mzx_thing p_under_id = NO_ID;
+  char sensor_param = 0xFF, sensor_color = 0xFF;
   int p_offset = -1;
 
   if(dir < 2)
@@ -2044,7 +2079,7 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
     if(arraydir2(src_board, dx, dy, &dx, &dy, dir))
       return 1;
     d_offset = xy2array2(src_board, dx, dy);
-    d_id = level_id[d_offset];
+    d_id = (mzx_thing)level_id[d_offset];
     d_flag = flags[(int)d_id];
 
     // If a push can be made here, the destination has been found
@@ -2054,7 +2089,7 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
       // FIXME - In game2.asm you can't push things over water, even though
       // it still works somehow. Look into this.
       // Lava and goop are automatic failures even though it's "underable"
-      if((d_id == 26) || (d_id == 34))
+      if((d_id == LAVA) || (d_id == GOOP))
         return 1;
       // Otherwise, we're good
       break;
@@ -2068,14 +2103,14 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
         if(!(d_flag & A_SPEC_PUSH))
           return 1;
         // Player can be pushed onto sensor, otherwise it's pushable
-        if((d_id == 122) && (p_id == 127))
+        if((d_id == SENSOR) && (p_id == PLAYER))
           break;
         else
 
         // Can be pushed onto a transport if transport checks out
-        if(d_id == 49)
+        if(d_id == TRANSPORT)
         {
-          if(transport(mzx_world, dx, dy, dir, 0, 0, 0, 1))
+          if(transport(mzx_world, dx, dy, dir, SPACE, 0, 0, 1))
             return 1;
           else
             break;
@@ -2090,21 +2125,21 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
     // Start back at the beginning...
     dx = x;
     dy = y;
-    p_id = 0xFF;
+    p_id = NO_ID;
 
     while(1)
     {
       // Get thing at next location
       arraydir2(src_board, dx, dy, &dx, &dy, dir);
       d_offset = xy2array2(src_board, dx, dy);
-      d_id = level_id[d_offset];
+      d_id = (mzx_thing)level_id[d_offset];
       d_param = level_param[d_offset];
       d_color = level_color[d_offset];
-      d_under_id = level_under_id[d_offset];
+      d_under_id = (mzx_thing)level_under_id[d_offset];
       d_flag = flags[(int)d_id];
 
       // Sensor? Mark it
-      if(d_under_id == 122)
+      if(d_under_id == SENSOR)
       {
         sensor_color = level_under_color[d_offset];
         sensor_param = level_under_param[d_offset];
@@ -2112,17 +2147,17 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
 
       // Can the destination be moved under and thus pushed onto?
       // A sensor will also work if the player is what's being pushed onto it.
-      if((d_flag & A_UNDER) || ((p_id == 127) && (d_id == 122)))
+      if((d_flag & A_UNDER) || ((p_id == PLAYER) && (d_id == SENSOR)))
       {
         // Place the previous thing here
         id_place(mzx_world, dx, dy, p_id, p_color, p_param);
-        if((p_id == 127) && (p_under_id == 122))
+        if((p_id == PLAYER) && (p_under_id == SENSOR))
         {
           push_player_sensor(mzx_world, p_offset, d_offset, sensor_param,
            sensor_color);
         }
         // If this is a sensor, the player was pushed onto it
-        if(d_id == 122)
+        if(d_id == SENSOR)
         {
           // The player is just stepping on it.. alert sensor
           step_sensor(mzx_world, d_param);
@@ -2134,7 +2169,7 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
       // Is it pushable?
       if(d_flag & (push_status | A_SPEC_PUSH))
       {
-        if(d_id == 49)
+        if(d_id == TRANSPORT)
         {
           // If it's a transport, transport it
           transport(mzx_world, dx, dy, dir, p_id, p_param, p_color, 1);
@@ -2156,14 +2191,14 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
           level_color[d_offset] = p_color;
 
           // How about a pushable robot?
-          if(d_id == 123)
+          if(d_id == ROBOT_PUSHABLE)
           {
             // Send the default label for pushing
             send_robot_def(mzx_world, d_param, 3);
           }
 
           // Was a player/sensor sandwich pushed?
-          if((p_id == 127) && (p_under_id == 122))
+          if((p_id == PLAYER) && (p_under_id == SENSOR))
           {
             push_player_sensor(mzx_world, p_offset, d_offset,
              sensor_param, sensor_color);
@@ -2179,7 +2214,7 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
 
 
         // Is it a sensor that was pushed? Flag it.
-        if(d_id == 122)
+        if(d_id == SENSOR)
         {
           push_sensor(mzx_world, d_param);
         }
@@ -2218,8 +2253,9 @@ void shoot(World *mzx_world, int x, int y, int dir, int type)
 
   // If it's a player bullet maybe give some points
   // Has to be an enemy ID 80-95 but not 83, 85, 92, or 93
-  if((type == PLAYER_BULLET) && (d_id >= 80) && (d_id <= 95) &&
-   (d_id != 83) && (d_id != 85) && (d_id != 92) && (d_id != 93))
+  if((type == PLAYER_BULLET) && (d_id >= SNAKE) &&
+   (d_id <= BEAR_CUB) && (d_id != SLIMEBLOB) && (d_id != GHOST) &&
+   (d_id != BULLET_GUN) && (d_id != SPINNING_GUN))
   {
     // Score isn't supposed to overflow.. but the overflow
     // detection in game2.asm is broken anyway....
@@ -2231,7 +2267,7 @@ void shoot(World *mzx_world, int x, int y, int dir, int type)
   if(d_flag & A_UNDER)
   {
     char n_param = (type << 2) | dir;
-    id_place(mzx_world, dx, dy, 61, bullet_color[type], n_param);
+    id_place(mzx_world, dx, dy, BULLET, bullet_color[type], n_param);
     return;
   }
 
@@ -2239,8 +2275,9 @@ void shoot(World *mzx_world, int x, int y, int dir, int type)
   if(d_flag & A_SHOOTABLE)
   {
     // However, enemies can only shoot these things:
-    if((type != ENEMY_BULLET) || (d_id == 61) || (d_id == 28) ||
-     (d_id == 29) || (d_id == 6) || (d_id == 7))
+    if((type != ENEMY_BULLET) || (d_id == BULLET) || (d_id == GEM) ||
+     (d_id == MAGIC_GEM) || (d_id == BREAKAWAY) ||
+     (d_id == CUSTOM_BREAK))
     {
       // Can be removed
       id_remove_top(mzx_world, dx, dy);
@@ -2255,8 +2292,7 @@ void shoot(World *mzx_world, int x, int y, int dir, int type)
     // And these are the ones
     switch(d_id)
     {
-      // Panel
-      case 72:
+      case RICOCHET_PANEL:
       {
         play_sfx(mzx_world, 31);
         // Fanangle the panel orientation into a shoot direction
@@ -2271,8 +2307,8 @@ void shoot(World *mzx_world, int x, int y, int dir, int type)
         shoot(mzx_world, dx, dy, dir, NEUTRAL_BULLET);
         break;
       }
-      // Ricochet
-      case 73:
+
+      case RICOCHET:
       {
         int pdir = flip_dir(dir);
         play_sfx(mzx_world, 31);
@@ -2280,8 +2316,8 @@ void shoot(World *mzx_world, int x, int y, int dir, int type)
         shoot(mzx_world, dx, dy, pdir, NEUTRAL_BULLET);
         break;
       }
-      // Mine
-      case 74:
+
+      case MINE:
       {
         // Turn into explosion
         level_id[d_offset] = 38;
@@ -2290,112 +2326,120 @@ void shoot(World *mzx_world, int x, int y, int dir, int type)
         play_sfx(mzx_world, 36);
         break;
       }
-      // Player
-      case 127:
+
+      case PLAYER:
       {
         // Player bullets don't hurt player
         if(type == PLAYER_BULLET) break;
-        hurt_player_id(mzx_world, 61);
+        hurt_player_id(mzx_world, BULLET);
         send_robot_def(mzx_world, 0, 7);
         break;
       }
-      // Robot
-      case 123:
-      case 124:
+
+      case ROBOT:
+      case ROBOT_PUSHABLE:
       {
         // Send the current shot label to the robot
         send_robot_def(mzx_world, d_param, type + 4);
         // Set its last shot dir..
-        (src_board->robot_list[d_param])->last_shot_dir = flip_dir(dir) + 1;
+        (src_board->robot_list[d_param])->last_shot_dir =
+         int_to_dir(flip_dir(dir));
         break;
       }
-      // Eye
-      case 81:
+
+      case EYE:
       {
         // Can't be shot by enemy bullet
         if(type == ENEMY_BULLET) break;
         // Turn into explosion
-        level_id[d_offset] = 38;
+        level_id[d_offset] = (char)EXPLOSION;
         level_param[d_offset] = (d_param & 0x38) << 1;
         play_sfx(mzx_world, 36);
         break;
       }
-      // Slime
-      case 83:
+
+      case SLIMEBLOB:
       {
         // Can't be shot by enemy bullet
-        if(type == ENEMY_BULLET) break;
-        // Check if not invincible
-        if(!(d_param & 0x80))
+        if(type != ENEMY_BULLET)
         {
-          // Kill it
-          id_remove_top(mzx_world, dx, dy);
-          play_sfx(mzx_world, 29);
+          // Check if not invincible
+          if(!(d_param & 0x80))
+          {
+            // Kill it
+            id_remove_top(mzx_world, dx, dy);
+            play_sfx(mzx_world, 29);
+          }
         }
         break;
       }
-      // Runner
-      case 84:
+
+      case RUNNER:
       {
         // Can't be shot by enemy bullet
-        if(type == ENEMY_BULLET) break;
-        // Check if it has 0 HP
-        if(d_param & 0xC0)
+        if(type != ENEMY_BULLET)
         {
-          // Otherwise, take an HP
-          level_param[d_offset] = d_param - 0x40;
-          play_sfx(mzx_world, 45);
-        }
-        else
-        {
-          // Kill it
-          id_remove_top(mzx_world, dx, dy);
-          play_sfx(mzx_world, 29);
+          // Check if it has 0 HP
+          if(d_param & 0xC0)
+          {
+            // Otherwise, take an HP
+            level_param[d_offset] = d_param - 0x40;
+            play_sfx(mzx_world, 45);
+          }
+          else
+          {
+            // Kill it
+            id_remove_top(mzx_world, dx, dy);
+            play_sfx(mzx_world, 29);
+          }
         }
 
         break;
       }
-      // Ghost
-      case 85:
+
+      case GHOST:
       {
         // Can't be shot by enemy bullet
-        if(type == ENEMY_BULLET) break;
-        // Is it not invincible?
-        if(!(d_param & 0x08))
+        if(type != ENEMY_BULLET)
         {
-          // Kill it
-          id_remove_top(mzx_world, dx, dy);
-          play_sfx(mzx_world, 29);
+          // Is it not invincible?
+          if(!(d_param & 0x08))
+          {
+            // Kill it
+            id_remove_top(mzx_world, dx, dy);
+            play_sfx(mzx_world, 29);
+          }
         }
 
         break;
       }
-      // Dragon
-      case 86:
+
+      case DRAGON:
       {
         // Can't be shot by enemy bullet
-        if(type == ENEMY_BULLET) break;
-
-        // Out of HP?
-        if(!(d_param & 0xE0))
+        if(type != ENEMY_BULLET)
         {
-          // Kill it
-          id_remove_top(mzx_world, dx, dy);
-          play_sfx(mzx_world, 29);
-        }
-        else
-        {
-          // Take away a hit point
-          level_param[d_offset] = d_param - 0x20;
-          play_sfx(mzx_world, 45);
+          // Out of HP?
+          if(!(d_param & 0xE0))
+          {
+            // Kill it
+            id_remove_top(mzx_world, dx, dy);
+            play_sfx(mzx_world, 29);
+          }
+          else
+          {
+            // Take away a hit point
+            level_param[d_offset] = d_param - 0x20;
+            play_sfx(mzx_world, 45);
+          }
         }
 
         break;
       }
-      // Fish/Spider/Bear
-      case 87:
-      case 89:
-      case 94:
+
+      case FISH:
+      case SPIDER:
+      case BEAR:
       {
         // Zero HP?
         if(!(d_param & 0x80))
@@ -2421,7 +2465,8 @@ void shoot_fire(World *mzx_world, int x, int y, int dir)
 {
   Board *src_board = mzx_world->current_board;
   int dx, dy, d_offset;
-  char d_id, d_param, d_flag;
+  mzx_thing d_id;
+  char d_param, d_flag;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
 
@@ -2429,19 +2474,19 @@ void shoot_fire(World *mzx_world, int x, int y, int dir)
     return;
 
   d_offset = xy2array2(src_board, dx, dy);
-  d_id = level_id[d_offset];
+  d_id = (mzx_thing)level_id[d_offset];
   d_param = level_param[d_offset];
   d_flag = flags[(int)d_id];
 
   // If it can be moved under, place it
   if(d_flag & A_UNDER)
   {
-    id_place(mzx_world, dx, dy, 78, 0, dir << 1);
+    id_place(mzx_world, dx, dy, SHOOTING_FIRE, 0, dir << 1);
   }
   else
 
   // Did it hit a robot?
-  if((d_id == 123) || (d_id == 124))
+  if(is_robot(d_id))
   {
     // Send the spitfire label
     send_robot_def(mzx_world, d_param, 9);
@@ -2449,9 +2494,9 @@ void shoot_fire(World *mzx_world, int x, int y, int dir)
   else
 
   // Did it hit the player?
-  if(d_id == 127)
+  if(d_id == PLAYER)
   {
-    hurt_player_id(mzx_world, 78);
+    hurt_player_id(mzx_world, SHOOTING_FIRE);
   }
 }
 
@@ -2459,7 +2504,8 @@ void shoot_seeker(World *mzx_world, int x, int y, int dir)
 {
   Board *src_board = mzx_world->current_board;
   int dx, dy, d_offset;
-  char d_id, d_param, d_flag;
+  mzx_thing d_id;
+  char d_param, d_flag;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
 
@@ -2467,21 +2513,21 @@ void shoot_seeker(World *mzx_world, int x, int y, int dir)
     return;
 
   d_offset = xy2array2(src_board, dx, dy);
-  d_id = level_id[d_offset];
+  d_id = (mzx_thing)level_id[d_offset];
   d_param = level_param[d_offset];
   d_flag = flags[(int)d_id];
 
   // If it can be moved under, place it
   if(d_flag & A_UNDER)
   {
-    id_place(mzx_world, dx, dy, 79, 0, 127);
+    id_place(mzx_world, dx, dy, SEEKER, 0, 127);
   }
   else
 
   // Did it hit the player?
-  if(d_id == 127)
+  if(d_id == PLAYER)
   {
-    hurt_player_id(mzx_world, 79);
+    hurt_player_id(mzx_world, SEEKER);
   }
 }
 
@@ -2489,7 +2535,8 @@ void shoot_missile(World *mzx_world, int x, int y, int dir)
 {
   Board *src_board = mzx_world->current_board;
   int dx, dy, d_offset;
-  char d_id, d_param, d_flag;
+  mzx_thing d_id;
+  char d_param, d_flag;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
 
@@ -2497,30 +2544,33 @@ void shoot_missile(World *mzx_world, int x, int y, int dir)
     return;
 
   d_offset = xy2array2(src_board, dx, dy);
-  d_id = level_id[d_offset];
+  d_id = (mzx_thing)level_id[d_offset];
   d_param = level_param[d_offset];
   d_flag = flags[(int)d_id];
 
   // If it can be moved under, place it
   if(d_flag & A_UNDER)
   {
-    id_place(mzx_world, dx, dy, 62, missile_color, dir);
+    id_place(mzx_world, dx, dy, MISSILE, missile_color, dir);
   }
 
   // Did it hit the player?
-  if(d_id == 127)
+  if(d_id == PLAYER)
   {
-    hurt_player_id(mzx_world, 62);
+    hurt_player_id(mzx_world, MISSILE);
   }
 }
 
-int move(World *mzx_world, int x, int y, int dir, int move_flags)
+move_status move(World *mzx_world, int x, int y, int dir,
+ int move_flags)
 {
   Board *src_board = mzx_world->current_board;
   int dx, dy, d_offset, d_flag;
-  char d_id, d_param;
+  mzx_thing d_id;
+  char d_param;
   int p_offset = xy2array2(src_board, x, y);
-  char p_id, p_param, p_color;
+  mzx_thing p_id;
+  char p_param, p_color;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
   char *level_color = src_board->level_color;
@@ -2528,107 +2578,112 @@ int move(World *mzx_world, int x, int y, int dir, int move_flags)
   if(arraydir2(src_board, x, y, &dx, &dy, dir))
   {
     // Hit edge
-    return 3;
+    return HIT_EDGE;
   }
+
   d_offset = xy2array2(src_board, dx, dy);
-  d_id = level_id[d_offset];
+  d_id = (mzx_thing)level_id[d_offset];
   d_param = level_param[d_offset];
   d_flag = flags[(int)d_id];
 
-  p_id = level_id[p_offset];
+  p_id = (mzx_thing)level_id[p_offset];
   p_param = level_param[p_offset];
   p_color = level_color[p_offset];
 
   // Only if the player shouldn't be checked yet
-  if((move_flags & MOVE_REACT_PLAYER) && (d_id == 127))
+  if((move_flags & REACT_PLAYER) && (d_id == PLAYER))
   {
     // Hit the player
-    return 2;
+    return HIT_PLAYER;
   }
 
   // Is it a spitfire? Is it moving onto a robot?
-  if((move_flags & MOVE_SPITFIRE) && ((d_id == 123) || (d_id == 124)))
+  if((move_flags & SPITFIRE) && is_robot(d_id))
   {
     // Send the label
     send_robot_def(mzx_world, d_param, 9);
-    return 1;
+    return HIT;
   }
 
   // Can move? However, flags may prohibit the move.
   if(d_flag & A_UNDER)
   {
-    int web_flags = (move_flags & (MOVE_MUST_WEB | MOVE_MUST_THICKWEB)) >> 5;
-    int web = d_id - 17;
-    if((web < 1) || (web > 2)) web = 0;
+    int web_flags = (move_flags & (MUST_WEB | MUST_THICKWEB)) >> 5;
+    int web = (d_id == WEB) || (d_id == THICK_WEB);
+    if((web < 1) || (web > 2))
+      web = 0;
 
     if(web_flags)
     {
       // Must be one of these
       if(!(web_flags & web))
-        return 1;
+        return HIT;
     }
 
     // Must be water?
-    if((move_flags & MOVE_MUST_WATER) && ((d_id < 20) || (d_id > 24)))
-      return 1;
+    if((move_flags & MUST_WATER) && !(is_water(d_id)))
+      return HIT;
 
     // Must be lava or goop?
-    if((move_flags & MOVE_MUST_LAVAGOOP) && (d_id != 26) && (d_id != 34))
-      return 1;
+    if((move_flags & MUST_LAVAGOOP) &&
+     (d_id != LAVA) && (d_id != GOOP))
+    {
+      return HIT;
+    }
 
     // Now CAN it move to lava if there's lava?
-    if((d_id == 26) && !(move_flags & MOVE_CAN_LAVAWALK))
-      return 1;
+    if((d_id == LAVA) && !(move_flags & CAN_LAVAWALK))
+      return HIT;
 
     // Same for fire
-    if((d_id == 63) && !(move_flags & MOVE_CAN_FIREWALK))
-      return 1;
+    if((d_id == FIRE) && !(move_flags & CAN_FIREWALK))
+      return HIT;
 
     // Same for water
-    if((d_id >= 20) && (d_id <= 24) && !(move_flags & MOVE_CAN_WATERWALK))
-      return 1;
+    if(is_water(d_id) && !(move_flags & CAN_WATERWALK))
+      return HIT;
 
     // Only must goop can go on goop
-    if((d_id == 34) && !(move_flags & MOVE_CAN_GOOPWALK))
-      return 1;
+    if((d_id == GOOP) && !(move_flags & CAN_GOOPWALK))
+      return HIT;
   }
   else
 
   // Moving onto a transporter?
-  if(d_id == 49)
+  if(d_id == TRANSPORT)
   {
     // Can it transport?
-    if(move_flags & MOVE_CAN_TRANSPORT)
+    if(move_flags & CAN_TRANSPORT)
     {
       int can_push = 0;
 
       // Transport it
-      if(move_flags & MOVE_CAN_PUSH)
+      if(move_flags & CAN_PUSH)
         can_push = 1;
 
       // If it can transport, do it
       if(!transport(mzx_world, dx, dy, dir, p_id, p_param, p_color, can_push))
       {
         id_remove_top(mzx_world, x, y);
-        return 0;
+        return NO_HIT;
       }
     }
     // Otherwise blocked
-    return 1;
+    return HIT;
   }
   else
 
   // Is it pushable and can it be pushed?
   if((d_flag & (A_PUSHNS | A_PUSHEW | A_SPEC_PUSH)) &&
-   (move_flags & MOVE_CAN_PUSH))
+   (move_flags & CAN_PUSH))
   {
     // If it can't push, exit
       if(push(mzx_world, x, y, dir, 0))
-        return 1;
+        return HIT;
   }
   else
   {
-    return 1;
+    return HIT;
   }
 
   // Made it this far - actually move the thing.
@@ -2638,54 +2693,49 @@ int move(World *mzx_world, int x, int y, int dir, int move_flags)
   id_place(mzx_world, dx, dy, p_id, p_color, p_param);
 
   // Successfully return
-  return 0;
+  return NO_HIT;
 }
 
-int parsedir(World *mzx_world, int old_dir, int x, int y, int flow_dir,
- int bln, int bls, int ble, int blw)
+mzx_dir parsedir(World *mzx_world, mzx_dir old_dir, int x, int y,
+ mzx_dir flow_dir, int bln, int bls, int ble, int blw)
 {
-  int n_dir = old_dir & 0x0F;
+  int n_dir = (int)old_dir & 0x0F;
 
   switch(n_dir)
   {
     // idle, beneath, anydir, nodir don't get modified
-    case 0:
-    case 11:
-    case 12:
-    case 14:
-      return n_dir;
+    case IDLE:
+    case BENEATH:
+    case ANYDIR:
+    case NODIR:
+      return (mzx_dir)n_dir;
 
-    // Cardinal direction
-    case 1:
-    case 2:
-    case 3:
-    case 4:
+    case NORTH:
+    case SOUTH:
+    case EAST:
+    case WEST:
       n_dir--;
       break;
 
-    // randns
-    case 5:
+    case RANDNS:
       n_dir = rand() & 1;
       break;
 
-    // randew
-    case 6:
+    case RANDEW:
       n_dir = (rand() & 1) + 2;
       break;
 
-    // randne
-    case 7:
-      n_dir = (rand() & 2);
+    case RANDNE:
+      n_dir = rand() & 2;
       break;
 
-    // randnb
-    case 8:
+    case RANDNB:
       bln ^= 1;
       bls ^= 1;
       ble ^= 1;
       blw ^= 1;
-    // randb
-    case 15:
+
+    case RANDB:
     {
       int bl_sum = bln + bls + ble + blw;
       if(bl_sum)
@@ -2700,44 +2750,44 @@ int parsedir(World *mzx_world, int old_dir, int x, int y, int flow_dir,
       }
       else
       {
-        return 14;
+        return NODIR;
       }
       break;
     }
 
-    // seek
-    case 9:
+    case SEEK:
       n_dir = find_seek(mzx_world, x, y);
       break;
 
-    // randany
-    case 10:
+    case RANDANY:
       n_dir = rand() & 3;
       break;
 
-    // flow
-    case 13:
+    case FLOW:
       if(flow_dir)
         n_dir = flow_dir - 1;
       else
-        return 0;
+        return IDLE;
       break;
   }
 
   // Rotate clockwise
-  if(old_dir & 0x20)
+  if(old_dir & CW)
   {
-    if(n_dir >= 2)
+    if(n_dir >= SOUTH)
       n_dir ^= 1;
+
     n_dir ^= 2;
   }
+
   // Move opposite
-  if(old_dir & 0x40)
+  if(old_dir & OPP)
   {
     n_dir = (n_dir ^ 1);
   }
+
   // Randp
-  if(old_dir & 0x10)
+  if(old_dir & RANDP)
   {
     int rval = rand();
     n_dir ^= 2;
@@ -2746,8 +2796,8 @@ int parsedir(World *mzx_world, int old_dir, int x, int y, int flow_dir,
       n_dir ^= 1;
     }
   }
-  // Randnot
-  if(old_dir & 0x80)
+
+  if(old_dir & RANDNOT)
   {
     int rval = (rand() & 3);
     if(n_dir != rval)
@@ -2760,5 +2810,5 @@ int parsedir(World *mzx_world, int old_dir, int x, int y, int flow_dir,
     }
   }
 
-  return n_dir + 1;
+  return (mzx_dir)(n_dir + 1);
 }

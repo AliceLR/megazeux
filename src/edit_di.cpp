@@ -146,9 +146,9 @@ void size_pos(World *mzx_world)
     elements[5] = construct_number_box(15, 7, "Viewport Height:",
      1, 25, 0, results + 3);
     elements[6] = construct_number_box(15, 11, "Board Width:    ",
-     0, 32767, 0, results + 4);
+     1, 32767, 0, results + 4);
     elements[7] = construct_number_box(15, 12, "Board Height:   ",
-     0, 32767, 0, results + 5);
+     1, 32767, 0, results + 5);
 
     construct_dialog(&di, "Board Sizes/Positions", 10, 4, 60, 18,
      elements, 8, 2);
@@ -540,6 +540,13 @@ void global_info(World *mzx_world)
 
         mzx_world->first_board = first_board;
         mzx_world->edge_color = edge_color;
+
+        // These are the only parts of the default global data
+        // that the editor can change, so it has to be updated
+        // so testing won't screw things up.
+        set_counter(mzx_world, "LIVES", starting_lives, 0);
+        set_counter(mzx_world, "HEALTH", starting_health, 0);
+
         mzx_world->starting_lives = starting_lives;
         mzx_world->lives_limit = lives_limit;
         mzx_world->starting_health = starting_health;

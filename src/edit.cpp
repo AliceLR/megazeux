@@ -314,7 +314,7 @@ char *thing_menus[8][20] =
     "Robot           ~F?",
     "Pushable Robot  ~F?",
     "Player          ~B\x02",
-    "Scroll          ~F\xE8",
+    "Scroll          ~F\xE4",
     "Sign            ~6\xE2",
     "Sensor          ~F?",
     "Bullet          ~F\xF9",
@@ -324,25 +324,55 @@ char *thing_menus[8][20] =
   }
 };
 
-char tmenu_thing_ids[8][18] =
+mzx_thing tmenu_thing_ids[8][18] =
 {
-  //Terrain (F3)
-  { 0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 15, 16, 17, 18, 19, 65, 71},
+  // Terrain (F3)
+  {
+    SPACE, NORMAL, SOLID, TREE, LINE, CUSTOM_BLOCK, BREAKAWAY,
+    CUSTOM_BREAK, FAKE, CARPET, FLOOR, TILES, CUSTOM_FLOOR, WEB,
+    THICK_WEB, FOREST, INVIS_WALL
+  },
   // Item (F4)
-  { 28, 29, 30, 31, 32, 33, 35, 36, 39, 40, 50, 66, 55, 27 },
+  {
+    GEM, MAGIC_GEM, HEALTH, RING, POTION, ENERGIZER, AMMO, BOMB, KEY,
+    LOCK, COIN, LIFE, POUCH, CHEST
+  },
+
   // Creature (F5)
-  { 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 94, 95, 60,
-    92, 93, 97 },
+  {
+    SNAKE, EYE, THIEF, SLIMEBLOB, RUNNER, GHOST, DRAGON, FISH, SHARK,
+    SPIDER, GOBLIN, SPITTING_TIGER, BEAR, BEAR_CUB, LAZER_GUN,
+    BULLET_GUN, SPINNING_GUN, MISSILE_GUN
+  },
+
   // Puzzle (F6)
-  { 8, 9, 10, 11, 12, 56, 57, 58 },
+  {
+    BOULDER, CRATE, CUSTOM_PUSH, BOX, CUSTOM_BOX, PUSHER, SLIDER_NS,
+    SLIDER_EW
+  },
+
   // Tranport (F7)
-  { 43, 44, 49, 67, 45, 46 },
+  {
+    STAIRS, CAVE, TRANSPORT, WHIRLPOOL_1, CW_ROTATE, CCW_ROTATE
+  },
+
   // Element (F8)
-  { 20, 21, 22, 23, 24, 25, 26, 63, 34, 37, 38 },
+  {
+    STILL_WATER, N_WATER, S_WATER, E_WATER, W_WATER, ICE, LAVA, FIRE,
+    GOOP, LIT_BOMB, EXPLOSION
+  },
+
   // Misc (F9)
-  { 41, 47, 72, 73, 74, 75, 76, 77, 51, 52, 53, 54 },
+  {
+    DOOR, GATE, RICOCHET_PANEL, RICOCHET, MINE, SPIKE, CUSTOM_HURT,
+    TEXT, N_MOVING_WALL, S_MOVING_WALL, E_MOVING_WALL, W_MOVING_WALL
+  },
+
   // Objects (F10)
-  { 124, 123, 127, 126, 125, 122, 61, 62, 79, 78}
+  {
+    ROBOT, ROBOT_PUSHABLE, PLAYER, SCROLL, SIGN, SENSOR, BULLET,
+    MISSILE, SEEKER, SHOOTING_FIRE
+  }
 };
 
 // Default colors
@@ -376,22 +406,22 @@ char drawmode_help[5][32] =
 // It's important that after changing the param the thing is placed (using
 // place_current_at_xy) so that scrolls/sensors/robots get copied.
 
-int change_param(World *mzx_world, int id, int param, Robot *copy_robot,
- Scroll *copy_scroll, Sensor *copy_sensor)
+int change_param(World *mzx_world, mzx_thing id, int param,
+ Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor)
 {
-  if(id == 122)
+  if(id == SENSOR)
   {
     return edit_sensor(mzx_world, copy_sensor);
   }
   else
 
-  if((id == 123) || (id == 124))
+  if(is_robot(id))
   {
     return edit_robot(mzx_world, copy_robot);
   }
   else
 
-  if((id == 125) || (id == 126))
+  if(is_signscroll(id))
   {
     return edit_scroll(mzx_world, copy_scroll);
   }
@@ -401,20 +431,20 @@ int change_param(World *mzx_world, int id, int param, Robot *copy_robot,
   }
 }
 
-int place_current_at_xy(World *mzx_world, int id, int color, int param,
- int x, int y, Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor,
- int overlay_edit)
+int place_current_at_xy(World *mzx_world, mzx_thing id, int color,
+ int param, int x, int y, Robot *copy_robot, Scroll *copy_scroll,
+ Sensor *copy_sensor, int overlay_edit)
 {
   Board *src_board = mzx_world->current_board;
   int offset = x + (y * src_board->board_width);
   char *level_id = src_board->level_id;
-  int old_id = level_id[offset];
+  mzx_thing old_id = (mzx_thing)level_id[offset];
 
   if(!overlay_edit)
   {
-    if(old_id != 127)
+    if(old_id != PLAYER)
     {
-      if(id == 127)
+      if(id == PLAYER)
       {
         id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
         mzx_world->player_x = x;
@@ -422,9 +452,9 @@ int place_current_at_xy(World *mzx_world, int id, int color, int param,
       }
       else
 
-      if((id == 123) || (id == 124))
+      if(is_robot(id))
       {
-        if((old_id == 123) || (old_id == 124))
+        if(is_robot(old_id))
         {
           int old_param = src_board->level_param[offset];
           replace_robot(src_board, copy_robot, old_param);
@@ -443,9 +473,9 @@ int place_current_at_xy(World *mzx_world, int id, int color, int param,
       }
       else
 
-      if((id == 125) || (id == 126))
+      if(is_signscroll(id))
       {
-        if((old_id == 125) || (old_id == 126))
+        if(is_signscroll(old_id))
         {
           int old_param = src_board->level_param[offset];
           replace_scroll(src_board, copy_scroll, old_param);
@@ -460,9 +490,9 @@ int place_current_at_xy(World *mzx_world, int id, int color, int param,
       }
       else
 
-      if(id == 122)
+      if(id == SENSOR)
       {
-        if(old_id == 122)
+        if(old_id == SENSOR)
         {
           int old_param = src_board->level_param[offset];
           replace_sensor(src_board, copy_sensor, old_param);
@@ -491,52 +521,52 @@ int place_current_at_xy(World *mzx_world, int id, int color, int param,
   return param;
 }
 
-void grab_at_xy(World *mzx_world, int *new_id, int *new_color,
+void grab_at_xy(World *mzx_world, mzx_thing *new_id, int *new_color,
  int *new_param, Robot *copy_robot, Scroll *copy_scroll,
  Sensor *copy_sensor, int x, int y, int overlay_edit)
 {
   Board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int offset = x + (y * board_width);
-  int old_id = *new_id;
+  mzx_thing old_id = *new_id;
   int old_param = *new_param;
 
   if(!overlay_edit)
   {
-    int grab_id = src_board->level_id[offset];
+    mzx_thing grab_id = (mzx_thing)src_board->level_id[offset];
     int grab_param = src_board->level_param[offset];
     *new_color = get_id_color(src_board, offset);
 
     // First, clear the existing copies, unless the new id AND param
     // matches, because in that case it's the same thing
 
-    if(((old_id == 123) || (old_id == 124)) &&
+    if(is_robot(old_id) &&
      ((old_id != grab_id) || (old_param != grab_param)))
     {
       clear_robot_contents(copy_robot);
     }
 
-    if(((old_id == 125) || (old_id == 126)) &&
+    if(is_signscroll(old_id) &&
      ((old_id != grab_id) || (old_param != grab_param)))
     {
       clear_scroll_contents(copy_scroll);
     }
 
-    if((grab_id == 123) || (grab_id == 124))
+    if(is_robot(grab_id))
     {
       Robot *src_robot = src_board->robot_list[grab_param];
       duplicate_robot_direct(src_robot, copy_robot, 0, 0);
     }
     else
 
-    if((grab_id == 125) || (grab_id == 126))
+    if(is_signscroll(grab_id))
     {
       Scroll *src_scroll = src_board->scroll_list[grab_param];
       duplicate_scroll_direct(src_scroll, copy_scroll);
     }
     else
 
-    if(grab_id == 122)
+    if(grab_id == SENSOR)
     {
       Sensor *src_sensor = src_board->sensor_list[grab_param];
       duplicate_sensor_direct(src_sensor, copy_sensor);
@@ -552,11 +582,12 @@ void grab_at_xy(World *mzx_world, int *new_id, int *new_color,
   }
 }
 
-void thing_menu(World *mzx_world, int menu_number, int *new_id,
+void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
  int *new_color, int *new_param, Robot *copy_robot, Scroll *copy_scroll,
  Sensor *copy_sensor, int x, int y)
 {
-  int id, color, param;
+  mzx_thing id;
+  int color, param;
   int chosen;
   int old_id = *new_id;
 
@@ -568,6 +599,7 @@ void thing_menu(World *mzx_world, int menu_number, int *new_id,
   if(chosen >= 0)
   {
     id = tmenu_thing_ids[menu_number][chosen];
+
     if(def_colors[id])
     {
       color = def_colors[id];
@@ -576,47 +608,48 @@ void thing_menu(World *mzx_world, int menu_number, int *new_id,
     {
       color = *new_color;
     }
-
+  
     // Perhaps put a new blank scroll, robot, or sensor in one of the copies
-    if(id == 122)
+    if(id == SENSOR)
     {
       create_blank_sensor_direct(copy_sensor);
     }
     else
 
-    if((id == 123) || (id == 124))
+    if(is_robot(id))
     {
-      if((old_id == 123) || (old_id == 124))
+      if(is_robot(old_id))
         clear_robot_contents(copy_robot);
 
       create_blank_robot_direct(copy_robot, 0, 0);
     }
-
-    if((id == 125) || (id == 126))
+  
+    if(is_signscroll(id))
     {
-      if((old_id == 125) || (old_id == 126))
-      {
+      if(is_signscroll(old_id))
         clear_scroll_contents(copy_scroll);
-      }
-
+  
       create_blank_scroll_direct(copy_scroll);
     }
 
-    param = *new_param;
     param =
      change_param(mzx_world, id, -1, copy_robot, copy_scroll, copy_sensor);
 
-    param = place_current_at_xy(mzx_world, id, color, param,
-     x, y, copy_robot, copy_scroll, copy_sensor, 0);
-
-    *new_id = id;
-    *new_param = param;
-    *new_color = color;
+    if(param >= 0)
+    { 
+      param = place_current_at_xy(mzx_world, id, color, param,
+       x, y, copy_robot, copy_scroll, copy_sensor, 0);
+  
+      *new_id = id;
+      *new_param = param;
+      *new_color = color;
+    }
   }
 }
 
-void flash_thing(World *mzx_world, int start, int end, int flash_one,
- int flash_two, int scroll_x, int scroll_y, int edit_screen_height)
+void flash_thing(World *mzx_world, int start, int end,
+ int flash_one, int flash_two, int scroll_x, int scroll_y,
+ int edit_screen_height)
 {
   Board *src_board = mzx_world->current_board;
   int backup[32];
@@ -671,7 +704,7 @@ void edit_world(World *mzx_world)
   int cursor_board_x = 0, cursor_board_y = 0;
   int cursor_x = 0, cursor_y = 0;
   int scroll_x = 0, scroll_y = 0;
-  int current_id = 0;
+  mzx_thing current_id = SPACE;
   int current_color = 7;
   int current_param = 0;
   int board_width, board_height;
@@ -696,6 +729,7 @@ void edit_world(World *mzx_world)
   int backup_count = mzx_world->conf.backup_count;
   int backup_interval = mzx_world->conf.backup_interval;
   char *backup_name = mzx_world->conf.backup_name;
+  char *backup_ext = mzx_world->conf.backup_ext;
   int backup_timestamp = get_ticks();
   int backup_num = 0;
   char *level_id;
@@ -761,7 +795,7 @@ void edit_world(World *mzx_world)
     {
       char backup_name_formatted[512];
       sprintf(backup_name_formatted,
-       "%s%d.mzx", backup_name, backup_num + 1);
+       "%s%d%s", backup_name, backup_num + 1, backup_ext);
 
       save_world(mzx_world, backup_name_formatted, 0, 1);
       backup_num = (backup_num + 1) % backup_count;
@@ -773,7 +807,7 @@ void edit_world(World *mzx_world)
 
     if(current_param == -1)
     {
-      current_id = 0;
+      current_id = SPACE;
       current_param = 0;
       current_color = 7;
     }
@@ -856,13 +890,13 @@ void edit_world(World *mzx_world)
 
         if(!overlay_edit)
         {
-          if(current_id == 122)
+          if(current_id == SENSOR)
           {
             display_char = copy_sensor.sensor_char;
           }
           else
 
-          if((current_id == 123) || (current_id == 124))
+          if(is_robot(current_id))
           {
             display_char = copy_robot.robot_char;
           }
@@ -1225,7 +1259,7 @@ void edit_world(World *mzx_world)
       {
         if(draw_mode == 2)
         {
-          place_current_at_xy(mzx_world, 77, current_color,
+          place_current_at_xy(mzx_world, TEXT, current_color,
            ' ', cursor_board_x, cursor_board_y, &copy_robot,
            &copy_scroll, &copy_sensor, overlay_edit);
 
@@ -1243,7 +1277,7 @@ void edit_world(World *mzx_world)
           if((!overlay_edit) && (current_id == level_id[offset]) &&
            (current_color == level_color[offset]))
           {
-            place_current_at_xy(mzx_world, 0, 7, 0, cursor_board_x,
+            place_current_at_xy(mzx_world, SPACE, 7, 0, cursor_board_x,
              cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
              overlay_edit);
           }
@@ -1268,7 +1302,7 @@ void edit_world(World *mzx_world)
           if(((cursor_board_x - scroll_x) < 5) && scroll_x)
             scroll_x--;
 
-          place_current_at_xy(mzx_world, 77, current_color,
+          place_current_at_xy(mzx_world, TEXT, current_color,
            ' ', cursor_board_x, cursor_board_y, &copy_robot,
            &copy_scroll, &copy_sensor, overlay_edit);
           modified = 1;
@@ -1309,7 +1343,7 @@ void edit_world(World *mzx_world)
       {
         if(draw_mode == 2)
         {
-          place_current_at_xy(mzx_world, 77, current_color, ' ',
+          place_current_at_xy(mzx_world, TEXT, current_color, ' ',
            cursor_board_x, cursor_board_y, &copy_robot,
            &copy_scroll, &copy_sensor, overlay_edit);
         }
@@ -1317,13 +1351,13 @@ void edit_world(World *mzx_world)
         {
           if(overlay_edit)
           {
-            place_current_at_xy(mzx_world, 0, 7, 32, cursor_board_x,
+            place_current_at_xy(mzx_world, SPACE, 7, 32, cursor_board_x,
              cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
              overlay_edit);
           }
           else
           {
-            place_current_at_xy(mzx_world, 0, 7, 0, cursor_board_x,
+            place_current_at_xy(mzx_world, SPACE, 7, 0, cursor_board_x,
              cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
              overlay_edit);
           }
@@ -1339,8 +1373,8 @@ void edit_world(World *mzx_world)
         {
           if(!overlay_edit)
           {
-            flash_thing(mzx_world, 71, 71, 178, 176, scroll_x, scroll_y,
-             edit_screen_height);
+            flash_thing(mzx_world, (int)INVIS_WALL, (int)INVIS_WALL,
+             178, 176, scroll_x, scroll_y, edit_screen_height);
           }
         }
         else
@@ -1360,8 +1394,8 @@ void edit_world(World *mzx_world)
         {
           if(!overlay_edit)
           {
-            flash_thing(mzx_world, 123, 124, '!', 0, scroll_x, scroll_y,
-             edit_screen_height);
+            flash_thing(mzx_world, (int)ROBOT, (int)ROBOT_PUSHABLE,
+             '!', 0, scroll_x, scroll_y, edit_screen_height);
           }
         }
         else
@@ -1387,8 +1421,8 @@ void edit_world(World *mzx_world)
           if(get_shift_status(keycode_SDL))
           {
             // Show fakes
-            flash_thing(mzx_world, 13, 19, '#', 177, scroll_x, scroll_y,
-             edit_screen_height);
+            flash_thing(mzx_world, (int)FAKE, (int)THICK_WEB, '#', 177,
+             scroll_x, scroll_y, edit_screen_height);
           }
           else
           {
@@ -1409,8 +1443,8 @@ void edit_world(World *mzx_world)
           if(get_shift_status(keycode_SDL))
           {
             // Show spaces
-            flash_thing(mzx_world, 0, 0, 'O', '*', scroll_x, scroll_y,
-             edit_screen_height);
+            flash_thing(mzx_world, (int)SPACE, (int)SPACE, 'O', '*',
+             scroll_x, scroll_y, edit_screen_height);
           }
           else
           {
@@ -1554,7 +1588,7 @@ void edit_world(World *mzx_world)
             else
             {
               overlay_edit = 0;
-              current_id = 0;
+              current_id = SPACE;
               current_param = 0;
               current_color = 7;
             }
@@ -1692,9 +1726,9 @@ void edit_world(World *mzx_world)
         if(get_alt_status(keycode_SDL))
         {
           char test_wav[128] = { 0 };
-          char *wav_ext[] = { ".WAV", ".SAM", NULL };
+          char *sam_ext[] = { ".WAV", ".SAM", ".OGG", NULL };
 
-          if(!choose_file(mzx_world, wav_ext, test_wav,
+          if(!choose_file(mzx_world, sam_ext, test_wav,
            "Choose a wav file", 1))
           {
             play_sample(0, test_wav);
@@ -1707,7 +1741,7 @@ void edit_world(World *mzx_world)
           if(!modified || !confirm(mzx_world,
            "Load: World has not been saved, are you sure?"))
           {
-            if(!choose_file(mzx_world, world_ext, current_world,
+            if(!choose_file_ch(mzx_world, world_ext, current_world,
              "Load World", 1))
             {
               int fade;
@@ -1769,6 +1803,13 @@ void edit_world(World *mzx_world)
                     fix_mod();
                   }
                   fix_scroll();
+
+                  if((draw_mode > 3) &&
+                   (block_board == (mzx_world->current_board)))
+                  {
+                    draw_mode = 0;
+                  }
+
                   modified = 1;
                 }
                 break;
@@ -1802,6 +1843,10 @@ void edit_world(World *mzx_world)
                 {
                   append_world(mzx_world, import_name);
                 }
+
+                if(draw_mode > 3)
+                  draw_mode = 0;
+
                 modified = 1;
                 break;
               }
@@ -2686,40 +2731,40 @@ void edit_world(World *mzx_world)
               case 7:
               {
                 // Copy from overlay
-                int layer_convert = rtoo_obj_type(mzx_world);
+                int convert_select = rtoo_obj_type(mzx_world);
+                mzx_thing convert_id = NO_ID;
 
-                switch(layer_convert)
+                switch(convert_select)
                 {
                   case 0:
                   {
                     // Custom Block
-                    layer_convert = 5;
+                    convert_id = CUSTOM_BLOCK;
                     break;
                   }
 
                   case 1:
                   {
-                    // Custom Floor
-                    layer_convert = 17;
+                    convert_id = CUSTOM_FLOOR;
                     break;
                   }
 
                   case 2:
                   {
-                    // Text
-                    layer_convert = 77;
+                    convert_id = TEXT;
                     break;
                   }
                 }
 
-                if(layer_convert != -1)
+                if(convert_select != -1)
                 {
                   int overlay_offset = start_x +
                    (start_y * block_board->board_width);
-                  copy_layer_to_board(src_board, dest_x, dest_y, block_width,
-                   block_height, block_board->overlay + overlay_offset,
-                   block_board->overlay_color + overlay_offset,
-                   block_board->board_width, layer_convert);
+                  copy_layer_to_board(src_board, dest_x, dest_y,
+                   block_width, block_height, block_board->overlay +
+                   overlay_offset, block_board->overlay_color +
+                   overlay_offset, block_board->board_width,
+                   convert_id);
 
                   modified = 1;
                 }
@@ -2820,7 +2865,7 @@ void edit_world(World *mzx_world)
         if(overlay_edit)
         {
           overlay_edit = 0;
-          current_id = 0;
+          current_id = SPACE;
           current_param = 0;
           current_color = 7;
           key = 0;
@@ -2913,10 +2958,13 @@ void edit_world(World *mzx_world)
             send_robot_def(mzx_world, 0, 11);
             send_robot_def(mzx_world, 0, 10);
             find_player(mzx_world);
+
             mzx_world->player_restart_x = mzx_world->player_x;
             mzx_world->player_restart_y = mzx_world->player_y;
+
             strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
             load_mod(mzx_world->real_mod_playing);
+
             play_game(mzx_world, 1);
             reload_world(mzx_world, "__test.mzx", &fade);
             scroll_color = 15;
@@ -3094,6 +3142,12 @@ void edit_world(World *mzx_world)
             src_board->mod_playing[0] = 0;
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
+
+            if((draw_mode > 3) &&
+             (block_board == (mzx_world->current_board)))
+            {
+              draw_mode = 0;
+            }
           }
 
           modified = 1;
@@ -3116,6 +3170,10 @@ void edit_world(World *mzx_world)
           {
             clear_world(mzx_world);
             create_blank_world(mzx_world);
+
+            if(draw_mode > 3)
+              draw_mode = 0;
+
             synchronize_board_values();
             fix_scroll();
             end_mod();
@@ -3180,24 +3238,24 @@ void edit_world(World *mzx_world)
         if(get_alt_status(keycode_SDL))
         {
           int offset = cursor_board_x + (cursor_board_y * board_width);
-          int d_id = level_id[offset];
+          mzx_thing d_id = (mzx_thing)level_id[offset];
           int d_param = level_param[offset];
 
-          if(d_id == 122)
+          if(d_id == SENSOR)
           {
             edit_sensor(mzx_world, src_board->sensor_list[d_param]);
             modified = 1;
           }
           else
 
-          if((d_id == 123) || (d_id == 124))
+          if(is_robot(d_id))
           {
             edit_robot(mzx_world, src_board->robot_list[d_param]);
             modified = 1;
           }
           else
 
-          if((d_id == 125) || (d_id == 126))
+          if(is_signscroll(d_id))
           {
             edit_scroll(mzx_world, src_board->scroll_list[d_param]);
             modified = 1;
@@ -3278,7 +3336,7 @@ void edit_world(World *mzx_world)
       key = get_key(keycode_unicode);
       if(key != 0)
       {
-        place_current_at_xy(mzx_world, 77, current_color,
+        place_current_at_xy(mzx_world, TEXT, current_color,
          key, cursor_board_x, cursor_board_y, &copy_robot,
          &copy_scroll, &copy_sensor, overlay_edit);
 

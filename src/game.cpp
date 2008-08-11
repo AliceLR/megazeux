@@ -20,12 +20,6 @@
  */
 
 
-// I added a bunch of stuff here. Whenever a window is popped up, the mouse
-// cursor is re-activated, and then CURSORSTATE is checked upon closing the
-// window. If it's 1, the cursor is left on, otherwise it's hidden as normal.
-// You can find all instances by searching for CURSORSTATE. Spid
-
-
 // Main title screen/gaming code
 
 #include <stdlib.h>
@@ -87,9 +81,7 @@ char *world_ext[] = { ".MZX", NULL };
 
 char *save_ext[] = { ".SAV", NULL };
 
-//Easter Egg enter menu -Koji
-// Idea by Exophase.
-// Wasting mem with style.. okay, not anymore :( - Exo
+// Oh boy, the 1337 menu. Have fun with this.
 char *lame_menu= "F1    - HELP!!1\n"
               "etner - TIHS MENUE\n"
               "EScapE- DONT PRESS LOL\n"
@@ -107,16 +99,10 @@ char *lame_menu= "F1    - HELP!!1\n"
 
 char debug_mode = 0;
 
-int bomb_type = 1; // Start on hi-bombs
-int dead = 0;
 int update_music;
 
 // For changing screens AFTER an update is done and shown
-int target_board = -1; // Where to go
-int target_where = -2; // 0 for x/y, 1 for entrance
 // -1 for teleport (so fading isn't used)
-int target_x = -1; // Or color of entrance
-int target_y = -1; // Or id of entrance
 // For RESTORE/EXCHANGE PLAYER POSITION with DUPLICATION.
 int target_d_id = -1;
 // For RESTORE/EXCHANGE PLAYER POSITION with DUPLICATION.
@@ -156,7 +142,6 @@ void load_world_file(World *mzx_world, char *name)
   load_mod(src_board->mod_playing);
   strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
   set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-  dead = 0;
 
   set_mesg(mzx_world,
    "** BETA **    F1: Help   Enter: Menu   Ctrl-Alt-Enter: Fullscreen");
@@ -233,7 +218,6 @@ void title_screen(World *mzx_world)
             load_world_file(mzx_world, curr_file);
 
           fadein = 1;
-          dead = 0;
           break;
         }
 
@@ -254,17 +238,17 @@ void title_screen(World *mzx_world)
         case SDLK_RETURN: // Enter
         {
           if(get_counter(mzx_world, "ENTER_MENU", 0))
-          { 
+          {
             int key;
-  
+
             save_screen();
             draw_window_box(30, 4, 52, 16, 25, 16, 24, 1, 1);
             write_string(main_menu, 32, 5, 31, 1);
             write_string(" Main Menu ", 36, 4, 30, 0);
             update_screen();
-  
+
             m_show();
-  
+
             do
             {
               update_event_status_delay();
@@ -272,7 +256,7 @@ void title_screen(World *mzx_world)
               key = get_key(keycode_SDL);
             } while((key != SDLK_RETURN) &&
              (key != SDLK_KP_ENTER));
-  
+
             restore_screen();
             update_screen();
             update_event_status();
@@ -329,12 +313,12 @@ void title_screen(World *mzx_world)
               src_board = mzx_world->current_board;
               // Swap in starting board
               load_mod(src_board->mod_playing);
-              strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+              strcpy(mzx_world->real_mod_playing,
+               src_board->mod_playing);
 
               send_robot_def(mzx_world, 0, 10);
               // Copy filename
               strcpy(curr_sav, save_file_name);
-              dead = 0;
               fadein ^= 1;
 
               send_robot_def(mzx_world, 0, 11);
@@ -363,8 +347,10 @@ void title_screen(World *mzx_world)
 
                 src_board = mzx_world->current_board;
                 load_mod(src_board->mod_playing);
-                strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-                set_counter(mzx_world, "TIME", src_board->time_limit, 0);
+                strcpy(mzx_world->real_mod_playing,
+                 src_board->mod_playing);
+                set_counter(mzx_world, "TIME",
+                 src_board->time_limit, 0);
               }
               else
               {
@@ -372,7 +358,6 @@ void title_screen(World *mzx_world)
               }
               vquick_fadeout();
               fadein = 1;
-              dead = 0;
             }
             break;
           }
@@ -396,13 +381,13 @@ void title_screen(World *mzx_world)
             if(mzx_world->only_from_swap)
             {
               m_show();
-              error("You can only play this game via a swap from another game",
-               0, 24, 0x3101);
+              error("You can only play this game via a swap"
+               " from another game", 0, 24, 0x3101);
               break;
             }
 
             // Load world curr_file
-            // Don't end mod- We want to have smooth transition for that.
+            // Don't end mod- We want a smooth transition for that.
             // Clear screen
 
             clear_screen(32, 7);
@@ -417,14 +402,14 @@ void title_screen(World *mzx_world)
             src_board = mzx_world->current_board;
 
             send_robot_def(mzx_world, 0, 11);
-
             send_robot_def(mzx_world, 0, 10);
 
             if(strcmp(src_board->mod_playing, "*") &&
              strcmp(src_board->mod_playing, old_mod_playing))
               load_mod(src_board->mod_playing);
 
-            strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+            strcpy(mzx_world->real_mod_playing,
+             src_board->mod_playing);
 
             set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
@@ -447,30 +432,30 @@ void title_screen(World *mzx_world)
             reload_world(mzx_world, curr_file, &fade);
             src_board = mzx_world->current_board;
             load_mod(src_board->mod_playing);
-            strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+            strcpy(mzx_world->real_mod_playing,
+             src_board->mod_playing);
             set_counter(mzx_world, "TIME", src_board->time_limit, 0);
             vquick_fadeout();
             fadein = 1;
-            dead = 0;
           }
           break;
         }
 
-        case SDLK_F6://F6
+        case SDLK_F6:
         {
           // Debug menu
           debug_mode ^= 1;
           break;
         }
 
-        case SDLK_F7: // F7
+        case SDLK_F7:
         {
           // SMZX Mode
           set_screen_mode(get_screen_mode() + 1);
           break;
         }
 
-        case SDLK_F1: // F1
+        case SDLK_F1:
         {
           if(get_counter(mzx_world, "HELP_MENU", 0) ||
             (!mzx_world->active))
@@ -483,7 +468,7 @@ void title_screen(World *mzx_world)
         }
 
         // Quick load
-        case SDLK_F10: // F4
+        case SDLK_F10:
         {
           // Restore
           m_show();
@@ -502,10 +487,10 @@ void title_screen(World *mzx_world)
             src_board = mzx_world->current_board;
             // Swap in starting board
             load_mod(src_board->mod_playing);
-            strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+            strcpy(mzx_world->real_mod_playing,
+             src_board->mod_playing);
 
             send_robot_def(mzx_world, 0, 10);
-            dead = 0;
             fadein ^= 1;
 
             send_robot_def(mzx_world, 0, 11);
@@ -533,8 +518,10 @@ void title_screen(World *mzx_world)
               reload_world(mzx_world, curr_file, &fade);
               src_board = mzx_world->current_board;
               load_mod(src_board->mod_playing);
-              strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-              set_counter(mzx_world, "TIME", src_board->time_limit, 0);
+              strcpy(mzx_world->real_mod_playing,
+               src_board->mod_playing);
+              set_counter(mzx_world, "TIME",
+               src_board->time_limit, 0);
             }
             else
             {
@@ -542,7 +529,6 @@ void title_screen(World *mzx_world)
             }
             vquick_fadeout();
             fadein = 1;
-            dead = 0;
           }
 
           update_screen();
@@ -666,7 +652,8 @@ void draw_viewport(World *mzx_world)
 }
 
 // Updates game variables
-// Slowed = 1 to not update lazwall or time due to slowtime or freezetime
+// Slowed = 1 to not update lazwall or time
+// due to slowtime or freezetime
 
 void update_variables(World *mzx_world, int slowed)
 {
@@ -679,7 +666,7 @@ void update_variables(World *mzx_world, int slowed)
   int b_mesg_timer = src_board->b_mesg_timer;
   int invinco;
   int lazwall_start = src_board->lazwall_start;
-  static int slowdown = 0; // Slows certain things down to every other cycle
+  static int slowdown = 0;
   slowdown ^= 1;
 
   // If odd, we...
@@ -814,8 +801,9 @@ void rotate(World *mzx_world, int x, int y, int dir)
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
   char *level_color = src_board->level_color;
-  char id, param, color;
-  char cur_id;
+  mzx_thing id;
+  char param, color;
+  mzx_thing cur_id;
   int d_flag;
   int cur_offset, next_offset;
 
@@ -847,8 +835,8 @@ void rotate(World *mzx_world, int x, int y, int dir)
 
   for(i = 0; i < 8; i++)
   {
-    cur_id = level_id[offset + offs[i]];
-    if((flags[(int)cur_id] & A_UNDER) && (cur_id != 34))
+    cur_id = (mzx_thing)level_id[offset + offs[i]];
+    if((flags[(int)cur_id] & A_UNDER) && (cur_id != GOOP))
       break;
   }
 
@@ -856,18 +844,20 @@ void rotate(World *mzx_world, int x, int y, int dir)
   {
     for(i = 0; i < 8; i++)
     {
-      cur_id = level_id[offset + offs[i]];
+      cur_id = (mzx_thing)level_id[offset + offs[i]];
       d_flag = flags[(int)cur_id];
 
       if((!(d_flag & A_PUSHABLE) || (d_flag & A_SPEC_PUSH)) &&
-       (cur_id != 47))
+       (cur_id != GATE))
+      {
         break; // Transport NOT pushable
+      }
     }
 
     if(i == 8)
     {
       cur_offset = offset + offs[0];
-      id = level_id[cur_offset];
+      id = (mzx_thing)level_id[cur_offset];
       color = level_color[cur_offset];
       param = level_param[cur_offset];
 
@@ -881,7 +871,7 @@ void rotate(World *mzx_world, int x, int y, int dir)
       }
 
       cur_offset = offset + offs[7];
-      level_id[cur_offset] = id;
+      level_id[cur_offset] = (char)id;
       level_color[cur_offset] = color;
       level_param[cur_offset] = param;
     }
@@ -901,11 +891,11 @@ void rotate(World *mzx_world, int x, int y, int dir)
 
       cur_offset = offset + offs[ccw];
       next_offset = offset + offs[i];
-      cur_id = level_id[cur_offset];
+      cur_id = (mzx_thing)level_id[cur_offset];
       d_flag = flags[(int)cur_id];
 
       if(((d_flag & A_PUSHABLE) || (d_flag & A_SPEC_PUSH)) &&
-       (cur_id != 47) && (!(update_done[cur_offset] & 2)))
+       (cur_id != GATE) && (!(update_done[cur_offset] & 2)))
       {
         offs_place_id(mzx_world, next_offset, cur_id,
          level_color[cur_offset], level_param[cur_offset]);
@@ -918,8 +908,8 @@ void rotate(World *mzx_world, int x, int y, int dir)
         i = ccw;
         while(i != cw)
         {
-          cur_id = level_id[offset + offs[i]];
-          if((flags[(int)cur_id] & A_UNDER) && (cur_id != 34))
+          cur_id = (mzx_thing)level_id[offset + offs[i]];
+          if((flags[(int)cur_id] & A_UNDER) && (cur_id != GOOP))
             break;
 
           i++;
@@ -993,7 +983,9 @@ void update_player(World *mzx_world)
   int player_x = mzx_world->player_x;
   int player_y = mzx_world->player_y;
   int board_width = src_board->board_width;
-  int under_id = src_board->level_under_id[player_x + (player_y * board_width)];
+  mzx_thing under_id =
+   (mzx_thing)src_board->level_under_id[player_x +
+   (player_y * board_width)];
 
   // t1 = ID stood on
   if(!(flags[under_id] & A_AFFECT_IF_STOOD))
@@ -1003,7 +995,7 @@ void update_player(World *mzx_world)
 
   switch(under_id)
   {
-    case 25: // Ice
+    case ICE:
     {
       int player_last_dir = src_board->player_last_dir;
       if(player_last_dir & 0x0F)
@@ -1014,23 +1006,33 @@ void update_player(World *mzx_world)
       break;
     }
 
-    case 26: // Lava
-      if(mzx_world->firewalker_dur > 0) break;
+    case LAVA:
+    {
+      if(mzx_world->firewalker_dur > 0)
+        break;
+
       play_sfx(mzx_world, 22);
       set_mesg(mzx_world, "Augh!");
       dec_counter(mzx_world, "HEALTH", id_dmg[26], 0);
       return;
+    }
 
-    case 63: // Fire
-      if(mzx_world->firewalker_dur > 0) break;
+    case FIRE:
+    {
+      if(mzx_world->firewalker_dur > 0)
+        break;
+
       play_sfx(mzx_world, 43);
       set_mesg(mzx_world, "Ouch!");
       dec_counter(mzx_world, "HEALTH", id_dmg[63], 0);
       return;
+    }
 
-    default: // Water
+    default:
+    {
       move_player(mzx_world, under_id - 21);
       break;
+    }
   }
 
   find_player(mzx_world);
@@ -1064,6 +1066,10 @@ void game_settings(World *mzx_world)
   int music_volume, sound_volume, sfx_volume;
   dialog di;
   int dialog_result;
+  int speed_option = 0;
+  int num_elements = 8;
+  int start_option = 0;
+
   char *radio_strings_1[2] =
   {
     "Digitized music on", "Digitized music off"
@@ -1072,27 +1078,35 @@ void game_settings(World *mzx_world)
   {
     "PC speaker SFX on", "PC speaker SFX off"
   };
-  element *elements[9] =
-  {
-    construct_number_box(3, 2, "Speed- ", 1, 9,
-     0, &mzx_speed),
-    construct_radio_button(4, 4, radio_strings_1, 2, 19,
-     &music),
-    construct_radio_button(4, 7, radio_strings_2, 2, 18,
-     &sfx),
-    construct_label(3, 10, "Audio volumes-"),
-    construct_number_box(3, 11, "Overall volume- ",
-     1, 8, 0, &music_volume),
-    construct_number_box(3, 12, "SoundFX volume- ",
-     1, 8, 0, &sound_volume),
-    construct_number_box(3, 13, "PC Speaker SFX- ",
-     1, 8, 0, &sfx_volume),
-    construct_button(4, 15, "OK", 0),
-    construct_button(14, 15, "Cancel", 1)
-  };
+  element *elements[9];
 
-  construct_dialog(&di, "Game Settings", 25, 4, 30, 18,
-   elements, 9, 0);
+  if(!mzx_world->lock_speed)
+  {
+    speed_option = 2;
+    num_elements = 9;
+    start_option = 8;
+    elements[8] = construct_number_box(5, 2, "Speed- ", 1, 9,
+     0, &mzx_speed);
+  }
+
+  elements[0] = construct_radio_button(4, 2 + speed_option,
+   radio_strings_1, 2, 19, &music);
+  elements[1] = construct_radio_button(4, 5 + speed_option,
+   radio_strings_2, 2, 18, &sfx);
+  elements[2] = construct_label(3, 8 + speed_option,
+   "Audio volumes-");
+  elements[3] = construct_number_box(3, 9 + speed_option,
+   "Overall volume- ", 1, 8, 0, &music_volume);
+  elements[4] = construct_number_box(3, 10 + speed_option,
+   "SoundFX volume- ", 1, 8, 0, &sound_volume);
+  elements[5] = construct_number_box(3, 11 + speed_option,
+   "PC Speaker SFX- ", 1, 8, 0, &sfx_volume);
+  elements[6] = construct_button(7, 13 + speed_option, "OK", 0);
+  elements[7] = construct_button(16, 13 + speed_option,
+   "Cancel", 1);
+
+  construct_dialog(&di, "Game Settings", 25, 4 - (speed_option / 2),
+   30, 16 + speed_option, elements, num_elements, start_option);
 
   set_context(92);
   mzx_speed = mzx_world->mzx_speed;
@@ -1146,7 +1160,8 @@ void game_settings(World *mzx_world)
   }
 }
 
-// Number of cycles to make player idle before repeating a directional move
+// Number of cycles to make player idle before repeating a
+// directional move
 
 #define REPEAT_WAIT 2
 
@@ -1162,8 +1177,6 @@ void play_game(World *mzx_world, int fadein)
   // Mouse remains hidden unless menu/etc. is invoked
 
   set_context(91);
-
-  dead = 0;
 
   do
   {
@@ -1193,7 +1206,7 @@ void play_game(World *mzx_world, int fadein)
 
       switch(key)
       {
-        case SDLK_F1: // F1
+        case SDLK_F1:
         {
           if(get_counter(mzx_world, "HELP_MENU", 0))
           {
@@ -1203,7 +1216,7 @@ void play_game(World *mzx_world, int fadein)
           break;
         }
 
-        case SDLK_F2: // F2
+        case SDLK_F2:
         {
           // Settings
           if(get_counter(mzx_world, "F2_MENU", 0) ||
@@ -1219,7 +1232,7 @@ void play_game(World *mzx_world, int fadein)
         }
 
         case SDLK_KP_ENTER:
-        case SDLK_RETURN: // Enter
+        case SDLK_RETURN:
         {
           int enter_menu_status =
            get_counter(mzx_world, "ENTER_MENU", 0);
@@ -1255,7 +1268,7 @@ void play_game(World *mzx_world, int fadein)
           break;
         }
 
-        case SDLK_ESCAPE: // ESC
+        case SDLK_ESCAPE:
         {
           // Quit
           m_show();
@@ -1267,16 +1280,17 @@ void play_game(World *mzx_world, int fadein)
           break;
         }
 
-        case SDLK_F3: // F3
+        case SDLK_F3:
         {
           // Save game
-          if(!dead)
+          if(!mzx_world->dead)
           {
             // Can we?
             if((src_board->save_mode != CANT_SAVE) &&
              ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
              (src_board->level_under_id[mzx_world->player_x +
-             (src_board->board_width * mzx_world->player_y)] == 122)))
+             (src_board->board_width * mzx_world->player_y)] ==
+             SENSOR)))
             {
               char save_game[512];
 
@@ -1319,13 +1333,13 @@ void play_game(World *mzx_world, int fadein)
             src_board = mzx_world->current_board;
             // Swap in starting board
             load_mod(src_board->mod_playing);
-            strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+            strcpy(mzx_world->real_mod_playing,
+             src_board->mod_playing);
 
             find_player(mzx_world);
 
             strcpy(curr_sav, save_file_name);
             send_robot_def(mzx_world, 0, 10);
-            dead = 0;
             fadein ^= 1;
           }
 
@@ -1333,33 +1347,40 @@ void play_game(World *mzx_world, int fadein)
           break;
         }
 
-        case SDLK_F5: // F5
-        case SDLK_INSERT: // Ins
+        case SDLK_F5:
+        case SDLK_INSERT:
         {
           // Change bomb type
-          if(!dead)
+          if(!mzx_world->dead)
           {
-            bomb_type ^= 1;
-            if((!src_board->player_attack_locked) && (src_board->can_bomb))
+            mzx_world->bomb_type ^= 1;
+            if((!src_board->player_attack_locked) &&
+             (src_board->can_bomb))
             {
               play_sfx(mzx_world, 35);
-              if(bomb_type)
-                set_mesg(mzx_world, "You switch to high strength bombs.");
+              if(mzx_world->bomb_type)
+              {
+                set_mesg(mzx_world,
+                 "You switch to high strength bombs.");
+              }
               else
-                set_mesg(mzx_world, "You switch to low strength bombs.");
+              {
+                set_mesg(mzx_world,
+                 "You switch to low strength bombs.");
+              }
             }
           }
           break;
         }
 
-        case SDLK_F6: // F6
+        case SDLK_F6:
         {
           // Debug menu
           debug_mode ^= 1;
           break;
         }
 
-        case SDLK_F7: // F7
+        case SDLK_F7:
         {
           int i;
 
@@ -1374,13 +1395,13 @@ void play_game(World *mzx_world, int fadein)
           set_counter(mzx_world, "HIBOMBS", 32767, 1);
 
           mzx_world->score = 0;
+          mzx_world->dead = 0;
 
           for(i = 0; i < 16; i++)
           {
             mzx_world->keys[i] = i;
           }
 
-          dead = 0; // :)
           src_board->player_ns_locked = 0;
           src_board->player_ew_locked = 0;
           src_board->player_attack_locked = 0;
@@ -1397,30 +1418,51 @@ void play_game(World *mzx_world, int fadein)
 
           if(player_x > 0)
           {
-            place_at_xy(mzx_world, 0, 7, 0, player_x - 1, player_y);
+            place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
+             player_y);
+
             if(player_y > 0)
-              place_at_xy(mzx_world, 0, 7, 0, player_x - 1, player_y - 1);
+            {
+              place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
+               player_y - 1);
+            }
 
             if(player_y < (board_height - 1))
-              place_at_xy(mzx_world, 0, 7, 0, player_x - 1, player_y + 1);
+            {
+              place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
+               player_y + 1);
+            }
           }
 
           if(player_x < (board_width - 1))
           {
-            place_at_xy(mzx_world, 0, 7, 0, player_x + 1, player_y);
+            place_at_xy(mzx_world, SPACE, 7, 0, player_x + 1,
+             player_y);
 
             if(player_y > 0)
-              place_at_xy(mzx_world, 0, 7, 0, player_x + 1, player_y - 1);
+            {
+              place_at_xy(mzx_world, SPACE, 7, 0,
+               player_x + 1, player_y - 1);
+            }
 
             if(player_y < (board_height - 1))
-              place_at_xy(mzx_world, 0, 7, 0, player_x + 1, player_y + 1);
+            {
+              place_at_xy(mzx_world, SPACE, 7, 0,
+               player_x + 1, player_y + 1);
+            }
           }
 
           if(player_y > 0)
-            place_at_xy(mzx_world, 0, 7, 0, player_x, player_y - 1);
+          {
+            place_at_xy(mzx_world, SPACE, 7, 0,
+             player_x, player_y - 1);
+          }
 
           if(player_y < (board_height - 1))
-            place_at_xy(mzx_world, 0, 7, 0, player_x, player_y + 1);
+          {
+            place_at_xy(mzx_world, SPACE, 7, 0,
+             player_x, player_y + 1);
+          }
 
           break;
         }
@@ -1428,13 +1470,14 @@ void play_game(World *mzx_world, int fadein)
         // Quick save
         case SDLK_F9:
         {
-          if(!dead)
+          if(!mzx_world->dead)
           {
             // Can we?
             if((src_board->save_mode != CANT_SAVE) &&
              ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
              (src_board->level_under_id[mzx_world->player_x +
-             (src_board->board_width * mzx_world->player_y)] == 122)))
+             (src_board->board_width * mzx_world->player_y)] ==
+             SENSOR)))
             {
               // Save entire game
               save_world(mzx_world, curr_sav, 1, get_fade_status());
@@ -1465,16 +1508,16 @@ void play_game(World *mzx_world, int fadein)
 
             // Swap in starting board
             load_mod(src_board->mod_playing);
-            strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+            strcpy(mzx_world->real_mod_playing,
+             src_board->mod_playing);
 
             send_robot_def(mzx_world, 0, 10);
-            dead = 0;
             fadein ^= 1;
           }
           break;
         }
 
-        case SDLK_F11: // F11
+        case SDLK_F11:
         {
           // SMZX Mode
           set_screen_mode(get_screen_mode() + 1);
@@ -1496,10 +1539,11 @@ void place_player(World *mzx_world, int x, int y, int dir)
   {
     id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
   }
-  id_place(mzx_world, x, y, 127, 0, 0);
+  id_place(mzx_world, x, y, PLAYER, 0, 0);
   mzx_world->player_x = x;
   mzx_world->player_y = y;
-  src_board->player_last_dir = (src_board->player_last_dir & 240) | (dir + 1);
+  src_board->player_last_dir =
+   (src_board->player_last_dir & 240) | (dir + 1);
 }
 
 // Returns 1 if didn't move
@@ -1538,49 +1582,55 @@ int move_player(World *mzx_world, int dir)
     // Hit an edge, teleport to another board?
     int board_dir = src_board->board_dir[dir];
     // Board must be valid
-    if((board_dir == NO_BOARD) || (board_dir >= mzx_world->num_boards) ||
+    if((board_dir == NO_BOARD) ||
+     (board_dir >= mzx_world->num_boards) ||
      (!mzx_world->board_list[board_dir]))
+    {
       return 1;
+    }
 
-    target_board = board_dir;
-    target_where = 0;
-    target_x = player_x;
-    target_y = player_y;
+    mzx_world->target_board = board_dir;
+    mzx_world->target_where = TARGET_POSITION;
+    mzx_world->target_x = player_x;
+    mzx_world->target_y = player_y;
 
     switch(dir)
     {
       case 0: // North- Enter south side
       {
-        target_y = (mzx_world->board_list[board_dir])->board_height - 1;
+        mzx_world->target_y =
+         (mzx_world->board_list[board_dir])->board_height - 1;
         break;
       }
 
       case 1: // South- Enter north side
       {
-        target_y = 0;
+        mzx_world->target_y = 0;
         break;
       }
 
       case 2: // East- Enter west side
       {
-        target_x = 0;
+        mzx_world->target_x = 0;
         break;
       }
 
       case 3: // West- Enter east side
       {
-        target_x = (mzx_world->board_list[board_dir])->board_width - 1;
+        mzx_world->target_x =
+         (mzx_world->board_list[board_dir])->board_width - 1;
         break;
       }
     }
-    src_board->player_last_dir = (src_board->player_last_dir & 240) + dir + 1;
+    src_board->player_last_dir =
+     (src_board->player_last_dir & 240) + dir + 1;
     return 0;
   }
   else
   {
     // Not edge
     int d_offset = new_x + (new_y * src_board->board_width);
-    char d_id = src_board->level_id[d_offset];
+    mzx_thing d_id = (mzx_thing)src_board->level_id[d_offset];
     int d_flag = flags[(int)d_id];
 
     if(d_flag & A_SPEC_STOOD)
@@ -1589,7 +1639,8 @@ int move_player(World *mzx_world, int dir)
       // Activate label and then move player
       char d_param = src_board->level_param[d_offset];
       send_robot(mzx_world,
-       (src_board->sensor_list[d_param])->robot_to_mesg, "SENSORON", 0);
+       (src_board->sensor_list[d_param])->robot_to_mesg,
+       "SENSORON", 0);
       place_player(mzx_world, new_x, new_y, dir);
     }
     else
@@ -1597,7 +1648,7 @@ int move_player(World *mzx_world, int dir)
     if(d_flag & A_ENTRANCE)
     {
       // Entrance
-      char d_board = src_board->level_param[d_offset];
+      int d_board = src_board->level_param[d_offset];
       play_sfx(mzx_world, 37);
       // Can move?
       if((d_board != mzx_world->current_board_id) &&
@@ -1605,34 +1656,35 @@ int move_player(World *mzx_world, int dir)
        (mzx_world->board_list[d_board]))
       {
         // Go to board t1 AFTER showing update
-        target_board = d_board;
-        target_where = 1;
-        target_x = src_board->level_color[d_offset];
-        target_y = d_id;
+        mzx_world->target_board = d_board;
+        mzx_world->target_where = TARGET_ENTRANCE;
+        mzx_world->target_color = src_board->level_color[d_offset];
+        mzx_world->target_id = d_id;
       }
 
       place_player(mzx_world, new_x, new_y, dir);
     }
     else
 
-    if((d_flag & A_ITEM) && (d_id != 123))
+    if((d_flag & A_ITEM) && (d_id != ROBOT_PUSHABLE))
     {
       // Item
-      char d_under_id = mzx_world->under_player_id;
+      mzx_thing d_under_id = (mzx_thing)mzx_world->under_player_id;
       char d_under_color = mzx_world->under_player_color;
       char d_under_param = mzx_world->under_player_param;
       int grab_result = grab_item(mzx_world, d_offset, dir);
       if(grab_result)
       {
-        if(d_id == 49)
+        if(d_id == TRANSPORT)
         {
           int player_last_dir = src_board->player_last_dir;
           // Teleporter
           id_remove_top(mzx_world, player_x, player_y);
-          mzx_world->under_player_id = d_under_id;
+          mzx_world->under_player_id = (char)d_under_id;
           mzx_world->under_player_color = d_under_color;
           mzx_world->under_player_param = d_under_param;
-          src_board->player_last_dir = (player_last_dir & 240) + dir + 1;
+          src_board->player_last_dir =
+           (player_last_dir & 240) + dir + 1;
           // New player x/y will be found after update !!! maybe fix.
         }
         else
@@ -1655,7 +1707,7 @@ int move_player(World *mzx_world, int dir)
 
     if((d_flag & A_ENEMY) || (d_flag & A_HURTS))
     {
-      if(d_id == 61)
+      if(d_id == BULLET)
       {
         // Bullet
         if((src_board->level_param[d_offset] >> 2) == PLAYER_BULLET)
@@ -1683,7 +1735,8 @@ int move_player(World *mzx_world, int dir)
         {
           // Kill/move
           id_remove_top(mzx_world, new_x, new_y);
-          if((d_id != 34) && (!src_board->restart_if_zapped)) // Not onto goop..
+          if((d_id != GOOP) &&
+           (!src_board->restart_if_zapped)) // Not onto goop
           if(!src_board->restart_if_zapped)
           {
             place_player(mzx_world, new_x, new_y, dir);
@@ -1705,7 +1758,7 @@ int move_player(World *mzx_world, int dir)
       {
         // Push
         // Pushable robot needs to be sent the touch label
-        if(d_id == 123)
+        if(d_id == ROBOT_PUSHABLE)
           send_robot_def(mzx_world,
            src_board->level_param[d_offset], 0);
 
@@ -1721,9 +1774,7 @@ int move_player(World *mzx_world, int dir)
   return 1;
 }
 
-char door_first_movement[8] = { 0, 3, 0, 2, 1, 3, 1, 2 };
-
-void give_potion(World *mzx_world, int type)
+void give_potion(World *mzx_world, mzx_potion type)
 {
   Board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
@@ -1737,13 +1788,13 @@ void give_potion(World *mzx_world, int type)
 
   switch(type)
   {
-    case 0: // Dud
+    case POTION_DUD:
     {
       set_mesg(mzx_world, "* No effect *");
       break;
     }
 
-    case 1: // Invinco
+    case POTION_INVINCO:
     {
       set_mesg(mzx_world, "* Invinco *");
       send_robot_def(mzx_world, 0, 2);
@@ -1751,17 +1802,20 @@ void give_potion(World *mzx_world, int type)
       break;
     }
 
-    case 2: // Blast
+    case POTION_BLAST:
     {
       int x, y, offset;
+      mzx_thing d_id;
+      int d_flag;
+
       // Adjust the rate for board size - it was hardcoded for 10000
       int placement_rate = 18 * (board_width * board_height) / 10000;
       for(y = 0, offset = 0; y < board_height; y++)
       {
         for(x = 0; x < board_width; x++, offset++)
         {
-          char d_id = level_id[offset];
-          int d_flag = flags[(int)d_id];
+          d_id = (mzx_thing)level_id[offset];
+          d_flag = flags[d_id];
 
           if((d_flag & A_UNDER) && !(d_flag & A_ENTRANCE))
           {
@@ -1769,7 +1823,8 @@ void give_potion(World *mzx_world, int type)
 
             if((rand() % placement_rate) == 0)
             {
-              id_place(mzx_world, x, y, 38, 0, 16 * ((rand() % 5) + 2));
+              id_place(mzx_world, x, y, EXPLOSION, 0,
+               16 * ((rand() % 5) + 2));
             }
           }
         }
@@ -1779,44 +1834,46 @@ void give_potion(World *mzx_world, int type)
       break;
     }
 
-    case 3: // Health +10
+    case POTION_SMALL_HEALTH:
     {
       inc_counter(mzx_world, "HEALTH", 10, 0);
       set_mesg(mzx_world, "* Healing *");
       break;
     }
 
-    case 4: // Health +50
+    case POTION_BIG_HEALTH:
     {
       inc_counter(mzx_world, "HEALTH", 50, 0);
       set_mesg(mzx_world, "* Healing *");
       break;
     }
 
-    case 5: // Poison
+    case POTION_POISON:
     {
       dec_counter(mzx_world, "HEALTH", 10, 0);
       set_mesg(mzx_world, "* Poison *");
       break;
     }
 
-    case 6: // Blind
+    case POTION_BLIND:
     {
       mzx_world->blind_dur = 200;
       set_mesg(mzx_world, "* Blind *");
       break;
     }
 
-    case 7: // Kill
+    case POTION_KILL:
     {
       int x, y, offset;
+      mzx_thing d_id;
+
       for(y = 0, offset = 0; y < board_height; y++)
       {
         for(x = 0; x < board_width; x++, offset++)
         {
-          char d_id = level_id[offset];
-          // Enemy
-          if((d_id > 79) && (d_id < 96) && (d_id != 92) && (d_id != 93))
+          d_id = (mzx_thing)level_id[offset];
+
+          if(is_enemy(d_id))
             id_remove_top(mzx_world, x, y);
         }
       }
@@ -1824,23 +1881,23 @@ void give_potion(World *mzx_world, int type)
       break;
     }
 
-    case 8: // Firewalk
+    case POTION_FIREWALK:
     {
       mzx_world->firewalker_dur = 200;
       set_mesg(mzx_world, "* Firewalking *");
       break;
     }
 
-    case 9: // Detonate
+    case POTION_DETONATE:
     {
       int x, y, offset;
       for(y = 0, offset = 0; y < board_height; y++)
       {
         for(x = 0; x < board_width; x++, offset++)
         {
-          if(level_id[offset] == 36)
+          if(level_id[offset] == BOMB)
           {
-            level_id[offset] = 38;
+            level_id[offset] = EXPLOSION;
             if(level_param[offset] == 0)
               level_param[offset] = 32;
             else
@@ -1852,16 +1909,16 @@ void give_potion(World *mzx_world, int type)
       break;
     }
 
-    case 10: // Banish
+    case POTION_BANISH:
     {
       int x, y, offset;
       for(y = 0, offset = 0; y < board_height; y++)
       {
         for(x = 0; x < board_width; x++, offset++)
         {
-          if(level_id[offset] == 86)
+          if(level_id[offset] == (char)DRAGON)
           {
-            level_id[offset] = 85;
+            level_id[offset] = GHOST;
             level_param[offset] = 51;
           }
         }
@@ -1870,18 +1927,19 @@ void give_potion(World *mzx_world, int type)
       break;
     }
 
-    case 11: // Summon
+    case POTION_SUMMON:
     {
+      mzx_thing d_id;
       int x, y, offset;
+
       for(y = 0, offset = 0; y < board_height; y++)
       {
         for(x = 0; x < board_width; x++, offset++)
         {
-          char d_id = level_id[offset];
-          if((d_id > 79) && (d_id < 96) && (d_id != 92) && (d_id != 93))
+          d_id = (mzx_thing)level_id[offset];
+          if(is_enemy(d_id))
           {
-            // Enemy
-            level_id[offset] = 86;
+            level_id[offset] = (char)DRAGON;
             level_color[offset] = 4;
             level_param[offset] = 102;
           }
@@ -1891,7 +1949,7 @@ void give_potion(World *mzx_world, int type)
       break;
     }
 
-    case 12: // Avalanche
+    case POTION_AVALANCHE:
     {
       int x, y, offset;
       // Adjust the rate for board size - it was hardcoded for 10000
@@ -1907,7 +1965,7 @@ void give_potion(World *mzx_world, int type)
           {
             if((rand() % placement_rate) == 0)
             {
-              id_place(mzx_world, x, y, 8, 7, 0);
+              id_place(mzx_world, x, y, BOULDER, 7, 0);
             }
           }
         }
@@ -1916,21 +1974,21 @@ void give_potion(World *mzx_world, int type)
       break;
     }
 
-    case 13: // Freeze
+    case POTION_FREEZE:
     {
       mzx_world->freeze_time_dur = 200;
       set_mesg(mzx_world, "* Freeze time *");
       break;
     }
 
-    case 14: // Wind
+    case POTION_WIND:
     {
       mzx_world->wind_dur = 200;
       set_mesg(mzx_world, "* Wind *");
       break;
     }
 
-    case 15: // Slow
+    case POTION_SLOW:
     {
       mzx_world->slow_time_dur = 200;
       set_mesg(mzx_world, "* Slow time *");
@@ -1943,7 +2001,7 @@ int grab_item(World *mzx_world, int offset, int dir)
 {
   // Dir is for transporter
   Board *src_board = mzx_world->current_board;
-  char id = src_board->level_id[offset];
+  mzx_thing id = (mzx_thing)src_board->level_id[offset];
   char param = src_board->level_param[offset];
   char color = src_board->level_color[offset];
   int remove = 0;
@@ -1952,7 +2010,7 @@ int grab_item(World *mzx_world, int offset, int dir)
 
   switch(id)
   {
-    case 27: // Chest
+    case CHEST: // Chest
     {
       int item;
 
@@ -1965,40 +2023,48 @@ int grab_item(World *mzx_world, int offset, int dir)
       // Act upon contents
       play_sfx(mzx_world, 41);
       item = ((param & 240) >> 4); // Amount for most things
-      switch(param & 15)
+
+      switch((mzx_chest_contents)(param & 15))
       {
-        case 1: // Key
+        case ITEM_KEY: // Key
         {
           if(give_key(mzx_world, item))
           {
-            set_mesg(mzx_world,
-             "Inside the chest is a key, but you can't carry any more keys!");
+            set_mesg(mzx_world, "Inside the chest is a key, "
+             "but you can't carry any more keys!");
             return 0;
           }
           set_mesg(mzx_world, "Inside the chest you find a key.");
           break;
         }
 
-        case 2: // Coins
+        case ITEM_COINS: // Coins
         {
           item *= 5;
-          set_3_mesg(mzx_world, "Inside the chest you find ", item, " coins.");
+          set_3_mesg(mzx_world, "Inside the chest you find ",
+           item, " coins.");
           inc_counter(mzx_world, "COINS", item, 0);
           inc_counter(mzx_world, "SCORE", item, 0);
           break;
         }
 
-        case 3: // Life
+        case ITEM_LIFE: // Life
         {
           if(item > 1)
-            set_3_mesg(mzx_world, "Inside the chest you find ", item, " free lives.");
+          {
+            set_3_mesg(mzx_world, "Inside the chest you find ",
+             item, " free lives.");
+          }
           else
-            set_mesg(mzx_world, "Inside the chest you find 1 free life.");
+          {
+            set_mesg(mzx_world,
+             "Inside the chest you find 1 free life.");
+          }
           inc_counter(mzx_world, "LIVES", item, 0);
           break;
         }
 
-        case 4: // Ammo
+        case ITEM_AMMO: // Ammo
         {
           item *= 5;
           set_3_mesg(mzx_world,
@@ -2007,24 +2073,26 @@ int grab_item(World *mzx_world, int offset, int dir)
           break;
         }
 
-        case 5: // Gems
+        case ITEM_GEMS: // Gems
         {
           item *= 5;
-          set_3_mesg(mzx_world, "Inside the chest you find ", item, " gems.");
+          set_3_mesg(mzx_world, "Inside the chest you find ",
+           item, " gems.");
           inc_counter(mzx_world, "GEMS", item, 0);
           inc_counter(mzx_world, "SCORE", item, 0);
           break;
         }
 
-        case 6: // Health
+        case ITEM_HEALTH: // Health
         {
           item *= 5;
-          set_3_mesg(mzx_world, "Inside the chest you find ", item, " health.");
+          set_3_mesg(mzx_world, "Inside the chest you find ",
+           item, " health.");
           inc_counter(mzx_world, "HEALTH", item, 0);
           break;
         }
 
-        case 7: // Potion
+        case ITEM_POTION: // Potion
         {
           int answer;
           m_show();
@@ -2035,11 +2103,11 @@ int grab_item(World *mzx_world, int offset, int dir)
             return 0;
 
           src_board->level_param[offset] = 0;
-          give_potion(mzx_world, item);
+          give_potion(mzx_world, (mzx_potion)item);
           break;
         }
 
-        case 8: // Ring
+        case ITEM_RING: // Ring
         {
           int answer;
 
@@ -2052,11 +2120,11 @@ int grab_item(World *mzx_world, int offset, int dir)
             return 0;
 
           src_board->level_param[offset] = 0;
-          give_potion(mzx_world, item);
+          give_potion(mzx_world, (mzx_potion)item);
           break;
         }
 
-        case 9: // Lobombs
+        case ITEM_LOBOMBS: // Lobombs
         {
           item *= 5;
           set_3_mesg(mzx_world, "Inside the chest you find ", item,
@@ -2065,7 +2133,7 @@ int grab_item(World *mzx_world, int offset, int dir)
           break;
         }
 
-        case 10: // Hibombs
+        case ITEM_HIBOMBS: // Hibombs
         {
           item *= 5;
           set_3_mesg(mzx_world, "Inside the chest you find ", item,
@@ -2079,19 +2147,21 @@ int grab_item(World *mzx_world, int offset, int dir)
       break;
     }
 
-    case 28: // Gem
-    case 29: // Magic gem
+    case GEM:
+    case MAGIC_GEM:
     {
       play_sfx(mzx_world, id - 28);
       inc_counter(mzx_world, "GEMS", 1, 0);
-      if(id == 29)
+
+      if(id == MAGIC_GEM)
         inc_counter(mzx_world, "HEALTH", 1, 0);
+
       inc_counter(mzx_world, "SCORE", 1, 0);
       remove = 1;
       break;
     }
 
-    case 30: // Health
+    case HEALTH:
     {
       play_sfx(mzx_world, 2);
       inc_counter(mzx_world, "HEALTH", param, 0);
@@ -2099,15 +2169,15 @@ int grab_item(World *mzx_world, int offset, int dir)
       break;
     }
 
-    case 31: // Ring
-    case 32: // Potion
+    case RING:
+    case POTION:
     {
-      give_potion(mzx_world, param);
+      give_potion(mzx_world, (mzx_potion)param);
       remove = 1;
       break;
     }
 
-    case 34: // Goop
+    case GOOP:
     {
       play_sfx(mzx_world, 48);
       set_mesg(mzx_world, "There is goop in your way!");
@@ -2115,7 +2185,7 @@ int grab_item(World *mzx_world, int offset, int dir)
       break;
     }
 
-    case 33: // Energizer
+    case ENERGIZER:
     {
       play_sfx(mzx_world, 16);
       set_mesg(mzx_world, "Energize!");
@@ -2125,7 +2195,7 @@ int grab_item(World *mzx_world, int offset, int dir)
       break;
     }
 
-    case 35: // Ammo
+    case AMMO:
     {
       play_sfx(mzx_world, 3);
       inc_counter(mzx_world, "AMMO", param, 0);
@@ -2133,7 +2203,7 @@ int grab_item(World *mzx_world, int offset, int dir)
       break;
     }
 
-    case 36: // Bomb
+    case BOMB:
     {
       if(src_board->collect_bombs)
       {
@@ -2159,7 +2229,7 @@ int grab_item(World *mzx_world, int offset, int dir)
       break;
     }
 
-    case 39: // Key
+    case KEY:
     {
       if(give_key(mzx_world, color))
       {
@@ -2175,7 +2245,7 @@ int grab_item(World *mzx_world, int offset, int dir)
       break;
     }
 
-    case 40: // Lock
+    case LOCK:
     {
       if(take_key(mzx_world, color))
       {
@@ -2191,13 +2261,14 @@ int grab_item(World *mzx_world, int offset, int dir)
       break;
     }
 
-    case 41: // Door
+    case DOOR:
     {
       int board_width = src_board->board_width;
       char *level_id = src_board->level_id;
       char *level_param = src_board->level_param;
       int x = offset % board_width;
       int y = offset / board_width;
+      char door_first_movement[8] = { 0, 3, 0, 2, 1, 3, 1, 2 };
 
       if(param & 8)
       {
@@ -2221,7 +2292,8 @@ int grab_item(World *mzx_world, int offset, int dir)
       src_board->level_id[offset] = 42;
       src_board->level_param[offset] = (param & 7);
 
-      if(move(mzx_world, x, y, door_first_movement[param & 7], 1 | 4 | 8 | 16))
+      if(move(mzx_world, x, y, door_first_movement[param & 7],
+       CAN_PUSH | CAN_LAVAWALK | CAN_FIREWALK | CAN_WATERWALK))
       {
         set_mesg(mzx_world, "The door is blocked from opening!");
         play_sfx(mzx_world, 19);
@@ -2235,7 +2307,7 @@ int grab_item(World *mzx_world, int offset, int dir)
       break;
     }
 
-    case 47: // Gate
+    case GATE:
     {
       if(param)
       {
@@ -2255,22 +2327,24 @@ int grab_item(World *mzx_world, int offset, int dir)
         set_mesg(mzx_world, "You open the gate.");
       }
 
-      src_board->level_id[offset] = 48;
+      src_board->level_id[offset] = (char)OPEN_GATE;
       src_board->level_param[offset] = 22;
       play_sfx(mzx_world, 15);
       break;
     }
 
-    case 49: // Transport
+    case TRANSPORT:
     {
       int x = offset % src_board->board_width;
       int y = offset / src_board->board_width;
 
-      if(transport(mzx_world, x, y, dir, 127, 0, 0, 1)) break;
+      if(transport(mzx_world, x, y, dir, PLAYER, 0, 0, 1))
+        break;
+
       return 1;
     }
 
-    case 50: // Coin
+    case COIN:
     {
       play_sfx(mzx_world, 4);
       inc_counter(mzx_world, "COINS", 1, 0);
@@ -2279,7 +2353,7 @@ int grab_item(World *mzx_world, int offset, int dir)
       break;
     }
 
-    case 55: // Pouch
+    case POUCH:
     {
       play_sfx(mzx_world, 38);
       inc_counter(mzx_world, "GEMS", (param & 15) * 5, 0);
@@ -2292,7 +2366,7 @@ int grab_item(World *mzx_world, int offset, int dir)
       break;
     }
 
-    case 65: // Forest
+    case FOREST:
     {
       play_sfx(mzx_world, 13);
       if(src_board->forest_becomes == FOREST_TO_EMPTY)
@@ -2301,13 +2375,13 @@ int grab_item(World *mzx_world, int offset, int dir)
       }
       else
       {
-        src_board->level_id[offset] = 15;
+        src_board->level_id[offset] = (char)FLOOR;
         return 1;
       }
       break;
     }
 
-    case 66: // Life
+    case LIFE:
     {
       play_sfx(mzx_world, 5);
       inc_counter(mzx_world, "LIVES", 1, 0);
@@ -2316,111 +2390,101 @@ int grab_item(World *mzx_world, int offset, int dir)
       break;
     }
 
-    case 71: // Invis. wall
+    case INVIS_WALL:
     {
-      src_board->level_id[offset] = 1;
+      src_board->level_id[offset] = (char)NORMAL;
       set_mesg(mzx_world, "Oof! You ran into an invisible wall.");
       play_sfx(mzx_world, 12);
       break;
     }
 
-    case 74: // Mine
+    case MINE:
     {
-      src_board->level_id[offset] = 38;
+      src_board->level_id[offset] = (char)EXPLOSION;
       src_board->level_param[offset] = param & 240;
       play_sfx(mzx_world, 36);
       break;
     }
 
-    case 81: // Eye
+    case EYE:
     {
-      src_board->level_id[offset] = 38;
+      src_board->level_id[offset] = (char)EXPLOSION;
       src_board->level_param[offset] = (param << 1) & 112;
       break;
     }
 
-    case 82: // Thief
+    case THIEF:
     {
       dec_counter(mzx_world, "GEMS", (param & 128) >> 7, 0);
       play_sfx(mzx_world, 44);
       break;
     }
 
-    case 83: // Slime
+    case SLIMEBLOB:
     {
       if(param & 64)
-      {
-        // Hurtsy
-        dec_counter(mzx_world, "HEALTH", id_dmg[83], 0);
-        play_sfx(mzx_world, 21);
-        set_mesg(mzx_world, "Ouch!");
-      }
+        hurt_player_id(mzx_world, SLIMEBLOB);
+
       if(param & 128)
-        break; // Invinco
-      src_board->level_id[offset] = 6;
+        break;
+
+      src_board->level_id[offset] = (char)BREAKAWAY;
       break;
     }
 
-    case 85: // Ghost
+    case GHOST:
     {
-      // Hurtsy
-      dec_counter(mzx_world, "HEALTH", id_dmg[85], 0);
-      play_sfx(mzx_world, 21);
-      set_mesg(mzx_world, "Ouch!");
+      hurt_player_id(mzx_world, GHOST);
+
       // Die !?
       if(!(param & 8))
         remove = 1;
+
       break;
     }
 
-    case 86: // Dragon
+    case DRAGON:
     {
-      // Hurtsy
-      dec_counter(mzx_world, "HEALTH", id_dmg[86], 0);
-      play_sfx(mzx_world, 21);
-      set_mesg(mzx_world, "Ouch!");
+      hurt_player_id(mzx_world, DRAGON);
       break;
     }
 
-    case 87: // Fish
+    case FISH:
     {
       if(param & 64)
       {
-        // Hurtsy
-        dec_counter(mzx_world, "HEALTH", id_dmg[87], 0);
-        play_sfx(mzx_world, 21);
-        set_mesg(mzx_world, "Ouch!");
+        hurt_player_id(mzx_world, FISH);
         remove = 1;
       }
       break;
     }
 
-    case 124: // Robot
+    case ROBOT:
     {
       send_robot_def(mzx_world, param, 0);
       break;
     }
 
-    case 125: // Sign
-    case 126: // Scroll
+    case SIGN:
+    case SCROLL:
     {
       play_sfx(mzx_world, 47);
 
       m_show();
       scroll_edit(mzx_world, src_board->scroll_list[param], id & 1);
 
-      if(id == 126)
-      {
+      if(id == SCROLL)
         remove = 1;
-      }
+
       break;
     }
+
+    default:
+      break;
   }
 
   if(remove == 1)
-  {
     offs_remove_id(mzx_world, offset);
-  }
 
   return remove; // Not grabbed
 }
@@ -2467,7 +2531,7 @@ void show_status(World *mzx_world)
 
   // Show hi/lo bomb selection
 
-  write_string("(cur.)", 48, 9 + bomb_type, 25, 0);
+  write_string("(cur.)", 48, 9 + mzx_world->bomb_type, 25, 0);
   // Show effects
   if(mzx_world->firewalker_dur > 0)
     write_string("-W-", 43, 21, 28, 0);
@@ -2577,13 +2641,14 @@ int update(World *mzx_world, int game, int *fadein)
     if(wind_dir < 4)
     {
       // No wind this turn if above 3
-      src_board->player_last_dir = (src_board->player_last_dir & 0xF0) + wind_dir;
+      src_board->player_last_dir =
+       (src_board->player_last_dir & 0xF0) + wind_dir;
       move_player(mzx_world, wind_dir);
     }
   }
 
   // The following is during gameplay ONLY
-  if((game) && (!dead))
+  if(game && (!mzx_world->dead))
   {
     // Shoot
     if(get_key_status(keycode_SDL, SDLK_SPACE))
@@ -2625,8 +2690,8 @@ int update(World *mzx_world, int game, int *fadein)
             shoot(mzx_world, mzx_world->player_x, mzx_world->player_y,
              move_dir, PLAYER_BULLET);
             reload = 2;
-            src_board->player_last_dir = (src_board->player_last_dir & 0x0F) |
-             (move_dir << 4);
+            src_board->player_last_dir =
+             (src_board->player_last_dir & 0x0F) | (move_dir << 4);
           }
         }
       }
@@ -2654,7 +2719,8 @@ int update(World *mzx_world, int game, int *fadein)
       if((key_down_delay == 0) || (key_down_delay > REPEAT_WAIT))
       {
         move_player(mzx_world, 1);
-        src_board->player_last_dir = (src_board->player_last_dir & 0x0F) + 0x10;
+        src_board->player_last_dir =
+         (src_board->player_last_dir & 0x0F) + 0x10;
       }
       if(key_down_delay <= REPEAT_WAIT)
         mzx_world->key_down_delay = key_down_delay + 1;
@@ -2668,7 +2734,8 @@ int update(World *mzx_world, int game, int *fadein)
       if((key_right_delay == 0) || (key_right_delay > REPEAT_WAIT))
       {
         move_player(mzx_world, 2);
-        src_board->player_last_dir = (src_board->player_last_dir & 0x0F) + 0x20;
+        src_board->player_last_dir =
+         (src_board->player_last_dir & 0x0F) + 0x20;
       }
       if(key_right_delay <= REPEAT_WAIT)
         mzx_world->key_right_delay = key_right_delay + 1;
@@ -2682,7 +2749,8 @@ int update(World *mzx_world, int game, int *fadein)
       if((key_left_delay == 0) || (key_left_delay > REPEAT_WAIT))
       {
         move_player(mzx_world, 3);
-        src_board->player_last_dir = (src_board->player_last_dir & 0x0F) + 0x30;
+        src_board->player_last_dir =
+         (src_board->player_last_dir & 0x0F) + 0x30;
       }
       if(key_left_delay <= REPEAT_WAIT)
         mzx_world->key_left_delay = key_left_delay + 1;
@@ -2699,8 +2767,10 @@ int update(World *mzx_world, int game, int *fadein)
     if(get_key_status(keycode_SDL, SDLK_DELETE) &&
      (!src_board->player_attack_locked))
     {
-      int d_offset = mzx_world->player_x + (mzx_world->player_y * board_width);
-      if(level_under_id[d_offset] != 37)
+      int d_offset =
+       mzx_world->player_x + (mzx_world->player_y * board_width);
+
+      if(level_under_id[d_offset] != (char)LIT_BOMB)
       {
         // Okay.
         if(!src_board->can_bomb)
@@ -2709,14 +2779,16 @@ int update(World *mzx_world, int game, int *fadein)
         }
         else
 
-        if((bomb_type == 0) && (!get_counter(mzx_world, "LOBOMBS", 0)))
+        if((mzx_world->bomb_type == 0) &&
+         (!get_counter(mzx_world, "LOBOMBS", 0)))
         {
           set_mesg(mzx_world, "You are out of low strength bombs!");
           play_sfx(mzx_world, 32);
         }
         else
 
-        if((bomb_type == 1) && (!get_counter(mzx_world, "HIBOMBS", 0)))
+        if((mzx_world->bomb_type == 1) &&
+         (!get_counter(mzx_world, "HIBOMBS", 0)))
         {
           set_mesg(mzx_world, "You are out of high strength bombs!");
           play_sfx(mzx_world, 32);
@@ -2731,10 +2803,10 @@ int update(World *mzx_world, int game, int *fadein)
           mzx_world->under_player_param = level_under_param[d_offset];
           level_under_id[d_offset] = 37;
           level_under_color[d_offset] = 8;
-          level_under_param[d_offset] = bomb_type << 7;
-          play_sfx(mzx_world, 33 + bomb_type);
+          level_under_param[d_offset] = mzx_world->bomb_type << 7;
+          play_sfx(mzx_world, 33 + mzx_world->bomb_type);
 
-          if(bomb_type)
+          if(mzx_world->bomb_type)
             dec_counter(mzx_world, "HIBOMBS", 1, 0);
           else
             dec_counter(mzx_world, "LOBOMBS", 1, 0);
@@ -2758,7 +2830,8 @@ int update(World *mzx_world, int game, int *fadein)
   if(!slowed)
   {
     int entrance = 1;
-    int d_offset = mzx_world->player_x + (mzx_world->player_y * board_width);
+    int d_offset =
+     mzx_world->player_x + (mzx_world->player_y * board_width);
 
     mzx_world->was_zapped = 0;
     if(flags[(int)level_under_id[d_offset]] & A_ENTRANCE)
@@ -2782,14 +2855,15 @@ int update(World *mzx_world, int game, int *fadein)
 
       // Same board or nonexistant?
       if((d_board != mzx_world->current_board_id)
-       && (d_board < mzx_world->num_boards) && (mzx_world->board_list[d_board] != NULL))
+       && (d_board < mzx_world->num_boards) &&
+       (mzx_world->board_list[d_board] != NULL))
       {
         // Nope.
         // Go to board d_board
-        target_board = d_board;
-        target_where = 1;
-        target_x = level_under_color[d_offset];
-        target_y = level_under_id[d_offset];
+        mzx_world->target_board = d_board;
+        mzx_world->target_where = TARGET_ENTRANCE;
+        mzx_world->target_color = level_under_color[d_offset];
+        mzx_world->target_id = (mzx_thing)level_under_id[d_offset];
       }
     }
 
@@ -2809,17 +2883,18 @@ int update(World *mzx_world, int game, int *fadein)
       // Jump to given board
       if(mzx_world->current_board_id == endgame_board)
       {
-        id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
-        id_place(mzx_world, endgame_x, endgame_y, 127, 0, 0);
+        id_remove_top(mzx_world, mzx_world->player_x,
+         mzx_world->player_y);
+        id_place(mzx_world, endgame_x, endgame_y, PLAYER, 0, 0);
         mzx_world->player_x = endgame_x;
         mzx_world->player_y = endgame_y;
       }
       else
       {
-        target_board = endgame_board;
-        target_where = 0;
-        target_x = endgame_x;
-        target_y = endgame_y;
+        mzx_world->target_board = endgame_board;
+        mzx_world->target_where = TARGET_POSITION;
+        mzx_world->target_x = endgame_x;
+        mzx_world->target_y = endgame_y;
       }
       // Clear "endgame" part
       endgame_board = NO_ENDGAME_BOARD;
@@ -2834,7 +2909,7 @@ int update(World *mzx_world, int game, int *fadein)
       src_board->b_mesg_col = -1;
       if(mzx_world->game_over_sfx)
         play_sfx(mzx_world, 24);
-      dead = 1;
+      mzx_world->dead = 1;
     }
   }
   else
@@ -2865,8 +2940,10 @@ int update(World *mzx_world, int game, int *fadein)
           player_restart_y = board_height - 1;
 
         // Return to entry x/y
-        id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
-        id_place(mzx_world, player_restart_x, player_restart_y, 127, 0, 0);
+        id_remove_top(mzx_world, mzx_world->player_x,
+         mzx_world->player_y);
+        id_place(mzx_world, player_restart_x, player_restart_y,
+         PLAYER, 0, 0);
         mzx_world->player_x = player_restart_x;
         mzx_world->player_y = player_restart_y;
       }
@@ -2878,30 +2955,31 @@ int update(World *mzx_world, int game, int *fadein)
           int death_x = mzx_world->death_x;
           int death_y = mzx_world->death_y;
 
-          id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
-          id_place(mzx_world, death_x, death_y, 127, 0, 0);
+          id_remove_top(mzx_world, mzx_world->player_x,
+           mzx_world->player_y);
+          id_place(mzx_world, death_x, death_y, PLAYER, 0, 0);
           mzx_world->player_x = death_x;
           mzx_world->player_y = death_y;
         }
         else
         {
-          target_board = death_board;
-          target_where = 0;
-          target_x = mzx_world->death_x;
-          target_y = mzx_world->death_y;
+          mzx_world->target_board = death_board;
+          mzx_world->target_where = TARGET_POSITION;
+          mzx_world->target_x = mzx_world->death_x;
+          mzx_world->target_y = mzx_world->death_y;
         }
       }
     }
   }
 
-  if(target_where != -1)
+  if(mzx_world->target_where != TARGET_TELEPORT)
   {
     int top_x, top_y;
 
     // Draw border
     draw_viewport(mzx_world);
 
-    //Draw screen
+    // Draw screen
     if(!game)
     {
       *player_color = 0;
@@ -2933,7 +3011,8 @@ int update(World *mzx_world, int game, int *fadein)
       if(game)
       {
         id_put(src_board, player_x - top_x + viewport_x,
-         player_y - top_y + viewport_y, player_x, player_y, player_x, player_y);
+         player_y - top_y + viewport_y, player_x,
+         player_y, player_x, player_y);
       }
     }
     else
@@ -2955,7 +3034,8 @@ int update(World *mzx_world, int game, int *fadein)
       else
         timer_color = (edge_color << 4) + 15;
 
-      sprintf(tmp_str, "%d:%02d", time_remaining / 60, time_remaining % 60);
+      sprintf(tmp_str, "%d:%02d",
+       time_remaining / 60, time_remaining % 60);
       write_string(tmp_str, 1, 24, timer_color, 0);
 
       // Border with spaces
@@ -2997,23 +3077,21 @@ int update(World *mzx_world, int game, int *fadein)
       draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
        mzx_world->player_y);
     }
+
+    if(update_music)
+    {
+      load_mod(src_board->mod_playing);
+      strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+    }
+
+    update_music = 0;
+
+    if(pal_update)
+      update_palette();
+
+    update_screen();
   }
 
-  if(update_music)
-  {
-    load_mod(src_board->mod_playing);
-    strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-  }
-
-  update_music = 0;
-
-  if(pal_update)
-    update_palette();
-
-  // Update screen
-  update_screen();
-
-  //Retrace/speed wait
   if(mzx_world->mzx_speed > 1)
   {
     // Number of ms the update cycle took
@@ -3043,11 +3121,10 @@ int update(World *mzx_world, int game, int *fadein)
     return 1;
   }
 
-  if(target_board >= 0)
+  if(mzx_world->target_where != TARGET_NONE)
   {
     int saved_player_last_dir = src_board->player_last_dir;
-    int player_x = mzx_world->player_x;
-    int player_y = mzx_world->player_y;
+    int target_board = mzx_world->target_board;
 
     // Aha.. TELEPORT or ENTRANCE.
     // Destroy message, bullets, spitfire?
@@ -3055,18 +3132,19 @@ int update(World *mzx_world, int game, int *fadein)
     if(mzx_world->clear_on_exit)
     {
       int offset;
-      char d_id;
+      mzx_thing d_id;
+
       src_board->b_mesg_timer = 0;
       for(offset = 0; offset < (board_width * board_height); offset++)
       {
-        d_id = level_id[offset];
-        if((d_id == 78) || (d_id == 61))
+        d_id = (mzx_thing)level_id[offset];
+        if((d_id == SHOOTING_FIRE) || (d_id == BULLET))
           offs_remove_id(mzx_world, offset);
       }
     }
 
     // Load board
-    mzx_world->under_player_id = 0;
+    mzx_world->under_player_id = (char)SPACE;
     mzx_world->under_player_param = 0;
     mzx_world->under_player_color = 7;
 
@@ -3076,7 +3154,9 @@ int update(World *mzx_world, int game, int *fadein)
 
     if(strcasecmp(mzx_world->real_mod_playing, src_board->mod_playing) &&
      strcmp(src_board->mod_playing, "*"))
+    {
       update_music = 1;
+    }
 
     level_id = src_board->level_id;
     level_param = src_board->level_param;
@@ -3090,21 +3170,23 @@ int update(World *mzx_world, int game, int *fadein)
     set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
     // Find target x/y
-    if(target_where == 1)
+    if(mzx_world->target_where == TARGET_ENTRANCE)
     {
       int i;
       int tmp_x[5];
       int tmp_y[5];
       int x, y, offset;
-      char d_id;
+      mzx_thing d_id;
+      mzx_thing target_id = mzx_world->target_id;
+      int target_color = mzx_world->target_color;
 
       // Entrance
       // First, set searched for id to the first in the whirlpool
       // series if it is part of the whirlpool series
-      if((target_y > 67) && (target_y < 71))
-        target_y = 67;
+      if(is_whirlpool(target_id))
+        target_id = WHIRLPOOL_1;
 
-      // Now scan. Order- (type == target_y, color == target_x)
+      // Now scan. Order-
       // 1) Same type & color
       // 2) Same color
       // 3) Same type & foreground
@@ -3121,26 +3203,26 @@ int update(World *mzx_world, int game, int *fadein)
       {
         for(x = 0; x < board_width; x++, offset++)
         {
-          d_id = level_id[offset];
+          d_id = (mzx_thing)level_id[offset];
 
-          if(d_id == 127)
+          if(d_id == PLAYER)
           {
             // Remove the player, maybe readd
-            player_x = x;
-            player_y = y;
-            id_remove_top(mzx_world, player_x, player_y);
+            mzx_world->player_x = x;
+            mzx_world->player_y = y;
+            id_remove_top(mzx_world, x, y);
             // Grab again - might have revealed an entrance
-            d_id = level_id[offset];
+            d_id = (mzx_thing)level_id[offset];
           }
 
-          if((d_id > 67) && (d_id < 71))
-            d_id = 67;
+          if(is_whirlpool(d_id))
+            d_id = WHIRLPOOL_1;
 
-          if(d_id == target_y)
+          if(d_id == target_id)
           {
             // Same type
             // Color match?
-            if(level_color[offset] == target_x)
+            if(level_color[offset] == target_color)
             {
               // Yep
               tmp_x[0] = x;
@@ -3149,7 +3231,8 @@ int update(World *mzx_world, int game, int *fadein)
             else
 
             // Fg?
-            if((level_color[offset] & 0x0F) == (target_x & 0x0F))
+            if((level_color[offset] & 0x0F) ==
+             (target_color & 0x0F))
             {
               // Yep
               tmp_x[2] = x;
@@ -3168,7 +3251,7 @@ int update(World *mzx_world, int game, int *fadein)
           {
             // Not same type, but an entrance
             // Color match?
-            if(level_color[offset] == target_x)
+            if(level_color[offset] == target_color)
             {
               // Yep
               tmp_x[1] = x;
@@ -3177,7 +3260,7 @@ int update(World *mzx_world, int game, int *fadein)
             // Fg?
             else
 
-            if((level_color[offset] & 0x0F) == (target_x & 0x0F))
+            if((level_color[offset] & 0x0F) == (target_color & 0x0F))
             {
               // Yep
               tmp_x[3] = x;
@@ -3197,19 +3280,18 @@ int update(World *mzx_world, int game, int *fadein)
 
       if(i < 5)
       {
-        // Goto tmp_x[i], tmp_y[i]
         mzx_world->player_x = tmp_x[i];
         mzx_world->player_y = tmp_y[i];
-        player_x = mzx_world->player_x;
-        player_y = mzx_world->player_y;
       }
-      // Else we stay at default player position
-      id_place(mzx_world, player_x, player_y, 127, 0, 0);
-      mzx_world->player_x = player_x;
-      mzx_world->player_y = player_y;
+
+      id_place(mzx_world, mzx_world->player_x,
+       mzx_world->player_y, PLAYER, 0, 0);
     }
     else
     {
+      int target_x = mzx_world->target_x;
+      int target_y = mzx_world->target_y;
+
       // Specified x/y
       if(target_x < 0)
         target_x = 0;
@@ -3223,36 +3305,11 @@ int update(World *mzx_world, int game, int *fadein)
       if(target_y >= board_height)
         target_y = board_height - 1;
 
-      mzx_world->player_x = 0;
-      mzx_world->player_y = 0;
       find_player(mzx_world);
-      player_x = mzx_world->player_x;
-      player_y = mzx_world->player_y;
-
-      if((target_x != player_x) || (target_y != player_y))
-      {
-        int offset;
-        offset = target_x + (target_y * board_width);
-
-        if((level_id[offset] == 123) || (level_id[offset] == 124))
-          clear_robot_id(src_board, level_param[offset]);
-
-        if((level_id[offset] == 125) || (level_id[offset] == 126))
-          clear_scroll_id(src_board, level_param[offset]);
-
-        if(level_id[offset] == 122)
-          step_sensor(mzx_world, level_param[offset]);
-
-        // Place the player
-        id_remove_top(mzx_world, player_x, player_y);
-        id_place(mzx_world, target_x, target_y, 127, 0, 0);
-        mzx_world->player_x = target_x;
-        mzx_world->player_y = target_y;
-      }
+      place_player_xy(mzx_world, target_x, target_y);
     }
 
     send_robot_def(mzx_world, 0, 11);
-    find_player(mzx_world);
     mzx_world->player_restart_x = mzx_world->player_x;
     mzx_world->player_restart_y = mzx_world->player_y;
     // Now... Set player_last_dir for direction FACED
@@ -3260,11 +3317,14 @@ int update(World *mzx_world, int game, int *fadein)
      (saved_player_last_dir & 0xF0);
 
     // ...and if player ended up on ICE, set last dir pressed as well
-    if(level_under_id[player_x + (player_y * board_width)] == 25)
+    if((mzx_thing)level_under_id[mzx_world->player_x +
+     (mzx_world->player_y * board_width)] == ICE)
+    {
       src_board->player_last_dir = saved_player_last_dir;
+    }
 
     // Fix palette
-    if(target_where >= 0)
+    if(mzx_world->target_where != TARGET_TELEPORT)
     {
       // Prepare for fadein
       if(!get_fade_status())
@@ -3272,10 +3332,7 @@ int update(World *mzx_world, int game, int *fadein)
       vquick_fadeout();
     }
 
-    target_x = -1;
-    target_y = -1;
-    target_board = -1;
-    target_where = -2;
+    mzx_world->target_where = TARGET_NONE;
 
     // Disallow any keypresses this cycle
 
@@ -3299,14 +3356,14 @@ void find_player(World *mzx_world)
   if(mzx_world->player_y >= board_height)
     mzx_world->player_y = 0;
 
-  if(level_id[mzx_world->player_x +
-   (mzx_world->player_y * board_width)] != 127)
+  if((mzx_thing)level_id[mzx_world->player_x +
+   (mzx_world->player_y * board_width)] != PLAYER)
   {
     for(dy = 0, offset = 0; dy < board_height; dy++)
     {
       for(dx = 0; dx < board_width; dx++, offset++)
       {
-        if(level_id[offset] == 127)
+        if((mzx_thing)level_id[offset] == PLAYER)
         {
           mzx_world->player_x = dx;
           mzx_world->player_y = dy;
@@ -3379,14 +3436,16 @@ void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y)
 
   write_number(d_x, EC_DEBUG_NUMBER, x + 8, y + 1, 5);
   write_number(d_y, EC_DEBUG_NUMBER, x + 14, y + 1, 5);
-  write_number(mzx_world->current_board_id, EC_DEBUG_NUMBER, x + 18, y + 2, 0, 1);
+  write_number(mzx_world->current_board_id, EC_DEBUG_NUMBER,
+   x + 18, y + 2, 0, 1);
 
   for(i = 0; i < src_board->num_robots_active; i++)
   {
     robot_mem += (src_board->robot_list_name_sorted[i])->program_length;
   }
 
-  write_number((robot_mem + 512) / 1024, EC_DEBUG_NUMBER, x + 12, y + 3, 5, 0);
+  write_number((robot_mem + 512) / 1024, EC_DEBUG_NUMBER,
+   x + 12, y + 3, 5, 0);
 
   if(*(src_board->mod_playing) != 0)
   {
@@ -3394,12 +3453,14 @@ void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y)
     {
       char tempc = src_board->mod_playing[18];
       src_board->mod_playing[18] = 0;
-      write_string(src_board->mod_playing, x + 1, y + 4, EC_DEBUG_NUMBER, 0);
+      write_string(src_board->mod_playing, x + 1, y + 4,
+       EC_DEBUG_NUMBER, 0);
       src_board->mod_playing[18] = tempc;
     }
     else
     {
-      write_string(src_board->mod_playing, x + 1, y + 4, EC_DEBUG_NUMBER, 0);
+      write_string(src_board->mod_playing, x + 1, y + 4,
+       EC_DEBUG_NUMBER, 0);
     }
   }
   else

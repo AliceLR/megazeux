@@ -61,6 +61,7 @@ struct _config_info
   int backup_count;
   int backup_interval;
   char backup_name[256];
+  char backup_ext[256];
 
   // Macro options
   int num_extended_macros;

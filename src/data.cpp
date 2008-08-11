@@ -28,13 +28,10 @@
 
 // Current MZX file information
 char curr_file[512] = "CAVERNS.MZX";
-// Current SAVE file
 char curr_sav[512] = "SAVED.SAV";
 char help_file[MAX_PATH];                       // Drive + Path + Filename
 char megazeux_dir[MAX_PATH];                    // Directory started in
 char current_dir[MAX_PATH];                     // Current directory
-unsigned char megazeux_drive = 2;               // Startup drive (0=A...)
-unsigned char current_drive = 2;                // Current drive (0=A...)
 char quicksave_file[512];                       // Current quicksave filename
 
 // Some global world values that haven't been removed yet.
@@ -283,11 +280,11 @@ char *thing_names[128] =
   "Sprite_colliding",
   "Image_file",
   "[unknown]",
-  "[unknown]","[unknown]","[unknown]","[unknown]",
-  "[unknown]","[unknown]","[unknown]","[unknown]",
-  "[unknown]","[unknown]","[unknown]","[unknown]",
-  "[unknown]","[unknown]","[unknown]","[unknown]",
-  "[unknown]","[unknown]","[unknown]","[unknown]",
+  "[unknown]", "[unknown]", "[unknown]", "[unknown]",
+  "[unknown]", "[unknown]", "[unknown]", "[unknown]",
+  "[unknown]", "[unknown]", "[unknown]", "[unknown]",
+  "[unknown]", "[unknown]", "[unknown]", "[unknown]",
+  "[unknown]", "[unknown]", "[unknown]", "[unknown]",
   "Sensor",
   "PushableRobot",
   "Robot",
