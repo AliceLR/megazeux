@@ -1,0 +1,12 @@
+#
+# linux makefile generics
+#
+
+# location of strip (must be defined)
+STRIP     = strip --strip-unneeded
+
+# standard linker includes
+INCLUDES  = -I${PREFIX}/include -I${PREFIX}/include/SDL
+
+# standard libraries
+LIBS      = -L$(PREFIX)/lib -lSDL -lpthread

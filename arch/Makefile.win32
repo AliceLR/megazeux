@@ -1,0 +1,15 @@
+#
+# win32 makefile generics
+#
+
+# windows requires a binary extension
+BINEXT    = .exe
+
+# location of strip (must be defined)
+STRIP     = strip --strip-unneeded
+
+# standard linker includes
+INCLUDES  = -I${PREFIX}/include -I${PREFIX}/include/SDL
+
+# standard libraries
+LIBS      = -L$(PREFIX)/lib -lmingw32 -mwindows -lSDLmain -lSDL

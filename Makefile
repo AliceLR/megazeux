@@ -1,36 +1,37 @@
-# MZX makefile
+#
+# Slave MegaZeux makefile
+#
+include Makefile.platform
+include Makefile.in
 
-OBJS      = main.o graphics.o window.o hexchar.o event.o         \
-            error.o helpsys.o world.o board.o robot.o idput.o    \
-            intake.o sfx.o scrdisp.o data.o game.o counter.o     \
-            idarray.o delay.o game2.o expr.o sprite.o runrobo2.o \
-            mzm.o decrypt.o audio.o edit.o edit_di.o block.o     \
-            char_ed.o pal_ed.o param.o sfx_edit.o fill.o rasm.o  \
-            robo_ed.o configure.o
+SUBDIRS = contrib/gdm2s3m/src contrib/libmodplug/src src
 
-PREFIX    = /usr
+all:	subdir
 
-BIN       = mzx280d.exe
-
-CC        = gcc
-CPP       = g++
-STRIP     = strip
-CFLAGS    = -mconsole -O2 -funsigned-char -ffast-math
-INCLUDES  = -I$(PREFIX)/include -I$(PREFIX)/include/SDL
-
-LIBS      = -L$(PREFIX)/lib -lmingw32 -lSDLmain -lSDL -lmodplug -lgdm2s3m
-
-.SUFFIXES: .cpp
-
-%.o: %.cpp
-	${CPP} ${CFLAGS} ${INCLUDES} -c $<
-
-all: mzx
-
-mzx:	${OBJS}
-	${CPP} ${OBJS} ${LIBS} -o ${BIN}
-	${STRIP} --strip-all ${BIN}
+subdir:
+	list='$(SUBDIRS)';                 \
+	for subdir in $$list; do           \
+	  pwd=`pwd`;                       \
+	  cd $$subdir && make && cd $$pwd; \
+	done;
 
 clean:
-	rm -f *.o ${BIN}
+	list='$(SUBDIRS)';                       \
+	for subdir in $$list; do                 \
+	  pwd=`pwd`;                             \
+	  cd $$subdir && make clean && cd $$pwd; \
+	done;
 
+install:
+	mkdir -p ${PREFIX}/share/megazeux && \
+	chown root:root ${PREFIX}/share/megazeux && \
+	chmod 0755 ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 mzx_default.chr ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 mzx_blank.chr ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 mzx_smzx.chr ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 mzx_ascii.chr ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 default.spl ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 mzx_help.fil ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 config.txt /etc/megazeux-config && \
+	install -o root -m 0755 ${TARGET} ${PREFIX}/bin && \
+	ln -sf ${TARGET} ${PREFIX}/bin/megazeux

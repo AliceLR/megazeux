@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# August 6, 2004
+# December 16, 2004
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -8,6 +8,8 @@
 # If value is not given, then it is assumed to be 1.
 # You can include spaces in values by escaping them with \s.
 # (see the default macros for examples)
+# For directories, use forward slashes (/) instead of back-slashes,
+# as they work more reliably.
 # Note that even if the option is given to change the values
 # in MZX, this text file will NOT be modified, and hence the
 # values will revert to what they are here when you restart MZX.
@@ -38,6 +40,7 @@
 #force_height_multiplier = 1
 
 # Whether MZX should start up in fullscreen or not.
+# Press ctrl-alt-enterWh to toggle fullscreen as MZX runs.
 
 #fullscreen = 0
 
@@ -56,7 +59,7 @@
 # Allow music to be sampled at higher precision. Increases CPU
 # usage but increases audio quality as well.
 
-enable_oversampling = 1
+#enable_oversampling = 1
 
 # Set resampling mode. Choices are:
 # none (fastest, poor quality)
@@ -64,7 +67,7 @@ enable_oversampling = 1
 # cubic (slow, great quality)
 # fir (very slow, excellent quality)
 
-resampling_mode = fir
+#resampling_mode = linear
 
 # Whether music/samples should be played or not.
 # Does not include PC speaker effects.
@@ -80,6 +83,7 @@ resampling_mode = fir
 
 # Volume samples play at
 #sample_volume = 8
+
 
 ### Game options ###
 
@@ -144,3 +148,75 @@ resampling_mode = fir
 #macro_three = goto\s
 #macro_four = send\s
 #macro_five = :\splayershot^
+
+# Whether or not the palette should be reverted to default
+# when the robot editor is load. If set, SMZX mode 0 will
+# also be enforced.
+
+#robot_editor_default_palette = 0
+
+
+# Backup options
+
+# Backups are save files made in the editor. They will only be made
+# while in the main editor, not while in a sub-editor or a dialogue
+# box of sorts. Note that this can cause slight pauses while editing,
+# as the game saves.
+# If you have multiple backups you should check the modified date in
+# a console or file properties to determine which was most recently
+# modified. The number will not indicate most recently saved.
+
+# How many backups to be made. Set to zero to disable backups.
+
+#backup_count = 0
+
+# How often (in seconds) backups should be made
+
+#backup_interval = 60
+
+# The name of the backup file. If you choose "backup" with 3 backups
+# the backups will be named backup1.mzx, backup2.mzx, and backup3.mzx.
+
+#backup_name = backup
+
+
+# Joystick options
+
+# It is possible to emulate key presses using a joystick. If this file
+# is config.txt these options will apply as a default to all games -
+# you can put them in game.cnf to apply specifically to game.mzx.
+
+# A joystick is first specified as joyN where N is the number from
+# 1 onwards identifying the joystick in your system. You may have
+# to experiment to find which joystick is which number, if you have
+# multiple ones, otherwise just use 1. Up to 16 joysticks are
+# recognized.
+# You can currently map two things, axes and buttons.
+# Axes/buttons are mapped to keys given by number. You can find out
+# a key's number by printing key_pressed in a loop (NOT key_code).
+# Axis mapping looks as follows:
+
+#joyXaxisY = A, B
+
+# Where X is the number of the joystick, Y is the number of the axis
+# (1 is typically left/right, 2 is typically up/down), A is the key
+# for one extreme (such as left) and B is the key for the other
+# (such as right).
+
+# Button mapping looks as follows:
+
+#joyXbuttonY = A
+
+# Where X is the number of the joystick, Y is the number of the button
+# (you may have to experiment to find out which button is which number),
+# and A is the key whose press is emulated when this button is pressed.
+
+
+# Misc Options
+
+# Set to 1 if you want MZX to pause when key focus is lost. Useful for
+# when another app (such as someone IM'ing you) steals the screen. This
+# might cause MZX to lock up sometimes on some machines - if you have
+# problems with it don't enable it.
+
+#pause_on_unfocus = 0

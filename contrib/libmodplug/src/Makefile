@@ -9,7 +9,7 @@
 CXXFLAGS := -Wall
 o := o
 
-libmodplug_base = contrib/libmodplug/src
+libmodplug_base = .
 
 libmodplug_cflags = -DHAVE_INTTYPES_H -I${libmodplug_base} \
                     -I${libmodplug_base}/libmodplug

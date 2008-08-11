@@ -9,7 +9,7 @@
 CFLAGS := -Wall -std=c99
 o := o
 
-gdm2s3m_base = contrib/gdm2s3m/src
+gdm2s3m_base = .
 gdm2s3m_cflags := -W -Wmissing-format-attribute -Wpointer-arith -Wcast-align
 gdm2s3m_cflags += -Wwrite-strings -pedantic -I${gdm2s3m_base}
 gdm2s3m = ${gdm2s3m_base}/libgdm2s3m.a

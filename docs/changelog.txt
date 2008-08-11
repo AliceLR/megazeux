@@ -1,0 +1,248 @@
++ Fixed a bug causing problems with static overlay if a non-overlaid sprite
+  is displayed so it's clipped off the edge of the screen.
++ Fixed a bug in the display of c?x color boxes in the F2 menu in the robot
+  editor
++ Fixed a bug that caused incorrect thisx/thisy for one cycle after copyblock
++ Fixed a bug preventing calls to nonexistant subroutines from passing that
+  point in the robot
++ Fixed crash on sam 0 "file"
++ Fixed a bug where loading new SFX may not correctly overwrite previous ones
++ Fixed a bug where you could only load/unload so many mods before MZX couldn't
+  load anymore.. same bug as the SAMs but went unnoticed!
++ Fixed a bug that caused you to be infinitely stuck in the global settings
+  dialog box when you press previous on the next page.
++ Fixed a bug where going to next then exiting would not save the changes
+  from the previous page.
++ Fixed a bug that could cause crashes while ending modules.
++ Fixed a bug that could do the same kind of thing with sams.
++ Fixed an allocation bug when loading MZX worlds that could lead to crashes.
++ Fixed a bug that caused MZX to crash if you interpolated an expression with
+  a value equal to or greater than 1 billion.
++ Fixed a bug where mixing ccheck1/2 with sprites from board and vlayer could
+  cause problems (that's the short version of the explanation, I'll spare you
+  the long one)
++ Fixed a bug that could cause certain old MZX games to crash after the title
+  screen
++ Somewhere broke missiles between 2.80c and 2.80d. Fixed.
++ Fixed error in lit bomb anim sequence setup in char ID editor.
++ Reworked a lot of robot editor code; adding/deleting lines while marked areas
+  are active should work more naturally now and it's hopefully no longer possible
+  to crash it in the same ways it was previously.
++ Fixed crash when setting mesg row to less than 0.
++ Fixed mouse presses not working in the robot editor.
++ Made MZX ignore alt + tab so you can safely switch in your WM without it
+  triggering...
++ Added numerical key entry for number boxes. Use 0-9 to add to the most
+  significant digit and backspace to take it away.
+- Fixed maximum board size to about 16.7 million tiles (128MB), for now.
++ Added config.txt option to make MZX pause when key focus is lost
+  (when clicking on another window, perhaps) or when it's minimized. Music will
+  still continue.
++ Added save/load position to the editor. Works for loads inbetween boards as
+  well. Press ctrl + num to save to slots 0 through 9 and alt + num to load from
+  that slot. Please press shift + 8 or the numpad * key instead of alt + 8 to
+  set mod wildcard. 
++ MZX now ignores the mouse scroll wheel instead of interpreting it as a click.
++ Fixed a further bug that could cause playing samples to crash.
++ Added config file option to revert the robot editor to the default palette
+  when loaded.
++ Fixed bug in shoot command.
++ Fixed error when making save name in editor but cancelling.
++ Auto-backup - see config.txt for details.
++ Joystick key mapping - see config.txt for details.
++ You can now load game-specific config files by creating game.cnf for the
+  corresponding game.cnf (for instance, caverns.cnf). This is mainly useful
+  for joystick key mapping. Note that these settings will NOT go away if
+  another game is loaded that doesn't have a .cnf.
++ Alt-enter finally works as block action in the robot editor.
++ Loading a .mzx/.sav from another directory indirectly (via command-line or
+  robotic) will now actually change the current working directory.
+
+October 9, 2004 - MZX 2.80d
+
++ Fixed cursor going invisible when escaping from import in the editor
++ Fixed robot editor entry when pressing OK on global info
++ Fixed lack of name for MZB import/export (any MZB's exported in prior
+  beta versions still won't have a name)
++ Fixed some problems with setting the mouse position
++ Fixed problem with exits not bringing you all the way to the edge if width
+  over 400 or height over 200
++ Fixed bug that cleared too much when increasing both width and height while
+  resizing the board
++ Fixed problem with 1 char shortcut commands with spaces immediately after them
++ Fixed problems with load_robot and load_bc (caused crashes and infinite loops)
++ Optmized RASM heavily (this should be most noticable when doing a lot of
+  external robot loading from text files)
++ Fixed inability to use absolute paths in loading a game from command line
++ Fixed lastshot/lasttouch conditions with directions not working
++ Fixed char editor in robots not going into SMZX mode when proper
++ Cleaned up source code so it passes -Wall without complaint and in the process
+  corrected some glaring code errors that may have corrected random problems
++ File opening broken in 2.80c, fixed
++ Implemented MZM2 saving and loading and rewrote mzm.cpp (if anything is changed
+  or fixed regarding MZMs, attribute it to this). MZM2s can be of larger
+  dimensions, smaller filesize for same amount of data, and can store robots.
++ Fixed bug that could cause MZX to crash when making new strings
++ Block operations to overlay when overlay was off caused crashes - fixed
++ Fixed a problem with sprite ccheck2 against other sprites
++ Optimized function counter lookups a bit; speed gain for all counter accesses
+  (especially ones that begin with certain characters such as _)
++ Fixed disassembly error with ' ' character
++ Fixed assembly error where condition extended dir (such as blocked opp seek)
+  was not getting compiled with the dir extension
++ Fixed editor bug where the param was not being cleared when overwriting things
+  by double placement
++ Fixed inability to use counters with playercolor/bulletcolor/missilecolor
++ Added ability to use counters in place of p?? in the robot editor
+  Note - even though this expands functionality of the editor this does not
+  require a version number change because the worlds will still be playable in
+  older MZX versions (and will display correctly in the robot editor - you simply
+  won't be able to correctly edit the commands)
++ Mouse correctly limited to screen edges now
++ Fixed inability to overwrite robots with pushable robots and vice-versa,
+  as well as scrolls with signs and vice-versa
++ Possibly fixed problem with windowing error when editing global robot (?)
++ Fixed disappearing cursor after color selection box with mouse (and other places?)
++ Fixed bug in sprite clipping that caused some to be clipped off inappropriately
++ Made board_id/board_param counters readable
++ Added bound checks for all counters using board_x/board_y/overlay_x/overlay_y
++ Removed ability to put robots, scrolls/signs, and sensors (with the put command in
+  Robotic)
++ Fixed potential direction corruption bug causing directions not to work
+  sometimes even if they display correctly in the robot editor
++ Fixed copy overlay to MZM copying to overlay too
++ Fixed a bug where debug window could display the wrong amount of robot mem
+  and potentially even crash MZX
++ Fixed help_menu counter not doing anything (durr)
++ Changed sprite draw order so they're drawn underneath the message bar,
+  debug box, and time remaining display
++ Changed put p?? in Robotic so it will put default params if available
++ Fixed a bug that could cause copies from overlay to vlayer to not end up at
+  the correct destination
++ Fixed a bug where c?x and cx? would not display correctly in the robot editor
++ Optimized copy blocks a bit using variable length arrays instead of malloc
+
+August 16, 2004 - MZX 2.80c
+
++ Fixed issues with the commands counter not being reset
++ Color intensity now gets reset when you enter the editor
++ SAMs got cutoff sometimes now.. fixed
++ Fixed bug where loading a world with empty boards could change the starting,
+  endgame, and death boards
++ Fixed bug where you could text enter off the bottom of the board, causing
+  problems
++ Fixed bug involving cutting/clearing the entire robot in the robot editor
+  while not at the first line
++ Fixed robot name entry for global robot not disappearing on small boards
++ Fixed bug where you could duplicate the player by holding down a direction
+  as a saved game loads
++ Fixed bug where you could go to line 0 in the robot editor
++ Saving an MZM now auto-adds the .mzm extension...
++ Fixed black screen on quicksave
++ Fixed bug where opening a file didn't close the old one if one was open
+  (so it'd eventually crash MZX)
++ Changed alt+backspace behavior in intake so it doesn't exit
++ Added clipping for refx/refy/width/height for sprites (less than 0 at
+  initialization, greater than board width/height at draw)
++ Fixed direction parsing for move all
++ Fixed bug where creating things on top of the player would use a slot
+  for robots/scrolls/signs/sensors instead of just copy to the buffer
++ Added ability to use chars as immediates in Robotic commands
+  (ie, set "$str.0" 'a')
++ Added options to enable oversampling and specify resampling mode in
+  the config file (higher quality audio)
++ Building with patched modplug that fixes loading 2-channel mods
+  outputted by FT2. If you're building yourself, see build.txt.
++ Fixed inability to mouse click in alt + h mode
++ Fixed ability to mouse click outside of board range
++ Should work better for Linux users; case insensitivity for file opens
+  has been added.
++ Fixed close bug that was affecting Linux builds (may affect more)
++ Keypad enter works where normal enter works now
++ Fixed disappearing cursor when cancelling out of abandon changes box
+  when loading a new world in the editor
++ Fixed problems when loading/saving robots outside of ID range (do not
+  hardcode ID's people)
++ Fixed problem with NO BOARD exits being set to something else when
+  empty boards were being stripped or when worlds were being imported
++ Fixed bug where auto-decrypting worlds didn't work if the XOR value
+  was negative
++ Fixed problem with rid not working the first cycle
++ Fixed inability to interpolate (with &&'s) counter names larger than
+  14
++ Added new robot mem counter in debug box (only kb precise, rounds up)
++ Fixed ability to clone the player on non-title board after testing
++ Lengthened size of mod name buffers
++ Fixed bug where send x y doesn't work from the global robot
++ Fixed a few bugs that could cause MZX to crash
++ Fixed a bug that prevented copyrobot "string" from working in some
+  situations
++ Fixed a bug allowing player duplication in board importing
+
+August 11, 2004 - MZX 2.80b
+
++ Made it possible for robots to move through teleporters
++ Fixed bug with pressing shift in text entry boxes
++ Made it so alt + tab does not switch draw modes in editor
++ Fixed a disassembly error for color intensity N percent command
++ Fixed problem with looping on mods that do not loop explicitely
++ Fixed alt + dir scrolling in the char editor
++ Fixed not being able to click the rightmost char in the char editor
++ Readded unmark (alt + u) to robot editor (mysteriously disappeared??)
++ Fixed key label so it returns proper unicode values
++ The player and pushable robots can now be pushed by the push command
++ Fixed bug where you could clone the player by switching boards
++ Fixed bug where you could either turn off overlay or switch to boards
+  that don't have it while in overlay edit mode...
++ Fixed bug where remains of debug window would not be cleared in editor
+  if the board width is too small
++ Fixed bug where turning off the menu with a board too small would mess
+  things up
++ Fixed bug where run lengths were saved one too large... this could fix
+  stability problems in at least occasional cases (with saved worlds or
+  save games, at least)
++ Fixed placing solid things beneath robots (like bombs)
++ Added support for a keyboard plus in the char editors
++ Fixed previous button in SFX editor
++ Made robot name box disappear when robot char box comes up...
++ Fixed bug where mods restart after pressing P if they're the same mod
+  as what was playing before
++ Fixed problem with changing params (with P) in the editor.
++ Fixed bug where null boards were not being pruned from old worlds upon
+  load
++ Made file name saving box larger (for saving games and worlds)
++ Fixed bug where default (100%) palette intensity values would not be
+  applied to the palette a game loads with
++ Fixed bug where exporting char sets that are full size caused a 0
+  byte charset to be exported (8bit wraparound)
+- Removed export text in the board editor. Don't think anyone wanted it...
++ Added support for forms such as :line
++ Fixed sporadic incompletion of strings without trailing quotes at the
+  end of the line
++ Fixed bug where clearing/cutting the last line of a robot crashed MZX
++ F4 in robot editor now works more generally
++ Made line numbers in robot editor error report start at 1
++ Added ctrl + G to go to a line in the robot editor (ala nano)
++ Made it possible to change a robot's color in the editor
++ Fixed bug where spitfire, seekers, and missiles didn't hurt something
+  immediate adjacent to whatever shot it
++ Fixed editing of spitfires
++ Made default speed 4 again (5, bleh)
++ Readded quicksave/quickload
++ Readded F8 clear (always works - be careful)
++ Fixed autorepeat problems for spacepressed/delpressed.
++ Wrapped around sprite values so LogiCow's bad code would work (HTMCIAB)
++ Cleared block commands inbetween board changing and other things like
+  that
++ Fixed bug where MZX would crash if put dir player overwrote the robot
+  doing it
++ Fixed bug where playing SAMs would eventually crash MZX
++ Fixed some mod * problems (hopefully?)
++ Fixed bug where pasting blocks over the edge of the board in the editor
+  would cause MZX to crash
++ Uses new GDM2S3M source that fixes some bugs. If your converted GDM's
+  have problems, delete the S3M's it generated.
+
+August 9, 2004 - First release, MZX 2.80 BETA
+
+

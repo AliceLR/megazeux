@@ -1,0 +1,21 @@
+#
+# used by all makefiles
+#
+CC        = gcc
+CPP       = g++
+
+# default target name
+TARGET    = mzx280e
+VERSION   = 2.80e
+
+# default optimisations
+CXXFLAGS  = -O2 -funsigned-char -ffast-math -Wall -DMZX_VERSION=\"${VERSION}\"
+CXXFLAGS += -I../contrib/libmodplug/src -I../contrib/libmodplug/src/include
+CXXFLAGS += -I../contrib/gdm2s3m/src
+LIBS     += ../contrib/libmodplug/src/libmodplug.a
+LIBS     += ../contrib/gdm2s3m/src/libgdm2s3m.a
+
+.SUFFIXES: .cpp
+
+%.o: %.cpp
+	${CXX} ${CXXFLAGS} ${INCLUDES} -c $<
