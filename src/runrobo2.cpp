@@ -1425,7 +1425,6 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if(is_string(dest_string))
         {
-          int smaller_length;
           mzx_string dest;
           mzx_string src;
 
@@ -1455,22 +1454,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             src.length = strlen(src_buffer);
           }
 
-          smaller_length = dest.length;
-
-          if(src.length < smaller_length)
-            smaller_length = src.length;
-
-          char t1[dest.length + 1];
-          char t2[src.length + 1];
-          memcpy(t1, dest.value, dest.length);
-          t1[dest.length] = 0;
-          memcpy(t2, src.value, src.length);
-          t2[src.length] = 0;
-
-          difference = strncasecmp(dest.value, src.value, smaller_length);
-
-          if(!difference && (src.length != dest.length))
-            difference = dest.length - src.length;
+          difference = compare_strings(&dest, &src);
         }
         else
         {
@@ -1928,7 +1912,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         char *p2 = next_param_pos(cmd_ptr + 1);
         mzx_thing check_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
-        int check_param = parse_param(mzx_world, p3, id);
+        unsigned int check_param = parse_param(mzx_world, p3, id);
         char *p4 = next_param_pos(p3);
         int check_x = parse_param(mzx_world, p4, id);
         char *p5 = next_param_pos(p4);
@@ -4182,11 +4166,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 164: // viewport x y
       {
-        int viewport_x = parse_param(mzx_world, cmd_ptr + 1, id);
+        unsigned int viewport_x =
+         parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
-        int viewport_y = parse_param(mzx_world, p2, id);
-        int viewport_width = src_board->viewport_width;
-        int viewport_height = src_board->viewport_height;
+        unsigned int viewport_y = parse_param(mzx_world, p2, id);
+        unsigned int viewport_width = src_board->viewport_width;
+        unsigned int viewport_height = src_board->viewport_height;
 
         if((viewport_x + viewport_width) > 80)
           viewport_x = 80 - viewport_width;
@@ -4207,16 +4192,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int viewport_x = src_board->viewport_x;
         int viewport_y = src_board->viewport_y;
 
-        if(viewport_width < 1)
-          viewport_width = 1;
-
-        if(viewport_height < 1)
-          viewport_height = 1;
-
-        if(viewport_width > 80)
+        if((viewport_width < 1) || (viewport_width > 80))
           viewport_width = 80;
 
-        if(viewport_height > 25)
+        if((viewport_height < 1) || (viewport_height > 25))
           viewport_height = 25;
 
         if((viewport_x + viewport_width) > 80)

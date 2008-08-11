@@ -52,6 +52,8 @@ void replace_current_board(World *mzx_world, char *name)
     src_board = load_board_allocate_direct(input_mzb, 0);
     optimize_null_objects(src_board);
 
+    set_update_done_current(mzx_world);
+
     if(src_board->robot_list)
       src_board->robot_list[0] = &(mzx_world->global_robot);
 

@@ -30,6 +30,7 @@ struct _config_info
   int resolution_x;
   int resolution_y;
   int height_multiplier;
+  int force_32bpp;
 
   // Audio options
   int output_frequency;

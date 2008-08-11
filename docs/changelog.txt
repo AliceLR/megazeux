@@ -1,3 +1,32 @@
+December 14, 2005 - MZX 2.81c
+
++ Oops, accidentally broke shift + F2. Fixed that..
++ Also accidentally broke &+counter& for full hex representation. Fixed.
++ Fixed memory leak problem with playing certain WAVs in a loop.
++ Fixed inconsistency of bad viewport sizes behaving differently on
+  current versions from old DOS versions.
++ Accidentally broke joystick stuff in config.txt (has to do with way
+  configure options were being read), fixed.
++ Fixed bug causing crash when loading MZBs larger than the current board
+  size.
++ Made cursor hidden in alt + V in editor.
++ String comparison failed with nulls in the strings, fixed. Also
+  should be slightly more optimal.
++ Fixed bug when using negative numbers for if sprite_colliding "counter"
++ Fixed math operations (inc, dec, etc) not working on string indeces.
++ Added ability to force screen to 32bpp. Fixes some slight rendering
+  issues, and if you have problems with fullscreen let me know if this
+  helps (try it without first though). See force_32bpp in config.txt.
++ Fixed sprite clipping bug with respect to overlay.
++ Fixed bug where pressing enter on things besides robots, scrolls/signs,
+  or sensors in the editor would clear whatever was underneath it.
++ Accidentally broke SFX with optional PC speaker chains (played both,
+  should only play PC speaker when digital music is off, fixes Bernard
+  the Bard)
++ Made last character in char selection for F3 and alt + C remembered
+  (note that they're remembered in two different places for both)
++ Accidentally broke life animations, fixed
+
 November 26, 2005 - MZX 2.81b
 
 + Fixed inability to make proper .savs of worlds with strings (they'd

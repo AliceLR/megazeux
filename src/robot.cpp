@@ -2264,6 +2264,7 @@ char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer)
           get_string(mzx_world, name_buffer, &str_src, 0);
 
           name_length = str_src.length;
+
           if(dest_pos + name_length >= ROBOT_MAX_TR)
             name_length = ROBOT_MAX_TR - dest_pos - 1;
 
@@ -2275,8 +2276,9 @@ char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer)
         // #(counter) is a hex representation.
         if(name_buffer[0] == '+')
         {
-          sprintf(name_buffer, "%x",
-           get_counter(mzx_world, number_buffer + 1, id));
+          sprintf(number_buffer, "%x",
+           get_counter(mzx_world, name_buffer + 1, id));
+
           name_length = strlen(number_buffer);
 
           if(dest_pos + name_length >= ROBOT_MAX_TR)

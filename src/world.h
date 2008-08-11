@@ -189,6 +189,10 @@ struct _World
 
   // Keep this open, just once
   FILE *help_file;
+
+  // An array for game2.cpp
+  char *update_done;
+  int update_done_size;
 };
 
 // Taken from the old saveload.h
@@ -208,6 +212,7 @@ void default_scroll_values(World *mzx_world);
 void create_blank_world(World *mzx_world);
 void optimize_null_boards(World *mzx_world);
 void set_update_done(World *mzx_world);
+void set_update_done_current(World *mzx_world);
 
 // Code to load multi-byte ints from little endian file
 

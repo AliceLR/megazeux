@@ -30,7 +30,7 @@
 # You may also try a resolution like 640x700 that multiplies
 # the width, then set the multiplier..
 
-#force_resolution = 640,350
+#force_resolution = 640,700
 
 # Make it so the display is stretched by this amount (must be
 # integer). This is useful for getting resolutions like 640x700
@@ -42,6 +42,12 @@
 # Press ctrl-alt-enterWh to toggle fullscreen as MZX runs.
 
 #fullscreen = 0
+
+# Forces the screen to be rendered in 32bpp instead of 8bpp. Is
+# slower but may be more compatible, try it if you're getting
+# visual problems (particularly in fullscreen)
+
+#force_32bpp = 0
 
 
 ### Audio options ###
@@ -282,4 +288,3 @@ modplug_resample_mode = cubic
 # GUI set.
 
 #mask_midchars = 1
-

@@ -49,9 +49,6 @@ extern int was_zapped;
 
 extern char saved_pl_color;
 
-extern char *update_done;
-extern int update_done_size;
-
 extern char          *thing_names[128];
 extern unsigned int  flags[128];
 
@@ -182,7 +179,10 @@ typedef enum
 
 #define is_enemy(id)                                      \
   ((id >= SNAKE) && (id <= BEAR_CUB) &&                   \
-   (id != BULLET_GUN) && (id != SPINNING_GUN))             \
+   (id != BULLET_GUN) && (id != SPINNING_GUN))            \
+
+#define is_storageless(id)                                \
+  (id < SENSOR)                                           \
 
 typedef enum
 {
@@ -316,263 +316,247 @@ typedef enum
 
 typedef enum
 {
-0    x  End = 0
-1    x  Die = 1
-2    x  Wait = 2
-3       Cycle = 3
-4   x g Go = 4
-5    g  Walk = 5
-6   x g Become = 6
-7    g  Char = 7
-8    g  Color = 8
-9   x g Gotoxy = 9
-10      Set = 10
-11      Inc = 11
-12      Dec = 12
-13  ODT Set_s = 13
-14  ODT Inc_s = 14
-15  ODT Dec_s = 15
-16      If = 16
-17  ODT If_s = 17
-18   g  If_cond = 18
-19   g  If_not_cond = 19
-20      If_any = 20
-21      If_no = 21
-22      If_thing_dir = 22
-23      If_not_thing_dir = 23
-24      If_thing_at = 24
-25   g  If_at = 25
-26      If_player_dir = 26
-27      Double = 27
-28      Half = 28
-29      Goto = 29
-30      Send = 30
-31  x g Explode = 31
-32   g  Put = 32
-33      Give = 33
-34      Take = 34
-35      Take_else = 35
-36   *  Endgame = 36
-37   *  Endlife = 37
-38      Mod = 38
-39      Sam = 39
-40      Volume = 40
-41      End_mod = 41
-42      End_sam = 42
-43      Play = 43
-44      End_play = 44
-45      Wait_play = 45
-46      Wait_play = 46
-47      (blank line)
-48      Sfx [##]
-49      Play sfx [str]
-50   g  Open [dir]
-51   *  Lockself
-52   *  Unlockself
-53   g  Send [dir] [label]
-54      Zap [str] [##]
-55      Restore [str] [##]
-56   *  Lockplayer
-57   *  Unlockplayer
-58   *  Lockplayer ns
-59   *  Lockplayer ew
-60   *  Lockplayer attack
-61   x  Move player [dir]
-62   x  Move player [dir] [str]
-63      Put player [-#] [-#]
-64  ODT If player [dir] [str] (Becomes If [cond=touching] [dir] [str])
-65  ODT If player not [dir] [str] (Becomes If not [cond=touching] [dir] [str])
-66      If player [-#] [-#] [str]
-67   g  Put player [dir]
-68  x g Try [dir] [str]
-69  * g Rotatecw
-70  * g Rotateccw
-71   g  Switch [dir] [dir]
-72   g  Shoot [dir]
-73  * g Laybomb [dir]
-74  * g Laybomb high [dir]
-75  * g Shootmissile [dir]
-76  * g Shootseeker [dir]
-77  * g Spitfire [dir]
-78  * g Lazerwall [dir] [##]
-79      Put [color/thing/param] [-#] [-#]
-80  x g Die item
-81      Send [-#] [-#] [str]
-82  x * Copyrobot [str]
-83  x * Copyrobot [-#] [-#]
-84  x*g Copyrobot [dir]
-85   g  Duplicate self [dir]
-86      Duplicate self [-#] [-#]
-87      Bulletn [ch] (In MZX 2.0, changes ALL bullet n pics)
-88      Bullets [ch] (In MZX 2.0, changes ALL bullet s pics)
-89      Bullete [ch] (In MZX 2.0, changes ALL bullet e pics)
-90      Bulletw [ch] (In MZX 2.0, changes ALL bullet w pics)
-91   *  Givekey [col]
-92   *  Givekey [col] [str]
-93   *  Takekey [col]
-94   *  Takekey [col] [str]
-95      Inc [str] random [##] [##]
-96      Dec [str] random [##] [##]
-97      Set [str] random [##] [##]
-98      Trade [##] [item] [##] [item] [str]
-99      Send [dir] player [str]
-100     Put [color/thing/param] [dir] player
-101  x  /[str]
-102     *[str]
-103     [[str]
-104     ?[str];[str]
-105     ?[str];[str];[str]
-106     :[str]
-107     .[str]
-108     |[str]
-109  x  Teleport player [str] [-#] [-#]
-110  *  Scrollview [dir] [##]
-111     Input string [str]
-112     If string [str] [str]
-113     If string not [str] [str]
-114     If string matches [str] [str]
-115     Player char [ch] (In MZX 2.0, sets the pic for all four directions)
-116     %[str]
-117     &[str]
-118  x  Move all [color/thing/param] [dir] (different)
-119  x  Copy [-#] [-#] [-#] [-#]
-120     Set edge color [col]
-121     Board [dir] [str]
-122     Board [dir] none
-123     Char edit [ch] [##] [##] [##] [##] [##] [##] [##] [##] [##] [##] [##] [##] [##] [##]
-124  g  Become pushable
-125  g  Become nonpushable
-126     Blind [##]
-127     Firewalker [##]
-128  *  Freezetime [##]
-129  *  Slowtime [##]
-130     Wind [##]
-131     Avalance
-132 x g Copy [dir] [dir]
-133  g  Become lavawalker
-134  g  Become nonlavawalker
-135     Change [color/thing/param] [color/thing/param] (Diff. from ver 1.0?)
-136  *  Playercolor [col]
-137  *  Bulletcolor [col] (In MZX 2.0, changes all bullet colors)
-138  *  Missilecolor [col]
-139     Message row [##]
-140 Pre Rel self (In MZX 2.0, unpredictable/useless for use w/global robot)
-141 Pre Rel player
-142 Pre Rel counters
-143     Change char id [##] [ch] (Not param checked or doc'd until MZX 2.0)
-144     Jump mod order [##]
-145     Ask [str]
-146  *  Fillhealth
-147     Change thick arrow char [dir] [ch]
-148     Change thin arrow char [dir] [ch]
-149  *  Set maxhealth [##]
-150     Save player position (In MZX 2.0, saves to position 1)
-151     Restore player position (In MZX 2.0, uses position 1)
-152     Exchange player position (In MZX 2.0, uses position 1)
-153     Set mesg column [##]
-154     Center mesg
-155     Clear mesg
-156  *  Resetview
-157     Sam [##] [##]
-158 ODT Volume [str]
-159  *  Scrollbase color [col]
-160  *  Scrollcorner color [col] (Diff. from MZX 1.03)
-161  *  Scrolltitle color [col]
-162  *  Scrollpointer color [col]
-163  *  Scrollarrow color [col]
-164     Viewport [##] [##] (Not param checked until MZX 2.0)
-165     Viewport size [##] [##] (Not param checked until MZX 2.0)
-166 ODT Set mesg column [str]
-167 ODT Message row [str]
-168     Save player position [##]
-169     Restore player position [##]
-170     Exchange player position [##]
-171     Restore player position [##] duplicate self
-172     Exchange player position [##] duplicate self
-173     Player bulletn [ch]
-174     Player bullets [ch]
-175     Player bullete [ch]
-176     Player bulletw [ch]
-177     Neutral bulletn [ch]
-178     Neutral bullets [ch]
-179     Neutral bullete [ch]
-180     Neutral bulletw [ch]
-181     Enemy bulletn [ch]
-182     Enemy bullets [ch]
-183     Enemy bullete [ch]
-184     Enemy bulletw [ch]
-185  *  Player bulletcolor [col]
-186  *  Neutral bulletcolor [col]
-187  *  Enemy bulletcolor [col]
-188
-189
-190
-191
-192
-193 Pre Rel self first (Unpredictable/useless for use w/global robot)
-194 Pre Rel self last (Unpredictable/useless for use w/global robot)
-195 Pre Rel player first
-196 Pre Rel player last
-197 Pre Rel counters first
-198 Pre Rel counters last
-199     Mod fade out
-200     Mod fade in [str]
-201  x  Copy block [-#] [-#] [##] [##] [-#] [-#]
-202     Clip input
-203  g  Push [dir]
-204     Scroll char [ch] [dir]
-205     Flip char [ch] [dir]
-206     Copy char [ch] [ch]
-207
-208
-209
-210     Change sfx [##] [str]
-211     Color intensity [##] percent
-212     Color intensity [##] [##] percent
-213  x  Color fade out
-214  x  Color fade in
-215     Set color [##] [##] [##] [##]
-216     Load char set [str]
-217     Multiply [str] [##]
-218     Divide [str] [##]
-219     Modulo [str] [##]
-220     Player char [dir] [ch]
-221
-222   Load palette [str]
-223
-224     Mod fade [##] [##] (target/speed)
-225  *  Scrollview [-#] [-#]
-226  x  Swap world [str]
-227  *  If alignedrobot [str] [str]
-228
-229  *  Lockscroll
-230  *  Unlockscroll
-231     If first string [str] [str]
-232     Persistent go [str] (waits until it can move then moves)
-233     Wait mod fade
-234
-235   Enable saving
-236   Disable saving
-237  *  Enable sensoronly saving
-238     Status counter [##] [str]
-239     Overlay on
-240     Overlay static
-241     Overlay transparent
-242     Put [col] [ch] overlay [-#] [-#]
-243  x  Copy overlay block [-#] [-#] [##] [##] [-#] [-#]
-244
-245     Change overlay [col] [ch] [col] [ch]
-246     Change overlay [col] [col]
-247     Write overlay [col] [str] [-#] [-#]
-248
-249     INTERNAL USE (temporary use for box messages)
-250
-251   Loop start
-252     Loop [##]
-253     Abort loop
-254     Disable mesg edge
-255     Enable mesg edge
-
+  End                       = 0
+  Die = 1
+  Wait = 2
+  Cycle = 3
+  Go = 4
+  Walk = 5
+  Become = 6
+  Char = 7
+  Color = 8
+  Gotoxy = 9
+  Set = 10
+  Inc = 11
+  Dec = 12
+  Set_s = 13
+  Inc_s = 14
+  Dec_s = 15
+  If = 16
+  If_s = 17
+  If_cond = 18
+  If_not_cond = 19
+  If_any = 20
+  If_no = 21
+  If_thing_dir = 22
+  If_not_thing_dir = 23
+  If_thing_at = 24
+  If_at = 25
+  If_player_dir = 26
+  Double = 27
+  Half = 28
+  Goto = 29
+  Send = 30
+  Explode = 31
+  Put = 32
+  Give = 33
+  Take = 34
+  Take_else = 35
+  Endgame = 36
+  Endlife = 37
+  Mod = 38
+  Sam = 39
+  Volume = 40
+  End_mod = 41
+  End_sam = 42
+  Play = 43
+  End_play = 44
+  Wait_play = 45
+  Wait_play = 46
+  __blank_line = 47
+  sfx = 48
+  Play_sfx = 49
+  Open = 50
+  Lockself = 51
+  Unlockself = 52
+  Send = 53
+  Zap = 54
+  Restore = 55
+  Lockplayer = 56
+  Unlockplayer = 57
+  Lockplayer_ns = 58
+  Lockplayer_ew = 59
+  Lockplayer_attack = 60
+  Move_player = 61
+  Move_player_else = 62
+  Put_player = 63
+  If_player = 64
+  If_player_not = 65
+  If_player_at = 66
+  Put_player_dir = 67
+  Try = 68
+  Rotatecw = 69
+  Rotateccw = 70
+  Switch = 71
+  Shoot = 72
+  Laybomb = 73
+  Laybomb_high = 74
+  Shootmissile = 75
+  Shootseeker = 76
+  Spitfire = 77
+  Lazerwall = 78
+  Put_at = 79
+  Die_item                    = 80
+  Send_at                     = 81
+  Copyrobot                   = 82
+  Copyrobot_at                = 83
+  Copyrobot_dir               = 84
+  Duplicate_self              = 85
+  Duplicate_self_at           = 86
+  Bulletn = 87
+  Bullets = 88
+  Bullete = 89
+  Bulletw = 90
+  Givekey = 91
+  Givekey_else = 92
+  Takekey = 93
+  Takekey_else = 94
+  Inc_random = 95
+  Dec_random = 96
+  Set_random = 97
+  Trade = 98
+  Send_dir_player             = 99
+  Put_dir_player              = 100
+  _go_string                  = 101
+  _row_message                = 102
+  _box_message                = 103
+  _box_message_label          = 104
+  _box_message_label_counter  = 105
+  _label                      = 106
+  _comment                    = 107
+  _zapped_label               = 108
+  teleport_player             = 109
+  Scrollview                  = 110
+  Input_string                = 111
+  If_string                   = 112
+  If_string_not               = 113
+  If_string_matches           = 114
+  Player_char [ch]            = 115
+  _color_message              = 116
+  _center_message             = 117
+  Move_all                    = 118
+  Copy                        = 119
+  Set_edge_color              = 120
+  Board_exit                  = 121
+  Board_exit_none             = 122
+  Char_edit                   = 123
+  Become_pushable             = 124
+  Become_nonpushable          = 125
+  Blind                       = 126
+  Firewalker                  = 127
+  Freezetime                  = 128
+  Slowtime                    = 129
+  Wind                        = 130
+  Avalance                    = 131
+  Copy_dir                    = 132
+  Become_lavawalker           = 133
+  Become_nonlavawalker        = 134
+  Change                      = 135
+  Playercolor                 = 136
+  Bulletcolor                 = 137
+  Missilecolor                = 138
+  Message_row                 = 139
+  Rel_self = 140
+  Rel_player = 141
+  Rel_counters = 142
+  Change_char_id = 143
+  Jump_mod_order = 144
+  Ask = 145
+  Fillhealth = 146
+  Change_thick_arrow_char = 147
+  Change_thin_arrow_char = 148
+  Set_maxhealth = 149
+  Save_player_position = 150
+  Restore_player_position = 151
+  Exchange_player_position = 152
+  Set_mesg_column = 153
+  Center_mesg = 154
+  Clear_mesg = 155
+  Resetview = 156
+  Sam = 157
+  Volume = 158
+  Scrollbase_color = 159
+  Scrollcorner_color = 160
+  Scrolltitle_color = 161
+  Scrollpointer_color = 162
+  Scrollarrow_color = 163
+  Viewport = 164
+  Viewport_size = 165
+  Set_mesg_column = 166
+  Message_row = 167
+  Save_player_position = 168
+  Restore_player_position = 169
+  Exchange_player_position = 170
+  Restore_player_position = 171
+  Exchange_player_position = 172
+  Player_bulletn = 173
+  Player_bullets = 174
+  Player_bullete = 175
+  Player_bulletw = 176
+  Neutral_bulletn = 177
+  Neutral_bullets = 178
+  Neutral_bullete = 179
+  Neutral_bulletw = 180
+  Enemy_bulletn = 181
+  Enemy_bullets = 182
+  Enemy_bullete = 183
+  Enemy_bulletw = 184
+  Player_bulletcolor = 185
+  Neutral_bulletcolor = 186
+  Enemy_bulletcolor = 187
+  Rel_self_first = 193
+  Rel_self_last = 194
+  Rel_player_first = 195
+  Rel_player_last = 196
+  Rel_counters_first = 197
+  Rel_counters_last = 198
+  Mod_fade_out = 199
+  Mod_fade_in = 200
+  Copy_block = 201
+  Clip_input = 202
+  Push = 203
+  Scroll_char = 204
+  Flip_char = 205
+  Copy_char = 206
+  Change_sfx = 210
+  Color_intensity = 211
+  Color_intensity_single = 212
+  Color_fade_out = 213
+  Color_fade_in = 214
+  Set_color = 215
+  Load_char_set = 216
+  Multiply = 217
+  Divide = 218
+  Modulo = 219
+  Player_char = 220
+  Load_palette = 222
+  Mod_fad = 224
+  Scrollview = 225
+  Swap_world = 226
+  If_alignedrobo = 227
+  Lockscroll = 229
+  Unlockscroll = 230
+  If_first_string = 231
+  Persistent_go = 232
+  Wait_mod_fade = 233
+  Enable_saving = 235
+  Disable_saving = 236
+  Enable_sensoronly_saving = 237
+  Status_counter = 238
+  Overlay_on = 239
+  Overlay_static = 240
+  Overlay_transparent = 241
+  Put_overlay = 242
+  Copy_overlay_block = 243
+  Change_overlay_char = 244
+  Change_overlay = 245
+  Write_overlay = 246
+  __message_box_temporary = 249
+  Loop_start = 251
+  Loop = 252
+  Abort_loop = 253
+  Disable_mesg_edge = 254
+  Enable_mesg_edge = 255
 } mzx_robotic_commands;
 
 */

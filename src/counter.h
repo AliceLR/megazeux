@@ -135,6 +135,7 @@ void set_string(World *mzx_world, char *name, mzx_string *src, int id);
 void inc_string(World *mzx_world, char *name, mzx_string *src, int id);
 // Decreases the end of a string by N characters
 void dec_string_int(World *mzx_world, char *name, int value, int id);
+int compare_strings(mzx_string *dest, mzx_string *src);
 int load_string_board_direct(World *mzx_world, mzx_string *str,
  int next, int w, int h, char l, char *src, int width);
 void load_string_board(World *mzx_world, char *expression,

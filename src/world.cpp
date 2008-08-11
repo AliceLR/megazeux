@@ -1426,6 +1426,8 @@ void create_blank_world(World *mzx_world)
 
   mzx_world->name[0] = 0;
 
+  set_update_done(mzx_world);
+
   ec_load_mzx();
   default_palette();
   default_global_data(mzx_world);
@@ -1604,14 +1606,40 @@ void set_update_done(World *mzx_world)
       max_size = cur_size;
   }
 
-  if(max_size > update_done_size)
+  if(max_size > mzx_world->update_done_size)
   {
-    if(!update_done_size)
-      update_done = (char *)malloc(max_size);
+    if(mzx_world->update_done == NULL)
+    {
+      mzx_world->update_done = (char *)malloc(max_size);
+    }
     else
-      update_done = (char *)realloc(update_done, max_size);
+    {
+      mzx_world->update_done =
+       (char *)realloc(mzx_world->update_done, max_size);
+    }
 
-    update_done_size = max_size;
+    mzx_world->update_done_size = max_size;
+  }
+}
+
+void set_update_done_current(World *mzx_world)
+{
+  Board *current_board = mzx_world->current_board;
+  int size = current_board->board_width * current_board->board_height;
+
+  if(size > mzx_world->update_done_size)
+  {
+    if(mzx_world->update_done == NULL)
+    {
+     mzx_world->update_done = (char *)malloc(size);
+    }
+    else
+    {
+      mzx_world->update_done =
+       (char *)realloc(mzx_world->update_done, size);
+    }
+
+    mzx_world->update_done_size = size;   
   }
 }
 

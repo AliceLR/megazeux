@@ -143,12 +143,16 @@ void play_str(char *str, int sfx_play)
       // Digi
       if(digi_st > 0)
       {
-        str[digi_end] = 0;
+        if(get_music_on_state())
+        {
+          str[digi_end] = 0;
 
-        play_sample(sam_freq[note - 1] >> oct, str + digi_st);
+          play_sample(sam_freq[note - 1] >> oct, str + digi_st);
 
-        str[digi_end] = '&';
-        digi_st = -1;
+          str[digi_end] = '&';
+          digi_st = -1;
+          break;
+        }
       }
       else
 

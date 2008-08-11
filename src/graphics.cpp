@@ -68,31 +68,30 @@ void init_video(config_info *conf)
 {
   int res_x = conf->resolution_x;
   int res_y = conf->resolution_y;
+  int force_32bpp = conf->force_32bpp;
   int fullscreen = conf->fullscreen;
 
   char temp[64];
 
-  /*
-  SDL_Surface *icon;
-
-  icon = SDL_LoadBMP("mzx_icon.bmp");
-
-  if(icon)
-  {
-    SDL_SetColorKey(icon, 0, 0xDD);
-    SDL_WM_SetIcon(icon, NULL);
-    SDL_FreeSurface(icon);
-  }
-  */
-
   if(!fullscreen)
   {
-    graphics.screen = SDL_SetVideoMode(640, 350, 8, 0);
+    if(force_32bpp)
+      graphics.screen = SDL_SetVideoMode(640, 350, 32, 0);
+    else
+      graphics.screen = SDL_SetVideoMode(640, 350, 8, 0);
   }
   else
   {
-    graphics.screen = SDL_SetVideoMode(res_x, res_y, 8,
-     SDL_FULLSCREEN);
+    if(force_32bpp)
+    {
+      graphics.screen = SDL_SetVideoMode(res_x, res_y, 32,
+       SDL_FULLSCREEN);
+    }
+    else
+    {
+      graphics.screen = SDL_SetVideoMode(res_x, res_y, 8,
+       SDL_FULLSCREEN | SDL_HWPALETTE);
+    }
   }
 
   sprintf(temp, "MegaZeux %s", version_number_string);
@@ -103,6 +102,7 @@ void init_video(config_info *conf)
   graphics.fullscreen = fullscreen;
   graphics.resolution_x = res_x;
   graphics.resolution_y = res_y;
+  graphics.force_32bpp = force_32bpp;
   graphics.height_multiplier = conf->height_multiplier;
   graphics.mouse_status = 0;
   graphics.cursor_timestamp = SDL_GetTicks();
@@ -121,7 +121,11 @@ void toggle_fullscreen()
 {
   if(graphics.fullscreen)
   {
-    graphics.screen = SDL_SetVideoMode(640, 350, 8, 0);
+    if(graphics.force_32bpp)
+      graphics.screen = SDL_SetVideoMode(640, 350, 32, 0);
+    else
+      graphics.screen = SDL_SetVideoMode(640, 350, 8, 0);
+
     graphics.fullscreen = 0;
   }
   else
@@ -129,8 +133,16 @@ void toggle_fullscreen()
     int res_x = graphics.resolution_x;
     int res_y = graphics.resolution_y;
 
-    graphics.screen = SDL_SetVideoMode(res_x, res_y, 8,
-     SDL_FULLSCREEN);
+    if(graphics.force_32bpp)
+    {
+      graphics.screen = SDL_SetVideoMode(res_x, res_y, 32,
+       SDL_FULLSCREEN);
+    }
+    else
+    {
+      graphics.screen = SDL_SetVideoMode(res_x, res_y, 8,
+       SDL_FULLSCREEN | SDL_HWPALETTE);
+    }
 
     graphics.fullscreen = 1;
   }
@@ -598,9 +610,9 @@ void get_screen(char_element *dest)
    80 * 25 * sizeof(char_element));
 }
 
-// Draw the entire screen
+// Optimized for 8bpp
 
-void update_screen()
+void update_screen8()
 {
   Uint32 *dest;
   Uint32 *ldest, *ldest2;
@@ -1001,6 +1013,314 @@ void update_screen()
   SDL_UnlockSurface(graphics.screen);
 }
 
+// Slower but more compatible version for 32bpp
+
+void update_screen32()
+{
+  Uint32 *dest;
+  Uint32 *ldest, *ldest2;
+  char_element *src = graphics.text_video;
+  Uint8 *char_ptr;
+  Uint32 char_colors[4];
+  Uint32 current_char_byte;
+  Uint8 current_color;
+  Uint32 i, i2, i3;
+  Sint32 i4;
+  Uint32 line_advance = (graphics.screen->pitch / sizeof(Uint32));
+  Uint32 line_advance_sub;
+  Uint32 row_advance = ((graphics.screen->pitch / sizeof(Uint32)) * 14);
+  Uint32 ticks = SDL_GetTicks();
+  Uint32 *old_dest = NULL;
+
+  if((graphics.height_multiplier > 1) && graphics.fullscreen)
+  {
+    dest = (Uint32 *)(graphics.screen->pixels) +
+     (graphics.screen->pitch * (((graphics.screen->h /
+     graphics.height_multiplier) - 350) / 2)) +
+     ((graphics.screen->w - 640) / 2);
+    line_advance *= graphics.height_multiplier;
+    row_advance *= graphics.height_multiplier;
+  }
+  else
+  {
+    dest = (Uint32 *)(graphics.screen->pixels) +
+     (line_advance * ((graphics.screen->h - 350) / 2)) +
+     ((graphics.screen->w - 640) / 2);
+
+    dest = (Uint32 *)graphics.screen->pixels;
+  }
+
+  line_advance_sub = line_advance - 8;
+
+  old_dest = dest;
+
+  if((ticks - graphics.cursor_timestamp) > CURSOR_BLINK_RATE)
+  {
+    graphics.cursor_flipflop ^= 1;
+    graphics.cursor_timestamp = ticks;
+  }
+
+  SDL_LockSurface(graphics.screen);
+
+  if(!graphics.screen_mode)
+  {
+    for(i = 0; i < 25; i++)
+    {
+      ldest2 = dest;
+      for(i2 = 0; i2 < 80; i2++)
+      {
+        ldest = dest;
+        // Fill in background color
+        char_colors[0] = graphics.flat_intensity_palette[src->bg_color];
+        char_colors[1] = graphics.flat_intensity_palette[src->fg_color];
+
+        // Fill in foreground color
+        char_ptr = graphics.charset + (src->char_value * 14);
+        src++;
+        for(i3 = 0; i3 < 14; i3++)
+        {
+          current_char_byte = *char_ptr;
+          char_ptr++;
+
+          for(i4 = 7; i4 >= 0; i4--, dest++)
+          {
+            *dest = char_colors[(current_char_byte >> i4) & 0x01];
+          }
+
+          dest += line_advance_sub;
+        }
+        dest = ldest + 8;
+      }
+      dest = ldest2 + row_advance;
+    }
+  }
+  else
+
+  if(graphics.screen_mode != 3)
+  {
+    Uint32 cb_bg, cb_fg;
+    Uint32 c_color;
+
+    for(i = 0; i < 25; i++)
+    {
+      ldest2 = dest;
+      for(i2 = 0; i2 < 80; i2++)
+      {
+        ldest = dest;
+        cb_bg = (src->bg_color & 0x0F);
+        cb_fg = (src->fg_color & 0x0F);
+
+        char_colors[0] =
+         graphics.flat_intensity_palette[(cb_bg << 4) | cb_bg];
+        char_colors[1] =
+         graphics.flat_intensity_palette[(cb_bg << 4) | cb_fg];
+        char_colors[2] =
+         graphics.flat_intensity_palette[(cb_fg << 4) | cb_bg];
+        char_colors[3] =
+         graphics.flat_intensity_palette[(cb_fg << 4) | cb_fg];
+
+        // Fill in foreground color
+        char_ptr = graphics.charset + (src->char_value * 14);
+        src++;
+        for(i3 = 0; i3 < 14; i3++)
+        {
+          current_char_byte = *char_ptr;
+          char_ptr++;
+          for(i4 = 6; i4 >= 0; i4 -= 2, dest += 2)
+          {
+            c_color = char_colors[(current_char_byte >> i4) & 0x03];
+            *dest = c_color;
+            *(dest + 1) = c_color;
+          }
+          dest += line_advance_sub;
+        }
+        dest = ldest + 8;
+      }
+      dest = ldest2 + row_advance;
+    }
+  }
+  else
+  {
+    Uint32 c_color;
+
+    for(i = 0; i < 25; i++)
+    {
+      ldest2 = dest;
+      for(i2 = 0; i2 < 80; i2++)
+      {
+        ldest = dest;
+        current_color = (src->bg_color << 4) | (src->fg_color & 0x0F);
+        // Fill in background color
+        char_colors[0] = graphics.flat_intensity_palette[current_color];
+        char_colors[1] =
+         graphics.flat_intensity_palette[(current_color + 2) & 0xFF];
+        char_colors[2] =
+         graphics.flat_intensity_palette[(current_color + 1) & 0xFF];
+        char_colors[3] =
+         graphics.flat_intensity_palette[(current_color + 3) & 0xFF];
+
+        // Fill in foreground color
+        char_ptr = graphics.charset + (src->char_value * 14);
+        src++;
+        for(i3 = 0; i3 < 14; i3++)
+        {
+          current_char_byte = *char_ptr;
+          char_ptr++;
+          for(i4 = 6; i4 >= 0; i4 -= 2, dest += 2)
+          {
+            c_color = char_colors[(current_char_byte >> i4) & 0x03];
+            *dest = c_color;
+            *(dest + 1) = c_color;
+          }
+          dest += line_advance_sub;
+        }
+        dest = ldest + 8;
+      }
+      dest = ldest2 + row_advance;
+    }
+  }
+
+  if(graphics.mouse_status)
+  {
+    int mouse_x, mouse_y;
+    get_real_mouse_position(&mouse_x, &mouse_y);
+
+    mouse_x = (mouse_x / graphics.mouse_width_mul) *
+     graphics.mouse_width_mul;
+    mouse_y = (mouse_y / graphics.mouse_height_mul) *
+     graphics.mouse_height_mul;
+
+    dest = old_dest + mouse_x + (mouse_y * line_advance);
+
+    for(i = 0; i < graphics.mouse_height_mul; i++)
+    {
+      ldest = dest;
+      for(i2 = 0; i2 < graphics.mouse_width_mul; i2++, dest++)
+      {
+        *dest = 0xFFFFFFFF - *dest;
+      }
+      dest = ldest + line_advance;
+    }
+  }
+
+  // Draw cursor perhaps
+  if(graphics.cursor_flipflop &&
+   (graphics.cursor_mode != cursor_mode_invisible))
+  {
+    char_element *cursor_element = graphics.text_video +
+     graphics.cursor_x +  (graphics.cursor_y * 80);
+    Uint32 cursor_color;
+    Uint32 cursor_char = cursor_element->char_value;
+    Uint32 lines = 0;
+    Uint32 *cursor_offset = old_dest;
+    Uint32 i;
+    Uint32 cursor_solid = 0xFFFFFFFF;
+    Uint32 *char_offset = (Uint32 *)(graphics.charset + (cursor_char * 14));
+    Uint32 bg_color = cursor_element->bg_color;
+    cursor_offset += (graphics.cursor_x * 8) + (graphics.cursor_y * row_advance);
+
+    // Choose FG
+    cursor_color = cursor_element->fg_color;
+
+    // See if the cursor char is completely solid or completely
+    // empty
+    for(i = 0; i < 3; i++)
+    {
+      cursor_solid &= *char_offset;
+      char_offset++;
+    }
+    // Get the last bit
+    cursor_solid &= (*((Uint16 *)char_offset)) | 0xFFFF0000;
+
+    // Solid cursor, use BG instead
+    if(cursor_solid == 0xFFFFFFFF)
+    {
+      // But wait! What if the background is the same as the foreground?
+      // If so, use +8 instead.
+      if(bg_color == cursor_color)
+      {
+        cursor_color = (bg_color + 8) & 0x0F;
+      }
+      else
+      {
+        cursor_color = bg_color;
+      }
+    }
+    else
+
+    // What if the foreground is the same as the background?
+    // It needs to flash +8 then
+    if(bg_color == cursor_color)
+    {
+      cursor_color = (cursor_color + 8) & 0x0F;
+    }
+
+    switch(graphics.cursor_mode)
+    {
+      case cursor_mode_underline:
+      {
+        lines = 2;
+        cursor_offset += (12 * line_advance);
+        break;
+      }
+
+      case cursor_mode_solid:
+      {
+        lines = 14;
+        break;
+      }
+
+      default:
+      {
+        break;
+      }
+    }
+
+    cursor_color = graphics.flat_intensity_palette[cursor_color];
+
+    for(i = 0; i < lines; i++)
+    {
+      for(i2 = 0; i2 < 8; i2++, cursor_offset++)
+      {
+        *cursor_offset = cursor_color;
+      }
+      cursor_offset += line_advance_sub;
+    }
+  }
+
+  if((graphics.height_multiplier > 1) && (graphics.fullscreen))
+  {
+    // Duplicate the screen
+    Uint32 *dest2;
+    Uint32 line_advance2 = graphics.screen->pitch / sizeof(Uint32);
+    dest = old_dest;
+    dest2 = dest + line_advance2;
+
+    for(i = 0; i < 350; i++)
+    {
+      for(i2 = 0; i2 < graphics.height_multiplier - 1; i2++)
+      {
+        memcpy(dest2, dest, 640 * sizeof(Uint32));
+        dest2 += line_advance2;
+      }
+      dest2 += line_advance2;
+      dest += line_advance;
+    }
+  }
+
+  SDL_Flip(graphics.screen);
+
+  SDL_UnlockSurface(graphics.screen);
+}
+
+void update_screen()
+{
+  if(graphics.force_32bpp)
+    update_screen32();
+  else
+    update_screen8();
+}
+
 void cursor_underline(void)
 {
   graphics.cursor_mode = cursor_mode_underline;
@@ -1067,12 +1387,6 @@ Sint32 ec_load_set(char *name)
 
 Sint32 ec_load_set_secondary(char *name, Uint8 *dest)
 {
-  /**
-   * this function is used only by internally loaded files.
-   * theoretically, we trust these. there is no need to
-   * translate these names, but the packaged files become
-   * a case sensitive issue (i.e. default.pal not DEFAULT.PaL).
-   */
   FILE *fp = fopen(name, "rb");
 
   if(fp == NULL)
@@ -1230,6 +1544,25 @@ void init_palette(void)
   update_palette();
 }
 
+void update_colors(SDL_Surface *screen, SDL_Color *palette,
+ Uint32 count)
+{
+  if(graphics.force_32bpp)
+  {
+    Uint32 i;
+    for(i = 0; i < count; i++)
+    {
+      graphics.flat_intensity_palette[i] =
+       SDL_MapRGBA(screen->format, palette[i].r, palette[i].g,
+       palette[i].b, 255);
+    }
+  }
+  else
+  {
+    SDL_SetColors(screen, palette, 0, count);
+  }
+}
+
 void update_palette()
 {
   Uint32 i;
@@ -1253,16 +1586,16 @@ void update_palette()
          ((graphics.intensity_palette[i & 15].b << 1) +
           graphics.intensity_palette[i >> 4].b) / 3;
       }
-      SDL_SetColors(graphics.screen, new_palette, 0, 256);
+      update_colors(graphics.screen, new_palette, 256);
     }
     else
     {
-      SDL_SetColors(graphics.screen, graphics.intensity_palette, 0, 256);
+      update_colors(graphics.screen, graphics.intensity_palette, 256);
     }
   }
   else
   {
-    SDL_SetColors(graphics.screen, graphics.intensity_palette, 0, 32);
+    update_colors(graphics.screen, graphics.intensity_palette, 32);
   }
 }
 
@@ -1633,6 +1966,7 @@ void vquick_fadeout(void)
       ticks = SDL_GetTicks();
       set_palette_intensity(i);
       update_palette();
+      update_screen();
       ticks = SDL_GetTicks() - ticks;
       if(ticks <= 16)
         delay(16 - ticks);
@@ -1668,6 +2002,7 @@ void vquick_fadein(void)
         set_color_intensity(i2, graphics.current_intensity[i2]);
       }
       update_palette();
+      update_screen();
       ticks = SDL_GetTicks() - ticks;
       if(ticks <= 16)
         delay(16 - ticks);
@@ -1694,6 +2029,10 @@ void insta_fadeout(void)
 
     delay(1);
     update_palette();
+
+    if(graphics.force_32bpp)
+      update_screen();
+
     graphics.fade_status = 1;
   }
 }
@@ -1718,6 +2057,9 @@ void insta_fadein(void)
     }
 
     update_palette();
+
+    if(graphics.force_32bpp)
+      update_screen();
   }
 }
 

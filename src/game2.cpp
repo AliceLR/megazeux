@@ -207,6 +207,7 @@ void update_board(World *mzx_world)
   char current_param;
   char current_color;
   mzx_thing current_under_id;
+  char *update_done = mzx_world->update_done;
 
   // Toggle slow_down
   mzx_world->slow_down ^= 1;
@@ -516,7 +517,7 @@ void update_board(World *mzx_world)
                   }
 
                   // Robot gets sent a label
-                  if((new_id == ROBOT) || (new_id == ROBOT_PUSHABLE))
+                  if(is_robot(new_id))
                   {
                     // Send bombed label
                     send_robot_def(mzx_world, new_param, 1);

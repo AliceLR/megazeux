@@ -72,12 +72,12 @@ int compare_spr(const void *dest, const void *src)
 void draw_sprites(World *mzx_world)
 {
   Board *src_board = mzx_world->current_board;
-  int i, i2, i3, i4, i5, i6, st_x, st_y, of_x, of_y;
+  int i, i2, i3, i4, i5, i6, start_x, start_y, offset_x, offset_y;
   int skip, skip2, skip3;
-  int dr_w, dr_h, ref_x, ref_y, scr_x, scr_y;
+  int draw_width, draw_height, ref_x, ref_y, screen_x, screen_y;
   int bwidth, bheight, use_chars = 1;
   Sprite **sprite_list = mzx_world->sprite_list;
-  Sprite *dr_order[MAX_SPRITES];
+  Sprite *draw_order[MAX_SPRITES];
   Sprite *cur_sprite;
   char ch, color, dcolor;
   int viewport_x = src_board->viewport_x;
@@ -100,83 +100,81 @@ void draw_sprites(World *mzx_world)
     {
       if((sprite_list[i])->flags & SPRITE_INITIALIZED)
       {
-        dr_order[i2] = sprite_list[i];
+        draw_order[i2] = sprite_list[i];
         i2++;
       }
       else
       {
-        dr_order[i3] = sprite_list[i];
+        draw_order[i3] = sprite_list[i];
         i3--;
       }
     }
 
     // Now sort it, using qsort.
 
-    qsort(dr_order, i2, sizeof(Sprite *), compare_spr);
+    qsort(draw_order, i2, sizeof(Sprite *), compare_spr);
   }
 
   // draw this on top of the SCREEN window.
   for(i = 0; i < MAX_SPRITES; i++)
   {
     if(mzx_world->sprite_y_order)
-    {
-      cur_sprite = dr_order[i];
-    }
+      cur_sprite = draw_order[i];
     else
-    {
       cur_sprite = sprite_list[i];
-    }
 
     if(cur_sprite->flags & SPRITE_INITIALIZED)
     {
-      calculate_xytop(mzx_world, &scr_x, &scr_y);
+      calculate_xytop(mzx_world, &screen_x, &screen_y);
       ref_x = cur_sprite->ref_x;
       ref_y = cur_sprite->ref_y;
-      of_x = 0;
-      of_y = 0;
-      st_x = (cur_sprite->x + viewport_x);
-      st_y = (cur_sprite->y + viewport_y);
+      offset_x = 0;
+      offset_y = 0;
+      start_x = (cur_sprite->x + viewport_x);
+      start_y = (cur_sprite->y + viewport_y);
 
       if(!(cur_sprite->flags & SPRITE_STATIC))
       {
-        st_x -= scr_x;
-        st_y -= scr_y;
+        start_x -= screen_x;
+        start_y -= screen_y;
       }
 
-      dr_w = cur_sprite->width;
-      dr_h = cur_sprite->height;
+      draw_width = cur_sprite->width;
+      draw_height = cur_sprite->height;
 
       // clip draw position against viewport
 
-      if(st_x < viewport_x)
+      if(start_x < viewport_x)
       {
-        of_x = viewport_x - st_x;
-        dr_w -= of_x;
-        if(dr_w < 1) continue;
+        offset_x = viewport_x - start_x;
+        draw_width -= offset_x;
+        if(draw_width < 1)
+          continue;
 
-        st_x = viewport_x;
+        start_x = viewport_x;
       }
 
-      if(st_y < viewport_y)
+      if(start_y < viewport_y)
       {
-        of_y = viewport_y - st_y;
-        dr_h -= of_y;
-        if(dr_h < 1) continue;
+        offset_y = viewport_y - start_y;
+        draw_height -= offset_y;
+        if(draw_height < 1)
+          continue;
 
-        st_y = viewport_y;
+        start_y = viewport_y;
       }
 
-      if((st_x > (viewport_x + viewport_width)) ||
-       (st_y > (viewport_y + viewport_height))) continue;
+      if((start_x > (viewport_x + viewport_width)) ||
+       (start_y > (viewport_y + viewport_height)))
+      {
+        continue;
+      }
 
-      if((st_x + dr_w) > (viewport_x + viewport_width))
-      {
-        dr_w = viewport_x + viewport_width - st_x;
-      }
-      if((st_y + dr_h) > (viewport_y + viewport_height))
-      {
-        dr_h = viewport_y + viewport_height - st_y;
-      }
+      if((start_x + draw_width) > (viewport_x + viewport_width))
+        draw_width = viewport_x + viewport_width - start_x;
+
+      if((start_y + draw_height) > (viewport_y + viewport_height))
+        draw_height = viewport_y + viewport_height - start_y;
 
       if(cur_sprite->flags & SPRITE_VLAYER)
       {
@@ -195,58 +193,51 @@ void draw_sprites(World *mzx_world)
         src_colors = src_board->level_color;
       }
 
-      if((ref_x + dr_w) > bwidth)
-        dr_w = bwidth - ref_x;
+      if((ref_x + draw_width) > bwidth)
+        draw_width = bwidth - ref_x;
 
-      if((ref_y + dr_h) > bheight)
-        dr_h = bheight - ref_y;
+      if((ref_y + draw_height) > bheight)
+        draw_height = bheight - ref_y;
 
-      i4 = ((ref_y + of_y) * bwidth) + ref_x + of_x;
-      i5 = (st_y * 80) + st_x;
+      i4 = ((ref_y + offset_y) * bwidth) + ref_x + offset_x;
+      i5 = (start_y * 80) + start_x;
 
       if(overlay_mode == 2)
       {
-        i6 = ((st_y - viewport_y) * board_width) + st_x - viewport_x;
+        i6 = ((start_y - viewport_y) * board_width) + start_x - viewport_x;
       }
       else
       {
-        i6 = (cur_sprite->y * board_width) + cur_sprite->x;
+        i6 = ((cur_sprite->y + offset_y) * board_width) +
+         cur_sprite->x + offset_x;
       }
 
-      skip = bwidth - dr_w;
-      skip2 = 80 - dr_w;
-      skip3 = board_width - dr_w;
+      skip = bwidth - draw_width;
+      skip2 = 80 - draw_width;
+      skip3 = board_width - draw_width;
 
       switch((cur_sprite->flags & 0x0C) >> 2)
       {
         // natural colors, over overlay
         case 3: // 11
         {
-          for(i2 = 0; i2 < dr_h; i2++)
+          for(i2 = 0; i2 < draw_height; i2++)
           {
-            for(i3 = 0; i3 < dr_w; i3++)
+            for(i3 = 0; i3 < draw_width; i3++)
             {
               color = src_colors[i4];
               if(use_chars)
-              {
                 ch = src_chars[i4];
-              }
               else
-              {
                 ch = get_id_char(src_board, i4);
-              }
 
               if(!(color & 0xF0))
-              {
                 color = (color & 0x0F) | (get_color_linear(i5) & 0xF0);
-              }
 
               if(ch != 32)
               {
                 if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
-                {
                   draw_char_linear_ext(color, ch, i5, 0, 0);
-                }
               }
               i4++;
               i5++;
@@ -260,31 +251,23 @@ void draw_sprites(World *mzx_world)
         // natural colors, under overlay
         case 2: // 10
         {
-          for(i2 = 0; i2 < dr_h; i2++)
+          for(i2 = 0; i2 < draw_height; i2++)
           {
-            for(i3 = 0; i3 < dr_w; i3++)
+            for(i3 = 0; i3 < draw_width; i3++)
             {
               color = src_colors[i4];
               if(use_chars)
-              {
                 ch = src_chars[i4];
-              }
               else
-              {
                 ch = get_id_char(src_board, i4);
-              }
 
               if(!(color & 0xF0))
-              {
                 color = (color & 0x0F) | (get_color_linear(i5) & 0xF0);
-              }
 
               if((!overlay_mode || (overlay[i6] == 32)) && ch != 32)
               {
                 if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
-                {
                   draw_char_linear_ext(color, ch, i5, 0, 0);
-                }
               }
               i4++;
               i5++;
@@ -302,31 +285,23 @@ void draw_sprites(World *mzx_world)
         {
           color = cur_sprite->color;
 
-          for(i2 = 0; i2 < dr_h; i2++)
+          for(i2 = 0; i2 < draw_height; i2++)
           {
-            for(i3 = 0; i3 < dr_w; i3++)
+            for(i3 = 0; i3 < draw_width; i3++)
             {
               if(use_chars)
-              {
                 ch = src_chars[i4];
-              }
               else
-              {
                 ch = get_id_char(src_board, i4);
-              }
 
               dcolor = color;
               if(!(color & 0xF0))
-              {
                 dcolor = (color & 0x0F) | (get_color_linear(i5) & 0xF0);
-              }
 
               if(ch != 32)
               {
                 if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
-                {
                   draw_char_linear_ext(dcolor, ch, i5, 0, 0);
-                }
               }
               i4++;
               i5++;
@@ -342,31 +317,23 @@ void draw_sprites(World *mzx_world)
         {
           color = cur_sprite->color;
 
-          for(i2 = 0; i2 < dr_h; i2++)
+          for(i2 = 0; i2 < draw_height; i2++)
           {
-            for(i3 = 0; i3 < dr_w; i3++)
+            for(i3 = 0; i3 < draw_width; i3++)
             {
               if(use_chars)
-              {
                 ch = src_chars[i4];
-              }
               else
-              {
                 ch = get_id_char(src_board, i4);
-              }
 
               dcolor = color;
               if(!(color & 0xF0))
-              {
                 dcolor = (color & 0x0F) | (get_color_linear(i5) & 0xF0);
-              }
 
               if((!overlay_mode || (overlay[i6] == 32)) && ch != 32)
               {
                 if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
-                {
                   draw_char_linear_ext(dcolor, ch, i5, 0, 0);
-                }
               }
               i4++;
               i5++;

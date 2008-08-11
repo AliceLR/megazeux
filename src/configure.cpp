@@ -413,7 +413,15 @@ void pause_on_unfocus(config_info *conf, char *name, char *value,
 void include_config(config_info *conf, char *name, char *value,
  char *extended_data)
 {
+  // This one's for the original include N form
   set_config_from_file(conf, name + 7);
+}
+
+void include2_config(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  // This one's for the include = N form
+  set_config_from_file(conf, value);
 }
 
 void config_set_sfx_volume(config_info *conf, char *name,
@@ -442,6 +450,12 @@ void config_set_audio_freq(config_info *conf, char *name,
   conf->output_frequency = strtol(value, NULL, 10);
 }
 
+void config_force_32bpp(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  conf->force_32bpp = strtol(value, NULL, 10);
+}
+
 
 config_entry config_options[] =
 {
@@ -468,13 +482,14 @@ config_entry config_options[] =
   { "disassemble_base", config_disassemble_base },
   { "disassemble_extras", config_disassemble_extras },
   { "enable_oversampling", config_enable_oversampling },
+  { "force_32bpp", config_force_32bpp },
   { "force_height_multiplier", config_set_multiplier },
   { "force_resolution", config_set_resolution },
   { "fullscreen", config_set_fullscreen },
+  { "include", include2_config },
   { "include*", include_config },
-  { "include=*", include_config },
-  { "joy?1-2axis?1-2", joy_axis_set },
-  { "joy?1-2button?1-2", joy_button_set },
+  { "joy!axis!", joy_axis_set },
+  { "joy!button!", joy_button_set },
   { "macro_*", config_macro },
   { "mask_midchars", config_mask_midchars },
   { "modplug_resample_mode", config_mp_resample_mode },
@@ -525,6 +540,7 @@ config_info default_options =
   640,
   350,
   1,
+  0,
 
   // Audio options
   44100,

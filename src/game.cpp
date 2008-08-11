@@ -895,12 +895,12 @@ void rotate(World *mzx_world, int x, int y, int dir)
       d_flag = flags[(int)cur_id];
 
       if(((d_flag & A_PUSHABLE) || (d_flag & A_SPEC_PUSH)) &&
-       (cur_id != GATE) && (!(update_done[cur_offset] & 2)))
+       (cur_id != GATE) && (!(mzx_world->update_done[cur_offset] & 2)))
       {
         offs_place_id(mzx_world, next_offset, cur_id,
          level_color[cur_offset], level_param[cur_offset]);
         offs_remove_id(mzx_world, cur_offset);
-        update_done[offset + offs[i]] |= 2;
+        mzx_world->update_done[offset + offs[i]] |= 2;
         i = ccw;
       }
       else

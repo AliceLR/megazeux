@@ -47,7 +47,7 @@ void offs_place_id(World *mzx_world, unsigned int offset,
   int d_flag = flags[(int)id];
 
   // Mark as updated
-  update_done[offset] = 1;
+  mzx_world->update_done[offset] = 1;
 
   // Is it a sensor and is the player being put on it?
   // Or, can it be moved under and can the new item not be moved under?
@@ -83,18 +83,19 @@ void offs_place_id(World *mzx_world, unsigned int offset,
 }
 
 // Clear main and under at a position
-void id_clear(Board *src_board, int array_x, int array_y)
+void id_clear(World *mzx_world, int array_x, int array_y)
 {
-  int offset = (array_y * src_board->board_width) + array_x;
-  src_board->level_id[offset] = 0;
-  src_board->level_param[offset] = 0;
-  src_board->level_color[offset] = 7;
-  src_board->level_under_id[offset] = 0;
-  src_board->level_under_param[offset] = 0;
-  src_board->level_under_color[offset] = 7;
+  Board *current_board = mzx_world->current_board;
+  int offset = (array_y * current_board->board_width) + array_x;
+  current_board->level_id[offset] = 0;
+  current_board->level_param[offset] = 0;
+  current_board->level_color[offset] = 7;
+  current_board->level_under_id[offset] = 0;
+  current_board->level_under_param[offset] = 0;
+  current_board->level_under_color[offset] = 7;
 
   // Mark as updated
-  update_done[offset] = 1;
+  mzx_world->update_done[offset] = 1;
 }
 
 // Remove the top thing at a position
@@ -157,5 +158,5 @@ void id_remove_under(World *mzx_world, int array_x, int array_y)
     src_board->level_under_color[offset] = 7;
   }
 
-  update_done[offset] = 1;
+  mzx_world->update_done[offset] = 1;
 }

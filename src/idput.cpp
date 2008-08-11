@@ -489,7 +489,7 @@ unsigned char get_id_color(Board *src_board, int id_offset)
       spec_color = fire_colors[src_board->level_param[id_offset]];
       break;
 
-    case ICE:
+    case LIFE:
       spec_color = life_colors[src_board->level_param[id_offset]];
       break;
 

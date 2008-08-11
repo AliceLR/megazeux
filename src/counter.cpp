@@ -626,70 +626,70 @@ int spr_num_read(World *mzx_world, function_counter *counter,
 int spr_cx_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->col_x;
 }
 
 int spr_cy_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->col_y;
 }
 
 int spr_width_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->width;
 }
 
 int spr_height_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->height;
 }
 
 int spr_refx_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->ref_x;
 }
 
 int spr_refy_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->ref_y;
 }
 
 int spr_x_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->x;
 }
 
 int spr_y_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->y;
 }
 
 int spr_cwidth_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->col_width;
 }
 
 int spr_cheight_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->col_height;
 }
 
@@ -710,7 +710,7 @@ void spr_yorder_write(World *mzx_world, function_counter *counter,
 void spr_ccheck_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   Sprite *cur_sprite = mzx_world->sprite_list[spr_num];
 
   value %= 3;
@@ -739,7 +739,7 @@ void spr_ccheck_write(World *mzx_world, function_counter *counter,
 void spr_clist_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   Sprite *cur_sprite = mzx_world->sprite_list[spr_num];
   sprite_colliding_xy(mzx_world, cur_sprite, cur_sprite->x,
    cur_sprite->y);
@@ -748,35 +748,35 @@ void spr_clist_write(World *mzx_world, function_counter *counter,
 void spr_cx_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->col_x = value;
 }
 
 void spr_cy_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->col_y = value;
 }
 
 void spr_height_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->height = value;
 }
 
 void spr_width_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->width = value;
 }
 
 void spr_refx_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
 
   if(value < 0)
     value = 0;
@@ -787,7 +787,7 @@ void spr_refx_write(World *mzx_world, function_counter *counter,
 void spr_refy_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
 
   if(value < 0)
     value = 0;
@@ -798,21 +798,21 @@ void spr_refy_write(World *mzx_world, function_counter *counter,
 void spr_x_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->x = value;
 }
 
 void spr_y_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->y = value;
 }
 
 void spr_vlayer_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   if(value)
     (mzx_world->sprite_list[spr_num])->flags |= SPRITE_VLAYER;
   else
@@ -822,7 +822,7 @@ void spr_vlayer_write(World *mzx_world, function_counter *counter,
 void spr_static_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   if(value)
     (mzx_world->sprite_list[spr_num])->flags |= SPRITE_STATIC;
   else
@@ -832,7 +832,7 @@ void spr_static_write(World *mzx_world, function_counter *counter,
 void spr_overlaid_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   if(value)
     (mzx_world->sprite_list[spr_num])->flags |= SPRITE_OVER_OVERLAY;
   else
@@ -842,14 +842,14 @@ void spr_overlaid_write(World *mzx_world, function_counter *counter,
 void spr_off_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_INITIALIZED;
 }
 
 void spr_swap_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   Sprite *src = mzx_world->sprite_list[spr_num];
   Sprite *dest = mzx_world->sprite_list[value];
   mzx_world->sprite_list[value] = src;
@@ -859,14 +859,14 @@ void spr_swap_write(World *mzx_world, function_counter *counter,
 void spr_cwidth_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->col_width = value;
 }
 
 void spr_cheight_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->col_height = value;
 }
 
@@ -875,7 +875,7 @@ void spr_setview_write(World *mzx_world, function_counter *counter,
 {
   Board *src_board = mzx_world->current_board;
   int n_scroll_x, n_scroll_y;
-  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
+  int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   Sprite *cur_sprite = mzx_world->sprite_list[spr_num];
   src_board->scroll_x = 0;
   src_board->scroll_y = 0;
@@ -1195,21 +1195,21 @@ void int2bin_write(World *mzx_world, function_counter *counter,
   {
     case 0:
     {
-      //clear
+      // clear
       integer &= ~(1 << place);
       break;
     }
 
     case 1:
     {
-      //set
+      // set
       integer |= (1 << place);
       break;
     }
 
     case 2:
     {
-      //toggle
+      // toggle
       integer ^= (1 << place);
       break;
     }
@@ -1602,18 +1602,8 @@ int str_num_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   // Is it a single char?
-  char *dot_ptr = NULL;
-  char *name_ptr = name + 1;
-  char cur_char = *name_ptr;
+  char *dot_ptr = strrchr(name + 1, '.');
   mzx_string src;
-
-  while(cur_char)
-  {
-    if(cur_char == '.')
-      dot_ptr = name_ptr;
-    name_ptr++;
-    cur_char = *name_ptr;
-  }
 
   if(dot_ptr)
   {
@@ -1635,14 +1625,14 @@ int str_num_read(World *mzx_world, function_counter *counter,
 
       if(get_string(mzx_world, name, &src, id))
       {
+        *(dot_ptr - 1) = '.';
+
         if(str_num >= src.length)
           return 0;
 
         return src.value[str_num];
       }
     }
-
-    return 0;
   }
 
   if(get_string(mzx_world, name, &src, id))
@@ -1662,74 +1652,58 @@ void str_num_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   // Is it a single char?
-  int dot_position = 0;
-  int name_position = 1;
-  int str_num;
-  int next;
-  char cur_char = name[1];
-  mzx_string *src;
+  char *dot_ptr = strrchr(name + 1, '.');
 
-  while(cur_char)
+  if(dot_ptr)
   {
-    if(cur_char == '.')
-      dot_position = name_position;
-    name_position++;
-    cur_char = name[name_position];
-  }
+    mzx_string *src;
+    int old_length, new_length;
+    int str_num;
+    int next;
 
-  // A number
-  str_num = strtol(name + dot_position + 1, NULL, 10);
+    *dot_ptr = 0;
+    dot_ptr++;
 
-  // No size restrictions except it can't be negative. If you
-  // set this to something really large it'll probably crash!
+    // A number
+    str_num = strtol(dot_ptr, NULL, 10);
 
-  if(str_num < 0)
-    str_num = 0;
+    src = find_string(mzx_world, name, &next);
 
-  name[dot_position] = 0;
+    new_length = str_num + 1;
 
-  src = find_string(mzx_world, name, &next);
-
-  if(src)
-  {
-    int allocated_length = src->allocated_length;
-
-    // If we're writing out of bounds allocate enough space
-    // to serve what we need. If we're allocating within 2x
-    // what's available double the space. This way iterative
-    // writes won't constantly tax new allocations but writes
-    // into far off space won't allocate twice as much as
-    // needed.
-
-    if(str_num >= allocated_length)
+    if(src != NULL)
     {
-      if(str_num < (allocated_length * 2))
+      old_length = src->allocated_length;
+
+      if(new_length > old_length)
       {
-        src = reallocate_string(mzx_world, src, next,
-         allocated_length * 2);
-      }
-      else
-      {
-        src = reallocate_string(mzx_world, src, next,
-         str_num + 1);
+        unsigned int i;
+
+        for(i = 1 << 31; i != 0; i >>= 1)
+        {
+          if(new_length & i)
+            break;
+        }
+
+        new_length = i << 1;
       }
     }
 
-    if(str_num >= src->length)
+    force_string_length(src, new_length);
+    if(src->length <= str_num)
       src->length = str_num + 1;
 
     src->value[str_num] = value;
   }
   else
   {
-    mzx_string new_string;
-    char temp_space[str_num + 1];
+    mzx_string src_str;
+    char n_buffer[16];
+    sprintf(n_buffer, "%d", value);
 
-    temp_space[str_num] = value;
-    new_string.value = temp_space;
-    new_string.length = str_num + 1;
-
-    add_string(mzx_world, name, &new_string, next);
+    src_str.value = n_buffer;
+    src_str.length = strlen(n_buffer);
+    set_string(mzx_world, name, &src_str, id);
   }
 }
 
@@ -2913,8 +2887,8 @@ void inc_counter(World *mzx_world, char *name, int value, int id)
   {
     current_value =
      fdest->function_read(mzx_world, fdest, name, id);
-    current_value += value;
-    fdest->function_write(mzx_world, fdest, name, current_value, id);
+    fdest->function_write(mzx_world, fdest, name,
+     current_value + value, id);
   }
   else
   {
@@ -2924,9 +2898,8 @@ void inc_counter(World *mzx_world, char *name, int value, int id)
     {
       value += cdest->value;
       if(cdest->gateway_write)
-      {
         value = cdest->gateway_write(mzx_world, cdest, name, value, id);
-      }
+
       cdest->value = value;
     }
     else
@@ -2991,8 +2964,8 @@ void dec_counter(World *mzx_world, char *name, int value, int id)
   {
     current_value =
      fdest->function_read(mzx_world, fdest, name, id);
-    current_value -= value;
-    fdest->function_write(mzx_world, fdest, name, current_value, id);
+    fdest->function_write(mzx_world, fdest, name,
+     current_value - value, id);
   }
   else
   {
@@ -3002,9 +2975,8 @@ void dec_counter(World *mzx_world, char *name, int value, int id)
     {
       value = cdest->value - value;
       if(cdest->gateway_write)
-      {
         value = cdest->gateway_write(mzx_world, cdest, name, value, id);
-      }
+
       cdest->value = value;
     }
     else
@@ -3043,8 +3015,8 @@ void mul_counter(World *mzx_world, char *name, int value, int id)
   {
     current_value =
      fdest->function_read(mzx_world, fdest, name, id);
-    current_value *= value;
-    fdest->function_write(mzx_world, fdest, name, current_value, id);
+    fdest->function_write(mzx_world, fdest, name,
+     current_value * value, id);
   }
   else
   {
@@ -3054,9 +3026,8 @@ void mul_counter(World *mzx_world, char *name, int value, int id)
     {
       value *= cdest->value;
       if(cdest->gateway_write)
-      {
         value = cdest->gateway_write(mzx_world, cdest, name, value, id);
-      }
+
       cdest->value = value;
     }
   }
@@ -3077,8 +3048,8 @@ void div_counter(World *mzx_world, char *name, int value, int id)
   {
     current_value =
      fdest->function_read(mzx_world, fdest, name, id);
-    current_value /= value;
-    fdest->function_write(mzx_world, fdest, name, current_value, id);
+    fdest->function_write(mzx_world, fdest, name,
+     current_value / value, id);
   }
   else
   {
@@ -3088,9 +3059,8 @@ void div_counter(World *mzx_world, char *name, int value, int id)
     {
       value = cdest->value / value;
       if(cdest->gateway_write)
-      {
         value = cdest->gateway_write(mzx_world, cdest, name, value, id);
-      }
+
       cdest->value = value;
     }
   }
@@ -3111,18 +3081,95 @@ void mod_counter(World *mzx_world, char *name, int value, int id)
   {
     current_value =
      fdest->function_read(mzx_world, fdest, name, id);
-    current_value %= value;
-    fdest->function_write(mzx_world, fdest, name, current_value, id);
+
+    fdest->function_write(mzx_world, fdest, name,
+     current_value % value, id);
   }
   else
   {
     cdest = find_counter(mzx_world, name, &next);
 
     if(cdest)
-    {
       cdest->value %= value;
+  }
+}
+
+int compare_strings(mzx_string *dest, mzx_string *src)
+{
+  char *src_value;
+  char *dest_value;
+  Uint32 *src_value_32b;
+  Uint32 *dest_value_32b;
+  Uint32 val_src_32b, val_dest_32b;
+  Uint32 difference;
+  char val_src, val_dest;
+  int cmp_length = dest->length;
+  int length_32b;
+  int i;
+
+  if(src->length < cmp_length)
+    return 1;
+
+  if(src->length > cmp_length)
+    return -1;
+
+  // Compare 32bits at a time, should be mostly portable now
+  length_32b = cmp_length / 4;
+
+  src_value = src->value;
+  dest_value = dest->value;
+
+  src_value_32b = (Uint32 *)src_value;
+  dest_value_32b = (Uint32 *)dest_value;
+
+  for(i = 0; i < length_32b; i++)
+  {
+    val_src_32b = src_value_32b[i];
+    val_dest_32b = dest_value_32b[i];
+
+    if(val_src_32b != val_dest_32b)
+    {
+      difference =
+       toupper(val_dest_32b >> 24) - toupper(val_src_32b >> 24);
+
+      if(difference)
+        return difference;
+
+      difference = toupper((val_dest_32b >> 16) & 0xFF) -
+       toupper((val_src_32b >> 16) & 0xFF);
+
+      if(difference)
+        return difference;
+
+      difference = toupper((val_dest_32b >> 8) & 0xFF) -
+       toupper((val_src_32b >> 8) & 0xFF);
+
+      if(difference)
+        return difference;
+
+      difference = toupper(val_dest_32b & 0xFF) -
+       toupper(val_src_32b & 0xFF);
+
+      if(difference)
+        return difference;
     }
   }
+
+  for(i = length_32b * 4; i < cmp_length; i++)
+  {
+    val_src = src_value[i];
+    val_dest = dest_value[i];
+
+    if(val_src != val_dest)
+    {
+      difference = toupper(val_dest) - toupper(val_src);
+
+      if(difference)
+        return difference;
+    }
+  }
+
+  return 0;
 }
 
 void load_string_board(World *mzx_world, char *name, int w, int h,
@@ -3194,22 +3241,9 @@ int is_string(char *buffer)
 {
   // For something to be a mzx_string it has to start with a $ and
   // not have a . in its name
-  if(buffer[0] == '$')
-  {
-    int pos = 1;
-    char current_char = buffer[1];
-
-    while(current_char)
-    {
-      if(current_char == '.')
-      {
-        return 0;
-      }
-      pos++;
-      current_char = buffer[pos];
-    }
+  if((buffer[0] == '$') && (strchr(buffer + 1, '.') == NULL))
     return 1;
-  }
+
   return 0;
 }
 

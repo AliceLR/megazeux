@@ -68,6 +68,9 @@ typedef struct
   Uint8 blank_charset[14 * 256];
   Uint8 smzx_charset[14 * 256];
   Uint8 ascii_charset[14 * 256];
+
+  Uint32 force_32bpp;
+  Uint32 flat_intensity_palette[256];
 } graphics_data;
 
 void color_string(char *string, Uint32 x, Uint32 y, Uint8 color);

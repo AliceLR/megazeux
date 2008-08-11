@@ -537,6 +537,8 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
           char_buffer[chars_length] = 0;
 
           insert_string(rstate.command_buffer, char_buffer, &rstate.current_x);
+
+          last_char = new_char;
         }
         break;
       }

@@ -608,7 +608,7 @@ void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
     {
       color = *new_color;
     }
-  
+
     // Perhaps put a new blank scroll, robot, or sensor in one of the copies
     if(id == SENSOR)
     {
@@ -623,12 +623,12 @@ void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
 
       create_blank_robot_direct(copy_robot, 0, 0);
     }
-  
+
     if(is_signscroll(id))
     {
       if(is_signscroll(old_id))
         clear_scroll_contents(copy_scroll);
-  
+
       create_blank_scroll_direct(copy_scroll);
     }
 
@@ -636,10 +636,10 @@ void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
      change_param(mzx_world, id, -1, copy_robot, copy_scroll, copy_sensor);
 
     if(param >= 0)
-    { 
+    {
       param = place_current_at_xy(mzx_world, id, color, param,
        x, y, copy_robot, copy_scroll, copy_sensor, 0);
-  
+
       *new_id = id;
       *new_param = param;
       *new_color = color;
@@ -776,7 +776,6 @@ void edit_world(World *mzx_world)
   mzx_world->active = 1;
 
   create_blank_world(mzx_world);
-  set_update_done(mzx_world);
   m_show();
 
   end_mod();
@@ -1394,7 +1393,7 @@ void edit_world(World *mzx_world)
         {
           if(!overlay_edit)
           {
-            flash_thing(mzx_world, (int)ROBOT, (int)ROBOT_PUSHABLE,
+            flash_thing(mzx_world, (int)ROBOT_PUSHABLE, (int)ROBOT,
              '!', 0, scroll_x, scroll_y, edit_screen_height);
           }
         }
@@ -1942,7 +1941,7 @@ void edit_world(World *mzx_world)
           if(get_alt_status(keycode_SDL))
           {
             size_pos(mzx_world);
-            set_update_done(mzx_world);
+            set_update_done_current(mzx_world);
             synchronize_board_values();
             fix_scroll();
 
@@ -2790,9 +2789,18 @@ void edit_world(World *mzx_world)
              change_param(mzx_world, current_id, current_param,
              &copy_robot, &copy_scroll, &copy_sensor);
 
-            current_param = place_current_at_xy(mzx_world,
-             current_id, current_color, current_param, cursor_board_x,
-             cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor, 0);
+            // Kinda a hack, but should get the job done.
+            if(is_storageless(current_id))
+            {           
+              src_board->level_param[(cursor_board_y * board_width) +
+               cursor_board_x] = current_param;
+            }
+            else
+            {
+              current_param = place_current_at_xy(mzx_world,
+               current_id, current_color, current_param, cursor_board_x,
+               cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor, 0);
+            }
 
             modified = 1;
           }
@@ -2891,6 +2899,7 @@ void edit_world(World *mzx_world)
           int v_key;
 
           cursor_off();
+          m_hide();
 
           do
           {
@@ -2933,6 +2942,7 @@ void edit_world(World *mzx_world)
             }
           } while(v_key != SDLK_ESCAPE);
 
+          m_show();
           clear_screen_no_update(177, 1);
         }
         else

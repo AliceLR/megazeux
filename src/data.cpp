@@ -39,9 +39,6 @@ char quicksave_file[512];                       // Current quicksave filename
 unsigned char scroll_color = 15;                // Current scroll color
 unsigned char current_help_sec = 0;             // Use for context-sens.help
 
-char *update_done;
-int update_done_size = 0;
-
 // Array of flags for things
 unsigned int flags[] =
 {

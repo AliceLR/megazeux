@@ -313,6 +313,7 @@ Uint32 mp_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
    mp_stream->s.stream_offset;
   Uint8 *read_buffer = (Uint8 *)mp_stream->s.output_data +
    mp_stream->s.stream_offset;
+  Uint32 r_val = 0;
 
   read_len =
    ModPlug_Read(mp_stream->module_data, read_buffer, read_wanted);
@@ -325,21 +326,21 @@ Uint32 mp_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
     // ending..
 
     if(a_src->repeat)
+    {
       a_src->set_position(a_src, a_src->get_position(a_src));
+    }
     else
+    {
       memset(read_buffer + read_len, 0, read_wanted - read_len);
+      r_val = 1;
+    }
 
     read_len = 0;
   }
 
   sampled_mix_data((sampled_stream *)mp_stream, buffer, len);
 
-/*
-  if(read_len == 0)
-    return 1;
-*/
-
-  return 0;
+  return r_val;
 }
 
 void mp_set_volume(audio_stream *a_src, Uint32 volume)
@@ -1274,7 +1275,7 @@ void end_sample()
   audio_stream *current_astream = audio.stream_list_base;
   audio_stream *next_astream;
 
-  SDL_LockMutex(audio.audio_mutex);     
+  SDL_LockMutex(audio.audio_mutex);
 
   while(current_astream)
   {
@@ -1290,7 +1291,7 @@ void end_sample()
   }
 
 
-  SDL_UnlockMutex(audio.audio_mutex);     
+  SDL_UnlockMutex(audio.audio_mutex);
 }
 
 void jump_mod(int order)
@@ -1301,9 +1302,9 @@ void jump_mod(int order)
 
   if(audio.primary_stream && audio.primary_stream->set_order)
   {
-    SDL_LockMutex(audio.audio_mutex);     
-    audio.primary_stream->set_order(audio.primary_stream, order);   
-    SDL_UnlockMutex(audio.audio_mutex);     
+    SDL_LockMutex(audio.audio_mutex);
+    audio.primary_stream->set_order(audio.primary_stream, order);
+    SDL_UnlockMutex(audio.audio_mutex);
   }
 }
 
@@ -1313,9 +1314,9 @@ int get_order()
   {
     int order;
 
-    SDL_LockMutex(audio.audio_mutex);     
-    order = audio.primary_stream->get_order(audio.primary_stream);  
-    SDL_UnlockMutex(audio.audio_mutex);     
+    SDL_LockMutex(audio.audio_mutex);
+    order = audio.primary_stream->get_order(audio.primary_stream);
+    SDL_UnlockMutex(audio.audio_mutex);
 
     return order;
   }
@@ -1329,12 +1330,12 @@ void volume_mod(int vol)
 {
   if(audio.primary_stream)
   {
-    SDL_LockMutex(audio.audio_mutex);     
+    SDL_LockMutex(audio.audio_mutex);
 
     audio.primary_stream->set_volume(audio.primary_stream,
      vol * audio.music_volume / 8);
 
-    SDL_UnlockMutex(audio.audio_mutex);     
+    SDL_UnlockMutex(audio.audio_mutex);
   }
 }
 
@@ -1376,13 +1377,13 @@ void shift_frequency(int freq)
 
   if(audio.primary_stream && freq >= 16)
   {
-    SDL_LockMutex(audio.audio_mutex);     
+    SDL_LockMutex(audio.audio_mutex);
 
     ((sampled_stream *)audio.primary_stream)->
      set_frequency((sampled_stream *)audio.primary_stream,
      freq);
 
-    SDL_UnlockMutex(audio.audio_mutex);     
+    SDL_UnlockMutex(audio.audio_mutex);
   }
 }
 
@@ -1392,10 +1393,10 @@ int get_frequency()
   {
     int freq;
 
-    SDL_LockMutex(audio.audio_mutex);     
+    SDL_LockMutex(audio.audio_mutex);
     freq = ((sampled_stream *)audio.primary_stream)->
      get_frequency((sampled_stream *)audio.primary_stream);
-    SDL_UnlockMutex(audio.audio_mutex);     
+    SDL_UnlockMutex(audio.audio_mutex);
 
     return freq;
   }
@@ -1412,9 +1413,9 @@ void set_position(int pos)
 
   if(audio.primary_stream && audio.primary_stream->set_position)
   {
-    SDL_LockMutex(audio.audio_mutex);     
+    SDL_LockMutex(audio.audio_mutex);
     audio.primary_stream->set_position(audio.primary_stream, pos);
-    SDL_UnlockMutex(audio.audio_mutex);     
+    SDL_UnlockMutex(audio.audio_mutex);
   }
 }
 
@@ -1424,7 +1425,7 @@ int get_position()
   {
     int pos;
 
-    SDL_LockMutex(audio.audio_mutex);     
+    SDL_LockMutex(audio.audio_mutex);
     pos = audio.primary_stream->get_position(audio.primary_stream);
     SDL_UnlockMutex(audio.audio_mutex);
 
@@ -1438,19 +1439,19 @@ int get_position()
 
 void sound(int frequency, int duration)
 {
-  SDL_LockMutex(audio.audio_mutex);     
+  SDL_LockMutex(audio.audio_mutex);
   audio.pcs_stream->playing = 1;
   audio.pcs_stream->frequency = frequency;
   audio.pcs_stream->note_duration = duration;
-  SDL_UnlockMutex(audio.audio_mutex);     
+  SDL_UnlockMutex(audio.audio_mutex);
 }
 
 void nosound(int duration)
 {
-  SDL_LockMutex(audio.audio_mutex);     
+  SDL_LockMutex(audio.audio_mutex);
   audio.pcs_stream->playing = 0;
-  audio.pcs_stream->note_duration = duration; 
-  SDL_UnlockMutex(audio.audio_mutex);     
+  audio.pcs_stream->note_duration = duration;
+  SDL_UnlockMutex(audio.audio_mutex);
 }
 
 int filelength(FILE *fp)
@@ -1547,16 +1548,16 @@ void convert_sam_to_wav(char *source_name, char *dest_name)
 
 void set_music_on(int val)
 {
-  SDL_LockMutex(audio.audio_mutex);     
+  SDL_LockMutex(audio.audio_mutex);
   audio.music_on = val;
-  SDL_UnlockMutex(audio.audio_mutex);     
+  SDL_UnlockMutex(audio.audio_mutex);
 }
 
 void set_sfx_on(int val)
 {
-  SDL_LockMutex(audio.audio_mutex); 
+  SDL_LockMutex(audio.audio_mutex);
   audio.sfx_on = val;
-  SDL_UnlockMutex(audio.audio_mutex); 
+  SDL_UnlockMutex(audio.audio_mutex);
 }
 
 // These don't have to be locked because only the same thread can
@@ -1589,9 +1590,9 @@ int get_sfx_volume()
 
 void set_music_volume(int volume)
 {
-  SDL_LockMutex(audio.audio_mutex);   
+  SDL_LockMutex(audio.audio_mutex);
   audio.music_volume = volume;
-  SDL_UnlockMutex(audio.audio_mutex);   
+  SDL_UnlockMutex(audio.audio_mutex);
 }
 
 void set_sound_volume(int volume)
@@ -1623,7 +1624,7 @@ void set_sfx_volume(int volume)
   audio.sfx_volume = volume;
   audio.pcs_stream->a.set_volume((audio_stream *)audio.pcs_stream,
    volume * 255 / 8);
-  SDL_UnlockMutex(audio.audio_mutex); 
+  SDL_UnlockMutex(audio.audio_mutex);
 }
 
 

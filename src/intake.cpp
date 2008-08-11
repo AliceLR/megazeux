@@ -31,6 +31,8 @@
 // Global status of insert
 char insert_on = 1;
 
+char last_char = 0;
+
 // (returns the key used to exit) String points to your memory for storing
 // the new string. The current "value" is used- clear the string before
 // calling intake if you need a blank string. Max_len is the maximum length
@@ -489,10 +491,11 @@ int intake(World *mzx_world, char *string, int max_len,
         if(get_alt_status(keycode_SDL) && !filter_type)
         {
           // If alt - C is pressed, choose character
-          int new_char = char_selection(cur_char);
+          int new_char = char_selection(last_char);
           if(new_char >= 32)
           {
             cur_char = new_char;
+            last_char = new_char;
             place = 1;
           }
           else
