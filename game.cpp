@@ -4,6 +4,7 @@
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  * Copyright (C) 1999 Charles Goetzman
+ * Copyright (C) 2004 Gilead Kutnick
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -56,6 +57,7 @@
 #include "world.h"
 #include "delay.h"
 #include "robot.h"
+#include "fsafeopen.h"
 
 char *main_menu = "Enter- Menu\n"
                   "Esc  - Exit to DOS\n"
@@ -173,9 +175,6 @@ void title_screen(World *mzx_world)
   int fadein = 1;
   int key = 0;
   int fade;
-  FILE *fp;
-  char temp[FILENAME_SIZE];
-  char temp2[FILENAME_SIZE];
   struct stat file_info;
   Board *src_board;
 
@@ -269,7 +268,7 @@ void title_screen(World *mzx_world)
           break;
         }
 
-				case SDLK_KP_ENTER:
+        case SDLK_KP_ENTER:
         case SDLK_RETURN: // Enter
         {
           int fade_status = get_fade_status();
@@ -425,8 +424,8 @@ void title_screen(World *mzx_world)
         {
           if(mzx_world->active)
           {
-						char old_mod_playing[128];
-						strcpy(old_mod_playing, mzx_world->real_mod_playing);
+            char old_mod_playing[128];
+            strcpy(old_mod_playing, mzx_world->real_mod_playing);
 
             // Play
             // Only from swap?
@@ -457,11 +456,11 @@ void title_screen(World *mzx_world)
             send_robot_def(mzx_world, 0, 11);
             send_robot_def(mzx_world, 0, 10);
 
-						if(strcmp(src_board->mod_playing, "*") &&
-						 strcmp(src_board->mod_playing, old_mod_playing))
-							load_mod(src_board->mod_playing);
+            if(strcmp(src_board->mod_playing, "*") &&
+             strcmp(src_board->mod_playing, old_mod_playing))
+              load_mod(src_board->mod_playing);
 
-						strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+            strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
 
             set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
@@ -510,12 +509,15 @@ void title_screen(World *mzx_world)
 
         case SDLK_F1: // F1
         {
-          m_show();
-          help_system(mzx_world);
+          if(get_counter(mzx_world, "HELP_MENU", 0))
+          {
+            m_show();
+            help_system(mzx_world);
+          }
           break;
         }
 
-				// Quick load
+        // Quick load
         case SDLK_F10: // F4
         {
           int fade_status = get_fade_status();
@@ -528,14 +530,14 @@ void title_screen(World *mzx_world)
             insta_fadein();
           }
 
-					// Swap out current board...
-					clear_sfx_queue();
-					// Load game
-					fadein = 0;
+          // Swap out current board...
+          clear_sfx_queue();
+          // Load game
+          fadein = 0;
 
-					if(reload_savegame(mzx_world, curr_sav, &fadein))
-					{
-						vquick_fadeout();
+          if(reload_savegame(mzx_world, curr_sav, &fadein))
+          {
+            vquick_fadeout();
           }
           else
           {
@@ -813,7 +815,7 @@ void rotate(World *mzx_world, int x, int y, int dir)
   Board *src_board = mzx_world->current_board;
   char *offsp = cw_offs;
   int offs[8];
-  int offset, i, i2;
+  int offset, i;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
   int cw, ccw;
@@ -854,7 +856,7 @@ void rotate(World *mzx_world, int x, int y, int dir)
   for(i = 0; i < 8; i++)
   {
     cur_id = level_id[offset + offs[i]];
-    if((flags[cur_id] & A_UNDER) && (cur_id != 34))
+    if((flags[(int)cur_id] & A_UNDER) && (cur_id != 34))
       break;
   }
 
@@ -863,7 +865,7 @@ void rotate(World *mzx_world, int x, int y, int dir)
     for(i = 0; i < 8; i++)
     {
       cur_id = level_id[offset + offs[i]];
-      d_flag = flags[cur_id];
+      d_flag = flags[(int)cur_id];
 
       if((!(d_flag & A_PUSHABLE) || (d_flag & A_SPEC_PUSH)) &&
        (cur_id != 47))
@@ -908,7 +910,7 @@ void rotate(World *mzx_world, int x, int y, int dir)
       cur_offset = offset + offs[ccw];
       next_offset = offset + offs[i];
       cur_id = level_id[cur_offset];
-      d_flag = flags[cur_id];
+      d_flag = flags[(int)cur_id];
 
       if(((d_flag & A_PUSHABLE) || (d_flag & A_SPEC_PUSH)) &&
        (cur_id != 47) && (!(update_done[cur_offset] & 2)))
@@ -925,7 +927,7 @@ void rotate(World *mzx_world, int x, int y, int dir)
         while(i != cw)
         {
           cur_id = level_id[offset + offs[i]];
-          if((flags[cur_id] & A_UNDER) && (cur_id != 34))
+          if((flags[(int)cur_id] & A_UNDER) && (cur_id != 34))
             break;
 
           i++;
@@ -1097,7 +1099,6 @@ dialog stdi =
 void game_settings(World *mzx_world)
 {
   Board *src_board = mzx_world->current_board;
-  char temp[FILENAME_SIZE];
   set_context(92);
   spd_tmp = overall_speed;
   music = music_on ^ 1;
@@ -1133,7 +1134,6 @@ void game_settings(World *mzx_world)
   // Check- turn music on/off?
   if(music == music_on)
   {
-    char temp2[FILENAME_SIZE];
     if(music_on == 1)
     {
       // Turn off music.
@@ -1159,7 +1159,7 @@ void play_game(World *mzx_world, int fadein)
 {
   // We have the world loaded, on the proper scene.
   // We are faded out. Commence playing!
-  int key;
+  int key = -1;
   FILE *fp;
   char keylbl[5] = "KEY?";
   Board *src_board;
@@ -1195,20 +1195,23 @@ void play_game(World *mzx_world, int fadein)
 
     if(key)
     {
-			int key_char = get_key(keycode_unicode);
+      int key_char = get_key(keycode_unicode);
 
-			if(key_char)
-			{
-				keylbl[3] = key_char;
-				send_robot_all(mzx_world, keylbl);
-			}
+      if(key_char)
+      {
+        keylbl[3] = key_char;
+        send_robot_all(mzx_world, keylbl);
+      }
 
       switch(key)
       {
         case SDLK_F1: // F1
         {
-          m_show();
-          help_system(mzx_world);
+          if(get_counter(mzx_world, "HELP_MENU", 0))
+          {
+            m_show();
+            help_system(mzx_world);
+          }
           break;
         }
 
@@ -1235,7 +1238,7 @@ void play_game(World *mzx_world, int fadein)
           break;
         }
 
-				case SDLK_KP_ENTER:
+        case SDLK_KP_ENTER:
         case SDLK_RETURN: // Enter
         {
           send_robot_all(mzx_world, "KeyEnter");
@@ -1329,7 +1332,7 @@ void play_game(World *mzx_world, int fadein)
                 }
                 add_ext(curr_sav, ".sav");
                 // Check for an overwrite
-                fp = fopen(curr_sav, "rb");
+                fp = fsafeopen(curr_sav, "rb");
 
                 if(!stat(curr_sav, &file_info))
                 {
@@ -1383,7 +1386,7 @@ void play_game(World *mzx_world, int fadein)
               load_mod(src_board->mod_playing);
               strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
 
-							find_player(mzx_world);
+              find_player(mzx_world);
 
               strcpy(curr_sav, save_file_name);
               send_robot_def(mzx_world, 0, 10);
@@ -1440,9 +1443,9 @@ void play_game(World *mzx_world, int fadein)
           mzx_world->score = 0;
 
           for(i = 0; i < 16; i++)
-					{
+          {
             mzx_world->keys[i] = i;
-					}
+          }
 
           dead = 0; // :)
           src_board->player_ns_locked = 0;
@@ -1453,45 +1456,45 @@ void play_game(World *mzx_world, int fadein)
         }
 
         case SDLK_F8:
-				{
-					int player_x = mzx_world->player_x;
-					int player_y = mzx_world->player_y;
-					int board_width = src_board->board_width;
-					int board_height = src_board->board_height;
+        {
+          int player_x = mzx_world->player_x;
+          int player_y = mzx_world->player_y;
+          int board_width = src_board->board_width;
+          int board_height = src_board->board_height;
 
           if(player_x > 0)
           {
-						place_at_xy(mzx_world, 0, 7, 0, player_x - 1, player_y);
+            place_at_xy(mzx_world, 0, 7, 0, player_x - 1, player_y);
             if(player_y > 0)
-							place_at_xy(mzx_world, 0, 7, 0, player_x - 1, player_y - 1);
+              place_at_xy(mzx_world, 0, 7, 0, player_x - 1, player_y - 1);
 
             if(player_y < (board_height - 1))
-							place_at_xy(mzx_world, 0, 7, 0, player_x - 1, player_y + 1);
+              place_at_xy(mzx_world, 0, 7, 0, player_x - 1, player_y + 1);
           }
 
           if(player_x < (board_width - 1))
           {
-						place_at_xy(mzx_world, 0, 7, 0, player_x + 1, player_y);
+            place_at_xy(mzx_world, 0, 7, 0, player_x + 1, player_y);
 
             if(player_y > 0)
-							place_at_xy(mzx_world, 0, 7, 0, player_x + 1, player_y - 1);
+              place_at_xy(mzx_world, 0, 7, 0, player_x + 1, player_y - 1);
 
             if(player_y < (board_height - 1))
-							place_at_xy(mzx_world, 0, 7, 0, player_x + 1, player_y + 1);
+              place_at_xy(mzx_world, 0, 7, 0, player_x + 1, player_y + 1);
           }
 
           if(player_y > 0)
-						place_at_xy(mzx_world, 0, 7, 0, player_x, player_y - 1);
+            place_at_xy(mzx_world, 0, 7, 0, player_x, player_y - 1);
 
           if(player_y < (board_height - 1))
-						place_at_xy(mzx_world, 0, 7, 0, player_x, player_y + 1);
+            place_at_xy(mzx_world, 0, 7, 0, player_x, player_y + 1);
 
           break;
         }
 
-				// Quick save
-				case SDLK_F9:
-				{
+        // Quick save
+        case SDLK_F9:
+        {
           if(!dead)
           {
             // Can we?
@@ -1500,52 +1503,52 @@ void play_game(World *mzx_world, int fadein)
              (src_board->level_under_id[mzx_world->player_x +
              (src_board->board_width * mzx_world->player_y)] == 122)))
             {
-							int fade_status = get_fade_status();
+              int fade_status = get_fade_status();
 
               // Save entire game
               save_world(mzx_world, curr_sav, 1, fade_status);
             }
-					}
-					break;
-				}
+          }
+          break;
+        }
 
-				// Quick load
-				case SDLK_F10:
-				{
-					struct stat file_info;
+        // Quick load
+        case SDLK_F10:
+        {
+          struct stat file_info;
 
-					if(!stat(curr_sav, &file_info))
-					{
-						// Load game
-						fadein = 0;
-						if(reload_savegame(mzx_world, curr_sav, &fadein))
-						{
-							vquick_fadeout();
-							return;
-						}
-	
-						// Reset this
-						src_board = mzx_world->current_board;
+          if(!stat(curr_sav, &file_info))
+          {
+            // Load game
+            fadein = 0;
+            if(reload_savegame(mzx_world, curr_sav, &fadein))
+            {
+              vquick_fadeout();
+              return;
+            }
+  
+            // Reset this
+            src_board = mzx_world->current_board;
 
-						find_player(mzx_world);
+            find_player(mzx_world);
 
-						// Swap in starting board
-						load_mod(src_board->mod_playing);
-						strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-	
-						send_robot_def(mzx_world, 0, 10);
-						dead = 0;
-						fadein ^= 1;
-					}
-					break;
-				}
+            // Swap in starting board
+            load_mod(src_board->mod_playing);
+            strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+  
+            send_robot_def(mzx_world, 0, 10);
+            dead = 0;
+            fadein ^= 1;
+          }
+          break;
+        }
 
-				case SDLK_F11: // F11
-				{
-					// SMZX Mode
-					set_screen_mode(get_screen_mode() + 1);
-					break;
-				}
+        case SDLK_F11: // F11
+        {
+          // SMZX Mode
+          set_screen_mode(get_screen_mode() + 1);
+          break;
+        }
       }
     }
   } while(key != SDLK_ESCAPE);
@@ -1616,17 +1619,28 @@ int move_player(World *mzx_world, int dir)
     switch(dir)
     {
       case 0: // North- Enter south side
-        target_y = 199;
+      {
+        target_y = (mzx_world->board_list[board_dir])->board_height - 1;
         break;
+      }
+
       case 1: // South- Enter north side
+      {
         target_y = 0;
         break;
+      }
+
       case 2: // East- Enter west side
+      {
         target_x = 0;
         break;
+      }
+
       case 3: // West- Enter east side
-        target_x = 399;
+      {
+        target_x = (mzx_world->board_list[board_dir])->board_width - 1;
         break;
+      }
     }
     src_board->player_last_dir = (src_board->player_last_dir & 240) + dir + 1;
     return 0;
@@ -1636,7 +1650,7 @@ int move_player(World *mzx_world, int dir)
     // Not edge
     int d_offset = new_x + (new_y * src_board->board_width);
     char d_id = src_board->level_id[d_offset];
-    int d_flag = flags[d_id];
+    int d_flag = flags[(int)d_id];
 
     if(d_flag & A_SPEC_STOOD)
     {
@@ -1730,7 +1744,7 @@ int move_player(World *mzx_world, int dir)
       }
       else
       {
-        dec_counter(mzx_world, "HEALTH", id_dmg[d_id], 0);
+        dec_counter(mzx_world, "HEALTH", id_dmg[(int)d_id], 0);
         play_sfx(mzx_world, 21);
         set_mesg(mzx_world, "Ouch!");
 
@@ -1816,7 +1830,7 @@ void give_potion(World *mzx_world, int type)
         for(x = 0; x < board_width; x++, offset++)
         {
           char d_id = level_id[offset];
-          int d_flag = flags[d_id];
+          int d_flag = flags[(int)d_id];
 
           if((d_flag & A_UNDER) && !(d_flag & A_ENTRANCE))
           {
@@ -1956,7 +1970,7 @@ void give_potion(World *mzx_world, int type)
       {
         for(x = 0; x < board_width; x++, offset++)
         {
-          int d_flag = flags[level_id[offset]];
+          int d_flag = flags[(int)level_id[offset]];
 
           if((d_flag & A_UNDER) && !(d_flag & A_ENTRANCE))
           {
@@ -2268,7 +2282,6 @@ int grab_item(World *mzx_world, int offset, int dir)
     case 41: // Door
     {
       int board_width = src_board->board_width;
-      int board_height = src_board->board_height;
       char *level_id = src_board->level_id;
       char *level_param = src_board->level_param;
       int x = offset % board_width;
@@ -2575,7 +2588,6 @@ void show_counter(World *mzx_world, char *str, int x, int y,
 int update(World *mzx_world, int game, int *fadein)
 {
   int start_ticks = get_ticks();
-  char r, g, b;
   int time_remaining;
   static int reload = 0;
   static int slowed = 0; // Flips between 0 and 1 during slow_time
@@ -2584,10 +2596,6 @@ int update(World *mzx_world, int game, int *fadein)
   int volume = src_board->volume;
   int volume_inc = src_board->volume_inc;
   int volume_target = src_board->volume_target;
-  char *bottom_mesg = src_board->bottom_mesg;
-  int mesg_edges = mzx_world->mesg_edges;
-  int player_attack_locked = src_board->player_attack_locked;
-  int player_last_dir = src_board->player_last_dir;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
   char *level_id = src_board->level_id;
@@ -2596,7 +2604,6 @@ int update(World *mzx_world, int game, int *fadein)
   char *level_under_id = src_board->level_under_id;
   char *level_under_color = src_board->level_under_color;
   char *level_under_param = src_board->level_under_param;
-  int fade_status = get_fade_status();
   int total_ticks;
 
   pal_update = 0;
@@ -2804,7 +2811,7 @@ int update(World *mzx_world, int game, int *fadein)
         }
         else
 
-        if(!(flags[level_under_id[d_offset]] & A_ENTRANCE))
+        if(!(flags[(int)level_under_id[d_offset]] & A_ENTRANCE))
         {
           // Bomb!
           mzx_world->under_player_id = level_under_id[d_offset];
@@ -2842,7 +2849,7 @@ int update(World *mzx_world, int game, int *fadein)
     int d_offset = mzx_world->player_x + (mzx_world->player_y * board_width);
 
     was_zapped = 0;
-    if(flags[level_under_id[d_offset]] & A_ENTRANCE)
+    if(flags[(int)level_under_id[d_offset]] & A_ENTRANCE)
       entrance = 0;
 
     update_board(mzx_world);
@@ -2854,8 +2861,7 @@ int update(World *mzx_world, int game, int *fadein)
 
     // Pushed onto an entrance?
 
-    if((entrance) &&
-     (flags[level_under_id[d_offset]] & A_ENTRANCE)
+    if((entrance) && (flags[(int)level_under_id[d_offset]] & A_ENTRANCE)
      && (!was_zapped))
     {
       int d_board = src_board->level_under_param[d_offset];
@@ -2937,7 +2943,7 @@ int update(World *mzx_world, int game, int *fadein)
     {
       if(death_board == NO_DEATH_BOARD)
       {        
-				int player_restart_x = mzx_world->player_restart_x;
+        int player_restart_x = mzx_world->player_restart_x;
         int player_restart_y = mzx_world->player_restart_y;
         // Return to entry x/y
         id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
@@ -3021,12 +3027,14 @@ int update(World *mzx_world, int game, int *fadein)
       draw_game_window(src_board, top_x, top_y);
     }
 
+    // Add sprites
+    draw_sprites(mzx_world);
+
     // Add time limit
     time_remaining = get_counter(mzx_world, "TIME", 0);
     if(time_remaining)
     {
       int edge_color = mzx_world->edge_color;
-      int seconds = time_remaining % 60;
       int timer_color;
       if(edge_color == 15)
         timer_color = 0xF0; // Prevent white on white for timer
@@ -3074,9 +3082,6 @@ int update(World *mzx_world, int game, int *fadein)
       draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
        mzx_world->player_y);
     }
-
-    // Add SPRITES! - Exo
-    draw_sprites(mzx_world);
   }
 
   if(update_music)
@@ -3124,7 +3129,6 @@ int update(World *mzx_world, int game, int *fadein)
 
   if(target_board >= 0)
   {
-    int faded = get_fade_status();
     int saved_player_last_dir = src_board->player_last_dir;
     int player_x = mzx_world->player_x;
     int player_y = mzx_world->player_y;
@@ -3245,7 +3249,7 @@ int update(World *mzx_world, int game, int *fadein)
           }
           else
 
-          if(flags[d_id] & A_ENTRANCE)
+          if(flags[(int)d_id] & A_ENTRANCE)
           {
             // Not same type, but an entrance
             // Color match?
@@ -3375,12 +3379,12 @@ void find_player(World *mzx_world)
   char *level_id = src_board->level_id;
   int offset;
 
-	if((mzx_world->player_x > board_width) ||
-	 (mzx_world->player_y > board_height))
-	{
-		mzx_world->player_x = 0;
-		mzx_world->player_y = 0;
-	}
+  if((mzx_world->player_x > board_width) ||
+   (mzx_world->player_y > board_height))
+  {
+    mzx_world->player_x = 0;
+    mzx_world->player_y = 0;
+  }
 
   if(level_id[mzx_world->player_x +
    (mzx_world->player_y * board_width)] != 127)
@@ -3463,8 +3467,8 @@ int give_key(World *mzx_world, int color)
 void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y)
 {
   Board *src_board = mzx_world->current_board;
-	int i;
-	int robot_mem = 0;
+  int i;
+  int robot_mem = 0;
 
   draw_window_box(x, y, x + 19, y + 5, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
    EC_DEBUG_BOX_CORNER, 0, 1);
@@ -3473,7 +3477,7 @@ void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y)
   (
     "X/Y:        /     \n"
     "Board:            \n"
-		"Robot mem:      kb\n",
+    "Robot mem:      kb\n",
     x + 1, y + 1, EC_DEBUG_LABEL, 0
   );
 
@@ -3481,16 +3485,16 @@ void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y)
   write_number(d_y, EC_DEBUG_NUMBER, x + 14, y + 1, 5);
   write_number(mzx_world->current_board_id, EC_DEBUG_NUMBER, x + 18, y + 2, 0, 1);
 
-	for(i = 0; i < src_board->num_robots; i++)
-	{
-		robot_mem += (src_board->robot_list_name_sorted[i])->program_length;
-	}
+  for(i = 0; i < src_board->num_robots_active; i++)
+  {
+    robot_mem += (src_board->robot_list_name_sorted[i])->program_length;
+  }
 
   write_number((robot_mem + 512) / 1024, EC_DEBUG_NUMBER, x + 12, y + 3, 5, 0);
 
   if(*(src_board->mod_playing) != 0)
   {
-    if(strlen(src_board->mod_playing) > 12)
+    if(strlen(src_board->mod_playing) > 18)
     {
       char tempc = src_board->mod_playing[18];
       src_board->mod_playing[18] = 0;

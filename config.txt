@@ -56,7 +56,7 @@
 # Allow music to be sampled at higher precision. Increases CPU
 # usage but increases audio quality as well.
 
-#enable_oversampling = 0
+enable_oversampling = 1
 
 # Set resampling mode. Choices are:
 # none (fastest, poor quality)
@@ -64,7 +64,7 @@
 # cubic (slow, great quality)
 # fir (very slow, excellent quality)
 
-#resampling_mode = linear
+resampling_mode = fir
 
 # Whether music/samples should be played or not.
 # Does not include PC speaker effects.
@@ -75,16 +75,24 @@
 
 #pc_speaker_on = 1
 
+# Volume music plays at
+#music_volume = 8
+
+# Volume samples play at
+#sample_volume = 8
 
 ### Game options ###
 
 # Name of world file that should be loaded when MZX starts.
+
 #startup_file = caverns.mzx
 
 # Default save file name given when you first try to save.
+
 #save_file = saved.sav
 
 # Speed MZX should start at (1 through 9)
+
 #mzx_speed = 4
 
 

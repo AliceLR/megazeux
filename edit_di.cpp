@@ -250,6 +250,13 @@ void size_pos(World *mzx_world)
       {
         // Change the size; if it's not an enlargement, make sure
         // the player confirms first.
+
+        // Hack to prevent multiplies of 256, for now - only relevant
+        // with overlay off, but we want to avoid complications if
+        // the user turns the overlay off later
+        if((strg[4] % 256) == 0)
+          strg[4]++;
+
         if(((strg[4] >= src_board->board_width) &&
           (strg[5] >= src_board->board_height)) ||
           !confirm(mzx_world, "Reduce board size- Are you sure?"))
@@ -546,67 +553,75 @@ void global_info(World *mzx_world)
 
     dialog_result = do_dialog();
 
-    if((dialog_result == -1) || (dialog_result == 1))
+    switch(dialog_result)
     {
-      pop_context();
-      return;
-    }
-
-    if(rad1 == 2)
-      mzx_world->death_board = brd1;
-    else
-
-    if(rad1 == 1)
-      mzx_world->death_board = NO_DEATH_BOARD;
-
-    else
-      mzx_world->death_board = DEATH_SAME_POS;
-
-    if(rad2 == 1)
-      mzx_world->endgame_board = brd2;
-    else
-      mzx_world->endgame_board = NO_ENDGAME_BOARD;
-
-    mzx_world->death_x = dx;
-    mzx_world->endgame_x = ex;
-    mzx_world->death_y = dy;
-    mzx_world->endgame_y = ey;
-    mzx_world->game_over_sfx = chk[0];
-
-    if(dialog_result == 2)
-    {
-      if(global_next(mzx_world))
-        redo = 1; // More
-    }
-    else
-
-    if(dialog_result == 3)
-      global_chars(mzx_world); // Chars
-
-    else
-
-    if(dialog_result == 4)
-    {
-      global_dmg(mzx_world); // Dmg
-    }
-    else
-    {
-      Robot *cur_robot = &(mzx_world->global_robot);
-      // First get name...
-      m_hide();
-      save_screen();
-      draw_window_box(16, 12, 50, 14, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
-       EC_DEBUG_BOX_CORNER, 1, 1);
-      write_string("Name for robot:", 18, 13, EC_DEBUG_LABEL, 0);
-      m_show();
-
-      if(intake(cur_robot->robot_name, 14, 34, 13, 15, 1, 0) != SDLK_ESCAPE)
+      case 0:
       {
-				restore_screen();
-				save_screen();
-        set_context(87);
-        robot_editor(mzx_world, cur_robot);
-        pop_context();
+        if(rad1 == 2)
+          mzx_world->death_board = brd1;
+        else
+    
+        if(rad1 == 1)
+          mzx_world->death_board = NO_DEATH_BOARD;
+    
+        else
+          mzx_world->death_board = DEATH_SAME_POS;
+    
+        if(rad2 == 1)
+          mzx_world->endgame_board = brd2;
+        else
+          mzx_world->endgame_board = NO_ENDGAME_BOARD;
+    
+        mzx_world->death_x = dx;
+        mzx_world->endgame_x = ex;
+        mzx_world->death_y = dy;
+        mzx_world->endgame_y = ey;
+        mzx_world->game_over_sfx = chk[0];
+        break;
+      }
+
+      case 2:
+      {
+        if(global_next(mzx_world))
+          redo = 1; // More
+
+        break;
+      }
+
+      case 3:
+      {
+        global_chars(mzx_world); // Chars
+        break;
+      }
+
+      case 4:
+      {
+        global_dmg(mzx_world); // Dmg
+        break;
+      }
+
+      case 5:
+      {
+        Robot *cur_robot = &(mzx_world->global_robot);
+        // First get name...
+        m_hide();
+        save_screen();
+        draw_window_box(16, 12, 50, 14, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
+         EC_DEBUG_BOX_CORNER, 1, 1);
+        write_string("Name for robot:", 18, 13, EC_DEBUG_LABEL, 0);
+        m_show();
+
+        if(intake(cur_robot->robot_name, 14, 34, 13, 15, 1, 0) != SDLK_ESCAPE)
+        {
+          restore_screen();
+          set_context(87);
+          robot_editor(mzx_world, cur_robot);
+          pop_context();
+        }
+        else
+        {
+          restore_screen();
+        }
       }
     }
   } while(redo);
@@ -1244,7 +1259,7 @@ int char_values[8][24] =
 // Chars #1-8
 void global_chars(World *mzx_world)
 {
-  int i, i2, i3;
+  int i;
   int cur_id, dialog_result;
 
   int curr_scr = 0;
@@ -1464,7 +1479,7 @@ void global_dmg(World *mzx_world)
   for(i = 0; i < 22; i++)
   {
     ddi_storage[i + 2] = tmp + i;
-    tmp[i] = id_dmg[dmg_ids[i]];
+    tmp[i] = id_dmg[(int)dmg_ids[i]];
     ddi_xs[i + 2] = 2 + (14 - strlen(dmg_strs[i + 2]));
     if(i > 10)
       ddi_xs[i + 2] += 29;
@@ -1474,7 +1489,7 @@ void global_dmg(World *mzx_world)
   if(!do_ddialog())
   {
     for(i = 0; i < 22; i++)
-    id_dmg[dmg_ids[i]] = tmp[i];
+    id_dmg[(int)dmg_ids[i]] = tmp[i];
   }
   pop_context();
 }

@@ -190,10 +190,8 @@ unsigned char id_dmg[128];
 unsigned char get_special_id_char(Board *src_board, unsigned char cell_id,
  int offset)
 {
-  int array_x, array_y;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
-  char *level_color = src_board->level_color;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
 

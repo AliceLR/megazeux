@@ -24,8 +24,9 @@
 
 #include "world.h"
 
-void save_mzm(World *mzx_world, char *name, int x, int y,
- int w, int h, int mode, int mode2);
-void load_mzm(World *mzx_world, char *name, int x, int y, int mode);
+void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
+ int width, int height, int mode, int savegame);
+int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
+ int mode, int savegame);
 
 #endif

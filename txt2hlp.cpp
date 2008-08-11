@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 2004 Gilead Kutnick
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -24,92 +25,172 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-//Custom fgetc function to dump \r's and replace \xFF's and /x1's.
-int fgetc2(FILE *fp) {
-  int t1=fgetc(fp);
-  if(t1=='\r') return fgetc2(fp);
-  if(t1==255) return 32;
-  if(t1==1) return 2;
-  return t1;
+// Cleaned up/revised txt2hlp.cpp for compiling outside of DOS
+
+// Endian safe file readers taken from world.cpp..
+int fgetw(FILE *fp)
+{
+  int r = fgetc(fp);
+  r |= fgetc(fp) << 8;
+  return r;
 }
+
+int fgetd(FILE *fp)
+{
+  int r = fgetc(fp);
+  r |= fgetc(fp) << 8;
+  r |= fgetc(fp) << 16;
+  r |= fgetc(fp) << 24;
+
+  return r;
+}
+
+void fputw(int src, FILE *fp)
+{
+  fputc(src & 0xFF, fp);
+  fputc(src >> 8, fp);
+}
+
+void fputd(int src, FILE *fp)
+{
+  fputc(src & 0xFF, fp);
+  fputc((src >> 8) & 0xFF, fp);
+  fputc((src >> 16) & 0xFF, fp);
+  fputc((src >> 24) & 0xFF, fp);
+}
+
+// Custom fgetc function to dump \r's and replace \xFF's and /x1's.
+int fgetc2(FILE *fp)
+{
+  int current_char = fgetc(fp);
+  switch(current_char)
+  {
+    case '\r':
+    {
+      return fgetc2(fp);
+    }
+
+    case 255:
+    {
+      return 32;
+    }
+
+    case 1:
+    {
+      return 2;
+    }
+
+    default:
+    {
+      return current_char;
+    }
+  }
+}
+
 #define fgetc(f) fgetc2(f)
 
-int main(int argc,char *argv[]) {
-  int t1,t2,t3;
-  char tstr[81]="";
-  long tlong;
+int main(int argc, char *argv[])
+{
+  int current_char;
+  int t1, t2, t3;
+  char tstr[81] = "";
+  int tlong;
+  int i;
 
-  printf("\n\n");
+  // Source/dest files open. Now scan source for number of filenames.
+  // A new file is designated by a # as the first character of a line.
 
-  if(argc<3) {
-    printf("Usage: TXT2HLP source.txt output.fil\n\n\a");
-    return 1;
-    }
+  int num_files = 1;
+
+  // Count context sensitive links too. A link is designated by a : as
+  // the first character of a line, followed by three numerals, followed
+  // by the end of the line. (a \n)
+
+  int num_links = 0;
 
   FILE *source;
   FILE *dest;
 
-  source=fopen(argv[1],"rb");
-  if(source==NULL) {
-    printf("Error opening %s for input.\n\n\a",argv[1]);
-    return 1;
-    }
+  printf("\n\n");
 
-  dest=fopen(argv[2],"wb");
-  if(dest==NULL) {
+  if(argc < 3)
+  {
+    printf("Usage: TXT2HLP source.txt output.fil\n");
+    return 1;
+  }
+
+  source = fopen(argv[1], "rb");
+
+  if(source == NULL)
+  {
+    printf("Error opening %s for input.\n", argv[1]);
+    return -1;
+  }
+
+  dest = fopen(argv[2],"wb");
+
+  if(dest == NULL)
+  {
     fclose(source);
-    printf("Error opening %s for output.\n\n\a",argv[2]);
+    printf("Error opening %s for output.\n", argv[2]);
     return 1;
-    }
+  }
 
-  //Source/dest files open. Now scan source for number of filenames.
-  //A new file is designated by a # as the first character of a line.
+  do
+  {
+    current_char = fgetc(source);
 
-  int numfiles=1;
+    switch(current_char)
+    {
+      case '#':
+      {
+        num_files++;
+        break;
+      }
 
-  //Count context sensitive links too. A link is designated by a : as
-  //the first character of a line, followed by three numerals, followed
-  //by the end of the line. (a \n)
+      case ':':
+      {
+        // Get upcoming link
+        int link = fscanf(source, "%3d");
 
-  int numlinks=0;
-
-  do {
-    t1=fgetc(source);
-    if(t1=='#') numfiles++;
-    if(t1==':') {
-      //Check next chars
-      t2=0;
-      t1=fgetc(source);
-      if(isdigit(t1)) {
-        t2+=100*(t1-'0');
-        t1=fgetc(source);
-        if(isdigit(t1)) {
-          t2+=10*(t1-'0');
-          t1=fgetc(source);
-          if(isdigit(t1)) {
-            t2+=t1-'0';
-            t1=fgetc(source);
-            if(((t1=='\n')||(t1==':'))&&(t2>=numlinks)) numlinks=t2+1;
-            }
-          }
+        // Get next char
+        current_char = fgetc(source);
+        
+        if(((current_char == '\n') || (current_char == ':')) &&
+         link >= numlinks))
+        {
+          num_links = link + 1;
         }
       }
-    if(t1=='\n') continue;
-    while(fgetc(source)!='\n') if(feof(source)) break;
-  } while(!feof(source));
+    }
 
-  printf("Files: %d  Links: %d\n",numfiles,numlinks);
+    // Get the rest of the line
+    while((current_char != '\n') && (current_char != -1))
+    {
+      current_char == fgetc(source);
+    }
+  } while(current_char != -1);
 
-  //Number of files obtained. Write header, with room, to dest. This
-  //includes number of links and blank spaces to add in filenames and
-  //link info.
-  fwrite(&numfiles,1,2,dest);
-  for(t1=0;t1<numfiles;t1++)
-    fwrite("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0",21,1,dest);
-  fwrite(&numlinks,1,2,dest);
-  if(numlinks>0)
-    for(t1=0;t1<numlinks;t1++)
-      fwrite("\0\0\0\0\0\0\0\0\0\0\0\0",12,1,dest);
+  printf("Files: %d  Links: %d\n", numfiles, numlinks);
+
+  // Number of files obtained. Write header, with room, to dest. This
+  // includes number of links and blank spaces to add in filenames and
+  // link info.
+
+  fputw(num_files, dest);
+  for(i = 0; i < numfiles; i++)
+  {
+    fwrite("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 21, 1, dest);
+  }
+
+  fputw(num_links, dest);
+  if(numlinks > 0)
+  {
+    for(i = 0; i < num_links; i++)
+    {
+      fwrite("\0\0\0\0\0\0\0\0\0\0\0\0", 12, 1, dest);
+    }
+  }
 
   //Now we start our actual file chain. Current file info-
   char curr_file[13]="MAIN.HLP";
@@ -133,40 +214,45 @@ int main(int argc,char *argv[]) {
   fputc(1,dest);
   printf("Processing file %s...\n",curr_file);
 
-  do {
+  do
+  {
     //Our loop. Read first char of current line
     line_len=0;
     t1=fgetc(source);
-    switch(t1) {
+    switch(t1)
+    {
       case '$'://Centered line- write prefix...
         fputc(255,dest); fputc('$',dest); file_len+=2;
         //...and read first character...
       case '.'://Normal line- read first character
-      mesg://Jump point to copy until and through an \n
+        mesg://Jump point to copy until and through an \n
         t1=fgetc(source);
       default://Normal line (first char in t1)
         //Copy until a \n
         if(t1=='\n') goto blanko;
-        while(!feof(source)) {
+        while(!feof(source))
+        {
           fputc(t1,dest); file_len++;
           line_len++;
           t1=fgetc(source);
           if(t1=='\n') break;
-          }
+        }
         //Now put an \n
-      blanko:
+        blanko:
         fputc('\n',dest); file_len++;
         break;
       case '>'://Choice of some type
         fputc(255,dest); file_len++;
         //See if dest is normal or file
         t1=fgetc(source);
-        if(t1=='#') {
+        if(t1=='#')
+        {
           //File.
           fputc('<',dest); file_len++;
           //Grab name.
           t2=t3=0;//t2 counts str size, t3 counts colons passed
-          do {
+          do
+          {
             t1=fgetc(source);
             if((t1==':')&&t3) break;
             if(t1=='\n') break;
@@ -176,17 +262,18 @@ int main(int argc,char *argv[]) {
           tstr[t2]=0;
           if(t2==10) //10 len not allowed
             printf("Error- Label length of 10 on line %d, file %s.\n",
-              curr_lnum,curr_file);
+                   curr_lnum,curr_file);
           fputc(t2,dest); file_len++;
           fwrite(tstr,++t2,1,dest); file_len+=t2;
           //Now do actual message after the label/file.
           goto mesg;
-          }
+        }
         //Non-file.
         fputc('>',dest); file_len++;
         //Grab name.
         t2=0;//t2 counts str size
-        do {
+        do
+        {
           if((t1==':')||(t1=='\n')) break;
           tstr[t2++]=t1;
           t1=fgetc(source);
@@ -194,10 +281,10 @@ int main(int argc,char *argv[]) {
         tstr[t2]=0;
         if(t2==1) //1 len not allowed
           printf("Error- Label length of 1 on line %d, file %s.\n",
-            curr_lnum,curr_file);
+                 curr_lnum,curr_file);
         if(t2==10) //10 len not allowed
           printf("Error- Label length of 10 on line %d, file %s.\n",
-            curr_lnum,curr_file);
+                 curr_lnum,curr_file);
         fputc(t2,dest); file_len++;
         fwrite(tstr,++t2,1,dest); file_len+=t2;
         //Now do actual message after the label.
@@ -206,7 +293,8 @@ int main(int argc,char *argv[]) {
         fputc(255,dest); fputc(':',dest); file_len+=2;
         //Grab name.
         t2=0;//Counts str length
-        do {
+        do
+        {
           t1=fgetc(source);
           if((t1==':')||(t1=='\n')) break;
           tstr[t2++]=t1;
@@ -214,20 +302,21 @@ int main(int argc,char *argv[]) {
         tstr[t2]=0;
         if(t2==1) //1 len not allowed
           printf("Error- Label length of 1 on line %d, file %s.\n",
-            curr_lnum,curr_file);
+                 curr_lnum,curr_file);
         if(t2==10) //10 len not allowed
           printf("Error- Label length of 10 on line %d, file %s.\n",
-            curr_lnum,curr_file);
+                 curr_lnum,curr_file);
         fputc(t2,dest); file_len++;
         fwrite(tstr,++t2,1,dest); file_len+=t2;
         //Is this a context-link?
         if((t2==4)&&(isdigit(tstr[0]))&&
-          (isdigit(tstr[1]))&&(isdigit(tstr[2]))) {
-            //Yep.
-            t3=atoi(tstr);
-            link_numbers[curr_link_ref]=t3;
-            link_offsets[curr_link_ref++]=file_len-7;
-            }
+           (isdigit(tstr[1]))&&(isdigit(tstr[2])))
+        {
+          //Yep.
+          t3=atoi(tstr);
+          link_numbers[curr_link_ref]=t3;
+          link_offsets[curr_link_ref++]=file_len-7;
+        }
         //Is there a message next?
         if(t1==':') goto mesg;//Yep.
         //Nope- Just output an EOL.
@@ -236,10 +325,11 @@ int main(int argc,char *argv[]) {
       case '#'://New file
         //First, end current
         fputc(0,dest); file_len++;
-        if(file_len>biggest_file) {
+        if(file_len>biggest_file)
+        {
           biggest_file=file_len;
           strcpy(max_file,curr_file);
-          }
+        }
         //Put it's info at the start
         tlong=ftell(dest);
         fseek(dest,curr_file_storage,SEEK_SET);
@@ -248,12 +338,13 @@ int main(int argc,char *argv[]) {
         fwrite(&file_len,1,4,dest);
         if(file_len>65535U) printf("Warning- File %s over 64k bytes in length.\n",curr_file);
         //Write in links info
-        for(t1=0;t1<curr_link_ref;t1++) {
+        for(t1=0;t1<curr_link_ref;t1++)
+        {
           fseek(dest,4+numfiles*21+link_numbers[t1]*12,SEEK_SET);
           fwrite(&file_offs,1,4,dest);
           fwrite(&file_len,1,4,dest);
           fwrite(&link_offsets[t1],1,4,dest);
-          }
+        }
         //Start next file
         fseek(dest,tlong,SEEK_SET);
         file_offs=tlong;
@@ -263,7 +354,8 @@ int main(int argc,char *argv[]) {
         fputc(1,dest);
         //Get new filename
         t2=0;//Counts str length
-        do {
+        do
+        {
           t1=fgetc(source);
           if(t1=='\n') break;
           tstr[t2++]=t1;
@@ -277,19 +369,20 @@ int main(int argc,char *argv[]) {
         break;
       case '@'://End of help.doc file
         goto alldone;
-      }
+    }
     if(line_len>64)
       printf("Warning: Line %d over 64 chars in file %s.\n",curr_lnum,curr_file);
     curr_lnum++;
     //Done with this line.
   } while(!feof(source));
-alldone:
+  alldone:
   //End last file
   fputc(0,dest); file_len++;
-  if(file_len>biggest_file) {
+  if(file_len>biggest_file)
+  {
     biggest_file=file_len;
     strcpy(max_file,curr_file);
-    }
+  }
   //Put it's info at the start
   fseek(dest,curr_file_storage,SEEK_SET);
   fwrite(curr_file,1,13,dest);
@@ -297,12 +390,13 @@ alldone:
   fwrite(&file_len,1,4,dest);
   if(file_len>65535U) printf("Warning- File %s over 64k bytes in length.\n",curr_file);
   //Write in links info
-  for(t1=0;t1<curr_link_ref;t1++) {
+  for(t1=0;t1<curr_link_ref;t1++)
+  {
     fseek(dest,4+numfiles*21+link_numbers[t1]*12,SEEK_SET);
     fwrite(&file_offs,1,4,dest);
     fwrite(&file_len,1,4,dest);
     fwrite(&link_offsets[t1],1,4,dest);
-    }
+  }
   //All done! Close files.
   fclose(dest);
   fclose(source);

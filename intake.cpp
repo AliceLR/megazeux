@@ -73,13 +73,12 @@ int intake(char *string, int max_len, char x, char y,
  unsigned char color, char exit_type, int filter_type,
  char password, int *return_x_pos, char robo_intk, char *macro)
 {
-  int currx, key, curr_len, t1, ret;
+  int currx, key, curr_len, i;
   int macro_position = -1;
-  int done = 0, place;
+  int done = 0, place = 0;
   char cur_char = 0;
   char temp_char;
   int in_macro;
-  static unsigned char ch_sel = 219;
 
   if(macro != NULL)
     macro_position = 0;
@@ -633,14 +632,14 @@ int intake(char *string, int max_len, char x, char y,
     curr_len = strlen(string);
     if(curr_len)
     {
-      for(t1 = 0; t1 < curr_len; t1++)
+      for(i = 0; i < curr_len; i++)
       {
-        if((string[t1] != ';') && (string[t1] != ',') &&
-         (string[t1] != ' '))
+        if((string[i] != ';') && (string[i] != ',') &&
+         (string[i] != ' '))
           break;
       }
 
-      if(t1 >= curr_len)
+      if(i >= curr_len)
       {
         string[0] = 0; // Become an empty string
         if(return_x_pos)

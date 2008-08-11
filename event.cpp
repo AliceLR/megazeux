@@ -40,7 +40,7 @@ Uint32 update_event_status()
 
   while(SDL_PollEvent(&event))
   {
-    rval |= process_event(event);
+    rval |= process_event(&event);
   }
 
   rval |= update_autorepeat();
@@ -65,15 +65,15 @@ void wait_event()
   input.last_mouse_button = 0;
 
   SDL_WaitEvent(&event);
-  process_event(event);
+  process_event(&event);
   update_autorepeat();
 }
 
-Uint32 process_event(SDL_Event event)
+Uint32 process_event(SDL_Event *event)
 {
   Uint32 rval = 1;
 
-  switch(event.type)
+  switch(event->type)
   {
     case SDL_QUIT:
     {
@@ -86,8 +86,8 @@ Uint32 process_event(SDL_Event event)
 
     case SDL_MOUSEMOTION:
     {
-      int mx = event.motion.x / 8;
-      int my = event.motion.y / 14;
+      int mx = event->motion.x / 8;
+      int my = event->motion.y / 14;
       m_move(mx, my);
       input.mouse_x = mx;
       input.mouse_y = my;
@@ -97,9 +97,9 @@ Uint32 process_event(SDL_Event event)
 
     case SDL_MOUSEBUTTONDOWN:
     {
-      input.last_mouse_button = event.button.button;
-      input.last_mouse_repeat = event.button.button;
-      input.mouse_button_state |= 1 << (event.button.button - 1);
+      input.last_mouse_button = event->button.button;
+      input.last_mouse_repeat = event->button.button;
+      input.mouse_button_state |= 1 << (event->button.button - 1);
       input.last_mouse_repeat_state = 1;
       input.last_mouse_time = SDL_GetTicks();
       break;
@@ -107,7 +107,7 @@ Uint32 process_event(SDL_Event event)
 
     case SDL_MOUSEBUTTONUP:
     {
-      input.mouse_button_state &= ~(1 << (event.button.button - 1));
+      input.mouse_button_state &= ~(1 << (event->button.button - 1));
       input.last_mouse_repeat = 0;
       input.last_mouse_repeat_state = 0;
       break;
@@ -115,31 +115,31 @@ Uint32 process_event(SDL_Event event)
 
     case SDL_KEYDOWN:
     {
-      if((event.key.keysym.sym == SDLK_RETURN) &&
+      if((event->key.keysym.sym == SDLK_RETURN) &&
        get_alt_status(keycode_SDL) && get_ctrl_status(keycode_SDL))
       {
         toggle_fullscreen();
         break;
       }
 
-      if(event.key.keysym.sym == SDLK_CAPSLOCK)
+      if(event->key.keysym.sym == SDLK_CAPSLOCK)
       {
         input.caps_status = 1;
       }
 
-      if(event.key.keysym.sym == SDLK_F12)
+      if(event->key.keysym.sym == SDLK_F12)
       {
         dump_screen();
         break;
       }
 
-      input.last_SDL_pressed = event.key.keysym.sym;
-      input.last_SDL = event.key.keysym.sym;
-      input.last_unicode = event.key.keysym.unicode;
+      input.last_SDL_pressed = event->key.keysym.sym;
+      input.last_SDL = event->key.keysym.sym;
+      input.last_unicode = event->key.keysym.unicode;
       input.SDL_keymap[SDLK_ESCAPE] = 1;
-      input.last_SDL_repeat = event.key.keysym.sym;
-      input.last_unicode_repeat = event.key.keysym.unicode;
-      input.SDL_keymap[event.key.keysym.sym] = 1;
+      input.last_SDL_repeat = event->key.keysym.sym;
+      input.last_unicode_repeat = event->key.keysym.unicode;
+      input.SDL_keymap[event->key.keysym.sym] = 1;
       input.last_keypress_time = SDL_GetTicks();
       input.last_SDL_release = (SDLKey)0;
       break;
@@ -147,15 +147,15 @@ Uint32 process_event(SDL_Event event)
 
     case SDL_KEYUP:
     {
-      if(event.key.keysym.sym == SDLK_CAPSLOCK)
+      if(event->key.keysym.sym == SDLK_CAPSLOCK)
       {
         input.caps_status = 0;
       }
 
-      input.SDL_keymap[event.key.keysym.sym] = 0;
+      input.SDL_keymap[event->key.keysym.sym] = 0;
       input.last_SDL_repeat = (SDLKey)0;
       input.last_unicode_repeat = 0;
-      input.last_SDL_release = event.key.keysym.sym;
+      input.last_SDL_release = event->key.keysym.sym;
       break;
     }
 
@@ -255,6 +255,7 @@ Uint32 get_key(keycode_type type)
     }
   }
 
+  // Unnecessary return to shut -Wall up
   return 0;
 }
 
@@ -274,8 +275,15 @@ Uint32 get_key_status(keycode_type type, Uint32 index)
     {
       return input.SDL_keymap[index];
     }
+
+    // Not currently handled (probably will never be)
+    case keycode_unicode:
+    {
+      return 0;
+    }
   }
 
+  // Unnecessary return to shut -Wall up
   return 0;
 }
 
@@ -292,8 +300,15 @@ Uint32 get_last_key(keycode_type type)
     {
       return input.last_SDL_pressed;
     }
+
+    // Not currently handled (probably will never be)
+    case keycode_unicode:
+    {
+      return 0;
+    }
   }
 
+  // Unnecessary return to shut -Wall up
   return 0;
 }
 
@@ -310,8 +325,15 @@ Uint32 get_last_key_released(keycode_type type)
     {
       return input.last_SDL_release;
     }
+
+    // Not currently handled (probably will never be)
+    case keycode_unicode:
+    {
+      return 0;
+    }
   }
 
+  // Unnecessary return to shut -Wall up
   return 0;
 }
 
@@ -355,18 +377,22 @@ Uint32 get_mouse_status()
 void warp_mouse(Uint32 x, Uint32 y)
 {
   SDL_WarpMouse(x * 8, y * 14);
+  input.mouse_x = x;
+  input.mouse_y = y;
   m_move(x, y);
 }
 
 void warp_mouse_x(Uint32 x)
 {
   SDL_WarpMouse(x * 8, input.mouse_y * 14);
+  input.mouse_x = x;
   m_move(x, input.mouse_y);
 }
 
 void warp_mouse_y(Uint32 y)
 {
   SDL_WarpMouse(input.mouse_x * 8, y * 14);
+  input.mouse_y = y;
   m_move(input.mouse_x, y);
 }
 
@@ -378,11 +404,19 @@ void force_last_key(keycode_type type, int val)
     {
       SDLKey second;
       input.last_SDL_pressed = convert_xt_SDL(val, &second);
+      break;
     }
 
     case keycode_SDL:
     {
       input.last_SDL_pressed = (SDLKey)val;
+      break;
+    }
+
+    // Not currently handled (probably will never be)
+    case keycode_unicode:
+    {
+      break;
     }
   }
 }
@@ -495,7 +529,9 @@ Uint32 convert_SDL_xt(SDLKey key)
     case SDLK_LEFT: return 0x4B;
     case SDLK_DOWN: return 0x50;
     case SDLK_RIGHT: return 0x4D;
-    case 0: return 0;
+
+    // All others are currently undefined; returns 0
+    default: return 0;
   }
 }
 
@@ -623,7 +659,7 @@ SDLKey convert_xt_SDL(Uint32 key, SDLKey *second)
     case 0x50:
       *second = SDLK_DOWN;
       return SDLK_KP2;
-    case 0x00: return (SDLKey)0;
+    default: return (SDLKey)0;
   }
 }
 

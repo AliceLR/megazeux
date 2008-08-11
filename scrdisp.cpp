@@ -38,13 +38,13 @@
 // Also used to display scrolls. Use a type of 0 for Show Scroll, 1 for Show
 // Sign, 2 for Edit Scroll.
 
-void scroll_edit(World *mzx_world, Scroll *scroll, char type)
+void scroll_edit(World *mzx_world, Scroll *scroll, int type)
 {
   // Important status vars (insert kept in intake.cpp)
   unsigned int pos = 1, old_pos; // Where IN scroll?
   int currx = 0; // X position in line
   int key; // Key returned by intake()
-  int t1, t2, t3;
+  int t1, t2 = -1, t3;
   char *where; // Where scroll is
   char line[80]; // For editing
   int scroll_base_color = mzx_world->scroll_base_color;
@@ -127,8 +127,8 @@ void scroll_edit(World *mzx_world, Scroll *scroll, char type)
 
     switch(key)
     {
-      case SDLK_UP: // Up
-        up_a_line:
+      case SDLK_UP:
+			{
         // Go back a line (if possible)
         if(where[pos - 1] == 1) break; // Can't.
         pos--;
@@ -140,9 +140,10 @@ void scroll_edit(World *mzx_world, Scroll *scroll, char type)
         pos++;
         // Done.
         break;
+			}
 
-      case SDLK_DOWN://Down
-        down_a_line:
+      case SDLK_DOWN:
+			{
         // Go forward a line (if possible)
         while(where[pos] != '\n')
           pos++;
@@ -156,8 +157,10 @@ void scroll_edit(World *mzx_world, Scroll *scroll, char type)
         }
         // Yep. Done.
         break;
+			}
 
-      case SDLK_RETURN: // Enter
+      case SDLK_RETURN:
+			{
         if(type < 2)
         {
           key = SDLK_ESCAPE;
@@ -178,9 +181,12 @@ void scroll_edit(World *mzx_world, Scroll *scroll, char type)
           scroll->num_lines++;
         }
         break;
+			}
 
-      case SDLK_BACKSPACE: // Backspace
-        if(type < 2) break;
+      case SDLK_BACKSPACE:
+			{
+        if(type < 2)
+					break;
 
         // We are at the start of the current line and we are trying to
         // append it to the end of the previous line. First, remember
@@ -220,8 +226,10 @@ void scroll_edit(World *mzx_world, Scroll *scroll, char type)
         scroll->num_lines--;
         // Done.
         break;
+			}
 
-      case SDLK_PAGEDOWN: // Pagedown (by 6 lines)
+      case SDLK_PAGEDOWN:
+			{
         for(t1 = 6; t1 > 0; t1--)
         {
           pgdn:
@@ -239,8 +247,10 @@ void scroll_edit(World *mzx_world, Scroll *scroll, char type)
           // Yep. Done.
         }
         break;
+			}
 
-      case SDLK_PAGEUP: // Pageup (by 6 lines)
+      case SDLK_PAGEUP:
+			{
         for(t1 = -6; t1 < 0; t1++)
         {
           pgup:
@@ -256,16 +266,21 @@ void scroll_edit(World *mzx_world, Scroll *scroll, char type)
           // Done.
         }
         break;
+			}
 
-      case SDLK_HOME: // Home
+      case SDLK_HOME:
+			{
         // FIXME - This is so dirty. Please replace it.
         t1 = -30000;
         goto pgup;
+			}
 
-      case SDLK_END: // End
+      case SDLK_END:
+			{
         // FIXME - See above.
         t1 = 30000;
         goto pgdn;
+			}
 
       default:
       case SDLK_ESCAPE:
@@ -281,7 +296,7 @@ void scroll_edit(World *mzx_world, Scroll *scroll, char type)
     insta_fadeout();
 }
 
-void scroll_frame(World *mzx_world, Scroll *scroll, unsigned int pos)
+void scroll_frame(World *mzx_world, Scroll *scroll, int pos)
 {
   // Displays one frame of a scroll. The scroll edging, arrows, and title
   // must already be shown. Simply prints each line. POS is the position
@@ -336,7 +351,7 @@ void scroll_frame(World *mzx_world, Scroll *scroll, unsigned int pos)
 char scr_nm_strs[5][12] =
 { "  Scroll   ", "   Sign    ", "Edit Scroll", "   Help    ", "" };
 
-void scroll_edging(World *mzx_world, char type)
+void scroll_edging(World *mzx_world, int type)
 {
   int scroll_base_color = mzx_world->scroll_base_color;
   int scroll_corner_color = mzx_world->scroll_corner_color;
@@ -402,13 +417,13 @@ void scroll_edging(World *mzx_world, char type)
   update_screen();
 }
 
-void help_display(World *mzx_world, char *help, unsigned int offs,
- char *file, char *label)
+void help_display(World *mzx_world, char *help, int offs, char *file,
+ char *label)
 {
   // Display a help file
-  unsigned int pos = offs, old_pos, next_pos; // Where
-  int key, fad = get_fade_status();
-  int t1, t2;
+  int pos = offs, old_pos; // Where
+  int key = 0, fad = get_fade_status();
+  int t1;
   char mclick;
   // allow_help = 0;
   // Draw screen
@@ -439,10 +454,10 @@ void help_display(World *mzx_world, char *help, unsigned int offs,
       get_mouse_position(&mouse_x, &mouse_y);
 
       // Move to line clicked on if mouse is in scroll, else exit
-      if((mouse_y >= 6)&&(mouse_y <= 18)&&
+      if((mouse_y >= 6) && (mouse_y <= 18) &&
        (mouse_x >= 8) && (mouse_x <= 71))
       {
-        mclick=1;
+        mclick = 1;
         t1 = mouse_y - 12;
         if(t1 == 0)
           goto option;
@@ -461,9 +476,9 @@ void help_display(World *mzx_world, char *help, unsigned int offs,
     old_pos = pos;
     switch(key)
     {
-      case SDLK_F1: // F1
-        if(get_key_status(keycode_SDL, SDLK_LALT) ||
-         get_key_status(keycode_SDL, SDLK_RALT))
+      case SDLK_F1:
+			{
+        if(get_alt_status(keycode_SDL))
         {
           // Jump to label 072 in MAIN.HLP
           strcpy(file,"MAIN.HLP");
@@ -476,9 +491,10 @@ void help_display(World *mzx_world, char *help, unsigned int offs,
           strcpy(label, "000");
         }
         goto ex;
+			}
 
-      case SDLK_UP: // Up
-        up_a_line:
+      case SDLK_UP:
+			{
         // Go back a line (if possible)
         if(help[pos - 1] == 1) break; // Can't.
         pos--;
@@ -490,8 +506,10 @@ void help_display(World *mzx_world, char *help, unsigned int offs,
         pos++;
         // Done.
         break;
-      case SDLK_DOWN: // Down
-        down_a_line:
+			}
+
+      case SDLK_DOWN:
+			{
         // Go forward a line (if possible)
         while(help[pos] != '\n') pos++;
         // At end of current. Is there a next line?
@@ -504,7 +522,10 @@ void help_display(World *mzx_world, char *help, unsigned int offs,
         }
         // Yep. Done.
         break;
-      case SDLK_RETURN://Enter
+			}
+
+      case SDLK_RETURN:
+			{
         option:
         // Option?
         if((help[pos] == 255) && ((help[pos + 1] == '>') ||
@@ -550,7 +571,10 @@ void help_display(World *mzx_world, char *help, unsigned int offs,
         // If there WAS an option, any existing label was found.
         labdone:
         break;
-      case SDLK_PAGEDOWN://Pagedown (by 6 lines)
+			}
+
+      case SDLK_PAGEDOWN:
+			{
         for(t1 = 6; t1 > 0; t1--)
         {
           pgdn:
@@ -567,9 +591,14 @@ void help_display(World *mzx_world, char *help, unsigned int offs,
           }
           // Yep. Done.
         }
-        if(mclick) goto option;
+        if(mclick)
+					goto option;
+
         break;
-      case SDLK_PAGEUP: // Pageup (by 6 lines)
+			}
+
+      case SDLK_PAGEUP:
+			{
         for(t1 = -6; t1 < 0; t1++)
         {
           pgup:
@@ -584,29 +613,40 @@ void help_display(World *mzx_world, char *help, unsigned int offs,
           pos++;
           // Done.
         }
-        if(mclick) goto option;
+        if(mclick)
+					goto option;
         break;
-      case SDLK_HOME: // Home
+			}
+
+      case SDLK_HOME:
+			{
         // FIXME - :(
         t1 = -30000;
         goto pgup;
-      case SDLK_END: // End
+			}
+
+      case SDLK_END:
+			{
         t1 = 30000;
         goto pgdn;
+			}
 
       default:
+			{
         break;
+			}
     }
-    //Continue?
   } while(key != SDLK_ESCAPE);
+
   // Restore screen and exit
   ex:
-  if(fad) insta_fadeout();
+  if(fad)
+		insta_fadeout();
+
   restore_screen();
-  // allow_help = 1;
 }
 
-void help_frame(World *mzx_world, char *help, unsigned int pos)
+void help_frame(World *mzx_world, char *help, int pos)
 {
   // Displays one frame of the help. Simply prints each line. POS is the
   // position of the center line.

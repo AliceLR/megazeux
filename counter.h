@@ -99,7 +99,7 @@ void load_string_board(World *mzx_world, char *expression,
  int w, int h, char l, char *src, int width, int id);
 int set_counter_special(World *mzx_world, int spec_type,
  char *char_value, int value, int id);
-int translate_coordinates(char *src, int *x, int *y);
+int translate_coordinates(char *src, unsigned int *x, unsigned int *y);
 int is_string(char *buffer);
 void get_string_size_offset(char *name, int *ssize, int *soffset);
 

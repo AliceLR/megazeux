@@ -122,9 +122,10 @@ int case5(char *path, char *string)
 
   // reconstruct wd
   memcpy(newpath, "./", 2);
-	// copy everything sans last token
-	if(dirlen > 0)
-		memcpy(newpath + 2, path, dirlen - 1);
+
+  // copy everything sans last token
+  if(dirlen > 0)
+    memcpy(newpath + 2, path, dirlen - 1);
 
   // open directory
   wd = opendir(newpath);
@@ -277,19 +278,18 @@ int match(char *path)
 
 int fsafetranslate(const char *path, char *newpath)
 {
-  char *filename, *ret = NULL;
   struct stat inode;
   int i, pathlen;
 
   // check for exploit
   if(path == NULL)
-    return -1;
+    return -3;
 
   // get length of path
   pathlen = strlen (path);
 
   if(pathlen < 1)
-    return -1;
+    return -3;
 
   // copy string (including \0)
   memcpy(newpath, path, pathlen + 1);
@@ -310,16 +310,16 @@ int fsafetranslate(const char *path, char *newpath)
 
   // check top-level absolutes, windows and Linux */
   if(newpath[0] == '/')
-    return -1;
+    return -2;
 
   if(pathlen > 1)
   {
     // windows drive letters
     if(((newpath[0] >= 'A') && (newpath[0] <= 'Z')) ||
-     ((newpath[0] >= 'a') && (newpath[0] <= 'z')))
+       ((newpath[0] >= 'a') && (newpath[0] <= 'z')))
     {
       if(newpath[1] == ':')
-        return -1;
+        return -2;
     }
 
     // reject any pathname including /../
@@ -329,11 +329,11 @@ int fsafetranslate(const char *path, char *newpath)
       {
         // no need for delimeters -- any .. is invalid
         if((i == 0) || pathlen < 4)
-          return -1;
+          return -2;
 
         // check for delimeters (file...ext is valid!)
         if((newpath[i - 1] == '/') && (newpath[i + 2] == '/'))
-          return -1;
+          return -2;
       }
     }
   }
@@ -354,10 +354,29 @@ int fsafetranslate(const char *path, char *newpath)
 FILE *fsafeopen(const char *path, const char *mode)
 {
   char newpath[MAX_PATH];
+  int i, ret;
 
   // validate pathname, and optionally retrieve a better name
-  if(fsafetranslate(path, newpath) < 0)
+  ret = fsafetranslate(path, newpath);
+
+  // bad name, or security checks failed
+  if(ret < -1)
     return NULL;
+
+  // file NAME could not be translated
+  if(ret == -1)
+  {
+    // if we're reading, any failure to translate the name means we back out
+    for(i = 0; i < (int)strlen(mode); i++)
+    {
+      if(mode[i] == 'r' || mode[i] == '+')
+        return NULL;
+    }
+
+    // if we're writing, the file may not already exist. if it does, though,
+    // we want to use the translated name.
+    strcpy(newpath, path);
+  }
 
   // try opening the file
   return fopen(newpath, mode);

@@ -10,7 +10,7 @@ OBJS      = main.o graphics.o window.o hexchar.o event.o         \
 
 PREFIX    = /usr
 
-BIN       = mzx280c.exe
+BIN       = mzx280d.exe
 
 CC        = gcc
 CPP       = g++

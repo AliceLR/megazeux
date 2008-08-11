@@ -20,8 +20,6 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-//Part two of RUNROBOT.CPP
-
 #include <stdio.h>
 #include <stdlib.h>
 #include <time.h>
@@ -48,6 +46,8 @@
 #include "event.h"
 #include "robot.h"
 #include "world.h"
+#include "fsafeopen.h"
+#include "param.h"
 
 extern int topindex, backindex;
 
@@ -69,25 +69,25 @@ char *item_to_counter[9] =
 
 void magic_load_mod(World *mzx_world, char *filename)
 {
-	Board *src_board = mzx_world->current_board;
+  Board *src_board = mzx_world->current_board;
   int mod_name_size = strlen(filename);
   if((mod_name_size > 1) && (filename[mod_name_size - 1] == '*'))
   {
     filename[mod_name_size - 1] = 0;
-		if(strcmp(src_board->mod_playing, filename))
-			load_mod(filename);
+    if(strcmp(src_board->mod_playing, filename))
+      load_mod(filename);
 
-		src_board->mod_playing[0] = '*';
+    src_board->mod_playing[0] = '*';
   }
   else
   {
-		if(filename[0] != '*')
-			load_mod(filename);
-		
-		strcpy(src_board->mod_playing, filename);
+    if(filename[0] != '*')
+      load_mod(filename);
+    
+    strcpy(src_board->mod_playing, filename);
   }
 
-	strcpy(mzx_world->real_mod_playing, filename);
+  strcpy(mzx_world->real_mod_playing, filename);
 }
 
 void save_player_position(World *mzx_world, int pos)
@@ -123,7 +123,7 @@ void calculate_blocked(World *mzx_world, int x, int y, int id, int bl[4])
       {
         offset = new_x + (new_y * board_width);
         // Not edge... blocked?
-        if((flags[level_id[offset]] & A_UNDER) != A_UNDER)
+        if((flags[(int)level_id[offset]] & A_UNDER) != A_UNDER)
           bl[i] = 1;
         else
           bl[i] = 0;
@@ -151,9 +151,16 @@ int place_at_xy(World *mzx_world, int id, int color, int param, int x, int y)
     // The param must represent the char for this to happen,
     // nothing else will give.
     if((id_chars[new_id] != 255)  || (id_chars[id] != 255))
-      param = 0;
+    {
+      if(def_params[id] > 0)
+        param = def_params[id];
+      else
+        param = 0;
+    }
     else
+    {
       param = src_board->level_param[offset];
+    }
   }
 
   if(new_id == 122)
@@ -178,9 +185,9 @@ int place_at_xy(World *mzx_world, int id, int color, int param, int x, int y)
   else
 
   if(new_id == 127)
-	{
+  {
     return 0; // Don't allow the player to be overwritten
-	}
+  }
 
   if(param == 256)
   {
@@ -239,6 +246,7 @@ int place_dir_xy(World *mzx_world, int id, int color, int param, int x, int y,
         return place_at_xy(mzx_world, id, color, param, new_x, new_y);
       }
     }
+    return 0;
   }
 }
 
@@ -437,7 +445,6 @@ void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
   Board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int src_offset = src_x + (src_y * board_width);
-  int dest_offset = dest_x + (dest_y * board_width);
   int src_id = src_board->level_id[src_offset];
 
   // Cannot copy from player to player
@@ -474,15 +481,17 @@ void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
     // deletions at the destination as well, and will also disallow
     // overwriting the player.
     if(src_param != -1)
+    {
       place_at_xy(mzx_world, src_id, src_board->level_color[src_offset],
        src_param, dest_x, dest_y);
+    }
   }
 }
 
 void copy_board_to_board_buffer(Board *src_board, int x,
  int y, int width, int height, char *dest_id, char *dest_param,
  char *dest_color, char *dest_under_id, char *dest_under_param,
- char *dest_under_color)
+ char *dest_under_color, Board *dest_board)
 {
   int board_width = src_board->board_width;
   int src_offset = x + (y * board_width);
@@ -508,7 +517,7 @@ void copy_board_to_board_buffer(Board *src_board, int x,
       if((src_id == 123) || (src_id == 124))
       {
         Robot *src_robot = src_board->robot_list[src_param];
-        src_param = duplicate_robot(src_board, src_robot,
+        src_param = duplicate_robot(dest_board, src_robot,
          0, 0);
       }
       else
@@ -517,7 +526,7 @@ void copy_board_to_board_buffer(Board *src_board, int x,
       if((src_id == 125) || (src_id == 126))
       {
         Scroll *src_scroll = src_board->scroll_list[src_param];
-        src_param = duplicate_scroll(src_board, src_scroll);
+        src_param = duplicate_scroll(dest_board, src_scroll);
       }
       else
 
@@ -526,7 +535,7 @@ void copy_board_to_board_buffer(Board *src_board, int x,
       if(src_id == 122)
       {
         Sensor *src_sensor = src_board->sensor_list[src_param];
-        src_param = duplicate_sensor(src_board, src_sensor);
+        src_param = duplicate_sensor(dest_board, src_sensor);
       }
 
       // Now perform the copy to the buffer sections
@@ -538,6 +547,15 @@ void copy_board_to_board_buffer(Board *src_board, int x,
         dest_under_id[dest_offset] = level_under_id[src_offset];
         dest_under_param[dest_offset] = level_under_param[src_offset];
         dest_under_color[dest_offset] = level_under_color[src_offset];
+      }
+      else
+      {
+        dest_id[dest_offset] = 0;
+        dest_param[dest_offset] = 0;
+        dest_color[dest_offset] = 7;
+        dest_under_id[dest_offset] = 0;
+        dest_under_param[dest_offset] = 0;
+        dest_under_color[dest_offset] = 7;      
       }
     }
   }
@@ -567,7 +585,9 @@ void copy_board_buffer_to_board(Board *src_board, int x, int y,
      dest_offset++)
     {
       dest_id = level_id[dest_offset];
-      if(dest_id != 127)
+      src_id_cur = src_id[src_offset];
+
+      if((dest_id != 127) && (src_id_cur != 127))
       {
         dest_param = level_param[dest_offset];
 
@@ -588,8 +608,6 @@ void copy_board_buffer_to_board(Board *src_board, int x, int y,
           clear_robot_id(src_board, dest_param);
         }
 
-        // Now perform the copy from the buffer sections
-        src_id_cur = src_id[src_offset];
         if((src_id_cur == 123) || (src_id_cur == 124))
         {
           // Fix robot x/y
@@ -599,15 +617,12 @@ void copy_board_buffer_to_board(Board *src_board, int x, int y,
            y + i;
         }
 
-        if(src_id_cur != 127)
-        {
-          level_id[dest_offset] = src_id_cur;
-          level_param[dest_offset] = src_param[src_offset];
-          level_color[dest_offset] = src_color[src_offset];
-          level_under_id[dest_offset] = src_under_id[src_offset];
-          level_under_param[dest_offset] = src_under_param[src_offset];
-          level_under_color[dest_offset] = src_under_color[src_offset];
-        }
+        level_id[dest_offset] = src_id_cur;
+        level_param[dest_offset] = src_param[src_offset];
+        level_color[dest_offset] = src_color[src_offset];
+        level_under_id[dest_offset] = src_under_id[src_offset];
+        level_under_param[dest_offset] = src_under_param[src_offset];
+        level_under_color[dest_offset] = src_under_color[src_offset];
       }
     }
   }
@@ -693,9 +708,6 @@ void copy_board_to_layer(Board *src_board, int x, int y,
   int src_skip = board_width - width;
   int dest_skip = dest_width - width;
   int dest_offset = 0;
-  char *level_id = src_board->level_id;
-  char *level_param = src_board->level_param;
-  char *level_color = src_board->level_color;
   int src_char;
   int i, i2;
 
@@ -779,7 +791,7 @@ void clear_board_block(Board *src_board, int x, int y,
   char *level_under_id = src_board->level_under_id;
   char *level_under_param = src_board->level_under_param;
   char *level_under_color = src_board->level_under_color;
-  int src_id_cur, dest_id, dest_param;
+  int dest_id, dest_param;
   int i, i2;
 
   for(i = 0; i < height; i++, dest_offset += dest_skip)
@@ -854,7 +866,7 @@ void replace_player(World *mzx_world)
   {
     for(dx = 0; dx < board_width; dx++, offset++)
     {
-      if(A_UNDER & flags[level_id[offset]])
+      if(A_UNDER & flags[(int)level_id[offset]])
       {
         // Place the player here
         mzx_world->player_x = dx;
@@ -874,7 +886,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 {
   Board *src_board = mzx_world->current_board;
   Robot *cur_robot;
-  int i, fade = get_fade_status();
+  int fade = get_fade_status();
   int cmd; // Command to run
   int lines_run = 0; // For preventing infinite loops
   int gotoed; // Set to 1 if we shouldn't advance cmd since we went to a lbl
@@ -892,8 +904,6 @@ void run_robot(World *mzx_world, int id, int x, int y)
   char *level_param = src_board->level_param;
   char *level_color = src_board->level_color;
   char *level_under_id = src_board->level_under_id;
-  char *level_under_param = src_board->level_under_param;
-  char *level_under_color = src_board->level_under_color;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
 
@@ -915,8 +925,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
   }
   else
   {
-		int walk_dir;
-		cur_robot = src_board->robot_list[id];
+    int walk_dir;
+    cur_robot = src_board->robot_list[id];
+
     walk_dir = cur_robot->walk_dir;
 
     // Reset x/y
@@ -938,6 +949,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
     {
       return; // (nope)
     }
+
     // Walk?
     if((walk_dir >= 1) && (walk_dir <= 4))
     {
@@ -953,9 +965,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
       else
 
       if(move_status > 0)
-			{
+      {
         send_robot_id(mzx_world, id, "thud", 1);
-			}
+      }
       else
       {
         // Update x/y
@@ -1212,11 +1224,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
             int new_id = level_id[offset];
             int color = level_color[offset];
             if(place_at_xy(mzx_world, new_id, color, id, new_x, new_y))
-						{
+            {
               id_remove_top(mzx_world, x, y);
-							x = new_x;
-							y = new_y;
-						}
+              x = new_x;
+              y = new_y;
+            }
           }
           done = 1;
         }
@@ -1319,7 +1331,6 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = next_param_pos(cmd_ptr + 1);
-        char src_buffer[256];
         char dest_buffer[256];
         tr_msg(mzx_world, dest_string, id, dest_buffer);
         int value = parse_param(mzx_world, src_string, id);
@@ -1539,7 +1550,6 @@ void run_robot(World *mzx_world, int id, int x, int y)
           case 4: // Blocked dir
           {
             int new_bl[4];
-            int i;
 
             // If REL PLAYER or REL COUNTERS, use special code
             switch(mzx_world->mid_prefix)
@@ -1715,7 +1725,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 20: // if any thing label
       {
         // Get foreg/backg allowed in fb/bg
-        int offset, did, dcolor, dparam;
+        int offset;
         int color = parse_param(mzx_world, cmd_ptr + 1, id); // Color
         int fg, bg;
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -1741,7 +1751,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 21: // if no thing label
       {
         // Get foreg/backg allowed in fb/bg
-        int offset, did, dcolor, dparam;
+        int offset;
         int color = parse_param(mzx_world, cmd_ptr + 1, id); // Color
         int fg, bg;
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -1828,7 +1838,6 @@ void run_robot(World *mzx_world, int id, int x, int y)
         if(check_id == 98)
         {
           int ret;
-          int check_start = 0;
 
           prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
 
@@ -2018,8 +2027,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
           char *p4 = next_param_pos(p3);
           int direction = parse_param(mzx_world, p4, id);
 
-          place_dir_xy(mzx_world, put_id, put_color, put_param, x, y,
-           direction, cur_robot, _bl);
+          if(put_id < 122)
+          {
+            place_dir_xy(mzx_world, put_id, put_color, put_param, x, y,
+             direction, cur_robot, _bl);
+          }
           update_blocked = 1;
         }
         break;
@@ -2083,7 +2095,6 @@ void run_robot(World *mzx_world, int id, int x, int y)
         break;
       }
 
-      // FIXME - Get sound system working, of course...
       case 38: // Mod
       {
         char mod_name_buffer[256];
@@ -2424,13 +2435,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
             if(!move_dir(src_board, &put_x, &put_y, put_dir - 1))
             {
               if(place_player_xy(mzx_world, put_x, put_y))
-							{
-								if((mzx_world->player_x == x) && (mzx_world->player_y == y))
-								{
-									return;
-								}
+              {
+                if((mzx_world->player_x == x) && (mzx_world->player_y == y))
+                {
+                  return;
+                }
                 done = 1;
-							}
+              }
             }
           }
         }
@@ -2654,7 +2665,25 @@ void run_robot(World *mzx_world, int id, int x, int y)
            dest_width, dest_height);
 
           tr_msg(mzx_world, cmd_ptr + 3, id, mzm_name_buffer);
-          load_mzm(mzx_world, mzm_name_buffer, put_x, put_y, put_param);
+          load_mzm(mzx_world, mzm_name_buffer, put_x, put_y, put_param, 1);
+
+          if(id)
+          {
+            int offset = x + (y * board_width);
+            int d_id = level_id[offset];
+
+            if((d_id != 123) && (d_id != 124))
+              return;
+
+            id = level_param[offset];
+            cur_robot = src_board->robot_list[id];
+
+            // Update position
+            program = cur_robot->program;
+            cmd_ptr = program + cur_robot->cur_prog_line;
+
+            update_blocked = 1;
+          }
         }
         else
 
@@ -2672,14 +2701,18 @@ void run_robot(World *mzx_world, int id, int x, int y)
         }
         else
         {
-          put_color = parse_param(mzx_world, cmd_ptr + 1, id);
-          prefix_mid_xy(mzx_world, &put_x, &put_y, x, y);
-          place_at_xy(mzx_world, put_id, put_color, put_param, put_x, put_y);
-          // Still alive?
-          if((put_x == x) && (put_y == y))
-            return;
+          // Shouldn't be able to place robots, scrolls etc this way!
+          if(put_id < 122)
+          {
+            put_color = parse_param(mzx_world, cmd_ptr + 1, id);
+            prefix_mid_xy(mzx_world, &put_x, &put_y, x, y);
+            place_at_xy(mzx_world, put_id, put_color, put_param, put_x, put_y);
+            // Still alive?
+            if((put_x == x) && (put_y == y))
+              return;
 
-          update_blocked = 1;
+            update_blocked = 1;
+          }
         }
         break;
       }
@@ -2702,7 +2735,6 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 82: // copyrobot ""
       {
-        Robot *dest_robot;
         int first, last;
         char robot_name_buffer[256];
         // Get the robot name
@@ -2718,9 +2750,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
           // Find the first robot that matches
           if(find_robot(src_board, robot_name_buffer, &first, &last))
           {
-            if(first != id)
+            Robot *found_robot = src_board->robot_list_name_sorted[first];
+
+            if(found_robot != cur_robot)
             {
-              replace_robot(src_board, src_board->robot_list_name_sorted[first], id);
+              replace_robot(src_board, found_robot, id);
             }
           }
         }
@@ -3019,9 +3053,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
           char *p4 = next_param_pos(p3);
           int direction = parse_param(mzx_world, p4, id);
 
-          place_dir_xy(mzx_world, put_id, put_color, put_param,
-           mzx_world->player_x, mzx_world->player_y, direction,
-           cur_robot, _bl);
+          if(put_id < 122)
+          {
+            place_dir_xy(mzx_world, put_id, put_color, put_param,
+             mzx_world->player_x, mzx_world->player_y, direction,
+             cur_robot, _bl);
+          }
           update_blocked = 1;
         }
         break;
@@ -3084,6 +3121,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 102: // Mesg
       {
         char message_buffer[256];
+
         tr_msg(mzx_world, cmd_ptr + 2, id, message_buffer);
         set_mesg_direct(src_board, message_buffer);
         break;
@@ -3335,7 +3373,6 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int lx, ly;
         int fg, bg;
         int offset;
-        int dcolor;
 
         move_dir = parsedir(move_dir, x, y, cur_robot->walk_dir);
         split_colors(move_color, &fg, &bg);
@@ -3400,8 +3437,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
 
-				if((dest_x == x) && (dest_y == y))
-					return;
+        if((dest_x == x) && (dest_y == y))
+          return;
 
         update_blocked = 1;
         break;
@@ -3518,7 +3555,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           for(x = 0; x < board_width; x++, offset++)
           {
-            int d_flag = flags[level_id[offset]];
+            int d_flag = flags[(int)level_id[offset]];
 
             if((d_flag & A_UNDER) && !(d_flag & A_ENTRANCE) &&
              (rand() % placement_rate) == 0)
@@ -3551,10 +3588,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
              !move_dir(src_board, &dest_x, &dest_y, dest_dir - 1))
             {
               copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
-						
-							if((dest_x == x) && (dest_y == y))
-								return;
-						}
+            
+              if((dest_x == x) && (dest_y == y))
+                return;
+            }
           }
         }
         update_blocked = 1;
@@ -3587,7 +3624,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         char *p6 = next_param_pos(p5);
         int put_param = parse_param(mzx_world, p6, id);
         int check_fg, check_bg, put_fg, put_bg;
-        int offset, did, dparam, dcolor, put_x, put_y;
+        int offset, did, dparam, dcolor;
 
         split_colors(check_color, &check_fg, &check_bg);
         split_colors(put_color, &put_fg, &put_bg);
@@ -4047,10 +4084,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int duplicate_x = mzx_world->player_x;
         int duplicate_y = mzx_world->player_y;
         int duplicate_color, duplicate_id, dest_id;
-        int dx, dy, offset, ldone = 0;
+        int offset;
 
         if((pos < 0) || (pos > 7))
           pos = 0;
+
         restore_player_position(mzx_world, pos);
         // Duplicate the robot to where the player was
 
@@ -4075,8 +4113,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
           level_color[offset] = duplicate_color;
           level_param[offset] = dest_id;
 
-					x = duplicate_x;
-					y = duplicate_y;
+          x = duplicate_x;
+          y = duplicate_y;
 
           replace_player(mzx_world);
 
@@ -4091,10 +4129,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int duplicate_x = mzx_world->player_x;
         int duplicate_y = mzx_world->player_y;
         int duplicate_color, duplicate_id, dest_id;
-        int dx, dy, offset, ldone = 0;
+        int offset;
 
         if((pos < 0) || (pos > 7))
           pos = 0;
+
         restore_player_position(mzx_world, pos);
         save_player_position(mzx_world, pos);
         // Duplicate the robot to where the player was
@@ -4120,8 +4159,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
           level_color[offset] = duplicate_color;
           level_param[offset] = dest_id;
 
-					x = duplicate_x;
-					y = duplicate_y;
+          x = duplicate_x;
+          y = duplicate_y;
 
           replace_player(mzx_world);
 
@@ -4296,8 +4335,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
             tr_msg(mzx_world, p5 + 2, id, name_buffer);
             prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
              src_width, src_height);
+
+            if(copy_type && !src_type)
+              src_type = 3;
+
             save_mzm(mzx_world , name_buffer, src_x, src_y, width, height,
-             src_type, copy_type);
+             src_type, 1);
             break;
           }
           else
@@ -4384,31 +4427,25 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         switch((dest_type << 2) | (src_type))
         {
-          // FIXME - These buffers are bad. Variable arrays are nice
-          // but C99 only. alloca is nice but I can't seem to get it
-          // working on mingw..
           // Board to board
           case 0:
           {
-            char *id_buffer = (char *)malloc(width * height);
-            char *param_buffer = (char *)malloc(width * height);
-            char *color_buffer = (char *)malloc(width * height);
-            char *under_id_buffer = (char *)malloc(width * height);
-            char *under_param_buffer = (char *)malloc(width * height);
-            char *under_color_buffer = (char *)malloc(width * height);
+            char id_buffer[width * height];
+            char param_buffer[width * height];
+            char color_buffer[width * height];
+            char under_id_buffer[width * height];
+            char under_param_buffer[width * height];
+            char under_color_buffer[width * height];
+
             copy_board_to_board_buffer(src_board, src_x, src_y, width,
              height, id_buffer, param_buffer, color_buffer,
-             under_id_buffer, under_param_buffer, under_color_buffer);
+             under_id_buffer, under_param_buffer, under_color_buffer,
+             src_board);
             copy_board_buffer_to_board(src_board, dest_x, dest_y, width,
              height, id_buffer, param_buffer, color_buffer,
              under_id_buffer, under_param_buffer, under_color_buffer);
             update_blocked = 1;
-            free(id_buffer);
-            free(param_buffer);
-            free(color_buffer);
-            free(under_id_buffer);
-            free(under_param_buffer);
-            free(under_color_buffer);
+
             break;
           }
 
@@ -4428,6 +4465,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
           case 4:
           {
             int overlay_offset = dest_x + (dest_y * board_width);
+
+            if(!src_board->overlay_mode)
+              setup_overlay(src_board, 3);
+
             copy_board_to_layer(src_board, src_x, src_y, width, height,
              src_board->overlay + overlay_offset,
              src_board->overlay_color + overlay_offset, board_width);
@@ -4448,16 +4489,14 @@ void run_robot(World *mzx_world, int id, int x, int y)
           // Vlayer to vlayer
           case 10:
           {
-            char *char_buffer = (char *)malloc(width * height);
-            char *color_buffer = (char *)malloc(width * height);
+            char char_buffer[width * height];
+            char color_buffer[width * height];
             copy_layer_to_buffer(src_x, src_y, width, height,
              mzx_world->vlayer_chars, mzx_world->vlayer_colors,
              char_buffer, color_buffer, mzx_world->vlayer_width);
             copy_buffer_to_layer(dest_x, dest_y, width, height,
              char_buffer, color_buffer, mzx_world->vlayer_chars,
              mzx_world->vlayer_colors, mzx_world->vlayer_width);
-            free(char_buffer);
-            free(color_buffer);
             break;
           }
         }
@@ -4465,9 +4504,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
         // If we got deleted, exit
         if(id)
         {
-					int offset = x + (y * board_width);
+          int offset = x + (y * board_width);
           int d_id = level_id[offset];
-					int d_param = level_param[offset];
+          int d_param = level_param[offset];
 
           if(((d_id != 123) && (d_id != 124)) || (d_param != id))
             return;
@@ -4530,6 +4569,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           if(*(p5 + 1) == '#')
           {
             dest_width = mzx_world->vlayer_width;
+            dest_height = mzx_world->vlayer_height;
             dest_type = 2;
           }
           else
@@ -4542,13 +4582,14 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           if(*(p5 + 1) == '@')
           {
-            int copy_type = parse_param(mzx_world, p6, id);
             char name_buffer[256];
             tr_msg(mzx_world, p5 + 2, id, name_buffer);
             prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
              src_width, src_height);
+
             save_mzm(mzx_world , name_buffer, src_x, src_y, width, height,
-             src_type, copy_type);
+             src_type, 1);
+            break;
           }
           else
 
@@ -4564,6 +4605,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
               case 1:
               {
                 // Overlay to string
+
+                if(!src_board->overlay_mode)
+                  setup_overlay(src_board, 3);
+
                 load_string_board(mzx_world, str_buffer, width, height, t_char,
                  src_board->overlay + src_x + (src_y * board_width),
                  board_width, id);
@@ -4638,29 +4683,32 @@ void run_robot(World *mzx_world, int id, int x, int y)
           case 1:
           {
             int overlay_offset = src_x + (src_y * board_width);
+  
+            if(!src_board->overlay_mode)
+              setup_overlay(src_board, 3);
+
             copy_layer_to_board(src_board, dest_x, dest_y, width, height,
              src_board->overlay + overlay_offset,
              src_board->overlay_color + overlay_offset, board_width, 5);
             update_blocked = 1;
+
             break;
           }
 
-          // FIXME - These buffers are bad. Variable arrays are nice
-          // but C99 only. alloca is nice but I can't seem to get it
-          // working on mingw..
           // Overlay to overlay
           case 5:
           {
-            char *char_buffer = (char *)malloc(width * height);
-            char *color_buffer = (char *)malloc(width * height);
-            copy_layer_to_buffer(src_x, src_y, width, height,
-             src_board->overlay, src_board->overlay_color,
-             char_buffer, color_buffer, board_width);
-            copy_buffer_to_layer(dest_x, dest_y, width, height,
-             char_buffer, color_buffer, src_board->overlay,
-             src_board->overlay_color, board_width);
-            free(char_buffer);
-            free(color_buffer);
+            if(src_board->overlay_mode)
+            {
+              char char_buffer[width * height];
+              char color_buffer[width * height];
+              copy_layer_to_buffer(src_x, src_y, width, height,
+               src_board->overlay, src_board->overlay_color,
+               char_buffer, color_buffer, board_width);
+              copy_buffer_to_layer(dest_x, dest_y, width, height,
+               char_buffer, color_buffer, src_board->overlay,
+               src_board->overlay_color, board_width);
+            }
             break;
           }
 
@@ -4668,6 +4716,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
           case 6:
           {
             int vlayer_width = mzx_world->vlayer_width;
+
+            if(!src_board->overlay_mode)
+              setup_overlay(src_board, 3);
+
             copy_layer_to_layer(src_x, src_y, dest_x, dest_y, width,
              height, mzx_world->vlayer_chars, mzx_world->vlayer_colors,
              src_board->overlay, src_board->overlay_color, vlayer_width,
@@ -4679,6 +4731,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
           case 9:
           {
             int vlayer_width = mzx_world->vlayer_width;
+
+            if(!src_board->overlay_mode)
+              setup_overlay(src_board, 3);
+
             copy_layer_to_layer(src_x, src_y, dest_x, dest_y, width,
              height, src_board->overlay, src_board->overlay_color,
              mzx_world->vlayer_chars, mzx_world->vlayer_colors, board_width,
@@ -4689,16 +4745,14 @@ void run_robot(World *mzx_world, int id, int x, int y)
           // Vlayer to vlayer
           case 10:
           {
-            char *char_buffer = (char *)malloc(width * height);
-            char *color_buffer = (char *)malloc(width * height);
+            char char_buffer[width * height];
+            char color_buffer[width * height];
             copy_layer_to_buffer(src_x, src_y, width, height,
              mzx_world->vlayer_chars, mzx_world->vlayer_colors,
              char_buffer, color_buffer, mzx_world->vlayer_width);
             copy_buffer_to_layer(dest_x, dest_y, width, height,
              char_buffer, color_buffer, mzx_world->vlayer_chars,
              mzx_world->vlayer_colors, mzx_world->vlayer_width);
-            free(char_buffer);
-            free(color_buffer);
             break;
           }
         }
@@ -4756,11 +4810,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
               int d_flag = flags[d_id];
 
               if((d_id == 123) || (d_id == 127) || 
-							 ((push_dir < 2) && (d_flag & A_PUSHNS)) ||
+               ((push_dir < 2) && (d_flag & A_PUSHNS)) ||
                ((push_dir >= 2) && (d_flag & A_PUSHEW)))
               { 
-								push(mzx_world, x, y, push_dir, 0);
-								update_blocked = 1;
+                push(mzx_world, x, y, push_dir, 0);
+                update_blocked = 1;
               }
             }
           }
@@ -5020,7 +5074,6 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = cmd_ptr + next_param(cmd_ptr, 1);
-        char src_buffer[256];
         char dest_buffer[256];
         int value = parse_param(mzx_world, src_string + 1, id);
         tr_msg(mzx_world, dest_string, id, dest_buffer);
@@ -5033,7 +5086,6 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = cmd_ptr + next_param(cmd_ptr, 1);
-        char src_buffer[256];
         char dest_buffer[256];
         int value = parse_param(mzx_world, src_string + 1, id);
         tr_msg(mzx_world, dest_string, id, dest_buffer);
@@ -5046,7 +5098,6 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = cmd_ptr + next_param(cmd_ptr, 1);
-        char src_buffer[256];
         char dest_buffer[256];
         int value = parse_param(mzx_world, src_string + 1, id);
         tr_msg(mzx_world, dest_string, id, dest_buffer);
@@ -5133,20 +5184,25 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int redo_load = 0;
         char name_buffer[256];
+        char translated_name[MAX_PATH];
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
 
-        do
-        {
-          if(reload_swap(mzx_world, name_buffer, &fade))
+        if(!fsafetranslate(name_buffer, translated_name))
+        { 
+          do
           {
-            redo_load = error("Error swapping to next world", 1, 23, 0x2C01);
-          }
-        } while(redo_load == 2);
-
-        strcpy(curr_file, name_buffer);
-        mzx_world->swapped = 1;
-
-        return;
+            if(reload_swap(mzx_world, name_buffer, &fade))
+            {
+              redo_load = error("Error swapping to next world", 1, 23, 0x2C01);
+            }
+          } while(redo_load == 2);
+  
+          strcpy(curr_file, name_buffer);
+          mzx_world->swapped = 1;
+  
+          return;
+        }
+        break;
       }
 
       case 227: // If allignedrobot str str
@@ -5336,13 +5392,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         overlay = src_board->overlay;
         overlay_color = src_board->overlay_color;
-
+ 
         split_colors(src_color, &src_fg, &src_bg);
-
+ 
         for(i = 0; i < (board_width * board_height); i++)
         {
           d_color = overlay_color[i];
-
+ 
           if((overlay[i] == src_char) &&
            ((src_bg == 16) || (src_bg == (d_color >> 4))) &&
            ((src_fg == 16) || (src_fg == (d_color & 0x0F))))
@@ -5351,6 +5407,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             overlay_color[i] = fix_color(dest_color, d_color);
           }
         }
+
         break;
       }
 
@@ -5443,9 +5500,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
           back_cmd = cur_robot->cur_prog_line;
           do
           {
-            if((unsigned char)program[back_cmd - 1] == 0xFF) break;
+            if(program[back_cmd - 1] == 0xFF)
+              break;
+
             back_cmd -= program[back_cmd - 1] + 2;
-          } while((unsigned char)program[back_cmd + 1] != 251);
+          } while(program[back_cmd + 1] != 251);
 
           cur_robot->cur_prog_line = back_cmd;
         }
@@ -5456,16 +5515,17 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 253: // Abort loop
       {
-        int loop_amount = parse_param(mzx_world, cmd_ptr + 1, id);
-        int back_cmd;
+        int forward_cmd = cur_robot->cur_prog_line;
 
         do
         {
-          if((unsigned char)program[back_cmd - 1] == 0xFF) break;
-          back_cmd -= program[back_cmd - 1] + 2;
-        } while((unsigned char)program[back_cmd + 1] != 251);
+          if(!program[forward_cmd])
+            break;
 
-        cur_robot->cur_prog_line = back_cmd;
+          forward_cmd += program[forward_cmd] + 2;
+        } while(program[forward_cmd + 1] != 252);
+
+        cur_robot->cur_prog_line = forward_cmd;
         break;
       }
 

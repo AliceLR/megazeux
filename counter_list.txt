@@ -78,8 +78,8 @@ name                      r/w      g/n/f/b    i
 "PLAYERDIST"              r           b       *
 "PLAYERFACEDIR"           r w         b       *
 "PLAYERLASTDIR"           r w         b       *
-"PLAYER_X"                r           b       *
-"PLAYER_Y                 r           b       *
+"PLAYERX"                 r           b       *
+"PLAYERY"                 r           b       *
 "RED_VALUE"               r w         b       *
 "RID<robot name>"         r           b       *
 "ROBOT_ID_<robot name>"   r           b       *

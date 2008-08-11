@@ -78,16 +78,14 @@ int compare_spr(const void *dest, const void *src)
 void draw_sprites(World *mzx_world)
 {
   Board *src_board = mzx_world->current_board;
-  int num_sprites = mzx_world->num_sprites;
-  int i, i2, i3, i4, i5, i6, st_x, st_y, of_x, of_y, d;
+  int i, i2, i3, i4, i5, i6, st_x, st_y, of_x, of_y;
   int skip, skip2, skip3;
   int dr_w, dr_h, ref_x, ref_y, scr_x, scr_y;
   int bwidth, bheight, use_chars = 1;
-  int uvlayer = 0;
   Sprite **sprite_list = mzx_world->sprite_list;
   Sprite *dr_order[MAX_SPRITES];
   Sprite *cur_sprite;
-  unsigned char ch, color, dcolor;
+  char ch, color, dcolor;
   int viewport_x = src_board->viewport_x;
   int viewport_y = src_board->viewport_y;
   int viewport_width = src_board->viewport_width;
@@ -95,7 +93,6 @@ void draw_sprites(World *mzx_world)
   int board_width = src_board->board_width;
   int overlay_mode = src_board->overlay_mode;
   char *overlay = src_board->overlay;
-  char *overlay_color = src_board->overlay_color;
   char *src_chars;
   char *src_colors;
 
@@ -190,7 +187,7 @@ void draw_sprites(World *mzx_world)
       {
         use_chars = 1;
         bwidth = mzx_world->vlayer_width;
-				bheight = mzx_world->vlayer_height;
+        bheight = mzx_world->vlayer_height;
         src_chars = mzx_world->vlayer_chars;
         src_colors = mzx_world->vlayer_colors;
       }
@@ -198,16 +195,16 @@ void draw_sprites(World *mzx_world)
       {
         use_chars = 0;
         bwidth = board_width;
-				bheight = src_board->board_width;
-				src_chars = src_board->level_param;
+        bheight = src_board->board_height;
+        src_chars = src_board->level_param;
         src_colors = src_board->level_color;
       }
 
-			if((ref_x + dr_w) > bwidth)
-				dr_w = bwidth - ref_x;
+      if((ref_x + dr_w) > bwidth)
+        dr_w = bwidth - ref_x;
 
-			if((ref_y + dr_h) > bheight)
-				dr_h = bheight - ref_y;
+      if((ref_y + dr_h) > bheight)
+        dr_h = bheight - ref_y;
 
       i4 = ((ref_y + of_y) * bwidth) + ref_x + of_x;
       i5 = (st_y * 80) + st_x;
@@ -516,7 +513,7 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
     if((((xg - xl) - wl) & ((yg - yl) - hl)) >> 31)
     {
       // Does it require char/char verification?
-      if(check_sprite->flags & SPRITE_CHAR_CHECK)
+      if(check_sprite->flags & (SPRITE_CHAR_CHECK | SPRITE_CHAR_CHECK2))
       {
         // The sub rectangle is going to be somewhere within both sprites;
         // It's going to start at the beginning of the component further
@@ -537,11 +534,12 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
          (check_sprite->col_width & x_lmask);
         hg = (cur_sprite->col_height & y_gmask) |
          (check_sprite->col_height & y_lmask);
-        if(mw > wg)
+  
+        if((unsigned int)mw > wg)
         {
           mw = wg;
         }
-        if(mh > hg)
+        if((unsigned int)mh > hg)
         {
           mh = hg;
         }
@@ -571,7 +569,7 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
           {
             for(i3 = 0; i3 < mw; i3++)
             {
-              unsigned char c1, c2;
+              char c1, c2;
               if(use_chars2)
               {
                 c1 = get_id_char(src_board, i4);
@@ -591,8 +589,7 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
               if((c1 != 32) && (c2 != 32))
               {
                 // Collision.. maybe.
-                // We still have to see if both of the chars aren't
-                // blank.
+                // Neither char may be blank
                 if(!(is_blank(c1) || is_blank(c2)))
                 {
                   collision_list[colliding] = i;
@@ -614,7 +611,7 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
           {
             for(i3 = 0; i3 < mw; i3++)
             {
-              unsigned char c1, c2;
+              char c1, c2;
               if(use_chars2)
               {
                 c1 = get_id_char(src_board, i4);
@@ -662,21 +659,20 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
   return colliding;
 }
 
-int is_blank(unsigned char c)
+int is_blank(char c)
 {
-  char cp[14];
-  ec_read_char(c, cp);
+  int cp[4];
+  int blank = 0;
 
-  int blank = 0, i;
+  cp[3] = 0;
+  ec_read_char(c, (char *)cp);
 
-  for(i = 0; i < 14; i++)
-  {
-    blank |= cp[i];
-  }
+  blank |= cp[0];
+  blank |= cp[1];
+  blank |= cp[2];
+  blank |= cp[3];
 
   return !blank;
-
-  return 0;
 }
 
 

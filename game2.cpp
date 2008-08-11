@@ -47,7 +47,7 @@ char ccwturndir[4] = { 3, 2, 0, 1 };
 // OPEN DOOR movement directions, use bits 1,2,4,8,16 to index it.
 // 0ffh=no movement.
 
-unsigned char open_door_movement[] =
+char open_door_movement[] =
 {
   3   , 0   , 2   , 0   , 3   , 1   , 2   , 1   ,
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -57,7 +57,7 @@ unsigned char open_door_movement[] =
 
 // Bits for WAIT, in proper bit form, for opening doors. Use bits 1-16.
 
-unsigned char open_door_max_wait[] =
+char open_door_max_wait[] =
 {
   32 , 32 , 32 , 32 , 32 , 32 , 32 , 32 ,
   224, 224, 224, 224, 224, 224, 224, 224,
@@ -67,7 +67,6 @@ unsigned char open_door_max_wait[] =
 
 void hurt_player_id(World *mzx_world, int id)
 {
-  Board *src_board = mzx_world->current_board;
   int amount = id_dmg[id];
   dec_counter(mzx_world, "health", amount, 0);
   play_sfx(mzx_world, 21);
@@ -197,14 +196,12 @@ void update_board(World *mzx_world)
   int i;
   int x, y;
   int level_offset;
-  int last_offset;
   Board *src_board = mzx_world->current_board;
   Robot *cur_robot;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
   char *level_color = src_board->level_color;
   char *level_under_id = src_board->level_under_id;
-  char *level_under_param = src_board->level_under_param;
   char *level_under_color = src_board->level_under_color;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
@@ -234,8 +231,12 @@ void update_board(World *mzx_world)
 
       // If the char's update done value is set or the id is < 25
       // (space trough W water) then there's nothing to do here; go to the next one.
+
       if((update_done[level_offset] & 1) || (current_id < 25) ||
-       !(flags[current_id] & A_UPDATE)) continue;
+       !(flags[(int)current_id] & A_UPDATE))
+      {
+        continue;
+      }
 
       current_param = level_param[level_offset];
 
@@ -366,8 +367,8 @@ void update_board(World *mzx_world)
               int offset = xy2array2(src_board, new_x, new_y);
               int place = 0;
               // Save ID and param there
-              unsigned char new_id = level_id[offset];
-              unsigned char new_color = level_color[offset];
+              char new_id = level_id[offset];
+              char new_color = level_color[offset];
 
               // Fire does things to certain ID's
               // Space
@@ -444,10 +445,10 @@ void update_board(World *mzx_world)
                   // Get offset
                   int offset = xy2array2(src_board, new_x, new_y);
                   // Save ID and param there
-                  unsigned char new_id = level_id[offset];
-                  unsigned char new_param = level_param[offset];
+                  char new_id = level_id[offset];
+                  char new_param = level_param[offset];
                   // Get the flags for that ID
-                  int flag = flags[new_id];
+                  int flag = flags[(int)new_id];
 
                   // Should a new explosion be placed here?
                   // Also, some further things can happen.
@@ -538,7 +539,7 @@ void update_board(World *mzx_world)
             }
 
             // Is under an entrance? Explosion leaves space? Leave space.
-            if((flags[current_under_id] & A_ENTRANCE)
+            if((flags[(int)current_under_id] & A_ENTRANCE)
              || src_board->explosions_leave == EXPL_LEAVE_SPACE)
             {
               // Leave space
@@ -646,19 +647,19 @@ void update_board(World *mzx_world)
           if((move_status == 1) || (move_status == 3))
           {
             // Otherwise change direction; try cw then ccw
-            int new_direction = cwturndir[current_param];
-            level_param[level_offset] = new_direction;
+            int new_direction = cwturndir[(int)current_param];
             move_status = move(mzx_world, x, y, new_direction,
              4 | 8 | 16 | 128 | 1024);
             // Did it hit something that's not the player? Try ccw.
             if((move_status == 1) || (move_status == 3))
             {
-              new_direction = ccwturndir[current_param];
-              level_param[level_offset] = new_direction;
+              new_direction = ccwturndir[(int)current_param];
               move_status = move(mzx_world, x, y, new_direction,
                4 | 8 | 16 | 128 | 1024);
-              if(move_status) move_status = 2;
+              if(move_status)
+                move_status = 2;
             }
+            level_param[level_offset] = new_direction;
           }
 
           // Did it hit the player?
@@ -890,7 +891,7 @@ void update_board(World *mzx_world)
                 // Get offset
                 int offset = xy2array2(src_board, new_x, new_y);
                 // Save ID and param there
-                unsigned char new_id = level_id[offset];
+                char new_id = level_id[offset];
                 // See if it hits a fake
                 if((new_id == 0) || ((new_id >= 13) && (new_id <= 19)))
                 {
@@ -1010,7 +1011,7 @@ void update_board(World *mzx_world)
         case 86:
         {
           int fire_rate;
-          int rval;
+          int rval = -1;
 
           // Can it move?
           if(current_param & 0x04)
@@ -1022,9 +1023,10 @@ void update_board(World *mzx_world)
               int move_status;
               // Zero out movement
               level_param[level_offset] = current_param & 0xE7;
+
               // One out of 8 moves is random
 
-              if(rval & 0x07)
+              if(!(rval & 0x07))
               {
                 m_dir = rand() & 0x03;
               }
@@ -1651,8 +1653,8 @@ void update_board(World *mzx_world)
           if(start_time == src_board->lazwall_start)
           {
             current_color = level_color[level_offset];
-            unsigned char length = ((current_param & 0xE0) >> 5) + 1;
-            unsigned char direction = (current_param & 0x03);
+            char length = ((current_param & 0xE0) >> 5) + 1;
+            char direction = (current_param & 0x03);
             shoot_lazer(mzx_world, x, y, direction, length, current_color);
           }
           break;
@@ -1767,14 +1769,13 @@ void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
 {
   Board *src_board = mzx_world->current_board;
   char *level_id = src_board->level_id;
-  char *level_color = src_board->level_color;
   char *level_param = src_board->level_param;
 
   int lx = x;
   int ly = y;
   int offset;
-  unsigned char id;
-  unsigned char param;
+  char id;
+  char param;
 
   while(1)
   {
@@ -1819,8 +1820,8 @@ void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
     else
     // Otherwise...
     {
-      int flag = flags[id];
-      unsigned char n_param;
+      int flag = flags[(int)id];
+      char n_param;
       // Blocked. Get out of here
       if(!(flag & A_UNDER)) return;
 
@@ -1957,7 +1958,7 @@ int transport(World *mzx_world, int x, int y, int dir, int id, int param,
 }
 
 void push_player_sensor(World *mzx_world, int p_offset,
- int d_offset, unsigned char param, unsigned char color)
+ int d_offset, char param, char color)
 {
   Board *src_board = mzx_world->current_board;
   char *level_under_id = src_board->level_under_id;
@@ -1994,9 +1995,9 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
 
   int push_status = A_PUSHEW;
   int dx = x, dy = y, d_offset, d_flag;
-  unsigned char d_id = 0xFF, d_param, d_color, d_under_id;
-  unsigned char p_id = 0xFF, p_param = 0xFF, p_color = 0xFF;
-  unsigned char p_under_id = 0xFF, sensor_param, sensor_color;
+  char d_id = 0xFF, d_param, d_color, d_under_id;
+  char p_id = 0xFF, p_param = 0xFF, p_color = 0xFF;
+  char p_under_id = 0xFF, sensor_param = 0xFF, sensor_color = 0xFF;
   int p_offset = -1;
 
   if(dir < 2)
@@ -2014,7 +2015,7 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
       return 1;
     d_offset = xy2array2(src_board, dx, dy);
     d_id = level_id[d_offset];
-    d_flag = flags[d_id];
+    d_flag = flags[(int)d_id];
 
     // If a push can be made here, the destination has been found
 
@@ -2070,7 +2071,7 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
       d_param = level_param[d_offset];
       d_color = level_color[d_offset];
       d_under_id = level_under_id[d_offset];
-      d_flag = flags[d_id];
+      d_flag = flags[(int)d_id];
 
       // Sensor? Mark it
       if(d_under_id == 122)
@@ -2164,11 +2165,10 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
 void shoot(World *mzx_world, int x, int y, int dir, int type)
 {
   int dx, dy, d_offset, d_flag;
-  unsigned char d_id, d_param;
+  char d_id, d_param;
   Board *src_board = mzx_world->current_board;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
-  char *level_color = src_board->level_color;
 
   // If enemy hurts enemy then enemy bullet becomes neutral
   if((mzx_world->enemy_hurt_enemy == 1) && (type == ENEMY_BULLET))
@@ -2184,7 +2184,7 @@ void shoot(World *mzx_world, int x, int y, int dir, int type)
   d_offset = xy2array2(src_board, dx, dy);
   d_id = src_board->level_id[d_offset];
   d_param = src_board->level_param[d_offset];
-  d_flag = flags[d_id];
+  d_flag = flags[(int)d_id];
 
   // If it's a player bullet maybe give some points
   // Has to be an enemy ID 80-95 but not 83, 85, 92, or 93
@@ -2200,7 +2200,7 @@ void shoot(World *mzx_world, int x, int y, int dir, int type)
   // If it's underable the bullet can move here
   if(d_flag & A_UNDER)
   {
-    unsigned char n_param = (type << 2) | dir;
+    char n_param = (type << 2) | dir;
     id_place(mzx_world, dx, dy, 61, bullet_color[type], n_param);
     return;
   }
@@ -2391,19 +2391,17 @@ void shoot_fire(World *mzx_world, int x, int y, int dir)
 {
   Board *src_board = mzx_world->current_board;
   int dx, dy, d_offset;
-  unsigned char d_id, d_param, d_flag;
+  char d_id, d_param, d_flag;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
-  char *level_color = src_board->level_color;
 
   if(arraydir2(src_board, x, y, &dx, &dy, dir))
-  {
     return;
-  }
+
   d_offset = xy2array2(src_board, dx, dy);
   d_id = level_id[d_offset];
   d_param = level_param[d_offset];
-  d_flag = flags[d_id];
+  d_flag = flags[(int)d_id];
 
   // If it can be moved under, place it
   if(d_flag & A_UNDER)
@@ -2431,19 +2429,17 @@ void shoot_seeker(World *mzx_world, int x, int y, int dir)
 {
   Board *src_board = mzx_world->current_board;
   int dx, dy, d_offset;
-  unsigned char d_id, d_param, d_flag;
+  char d_id, d_param, d_flag;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
-  char *level_color = src_board->level_color;
 
   if(arraydir2(src_board, x, y, &dx, &dy, dir))
-  {
     return;
-  }
+
   d_offset = xy2array2(src_board, dx, dy);
   d_id = level_id[d_offset];
   d_param = level_param[d_offset];
-  d_flag = flags[d_id];
+  d_flag = flags[(int)d_id];
 
   // If it can be moved under, place it
   if(d_flag & A_UNDER)
@@ -2463,20 +2459,17 @@ void shoot_missile(World *mzx_world, int x, int y, int dir)
 {
   Board *src_board = mzx_world->current_board;
   int dx, dy, d_offset;
-  unsigned char d_id, d_param, d_flag;
+  char d_id, d_param, d_flag;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
-  char *level_color = src_board->level_color;
-
 
   if(arraydir2(src_board, x, y, &dx, &dy, dir))
-  {
     return;
-  }
+
   d_offset = xy2array2(src_board, dx, dy);
   d_id = level_id[d_offset];
   d_param = level_param[d_offset];
-  d_flag = flags[d_id];
+  d_flag = flags[(int)d_id];
 
   // If it can be moved under, place it
   if(d_flag & A_UNDER)
@@ -2509,9 +2502,9 @@ int move(World *mzx_world, int x, int y, int dir, int move_flags)
 {
   Board *src_board = mzx_world->current_board;
   int dx, dy, d_offset, d_flag;
-  unsigned char d_id, d_param;
+  char d_id, d_param;
   int p_offset = xy2array2(src_board, x, y);
-  unsigned char p_id, p_param, p_color;
+  char p_id, p_param, p_color;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
   char *level_color = src_board->level_color;
@@ -2524,7 +2517,7 @@ int move(World *mzx_world, int x, int y, int dir, int move_flags)
   d_offset = xy2array2(src_board, dx, dy);
   d_id = level_id[d_offset];
   d_param = level_param[d_offset];
-  d_flag = flags[d_id];
+  d_flag = flags[(int)d_id];
 
   p_id = level_id[p_offset];
   p_param = level_param[p_offset];

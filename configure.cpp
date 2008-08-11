@@ -363,8 +363,8 @@ config_info default_options =
   2048,
 	0,
 	1,
-  7,
-  7,
+  8,
+  8,
   1,
   1,
 

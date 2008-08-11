@@ -50,10 +50,10 @@
 
 struct Sprite
 {
-  unsigned int x;
-  unsigned int y;
-  unsigned int ref_x;
-  unsigned int ref_y;
+  int x;
+  int y;
+  int ref_x;
+  int ref_y;
   char color;
   char flags;
   char width;
@@ -82,7 +82,7 @@ void draw_sprites(World *mzx_world);
 int sprite_at_xy(Sprite *cur_sprite, int x, int y);
 int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite,
  int x, int y);
-int is_blank(unsigned char c);
+int is_blank(char c);
 
 // global data types
 

@@ -33,16 +33,15 @@
 #define TIME_SUSPEND 300
 
 // All screen-affecting code preserves the mouse cursor
-char save_screen();
-char restore_screen();
-char draw_window_box(int x1,int y1,int x2,int y2,
- unsigned char color, unsigned char dark_color,
- unsigned char corner_color, char shadow, char fill_center);
+int save_screen();
+int restore_screen();
+int draw_window_box(int x1, int y1, int x2, int y2, int color,
+ int dark_color, int corner_color, int shadow, int fill_center);
 int list_menu(char *choices, int choice_size, char *title,
   int current, int num_choices, int xpos);
-int char_selection(unsigned char current);
+int char_selection(int current);
 int color_selection(int current, int allow_wild);
-void draw_color_box(unsigned char color, char q_bit, char x, char y);
+void draw_color_box(int color, int q_bit, int x, int y);
 
 // Shell for list_menu() (returns -1 for ESC)
 int add_board(World *mzx_world, int current);

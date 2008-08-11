@@ -62,7 +62,7 @@ void play_sfx(World *mzx_world, int sfxn)
 void play_str(char *str, int sfx_play)
 {
   int t1, oct = 3, note = 1, dur = 18, t2, last_note = -1,
-   digi_st = -1, digi_end;
+   digi_st = -1, digi_end = -1;
   char chr;
   // Note trans. table from 1-7 (a-z) to 1-12
   char nn[7] = { 10, 12, 1, 3, 5, 6, 8 };
@@ -78,7 +78,7 @@ void play_str(char *str, int sfx_play)
   }
 
   // Now, if sfx_play, only play digi
-  for(t1 = 0; t1 < strlen((char *)str); t1++)
+  for(t1 = 0; (unsigned int)t1 < strlen((char *)str); t1++)
   {
     chr = str[t1];
     if((chr >= 'a') && (chr <= 'z')) chr -= 32;

@@ -75,6 +75,7 @@ Board *load_board_allocate_direct(FILE *fp, int savegame)
 {
   Board *cur_board = (Board *)malloc(sizeof(Board));
   load_board_direct(cur_board, fp, savegame);
+	fread(cur_board->board_name, 25, 1, fp);
 
   return cur_board;
 }
@@ -182,6 +183,7 @@ void load_board_direct(Board *cur_board, FILE *fp, int savegame)
 
   // Load board parameters
   fread(cur_board->mod_playing, FILENAME_SIZE, 1, fp);
+	cur_board->mod_playing[FILENAME_SIZE] = 0;
   cur_board->viewport_x = fgetc(fp);
   cur_board->viewport_y = fgetc(fp);
   cur_board->viewport_width = fgetc(fp);
@@ -425,12 +427,14 @@ void save_board_file(Board *cur_board, char *name)
   fputs(world_version_string, board_file);
   optimize_null_objects(cur_board);
   save_board(cur_board, board_file, 0);
+	// Write name
+	fwrite(cur_board->board_name, 25, 1, board_file);
   fclose(board_file);
 }
 
 int save_board(Board *cur_board, FILE *fp, int savegame)
 {
-  int num_robots, num_scrolls, num_sensors, num_robots_active;
+  int num_robots, num_scrolls, num_sensors;
   int start_location = ftell(fp);
   int board_width = cur_board->board_width;
   int board_height = cur_board->board_height;
@@ -930,14 +934,15 @@ void change_board_size(Board *src_board, int new_width, int new_height)
     // Fill in any blanks
     if(new_height > board_height)
     {
-      int size_difference = new_size - board_size;
+			int offset = new_width * board_height;
+      int size_difference = new_size - offset;
 
-      memset(level_id + board_size, 0, size_difference);
-      memset(level_param + board_size, 0, size_difference);
-      memset(level_color + board_size, 7, size_difference);
-      memset(level_under_id + board_size, 0, size_difference);
-      memset(level_under_param + board_size, 0, size_difference);
-      memset(level_under_color + board_size, 7, size_difference);
+      memset(level_id + offset, 0, size_difference);
+      memset(level_param + offset, 0, size_difference);
+      memset(level_color + offset, 7, size_difference);
+      memset(level_under_id + offset, 0, size_difference);
+      memset(level_under_param + offset, 0, size_difference);
+      memset(level_under_color + offset, 7, size_difference);
 
       if(overlay_mode)
       {

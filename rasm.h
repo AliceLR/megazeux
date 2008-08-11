@@ -17,6 +17,7 @@
 #define CONDITION          (1 << 9)
 #define ITEM               (1 << 10)
 #define EXTRA              (1 << 11)
+#define COMMAND            (1 << 12)
 #define UNDEFINED          (1 << 13)
 
 #define S_IMM_U16          0
@@ -139,6 +140,20 @@ typedef struct
   int *param_types;
 } mzx_command;
 
+typedef struct
+{
+	char *name;
+	int count;
+	int offsets[19];
+} search_entry;
+
+typedef struct
+{
+  char *name;
+	int offset;
+	int type;
+} search_entry_short;
+
 int is_color(char *cmd_line);
 int is_param(char *cmd_line);
 int is_dir(char *cmd_line, char **next);
@@ -176,6 +191,8 @@ void get_wanted_arg(char *buffer, int arg);
 char *assemble_file(char *name, int *size);
 void disassemble_file(char *name, char *program, int allow_ignores,
  int base);
+search_entry *find_command(char *name);
+search_entry_short *find_argument(char *name);
 
 extern mzx_command command_list[256];
 

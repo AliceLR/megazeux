@@ -59,9 +59,6 @@ int main(int argc, char **argv)
 {
   int i;
   World mzx_world;
-  char fade;
-  config_entry *test;
-  char *name = "yes";
 
   //freopen("CON", "wb", stdout);
 
@@ -115,13 +112,13 @@ int main(int argc, char **argv)
 
   vquick_fadeout();
 
-	if(mzx_world.active)
-	{
-		clear_world(&mzx_world);
+  if(mzx_world.active)
+  {
+    clear_world(&mzx_world);
     clear_global_data(&mzx_world);
-	}
+  }
 
-	SDL_Quit();
+  SDL_Quit();
 
   return 0;
 }

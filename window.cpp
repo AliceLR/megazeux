@@ -49,7 +49,7 @@
 void *null_storage[256];
 
 Uint8 screen_storage[NUM_SAVSCR][80 * 25 * 2];
-char cur_screen = 0; // Current space for save_screen and restore_screen
+int cur_screen = 0; // Current space for save_screen and restore_screen
 signed char vid_usage[80 * 25]; // Mouse video usage array (for dialogs)
 
 // Free up memory.
@@ -61,7 +61,7 @@ signed char vid_usage[80 * 25]; // Mouse video usage array (for dialogs)
 // Saves current screen to buffer and increases buffer count. Returns
 // non-0 if the buffer for screens is already full. (IE 6 count)
 
-char save_screen()
+int save_screen()
 {
   if(cur_screen >= NUM_SAVSCR)
   {
@@ -77,7 +77,7 @@ char save_screen()
 // Restores top screen from buffer to screen and decreases buffer count.
 // Returns non-0 if there are no screens in the buffer.
 
-char restore_screen()
+int restore_screen()
 {
   if(cur_screen == 0)
     error("Windowing code bug", 2, 20, 0x1F02);
@@ -95,9 +95,8 @@ char restore_screen()
 // This routine is highly unoptimized. Center is not filled if fill_center
 // is set to 0. (defaults to 1)
 
-char draw_window_box(int x1, int y1, int x2, int y2, unsigned char color,
- unsigned char dark_color, unsigned char corner_color, char shadow,
- char fill_center)
+int draw_window_box(int x1, int y1, int x2, int y2, int color,
+ int dark_color, int corner_color, int shadow, int fill_center)
 {
   int t1, t2;
   //Validate parameters
@@ -243,7 +242,8 @@ int list_menu(char *choices, int choice_size, char *title,
 
   cursor_off();
 
-  if(strlen(title) > choice_size) width = strlen(title) + 6;
+  if(strlen(title) > (unsigned int)choice_size)
+    width = strlen(title) + 6;
 
   // Save screen
   if(save_screen()) return OUT_OF_WIN_MEM;
@@ -380,7 +380,7 @@ int list_menu(char *choices, int choice_size, char *title,
         current = i;
       }
 
-			case SDLK_KP_ENTER:
+      case SDLK_KP_ENTER:
       case SDLK_RETURN:
         // Selected
         restore_screen();
@@ -492,9 +492,10 @@ int list_menu(char *choices, int choice_size, char *title,
 
 // Mouse support- Click on a character to select it. If it is the current
 // character, it exits.
-int char_selection(unsigned char current)
+int char_selection(int current)
 {
-  int t1, t2, t3;
+  int x, y;
+  int key;
   // Save screen
   save_screen();
 
@@ -509,27 +510,29 @@ int char_selection(unsigned char current)
   draw_window_box(20, 5, 57, 16, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
   // Add title
   write_string(" Select a character ", 22, 5, DI_TITLE, 0);
+
   // Draw character set
-  for(t1 = 0; t1 < 32; t1++)
+  for(x = 0; x < 32; x++)
   {
-    for(t2 = 0; t2 < 8; t2++)
+    for(y = 0; y < 8; y++)
     {
-      draw_char(t1 + t2 * 32, DI_NONACTIVE, t1 + 23, t2 + 7);
+      draw_char(x + (y * 32), DI_NONACTIVE, x + 23, y + 7);
     }
   }
+
   do
   {
     // Calculate x/y
-    t1 = (current & 31) + 23;
-    t2 = (current >> 5) + 7;
+    x = (current & 31) + 23;
+    y = (current >> 5) + 7;
     // Highlight active character
-    draw_char(current, DI_ACTIVE, t1, t2);
+    draw_char(current, DI_ACTIVE, x, y);
     // Draw arrows
     draw_window_box(22, 6, 55, 15, DI_DARK, DI_MAIN, DI_CORNER, 0, 0);
-    draw_char(char_sel_arrows_0, DI_TEXT, t1, 15);
-    draw_char(char_sel_arrows_1, DI_TEXT, t1, 6);
-    draw_char(char_sel_arrows_2, DI_TEXT, 22, t2);
-    draw_char(char_sel_arrows_3, DI_TEXT, 55, t2);
+    draw_char(char_sel_arrows_0, DI_TEXT, x, 15);
+    draw_char(char_sel_arrows_1, DI_TEXT, x, 6);
+    draw_char(char_sel_arrows_2, DI_TEXT, 22, y);
+    draw_char(char_sel_arrows_3, DI_TEXT, 55, y);
     // Write number of character
     write_number(current, DI_MAIN, 53, 16, 3);
 
@@ -537,7 +540,7 @@ int char_selection(unsigned char current)
 
     // Get key
     update_event_status_delay();
-    t3 = get_key(keycode_SDL);
+    key = get_key(keycode_SDL);
 
     if(get_mouse_press())
     {
@@ -559,70 +562,91 @@ int char_selection(unsigned char current)
     }
 
     // Erase marks
-    draw_char(current, DI_NONACTIVE, t1, t2);
+    draw_char(current, DI_NONACTIVE, x, y);
     // Process key
 
-    switch(t3)
+    switch(key)
     {
       case SDLK_ESCAPE:
+      {
         // ESC
         pop_context();
         restore_screen();
+
         if(current == 0)
-         return -256;
+          return -256;
         else
-         return -current;
+          return -current;
+      }
 
       case SDLK_SPACE:
-			case SDLK_KP_ENTER:
+      case SDLK_KP_ENTER:
       case SDLK_RETURN:
-        enter:
+      {
         // Selected
         pop_context();
         restore_screen();
         return current;
+      }
 
       case SDLK_UP:
-        // Up
-        if(current > 31) current -= 32;
+      {
+        if(current > 31)
+          current -= 32;
+
         break;
+      }
 
       case SDLK_DOWN:
-        // Down
-        if(current < 224) current += 32;
+      {
+        if(current < 224)
+          current += 32;
+
         break;
+      }
 
       case SDLK_LEFT:
-        // Left
-        if(t1 > 23) current--;
+      {
+        if(x > 23)
+          current--;
+
         break;
+      }
 
       case SDLK_RIGHT:
-        // Right
-        if(t1 < 54) current++;
+      {
+        if(x < 54)
+          current++;
+
         break;
+      }
 
       case SDLK_HOME:
-        //Home
+      {
         current = 0;
         break;
+      }
 
       case SDLK_END:
-        //End
+      {
         current = 255;
         break;
+      }
 
       default:
+      {
         // If this is from 32 to 255, jump there.
-        if(t3 > 31)
+        if(key > 31)
           current = get_key(keycode_unicode);
+      }
 
       case SDLK_LSHIFT:
       case SDLK_RSHIFT:
       case 0:
+      {
         break;
+      }
     }
-    // Loop
   } while(1);
 }
 
@@ -774,7 +798,8 @@ int color_selection(int current, int allow_wild)
         int new_x = mouse_x - 15;
         int new_y = mouse_y - 4;
         if((currx == new_x) && (curry == new_y))
-          goto enter;
+          key = SDLK_RETURN;
+
         currx = new_x;
         curry = new_y;
       }
@@ -786,9 +811,9 @@ int color_selection(int current, int allow_wild)
       // ESC
       case SDLK_ESCAPE:
       case SDLK_SPACE:
-			case SDLK_KP_ENTER:
+      case SDLK_KP_ENTER:
       case SDLK_RETURN:
-        enter:
+      {
         pop_context();
         // Selected
         restore_screen();
@@ -820,47 +845,70 @@ int color_selection(int current, int allow_wild)
             current =- current;
         }
         return current;
+      }
 
       case SDLK_UP:
+      {
         // Up
-        if(curry > 0) curry--;
+        if(curry > 0)
+          curry--;
+
         break;
+      }
 
       case SDLK_DOWN:
+      {
         // Down
-        if(curry < (15 + allow_wild)) curry++;
+        if(curry < (15 + allow_wild))
+          curry++;
+
         break;
+      }
 
       case SDLK_LEFT:
+      {
         // Left
-        if(currx > 0) currx--;
+        if(currx > 0)
+          currx--;
+
         break;
+      }
 
       case SDLK_RIGHT:
+      {
         // Right
-        if(currx < (15 + allow_wild)) currx++;
+        if(currx < (15 + allow_wild))
+          currx++;
+
         break;
+      }
 
       case SDLK_HOME:
+      {
         // Home
-        currx = curry = 0;
+        currx = 0;
+        curry = 0;
         break;
+      }
 
       case SDLK_END:
+      {
         // End
-        currx = curry = 15 + allow_wild;
+        currx = 15 + allow_wild;
+        curry = 15 + allow_wild;  
         break;
+      }
 
       default:
-      case 0:
+      {
         break;
+      }
     }
-    // Loop
   } while(1);
 }
 
 // Short function to display a color as a colored box
-void draw_color_box(unsigned char color, char q_bit, char x, char y)
+void draw_color_box(int color, int q_bit, int x, int y)
 {
   // If q_bit is set, there are unknowns
   if(q_bit)
@@ -905,16 +953,16 @@ void draw_color_box(unsigned char color, char q_bit, char x, char y)
 }
 
 // Prototype- Internal function that displays a dialog box element.
-void display_element(World *mzx_world, char type, char x, char y,
- char *str, int p1, int p2, void *value, char active,char curr_check,
- char set_vid_usage = 0);
+void display_element(World *mzx_world, int type, int x, int y,
+ char *str, int p1, int p2, void *value, int active, int curr_check,
+ int set_vid_usage);
 
 // The code that runs the dialog boxes
 // Mouse support- Click to move/select/choose.
 int run_dialog(World *mzx_world, dialog *di, char reset_curr,
  char sfx_alt_t)
 {
-  int t1, t2, key;
+  int t1, t2 = -1, key;
   int tlng;
   char mouse_held = 0;
   // Current radio button or check box
@@ -1001,7 +1049,7 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
     display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
      y1 + di->element_ys[curr_e], di->element_strs[curr_e],
      di->element_param1s[curr_e], di->element_param2s[curr_e],
-     di->element_storage[curr_e], 1, curr_check);
+     di->element_storage[curr_e], 1, curr_check, 0);
 
     update_event_status_delay();
 
@@ -1037,7 +1085,8 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
           display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
            y1 + di->element_ys[curr_e], di->element_strs[curr_e],
            di->element_param1s[curr_e], di->element_param2s[curr_e],
-           di->element_storage[curr_e], 0, curr_check);
+           di->element_storage[curr_e], 0, curr_check, 0);
+
           curr_e = id_over;
           id_over = -1;
         }
@@ -1124,6 +1173,7 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
     switch(key)
     {
       case SDLK_TAB: // Tab
+      {
         if(get_shift_status(keycode_SDL))
         {
           prev_elem:
@@ -1131,7 +1181,7 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
           display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
            y1 + di->element_ys[curr_e], di->element_strs[curr_e],
            di->element_param1s[curr_e], di->element_param2s[curr_e],
-           di->element_storage[curr_e], 0, curr_check);
+           di->element_storage[curr_e], 0, curr_check, 0);
 
           // Move to previous element, going past text/box/line
           do
@@ -1150,16 +1200,17 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
           display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
            y1 + di->element_ys[curr_e], di->element_strs[curr_e],
            di->element_param1s[curr_e], di->element_param2s[curr_e],
-           di->element_storage[curr_e], 0, curr_check);
+           di->element_storage[curr_e], 0, curr_check, 0);
           // Move to next element
           curr_e++;
         }
         break;
+      }
 
       case SDLK_SPACE: // Space
-			case SDLK_KP_ENTER:
+      case SDLK_KP_ENTER:
       case SDLK_RETURN: // Enter
-        enter:
+      {
         // Activate button, choose from list/menu, or toggle check.
         switch(t1)
         {
@@ -1208,18 +1259,25 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
             goto next_elem;
         }
         break;
+      }
 
-      case SDLK_RIGHT://Right
-        if((t1 != DE_NUMBER) && (t1 != DE_FIVE)) goto change_down;
+      case SDLK_RIGHT:
+      {
+        if((t1 != DE_NUMBER) && (t1 != DE_FIVE))
+          goto change_down;
+      }
 
-      case SDLK_UP: // Up
-      case SDLK_PAGEUP: // PageUp
+      case SDLK_UP:
+      case SDLK_PAGEUP:
+      {
         change_up:
         // Change numeric, radio, or current check. Otherwise, move
         // to previous element.
+
         switch(t1)
         {
           case DE_RADIO:
+          {
             if(key == SDLK_PAGEUP)
               ((char *)di->element_storage[curr_e])[0] = 0;
             else
@@ -1228,29 +1286,38 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
                 ((char *)di->element_storage[curr_e])[0]--;
             }
             break;
+          }
 
           case DE_CHECK:
+          {
             if(key == SDLK_PAGEUP)
               curr_check = 0;
             else
               if(curr_check > 0)  curr_check--;
             break;
+          }
 
           case DE_NUMBER:
           case DE_FIVE:
+          {
             switch(key)
             {
               case SDLK_RIGHT: // Right
               case SDLK_UP: // Up
+              {
                 if(get_alt_status(keycode_SDL) ||
                  get_ctrl_status(keycode_SDL))
                   t2 = 10;
                 else
                   t2 = 1;
                 break;
-              case SDLK_PAGEUP: // PageUp
+              }
+
+              case SDLK_PAGEUP:
+              {
                 t2 = 100;
                 break;
+              }
             }
             change_num:
             tlng = ((int *)di->element_storage[curr_e])[0];
@@ -1268,27 +1335,37 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
             }
             ((int *)di->element_storage[curr_e])[0] += t2;
             break;
+          }
+
           default:
+          {
             goto prev_elem;
+          }
         }
         break;
+      }
 
-      case SDLK_HOME://Home
+      case SDLK_HOME:
+      {
         // Change numeric, radio, or current check. Otherwise, move
         // to first element.
         switch(t1)
         {
           case DE_NUMBER:
           case DE_FIVE:
+          {
             ((int *)di->element_storage[curr_e])[0] =
              di->element_param2s[curr_e];
             break;
+          }
+
           default:
+          {
             // Unhighlight old element
             display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
              y1 + di->element_ys[curr_e], di->element_strs[curr_e],
              di->element_param1s[curr_e], di->element_param2s[curr_e],
-             di->element_storage[curr_e], 0, curr_check);
+             di->element_storage[curr_e], 0, curr_check, 0);
             //Jump to first
             curr_e = 0;
             if(sfx_alt_t > 1)
@@ -1296,24 +1373,33 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
             else
               if(sfx_alt_t == 1)  curr_e = 4;
             break;
+          }
         }
 
         break;
+      }
 
-      case SDLK_LEFT: // Left
-        if((t1 != DE_NUMBER) && (t1 != DE_FIVE)) goto change_up;
+      case SDLK_LEFT:
+      {
+        if((t1 != DE_NUMBER) && (t1 != DE_FIVE))
+          goto change_up;
+      }
 
-      case SDLK_DOWN://Down
-      case SDLK_PAGEDOWN://PageDown
+      case SDLK_DOWN:
+      case SDLK_PAGEDOWN:
+      {
         change_down:
         // Change numeric, radio, or current check. Otherwise, move
         // to next element.
         switch(t1)
         {
           case DE_RADIO:
+          {
             if(key == SDLK_PAGEDOWN)
+            {
               ((char *)di->element_storage[curr_e])[0] =
                di->element_param1s[curr_e] - 1;
+            }
             else
             {
               if(((char *)di->element_storage[curr_e])[0] <
@@ -1321,7 +1407,10 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
                 ((char *)di->element_storage[curr_e])[0]++;
             }
             break;
+          }
+
           case DE_CHECK:
+          {
             if(key == SDLK_PAGEDOWN)
              curr_check = di->element_param1s[curr_e] - 1;
             else
@@ -1329,9 +1418,11 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
             if(curr_check<di->element_param1s[curr_e] - 1)
               curr_check++;
             break;
+          }
 
           case DE_NUMBER:
           case DE_FIVE:
+          {
             switch(key)
             {
               case SDLK_LEFT://Left
@@ -1347,27 +1438,37 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
                 break;
             }
             goto change_num;
+          }
+
           default:
+          {
             goto next_elem;
+          }
         }
         break;
+      }
 
-      case SDLK_END: // End
+      case SDLK_END:
+      {
         // Change numeric, radio, or current check. Otherwise, move
         // to last element.
         switch(t1)
         {
           case DE_NUMBER:
           case DE_FIVE:
+          {
             ((int *)di->element_storage[curr_e])[0] =
              di->element_param1s[curr_e];
             break;
+          }
+
           default:
+          {
             // Unhighlight old element
             display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
              y1 + di->element_ys[curr_e], di->element_strs[curr_e],
              di->element_param1s[curr_e], di->element_param2s[curr_e],
-             di->element_storage[curr_e], 0, curr_check);
+             di->element_storage[curr_e], 0, curr_check, 0);
             // Jump to end
             if(sfx_alt_t > 0) curr_e = 0;
             else
@@ -1383,15 +1484,19 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
               } while(0);
             }
             break;
+          }
         }
         break;
+      }
 
       case SDLK_ESCAPE: // ESC
+      {
         // Restore screen, set current, and return -1
         restore_screen();
         di->curr_element = curr_e;
         pop_context();
         return -1;
+      }
 
       case SDLK_F1: // F1
       {
@@ -1415,24 +1520,29 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
       }
 
       default:
-        // Change character to key. Otherwise beep.
+      {
+        // Change character to key.
         if((t1 == DE_CHAR) && (key > 31) && (key < 255))
         {
           ((char *)di->element_storage[curr_e])[0] =
            get_key(keycode_unicode);
         }
-      case 0:
         break;
+      }
+
+      case 0:
+      {
+        break;
+      }
     }
-    //Loop
   } while(1);
 }
 
 // Internal function to display an element, whether active or not.
 
-void display_element(World *mzx_world, char type, char x, char y,
- char *str, int p1, int p2, void *value, char active, char curr_check,
- char set_vid_usage)
+void display_element(World *mzx_world, int type, int x, int y,
+ char *str, int p1, int p2, void *value, int active, int curr_check,
+ int set_vid_usage)
 {
   // If set_vid_usage is non-0, set the vid_usage array appropriately.
   // set_vid_usage is equal to the element number plus 1.
@@ -1448,15 +1558,20 @@ void display_element(World *mzx_world, char type, char x, char y,
   switch(type)
   {
     case DE_TEXT:
+    {
       color_string(str, x, y, DI_TEXT);
       break;
+    }
 
     case DE_BOX:
+    {
       draw_window_box(x, y, x + p1 - 1, y + p2 - 1, DI_DARK, DI_MAIN,
        DI_CORNER, 0, 0);
       break;
+    }
 
     case DE_LINE:
+    {
       if(p2)
       {
         // Vertical
@@ -1469,8 +1584,10 @@ void display_element(World *mzx_world, char type, char x, char y,
         fill_line(p1, x, y, 196, DI_LINE);
       }
       break;
+    }
 
     case DE_INPUT:
+    {
       write_string(str, x, y, color, 0);
       write_string((char *)value, x + strlen(str), y, DI_INPUT, 0);
       fill_line(p1 - strlen((char *)value) + 1,
@@ -1478,12 +1595,16 @@ void display_element(World *mzx_world, char type, char x, char y,
       // Fill vid_usage
       if(set_vid_usage)
       {
-        for(t1 = 0; t1 <= p1 + strlen(str); t1++)
+        for(t1 = 0; (unsigned int)t1 <= p1 + strlen(str); t1++)
+        {
           vid_usage[t1 + x + y * 80] = set_vid_usage - 1;
+        }
       }
       break;
+    }
 
     case DE_CHECK:
+    {
       write_string(str, x + 4, y, DI_NONACTIVE, 0);
       // Draw boxes
       for(t1 = 0; t1 < p1; t1++)
@@ -1506,8 +1627,10 @@ void display_element(World *mzx_world, char type, char x, char y,
             vid_usage[t2 + x + (t1 + y) * 80] = set_vid_usage - 1;
       }
       break;
+    }
 
     case DE_RADIO:
+    {
       write_string(str, x + 4, y, DI_NONACTIVE, 0);
       // Draw boxes
       for(t1 = 0; t1 < p1; t1++)
@@ -1530,8 +1653,10 @@ void display_element(World *mzx_world, char type, char x, char y,
             vid_usage[t2 + x + (t1 + y) * 80] = set_vid_usage - 1;
       }
       break;
+    }
 
     case DE_COLOR:
+    {
       write_string(str, x, y, color, 0);
       t1 = ((int *)value)[0];
       if((t1 & 256) == 256)
@@ -1551,8 +1676,10 @@ void display_element(World *mzx_world, char type, char x, char y,
           vid_usage[t1 + x + y * 80] = set_vid_usage - 1;
       }
       break;
+    }
 
     case DE_CHAR:
+    {
       write_string(str, x, y, color, 0);
       draw_char(((unsigned char *)value)[0], DI_CHAR, x +
        strlen(str) + 1, y);
@@ -1566,8 +1693,10 @@ void display_element(World *mzx_world, char type, char x, char y,
           vid_usage[t1 + x + y * 80] = set_vid_usage - 1;
       }
       break;
+    }
 
     case DE_BUTTON:
+    {
       if(active)
         color = DI_ACTIVEBUTTON;
       else
@@ -1584,9 +1713,11 @@ void display_element(World *mzx_world, char type, char x, char y,
           vid_usage[t1 + x + y * 80] = set_vid_usage - 1;
       }
       break;
+    }
 
     case DE_NUMBER:
     case DE_FIVE:
+    {
       t1 = 1;
       if(type == DE_FIVE) t1 = 5;
       write_string(str, x, y, color, 0);
@@ -1630,8 +1761,10 @@ void display_element(World *mzx_world, char type, char x, char y,
         }
       }
       break;
+    }
 
     case DE_LIST:
+    {
       write_string(str, x , y, color, 0);
       // Draw in current choice
       t1 = p2 * (((int *)value)[0] + 1);
@@ -1649,6 +1782,7 @@ void display_element(World *mzx_world, char type, char x, char y,
         }
       }
       break;
+    }
 
     case DE_BOARD:
     {
@@ -1728,8 +1862,6 @@ int add_board(World *mzx_world, int current)
 int choose_board(World *mzx_world, int current, char *title, int board0_none)
 {
   int i;
-  int old_board_id = mzx_world->current_board_id;
-  char temp_board_str[BOARD_NAME_SIZE];
   char *board_names =
    (char *)malloc((mzx_world->num_boards + 1) * BOARD_NAME_SIZE);
   char *cur_offset = board_names;
@@ -1849,7 +1981,6 @@ char *mod_types[] =
 int choose_file(char **wildcards, char *ret, char *title,
  int dirs_okay)
 {
-  FILE *fp;
   DIR *current_dir;
   struct stat file_info;
   struct dirent *current_file;
@@ -1858,10 +1989,9 @@ int choose_file(char **wildcards, char *ret, char *title,
   char list[4096 * 60];
   int list_pos;
   int num_files;
-  char temp[32];
   char *file_name;
   int file_name_length;
-  int ext_pos;
+  int ext_pos = -1;
   int chosen;
   int i;
 
@@ -1885,7 +2015,8 @@ int choose_file(char **wildcards, char *ret, char *title,
         file_name = current_file->d_name;
         file_name_length = strlen(current_file->d_name);
 
-        if(file_name_length > 32) file_name_length = 32;
+        if(file_name_length > 32)
+          file_name_length = 32;
 
         stat(current_file->d_name, &file_info);
         if(S_ISDIR(file_info.st_mode))

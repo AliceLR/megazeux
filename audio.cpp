@@ -37,6 +37,7 @@
 #include "configure.h"
 #include "gdm2s3m.h"
 #include "fsafeopen.h"
+#include "delay.h"
 
 struct _ModPlugFile
 {
@@ -53,12 +54,11 @@ const int freq_conversion = 3579364;
 
 void audio_callback(void *userdata, Uint8 *stream, int len)
 {
-  int i, i2, i3, offset = 0;
+  int i, i2, offset = 0;
   Sint16 *mix_src_ptr;
   Sint32 *mix_dest_ptr;
   Sint32 *buffer_src_ptr;
   Sint16 *buffer_dest_ptr;
-  Sint16 cur_sample16;
   Sint32 cur_sample;
   int sample_duration, end_duration;
   int increment_value, increment_buffer;
@@ -223,7 +223,7 @@ void init_audio(config_info *conf)
   SDL_AudioSpec desired_spec =
   {
     44100,
-    AUDIO_S16,
+    AUDIO_S16SYS,
     2,
     0,
     buffer_size,
@@ -348,7 +348,21 @@ void play_sample(int freq, char *filename)
 
   // FIXME - destroy least recently used?
   if(audio.num_samples_playing >= MAX_SAMS)
-    return;
+  {
+    unsigned int smallest = audio.sam_timestamps[0];
+    int smallest_i = 0;
+    int i;
+    for(i = 1; i < MAX_SAMS; i++)
+    {
+      if(audio.sam_timestamps[i] < smallest)
+      {
+        smallest = audio.sam_timestamps[i];
+        smallest_i = i;
+      }
+    }
+
+    end_individual_sample(smallest_i);
+  }
 
   if(extension_pos && !strcasecmp(filename + extension_pos, ".sam"))
   {
@@ -391,9 +405,6 @@ void play_sample(int freq, char *filename)
       sample_loaded->mSoundFile.Ins[1].nVolume = (256 * sound_gvol) / 8;
       sample_loaded->mSoundFile.Ins[2].nVolume = (256 * sound_gvol) / 8;
 
-      // This number is pretty much obtained via experimentation. It can probably
-      // stand to be a little higher.
-
       // Find a free position to put it
       for(i = 0; i < 16; i++)
       {
@@ -405,6 +416,7 @@ void play_sample(int freq, char *filename)
       audio.sample_buffers[i] =
        (Sint16 *)malloc(audio.audio_settings.size);
       audio.num_samples_playing++;
+      audio.sam_timestamps[i] = get_ticks();
     }
 
     free(input_buffer);
@@ -454,26 +466,10 @@ void volume_mod(int vol)
     audio.current_mod->mSoundFile.SetMasterVolume((vol * music_gvol / 16) + 1);
 }
 
-void mod_exit(void)
-{
-
-}
-
-void mod_init(void)
-{
-
-}
+// FIXME - Implement? The best route right now would be to load a module
+// then mangle it so it only plays the given sample at the given frequency.
 
 void spot_sample(int freq, int sample)
-{
-
-}
-
-// This function will remove samples from the cache one at a time,
-// starting with least-played and ending with currently-playing.
-// Call it removes ONE sample unless CLEAR_ALL is set. Returns 1
-// if nothing was found to deallocate (IE no further fixes possible)
-int free_sam_cache(char clear_all)
 {
 
 }
@@ -510,7 +506,7 @@ const int default_period = 428;
 void convert_sam_to_wav(char *source_name, char *dest_name)
 {
   FILE *source, *dest;
-  int frequency, period;
+  int frequency;
   int source_length, dest_length;
 
   char *data;

@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 2004 Gilead Kutnick
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -109,7 +110,6 @@ void load_robot(Robot *cur_robot, FILE *fp, int savegame)
 
   cur_robot->program = (char *)malloc(program_size);
   fread(cur_robot->program, program_size, 1, fp);
-
 
   // Now create a label cache IF the robot is in use
   if(cur_robot->used)
@@ -901,7 +901,7 @@ void send_sensor_command(World *mzx_world, int id, int command)
 {
   Board *src_board = mzx_world->current_board;
   Sensor *cur_sensor = src_board->sensor_list[id];
-  int x, y, under;
+  int x = -1, y = -1, under = -1;
   char *level_under_id = src_board->level_under_id;
   char *level_under_param = src_board->level_under_param;
   char *level_under_color = src_board->level_under_color;
@@ -1087,7 +1087,6 @@ void set_robot_position(Robot *cur_robot, int position)
 
 int send_robot_direct(Robot *cur_robot, char *mesg, int ignore_lock)
 {
-  int i = 1;
   char *robot_program = cur_robot->program;
   int new_position;
 
@@ -1166,8 +1165,6 @@ void prefix_first_last_xy(World *mzx_world, int *fx, int *fy,
  int *lx, int *ly, int robotx, int roboty)
 {
   Board *src_board = mzx_world->current_board;
-  int player_x;
-  int player_y;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
   int tfx = *fx;
@@ -1179,62 +1176,93 @@ void prefix_first_last_xy(World *mzx_world, int *fx, int *fy,
   {
     case 1:
     case 5:
+    {
       tfx += robotx;
       tfy += roboty;
       break;
+    }
 
     case 2:
     case 6:
+    {
       find_player(mzx_world);
       tfx += mzx_world->player_x;
       tfy += mzx_world->player_y;
       break;
+    }
 
     case 3:
+    {
       tfx += get_counter(mzx_world, "FIRSTXPOS", 0);
       tfy += get_counter(mzx_world, "FIRSTYPOS", 0);
       break;
+    }
 
     case 7:
+    {
       tfx += get_counter(mzx_world, "XPOS", 0);
       tfy += get_counter(mzx_world, "YPOS", 0);
       break;
+    }
   }
 
   switch(mzx_world->last_prefix)
   {
     case 1:
     case 5:
+    {
       tlx += robotx;
       tly += roboty;
       break;
+    }
 
     case 2:
     case 6:
+    {
       find_player(mzx_world);
       tlx += mzx_world->player_x;
       tly += mzx_world->player_y;
       break;
+    }
 
     case 3:
+    {
       tlx += get_counter(mzx_world, "LASTXPOS", 0);
       tly += get_counter(mzx_world, "LASTYPOS", 0);
       break;
+    }
 
     case 7:
+    {
       tlx += get_counter(mzx_world, "XPOS", 0);
       tly += get_counter(mzx_world, "YPOS", 0);
       break;
+    }
   }
 
-  if(tfx < 0) tfx = 0;
-  if(tfy < 0) tfy = 0;
-  if(tlx < 0) tlx = 0;
-  if(tly < 0) tly = 0;
-  if(tfx >= board_width) tfx = board_width - 1;
-  if(tfy >= board_height) tfy = board_height - 1;
-  if(tlx >= board_width) tlx = board_width - 1;
-  if(tly >= board_height) tly = board_height - 1;
+  if(tfx < 0)
+    tfx = 0;
+
+  if(tfy < 0)
+    tfy = 0;
+
+  if(tlx < 0)
+    tlx = 0;
+
+  if(tly < 0)
+    tly = 0;
+
+  if(tfx >= board_width)
+    tfx = board_width - 1;
+
+  if(tfy >= board_height)
+    tfy = board_height - 1;
+
+  if(tlx >= board_width)
+    tlx = board_width - 1;
+
+  if(tly >= board_height)
+    tly = board_height - 1;
 
   *fx = tfx;
   *fy = tfy;
@@ -1250,9 +1278,6 @@ void prefix_first_last_xy(World *mzx_world, int *fx, int *fy,
 void prefix_first_xy_var(World *mzx_world, int *fx, int *fy,
  int robotx, int roboty, int width, int height)
 {
-  Board *src_board = mzx_world->current_board;
-  int player_x;
-  int player_y;
   int tfx = *fx;
   int tfy = *fy;
 
@@ -1260,32 +1285,45 @@ void prefix_first_xy_var(World *mzx_world, int *fx, int *fy,
   {
     case 1:
     case 5:
+    {
       tfx += robotx;
       tfy += roboty;
       break;
+    }
 
     case 2:
     case 6:
+    {
       find_player(mzx_world);
       tfx += mzx_world->player_x;
       tfy += mzx_world->player_y;
       break;
+    }
 
     case 3:
+    {
       tfx += get_counter(mzx_world, "FIRSTXPOS", 0);
       tfy += get_counter(mzx_world, "FIRSTYPOS", 0);
       break;
+    }
 
     case 7:
+    {
       tfx += get_counter(mzx_world, "XPOS", 0);
       tfy += get_counter(mzx_world, "YPOS", 0);
       break;
+    }
   }
 
-  if(tfx < 0) tfx = 0;
-  if(tfy < 0) tfy = 0;
+  if(tfx < 0)
+    tfx = 0;
+
+  if(tfy < 0)
+    tfy = 0;
+
   if(tfx >= width)
     tfx = width - 1;
+
   if(tfy >= height)
     tfy = height - 1;
 
@@ -1296,7 +1334,6 @@ void prefix_first_xy_var(World *mzx_world, int *fx, int *fy,
 void prefix_last_xy_var(World *mzx_world, int *lx, int *ly,
  int robotx, int roboty, int width, int height)
 {
-  Board *src_board = mzx_world->current_board;
   int tlx = *lx;
   int tly = *ly;
 
@@ -1304,26 +1341,34 @@ void prefix_last_xy_var(World *mzx_world, int *lx, int *ly,
   {
     case 1:
     case 5:
+    {
       tlx += robotx;
       tly += roboty;
       break;
+    }
 
     case 2:
     case 6:
+    {
       find_player(mzx_world);
       tlx += mzx_world->player_x;
       tly += mzx_world->player_y;
       break;
+    }
 
     case 3:
+    {
       tlx += get_counter(mzx_world, "LASTXPOS", 0);
       tly += get_counter(mzx_world, "LASTYPOS", 0);
       break;
+    }
 
     case 7:
+    {
       tlx += get_counter(mzx_world, "XPOS", 0);
       tly += get_counter(mzx_world, "YPOS", 0);
       break;
+    }
   }
 
   if(tlx < 0)
@@ -1345,9 +1390,6 @@ void prefix_last_xy_var(World *mzx_world, int *lx, int *ly,
 void prefix_mid_xy_var(World *mzx_world, int *mx, int *my,
  int robotx, int roboty, int width, int height)
 {
-  Board *src_board = mzx_world->current_board;
-  int player_x;
-  int player_y;
   int tmx = *mx;
   int tmy = *my;
 
@@ -1485,7 +1527,7 @@ int move_dir(Board *src_board, int *x, int *y, int dir)
 // NOTE- CLIPS COUNTER NAMES!
 int parse_param(World *mzx_world, char *program, int id)
 {
-  char ibuff[64];
+  char ibuff[256];
 
   if(program[0] == 0)
   {
@@ -1597,8 +1639,6 @@ void robot_box_display(World *mzx_world, char *program,
   // Important status vars (insert kept in intake.cpp)
   int pos = 0, old_pos; // Where IN robot?
   int key; // Key
-  int i, i2;
-  int cur_cmd;
   int fade_status;
 
   label_storage[0] = 0;
@@ -1797,7 +1837,7 @@ void robot_box_display(World *mzx_world, char *program,
 
 int robot_box_up(char *program, int pos, int count)
 {
-  int i, cur_cmd;
+  int i, cur_cmd = -1;
   int old_pos;
   int done = 0;
 
@@ -1835,7 +1875,7 @@ int robot_box_up(char *program, int pos, int count)
 
 int robot_box_down(char *program, int pos, int count)
 {
-  int i, cur_cmd;
+  int i, cur_cmd = -1;
   int old_pos;
   int done = 0;
 
@@ -1877,7 +1917,6 @@ void robot_frame(World *mzx_world, char *program, int id)
   // must already be shown. Simply prints each line. The pointer points
   // to the center line.
   int scroll_base_color = mzx_world->scroll_base_color;
-  int cur_cmd;
   int i, pos = 0;
   int old_pos;
   // Display center line
@@ -1910,7 +1949,7 @@ void robot_frame(World *mzx_world, char *program, int id)
 
 void display_robot_line(World *mzx_world, char *program, int y, int id)
 {
-  char ibuff[64];
+  char ibuff[256];
   char *next;
   int scroll_base_color = mzx_world->scroll_base_color;
   int scroll_arrow_color = mzx_world->scroll_arrow_color;
@@ -1918,19 +1957,24 @@ void display_robot_line(World *mzx_world, char *program, int y, int id)
   switch(program[1])
   {
     case 103: // Normal message
+    {
       tr_msg(mzx_world, program + 3, id, ibuff);
-      ibuff[64] = 0; // Clip
+      ibuff[63] = 0; // Clip
       write_string(ibuff, 8, y, scroll_base_color, 1);
       break;
+    }
 
     case 104: // Option
+    {
       // Skip over label...
       // next is pos of string
       next = next_param_pos(program + 2);
       tr_msg(mzx_world, next + 1, id, ibuff);
+      ibuff[63] = 0; // Clip
       color_string(ibuff, 10, y, scroll_base_color);
       draw_char('', scroll_arrow_color, 8, y);
       break;
+    }
 
     case 105: // Counter-based option
     {
@@ -1943,6 +1987,7 @@ void display_robot_line(World *mzx_world, char *program, int y, int id)
         next = next_param_pos(program + 2);
         next = next_param_pos(next);
         tr_msg(mzx_world, next + 1, id, ibuff);
+        ibuff[63] = 0; // Clip
         color_string(ibuff, 10, y, scroll_base_color);
         draw_char('', scroll_arrow_color, 8, y);
       }
@@ -1950,14 +1995,18 @@ void display_robot_line(World *mzx_world, char *program, int y, int id)
     }
 
     case 116: // Colored message
+    {
       tr_msg(mzx_world, program + 3, id, ibuff);
+      ibuff[63] = 0; // Clip
       color_string(ibuff, 8, y, scroll_base_color);
       break;
+    }
 
     case 117: // Centered message
     {
       int length, x_position;
       tr_msg(mzx_world, program + 3, id, ibuff);
+      ibuff[63] = 0; // Clip
       length = strlencolor(ibuff);
       x_position = 40 - (length / 2);
       color_string(ibuff, x_position, y, scroll_base_color);
@@ -2135,6 +2184,7 @@ void remove_robot_name_entry(Board *src_board, Robot *cur_robot, char *name)
   Robot **name_list = src_board->robot_list_name_sorted;
 
   find_robot(src_board, name, &first, &last);
+
   // Find the one that matches the robot
   while(name_list[first] != cur_robot)
     first++;
@@ -2339,6 +2389,8 @@ void duplicate_robot_direct(Robot *cur_robot, Robot *copy_robot,
 
   copy_robot->pos_within_line = 0;
   copy_robot->status = 0;
+
+  copy_robot->status = 0;
 }
 
 // Finds a robot ID then duplicates a robot there.
@@ -2409,7 +2461,6 @@ int duplicate_scroll(Board *src_board, Scroll *cur_scroll)
   int dest_id = find_free_scroll(src_board);
   if(dest_id != -1)
   {
-    int i;
     Scroll *copy_scroll = (Scroll *)malloc(sizeof(Scroll));
     duplicate_scroll_direct(cur_scroll, copy_scroll);
     src_board->scroll_list[dest_id] = copy_scroll;
@@ -2569,7 +2620,7 @@ void optimize_null_objects(Board *src_board)
 
   if(i2 != i)
   {
-		do_modify |= 1;
+    do_modify |= 1;
     optimized_robot_list[0] = robot_list[0];
     free(robot_list);
     src_board->robot_list =
@@ -2595,7 +2646,7 @@ void optimize_null_objects(Board *src_board)
 
   if(i2 != i)
   {
-		do_modify |= 1;
+    do_modify |= 1;
     optimized_scroll_list[0] = scroll_list[0];
     free(scroll_list);
     src_board->scroll_list =
@@ -2622,7 +2673,7 @@ void optimize_null_objects(Board *src_board)
 
   if(i2 != i)
   {
-		do_modify |= 1;
+    do_modify |= 1;
     optimized_sensor_list[0] = sensor_list[0];
     free(sensor_list);
     src_board->sensor_list =
@@ -2638,47 +2689,47 @@ void optimize_null_objects(Board *src_board)
   // Make sure this is up to date
   robot_list = src_board->robot_list;
 
-	if(do_modify)
-	{
-		// Now, physically modify all references on the board
-		for(y = 0, offset = 0; y < board_height; y++)
-		{
-			for(x = 0; x < board_width; x++, offset++)
-			{
-				d_id = level_id[offset];
-				// Is it a robot?
-				if((d_id == 123) || (d_id == 124))
-				{
-					d_param = level_param[offset];
-					d_new_param = robot_id_translation_list[d_param];
-					level_param[offset] = d_new_param;
-					// Also, as a service, set the x/y coordinates, just in case
-					// they haven't been initialized (this is a potential pitfall)
-					cur_robot = robot_list[d_new_param];
-					cur_robot->xpos = x;
-					cur_robot->ypos = y;
-				}
-				else
-	
-				// Is it a scoll?
-				if((d_id == 125) || (d_id == 126))
-				{
-					d_param = level_param[offset];
-					d_new_param = scroll_id_translation_list[d_param];
-					level_param[offset] = d_new_param;
-				}
-				else
-	
-				// Is it a sensor?
-				if(d_id == 122)
-				{
-					d_param = level_param[offset];
-					d_new_param = sensor_id_translation_list[d_param];
-					level_param[offset] = d_new_param;
-				}
-			}
-		}
-	}
+  if(do_modify)
+  {
+    // Now, physically modify all references on the board
+    for(y = 0, offset = 0; y < board_height; y++)
+    {
+      for(x = 0; x < board_width; x++, offset++)
+      {
+        d_id = level_id[offset];
+        // Is it a robot?
+        if((d_id == 123) || (d_id == 124))
+        {
+          d_param = level_param[offset];
+          d_new_param = robot_id_translation_list[d_param];
+          level_param[offset] = d_new_param;
+          // Also, as a service, set the x/y coordinates, just in case
+          // they haven't been initialized (this is a potential pitfall)
+          cur_robot = robot_list[d_new_param];
+          cur_robot->xpos = x;
+          cur_robot->ypos = y;
+        }
+        else
+  
+        // Is it a scoll?
+        if((d_id == 125) || (d_id == 126))
+        {
+          d_param = level_param[offset];
+          d_new_param = scroll_id_translation_list[d_param];
+          level_param[offset] = d_new_param;
+        }
+        else
+  
+        // Is it a sensor?
+        if(d_id == 122)
+        {
+          d_param = level_param[offset];
+          d_new_param = sensor_id_translation_list[d_param];
+          level_param[offset] = d_new_param;
+        }
+      }
+    }
+  }
 
   // Free the lists
   free(robot_id_translation_list);
@@ -2690,6 +2741,7 @@ Robot *create_blank_robot(int x, int y)
 {
   Robot *cur_robot = (Robot *)malloc(sizeof(Robot));
   create_blank_robot_direct(cur_robot, x, y);
+  return cur_robot;
 }
 
 void create_blank_robot_direct(Robot *cur_robot, int x, int y)
@@ -2714,6 +2766,7 @@ Scroll *create_blank_scroll()
 {
   Scroll *cur_scroll = (Scroll *)malloc(sizeof(Scroll));
   create_blank_scroll_direct(cur_scroll);
+  return cur_scroll;
 }
 
 void create_blank_scroll_direct(Scroll *cur_scroll)
@@ -2734,6 +2787,7 @@ Sensor *create_blank_sensor()
 {
   Sensor *cur_sensor = (Sensor *)malloc(sizeof(Sensor));
   create_blank_sensor_direct(cur_sensor);
+  return cur_sensor;
 }
 
 void create_blank_sensor_direct(Sensor *cur_sensor)
@@ -2752,21 +2806,21 @@ int get_robot_id(Board *src_board, char *name)
     // a back-reference for ID's
     int offset = cur_robot->xpos +
      (cur_robot->ypos * src_board->board_width);
-		int d_id = src_board->level_id[offset];
+    int d_id = src_board->level_id[offset];
 
-		if((d_id == 123) || (d_id == 124))
-		{
-			return src_board->level_param[offset];
-		}
-		else
-		{
-			int i;
-			for(i = 1; i <= src_board->num_robots; i++)
-			{
-				if(!strcmp(name, (src_board->robot_list[i])->robot_name))
-					return i;
-			}
-		}
+    if((d_id == 123) || (d_id == 124))
+    {
+      return src_board->level_param[offset];
+    }
+    else
+    {
+      int i;
+      for(i = 1; i <= src_board->num_robots; i++)
+      {
+        if(!strcmp(name, (src_board->robot_list[i])->robot_name))
+          return i;
+      }
+    }
   }
 
   return -1;

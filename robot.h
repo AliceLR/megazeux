@@ -44,21 +44,21 @@ typedef struct
 
 typedef struct
 {
-  unsigned int program_length;
+  int program_length;
   char *program;                  // Pointer to robot's program
   char robot_name[15];
   unsigned char robot_char;
   // Location of start of line (pt to FF for none)
-  unsigned int cur_prog_line;
-  unsigned int pos_within_line;   // Countdown for GO and WAIT
-  unsigned int robot_cycle;
-  unsigned int cycle_count;
-  unsigned char bullet_type;
-  unsigned char is_locked;
-  unsigned char can_lavawalk;     // Can always travel on fire
-  unsigned char walk_dir;         // 1-4, of course
-  unsigned char last_touch_dir;   // 1-4, of course
-  unsigned char last_shot_dir;    // 1-4, of course
+  int cur_prog_line;
+  int pos_within_line;   					// Countdown for GO and WAIT
+  int robot_cycle;
+  int cycle_count;
+  char bullet_type;
+  char is_locked;
+  char can_lavawalk;     					// Can always travel on fire
+  char walk_dir;         					// 1-4, of course
+  char last_touch_dir;   					// 1-4, of course
+  char last_shot_dir;    					// 1-4, of course
 
   // Used for IF ALIGNED "robot", THISX/THISY, PLAYERDIST,
   // HORIZPLD, VERTPLD, and others. Keep udpated at all
@@ -91,11 +91,11 @@ typedef struct
 
 typedef struct
 {
-  unsigned int num_lines;
+	int num_lines;
 
   // Pointer to scroll's message
   char *mesg;
-  unsigned int mesg_size;
+  int mesg_size;
 
   // Set to 1 if used onscreen, 0 if not
   char used;
@@ -104,7 +104,7 @@ typedef struct
 typedef struct
 {
   char sensor_name[15];
-  unsigned char sensor_char;
+  char sensor_char;
   char robot_to_mesg[15];
 
   // Set to 1 if used onscreen, 0 if not
@@ -229,7 +229,7 @@ void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
 void copy_board_to_board_buffer(Board *src_board, int x, int y,
  int width, int height, char *dest_id, char *dest_param,
  char *dest_color, char *dest_under_id, char *dest_under_param,
- char *dest_under_color);
+ char *dest_under_color, Board *dest_board);
 void copy_board_buffer_to_board(Board *src_board, int x, int y,
  int width, int height, char *src_id, char *src_param,
  char *src_color, char *src_under_id, char *src_under_param,

@@ -59,7 +59,7 @@ typedef enum
   keycode_unicode
 } keycode_type;
 
-Uint32 process_event(SDL_Event event);
+Uint32 process_event(SDL_Event *event);
 void wait_event();
 Uint32 update_autorepeat();
 Uint32 update_event_status();

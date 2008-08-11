@@ -19,289 +19,571 @@
  */
 
 #include <stdlib.h>
+#include <string.h>
+
 #include "mzm.h"
 #include "idput.h"
-#include "data.h"
 #include "world.h"
+#include "fsafeopen.h"
 
-void save_mzm(World *mzx_world, char *name, int x, int y, int w,
- int h, int mode, int mode2)
+// This is assumed to not go over the edges.
+
+void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
+ int width, int height, int mode, int savegame)
 {
-  Board *src_board = mzx_world->current_board;
-  int i, i2;
-  int bwidth, bheight;
-  char *src_char;
-  char *src_color;
-  int edge_skip;
+  FILE *output_file = fsafeopen(name, "wb");
 
-  if((mode == 1) && !src_board->overlay_mode) return;
-
-  if(mode == 2)
+  if(output_file)
   {
-    bwidth = mzx_world->vlayer_width;
-    bheight = mzx_world->vlayer_height;
-  }
-  else
-  {
-    bwidth = src_board->board_width;;
-    bheight = src_board->board_height;
-  }
+    int storage_mode = 0;
 
-  edge_skip = bwidth - w;
+    if(mode)
+      storage_mode = 1;
 
-  // No attempt is made to clip it.. if it runs off the board, it just
-  // doesn't do it.
-  if(!((x < 0) | (y < 0) | ((x + w) > bwidth) | ((y + h) > bheight)))
-  {
-    FILE *fp = fopen((const char *)name, "wb");
-    fprintf(fp, "MZMX");
-    fputc(w, fp);
-    fputc(h, fp);
-    fseek(fp, 16, SEEK_SET);
+    if(savegame)
+      savegame = 1;
 
-    // mode 0 = from board
-    // mode 1 = from overlay
-    // mode 2 = from vlayer
-
-    if(mode == 0)
+    fwrite("MZM2", 4, 1, output_file);
+    fputw(width, output_file);
+    fputw(height, output_file);
+    // Come back here later if there's robot information
+    fputd(0, output_file);
+    fputc(0, output_file);
+    fputc(storage_mode, output_file);
+    fputc(0, output_file);
+    fseek(output_file, 1, SEEK_CUR);
+  
+    switch(mode)
     {
-      char *src_id =
-       src_board->level_id + (y * bwidth) + x;
-      int src_id2 = (y * bwidth) + x;
-      char *src_param =
-       src_board->level_param + (y * bwidth) + x;
-      char *src_color =
-       src_board->level_color + (y * bwidth) + x;
-      char *src_uid =
-       src_board->level_under_id + (y * bwidth) + x;
-      char *src_uparam =
-       src_board->level_under_param + (y * bwidth) + x;
-      char *src_ucolor =
-       src_board->level_under_color + (y * bwidth) + x;
-      int edge_skip = bwidth - w;
-      char id;
-
-      for(i = 0; i < h; i++)
+      // Board, raw
+      case 0:
       {
-        for(i2 = 0; i2 < w; i2++)
+        Board *src_board = mzx_world->current_board;
+        int board_width = src_board->board_width;
+        char *level_id = src_board->level_id;
+        char *level_param = src_board->level_param;
+        char *level_color = src_board->level_color;
+        char *level_under_id = src_board->level_under_id;
+        char *level_under_param = src_board->level_under_param;
+        char *level_under_color = src_board->level_under_color;
+        int x, y;
+        int offset = start_x + (start_y * board_width);
+        int line_skip = board_width - width;
+        int num_robots = 0;
+        char robot_numbers[256];
+        int robot_table_position;
+        int current_id;
+        int i;
+
+        for(y = 0; y < height; y++)
         {
-          // Don't put a new player, robot, pushable robot, scroll,
-          // sign, or sensor
-          id = *src_id;
-          if(id < 122)
-          {
-            fputc(*src_id, fp);
-            // if mode2 switch, save the char there as param
-            if(mode2)
+          for(x = 0; x < width; x++, offset++)
+          {           
+            current_id = level_id[offset];
+
+            if((current_id == 123) || (current_id == 124))
             {
-              fputc(get_id_char(src_board, src_id2), fp);
+              // Robot
+              robot_numbers[num_robots] = level_param[offset];
+              num_robots++;
+              
+              fputc(current_id, output_file);
+              fputc(0, output_file);
+              fputc(level_color[offset], output_file);
+              fputc(level_under_id[offset], output_file);
+              fputc(level_under_param[offset], output_file);
+              fputc(level_under_color[offset], output_file);
+            }
+            else
+
+            if((current_id == 122) || (current_id >= 125))
+            {
+              // Sensor, scroll, sign, or player
+              // Put customblock fake
+              fputc(5, output_file);
+              fputc(get_id_char(src_board, offset), output_file);
+              fputc(get_id_color(src_board, offset), output_file);
+              fputc(level_under_id[offset], output_file);
+              fputc(level_under_param[offset], output_file);
+              fputc(level_under_color[offset], output_file);
             }
             else
             {
-              fputc(*src_param, fp);
+              fputc(current_id, output_file);
+              fputc(level_param[offset], output_file);
+              fputc(level_color[offset], output_file);
+              fputc(level_under_id[offset], output_file);
+              fputc(level_under_param[offset], output_file);
+              fputc(level_under_color[offset], output_file);
             }
           }
-          else
-          {
-            // Instead, put a customblock that looks like the thing
-            fputc(5, fp);
-            fputc(get_id_char(src_board, src_id2), fp);
-          }
-          fputc(*src_color, fp);
-          fputc(*src_uid, fp);
-          fputc(*src_uparam, fp);
-          fputc(*src_ucolor, fp);
-          src_id++;
-          src_param++;
-          src_color++;
-          src_uid++;
-          src_uparam++;
-          src_ucolor++;
-          src_id2++;
+          offset += line_skip;
         }
-        src_id += edge_skip;
-        src_id2 += edge_skip;
-        src_param += edge_skip;
-        src_color += edge_skip;
-        src_uid += edge_skip;
-        src_uparam += edge_skip;
-        src_ucolor += edge_skip;
-      }
-      fclose(fp);
-      return;
-    }
 
-    if(mode <= 2)
-    {
-      if(mode == 1)
-      {
-        src_char = src_board->overlay + (y * bwidth) + x;
-        src_color = src_board->overlay_color + (y * bwidth) + x;
-      }
-      else
-
-      if(mode == 2)
-      {
-        src_char = mzx_world->vlayer_chars +
-         (y * mzx_world->vlayer_width) + x;
-        src_color = mzx_world->vlayer_colors +
-         (y * mzx_world->vlayer_width) + x;
-      }
-
-      for(i = 0; i < h; i++)
-      {
-        for(i2 = 0; i2 < w; i2++)
+        // Go back to header to put robot table information
+        if(num_robots)
         {
-          fputc(5, fp);
-          fputc(*src_char, fp);
-          fputc(*src_color, fp);
-          fputc(0, fp);
-          fputc(0, fp);
-          fputc(0, fp);
-          src_char++;
-          src_color++;
-        }
-        src_char += edge_skip;
-        src_color += edge_skip;
-      }
-    }
-    fclose(fp);
-  }
-}
+          Robot **robot_list = src_board->robot_list;
 
-void load_mzm(World *mzx_world, char *name, int x, int y, int mode)
-{
-  Board *src_board = mzx_world->current_board;
-  int i, i2;
-  int w, h;
+          robot_table_position = ftell(output_file);
+          fseek(output_file, 8, SEEK_SET);
+          // Where the robots will be stored
+          fputd(robot_table_position, output_file);
+          // Number of robots
+          fputc(num_robots, output_file);
+          // Skip board storage mode
+          fseek(output_file, 1, SEEK_CUR);
+          // Savegame mode for robots
+          fputc(savegame, output_file);
 
-  if((mode == 1) && !src_board->overlay_mode) return;
-
-  FILE *fp = fopen(name, "rb");
-
-  if(fp && (fgetc(fp) == 'M') && (fgetc(fp) == 'Z') &&
-   (fgetc(fp) == 'M') && (fgetc(fp) == 'X'))
-  {
-    int bwidth, bheight;
-
-    // No attempt is made to clip it.. if it runs off the board, it just
-    // doesn't do it.
-    w = fgetc(fp);
-    h = fgetc(fp);
-    fseek(fp, 16, SEEK_SET);
-
-    if(mode == 2)
-    {
-      bwidth = mzx_world->vlayer_width;
-      bheight = mzx_world->vlayer_height;
-    }
-    else
-    {
-      bwidth = src_board->board_width;
-      bheight = src_board->board_height;
-    }
-
-    // No attempt is made to clip it.. if it runs off the board, it just
-    // doesn't do it.
-    if(!((x < 0) | (y < 0) | ((x + w) > bwidth) | ((y + h) > bheight)))
-    {
-      // mode 0 = to board
-      // mode 1 = to overlay
-      // mode 2 = to vlayer
-
-      if(mode == 0)
-      {
-        char *dest_id =
-         src_board->level_id + (y * bwidth) + x;
-        char *dest_param =
-         src_board->level_param + (y * bwidth) + x;
-        char *dest_color =
-         src_board->level_color + (y * bwidth) + x;
-        char *dest_uid =
-         src_board->level_under_id + (y * bwidth) + x;
-        char *dest_uparam =
-         src_board->level_under_param + (y * bwidth) + x;
-        char *dest_ucolor =
-         src_board->level_under_color + (y * bwidth) + x;
-        int edge_skip = bwidth - w;
-
-        for(i = 0; i < h; i++)
-        {
-          for(i2 = 0; i2 < w; i2++)
+          // Back to robot table position
+          fseek(output_file, robot_table_position, SEEK_SET);
+    
+          for(i = 0; i < num_robots; i++)
           {
-            // Don't overwrite the player!
-            if(*dest_id != 127)
-            {
-              *dest_id = fgetc(fp);
-            }
-            else
-            {
-              fgetc(fp);
-            }
-            *dest_param = fgetc(fp);
-            *dest_color = fgetc(fp);
-            *dest_uid = fgetc(fp);
-            *dest_uparam = fgetc(fp);
-            *dest_ucolor = fgetc(fp);
-            dest_id++;
-            dest_param++;
-            dest_color++;
-            dest_uid++;
-            dest_uparam++;
-            dest_ucolor++;
+            // Save each robot
+            save_robot(robot_list[robot_numbers[i]], output_file, savegame);
           }
-          dest_id += edge_skip;
-          dest_param += edge_skip;
-          dest_color += edge_skip;
-          dest_uid += edge_skip;
-          dest_uparam += edge_skip;
-          dest_ucolor += edge_skip;
         }
-        fclose(fp);
-        return;
+
+        break;
       }
 
-      if(mode <= 2)
+      // Overlay/Vlayer
+      case 1:
+      case 2:
       {
-        char *dest_char;
-        char *dest_color;
-        int edge_skip = bwidth - w;
+        Board *src_board = mzx_world->current_board;
+        int board_width;
+        int x, y;
+        int offset;
+        int line_skip;
+        char *chars;
+        char *colors;
 
         if(mode == 1)
         {
-          dest_char = src_board->overlay + (y * bwidth) + x;
-          dest_color = src_board->overlay_color + (y * bwidth) + x;
+          // Overlay
+          if(!src_board->overlay_mode)
+            setup_overlay(src_board, 3);
+
+          chars = src_board->overlay;
+          colors = src_board->overlay_color;
+          board_width = src_board->board_width;
         }
         else
-
-        if(mode == 2)
         {
-          dest_char = mzx_world->vlayer_chars +
-           (y * bwidth) + x;
-          dest_color = mzx_world->vlayer_colors +
-           (y * bwidth) + x;
+          // Vlayer
+          chars = mzx_world->vlayer_chars;
+          colors = mzx_world->vlayer_colors;
+          board_width = mzx_world->vlayer_width;
         }
 
-        for(i = 0; i < h; i++)
+        offset = start_x + (start_y * board_width);
+        line_skip = board_width - width;
+
+        for(y = 0; y < height; y++)
         {
-          for(i2 = 0; i2 < w; i2++)
+          for(x = 0; x < width; x++, offset++)
           {
-            fgetc(fp);
-            *dest_char = fgetc(fp);
-            *dest_color = fgetc(fp);
-            fgetc(fp);
-            fgetc(fp);
-            fgetc(fp);
-            dest_char++;
-            dest_color++;
+            fputc(chars[offset], output_file);
+            fputc(colors[offset], output_file);
           }
-          dest_char += edge_skip;
-          dest_color += edge_skip;
+          offset += line_skip;
         }
+
+        break;
+      }
+
+      // Board, char based
+      case 3:
+      {
+        Board *src_board = mzx_world->current_board;
+        int board_width = src_board->board_width;
+        int x, y;
+        int offset = start_x + (start_y * board_width);
+        int line_skip = board_width - width;
+
+        for(y = 0; y < height; y++)
+        {
+          for(x = 0; x < width; x++, offset++)
+          {
+            fputc(get_id_char(src_board, offset), output_file);
+            fputc(get_id_color(src_board, offset), output_file);
+          }
+          offset += line_skip;
+        }
+
+        break;
       }
     }
 
-    fclose(fp);
+    fclose(output_file);
   }
 }
+
+// This will clip.
+
+int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
+ int mode, int savegame)
+{
+  FILE *input_file = fsafeopen(name, "rb");
+
+  if(input_file)
+  {
+    char magic_string[5];
+    int storage_mode;
+    int width, height;
+    int savegame_mode;
+    int num_robots;
+    int robots_location;
+
+    fread(magic_string, 4, 1, input_file);
+    magic_string[4] = 0;
+    
+    if(!strncmp(magic_string, "MZMX", 4))
+    {
+      // An MZM1 file is always storage mode 0
+      storage_mode = 0;
+      savegame_mode = 0;
+      num_robots = 0;
+      robots_location = 0;
+      width = fgetc(input_file);
+      height = fgetc(input_file);
+      fseek(input_file, 10, SEEK_CUR);
+    }
+    else
+
+    if(!strncmp(magic_string, "MZM2", 4))
+    {
+      width = fgetw(input_file);
+      height = fgetw(input_file);
+      robots_location = fgetd(input_file);
+      num_robots = fgetc(input_file);
+      storage_mode = fgetc(input_file);
+      savegame_mode = fgetc(input_file);
+      fseek(input_file, 1, SEEK_CUR);
+    }
+    else
+    {
+      // Failure, abort
+      fclose(input_file);
+      return -1;
+    }
+        
+    switch(mode)
+    {
+      // Write to board
+      case 0:
+      {
+        Board *src_board = mzx_world->current_board;
+        int board_width = src_board->board_width;
+        int board_height = src_board->board_height;
+        int effective_width = width;
+        int effective_height = height;
+        int file_line_skip;
+        int line_skip;
+        int x, y;
+        int offset = start_x + (start_y * board_width);
+        char *level_id = src_board->level_id;
+        char *level_param = src_board->level_param;
+        char *level_color = src_board->level_color;
+        char *level_under_id = src_board->level_under_id;
+        char *level_under_param = src_board->level_under_param;
+        char *level_under_color = src_board->level_under_color;
+        int src_id;
+
+        // Clip
+
+        if((effective_width + start_x) >= board_width)
+          effective_width = board_width - start_x;
+      
+        if((effective_height + start_y) >= board_height)
+          effective_height = board_height - start_y;
+      
+        line_skip = board_width - effective_width;
+
+        switch(storage_mode)
+        {
+          case 0:
+          {
+            // Board style, write as is
+            int current_id;
+            int current_robot_loaded = 0;
+            int robot_x_locations[256];
+            int robot_y_locations[256];
+            int width_difference;
+            int i;
+
+            width_difference = width - effective_width;
+
+            for(y = 0; y < effective_height; y++)
+            {
+              for(x = 0; x < effective_width; x++, offset++)
+              {
+                current_id = fgetc(input_file);               
+                if((current_id == 123) || (current_id == 124))
+                {
+                  robot_x_locations[current_robot_loaded] = x + start_x;
+                  robot_y_locations[current_robot_loaded] = y + start_y;
+                  current_robot_loaded++;
+                }
+
+                src_id = level_id[offset];
+
+                if(src_id == 122)
+                  clear_sensor_id(src_board, level_param[offset]);
+                else
+
+                if((src_id == 126) || (src_id == 125))
+                  clear_scroll_id(src_board, level_param[offset]);
+                else
+
+                if((src_id == 123) || (src_id == 124))
+                  clear_robot_id(src_board, level_param[offset]);
+
+                // Don't allow the player to be overwritten
+                if(src_id != 127)
+                {
+                  level_id[offset] = current_id;
+                  level_param[offset] = fgetc(input_file);
+                  level_color[offset] = fgetc(input_file);
+                  level_under_id[offset] = fgetc(input_file);
+                  level_under_param[offset] = fgetc(input_file);
+                  level_under_color[offset] = fgetc(input_file);
+                }
+                else
+                {
+                  fseek(input_file, 5, SEEK_CUR);
+                }
+              }             
+
+              offset += line_skip;
+
+              // Gotta run through and mark the next robots to be skipped
+              for(i = 0; i < width_difference; i++)
+              {
+                current_id = fgetc(input_file);
+                fseek(input_file, 5, SEEK_CUR);
+
+                if((current_id == 123) || (current_id == 124))
+                {
+                  robot_x_locations[current_robot_loaded] = -1;
+                  current_robot_loaded++;
+                }
+              }
+            }
+
+            for(i = current_robot_loaded; i < num_robots; i++)
+            {
+              robot_x_locations[i] = -1;
+            }
+
+            if(num_robots)
+            {
+              Robot *cur_robot;
+              int current_x, current_y;
+              int offset;
+              int new_param;
+
+              fseek(input_file, robots_location, SEEK_SET);
+
+              for(i = 0; i < num_robots; i++)
+              {
+                cur_robot = load_robot_allocate(input_file, savegame_mode);
+                current_x = robot_x_locations[i];
+                current_y = robot_y_locations[i];
+
+                if(current_x != -1)
+                {
+                  new_param = find_free_robot(src_board);
+                  offset = current_x + (current_y * board_width);
+                  
+                  if(new_param != -1)
+                  {
+                    if(level_id[offset] != 127)
+                    {
+                      add_robot_name_entry(src_board, cur_robot,
+                       cur_robot->robot_name);
+                      src_board->robot_list[new_param] = cur_robot;
+                      cur_robot->xpos = current_x;
+                      cur_robot->ypos = current_y;
+                      level_param[offset] = 
+                       new_param;
+                    }
+                    else
+                    {
+                      clear_robot(cur_robot);
+                    }
+                  }
+                  else
+                  {
+                    clear_robot(cur_robot);
+                    level_id[offset] = 0;
+                    level_param[offset] = 0;
+                    level_color[offset] = 7;
+                  }
+                }
+                else
+                {
+                  clear_robot(cur_robot);
+                }
+              }  
+            }
+            break;
+          }
+
+          case 1:
+          {
+            // Compact style; expand to customblocks
+            // Board style, write as is
+
+            file_line_skip = (width - effective_width) * 2;
+
+            for(y = 0; y < effective_height; y++)
+            {
+              for(x = 0; x < effective_width; x++, offset++)
+              {
+                src_id = level_id[offset];
+
+                if(src_id == 122)
+                  clear_sensor_id(src_board, level_param[offset]);
+                else
+
+                if((src_id == 126) || (src_id == 125))
+                  clear_scroll_id(src_board, level_param[offset]);
+                else
+
+                if((src_id == 123) || (src_id == 124))
+                  clear_robot_id(src_board, level_param[offset]);
+
+                // Don't allow the player to be overwritten
+                if(src_id != 127)
+                {
+                  level_id[offset] = 5;
+                  level_param[offset] = fgetc(input_file);
+                  level_color[offset] = fgetc(input_file);
+                  level_under_id[offset] = 0;
+                  level_under_param[offset] = 0;
+                  level_under_color[offset] = 0;
+                }
+                else
+                {
+                  fseek(input_file, 2, SEEK_CUR);
+                }
+              }
+
+              offset += line_skip;
+              fseek(input_file, file_line_skip, SEEK_CUR);
+            }           
+            break;
+          }
+        }
+        break;
+      }
+
+      // Overlay/vlayer
+      case 1:
+      case 2:
+      {
+        Board *src_board = mzx_world->current_board;
+        int dest_width = src_board->board_width;
+        int dest_height = src_board->board_height;
+        char *dest_chars;
+        char *dest_colors;
+        int effective_width = width;
+        int effective_height = height;
+        int file_line_skip;
+        int line_skip;
+        int x, y;
+        int offset;
+
+        if(mode == 1)
+        {
+          // Overlay
+          if(!src_board->overlay_mode)
+            setup_overlay(src_board, 3);
+
+          dest_chars = src_board->overlay;
+          dest_colors = src_board->overlay_color;
+          dest_width = src_board->board_width;
+          dest_height = src_board->board_height;
+        }
+        else
+        {
+          // Vlayer
+          dest_chars = mzx_world->vlayer_chars;
+          dest_colors = mzx_world->vlayer_colors;
+          dest_width = mzx_world->vlayer_width;
+          dest_height = mzx_world->vlayer_height;
+        }
+
+        offset = start_x + (start_y * dest_width);
+
+        // Clip
+
+        if((effective_width + start_x) >= dest_width)
+          effective_width = dest_width - start_x;
+      
+        if((effective_height + start_y) >= dest_height)
+          effective_height = dest_height - start_y;
+      
+        line_skip = dest_width - effective_width;
+
+        switch(storage_mode)
+        {
+          case 0:
+          {
+            // Coming from board storage; for now use param as char
+
+            file_line_skip = (width - effective_width) * 6;
+
+            for(y = 0; y < effective_height; y++)
+            {
+              for(x = 0; x < effective_width; x++, offset++)
+              {
+                // Skip ID
+                fseek(input_file, 1, SEEK_CUR);
+                dest_chars[offset] = fgetc(input_file);
+                dest_colors[offset] = fgetc(input_file);
+                // Skip under parts
+                fseek(input_file, 3, SEEK_CUR);
+              }             
+  
+              offset += line_skip;
+              fseek(input_file, file_line_skip, SEEK_CUR);
+            }           
+            break;
+          }
+
+          case 1:
+          {
+            // Coming from layer storage; transfer directly
+
+            file_line_skip = (width - effective_width) * 2;
+
+            for(y = 0; y < effective_height; y++)
+            {
+              for(x = 0; x < effective_width; x++, offset++)
+              {
+                dest_chars[offset] = fgetc(input_file);
+                dest_colors[offset] = fgetc(input_file);
+              }             
+  
+              offset += line_skip;
+              fseek(input_file, file_line_skip, SEEK_CUR);
+            }           
+            break;
+          }
+
+        }     
+        break;
+      }
+    }
+    fclose(input_file);
+  }
+
+  return 0;
+}
+
 

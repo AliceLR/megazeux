@@ -29,13 +29,13 @@
 
 // Type 0/1 to DISPLAY a scroll/sign
 
-void scroll_edit(World *mzx_world, Scroll *scroll, char type = 2);
-void scroll_frame(World *mzx_world, Scroll *scroll, unsigned int pos);
+void scroll_edit(World *mzx_world, Scroll *scroll, int type);
+void scroll_frame(World *mzx_world, Scroll *scroll, int pos);
 // type == 0 scroll, 1 sign, 2 scroll edit
-void scroll_edging(World *mzx_world, char type);
-void help_display(World *mzx_world, char *help, unsigned int offs,
+void scroll_edging(World *mzx_world, int type);
+void help_display(World *mzx_world, char *help, int offs,
  char *file, char *label);
-void help_frame(World *mzx_world, char *help, unsigned int pos);
+void help_frame(World *mzx_world, char *help, int pos);
 char print(char *str);
 int strlencolor(char *str);
 

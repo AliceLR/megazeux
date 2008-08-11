@@ -45,7 +45,7 @@ void offs_place_id(World *mzx_world, unsigned int offset, char id,
   Board *src_board = mzx_world->current_board;
   unsigned char p_id = src_board->level_id[offset];
   int p_flag = flags[p_id];
-  int d_flag = flags[id];
+  int d_flag = flags[(int)id];
 
   // Mark as updated
   update_done[offset] = 1;

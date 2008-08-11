@@ -40,6 +40,7 @@ typedef struct
   Sint32 *mix_buffer;
   Sint16 *mod_buffer;
   Sint16 *sample_buffers[MAX_SAMS];
+  Uint32 sam_timestamps[MAX_SAMS];
   Uint32 repeat_timeout;
   Uint32 repeat_timestamp;
   Uint32 pc_speaker_on;
