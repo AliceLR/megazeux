@@ -1,43 +1,45 @@
-#include "rasm.h"
 #include <ctype.h>
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
 
-int cm3[]   = { IMM_U16 | STRING };
+#include "rasm.h"
+
+int cm3[]   = { IGNORE_FOR, IMM_U16 | STRING };
 int cm4[]   = { IMM_U16 | STRING };
-int cm5[]   = { DIR, IMM_U16 | STRING };
+int cm5[]   = { DIR, IGNORE_FOR, IMM_U16 | STRING };
 int cm6[]   = { DIR };
 int cm7[]   = { COLOR | STRING, THING, PARAM };
 int cm8[]   = { CHARACTER | STRING | IMM_U16 };
 int cm9[]   = { COLOR | STRING };
 int cm10[]  = { IMM_S16 | STRING, IMM_S16 | STRING };
-int cm11[]  = { STRING, IMM_U16 | STRING };
-int cm12[]  = { STRING, IMM_U16 | STRING };
-int cm13[]  = { STRING, IMM_U16 | STRING };
-int cm14[]  = { STRING, STRING };
-int cm15[]  = { STRING, STRING };
-int cm16[]  = { STRING, STRING };
-int cm17[]  = { STRING, EQUALITY, IMM_U16 | STRING, STRING };
-int cm18[]  = { STRING, EQUALITY, STRING, STRING };
-int cm19[]  = { CONDITION, STRING };
-int cm20[]  = { CMD_NOT, CONDITION, STRING };
-int cm21[]  = { CMD_ANY, COLOR | STRING, THING, PARAM, STRING };
-int cm22[]  = { CMD_NOT, CMD_ANY, COLOR | STRING, THING, PARAM, STRING };
-int cm23[]  = { COLOR | STRING, THING, PARAM, DIR, STRING };
-int cm24[]  = { CMD_NOT, COLOR | STRING, THING, PARAM, DIR, STRING };
-int cm25[]  = { COLOR | STRING, THING, PARAM, IMM_S16 | STRING, IMM_S16 | STRING, STRING };
-int cm26[]  = { IMM_S16 | STRING, IMM_S16 | STRING, STRING };
-int cm27[]  = { DIR, CMD_PLAYER, COLOR | STRING, THING, PARAM, STRING };
+int cm11[]  = { STRING, IGNORE_TO, IMM_U16 | STRING };
+int cm12[]  = { STRING, IGNORE_BY, IMM_U16 | STRING };
+int cm13[]  = { STRING, IGNORE_BY, IMM_U16 | STRING };
+int cm14[]  = { STRING, IGNORE_TO, STRING };
+int cm15[]  = { STRING, IGNORE_BY, STRING };
+int cm16[]  = { STRING, IGNORE_BY, STRING };
+int cm17[]  = { STRING, EQUALITY, IMM_U16 | STRING, IGNORE_THEN, STRING };
+int cm18[]  = { STRING, EQUALITY, STRING, IGNORE_THEN, STRING };
+int cm19[]  = { CONDITION, IGNORE_THEN, STRING };
+int cm20[]  = { CMD_NOT, CONDITION, IGNORE_THEN, STRING };
+int cm21[]  = { CMD_ANY, COLOR | STRING, THING, PARAM, IGNORE_THEN, STRING };
+int cm22[]  = { CMD_NOT, CMD_ANY, COLOR | STRING, THING, PARAM, IGNORE_THEN, STRING };
+int cm23[]  = { COLOR | STRING, THING, PARAM, DIR, IGNORE_THEN, STRING };
+int cm24[]  = { CMD_NOT, COLOR | STRING, THING, PARAM, DIR, IGNORE_THEN, STRING };
+int cm25[]  = { COLOR | STRING, THING, PARAM, IGNORE_AT, IMM_S16 | STRING, 
+ IMM_S16 | STRING, IGNORE_THEN, STRING };
+int cm26[]  = { IMM_S16 | STRING, IGNORE_AT, IMM_S16 | STRING, IGNORE_THEN, STRING };
+int cm27[]  = { DIR, CMD_PLAYER, COLOR | STRING, THING, PARAM, IGNORE_THEN, STRING };
 int cm28[]  = { STRING };
 int cm29[]  = { STRING };
 int cm30[]  = { STRING };
-int cm31[]  = { STRING, STRING };
+int cm31[]  = { STRING, IGNORE_TO, STRING };
 int cm32[]  = { IMM_U16 | STRING };
-int cm33[]  = { COLOR | STRING, THING, PARAM, DIR };
+int cm33[]  = { COLOR | STRING, THING, PARAM, IGNORE_TO, DIR };
 int cm34[]  = { IMM_U16 | STRING, ITEM };
 int cm35[]  = { IMM_U16 | STRING, ITEM };
-int cm36[]  = { IMM_U16 | STRING, ITEM, STRING };
+int cm36[]  = { IMM_U16 | STRING, ITEM, IGNORE_ELSE, STRING };
 int cm39[]  = { STRING };
 int cm40[]  = { IMM_U16 | STRING, STRING };
 int cm41[]  = { IMM_U16 | STRING };
@@ -49,49 +51,54 @@ int cm46[]  = { CMD_PLAY, STRING };
 int cm47[]  = { CMD_PLAY };
 int cm49[]  = { IMM_U16 | STRING };
 int cm50[]  = { CMD_SFX, STRING };
-int cm51[]  = { DIR };
-int cm54[]  = { DIR, STRING };
+int cm51[]  = { IGNORE_AT, DIR };
+int cm54[]  = { IGNORE_AT, DIR, IGNORE_TO, STRING };
 int cm55[]  = { STRING, IMM_U16 | STRING };
 int cm56[]  = { STRING, IMM_U16 | STRING };
 int cm59[]  = { CMD_NS };
 int cm60[]  = { CMD_EW };
 int cm61[]  = { CMD_ATTACK };
-int cm62[]  = { CMD_PLAYER, DIR };
-int cm63[]  = { CMD_PLAYER, DIR, STRING };
-int cm64[]  = { CMD_PLAYER, IMM_S16 | STRING, IMM_S16 | STRING };
+int cm62[]  = { CMD_PLAYER, IGNORE_TO, DIR };
+int cm63[]  = { CMD_PLAYER, IGNORE_TO, DIR, IGNORE_ELSE, STRING };
+int cm64[]  = { CMD_PLAYER, IGNORE_AT, IMM_S16 | STRING, IMM_S16 | STRING };
 int cm65[]  = { CMD_PLAYER, DIR, STRING };
 int cm66[]  = { CMD_PLAYER, CMD_NOT, DIR, STRING };
-int cm67[]  = { CMD_PLAYER, IMM_S16 | STRING, IMM_S16 | STRING, STRING };
+int cm67[]  = { CMD_PLAYER, IGNORE_AT, IMM_S16 | STRING, IMM_S16 | STRING, STRING };
 int cm68[]  = { CMD_PLAYER, DIR };
-int cm69[]  = { DIR, STRING };
-int cm72[]  = { STRING, STRING };
-int cm73[]  = { DIR };
-int cm74[]  = { DIR };
-int cm75[]  = { CMD_HIGH, DIR };
-int cm76[]  = { DIR };
-int cm77[]  = { DIR };
-int cm78[]  = { DIR };
-int cm79[]  = { DIR, IMM_U16 | STRING };
-int cm80[]  = { COLOR | STRING, THING, PARAM, IMM_S16 | STRING, IMM_S16 | STRING };
-int cm81[]  = { CMD_ITEM };
-int cm82[]  = { IMM_S16 | STRING, IMM_S16 | STRING, STRING };
+int cm69[]  = { DIR, IGNORE_ELSE, STRING };
+int cm72[]  = { STRING, IGNORE_WITH, STRING };
+int cm73[]  = { IGNORE_TO, DIR };
+int cm74[]  = { IGNORE_TO, DIR };
+int cm75[]  = { CMD_HIGH, IGNORE_TO, DIR };
+int cm76[]  = { IGNORE_TO, DIR };
+int cm77[]  = { IGNORE_TO, DIR };
+int cm78[]  = { IGNORE_TO, DIR };
+int cm79[]  = { IGNORE_TO, DIR, IGNORE_FOR, IMM_U16 | STRING };
+int cm80[]  = { COLOR | STRING, THING, PARAM, IGNORE_AT, IMM_S16 | STRING,
+ IMM_S16 | STRING };
+int cm81[]  = { IGNORE_AS, IGNORE_AN, CMD_ITEM };
+int cm82[]  = { IGNORE_AT, IMM_S16 | STRING, IMM_S16 | STRING, IGNORE_TO, STRING };
 int cm83[]  = { STRING };
-int cm84[]  = { IMM_S16 | STRING, IMM_S16 | STRING };
-int cm85[]  = { DIR };
-int cm86[]  = { CMD_SELF, DIR };
-int cm87[]  = { CMD_SELF, IMM_S16 | STRING, IMM_S16 | STRING };
-int cm88[]  = { CHARACTER | STRING | IMM_U16 };
-int cm89[]  = { CHARACTER | STRING | IMM_U16 };
-int cm90[]  = { CHARACTER | STRING | IMM_U16 };
-int cm91[]  = { CHARACTER | STRING | IMM_U16 };
+int cm84[]  = { IGNORE_AT, IMM_S16 | STRING, IMM_S16 | STRING };
+int cm85[]  = { IGNORE_FROM, DIR };
+int cm86[]  = { CMD_SELF, IGNORE_TO, DIR };
+int cm87[]  = { CMD_SELF, IGNORE_AT, IMM_S16 | STRING, IMM_S16 | STRING };
+int cm88[]  = { IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm89[]  = { IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm90[]  = { IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm91[]  = { IGNORE_IS, CHARACTER | STRING | IMM_U16 };
 int cm92[]  = { COLOR | STRING };
-int cm93[]  = { COLOR | STRING, STRING };
+int cm93[]  = { COLOR | STRING, IGNORE_ELSE, STRING };
 int cm94[]  = { COLOR | STRING };
-int cm95[]  = { COLOR | STRING, STRING };
-int cm96[]  = { STRING, CMD_RANDOM, IMM_U16 | STRING, IMM_U16 | STRING };
-int cm97[]  = { STRING, CMD_RANDOM, IMM_U16 | STRING, IMM_U16 | STRING };
-int cm98[]  = { STRING, CMD_RANDOM, IMM_U16 | STRING, IMM_U16 | STRING };
-int cm99[]  = { IMM_U16 | STRING, ITEM, IMM_U16 | STRING, ITEM, STRING };
+int cm95[]  = { COLOR | STRING, IGNORE_ELSE, STRING };
+int cm96[]  = { STRING, IGNORE_BY, CMD_RANDOM, IMM_U16 | STRING, IGNORE_TO,
+ IMM_U16 | STRING };
+int cm97[]  = { STRING, IGNORE_BY, CMD_RANDOM, IMM_U16 | STRING, IGNORE_TO,
+ IMM_U16 | STRING };
+int cm98[]  = { STRING, IGNORE_BY, CMD_RANDOM, IMM_U16 | STRING, IGNORE_TO,
+ IMM_U16 | STRING };
+int cm99[]  = { IMM_U16 | STRING, ITEM, IGNORE_FOR, IMM_U16 | STRING, ITEM,
+ IGNORE_ELSE, STRING };
 int cm100[]  = { DIR, CMD_PLAYER, STRING };
 int cm101[] = { COLOR | STRING, THING, PARAM, DIR, CMD_PLAYER };
 int cm102[] = { STRING };
@@ -102,23 +109,26 @@ int cm106[] = { STRING, STRING, STRING };
 int cm107[] = { STRING };
 int cm108[] = { STRING };
 int cm109[] = { STRING };
-int cm110[] = { CMD_PLAYER, STRING, IMM_S16 | STRING, IMM_S16 | STRING };
-int cm111[] = { DIR, IMM_U16 | STRING };
+int cm110[] = { CMD_PLAYER, IGNORE_TO, STRING, IGNORE_AT, IMM_S16 | STRING,
+ IMM_S16 | STRING };
+int cm111[] = { IGNORE_TO, DIR, IGNORE_FOR, IMM_U16 | STRING };
 int cm112[] = { CMD_STRING, STRING };
-int cm113[] = { CMD_STRING, STRING, STRING };
-int cm114[] = { CMD_STRING, CMD_NOT, STRING, STRING };
-int cm115[] = { CMD_STRING, CMD_MATCHES, STRING, STRING };
-int cm116[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16 };
+int cm113[] = { CMD_STRING, IGNORE_IS, STRING, IGNORE_THEN, STRING };
+int cm114[] = { CMD_STRING, IGNORE_IS, CMD_NOT, STRING, IGNORE_THEN, STRING };
+int cm115[] = { CMD_STRING, CMD_MATCHES, STRING, IGNORE_THEN, STRING };
+int cm116[] = { CMD_CHAR, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
 int cm117[] = { STRING };
 int cm118[] = { STRING };
-int cm119[] = { CMD_ALL, COLOR | STRING, THING, PARAM, DIR };
-int cm120[] = { IMM_S16 | STRING, IMM_S16 | STRING, IMM_S16 | STRING, IMM_S16 | STRING };
-int cm121[] = { CMD_EDGE, CMD_COLOR, COLOR };
-int cm122[] = { DIR, STRING };
-int cm123[] = { DIR, CMD_NONE };
-int cm124[] = { CMD_EDIT, CHARACTER | STRING | IMM_U16, IMM_U16 | STRING, IMM_U16 | STRING,
- IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING,
- IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING,
+int cm119[] = { CMD_ALL, COLOR | STRING, THING, PARAM, IGNORE_TO, DIR };
+int cm120[] = { IGNORE_AT, IMM_S16 | STRING, IMM_S16 | STRING, IGNORE_TO,
+ IMM_S16 | STRING, IMM_S16 | STRING };
+int cm121[] = { CMD_EDGE, CMD_COLOR, IGNORE_TO, COLOR };
+int cm122[] = { IGNORE_TO, IGNORE_THE, DIR, IGNORE_IS, STRING };
+int cm123[] = { IGNORE_TO, IGNORE_THE, DIR, CMD_NONE };
+int cm124[] = { CMD_EDIT, CHARACTER | STRING | IMM_U16, IGNORE_TO, 
+ IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING,
+ IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING,
+ IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING,
  IMM_U16 | STRING, IMM_U16 | STRING };
 int cm125[] = { CMD_PUSHABLE };
 int cm126[] = { CMD_NONPUSHABLE };
@@ -127,60 +137,66 @@ int cm128[] = { IMM_U16 | STRING };
 int cm129[] = { IMM_U16 | STRING };
 int cm130[] = { IMM_U16 | STRING };
 int cm131[] = { IMM_U16 | STRING };
-int cm133[] = { DIR, DIR };
-int cm134[] = { CMD_LAVAWALKER };
-int cm135[] = { CMD_NONLAVAWALKER };
-int cm136[] = { COLOR | STRING, THING, PARAM, COLOR | STRING, THING, PARAM };
-int cm137[] = { COLOR };
-int cm138[] = { COLOR };
-int cm139[] = { COLOR };
-int cm140[] = { CMD_ROW, IMM_U16 | STRING };
-int cm141[] = { CMD_SELF };
-int cm142[] = { CMD_PLAYER };
-int cm143[] = { CMD_COUNTERS };
-int cm144[] = { CMD_CHAR, CMD_ID, IMM_U16 | STRING, CHARACTER | STRING | IMM_U16 };
-int cm145[] = { CMD_MOD, CMD_ORDER, IMM_U16 | STRING };
+int cm133[] = { IGNORE_FROM, DIR, IGNORE_TO, DIR };
+int cm134[] = { IGNORE_A, CMD_LAVAWALKER };
+int cm135[] = { IGNORE_A, CMD_NONLAVAWALKER };
+int cm136[] = { IGNORE_FROM, COLOR | STRING, THING, PARAM, IGNORE_TO, 
+ COLOR | STRING, THING, PARAM };
+int cm137[] = { IGNORE_IS, COLOR };
+int cm138[] = { IGNORE_IS, COLOR };
+int cm139[] = { IGNORE_IS, COLOR };
+int cm140[] = { CMD_ROW, IGNORE_IS, IMM_U16 | STRING };
+int cm141[] = { IGNORE_TO, CMD_SELF };
+int cm142[] = { IGNORE_TO, CMD_PLAYER };
+int cm143[] = { IGNORE_TO, CMD_COUNTERS };
+int cm144[] = { CMD_CHAR, CMD_ID, IMM_U16 | STRING,
+ IGNORE_TO, CHARACTER | STRING | IMM_U16 };
+int cm145[] = { IGNORE_TO, CMD_MOD, CMD_ORDER, IMM_U16 | STRING };
 int cm146[] = { STRING };
-int cm148[] = { CMD_THICK, CMD_ARROW, CMD_CHAR, DIR, CHARACTER | STRING | IMM_U16 };
-int cm149[] = { CMD_THIN, CMD_ARROW, CMD_CHAR, DIR, CHARACTER | STRING | IMM_U16 };
+int cm148[] = { CMD_THICK, CMD_ARROW, CMD_CHAR, DIR,
+ IGNORE_TO, CHARACTER | STRING | IMM_U16 };
+int cm149[] = { CMD_THIN, CMD_ARROW, CMD_CHAR, DIR,
+ IGNORE_TO, CHARACTER | STRING | IMM_U16 };
 int cm150[] = { CMD_MAXHEALTH, IMM_U16 | STRING };
 int cm151[] = { CMD_PLAYER, CMD_POSITION };
 int cm152[] = { CMD_PLAYER, CMD_POSITION };
 int cm153[] = { CMD_PLAYER, CMD_POSITION };
-int cm154[] = { CMD_MESG, CMD_COLUMN, IMM_U16 | STRING };
+int cm154[] = { CMD_MESG, CMD_COLUMN, IGNORE_TO, IMM_U16 | STRING };
 int cm155[] = { CMD_MESG };
 int cm156[] = { CMD_MESG };
 int cm158[] = { IMM_U16 | STRING, IMM_U16 | STRING };
 int cm159[] = { STRING };
-int cm160[] = { CMD_COLOR, COLOR | STRING };
-int cm161[] = { CMD_COLOR, COLOR | STRING };
-int cm162[] = { CMD_COLOR, COLOR | STRING };
-int cm163[] = { CMD_COLOR, COLOR | STRING };
-int cm164[] = { CMD_COLOR, COLOR | STRING };
-int cm165[] = { IMM_U16 | STRING, IMM_U16 | STRING };
-int cm166[] = { CMD_SIZE, IMM_U16 | STRING, IMM_U16 | STRING };
-int cm167[] = { CMD_MESG, CMD_COLUMN, STRING };
-int cm168[] = { CMD_ROW, STRING };
-int cm169[] = { CMD_PLAYER, CMD_POSITION, IMM_U16 | STRING };
-int cm170[] = { CMD_PLAYER, CMD_POSITION, IMM_U16 | STRING };
-int cm171[] = { CMD_PLAYER, CMD_POSITION, IMM_U16 | STRING };
-int cm172[] = { CMD_PLAYER, CMD_POSITION, IMM_U16 | STRING, CMD_DUPLICATE, CMD_SELF };
-int cm173[] = { CMD_PLAYER, CMD_POSITION, IMM_U16 | STRING, CMD_DUPLICATE, CMD_SELF };
-int cm174[] = { CMD_BULLETN, CHARACTER | STRING | IMM_U16 };
-int cm175[] = { CMD_BULLETS, CHARACTER | STRING | IMM_U16 };
-int cm176[] = { CMD_BULLETE, CHARACTER | STRING | IMM_U16 };
-int cm177[] = { CMD_BULLETW, CHARACTER | STRING | IMM_U16 };
-int cm178[] = { CMD_BULLETN, CHARACTER | STRING | IMM_U16 };
-int cm179[] = { CMD_BULLETS, CHARACTER | STRING | IMM_U16 };
-int cm180[] = { CMD_BULLETE, CHARACTER | STRING | IMM_U16 };
-int cm181[] = { CMD_BULLETW, CHARACTER | STRING | IMM_U16 };
-int cm182[] = { CMD_BULLETN, CHARACTER | STRING | IMM_U16 };
-int cm183[] = { CMD_BULLETS, CHARACTER | STRING | IMM_U16 };
-int cm184[] = { CMD_BULLETE, CHARACTER | STRING | IMM_U16 };
-int cm185[] = { CMD_BULLETW, CHARACTER | STRING | IMM_U16 };
-int cm186[] = { CMD_BULLETCOLOR, COLOR | STRING };
-int cm187[] = { CMD_BULLETCOLOR, COLOR | STRING };
-int cm188[] = { CMD_BULLETCOLOR, COLOR | STRING };
+int cm160[] = { CMD_COLOR, IGNORE_IS, COLOR | STRING };
+int cm161[] = { CMD_COLOR, IGNORE_IS, COLOR | STRING };
+int cm162[] = { CMD_COLOR, IGNORE_IS, COLOR | STRING };
+int cm163[] = { CMD_COLOR, IGNORE_IS, COLOR | STRING };
+int cm164[] = { CMD_COLOR, IGNORE_IS, COLOR | STRING };
+int cm165[] = { IGNORE_IS, IGNORE_AT, IMM_U16 | STRING, IMM_U16 | STRING };
+int cm166[] = { CMD_SIZE, IGNORE_IS, IMM_U16 | STRING, IGNORE_BY, IMM_U16 | STRING };
+int cm167[] = { CMD_MESG, CMD_COLUMN, IGNORE_TO, STRING };
+int cm168[] = { CMD_ROW, IGNORE_IS, STRING };
+int cm169[] = { CMD_PLAYER, CMD_POSITION, IGNORE_TO, IMM_U16 | STRING };
+int cm170[] = { CMD_PLAYER, CMD_POSITION, IGNORE_FROM, IMM_U16 | STRING };
+int cm171[] = { CMD_PLAYER, CMD_POSITION, IGNORE_WITH, IMM_U16 | STRING };
+int cm172[] = { CMD_PLAYER, CMD_POSITION, IGNORE_FROM, IMM_U16 | STRING,
+ IGNORE_AND, CMD_DUPLICATE, CMD_SELF };
+int cm173[] = { CMD_PLAYER, CMD_POSITION, IGNORE_WITH, IMM_U16 | STRING,
+ IGNORE_AND, CMD_DUPLICATE, CMD_SELF };
+int cm174[] = { CMD_BULLETN, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm175[] = { CMD_BULLETS, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm176[] = { CMD_BULLETE, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm177[] = { CMD_BULLETW, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm178[] = { CMD_BULLETN, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm179[] = { CMD_BULLETS, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm180[] = { CMD_BULLETE, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm181[] = { CMD_BULLETW, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm182[] = { CMD_BULLETN, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm183[] = { CMD_BULLETS, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm184[] = { CMD_BULLETE, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm185[] = { CMD_BULLETW, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
+int cm186[] = { CMD_BULLETCOLOR, IGNORE_IS, COLOR | STRING };
+int cm187[] = { CMD_BULLETCOLOR, IGNORE_IS, COLOR | STRING };
+int cm188[] = { CMD_BULLETCOLOR, IGNORE_IS, COLOR | STRING };
 int cm194[] = { CMD_SELF, CMD_FIRST };
 int cm195[] = { CMD_SELF, CMD_LAST };
 int cm196[] = { CMD_PLAYER, CMD_FIRST };
@@ -189,157 +205,164 @@ int cm198[] = { CMD_COUNTERS, CMD_FIRST };
 int cm199[] = { CMD_COUNTERS, CMD_LAST };
 int cm200[] = { CMD_FADE, CMD_OUT };
 int cm201[] = { CMD_FADE, CMD_IN, STRING };
-int cm202[] = { CMD_BLOCK, IMM_S16 | STRING, IMM_S16 | STRING, IMM_U16 | STRING,
- IMM_U16 | STRING, IMM_S16 | STRING, IMM_S16 | STRING };
+int cm202[] = { CMD_BLOCK, IGNORE_AT, IMM_S16 | STRING, IMM_S16 | STRING,
+ IGNORE_FOR, IMM_U16 | STRING, IGNORE_BY, IMM_U16 | STRING,
+ IGNORE_TO, IMM_S16 | STRING, IMM_S16 | STRING };
 int cm203[] = { CMD_INPUT };
-int cm204[] = { CMD_DIR };
+int cm204[] = { IGNORE_TO, CMD_DIR };
 int cm205[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16, DIR };
 int cm206[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16, DIR };
-int cm207[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16, CHARACTER | STRING | IMM_U16 };
-int cm211[] = { CMD_SFX, IMM_U16 | STRING, STRING };
-int cm212[] = { CMD_INTENSITY, IMM_U16 | STRING, CMD_PERCENT };
-int cm213[] = { CMD_INTENSITY, IMM_U16 | STRING, IMM_U16 | STRING, CMD_PERCENT };
+int cm207[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16,
+ IGNORE_TO, CHARACTER | STRING | IMM_U16 };
+int cm211[] = { CMD_SFX, IMM_U16 | STRING, IGNORE_TO, STRING };
+int cm212[] = { CMD_INTENSITY, IMM_U16 | STRING, IGNORE_IS, IGNORE_AT,
+ CMD_PERCENT };
+int cm213[] = { CMD_INTENSITY, IMM_U16 | STRING, IGNORE_IS, IGNORE_AT, 
+ IMM_U16 | STRING, CMD_PERCENT };
 int cm214[] = { CMD_FADE, CMD_OUT };
 int cm215[] = { CMD_FADE, CMD_IN };
-int cm216[] = { CMD_COLOR, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING,
- IMM_U16 | STRING };
+int cm216[] = { CMD_COLOR, IGNORE_TO, IMM_U16 | STRING, IMM_U16 | STRING,
+ IMM_U16 | STRING, IMM_U16 | STRING };
 int cm217[] = { CMD_CHAR, CMD_SET, STRING };
-int cm218[] = { STRING, IMM_U16 | STRING };
-int cm219[] = { STRING, IMM_U16 | STRING };
-int cm220[] = { STRING, IMM_U16 | STRING };
-int cm221[] = { CMD_CHAR, DIR, CHARACTER | STRING | IMM_U16 };
+int cm218[] = { STRING, IGNORE_BY, IMM_U16 | STRING };
+int cm219[] = { STRING, IGNORE_BY, IMM_U16 | STRING };
+int cm220[] = { STRING, IGNORE_BY, IMM_U16 | STRING };
+int cm221[] = { CMD_CHAR, DIR, IGNORE_IS, CHARACTER | STRING | IMM_U16 };
 int cm223[] = { CMD_PALETTE, STRING };
-int cm225[] = { CMD_FADE, IMM_U16 | STRING, IMM_U16 | STRING };
+int cm225[] = { CMD_FADE, IGNORE_TO, IMM_U16 | STRING, IGNORE_BY,
+ IMM_U16 | STRING };
 int cm226[] = { CMD_POSITION, IMM_S16 | STRING, IMM_S16 | STRING };
 int cm227[] = { CMD_WORLD, STRING };
-int cm228[] = { CMD_ALIGNEDROBOT, STRING, STRING };
-int cm232[] = { CMD_FIRST, CMD_STRING, STRING, STRING };
+int cm228[] = { CMD_ALIGNEDROBOT, IGNORE_WITH, STRING, IGNORE_THEN, STRING };
+int cm232[] = { CMD_FIRST, CMD_STRING, IGNORE_IS, STRING, IGNORE_THEN, STRING };
 int cm233[] = { CMD_GO, STRING };
-int cm234[] = { CMD_MOD, CMD_FADE };
+int cm234[] = { IGNORE_FOR, CMD_MOD, CMD_FADE };
 int cm236[] = { CMD_SAVING };
 int cm237[] = { CMD_SAVING };
 int cm238[] = { CMD_SENSORONLY, CMD_SAVING };
-int cm239[] = { CMD_COUNTER, IMM_U16 | STRING, STRING };
-int cm240[] = { CMD_ON };
-int cm241[] = { CMD_STATIC };
-int cm242[] = { CMD_TRANSPARENT };
-int cm243[] = { COLOR | STRING, CHARACTER | STRING | IMM_U16, CMD_OVERLAY, IMM_S16 | STRING, 
- IMM_S16 | STRING };
-int cm244[] = { CMD_OVERLAY, CMD_BLOCK, IMM_S16 | STRING, IMM_S16 | STRING, 
- IMM_U16 | STRING, IMM_U16 | STRING, IMM_S16 | STRING, IMM_S16 | STRING };
+int cm239[] = { CMD_COUNTER, IGNORE_IS, IMM_U16 | STRING, STRING };
+int cm240[] = { IGNORE_IS, CMD_ON };
+int cm241[] = { IGNORE_IS, CMD_STATIC };
+int cm242[] = { IGNORE_IS, CMD_TRANSPARENT };
+int cm243[] = { COLOR | STRING, CHARACTER | STRING | IMM_U16, CMD_OVERLAY,
+ IGNORE_TO, IMM_S16 | STRING, IMM_S16 | STRING };
+int cm244[] = { CMD_OVERLAY, CMD_BLOCK, IGNORE_AT, IMM_S16 | STRING,
+ IMM_S16 | STRING, IGNORE_FOR, IMM_U16 | STRING, IGNORE_BY, IMM_U16 | STRING,
+ IGNORE_TO, IMM_S16 | STRING, IMM_S16 | STRING };
 int cm246[] = { CMD_OVERLAY, COLOR | STRING, CHARACTER | STRING | IMM_U16, 
- COLOR | STRING, CHARACTER | STRING };
-int cm247[] = { CMD_OVERLAY, COLOR | STRING, COLOR | STRING };
-int cm248[] = { CMD_OVERLAY, COLOR | STRING, STRING, IMM_S16 | STRING, IMM_S16 | STRING };
+ IGNROE_TO, COLOR | STRING, CHARACTER | STRING };
+int cm247[] = { CMD_OVERLAY, COLOR | STRING, IGNORE_TO, COLOR | STRING };
+int cm248[] = { CMD_OVERLAY, COLOR | STRING, STRING, IGNORE_AT, 
+ IMM_S16 | STRING, IMM_S16 | STRING };
 int cm252[] = { CMD_START };
-int cm253[] = { IMM_U16 | STRING };
+int cm253[] = { IGNORE_FOR, IMM_U16 | STRING };
 int cm254[] = { CMD_LOOP };
 int cm255[] = { CMD_MESG, CMD_EDGE };
 int cm256[] = { CMD_MESG, CMD_EDGE };
 
 mzx_command command_list[] =
 {
-  { "End",            0, NULL },
-  { "Die",            0, NULL },
-  { "Wait",           1, cm3 },
-  { "Cycle",          1, cm4 },
-  { "Go",             2, cm5 },
-  { "Walk",           1, cm6 },
-  { "Become",         3, cm7 },
-  { "Char",           1, cm8 },
-  { "Color",          1, cm9 },
-  { "Gotoxy",         2, cm10 },
-  { "Set",            2, cm11 },
-  { "Inc",            2, cm12 },  
-  { "Dec",            2, cm13 },
-  { "Set",            2, cm14 },
-  { "Inc",            2, cm15 },  
-  { "Dec",            2, cm16 },
-  { "If",             4, cm17 },
-  { "If",             4, cm18 },
-  { "If",             2, cm19 },
-  { "If",             3, cm20 },
-  { "If",             5, cm21 },
-  { "If",             6, cm22 },
-  { "If",             5, cm23 },
-  { "If",             6, cm24 },
-  { "If",             6, cm25 },
-  { "If",             3, cm26 },
-  { "If",             6, cm27 },
-  { "Double",         1, cm28 },
-  { "Half",           1, cm29 },
-  { "Goto",           1, cm30 },
-  { "Send",           2, cm31 },
-  { "Explode",        1, cm32 },
-  { "Put",            4, cm33 },
-  { "Give",           2, cm34 },
-  { "Take",           2, cm35 },
-  { "Take",           3, cm36 },  
-  { "Endgame",        0, NULL },
-  { "Endlife",        0, NULL },
-  { "Mod",            1, cm39 },
-  { "Sam",            2, cm40 },
-  { "Volume",         1, cm41 },
-  { "End",            1, cm42 },
-  { "End",            1, cm43 },
-  { "Play",           1, cm44 },
-  { "End",            1, cm45 },
-  { "Wait",           2, cm46 }, 
-  { "Wait",           1, cm47 },
+  { "end",            0, NULL },
+  { "die",            0, NULL },
+  { "wait",           1, cm3 },
+  { "cycle",          1, cm4 },
+  { "go",             2, cm5 },
+  { "walk",           1, cm6 },
+  { "become",         3, cm7 },
+  { "char",           1, cm8 },
+  { "color",          1, cm9 },
+  { "gotoxy",         2, cm10 },
+  { "set",            2, cm11 },
+  { "inc",            2, cm12 },  
+  { "dec",            2, cm13 },
+  { "set",            2, cm14 },
+  { "inc",            2, cm15 },  
+  { "dec",            2, cm16 },
+  { "if",             4, cm17 },
+  { "if",             4, cm18 },
+  { "if",             2, cm19 },
+  { "if",             3, cm20 },
+  { "if",             5, cm21 },
+  { "if",             6, cm22 },
+  { "if",             5, cm23 },
+  { "if",             6, cm24 },
+  { "if",             6, cm25 },
+  { "if",             3, cm26 },
+  { "if",             6, cm27 },
+  { "double",         1, cm28 },
+  { "half",           1, cm29 },
+  { "goto",           1, cm30 },
+  { "send",           2, cm31 },
+  { "explode",        1, cm32 },
+  { "put",            4, cm33 },
+  { "give",           2, cm34 },
+  { "take",           2, cm35 },
+  { "take",           3, cm36 },  
+  { "endgame",        0, NULL },
+  { "endlife",        0, NULL },
+  { "mod",            1, cm39 },
+  { "sam",            2, cm40 },
+  { "volume",         1, cm41 },
+  { "end",            1, cm42 },
+  { "end",            1, cm43 },
+  { "play",           1, cm44 },
+  { "end",            1, cm45 },
+  { "wait",           2, cm46 }, 
+  { "wait",           1, cm47 },
   { "_blank_line",    0, NULL },
-  { "Sfx",            1, cm49 },
-  { "Play",           2, cm50 },
-  { "Open",           1, cm51 },
-  { "Lockself",       0, NULL },
-  { "Unlockself",     0, NULL },
-  { "Send",           2, cm54 },
-  { "Zap",            2, cm55 },
-  { "Restore",        2, cm56 },
-  { "Lockplayer",     0, NULL },
-  { "Unlockplayer",   0, NULL },
-  { "Lockplayer",     1, cm59 },  
-  { "Lockplayer",     1, cm60 },
-  { "Lockplayer",     1, cm61 },
-  { "Move",           2, cm62 },
-  { "Move",           3, cm63 },
-  { "Put",            2, cm64 },
-  { "If",             3, cm65 },
-  { "If",             4, cm66 },
-  { "If",             4, cm67 },
-  { "Put",            2, cm68 },
-  { "Try",            2, cm69 },
-  { "Rotatecw",       0, NULL },
-  { "Rotateccw",      0, NULL },
-  { "Switch",         2, cm72 },
-  { "Shoot",          1, cm73 },
-  { "Laybomb",        1, cm74 },
-  { "Laybomb",        1, cm75 },
-  { "Shootmissile",   1, cm76 },
-  { "Shootseeker",    1, cm77 },
-  { "Spitfire",       1, cm78 },
-  { "Lazerwall",      2, cm79 },
-  { "Put",            5, cm80 },
-  { "Die",            1, cm81 },
-  { "Send",           3, cm82 },
-  { "Copyrobot",      1, cm83 },
-  { "Copyrobot",      2, cm84 },
-  { "Copyrobot",      1, cm85 },
-  { "Duplicate",      2, cm86 },
-  { "Duplicate",      3, cm87 },
-  { "Bulletn",        1, cm88 },
-  { "Bullets",        1, cm89 },
-  { "Bullete",        1, cm90 },
-  { "Bulletw",        1, cm91 },
-  { "Givekey",        1, cm92 },
-  { "Givekey",        2, cm93 },
-  { "Takekey",        1, cm94 },
-  { "Takekey",        2, cm95 },
-  { "Inc",            4, cm96 },
-  { "Dec",            4, cm97 },
-  { "Set",            4, cm98 },
-  { "Trade",          5, cm99 },
-  { "Send",           3, cm100 },
-  { "Put",            5, cm101 },
+  { "sfx",            1, cm49 },
+  { "play",           2, cm50 },
+  { "open",           1, cm51 },
+  { "lockself",       0, NULL },
+  { "unlockself",     0, NULL },
+  { "send",           2, cm54 },
+  { "zap",            2, cm55 },
+  { "restore",        2, cm56 },
+  { "lockplayer",     0, NULL },
+  { "unlockplayer",   0, NULL },
+  { "lockplayer",     1, cm59 },  
+  { "lockplayer",     1, cm60 },
+  { "lockplayer",     1, cm61 },
+  { "move",           2, cm62 },
+  { "move",           3, cm63 },
+  { "put",            2, cm64 },
+  { "if",             3, cm65 },
+  { "if",             4, cm66 },
+  { "if",             4, cm67 },
+  { "put",            2, cm68 },
+  { "try",            2, cm69 },
+  { "rotatecw",       0, NULL },
+  { "rotateccw",      0, NULL },
+  { "switch",         2, cm72 },
+  { "shoot",          1, cm73 },
+  { "laybomb",        1, cm74 },
+  { "laybomb",        1, cm75 },
+  { "shootmissile",   1, cm76 },
+  { "shootseeker",    1, cm77 },
+  { "spitfire",       1, cm78 },
+  { "lazerwall",      2, cm79 },
+  { "put",            5, cm80 },
+  { "die",            1, cm81 },
+  { "send",           3, cm82 },
+  { "copyrobot",      1, cm83 },
+  { "copyrobot",      2, cm84 },
+  { "copyrobot",      1, cm85 },
+  { "duplicate",      2, cm86 },
+  { "duplicate",      3, cm87 },
+  { "bulletn",        1, cm88 },
+  { "bullets",        1, cm89 },
+  { "bullete",        1, cm90 },
+  { "bulletw",        1, cm91 },
+  { "givekey",        1, cm92 },
+  { "givekey",        2, cm93 },
+  { "takekey",        1, cm94 },
+  { "takekey",        2, cm95 },
+  { "inc",            4, cm96 },
+  { "dec",            4, cm97 },
+  { "set",            4, cm98 },
+  { "trade",          5, cm99 },
+  { "send",           3, cm100 },
+  { "put",            5, cm101 },
   { "//",             1, cm102 },
   { "*",              1, cm103 },
   { "[",              1, cm104 },
@@ -348,153 +371,153 @@ mzx_command command_list[] =
   { ":",              1, cm107 },
   { ".",              1, cm108 },
   { "|",              1, cm109 },
-  { "Teleport",       4, cm110 },
-  { "Scrollview",     2, cm111 },
-  { "Input",          2, cm112 },
-  { "If",             3, cm113 },
-  { "If",             4, cm114 },
-  { "If",             4, cm115 },
-  { "Player",         2, cm116 },
+  { "teleport",       4, cm110 },
+  { "scrollview",     2, cm111 },
+  { "input",          2, cm112 },
+  { "if",             3, cm113 },
+  { "if",             4, cm114 },
+  { "if",             4, cm115 },
+  { "player",         2, cm116 },
   { "%",              1, cm117 },
   { "&",              1, cm118 },
-  { "Move",           5, cm119 },
-  { "Copy",           4, cm120 },
-  { "Set",            3, cm121 },
-  { "Board",          2, cm122 },
-  { "Board",          2, cm123 },
-  { "Char",           16, cm124 },
-  { "Become",         1, cm125 },
-  { "Become",         1, cm126 },
-  { "Blind",          1, cm127 },
-  { "Firewalker",     1, cm128 },
-  { "Freezetime",     1, cm129 },
-  { "Slowtime",       1, cm130 },
-  { "Wind",           1, cm131 },
-  { "Avalanche",      0, NULL },
-  { "Copy",           2, cm133 },
-  { "Become",         1, cm134 },
-  { "Become",         1, cm135 },
-  { "Change",         6, cm136 },
-  { "Playercolor",    1, cm137 },
-  { "Bulletcolor",    1, cm138 },
-  { "Missilecolor",   1, cm139 },
-  { "Message",        2, cm140 },
-  { "Rel",            1, cm141 },
-  { "Rel",            1, cm142 },
-  { "Rel",            1, cm143 },
-  { "Change",         4, cm144 },
-  { "Jump",           2, cm145 },
-  { "Ask",            1, cm146 },
-  { "Fillhealth",     0, NULL },
-  { "Change",         5, cm148 },
-  { "Change",         5, cm149 },
-  { "Set",            2, cm150 },
-  { "Save",           2, cm151 },
-  { "Restore",        2, cm152 },
-  { "Exchange",       2, cm153 },
-  { "Set",            3, cm154 },
-  { "Center",         1, cm155 },
-  { "Clear",          1, cm156 },
-  { "Resetview",      0, NULL },
-  { "Sam",            2, cm158 },
-  { "Volume",         1, cm159 },
-  { "Scrollbase",     2, cm160 },
-  { "Scrollcorner",   2, cm161 },
-  { "Scrolltitle",    2, cm162 },
-  { "Scrollpointer",  2, cm163 },
-  { "Scrollarrow",    2, cm164 },
-  { "Viewport",       2, cm165 },
-  { "Viewport",       3, cm166 },
-  { "Set",            3, cm167 },
-  { "Message",        2, cm168 },
-  { "Save",           3, cm169 },
-  { "Restore",        3, cm170 },
-  { "Exchange",       3, cm171 },
-  { "Restore",        5, cm172 },
-  { "Exchange",       5, cm173 },
-  { "Player",         2, cm174 },
-  { "Player",         2, cm175 },
-  { "Player",         2, cm176 },
-  { "Player",         2, cm177 },
-  { "Neutral",        2, cm178 },
-  { "Neutral",        2, cm179 },
-  { "Neutral",        2, cm180 },
-  { "Neutral",        2, cm181 },
-  { "Enemy",          2, cm182 },
-  { "Enemy",          2, cm183 },
-  { "Enemy",          2, cm184 },
-  { "Enemy",          2, cm185 },
-  { "Player",         2, cm186 },
-  { "Neutral",        2, cm187 },
-  { "Enemy",          2, cm188 },
+  { "move",           5, cm119 },
+  { "copy",           4, cm120 },
+  { "set",            3, cm121 },
+  { "board",          2, cm122 },
+  { "board",          2, cm123 },
+  { "char",           16, cm124 },
+  { "become",         1, cm125 },
+  { "become",         1, cm126 },
+  { "blind",          1, cm127 },
+  { "firewalker",     1, cm128 },
+  { "freezetime",     1, cm129 },
+  { "slowtime",       1, cm130 },
+  { "wind",           1, cm131 },
+  { "avalanche",      0, NULL },
+  { "copy",           2, cm133 },
+  { "become",         1, cm134 },
+  { "become",         1, cm135 },
+  { "change",         6, cm136 },
+  { "playercolor",    1, cm137 },
+  { "bulletcolor",    1, cm138 },
+  { "missilecolor",   1, cm139 },
+  { "message",        2, cm140 },
+  { "rel",            1, cm141 },
+  { "rel",            1, cm142 },
+  { "rel",            1, cm143 },
+  { "change",         4, cm144 },
+  { "jump",           2, cm145 },
+  { "ask",            1, cm146 },
+  { "fillhealth",     0, NULL },
+  { "change",         5, cm148 },
+  { "change",         5, cm149 },
+  { "set",            2, cm150 },
+  { "save",           2, cm151 },
+  { "restore",        2, cm152 },
+  { "exchange",       2, cm153 },
+  { "set",            3, cm154 },
+  { "center",         1, cm155 },
+  { "clear",          1, cm156 },
+  { "resetview",      0, NULL },
+  { "sam",            2, cm158 },
+  { "volume",         1, cm159 },
+  { "scrollbase",     2, cm160 },
+  { "scrollcorner",   2, cm161 },
+  { "scrolltitle",    2, cm162 },
+  { "scrollpointer",  2, cm163 },
+  { "scrollarrow",    2, cm164 },
+  { "viewport",       2, cm165 },
+  { "viewport",       3, cm166 },
+  { "set",            3, cm167 },
+  { "message",        2, cm168 },
+  { "save",           3, cm169 },
+  { "restore",        3, cm170 },
+  { "exchange",       3, cm171 },
+  { "restore",        5, cm172 },
+  { "exchange",       5, cm173 },
+  { "player",         2, cm174 },
+  { "player",         2, cm175 },
+  { "player",         2, cm176 },
+  { "player",         2, cm177 },
+  { "neutral",        2, cm178 },
+  { "neutral",        2, cm179 },
+  { "neutral",        2, cm180 },
+  { "neutral",        2, cm181 },
+  { "enemy",          2, cm182 },
+  { "enemy",          2, cm183 },
+  { "enemy",          2, cm184 },
+  { "enemy",          2, cm185 },
+  { "player",         2, cm186 },
+  { "neutral",        2, cm187 },
+  { "enemy",          2, cm188 },
   { "__unused",       0, NULL },
   { "__unused",       0, NULL },
   { "__unused",       0, NULL },
   { "__unused",       0, NULL },
   { "__unused",       0, NULL },
-  { "Rel",            2, cm194 },
-  { "Rel",            2, cm195 },
-  { "Rel",            2, cm196 },
-  { "Rel",            2, cm197 },
-  { "Rel",            2, cm198 },
-  { "Rel",            2, cm199 },
-  { "Mod",            2, cm200 },
-  { "Mod",            3, cm201 },
-  { "Copy",           7, cm202 },
-  { "Clip",           1, cm203 },
-  { "Push",           1, cm204 },
-  { "Scroll",         3, cm205 },
-  { "Flip",           3, cm206 },
-  { "Copy",           3, cm207 },
+  { "rel",            2, cm194 },
+  { "rel",            2, cm195 },
+  { "rel",            2, cm196 },
+  { "rel",            2, cm197 },
+  { "rel",            2, cm198 },
+  { "rel",            2, cm199 },
+  { "mod",            2, cm200 },
+  { "mod",            3, cm201 },
+  { "copy",           7, cm202 },
+  { "clip",           1, cm203 },
+  { "push",           1, cm204 },
+  { "scroll",         3, cm205 },
+  { "flip",           3, cm206 },
+  { "copy",           3, cm207 },
   { "__unused",       0, NULL },
   { "__unused",       0, NULL },
   { "__unused",       0, NULL },
-  { "Change",         3, cm211 },
-  { "Color",          3, cm212 },
-  { "Color",          4, cm213 },
-  { "Color",          2, cm214 },
-  { "Color",          2, cm215 },
-  { "Set",            5, cm216 },
-  { "Load",           3, cm217 },
-  { "Multiply",       2, cm218 },
-  { "Divide",         2, cm219 },
-  { "Modulo",         2, cm220 },
-  { "Player",         3, cm221 },
+  { "change",         3, cm211 },
+  { "color",          3, cm212 },
+  { "color",          4, cm213 },
+  { "color",          2, cm214 },
+  { "color",          2, cm215 },
+  { "set",            5, cm216 },
+  { "load",           3, cm217 },
+  { "multiply",       2, cm218 },
+  { "divide",         2, cm219 },
+  { "modulo",         2, cm220 },
+  { "player",         3, cm221 },
   { "__unused",       0, NULL },
-  { "Load",           2, cm223 },
+  { "load",           2, cm223 },
   { "__unused",       0, NULL },
-  { "Mod",            3, cm225 },
-  { "Scrollview",     3, cm226 },
-  { "Swap",           2, cm227 },
-  { "If",             3, cm228 },
+  { "mod",            3, cm225 },
+  { "scrollview",     3, cm226 },
+  { "swap",           2, cm227 },
+  { "if",             3, cm228 },
   { "__unused",       0, NULL },
-  { "Lockscroll",     0, NULL },
-  { "Unlockscroll",   0, NULL },
-  { "If",             4, cm232 },
-  { "Persistent",     2, cm233 },
-  { "Wait",           2, cm234 },
+  { "lockscroll",     0, NULL },
+  { "unlockscroll",   0, NULL },
+  { "if",             4, cm232 },
+  { "persistent",     2, cm233 },
+  { "wait",           2, cm234 },
   { "__unused",       0, NULL },
-  { "Enable",         1, cm236 },
-  { "Disable",        1, cm237 },
-  { "Enable",         2, cm238 },
-  { "Status",         3, cm239 },
-  { "Overlay",        1, cm240 },
-  { "Overlay",        1, cm241 },
-  { "Overlay",        1, cm242 },
-  { "Put",            5, cm243 },
-  { "Copy",           8, cm244 },
+  { "enable",         1, cm236 },
+  { "disable",        1, cm237 },
+  { "enable",         2, cm238 },
+  { "status",         3, cm239 },
+  { "overlay",        1, cm240 },
+  { "overlay",        1, cm241 },
+  { "overlay",        1, cm242 },
+  { "put",            5, cm243 },
+  { "copy",           8, cm244 },
   { "__unused",       0, NULL },
-  { "Change",         5, cm246 },
-  { "Change",         3, cm247 },
-  { "Write",          5, cm248 },
+  { "change",         5, cm246 },
+  { "change",         3, cm247 },
+  { "write",          5, cm248 },
   { "__unused",       0, NULL },
   { "__unused",       0, NULL },
   { "__unused",       0, NULL },
-  { "Loop",           1, cm252 },
-  { "Loop",           1, cm253 },
-  { "Abort",          1, cm254 },
-  { "Disable",        2, cm255 },
-  { "Enable",         2, cm256 }
+  { "loop",           1, cm252 },
+  { "loop",           1, cm253 },
+  { "abort",          1, cm254 },
+  { "disable",        2, cm255 },
+  { "enable",         2, cm256 }
 };
 
 char *dir_types1[20] =
@@ -525,7 +548,7 @@ char *equality_types1[6] =
 
 char *equality_types2[6] =
 {
-  "==", "<>", ">", "<", "=?", "=<"
+  "==", "<>", ">", "<", "=>", "=<"
 };
 
 char *equality_types3[6] =
@@ -763,7 +786,8 @@ int parse_argument(char *cmd_line, char **next, int *arg_translated, int *error)
 
   *error = 0;
 
-  // If the first character is a quote it'll be a string; make sure it can find the end though.
+  // If the first character is a quote it'll be a string; 
+	// make sure it can find the end though.
   if(current == '\"')
   {
     do
@@ -777,9 +801,9 @@ int parse_argument(char *cmd_line, char **next, int *arg_translated, int *error)
     return STRING;
   }
 
-  // If the first character is a negative sign or a numerical constant, it's an immediate
-  // number. I can't figure out the difference between IMM_U16 and IMM_S16 to Robotic so
-  // I'm giving IMM_U16 for now.
+  // If the first character is a negative sign or a numerical constant, 
+	// it's an immediate number. I can't figure out the difference between
+	// IMM_U16 and IMM_S16 to Robotic so I'm giving IMM_U16 for now.
   
   if((current == '-') || isdigit(current))
   {
@@ -787,8 +811,8 @@ int parse_argument(char *cmd_line, char **next, int *arg_translated, int *error)
     return IMM_U16;
   }
 
-  // If the first letter is a single quote then it's a character; make sure there's only
-  // one constant there and a close quote.
+  // If the first letter is a single quote then it's a character; 
+	// make sure there's only one constant there and a close quote.
  
   if(current == '\'')
   {
@@ -1157,21 +1181,29 @@ int match_command(mzx_command *cmd)
     }
     for(i2 = 0; i2 < cmd->parameters; i2++)
     {
-      if(command_list[i].param_types[i2] & CMD)
-      {
-        if(cmd->param_types[i2] != command_list[i].param_types[i2])
-        {
-          break;
-        }
-      }
-      else
-      {        
-        if((cmd->param_types[i2] & command_list[i].param_types[i2]) !=
-         cmd->param_types[i2])
-        {
-          break;
-        }
-      }
+			if(!(command_list[i].param_types[i2] & IGNORE))
+			{
+				if(command_list[i].param_types[i2] & CMD)
+				{
+					if(cmd->param_types[i2] != command_list[i].param_types[i2])
+					{
+						break;
+					}
+				}
+				else
+				{        
+					if((cmd->param_types[i2] & command_list[i].param_types[i2]) !=
+					 cmd->param_types[i2])
+					{
+						break;
+					}
+				}
+			}
+			else
+			{
+				// Don't count this one
+				i2--;
+			}
     }
     if(i2 == cmd->parameters) break;
   }
@@ -1185,7 +1217,7 @@ int assemble_text(char *input_name, char *output_name)
   char current_line[256];
   char *current_line_position;
   char *next_line_position;
-  char object_file[65536];  
+  char object_file[32768];  
   char *object_file_position = object_file + 1;
   char *next_object_file_position;
   int line_number = 1;
@@ -1254,8 +1286,8 @@ int assemble_text(char *input_name, char *output_name)
       {
         skip_whitespace(current_line_position, &current_line_position);
 
-        current_arg_type = parse_argument(current_line_position, &next_line_position,
-         &current_arg_translation, &error);
+        current_arg_type = parse_argument(current_line_position,
+				 &next_line_position, &current_arg_translation, &error);
         current_command.param_types[arg_count] = current_arg_type;
           
         if(error == ERR_BADSTRING)
@@ -1477,7 +1509,7 @@ int assemble_command(int command_number, mzx_command *cmd, void *params[32],
       {
         // It's not a command fragment
         *c_obj_pos = 0;
-        *((short int *)(obj_pos + 1)) = *((short *)params[i]);
+        *((short int *)(c_obj_pos + 1)) = *((short *)params[i]);
         c_obj_pos += 3;
       }
     }
@@ -1487,7 +1519,7 @@ int assemble_command(int command_number, mzx_command *cmd, void *params[32],
   *obj_pos = size;
   *c_obj_pos = size;
 
-  *next_obj_pos = c_obj_pos;
+  *next_obj_pos = c_obj_pos + 1;
 
   return size + 2;
 }

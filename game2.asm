@@ -35,12 +35,20 @@ include "random.inc"
 include "string.inc"
 include "const.inc"
 include "idarray.inc"
+include "trig.inc"
 
-p286
+p386
 JUMPS
 include "model.inc"
 
 Dataseg
+
+return_value dw ?
+multiplier dw 10000
+divider dw 10000
+c_divisions dw 360
+
+const_2pi dt 6.2831853071796
 
 slow_down db 0							; Global slowdown for most objects
 gem_name db "GEMS",0             ; Misc. strings
@@ -3834,6 +3842,113 @@ arg old_dir:word,x:word,y:word,flow_dir:word,bln:word,bls:word,ble:word,blw:word
 	ret
 
 endp parsedir
+
+proc sin far
+arg theta:word
+
+  shl [theta], 1
+  fild [theta]
+  fldpi
+  fmulp st(1), st(0)
+  fidiv [c_divisions]
+
+  fsin
+  fimul [multiplier]
+  fistp [return_value]
+  mov ax, [return_value]
+  ret
+
+endp sin
+
+proc cos far
+arg theta:word
+
+  shl [theta], 1
+  fild [theta]
+  fldpi
+  fmulp st(1), st(0)
+  fidiv [c_divisions]
+  fcos
+  fimul [multiplier]
+  fistp [return_value]
+  mov ax, [return_value]
+  ret
+
+endp cos
+
+proc tan far
+arg theta:word
+
+  shl theta, 1
+  fild [theta]
+  fldpi
+  fmulp st(1), st(0)
+  fidiv [c_divisions]
+  fptan
+  fstp st(0)
+  fimul [multiplier]
+  fistp [return_value]
+  mov ax, [return_value]
+  ret
+  
+endp tan
+  
+proc atan far
+arg val:word
+          
+ fild [val]
+ fidiv [divider]
+ fld1
+ fpatan
+ fimul [c_divisions]
+ fld const_2pi
+ fdivp
+ fistp [return_value]
+ mov ax, [return_value]
+ ret
+ 
+endp atan
+
+proc asin far
+arg val:word
+          
+  fild [val]
+  fidiv [divider]    
+  fld st(0)                 ; put a in st(1)
+  fmul st(0), st(0)         ; square a
+  fld1                      ; load 1
+  fsubrp                    ; 1 - a^2
+  fsqrt                     ; take sqrt
+  fpatan
+  fimul [c_divisions]
+  fld const_2pi
+  fdivp
+  fistp [return_value]
+  mov ax, [return_value]
+  ret
+   
+endp asin
+
+proc acos far
+arg val:word
+          
+  fild [val]
+  fidiv [divider]    
+  fld st(0)                 ; put a in st(1)
+  fmul st(0), st(0)         ; squar a
+  fld1                      ; load 1
+  fsubrp                    ; 1 - a^2
+  fsqrt                     ; take sqrt
+  fxch                      ; swap st(0) and st(1)
+  fpatan
+  fimul [c_divisions]
+  fld [const_2pi]
+  fdivp
+  fistp [return_value]
+  mov ax, [return_value]
+  ret
+
+endp acos
 
 ends
 

@@ -63,12 +63,12 @@ char default_pal[16][3]={
 	{ 42,21,00 },
 	{ 42,42,42 },
 	{ 21,21,21 },
-	{ 00,00,63 },
-	{ 00,63,00 },
-	{ 00,63,63 },
-	{ 63,00,00 },
-	{ 63,00,63 },
-	{ 63,63,00 },
+	{ 21,21,63 },
+	{ 21,63,21 },
+	{ 21,63,63 },
+	{ 63,21,21 },
+	{ 63,21,63 },
+	{ 63,63,21 },
 	{ 63,63,63 } };
 
 //Set one EGA palette register. Blanks screen. Sets attr, 0-15, to
@@ -420,8 +420,6 @@ void smzx_update_palette(char wait_for_retrace)
   if(faded_out)return;
   // Wait for retrace if applicable
   if(wait_for_retrace) wait_retrace();
-  
-  if(wait_for_retrace)wait_retrace();
 
   // Only update the diagonals if SMZX mode 2 is set
   if(smzx_mode == 1)

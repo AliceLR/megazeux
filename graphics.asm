@@ -565,12 +565,7 @@ proc draw_char_linear far
 arg chr:byte,color:byte,pos:word,segm:word
 
 	push ax bx es di	; Conserve registers
-                                                                                         
-  push ax
-  push bx
-  push es
-  push di	; Conserve registers              
-                                                      
+                                                                                                                                                            
 	mov ax,[segm]		  ; Load in segment of video memory 
 	mov es,ax                                           
   mov di, [pos]     ; position

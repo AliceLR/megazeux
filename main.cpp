@@ -220,7 +220,7 @@ int main(int argc,char **argv) {
 	draw_window_box(2,1,77,3,0xB800,120,127,113,0);
 	draw_window_box(2,4,77,16,0xB800,120,127,113,0);
 	draw_window_box(2,17,77,23,0xB800,120,127,113,0);
-  write_string("MegaZeux version 2.69c",27,2,127,0xB800);
+  write_string("MegaZeux version 2.70",27,2,127,0xB800);
 // #ifdef BETA
 	write_string("Beta; please distribute",27,17,127,0xB800);
 // #endif
@@ -626,12 +626,14 @@ char scan_options(void) {
 	if(help) {
 		if(help==1) puts("\a");
 		else puts("");
-		puts("MegaZeux version 2.69c\tCommand line parameters-\n");
+		puts("MegaZeux version 2.70\tCommand line parameters-\n");
 		puts("      -?  Help with parameters.");
 		puts("-nomouse  Don't use mouse, even if found.");
 		puts("  -noems  Don't use EMS memory, even if available. (NOT RECOMMENDED)");
 		puts("    -ega  Use EGA mode even if VGA or better found.");
 		puts("  -keyb2  Use the alternate keyboard handler; Try this if the keyboard acts");
+    puts("  -noconfig   Start up without the configuration screen.");
+		puts("          Don't use this option unless you have properly configured already.");
 		puts("\t  strange within the game or keys come out as if you are holding the");
 		puts("\t  Ctrl, Shift, or Alt key down, when you aren't.");
 		puts("-l[file]  Loads the world [file] up when starting MegaZeux. Do not include the");

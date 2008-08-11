@@ -24,8 +24,8 @@ char far *vlayer_chars;
 char far *vlayer_colors;
 int ems_saved;
 int vlayer_ems;
-int vlayer_width = 256;
-int vlayer_height = 128;
+unsigned int vlayer_width = 256;
+unsigned int vlayer_height = 128;
 
 int vlayer_allocated = 0;
 

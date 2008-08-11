@@ -34,10 +34,6 @@ extern int player_restart_y;
 extern char was_zapped;
 extern char file_in[12];
 extern char file_out[12];
-extern int multiplier;
-extern int divider;
-extern int c_divisions;
-
 
 #ifdef __cplusplus
 extern "C" {
@@ -54,6 +50,7 @@ void dec_counter(char far *name,int value=1,unsigned char id=0);
 char take_key(char color);
 //Give a key. Returns non-0 if no room.
 char give_key(char color);
+int get_rparam(char far *src, int id);
 int translate_coordinates(char far *src, int &x, int &y);
 
 #ifdef __cplusplus

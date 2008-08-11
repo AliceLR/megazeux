@@ -61,14 +61,17 @@
 #include "mod.h"
 #include "palette.h"
 #include "vlayer.h"
+#include "trig.h"
+// Loading robots...
+#include "robo_ed.h"
+
+#include "error.h"
 
 long off;
 char fileio;
+int robot_id;
 char file_in[12];
 char file_out[12];
-int multiplier;
-int divider;
-int c_divisions;
 
 // I took away the mzxakversion stuff. So you no longer
 // have to set "mzxakversion" to 1. -Koji
@@ -185,27 +188,9 @@ int get_counter(char far *name,unsigned char id)
   {
     if(c_divisions)
     {
-      int sin_return;
       int theta = (int)(strtol(name + 3, NULL, 10)) % c_divisions;
-      // Do sin
-      asm {
-        shl theta, 1
-        fild word ptr theta
-        fldpi
-        fmulp st(1), st(0)
-        fidiv word ptr c_divisions
-
-        // If compiling with Borland C/TC++ 3.0 and it doesn't get
-        // past here it's because the compiler can't normally cope with
-        // 386/387 instructions like this. To get around it, you should
-        // turn on "compile through assembler" in the compiler options.
-        // This will, however, make you unable to compile other larger
-        // modules, so you need to then turn it off when those are compiling.
-        fsin
-        fimul word ptr multiplier
-        fistp word ptr sin_return
-      }      
-      return(sin_return);
+      int retval = sin(theta);
+      return retval;
     }
   }
 
@@ -213,20 +198,9 @@ int get_counter(char far *name,unsigned char id)
   {
     if(c_divisions)
     {
-      int cos_return;
       int theta = (int)(strtol(name + 3, NULL, 10)) % c_divisions;
-      // Do cos
-      asm {
-        shl theta, 1
-        fild word ptr theta
-        fldpi
-        fmulp st(1), st(0)
-        fidiv word ptr c_divisions
-        fcos
-        fimul word ptr multiplier
-        fistp word ptr cos_return
-      }      
-      return(cos_return);
+      int ret_val = cos(theta);
+      return ret_val;
     }
   }
 
@@ -234,24 +208,11 @@ int get_counter(char far *name,unsigned char id)
   {
     if(c_divisions)
     {
-      int tan_return;
       int theta = (int)(strtol(name + 3, NULL, 10)) % c_divisions;
       if((theta + (c_divisions >> 2)) % (c_divisions >> 1))
       {
-        //return((int)(tan((theta * M_PI * 2)/c_divisions) * multiplier));
-        // Do tan
-        asm {
-          shl theta, 1
-          fild word ptr theta
-          fldpi
-          fmulp st(1), st(0)
-          fidiv word ptr c_divisions
-          fptan
-          fstp st(0)
-          fimul word ptr multiplier
-          fistp word ptr tan_return
-        }      
-        return(tan_return);
+        int ret_val = tan(theta);
+        return ret_val;
       }
     }
   }
@@ -260,23 +221,9 @@ int get_counter(char far *name,unsigned char id)
   {
     if(divider)
     {
-      int atan_return;
-      int val = strtol(name + 4, NULL, 10);
-      double const_2pi = 6.2831853071796;
-      if((val <= divider) && (val >= -divider))
-      {
-        asm {
-          fild word ptr val
-          fidiv word ptr divider
-          fld1
-          fpatan
-          fimul word ptr c_divisions
-          fld const_2pi
-          fdivp
-          fistp word ptr atan_return
-        }
-        return(atan_return);
-      }
+      int val = (int)strtol(name + 4, NULL, 10);
+      int ret_val = atan(val);
+      return ret_val;
     }
   }
 
@@ -284,27 +231,11 @@ int get_counter(char far *name,unsigned char id)
   {
     if(divider)
     {
-      int asin_return;
-      int val = strtol(name + 4, NULL, 10);
-      double const_2pi = 6.2831853071796;
-      if((val <= divider) && (val >= -divider))
+      int val = (int)strtol(name + 4, NULL, 10);
+	    if((val <= divider) && (val >= -divider))
       {
-        // asin(a) = atan(a/sqrt(1 - a^2))
-        asm {
-          fild word ptr val         
-          fidiv word ptr divider    
-          fld st(0)                 // put a in st(1)
-          fmul st(0), st(0)         // square a
-          fld1                      // load 1
-          fsubrp                    // 1 - a^2
-          fsqrt                     // take sqrt
-          fpatan
-          fimul word ptr c_divisions
-          fld const_2pi
-          fdivp
-          fistp word ptr asin_return
-        }
-        return(asin_return);
+        int ret_val = asin(val);
+        return ret_val;
       }
     }
   }
@@ -313,28 +244,11 @@ int get_counter(char far *name,unsigned char id)
   {
     if(divider)
     {
-      int acos_return;
-      int val = strtol(name + 4, NULL, 10);
-      double const_2pi = 6.2831853071796;
-      if((val <= divider) && (val >= -divider))
+      int val = (int)strtol(name + 4, NULL, 10);
+	    if((val <= divider) && (val >= -divider))
       {
-        // asin(a) = atan(sqrt(1 - a^2)/a)
-        asm {
-          fild word ptr val         
-          fidiv word ptr divider    
-          fld st(0)                 // put a in st(1)
-          fmul st(0), st(0)         // square a
-          fld1                      // load 1
-          fsubrp                    // 1 - a^2
-          fsqrt                     // take sqrt
-          fxch                      // swap st(0) and st(1)
-          fpatan
-          fimul word ptr c_divisions
-          fld const_2pi
-          fdivp
-          fistp word ptr acos_return
-        }
-        return(acos_return);
+        int ret_val = acos(val);
+        return ret_val;
       }
     }
   }
@@ -343,7 +257,7 @@ int get_counter(char far *name,unsigned char id)
 
   if(!strn_cmp(name, "SQRT", 4))
   {
-    int val = (int)(strtol(name + 4, NULL, 10));
+    int val = (int)strtol(name + 4, NULL, 10);
     if(val >= 0)
     {
       int sqrt_return;
@@ -358,7 +272,7 @@ int get_counter(char far *name,unsigned char id)
 
   if(!strn_cmp(name, "ABS", 3))
   {
-    int val = (int)(strtol(name + 3, NULL, 10));
+    int val = (int)strtol(name + 3, NULL, 10);
     if(val < 0) val = -val;
     return(val);
   }
@@ -409,6 +323,34 @@ int get_counter(char far *name,unsigned char id)
     fileio = 6;
   }
 
+	if(!strn_cmp(name, "load_robot", 10))
+	{
+		robot_id = get_rparam(name + 10, id);
+		if(robot_id == -1) return -1;
+ 		fileio = 9;
+	}
+
+  if(!strn_cmp(name, "save_robot", 10))
+	{
+		robot_id = get_rparam(name + 10, id);
+		if(robot_id == -1) return -1;
+ 		fileio = 10;
+	}
+
+  if(!strn_cmp(name, "load_bc", 7))
+	{
+		robot_id = get_rparam(name + 7, id);
+		if(robot_id == -1) return -1;
+ 		fileio = 11;
+	}
+
+  if(!strn_cmp(name, "save_bc", 7))
+	{
+		robot_id = get_rparam(name + 7, id);
+		if(robot_id == -1) return -1;
+ 		fileio = 12;
+	}
+
   //Open input_file! -Koji
   if(!strn_cmp(name, "FREAD", 5))
   {
@@ -426,17 +368,17 @@ int get_counter(char far *name,unsigned char id)
     //Reads a counter from input_file - Exo
     if(!str_cmp(name + 5, "_COUNTER"))
     {
-      return(fgetc(input_file) | fgetc(input_file) << 8);
+      return((fgetc(input_file)) | (fgetc(input_file) << 8));
     }
 
     if(!str_cmp(name + 5, "_POS"))
     {
-      return(ftell(input_file) & 32767);
+      return((int)(ftell(input_file) & 32767));
     }
 
     if(!str_cmp(name + 5, "_PAGE"))
     {
-      return(ftell(input_file) >> 15);
+      return((int)(ftell(input_file) >> 15));
     }
 
     //Reads from input_file. -Koji
@@ -473,12 +415,12 @@ int get_counter(char far *name,unsigned char id)
 
     if(!str_cmp(name + 6,"_POS"))
     {
-      return(ftell(output_file) & 32767);
+      return((int)(ftell(output_file) & 32767));
     }
 
     if(!str_cmp(name + 6,"_PAGE"))
     {
-      return(ftell(output_file) >> 15);
+      return((int)(ftell(output_file) >> 15));
     }
   }
 
@@ -532,8 +474,8 @@ int get_counter(char far *name,unsigned char id)
 
       if(!strn_cmp(next, "_CLIST", 6))
       {
-        spr_num = (int)strtol(next + 6, NULL, 10);
-        return(collision_list.collisions[spr_num]);
+				spr_num = strtol(next + 6, NULL, 10);
+				return(collision_list.collisions[spr_num]);
       }
 
       spr_num = (unsigned char)strtol(next, &next, 10);
@@ -597,22 +539,22 @@ int get_counter(char far *name,unsigned char id)
     {
   	  return smzx_mode;
     }
-    if((name[5] == 'R') || (name[5] == 'r'))
+    if(!str_cmp(name + 5, "R"))
     {
       int c;
-      c = strtol(name + 6, NULL, 10) & 255;
+      c = (int)strtol(name + 6, NULL, 10) & 255;
       return smzx_mode2_palette[c * 3];
     }
-    if((name[5] == 'G') || (name[5] == 'g'))
+    if(!str_cmp(name + 5, "G"))
     {
       int c;
-      c = strtol(name + 6, NULL, 10) & 255;
+      c = (int)strtol(name + 6, NULL, 10) & 255;
       return smzx_mode2_palette[(c * 3) + 1];
     }
-    if((name[5] == 'B') || (name[5] == 'b'))
+    if(!str_cmp(name + 5, "B"))
     {
       int c;
-      c = strtol(name + 6, NULL, 10) & 255;
+      c = (int)strtol(name + 6, NULL, 10) & 255;
       return smzx_mode2_palette[(c * 3) + 2];
     }
   }
@@ -703,7 +645,7 @@ int get_counter(char far *name,unsigned char id)
   {
     if(!str_cmp(name + 3, "_PRESSED"))
     {
-      return key_get;
+      return (unsigned char)key_get;
     }
     if(!str_cmp(name + 3, "_RELEASE"))
     {
@@ -734,7 +676,7 @@ int get_counter(char far *name,unsigned char id)
     }
     else
     {
-      int n = strtol(name + 3, NULL, 10) & 0x7F;
+      int n = (int)strtol(name + 3, NULL, 10) & 0x7F;
       return state_table[n];
     }
   }
@@ -829,7 +771,7 @@ int get_counter(char far *name,unsigned char id)
   if(!strn_cmp(name, "RID", 3))
   {
     int i;
-    for(i = 0; i < NUM_ROBOTS; i++)
+    for(i = 0; i < NUM_ROBOTS + 1; i++)
     {
       if(!str_cmp(robots[i].robot_name, name + 3))
       {
@@ -841,7 +783,7 @@ int get_counter(char far *name,unsigned char id)
   if((name[0] == 'R') || (name[0] == 'r'))
   {
     char far *next;
-    unsigned int n = strtol(name + 1, &next, 10);
+    unsigned int n = (unsigned int)strtol(name + 1, &next, 10);
     if(*next == '.')
     {
       return(get_counter(next + 1, n));
@@ -1063,11 +1005,11 @@ int get_counter(char far *name,unsigned char id)
 void set_counter(char far *name,int value,unsigned char id) 
 {
   int t1;
-//File protocal -Koji
+//File protocol -Koji
   if(fileio > 0)
   {       //This can be good thing or a bad thing...
     //I'd say it'd be wise to seclude a new game
-    //inside a it's own folder to fight against
+    //inside a its own folder to fight against
     //a posible viral threat. -Koji
     // I changed if's to a switch. - Exo
 
@@ -1113,44 +1055,36 @@ void set_counter(char far *name,int value,unsigned char id)
       }
       case 4:
       {
+				// Save .sav file.
 				//Store current
 				store_current();
 				//Save game
-				save_world(name);
+				save_world(name, 1, 0);
 				//Reload current
 				select_current(curr_board);
         break;
 			}        
       case 5:
-      {
-        // Load game
-        int last_board = curr_board;
-  			store_current();
-	  		clear_current();
-        end_mod();
-				if(!load_world(name, 2, 1, 0)) 
-        {
-          char temp[12];
-					if(board_where[curr_board]!=W_NOWHERE)
-					  select_current(curr_board);
-					else select_current(0);
-					send_robot_def(0,10);				  
-          str_cpy(temp, mod_playing);
-          if(temp[0])
-          {
-            load_mod(temp);
-          }
-					if(get_counter("CURSORSTATE", 0) == 0) 
-          {
-            m_hide();
-          }
-				}
-        else
-        {
-          load_mod(mod_playing);
-          select_current(last_board);
-        }
-        break;
+      {		
+				// Load world
+				char faded = 0;
+
+				// Gotta do this a little early
+				fileio = 0;
+
+				// Clear world and reload
+				clear_world();
+        load_world(name, 0, 1, &faded);
+
+				if(board_where[curr_board] != W_NOWHERE) 
+				 select_current(curr_board);
+				else select_current(0);
+
+				send_robot_def(0, 10);
+
+				force_state = 2;	 
+
+				break;
       }
       // Load SMZX palette
       case 6:
@@ -1162,12 +1096,12 @@ void set_counter(char far *name,int value,unsigned char id)
       case 7:
       {
 				int temp = robots[id].cur_prog_line;
-				// First set the current line to 0
-				robots[id].cur_prog_line = 0;
+				// First set the current line to 1
+				robots[id].cur_prog_line = 1;
 				//Store current
 				store_current();
 				//Save game
-				save_world(name, 0, 0);
+				save_world(name);
 				//Reload current
 				select_current(curr_board);
 				robots[id].cur_prog_line = temp;
@@ -1185,6 +1119,189 @@ void set_counter(char far *name,int value,unsigned char id)
         str_cpy(file_out, name);
         break;
       }
+			case 9:
+			{
+				// Load robot
+				FILE *robot_file;
+				unsigned char file_in[256];
+				unsigned char file_out[256];
+				unsigned char far *loc;
+				unsigned int mem_used = 0;
+				int ret_length;
+				
+				if(id == GLOBAL_ROBOT)
+				{
+					prepare_robot_mem(0);
+				}
+
+				robot_file = fopen(name, "rt");
+
+				if(robot_file == NULL)
+				{
+					break;
+				}
+
+				if(robot_free_mem < 31744)
+				{
+					reallocate_robot_mem(1, robot_id, robot_free_mem);
+				}
+				else
+				{
+					reallocate_robot_mem(1, robot_id, 31744);
+				}
+				
+				loc = robot_mem + robots[robot_id].program_location;
+  			prepare_robot_mem(0);
+
+				*loc = 255;
+				loc++;
+				mem_used++;
+
+				while(fgets(file_in, 256, robot_file) != NULL)
+				{
+					*(file_in + str_len(file_in) - 1) = 0;
+
+					if(string_to_robot(file_in, file_out, &ret_length)) break;					
+
+					mem_cpy(loc, file_out, ret_length);
+					loc += ret_length;
+					mem_used += ret_length;					
+
+					sprintf(file_out, "%d", ret_length);
+				}
+				*loc = 0;
+				mem_used++;
+				
+				reallocate_robot_mem(1, robot_id, mem_used);
+
+				robots[robot_id].cur_prog_line = 1;
+
+				if(robot_id == id)
+				{
+					force_state = 1;
+				}
+				else
+				{
+					force_state = 3;
+				}
+
+				if(id == GLOBAL_ROBOT)
+				{
+					prepare_robot_mem(1);
+				}
+
+				fclose(robot_file);
+				break;
+			}
+			case 10:
+			{
+ 				// Dump robot contents
+				char far *rloc = robot_mem + robots[robot_id].program_location + 1;
+				FILE *robot_file = fopen(name, "wt");
+				unsigned char str_out[255];
+				unsigned char cur_length = rloc[0];
+
+				if(id == GLOBAL_ROBOT)
+				{
+					prepare_robot_mem(0);
+				}
+
+				while(cur_length)
+				{
+ 					robot_to_string(rloc, str_out);
+					fputs(str_out, robot_file);
+					fputs("\n", robot_file);
+					rloc += cur_length + 2;
+					cur_length = *rloc;				
+				} 				
+				fclose(robot_file);
+
+				if(id == GLOBAL_ROBOT)
+				{
+					prepare_robot_mem(1);
+				}
+
+				break;
+			}
+
+			case 11:
+			{
+				// Load robot from bytecode
+				FILE *robot_file;
+				int robot_size;
+
+				robot_file = fopen(name, "rb");
+
+				if(robot_file == NULL)
+				{
+					break;
+				}
+
+				if(id == GLOBAL_ROBOT)
+				{
+					prepare_robot_mem(0);
+				}
+
+				fseek(robot_file, 0, SEEK_END);
+				robot_size = (int)ftell(robot_file);
+				fseek(robot_file, 0, SEEK_SET);
+				if(reallocate_robot_mem(1, robot_id, robot_size))
+				{
+					break;
+				}
+				fread(robot_mem + robots[robot_id].program_location, robot_size, 1,
+				 robot_file);
+
+				robots[robot_id].cur_prog_line = 1;
+									
+				if(robot_id == id)
+				{
+					force_state = 1;
+				}
+				else
+				{
+					force_state = 3;
+				}
+
+				fclose(robot_file);
+				
+				if(id == GLOBAL_ROBOT)
+				{
+					prepare_robot_mem(1);
+				}
+
+				break;
+			}
+
+			case 12:
+			{
+				// Load robot from bytecode
+				FILE *robot_file;
+				int robot_size = robots[robot_id].program_length;
+
+				robot_file = fopen(name, "wb");
+
+				if(id == GLOBAL_ROBOT)
+				{
+					prepare_robot_mem(0);
+				}
+
+				if(reallocate_robot_mem(1, robot_id, robot_size))
+				{
+					break;
+				}
+				fwrite(robot_mem + robots[robot_id].program_location, robot_size, 1,
+				 robot_file);
+									
+				fclose(robot_file);
+
+				if(id == GLOBAL_ROBOT)
+				{
+					prepare_robot_mem(1);
+				}
+
+				break;
+			}
     }
 
     fileio = 0;
@@ -1486,7 +1603,7 @@ void set_counter(char far *name,int value,unsigned char id)
     }
     if((name[5] == 'R') || (name[5] == 'r'))
     {
-      int c = strtol(name + 6, NULL, 10);
+      int c = (int)strtol(name + 6, NULL, 10);
       smzx_mode2_palette[c * 3] = char(value & 63);
       if(smzx_mode == 2)
         update_smzx_color((unsigned char)c);
@@ -1494,7 +1611,7 @@ void set_counter(char far *name,int value,unsigned char id)
     }
     if((name[5] == 'G') || (name[5] == 'g'))
     {
-      int c = strtol(name + 6, NULL, 10);
+      int c = (int)strtol(name + 6, NULL, 10);
       smzx_mode2_palette[(c * 3) + 1] = char(value & 63);
       if(smzx_mode == 2)
         update_smzx_color((unsigned char)c);
@@ -1502,7 +1619,7 @@ void set_counter(char far *name,int value,unsigned char id)
     }
     if((name[5] == 'B') || (name[5] == 'b'))
     {
-      int c = strtol(name + 6, NULL, 10);
+      int c = (int)strtol(name + 6, NULL, 10);
       smzx_mode2_palette[(c * 3) + 2] = char(value & 63);
       if(smzx_mode == 2)
         update_smzx_color((unsigned char)c);
@@ -1521,14 +1638,14 @@ void set_counter(char far *name,int value,unsigned char id)
   {
     if(!str_cmp(name + 7, "WIDTH"))
     {
-      vlayer_width = value;
-      vlayer_height = 32768 / vlayer_width;
+      vlayer_width = (unsigned)value;
+      vlayer_height = 32768U / vlayer_width;
       return;
     }
     if(!str_cmp(name + 7, "HEIGHT"))
     {
-      vlayer_height = value;
-      vlayer_width = 32768 / vlayer_height;
+      vlayer_height = (unsigned)value;
+      vlayer_width = 32768U / vlayer_height;
       return;
     }
   }
@@ -2124,16 +2241,25 @@ void dec_counter(char far *name,int value,unsigned char id)
   set_counter(name,(int)t,id);
 }
 
+int get_rparam(char far *src, int id)
+{
+  if(*src == 0) return id;
+  int val = ((int)strtol(src, NULL, 10)) % (NUM_ROBOTS + 1);
+	if(val == GLOBAL_ROBOT) return -1;
+	if(robots[val].used == 0) return -1;
+	return val;
+}
+
 int translate_coordinates(char far *src, int &x, int &y)
 {
   char far *next;
 
   if(*src == 0) return -1;  
 
-  x = strtol(src, &next, 10);
+  x = (int)strtol(src, &next, 10);
   if(*next == ',')
   {
-    y = strtol(next + 1, NULL, 10);
+    y = (int)strtol(next + 1, NULL, 10);
     return 0;
   }
   else

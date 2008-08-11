@@ -423,8 +423,8 @@ int sprite_colliding_xy(unsigned char sprite, int x, int y)
   }
 
   i3 = ((y + sprites[sprite].col_y) * max_bxsiz) + x + sprites[sprite].col_x;
-  i4 = ((sprites[sprite].ref_y + sprites[sprite].col_y) * bwidth) +
-   sprites[sprite].ref_x + sprites[sprite].col_x;
+  i4 = ((sprites[sprite].ref_y + sprites[sprite].col_y) * bwidth);
+	i4 += sprites[sprite].ref_x + sprites[sprite].col_x;
   skip = max_bxsiz - sprites[sprite].col_width;
   skip2 = bwidth - sprites[sprite].col_width;
 

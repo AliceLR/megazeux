@@ -3,7 +3,9 @@
 
 #include <stdio.h>
 
-#define MAX_OBJ_SIZE       32768
+#define MZX_BCC						 1
+
+#define MAX_OBJ_SIZE       31744
 
 #define IMM_U16            (1 << 0)
 #define IMM_S16            (1 << 0)

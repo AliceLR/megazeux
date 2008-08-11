@@ -34,6 +34,7 @@
    M\x02\x45 - MZX 2.69
    M\x02\x46 - MZX 2.69b
    M\x02\x48 - MZX 2.69c
+	 M\x02\x49 - MZX 2.70
 
    .SAV files:
    MZSV2 - Ver 2.x MegaZeux
@@ -45,6 +46,7 @@
    MZS\x02\x45 - MZX 2.69
    MZS\x02\x46 - MZX 2.69b
    MZS\x02\x48 - MZX 2.69c
+	 MZS\x02\x49 - MZX 2.70
 
  All others are unchanged.
 
@@ -76,7 +78,8 @@
 #include "mstring.h"
 #include "runrobot.h"
 #include "vlayer.h"
-#define VERSION 0x248
+#include "trig.h"
+#define VERSION 0x249
 #define SAVE_INDIVIDUAL
 
 unsigned int version_loaded = VERSION;
@@ -187,7 +190,7 @@ void save_world(char far *file,char savegame,char faded) {
 	save_screen(current_pg_seg);
 	meter("Saving...",current_pg_seg,meter_curr,meter_target);
 	if (savegame) {
-		fwrite("MZS\x02\x48",1,5,fp);
+		fwrite("MZS\x02\x49",1,5,fp);
 		fputc(curr_board,fp);
 		xor=0;
 	} else {
@@ -196,7 +199,7 @@ void save_world(char far *file,char savegame,char faded) {
 		//Pw info-
 		write_password(fp);
 		//File type id-
-		fwrite("M\x02\x48",1,3,fp);
+		fwrite("M\x02\x49",1,3,fp);
 		//Get xor code...
 		xor=get_pw_xor_code();
 	}
@@ -732,7 +735,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
     if(version_loaded >= 0x241)
     {
       int spr_total = 64;
-      if(version_loaded >= 0x248)
+      if(version_loaded >= VERSION)
       {
         spr_total = 256;
       }
@@ -825,7 +828,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 					}
 
 					// Vlayer stuff for 2.69c
-					if(version_loaded >= 0x248)
+					if(version_loaded >= VERSION)
 					{
 						fread(&commands, 1, 2, fp);
 						map_vlayer();

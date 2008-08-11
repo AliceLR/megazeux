@@ -27,7 +27,7 @@ Ideal
 include "data.inc"
 include "const.inc"
 
-p186
+p386
 JUMPS
 include "model.inc"
 

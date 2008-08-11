@@ -271,19 +271,23 @@ void clear_robot(unsigned char id) {
 	unsigned int t1,t2;
 	int temp=curr_rmem_status;
 	//Reallocate
+
 	reallocate_robot_mem(T_ROBOT,id,2);
+
 	prepare_robot_mem((id==0)||(id==NUM_ROBOTS));
 	//Clear struct
 	t1=robots[id].program_location;
 	for(t2=0;t2<sizeof(Robot);t2++) {
 		((char far *)(&robots[id]))[t2]=0;
 		}
-	robots[id].program_length=2;
+
+ 	robots[id].program_length=2;
 	robots[id].robot_cycle=1;
 	robots[id].program_location=t1;
 	robots[id].cur_prog_line=1;
 	robots[id].robot_char=2;
 	robots[id].bullet_type=1;
+
 	//Clear program (robot mem prepared from reallocate)
 	robot_mem[t1]=0xFF;
 	robot_mem[t1+1]=0x00;

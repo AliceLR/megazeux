@@ -49,6 +49,8 @@ extern int target_y;//Or id of entrance
 extern int target_d_id;
 extern int target_d_color;
 
+extern char dead;
+
 extern char pal_update;
 
 #ifdef __cplusplus

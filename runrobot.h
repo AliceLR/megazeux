@@ -47,6 +47,10 @@ extern unsigned char ibuff2[161];//Alternate buffer
 unsigned char far *tr_msg(unsigned char far *orig_mesg,int id,
 	unsigned char far *buffer=ibuff);
 
+// Used to not advance or stop execution.	- Exo
+
+extern unsigned char force_state;
+
 //Returns pos of next parameter, where pos is pos of current parameter
 unsigned int next_param(unsigned char far *ptr,unsigned int pos);
 

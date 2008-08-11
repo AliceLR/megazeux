@@ -134,16 +134,21 @@ void clear_current_and_select(unsigned char id,char adopt_settings) {
 
 void select_current(unsigned char id) {
 	int t1;
+
 	char temp[FILENAME_SIZE];
+
 	//Save current mod...
 	str_cpy(temp,real_mod_playing);
+
 	//Does board exist?
 	if(board_where[id]==W_NOWHERE)
 		error("Attempt to load nonexistent board",2,20,current_pg_seg,0x0401);
+
 	//If board is current, we're done
 	if(board_where[id]==W_CURRENT) return;
+
 	//Otherwise, load it in...
-	if((t1=grab_current(id))!=0) {
+  if((t1=grab_current(id))!=0) {
 		//Out of robot memory or other error?
 		if(t1==4) //Out of robot memory
 			error("Out of robot memory",1,21,current_pg_seg,0x0501);
@@ -152,8 +157,10 @@ void select_current(unsigned char id) {
 			error("Out of memory and/or disk space",2,4,
 				current_pg_seg,0x0202);
 		}
+
 	//Loaded. Deallocate...
 	deallocate_board_space(id);
+
 	//...and select as current.
 	board_where[curr_board=id]=W_CURRENT;
 	board_sizes[id]=0;
@@ -168,6 +175,7 @@ void select_current(unsigned char id) {
 		}
 	}
 	find_player();
+ 
 	//Done!
 }
 
@@ -228,10 +236,10 @@ void clear_current(char adopt_settings) {
 	for(t1=1;t1<NUM_SENSORS;t1++) clear_sensor(t1);
 	//Clear settings
 	if(!adopt_settings) {
-		viewport_x=3; viewport_y=2;
-		viewport_xsiz=74; viewport_ysiz=21;
+		viewport_x=0; viewport_y=0;
+		viewport_xsiz=80; viewport_ysiz=25;
 		board_xsiz=100;
-		board_ysiz=50;
+		board_ysiz=100;
 		max_bsiz_mode=2;
 		max_bxsiz=max_bysiz=100;
 		can_shoot=can_bomb=fire_burn_space=fire_burn_fakes=fire_burn_trees=
@@ -249,7 +257,7 @@ void clear_current(char adopt_settings) {
 	b_mesg_row=24;
 	b_mesg_col=255;
 	locked_x=locked_y=65535;
-	overlay_mode=OVERLAY_OFF;
+	overlay_mode=OVERLAY_ON;
 	//Clear board exits
 	for(t1=0;t1<4;t1++) board_dir[t1]=NO_BOARD;
 	//DON'T clear board title

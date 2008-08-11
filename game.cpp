@@ -122,7 +122,7 @@ int game_menu_keys[13]={ -59,0,27,-60,-61,-62,-63,-64,-67,-68,0,0,0 };
 int key_get;
 
 char bomb_type=1;//Start on hi-bombs
-char dead=0;
+extern char dead=0;
 
 //For changing screens AFTER an update is done and shown
 int target_board=-1;//Where to go
@@ -176,6 +176,14 @@ void title_screen(void) {
 	}
 	else goto world_load;//Choose world to load
 
+	//Main game loop
+	//Mouse remains hidden unless menu/etc. is invoked
+	//Making the menu functions on by default -Koji
+	// Do it HERE too - Exo
+	set_counter("ENTER_MENU",1);
+	set_counter("HELP_MENU",1);
+	set_counter("F2_MENU",1);
+	
 	goto menu_mesg; //stupid hack to shut up tc
 
 	//Main game loop
@@ -215,12 +223,12 @@ void title_screen(void) {
 					break;
 				case -17://AltW
 					//Re-init screen
-					vga_16p_mode();
+					m_deinit();
 					ega_14p_mode();
 					cursor_off();
 					blink_off();
-					ec_update_set();
-					update_palette(0);
+					m_init();
+					m_show();
 					break;
 				case 'E'://E
 				case -66://F8
@@ -509,32 +517,31 @@ void draw_viewport(void) {
 	int t1,t2;
 	enter_func("draw_viewport");
 	//Draw the current viewport on current_pg_seg
-	if(overall_speed==1) {
-		//Special clear- only fills areas that aren't part of the display.
-		//Less flicker for speed #1
-		if(viewport_y>1) {
-			//Top
-			for(t1=0;t1<viewport_y;t1++)
-				fill_line(80,0,t1,177+(edge_color<<8),current_pg_seg);
-			}
-		if((viewport_y+viewport_ysiz)<24) {
-			//Bottom
-			for(t1=viewport_y+viewport_ysiz+1;t1<25;t1++)
-				fill_line(80,0,t1,177+(edge_color<<8),current_pg_seg);
-			}
-		if(viewport_x>1) {
-			//Left
-			for(t1=0;t1<25;t1++)
-				fill_line(viewport_x,0,t1,177+(edge_color<<8),current_pg_seg);
-			}
-		if((viewport_x+viewport_xsiz)<79) {
-			//Right
-			t2=viewport_x+viewport_xsiz+1;
-			for(t1=0;t1<25;t1++)
-				fill_line(80-t2,t2,t1,177+(edge_color<<8),current_pg_seg);
-			}
-		}
-	else clear_screen(177+(edge_color<<8),current_pg_seg);
+	
+ 	//Special clear- only fills areas that aren't part of the display.
+ 	//Less flicker for speed #1
+ 	if(viewport_y>1) {
+ 		//Top
+ 		for(t1=0;t1<viewport_y;t1++)
+ 			fill_line(80,0,t1,177+(edge_color<<8),current_pg_seg);
+ 		}
+ 	if((viewport_y+viewport_ysiz)<24) {
+ 		//Bottom
+ 		for(t1=viewport_y+viewport_ysiz+1;t1<25;t1++)
+ 			fill_line(80,0,t1,177+(edge_color<<8),current_pg_seg);
+ 		}
+ 	if(viewport_x>1) {
+ 		//Left
+ 		for(t1=0;t1<25;t1++)
+ 			fill_line(viewport_x,0,t1,177+(edge_color<<8),current_pg_seg);
+ 		}
+ 	if((viewport_x+viewport_xsiz)<79) {
+ 		//Right
+ 		t2=viewport_x+viewport_xsiz+1;
+ 		for(t1=0;t1<25;t1++)
+ 			fill_line(80-t2,t2,t1,177+(edge_color<<8),current_pg_seg);
+ 		}
+		
 	//Draw the box
 	if(viewport_x>0) {/* left */
 		for(t1=0;t1<viewport_ysiz;t1++)
@@ -916,6 +923,13 @@ void play_game(char fadein) {
 	char keylbl[5]="KEY?";
 	enter_func("play_game");
 
+	//Main game loop
+	//Mouse remains hidden unless menu/etc. is invoked
+	//Making the menu functions on by default -Koji
+	set_counter("ENTER_MENU",1);
+	set_counter("HELP_MENU",1);
+	set_counter("F2_MENU",1);
+
 	set_context(91);
 
 	switch_keyb_table(0);
@@ -927,12 +941,6 @@ void play_game(char fadein) {
 	page_flip(0);
 	m_vidseg(current_pg_seg);
 
-	//Main game loop
-	//Mouse remains hidden unless menu/etc. is invoked
-	//Making the menu functions on by default -Koji
-	set_counter("ENTER_MENU",1);
-	set_counter("HELP_MENU",1);
-	set_counter("F2_MENU",1);
 	do {
 		//Update
 		if(update(1,fadein)) continue;
@@ -1211,16 +1219,16 @@ void play_game(char fadein) {
 					break;
 				case -69://F11
 					//SMZX Mode
-          set_counter("SMZX_MODE", smzx_mode ^ 1, 0);
+          set_counter("SMZX_MODE", smzx_mode + 1, 0);
 					break;
 				case '='://AltW
 					//Re-init screen
-					vga_16p_mode();
+					m_deinit();
 					ega_14p_mode();
 					cursor_off();
 					blink_off();
-					ec_update_set();
-					update_palette(0);
+					m_init();
+					m_show();
 					break;
 				case -68://F10
 					//Quickload

@@ -96,6 +96,10 @@ extern int topindex,backindex;
 // Commands per cycle - Exo
 int commands = 40;
 
+// Used to not advance or stop execution.	- Exo
+
+unsigned char force_state = 0;
+
 void set_built_in_messages(int param);
 int get_built_in_messages(void);
 
@@ -123,17 +127,21 @@ void run_robot(int id,int x,int y)
   enter_func("run_robot");
   if(id<0) if(robots[-id].status!=2) return;
   int t1,t2,t3,t4,t5,t6,t7,t8,t9,t0,t10,t11,fad=is_faded();//Temps
+
   int cmd;//Command to run
   int lines_run=0,last_label=-1;//For preventing infinite loops
   char gotoed;//Set to 1 if we shouldn't advance cmd since we went to a lbl
+  force_state = 0;
   int old_pos;//Old position to verify gotos DID something
   int _bl[4]={ 0,0,0,0};//Whether blocked in a given direction (2=OUR bullet)
   int t12; // New * "" command (changes Built_In_Messages to be sure to display the messages)
+
+  unsigned char temp[81];
+
   unsigned char far *robot;
   unsigned char far *cmd_ptr;//Points to current command
   char done=0;//Set to 1 on a finishing command
   char update_blocked=0;//Set to 1 to update the _bl[4] array
-  unsigned char temp[81];
   char first_cmd=1;//It is the first cmd.
   FILE *fp;
   //Reset global prefixes
@@ -227,6 +235,7 @@ do
   cmd=cmd_ptr[0];
   //Act according to command
   t10 = 0;
+
   switch(cmd)
   {
     case 0://End
@@ -255,10 +264,13 @@ do
       robots[id].pos_within_line++;
       if(first_cmd) robots[id].status=1;
       goto breaker;
+
     case 3://Cycle
+
       robots[id].robot_cycle=(unsigned char)parse_param(&cmd_ptr[1],id);
       done=1;
       break;
+
     case 4://Go dir num
       //get num
       t1=(unsigned char)parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
@@ -288,6 +300,7 @@ do
       }
       goto breaker;
     case 5://Walk dir
+
       if(id==NUM_ROBOTS) break;
       t1=parsedir(cmd_ptr[2],x,y,robots[id].walk_dir);
       if((t1<1)||(t1>4))
@@ -297,6 +310,7 @@ do
       }
       robots[id].walk_dir=t1;
       break;
+
     case 6://Become color thing param
       if(id==NUM_ROBOTS) goto die;
       t1=x+y*max_bxsiz;
@@ -454,18 +468,18 @@ do
               {
                 count = 65535;
               }
-              int i, temp;
+              int i, rval;
               for(i = 0; i < count; i++)
               {
-                temp = fgetc(input_file);
-                if((temp == EOF) || ((temp == '*') && (count == 65535)))
+                rval = fgetc(input_file);
+                if((rval == EOF) || ((rval == '*') && (count == 65535)))
                 {
                   temp_str[i] = 0;
                   break;
                 }
                 else
                 {
-                  temp_str[i] = (char)temp;
+                  temp_str[i] = (char)rval;
                 }                
               }
               temp_str[i] = '\0';
@@ -1111,7 +1125,27 @@ do
       lay_bomb_entry:
       t4=x; t5=y;
       t6=parsedir(parse_param(&cmd_ptr[t0],id),x,y,robots[id].walk_dir);
+		
       put_to_dir:
+
+			// "beneath player" code was moved here so robots could get it too - Exo
+
+      if(t6==11)
+      {
+        //Put BENEATH player OR robot
+        if((t2>121)&&(t2<128)) break;
+        t1=fix_color(t1,level_under_color[t4+t5*max_bxsiz]);
+        t7=level_under_id[t4+t5*max_bxsiz];
+        t8=level_under_param[t4+t5*max_bxsiz];
+        if(t7==122)
+          clear_sensor(t8);
+        //Put it now.
+        level_under_id[t4+t5*max_bxsiz]=t2;
+        level_under_color[t4+t5*max_bxsiz]=t1;
+        level_under_param[t4+t5*max_bxsiz]=t3;
+        break;
+      }
+
       if((t6<1)||(t6>4)) break;
       if(move_dir(t4,t5,t6-1)) break;
       put_at_XY:
@@ -1691,21 +1725,6 @@ do
       t3=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
       t6=parsedir(parse_param(&cmd_ptr[t0],id),x,y,robots[id].walk_dir);
       t4=player_x; t5=player_y;
-      if(t6==11)
-      {
-        //Put BENEATH player
-        if((t2>121)&&(t2<128)) break;
-        t1=fix_color(t1,level_under_color[t4+t5*max_bxsiz]);
-        t7=level_under_id[t4+t5*max_bxsiz];
-        t8=level_under_param[t4+t5*max_bxsiz];
-        if(t7==122)
-          clear_sensor(t8);
-        //Put it now.
-        level_under_id[t4+t5*max_bxsiz]=t2;
-        level_under_color[t4+t5*max_bxsiz]=t1;
-        level_under_param[t4+t5*max_bxsiz]=t3;
-        break;
-      }
       goto put_to_dir;
     case 101:// /"dirs"
     case 232://Persistent go [str]
@@ -3211,30 +3230,33 @@ do
       pal_update=1;
       break;
     case 216://Load char set ""
-      char far *temp = tr_msg(&cmd_ptr[2],id);
+      char far *tmp = tr_msg(&cmd_ptr[2], id);
 
       // This will load a charset to a different position - Exo
-      if(temp[0] == '+')
+      if(tmp[0] == '+')
       {
         char far *next;
-        char tempc = temp[3];
-        temp[3] = 0;
-        int pos = (int)strtol(temp + 1, &next, 16);
-        temp[3] = tempc;
+        char tempc = tmp[3];
+        tmp[3] = 0;
+        int pos = (int)strtol(tmp + 1, &next, 16);
+        tmp[3] = tempc;
         ec_load_set_nou_var(next, pos);
       }
       else
       {
-        if(temp[0] == '@')
+        if(tmp[0] == '@')
         {
           char far *next;
-          char tempc = temp[4];
-          temp[4] = 0;
-          int pos = (int)strtol(temp + 1, &next, 10);
-          temp[4] = tempc;
+          char tempc = tmp[4];
+          tmp[4] = 0;
+          int pos = (int)strtol(tmp + 1, &next, 10);
+          tmp[4] = tempc;
           ec_load_set_nou_var(next, pos);
         }
-        ec_load_set_nou(temp);
+				else
+				{
+					ec_load_set_nou(tmp);
+				}
       }
       break;
     case 217://multiply str #
@@ -3287,6 +3309,7 @@ do
       if((volume>volume_target)&&(volume_inc>0)) volume_inc=-volume_inc;
       break;
     case 225://Scrollview x y
+
       t1=parse_param(&cmd_ptr[1],id);
       t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
       prefix_xy(t3,t3,t1,t2,t3,t3,x,y);
@@ -3298,8 +3321,9 @@ do
       scroll_y=t2-t5;
       break;
     case 226://Swap world str
+    {
       str_cpy(temp,tr_msg(&cmd_ptr[2],id));
-      //Clear world and reload
+      // Clear world and reload
       clear_world();
       update_done[0]|=254;
       //(DON'T clear game params)
@@ -3307,18 +3331,20 @@ do
       if(load_world(temp,-1)) {
         t1=error("Error swapping to next world",1,23,current_pg_seg,0x2C01);
         if(t1==2) goto redo;
-		  }
-		 str_cpy(curr_file,temp);
-     select_current(first_board);
-     send_robot_def(0,10);
-     target_where=-2;
-     target_board=first_board;
-     target_x=player_x;
-     target_y=player_y;
-     exit_func();
-     return;
+      }
+      str_cpy(curr_file,temp);
+      select_current(first_board);
+      send_robot_def(0,10);
+      target_where=-2;
+      target_board=first_board;
+      target_x=player_x;
+      target_y=player_y;
+      exit_func();
+      return;
+    }
 
-    case 227://If allignedrobot str str
+    case 227://If allignedrobot str str    
+
       if(id==NUM_ROBOTS) break;
       tr_msg(&cmd_ptr[2],id);
       for(t1=0;t1<NUM_ROBOTS;t1++)
@@ -3505,12 +3531,24 @@ do
   }
   //Go to next command! First erase prefixes...
   next_cmd:
+
+	if(force_state == 2)
+	{
+		return;
+	}
+
+	if(force_state == 3)
+	{
+		robot = robot_mem + robots[id].program_location;
+	}
+
   first_prefix=mid_prefix=last_prefix=0;
   next_cmd_prefix:
   //Next line
   robots[id].pos_within_line=first_cmd=0;
   if(old_pos==robots[id].cur_prog_line) gotoed=0;//No move=didn't goto
-  if(!gotoed) robots[id].cur_prog_line+=robot[robots[id].cur_prog_line]+2;
+  if(!gotoed && (force_state != 1))
+	 robots[id].cur_prog_line+=robot[robots[id].cur_prog_line]+2;
   if(!robot[robots[id].cur_prog_line])
   {
     //End of program

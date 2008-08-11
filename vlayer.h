@@ -23,8 +23,8 @@
 extern unsigned char far *vlayer_chars;
 extern unsigned char far *vlayer_colors;
 extern int vlayer_ems;
-extern int vlayer_width;
-extern int vlayer_height;
+extern unsigned int vlayer_width;
+extern unsigned int vlayer_height;
 
 void allocate_vlayer();
 void deallocate_vlayer();

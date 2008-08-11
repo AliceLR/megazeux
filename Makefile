@@ -53,16 +53,6 @@ sfx.obj+sfx_edit.obj+sprite.obj+string.obj+timer.obj+window.obj+vlayer.obj
 
 all: megazeux.exe fix.exe getpw.exe killgbl.exe txt2hlp.exe ver1to2.exe
 
-#
-# Exo documented that as of 2.68, this file had to be compiled
-# to assembly and then converted to machine code by tasm. This is
-# because of the 387 "fsin" instruction which bcc doesn't understand.
-#
-# The -B flag achieves this, but must not be used project-wide.
-#
-counter.obj: counter.cpp
-	@$(CC) -B -c counter.cpp
-
 megazeux.exe: $(obj)
 	@$(TLINK) /m/c/d/P-/L$(LIBPATH) @&&|
 c0l.obj+$(lobj)+robo_ed.obj,megazeux,megazeux,mse_cl.lib+cl.lib

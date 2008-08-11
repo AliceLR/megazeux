@@ -146,19 +146,19 @@ extern unsigned char cheats_active;
 extern unsigned char current_help_sec;
 extern unsigned char saved_pl_color;
 extern unsigned int flags[128];
-extern char far *board_list;
-extern bOffset far *board_offsets;
-extern unsigned long far *board_sizes;
-extern char far *board_filenames;
-extern unsigned char far *level_id;
-extern unsigned char far *level_color;
-extern unsigned char far *level_param;
-extern unsigned char far *level_under_id;
-extern unsigned char far *level_under_color;
-extern unsigned char far *level_under_param;
-extern unsigned char far *overlay;
-extern unsigned char far *overlay_color;
-extern unsigned char far *update_done;
+extern char *board_list;
+extern bOffset *board_offsets;
+extern unsigned long *board_sizes;
+extern char *board_filenames;
+extern unsigned char *level_id;
+extern unsigned char *level_color;
+extern unsigned char *level_param;
+extern unsigned char *level_under_id;
+extern unsigned char *level_under_color;
+extern unsigned char *level_under_param;
+extern unsigned char *overlay;
+extern unsigned char *overlay_color;
+extern unsigned char *update_done;
 
 extern unsigned char overlay_mode;
 
@@ -169,17 +169,17 @@ extern unsigned char under_player_param;
 extern unsigned int max_bxsiz;
 extern unsigned int max_bysiz;
 
-extern Robot far *robots;
-extern Scroll far *scrolls;
-extern Counter far *counters;
-extern Sensor far *sensors;
+extern Robot *robots;
+extern Scroll *scrolls;
+extern Counter *counters;
+extern Sensor *sensors;
 
 
-extern char far *music_devices[NUM_DEVICES+1];
-extern char far *music_MSEs[NUM_DEVICES];
+extern char *music_devices[NUM_DEVICES+1];
+extern char *music_MSEs[NUM_DEVICES];
 extern unsigned int mixing_rates[NUM_DEVICES][3];
-extern char far *music_quality[3];
+extern char *music_quality[3];
 
-extern char far *thing_names[128];
+extern char *thing_names[128];
 
 #endif

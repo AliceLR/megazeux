@@ -20,26 +20,29 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-// Prototypes for saveload.cpp
+/* Declarations for TRIG.ASM */
 
-#ifndef __SAVELOAD_H
-#define __SAVELOAD_H
+#ifndef TRIG_H
 
-#include <_null.h>
+extern int far multiplier;
+extern int far divider;
+extern int far c_divisions;
 
-//Returns 0 for save name in curr_file, 1/-1 for cancel.
-char save_world_dialog(void);
-char save_game_dialog(void);
+#ifdef __cplusplus
+extern "C" {
+#endif
 
-void save_world(char far *file,char savegame=0,char faded=0);
-//Returns non-0 for error so you don't jump to main board
-char load_world(char far *file,char edit=0,char savegame=0,char *faded=NULL);
-
-//Loading save games DOESN'T select curr_board as current!
-
-// I added this so other things can determine features based on
-//   version, if necessary.. it's to preserve backwards compat. - Exo
-
-extern unsigned int version_loaded;
+int far sin(int theta);
+int far cos(int theta);
+int far tan(int theta);
+int far asin(int val);
+int far acos(int val);
+int far atan(int val);
 
 #endif
+
+#ifdef __cplusplus
+}
+#endif
+
+
