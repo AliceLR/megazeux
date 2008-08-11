@@ -50,6 +50,9 @@ extern int topindex,backindex;
 #include "game.h"
 #include "game2.h"
 #include "roballoc.h"
+#include "expr.h"
+// Strings! - Exo
+#include "mstring.h"
 #include <stdlib.h>
 
 #pragma warn -sig
@@ -514,9 +517,23 @@ int parse_param(unsigned char far *robot,int id) {
 		exit_func();
 		return t1;
 #else
-		return (int)robot[1]+(int)(robot[2]<<8);
+    // Why Greg, why? - Exo
+		// return (int)robot[1]+(int)(robot[2]<<8);
+    return(*((int *)(robot + 1)));
 #endif
 		}
+  // Expression - Exo
+  if(robot[1] == '(')
+  //if((robot[1] == '(') && version_loaded >= 0x241)
+  {
+    char far *e_ptr = robot + 2;
+    int error, val;
+    val = parse_expression(&e_ptr, error, id);
+    if(!error)
+    {
+      return(val);
+    }
+  }
 	tr_msg(&robot[1],id,ibuff2);
 	//String
 	if(str_len(ibuff)>=COUNTER_NAME_SIZE)
@@ -849,6 +866,23 @@ unsigned char far *tr_msg(unsigned char far *orig_mesg,int id,
 	int sp=0,dp=0,t1;
 	enter_func("tr_msg");
 	do {
+    // Expression!
+    if(orig_mesg[sp] == '(')
+    //if((orig_mesg[sp] == '(') && (version_loaded >= 0x241))
+    {
+      char far *arg = orig_mesg + sp + 1;
+      int error;
+      int val = parse_expression(&arg, error, id);
+      if(!error)
+      {
+        char temp[8];
+        itoa(val, temp, 10);
+        str_cpy(buffer + dp, temp);
+        dp += str_len(temp);
+        sp = arg - orig_mesg + 1;
+      }
+    }
+       
 		if(orig_mesg[sp]!='&') buffer[dp++]=orig_mesg[sp++];
 		else {
 			if(orig_mesg[++sp]=='&') {
@@ -874,13 +908,14 @@ unsigned char far *tr_msg(unsigned char far *orig_mesg,int id,
 				else {
 					//Counter
           // Now could also be a string
-          if(!strn_cmp(cnam, "$string", 7))
+          if(string_type(cnam) == 1)
           {
             // Write the value of the counter name
-            int index = cnam[7] + STRING_BASE;
-            str_cpy(&buffer[dp], counters[index].counter_name);
-  					dp+=str_len(counters[index].counter_name);
-					}
+            char t_buf[64];
+            get_string(cnam, t_buf);
+            str_cpy(&buffer[dp], t_buf);
+  				  dp+=str_len(t_buf);
+          }
           else
           {
             // #(counter) is a hex representation.

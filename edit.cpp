@@ -68,6 +68,9 @@
 #include "blink.h"
 #include "cursor.h"
 #include "counter.h"
+// For saving/loading MZX image files - Exo
+#include "mzm.h"
+
 /* Edit menu- (w/box ends on sides) Current menu name is highlighted. The
 	bottom section zooms to show a list of options for the current menu,
 	although all keys are available at all times. PGUP/PGDN changes menu.
@@ -163,12 +166,13 @@ char show_level=1;
 #define NUM_MENUS 6
 char far menu_names[NUM_MENUS][9]={
 	" WORLD "," BOARD "," THING "," CURSOR "," SHOW "," MISC " };
-char far draw_names[6][10]={ " Current:"," Drawing:","    Text:","   Block:",
-	"   Block:"," Import:" };
+char far draw_names[7][10]={ " Current:"," Drawing:","    Text:","   Block:",
+	"   Block:"," Import:", " Import:" };
 char far text_help[19]="Type to place text";
 char far block_help[28]="Press ENTER on other corner";
 char far block_help2[27]="Press ENTER to place block";
 char far block_help3[26]="Press ENTER to place ANSi";
+char far block_help4[25]="Press ENTER to place MZM";
 char far menu_help[15]="Pgup/Pgdn:Menu";
 char far *menu_lines[NUM_MENUS][2]={ {
 " L:LoadS:Save  G:Global Info    Alt+R:Restart  Alt+T:Test",
@@ -233,6 +237,7 @@ void edit_world(void) {
 	int key;
 	char temp[20];
 	char ansi[15];
+  char mzm[15];
 	long tlong1,tlong2;
 	char r,g,b;
 	FILE *fp;
@@ -371,6 +376,8 @@ void edit_world(void) {
 				else if((draw_mode&127)==4) write_string(block_help2,t3,20,EC_MODE_HELP,
 					current_pg_seg);
 				else if((draw_mode&127)==5) write_string(block_help3,t3,20,EC_MODE_HELP,
+					current_pg_seg);
+				else if((draw_mode&127)==6) write_string(block_help4,t3,20,EC_MODE_HELP,
 					current_pg_seg);
 				else {
 					//Current thing
@@ -575,7 +582,8 @@ void edit_world(void) {
 		//Ensure uppercase
 		if((key>='a')&&(key<='z')) key-=32;
 		//Fix for block mode
-		if(((draw_mode&127)==3)||((draw_mode&127)==4)||((draw_mode&127)==5))
+		if(((draw_mode&127)==3)||((draw_mode&127)==4)||((draw_mode&127)==5)
+     ||(draw_mode&127)==6)
 			if((key==' ')||(key==13)) key=-48;
 	re_evaul_key:
 		switch(key) {
@@ -914,6 +922,27 @@ void edit_world(void) {
 							update_view=update_menu=1;
 							}
 						break;
+          case 7:
+          {
+            // MZM file
+            if(choose_file("*.MZM", mzm, "Choose MZM file")) break;
+            // Get type of import
+            t2 = import_mzm_obj_type();
+						if(t2 == 1) 
+            {
+							if(overlay_mode == 0) 
+              {
+								error("Overlay mode is not on (see Board Info)",0,24,
+									current_pg_seg,0x1103);
+								break;
+						  }
+						}            
+
+            blk_cmd = t2;
+					  draw_mode = (draw_mode & 128) + 6;
+            update_view = update_menu = 1;
+            break;
+          }            
 					case 3:
 						//Import world
 						if(choose_file("*.MZX",temp,"Choose world to import")) break;
@@ -1272,6 +1301,8 @@ void edit_world(void) {
 				else if(((draw_mode&127)!=3)&&((draw_mode&127)!=4)) {
 					if((draw_mode&127)==5)//Place ANSi
 						import_ansi(ansi,blk_cmd,curr_thing,curr_param,ARRAY_X,ARRAY_Y);
+          if((draw_mode & 127) == 6)//Place MZM
+						load_mzm(mzm, ARRAY_X, ARRAY_Y, blk_cmd);
 					//Turn other mode OFF.
 					draw_mode&=128;
 					update_view=update_menu=1;
@@ -1930,6 +1961,22 @@ void edit_world(void) {
 						export_ansi(temp,save_x,save_y,save_x2,save_y2,0);
 						overlay_mode=t1;
 						break;
+          case 8:
+            // Save as MZM
+            temp[0] = 0;
+            if(save_file_dialog("Block MZM Save", "Save block as: ", temp))
+              break;
+            add_ext(temp, ".MZM");
+            if(draw_mode & 128)
+            {
+              save_mzm(temp, save_x, save_y, (save_x2 - save_x + 1),
+               (save_y2 - save_y + 1), 1, 0);
+            }
+            else
+            {
+              save_mzm(temp, save_x, save_y, (save_x2 - save_x + 1),
+               (save_y2 - save_y + 1), 0, 0);
+            }
 					}
 				break;
 			case -24://AltO

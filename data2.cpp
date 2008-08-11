@@ -166,7 +166,7 @@ char far *thing_names[128]={
 	"BearCub",
 	"[unknown]",
 	"MissileGun",
-	"Sprite","Sprite_colliding","[unknown]","[unknown]", //98, 99
+	"Sprite","Sprite_colliding","Image_file","[unknown]", //98, 99
 	"[unknown]","[unknown]","[unknown]","[unknown]",
 	"[unknown]","[unknown]","[unknown]","[unknown]",
 	"[unknown]","[unknown]","[unknown]","[unknown]",

@@ -221,10 +221,9 @@ void title_screen(void) {
 					break;
 				case 'E'://E
 				case -66://F8
-          // No editor in MZXRun! - Exo
-          /*
+          // None of that...
 					//Editor
-					clear_sfx_queue();
+					/* clear_sfx_queue();
 					vquick_fadeout();
 					for(t1=0;t1<16;t1++)
 						set_color_intensity(t1,100);
@@ -252,8 +251,7 @@ void title_screen(void) {
 						set_counter("TIME",time_limit);
 						}
 					clear_game_params();
-					dead=0;
-          */
+					dead=0; */
 					break;
 				case 'S'://S
 				case -60://F2

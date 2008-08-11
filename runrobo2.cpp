@@ -61,14 +61,13 @@ extern int topindex,backindex;
 #include "counter.h"
 
 #include "egacode.h"
-#include "admath.h"
 #include "blink.h"
 #include "const.h"
 #include "cursor.h"
 #include "data.h"
 #include "game.h"
 #include "game2.h"
-#include "graphics.h"
+#include "graphics.h"       
 #include "idarray.h"
 #include "idput.h"
 #include "mouse.h"
@@ -78,9 +77,12 @@ extern int topindex,backindex;
 #include "string.h"
 #include "struct.h"
 #include "conio.h"
+#include "mzm.h"
 
 // Sprites.. - Exo
 #include "sprite.h"
+// Strings! - Exo
+#include "mstring.h"
 
 #define parsedir(a,b,c,d) parsedir(a,b,c,d,_bl[0],_bl[1],_bl[2],_bl[3])
 
@@ -360,123 +362,191 @@ do
         ibuff[COUNTER_NAME_SIZE-1]=0;
       tr_msg(&cmd_ptr[next_param(cmd_ptr,1)], id, ibuff2);
       temp_ptr = ibuff2;
-      t2 = 0;
-      if(ibuff[0] == '$')
+      if(string_type(ibuff) == 1)
       {
-        char temp_str[15];
-        // set the string index
-        int index = ibuff[7] + STRING_BASE;
+        char temp_str[64];
+        char far *tp_2 = ibuff2 + 1;
+        char far *cp = tp_2;
         // set string
-        if(!temp_ptr[0])
+        if(*ibuff2 == 0)
         {
-          // set string to (integer representation)
-          t1 = parse_param(temp_ptr, id);
-          sprintf(temp_str, "%d", t1);
-          str_cpy(counters[index].counter_name, temp_str);
+          int val = *(ibuff2 + 1);
+          // dec string by chars
+          if(cmd == 12)
+          {
+            get_string(ibuff, temp_str);
+            int len = str_len(temp_str);
+            if(len >= val)
+            {
+              temp_str[len - val] = '\0';
+              set_string(ibuff, temp_str);
+            }
+          }
+          if(cmd == 10)
+          {
+            // set string to (integer representation)
+            set_str_int(ibuff, val);
+          }
         }
         else
         {
-          unsigned char far *tp_2 = temp_ptr + 1;
-          if(!str_cmp(tp_2, "INPUT"))
+          if(cmd != 12)
           {
-            tp_2 = input_string;
-          }
-          if(!str_cmp(tp_2, "BOARD_SCAN"))
-          {
-            int bpos = (get_counter("BOARD_Y") * max_bxsiz) + get_counter("BOARD_X");
-            int i;
-            char c_char;
-            for(i = 0; i < COUNTER_NAME_SIZE; i++)
+            unsigned char far *tp_2 = temp_ptr + 1;
+            if(!str_cmp(tp_2, "INPUT"))
             {
-              c_char = get_id_char(bpos);
-              if(c_char == '*')
+              cp = input_string;
+            }  
+            if(!str_cmp(tp_2, "BOARD_SCAN"))
+            {
+              int bpos = (get_counter("BOARD_Y") * max_bxsiz) + get_counter("BOARD_X");
+              int i;
+              char c_char;
+              for(i = 0; i < COUNTER_NAME_SIZE; i++)
               {
-                temp_str[i] = 0;
-                break;
+                c_char = get_id_char(bpos);
+                if(c_char == '*')
+                {
+                  temp_str[i] = 0;
+                  break;
+                }
+                temp_str[i] = c_char;
+                bpos++;
               }
-              temp_str[i] = c_char;
-              bpos++;
+              temp_str[i + 1] = 0;
+              cp = temp_str;
             }
-            temp_str[i + 1] = 0;
-            tp_2 = temp_str;
-          }
-          if(!str_cmp(tp_2, "BOARD_NAME"))
-          {
-            tp_2 = board_list + (curr_board * BOARD_NAME_SIZE);
-          }
-          if(!str_cmp(tp_2, "MOD_NAME"))
-          {
-            tp_2 = mod_playing;
-          }
-          if(!str_cmp(tp_2, "FREAD") && input_file)
-          {
-            // Read string in from the read file
-            int i, temp;
-            for(i = 0; i < COUNTER_NAME_SIZE; i++)
+            if(!str_cmp(tp_2, "BOARD_NAME"))
             {
-              temp = fgetc(input_file);
-              if((temp == EOF) || (temp == '*'))
+              cp = board_list + (curr_board * BOARD_NAME_SIZE);
+            }
+            if(!str_cmp(tp_2, "MOD_NAME"))
+            {
+              if(*mod_playing == 0)
               {
-                temp_str[i] = 0;
-                break;
+                cp = "(no module)";
               }
               else
               {
-                temp_str[i] = (char)temp;
+                cp = mod_playing;
               }
             }
-            tp_2 = temp_str;
-          }
-          if(!str_cmp(tp_2, "FWRITE") && output_file)
-          {
-            // Write string in to write file
-            fprintf(output_file, "%s*", counters[index].counter_name);
-            t2 = 1;
-          }
-          if(tp_2[0] == '$')
-          {
-            int index2 = tp_2[7] + STRING_BASE;
-            tp_2 = counters[index2].counter_name;
-          }
-
-          if(!t2)
-          {
-            mem_cpy(counters[index].counter_name, tp_2, COUNTER_NAME_SIZE);
+            if(!strn_cmp(tp_2, "FREAD", 5) && input_file)
+            {
+              // Read string in from the read file
+              unsigned int count = 65535;
+              if(tp_2[5] != '\0')
+              {
+                // Read a fixed amount
+                count = strtol(tp_2 + 5, NULL, 10);
+              }
+              if(count > 63)
+              {
+                count = 65535;
+              }
+              int i, temp;
+              for(i = 0; i < count; i++)
+              {
+                temp = fgetc(input_file);
+                if((temp == EOF) || ((temp == '*') && (count == 65535)))
+                {
+                  temp_str[i] = 0;
+                  break;
+                }
+                else
+                {
+                  temp_str[i] = (char)temp;
+                }                
+              }
+              temp_str[i] = '\0';
+              cp = temp_str;
+            }
+            if(!strn_cmp(tp_2, "FWRITE", 6) && output_file)
+            {
+              // Write string in to write file
+              unsigned int count = 65535;
+              if(tp_2[6] != '\0')
+              {
+                // Read a fixed amount
+                count = strtol(tp_2 + 6, NULL, 10);
+              }
+              if(count > 63)
+              {
+                get_string(ibuff, temp_str);
+                fprintf(output_file, "%s*", temp_str);
+              }
+              else
+              {
+                int i;
+                get_string(ibuff, temp_str);
+                for(i = 0; i < count; i++)
+                {
+                  fputc(temp_str[i], output_file);
+                }
+              }
+              cp = NULL;
+            }
+            if(string_type(tp_2) == 1)
+            {
+              cp = get_string(tp_2, temp_str);
+            }
+  
+            if(cp != NULL)
+            {
+              // Set
+              if(cmd == 10)
+              {
+                set_string(ibuff, cp);
+              }
+              // Inc
+              if(cmd == 11)
+              {
+                char str[64];
+                get_string(ibuff, str);
+                if((str_len(str) + str_len(cp)) < 64)
+                {
+                  str_cat(str, cp);
+                }
+                set_string(ibuff, str);
+              }
+            }
           }
         }
       }
       else
       {
         t1=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
+        if(cmd==10) set_counter(ibuff,t1,id);
+        else if(cmd==11) inc_counter(ibuff,t1,id);
+        else dec_counter(ibuff,t1,id);
       }
-      if(cmd==10) set_counter(ibuff,t1,id);
-      else if(cmd==11) inc_counter(ibuff,t1,id);
-      else dec_counter(ibuff,t1,id);
       last_label=-1;//Allows looping "infinitely"
       break;
     case 16://if c?n l
       // Check for string comparison - Exo
-      if(cmd_ptr[2] == '$')
+      char far *tp = cmd_ptr + 1;
+      if((*tp != 0) && (string_type(tp + 1) == 1))
       {
         char far *tp_2 = cmd_ptr + next_param(cmd_ptr, 1) + 3;
+        char temp_str[64];
         signed int eval;
         if(!tp_2[0])
         {
-          sprintf(ibuff2, "%d", parse_param(&cmd_ptr[3+next_param(cmd_ptr,1)],id));
+          itoa(tp_2[1], ibuff2, 10);
         }
         else
         {
-          if(tp_2[1] == '$')
+          if(string_type(tp_2 + 1) == 1)
           {
-            str_cpy(ibuff2, counters[tp_2[8] + STRING_BASE].counter_name);
+            get_string((tp_2 + 1), ibuff2);
           }
           else
           {
-            str_cpy(ibuff2, tp_2 + 1);
+            get_string((tp_2 + 1), ibuff2);
           }
         }
-        str_cpy(ibuff, counters[cmd_ptr[9] + STRING_BASE].counter_name);
-        eval = str_cmp(ibuff, ibuff2);
+        get_string((tp + 1), temp_str);
+        eval = str_cmp(temp_str, ibuff2);
         t4=0;
         switch(parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id))
         {
@@ -1377,12 +1447,19 @@ do
       update_blocked=1;
       break;
     case 79://put thing at x y
+      char far *l = NULL;
       t0=1;
+      if(*(cmd_ptr + 1))
+      {
+        l = cmd_ptr + 2;
+      }
       t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
       t2=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
       t3=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
       t4=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
       t5=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
+      prefix_xy(t9,t9,t4,t5,t9,t9,x,y);
+      // put sprite
       if(t2 == 98)
       {
         if(t3 == 256)
@@ -1392,7 +1469,14 @@ do
         plot_sprite(t1, t3, t4, t5);
         break;
       }
-      prefix_xy(t9,t9,t4,t5,t9,t9,x,y);
+      // put image file
+      if((t2 == 100) && (l != NULL) && (*l == '@'))
+      {
+        // "Type" must be 0 or 1; board or overlay
+        t3 &= 1;
+        load_mzm(l + 1, t4, t5, t3);
+        break;
+      }         
       goto put_at_XY;
     case 81://Send x y "label"
       t1=parse_param(&cmd_ptr[1],id);
@@ -2355,14 +2439,25 @@ do
       break;
     case 201://Copy block sx sy xsiz ysiz dx dy
     case 243://Copy overlay block sx sy xs ys dx dy
+      char far *l1 = NULL, *l2 = NULL;
       t9=1;
       t1=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
       t2=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
       t3=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
       t4=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t5=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
+      t5=parse_param(&cmd_ptr[t9],id); 
+      if(*(cmd_ptr + t9))
+      {
+        l1 = cmd_ptr + t9 + 1;
+      }
+      t9=next_param(cmd_ptr,t9);
       t6=parse_param(&cmd_ptr[t9],id);
+      if(*(cmd_ptr + t9))
+      {
+        l2 = cmd_ptr + t9 + 1;
+      }
       //Prefixes.
+      t7 = t6;
       prefix_xy(t1,t2,t0,t0,t5,t6,x,y);
       //Clip and verify parameters.
       if(t1<0) t1=0;
@@ -2371,15 +2466,117 @@ do
       if(t6<0) t6=0;
       if(t1>=board_xsiz) t1=board_xsiz-1;
       if(t2>=board_ysiz) t2=board_ysiz-1;
-      if(t5>=board_xsiz) t5=board_xsiz-1;
-      if(t6>=board_ysiz) t6=board_ysiz-1;
       if(t3<1) t3=1;
       if(t4<1) t4=1;
       if((t1+t3)>board_xsiz) t3=board_xsiz-t1;
-      if((t5+t3)>board_xsiz) t3=board_xsiz-t5;
       if((t2+t4)>board_ysiz) t4=board_ysiz-t2;
-      if((t6+t4)>board_ysiz) t4=board_ysiz-t6;
       //Copy.
+      if((cmd == 243) && (l1 != NULL))
+      {
+        // Save portion of overlay to a string
+        if(string_type(l1) == 1)
+        {
+          load_string_board(l1, t1, t2, t3, t4, t7, overlay);
+          break;
+        }
+
+        // Save overlay to file
+        if(*l1 == '@')
+        {
+          save_mzm(l1 + 1, t1, t2, t3, t4, 1, t7);
+          break;
+        }
+
+        if(!str_cmp(l1, "BOARD_X") && (l2 != NULL) &&
+         !str_cmp(l2, "BOARD_Y"))
+        {
+          // Copy from overlay to board; make customblocks.
+          // The only thing it won't overwrite is the player.
+          char far *src_char = overlay + (t2 * max_bxsiz) + t1;
+          char far *src_color = overlay_color + (t2 * max_bxsiz) + t1;
+          char far *dest_id = level_id + (t6 * max_bxsiz) + t5;
+          char far *dest_char = level_param + (t6 * max_bxsiz) + t5;
+          char far *dest_color = level_color + (t6 * max_bxsiz) + t5;
+          int edge_skip = max_bxsiz - t3;
+          int i, i2;
+          for(i = 0; i < t4; i++)
+          {
+            for(i2 = 0; i2 < t3; i2++)
+            {
+              if(*dest_id != 127)
+              {
+                *dest_id = 5;
+                *dest_char = *src_char;
+                *dest_color = *src_color;
+              }
+              dest_char++;
+              dest_color++;
+              dest_id++;
+              src_char++;
+              src_color++;
+            }
+            dest_char += edge_skip;
+            dest_color += edge_skip;
+            dest_id += edge_skip;
+            src_char += edge_skip;
+            src_color += edge_skip;
+          }
+          update_blocked = 1;
+          break;
+        }
+      }
+
+      if((cmd == 201) && (l1 != NULL))
+      {
+        // Save portion of board to a string
+        if(string_type(l1) == 1)
+        {
+          load_string_board(l1, t1, t2, t3, t4, t7, level_param);
+          break;
+        }
+
+        // Save board to file
+        if(*l1 == '@')
+        {
+          save_mzm(l1 + 1, t1, t2, t3, t4, 0, t7);
+          break;
+        }
+
+        if(!str_cmp(l1, "OVERLAY_X") && (l2 != NULL) && 
+         !str_cmp(l2, "OVERLAY_Y"))
+        {
+          // Copy from board to overlay
+          char far *dest_char = overlay + (t6 * max_bxsiz) + t5;
+          char far *dest_color = overlay_color + (t6 * max_bxsiz) + t5;
+          char far *src_color = level_color + (t2 * max_bxsiz) + t1;
+          int edge_skip = max_bxsiz - t3;
+          int i, i2, i3;
+          i3 = (t2 * max_bxsiz) + t1;
+          for(i = 0; i < t4; i++)
+          {
+            for(i2 = 0; i2 < t3; i2++)
+            {
+              *dest_char = get_id_char(i3);
+              *dest_color = *src_color;
+              i3++;
+              src_color++;
+              dest_char++;
+              dest_color++;
+            }
+            i3 += edge_skip;
+            dest_char += edge_skip;
+            dest_color += edge_skip;
+            src_color += edge_skip;
+          }
+          break;
+        }
+      }
+
+      if(t5>=board_xsiz) t5=board_xsiz-1;
+      if(t6>=board_ysiz) t6=board_ysiz-1;
+      if((t5+t3)>board_xsiz) t3=board_xsiz-t5;
+      if((t6+t4)>board_ysiz) t4=board_ysiz-t6;
+
       if((t1==t5)&&(t2==t6)) break;//None to do!
       if((t5<t1)||((t5==t1)&&(t6<t2)))
       {

@@ -36,7 +36,7 @@ include "string.inc"
 include "const.inc"
 include "idarray.inc"
 
-p186
+p286
 JUMPS
 include "model.inc"
 
@@ -203,7 +203,7 @@ MACRO _xy2array2
 	add ax,cx           ;; Add X.
 
 ENDM _xy2array2
-
+  
 ;
 ; Internal procedure to take an x/y pos and a direction and return
 ; a new x/y pos. Returns 0FFFFh if offscreen in that direction.

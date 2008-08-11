@@ -1,0 +1,32 @@
+MZM file format: MZX image
+
+This file format is a simple format that describes graphically a 
+ rectangular area.
+ 
+b = byte (8bit)
+w = word (16bit)
+d = dword (32bit)
+sN = string of N size (ie N bytes)
+
+header:
+
+pos  size  description
+0     s4    "MZMX" tag
+4     b     width
+5     b     height
+6
+.           reserved
+f           
+
+data:
+
+The data is composed of w * h (width * height) blocks, where each
+ block is 6 bytes and contains the following:
+
+pos  size  description
+0     b      ID (5 for overlay)
+1     b      param (char for overlay)
+2     b      color
+3     b      under ID (0 for overlay)
+4     b      under param (0 for overlay)
+5     b      under color (0 for overlay)

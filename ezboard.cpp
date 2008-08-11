@@ -25,7 +25,6 @@
 #include "scrdisp.h"
 #include "string.h"
 #include "beep.h"
-#include "string.h"
 #include "mod.h"
 #include "roballoc.h"
 #include "egacode.h"
@@ -39,6 +38,7 @@
 #include "game.h"
 #include "counter.h"
 #include "sprite.h"
+#include "mstring.h"
 
 void set_built_in_messages(int param);
 
@@ -323,6 +323,11 @@ void clear_game_params(void) {
   for(t1 = 0; t1 < 64; t1++)
   {
     sprites[t1].flags = 0;
+  }
+  // Clear strings. - Exo
+  for(t1 = 0; t1 < 1024; t1++)
+  {
+    strings[0][t1] = '\0';
   }
   total_sprites = 0;
   sprite_y_order = 0;

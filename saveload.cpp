@@ -30,6 +30,7 @@
    M\002\011 - 2.5.1spider2+, 2.9.x
    M\x02\x3E - MZX 2.62.x
    M\x02\x41 - MZX 2.65.x
+   M\x02\x44 - MZX 2.68.x
 
    .SAV files:
    MZSV2 - Ver 2.x MegaZeux
@@ -37,6 +38,7 @@
    MZS\002\011 - 2.5.1spider2+, 2.9.x
    MZS\x02\x3E - MZX 2.62.x
    MZS\x02\x41 - MZX 2.65.x
+   MZS\x02\x44 - MZX 2.68.x
 
 
  All others are unchanged.
@@ -65,7 +67,9 @@
 #include "ems.h"
 #include "counter.h"
 #include "sprite.h"
-#define VERSION 0x241
+#include "counter.h"
+#include "mstring.h"
+#define VERSION 0x244
 #define SAVE_INDIVIDUAL
 
 int version_loaded;
@@ -176,7 +180,7 @@ void save_world(char far *file,char savegame,char faded) {
 	save_screen(current_pg_seg);
 	meter("Saving...",current_pg_seg,meter_curr,meter_target);
 	if (savegame) {
-		fwrite("MZS\x02\x41",1,5,fp);
+		fwrite("MZS\x02\x44",1,5,fp);
 		fputc(curr_board,fp);
 		xor=0;
 	} else {
@@ -328,6 +332,48 @@ void save_world(char far *file,char savegame,char faded) {
     fputc(sprite_y_order, fp);
     // collision list
     fwrite(&collision_list, 1, sizeof(Collision_list), fp);
+    // 2.68 extensions - Exo
+    // strings:
+    fwrite(strings, 1, 16 * 64, fp);
+    // multiplier
+    fwrite(&multiplier, 1, 2, fp);
+    // divider
+    fwrite(&divider, 1, 2, fp);
+    // circle divisions
+    fwrite(&c_divisions, 1, 2, fp);
+    // Input file name
+    fwrite(file_in, 1, 12, fp);
+    // Input file position
+    long int pos;
+    if(input_file)
+    {
+      pos = ftell(input_file);
+      fwrite(&pos, 1, 4, fp);
+    }
+    else
+    {
+      // Put blanks.
+      fputc(0, fp);
+      fputc(0, fp);
+      fputc(0, fp);
+      fputc(0, fp);
+    }
+    // Output file name
+    fwrite(file_out, 1, 12, fp);
+    // Output file position
+    if(output_file)
+    {
+      pos = ftell(output_file);
+      fwrite(&pos, 1, 4, fp);
+    }
+    else
+    {
+      // Put blanks.
+      fputc(0, fp);
+      fputc(0, fp);
+      fputc(0, fp);
+      fputc(0, fp);
+    }
   }
 
 //            for (t1=0;t1<NUM_COUNTERS;t1++) //Write out every last counter Spid
@@ -456,7 +502,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 	if(savegame) {
                 fread(tempstr,1,5,fp);
 		version = save_magic(tempstr);
-		if((version < VERSION) && (version != 0x0209) && (version != 0x020B))
+		if((version > VERSION) && (version != 0x0209) && (version != 0x020B))
     {
 			restore_screen(current_pg_seg);
 			if (!version) {
@@ -656,7 +702,55 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
       sprite_y_order = fgetc(fp);
       // collision info
       fread(&collision_list, 1, sizeof(Collision_list), fp);
-		}
+		
+      // If the version is 2.68 or higher, load strings and
+      // some other stuff, after sprites.
+      if(version_loaded >= 0x244)
+      {
+        // Read strings
+        fread(strings, 1, 16 * 64, fp);
+        // Multiplier
+        fread(&multiplier, 1, 2, fp);
+        // Divider
+        fread(&divider, 1, 2, fp);
+        // Circle divisions
+        fread(&c_divisions, 1, 2, fp);
+        // Files; first close existing ones
+        if(input_file)
+        {
+          fclose(input_file);
+        }
+        if(output_file)
+        {
+          fclose(output_file);
+        }
+        long int seek;
+        // Load input file name, open
+        fread(file_in, 1, 12, fp);
+        if(file_in[0] != '\0')
+        {
+          input_file = fopen(file_in, "rb");
+          fread(&seek, 1, 4, fp);
+          fseek(input_file, seek, SEEK_SET);
+        }
+        else
+        {
+          fread(&seek, 1, 4, fp);
+        }
+        // Load ouput file name, open
+        fread(file_out, 1, 12, fp);
+        if(file_out[0] != '\0')
+        {
+          output_file = fopen(file_out, "rb");
+          fread(&seek, 1, 4, fp);
+          fseek(output_file, seek, SEEK_SET);
+        }
+        else
+        {
+          fread(&seek, 1, 4, fp);
+        }                  
+      }
+    }
   }
 	update_palette();
 	//Get position of global robot...

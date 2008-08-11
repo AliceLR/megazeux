@@ -1,0 +1,21 @@
+MZX save file format extensions
+
+These all are stored after the counters in the save file.
+
+Byte(s)		
+
+00-1023				Sprites (16 bytes each * 64)
+1024				Total sprite count
+1025				Sprite y_order flag
+1026-1091			Sprite collision info (66 bytes)
+1092-2115			Strings (16 bytes each * 64)
+2116-2117			Math multiplier
+2118-2119			Math divider
+2120-2121			Circle divider
+2122-2133			Input file name
+2134-2137			Input file position
+2138-2149			Output file name
+2150-2153			Output file position
+
+
+

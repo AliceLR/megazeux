@@ -1,4 +1,4 @@
-/* $Id$
+                 /* $Id$
  * MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
@@ -19,24 +19,13 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* Declarations */
-
-#ifndef __BLOCK_H
-#define __BLOCK_H
-
-int block_cmd(void);
-int rtoo_obj_type(void);
-int choose_char_set(void);
-char save_file_dialog(char far *title,char far *prompt,char far *dest);
-//Have overlay_mode set to wanted mode with bits 64/128 set properly
-void export_ansi(char far *file,int x1,int y1,int x2,int y2,char text_only);
-int export_type(void);
-int import_type(void);
-//Pass curr_thing and curr_param so overwritten objects can be handled
-//correctly
-void import_ansi(char far *filename,char obj_type,int &curr_thing,
- int &curr_param,int start_x=0,int start_y=0);
-int import_ansi_obj_type(void);
-int import_mzm_obj_type(void);
-
-#endif
+extern char strings[16][64];
+int string_type(char far *expression);
+char *get_string(char far *expression, char far *str_buffer);
+char get_str_char(char far *expression);
+int get_str_int(char far *expression);
+void set_string(char far *expression, char *set);
+void set_str_char(char far *expression, char set);
+void set_str_int(char far *expression, int val);
+void load_string_board(char far *expression, int x, int y, int w, 
+ int h, char l, char far *src);

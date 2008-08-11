@@ -43,6 +43,7 @@
 // ( ) Paint block
 // ( ) Copy to/from overlay
 // ( ) Save as ANSi
+// ( ) Save as MZM            - I added this one. - Exo
 //
 //    _OK_      _Cancel_
 //
@@ -50,17 +51,17 @@
 
 char bdi_types[3]={ DE_RADIO,DE_BUTTON,DE_BUTTON };
 char bdi_xs[3]={ 2,5,15 };
-char bdi_ys[3]={ 2,11,11 };
+char bdi_ys[3]={ 2,12,12 };
 char far *bdi_strs[3]={ "Copy block\nMove block\nClear block\nFlip block\n\
-Mirror block\nPaint block\nCopy to/from overlay\nSave as ANSi",
+Mirror block\nPaint block\nCopy to/from overlay\nSave as ANSi\nSave as MZM",
 "OK","Cancel" };
-int bdi_p1s[3]={ 8,0,-1 };
+int bdi_p1s[3]={ 9,0,-1 };
 int bdi_p2s[1]={ 20 };
 int block_op=0;
 void far *bdi_storage[1]={ &block_op };
 
 dialog bdi={
-	26,4,53,17,"Choose block command",3,
+	26,3,53,17,"Choose block command",3,
 	bdi_types,
 	bdi_xs,
 	bdi_ys,
@@ -324,17 +325,17 @@ int export_type(void) {
 
 char imdi_types[3]={ DE_RADIO,DE_BUTTON,DE_BUTTON };
 char imdi_xs[3]={ 2,5,15 };
-char imdi_ys[3]={ 3,11,11 };
+char imdi_ys[3]={ 3,12,12 };
 char far *imdi_strs[3]={ "Board file (MZB)\nCharacter set (CHR)\n\
 Ansi display (ANS)\nWorld file (MZX)\nPalette (PAL)\nSound effects (SFX)\n\
-Ansi (choose pos.)",
+Ansi (choose pos.)\nMZM (choose pos.)",
 "OK","Cancel" };
-int imdi_p1s[3]={ 7,0,-1 };
+int imdi_p1s[3]={ 8,0,-1 };
 int imdi_p2s[1]={ 19 };
 void far *imdi_storage[1]={ NULL };
 
 dialog imdi={
-	26,4,53,17,"Import:",3,
+	26,3,53,17,"Import:",3,
 	imdi_types,
 	imdi_xs,
 	imdi_ys,
@@ -641,3 +642,34 @@ int import_ansi_obj_type(void) {
 	pop_context();
 	return iao_type;
 }
+
+char imzdi_types[3]={ DE_RADIO,DE_BUTTON,DE_BUTTON };
+char imzdi_xs[3]={ 6,5,15 };
+char imzdi_ys[3]={ 5,11,11 };
+char far *imzdi_strs[3]={ "Board\nOverlay\n", "OK", "Cancel" };
+int imzdi_p1s[3]={ 2,0,-1 };
+int imzdi_p2s[1]={ 12 };
+int imz_type = 0;
+void far *imzdi_storage[1]={ &imz_type };
+
+dialog imzdi={
+	26,4,53,17,"Import MZM as-",3,
+	imzdi_types,
+	imzdi_xs,
+	imzdi_ys,
+	imzdi_strs,
+	imzdi_p1s,
+	imzdi_p2s,
+	imzdi_storage,0 };
+
+int import_mzm_obj_type(void) 
+{
+	set_context(78);
+	if(run_dialog(&imzdi,current_pg_seg)) {
+		pop_context();
+		return -1;
+		}
+	pop_context();
+	return imz_type;
+}
+

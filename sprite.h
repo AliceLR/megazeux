@@ -64,7 +64,7 @@ typedef struct Sprite Sprite;
 struct Collision_list
 {
   int num;
-  char collisions[32];
+  char collisions[64];
 };
 typedef struct Collision_list Collision_list;
 

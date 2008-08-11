@@ -19,24 +19,13 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* Declarations */
+#ifndef EXPR_H
+#define EXPR_H
 
-#ifndef __BLOCK_H
-#define __BLOCK_H
+long int parse_expression(char far **expression, int &error, int id);
+long int parse_argument(char far **argument, int &type, int id);
+void skip_whitespace(char **expression);
+long int evaluate_operation(long int operand_a, int c_operator, 
+ long int operand_b);
 
-int block_cmd(void);
-int rtoo_obj_type(void);
-int choose_char_set(void);
-char save_file_dialog(char far *title,char far *prompt,char far *dest);
-//Have overlay_mode set to wanted mode with bits 64/128 set properly
-void export_ansi(char far *file,int x1,int y1,int x2,int y2,char text_only);
-int export_type(void);
-int import_type(void);
-//Pass curr_thing and curr_param so overwritten objects can be handled
-//correctly
-void import_ansi(char far *filename,char obj_type,int &curr_thing,
- int &curr_param,int start_x=0,int start_y=0);
-int import_ansi_obj_type(void);
-int import_mzm_obj_type(void);
-
-#endif
+#endif    

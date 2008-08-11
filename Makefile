@@ -25,15 +25,15 @@ TLINK = tlink
 .asm.obj:
 	@$(TASM) /jWARN /MX /M5 /ZI /O /T $<,$@
 
-obj  = admath.obj arrowkey.obj beep.obj blink.obj block.obj boardmem.obj \
+obj  = arrowkey.obj beep.obj blink.obj block.obj boardmem.obj \
 ceh.obj charset.obj char_ed.obj comp_chk.obj counter.obj cursor.obj \
 data.obj data2.obj detect.obj dt_data.obj edit.obj edit_di.obj egacode.obj \
-ems.obj error.obj ezboard.obj fill.obj game.obj game2.obj getkey.obj \
+ems.obj error.obj ezboard.obj expr.obj fill.obj game.obj game2.obj getkey.obj \
 graphics.obj helpsys.obj hexchar.obj idarray.obj idput.obj intake.obj \
-main.obj meminter.obj meter.obj mouse.obj new_mod.obj palette.obj \
-pal_ed.obj param.obj password.obj random.obj retrace.obj roballoc.obj \
-runrobot.obj runrobo2.obj saveload.obj scrdisp.obj scrdump.obj sfx.obj \
-sfx_edit.obj sprite.obj string.obj timer.obj window.obj
+main.obj meminter.obj meter.obj mouse.obj mstring.obj mzm.obj new_mod.obj \
+palette.obj pal_ed.obj param.obj password.obj random.obj retrace.obj \
+roballoc.obj runrobot.obj runrobo2.obj saveload.obj scrdisp.obj scrdump.obj \
+sfx.obj sfx_edit.obj sprite.obj string.obj timer.obj window.obj
 
 #
 # I'd rather this wasn't necessary, but I can't think of a way either in
@@ -41,17 +41,27 @@ sfx_edit.obj sprite.obj string.obj timer.obj window.obj
 # list. So it's just copy/pasted. This tr command helps:
 #   tr ' ' '+' << "EOF"
 #
-lobj = admath.obj+arrowkey.obj+beep.obj+blink.obj+block.obj+boardmem.obj+\
+lobj = arrowkey.obj+beep.obj+blink.obj+block.obj+boardmem.obj+\
 ceh.obj+charset.obj+char_ed.obj+comp_chk.obj+counter.obj+cursor.obj+\
 data.obj+data2.obj+detect.obj+dt_data.obj+edit.obj+edit_di.obj+egacode.obj+\
-ems.obj+error.obj+ezboard.obj+fill.obj+game.obj+game2.obj+getkey.obj+\
+ems.obj+error.obj+ezboard.obj+expr.obj+fill.obj+game.obj+game2.obj+getkey.obj+\
 graphics.obj+helpsys.obj+hexchar.obj+idarray.obj+idput.obj+intake.obj+\
-main.obj+meminter.obj+meter.obj+mouse.obj+new_mod.obj+palette.obj+\
-pal_ed.obj+param.obj+password.obj+random.obj+retrace.obj+roballoc.obj+\
-runrobot.obj+runrobo2.obj+saveload.obj+scrdisp.obj+scrdump.obj+sfx.obj+\
-sfx_edit.obj+sprite.obj+string.obj+timer.obj+window.obj
+main.obj+meminter.obj+meter.obj+mouse.obj+mstring.obj+mzm.obj+new_mod.obj+\
+palette.obj+pal_ed.obj+param.obj+password.obj+random.obj+retrace.obj+\
+roballoc.obj+runrobot.obj+runrobo2.obj+saveload.obj+scrdisp.obj+scrdump.obj+\
+sfx.obj+sfx_edit.obj+sprite.obj+string.obj+timer.obj+window.obj
 
 all: megazeux.exe fix.exe getpw.exe killgbl.exe txt2hlp.exe ver1to2.exe
+
+#
+# Exo documented that as of 2.68, this file had to be compiled
+# to assembly and then converted to machine code by tasm. This is
+# because of the 387 "fsin" instruction which bcc doesn't understand.
+#
+# The -B flag achieves this, but must not be used project-wide.
+#
+counter.obj: counter.cpp
+	@$(CC) -B -c counter.cpp
 
 megazeux.exe: $(obj)
 	@$(TLINK) /m/c/d/P-/L$(LIBPATH) @&&|

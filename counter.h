@@ -32,6 +32,12 @@ extern FILE *output_file;
 extern int player_restart_x;
 extern int player_restart_y;
 extern char was_zapped;
+extern char file_in[12];
+extern char file_out[12];
+extern int multiplier;
+extern int divider;
+extern int c_divisions;
+
 
 #ifdef __cplusplus
 extern "C" {
