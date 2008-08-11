@@ -1,95 +1,36 @@
-#
-# You need TASM 3.0 and Borland C++ 3.0 to use this Makefile.
-#
-# Please note that in these old versions of MegaZeux, the source
-# for the robot editor was lost. Therefore this file just hacks
-# in robo_ed.obj when required.
-#
+# MZX makefile
 
-.AUTODEPEND
+OBJS      = main.o graphics.o window.o hexchar.o event.o         \
+            error.o helpsys.o world.o board.o robot.o idput.o    \
+            intake.o sfx.o scrdisp.o data.o game.o counter.o     \
+            idarray.o delay.o game2.o expr.o sprite.o runrobo2.o \
+            mzm.o decrypt.o audio.o edit.o edit_di.o block.o     \
+            char_ed.o pal_ed.o param.o sfx_edit.o fill.o rasm.o  \
+            robo_ed.o configure.o
 
-INCPATH=C:\BORLANDC\INCLUDE;.
-LIBPATH=C:\BORLANDC\LIB;.
+PREFIX    = /usr
 
-CC = bcc +megazeux.cfg -I$(INCPATH) -L$(LIBPATH)
-TASM = tasm
-TLIB = tlib
-TLINK = tlink
+BIN       = mzx280.exe
 
-.c.obj:
-	@$(CC) -c {$< }
+CC        = gcc
+CPP       = g++
+STRIP     = strip
+CFLAGS    = -mconsole -O2 -funsigned-char -ffast-math
+INCLUDES  = -I$(PREFIX)/include -I$(PREFIX)/include/SDL
 
-.cpp.obj:
-	@$(CC) -c {$< }
+LIBS      = -L$(PREFIX)/lib -lmingw32 -lSDLmain -lSDL -lmodplug -lgdm2s3m
 
-.asm.obj:
-	@$(TASM) /jWARN /MX /M5 /ZI /O /T $<,$@
+.SUFFIXES: .cpp
 
-obj  = arrowkey.obj beep.obj blink.obj block.obj boardmem.obj \
-ceh.obj charset.obj char_ed.obj comp_chk.obj counter.obj cursor.obj \
-data.obj data2.obj detect.obj dt_data.obj edit.obj edit_di.obj egacode.obj \
-ems.obj error.obj ezboard.obj expr.obj fill.obj game.obj game2.obj getkey.obj \
-graphics.obj helpsys.obj hexchar.obj idarray.obj idput.obj intake.obj \
-main.obj meminter.obj meter.obj mouse.obj mstring.obj mzm.obj new_mod.obj \
-palette.obj pal_ed.obj param.obj password.obj random.obj retrace.obj \
-roballoc.obj runrobot.obj runrobo2.obj saveload.obj scrdisp.obj scrdump.obj \
-sfx.obj sfx_edit.obj sprite.obj string.obj timer.obj window.obj vlayer.obj
+%.o: %.cpp
+	${CPP} ${CFLAGS} ${INCLUDES} -c $<
 
-#
-# I'd rather this wasn't necessary, but I can't think of a way either in
-# Make or DOS to convert the space separated list above into a + separated
-# list. So it's just copy/pasted. This tr command helps:
-#   tr ' ' '+' << "EOF"
-#
-lobj = arrowkey.obj+beep.obj+blink.obj+block.obj+boardmem.obj+\
-ceh.obj+charset.obj+char_ed.obj+comp_chk.obj+counter.obj+cursor.obj+\
-data.obj+data2.obj+detect.obj+dt_data.obj+edit.obj+edit_di.obj+egacode.obj+\
-ems.obj+error.obj+ezboard.obj+expr.obj+fill.obj+game.obj+game2.obj+getkey.obj+\
-graphics.obj+helpsys.obj+hexchar.obj+idarray.obj+idput.obj+intake.obj+\
-main.obj+meminter.obj+meter.obj+mouse.obj+mstring.obj+mzm.obj+new_mod.obj+\
-palette.obj+pal_ed.obj+param.obj+password.obj+random.obj+retrace.obj+\
-roballoc.obj+runrobot.obj+runrobo2.obj+saveload.obj+scrdisp.obj+scrdump.obj+\
-sfx.obj+sfx_edit.obj+sprite.obj+string.obj+timer.obj+window.obj+vlayer.obj
+all: mzx
 
-all: megazeux.exe fix.exe getpw.exe killgbl.exe txt2hlp.exe ver1to2.exe
-
-megazeux.exe: $(obj)
-	@$(TLINK) /m/c/d/P-/L$(LIBPATH) @&&|
-c0l.obj+$(lobj)+robo_ed.obj,megazeux,megazeux,mse_cl.lib+cl.lib
-|
-
-#
-# Other external binaries that might be useful
-#
-
-fix.exe: fix.obj
-	@$(TLINK) /m/c/d/P-/L$(LIBPATH) @&&|
-c0l.obj+fix.obj,fix,fix,cl.lib
-|
-
-getpw.exe: getpw.obj
-	@$(TLINK) /m/c/d/P-/L$(LIBPATH) @&&|
-c0l.obj+getpw.obj,getpw,getpw,cl.lib
-|
-
-killgbl.exe: killgbl.obj
-	@$(TLINK) /m/c/d/P-/L$(LIBPATH) @&&|
-c0l.obj+killgbl.obj,killgbl,killgbl,cl.lib
-|
-
-txt2hlp.exe: txt2hlp.obj
-	@$(TLINK) /m/c/d/P-/L$(LIBPATH) @&&|
-c0l.obj+txt2hlp.obj,txt2hlp,txt2hlp,cl.lib
-|
-
-ver1to2.exe: ver1to2.obj
-	@$(TLINK) /m/c/d/P-/L$(LIBPATH) @&&|
-c0l.obj+ver1to2.obj,ver1to2,ver1to2,cl.lib
-|
+mzx:	${OBJS}
+	${CPP} ${OBJS} ${LIBS} -o ${BIN}
+	${STRIP} --strip-all ${BIN}
 
 clean:
-	@ren robo_ed.obj robo_ed.bak
-	@del *.obj
-	@ren robo_ed.bak robo_ed.obj
-	@del *.exe
-	@del *.map
+	rm -f *.o ${BIN}
+

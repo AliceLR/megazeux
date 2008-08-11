@@ -441,7 +441,7 @@ ID  EOC Command
 18   g  If [cond] [str]
 19   g  If not [cond] [str]
 20      If any [color/thing/param] [str] (different)
-21      If not any [color/thing/param] [str] (different)
+21      If no [color/thing/param] [str] (different)
 22      If [color/thing/param] [dir] [str] (different)
 23      If not [color/thing/param] [dir] [str] (different)
 24      If [color/thing/param] [-#] -#] [str] (different)

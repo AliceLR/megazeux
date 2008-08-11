@@ -20,16 +20,19 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#include "expr.h"
-#include "string.h"
-#include "counter.h"
-#include "runrobot.h"
 #include <ctype.h>
 #include <stdlib.h>
+#include <string.h>
 
-long int last_val;
+#include "world.h"
+#include "expr.h"
+#include "counter.h"
+#include "robot.h"
 
-long int parse_expression(char far **expression, int &error, int id)
+int last_val;
+
+int parse_expression(World *mzx_world, char **expression,
+ int &error, int id)
 {
   long int operand_val;
   int current_arg;
@@ -40,12 +43,12 @@ long int parse_expression(char far **expression, int &error, int id)
 
   // Skip initial whitespace..
   skip_whitespace(expression);
-  value = parse_argument(expression, current_arg, id);
+  value = parse_argument(mzx_world, expression, current_arg, id);
   if((current_arg != 0) && (current_arg != 2))
   {
     // First argument must be a value type.
     error = 1;
-    return(-99);
+    return -99;
   }
   skip_whitespace(expression);
 
@@ -56,7 +59,7 @@ long int parse_expression(char far **expression, int &error, int id)
       // Close paren, safe to go.
       break;
     }
-    c_operator = parse_argument(expression, current_arg, id);
+    c_operator = parse_argument(mzx_world, expression, current_arg, id);
     // Next arg must be an operator, unless it's a negative number,
     // in which case it's considered + num
     if(current_arg == 2)
@@ -68,33 +71,33 @@ long int parse_expression(char far **expression, int &error, int id)
       if(current_arg != 1)
       {
         error = 2;
-        return(-100);
+        return -100;
       }
-      skip_whitespace(expression);  
-      operand_val = parse_argument(expression, current_arg, id);
+      skip_whitespace(expression);
+      operand_val = parse_argument(mzx_world, expression, current_arg, id);
       // And now it must be an integer.
       if((current_arg != 0) && (current_arg != 2))
       {
         error = 3;
-        return(-102);
+        return -102;
       }
       // Evaluate it.
       value = evaluate_operation(value, c_operator, operand_val);
     }
-    skip_whitespace(expression);      
+    skip_whitespace(expression);
   }
-  
+
   last_val = value;
 
-  return(value);
+  return value;
 }
 
-long int parse_argument(char far **argument, int &type, int id)
+int parse_argument(World *mzx_world, char **argument, int &type, int id)
 {
   int first_char = **argument;
 
   // Test the first one.
-  
+
   switch(first_char)
   {
     // Addition operator
@@ -102,7 +105,7 @@ long int parse_argument(char far **argument, int &type, int id)
     {
       type = 1;
       (*argument)++;
-      return(1);
+      return 1;
     }
     // Subtraction operator
     case '-':
@@ -111,42 +114,42 @@ long int parse_argument(char far **argument, int &type, int id)
       if(!isspace(**argument))
       {
         int t2;
-        long int val = parse_argument(argument, t2, id);
+        long int val = parse_argument(mzx_world, argument, t2, id);
         if((t2 == 0) || (t2 == 2))
         {
           val = -val;
           type = 2;
-          return(val);
+          return val;
         }
         else
         {
           type = -1;
-          return(-1);
+          return -1;
         }
       }
       type = 1;
-      return(2);
+      return 2;
     }
     // Multiplication operator
     case '*':
     {
       type = 1;
       (*argument)++;
-      return(3);
+      return 3;
     }
     // Division operator
     case '/':
     {
       type = 1;
       (*argument)++;
-      return(4);
+      return 4;
     }
     // Modulus operator
     case '%':
     {
       type = 1;
       (*argument)++;
-      return(5);
+      return 5;
     }
 
     // Exponent operator
@@ -154,7 +157,7 @@ long int parse_argument(char far **argument, int &type, int id)
     {
       type = 1;
       (*argument)++;
-      return(6);
+      return 6;
     }
 
     // Bitwise AND operator
@@ -162,15 +165,15 @@ long int parse_argument(char far **argument, int &type, int id)
     {
       type = 1;
       (*argument)++;
-      return(7);
+      return 7;
     }
-    
+
     // Bitwise OR operator
     case 'o':
     {
       type = 1;
       (*argument)++;
-      return(8);
+      return 8;
     }
 
     // Bitwise XOR operator
@@ -178,7 +181,7 @@ long int parse_argument(char far **argument, int &type, int id)
     {
       type = 1;
       (*argument)++;
-      return(9);
+      return 9;
     }
 
     // Less than/bitshift left
@@ -189,14 +192,14 @@ long int parse_argument(char far **argument, int &type, int id)
       if(**argument == '<')
       {
         (*argument)++;
-        return(10);
+        return 10;
       }
       if(**argument == '=')
       {
-        (*argument)++;        
-        return(14);
+        (*argument)++;
+        return 14;
       }
-      return(13);
+      return 13;
     }
     // Greater than/bitshift right
     case '>':
@@ -206,21 +209,21 @@ long int parse_argument(char far **argument, int &type, int id)
       if(**argument == '>')
       {
         (*argument)++;
-        return(11);
+        return 11;
       }
       if(**argument == '=')
       {
         (*argument)++;
-        return(16);
+        return 16;
       }
-      return(15);
+      return 15;
     }
     // Equality
     case '=':
     {
       type = 1;
       (*argument)++;
-      return(12);
+      return 12;
     }
     // Logical negation
     case '!':
@@ -229,7 +232,7 @@ long int parse_argument(char far **argument, int &type, int id)
       if(*(*argument + 1) == '=')
       {
         (*argument) += 2;
-        return(17);
+        return 17;
       }
     }
 
@@ -240,17 +243,17 @@ long int parse_argument(char far **argument, int &type, int id)
       if(!isspace(**argument))
       {
         int t2;
-        long int val = parse_argument(argument, t2, id);
+        long int val = parse_argument(mzx_world, argument, t2, id);
         if((t2 == 0) || (t2 == 2))
         {
           val = ~val;
           type = 2;
-          return(val);
+          return val;
         }
         else
         {
           type = -1;
-          return(-1);
+          return -1;
         }
       }
     }
@@ -260,14 +263,14 @@ long int parse_argument(char far **argument, int &type, int id)
     {
       type = 0;
       (*argument)++;
-      return(last_val);
+      return last_val;
     }
 
     // The evil null terminator...
     case '\0':
     {
       type = -1;
-      return(-1);
+      return -1;
     }
 
     // Parentheses! Recursive goodness...
@@ -276,21 +279,21 @@ long int parse_argument(char far **argument, int &type, int id)
     {
       int error;
       long int val;
-      char far *a_ptr = (*argument) + 1;
-      val = parse_expression(&a_ptr, error, id);
+      char *a_ptr = (*argument) + 1;
+      val = parse_expression(mzx_world, &a_ptr, error, id);
       if(error)
       {
         type = -1;
-        return(-1);
+        return -1;
       }
       else
       {
         *argument = a_ptr + 1;
         type = 0;
-        return(val);
+        return val;
       }
     }
-    
+
     // Begins with a ' or a & makes it a message ('counter')
     case '&':
     case '\'':
@@ -322,7 +325,7 @@ long int parse_argument(char far **argument, int &type, int id)
               case '\0':
               {
                 type = -1;
-                return(-1);
+                return -1;
               }
               case ')':
               {
@@ -331,7 +334,7 @@ long int parse_argument(char far **argument, int &type, int id)
               }
               case '(':
               {
-                close_paren_count++;            
+                close_paren_count++;
                 break;
               }
             }
@@ -342,7 +345,7 @@ long int parse_argument(char far **argument, int &type, int id)
           if(**argument == '\0')
           {
             type = -1;
-            return(-1);
+            return -1;
           }
 
           temp[count] = **argument;
@@ -353,8 +356,8 @@ long int parse_argument(char far **argument, int &type, int id)
       type = 0;
       (*argument)++;
       temp[count] = '\0';
-      tr_msg(temp, id, temp2);      
-      return((long int)get_counter(temp2, id));
+      tr_msg(mzx_world, temp, id, temp2);
+      return get_counter(mzx_world, temp2, id);
     }
 
     // Otherwise, it must be an integer, or just something invalid.
@@ -365,19 +368,19 @@ long int parse_argument(char far **argument, int &type, int id)
         // It's good.
         char *end_p;
         long int val = strtol(*argument, &end_p, 0);
-        *argument = end_p;        
+        *argument = end_p;
         type = 0;
-        return(val);
+        return val;
       }
       else
       {
         // It's not so good..
         type = -1;
-        return(-1);
+        return -1;
       }
     }
   }
-}  
+}
 
 void skip_whitespace(char **expression)
 {
@@ -387,8 +390,7 @@ void skip_whitespace(char **expression)
   }
 }
 
-long int evaluate_operation(long int operand_a, int c_operator, 
- long int operand_b)
+int evaluate_operation(int operand_a, int c_operator, int operand_b)
 {
   switch(c_operator)
   {
@@ -442,76 +444,76 @@ long int evaluate_operation(long int operand_a, int c_operator,
         }
         else
         {
-          return(0);
+          return 0;
         }
       }
-      
+
       for(i = 0; i < operand_b; i++)
       {
         val *= operand_a;
       }
-      return(val);
+      return val;
     }
     // Bitwise AND
     case 7:
     {
-      return(operand_a & operand_b);
+      return (operand_a & operand_b);
     }
     // Bitwise OR
     case 8:
     {
-      return(operand_a | operand_b);
+      return (operand_a | operand_b);
     }
     // Bitwise XOR
     case 9:
     {
-      return(operand_a ^ operand_b);
+      return (operand_a ^ operand_b);
     }
     // Logical bitshift left
     case 10:
     {
-      return(operand_a << operand_b);
+      return (operand_a << operand_b);
     }
     // Locical bitshift right
     case 11:
     {
-      return((long unsigned int)(operand_a) >> operand_b);
+      return (unsigned int)(operand_a) >> operand_b;
     }
     // Equality
     case 12:
     {
-      return(operand_a == operand_b);
+      return (operand_a == operand_b);
     }
     // less than
     case 13:
     {
-      return(operand_a < operand_b);
+      return (operand_a < operand_b);
     }
     // less than or equal to
     case 14:
     {
-      return(operand_a <= operand_b);
+      return (operand_a <= operand_b);
     }
     // greater than
     case 15:
     {
-      return(operand_a > operand_b);
+      return (operand_a > operand_b);
     }
     // greater than or equal to
     case 16:
     {
-      return(operand_a >= operand_b);
+      return (operand_a >= operand_b);
     }
     // not equal to
     case 17:
     {
-      return(operand_a != operand_b);
+      return (operand_a != operand_b);
     }
     default:
     {
       return(operand_a);
     }
-  
+
   }
 }
 

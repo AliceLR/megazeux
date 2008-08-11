@@ -1,0 +1,19 @@
+diff -Nudr -U3 libmodplug-0.7/src/load_mod.cpp libmodplug-0.7-2-channel-fix/src/load_mod.cpp
+--- libmodplug-0.7/src/load_mod.cpp	2002-07-21 09:15:00.000000000 +0100
++++ libmodplug-0.7-2-channel-fix/src/load_mod.cpp	2004-08-14 02:25:23.870882288 +0100
+@@ -192,13 +192,14 @@
+ 	 || (IsMagic(s, "M&K!")) || (IsMagic(s, "N.T."))) m_nChannels = 4; else
+ 	if ((IsMagic(s, "CD81")) || (IsMagic(s, "OKTA"))) m_nChannels = 8; else
+ 	if ((s[0]=='F') && (s[1]=='L') && (s[2]=='T') && (s[3]>='4') && (s[3]<='9')) m_nChannels = s[3] - '0'; else
+-	if ((s[0]>='4') && (s[0]<='9') && (s[1]=='C') && (s[2]=='H') && (s[3]=='N')) m_nChannels = s[0] - '0'; else
++	if ((s[0]>='2') && (s[0]<='9') && (s[1]=='C') && (s[2]=='H') && (s[3]=='N')) m_nChannels = s[0] - '0'; else
+ 	if ((s[0]=='1') && (s[1]>='0') && (s[1]<='9') && (s[2]=='C') && (s[3]=='H')) m_nChannels = s[1] - '0' + 10; else
+ 	if ((s[0]=='2') && (s[1]>='0') && (s[1]<='9') && (s[2]=='C') && (s[3]=='H')) m_nChannels = s[1] - '0' + 20; else
+ 	if ((s[0]=='3') && (s[1]>='0') && (s[1]<='2') && (s[2]=='C') && (s[3]=='H')) m_nChannels = s[1] - '0' + 30; else
+ 	if ((s[0]=='T') && (s[1]=='D') && (s[2]=='Z') && (s[3]>='4') && (s[3]<='9')) m_nChannels = s[3] - '0'; else
+ 	if (IsMagic(s,"16CN")) m_nChannels = 16; else
+ 	if (IsMagic(s,"32CN")) m_nChannels = 32; else m_nSamples = 15;
++
+ 	// Load Samples
+ 	nErr = 0;
+ 	dwTotalSampleLen = 0;

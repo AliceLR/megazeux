@@ -29,7 +29,7 @@
 // structures
 
   // flags - abcdefgh
-  // a - nothing 
+  // a - nothing
   // b - nothing
   // c - nothing
   // d - static
@@ -58,11 +58,12 @@ struct Sprite
   char flags;
   char width;
   char height;
-  char col_x;
-  char col_y;
+  signed char col_x;
+  signed char col_y;
   char col_width;
   char col_height;
 };
+
 typedef struct Sprite Sprite;
 
 struct Collision_list
@@ -70,22 +71,19 @@ struct Collision_list
   int num;
   int collisions[MAX_SPRITES];
 };
+
 typedef struct Collision_list Collision_list;
 
 // functions
 
-void plot_sprite(int color, unsigned char sprite, int x, int y);
-void draw_sprites();
-int sprite_at_xy(unsigned char sprite, int x, int y);
-int sprite_colliding_xy(unsigned char sprite, int x, int y);
+void plot_sprite(World *mzx_world, Sprite *cur_sprite, int color,
+ int x, int y);
+void draw_sprites(World *mzx_world);
+int sprite_at_xy(Sprite *cur_sprite, int x, int y);
+int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite,
+ int x, int y);
 int is_blank(unsigned char c);
 
 // global data types
-
-extern unsigned char sprite_num;
-extern char sprite_y_order;
-extern unsigned char total_sprites;
-extern Sprite sprites[MAX_SPRITES];
-extern Collision_list collision_list;
 
 #endif

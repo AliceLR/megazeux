@@ -1,0 +1,62 @@
+Axx Set speed to xx (default 06)
+Bxx Jump to order xx
+Cxx Break pattern to row xx
+D0y.Volume slide down by y
+Dx0.Volume slide up by x
+DFy.Fine volume slide down by y(!=0,F)
+DxF.Fine volume slide up by x(!=0,F)
+Exx.Slide down by xx (range 00..DF)
+EFx.Fine slide down by x
+EEx.Extra fine slide down by x
+Fxx.Slide up by xx (range 00..DF)
+FFx.Fine slide up by x
+FEx.Extra fine slide up by x
+Gxx.Tone portamento, speed xx
+Hxy.Vibrato, speed x and depth y
+Ixy Tremor with ontime x and offtime y
+Jxy.Arpeggio; adds halfnotes: x,y,0
+Kxy.Dual command: H00 & Dxy
+Lxy.Dual command: G00 & Dxy
+Mxx --
+Nxx --
+Oxx Set SampleOffset=xx00h
+Pxx --
+Qxy.Retrig note (see right)
+Rxy.Tremolo with speed x and depth y
+Sxy Special commands (see top-right)
+Txx Tempo=xx (range 20..FF, def:7dh)
+Uxx Fine vibrato (see Hxx)
+Vxx Set global volume (0..40)
+Wxx --
+Xxx unused amiga command 8xx ( Set panning in modern software (X00 left, XFF right) )
+Zxx --
+
+S0x Set filter (1/0/F=on/off/for) (ignored)
+S1x Set glissando control x=0/1
+S2x Set finetune
+S3x Set vibrato waveform to x
+S4x Set tremolo waveform to x
+S5x --
+S6x --
+S7x --
+S8x Set pan position (GRAVIS only in original ST3, ok in modern software)
+S9x --
+SAx old stereo control (ignored)
+SBx Loop (x=cnt)/StartLoop (x=0)
+SCx NoteCut in x frames
+SDx NoteDelay for x frames
+SEx PatternDelay for x notes
+SFx FunkRepeat, x=speed (ignored)
+
+Vibrato waveforms (S3x & S4x)
+    0:sinewave    1:ramp down
+    2:squarewave  3:random
+    +4:don't reset waveform
+
+Retrig note infobyte (Qxy)
+    y=frames between retrigs
+    x=volume change per retrig:
+    0:0    4:-8   8:?   C:8
+    1:-1   5:-16  9:1   D:16
+    2:-2   6:*2/3 A:2   E:*3/2
+    3:-4   7:*1/2 B:4   F:*2

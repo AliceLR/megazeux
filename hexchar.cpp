@@ -24,39 +24,50 @@
 #include "hexchar.h"
 #include "graphics.h"
 #include <stdlib.h>
-#include "string.h"
+#include <string.h>
 
 #define num2hex(x) ((x)>9 ? 87+(x) : 48+(x))
 
 //DOES NOT PRESERVE MOUSE CURSOR
-void write_hex_byte(unsigned char byte,unsigned char color,int x,int y,
- unsigned int segment) {
-	int t1,t2;
-	t1=(byte&240)>>4;
-	t1=num2hex(t1);
-	t2=byte&15;
-	t2=num2hex(t2);
-	draw_char(t1,color,x,y,segment);
-	draw_char(t2,color,x+1,y,segment);
+void write_hex_byte(char byte, char color, int x, int y)
+{
+  int t1,t2;
+  t1=(byte&240)>>4;
+  t1=num2hex(t1);
+  t2=byte&15;
+  t2=num2hex(t2);
+  draw_char(t1,color,x,y);
+  draw_char(t2,color,x+1,y);
 }
 
 //Set rightalign to print the rightmost char at xy and proceed to the left
 //minlen is the minimum length to print. Pad with 0.
 //DOES NOT PRESERVE MOUSE CURSOR
-void write_number(int number,unsigned char color,int x,int y,
- unsigned int segment,char minlen,char rightalign,int base) {
-	char temp[7];
-	int t1,t2;
-	itoa(number,temp,base);
-	if(rightalign) {
-		t1=str_len(temp);
-		if(minlen>t1) t1=minlen;
-		x-=t1-1;
-		}
-	if((t2=str_len(temp))<minlen) {
-		t2=minlen-t2;
-		for(t1=0;t1<t2;t1++)
-			draw_char('0',color,x++,y,segment);
-		}
-	write_string(temp,x,y,color,segment);
+void write_number(int number, char color, int x, int y,
+ int minlen, int rightalign, int base)
+{
+  char temp[7];
+  int t1, t2;
+  if(base == 10)
+    sprintf(temp, "%d", number);
+  else
+    sprintf(temp, "%x", number);
+
+  if(rightalign)
+  {
+    t1 = strlen(temp);
+    if(minlen > t1)
+      t1 = minlen;
+    x -= t1 - 1;
+  }
+
+  if((t2 = strlen(temp)) < minlen)
+  {
+    t2 = minlen - t2;
+    for(t1 = 0; t1 < t2; t1++)
+      draw_char('0', color, x++, y);
+  }
+
+  write_string(temp, x, y, color, 0);
 }
+

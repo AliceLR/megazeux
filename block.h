@@ -24,19 +24,14 @@
 #ifndef __BLOCK_H
 #define __BLOCK_H
 
-int block_cmd(void);
-int rtoo_obj_type(void);
-int choose_char_set(void);
-char save_file_dialog(char far *title,char far *prompt,char far *dest);
-//Have overlay_mode set to wanted mode with bits 64/128 set properly
-void export_ansi(char far *file,int x1,int y1,int x2,int y2,char text_only);
-int export_type(void);
-int import_type(void);
-//Pass curr_thing and curr_param so overwritten objects can be handled
-//correctly
-void import_ansi(char far *filename,char obj_type,int &curr_thing,
- int &curr_param,int start_x=0,int start_y=0);
-int import_ansi_obj_type(void);
-int import_mzm_obj_type(void);
+int block_cmd(World *mzx_world);
+int rtoo_obj_type(World *mzx_world);
+int choose_char_set(World *mzx_world);
+int save_file_dialog(World *mzx_world, char *title, char *prompt, char *dest);
+int save_char_dialog(World *mzx_world, char *dest, int *char_offset,
+ int *char_size);
+int export_type(World *mzx_world);
+int import_type(World *mzx_world);
+int import_mzm_obj_type(World *mzx_world);
 
 #endif

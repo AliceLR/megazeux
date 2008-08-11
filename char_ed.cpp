@@ -18,21 +18,20 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-//I went ahead and commented out the entire smzx char edit stuff -Koji
-//Character editor
+
+// I went ahead and commented out the entire smzx char edit stuff -Koji
+// Character editor
+
+#include <stdlib.h>
+#include <string.h>
 
 #include "helpsys.h"
-#include "mouse.h"
-#include "beep.h"
-#include "egacode.h"
 #include "char_ed.h"
 #include "window.h"
 #include "graphics.h"
-#include "getkey.h"
 #include "hexchar.h"
 #include "data.h"
-#include "charset.h"
-#include "palette.h"
+#include "event.h"
 
 //-------------------------------------------------
 //     +----------------+ Current char-     (#000)
@@ -58,273 +57,779 @@
 //       "Current Char-"=Enter
 //       "..0.."=Change char
 
-int ce_menu_cmds[13]={ 0,0,' ',13,-83,'N',0,'M','F',-60,-61,9,-63 };
+char buffer[14];
+char current_char = 1;
 
-int char_editor(void) {
-	unsigned char matrix[14];
-	static unsigned char buffer[14];
-	char x=3,y=6,draw=0,bit;
-	int t1,t2,t3,t4,key;
-	static unsigned char chr=1;
-	set_context(79);
-	m_hide();
-	save_screen(current_pg_seg);
-	draw_window_box(15,3,65,20,current_pg_seg,143,128,135);
-	//Draw in static elements
-	draw_window_box(21,4,38,19,current_pg_seg,128,143,135,0,0);
-	write_string("Current char-(#000)\n\n\
- Move cursor\n\
--+ Change char\n\
-Space   Toggle pixel\n\
-Enter   Select char\n\
-DelClear char\n\
-N  'Negative'\n\
-Alt+  Shift char\n\
-M  'Mirror'\n\
-F  'Flip'\n\
-F2 Copy to buffer\n\
-F3 Copy from buffer\n\
-TabDraw\n\
-\n\
-F5 Revert to MZX",40,4,143,current_pg_seg);
-	m_show();
-	//Get char
-	ec_read_char(chr,matrix);
-	do
-	{
-		//Update char
-		m_hide();
-		if (smzx_mode)
-		{
-			for(t2=0;t2<14;t2++)
-			{
-				for(t1=0;t1<8;t1++)
-				{
-					bit = (matrix[t2]&(128>>t1))/(128>>t1) + 2 * (matrix[t2]&(64>>t1))/(64>>t1);
-					switch(bit)
-					{
-						case 3:
-							write_string("€€€€",22+(t1<<1),5+t2,135,current_pg_seg);
-							break;
-						case 2:
-							write_string("≤≤≤≤",22+(t1<<1),5+t2,135,current_pg_seg);
-							break;
-						case 1:
-							write_string("∞∞∞∞",22+(t1<<1),5+t2,135,current_pg_seg);
-							break;
-						default:
-							write_string("˙˙˙˙",22+(t1<<1),5+t2,135,current_pg_seg);
-						break;
-					}
-				t1++;
-				}
-			}
-		}
-    else
+int char_editor(World *mzx_world)
+{
+  char matrix[14];
+  int x = 3;
+  int y = 6;
+  int draw = 0;
+  int draw_new;
+  int bit;
+
+  int i, i2, key;
+  set_context(79);
+  save_screen();
+  draw_window_box(15, 3, 65, 20, 143, 128, 135, 1, 1);
+  // Draw in static elements
+  draw_window_box(21, 4, 38, 19, 128, 143, 135, 0, 0);
+  write_string
+  (
+    "Current char-\t(#000)\n\n"
+    "\t Move cursor\n"
+    "-+\t Change char\n"
+    "Space   Toggle pixel\n"
+    "Enter   Select char\n"
+    "Del\tClear char\n"
+    "N\t  'Negative'\n"
+    "Alt+  Shift char\n"
+    "M\t  'Mirror'\n"
+    "F\t  'Flip'\n"
+    "F2\t Copy to buffer\n"
+    "F3\t Copy from buffer\n"
+    "Tab\tDraw\n"
+    "F4\t Revert to ASCII\n"
+    "F5\t Revert to MZX", 40, 4, 143, 1
+  );
+
+  m_show();
+  // Get char
+  ec_read_char(current_char, matrix);
+
+  do
+  {
+    // Update char
+    for(i = 0; i < 14; i++)
     {
-		  for(t1=0;t1<8;t1++)
-		  {
-			  for(t2=0;t2<14;t2++)
-			  {
-				  bit=matrix[t2]&(128>>t1);
-				  if(bit) write_string("€€",22+(t1<<1),5+t2,135,
-  					current_pg_seg);
-	  			else write_string("˙˙",22+(t1<<1),5+t2,135,current_pg_seg);
-		  	}
-		  }
+      write_number(matrix[i], 135, 17, i + 5, 3);
+
+      for(i2 = 0; i2 < 8; i2++)
+      {
+        bit = (matrix[i] >> (7 - i2)) & 0x01;
+        if(bit)
+          write_string("€€", (i2 * 2) + 22, i + 5, 135, 0);
+        else
+          write_string("˙˙", (i2 * 2) + 22, i + 5, 135, 0);
+      }
     }
 
-		for(t2=0;t2<14;t2++)
-			write_number(matrix[t2],135,17,5+t2,current_pg_seg,3);
-		//Update draw status
-		if(draw==1) write_string("(set)   ",53,17,143,current_pg_seg);
-		else if(draw==2) write_string("(clear) ",53,17,143,current_pg_seg);
-		else if(draw==3) write_string("(toggle)",53,17,143,current_pg_seg);
-		else write_string("(off)   ",53,17,135,current_pg_seg);
-		//Highlight cursor
-		color_line(2,22+(x<<1),5+y,27,current_pg_seg);
-		//Current character
-		write_number(chr,143,60,4,current_pg_seg,3);
-		for(t1=-10;t1<11;t1++)
-			draw_char((unsigned char)(chr+t1),128+(t1==0)*15,53+t1,5,
-				current_pg_seg);
-		//Key
-		m_show();
-		key=getkey();
-		if((key>='a')&&(key<='z')) key-=32;
-	re_evaul_key:
-		switch(key) {
-			case MOUSE_EVENT:
-				//Mouse- check area
-				if((mouse_event.cx>21)&&(mouse_event.cx<38)&&
-					(mouse_event.cy>4)&&(mouse_event.cy<19)) {
-						//Grid.
-						x=(mouse_event.cx-22)>>1;
-						y=mouse_event.cy-5;
-						goto place;
-					}
-				if((mouse_event.cx>38)&&(mouse_event.cx<64)) {
-					if((mouse_event.cy>5)&&(mouse_event.cy<20)) {
-						//Menu.
-						key=ce_menu_cmds[mouse_event.cy-6];
-						goto re_evaul_key;
-						}
-					else if(mouse_event.cy==4) //Choose char.
-						goto select_char;
-					else if(mouse_event.cy==5) {
-						//Change char
-						if(mouse_event.cx<43) {
-							beep();//Too far left
-							break;
-							}
-						//Become...
-						chr+=mouse_event.cx-53;
-						ec_read_char(chr,matrix);
-						break;
-						}
-					}
-			default:
-				//Bad mouse/key
-				beep();
-				break;
-			case -75://Left
-				if((--x)<0) x=7;
-				if(draw==1) goto set;
-				if(draw==2) goto reset;
-				if(draw==3) goto place;
-				break;
-			case -77://Right
-				if((++x)>7) x=0;
-				if(draw==1) goto set;
-				if(draw==2) goto reset;
-				if(draw==3) goto place;
-				break;
-			case -72://Up
-				if((--y)<0) y=13;
-				if(draw==1) goto set;
-				if(draw==2) goto reset;
-				if(draw==3) goto place;
-				break;
-			case -80://Down
-				if((++y)>13) y=0;
-				if(draw==1) goto set;
-				if(draw==2) goto reset;
-				if(draw==3) goto place;
-				break;
-			case '-':
-			case '_':
-				chr--;
-				ec_read_char(chr,matrix);
-				break;
-			case '+':
-			case '=':
-				chr++;
-				ec_read_char(chr,matrix);
-				break;
-			case ' ':
-			place:
-				matrix[y]^=(128>>x);
-				ec_change_char(chr,matrix);
-				break;
-			set:
-				matrix[y]|=(128>>x);
-				ec_change_char(chr,matrix);
-				break;
-			reset:
-				matrix[y]&=~(128>>x);
-				ec_change_char(chr,matrix);
-				break;
-			case 13:
-			select_char:
-				t1=char_selection(chr,current_pg_seg);
-				if(t1>=0) chr=t1;
-				ec_read_char(chr,matrix);
-				break;
-			case 'Q':
-				key=27;
-				break;
-			case -83://Delete
-				for(t1=0;t1<14;t1++) matrix[t1]=0;
-				ec_change_char(chr,matrix);
-				break;
-			case -60://F2
-				for(t1=0;t1<14;t1++) buffer[t1]=matrix[t1];
-				break;
-			case -61://F3
-				for(t1=0;t1<14;t1++) matrix[t1]=buffer[t1];
-				ec_change_char(chr,matrix);
-				break;
-			case 'M':
-				for(t1=0;t1<14;t1++) {
-					t3=128;
-					t4=1;
-					for(t2=0;t2<4;t2++) {
-						if((matrix[t1]&t3)&&(matrix[t1]&t4)) ;/* Both on */
-						else if((matrix[t1]&t3)||(matrix[t1]&t4)) matrix[t1]^=t3+t4;
-						t3>>=1;
-						t4<<=1;
-						}
-					}
-				ec_change_char(chr,matrix);
-				break;
-			case 'F':
-				for(t1=0;t1<7;t1++) {
-					t2=matrix[t1];
-					matrix[t1]=matrix[13-t1];
-					matrix[13-t1]=t2;
-					}
-				ec_change_char(chr,matrix);
-				break;
-			case 9://Tab
-				if((++draw)>3) draw=0;
-				if(draw==1) goto set;
-				if(draw==2) goto reset;
-				if(draw==3) goto place;
-				break;
-			case 'N':
-				for(t1=0;t1<14;t1++)
-					matrix[t1]^=255;
-				ec_change_char(chr,matrix);
-				break;
-			case -63:
-				//Revert to megazeux
-				for(t1=0;t1<14;t1++)
-					matrix[t1]=default_mzx_char_set[chr*14+t1];
-				ec_change_char(chr,matrix);
-				break;
-			case -152:/* Alt Up */
-				t1=matrix[0];
-				for(t2=0;t2<13;t2++) matrix[t2]=matrix[t2+1];
-				matrix[13]=t1;
-				ec_change_char(chr,matrix);
-				break;
-			case -160:/* Alt Down */
-				t1=matrix[13];
-				for(t2=14;t2>0;t2--) matrix[t2]=matrix[t2-1];
-				matrix[0]=t1;
-				ec_change_char(chr,matrix);
-				break;
-			case -155:/* Alt Left */
-				for(t1=0;t1<14;t1++) {
-					t2=matrix[t1]&128;
-					matrix[t1]<<=1;
-					if(t2) matrix[t1]|=1;
-					}
-				ec_change_char(chr,matrix);
-				break;
-			case -157:/* Alt Right */
-				for(t1=0;t1<14;t1++) {
-					t2=matrix[t1]&1;
-					matrix[t1]>>=1;
-					if(t2) matrix[t1]|=128;
-					}
-				ec_change_char(chr,matrix);
-			case 27:
-			case 0:
-				break;
-			}
-	} while(key!=27);
-	restore_screen(current_pg_seg);
-	pop_context();
-	return chr;
+    switch(draw)
+    {
+      case 0:
+        write_string("(off)   ", 53, 17, 143, 0);
+        break;
+
+      case 1:
+        write_string("(set)   ", 53, 17, 143, 0);
+        break;
+
+      case 2:
+        write_string("(clear) ", 53, 17, 143, 0);
+        break;
+
+      case 3:
+        write_string("(toggle)", 53, 17, 143, 0);
+        break;
+    }
+
+    // Highlight cursor
+    color_line(2, (x * 2) + 22, y + 5, 27);
+    // Current character
+    write_number(current_char, 143, 60, 4, 3);
+
+    for(i = -10; i < 11; i++)
+    {
+      draw_char(current_char + i, 128 + (i == 0) * 15, i + 53, 5);
+    }
+
+    update_screen();
+    update_event_status_delay();
+
+    key = get_key(keycode_SDL);
+
+    if(get_mouse_press())
+    {
+      int mouse_x, mouse_y;
+      get_mouse_position(&mouse_x, &mouse_y);
+
+      if((mouse_x > 21) && (mouse_x < 38) &&
+       (mouse_y > 4) && (mouse_y < 19))
+      {
+        // Grid.
+        x = (mouse_x - 22) / 2;
+        y = mouse_y - 5;
+        matrix[y] = matrix[y] ^ (0x80 >> x);
+        ec_change_byte(current_char, y, matrix[y]);
+      }
+      else
+
+      if(((mouse_x > 43) && (mouse_x < 64)) &&
+       (mouse_y == 5))
+      {
+        current_char += mouse_x - 53;
+        ec_read_char(current_char, matrix);
+      }
+    }
+
+    draw_new = 0;
+
+    switch(key)
+    {
+      case SDLK_LEFT:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          char wrap_bit;
+
+          for(i = 0; i < 14; i++)
+          {
+            wrap_bit = matrix[i] & 0x80;
+            matrix[i] <<= 1;
+            if(wrap_bit)
+              matrix[i] |= 1;
+          }
+        }
+        else
+        {
+          x--;
+          if(x < 0)
+            x = 7;
+          draw_new = 1;
+        }
+        break;
+      }
+
+      case SDLK_RIGHT:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          char wrap_bit;
+
+          for(i = 0; i < 14; i++)
+          {
+            wrap_bit = matrix[i] & 1;
+            matrix[i] >>= 1;
+            if(wrap_bit)
+              matrix[i] |= 0x80;
+          }
+        }
+        else
+        {
+          x++;
+          if(x > 7)
+            x = 0;
+          draw_new = 1;
+        }
+        break;
+      }
+
+      case SDLK_UP:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          char wrap_row = matrix[0];
+
+          for(i = 0; i < 13; i++)
+          {
+            matrix[i] = matrix[i + 1];
+          }
+          matrix[13] = wrap_row;
+        }
+        else
+        {
+          y--;
+          if(y < 0)
+            y = 13;
+          draw_new = 1;
+        }
+        break;
+      }
+
+      case SDLK_DOWN:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          char wrap_row = matrix[13];
+
+          for(i = 14; i > 0; i--)
+          {
+            matrix[i] = matrix[i - 1];
+          }
+          matrix[0] = wrap_row;
+        }
+        else
+        {
+          y++;
+          if(y > 13)
+            y = 0;
+          draw_new = 1;
+        }
+        break;
+      }
+
+      case SDLK_KP_MINUS:
+      case SDLK_MINUS:
+      {
+        current_char--;
+        ec_read_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_KP_PLUS:
+      case SDLK_EQUALS:
+      {
+        current_char++;
+        ec_read_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_SPACE:
+      {
+        matrix[y] = matrix[y] ^ (0x80 >> x);
+        ec_change_byte(current_char, y, matrix[y]);
+        break;
+      }
+
+      case SDLK_RETURN:
+      {
+        int new_char = char_selection(current_char);
+        if(new_char >= 0)
+          current_char = new_char;
+
+        ec_read_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_q:
+      {
+        key = SDLK_ESCAPE;
+        break;
+      }
+
+      case SDLK_DELETE:
+      {
+        memset(matrix, 0, 14);
+        ec_change_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_F2:
+      {
+        memcpy(buffer, matrix, 14);
+        break;
+      }
+
+      case SDLK_F3:
+      {
+        memcpy(matrix, buffer, 14);
+        ec_change_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_m:
+      {
+        char current_row;
+        for(i = 0; i < 14; i++)
+        {
+          current_row = matrix[i];
+          current_row = (current_row << 4) | (current_row >> 4);
+          current_row = ((current_row & 0xCC) >> 2) |
+           ((current_row & 0x33) << 2);
+          current_row = ((current_row & 0xAA) >> 1) |
+           ((current_row & 0x55) << 1);
+
+          matrix[i] = current_row;
+        }
+        ec_change_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_f:
+      {
+        char current_row;
+        for(i = 0; i < 7; i++)
+        {
+          current_row = matrix[i];
+          matrix[i] = matrix[13 - i];
+          matrix[13 - i] = current_row;
+        }
+        ec_change_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_TAB:
+      {
+        draw++;
+        if(draw > 3)
+          draw = 0;
+
+        draw_new = 1;
+        break;
+      }
+
+      case SDLK_n:
+      {
+        for(i = 0; i < 14; i++)
+        {
+          matrix[i] ^= 0xFF;
+        }
+        ec_change_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_F4:
+      {
+        ec_load_char_ascii(current_char);
+        ec_read_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_F5:
+      {
+        ec_load_char_mzx(current_char);
+        ec_read_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_F1: // F1
+      {
+        m_show();
+        help_system(mzx_world);
+        break;
+      }
+    }
+
+    if(draw_new)
+    {
+      switch(draw)
+      {
+        case 1:
+        {
+          matrix[y] = matrix[y] | (0x80 >> x);
+          break;
+        }
+
+        case 2:
+        {
+          matrix[y] = matrix[y] & ~(0x80 >> x);
+          break;
+        }
+
+        case 3:
+        {
+          matrix[y] = matrix[y] ^ (0x80 >> x);
+          break;
+        }
+      }
+      ec_change_byte(current_char, y, matrix[y]);
+    }
+  } while(key != SDLK_ESCAPE);
+  restore_screen();
+  pop_context();
+  return current_char;
 }
+
+int smzx_char_editor(World *mzx_world)
+{
+  char matrix[14];
+  int x = 2;
+  int y = 6;
+  int draw = 0;
+  int draw_new;
+  int bit;
+  int current_type = 0;
+
+  int i, i2, key;
+  set_context(79);
+  save_screen();
+  draw_window_box(15, 3, 65, 20, 143, 128, 135, 1, 1);
+  // Draw in static elements
+  draw_window_box(21, 4, 38, 19, 128, 143, 135, 0, 0);
+  write_string
+  (
+    "Current char-\t(#000)\n\n"
+    "\t Move cursor\n"
+    "-+\t Change char\n"
+    "Space   Toggle pixel\n"
+    "Enter   Select char\n"
+    "Del\tClear char\n"
+    "N\t  'Negative'\n"
+    "Alt+  Shift char\n"
+    "M\t  'Mirror'\n"
+    "F\t  'Flip'\n"
+    "F2\t Copy to buffer\n"
+    "F3\t Copy from buffer\n"
+    "Tab\tDraw\n"
+    "1-4\tSelect\n"
+    "F5\t Revert to SMZX", 40, 4, 143, 1
+  );
+
+  m_show();
+  // Get char
+  ec_read_char(current_char, matrix);
+
+  do
+  {
+    // Update char
+    for(i = 0; i < 14; i++)
+    {
+      write_number(matrix[i], 135, 17, i + 5, 3);
+
+      for(i2 = 0; i2 < 8; i2 += 2)
+      {
+        bit = (matrix[i] >> (6 - i2)) & 0x03;
+        switch(bit)
+        {
+          case 3:
+            write_string("€€€€", (i2 * 2) + 22, i + 5, 135, 0);
+            break;
+
+          case 1:
+            write_string("≤≤≤≤", (i2 * 2) + 22, i + 5, 135, 0);
+            break;
+
+          case 2:
+            write_string("∞∞∞∞", (i2 * 2) + 22, i + 5, 135, 0);
+            break;
+
+          case 0:
+            write_string("˙˙˙˙", (i2 * 2) + 22, i + 5, 135, 0);
+            break;
+        }
+      }
+    }
+
+    switch(draw)
+    {
+      case 0:
+        write_string("(off)   ", 53, 17, 143, 0);
+        break;
+
+      case 1:
+        write_string("(set)   ", 53, 17, 143, 0);
+        break;
+    }
+
+    switch(current_type)
+    {
+      case 3:
+        write_string("€€€€", 57, 18, 135, 0);
+        break;
+
+      case 1:
+        write_string("≤≤≤≤", 57, 18, 135, 0);
+        break;
+
+      case 2:
+        write_string("∞∞∞∞", 57, 18, 135, 0);
+        break;
+
+      case 0:
+        write_string("˙˙˙˙", 57, 18, 135, 0);
+        break;
+    }
+
+    // Highlight cursor
+    color_line(4, (x * 2) + 22, y + 5, 27);
+    // Current character
+    write_number(current_char, 143, 60, 4, 3);
+
+    for(i = -10; i < 11; i++)
+    {
+      draw_char(current_char + i, 128 + (i == 0) * 15, i + 53, 5);
+    }
+
+    update_screen();
+    update_event_status_delay();
+
+    key = get_key(keycode_SDL);
+
+    if(get_mouse_press())
+    {
+      int mouse_x, mouse_y;
+      get_mouse_position(&mouse_x, &mouse_y);
+
+      if((mouse_x > 21) && (mouse_x < 38) &&
+       (mouse_y > 4) && (mouse_y < 19))
+      {
+        // Grid.
+        x = ((mouse_x - 22) / 2) & 0xFE;
+        y = mouse_y - 5;
+
+        if(get_mouse_status() == SDL_BUTTON(3))
+        {
+          current_type = (matrix[y] >> (6 - x)) & 0x03;
+        }
+        else
+        {
+          matrix[y] = (matrix[y] & ~(0xC0 >> x)) | (current_type << (6 - x));
+          ec_change_byte(current_char, y, matrix[y]);
+        }
+      }
+      else
+
+      if(((mouse_x > 43) && (mouse_x < 64)) &&
+       (mouse_y == 5))
+      {
+        current_char += mouse_x - 53;
+        ec_read_char(current_char, matrix);
+      }
+    }
+
+    draw_new = 0;
+
+    switch(key)
+    {
+      case SDLK_LEFT:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          char wrap_section;
+
+          for(i = 0; i < 14; i++)
+          {
+            wrap_section = matrix[i] & 0xC0;
+            matrix[i] <<= 2;
+            matrix[i] |= wrap_section;
+          }
+        }
+        else
+        {
+          x -= 2;
+          if(x < 0)
+            x = 6;
+          draw_new = 1;
+        }
+        break;
+      }
+
+      case SDLK_RIGHT:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          char wrap_section;
+
+          for(i = 0; i < 14; i++)
+          {
+            wrap_section = matrix[i] & 0x03;
+            matrix[i] >>= 2;
+            matrix[i] |= (wrap_section << 6);
+          }
+        }
+        else
+        {
+          x += 2;
+          if(x > 6)
+            x = 0;
+          draw_new = 1;
+        }
+        break;
+      }
+
+      case SDLK_UP:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          char wrap_row = matrix[0];
+
+          for(i = 0; i < 13; i++)
+          {
+            matrix[i] = matrix[i + 1];
+          }
+          matrix[13] = wrap_row;
+        }
+        else
+        {
+          y--;
+          if(y < 0)
+            y = 13;
+          draw_new = 1;
+        }
+        break;
+      }
+
+      case SDLK_DOWN:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          char wrap_row = matrix[13];
+
+          for(i = 14; i > 0; i--)
+          {
+            matrix[i] = matrix[i - 1];
+          }
+          matrix[0] = wrap_row;
+        }
+        else
+        {
+          y++;
+          if(y > 13)
+            y = 0;
+          draw_new = 1;
+        }
+        break;
+      }
+
+      case SDLK_KP_MINUS:
+      case SDLK_MINUS:
+      {
+        current_char--;
+        ec_read_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_KP_PLUS:
+      case SDLK_EQUALS:
+      {
+        current_char++;
+        ec_read_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_SPACE:
+      {
+        matrix[y] = (matrix[y] & ~(0xC0 >> x)) | (current_type << (6 - x));
+        ec_change_byte(current_char, y, matrix[y]);
+        break;
+      }
+
+      case SDLK_RETURN:
+      {
+        int new_char = char_selection(current_char);
+        if(new_char >= 0)
+          current_char = new_char;
+
+        ec_read_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_q:
+      {
+        key = SDLK_ESCAPE;
+        break;
+      }
+
+      case SDLK_DELETE:
+      {
+        memset(matrix, 0, 14);
+        ec_change_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_F2:
+      {
+        memcpy(buffer, matrix, 14);
+        break;
+      }
+
+      case SDLK_F3:
+      {
+        memcpy(matrix, buffer, 14);
+        ec_change_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_m:
+      {
+        char current_row;
+        for(i = 0; i < 14; i++)
+        {
+          current_row = matrix[i];
+          current_row = (current_row << 4) | (current_row >> 4);
+          current_row = ((current_row & 0xCC) >> 2) |
+           ((current_row & 0x33) << 2);
+
+          matrix[i] = current_row;
+        }
+        ec_change_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_f:
+      {
+        char current_row;
+        for(i = 0; i < 7; i++)
+        {
+          current_row = matrix[i];
+          matrix[i] = matrix[13 - i];
+          matrix[13 - i] = current_row;
+        }
+        ec_change_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_TAB:
+      {
+        draw ^= 1;
+        draw_new = 1;
+        break;
+      }
+
+      case SDLK_n:
+      {
+        for(i = 0; i < 14; i++)
+        {
+          matrix[i] ^= 0xFF;
+        }
+        ec_change_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_F5:
+      {
+        ec_load_char_smzx(current_char);
+        ec_read_char(current_char, matrix);
+        break;
+      }
+
+      case SDLK_1:
+      {
+        current_type = 0;
+        break;
+      }
+
+      case SDLK_2:
+      {
+        current_type = 2;
+        break;
+      }
+
+      case SDLK_3:
+      {
+        current_type = 1;
+        break;
+      }
+
+      case SDLK_4:
+      {
+        current_type = 3;
+        break;
+      }
+
+      case SDLK_INSERT:
+      {
+        current_type = (matrix[y] >> (6 - x)) & 0x03;
+        break;
+      }
+
+      case SDLK_F1: // F1
+      {
+        m_show();
+        help_system(mzx_world);
+        break;
+      }
+    }
+
+    if((draw_new) && draw)
+    {
+      matrix[y] = (matrix[y] & ~(0xC0 >> x)) | (current_type << (6 - x));
+      ec_change_byte(current_char, y, matrix[y]);
+    }
+  } while(key != SDLK_ESCAPE);
+  restore_screen();
+  pop_context();
+  return current_char;
+}
+

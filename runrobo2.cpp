@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 2004 Gilead Kutnick
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -21,3570 +22,5472 @@
 
 //Part two of RUNROBOT.CPP
 
-#include "profile.h"
-#include "error.h"
-#include "ezboard.h"
-#include "saveload.h"
 #include <stdio.h>
-#include "palette.h"
-#include "egacode.h"
+#include <stdlib.h>
+#include <time.h>
+#include <string.h>
+
+#include "error.h"
 #include "intake.h"
 #include "edit.h"
-#include "random.h"
-#include "beep.h"
-#include "getkey.h"
 #include "graphics.h"
-#include "arrowkey.h"
 #include "scrdisp.h"
 #include "window.h"
 #include "sfx.h"
-extern int topindex,backindex;
-#include "mod.h"
-#include "idarray.h"
-#include "runrobot.h"
-#include "struct.h"
-#include "const.h"
-#include "data.h"
-#include "string.h"
-#include "counter.h"
-#include "game.h"
-#include "game2.h"
-#include "roballoc.h"
-#include <stdlib.h>
-
-#include <time.h>
-#include <dos.h>
-#include <io.h>
-#include <stdio.h>
-#include <stdlib.h>
-
-#include "counter.h"
-
-#include "egacode.h"
-#include "blink.h"
-#include "const.h"
-#include "cursor.h"
-#include "data.h"
-#include "game.h"
-#include "game2.h"
-#include "graphics.h"       
+#include "audio.h"
 #include "idarray.h"
 #include "idput.h"
-#include "mouse.h"
-#include "palette.h"
-#include "runrobot.h"
-#include "sfx.h"
-#include "string.h"
-#include "struct.h"
-#include "conio.h"
+#include "const.h"
+#include "data.h"
+#include "counter.h"
+#include "game.h"
+#include "game2.h"
+#include "counter.h"
 #include "mzm.h"
-#include "ems.h"
-
-// Sprites.. - Exo
 #include "sprite.h"
-// Strings! - Exo
-#include "mstring.h"
-// Vlayer! - Exo
-#include "vlayer.h"
+#include "event.h"
+#include "robot.h"
+#include "world.h"
 
-#define parsedir(a,b,c,d) parsedir(a,b,c,d,_bl[0],_bl[1],_bl[2],_bl[3])
+extern int topindex, backindex;
 
-#pragma warn -sig
-
-// I used Visual Slick Edit's "beatufy source" on this. ^_^ - Exo
+#define parsedir(a, b, c, d) \
+parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3]) \
 
 // Commands per cycle - Exo
 int commands = 40;
 
-// Used to not advance or stop execution.	- Exo
-
-unsigned char force_state = 0;
-
-void set_built_in_messages(int param);
-int get_built_in_messages(void);
+char *item_to_counter[9] =
+{
+  "GEMS",
+  "AMMO",
+  "TIME",
+  "SCORE",
+  "HEALTH",
+  "LIVES",
+  "LOBOMBS",
+  "HIBOMBS",
+  "COINS"
+};
 
 // side-effects: mangles the input string
 // bleah; this is so unreadable; just a very quick dirty hack
-static void magic_load_mod(char far *filename) {
-int magic;
-magic = str_len(filename);
-if( ( magic > 1 ) && ( filename[magic-1] == '*' ) )
+static void magic_load_mod(char *filename)
 {
-  filename[magic-1] = '\000';
-  load_mod(filename);
-  load_mod("*");
+  int mod_name_size = strlen(filename);
+  if((mod_name_size > 1) && (filename[mod_name_size - 1] == '*'))
+  {
+    filename[mod_name_size - 1] = '\000';
+    load_mod(filename);
+    load_mod("*");
+  }
+  else
+  {
+    load_mod(filename);
+  }
 }
-else
+
+void save_player_position(World *mzx_world, int pos)
 {
-  load_mod(filename);
-}
+  mzx_world->pl_saved_x[pos] = mzx_world->player_x;
+  mzx_world->pl_saved_y[pos] = mzx_world->player_y;
+  mzx_world->pl_saved_board[pos] = mzx_world->current_board_id;
 }
 
-//Run a single robot through a single cycle.
-//If id is negative, only run it if .status is 2
-void run_robot(int id,int x,int y) 
+void restore_player_position(World *mzx_world, int pos)
 {
-  enter_func("run_robot");
-  if(id<0) if(robots[-id].status!=2) return;
-  int t1,t2,t3,t4,t5,t6,t7,t8,t9,t0,t10,t11,fad=is_faded();//Temps
+  target_x = mzx_world->pl_saved_x[pos];
+  target_y = mzx_world->pl_saved_y[pos];
+  target_board = mzx_world->pl_saved_board[pos];
+  target_where = 0;
+}
 
-  int cmd;//Command to run
-  int lines_run=0,last_label=-1;//For preventing infinite loops
-  char gotoed;//Set to 1 if we shouldn't advance cmd since we went to a lbl
-  force_state = 0;
-  int old_pos;//Old position to verify gotos DID something
-  int _bl[4]={ 0,0,0,0};//Whether blocked in a given direction (2=OUR bullet)
-  int t12; // New * "" command (changes Built_In_Messages to be sure to display the messages)
+void calculate_blocked(World *mzx_world, int x, int y, int id, int bl[4])
+{
+  Board *src_board = mzx_world->current_board;
+  int board_width = src_board->board_width;
+  char *level_id = src_board->level_id;
 
-  unsigned char temp[81];
+  if(id)
+  {
+    int i, offset, new_x, new_y;
+    for(i = 0; i < 4; i++)
+    {
+      new_x = x;
+      new_y = y;
 
-  unsigned char far *robot;
-  unsigned char far *cmd_ptr;//Points to current command
-  char done=0;//Set to 1 on a finishing command
-  char update_blocked=0;//Set to 1 to update the _bl[4] array
-  char first_cmd=1;//It is the first cmd.
-  FILE *fp;
-  //Reset global prefixes
-  first_prefix=mid_prefix=last_prefix=0;
-  if(id<0)
-  {
-    id=-id;
-    robots[id].xpos=x;
-    robots[id].ypos=y;
-    robots[id].cycle_count=0;
-    goto redone;
-  }
-  //Reset x/y
-  robots[id].xpos=x;
-  robots[id].ypos=y;
-  //Update cycle count
-  if((++robots[id].cycle_count)<(robots[id].robot_cycle))
-  {
-    robots[id].status=1;
-    exit_func();
-    return;
-  }
-  robots[id].cycle_count=0;
-  //Does program exist?
-  if(robots[id].program_length<3)
-  {
-    exit_func();
-    return;//(nope)
-  }
-  //Walk?
-  if((robots[id].walk_dir>0)&&(robots[id].walk_dir<5))
-  {
-    t2=_move(x,y,robots[id].walk_dir-1,1|2|8|16+4*robots[id].can_lavawalk);
-    if(t2==3)
-    {//Send to edge, if no response, then to thud.
-      if(send_robot_id(id,"edge",1))
-        send_robot_id(id,"thud",1);
+      if(!move_dir(src_board, &new_x, &new_y, i))
+      {
+        offset = new_x + (new_y * board_width);
+        // Not edge... blocked?
+        if((flags[level_id[offset]] & A_UNDER) != A_UNDER)
+          bl[i] = 1;
+        else
+          bl[i] = 0;
+      }
+      else
+      {
+        bl[i] = 1; // Edge is considered blocked
+      }
     }
-    else if(t2>0) send_robot_id(id,"thud",1);
+  }
+}
+
+int place_at_xy(World *mzx_world, int id, int color, int param, int x, int y)
+{
+  Board *src_board = mzx_world->current_board;
+  int board_width = src_board->board_width;
+  int offset = x + (y * board_width);
+  int new_id = src_board->level_id[offset];
+
+  // Okay, I'm really stabbing at behavior here.
+  // Wildcard param, use source but only if id matches and isn't
+  // greater than or equal to 122..
+  if(param == 256)
+  {
+    // The param must represent the char for this to happen,
+    // nothing else will give.
+    if((id_chars[new_id] != 255)  || (id_chars[id] != 255))
+      param = 0;
+    else
+      param = src_board->level_param[offset];
+  }
+
+  if(new_id == 122)
+  {
+    int new_param = src_board->level_param[offset];
+    clear_sensor_id(src_board, new_param);
+  }
+  else
+
+  if((new_id == 126) || (new_id == 125))
+  {
+    int new_param = src_board->level_param[offset];
+    clear_scroll_id(src_board, new_param);
+  }
+  else
+
+  if((new_id == 123) || (new_id == 124))
+  {
+    int new_param = src_board->level_param[offset];
+    clear_robot_id(src_board, new_param);
+  }
+  else
+
+  if(new_id == 127)
+    return 0; // Don't allow the player to be overwritten
+
+  if(param == 256)
+  {
+    param = src_board->level_param[offset];
+  }
+
+  id_place(mzx_world, x, y, id,
+   fix_color(color, src_board->level_color[offset]), param);
+  return 1;
+}
+
+int place_under_xy(Board *src_board, int id, int color, int param, int x,
+ int y)
+{
+  int board_width = src_board->board_width;
+  char *level_under_id = src_board->level_under_id;
+  char *level_under_color = src_board->level_under_color;
+  char *level_under_param = src_board->level_under_param;
+
+  // This is kinda a new addition, maybe not necessary
+  // Dest must be underable, and the source must not be
+  if(flags[id] & A_UNDER)
+  {
+    int offset = x + (y * board_width);
+    if(param == 256)
+      param = level_under_param[offset];
+
+    color = fix_color(color, level_under_color[offset]);
+    if(level_under_id[offset] == 122)
+      clear_sensor_id(src_board, level_under_param[offset]);
+
+    // Put it now.
+    level_under_id[offset] = id;
+    level_under_color[offset] = color;
+    level_under_param[offset] = param;
+
+    return 1;
+  }
+
+  return 0;
+}
+
+int place_dir_xy(World *mzx_world, int id, int color, int param, int x, int y,
+ int direction, Robot *cur_robot, int *_bl)
+{
+  Board *src_board = mzx_world->current_board;
+
+  // Check under
+  if(direction == 11)
+  {
+    return place_under_xy(src_board, id, color, param, x, y);
+  }
+  else
+  {
+    int new_x = x;
+    int new_y = y;
+    direction = parsedir(direction, x, y, cur_robot->walk_dir);
+
+    if((direction >= 1) && (direction <= 4))
+    {
+      if(!move_dir(src_board, &new_x, &new_y, direction - 1))
+      {
+        return place_at_xy(mzx_world, id, color, param, new_x, new_y);
+      }
+    }
+  }
+}
+
+int place_player_xy(World *mzx_world, int x, int y)
+{
+  if((mzx_world->player_x != x) || (mzx_world->player_y != y))
+  {
+    Board *src_board = mzx_world->current_board;
+    int offset = x + (y * src_board->board_width);
+    int did = src_board->level_id[offset];
+    int dparam = src_board->level_param[offset];
+
+    if((did == 123) || (did == 124))
+    {
+      clear_robot_id(src_board, dparam);
+    }
+    else
+
+    if((did == 125) || (did == 126))
+    {
+      clear_scroll_id(src_board, dparam);
+    }
+    else
+
+    if(did == 122)
+    {
+      step_sensor(mzx_world, dparam);
+    }
+
+    id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+    id_place(mzx_world, x, y, 127, 0, 0);
+    mzx_world->player_x = x;
+    mzx_world->player_y = y;
+
+    return 1;
+  }
+
+  return 0;
+}
+
+void send_at_xy(World *mzx_world, int id, int x, int y, char *label)
+{
+  Board *src_board = mzx_world->current_board;
+  int offset = x + (y * src_board->board_width);
+  int d_id = src_board->level_id[offset];
+
+  if((d_id == 123) || (d_id == 124))
+  {
+    char label_buffer[128];
+    tr_msg(mzx_world, label, id, label_buffer);
+    send_robot_id(mzx_world, src_board->level_param[offset], label_buffer, 0);
+  }
+}
+
+int get_random_range(int min_value, int max_value)
+{
+  int result;
+  int difference;
+
+  if(min_value == max_value)
+  {
+    result = min_value;
+  }
+  else
+  {
+    if(max_value > min_value)
+      difference = max_value - min_value;
+    else
+      difference = min_value - max_value;
+
+    if(difference)
+      result = (rand() % (difference + 1)) + min_value;
+    else
+      result = rand();
+  }
+
+  return result;
+}
+
+int send_self_label_tr(World *mzx_world, char *param, int id)
+{
+  char label_buffer[128];
+  tr_msg(mzx_world, param, id, label_buffer);
+
+  if(send_robot_id(mzx_world, id, label_buffer, 1))
+    return 0;
+  else
+    return 1;
+}
+
+void split_colors(int color, int *fg, int *bg)
+{
+  if(color & 256)
+  {
+    color ^= 256;
+    if(color == 32)
+    {
+      *fg = 16;
+      *bg = 16;
+    }
+    else
+
+    if(color < 16)
+    {
+      *bg = 16;
+      *fg = color;
+    }
     else
     {
-      //Update x/y
-      switch(robots[id].walk_dir)
+      *bg = color - 16;
+      *fg = 16;
+    }
+  }
+  else
+  {
+    *bg = color >> 4;
+    *fg = color & 0x0F;
+  }
+}
+
+int check_at_xy(Board *src_board, int id, int fg, int bg, int param,
+ int offset)
+{
+  int did = src_board->level_id[offset];
+  int dcolor = src_board->level_color[offset];
+  int dparam = src_board->level_param[offset];
+
+  // Whirlpool matches down
+  if((did > 67) && (did <= 70))
+    did = 67;
+
+  if((did == id) && (((dcolor & 0x0F) == fg) || (fg == 16)) &&
+   (((dcolor >> 4) == bg) || (bg == 16)) &&
+   ((dparam == param) || (param == 256)))
+  {
+    return 1;
+  }
+
+  return 0;
+}
+
+int check_under_xy(Board *src_board, int id, int fg, int bg, int param,
+ int offset)
+{
+  int did = src_board->level_under_id[offset];
+  int dcolor = src_board->level_under_color[offset];
+  int dparam = src_board->level_under_param[offset];
+
+  if((did == id) && (((dcolor & 0x0F) == fg) || (fg == 16)) &&
+   (((dcolor >> 4) == bg) || (bg == 16)) &&
+   ((dparam == param) || (param == 256)))
+    return 1;
+
+  return 0;
+}
+
+int check_dir_xy(World *mzx_world, int id, int color, int param,
+ int x, int y, int direction, Robot *cur_robot, int *_bl)
+{
+  Board *src_board = mzx_world->current_board;
+  int board_width = src_board->board_width;
+  int fg, bg;
+  int offset;
+
+  split_colors(color, &fg, &bg);
+
+  // Check under
+  if(direction == 11)
+  {
+    offset = x + (y * board_width);
+    if(check_under_xy(src_board, id, fg, bg, param, offset))
+      return 1;
+
+    return 0;
+  }
+  else
+  {
+    int new_x = x;
+    int new_y = y;
+    direction = parsedir(direction, x, y, cur_robot->walk_dir);
+
+    if(!move_dir(src_board, &new_x, &new_y, direction - 1))
+    {
+      offset = new_x + (new_y * board_width);
+
+      if(check_at_xy(src_board, id, fg, bg, param, offset))
+        return 1;
+    }
+    return 0;
+  }
+}
+
+void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
+ int dest_x, int dest_y)
+{
+  Board *src_board = mzx_world->current_board;
+  int board_width = src_board->board_width;
+  int src_offset = src_x + (src_y * board_width);
+  int dest_offset = dest_x + (dest_y * board_width);
+  int src_id = src_board->level_id[src_offset];
+
+  // Cannot copy from player to player
+  if(src_id != 127)
+  {
+    int src_param = src_board->level_param[src_offset];
+
+    // Duplicate robot
+    if((src_id == 123) || (src_id == 124))
+    {
+      Robot *src_robot = src_board->robot_list[src_param];
+      src_param = duplicate_robot(src_board, src_robot,
+       dest_x, dest_y);
+    }
+    else
+
+    // Duplicate scroll
+    if((src_id == 125) || (src_id == 126))
+    {
+      Scroll *src_scroll = src_board->scroll_list[src_param];
+      src_param = duplicate_scroll(src_board, src_scroll);
+    }
+    else
+
+    // Duplicate sensor
+    // Duplicate scroll
+    if(src_id == 122)
+    {
+      Sensor *src_sensor = src_board->sensor_list[src_param];
+      src_param = duplicate_sensor(src_board, src_sensor);
+    }
+
+    // Now perform the copy; this should perform any necessary
+    // deletions at the destination as well, and will also disallow
+    // overwriting the player.
+    if(src_param != -1)
+      place_at_xy(mzx_world, src_id, src_board->level_color[src_offset],
+       src_param, dest_x, dest_y);
+  }
+}
+
+void copy_board_to_board_buffer(Board *src_board, int x,
+ int y, int width, int height, char *dest_id, char *dest_param,
+ char *dest_color, char *dest_under_id, char *dest_under_param,
+ char *dest_under_color)
+{
+  int board_width = src_board->board_width;
+  int src_offset = x + (y * board_width);
+  int src_skip = board_width - width;
+  int dest_offset = 0;
+  char *level_id = src_board->level_id;
+  char *level_param = src_board->level_param;
+  char *level_color = src_board->level_color;
+  char *level_under_id = src_board->level_under_id;
+  char *level_under_param = src_board->level_under_param;
+  char *level_under_color = src_board->level_under_color;
+  int src_id, src_param;
+  int i, i2;
+
+  for(i = 0; i < height; i++, src_offset += src_skip)
+  {
+    for(i2 = 0; i2 < width; i2++, src_offset++,
+     dest_offset++)
+    {
+      src_id = level_id[src_offset];
+      src_param = level_param[src_offset];
+      // Duplicate robot
+      if((src_id == 123) || (src_id == 124))
       {
-        case 1: y--; break;
-        case 2: y++; break;
-        case 3: x++; break;
-        case 4: x--; break;
+        Robot *src_robot = src_board->robot_list[src_param];
+        src_param = duplicate_robot(src_board, src_robot,
+         0, 0);
+      }
+      else
+
+      // Duplicate scroll
+      if((src_id == 125) || (src_id == 126))
+      {
+        Scroll *src_scroll = src_board->scroll_list[src_param];
+        src_param = duplicate_scroll(src_board, src_scroll);
+      }
+      else
+
+      // Duplicate sensor
+      // Duplicate scroll
+      if(src_id == 122)
+      {
+        Sensor *src_sensor = src_board->sensor_list[src_param];
+        src_param = duplicate_sensor(src_board, src_sensor);
+      }
+
+      // Now perform the copy to the buffer sections
+      if(src_param != -1)
+      {
+        dest_id[dest_offset] = src_id;
+        dest_param[dest_offset] = src_param;
+        dest_color[dest_offset] = level_color[src_offset];
+        dest_under_id[dest_offset] = level_under_id[src_offset];
+        dest_under_param[dest_offset] = level_under_param[src_offset];
+        dest_under_color[dest_offset] = level_under_color[src_offset];
       }
     }
   }
-  if(robots[id].cur_prog_line==0)
+}
+
+void copy_board_buffer_to_board(Board *src_board, int x, int y,
+ int width, int height, char *src_id, char *src_param,
+ char *src_color, char *src_under_id, char *src_under_param,
+ char *src_under_color)
+{
+  int board_width = src_board->board_width;
+  int dest_offset = x + (y * board_width);
+  int dest_skip = board_width - width;
+  int src_offset = 0;
+  char *level_id = src_board->level_id;
+  char *level_param = src_board->level_param;
+  char *level_color = src_board->level_color;
+  char *level_under_id = src_board->level_under_id;
+  char *level_under_param = src_board->level_under_param;
+  char *level_under_color = src_board->level_under_color;
+  int src_id_cur, dest_id, dest_param;
+  int i, i2;
+
+  for(i = 0; i < height; i++, dest_offset += dest_skip)
   {
-    robots[id].status=1;
-    goto breaker;//Inactive
+    for(i2 = 0; i2 < width; i2++, src_offset++,
+     dest_offset++)
+    {
+      dest_id = level_id[dest_offset];
+      if(dest_id != 127)
+      {
+        dest_param = level_param[dest_offset];
+
+        if(dest_id == 122)
+        {
+          clear_sensor_id(src_board, dest_param);
+        }
+        else
+
+        if((dest_id == 126) || (dest_id == 125))
+        {
+          clear_scroll_id(src_board, dest_param);
+        }
+        else
+
+        if((dest_id == 123) || (dest_id == 124))
+        {
+          clear_robot_id(src_board, dest_param);
+        }
+
+        // Now perform the copy from the buffer sections
+        src_id_cur = src_id[src_offset];
+        if((src_id_cur == 123) || (src_id_cur == 124))
+        {
+          // Fix robot x/y
+          (src_board->robot_list[src_param[src_offset]])->xpos =
+           x + i2;
+          (src_board->robot_list[src_param[src_offset]])->xpos =
+           y + i;
+        }
+
+        if(src_id_cur != 127)
+        {
+          level_id[dest_offset] = src_id_cur;
+          level_param[dest_offset] = src_param[src_offset];
+          level_color[dest_offset] = src_color[src_offset];
+          level_under_id[dest_offset] = src_under_id[src_offset];
+          level_under_param[dest_offset] = src_under_param[src_offset];
+          level_under_color[dest_offset] = src_under_color[src_offset];
+        }
+      }
+    }
   }
-  redone:
-  //Get program location
-  prepare_robot_mem(id==NUM_ROBOTS);
-  robot=&robot_mem[robots[id].program_location];
-  //NOW quit if inactive (had to do walk first)
-  if(robot[robots[id].cur_prog_line]==0)
+}
+
+void copy_layer_to_buffer(int x, int y, int width, int height,
+ char *src_char, char *src_color,  char *dest_char,
+ char *dest_color, int layer_width)
+{
+  int src_offset = x + (y * layer_width);
+  int src_skip = layer_width - width;
+  int dest_offset = 0;
+  int i, i2;
+
+  for(i = 0; i < height; i++, src_offset += src_skip)
   {
-    robots[id].status=1;
+    for(i2 = 0; i2 < width; i2++, src_offset++,
+     dest_offset++)
+    {
+      // Now perform the copy to the buffer sections
+      dest_char[dest_offset] = src_char[src_offset];
+      dest_color[dest_offset] = src_color[src_offset];
+    }
+  }
+}
+
+void copy_buffer_to_layer(int x, int y, int width,
+ int height, char *src_char, char *src_color,
+ char *dest_char, char *dest_color, int layer_width)
+{
+  int dest_offset = x + (y * layer_width);
+  int dest_skip = layer_width - width;
+  int src_offset = 0;
+  int i, i2;
+
+  for(i = 0; i < height; i++, dest_offset += dest_skip)
+  {
+    for(i2 = 0; i2 < width; i2++, src_offset++,
+     dest_offset++)
+    {
+      // Now perform the copy to the buffer sections
+      dest_char[dest_offset] = src_char[src_offset];
+      dest_color[dest_offset] = src_color[src_offset];
+    }
+  }
+}
+
+void copy_layer_to_layer(int src_x, int src_y,
+ int dest_x, int dest_y, int width, int height, char *src_char,
+ char *src_color, char *dest_char, char *dest_color, int src_width,
+ int dest_width)
+{
+  int dest_offset = dest_x + (dest_y * dest_width);
+  int dest_skip = dest_width - width;
+  int src_offset = src_x + (src_y * src_width);
+  int src_skip = src_width - width;
+  int src_char_cur;
+  int i, i2;
+
+  for(i = 0; i < height; i++, dest_offset += dest_skip,
+   src_offset += src_skip)
+  {
+    for(i2 = 0; i2 < width; i2++, src_offset++,
+     dest_offset++)
+    {
+      src_char_cur = src_char[src_offset];
+      if(src_char_cur != 32)
+      {
+        // Now perform the copy, if src != 32
+        dest_char[dest_offset] = src_char_cur;
+        dest_color[dest_offset] = src_color[src_offset];
+      }
+    }
+  }
+}
+
+void copy_board_to_layer(Board *src_board, int x, int y,
+ int width, int height, char *dest_char, char *dest_color,
+ int dest_width)
+{
+  int board_width = src_board->board_width;
+  int src_offset = x + (y * board_width);
+  int src_skip = board_width - width;
+  int dest_skip = dest_width - width;
+  int dest_offset = 0;
+  char *level_id = src_board->level_id;
+  char *level_param = src_board->level_param;
+  char *level_color = src_board->level_color;
+  int src_char;
+  int i, i2;
+
+  for(i = 0; i < height; i++, src_offset += src_skip, dest_offset += dest_skip)
+  {
+    for(i2 = 0; i2 < width; i2++, src_offset++,
+     dest_offset++)
+    {
+      src_char = get_id_char(src_board, src_offset);
+      if(src_char != 32)
+      {
+        dest_char[dest_offset] = get_id_char(src_board, src_offset);
+        dest_color[dest_offset] = get_id_color(src_board, src_offset);
+      }
+    }
+  }
+}
+
+// Make sure convert ID is a custom_*, otherwise this could get ugly
+
+void copy_layer_to_board(Board *src_board, int x, int y,
+ int width, int height, char *src_char, char *src_color,
+ int src_width, int convert_id)
+{
+  int board_width = src_board->board_width;
+  int dest_offset = x + (y * board_width);
+  int dest_skip = src_board->board_width - width;
+  int src_skip = src_width - width;
+  int src_offset = 0;
+  char *level_id = src_board->level_id;
+  char *level_param = src_board->level_param;
+  char *level_color = src_board->level_color;
+  int src_char_cur;
+  int i, i2;
+
+  for(i = 0; i < height; i++, src_offset += src_skip,
+   dest_offset += dest_skip)
+  {
+    for(i2 = 0; i2 < width; i2++, src_offset++,
+     dest_offset++)
+    {
+      src_char_cur = src_char[src_offset];
+      if(src_char_cur != 32)
+      {
+        level_id[dest_offset] = convert_id;
+        level_param[dest_offset] = src_char_cur;
+        level_color[dest_offset] = src_color[src_offset];
+      }
+    }
+  }
+}
+
+void clear_layer_block(int src_x, int src_y, int width,
+ int height, char *dest_char, char *dest_color, int dest_width)
+{
+  int dest_offset = src_x + (src_y * dest_width);
+  int dest_skip = dest_width - width;
+  int i, i2;
+
+  for(i = 0; i < height; i++, dest_offset += dest_skip)
+  {
+    for(i2 = 0; i2 < width; i2++, dest_offset++)
+    {
+      // Now perform the copy to the buffer sections
+      dest_char[dest_offset] = 32;
+      dest_color[dest_offset] = 7;
+    }
+  }
+}
+
+void clear_board_block(Board *src_board, int x, int y,
+ int width, int height)
+{
+  int board_width = src_board->board_width;
+  int dest_offset = x + (y * board_width);
+  int dest_skip = board_width - width;
+  int src_offset = 0;
+  char *level_id = src_board->level_id;
+  char *level_param = src_board->level_param;
+  char *level_color = src_board->level_color;
+  char *level_under_id = src_board->level_under_id;
+  char *level_under_param = src_board->level_under_param;
+  char *level_under_color = src_board->level_under_color;
+  int src_id_cur, dest_id, dest_param;
+  int i, i2;
+
+  for(i = 0; i < height; i++, dest_offset += dest_skip)
+  {
+    for(i2 = 0; i2 < width; i2++, src_offset++,
+     dest_offset++)
+    {
+      dest_id = level_id[dest_offset];
+      if(dest_id != 127)
+      {
+        dest_param = level_param[dest_offset];
+
+        if(dest_id == 122)
+        {
+          clear_sensor_id(src_board, dest_param);
+        }
+        else
+
+        if((dest_id == 126) || (dest_id == 125))
+        {
+          clear_scroll_id(src_board, dest_param);
+        }
+        else
+
+        if((dest_id == 123) || (dest_id == 124))
+        {
+          clear_robot_id(src_board, dest_param);
+        }
+
+        level_id[dest_offset] = 0;
+        level_param[dest_offset] = 0;
+        level_color[dest_offset] = 7;
+        level_under_id[dest_offset] = 0;
+        level_under_param[dest_offset] = 0;
+        level_under_color[dest_offset] = 7;
+      }
+    }
+  }
+}
+
+void setup_overlay(Board *src_board, int mode)
+{
+  if(!mode && src_board->overlay_mode)
+  {
+    // Deallocate overlay
+    free(src_board->overlay);
+    free(src_board->overlay_color);
+  }
+
+  if(!src_board->overlay_mode && mode)
+  {
+    int board_size = src_board->board_width * src_board->board_height;
+    // Allocate an overlay
+    src_board->overlay = (char *)malloc(board_size);
+    src_board->overlay_color = (char *)malloc(board_size);
+    memset(src_board->overlay, 32, board_size);
+    memset(src_board->overlay_color, 7, board_size);
+  }
+  src_board->overlay_mode = mode;
+}
+
+void replace_player(World *mzx_world)
+{
+  Board *src_board = mzx_world->current_board;
+  char *level_id = src_board->level_id;
+  int board_width = src_board->board_width;
+  int board_height = src_board->board_height;
+  int dx, dy, offset;
+  int ldone = 0;
+
+  for(dy = 0, offset = 0; (dy < board_height) && (!ldone); dy++)
+  {
+    for(dx = 0; dx < board_width; dx++, offset++)
+    {
+      if(A_UNDER & flags[level_id[offset]])
+      {
+        // Place the player here
+        mzx_world->player_x = dx;
+        mzx_world->player_y = dy;
+        id_place(mzx_world, mzx_world->player_x, mzx_world->player_y,
+         127, 0, 0);
+        ldone = 1;
+        break;
+      }
+    }
+  }
+}
+
+// Run a single robot through a single cycle.
+// If id is negative, only run it if status is 2
+void run_robot(World *mzx_world, int id, int x, int y)
+{
+  Board *src_board = mzx_world->current_board;
+  Robot *cur_robot = src_board->robot_list[id];
+  int i, fade = get_fade_status();
+  int cmd; // Command to run
+  int lines_run = 0; // For preventing infinite loops
+  int gotoed; // Set to 1 if we shouldn't advance cmd since we went to a lbl
+
+  int old_pos; // Old position to verify gotos DID something
+  // Whether blocked in a given direction (2 = OUR bullet)
+  int _bl[4] = { 0, 0, 0, 0 };
+  // New * "" command (changes Built_In_Messages to be sure to display the messages)
+  char *program;
+  char *cmd_ptr; // Points to current command
+  char done = 0; // Set to 1 on a finishing command
+  char update_blocked = 0; // Set to 1 to update the _bl[4] array
+  char first_cmd = 1; // It is the first cmd.
+  char *level_id = src_board->level_id;
+  char *level_param = src_board->level_param;
+  char *level_color = src_board->level_color;
+  char *level_under_id = src_board->level_under_id;
+  char *level_under_param = src_board->level_under_param;
+  char *level_under_color = src_board->level_under_color;
+  int board_width = src_board->board_width;
+  int board_height = src_board->board_height;
+
+  if((id < 0) && ((src_board->robot_list[-id])->status != 2))
+    return;
+
+  // Reset global prefixes
+  mzx_world->first_prefix = 0;
+  mzx_world->mid_prefix = 0;
+  mzx_world->last_prefix = 0;
+
+  if(id < 0)
+  {
+    id = -id;
+    cur_robot = src_board->robot_list[id];
+    cur_robot->xpos = x;
+    cur_robot->ypos = y;
+    cur_robot->cycle_count = 0;
+  }
+  else
+  {
+    int walk_dir = cur_robot->walk_dir;
+    // Reset x/y
+    cur_robot->xpos = x;
+    cur_robot->ypos = y;
+    // Update cycle count
+
+    cur_robot->cycle_count++;
+    if((cur_robot->cycle_count) < (cur_robot->robot_cycle))
+    {
+      cur_robot->status = 1;
+      return;
+    }
+
+    cur_robot->cycle_count = 0;
+
+    // Does program exist?
+    if(cur_robot->program_length < 3)
+    {
+      return; // (nope)
+    }
+    // Walk?
+    if((walk_dir >= 1) && (walk_dir <= 4))
+    {
+      int move_status = move(mzx_world, x, y, walk_dir - 1,
+       1 | 2 | 8 | 16 + (4 * cur_robot->can_lavawalk));
+
+      if(move_status == 3)
+      {
+        // Send to edge, if no response, then to thud.
+        if(send_robot_id(mzx_world, id, "edge", 1))
+          send_robot_id(mzx_world, id, "thud", 1);
+      }
+      else
+
+      if(move_status > 0)
+        send_robot_id(mzx_world, id, "thud", 1);
+
+      else
+      {
+        // Update x/y
+        switch(walk_dir)
+        {
+          case 1:
+            y--;
+            break;
+          case 2:
+            y++;
+            break;
+          case 3:
+            x++;
+            break;
+          case 4:
+            x--;
+            break;
+        }
+      }
+    }
+
+    if(cur_robot->cur_prog_line == 0)
+    {
+      cur_robot->status = 1;
+      goto breaker; // Inactive
+    }
+  }
+
+  // Get program location
+  program = cur_robot->program;
+
+  // NOW quit if inactive (had to do walk first)
+  if(cur_robot->cur_prog_line == 0)
+  {
+    cur_robot->status = 1;
     goto end_prog;
   }
-  //Figure blocked vars (accurate until robot program ends OR a put
-  //or change command is issued)
-  if(id<NUM_ROBOTS)
+
+  // Figure blocked vars (accurate until robot program ends OR a put
+  // or change command is issued)
+
+  calculate_blocked(mzx_world, x, y, id, _bl);
+
+  // Update player x/y if necessary
+  find_player(mzx_world);
+
+  // Main robot loop
+
+  do
   {
-    for(t1=0;t1<4;t1++)
+    gotoed = 0;
+    old_pos = cur_robot->cur_prog_line;
+
+    // Get ptr to command
+    cmd_ptr = program + old_pos + 1;
+
+    // Get command number
+    cmd = cmd_ptr[0];
+    // Act according to command
+
+    //printf("running cmd %d (id %d) at %d\n", cmd, id, old_pos);
+
+    switch(cmd)
     {
-      t4=x; t5=y;
-      if(!move_dir(t4,t5,t1))
+      case 0: // End
       {
-        //Not edge... blocked?
-        if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
+        if(first_cmd)
+          cur_robot->status = 1;
+        goto end_prog;
       }
-      else _bl[t1]=1;//Edge is considered blocked
-    }
-  }
-  if(level_id[player_x+player_y*max_bxsiz]!=127) find_player();
-  //Main robot loop
-do
-{
-  gotoed=0;
-  old_pos=robots[id].cur_prog_line;
-  //Get ptr to command
-  cmd_ptr=&robot[robots[id].cur_prog_line+1];
-  //Get command number
-  cmd=cmd_ptr[0];
-  //Act according to command
-  t10 = 0;
 
-  switch(cmd)
-  {
-    case 0://End
-      if(first_cmd) robots[id].status=1;
-      goto end_prog;
-    case 1://Die
-    case 80://Die item
-      die:
-      clear_robot(id);
-      if(id<NUM_ROBOTS)
+      case 1: // Die
       {
-        id_remove_top(x,y);
-        if(cmd==80)
+        clear_robot_id(src_board, id);
+        if(id)
         {
-          id_remove_top(player_x,player_y);
-          player_x=x;
-          player_y=y;
-          id_place(x,y,127,0,0);
+          id_remove_top(mzx_world, x, y);
         }
-      }
-      exit_func();
-      return;
-    case 2://Wait
-      t1=(unsigned char)parse_param(&cmd_ptr[1],id);
-      if(t1==robots[id].pos_within_line) break;
-      robots[id].pos_within_line++;
-      if(first_cmd) robots[id].status=1;
-      goto breaker;
-
-    case 3://Cycle
-
-      robots[id].robot_cycle=(unsigned char)parse_param(&cmd_ptr[1],id);
-      done=1;
-      break;
-
-    case 4://Go dir num
-      //get num
-      t1=(unsigned char)parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      //Inc. pos. or break
-      if(t1==robots[id].pos_within_line) break;
-      robots[id].pos_within_line++;
-    case 68://Go dir label
-      if(id==NUM_ROBOTS) break;
-      //Parse dir
-      t1=parsedir(cmd_ptr[2],x,y,robots[id].walk_dir);
-      t1--;
-      if((t1<0)||(t1>3)) break;
-      t2=_move(x,y,t1,1|2|8|16|4*robots[id].can_lavawalk);
-      if((t2>0)&&(cmd==68))
-      {
-        //blocked- send to label
-        send_robot_id(id,tr_msg(&cmd_ptr[next_param(cmd_ptr,1)+1],id),1);
-        gotoed=1;
-        break;
-      }
-      move_dir(x,y,t1);
-      if(cmd==68)
-      {
-        //not blocked- make sure only moves once!
-        done=1;
-        break;
-      }
-      goto breaker;
-    case 5://Walk dir
-
-      if(id==NUM_ROBOTS) break;
-      t1=parsedir(cmd_ptr[2],x,y,robots[id].walk_dir);
-      if((t1<1)||(t1>4))
-      {
-        robots[id].walk_dir=0;
-        break;
-      }
-      robots[id].walk_dir=t1;
-      break;
-
-    case 6://Become color thing param
-      if(id==NUM_ROBOTS) goto die;
-      t1=x+y*max_bxsiz;
-      //Color-
-      t2=level_color[t1];
-      t3=fix_color(parse_param(&cmd_ptr[1],id),t2);
-      level_color[t1]=t3;
-      //Point to thing...
-      t4=next_param(cmd_ptr,1);
-      //Thing-
-      level_id[t1]=t6=parse_param(&cmd_ptr[t4],id);
-      //Param- Only change if not becoming a robot
-      if((t6!=123)&&(t6!=124))
-      {
-        level_param[t1]=(unsigned char)parse_param(&cmd_ptr[t4+3],id);
-        clear_robot(id);
-        //If became a scroll, sensor, or sign...
-        if((t6==122)||(t6==125)||(t6==126)||(t6==127))
-          id_remove_top(x,y);
-        //Delete "under"? (if became another type of "under")
-        if(flags[t6]&A_UNDER)
-        {
-          //Became an under, so delete under.
-          level_under_param[t1]=level_under_id[t1]=0;
-          level_under_color[t1]=7;
-        }
-        exit_func();
         return;
       }
-      //Became a robot. Whoopi.
-      break;
-    case 7://Char
-      robots[id].robot_char=(unsigned char)parse_param(&cmd_ptr[1],id);
-      break;
-    case 8://Color
-      if(id==NUM_ROBOTS) break;
-      level_color[x+y*max_bxsiz]=fix_color(parse_param(&cmd_ptr[1],id),
-                                           level_color[x+y*max_bxsiz]);
-      break;
-    case 9://Gotoxy
-      if(id==NUM_ROBOTS) break;
-      done=1;
-      t1=parse_param(&cmd_ptr[1],id);
-      t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      prefix_xy(t3,t3,t1,t2,t3,t3,x,y);
-      if((t1==x)&&(t2==y)) break;
-      //delete at x y
-      t3=level_id[t1+t2*max_bxsiz];
-      t4=level_param[t1+t2*max_bxsiz];
-      if(t3==122) clear_sensor(t4);
-      if((t3==126)||(t3==125)) clear_scroll(t4);
-      if((t3==123)||(t3==124))
+
+      case 80: // Die item
       {
-        clear_robot(t4);
-        robot=&robot_mem[robots[id].program_location];
-        cmd_ptr=&robot[robots[id].cur_prog_line+1];
-      }
-      if(t3==127) break;//Abort jump if player there
-      //move
-      id_place(t1,t2,level_id[x+y*max_bxsiz],level_color[x+y*max_bxsiz],id);
-      //remove
-      id_remove_top(x,y);
-      break;
-    case 10://set c #
-    case 11://inc c #
-    case 12://dec c #
-      unsigned char far *temp_ptr;
-      tr_msg(&cmd_ptr[2], id);
-      tr_msg(&cmd_ptr[next_param(cmd_ptr,1)], id, ibuff2);
-      temp_ptr = ibuff2;
-      if(string_type(ibuff) == 1)
-      {
-        char temp_str[64];
-        char far *tp_2 = ibuff2 + 1;
-        char far *cp = tp_2;
-        // set string
-        if(*ibuff2 == 0)
+        clear_robot_id(src_board, id);
+        if(id)
         {
-          int val = *(ibuff2 + 1);
-          // dec string by chars
-          if(cmd == 12)
+          id_remove_top(mzx_world, x, y);
+          place_player_xy(mzx_world, x, y);
+        }
+        return;
+      }
+
+      case 2: // Wait
+      {
+        int wait_time = parse_param(mzx_world, cmd_ptr + 1, id) & 0xFF;
+        if(wait_time == cur_robot->pos_within_line)
+          break;
+        cur_robot->pos_within_line++;
+        if(first_cmd)
+          cur_robot->status = 1;
+
+        goto breaker;
+      }
+
+      case 3: // Cycle
+      {
+        cur_robot->robot_cycle = parse_param(mzx_world, cmd_ptr + 1,id);
+        done = 1;
+        break;
+      }
+
+      case 4: // Go dir num
+      {
+        if(id)
+        {
+          int direction = parsedir(cmd_ptr[2], x, y, cur_robot->walk_dir);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int num = parse_param(mzx_world, p2, id);
+          // Inc. pos. or break
+          if(num != cur_robot->pos_within_line)
           {
-            get_string(ibuff, temp_str);
-            int len = str_len(temp_str);
-            if(len >= val)
+            cur_robot->pos_within_line++;
             {
-              temp_str[len - val] = '\0';
-              set_string(ibuff, temp_str);
+              // Parse dir
+              direction--;
+              if((direction >= 0) && (direction <= 3))
+              {
+                int move_status = move(mzx_world, x, y, direction,
+                 1 | 2 | 8 | 16 | 4 * cur_robot->can_lavawalk);
+                if(!move_status)
+                {
+                  move_dir(src_board, &x, &y, direction);
+                }
+              }
+            }
+            goto breaker;
+          }
+        }
+        break;
+      }
+
+      case 68: // Go dir label
+      {
+        if(id)
+        {
+          // Parse dir
+          int direction = parsedir(cmd_ptr[2], x, y, cur_robot->walk_dir);
+          direction--;
+          if((direction >= 0) && (direction <= 3))
+          {
+            int move_status = move(mzx_world, x, y, direction,
+             1 | 2 | 8 | 16 | 4 * cur_robot->can_lavawalk);
+            if(move_status)
+            {
+              // blocked- send to label
+              char *p2 = next_param_pos(cmd_ptr + 1);
+              gotoed = send_self_label_tr(mzx_world,  p2 + 1, id);
+            }
+            else
+            {
+              move_dir(src_board, &x, &y, direction);
+              // not blocked- make sure only moves once!
+              done = 1;
             }
           }
-          if(cmd == 10)
+        }
+        break;
+      }
+
+      case 5: // Walk dir
+      {
+        if(id)
+        {
+          int direction = parsedir(cmd_ptr[2], x, y, cur_robot->walk_dir);
+          if((direction < 1) || (direction > 4))
           {
-            // set string to (integer representation)
-            set_str_int(ibuff, val);
+            cur_robot->walk_dir = 0;
+          }
+          else
+          {
+            cur_robot->walk_dir = direction;
+          }
+        }
+        break;
+      }
+
+      case 6: // Become color thing param
+      {
+        if(id)
+        {
+          int offset = x + (y * board_width);
+          int color = parse_param(mzx_world, cmd_ptr + 1, id);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int new_id = parse_param(mzx_world, p2, id);
+          int param = parse_param(mzx_world, p2 + 3, id);
+          color = fix_color(color, level_color[offset]);
+          level_color[offset] = color;
+          level_id[offset] = new_id;
+
+          // Param- Only change if not becoming a robot
+          if((new_id != 123) && (new_id != 124))
+          {
+            level_param[offset] = param;
+            clear_robot_id(src_board, id);
+            // If became a scroll, sensor, or sign...
+            if((new_id >= 122) && (new_id <= 127))
+              id_remove_top(mzx_world, x, y);
+            // Delete "under"? (if became another type of "under")
+            if(flags[new_id] & A_UNDER)
+            {
+              // Became an under, so delete under.
+              src_board->level_under_param[offset] = 0;
+              src_board->level_under_id[offset] = 0;
+              src_board->level_under_color[offset] = 7;
+            }
+          }
+          return;
+        }
+
+        // Became a robot.
+        break;
+      }
+
+      case 7: // Char
+      {
+        cur_robot->robot_char = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 8: // Color
+      {
+        if(id)
+        {
+          int offset = x + (y * board_width);
+          level_color[offset] =
+           fix_color(parse_param(mzx_world, cmd_ptr + 1, id), level_color[offset]);
+        }
+        break;
+      }
+
+      case 9: // Gotoxy
+      {
+        if(id)
+        {
+          int new_x = parse_param(mzx_world, cmd_ptr + 1, id);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int new_y = parse_param(mzx_world, p2, id);
+          prefix_mid_xy(mzx_world, &new_x, &new_y, x, y);
+
+          if((new_x != x) || (new_y != y))
+          {
+            // delete at x y
+            int offset = x + (y * board_width);
+            int new_id = level_id[offset];
+            int param = level_param[offset];
+            int color = level_color[offset];
+            if(place_at_xy(mzx_world, new_id, color, param, new_x, new_y))
+              id_remove_top(mzx_world, x, y);
+            done = 1;
+          }
+        }
+        break;
+      }
+
+      case 10: // set counter #
+      {
+        char *dest_string = cmd_ptr + 2;
+        char *src_string = next_param_pos(cmd_ptr + 1);
+        char src_buffer[128];
+        char dest_buffer[128];
+        tr_msg(mzx_world, dest_string, id, dest_buffer);
+
+        // Setting a string
+        if(is_string(dest_buffer))
+        {
+          // Is it a non-immediate
+          if(*src_string)
+          {
+            // Translate into src buffer
+            tr_msg(mzx_world, src_string + 1, id, src_buffer);
+
+            if(is_string(src_buffer))
+            {
+              // Is it another string?
+              get_string(mzx_world, src_buffer, id, src_buffer);
+            }
+          }
+          else
+          {
+            // Set it to immediate representation
+            sprintf(src_buffer, "%d", parse_param(mzx_world, src_string, id));
+          }
+          set_string(mzx_world, dest_buffer, src_buffer, id);
+        }
+        else
+        {
+          // Set to counter
+          int value;
+          mzx_world->special_counter_return = NONE;
+          value = parse_param(mzx_world, src_string, id);
+          if(mzx_world->special_counter_return != NONE)
+          {
+            gotoed = set_counter_special(mzx_world,
+             mzx_world->special_counter_return, dest_buffer, value, id);
+
+            // Swapped? Get out of here
+            if(mzx_world->swapped)
+              return;
+
+            program = cur_robot->program;
+            cmd_ptr = program + cur_robot->cur_prog_line;
+          }
+          else
+          {
+            set_counter(mzx_world, dest_buffer, value, id);
+          }
+        }
+        break;
+      }
+
+      case 11: // inc counter #
+      {
+        char *dest_string = cmd_ptr + 2;
+        char *src_string = next_param_pos(cmd_ptr + 1);
+        char src_buffer[128];
+        char dest_buffer[128];
+        tr_msg(mzx_world, dest_string, id, dest_buffer);
+
+        // Incrementing a string
+        if(is_string(dest_buffer))
+        {
+          // Must be a non-immediate
+          if(*src_string)
+          {
+            // Translate into src buffer
+            tr_msg(mzx_world, src_string + 1, id, src_buffer);
+
+            if(is_string(src_buffer))
+            {
+              // Is it another string? Grab it
+              get_string(mzx_world, src_buffer, id, src_buffer);
+            }
+            // Set it
+            inc_string(mzx_world, dest_buffer, src_buffer, id);
           }
         }
         else
         {
-          if(cmd != 12)
-          {
-            unsigned char far *tp_2 = temp_ptr + 1;
-            if(!str_cmp(tp_2, "INPUT"))
-            {
-              cp = input_string;
-            }  
-            if(!str_cmp(tp_2, "BOARD_SCAN"))
-            {
-              int bpos = (get_counter("BOARD_Y") * max_bxsiz) + get_counter("BOARD_X");
-              int i;
-              char c_char;
-              for(i = 0; i < COUNTER_NAME_SIZE; i++)
-              {
-                c_char = get_id_char(bpos);
-                if(c_char == '*')
-                {
-                  temp_str[i] = 0;
-                  break;
-                }
-                temp_str[i] = c_char;
-                bpos++;
-              }
-              temp_str[i + 1] = 0;
-              cp = temp_str;
-            }
-            if(!str_cmp(tp_2, "BOARD_NAME"))
-            {
-              cp = board_list + (curr_board * BOARD_NAME_SIZE);
-            }
-            if(!str_cmp(tp_2, "ROBOT_NAME"))
-            {
-              cp = robots[id].robot_name;
-            }
+          // Set to counter
+          int value = parse_param(mzx_world, src_string, id);
+          inc_counter(mzx_world, dest_buffer, value, id);
+        }
+        break;
+      }
 
-            if(!str_cmp(tp_2, "MOD_NAME"))
+      case 12: // dec counter #
+      {
+        char *dest_string = cmd_ptr + 2;
+        char *src_string = next_param_pos(cmd_ptr + 1);
+        char src_buffer[128];
+        char dest_buffer[128];
+        tr_msg(mzx_world, dest_string, id, dest_buffer);
+        int value = parse_param(mzx_world, src_string, id);
+
+        // Decrementing a string
+        if(is_string(dest_buffer))
+        {
+          // Set it to immediate representation
+          dec_string_int(mzx_world, dest_buffer, value, id);
+        }
+        else
+        {
+          // Set to counter
+          dec_counter(mzx_world, dest_buffer, value, id);
+        }
+        break;
+      }
+
+      case 16: // if c?n l
+      {
+        int difference = 0;
+        char *dest_string = cmd_ptr + 2;
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        char *src_string = p2 + 3;
+        int comparison = parse_param(mzx_world, p2, id);
+        char src_buffer[128];
+        char dest_buffer[128];
+        int success = 0;
+
+        if(is_string(dest_string))
+        {
+          tr_msg(mzx_world, dest_string, id, dest_buffer);
+          // Get a pointer to the dest string
+          get_string(mzx_world, dest_buffer, id, dest_buffer);
+          // Is it immediate?
+          if(*src_string)
+          {
+            tr_msg(mzx_world, src_string + 1, id, src_buffer);
+            if(is_string(src_buffer))
             {
-              if(*mod_playing == 0)
-              {
-                cp = "(no module)";
-              }
-              else
-              {
-                cp = mod_playing;
-              }
+              get_string(mzx_world, src_buffer, id, src_buffer);
             }
-            if(!strn_cmp(tp_2, "FREAD", 5) && input_file)
+          }
+          else
+          {
+            sprintf(src_buffer, "%d", parse_param(mzx_world, src_string, id));
+          }
+
+          difference = strcasecmp(dest_buffer, src_buffer);
+        }
+        else
+        {
+          int dest_value = parse_param(mzx_world, cmd_ptr + 1, id);
+          int src_value = parse_param(mzx_world, src_string, id);
+          difference = dest_value - src_value;
+        }
+
+        switch(comparison)
+        {
+          case 0:
+          {
+            if(!difference)
+              success = 1;
+            break;
+          }
+
+          case 1:
+          {
+            if(difference < 0)
+              success = 1;
+            break;
+          }
+
+          case 2:
+          {
+            if(difference > 0)
+              success = 1;
+            break;
+          }
+
+          case 3:
+          {
+            if(difference >= 0)
+              success = 1;
+            break;
+          }
+
+          case 4:
+          {
+            if(difference <= 0)
+              success = 1;
+            break;
+          }
+
+          case 5:
+          {
+            if(difference)
+              success = 1;
+            break;
+          }
+        }
+
+        if(success)
+        {
+          char *p3 = next_param_pos(p2 + 3);
+          gotoed = send_self_label_tr(mzx_world,  p3 + 1, id);
+        }
+
+        break;
+      }
+
+      case 18: // if condition label
+      case 19: // if not cond. label
+      {
+        int condition = parse_param(mzx_world, cmd_ptr + 1, id);
+        int direction = condition >> 8;
+        int success = 0;
+        condition &= 0xFF;
+        direction = parsedir(direction, x, y, cur_robot->walk_dir);
+
+        switch(condition)
+        {
+          case 0: // Walking dir
+          {
+            if(direction < 5)
             {
-              // Read string in from the read file
-              unsigned int count = 65535;
-              if(tp_2[5] != '\0')
+              if(cur_robot->walk_dir == direction)
+                success = 1;
+              break;
+            }
+            else
+
+            if(direction == 14)
+            {
+              if(cur_robot->walk_dir == 0)
+                success = 1;
+            }
+            else
+
+            // assumed anydir
+            if(cur_robot->walk_dir != 0)
+              success = 1;
+            break;
+          }
+
+          case 1: // swimming
+          {
+            if(id)
+            {
+              int offset = x + (y * board_width);
+              int under = level_under_id[offset];
+
+              if((under > 19) && (under < 25))
+                success = 1;
+            }
+            break;
+          }
+
+          case 2: // firewalking
+          {
+            if(id)
+            {
+              int offset = x + (y * board_width);
+              int under = level_under_id[offset];
+
+              if((under == 26) || (under == 63))
+                success = 1;
+            }
+            break;
+          }
+
+          case 3: // touching dir
+          {
+            if(id)
+            {
+              int new_x;
+              int new_y;
+
+              if((direction >= 1) && (direction <= 4))
               {
-                // Read a fixed amount
-                count = strtol(tp_2 + 5, NULL, 10);
-              }
-              if(count > 63)
-              {
-                count = 65535;
-              }
-              int i, rval;
-              for(i = 0; i < count; i++)
-              {
-                rval = fgetc(input_file);
-                if((rval == EOF) || ((rval == '*') && (count == 65535)))
+                // Is player in dir t2?
+                new_x = x;
+                new_y = y;
+                if(!move_dir(src_board, &new_x, &new_y, direction - 1))
                 {
-                  temp_str[i] = 0;
-                  break;
+                  if((mzx_world->player_x == new_x) &&
+                   (mzx_world->player_y == new_y))
+                    success = 1;
                 }
-                else
-                {
-                  temp_str[i] = (char)rval;
-                }                
-              }
-              temp_str[i] = '\0';
-              cp = temp_str;
-            }
-            if(!strn_cmp(tp_2, "FWRITE", 6) && output_file)
-            {
-              // Write string in to write file
-              unsigned int count = 65535;
-              if(tp_2[6] != '\0')
-              {
-                // Read a fixed amount
-                count = strtol(tp_2 + 6, NULL, 10);
-              }
-              if(count > 63)
-              {
-                get_string(ibuff, temp_str);
-                fprintf(output_file, "%s*", temp_str);
               }
               else
               {
                 int i;
-                get_string(ibuff, temp_str);
-                for(i = 0; i < count; i++)
+                // either anydir or nodir
+                // is player touching at all?
+                for(i = 0; i < 4; i++)
                 {
-                  fputc(temp_str[i], output_file);
+                  // try all dirs
+                  new_x = x;
+                  new_y = y;
+                  if(!move_dir(src_board, &new_x, &new_y, i))
+                  {
+                    if((mzx_world->player_x == new_x) &&
+                     (mzx_world->player_y == new_y))
+                    success = 1;
+                  }
                 }
-              }
-              cp = NULL;
-            }
-            if(string_type(tp_2) == 1)
-            {
-              cp = get_string(tp_2, temp_str);
-            }
-  
-            if(cp != NULL)
-            {
-              // Set
-              if(cmd == 10)
-              {
-                set_string(ibuff, cp);
-              }
-              // Inc
-              if(cmd == 11)
-              {
-                char str[64];
-                get_string(ibuff, str);
-                if((str_len(str) + str_len(cp)) < 64)
-                {
-                  str_cat(str, cp);
-                }
-                set_string(ibuff, str);
+
+              // We want NODIR though, so reverse success
+              if((direction == 14) || (direction == 0))
+                success ^= 1;
               }
             }
+            break;
           }
-        }
-      }
-      else
-      {
-        if(str_len(ibuff)>=COUNTER_NAME_SIZE)
-         ibuff[COUNTER_NAME_SIZE-1]=0;
-        t1=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-        if(cmd==10) set_counter(ibuff,t1,id);
-        else if(cmd==11) inc_counter(ibuff,t1,id);
-        else dec_counter(ibuff,t1,id);
-      }
-      last_label=-1;//Allows looping "infinitely"
-      break;
-    case 16://if c?n l
-      // Check for string comparison - Exo
-      char far *tp = cmd_ptr + 1;
-      if((*tp != 0) && (string_type(tp + 1) == 1))
-      {
-        char far *tp_2 = cmd_ptr + next_param(cmd_ptr, 1) + 3;
-        char temp_str[64];
-        signed int eval;
-        if(!tp_2[0])
-        {
-          itoa(tp_2[1], ibuff2, 10);
-        }
-        else
-        {
-          if(string_type(tp_2 + 1) == 1)
+
+          case 4: // Blocked dir
           {
-            get_string((tp_2 + 1), ibuff2);
-          }
-          else
-          {
-            str_cpy(ibuff2, tp_2 + 1);
-          }
-        }
-        get_string((tp + 1), temp_str);
-        eval = str_cmp(temp_str, ibuff2);
-        t4=0;
-        switch(parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id))
-        {
-          case 0:
-            if(!eval) t4=1;
-            break;
-          case 5:
-            if(eval) t4=1;
-            break;
-        }
-        if(t4)
-        {
-          send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr, 3+next_param(cmd_ptr,1))],id),1);
-          gotoed=1;
-        }
-      }
-      else
-      {
-        //Get first number
-        t1=parse_param(&cmd_ptr[1],id);
-        //Get second number
-        t2=parse_param(&cmd_ptr[3+next_param(cmd_ptr,1)],id);
-        //Comparison
-        t4=0;//Not true
-        switch(parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id))
-        {
-          case 0:
-            if(t1==t2) t4=1;
-            break;
-          case 1:
-            if(t1<t2) t4=1;
-            break;
-          case 2:
-            if(t1>t2) t4=1;
-            break;
-          case 3:
-            if(t1>=t2) t4=1;
-            break;
-          case 4:
-            if(t1<=t2) t4=1;
-            break;
-          case 5:
-            if(t1!=t2) t4=1;
-            break;
-        }
-        if(t4)
-        {
-          send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,
-                                                        3+next_param(cmd_ptr,1))],id),1);
-          gotoed=1;
-        }
-      }
-      break;
-    case 18://if condition label
-    case 19://if not cond. label
-      t1=parse_param(&cmd_ptr[1],id);
-      t2=((unsigned int)t1)>>8;
-      t1=((unsigned int)t1)&255;
-      t2=parsedir(t2,x,y,robots[id].walk_dir);
-      //t1=condition, t2=direction if any (already parsed)
-      t3=0;//Set to 1 for true
-      switch(t1)
-      {
-        case 0://Walking dir
-          if(t2<5)
-          {
-            if(robots[id].walk_dir==t2) t3=1;
-            break;
-          }
-          if(t2==14)
-          {
-            if(robots[id].walk_dir==0) t3=1;
-            break;
-          }
-          //assumed anydir
-          if(robots[id].walk_dir!=0) t3=1;
-          break;
-        case 1://swimming
-          if(id==NUM_ROBOTS) break;
-          t2=level_under_id[x+y*max_bxsiz];
-          if((t2>19)&&(t2<25)) t3=1;
-          break;
-        case 2://firewalking
-          if(id==NUM_ROBOTS) break;
-          t2=level_under_id[x+y*max_bxsiz];
-          if((t2==26)||(t2==63)) t3=1;
-          break;
-        case 3://touching dir
-          if(id==NUM_ROBOTS) break;
-          if((t2<5)&&(t2>0))
-          {
-            //Is player in dir t2?
-            t4=x; t5=y;
-            if(move_dir(t4,t5,t2-1)) break;
-            if((player_x==t4)&&(player_y==t5)) t3=1;
-            break;
-          }
-          //either anydir or nodir
-          //is player touching at all?
-          for(t6=0;t6<4;t6++)
-          {//try all dirs
-            t4=x; t5=y;
-            if(move_dir(t4,t5,t6)) continue;
-            if((player_x==t4)&&(player_y==t5)) t3=1;
-          }
-          //t3=1 for anydir
-          if((t2==14)||(t2==0)) //We want NODIR though, so
-            t3^=1;             //reverse t3.
-          break;
-        case 4://Blocked dir
-          //If REL PLAYER or REL COUNTERS, use special code
-          if(mid_prefix==2)
-          {
-            //Rel player
-            for(t1=0;t1<4;t1++)
+            int new_bl[4];
+            int i;
+
+            // If REL PLAYER or REL COUNTERS, use special code
+            switch(mzx_world->mid_prefix)
             {
-              _bl[t1]=0;
-              t4=player_x; t5=player_y;
-              if(!move_dir(t4,t5,t1))
+              case 2:
               {
-                //Not edge... blocked?
-                if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
-              }
-              else _bl[t1]=1;//Edge is considered blocked
-            }
-            if((t2<5)&&(t2>0))
-            {
-              t3=_bl[t2-1];
-            }
-            else
-            {
-              //either anydir or nodir
-              //is blocked any dir at all?
-              t3=_bl[0]|_bl[1]|_bl[2]|_bl[3];
-              //t3=1 for anydir
-              if((t2==14)||(t2==0)) //We want NODIR though, so
-                t3^=1;             //reverse t3.
-            }
-            //Fix blocked arrays
-            if(id<NUM_ROBOTS)
-            {
-              for(t1=0;t1<4;t1++)
-              {
-                _bl[t1]=0;
-                t4=x; t5=y;
-                if(!move_dir(t4,t5,t1))
-                {
-                  //Not edge... blocked?
-                  if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
-                }
-                else _bl[t1]=1;//Edge is considered blocked
-              }
-            }
-          }
-          else if(mid_prefix==3)
-          {
-            //Rel counters
-            t2=get_counter("THISX");
-            t3=get_counter("THISY");
-            for(t1=0;t1<4;t1++)
-            {
-              _bl[t1]=0;
-              t4=t2; t5=t3;
-              if(!move_dir(t4,t5,t1))
-              {
-                //Not edge... blocked?
-                if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
-              }
-              else _bl[t1]=1;//Edge is considered blocked
-            }
-            if((t2<5)&&(t2>0))
-            {
-              t3=_bl[t2-1];
-            }
-            else
-            {
-              //either anydir or nodir
-              //is blocked any dir at all?
-              t3=_bl[0]|_bl[1]|_bl[2]|_bl[3];
-              //t3=1 for anydir
-              if((t2==14)||(t2==0)) //We want NODIR though, so
-                t3^=1;             //reverse t3.
-            }
-            if(id<NUM_ROBOTS)
-            {
-              for(t1=0;t1<4;t1++)
-              {
-                _bl[t1]=0;
-                t4=x; t5=y;
-                if(!move_dir(t4,t5,t1))
-                {
-                  //Not edge... blocked?
-                  if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
-                }
-                else _bl[t1]=1;//Edge is considered blocked
-              }
-            }
-          }
-          else
-          {
-            if(id==NUM_ROBOTS) break;
-            //Same as player except with anything
-            if((t2<5)&&(t2>0))
-            {
-              t3=_bl[t2-1];
-              break;
-            }
-            //either anydir or nodir
-            //is blocked any dir at all?
-            t3=_bl[0]|_bl[1]|_bl[2]|_bl[3];
-            //t3=1 for anydir
-            if((t2==14)||(t2==0)) //We want NODIR though, so
-              t3^=1;             //reverse t3.
-          }
-          break;
-        case 5://Aligned
-          if(id==NUM_ROBOTS) break;
-          if((player_x==x)||(player_y==y)) t3=1;
-          break;
-        case 6://AlignedNS
-          if(id==NUM_ROBOTS) break;
-          if(player_x==x) t3=1;
-          break;
-        case 7://AlignedEW
-          if(id==NUM_ROBOTS) break;
-          if(player_y==y) t3=1;
-          break;
-        case 8://LASTSHOT dir (only 1-4 accepted)
-          if(id==NUM_ROBOTS) break;
-          if((t2<1)||(t2>4)) break;
-          if(t2==robots[id].last_shot_dir) t3=1;
-          break;
-        case 9://LASTTOUCH dir (only 1-4 accepted)
-          if(id==NUM_ROBOTS) break;
-          t2=parsedir(t2,x,y,robots[id].walk_dir);
-          if((t2<1)||(t2>4)) break;
-          if(t2==robots[id].last_touch_dir) t3=1;
-          break;
-        case 10://RTpressed
-          if(rt_pressed) t3=1;
-          break;
-        case 11://LTpressed
-          if(lf_pressed) t3=1;
-          break;
-        case 12://UPpressed
-          if(up_pressed) t3=1;
-          break;
-        case 13://dnpressed
-          if(dn_pressed) t3=1;
-          break;
-        case 14://sppressed
-          if(sp_pressed) t3=1;
-          break;
-        case 15://delpressed
-          if(del_pressed) t3=1;
-          break;
-        case 16://musicon
-          if(music_on) t3=1;
-          break;
-        case 17://soundon
-          if(sfx_on) t3=1;
-          break;
-      }
-      if(cmd==19) t3^=1;//Reverse truth if NOT is present
-      if(t3)
-      {//jump
-        send_robot_id(id,tr_msg(&cmd_ptr[5],id),1);
-        gotoed=1;
-      }
-      break;
-    case 20://if any thing label
-    case 21://if no thing label
-      //Get foreg/backg allowed in t1/t2
-      t1=parse_param(&cmd_ptr[1],id);//Color
-      t3=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);//Thing
-      t4=parse_param(&cmd_ptr[next_param(cmd_ptr,next_param(cmd_ptr,1))],id);//Param
-      if(t1&256)
-      {
-        t1^=256;
-        if(t1==32) t1=t2=16;
-        else if(t1<16) t2=16;
-        else
-        {
-          t2=t1-16;
-          t1=16;
-        }
-      }
-      else
-      {
-        t2=t1>>4;
-        t1=t1&15;
-      }
-      t5=cmd-20;
-      for(t7=0;t7<10000;t7++)
-      {
-        t6=level_id[t7];
-        if(t6!=t3) continue;
-        t6=level_color[t7];
-        if(t1<16)
-        {
-          if((t6&15)!=t1) continue;
-        }
-        if(t2<16)
-        {
-          if((t6>>4)!=t2) continue;
-        }
-        if(t4<256)
-        {
-          t6=level_param[t7];
-          if(t6!=t4) continue;
-        }
-        t5=21-cmd;
-        break;
-      }
-      if(t5)
-      {
-        send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,
-                                                      next_param(cmd_ptr,next_param(cmd_ptr,1)))],id),1);
-        gotoed=1;
-      }
-      break;
-    case 22://if thing dir
-    case 23://if NOT thing dir
-      t1=x; t2=y;
-      t4=1;
-      t3=next_param(cmd_ptr,next_param(cmd_ptr,next_param(cmd_ptr,t4)));
-      t9=1+next_param(cmd_ptr,t3);
-      t3=parse_param(&cmd_ptr[t3],id);
-      goto if_thing_dir;
-    case 24://if thing x y
-      t4=1;
-      t3=next_param(cmd_ptr,next_param(cmd_ptr,next_param(cmd_ptr,t4)));
-      t9=1+next_param(cmd_ptr,next_param(cmd_ptr,t3));
-      t1=parse_param(&cmd_ptr[t3],id);
-      t2=parse_param(&cmd_ptr[next_param(cmd_ptr,t3)],id);
-      t11 = t1;
-      t12 = t2;
-      prefix_xy(t8,t8,t1,t2,t8,t8,x,y);
-      t10 = 0;
-      goto if_thing_at_xy;
-    case 25://if at x y label
-      if(id==NUM_ROBOTS) break;
-      t1=parse_param(&cmd_ptr[1],id);
-      t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      prefix_xy(t3,t3,t1,t2,t3,t3,x,y);
-      if((t1!=x)||(t2!=y)) break;
-      send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,
-                                                    next_param(cmd_ptr,1))],id),1);
-      gotoed=1;
-      break;
-    case 26://if dir of player is thing, "label"
-
-      t1=player_x; t2=player_y;// X/Y
-      t3=parse_param(&cmd_ptr[1],id);// Direction
-      t4=next_param(cmd_ptr,1);// Location of thing
-      // Byte of label string
-      t9=1+next_param(cmd_ptr,next_param(cmd_ptr,next_param(cmd_ptr,t4)));
-      if_thing_dir:
-      t10 = 0;
-      t3=parsedir(t3,x,y,robots[id].walk_dir);
-      // if((t3==11)&&(cmd==26)) {
-      if(t3==11)
-      {
-        t10=999; //set t10, used to set cmd
-        goto if_thing_at_xy;
-      }
-      if((t3<1)||(t3>4)) goto if_thing_no;
-      if(move_dir(t1,t2,t3-1)) goto if_thing_no;
-      if(t10 == 999) t10 = 0;
-
-     if_thing_at_xy:
-      //t3/t4 <- color (fg/bk)
-      //t5 <- thing
-      //t6 <- param
-      t3=parse_param(&cmd_ptr[t4],id);
-      t5=parse_param(&cmd_ptr[next_param(cmd_ptr,t4)],id);
-      t6=parse_param(&cmd_ptr[next_param(cmd_ptr,
-                                         next_param(cmd_ptr,t4))],id);
-
-      // Check if sprite's at area
-      if(t5 == 98)
-      {
-        int ret;
-
-        if((t3 == 288) && (version_loaded >= 0x248))
-        {
-          t6 = sprite_num;
-          t3 = 0;
-        }
-
-        if(t6 == 256)
-        {
-          int i;
-          for(i = t3; i < MAX_SPRITES; i++)
-          {
-            if(sprite_at_xy(i, t1, t2)) break;
-          }
-          if(i == MAX_SPRITES)
-          {
-            i = -1;
-            ret = 0;
-          }
-          else
-          {
-            sprite_num = i;
-            ret = 1;
-          }
-        }
-        else
-        {
-          ret = sprite_at_xy(t6, t1, t2);
-        }
-
-        if(ret)
-        {
-          send_robot_id(id,tr_msg(&cmd_ptr[t9],id),1);
-          gotoed=1;
-        }
-        break;
-      }
-
-      // Check collision detection for sprite - Exo
-      if(t5 == 99)
-      {
-        int ret;
-        if(t6 == 256)
-        {
-          t6 = sprite_num;
-        }
-        if(t3 == 288)
-        {
-          t11 += sprites[t6].x;
-          t12 += sprites[t6].y;
-        }
-        ret = sprite_colliding_xy(t6, t11, t12);
-        if(ret)
-        {
-          send_robot_id(id,tr_msg(&cmd_ptr[t9],id),1);
-          gotoed=1;
-        }
-        break;
-      }
-
-      if(t3&256)
-      {
-        t3^=256;
-        if(t3<16) t4=16;
-        else if(t3==32) t3=t4=16;
-        else
-        {
-          t4=t3-16;
-          t3=16;
-        }
-      }
-      else
-      {
-        t4=t3>>4;
-        t3=t3&15;
-      }
-      if(t10==999) goto under_player; //checks t10, used to check cmd
-      t7=level_id[t1+t2*max_bxsiz];
-      if(t7!=t5) goto if_thing_no;
-      t7=level_color[t1+t2*max_bxsiz];
-      if(t3<16)
-        if((t7&15)!=t3) goto if_thing_no;
-      if(t4<16)
-        if((t7>>4)!=t4) goto if_thing_no;
-      if(t6<256)
-      {
-        t7=level_param[t1+t2*max_bxsiz];
-        if(t7!=t6) goto if_thing_no;
-      }
-      //Jump to label if not cmd 23
-      if(cmd==23) break;
-      send_robot_id(id,tr_msg(&cmd_ptr[t9],id),1);
-      gotoed=1;
-      break;
-      if_thing_no:
-      //Jump to label if cmd 23
-      if(cmd==23)
-      {
-        send_robot_id(id,tr_msg(&cmd_ptr[t9],id),1);
-        gotoed=1;
-      }
-      break;
-      under_player:
-      //If UNDER/BENEATH PLAYER thing  ( and if thing under)
-      t7=level_under_id[t1+t2*max_bxsiz];
-      if(t7!=t5) goto if_thing_no; //for next few statements, did not used to go to if_thing_no
-      t7=level_under_color[t1+t2*max_bxsiz];
-      if(t3<16)
-        if((t7&15)!=t3) goto if_thing_no;
-      if(t4<16)
-        if((t7>>4)!=t4) goto if_thing_no;
-      if(t6<256)
-      {
-        t7=level_under_param[t1+t2*max_bxsiz];
-        if(t7!=t6) goto if_thing_no;
-      }
-      //POSSIBLE FIX FOR UNDER BUGGY!
-      if(cmd==23) break;
-      send_robot_id(id,tr_msg(&cmd_ptr[t9],id),1);
-      gotoed=1;
-      break;
-    case 27://double c
-      tr_msg(&cmd_ptr[2],id);
-      if(!str_cmp(ibuff,"SCORE")) score<<=1;
-      else
-      {
-        t1=get_counter(ibuff,id);
-        t1<<=1;
-        set_counter(ibuff,t1,id);
-      }
-      last_label=-1;//Allows looping "infinitely"
-      break;
-    case 28://half c
-      tr_msg(&cmd_ptr[2],id);
-      if(!str_cmp(ibuff,"SCORE")) score>>=1;
-      else
-      {
-        t1=get_counter(ibuff,id);
-        t1>>=1;
-        set_counter(ibuff,t1,id);
-      }
-      last_label=-1;//Allows looping "infinitely"
-      break;
-    case 29://Goto
-      send_robot_id(id,tr_msg(&cmd_ptr[2],id),1);
-      gotoed=1;
-      break;
-    case 30://Send robot label
-      send_robot(tr_msg(&cmd_ptr[2],id,ibuff2),tr_msg(
-                                                     &cmd_ptr[next_param(cmd_ptr,1)+1],id));
-      break;
-    case 31://Explode
-      if(id==NUM_ROBOTS) goto die;
-      level_param[x+y*max_bxsiz]=((unsigned char)parse_param(&cmd_ptr[1],id)-1)*16;
-      level_id[x+y*max_bxsiz]=38;
-      clear_robot(id);
-      exit_func();
-      return;
-    case 32://put thing dir
-      if(id==NUM_ROBOTS) break;
-      //t1=color (w/?) t2=thing t3=param
-      t0=1;
-      t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t2=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t3=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      //t4 x t5 y t6 dir
-      lay_bomb_entry:
-      t4=x; t5=y;
-      t6=parsedir(parse_param(&cmd_ptr[t0],id),x,y,robots[id].walk_dir);
-		
-      put_to_dir:
-
-			// "beneath player" code was moved here so robots could get it too - Exo
-
-      if(t6==11)
-      {
-        //Put BENEATH player OR robot
-        if((t2>121)&&(t2<128)) break;
-        t1=fix_color(t1,level_under_color[t4+t5*max_bxsiz]);
-        t7=level_under_id[t4+t5*max_bxsiz];
-        t8=level_under_param[t4+t5*max_bxsiz];
-        if(t7==122)
-          clear_sensor(t8);
-        //Put it now.
-        level_under_id[t4+t5*max_bxsiz]=t2;
-        level_under_color[t4+t5*max_bxsiz]=t1;
-        level_under_param[t4+t5*max_bxsiz]=t3;
-        break;
-      }
-
-      if((t6<1)||(t6>4)) break;
-      if(move_dir(t4,t5,t6-1)) break;
-      put_at_XY:
-      if((t2>121)&&(t2<128)) break;
-      duplicate_entry:
-      t7=level_id[t4+t5*max_bxsiz];
-      t8=level_param[t4+t5*max_bxsiz];
-      if(t7==127) break;
-      if((t7==123)||(t7==124))
-      {
-        clear_robot(t8);
-        robot=&robot_mem[robots[id].program_location];
-        cmd_ptr=&robot[robots[id].cur_prog_line+1];
-      }
-      if((t7==125)||(t7==126))
-        clear_scroll(t8);
-      if(t8==122)
-        clear_sensor(t8);
-      t1=fix_color(t1,level_color[t4+t5*max_bxsiz]);
-      //Put thing
-      id_place(t4,t5,t2,t1,t3);
-      //Are we still "alive"?
-      if(id!=GLOBAL_ROBOT)
-      {
-        t1=level_id[x+y*max_bxsiz];
-        if((t1!=123)&&(t1!=124))
-        {
-          exit_func();
-          return;//Nope.
-        }
-        t1=level_param[x+y*max_bxsiz];
-        if(t1!=id)
-        {
-          exit_func();
-          return;//Nope.
-        }
-      }
-      //Figure blocked vars
-      update_blocked=1;
-      break;
-    case 33://Give # item
-      t1=parse_param(&cmd_ptr[1],id);
-      t2=cmd_ptr[next_param(cmd_ptr,1)+1];
-      inc_counter(item_to_counter[t2],t1);
-      last_label=-1;//Allows looping "infinitely"
-      break;
-    case 34://Take # item
-    case 35://Take # item "label"
-      t1=parse_param(&cmd_ptr[1],id);
-      t2=cmd_ptr[next_param(cmd_ptr,1)+1];
-      t4=0;
-      if(t2!=3)
-      {
-        t3=get_counter(item_to_counter[t2]);
-        if(t3<t1) t4=1;
-        else dec_counter(item_to_counter[t2],t1);
-      }
-      else
-      {
-        if(score<t1) t4=1;
-        else score-=t1;
-      }
-      if((t4)&(cmd==35))
-      {
-        send_robot_id(id,tr_msg(&cmd_ptr[next_param(cmd_ptr,1)+4],
-                                id),1);
-        gotoed=1;
-      }
-      last_label=-1;//Allows looping "infinitely"
-      break;
-    case 36://Endgame
-      set_counter("LIVES",0);
-    case 37://Endlife
-      set_counter("HEALTH",0);
-      break;
-    case 38://Mod
-      magic_load_mod(tr_msg(&cmd_ptr[2],id));
-      volume_mod(volume);
-      break;
-    case 39://sam
-      t1=parse_param(&cmd_ptr[1],id);//Freq
-      t2=next_param(cmd_ptr,1)+1;//Loc of string
-      play_sample(t1,tr_msg(&cmd_ptr[t2],id));
-      break;
-    case 40://Volume
-      volume=volume_target=t1=(unsigned char)parse_param(&cmd_ptr[1],id);
-      volume_mod(t1);
-      break;
-    case 41://End mod
-      end_mod();
-      break;
-    case 42://End sam
-      end_sample();
-      break;
-    case 43://Play notes
-      play_str(&cmd_ptr[2]);
-      break;
-    case 44://End play
-      clear_sfx_queue();
-      break;
-    case 45://wait play "str"
-    case 46://wait play
-      t1=topindex-backindex;
-      if(t1<0) t1=topindex+(NOISEMAX-backindex);
-      if(t1>10) goto breaker;
-      if(cmd==45) play_str(&cmd_ptr[2]);
-      break;
-      //case 47:Blank line
-    case 48://sfx num
-      play_sfx(parse_param(&cmd_ptr[1],id));
-      break;
-    case 49://play sfx notes
-      if(!is_playing()) play_str(&cmd_ptr[2]);
-      break;
-    case 50://open
-      if(id==NUM_ROBOTS) break;
-      t1=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t1<1)||(t1>4)) break;
-      t2=x; t3=y;
-      if(move_dir(t2,t3,t1-1)) break;
-      t4=level_id[t2+t3*max_bxsiz];
-      if((t4!=41)&&(t4!=47)) break;
-      //Become pushable for a split second
-      t6=level_id[x+y*max_bxsiz];
-      level_id[x+y*max_bxsiz]=123;
-      grab_item(t2,t3,0);
-      //Re-find robot
-      if(level_id[x+y*max_bxsiz]!=123); {
-        for(t1=0;t1<4;t1++)
-        {
-          t4=x; t5=y;
-          if(!move_dir(t4,t5,t1))
-          {
-            //Not edge... robot?
-            if(level_id[t4+t5*max_bxsiz]==123)
-            {
-              if(level_param[t4+t5*max_bxsiz]==id)
-              {
-                x=t4;
-                y=t5;
+                // Give an ID of -1 to throw it off from not
+                // allowing global robot.
+                calculate_blocked(mzx_world, mzx_world->player_x,
+                 mzx_world->player_y, -1, new_bl);
+                update_blocked = 1;
                 break;
               }
+
+              case 3:
+              {
+                // Give an ID of -1 to throw it off from not
+                // allowing global robot.
+                calculate_blocked(mzx_world,
+                 get_counter(mzx_world, "XPOS", 0),
+                 get_counter(mzx_world, "YPOS", 0), -1, new_bl);
+                update_blocked = 1;
+                break;
+              }
+
+              default:
+              {
+                // Use the blocked list that's already there
+                memcpy(new_bl, _bl, sizeof(int) * 4);
+              }
             }
-          }
-        }
-      }
-      //Become old pushable status
-      level_id[x+y*max_bxsiz]=t6;
-      //Figure blocked vars
-      update_blocked=1;
-      break;
-    case 51://Lockself
-    case 52://Unlockself
-      robots[id].is_locked=52-cmd;
-      break;
-    case 53://Send DIR "label"
-      if(id==NUM_ROBOTS) break;
-      t1=x; t2=y;
-      t3=parse_param(&cmd_ptr[1],id);
-      t4=1+next_param(cmd_ptr,1);
-      send_dir:
-      //t1/t2=x/y
-      //t3=dir
-      //t4=loc of label
-      t3=parsedir(t3,x,y,robots[id].walk_dir);
-      if((t3<1)||(t3>4)) break;
-      if(move_dir(t1,t2,t3-1)) break;
-      send_at_XY:
-      t3=level_id[t1+t2*max_bxsiz];
-      if((t3!=123)&&(t3!=124)) break;
-      t3=level_param[t1+t2*max_bxsiz];
-      send_robot_id(t3,tr_msg(&cmd_ptr[t4],id));
-      //Use t4 instead of 2 'cuase send
-      //x y "label" uses 3.
-      break;
-    case 54://Zap label num
-    case 55://Restore label num
-      tr_msg(&cmd_ptr[2],id);
-      t1=(unsigned char)parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      for(t2=0;t2<t1;t2++)
-      {
-        if(cmd==54)
-        {
-          if(zap_label(robot,ibuff)==0) break;
-        }
-        else
-        {
-          if(restore_label(robot,ibuff)==0) break;
-        }
-      }
-      break;
-    case 56://Lockplayer
-      player_ns_locked=player_ew_locked=player_attack_locked=1;
-      break;
-    case 57://unlockplayer
-      player_ns_locked=player_ew_locked=player_attack_locked=0;
-      break;
-    case 58://lockplayer ns
-      player_ns_locked=1;
-      break;
-    case 59://lockplayer ew
-      player_ew_locked=1;
-      break;
-    case 60://lockplayer attack
-      player_attack_locked=1;
-      break;
-    case 61://move player dir
-    case 62://move pl dir "label"
-      t1=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t1<1)||(t1>4)) break;
-      t2=player_x; t3=player_y; t4=curr_board;
-      //Have to fix vars and move to next command NOW, in case player
-      //is send to another screen!
-      first_prefix=mid_prefix=last_prefix=0;
-      robots[id].pos_within_line=0;
-      robots[id].cur_prog_line+=robot[robots[id].cur_prog_line]+2;
-      if(!robot[robots[id].cur_prog_line])
-        robots[id].cur_prog_line=0;
-      robots[id].cycle_count=0;
-      robots[id].xpos=x;
-      robots[id].ypos=y;
-      //Move player
-      t0=target_where;
-      move_player(t1-1);
-      if((player_x==t2)&&(player_y==t3)&&(curr_board==t4)&&(cmd==62)&&
-         (target_where==t0))
-      {
-        send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],
-                                id),1);
-        gotoed=1;
-        goto breaker;
-      }
-      exit_func();
-      return;
-    case 63://Put player x y
-      t1=parse_param(&cmd_ptr[1],id);
-      t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      prefix_xy(t3,t3,t1,t2,t3,t3,x,y);
-      put_player_XY:
-      //Put at t1,t2
-      done=1;
-      if((player_x==t1)&&(player_y==t2)) break;
-      id_remove_top(player_x,player_y);
-      t3=level_id[t1+t2*max_bxsiz];
-      t4=level_param[t1+t2*max_bxsiz];
-      if((t3==123)||(t3==124))
-      {
-        clear_robot(t4);
-        robot=&robot_mem[robots[id].program_location];
-        cmd_ptr=&robot[robots[id].cur_prog_line+1];
-      }
-      if((t3==125)||(t3==126))
-        clear_scroll(t4);
-      if(t3==122) step_sensor(t4);
-      id_place(t1,t2,127,0,0);
-      player_x=t1;
-      player_y=t2;
-      //still alive?
-      if((player_x==x)&&(player_y==y))
-      {
-        exit_func();
-        return;
-      }
-      break;
-    case 66://if player x y
-      t1=parse_param(&cmd_ptr[1],id);
-      t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      prefix_xy(t3,t3,t1,t2,t3,t3,x,y);
-      if((t1!=player_x)||(t2!=player_y)) break;
-      send_robot_id(id,tr_msg(&cmd_ptr[next_param(cmd_ptr,
-                                                  next_param(cmd_ptr,1))+1],id),1);
-      gotoed=1;
-      break;
-    case 67://put player dir
-      if(id==NUM_ROBOTS) break;
-      t1=x; t2=y;
-      t3=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t3<1)||(t3>4)) break;
-      if(move_dir(t1,t2,t3-1)) break;
-      goto put_player_XY;
-    case 69://rotate cw
-    case 70://rotate ccw
-      if(id==NUM_ROBOTS) break;
-      rotate(x,y,cmd-69);
-      //Figure blocked vars
-      update_blocked=1;
-      break;
-    case 71://switch dir dir
-      if(id==NUM_ROBOTS) break;
-      t1=t4=x; t2=t5=y;
-      t3=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t3<1)||(t3>4)) break;
-      if(move_dir(t1,t2,t3-1)) break;
-      t6=parsedir(parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id)
-                  ,x,y,robots[id].walk_dir);
-      if((t6<1)||(t6>4)) break;
-      if(move_dir(t4,t5,t6-1)) break;
-      //Switch t1,t2 with t4,t5
-      if((t1==t4)&&(t2==t5)) break;
-      t3=level_id[t1+t2*max_bxsiz];
-      t6=level_param[t1+t2*max_bxsiz];
-      t7=level_color[t1+t2*max_bxsiz];
-      level_id[t1+t2*max_bxsiz]=level_id[t4+t5*max_bxsiz];
-      level_param[t1+t2*max_bxsiz]=level_param[t4+t5*max_bxsiz];
-      level_color[t1+t2*max_bxsiz]=level_color[t4+t5*max_bxsiz];
-      level_id[t4+t5*max_bxsiz]=t3;
-      level_param[t4+t5*max_bxsiz]=t6;
-      level_color[t4+t5*max_bxsiz]=t7;
-      //Figure blocked vars
-      update_blocked=1;
-      break;
-    case 72://Shoot
-      if(id==NUM_ROBOTS) break;
-      t3=parsedir(cmd_ptr[2],x,y,robots[id].walk_dir);
-      if((t3<1)||(t3>4)) break;
-      if(_bl[--t3]&2) break;//No shooty a shot
-      _shoot_c(x,y,t3,robots[id].bullet_type);
-      //Figure blocked vars
-      if(!_bl[t3]) _bl[t3]=3;
-      break;
-    case 73://laybomb
-      t1=0;
-      goto lay_bomb;
-    case 74://laybomb high
-      t1=128;
-      lay_bomb:
-      if(id==NUM_ROBOTS) break;
-      t3=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if(t3==11)
-      {
-        //underneath
-        level_under_id[x+y*max_bxsiz]=37;
-        level_under_param[x+y*max_bxsiz]=t1;
-        level_under_color[x+y*max_bxsiz]=8;
-        break;
-      }
-      if((t3<1)||(t3>4)) break;
-      //Simulate a put
-      t3=t1; t1=8; t2=37; t0=1;
-      goto lay_bomb_entry;
-    case 75://shoot missile
-      if(id==NUM_ROBOTS) break;
-      t3=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t3<1)||(t3>4)) break;
-      _shoot_missile_c(x,y,t3-1);
-      //Figure blocked vars
-      update_blocked=1;
-      break;
-    case 76://shoot seeker
-      if(id==NUM_ROBOTS) break;
-      t3=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t3<1)||(t3>4)) break;
-      _shoot_seeker_c(x,y,t3-1);
-      //Figure blocked vars
-      update_blocked=1;
-      break;
-    case 77://spit fire
-      if(id==NUM_ROBOTS) break;
-      t3=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t3<1)||(t3>4)) break;
-      _shoot_fire_c(x,y,t3-1);
-      //Figure blocked vars
-      update_blocked=1;
-      break;
-    case 78://lazer wall
-      if(id==NUM_ROBOTS) break;
-      t1=(unsigned char)parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      t3=parsedir(cmd_ptr[2],x,y,robots[id].walk_dir);
-      if((t3<1)||(t3>4)) break;
-      _shoot_lazer_c(x,y,t3-1,t1,level_color[x+y*max_bxsiz]);
-      //Figure blocked vars
-      update_blocked=1;
-      break;
-    case 79://put thing at x y
-      char far *l = NULL;
-      t0=1;
-      if(*(cmd_ptr + 1))
-      {
-        l = cmd_ptr + 2;
-      }
-      t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t2=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t3=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t4=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t5=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      // put image file
-      // Image file should be non-prefixed because it should be
-      // able to go past the board dimensions.
-      if((t2 == 100) && (l != NULL) && (*l == '@'))
-      {
-        // "Type" must be 0, 1, or 2; board, overlay, or vlayer
-        t3 %= 3;
-        tr_msg(l + 1, id, ibuff2);
-        load_mzm(ibuff2, t4, t5, t3);
-        break;
-      }         
-      prefix_xy(t9,t9,t4,t5,t9,t9,x,y);
-      if(t2 == 98)
-      {
-        if(t3 == 256)
-        {
-          t3 = sprite_num;
-        }
-        plot_sprite(t1, t3, t4, t5);
-        break;
-      }
-      goto put_at_XY;
-    case 81://Send x y "label"
-      t1=parse_param(&cmd_ptr[1],id);
-      t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      t4=1+next_param(cmd_ptr,next_param(cmd_ptr,1));
-      prefix_xy(t3,t3,t1,t2,t3,t3,x,y);
-      goto send_at_XY;
-    case 82://copyrobot ""
-      tr_msg(&cmd_ptr[2],id);
-      for(t1=0;t1<=NUM_ROBOTS;t1++)
-        if(str_cmp(robots[t1].robot_name,ibuff)==0) break;
-      if(t1>NUM_ROBOTS) break;
-      copy_robot_num:
-      if(t1==id) break;
-      //Finally- Copy!
-      copy_robot(id,t1);
-      if(robots[id].cur_prog_line>0)
-        robots[id].cur_prog_line=1;
-      robots[id].pos_within_line=0;
-      robot=&robot_mem[robots[id].program_location];
-      goto breaker;
-    case 83://copyrobot x y
-      t1=parse_param(&cmd_ptr[1],id);
-      t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      prefix_xy(t3,t3,t1,t2,t3,t3,x,y);
-      copy_robot_at_XY:
-      t3=level_id[t1+t2*max_bxsiz];
-      if((t3!=123)&&(t3!=124)) break;
-      t1=level_param[t1+t2*max_bxsiz];
-      goto copy_robot_num;
-    case 84://copyrobot dir
-      if(id==NUM_ROBOTS) break;
-      t1=x; t2=y;
-      t3=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t3<1)||(t3>4)) break;
-      if(move_dir(t1,t2,t3-1)) break;
-      goto copy_robot_at_XY;
-    case 85://dupe self dir
-      if(id==NUM_ROBOTS) break;
-      t4=x; t5=y;
-      t3=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t3<1)||(t3>4)) break;
-      if(move_dir(t4,t5,t3-1)) break;
-      goto dupe_at_XY;
-    case 86://dupe self xy
-      t4=parse_param(&cmd_ptr[1],id);
-      t5=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      prefix_xy(t3,t3,t4,t5,t3,t3,x,y);
-      dupe_at_XY:
-      //Make copy
-      t3=find_robot();
-      if(!t3) break;
-      if(copy_robot(t3,id))
-      {
-        robots[t3].used=0;
-        break;
-      }
-      robot=&robot_mem[robots[id].program_location];
-      cmd_ptr=&robot[robots[id].cur_prog_line+1];
-      robots[t3].cur_prog_line=1;
-      robots[t3].pos_within_line=0;
-      if(id!=GLOBAL_ROBOT)
-      {
-        t1=level_color[x+y*max_bxsiz];
-        t2=level_id[x+y*max_bxsiz];
-      }
-      else
-      {
-        t1=7;
-        t2=124;
-      }
-      goto duplicate_entry;
-    case 87://bulletn
-    case 88://s
-    case 89://e
-    case 90://w
-      t1=cmd-87;
-      bullet_char[t1]=bullet_char[t1+4]=bullet_char[t1+8]=
-                                        parse_param(&cmd_ptr[1],id);
-      break;
-    case 91://givekey col
-    case 92://givekey col "l"
-      t1=15&parse_param(&cmd_ptr[1],id);//Color
-      if(give_key(t1))
-        if(cmd==92)
-        {
-          send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],
-                                  id),1);
-          gotoed=1;
-        }
-      break;
-    case 93://takekey col
-    case 94://takekey col "l"
-      t1=15&parse_param(&cmd_ptr[1],id);//Color
-      if(take_key(t1))
-        if(cmd==94)
-        {
-          send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],
-                                  id),1);
-          gotoed=1;
-        }
-      break;
-    case 95://inc c r
-    case 96://dec c r
-    case 97://set c r
-      tr_msg(&cmd_ptr[2],id);
-      if(str_len(ibuff)>=COUNTER_NAME_SIZE)
-        ibuff[COUNTER_NAME_SIZE-1]=0;
-      t1=next_param(cmd_ptr,1);
-      //t1 points to low range to set to
-      t2=parse_param(&cmd_ptr[t1],id);
-      t1=next_param(cmd_ptr,t1);
-      t3=parse_param(&cmd_ptr[t1],id);
-      //Get random number from t2 to t3
-      if(t2==t3) t4=t2;
-      else
-      {
-        if(t3<t2)
-        {
-          t4=t2;
-          t2=t3;
-          t3=t4;
-        }
-        t4=((random_num())%(t3-t2+1))+t2;
-        //t4 <- random num
-      }
-      if(cmd==97) set_counter(ibuff,t4,id);
-      else if(cmd==95) inc_counter(ibuff,t4,id);
-      else dec_counter(ibuff,t4,id);
-      last_label=-1;//Allows looping "infinitely"
-      break;
-    case 98://Trade givenum givetype takenum taketype poorlabel
-      t1=1;
-      t2=parse_param(&cmd_ptr[t1],id); t1=next_param(cmd_ptr,t1);
-      t3=parse_param(&cmd_ptr[t1],id); t1=next_param(cmd_ptr,t1);
-      t4=parse_param(&cmd_ptr[t1],id); t1=next_param(cmd_ptr,t1);
-      t5=parse_param(&cmd_ptr[t1],id); t1=next_param(cmd_ptr,t1);
-      t9=0;
-      if(t5!=3)
-      {
-        t6=get_counter(item_to_counter[t5]);
-        if(t6<t4) t9=1;
-        else set_counter(item_to_counter[t5],t6-t4);
-      }
-      else
-      {
-        if(score<t6) t9=1;
-        else score-=t4;
-      }
-      if(t9)
-      {
-        send_robot_id(id,tr_msg(&cmd_ptr[1+t1],id),1);
-        gotoed=1;
-      }
-      else
-      {
-        if(t3!=3) inc_counter(item_to_counter[t3],t2);
-        else score+=t2;
-      }
-      last_label=-1;//Allows looping "infinitely"
-      break;
-    case 99://Send DIR of player "label"
-      t1=player_x; t2=player_y;
-      t3=parse_param(&cmd_ptr[1],id);
-      t4=1+next_param(cmd_ptr,1);
-      goto send_dir;
-    case 100://put thing dir of player
-      t0=1;
-      t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t2=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t3=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t6=parsedir(parse_param(&cmd_ptr[t0],id),x,y,robots[id].walk_dir);
-      t4=player_x; t5=player_y;
-      goto put_to_dir;
-    case 101:// /"dirs"
-    case 232://Persistent go [str]
-      if(id==NUM_ROBOTS) break;
-      //get next dir char, if none, next cmd
-      t1=cmd_ptr[++robots[id].pos_within_line+1];
-      //t1='n' 's' 'w' 'e' or 'i'
-      if(t1=='n') t1=0;
-      else if(t1=='N') t1=0;
-      else if(t1=='s') t1=1;
-      else if(t1=='S') t1=1;
-      else if(t1=='e') t1=2;
-      else if(t1=='E') t1=2;
-      else if(t1=='w') t1=3;
-      else if(t1=='W') t1=3;
-      else if(t1=='i') goto breaker;
-      else if(t1=='I') goto breaker;
-      else goto next_cmd;//invalid char means next cmd (including null)
-      //move in dir
-      if((_move(x,y,t1,1|2|8|16|4*robots[id].can_lavawalk))&&//4 lava
-         (cmd==232)) robots[id].pos_within_line--;//persistent...
-      move_dir(x,y,t1);
-      goto breaker;
-    case 102://Mesg
-      t12 = get_built_in_messages();
-      set_built_in_messages(1);
-      set_mesg(tr_msg(&cmd_ptr[2],id));
-      set_built_in_messages(t12);
-      break;
-    case 103:
-    case 104:
-    case 105:
-    case 116:
-    case 117:
-      //Box messages!
-      robot_box_display(&cmd_ptr[-1],id,temp);
-      //Move to end of all box mesg cmds.
-      do
-      {
-        robots[id].cur_prog_line+=robot[robots[id].cur_prog_line]+2;
-        reek:
-        //At next line- check type
-        if(!robot[robots[id].cur_prog_line]) goto end_prog;
-        t1=robot[robots[id].cur_prog_line+1];
-        if((t1!=47)&&(t1!=103)&&(t1!=104)&&(t1!=105)&&(t1!=106)&&(t1!=116)&&(t1!=117)) break;
-      } while(1);
-      //Labels
-      if(!temp[0]) goto breaker;
-      send_robot_id(id,temp,1);
-      gotoed=1;
-      goto breaker;
-    case 106://label
-      if(last_label==robots[id].cur_prog_line) //Passed here already?
-        goto breaker;//Yep.
-      last_label=robots[id].cur_prog_line;
-      break;
-    case 107://comment-do nothing!
-      //(unless first char is a @)
-      if(cmd_ptr[2]!='@') break;
-      //Rename robot
-      if(cmd_ptr[1]<3)
-      {
-        robots[id].robot_name[0]=0;
-        break;
-      }
-      tr_msg(&cmd_ptr[3],id);
-      if(str_len(ibuff)>14) ibuff[14]=0;
-      str_cpy(robots[id].robot_name,ibuff);
-      break;
-      //case 108://zapped label-do nothing!
-    case 109://teleport
-      tr_msg(&cmd_ptr[2],id);
-      for(t1=0;t1<NUM_BOARDS;t1++)
-      {
-        if(board_where[t1]==W_NOWHERE) continue;
-        if(str_cmp(&board_list[t1*25],ibuff)==0) break;
-      }
-      if(t1==NUM_BOARDS) break;
-      t3=t1;
-      t4=next_param(cmd_ptr,1);
-      t1=parse_param(&cmd_ptr[t4],id);
-      t2=parse_param(&cmd_ptr[next_param(cmd_ptr,t4)],id);
-      //x/y=t1/t2 brd=t3
-      //Prefix the XY pair
-      t5=board_xsiz;
-      t6=board_ysiz;
-      board_xsiz=board_ysiz=400;
-      prefix_xy(t4,t4,t1,t2,t4,t4,x,y);
-      board_xsiz=t5;
-      board_ysiz=t6;
-      //Set vars
-      target_board=t3;
-      target_x=t1;
-      target_y=t2;
-      target_where=-1;
-      done=1;
-      break;
-    case 110://scrollview dir num
-      t3=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t3<1)||(t3>4)) break;
-      t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      switch(t3)
-      {
-        case 1:
-          scroll_y-=t2;
-          break;
-        case 2:
-          scroll_y+=t2;
-          break;
-        case 3:
-          scroll_x+=t2;
-          break;
-        case 4:
-          scroll_x-=t2;
-          break;
-      }
-      break;
-    case 111://input string
-      m_hide();
-      save_screen(current_pg_seg);
-      if(fad)
-      {
-        clear_screen(1824,current_pg_seg);
-        insta_fadein();
-      }
-      draw_window_box(3,11,77,14,current_pg_seg,EC_DEBUG_BOX,
-                      EC_DEBUG_BOX_DARK,EC_DEBUG_BOX_CORNER);
-      write_string(tr_msg(&cmd_ptr[2],id),5,12,EC_DEBUG_LABEL,
-                   current_pg_seg);
-      m_show();
-      input_string[0]=0;
-      t1=curr_table;
-      switch_keyb_table(1);
-      intake(input_string,70,5,13,current_pg_seg,15,1,0);
-      if(fad) insta_fadeout();
-      switch_keyb_table(t1);
-      restore_screen(current_pg_seg);
-      input_size=str_len(input_string);
-      num_input=atoi(input_string);
-      break;
-    case 112://If string "" "l"
-      if(!str_cmp(tr_msg(&cmd_ptr[2],id),input_string))
-      {
-        send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],
-                                id),1);
-        gotoed=1;
-      }
-      break;
-    case 113://If string not "" "l"
-      if(str_cmp(tr_msg(&cmd_ptr[2],id),input_string))
-      {
-        send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],
-                                id),1);
-        gotoed=1;
-      }
-      break;
-    case 114://If string matches "" "l"
-      //compare
-      tr_msg(&cmd_ptr[2],id);
-      for(t1=0;t1<str_len(ibuff);t1++)
-      {
-        t2=ibuff[t1];
-        if((t2>='a')&&(t2<='z')) t2-=32;
-        t3=input_string[t1];
-        if((t3>='a')&&(t3<='z')) t3-=32;
-        if(t2=='?') continue;
-        if(t2=='#')
-        {
-          if((t3<'0')||(t3>'9')) break;
-          continue;
-        }
-        if(t2=='_')
-        {
-          if((t3<'A')||(t3>'Z')) break;
-          continue;
-        }
-        if(t2=='*')
-        {
-          t1=32767;
-          break;
-        }
-        if(t2!=t3) break;
-      }
-      if(t1<str_len(ibuff)) break;
-      //Matches
-      send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],id),1);
-      gotoed=1;
-      break;
-    case 115://Player char
-      t2=(unsigned char)parse_param(&cmd_ptr[1],id);
-      for(t1=0;t1<4;t1++)
-        player_char[t1]=t2;
-      break;
-    case 118://move all thing dir
-      done=1;
-      t1=parse_param(&cmd_ptr[1],id);//Color
-      t3=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);//Thing
-      t4=parse_param(&cmd_ptr[next_param(cmd_ptr,next_param(cmd_ptr,1))],id);//Param
-      if(t1&256)
-      {
-        t1^=256;
-        if(t1==32) t1=t2=16;
-        else if(t1<16) t2=16;
-        else
-        {
-          t2=t1-16;
-          t1=16;
-        }
-      }
-      else
-      {
-        t2=t1>>4;
-        t1=t1&15;
-      }
-      //t1/t2=fg/bk t3=thing t4=param t5=dir
-      t5=parsedir(parse_param(&cmd_ptr[next_param(cmd_ptr,
-                                                  next_param(cmd_ptr,next_param(cmd_ptr,1)))],id),x,y,robots[id].walk_dir);
-      if((t5<1)||(t5>4)) break;
-      //if dir is 1 or 4, search top to bottom.
-      //if dir is 2 or 3, search bottom to top.
-      //t6 set to start, t7 is dest., t8 is inc.
-      if((t5==1)||(t5==4))
-      {
-        t6=0; t7=max_bxsiz*max_bysiz; t8=1;
-      }
-      else
-      {
-        t6=max_bxsiz*max_bysiz-1; t7=-1; t8=-1;
-      }
-      for(;t6!=t7;t6+=t8)
-      {
-        if(level_id[t6]!=t3) continue;
-        t9=level_color[t6];
-        if(t1<16)
-          if((t9&15)!=t1) continue;
-        if(t2<16)
-          if((t9>>4)!=t2) continue;
-        if(t4<256)
-          if(level_param[t6]!=t4) continue;
-          //Correct thing- now move it! :>
-        _move(t6%max_bxsiz,t6/max_bxsiz,t5-1,1+2+4+8+16);
-      }
-      break;
-    case 119://copy x y x y
-      //t1,t2 to t3,t4
-      t9=1;
-      t1=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t2=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t3=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t4=parse_param(&cmd_ptr[t9],id);
-      prefix_xy(t1,t2,t9,t9,t3,t4,x,y);
-      goto copy_XY;
-    case 120://set edge color
-      edge_color=parse_param(&cmd_ptr[1],id);
-      break;
-    case 121://board dir is ""
-    case 122://board dir is none
-      t3=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t3<1)||(t3>4)) break;
-      if(cmd==122) board_dir[t3-1]=NO_BOARD;
-      else
-      {
-        t2=next_param(cmd_ptr,1)+1;
-        //Find board by given name
-        tr_msg(&cmd_ptr[t2],id);
-        for(t1=0;t1<NUM_BOARDS;t1++)
-        {
-          if(board_where[t1]==W_NOWHERE) continue;
-          if(!str_cmp(&board_list[t1*25],ibuff)) break;
-        }
-        if(t1<NUM_BOARDS) board_dir[t3-1]=t1;
-      }
-      break;
-    case 123://char edit
-      t2=next_param(cmd_ptr,1);
-      for(t1=0;t1<14;t1++)
-      {
-        temp[t1]=parse_param(&cmd_ptr[t2],id);
-        t2=next_param(cmd_ptr,t2);
-      }
-      ec_change_char_nou((unsigned char)(parse_param(&cmd_ptr[1],id)),temp);
-      break;
-    case 124://Become push
-    case 125://Become nonpush
-      if(id==NUM_ROBOTS) break;
-      level_id[x+y*max_bxsiz]=cmd-1;
-      break;
-    case 126://blind
-      blind_dur=parse_param(&cmd_ptr[1],id);
-      break;
-    case 127://firewalker
-      firewalker_dur=parse_param(&cmd_ptr[1],id);
-      break;
-    case 128://freezetime
-      freeze_time_dur=parse_param(&cmd_ptr[1],id);
-      break;
-    case 129://slow time
-      slow_time_dur=parse_param(&cmd_ptr[1],id);
-      break;
-    case 130://wind
-      wind_dur=parse_param(&cmd_ptr[1],id);
-      break;
-    case 131://avalanche
-      for(t1=0;t1<10000;t1++)
-      {
-        if((t2=flags[level_id[t1]])&A_UNDER)
-        {
-          if(t2&A_ENTRANCE) continue;
-          if(random_num()%18==0)
-          {
-            t2=t1%max_bxsiz;
-            t3=t1/max_bxsiz;
-            if(t2>=board_xsiz) continue;
-            if(t3>=board_ysiz) continue;
-            id_place(t2,t3,8,7,0);
-          }
-        }
-      }
-      break;
-    case 132://copy dir dir
-      if(id==NUM_ROBOTS) break;
-      //t1,t2 to t3,t4
-      t1=t3=x; t2=t4=y;
-      t5=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t5<1)||(t5>4)) break;
-      if(move_dir(t1,t2,t5-1)) break;
-      t5=parsedir(parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id),
-                  x,y,robots[id].walk_dir);
-      if((t5<1)||(t5>4)) break;
-      if(move_dir(t3,t4,t5-1)) break;
-      copy_XY:
-      t5=level_id[t1+t2*max_bxsiz];
-      t6=level_param[t1+t2*max_bxsiz];
-      t7=level_id[t3+t4*max_bxsiz];
-      if(t7==127) break;//No copy over player
-      if(t5==127) break;//No copying player
-      if(t5==122)
-      {
-        /* Replicate a sensor */
-        t8=find_sensor();
-        if(!t8) break;// Out of sensors
-        copy_sensor(t8,t6);// Copy sensor
-        t6=t8;// Set param to newest copy
-      }
-      if((t5==123)||(t5==124))
-      {
-        /* Replicate a robot */
-        t8=find_robot();
-        if(!t8) break;// Out of robots
-        copy_robot(t8,t6);// Copy robot
-        robot=&robot_mem[robots[id].program_location];
-        cmd_ptr=&robot[robots[id].cur_prog_line+1];
-        t6=t8;// Set param to newest copy
-      }
-      if((t5==125)||(t5==126))
-      {
-        /* Replicate a scroll */
-        t8=find_scroll();
-        if(!t8) break;// Out of scrolls
-        copy_scroll(t8,t6);// Copy scroll
-        t6=t8;// Set param to newest copy
-      }
-      //Remove at location
-      if((t7==123)||(t7==124))
-      {
-        //delete robot
-        clear_robot(level_param[t3+t4*max_bxsiz]);
-        robot=&robot_mem[robots[id].program_location];
-        cmd_ptr=&robot[robots[id].cur_prog_line+1];
-      }
-      if((t7==125)||(t7==126))
-        //delete scroll
-        clear_scroll(level_param[t3+t4*max_bxsiz]);
-      if(t7==122)
-        //delete sensor
-        clear_sensor(level_param[t3+t4*max_bxsiz]);
-      level_id[t3+t4*max_bxsiz]=t5;
-      level_param[t3+t4*max_bxsiz]=t6;
-      level_color[t3+t4*max_bxsiz]=level_color[t1+t2*max_bxsiz];
-      if((t3==x)&&(t4==y))
-      {
-        exit_func();
-        return;
-      }
-      //Figure blocked vars
-      update_blocked=1;
-      break;
-    case 133://become lavawalker
-    case 134://become non lavawalker
-      robots[id].can_lavawalk=134-cmd;
-      break;
-    case 135://change color thing param color thing param
-      t9=1;
-      t1=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t3=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t4=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t5=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t7=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t8=parse_param(&cmd_ptr[t9],id);
-      //t1/t3/t4 to t5/t7/t8
-      //Change fgbk code to seperate fg/bk codes
-      if(t1&256)
-      {
-        t1^=256;
-        if(t1==32) t1=t2=16;
-        else if(t1<16) t2=16;
-        else
-        {
-          t2=t1-16;
-          t1=16;
-        }
-      }
-      else
-      {
-        t2=t1>>4;
-        t1=t1&15;
-      }
-      if(t5&256)
-      {
-        t5^=256;
-        if(t5==32) t5=t6=16;
-        else if(t5<16) t6=16;
-        else
-        {
-          t6=t5-16;
-          t5=16;
-        }
-      }
-      else
-      {
-        t6=t5>>4;
-        t5=t5&15;
-      }
-      //t1/t2 = fg/bk orig
-      //t3    = thing orig
-      //t4    = param orig
-      //t5/t6 = fg/bk new
-      //t7    = thing new
-      //t8    = param new
-      //Check for changing between incompatible objects
-      if((t7==122)&&(t3!=122)) break;
-      if(((t7==123)||(t7==124))&&(t3!=123)&&(t3!=124)) break;
-      if(((t7==125)||(t7==126))&&(t3!=125)&&(t3!=126)) break;
-      if((t3==127)||(t7==127)) break;
-      //Changing to Lava or Fire or Ice or Energizer or CW/CCW
-      //or Life
-      if((t7==25)||(t7==26)||(t7==33)||(t7==45)||
-         (t7==46)||(t7==63)||(t7==66)) t8=0;
-      //Changing to explosion
-      if(t7==38) t8&=0xF3;//Ignore stages above 3
-      //Search for id t3 of color fg=t1 bg=t2. Param==t4
-      for(t9=0;t9<10000;t9++)
-      {
-        if(t3==41)//Door finds open door
-          if(level_id[t9]==42) goto cid_okay;
-        if(t3==67)//Whirlpool finds any of them
-          if((level_id[t9]>66)&&(level_id[t9]<71)) goto cid_okay;
-        if(level_id[t9]!=t3) continue;
-        cid_okay:
-        t0=level_color[t9];
-        if(t1<16)
-          if((t0&15)!=t1) continue;
-        if(t2<16)
-          if((t0>>4)!=t2) continue;
-        if(t4<256)
-          if(level_param[t9]!=t4) continue;
-        if(t5<16) t0=(t0&240)|t5;
-        if(t6<16) t0=(t0&15)|(t6<<4);
-        level_color[t9]=t0;
-        level_id[t9]=t7;
-        if(t7==t3) goto skip_del;
-        if((t7==124)&&(t3==123)) goto skip_del;
-        if((t7==123)&&(t3==124)) goto skip_del;
-        if((t7==126)&&(t3==125)) goto skip_del;
-        if((t7==125)&&(t3==126)) goto skip_del;
-        if((t3==123)||(t3==124))
-        {
-          //delete robot
-          clear_robot(level_param[t9]);
-          robot=&robot_mem[robots[id].program_location];
-          cmd_ptr=&robot[robots[id].cur_prog_line+1];
-        }
-        if((t3==125)||(t3==126))
-          //delete scroll
-          clear_scroll(level_param[t9]);
-        if(t3==122)
-          //delete sensor
-          clear_sensor(level_param[t9]);
-        skip_del:
-        if(t7==0)
-        {
-          offs_remove_id(t9,0);
-          //If this LEAVES a space, use given color
-          if(level_id[t9]==0) level_color[t9]=t0;
-        }
-        else
-        {
-          if(t8<256)
-            if(t7<122)
-              level_param[t9]=t8;
-        }
-      }
-      //Are we still "alive"?
-      if(id!=GLOBAL_ROBOT)
-      {
-        t1=level_id[x+y*max_bxsiz];
-        if((t1!=123)&&(t1!=124))
-        {
-          exit_func();
-          return;//Nope.
-        }
-      }
-      //Figure blocked vars
-      update_blocked=1;
-      break;
-    case 136:// player color
-      t1=parse_param(&cmd_ptr[1],id);
-      if(get_counter("INVINCO",0))
-        saved_pl_color=fix_color(t1,saved_pl_color);
-      else *player_color=fix_color(t1,*player_color);
-      break;
-    case 137:// bullet color
-      for(t1=0;t1<3;t1++)
-        bullet_color[t1]=fix_color(parse_param(&cmd_ptr[1],id),
-                                   bullet_color[t1]);
-      break;
-    case 138:// missile color
-      missile_color=fix_color(parse_param(&cmd_ptr[1],id),missile_color);
-      break;
-    case 139://message row
-      b_mesg_row=parse_param(&cmd_ptr[1],id);
-      if(b_mesg_row>24) b_mesg_row=24;
-      break;
-    case 140://REL SELF
-      if(id==NUM_ROBOTS) break;
-    case 141://REL PLAYER
-    case 142://REL COUNTERS
-      first_prefix=mid_prefix=last_prefix=cmd-139;
-      lines_run--;
-      goto next_cmd_prefix;
-    case 143://set id char # to 'c'
-      t1=parse_param(&cmd_ptr[1],id);
-      if((t1>=0)&&(t1<=454))
-        if(t1==323) missile_color = parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-        else if((t1>=324) && (t1<=326))bullet_color[t1-324]=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-        else if((t1>=327))id_dmg[t1-327]=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-        else id_chars[t1]=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      break;
-    case 144://jump mod order #
-      jump_mod(parse_param(&cmd_ptr[1],id));
-      break;
-    case 145://ask yes/no
-      if(fad)
-      {
-        clear_screen(1824,current_pg_seg);
-        insta_fadein();
-      }
-      if(!ask_yes_no(tr_msg(&cmd_ptr[2],id))) send_robot_id(id,"YES",1);
-      else send_robot_id(id,"NO",1);
-      gotoed=1;
-      if(fad) insta_fadeout();
-      break;
-    case 146://fill health
-      set_counter("HEALTH",health_limit);
-      break;
-    case 147://thick arrow dir char
-      t1=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t1<1)||(t1>4)) break;
-      id_chars[249+t1]=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      break;
-    case 148://thin arrow dir char
-      t1=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t1<1)||(t1>4)) break;
-      id_chars[253+t1]=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      break;
-    case 149://set max health
-      health_limit=parse_param(&cmd_ptr[1],id);
-      set_counter("HEALTH",get_counter("HEALTH"));
-      break;
-    case 150://save pos
-      t0=0;
-      save_pos:
-      pl_saved_x[t0]=player_x;
-      pl_saved_y[t0]=player_y;
-      pl_saved_board[t0]=curr_board;
-      break;
-    case 151://restore
-      t0=0;
-      restore_pos:
-      t1=pl_saved_x[t0];
-      t2=pl_saved_y[t0];
-      t3=pl_saved_board[t0];
-      exch_pos_entry:
-      //Teleport
-      target_board=t3;
-      target_x=t1;
-      target_y=t2;
-      target_where=0;
-      done=1;
-      break;
-    case 152://exchange
-      t0=0;
-      exchange_pos:
-      t1=pl_saved_x[t0];
-      t2=pl_saved_y[t0];
-      t3=pl_saved_board[t0];
-      pl_saved_x[t0]=player_x;
-      pl_saved_y[t0]=player_y;
-      pl_saved_board[t0]=curr_board;
-      goto exch_pos_entry;
-    case 153://mesg col
-      b_mesg_col=parse_param(&cmd_ptr[1],id);
-      if(b_mesg_col>79) b_mesg_col=79;
-      break;
-    case 154://center mesg
-      b_mesg_col=255;
-      break;
-    case 155://clear mesg
-      b_mesg_timer=0;
-      break;
-    case 156://resetview
-      scroll_x=scroll_y=0;
-      break;
-    case 157://modsam freq num
-      t1=parse_param(&cmd_ptr[1],id);
-      if(music_on) spot_sample(t1,
-                               parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id));
-      break;
-    case 159://scrollbase
-      scroll_base_color=parse_param(&cmd_ptr[1],id);
-      break;
-    case 160://scrollcorner
-      scroll_corner_color=parse_param(&cmd_ptr[1],id);
-      break;
-    case 161://scrolltitle
-      scroll_title_color=parse_param(&cmd_ptr[1],id);
-      break;
-    case 162://scrollpointer
-      scroll_pointer_color=parse_param(&cmd_ptr[1],id);
-      break;
-    case 163://scrollarrow
-      scroll_arrow_color=parse_param(&cmd_ptr[1],id);
-      break;
-    case 164://viewport x y
-      viewport_x=parse_param(&cmd_ptr[1],id);
-      viewport_y=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      if((viewport_x+viewport_xsiz)>80) viewport_x=80-viewport_xsiz;
-      if((viewport_y+viewport_ysiz)>25) viewport_y=25-viewport_ysiz;
-      break;
-    case 165://viewport xsiz ysiz
-      viewport_xsiz=parse_param(&cmd_ptr[1],id);
-      viewport_ysiz=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      if(viewport_xsiz<1) viewport_xsiz=1;
-      if(viewport_ysiz<1) viewport_ysiz=1;
-      if(viewport_xsiz>80) viewport_xsiz=80;
-      if(viewport_ysiz>25) viewport_ysiz=25;
-      if((viewport_x+viewport_xsiz)>80) viewport_x=80-viewport_xsiz;
-      if((viewport_y+viewport_ysiz)>25) viewport_y=25-viewport_ysiz;
-      break;
-    case 168://save pos #
-      t0=parse_param(&cmd_ptr[1],id)-1;
-      if((t0<0)||(t0>7)) t0=0;
-      goto save_pos;
-    case 169://restore pos #
-      t0=parse_param(&cmd_ptr[1],id)-1;
-      if((t0<0)||(t0>7)) t0=0;
-      goto restore_pos;
-    case 170://exchange pos #
-      t0=parse_param(&cmd_ptr[1],id)-1;
-      if((t0<0)||(t0>7)) t0=0;
-      goto exchange_pos;
-    case 171://restore pos # duplicate self
-      t0=parse_param(&cmd_ptr[1],id)-1;
-      if((t0<0)||(t0>7)) t0=0;
-      t1=pl_saved_x[t0];
-      t2=pl_saved_y[t0];
-      t3=pl_saved_board[t0];
-      exch_pos_entry2:
-      //Teleport
-      target_board=t3;
-      target_x=t1;
-      target_y=t2;
-      target_where=0;
-      t3=find_robot();
-      if(t3)
-      {
-        copy_robot(t3,id);
-        if(robots[t3].cur_prog_line>0)
-          robots[t3].cur_prog_line=1;
-        robots[t3].pos_within_line=0;
-        if(id!=GLOBAL_ROBOT)
-        {
-          target_d_id=level_id[x+y*max_bxsiz];
-          target_d_color=level_color[x+y*max_bxsiz];
-        }
-        else
-        {
-          target_d_id=124;
-          target_d_color=7;
-        }
-        find_player();
-        id_place(player_x,player_y,target_d_id,
-                 target_d_color,t3);
-        //Find a space location for the player
-        for(player_y=0;player_y<board_xsiz;player_y++)
-        {
-          for(player_x=0;player_x<board_xsiz;player_x++)
-          {
-            if(A_UNDER&flags[level_id[player_x+player_y*max_bxsiz]])
-              goto sailormoon;
-          }
-        }
-        sailormoon:
-        if((player_x<board_xsiz)&&(player_y<board_ysiz))
-          id_place(player_x,player_y,127,0,0);
-        else player_x=player_y=0;
-      }
-      done=1;
-      break;
-    case 172://exchange pos # duplicate self
-      t0=parse_param(&cmd_ptr[1],id)-1;
-      if((t0<0)||(t0>7)) t0=0;
-      t1=pl_saved_x[t0];
-      t2=pl_saved_y[t0];
-      t3=pl_saved_board[t0];
-      pl_saved_x[t0]=player_x;
-      pl_saved_y[t0]=player_y;
-      pl_saved_board[t0]=curr_board;
-      goto exch_pos_entry2;
-    case 173://Pl bulletn
-    case 174://Pl bullets
-    case 175://Pl bullete
-    case 176://Pl bulletw
-    case 177://Nu bulletn
-    case 178://Nu bullets
-    case 179://Nu bullete
-    case 180://Nu bulletw
-    case 181://En bulletn
-    case 182://En bullets
-    case 183://En bullete
-    case 184://En bulletw
-      bullet_char[cmd-173]=parse_param(&cmd_ptr[1],id);
-      break;
-    case 185://Pl bcolor
-    case 186://Nu bcolor
-    case 187://En bcolor
-      bullet_color[cmd-185]=parse_param(&cmd_ptr[1],id);
-      break;
-    case 193://Rel self first
-      if(id==NUM_ROBOTS) break;
-    case 195://Rel player first
-    case 197://Rel counters first
-      first_prefix=((cmd-193)>>1)+5;
-      lines_run--;
-      goto next_cmd_prefix;
-    case 194://Rel self last
-      if(id==NUM_ROBOTS) break;
-    case 196://Rel player last
-    case 198://Rel counters last
-      last_prefix=((cmd-194)>>1)+5;
-      lines_run--;
-      goto next_cmd_prefix;
-    case 199://Mod fade out
-      volume_inc=-8;
-      volume_target=0;
-      break;
-    case 200://Mod fade in
-      volume_inc=8;
-      volume_target=255;
-      magic_load_mod(tr_msg(&cmd_ptr[2],id));
-      volume_mod(volume=0);
-      break;
-    case 201://Copy block sx sy xsiz ysiz dx dy
-    case 243://Copy overlay block sx sy xs ys dx dy
-      // There are a few "special" things that can be happening here,
-      // and they all fall under one of the following generalized
-      // cases:
-      // do the default action of the command
-      // copy from board to vlayer/overlay
-      // copy from vlayer/overlay to board
-      // copy from overlay to vlayer and vice-versa
-      // copy from board/vlayer/overlay to string
-      // copy from board/vlayer/overlay to mzm
-      // And they are done with the following specifications:
-      // - copy block x y w h "#x" "#y" goes from board
-      //   to vlayer
-      // - copy block x y w h "+x" "+y" goes from board
-      //   to overlay
-      // - copy block "#x" "#x" w h x y goes from vlayer
-      //   to board
-      // - copy overlay block x y w h "+x" "+y" goes from
-      //   overlay to board
-      // - copy overlay block x y w h "#x" "#y" goes from
-      //   overlay to vlayer
-      // - copy overlay block "#x" "#y" w h x y goes from
-      //   vlayer to overlay
-      // - copy block x y w h "$stringN" p goes from
-      //   board to string
-      // - copy overlay block x y w h "$stringN" c goes from
-      //   overlay to string
-      // - copy block "#x" "#y" w h "@mzm" p goes from vlayer
-      //   to MZM
-      // - copy block x y w h "@mzm" p goes from board to MZM
-      // - copy overlay block x y w h "@mzm" p goes from overlay
-      //   to MZM
-      // Prefixes aren't applied to ANY of these cases.
 
-      int special_copy = 0;
-      int src_vlayer = 0, dest_vlayer = 0;
-      int inversion = 0;
-      char l1[15], l2[15], l3[15], l4[15];
-      char far *src_char;
-      char far *src_color;
-      char far *dest_id;
-      char far *dest_char;
-      char far *dest_color;
-      int src_bwidth = max_bxsiz;
-      int src_bheight = max_bysiz;
-      int dest_bwidth = max_bxsiz;
-      int dest_bheight = max_bysiz;
-      int src_x, src_y, dest_x, dest_y;
-      int edge_skip, edge_skip2;
-      int off_src, off_dest;
-
-      l1[0] = 0;
-      l2[0] = 0;
-      l3[0] = 0;
-      l4[0] = 0;
-
-      t9=1;
-      t1=parse_param(&cmd_ptr[t9],id); 
-      if(*(cmd_ptr + t9))
-      {
-        tr_msg(cmd_ptr + t9 + 1, id, l1);
-      }
-      t9=next_param(cmd_ptr,t9);
-      t2=parse_param(&cmd_ptr[t9],id);
-      if(*(cmd_ptr + t9))
-      {
-        tr_msg(cmd_ptr + t9 + 1, id, l2);
-      }
-      t9=next_param(cmd_ptr,t9);
-      t3=parse_param(&cmd_ptr[t9],id); 
-      t9=next_param(cmd_ptr,t9);
-      t4=parse_param(&cmd_ptr[t9],id); 
-      t9=next_param(cmd_ptr,t9);
-      t5=parse_param(&cmd_ptr[t9],id); 
-      if(*(cmd_ptr + t9))
-      {
-        tr_msg(cmd_ptr + t9 + 1, id, l3);
-      }
-      t9=next_param(cmd_ptr,t9);
-      t6=parse_param(&cmd_ptr[t9],id);
-      if(*(cmd_ptr + t9))
-      {
-        tr_msg(cmd_ptr + t9 + 1, id, l4);
-      }
-
-      // See if the source is vlayer
-      if((*l1 == '#') && (*l2 == '#'))
-      {
-        map_vlayer();
-        src_vlayer = 1;
-        src_bwidth = vlayer_width;
-        src_bheight = vlayer_height;
-        src_x = strtol(l1 + 1, NULL, 10);
-        src_y = strtol(l2 + 1, NULL, 10);
-      }
-      else
-      {
-        src_x = t1;
-        src_y = t2;
-      }
-
-      dest_x = t5;
-      dest_y = t6;
-
-      // Now look at the dest
-      if(string_type(l3) == 1)
-      {
-        special_copy = 4;
-      }
-      else
-      {
-        if(*l3 == '@')
-        {
-          special_copy = 5;
-        }
-      }
-
-      if((*l3 == '#') && (*l4 == '#'))
-      {
-        if(!src_vlayer) map_vlayer();
-        dest_vlayer = 1;
-        dest_bwidth = vlayer_width;
-        dest_bheight = vlayer_height;
-        dest_x = strtol(l3 + 1, NULL, 10);
-        dest_y = strtol(l4 + 1, NULL, 10);
-      }
-      else
-      {
-        if((*l3 == '+') && (*l4 == '+'))
-        {
-          inversion = 1;
-          dest_x = strtol(l3 + 1, NULL, 10);
-          dest_y = strtol(l4 + 1, NULL, 10);
-        }
-      }
-
-      // Prefixes... well, actually it should only prefix
-      // if a special mode isn't being used because the dumb
-      // function clips.
-      if(!special_copy && !(src_vlayer || dest_vlayer))
-      {
-        prefix_xy(src_x, src_y, t0, t0, dest_x, dest_y, x, y);
-      }
-
-      t7 = t6;
-      // Clip and verify
-      if(src_x < 0) src_x = 0;
-      if(src_y < 0) src_y = 0;
-      if(dest_x < 0) dest_x = 0;
-      if(dest_y < 0) dest_y = 0;
-      if(src_x >= src_bwidth) src_x = src_bwidth - 1;
-      if(src_y >= src_bheight) src_y = src_bheight - 1;
-      if(t3 < 1) t3 = 1;
-      if(t4 < 1) t4 = 1;
-      if((src_x + t3) > src_bwidth) t3 = src_bwidth - src_x;
-      if((src_y + t4) > src_bheight) t4 = src_bheight - src_y;
-      if(dest_x >= dest_bwidth) dest_x = dest_bwidth - 1;
-      if(dest_y >= dest_bheight) dest_y = dest_bheight - 1;
-      if((dest_x + t3) > dest_bwidth) t3 = dest_bwidth - dest_x;
-      if((dest_y + t4) > dest_bheight) t4 = dest_bheight - dest_y;
-
-      off_src = (src_y * src_bwidth) + src_x;
-      off_dest = (dest_y * dest_bwidth) + dest_x;
-
-      if(dest_vlayer == 1)
-      {
-        dest_char = vlayer_chars + off_dest;
-        dest_color = vlayer_colors + off_dest;
-
-        // Dest is vlayer, it's going to be special copy either 1 or 4
-        // From board to vlayer
-        if(cmd == 201)
-        {
-          src_char = level_param + off_src;
-          src_color = level_color + off_src;
-          special_copy = 1;
-        }
-        // From overlay to vlayer
-        else
-        {
-          src_char = overlay + off_src;
-          src_color = overlay_color + off_src;
-          special_copy = 3;
-        }
-      }
-      
-      if(src_vlayer == 1)
-      {
-        // Source is vlayer, it's going to be special copy either 2 or 3.
-        src_char = vlayer_chars + off_src;
-        src_color = vlayer_colors + off_src;
-
-        // If the dest is already vlayer then..
-        if(dest_vlayer)
-        {
-          cmd = 244;
-          special_copy = 0;
-        }
-        else
-        {
-          // dest is "natural", can't be inversion or vlayer, so..      
-          // From vlayer to board
-          if(!special_copy)
-          {
-            if(cmd == 201)
+            if((direction >= 1) && (direction <= 4))
             {
-              dest_id = level_id + off_dest;
-              dest_char = level_param + off_dest;
-              dest_color = level_color + off_dest;
-              special_copy = 2;
+              success = new_bl[direction - 1];
             }
-            // From vlayer to overlay
             else
             {
-              dest_char = overlay + off_dest;
-              dest_color = overlay_color + off_dest;
-              special_copy = 3;
+              // either anydir or nodir
+              // is blocked any dir at all?
+              success = new_bl[0] | new_bl[1] | new_bl[2] | new_bl[3];
+              // success = 1 for anydir
+
+              // We want NODIR though, so reverse success
+
+              if((direction == 14) || (direction == 0))
+                success ^= 1;
             }
+            break;
+          }
+
+          case 5: // Aligned
+          {
+            if(id)
+            {
+              if((mzx_world->player_x == x) || (mzx_world->player_y == y))
+                success = 1;
+            }
+            break;
+          }
+
+          case 6: // AlignedNS
+          {
+            if(id)
+            {
+              if(mzx_world->player_x == x)
+                success = 1;
+            }
+            break;
+          }
+
+          case 7: // AlignedEW
+          {
+            if(id)
+            {
+              if(mzx_world->player_y == y)
+                success = 1;
+            }
+            break;
+          }
+
+          case 8: // LASTSHOT dir (only 1 - 4 accepted)
+          {
+            if(id)
+            {
+              if((direction >= 1) && (direction <= 4))
+              {
+                if(direction == cur_robot->last_shot_dir)
+                  success = 1;
+              }
+            }
+            break;
+          }
+
+          case 9: // LASTTOUCH dir (only 1 - 4 accepted)
+          {
+            if(id)
+            {
+              direction = parsedir(direction, x, y, cur_robot->walk_dir);
+              if((direction >= 1) && (direction <= 4))
+              {
+                if(direction == cur_robot->last_touch_dir)
+                  success = 1;
+              }
+            }
+            break;
+          }
+
+          case 10: // RTpressed
+          {
+            success = get_key_status(keycode_SDL, SDLK_RIGHT) > 0;
+            break;
+          }
+
+          case 11: // LTpressed
+          {
+            success = get_key_status(keycode_SDL, SDLK_LEFT) > 0;
+            break;
+          }
+
+          case 12: // UPpressed
+          {
+            success = get_key_status(keycode_SDL, SDLK_UP) > 0;
+            break;
+          }
+
+          case 13: // dnpressed
+          {
+            success = get_key_status(keycode_SDL, SDLK_DOWN) > 0;
+            break;
+          }
+
+          case 14: // sppressed
+          {
+            success = get_key_status(keycode_SDL, SDLK_SPACE);
+            break;
+          }
+
+          case 15: // delpressed
+          {
+            success = get_key_status(keycode_SDL, SDLK_DELETE);
+            break;
+          }
+
+          case 16: // musicon
+          {
+            // FIXME - globalize?
+            if(music_on)
+              success = 1;
+            break;
+          }
+
+          case 17: // soundon
+          {
+            // FIXME - globalize?
+            if(sfx_on)
+              success = 1;
+            break;
           }
         }
-      }
-      else
-      // Only check this if the source is NOT vlayer, that prevents
-      // source vlayer to inversion combo.
-      {
-        // From board to overlay
-        if(cmd == 201)
+
+        if(cmd == 19)
+          success ^= 1;     // Reverse truth if NOT is present
+
+        if(success)
         {
-          src_char = level_param + off_src;
-          src_color = level_color + off_src;
-          if(inversion == 1)
+          // jump
+          gotoed = send_self_label_tr(mzx_world, cmd_ptr + 5, id);
+        }
+        break;
+      }
+
+      case 20: // if any thing label
+      {
+        // Get foreg/backg allowed in fb/bg
+        int offset, did, dcolor, dparam;
+        int color = parse_param(mzx_world, cmd_ptr + 1, id); // Color
+        int fg, bg;
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int check_id = parse_param(mzx_world, p2, id); // Thing
+        char *p3 = next_param_pos(p2);
+        // Param
+        int check_param = parse_param(mzx_world, p3, id);
+
+        split_colors(color, &fg, &bg);
+
+        for(offset = 0; offset < (board_width * board_height); offset++)
+        {
+          if(check_at_xy(src_board, check_id, fg, bg, check_param, offset))
           {
-            dest_char = overlay + off_dest;
-            dest_color = overlay_color + off_dest;
-            special_copy = 1;  
+            char *p4 = next_param_pos(p3);
+            gotoed = send_self_label_tr(mzx_world,  p4 + 1, id);
+          }
+        }
+
+        break;
+      }
+
+      case 21: // if no thing label
+      {
+        // Get foreg/backg allowed in fb/bg
+        int offset, did, dcolor, dparam;
+        int color = parse_param(mzx_world, cmd_ptr + 1, id); // Color
+        int fg, bg;
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int check_id = parse_param(mzx_world, p2, id); // Thing
+        char *p3 = next_param_pos(p2);
+        // Param
+        int check_param = parse_param(mzx_world, p3, id);
+
+        split_colors(color, &fg, &bg);
+
+        for(offset = 0; offset < (board_width * board_height); offset++)
+        {
+          if(check_at_xy(src_board, check_id, fg, bg, check_param, offset))
+            break;
+        }
+
+        if(offset == (board_width * board_height))
+        {
+          char *p4 = next_param_pos(p3);
+          gotoed = send_self_label_tr(mzx_world,  p4 + 1, id);
+        }
+
+        break;
+      }
+
+      case 22: // if thing dir
+      {
+        if(id)
+        {
+          int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int check_id = parse_param(mzx_world, p2, id);
+          char *p3 = next_param_pos(p2);
+          int check_param = parse_param(mzx_world, p3, id);
+          char *p4 = next_param_pos(p3);
+          int direction = parse_param(mzx_world, p4, id);
+
+          if(check_dir_xy(mzx_world, check_id, check_color,
+           check_param, x, y, direction, cur_robot, _bl))
+          {
+            char *p5 = next_param_pos(p4);
+            gotoed = send_self_label_tr(mzx_world, p5 + 1, id);
+          }
+        }
+        break;
+      }
+
+      case 23: // if NOT thing dir
+      {
+        if(id)
+        {
+          int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int check_id = parse_param(mzx_world, p2, id);
+          char *p3 = next_param_pos(p2);
+          int check_param = parse_param(mzx_world, p3, id);
+          char *p4 = next_param_pos(p3);
+          int direction = parse_param(mzx_world, p4, id);
+
+          if(!check_dir_xy(mzx_world, check_id, check_color,
+           check_param, x, y, direction, cur_robot, _bl))
+          {
+            char *p5 = next_param_pos(p4);
+            gotoed = send_self_label_tr(mzx_world, p5 + 1, id);
+          }
+        }
+        break;
+      }
+
+      case 24: // if thing x y
+      {
+        int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int check_id = parse_param(mzx_world, p2, id);
+        char *p3 = next_param_pos(p2);
+        int check_param = parse_param(mzx_world, p3, id);
+        char *p4 = next_param_pos(p3);
+        int check_x = parse_param(mzx_world, p4, id);
+        char *p5 = next_param_pos(p4);
+        int check_y = parse_param(mzx_world, p5, id);
+        int fg, bg;
+        int offset;
+
+        if(check_id == 98)
+        {
+          int ret;
+          int check_start = 0;
+
+          prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
+
+          if(check_color == 288)
+            check_param = mzx_world->sprite_num;
+
+          if(check_param == 256)
+          {
+            int i;
+            for(i = check_color; i < MAX_SPRITES; i++)
+            {
+              if(sprite_at_xy(mzx_world->sprite_list[i], check_x,
+               check_y)) break;
+            }
+            if(i == MAX_SPRITES)
+            {
+              i = -1;
+              ret = 0;
+            }
+            else
+            {
+              mzx_world->sprite_num = i;
+              ret = 1;
+            }
+          }
+          else
+          {
+            ret = sprite_at_xy(mzx_world->sprite_list[check_param],
+             check_x, check_y);
+          }
+
+          if(ret)
+          {
+            char *p6 = next_param_pos(p5);
+            gotoed = send_self_label_tr(mzx_world, p6 + 1, id);
+          }
+        }
+        else
+
+        // Check collision detection for sprite - Exo
+
+        if(check_id == 99)
+        {
+          Sprite *check_sprite;
+
+          int ret;
+          if(check_param == 256)
+            check_param = mzx_world->sprite_num;
+
+          check_sprite = mzx_world->sprite_list[check_param];
+
+          if(check_color == 288)
+          {
+            check_x += check_sprite->x;
+            check_y += check_sprite->y;
+          }
+
+          prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
+          offset = check_x + (check_y * board_width);
+
+          ret = sprite_colliding_xy(mzx_world, check_sprite,
+           check_x, check_y);
+
+          if(ret)
+          {
+            char *p6 = next_param_pos(p5);
+            gotoed = send_self_label_tr(mzx_world, p6 + 1, id);
           }
         }
         else
         {
-          // From overlay to board
-          src_char = overlay + off_src;
-          src_color = overlay_color + off_src;
-          if(inversion == 1)
-          {              
-            dest_id = level_id + off_dest;
-            dest_char = level_param + off_dest;
-            dest_color = level_color + off_dest;
-            special_copy = 2;
+          prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
+          offset = check_x + (check_y * board_width);
+
+          split_colors(check_color, &fg, &bg);
+          if(check_at_xy(src_board, check_id, fg, bg, check_param,
+           offset))
+          {
+
+            char *p6 = next_param_pos(p5);
+            gotoed = send_self_label_tr(mzx_world, p6 + 1, id);
           }
         }
+        break;
       }
 
-      edge_skip = src_bwidth - t3;
-      edge_skip2 = dest_bwidth - t3;
-
-      switch(special_copy)
+      case 25: // if at x y label
       {
-        // Copy from board to vlayer/overlay
-        case 1:
+        if(id)
         {
-          int i, i2;
-          char src_ch;
-          for(i = 0; i < t4; i++)
+          int check_x = parse_param(mzx_world, cmd_ptr + 1, id);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int check_y = parse_param(mzx_world, p2, id);
+
+          prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
+          if((check_x == x) && (check_y == y))
           {
-            for(i2 = 0; i2 < t3; i2++)
-            {
-              src_ch = get_id_char(off_src);
-              if(src_ch != 32)
-              {
-                *dest_char = src_ch;
-                *dest_color = *src_color;
-              }
-              off_src++;
-              src_color++;
-              dest_char++;
-              dest_color++;
-            }
-            off_src += edge_skip;
-            src_color += edge_skip;
-            dest_char += edge_skip2;
-            dest_color += edge_skip2;
+            char *p3 = next_param_pos(p2);
+            gotoed = send_self_label_tr(mzx_world, p3 + 1, id);
           }
-          break;
         }
-        // Copy from vlayer/overlay to board
-        case 2:
+        break;
+      }
+
+      case 26: // if dir of player is thing, "label"
+      {
+        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int check_color = parse_param(mzx_world, p2, id);
+        char *p3 = next_param_pos(p2);
+        int check_id = parse_param(mzx_world, p3, id);
+        char *p4 = next_param_pos(p3);
+        int check_param = parse_param(mzx_world, p4, id);
+
+        if(check_dir_xy(mzx_world, check_id, check_color,
+         check_param, mzx_world->player_x, mzx_world->player_y,
+         direction, cur_robot, _bl))
         {
-          char src_ch;
-          int i, i2;
-          for(i = 0; i < t4; i++)
+          char *p5 = next_param_pos(p4);
+          gotoed = send_self_label_tr(mzx_world, p5 + 1, id);
+        }
+        break;
+      }
+
+      case 27: // double c
+      {
+        char dest_buffer[128];
+        tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
+        mul_counter(mzx_world, dest_buffer, 2, id);
+        break;
+      }
+
+      case 28: // half c
+      {
+        char dest_buffer[128];
+        tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
+        div_counter(mzx_world, dest_buffer, 2, id);
+        break;
+      }
+
+      case 29: // Goto
+      {
+        gotoed = send_self_label_tr(mzx_world, cmd_ptr + 2, id);
+        break;
+      }
+
+      case 30: // Send robot label
+      {
+        char robot_name_buffer[128];
+        char label_buffer[128];
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        tr_msg(mzx_world, cmd_ptr + 2, id, robot_name_buffer);
+        tr_msg(mzx_world, p2 + 1, id, label_buffer);
+
+        send_robot(mzx_world, robot_name_buffer, label_buffer, 0);
+        // Did the position get changed? (send to self)
+        if(old_pos != cur_robot->cur_prog_line)
+          gotoed = 1;
+
+        break;
+      }
+
+      case 31: // Explode
+      {
+        if(id)
+        {
+          int offset = x + (y * board_width);
+          level_param[offset] =
+           (parse_param(mzx_world, cmd_ptr + 1, id) - 1) * 16;
+          level_id[offset] = 38;
+        }
+        clear_robot_id(src_board, id);
+
+        return;
+      }
+
+      case 32: // put thing dir
+      {
+        if(id)
+        {
+          int put_color = parse_param(mzx_world, cmd_ptr + 1, id);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int put_id = parse_param(mzx_world, p2, id);
+          char *p3 = next_param_pos(p2);
+          int put_param = parse_param(mzx_world, p3, id);
+          char *p4 = next_param_pos(p3);
+          int direction = parse_param(mzx_world, p4, id);
+
+          place_dir_xy(mzx_world, put_id, put_color, put_param, x, y,
+           direction, cur_robot, _bl);
+          update_blocked = 1;
+        }
+        break;
+      }
+
+      case 33: // Give # item
+      {
+        int amount = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int item_number = *(p2 + 1);
+        inc_counter(mzx_world, item_to_counter[item_number], amount, 0);
+        break;
+      }
+
+      case 34: // Take # item
+      {
+        int amount = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int item_number = *(p2 + 1);
+        int success = 0;
+
+        if(get_counter(mzx_world, item_to_counter[item_number], 0) >= amount)
+        {
+          dec_counter(mzx_world, item_to_counter[item_number], amount, 0);
+          success = 1;
+        }
+
+        break;
+      }
+
+      case 35: // Take # item "label"
+      {
+        int amount = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int item_number = *(p2 + 1);
+        int success = 0;
+
+        if(get_counter(mzx_world, item_to_counter[item_number], 0) >= amount)
+        {
+          dec_counter(mzx_world, item_to_counter[item_number], amount, 0);
+          success = 1;
+        }
+        else
+        {
+          gotoed = send_self_label_tr(mzx_world,  p2 + 4, id);
+        }
+
+        break;
+      }
+
+      case 36: // Endgame
+      {
+        set_counter(mzx_world, "LIVES", 0, 0);
+        set_counter(mzx_world, "HEALTH", 0, 0);
+        break;
+      }
+
+      case 37: // Endlife
+      {
+        set_counter(mzx_world, "HEALTH", 0, 0);
+        break;
+      }
+
+      // FIXME - Get sound system working, of course...
+      case 38: // Mod
+      {
+        char mod_name_buffer[128];
+        tr_msg(mzx_world, cmd_ptr + 2, id, mod_name_buffer);
+        magic_load_mod(mod_name_buffer);
+        strcpy(src_board->mod_playing, mod_name_buffer);
+        strcpy(mzx_world->real_mod_playing, mod_name_buffer);
+        volume_mod(src_board->volume);
+        break;
+      }
+
+      case 39: // sam
+      {
+        char sam_name_buffer[128];
+        int frequency = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        tr_msg(mzx_world, p2 + 1, id, sam_name_buffer);
+        play_sample(frequency, sam_name_buffer);
+        break;
+      }
+
+      case 40: // Volume
+      {
+        int volume = parse_param(mzx_world, cmd_ptr + 1, id);
+        src_board->volume = volume;
+        src_board->volume_target = volume;
+        volume_mod(volume);
+        break;
+      }
+
+      case 41: // End mod
+      {
+        end_mod();
+        src_board->mod_playing[0] = 0;
+        mzx_world->real_mod_playing[0] = 0;
+        break;
+      }
+
+      case 42: // End sam
+      {
+        end_sample();
+        break;
+      }
+
+      case 43: // Play notes
+      {
+        play_str(cmd_ptr + 2, 0);
+        break;
+      }
+
+      case 44: // End play
+      {
+        clear_sfx_queue();
+        break;
+      }
+
+      // FIXME - This probably needs a different implementation
+      case 45: // wait play "str"
+      {
+        int index_dif = topindex - backindex;
+        if(index_dif < 0)
+         index_dif = topindex + (NOISEMAX - backindex);
+
+        if(index_dif > 10)
+          goto breaker;
+
+        play_str(cmd_ptr + 2, 0);
+
+        break;
+      }
+
+      case 46: // wait play
+      {
+        int index_dif = topindex - backindex;
+        if(index_dif < 0)
+         index_dif = topindex + (NOISEMAX - backindex);
+
+        if(index_dif > 10)
+          goto breaker;
+
+        break;
+      }
+
+      case 48: // sfx num
+      {
+        int sfx_num = parse_param(mzx_world, cmd_ptr + 1, id);
+        play_sfx(mzx_world, sfx_num);
+        break;
+      }
+
+      case 49: // play sfx notes
+      {
+        if(!is_playing())
+          play_str(cmd_ptr + 2, 0);
+
+        break;
+      }
+
+      case 50: // open
+      {
+        if(id)
+        {
+          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          parsedir(direction, x, y, cur_robot->walk_dir);
+          if((direction >= 1) & (direction <= 4))
           {
-            for(i2 = 0; i2 < t3; i2++)
+            int new_x = x;
+            int new_y = y;
+            if(!move_dir(src_board, &new_x, &new_y, direction - 1))
             {
-              if(*dest_id != 127)
+              int new_offset = new_x + (new_y * board_width);
+              int new_id = level_id[new_offset];
+              if((new_id == 41) || (new_id == 47))
               {
-                src_ch = *src_char;
-                if(src_ch != 32)
+                // Become pushable for right now
+                int offset = x + (y * board_width);
+                int old_id = level_id[offset];
+                level_id[offset] = 123;
+                grab_item(mzx_world, new_offset, 0);
+                // Find the robot
+                if(level_id[offset] != 123)
                 {
-                  *dest_id = 5;
-                  *dest_char = src_ch;
-                  *dest_color = *src_color;
+                  int i;
+                  for(i = 0; i < 4; i++)
+                  {
+                    new_x = x;
+                    new_y = y;
+                    if(!move_dir(src_board, &new_x, &new_y, i))
+                    {
+                      // Not edge... robot?
+                      new_offset = new_x + (new_y * board_width);
+                      if((level_id[new_offset] == 123) &&
+                       (level_param[new_offset] == id))
+                      {
+                        offset = new_offset;
+                        x = new_x;
+                        y = new_y;
+                        break;
+                      }
+                    }
+                  }
                 }
+                level_id[offset] = old_id;
+                update_blocked = 1;
               }
-              dest_char++;
-              dest_color++;
-              dest_id++;
-              src_char++;
-              src_color++;
             }
-            src_char += edge_skip;
-            src_color += edge_skip;
-            dest_char += edge_skip2;
-            dest_color += edge_skip2;
-            dest_id += edge_skip2;
           }
+        }
+        break;
+      }
+
+      case 51: // Lockself
+      {
+        cur_robot->is_locked = 1;
+        break;
+      }
+
+      case 52: // Unlockself
+      {
+        cur_robot->is_locked = 0;
+        break;
+      }
+
+      case 53: // Send DIR "label"
+      {
+        if(id)
+        {
+          int send_x = x;
+          int send_y = y;
+          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          direction = parsedir(direction, x, y, cur_robot->walk_dir);
+
+          if((direction >= 1) && (direction <= 4))
+          {
+            if(!move_dir(src_board, &send_x, &send_y, direction - 1))
+            {
+              send_at_xy(mzx_world, id, send_x, send_y, p2 + 1);
+              // Did the position get changed? (send to self)
+              if(old_pos != cur_robot->cur_prog_line)
+                gotoed = 1;
+            }
+          }
+        }
+        break;
+      }
+
+      case 54: // Zap label num
+      {
+        char label_buffer[128];
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int num_times = parse_param(mzx_world, p2, id);
+        int i;
+
+        tr_msg(mzx_world, cmd_ptr + 2, id, label_buffer);
+        for(i = 0; i < num_times; i++)
+        {
+          if(!zap_label(cur_robot, label_buffer))
+            break;
+        }
+        break;
+      }
+
+      case 55: // Restore label num
+      {
+        char label_buffer[128];
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int num_times = parse_param(mzx_world, p2, id);
+        int i;
+
+        tr_msg(mzx_world, cmd_ptr + 2, id, label_buffer);
+        for(i = 0; i < num_times; i++)
+        {
+          if(!restore_label(cur_robot, label_buffer))
+            break;
+        }
+        break;
+      }
+
+      case 56: // Lockplayer
+      {
+        src_board->player_ns_locked = 1;
+        src_board->player_ew_locked = 1;
+        src_board->player_attack_locked = 1;
+        break;
+      }
+
+      case 57: // unlockplayer
+      {
+        src_board->player_ns_locked = 0;
+        src_board->player_ew_locked = 0;
+        src_board->player_attack_locked = 0;
+        break;
+      }
+
+      case 58: // lockplayer ns
+      {
+        src_board->player_ns_locked = 1;
+        break;
+      }
+
+      case 59: // lockplayer ew
+      {
+        src_board->player_ew_locked = 1;
+        break;
+      }
+
+      case 60: // lockplayer attack
+      {
+        src_board->player_attack_locked = 1;
+        break;
+      }
+
+      case 61: // move player dir
+      case 62: // move pl dir "label"
+      {
+        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+        direction = parsedir(direction, x, y, cur_robot->walk_dir);
+        if((direction >= 1) && (direction <= 4))
+        {
+          int old_x = mzx_world->player_x;
+          int old_y = mzx_world->player_y;
+          int old_board = mzx_world->current_board_id;
+          int old_target = target_where;
+          // Have to fix vars and move to next command NOW, in case player
+          // is send to another screen!
+          mzx_world->first_prefix = 0;
+          mzx_world->mid_prefix = 0;
+          mzx_world->last_prefix = 0;
+          cur_robot->pos_within_line = 0;
+          cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+
+          if(!program[cur_robot->cur_prog_line])
+            cur_robot->cur_prog_line = 0;
+          cur_robot->cycle_count = 0;
+          cur_robot->xpos = x;
+          cur_robot->ypos = y;
+
+          // Move player
+          move_player(mzx_world, direction - 1);
+          if((mzx_world->player_x == old_x) && (mzx_world->player_y == old_y) &&
+           (mzx_world->current_board_id == old_board) && (cmd == 62) &&
+           (target_where == old_target))
+          {
+            char *p2 = next_param_pos(cmd_ptr + 1);
+            gotoed = send_self_label_tr(mzx_world,  p2 + 1, id);
+            goto breaker;
+          }
+          return;
+        }
+        break;
+      }
+
+      case 63: // Put player x y
+      {
+        int put_x = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int put_y = parse_param(mzx_world, p2, id);
+
+        prefix_mid_xy(mzx_world, &put_x, &put_y, x, y);
+
+        if(place_player_xy(mzx_world, put_x, put_y))
+        {
+          done = 1;
+          if((mzx_world->player_x == x) && (mzx_world->player_y == y))
+          {
+            return;
+          }
+        }
+        break;
+      }
+
+      case 66: // if player x y
+      {
+        int check_x = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int check_y = parse_param(mzx_world, p2, id);
+        prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
+
+        if((check_x == mzx_world->player_x) && (check_y == mzx_world->player_y))
+        {
+          char *p3 = next_param_pos(p2);
+          gotoed = send_self_label_tr(mzx_world, p3 + 1, id);
+        }
+        break;
+      }
+
+      case 67: // put player dir
+      {
+        if(id)
+        {
+          int put_dir = parse_param(mzx_world, cmd_ptr + 1, id);
+          put_dir = parsedir(put_dir, x, y, cur_robot->walk_dir);
+
+          if((put_dir >= 1) && (put_dir <= 4))
+          {
+            int put_x = x;
+            int put_y = y;
+            if(!move_dir(src_board, &put_x, &put_y, put_dir - 1))
+            {
+              if(place_player_xy(mzx_world, put_x, put_y))
+                done = 1;
+            }
+          }
+        }
+        break;
+      }
+
+      case 69: // rotate cw
+      {
+        if(id)
+        {
+          rotate(mzx_world, x, y, 0);
+          // Figure blocked vars
+          update_blocked = 1;
+        }
+        break;
+      }
+
+      case 70: // rotate ccw
+      {
+        if(id)
+        {
+          rotate(mzx_world, x, y, 1);
+          // Figure blocked vars
           update_blocked = 1;
           break;
         }
-        // copy from overlay to vlayer and vice-versa
-        case 3:
+      }
+
+      case 71: // switch dir dir
+      {
+        if(id)
         {
-          int i, i2;
-          char src_ch;
-          for(i = 0; i < t4; i++)
+          int src_x = x;
+          int dest_x = x;
+          int src_y = y;
+          int dest_y = y;
+          int dest_dir = parse_param(mzx_world, cmd_ptr + 1, id);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int src_dir = parse_param(mzx_world, p2, id);
+          src_dir = parsedir(src_dir, x, y, cur_robot->walk_dir);
+          dest_dir = parsedir(dest_dir, x, y, cur_robot->walk_dir);
+
+          if((src_dir >= 1) && (src_dir <= 4) && (dest_dir >= 1) &&
+           (dest_dir <= 4))
           {
-            for(i2 = 0; i2 < t3; i2++)
+            int move_status = move_dir(src_board, &src_x, &src_y, src_dir - 1);
+            move_status |= move_dir(src_board, &dest_x, &dest_y, dest_dir - 1);
+            if(!move_status)
             {
-              src_ch = *src_char;
-              if(src_ch != 32)
+              // Switch src_x, src_y with dest_x, dest_y
+              // The nice thing is that nothing gets deleted,
+              // nothing gets copied.
+              if((src_x != dest_x) || (src_y != dest_y))
               {
-                *dest_char = src_ch;
-                *dest_color = *src_color;
+                int src_offset = src_x + (src_y * board_width);
+                int dest_offset = dest_x + (dest_y * board_width);
+                int cp_id = level_id[src_offset];
+                int cp_param = level_param[src_offset];
+                int cp_color = level_color[src_offset];
+                level_id[src_offset] = level_id[dest_offset];
+                level_param[src_offset] = level_param[dest_offset];
+                level_color[src_offset] = level_color[dest_offset];
+                level_id[dest_offset] = cp_id;
+                level_param[dest_offset] = cp_param;
+                level_color[dest_offset] = cp_color;
+                // Figure blocked vars
+                update_blocked = 1;
               }
-              src_char++;
-              src_color++;
-              dest_char++;
-              dest_color++;
             }
-            src_char += edge_skip;
-            src_color += edge_skip;
-            dest_char += edge_skip2;
-            dest_color += edge_skip2;
           }
-          break;
         }
+        break;
+      }
 
-        // copy from board/vlayer/overlay to string
-        case 4:
+      case 72: // Shoot
+      {
+        if(id)
         {
-          load_string_board(l3, t3, t4, t7, src_char, src_bwidth);
-          break;
+          int direction = parsedir(cmd_ptr[2], x, y, cur_robot->walk_dir);
+          if((direction >= 1) && (direction <= 4))
+          {
+            if(!(_bl[direction] & 2))
+            {
+              // Block
+              shoot(mzx_world, x, y, direction - 1, cur_robot->bullet_type);
+              if(_bl[direction])
+                _bl[direction] = 3;
+            }
+          }
         }
+        break;
+      }
 
-        // copy from board/vlayer/overlay to mzm
-        case 5:
+      case 73: // laybomb
+      {
+        if(id)
         {
-          // Save from vlayer
-          if(src_vlayer)
+          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          place_dir_xy(mzx_world, 37, 8, 0, x, y, direction,
+           cur_robot, _bl);
+          update_blocked = 1;
+        }
+        break;
+      }
+
+      case 74: // laybomb high
+      {
+        if(id)
+        {
+          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          place_dir_xy(mzx_world, 37, 8, 128, x, y, direction,
+           cur_robot, _bl);
+          update_blocked = 1;
+        }
+        break;
+      }
+
+      case 75: // shoot missile
+      {
+        if(id)
+        {
+          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          direction = parsedir(direction, x, y, cur_robot->walk_dir);
+          if((direction >= 1) && (direction <= 4))
           {
-            save_mzm(l3 + 1, src_x, src_y, t3, t4, 2, t7);
-            break;
+            shoot_missile(mzx_world, x, y, direction - 1);
+            // Figure blocked vars
+            update_blocked = 1;
           }
-          // Save from board
-          if(cmd == 201)
+        }
+        break;
+      }
+
+      case 76: // shoot seeker
+      {
+        if(id)
+        {
+          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          direction = parsedir(direction, x, y, cur_robot->walk_dir);
+          if((direction >= 1) && (direction <= 4))
           {
-            save_mzm(l3 + 1, t1, t2, t3, t4, 0, t7);
-            break;
+            shoot_seeker(mzx_world, x, y, direction - 1);
+            // Figure blocked vars
+            update_blocked = 1;
           }
-          // Save from overlay
+        }
+        break;
+      }
+
+      case 77: // spit fire
+      {
+        if(id)
+        {
+          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          direction = parsedir(direction, x, y, cur_robot->walk_dir);
+          if((direction >= 1) && (direction <= 4))
+          {
+            shoot_fire(mzx_world, x, y, direction - 1);
+            // Figure blocked vars
+            update_blocked = 1;
+          }
+        }
+        break;
+      }
+
+      case 78: // lazer wall
+      {
+        if(id)
+        {
+          int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+          direction = parsedir(direction, x, y, cur_robot->walk_dir);
+
+          if((direction >= 1) && (direction <= 4))
+          {
+            char *p2 = next_param_pos(cmd_ptr + 1);
+            int duration = parse_param(mzx_world, p2, id);
+            shoot_lazer(mzx_world, x, y, direction - 1, duration,
+             level_color[x + (y * board_width)]);
+            // Figure blocked vars
+            update_blocked = 1;
+          }
+        }
+        break;
+      }
+
+      case 79: // put at xy
+      {
+        // Defer initialization of color until later because it might be
+        // an MZM name string instead.
+        int put_color;
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int put_id = parse_param(mzx_world, p2, id);
+        char *p3 = next_param_pos(p2);
+        int put_param = parse_param(mzx_world, p3, id);
+        char *p4 = next_param_pos(p3);
+        int put_x = parse_param(mzx_world, p4, id);
+        char *p5 = next_param_pos(p4);
+        int put_y = parse_param(mzx_world, p5, id);
+
+        // MZM image file
+        if((put_id == 100) && *(cmd_ptr + 1) && (*(cmd_ptr + 2) == '@'))
+        {
+          int dest_width, dest_height;
+          char mzm_name_buffer[128];
+          // "Type" must be 0, 1, or 2; board, overlay, or vlayer
+          put_param %= 3;
+
+          if(put_param == 2)
+          {
+            // Use vlayer dimensions
+            dest_width = mzx_world->vlayer_width;
+            dest_height = mzx_world->vlayer_height;
+          }
           else
           {
-            save_mzm(l3 + 1, t1, t2, t3, t4, 1, t7);
+            dest_width = src_board->board_width;
+            dest_height = src_board->board_height;
+          }
+
+          prefix_mid_xy_var(mzx_world, &put_x, &put_y, x, y,
+           dest_width, dest_height);
+
+          tr_msg(mzx_world, cmd_ptr + 3, id, mzm_name_buffer);
+          load_mzm(mzx_world, mzm_name_buffer, put_x, put_y, put_param);
+        }
+        else
+
+        // Sprite
+        if(put_id == 98)
+        {
+          put_color = parse_param(mzx_world, cmd_ptr + 1, id);
+          if(put_param == 256)
+            put_param = mzx_world->sprite_num;
+
+          prefix_mid_xy(mzx_world, &put_x, &put_y, x, y);
+
+          plot_sprite(mzx_world, mzx_world->sprite_list[put_param],
+           put_color, put_x, put_y);
+        }
+        else
+        {
+          put_color = parse_param(mzx_world, cmd_ptr + 1, id);
+          prefix_mid_xy(mzx_world, &put_x, &put_y, x, y);
+          place_at_xy(mzx_world, put_id, put_color, put_param, put_x, put_y);
+          // Still alive?
+          if((put_x == x) && (put_y == y))
+            return;
+
+          update_blocked = 1;
+        }
+        break;
+      }
+
+      case 81: // Send x y "label"
+      {
+        if(id)
+        {
+          int send_x = parse_param(mzx_world, cmd_ptr + 1, id);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int send_y = parse_param(mzx_world, p2, id);
+          char *p3 = next_param_pos(p2);
+          prefix_mid_xy(mzx_world, &send_x, &send_y, x, y);
+
+          send_at_xy(mzx_world, id, send_x, send_y, p3 + 1);
+          // Did the position get changed? (send to self)
+          if(old_pos != cur_robot->cur_prog_line)
+            gotoed = 1;
+        }
+        break;
+      }
+
+      case 82: // copyrobot ""
+      {
+        Robot *dest_robot;
+        int first, last;
+        char robot_name_buffer[128];
+        // Get the robot name
+        tr_msg(mzx_world, cmd_ptr + 2, id, robot_name_buffer);
+
+        // Check the global robot
+        if(!strcasecmp(mzx_world->global_robot.robot_name, robot_name_buffer))
+        {
+          replace_robot(src_board, &(mzx_world->global_robot), id);
+        }
+        else
+        {
+          // Find the first robot that matches
+          if(find_robot(src_board, robot_name_buffer, &first, &last))
+          {
+            if(first != id)
+            {
+              replace_robot(src_board, src_board->robot_list_name_sorted[first], id);
+            }
+          }
+        }
+        cur_robot = src_board->robot_list[id];
+        goto breaker;
+      }
+
+      case 83: // copyrobot x y
+      {
+        int copy_x = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int copy_y = parse_param(mzx_world, p2, id);
+        int offset, did;
+
+        prefix_mid_xy(mzx_world, &copy_x, &copy_y, x, y);
+        offset = copy_x + (copy_y * board_width);
+        did = level_id[offset];
+
+        if((did == 123) || (did == 124))
+        {
+          replace_robot(src_board,
+           src_board->robot_list[level_param[offset]], id);
+        }
+        cur_robot = src_board->robot_list[id];
+        goto breaker;
+      }
+
+      case 84: // copyrobot dir
+      {
+        int copy_dir = parse_param(mzx_world, cmd_ptr + 1, id);
+        int offset, did;
+        int copy_x = x;
+        int copy_y = y;
+
+        copy_dir = parsedir(copy_dir, x, y, cur_robot->walk_dir);
+
+        if((copy_dir >= 1) && (copy_dir <= 4))
+        {
+          if(!move_dir(src_board, &copy_x, &copy_y, copy_dir - 1))
+          {
+            offset = copy_x + (copy_y * board_width);
+            did = level_id[offset];
+
+            if((did == 123) || (did == 124))
+            {
+              replace_robot(src_board,
+               src_board->robot_list[level_param[offset]], id);
+            }
+          }
+        }
+        cur_robot = src_board->robot_list[id];
+        goto breaker;
+      }
+
+      case 85: // dupe self dir
+      {
+        if(id)
+        {
+          int duplicate_dir = parse_param(mzx_world, cmd_ptr + 1, id);
+          int dest_id;
+          int duplicate_id, duplicate_color, offset;
+          int duplicate_x = x;
+          int duplicate_y = y;
+
+          duplicate_dir = parsedir(duplicate_dir, x, y, cur_robot->walk_dir);
+
+          if((duplicate_dir >= 1) && (duplicate_dir <= 4))
+          {
+            offset = x + (y * board_width);
+            duplicate_color = level_color[offset];
+            duplicate_id = level_id[offset];
+
+            if(!move_dir(src_board, &duplicate_x, &duplicate_y,
+             duplicate_dir - 1))
+            {
+              dest_id = duplicate_robot(src_board, cur_robot,
+               duplicate_x, duplicate_y);
+
+              if(dest_id != -1)
+                place_at_xy(mzx_world, duplicate_id, duplicate_color,
+                 dest_id, duplicate_x, duplicate_y);
+            }
+          }
+        }
+        break;
+      }
+
+      case 86: // dupe self xy
+      {
+        int duplicate_x = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int duplicate_y = parse_param(mzx_world, p2, id);
+        int dest_id;
+        int duplicate_id, duplicate_color, offset;
+
+        prefix_mid_xy(mzx_world, &duplicate_x, &duplicate_y, x, y);
+
+        if((duplicate_x != x) || (duplicate_y != y))
+        {
+          if(id)
+          {
+            offset = x + (y * board_width);
+            duplicate_color = level_color[offset];
+            duplicate_id = level_id[offset];
+          }
+          else
+          {
+            duplicate_color = 7;
+            duplicate_id = 124;
+          }
+
+          dest_id = duplicate_robot(src_board, cur_robot, duplicate_x, duplicate_y);
+
+          if(dest_id != -1)
+          {
+            place_at_xy(mzx_world, duplicate_id, duplicate_color, dest_id,
+             duplicate_x, duplicate_y);
+          }
+        }
+        else
+        {
+          cur_robot->cur_prog_line = 1;
+          gotoed = 1;
+        }
+        break;
+      }
+
+      case 87: // bulletn
+      {
+        int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
+        bullet_char[0] = new_char;
+        bullet_char[4] = new_char;
+        bullet_char[8] = new_char;
+        break;
+      }
+
+      case 88: // bullets
+      {
+        int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
+        bullet_char[1] = new_char;
+        bullet_char[5] = new_char;
+        bullet_char[9] = new_char;
+        break;
+      }
+
+      case 89: // bullete
+      {
+        int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
+        bullet_char[2] = new_char;
+        bullet_char[6] = new_char;
+        bullet_char[10] = new_char;
+        break;
+      }
+
+      case 90: // bulletw
+      {
+        int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
+        bullet_char[3] = new_char;
+        bullet_char[7] = new_char;
+        bullet_char[11] = new_char;
+        break;
+      }
+
+      case 91: // givekey col
+      {
+        int key_num = parse_param(mzx_world, cmd_ptr + 1, id) & 0x0F;
+        give_key(mzx_world, key_num);
+        break;
+      }
+
+      case 92: // givekey col "l"
+      {
+        int key_num = parse_param(mzx_world, cmd_ptr + 1, id) & 0x0F;
+        if(give_key(mzx_world, key_num))
+        {
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          gotoed = send_self_label_tr(mzx_world, p2 + 1, id);
+        }
+        break;
+      }
+
+      case 93: // takekey col
+      {
+        int key_num = parse_param(mzx_world, cmd_ptr + 1, id) & 0x0F;
+        take_key(mzx_world, key_num);
+        break;
+      }
+
+      case 94: // takekey col "l"
+      {
+        int key_num = parse_param(mzx_world, cmd_ptr + 1, id) & 0x0F;
+        if(take_key(mzx_world, key_num))
+        {
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          gotoed = send_self_label_tr(mzx_world, p2 + 1, id);
+        }
+        break;
+      }
+
+      case 95: // inc c r
+      {
+        char dest_buffer[128];
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        char *p3 = next_param_pos(p2);
+        int min_value = parse_param(mzx_world, p2, id);
+        int max_value = parse_param(mzx_world, p3, id);
+        int result;
+
+        tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
+        result = get_random_range(min_value, max_value);
+        inc_counter(mzx_world, dest_buffer, result, id);
+        break;
+      }
+
+      case 96: // dec c r
+      {
+        char dest_buffer[128];
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        char *p3 = next_param_pos(p2);
+        int min_value = parse_param(mzx_world, p2, id);
+        int max_value = parse_param(mzx_world, p3, id);
+        int result;
+
+        tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
+        result = get_random_range(min_value, max_value);
+        dec_counter(mzx_world, dest_buffer, result, id);
+        break;
+      }
+
+      case 97: // set c r
+      {
+        char dest_buffer[128];
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        char *p3 = next_param_pos(p2);
+        int min_value = parse_param(mzx_world, p2, id);
+        int max_value = parse_param(mzx_world, p3, id);
+        int result;
+
+        tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
+        result = get_random_range(min_value, max_value);
+        set_counter(mzx_world, dest_buffer, result, id);
+        break;
+      }
+
+      case 98: // Trade givenum givetype takenum taketype poorlabel
+      {
+        int give_num = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int give_type = parse_param(mzx_world, p2, id);
+        char *p3 = next_param_pos(p2);
+        int take_num = parse_param(mzx_world, p3, id);
+        char *p4 = next_param_pos(p3);
+        int take_type = parse_param(mzx_world, p4, id);
+        int amount_held = get_counter(mzx_world, item_to_counter[take_type], 0);
+
+        if(amount_held < take_num)
+        {
+          char *p5 = next_param_pos(p4);
+          gotoed = send_self_label_tr(mzx_world, p5 + 1, id);
+        }
+        else
+        {
+          dec_counter(mzx_world, item_to_counter[take_type], take_num, 0);
+          inc_counter(mzx_world, item_to_counter[give_type], give_num, 0);
+        }
+        break;
+      }
+
+      case 99: // Send DIR of player "label"
+      {
+        int send_x = mzx_world->player_x;
+        int send_y = mzx_world->player_y;
+        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+        direction = parsedir(direction, send_x, send_y, cur_robot->walk_dir);
+
+        if(!move_dir(src_board, &send_x, &send_y, direction - 1))
+        {
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          send_at_xy(mzx_world, id, send_x, send_y, p2 + 1);
+          // Did the position get changed? (send to self)
+          if(old_pos != cur_robot->cur_prog_line)
+            gotoed = 1;
+        }
+        break;
+      }
+
+      case 100: // put thing dir of player
+      {
+        if(id)
+        {
+          int put_color = parse_param(mzx_world, cmd_ptr + 1, id);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int put_id = parse_param(mzx_world, p2, id);
+          char *p3 = next_param_pos(p2);
+          int put_param = parse_param(mzx_world, p3, id);
+          char *p4 = next_param_pos(p3);
+          int direction = parse_param(mzx_world, p4, id);
+
+          place_dir_xy(mzx_world, put_id, put_color, put_param,
+           mzx_world->player_x, mzx_world->player_y, direction,
+           cur_robot, _bl);
+          update_blocked = 1;
+        }
+        break;
+      }
+
+      case 101: // /"dirs"
+      case 232: // Persistent go [str]
+      {
+        if(id)
+        {
+          int current_char, direction;
+          // get next dir char, if none, next cmd
+          cur_robot->pos_within_line++;
+          current_char = cmd_ptr[cur_robot->pos_within_line + 1];
+          // current_char must be 'n', 's', 'w', 'e' or 'i'
+          switch(current_char)
+          {
+            case 'n':
+            case 'N':
+              direction = 0;
+              break;
+            case 's':
+            case 'S':
+              direction = 1;
+              break;
+            case 'e':
+            case 'E':
+              direction = 2;
+              break;
+            case 'w':
+            case 'W':
+              direction = 3;
+              break;
+            case 'i':
+            case 'I':
+              direction = -1;
+              break;
+            default:
+              direction = -2;
+          }
+
+          if(direction >= 0)
+          {
+            if((move(mzx_world, x, y, direction,
+             1 | 2 | 8 | 16 | 4 * cur_robot->can_lavawalk)) &&
+             (cmd == 232))
+              cur_robot->pos_within_line--; // persistent...
+
+            move_dir(src_board, &x, &y, direction);
+          }
+
+          if(direction == -2)
+            goto next_cmd;
+          else
+            goto breaker;
+        }
+        break;
+      }
+
+      case 102: // Mesg
+      {
+        char message_buffer[128];
+        tr_msg(mzx_world, cmd_ptr + 2, id, message_buffer);
+        set_mesg_direct(src_board, message_buffer);
+        break;
+      }
+
+      case 103:
+      case 104:
+      case 105:
+      case 116:
+      case 117:
+      {
+        // Box messages!
+        char label_buffer[128];
+        int cur_prog_line = cur_robot->cur_prog_line;
+        int next_cmd = 0;
+
+        robot_box_display(mzx_world, cmd_ptr - 1, label_buffer, id);
+
+        // Move to end of all box mesg cmds.
+        do
+        {
+          cur_prog_line += program[cur_prog_line] + 2;
+          // At next line- check type
+          if(!program[cur_prog_line])
+            goto end_prog;
+
+          next_cmd = program[cur_prog_line + 1];
+        } while((next_cmd == 47) || ((next_cmd >= 103) && (next_cmd <= 106))
+         || (next_cmd == 116) || (next_cmd == 117));
+
+        cur_robot->cur_prog_line = cur_prog_line;
+
+        // Send label
+        if(label_buffer[0])
+        {
+          gotoed = send_self_label_tr(mzx_world, label_buffer, id);
+        }
+
+        goto breaker;
+      }
+
+      case 107: // comment-do nothing!
+      {
+        // (unless first char is a @)
+        if(cmd_ptr[2] == '@')
+        {
+          char name_buffer[128];
+          tr_msg(mzx_world, cmd_ptr + 3, id, name_buffer);
+          name_buffer[15] = 0;
+
+          if(id)
+          {
+            change_robot_name(src_board, cur_robot, name_buffer);
+          }
+          else
+          {
+            // Special code for global robot
+            strcpy(cur_robot->robot_name, name_buffer);
+          }
+        }
+        break;
+      }
+
+      case 109: // teleport
+      {
+        char board_dest_buffer[128];
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int teleport_x = parse_param(mzx_world, p2, id);
+        char *p3 = next_param_pos(p2);
+        int teleport_y = parse_param(mzx_world, p3, id);
+        int current_board_id = mzx_world->current_board_id;
+        int board_id;
+
+        tr_msg(mzx_world, cmd_ptr + 2, id, board_dest_buffer);
+        board_id = find_board(mzx_world, board_dest_buffer);
+
+        if(board_id != NO_BOARD)
+        {
+          mzx_world->current_board = mzx_world->board_list[board_id];
+          prefix_mid_xy(mzx_world, &teleport_x, &teleport_y,
+           x, y);
+          // And switch back
+          mzx_world->current_board =
+           mzx_world->board_list[current_board_id];
+          target_board = board_id;
+          target_x = teleport_x;
+          target_y = teleport_y;
+          target_where = -1;
+          done = 1;
+        }
+
+        break;
+      }
+
+      case 110: // scrollview dir num
+      {
+        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+        direction = parsedir(direction, x, y, cur_robot->walk_dir);
+
+        if((direction >= 1) && (direction <= 4))
+        {
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int num = parse_param(mzx_world, p2, id);
+
+          switch(direction)
+          {
+            case 1:
+              src_board->scroll_y -= num;
+              break;
+            case 2:
+              src_board->scroll_y += num;
+              break;
+            case 3:
+              src_board->scroll_x += num;
+              break;
+            case 4:
+              src_board->scroll_x -= num;
+              break;
+          }
+        }
+        break;
+      }
+
+      case 111: // input string
+      {
+        char input_buffer[128];
+
+        m_hide();
+        save_screen();
+        if(fade)
+        {
+          clear_screen(32, 7);
+          insta_fadein();
+        }
+        draw_window_box(3, 11, 77, 14, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
+         EC_DEBUG_BOX_CORNER, 1, 1);
+        tr_msg(mzx_world, cmd_ptr + 2, id, input_buffer);
+        write_string(input_buffer, 5, 12, EC_DEBUG_LABEL, 1);
+        m_show();
+        src_board->input_string[0] = 0;
+
+        intake(src_board->input_string, 70, 5, 13, 15, 1, 0);
+        if(fade)
+          insta_fadeout();
+
+        restore_screen();
+        src_board->input_size = strlen(src_board->input_string);
+        src_board->num_input = atoi(src_board->input_string);
+        break;
+      }
+
+      case 112: // If string "" "l"
+      {
+        char cmp_buffer[128];
+        tr_msg(mzx_world, cmd_ptr + 2, id, cmp_buffer);
+        if(!strcasecmp(cmp_buffer, src_board->input_string))
+        {
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          gotoed = send_self_label_tr(mzx_world, p2 + 1, id);
+        }
+        break;
+      }
+
+      case 113: // If string not "" "l"
+      {
+        char cmp_buffer[128];
+        tr_msg(mzx_world, cmd_ptr + 2, id, cmp_buffer);
+        if(strcasecmp(cmp_buffer, src_board->input_string))
+        {
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          gotoed = send_self_label_tr(mzx_world, p2 + 1, id);
+        }
+        break;
+      }
+
+      case 114: // If string matches "" "l"
+      {
+        // compare
+        char cmp_buffer[128];
+        char *input_string = src_board->input_string;
+        tr_msg(mzx_world, cmd_ptr + 2, id, cmp_buffer);
+        char current_char;
+        char cmp_char;
+        int cmp_len = strlen(cmp_buffer);
+        int i = 0;
+
+        for(i = 0; i < cmp_len; i++)
+        {
+          cmp_char = cmp_buffer[i];
+          current_char = input_string[i];
+
+          if((cmp_char >= 'a') && (cmp_char <= 'z'))
+            cmp_char -= 32;
+          if((current_char >= 'a') && (current_char <= 'z'))
+            current_char -= 32;
+
+          if(cmp_char == '?') continue;
+          if(cmp_char == '#')
+          {
+            if((current_char < '0') || (current_char > '9'))
+              break;
+            continue;
+          }
+          if(cmp_char == '_')
+          {
+            if((current_char < 'A') || (current_char > 'Z'))
+              break;
+            continue;
+          }
+          if(cmp_char == '*')
+          {
+            i = 1000000;
+            break;
+          }
+
+          if(cmp_char != current_char) break;
+        }
+
+        if(i >= cmp_len)
+        {
+          // Matches
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          gotoed = send_self_label_tr(mzx_world, p2 + 1, id);
+        }
+        break;
+      }
+
+      case 115: // Player char
+      {
+        int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
+        int i;
+
+        for(i = 0; i < 4; i++)
+        {
+          player_char[i] = new_char;
+        }
+        break;
+      }
+
+      case 118: // move all thing dir
+      {
+        int move_color = parse_param(mzx_world, cmd_ptr + 1, id); // Color
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int move_id = parse_param(mzx_world, p2, id);
+        char *p3 = next_param_pos(p2);
+        int move_param = parse_param(mzx_world, p3, id);
+        char *p4 = next_param_pos(p3);
+        int move_dir = parse_param(mzx_world, p4, id);
+        int lx, ly;
+        int fg, bg;
+        int offset;
+        int dcolor;
+
+        parsedir(move_dir, x, y, cur_robot->walk_dir);
+        split_colors(move_color, &fg, &bg);
+
+        if((move_dir >= 1) && (move_dir <= 4))
+        {
+          move_dir--;
+          // if dir is 1 or 4, search top to bottom.
+          // if dir is 2 or 3, search bottom to top.
+          if((move_dir == 0) || (move_dir == 3))
+          {
+            for(ly = 0, offset = 0; ly < board_height; ly++)
+            {
+              for(lx = 0; lx < board_width; lx++, offset++)
+              {
+                int dcolor = level_color[offset];
+                if((move_id == level_id[offset]) &&
+                 ((move_param == 256) || (level_param[offset] == move_param)) &&
+                 ((fg == 16) || (fg == (dcolor & 0x0F))) &&
+                 ((bg == 16) || (bg == (dcolor >> 4))))
+                {
+                  move(mzx_world, lx, ly, move_dir, 1 | 2 | 4 | 8 | 16);
+                }
+              }
+            }
+          }
+          else
+          {
+            offset = (board_width * board_height) - 1;
+            for(ly = board_height - 1; ly >= 0; ly--)
+            {
+              for(lx = board_width - 1; lx >= 0; lx--, offset--)
+              {
+                int dcolor = level_color[offset];
+                if((move_id == level_id[offset]) &&
+                 ((move_param == 256) || (level_param[offset] == move_param)) &&
+                 ((fg == 16) || (fg == (dcolor & 0x0F))) &&
+                 ((bg == 16) || (bg == (dcolor >> 4))))
+                {
+                  move(mzx_world, lx, ly, move_dir, 1 | 2 | 4 | 8 | 16);
+                }
+              }
+            }
+          }
+        }
+        done = 1;
+        break;
+      }
+
+      case 119: // copy x y x y
+      {
+        int src_x = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int src_y = parse_param(mzx_world, p2, id);
+        char *p3 = next_param_pos(p2);
+        int dest_x = parse_param(mzx_world, p3, id);
+        char *p4 = next_param_pos(p3);
+        int dest_y = parse_param(mzx_world, p4, id);
+
+        prefix_first_last_xy(mzx_world, &src_x, &src_y,
+         &dest_x, &dest_y, x, y);
+
+        copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
+        update_blocked = 1;
+        break;
+      }
+
+      case 120: // set edge color
+      {
+        mzx_world->edge_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 121: // board dir
+      {
+        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+        direction = parsedir(direction, x, y, cur_robot->walk_dir);
+        if((direction >= 1) && (direction <= 4))
+        {
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          char board_name_buffer[128];
+          int board_number;
+
+          tr_msg(mzx_world, p2 + 1, id, board_name_buffer);
+          board_number = find_board(mzx_world, board_name_buffer);
+
+          if(board_number != NO_BOARD)
+            src_board->board_dir[direction - 1] = board_number;
+        }
+        break;
+      }
+
+      case 122: // board dir is none
+      {
+        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+        direction = parsedir(direction, x, y, cur_robot->walk_dir);
+        if((direction >= 1) && (direction <= 4))
+        {
+          src_board->board_dir[direction - 1] = NO_BOARD;
+        }
+        break;
+      }
+
+      case 123: // char edit
+      {
+        int char_num = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *next_param = next_param_pos(cmd_ptr + 1);
+        char char_buffer[14];
+        int i;
+
+        for(i = 0; i < 14; i++)
+        {
+          char_buffer[i] = parse_param(mzx_world, next_param, id);
+          next_param = next_param_pos(next_param);
+        }
+
+        ec_change_char(char_num, char_buffer);
+        break;
+      }
+
+      case 124: // Become push
+      {
+        if(id)
+        {
+          level_id[x + (y * board_width)] = 123;
+        }
+        break;
+      }
+
+      case 125: // Become nonpush
+      {
+        if(id)
+        {
+          level_id[x + (y * board_width)] = 124;
+        }
+        break;
+      }
+
+      case 126: // blind
+      {
+        mzx_world->blind_dur = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 127: // firewalker
+      {
+        mzx_world->firewalker_dur = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 128: // freezetime
+      {
+        mzx_world->freeze_time_dur = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 129: // slow time
+      {
+        mzx_world->slow_time_dur = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 130: // wind
+      {
+        mzx_world->wind_dur = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 131: // avalanche
+      {
+        int x, y, offset;
+        // Adjust the rate for board size - it was hardcoded for 10000
+        int placement_rate = 18 * (board_width * board_height) / 10000;
+
+        for(y = 0, offset = 0; y < board_height; y++)
+        {
+          for(x = 0; x < board_width; x++, offset++)
+          {
+            int d_flag = flags[level_id[offset]];
+
+            if((d_flag & A_UNDER) && !(d_flag & A_ENTRANCE) &&
+             (rand() % placement_rate) == 0)
+            {
+              id_place(mzx_world, x, y, 8, 7, 0);
+            }
+          }
+        }
+        break;
+      }
+
+      case 132: // copy dir dir
+      {
+        if(id)
+        {
+          int src_dir = parse_param(mzx_world, cmd_ptr + 1, id);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int dest_dir = parse_param(mzx_world, p2, id);
+          src_dir = parsedir(src_dir, x, y, cur_robot->walk_dir);
+          dest_dir = parsedir(dest_dir, x, y, cur_robot->walk_dir);
+
+          if((src_dir >= 1) && (src_dir <= 4) && (dest_dir >= 1) &&
+           (dest_dir <= 4))
+          {
+            int src_x = x;
+            int src_y = y;
+            int dest_x = x;
+            int dest_y = y;
+            if(!move_dir(src_board, &src_x, &src_y, src_dir - 1) &&
+             !move_dir(src_board, &dest_x, &dest_y, dest_dir - 1))
+            {
+              copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
+            }
+          }
+        }
+        update_blocked = 1;
+        break;
+      }
+
+      case 133: // become lavawalker
+      {
+        cur_robot->can_lavawalk = 1;
+        break;
+      }
+
+      case 134: // become non lavawalker
+      {
+        cur_robot->can_lavawalk = 0;
+        break;
+      }
+
+      case 135: // change color thing param color thing param
+      {
+        int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int check_id = parse_param(mzx_world, p2, id);
+        char *p3 = next_param_pos(p2);
+        int check_param = parse_param(mzx_world, p3, id);
+        char *p4 = next_param_pos(p3);
+        int put_color = parse_param(mzx_world, p4, id);
+        char *p5 = next_param_pos(p4);
+        int put_id = parse_param(mzx_world, p5, id);
+        char *p6 = next_param_pos(p5);
+        int put_param = parse_param(mzx_world, p6, id);
+        int check_fg, check_bg, put_fg, put_bg;
+        int offset, did, dparam, dcolor, put_x, put_y;
+
+        split_colors(check_color, &check_fg, &check_bg);
+        split_colors(put_color, &put_fg, &put_bg);
+
+        // Make sure the change isn't incompatable
+        // Only robots (pushable or otherwise) can be changed to
+        // robots. The same goes for scrolls/signs and sensors.
+        // Players cannot be changed at all
+
+        if(((put_id != 122) || (check_id == 122)) &&
+         (((put_id != 123) || ((check_id == 124) || (check_id == 123))) &&
+          ((put_id != 124) || ((check_id == 123) || (check_id == 124))) &&
+          ((put_id != 125) || (check_id == 126))) &&
+          ((put_id != 126) || (check_id == 125)) &&
+          ((put_id != 127) && (check_id != 127)))
+        {
+          // Clear out params for param-less objects,
+          // lava, fire, ice, energizer, rotates, or life
+          if((put_id == 25) || (put_id == 26) || (put_id == 33) ||
+           (put_id == 45) || (put_id == 46) || (put_id == 63) ||
+           (put_id == 68))
+            put_param = 0;
+
+          // Ignore upper stages for explosions
+          if(put_id == 38)
+            put_param &= 0xF3;
+
+          // Open door becomes door
+          if(check_id == 42)
+            check_id = 41;
+
+          // Whirlpool becomes base whirlpool
+          if((check_id > 67) && (check_id <= 70))
+            check_id = 67;
+
+          // Cannot change param on these
+          if(put_id > 122)
+            put_param = 256;
+
+          for(offset = 0; offset < (board_width * board_height); offset++)
+          {
+            did = level_id[offset];
+            dparam = level_param[offset];
+            dcolor = level_color[offset];
+
+            // open door becomes door
+            if(did == 42)
+              did = 41;
+            // Whirpool becomes base one
+            if((did > 67) && (did <= 70))
+              did = 67;
+
+            if((did == check_id) && (((dcolor & 0x0F) == check_fg) ||
+             (check_fg == 16)) && (((dcolor >> 4) == check_bg) ||
+             (check_bg == 16)) && ((dparam == check_param) ||
+             (check_param == 256)))
+            {
+              // Change the color and the ID
+              level_color[offset] = fix_color(put_color, dcolor);
+              level_id[offset] = put_id;
+
+              if(((did == 123) || (did == 124)) && (put_id != 123) &&
+               (put_id != 124))
+              {
+                // delete robot if not changing to a robot
+                clear_robot_id(src_board, dparam);
+              }
+              else
+
+              if(((did == 125) || (did == 126)) && (put_id != 125) &&
+               (put_id != 126))
+              {
+                // delete scroll if not changing to a scroll/sign
+                clear_scroll_id(src_board, dparam);
+              }
+              else
+
+              if((did == 122) && (put_id != 122))
+              {
+                // delete sensor if not changing to a sensor
+                clear_sensor_id(src_board, dparam);
+              }
+
+              if(put_id == 0)
+              {
+                offs_remove_id(mzx_world, offset);
+                // If this LEAVES a space, use given color
+                if(level_id[offset] == 0)
+                  level_color[offset] = fix_color(put_color, dcolor);
+              }
+              else
+              {
+                if(put_param != 256)
+                  level_param[offset] = put_param;
+              }
+            }
+          }
+          // If we got deleted, exit
+
+          if(id)
+          {
+            did = level_id[x + (y * board_width)];
+
+            if((did != 123) && (did != 124))
+              return;
+            update_blocked = 1;
+          }
+        }
+
+        break;
+      }
+
+      case 136: // player color
+      {
+        int new_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        if(get_counter(mzx_world, "INVINCO", 0))
+        {
+          mzx_world->saved_pl_color =
+           fix_color(new_color, mzx_world->saved_pl_color);
+        }
+        else
+        {
+          *player_color = fix_color(new_color, *player_color);
+        }
+        break;
+      }
+
+      case 137: // bullet color
+      {
+        int new_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        int i;
+
+        for(i = 0; i < 3; i++)
+        {
+          bullet_color[i] =
+           fix_color(new_color, bullet_color[i]);
+        }
+        break;
+      }
+
+      case 138: // missile color
+      {
+        missile_color =
+         fix_color(parse_param(mzx_world, cmd_ptr + 1, id), missile_color);
+        break;
+      }
+
+      case 139: // message row
+      {
+        int b_mesg_row = parse_param(mzx_world, cmd_ptr + 1, id);
+        if(b_mesg_row > 24)
+          b_mesg_row = 24;
+        src_board->b_mesg_row = b_mesg_row;
+        break;
+      }
+
+      case 140: // rel self
+      {
+        if(id)
+        {
+          mzx_world->first_prefix = 1;
+          mzx_world->mid_prefix = 1;
+          mzx_world->last_prefix = 1;
+          lines_run--;
+          goto next_cmd_prefix;
+        }
+        break;
+      }
+
+      case 141: // rel player
+      {
+        mzx_world->first_prefix = 2;
+        mzx_world->mid_prefix = 2;
+        mzx_world->last_prefix = 2;
+        lines_run--;
+        goto next_cmd_prefix;
+      }
+
+      case 142: // rel counters
+      {
+        mzx_world->first_prefix = 3;
+        mzx_world->mid_prefix = 3;
+        mzx_world->last_prefix = 3;
+        lines_run--;
+        goto next_cmd_prefix;
+      }
+
+      case 143: // set id char # to 'c'
+      {
+        int id_char = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int id_value = parse_param(mzx_world, p2, id);
+        if((id_char >= 0) && (id_char <= 454))
+        {
+          if(id_char == 323)
+            missile_color = id_value;
+          else
+            if((id_char >= 324) && (id_char <= 326))
+              bullet_color[id_char - 324] = id_value;
+          else
+            if((id_char >= 327))
+              id_dmg[id_char - 327] = id_value;
+          else
+            id_chars[id_char] = id_value;
+        }
+        break;
+      }
+
+      // FIXME - how to make this work..?
+      case 144: // jump mod order #
+      {
+        jump_mod(parse_param(mzx_world, cmd_ptr + 1, id));
+        break;
+      }
+
+      case 145: // ask yes/no
+      {
+        char question_buffer[128];
+        int send_status;
+
+        if(fade)
+        {
+          clear_screen(32, 7);
+          insta_fadein();
+        }
+
+        tr_msg(mzx_world, cmd_ptr + 2, id, question_buffer);
+
+        if(!ask_yes_no(mzx_world, question_buffer))
+          send_status = send_robot_id(mzx_world, id, "YES", 1);
+        else
+          send_status = send_robot_id(mzx_world, id, "NO", 1);
+
+        if(!send_status)
+          gotoed = 1;
+
+        if(fade)
+          insta_fadeout();
+        break;
+      }
+
+      case 146: // fill health
+      {
+        set_counter(mzx_world, "HEALTH", mzx_world->health_limit, 0);
+        break;
+      }
+
+      case 147: // thick arrow dir char
+      {
+        int dir = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        dir = parsedir(dir, x, y, cur_robot->walk_dir);
+
+        if((dir >= 1) && (dir <= 4))
+        {
+          id_chars[249 + dir] = parse_param(mzx_world, p2, id);
+        }
+        break;
+      }
+
+      case 148: // thin arrow dir char
+      {
+        int dir = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        dir = parsedir(dir, x, y, cur_robot->walk_dir);
+
+        if((dir >= 1) && (dir <= 4))
+        {
+          id_chars[253 + dir] =
+           parse_param(mzx_world, p2, id);
+        }
+        break;
+      }
+
+      case 149: // set max health
+      {
+        mzx_world->health_limit = parse_param(mzx_world, cmd_ptr + 1, id);
+        inc_counter(mzx_world, "HEALTH", 0, 0);
+        break;
+      }
+
+      case 150: // save pos
+      {
+        save_player_position(mzx_world, 0);
+        break;
+      }
+
+      case 151: // restore
+      {
+        restore_player_position(mzx_world, 0);
+        done = 1;
+        break;
+      }
+
+      case 152: // exchange
+      {
+        restore_player_position(mzx_world, 0);
+        save_player_position(mzx_world, 0);
+        done = 1;
+        break;
+      }
+
+      case 153: // mesg col
+      {
+        int b_mesg_col = parse_param(mzx_world, cmd_ptr + 1, id);
+        if(b_mesg_col > 79)
+          b_mesg_col = 79;
+        src_board->b_mesg_col = b_mesg_col;
+        break;
+      }
+
+      case 154: // center mesg
+      {
+        src_board->b_mesg_col = -1;
+        break;
+      }
+
+      case 155: // clear mesg
+      {
+        src_board->b_mesg_timer = 0;
+        break;
+      }
+
+      case 156: // resetview
+      {
+        src_board->scroll_x = 0;
+        src_board->scroll_y = 0;
+        break;
+      }
+
+      // FIXME - There may be no way to get this to work. It may have to be removed.
+      case 157: // modsam freq num
+      {
+        if(music_on)
+        {
+          int frequency = parse_param(mzx_world, cmd_ptr + 1, id);
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          int sam_num = parse_param(mzx_world, p2, id);
+          spot_sample(frequency, sam_num);
+        }
+        break;
+      }
+
+      case 159: // scrollbase
+      {
+        mzx_world->scroll_base_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 160: // scrollcorner
+      {
+        mzx_world->scroll_corner_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 161: // scrolltitle
+      {
+        mzx_world->scroll_title_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 162: // scrollpointer
+      {
+        mzx_world->scroll_pointer_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 163: // scrollarrow
+      {
+        mzx_world->scroll_arrow_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 164: // viewport x y
+      {
+        int viewport_x = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int viewport_y = parse_param(mzx_world, p2, id);
+        int viewport_width = src_board->viewport_width;
+        int viewport_height = src_board->viewport_height;
+
+        if((viewport_x + viewport_width) > 80)
+          viewport_x = 80 - viewport_width;
+        if((viewport_y + viewport_height) > 25)
+          viewport_y = 25 - viewport_height;
+
+        src_board->viewport_x = viewport_x;
+        src_board->viewport_y = viewport_y;
+
+        break;
+      }
+
+      case 165: // viewport width height
+      {
+        int viewport_width = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int viewport_height = parse_param(mzx_world, p2, id);
+        int viewport_x = src_board->viewport_x;
+        int viewport_y = src_board->viewport_y;
+
+        if(viewport_width < 1)
+          viewport_width = 1;
+
+        if(viewport_height < 1)
+          viewport_height = 1;
+
+        if(viewport_width > 80)
+          viewport_width = 80;
+
+        if(viewport_height > 25)
+          viewport_height = 25;
+
+        if((viewport_x + viewport_width) > 80)
+          src_board->viewport_x = 80 - viewport_width;
+
+        if((viewport_y + viewport_height) > 25)
+          src_board->viewport_y = 25 - viewport_height;
+
+        src_board->viewport_width = viewport_width;
+        src_board->viewport_height = viewport_height;
+
+        break;
+      }
+
+      case 168: // save pos #
+      {
+        int pos = parse_param(mzx_world, cmd_ptr + 1, id) - 1;
+        if((pos < 0) || (pos > 7))
+          pos = 0;
+        save_player_position(mzx_world, pos);
+        break;
+      }
+
+      case 169: // restore pos #
+      {
+        int pos = parse_param(mzx_world, cmd_ptr + 1, id) - 1;
+        if((pos < 0) || (pos > 7))
+          pos = 0;
+        restore_player_position(mzx_world, pos);
+        done = 1;
+        break;
+      }
+
+      case 170: // exchange pos #
+      {
+        int pos = parse_param(mzx_world, cmd_ptr + 1, id) - 1;
+        if((pos < 0) || (pos > 7))
+          pos = 0;
+        restore_player_position(mzx_world, pos);
+        save_player_position(mzx_world, pos);
+        done = 1;
+        break;
+      }
+
+      case 171: // restore pos # duplicate self
+      {
+        int pos = parse_param(mzx_world, cmd_ptr + 1, id) - 1;
+        int duplicate_x = mzx_world->player_x;
+        int duplicate_y = mzx_world->player_y;
+        int duplicate_color, duplicate_id, dest_id;
+        int dx, dy, offset, ldone = 0;
+
+        if((pos < 0) || (pos > 7))
+          pos = 0;
+        restore_player_position(mzx_world, pos);
+        // Duplicate the robot to where the player was
+
+        if(id)
+        {
+          offset = x + (y * board_width);
+          duplicate_color = level_color[offset];
+          duplicate_id = level_id[offset];
+        }
+        else
+        {
+          duplicate_color = 7;
+          duplicate_id = 124;
+        }
+
+        offset = duplicate_x + (duplicate_y * board_width);
+        dest_id = duplicate_robot(src_board, cur_robot, duplicate_x, duplicate_y);
+
+        if(dest_id != -1)
+        {
+          level_id[offset] = duplicate_id;
+          level_color[offset] = duplicate_color;
+          level_param[offset] = dest_id;
+
+          replace_player(mzx_world);
+
+          done = 1;
+        }
+        break;
+      }
+
+      case 172: // exchange pos # duplicate self
+      {
+        int pos = parse_param(mzx_world, cmd_ptr + 1, id) - 1;
+        int duplicate_x = mzx_world->player_x;
+        int duplicate_y = mzx_world->player_y;
+        int duplicate_color, duplicate_id, dest_id;
+        int dx, dy, offset, ldone = 0;
+
+        if((pos < 0) || (pos > 7))
+          pos = 0;
+        restore_player_position(mzx_world, pos);
+        save_player_position(mzx_world, pos);
+        // Duplicate the robot to where the player was
+
+        if(id)
+        {
+          offset = x + (y * board_width);
+          duplicate_color = level_color[offset];
+          duplicate_id = level_id[offset];
+        }
+        else
+        {
+          duplicate_color = 7;
+          duplicate_id = 124;
+        }
+
+        offset = duplicate_x + (duplicate_y * board_width);
+        dest_id = duplicate_robot(src_board, cur_robot, duplicate_x, duplicate_y);
+
+        if(dest_id != -1)
+        {
+          level_id[offset] = duplicate_id;
+          level_color[offset] = duplicate_color;
+          level_param[offset] = dest_id;
+
+          replace_player(mzx_world);
+
+          done = 1;
+        }
+        break;
+      }
+
+      case 173: // Pl bulletn
+      case 174: // Pl bullets
+      case 175: // Pl bullete
+      case 176: // Pl bulletw
+      case 177: // Nu bulletn
+      case 178: // Nu bullets
+      case 179: // Nu bullete
+      case 180: // Nu bulletw
+      case 181: // En bulletn
+      case 182: // En bullets
+      case 183: // En bullete
+      case 184: // En bulletw
+      {
+        // Id' make these all separate, but this is really too convenient..
+        bullet_char[cmd - 173] = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 185: // Pl bcolor
+      case 186: // Nu bcolor
+      case 187: // En bcolor
+      {
+        bullet_color[cmd - 185] = parse_param(mzx_world, cmd_ptr + 1, id);
+        break;
+      }
+
+      case 193: // Rel self first
+      {
+        if(id)
+        {
+          mzx_world->first_prefix = 5;
+          lines_run--;
+          goto next_cmd_prefix;
+        }
+        break;
+      }
+
+      case 194: // Rel self last
+      {
+        if(id)
+        {
+          mzx_world->last_prefix = 5;
+          lines_run--;
+          goto next_cmd_prefix;
+        }
+        break;
+      }
+
+      case 195: // Rel player first
+      {
+        mzx_world->first_prefix = 6;
+        lines_run--;
+        goto next_cmd_prefix;
+      }
+
+      case 196: // Rel player last
+      {
+        mzx_world->last_prefix = 6;
+        lines_run--;
+        goto next_cmd_prefix;
+      }
+
+      case 197: // Rel counters first
+      {
+        mzx_world->first_prefix = 7;
+        lines_run--;
+        goto next_cmd_prefix;
+      }
+
+      case 198: // Rel counters last
+      {
+        mzx_world->last_prefix = 7;
+        lines_run--;
+        goto next_cmd_prefix;
+      }
+
+      case 199: // Mod fade out
+      {
+        src_board->volume_inc = -8;
+        src_board->volume_target = 0;
+        break;
+      }
+
+      case 200: // Mod fade in
+      {
+        char name_buffer[128];
+        src_board->volume_inc = 8;
+        src_board->volume_target = 255;
+        tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
+
+        magic_load_mod(name_buffer);
+        strcpy(src_board->mod_playing, name_buffer);
+        strcpy(mzx_world->real_mod_playing, name_buffer);
+        src_board->volume = 0;
+        volume_mod(0);
+        break;
+      }
+
+      case 201: // Copy block sx sy width height dx dy
+      {
+        char *p1 = cmd_ptr + 1;
+        char *p2 = next_param_pos(p1);
+        char *p3 = next_param_pos(p2);
+        char *p4 = next_param_pos(p3);
+        char *p5 = next_param_pos(p4);
+        char *p6 = next_param_pos(p5);
+        int src_x, src_y, dest_x, dest_y;
+        int width = parse_param(mzx_world, p3, id);
+        int height = parse_param(mzx_world, p4, id);
+        int src_width = board_width;
+        int src_height = board_height;
+        int dest_width = board_width;
+        int dest_height = board_height;
+
+        // 0 is board, 1 is overlay, 2 is vlayer
+        // src_type cannot be overlay here...
+        int src_type = 0, dest_type = 0;
+        if((*p1) && (*(p1 + 1) == '#'))
+        {
+          char src_char_buffer[128];
+          src_width = mzx_world->vlayer_width;
+          src_height = mzx_world->vlayer_height;
+          src_type = 2;
+          tr_msg(mzx_world, p1 + 2, id, src_char_buffer);
+          src_x = strtol(src_char_buffer, NULL, 10);
+        }
+        else
+        {
+          src_x = parse_param(mzx_world, p1, id);
+        }
+
+        if((*p2) && (*(p2 + 1) == '#'))
+        {
+          char src_char_buffer[128];
+          src_width = mzx_world->vlayer_width;
+          src_height = mzx_world->vlayer_height;
+          src_type = 2;
+          tr_msg(mzx_world, p2 + 2, id, src_char_buffer);
+          src_y = strtol(src_char_buffer, NULL, 10);
+        }
+        else
+        {
+          src_y = parse_param(mzx_world, p2, id);
+        }
+
+        if(*p5)
+        {
+          if(*(p5 + 1) == '#')
+          {
+            dest_width = mzx_world->vlayer_width;
+            dest_height = mzx_world->vlayer_height;
+            dest_type = 2;
+          }
+          else
+
+          if(*(p5 + 1) == '+')
+          {
+            dest_type = 1;
+          }
+          else
+
+          if(*(p5 + 1) == '@')
+          {
+            int copy_type = parse_param(mzx_world, p6, id);
+            char name_buffer[128];
+            tr_msg(mzx_world, p5 + 2, id, name_buffer);
+            prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+             src_width, src_height);
+            save_mzm(mzx_world , name_buffer, src_x, src_y, width, height,
+             src_type, copy_type);
+            break;
+          }
+          else
+
+          if(is_string(p5 + 1))
+          {
+            char str_buffer[128];
+            int t_char = parse_param(mzx_world, p6, id);
+            prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+             src_width, src_height);
+            tr_msg(mzx_world, p5 + 1, id, str_buffer);
+            switch(src_type)
+            {
+              case 0:
+              {
+                // Board to string
+                load_string_board(mzx_world, str_buffer, width, height, t_char,
+                 level_param + src_x + (src_y * board_width), board_width, id);
+                break;
+              }
+              case 2:
+              {
+                // Vlayer to string
+                int vlayer_width = mzx_world->vlayer_width;
+                load_string_board(mzx_world, str_buffer, width, height, t_char,
+                 mzx_world->vlayer_chars + src_x + (src_y * vlayer_width),
+                 vlayer_width, id);
+                break;
+              }
+            }
             break;
           }
         }
-      }
 
-      if(special_copy != 0)
-      {
-        if(src_vlayer || dest_vlayer)
+        if(*p6)
         {
-          unmap_vlayer();
-        }
-        break;
-      }
-
-      t1 = src_x;
-      t2 = src_y;
-      t5 = dest_x;
-      t6 = dest_y;
-
-      if((t1==t5)&&(t2==t6)) break;//None to do!
-      if((t5<t1)||((t5==t1)&&(t6<t2)))
-      {
-        //Copy starting at UL, going by columns.
-        for(t7=t1;t7<(t1+t3);t7++)
-        {
-          for(t8=t2;t8<(t2+t4);t8++)
+          if(*(p6 + 1) == '#')
           {
-            if(cmd == 244)
-            {
-              t9=t7+t8*vlayer_width;
-              t0=((t7-t1)+t5)+((t8-t2)+t6)*vlayer_width;
-              vlayer_chars[t0] = vlayer_chars[t9];
-              vlayer_colors[t0] = vlayer_colors[t9];
-              continue;
-            }
-            t9=t7+t8*max_bxsiz;
-            t0=((t7-t1)+t5)+((t8-t2)+t6)*max_bxsiz;
-            //Copy from t9 to t0
-            // Vlayer hack
-            if(cmd==243)
-            {
-              overlay[t0]=overlay[t9];
-              overlay_color[t0]=overlay_color[t9];
-              continue;
-            }
-            //Clear anything there...
-            cmd=level_id[t0];
-            if(cmd==127) continue;//No copy over player
-            if(cmd==122)
-              clear_sensor(level_param[t0]);
-            else if((cmd==123)||(cmd==124))
-            {
-              clear_robot(level_param[t0]);
-              robot=&robot_mem[robots[id].program_location];
-              cmd_ptr=&robot[robots[id].cur_prog_line+1];
-            }                        
-            else if((cmd==125)||(cmd==126))
-              clear_scroll(level_param[t0]);
-            //Copy any robot/scroll at t9
-            cmd=level_id[t9];
-            t10=level_param[t9];
-            if(cmd==122)
-            {//(sensor)
-              //...make a copy...
-              if(!(t11=find_sensor())) continue;
-              copy_sensor(t11,t10);
-              t10=t11;
-            }
-            if((cmd==123)||(cmd==124))
-            {//(robot)
-              //...make a copy...
-              if(!(t11=find_robot())) continue;
-              if(copy_robot(t11,t10))
-              {
-                robots[t11].used=0;
-                continue;
-              }
-              robot=&robot_mem[robots[id].program_location];
-              cmd_ptr=&robot[robots[id].cur_prog_line+1];
-              //...and deallocate original if it was number 0.
-              t10=t11;
-            }
-            if((cmd==125)||(cmd==126))
-            {//(scroll)
-              //...make a copy...
-              if(!(t11=find_scroll())) continue;
-              if(copy_scroll(t11,t10))
-              {
-                robots[t11].used=0;
-                continue;
-              }
-              t10=t11;
-            }
-            //Player?
-            if(cmd==127)
-            {
-              level_id[t0]=level_param[t0]=
-                           level_under_id[t0]=level_under_param[t0]=0;
-              level_color[t0]=level_under_color[t0]=7;
-            }
-            else
-            {
-              //Place
-              level_id[t0]=cmd;
-              level_param[t0]=t10;
-              level_color[t0]=level_color[t9];
-              level_under_id[t0]=level_under_id[t9];
-              level_under_color[t0]=level_under_color[t9];
-              level_under_param[t0]=level_under_param[t9];
-            }
-            //Loop. (whew!)
+            dest_width = mzx_world->vlayer_width;
+            dest_height = mzx_world->vlayer_height;
+            dest_type = 2;
+          }
+          else
+
+          if(*(p6 + 1) == '+')
+          {
+            dest_type = 1;
           }
         }
-        //Done (UL -> LR)
-      }
-      else
-      {
-        //Copy starting at LR, going left by columns.
-        for(t7=(t1+t3-1);t7>=t1;t7--)
+
+        if(dest_type)
         {
-          for(t8=(t2+t4-1);t8>=t2;t8--)
-          {
-            // Vlayer hack
-            if(cmd == 244)
-            {
-              t9=t7+t8*vlayer_width;
-              t0=((t7-t1)+t5)+((t8-t2)+t6)*vlayer_width;
-              vlayer_chars[t0] = vlayer_chars[t9];
-              vlayer_colors[t0] = vlayer_colors[t9];
-              continue;
-            }
-            t9=t7+t8*max_bxsiz;
-            t0=((t7-t1)+t5)+((t8-t2)+t6)*max_bxsiz;
-            //Copy from t9 to t0
-            if(cmd==243)
-            {
-              overlay[t0]=overlay[t9];
-              overlay_color[t0]=overlay_color[t9];
-              continue;
-            }
-            //Clear anything there...
-            cmd=level_id[t0];
-            if(cmd==127) continue;//No copy over player
-            if(cmd==122)
-              clear_sensor(level_param[t0]);
-            else if((cmd==123)||(cmd==124))
-            {
-              clear_robot(level_param[t0]);
-              robot=&robot_mem[robots[id].program_location];
-              cmd_ptr=&robot[robots[id].cur_prog_line+1];
-            }
-            else if((cmd==125)||(cmd==126))
-              clear_scroll(level_param[t0]);
-            //Copy any robot/scroll at t9
-            cmd=level_id[t9];
-            t10=level_param[t9];
-            if(cmd==122)
-            {//(sensor)
-              //...make a copy...
-              if(!(t11=find_sensor())) continue;
-              copy_sensor(t11,t10);
-              t10=t11;
-            }
-            if((cmd==123)||(cmd==124))
-            {//(robot)
-              //...make a copy...
-              if(!(t11=find_robot())) continue;
-              if(copy_robot(t11,t10))
-              {
-                robots[t11].used=0;
-                continue;
-              }
-              robot=&robot_mem[robots[id].program_location];
-              cmd_ptr=&robot[robots[id].cur_prog_line+1];
-              //...and deallocate original if it was number 0.
-              t10=t11;
-            }
-            if((cmd==125)||(cmd==126))
-            {//(scroll)
-              //...make a copy...
-              if(!(t11=find_scroll())) continue;
-              if(copy_scroll(t11,t10))
-              {
-                robots[t11].used=0;
-                continue;
-              }
-              t10=t11;
-            }
-            //Player?
-            if(cmd==127)
-            {
-              level_id[t0]=level_param[t0]=
-                           level_under_id[t0]=level_under_param[t0]=0;
-              level_color[t0]=level_under_color[t0]=7;
-            }
-            else
-            {
-              //Place
-              level_id[t0]=cmd;
-              level_param[t0]=t10;
-              level_color[t0]=level_color[t9];
-              level_under_id[t0]=level_under_id[t9];
-              level_under_color[t0]=level_under_color[t9];
-              level_under_param[t0]=level_under_param[t9];
-            }
-            //Loop. (whew!)
-          }
+          char dest_char_buffer[128];
+          tr_msg(mzx_world, p5 + 1, id, dest_char_buffer);
+          dest_x = strtol(dest_char_buffer + 1, NULL, 10);
+          tr_msg(mzx_world, p6 + 1, id, dest_char_buffer);
+          dest_y = strtol(dest_char_buffer + 1, NULL, 10);
         }
-        //Done (UL -> LR)
-      }
-      if(cmd == 244)
-      {
-        unmap_vlayer();
-      }
-      update_blocked=(cmd==201);
-      break;
-
-    case 202://Clip input
-      //Chop up to and through first section of whitespace.
-      //First, until non space or end
-      if(!input_size) break;
-      t1=0;
-      do
-      {
-        if(input_string[t1]==32) break;
-      } while((++t1)<input_size);
-      if(input_string[t1]==32)
-      {
-        do
-        {
-          if(input_string[t1]!=32) break;
-        } while((++t1)<input_size);
-      }
-      //Chop UNTIL t1. (t1 points to first No-Chop)
-      str_cpy(input_string,&input_string[t1]);
-      input_size=str_len(input_string);
-      num_input=atoi(input_string);
-      break;
-    case 203://Push dir
-      if(id==NUM_ROBOTS) break;
-      t1=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      if((t1<1)||(t1>4)) break;
-      t2=x; t3=y;
-      if(move_dir(t2,t3,t1-1)) break;
-      t4=flags[t5=level_id[t2+t3*max_bxsiz]];
-      if((t5!=123)&&(t5!=127))
-      {
-        if((t3<3)&&(!(t4&A_PUSHNS))) break;
-        else if((t3>2)&&(!(t4&A_PUSHEW))) break;
-      }
-      _push(x,y,t1-1,0);
-      update_blocked=1;
-      break;
-    case 204://Scroll char dir
-      t9=(unsigned char)parse_param(&cmd_ptr[1],id);
-      t2=parsedir(parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id),
-                  x,y,robots[id].walk_dir);
-      if((t2<1)||(t2>4)) break;
-      ec_read_char(t9,temp);
-      switch(t2)
-      {
-        case 1:
-          t1=temp[0];
-          for(t2=0;t2<13;t2++) temp[t2]=temp[t2+1];
-          temp[13]=t1;
-          break;
-        case 2:
-          t1=temp[13];
-          for(t2=14;t2>0;t2--) temp[t2]=temp[t2-1];
-          temp[0]=t1;
-          break;
-        case 3:
-          for(t1=0;t1<14;t1++)
-          {
-            t2=temp[t1]&1;
-            temp[t1]>>=1;
-            if(t2) temp[t1]|=128;
-          }
-          break;
-        case 4:
-          for(t1=0;t1<14;t1++)
-          {
-            t2=temp[t1]&128;
-            temp[t1]<<=1;
-            if(t2) temp[t1]|=1;
-          }
-      }
-      ec_change_char_nou(t9,temp);
-      break;
-    case 205://Flip char dir
-      t9=(unsigned char)parse_param(&cmd_ptr[1],id);
-      t2=parsedir(parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id),
-                  x,y,robots[id].walk_dir);
-      if((t2<1)||(t2>4)) break;
-      ec_read_char(t9,temp);
-      switch(t2)
-      {
-        case 1:
-        case 2:
-          for(t1=0;t1<7;t1++)
-          {
-            t2=temp[t1];
-            temp[t1]=temp[13-t1];
-            temp[13-t1]=t2;
-          }
-          break;
-        case 3:
-        case 4:
-          for(t1=0;t1<14;t1++)
-          {
-            t3=128;
-            t4=1;
-            for(t2=0;t2<4;t2++)
-            {
-              if((temp[t1]&t3)&&(temp[t1]&t4)) ;/* Both on */
-              else if((temp[t1]&t3)||(temp[t1]&t4)) temp[t1]^=t3+t4;
-              t3>>=1;
-              t4<<=1;
-            }
-          }
-      }
-      ec_change_char_nou(t9,temp);
-      break;
-    case 206://copy char char
-      t1=(unsigned char)parse_param(&cmd_ptr[1],id);
-      t2=(unsigned char)parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      ec_read_char(t1,temp);
-      ec_change_char_nou(t2,temp);
-      break;
-    case 210://change sfx
-      t1=next_param(cmd_ptr,1)+1;
-      if(str_len(&cmd_ptr[t1])>68) cmd_ptr[t1+68]=0;
-      str_cpy(&custom_sfx[parse_param(&cmd_ptr[1],id)*69],&cmd_ptr[t1]);
-      break;
-    case 211://color intensity #%
-      set_palette_intensity(parse_param(&cmd_ptr[1],id));
-      pal_update=1;
-      break;
-    case 212://color intensity # #%
-      set_color_intensity(parse_param(&cmd_ptr[1],id)%16,
-                          parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id));
-      pal_update=1;
-      break;
-    case 213://color fade out
-      vquick_fadeout();
-      break;
-    case 214://color fade in
-      vquick_fadein();
-      break;
-    case 215://set color # r g b
-      t9=1;
-      t1=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t2=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t3=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-      t4=parse_param(&cmd_ptr[t9],id);
-      t1%=16;
-      set_rgb(t1,t2,t3,t4);
-      pal_update=1;
-      break;
-    case 216://Load char set ""
-      char far *tmp = tr_msg(&cmd_ptr[2], id);
-
-      // This will load a charset to a different position - Exo
-      if(tmp[0] == '+')
-      {
-        char far *next;
-        char tempc = tmp[3];
-        tmp[3] = 0;
-        int pos = (int)strtol(tmp + 1, &next, 16);
-        tmp[3] = tempc;
-        ec_load_set_nou_var(next, pos);
-      }
-      else
-      {
-        if(tmp[0] == '@')
-        {
-          char far *next;
-          char tempc = tmp[4];
-          tmp[4] = 0;
-          int pos = (int)strtol(tmp + 1, &next, 10);
-          tmp[4] = tempc;
-          ec_load_set_nou_var(next, pos);
-        }
-				else
-				{
-					ec_load_set_nou(tmp);
-				}
-      }
-      break;
-    case 217://multiply str #
-    case 218://divide str #
-    case 219://modulo str #
-      tr_msg(&cmd_ptr[2],id);
-      if(str_len(ibuff)>=COUNTER_NAME_SIZE)
-        ibuff[COUNTER_NAME_SIZE-1]=0;
-      t1=next_param(cmd_ptr,1);
-      //t1 points to number to use
-      t2=parse_param(&cmd_ptr[1],id);
-      t1=parse_param(&cmd_ptr[t1],id);
-      if(t1==0) t2=0;
-      else if(cmd==217) t2=t2*t1;
-      else if(cmd==218) t2=t2/t1;
-      else t2=t2%t1;
-      set_counter(ibuff,t2,id);
-      last_label=-1;//Allows looping "infinitely"
-      break;
-    case 220://Player char dir 'c'
-      t1=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
-      t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      if((t1<1)||(t1>4)) break;
-      player_char[t1-1]=t2;
-      break;
-    case 222://Load palette
-      fp=fopen(tr_msg(&cmd_ptr[2],id),"rb");
-      if(fp==NULL) break;
-      for(t1=0;t1<16;t1++)
-      {
-        t2=fgetc(fp);
-        t3=fgetc(fp);
-        t4=fgetc(fp);
-        set_rgb(t1,t2,t3,t4);
-      }
-      pal_update=1;
-      //Done.
-      fclose(fp);
-      break;
-    case 224://Mod fade #t #s
-      volume_inc=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      volume_target=parse_param(&cmd_ptr[1],id);
-      if(volume_target==volume)
-      {
-        volume_inc=volume_target=0;
-        break;
-      }
-      if(volume_inc==0) volume_inc=1;
-      if((volume<volume_target)&&(volume_inc<0)) volume_inc=-volume_inc;
-      if((volume>volume_target)&&(volume_inc>0)) volume_inc=-volume_inc;
-      break;
-    case 225://Scrollview x y
-
-      t1=parse_param(&cmd_ptr[1],id);
-      t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-      prefix_xy(t3,t3,t1,t2,t3,t3,x,y);
-      //t1/t2 target to put in upper left corner
-      //offset off of player position
-      scroll_x=scroll_y=0;
-      calculate_xytop(t4,t5);
-      scroll_x=t1-t4;
-      scroll_y=t2-t5;
-      break;
-    case 226://Swap world str
-    {
-      str_cpy(temp,tr_msg(&cmd_ptr[2],id));
-      // Clear world and reload
-      clear_world();
-      update_done[0]|=254;
-      //(DON'T clear game params)
-     redo:
-      if(load_world(temp,-1)) {
-        t1=error("Error swapping to next world",1,23,current_pg_seg,0x2C01);
-        if(t1==2) goto redo;
-      }
-      str_cpy(curr_file,temp);
-      select_current(first_board);
-      send_robot_def(0,10);
-      target_where=-2;
-      target_board=first_board;
-      target_x=player_x;
-      target_y=player_y;
-      exit_func();
-      return;
-    }
-
-    case 227://If allignedrobot str str    
-
-      if(id==NUM_ROBOTS) break;
-      tr_msg(&cmd_ptr[2],id);
-      for(t1=0;t1<NUM_ROBOTS;t1++)
-      {
-        if(!str_cmp(robots[t1].robot_name,ibuff))
-        {
-          if(x==robots[t1].xpos) break;
-          if(y==robots[t1].ypos) break;
-        }
-      }
-      if(t1<NUM_ROBOTS)
-      {
-        send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],
-                                id),1);
-        gotoed=1;
-      }
-      break;
-    case 229://Lockscroll
-      //The scrolling is locked at the current position.
-      //Further scrollview cmds can change it.
-      t1=scroll_x;
-      t2=scroll_y;
-      scroll_x=scroll_y=0;
-      calculate_xytop(t3,t4);
-      locked_x=t3;
-      locked_y=t4;
-      scroll_x=t1;
-      scroll_y=t2;
-      break;
-    case 230://Unlockscroll
-      locked_x=locked_y=65535;
-      break;
-    case 231://If first string str str
-      t1=-1;
-      if(!input_size) break;
-      t1=0;
-      do
-      {
-        if(input_string[t1]==32) break;
-      } while((++t1)<input_size);
-      if(input_string[t1]==32) input_string[t1]=0;
-      else t1=-1;
-      //Compare
-      if(!str_cmp(input_string,tr_msg(&cmd_ptr[2],id)))
-      {
-        send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],
-                                id),1);
-        gotoed=1;
-      }
-      if(t1>=0) input_string[t1]=32;
-      break;
-    case 233://Wait mod fade
-      if(volume!=volume_target) goto breaker;
-      break;
-    case 235://Enable saving
-    case 236://Disable saving
-    case 237://Enable sensoronly saving
-      save_mode=cmd-235;
-      break;
-    case 238://Status counter ## str
-      t1=parse_param(&cmd_ptr[1],id);
-      t2=1+next_param(cmd_ptr,1);
-      if((t1<1)||(t1>6)) break;
-      tr_msg(&cmd_ptr[t2],id);
-      if(str_len(ibuff)>=COUNTER_NAME_SIZE)
-        ibuff[COUNTER_NAME_SIZE-1]=0;
-      str_cpy(&status_shown_counters[COUNTER_NAME_SIZE*(t1-1)],ibuff);
-      break;
-    case 239://Overlay on
-    case 240://Overlay static
-    case 241://Overlay transparent
-      overlay_mode=cmd-238;
-      break;
-    case 242://put col ch overlay x y
-      if(!overlay_mode) overlay_mode=3;
-      t0=1;
-      t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t2=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t3=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t4=parse_param(&cmd_ptr[t0],id);
-      prefix_xy(t9,t9,t3,t4,t9,t9,x,y);
-      //t1=color t2=char t3/t4=pos
-      t1=fix_color(t1,overlay_color[t3+t4*max_bxsiz]);
-      overlay[t3+t4*max_bxsiz]=t2;
-      overlay_color[t3+t4*max_bxsiz]=t1;
-      break;
-    case 245://Change overlay col ch col ch
-    case 246://Change overlay col col
-      if(!overlay_mode) overlay_mode=3;
-      t0=1;
-      t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      if(cmd==245)
-      {
-        t3=parse_param(&cmd_ptr[t0],id);
-        t0=next_param(cmd_ptr,t0);
-      }
-      t5=parse_param(&cmd_ptr[t0],id);
-      if(cmd==245)
-      {
-        t0=next_param(cmd_ptr,t0);
-        t7=parse_param(&cmd_ptr[t0],id);
-      }
-      //Change fgbk code to seperate fg/bk codes
-      if(t1&256)
-      {
-        t1^=256;
-        if(t1==32) t1=t2=16;
-        else if(t1<16) t2=16;
         else
         {
-          t2=t1-16;
-          t1=16;
+          dest_x = parse_param(mzx_world, p5, id);
+          dest_y = parse_param(mzx_world, p6, id);
         }
-      }
-      else
-      {
-        t2=t1>>4;
-        t1=t1&15;
-      }
-      //col t1/t2 ch t3 to col t5 ch t7
-      for(t9=0;t9<10000;t9++)
-      {
-        if(cmd==245)
-          if(overlay[t9]!=t3) continue;
-        t0=overlay_color[t9];
-        if(t1<16)
-          if((t0&15)!=t1) continue;
-        if(t2<16)
-          if((t0>>4)!=t2) continue;
-        t0=fix_color(t5,t0);
-        overlay_color[t9]=t0;
-        if(cmd==245) overlay[t9]=t7;
-      }
-      break;
-    case 247://Write overlay col str # #
-      if(!overlay_mode) overlay_mode=3;
-      t0=1;
-      t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t2=t0+1; t0=next_param(cmd_ptr,t0);
-      t3=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-      t4=parse_param(&cmd_ptr[t0],id);
-      prefix_xy(t9,t9,t3,t4,t9,t9,x,y);
-      //Write str cmd_ptr[t2] at t3/t4 in color t1
-      t5=str_len(tr_msg(&cmd_ptr[t2],id));
-      for(t6=0;t6<t5;t6++)
-      {
-        t7=t3+t4*max_bxsiz;
-        overlay_color[t7]=t1;
-        overlay[t7]=ibuff[t6];
-        if((++t3)>=board_xsiz) break;
-      }
-      break;
-    case 251://Loop start
-      robots[id].loop_count=0;
-      break;
-    case 252://Loop #
-      t1=parse_param(&cmd_ptr[1],id);
-      if((robots[id].loop_count++)>=t1) break;
-      //Search backwards for a cmd 251 or start of program
-      t2=robots[id].cur_prog_line;
-      do
-      {
-        if(robot[t2-1]==0xFF) break;
-        t2-=robot[t2-1]+2;
-      } while(robot[t2+1]!=251);
-      robots[id].cur_prog_line=t2;
-      last_label=-1;//Allows looping "infinitely" even w/label inside
-      break;
-    case 253://Abort loop
-      //Search forwards for a cmd 252 or start of program
-      t2=robots[id].cur_prog_line;
-      do
-      {
-        if(robot[t2]==0) break;
-        t2+=robot[t2]+2;
-      } while(robot[t2+1]!=252);
-      robots[id].cur_prog_line=t2;
-      if(!robot[t2]) goto end_prog;
-      break;
-    case 254://Disable mesg edge
-    case 255://Enable mesg edge
-      mesg_edges=cmd-254;
-      break;
-  }
-  //Go to next command! First erase prefixes...
-  next_cmd:
 
-	if(force_state == 2)
-	{
-		return;
-	}
+        prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+         src_width, src_height);
+        prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
+         dest_width, dest_height);
 
-	if(force_state == 3)
-	{
-		robot = robot_mem + robots[id].program_location;
-	}
+        // Clip and verify; the prefixers already handled the
+        // base coordinates, so just handle the width/height
+        if(width < 1)
+          width = 1;
+        if(height < 1)
+          height = 1;
+        if((src_x + width) > src_width)
+          width = src_width - src_x;
+        if((src_y + height) > src_height)
+          height = src_height - src_y;
+        if((dest_x + width) > dest_width)
+          width = dest_width - dest_x;
+        if((dest_y + height) > dest_height)
+          height = dest_height - dest_y;
 
-  first_prefix=mid_prefix=last_prefix=0;
-  next_cmd_prefix:
-  //Next line
-  robots[id].pos_within_line=first_cmd=0;
-  if(old_pos==robots[id].cur_prog_line) gotoed=0;//No move=didn't goto
-  if(!gotoed && (force_state != 1))
-	 robots[id].cur_prog_line+=robot[robots[id].cur_prog_line]+2;
-  if(!robot[robots[id].cur_prog_line])
-  {
-    //End of program
-    end_prog:
-    robots[id].cur_prog_line=0;
-    break;
-  }
-  if((update_blocked)&&(id<NUM_ROBOTS))
-  {
-    update_blocked=0;
-    for(t1=0;t1<4;t1++)
-    {
-      _bl[t1]=0;
-      t4=x; t5=y;
-      if(!move_dir(t4,t5,t1))
-      {
-        //Not edge... blocked?
-        if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
+        switch((dest_type << 2) | (src_type))
+        {
+          // FIXME - These buffers are bad. Variable arrays are nice
+          // but C99 only. alloca is nice but I can't seem to get it
+          // working on mingw..
+          // Board to board
+          case 0:
+          {
+            char *id_buffer = (char *)malloc(width * height);
+            char *param_buffer = (char *)malloc(width * height);
+            char *color_buffer = (char *)malloc(width * height);
+            char *under_id_buffer = (char *)malloc(width * height);
+            char *under_param_buffer = (char *)malloc(width * height);
+            char *under_color_buffer = (char *)malloc(width * height);
+            copy_board_to_board_buffer(src_board, src_x, src_y, width,
+             height, id_buffer, param_buffer, color_buffer,
+             under_id_buffer, under_param_buffer, under_color_buffer);
+            copy_board_buffer_to_board(src_board, dest_x, dest_y, width,
+             height, id_buffer, param_buffer, color_buffer,
+             under_id_buffer, under_param_buffer, under_color_buffer);
+            update_blocked = 1;
+            free(id_buffer);
+            free(param_buffer);
+            free(color_buffer);
+            free(under_id_buffer);
+            free(under_param_buffer);
+            free(under_color_buffer);
+            break;
+          }
+
+          // Vlayer to board
+          case 2:
+          {
+            int vlayer_width = mzx_world->vlayer_width;
+            int vlayer_offset = src_x + (src_y * vlayer_width);
+            copy_layer_to_board(src_board, dest_x, dest_y, width, height,
+             mzx_world->vlayer_chars + vlayer_offset,
+             mzx_world->vlayer_colors + vlayer_offset, vlayer_width, 5);
+            update_blocked = 1;
+            break;
+          }
+
+          // Board to overlay
+          case 4:
+          {
+            int overlay_offset = dest_x + (dest_y * board_width);
+            copy_board_to_layer(src_board, src_x, src_y, width, height,
+             src_board->overlay + overlay_offset,
+             src_board->overlay_color + overlay_offset, board_width);
+            break;
+          }
+
+          // Board to vlayer
+          case 8:
+          {
+            int vlayer_width = mzx_world->vlayer_width;
+            int vlayer_offset = dest_x + (dest_y * vlayer_width);
+            copy_board_to_layer(src_board, src_x, src_y, width, height,
+             mzx_world->vlayer_chars + vlayer_offset,
+             mzx_world->vlayer_colors + vlayer_offset, vlayer_width);
+            break;
+          }
+
+          // Vlayer to vlayer
+          case 10:
+          {
+            char *char_buffer = (char *)malloc(width * height);
+            char *color_buffer = (char *)malloc(width * height);
+            copy_layer_to_buffer(src_x, src_y, width, height,
+             mzx_world->vlayer_chars, mzx_world->vlayer_colors,
+             char_buffer, color_buffer, mzx_world->vlayer_width);
+            copy_buffer_to_layer(dest_x, dest_y, width, height,
+             char_buffer, color_buffer, mzx_world->vlayer_chars,
+             mzx_world->vlayer_colors, mzx_world->vlayer_width);
+            free(char_buffer);
+            free(color_buffer);
+            break;
+          }
+        }
+        break;
       }
-      else _bl[t1]=1;//Edge is considered blocked
+
+      case 243: // Copy overlay block sx sy width height dx dy
+      {
+        char *p1 = cmd_ptr + 1;
+        char *p2 = next_param_pos(p1);
+        char *p3 = next_param_pos(p2);
+        char *p4 = next_param_pos(p3);
+        char *p5 = next_param_pos(p4);
+        char *p6 = next_param_pos(p5);
+        int src_x, src_y, dest_x, dest_y;
+        int width = parse_param(mzx_world, p3, id);
+        int height = parse_param(mzx_world, p4, id);
+        int src_width = board_width;
+        int src_height = board_height;
+        int dest_width = board_width;
+        int dest_height = board_height;
+
+        // 0 is board, 1 is overlay, 2 is vlayer
+        // src_type cannot be board here...
+        int src_type = 1, dest_type = 1;
+        if((*p1) && (*(p1 + 1) == '#'))
+        {
+          char src_char_buffer[128];
+          src_width = mzx_world->vlayer_width;
+          src_height = mzx_world->vlayer_height;
+          src_type = 2;
+          tr_msg(mzx_world, p1 + 2, id, src_char_buffer);
+          src_x = strtol(src_char_buffer, NULL, 10);
+        }
+        else
+        {
+          src_x = parse_param(mzx_world, p1, id);
+        }
+
+        if((*p2) && (*(p2 + 1) == '#'))
+        {
+          char src_char_buffer[128];
+          src_width = mzx_world->vlayer_width;
+          src_height = mzx_world->vlayer_height;
+          src_type = 2;
+          tr_msg(mzx_world, p2 + 2, id, src_char_buffer);
+          src_y = strtol(src_char_buffer, NULL, 10);
+        }
+        else
+        {
+          src_y = parse_param(mzx_world, p2, id);
+        }
+
+        if(*p5)
+        {
+          if(*(p5 + 1) == '#')
+          {
+            dest_width = mzx_world->vlayer_width;
+            dest_type = 2;
+          }
+          else
+
+          if(*(p5 + 1) == '+')
+          {
+            dest_type = 0;
+          }
+          else
+
+          if(*(p5 + 1) == '@')
+          {
+            int copy_type = parse_param(mzx_world, p6, id);
+            char name_buffer[128];
+            tr_msg(mzx_world, p5 + 2, id, name_buffer);
+            prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+             src_width, src_height);
+            save_mzm(mzx_world , name_buffer, src_x, src_y, width, height,
+             src_type, copy_type);
+          }
+          else
+
+          if(is_string(p5 + 1))
+          {
+            char str_buffer[128];
+            int t_char = parse_param(mzx_world, p6, id);
+            tr_msg(mzx_world, p5 + 1, id, str_buffer);
+            prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+             src_width, src_height);
+            switch(src_type)
+            {
+              case 1:
+              {
+                // Overlay to string
+                load_string_board(mzx_world, str_buffer, width, height, t_char,
+                 src_board->overlay + src_x + (src_y * board_width),
+                 board_width, id);
+                break;
+              }
+              case 2:
+              {
+                // Vlayer to string
+                int vlayer_width = mzx_world->vlayer_width;
+                load_string_board(mzx_world, str_buffer, width, height, t_char,
+                 mzx_world->vlayer_chars + src_x + (src_y * vlayer_width),
+                 vlayer_width, id);
+                break;
+              }
+            }
+            break;
+          }
+        }
+
+        if(*p6)
+        {
+          if(*(p6 + 1) == '#')
+          {
+            dest_width = mzx_world->vlayer_width;
+            dest_type = 2;
+          }
+          else
+
+          if(*(p6 + 1) == '+')
+          {
+            dest_type = 0;
+          }
+        }
+
+        if((dest_type == 0) || (dest_type == 2))
+        {
+          char dest_char_buffer[128];
+          tr_msg(mzx_world, p5 + 2, id, dest_char_buffer);
+          dest_x = strtol(dest_char_buffer, NULL, 10);
+          tr_msg(mzx_world, p6 + 2, id, dest_char_buffer);
+          dest_y = strtol(dest_char_buffer, NULL, 10);
+        }
+        else
+        {
+          dest_x = parse_param(mzx_world, p5, id);
+          dest_y = parse_param(mzx_world, p6, id);
+        }
+
+        prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+         src_width, src_height);
+        prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
+         dest_width, dest_height);
+
+        // Clip and verify; the prefixers already handled the
+        // base coordinates, so just handle the width/height
+        if(width < 1)
+          width = 1;
+        if(height < 1)
+          height = 1;
+        if((src_x + width) > src_width)
+          width = src_width - src_x;
+        if((src_y + height) > src_height)
+          height = src_height - src_y;
+        if((dest_x + width) > dest_width)
+          width = dest_width - dest_x;
+        if((dest_y + height) > dest_height)
+          height = dest_height - dest_y;
+
+        switch((dest_type << 2) | (src_type))
+        {
+          // Overlay to board
+          case 1:
+          {
+            int overlay_offset = src_x + (src_y * board_width);
+            copy_layer_to_board(src_board, dest_x, dest_y, width, height,
+             src_board->overlay + overlay_offset,
+             src_board->overlay_color + overlay_offset, board_width, 5);
+            update_blocked = 1;
+            break;
+          }
+
+          // FIXME - These buffers are bad. Variable arrays are nice
+          // but C99 only. alloca is nice but I can't seem to get it
+          // working on mingw..
+          // Overlay to overlay
+          case 5:
+          {
+            char *char_buffer = (char *)malloc(width * height);
+            char *color_buffer = (char *)malloc(width * height);
+            copy_layer_to_buffer(src_x, src_y, width, height,
+             src_board->overlay, src_board->overlay_color,
+             char_buffer, color_buffer, board_width);
+            copy_buffer_to_layer(dest_x, dest_y, width, height,
+             char_buffer, color_buffer, src_board->overlay,
+             src_board->overlay_color, board_width);
+            free(char_buffer);
+            free(color_buffer);
+            break;
+          }
+
+          // Vlayer to overlay
+          case 6:
+          {
+            int vlayer_width = mzx_world->vlayer_width;
+            copy_layer_to_layer(src_x, src_y, dest_x, dest_y, width,
+             height, mzx_world->vlayer_chars, mzx_world->vlayer_colors,
+             src_board->overlay, src_board->overlay_color, vlayer_width,
+             board_width);
+            break;
+          }
+
+          // Overlay to vlayer
+          case 9:
+          {
+            int vlayer_width = mzx_world->vlayer_width;
+            copy_layer_to_layer(src_x, src_y, dest_x, dest_y, width,
+             height, src_board->overlay, src_board->overlay_color,
+             mzx_world->vlayer_chars, mzx_world->vlayer_colors, board_width,
+             vlayer_width);
+            break;
+          }
+
+          // Vlayer to vlayer
+          case 10:
+          {
+            char *char_buffer = (char *)malloc(width * height);
+            char *color_buffer = (char *)malloc(width * height);
+            copy_layer_to_buffer(src_x, src_y, width, height,
+             mzx_world->vlayer_chars, mzx_world->vlayer_colors,
+             char_buffer, color_buffer, mzx_world->vlayer_width);
+            copy_buffer_to_layer(dest_x, dest_y, width, height,
+             char_buffer, color_buffer, mzx_world->vlayer_chars,
+             mzx_world->vlayer_colors, mzx_world->vlayer_width);
+            free(char_buffer);
+            free(color_buffer);
+            break;
+          }
+        }
+        break;
+      }
+
+      case 202: // Clip input
+      {
+        char *input_string = src_board->input_string;
+        int input_size = src_board->input_size;
+        int i = 0;
+
+        // Chop up to and through first section of whitespace.
+        // First, until non space or end
+        if(input_size)
+        {
+          do
+          {
+            if(input_string[i] == 32)
+              break;
+          } while((++i) < input_size);
+        }
+
+        if(input_string[i] == 32)
+        {
+          do
+          {
+            if(input_string[i] != 32)
+              break;
+          } while((++i) < input_size);
+        }
+        // Chop UNTIL i. (i points to first No-Chop)
+
+        strcpy(input_string, input_string + i);
+        src_board->input_size = strlen(input_string);
+        src_board->num_input = atoi(input_string);
+        break;
+      }
+
+      case 203: // Push dir
+      {
+        if(id)
+        {
+          int push_dir = parse_param(mzx_world, cmd_ptr + 1, id);
+          push_dir = parsedir(push_dir, x, y, cur_robot->walk_dir) - 1;
+
+          if((push_dir >= 0) && (push_dir <= 3))
+          {
+            int push_x = x;
+            int push_y = y;
+            if(!move_dir(src_board, &push_x, &push_y, push_dir))
+            {
+              int offset = push_x + (push_y * board_width);
+              int d_id = level_id[offset];
+              int d_flag = flags[d_id];
+
+              if((d_id != 123) && (d_id != 127))
+              {
+                if(((push_dir < 2) && (d_flag & A_PUSHNS)) ||
+                 ((push_dir >= 2) && (d_flag & A_PUSHEW)))
+
+                push(mzx_world, x, y, push_dir, 0);
+                update_blocked = 1;
+              }
+            }
+          }
+        }
+        break;
+      }
+
+      case 204: // Scroll char dir
+      {
+        int char_num = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int scroll_dir = parse_param(mzx_world, p2, id);
+        scroll_dir = parsedir(scroll_dir, x, y, cur_robot->walk_dir);
+
+        if((scroll_dir >= 1) && (scroll_dir <= 4))
+        {
+          char char_buffer[14];
+          int i;
+
+          ec_read_char(char_num, char_buffer);
+
+          switch(scroll_dir)
+          {
+            case 1:
+            {
+              char wrap_row = char_buffer[0];
+
+              for(i = 0; i < 13; i++)
+              {
+                char_buffer[i] = char_buffer[i + 1];
+              }
+              char_buffer[13] = wrap_row;
+
+              break;
+            }
+
+            case 2:
+            {
+              char wrap_row = char_buffer[13];
+
+              for(i = 14; i > 0; i--)
+              {
+                char_buffer[i] = char_buffer[i - 1];
+              }
+              char_buffer[0] = wrap_row;
+
+              break;
+            }
+
+            case 3:
+            {
+              char wrap_bit;
+
+              for(i = 0; i < 14; i++)
+              {
+                wrap_bit = char_buffer[i] & 1;
+                char_buffer[i] >>= 1;
+                if(wrap_bit)
+                  char_buffer[i] |= 0x80;
+              }
+              break;
+            }
+
+            case 4:
+            {
+              char wrap_bit;
+
+              for(i = 0; i < 14; i++)
+              {
+                wrap_bit = char_buffer[i] & 0x80;
+                char_buffer[i] <<= 1;
+                if(wrap_bit)
+                  char_buffer[i] |= 1;
+              }
+            }
+          }
+
+          ec_change_char(char_num, char_buffer);
+        }
+        break;
+      }
+
+      case 205: // Flip char dir
+      {
+        int char_num = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int flip_dir = parse_param(mzx_world, p2, id);
+        char char_buffer[14];
+        char current_row;
+        int i;
+
+        flip_dir = parsedir(flip_dir, x, y, cur_robot->walk_dir);
+
+        if((flip_dir >= 1) && (flip_dir <= 4))
+        {
+          ec_read_char(char_num, char_buffer);
+
+          switch(flip_dir)
+          {
+            case 1:
+            case 2:
+            {
+              for(i = 0; i < 7; i++)
+              {
+                current_row = char_buffer[i];
+                char_buffer[i] = char_buffer[13 - i];
+                char_buffer[13 - i] = current_row;
+              }
+            }
+            break;
+
+            case 3:
+            case 4:
+            {
+              for(i = 0; i < 14; i++)
+              {
+                current_row = char_buffer[i];
+                current_row = (current_row << 4) | (current_row >> 4);
+                current_row = ((current_row & 0xCC) >> 2) |
+                 ((current_row & 0x33) << 2);
+                current_row = ((current_row & 0xAA) >> 1) |
+                 ((current_row & 0x55) << 1);
+
+                char_buffer[i] = current_row;
+              }
+              break;
+            }
+          }
+
+          ec_change_char(char_num, char_buffer);
+        }
+        break;
+      }
+
+      case 206: // copy char char
+      {
+        int src_char = parse_param(mzx_world, cmd_ptr + 1, id);
+        char char_buffer[14];
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int dest_char = parse_param(mzx_world, p2, id);
+        ec_read_char(src_char, char_buffer);
+        ec_change_char(dest_char, char_buffer);
+        break;
+      }
+
+      case 210: // change sfx
+      {
+        int fx_num = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+
+        if(strlen(p2 + 1) > 68)
+          p2[69] = 0;
+        strcpy(mzx_world->custom_sfx + (fx_num * 69), p2 + 1);
+        break;
+      }
+
+      case 211: // color intensity #%
+      {
+        int intensity = parse_param(mzx_world, cmd_ptr + 1, id);
+        if(intensity < 0)
+          intensity = 0;
+
+        set_palette_intensity(intensity);
+        pal_update = 1;
+        break;
+      }
+
+      case 212: // color intensity # #%
+      {
+        int color = parse_param(mzx_world, cmd_ptr + 1, id) & 0xFF;
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int intensity = parse_param(mzx_world, p2, id);
+        if(intensity < 0)
+          intensity = 0;
+
+        set_color_intensity(color, intensity);
+        pal_update = 1;
+        break;
+      }
+
+      case 213: // color fade out
+      {
+        vquick_fadeout();
+        break;
+      }
+
+      case 214: // color fade in
+      {
+        vquick_fadein();
+        break;
+      }
+
+      case 215: // set color # r g b
+      {
+        // Now you can set all 256 colors this way (for SMZX)
+        int pal_number = parse_param(mzx_world, cmd_ptr + 1, id) & 0xFF;
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int r = parse_param(mzx_world, p2, id);
+        char *p3 = next_param_pos(p2);
+        int g = parse_param(mzx_world, p3, id);
+        char *p4 = next_param_pos(p3);
+        int b = parse_param(mzx_world, p4, id);
+
+        // It's pretty sad that this is necessary, but some people don't
+        // know how to use set color apparently (see SM4MZX for details)
+        if(r > 63)
+          r = 63;
+        if(g > 63)
+          g = 63;
+        if(b > 63)
+          b = 63;
+
+        set_rgb(pal_number, r, g, b);
+        pal_update = 1;
+        break;
+      }
+
+      case 216: // Load char set ""
+      {
+        char charset_name[128];
+
+        tr_msg(mzx_world, cmd_ptr + 2, id, charset_name);
+
+        // This will load a charset to a different position - Exo
+        if(charset_name[0] == '+')
+        {
+          char *next;
+          char tempc = charset_name[3];
+          int pos;
+
+          charset_name[3] = 0;
+          pos = (int)strtol(charset_name + 1, &next, 16);
+          charset_name[3] = tempc;
+          ec_load_set_var(next, pos);
+        }
+        else
+
+        if(charset_name[0] == '@')
+        {
+          char *next;
+          char tempc = charset_name[4];
+          int pos;
+
+          charset_name[4] = 0;
+          pos = (int)strtol(charset_name + 1, &next, 10);
+          charset_name[4] = tempc;
+          ec_load_set_var(next, pos);
+        }
+        else
+        {
+          ec_load_set(charset_name);
+        }
+        break;
+      }
+
+      case 217: // multiply counter #
+      {
+        char *dest_string = cmd_ptr + 2;
+        char *src_string = cmd_ptr + next_param(cmd_ptr, 1);
+        char src_buffer[128];
+        char dest_buffer[128];
+        int value = parse_param(mzx_world, src_string + 1, id);
+        tr_msg(mzx_world, dest_string, id, dest_buffer);
+
+        mul_counter(mzx_world, dest_buffer, value, id);
+        break;
+      }
+
+      case 218: // divide counter #
+      {
+        char *dest_string = cmd_ptr + 2;
+        char *src_string = cmd_ptr + next_param(cmd_ptr, 1);
+        char src_buffer[128];
+        char dest_buffer[128];
+        int value = parse_param(mzx_world, src_string + 1, id);
+        tr_msg(mzx_world, dest_string, id, dest_buffer);
+
+        div_counter(mzx_world, dest_buffer, value, id);
+        break;
+      }
+
+      case 219: // mul counter #
+      {
+        char *dest_string = cmd_ptr + 2;
+        char *src_string = cmd_ptr + next_param(cmd_ptr, 1);
+        char src_buffer[128];
+        char dest_buffer[128];
+        int value = parse_param(mzx_world, src_string + 1, id);
+        tr_msg(mzx_world, dest_string, id, dest_buffer);
+
+        mod_counter(mzx_world, dest_buffer, value, id);
+        break;
+      }
+
+      case 220: // Player char dir 'c'
+      {
+        int direction = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int new_char = parse_param(mzx_world, p2, id);
+        direction = parsedir(direction, x, y, cur_robot->walk_dir);
+
+        if((direction >= 1) && (direction <= 4))
+        {
+          player_char[direction - 1] = new_char;
+        }
+        break;
+      }
+
+      // Can load full 256 color ones too now. Will use file size to
+      // determine how many to load.
+      case 222: // Load palette
+      {
+        char name_buffer[128];
+
+        tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
+        load_palette(name_buffer);
+        pal_update = 1;
+
+        // Done.
+        break;
+      }
+
+      case 224: // Mod fade #t #s
+      {
+        int volume_target = parse_param(mzx_world, cmd_ptr + 1, id);;
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int volume = src_board->volume;
+        int volume_inc = parse_param(mzx_world, p2, id);
+
+        if(volume_target == volume)
+        {
+          src_board->volume_inc = 0;
+          src_board->volume_target = 0;
+        }
+        else
+        {
+          if(volume_inc == 0)
+            volume_inc = 1;
+          if((volume < volume_target) && (volume_inc < 0))
+            volume_inc = -volume_inc;
+          if((volume > volume_target) && (volume_inc > 0))
+            volume_inc = -volume_inc;
+
+          src_board->volume_target = volume_target;
+          src_board->volume_inc = volume_inc;
+        }
+        break;
+      }
+
+      case 225: // Scrollview x y
+      {
+        int scroll_x = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int scroll_y = parse_param(mzx_world, p2, id);
+        int n_scroll_x, n_scroll_y;
+
+        prefix_mid_xy(mzx_world, &scroll_x, &scroll_y, x, y);
+
+        // scroll_x/scrolly target to put in upper left corner
+        // offset off of player position
+        src_board->scroll_x = 0;
+        src_board->scroll_y = 0;
+        calculate_xytop(mzx_world, &n_scroll_x, &n_scroll_y);
+        src_board->scroll_x = scroll_x - n_scroll_x;
+        src_board->scroll_y = scroll_y - n_scroll_y;
+        break;
+      }
+
+      case 226: // Swap world str
+      {
+        int redo_load = 0;
+        char name_buffer[128];
+        tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
+
+        do
+        {
+          if(reload_swap(mzx_world, name_buffer, &fade))
+          {
+            redo_load = error("Error swapping to next world", 1, 23, 0x2C01);
+          }
+        } while(redo_load == 2);
+
+        strcpy(curr_file, name_buffer);
+        mzx_world->swapped = 1;
+        return;
+      }
+
+      case 227: // If allignedrobot str str
+      {
+        if(id)
+        {
+          Robot *dest_robot;
+          int first, last;
+          char robot_name_buffer[128];
+          tr_msg(mzx_world, cmd_ptr + 2, id, robot_name_buffer);
+
+          find_robot(src_board, robot_name_buffer, &first, &last);
+          while(first <= last)
+          {
+            dest_robot = src_board->robot_list_name_sorted[first];
+            if(dest_robot &&
+             ((dest_robot->xpos == x) || (dest_robot->ypos == y)))
+            {
+              char *p2 = next_param_pos(cmd_ptr + 1);
+              gotoed = send_self_label_tr(mzx_world, p2 + 1, id);
+            }
+            first++;
+          }
+        }
+        break;
+      }
+
+      case 229: // Lockscroll
+      {
+        // The scrolling is locked at the current position.
+        // Further scrollview cmds can change it.
+        int scroll_x = src_board->scroll_x;
+        int scroll_y = src_board->scroll_y;
+        int n_scroll_x, n_scroll_y;
+        src_board->scroll_x = 0;
+        src_board->scroll_y = 0;
+        calculate_xytop(mzx_world, &n_scroll_x, &n_scroll_y);
+        src_board->locked_x = n_scroll_x;
+        src_board->locked_y = n_scroll_y;
+        src_board->scroll_x = scroll_x;
+        src_board->scroll_y = scroll_y;
+        break;
+      }
+
+      case 230: // Unlockscroll
+      {
+        src_board->locked_x = -1;
+        src_board->locked_y = -1;
+        break;
+      }
+
+      case 231: // If first string str str
+      {
+        char *input_string = src_board->input_string;
+        char match_string_buffer[128];
+        int i = 0;
+
+        if(src_board->input_size)
+        {
+          do
+          {
+            if(input_string[i] == 32) break;
+            i++;
+          } while(i < src_board->input_size);
+        }
+
+        if(input_string[i] == 32)
+          input_string[i] = 0;
+        else
+          i = -1;
+
+        tr_msg(mzx_world, cmd_ptr + 2, id, match_string_buffer);
+
+        // Compare
+        if(!strcasecmp(input_string, match_string_buffer))
+        {
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          gotoed = send_self_label_tr(mzx_world, p2 + 1, id);
+        }
+
+        if(i >= 0)
+          input_string[i] = 32;
+
+        break;
+      }
+
+      case 233: // Wait mod fade
+      {
+        if(src_board->volume != src_board->volume_target)
+          goto breaker;
+        break;
+      }
+
+      case 235: // Enable saving
+      {
+        src_board->save_mode = 0;
+        break;
+      }
+
+      case 236: // Disable saving
+      {
+        src_board->save_mode = 1;
+        break;
+      }
+
+      case 237: // Enable sensoronly saving
+      {
+        src_board->save_mode = 2;
+        break;
+      }
+
+      case 238: // Status counter ## str
+      {
+        int counter_slot = parse_param(mzx_world, cmd_ptr + 1, id);
+        if((counter_slot >= 1) && (counter_slot <= 6))
+        {
+          char *p2 = next_param_pos(cmd_ptr + 1);
+          char counter_name[128];
+          tr_msg(mzx_world, p2 + 1, id, counter_name);
+
+          if(strlen(counter_name) >= COUNTER_NAME_SIZE)
+            counter_name[COUNTER_NAME_SIZE - 1] = 0;
+
+          strcpy(mzx_world->status_counters_shown[counter_slot], counter_name);
+        }
+        break;
+      }
+
+      case 239: // Overlay on
+      {
+        setup_overlay(src_board, 1);
+        break;
+      }
+
+      case 240: // Overlay static
+      {
+        setup_overlay(src_board, 2);
+        break;
+      }
+
+      case 241: // Overlay transparent
+      {
+        setup_overlay(src_board, 3);
+        break;
+      }
+
+      case 242: // put col ch overlay x y
+      {
+        int put_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int put_char = parse_param(mzx_world, p2, id);
+        char *p3 = next_param_pos(p2);
+        int put_x = parse_param(mzx_world, p3, id);
+        char *p4 = next_param_pos(p3);
+        int put_y = parse_param(mzx_world, p4, id);
+        int offset;
+
+        if(!src_board->overlay_mode)
+          setup_overlay(src_board, 3);
+
+        prefix_mid_xy(mzx_world, &put_x, &put_y, x, y);
+        offset = put_x + (put_y * board_width);
+
+        put_color =
+          fix_color(put_color, src_board->overlay_color[offset]);
+
+        src_board->overlay[offset] = put_char;
+        src_board->overlay_color[offset] = put_color;
+        break;
+      }
+
+      case 245: // Change overlay col ch col ch
+      {
+        int src_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int src_char = parse_param(mzx_world, p2, id);
+        char *p3 = next_param_pos(p2);
+        int dest_color = parse_param(mzx_world, p3, id);
+        char *p4 = next_param_pos(p3);
+        int dest_char = parse_param(mzx_world, p4, id);
+        int src_fg, src_bg, i;
+        char *overlay, *overlay_color;
+        int d_color;
+
+        if(!src_board->overlay_mode)
+          setup_overlay(src_board, 3);
+
+        overlay = src_board->overlay;
+        overlay_color = src_board->overlay_color;
+
+        split_colors(src_color, &src_fg, &src_bg);
+
+        for(i = 0; i < (board_width * board_height); i++)
+        {
+          d_color = overlay_color[i];
+
+          if((overlay[i] == src_char) &&
+           ((src_bg == 16) || (src_bg == (d_color >> 4))) &&
+           ((src_fg == 16) || (src_fg == (d_color & 0x0F))))
+          {
+            overlay[i] = dest_char;
+            overlay_color[i] = fix_color(dest_color, d_color);
+          }
+        }
+        break;
+      }
+
+      case 246: // Change overlay col col
+      {
+        int src_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int dest_color = parse_param(mzx_world, p2, id);
+        int src_fg, src_bg, i;
+        char *overlay, *overlay_color;
+        int d_color;
+
+        if(!src_board->overlay_mode)
+          setup_overlay(src_board, 3);
+
+        overlay = src_board->overlay;
+        overlay_color = src_board->overlay_color;
+
+        split_colors(src_color, &src_fg, &src_bg);
+
+        for(i = 0; i < (board_width * board_height); i++)
+        {
+          d_color = overlay_color[i];
+
+          if(((src_bg == 16) || (src_bg == (d_color >> 4))) &&
+           ((src_fg == 16) || (src_fg == (d_color & 0x0F))))
+          {
+            overlay_color[i] = fix_color(dest_color, d_color);
+          }
+        }
+        break;
+      }
+
+      case 247: // Write overlay col str # #
+      {
+        int write_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        char *write_string = p2 + 1;
+        char *p3 = next_param_pos(p2);
+        int write_x = parse_param(mzx_world, p3, id);
+        char *p4 = next_param_pos(p3);
+        int write_y = parse_param(mzx_world, p4, id);
+        int offset;
+        char string_buffer[128];
+        char current_char;
+        char *overlay, *overlay_color;
+
+        prefix_mid_xy(mzx_world, &write_x, &write_y, x, y);
+        offset = write_x + (write_y * board_width);
+
+        tr_msg(mzx_world, write_string, id, string_buffer);
+
+        write_string = string_buffer;
+        current_char = *write_string;
+
+        if(!src_board->overlay_mode)
+          setup_overlay(src_board, 3);
+
+        overlay_color = src_board->overlay_color;
+        overlay = src_board->overlay;
+
+        while(current_char != 0)
+        {
+          overlay_color[offset] = write_color;
+          overlay[offset] = current_char;
+          write_x++;
+          if(write_x == board_width)
+            break;
+          write_string++;
+          current_char = *write_string;
+          offset++;
+        }
+        break;
+      }
+
+      case 251: // Loop start
+      {
+        cur_robot->loop_count = 0;
+        break;
+      }
+
+      case 252: // Loop #
+      {
+        int loop_amount = parse_param(mzx_world, cmd_ptr + 1, id);
+        int loop_count = cur_robot->loop_count;
+        int back_cmd;
+
+        if(loop_count < loop_amount)
+        {
+          back_cmd = cur_robot->cur_prog_line;
+          do
+          {
+            if((unsigned char)program[back_cmd - 1] == 0xFF) break;
+            back_cmd -= program[back_cmd - 1] + 2;
+          } while((unsigned char)program[back_cmd + 1] != 251);
+
+          cur_robot->cur_prog_line = back_cmd;
+        }
+
+        cur_robot->loop_count = loop_count + 1;
+        break;
+      }
+
+      case 253: // Abort loop
+      {
+        int loop_amount = parse_param(mzx_world, cmd_ptr + 1, id);
+        int back_cmd;
+
+        do
+        {
+          if((unsigned char)program[back_cmd - 1] == 0xFF) break;
+          back_cmd -= program[back_cmd - 1] + 2;
+        } while((unsigned char)program[back_cmd + 1] != 251);
+
+        cur_robot->cur_prog_line = back_cmd;
+        break;
+      }
+
+      case 254: // Disable mesg edge
+      {
+        mzx_world->mesg_edges = 0;
+        break;
+      }
+
+
+      case 255: // Enable mesg edge
+      {
+        mzx_world->mesg_edges = 1;
+        break;
+      }
     }
-    //Update player position too
-    if(level_id[player_x+player_y*max_bxsiz]!=127) find_player();
-  }
-} while(((++lines_run)<commands)&&(!done));
 
-breaker:
-  //Fix char set (added to fix pixel editing. Optional) -Koji
-  // WTF no! This is ruining all of the charset buffering/synchronization!
-  // Instead the pixel editing functions should be setting need_update,
-  // this shouldn't be called here of all places. - Exo
-  // ec_update_set();
-  
-  robots[id].cycle_count=0;//In case a label changed it
-  //Reset x/y (from movements)
-  robots[id].xpos=x;
-  robots[id].ypos=y;
-  exit_func();
+    // Go to next command! First erase prefixes...
+    next_cmd:
+
+    mzx_world->first_prefix = 0;
+    mzx_world->mid_prefix = 0;
+    mzx_world->last_prefix = 0;
+
+    next_cmd_prefix:
+    // Next line
+    cur_robot->pos_within_line = 0;
+    first_cmd = 0;
+
+    if(!cur_robot->cur_prog_line)
+      break;
+
+    if(!gotoed)
+      cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+
+    if(!program[cur_robot->cur_prog_line])
+    {
+      //End of program
+      end_prog:
+      cur_robot->cur_prog_line = 0;
+      break;
+    }
+
+    if(update_blocked)
+    {
+      calculate_blocked(mzx_world, x, y, id, _bl);
+    }
+    find_player(mzx_world);
+
+  } while(((++lines_run) < commands) && (!done));
+
+  breaker:
+
+  cur_robot->cycle_count = 0; // In case a label changed it
+  // Reset x/y (from movements)
+  cur_robot->xpos = x;
+  cur_robot->ypos = y;
 }
+

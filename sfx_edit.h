@@ -23,9 +23,10 @@
 #define __SFX_EDIT_H
 
 #include "sfx.h"
+#include "world.h"
 
-void sfx_edit(void);
+void sfx_edit(World *mzx_world);
 
-extern char sfx_names[NUM_SFX*10];
+extern char sfx_names[NUM_SFX * 10];
 
 #endif

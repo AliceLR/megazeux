@@ -3,9 +3,7 @@
 
 #include <stdio.h>
 
-#define MZX_BCC						 1
-
-#define MAX_OBJ_SIZE       31744
+#define MAX_OBJ_SIZE       65536
 
 #define IMM_U16            (1 << 0)
 #define IMM_S16            (1 << 0)
@@ -19,6 +17,22 @@
 #define CONDITION          (1 << 9)
 #define ITEM               (1 << 10)
 #define EXTRA              (1 << 11)
+#define UNDEFINED          (1 << 13)
+
+#define S_IMM_U16          0
+#define S_IMM_S16          0
+#define S_CHARACTER        2
+#define S_COLOR            3
+#define S_DIR              4
+#define S_THING            5
+#define S_PARAM            6
+#define S_STRING           7
+#define S_EQUALITY         8
+#define S_CONDITION        9
+#define S_ITEM             10
+#define S_EXTRA            11
+#define S_CMD              12
+#define S_UNDEFINED        13
 
 #define ERR_BADSTRING      1
 #define ERR_BADCHARACTER   2
@@ -93,6 +107,30 @@
 #define CMD_DIR            CMD | 65
 #define CMD_COUNTER        CMD | 66
 #define CMD_DUPLICATE      CMD | 67
+#define CMD_NO             CMD | 68
+
+#define IGNORE             (1 << 30)
+#define IGNORE_COMMA       IGNORE | 0
+#define IGNORE_SEMICOLON   IGNORE | 1
+#define IGNORE_A           IGNORE | 2
+#define IGNORE_AN          IGNORE | 3
+#define IGNORE_AND         IGNORE | 4
+#define IGNORE_AS          IGNORE | 5
+#define IGNORE_AT          IGNORE | 6
+#define IGNORE_BY          IGNORE | 7
+#define IGNORE_ELSE        IGNORE | 8
+#define IGNORE_FOR         IGNORE | 9
+#define IGNORE_FROM        IGNORE | 10
+#define IGNORE_INTO        IGNORE | 11
+#define IGNORE_IS          IGNORE | 12
+#define IGNORE_OF          IGNORE | 13
+#define IGNORE_THE         IGNORE | 14
+#define IGNORE_THEN        IGNORE | 15
+#define IGNORE_THERE       IGNORE | 16
+#define IGNORE_THROUGH     IGNORE | 17
+#define IGNORE_THRU        IGNORE | 18
+#define IGNORE_TO          IGNORE | 19
+#define IGNORE_WITH        IGNORE | 20
 
 typedef struct
 {
@@ -114,14 +152,31 @@ int is_extra(char *cmd_line, char **next);
 int get_color(char *cmd_line);
 int get_param(char *cmd_line);
 
-int parse_argument(char *cmd_line, char **next, int *arg_translated, int *error);
+int parse_argument(char *cmd_line, char **next, int *arg_translated,
+ int *error, int *arg_short);
 void get_word(char *str, char *source, char t);
-int match_command(mzx_command *cmd);
+int match_command(mzx_command *cmd, char *error_buffer);
 int assemble_text(char *input_name, char *output_name);
-int assemble_command(int command_number, mzx_command *cmd, void *params[32], 
+int assemble_command(int command_number, mzx_command *cmd, void *params[32],
  char *obj_pos, char **next_obj_pos);
 void print_command(mzx_command *cmd);
 void skip_whitespace(char *cpos, char **next);
 int get_line(char *buffer, FILE *fp);
+int disassemble_line(char *cpos, char **next, char *output_buffer,
+ char *error_buffer, int *total_bytes, int print_ignores, char *arg_types,
+ int *arg_count, int base);
+int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
+ char *param_listing, int *arg_count_ext);
+void print_color(int color, char *color_buffer);
+int print_dir(int dir, char *dir_buffer, char *arg_types,
+ int arg_place);
+void print_error(int arg_number, char *error_buffer, int bad_arg,
+ int correct_arg);
+void get_wanted_arg(char *buffer, int arg);
+char *assemble_file(char *name, int *size);
+void disassemble_file(char *name, char *program, int allow_ignores,
+ int base);
+
+extern mzx_command command_list[256];
 
 #endif

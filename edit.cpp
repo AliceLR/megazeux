@@ -2,8 +2,7 @@
  * MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
- * Copyright (C) 2002 Gilead Kutnick - exophase@adelphia.net
+ * Copyright (C) 2004 Gilead Kutnick - exophase@adelphia.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -20,85 +19,62 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-//Password completely removed -Koj
-//Took out SMZX -Koji
-//Editing the world!
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+#include <unistd.h>
 
 #include "helpsys.h"
-#include "runrobot.h"
 #include "scrdisp.h"
-#include "scrdump.h"
 #include "sfx.h"
 #include "sfx_edit.h"
 #include "counter.h"
 #include "game.h"
 #include "fill.h"
-#include "meter.h"
-//#include "password.h"
-#include "egacode.h"
 #include "block.h"
 #include "pal_ed.h"
 #include "char_ed.h"
 #include "edit_di.h"
-#include "beep.h"
-#include "boardmem.h"
 #include "intake.h"
-#include "mod.h"
 #include "param.h"
 #include "error.h"
 #include "idarray.h"
-#include "ems.h"
-#include "meminter.h"
-#include "cursor.h"
-#include "retrace.h"
-#include "string.h"
 #include "edit.h"
-#include "ezboard.h"
 #include "data.h"
 #include "const.h"
 #include "graphics.h"
 #include "window.h"
-#include "getkey.h"
-#include "palette.h"
 #include "idput.h"
 #include "hexchar.h"
-#include <dos.h>
-#include "roballoc.h"
-#include "saveload.h"
-#include <stdio.h>
-#include <stdlib.h>
-#include "blink.h"
-#include "cursor.h"
 #include "counter.h"
-// For saving/loading MZX image files - Exo
 #include "mzm.h"
+#include "world.h"
+#include "event.h"
+#include "audio.h"
 
 /* Edit menu- (w/box ends on sides) Current menu name is highlighted. The
-	bottom section zooms to show a list of options for the current menu,
-	although all keys are available at all times. PGUP/PGDN changes menu.
-	The menus are shown in listed order. [draw] can be [text]. (in which case
-	there is the words "Type to place text" after the ->) [draw] can also be
-	[place] or [block]. The options DRAW, TEXT, DEBUG, BLOCK, MOD, and DEF.
-	COLORS are highlighted white (instead of green) when active. Debug mode
-	pops up a small window in the lower left corner, which rushes to the right
-	side and back when the cursor reaches 3/4 of the way towards it,
-	horizontally. The menu itself is 15 lines wide and 7 lines high. The
-	board display, w/o the debug menu, is 19 lines high and 80 lines wide.
-	Note: SAVE is highlighted white if the world has changed since last load
-	or save.
+  bottom section zooms to show a list of options for the current menu,
+  although all keys are available at all times. PGUP/PGDN changes menu.
+  The menus are shown in listed order. [draw] can be [text]. (in which case
+  there is the words "Type to place text" after the ->) [draw] can also be
+  [place] or [block]. The options DRAW, TEXT, DEBUG, BLOCK, MOD, and DEF.
+  COLORS are highlighted white (instead of green) when active. Debug mode
+  pops up a small window in the lower left corner, which rushes to the right
+  side and back when the cursor reaches 3/4 of the way towards it,
+  horizontally. The menu itself is 15 lines wide and 7 lines high. The
+  board display, w/o the debug menu, is 19 lines high and 80 lines wide.
+  Note: SAVE is highlighted white if the world has changed since last load
+  or save.
 
-	The commands with ! instead of : have not been implemented yet.
+  The commands with ! instead of : have not been implemented yet.
 
-	The menu line turns to "Overlay editing-" and the lower portion shows
-	overlay commands on overlay mode.
+  The menu line turns to "Overlay editing-" and the lower portion shows
+  overlay commands on overlay mode.
 ÄÄÄÄÄÄÄÄÄÄÄÄÄ¿
-X/Y:    99/99³
-Board:    000³
-Mem:    0000k³
-EMS:    0000k³
-Robot memory-³
-64.0/64k 100%³
-             ³ <- added for modules - Exo
+X/Y:  nnn/nnn³
+Board:    nnn³
+(module)     ³
 ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
  WORLD  BOARD  THING  CURSOR  SHOW  MISC  Drawing:_!_ (_#_ PushableRobot p00)
 ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
@@ -118,7 +94,7 @@ Robot memory-³
  Shift+F4:Show Spaces
 
  F1!Help    R:Redraw Screen  Alt+A:Select Char Set  Alt+D:Default Colors
- ESC:Exit	Alt+L:Test SAM   Alt+Y:Debug Mode       Alt+N:Music
+ ESC:Exit Alt+L:Test SAM   Alt+Y:Debug Mode       Alt+N:Music
 ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄPgup/Pgdn:MenuÄ
 
 ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
@@ -130,3387 +106,2986 @@ Robot memory-³
 
 Undocumented keys:
 
-End:			LR corner
-Home:			UL corner
-ESC:			Cancel mode/overlay mode if active (otherwise exit)
-Backspace:	Delete (move left one in text)
-Alt+W:                  redraw screen
+End:      LR corner
+Home:     UL corner
+ESC:      Cancel mode/overlay mode if active (otherwise exit)
+Backspace:  Delete (move left one in text)
 */
 
-/* Editing data */
+#define synchronize_board_values()          \
+  src_board = mzx_world->current_board;     \
+  board_width = src_board->board_width;     \
+  board_height = src_board->board_height;   \
+  level_id = src_board->level_id;           \
+  level_param = src_board->level_param;     \
+  level_color = src_board->level_color;     \
+  overlay = src_board->overlay;             \
+  overlay_color = src_board->overlay_color; \
+  clear_screen_no_update(177, 1)            \
 
-int draw_mode=0;//1 for on, 2 for text, 3 for block, 4 for block place.
-					 //+128 for overlay.
-int curr_color=7,curr_thing=0,curr_param=0;//Current. Param 0 for robot/etc
-														 //is temp. storage to be deleted
-														 //or realigned upon first
-														 //placement. Other params mean
-														 //to copy on placement.
-char curr_menu=0;//Current menu, 0 thru 5.
-char def_color_mode=1;//If default colors are on.
-char debug_mode=0,debug_x=0;//If debug mode is on, and X position of box.
-int x_pos=0,y_pos=0;//Current screen cursor position.
-int x_top_pos=0,y_top_pos=0;//Current x/y position in array of screen
-#define ARRAY_X (x_pos+x_top_pos)
-#define ARRAY_Y (y_pos+y_top_pos)
-#define ARRAY_OFFS (ARRAY_X+ARRAY_Y*max_bxsiz)
-char changed=0;//Whether world has changed since a load or save.
-//Whether to update menu and/or view, whether to fade in
-char update_menu=1,fade_in=1,update_view=1;
-//Remembers one corner of a block cmd or the starting position for a text cmd
-int save_x,save_y;
-int save_x2,save_y2;
-char blk_cmd;
-//Whether to show non-overlay when editing overlay
-char show_level=1;
+#define fix_scroll()                        \
+  if(cursor_board_x >= board_width)         \
+  {                                         \
+    cursor_board_x = (board_width - 1);     \
+    scroll_x = (board_width - 80);          \
+                                            \
+    if(scroll_x < 0)                        \
+      scroll_x = 0;                         \
+  }                                         \
+                                            \
+  if(cursor_board_y >= board_height)        \
+  {                                         \
+    cursor_board_y = (board_height - 1);    \
+      scroll_y =                            \
+      (board_height - edit_screen_height);  \
+                                            \
+    if(scroll_y < 0)                        \
+      scroll_y = 0;                         \
+  }                                         \
 
-/* Menu data */
+#define fix_board(new_board)                \
+  mzx_world->current_board_id = new_board;  \
+  mzx_world->current_board =                \
+   mzx_world->board_list[new_board];        \
+
+#define fix_mod()                           \
+  load_mod(src_board->mod_playing);         \
+  strcpy(mzx_world->real_mod_playing,       \
+   src_board->mod_playing);                 \
+
+
 #define NUM_MENUS 6
-char far menu_names[NUM_MENUS][9]={
-	" WORLD "," BOARD "," THING "," CURSOR "," SHOW "," MISC " };
-char far draw_names[7][10]={ " Current:"," Drawing:","    Text:","   Block:",
-	"   Block:"," Import:", " Import:" };
-char far text_help[19]="Type to place text";
-char far block_help[28]="Press ENTER on other corner";
-char far block_help2[27]="Press ENTER to place block";
-char far block_help3[26]="Press ENTER to place ANSi";
-char far block_help4[25]="Press ENTER to place MZM";
-char far menu_help[15]="Pgup/Pgdn:Menu";
-char far *menu_lines[NUM_MENUS][2]={ {
-" L:LoadS:Save  G:Global Info    Alt+R:Restart  Alt+T:Test",
-" Alt+S:Status Info  Alt+C:Char Edit  Alt+E:Palette  Alt+F:Sound Effects"
-} , {
-" Alt+Z:Clear   X:Exits  Alt+P:Size/Pos  I:Info  A:Add  D:Delete  V:View",
-" Alt+I:Import  Alt+X:Export  B:Select Board  Alt+O:Edit Overlay"
-} , {
-" F3:Terrain  F4:Item F5:Creature  F6:Puzzle  F7:Transport  F8:Element",
-" F9:MiscF10:Objects  P:Parameter  C:Color"
-} , {
-" :Move  Space:Place  Enter:Modify+Grab  Alt+M:Modify  Ins:Grab  Del:Delete",
-" F:Fill   Tab:DrawF2:Text  Alt+B:Block   Alt+:Move 10"
-} , {
-" Shift+F1:Show InvisWalls  Shift+F2:Show Robots  Shift+F3:Show Fakes",
-" Shift+F4:Show Spaces"
-} , {
-" F1:Help    R:Redraw Screen  Alt+A:Select Char Set  Alt+D:Default Colors",
-" ESC:Exit   Alt+L:Test SAM   Alt+Y:Debug Mode  Alt+N:Music  Alt+8:Mod *"
-} };
+char menu_names[NUM_MENUS][9] =
+{
+  " WORLD ", " BOARD ", " THING ", " CURSOR ", " SHOW ", " MISC "
+};
 
-int far menu_keys[NUM_MENUS+1][2][28]={ {
-{	6,'L',5,0,6,'S',2,0,13,'G',4,0,13,-19,2,0,10,-20,2,0,12,'*',2,0 },
-{	17,-31,2,0,15,-46,2,0,13,-18,2,0,19,-33,7,0 }
-},{
-{	11,-44,3,0,7,'X',7,0,14,-25,2,0,6,'I',2,0,5,'A',2,0,8,'D',2,0,6,'V',2,0 },
-{	12,-23,2,0,12,-45,2,0,14,'B',2,0,18,-24,2,0 }
-},{
-{  10,-61,2,0,7,-62,6,0,11,-63,2,0,9,-64,2,0,12,-65,2,0,10,-66,4,0 },
-{  7,-67,5,0,11,-68,2,0,11,'P',2,0,7,'C',32,0 }
-},{
-{	9,0,11,' ',2,0,17,13,2,0,12,-50,2,0,8,-82,2,0,10,-83,2,0 },
-{	6,'F',3,0,8,9,5,0,7,-60,12,0,11,-48,22,0 }
-},{
-{	24,-84,2,0,20,-85,2,0,19,-86,10,0 },
-{	20,-87,57,0 }
-},{
-{	7,-59,4,0,15,'R',2,0,21,-30,2,0,20,-32,6,0 },
-{	8,27,3,0,14,-38,3,0,16,-21,7,0,11,-49,15,0 }
-},{
-{	9,0,11,' ',2,0,8,-82,2,0,15,13,2,0,10,-83,8,0,6,'F',4,0 },
-{	7,'C',2,0,11,-48,2,0,8,9,19,0,16,-31,2,0,7,-60,3,0 } } };
+char menu_positions[] = "11111112222222333333344444444555555666666";
 
-char far *overlay_menu_lines[4]={
-" OVERLAY EDITING- (Alt+O to end)",
-" :Move  Space:Place  Ins:Grab  Enter:Character  Del:Delete   F:Fill",
-" C:Color  Alt+B:Block  Tab:Draw  Alt+:Move 10   Alt+S:Show level  F2:Text",
-"Character" };
+char draw_names[7][10] =
+{
+  " Current:", " Drawing:", "    Text:", "   Block:", "   Block:", " Import:"
+};
 
-void add_ext(char far *str,char far *ext) {
-	int t1,t2=str_len(str);
-	//check for existing ext.
-	for(t1=0;t1<t2;t1++)
-		if(str[t1]=='.') break;
-	if(t1<t2) return;
-	str[8]=0;//Limit main filename section to 8 chars
-	str_cat(str,ext);
-}
-
-void edit_world(void) {
-	int t1,t2,t3,t4,t5,t6,t7,t8,t9,t0;
-	int key;
-	char temp[20];
-	char ansi[15];
-  char mzm[15];
-	long tlong1,tlong2;
-	char r,g,b;
-	FILE *fp;
-	set_context(80);
-	error_mode=0;
-	//Clear world on entrance
-	clear_world();
-	clear_zero_objects();
-	scroll_color=15;
-	scroll_base_color=143;
-	scroll_corner_color=135;
-	scroll_pointer_color=128;
-	scroll_title_color=143;
-	scroll_arrow_color=142;
-  if(smzx_mode == 2)
+char *menu_lines[NUM_MENUS][2]=
+{
   {
-    update_smzx_palette();
+    " L:Load\tS:Save  G:Global Info    Alt+R:Restart  Alt+T:Test",
+    " Alt+S:Status Info  Alt+C:Char Edit  Alt+E:Palette  Alt+F:Sound Effects"
+  },
+  {
+    " Alt+Z:Clear   X:Exits\t  Alt+P:Size/Pos  I:Info  A:Add  D:Delete  V:View",
+    " Alt+I:Import  Alt+X:Export  B:Select Board  Alt+O:Edit Overlay"
+  },
+  {
+    " F3:Terrain  F4:Item\tF5:Creature  F6:Puzzle  F7:Transport  F8:Element",
+    " F9:Misc\tF10:Objects  P:Parameter  C:Color"
+  },
+  {
+    " :Move  Space:Place  Enter:Modify+Grab  Alt+M:Modify  Ins:Grab  Del:Delete",
+    " F:Fill   Tab:Draw\tF2:Text\t\t  Alt+B:Block   Alt+:Move 10"
+  },
+  {
+    " Shift+F1:Show InvisWalls  Shift+F2:Show Robots  Shift+F3:Show Fakes",
+    " Shift+F4:Show Spaces"
+  },
+  {
+    " F1:Help    Home\\End:Corner  Alt+A:Select Char Set  Alt+D:Default Colors",
+    " ESC:Exit   Alt+L:Test SAM   Alt+Y:Debug Mode\t  Alt+N:Music  Alt+8:Mod *"
   }
-	//Setup most variables
-	draw_mode=curr_thing=curr_param=curr_menu=x_pos=y_pos=changed=
-		x_top_pos=y_top_pos=0;
-	curr_color=update_menu=fade_in=7;
-	show_level=1;
-	debug_x=65;
-	//Set page
-	current_page=0;
-	current_pg_seg=VIDEO_SEG;
-	//Clear screen
-	clear_screen(1824,current_pg_seg);
-	m_show();
-	//Normally cursor is moved right after key interpretation.
-	move_cursor(x_pos,y_pos);
-	cursor_solid();
-	do {
-		//If NOTHING was changed, do NOT page flip
-		set_counter("HELP_MENU",1);
-		if(!(update_view|update_menu|fade_in)) {
-			m_hide();
-			goto no_pflip;
-			}
-		//Pre-page flip
-		current_pg_seg=VIDEO_NUM2SEG(!current_page);
-		//Draw view OR copy view from old page
-		if(update_view) {
-			//Fill area to blot out overflow
-			fill_line(1520,0,0,EC_NA_FILL*256+177,current_pg_seg);
-			if(draw_mode<128) {
-				overlay_mode|=128;
-				draw_edit_window(x_top_pos,y_top_pos,current_pg_seg);
-				overlay_mode&=~128;
-				}
-			else {
-				//ALWAYS shown as a normal overlay.
-				t1=overlay_mode;
-				overlay_mode=1;
-				if(!show_level) overlay_mode|=64;
-				draw_edit_window(x_top_pos,y_top_pos,current_pg_seg);
-				overlay_mode=t1;
-				}
-			//Highlight block, if any
-			if((draw_mode&127)==3) {
-				//From t1/t2 to t3/t4
-				t1=save_x;
-				t2=save_y;
-				t3=ARRAY_X;
-				t4=ARRAY_Y;
-				if(t3<t1) {
-					t5=t1;
-					t1=t3;
-					t3=t5;
-					}
-				if(t4<t2) {
-					t5=t2;
-					t2=t4;
-					t4=t5;
-					}
-				//Offset by xy_top_pos
-				t1-=x_top_pos;
-				t2-=y_top_pos;
-				t3-=x_top_pos;
-				t4-=y_top_pos;
-				//Clip to screen
-				if(t1<0) t1=0;
-				if(t2<0) t2=0;
-				if(t3>79) t3=79;
-				if(t4>18) t4=18;
-				//t3 becomes WIDTH
-				t3=t3-t1+1;
-				//Highlight block
-				for(;t2<=t4;t2++)
-					color_line(t3,t1,t2,159,current_pg_seg);
-				}
-			}
-		else {
-			//Copy 19 lines of 80 chars of 2 bytes each.
-			m_hide();
-			mem_cpy((char far *)MK_FP(current_pg_seg,0),
-				(char far *)MK_FP(VIDEO_NUM2SEG(current_page),0),3040);
-			m_show();
-			}
-		//Draw menu (draw debug if view updated)
-		if(update_menu|update_view) {
-			if(debug_mode) {
-				draw_debug_box(11);
-				update_view=0;
-				}
-			//Draw box
-			if(update_menu) {
-				draw_window_box(0,19,79,24,current_pg_seg,EC_MAIN_BOX,
-					EC_MAIN_BOX_DARK,EC_MAIN_BOX_CORNER,0);
-				draw_window_box(0,21,79,24,current_pg_seg,EC_MAIN_BOX,
-					EC_MAIN_BOX_DARK,EC_MAIN_BOX_CORNER,0);
-				draw_char(196,EC_MAIN_BOX_CORNER,78,21,current_pg_seg);
-				draw_char(217,EC_MAIN_BOX_DARK,79,21,current_pg_seg);
-				//Write menu names
-				if(draw_mode<128) {
-					t3=1;//X position
-					for(t1=0;t1<NUM_MENUS;t1++) {
-						t2=EC_MENU_NAME;//Pick the color
-						if(t1==curr_menu) t2=EC_CURR_MENU_NAME;
-						//Write it
-						write_string(menu_names[t1],t3,20,t2,current_pg_seg);
-						//Add to x
-						t3+=str_len(menu_names[t1]);
-						}
-					}
-				else {
-					write_string(overlay_menu_lines[0],1,20,EC_MENU_NAME,
-						current_pg_seg);
-					t3=42;
-					}
-				//Write mode string
-				write_string(draw_names[draw_mode&127],t3,20,EC_MODE_STR,current_pg_seg);
-				t3+=str_len(draw_names[draw_mode&127]);
-				//Write help or current thing
-				if((draw_mode&127)==2) write_string(text_help,t3,20,EC_MODE_HELP,
-					current_pg_seg);
-				else if((draw_mode&127)==3) write_string(block_help,t3,20,EC_MODE_HELP,
-					current_pg_seg);
-				else if((draw_mode&127)==4) write_string(block_help2,t3,20,EC_MODE_HELP,
-					current_pg_seg);
-				else if((draw_mode&127)==5) write_string(block_help3,t3,20,EC_MODE_HELP,
-					current_pg_seg);
-				else if((draw_mode&127)==6) write_string(block_help4,t3,20,EC_MODE_HELP,
-					current_pg_seg);
-				else {
-					//Current thing
-					draw_char(' ',7,t3,20,current_pg_seg);
-					draw_char(' ',7,t3+2,20,current_pg_seg);
-					//Use id_put
-					if(draw_mode<128) {
-						t1=level_id[0];
-						t2=level_color[0];
-						t4=level_param[0];
-						t5=level_under_color[0];
-						level_id[0]=curr_thing;
-						level_color[0]=curr_color;
-						level_param[0]=curr_param;
-						level_under_color[0]=0;
-						overlay_mode|=128;
-						id_put(t3+1,20,0,0,0,0,current_pg_seg);
-						overlay_mode&=~128;
-						level_id[0]=t1;
-						level_color[0]=t2;
-						level_param[0]=t4;
-						level_under_color[0]=t5;
-						}
-					else draw_char(curr_param,curr_color,t3+1,20,current_pg_seg);
-					//Space and '('
-					t3+=4;
-					draw_char('(',EC_CURR_THING,t3++,20,current_pg_seg);
-					//Color symbol
-					draw_color_box(curr_color,0,t3,20,current_pg_seg);
-					//Name of thing
-					if(draw_mode&128) {
-						write_string(overlay_menu_lines[3],t3+4,20,EC_CURR_THING,
-							current_pg_seg);
-						t3+=str_len(overlay_menu_lines[3])+5;
-						}
-					else {
-						write_string(thing_names[curr_thing],t3+4,20,EC_CURR_THING,
-							current_pg_seg);
-						t3+=str_len(thing_names[curr_thing])+5;
-						}
-					//Parameter (DON'T SHOW for robots/etc unless RPARAM def'd)
-#ifndef RPARAM
-					if(curr_thing<122) {
-#endif
-						draw_char('p',EC_CURR_PARAM,t3++,20,current_pg_seg);
-						write_hex_byte(curr_param,EC_CURR_PARAM,t3,20,current_pg_seg);
-						t3+=2;
-#ifndef RPARAM
-						}
-					else t3--;
-#endif
-					//')'
-					draw_char(')',EC_CURR_THING,t3,20,current_pg_seg);
-					//Done
-					}
-				//Draw current menu
-				if(draw_mode&128) {
-					write_string(overlay_menu_lines[1],1,22,EC_OPTION,current_pg_seg);
-					write_string(overlay_menu_lines[2],1,23,EC_OPTION,current_pg_seg);
-					}
-				else {
-					write_string(menu_lines[curr_menu][0],1,22,EC_OPTION,current_pg_seg);
-					write_string(menu_lines[curr_menu][1],1,23,EC_OPTION,current_pg_seg);
-					}
-				//Highlight any current options
-				if(draw_mode&128) {
-					if(show_level)
-						color_line(16,51,23,EC_HIGHLIGHTED_OPTION,current_pg_seg);
-					if(draw_mode==129)
-						color_line(8,24,23,EC_HIGHLIGHTED_OPTION,current_pg_seg);
-					else if(draw_mode==130)
-						color_line(7,69,23,EC_HIGHLIGHTED_OPTION,current_pg_seg);
-					else if((draw_mode==131)||(draw_mode==132))
-						color_line(11,11,23,EC_HIGHLIGHTED_OPTION,current_pg_seg);
-					}
-				else if(curr_menu==0) {
-					if(changed)
-						color_line(6,13,22,EC_HIGHLIGHTED_OPTION,current_pg_seg);
-					}
-				else if(curr_menu==3) {
-					if(draw_mode==1)
-						color_line(8,11,23,EC_HIGHLIGHTED_OPTION,current_pg_seg);
-					else if(draw_mode==2)
-						color_line(7,24,23,EC_HIGHLIGHTED_OPTION,current_pg_seg);
-					else if((draw_mode==3)||(draw_mode==4))
-						color_line(11,43,23,EC_HIGHLIGHTED_OPTION,current_pg_seg);
-					}
-				else if(curr_menu==5) {
-					if(def_color_mode)
-						color_line(20,53,22,EC_HIGHLIGHTED_OPTION,current_pg_seg);
-					if(mod_playing[0]!=0)
-						color_line(11,53,23,EC_HIGHLIGHTED_OPTION,current_pg_seg);
-					if(debug_mode)
-						color_line(16,30,23,EC_HIGHLIGHTED_OPTION,current_pg_seg);
-					}
-				//Write menu help string
-				if(draw_mode<128)
-					write_string(menu_help,64,24,EC_CURR_PARAM,current_pg_seg);
-				//Done!
-				}
-			else {//Otherwise copy menu
-				m_hide();
-				mem_cpy((char far *)MK_FP(current_pg_seg,3040),
-					(char far *)MK_FP(VIDEO_NUM2SEG(current_page),3040),960);
-				m_show();
-				}
-			//Menu is updated
-			update_menu=0;
-			}
-		else {//Otherwise copy menu
-			m_hide();
-			mem_cpy((char far *)MK_FP(current_pg_seg,3040),
-				(char far *)MK_FP(VIDEO_NUM2SEG(current_page),3040),960);
-			m_show();
-			}
-		//Page flip
-		current_page=1-current_page;
-		//Page flip automatically doesn't occur until NEXT retrace.
-		//But we wait until then so we don't start writing on the
-		//visible page!
-		m_hide();
-		page_flip(current_page);
-		move_cursor(x_pos,y_pos);
-		cursor_solid();
-		m_vidseg(current_pg_seg);
-		wait_retrace();
-		//Fade in (used upon entrance)
-		if(fade_in) {
-			vquick_fadein();
-			fade_in=0;
-			//Turn cursor on
-			cursor_solid();
-			}
-	no_pflip:
-		//Move cursor done at end of loop
-		if(debug_mode) {
-			write_number(ARRAY_X,EC_DEBUG_NUMBER,debug_x+7,12,current_pg_seg,3);
-			write_number(ARRAY_Y,EC_DEBUG_NUMBER,debug_x+11,12,current_pg_seg,3);
-			}
-		//Highlight cursor - Save old color/char and fiddle with it
-		t1=t2=*(unsigned char far *)MK_FP(current_pg_seg,((x_pos+y_pos*80)<<1)+1);
-		//If same fg/bk, flip the bk brightness
-		if((t1&15)==((t1&240)>>4)) t1^=128;
-		*(unsigned char far *)MK_FP(current_pg_seg,((x_pos+y_pos*80)<<1)+1)=t1;
-		//Check character- if it is a 219, change to a space.
-		//If it is a ², make it a °.
-		t1=t3=*(unsigned char far *)MK_FP(current_pg_seg,(x_pos+y_pos*80)<<1);
-		if(t1==219) t1=32;
-		if(t1==178) t1=176;
-		*(unsigned char far *)MK_FP(current_pg_seg,(x_pos+y_pos*80)<<1)=t1;
-		//Get key
-		m_show();
-		key=getkey();
-		m_hide();
-		//Fix cursor
-		*(unsigned char far *)MK_FP(current_pg_seg,((x_pos+y_pos*80)<<1)+1)=t2;
-		*(unsigned char far *)MK_FP(current_pg_seg,(x_pos+y_pos*80)<<1)=t3;
-		m_show();
-		//Act upon key
-		cursor_off();
-		//Check for text mode...
-		if(((draw_mode&127)==2)&&((key>=32)&&(key<=255))) {
-			//Place a character.
-			changed=1;
-			if(!(draw_mode&128)) {
-				if(level_id[ARRAY_OFFS]==127) goto move_right;//No overwriting player
-				//If top thing at position is a robot/etc, deallocate it. If it
-				//is the CURRENT thing, copy to #0 first
-				t1=level_id[ARRAY_OFFS];
-				if(t1==122) {//(sensor)
-					if((level_param[ARRAY_OFFS]==curr_param)&&(curr_thing==122))
-						copy_sensor(0,curr_param);
-					clear_sensor(level_param[ARRAY_OFFS]);
-					curr_param=0;
-					}
-				else if((t1==123)||(t1==124)) {//(robot)
-					if((level_param[ARRAY_OFFS]==curr_param)&&
-						((curr_thing==123)||(curr_thing==124)))
-							copy_robot(0,curr_param);//No mem. = too bad
-					clear_robot(level_param[ARRAY_OFFS]);
-					curr_param=0;
-					}
-				else if((t1==125)||(t1==126)) {//(scroll)
-					if((level_param[ARRAY_OFFS]==curr_param)&&
-						((curr_thing==125)||(curr_thing==126)))
-							copy_scroll(0,curr_param);//No mem. = too bad
-					clear_scroll(level_param[ARRAY_OFFS]);
-					curr_param=0;
-					}
-				//Place.
-				id_place(ARRAY_X,ARRAY_Y,77,curr_color,key);
-				}
-			else {
-				//Overlay mode
-				overlay[ARRAY_OFFS]=key;
-				overlay_color[ARRAY_OFFS]=curr_color;
-				}
-			update_view=1;
-			//Increase x position if possible
-			goto move_right;
-			}
-		//Ensure uppercase
-		if((key>='a')&&(key<='z')) key-=32;
-		//Fix for block mode
-		if(((draw_mode&127)==3)||((draw_mode&127)==4)||((draw_mode&127)==5)
-     ||(draw_mode&127)==6)
-			if((key==' ')||(key==13)) key=-48;
-	re_evaul_key:
-		switch(key) {
-			case ']'://Screen .PCX dump
-				dump_screen();
-				break;
-			case MOUSE_EVENT://Mouse click
-				//Possibilities-
-				//
-				//1) Mouse is in upper menu area.
-				// a) Mouse will change current menu/exit overlay mode (left)
-				// b) Mouse will change current color (right)
-				//2) Mouse is in lower menu area.
-				// a) Mouse will choose menu command.
-				// b) Mouse will change current menu. (Pgup/Pgdn)
-				//3) Mouse is in level area- move cursor and place.
-				//4) Mouse is anywhere else- do nothing.
-				if(mouse_event.cy==20) {//#1
-					if(mouse_event.cx<42) {//#1a
-						if(draw_mode&128) goto overlay_off;
-						//Determine menu to switch to.
-						t1=1;
-						for(t2=0;t2<NUM_MENUS;t2++) {
-							t1+=str_len(menu_names[t2]);
-							if(mouse_event.cx<t1) break;
-							}
-						if(t2>=NUM_MENUS) t2=NUM_MENUS-1;
-						curr_menu=t2;
-						update_menu=1;
-						break;
-						}
-					else goto change_color;//#1b
-					}
-				else if(mouse_event.cy>21) {//#2
-					if(mouse_event.cy<24) {//#2a
-						if((mouse_event.cx<2)||(mouse_event.cx==79)) break;
-						if(draw_mode&128) t1=NUM_MENUS;
-						else t1=curr_menu;
-						t2=mouse_event.cy-22;
-						t3=mouse_event.cx-2;
-						t4=0;
-						do {
-							t3-=menu_keys[t1][t2][t4];
-							if(t3<0) break;
-							t4+=2;
-						} while(1);
-						key=menu_keys[t1][t2][t4+1];
-						goto re_evaul_key;
-						}
-					else {//#2b
-						if(mouse_event.cx<68) goto prev_menu;
-						else goto next_menu;
-						}
-					}
-				//#3 or #4?
-				if(mouse_event.cy>18) break;
-				if(mouse_event.cx>=board_xsiz) break;
-				if(mouse_event.cy>=board_ysiz) break;
-				//#3- Move cursor and place.
-				x_pos=mouse_event.cx;
-				y_pos=mouse_event.cy;
-				//Move debug window?
-				if((debug_x==65)&&(x_pos>59)) {
-					debug_x=0;
-					update_view=1;
-					}
-				if((debug_x==0)&&(x_pos<20)) {
-					debug_x=65;
-					update_view=1;
-					}
-				goto place;
-			case -20://Alt+T
-				//Test
-				//if(protection_method!=NO_PROTECTION) {
-				//	error("Can't test password-protected world",0,24,
-				//		current_pg_seg,0x2001);
-				//	break;
-				//	}
-				if((curr_thing==122)&&(curr_param==0)) {
-					clear_sensor(0);
-					curr_thing=0;
-					}
-				else if(((curr_thing==123)||(curr_thing==124))&&(curr_param==0)) {
-					clear_robot(0);
-					curr_thing=0;
-					}
-				else if(((curr_thing==125)||(curr_thing==126))&&(curr_param==0)) {
-					clear_scroll(0);
-					curr_thing=0;
-					}
-				//Temporary save
-				str_cpy(temp,curr_file);
-				t1=curr_board;
-				store_current();
-				save_world("test_$$$.mzx");
-				select_current(t1);
-				//Turn cheats on and fade out
-				cheats_active+=5;
-				vquick_fadeout();
-				//Play
-				clear_game_params();
-				set_counter("TIME",time_limit);
-				send_robot_def(0,11);
-				send_robot_def(0,10);
-				m_hide();
-				player_restart_x=player_x;
-				player_restart_y=player_y;
-				play_game(1);
-				cheats_active-=5;
-				//Clear screen
-				clear_screen(1824,current_pg_seg);
-				//Palette
-				default_palette();
-				for(t2=0;t2<16;t2++)
-					set_color_intensity(t2,100);
-				insta_fadein();
-				m_show();
-				//Reload
-				clear_world();
-				if(load_world("test_$$$.mzx",2)) {
-					clear_world();
-					select_current(0);
-					update_view=update_menu=1;
-					curr_file[0]=0;
-          if(smzx_mode == 2)
-          {
-            update_smzx_palette();
-          }
-					break;
-					}
-				select_current(t1);
-				unlink("test_$$$.mzx");
-				insta_fadeout();
-				fade_in=1;
-				update_view=update_menu=1;
-				str_cpy(curr_file,temp);
-				break;
-			case -33://AltF
-				//Edit SFX
-				sfx_edit();
-				changed=1;
-				break;
-			case -17://AltW
-				//Re-init screen
-				vga_16p_mode();
-				ega_14p_mode();
-				cursor_off();
-				blink_off();
-				ec_update_set();
-				update_palette(0);
-				changed=1;
-				update_menu=1;
-				break;
-			case 'F'://F
-				//Fill
-				//Just, well, fill! Fill function takes care of all
-				//robot copying/deleting/etc, filling something over
-				//itself, (same OR different param) and filling with/over
-				//the player. (not allowed) Only precaution- copy current
-				//robot to #0 first.
-				if(draw_mode&128)
-					fill_overlay(ARRAY_X,ARRAY_Y,curr_param,curr_color);
-				else {
-					if((curr_thing==122)&&(curr_param)) {
-						copy_sensor(0,curr_param);
-						sensors[0].used=1;
-						curr_param=0;
-						}
-					else if(((curr_thing==123)||(curr_thing==124))&&(curr_param)) {
-						copy_robot(0,curr_param);
-						robots[0].used=1;
-						curr_param=0;
-						}
-					else if(((curr_thing==125)||(curr_thing==126))&&(curr_param)) {
-						copy_scroll(0,curr_param);
-						scrolls[0].used=1;
-						curr_param=0;
-						}
-					fill_area(ARRAY_X,ARRAY_Y,curr_thing,curr_color,curr_param);
-					}
-				//Was our current object overwritten?
-				if((curr_thing==122)&&(!sensors[curr_param].used))
-					curr_thing=0;
-				else if(((curr_thing==123)||(curr_thing==124))&&
-					(!robots[curr_param].used))
-						curr_thing=0;
-				else if(((curr_thing==125)||(curr_thing==126))&&
-					(!scrolls[curr_param].used))
-						curr_thing=0;
-				changed=1;
-				update_view=update_menu=1;
-				break;
-			case 'V'://V
-				//View
-				if(draw_mode&128) break;
-				scroll_x=scroll_y=0;
-				do {
-					//Select OTHER page for seg
-					current_pg_seg=VIDEO_NUM2SEG(!current_page);
-					//Draw border
-					draw_viewport();
-					//Figure out x/y of top
-					calculate_xytop(t1,t2);
-					//Draw screen
-					draw_game_window(t1,t2,current_pg_seg);
-					//Page flip
-					current_page=1-current_page;
-					page_flip(current_page);
-					m_vidseg(current_pg_seg);
-					//Retrace
-					wait_retrace();
-					//Movement
-					if(keywaiting()) {
-						key=getkey();
-						switch(key) {
-							case -72://Up
-								scroll_y--;
-								break;
-							case -80://Down
-								scroll_y++;
-								break;
-							case -75://Left
-								scroll_x--;
-								break;
-							case -77://Right
-								scroll_x++;
-								break;
-							case -71://Home
-							case -79://End
-								scroll_x=scroll_y=0;
-								break;
-							}
-						}
-				} while(key!=27);
-				scroll_x=scroll_y=0;
-				update_view=update_menu=key=1;
-				break;
-			case -23://AltI
-				//Import
-				if(draw_mode&128) break;
-				//Choose import mode
-				t1=import_type();
-				if(t1==-1) break;
-				//Import as...
-				switch(t1) {
-					case 0:
-						//...board file.
-						if(choose_file("*.MZB",temp,"Choose board to import")) break;
-						//Open file.
-						fp=fopen(temp,"rb");
-						if(fp==NULL) {
-							error("Error importing board",1,24,current_pg_seg,0x1501);
-							break;
-							}
-						//Verify header
-						fread(temp,1,3,fp);
-						temp[3]=0;
-						if(str_cmp(temp,"\xFFMB")) {
-							//Either a ver 1.0? file or corrupted
-							error("Error importing board",1,24,current_pg_seg,0x1502);
-							break;
-							}
-						//Get file ver.
-						t1=fgetc(fp);
-						if(t1!='2') {
-							//Not a ver 2.00 file
-							error("Board is from a more recent version of MegaZeux",
-								0,24,current_pg_seg,0x1601);
-							break;
-							}
-						//Read board- Store current...
-						//If current object is a robot/etc of not #0, copy to #0.
-						if((curr_thing==122)&&(curr_param!=0)) {
-							copy_sensor(0,curr_param);
-							curr_param=0;
-							}
-						if(((curr_thing==123)||(curr_thing==124))&&(curr_param!=0))
-							//No room = forget it!
-							if(!copy_robot(0,curr_param)) curr_param=0;
-						if(((curr_thing==125)||(curr_thing==126))&&(curr_param!=0))
-							//No room = forget it!
-							if(!copy_scroll(0,curr_param)) curr_param=0;
-						//Clear current
-						clear_current();
-						//Get size of board
-						tlong1=ftell(fp);
-						fseek(fp,-BOARD_NAME_SIZE,SEEK_END);
-						tlong2=ftell(fp);
-						fseek(fp,tlong1,SEEK_SET);
-						tlong2-=tlong1;
-						//tlong2=board size
-						//no space allocated to current
-						//allocate space and set vars
-						if(allocate_board_space(tlong2,curr_board))//Exit only
-							error("Out of memory and/or disk space",2,4,
-								current_pg_seg,0x0205);
-						//allocated, set vars
-						board_sizes[curr_board]=tlong2;
-						//Read board
-						disk_board(curr_board,fp,1,0);
-						//Load into current
-						select_current(curr_board);
-						//Load board name from file
-						fread(&board_list[curr_board*BOARD_NAME_SIZE],1,
-							BOARD_NAME_SIZE,fp);
-						//Done.
-						fclose(fp);
-						break;
-					case 1:
-						//Character set
-						if(choose_file("*.CHR",temp,"Choose character set")) break;
-						//Open file.
-						if(ec_load_set(temp))
-							error("Error importing char. set",1,24,current_pg_seg,0x1801);
-						break;
-					case 2:
-					case 6:
-						//Ansi file
-						if(choose_file("*.ANS",ansi,"Choose ANSi file")) break;
-						//Get type of import
-						t2=import_ansi_obj_type();
-						if(t2==-1) break;
-						//Check if overlay
-						if(t2==3) {
-							if(overlay_mode==0) {
-								error("Overlay mode is not on (see Board Info)",0,24,
-									current_pg_seg,0x1103);
-								break;
-								}
-							}
-						//Import
-						if(t2==0) t2=5;
-						else if(t2==1) t2=17;
-						else if(t2==2) t2=77;
-						else t2=0;
-						if(t1==2) import_ansi(ansi,t2,curr_thing,curr_param);
-						else {
-							blk_cmd=t2;
-							draw_mode=(draw_mode&128)+5;
-							update_view=update_menu=1;
-							}
-						break;
-          case 7:
-          {
-            // MZM file
-            if(choose_file("*.MZM", mzm, "Choose MZM file")) break;
-            // Get type of import
-            t2 = import_mzm_obj_type();
-						if(t2 == 1) 
-            {
-							if(overlay_mode == 0) 
-              {
-								error("Overlay mode is not on (see Board Info)",0,24,
-									current_pg_seg,0x1103);
-								break;
-						  }
-						}            
+};
 
-            blk_cmd = t2;
-					  draw_mode = (draw_mode & 128) + 6;
-            update_view = update_menu = 1;
-            break;
-          }            
-					case 3:
-						//Import world
-						if(choose_file("*.MZX",temp,"Choose world to import")) break;
-						//Open file
-						fp=fopen(temp,"rb");
-						if(fp==NULL) {
-							error("Error importing world",1,24,current_pg_seg,0x1A01);
-							break;
-							}
-						//Check for password protection and world type
-						fseek(fp,25,SEEK_SET);
-						if(fgetc(fp)!=0) {
-							/*error("Cannot import password protected world",0,
-								24,current_pg_seg,0x1B01);
-							fclose(fp);
-							break;*/
-							}
-						if(fgetc(fp)!='M') {
-							error("Error importing world",1,24,current_pg_seg,0x1A02);
-							fclose(fp);
-							break;
-							}
-						t1=fgetc(fp);
-						if(t1=='X') {
-							error("World is from version 1- Use conversion program",
-								0,24,current_pg_seg,0x1C01);
-							fclose(fp);
-							break;
-							}
-						//Version and pw okay
-						fseek(fp,4234,SEEK_SET);
-						t1=fgetc(fp);//Number of boards
-						if(t1==0) {
-							//SFX- Skip
-							fread(&t1,1,2,fp);
-							fseek(fp,t1,SEEK_CUR);
-							t9=3+t1;
-							t1=fgetc(fp);
-							}
-						else t9=0;//Size of SFX section
-						//Count OUR empty boards
-						t2=0;
-						for(t3=0;t3<NUM_BOARDS;t3++)
-							if(board_where[t3]==W_NOWHERE) t2++;
-						//Compare
-						if(t1>t2) {
-							//Too many-
-							if(t2==0) {
-								error("No available boards",1,24,current_pg_seg,0x0B02);
-								fclose(fp);
-								break;
-								}
-							if(error("Too many boards- only partial import will be done",
-								0,25,current_pg_seg,0x1D01)==1) {
-									fclose(fp);
-									break;//Fail
-									}
-							//They chose OK, so import as many as possible.
-							}
-						//Import t1 boards- Mark as importable by setting
-						//type to W_IMPORT, offset to file area, and size
-						//properly. Also sets title.
-						t3=0;//Current board to change (out of NUM_BOARDS)
-						t4=0;//Current board within MZX file (out of t1)
-						do {
-							//Find next empty board
-							do {
-								t3++;
-								if(t3>=NUM_BOARDS) break;
-							} while(board_where[t3]!=W_NOWHERE);
-							if(t3>=NUM_BOARDS) break;//Done
-							//Import to board t3- get title
-							fread(&board_list[BOARD_NAME_SIZE*t3],1,
-								BOARD_NAME_SIZE,fp);
-							//Jump to board size/offset, saving curr. position
-							tlong1=ftell(fp);
-							//Tlong2=Position of size/offsets
-							tlong2=4235+t9+(t1*BOARD_NAME_SIZE);
-							//Increase to position of size/offset for current board
-							tlong2+=t4*8;
-							//Jump
-							fseek(fp,tlong2,SEEK_SET);
-							//Read size and offset
-							fread(&board_sizes[t3],4,1,fp);
-							fread(&board_offsets[t3].offset,4,1,fp);
-							//Set where
-							board_where[t3]=W_IMPORT;
-							//Return to names
-							fseek(fp,tlong1,SEEK_SET);
-							//Next board...
-						} while((++t4)<t1);
-						//Now actually IMPORT each board- % meter used
-						save_screen(current_pg_seg);
-						t2=0;//Keeps track of number of boards imported
-						//t4=Max number of boards we'll import
-						meter("Importing world...",current_pg_seg,t2,t4);
-						for(t1=0;t1<NUM_BOARDS;t1++) {
-							//Import this board?
-							if(board_where[t1]!=W_IMPORT) continue;
-							//Save file offset
-							tlong1=board_offsets[t1].offset;
-							//Allocate space...
-							board_where[t1]=W_NOWHERE;
-							if(allocate_board_space(board_sizes[t1],t1)) {
-								fclose(fp);
-								restore_screen(current_pg_seg);
-								error("Out of memory and/or disk space",2,4,
-									current_pg_seg,0x0206);
-								}
-							//Read in board.
-							fseek(fp,tlong1,SEEK_SET);
-							disk_board(t1,fp,1,0);
-							//Next!
-							meter_interior(current_pg_seg,++t2,t4);
-							}
-						//Done!
-						fclose(fp);
-						restore_screen(current_pg_seg);
-						break;
-					case 4:
-						//Palette file
-						if(choose_file("*.PAL",temp,"Choose palette file")) break;
-						//Open file.
-						fp=fopen(temp,"rb");
-						if(fp==NULL) {
-							error("Error importing palette",1,24,current_pg_seg,0x2401);
-							break;
-							}
-						for(t1=0;t1<16;t1++) {
-							r=fgetc(fp);
-							g=fgetc(fp);
-							b=fgetc(fp);
-							set_rgb(t1,r,g,b);
-							}
-						update_palette();
-						//Done.
-						fclose(fp);
-						break;
-					case 5:
-						//SFX file
-						if(choose_file("*.SFX",temp,"Choose SFX file")) break;
-						//Open file.
-						fp=fopen(temp,"rb");
-						if(fp==NULL) {
-							error("Error importing .SFX file",1,24,current_pg_seg,0x3001);
-							break;
-							}
-						custom_sfx_on=1;
-						for(t1=0;t1<NUM_SFX;t1++)
-							fread(&custom_sfx[69*t1],1,69,fp);
-						//Done.
-						fclose(fp);
-						break;
-					}
-				changed=1;
-				update_view=update_menu=1;
-				break;
-			case -45://AltX
-				//Export
-				if(draw_mode&128) break;
-				//Confirm pw
-				//if(check_pw()) break;
-				//Choose export mode
-				t1=export_type();
-				if(t1==-1) break;
-				//Get file name
-				temp[0]=0;
+char *overlay_menu_lines[4] =
+{
+  " OVERLAY EDITING- (Alt+O to end)",
+  " :Move  Space:Place  Ins:Grab  Enter:Character  Del:Delete\t   F:Fill",
+  " C:Color  Alt+B:Block  Tab:Draw  Alt+:Move 10   Alt+S:Show level  F2:Text",
+  "Character"
+};
 
-				if(save_file_dialog("Export","Save as: ",temp)) break;
+// Arrays for 'thing' menus
+char tmenu_num_choices[8] = { 17, 14, 18, 8, 6, 11, 12, 10 };
+char *tmenu_titles[8] =
+{
+  "Terrains", "Items", "Creatures", "Puzzle Pieces",
+  "Transport", "Elements", "Miscellaneous", "Objects"
+};
 
-				//Export as...
-				switch(t1) {
-					case 0:
-						//...board file.
-						add_ext(temp,".MZB");
-						//Open file.
-						fp=fopen(temp,"wb");
-						if(fp==NULL) {
-							error("Error exporting board",1,24,current_pg_seg,0x1201);
-							break;
-							}
-						//Save header.
-						fwrite("\xFFMB2",1,4,fp);
-						//Write board- Store it...
-						//If current object is a robot/etc of not #0, copy to #0.
-						if((curr_thing==122)&&(curr_param!=0)) {
-							copy_sensor(0,curr_param);
-							curr_param=0;
-							}
-						if(((curr_thing==123)||(curr_thing==124))&&(curr_param!=0))
-							//No room = forget it!
-							if(!copy_robot(0,curr_param)) curr_param=0;
-						if(((curr_thing==125)||(curr_thing==126))&&(curr_param!=0))
-							//No room = forget it!
-							if(!copy_scroll(0,curr_param)) curr_param=0;
-						//Store current
-						store_current();
-						//Save board
-						disk_board(curr_board,fp,0,0);
-						//Reload current
-						select_current(curr_board);
-						update_view=update_menu=1;
-						//Save board name to file
-						fwrite(&board_list[curr_board*BOARD_NAME_SIZE],1,
-							BOARD_NAME_SIZE,fp);
-						//Done.
-						fclose(fp);
-						break;
-					case 1:
-						//Character set
-            if(temp[0] == '+')
-            {
-              char tempc = temp[4];
-              temp[4] = 0;
-              char far *next;
-              int offset = strtol(temp + 1, &next, 10);
-              temp[4] = tempc;
+// Each 'item' is 20 char long, including '\0'.
+char *thing_menus[8] =
+{
+  // Terrain (F3)
+  "Space           ~1 \0"
+  "Normal          ~E²\0"
+  "Solid           ~DÛ\0"
+  "Tree            ~A\0"
+  "Line            ~BÍ\0"
+  "Custom Block    ~F?\0"
+  "Breakaway       ~C±\0"
+  "Custom Break    ~F?\0"
+  "Fake            ~9²\0"
+  "Carpet          ~4±\0"
+  "Floor           ~6°\0"
+  "Tiles           ~0þ\0"
+  "Custom Floor    ~F?\0"
+  "Web             ~7Å\0"
+  "Thick Web       ~7Î\0"
+  "Forest          ~2²\0"
+  "Invis. Wall     ~1 ",
 
-              int size = 256;
- 
-              if(*next == '#')
-              {
-                tempc = next[4];
-                next[4] = 0;
-                char far *next2 = next;
-                size = strtol(next + 1, &next, 10);
-                next2[4] = tempc;
-              }  
+  // Item (F4)
+  "Gem             ~A\0"
+  "Magic Gem       ~E\0"
+  "Health          ~C\0"
+  "Ring            ~E\x9\0"
+  "Potion          ~B–\0"
+  "Energizer       ~D\0"
+  "Ammo            ~3¤\0"
+  "Bomb            ~8\0"
+  "Key             ~F\0"
+  "Lock            ~F\xA\0"
+  "Coin            ~E\0"
+  "Life            ~B›\0"
+  "Pouch           ~7Ÿ\0"
+  "Chest           ~6 ",
 
-						  add_ext(next, ".CHR");
-              if(ec_save_set(next, offset, size))
-                error("Error exporting char. set",1,24,current_pg_seg,0x1301);
-            }              
-            else
-            {  
-              if(temp[0] == '#')
-              {
-                char tempc = temp[4];
-                temp[4] = 0;
-                char far *next;
-                int size = strtol(temp + 1, &next, 10);
-                temp[4] = tempc;
-                
-  						  add_ext(next, ".CHR");
-                if(ec_save_set(next, 0, size))
-                  error("Error exporting char. set",1,24,current_pg_seg,0x1301);
-              }
-              else
-              {
-  						  add_ext(temp,".CHR");
-  						  //Open file.
-  						  if(ec_save_set(temp, 0, 256))
-  							  error("Error exporting char. set",1,24,current_pg_seg,0x1301);
-              }
-            }
-            break;
-					  case 2:
-						  //Ansi file
-						add_ext(temp,".ANS");
-					case 3:
-						//Text file
-						if(t1==3) add_ext(temp,".TXT");
-						//Overlays as they normally would be.
-						//Save. (auto clips)
-						export_ansi(temp,0,0,board_xsiz,board_ysiz,t1-2);
-						//Done.
-						break;
-					case 4:
-						//Palette file
-						add_ext(temp,".PAL");
-						fp=fopen(temp,"wb");
-						if(fp==NULL) {
-							error("Error exporting palette",1,24,current_pg_seg,0x2E01);
-							break;
-							}
-						for(t1=0;t1<16;t1++) {
-							get_rgb(t1,r,g,b);
-							fputc(r,fp);
-							fputc(g,fp);
-							fputc(b,fp);
-							}
-						fclose(fp);
-						break;
-					case 5:
-						//SFX file
-						add_ext(temp,".SFX");
-						fp=fopen(temp,"wb");
-						if(fp==NULL) {
-							error("Error exporting .SFX file",1,24,current_pg_seg,0x2F01);
-							break;
-							}
-						for(t1=0;t1<NUM_SFX;t1++) {
-							if(custom_sfx_on)
-								fwrite(&custom_sfx[69*t1],1,69,fp);
-							else fwrite(sfx_strs[t1],1,69,fp);
-							}
-						fclose(fp);
-						break;
-					}
-				break;
-		      /*case '*':// *
-				//Password
-				if(draw_mode&128) break;
-				password_dialog();
-				changed=1;
-				break;*/
-			case -30://AltA
-				//Select char set
-				if(draw_mode&128) break;
-				t1=choose_char_set();
-				if(t1==-1) break;
-				switch(t1) {
-					case 0:
-						//Megazeux default
-						ec_load_mzx();
-						break;
-					case 1:
-						//Blank
-						ec_load_mzx();
-						//Characters to leave alone-
-						//32 through 126 (text)
-						//0 (already blank)
-						//16-18, 24-27, 29-31 (arrows)
-						//176-223 (lines/blocks)
-						//254 (square)
-						//249-250 (dots)
-						//251 (check mark)
-						//7 (circle)
-						//
-						//Blanken all others.
-						//
-						//Series to blanken-
-						//1-6, 8-15, 19-23, 28, 127-175, 224-248, 252-253
-						for(t1=1;t1<=6;t1++)
-							for(t2=0;t2<14;t2++)
-								ec_change_byte_nou(t1,t2,0);
-						for(t1=8;t1<=15;t1++)
-							for(t2=0;t2<14;t2++)
-								ec_change_byte_nou(t1,t2,0);
-						for(t1=19;t1<=23;t1++)
-							for(t2=0;t2<14;t2++)
-								ec_change_byte_nou(t1,t2,0);
-						for(t1=127;t1<=175;t1++)
-							for(t2=0;t2<14;t2++)
-								ec_change_byte_nou(t1,t2,0);
-						for(t1=224;t1<=248;t1++)
-							for(t2=0;t2<14;t2++)
-								ec_change_byte_nou(t1,t2,0);
-						for(t2=0;t2<14;t2++) {
-							ec_change_byte_nou(28,t2,0);
-							ec_change_byte_nou(252,t2,0);
-							ec_change_byte_nou(253,t2,0);
-							ec_change_byte_nou(255,t2,0);
-							}
-						ec_update_set();
-						break;
-					}
-				changed=1;
-				break;
-			case -48://AltB
-				//Block mode
-				if((draw_mode&127)==0) {
-					//Turn ON.
-					draw_mode=3+(draw_mode&128);
-					save_x=ARRAY_X;
-					save_y=ARRAY_Y;
-					update_view=update_menu=1;
-					break;
-					}
-				else if(((draw_mode&127)!=3)&&((draw_mode&127)!=4)) {
-					if((draw_mode&127)==5)//Place ANSi
-						import_ansi(ansi,blk_cmd,curr_thing,curr_param,ARRAY_X,ARRAY_Y);
-          if((draw_mode & 127) == 6)//Place MZM
-						load_mzm(mzm, ARRAY_X, ARRAY_Y, blk_cmd);
-					//Turn other mode OFF.
-					draw_mode&=128;
-					update_view=update_menu=1;
-					break;
-					}
-				else if((draw_mode&127)==4) {
-					//Block destination chosen.
-					t1=ARRAY_X;
-					t2=ARRAY_Y;
-					if(((save_x2-save_x)+t1)>=board_xsiz)
-						save_x2=save_x+board_xsiz-t1-1;
-					if(((save_y2-save_y)+t2)>=board_ysiz)
-						save_y2=save_y+board_ysiz-t2-1;
-					switch(blk_cmd) {
-						case 0://Copy
-							//Do ULeft->LRight or LRight->ULeft?
-							if((t1==save_x)&&(t2==save_y)) break;//Done
-							if((t1<save_x)||((t1==save_x)&&(t2<save_y))) {
-								//Copy starting at UL, going by columns.
-								for(t3=save_x;t3<=save_x2;t3++) {
-									for(t4=save_y;t4<=save_y2;t4++) {
-										t5=t3+t4*max_bxsiz;
-										t6=((t3-save_x)+t1)+((t4-save_y)+t2)*max_bxsiz;
-										//Copy from t5 to t6
-										if(draw_mode&128) {
-											//Overlay-
-											overlay[t6]=overlay[t5];
-											overlay_color[t6]=overlay_color[t5];
-											continue;
-											}
-										//Clear anything there...
-										t7=level_id[t6];
-										if(t7==127) continue;//No copy over player
-										if(t7==122) {//(sensor)
-											//Clear, copying to 0 first if param==curr
-											if((level_param[t6]==curr_param)&&
-												(curr_thing==122)) {
-													copy_sensor(0,curr_param);
-													curr_param=0;
-													}
-											clear_sensor(level_param[t6]);
-											}
-										else if((t7==123)||(t7==124)) {//(robot)
-											//Clear, copying to 0 first if param==curr
-											if((level_param[t6]==curr_param)&&
-												((curr_thing==123)||(curr_thing==124))) {
-													copy_robot(0,curr_param);
-													curr_param=0;
-													}
-											clear_robot(level_param[t6]);
-											}
-										else if((t7==125)||(t7==126)) {//(scroll)
-											//Clear, copying to 0 first if param==curr
-											if((level_param[t6]==curr_param)&&
-												((curr_thing==125)||(curr_thing==126))) {
-													copy_scroll(0,curr_param);
-													curr_param=0;
-													}
-											clear_scroll(level_param[t6]);
-											}
-										//Copy any robot/scroll at t5
-										t7=level_id[t5];
-										t8=level_param[t5];
-										if(t7==122) {//(sensor)
-											//...make a copy...
-											if(!(t9=find_sensor())) {
-												error("No available sensors",1,24,current_pg_seg,0x0801);
-												break;
-												}
-											copy_sensor(t9,t8);
-											t8=t9;
-											}
-										if((t7==123)||(t7==124)) {//(robot)
-											//...make a copy...
-											if(!(t9=find_robot())) {
-												error("No available robots",1,24,current_pg_seg,0x0901);
-												break;
-												}
-											if(copy_robot(t9,t8)) {
-												robots[t9].used=0;
-												error("Out of robot memory",1,21,current_pg_seg,0x0502);
-												break;
-												}
-											//...and deallocate original if it was number 0.
-											t8=t9;
-											}
-										if((t7==125)||(t7==126)) {//(scroll)
-											//...make a copy...
-											if(!(t9=find_scroll())) {
-												error("No available scrolls",1,24,current_pg_seg,0x0A01);
-												break;
-												}
-											if(copy_scroll(t9,t8)) {
-												robots[t9].used=0;
-												error("Out of robot memory",1,21,current_pg_seg,0x0503);
-												break;
-												}
-											t8=t9;
-											}
-										//Player?
-										if(t7==127) {
-											level_id[t6]=level_param[t6]=
-												level_under_id[t6]=level_under_param[t6]=0;
-											level_color[t6]=level_under_color[t6]=7;
-											}
-										else {
-											//Place
-											level_id[t6]=t7;
-											level_param[t6]=t8;
-											level_color[t6]=level_color[t5];
-											level_under_id[t6]=level_under_id[t5];
-											level_under_color[t6]=level_under_color[t5];
-											level_under_param[t6]=level_under_param[t5];
-											}
-										//Loop. (whew!)
-										}
-									}
-								//Done (UL -> LR)
-								}
-							else {
-								//Copy starting at LR, going left by columns.
-								for(t3=save_x2;t3>=save_x;t3--) {
-									for(t4=save_y2;t4>=save_y;t4--) {
-										t5=t3+t4*max_bxsiz;
-										t6=((t3-save_x)+t1)+((t4-save_y)+t2)*max_bxsiz;
-										//Copy from t5 to t6
-										if(draw_mode&128) {
-											//Overlay-
-											overlay[t6]=overlay[t5];
-											overlay_color[t6]=overlay_color[t5];
-											continue;
-											}
-										//Clear anything there...
-										t7=level_id[t6];
-										if(t7==127) continue;//No copy over player
-										if(t7==122) {//(sensor)
-											//Clear, copying to 0 first if param==curr
-											if((level_param[t6]==curr_param)&&
-												(curr_thing==122)) {
-													copy_sensor(0,curr_param);
-													curr_param=0;
-													}
-											clear_sensor(level_param[t6]);
-											}
-										else if((t7==123)||(t7==124)) {//(robot)
-											//Clear, copying to 0 first if param==curr
-											if((level_param[t6]==curr_param)&&
-												((curr_thing==123)||(curr_thing==124))) {
-													copy_robot(0,curr_param);
-													curr_param=0;
-													}
-											clear_robot(level_param[t6]);
-											}
-										else if((t7==125)||(t7==126)) {//(scroll)
-											//Clear, copying to 0 first if param==curr
-											if((level_param[t6]==curr_param)&&
-												((curr_thing==125)||(curr_thing==126))) {
-													copy_scroll(0,curr_param);
-													curr_param=0;
-													}
-											clear_scroll(level_param[t6]);
-											}
-										//Copy any robot/scroll at t5
-										t7=level_id[t5];
-										t8=level_param[t5];
-										if(t7==122) {//(sensor)
-											//...make a copy...
-											if(!(t9=find_sensor())) {
-												error("No available sensors",1,24,current_pg_seg,0x0801);
-												break;
-												}
-											copy_sensor(t9,t8);
-											t8=t9;
-											}
-										if((t7==123)||(t7==124)) {//(robot)
-											//...make a copy...
-											if(!(t9=find_robot())) {
-												error("No available robots",1,24,current_pg_seg,0x0901);
-												break;
-												}
-											if(copy_robot(t9,t8)) {
-												robots[t9].used=0;
-												error("Out of robot memory",1,21,current_pg_seg,0x0502);
-												break;
-												}
-											//...and deallocate original if it was number 0.
-											t8=t9;
-											}
-										if((t7==125)||(t7==126)) {//(scroll)
-											//...make a copy...
-											if(!(t9=find_scroll())) {
-												error("No available scrolls",1,24,current_pg_seg,0x0A01);
-												break;
-												}
-											if(copy_scroll(t9,t8)) {
-												robots[t9].used=0;
-												error("Out of robot memory",1,21,current_pg_seg,0x0503);
-												break;
-												}
-											t8=t9;
-											}
-										//Player?
-										if(t7==127) {
-											level_id[t6]=level_param[t6]=
-												level_under_id[t6]=level_under_param[t6]=0;
-											level_color[t6]=level_under_color[t6]=7;
-											}
-										else {
-											//Place
-											level_id[t6]=t7;
-											level_param[t6]=t8;
-											level_color[t6]=level_color[t5];
-											level_under_id[t6]=level_under_id[t5];
-											level_under_color[t6]=level_under_color[t5];
-											level_under_param[t6]=level_under_param[t5];
-											}
-										//Loop. (whew!)
-										}
-									}
-								//Done (UL -> LR)
-								}
-							break;
-						case 6://Copy (to/from overlay)
-							//If from overlay to main, ask if we want it to become
-							//CustomFloor, CustomBlock, or Text.
-							if(draw_mode<128) {
-								t9=rtoo_obj_type();
-								if(t9==-1) break;
-								if(t9==0) t9=5;
-								else if(t9==1) t9=17;
-								else t9=77;
-								}
-							//Copy starting at UL, going by columns.
-							for(t3=save_x;t3<=save_x2;t3++) {
-								for(t4=save_y;t4<=save_y2;t4++) {
-									t5=t3+t4*max_bxsiz;
-									t6=((t3-save_x)+t1)+((t4-save_y)+t2)*max_bxsiz;
-									//Copy from t5 to t6
-									if(draw_mode&128) {
-										//TO Overlay- Use magic id draw function
-										overlay_mode|=128;//DON'T do overlay
-										id_put(0,0,t3,t4,0,0,current_pg_seg);
-										overlay_mode&=~128;
-										//Use color/char at 0/0
-										overlay[t6]=*(char far *)MK_FP(current_pg_seg,0);
-										overlay_color[t6]=*(char far *)MK_FP(current_pg_seg,1);
-										continue;
-										}
-									//FROM overlay...
-									//Clear anything there...
-									t7=level_id[t6];
-									if(t7==127) continue;//No copy over player
-									if(t7==122) {//(sensor)
-										//Clear, copying to 0 first if param==curr
-										if((level_param[t6]==curr_param)&&
-											(curr_thing==122)) {
-												copy_sensor(0,curr_param);
-												curr_param=0;
-												}
-										clear_sensor(level_param[t6]);
-										}
-									else if((t7==123)||(t7==124)) {//(robot)
-										//Clear, copying to 0 first if param==curr
-										if((level_param[t6]==curr_param)&&
-											((curr_thing==123)||(curr_thing==124))) {
-												copy_robot(0,curr_param);
-												curr_param=0;
-												}
-										clear_robot(level_param[t6]);
-										}
-									else if((t7==125)||(t7==126)) {//(scroll)
-										//Clear, copying to 0 first if param==curr
-										if((level_param[t6]==curr_param)&&
-											((curr_thing==125)||(curr_thing==126))) {
-												copy_scroll(0,curr_param);
-												curr_param=0;
-												}
-										clear_scroll(level_param[t6]);
-										}
-									//Copy as ID type t9 UNLESS it's a space
-									if(overlay[t5]==32) {
-										level_id[t6]=level_param[t6]=0;
-										level_color[t6]=7;
-										}
-									else {
-										level_id[t6]=t9;
-										level_param[t6]=overlay[t5];
-										level_color[t6]=overlay_color[t5];
-										}
-									level_under_id[t6]=level_under_param[t6]=0;
-									level_under_color[t6]=7;
-									//Loop.
-									}
-								}
-							//Done
-							break;
-						case 1://Move
-							//Do ULeft->LRight or LRight->ULeft?
-							if((t1==save_x)&&(t2==save_y)) break;//Done
-							if((t1<save_x)||((t1==save_x)&&(t2<save_y))) {
-								//Move starting at UL, going by columns.
-								for(t3=save_x;t3<=save_x2;t3++) {
-									for(t4=save_y;t4<=save_y2;t4++) {
-										t5=t3+t4*max_bxsiz;
-										t6=((t3-save_x)+t1)+((t4-save_y)+t2)*max_bxsiz;
-										//Move from t5 to t6
-										if(draw_mode&128) {
-											//Overlay-
-											overlay[t6]=overlay[t5];
-											overlay_color[t6]=overlay_color[t5];
-											overlay[t5]=32;
-											overlay_color[t5]=7;
-											continue;
-											}
-										//Clear anything there...
-										t7=level_id[t6];
-										if(t7==127) continue;//No copy over player
-										if(t7==122) {//(sensor)
-											//Clear, copying to 0 first if param==curr
-											if((level_param[t6]==curr_param)&&
-												(curr_thing==122)) {
-													copy_sensor(0,curr_param);
-													curr_param=0;
-													}
-											clear_sensor(level_param[t6]);
-											}
-										else if((t7==123)||(t7==124)) {//(robot)
-											//Clear, copying to 0 first if param==curr
-											if((level_param[t6]==curr_param)&&
-												((curr_thing==123)||(curr_thing==124))) {
-													copy_robot(0,curr_param);
-													curr_param=0;
-													}
-											clear_robot(level_param[t6]);
-											}
-										else if((t7==125)||(t7==126)) {//(scroll)
-											//Clear, copying to 0 first if param==curr
-											if((level_param[t6]==curr_param)&&
-												((curr_thing==125)||(curr_thing==126))) {
-													copy_scroll(0,curr_param);
-													curr_param=0;
-													}
-											clear_scroll(level_param[t6]);
-											}
-										//move
-										level_id[t6]=level_id[t5];
-										level_param[t6]=level_param[t5];
-										level_color[t6]=level_color[t5];
-										level_under_id[t6]=level_under_id[t5];
-										level_under_color[t6]=level_under_color[t5];
-										level_under_param[t6]=level_under_param[t5];
-										id_clear(t3,t4);
-										//Loop.
-										}
-									}
-								//Done (UL -> LR)
-								}
-							else {
-								//Move starting at LR, going left by columns.
-								for(t3=save_x2;t3>=save_x;t3--) {
-									for(t4=save_y2;t4>=save_y;t4--) {
-										t5=t3+t4*max_bxsiz;
-										t6=((t3-save_x)+t1)+((t4-save_y)+t2)*max_bxsiz;
-										//Move from t5 to t6
-										if(draw_mode&128) {
-											//Overlay-
-											overlay[t6]=overlay[t5];
-											overlay_color[t6]=overlay_color[t5];
-											overlay[t5]=32;
-											overlay_color[t5]=7;
-											continue;
-											}
-										//Clear anything there...
-										t7=level_id[t6];
-										if(t7==127) continue;//No copy over player
-										if(t7==122) {//(sensor)
-											//Clear, copying to 0 first if param==curr
-											if((level_param[t6]==curr_param)&&
-												(curr_thing==122)) {
-													copy_sensor(0,curr_param);
-													curr_param=0;
-													}
-											clear_sensor(level_param[t6]);
-											}
-										else if((t7==123)||(t7==124)) {//(robot)
-											//Clear, copying to 0 first if param==curr
-											if((level_param[t6]==curr_param)&&
-												((curr_thing==123)||(curr_thing==124))) {
-													copy_robot(0,curr_param);
-													curr_param=0;
-													}
-											clear_robot(level_param[t6]);
-											}
-										else if((t7==125)||(t7==126)) {//(scroll)
-											//Clear, copying to 0 first if param==curr
-											if((level_param[t6]==curr_param)&&
-												((curr_thing==125)||(curr_thing==126))) {
-													copy_scroll(0,curr_param);
-													curr_param=0;
-													}
-											clear_scroll(level_param[t6]);
-											}
-										//Move
-										level_id[t6]=level_id[t5];
-										level_param[t6]=level_param[t5];
-										level_color[t6]=level_color[t5];
-										level_under_id[t6]=level_under_id[t5];
-										level_under_color[t6]=level_under_color[t5];
-										level_under_param[t6]=level_under_param[t5];
-										id_clear(t3,t4);
-										//Loop.
-										}
-									}
-								//Done (UL -> LR)
-								}
-							break;
-						}
-					draw_mode&=128;
-					changed=1;
-					update_view=update_menu=1;
-					break;
-					}
-				//Finish block
-				draw_mode&=128;
-				save_x2=ARRAY_X;
-				save_y2=ARRAY_Y;
-				if(save_x>save_x2) {
-					t1=save_x;
-					save_x=save_x2;
-					save_x2=t1;
-					}
-				if(save_y>save_y2) {
-					t1=save_y;
-					save_y=save_y2;
-					save_y2=t1;
-					}
-				//Redraw
-				update_view=update_menu=1;
-				//Ask function
-				t1=block_cmd();
-				if(t1==-1) break;
-				//Do function t1
-				switch(t1) {
-					case 0:
-						//Copy
-						blk_cmd=t1;
-						draw_mode+=4;
-						break;
-					case 1:
-						//Move
-						blk_cmd=t1;
-						draw_mode+=4;
-						break;
-					case 2:
-						//Clear
-						for(t1=save_x;t1<=save_x2;t1++) {
-							for(t2=save_y;t2<=save_y2;t2++) {
-								if(draw_mode<128) {
-									t3=level_id[t1+t2*max_bxsiz];
-									if(t3==127) continue;//Player
-									if(t3==122) {//(sensor)
-										//Clear, copying to 0 first if param==curr
-										if((level_param[t1+t2*max_bxsiz]==curr_param)&&
-											(curr_thing==122)) {
-												copy_sensor(0,curr_param);
-												curr_param=0;
-												}
-										clear_sensor(level_param[t1+t2*max_bxsiz]);
-										}
-									else if((t3==123)||(t3==124)) {//(robot)
-										//Clear, copying to 0 first if param==curr
-										if((level_param[t1+t2*max_bxsiz]==curr_param)&&
-											((curr_thing==123)||(curr_thing==124))) {
-												copy_robot(0,curr_param);
-												curr_param=0;
-												}
-										clear_robot(level_param[t1+t2*max_bxsiz]);
-										}
-									else if((t3==125)||(t3==126)) {//(scroll)
-										//Clear, copying to 0 first if param==curr
-										if((level_param[t1+t2*max_bxsiz]==curr_param)&&
-											((curr_thing==125)||(curr_thing==126))) {
-												copy_scroll(0,curr_param);
-												curr_param=0;
-												}
-										clear_scroll(level_param[t1+t2*max_bxsiz]);
-										}
-									//Clear
-									id_clear(t1,t2);
-									}
-								else {
-									overlay[t1+t2*max_bxsiz]=32;
-									overlay_color[t1+t2*max_bxsiz]=7;
-									}
-								}
-							}
-						changed=1;
-						break;
-					case 3:
-						//Flip
-						if(draw_mode<128) {
-							t4=((save_y2-save_y)>>1)+save_y;
-							for(t1=save_x;t1<=save_x2;t1++) {
-								for(t2=save_y,t3=save_y2;t2<=t4;t2++,t3--) {
-									t5=level_id[t1+t2*max_bxsiz];
-									level_id[t1+t2*max_bxsiz]=level_id[t1+t3*max_bxsiz];
-									level_id[t1+t3*max_bxsiz]=t5;
+  // Creature (F5)
+  "Snake           ~2ë\0"
+  "Eye             ~Fì\0"
+  "Thief           ~C\0"
+  "Slime Blob      ~A*\0"
+  "Runner          ~4\0"
+  "Ghost           ~7ê\0"
+  "Dragon          ~4\0"
+  "Fish            ~Eà\0"
+  "Shark           ~7\0"
+  "Spider          ~7•\0"
+  "Goblin          ~D\0"
+  "Spitting Tiger  ~Bã\0"
+  "Bear            ~6¬\0"
+  "Bear Cub        ~6­\0"
+  "Lazer Gun       ~4Î\0"
+  "Bullet Gun      ~F\0"
+  "Spinning Gun    ~F\0"
+  "Missile Gun     ~8",
 
-									t5=level_color[t1+t2*max_bxsiz];
-									level_color[t1+t2*max_bxsiz]=level_color[t1+t3*max_bxsiz];
-									level_color[t1+t3*max_bxsiz]=t5;
+  // Puzzle (F6)
+  "Boulder         ~7é\0"
+  "Crate           ~6þ\0"
+  "Custom Push     ~F?\0"
+  "Box             ~Eþ\0"
+  "Custom Box      ~F?\0"
+  "Pusher          ~D\0"
+  "Slider NS       ~D\0"
+  "Slider EW       ~D",
 
-									t5=level_param[t1+t2*max_bxsiz];
-									level_param[t1+t2*max_bxsiz]=level_param[t1+t3*max_bxsiz];
-									level_param[t1+t3*max_bxsiz]=t5;
+  // Tranport (F7)
+  "Stairs          ~A¢\0"
+  "Cave            ~6¡\0"
+  "Transport       ~E<\0"
+  "Whirlpool       ~B—\0"
+  "CWRotate        ~9/\0"
+  "CCWRotate       ~9\\",
 
-									t5=level_under_id[t1+t2*max_bxsiz];
-									level_under_id[t1+t2*max_bxsiz]=level_under_id[t1+t3*max_bxsiz];
-									level_under_id[t1+t3*max_bxsiz]=t5;
+  // Element (F8)
+  "Still Water     ~9°\0"
+  "N Water         ~9\x18\0"
+  "S Water         ~9\x19\0"
+  "E Water         ~9\x1A\0"
+  "W Water         ~9\x1B\0"
+  "Ice             ~Bý\0"
+  "Lava            ~C²\0"
+  "Fire            ~E±\0"
+  "Goop            ~8°\0"
+  "Lit Bomb        ~8«\0"
+  "Explosion       ~E±",
 
-									t5=level_under_color[t1+t2*max_bxsiz];
-									level_under_color[t1+t2*max_bxsiz]=level_under_color[t1+t3*max_bxsiz];
-									level_under_color[t1+t3*max_bxsiz]=t5;
+  // Misc (F9)
+  "Door            ~6Ä\0"
+  "Gate            ~8\0"
+  "Ricochet Panel  ~9/\0"
+  "Ricochet        ~A*\0"
+  "Mine            ~C\0"
+  "Spike           ~8\0"
+  "Custom Hurt     ~F?\0"
+  "Text            ~F?\0"
+  "N Moving Wall   ~F?\0"
+  "S Moving Wall   ~F?\0"
+  "E Moving Wall   ~F?\0"
+  "W Moving Wall   ~F?",
 
-									t5=level_under_param[t1+t2*max_bxsiz];
-									level_under_param[t1+t2*max_bxsiz]=level_under_param[t1+t3*max_bxsiz];
-									level_under_param[t1+t3*max_bxsiz]=t5;
-									}
-								}
-							}
-						else {
-							t4=((save_y2-save_y)>>1)+save_y;
-							for(t1=save_x;t1<=save_x2;t1++) {
-								for(t2=save_y,t3=save_y2;t2<=t4;t2++,t3--) {
-									t5=overlay[t1+t2*max_bxsiz];
-									overlay[t1+t2*max_bxsiz]=overlay[t1+t3*max_bxsiz];
-									overlay[t1+t3*max_bxsiz]=t5;
+  // Objects (F10)
+  "Robot           ~F?\0"
+  "Pushable Robot  ~F?\0"
+  "Player          ~B\0"
+  "Scroll          ~Fè\0"
+  "Sign            ~6â\0"
+  "Sensor          ~F?\0"
+  "Bullet          ~Fù\0"
+  "Missile         ~8\0"
+  "Seeker          ~A/\0"
+  "Shooting Fire   ~E"
+};
 
-									t5=overlay_color[t1+t2*max_bxsiz];
-									overlay_color[t1+t2*max_bxsiz]=overlay_color[t1+t3*max_bxsiz];
-									overlay_color[t1+t3*max_bxsiz]=t5;
-									}
-								}
-							}
-						changed=1;
-						break;
-					case 4:
-						//Mirror
-						if(draw_mode<128) {
-							t4=((save_x2-save_x)>>1)+save_x;
-							for(t1=save_x,t3=save_x2;t1<=t4;t1++,t3--) {
-								for(t2=save_y;t2<=save_y2;t2++) {
-									t5=level_id[t1+t2*max_bxsiz];
-									level_id[t1+t2*max_bxsiz]=level_id[t3+t2*max_bxsiz];
-									level_id[t3+t2*max_bxsiz]=t5;
+char tmenu_thing_ids[8][18] =
+{
+  //Terrain (F3)
+  { 0, 1, 2, 3, 4, 5, 6, 7, 13, 14, 15, 16, 17, 18, 19, 65, 71},
+  // Item (F4)
+  { 28, 29, 30, 31, 32, 33, 35, 36, 39, 40, 50, 66, 55, 27 },
+  // Creature (F5)
+  { 80, 81, 82, 83, 84, 85, 86, 87, 88, 89, 90, 91, 94, 95, 60,
+    92, 93, 97 },
+  // Puzzle (F6)
+  { 8, 9, 10, 11, 12, 56, 57, 58 },
+  // Tranport (F7)
+  { 43, 44, 49, 67, 45, 46 },
+  // Element (F8)
+  { 20, 21, 22, 23, 24, 25, 26, 63, 34, 37, 38 },
+  // Misc (F9)
+  { 41, 47, 72, 73, 74, 75, 76, 77, 51, 52, 53, 54 },
+  // Objects (F10)
+  { 124, 123, 127, 126, 125, 122, 61, 62, 79, 78}
+};
 
-									t5=level_color[t1+t2*max_bxsiz];
-									level_color[t1+t2*max_bxsiz]=level_color[t3+t2*max_bxsiz];
-									level_color[t3+t2*max_bxsiz]=t5;
+// Default colors
+char def_colors[128] =
+{
+  7 , 0 , 0 , 10, 0 , 0 , 0 , 0 , 7 , 6 , 0 , 0 , 0 , 0 , 0 , 0 ,   // 0x00-0x0F
+  0 , 0 , 7 , 7 , 25, 25, 25, 25, 25, 59, 76, 6 , 0 , 0 , 12, 14,   // 0x10-0x1F
+  11, 15, 24, 3 , 8 , 8 , 239,0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 8 ,   // 0x20-0x2F
+  8 , 0 , 14, 0 , 0 , 0 , 0 , 7 , 0 , 0 , 0 , 0 , 4 , 15, 8 , 12,   // 0x30-0x3F
+  0 , 2 , 11, 31, 31, 31, 31, 0 , 9 , 10, 12, 8 , 0 , 0 , 14, 10,   // 0x40-0x4F
+  2 , 15, 12, 10, 4 , 7 , 4 , 14, 7 , 7 , 2 , 11, 15, 15, 6 , 6 ,   // 0x50-0x5F
+  0 , 8 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 ,   // 0x60-0x6F
+  0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 6 , 15, 27    // 0x70-0x7F
+};
 
-									t5=level_param[t1+t2*max_bxsiz];
-									level_param[t1+t2*max_bxsiz]=level_param[t3+t2*max_bxsiz];
-									level_param[t3+t2*max_bxsiz]=t5;
+char *mod_ext[] =
+{
+  ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it",
+  ".669", ".ult", ".wav", ".dsm", ".far", ".ams", ".mdl", ".okt" ".dmf",
+  ".ptm", ".dbm", ".amf", ".mt2", ".psm", ".j2b", ".umx", NULL
+};
 
-									t5=level_under_id[t1+t2*max_bxsiz];
-									level_under_id[t1+t2*max_bxsiz]=level_under_id[t3+t2*max_bxsiz];
-									level_under_id[t3+t2*max_bxsiz]=t5;
+char drawmode_help[5][32] =
+{
+  "Type to place text",
+  "Press ENTER on other corner",
+  "Press ENTER to place block",
+  "Press ENTER to place MZM"
+};
 
-									t5=level_under_color[t1+t2*max_bxsiz];
-									level_under_color[t1+t2*max_bxsiz]=level_under_color[t3+t2*max_bxsiz];
-									level_under_color[t3+t2*max_bxsiz]=t5;
+// It's important that after changing the param the thing is placed (using
+// place_current_at_xy) so that scrolls/sensors/robots get copied.
 
-									t5=level_under_param[t1+t2*max_bxsiz];
-									level_under_param[t1+t2*max_bxsiz]=level_under_param[t3+t2*max_bxsiz];
-									level_under_param[t3+t2*max_bxsiz]=t5;
-									}
-								}
-							}
-						else {
-							t4=((save_x2-save_x)>>1)+save_x;
-							for(t1=save_x,t3=save_x2;t1<=t4;t1++,t3--) {
-								for(t2=save_y;t2<=save_y2;t2++) {
-									t5=overlay[t1+t2*max_bxsiz];
-									overlay[t1+t2*max_bxsiz]=overlay[t3+t2*max_bxsiz];
-									overlay[t3+t2*max_bxsiz]=t5;
-
-									t5=overlay_color[t1+t2*max_bxsiz];
-									overlay_color[t1+t2*max_bxsiz]=overlay_color[t3+t2*max_bxsiz];
-									overlay_color[t3+t2*max_bxsiz]=t5;
-									}
-								}
-							}
-						changed=1;
-						break;
-					case 5:
-						//Paint
-						if(draw_mode<128) {
-							for(t1=save_x;t1<=save_x2;t1++)
-								for(t2=save_y;t2<=save_y2;t2++)
-									level_color[t1+t2*max_bxsiz]=curr_color;
-							}
-						else {
-							for(t1=save_x;t1<=save_x2;t1++)
-								for(t2=save_y;t2<=save_y2;t2++)
-									overlay_color[t1+t2*max_bxsiz]=curr_color;
-							}
-						changed=1;
-						break;
-					case 6:
-						//Main <-> overlay
-						if(overlay_mode==0) {
-							error("Overlay mode is not on (see Board Info)",0,24,
-								current_pg_seg,0x1102);
-							break;
-							}
-						blk_cmd=t1;
-						if(draw_mode<128) {
-							//Clear current object...
-							if((curr_thing==122)&&(curr_param==0))
-								clear_sensor(0);
-							else if(((curr_thing==123)||(curr_thing==124))&&(curr_param==0))
-								clear_robot(0);
-							else if(((curr_thing==125)||(curr_thing==126))&&(curr_param==0))
-								clear_scroll(0);
-							curr_thing=0;
-							curr_color=7;
-							curr_param=32;
-							//Draw mode fix
-							draw_mode=132;
-							//Update
-							update_menu=update_view=1;
-							//Done
-							break;
-							}
-						//Turn off-
-						curr_thing=0;
-						curr_color=7;
-						curr_param=0;
-						//Draw mode fix
-						draw_mode=4;
-						//Update
-						update_menu=update_view=1;
-						break;
-					case 7:
-						//Pw check
-						//if(protection_method==NO_SAVING)
-							//if(check_pw()) break;
-						//Save as ANSi
-						temp[0]=0;
-						if(save_file_dialog("Block ANSi Save","Save block as: ",temp))
-							break;
-						add_ext(temp,".ANS");
-						t1=overlay_mode;
-						if(draw_mode&128) overlay_mode=1|(64*(show_level==0));
-						else overlay_mode=128;
-						export_ansi(temp,save_x,save_y,save_x2,save_y2,0);
-						overlay_mode=t1;
-						break;
-          case 8:
-            // Save as MZM
-            temp[0] = 0;
-            if(save_file_dialog("Block MZM Save", "Save block as: ", temp))
-              break;
-            add_ext(temp, ".MZM");
-            if(draw_mode & 128)
-            {
-              save_mzm(temp, save_x, save_y, (save_x2 - save_x + 1),
-               (save_y2 - save_y + 1), 1, 0);
-            }
-            else
-            {
-              save_mzm(temp, save_x, save_y, (save_x2 - save_x + 1),
-               (save_y2 - save_y + 1), 0, 0);
-            }
-					}
-				break;
-			case -24://AltO
-				//Overlay mode
-				//Turn on-
-				if(draw_mode<128) {
-					//Is overlay mode ON !?
-					if(overlay_mode==0) {
-						error("Overlay mode is not on (see Board Info)",0,24,
-							current_pg_seg,0x1101);
-						break;
-						}
-					//Clear current object...
-					if((curr_thing==122)&&(curr_param==0))
-						clear_sensor(0);
-					else if(((curr_thing==123)||(curr_thing==124))&&(curr_param==0))
-						clear_robot(0);
-					else if(((curr_thing==125)||(curr_thing==126))&&(curr_param==0))
-						clear_scroll(0);
-					curr_thing=0;
-					curr_color=7;
-					curr_param=32;
-					//Draw mode fix
-					draw_mode=128;
-					//Update
-					update_menu=update_view=1;
-					//Done
-					context=81;
-					break;
-					}
-			overlay_off:
-				context=80;
-				//Turn off-
-				curr_thing=0;
-				curr_color=7;
-				curr_param=0;
-				//Draw mode fix
-				draw_mode=0;
-				//Update
-				update_menu=update_view=1;
-				break;
-			case -46://AltC
-				if(draw_mode&128) break;
-				//Edit char set
-				char_editor();
-				changed=1;
-				break;
-			case -18://AltE
-				if(draw_mode&128) break;
-				//Edit palette
-				palette_editor();
-				changed=1;
-				break;
-			case 'G'://G
-				if(draw_mode&128) break;
-				//Global info
-				global_info();
-				changed=1;
-				update_menu=update_view=1;
-				break;
-			case -84://ShF1
-				if(draw_mode&128) break;
-				//Show invisible walls
-				//Loop, fiddling with global chars and showing.
-				t1=id_chars[71];
-				overlay_mode|=128;
-				do {
-					id_chars[71]=178;
-					draw_edit_window(x_top_pos,y_top_pos,current_pg_seg);
-					id_chars[71]=176;
-					draw_edit_window(x_top_pos,y_top_pos,current_pg_seg);
-				} while(!keywaiting());
-				overlay_mode&=~128;
-				getkey();
-				id_chars[71]=t1;
-				update_view=1;
-				break;
-			case -85://ShF2
-				if(draw_mode&128) break;
-				//Show robots
-				//Loop, fiddling with global chars and showing.
-				overlay_mode|=128;
-				do {
-					id_chars[123]='!';
-					id_chars[124]='!';
-					draw_edit_window(x_top_pos,y_top_pos,current_pg_seg);
-					id_chars[123]=0;
-					id_chars[124]=0;
-					draw_edit_window(x_top_pos,y_top_pos,current_pg_seg);
-				} while(!keywaiting());
-				overlay_mode&=~128;
-				getkey();
-				update_menu=1;//Redraw debug menu if needed
-				break;
-			case -86://ShF3
-				if(draw_mode&128) break;
-				//Show fakes
-				//Loop, fiddling with global chars and showing.
-				t1=id_chars[13];
-				t2=id_chars[14];
-				t3=id_chars[15];
-				t4=id_chars[16];
-				overlay_mode|=128;
-				do {
-					for(t5=13;t5<20;t5++) id_chars[t5]='#';
-					draw_edit_window(x_top_pos,y_top_pos,current_pg_seg);
-					for(t5=13;t5<20;t5++) id_chars[t5]=177;
-					draw_edit_window(x_top_pos,y_top_pos,current_pg_seg);
-				} while(!keywaiting());
-				overlay_mode&=~128;
-				getkey();
-				id_chars[13]=t1;
-				id_chars[14]=t2;
-				id_chars[15]=t3;
-				id_chars[16]=t4;
-				id_chars[17]=255;
-				id_chars[18]=0;
-				id_chars[19]=0;
-				update_view=1;
-				break;
-			case -87://ShF4
-				if(draw_mode&128) break;
-				//Show spaces
-				//Loop, fiddling with global chars and showing.
-				t1=id_chars[0];
-				overlay_mode|=128;
-				do {
-					id_chars[0]='O';
-					draw_edit_window(x_top_pos,y_top_pos,current_pg_seg);
-					id_chars[0]='*';
-					draw_edit_window(x_top_pos,y_top_pos,current_pg_seg);
-				} while(!keywaiting());
-				overlay_mode&=~128;
-				getkey();
-				id_chars[0]=t1;
-				update_view=1;
-				break;
-			case -90://ShF7
-				set_counter("SMZX_MODE",smzx_mode + 1, 0);
-				update_view=update_menu=1;
-				break;
-			case 'I'://I
-				if(draw_mode&128) break;
-				//Board info
-				board_info();
-				changed=1;
-				break;
-			case -25://AltP
-				if(draw_mode&128) break;
-				t1=board_xsiz;
-				t2=board_ysiz;
-				t3=max_bxsiz;
-				t4=max_bysiz;
-				//Size/pos
-				size_pos();
-				//Fix x/y
-				if(ARRAY_X>=board_xsiz) x_pos=x_top_pos=0;
-				if(ARRAY_Y>=board_ysiz) y_pos=y_top_pos=0;
-				if((x_top_pos+80)>board_xsiz) x_top_pos=0;
-				if((y_top_pos+19)>board_ysiz) x_top_pos=0;
-
-				//Board size change?
-				if((t1!=board_xsiz)||(t2!=board_ysiz)||(t3!=max_bxsiz)||
-				 (t4!=max_bysiz)) {
-					//Yep. save board to file, using old sizes.
-					fp=fopen("~EDITRSZ.TMP","wb+");
-					if(fp==NULL) {
-						error("Error accessing temp file, ~EDITRSZ.TMP",1,24,
-							current_pg_seg,0x3601);
-						break;
-						}
-					for(t5=0;t5<t1;t5++) {
-						for(t6=0;t6<t2;t6++) {
-							fputc(level_id[t5+t6*t3],fp);
-							fputc(level_color[t5+t6*t3],fp);
-							fputc(level_param[t5+t6*t3],fp);
-							fputc(level_under_id[t5+t6*t3],fp);
-							fputc(level_under_color[t5+t6*t3],fp);
-							fputc(level_under_param[t5+t6*t3],fp);
-							fputc(overlay[t5+t6*t3],fp);
-							fputc(overlay_color[t5+t6*t3],fp);
-							}
-						}
-					fseek(fp,0,SEEK_SET);
-					//Now clear board...
-					for(t5=0;t5<10000;t5++) {
-						level_id[t5]=level_under_id[t5]=0;
-						level_param[t5]=level_under_param[t5]=0;
-						level_color[t5]=level_under_color[t5]=overlay_color[t5]=7;
-						overlay[t5]=32;
-						}
-					t0=0;//We didn't clear the player yet
-					//And reload
-					for(t5=0;t5<t1;t5++) {
-						for(t6=0;t6<t2;t6++) {
-							if((t5>=board_xsiz)||(t6>=board_ysiz)) {
-								//Not being placed. If a robot/scroll, delete
-								t7=fgetc(fp);
-								t8=fgetc(fp);//color
-								t9=fgetc(fp);//param
-								if(t7==127) t0=1;//player
-								else if(t7==122) {//(sensor)
-									//Clear, copying to 0 first if param==curr
-									if((t9==curr_param)&&
-										(curr_thing==122)) {
-											copy_sensor(0,curr_param);
-											curr_param=0;
-											}
-									clear_sensor(t9);
-									}
-								else if((t7==123)||(t7==124)) {//(robot)
-									//Clear, copying to 0 first if param==curr
-									if((t9==curr_param)&&
-										((curr_thing==123)||(curr_thing==124))) {
-											copy_robot(0,curr_param);
-											curr_param=0;
-											}
-									clear_robot(t9);
-									}
-								else if((t7==125)||(t7==126)) {//(scroll)
-									//Clear, copying to 0 first if param==curr
-									if((t9==curr_param)&&
-										((curr_thing==125)||(curr_thing==126))) {
-											copy_scroll(0,curr_param);
-											curr_param=0;
-											}
-									clear_scroll(t9);
-									}
-								//Under...
-								t7=fgetc(fp);
-								t8=fgetc(fp);
-								t9=fgetc(fp);
-								if(t7==122) {//(sensor)
-									//Clear, copying to 0 first if param==curr
-									if((t9==curr_param)&&
-										(curr_thing==122)) {
-											copy_sensor(0,curr_param);
-											curr_param=0;
-											}
-									clear_sensor(t9);
-									}
-								//Overlay...
-								fgetc(fp);
-								fgetc(fp);
-								}
-							else {
-								//Place into new board
-								t7=t5+t6*max_bxsiz;
-								level_id[t7]=fgetc(fp);
-								level_color[t7]=fgetc(fp);
-								level_param[t7]=fgetc(fp);
-								level_under_id[t7]=fgetc(fp);
-								level_under_color[t7]=fgetc(fp);
-								level_under_param[t7]=fgetc(fp);
-								overlay[t7]=fgetc(fp);
-								overlay_color[t7]=fgetc(fp);
-								}
-							}
-						}
-					if(t0) {
-						//Place player at first empty space
-						t4=0;
-						for(t1=0;t1<board_xsiz;t1++) {
-							for(t2=0;t2<board_ysiz;t2++) {
-								t3=level_id[t1+t2*max_bxsiz];
-								if(t3<120) t4=t1+t2*max_bxsiz;
-								if(level_id[t1+t2*max_bxsiz]) continue;
-								id_place(t1,t2,127,0,0);
-								goto donneth;
-								}
-							}
-						//Put at first non-robot/scroll/sign/sensor
-						offs_place_id(t4,0,127,0,0);
-						}
-					fclose(fp);
-					unlink("~EDITRSZ.TMP");
-					}
-			donneth:
-				changed=1;
-				update_menu=update_view=1;
-				break;
-			case 'X'://X
-				if(draw_mode&128) break;
-				//Exits
-				board_exits();
-				changed=1;
-				break;
-			case -31://AltS
-				if(draw_mode&128) {
-					//Whether to show level in overlay mode
-					update_view=update_menu=1;
-					show_level^=1;
-					break;
-					}
-				//Status counter info
-				status_counter_info();
-				changed=1;
-				break;
-			case -19://AltR
-				if(draw_mode&128) break;
-				//Restart
-				if(!confirm("Clear ALL- Are you sure?")) {
-					//If current object is a robot/etc of not #0, copy to #0.
-					if((curr_thing==122)&&(curr_param!=0)) {
-						copy_sensor(0,curr_param);
-						curr_param=0;
-						}
-					if(((curr_thing==123)||(curr_thing==124))&&(curr_param!=0))
-						//No room = forget it!
-						if(!copy_robot(0,curr_param)) curr_param=0;
-					if(((curr_thing==125)||(curr_thing==126))&&(curr_param!=0))
-						//No room = forget it!
-						if(!copy_scroll(0,curr_param)) curr_param=0;
-					//If pw-protection is NO_SAVING, clear curr_objects
-					//if(protection_method==NO_SAVING) {
-					//	clear_zero_objects();
-					//	curr_thing=curr_param=0;
-					//	curr_color=7;
-					//	}
-					clear_world();
-					changed=0;
-					update_menu=update_view=1;
-					draw_mode=0;
-					}
-				break;
-			case 'L'://L
-				if(draw_mode&128) break;
-				//Changed?
-				if(changed)
-					if(confirm("Load: World has not been saved, are you sure?")) break;
-				//Load world
-				if(!choose_file("*.MZX",temp,"Choose world to load",1)) {
-					//If current object is a robot/etc of not #0, copy to #0.
-					if((curr_thing==122)&&(curr_param!=0)) {
-						copy_sensor(0,curr_param);
-						curr_param=0;
-						}
-					if(((curr_thing==123)||(curr_thing==124))&&(curr_param!=0))
-						//No room = forget it!
-						if(!copy_robot(0,curr_param)) curr_param=0;
-					if(((curr_thing==125)||(curr_thing==126))&&(curr_param!=0))
-						//No room = forget it!
-						if(!copy_scroll(0,curr_param)) curr_param=0;
-					//If pw-protection is NO_SAVING, clear curr_objects
-					//if(protection_method==NO_SAVING) {
-					//	clear_zero_objects();
-					//	curr_thing=curr_param=0;
-					//	curr_color=7;
-					//	}
-					//Swap out current board...
-					store_current();
-					clear_current();
-					//Load game
-					if(load_world(temp,1)) {
-						select_current(curr_board);
-						break;
-						}
-					//Swap in starting board
-					if(board_where[first_board]!=W_NOWHERE)
-						select_current(first_board);
-					else select_current(0);
-					changed=0;
-					update_menu=update_view=1;
-					x_pos=x_top_pos=y_pos=y_top_pos=draw_mode=0;
-					//Copy filename
-					str_cpy(curr_file,temp);
-					}
-				break;
-			case 'S'://S
-				if(draw_mode&128) break;
-				//Pw check
-				//if(protection_method==NO_SAVING)
-				//	if(check_pw()) break;
-				//Save world
-				if(!save_world_dialog()) {
-					//Name in curr_file...
-					if(curr_file[0]==0) break;
-					add_ext(curr_file,".MZX");
-					//Check for an overwrite
-					if((fp=fopen(curr_file,"rb"))!=NULL) {
-						fclose(fp);
-						if(confirm("File exists- Overwrite?")) break;
-						}
-					//If current object is a robot/etc of not #0, copy to #0.
-					if((curr_thing==122)&&(curr_param!=0)) {
-						copy_sensor(0,curr_param);
-						curr_param=0;
-						}
-					if(((curr_thing==123)||(curr_thing==124))&&(curr_param!=0))
-						//No room = forget it!
-						if(!copy_robot(0,curr_param)) curr_param=0;
-					if(((curr_thing==125)||(curr_thing==126))&&(curr_param!=0))
-						//No room = forget it!
-						if(!copy_scroll(0,curr_param)) curr_param=0;
-					//Store current
-					store_current();
-					//Save entire game
-					save_world(curr_file);
-					//Reload current
-					select_current(curr_board);
-					changed=0;
-					update_view=update_menu=1;
-					}
-				break;
-			case 'D'://D
-				if(draw_mode&128) break;
-				//Delete board
-				//Choose which one...
-				t1=choose_board(curr_board,"Delete board:",current_pg_seg);
-				if(t1>0) {
-					if(confirm("DELETE BOARD- Are you sure?")) break;
-					//Deleting board t1. Current?
-					if(curr_board==t1) {
-						//Fix objects and swap to 0
-						//If current object is a robot/etc of not #0, copy to #0.
-						if((curr_thing==122)&&(curr_param!=0)) {
-							copy_sensor(0,curr_param);
-							curr_param=0;
-							}
-						if(((curr_thing==123)||(curr_thing==124))&&(curr_param!=0))
-							//No room = forget it!
-							if(!copy_robot(0,curr_param)) curr_param=0;
-						if(((curr_thing==125)||(curr_thing==126))&&(curr_param!=0))
-							//No room = forget it!
-							if(!copy_scroll(0,curr_param)) curr_param=0;
-						swap_with(0);
-						//Update x/y
-						if(ARRAY_X>=board_xsiz) x_pos=x_top_pos=0;
-						if(ARRAY_Y>=board_ysiz) y_pos=y_top_pos=0;
-						if((x_top_pos+80)>board_xsiz) x_top_pos=0;
-						if((y_top_pos+19)>board_ysiz) x_top_pos=0;
-						}
-					//Delete it if it isn't already
-					if(board_where[t1]!=W_NOWHERE) delete_board(t1);
-					//Fix starting board if neccessary
-					if(t1==first_board) first_board=0;
-					changed=1;
-					}
-				update_view=update_menu=1;
-				break;
-			case 'B'://B
-				if(draw_mode&128) break;
-				//Select board
-				//If current object is a robot/etc of not #0, copy to #0.
-				if((curr_thing==122)&&(curr_param!=0)) {
-					copy_sensor(0,curr_param);
-					curr_param=0;
-					}
-				if(((curr_thing==123)||(curr_thing==124))&&(curr_param!=0))
-					//No room = forget it!
-					if(!copy_robot(0,curr_param)) curr_param=0;
-				if(((curr_thing==125)||(curr_thing==126))&&(curr_param!=0))
-					//No room = forget it!
-					if(!copy_scroll(0,curr_param)) curr_param=0;
-				//Choose...
-				t1=choose_board(curr_board,"Select current board:",current_pg_seg);
-				if(t1>=0) swap_with(t1);
-				draw_mode=0;
-				update_view=update_menu=1;
-				//Update x/y
-				if(ARRAY_X>=board_xsiz) x_pos=x_top_pos=0;
-				if(ARRAY_Y>=board_ysiz) y_pos=y_top_pos=0;
-				if((x_top_pos+80)>board_xsiz) x_top_pos=0;
-				if((y_top_pos+19)>board_ysiz) y_top_pos=0;
-				break;
-			case 'A'://A
-				if(draw_mode&128) break;
-				//Add board
-				//Search for empty...
-				for(t1=0;t1<NUM_BOARDS;t1++)
-					if(board_where[t1]==W_NOWHERE) break;
-				if(t1>=NUM_BOARDS) {
-					error("No available boards",1,24,current_pg_seg,0x0B01);
-					break;
-					}
-				//Input a name
-				m_hide();
-				save_screen(current_pg_seg);
-				draw_window_box(16,12,64,14,current_pg_seg,EC_DEBUG_BOX,
-					EC_DEBUG_BOX_DARK,EC_DEBUG_BOX_CORNER);
-				write_string("Name for new board:",18,13,EC_DEBUG_LABEL,
-					current_pg_seg);
-				update_menu=update_view=1;
-				board_list[t1*BOARD_NAME_SIZE]=0;
-				m_show();
-				if(intake(&board_list[t1*BOARD_NAME_SIZE],BOARD_NAME_SIZE-1,
-					38,13,current_pg_seg,15,1,0)==27) {
-						restore_screen(current_pg_seg);
-						break;
-						}
-				restore_screen(current_pg_seg);
-				//If current object is a robot/etc of not #0, copy to #0.
-				if((curr_thing==122)&&(curr_param!=0)) {
-					copy_sensor(0,curr_param);
-					curr_param=0;
-					}
-				if(((curr_thing==123)||(curr_thing==124))&&(curr_param!=0))
-					//No room = forget it!
-					if(!copy_robot(0,curr_param)) curr_param=0;
-				if(((curr_thing==125)||(curr_thing==126))&&(curr_param!=0))
-					//No room = forget it!
-					if(!copy_scroll(0,curr_param)) curr_param=0;
-				//Store current
-				store_current();
-				//Add at number t1
-				clear_current_and_select(t1);
-				board_where[curr_board=t1]=W_CURRENT;
-				board_sizes[t1]=0;
-				changed=1;
-				//No need to fix x/y position since sizing info is taken
-				//from current board.
-				break;
-			case 27://ESC
-				//ESC cancels draw mode if any, instead of exiting
-				if((draw_mode&127)>0) {
-					draw_mode&=128;
-					update_view=update_menu=1;
-					key=0;
-					}
-				//If none, tries to cancel overlay mode
-				else if(draw_mode&128) {
-					key=0;
-					goto overlay_off;
-					}
-				//Else we will exit-
-				else if(changed)
-					if(confirm("Exit: World has not been saved, are you sure?")) {
-						key=0;
-						break;
-						}
-				break;
-			case -81://Pgdn
-			next_menu:
-				if(draw_mode&128) break;
-				if(curr_menu<(NUM_MENUS-1)) curr_menu++;
-				else curr_menu=0;
-				update_menu=1;
-				break;
-			case -73://Pgup
-			prev_menu:
-				if(draw_mode&128) break;
-				if(curr_menu>0) curr_menu--;
-				else curr_menu=NUM_MENUS-1;
-				update_menu=1;
-				break;
-			case -71://Home
-				x_pos=y_pos=x_top_pos=y_top_pos=0;
-				update_view=1;
-				debug_x=65;
-				break;
-			case -79://End
-				if(board_xsiz<80) {
-					x_top_pos=0;
-					x_pos=board_xsiz-1;
-					}
-				else {
-					x_pos=79;
-					x_top_pos=board_xsiz-x_pos-1;
-					}
-				if(board_ysiz<19) {
-					y_top_pos=0;
-					y_pos=board_ysiz-1;
-					}
-				else {
-					y_pos=18;
-					y_top_pos=board_ysiz-y_pos-1;
-					}
-				update_view=1;
-				debug_x=0;
-				break;
-			case -77://Right
-			case -157://AltRight
-			move_right:
-				if(key==-157) t1=10;
-				else t1=1;
-				for(;t1>0;t1--) {//By amount
-				//At edge?
-				if(ARRAY_X<(board_xsiz-1)) {
-					//Nope- Do a little incrementing.
-					//If x position < 74, move right one.
-					//Else scroll right one, unless can't, then
-					//move right one.
-					if(x_pos<74) x_pos++;
-					else {
-						if((x_top_pos+80)<board_xsiz) {
-							x_top_pos++;
-							update_view=1;
-							}
-						else x_pos++;
-						}
-					//Move debug window?
-					if((debug_x==65)&&(x_pos>59)) {
-						debug_x=0;
-						update_view=1;
-						}
-					//Draw? (only if not last movement)
-					if((t1)&&((draw_mode&127)==1)) {
-						if(draw_mode&128) {
-							overlay[ARRAY_OFFS]=curr_param;
-							overlay_color[ARRAY_OFFS]=curr_color;
-							update_view=1;
-							}
-						else if(level_id[ARRAY_OFFS]!=127) {//No overwriting player
-							//If a robot/scroll/sensor...
-							if(curr_thing==122) {//(sensor)
-								//...make a copy...
-								if(!(t2=find_sensor())) {
-									error("No available sensors",1,24,current_pg_seg,0x0801);
-									break;
-									}
-								copy_sensor(t2,curr_param);
-								//...and deallocate original if it was number 0.
-								if(curr_param==0) clear_sensor(0);
-								curr_param=t2;
-								}
-							if((curr_thing==123)||(curr_thing==124)) {//(robot)
-								//...make a copy...
-								if(!(t2=find_robot())) {
-									error("No available robots",1,24,current_pg_seg,0x0901);
-									break;
-									}
-								if(copy_robot(t2,curr_param)) {
-									robots[t2].used=0;
-									error("Out of robot memory",1,21,current_pg_seg,0x0502);
-									break;
-									}
-								//...and deallocate original if it was number 0.
-								if(curr_param==0) clear_robot(0);
-								curr_param=t2;
-								}
-							if((curr_thing==125)||(curr_thing==126)) {//(scroll)
-								//...make a copy...
-								if(!(t2=find_scroll())) {
-									error("No available scrolls",1,24,current_pg_seg,0x0A01);
-									break;
-									}
-								if(copy_scroll(t2,curr_param)) {
-									robots[t2].used=0;
-									error("Out of robot memory",1,21,current_pg_seg,0x0503);
-									break;
-									}
-								//...and deallocate original if it was number 0.
-								if(curr_param==0) clear_scroll(0);
-								curr_param=t2;
-								}
-							//Search and erase old players if placing a player.
-							if(curr_thing==127)
-								for(t2=0;t2<board_xsiz;t2++)
-									for(t3=0;t3<board_ysiz;t3++)
-										if(level_id[t2+t3*max_bxsiz]==127)
-											id_remove_top(t2,t3);
-							//If top thing at position is a robot/etc, deallocate it.
-							t2=level_id[ARRAY_OFFS];
-							if((t2==122)&&(curr_thing!=127)) //(sensor)
-								clear_sensor(level_param[ARRAY_OFFS]);
-							else if((t2==123)||(t2==124)) //(robot)
-								clear_robot(level_param[ARRAY_OFFS]);
-							else if((t2==125)||(t2==126)) //(scroll)
-								clear_scroll(level_param[ARRAY_OFFS]);
-							//Place.
-							id_place(ARRAY_X,ARRAY_Y,curr_thing,curr_color,curr_param);
-							}
-						}
-					}
-					}
-				if((draw_mode&127)==1) goto place;
-				if((draw_mode&127)==3) update_view=1;
-				break;
-			case -75://Left
-			case -155://AltLeft
-				if(key==-155) t1=10;
-				else t1=1;
-				for(;t1>0;t1--) {//By amount
-				//At edge?
-				if(ARRAY_X>0) {
-					//Nope- Do a little decrementing.
-					//If x position > 5, move left one.
-					//Else scroll left one, unless can't, then
-					//move left one.
-					if(x_pos>5) x_pos--;
-					else {
-						if(x_top_pos>0) {
-							x_top_pos--;
-							update_view=1;
-							}
-						else x_pos--;
-						}
-					//Move debug window?
-					if((debug_x==0)&&(x_pos<20)) {
-						debug_x=65;
-						update_view=1;
-						}
-					//Draw? (only if not last movement)
-					if((t1)&&((draw_mode&127)==1)) {
-						if(draw_mode&128) {
-							overlay[ARRAY_OFFS]=curr_param;
-							overlay_color[ARRAY_OFFS]=curr_color;
-							update_view=1;
-							}
-						else if(level_id[ARRAY_OFFS]!=127) {//No overwriting player
-							//If a robot/scroll/sensor...
-							if(curr_thing==122) {//(sensor)
-								//...make a copy...
-								if(!(t2=find_sensor())) {
-									error("No available sensors",1,24,current_pg_seg,0x0801);
-									break;
-									}
-								copy_sensor(t2,curr_param);
-								//...and deallocate original if it was number 0.
-								if(curr_param==0) clear_sensor(0);
-								curr_param=t2;
-								}
-							if((curr_thing==123)||(curr_thing==124)) {//(robot)
-								//...make a copy...
-								if(!(t2=find_robot())) {
-									error("No available robots",1,24,current_pg_seg,0x0901);
-									break;
-									}
-								if(copy_robot(t2,curr_param)) {
-									robots[t2].used=0;
-									error("Out of robot memory",1,21,current_pg_seg,0x0502);
-									break;
-									}
-								//...and deallocate original if it was number 0.
-								if(curr_param==0) clear_robot(0);
-								curr_param=t2;
-								}
-							if((curr_thing==125)||(curr_thing==126)) {//(scroll)
-								//...make a copy...
-								if(!(t2=find_scroll())) {
-									error("No available scrolls",1,24,current_pg_seg,0x0A01);
-									break;
-									}
-								if(copy_scroll(t2,curr_param)) {
-									robots[t2].used=0;
-									error("Out of robot memory",1,21,current_pg_seg,0x0503);
-									break;
-									}
-								//...and deallocate original if it was number 0.
-								if(curr_param==0) clear_scroll(0);
-								curr_param=t2;
-								}
-							//Search and erase old players if placing a player.
-							if(curr_thing==127)
-								for(t2=0;t2<board_xsiz;t2++)
-									for(t3=0;t3<board_ysiz;t3++)
-										if(level_id[t2+t3*max_bxsiz]==127)
-											id_remove_top(t2,t3);
-							//If top thing at position is a robot/etc, deallocate it.
-							t2=level_id[ARRAY_OFFS];
-							if((t2==122)&&(curr_thing!=127)) //(sensor)
-								clear_sensor(level_param[ARRAY_OFFS]);
-							else if((t2==123)||(t2==124)) //(robot)
-								clear_robot(level_param[ARRAY_OFFS]);
-							else if((t2==125)||(t2==126)) //(scroll)
-								clear_scroll(level_param[ARRAY_OFFS]);
-							//Place.
-							id_place(ARRAY_X,ARRAY_Y,curr_thing,curr_color,curr_param);
-							}
-						}
-					}
-					}
-				if((draw_mode&127)==1) goto place;
-				if((draw_mode&127)==3) update_view=1;
-				break;
-			case 8://Backspace
-				//Delete to the left...first move left in text mode
-				//At edge?
-				if((ARRAY_X>0)&&((draw_mode&127)==2)) {
-					//Nope- Do a little decrementing.
-					//If x position > 5, move left one.
-					//Else scroll left one, unless can't, then
-					//move left one.
-					if(x_pos>5) x_pos--;
-					else {
-						if(x_top_pos>0) x_top_pos--;
-						else x_pos--;
-						}
-					//Move debug window?
-					if((debug_x==0)&&(x_pos<20)) debug_x=65;
-					}
-				//Jump to delete
-				goto erase;
-			case -80://Down
-			case -160://AltDown
-			move_down:
-				if(key==-160) t1=10;
-				else t1=1;
-				for(;t1>0;t1--) {//By amount
-				//At edge?
-				if(ARRAY_Y<(board_ysiz-1)) {
-					//Nope- Do a little incrementing.
-					//If y position < 14, move down one.
-					//Else scroll down one, unless can't, then
-					//move down one.
-					if(y_pos<14) y_pos++;
-					else {
-						if((y_top_pos+19)<board_ysiz) {
-							y_top_pos++;
-							update_view=1;
-							}
-						else y_pos++;
-						}
-					//Draw? (only if not last movement)
-					if((t1)&&((draw_mode&127)==1)) {
-						if(draw_mode&128) {
-							overlay[ARRAY_OFFS]=curr_param;
-							overlay_color[ARRAY_OFFS]=curr_color;
-							update_view=1;
-							}
-						else if(level_id[ARRAY_OFFS]!=127) {//No overwriting player
-							//If a robot/scroll/sensor...
-							if(curr_thing==122) {//(sensor)
-								//...make a copy...
-								if(!(t2=find_sensor())) {
-									error("No available sensors",1,24,current_pg_seg,0x0801);
-									break;
-									}
-								copy_sensor(t2,curr_param);
-								//...and deallocate original if it was number 0.
-								if(curr_param==0) clear_sensor(0);
-								curr_param=t2;
-								}
-							if((curr_thing==123)||(curr_thing==124)) {//(robot)
-								//...make a copy...
-								if(!(t2=find_robot())) {
-									error("No available robots",1,24,current_pg_seg,0x0901);
-									break;
-									}
-								if(copy_robot(t2,curr_param)) {
-									robots[t2].used=0;
-									error("Out of robot memory",1,21,current_pg_seg,0x0502);
-									break;
-									}
-								//...and deallocate original if it was number 0.
-								if(curr_param==0) clear_robot(0);
-								curr_param=t2;
-								}
-							if((curr_thing==125)||(curr_thing==126)) {//(scroll)
-								//...make a copy...
-								if(!(t2=find_scroll())) {
-									error("No available scrolls",1,24,current_pg_seg,0x0A01);
-									break;
-									}
-								if(copy_scroll(t2,curr_param)) {
-									robots[t2].used=0;
-									error("Out of robot memory",1,21,current_pg_seg,0x0503);
-									break;
-									}
-								//...and deallocate original if it was number 0.
-								if(curr_param==0) clear_scroll(0);
-								curr_param=t2;
-								}
-							//Search and erase old players if placing a player.
-							if(curr_thing==127)
-								for(t2=0;t2<board_xsiz;t2++)
-									for(t3=0;t3<board_ysiz;t3++)
-										if(level_id[t2+t3*max_bxsiz]==127)
-											id_remove_top(t2,t3);
-							//If top thing at position is a robot/etc, deallocate it.
-							t2=level_id[ARRAY_OFFS];
-							if((t2==122)&&(curr_thing!=127)) //(sensor)
-								clear_sensor(level_param[ARRAY_OFFS]);
-							else if((t2==123)||(t2==124)) //(robot)
-								clear_robot(level_param[ARRAY_OFFS]);
-							else if((t2==125)||(t2==126)) //(scroll)
-								clear_scroll(level_param[ARRAY_OFFS]);
-							//Place.
-							id_place(ARRAY_X,ARRAY_Y,curr_thing,curr_color,curr_param);
-							}
-						}
-					}
-					}
-				if((draw_mode&127)==1) goto place;
-				if((draw_mode&127)==3) update_view=1;
-				break;
-			case -72://Up
-			case -152://AltUp
-				if(key==-152) t1=10;
-				else t1=1;
-				for(;t1>0;t1--) {//By amount
-				//At edge?
-				if(ARRAY_Y>0) {
-					//Nope- Do a little decrementing.
-					//If y position > 4, move up one.
-					//Else scroll up one, unless can't, then
-					//move up one.
-					if(y_pos>4) y_pos--;
-					else {
-						if(y_top_pos>0) {
-							y_top_pos--;
-							update_view=1;
-							}
-						else y_pos--;
-						}
-					//Draw? (only if not last movement)
-					if((t1)&&((draw_mode&127)==1)) {
-						if(draw_mode&128) {
-							overlay[ARRAY_OFFS]=curr_param;
-							overlay_color[ARRAY_OFFS]=curr_color;
-							update_view=1;
-							}
-						else if(level_id[ARRAY_OFFS]!=127) {//No overwriting player
-							//If a robot/scroll/sensor...
-							if(curr_thing==122) {//(sensor)
-								//...make a copy...
-								if(!(t2=find_sensor())) {
-									error("No available sensors",1,24,current_pg_seg,0x0801);
-									break;
-									}
-								copy_sensor(t2,curr_param);
-								//...and deallocate original if it was number 0.
-								if(curr_param==0) clear_sensor(0);
-								curr_param=t2;
-								}
-							if((curr_thing==123)||(curr_thing==124)) {//(robot)
-								//...make a copy...
-								if(!(t2=find_robot())) {
-									error("No available robots",1,24,current_pg_seg,0x0901);
-									break;
-									}
-								if(copy_robot(t2,curr_param)) {
-									robots[t2].used=0;
-									error("Out of robot memory",1,21,current_pg_seg,0x0502);
-									break;
-									}
-								//...and deallocate original if it was number 0.
-								if(curr_param==0) clear_robot(0);
-								curr_param=t2;
-								}
-							if((curr_thing==125)||(curr_thing==126)) {//(scroll)
-								//...make a copy...
-								if(!(t2=find_scroll())) {
-									error("No available scrolls",1,24,current_pg_seg,0x0A01);
-									break;
-									}
-								if(copy_scroll(t2,curr_param)) {
-									robots[t2].used=0;
-									error("Out of robot memory",1,21,current_pg_seg,0x0503);
-									break;
-									}
-								//...and deallocate original if it was number 0.
-								if(curr_param==0) clear_scroll(0);
-								curr_param=t2;
-								}
-							//Search and erase old players if placing a player.
-							if(curr_thing==127)
-								for(t2=0;t2<board_xsiz;t2++)
-									for(t3=0;t3<board_ysiz;t3++)
-										if(level_id[t2+t3*max_bxsiz]==127)
-											id_remove_top(t2,t3);
-							//If top thing at position is a robot/etc, deallocate it.
-							t2=level_id[ARRAY_OFFS];
-							if((t2==122)&&(curr_thing!=127)) //(sensor)
-								clear_sensor(level_param[ARRAY_OFFS]);
-							else if((t2==123)||(t2==124)) //(robot)
-								clear_robot(level_param[ARRAY_OFFS]);
-							else if((t2==125)||(t2==126)) //(scroll)
-								clear_scroll(level_param[ARRAY_OFFS]);
-							//Place.
-							id_place(ARRAY_X,ARRAY_Y,curr_thing,curr_color,curr_param);
-							}
-						}
-					}
-					}
-				if((draw_mode&127)==1) goto place;
-				if((draw_mode&127)==3) update_view=1;
-				break;
-			case -21://AltY
-				//Toggle debug
-				debug_mode=!debug_mode;
-				update_view=update_menu=1;
-				break;
-			case -32://AltD
-				if(draw_mode&128) break;
-				//Toggle default colors
-				def_color_mode=!def_color_mode;
-				update_menu=1;
-				break;
-			case 32://Space
-				//Place, making copies properly for robots/scrolls/sensors,
-				//not deleting the player, and moving the player from it's
-				//original position if placed.
-				//If same id/color, erase
-				if(draw_mode&128) {
-					if((overlay[ARRAY_OFFS]==curr_param)&&
-						(overlay_color[ARRAY_OFFS]==curr_color)) goto erase;
-					}
-				else {
-					if((level_id[ARRAY_OFFS]==curr_thing)&&
-						(level_color[ARRAY_OFFS]==curr_color)) goto erase;
-					}
-			place:
-				changed=1;
-				//(place: label here since drawing and new things should
-				//ALWAYS work)
-				if(draw_mode&128) {
-					overlay[ARRAY_OFFS]=curr_param;
-					overlay_color[ARRAY_OFFS]=curr_color;
-					update_view=1;
-					break;
-					}
-				if(level_id[ARRAY_OFFS]==127) break;//No overwriting player
-				//If a robot/scroll/sensor...
-				if(curr_thing==122) {//(sensor)
-					//...make a copy...
-					if(!(t1=find_sensor())) {
-						error("No available sensors",1,24,current_pg_seg,0x0801);
-						break;
-						}
-					copy_sensor(t1,curr_param);
-					//...and deallocate original if it was number 0.
-					if(curr_param==0) clear_sensor(0);
-					curr_param=t1;
-					}
-				if((curr_thing==123)||(curr_thing==124)) {//(robot)
-					//...make a copy...
-					if(!(t1=find_robot())) {
-						error("No available robots",1,24,current_pg_seg,0x0901);
-						break;
-						}
-					if(copy_robot(t1,curr_param)) {
-						robots[t1].used=0;
-						error("Out of robot memory",1,21,current_pg_seg,0x0502);
-						break;
-						}
-					//...and deallocate original if it was number 0.
-					if(curr_param==0) clear_robot(0);
-					curr_param=t1;
-					}
-				if((curr_thing==125)||(curr_thing==126)) {//(scroll)
-					//...make a copy...
-					if(!(t1=find_scroll())) {
-						error("No available scrolls",1,24,current_pg_seg,0x0A01);
-						break;
-						}
-					if(copy_scroll(t1,curr_param)) {
-						robots[t1].used=0;
-						error("Out of robot memory",1,21,current_pg_seg,0x0503);
-						break;
-						}
-					//...and deallocate original if it was number 0.
-					if(curr_param==0) clear_scroll(0);
-					curr_param=t1;
-					}
-				//Search and erase old players if placing a player.
-				if(curr_thing==127)
-					for(t1=0;t1<board_xsiz;t1++)
-						for(t2=0;t2<board_ysiz;t2++)
-							if(level_id[t1+t2*max_bxsiz]==127)
-								id_remove_top(t1,t2);
-				//If top thing at position is a robot/etc, deallocate it.
-				t1=level_id[ARRAY_OFFS];
-				if((t1==122)&&(curr_thing!=127)) //(sensor)
-					clear_sensor(level_param[ARRAY_OFFS]);
-				else if((t1==123)||(t1==124)) //(robot)
-					clear_robot(level_param[ARRAY_OFFS]);
-				else if((t1==125)||(t1==126)) //(scroll)
-					clear_scroll(level_param[ARRAY_OFFS]);
-				//Place.
-				id_place(ARRAY_X,ARRAY_Y,curr_thing,curr_color,curr_param);
-				update_view=1;
-				break;
-			case -83://Del
-			erase:
-				changed=1;
-				//Erase
-				if(draw_mode&128) {
-					overlay[ARRAY_OFFS]=32;
-					overlay_color[ARRAY_OFFS]=7;
-					update_view=1;
-					break;
-					}
-				//Special for robots/scrolls/sensors
-				t1=level_id[ARRAY_OFFS];
-				if(t1==122) {//(sensor)
-					//Clear, copying to 0 first if param==curr
-					if((level_param[ARRAY_OFFS]==curr_param)&&
-						(curr_thing==122)) {
-							copy_sensor(0,curr_param);
-							curr_param=0;
-							}
-					clear_sensor(level_param[ARRAY_OFFS]);
-					}
-				else if((t1==123)||(t1==124)) {//(robot)
-					//Clear, copying to 0 first if param==curr
-					if((level_param[ARRAY_OFFS]==curr_param)&&
-						((curr_thing==123)||(curr_thing==124))) {
-							copy_robot(0,curr_param);
-							curr_param=0;
-							}
-					clear_robot(level_param[ARRAY_OFFS]);
-					}
-				else if((t1==125)||(t1==126)) {//(scroll)
-					//Clear, copying to 0 first if param==curr
-					if((level_param[ARRAY_OFFS]==curr_param)&&
-						((curr_thing==125)||(curr_thing==126))) {
-							copy_scroll(0,curr_param);
-							curr_param=0;
-							}
-					clear_scroll(level_param[ARRAY_OFFS]);
-					}
-				else if(t1==127) break;//No kill player
-				//Clear
-				id_clear(ARRAY_X,ARRAY_Y);
-				update_view=1;
-				break;
-			case 'C'://C
-			change_color:
-				//Change color
-				t1=color_selection(curr_color,current_pg_seg);
-				if(t1>-1) {
-					curr_color=t1;
-					update_menu=1;
-					}
-				break;
-			case -61://F3
-			case -62://F4
-			case -63://F5
-			case -64://F6
-			case -65://F7
-			case -66://F8
-			case -67://F9
-			case -68://F10
-				if(draw_mode&128) break;
-				//Over player?
-				if(level_id[ARRAY_OFFS]==127) {//No overwriting player
-					error("Cannot overwrite player- move him first",0,24,
-						current_pg_seg,0x3E01);
-					break;
-					}
-				//Unselecting #0?
-				if((curr_thing==122)&&(curr_param==0)) {
-					clear_sensor(0);
-					curr_thing=0;
-					}
-				else if(((curr_thing==123)||(curr_thing==124))&&(curr_param==0)) {
-					clear_robot(0);
-					curr_thing=0;
-					}
-				else if(((curr_thing==125)||(curr_thing==126))&&(curr_param==0)) {
-					clear_scroll(0);
-					curr_thing=0;
-					}
-				//Thing menus
-				t1=(-key)-61;//Menu # from 0 to 7
-				t2=list_menu(thing_menus[t1],20,tmenu_titles[t1],0,
-					tmenu_num_choices[t1],current_pg_seg);
-				if(t2>-1) {
-					t1=tmenu_thing_ids[t1][t2];
-					//Set param
-					t2=edit_param(t1,-1);
-					if(t2<0) break;//ESC
-					curr_thing=t1;//Thing
-					curr_param=t2;//Param
-					if(def_color_mode)//Set color
-						if(def_colors[curr_thing])
-							curr_color=def_colors[curr_thing];
-					update_menu=1;
-					goto place;//Now PLACE it!
-					}
-				break;
-			case -82://Insert
-				if(draw_mode&128) {
-					curr_param=overlay[ARRAY_OFFS];
-					curr_color=overlay_color[ARRAY_OFFS];
-					update_menu=1;
-					break;
-					}
-				//Grab. Only special case is if current is a sensor/etc. with
-				//param 0, then must free mem.
-				if((curr_thing==122)&&(curr_param==0))
-					clear_sensor(0);
-				else if(((curr_thing==123)||(curr_thing==124))&&(curr_param==0))
-					clear_robot(0);
-				else if(((curr_thing==125)||(curr_thing==126))&&(curr_param==0))
-					clear_scroll(0);
-				//Grab (gets objects properly, as a reference to copy from)
-				curr_thing=level_id[ARRAY_OFFS];
-				curr_param=level_param[ARRAY_OFFS];
-				curr_color=level_color[ARRAY_OFFS];
-				update_menu=1;
-				break;
-			case -50://AltM
-				if(draw_mode&128) break;
-				//Modify- Edit parameter of thing UNDER cursor. If it is our
-				//current object, we first copy ourselves to #0.
-				if((level_id[ARRAY_OFFS]==curr_thing)&&
-					(level_param[ARRAY_OFFS]==curr_param)) {
-						if(curr_thing==122) {
-							copy_sensor(0,curr_param);
-							curr_param=0;
-							}
-						else if((curr_thing==123)||(curr_thing==124)) {
-							//If out of mem, just don't copy!
-							if(!copy_robot(0,curr_param)) curr_param=0;
-							}
-						else if((curr_thing==125)||(curr_thing==126)) {
-							//If out of mem, just don't copy!
-							if(!copy_scroll(0,curr_param)) curr_param=0;
-							}
-					}
-				t2=edit_param(level_id[ARRAY_OFFS],level_param[ARRAY_OFFS]);
-				if(t2>-1) {
-					changed=1;
-					level_param[ARRAY_OFFS]=t2;
-					}
-				break;
-			case 13://Enter
-				update_view=1;
-				//(special for text mode)
-				if((draw_mode&127)==2) {
-					x_top_pos=save_x-5;
-					x_pos=5;
-					if(save_x<5) {
-						x_top_pos=0;
-						x_pos=save_x;
-						}
-					else if((save_x+75)>board_xsiz) {
-						x_top_pos=board_xsiz-80;
-						x_pos=save_x-x_top_pos;
-						if(x_top_pos<0) {
-							x_top_pos=0;
-							x_pos=save_x;
-							}
-						if(x_pos<0) x_pos=0;
-						}
-					goto move_down;
-					}
-				if(draw_mode&128) {
-					t1=char_selection(curr_param,current_pg_seg);
-					if(t1>=0) curr_param=t1;
-					update_menu=1;
-					break;
-					}
-				//Modify at cursor and grab. Only special case is if current
-				//is an object param #0. Grabbing objects works because our
-				//copy is supposed to be an exact duplicate, and we make copies
-				//during placement.
-				if((curr_thing==122)&&(curr_param==0))
-					clear_sensor(0);
-				else if(((curr_thing==123)||(curr_thing==124))&&(curr_param==0))
-					clear_robot(0);
-				else if(((curr_thing==125)||(curr_thing==126))&&(curr_param==0))
-					clear_scroll(0);
-				//Grab
-				curr_thing=level_id[ARRAY_OFFS];
-				curr_param=level_param[ARRAY_OFFS];
-				curr_color=level_color[ARRAY_OFFS];
-				//Modify
-				t2=edit_param(curr_thing,curr_param);
-				if(t2>-1) {
-					curr_param=t2;
-					changed=1;
-					}
-				//Save
-				level_param[ARRAY_OFFS]=curr_param;
-				update_menu=1;
-				break;
-			case 'P'://P
-				if(draw_mode&128) break;
-				//Edit parameter of current thing.
-				t2=edit_param(curr_thing,curr_param);
-				if(t2>-1) curr_param=t2;
-				update_menu=1;
-				break;
-			case 'R'://R
-				//Redraw screen
-				update_view=update_menu=1;
-				break;
-			case 9://Tab
-				//Toggle draw
-				if((draw_mode&127)==0) draw_mode=1+(draw_mode&128);
-				else draw_mode&=128;
-				update_menu=update_view=1;
-				if(draw_mode&127) goto place;
-				break;
-			case -44://AltZ
-				if(draw_mode&128) break;
-				//Clear board
-				if(!confirm("Clear board- Are you sure?")) {
-					//Save current objects
-					if((curr_thing==122)&&(curr_param!=0)) {
-						copy_sensor(0,curr_param);
-						curr_param=0;
-						}
-					if(((curr_thing==123)||(curr_thing==124))&&(curr_param!=0))
-						//No room- forget it!
-						if(!copy_robot(0,curr_param)) curr_param=0;
-					if(((curr_thing==125)||(curr_thing==126))&&(curr_param!=0))
-						//No room- forget it!
-						if(!copy_scroll(0,curr_param)) curr_param=0;
-					//No need to fix x/y position since board size remains
-					clear_current();
-					changed=1;
-					update_view=update_menu=1;
-					draw_mode=0;
-					}
-				break;
-			case -49://AltN
-				if(draw_mode&128) break;
-				//Mod
-				update_menu=1;
-				//Turn off module if one present...
-				if(mod_playing[0]!=0) end_mod();
-				//...else new module
-				else {
-					if(choose_file(NULL,temp,"Choose a module file")) break;
-					load_mod(temp);
-					}
-				changed=1;
-				break;
-			case -127://Alt8
-				if(draw_mode&128) break;
-				//Mod
-				update_menu=1;
-				//Turn off module if one present...
-				if(mod_playing[0]!=0) end_mod();
-				//...else new module
-				str_cpy(mod_playing,"*");
-				changed=1;
-				break;
-			case -38://AltL
-				if(draw_mode&128) break;
-				//Sample
-				update_menu=1;
-				//Choose and play sample
-				if(choose_file("*.SAM",temp,"Choose a .SAM file")) break;
-				play_sample(428,temp);
-				break;
-			case -60://F2
-				//Text
-				update_menu=1;
-				if((draw_mode&127)==0) {
-					draw_mode=2+(draw_mode&128);//Text mode
-					save_x=ARRAY_X;//Remember our position for ENTER.
-					}
-				else draw_mode&=128;
-				break;
-			}
-		move_cursor(x_pos,y_pos);
-		cursor_solid();
-		//Loop if not exiting
-	} while(key!=27);
-	cursor_off();
-	vquick_fadeout();
-	clear_sfx_queue();
-	//Exit with mouse on
-	error_mode=2;
-	pop_context();
-}
-
-//Arrays for 'thing' menus
-char tmenu_num_choices[8]={ 17,14,18,8,6,11,12,10 };
-char far *tmenu_titles[8]={ "Terrains","Items","Creatures","Puzzle Pieces",
-"Transport","Elements","Miscellaneous","Objects" };
-char far *thing_menus[8]={//Each 'item' is 20 char long, including '\0'.
-//Terrain (F3)
-"Space           ~1 \0\
-Normal          ~E²\0\
-Solid           ~DÛ\0\
-Tree            ~A\0\
-Line            ~BÍ\0\
-Custom Block    ~F?\0\
-Breakaway       ~C±\0\
-Custom Break    ~F?\0\
-Fake            ~9²\0\
-Carpet          ~4±\0\
-Floor           ~6°\0\
-Tiles           ~0þ\0\
-Custom Floor    ~F?\0\
-Web             ~7Å\0\
-Thick Web       ~7Î\0\
-Forest          ~2²\0\
-Invis. Wall     ~1 ",
-//Item (F4)
-"Gem             ~A\0\
-Magic Gem       ~E\0\
-Health          ~C\0\
-Ring            ~E\x9\0\
-Potion          ~B–\0\
-Energizer       ~D\0\
-Ammo            ~3¤\0\
-Bomb            ~8\0\
-Key             ~F\0\
-Lock            ~F\xA\0\
-Coin            ~E\0\
-Life            ~B›\0\
-Pouch           ~7Ÿ\0\
-Chest           ~6 ",
-//Creature (F5)
-"Snake           ~2ë\0\
-Eye             ~Fì\0\
-Thief           ~C\0\
-Slime Blob      ~A*\0\
-Runner          ~4\0\
-Ghost           ~7ê\0\
-Dragon          ~4\0\
-Fish            ~Eà\0\
-Shark           ~7\0\
-Spider          ~7•\0\
-Goblin          ~D\0\
-Spitting Tiger  ~Bã\0\
-Bear            ~6¬\0\
-Bear Cub        ~6­\0\
-Lazer Gun       ~4Î\0\
-Bullet Gun      ~F\0\
-Spinning Gun    ~F\0\
-Missile Gun     ~8",
-//Puzzle (F6)
-"Boulder         ~7é\0\
-Crate           ~6þ\0\
-Custom Push     ~F?\0\
-Box             ~Eþ\0\
-Custom Box      ~F?\0\
-Pusher          ~D\0\
-Slider NS       ~D\0\
-Slider EW       ~D",
-//Tranport (F7)
-"Stairs          ~A¢\0\
-Cave            ~6¡\0\
-Transport       ~E<\0\
-Whirlpool       ~B—\0\
-CWRotate        ~9/\0\
-CCWRotate       ~9\\",
-//Element (F8)
-"Still Water     ~9°\0\
-N Water         ~9\x18\0\
-S Water         ~9\x19\0\
-E Water         ~9\x1A\0\
-W Water         ~9\x1B\0\
-Ice             ~Bý\0\
-Lava            ~C²\0\
-Fire            ~E±\0\
-Goop            ~8°\0\
-Lit Bomb        ~8«\0\
-Explosion       ~E±",
-//Misc (F9)
-"Door            ~6Ä\0\
-Gate            ~8\0\
-Ricochet Panel  ~9/\0\
-Ricochet        ~A*\0\
-Mine            ~C\0\
-Spike           ~8\0\
-Custom Hurt     ~F?\0\
-Text            ~F?\0\
-N Moving Wall   ~F?\0\
-S Moving Wall   ~F?\0\
-E Moving Wall   ~F?\0\
-W Moving Wall   ~F?",
-//Objects (F10)
-"Robot           ~F?\0\
-Pushable Robot  ~F?\0\
-Player          ~B\0\
-Scroll          ~Fè\0\
-Sign            ~6â\0\
-Sensor          ~F?\0\
-Bullet          ~Fù\0\
-Missile         ~8\0\
-Seeker          ~A/\0\
-Shooting Fire   ~E" };
-char tmenu_thing_ids[8][18]={
-//Terrain (F3)
-{ 0,1,2,3,4,5,6,7,13,14,15,16,17,18,19,65,71 },
-//Item (F4)
-{ 28,29,30,31,32,33,35,36,39,40,50,66,55,27 },
-//Creature (F5)
-{ 80,81,82,83,84,85,86,87,88,89,90,91,94,95,60,92,93,97 },
-//Puzzle (F6)
-{ 8,9,10,11,12,56,57,58 },
-//Tranport (F7)
-{ 43,44,49,67,45,46 },
-//Element (F8)
-{ 20,21,22,23,24,25,26,63,34,37,38 },
-//Misc (F9)
-{ 41,47,72,73,74,75,76,77,51,52,53,54 },
-//Objects (F10)
-{ 124,123,127,126,125,122,61,62,79,78 } };
-
-//Default colors
-unsigned char def_colors[128]={
-	7,0,0,10,0,0,0,0,7,6,0,0,0,0,0,0,0,0,7,7,25,25,25,25,25,59,76,6,0,0,12,14,//0-31
-	11,15,24,3,8,8,239,0,0,0,0,0,0,0,0,8,8,0,14,0,0,0,0,7,0,0,0,0,4,15,8,12,//32-63
-	0,2,11,31,31,31,31,0,9,10,12,8,0,0,14,10,2,15,12,10,4,7,4,14,7,7,2,11,15,15,6,6,//64-95
-	0,8,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,6,15,27 };//96-127
-
-void draw_debug_box(char ypos) {
-	int t1;
-	draw_window_box(debug_x,ypos,debug_x+14,24,current_pg_seg,
-		EC_DEBUG_BOX,EC_DEBUG_BOX_DARK,EC_DEBUG_BOX_CORNER,0);
-	write_string("X/Y:     /\nBoard:\nMem:        k\nEMS:        k\nRobot memory-\n  . /61k    %",
-		debug_x+1,ypos+1,EC_DEBUG_LABEL,current_pg_seg);
-	write_number(curr_board,EC_DEBUG_NUMBER,debug_x+13,ypos+2,
-		current_pg_seg,0,1);
-	write_number((int)(farcoreleft()>>10),EC_DEBUG_NUMBER,
-		debug_x+12,ypos+3,current_pg_seg,0,1);
-	write_number(free_mem_EMS()<<4,EC_DEBUG_NUMBER,debug_x+12,ypos+4,
-		current_pg_seg,0,1);
-	t1=robot_free_mem/102;
-	write_number(t1/10,EC_DEBUG_NUMBER,debug_x+2,ypos+6,current_pg_seg,
-		0,1);
-	write_number(t1%10,EC_DEBUG_NUMBER,debug_x+4,ypos+6,current_pg_seg,1);
-  if(*mod_playing != 0)
+int change_param(World *mzx_world, int id, int param, Robot *copy_robot,
+ Scroll *copy_scroll, Sensor *copy_sensor)
+{
+  if(id == 122)
   {
-	  write_string(mod_playing,debug_x+2,ypos+7,EC_DEBUG_NUMBER,current_pg_seg);
+    return edit_sensor(mzx_world, copy_sensor);
+  }
+  else
+
+  if((id == 123) || (id == 124))
+  {
+    return edit_robot(mzx_world, copy_robot);
+  }
+  else
+
+  if((id == 125) || (id == 126))
+  {
+    return edit_scroll(mzx_world, copy_scroll);
   }
   else
   {
-    write_string("(no module)",debug_x+2,ypos+7, EC_DEBUG_NUMBER, current_pg_seg);
+    return edit_param(mzx_world, id, param);
   }
-	t1=(unsigned int)(robot_free_mem*100L/62464L);
-	write_number(t1,EC_DEBUG_NUMBER,debug_x+12,ypos+6,current_pg_seg,0,1);
 }
+
+int place_current_at_xy(World *mzx_world, int id, int color, int param,
+ int x, int y, Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor,
+ int overlay_edit)
+{
+  Board *src_board = mzx_world->current_board;
+  int offset = x + (y * src_board->board_width);
+  char *level_id = src_board->level_id;
+  int old_id = level_id[offset];
+
+  if(!overlay_edit)
+  {
+    if(id == 127)
+    {
+      id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
+      mzx_world->player_x = x;
+      mzx_world->player_y = y;
+    }
+    else
+
+    if((id == 123) || (id == 124))
+    {
+      if((old_id == 123) || (old_id == 124))
+      {
+        int old_param = src_board->level_param[offset];
+        replace_robot(src_board, copy_robot, old_param);
+        return old_param;
+      }
+
+      param = duplicate_robot(src_board, copy_robot, x, y);
+      if(param != -1)
+      {
+        (src_board->robot_list[param])->xpos = x;
+        (src_board->robot_list[param])->ypos = y;
+        (src_board->robot_list[param])->used = 1;
+      }
+    }
+    else
+
+    if((id == 125) || (id == 126))
+    {
+      if((old_id == 125) || (old_id == 126))
+      {
+        int old_param = src_board->level_param[offset];
+        replace_scroll(src_board, copy_scroll, old_param);
+        return old_param;
+      }
+
+      param = duplicate_scroll(src_board, copy_scroll);
+      if(param != -1)
+        (src_board->scroll_list[param])->used = 1;
+    }
+    else
+
+    if(id == 122)
+    {
+      if((old_id == 123) || (old_id == 124))
+      {
+        int old_param = src_board->level_param[offset];
+        replace_sensor(src_board, copy_sensor, old_param);
+        return old_param;
+      }
+
+      param = duplicate_sensor(src_board, copy_sensor);
+      if(param != -1)
+        (src_board->sensor_list[param])->used = 1;
+    }
+
+    if(param != -1)
+    {
+      place_at_xy(mzx_world, id, color, param, x, y);
+    }
+  }
+  else
+  {
+    int offset = x + (y * src_board->board_width);
+    src_board->overlay[offset] = param;
+    src_board->overlay_color[offset] = color;
+  }
+
+  return param;
+}
+
+void grab_at_xy(World *mzx_world, int *new_id, int *new_color,
+ int *new_param, Robot *copy_robot, Scroll *copy_scroll,
+ Sensor *copy_sensor, int x, int y, int overlay_edit)
+{
+  Board *src_board = mzx_world->current_board;
+  int board_width = src_board->board_width;
+  int offset = x + (y * board_width);
+  int old_id = *new_id;
+  int old_param = *new_param;
+
+  if(!overlay_edit)
+  {
+    int grab_id = src_board->level_id[offset];
+    int grab_param = src_board->level_param[offset];
+    *new_color = get_id_color(src_board, offset);
+
+    // First, clear the existing copies, unless the new id AND param
+    // matches, because in that case it's the same thing
+
+    if(((old_id == 123) || (old_id == 124)) &&
+     ((old_id != grab_id) || (old_param != grab_param)))
+    {
+      clear_robot_contents(copy_robot);
+    }
+
+    if(((old_id == 125) || (old_id == 126)) &&
+     ((old_id != grab_id) || (old_param != grab_param)))
+    {
+      clear_scroll_contents(copy_scroll);
+    }
+
+    if((grab_id == 123) || (grab_id == 124))
+    {
+      Robot *src_robot = src_board->robot_list[grab_param];
+      duplicate_robot_direct(src_robot, copy_robot, 0, 0);
+    }
+    else
+
+    if((grab_id == 125) || (grab_id == 126))
+    {
+      Scroll *src_scroll = src_board->scroll_list[grab_param];
+      duplicate_scroll_direct(src_scroll, copy_scroll);
+    }
+    else
+
+    if(grab_id == 122)
+    {
+      Sensor *src_sensor = src_board->sensor_list[grab_param];
+      duplicate_sensor_direct(src_sensor, copy_sensor);
+    }
+
+    *new_id = grab_id;
+    *new_param = grab_param;
+  }
+  else
+  {
+    *new_param = src_board->overlay[offset];
+    *new_color = src_board->overlay_color[offset];
+  }
+}
+
+void thing_menu(World *mzx_world, int menu_number, int *new_id,
+ int *new_color, int *new_param, Robot *copy_robot, Scroll *copy_scroll,
+ Sensor *copy_sensor, int x, int y)
+{
+  int id, color, param;
+  int chosen;
+  int old_id = *new_id;
+
+  cursor_off();
+  chosen =
+   list_menu(thing_menus[menu_number], 20, tmenu_titles[menu_number], 0,
+   tmenu_num_choices[menu_number], 27);
+
+  if(chosen >= 0)
+  {
+    id = tmenu_thing_ids[menu_number][chosen];
+    if(def_colors[id])
+    {
+      color = def_colors[id];
+    }
+    else
+    {
+      color = *new_color;
+    }
+
+    // Perhaps put a new blank scroll, robot, or sensor in one of the copies
+    if(id == 122)
+    {
+      create_blank_sensor_direct(copy_sensor);
+    }
+    else
+
+    if((id == 123) || (id == 124))
+    {
+      if((old_id == 123) || (old_id == 124))
+        clear_robot_contents(copy_robot);
+
+      create_blank_robot_direct(copy_robot, 0, 0);
+    }
+
+    if((id == 125) || (id == 126))
+    {
+      if((old_id == 125) || (old_id == 126))
+      {
+        clear_scroll_contents(copy_scroll);
+      }
+
+      create_blank_scroll_direct(copy_scroll);
+    }
+
+    param = *new_param;
+    param =
+     change_param(mzx_world, id, -1, copy_robot, copy_scroll, copy_sensor);
+
+    param = place_current_at_xy(mzx_world, id, color, param,
+     x, y, copy_robot, copy_scroll, copy_sensor, 0);
+
+    *new_id = id;
+    *new_param = param;
+    *new_color = color;
+  }
+  cursor_solid();
+}
+
+void flash_thing(World *mzx_world, int start, int end, int flash_one,
+ int flash_two, int scroll_x, int scroll_y, int edit_screen_height)
+{
+  Board *src_board = mzx_world->current_board;
+  int backup[32];
+  int i, i2;
+
+  cursor_off();
+
+  for(i = 0, i2 = start; i2 < end + 1; i++, i2++)
+  {
+    backup[i] = id_chars[i2];
+  }
+
+  src_board->overlay_mode |= 0x80;
+
+  do
+  {
+    for(i = start; i < end + 1; i++)
+    {
+      id_chars[i] = flash_one;
+    }
+    draw_edit_window(src_board, scroll_x, scroll_y, edit_screen_height);
+    update_screen();
+
+    for(i = start; i < end + 1; i++)
+    {
+      id_chars[i] = flash_two;
+    }
+    draw_edit_window(src_board, scroll_x, scroll_y, edit_screen_height);
+    update_screen();
+
+    update_event_status_delay();
+  } while(!get_key(keycode_SDL));
+
+  update_event_status_delay();
+
+  src_board->overlay_mode &= 0x7F;
+
+  for(i = 0, i2 = start; i2 < end + 1; i++, i2++)
+  {
+    id_chars[i2] = backup[i];
+  }
+
+  cursor_solid();
+}
+
+void edit_world(World *mzx_world)
+{
+  Board *src_board;
+  Robot copy_robot;
+  Scroll copy_scroll;
+  Sensor copy_sensor;
+
+  int i;
+  int cursor_board_x = 0, cursor_board_y = 0;
+  int cursor_x = 0, cursor_y = 0;
+  int scroll_x = 0, scroll_y = 0;
+  int current_id = 0;
+  int current_color = 7;
+  int current_param = 0;
+  int board_width, board_height;
+  int key;
+  int draw_mode = 0;
+  int overlay_edit = 0;
+  int current_menu = 0;
+  int show_level = 1;
+  int display_next_pos;
+  int block_x, block_y;
+  int block_dest_x, block_dest_y;
+  int block_command;
+  int text_place;
+  int text_start_x;
+  int modified = 0;
+  int debug_x = 60;
+  int saved_overlay_mode;
+  int edit_screen_height = 19;
+  int copy_repeat_width = -1;
+  int copy_repeat_height = -1;
+  char *level_id;
+  char *level_param;
+  char *level_color;
+  char *overlay;
+  char *overlay_color;
+  char current_world[128];
+  char mzm_name_buffer[128];
+
+  current_world[0] = 0;
+
+  copy_robot.used = 0;
+  copy_sensor.used = 0;
+  copy_scroll.used = 0;
+
+  mzx_world->version = VERSION;
+
+  if(mzx_world->active)
+  {
+    clear_world(mzx_world);
+    clear_global_data(mzx_world);
+  }
+  mzx_world->active = 1;
+
+  create_blank_world(mzx_world);
+  set_update_done(mzx_world);
+  cursor_solid();
+  m_show();
+
+  end_mod();
+
+  find_player(mzx_world);
+
+  synchronize_board_values();
+  update_screen();
+
+  insta_fadein();
+
+  do
+  {
+    cursor_x = cursor_board_x - scroll_x;
+    cursor_y = cursor_board_y - scroll_y;
+
+    if(current_param == -1)
+    {
+      current_id = 0;
+      current_param = 0;
+      current_color = 7;
+    }
+
+    move_cursor(cursor_x, cursor_y);
+
+    saved_overlay_mode = src_board->overlay_mode;
+
+    if(!overlay_edit)
+    {
+      src_board->overlay_mode = 0;
+      draw_edit_window(src_board, scroll_x, scroll_y, edit_screen_height);
+    }
+    else
+    {
+      src_board->overlay_mode = 1;
+      if(!show_level)
+      {
+        src_board->overlay_mode |= 0x40;
+        draw_edit_window(src_board, scroll_x, scroll_y, edit_screen_height);
+        src_board->overlay_mode ^= 0x40;
+      }
+      else
+      {
+        draw_edit_window(src_board, scroll_x, scroll_y, edit_screen_height);
+      }
+    }
+    src_board->overlay_mode = saved_overlay_mode;
+
+    if(edit_screen_height == 19)
+    {
+      draw_window_box(0, 19, 79, 24, EC_MAIN_BOX, EC_MAIN_BOX_DARK,
+       EC_MAIN_BOX_CORNER, 0, 1);
+      draw_window_box(0, 21, 79, 24, EC_MAIN_BOX, EC_MAIN_BOX_DARK,
+       EC_MAIN_BOX_CORNER, 0, 1);
+
+      if(!overlay_edit)
+      {
+        int i, write_color, x;
+        x = 1; // X position
+
+        for(i = 0; i < NUM_MENUS; i++)
+        {
+          if(i == current_menu)
+            write_color = EC_CURR_MENU_NAME;
+          else
+            write_color = EC_MENU_NAME; // Pick the color
+
+          // Write it
+          write_string(menu_names[i], x, 20, write_color, 0);
+          // Add to x
+          x += strlen(menu_names[i]);
+        }
+
+        write_string(menu_lines[current_menu][0], 1, 22, EC_OPTION, 1);
+        write_string(menu_lines[current_menu][1], 1, 23, EC_OPTION, 1);
+      }
+      else
+      {
+        write_string(overlay_menu_lines[0], 1, 20, EC_MENU_NAME, 1);
+        write_string(overlay_menu_lines[1], 1, 22, EC_OPTION, 1);
+        write_string(overlay_menu_lines[2], 1, 23, EC_OPTION, 1);
+      }
+
+      write_string(draw_names[draw_mode], 42, 20, EC_MODE_STR, 0);
+      display_next_pos = strlen(draw_names[draw_mode]) + 42;
+
+      if(draw_mode > 1)
+      {
+        write_string(drawmode_help[draw_mode - 2], display_next_pos, 20,
+         EC_MODE_HELP, 0);
+      }
+      else
+      {
+        int display_char, display_color = current_color;
+
+        if(!overlay_edit)
+        {
+          if(current_id == 122)
+          {
+            display_char = copy_sensor.sensor_char;
+          }
+          else
+
+          if((current_id == 123) || (current_id == 124))
+          {
+            display_char = copy_robot.robot_char;
+          }
+          else
+          {
+            int temp_char = level_id[0];
+            int temp_param = level_param[0];
+            level_id[0] = current_id;
+            level_param[0] = current_param;
+
+            display_char = get_id_char(src_board, 0);
+
+            level_id[0] = temp_char;
+            level_param[0] = temp_param;
+          }
+        }
+        else
+        {
+          display_char = current_param;
+        }
+
+        draw_char(' ', 7, display_next_pos, 20);
+        draw_char(display_char, display_color, display_next_pos + 1, 20);
+        draw_char(' ', 7, display_next_pos + 2, 20);
+
+        display_next_pos += 4;
+        draw_char('(', EC_CURR_THING, display_next_pos, 20);
+        draw_color_box(display_color, 0, display_next_pos + 1, 20);
+        display_next_pos += 5;
+
+        if(overlay_edit)
+        {
+          write_string("Character", display_next_pos, 20,
+           EC_CURR_THING, 0);
+          display_next_pos += 9;
+          write_hex_byte(current_param, EC_CURR_PARAM, display_next_pos + 1, 20);
+          display_next_pos += 3;
+        }
+        else
+        {
+          write_string(thing_names[current_id], display_next_pos, 20,
+           EC_CURR_THING, 0);
+          display_next_pos += strlen(thing_names[current_id]);
+          draw_char('p', EC_CURR_PARAM, display_next_pos + 1, 20);
+          write_hex_byte(current_param, EC_CURR_PARAM, display_next_pos + 2, 20);
+          display_next_pos += 4;
+        }
+
+        draw_char(')', EC_CURR_THING, display_next_pos, 20);
+      }
+
+      draw_char(196, EC_MAIN_BOX_CORNER, 78, 21);
+      draw_char(217, EC_MAIN_BOX_DARK, 79, 21);
+    }
+
+    if(debug_mode)
+    {
+      draw_debug_box(mzx_world, debug_x, edit_screen_height - 6,
+       cursor_board_x, cursor_board_y);
+    }
+
+    // Highlight block for draw mode 3
+    if(draw_mode == 3)
+    {
+      int block_screen_x = block_x - scroll_x;
+      int block_screen_y = block_y - scroll_y;
+      int start_x, start_y;
+      int block_width, block_height;
+
+      if(block_screen_x < 0)
+        block_screen_x = 0;
+
+      if(block_screen_y < 0)
+        block_screen_y = 0;
+
+      if(block_screen_x >= 80)
+        block_screen_x = 79;
+
+      if(block_screen_y >= edit_screen_height)
+        block_screen_y = edit_screen_height - 1;
+
+      if(block_screen_x < cursor_x)
+      {
+        start_x = block_screen_x;
+        block_width = cursor_x - block_screen_x + 1;
+      }
+      else
+      {
+        start_x = cursor_x;
+        block_width = block_screen_x - cursor_x + 1;
+      }
+
+      if(block_screen_y < cursor_y)
+      {
+        start_y = block_screen_y;
+        block_height = cursor_y - block_screen_y + 1;
+      }
+      else
+      {
+        start_y = cursor_y;
+        block_height = block_screen_y - cursor_y + 1;
+      }
+
+      for(i = 0; i < block_height; i++)
+      {
+        color_line(block_width, start_x, start_y + i, 0x9F);
+      }
+    }
+
+    text_place = 0;
+
+    update_screen();
+
+    update_event_status_delay();
+    key = get_key(keycode_SDL);
+
+    if(get_mouse_press())
+    {
+      int mouse_x, mouse_y;
+      get_mouse_position(&mouse_x, &mouse_y);
+
+      if(mouse_y == 20)
+      {
+        if((mouse_x >= 1) && (mouse_x <= 41))
+        {
+          current_menu = menu_positions[mouse_x - 1] - '1';
+        }
+        else
+
+        if((mouse_x >= 56) && (mouse_x <= 58))
+        {
+          int new_color;
+          cursor_off();
+          new_color = color_selection(current_color, 0);
+          if(new_color >= 0)
+            current_color = new_color;
+
+        }
+      }
+      else
+
+      if((mouse_y < edit_screen_height) && (edit_screen_height == 19))
+      {
+        cursor_board_x = mouse_x + scroll_x;
+        cursor_board_y = mouse_y + scroll_y;
+
+        if(get_mouse_status() == SDL_BUTTON(3))
+        {
+          grab_at_xy(mzx_world, &current_id, &current_color,
+           &current_param, &copy_robot, &copy_scroll, &copy_sensor,
+           cursor_board_x, cursor_board_y, overlay_edit);
+        }
+        else
+        {
+          current_param = place_current_at_xy(mzx_world, current_id,
+           current_color, current_param, cursor_board_x, cursor_board_y,
+           &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+        }
+      }
+    }
+
+    switch(key)
+    {
+      case SDLK_UP:
+      {
+        int i, move_amount = 1;
+
+        if(get_alt_status(keycode_SDL))
+          move_amount = 10;
+
+        if(get_ctrl_status(keycode_SDL) && (copy_repeat_height >= 0))
+          move_amount = copy_repeat_height;
+
+        for(i = 0; i < move_amount; i++)
+        {
+          if(!cursor_board_y)
+            break;
+
+          cursor_board_y--;
+
+          if(draw_mode == 1)
+          {
+            current_param = place_current_at_xy(mzx_world, current_id,
+             current_color, current_param, cursor_board_x, cursor_board_y,
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+            modified = 1;
+          }
+
+          if(((cursor_board_y - scroll_y) < 3) && scroll_y)
+            scroll_y--;
+        }
+        break;
+      }
+
+      case SDLK_DOWN:
+      {
+        int i, move_amount = 1;
+
+        if(get_alt_status(keycode_SDL))
+          move_amount = 10;
+
+        if(get_ctrl_status(keycode_SDL) && (copy_repeat_height >= 0))
+          move_amount = copy_repeat_height;
+
+        for(i = 0; i < move_amount; i++)
+        {
+          if(cursor_board_y == (board_height - 1))
+            break;
+
+          cursor_board_y++;
+
+          if(draw_mode == 1)
+          {
+            current_param = place_current_at_xy(mzx_world, current_id,
+             current_color, current_param, cursor_board_x, cursor_board_y,
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+            modified = 1;
+          }
+
+          // Scroll board position if there's room to
+          if(((cursor_board_y - scroll_y) > (edit_screen_height - 5)) &&
+           (scroll_y < (board_height - edit_screen_height)))
+            scroll_y++;
+        }
+        break;
+      }
+
+      case SDLK_LEFT:
+      {
+        int i, move_amount = 1;
+
+        if(get_alt_status(keycode_SDL))
+          move_amount = 10;
+
+        if(get_ctrl_status(keycode_SDL) && (copy_repeat_width >= 0))
+          move_amount = copy_repeat_width;
+
+        for(i = 0; i < move_amount; i++)
+        {
+          if(!cursor_board_x)
+            break;
+
+          cursor_board_x--;
+
+          if(draw_mode == 1)
+          {
+            current_param = place_current_at_xy(mzx_world, current_id,
+             current_color, current_param, cursor_board_x, cursor_board_y,
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+            modified = 1;
+          }
+
+          if(((cursor_board_x - scroll_x) < 5) && scroll_x)
+            scroll_x--;
+        }
+
+        if((cursor_board_x - scroll_x) < (debug_x + 25))
+          debug_x = 60;
+
+        break;
+      }
+
+      case SDLK_RIGHT:
+      {
+        int i, move_amount = 1;
+
+        if(get_alt_status(keycode_SDL))
+          move_amount = 10;
+
+        if(get_ctrl_status(keycode_SDL) && (copy_repeat_width >= 0))
+          move_amount = copy_repeat_width;
+
+        for(i = 0; i < move_amount; i++)
+        {
+          if(cursor_board_x == (board_width - 1))
+            break;
+
+          cursor_board_x++;
+
+          if(draw_mode == 1)
+          {
+            current_param = place_current_at_xy(mzx_world, current_id,
+             current_color, current_param, cursor_board_x, cursor_board_y,
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+            modified = 1;
+          }
+
+          if(((cursor_board_x - scroll_x) > 74) &&
+           (scroll_x < (board_width - 80)))
+            scroll_x++;
+        }
+
+        if((cursor_board_x - scroll_x) > (debug_x - 5))
+          debug_x = 0;
+
+        break;
+      }
+
+      case SDLK_SPACE:
+      {
+        if(draw_mode == 2)
+        {
+          place_current_at_xy(mzx_world, 77, current_color,
+           ' ', cursor_board_x, cursor_board_y, &copy_robot,
+           &copy_scroll, &copy_sensor, overlay_edit);
+
+          if(cursor_board_x < (board_width - 1))
+            cursor_board_x++;
+
+          if(((cursor_board_x - scroll_x) > 74) &&
+           (scroll_x < (board_width - 80)))
+            scroll_x++;
+        }
+        else
+        {
+          int offset = cursor_board_x + (cursor_board_y * board_width);
+          int place_id = current_id;
+          int place_param = current_param;
+          int place_color = current_color;
+
+          if((!overlay_edit) && (place_id == level_id[offset]) &&
+           (place_color == level_color[offset]))
+          {
+            place_id = 0;
+            place_color = 7;
+          }
+
+          current_param = place_current_at_xy(mzx_world, place_id,
+           place_color, place_param, cursor_board_x, cursor_board_y,
+           &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+        }
+        modified = 1;
+        break;
+      }
+
+      case SDLK_BACKSPACE:
+      {
+        if(draw_mode == 2)
+        {
+          if(cursor_board_x)
+            cursor_board_x--;
+
+          if(((cursor_board_x - scroll_x) < 5) && scroll_x)
+            scroll_x--;
+
+          place_current_at_xy(mzx_world, 77, current_color,
+           ' ', cursor_board_x, cursor_board_y, &copy_robot,
+           &copy_scroll, &copy_sensor, overlay_edit);
+          modified = 1;
+        }
+        break;
+      }
+
+      case SDLK_INSERT:
+      {
+        grab_at_xy(mzx_world, &current_id, &current_color, &current_param,
+         &copy_robot, &copy_scroll, &copy_sensor, cursor_board_x,
+         cursor_board_y, overlay_edit);
+        break;
+      }
+
+      case SDLK_TAB:
+      {
+        if(draw_mode)
+        {
+          draw_mode = 0;
+        }
+        else
+        {
+          draw_mode = 1;
+          current_param = place_current_at_xy(mzx_world, current_id,
+           current_color, current_param, cursor_board_x, cursor_board_y,
+           &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+          modified = 1;
+        }
+
+        break;
+      }
+
+      case SDLK_DELETE:
+      {
+        if(draw_mode == 2)
+        {
+          place_current_at_xy(mzx_world, 77, current_color, ' ',
+           cursor_board_x, cursor_board_y, &copy_robot,
+           &copy_scroll, &copy_sensor, overlay_edit);
+        }
+        else
+        {
+          place_current_at_xy(mzx_world, 0, 7, 0, cursor_board_x,
+           cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
+           overlay_edit);
+        }
+        modified = 1;
+        break;
+      }
+
+      // Show invisible walls
+      case SDLK_F1:
+      {
+        if(get_shift_status(keycode_SDL))
+        {
+          if(!overlay_edit)
+          {
+            flash_thing(mzx_world, 71, 71, 178, 176, scroll_x, scroll_y,
+             edit_screen_height);
+          }
+        }
+        else
+        {
+          m_show();
+          help_system(mzx_world);
+          break;
+        }
+
+        break;
+      }
+
+      // Show robots
+      case SDLK_F2:
+      {
+        if(get_shift_status(keycode_SDL))
+        {
+          if(!overlay_edit)
+          {
+            flash_thing(mzx_world, 123, 124, '!', 0, scroll_x, scroll_y,
+             edit_screen_height);
+          }
+        }
+        else
+        {
+          draw_mode = 2;
+          text_start_x = cursor_board_x;
+        }
+        break;
+      }
+
+      // Terrain
+      case SDLK_F3:
+      {
+        if(!overlay_edit)
+        {
+          if(get_shift_status(keycode_SDL))
+          {
+            // Show fakes
+            flash_thing(mzx_world, 13, 19, '#', 177, scroll_x, scroll_y,
+             edit_screen_height);
+          }
+          else
+          {
+            thing_menu(mzx_world, 0, &current_id, &current_color,
+             &current_param, &copy_robot, &copy_scroll, &copy_sensor,
+             cursor_board_x, cursor_board_y);
+            modified = 1;
+          }
+        }
+        break;
+      }
+
+      // Item
+      case SDLK_F4:
+      {
+        if(!overlay_edit)
+        {
+          if(get_shift_status(keycode_SDL))
+          {
+            // Show spaces
+            flash_thing(mzx_world, 0, 0, 'O', '*', scroll_x, scroll_y,
+             edit_screen_height);
+          }
+          else
+          {
+            thing_menu(mzx_world, 1, &current_id, &current_color,
+             &current_param, &copy_robot, &copy_scroll, &copy_sensor,
+             cursor_board_x, cursor_board_y);
+            modified = 1;
+          }
+        }
+        break;
+      }
+
+      // Creature
+      case SDLK_F5:
+      {
+        if(!overlay_edit)
+        {
+          thing_menu(mzx_world, 2, &current_id, &current_color, &current_param,
+           &copy_robot, &copy_scroll, &copy_sensor, cursor_board_x, cursor_board_y);
+          modified = 1;
+        }
+        break;
+      }
+
+      // Puzzle
+      case SDLK_F6:
+      {
+        if(!overlay_edit)
+        {
+          thing_menu(mzx_world, 3, &current_id, &current_color, &current_param,
+           &copy_robot, &copy_scroll, &copy_sensor, cursor_board_x, cursor_board_y);
+          modified = 1;
+        }
+        break;
+      }
+
+      // Transport
+      case SDLK_F7:
+      {
+        if(!overlay_edit)
+        {
+          thing_menu(mzx_world, 4, &current_id, &current_color, &current_param,
+           &copy_robot, &copy_scroll, &copy_sensor, cursor_board_x, cursor_board_y);
+          modified = 1;
+        }
+        break;
+      }
+
+      // Element
+      case SDLK_F8:
+      {
+        if(!overlay_edit)
+        {
+          thing_menu(mzx_world, 5, &current_id, &current_color, &current_param,
+           &copy_robot, &copy_scroll, &copy_sensor, cursor_board_x, cursor_board_y);
+          modified = 1;
+        }
+        break;
+      }
+
+      // Misc
+      case SDLK_F9:
+      {
+        if(!overlay_edit)
+        {
+          thing_menu(mzx_world, 6, &current_id, &current_color, &current_param,
+           &copy_robot, &copy_scroll, &copy_sensor, cursor_board_x, cursor_board_y);
+          modified = 1;
+        }
+        break;
+      }
+
+      // Object
+      case SDLK_F10:
+      {
+        if(!overlay_edit)
+        {
+          thing_menu(mzx_world, 7, &current_id, &current_color, &current_param,
+           &copy_robot, &copy_scroll, &copy_sensor, cursor_board_x, cursor_board_y);
+          modified = 1;
+        }
+        break;
+      }
+
+      case SDLK_c:
+      {
+        if(draw_mode != 2)
+        {
+          cursor_off();
+          if(get_alt_status(keycode_SDL))
+          {
+            if(!get_screen_mode())
+              char_editor(mzx_world);
+            else
+              smzx_char_editor(mzx_world);
+
+            modified = 1;
+          }
+          else
+          {
+            int new_color = color_selection(current_color, 0);
+            if(new_color >= 0)
+              current_color = new_color;
+          }
+          cursor_solid();
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_o:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_SDL))
+          {
+            if(!overlay_edit)
+            {
+              if(!src_board->overlay_mode)
+              {
+                error("Overlay mode is not on (see Board Info)", 0, 24,
+                 0x1103);
+              }
+              else
+              {
+                overlay_edit = 1;
+                current_param = 32;
+                current_color = 7;
+              }
+            }
+            else
+            {
+              overlay_edit = 0;
+              current_id = 0;
+              current_param = 0;
+              current_color = 7;
+            }
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_s:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_SDL))
+          {
+            if(overlay_edit)
+            {
+              show_level ^= 1;
+            }
+            else
+            {
+              status_counter_info(mzx_world);
+              modified = 1;
+              cursor_solid();
+            }
+          }
+          else
+          {
+            if(!save_world_dialog(mzx_world, current_world))
+            {
+              struct stat file_info;
+
+              // Name in current world name
+              if(current_world[0] == 0)
+                break;
+
+              add_ext(current_world, ".mzx");
+              // Check for an overwrite
+              if(!stat(current_world, &file_info))
+              {
+                if(confirm(mzx_world, "File exists - Overwrite?"))
+                  break;
+              }
+
+              // Save entire game
+              save_world(mzx_world, current_world, 0, 1);
+
+              modified = 0;
+            }
+            cursor_solid();
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+
+        break;
+      }
+
+      case SDLK_HOME:
+      {
+        cursor_board_x = 0;
+        cursor_board_y = 0;
+        scroll_x = 0;
+        scroll_y = 0;
+        break;
+      }
+
+      case SDLK_END:
+      {
+        cursor_board_x = board_width - 1;
+        cursor_board_y = board_height - 1;
+        scroll_x = board_width - 80;
+        scroll_y = board_height - edit_screen_height;
+
+        if(scroll_x < 0)
+          scroll_x = 0;
+
+        if(scroll_y < 0)
+          scroll_y = 0;
+
+        break;
+      }
+
+      case SDLK_b:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_SDL))
+          {
+            block_x = cursor_board_x;
+            block_y = cursor_board_y;
+            draw_mode = 3;
+          }
+          else
+          {
+            int new_board =
+             choose_board(mzx_world, mzx_world->current_board_id,
+             "Select current board:", 0);
+            cursor_solid();
+
+            if(new_board >= 0)
+            {
+              fix_board(new_board);
+              synchronize_board_values();
+              if(strcmp(src_board->mod_playing, "*") &&
+               strcasecmp(src_board->mod_playing,
+               mzx_world->real_mod_playing))
+              {
+                fix_mod();
+              }
+
+              fix_scroll();
+              modified = 1;
+            }
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_l:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          char test_wav[128];
+          char *wav_ext[] = { ".WAV", ".SAM", NULL };
+
+          if(!choose_file(wav_ext, test_wav, "Choose a wav file", 0))
+          {
+            play_sample(428, test_wav);
+          }
+          cursor_solid();
+        }
+        else
+
+        if(draw_mode != 2)
+        {
+          if(!modified || !confirm(mzx_world,
+           "Load: World has not been saved, are you sure?"))
+          {
+            if(!choose_file(world_ext, current_world, "Load World", 1))
+            {
+              int fade;
+              // Load world curr_file
+              end_mod();
+              reload_world(mzx_world, current_world, &fade);
+              insta_fadein();
+              synchronize_board_values();
+              fix_mod();
+              fix_scroll();
+              modified = 0;
+            }
+            cursor_solid();
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_i:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          int import_number = import_type(mzx_world);
+          if(import_number >= 0)
+          {
+            char import_name[128];
+
+            switch(import_number)
+            {
+              case 0:
+              {
+                char *mzb_ext[] = { ".MZB", NULL };
+                if(!choose_file(mzb_ext, import_name, "Choose board to import", 0))
+                {
+                  replace_current_board(mzx_world, import_name);
+                  synchronize_board_values();
+                  if(strcmp(src_board->mod_playing, "*") &&
+                   strcasecmp(src_board->mod_playing, mzx_world->real_mod_playing))
+                  {
+                    fix_mod();
+                  }
+                  fix_scroll();
+                  modified = 1;
+                }
+                break;
+              }
+
+              case 1:
+              {
+                // Character set
+                char *chr_ext[] = { ".CHR", NULL };
+                if(!choose_file(chr_ext, import_name,
+                 "Choose character set to import", 0))
+                {
+                  ec_load_set(import_name);
+                }
+                modified = 1;
+                break;
+              }
+
+              case 2:
+              {
+                // World file
+                if(!choose_file(world_ext, import_name,
+                 "Choose world to import", 0))
+                {
+                  append_world(mzx_world, import_name);
+                }
+                modified = 1;
+                break;
+              }
+
+              case 3:
+              {
+                // Palette
+                // Character set
+                char *pal_ext[] = { ".PAL", NULL };
+                if(!choose_file(pal_ext, import_name,
+                 "Choose palette to import", 0))
+                {
+                  load_palette(import_name);
+                  update_palette();
+                  modified = 1;
+                }
+                break;
+              }
+
+              case 4:
+              {
+                // Sound effects
+                char *sfx_ext[] = { ".SFX", NULL };
+                if(!choose_file(sfx_ext, import_name,
+                 "Choose palette to import", 0))
+                {
+                  FILE *sfx_file;
+
+                  sfx_file = fopen(import_name, "rb");
+                  fread(mzx_world->custom_sfx, 69, 50, sfx_file);
+                  mzx_world->custom_sfx_on = 1;
+                  fclose(sfx_file);
+                  modified = 1;
+                }
+                break;
+              }
+
+              case 5:
+              {
+                // MZM file
+                char *mzm_ext[] = { ".MZM", NULL };
+                if(!choose_file(mzm_ext, mzm_name_buffer,
+                 "Choose image file to import", 0))
+                {
+                  draw_mode = 5;
+                  block_command = 9;
+                }
+
+                break;
+              }
+            }
+            cursor_solid();
+          }
+        }
+        else
+
+        if(draw_mode != 2)
+        {
+          board_info(mzx_world);
+          // If this is the first board, patch the title into the world name
+          if(mzx_world->current_board_id == 0)
+            strcpy(mzx_world->name, src_board->board_name);
+
+          modified = 1;
+          cursor_solid();
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_g:
+      {
+        if(draw_mode != 2)
+        {
+          global_info(mzx_world);
+          modified = 1;
+          cursor_solid();
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_p:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_SDL))
+          {
+            size_pos(mzx_world);
+            set_update_done(mzx_world);
+            synchronize_board_values();
+            fix_scroll();
+
+            // Uh oh, we might need a new player
+            if((mzx_world->player_x >= board_width) ||
+             ((mzx_world->player_y) >= board_height))
+              replace_player(mzx_world);
+
+            modified = 1;
+            cursor_solid();
+          }
+          else
+
+          if(!overlay_edit)
+          {
+            int offset = cursor_board_x + (cursor_board_y * board_width);
+            int d_id = level_id[offset];
+            if(d_id < 122)
+            {
+              int d_param = level_param[offset];
+              d_param = change_param(mzx_world, d_id, d_param, NULL, NULL, NULL);
+              place_current_at_xy(mzx_world, current_id, current_color,
+               d_param, cursor_board_x, cursor_board_y, NULL, NULL, NULL, 0);
+              modified = 1;
+            }
+            cursor_solid();
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_x:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          int export_number = export_type(mzx_world);
+          if(export_number >= 0)
+          {
+            char export_name[128];
+            export_name[0] = 0;
+
+            switch(export_number)
+            {
+              case 0:
+              {
+                // Board file
+                if(!save_file_dialog(mzx_world, "Export", "Save as: ", export_name))
+                {
+                  add_ext(export_name, ".mzb");
+                  save_board_file(src_board, export_name);
+                }
+                break;
+              }
+
+              case 1:
+              {
+                // Character set
+                int char_offset = 0;
+                int char_size = 256;
+
+                if(!save_char_dialog(mzx_world, export_name, &char_offset,
+                 &char_size))
+                {
+                  add_ext(export_name, ".chr");
+                  ec_save_set_var(export_name, char_offset, char_size);
+                }
+
+                break;
+              }
+
+              case 2:
+              {
+                // Text file
+
+                if(!save_file_dialog(mzx_world, "Export", "Save as: ", export_name))
+                {
+                  FILE *txt_file;
+                  int x, y, offset = scroll_x + (scroll_y * board_width);
+                  int width = 80, height = 25;
+                  int skip;
+
+                  if(board_width < (scroll_x + 80))
+                    width = board_width - scroll_x;
+
+                  if(board_height < (scroll_y + 25))
+                    height = board_height - scroll_y;
+
+                  skip = board_width - width;
+
+                  add_ext(export_name, ".txt");
+                  txt_file = fopen(export_name, "wb");
+
+                  for(y = 0; y < height; y++)
+                  {
+                    for(x = 0; x < width; x++, offset++)
+                    {
+                      fputc(get_id_char(src_board, offset), txt_file);
+                    }
+                    fputc('\n', txt_file);
+                    offset += skip;
+                  }
+                  fclose(txt_file);
+                }
+                break;
+              }
+
+              case 3:
+              {
+                // Palette
+                if(!save_file_dialog(mzx_world, "Export", "Save as: ", export_name))
+                {
+                  add_ext(export_name, ".pal");
+                  save_palette(export_name);
+                }
+
+                break;
+              }
+
+              case 4:
+              {
+                // Sound effects
+                if(!save_file_dialog(mzx_world, "Export", "Save as: ", export_name))
+                {
+                  FILE *sfx_file;
+
+                  add_ext(export_name, ".sfx");
+                  sfx_file = fopen(export_name, "wb");
+                  if(mzx_world->custom_sfx_on)
+                    fwrite(mzx_world->custom_sfx, 69, 50, sfx_file);
+                  else
+                    fwrite(sfx_strs, 69, 50, sfx_file);
+
+                  fclose(sfx_file);
+                }
+                break;
+              }
+            }
+          }
+          cursor_solid();
+        }
+        else
+
+        if(draw_mode != 2)
+        {
+          board_exits(mzx_world);
+          modified = 1;
+          cursor_solid();
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_n:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_SDL))
+          {
+            if(!src_board->mod_playing[0])
+            {
+              char new_mod[128];
+
+              if(!choose_file(mod_ext, new_mod, "Choose a module file", 0))
+              {
+                load_mod(new_mod);
+                strcpy(src_board->mod_playing, new_mod);
+                strcpy(mzx_world->real_mod_playing, new_mod);
+              }
+              cursor_solid();
+            }
+            else
+            {
+              end_mod();
+              src_board->mod_playing[0] = 0;
+              mzx_world->real_mod_playing[0] = 0;
+            }
+            modified = 1;
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_RETURN:
+      {
+        if(draw_mode == 3)
+        {
+          int start_x = block_x;
+          int start_y = block_y;
+          int block_width, block_height;
+
+          if(start_x > cursor_board_x)
+          {
+            start_x = cursor_board_x;
+            block_width = block_x - cursor_board_x + 1;
+          }
+          else
+          {
+            block_width = cursor_board_x - block_x + 1;
+          }
+
+          if(start_y > cursor_board_y)
+          {
+            start_y = cursor_board_y;
+            block_height = block_y - cursor_board_y + 1;
+          }
+          else
+          {
+            block_height = cursor_board_y - block_y + 1;
+          }
+
+          // Select block command
+          block_command = block_cmd(mzx_world);
+          block_dest_x = cursor_board_x;
+          block_dest_y = cursor_board_y;
+          cursor_solid();
+
+          // Some block commands are done automatically
+          switch(block_command)
+          {
+            case -1:
+            {
+              draw_mode = 0;
+              break;
+            }
+
+            case 0:
+            case 1:
+            case 2:
+            {
+              draw_mode = 4;
+              break;
+            }
+
+            case 3:
+            {
+              // Clear block
+              if(overlay_edit)
+              {
+                clear_layer_block(start_x, start_y, block_width,
+                 block_height, overlay, overlay_color, board_width);
+              }
+              else
+              {
+                clear_board_block(src_board, start_x, start_y,
+                 block_width, block_height);
+              }
+
+              draw_mode = 0;
+              modified = 1;
+              break;
+            }
+
+            case 4:
+            {
+              // Flip block
+              char *temp_buffer = (char *)malloc(board_width);
+              int start_offset = start_x + (start_y * board_width);
+              int end_offset = start_x + ((start_y + block_height - 1) * board_width);
+
+              if(overlay_edit)
+              {
+                for(i = 0; i < (block_height / 2); i++, start_offset += board_width,
+                 end_offset -= board_width)
+                {
+                  memcpy(temp_buffer, overlay + start_offset, block_width);
+                  memcpy(overlay + start_offset, overlay + end_offset, block_width);
+                  memcpy(overlay + end_offset, temp_buffer, block_width);
+                  memcpy(temp_buffer, overlay_color + start_offset, block_width);
+                  memcpy(overlay_color + start_offset, overlay_color + end_offset,
+                   block_width);
+                  memcpy(overlay_color + end_offset, temp_buffer, block_width);
+                }
+              }
+              else
+              {
+                char *level_under_id = src_board->level_under_id;
+                char *level_under_color = src_board->level_under_color;
+                char *level_under_param = src_board->level_under_param;
+
+                for(i = 0; i < (block_height / 2); i++, start_offset += board_width,
+                 end_offset -= board_width)
+                {
+                  memcpy(temp_buffer, level_id + start_offset, block_width);
+                  memcpy(level_id + start_offset, level_id + end_offset, block_width);
+                  memcpy(level_id + end_offset, temp_buffer, block_width);
+                  memcpy(temp_buffer, level_color + start_offset, block_width);
+                  memcpy(level_color + start_offset, level_color + end_offset,
+                   block_width);
+                  memcpy(level_color + end_offset, temp_buffer, block_width);
+                  memcpy(temp_buffer, level_param + start_offset, block_width);
+                  memcpy(level_param + start_offset, level_param + end_offset,
+                   block_width);
+                  memcpy(level_param + end_offset, temp_buffer, block_width);
+                  memcpy(temp_buffer, level_under_id + start_offset, block_width);
+                  memcpy(level_under_id + start_offset, level_under_id + end_offset,
+                   block_width);
+                  memcpy(level_under_id + end_offset, temp_buffer, block_width);
+                  memcpy(temp_buffer, level_under_color + start_offset, block_width);
+                  memcpy(level_under_color + start_offset,
+                   level_under_color + end_offset, block_width);
+                  memcpy(level_under_color + end_offset, temp_buffer, block_width);
+                  memcpy(temp_buffer, level_under_param + start_offset, block_width);
+                  memcpy(level_under_param + start_offset,
+                   level_under_param + end_offset, block_width);
+                  memcpy(level_under_param + end_offset, temp_buffer, block_width);
+                }
+              }
+
+              free(temp_buffer);
+              draw_mode = 0;
+              modified = 1;
+              break;
+            }
+
+            case 5:
+            {
+              // Mirror block
+              int temp, i2;
+              int start_offset = start_x + (start_y * board_width);
+              int previous_offset;
+              int end_offset;
+
+              if(overlay_edit)
+              {
+                for(i = 0; i < block_height; i++)
+                {
+                  previous_offset = start_offset;
+                  end_offset = start_offset + block_width - 1;
+                  for(i2 = 0; i2 < (block_width / 2);
+                   i2++, start_offset++, end_offset--)
+                  {
+                    temp = overlay[start_offset];
+                    overlay[start_offset] = overlay[end_offset];
+                    overlay[end_offset] = temp;
+                    temp = overlay_color[start_offset];
+                    overlay_color[start_offset] = overlay_color[end_offset];
+                    overlay_color[end_offset] = temp;
+                  }
+                  start_offset = previous_offset + board_width;
+                }
+              }
+              else
+              {
+                char *level_under_id = src_board->level_under_id;
+                char *level_under_color = src_board->level_under_color;
+                char *level_under_param = src_board->level_under_param;
+
+                for(i = 0; i < block_height; i++)
+                {
+                  previous_offset = start_offset;
+                  end_offset = start_offset + block_width - 1;
+                  for(i2 = 0; i2 < (block_width / 2);
+                   i2++, start_offset++, end_offset--)
+                  {
+                    temp = level_id[start_offset];
+                    level_id[start_offset] = level_id[end_offset];
+                    level_id[end_offset] = temp;
+                    temp = level_color[start_offset];
+                    level_color[start_offset] = level_color[end_offset];
+                    level_color[end_offset] = temp;
+                    temp = level_param[start_offset];
+                    level_param[start_offset] = level_param[end_offset];
+                    level_param[end_offset] = temp;
+                    temp = level_under_id[start_offset];
+                    level_under_id[start_offset] = level_under_id[end_offset];
+                    level_under_id[end_offset] = temp;
+                    temp = level_under_color[start_offset];
+                    level_under_color[start_offset] = level_under_color[end_offset];
+                    level_under_color[end_offset] = temp;
+                    temp = level_under_param[start_offset];
+                    level_under_param[start_offset] = level_under_param[end_offset];
+                    level_under_param[end_offset] = temp;
+                  }
+                  start_offset = previous_offset + board_width;
+                }
+              }
+
+              draw_mode = 0;
+              modified = 1;
+              break;
+            }
+
+            case 6:
+            {
+              // Paint
+              int i2;
+              int skip = board_width - block_width;
+              char *dest_offset;
+
+              if(overlay_edit)
+              {
+                dest_offset =
+                 overlay_color + start_x + (start_y * board_width);
+              }
+              else
+              {
+                dest_offset =
+                 level_color + start_x + (start_y * board_width);
+              }
+
+              for(i = 0; i < block_height; i++, dest_offset += skip)
+              {
+                for(i2 = 0; i2 < block_width; i2++, dest_offset++)
+                {
+                  *dest_offset = current_color;
+                }
+              }
+              draw_mode = 0;
+              modified = 1;
+              break;
+            }
+
+            case 7:
+            {
+              if(!overlay_edit)
+              {
+                if(!src_board->overlay_mode)
+                {
+                  error("Overlay mode is not on (see Board Info)", 0, 24,
+                   0x1103);
+                  draw_mode = 0;
+                }
+                else
+                {
+                  draw_mode = 4;
+                  overlay_edit = 1;
+                }
+              }
+              else
+              {
+                overlay_edit = 0;
+                draw_mode = 4;
+              }
+              break;
+            }
+
+            case 8:
+            {
+              // Save as MZM
+              char *mzm_ext[] = { ".MZM", NULL };
+
+              mzm_name_buffer[0] = 0;
+
+              if(!save_file_dialog(mzx_world, "Export", "Save as: ", mzm_name_buffer))
+              {
+                if(overlay_edit)
+                {
+                  save_mzm(mzx_world, mzm_name_buffer, start_x, start_y,
+                   block_width, block_height, 1, 1);
+                }
+                else
+                {
+                  save_mzm(mzx_world, mzm_name_buffer, start_x, start_y,
+                   block_width, block_height, 0, 0);
+                }
+              }
+              modified = 1;
+              cursor_solid();
+              draw_mode = 0;
+              break;
+            }
+          }
+        }
+        else
+
+        if(draw_mode == 2)
+        {
+          // Go to next line
+          int dif_x = cursor_board_x - text_start_x;
+          if(dif_x > 0)
+          {
+            for(i = 0; i < dif_x; i++)
+            {
+              if(!cursor_board_x)
+                break;
+
+              cursor_board_x--;
+
+              if(((cursor_board_x - scroll_x) < 5) && scroll_x)
+                scroll_x--;
+            }
+          }
+          else
+
+          if(dif_x < 0)
+          {
+            for(i = 0; i < -dif_x; i++)
+            {
+              if(cursor_board_x >= board_width)
+                break;
+
+              cursor_board_x++;
+
+              if(((cursor_board_x - scroll_x) > 74) &&
+               (scroll_x < (board_width - 80)))
+                scroll_x++;
+            }
+          }
+
+          if(cursor_board_y < board_height)
+          {
+            cursor_board_y++;
+
+            // Scroll board position if there's room to
+            if(((cursor_board_y - scroll_y) > (edit_screen_height - 5)) &&
+             (scroll_y < (board_height - edit_screen_height)))
+              scroll_y++;
+          }
+        }
+        else
+
+        if(overlay_edit)
+        {
+          if(draw_mode > 3)
+          {
+            int dest_x = cursor_board_x;
+            int dest_y = cursor_board_y;
+            int start_x = block_x;
+            int start_y = block_y;
+            int block_width, block_height;
+
+            if(start_x > block_dest_x)
+            {
+              start_x = block_dest_x;
+              block_width = block_x - block_dest_x + 1;
+            }
+            else
+            {
+              block_width = block_dest_x - block_x + 1;
+            }
+
+            if(start_y > block_dest_y)
+            {
+              start_y = block_dest_y;
+              block_height = block_y - block_dest_y + 1;
+            }
+            else
+            {
+              block_height = block_dest_y - block_y + 1;
+            }
+
+            draw_mode = 0;
+
+            switch(block_command)
+            {
+              case 0:
+              case 1:
+              {
+                // Copy block
+                char *char_buffer = (char *)malloc(block_width * block_height);
+                char *color_buffer = (char *)malloc(block_width * block_height);
+                copy_layer_to_buffer(start_x, start_y, block_width,
+                 block_height, overlay, overlay_color, char_buffer,
+                 color_buffer, board_width);
+                copy_buffer_to_layer(dest_x, dest_y, block_width,
+                 block_height, char_buffer, color_buffer, overlay,
+                 overlay_color, board_width);
+                free(char_buffer);
+                free(color_buffer);
+
+                // 1 is repeat copy
+                if(block_command == 1)
+                {
+                  draw_mode = 4;
+                  copy_repeat_width = block_width;
+                  copy_repeat_height = block_height;
+                }
+                modified = 1;
+                break;
+              }
+
+              case 2:
+              {
+                // Move block
+                char *char_buffer = (char *)malloc(block_width * block_height);
+                char *color_buffer = (char *)malloc(block_width * block_height);
+                copy_layer_to_buffer(start_x, start_y, block_width,
+                 block_height, overlay, overlay_color, char_buffer,
+                 color_buffer, board_width);
+                clear_layer_block(start_x, start_y, block_width,
+                 block_height, overlay, overlay_color, board_width);
+                copy_buffer_to_layer(dest_x, dest_y, block_width,
+                 block_height, char_buffer, color_buffer, overlay,
+                 overlay_color, board_width);
+                free(char_buffer);
+                free(color_buffer);
+                modified = 1;
+                break;
+              }
+
+              case 7:
+              {
+                // Copy from overlay
+                int overlay_offset = dest_x + (dest_y * board_width);
+                copy_board_to_layer(src_board, start_x, start_y, block_width,
+                 block_height, overlay + overlay_offset,
+                 overlay_color + overlay_offset, board_width);
+                modified = 1;
+                break;
+              }
+
+              case 9:
+              {
+                // Load MZM
+                load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, 1);
+                modified = 1;
+                break;
+              }
+            }
+          }
+          else
+          {
+            int new_param = char_selection(current_param);
+            if(new_param >= 0)
+            {
+              current_param = new_param;
+              modified = 1;
+            }
+            cursor_solid();
+          }
+        }
+        else
+        {
+          if(draw_mode > 2)
+          {
+            int dest_x = cursor_board_x;
+            int dest_y = cursor_board_y;
+            int start_x = block_x;
+            int start_y = block_y;
+            int block_width, block_height;
+
+            if(start_x > block_dest_x)
+            {
+              start_x = block_dest_x;
+              block_width = block_x - block_dest_x + 1;
+            }
+            else
+            {
+              block_width = block_dest_x - block_x + 1;
+            }
+
+            if(start_y > block_dest_y)
+            {
+              start_y = block_dest_y;
+              block_height = block_y - block_dest_y + 1;
+            }
+            else
+            {
+              block_height = block_dest_y - block_y + 1;
+            }
+
+            draw_mode = 0;
+
+            switch(block_command)
+            {
+              case 0:
+              case 1:
+              {
+                // Copy block
+                int block_size = block_width * block_height;
+                char *id_buffer = (char *)malloc(block_size);
+                char *param_buffer = (char *)malloc(block_size);
+                char *color_buffer = (char *)malloc(block_size);
+                char *under_id_buffer = (char *)malloc(block_size);
+                char *under_param_buffer = (char *)malloc(block_size);
+                char *under_color_buffer = (char *)malloc(block_size);
+                copy_board_to_board_buffer(src_board, start_x, start_y,
+                 block_width, block_height, id_buffer, param_buffer,
+                 color_buffer, under_id_buffer, under_param_buffer,
+                 under_color_buffer);
+                copy_board_buffer_to_board(src_board, dest_x, dest_y,
+                 block_width, block_height, id_buffer, param_buffer,
+                 color_buffer, under_id_buffer, under_param_buffer,
+                 under_color_buffer);
+                free(id_buffer);
+                free(param_buffer);
+                free(color_buffer);
+                free(under_id_buffer);
+                free(under_param_buffer);
+                free(under_color_buffer);
+
+                // 1 is repeat copy
+                if(block_command == 1)
+                {
+                  draw_mode = 4;
+                  copy_repeat_width = block_width;
+                  copy_repeat_height = block_height;
+                }
+
+                modified = 1;
+                break;
+              }
+
+              case 2:
+              {
+                // Move block
+                int block_size = block_width * block_height;
+                char *id_buffer = (char *)malloc(block_size);
+                char *param_buffer = (char *)malloc(block_size);
+                char *color_buffer = (char *)malloc(block_size);
+                char *under_id_buffer = (char *)malloc(block_size);
+                char *under_param_buffer = (char *)malloc(block_size);
+                char *under_color_buffer = (char *)malloc(block_size);
+                copy_board_to_board_buffer(src_board, start_x, start_y,
+                 block_width, block_height, id_buffer, param_buffer,
+                 color_buffer, under_id_buffer, under_param_buffer,
+                 under_color_buffer);
+                clear_board_block(src_board, start_x, start_y,
+                 block_width, block_height);
+                copy_board_buffer_to_board(src_board, dest_x, dest_y,
+                 block_width, block_height, id_buffer, param_buffer,
+                 color_buffer, under_id_buffer, under_param_buffer,
+                 under_color_buffer);
+                free(id_buffer);
+                free(param_buffer);
+                free(color_buffer);
+                free(under_id_buffer);
+                free(under_param_buffer);
+                free(under_color_buffer);
+
+                modified = 1;
+                break;
+              }
+
+              case 7:
+              {
+                // Copy from board
+                int layer_convert = rtoo_obj_type(mzx_world);
+
+                switch(layer_convert)
+                {
+                  case 0:
+                  {
+                    // Custom Block
+                    layer_convert = 5;
+                    break;
+                  }
+
+                  case 1:
+                  {
+                    // Custom Floor
+                    layer_convert = 17;
+                    break;
+                  }
+
+                  case 2:
+                  {
+                    // Text
+                    layer_convert = 77;
+                    break;
+                  }
+                }
+
+                if(layer_convert != -1)
+                {
+                  int overlay_offset = start_x + (start_y * board_width);
+                  copy_layer_to_board(src_board, dest_x, dest_y, block_width,
+                   block_height, overlay + overlay_offset,
+                   overlay_color + overlay_offset, board_width, layer_convert);
+
+                  modified = 1;
+                }
+                break;
+              }
+
+              case 9:
+              {
+                // Load MZM
+                load_mzm(mzx_world, mzm_name_buffer, dest_x, dest_y, 0);
+                modified = 1;
+                break;
+              }
+            }
+          }
+          else
+          {
+            grab_at_xy(mzx_world, &current_id, &current_color, &current_param,
+             &copy_robot, &copy_scroll, &copy_sensor, cursor_board_x,
+             cursor_board_y, overlay_edit);
+
+            current_param =
+             change_param(mzx_world, current_id, current_param, &copy_robot,
+             &copy_scroll, &copy_sensor);
+
+            current_param = place_current_at_xy(mzx_world, current_id, current_color,
+             current_param, cursor_board_x, cursor_board_y, &copy_robot,
+             &copy_scroll, &copy_sensor, 0);
+
+            modified = 1;
+          }
+          cursor_solid();
+        }
+
+        break;
+      }
+
+      case SDLK_F11:
+      {
+        // SMZX Mode
+        set_screen_mode(get_screen_mode() + 1);
+        break;
+      }
+
+      case SDLK_e:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_SDL))
+          {
+            palette_editor(mzx_world);
+            modified = 1;
+            cursor_solid();
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+
+        break;
+      }
+
+      case SDLK_f:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_SDL))
+          {
+            sfx_edit(mzx_world);
+            modified = 1;
+            cursor_solid();
+          }
+          else
+          {
+            fill_area(mzx_world, current_id, current_color,
+             current_param, cursor_board_x, cursor_board_y,
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+            modified = 1;
+          }
+        }
+        else
+        {
+          text_place = 1;
+        }
+
+        break;
+      }
+
+      case SDLK_ESCAPE:
+      {
+        if(draw_mode)
+        {
+          draw_mode = 0;
+          copy_repeat_width = -1;
+          copy_repeat_height = -1;
+          key = 0;
+        }
+        else
+
+        if(overlay_edit)
+        {
+          overlay_edit = 0;
+          current_id = 0;
+          current_param = 0;
+          current_color = 7;
+          key = 0;
+        }
+        else
+
+        if(modified &&
+         confirm(mzx_world, "Exit: World has not been saved, are you sure?"))
+        {
+          key = 0;
+          cursor_solid();
+        }
+        break;
+      }
+
+      case SDLK_v:
+      {
+        if(draw_mode != 2)
+        {
+          // View mode
+          int viewport_width = src_board->viewport_width;
+          int viewport_height = src_board->viewport_height;
+          int v_scroll_x = 0, v_scroll_y = 0;
+          int v_key;
+
+          cursor_off();
+
+          do
+          {
+            draw_viewport(mzx_world);
+            draw_game_window(src_board, v_scroll_x, v_scroll_y);
+            update_screen();
+
+            update_event_status_delay();
+            v_key = get_key(keycode_SDL);
+
+            switch(v_key)
+            {
+              case SDLK_LEFT:
+              {
+                if(v_scroll_x)
+                  v_scroll_x--;
+                break;
+              }
+
+              case SDLK_RIGHT:
+              {
+                if(v_scroll_x < (board_width - viewport_width))
+                  v_scroll_x++;
+                break;
+              }
+
+              case SDLK_UP:
+              {
+                if(v_scroll_y)
+                  v_scroll_y--;
+                break;
+              }
+
+              case SDLK_DOWN:
+              {
+                if(v_scroll_y < (board_height - viewport_height))
+                  v_scroll_y++;
+                break;
+              }
+            }
+          } while(v_key != SDLK_ESCAPE);
+
+          clear_screen_no_update(177, 1);
+          cursor_solid();
+        }
+        else
+        {
+          text_place = 1;
+        }
+      }
+
+      case SDLK_t:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          int fade;
+          int current_board_id = mzx_world->current_board_id;
+          char current_name[128];
+          char tempfile_name[128];
+
+          tmpnam(tempfile_name);
+          strcpy(current_name, current_world);
+
+          save_world(mzx_world, tempfile_name, 0, 0);
+
+          vquick_fadeout();
+          cursor_off();
+          src_board = mzx_world->board_list[current_board_id];
+          fix_board(current_board_id);
+          set_counter(mzx_world, "TIME", src_board->time_limit, 0);
+          send_robot_def(mzx_world, 0, 11);
+          send_robot_def(mzx_world, 0, 10);
+          find_player(mzx_world);
+          mzx_world->player_restart_x = mzx_world->player_x;
+          mzx_world->player_restart_y = mzx_world->player_y;
+          strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+          play_game(mzx_world, 1);
+
+          reload_world(mzx_world, tempfile_name, &fade);
+          scroll_color = 15;
+          find_player(mzx_world);
+          mzx_world->current_board_id = current_board_id;
+          mzx_world->current_board = mzx_world->board_list[current_board_id];
+          synchronize_board_values();
+          insta_fadein();
+          fix_mod();
+          unlink(tempfile_name);
+
+          strcpy(current_world, current_name);
+          cursor_solid();
+        }
+        else
+
+        if(draw_mode == 2)
+        {
+          text_place = 1;
+        }
+
+        break;
+      }
+
+      case SDLK_a:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          int charset_load = choose_char_set(mzx_world);
+
+          switch(charset_load)
+          {
+            case 0:
+            {
+              ec_load_mzx();
+              break;
+            }
+
+            case 1:
+            {
+              ec_load_ascii();
+              break;
+            }
+
+            case 2:
+            {
+              ec_load_smzx();
+              break;
+            }
+
+            case 3:
+            {
+              ec_load_blank();
+              break;
+            }
+          }
+
+          modified = 1;
+          cursor_solid();
+        }
+        else
+
+        if(draw_mode != 2)
+        {
+          // Add board, find first free
+          for(i = 0; i < mzx_world->num_boards; i++)
+          {
+            if(mzx_world->board_list[i] == NULL)
+              break;
+          }
+          if(add_board(mzx_world, i) >= 0)
+          {
+            fix_board(i);
+            synchronize_board_values();
+            fix_mod();
+            fix_scroll();
+
+            modified = 1;
+          }
+          cursor_solid();
+
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_d:
+      {
+        if(draw_mode != 2)
+        {
+          if(get_alt_status(keycode_SDL))
+          {
+            default_palette();
+            update_palette();
+          }
+          else
+          {
+            int del_board =
+             choose_board(mzx_world, mzx_world->current_board_id,
+             "Delete board:", 0);
+
+            if((del_board > 0) &&
+             !confirm(mzx_world, "DELETE BOARD - Are you sure?"))
+            {
+              int current_board_id = mzx_world->current_board_id;
+              clear_board(mzx_world->board_list[del_board]);
+              mzx_world->board_list[del_board] = NULL;
+
+              // Remove null board from list
+              optimize_null_boards(mzx_world);
+
+              if(del_board == current_board_id)
+              {
+                fix_board(0);
+                synchronize_board_values();
+                if(strcmp(src_board->mod_playing, "*") &&
+                 strcasecmp(src_board->mod_playing,
+                 mzx_world->real_mod_playing))
+                {
+                  fix_mod();
+                }
+                fix_scroll();
+              }
+              else
+              {
+                synchronize_board_values();
+              }
+            }
+          }
+
+          modified = 1;
+          cursor_solid();
+        }
+        else
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_z:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          // Clear board
+          if(!confirm(mzx_world, "Clear board - Are you sure?"))
+          {
+            int current_board_id = mzx_world->current_board_id;
+            clear_board(src_board);
+            src_board = create_blank_board();
+            mzx_world->board_list[mzx_world->current_board_id] =
+             src_board;
+            mzx_world->current_board = src_board;
+            synchronize_board_values();
+            fix_scroll();
+            end_mod();
+            src_board->mod_playing[0] = 0;
+            strcpy(mzx_world->real_mod_playing,
+             src_board->mod_playing);
+          }
+
+          modified = 1;
+          cursor_solid();
+        }
+        else
+
+        if(draw_mode == 2)
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_r:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          // Clear world
+          if(!confirm(mzx_world, "Clear ALL - Are you sure?"))
+          {
+            clear_world(mzx_world);
+            create_blank_world(mzx_world);
+            synchronize_board_values();
+            fix_scroll();
+            end_mod();
+          }
+
+          modified = 1;
+          cursor_solid();
+        }
+        else
+
+        if(draw_mode == 2)
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_PAGEDOWN:
+      {
+        current_menu++;
+
+        if(current_menu == 6)
+          current_menu = 0;
+
+        break;
+      }
+
+      case SDLK_PAGEUP:
+      {
+        current_menu--;
+
+        if(current_menu == -1)
+          current_menu = 5;
+
+        break;
+      }
+
+      case SDLK_8:
+      case SDLK_KP_MULTIPLY:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          if(src_board->mod_playing[0])
+            end_mod();
+          src_board->mod_playing[0] = '*';
+          src_board->mod_playing[1] = 0;
+
+          modified = 1;
+        }
+        else
+
+        if(draw_mode == 2)
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_m:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          int offset = cursor_board_x + (cursor_board_y * board_width);
+          int d_id = level_id[offset];
+          int d_param = level_param[offset];
+
+          if(d_id == 122)
+          {
+            edit_sensor(mzx_world, src_board->sensor_list[d_param]);
+            modified = 1;
+          }
+          else
+
+          if((d_id == 123) || (d_id == 124))
+          {
+            edit_robot(mzx_world, src_board->robot_list[d_param]);
+            modified = 1;
+          }
+          else
+
+          if((d_id == 125) || (d_id == 126))
+          {
+            edit_scroll(mzx_world, src_board->scroll_list[d_param]);
+            modified = 1;
+          }
+
+          cursor_solid();
+        }
+        else
+
+        if(draw_mode == 2)
+        {
+          text_place = 1;
+        }
+        break;
+      }
+
+      case SDLK_y:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          debug_mode ^= 1;
+        }
+        else
+
+        if(draw_mode == 2)
+        {
+          text_place = 1;
+        }
+
+        break;
+      }
+
+      case SDLK_h:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          if(edit_screen_height == 19)
+          {
+            edit_screen_height = 25;
+            if((scroll_y + 25) > board_height)
+              scroll_y = board_height - 25;
+          }
+          else
+          {
+            edit_screen_height = 19;
+            if((cursor_board_y - scroll_y) > 18)
+              scroll_y += cursor_board_y - scroll_y - 18;
+          }
+        }
+        else
+
+        if(draw_mode == 2)
+        {
+          text_place = 1;
+        }
+
+        break;
+      }
+
+
+      case 0:
+      {
+        break;
+      }
+
+      default:
+      {
+        if(draw_mode == 2)
+          text_place = 1;
+      }
+    }
+
+    if(text_place)
+    {
+      key = get_key(keycode_unicode);
+      if(key != 0)
+      {
+        place_current_at_xy(mzx_world, 77, current_color,
+         key, cursor_board_x, cursor_board_y, &copy_robot,
+         &copy_scroll, &copy_sensor, overlay_edit);
+
+        if(cursor_board_x < (board_width - 1))
+          cursor_board_x++;
+
+        if((cursor_board_x > 74) && (cursor_board_x < (board_width - 5)) &&
+         (scroll_x < (board_width - 80)))
+          scroll_x++;
+
+        modified = 1;
+      }
+    }
+  } while(key != SDLK_ESCAPE);
+
+  update_event_status();
+  clear_world(mzx_world);
+  clear_global_data(mzx_world);
+  cursor_off();
+  end_mod();
+  m_hide();
+  clear_screen(32, 7);
+  insta_fadeout();
+  strcpy(curr_file, current_world);
+}
+

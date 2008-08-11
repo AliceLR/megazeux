@@ -21,103 +21,103 @@
 
 // internal help system
 
-#include "mod.h"
-#include "cursor.h"
-#include <string.h>
-#include "scrdisp.h"
 #include <stdio.h>
-#include "meminter.h"
-#include "beep.h"
+#include <stdlib.h>
+#include <string.h>
+
+#include "scrdisp.h"
 #include "helpsys.h"
 #include "data.h"
+#include "graphics.h"
+#include "world.h"
 
-int context=72;//72="No" context link
-unsigned char far *help=NULL;
+int context = 72; // 72 = "No" context link
+char *help = NULL;
 int contexts[20];
-int curr_context=0;
+int curr_context = 0;
 
-void set_context(int con) {
-	contexts[curr_context++]=context;
-	context=con;
+void set_context(int con)
+{
+  contexts[curr_context++] = context;
+  context = con;
 }
 
-void pop_context(void) {
-	context=contexts[--curr_context];
+void pop_context(void)
+{
+  context = contexts[--curr_context];
 }
 
-void help_system(void) {
-	FILE *fp;
-	unsigned int t1,t2;
-	unsigned char old_cmode=cursor_mode;
-	long where;
-	long offs;
-	long size;
-	char file[13];
-	char file2[13];
-	char label[20];
-	//Reserve memory (24k)
-	help=(char far *)farmalloc(24576);
-	if(help==NULL) {
-		//Try to free up mem
-		free_sam_cache(1);
-		help=(char far *)farmalloc(24576);
-		if(help==NULL) {
-			beep();
-			return;
-			}
-		}
-	//Search context links
-	fp=fopen(help_file,"rb");
-	if(fp==NULL) {
-		beep();
-		farfree(help);
-		return;
-		}
-	fread(&t1,1,2,fp);
-	fseek(fp,t1*21+4+context*12,SEEK_SET);
-	//At proper context info
-	fread(&where,1,4,fp);//Where file to load is
-	fread(&size,1,4,fp);//Size of file to load
-	fread(&offs,1,4,fp);//Offset within file of link
-	//Jump to file
-	fseek(fp,where,SEEK_SET);
-	//Read it in
-	fread(help,1,size,fp);
-	//Display it
-	cursor_off();
-labelled:
-	help_display(help,offs,file,label);
-	//File?
-	if(file[0]) {
-		//Yep. Search for file.
-		fseek(fp,2,SEEK_SET);
-		for(t2=0;t2<t1;t2++) {
-			fread(file2,1,13,fp);
-			if(!_fstricmp(file,file2)) break;
-			fseek(fp,8,SEEK_CUR);
-			}
-		if(t2<t1) {
-			//Found file.
-			fread(&where,1,4,fp);
-			fread(&size,1,4,fp);
-			fseek(fp,where,SEEK_SET);
-			fread(help,1,size,fp);
-			//Search for label
-			for(t2=0;t2<size;t2++) {
-				if(help[t2]!=255) continue;
-				if(help[t2+1]!=':') continue;
-				if(!_fstricmp(&help[t2+3],label)) break;//Found label!
-				}
-			if(t2<size) {
-				//Found label. t2 is offset.
-				offs=t2;
-				goto labelled;
-				}
-			}
-		}
-	//All done!
-	fclose(fp);
-	farfree(help);
-	if(old_cmode==CURSOR_UNDERLINE) cursor_underline();
-	else if(old_cmode==CURSOR_BLOCK) cursor_solid();
+void help_system(World *mzx_world)
+{
+  FILE *fp;
+  int t1, t2;
+  cursor_mode_types old_cmode = get_cursor_mode();
+  int where;
+  int offs;
+  int size;
+  char file[13];
+  char file2[13];
+  char label[20];
+  // Reserve memory (24k)
+  help = (char *)malloc(24576);
+  // Search context links
+  fp = fopen(help_file, "rb");
+  if(fp == NULL)
+  {
+    free(help);
+    return;
+  }
+  t1 = fgetw(fp);
+  fseek(fp, t1 * 21 + 4 + context * 12, SEEK_SET);
+  // At proper context info
+  where = fgetd(fp);    // Where file to load is
+  size = fgetd(fp);     // Size of file to load
+  offs = fgetd(fp);     //Offset within file of link
+
+  // Jump to file
+  fseek(fp, where, SEEK_SET);
+  // Read it in
+  fread(help, 1, size, fp);
+  // Display it
+  cursor_off();
+
+  labelled:
+  help_display(mzx_world, help, offs, file, label);
+  // File?
+  if(file[0])
+  {
+    //Yep. Search for file.
+    fseek(fp, 2, SEEK_SET);
+    for(t2 = 0; t2 < t1; t2++)
+    {
+      fread(file2, 1, 13, fp);
+      if(!strcmp(file, file2)) break;
+      fseek(fp, 8, SEEK_CUR);
+    }
+    if(t2 < t1)
+    {
+      //Found file.
+      where = fgetd(fp);
+      size = fgetd(fp);
+      fseek(fp, where, SEEK_SET);
+      fread(help, 1, size, fp);
+      // Search for label
+      for(t2 = 0; t2 < size; t2++)
+      {
+        if(help[t2] != 255) continue;
+        if(help[t2 + 1] != ':') continue;
+        if(!strcmp(help + t2 + 3, label)) break; // Found label!
+      }
+      if(t2 < size)
+      {
+        //Found label. t2 is offset.
+        offs = t2;
+        goto labelled;
+      }
+    }
+  }
+  //All done!
+  fclose(fp);
+  free(help);
+  set_cursor_mode(old_cmode);
 }

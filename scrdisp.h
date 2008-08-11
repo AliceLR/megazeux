@@ -24,18 +24,19 @@
 #ifndef __SCRDISP_H
 #define __SCRDISP_H
 
-extern int scroll_base_color;
-extern int scroll_corner_color;
-extern int scroll_pointer_color;
-extern int scroll_title_color;
-extern int scroll_arrow_color;
+#include "world.h"
+#include "robot.h"
 
-void scroll_edit(int id,char type=2);//Type 0/1 to DISPLAY a scroll/sign
-void scroll_frame(int id,unsigned int pos);
-void scroll_edging(char type);//type==0 scroll, 1 sign, 2 scroll edit
-void help_display(unsigned char far *help,unsigned int offs,char far *file,
-	char far *label);
-void help_frame(unsigned char far *help,unsigned int pos);
-char print(unsigned char far *str);
+// Type 0/1 to DISPLAY a scroll/sign
+
+void scroll_edit(World *mzx_world, Scroll *scroll, char type = 2);
+void scroll_frame(World *mzx_world, Scroll *scroll, unsigned int pos);
+// type == 0 scroll, 1 sign, 2 scroll edit
+void scroll_edging(World *mzx_world, char type);
+void help_display(World *mzx_world, char *help, unsigned int offs,
+ char *file, char *label);
+void help_frame(World *mzx_world, char *help, unsigned int pos);
+char print(char *str);
+int strlencolor(char *str);
 
 #endif

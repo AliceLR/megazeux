@@ -25,39 +25,41 @@
 #define __PARAM_H
 
 extern int def_params[128];
-int edit_param(unsigned char id,int param);
+int edit_param(World *mzx_world, int id, int param);
 
-//(internal) "p"arameter "e"dit functions
-int pe_chest(int param);
-int pe_health(int param);
-int pe_ring(int param);
-int pe_bomb(int param);
-int pe_lit_bomb(int param);
-int pe_explosion(int param);
-int pe_door(int param);
-int pe_gate(int param);
-int pe_transport(int param);
-int pe_pouch(int param);
-int pe_pusher(int param);
-int pe_lazer_gun(int param);
-int pe_bullet(int param);
-int pe_ricochet_panel(int param);
-int pe_mine(int param);
-int pe_snake(int param);
-int pe_eye(int param);
-int pe_thief(int param);
-int pe_slime_blob(int param);
-int pe_runner(int param);
-int pe_ghost(int param);
-int pe_dragon(int param);
-int pe_fish(int param);
-int pe_shark(int param);
-int pe_spider(int param);
-int pe_goblin(int param);
-int pe_bullet_gun(int param);
-int pe_bear(int param);
-int pe_bear_cub(int param);
-int pe_missile_gun(int param);
-int pe_sensor(int param);
+// (internal) "p"arameter "e"dit functions
+int pe_chest(World *mzx_world, int param);
+int pe_health(World *mzx_world, int param);
+int pe_ring(World *mzx_world, int param);
+int pe_bomb(World *mzx_world, int param);
+int pe_lit_bomb(World *mzx_world, int param);
+int pe_explosion(World *mzx_world, int param);
+int pe_door(World *mzx_world, int param);
+int pe_gate(World *mzx_world, int param);
+int pe_transport(World *mzx_world, int param);
+int pe_pouch(World *mzx_world, int param);
+int pe_pusher(World *mzx_world, int param);
+int pe_lazer_gun(World *mzx_world, int param);
+int pe_bullet(World *mzx_world, int param);
+int pe_ricochet_panel(World *mzx_world, int param);
+int pe_mine(World *mzx_world, int param);
+int pe_snake(World *mzx_world, int param);
+int pe_eye(World *mzx_world, int param);
+int pe_thief(World *mzx_world, int param);
+int pe_slime_blob(World *mzx_world, int param);
+int pe_runner(World *mzx_world, int param);
+int pe_ghost(World *mzx_world, int param);
+int pe_dragon(World *mzx_world, int param);
+int pe_fish(World *mzx_world, int param);
+int pe_shark(World *mzx_world, int param);
+int pe_spider(World *mzx_world, int param);
+int pe_goblin(World *mzx_world, int param);
+int pe_bullet_gun(World *mzx_world, int param);
+int pe_bear(World *mzx_world, int param);
+int pe_bear_cub(World *mzx_world, int param);
+int pe_missile_gun(World *mzx_world, int param);
+int edit_sensor(World *mzx_world, Sensor *cur_sensor);
+int edit_scroll(World *mzx_world, Scroll *cur_scroll);
+int edit_robot(World *mzx_world, Robot *cur_robot);
 
 #endif

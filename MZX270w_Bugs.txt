@@ -1,0 +1,48 @@
+In general:
+ * These crashes are doing weird things to my monitor.  It's now 
+   continually making minute resizes on the horizontal aspect, even 
+   though the program is crashed and closed.  There, it just did it 
+   again!
+
+In Caverns:
+ * Fish in the fountain seem to be abnormally "intelligent" in their
+   following patterns.  They get in the way a lot more than I remember
+   them doing.
+ * The rainbow bridge does not appear when all the gems are collected.
+   There is a character change to reflect the gem placement, and a 
+   flash of light, but no bridge.
+
+In Demon Earth:
+ * Game will often crash on start.  I suspect this may have something 
+   to do with the way Nytar forced all four game files to load up the 
+   starting world when played, since it seems to work when you play 
+   from the world DE_START.  However, this is only conjecture.
+ * Fade in after room transition doesn't look right, there is a bright 
+   flash of the room before it goes back to dark and fades up.
+ * Name selection still doesn't work, and hasn't since 2.69c.  The
+   player is always called "Player".  This may be the fault of bad
+   coding taking improper advantage of a 2.69b bug.
+ * When arriving on Earth, I'm not sure the character set changed 
+   correctly; when I went over to the boulders blocking the east passage
+   they looked like a type of game enemy, not boulders.
+ * Upon touching the boulders, the game crashed to desktop.
+ * There is clearly a problem with the status bar that is hard to 
+   diagnose.  It appears that it somehow gets uncoupled from tracking 
+   energy and health, perhaps on getting a power up.  All I could tell
+   was that the numbers were stuck at full (I initially thought 
+   something was broken so that I had infinite ammo), but when I kept
+   firing shots I eventually drained both my energy and my health and 
+   died.
+ * Loading an old version's save game (just to check) crashed the 
+   program with a "Windowing Code Bug".  I know this isn't supported
+   functionality, and didn't expect it to be, but it would be nice if
+   it failed gracefully with a "Save game is from a previous version"
+   error, instead of a fatal crash.
+
+In Rayne's Jellybean:
+ * The game is entirely unplayable, the characters on the game screen 
+   are a bunch of garbage, and while the basic shape is apparent by the
+   colors, the only legible things are the four answers.
+ * I can't tell for sure, but if I remember what the keys are for 
+   selecting answers are, then they aren't working, and cause no 
+   response.

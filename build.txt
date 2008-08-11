@@ -1,0 +1,27 @@
+How to build MegaZeux 2.80+:
+
+First, you need the source for MZX, obviously, which can be found on
+http://www.digitalmzx.net/ and http://www.zeuxworld.com/
+(as of this writing. It should show up on megazeux.sourceforge.net
+eventually)
+
+Next, you need the correct libraries installed, which are the
+ following:
+
+SDL: http://www.libsdl.org/
+
+libmodplug: http://sourceforge.net/projects/libmodplug/
+
+gdm2s3m: http://mzx.bitpack.net/gdm2s3m-1.1.tar.gz
+(should also show up on other sites soon)
+
+Now, you need GCC installed and GNU make to actually build. Currently,
+GCC on Windows and Linux are supported. Use Makefile.linux to build on
+Linux, and the vanilla Makefile to build on Windows. As of this writing,
+the only compiler that has been tested on Windows is mingw. I suggest
+anyone who's interested in building on Windows uses it:
+
+http://www.mingw.org/
+
+
+If you have any other questions, e-mail me at exophase@adelphia.net.

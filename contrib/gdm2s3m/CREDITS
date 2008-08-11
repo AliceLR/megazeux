@@ -1,0 +1,18 @@
+-- Alistair John Strachan (ajs)  <alistair@devzero.co.uk>
+
+Principle developer of the utility.
+
+-- Gilead Kutnick (Exophase)  <exophase@adelphia.net>
+
+For porting MegaZeux from DOS to Windows/Linux, and for convincing me to
+finish this utility.
+
+-- Hubert Lamontagne (MadBrain)  <madbrain@videotron.ca>
+
+For supporting me during the writing of this utility and for providing
+documentation on s3m's effects and the included test GDMs.
+
+-- MenTaLguY  <>
+
+For writing the gdm.txt reverse engineered GDM specification. Find the
+file included herein.

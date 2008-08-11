@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 2002 Gilead Kutnick - exophase@adelphia.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,10 +23,14 @@
 #ifndef EXPR_H
 #define EXPR_H
 
-long int parse_expression(char far **expression, int &error, int id);
-long int parse_argument(char far **argument, int &type, int id);
-void skip_whitespace(char **expression);
-long int evaluate_operation(long int operand_a, int c_operator, 
- long int operand_b);
+#include "world.h"
 
-#endif    
+int parse_expression(World *mzx_world, char **expression,
+ int &error, int id);
+int parse_argument(World *mzx_world, char **argument, int &type,
+ int id);
+void skip_whitespace(char **expression);
+int evaluate_operation(int operand_a, int c_operator, int operand_b);
+
+#endif
+

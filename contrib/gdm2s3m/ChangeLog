@@ -1,0 +1,34 @@
+1.7
+
+Un-inline some functions to enable the build on MacOS X. We weren't buying much
+anyway.
+
+1.6
+
+Fix an explicit cast allowing this to be built with G++.
+
+1.5
+
+Hopefully allows compile under windows cygwin.
+
+1.4
+
+Fixed some overzealous casting in pointer arithmetic. Now 64bit-pointer clean.
+Tested on my Athlon 64.
+
+1.3
+
+Ported to MSVC, wrote build.txt makefile. I won't be able to maintain this,
+but it'll be a start for any MSVC developer interested.
+
+1.2
+
+Make endian safe (port to Mac OS X). Tested. Thanks Inuchance.
+
+1.1
+
+Fixes note cut bug (affecting some effects).
+
+1.0
+
+Initial release

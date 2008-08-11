@@ -21,26 +21,19 @@
 
 /* Declarations for IDARRAY.ASM */
 
-#ifndef __IDARRAY_H
-#define __IDARRAY_H
+#ifndef IDARRAY_H
+#define IDARRAY_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "world.h"
 
-void id_place(int x,int y,unsigned char id,unsigned char color,
-	unsigned char param);
+void id_place(World *mzx_world, int array_x, int array_y, char id,
+ char color, char param);
+void offs_place_id(World *mzx_world, unsigned int offset, char id,
+ char color, char param);
+void id_clear(Board *src_board, int array_x, int array_y);
+void id_remove_top(World *mzx_world, int array_x, int array_y);
 //"blank" is a junk byte
-void offs_place_id(unsigned int offs,int blank,unsigned char id,
-	unsigned char color,unsigned char param);
-void id_clear(int x,int y);
-void id_remove_top(int x,int y);
-//"blank" is a junk byte
-void offs_remove_id(unsigned int offs,int blank);
-void id_remove_under(int x,int y);
-
-#ifdef __cplusplus
-}
-#endif
+void offs_remove_id(World *mzx_world, unsigned int offset);
+void id_remove_under(Board *src_board, int array_x, int array_y);
 
 #endif

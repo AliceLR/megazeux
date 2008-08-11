@@ -24,15 +24,17 @@
 #ifndef __INTAKE_H
 #define __INTAKE_H
 
-#include <_null.h>
+#include <stdlib.h>
 
 //Global insert status
 extern char insert_on;
 
-//See code for full docs, preserves mouse cursor, be prepared for a
-//MOUSE_EVENT! (must acknowledge_event() it)
-int intake(char far *string,int max_len,char x,char y,unsigned int segment,
- unsigned char color,char exit_type,int filter_type,char password=0,
- int *return_x_pos=NULL,char robo_intk=0,char far *macro=NULL);
+// See code for full docs, preserves mouse cursor, be prepared for a
+// MOUSE_EVENT! (must acknowledge_event() it)
+int intake(char *string, int max_len, char x, char y,
+ unsigned char color, char exit_type, int filter_type,
+ char password = 0, int *return_x_pos = NULL, char robo_intk = 0,
+ char *macro = NULL);
 
 #endif
+

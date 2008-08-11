@@ -25,10 +25,6 @@
 #ifndef __MAIN_H
 #define __MAIN_H
 
-char scan_options(void);
-char load_config_file(void);//Returns non-0 if not found
-void save_config_file(void);//Saves the .CFG file
-void update_config_file(void);//Updates the speed setting in the .CFG file
-
+char scan_options(int argc, char **argv);
 
 #endif

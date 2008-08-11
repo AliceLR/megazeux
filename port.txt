@@ -1,0 +1,394 @@
+MegaZeux 2.80 public BETA
+
+
+-- Introduction --
+
+MegaZeux 2.80 is a hybrid port/rewrite of MegaZeux 2.70 for DOS (actually,
+development for 2.80 began a bit prior to 2.70's release, but it's 100%
+feature compatible). It is not a complete rewrite, in that the existing
+MZX source was used as a base for its development. Nonetheless, quite a lot
+of the code has been rewritten, and what hasn't been has been reformatted
+and carefully examined. As much as 75% or more of the current source is new
+code or code that has been heavily modified from the original. For this
+reason, it is not adequete to simply refer to it as a port, because a
+typical port will only have the bare minimum changes necessary to make the
+program run seamlessly on other platforms (or sometimes, just one other
+platform, such as MZX32). This does not fully realize this project's short
+and long-term goals, which include:
+
+- First and foremost, as stated, allowing MZX in its current state to run
+  seamlessly on other platforms with no handicaps (for instance, missing
+  robot editor)
+- Removing unnatural limitations within MZX itself.
+- Providing a relatively sane and efficient implementation of MZX's
+  functionality.
+- Providing source code which is decently readable, maintainable, and
+  can easily be modified and expanded upon.
+- As much portability as possible, placing portability over other ideals.
+
+In case anyone is actually interested, here is a more technical overview
+of what has actually been done so far on this project:
+
+- All ASM files have been rewritten to ANSI C compliant C++; this mainly
+  involves the mammoth game2.asm.
+- Everything graphics related has been replaced with an SDL driven engine,
+  including text mode rendering (also capable of rendering SMZX modes)
+- All keyboard and mouse events are now also handled by an SDL driven
+  engine. All internal keyboard/mouse routines use SDL keycodes; no
+  attempt was made to convert to MZX's old format at this level.
+- All world/board/robot loading and saving code has been entirely
+  rewritten and is more modular now.
+- All robot handling code has been rewritten from scratch, and is more
+  sane/efficient now (allocation, message sending, sensors, etc.)
+- All counter handling code has also been rewritten from scratch. This
+  includes the functionality of builtin and "function" counters. It also
+  includes a new string framework.
+- The robot interpreter has been almost entirely rewritten.
+- The main game playing code (game.cpp) has been almost entirely rewritten.
+- All module/sample playing code has been rewritten to use modplug and
+  SDL. PC speaker effects are emulated.
+- The main part of the editor (edit.cpp) has been almost entirely rewritten.
+- The robot editor has been entirely rewritten, utilizing a modifed (fixed)
+  version of RASM (released by me over a year ago)
+- All other source files (for instance, window handling code, scroll
+  displaying, char editor, etc.) have been largely overhauled, some to more
+  of a degree than others. At the very least, everything has been
+  reformatted and made to work with the new systems.
+
+Now, for a disclaimer. This release is very much in beta status. What that
+means is that it will almost definitely have several bugs. I have every
+intention of fixing such bugs as soon as I can, and if I don't, someone
+else definitely will. The port has been tested internally by private beta
+testers for some time now, and I suspect that there is at least a 90%
+compatability rate. Nonetheless, MZX has such a diverse number of
+applications and worlds have so many variables that it's impossible to
+test exhaustively, especially with the features added after version 2.51s3.
+See more about bugs/reporting procedure further down.
+
+
+-- Platforms --
+
+Currently, the port will only definitely work on Windows (9x or NT based).
+It should build on Linux, however, there is no support for case insensitive
+file reading yet, so you would likely have to run games off of a FAT
+paritition to have any luck with them. Chances are it won't work very well
+on MacOS X because the code is not 100% endian safe yet. These problems
+will definitely be alleviated in due time.
+
+
+-- Minimum Requirements --
+
+I really can't give any exact numbers here, because for one thing it depends
+entirely on the game being ran. Chances are the requirements will only be
+slightly higher than it would be for a machine that can run the DOS version
+correctly, and sometimes may even be slightly lower. As compared to the
+original, the port has to manually draw the screen pixel by pixel without
+acceleration. However, the renderer is optimized and quite fast.
+
+For the record, I believe the lowest specs machine that has ran the port so
+far is a 266MHz mobile Pentium 2 with 32-64MB of RAM. Chances are it can
+run fine on something even slower than this. Right now, I don't know, but
+in the future this section will likely have more information. If you have
+any specific success or failure stories on older hardware, let me know.
+
+
+-- Gameplay --
+
+Gameplay should be more or less the same as it always was. Some keys
+are changed though:
+
+- Use ctrl + alt + enter to toggle between fullscreen and windowed mode
+  (read the disclaimer on this further down!)
+- Use F12 to dump the screen to a BMP; this can be done at ANY time.
+
+The default values (speed, volumes, etc) are the same as they were before,
+but if you change them in MZX they won't stay that way the next time you
+load. To change them permanently, you have to change the config file
+(see below).
+
+Password protected worlds are not supported natively. However, if you try
+to load one, you will be presented with an option to permanently decrypt
+the world and then load it. With that said, password protection is now
+100% removed from MZX, and no trace of encryption code exists outside of
+the decryption module.
+
+There are a couple discrepencies that break compatability that should be
+noted:
+
+- key_pressed and key_code now return unsigned chars instead of signed,
+  so if the game checks for negative values, it won't work.
+- The same goes for reading back characters for strings.
+- Some things that worked in the DOS version only worked due to chance,
+  such as there being default (but valid) values for sprite widths or
+  heights and thus sprites could be displayed before new values were
+  set.
+
+These shouldn't apply to very many games (I know of one.. in the recent
+DoZ. The game was already really broken anyway :p)
+
+
+-- Limitations --
+
+The MZX port removes many limitations of the original. However, some
+still remain due to the world format which has not been changed. These
+are the changes:
+
+- Boards may now be as large as 32767x32767. Please do not make boards
+  this large. :)
+- You may now have up to 250 boards.
+- Boards may have up to 255 robots, 255 scrolls, and 255 sensors.
+- There is no robot memory per board limit. However, individual robots
+  may only be up to 64k large. If you include the global robot, this
+  means that you effectively can have up to 16MB of robot memory per
+  board.
+- The same applies to scrolls, which have separate memory spaces and
+  may only be up to 64k in length each (so you could have almost
+  16MB of scroll text per board, but who would want that??)
+- The robot stack need not be initialized, and will be dynamically
+  resized as necessary (useful for recursion). This refers to lines
+  such as
+  . "#*-1-2-3-4-5-6-7-8"
+  at the beginning of robots. They're no longer necessary or useful
+  (they will be ignored, like any other comment).
+- You may have a virtually unlimited number of counters active. The
+  theoretical limit is some 4 billion. The effective limit depends on
+  memory available.
+- The same goes for strings, which may now have any name, so long as
+  it begins with a dollar sign ($). The same conventions regarding
+  strings in 2.68+ still apply (see 268_info.txt for more information)
+
+A warning: I have tried my best to make it impossible to exceed these
+limits, however, you may be able to somehow. If you do, don't save the
+game. You will probably corrupt it. Just exit.
+
+
+-- Video --
+
+The port by default runs in a window that is 640x350. It can run fullscreen,
+but chances are you won't get 640x350. It's very likely that you'll get
+640x400, which only has minor black bars at the top and bottom (I find it to
+be entirely satisfactory). If you're not so lucky, you might be limited to
+640x480. You can manually specify a resolution in the config file. In fact,
+before going into fullscreen, I recommend forcing 640x480 then 640x400. So
+far we've experienced temporary monitor problems when trying to go into
+640x350 fullscreen for one user - it may be a good idea to force 640x400's
+refresh rate using a tool like hztool (win9x) or NVRefresh (win2k+). You
+can also set these with PowerStrip, as well as experiment with custom
+refresh rates. It is worth trying to add 640x350 and 640x700 in this
+utility.
+
+If you don't get 640x400, there might be a remedy to this.. but as of now
+I don't know any. I believe that most video cards can handle it, though.
+In the cases where you can't, it's probably a driver/OS/configuration issue.
+
+It is also possible to set a multiplier for the height, for the image to be
+stretched. Be sure that the multiplication of 350 is within the resolution
+chosen or MZX will crash! On my machine, I can run MZX at 640x700 with a 2x
+height multiplier and it looks great.
+
+
+-- Audio --
+
+With this version, many more module formats are playable than compared to
+the previous version. The following are natively supported:
+
+XM, S3M, MOD, MED, MTM, STM, IT, 669, ULT, WAV, DSm, FAR, AMS, MDL, OKT,
+DMF, PTM, DBM, AMF, MT2, PSM, J2B, and UMX.
+
+Yes, WAVs can be loaded as mods, and although this is not generally
+recommended it could be useful sometimes (such as for short musical clips).
+
+GDM is not supported natively. However, if a GDM file is attempted to be
+loaded, an attempt will be made to load an alternate .S3M version, and if
+it does not exist, one will be created by converting the GDM file.
+
+The same goes for SAM; they will be converted to WAV. Therefore, you can
+now use WAV files natively as samples.
+
+It is strongly recommended that you do not include any GDM or SAM files in
+distributions of new MZX games; instead include only their conversions.
+You cannot load GDM files with alt + N in the editor at all anymore.
+However, you can convert SAM files by testing them with alt + L, and you
+can convert GDM files by loading them with a robot. Or, you can use an
+external convertor.
+
+Audio is always sampled to 16bit, 44KHz. If your computer cannot support
+this, then I believe SDL will emulate it, although I'm not 100% certain
+(this remains to be seen). If this is the case, you're in dire need of a
+new soundcard anyway.
+
+The size of the audio buffer can be changed in the config file. See the
+comments therein to determine the affect of this.
+
+
+-- Editor --
+
+Although quite a lot of the editor has been rewritten from scratch, a
+sincere attempt has been made to make it as compatible and similar to the
+original as possible. These are the differences:
+
+- You cannot click on help options to make it happen (for instance, you
+  can't click on L:Load and expect it to bring up the load window).
+- You cannot import or export ANS files. Use MZM instead.
+- You can now perform repeated copies by selecting "Copy (repeated)"
+  from the block command window. This will cause you to repeat the copy
+  indefinitely until you press escape. Also, after the first paste is
+  made, you may press ctrl + direction to move in steps that are the
+  size of the copy (you really have to try it to get a good idea of what
+  I mean)
+- Press alt + H to hide/unhide the menu/information occupying the bottom
+  6 lines of the screen.
+- Right click is similar to pressing insert (grabs whatever's under the
+  cursor)
+- Exporting char sets now gives direct options to set the size/offset
+  for partial charsets. The old format (prefixing the name) will not
+  work.
+- For saving files, you may make filenames larger and use mixed case
+  (as opposed to all caps).
+- Now when you import worlds their exits will actually work.
+- Loading worlds results in all empty boards and empty
+  robots/scrolls/sensors within the boards being removed. When you delete
+  a board, you won't be presented with a gap in the board list anymore.
+- You may once again select ASCII as a default charset and revert to it
+  in the char editor. You may also select a default SMZX charset.
+- Anywhere you can enter a line of text you can now press ctrl + left
+  and ctrl + right to go to the previous/next word.
+
+- The SMZX char editor has been changed quite a bit. First, to use, you
+  must be in SMZX modes 1-3 (toggle using F11).
+  Within the editor, press keys 1 through 4 to change the "current color."
+  You can place this color with space, and you can toggle repeated
+  placement on/off using tab (sorry, no clear/toggle in this mode, they
+  got in the way far more than they helped).
+  You now move in increments of 1 char naturally instead of "half chars."
+  Right click grabs the current "color" underneath the cursor.
+
+- The robotic editor has been rewritten from scratch and is therefore
+  quite different. Some options do not appear in the help at the bottom
+  (not enough room), so refer here for information:
+  
+  You are now able to type invalid code within a robotic line. You will
+  see that it's invalid due to the way the line is color coded. If you
+  try to escape while any lines are invalid or if you press alt + V, a 
+  window will be brought up describing the nature of all erroneous lines.
+  It will also let you mark each line to be deleted or commented out on
+  exit. If all invalid lines are marked with anything besides ignore,
+  you can exit safely. You may also mark invalid lines using ctrl + I, D,
+  and C (to mark as ignore, delete, and comment respectively).
+  
+  ctrl + C may also be used to comment out a normal line, and then
+  uncomment.
+
+  alt + O is still available, but you may only change macros here (see
+  the config file for the other rarely used options). This does give
+  you more room to modify macros, though. They may be up to 64 characters
+  in length, and you may set up to around 45 or so in this window. (To
+  get larger, you'll have to use the config file.)
+
+  There are some slight discrepencies in robot size; if you highlight the
+  last line then leave it it will register as a compilation of that line.
+  Yet, when you exit, the line will be discarded, so this addition is not
+  permanent. This shouldn't be problematic.
+
+  alt + enter and alt + escape no longer work; use the alternatives
+  (alt + b and alt + u)
+
+
+-- Config File --
+
+The config file is named config.txt and is a plain-text file that is
+intended to be edited in a text editor. All information about it and
+options are described in the file itself. It's a good idea to keep a
+backup of it in case you want to be made aware of the defaults again,
+but if you simply delete the file these defaults will be used.
+
+You may also set config file options at commandline. Note that you
+may not use whitespace at all here (if you do, different words will
+be counted as separate options). For instance, you may run from
+command line:
+
+mzx280 startup_file=test.mzx mzx_speed=7
+
+To start MZX with test.mzx at speed 7.
+
+It's probably worth the time of any new user to check out the config
+file options.
+
+
+-- Misc --
+
+The default char sets for MZX, SMZX, ASCII, and even blank are stored
+as actual charsets in the same directory as MZX (mzx_default.chr,
+mzx_smzx.chr, mzx_ascii.chr, and mzx_blank.chr respectively). They
+are not read-only by default, but you may want to make them so. Don't
+change them unless you know what you're doing.
+
+See build.txt for information about building from source.
+
+
+-- Known Bugs --
+
+As of this release I don't KNOW of any bugs, and in general I don't
+make a habit of releasing something when I know of specific bugs. Since
+I wrote much of the code and have a good understanding of virtually all
+of it, and because it's much easier to debug outside of DOS, chances are
+I should be able to fix any bugs that crop up.
+
+
+-- Bug Reporting Procedure --
+
+If you find a bug, report it on DigitalMZX (there will be a special
+pinned thread for this) or e-mail me at exophase@adelphia.net. Here are
+some guidelines to consider:
+
+- Describe exactly what is happening to you. Do not attempt to diagnose
+  the nature of the bug, because you may be wrong, and this could throw
+  me off significantly.
+- I may ask for you to then send the world file where this is happening,
+  or even better, a save file.
+- Include directions of how to reproduce the bug. If the bug doesn't
+  happen every time, try to find out what is causing it some of the time
+  and reproduce it regularly.
+- If possible, it would be very helpful if you were to create a new world
+  which synthesizes the bug in as little code as possible. This may 
+  require some debugging of your own on the game in question to find out
+  exactly what's not working.
+
+Please do NOT make reports such as:
+
+"HELP ME MZX IS CRASHING HELP THIS SUCKS"
+
+Because they won't help anything.
+
+
+-- Credits --
+
+Main author: Exophase (Gilead Kutnick, exophase@adelphia.net)
+
+Original MZX base code: Gregory Janson
+
+Additional MZX contributions: Spider124, MenTaLguY, CapnKev, JZig,
+  madbrain, Akwende, Koji
+
+(I'd also like to thank MenTaLguY for idput.cpp, the first converted
+ piece of MZX's code base, which has been included in the DOS build
+ since version 2.51s3)
+
+Original SAM2WAV code: madbrain
+
+GDM2S3M library code: ajs
+
+Default SMZX charset: LogiCow
+
+Beta Testers:
+  Wervyn
+  Quasar84
+  Terryn
+  asgromo
+
+I'd really like to give a special thanks to my beta testers,
+especially Terryn. They really worked very hard in not only finding
+bugs but helping crush them. If not for them, the port would have
+never progressed at all. They were very patient and hardworking
+throughout this whole ordeal.
+

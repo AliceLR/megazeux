@@ -24,13 +24,14 @@
 #ifndef __EDIT_DI_H
 #define __EDIT_DI_H
 
-void status_counter_info(void);
-void board_exits(void);
-void size_pos(void);
-void board_info(void);
-void global_info(void);
-char global_next(void);
-void global_chars(void);
-void global_dmg(void);
+void status_counter_info(World *mzx_world);
+void board_exits(World *mzx_world);
+void size_pos(World *mzx_world);
+void board_info(World *mzx_world);
+void global_info(World *mzx_world);
+int global_next(World *mzx_world);
+void global_chars(World *mzx_world);
+void global_dmg(World *mzx_world);
 
 #endif
+

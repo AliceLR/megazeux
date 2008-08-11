@@ -1,0 +1,125 @@
+# Configuration file for MegaZeux
+# August 6, 2004
+
+# Comments begin with #. Whitespace is ignored. Empty lines are
+# ignored as well.
+# Options are set in the following format:
+# option = value
+# If value is not given, then it is assumed to be 1.
+# You can include spaces in values by escaping them with \s.
+# (see the default macros for examples)
+# Note that even if the option is given to change the values
+# in MZX, this text file will NOT be modified, and hence the
+# values will revert to what they are here when you restart MZX.
+
+# Default options are given (and commented out) with
+# an explanation. If an option is not chosen at all
+# this default will automatically be used.
+
+
+### Video options ###
+
+# Resolution MZX uses for fullscreen. Note that MZX will always
+# be 640x350 centered within the resolution you choose
+# (in other words, it won't be stretched). Give in x, y format.
+# Use this if the default is giving you problems. Suggested
+# values are 640, 400 and 640, 480.
+# This resolution may not actually work; if it doesn't, you will
+# get the nearest that does.
+# You may also try a resolution like 640x700 that multiplies
+# the width, then set the multiplier..
+
+#force_resolution = 640, 350
+
+# Make it so the display is stretched by this amount (must be
+# integer). This is useful for getting resolutions like 640x700
+# to look correct (set to 2).
+
+#force_height_multiplier = 1
+
+# Whether MZX should start up in fullscreen or not.
+
+#fullscreen = 0
+
+
+### Audio options ###
+
+# Audio buffer size. Setting this to lower can improve latency,
+# so audio will be heard sooner after it is set to be changed.
+# It is also possible to change PC speaker effects more rapidly
+# with lower values. Lower buffer sizes need more CPU power to
+# process. The default is adequete for PC speaker playback every
+# command at speed 4.
+
+#audio_buffer = 2048
+
+# Whether music/samples should be played or not.
+# Does not include PC speaker effects.
+
+#music_on = 1
+
+# Whether PC speaker effects should be played or not.
+
+#pc_speaker_on = 1
+
+
+### Game options ###
+
+# Name of world file that should be loaded when MZX starts.
+#startup_file = caverns.mzx
+
+# Default save file name given when you first try to save.
+#save_file = saved.sav
+
+# Speed MZX should start at (1 through 9)
+#mzx_speed = 5
+
+
+### Robot editor options ###
+
+# Enable or disable color coding in the editor.
+# If color coding is off, ccode_string is used for the entire
+# line.
+#color_coding_on = 0
+
+# Color codes for various types.
+# For colors, use 255 to show a color box.
+#ccode_colors = 255
+#ccode_commands = 15
+#ccode_conditions = 15
+#ccode_current_line = 11
+#ccode_directions = 3
+#ccode_equalities = 0
+#ccode_extras = 7
+#ccode_immediates = 10
+#ccode_items = 11
+#ccode_params = 2
+#ccode_strings = 14
+#ccode_things = 11
+
+# Whether or not "extra words" should be displayed.
+# For instance, if turned on, a line like "wait 1" will
+# become "wait for 1."
+
+#disassemble_extras = 0
+
+# The base numbers should be displayed as. Valid options
+# are 10 and 16 (decimal and hexidecimal). Hex numbers are
+# prefixed with a dollar sign ($).
+
+#disassemble_base = 16
+
+# Changing this will allow invalid comments to automatically
+# be marked to "delete" or "comment" instead of "ignore".
+# Don't change this unless you know what you're doing.
+
+#default_invalid_status = ignore
+
+# Default macros that can be used in the robot editor with
+# F6 through F10.
+
+#macro_one = char\s
+#macro_two = color\s
+#macro_three = goto\s
+#macro_four = send\s
+#macro_five = :\splayershot^

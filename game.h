@@ -22,48 +22,52 @@
 
 /* Declarations for GAME.CPP */
 
-#ifndef __GAME_H
-#define __GAME_H
+#ifndef GAME_H
+#define GAME_H
 
-void title_screen(void);
-void draw_viewport(void);
-void update_variables(char slowed=0);
-void calculate_xytop(int &x,int &y);
-void update_player(void);
-void game_settings(void);
-void play_game(char fadein=1);
-char move_player(char dir);
-char grab_item(int x,int y,char dir);//Dir is for transporter
-void show_status(void);
-void show_counter(char far *str,char x,char y,char skip_if_zero=0);
-char update(char game,char &fadein);
+#include "world.h"
+
+void place_player(World *mzx_world, int x, int y, int dir);
+void load_world_selection(World *mzx_world);
+void load_world_file(World *mzx_world, char *name);
+void title_screen(World *mzx_world);
+void draw_viewport(World *src_board);
+void update_variables(World *mzx_world, int slowed);
+void calculate_xytop(World *mzx_world, int *x, int *y);
+void update_player(World *mzx_world);
+void game_settings(World *mzx_world);
+void play_game(World *mzx_world, int fadein);
+int move_player(World *mzx_world, int dir);
+// Dir is for transporter
+void give_potion(World *mzx_world, int type);
+int grab_item(World *mzx_world, int offset, int dir);
+void show_status(World *mzx_world);
+void show_counter(World *mzx_world, char *str, int x, int y,
+ int skip_if_zero);
+int update(World *mzx_world, int game, int *fadein);
+void set_mesg(World *mzx_world, char *str);
+void set_3_mesg(Board *src_board, char *str1, int num, char *str2);
+void set_mesg_direct(Board *src_board, char *str);
+void rotate(World *mzx_world, int x, int y, int dir);
+void check_find_player(World *mzx_world);
+void find_player(World *mzx_world);
+int take_key(World *mzx_world, int color);
+int give_key(World *mzx_world, int color);
+void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y);
 
 // The getkey key.
 extern int key_get;
 
 //For changing screens AFTER an update is done and shown
-extern int target_board;//Where to go
-extern int target_where;//0 for x/y, 1 for entrance
-extern int target_x;//Or color of entrance
-extern int target_y;//Or id of entrance
+extern int target_board; // Where to go
+extern int target_where; // 0 for x/y, 1 for entrance
+extern int target_x; // Or color of entrance
+extern int target_y; // Or id of entrance
 extern int target_d_id;
 extern int target_d_color;
 
-extern char dead;
-
-extern char pal_update;
-
-#ifdef __cplusplus
-extern "C" {
-#endif
-
-void set_mesg(char far *str);
-void set_3_mesg(char far *str1,int num,char far *str2);
-void rotate(int x,int y,char dir);
-void find_player(void);
-
-#ifdef __cplusplus
-}
-#endif
+extern int dead;
+extern int pal_update;
+extern char *world_ext[2];
 
 #endif

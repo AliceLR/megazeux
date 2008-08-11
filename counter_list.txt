@@ -1,0 +1,150 @@
+Counters:
+name                      r/w      g/n/f/b    i
+"ABSn"                    r           f       *
+"ACOS"                    r           f       *
+"ASIN"                    r           f       *
+"ATAN"                    r           f       *
+"BIMESG"                    w         f       *
+"BIT_PLACE"               r w         n       *
+"BLUE_VALUE"              r w         f       *
+"BOARD_CHAR"              r           b       *
+"BOARD_COLOR"             r           b       *
+"BOARD_H"                 r           b       *
+"BOARD_ID"                w           b       *
+"BOARD_PARAM"             w           b       *
+"BOARD_W"                 r           b       *
+"BOARD_X"                 r           n       *
+"BOARD_Y"                 r           n       *
+"BULLETTYPE"              r w         b       *
+"BUTTONS"                 r           b       *
+"BYTE"                    r w         n       *
+"CHAR"                    r w         n       *
+"CHAR_BYTE"                           f       *
+"CHAR_X"                  r w         b       *
+"CHAR_Y"                  r w         b       *
+"COMMANDS"                  w         b       *
+"COS"                     r           f       *
+"CURRENT_COLOR"           r w         n       *
+"CURSORSTATE"             r w         n       *
+"C_DIVISIONS"             r w         b       * 
+"DATE_DAY"                r           f       *
+"DATE_MONTH"              r           f       *
+"DATE_YEAR"               r           f       *
+"DIVIDER"                 r w         b       *
+"FREAD"                   r           f       *
+"FREAD_COUNTER"           r           f       *
+"FREAD_OPEN"              r           f       *
+"FREAD_PAGE"                w         b       *
+"FREAD_POS"                 w         b       *
+"FWRITE"                    w         f       *
+"FWRITE_APPEND"           r           f       *
+"FWRITE_COUNTER"          r w         f       *
+"FWRITE_MODIFY"           r           f       *
+"FWRITE_OPEN"             r           f       *
+"FWRITE_PAGE"             r w         b       *
+"FWRITE_POS"              r w         b       *
+"GREEN_VALUE"             r w         f       *
+"HEALTH"                    w         g       *
+"HORIZPLD"                r           b       *
+"INPUT"                   r w         b       *
+"INPUTSIZE"               r w         b       *
+"INT"                     r w         n       *
+"INT2BIN"                 r w         f       *
+"INVINCO"                   w         g       *
+"KEY"                     r w         b       *
+"KEY_CODE"                r           b       *
+"KEY_PRESSED"             r           b       *
+"KEYn"                    r           b       *
+"LAVA_WALK"               r w         g       *
+"LIVES"                     w         g       *
+"LOAD_BC"                 r           f				*
+"LOAD_GAME"               r           f				*
+"LOAD_ROBOT"              r           f       *
+"LOCALn"                  r w         b       *
+"LOOPCOUNT"               r w         b       *
+"MBOARDX"                 r           b       *
+"MBOARDY"                 r           b       *
+"MOD_ORDER"               r           b				*
+"MOUSEX"                  r w         b       *
+"MOUSEY"                  r w         b       *
+"MULTIPLIER"              r w         b       *
+"MZX_SPEED"               r w         b       *
+"OVERLAY_CHAR"            r           b       *
+"OVERLAY_COLOR"           r           b       *
+"OVERLAY_MODE"            r           b       *
+"OVERLAY_X"               r           n       *
+"OVERLAY_Y"               r           n       *
+"PIXEL"                   r w         f       *
+"PLAYERDIST"              r           b       *
+"PLAYERFACEDIR"           r w         b       *
+"PLAYERLASTDIR"           r w         b       *
+"PLAYER_X"                r           b       *
+"PLAYER_Y                 r           b       *
+"RED_VALUE"               r w         b       *
+"RID<robot name>"         r           b       *
+"ROBOT_ID_<robot name>"   r           b       *
+"Rn.<counter>             r           b       *
+"SAVE_BC"                 r           f				*
+"SAVE_GAME"               r           f				*
+"SAVE_ROBOT"              r           f				*
+"SAVE_WORLD"              r           f				*
+"SCORE"                   r w         b       *
+"SCROLLEDX"               r           b       *
+"SCROLLEDY"               r           b       *
+"SIN"                     r           f       *
+"SMZX_Bn"                 r w         b       *
+"SMZX_Gn"                 r w         b       *
+"SMZX_MODE"               r w         f       *
+"SMZX_PALETTE"            r           f       *
+"SMZX_Rn"                 r w         b       *
+"SPR_CLISTn"              r           b       *
+"SPR_COLLISIONS"          r           b       *
+"SPR_NUM"                 r w         b       *
+"SPR_YORDER"                w         f       *
+"SPRn_CCHECK"               w         f       *
+"SPRn_CHEIGHT"            r w         b       *
+"SPRn_CLIST"                w         f       *
+"SPRn_CWIDTH"             r w         b       *
+"SPRn_CX"                 r w         b       *
+"SPRn_CY"                 r w         b       *
+"SPRn_HEIGHT"             r w         b       *
+"SPRn_OFF"                  w         f       *
+"SPRn_OVERLAID"             w         f       *
+"SPRn_OVERLAY"              w         f       *
+"SPRn_REFX"               r w         b       *
+"SPRn_REFY"               r w         b       *
+"SPRn_SETVIEW"              w         f       *
+"SPRn_STATIC"               w         b       *
+"SPRn_SWAP"                 w         f       *
+"SPRn_VLAYER"               w         f       *
+"SPRn_WIDTH"              r w         b       *
+"SPRn_X"                  r w         b       *
+"SPRn_Y"                  r w         b       *
+"SQRTn"                   r           f       *
+"TAN"                     r           f       *
+"THISX"                   r           b       *
+"THISY"                   r           b       *
+"THIS_CHAR"               r           b       *
+"THIS_COLOR"              r           b       *
+"TIME"                    r w         n       *
+"TIMERSET"                r w         b       *
+"TIME_HOURS"              r           f       *
+"TIME_MINUTES"            r           f       *
+"TIME_SECONDS"            r           f       *
+"VCHn,n"                  r w         b       *
+"VCOn,n"                  r w         b       *
+"VERTPLD"                 r           b       *
+"VLAYER_HEIGHT"           r w         b       *
+"VLAYER_WIDTH"            r w         b       *
+"XPOS"                    r w         n       *
+"YPOS"                    r w         n       *
+  
+Strings:
+name                      r/w      g/n/f/b    i
+"BOARD_LIST"              r           b       *
+"BOARD_SCAN"              r           b       *
+"INPUT"                   r           b       *
+"MOD_NAME"                r           b       *
+"ROBOT_NAME"              r           b       *
+"FREAD"                   r           f       *
+"FWRITE"                    w         f       *

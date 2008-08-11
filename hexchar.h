@@ -24,9 +24,8 @@
 #ifndef __HEXCHAR_H
 #define __HEXCHAR_H
 
-void write_hex_byte(unsigned char byte,unsigned char color,int x,int y,
- unsigned int segment);
-void write_number(int number,unsigned char color,int x,int y,
- unsigned int segment,char minlen=0,char rightalign=0,int base=10);
+void write_hex_byte(char byte, char color, int x, int y);
+void write_number(int number, char color, int x, int y,
+ int minlen = 0, int rightalign = 0, int base = 10);
 
 #endif

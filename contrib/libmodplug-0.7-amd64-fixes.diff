@@ -1,0 +1,80 @@
+diff -Nudr -U3 -x CVS -x aclocal.m4 -x config.sub -x configure -x configure.in -x libtool -x ltmain.sh -x Makefile.in -x mkinstalldirs libmodplug-0.7/AUTHORS libmodplug/AUTHORS
+--- libmodplug-0.7/AUTHORS	2003-10-11 02:08:26.000000000 +0100
++++ libmodplug/AUTHORS	2005-02-02 11:54:15.000000000 +0000
+@@ -1,6 +1,9 @@
+ XMMS plugin:
+   Kenton Varda <temporal@gauge3d.org>
+ 
++General Maintainence:
++  Konstanty Bialkowski <konstanty@ieee.org>
++
+ Sound Engine:
+   Olivier Lapicque <olivierl@jps.net>
+ 
+@@ -10,3 +13,5 @@
+   Markus Fick <marf@gmx.net>
+ Endianness Fix (made it work on big endian platforms like PPC):
+   Adam Goode <adam@evdebs.org>
++AMD64 Fix (long long vs long vs int)
++  Tyler Montbriand <tsm@accesscomm.ca>
+diff -Nudr -U3 -x CVS -x aclocal.m4 -x config.sub -x configure -x configure.in -x libtool -x ltmain.sh -x Makefile.in -x mkinstalldirs libmodplug-0.7/README libmodplug/README
+--- libmodplug-0.7/README	2003-10-11 02:08:26.000000000 +0100
++++ libmodplug/README	2005-02-02 11:54:15.000000000 +0000
+@@ -1,7 +1,7 @@
+ Modplug Plugin for XMMS v2.0 / libmodplug v0.7
+  Based on the ModPlug sound engine by Olivier Lapicque <olivierl@jps.net>
+  XMMS plugin by Kenton Varda <temporal@gauge3d.org>
+- Placed in the public domain in October, 2001
++ Maintainer is now Konstanty Bialkowski <konstanty@ieee.org>
+ 
+ Olivier Lapicque, author of Modplug, which is arguably the best quality
+ MOD-playing software available, has placed his sound rendering code in the
+@@ -15,6 +15,10 @@
+   If anyone would like to take over for me, please e-mail me at
+   <temporal@gauge3d.org>.  Thanks.
+ 
++-- 
++
++Konstanty Bialkowski has taken this job.
++
+ Contents
+ --------
+  1. Requirements
+diff -Nudr -U3 -x CVS -x aclocal.m4 -x config.sub -x configure -x configure.in -x libtool -x ltmain.sh -x Makefile.in -x mkinstalldirs libmodplug-0.7/src/libmodplug/stdafx.h libmodplug/src/libmodplug/stdafx.h
+--- libmodplug-0.7/src/libmodplug/stdafx.h	2002-07-21 09:15:01.000000000 +0100
++++ libmodplug/src/libmodplug/stdafx.h	2005-02-02 11:54:16.000000000 +0000
+@@ -31,21 +31,31 @@
+ typedef unsigned char UCHAR;
+ typedef unsigned char* PUCHAR;
+ typedef unsigned short USHORT;
++#if defined(__x86_64__)
++typedef unsigned int ULONG;
++typedef unsigned int UINT;
++typedef unsigned int DWORD;
++typedef int LONG;
++typedef long LONGLONG;
++typedef int * LPLONG;
++typedef unsigned int * LPDWORD;
++#else
+ typedef unsigned long ULONG;
+ typedef unsigned long UINT;
+ typedef unsigned long DWORD;
+ typedef long LONG;
++typedef long long LONGLONG;
++typedef long * LPLONG;
++typedef unsigned long * LPDWORD;
++#endif
+ typedef unsigned short WORD;
+ typedef unsigned char BYTE;
+ typedef unsigned char * LPBYTE;
+ typedef bool BOOL;
+ typedef char * LPSTR;
+ typedef void *  LPVOID;
+-typedef long * LPLONG;
+-typedef unsigned long * LPDWORD;
+ typedef unsigned short * LPWORD;
+ typedef const char * LPCSTR;
+-typedef long long LONGLONG;
+ typedef void * PVOID;
+ typedef void VOID;
+ 

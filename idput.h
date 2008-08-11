@@ -21,29 +21,19 @@
 
 /* Declarations for IDPUT.ASM */
 
-#ifndef __IDPUT_H
-#define __IDPUT_H
+#include "world.h"
+#include "board.h"
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#ifndef IDPUT_H
+#define IDPUT_H
 
-void id_put(unsigned char x_pos,unsigned char y_pos,
-	int array_x,int array_y,int ovr_x,int ovr_y,int vid_seg);
-void draw_edit_window(int array_x,int array_y,int vid_seg);
-void draw_game_window(int array_x,int array_y,int vid_seg);
+void id_put(Board *src_board, unsigned char x_pos, unsigned char y_pos,
+  int array_x, int array_y, int ovr_x, int ovr_y);
+void draw_game_window(Board *src_board, int array_x, int array_y);
+void draw_edit_window(Board *src_board, int array_x, int array_y,
+ int window_height);
 
-void _id_put(unsigned char x_pos,unsigned char y_pos,
-	int array_x,int array_y,int ovr_x,int ovr_y,void * vid_seg);
-void _draw_edit_window(int array_x,int array_y,void * vid_seg);
-void _draw_game_window(int array_x,int array_y,void * vid_seg);
-
-
-unsigned char get_id_char(int id_offset);
-unsigned char get_id_color(int id_offset);
-
-#ifdef __cplusplus
-}
-#endif
+unsigned char get_id_char(Board *src_board, int id_offset);
+unsigned char get_id_color(Board *src_board, int id_offset);
 
 #endif

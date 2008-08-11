@@ -1,0 +1,21 @@
+diff -Nudr -U3 libmodplug-0.7.orig/src/sndmix.cpp libmodplug-0.7/src/sndmix.cpp
+--- libmodplug-0.7.orig/src/sndmix.cpp	2003-10-11 03:26:20.000000000 +0100
++++ libmodplug-0.7/src/sndmix.cpp	2005-05-23 19:50:38.097948768 +0100
+@@ -373,7 +373,7 @@
+ 				// End of song ?
+ 				if ((m_nPattern == 0xFF) || (m_nCurrentPattern >= MAX_ORDERS))
+ 				{
+-					//if (!m_nRepeatCount)
++					if (!m_nRepeatCount)
+ 						return FALSE;     //never repeat entire song
+ 					if (!m_nRestartPos)
+ 					{
+@@ -406,7 +406,7 @@
+ 							}
+ 						}
+ 					}
+-//					if (m_nRepeatCount > 0) m_nRepeatCount--;
++					if (m_nRepeatCount > 0) m_nRepeatCount--;
+ 					m_nCurrentPattern = m_nRestartPos;
+ 					m_nRow = 0;
+ 					if ((Order[m_nCurrentPattern] >= MAX_PATTERNS) || (!Patterns[Order[m_nCurrentPattern]])) return FALSE;

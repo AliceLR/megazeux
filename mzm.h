@@ -19,6 +19,13 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-void save_mzm(char far *name, int x, int y, int w, int h, int mode, 
- int mode2);
-void load_mzm(char far *name, int x, int y, int mode);
+#ifndef MZM_H
+#define MZM_H
+
+#include "world.h"
+
+void save_mzm(World *mzx_world, char *name, int x, int y,
+ int w, int h, int mode, int mode2);
+void load_mzm(World *mzx_world, char *name, int x, int y, int mode);
+
+#endif

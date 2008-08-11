@@ -30,18 +30,6 @@
 //only for warnings) Code is a specialized error code for debugging purposes.
 //Type of 3 for a critical error.
 
-#ifdef __cplusplus
-
-int error(char far *string,char type,char options,int segment,
-	unsigned int code=0);
-extern "C" int error2(char far *string,char type,char options,int segment,
-	unsigned int code=0);
-
-#else
-
-int error2(char far *string,char type,char options,int segment,
-	unsigned int code);
-
-#endif
+int error(char *string, char type, char options, unsigned int code = 0);
 
 #endif

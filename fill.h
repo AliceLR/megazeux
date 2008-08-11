@@ -24,7 +24,8 @@
 #ifndef __FILL_H
 #define __FILL_H
 
-void fill_area(int x,int y,int with_id,int with_color,int &with_param);
-void fill_overlay(int x,int y,int with_id,int with_color);
+void fill_area(World *mzx_world, int id, int color, int param,
+ int x, int y, Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor,
+ int overlay_edit);
 
 #endif

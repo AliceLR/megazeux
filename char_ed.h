@@ -24,6 +24,7 @@
 #ifndef __CHAR_ED_H
 #define __CHAR_ED_H
 
-int char_editor(void);
+int char_editor(World *mzx_world);
+int smzx_char_editor(World *mzx_world);
 
 #endif

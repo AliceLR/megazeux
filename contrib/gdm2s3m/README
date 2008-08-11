@@ -1,0 +1,56 @@
+CONTACT
+
+Name:       Alistair John Strachan
+Email:      <alistair@devzero.co.uk>
+Secondary:  <ajs@bitpack.net>
+Website:    http://www.bitpack.net/
+
+GDM2S3M UTILITY V1.7
+
+This utility is designed to convert GDM, a format developed by the ALSA
+developer Edward Schlunder, many years ago, into the ScreamTracker 3 file
+format (S3M).
+
+It is likely to contain bugs. See the CREDITS file for contact details
+should you isolate a bug.
+
+BUILDING AND INSTALLING
+
+Build the software with "make":
+
+On Linux:
+make BUILD=linux
+
+On Windows MINGW:
+make
+
+As of version 1.3, compiling with Microsoft's free Visual C++ 2003 toolkit
+compiler is supported. You can obtain this from:
+
+http://msdn.microsoft.com/visualc/vctoolkit2003/
+
+At the time of writing, this compiler was free. A crappy batch file is
+provided for building both a static library, and the standalone EXE.
+
+Under the toolkit shell, type:
+build.bat
+
+USAGE
+
+cd src
+./gdm2s3m <file.gdm> <file.s3m>
+
+SOFTWARE LICENSE
+
+The entire contents of this archive are released under the terms of the
+GNU General Public License as published by the Free Software Foundation;
+either version 2, or (at your option) any later version.
+
+The only exceptions to this are the provided GDM/S3M/MTM files under the
+test/ directory, which are "borrowed" from various music archives and
+are believed to be unlicensed.
+
+Additionally, the document gdm.txt is released under the OpenContent
+License (OPL), version 1.0.
+
+All redistributions of this package must contain the above boilerplate text.

@@ -24,9 +24,11 @@
 #ifndef __HELPSYS_H
 #define __HELPSYS_H
 
+#include "world.h"
+
 extern int context;//Current context link. 72="No" context link
 void set_context(int con);
 void pop_context(void);
-void help_system(void);
+void help_system(World *mzx_world);
 
 #endif

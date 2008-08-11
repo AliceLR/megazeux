@@ -24,6 +24,6 @@
 #ifndef __PAL_ED_H
 #define __PAL_ED_H
 
-void palette_editor(void);
+void palette_editor(World *mzx_world);
 
 #endif
