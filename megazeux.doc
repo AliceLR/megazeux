@@ -1,0 +1,801 @@
+
+MegaZeux ver 2.51 source -
+
+		  Copyright (C) 1996 by Greg Janson
+		  Copyright (C) 1998 by Matthew D. Williams
+
+
+  REQUIREMENTS:
+		  IBM PC (286 or higher) compatible computer
+		  640K RAM
+		  EGA or higher display adapter
+		  SoundBlaster/PAS-16/GUS sound card optional
+		  Mouse optional
+		  Dos 2.1 or greater
+		  Hard drive w/at least 5 megabytes free
+
+              Internet: dbwilli@scsn.net
+		  WWW: http://www.scsn.net/users/dbwilli/
+	
+  This game package may be copied or distributed according to the
+  terms and conditions stated in GNUGPL.DOC.
+
+MegaZeux --- Table of Contents
+
+  Section
+
+	  I.  License Agreement and Support
+	 II.  Installing and Starting the Program
+	III.  Overview of MegaZeux
+       IV.  Controls
+	  V.  Advanced Play Info, Tips
+	 VI.  The World Editor
+	VII.  General Editing Tips
+     VIII.  Robots- What They Are and How to Use Them
+	 IX.  FREQUENTLY ASKED QUESTIONS
+	  X.  Command Line Options
+	 XI.  EMS Memory/Boot Disk Tips
+	XII.  Known Bugs and Quirks
+     XIII.  Thanks, Acknowledgements, and Miscellaneous
+
+I. LICENSE AGREEMENT AND SUPPORT
+
+  --- LICENSE ---
+ 
+  This program is free software; you can redistribute it and/or
+  modify it under the terms of the GNU General Public License as
+  published by the Free Software Foundation; either version 2 of
+  the License, or (at your option) any later version.
+ 
+  This program is distributed in the hope that it will be useful,
+  but WITHOUT ANY WARRANTY; without even the implied warranty of
+  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+  General Public License for more details.
+ 
+  You should have received a copy of the GNU General Public License
+  (GNUGPL.DOC) along with this program; if not, write to the Free Software
+  Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
+
+  --- SUPPORT ---
+
+  This source code is supplied as is.  The current copyright holder is not
+  required in any way to assist anyone who chooses to modify this code.
+
+  However, the current copyright holder can be reached via email:
+  Matt Williams
+  dbwilli@scsn.net
+  And via the World Wide Web:
+  http://www.scsn.net/users/dbwilli/
+
+II. INSTALLING AND STARTING THE PROGRAM
+
+  It is recommended that you install MegaZeux in its own sub-directory
+  on your hard disk. Do NOT run the program directly from a distribution
+  disk, as disks sometimes fail.  Always make a copy and run the program
+  from it!
+
+  To install the registered version of MegaZeux, simply change to the proper
+  drive (usually A: or B:) after inserting the installation disk. Type
+  INSTALL and select the program to install. A recommended directory is
+  MEGAZEUX. Then you must wait as the program is unarchived and copied to
+  the given directory.
+
+  You should always use INSTALL to install registered products from Software
+  Visions, as they are in archived form.
+
+  Once the program is installed, you can change to that sub-directory at
+  any time and run the program.
+
+  MegaZeux is started by typing
+
+		  MEGAZEUX
+
+  You will then be prompted for an output device to use for all digitized
+  music and sound. If you do not pick PC Speaker, you will then be prompted
+  for whether you wish PC Speaker sound IN ADDITION to digitized music and
+  sound. Then, if you did not pick No Sound for digitized output, you will
+  be prompted to pick a mixing rate for digitized music. Lower numbers are
+  more staticy and may distort percussion sounds, but higher numbers require
+  more processor power. The high end numbers will slow down the game (OK on
+  a 386 or 486) or even stop it on a 286 or very slow 386. Experiment for
+  the best compromise.
+
+  You will then be whisked to the title screen for the first included game,
+  Caverns of Zeux. Press P to play, or L to load another world. Press F1
+  for comprehensive help AT ANY TIME. Help is context sensitive, and much
+  more comprehensive than this document.
+
+III.  Overview of MegaZeux
+
+  Welcome to MegaZeux!
+
+  As you may already know, MegaZeux is a game system which
+  allows you to play almost limitless worlds in EGA graphics
+  and with beautiful digitized music and sound. MegaZeux comes
+  with worlds, and new worlds are being uploaded every day to
+  major on-line services such as America Online. But the most
+  fabulous feature of MegaZeux is the World Editor.
+
+  Using the World Editor, ANYONE can create the world of their
+  dreams. Make it as simple or complex, as easy or difficult,
+  as long or short as you please. And we aren't just talking
+  about worlds made up of petty, pre-programmed enemies and
+  objects. MegaZeux has it's own, easy to use PROGRAMMING
+  LANGUAGE called Robotic that allows you to create enemies,
+  objects, and worlds that do almost anything you desire.
+
+  For the new user, I recommend you play Caverns, the first
+  included game, to get the feel of MegaZeux. You may wish
+  to read the section entitled "Controls" to learn how
+  to play MegaZeux.
+
+  Once you have the feel for the game, however, feel free
+  to dive into the World Editor and get messy! You should
+  probably read the section entitled "The World Editor"
+  first.
+
+IV.  Controls
+
+  MegaZeux is very easy to play, once you understand the
+  simple control system. After that, experimentation will
+  prove to be the best teacher, although you can discover
+  everything within Help as well.
+
+  To start a game, press 'P' during the title screen. To
+  select another world, press 'L' during the title screen.
+  Use ESC during the title screen to exit to DOS, or during
+  the game to return to the title screen. You know it is
+  the title screen if a message on the bottom says "Press
+  F1 for help, Enter for menu". Enter will bring up a menu
+  of options on the title screen, also.
+
+  Your character is represented by a little smiley face
+  in the included game(s). In other games, he may be
+  a stick person, animal, spaceship, or other entity.
+  Usually it is obvious where you are, since you are usually
+  colored to stand out.
+
+  To move your character, press one of the arrow keys on
+  the keyboard or numeric keypad. If you hold it down, you
+  will continue to move in that direction.
+
+  To interact with objects and other characters, you usually
+  must stand next to them and touch them. This basically
+  means push against them using the arrow keys. Watch out
+  for enemies and evil creatures, who will often hurt you
+  when you touch them.
+
+  To stop enemies, you will usually have some type of weapon,
+  often with limited ammunition. The actual weapon depends
+  upon the game, and may even differ from game to game, but
+  by default you have a small pistol. To fire your weapon,
+  hold Space and press an arrow key. You can also hold the
+  arrow key and press Space. You must press both keys TOGETHER.
+
+  To see your current status, such as Health points, Coins,
+  Gems, Ammunition, and Keys, press Enter. This will bring up
+  a box containing all your stats, as well as a menu detailing
+  other options you have available.
+
+  In some games, you may encounter bombs. (as usual, push
+  against them to pick them up.) To use a bomb, press the
+  Delete key. Then run! The bomb will not actually burn its
+  fuse until you step away from it. There are two styles of
+  bomb- Low strength and High strength. You can tell which
+  kind you pick up by the pitch of the sound it makes. To
+  change which TYPE of bomb you are using, press Insert. A
+  message at the bottom of the screen will inform you of
+  your new selection.
+
+  Other games may have other controls, such as 'S' to cast
+  a spell, or 'J' to jump, but they will be detailed within
+  the game. Some basic play tips:
+
+  * Make sure you visit every screen. To get to other screens,
+	 enter passageways, stairs, caves, or doors. (by pushing
+	 against them.) You can also often reach another screen
+	 by pushing against the edge of the screen, leading to an
+	 adjacent screen.
+
+  * Touch everything! Even things of seemingly little value may
+	 prove worthy of your attention. If it kills you, then...
+	 well... hope you saved.
+
+  * Save your game! It is rather simple- Press F3 to save your
+	 game to disk at the EXACT point you are at. Press F4 to
+	 reload a game off of disk. You can use F9 and F10 to
+	 quick-save and quick-load, which work on the last game
+	 you saved. Remember to save often- If something kills you,
+	 you'll want a game to go back to.
+
+  * Collect supplies! Make sure you grab every coin, gem,
+	 ammo dump, bomb, chest, and pouch you see! You will often
+	 be in want of supplies, so don't push things.
+
+  * Remember how things work. Most things in MegaZeux have
+	 patterns, and the same object will usually do the same
+	 thing all the time. (although two objects may look alike
+	 and not really be the same thing)
+
+V.  Advanced Play Info, Tips
+
+  You've tried some MegaZeux worlds, and they are fun, but you
+  have the feeling you are missing something. This is it- the
+  remaining knowledge you might need to survive in a given world.
+
+  First, let me warn you that many worlds you get from public
+  services or BBSes may not be of a very good quality. They may
+  be unfair, boring, have bugs, and/or not give proper
+  instructions. My advice is to E-Mail the author and tell him
+  what you think of poor quality MegaZeux games. There is no
+  problem in MAKING them, but PLEASE don't upload them. Don't
+  let a few losers ruin the fun.
+
+  Now to cover the game keys, in detail-
+
+  F1- Help
+  Use this at any time to bring up help relating to the current
+  situation. Within the game, you will go to the Controls
+  section.
+
+  Enter- Menu/status
+  Use this to bring up a menu of options and a list of your
+  current stats, such as Score, Gems, etc.
+
+  ESC- Exit to title
+  This will quit the current game and return to it's title
+  screen.
+
+  F2- Settings
+  This will bring up a dialog box where you can change the
+  current game settings, such as Game Speed, Music, and
+  Sound. To speed up the game, lower the speed and/or turn
+  music off. A speed of 1 will cause flicker in most machines,
+  so it is not recommended unless it is your only option.
+
+  F3- Save game
+  This will prompt you for a filename, then save the exact
+  state of your current game. Some games may not allow saving
+  on some or all of its screens. This lets you quit your game
+  in the middle or take precautions against unknown dangers.
+
+  F4- Restore game
+  This will let you select a saved game from a list of filenames.
+  The game will then be reloaded from the same point you left off
+  at.
+
+  F5 or Insert- Toggle bomb type
+  This will switch your current bomb type between High Strength
+  and Low Strength.
+
+  F6- Debug mode
+  This will bring up a small box in the lower left corner of the
+  screen, detailing your position and the current memory
+  situation. It is generally only necessary when testing and
+  fixing your own games. Press F6 again to turn the box off. The
+  debug menu, when active, will also increase the sensitivity to
+  module and SAM problems. Normally during the game, no errors
+  relating to modules and SAMs will be shown. With the debug menu on,
+  errors loading modules and SAMs and out of memory conditions will
+  be shown.
+
+  F9- Quicksave
+  This will save the game, like F3, but to the last filename you
+  used, without prompting you for a filename. The old file will
+  be overwritten. If no game has been saved since MegaZeux was
+  started, a filename of SAVED.SAV will be used.
+
+  F10- Quickload
+  This will reload the last game saved using F3 or F9. If no
+  game has been saved since MegaZeux was started, a filename of
+  SAVED.SAV will be used.
+
+  Arrows- Move
+  The arrow keys will move your character and allow him to
+  interact with most objects.
+
+  Space- Shoot
+  Use this key in conjunction with an arrow key to fire your
+  weapon in the selected direction. Weapons vary from world to
+  world.
+
+  Delete- Bomb
+  This will drop a bomb of the current type BENEATH the player.
+  Move out of the way to see it, then run before it explodes!
+
+  The following keys are active at the title screen-
+
+  F1- Help (see above)
+
+  Enter- Menu
+  This is similar to Enter within the game. However, there is
+  no status screen.
+
+  ESC- Exit to DOS
+  Pressing ESC will exit MegaZeux, returning to the DOS prompt
+  or other operating system.
+
+  F2 or S- Settings (see above)
+
+  F3 or L- Load world
+  This will allow you to load up the title screen of any MegaZeux
+  world. A list of choices will be presented to you to select
+  from. After the world is loaded, you may watch the title
+  screen, then press 'P' to play.
+
+  F4 or R- Restore game (see above)
+
+  F5 or P- Play game
+  This will stop the title screen and actually begin game play.
+
+  F6- Debug menu (see above)
+
+  F8 or E- World editor
+  This will quit the gaming portion of MegaZeux and enter the
+  integrated World Editor. For detailed info on using the World
+  Editor, view the appropriate help sections.
+
+  F10- Quickload (see above)
+
+  We'll close this section with some more playing tips, some
+  general hints and others specific to certain sections of
+  Caverns of Zeux, the first included game.
+
+  * Don't take anything for granted. If it looks like a spike,
+	 it PROBABLY is. PROBABLY. Although it is rare that these
+	 types of puzzles must be solved to complete a game, there
+	 are often bonuses, hidden rooms, etc. behind illusions.
+
+  * Don't trust anyone. All characters in a game, (including
+	 yourself) have the potential to lie, cheat, and backstab.
+
+  * Try things twice. Sometimes objects respond differently a
+	 second time. If you get a new treasure, go talk to all
+	 the citizens- maybe one of them will say something new!
+
+  * Caverns hint- (DON'T READ UNLESS YOU ARE STUCK!) Many people
+	 often get stuck early in the game, after a couple of bosses.
+	 If you have the three amulets, did you talk to the dwarf in
+	 town who wants them? Make sure you change back to a dwarf
+	 by talking to the spirit. Later make sure to lavawalk across
+	 the lava on the left of the room where you got the three
+	 amulets.
+
+VI.  The World Editor
+
+  Ready to start creating your own worlds? Then let's get
+  started! This section is a short editor tutorial, it will teach
+  you the basics of creating your own worlds.
+
+  To get into the editor, press E from the title screen. You will
+  be presented with a blank board with a small menu at the bottom.
+  You can use PgUp and PgDn to change the currently shown menu,
+  and you will be presented with various keys and options. The
+  mouse also works here. Feel free to fool around with these
+  various options. Press Alt+R to restart and clear everything.
+
+  For your first world, you should start simple. The screen you
+  begin on is your title screen, so pick a simple name for your
+  game, such as "Mike's World". Move the flashing cursor down a
+  few lines and over a few spaces, using the arrow keys. Press C
+  and use the arrow keys to select an appropriate color. Press
+  Enter to select this color. Now press F2 to write Text. Type
+  in the name of your world, and then press F2 to stop writing
+  text. This screen will be your title screen.
+
+  Now you need to create the first board, or location, of your
+  game. Press A to add a board, then type in a short description
+  of the board, such as "Starting Board". Press Enter to go to
+  this new board.
+
+  Now you are free to doodle around. Use C to change the active
+  color. Use F3 through F9 to bring up menus of items, terrains,
+  and creatures. Selecting one with the arrows and Enter will
+  allow you to place it using arrow keys and space.
+
+  For example, press F3 for terrains, and select Line. (This is
+  a form of wall.) Now move around, placing walls. To ease this,
+  you can press Tab to toggle draw mode. When draw mode is active,
+  every move of the cursor will place the current item/color. The
+  current item and color is shown on the top line of the menu.
+
+  Try to create a pleasing-looking screen, with walls, items, and
+  creatures. Some items will require that you set settings to
+  determine their behavior. To place the player's starting
+  position, move the cursor to the destination, press F10, and
+  select Player.
+
+  When you are done, press G to go to the Global Info screen. TAB
+  to the Next button and press Enter. You will now be highlighting
+  the option "Starting Board". Press Enter, and select the
+  starting board (NOT the title screen) from the list and press
+  Enter. Then TAB to OK and press Enter. This tells MegaZeux which
+  board you want the game to start on.
+
+  You could now press Alt+N to select a module (music) file for the
+  board, if you wished. Then press S to save the world, and type in a
+  filename of eight or less characters. (The extension of .MZX
+  will automatically be added.) Press Enter twice to save. Press
+  ESC to exit the editor, and now you can play your game! You can
+  use L to reload your world in the editor to make changes, if
+  necessary. See General Editing Tips for more advanced editing
+  info.
+
+VII.  General Editing Tips
+
+  The following is a list of important editing tips. They assume
+  you are familiar with MegaZeux's dialog box system, and that
+  you can navigate the editor's menus.
+
+	  Linking Boards
+
+  One-board games get boring REAL fast. There are two ways to
+  connect multiple boards. The first way is to add stairs, doors,
+  and whirlpools using the Transport (F7) menu. Then you select a
+  destination board. The destination board should contain a
+  similar transport, leading back. The two entrances will now lead
+  to each other.
+
+  The other method of connecting boards is with X, the Board Exits
+  dialog. Here, you can select boards that you will reach if you
+  walk off of the screen in a given direction. The destination
+  board shouldn't have anything in the way, and will not
+  automatically lead back- You must set the exit on that board
+  too.
+
+  To add boards, press A, or select (new board) from a board list.
+  To switch to other boards, use B.
+
+	  Board Sizes
+
+  You can change the maximum size, and the view position, of a
+  board, with Alt+P. Here you can move and re-size the view, or
+  center it on-screen.
+
+  You can also change the actual size of the board, as well as
+  the maximum, overall size. The lowermost radio control
+  determines the MAXIMUM size possible for the board, one of
+  60x166, 80x125, 100x100, 200x50, or 400x25. The Virtual size
+  is the ACTUAL size of the board, which is always equal to or
+  less than the MAXIMUM size. Example- If you wanted a board
+  that was 180 wide and 40 high, you would select a MAXIMUM
+  size of 200x50, then set the Virtual size to 180x40.
+
+  Note that reducing the size of a board will permanently
+  destroy anything outside the new limits.
+
+	  Other Important Editing Keys
+
+  You can use Insert to "grab" the object beneath the cursor, or
+  Enter to edit it and then grab it as well. Use P to modify the
+  current object's settings. Use Alt+N to select music for the
+  current board, or turn the music off if it is already selected.
+  Use Alt+Z to clear the current board entirely. You can edit
+  important Board Options with I, and important Global (world)
+  Options with G.
+
+VIII.  Robots- What They Are and How to Use Them
+
+  Robots are the heart and soul of MegaZeux. Anything you could
+  want to do in MegaZeux, anything you see done in a MegaZeux
+  game, many things you didn't know were possible, can be done
+  with MegaZeux's Robots.
+
+  Robots are programmed in their own programming language, called
+  Robotic. Robotic is a fairly simple language to learn, somewhere
+  along the lines of BASIC, although a bit more complex. If you've
+  ever used Epic Megagame's ZZT, Robotic is a bit more complex
+  than ZZT-OOP, although it is similar and more logical in style
+  and syntax.
+
+  To place a Robot in the editor, press F10 and select Robot, or
+  Pushable Robot if you want things to be able to push the Robot.
+  Then name the Robot, and select a character to represent it. Now
+  you are brought to the Robot editor, where you can program the
+  Robot in Robotic.
+
+  Complete info and a tutorial on Robotic is included in the online
+  Help.
+
+IX.  FREQUENTLY ASKED QUESTIONS
+
+  The following is a list of questions that I have received
+  through mail or E-mail about MegaZeux repetitively.
+
+  Q: My robot can't change it's/the player's characters! I
+	  use CHAR "A" but it turns invisible!
+
+  A: Use CHAR 'A' instead. You MUST use single quotes
+	  (apostrophes) or it will use the value of the COUNTER
+	  A which is probably 0.
+
+  Q: Can I distribute a world I made with MegaZeux? Is it
+	  legal? Must I/Can I include MegaZeux with it? Can they
+	  be shareware worlds?
+
+  A: Of course you can distribute your worlds! That is what
+	  MegaZeux is for! Please refrain from uploading worlds
+	  that you made as a novice user, if they contain only
+	  built-in enemies, items, and no plot/etc. People will
+	  only yell at you. Get creative and use Robots! Please
+	  include any SAM, MOD, and CHR files with the games,
+	  as well as a short TXT description file if necessary.
+	  Don't include MegaZeux, but make sure MegaZeux itself
+	  is available on any BBS or online system that you
+	  upload worlds to. (MegaZeux is available on AOL) Your
+	  worlds can be freeware, public domain, or shareware,
+	  whichever you prefer.
+
+  Q: Can I use the music from Caverns in my games? How about
+	  the music from the registered games? How about the SAM
+	  files?
+
+  A: I would prefer it if you did not use Caverns music in
+	  any games you distribute, because most people have
+	  heard it and it is getting old. The music from the
+	  registered games is illegal to distribute. The SAM
+	  files are public domain and may be used as you please.
+
+  Q: Where can I get module files?
+
+  A: If you can't make them, search public BBSes and online
+	  services for public domain ones. AOL has a large MOD/S3M
+	  library, as do many CD-ROM collections. Or employ a
+	  friend to do it for you. I myself (Greg Janson) am
+	  not available to create module files unless I am being
+	  paid well for my time.
+
+  Q: What is some good software to create module files?
+
+  A: For modules, Fast Tracker II by Triton is fairly good, but
+	  you have to avoid using the XM features. ScreamTracker 3.0
+	  is good for making S3M files.
+
+  Q: How do I make SAM files?
+
+  A: There are three easy ways to create SAM files. First,
+	  you get recording software, a sound card, and a mike.
+	  Hook 'em all up (read the instructions) and go for it.
+	  Second, you can download them or get them from module
+	  files or other games. Third, you can take existing files
+	  and change them with effects like echo. Blaster Master
+	  is a good piece of software to handle numbers one and
+	  three.
+
+  Q: But I can only find software to make WAVs! (or VOCs)
+
+  A: There is a nice small program called CVT2SAM which can
+	  convert most WAVs and VOCs to SAMs. I believe it is in
+	  the public domain. It is available on AOL.
+
+  Q: The TELEPORT PLAYER command doesn't work!
+
+  A: It does now. That was a small (er... big) bug in version
+	  1.02, which was corrected in version 1.03 and 2.51.
+
+  Q: Is the world design contest still going?
+
+  A: Until you see a Best of MegaZeux series OR the calendar
+	  reaches 1-22-97 without sufficient entries, the contest
+	  will continue. So far I've received only one board,
+	  which wasn't even acceptable. However, I've received
+	  E-mail from several interested parties, so the contest
+	  continues. See CONTEST.TXT for details.
+
+  Q: I need more than 256 characters!
+
+  A: Then you'll need to carefully utilize the Robot command
+	  LOAD CHAR SET and ration your characters carefully. The
+	  limit of 256 is a hardware limit and cannot easily be
+	  worked around.
+
+X.  Command Line Options
+
+  The following command line options are available for use when
+  starting MegaZeux. To use them, type them in after MEGAZEUX
+  at the DOS prompt. Separate all options with spaces.
+
+  -?
+
+  Bring up command line option help screen.
+
+  -lxxxxxxxx.MZX
+
+  Loads up xxxxxxxx.MZX at start up. (the .MZX is optional)
+
+  -nomouse
+
+  Don't activate the mouse, even if one is present. Use if the
+  mouse gets in the way or MegaZeux seems to think you have a
+  mouse when you don't.
+
+  -noems
+
+  Don't use any EMS memory. Use if MegaZeux's use of EMS memory
+  is causing a problem. Note that with this option, you will
+  probably not have enough memory for module and SAM files.
+
+  -ega
+
+  Use EGA mode even on VGA or higher. This only affects the
+  granularity of palette fades and color changes.
+
+  -keyb2
+
+  Use another style of keyboard handler. Use if your keyboard is
+  locking up or otherwise causing problems.
+
+  ** Sound Card Options
+
+  -port###
+  -irq#
+  -dma#
+
+  Allows you to specify the settings for your sound card. -port
+  sets the base port and must be followed by a hexadecimal number
+  such as 220. -irq sets the IRQ line number, and should be
+  followed by a single digit such as 7. -dma sets the DMA number
+  and should be followed by a single digit such as 1. See your
+  sound card manual for details. These options are only neccesary
+  if autodetection fails. An example of a command line for the
+  default SoundBlaster settings-
+
+  MEGAZEUX -port220 -irq7 -dma1
+
+XI.  EMS Memory/Boot Disk Tips
+
+  MegaZeux makes extensive use of EMS and conventional (first
+  640k) memory. The more you have available, the better it will
+  run.
+
+  To have EMS memory available, you must have an EMS driver
+  installed. Most EMS drivers also require an XMS/HIMEM driver
+  loaded first. You will need lines similar to the following in
+  your CONFIG.SYS to load HIMEM and an EMS driver, respectively-
+
+  DEVICE=C:\DOS\HIMEM.SYS
+  DEVICEHIGH=C:\DOS\EMM386.EXE 3072 H=160
+
+  The 3072 tells DOS to reserve up to 3072K of memory (3
+  megabytes) for EMS. Feel free to lower or raise this value,
+  but a minimum of 2048K (2 megabytes) is recommended.
+
+  It is also recommended that you load SmartDrive to run MegaZeux.
+  SmartDrive is a disk-cache utility that is usually loaded,
+  because it greatly speeds up repeat disk accesses. You probably
+  already have a line such as SMARTDRV.EXE /X in your AUTOEXEC.BAT;
+  if not, you should consider adding it somewhere after the PATH
+  statement.
+
+  To help free up conventional memory, you may need to create a
+  boot disk. This is a common procedure for games that use less
+  conventional setups (such as MegaZeux), and if a certain boot disk
+  works for one game, it may work just fine for MegaZeux. However,
+  you must remember to include HIMEM and an EMS driver, and include
+  a mouse driver if you want your mouse to be available.
+
+  To create a boot disk, stick a blank disk into your A: drive and
+  type the following:
+
+  FORMAT A: /S <enter>
+
+  Answer Yes to all questions. Give the disk a label if you wish.
+  Answer No to "Format another?" and then type:
+
+  COPY CON A:CONFIG.SYS <enter>
+  DEVICE=C:\DOS\HIMEM.SYS <enter>
+  DEVICEHIGH=C:\DOS\EMM386.EXE 4096 H=160 <enter>
+  DOS=HIGH <enter>
+  <ctrl+z>
+
+  COPY CON A:AUTOEXEC.BAT <enter>
+  PATH C:\DOS;C:\WINDOWS <enter>
+  SMARTDRV /X <enter>
+  C:\MOUSE\MOUSE <enter>
+  C: <enter>
+  CD \MEGAZEUX <enter>
+  MEGAZEUX <enter>
+  <ctrl+z>
+
+  The line to load the mouse driver is optional, and may vary on
+  different computers. The drive and directory you have MegaZeux
+  in may differ as well. Your windows and dos paths may differ.
+
+  Once you've followed these instructions, you can insert the
+  disk and reboot the computer to run MegaZeux. It is best if you
+  get a computer-wise friend to help you, if you can't get the
+  above to work.
+
+  One note- most newer sound cards require drivers or other
+  programs to be run before they can be used. Check your existing
+  configuration files and/or manuals to find out what these
+  commands are if you intend to use MegaZeux with a boot disk.
+
+XII.  Known Bugs and Quirks
+
+  Note that the graphics quirks are more likely to appear on laptops
+  as their graphics cards are usually proprietary and may contain
+  non-standard quirks.
+
+  A. A couple of computers/graphics cards display MegaZeux in the
+	  "9-pixel-character" mode. This basically means that thin black
+	  lines appear between each column of most characters. This doesn't
+	  affect gameplay but can be annoying. Known offenders- Zenith
+	  Z-Note MX laptop.
+
+  B. A couple computers/graphics cards may display characters with the
+	  bottom of every character stretched down a little (2 additional
+	  rows of pixels added). This does not affect gameplay but can be
+	  annoying. Known offenders- Sharp 8700 Laptop
+
+  C. Certain SVGA cards display black as deep red. Again, this doesn't
+	  affect gameplay but can be annoying.
+
+  D. The Global Robot's code has been reported to be trashed while
+	  music is on. (in the editor.) It happened very rarely and I cannot
+	  seem to reproduce or pinpoint the bug. It may be an isolated
+	  cause.
+
+  E. Certain modules may play slightly off-tune.
+
+  F. MegaZeux does not always run under certain Windows or Win95
+	  configurations, or if it does, sound does not work.
+
+  If you have something to add here or might be able to help solve one
+  of these quirks, drop me a line.
+
+XIII.  THANKS, ACKNOWLEDGEMENTS, AND MISCELLANEOUS
+
+  ** Credits and Acknowledgments **
+
+  Programming and Overall Design by Gregory Janson
+  Music/Sound code by Edward Schlunder
+
+  Included Game Modules by Gregory Janson
+  Included Music by Gregory Janson
+
+  Beta Testing and Special thanks:
+
+  Jason Albanese
+  Alek Benedict
+  Chris Bromley
+  Christopher Christensen *
+  Chris Cooper
+  Carlos DaSilva
+  Jacob Farmer
+  Geoff Friesen *
+  Tim Gallagher
+  Themie Gouthas *
+  Jamie Holub
+  Jason Kim
+  Dave Kirsch *
+  Elbert Lim
+  Joe McManis
+  Vic Putz *
+  Robin Rudge *
+  Brian Schweitzer
+  Allen Shirvanian
+  Tim Sweeny (author of ZZT)
+  Tony Vanvranken
+
+  * = Thanks for the public domain code!
+
+  AOL Beta Testers
+
+  Compukid
+  Shammydog
+  DMcgee1008
+  SpectreB1
+  NL Aric
+  JustJoshua
+  SkreenNme
+  MegaKev
+  Herbie III
+  Spider124
+ 
+				- Originally by Greg Janson
+				  ZZT'er at heart
+
+				- Modified by Matt Williams
+				  also a ZZT'er at heart
+				  on March 1, 1998

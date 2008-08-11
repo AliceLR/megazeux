@@ -1,0 +1,329 @@
+
+Bugs-
+	Fire bug :)
+
+Block transfer BETWEEN boards (exporting to a MZS file?)
+Status counters ALWAYS shown as 0 (&COUNTER&)
+Status booleans (!COUNTER!)
+
+BK palette fading
+IF MOD ORDER?
+ZAP ALL KEY LABELS/etc
+PLAYERX/PLAYERY counters
+
+TO ADD TO MZX II- (for sure) (*=Done, +=Added to info_mzx.txt file)
+
+  Partial .CHR import? (from-to)
+
+  Replace lowercase strings w/uppercase to merge them
+  Search all code for speed and SIZE improvements. Check all dynamic
+	allocations for possible EMS usage. Check all data for a size reduction.
+	In general, target mem. free is 250k w/EMS usage, and 150k w/o EMS usage.
+  Make sure FARMALLOC is only used dynamically for MOD, SAM, boards/file
+	lists, and MAYBE help. Possibly pre-allocate a buffer for help and
+	another for file lists.
+
+* Context-sensitive help.
+* Remember double-under for player, for bombs/sensors.
+* Changing to Lava, etc fixes param for anim.
+* TELEPORT doesn't fade or show latest update.
+* Allow resizing board without mess up using a temp file to hold board during
+	conversion.
+* Add && support to?- INPUT STRING PROMPT, MOD, TELEPORT, BOARD DIR,
+	ASK PROMPT, MOD FADE IN, LOAD CHR SET, LOAD PAL, SWAP WORLD
+* Transporting onto a sensor works properly. Others push it.
+* New conditions- musicon and pcsfxon
+* Make sure ALL cmds work w/global robot, at least in code.
+* Make sure ALL cmds are param checked.
+* Block options w/o block operates on current line.
+* Changing things to spaces CLEARS them, to avoid screwing up floors.
+* Restart position not changed during a save/load
+* Label- :playerhurt for NON bullets, not sent on invincible hurts
+* Max cmds per cycle at 40, not 25
+* Global robot runs normally in freeze/slow time
+* Remember to save player color if a robot or potion sets/incs INVINCO.
+* Choice of 100x100, 200x50, 400x25, 80x125, or 60x166.
+* REMEMBER IN CONVERTER- Robots w/& need it as a &&!
+* Character editor remembers character you were editing.
+* Robo-P renamed to Robotic (can become something cooler if wished)
+* Scrolls now allow proper use of mouse, pgup, and pgdn.
+* Scrollborder became Scrollcorner.
+* :gooptouched auto label added.
+* Messages like "You got a red key" are now "You got a key" so palette
+	fiddling won't make strange words. :)
+* "rel counters last" and "rel counters first" uses special counters-
+	FIRSTXPOS, LASTYPOS, etc.
+* Within robotic messages (box/line) a &INPUT& will be replaced by the
+	exact text of the currently inputted string
+* Replace character vars in WINDOW.CPP with #defines (IE pc_dot)
+* Notes in play of same freq won't run together
+  Points in included games (besides Caverns)
+* Explosions won't destroy entrances, lava, water, ice, or goop
+* Note that time resets upon leaving/entering room (in help)
+* Must stop robots from firing if there is already a bullet of the same
+	dir/type in that dir.
+* Add MOD making info to help file
+* Remember to get rotate to work w/sensors
+* Get the contortions right for getting TELEPORT to work with REL ???
+	since the change is now done much later when REL is not handy
+* Other things will push the player ONTO a sensor.
+* The above will trigger the SENSORON label.
+* If player is on an entrance without having been there before the update,
+	use it. (IE can now be pushed onto entrances)
+* Teleporting or walking onto a screen and starting on a sensor will
+	trigger the SENSORON label
+* Non-players/puzzle pieces now transport properly.
+* Make sure attempts to change the player's color during invinco set
+	saved_pl_color instead.
+* PLAYERLASTDIR (0-4) and PLAYERFACEDIR (0-3) as counters.
+* Points for killing enemies (3) and points for rings/potions (5)
+* Way to disable edging spaces on message row- ENABLE MESG EDGE, DISABLE.
+* Cmds- LOOP START, LOOP # TIMES, ABORT LOOP, robot ctr LOOPCOUNT
+* Make sure pc sfx and pc digi can coexist properly
+* Increase non-built in counter limit to 50.
+* Robots- Writing to an "off" overlay makes it "transparent". Clearing an
+	overlay entirely while it is "transparent" makes it "off".
+* Add game over music toggle
+* New passage search order- 1) Same type, same color 2) Same color 3) Same
+	type, same foreground 4) Same foreground 5) Same type 6) Default player
+	position
+* Palette import/export
+* If starting board is deleted, change it to title.
+* "Sets of five" numerical input should actually go by fives
+* Store ASCII set in .EXE
+* Rename RIP-OFF PROTECTION to CAN'T SAVE PROTECTION (ANTI-RIPOFF)
+* Fix bug- Board size/pos screen leaves Cancel buttons as Center for other
+	dialogs
+* Holding the mouse button on a numeric arrow button should cycle the num.
+* Menu changes can wrap the menu line (PgDn/PgUp in editor)
+* Remove the "." Directory from file menus
+* Player dir pic is based only on arrow keys, NOT on ice or water. Robot
+	movement DOES change the pic. Starts facing south.
+* Six (not four) status counters.
+* Text file export is for MAPS. (making note of purpose for future ref)
+* Overlay mode- robots set not to off but to transparent- there, not shown,
+	though. (so that the actual overlay info is still saved) Transparent
+	mode also available in world editor.
+* CHANGE blah p?? blah p?? (notice the p?? added for the first) Can be p??.
+* Doors, if can't move, don't advance in anim.
+* Parameters are stored as 0 thru 256- 0-255 normal, 256 wild (IE no change)
+* CHANGE cmds between types resets the parameters unless between "custom"
+	types, robot types, or scroll/signs.
+* "Persistent go" command, like /"nsew" but WAITS to move if blocked.
+* No chest message on empty.
+* Lava on CAVERNS.MZX on screen that leads to other lava. (since a second
+	lavawalk invocation is required)
+* Startup "help" screen on first use.
+* Explosions Leave Empty shouldn't mess up ANY floors, etc. (does web.)
+* Add to file format room for sound effects, possibly optional. Limit
+	their size, allow special codes (&) for SAMs in sound effects. Update
+	Load World, Save World, and Import World. (offsets for board areas)
+* Much better fill routine. Remember to test it with robots/etc and
+	over robots/etc.
+* Entering a non-cmd with the first character as a [, ., :, etc auto
+	formats it. Leading and trailing spaces and quotes are cleared first.
+* Save/Load game should be accessed through F-keys.
+* Remove special menu for Alt+M (modify) in editor- just modify!
+* Converting ver 1.02 files- make sure Goop character is reset.
+* Change palette code so that EGA/VGA differences are only noticed in the
+	actual palette changing code and the init- Otherwise it is always
+	stored as 18 bit rgb.
+* Windowing code- use vid pages 2/3 for the last two screen save slots.
+* In editor, keeps track of whether world has been modified.
+* Ceiling layer- noninteractive, but overlays things and looks neat.
+	Wouldn't need a parameter code, the id code would be the character
+	code. Include in editor- Edit, display toggle. Robots- changing it
+	by character, copying areas of it, and filling an area of it by
+	cmd or string (IE set area to "A string") Two arrays- overlay_char
+	and overlay_color. Char of 32 is see-thru. Layer during game can be
+	on, off, or static (IE not scrolling) just showing upper left portion.
+* Robot commands to change      the mode of saving.
+* Use an additional 64k of robot memory for ONLY the global robot and
+	#0 scrolls/robots. Limit any one robot/scroll to 31k.
+* Allow placing shooting fire in editor.
+* Make all enemies without speed arguments move 1/2 thier speed. Make
+	dragons move same speed with occasional stupidity, as well as super
+	intellegents- have occasional stupidity.
+* Player CANNOT be overwritten, you must place him anew to move him.
+* Make sure first line of robot shows if it is a box mesg.
+* Speeds in game- 0=no vert retrace wait, 1=# vert retrace waits
+* Input strings should allow input of spaces.
+* Time limits- Out of time zaps to entrance automatically, THEN RESETS
+	TIMER. Counter TIMERESET holds reset value for timer, and is stored in
+	time_limit variable. The TIME counter holds the current time.
+* MOD code has only an error on no memory. Errors for loading mods and
+	sams (IE not enough memory) are activatable via a special debbuging
+	option via the Settings menu. Sam for errors for not found. The
+	errors are always within in the editor, but then they have the note
+	saying "(MOD still set for this board)" unless it was a file error.
+	File errors ALWAYS give errors.
+* First test of a game should NOT give GAME OVER.
+* Make sure sound effects aren't cut off across screens.
+* Make sure mod errors are less frequent.
+* Make sure MOD is put into mod_playing if music is off (editor AND robots)
+	or for loading error (editor only)
+* Placing a bomb while upon a passage warps to title. Fix.
+* Sensors must be pushable.
+* Add a new sensor-activated label- SENSORPUSHED, when the sensor is
+	pushed, with or without the player on it.
+* Make sure that when the player is pushed, that if a sensor is beneath the
+	player, it is pushed as well. (this and the above allow vehicles)
+* Label- JUSTENTERED when the player just entered the screen or the game
+	is started. (NOT restored)
+* Command- Can lock/unlock board scrolling temporarily- LOCKSCROLL,
+	UNLOCKSCROLL.
+* IF ALIGNEDROBOT "robot" "label"
+* Damage editing- Changing the amount of damage things inflict.
+* Change cheat keys. Only include Give All key and Destroy Surrounding key.
+	Still have available during Test mode. Cheat cmd line option- A dash '-'
+	followed by ascii 254.
+* Load title screen directly when loading game for title. Prevents music on
+	first board from playing, and saves time.
+* New robot-specific auto-counters- (read only) THISX, THISY.
+* Aha- Anywhere a number can go, a counter can too. Wherever there is a
+	number, it is automatically assumed to be a COUNTER unless the first
+	character of the string is a 0. Then the next two numbers are a two
+	byte integer. Now add param checking, etc. X/Y positions are still
+	shown -/+ but stored unsigned to become signed.
+* Going even farther- Characters and colors can optionally be represented
+	by either numbers, which are immed. converted to the char/color, or
+	counters. Same storage format. (unsigned int) Colors with wilds are now
+	stored as the unsigned int with "bit 256" set. Things, conditions,
+	expressions, params, items, strings, and directions remain normal.
+* Change the -keyboard2 cmd line option to -keyb2.
+* Cmd line- load MZX file.
+* Cmd lines- Force ega-only, don't use ems.
+* Config file for options, ask "OK?" on startup. Remove all config
+	cmd line options.
+* Cmd- SCROLLVIEW X Y. (upper left hand corner is specified) Based off of
+	current player position.
+* Cmd- SWAP TO WORLD "world.mzx" as if starting the world up. Skips any
+	title screen. (you could put a message there) The other world can have
+	a "Only play from swap" option.
+* Quicksave key in game- Saves without asking for filename and confirmation
+	unless there isn't a current save file.
+* Quickload key in game- Same idea.
+* Option (default off) on world to clear messages, bullets, and spitfires
+	from a screen when exited.
+* Defaults should be more logical for boards, specifically, default
+	board position should be at 3,2 with a size of 74,21.
+* Label JUSTLOADED sent to as soon as the game is started or restored.
+	(including the title screen and actual playing)
+* Shows character number on char edit and char selection.
+* Shows color number on color selection.
+* Revamped user interface.
+* Multiple spots to SAVE/RESTORE/EXCHANGE PLAYER POSITION. (8)
+* RESTORE/EXCHANGE PLAYER POSITION with the option to duplicate the robot
+	to take his place. When the player moves back, the robot is, of course,
+	deleted.
+* Remove RANDOM POS/SIZE options.
+* Page flip in editor.
+* Robot logic to avoid slowdown loops (IE short loops w/o WAITs) by keeping
+	a location counter of the last label passed/jumped to and stopping if
+	you ever reach it again WITHOUT any code inbetween that changes a
+	counter. (or stops the cycle, of course)
+* Allow labels to interrupt in a robot's scroll code and have the scroll
+	still show uninterrupted.
+* Show a pic of the item next to it in the THINGS menus.
+* The viewport sizing commands should be param checked. (runtime)
+* CHANGE CHAR ID # 'x' should be param checked. (runtime)
+* Different bullet pics/colors for player, neutral, and enemy bullets.
+* Status shown counters should NOT show if the value is 0.
+* Use EMS for robots, scrolls, and boards. (Not the current     board)
+* Prefixes that affect only the first or last x y pair of a command.
+* Mod fade commands (background)
+* Allow lives/health to max out at 65535.
+* Score as a counter, although still stored and treated as a LONG.
+* Maximum of 150 boards. (not 127)
+* Cmd- COPY BLOCK x y x y x y.
+* Add label for SpitFire hitting a robot.
+* Add label for Lazer hitting a robot.
+* Cmd- Clip Input (chops first word + spaces off of input)
+* Cmd- Checking input but only the first word
+* KEY1 through KEY9 labels. (like KEYA thru KEYZ)
+* Allow viewport sizes down to 1x1.
+* PUSH robot command- push things to dir without moving there.
+* ONE global robot. (No ID) Stored seperate from a board.
+* Robots- Allow importing of a character into a CHAR EDIT command.
+* Robots- Have SCROLL CHAR, FLIP CHAR, and COPY CHAR commands.
+* Full backward compatibility w/old Megazeux via a conversion program.
+* Editable built-in sfx. (including to digitized)
+* Elements- Add Goop, which is like Water from ZZT.
+* EGA/VGA palette editor, with easy fading. Commands- COLOR INTENSITY #
+	PERCENT, COLOR INTENSITY "counter" PERCENT, COLOR FADE IN, COLOR FADE OUT,
+	SET COLOR # TO r g b, SET COLOR # TO INTENSITY # PERCENT, SET COLOR
+	"counter" TO INTENSITY "counter" PERCENT. (note- the FADE OUT/IN cmds
+	are "quick" fades, IE not in the bk, but they actually stall the game
+	a bit. They also end the current cycle.)
+* Display counters within strings, IE * "You have &GEMS& gems." (use &&
+	for &)
+* Robot command- Load .chr set.
+* New default characters for global chars and char set.
+* When adding another board, copy most of the options (can attack, etc.)
+	from the current board, including MOD file.
+* Edit ANY character/color from Global Chars.
+* Char editor- Revert to Ascii, Revert to Megazeux, change REVERSE to
+	NEGATIVE.
+* Alt-Y Debug info should LABEL each line.
+* Block command- Paint (w/color).
+* Board editor- Scroll when cursor is five spaces from the edge.
+* Work help file better.
+* Fade in/out between screens and program areas.
+* Ice should NOT keep pushing you against something. If you are blocked,
+	cease movement.
+* When entering a new screen, show update THEN load screen.
+* Make sound test available in editor as an option. Remove it from the
+	previous way of access. (access from Alt+F sound FX editor)
+* Stabalize speed with and without mods, even after a mod error.
+* Can't test a save-locked game w/o pw and fix it so it doesn't lock up.
+* Remove scroll coloring on line by line.
+* Simplify scroll editing. (scrolls are really unimportant)
+* Export .ANS file. Document in help how blink works in this case.
+* Command line option- -? to list help for cmd line options. An invalid
+	option will also do this.
+* Redraw a nice, sleek gray "tech" intro screen, using box commands, not
+	by storing it as a color_string.
+* Energizer should return player color to old color.
+* Capture and throw away Ctrl-C, PrintScreen, SysRq, and Pause.
+* Rewrite keyboard code as above and to avoid Shift/Alt/Ctrl lock.
+
+TO ADD TO MZX II, ALREADY DOABLE IN CURRENT SOMEHOW-
+
+* Return in editor at end of program should be able to add a blank line.
+* Allow marking of a section of robot, in lines. (for editing)
+* Remove -bios, -mouse, -debug, -prism, and -ii! options.
+* Remove useless "pro" mode.
+* Robot commands- DIVIDE, MULTIPLY, MODULO.
+* Different player pics per direction.
+
+TO ADD TO MZX II, MAYBE- (?=VERY VERY unlikely)
+
+? New MOD/SAM code.
+? MIDi support. (and/or CMF, ROL, etc)
+
+TO ADD TO A VGA ONLY VERSION OF MZX-
+
+  VGA 256-color (320x240) (tiles instead of chars) (page flipping)
+  Tile size of 16x16.
+  Palette editing. (full VGA)
+  Support fully EMS/XMS/virtual memory/storage in graphics memory for tiles.
+  GOOD tile editor (VGA).
+  Tile editing of multiple tiles in a setup at a time.
+  Minimum of 500 tiles.
+  Smooth movement for VGA. (slides from tile to tile but still limited to
+	stopping within tiles)
+  Choose tiles for borders.
+  Windows-style dialogs.
+  Palette rotation. (auto)
+  Overlay page (graphics) w/optional parallax scrolling. (overlay page is
+	pure graphics and although editable by robots has no gameplay value
+	except to cover the main layer)
+  Import PCX/GIF/etc. (seperates into non-duplicated tiles and layers as
+	either CustomFloor, CustomBlock, or into the overlay page)
+  Player and robots can be two tiles high. (for graphical purposes only)
+  Overlaid sprites? (Independant graphical entitys)
+  Default characters for objects that are logical for tiles.
+
+
+
+

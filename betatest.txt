@@ -1,0 +1,67 @@
+
+MZX 2.50 (2.48g/2.49b) beta testers-
+
+Name (Email) Computer::Sound card or "Compatible" -- Notes
+
+Greg Beauchesne (zapyo@aol.com) Pentium P60::SB-16
+Adam Parrish (myth@alinc.com) 486DX4-100::SB-32
+"Adam Smith (Aldar)" (smitha@edmonds.wednet.edu) 386-33::"SB-Pro"
+John Howard Davison (ohio1@imcnet.net) 486DX2-50::SB 1.x
+"Geoff Paulson" (gpaulson@3-cities.com) 486DX::SB-16
+Scott Hammack (shammack@goldinc.com) 486DX2-100::SB-16
+"Ben Krause" (subzero@neont.com) 486::SB-16
+Kevin Vance (kevvance@aol.com) 486DX-60::"SB 1.x"/"SB-Pro"
+	  Pentium 75::"SB 1.x"
+Kevin Rohleder (krohleder2@aol.com) Pentium 75::"SB 1.x"/"SB 2.x"
+"Brad Faler" (falerb@ida.net) Pentium 133::SB-32
+Mike Sambrone (mgs@indirect.com) 386DX-60:SB 2.x
+Luke Drelick (duky@worldnet.att.net) Pentium 75::SB-16
+Peter Holzaepfel (user377367@gnn.com) Pentium 90::"SB 1.x"
+	  Pentium 75::SB-Pro
+	  486-75::SB-16
+	  Pentium 75::None
+	  386-16::None
+Jacob Page (jpages@srv.net) Pentium 60::"SB 1.x"
+Evan Furchtgott (thecreator@pipeline.com) Pentium 166::SB-32
+Dave Bishop (dnbishop@aol.com) 486DX2-50::SB-16
+William Lovas (wlovas@pantek.com) 486DX4-100::"SB 1.x"
+Matthew McGee (thedianoga@aol.com) 486SX-33::SB-16/SB-Pro
+	  586-100::"SB-16"
+Timothy Fernandez (fergie@sorcererisle.com) 486SX-25::SB-16
+Dan Patalano (mogthe1st@aol.com) Pentium 100::SB-Pro
+"Luc French" (lfrench106@aol.com) 486-??::"SB 1.x"
+"DeadPhrog (J.W. Kaufmann)" (deadphrog@sinewave.com) 486DX-66::"SB-Pro"
+"James "Raptor" Wong" (gwong@ozemail.com.au) 486DX-66::SB-16
+"Jason E. Neufeld"(73267.3322@compuserve.com) 586-100::SB-32
+
+(zapyo@aol.com)
+(myth@alinc.com)
+(smitha@edmonds.wednet.edu)
+(ohio1@imcnet.net)
+(gpaulson@3-cities.com)
+(shammack@goldinc.com)
+(subzero@neont.com)
+(kevvance@aol.com)
+(krohleder2@aol.com)
+(falerb@ida.net)
+(mgs@indirect.com)
+(duky@worldnet.att.net)
+(user377367@gnn.com)
+(jpages@srv.net)
+(thecreator@pipeline.com)
+(dnbishop@aol.com)
+(wlovas@pantek.com)
+(thedianoga@aol.com)
+(fergie@sorcererisle.com)
+(mogthe1st@aol.com)
+(lfrench106@aol.com)
+(deadphrog@sinewave.com)
+(gwong@ozemail.com.au)
+(73267.3322@compuserve.com)
+
+
+
+
+
+
+

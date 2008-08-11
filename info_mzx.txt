@@ -1,0 +1,898 @@
+
+** Codes for objects-
+
+ID  Is              Char Param           Color Special
+--- --------------- ---- --------------- ----- ----------------------------
+0   Space           32                   Curr  UNDER
+1   Normal          178                  Curr
+2   Solid           219                  Curr
+3   Tree            6                    10
+4   Line            Var                  Curr
+5   Custom Block    Par  Char            Curr
+6   Breakaway       177                  Curr
+7   Custom Break    Par  Char            Curr
+8   Boulder         233                  7
+9   Crate           254                  6
+10  Custom Push     Par  Char            Curr
+11  Box             254                  Curr
+12  Custom Box      Par  Char            Curr
+13  Fake            178                  Curr  UNDER
+14  Carpet          177                  Curr  UNDER
+15  Floor           176                  Curr  UNDER
+16  Tiles           254                  Curr  UNDER
+17  Custom Floor    Par  Char            Curr  UNDER
+18  Web             Var                  7     UNDER
+19  Thick Web       Var                  7     UNDER
+20  Still Water     176                  25    UNDER
+21  N Water         24                   25    UNDER
+22  S Water         25                   25    UNDER
+23  E Water         26                   25    UNDER
+24  W Water         27                   25    UNDER
+25  Ice             Var  Anim            59    UNDER
+26  Lava            Var  Anim            76    UNDER
+27  Chest           239  Contents        6     CHAR 160 IN v2.0+
+28  Gem             4                    Curr
+29  Magic Gem       4                    Curr
+30  Health          3    Amount          12
+31  Ring            9    Effect          14
+32  Potion          173  Effect          11    CHAR 150 IN v2.0+
+33  Energizer       7    Glow            15
+34  Goop            176                  24    v2.0+ LIKE ZZT'S WATER
+35  Ammo            Var  Amount          3
+36  Bomb            11   High or Low     8
+37  Lit Bomb        Var  Fuse            8
+38  Explosion       177  Stage           239
+39  Key             12                   Curr
+40  Lock            10                   Curr
+41  Door            Var  Dir/Lock        Curr
+42  Open Door       Var  Dir/Stage       Curr  TREAT AS ABOVE FOR CHANGE CMD
+43  Stairs          240  Destination     Curr  UNDER, CHAR 162 IN v2.0+
+44  Cave ("Door")   239  Destination     Curr  UNDER, CHAR 161 IN v2.0+
+45  CW Rotate       Var  Anim            Curr
+46  CCW Rotate      Var  Anim            Curr
+47  Gate            22   Lock            8
+48  Open Gate       95   Delay           8     UNDER, CHAR 196 IN v2.0+
+49  Transport       Var  Anim/Dir        Curr
+50  Coin            7                    14
+51  N Moving Wall   Par  Char            Curr
+52  S Moving Wall   Par  Char            Curr
+53  E Moving Wall   Par  Char            Curr
+54  W Moving Wall   Par  Char            Curr
+55  Pouch           229  Contents        7     CHAR 159 IN v2.0+
+56  Pusher          Var  Direction       Curr
+57  Slider NS       18                   Curr
+58  Slider EW       29                   Curr
+59  Lazer           Var  Anim/Dir/Stage  Curr
+60  Lazer Gun       206  Dir/Timing      4
+61  Bullet          Var  Dir/Type        15
+62  Missile         Var  Dir             8
+63  Fire            Var  Anim            12
+64
+65  Forest          178                  2
+66  Life            Var  Anim            13
+67  Whirlpool 1     54   Destination     31    UNDER, CHAR 151-154 IN v2.0+
+68  Whirlpool 2     64   Destination     31    UNDER, TREAT AS 1 FOR CHANGE
+69  Whirlpool 3     57   Destination     31    UNDER, TREAT AS 1 FOR CHANGE
+70  Whirlpool 4     149  Destination     31    UNDER, TREAT AS 1 FOR CHANGE
+71  Invis Wall      32                   Curr
+72  Ricochet Panel  Var  Orientation     9
+73  Ricochet        42                   10
+74  Mine            Var  Anim/Radius     12
+75  Spike           Var  Dir             8
+76  Custom Hurt     Par  Char            Curr
+77  Text            Par  Char            Curr
+78  Shooting Fire   Var  Anim/Dir        14
+79  Seeker          Var  Anim/Life       10
+80  Snake           235  Int/Spd/Dir     2
+81  Eye             236  Int/Spd/Radius  15
+82  Thief           1    Int/Spd/Steal   12    CHAR 5 IN v2.0+
+83  Slimeblob       42   Spd/Invnc/Hurts 10
+84  Runner          2    Spd/Dir/HP      4
+85  Ghost           234  Int/Spd/Invnc   7
+86  Dragon          21   Fire/Move/HP    4
+87  Fish            224  Int/Spd/Hurts   14    PARAM CONT- HP/CurrentAffects
+88  Shark           94   Int/Fire/Rate   7     CHAR 127 IN v2.0+
+89  Spider          15   Int/Spd/HP/Web  7     CHAR 149 IN v2.0+
+90  Goblin          5    Int/Rest        2
+91  Spitting Tiger  227  Int/Fire/Rate   11
+92  Bullet Gun      Var  Dir/Rate/Int    15
+93  Spinning Gun    Var  Dir/Rate/Int    15
+94  Bear            153  Sens/Spd/HP     6     CHAR 172 IN v2.0+
+95  Bear Cub        148  Int/Mode/Switch 6     CHAR 173 IN v2.0+
+96
+97  Missile Gun     Var  Int/Dir/Rate    8
+98
+99
+100
+101
+102
+103
+104
+105
+106
+107
+108
+109
+110
+111
+112
+113
+114
+115
+116
+117
+118
+119
+120
+121
+122 Sensor          Var  ID #            Curr
+123 Robot Pushable  Var  ID #            Curr
+124 Robot           Var  ID #            Curr
+125 Sign            226  ID #            8
+126 Scroll          232  ID #            15
+127 Player          Var                  27
+
+** Robot program storage format-
+
+BYTE 1- Number of total bytes in this command, not including this one or
+		  the final byte which is a repeat of this count.
+		  A zero here signifies the end of the program.
+		  A -1 (~0) (0FFh) here signifies the start of the program, and is
+		  immediatly followed by BYTE 1 of the first command.
+BYTE 2- Command identification code.
+THEN  - Command paramters, if any, according to command. Parameters take
+		  the minimum bytes required for ver 1.0?. For ver 2.00, they are
+		  all min. 3 bytes- The first byte is a code of n for a string/counter
+		  of n length or 0 for a numeral, the second/third bytes is the numeral
+		  or the null-terminated counter/string. Conditions/etc are stored as
+		  numerals. Even things like directions that fit in one byte take up
+		  two bytes. Nothing except counters/strings requires more than these
+		  two bytes, however. The length of a string INCLUDES THE NULL BYTE.
+FINAL - Repeat of BYTE 1 for backwards searching.
+
+A blank program is 2 bytes long- A -1 then a 0.
+
+** Scroll storage format-
+
+BYTE 1- A 01h. This marks the start of the text.
+MIDDLE- Lines, all terminated with a '\n'. (0Ah) There must be at least
+		  one line, even if it is just a '\n'.
+LAST  - A 00h. This marks the end of the text.
+
+A blank text is 3 bytes long- A 01h, a '\n', and a 00h.
+
+** Command line options-
+
+Version 1.0? and below-
+
+-debug  : Begin with x/y pos, etc showing (Like Alt-Y within program)
+-ms     : Music on SB
+-mp     : Music on PC
+-mo     : Music off
+-sp     : PC speaker sound effects on
+-so     : PC speaker sound effects off
+-bios   : Use bios for certain functions
+-nomouse: Don't activate mouse
+-mouse  : Use mouse even if found
+-prism  : Cheat keys
+-ii!    : Pro mode
+-keyboard2:Use another method of ending the keyboard handler
+
+Version 2.0 and above-
+
+-?      : Bring up command line help screen, also done on invalid option
+			 along with a beep
+-lblah  : Loads up blah.mzx at start up (.mzx is optional)
+-nomouse: Don't activate mouse
+-noems  : Don't use EMS
+-ega    : Use EGA mode even on higher cards
+-keyb2  : Use another method of ending the keyboard handler
+
+** Transport destination search algorithim
+
+1) Check space on other side of transport- if it is empty or can be pushed
+	out of the way, transport to there.
+2) Check starting at space on other side for a transport of opposite
+	orientation or of anydir orientation. The first found that has empty
+	on the other side or stuff that can be pushed out of the way on the
+	other side is the destination.
+3) No destination.
+
+** Robot command codes-
+
+Version 1.0?-
+
+EOC=End-of-cycle (x=yes, Pre=prefix)
+Params-
+	[#] Number 0 to 255
+	[##] Number 0 to 65535
+	[-#] Number from -128 to 127
+	[dir] NSEW plus modifiers
+	[ch] Character
+	[col] Color
+	[color/thing/param] Color + Thing + Param
+	[color/thing] Color + Thing (no Param)
+	[thing] Thing (no Color or Param)
+	[str] String
+	[!<>=] Equality
+	[cond] Condition (often with a direction)
+	[item] Item (AMMOS, etc)
+
+	Color can only have ?'s when coupled with a thing. In that case, if
+	a ? is present, the high bit of the thing is set. (+128) See later
+	section for color coding.
+
+ID  EOC Command
+--- --- -------
+0    x  End
+1    x  Die
+2    x  Wait [#]
+3       Cycle [#]
+4    x  Go [dir] [#]
+5       Walk [dir]
+6    x  Become [color/thing/param]
+7       Char [ch]
+8       Color [col]
+9    x  Gotoxy [-#] [-#]
+10      Set [str] [##]
+11      Inc [str] [##]
+12      Dec [str] [##]
+13      Set [str] [str]
+14      Inc [str] [str]
+15      Dec [str] [str]
+16      If [str] [!<>=] [##] [str]
+17      If [str] [!<>=] [str] [str]
+18      If [cond] [str]
+19      If not [cond] [str]
+20      If any [color/thing] [str]
+21      If not any [color/thing] [str]
+22      If [color/thing] [dir] [str]
+23      If not [color/thing] [dir] [str]
+24      If [color/thing] [-#] -#] [str]
+25      If [-#] [-#] [str]
+26      If [dir] player [color/thing] [str]
+27      Double [str]
+28      Half [str]
+29      Goto [str]
+30      Send [str] [str]
+31   x  Explode [#]
+32      Put [color/thing/param] [dir]
+33      Give [##] [item]
+34      Take [##] [item]
+35      Take [##] [item] [str]
+36      Endgame
+37      Endlife
+38      Mod [str]
+39      Sam [##] [str]
+40      Volume [#]
+41      End mod
+42      End sam
+43      Play [str]
+44      End play
+45      Wait play [str]
+46      Wait play
+47      (blank line)
+48      Sfx [#]
+49      Play sfx [str]
+50      Open [dir]
+51      Lockself
+52      Unlockself
+53      Send [dir] [label]
+54      Zap [str] [#]
+55      Restore [str] [#]
+56      Lockplayer
+57      Unlockplayer
+58      Lockplayer ns
+59      Lockplayer ew
+60      Lockplayer attack
+61   x  Move player [dir]
+62   x  Move player [dir] [str]
+63      Put player [-#] [-#]
+64      If player [dir] [str]
+65      If player not [dir] [str]
+66      If player [-#] [-#] [str]
+67      Put player [dir]
+68   x  Go [dir] [str]
+69      Rotatecw
+70      Rotateccw
+71      Switch [dir] [dir]
+72      Shoot [dir]
+73      Laybomb [dir]
+74      Laybomb high [dir]
+75      Shootmissile [dir]
+76      Shootseeker [dir]
+77      Spitfire [dir]
+78      Lazerwall [dir] [#]
+79      Put [color/thing/param] [-#] [-#]
+80   x  Die item
+81      Send [-#] [-#] [str]
+82   x  Copyrobot [str]
+83   x  Copyrobot [-#] [-#]
+84   x  Copyrobot [dir]
+85      Duplicate self [dir]
+86      Duplicate self [-#] [-#]
+87      Bulletn [ch] (In MZX 2.0, changes all bullet n pics)
+88      Bullets [ch] (In MZX 2.0, changes all bullet s pics)
+89      Bullete [ch] (In MZX 2.0, changes all bullet e pics)
+90      Bulletw [ch] (In MZX 2.0, changes all bullet w pics)
+91      Givekey [col]
+92      Givekey [col] [str]
+93      Takekey [col]
+94      Takekey [col] [str]
+95      Inc [str] random [##] [##]
+96      Dec [str] random [##] [##]
+97      Set [str] random [##] [##]
+98      Trade [##] [item] [##] [item] [str]
+99      Send [dir] player [str]
+100     Put [color/thing/param] [dir] player
+101  x  /[str]
+102     *[str]
+103     [[str]
+104     ?[str];[str]
+105     ?[str];[str];[str]
+106     :[str]
+107     .[str]
+108     |[str]
+109  x  Teleport player [str] [-#] [-#]
+110     Scrollview [dir] [#]
+111     Input string [str]
+112     If string [str] [str]
+113     If string not [str] [str]
+114     If string matches [str] [str]
+115     Player char [ch] (In MZX 2.0, sets the pic for all four directions)
+116     %[str]
+117     &[str]
+118  x  Move all [color/thing] [dir]
+119  x  Copy [-#] [-#] [-#] [-#]
+120     Set edge color [col]
+121     Board [dir] [str]
+122     Board [dir] none
+123     Char edit [ch] [#] [#] [#] [#] [#] [#] [#] [#] [#] [#] [#] [#] [#] [#]
+124     Become pushable
+125     Become nonpushable
+126     Blind [#]
+127     Firewalker [#]
+128     Freezetime [#]
+129     Slowtime [#]
+130     Wind [#]
+131     Avalance
+132  x  Copy [dir] [dir]
+133     Become lavawalker
+134     Become nonlavawalker
+135     Change [color/thing] [color/thing/param]
+136     Playercolor [col]
+137     Bulletcolor [col] (In MZX 2.0, changes all bullet colors)
+138     Missilecolor [col]
+139     Message row [#]
+140 Pre Rel self
+141 Pre Rel player
+142 Pre Rel counters
+143     Change char id [##] [ch] (Not param checked or doc'd until MZX 2.0)
+144     Jump mod order [#]
+145     Ask [str]
+146     Fillhealth
+147     Change thick arrow char [dir] [ch]
+148     Change thin arrow char [dir] [ch]
+149     Set maxhealth [##]
+150     Save player position (In MZX 2.0, saves to position 1)
+151     Restore player position (In MZX 2.0, uses position 1)
+152     Exchange player position (In MZX 2.0, saves to position 1)
+153     Set mesg column [#]
+154     Center mesg
+155     Clear mesg
+156     Resetview
+157     Sam [##] [#]
+158     Volume [str]
+159     Scrollbase color [col]
+160     Scrollborder color [col]
+161     Scrolltitle color [col]
+162     Scrollpointer color [col]
+163     Scrollarrow color [col]
+164     Viewport [#] [#] (Not param checked until MZX 2.0)
+165     Viewport size [#] [#] (Not param checked until MZX 2.0)
+166     Set mesg column [str]
+167     Message row [str]
+
+Version 2.00-
+
+EOC=End-of-cycle (x=yes, Pre=prefix, ODT=Outdated and NOT SUPPORTED since it
+	can be translated into another command, *=would be nice to seperate into
+	multiple words, g=works different/unpredictably for a global robot) The
+	ODT's may be replaced with new commands at a later	date.
+Params-
+	[##] Number 0 to 65535 OR a counter (can be converted from a color, char,
+		or param)
+	[-#] Number from -32768 to 32768 OR a counter (can be converted)
+	[ch] Character OR a counter (can be converted from a color, param, or num)
+	[col] Color OR a counter (can be converted from a char, param, or num)
+	[dir] NSEW plus modifiers
+	[color/thing/param] Color + Thing + Param <- OR a counter/char/color/num
+	[str] String (often a counter)
+	[!<>=] Equality
+	[cond] Condition (often with a direction)
+	[item] Item (AMMOS/AMMO, GEMS/GEM, etc)
+
+	Color can only have ?'s when coupled with a thing OR used in the overlay
+	put command. In that case, if a ? is present, the +256 bit of the color
+	is set. See later section for color coding.
+
+	A param of 256 means "any param" or p??.
+
+ID  EOC Command
+--- --- -------
+0    x  End
+1    x  Die
+2    x  Wait [##]
+3       Cycle [##]
+4   x g Go [dir] [##]
+5    g  Walk [dir]
+6   x g Become [color/thing/param]
+7    g  Char [ch]
+8    g  Color [col]
+9   x g Gotoxy [-#] [-#]
+10      Set [str] [##]
+11      Inc [str] [##]
+12      Dec [str] [##]
+13  ODT Set [str] [str]
+14  ODT Inc [str] [str]
+15  ODT Dec [str] [str]
+16      If [str] [!<>=] [##] [str]
+17  ODT If [str] [!<>=] [str] [str]
+18   g  If [cond] [str]
+19   g  If not [cond] [str]
+20      If any [color/thing/param] [str] (different)
+21      If not any [color/thing/param] [str] (different)
+22      If [color/thing/param] [dir] [str] (different)
+23      If not [color/thing/param] [dir] [str] (different)
+24      If [color/thing/param] [-#] -#] [str] (different)
+25   g  If [-#] [-#] [str]
+26      If [dir] player [color/thing/param] [str] (different)
+27      Double [str]
+28      Half [str]
+29      Goto [str]
+30      Send [str] [str]
+31  x g Explode [##]
+32   g  Put [color/thing/param] [dir]
+33      Give [##] [item]
+34      Take [##] [item]
+35      Take [##] [item] [str]
+36   *  Endgame
+37   *  Endlife
+38      Mod [str]
+39      Sam [##] [str]
+40      Volume [##]
+41      End mod
+42      End sam
+43      Play [str]
+44      End play
+45      Wait play [str]
+46      Wait play
+47      (blank line)
+48      Sfx [##]
+49      Play sfx [str]
+50   g  Open [dir]
+51   *  Lockself
+52   *  Unlockself
+53   g  Send [dir] [label]
+54      Zap [str] [##]
+55      Restore [str] [##]
+56   *  Lockplayer
+57   *  Unlockplayer
+58   *  Lockplayer ns
+59   *  Lockplayer ew
+60   *  Lockplayer attack
+61   x  Move player [dir]
+62   x  Move player [dir] [str]
+63      Put player [-#] [-#]
+64  ODT If player [dir] [str] (Becomes If [cond=touching] [dir] [str])
+65  ODT If player not [dir] [str] (Becomes If not [cond=touching] [dir] [str])
+66      If player [-#] [-#] [str]
+67   g  Put player [dir]
+68  x g Try [dir] [str]
+69  * g Rotatecw
+70  * g Rotateccw
+71   g  Switch [dir] [dir]
+72   g  Shoot [dir]
+73  * g Laybomb [dir]
+74  * g Laybomb high [dir]
+75  * g Shootmissile [dir]
+76  * g Shootseeker [dir]
+77  * g Spitfire [dir]
+78  * g Lazerwall [dir] [##]
+79      Put [color/thing/param] [-#] [-#]
+80  x g Die item
+81      Send [-#] [-#] [str]
+82  x * Copyrobot [str]
+83  x * Copyrobot [-#] [-#]
+84  x*g Copyrobot [dir]
+85   g  Duplicate self [dir]
+86      Duplicate self [-#] [-#]
+87      Bulletn [ch] (In MZX 2.0, changes ALL bullet n pics)
+88      Bullets [ch] (In MZX 2.0, changes ALL bullet s pics)
+89      Bullete [ch] (In MZX 2.0, changes ALL bullet e pics)
+90      Bulletw [ch] (In MZX 2.0, changes ALL bullet w pics)
+91   *  Givekey [col]
+92   *  Givekey [col] [str]
+93   *  Takekey [col]
+94   *  Takekey [col] [str]
+95      Inc [str] random [##] [##]
+96      Dec [str] random [##] [##]
+97      Set [str] random [##] [##]
+98      Trade [##] [item] [##] [item] [str]
+99      Send [dir] player [str]
+100     Put [color/thing/param] [dir] player
+101  x  /[str]
+102     *[str]
+103     [[str]
+104     ?[str];[str]
+105     ?[str];[str];[str]
+106     :[str]
+107     .[str]
+108     |[str]
+109  x  Teleport player [str] [-#] [-#]
+110  *  Scrollview [dir] [##]
+111     Input string [str]
+112     If string [str] [str]
+113     If string not [str] [str]
+114     If string matches [str] [str]
+115     Player char [ch] (In MZX 2.0, sets the pic for all four directions)
+116     %[str]
+117     &[str]
+118  x  Move all [color/thing/param] [dir] (different)
+119  x  Copy [-#] [-#] [-#] [-#]
+120     Set edge color [col]
+121     Board [dir] [str]
+122     Board [dir] none
+123     Char edit [ch] [##] [##] [##] [##] [##] [##] [##] [##] [##] [##] [##] [##] [##] [##]
+124  g  Become pushable
+125  g  Become nonpushable
+126     Blind [##]
+127     Firewalker [##]
+128  *  Freezetime [##]
+129  *  Slowtime [##]
+130     Wind [##]
+131     Avalance
+132 x g Copy [dir] [dir]
+133  g  Become lavawalker
+134  g  Become nonlavawalker
+135     Change [color/thing/param] [color/thing/param] (Diff. from ver 1.0?)
+136  *  Playercolor [col]
+137  *  Bulletcolor [col] (In MZX 2.0, changes all bullet colors)
+138  *  Missilecolor [col]
+139     Message row [##]
+140 Pre Rel self (In MZX 2.0, unpredictable/useless for use w/global robot)
+141 Pre Rel player
+142 Pre Rel counters
+143     Change char id [##] [ch] (Not param checked or doc'd until MZX 2.0)
+144     Jump mod order [##]
+145     Ask [str]
+146  *  Fillhealth
+147     Change thick arrow char [dir] [ch]
+148     Change thin arrow char [dir] [ch]
+149  *  Set maxhealth [##]
+150     Save player position (In MZX 2.0, saves to position 1)
+151     Restore player position (In MZX 2.0, uses position 1)
+152     Exchange player position (In MZX 2.0, uses position 1)
+153     Set mesg column [##]
+154     Center mesg
+155     Clear mesg
+156  *  Resetview
+157     Sam [##] [##]
+158 ODT Volume [str]
+159  *  Scrollbase color [col]
+160  *  Scrollcorner color [col] (Diff. from MZX 1.03)
+161  *  Scrolltitle color [col]
+162  *  Scrollpointer color [col]
+163  *  Scrollarrow color [col]
+164     Viewport [##] [##] (Not param checked until MZX 2.0)
+165     Viewport size [##] [##] (Not param checked until MZX 2.0)
+166 ODT Set mesg column [str]
+167 ODT Message row [str]
+168     Save player position [##]
+169     Restore player position [##]
+170     Exchange player position [##]
+171     Restore player position [##] duplicate self
+172     Exchange player position [##] duplicate self
+173     Player bulletn [ch]
+174     Player bullets [ch]
+175     Player bullete [ch]
+176     Player bulletw [ch]
+177     Neutral bulletn [ch]
+178     Neutral bullets [ch]
+179     Neutral bullete [ch]
+180     Neutral bulletw [ch]
+181     Enemy bulletn [ch]
+182     Enemy bullets [ch]
+183     Enemy bullete [ch]
+184     Enemy bulletw [ch]
+185  *  Player bulletcolor [col]
+186  *  Neutral bulletcolor [col]
+187  *  Enemy bulletcolor [col]
+188
+189
+190
+191
+192
+193 Pre Rel self first (Unpredictable/useless for use w/global robot)
+194 Pre Rel self last (Unpredictable/useless for use w/global robot)
+195 Pre Rel player first
+196 Pre Rel player last
+197 Pre Rel counters first
+198 Pre Rel counters last
+199     Mod fade out
+200     Mod fade in [str]
+201  x  Copy block [-#] [-#] [##] [##] [-#] [-#]
+202     Clip input
+203  g  Push [dir]
+204     Scroll char [ch] [dir]
+205     Flip char [ch] [dir]
+206     Copy char [ch] [ch]
+207
+208
+209
+210     Change sfx [##] [str]
+211     Color intensity [##] percent
+212     Color intensity [##] [##] percent
+213  x  Color fade out
+214  x  Color fade in
+215     Set color [##] [##] [##] [##]
+216     Load char set [str]
+217     Multiply [str] [##]
+218     Divide [str] [##]
+219     Modulo [str] [##]
+220     Player char [dir] [ch]
+221
+222	  Load palette [str]
+223
+224     Mod fade [##] [##] (target/speed)
+225  *  Scrollview [-#] [-#]
+226  x  Swap world [str]
+227  *  If alignedrobot [str] [str]
+228
+229  *  Lockscroll
+230  *  Unlockscroll
+231     If first string [str] [str]
+232     Persistent go [str] (waits until it can move then moves)
+233     Wait mod fade
+234
+235	  Enable saving
+236	  Disable saving
+237  *  Enable sensoronly saving
+238     Status counter [##] [str]
+239     Overlay on
+240     Overlay static
+241     Overlay transparent
+242     Put [col] [ch] overlay [-#] [-#]
+243  x  Copy overlay block [-#] [-#] [##] [##] [-#] [-#]
+244
+245     Change overlay [col] [ch] [col] [ch]
+246     Change overlay [col] [col]
+247     Write overlay [col] [str] [-#] [-#]
+248
+249     INTERNAL USE (temporary use for box messages)
+250
+251	  Loop start
+252     Loop [##]
+253     Abort loop
+254     Disable mesg edge
+255     Enable mesg edge
+
+** Color words-
+
+00 Black
+01 Dark Blue
+02 Dark Green
+03 Dark Cyan
+04 Dark Red
+05 Dark Purple
+06 Brown
+07 Light Gray
+08 Dark Gray
+09 Blue
+10 Green
+11 Cyan
+12 Red
+13 Purple
+14 Yellow
+15 White
+
+** Conditions-
+
+Walking [dir]
+Swimming
+Firewalking
+Touching [dir]
+Blocked [dir]
+Aligned
+Alignedns
+Alignedew
+Lastshot [dir]
+Lasttouch [dir]
+Rightpressed
+Leftpressed
+Uppressed
+Downpressed
+Spacepressed
+Delpressed
+Musicon
+Pcsfxon
+
+** Auto labels-
+
+THUD, TOUCH, BOMBED, KEYA-Z, INVINCO, PUSHED, EDGE, ENEMYSHOT, PLAYERSHOT,
+NEUTRALSHOT, SHOT, PLAYERHIT, SENSORON, SENSORTHUD.
+
+MZX 2.0- KEY1-9, SPITFIRE, JUSTLOADED, JUSTENTERED, SENSORPUSHED, LAZER,
+	GOOPTOUCHED, PLAYERHURT.
+
+** Auto counters- (* = Robot specific)
+
+GEMS, AMMO, LOBOMBS, HIBOMBS, COINS, LIVES, HEALTH, TIME, INVINCO, INPUT,
+INPUTSIZE, KEY, BULLETTYPE*, PLAYERDIST*, HORIZPLD*, VERTPLD*.
+
+MZX 2.0- SCORE, THISX*, THISY*, TIMERESET, LOOPCOUNT*, PLAYERLASTDIR,
+	PLAYERFACEDIR.
+
+Special- XPOS, YPOS (for REL COUNTERS) These are still global.
+
+** Directions-
+
+IDLE (0)
+NORTH, N, UP (1)
+SOUTH, S, DOWN (2)
+EAST, E, RIGHT (3)
+WEST, W, LEFT (4)
+RANDNS (5)
+RANDEW (6)
+RANDNE (7)
+RANDNB (8)
+SEEK (9)
+RANDANY (10)
+BENEATH, UNDER (11)
+ANYDIR (12)
+FLOW (13)
+NODIR (14)
+RANDB (15)
+RANDP (+16)
+CW (+32)
+OPP (+64)
+RANDNOT (+128)
+
+** Equalitys-
+
+= or ==        (equal to)
+!= or <> or >< (not equal to)
+>              (greater than)
+<              (less than)
+>= or =>       (greater than or equal to)
+<= or =<       (less than or equal to)
+
+** Color coding-
+
+W/o ?-
+	Low nybble foreground (0-15)
+	High nybble background (0-15)
+
+With ?-
+	Check to see if bit for ? is set (In 1.0? robots, this is the high bit of
+	the following thing code. Otherwise, it is +256.) If not, color is same as
+	above. Otherwise- 0 through 15 stand for a specific foreground color with
+	unknown background color. 16 through 31 stand for a specific background
+	color (the number minus 16) with unknown foreground color. 32 stands for
+	unknown background and unknown foreground both.
+
+** Sound effects numbers and codings- (version 1.0?) (See v2.00 editor for
+	changes to game over and death sfx)
+
+Num String                                               Is
+--- ---------------------------------------------------- ------------------
+0   t5c-gec-gec														Gem
+1   t5c-gec-gec														Magic Gem
+2   tcge-zcge															Health
+3	 t-c+c+c-g-g-g														Ammo
+4   t6a#a#zx															Coin
+5   t-cegeg+c-g+cecegeg+c											Life
+6   t-cc#dd#e															Lo Bomb
+7   tcc#dd#e															Hi Bomb
+8   t4gec-g+ec-ge+c-gec												Key
+9   t-gc#-a#a															Full Keys
+10  tceg+c-eg+ce-g+ceg												Unlock
+11  s1a#z+a#-a#x														Can't Unlock
+12  t-a-a+e-e+c-c														Invis. Wall
+13  zax																	Forest
+14  t0a#+a#-a#b+b-b													Gate Locked
+15  t0a+a-a+a-a														Opening Gate
+16  t-g+g-g+g+g-g+g-g-g+g-g-tg+g									Invinco Start
+17  sc-cqxsg-g+a#-a#xx+g-g+a#-a#									Invinco Beat
+18  sc-cqxsg-g+f-f+d#-d#+c-ca#-a#2c-c							Invinco End
+19  t0g+g-gd#+d#-d#													Door locked
+20  t0g+gd#+d#															Door opening
+21  tc-zgd#c-gd#c														Hurt
+22  ta-a-a+a-a-a														AUGH!
+23  t+c-gd#cgd#c-g+d#c-g+d#c-gd#+c-gd#cgd#c-g+d#c-gd#+c  Death
+	  -gd#cgd#c-g+d#c-gc-gd#g+c
+24  sc-cqxsa#-a#++c-c+q.xsd#-d#qxsa#-a#++c-cq.xs+c-cqxs  Game over
+	  a#-a#++c-c+q.xsd#-d#qxs+f-f+c-cq.xs
+25  t0c+c-c+c-c														Gate closing
+26  t1d#x																Push
+27  t2c+c+c2d#+d#+d#2g+g+g3cd#g									Transport
+28  z+c-c																Shoot
+29  t1a+a+a																Break
+30  t-af#-f#a															Out of ammo
+31  t+f#																	Ricochet
+32  s-d-d-d																Out of bombs
+33  tc-aec-a															Place bomb (lo)
+34  t+c-aec-a															Place bomb (hi)
+35  t+g-ege-ege														Switch bomb type
+36  t1c+c0d#+d#-g+g-c#												Explosion
+37  t2cg+e+c2c#g#+f+c#2da+f#+d2d#a#+g+d#						Entrance
+38  tcge+c-g+ecge+c-g+ec											Pouch
+39  zcd#gd#cd#gd#cd#gd#cd#gd#cfg#fcfg#fcfg#fcfg#fcga#gc  Ring/potion
+	  ga#gcga#gcga#gs+c
+40  z-a-a-aa-aa														Empty chest
+41  t1c+c-c#+c#-d+d-d#+d#-e+e-ec									Chest
+42  tc-gd#c-zd#gd#c													Out of time
+43  zc-d#g-cd#															Fire ouch
+44  tcd#g+cd#g															Stolen gem
+45  z1d#+d#+d#															Enemy HP down
+46  z0ca#f+d#cf#														Dragon fire
+47  tcg+c-eda+d-f#eb+e-g#											Scroll/sign
+48  See editor in v2.00                                  Goop touch (v2.0+)
+
+** Codes for variables, etc-
+
+Overlay off                   0
+Overlay on                    1
+Overlay static                2
+Overlay transparent           3
+
+Explosion leave space			0
+Explosion leave ash				1
+Explosion leave fire				2
+
+Can save								0
+Can't save							1
+Can save only on a sensor		2
+
+Forest becomes empty				0
+Forest becomes floor				1
+
+Fire burns limited				0
+Fire burns forever				1
+
+Code for no board					255
+Code for no endgame board		128 (255 in MZX v2.0+)
+Code for death to restart		128 (255 in MZX v2.0+)
+Code for death to be same pos	129 (254 in MZX v2.0+)
+
+Player bullet						0
+Neutral bullet						1
+Enemy bullet						2
+
+Directions							SEE ABOVE
+Colors								SEE ABOVE
+
+Simple direction, N				0
+Simple direction, S				1
+Simple direction, E				2
+Simple direction, W				3
+
+Simple direction -> Complex   Add 1
+Complex direction -> Simple	Subtract 1
+
+Horizontal							0
+Vertical								1
+
+No key (key array)				127
+
+No time limit						0
+
+No protection						0
+Protection from saving			1
+Protection from editing			2
+Protection from everything		3
+
+Size of full pathname holders	129
+
+Other variable codes are not important or are only internal and will not
+carry over to MZX 2.0.

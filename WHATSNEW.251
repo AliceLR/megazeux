@@ -1,0 +1,696 @@
+
+2.51 release: (quick bug-fix release while working on 3.00)
+
+ * NOTE: I HAVE decided to release a 3.00 version of MegaZeux using
+	PROTECTED MODE and a large number of enhancements. Visit the Software
+	Visions web site for details. Betas will be PUBLIC.
+
+ * Bug where moving north or west towards a board that is larger than 100
+	tiles in a dimension may not work properly fixed.
+ * Bugs in 2GDM.EXE preventing proper conversion of some S3Ms fixed.
+ * A rare bug preventing internal MOD conversion fixed.
+ * "Error opening MOD" will no longer appear during normal gameplay.
+ * Exporting ANSis now adds a color to the end returning text to normal
+	grey. (so TYPEing them in DOS no longer screws up the DOS colors)
+
+2.50 release:
+
+ * FOR ALL YOU 2.07 USERS- THE MAJOR UPGRADE is the new sound code! Support
+	for stereo, 16-bit, more cards, 4 sound effects channels, 32 music
+	channels, higher quality, and faster sound code! Less bugs! More formats
+	supported! All non-MOD files MUST be converted to GDM using the included
+	2GDM.EXE program. Formats supported- MOD (up to 32 channels), WOW/OCT/NST,
+	S3M, 669, and MTM.
+
+ * Volume controls (overall and SAM) added to F2-Settings (saved in .CFG file)
+ * SAMs play at 2x volume.
+ * MTM support added to 2GDM.EXE. Other formats aren't added because they
+	aren't needed (not used often enough) or in the case of XM, because they
+	support too many advanced features that MZX does not support. Partial
+	XM support MAY be added later.
+ * Many minor bug fixes in 2GDM.EXE's conversion routines.
+ * Internal MOD conversion (in MegaZeux) sped up considerably.
+ * For all those that upgraded from 2.07, see 2.49g and 2.48b WHATS-NEW
+	for more stuff, including a couple interesting new Robotic features
+
+ * This is the LAST planned release of MegaZeux. I may release bug-fix
+	upgrades but that is it. I am moving on to new projects. (I will still
+	support MegaZeux, of course.)
+
+2.49g release:
+
+ * New Import function added- You can import an ANSi to any position on the
+	board.
+ * Full SAM sound effect support as in the original 2.07 version (but using
+	the new MOD code for up to 4 simultaneous channels)
+ * The OPEN Robotic command will now push the Robot out of the way if the
+	door would be blocked by the robot.
+ * REL PLAYER and REL COUNTERS now affects the THISX/THISY counters
+	(giving the distance FROM the player/counters TO the Robot) and the
+	prefixes also affect the IF [dir] BLOCKED command, allowing you to
+	check for blocked status next to the player or an arbitrary position.
+ * [ box message statements now clip their message to 64 characters (the
+	maximum) on display. Note that all other box-message statements are
+	NOT clipped!
+ * Color codes are allowed in ? and & box message statements
+ * Invalid sound card settings no longer cause a lock-up
+ * You can hold down the mouse button to cycle through RGB values in the
+	palette editor
+ * Changing something to an explosion no longer can cause weird colors
+ * Whats New section of help sorted by version
+ * Placing a robot over the player is prevented with a warning
+ * The "Alt+N- Music" lights up properly in the editor now
+ * When chaning from a larger board to a smaller board, you can no longer
+	accidentally have the cursor outside of the board size
+ * GUS owners don't need to enter # of SFX channels, since MegaZeux
+	cannot support GUS sound effects anyways.
+ * Fileboxes (loading MODs, worlds, etc.) can now hold as many filenames
+	as memory allows.
+ * GUS setup shown properly on configuration screen
+ * 2GDM.EXE rewritten- In THIS release, it can only convert MOD, NST, WOW,
+	OCT, 669, and S3M files! The final (2.50) release will have support for
+	the remaining file formats. It is being rewritten to fix many small bugs
+	and make it smaller and faster, as well as possibly add more file
+	formats.
+ * 2GDM.EXE- F00 effect in MODs deleted during conversion
+ * 2GDM.EXE- Bad effects S8x, S0x, and Xxx deleted during S3M conversion
+ * 2GDM.EXE now works properly from other directories
+ * INTERNAL MOD loading support. You can now load MODs, NSTs, WOWs, and OCTs
+	from within the game without having to convert them to GDM first. The
+	only exception is 15-instrument MODs- they must first be converted. Note
+	that all other formats, such as S3M, 669, etc. must still be converted.
+	NST/WOW/OCT support was only added because they are extremely similar to
+	MODs, and MODs were required for backward compatibility.
+ * Insert doesn't display those "Lo bomb selected" messages, etc. if the
+	player is Attack Locked or settings say he cannot bomb.
+ * Minor bugs in ANSi import corrected. (problem fixed- caused errors
+	on import of ANSis with more or the same number of lines as the
+	current board size maximum)
+ * "Ammo <10" and "Ammo >9" entries in Global Chars changed to "Small
+	Ammo" and "Large Ammo" to prevent confusion.
+
+2.48b release:
+
+ * ALL NEW music code! Features include faster, NO BUGs, 32 channels,
+	more formats supported (sorry, no MID or XM) etc. See the section
+	entitiled 'MegaZeux's Sound System' for details. (in Help)
+ * Bug where selecting "(no board)" to add a board caused an error if
+	that wasn't the first "(no board)" on the list.
+ * Bug where if a robot line entered consisted of only semicolons, spaces,
+	and commas, it would screw up that robot's program, fixed.
+ * Command line options (-port,-dma,-irq) added for setting sound card
+	parameters. Only needed if auto-detection fails.
+ * Minor help corrections.
+ * Save/load during testing in editor disabled.
+ * Pressing \ no longer causes problems during gameplay.
+ * Bug where "Restart board" for death option in global options didn't
+	function properly on first board, nor did restart-if-zapped. (fixed)
+ * Filling in the overlay no longer locks up if you fill over something of
+	the same color and picture.
+ * Overlay no longer messed up when resizing board.
+ * Lock up on Import World removed.
+ * Setting the counter "INVINCO" to 0 works properly.
+ * Hopefully fixed rare lockups after robot box messages.
+ * Added confirmation for board deletion in editor.
+ * All included worlds are NO LONGER password protected. (The old password
+	was "megahertz".)
+ * Minor bugs in passage search algorithms corrected.
+ * Obscure bug involving REL prefixes if used in "infinite-loop" type
+	constructs (fixed)
+ * In editor- Alt+Dir to move 10 spaces now works as expected with draw
+	mode on. (IE it will draw in ALL 10 spaces)
+ * Bug where passages on screens wider than 256 spaces didn't work
+	properly. (fixed)
+ * Bug where fire-to-player's-right would lock up and kill him FIXED.
+ * Counters can be used in ALL strings in &COUNTER& notation. For example,
+	SEND "ROBOT" "LABEL&COUNTER&" will replace &COUNTER& with a number.
+	This works for ALL strings- counternames, labels, robots, etc. See
+	Robotic help for details.
+
+2.07 release:
+
+ * Labels and NON-valid counter-regulated options in robot box messages are
+	not blank lines; Instead they are just removed from the message.
+ * Passage (stairs/caves/whirlpools) search algorithm corrected.
+ * Digitized sample SFX works properly with the note B now.
+ * Bug where getting multiple energizers in a row screwed up player's color
+	is fixed.
+ * Bug where chests with invinco potions will die when taken is fixed.
+ * Filling in editor, with a robot/scroll/sensor over itself, is now
+	handled properly.
+ * Whee!! More minor help typos fixed.
+
+2.06 release:
+
+ * Yet more cursor safegaurds inserted. (Where do you GET these problems!? :)
+ * Saving a game no longer asks for overwrite confirmation if the file
+	doesn't really exist.
+ * Help and tutorial- Minor textual errors fixed
+ * Save dialog boxes only allow entry of 12 characters now, instead of 13.
+ * Help file can be accessed from any directory.
+ * -l cmd line option will no longer cause a loading error with an oversized
+	filename. (it will instead be ignored)
+
+2.05 release:
+
+ * Cursor bug fixed. (If it isn't, then get a new BIOS! :p)
+ * MegaZeux now utilizes overlaid code, for almost 50k core memory savings.
+ * LOCKSCROLL cmd fixed
+ * Moving into the lower-right corner of full-size boards no longer warps you
+	to the upper-left corner.
+ * SET COLOR and COLOR INTENSITY don't blow up if the color is not from 0
+	to 16.
+ * Code for activating 16 background colors is now shorter and uses BIOS
+	calls for compatibility.
+
+2.04 release:
+
+ * Slight modifications to Robotic Tutorial (help file)
+ * Sending a robot a message, when it hadn't done anything yet that turn,
+	activates it immediately. This helps with syncronized activities, such
+	as large, multi-robot creatures.
+ * ALT+Numerics feature of BIOS keyboard routine DISABLED (IE ALT+3 will
+	no longer break to DOS)
+ * Counters' code optimized.
+ * The temp file ~EDITRSZ.TMP created when resizing a board is now
+	deleted when finished.
+ * a KEYBOARD CODE kink was worked out (hopefully got 'em all...)
+ * Made printer code more general (should work on any printer in text mode)
+ * PALETTE BUG on some SVGA cards FIXED. (black now looks like black) If it
+	still isn't, please notify me.
+ * HOME and END will jump to the top/bottom of a box message/help/scroll.
+ * PgUp/PgDn/Mouse navigation work properly in box messages/help/scrolls
+ * HOME and END in dialogs works properly now- Unless you are editing a
+	number, they will jump to the FIRST item and the NEXT or OK button,
+	respectively. In a string, they will still jump to the start/end unless
+	you are already there, then they will jump to the proper dialog location.
+ * Robots (especially when there are lots of them) sped up.
+ * DUPLICATE SELF and COPY ROBOT cmds sped up some, except when used by
+	global robot.
+ * Palette intensities reset when going into editor after the title screen
+	changes them.
+ * MODULO "str" # will no longer crash if # is 0.
+ * Extreme palette activity no longer causes snow or (on EGA) screen breakup.
+	Palette activity also sped up.
+ * Bug fixed- If a SAM/MOD command had to free up board memory (showing the
+	little "freeing up board memory..." meter) then that robot stopped running.
+ * Bug fixed- If the robot changed it's surroundings (IE Putting a SPACE to
+	it's NORTH) and then did a RANDNB or RANDB, the new surroundings weren't
+	always taken into consideration.
+ * DIVIDE ERROR crash/bug fixed. (It was related to usage of RANDNB and RANDB)
+ * CHAR "A" vs. CHAR 'A' question added to F.A.Q.
+ * README.TXT changed- Boot disk/support info added.
+ * Help on cmd ."@string" corrected.
+ * SPEED defaults to 4 (settings) and is saved in MEGAZEUX.CFG.
+
+2.03 release:
+
+ * Intensity of palette (and other stuff?) now resets after a test game.
+ * Messed-up black color on certain graphics cards- Attempted to fix.
+ * Minor bug in VER1TO2.EXE fixed
+ * Robot section of Tutorial corrected (the descriptor scrolls)
+ * Speeds based on real time (IE speed 3 will be the same on ANY computer,
+	unless the computer itself is so slow that it forces a slower speed.)
+ * CAVERNS has game over screen fixed
+ * MOVE PLAYER [dir] "label" command now works properly. (Before, the label
+	was almost always ignored)
+
+2.02 release:
+
+ * Bugs with Enter in text mode on small boards fixed
+ * Bugs with slime fixed
+ * If you have screen faded out (COLOR FADE OUT) and go to another screen,
+	it no longer fades it in for you automatically.
+ * HELP.DOC- CHANGE CHAR ID section fixed
+ * Fill really does now fill properly on boards larger than 127x127. :)
+ * Sped up sensor interactions somewhat
+ * Fixed problems with boards not scrolling with the player, in the
+	game on over-sized boards. Run FIX.EXE in all directories containing
+	version 2.01 or 2.00 .MZX/.MZB files.
+ * Nothing can give you negative coins, gems, etc. (such as thieves)
+ * Minor robot speed improvements
+ * Turning Music Off (Settings in Game) really keeps it off... :)
+
+2.01 release:
+
+ * Sensor command CHAR'X' fixed
+ * TAKEing health now counts as hurting the player for the :playerhurt label
+ * Can load help from any drive/directory
+ * Copy block in editor now properly clips the block's destination
+ * Move block in editor now properly clips the block's destination
+ * ."@new_robot_name" command added
+ * If the player runs up against a player bullet, it won't hurt him
+ * JUSTENTERED, JUSTLOADED, and GOOPTOUCHED labels fixed
+ * UNLOCKSCROLL and locked scrolling in general fixed
+ * Global info now properly sets endgame/death boards
+ * Robot ASK command works properly now
+ * Help- internet address/address validity date corrected
+ * Help- CHANGE CHAR ID help section- added note about how the numbers are
+	also listed in the Global Edit Chars menus
+ * ENTER can now exit robot box messages/scrolls
+ * Message line (bottom) shows color correctly
+ * EXCHANGE/RESTORE w/DUPLICATE SELF fixed
+ * Attempted to fix cursor problems in editor. If it doesn't work now, then
+	I have no solution, as I use documented BIOS routines with many safegaurds.
+ * Minor speed improvements
+ * Minor size reduction
+ * Fill in editor now works with board sizes over 127x127
+
+2.00 release: MAJOR UPDATE! TOTAL REWRITE! (warning- this list is LONG)
+
+ * All code has been rewritten or at least stepped through line by line,
+	except for the music code.
+ * New user interface style and startup screen. Lots of neat little
+	items like shadows, nicer colors, etc. Mostly aesthetic but nice.
+	Mouse support also improved.
+ * Keyboard code rewritten (again) All alt-lock, shift-lock, and ctrl-lock
+	problems, as well as most other keyboard problems, should not be a
+	problem anymore. You may have to use the -keyb2 command line option.
+	If a key locks, tap it a couple times.
+ * No flicker- The game engine now page flips.
+ * Better string input- ANYWHERE you can enter a string, you can now
+	move with the cursors and insert in the middle...
+ * Better character selection box- Shows all the characters.
+ * New default character set- Much nicer, more general use characters.
+ * Now detects processor to avoid lock ups on an old 8086/8088. If an
+	invalid graphics card is found, DOS services are used for printing.
+ * Different command line options. (use -? to get info on them)
+ * Context sensitive help.
+ * Bombs and sensors under the player no longer mess up floors, etc.
+ * CHANGEing something to lava, fire, etc. now works correctly.
+ * Transporting onto a sensor works properly.
+ * New conditions- MUSICON and PCSFXON
+ * Changing things to spaces CLEARS them, to avoid screwing up floors.
+ * Restart position not changed during a save/load
+ * Label- :playerhurt for when player is hurt, not sent on invincible hurts
+ * Maximum robot commands per cycle is 40, not 25
+ * Global robot runs normally in freeze/slow time
+ * Choice of 100x100, 200x50, 400x25, 80x125, or 60x166 for each board.
+ * Character editor remembers character you were editing.
+ * Robo-P renamed to Robotic
+ * Scrolls now allow proper use of mouse, pgup, and pgdn.
+ * Scrollborder became Scrollcorner.
+ * :gooptouched auto label added, for when the player touches Goop.
+ * Messages like "You got a red key" are now "You got a key" so palette
+	 fiddling won't make strange words. :)
+ * Within robotic messages (box/line) an &INPUT& will be replaced by the
+	 exact text of the currently inputted string
+ * Notes in play of same freq won't run together
+ * Explosions won't destroy entrances, lava, water, ice, or goop
+ * Robots are stopped from firing if there is already a bullet of the same
+	 dir/type in that dir.
+ * Other things will push the player ONTO a sensor.
+ * The above will trigger the SENSORON label.
+ * If player is on an entrance without having been there before the update,
+	 use it. (IE can now be pushed onto entrances)
+ * Teleporting or walking onto a screen and starting on a sensor will
+	 trigger the SENSORON label
+ * Non-players/puzzle pieces now transport properly.
+ * PLAYERLASTDIR (0-4) and PLAYERFACEDIR (0-3) as counters.
+ * Points for killing enemies (3) and points for rings/potions (5)
+ * Way to disable edging spaces on message row- ENABLE MESG EDGE, DISABLE.
+ * Cmds- LOOP START, LOOP # TIMES, ABORT LOOP, uses robot counter LOOPCOUNT
+ * Counter limit increased to 50 plus built-in.
+ * New passage search order- 1) Same type, same color 2) Same color 3) Same
+	 type, same foreground 4) Same foreground 5) Same type 6) Default player
+	 position
+ * Palette import/export
+ * If the starting board is deleted, change starting board to title.
+ * "Sets of five" numerical input actually increase by fives
+ * Holding the mouse button on a numeric arrow button cycles the num.
+ * Removed the "." Directory from file menus
+ * Six (not four) status counters.
+ * CHANGE blah p?? blah p?? (notice the p?? added for the first thing)
+ * Doors, if can't move, don't advance in anim. IE, doors won't get "stuck"
+	 if they are blocked.
+ * PERSISTENT GO command, like /"nsew" but WAITS to move if blocked.
+ * No chest message on empty.
+ * Startup "help" screen on first use.
+ * Explosions Leave Empty doesn't mess up ANY floors, etc. (does web.)
+ * Much better fill routine.
+ * Entering a non-cmd with the first character as a [, ., :, etc autoatically
+	 formats it. Leading and trailing spaces and quotes are cleared first.
+ * Save/Load game/etc are accessed through F-keys in the game.
+ * Removed special menu for Alt+M (modify) in editor
+ * In editor, keeps track of whether world has been modified.
+ * Ceiling layer- noninteractive, but overlays things and looks neat.
+	 Included in editor- Edit, display toggle. Robots- changing it
+	 by character, copying areas of it, and filling an area of it by
+	 cmd or string (IE set area to "A string") Char of 32 is see-thru.
+	 Layer during game can be on, off, or static (IE not scrolling, just
+	 showing upper left portion)
+ * Robot commands to change the mode of saving.
+ * Limit any one robot/scroll to 31k.
+ * Allow placing shooting fire in editor.
+ * Make all enemies without speed arguments move 1/2 thier speed.
+ * Player CANNOT be overwritten, you must place him anew to move him.
+ * First line of robot now shows if it is a box mesg.
+ * Speed 1 in game does NOT page flip, for speed.
+ * Inputed strings allow input of spaces.
+ * Time limits- Out of time zaps to entrance automatically, THEN RESETS
+	 TIMER. Counter TIMERESET holds reset value for timer, and the TIME
+	 counter holds the current time.
+ * MOD code has only an error on no memory. Errors for loading mods and
+	 sams (IE not enough memory) are activatable if the debug menu (F6)
+	 is shown. SAMs have errors for file errors/out of memory. These errors
+	 are always in the editor/testing games.
+ * First test of a game doesn't give GAME OVER.
+ * Sound effects aren't cut off across screens.
+ * Placing a bomb while upon a passage no longed warps to title.
+ * Sensors are pushable by things other than the player.
+ * New sensor-activated label- SENSORPUSHED, when the sensor is pushed,
+	 with or without the player on it.
+ * Label- JUSTENTERED when the player just entered the screen or the game
+	 is started. (NOT restored)
+ * Command- Can lock/unlock board scrolling temporarily- LOCKSCROLL,
+	 UNLOCKSCROLL.
+ * IF ALIGNEDROBOT "robot" "label"
+ * Damage editing- Changing the amount of damage things inflict.
+ * Load title screen directly when loading game for title. Prevents music on
+	 first board from playing, and saves time.
+ * New robot-specific auto-counters- (read only) THISX, THISY.
+ * Anywhere a number can go in a Robotic command, a counter can too.
+	 Wherever there is a number, character, or color, you can use a counter
+	 name in quotes instead.
+ * Cmd line- load MZX file. (-lxxxxxxxx.MZX)
+ * Config file for options, ask "OK?" on startup. Removed all config
+	 cmd line options.
+ * Cmd- SCROLLVIEW X Y. (upper left hand corner is specified) Based off of
+	 current player position.
+ * Cmd- SWAP TO WORLD "world.mzx" as if starting the world up. Skips any
+	 title screen. (you could put a message there) The other world can have
+	 a "Only play from swap" option set.
+ * Quicksave key in game- Saves without asking for filename and confirmation.
+ * Quickload key in game- Same idea.
+ * Option (default off) on world to clear messages, bullets, and spitfires
+	 from a screen when exited.
+ * Label JUSTLOADED sent to as soon as the game is started or restored.
+	 (including the title screen and actual playing)
+ * Shows character number on char edit and char selection.
+ * Shows color number on color selection.
+ * Multiple spots to SAVE/RESTORE/EXCHANGE PLAYER POSITION. (8)
+ * RESTORE/EXCHANGE PLAYER POSITION with the option to duplicate the robot
+	 to take his place. When the player moves back, the robot is, of course,
+	 deleted.
+ * Remove RANDOM POS/SIZE options.
+ * Allow labels to interrupt in a robot's box-message code and have the
+	 message still show uninterrupted.
+ * Show a pic of the item next to it in the THINGS menus.
+ * Different bullet pics/colors for player, neutral, and enemy bullets.
+ * Status shown counters won't show if the value is 0.
+ * Prefixes that affect only the first or last x y pair of a command.
+	 (REL COUNTERS LAST, REL SELF FIRST, etc.)
+ * Mod fading commands (background)
+ * Allow lives/health to max out at 65535.
+ * Score as a counter.
+ * Maximum of 150 boards. (not 127)
+ * Cmd- COPY BLOCK x y x y x y.
+ * Label for SpitFire hitting a robot- "spitfire"
+ * Label for Lazer hitting a robot- "lazer"
+ * Cmd- CLIP INPUT (chops first word + spaces off of input)
+ * Cmd- IF FIRST INPUT "str" "label"
+ * KEY1 through KEY9 labels. (like KEYA thru KEYZ)
+ * Allow viewport sizes down to 1x1.
+ * PUSH robot command- push things to dir without moving there.
+ * ONE global robot. (No ID) Stored seperate from a board, and is active on
+	 ALL boards.
+ * Robots- Allow importing of a character into a CHAR EDIT command.
+ * Robots- Have SCROLL CHAR, FLIP CHAR, and COPY CHAR commands.
+ * Full backward compatibility w/old Megazeux via a conversion program.
+	 (VER1TO2.EXE)
+ * Editable built-in sfx. (including to digitized)
+ * Elements- Goop, which is like Water from ZZT.
+ * EGA/VGA palette editor, with easy fading. Commands- COLOR INTENSITY #
+	 PERCENT, COLOR INTENSITY "counter" PERCENT, COLOR FADE IN, COLOR FADE OUT,
+	 SET COLOR # TO r g b, SET COLOR # TO INTENSITY # PERCENT, SET COLOR
+	 "counter" TO INTENSITY "counter" PERCENT. (note- the FADE OUT/IN cmds
+	 are "quick" fades, IE not in the bk, but they actually stall the game
+	 a bit. They also end the current cycle.)
+ * Display counters within strings, IE * "You have &GEMS& gems." (use &&
+	 for &)
+ * Robot command- LOAD CHAR SET "file.chr"
+ * New default characters for global chars and char set.
+ * When adding another board, copy most of the options (can attack, etc.)
+	 from the current board, including MOD file.
+ * Edit ANY character/color from Global Chars or CHANGE CHAR ID.
+ * Char editor- Revert to Ascii, Revert to Megazeux, changed REVERSE to
+	 NEGATIVE.
+ * Alt-Y Debug info LABELs each line.
+ * Block command- Paint (w/color).
+ * Board editor- Scroll when cursor is five spaces from the edge.
+ * Fade in/out between screens and program areas.
+ * Ice does NOT keep pushing you against something. If you are blocked,
+	 cease movement.
+ * Make sound test available in editor as an option, from the sound effects
+	 editing screen.
+ * Can't test a save-locked game w/o pw, and it no longer locks up from this.
+ * REMOVED scroll coloring on line by line. (using ! codes)
+ * Export .ANS file.
+ * Energizer will return player color to old color.
+ * Capture and throw away Ctrl-C, PrintScreen, SysRq, and Pause.
+ * Return in editor at end of program can now add a blank line.
+ * Allow marking of a section of robot, in lines. You can now Copy, Cut,
+	 Clear, or Paste blocks.
+ * Remove useless "pro" mode.
+ * Robot commands- DIVIDE, MULTIPLY, MODULO.
+ * Different player pics per direction.
+
+1.03 release: QUICK FIXES, LIMITED DISTRIBUTION
+
+ * TELEPORT command fixed
+ * Gives error on attempt to test pw-protected world
+ * "Explosions leave Empty" won't screw up floors, etc. (except web)
+ * Placing a bomb over an entrance no longer warps to the title screen
+ * INPUT STRING allows input of spaces
+
+1.02 release: NEW:
+
+ * Miscellaneous help errors fixed
+ * Miscellaneous errors in Caverns fixed
+ * Miscellaneous speed/efficiency code updated
+ * AVALANCHE fully fixed, now can be entered into a robot
+ * Timing code fixed (may fix some problems)
+ * Slight modification to keyboard code (may fix some problems)
+ * Added -keyboard2 option
+
+1.01 release: FIRST "NON-BETA" RELEASE:
+
+ * JUMP MOD ORDER 'num' has now been documented.
+ * AVALANCE corrected to AVALANCHE.
+ * Robot command GO DIR "LABEL" fixed.
+ * Some minor help errors fixed.
+ * Fixed bug where a BECOME THING command, if becoming a space, fake, or
+	other "under"-type object, would not erase anything already under the
+	robot.
+ * REL TO PLAYER and REL TO SELF now work with the TELEPORT command.
+ * If a robot (from WALKing) is sent to the EDGE label and none exists,
+	it then attempts to find a THUD label as well.
+
+1.00g release: FIRST PUBLIC RELEASE:
+
+ * Removed ALL joystick support- Didn't work, couldn't get it to.
+ * PW protect- lot simpler, faster, and easier to hack. :)
+ * GLOBAL INFO- Toggleable game over music (you should correct this in all
+	your pre-1.00g games)
+ * Fixed misc. bugs in games. SOMEONE NEEDS TO TEST THEM ALL AGAIN FROM START
+	TO FINISH.
+ * Strings w/o quotes that begin with C or P are not capitilized funny.
+ * Settings box no longer turns off music.
+ * Alt-A in editor (param) gives error if there is not a legal "thing".
+ * ALLIGNED fixed to ALIGNED (spelling error inherited from ZZT)
+ * Fixed bug where if slow time or freeze time was active when player touched
+	a door, player was copied.
+ * Help- fixed slight bugs
+ * Fixed minor problems in Caverns, Forest, and Chronos
+ * MOD not required for SAM
+ * Level not speeded up if MOD not playing
+ * MOD not require a speed command (speed properly done)
+ * Help uses Alt-P to print
+ * Speed defaults to 3 not 4
+
+6th beta release: NEW:
+
+ * Fixed bug where slow/stop effects didn't work on title.
+ * Fixed bug in command MOVE PLAYER where it would occasionally create junk.
+ * Fixed bug in robot editor where if "Show Colors" option (Alt-O) was off,
+	any color with a ? for the second digit showed an incorrect first digit-
+	cV? for cF?, etc.
+ * The direction UNDER now works with the PUT thing dir PLAYER command.
+ * Dir/drive support added to loading MZX fileboxes.
+ * HELP IS IN ONE FILE- MZX_HELP.PKG (note- memory minimum is still
+	maintained.)
+ * Fixed bug where fire could hurt you indirectly even if lavawalker was in
+	effect.
+ * Fixed bug where nothing (except player) could push a pushable robot head
+	on. (only if it was in a string of things to push)
+ * Fixed bug where shooting fire would destroy entrances.
+ * Fixed bug in Put commands that would erase before placing, so putting
+	things over a fake or floor erased the fake/floor. (etc)
+ * Change command- Didn't change params properly if you were changing
+	between like objects (IE text to text) Also made more robust against
+	attempts to change things to robots/scrolls/signs/sensors/players.
+ * Put commands- Made more robust against attempts to put robots/scrolls/
+	signs/sensors/players.
+ * Fixed bug where no player on a board would really mean no player!
+ * With Shift-F1 through Shift-F4 in editor, the key used to stop the
+	flashing is not interpreted but ignored.
+ * Sensor/Robot interactions! (See help)
+ * PageUp will change menus in the editor now. (along with PageDown)
+ * Removed all refrences (except in file format) to double speed robots
+	and projectiles. Code increase is not worth it.
+ * RANDB, RANDNB directions added!
+ * Misc. help corrections and bug fixes, finished help. (except for
+	minor changes)
+ * Alt-O (options) no longer clears the command line at the bottom
+ * Character insert in robot editor now inserts the characters corresponding
+	to 10 and 13.
+ * If you select base 16 in Alt-O options (robot editor) then ALL numbers
+	are shown in hex, including when editing the line. (previously, the
+	current line was shown in base 10 at all times.)
+ * Chronos-Stasis finished. (not tested outside of myself)
+ * Forest of Ruin finished except for ending. (see above)
+ * Repeat (F4) and Delete line (Alt-D) added to robot editor
+ * Copy, Cut, and Paste line (Alt-C/T/P) added to robot editor (note- paste
+	REPLACES current line)
+ * Export robot (Alt-X) added to editor. Exporting from current line or
+	top of program both supported.
+ * Import robot (Alt-I) added to editor. Importing only looks for *.TXT
+	in the filebox. Import always REPLACES the current robot program.
+
+5th beta release: NEW:
+
+ * Fixed bug in teleport command where screen was not updated if player
+	ended up in the same position.
+ * Fixed bug where mouse didn't select right item on game menu
+ * Fixed bug where adding a new robot/scroll/sensor when the current item
+	was a robot/scroll/sensor would reset the color to lt.grey
+ * Caverns all finished (hope I got all the bugs)
+ * The DEF.COLORS option doesn't reset when changing/adding boards now
+ * SAM now works right...
+ * In fact, added new code for MOD and VOC- a LOT less "out of mem" or
+	"error loading" errors.
+ * Fixed bug with locked doors (not locks, but real doors)
+ * Saving games and files is MUCH faster in almost all circumstances.
+	Save meter more accurate as well.
+ * Board import/export fixed- robots/scrolls/sensors were messed up
+ * Pgdn, Pgup, Ctrl/Alt Home, Ctrl/Alt End added to robot editor.
+ * Ctrl/Alt Left + Right used to jump 10 chars in character selection boxes.
+ * Save area in character editor (F-2 and F-3) stays the same between calls
+	to the character editor, including when loading games.
+ * Character editor shows not only current char pic, but those of the three
+	chars before and three chars after as well.
+ * Fixed bug where a robot with no program would majorly mess up things.
+ * Misc. bug fixes, help typos, and optimizations.
+ !ADDED 14 COMMANDS (all commands finished)
+ !ADDED  2 DIRECTIONS (randp, randnot)
+ * Help brings up Robot Table of Contents within robot editor
+ * Quotes not required around strings of one word not matching any
+	reserved word, IE a word used for ANYTHING else, anywhere. They are
+	added automaticaly, though.
+ * EDITOR OPTIONS in robot editor (Alt-O) Choose number base, upper case
+	or lower case, and whether to display colors.
+ * Bug fixed in editor- Now colors like c7? (with ? at end) work right.
+ * Calibrate Joystick button added to Game options (F2) Tony- See if this
+	helps.
+ * Speeded up certain file operations. This MAY fix the "lockup" bug when
+	accessing Help during a MOD- I think that the lockup may of been just a
+	really slow file access.
+ * Added X position indicator to bottom left of robot window, to facilate
+	creating box messages that aren't too long.
+ * Fixed bug that allowed entering ANY character at the mixing rate
+	prompt.
+ * INPUT STRING, IF STRING "str" "label", IF STRING NOT "str" "label"
+	robot commands added.
+ * UNDER/BENEATH direction added to IF dir PLAYER thing "label" command.
+ * Clarified options at startup- Music device became Device for Digitized
+	Music and Sound.
+ * Added four more mixing rates. Choose from 7500 up to 25000 in jumps of
+	2500. (eight rates total)
+
+4th beta release: NEW:
+
+ * Note- SAVE GAME FORMAT CHANGED. Delete all your .SAV files. .MZX file
+	format NOT changed- compatibility still maintained.
+ * Scroll border/etc. colors changable using robot commands- SCROLLBASE
+	COLOR, SCROLLBORDER COLOR, etc. (see help)
+ * Removed Alt-Minus and Alt-Plus keys in editor- Useless and dangerous.
+	(they were only for testing purposes.)
+ * Various bug fixes
+ * Joystick support- UNTESTED! Tony- I need feedback!
+ * Mixing rate options at startup.
+ * A warning is given and verification is necessary if you try to save a
+	.MZX file over an already existing file.
+ * You can now choose from some additional music output devices.
+ * Help is in seperate files, MZX*.HLP, to save memory. (lots!)
+ * I FINALLY THINK THE MEMORY AND FILE CODE WORKS PERFECT! Except for speed.
+	Something to work on...
+ * Char editor shows values of bytes along left side, for use with robot
+	command CHAR EDIT.
+ * Yet more help
+ * Robot editor! See the top box for keys to use (Import/eXport not
+	implemented yet)
+ * Robots as well! See Help, Robo-P Reference, Command Reference, and look
+	at commands for help using them. Some are not done yet.
+ * Video mode returns to default VGA mode (text 16x9) on exit
+ * File lists sorted
+ * Directory support and DRIVE support in file boxes WAS added, but was
+	taken out due to problems since changing the current directory makes it
+	almost impossible to find the current .MZX file to read boards from.
+ * Custom Critical Error Handler (no dos grey messages if the drive is
+	invalid or something like that)
+ * Password displayed as *'s when inputting, except on protection menu.
+	(Do YOU think it should be *'s on protection menu? 'T'? CP?)
+ * Enemys-hurt-enemys option added (GLOBAL info, SPEC. button)
+ * "Show Robots" option added (Shift F2)
+ * More help added
+ * Fixed sensor bug (The player couldn't move onto it in most cases)
+ * Fixed a bug where if you tried to Grab something via the Modify menu and
+	the current thing was a scroll, sign, or robot that had no copy anywhere
+	else on the current board, then the memory allocated to that object was
+	not freed. (whew!)
+ * A few more optimizations
+ * Mouse disapears after a certain period of time of non-use
+ * Boulders from the AVALANCHE potion, and explosions from the BLAST potion
+	can't appear over an entrance anymore
+ * Fixed some bugs in Text Export
+ * Removed .BIN import- Waste of program space
+ * Made ALL options (protection, ANSi import) available in unregistered-
+	now registration is only for the games
+ * Removed "suicide key" from game. Think about how it could screw up
+	carefully planned cinemas, story sequences, etc.
+ * Mouse support in character editor
+ * Test function added
+ * Speeded up saves and board switches
+ * Slowed down all file access (okay, so it's not a feature, but it's more
+	reliable, as is memory management as well)
+ * Made save meter more accurate
+ * BLOCK COMMANDS! (in editor)
+ * ZZT board import (not perfectly accurate, but...)
+ * Bug fixed where games with the title screen title at maximum length would
+	mess up the file list box
+ * MOD (SB & speaker) support! (& SAM)
+ * Explosion-meets-player bug fixed
+
+3rd beta release: NEW:
+
+ * Full mouse support (except in character editing)
+ * No "pointer" mouse...
+ * Scrolls and sensors
+ * Robot code (memory management) mostly transparent to user
+ * GLOBAL Info- Death & endgame options
+ * GLOBAL Info- Removed "Health Only/Lives Only" options
+ * CW/CCW support
+ * Sound always the same speed
+ * Bug fixes and optimizations
+ * Status Info added
+
+2nd beta release: NEW:
+
+ * Cmd line options
+ * Mouse support (not finished)
+ * -Bios option
+ * Hopefully fixed Tony's graphics bugs (try it with and without -bios)
+ * Bug fixes
+ * Tutorial.mzx has creatures/guns sections
+ * Fixed/better/changed keyboard routines
+ * Optimized code

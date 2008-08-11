@@ -1,0 +1,239 @@
+
+File format for the .MZX world file (w/o password protection)
+-----------------------------------
+
+This file format is only accurate up through version 1.03.
+
+Byte(s)		Is
+
+00-24			Title of game (name of first board) w/terminating null. Padded
+				with junk.
+25				Protection method (0=none, 1=no-save, 2=no-edit, 3=total)
+				If not a 0, followed by the length of the password, then the
+				fifteen character password (encrypted) The rest of the file is
+				unaffected.
+26-28			The letters "MZX"
+29-3612		The character set (14 bytes per character, 256 characters)
+				Each character is 14 bytes, from the top row to the bottom
+				row, one byte per pixel row.
+3613-3918	IdChars array (306 bytes) This is the info in Global Chars,
+				as well as anything that can be edited with CHANGE CHAR ID.
+3919-3978	The four status counters, IE those counters shown on the
+				status screen. Each is 15 chars long, including a terminating
+				null. Padded with junk.
+3979-3982	Bullet characters- N S E W.
+3983			Player character.
+3984			X position of saved player position. (SAVE PLAYER POSITION cmd)
+3985			Y position of saved player position.
+3986			Board number (0-127) of saved player position.
+3987			Color of edge border during play.
+3988			Color of player.
+3989			Color of bullets.
+3990			Color of missiles.
+3991			Starting board number.
+3992			Board for end game. (128 for none)
+3993			Board for death. (128 for restart board, 129 for same pos)
+3994			X position for end game.
+3995			Y position for end game.
+3996			X position for death.
+3997			Y position for death.
+3998-3999	Starting number of lives. (word)
+4000-4001   Limit to lives. (word)
+4002-4003	Starting amount of health. (word)
+4004-4005	Limit to health. (word)
+4006			1 if enemies can hurt each other, 0 if not.
+4007			1 if game over sfx are on, 0 if not.
+4008			00.
+4009			Number of boards. (1 to 127)
+4010-????	Per board- 25 char title, including null terminator. Padded
+				with junk.
+????-????	Per board- Length of board in bytes (dword) and position of
+				board within file. (byte number, dword)
+
+At location of board- The board itself. (see .MZB files, exactly the same)
+
+
+Format for a .MZB board file
+----------------------------
+
+This file format is only accurate up through version 1.03.
+
+First- Level ids, RLE encoded.
+Then-  Level colors, RLE encoded.
+Then-  Level params, RLE encoded.
+Then-  Ids under stuff, RLE encoded.
+Then-  Colors of ids under stuff, RLE encoded.
+Last-  Params of ids under stuff, RLE encoded.
+
+Level id/color/param is a number representing an object, a number for it's
+color, (bk and fg) and a number representing it's stats. (IE robot id, or
+enemy stats, or custom chars, or passage destination, etc) These are all
+bytes. The "under stuff" is for things beneath other things, like floors and
+carpets. All six sets are RLE encoded, a simple compression method. The
+method works as follows- The first byte is the x size (of the board) and the
+second byte is the y size. After that, read two bytes. The first is the runs
+byte, the second is the data byte. The runs byte tells how many times to use
+the data byte. This repeats for the entire x/y size. Runs can wrap across
+multiple lines.
+
+After board design-
+
+00-12    	Name of default MOD file, w/extension and null terminator.
+				Padded with junk.
+13				X position of upper left corner of the viewport.
+14				Y position of upper left corner of the viewport.
+15				X size of the viewport.
+16				Y size of the viewport.
+17				1 if you can shoot here, 0 otherwise.
+18				1 if you can bomb here, 0 otherwise.
+19				1 if fire burns through brown things, 0 otherwise.
+20				1 if fire burns through spaces, 0 otherwise.
+21				1 if fire burns through fakes, 0 otherwise.
+22				1 if fire burns through trees, 0 otherwise.
+23          Code for what an explosion leaves- 0 for spaces, 1 for ash,
+				2 for fire.
+24				1 if you can't save here, 2 if you can only save on a sensor,
+				0 for normal saving.
+25				0 if forest becomes empty, 1 if forest becomes floor.
+26				1 if you collect bombs normally, 0 if they automatically light.
+27          1 if fire burns forever, 0 otherwise.
+28-31			Board numbers for boards to the N S E and W. 255 for no board.
+32				1 if you restart the screen when zapped, 0 otherwise.
+33-34			Time limit. (word)
+35				The last alphabetic key that was pressed. (A-Z)
+36-37			Numeric form of the last input. (word)
+38				Size in characters of the last input.
+39				Volume for MOD files.
+40				1 if the player is locked in the ns direction.
+41				1 if the player is locked in the ew direction.
+42				1 if the player is locked from attacking.
+43-123		81 char string (including null terminator and junk padding) of
+				the last string inputted.
+124			Number of cycles remaining of blindness.
+125			Number of cycles remaining of firewalking.
+126			00.
+127			Number of cycles remaining of frozen time.
+128			Number of cycles remaining of slowed time.
+129-131		00.
+132			Number of cycles remaining of wind.
+133			Last direction the player moved. (0=N, 1=S, 2=E, 3=W)
+134-214		81 char string (including null terminator and junk padding) of
+				current message at the bottom of the screen.
+215			Number of cycles until the message at the bottom of the screen
+				disappears.
+216			Lazer wall timer, from 0 to 7. (increases once per cycle and
+				loops from 7 to 0)
+217			Row for the message row.
+218			Column for the message row, 0 for centered.
+219			X scroll of the screen, signed byte. (From SCROLL VIEW)
+220			Y scroll of the screen, signed byte. (From SCROLL VIEW)
+221			Number of robots.
+
+Per robot- (these robots start counting at id #1. There is no id #0.)
+
+0-3         (signed dword) Length of robot program
+4-7			Junk
+8-22			15 character robot name, including null terminator. Padded with
+				junk.
+23				Robot character.
+24-27			(signed dword) Location within program of current line
+28				(unsigned byte) Location within current line, IE countdown
+				for WAIT and GO commands.
+29				(unsigned byte) Robot cycle number.
+30				(unsigned byte) Robot cycle count. Reset to 0 after robot runs
+				a program section, then each cycle counts up 1. When it reaches
+				the Robot cycle number, program continues and this is again
+				reset to 0.
+31				Bullet type code- 0 player, 1 neutral, 2 enemy.
+32				Set to one if robot is locked from receiving messages.
+33				Set to one for a lava walking robot.
+34				Current direction of walk. (1 North 2 South 3 East 4 West)
+35				Last direction the robot was touched. (1-4)
+36				Last direction the robot was shot. (1-4)
+
+This is now followed by the robot's program according to it's length.
+
+Next-
+0				Number of scrolls (counting from id #1)
+
+Per scroll-
+0-1			(unsigned word) Number of lines in the scroll
+2-5			Junk.
+6-9			(unsigned dword) Length in chars of the scroll.
+
+This is now followed by the scroll's text. Signs count as scrolls.
+
+Next-
+0				Number of sensors (counting from id #1)
+
+Per sensor-
+0-14			15 char name of sensor, including null terminator. Padded with
+				junk.
+15				Sensor char.
+16-30			15 char name of robot to send messages to, including null
+				terminator. Padded with junk.
+
+Finally, the board name (25 chars including null and junk padding) is at the
+end of the board ONLY IN A .MZB FILE. Within a .MZX or .SAV file, this is not
+present.
+
+
+Format for a .SAV saved game file (Megazeux)
+---------------------------------
+
+This file format is only accurate up through version 1.03.
+
+00-05			The letters "MZSAV" and a null terminator.
+06				Current board number.
+07-3590		The character set (14 bytes per character, 256 characters)
+				Each character is 14 bytes, from the top row to the bottom
+				row, one byte per pixel row.
+3591-3896	IdChars array (306 bytes) This is the info in Global Chars,
+				as well as anything that can be edited with CHANGE CHAR ID.
+3897-3912   Current keys held. Each byte is either 0-15 for a key or 127
+				for no key.
+3913-3962	The four status counters, IE those counters shown on the
+				status screen. Each is 15 chars long, including a terminating
+				null. Padded with junk.
+3963-3966	Bullet characters- N S E W.
+3967			Player character.
+3968			X position of saved player position. (SAVE PLAYER POSITION cmd)
+3969			Y position of saved player position.
+3970			Board number (0-127) of saved player position.
+3971			Color of edge border during play.
+3972			Color of player.
+3973			Color of bullets.
+3974			Color of missiles.
+3975			Base color for scrolls.
+3976			Border color for scrolls.
+3977			Pointer color for scrolls.
+3978			Title color for scrolls.
+3979			Arrow color for scrolls.
+3980-3983	(dword) Current score.
+3984			Starting board number.
+3985			Board for end game.
+3986			Board for death.
+3987			X position for end game.
+3988			Y position for end game.
+3989			X position for death.
+3990			Y position for death.
+3991-3992	Starting number of lives. (word)
+3993-3994   Limit to lives. (word)
+3995-3996	Starting amount of health. (word)
+3997-3998	Limit to health. (word)
+3999			1 if enemies can hurt each other, 0 if not.
+4000			Junk byte.
+4001			00.
+4002			Number of counters
+Per counter-
+00-14			15 char name of counter, including null terminator. Padded with
+				junk.
+15-16			(unsigned word) Value of counter.
+Then-
+00				Number of boards. (1 to 127)
+01-????		Per board- 25 char title, including null terminator. Padded
+				with junk.
+????-????	Per board- Length of board in bytes (dword) and position of
+				board within file. (byte number, dword)
+
+At location of board- The board itself. (see .MZB files, exactly the same)
