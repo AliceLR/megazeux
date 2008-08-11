@@ -24,11 +24,20 @@
 //are rounded to 6 bit when output to the graphics card. (VGA rgb values
 //are 8 bit)
 
+#include <stdio.h>
 #include "palette.h"
+#include "egacode.h"
+#include "mouse.h"
+#include "cursor.h"
+#include "blink.h"
 #include "retrace.h"
 #include "comp_chk.h"
 
-char smzx_mode =0;
+char smzx_mode = 0;
+char smzx_pal_initialized = 0;
+char ati_fix = 0;
+char far smzx_mode2_palette[768];
+
 //Current palette w/o intensity adjustments (18 bit)
 char current_pal[16][3];
 //Current intensity level (percentage) per color
@@ -41,8 +50,8 @@ char faded_out=0;
 char saved_intensity[16];
 
 //Default EGA hardware palette. Also used for VGA palette refrencing.
-char default_EGA_hardware_pal[16]={
-	0,1,2,3,4,5,6,7,56,57,58,59,60,61,62,63 };
+char far default_EGA_hardware_pal[16]={
+	0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63 };
 //Default palette rgbs
 char default_pal[16][3]={
 	{ 00,00,00 },
@@ -105,6 +114,125 @@ void set_vga_register(char color,char r,char g,char b) {
 		}
 }
 
+/*//Set one VGA DAC palette register.
+void get_vga_register(char color, char &r, char &g, char &b) 
+{
+  // Assume it's going to be in 256 color mode.
+  char r2, g2, b2;
+	asm {
+		mov dx, 03C7h
+		mov al, color
+    out dx, al
+		add dx, 2
+		in al, dx
+		mov byte ptr r2, al
+		in al, dx
+		mov byte ptr g2, al
+		in al, dx
+		mov byte ptr b2, al
+  }
+  r = r2;
+  g = g2;
+  b = b2;
+}*/
+
+void update_smzx_palette()
+{
+  int i, i2;
+  
+  if(smzx_mode == 2)
+  {
+    for(i = 0, i2 = 0; i < 256; i++, i2 += 3)
+    {
+      update_smzx_color((unsigned char)i);
+    }
+  }
+}
+
+void update_smzx_color(unsigned char c)
+{
+  char c2 = c;
+  if(ati_fix == 1)
+    c2 = (((c & 0xF) << 4) | ((unsigned char)c >> 4));
+  int c_off = c * 3;
+  set_vga_register(c2, smzx_mode2_palette[c_off],
+   smzx_mode2_palette[c_off + 1], smzx_mode2_palette[c_off + 2]);
+}
+
+void update_smzx_color_direct(unsigned char c, unsigned char r, 
+ unsigned char g, unsigned char b)
+{
+  char c2 = c;
+  if(ati_fix == 1)
+    c2 = (((c & 0xF) << 4) | (c >> 4));
+  set_vga_register(c2, r, g, b);
+}
+
+void load_smzx_palette(char far *fname)
+{
+  int i;
+
+  FILE *fp = fopen(fname, "rb");
+  if(fp != NULL)
+  {
+    int fs, i, i2;
+    fseek(fp, 0, SEEK_END);
+    fs = ftell(fp);
+    if(fs > 768) fs = 768;
+    fseek(fp, 0, SEEK_SET);
+    
+    for(i = 0, i2 = 0; i2 < fs; i++, i2 += 3)
+    {
+      smzx_mode2_palette[i2] = fgetc(fp);
+      smzx_mode2_palette[i2 + 1] = fgetc(fp);
+      smzx_mode2_palette[i2 + 2] = fgetc(fp);    
+    }
+    update_smzx_palette();
+    fclose(fp);  
+  }
+}
+
+void init_smzx_mode()
+{
+  m_deinit();
+  smzx_14p_mode();
+
+  if(ati_fix == 1)
+  {
+    asm {
+      mov al, 013h
+      mov dx, 03C0h
+      out dx, al
+      mov al, 01h
+      out dx, al
+    }
+  }
+
+  cursor_off();
+  blink_off();
+  m_init();
+  ec_update_set();
+  default_EGA_hardware_pal[6] = 6;
+  //reinit_palette();   
+  m_show();
+
+  if(smzx_mode == 2)
+  {
+    if(!smzx_pal_initialized)
+    {
+      load_smzx_palette("default.spl");
+      smzx_pal_initialized = 1;
+    }
+    else
+    {
+      update_smzx_palette();
+    }
+  }
+  else
+  {
+    smzx_update_palette(0);
+  }
+}
 
 //Initialize palette- On both EGA and VGA, sets the proper palette
 //codes. (IE sets up the default EGA palette) Call before using any
@@ -114,6 +242,7 @@ void init_palette(void) {
 	int t1;
 	//On both EGA and VGA, we must set all 16 registers to the defaults.
 	//Also copy it over to the current palette.
+
 	wait_retrace();
 	for(t1=0;t1<16;t1++) {
 		set_ega_register(t1,default_EGA_hardware_pal[t1]);
@@ -228,21 +357,28 @@ void update_palette(char wait_for_retrace) {
 	}
 }
 
-void normal_update_palette(char wait_for_retrace) {
-	smzx_mode = 0;
-	default_EGA_hardware_pal[6] = 20;
+void normal_update_palette(char wait_for_retrace) 
+{
 	int t1,t2,r,g,b;
+
+  for(t1 = 0; t1 < 8; t1++)
+  {
+    default_EGA_hardware_pal[t1] = t1;
+    default_EGA_hardware_pal[t1 + 8] = t1 + 56;
+  }
+  default_EGA_hardware_pal[6] = 20;
 
 	if(faded_out) return;
 	//Wait for retrace if applicable
 	if(wait_for_retrace) wait_retrace();
+
 	//VGA
 	if(vga_avail) {
 		for(t1=0;t1<16;t1++)
 			set_vga_register(t1,intensity_pal[t1][0],intensity_pal[t1][1],
 				intensity_pal[t1][2]);
 		//Special code for #0
-		set_vga_register(-6,intensity_pal[0][0],intensity_pal[0][1],
+		 set_vga_register(-6,intensity_pal[0][0],intensity_pal[0][1],
 			intensity_pal[0][2]);
 		for(t1=8;t1<20;t1++)
 			set_vga_register(-t1,intensity_pal[0][0],intensity_pal[0][1],
@@ -253,7 +389,7 @@ void normal_update_palette(char wait_for_retrace) {
 		//Done
 		return;
 		}
-			//EGA- turn 18 bit to 6 bit
+	/*		//EGA- turn 18 bit to 6 bit
 	for(t1=0;t1<16;t1++) {
 		t2=0;
 		r=intensity_pal[t1][0];
@@ -273,50 +409,31 @@ void normal_update_palette(char wait_for_retrace) {
 		else t2|=9;
 		set_ega_register(t1,t2);
 		}
-	unblank_screen();
+	unblank_screen(); */
 	//Done
-
 }
 
-void smzx_update_palette(char wait_for_retrace) {
-		default_EGA_hardware_pal[6] = 6;
-		smzx_mode = 1;
-		int t1,t2,r,g,b;
-		if(faded_out)return;
-		//Wait for retrace if applicable
-		if(wait_for_retrace)wait_retrace();
-		//VGA
-		if(vga_avail)
-		{
-			for(t1=0;t1<256;t1++)
-			set_vga_register(t1,
-			((intensity_pal[t1&15][0] << 1) + intensity_pal[t1>>4][0])/3 ,
-			((intensity_pal[t1&15][1] << 1) + intensity_pal[t1>>4][1])/3 ,
-			((intensity_pal[t1&15][2] << 1) + intensity_pal[t1>>4][2])/3 );
-			return;
-		}
-	//EGA- turn 18 bit to 6 bit
-	for(t1=0;t1<16;t1++) {
-		t2=0;
-		r=intensity_pal[t1][0];
-		g=intensity_pal[t1][1];
-		b=intensity_pal[t1][2];
-		if(r<16) ;
-		else if(r<32) t2|=32;
-		else if(r<48) t2|=4;
-		else t2|=36;
-		if(g<16) ;
-		else if(g<32) t2|=16;
-		else if(g<48) t2|=2;
-		else t2|=18;
-		if(b<16) ;
-		else if(b<32) t2|=8;
-		else if(b<48) t2|=1;
-		else t2|=9;
-		set_ega_register(t1,t2);
-		}
-	unblank_screen();
-	//Done
+void smzx_update_palette(char wait_for_retrace) 
+{
+  int i;
+  
+  if(faded_out)return;
+  // Wait for retrace if applicable
+  if(wait_for_retrace) wait_retrace();
+  
+  if(wait_for_retrace)wait_retrace();
+
+  // Only update the diagonals if SMZX mode 2 is set
+  if(smzx_mode == 1)
+  {
+    for(i = 0; i < 256; i++)
+    {
+      update_smzx_color_direct(i,
+       ((intensity_pal[i & 15][0] << 1) + intensity_pal[i >> 4][0]) / 3,
+       ((intensity_pal[i & 15][1] << 1) + intensity_pal[i >> 4][1]) / 3,
+       ((intensity_pal[i & 15][2] << 1) + intensity_pal[i >> 4][2]) / 3);
+    }
+  }
 }
 
 //Very quick fade out. Saves intensity table for fade in. Be sure

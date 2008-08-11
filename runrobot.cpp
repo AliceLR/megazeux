@@ -523,8 +523,8 @@ int parse_param(unsigned char far *robot,int id) {
 #endif
 		}
   // Expression - Exo
-  if(robot[1] == '(')
-  //if((robot[1] == '(') && version_loaded >= 0x241)
+  //if(robot[1] == '(')
+  if((robot[1] == '(') && version_loaded >= 0x244)
   {
     char far *e_ptr = robot + 2;
     int error, val;
@@ -867,8 +867,8 @@ unsigned char far *tr_msg(unsigned char far *orig_mesg,int id,
 	enter_func("tr_msg");
 	do {
     // Expression!
-    if(orig_mesg[sp] == '(')
-    //if((orig_mesg[sp] == '(') && (version_loaded >= 0x241))
+    //if(orig_mesg[sp] == '(')
+    if((orig_mesg[sp] == '(') && (version_loaded >= 0x244))
     {
       char far *arg = orig_mesg + sp + 1;
       int error;

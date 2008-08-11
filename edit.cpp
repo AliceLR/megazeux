@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 2002 Gilead Kutnick - exophase@adelphia.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -252,6 +253,10 @@ void edit_world(void) {
 	scroll_pointer_color=128;
 	scroll_title_color=143;
 	scroll_arrow_color=142;
+  if(smzx_mode == 2)
+  {
+    update_smzx_palette();
+  }
 	//Setup most variables
 	draw_mode=curr_thing=curr_param=curr_menu=x_pos=y_pos=changed=
 		x_top_pos=y_top_pos=0;
@@ -708,6 +713,10 @@ void edit_world(void) {
 					select_current(0);
 					update_view=update_menu=1;
 					curr_file[0]=0;
+          if(smzx_mode == 2)
+          {
+            update_smzx_palette();
+          }
 					break;
 					}
 				select_current(t1);
@@ -2113,11 +2122,11 @@ void edit_world(void) {
 				getkey();
 				id_chars[0]=t1;
 				update_view=1;
-				break;/*
+				break;
 			case -90://ShF7
 				set_counter("SMZX_MODE",smzx_mode + 1, 0);
 				update_view=update_menu=1;
-				break;  */
+				break;
 			case 'I'://I
 				if(draw_mode&128) break;
 				//Board info

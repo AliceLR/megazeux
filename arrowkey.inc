@@ -15,3 +15,4 @@ global C kb_installed:byte
 global C keyb_mode:byte			; Set to 1 for alternate code
 global C switch_keyb_table:far
 global C curr_table:byte
+global C state_table:far

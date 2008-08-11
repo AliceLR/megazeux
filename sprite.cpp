@@ -3,8 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
- * Copyright (C) 1999 Charles Goetzman
- * Copyright (C) 2002 B.D.A - Koji_takeo@worldmailer.com
+ * Copyright (C) 2002 Gilead Kutnick - exophase@adelphia.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -41,9 +40,7 @@ Collision_list collision_list;
 
 void plot_sprite(int color, int sprite, int x, int y)
 {
-  if(((x + sprites[sprite].width > board_xsiz) ||
-   (y + sprites[sprite].height > board_ysiz)) ||
-    !((sprites[sprite].width) || (sprites[sprite].height)))
+  if(!((sprites[sprite].width) || (sprites[sprite].height)))
   {
     return;
   }
@@ -175,7 +172,15 @@ void draw_sprites()
       
     i4 = ((ref_y + of_y) * max_bxsiz) + ref_x + of_x;
     i5 = (st_y * 80) + st_x;
-    i6 = (sprites[d].y * max_bxsiz) + sprites[d].x;
+
+    if(overlay_mode == 2)
+    {
+      i6 = ((sprites[d].y - scr_y) * max_bxsiz) + (sprites[d].x - scr_x);
+    }
+    else
+    {
+      i6 = (sprites[d].y * max_bxsiz) + sprites[d].x;
+    }
 
     skip = max_bxsiz - dr_w;
     skip2 = 80 - dr_w;
@@ -203,11 +208,9 @@ void draw_sprites()
             }
             i4++;
             i5++;
-            i6++;
           }
           i4 += skip;
           i5 += skip2;
-          i6 += skip;
         }
         break;
       }
@@ -265,11 +268,9 @@ void draw_sprites()
             }
             i4++;
             i5++;
-            i6++;
           }
           i4 += skip;
           i5 += skip2;
-          i6 += skip;
         }
         break;
       }

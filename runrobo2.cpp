@@ -90,6 +90,9 @@ extern int topindex,backindex;
 
 // I used Visual Slick Edit's "beatufy source" on this. ^_^ - Exo
 
+// Commands per cycle - Exo
+int commands = 40;
+
 void set_built_in_messages(int param);
 int get_built_in_messages(void);
 
@@ -542,7 +545,7 @@ do
           }
           else
           {
-            get_string((tp_2 + 1), ibuff2);
+            str_cpy(ibuff2, tp_2 + 1);
           }
         }
         get_string((tp + 1), temp_str);
@@ -1474,7 +1477,8 @@ do
       {
         // "Type" must be 0 or 1; board or overlay
         t3 &= 1;
-        load_mzm(l + 1, t4, t5, t3);
+        tr_msg(l + 1, id, ibuff2);
+        load_mzm(ibuff2, t4, t5, t3);
         break;
       }         
       goto put_at_XY;
@@ -2448,13 +2452,13 @@ do
       t5=parse_param(&cmd_ptr[t9],id); 
       if(*(cmd_ptr + t9))
       {
-        l1 = cmd_ptr + t9 + 1;
+        l1 = ibuff2;
       }
       t9=next_param(cmd_ptr,t9);
       t6=parse_param(&cmd_ptr[t9],id);
       if(*(cmd_ptr + t9))
       {
-        l2 = cmd_ptr + t9 + 1;
+        l2 = ibuff2;
       }
       //Prefixes.
       t7 = t6;
@@ -3225,9 +3229,7 @@ do
     //Update player position too
     if(level_id[player_x+player_y*max_bxsiz]!=127) find_player();
   }
-  if(get_counter("COMMANDS") < 1) set_counter("COMMANDS", 40);
-  t1 = get_counter("COMMANDS");
-} while(((++lines_run)<t1)&&(!done));
+} while(((++lines_run)<commands)&&(!done));
 breaker:
 //Fix char set (added to fix pixel editing. Optional) -Koji
 ec_update_set();

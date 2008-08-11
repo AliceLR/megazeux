@@ -5,6 +5,7 @@
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  * Copyright (C) 1999 Charles Goetzman
  * Copyright (C) 2002 B.D.A. (Koji) - Koji_Takeo@worldmailer.com
+ * Copyright (C) 2002 Gilead Kutnick - exophase@adelphia.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -100,6 +101,8 @@ int main(int argc,char **argv) {
 	int ret=0;
 	//Set if we need first time help
 	char first_time=0;
+  // Determines if ATI fix is present
+  FILE *f_ati_fix;
 	//Jump destination for exiting to DOS
 	if(setjmp(exit_jump)) {//Exiting to DOS
 		mod_exit();
@@ -150,7 +153,7 @@ int main(int argc,char **argv) {
 	draw_window_box(2,1,77,3,0xB800,120,127,113,0);
 	draw_window_box(2,4,77,16,0xB800,120,127,113,0);
 	draw_window_box(2,17,77,23,0xB800,120,127,113,0);
-  write_string("MegaZeux version 2.68",27,2,127,0xB800);
+  write_string("MegaZeux version 2.69",27,2,127,0xB800);
 // #ifdef BETA
 	write_string("Beta; please distribute",27,17,127,0xB800);
 // #endif
@@ -181,6 +184,13 @@ int main(int argc,char **argv) {
 	set_rgb(11,42,63,63);
 	set_rgb(12,63,42,42);
 	set_rgb(13,63,42,63);
+  // Do the ATI fix thing
+  f_ati_fix = fopen("ati_fix", "rb");
+  if(f_ati_fix != NULL)
+  {
+    ati_fix = 1;
+    fclose(f_ati_fix);
+  }
 	//Fade in
 	vquick_fadein();
 	//Initialize systems and display progess at bottom
@@ -563,7 +573,7 @@ char scan_options(void) {
 	if(help) {
 		if(help==1) puts("\a");
 		else puts("");
-		puts("MegaZeux version 2.68\tCommand line parameters-\n");
+		puts("MegaZeux version 2.69\tCommand line parameters-\n");
 		puts("      -?  Help with parameters.");
 		puts("-nomouse  Don't use mouse, even if found.");
 		puts("  -noems  Don't use EMS memory, even if available. (NOT RECOMMENDED)");

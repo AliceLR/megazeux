@@ -30,9 +30,11 @@ p186
 JUMPS
 include "model.inc"
 
-Codeseg
+Dataseg
 
 cursor_mode db CURSOR_UNDERL
+
+Codeseg
 
 ;
 ; Function- cursor_underline

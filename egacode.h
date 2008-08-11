@@ -25,6 +25,7 @@
 #define __EGACODE_H
 
 //Mode selection (also resets char sets)
+void smzx_14p_mode(void);
 void ega_14p_mode(void);
 void vga_16p_mode(void);
 

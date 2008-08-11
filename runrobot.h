@@ -61,6 +61,8 @@ extern char mid_prefix;
 extern char last_prefix;//See first_prefix
 extern char far *item_to_counter[9];
 
+extern int commands;
+
 //Robot box message stuff
 void display_robot_line(unsigned char far *robot,int y,int id);
 void robot_frame(unsigned char far *robot,int id);

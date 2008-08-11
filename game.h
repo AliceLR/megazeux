@@ -38,6 +38,9 @@ void show_status(void);
 void show_counter(char far *str,char x,char y,char skip_if_zero=0);
 char update(char game,char &fadein);
 
+// The getkey key.
+extern int key_get;
+
 //For changing screens AFTER an update is done and shown
 extern int target_board;//Where to go
 extern int target_where;//0 for x/y, 1 for entrance
@@ -45,7 +48,6 @@ extern int target_x;//Or color of entrance
 extern int target_y;//Or id of entrance
 extern int target_d_id;
 extern int target_d_color;
-
 
 extern char pal_update;
 

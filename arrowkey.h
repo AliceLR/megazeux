@@ -34,6 +34,7 @@ extern char far del_pressed;
 extern char far key_code;    /* Latest key code */
 extern char far keyb_mode;   /* Set to 1 for different key discard code */
 extern char far curr_table;  /* The current keyboard table (0/1) */
+extern char far state_table[128];
 
 #ifdef __cplusplus
 extern "C" {

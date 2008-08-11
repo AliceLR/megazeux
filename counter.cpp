@@ -31,6 +31,8 @@
 
 #include "counter.h"
 
+#include "getkey.h"
+#include "arrowkey.h"
 #include "bwsb.h"
 #include "egacode.h"
 #include "blink.h"
@@ -57,6 +59,7 @@
 #include "saveload.h"
 #include "ezboard.h"
 #include "mod.h"
+#include "palette.h"
 
 long off;
 char fileio;
@@ -372,6 +375,12 @@ int get_counter(char far *name,unsigned char id)
     return((get_counter("INT") >> place) & 1);
   }
 
+  // Prepare for SMZX palette
+  if(!str_cmp(name, "SMZX_PALETTE"))
+  {
+    fileio = 6;
+  }
+
   //Open input_file! -Koji
   if(!strn_cmp(name, "FREAD", 5))
   {
@@ -400,10 +409,6 @@ int get_counter(char far *name,unsigned char id)
     if(!str_cmp(name + 5, "_PAGE"))
     {
       return(ftell(input_file) >> 15);
-    }
-
-    if(!str_cmp(name + 5, "_SGAME"))
-    {
     }
 
     //Reads from input_file. -Koji
@@ -573,9 +578,32 @@ int get_counter(char far *name,unsigned char id)
     }
 
   //	}if(MZXAKWENDEVERSION == 1)
-  //	{
-  //		if(!str_cmp(name,"SMZX_MODE"))
-  //			return smzx_mode;
+  if(!strn_cmp(name,"SMZX_", 5))
+  {
+    if(!str_cmp(name + 5, "MODE"))
+    {
+  	  return smzx_mode;
+    }
+    if((name[5] == 'R') || (name[5] == 'r'))
+    {
+      int c;
+      c = strtol(name + 6, NULL, 10) & 255;
+      return smzx_mode2_palette[c * 3];
+    }
+    if((name[5] == 'G') || (name[5] == 'g'))
+    {
+      int c;
+      c = strtol(name + 6, NULL, 10) & 255;
+      return smzx_mode2_palette[(c * 3) + 1];
+    }
+    if((name[5] == 'B') || (name[5] == 'b'))
+    {
+      int c;
+      c = strtol(name + 6, NULL, 10) & 255;
+      return smzx_mode2_palette[(c * 3) + 2];
+    }
+  }
+
   if(!strn_cmp(name, "DATE_", 5))
   {
     if(!str_cmp(name + 5,"DAY"))
@@ -658,7 +686,46 @@ int get_counter(char far *name,unsigned char id)
   //Next, check for global, non-standard counters
   if(!str_cmp(name,"INPUT"))      return num_input;
   if(!str_cmp(name,"INPUTSIZE"))    return input_size;
-  if(!str_cmp(name,"KEY"))        return last_key;
+  if(!strn_cmp(name,"KEY",3))
+  {
+    if(!str_cmp(name + 3, "_PRESSED"))
+    {
+      return key_get;
+    }
+    if(!str_cmp(name + 3, "_RELEASE"))
+    {
+      int r = (unsigned char)key_code - 128;
+      if(r < 0)
+      {
+        return 0;
+      }
+      else
+      {
+        return r;
+      }
+    }
+    if(!str_cmp(name + 3, "_CODE"))
+    {
+      if(key_code < 0)
+      {
+        return 0;
+      }
+      else
+      {
+        return key_code;
+      }
+    }
+    if(name[3] == 0)
+    {
+      return last_key;
+    }
+    else
+    {
+      int n = strtol(name + 3, NULL, 10) & 0x7F;
+      return state_table[n];
+    }
+  }
+
   if(!str_cmp(name,"SCORE"))      return(unsigned int)score;
   if(!str_cmp(name,"TIMERESET"))    return time_limit;
   if(!str_cmp(name,"PLAYERFACEDIR")) return player_last_dir>>4;
@@ -1029,6 +1096,12 @@ void set_counter(char far *name,int value,unsigned char id)
         }
         break;
       }
+      // Load SMZX palette
+      case 6:
+      {    
+        load_smzx_palette(name);
+        break;
+      }
     }
 
     fileio = 0;
@@ -1053,7 +1126,8 @@ void set_counter(char far *name,int value,unsigned char id)
   if(string_type(name) == 2)
   {
     set_str_char(name, value);
-  }
+    return;
+  }        
 
   //Ok, ok. I did steal the "pos" within "page" idea from Akwende.
   //It is a great idea to be able to read more than 32767 bytes.
@@ -1267,39 +1341,64 @@ void set_counter(char far *name,int value,unsigned char id)
     overlay_mode = 4;
   }
 */
-/*		if(!str_cmp(name,"SMZX_MODE"))
+
+	if(!strn_cmp(name, "SMZX_", 5))
+  {
+    if(!str_cmp(name + 5, "MODE"))
     {
       smzx_mode = (char)value % 3;
-
-      if(smzx_mode==1)
+    
+      if(smzx_mode)
       {
-      smzx_14p_mode();
-      cursor_off();
-      blink_off();
-      ec_update_set();
-      //init_palette();
-      smzx_update_palette(0);
+        init_smzx_mode();
       }
       else
       {
-        if(smzx_mode==1)
-        {
+      	default_EGA_hardware_pal[6] = 20;
+        m_deinit();
         ega_14p_mode();
         cursor_off();
         blink_off();
+        m_init();
         ec_update_set();
-        update_palette(0);
-        }
-        else
-        {
-        ega_14p_mode();
-        cursor_off();
-        blink_off();
-        ec_update_set();
-        update_palette(0);
-        }
-      }
-    }*/
+        update_palette(0);       
+        reinit_palette();
+        m_show();
+      }    
+      return;
+    }
+    if((name[5] == 'R') || (name[5] == 'r'))
+    {
+      int c = strtol(name + 6, NULL, 10);
+      smzx_mode2_palette[c * 3] = char(value & 63);
+      if(smzx_mode == 2)
+        update_smzx_color((unsigned char)c);
+      return;
+    }
+    if((name[5] == 'G') || (name[5] == 'g'))
+    {
+      int c = strtol(name + 6, NULL, 10);
+      smzx_mode2_palette[(c * 3) + 1] = char(value & 63);
+      if(smzx_mode == 2)
+        update_smzx_color((unsigned char)c);
+      return;
+    }
+    if((name[5] == 'B') || (name[5] == 'b'))
+    {
+      int c = strtol(name + 6, NULL, 10);
+      smzx_mode2_palette[(c * 3) + 2] = char(value & 63);
+      if(smzx_mode == 2)
+        update_smzx_color((unsigned char)c);
+      return;
+    }
+  }
+
+  // Commands per cycle - Exo
+  if(!str_cmp(name, "COMMANDS"))
+  {
+    commands = value;
+    return;
+  }
 
   if(!strn_cmp(name, "BOARD_", 6))
   {

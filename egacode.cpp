@@ -55,7 +55,7 @@ void ega_14p_mode(void) {
 }
 
 
-/*void smzx_14p_mode(void)
+void smzx_14p_mode(void)
 {
 	asm {
 		mov ax,1201h
@@ -69,7 +69,7 @@ void ega_14p_mode(void) {
 		mov al,4Ch
 		out dx,al
 	}
-} */
+}
 //Enter 16-byte high character mode and reset character sets
 //(VGA native text mode)
 void vga_16p_mode(void) {

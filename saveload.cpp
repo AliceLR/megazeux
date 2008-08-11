@@ -29,16 +29,18 @@
    MZA - Ver 2.51S1 Megazeux
    M\002\011 - 2.5.1spider2+, 2.9.x
    M\x02\x3E - MZX 2.62.x
-   M\x02\x41 - MZX 2.65.x
-   M\x02\x44 - MZX 2.68.x
+   M\x02\x41 - MZX 2.65
+   M\x02\x44 - MZX 2.68
+   M\x02\x45 - MZX 2.69
 
    .SAV files:
    MZSV2 - Ver 2.x MegaZeux
    MZXSA - Ver 2.51S1 MegaZeux
    MZS\002\011 - 2.5.1spider2+, 2.9.x
    MZS\x02\x3E - MZX 2.62.x
-   MZS\x02\x41 - MZX 2.65.x
-   MZS\x02\x44 - MZX 2.68.x
+   MZS\x02\x41 - MZX 2.65
+   MZS\x02\x44 - MZX 2.68
+   MZS\x02\x45 - MZX 2.69
 
 
  All others are unchanged.
@@ -69,7 +71,8 @@
 #include "sprite.h"
 #include "counter.h"
 #include "mstring.h"
-#define VERSION 0x244
+#include "runrobot.h"
+#define VERSION 0x245
 #define SAVE_INDIVIDUAL
 
 int version_loaded;
@@ -180,7 +183,7 @@ void save_world(char far *file,char savegame,char faded) {
 	save_screen(current_pg_seg);
 	meter("Saving...",current_pg_seg,meter_curr,meter_target);
 	if (savegame) {
-		fwrite("MZS\x02\x44",1,5,fp);
+		fwrite("MZS\x02\x45",1,5,fp);
 		fputc(curr_board,fp);
 		xor=0;
 	} else {
@@ -189,7 +192,7 @@ void save_world(char far *file,char savegame,char faded) {
 		//Pw info-
 		write_password(fp);
 		//File type id-
-		fwrite("M\x02\x41",1,3,fp);
+		fwrite("M\x02\x45",1,3,fp);
 		//Get xor code...
 		xor=get_pw_xor_code();
 	}
@@ -374,6 +377,20 @@ void save_world(char far *file,char savegame,char faded) {
       fputc(0, fp);
       fputc(0, fp);
     }
+    // Put the 2.68b stuff
+    fwrite(&smzx_mode, 1, 2, fp);
+    // If smzx_mode is 2 save the palette too
+    if(smzx_mode == 2)
+    {
+      int i;
+      for(i = 0; i < 768; i += 3)
+      {
+        fputc(smzx_mode2_palette[i], fp);
+        fputc(smzx_mode2_palette[i + 1], fp);
+        fputc(smzx_mode2_palette[i + 2], fp);
+      }
+    }
+    fwrite(&commands, 1, 2, fp);
   }
 
 //            for (t1=0;t1<NUM_COUNTERS;t1++) //Write out every last counter Spid
@@ -669,6 +686,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 		b=fgetc(fp)^xor;
 		set_rgb(t1,r,g,b);
 		}
+	update_palette();
 	if(savegame) {
 		for(t1=0;t1<16;t1++)
 			set_color_intensity(t1,fgetc(fp));
@@ -750,9 +768,28 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
           fread(&seek, 1, 4, fp);
         }                  
       }
+
+      // A couple things 2.69 added      
+      if(version_loaded >= 0x245)
+      {
+        fread(&smzx_mode, 1, 2, fp);
+        set_counter("SMZX_MODE", smzx_mode, 0);
+        // Also get the palette
+        if(smzx_mode == 2)
+        {
+          int i;
+          for(i = 0; i < 768; i += 3)
+          {
+            smzx_mode2_palette[i] = fgetc(fp);
+            smzx_mode2_palette[i + 1] = fgetc(fp);
+            smzx_mode2_palette[i + 2] = fgetc(fp);
+          }
+          update_smzx_palette();
+        }
+        fread(&commands, 1, 2, fp);
+      }
     }
   }
-	update_palette();
 	//Get position of global robot...
 	fread(&gl_rob,4,1,fp);
 	if(xor) mem_xor((char far *)&gl_rob,4,xor);

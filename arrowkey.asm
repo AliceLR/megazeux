@@ -88,6 +88,16 @@ action_tbl2  db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;000h - 00Fh
 				 db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,1 ;0E0h - 0EFh
 				 db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;0F0h - 0FFh
 
+state_table  db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;000h - 00Fh
+				 db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;010h - 01Fh
+				 db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;020h - 02Fh
+				 db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;030h - 03Fh
+				 db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;040h - 04Fh
+				 db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;050h - 05Fh
+				 db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;060h - 06Fh
+				 db 0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0 ;070h - 07Fh
+
+
 ;
 ; Function- intercept_09
 ;
@@ -110,7 +120,21 @@ proc intercept_09 far
 	; Get scan code
 	sti
 	in al,60h
-	mov [key_code],al
+	; This is special code that will set the key array too.
+  ; The msb determines if the key was set or released..
+  mov cl, al
+  ; Not it; 0 for released, 1 for pressed.
+  not cl 
+  ; Put it at the lsb...
+  shr cl, 7 
+  ; Make another copy for the index...
+  mov bx, ax
+  ; Only interested in the 7 least significant bits.
+  and bx, 07Fh
+  add bx, OFFSET cs:state_table
+  ; Voila!
+  mov [cs:bx], cl
+  mov [key_code],al
 
 	; Set dl to 0, which means no loop
 ;	xor dl,dl

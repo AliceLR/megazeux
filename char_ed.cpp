@@ -94,7 +94,7 @@ F5 Revert to MZX",40,4,143,current_pg_seg);
 	{
 		//Update char
 		m_hide();
-		/*if (smzx_mode)
+		if (smzx_mode)
 		{
 			for(t2=0;t2<14;t2++)
 			{
@@ -119,17 +119,20 @@ F5 Revert to MZX",40,4,143,current_pg_seg);
 				t1++;
 				}
 			}
-		}*/
-		for(t1=0;t1<8;t1++)
-		{
-			for(t2=0;t2<14;t2++)
-			{
-				bit=matrix[t2]&(128>>t1);
-				if(bit) write_string("€€",22+(t1<<1),5+t2,135,
-					current_pg_seg);
-				else write_string("˙˙",22+(t1<<1),5+t2,135,current_pg_seg);
-			}
 		}
+    else
+    {
+		  for(t1=0;t1<8;t1++)
+		  {
+			  for(t2=0;t2<14;t2++)
+			  {
+				  bit=matrix[t2]&(128>>t1);
+				  if(bit) write_string("€€",22+(t1<<1),5+t2,135,
+  					current_pg_seg);
+	  			else write_string("˙˙",22+(t1<<1),5+t2,135,current_pg_seg);
+		  	}
+		  }
+    }
 
 		for(t2=0;t2<14;t2++)
 			write_number(matrix[t2],135,17,5+t2,current_pg_seg,3);

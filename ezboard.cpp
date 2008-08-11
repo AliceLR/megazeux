@@ -38,6 +38,8 @@
 #include "game.h"
 #include "counter.h"
 #include "sprite.h"
+#include "cursor.h"
+#include "blink.h"
 #include "mstring.h"
 
 void set_built_in_messages(int param);
@@ -332,7 +334,19 @@ void clear_game_params(void) {
   total_sprites = 0;
   sprite_y_order = 0;
   sprite_num = 0;
-	//Set all nine built-in counters
+  // Clear smzx_mode..
+  if(smzx_mode != 0)
+  {
+    ega_14p_mode();
+    cursor_off();
+    blink_off();
+    ec_update_set();
+    update_palette(0);  
+   	default_EGA_hardware_pal[6] = 20;
+    reinit_palette();
+    smzx_mode = 0;
+  }
+ 	//Set all nine built-in counters
 	str_cpy(counters[0].counter_name,"GEMS");
 	str_cpy(counters[1].counter_name,"AMMO");
 	str_cpy(counters[2].counter_name,"LOBOMBS");

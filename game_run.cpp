@@ -119,6 +119,8 @@ char far *game_menu=	"F1    - Help\n"
 int main_menu_keys[11]={ -59,0,27,-60,-61,-62,-63,-64,-65,-66,-68 };
 int game_menu_keys[13]={ -59,0,27,-60,-61,-62,-63,-64,-67,-68,0,0,0 };
 
+int key_get;
+
 char bomb_type=1;//Start on hi-bombs
 char dead=0;
 
@@ -189,6 +191,7 @@ void title_screen(void) {
 		if(keywaiting()) {
 			//Get key...
 			key=getkey();
+      key_get = key;
 			if((key>='a')&&(key<='z')) key-=32;
 			//...and process*/
 		process_key:
@@ -283,6 +286,7 @@ void title_screen(void) {
 						m_show();
 						do {
 						key=getkey();
+            key_get = key;
 						} while(!key);
 						if(t1) insta_fadeout();
 						if(key==27) key=0;
@@ -934,13 +938,13 @@ void play_game(char fadein) {
 		//Update
 		if(update(1,fadein)) continue;
 		//Keycheck
+
+    key_get = 0;
 		if(keywaiting()) {
 			//Get key...
 			key = getkey();
-			//KEY_PRESSED counter returns Any key pressed
-			// on the keyboard at the time it is called.
-  		//	-Koji
-			set_counter("KEY_PRESSED", key);
+      key_get = key;
+
 			if((key>='a')&&(key<='z')) key-=32;
 			//...and process
 		process_key:
@@ -1207,6 +1211,10 @@ void play_game(char fadein) {
 						if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 						}
 					break;
+				case -69://F11
+					//SMZX Mode
+          set_counter("SMZX_MODE", smzx_mode ^ 1, 0);
+					break;
 				case '='://AltW
 					//Re-init screen
 					vga_16p_mode();
@@ -1250,11 +1258,6 @@ void play_game(char fadein) {
 					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					break;
 				}
-			}
-			else
-			{
-				//key pressed counter -Koji
-				set_counter("KEY_PRESSED", 0);
 			}
 	} while(key!=27);
 

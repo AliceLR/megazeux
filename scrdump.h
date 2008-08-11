@@ -26,6 +26,7 @@
 //extern "C" {
 //#endif
 
+void smzx_dump_screen();
 void dump_screen();
 
 //#ifdef __cplusplus

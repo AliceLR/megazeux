@@ -24,6 +24,23 @@
 #ifndef __PALETTE_H
 #define __PALETTE_H
 extern char smzx_mode;
+extern char smzx_pal_initialized;
+extern char ati_fix;
+
+void set_vga_register(char color,char r,char g,char b);
+//void get_vga_register(char color, char &r, char &g, char &b);
+void update_smzx_palette();
+void update_smzx_color(unsigned char c);
+void update_smzx_color_direct(unsigned char c, unsigned char r, 
+ unsigned char g, unsigned char b);
+void load_smzx_palette(char far *fname);
+void init_smzx_mode();
+void set_ega_register(char attr,char ccode);
+void unblank_screen(void);
+
+extern char far default_EGA_hardware_pal[16];
+extern char far smzx_mode2_palette[768];
+extern char intensity_pal[16][3];
 
 void init_palette(void);
 void reinit_palette(void);

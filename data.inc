@@ -134,6 +134,7 @@ global C max_bsiz_mode:byte
 global C max_bxsiz:word
 global C max_bysiz:word
 global C mesg_edges:byte
+
 ; New values for s2
 
 global C saved_mouse_x:word

@@ -3,6 +3,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 2002 Gilead Kutnick - exophase@adelphia.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -25,6 +26,8 @@
 #include "runrobot.h"
 #include <ctype.h>
 #include <stdlib.h>
+
+long int last_val;
 
 long int parse_expression(char far **expression, int &error, int id)
 {
@@ -80,6 +83,9 @@ long int parse_expression(char far **expression, int &error, int id)
     }
     skip_whitespace(expression);      
   }
+  
+  last_val = value;
+
   return(value);
 }
 
@@ -247,6 +253,14 @@ long int parse_argument(char far **argument, int &type, int id)
           return(-1);
         }
       }
+    }
+
+    // # is the last expression value, 32bit.
+    case '#':
+    {
+      type = 0;
+      (*argument)++;
+      return(last_val);
     }
 
     // The evil null terminator...
