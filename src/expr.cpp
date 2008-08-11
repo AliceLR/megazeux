@@ -32,14 +32,14 @@
 int last_val;
 
 int parse_expression(World *mzx_world, char **expression,
- int &error, int id)
+ int *error, int id)
 {
   long int operand_val;
   int current_arg;
   long int c_operator;
   long int value;
 
-  error = 0;
+  *error = 0;
 
   // Skip initial whitespace..
   skip_whitespace(expression);
@@ -47,7 +47,7 @@ int parse_expression(World *mzx_world, char **expression,
   if((current_arg != 0) && (current_arg != 2))
   {
     // First argument must be a value type.
-    error = 1;
+    *error = 1;
     return -99;
   }
   skip_whitespace(expression);
@@ -56,9 +56,10 @@ int parse_expression(World *mzx_world, char **expression,
   {
     if(**expression == ')')
     {
-      // Close paren, safe to go.
+      (*expression)++;
       break;
     }
+
     c_operator = parse_argument(mzx_world, expression, current_arg, id);
     // Next arg must be an operator, unless it's a negative number,
     // in which case it's considered + num
@@ -70,7 +71,7 @@ int parse_expression(World *mzx_world, char **expression,
     {
       if(current_arg != 1)
       {
-        error = 2;
+        *error = 2;
         return -100;
       }
       skip_whitespace(expression);
@@ -78,7 +79,7 @@ int parse_expression(World *mzx_world, char **expression,
       // And now it must be an integer.
       if((current_arg != 0) && (current_arg != 2))
       {
-        error = 3;
+        *error = 3;
         return -102;
       }
       // Evaluate it.
@@ -280,7 +281,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
       int error;
       long int val;
       char *a_ptr = (*argument) + 1;
-      val = parse_expression(mzx_world, &a_ptr, error, id);
+      val = parse_expression(mzx_world, &a_ptr, &error, id);
       if(error)
       {
         type = -1;
@@ -288,7 +289,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
       }
       else
       {
-        *argument = a_ptr + 1;
+        *argument = a_ptr;
         type = 0;
         return val;
       }
@@ -302,10 +303,10 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
       char t_char = first_char;
       (*argument)++;
       int count = 0;
-      char temp[80];
-      char temp2[80];
+      char temp[256];
+      char temp2[256];
       // Remember, null terminator is evil; if it's hit exit completely.
-      while(((**argument) != t_char) && (count < 80))
+      while(((**argument) != t_char) && (count < 256))
       {
         // If a nested expression is hit closing 's should be ignored
         if((**argument) == '(')
@@ -314,7 +315,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
           // The number of )'s to expect.. finding one decreases it..
           // And finding a ( increases it.
 
-          while((close_paren_count) && (count < 80))
+          while((close_paren_count) && (count < 256))
           {
             temp[count] = **argument;
             (*argument)++;

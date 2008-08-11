@@ -1,0 +1,118 @@
+Extended macros
+Extended macros allows which takes parameters over several
+lines in this file. Like single line macros, macro_1 through
+macro_5 correspond to the F6 through F10 keys, but you can
+name these anything, so long as you start it with macro_
+(for instance, macro_sprite is valid). The first line is
+the definition which states the macro's name and label,
+and all proceeding lines which are indented by a single space
+or tab character are part of the macro body.
+
+Lines enclosed in parentheses denote parameters. The format
+is as follows:
+(type param1, param2, param3, ...)
+Where type describes the kind of parameter and param1, 2, 3,
+etc are parameters of that type. For instance, you may type
+
+(string32 first_name, last_name, address)
+
+Where the user is expected to supply three strings of up to
+32 characters. These strings are referred to as first_name,
+last_name, and address.
+
+The following types are valid:
+
+stringN - strings of N characters
+Example: string100
+The N is not optional.
+
+numberA-B - an integer value in the range of A to B.
+numberA - an integer value in the range of 0 to A.
+Examples:
+number20-30
+number256
+
+character - a single byte character.
+
+color - an MZX style color (includes wildcard variants)
+
+After defining all of your parameters, you can write the
+contents of the actual macro. To insert the value of the
+parameter, put inside the macro its name, enclosed in
+exclamation points. For instance:
+
+* "~fHello, !firstname! !lastname!."
+
+Parameters may also have default values. For instance,
+
+(string10 name=Bob, address=Nowhere)
+
+Note that whitespace may not be placed before or after
+the equals sign, otherwise it'd be considered part of the
+variable name and the default value respectively.
+
+The following are valid default values:
+
+For string: Any sequence of characters.
+For number: An integer number such as 1234
+For character: An integer value or a character inside
+ single quotes, for instance 200 or 'x'
+For color: An MZX style color, such as c0F or c?3
+
+If you don't supply defaults, default defaults are used:
+
+For string: The empty string
+For number: The lower boundary of the type
+For character: 0
+For color: c??
+
+Once you write up an extended macro you can use it in the
+robot editor. F6 through F10 will execute the macros named
+macro_1 through macro_5 if they exist (even if single line
+versions are defined). This will bring up a GUI window
+where you can visually enter all paramter values.
+
+For other macros, you can enter them via text. All lines
+starting with  are considered macro invocations. The
+format is
+macro_name(param1, param2, param3, ...)
+Note that the parameters can be supplied in one of two
+ways, by order or by name. Supplying by order means
+that the nth by order parameter you enter will
+correspond to the nth parameter defined in the macro.
+By name means that you give the name of the macro along
+with its value in the following way:
+name=value
+Note that values here follow the same formatting that
+default values do.
+
+Here's an example of writing a simple macro then calling
+it textually from the robot editor:
+
+macro_test = A Test
+ (number20 a, b)
+ (string32 c)
+ set "!c!" "(!a! + !b!)"
+
+If the user then types..
+
+#test(1, 2, counter)
+
+The following code would be produced:
+
+set "counter" "(1 + 2)"
+
+You could also type something like:
+
+#test(c=counter)
+
+Which would output...
+
+set "counter" "(0 + 0)"
+
+Notice that you don't have to supply every paramter. If you
+don't supply something for a value, its default will be used.
+
+
+By pressing alt + m, you can bring up a text box that will
+let you enter the name of a macro to be edited via GUI.

@@ -86,8 +86,22 @@ Uint32 process_event(SDL_Event *event)
 
     case SDL_MOUSEMOTION:
     {
-      int mx = event->motion.x / 8;
-      int my = event->motion.y / 14;
+      int mx = (event->motion.x - ((get_resolution_w() - 640) / 2)) / 8;
+      int my = (event->motion.y -
+       ((get_resolution_h() / get_height_multiplier() - 350) / 2)) / 14;
+
+      if(mx > 79)
+        mx = 79;
+
+      if(mx < 0)
+        mx = 0;
+
+      if(my > 24)
+        my = 24;
+
+      if(my < 0)
+        my = 0;
+
       m_move(mx, my);
       input.mouse_x = mx;
       input.mouse_y = my;
@@ -143,12 +157,22 @@ Uint32 process_event(SDL_Event *event)
         break;
       }
 
+      if(input.last_SDL_repeat)
+      {
+        // Stack current repeat key
+        input.last_SDL_repeat_stack[input.repeat_stack_pointer] =
+         input.last_SDL_repeat;
+        input.last_unicode_repeat_stack[input.repeat_stack_pointer] =
+         input.last_unicode_repeat;
+        input.repeat_stack_pointer++;
+      }
+
+      input.SDL_keymap[event->key.keysym.sym] = 1;
       input.last_SDL_pressed = event->key.keysym.sym;
       input.last_SDL = event->key.keysym.sym;
       input.last_unicode = event->key.keysym.unicode;
       input.last_SDL_repeat = event->key.keysym.sym;
       input.last_unicode_repeat = event->key.keysym.unicode;
-      input.SDL_keymap[event->key.keysym.sym] = 1;
       input.last_keypress_time = SDL_GetTicks();
       input.last_SDL_release = (SDLKey)0;
       break;
@@ -162,8 +186,11 @@ Uint32 process_event(SDL_Event *event)
       }
 
       input.SDL_keymap[event->key.keysym.sym] = 0;
-      input.last_SDL_repeat = (SDLKey)0;
-      input.last_unicode_repeat = 0;
+      if(input.last_SDL_repeat == event->key.keysym.sym)
+      {
+        input.last_SDL_repeat = (SDLKey)0;
+        input.last_unicode_repeat = 0;
+      }
       input.last_SDL_release = event->key.keysym.sym;
       break;
     }
@@ -216,7 +243,7 @@ Uint32 process_event(SDL_Event *event)
           input.last_unicode_repeat = stuffed_key;
           input.SDL_keymap[stuffed_key] = 1;
           input.last_keypress_time = SDL_GetTicks();
-          input.last_SDL_release = (SDLKey)0;           
+          input.last_SDL_release = (SDLKey)0;
 
           if(last_axis == (digital_value ^ 1))
           {
@@ -228,7 +255,7 @@ Uint32 process_event(SDL_Event *event)
             input.last_unicode_repeat = 0;
             input.last_SDL_release = stuffed_key;
           }
-      
+
         }
       }
       else
@@ -245,7 +272,7 @@ Uint32 process_event(SDL_Event *event)
         }
       }
 
-      input.last_axis[which][axis] = digital_value;  
+      input.last_axis[which][axis] = digital_value;
       break;
     }
 
@@ -265,7 +292,7 @@ Uint32 process_event(SDL_Event *event)
         input.last_unicode_repeat = stuffed_key;
         input.SDL_keymap[stuffed_key] = 1;
         input.last_keypress_time = SDL_GetTicks();
-        input.last_SDL_release = (SDLKey)0;           
+        input.last_SDL_release = (SDLKey)0;
       }
 
       break;
@@ -335,6 +362,19 @@ Uint32 update_autorepeat()
       }
     }
   }
+  else
+
+  if(input.repeat_stack_pointer)
+  {
+    // Take repeat off the stack.
+    input.repeat_stack_pointer--;
+    input.last_SDL_repeat =
+     input.last_SDL_repeat_stack[input.repeat_stack_pointer];
+    input.last_unicode_repeat =
+     input.last_unicode_repeat_stack[input.repeat_stack_pointer];
+
+    input.last_keypress_time = SDL_GetTicks();
+  }
 
   if(last_mouse_state)
   {
@@ -372,7 +412,7 @@ Uint32 get_key(keycode_type type)
   {
     case keycode_pc_xt:
     {
-      return convert_SDL_xt(input.last_SDL_repeat);
+      return convert_SDL_xt(input.last_SDL);
     }
 
     case keycode_SDL:
@@ -857,8 +897,6 @@ void map_joystick_button(int joystick, int button, SDLKey key)
 
 void set_refocus_pause(int val)
 {
-  printf("setting unfocus: %d\n", val);
-
   input.unfocus_pause = val;
 }
 

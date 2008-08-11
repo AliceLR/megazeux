@@ -188,7 +188,7 @@ void sfx_edit(World *mzx_world)
 
   set_context(97);
 
-  if(!run_dialog(mzx_world, &sfxdi, 1))
+  if(!run_dialog(mzx_world, &sfxdi, 1, 0, 0))
   {
     // Custom to internal
     if((old_sfx_mode) && (!mzx_world->custom_sfx_on))
@@ -230,7 +230,7 @@ void sfx_edit(World *mzx_world)
 
         sedi.curr_element = 4;
         // Run dialog
-        dialog_result = run_dialog(mzx_world, &sedi, 0, 1);
+        dialog_result = run_dialog(mzx_world, &sedi, 0, 1, 0);
         // Next/prev page?
         switch(dialog_result)
         {

@@ -116,7 +116,7 @@ void ec_load_char_ascii(Uint32 char_number);
 Sint32 ec_load_set_secondary(char *name, Uint8 *dest);
 
 void update_palette();
-void load_palette(char *fname);
+void load_palette(char *fname, int priv);
 void load_palette_mem(char mem_pal[][3], int count);
 void save_palette(char *fname);
 void save_palette_mem(char mem_pal[][3], int count);
@@ -149,4 +149,7 @@ void m_show(void);
 void m_move(int x, int y);
 void dump_screen();
 
+int get_resolution_w();
+int get_resolution_h();
+int get_height_multiplier();
 

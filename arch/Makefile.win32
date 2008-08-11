@@ -12,4 +12,11 @@ STRIP     = strip --strip-unneeded
 INCLUDES  = -I${PREFIX}/include -I${PREFIX}/include/SDL
 
 # standard libraries
-LIBS      = -L$(PREFIX)/lib -lmingw32 -mwindows -lSDLmain -lSDL
+LIBS      = -L${PREFIX}/lib -lmingw32 -lSDLmain -lSDL
+
+# debug does something different
+ifdef DEBUG
+LIBS     += -mconsole
+else
+LIBS     += -mwindows
+endif

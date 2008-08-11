@@ -29,6 +29,10 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#ifdef __WIN32__
+#include <windows.h>
+#endif
+
 #include "event.h"
 #include "helpsys.h"
 #include "hexchar.h"
@@ -230,15 +234,16 @@ char fg_per_bk[16] =
 // there percentage-wise. If you click on the current choice, it exits.
 // If you click on a choice to move there, the mouse cursor moves with it.
 
-int list_menu(char *choices, int choice_size, char *title,
+int list_menu(char **choices, int choice_size, char *title,
  int current, int num_choices, int xpos)
 {
   char key_buffer[64];
   int key_position = 0;
   int last_keypress_time = 0;
   int ticks;
-  int width = choice_size + 6, t1;
+  int width = choice_size + 6;
   int key;
+  int i;
 
   cursor_off();
 
@@ -272,29 +277,32 @@ int list_menu(char *choices, int choice_size, char *title,
     draw_window_box(xpos + 3, 3, xpos + 3 + choice_size, 21,
      DI_DARK,DI_MAIN, DI_CORNER, 0, 1);
     // Draw current
-    color_string(choices + (choice_size * current), xpos + 4, 12, DI_ACTIVE);
+    color_string(choices[current], xpos + 4, 12, DI_ACTIVE);
     // Draw above current
-    for(t1 = 1; t1 < 9; t1++)
+    for(i = 1; i < 9; i++)
     {
-      if((current - t1) < 0) break;
-      color_string(choices + (choice_size * (current - t1)), xpos + 4,
-       12 - t1, DI_NONACTIVE);
+      if((current - i) < 0)
+        break;
+      color_string(choices[current - i], xpos + 4,
+       12 - i, DI_NONACTIVE);
     }
     // Draw below current
-    for(t1 = 1; t1 < 9; t1++)
+    for(i = 1; i < 9; i++)
     {
-      if((current + t1) >= num_choices) break;
-      color_string(choices + (choice_size * (current + t1)), xpos + 4,
-       12 + t1, DI_NONACTIVE);
+      if((current + i) >= num_choices)
+        break;
+      color_string(choices[current + i], xpos + 4,
+       12 + i, DI_NONACTIVE);
     }
-    // Draw meter (xpos 9+choice_size, ypos 4 thru 20)
+
+    // Draw meter (xpos 9 + choice_size, ypos 4 thru 20)
     if(num_choices > 1)
     {
-      for(t1 = 4; t1 < 21; t1++)
-        draw_char(pc_filler, DI_PCFILLER, xpos + 4 + choice_size, t1);
+      for(i = 4; i < 21; i++)
+        draw_char(pc_filler, DI_PCFILLER, xpos + 4 + choice_size, i);
       // Add progress dot
-      t1 = (current * 16) / (num_choices - 1);
-      draw_char(pc_dot, DI_PCDOT, xpos + 4 + choice_size, t1 + 4);
+      i = (current * 16) / (num_choices - 1);
+      draw_char(pc_dot, DI_PCDOT, xpos + 4 + choice_size, i + 4);
     }
 
     update_screen();
@@ -357,20 +365,21 @@ int list_menu(char *choices, int choice_size, char *title,
     switch(key)
     {
       case SDLK_ESCAPE:
+      {
         // ESC
         restore_screen();
         if(current == 0)
-         return -32767;
+          return -32767;
         else
-         return -current;
+          return -current;
+      }
 
       case SDLK_BACKSPACE:
       {
-        int i;
         // Goto .. if it's there
         for(i = 0; i < num_choices; i++)
         {
-          if(!strncmp(choices + (i * choice_size), " .. ", 4))
+          if(!strncmp(choices[i], " .. ", 4))
             break;
         }
 
@@ -378,47 +387,62 @@ int list_menu(char *choices, int choice_size, char *title,
           break;
 
         current = i;
+        restore_screen();
+        return current;
       }
 
       case SDLK_KP_ENTER:
       case SDLK_RETURN:
+      {
         // Selected
         restore_screen();
         return current;
+      }
 
       case SDLK_UP:
-        //Up
-        if(current > 0) current--;
+      {
+        if(current > 0)
+          current--;
         break;
+      }
 
       case SDLK_DOWN:
-        //Down
-        if(current < (num_choices - 1)) current++;
+      {
+        if(current < (num_choices - 1))
+          current++;
         break;
+      }
 
       case SDLK_PAGEUP:
-        //Page Up
+      {
         current -= 8;
-        if(current < 0) current=0;
+        if(current < 0)
+          current = 0;
         break;
+      }
 
       case SDLK_PAGEDOWN:
-        //Page Down
+      {
         current += 8;
-        if(current >= num_choices) current = num_choices - 1;
+        if(current >= num_choices)
+          current = num_choices - 1;
         break;
+      }
 
       case SDLK_HOME:
-        //Home
+      {
         current = 0;
         break;
+      }
 
       case SDLK_END:
-        //End
+      {
         current = num_choices - 1;
         break;
+      }
 
       default:
+      {
         // Not necessarily invalid. Might be an alphanumeric; seek the
         // sucker.
 
@@ -437,14 +461,12 @@ int list_menu(char *choices, int choice_size, char *title,
           key_buffer[key_position] = key;
           key_position++;
 
-          int i;
-
           if(get_shift_status(keycode_SDL))
           {
             for(i = 0; i < num_choices; i++)
             {
-              if((choices[i * choice_size] == ' ') &&
-               !strncasecmp(choices + (i * choice_size) + 1, key_buffer,
+              if((choices[i][0] == ' ') &&
+               !strncasecmp(choices[i] + 1, key_buffer,
                key_position))
               {
                 // It's good!
@@ -457,7 +479,7 @@ int list_menu(char *choices, int choice_size, char *title,
           {
             for(i = 0; i < num_choices; i++)
             {
-              if(!strncasecmp(choices + (i * choice_size), key_buffer,
+              if(!strncasecmp(choices[i], key_buffer,
                key_position))
               {
                 // It's good!
@@ -467,11 +489,9 @@ int list_menu(char *choices, int choice_size, char *title,
             }
           }
         }
-
-      case 0:
         break;
+      }
     }
-    // Loop
   } while(1);
 }
 
@@ -542,6 +562,9 @@ int char_selection(int current)
     update_event_status_delay();
     key = get_key(keycode_SDL);
 
+    // Erase marks
+    draw_char(current, DI_NONACTIVE, x, y);
+
     if(get_mouse_press())
     {
       int mouse_x, mouse_y;
@@ -561,8 +584,6 @@ int char_selection(int current)
       }
     }
 
-    // Erase marks
-    draw_char(current, DI_NONACTIVE, x, y);
     // Process key
 
     switch(key)
@@ -896,7 +917,7 @@ int color_selection(int current, int allow_wild)
       {
         // End
         currx = 15 + allow_wild;
-        curry = 15 + allow_wild;  
+        curry = 15 + allow_wild;
         break;
       }
 
@@ -956,12 +977,12 @@ void draw_color_box(int color, int q_bit, int x, int y)
 // Prototype- Internal function that displays a dialog box element.
 void display_element(World *mzx_world, int type, int x, int y,
  char *str, int p1, int p2, void *value, int active, int curr_check,
- int set_vid_usage);
+ int set_vid_usage, int space_label);
 
 // The code that runs the dialog boxes
 // Mouse support- Click to move/select/choose.
-int run_dialog(World *mzx_world, dialog *di, char reset_curr,
- char sfx_alt_t)
+int run_dialog(World *mzx_world, dialog *di, int reset_curr,
+ int sfx_alt_t, int space_label)
 {
   int t1, t2 = -1, key;
   int tlng;
@@ -1015,13 +1036,15 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
     {
       display_element(mzx_world, di->element_types[t1], x1 + di->element_xs[t1],
        y1 + di->element_ys[t1], di->element_strs[t1], di->element_param1s[t1],
-       di->element_param2s[t1], di->element_storage[t1], 1, 0, t1 + 1);
+       di->element_param2s[t1], di->element_storage[t1], 1, 0, t1 + 1,
+       space_label);
     }
     else
     {
       display_element(mzx_world, di->element_types[t1], x1 + di->element_xs[t1],
        y1 + di->element_ys[t1], di->element_strs[t1], di->element_param1s[t1],
-       di->element_param2s[t1], di->element_storage[t1], 0, 0, t1 + 1);
+       di->element_param2s[t1], di->element_storage[t1], 0, 0, t1 + 1,
+       space_label);
     }
   }
 
@@ -1049,7 +1072,7 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
     display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
      y1 + di->element_ys[curr_e], di->element_strs[curr_e],
      di->element_param1s[curr_e], di->element_param2s[curr_e],
-     di->element_storage[curr_e], 1, curr_check, 0);
+     di->element_storage[curr_e], 1, curr_check, 0, space_label);
 
     update_event_status_delay();
 
@@ -1058,8 +1081,9 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
     {
       key = intake((char *)di->element_storage[curr_e],
        di->element_param1s[curr_e], x1 + di->element_xs[curr_e] +
-       strlen(di->element_strs[curr_e]), y1 + di->element_ys[curr_e],
-       DI_INPUT, 2, di->element_param2s[curr_e]);
+       strlen(di->element_strs[curr_e]) + space_label,
+       y1 + di->element_ys[curr_e], DI_INPUT, 2,
+       di->element_param2s[curr_e]);
     }
     else
     {
@@ -1085,7 +1109,7 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
           display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
            y1 + di->element_ys[curr_e], di->element_strs[curr_e],
            di->element_param1s[curr_e], di->element_param2s[curr_e],
-           di->element_storage[curr_e], 0, curr_check, 0);
+           di->element_storage[curr_e], 0, curr_check, 0, space_label);
 
           curr_e = id_over;
           id_over = -1;
@@ -1174,11 +1198,11 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
         if(get_shift_status(keycode_SDL))
         {
           prev_elem:
-          //Unhighlight old element
+          // Unhighlight old element
           display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
            y1 + di->element_ys[curr_e], di->element_strs[curr_e],
            di->element_param1s[curr_e], di->element_param2s[curr_e],
-           di->element_storage[curr_e], 0, curr_check, 0);
+           di->element_storage[curr_e], 0, curr_check, 0, space_label);
 
           // Move to previous element, going past text/box/line
           do
@@ -1197,7 +1221,7 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
           display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
            y1 + di->element_ys[curr_e], di->element_strs[curr_e],
            di->element_param1s[curr_e], di->element_param2s[curr_e],
-           di->element_storage[curr_e], 0, curr_check, 0);
+           di->element_storage[curr_e], 0, curr_check, 0, space_label);
           // Move to next element
           curr_e++;
         }
@@ -1212,48 +1236,70 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
         switch(t1)
         {
           case DE_CHECK:
+          {
             ((char *)di->element_storage[curr_e])[curr_check] ^= 1;
             break;
+          }
+
           case DE_COLOR:
-            t2 =
-             color_selection(((int *)di->element_storage[curr_e])[0],
+          {
+            int current_color =
+             color_selection(*((int *)di->element_storage[curr_e]),
              di->element_param1s[curr_e]);
-            if(t2 >= 0)
-              ((int *)di->element_storage[curr_e])[0] = t2;
+            if(current_color >= 0)
+              *((int *)di->element_storage[curr_e]) = current_color;
             break;
+          }
+
           case DE_CHAR:
-            t2 =
-             char_selection(((unsigned char *)di->element_storage[curr_e])[0]);
-            if(t2 == 0) t2 = 1;
-            if((t2 == 255) && (di->element_param1s[curr_e] == 0))
-              t2 = 1;
-            if(t2 >= 0)
-              ((unsigned char *)di->element_storage[curr_e])[0] = t2;
+          {
+            int current_char =
+             char_selection((*(char *)di->element_storage[curr_e]));
+            if(current_char == 0)
+              current_char = 1;
+            if((current_char == 255) && (di->element_param1s[curr_e] == 0))
+              current_char = 1;
+            if(current_char >= 0)
+              *((char *)di->element_storage[curr_e]) = current_char;
             break;
+          }
+
           case DE_BUTTON:
+          {
             // Restore screen, set current, and return answer
             pop_context();
             restore_screen();
             di->curr_element = curr_e;
             return di->element_param1s[curr_e];
+          }
+
           case DE_BOARD:
-            t2 = choose_board(mzx_world, ((int *)di->element_storage[curr_e])[0],
+          {
+            int current_board =
+             choose_board(mzx_world, *((int *)di->element_storage[curr_e]),
              di->element_strs[curr_e], di->element_param1s[curr_e]);
-            if(t2 >= 0)
-              ((int *)di->element_storage[curr_e])[0] = t2;
+            if(current_board >= 0)
+              ((int *)di->element_storage[curr_e])[0] = current_board;
             break;
+          }
+
           case DE_LIST:
-            t2 = di->element_param2s[curr_e];
-            t2 = list_menu(di->element_strs[curr_e] + t2, t2,
-             di->element_strs[curr_e],
-             ((int *)di->element_storage[curr_e])[0],
+          {
+            int choice_size = di->element_param2s[curr_e];
+            int result = list_menu(((char **)di->element_strs[curr_e]) + 1,
+             choice_size, ((char **)di->element_strs[curr_e])[0],
+             *((int *)di->element_storage[curr_e]),
              di->element_param1s[curr_e], 31);
-            if(t2 >= 0)
-              ((int *)di->element_storage[curr_e])[0] = t2;
+            if(result >= 0)
+              *((int *)di->element_storage[curr_e]) = result;
             break;
+          }
+
           default:
+          {
             // Same as a tab
             goto next_elem;
+          }
         }
         break;
       }
@@ -1362,7 +1408,7 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
             display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
              y1 + di->element_ys[curr_e], di->element_strs[curr_e],
              di->element_param1s[curr_e], di->element_param2s[curr_e],
-             di->element_storage[curr_e], 0, curr_check, 0);
+             di->element_storage[curr_e], 0, curr_check, 0, space_label);
             //Jump to first
             curr_e = 0;
             if(sfx_alt_t > 1)
@@ -1465,7 +1511,7 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
             display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
              y1 + di->element_ys[curr_e], di->element_strs[curr_e],
              di->element_param1s[curr_e], di->element_param2s[curr_e],
-             di->element_storage[curr_e], 0, curr_check, 0);
+             di->element_storage[curr_e], 0, curr_check, 0, space_label);
             // Jump to end
             if(sfx_alt_t > 0) curr_e = 0;
             else
@@ -1538,7 +1584,7 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
 
             if(key == SDLK_BACKSPACE)
             {
-              current_value /= 10;              
+              current_value /= 10;
             }
 
             if((key_char >= '0') && (key_char <= '9'))
@@ -1554,10 +1600,10 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
               }
 
               if(current_value < di->element_param1s[curr_e])
-                current_value = di->element_param1s[curr_e]; 
+                current_value = di->element_param1s[curr_e];
 
               if(current_value > di->element_param2s[curr_e])
-                current_value = di->element_param2s[curr_e]; 
+                current_value = di->element_param2s[curr_e];
             }
 
 
@@ -1582,7 +1628,7 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
 
 void display_element(World *mzx_world, int type, int x, int y,
  char *str, int p1, int p2, void *value, int active, int curr_check,
- int set_vid_usage)
+ int set_vid_usage, int space_label)
 {
   // If set_vid_usage is non-0, set the vid_usage array appropriately.
   // set_vid_usage is equal to the element number plus 1.
@@ -1590,6 +1636,17 @@ void display_element(World *mzx_world, int type, int x, int y,
   char temp[7];
   // Color for elements (active vs. inactive)
   int color = DI_NONACTIVE;
+
+  if(space_label && (type != DE_BUTTON))
+  {
+    char str2[512];
+    int len = strlen(str);
+    memcpy(str2, str, len);
+    str2[len] = ' ';
+    str2[len + 1] = 0;
+
+    str = str2;
+  }
 
   if(active)
     color = DI_ACTIVE;
@@ -1656,7 +1713,8 @@ void display_element(World *mzx_world, int type, int x, int y,
       // Highlight current
       if(active)
       {
-        if(curr_check >= p1) curr_check = p1 - 1;
+        if(curr_check >= p1)
+          curr_check = p1 - 1;
         color_line(p2 + 4, x, y + curr_check, DI_ACTIVE);
       }
       // Fill vid_usage
@@ -1752,6 +1810,7 @@ void display_element(World *mzx_world, int type, int x, int y,
         for(t1 = 0; t1 < t2; t1++)
           vid_usage[t1 + x + y * 80] = set_vid_usage - 1;
       }
+
       break;
     }
 
@@ -1902,19 +1961,22 @@ int add_board(World *mzx_world, int current)
 int choose_board(World *mzx_world, int current, char *title, int board0_none)
 {
   int i;
-  char *board_names =
-   (char *)malloc((mzx_world->num_boards + 1) * BOARD_NAME_SIZE);
-  char *cur_offset = board_names;
+  char **board_names =
+   (char **)malloc((mzx_world->num_boards + 1) * sizeof(char *));
 
   // Go through - blank boards get a (no board) marker. t2 keeps track
   // of the number of boards.
-  for(i = 0; i < mzx_world->num_boards; i++, cur_offset += BOARD_NAME_SIZE)
+  for(i = 0; i < mzx_world->num_boards; i++)
   {
+    board_names[i] = (char *)malloc(BOARD_NAME_SIZE);
+
     if(mzx_world->board_list[i] == NULL)
-      strcpy(cur_offset, "(no board)");
+      strcpy(board_names[i], "(no board)");
     else
-      strcpy(cur_offset, (mzx_world->board_list[i])->board_name);
+      strcpy(board_names[i], (mzx_world->board_list[i])->board_name);
   }
+
+  board_names[i] = (char *)malloc(12);
 
   if((current < 0) || (current >= mzx_world->num_boards))
     current = 0;
@@ -1922,14 +1984,14 @@ int choose_board(World *mzx_world, int current, char *title, int board0_none)
   // Add (new board) to bottom
   if(i < MAX_BOARDS)
   {
-    strcpy(board_names + (i * BOARD_NAME_SIZE), "(add board)");
+    strcpy(board_names[i], "(add board)");
     i++;
   }
 
   // Change top to (none) if needed
   if(board0_none)
   {
-    strcpy(board_names, "(none)");
+    strcpy(board_names[0], "(none)");
   }
 
   // Run the list_menu()
@@ -1939,7 +2001,12 @@ int choose_board(World *mzx_world, int current, char *title, int board0_none)
   if((current == mzx_world->num_boards) ||
    (current >= 0) && (mzx_world->board_list[current] == NULL))
   {
-    return add_board(mzx_world, current);
+    current = add_board(mzx_world, current);
+  }
+
+  for(i = 0; i < (mzx_world->num_boards + 1); i++)
+  {
+    free(board_names[i]);
   }
 
   free(board_names);
@@ -1959,7 +2026,7 @@ dialog c_di =
 char confirm(World *mzx_world, char *str)
 {
   c_di.title = str;
-  return run_dialog(mzx_world, &c_di);
+  return run_dialog(mzx_world, &c_di, 1, 0, 0);
 }
 
 char yn_types[2] = { DE_BUTTON, DE_BUTTON };
@@ -1975,35 +2042,34 @@ dialog yn_di =
 char ask_yes_no(World *mzx_world, char *str)
 {
   yn_di.title = str;
-  return run_dialog(mzx_world, &yn_di);
+  return run_dialog(mzx_world, &yn_di, 1, 0, 0);
 }
 
 // Sort function for below use in qsort
-int sort_function(const void *a, const void *b)
+int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
 {
-  char *dest_str = (char *)a;
-  char *src_str = (char *)b;
+  char *dest_str = *((char **)dest_str_ptr);
+  char *src_str = *((char **)src_str_ptr);
 
   // Space is greater if the other is not a space
   // Space then dot dot is lower if the other is not a dot
 
-  if((*src_str == 32) && (*dest_str != 32))
+  if((*src_str == ' ') && (*dest_str != ' '))
     return -1;
 
-  if((*dest_str == 32) && (*src_str != 32))
+  if((*dest_str == ' ') && (*src_str != ' '))
     return 1;
 
-
-  if(!strncmp(src_str, " .. ", 4) && (*dest_str == 32))
+  if(!strncmp(src_str, " .. ", 4) && (*dest_str == ' '))
     return 1;
 
-  if(!strncmp(dest_str, " .. ", 4) && (*src_str == 32))
+  if(!strncmp(dest_str, " .. ", 4) && (*src_str == ' '))
     return -1;
 
-  if((*src_str == 32) && (*dest_str != 32))
+  if((*src_str == ' ') && (*dest_str != ' '))
     return -1;
 
-  if((*dest_str == 32) && (*src_str != 32))
+  if((*dest_str == ' ') && (*src_str != ' '))
     return 1;
 
   return strcasecmp(dest_str, src_str);
@@ -2011,12 +2077,6 @@ int sort_function(const void *a, const void *b)
 
 // Shell for list_menu() (copies file chosen to ret and returns -1 for ESC)
 // dirs_okay of 1 means drive and directory changing is allowed.
-// Use NULL for wildcards to mean "all module files"
-#define NUM_MOD_TYPES 5
-char *mod_types[] =
-{ ".MOD", ".NST", ".WOW", ".OCT", ".S3M", ".XM", NULL };
-
-// FIXME - make memory dynamically allocated inside this
 
 int choose_file(char **wildcards, char *ret, char *title,
  int dirs_okay)
@@ -2026,29 +2086,42 @@ int choose_file(char **wildcards, char *ret, char *title,
   struct dirent *current_file;
   char current_dir_name[PATHNAME_SIZE];
   char previous_dir_name[PATHNAME_SIZE];
-  char list[4096 * 60];
-  int list_pos;
+  int total_filenames_allocated;
+  char **list;
   int num_files;
   char *file_name;
   int file_name_length;
   int ext_pos = -1;
   int chosen;
+  int ret_val = 1;
   int i;
+
+#ifdef __WIN32__
+  int drive_letter_bitmap;
+#endif
 
   getcwd(previous_dir_name, PATHNAME_SIZE);
 
-  while(1)
+  while(ret_val == 1)
   {
-    list_pos = 0;
+    total_filenames_allocated = 32;
+    list = (char **)malloc(sizeof(char *) * 32);
+
+    for(i = 0; i < 32; i++)
+    {
+      list[i] = (char *)malloc(60);
+    }
+
     num_files = 0;
 
     getcwd(current_dir_name, PATHNAME_SIZE);
     current_dir = opendir(current_dir_name);
 
-    while(1)
+    do
     {
-      memset(list + list_pos, ' ', 58);
-      list[list_pos + 58] = 0;
+      memset(list[num_files], ' ', 58);
+      list[num_files][58] = 0;
+
       current_file = readdir(current_dir);
       if(current_file)
       {
@@ -2064,11 +2137,10 @@ int choose_file(char **wildcards, char *ret, char *title,
           {
             if(dirs_okay && strcmp(file_name, "."))
             {
-              memcpy(list + list_pos + 1, file_name, file_name_length);
-              strcpy(list + list_pos + 34, "[subdirectory]");
-              list[list_pos + 59] = file_name_length;
-  
-              list_pos += 60;
+              memcpy(list[num_files] + 1, file_name, file_name_length);
+              strcpy(list[num_files] + 34, "[subdirectory]");
+              list[num_files][59] = file_name_length;
+
               num_files++;
             }
           }
@@ -2080,28 +2152,27 @@ int choose_file(char **wildcards, char *ret, char *title,
               if(file_name[file_name_length - 4] == '.')
                 ext_pos = file_name_length - 4;
               else
-  
+
               if(file_name[file_name_length - 3] == '.')
                 ext_pos = file_name_length - 3;
-  
+
               for(i = 0; wildcards[i] != NULL; i++)
               {
                 if(!strcasecmp((file_name + ext_pos),
                  wildcards[i]))
                 {
-                  memcpy(list + list_pos, file_name, file_name_length);
+                  memcpy(list[num_files], file_name, file_name_length);
                   // Is it a .mzx? If so try to display title
                   if(!strcasecmp(file_name + file_name_length - 4, ".mzx"))
                   {
                     FILE *mzx_file = fopen(file_name, "rb");
-                    list[list_pos + file_name_length] = ' ';
-                    fread(list + list_pos + 34, 1, 24, mzx_file);
-                    list[list_pos + 58] = 0;
+                    list[num_files][file_name_length] = ' ';
+                    fread(list[num_files] + 34, 1, 24, mzx_file);
+                    list[num_files][58] = 0;
                     fclose(mzx_file);
                   }
-  
-                  list[list_pos + 59] = file_name_length;
-                  list_pos += 60;
+
+                  list[num_files][59] = file_name_length;
                   num_files++;
                   break;
                 }
@@ -2109,37 +2180,88 @@ int choose_file(char **wildcards, char *ret, char *title,
             }
           }
         }
+
+        if(num_files == total_filenames_allocated)
+        {
+          list = (char **)realloc(list, sizeof(char *) *
+           total_filenames_allocated * 2);
+
+          for(i = total_filenames_allocated;
+           i < total_filenames_allocated * 2; i++)
+          {
+            list[i] = (char *)malloc(60);
+          }
+
+          total_filenames_allocated *= 2;
+        }
       }
-      else
+    } while(current_file);
+
+    qsort((void *)list, num_files, sizeof(char *), sort_function);
+
+#ifdef __WIN32__
+    drive_letter_bitmap = GetLogicalDrives();
+
+    for(i = 0; i < 32; i++)
+    {
+      if(drive_letter_bitmap & (1 << i))
       {
-        break;
+        memset(list[num_files], ' ', 58);
+        list[num_files][58] = 0;
+        list[num_files][59] = 3;
+        sprintf(list[num_files], " %c:", 'A' + i);
+        list[num_files][3] = ' ';
+        strcpy(list[num_files] + 34, "[drive]");
+        num_files++;
+
+        if(num_files == total_filenames_allocated)
+        {
+          list = (char **)realloc(list, sizeof(char *) *
+          total_filenames_allocated * 2);
+    
+          for(i = total_filenames_allocated;
+           i < total_filenames_allocated * 2; i++)
+          {
+            list[i] = (char *)malloc(60);
+          }
+  
+          total_filenames_allocated *= 2;
+        }
       }
     }
+#endif
 
-    qsort((void *)list, num_files, 60, sort_function);
     chosen = list_menu(list, 60, title, 0, num_files, 7);
 
     if(chosen < 0)
     {
       closedir(current_dir);
       chdir(previous_dir_name);
-      return -1;
+      ret_val = -1;
     }
+    else
 
     // Directory or drive
-    if(list[60 * chosen] == ' ')
+    if(list[chosen][0] == ' ')
     {
-      list[(60 * chosen + 1) + list[60 * chosen + 59]] = 0;
-      chdir(list + (60 * chosen) + 1);
+      list[chosen][list[chosen][59] + 1] = 0;
+      chdir(list[chosen] + 1);
       closedir(current_dir);
+      ret_val = 1;
     }
     else
     {
-      memcpy(ret, list + (60 * chosen), list[(60 * chosen) + 59]);
-      ret[list[(60 * chosen) + 59]] = 0;
-      return 0;
+      memcpy(ret, list[chosen], list[chosen][59]);
+      ret[list[chosen][59]] = 0;
+      ret_val = 0;
     }
+
+    for(i = 0; i < total_filenames_allocated; i++)
+    {
+      free(list[i]);
+    }
+    free(list);
   }
 
-  return 0;
+  return ret_val;
 }

@@ -144,7 +144,7 @@ void load_board_direct(Board *cur_board, FILE *fp, int savegame)
 
     // Skip sizes
     fseek(fp, 4, SEEK_CUR);
-    load_RLE2_plane(cur_board->overlay_color, fp, size);  
+    load_RLE2_plane(cur_board->overlay_color, fp, size);
     test_buffer = (char *)malloc(1024);
     free(test_buffer);
   }
@@ -306,6 +306,7 @@ void load_board_direct(Board *cur_board, FILE *fp, int savegame)
   }
 
   cur_board->num_scrolls = num_scrolls;
+  cur_board->num_scrolls_allocated = num_scrolls;
 
   // Load sensors
   num_sensors = fgetc(fp);
@@ -331,6 +332,7 @@ void load_board_direct(Board *cur_board, FILE *fp, int savegame)
   }
 
   cur_board->num_sensors = num_sensors;
+  cur_board->num_sensors_allocated = num_sensors;
 }
 
 Board *create_blank_board()
@@ -644,7 +646,7 @@ void clear_board(Board *cur_board)
   free(cur_board->level_under_id);
   free(cur_board->level_under_param);
   free(cur_board->level_under_color);
-             
+
   if(cur_board->overlay_mode)
   {
     free(cur_board->overlay);
@@ -810,8 +812,6 @@ void change_board_size(Board *src_board, int new_width, int new_height)
       level_under_id = src_board->level_under_id;
       level_under_color = src_board->level_under_color;
       level_under_param = src_board->level_under_param;
-      overlay = src_board->overlay;
-      overlay_color = src_board->overlay_color;
 
       // Do the overlay too, if it exists
       if(overlay_mode)
@@ -825,6 +825,9 @@ void change_board_size(Board *src_board, int new_width, int new_height)
 
         src_board->overlay = (char *)realloc(overlay, new_size);
         src_board->overlay_color = (char *)realloc(overlay_color, new_size);
+
+        overlay = src_board->overlay;
+        overlay_color = src_board->overlay_color;
       }
     }
     else

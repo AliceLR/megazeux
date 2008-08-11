@@ -71,7 +71,7 @@ void reset_sdi(void)
   sdi.num_elements = 3;
 }
 
-#define do_dialog() run_dialog(mzx_world, &sdi, 0, 2)
+#define do_dialog() run_dialog(mzx_world, &sdi, 0, 2, 0)
 
 char *sci_strs[NUM_STATUS_CNTRS] =
 {
@@ -596,7 +596,7 @@ void global_info(World *mzx_world)
     {
       case 2:
       {
-        // Returns 1 for previous                 
+        // Returns 1 for previous
         set_context(88);
         reset_sdi();
         sdi_types[2] = DE_BOARD;
@@ -607,7 +607,7 @@ void global_info(World *mzx_world)
         sdi_types[7] = DE_NUMBER;
         sdi_types[8] = DE_BUTTON;
         sdi_types[9] = DE_CHECK;
-      
+
         sdi_xs[2] = 6;
         sdi_xs[3] = 38;
         sdi_xs[4] = 6;
@@ -616,7 +616,7 @@ void global_info(World *mzx_world)
         sdi_xs[7] = 6;
         sdi_xs[8] = 38;
         sdi_xs[9] = 6;
-      
+
         sdi_ys[2] = 2;
         sdi_ys[3] = 3;
         sdi_ys[4] = 5;
@@ -625,7 +625,7 @@ void global_info(World *mzx_world)
         sdi_ys[7] = 9;
         sdi_ys[8] = 9;
         sdi_ys[9] = 11;
-      
+
         sdi_strs[2] = "First board-";
         sdi_strs[3] = "Edging color- ";
         sdi_strs[4] = "Starting lives-  ";
@@ -636,20 +636,20 @@ void global_info(World *mzx_world)
         sdi_strs[9] = "Enemies' bullets hurt other enemies\n"
          "Clear messages and projectiles on exit\n"
          "Can only play world from a 'SWAP WORLD'";
-      
+
         sdi_p1s[4] = 1;
         sdi_p1s[5] = 1;
         sdi_p1s[6] = 1;
         sdi_p1s[7] = 1;
         sdi_p1s[8] = 2;
         sdi_p1s[9] = 3;
-      
+
         sdi_p2s[4] = 32767;
         sdi_p2s[5] = 32767;
         sdi_p2s[6] = 32767;
         sdi_p2s[7] = 32767;
         sdi_p2s[9] = 39;
-      
+
         sdi_storage[2] = &brd;
         sdi_storage[3] = &col;
         sdi_storage[4] = &lv;
@@ -657,11 +657,11 @@ void global_info(World *mzx_world)
         sdi_storage[6] = &hl;
         sdi_storage[7] = &mhl;
         sdi_storage[9] = chk2;
-      
+
         sdi.num_elements = 10;
         dialog_result = do_dialog();
         pop_context();
-      
+
         if(dialog_result == 2)
         {
           redo = 1;
@@ -678,18 +678,18 @@ void global_info(World *mzx_world)
         if(rad1 == 2)
           mzx_world->death_board = brd1;
         else
-    
+
         if(rad1 == 1)
           mzx_world->death_board = NO_DEATH_BOARD;
-    
+
         else
           mzx_world->death_board = DEATH_SAME_POS;
-    
+
         if(rad2 == 1)
           mzx_world->endgame_board = brd2;
         else
           mzx_world->endgame_board = NO_ENDGAME_BOARD;
-    
+
         mzx_world->death_x = dx;
         mzx_world->endgame_x = ex;
         mzx_world->death_y = dy;
@@ -702,13 +702,13 @@ void global_info(World *mzx_world)
         mzx_world->lives_limit = mlv;
         mzx_world->starting_health = hl;
         mzx_world->health_limit = mhl;
-        mzx_world->enemy_hurt_enemy = chk[0];
-        mzx_world->clear_on_exit = chk[1];
-        mzx_world->only_from_swap = chk[2];
-      
+        mzx_world->enemy_hurt_enemy = chk2[0];
+        mzx_world->clear_on_exit = chk2[1];
+        mzx_world->only_from_swap = chk2[2];
+
         if(lv > mlv)
           mzx_world->starting_lives = mlv;
-      
+
         if(hl > mhl)
           mzx_world->starting_health = mhl;
 
@@ -827,7 +827,7 @@ void reset_cdi(void)
   cdi.num_elements = 27;
 }
 
-#define do_cdialog() run_dialog(mzx_world, &cdi, 0, 3)
+#define do_cdialog() run_dialog(mzx_world, &cdi, 0, 3, 0)
 
 // Info for char funcs, 192 selections (24 per func, 8 funcs)
 char *char_strs[8][24] =
@@ -1467,7 +1467,7 @@ dialog ddi =
   dmg_strs, ddi_p1s, ddi_p2s, ddi_storage, 2
 };
 
-#define do_ddialog() run_dialog(mzx_world, &ddi, 0, 2)
+#define do_ddialog() run_dialog(mzx_world, &ddi, 0, 2, 0)
 
 void global_dmg(World *mzx_world)
 {

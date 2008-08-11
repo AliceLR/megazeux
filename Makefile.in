@@ -2,14 +2,20 @@
 # used by all makefiles
 #
 CC        = gcc
-CPP       = g++
+CXX       = g++
 
 # default target name
-TARGET    = mzx280f
-VERSION   = 2.80f
+TARGET    = mzx280g
+VERSION   = 2.80g
 
-# default optimisations
+ifdef DEBUG
+# debug C++ flags
+CXXFLAGS  = -g -funsigned-char -Wall -DMZX_VERSION=\"${VERSION}\" -DDEBUG
+else
+# optimised C++ flags
 CXXFLAGS  = -O2 -funsigned-char -ffast-math -Wall -DMZX_VERSION=\"${VERSION}\"
+endif
+
 CXXFLAGS += -I../contrib/libmodplug/src -I../contrib/libmodplug/src/include
 CXXFLAGS += -I../contrib/gdm2s3m/src
 LIBS     += ../contrib/libmodplug/src/libmodplug.a

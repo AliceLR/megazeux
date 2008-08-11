@@ -25,8 +25,9 @@
 #include "data.h"
 #include "const.h"
 
-unsigned char curr_board = 0;                   // Current board
-// Current MZX file
+// Some globals that still lurk.. should be moved to other places.
+
+// Current MZX file information
 char curr_file[FILENAME_SIZE] = "CAVERNS.MZX";
 // Current SAVE file
 char curr_sav[FILENAME_SIZE] = "SAVED.SAV";
@@ -37,30 +38,10 @@ unsigned char megazeux_drive = 2;               // Startup drive (0=A...)
 unsigned char current_drive = 2;                // Current drive (0=A...)
 char quicksave_file[FILENAME_SIZE];             // Current quicksave filename
 
-// Mouse state stuff
-unsigned int saved_mouse_x = 0;
-unsigned int saved_mouse_y = 0;
-unsigned int saved_mouse_buttons = 0;
-
-// Board "save chunk"
-
-char mod_playing[FILENAME_SIZE];                // Mod currently playing
-char refresh_mod_playing = 1;                   // Load mod no matter what
-
-// World "save chunk"
-
-unsigned char music_on = 1;                     // If music is on
-unsigned char sfx_on = 1;                       // If pc sfx is on
-unsigned char music_device = 0;                 // Music device
-unsigned char music_gvol  = 8;                  // Global Music volume (x/8)
-unsigned char sound_gvol  = 8;                  // Global Sound volume (x/8)
-unsigned char overall_speed = 4;                // 1 through 7
+// Some global world values that haven't been removed yet.
 
 unsigned char scroll_color = 15;                // Current scroll color
-unsigned char cheats_active = 1;                // (additive flag)
 unsigned char current_help_sec = 0;             // Use for context-sens.help
-char saved_pl_color;
-int was_zapped;
 
 char *update_done;
 int update_done_size = 0;

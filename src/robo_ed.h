@@ -24,6 +24,9 @@
 #include "rasm.h"
 #include "world.h"
 
+#define MAX_MACRO_RECURSION 16
+#define MAX_MACRO_REPEAT 128
+
 typedef struct _robot_line robot_line;
 typedef struct _robot_state robot_state;
 
@@ -52,7 +55,7 @@ struct _robot_line
 struct _robot_state
 {
   int current_line;
-  robot_line *current_rline;  
+  robot_line *current_rline;
   int total_lines;
   int size;
   int max_size;
@@ -76,6 +79,10 @@ struct _robot_state
   char *active_macro;
   char *command_buffer;
   char command_buffer_space[512];
+  int macro_recurse_level;
+  int macro_repeat_level;
+
+  World *mzx_world;
 };
 
 extern char macros[5][64];
@@ -85,30 +92,34 @@ void move_and_update(robot_state *rstate, int count);
 void move_line_up(robot_state *rstate, int count);
 void move_line_down(robot_state *rstate, int count);
 void strip_ccodes(char *dest, char *src);
-void update_current_line(robot_state *rstate);
+int update_current_line(robot_state *rstate);
 void add_blank_line(robot_state *rstate, int relation);
-void display_robot_line(robot_state *rstate, 
+void display_robot_line(robot_state *rstate,
  robot_line *current_rline, int y);
 void delete_current_line(robot_state *rstate, int move);
-int validate_lines(World *mzx_world, robot_state *rstate,
- int show_none);
+int validate_lines(robot_state *rstate, int show_none);
 void insert_string(char *dest, char *string, int *position);
 int block_menu(World *mzx_world);
 void add_line(robot_state *rstate);
 void paste_buffer(robot_state *rstate);
 void copy_block_to_buffer(robot_state *rstate);
 void clear_block(robot_state *rstate);
-void export_block(World *mzx_world, robot_state *rstate,
- int region_default);
-void import_block(World *mzx_world, robot_state *rstate);
+void export_block(robot_state *rstate, int region_default);
+void import_block(robot_state *rstate);
 void edit_settings(World *mzx_world);
 void goto_line(robot_state *rstate, int line);
-void block_action(World *mzx_world, robot_state *rstate);
+void block_action(robot_state *rstate);
 int find_string(robot_state *rstate, char *str, int wrap,
  int *position, int case_sensitive);
-void find_replace_action(World *mzx_world, robot_state *rstate);
+void find_replace_action(robot_state *rstate);
 void str_lower_case(char *str, char *dest);
 void replace_current_line(robot_state *rstate, int r_pos, char *str,
  char *replace);
+void execute_macro(robot_state *rstate,
+ ext_macro *macro_src);
+void execute_numbered_macro(robot_state *rstate, int num);
+void output_macro(robot_state *rstate, ext_macro *macro_src);
+void execute_named_macro(robot_state *rstate, char *macro_name);
+void macro_default_values(robot_state *rstate, ext_macro *macro_src);
 
 #endif

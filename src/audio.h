@@ -52,6 +52,11 @@ typedef struct
   Uint32 pc_speaker_last_playing;
   Uint32 pc_speaker_sample_cutoff;
   Uint32 pc_speaker_last_increment_buffer;
+
+  Uint32 music_on;
+  Uint32 sfx_on;
+  Uint32 music_volume;
+  Uint32 sound_volume;
 } audio_struct;
 
 void init_audio(config_info *conf);
@@ -72,6 +77,14 @@ void sound(int frequency, int duration);
 void nosound(int duration);
 int filelength(FILE *fp);
 void convert_sam_to_wav(char *source_name, char *dest_name);
+void set_music_on(int val);
+void set_sfx_on(int val);
+int get_music_on_state();
+int get_sfx_on_state();
+int get_music_volume();
+int get_sound_volume();
+void set_music_volume(int volume);
+void set_sound_volume(int volume);
 
 extern int error_mode;
 

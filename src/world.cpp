@@ -219,7 +219,7 @@ int save_world_dialog(World *mzx_world, char *name)
   int dialog_result;
   set_context(76);
   cf_ptr = (void *)(name);
-  dialog_result = run_dialog(mzx_world, &s_di);
+  dialog_result = run_dialog(mzx_world, &s_di, 1, 0, 0);
   pop_context();
   return dialog_result;
 }
@@ -231,7 +231,7 @@ int save_game_dialog(World *mzx_world)
   sd_strs[0] = "Save game as: ";
   s_di.title = "Save Game";
   cf_ptr = (void *)(curr_sav);
-  dialog_result = run_dialog(mzx_world, &s_di);
+  dialog_result = run_dialog(mzx_world, &s_di, 1, 0, 0);
   pop_context();
   sd_strs[0] = "Save world as: ";
   s_di.title = "Save World";
@@ -569,8 +569,8 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
     if(strcmp(current_dir, file_path))
       chdir(file_path);
   }
-  
-  
+
+
   if(fp == NULL)
   {
     error("Error loading world", 1, 24, 0x0D01);
@@ -853,12 +853,16 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
 
     // Load input file name, open
     fread(mzx_world->input_file_name, 1, 12, fp);
+    mzx_world->input_file_name[12] = 0;
     if(mzx_world->input_file_name[0] != '\0')
     {
       mzx_world->input_file =
        fsafeopen(mzx_world->input_file_name, "rb");
 
-      fseek(mzx_world->input_file, fgetd(fp), SEEK_SET);
+      if(mzx_world->input_file)
+        fseek(mzx_world->input_file, fgetd(fp), SEEK_SET);
+      else
+        fseek(fp, 4, SEEK_CUR);
     }
     else
     {
@@ -866,12 +870,16 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
     }
     // Load ouput file name, open
     fread(mzx_world->output_file_name, 1, 12, fp);
+    mzx_world->output_file_name[12] = 0;
     if(mzx_world->output_file_name[0] != '\0')
     {
       mzx_world->output_file =
-       fsafeopen(mzx_world->output_file_name, "rb");
+       fsafeopen(mzx_world->output_file_name, "ab");
 
-      fseek(mzx_world->output_file, fgetd(fp), SEEK_SET);
+      if(mzx_world->output_file)
+        fseek(mzx_world->output_file, fgetd(fp), SEEK_SET);
+      else
+        fseek(fp, 4, SEEK_CUR);
     }
     else
     {
@@ -917,7 +925,7 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
   gl_rob = fgetd(fp);
   // Get number of boards
   num_boards = fgetc(fp);
- 
+
   if(num_boards == 0)
   {
     int sfx_size;
@@ -1230,6 +1238,12 @@ void clear_world(World *mzx_world)
   if(mzx_world->global_robot.stack)
     free(mzx_world->global_robot.stack);
 
+  if(mzx_world->input_file)
+    fclose(mzx_world->input_file);
+
+  if(mzx_world->output_file)
+    fclose(mzx_world->output_file);
+
   mzx_world->active = 0;
 }
 
@@ -1281,6 +1295,9 @@ void clear_global_data(World *mzx_world)
 
   mzx_world->vlayer_width = 0;
   mzx_world->vlayer_height = 0;
+
+  mzx_world->output_file_name[0] = 0;
+  mzx_world->input_file_name[0] = 0;
 
   memset(mzx_world->custom_sfx, 0, NUM_SFX * 69);
 }
@@ -1364,6 +1381,11 @@ void default_global_data(World *mzx_world)
   set_screen_mode(0);
   smzx_palette_loaded(0);
   default_scroll_values(mzx_world);
+
+  scroll_color = 15;
+
+  mzx_world->input_file = NULL;
+  mzx_world->output_file = NULL;
 }
 
 void default_scroll_values(World *mzx_world)
@@ -1458,6 +1480,13 @@ void optimize_null_boards(World *mzx_world)
   if(mzx_world->first_board >= num_boards)
     mzx_world->first_board = 0;
 
+  if((mzx_world->death_board >= num_boards) &&
+   (mzx_world->death_board < DEATH_SAME_POS))
+    mzx_world->death_board = NO_BOARD;
+
+  if(mzx_world->endgame_board >= num_boards)
+    mzx_world->endgame_board = NO_BOARD;
+
   if(i2 < num_boards)
   {
     int offset;
@@ -1477,7 +1506,7 @@ void optimize_null_boards(World *mzx_world)
      (Board **)realloc(optimized_board_list, sizeof(Board *) * i2);
 
     mzx_world->num_boards = i2;
-    mzx_world->num_boards_allocated = i2; 
+    mzx_world->num_boards_allocated = i2;
 
     // Fix all entrances and exits in each board
     for(i = 0; i < i2; i++)
@@ -1525,6 +1554,8 @@ void optimize_null_boards(World *mzx_world)
     }
 
     d_param = mzx_world->first_board;
+    if(d_param >= i2)
+      d_param = i2 - 1;
 
     d_param = board_id_translation_list[d_param];
     mzx_world->first_board = d_param;
@@ -1533,6 +1564,9 @@ void optimize_null_boards(World *mzx_world)
 
     if(d_param != NO_BOARD)
     {
+      if(d_param >= i2)
+        d_param = i2 - 1;
+
       d_param = board_id_translation_list[d_param];
       mzx_world->endgame_board = d_param;
     }
@@ -1541,6 +1575,9 @@ void optimize_null_boards(World *mzx_world)
 
     if(d_param != NO_BOARD)
     {
+      if(d_param >= i2)
+        d_param = i2 - 1;
+
       d_param = board_id_translation_list[d_param];
       mzx_world->death_board = d_param;
     }

@@ -9,7 +9,7 @@ STRIP     = strip --strip-unneeded
 INCLUDES  = -I${PREFIX}/include -I${PREFIX}/include/SDL
 
 # standard libraries
-LIBS      = -L$(PREFIX)/lib -lSDL -lpthread
+LIBS      = -L${PREFIX}/lib -lSDL -lpthread
 
 # install prefix
 PREFIX=/usr

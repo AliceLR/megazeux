@@ -29,8 +29,11 @@
 #include "configure.h"
 #include "counter.h"
 #include "event.h"
+#include "rasm.h"
+#include "macro.h"
 
-void config_set_audio_buffer(config_info *conf, char *name, char *value)
+void config_set_audio_buffer(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->buffer_size = strtol(value, NULL, 10);
 }
@@ -51,74 +54,88 @@ void config_set_audio_buffer(config_info *conf, char *name, char *value)
 // 12 commands and command fragments - 15
 
 
-void config_ccode_colors(config_info *conf, char *name, char *value)
+void config_ccode_colors(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->color_codes[4] = strtol(value, NULL, 10);
 }
 
-void config_ccode_commands(config_info *conf, char *name, char *value)
+void config_ccode_commands(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->color_codes[13] = strtol(value, NULL, 10);
 }
 
-void config_ccode_conditions(config_info *conf, char *name, char *value)
+void config_ccode_conditions(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->color_codes[10] = strtol(value, NULL, 10);
 }
 
-void config_ccode_current_line(config_info *conf, char *name, char *value)
+void config_ccode_current_line(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->color_codes[0] = strtol(value, NULL, 10);
 }
 
-void config_ccode_directions(config_info *conf, char *name, char *value)
+void config_ccode_directions(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->color_codes[5] = strtol(value, NULL, 10);
 }
 
-void config_ccode_equalities(config_info *conf, char *name, char *value)
+void config_ccode_equalities(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->color_codes[9] = strtol(value, NULL, 10);
 }
 
-void config_ccode_extras(config_info *conf, char *name, char *value)
+void config_ccode_extras(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->color_codes[8] = strtol(value, NULL, 10);
 }
 
-void config_ccode_on(config_info *conf, char *name, char *value)
+void config_ccode_on(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->color_coding_on = strtol(value, NULL, 10);
 }
 
-void config_ccode_immediates(config_info *conf, char *name, char *value)
+void config_ccode_immediates(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   int new_color = strtol(value, NULL, 10);
   conf->color_codes[1] = new_color;
   conf->color_codes[2] = new_color;
 }
 
-void config_ccode_items(config_info *conf, char *name, char *value)
+void config_ccode_items(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->color_codes[11] = strtol(value, NULL, 10);
 }
 
-void config_ccode_params(config_info *conf, char *name, char *value)
+void config_ccode_params(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->color_codes[7] = strtol(value, NULL, 10);
 }
 
-void config_ccode_strings(config_info *conf, char *name, char *value)
+void config_ccode_strings(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->color_codes[8] = strtol(value, NULL, 10);
 }
 
-void config_ccode_things(config_info *conf, char *name, char *value)
+void config_ccode_things(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->color_codes[6] = strtol(value, NULL, 10);
 }
 
-void config_default_invald(config_info *conf, char *name, char *value)
+void config_default_invald(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   if(!strcasecmp(value, "ignore"))
   {
@@ -138,12 +155,14 @@ void config_default_invald(config_info *conf, char *name, char *value)
   }
 }
 
-void config_disassemble_extras(config_info *conf, char *name, char *value)
+void config_disassemble_extras(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->disassemble_extras = strtol(value, NULL, 10);
 }
 
-void config_disassemble_base(config_info *conf, char *name, char *value)
+void config_disassemble_base(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   int new_base = strtol(value, NULL, 10);
 
@@ -151,59 +170,53 @@ void config_disassemble_base(config_info *conf, char *name, char *value)
     conf->disassemble_base = new_base;
 }
 
-void config_set_resolution(config_info *conf, char *name, char *value)
+void config_set_resolution(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   char *next;
   conf->resolution_x = strtol(value, &next, 10);
   conf->resolution_y = strtol(next + 1, NULL, 10);
 }
 
-void config_set_multiplier(config_info *conf, char *name, char *value)
+void config_set_multiplier(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->height_multiplier = strtol(value, NULL, 10);
 }
 
-void config_set_fullscreen(config_info *conf, char *name, char *value)
+void config_set_fullscreen(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->fullscreen = strtol(value, NULL, 10);
 }
 
-void config_macro_five(config_info *conf, char *name, char *value)
+void config_macro(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
-  value[63] = 0;
-  strcpy(conf->default_macros[4], value);
+  char *macro_name = name + 6;
+
+  if(isdigit(macro_name[0]) && !macro_name[1] &&
+   !extended_data)
+  {
+    int macro_num = macro_name[0] - 0x31;
+    value[63] = 0;
+    strcpy(conf->default_macros[macro_num], value);
+  }
+  else
+  {
+    if(extended_data)
+      add_ext_macro(conf, macro_name, extended_data, value);
+  }
 }
 
-void config_macro_four(config_info *conf, char *name, char *value)
-{
-  value[63] = 0;
-  strcpy(conf->default_macros[3], value);
-}
-
-void config_macro_one(config_info *conf, char *name, char *value)
-{
-  value[63] = 0;
-  strcpy(conf->default_macros[0], value);
-}
-
-void config_macro_three(config_info *conf, char *name, char *value)
-{
-  value[63] = 0;
-  strcpy(conf->default_macros[2], value);
-}
-
-void config_macro_two(config_info *conf, char *name, char *value)
-{
-  value[63] = 0;
-  strcpy(conf->default_macros[1], value);
-}
-
-void config_set_music(config_info *conf, char *name, char *value)
+void config_set_music(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->music_on = strtol(value, NULL, 10);
 }
 
-void config_set_mod_volume(config_info *conf, char *name, char *value)
+void config_set_mod_volume(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   int new_volume = strtol(value, NULL, 10);
 
@@ -216,7 +229,8 @@ void config_set_mod_volume(config_info *conf, char *name, char *value)
   conf->music_volume = new_volume;
 }
 
-void config_set_mzx_speed(config_info *conf, char *name, char *value)
+void config_set_mzx_speed(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   int new_speed = strtol(value, NULL, 10);
 
@@ -229,12 +243,14 @@ void config_set_mzx_speed(config_info *conf, char *name, char *value)
   conf->mzx_speed = new_speed;
 }
 
-void config_set_pc_speaker(config_info *conf, char *name, char *value)
+void config_set_pc_speaker(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->pc_speaker_on = strtol(value, NULL, 10);
 }
 
-void config_set_sam_volume(config_info *conf, char *name, char *value)
+void config_set_sam_volume(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   int new_volume = strtol(value, NULL, 10);
 
@@ -247,27 +263,31 @@ void config_set_sam_volume(config_info *conf, char *name, char *value)
   conf->sam_volume = new_volume;
 }
 
-void config_save_file(config_info *conf, char *name, char *value)
+void config_save_file(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   strcpy(conf->default_save_name, value);
 }
 
-void config_startup_file(config_info *conf, char *name, char *value)
+void config_startup_file(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   strcpy(conf->startup_file, value);
 }
 
-void config_enable_oversampling(config_info *conf, char *name, char *value)
+void config_enable_oversampling(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->oversampling_on = strtol(value, NULL, 10);
 }
 
-void config_resampling_mode(config_info *conf, char *name, char *value)
+void config_resampling_mode(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   if(!strcmp(value, "none"))
   {
     conf->resampling_mode = 0;
-  } 
+  }
   else
 
   if(!strcmp(value, "linear"))
@@ -288,32 +308,38 @@ void config_resampling_mode(config_info *conf, char *name, char *value)
   }
 }
 
-void redit_dpalette(config_info *conf, char *name, char *value)
+void redit_dpalette(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->redit_dpalette = strtol(value, NULL, 10);
 }
 
-void redit_hhelp(config_info *conf, char *name, char *value)
+void redit_hhelp(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->redit_hhelp = strtol(value, NULL, 10);
 }
 
-void backup_count(config_info *conf, char *name, char *value)
+void backup_count(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->backup_count = strtol(value, NULL, 10);
 }
 
-void backup_interval(config_info *conf, char *name, char *value)
+void backup_interval(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   conf->backup_interval = strtol(value, NULL, 10);
 }
 
-void backup_name(config_info *conf, char *name, char *value)
+void backup_name(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   strcpy(conf->backup_name, value);
 }
 
-void joy_axis_set(config_info *conf, char *name, char *value)
+void joy_axis_set(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   int joy_num, joy_axis;
   int joy_key_min, joy_key_max;
@@ -337,7 +363,8 @@ void joy_axis_set(config_info *conf, char *name, char *value)
    (SDLKey)joy_key_max);
 }
 
-void joy_button_set(config_info *conf, char *name, char *value)
+void joy_button_set(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   int joy_num, joy_axis;
   int joy_key;
@@ -354,11 +381,18 @@ void joy_button_set(config_info *conf, char *name, char *value)
   map_joystick_button(joy_num - 1, joy_axis - 1, (SDLKey)joy_key);
 }
 
-void pause_on_unfocus(config_info *conf, char *name, char *value)
+void pause_on_unfocus(config_info *conf, char *name, char *value,
+ char *extended_data)
 {
   int int_val = strtol(value, NULL, 10);
 
   set_refocus_pause(int_val);
+}
+
+void include_config(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  set_config_from_file(conf, name + 7);
 }
 
 config_entry config_options[] =
@@ -387,13 +421,10 @@ config_entry config_options[] =
   { "force_height_multiplier", config_set_multiplier },
   { "force_resolution", config_set_resolution },
   { "fullscreen", config_set_fullscreen },
+  { "include*", include_config },
   { "joy?1-2axis?1-2", joy_axis_set },
   { "joy?1-2button?1-2", joy_button_set },
-  { "macro_five", config_macro_five },
-  { "macro_four", config_macro_four },
-  { "macro_one", config_macro_one },
-  { "macro_three", config_macro_three },
-  { "macro_two", config_macro_two },
+  { "macro_*", config_macro },
   { "music_on", config_set_music },
   { "music_volume", config_set_mod_volume },
   { "mzx_speed", config_set_mzx_speed },
@@ -467,7 +498,10 @@ config_info default_options =
   0,
   0,
   60,
-  "backup"
+  "backup",
+  0,
+  0,
+  NULL
 };
 
 void default_config(config_info *conf)
@@ -483,10 +517,17 @@ void set_config_from_file(config_info *conf, char *conf_file_name)
   {
     char line_buffer[256];
     char line_buffer_alternate[256];
+    char *extended_buffer = (char *)malloc(512);
     char current_char, *input_position, *output_position;
     char *equals_position;
     char *value;
     config_entry *current_option;
+    int line_size;
+    int extended_size;
+    int extended_allocate_size = 512;
+    int peek_char;
+    int extended_buffer_offset;
+    char *use_extended_buffer;
 
     while(fgets(line_buffer_alternate, 255, conf_file))
     {
@@ -529,13 +570,50 @@ void set_config_from_file(config_info *conf, char *conf_file_name)
 
         if(line_buffer[0])
         {
+          // There might be extended information too - get it.
+          peek_char = fgetc(conf_file);
+          extended_size = 0;
+          extended_buffer_offset = 0;
+          use_extended_buffer = NULL;
+
+          while((peek_char == ' ') || (peek_char == '\t'))
+          {
+            // Extended data line
+            use_extended_buffer = extended_buffer;
+            if(fgets(line_buffer_alternate, 255, conf_file))
+            {
+              line_size = strlen(line_buffer_alternate);
+              extended_size += line_size;
+              if(extended_size >= extended_allocate_size)
+              {
+                extended_allocate_size *= 2;
+                extended_buffer = (char *)realloc(extended_buffer,
+                 extended_allocate_size);
+              }
+
+              strcpy(extended_buffer + extended_buffer_offset,
+               line_buffer_alternate);
+              extended_buffer_offset += line_size;
+            }
+
+            peek_char = fgetc(conf_file);
+          }
+          ungetc(peek_char, conf_file);
+
           current_option = find_option(line_buffer);
 
           if(current_option)
-            current_option->change_option(conf, line_buffer, value);
+          {
+            current_option->change_option(conf, line_buffer, value,
+             use_extended_buffer);
+          }
         }
       }
     }
+
+    free(extended_buffer);
+
+    fclose(conf_file);
   }
 }
 
@@ -590,8 +668,10 @@ void set_config_from_command_line(config_info *conf, int argc,
       current_option = find_option(line_buffer);
 
       if(current_option)
-        current_option->change_option(conf, line_buffer, value);
+        current_option->change_option(conf, line_buffer, value, NULL);
     }
   }
 }
+
+
 

@@ -192,7 +192,8 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
         // append it to the end of the previous line. First, remember
         // the size of the current line is in t2. Now we go back a line,
         // if there is one.
-        if(where[pos - 1] == 1) break; // Nope.
+        if(where[pos - 1] == 1)
+          break; // Nope.
         pos--;
         // Go to start of this line, COUNTING CHARACTERS.
         t1 = 0;
@@ -215,7 +216,7 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
         // OKAY! Just copy backwards over the \n in the middle to
         // append...
         t3 = scroll->mesg_size;
-        memmove(where + old_pos - 1, where + old_pos, t3 - old_pos);
+        memmove(where + old_pos - 1, where + old_pos, t3 - old_pos + 1);
         // ...and reallocate to one space less!
         reallocate_scroll(scroll, t3 - 1);
         where = scroll->mesg;
@@ -224,6 +225,10 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
         pos++;
         currx = t1 - 1;
         scroll->num_lines--;
+
+        // FIXME - total hack!
+        scroll->mesg[scroll->mesg_size - 1] = 0;
+
         // Done.
         break;
       }

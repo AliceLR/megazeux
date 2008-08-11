@@ -23,6 +23,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <ctype.h>
 
 #include "robot.h"
 #include "const.h"
@@ -801,10 +802,8 @@ void send_robot(World *mzx_world, char *name, char *mesg,
       first++;
     }
   }
-  else
-  {
-    send_sensors(mzx_world, name, mesg);
-  }
+
+  send_sensors(mzx_world, name, mesg);
 }
 
 void send_sensors(World *mzx_world, char *name, char *mesg)
@@ -967,7 +966,7 @@ void send_sensor_command(World *mzx_world, int id, int command)
 
         if(!move_status)
         {
-          // Moved! Find player...
+          // Find player...
           find_player(mzx_world);
           player_x = mzx_world->player_x;
           player_y = mzx_world->player_y;
@@ -977,9 +976,7 @@ void send_sensor_command(World *mzx_world, int id, int command)
         }
         else
         {
-          // Sensorthud!
           send_robot(mzx_world, cur_sensor->robot_to_mesg, "SENSORTHUD", 0);
-          // Done.
         }
         move_status = 2;
       }
@@ -1562,8 +1559,8 @@ int parse_param(World *mzx_world, char *program, int id)
   {
     char *e_ptr = (char *)program + 2;
     int error, val;
-    val = parse_expression(mzx_world, &e_ptr, error, id);
-    if(!error)
+    val = parse_expression(mzx_world, &e_ptr, &error, id);
+    if(!error && !(*e_ptr))
     {
       return val;
     }
@@ -1856,6 +1853,7 @@ void robot_box_display(World *mzx_world, char *program,
   // Restore screen and exit
   m_hide();
   restore_screen();
+  update_event_status();
 }
 
 int robot_box_up(char *program, int pos, int count)
@@ -1970,9 +1968,35 @@ void robot_frame(World *mzx_world, char *program, int id)
   }
 }
 
+int num_ccode_chars(char *str)
+{
+  char current_char = *str;
+  char *str_pos = str;
+  int count = 0;
+
+  while(current_char)
+  {
+    if((current_char == '~') || (current_char == '@'))
+    {
+      count++;
+
+      if(isxdigit(str_pos[1]))
+      {
+        count++;
+        str_pos++;
+      }
+    }
+
+    str_pos++;
+    current_char = *str_pos;
+  }
+
+  return count;
+}
+
 void display_robot_line(World *mzx_world, char *program, int y, int id)
 {
-  char ibuff[256];
+  char ibuff[512];
   char *next;
   int scroll_base_color = mzx_world->scroll_base_color;
   int scroll_arrow_color = mzx_world->scroll_arrow_color;
@@ -2020,7 +2044,7 @@ void display_robot_line(World *mzx_world, char *program, int y, int id)
     case 116: // Colored message
     {
       tr_msg(mzx_world, program + 3, id, ibuff);
-      ibuff[63] = 0; // Clip
+      ibuff[63 + num_ccode_chars(ibuff)] = 0; // Clip
       color_string(ibuff, 8, y, scroll_base_color);
       break;
     }
@@ -2029,7 +2053,7 @@ void display_robot_line(World *mzx_world, char *program, int y, int id)
     {
       int length, x_position;
       tr_msg(mzx_world, program + 3, id, ibuff);
-      ibuff[63] = 0; // Clip
+      ibuff[63 + num_ccode_chars(ibuff)] = 0; // Clip
       length = strlencolor(ibuff);
       x_position = 40 - (length / 2);
       color_string(ibuff, x_position, y, scroll_base_color);
@@ -2061,121 +2085,143 @@ void step_sensor(World *mzx_world, int id)
 char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer)
 {
   Board *src_board = mzx_world->current_board;
-  int sp = 0, dp = 0, i;
-  char counter_name[256];
+  char name_buffer[256];
+  char number_buffer[16];
+  char *src_ptr = mesg, *dest_ptr = buffer;
+  char *name_ptr;
+  char *old_ptr;
+  char current_char;
+
+  int error;
+  int val;
 
   do
   {
-    // Expression!
-    if((mesg[sp] == '(') && (mzx_world->version >= 0x244))
+    current_char = *src_ptr;
+
+    if((current_char == '(') && (mzx_world->version >= 0x244))
     {
-      char *arg = mesg + sp + 1;
-      int error;
-      int val = parse_expression(mzx_world, &arg, error, id);
+      src_ptr++;
+      old_ptr = src_ptr;
+      val = parse_expression(mzx_world, &src_ptr, &error, id);
+
       if(!error)
       {
-        char temp[512];
-        sprintf(temp, "%d", val);
-        strcpy(buffer + dp, temp);
-        dp += strlen(temp);
-        sp = arg - mesg + 1;
+        sprintf(number_buffer, "%d", val);
+        strcpy(dest_ptr, number_buffer);
+        dest_ptr += strlen(number_buffer);
       }
-    }
+      else
+      {
+        *dest_ptr = '(';
+        dest_ptr++;
+        src_ptr = old_ptr;
+      }
 
-    if(mesg[sp] != '&')
-    {
-      buffer[dp++] = mesg[sp++];
+      current_char = *src_ptr;
     }
     else
+
+    if(current_char == '&')
     {
-      if(mesg[++sp] == '&')
+      src_ptr++;
+      current_char = *src_ptr;
+
+      if(current_char == '&')
       {
-        buffer[dp++] = '&';
-        sp++;
+        src_ptr++;
+        *dest_ptr = '&';
+        dest_ptr++;
       }
       else
       {
         // Input or Counter?
-        for(i = 0; i < 128; i++)
+        name_ptr = name_buffer;
+
+        while(current_char)
         {
-          counter_name[i] = mesg[sp++];
-          if(mesg[sp])
+          if(current_char == '(' && (mzx_world->version >= 0x244))
           {
-            if(mesg[sp] == '&')
+            src_ptr++;
+            val = parse_expression(mzx_world, &src_ptr, &error, id);
+
+            if(!error)
             {
-              sp++;
-              break;
+              sprintf(number_buffer, "%d", val);
+              strcpy(name_ptr, number_buffer);
+              name_ptr += strlen(number_buffer);
             }
           }
           else
           {
+            *name_ptr = *src_ptr;
+            name_ptr++;
+            src_ptr++;
+          }
+
+          current_char = *src_ptr;
+
+          if(current_char == '&')
+          {
+            src_ptr++;
+            current_char = *src_ptr;
             break;
           }
         }
 
-        counter_name[++i] = 0;
-        if(!strcasecmp(counter_name, "INPUT"))
+        *name_ptr = 0;
+
+        if(!strcasecmp(name_buffer, "INPUT"))
         {
           // Input
-          strcpy(buffer + dp, src_board->input_string);
-          dp += strlen(src_board->input_string);
+          strcpy(dest_ptr, src_board->input_string);
+          dest_ptr += strlen(src_board->input_string);
+        }
+        else
+
+        // Counter or string
+        if(is_string(name_buffer))
+        {
+          // Write the value of the counter name
+          char t_buf[64];
+          t_buf[0] = 0;
+          get_string(mzx_world, name_buffer, 0, t_buf);
+          strcpy(dest_ptr, t_buf);
+          dest_ptr += strlen(t_buf);
+        }
+        else
+
+        // #(counter) is a hex representation.
+        if(name_buffer[0] == '+')
+        {
+          sprintf(name_buffer, "%x", get_counter(mzx_world, name_buffer + 1, id));
+          strcpy(dest_ptr, name_buffer);
+          dest_ptr += strlen(name_buffer);
+        }
+        else
+
+        if(name_buffer[0] == '#')
+        {
+          sprintf(dest_ptr, "%02x", get_counter(mzx_world, name_buffer + 1, id));
+          dest_ptr += 2;
         }
         else
         {
-          // Counter
-          // Now could also be a string
-          if(is_string(counter_name))
-          {
-            // Write the value of the counter name
-            char t_buf[64];
-            t_buf[0] = 0;
-            get_string(mzx_world, counter_name, 0, t_buf);
-            strcpy(buffer + dp, t_buf);
-            dp += strlen(t_buf);
-          }
-          else
-          {
-            // #(counter) is a hex representation.
-            if(counter_name[0] == '+')
-            {
-              sprintf(counter_name, "%x", get_counter(mzx_world, counter_name + 1, id));
-            }
-            else
-            {
-              if(counter_name[0] == '#')
-              {
-                char temp[4];
-                sprintf(temp, "%x", get_counter(mzx_world, counter_name + 1, id));
-
-                if(temp[1] == 0)
-                {
-                  temp[2] = 0;
-                  temp[1] = temp[0];
-                  temp[0] = '0';
-                }
-                memcpy(counter_name, temp, 4);
-              }
-              else
-              {
-                sprintf(counter_name, "%d", get_counter(mzx_world, counter_name, id));
-              }
-            }
-
-            strcpy(buffer + dp, counter_name);
-            dp += strlen(counter_name);
-          }
+          sprintf(name_buffer, "%d", get_counter(mzx_world, name_buffer, id));
+          strcpy(dest_ptr, name_buffer);
+          dest_ptr += strlen(name_buffer);
         }
       }
     }
-
-    if(dp > 80)
+    else
     {
-      dp = 80;
-      break;
+      *dest_ptr = current_char;
+      src_ptr++;
+      dest_ptr++;
     }
-  } while(mesg[sp]);
+  } while(current_char);
 
-  buffer[dp] = 0;
+  *dest_ptr = 0;
   return buffer;
 }
 
@@ -2733,7 +2779,7 @@ void optimize_null_objects(Board *src_board)
           cur_robot->ypos = y;
         }
         else
-  
+
         // Is it a scoll?
         if((d_id == 125) || (d_id == 126))
         {
@@ -2742,7 +2788,7 @@ void optimize_null_objects(Board *src_board)
           level_param[offset] = d_new_param;
         }
         else
-  
+
         // Is it a sensor?
         if(d_id == 122)
         {

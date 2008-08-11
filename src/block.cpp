@@ -81,7 +81,7 @@ int block_cmd(World *mzx_world)
 {
   int dialog_ret;
   set_context(73);
-  dialog_ret = run_dialog(mzx_world, &bdi);
+  dialog_ret = run_dialog(mzx_world, &bdi, 1, 0, 0);
   pop_context();
   if(dialog_ret)
     return -1;
@@ -108,7 +108,7 @@ int rtoo_obj_type(World *mzx_world)
 {
   set_context(74);
 
-  if(run_dialog(mzx_world, &adi))
+  if(run_dialog(mzx_world, &adi, 1, 0, 0))
   {
     pop_context();
     return -1;
@@ -143,7 +143,7 @@ dialog csdi =
 int choose_char_set(World *mzx_world)
 {
   set_context(75);
-  if(run_dialog(mzx_world, &csdi))
+  if(run_dialog(mzx_world, &csdi, 1, 0, 0))
   {
     pop_context();
     return -1;
@@ -185,7 +185,7 @@ int save_file_dialog(World *mzx_world, char *title, char *prompt, char *dest)
   fe_ptr = (void *)dest;
   ed_strs[0] = prompt;
   e_di.title = title;
-  return run_dialog(mzx_world, &e_di);
+  return run_dialog(mzx_world, &e_di, 1, 0, 0);
 }
 
 int save_char_dialog(World *mzx_world, char *dest, int *char_offset,
@@ -194,7 +194,7 @@ int save_char_dialog(World *mzx_world, char *dest, int *char_offset,
   edc_storage[0] = dest;
   edc_storage[1] = char_offset;
   edc_storage[2] = char_size;
-  return run_dialog(mzx_world, &ec_di);
+  return run_dialog(mzx_world, &ec_di, 1, 0, 0);
 }
 
 // The ansi prefix code
@@ -233,7 +233,7 @@ int export_type(World *mzx_world)
   set_context(77);
   exdi_storage[0] = &storage;
 
-  if(run_dialog(mzx_world, &exdi))
+  if(run_dialog(mzx_world, &exdi, 1, 0, 0))
   {
     pop_context();
     return -1;
@@ -272,7 +272,7 @@ int import_type(World *mzx_world)
   int storage = 0;
   set_context(78);
   imdi_storage[0] = &storage;
-  if(run_dialog(mzx_world, &imdi))
+  if(run_dialog(mzx_world, &imdi, 1, 0, 0))
   {
     pop_context();
     return -1;
@@ -299,7 +299,7 @@ dialog imzdi =
 int import_mzm_obj_type(World *mzx_world)
 {
   set_context(78);
-  if(run_dialog(mzx_world, &imzdi))
+  if(run_dialog(mzx_world, &imzdi, 1, 0, 0))
   {
     pop_context();
     return -1;

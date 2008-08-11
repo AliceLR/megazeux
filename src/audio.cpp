@@ -63,7 +63,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
   int sample_duration, end_duration;
   int increment_value, increment_buffer;
 
-  if(audio.mod_playing && music_on)
+  if(audio.mod_playing && audio.music_on)
   {
     int read_len =
      ModPlug_Read(audio.current_mod, audio.mod_buffer, len);
@@ -172,7 +172,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 
   // Mix samples, if any are playing
 
-  if(audio.num_samples_playing && music_on)
+  if(audio.num_samples_playing && audio.music_on)
   {
     for(i = 0; i < 16; i++)
     {
@@ -268,7 +268,7 @@ void init_audio(config_info *conf)
       break;
     }
   }
-  
+
   audio.mod_settings.mLoopCount = -1;
 
   ModPlug_SetSettings(&audio.mod_settings);
@@ -280,7 +280,7 @@ void init_audio(config_info *conf)
 }
 
 void load_mod(char *filename)
-{  
+{
   FILE *input_file;
   char *input_buffer;
   int file_size;
@@ -405,8 +405,10 @@ void play_sample(int freq, char *filename)
       // A little hack to modify the pitch
       sample_loaded->mSoundFile.Ins[1].nC4Speed = (freq_conversion / freq) / 2;
       sample_loaded->mSoundFile.Ins[2].nC4Speed = (freq_conversion / freq) / 2;
-      sample_loaded->mSoundFile.Ins[1].nVolume = (256 * sound_gvol) / 8;
-      sample_loaded->mSoundFile.Ins[2].nVolume = (256 * sound_gvol) / 8;
+      sample_loaded->mSoundFile.Ins[1].nVolume =
+       (256 * audio.sound_volume) / 8;
+      sample_loaded->mSoundFile.Ins[2].nVolume =
+       (256 * audio.sound_volume) / 8;
 
       // Find a free position to put it
       for(i = 0; i < 16; i++)
@@ -467,7 +469,8 @@ int get_order()
 void volume_mod(int vol)
 {
   if(audio.mod_playing)
-    audio.current_mod->mSoundFile.SetMasterVolume((vol * music_gvol / 16) + 1);
+    audio.current_mod->mSoundFile.
+     SetMasterVolume((vol * audio.music_volume / 16) + 1);
 }
 
 // FIXME - Implement? The best route right now would be to load a module
@@ -591,3 +594,44 @@ void convert_sam_to_wav(char *source_name, char *dest_name)
   fclose(source);
   fclose(dest);
 }
+
+void set_music_on(int val)
+{
+  audio.music_on = val;
+}
+
+void set_sfx_on(int val)
+{
+  audio.sfx_on = val;
+}
+
+int get_music_on_state()
+{
+  return audio.music_on;
+}
+
+int get_sfx_on_state()
+{
+  return audio.sfx_on;
+}
+
+int get_music_volume()
+{
+  return audio.music_volume;
+}
+
+int get_sound_volume()
+{
+  return audio.sound_volume;
+}
+
+void set_music_volume(int volume)
+{
+  audio.music_volume = volume;
+}
+
+void set_sound_volume(int volume)
+{
+  audio.sound_volume = volume;
+}
+

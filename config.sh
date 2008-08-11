@@ -31,22 +31,22 @@ echo                    >> Makefile.platform
 echo "# install prefix" >> Makefile.platform
 echo "PREFIX=$PREFIX"   >> Makefile.platform
 
-if [ "$ARCH" = "win32" ]; then
+if [ "$ARCH" = "win32" -o "$ARCH" = "macos" ]; then
 	echo "#define MZX_DEFAULT_CHR \"mzx_default.chr\"" > src/config.h
 	echo "#define MZX_BLANK_CHR \"mzx_blank.chr\"" >> src/config.h
 	echo "#define MZX_SMZX_CHR \"mzx_smzx.chr\"" >> src/config.h
 	echo "#define MZX_ASCII_CHR \"mzx_ascii.chr\"" >> src/config.h
-	echo "#define DEFAULT_SPL \"default.spl\"" >> src/config.h
+	echo "#define SMZX_PAL \"smzx.pal\"" >> src/config.h
 	echo "#define MZX_HELP_FIL \"mzx_help.fil\"" >> src/config.h
 	echo "#define CONFIG_TXT \"config.txt\"" >> src/config.h
 fi
 
-if [ "$ARCH" = "linux" -o "$ARCH" = "macos" ]; then
+if [ "$ARCH" = "linux" ]; then
 	echo "#define MZX_DEFAULT_CHR \"$PREFIX/share/megazeux/mzx_default.chr\"" > src/config.h
 	echo "#define MZX_BLANK_CHR \"$PREFIX/share/megazeux/mzx_blank.chr\"" >> src/config.h
 	echo "#define MZX_SMZX_CHR \"$PREFIX/share/megazeux/mzx_smzx.chr\"" >> src/config.h
 	echo "#define MZX_ASCII_CHR \"$PREFIX/share/megazeux/mzx_ascii.chr\"" >> src/config.h
-	echo "#define DEFAULT_SPL \"$PREFIX/share/megazeux/default.spl\"" >> src/config.h
+	echo "#define SMZX_PAL \"$PREFIX/share/megazeux/smzx.pal\"" >> src/config.h
 	echo "#define MZX_HELP_FIL \"$PREFIX/share/megazeux/mzx_help.fil\"" >> src/config.h
 	echo "#define CONFIG_TXT \"/etc/megazeux-config\"" >> src/config.h
 fi

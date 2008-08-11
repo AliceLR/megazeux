@@ -113,46 +113,60 @@ ESC:      Cancel mode/overlay mode if active (otherwise exit)
 Backspace:  Delete (move left one in text)
 */
 
-#define synchronize_board_values()          \
-  src_board = mzx_world->current_board;     \
-  board_width = src_board->board_width;     \
-  board_height = src_board->board_height;   \
-  level_id = src_board->level_id;           \
-  level_param = src_board->level_param;     \
-  level_color = src_board->level_color;     \
-  overlay = src_board->overlay;             \
-  overlay_color = src_board->overlay_color; \
-  clear_screen_no_update(177, 1);           \
+#define synchronize_board_values()              \
+  src_board = mzx_world->current_board;         \
+  board_width = src_board->board_width;         \
+  board_height = src_board->board_height;       \
+  level_id = src_board->level_id;               \
+  level_param = src_board->level_param;         \
+  level_color = src_board->level_color;         \
+  overlay = src_board->overlay;                 \
+  overlay_color = src_board->overlay_color;     \
+  clear_screen_no_update(177, 1);               \
 
-#define fix_scroll()                        \
-  if(cursor_board_x >= board_width)         \
-  {                                         \
-    cursor_board_x = (board_width - 1);     \
-    scroll_x = (board_width - 80);          \
-                                            \
-    if(scroll_x < 0)                        \
-      scroll_x = 0;                         \
-  }                                         \
-                                            \
-  if(cursor_board_y >= board_height)        \
-  {                                         \
-    cursor_board_y = (board_height - 1);    \
-      scroll_y =                            \
-      (board_height - edit_screen_height);  \
-                                            \
-    if(scroll_y < 0)                        \
-      scroll_y = 0;                         \
-  }                                         \
+#define fix_scroll()                            \
+  if(cursor_board_x >= board_width)             \
+  {                                             \
+    cursor_board_x = (board_width - 1);         \
+    scroll_x = (board_width - 80);              \
+                                                \
+    if(scroll_x < 0)                            \
+      scroll_x = 0;                             \
+  }                                             \
+                                                \
+  if(cursor_board_y >= board_height)            \
+  {                                             \
+    cursor_board_y = (board_height - 1);        \
+    scroll_y =                                  \
+     (board_height - edit_screen_height);       \
+                                                \
+    if(scroll_y < 0)                            \
+      scroll_y = 0;                             \
+  }                                             \
+                                                \
+  if((cursor_board_x + scroll_x)                \
+   >= board_width)                              \
+  {                                             \
+    scroll_x = (board_width - 80);              \
+  }                                             \
+                                                \
+  if((cursor_board_y + scroll_y)                \
+   >= board_height)                             \
+  {                                             \
+    scroll_y =                                  \
+     (board_height - edit_screen_height);       \
+  }                                             \
 
-#define fix_board(new_board)                \
-  mzx_world->current_board_id = new_board;  \
-  mzx_world->current_board =                \
-   mzx_world->board_list[new_board];        \
 
-#define fix_mod()                           \
-  load_mod(src_board->mod_playing);         \
-  strcpy(mzx_world->real_mod_playing,       \
-   src_board->mod_playing);                 \
+#define fix_board(new_board)                    \
+  mzx_world->current_board_id = new_board;      \
+  mzx_world->current_board =                    \
+   mzx_world->board_list[new_board];            \
+
+#define fix_mod()                               \
+  load_mod(src_board->mod_playing);             \
+  strcpy(mzx_world->real_mod_playing,           \
+   src_board->mod_playing);                     \
 
 
 #define NUM_MENUS 6
@@ -213,119 +227,135 @@ char *tmenu_titles[8] =
 };
 
 // Each 'item' is 20 char long, including '\0'.
-char *thing_menus[8] =
+char *thing_menus[8][20] =
 {
   // Terrain (F3)
-  "Space           ~1 \0"
-  "Normal          ~E²\0"
-  "Solid           ~DÛ\0"
-  "Tree            ~A\0"
-  "Line            ~BÍ\0"
-  "Custom Block    ~F?\0"
-  "Breakaway       ~C±\0"
-  "Custom Break    ~F?\0"
-  "Fake            ~9²\0"
-  "Carpet          ~4±\0"
-  "Floor           ~6°\0"
-  "Tiles           ~0þ\0"
-  "Custom Floor    ~F?\0"
-  "Web             ~7Å\0"
-  "Thick Web       ~7Î\0"
-  "Forest          ~2²\0"
-  "Invis. Wall     ~1 ",
+  {
+    "Space           ~1",
+    "Normal          ~E²",
+    "Solid           ~DÛ",
+    "Tree            ~A",
+    "Line            ~BÍ",
+    "Custom Block    ~F?",
+    "Breakaway       ~C±",
+    "Custom Break    ~F?",
+    "Fake            ~9²",
+    "Carpet          ~4±",
+    "Floor           ~6°",
+    "Tiles           ~0þ",
+    "Custom Floor    ~F?",
+    "Web             ~7Å",
+    "Thick Web       ~7Î",
+    "Forest          ~2²",
+    "Invis. Wall     ~1 "
+  },
 
   // Item (F4)
-  "Gem             ~A\0"
-  "Magic Gem       ~E\0"
-  "Health          ~C\0"
-  "Ring            ~E\x9\0"
-  "Potion          ~B–\0"
-  "Energizer       ~D\0"
-  "Ammo            ~3¤\0"
-  "Bomb            ~8\0"
-  "Key             ~F\0"
-  "Lock            ~F\xA\0"
-  "Coin            ~E\0"
-  "Life            ~B›\0"
-  "Pouch           ~7Ÿ\0"
-  "Chest           ~6 ",
+  {
+    "Gem             ~A",
+    "Magic Gem       ~E",
+    "Health          ~C",
+    "Ring            ~E\x9",
+    "Potion          ~B–",
+    "Energizer       ~D",
+    "Ammo            ~3¤",
+    "Bomb            ~8",
+    "Key             ~F",
+    "Lock            ~F\xA",
+    "Coin            ~E",
+    "Life            ~B›",
+    "Pouch           ~7Ÿ",
+    "Chest           ~6 "
+  },
 
   // Creature (F5)
-  "Snake           ~2ë\0"
-  "Eye             ~Fì\0"
-  "Thief           ~C\0"
-  "Slime Blob      ~A*\0"
-  "Runner          ~4\0"
-  "Ghost           ~7ê\0"
-  "Dragon          ~4\0"
-  "Fish            ~Eà\0"
-  "Shark           ~7\0"
-  "Spider          ~7•\0"
-  "Goblin          ~D\0"
-  "Spitting Tiger  ~Bã\0"
-  "Bear            ~6¬\0"
-  "Bear Cub        ~6­\0"
-  "Lazer Gun       ~4Î\0"
-  "Bullet Gun      ~F\0"
-  "Spinning Gun    ~F\0"
-  "Missile Gun     ~8",
+  {
+    "Snake           ~2ë",
+    "Eye             ~Fì",
+    "Thief           ~C",
+    "Slime Blob      ~A*",
+    "Runner          ~4",
+    "Ghost           ~7ê",
+    "Dragon          ~4",
+    "Fish            ~Eà",
+    "Shark           ~7",
+    "Spider          ~7•",
+    "Goblin          ~D",
+    "Spitting Tiger  ~Bã",
+    "Bear            ~6¬",
+    "Bear Cub        ~6­",
+    "Lazer Gun       ~4Î",
+    "Bullet Gun      ~F",
+    "Spinning Gun    ~F",
+    "Missile Gun     ~8"
+  },
 
   // Puzzle (F6)
-  "Boulder         ~7é\0"
-  "Crate           ~6þ\0"
-  "Custom Push     ~F?\0"
-  "Box             ~Eþ\0"
-  "Custom Box      ~F?\0"
-  "Pusher          ~D\0"
-  "Slider NS       ~D\0"
-  "Slider EW       ~D",
+  {
+    "Boulder         ~7é",
+    "Crate           ~6þ",
+    "Custom Push     ~F?",
+    "Box             ~Eþ",
+    "Custom Box      ~F?",
+    "Pusher          ~D",
+    "Slider NS       ~D",
+    "Slider EW       ~D"
+  },
 
   // Tranport (F7)
-  "Stairs          ~A¢\0"
-  "Cave            ~6¡\0"
-  "Transport       ~E<\0"
-  "Whirlpool       ~B—\0"
-  "CWRotate        ~9/\0"
-  "CCWRotate       ~9\\",
+  {
+    "Stairs          ~A¢",
+    "Cave            ~6¡",
+    "Transport       ~E<",
+    "Whirlpool       ~B—",
+    "CWRotate        ~9/",
+    "CCWRotate       ~9\\"
+  },
 
   // Element (F8)
-  "Still Water     ~9°\0"
-  "N Water         ~9\x18\0"
-  "S Water         ~9\x19\0"
-  "E Water         ~9\x1A\0"
-  "W Water         ~9\x1B\0"
-  "Ice             ~Bý\0"
-  "Lava            ~C²\0"
-  "Fire            ~E±\0"
-  "Goop            ~8°\0"
-  "Lit Bomb        ~8«\0"
-  "Explosion       ~E±",
+  {
+    "Still Water     ~9°",
+    "N Water         ~9\x18",
+    "S Water         ~9\x19",
+    "E Water         ~9\x1A",
+    "W Water         ~9\x1B",
+    "Ice             ~Bý",
+    "Lava            ~C²",
+    "Fire            ~E±",
+    "Goop            ~8°",
+    "Lit Bomb        ~8«",
+    "Explosion       ~E±"
+  },
 
   // Misc (F9)
-  "Door            ~6Ä\0"
-  "Gate            ~8\0"
-  "Ricochet Panel  ~9/\0"
-  "Ricochet        ~A*\0"
-  "Mine            ~C\0"
-  "Spike           ~8\0"
-  "Custom Hurt     ~F?\0"
-  "Text            ~F?\0"
-  "N Moving Wall   ~F?\0"
-  "S Moving Wall   ~F?\0"
-  "E Moving Wall   ~F?\0"
-  "W Moving Wall   ~F?",
+  {
+    "Door            ~6Ä",
+    "Gate            ~8",
+    "Ricochet Panel  ~9/",
+    "Ricochet        ~A*",
+    "Mine            ~C",
+    "Spike           ~8",
+    "Custom Hurt     ~F?",
+    "Text            ~F?",
+    "N Moving Wall   ~F?",
+    "S Moving Wall   ~F?",
+    "E Moving Wall   ~F?",
+    "W Moving Wall   ~F?"
+  },
 
   // Objects (F10)
-  "Robot           ~F?\0"
-  "Pushable Robot  ~F?\0"
-  "Player          ~B\0"
-  "Scroll          ~Fè\0"
-  "Sign            ~6â\0"
-  "Sensor          ~F?\0"
-  "Bullet          ~Fù\0"
-  "Missile         ~8\0"
-  "Seeker          ~A/\0"
-  "Shooting Fire   ~E"
+  {
+    "Robot           ~F?",
+    "Pushable Robot  ~F?",
+    "Player          ~B",
+    "Scroll          ~Fè",
+    "Sign            ~6â",
+    "Sensor          ~F?",
+    "Bullet          ~Fù",
+    "Missile         ~8",
+    "Seeker          ~A/",
+    "Shooting Fire   ~E"
+  }
 };
 
 char tmenu_thing_ids[8][18] =
@@ -425,7 +455,7 @@ int place_current_at_xy(World *mzx_world, int id, int color, int param,
         mzx_world->player_y = y;
       }
       else
-  
+
       if((id == 123) || (id == 124))
       {
         if((old_id == 123) || (old_id == 124))
@@ -436,7 +466,7 @@ int place_current_at_xy(World *mzx_world, int id, int color, int param,
           src_board->level_id[offset] = id;
           return old_param;
         }
-  
+
         param = duplicate_robot(src_board, copy_robot, x, y);
         if(param != -1)
         {
@@ -446,7 +476,7 @@ int place_current_at_xy(World *mzx_world, int id, int color, int param,
         }
       }
       else
-  
+
       if((id == 125) || (id == 126))
       {
         if((old_id == 125) || (old_id == 126))
@@ -457,28 +487,28 @@ int place_current_at_xy(World *mzx_world, int id, int color, int param,
           src_board->level_id[offset] = id;
           return old_param;
         }
-  
+
         param = duplicate_scroll(src_board, copy_scroll);
         if(param != -1)
           (src_board->scroll_list[param])->used = 1;
       }
       else
-  
+
       if(id == 122)
       {
-        if((old_id == 123) || (old_id == 124))
+        if(old_id == 122)
         {
           int old_param = src_board->level_param[offset];
           replace_sensor(src_board, copy_sensor, old_param);
           src_board->level_color[offset] = color;
           return old_param;
         }
-  
+
         param = duplicate_sensor(src_board, copy_sensor);
         if(param != -1)
           (src_board->sensor_list[param])->used = 1;
       }
-  
+
       if(param != -1)
       {
         place_at_xy(mzx_world, id, color, param, x, y);
@@ -752,7 +782,7 @@ void edit_world(World *mzx_world)
      ((get_ticks() - backup_timestamp) > (backup_interval * 1000)))
     {
       char backup_name_formatted[512];
-      sprintf(backup_name_formatted, 
+      sprintf(backup_name_formatted,
        "%s%d.mzx", backup_name, backup_num + 1);
 
       save_world(mzx_world, backup_name_formatted, 0, 1);
@@ -907,12 +937,6 @@ void edit_world(World *mzx_world)
       draw_char(217, EC_MAIN_BOX_DARK, 79, 21);
     }
 
-    if(debug_mode)
-    {
-      draw_debug_box(mzx_world, debug_x, edit_screen_height - 6,
-       cursor_board_x, cursor_board_y);
-    }
-
     // Highlight block for draw mode 3
     if(draw_mode == 3)
     {
@@ -959,6 +983,12 @@ void edit_world(World *mzx_world)
       {
         color_line(block_width, start_x, start_y + i, 0x9F);
       }
+    }
+
+    if(debug_mode)
+    {
+      draw_debug_box(mzx_world, debug_x, edit_screen_height - 6,
+       cursor_board_x, cursor_board_y);
     }
 
     text_place = 0;
@@ -1589,6 +1619,13 @@ void edit_world(World *mzx_world)
         cursor_board_y = 0;
         scroll_x = 0;
         scroll_y = 0;
+
+        if((cursor_board_x - scroll_x) < (debug_x + 25))
+        {
+          debug_x = 60;
+          clear_screen_no_update(177, 1);
+        }
+
         break;
       }
 
@@ -1604,6 +1641,12 @@ void edit_world(World *mzx_world)
 
         if(scroll_y < 0)
           scroll_y = 0;
+
+        if((cursor_board_x - scroll_x) > (debug_x - 5))
+        {
+          debug_x = 0;
+          clear_screen_no_update(177, 1);
+        }
 
         break;
       }
@@ -1765,7 +1808,7 @@ void edit_world(World *mzx_world)
                 if(!choose_file(pal_ext, import_name,
                  "Choose palette to import", 0))
                 {
-                  load_palette(import_name);
+                  load_palette(import_name, 0);
                   update_palette();
                   modified = 1;
                 }
@@ -1857,7 +1900,7 @@ void edit_world(World *mzx_world)
 
             // Uh oh, we might need a new player
             if((mzx_world->player_x >= board_width) ||
-             ((mzx_world->player_y) >= board_height))
+             (mzx_world->player_y >= board_height))
               replace_player(mzx_world);
 
             modified = 1;
@@ -1868,7 +1911,7 @@ void edit_world(World *mzx_world)
           {
             int offset = cursor_board_x + (cursor_board_y * board_width);
             int d_id = level_id[offset];
-            
+
             if(d_id < 122)
             {
               int d_param = level_param[offset];
@@ -2277,6 +2320,7 @@ void edit_world(World *mzx_world)
               break;
             }
           }
+          find_player(mzx_world);
         }
         else
 
@@ -2355,7 +2399,7 @@ void edit_world(World *mzx_world)
             {
               block_height = block_dest_y - block_y + 1;
             }
-  
+
             if((dest_x + block_width) > board_width)
               block_width = board_width - dest_x;
 
@@ -2448,6 +2492,8 @@ void edit_world(World *mzx_world)
             int start_x = block_x;
             int start_y = block_y;
             int block_width, block_height;
+            int original_width;
+            int original_height;
 
             if(start_x > block_dest_x)
             {
@@ -2468,6 +2514,9 @@ void edit_world(World *mzx_world)
             {
               block_height = block_dest_y - block_y + 1;
             }
+
+            original_width = block_width;
+            original_height = block_height;
 
             if((dest_x + block_width) > board_width)
               block_width = board_width - dest_x;
@@ -2526,11 +2575,23 @@ void edit_world(World *mzx_world)
                  color_buffer, under_id_buffer, under_param_buffer,
                  under_color_buffer, src_board);
                 clear_board_block(block_board, start_x, start_y,
-                 block_width, block_height);
+                 original_width, original_height);
                 copy_board_buffer_to_board(src_board, dest_x, dest_y,
                  block_width, block_height, id_buffer, param_buffer,
                  color_buffer, under_id_buffer, under_param_buffer,
                  under_color_buffer);
+
+                // Work around to move the player
+                if((mzx_world->player_x >= start_x) &&
+                 (mzx_world->player_y >= start_y) &&
+                 (mzx_world->player_x < (start_x + block_width)) &&
+                 (mzx_world->player_y < (start_y + block_height)) &&
+                 (block_board == src_board))
+                {
+                  place_player_xy(mzx_world,
+                   mzx_world->player_x - start_x + dest_x,
+                   mzx_world->player_y - start_y + dest_y);
+                }
 
                 modified = 1;
                 break;
@@ -2849,7 +2910,7 @@ void edit_world(World *mzx_world)
               synchronize_board_values();
               fix_mod();
               fix_scroll();
-  
+
               modified = 1;
             }
           }

@@ -18,6 +18,9 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#ifndef WORLD_H
+#define WORLD_H
+
 #include <stdio.h>
 
 #include "board.h"
@@ -27,9 +30,6 @@
 #include "sprite.h"
 #include "sfx.h"
 #include "configure.h"
-
-#ifndef WORLD_H
-#define WORLD_H
 
 #define VERSION 0x250
 
@@ -62,6 +62,7 @@ struct _World
   int pl_saved_y[8];
   int pl_saved_board[8];
   int saved_pl_color;
+  int was_zapped;
   int under_player_id;
   int under_player_color;
   int under_player_param;
@@ -157,6 +158,9 @@ struct _World
 
   // Indicates if a robot swapped the world
   int swapped;
+
+  // Current speed of MZX world
+  int mzx_speed;
 
   config_info conf;
 };

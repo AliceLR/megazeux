@@ -1,0 +1,276 @@
+Robotic revision ideas
+
+After gauging the response to a modestly altered Robotic language, it is is now
+my intention to include in a later version of MZX a language which is 100%
+compatible with Robotic as we know it now. It will, however, have several
+important extensions. Simplicity is a high priority. Syntax sensibility is
+also important, but it is more necessary to retain familiar style than to
+introduce new forms which may be deemed more writable for whatever reason. There
+will be no major attempt to make Robotic resemble any one specific known language;
+rather features will be added as a result of determined necessity.
+
+It should be noted that I have every intention of changing the Robotic bytecode
+dramatically. This has a few implications:
+
+- Source code will no longer have a one to one relationship with bytecode. This
+  means that bytecode cannot be disassembled into source code without losing
+  quite a bit of information; no attempt will be made to provide such a
+  disassembler as part of MZX itself. MZX currently stores bytecode alone in
+  its world files and to edit the robots this bytecode is disassembled. To edit
+  robots created with the new format (or indeed, converted from existing worlds)
+  the source code will have to be present. Since it is not necessary to have the
+  source code present to execute the game, there will likely exist world versions
+  that have had the source code stripped. These versions will be playable but
+  will not be editable. This is not necessarily an intentional form of protection,
+  but a way to reduce the size of the games tremendously.
+
+- The bytecode will be relatively simple to interpret. Most commands will be
+  linked as function calls by the interpreter. The bytecode itself will most
+  represent a relatively forth-like stack based machine. It will be lower level
+  than the current bytecode, and thus lower level than the Robotic language itself
+  (the current bytecode is merely a tokenization of Robotic code, and ensures
+  correct syntax so that need not be checked at runtime).
+
+- The bytecode will be done with efficiency in mind. I intend to provide as many
+  compile time optimizations to make code faster. Mainly, references that would
+  otherwise have to be deduced at runtime (such as the location of a counter with
+  a given name) will be hard linked if they can be deduced at compile time. These
+  will be considered "static" references and ones that cannot be deduced will be
+  considered "dynamic" or "run-time" references.
+
+With the last point in mind, I would like to point out that I intend to specifically
+document optimization ideas at some point, but that this will not be considered
+part of the language specification itself. However, since some language forms will
+inevitably be far more conducive to efficient optimization, it will often be in the
+programmer's best interest to code in a certain style.
+
+I'd also like to note that I intend for the language to be very simple to parse and
+compile (as it is now). This may add some extra overhead to writing the code, but I
+believe it is highly important that code can be quickly compiled on the fly. This is
+especially true for games that will import robots externally at run-time. Besides,
+I'm hardly interested in writing a full blown LALR table traversing or
+recursive-descent parser for MegaZeux at this time.
+
+Now, onto actual language specifications...
+
+A Robotic program will consist of several statements. A statement will be one of the
+following:
+
+A single command - this "does" something; as seen in Robotic currently.
+A compiler directive - this describes the code in some way, limits names, etc. It
+  may allow for macros and comments will certainly fall under this category.
+A multi-command command - some commands may take, as a parameter, a command block.
+  These will be clearly delimited in some way.
+
+All commands take a fixed number of parameters. Each parameter can be one of multiple
+types. For now it is best to consider a constant and a variable to be two different
+types; there are many instances where one will not be usable as another. For Robotic
+as we know it now, all types are basically analogous to either integers or strings.
+Thus I'll skip the existing types (such as character, direction, parameter) and give
+general types for variables. The type of a variable is denoted by its first character.
+
+integer variable - currently known as a "counter." Has no specific first character
+  (thus anything which doesn't fall under the other categories falls here). Integers
+  will have a size that is at LEAST 32bits, but you shouldn't rely on a certain size.
+string variable - contains a series of characters. Currently MZX has a form of
+  slicing the string by using + and # operators in the name of the string (at the end).
+  An individual character can be returned in integer form with the . operator.
+  Denoted with a $ at the beginning of the name.
+real variable - values with decimal portions. Guaranteed to have at leat double
+  precision (64bits), may have more. Denoted with a % at the beginning of the name.
+
+Now, using the name interpolation operators of MZX, it is possible to come to other
+more complicated types. These can be considered aggregate types. Consider the following:
+
+int&int2& - this is an integer indexed array of ints. Putting the subscript at the end
+  will be preferable by convention and possibly for optimization issues.
+int&$string& - this is a string indexed or associative array (may be considered a
+  dictionary or set as well).
+int&int2&,&int3& - multi-dimensional array of ints.
+$str&int& - array of stringgs
+
+etc.
+
+These are just some examples. Actually, I would like to make functions appear to be
+arrays! This is confusing, but a function is afterall a map from type a to type b,
+although there may side-effects to calling one. Nonetheless, it is quite possible to
+represent a function in exactly the same way a counter is represented. If you don't
+believe me, look at the current builtin functions such as cos and vco. They are used
+as counters but are actually functions! This is how I would like functions to be
+defined:
+
+: "<character denoting return type>name(parameter list)"
+
+As you can see they're like labels. Let me give some examples.
+
+: "#printme"
+  * "~fhello!"
+  goto #return
+
+OR
+
+: "#printme"
+  * "~fhello!"
+  return
+
+Notice the new return command - this is used to return a value. The # indicates that
+there is actually no return value at all. The consequences of such a thing have yet
+to be determined, but this does cover existing subroutines nicely.
+
+: "square(value)"
+  return (value * value)
+
+Returns the square of int value. Lack of special first char indicates a return type of
+int.
+
+: "$concat($str1, $str2)"
+  return ($str1 + $str2)
+
+Returns the concatenation of two strings. Pointless since this is a primitive
+operation, but nicely demonstrates the use of functions.
+
+There is a problem however - how to differentiate between functions and normal labels?
+Well, parentheses inside the label name will indicate that it has a parameter list. If
+there is no special type character (returns int) then it must have an empty parem list,
+otherwise the compiler will think it's a label. The reason why the compiler needs to be
+able to discern if it's a label or not is because a function is loaded into the counter
+list. Note that () in label names do NOT act as expressions, so you can't interpolate
+dynamic values into label names. This should come as no surprise because MZX 2.80 won't
+allow such a thing to work as it is. They're simply not efficient, and I don't believe
+anyone has ever required them, even though they were indeed possible in DOS MZX.
+
+
+Multi command commands:
+
+As noted earlier there will be some commands that take command blocks as parameters.
+This will be useful for flow control constructs, such as:
+
+if value
+  ...
+  ...
+
+Where the following indented lines are the code block. Value is anything that can be
+turned into an integer value (and as it stands now, anything can be). Most of the time
+it will be a variable or an expression, and if it evaluates to non-zero the block is
+done, otherwise if it evaluates to 0 it isn't. This should be clear to anyone who has
+used just about any imperatively based programming language.
+
+Some other constructs are loops:
+
+loop for x
+  ...
+  ...
+
+And for legacy's sake,
+
+loopstart
+...
+loop for x
+
+Note that indentation is not necessary if something else ends the block such as this.
+
+while value
+  ...
+  ...
+
+Does the block while the value is true.
+
+dowhile value
+  ...
+  ...
+
+Does the block once, then repeated times while the value is true.
+
+for initial value increment
+  ...
+
+A for loop. It should be noted here that while initial and increment are values, what
+they actually evaluate to isn't important! Actually, expressions will most likely be
+able to have side-effects. Mainly, an assignment operator and combinations of assignment
+and other operators. Since = is used for comparison, the assignment operator will
+probably be :=. Look at this example:
+
+for ((x := 0) a ($str := "")) (x < 10) (x++)
+  set $str ($str + x + " ")
+* ~f&$str&
+
+This will print out..
+0 1 2 3 4 5 6 7 8 9 10
+
+This was done in a Robotic familiar form, but more concise forms will probably be
+possible. Note that this allows string operations in expressions. This will probably be
+allowed, but I'm not yet completely certain. Expressions MAY be limited to integers.
+
+foreach pattern variable
+  ...
+  ...
+
+This one is rather interesting. I'm not totally sure how to approach it, really, but I
+think that pattern will be something of the form you would give in MZX (such as
+a&b& where the type of b is known) and the variable will be a temporary variable that
+the matching variables are stored in for each iteration. For now consider variable to
+be a reference, although I haven't formally touched on references. That means that it
+isn't a copy of the matching value but IS the value, just with a different name. So if
+you change it, you change the value. This can only really be made clear with an example..
+
+foreach str($strindex) $s
+  set $s ($s + " blah")
+
+This will put " blah" at the end of every string str followed by a string. So let's say
+you have the string stra, strb, and str0.. those would all match. Note that this is a
+good way of doing something with respect to every element of an array, but it can be
+more powerful than that. The details are still up in the air, but I'd really like to
+have something like this.
+
+
+References
+
+I should at least mention the possability of these. References are important because
+otherwise it's tough to pass arrays and whatnot to functions. You can actually do
+references already using string interpolation in variable names:
+
+set $ref "name"
+set ($ref) 10
+
+Will set the variable named "name" to 10. $ref thus refers to name.
+However I would like a way to do this that the compiler does more for you. I believe
+that references will only be possible when calling functions. In case it wasn't clear,
+be mindful of the fact that the above functions described were "pass by value."
+Consider the following:
+
+: 'set to 10(&value)'
+  set value 10
+  return
+
+This will set something passed to it to 10:
+
+set counter 1
+do 'set to 10&counter&'
+* "~f&counter&"
+
+I should point out the "do" command which merely evaluates a supplied value, which
+can thus call any functions. This is useful if you want to call a function merely for
+its side-effect and not a return type. Also, if it wasn't clear before, note the
+method of calling functions - the parameter is merely interpolated into the function
+name itself. This may be changed, though. And then notice the parameter value with the
+& before it. This indicates pass by reference (stolen from C++)
+
+Anyway, this will print out 10. When you call the function "set to 10", it passes the
+variable named counter by reference, and "value" is thus bound to what's passed to it.
+Changing value changes whatever's passed to it. One note - you will not be able to
+refer to references with the traditional && way. That is to say, they don't exist as
+actual counters with names. Something that may be alarming - if you were to do, within
+that function, the following:
+
+set "value&index&" 10
+
+(let's say index has the value 100)
+
+This would actually set the counter named counter100 to 10! Thus the reference
+"replaces" the name of the counter passed. This is useful in many cases, but care must
+be taken not to accidentally use the name unintentionally within another name.
+
+
+
+
+

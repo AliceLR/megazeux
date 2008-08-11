@@ -48,6 +48,7 @@
 #include "world.h"
 #include "fsafeopen.h"
 #include "param.h"
+#include "macro.h"
 
 extern int topindex, backindex;
 
@@ -83,7 +84,7 @@ void magic_load_mod(World *mzx_world, char *filename)
   {
     if(filename[0] != '*')
       load_mod(filename);
-    
+
     strcpy(src_board->mod_playing, filename);
   }
 
@@ -555,7 +556,7 @@ void copy_board_to_board_buffer(Board *src_board, int x,
         dest_color[dest_offset] = 7;
         dest_under_id[dest_offset] = 0;
         dest_under_param[dest_offset] = 0;
-        dest_under_color[dest_offset] = 7;      
+        dest_under_color[dest_offset] = 7;
       }
     }
   }
@@ -878,6 +879,11 @@ void replace_player(World *mzx_world)
       }
     }
   }
+
+  // Place the player here
+  mzx_world->player_x = 0;
+  mzx_world->player_y = 0;
+  place_at_xy(mzx_world, 127, 0, 0, 0, 0);
 }
 
 // Run a single robot through a single cycle.
@@ -1696,16 +1702,14 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           case 16: // musicon
           {
-            // FIXME - globalize?
-            if(music_on)
+            if(get_music_on_state())
               success = 1;
             break;
           }
 
           case 17: // soundon
           {
-            // FIXME - globalize?
-            if(sfx_on)
+            if(get_sfx_on_state())
               success = 1;
             break;
           }
@@ -2528,7 +2532,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           int direction = parsedir(cmd_ptr[2], x, y, cur_robot->walk_dir) - 1;
           if((direction >= 0) && (direction <= 3))
           {
-            
+
             if(!(_bl[direction] & 2))
             {
               // Block
@@ -3594,7 +3598,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
              !move_dir(src_board, &dest_x, &dest_y, dest_dir - 1))
             {
               copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
-            
+
               if((dest_x == x) && (dest_y == y))
                 return;
             }
@@ -3972,7 +3976,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       // FIXME - There may be no way to get this to work. It may have to be removed.
       case 157: // modsam freq num
       {
-        if(music_on)
+        if(get_music_on_state())
         {
           int frequency = parse_param(mzx_world, cmd_ptr + 1, id);
           char *p2 = next_param_pos(cmd_ptr + 1);
@@ -4698,7 +4702,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           case 1:
           {
             int overlay_offset = src_x + (src_y * board_width);
-  
+
             if(!src_board->overlay_mode)
               setup_overlay(src_board, 3);
 
@@ -4824,10 +4828,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
               int d_id = level_id[offset];
               int d_flag = flags[d_id];
 
-              if((d_id == 123) || (d_id == 127) || 
+              if((d_id == 123) || (d_id == 127) ||
                ((push_dir < 2) && (d_flag & A_PUSHNS)) ||
                ((push_dir >= 2) && (d_flag & A_PUSHEW)))
-              { 
+              {
                 push(mzx_world, x, y, push_dir, 0);
                 update_blocked = 1;
               }
@@ -5142,7 +5146,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         char name_buffer[256];
 
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
-        load_palette(name_buffer);
+        load_palette(name_buffer, 0);
         pal_update = 1;
 
         // Done.
@@ -5203,18 +5207,18 @@ void run_robot(World *mzx_world, int id, int x, int y)
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
 
         if(!fsafetranslate(name_buffer, translated_name))
-        { 
+        {
           do
           {
-            if(reload_swap(mzx_world, name_buffer, &fade))
+            if(reload_swap(mzx_world, translated_name, &fade))
             {
               redo_load = error("Error swapping to next world", 1, 23, 0x2C01);
             }
           } while(redo_load == 2);
-  
+
           strcpy(curr_file, name_buffer);
           mzx_world->swapped = 1;
-  
+
           return;
         }
         break;
@@ -5407,13 +5411,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         overlay = src_board->overlay;
         overlay_color = src_board->overlay_color;
- 
+
         split_colors(src_color, &src_fg, &src_bg);
- 
+
         for(i = 0; i < (board_width * board_height); i++)
         {
           d_color = overlay_color[i];
- 
+
           if((overlay[i] == src_char) &&
            ((src_bg == 16) || (src_bg == (d_color >> 4))) &&
            ((src_fg == 16) || (src_fg == (d_color & 0x0F))))

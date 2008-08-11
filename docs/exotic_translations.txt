@@ -1,0 +1,60 @@
+File loading:
+
+open file file_name (for) read (to) (number)
+open file file_name (for) write (to) (number)
+open file file_name (for) append (to) (number)
+open file file_name (for) modify (to) (number)
+
+
+File operations:
+
+
+Partial charset loading:
+
+load char set "filename.chr" offset
+
+
+Copy block:
+
+copy (board) block x1 y1 w h [overlay|vlayer] x2 y2
+copy overlay block x1 y1 w h [board|vlayer] x2 y2
+copy vlayer block x1 y1 w h [board|overlay] x2 y2
+
+copy [(board)|overlay|vlayer] block x1 y1 w h mzm file_name
+copy [(board)|overlay|vlayer] block x1 y1 w h string str
+
+
+MZM loading:
+
+load mzm [BOARD|OVERLAY|VLAYER] x y w h file_name
+
+
+Sprite collision:
+
+spr(number)_collides(x, y)
+spr(number)_collides_absolute(x, y)
+spr(number)_at(x, y)
+
+ Examples:
+
+ if (~spr0_collides1,0)
+   inc spr0_x 1
+
+ if spr(0)_collides(a, b)
+   * "~fouch"
+
+
+Trig:
+
+sin(%value)
+cos(%value)
+tan(%value)
+asin(%value)
+acos(%value)
+atan(%value)
+atan2(%value)
+
+ sin(val) * multiplier
+ asin(val / divider)
+
+

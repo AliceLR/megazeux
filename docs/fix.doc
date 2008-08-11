@@ -1,8 +1,0 @@
-
-
-FIX.EXE is a small program to fix a small bug in version 2.00/2.01 .MZX
-and .MZB files. Version 2.00/2.01 .SAV files cannot be fixed and if they
-cause problems, should be deleted. The bug involved the screen not showing
-the player and/or not scrolling properly with the player. If this ever
-happens in version 2.51, just run FIX.EXE again. It only works on the
-files in the current directory.

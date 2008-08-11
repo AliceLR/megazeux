@@ -38,6 +38,9 @@
 #include "helpsys.h"
 #include "edit.h"
 #include "fsafeopen.h"
+#include "configure.h"
+#include "math.h"
+#include "delay.h"
 
 #define combine_colors(a, b)  \
   (a) | (b << 4)              \
@@ -124,7 +127,6 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
   char previous_palette[16][3];
   char text_buffer[512], error_buffer[512];
   int current_line_color;
-
   robot_state rstate;
 
   rstate.current_line = 0;
@@ -148,6 +150,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
   rstate.active_macro = NULL;
   rstate.base = &base;
   rstate.command_buffer = rstate.command_buffer_space;
+  rstate.mzx_world = mzx_world;
 
   base.previous = NULL;
   base.line_bytecode_length = -1;
@@ -209,7 +212,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
   else
   {
     move_line_down(&rstate, 1);
-  } 
+  }
 
   save_screen();
   fill_line(80, 0, 0, top_char, top_color);
@@ -277,11 +280,11 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
     // Now, draw the lines. Start with 9 back from the current.
 
-    if(rstate.current_line > 
+    if(rstate.current_line >
       (rstate.scr_line_middle - rstate.scr_line_start))
     {
       first_line_draw_position = rstate.scr_line_start;
-      first_line_count_back = 
+      first_line_count_back =
        rstate.scr_line_middle - rstate.scr_line_start;
     }
     else
@@ -299,7 +302,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
     }
 
     // Now draw start - scr_end + 1 lines, or until bails
-    for(i = first_line_draw_position; 
+    for(i = first_line_draw_position;
      (i <= rstate.scr_line_end) && draw_rline; i++)
     {
       if(i != rstate.scr_line_middle)
@@ -312,9 +315,9 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
     mark_current_line = 0;
     if(rstate.mark_mode)
     {
-      int draw_start = rstate.current_line - 
+      int draw_start = rstate.current_line -
        (rstate.scr_line_middle - rstate.scr_line_start);
-      int draw_end = rstate.current_line + 
+      int draw_end = rstate.current_line +
        (rstate.scr_line_end - rstate.scr_line_middle) + 1;
 
       if(rstate.mark_start <= draw_end)
@@ -332,7 +335,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
         if(rstate.mark_end <= draw_end)
         {
-          draw_end = rstate.mark_end + rstate.scr_line_middle - 
+          draw_end = rstate.mark_end + rstate.scr_line_middle -
           rstate.current_line;
         }
         else
@@ -351,7 +354,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         }
         else
         {
-          if((rstate.mark_start != rstate.mark_end) && 
+          if((rstate.mark_start != rstate.mark_end) &&
            (draw_end >= rstate.scr_line_start))
             draw_char('E', mark_color, 0, draw_end);
         }
@@ -370,19 +373,21 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       }
     }
 
+    rstate.macro_repeat_level = 0;
+
     update_screen();
 
     if(mark_current_line)
     {
       draw_char(bg_char, mark_color, 1, rstate.scr_line_middle);
-      key = intake(rstate.command_buffer, 240, 2, 
+      key = intake(rstate.command_buffer, 240, 2,
        rstate.scr_line_middle, mark_color, 2, 0, 0, &rstate.current_x,
        1, rstate.active_macro);
     }
     else
     {
       draw_char(bg_char, bg_color_solid, 1, rstate.scr_line_middle);
-      key = intake(rstate.command_buffer, 240, 2, 
+      key = intake(rstate.command_buffer, 240, 2,
        rstate.scr_line_middle, current_line_color, 2, 0, 0,
        &rstate.current_x, 1, rstate.active_macro);
     }
@@ -403,6 +408,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
     }
 
     rstate.active_macro = NULL;
+    rstate.macro_recurse_level = 0;
 
     switch(key)
     {
@@ -464,13 +470,14 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       {
         if(get_alt_status(keycode_SDL))
         {
-          block_action(mzx_world, &rstate);
+          block_action(&rstate);
         }
         else
 
         if(rstate.current_x)
         {
           move_and_update(&rstate, 1);
+          rstate.current_x = 0;
         }
         else
         {
@@ -595,31 +602,31 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
       case SDLK_F6:
       {
-        rstate.active_macro = macros[0];
+        execute_numbered_macro(&rstate, 1);
         break;
       }
 
       case SDLK_F7:
       {
-        rstate.active_macro = macros[1];
+        execute_numbered_macro(&rstate, 2);
         break;
       }
 
       case SDLK_F8:
       {
-        rstate.active_macro = macros[2];
+        execute_numbered_macro(&rstate, 3);
         break;
       }
 
       case SDLK_F9:
       {
-        rstate.active_macro = macros[3];
+        execute_numbered_macro(&rstate, 4);
         break;
       }
 
       case SDLK_F10:
       {
-        rstate.active_macro = macros[4];
+        execute_numbered_macro(&rstate, 5);
         break;
       }
 
@@ -628,8 +635,8 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         if(get_alt_status(keycode_SDL))
         {
           update_current_line(&rstate);
-          validate_lines(mzx_world, &rstate, 1);
-          update_current_line(&rstate);        
+          validate_lines(&rstate, 1);
+          update_current_line(&rstate);
         }
         break;
       }
@@ -637,7 +644,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       case SDLK_ESCAPE:
       {
         update_current_line(&rstate);
-        if(validate_lines(mzx_world, &rstate, 0))
+        if(validate_lines(&rstate, 0))
           key = 0;
 
         update_current_line(&rstate);
@@ -716,7 +723,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       {
         if(get_alt_status(keycode_SDL))
         {
-          block_action(mzx_world, &rstate);
+          block_action(&rstate);
         }
         break;
       }
@@ -759,7 +766,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
           rstate.current_rline->validity_status = invalid_discard;
           update_current_line(&rstate);
         }
-    
+
         break;
       }
 
@@ -851,7 +858,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       {
         if(get_alt_status(keycode_SDL))
         {
-          import_block(mzx_world, &rstate);
+          import_block(&rstate);
         }
         else
 
@@ -872,11 +879,11 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         {
           if(rstate.mark_mode)
           {
-            export_block(mzx_world, &rstate, 1);
+            export_block(&rstate, 1);
           }
           else
           {
-            export_block(mzx_world, &rstate, 0);
+            export_block(&rstate, 0);
           }
         }
         break;
@@ -921,14 +928,14 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
             rstate.scr_line_end = 23;
             write_string(key_help_hide, 0, 24, bottom_text_color, 0);
           }
-        }         
+        }
         break;
       }
 
       case SDLK_f:
       {
         if(get_ctrl_status(keycode_SDL))
-          find_replace_action(mzx_world, &rstate);
+          find_replace_action(&rstate);
 
         break;
       }
@@ -945,7 +952,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
               int l_pos;
               int l_num = find_string(&rstate, search_string, wrap_option[0],
                &l_pos, case_option[0]);
-      
+
               if(l_num != -1)
               {
                 goto_line(&rstate, l_num);
@@ -961,7 +968,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
               int l_pos;
               int l_num = find_string(&rstate, search_string, wrap_option[0],
                &l_pos, case_option[0]);
-        
+
               if(l_num != -1)
               {
                 goto_line(&rstate, l_num);
@@ -971,6 +978,38 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
               }
               break;
             }
+          }
+        }
+        break;
+      }
+
+      case SDLK_m:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          char macro_line[256];
+
+          macro_line[0] = 0;
+
+          save_screen();
+          draw_window_box(15, 11, 65, 13, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
+           EC_DEBUG_BOX_CORNER, 1, 1);
+          write_string("Configure macro:", 17, 12, EC_DEBUG_LABEL, 0);
+
+          if(intake(macro_line, 29, 34, 12, 15, 1, 0) != SDLK_ESCAPE)
+          {
+            int next;
+            restore_screen();
+
+            ext_macro *macro_src = find_macro(&(mzx_world->conf), macro_line,
+             &next);
+
+            if(macro_src)
+              execute_macro(&rstate, macro_src);
+          }
+          else
+          {
+            restore_screen();
           }
         }
         break;
@@ -1216,7 +1255,7 @@ void move_and_update(robot_state *rstate, int count)
 }
 
 
-void update_current_line(robot_state *rstate)
+int update_current_line(robot_state *rstate)
 {
   char bytecode_buffer[512];
   char error_buffer[512];
@@ -1232,7 +1271,13 @@ void update_current_line(robot_state *rstate)
   int current_size = rstate->size;
   validity_types use_type = rstate->default_invalid;
 
-  if((bytecode_length != -1) && 
+  if(command_buffer[0] == '#')
+  {
+    execute_named_macro(rstate, command_buffer + 1);
+    return -1;
+  }
+
+  if((bytecode_length != -1) &&
    (current_size + bytecode_length - last_bytecode_length) <=
    rstate->max_size)
   {
@@ -1240,9 +1285,9 @@ void update_current_line(robot_state *rstate)
     int line_text_length;
 
     disassemble_line(bytecode_buffer, &next, new_command_buffer,
-     error_buffer, &line_text_length, rstate->include_ignores, 
+     error_buffer, &line_text_length, rstate->include_ignores,
      arg_types, &arg_count, rstate->disassemble_base);
-  
+
     if(line_text_length < 241)
     {
       current_rline->line_text_length = line_text_length;
@@ -1254,11 +1299,11 @@ void update_current_line(robot_state *rstate)
        (char *)realloc(current_rline->line_bytecode, bytecode_length);
       current_rline->num_args = arg_count;
       current_rline->validity_status = valid;
-  
+
       memcpy(current_rline->arg_types, arg_types, 20);
       strcpy(current_rline->line_text, new_command_buffer);
       memcpy(current_rline->line_bytecode, bytecode_buffer, bytecode_length);
-  
+
       rstate->size = current_size + bytecode_length - last_bytecode_length;
     }
     else
@@ -1297,7 +1342,7 @@ void update_current_line(robot_state *rstate)
      (current_size + (line_text_length + 5) - last_bytecode_length) >
      rstate->max_size)
     {
-      use_type = invalid_uncertain;   
+      use_type = invalid_uncertain;
     }
 
     if((use_type == invalid_comment) && (line_text_length > 236))
@@ -1305,10 +1350,10 @@ void update_current_line(robot_state *rstate)
       line_text_length = 236;
       command_buffer[236] = 0;
     }
-      
+
     current_rline->line_text_length = line_text_length;
     strcpy(current_rline->line_text, command_buffer);
-    
+
     if(use_type != invalid_comment)
     {
       current_rline->line_bytecode_length = 0;
@@ -1323,6 +1368,8 @@ void update_current_line(robot_state *rstate)
        current_size + (line_text_length + 5) - last_bytecode_length;
     }
   }
+
+  return 0;
 }
 
 void add_blank_line(robot_state *rstate, int relation)
@@ -1341,19 +1388,19 @@ void add_blank_line(robot_state *rstate, int relation)
     new_rline->line_bytecode_length = 3;
     new_rline->validity_status = valid;
     int current_line = rstate->current_line;
-  
+
     rstate->total_lines++;
     rstate->size += 3;
-  
+
     if(relation > 0)
     {
       new_rline->next = current_rline->next;
       new_rline->previous = current_rline;
-  
+
       if(current_rline->next)
         current_rline->next->previous = new_rline;
-  
-      current_rline->next = new_rline;  
+
+      current_rline->next = new_rline;
 
       rstate->current_rline = new_rline;
 
@@ -1370,7 +1417,7 @@ void add_blank_line(robot_state *rstate, int relation)
     {
       new_rline->next = current_rline;
       new_rline->previous = current_rline->previous;
-  
+
       current_rline->previous->next = new_rline;
       current_rline->previous = new_rline;
 
@@ -1405,7 +1452,7 @@ void delete_current_line(robot_state *rstate, int move)
     free(current_rline->line_text);
     free(current_rline->line_bytecode);
     free(current_rline);
-  
+
     rstate->size -= last_size;
 
     if(rstate->mark_mode)
@@ -1447,7 +1494,7 @@ void delete_current_line(robot_state *rstate, int move)
       }
       else
       {
-        rstate->current_rline = next; 
+        rstate->current_rline = next;
       }
     }
 
@@ -1467,26 +1514,36 @@ void add_line(robot_state *rstate)
   new_rline->validity_status = valid;
 
   rstate->current_rline = new_rline;
-  update_current_line(rstate);
-  rstate->current_rline = current_rline;
-
   new_rline->next = current_rline;
   new_rline->previous = current_rline->previous;
 
   current_rline->previous->next = new_rline;
   current_rline->previous = new_rline;
 
-  if(rstate->mark_mode)
+  if(update_current_line(rstate) != -1)
   {
-    if(rstate->mark_start >= rstate->current_line)
-      rstate->mark_start++;
 
-    if(rstate->mark_end >= rstate->current_line)
-      rstate->mark_end++;
+    rstate->current_rline = current_rline;
+
+    if(rstate->mark_mode)
+    {
+      if(rstate->mark_start >= rstate->current_line)
+        rstate->mark_start++;
+
+      if(rstate->mark_end >= rstate->current_line)
+        rstate->mark_end++;
+    }
+
+    rstate->total_lines++;
+    rstate->current_line++;
   }
-
-  rstate->total_lines++;
-  rstate->current_line++;
+  else
+  {
+    current_rline->previous = new_rline->previous;
+    current_rline->previous->next = new_rline->next;
+    rstate->current_rline = current_rline;
+    free(new_rline);
+  }
 }
 
 #define VALIDATE_ELEMENTS 60
@@ -1495,8 +1552,7 @@ void add_line(robot_state *rstate)
 // This will only check for errors after current_rline, so the
 // base should be passed.
 
-int validate_lines(World *mzx_world, robot_state *rstate,
- int show_none)
+int validate_lines(robot_state *rstate, int show_none)
 {
   // 70x5-21 square that displays up to 13 error messages,
   // and up to 48 buttons for delete/comment out/ignore. In total,
@@ -1512,6 +1568,7 @@ int validate_lines(World *mzx_world, robot_state *rstate,
   // Doesn't take any more errors after the number of erroneous
   // lines exceeds MAX_ERRORS.
 
+  World *mzx_world = rstate->mzx_world;
   char information[64];
   char di_types[VALIDATE_ELEMENTS] = { DE_TEXT, DE_BUTTON, DE_BUTTON };
   char di_xs[VALIDATE_ELEMENTS] = { 5, 28, 38 };
@@ -1695,7 +1752,7 @@ int validate_lines(World *mzx_world, robot_state *rstate,
 
       di.num_elements = element_pos;
 
-      dialog_result = run_dialog(mzx_world, &di, 0, 0);
+      dialog_result = run_dialog(mzx_world, &di, 0, 0, 0);
 
       if(dialog_result == -1)
       {
@@ -1767,7 +1824,6 @@ int validate_lines(World *mzx_world, robot_state *rstate,
           {
             current_size +=
              (line_pointers[dialog_result - 300])->line_text_length + 5;
-            
           }
 
           // Make it comment
@@ -1818,7 +1874,7 @@ int block_menu(World *mzx_world)
     di_ys, di_strs, di_p1s, di_p2s, di_storage, 0
   };
 
-  if(run_dialog(mzx_world, &di, 0, 0) == -1)
+  if(run_dialog(mzx_world, &di, 0, 0, 0) == -1)
     return -1;
   else
     return block_op;
@@ -1929,9 +1985,9 @@ void clear_block(robot_state *rstate)
   strcpy(rstate->command_buffer, rstate->current_rline->line_text);
 }
 
-void export_block(World *mzx_world, robot_state *rstate,
- int region_default)
+void export_block(robot_state *rstate, int region_default)
 {
+  World *mzx_world = rstate->mzx_world;
   robot_line *current_rline;
   robot_line *end_rline;
 
@@ -1969,7 +2025,7 @@ void export_block(World *mzx_world, robot_state *rstate,
     di.num_elements = 4;
   }
 
-  if(!run_dialog(mzx_world, &di, 0, 0))
+  if(!run_dialog(mzx_world, &di, 0, 0, 0))
   {
     FILE *export_file;
 
@@ -1981,7 +2037,7 @@ void export_block(World *mzx_world, robot_state *rstate,
     else
     {
       current_rline = rstate->mark_start_rline;
-      end_rline = rstate->mark_end_rline;
+      end_rline = rstate->mark_end_rline->next;
     }
 
     if(!export_type)
@@ -2017,7 +2073,7 @@ void export_block(World *mzx_world, robot_state *rstate,
   }
 }
 
-void import_block(World *mzx_world, robot_state *rstate)
+void import_block(robot_state *rstate)
 {
   char import_name[128];
   char *txt_ext[] = { ".TXT", NULL };
@@ -2030,7 +2086,9 @@ void import_block(World *mzx_world, robot_state *rstate)
 
     while(fgets(line_buffer, 255, import_file))
     {
-      line_buffer[strlen(line_buffer) - 1] = 0;
+      if(line_buffer[strlen(line_buffer) - 1] == '\n')
+        line_buffer[strlen(line_buffer) - 1] = 0;
+
       add_line(rstate);
     }
 
@@ -2067,12 +2125,13 @@ void edit_settings(World *mzx_world)
     di_ys, di_strs, di_p1s, di_p2s, di_storage, 1
   };
 
-  if(!run_dialog(mzx_world, &di, 0, 0))
+  if(!run_dialog(mzx_world, &di, 0, 0, 0))
     memcpy(macros, new_macros, 64 * 5);
 }
 
-void block_action(World *mzx_world, robot_state *rstate)
+void block_action(robot_state *rstate)
 {
+  World *mzx_world = rstate->mzx_world;
   int block_command = block_menu(mzx_world);
 
   if(!rstate->mark_mode)
@@ -2112,7 +2171,7 @@ void block_action(World *mzx_world, robot_state *rstate)
     case 3:
     {
       // Export block - text only
-      export_block(mzx_world, rstate, 1);
+      export_block(rstate, 1);
       break;
     }
   }
@@ -2129,9 +2188,10 @@ void goto_line(robot_state *rstate, int line)
   move_and_update(rstate, line - rstate->current_line);
 }
 
-void find_replace_action(World *mzx_world, robot_state *rstate)
+void find_replace_action(robot_state *rstate)
 {
-  char di_types[8] = { DE_INPUT, DE_INPUT, DE_CHECK, DE_CHECK, 
+  World *mzx_world = rstate->mzx_world;
+  char di_types[8] = { DE_INPUT, DE_INPUT, DE_CHECK, DE_CHECK,
    DE_BUTTON, DE_BUTTON, DE_BUTTON, DE_BUTTON };
   char di_xs[8] = { 2, 2, 3, 30, 5, 15, 27, 44, };
   char di_ys[8] = { 2, 3, 5, 5, 7, 7, 7, 7 };
@@ -2153,7 +2213,7 @@ void find_replace_action(World *mzx_world, robot_state *rstate)
     di_ys, di_strs, di_p1s, di_p2s, di_storage, 0
   };
 
-  last_find_option = run_dialog(mzx_world, &di, 0, 0);
+  last_find_option = run_dialog(mzx_world, &di, 0, 0, 0);
 
   switch(last_find_option)
   {
@@ -2219,7 +2279,7 @@ void find_replace_action(World *mzx_world, robot_state *rstate)
         // A decrease had better indicate a wrap, and you only get one
         if(((l_num == last_line) && (l_pos < last_pos)) || (l_num < last_line))
         {
-          if((((l_num == start_line) && (l_pos <= start_pos)) || 
+          if((((l_num == start_line) && (l_pos <= start_pos)) ||
            (l_num < start_line)) && (!wrapped))
           {
             wrapped = 1;
@@ -2231,7 +2291,7 @@ void find_replace_action(World *mzx_world, robot_state *rstate)
         }
 
         // If it has already wrapped don't let it past the start
-        if((((l_num == start_line) && (l_pos > start_pos)) || 
+        if((((l_num == start_line) && (l_pos > start_pos)) ||
          (l_num > start_line)) && wrapped)
         {
           break;
@@ -2268,7 +2328,7 @@ void replace_current_line(robot_state *rstate, int r_pos, char *str,
   int replace_size = strlen(replace);
   int str_size = strlen(str);
   char new_buffer[512];
-  
+
   strcpy(new_buffer, current_rline->line_text);
   memmove(new_buffer + r_pos + replace_size,
    new_buffer + r_pos + str_size, strlen(new_buffer) - r_pos);
@@ -2277,7 +2337,7 @@ void replace_current_line(robot_state *rstate, int r_pos, char *str,
   rstate->command_buffer = new_buffer;
   update_current_line(rstate);
   strcpy(rstate->command_buffer_space, new_buffer);
-  rstate->command_buffer = rstate->command_buffer_space;  
+  rstate->command_buffer = rstate->command_buffer_space;
 }
 
 int find_string(robot_state *rstate, char *str, int wrap,
@@ -2319,12 +2379,12 @@ int find_string(robot_state *rstate, char *str, int wrap,
         str_lower_case(current_rline->line_text, line_buffer);
       else
         use_buffer = current_rline->line_text;
-  
+
       pos = strstr(use_buffer, str);
-  
+
       if(pos)
         break;
-  
+
       current_rline = current_rline->next;
       current_line++;
     }
@@ -2374,4 +2434,640 @@ void str_lower_case(char *str, char *dest)
   }
 
   dest[i] = 0;
+}
+
+void execute_numbered_macro(robot_state *rstate, int num)
+{
+  World *mzx_world = rstate->mzx_world;
+  char macro_name[32];
+  sprintf(macro_name, "%d", num);
+  ext_macro *macro_src;
+  int next;
+
+  macro_src = find_macro(&(mzx_world->conf), macro_name, &next);
+
+  if(macro_src)
+    execute_macro(rstate, macro_src);
+  else
+    rstate->active_macro = macros[num - 1];
+}
+
+void execute_macro(robot_state *rstate, ext_macro *macro_src)
+{
+  World *mzx_world = rstate->mzx_world;
+  int i, i2, i3;
+
+  // First, the dialogue box must be generated. This will have a text
+  // label for the variable name and an input widget for the variable's
+  // value itself. An attempt will be made to make this look as nice
+  // as possible, but these will be comprimised (in this order) if
+  // space is critical.
+  // 1) All variables within a type group will be be aligned at a
+  //    a fixed with (of whatever the largest width of the name +
+  //    input widgit is) so that if they take multiple lines the
+  //    boxes will line up.
+  // 2) A blank line will be placed between each type group
+  // 3) The width/height ratio will be made as close to 4:3 as possible,
+  //    and the box will be centered.
+  // The first two dialogue elements are reserved for okay/cancel
+
+  int total_dialogue_elements = macro_src->total_variables + 3;
+  int num_types = macro_src->num_types;
+  char di_types[total_dialogue_elements];
+  char di_xs[total_dialogue_elements];
+  char di_ys[total_dialogue_elements];
+  char *di_strs[total_dialogue_elements];
+  int di_p1s[total_dialogue_elements];
+  int di_p2s[total_dialogue_elements];
+  void *di_storage[total_dialogue_elements];
+  macro_type *current_type;
+  int nominal_column_widths[num_types];
+  int nominal_column_subwidths[num_types];
+  int vars_per_line[num_types];
+  int largest_column_width = 0;
+  int total_width;
+  int largest_total_width;
+  int lines_needed[num_types];
+  int nominal_width = 77, old_width = 77;
+  int nominal_height, old_height = 25;
+  int total_lines_needed;
+  int largest;
+  int current_len;
+  double optimal_delta, old_optimal_delta = 1000000.0;
+  int x, y, dialogue_index = 2;
+  macro_variable *current_variable;
+  int draw_on_line;
+  int start_x, start_y;
+  dialog di;
+  int dialogue_value;
+  int label_size = strlen(macro_src->label) + 1;
+  int subwidths[3];
+
+  // No variables? Just print bare lines...
+  if(!num_types)
+  {
+    output_macro(rstate, macro_src);
+    return;
+  }
+
+  current_type = macro_src->types;
+
+  for(i = 0; i < num_types; i++, current_type++)
+  {
+    largest = strlen(current_type->variables[0].name);
+    for(i2 = 1; i2 < current_type->num_variables; i2++)
+    {
+      current_len = strlen(current_type->variables[i2].name);
+      if(current_len > largest)
+        largest = current_len;
+    }
+
+    nominal_column_subwidths[i] = largest;
+
+    switch(current_type->type)
+    {
+      case number:
+      {
+        largest += 15;
+        break;
+      }
+
+      case string:
+      {
+        largest += current_type->type_attributes[0] + 3;
+        break;
+      }
+
+      case character:
+      {
+        largest += 5;
+        break;
+      }
+
+      case color:
+      {
+        largest += 5;
+        break;
+      }
+    }
+
+    nominal_column_widths[i] = largest;
+
+    if(largest > largest_column_width)
+      largest_column_width = largest;
+  }
+
+  do
+  {
+    largest_total_width = 0;
+    total_lines_needed = 0;
+
+    // Determine how many lines each type needs
+    for(i = 0; i < num_types; i++)
+    {
+      total_width = nominal_width / nominal_column_widths[i];
+      if(total_width == 0)
+      {
+        lines_needed[i] = 1;
+      }
+      else
+      {
+        lines_needed[i] = (macro_src->types[i].num_variables +
+         (total_width - 1)) / total_width;
+      }
+
+      if(total_width > macro_src->types[i].num_variables)
+        total_width = macro_src->types[i].num_variables;
+
+      total_width *= nominal_column_widths[i];
+
+      total_lines_needed += lines_needed[i] + 1;
+      if(total_width > largest_total_width)
+        largest_total_width = total_width;
+    }
+
+    nominal_width = largest_total_width;
+    // Add a line between each, a top line, two for buttons, and
+    // two for borders
+    nominal_height = total_lines_needed + 5;
+
+    optimal_delta = fabs((80.0 / 25) - (double)(nominal_width + 3) / nominal_height);
+
+    if((old_optimal_delta < optimal_delta) ||
+     (nominal_width < largest_column_width) || (nominal_height > 25))
+    {
+      // Use the old one instead
+      nominal_width = old_width;
+      nominal_height = old_height;
+      break;
+    }
+
+    old_width = nominal_width;
+    old_height = nominal_height;
+    old_optimal_delta = optimal_delta;
+
+    nominal_width -= largest_column_width;
+  } while(1);
+
+  for(i = 0; i < num_types; i++)
+  {
+    vars_per_line[i] = nominal_width / nominal_column_widths[i];
+  }
+
+  if(nominal_width < label_size)
+    nominal_width = label_size;
+
+  if(nominal_width < 25)
+    nominal_width = 25;
+
+  if(nominal_width < 30)
+  {
+    subwidths[0] = nominal_width - 20;
+    subwidths[1] = 10;
+  }
+  else
+  {
+    subwidths[0] = nominal_width / 3;
+    subwidths[1] = subwidths[0];
+  }
+
+  nominal_width += 3;
+
+  // Generate the dialogue box
+  start_x = 39 - (nominal_width / 2);
+  start_y = 12 - (nominal_height / 2);
+
+  x = 2;
+  y = 2;
+
+  current_type = macro_src->types;
+
+  for(i = 0, dialogue_index = 3; i < num_types; i++, current_type++)
+  {
+    current_variable = current_type->variables;
+    // Draw this many
+    draw_on_line = vars_per_line[i];
+    for(i2 = current_type->num_variables; i2 > 0; i2 -= draw_on_line,
+     y++)
+    {
+      if(i2 < draw_on_line)
+
+        draw_on_line = i2;
+
+      x += ((nominal_width - 3) / 2) -
+       ((nominal_column_widths[i] * draw_on_line) / 2);
+
+      for(i3 = 0; i3 < draw_on_line; i3++, current_variable++,
+       dialogue_index++)
+      {
+        current_len = nominal_column_subwidths[i] -
+         strlen(current_variable->name);
+        x += current_len;
+
+        di_strs[dialogue_index] = current_variable->name;
+        di_xs[dialogue_index] = x;
+        di_ys[dialogue_index] = y;
+
+        x += nominal_column_widths[i] - current_len;
+
+        switch(current_type->type)
+        {
+          case number:
+          {
+            di_types[dialogue_index] = DE_NUMBER;
+            di_p1s[dialogue_index] = current_type->type_attributes[0];
+            di_p2s[dialogue_index] = current_type->type_attributes[1];
+            di_storage[dialogue_index] =
+             (void *)(&(current_variable->storage.int_storage));
+            break;
+          }
+
+          case string:
+          {
+            di_types[dialogue_index] = DE_INPUT;
+            di_p1s[dialogue_index] = current_type->type_attributes[0];
+            di_storage[dialogue_index] =
+             (void *)(current_variable->storage.str_storage);
+            di_p2s[dialogue_index] = 0;
+            break;
+          }
+
+          case character:
+          {
+            di_types[dialogue_index] = DE_CHAR;
+            di_storage[dialogue_index] =
+             (void *)(&(current_variable->storage.char_storage));
+            break;
+          }
+
+          case color:
+          {
+            di_types[dialogue_index] = DE_COLOR;
+            di_p1s[dialogue_index] = 1;
+            di_storage[dialogue_index] =
+             (void *)(&(current_variable->storage.int_storage));
+            break;
+          }
+        }
+      }
+      // Start over on next line
+      x = 2;
+    }
+    // Start over after skipping a line
+    x = 2;
+    y++;
+  }
+
+  // Place OK/Cancel/Default
+
+  di_xs[0] = subwidths[0] / 2;
+  di_xs[1] = subwidths[0] + (subwidths[1] / 2) - 2;
+  di_xs[2] = subwidths[0] + subwidths[1] + (subwidths[1] / 2) - 3;
+
+  di_ys[0] = y;
+  di_types[0] = DE_BUTTON;
+  di_strs[0] = "OK";
+  di_p1s[0] = 0;
+
+  di_ys[1] = y;
+  di_types[1] = DE_BUTTON;
+  di_strs[1] = "Cancel";
+  di_p1s[1] = -1;
+
+  di_ys[2] = y;
+  di_types[2] = DE_BUTTON;
+  di_strs[2] = "Default";
+  di_p1s[2] = -2;
+
+  // Setup and run the dialogue box.
+
+  di.x1 = start_x;
+  di.y1 = start_y;
+  di.x2 = start_x + nominal_width - 1;
+  di.y2 = start_y + nominal_height - 1;
+  di.title = macro_src->label;
+  di.num_elements = total_dialogue_elements;
+  di.element_types = di_types;
+  di.element_xs = di_xs;
+  di.element_ys = di_ys;
+  di.element_strs = di_strs;
+  di.element_storage = di_storage;
+  di.element_param1s = di_p1s;
+  di.element_param2s = di_p2s;
+  di.curr_element = 0;
+
+  do
+  {
+    dialogue_value = run_dialog(mzx_world, &di, 0, 0, 1);
+
+    switch(dialogue_value)
+    {
+      case 0:
+      {
+        // OK, output the lines
+        output_macro(rstate, macro_src);
+        break;
+      }
+
+      case -2:
+      {
+        // Plug in default values, allow to run again
+        macro_default_values(rstate, macro_src);
+        break;
+      }
+    }
+  } while(dialogue_value == -2);
+}
+
+void output_macro(robot_state *rstate, ext_macro *macro_src)
+{
+  int num_lines = macro_src->num_lines;
+  char line_buffer[512];
+  char number_buffer[16];
+  char *line_pos, *line_pos_old;
+  char *old_buffer_space = rstate->command_buffer;
+  macro_variable_reference *current_reference;
+  int i, i2;
+  int len;
+
+  if(rstate->macro_recurse_level == MAX_MACRO_RECURSION ||
+   rstate->macro_repeat_level == MAX_MACRO_REPEAT)
+  {
+    rstate->command_buffer[0] = 0;
+    update_current_line(rstate);
+    return;
+  }
+
+  rstate->macro_recurse_level++;
+  rstate->macro_repeat_level++;
+
+  // OK, output the lines
+
+  rstate->command_buffer = line_buffer;
+
+  for(i = 0; i < num_lines; i++)
+  {
+    line_pos = line_buffer;
+    line_pos_old = line_pos;
+    len = strlen(macro_src->lines[i][0]);
+    strcpy(line_pos, macro_src->lines[i][0]);
+    line_pos += len;
+
+    for(i2 = 0; i2 < macro_src->line_element_count[i]; i2++)
+    {
+      current_reference = &(macro_src->variable_references[i][i2]);
+      if(current_reference->type)
+      {
+        switch(current_reference->type->type)
+        {
+          case number:
+          {
+            if(current_reference->ref_mode == hexidecimal)
+            {
+              sprintf(number_buffer, "%02x",
+               current_reference->storage->int_storage);
+            }
+            else
+            {
+              sprintf(number_buffer, "%d",
+               current_reference->storage->int_storage);
+            }
+
+            len = strlen(number_buffer);
+            memcpy(line_pos, number_buffer, len);
+            line_pos += len;
+            break;
+          }
+
+          case string:
+          {
+            len = strlen(current_reference->storage->str_storage);
+            memcpy(line_pos, current_reference->storage->str_storage,
+             len);
+            line_pos += len;
+            break;
+          }
+
+          case character:
+          {
+            sprintf(line_pos, "'%c'",
+             current_reference->storage->char_storage);
+            line_pos += 3;
+            break;
+          }
+
+          case color:
+          {
+            print_color(current_reference->storage->int_storage,
+             line_pos);
+            line_pos += 3;
+            break;
+          }
+
+          default:
+          {
+            break;
+          }
+        }
+      }
+      else
+      {
+        strcpy(line_pos, "(undef)");
+        line_pos += strlen("(undef)");
+      }
+
+      len = strlen(macro_src->lines[i][i2 + 1]);
+      memcpy(line_pos, macro_src->lines[i][i2 + 1], len);
+      line_pos += len;
+    }
+
+    *line_pos = 0;
+    add_line(rstate);
+  }
+
+  rstate->command_buffer = old_buffer_space;
+  rstate->macro_recurse_level--;
+}
+
+void execute_named_macro(robot_state *rstate, char *macro_name)
+{
+  int next;
+  char *line_pos, *line_pos_old;
+  char last_char;
+  macro_type *param_type;
+
+  line_pos = skip_to_next(macro_name, ',', '(', 0);
+  last_char = *line_pos;
+  *line_pos = 0;
+
+  ext_macro *macro_src = find_macro(&(rstate->mzx_world->conf),
+   macro_name, &next);
+
+  *line_pos = last_char;
+
+  if(macro_src)
+  {
+    if(macro_src->num_types && (last_char))
+    {
+      // Fill in parameters
+      macro_default_values(rstate, macro_src);
+      variable_storage *param_storage;
+      int param_current_type = 0;
+      int param_current_var = 0;
+      int i;
+      char *value;
+
+      // Get name, may stop at equals sign first
+      while(1)
+      {
+        line_pos = skip_whitespace(line_pos + 1);
+        line_pos_old = line_pos;
+        line_pos = skip_to_next(line_pos, '=', ',', ')');
+
+        last_char = *line_pos;
+        *line_pos = 0;
+
+        param_storage = NULL;
+
+        if(last_char == '=')
+        {
+          // It's named, find which index this corresponds to.
+          *line_pos = 0;
+          param_type = macro_src->types;
+
+          for(i = 0; i < macro_src->num_types; i++, param_type++)
+          {
+            param_storage = find_macro_variable(line_pos_old,
+             param_type);
+            if(param_storage)
+              break;
+          }
+
+          line_pos++;
+          value = line_pos;
+          line_pos = skip_to_next(line_pos, '=', ',', ')');
+          last_char = *line_pos;
+          *line_pos = 0;
+        }
+        else
+
+        if(*(line_pos - 1) != '(')
+        {
+          param_type = macro_src->types + param_current_type;
+
+          if(param_current_var == param_type->num_variables)
+          {
+            param_current_type++;
+            param_type++;
+            param_current_var = 0;
+          }
+
+          if(param_current_type < macro_src->num_types)
+          {
+            param_storage =
+             &((param_type->variables[param_current_var]).storage);
+          }
+
+          value = line_pos_old;
+          param_current_var++;
+        }
+
+        if(param_storage)
+        {
+          switch(param_type->type)
+          {
+            case number:
+            {
+              param_storage->int_storage = strtol(value, NULL, 10);
+
+              if(param_storage->int_storage <
+               param_type->type_attributes[0])
+              {
+                param_storage->int_storage =
+                 param_type->type_attributes[0];
+              }
+
+              if(param_storage->int_storage >
+               param_type->type_attributes[1])
+              {
+                param_storage->int_storage =
+                 param_type->type_attributes[1];
+              }
+
+              break;
+            }
+
+            case string:
+            {
+              value[param_type->type_attributes[0]] = 0;
+              strcpy(param_storage->str_storage, value);
+              break;
+            }
+
+            case character:
+            {
+              if(*value == '\'')
+              {
+                param_storage->char_storage =
+                 *(value + 1);
+              }
+              else
+              {
+                param_storage->char_storage =
+                 strtol(value, NULL, 10);
+              }
+              break;
+            }
+
+            case color:
+            {
+              param_storage->int_storage =
+               get_color(value);
+              break;
+            }
+          }
+        }
+
+        if((last_char == ')') || (!last_char))
+          break;
+      }
+    }
+    output_macro(rstate, macro_src);
+  }
+  else
+  {
+    rstate->command_buffer[0] = 0;
+    update_current_line(rstate);
+  }
+}
+
+void macro_default_values(robot_state *rstate, ext_macro *macro_src)
+{
+  macro_type *current_type;
+  int i, i2;
+
+  for(i = 0, current_type = macro_src->types;
+   i < macro_src->num_types; i++, current_type++)
+  {
+    for(i2 = 0; i2 < current_type->num_variables; i2++)
+    {
+      if(current_type->type == string)
+      {
+        if(current_type->variables[i2].def.str_storage)
+        {
+          strcpy(current_type->variables[i2].storage.str_storage,
+           current_type->variables[i2].def.str_storage);
+        }
+        else
+        {
+          current_type->variables[i2].storage.str_storage[0] = 0;
+        }
+      }
+      else
+      {
+        memcpy(&(current_type->variables[i2].storage),
+         &(current_type->variables[i2].def), sizeof(variable_storage));
+      }
+    }
+  }
 }

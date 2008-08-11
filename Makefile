@@ -30,7 +30,7 @@ install:
 	install -o root -m 0644 mzx_blank.chr ${PREFIX}/share/megazeux && \
 	install -o root -m 0644 mzx_smzx.chr ${PREFIX}/share/megazeux && \
 	install -o root -m 0644 mzx_ascii.chr ${PREFIX}/share/megazeux && \
-	install -o root -m 0644 default.spl ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 smzx.pal ${PREFIX}/share/megazeux && \
 	install -o root -m 0644 mzx_help.fil ${PREFIX}/share/megazeux && \
 	install -o root -m 0644 config.txt /etc/megazeux-config && \
 	install -o root -m 0755 ${TARGET} ${PREFIX}/bin && \

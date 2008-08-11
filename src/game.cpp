@@ -223,7 +223,7 @@ void title_screen(World *mzx_world)
 
     src_board = mzx_world->current_board;
 
-    update_event_status_delay();
+    update_event_status();
 
     // Keycheck
     key = get_key(keycode_SDL);
@@ -1080,77 +1080,86 @@ void update_player(World *mzx_world)
 //
 //----------------------------
 
-int spd_tmp, music, sfx, mgvol, sgvol;
-char stdi_types[8] =
-{ DE_NUMBER, DE_RADIO, DE_RADIO, DE_TEXT, DE_NUMBER,
-  DE_NUMBER, DE_BUTTON, DE_BUTTON };
-char stdi_xs[8] = { 3, 4, 4, 3, 3, 3, 4, 14 };
-char stdi_ys[8] = { 2, 4, 7, 10 ,11 ,12 ,14 ,14 };
-char *stdi_strs[8] =
-{ "Speed- ", "Digitized music on\nDigitized music off",
-  "PC speaker SFX on\nPC speaker SFX off", "Sound card volumes-",
-  "Overall volume- ", "SoundFX volume- ", "OK", "Cancel" };
-int stdi_p1s[8] = { 1, 2, 2, 0, 1, 1, 0, 1 };
-int stdi_p2s[6]= { 9, 9, 7, 0, 8, 8 };
-void *stdi_storage[6] = { &spd_tmp, &music, &sfx, NULL, &mgvol, &sgvol };
-dialog stdi =
-{ 25, 4, 54, 20, "Game settings", 8,
-  stdi_types, stdi_xs, stdi_ys,
-  stdi_strs, stdi_p1s, stdi_p2s, stdi_storage, 0 };
 
 void game_settings(World *mzx_world)
 {
   Board *src_board = mzx_world->current_board;
-  set_context(92);
-  spd_tmp = overall_speed;
-  music = music_on ^ 1;
-  sfx = sfx_on ^ 1;
-  mgvol = music_gvol;
-  sgvol = sound_gvol;
+  int mzx_speed, music, sfx, music_volume, sound_volume;
 
-  if(run_dialog(mzx_world, &stdi))
+  char stdi_types[8] =
+  {
+    DE_NUMBER, DE_RADIO, DE_RADIO, DE_TEXT, DE_NUMBER,
+    DE_NUMBER, DE_BUTTON, DE_BUTTON
+  };
+
+  char stdi_xs[8] = { 3, 4, 4, 3, 3, 3, 4, 14 };
+  char stdi_ys[8] = { 2, 4, 7, 10, 11, 12, 14, 14 };
+
+  char *stdi_strs[8] =
+  {
+    "Speed- ",
+    "Digitized music on\nDigitized music off",
+    "PC speaker SFX on\nPC speaker SFX off",
+    "Sound card volumes-",
+    "Overall volume- ", "SoundFX volume- ", "OK", "Cancel"
+  };
+
+  int stdi_p1s[8] = { 1, 2, 2, 0, 1, 1, 0, 1 };
+  int stdi_p2s[6]= { 9, 9, 7, 0, 8, 8 };
+  void *stdi_storage[6] = { &mzx_speed, &music, &sfx, NULL,
+   &music_volume, &sound_volume };
+
+  dialog stdi =
+  {
+    25, 4, 54, 20, "Game settings", 8,
+    stdi_types, stdi_xs, stdi_ys,
+    stdi_strs, stdi_p1s, stdi_p2s, stdi_storage, 0
+  };
+
+  set_context(92);
+  mzx_speed = mzx_world->mzx_speed;
+  music = get_music_on_state() ^ 1;
+  sfx = get_sfx_on_state() ^ 1;
+  music_volume = get_music_volume();
+  sound_volume = get_sound_volume();
+
+  if(run_dialog(mzx_world, &stdi, 1, 0, 0))
   {
     pop_context();
     return;
   }
-  pop_context();
-  if(sound_gvol != sgvol)
-  {
-    sound_gvol = sgvol;
-  }
 
-  if(music_gvol != mgvol)
+  pop_context();
+  set_sound_volume(sound_volume);
+
+  if(music_volume != get_music_volume())
   {
-    music_gvol = mgvol;
+    set_music_volume(music_volume);
     volume_mod(src_board->volume);
   }
 
-  // Check- turn off sound?
-  if(sfx == sfx_on)
+  sfx ^= 1;
+  music ^= 1;
+
+  set_sfx_on(sfx);
+
+  if(!music)
   {
-    sfx_on = sfx ^ 1;
+    // Turn off music.
+    if(get_music_on_state())
+      end_mod();
   }
   else
-  sfx_on = sfx ^ 1;
 
-  // Check- turn music on/off?
-  if(music == music_on)
+  if(!get_music_on_state())
   {
-    if(music_on == 1)
-    {
-      // Turn off music.
-      music_on = 0;
-      end_mod();
-    }
-    else
-    {
-      music_on = 1;
-      // Turn on music.
-      strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-      load_mod(mzx_world->real_mod_playing);
-    }
+    // Turn on music.
+    strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+    load_mod(mzx_world->real_mod_playing);
   }
-  overall_speed = spd_tmp;
+
+  set_music_on(music);
+  mzx_world->mzx_speed = mzx_speed;
 }
 
 // Number of cycles to make player idle before repeating a directional move
@@ -1308,7 +1317,7 @@ void play_game(World *mzx_world, int fadein)
           if(!dead)
           {
             // Can we?
-            if((cheats_active <= 1) && (src_board->save_mode != CANT_SAVE) &&
+            if((src_board->save_mode != CANT_SAVE) &&
              ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
              (src_board->level_under_id[mzx_world->player_x +
              (src_board->board_width * mzx_world->player_y)] == 122)))
@@ -1358,45 +1367,43 @@ void play_game(World *mzx_world, int fadein)
         case SDLK_F4:
         {
           // Restore
-          if(cheats_active <= 1)
+          char save_file_name[64];
+          int fade_status = get_fade_status();
+          m_show();
+
+          if(fade_status)
           {
-            char save_file_name[64];
-            int fade_status = get_fade_status();
-            m_show();
-
-            if(fade_status)
-            {
-              clear_screen(32, 7);
-              insta_fadein();
-            }
-
-            if(!choose_file(save_ext, save_file_name,
-             "Choose game to restore", 1))
-            {
-              // Load game
-              fadein = 0;
-              if(reload_savegame(mzx_world, save_file_name, &fadein))
-              {
-                vquick_fadeout();
-                return;
-              }
-
-              // Reset this
-              src_board = mzx_world->current_board;
-              // Swap in starting board
-              load_mod(src_board->mod_playing);
-              strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-
-              find_player(mzx_world);
-
-              strcpy(curr_sav, save_file_name);
-              send_robot_def(mzx_world, 0, 10);
-              dead = 0;
-              fadein ^= 1;
-            }
-            if(fade_status)
-              insta_fadeout();
+            clear_screen(32, 7);
+            insta_fadein();
           }
+
+          if(!choose_file(save_ext, save_file_name,
+           "Choose game to restore", 1))
+          {
+            // Load game
+            fadein = 0;
+            if(reload_savegame(mzx_world, save_file_name, &fadein))
+            {
+              vquick_fadeout();
+              return;
+            }
+
+            // Reset this
+            src_board = mzx_world->current_board;
+            // Swap in starting board
+            load_mod(src_board->mod_playing);
+            strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+
+            find_player(mzx_world);
+
+            strcpy(curr_sav, save_file_name);
+            send_robot_def(mzx_world, 0, 10);
+            dead = 0;
+            fadein ^= 1;
+          }
+          if(fade_status)
+            insta_fadeout();
+
           update_event_status();
           break;
         }
@@ -1499,7 +1506,7 @@ void play_game(World *mzx_world, int fadein)
           if(!dead)
           {
             // Can we?
-            if((cheats_active <= 1) && (src_board->save_mode != CANT_SAVE) &&
+            if((src_board->save_mode != CANT_SAVE) &&
              ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
              (src_board->level_under_id[mzx_world->player_x +
              (src_board->board_width * mzx_world->player_y)] == 122)))
@@ -1527,7 +1534,7 @@ void play_game(World *mzx_world, int fadein)
               vquick_fadeout();
               return;
             }
-  
+
             // Reset this
             src_board = mzx_world->current_board;
 
@@ -1536,7 +1543,7 @@ void play_game(World *mzx_world, int fadein)
             // Swap in starting board
             load_mod(src_board->mod_playing);
             strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-  
+
             send_robot_def(mzx_world, 0, 10);
             dead = 0;
             fadein ^= 1;
@@ -2674,7 +2681,6 @@ int update(World *mzx_world, int game, int *fadein)
   // The following is during gameplay ONLY
   if((game) && (!dead))
   {
-
     // Shoot
     if(get_key_status(keycode_SDL, SDLK_SPACE))
     {
@@ -2850,7 +2856,7 @@ int update(World *mzx_world, int game, int *fadein)
     int entrance = 1;
     int d_offset = mzx_world->player_x + (mzx_world->player_y * board_width);
 
-    was_zapped = 0;
+    mzx_world->was_zapped = 0;
     if(flags[(int)level_under_id[d_offset]] & A_ENTRANCE)
       entrance = 0;
 
@@ -2864,7 +2870,7 @@ int update(World *mzx_world, int game, int *fadein)
     // Pushed onto an entrance?
 
     if((entrance) && (flags[(int)level_under_id[d_offset]] & A_ENTRANCE)
-     && (!was_zapped))
+     && (!mzx_world->was_zapped))
     {
       int d_board = src_board->level_under_param[d_offset];
       clear_sfx_queue(); // Since there is often a push sound
@@ -2883,7 +2889,7 @@ int update(World *mzx_world, int game, int *fadein)
       }
     }
 
-    was_zapped = 0;
+    mzx_world->was_zapped = 0;
   }
 
   // Death and game over
@@ -2944,9 +2950,16 @@ int update(World *mzx_world, int game, int *fadein)
     if(death_board != DEATH_SAME_POS)
     {
       if(death_board == NO_DEATH_BOARD)
-      {        
+      {
         int player_restart_x = mzx_world->player_restart_x;
         int player_restart_y = mzx_world->player_restart_y;
+
+        if(player_restart_x >= board_width)
+          player_restart_x = board_width - 1;
+
+        if(player_restart_y >= board_height)
+          player_restart_y = board_height - 1;
+
         // Return to entry x/y
         id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
         id_place(mzx_world, player_restart_x, player_restart_y, 127, 0, 0);
@@ -3101,10 +3114,11 @@ int update(World *mzx_world, int game, int *fadein)
   update_screen();
 
   //Retrace/speed wait
-  if(overall_speed > 1)
+  if(mzx_world->mzx_speed > 1)
   {
     // Number of ms the update cycle took
-    total_ticks = (16 * (overall_speed - 1)) - (get_ticks() - start_ticks);
+    total_ticks = (16 * (mzx_world->mzx_speed - 1))
+     - (get_ticks() - start_ticks);
     if(total_ticks < 0)
       total_ticks = 0;
     // Delay for 16 * (speed - 1) since the beginning of the update
@@ -3163,7 +3177,6 @@ int update(World *mzx_world, int game, int *fadein)
     if(strcasecmp(mzx_world->real_mod_playing, src_board->mod_playing) &&
      strcmp(src_board->mod_playing, "*"))
       update_music = 1;
-
 
     level_id = src_board->level_id;
     level_param = src_board->level_param;

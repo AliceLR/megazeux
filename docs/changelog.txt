@@ -1,3 +1,59 @@
++ Fixed crash on alt + x in robot editor.
++ Fixed missing line on alt + h in robot editor.
++ Introduced incorrect enter action in robot editor (didn't reset to beginning
+  of the line), fixed.
++ Fixed garbage appearing when moving from a larger to smaller board and being
+  outside of that board's scroll region.
++ Fixed bug that could cause glitches/crashing when resizing the board
++ Fixed error with global next option not retaining the three checkmark
+  options correctly.
++ Added work around so that move block moves the player (won't move it on
+  inter-board moves)
++ Fixed bad palette loading for Linux introduced in 2.80e or f or something
++ Made it so block highlighting doesn't highlight the debug window.
++ Made the debug window move if necessary when home/end is pressed.
++ Added autorepeat buffering so previous keys can be resumed.
++ Fixed bug with swap world possibly not working (crashing??) off Windows
++ Fixed more problems with garbage/crashes when resizing with the cursor
+  in a position causing the scroll to go off the edge
++ Fixed incorrect text cursor offset with force_height_multiplier on.
++ Redid way directories are loaded internally so you can load dirs with over
+  4096 entries now. Might be faster (unsure)
++ Chest contents list menu looked funny, fixed.
++ Changed default.spl to smzx.pal so you can load it more sanely.
++ Export block wasn't getting the last selected line. Fixed.
++ Hacked scroll editor so it wouldn't crash when removing lines. Scroll code
+  either needs to be 100% overhauled or replaced by robots somehow...
++ Fixed config files not being closed.
++ Added include file option for config files. Use it like this:
+  include configfile  e.g. include subconfig.cnf will load subconfig.cnf's
+  options
++ Fixed freadN not terminating strings.
++ Fixed graphical glitch when using the mouse in the char selector.
++ Fixed save games crashing when they can't load fopened files.
++ Fixed some other problems with save games and fopened files...
++ Accidentally had title screen running a bit slow...
++ Value strings starting with ( not parsed as an expression if they
+  don't end with the )
++ Fixed problem with key_code being triggered for keys that aren't
+  in-game
++ Removed the unimplemented if player dir and if not player dir
+  commands from RASM
++ Added extended macros. This allows for parameter based macros to
+  be entered in the robot editor via a window or by command. See
+  macro.txt for more information.
++ Fixed player cloning after flip/mirror and player placing.
++ Added random seeding that was mysteriously missing...
++ Finally added drive changing for Windows builds.
++ Fixed mousex/mousey for resolutions other than 640x350 (only applies to
+  fullscreen)
++ Fixed crash on weird invalid death/endgame boards...
++ % and & messages clip correctly now.
++ Fixed potential crash on double closing the files.
++ Fixed crash bugs with placing sensors and maybe scrolls.
++ Fixed sending sensors when you have robots of the same name (fixes
+  Weirdness chapter 1)
+
 December 26, 2004 - MZX 2.80f
 
 + Fixed a bug that could cause crashes when auto-quoting params in the robot
@@ -76,7 +132,7 @@ December 19, 2004 - MZX 2.80e
 + Added save/load position to the editor. Works for loads inbetween boards as
   well. Press ctrl + num to save to slots 0 through 9 and alt + num to load from
   that slot. Please press shift + 8 or the numpad * key instead of alt + 8 to
-  set mod wildcard. 
+  set mod wildcard.
 + MZX now ignores the mouse scroll wheel instead of interpreting it as a click.
 + Fixed a further bug that could cause playing samples to crash.
 + Added config file option to revert the robot editor to the default palette

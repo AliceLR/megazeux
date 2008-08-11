@@ -97,6 +97,8 @@ void set_string(World *mzx_world, char *name, char *value, int id);
 void inc_string(World *mzx_world, char *name, char *value, int id);
 // Decreases the end of a string by N characters
 void dec_string_int(World *mzx_world, char *name, int value, int id);
+void load_string_board_direct(World *mzx_world,
+ char *buffer, int w, int h, char l, char *src, int width, int id);
 void load_string_board(World *mzx_world, char *expression,
  int w, int h, char l, char *src, int width, int id);
 int set_counter_special(World *mzx_world, int spec_type,

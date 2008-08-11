@@ -14,8 +14,8 @@ SDL: http://www.libsdl.org/
 
 libmodplug: http://prdownloads.sourceforge.net/modplug-xmms/
 
-gdm2s3m: http://mzx.bitpack.net/gdm2s3m-1.5-lite.tar.bz2
-(should also show up on other sites soon)
+gdm2s3m: http://mzx.bitpack.net/gdm2s3m/
+(might also show up on other sites one day)
 
 NOTE: As of this writing, libmodplug (version 0.7) has a bug that
 doesn't allow it to correctly load 2-channel FT2 saved mods. There

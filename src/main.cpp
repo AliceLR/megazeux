@@ -60,8 +60,8 @@ int main(int argc, char **argv)
   int i;
   World mzx_world;
 
-#ifdef __WIN32__
-  //freopen("CON", "wb", stdout);
+#if defined(__WIN32__) && defined(DEBUG)
+  freopen("CON", "wb", stdout);
 #endif
 
   memset(&mzx_world, 0, sizeof(World));
@@ -69,9 +69,17 @@ int main(int argc, char **argv)
   set_config_from_file(&(mzx_world.conf), CONFIG_TXT);
   set_config_from_command_line(&(mzx_world.conf), argc, argv);
 
+  counter_fsg();
+
+#ifdef DEBUG
+  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK |
+   SDL_INIT_NOPARACHUTE);
+#else
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
+#endif
+
   SDL_EnableUNICODE(1);
-  
+
   initialize_joysticks();
 
   warp_mouse(39, 12);
@@ -98,11 +106,11 @@ int main(int argc, char **argv)
 
   strcpy(curr_file, mzx_world.conf.startup_file);
   strcpy(curr_sav, mzx_world.conf.default_save_name);
-  music_on = mzx_world.conf.music_on;
-  music_gvol = mzx_world.conf.music_volume;
-  sound_gvol = mzx_world.conf.sam_volume;
-  sfx_on = mzx_world.conf.pc_speaker_on;
-  overall_speed = mzx_world.conf.mzx_speed;
+  set_music_volume(mzx_world.conf.music_volume);
+  set_sound_volume(mzx_world.conf.sam_volume);
+  set_music_on(mzx_world.conf.music_on);
+  set_sfx_on(mzx_world.conf.pc_speaker_on);
+  mzx_world.mzx_speed = mzx_world.conf.mzx_speed;
 
   memcpy(macros, mzx_world.conf.default_macros, 5 * 64);
 
@@ -111,6 +119,10 @@ int main(int argc, char **argv)
   init_audio(&(mzx_world.conf));
   cursor_off();
   default_scroll_values(&mzx_world);
+
+  // Random seed..
+
+  srand(time(NULL));
 
   // Run main game (mouse is hidden and palette is faded)
   title_screen(&mzx_world);

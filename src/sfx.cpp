@@ -67,7 +67,7 @@ void play_str(char *str, int sfx_play)
   // Note trans. table from 1-7 (a-z) to 1-12
   char nn[7] = { 10, 12, 1, 3, 5, 6, 8 };
 
-  if(!sfx_on)
+  if(!get_sfx_on_state())
   {
     sfx_play = 1; // SFX off
   }
@@ -232,7 +232,7 @@ void play_str(char *str, int sfx_play)
 
     if(chr == '_')
     {
-      if(music_on)
+      if(get_music_on_state())
         break;
 
       digi_st = -1;
@@ -269,6 +269,8 @@ void submit_sound(int freq, int delay)
 
 void sound_system(void)
 {
+  int sfx_on = get_sfx_on_state();
+
   if(sound_in_queue)
   {
     // Current sound finished, more?

@@ -31,6 +31,8 @@
 
 #define UPDATE_DELAY 5
 
+#define KEY_REPEAT_STACK_SIZE 32
+
 typedef struct
 {
   Uint8 SDL_keymap[512];
@@ -40,6 +42,9 @@ typedef struct
   SDLKey last_SDL_release;
   Uint16 last_unicode;
   Uint16 last_unicode_repeat;
+  SDLKey last_SDL_repeat_stack[KEY_REPEAT_STACK_SIZE];
+  Uint16 last_unicode_repeat_stack[KEY_REPEAT_STACK_SIZE];
+  Uint32 repeat_stack_pointer;
   Uint32 last_keypress_time;
   Uint32 mouse_x;
   Uint32 mouse_y;

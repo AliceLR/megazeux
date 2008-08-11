@@ -22,8 +22,7 @@
 #define CONFIG_H
 
 #include "SDL.h"
-
-typedef struct _config_info config_info;
+#include "macro.h"
 
 struct _config_info
 {
@@ -61,10 +60,14 @@ struct _config_info
   int backup_count;
   int backup_interval;
   char backup_name[256];
+
+  int num_extended_macros;
+  int num_macros_allocated;
+  ext_macro **extended_macros;
 };
 
 typedef void (* config_function)(config_info *conf,
- char *name, char *value);
+ char *name, char *value, char *extended_data);
 
 typedef struct
 {

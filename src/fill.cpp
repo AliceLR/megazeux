@@ -185,7 +185,6 @@ void fill_area(World *mzx_world, int id, int color, int param,
     color_check = src_board->overlay_color;
 
     // 1) Initialize fill stack and record what we are filling over.
-    fill_over_id = id_check[offset];
     fill_over_color = color_check[offset];
     fill_over_param = param_check[offset];
 

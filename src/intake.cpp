@@ -491,6 +491,7 @@ int intake(char *string, int max_len, char x, char y,
       case SDLK_v:
       case SDLK_p:
       case SDLK_h:
+      case SDLK_m:
       {
         if(get_alt_status(keycode_SDL) && robo_intk)
         {

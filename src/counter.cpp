@@ -38,7 +38,7 @@
 #include "audio.h"
 #include "rasm.h"
 #include "fsafeopen.h"
-#include "counter_first_letter.h"
+//#include "counter_first_letter.h"
 
 typedef int (* builtin_read_function)(World *mzx_world,
  Function_counter *counter, char *name, int id);
@@ -193,7 +193,7 @@ int thisx_read(World *mzx_world, Function_counter *counter,
   if(mzx_world->mid_prefix == 2)
     return (mzx_world->current_board->robot_list[id])->xpos -
      mzx_world->player_x;
-  
+
   return (mzx_world->current_board->robot_list[id])->xpos;
 }
 
@@ -203,7 +203,7 @@ int thisy_read(World *mzx_world, Function_counter *counter,
   if(mzx_world->mid_prefix == 2)
     return (mzx_world->current_board->robot_list[id])->ypos -
      mzx_world->player_y;
-  
+
   return (mzx_world->current_board->robot_list[id])->ypos;
 }
 
@@ -315,9 +315,9 @@ int board_char_read(World *mzx_world, Function_counter *counter,
    (get_counter(mzx_world, "board_y", id) * src_board->board_width);
   int board_size = src_board->board_width * src_board->board_height;
 
-  if((offset >- 0) && (offset < board_size))
+  if((offset >= 0) && (offset < board_size))
     return get_id_char(src_board, offset);
-  
+
   return -1;
 }
 
@@ -329,7 +329,7 @@ int board_color_read(World *mzx_world, Function_counter *counter,
    (get_counter(mzx_world, "board_y", id) * src_board->board_width);
   int board_size = src_board->board_width * src_board->board_height;
 
-  if((offset >- 0) && (offset < board_size))
+  if((offset >= 0) && (offset < board_size))
     return get_id_color(src_board, offset);
 
   return -1;
@@ -355,7 +355,7 @@ int board_id_read(World *mzx_world, Function_counter *counter,
    (get_counter(mzx_world, "board_y", id) * src_board->board_width);
   int board_size = src_board->board_width * src_board->board_height;
 
-  if((offset > 0) && (offset < board_size))
+  if((offset >= 0) && (offset < board_size))
     return src_board->level_id[offset];
 
   return -1;
@@ -457,13 +457,13 @@ int overlay_mode_read(World *mzx_world, Function_counter *counter,
 int mzx_speed_read(World *mzx_world, Function_counter *counter,
  char *name, int id)
 {
-  return overall_speed;
+  return mzx_world->mzx_speed;
 }
 
 void mzx_speed_write(World *mzx_world, Function_counter *counter,
  char *name, int value, int id)
 {
-  overall_speed = value;
+  mzx_world->mzx_speed = value;
 }
 
 int overlay_char_read(World *mzx_world, Function_counter *counter,
@@ -476,7 +476,7 @@ int overlay_char_read(World *mzx_world, Function_counter *counter,
 
   if((offset >= 0) && (offset < board_size))
     return src_board->overlay[offset];
-  
+
   return -1;
 }
 
@@ -490,7 +490,7 @@ int overlay_color_read(World *mzx_world, Function_counter *counter,
 
   if((offset >= 0) && (offset < board_size))
     return src_board->overlay_color[offset];
-  
+
   return -1;
 }
 
@@ -724,7 +724,7 @@ void spr_refx_write(World *mzx_world, Function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
-  
+
   if(value < 0)
     value = 0;
 
@@ -1722,6 +1722,8 @@ Function_counter builtin_counters[] =
   { "vlayer_width", 0, vlayer_width_read, vlayer_width_write },
 };
 
+int counter_first_letter[512];
+
 int set_counter_special(World *mzx_world, int spec_type,
  char *char_value, int value, int id)
 {
@@ -1740,6 +1742,8 @@ int set_counter_special(World *mzx_world, int spec_type,
       {
         if(mzx_world->input_file)
           fclose(mzx_world->input_file);
+
+        mzx_world->input_file = NULL;
       }
 
       strcpy(mzx_world->input_file_name, char_value);
@@ -1759,6 +1763,8 @@ int set_counter_special(World *mzx_world, int spec_type,
       {
         if(mzx_world->output_file)
           fclose(mzx_world->output_file);
+
+        mzx_world->output_file = NULL;
       }
 
       strcpy(mzx_world->output_file_name, char_value);
@@ -1780,6 +1786,8 @@ int set_counter_special(World *mzx_world, int spec_type,
       {
         if(mzx_world->output_file)
           fclose(mzx_world->output_file);
+
+        mzx_world->output_file = NULL;
       }
 
       strcpy(mzx_world->output_file_name, char_value);
@@ -1801,6 +1809,8 @@ int set_counter_special(World *mzx_world, int spec_type,
       {
         if(mzx_world->output_file)
           fclose(mzx_world->output_file);
+
+        mzx_world->output_file = NULL;
       }
 
       strcpy(mzx_world->output_file_name, char_value);
@@ -1809,7 +1819,7 @@ int set_counter_special(World *mzx_world, int spec_type,
 
     case FOPEN_SMZX_PALETTE:
     {
-      load_palette(char_value);
+      load_palette(char_value, 0);
       pal_update = 1;
       return 0;
     }
@@ -1834,12 +1844,11 @@ int set_counter_special(World *mzx_world, int spec_type,
 
       if(!fsafetranslate(char_value, translated_name))
       {
-        printf("loading %s\n", translated_name);
         reload_savegame(mzx_world, translated_name, &faded);
-  
+
         if(faded)
           insta_fadeout();
-  
+
         mzx_world->swapped = 1;
       }
       return 0;
@@ -1862,7 +1871,7 @@ int set_counter_special(World *mzx_world, int spec_type,
         if(robot_id <= src_board->num_robots)
         {
           cur_robot = mzx_world->current_board->robot_list[robot_id];
-      
+
           if(cur_robot != NULL)
           {
             reallocate_robot(cur_robot, new_size);
@@ -1900,7 +1909,7 @@ int set_counter_special(World *mzx_world, int spec_type,
         if(robot_id <= src_board->num_robots)
         {
           cur_robot = mzx_world->current_board->robot_list[robot_id];
-      
+
           if(cur_robot != NULL)
           {
             fseek(bc_file, 0, SEEK_END);
@@ -1944,7 +1953,7 @@ int set_counter_special(World *mzx_world, int spec_type,
       if(robot_id <= src_board->num_robots)
       {
         cur_robot = mzx_world->current_board->robot_list[robot_id];
-      
+
         if(cur_robot != NULL)
         {
           disassemble_file(char_value, cur_robot->program,
@@ -1971,7 +1980,7 @@ int set_counter_special(World *mzx_world, int spec_type,
         if(robot_id <= src_board->num_robots)
         {
           cur_robot = mzx_world->current_board->robot_list[robot_id];
-        
+
           if(cur_robot != NULL)
           {
             fwrite(cur_robot->program, cur_robot->program_length, 1, bc_file);
@@ -2027,7 +2036,7 @@ int health_gateway(World *mzx_world, Counter *counter, char *name,
           player_x = player_restart_x;
           player_y = player_restart_y;
           id_place(mzx_world, player_x, player_y, 127, 0, 0);
-          was_zapped = 1;
+          mzx_world->was_zapped = 1;
           mzx_world->player_x = player_x;
           mzx_world->player_y = player_y;
         }
@@ -2261,11 +2270,11 @@ Function_counter *find_function_counter(char *name)
     {
       middle = (top + bottom) / 2;
       cmpval = match_function_counter(name + 1, (base[middle]).counter_name + 1);
-  
+
       if(cmpval > 0)
         bottom = middle + 1;
       else
-  
+
       if(cmpval < 0)
         top = middle - 1;
       else
@@ -2541,7 +2550,12 @@ char *set_function_string(World *mzx_world, char *name, int id, char *buffer)
     if(name[5])
     {
       int read_count = strtol(name + 5, NULL, 10);
+
+      if(read_count > 63)
+        read_count = 63;
+
       fread(buffer, read_count, 1, input_file);
+      buffer[read_count] = 0;
     }
     else
     {
@@ -2589,10 +2603,17 @@ char *set_function_string(World *mzx_world, char *name, int id, char *buffer)
     return buffer;
   }
 
-  // Because I'm tired of telling people :P
+  // Okay, I implemented this stupid thing, you can all die.
   if(!strcasecmp(name, "board_scan"))
   {
-    strcpy(buffer, "Please use copy block instead of board_scan. :o");
+    int board_width = src_board->board_width;
+
+    load_string_board_direct(mzx_world, buffer, 63, 1, '*',
+     src_board->level_param +
+     get_counter(mzx_world, "board_x", id) +
+     (get_counter(mzx_world, "board_y", id) * board_width),
+     board_width, id);
+
     return buffer;
   }
 
@@ -2847,11 +2868,19 @@ void mod_counter(World *mzx_world, char *name, int value, int id)
 void load_string_board(World *mzx_world, char *expression,
  int w, int h, char l, char *src, int width, int id)
 {
+  char t_buf[64];
+  load_string_board_direct(mzx_world, t_buf, w, h, l,
+   src, width, id);
+  set_string(mzx_world, expression, t_buf, id);
+}
+
+void load_string_board_direct(World *mzx_world,
+ char *buffer, int w, int h, char l, char *src, int width, int id)
+{
   int i;
   int wl = w;
-  char t_buf[64];
-  t_buf[63] = '\0';
-  char *t_pos = t_buf;
+  buffer[63] = '\0';
+  char *t_pos = buffer;
 
   if((w * h) > 63)
   {
@@ -2880,14 +2909,13 @@ void load_string_board(World *mzx_world, char *expression,
   {
     for(i = 0; i < ((w * h) + wl); i++)
     {
-      if(t_buf[i] == l)
+      if(buffer[i] == l)
       {
-        t_buf[i] = '\0';
+        buffer[i] = '\0';
         break;
       }
     }
   }
-  set_string(mzx_world, expression, t_buf, id);
 }
 
 int translate_coordinates(char *src, unsigned int *x, unsigned int *y)

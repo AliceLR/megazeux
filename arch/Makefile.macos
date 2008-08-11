@@ -3,10 +3,10 @@
 #
 
 # location of strip (must be defined)
-STRIP     = true
+STRIP     = strip
 
 # standard linker includes
 INCLUDES  = -I${PREFIX}/include -I${PREFIX}/include/SDL
 
 # standard libraries
-LIBS      = -L$(PREFIX)/lib -lSDLmain -lSDL -lpthread -framework Cocoa
+LIBS      = -L${PREFIX}/lib -lSDLmain -lSDL -lpthread -framework Cocoa

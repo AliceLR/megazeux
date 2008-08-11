@@ -430,7 +430,6 @@ void update_screen()
     dest = (Uint32 *)(graphics.screen->pixels) +
      (graphics.screen->pitch * (((graphics.screen->h /
      graphics.height_multiplier) - 350) / 8)) + ((graphics.screen->w - 640) / 8);
-    old_dest = dest;
     line_advance *= graphics.height_multiplier;
     row_advance *= graphics.height_multiplier;
   }
@@ -440,6 +439,8 @@ void update_screen()
      (graphics.screen->pitch * ((graphics.screen->h - 350) / 8)) +
      ((graphics.screen->w - 640) / 8);
   }
+
+  old_dest = dest;
 
   if((ticks - graphics.cursor_timestamp) > CURSOR_BLINK_RATE)
   {
@@ -567,7 +568,7 @@ void update_screen()
         char_colors[12] = (cb_ff << 16) | cb_bb;
         char_colors[13] = (cb_ff << 16) | cb_bf;
         char_colors[14] = (cb_ff << 16) | cb_fb;
-        char_colors[15] = (cb_ff << 16) | cb_bf;      
+        char_colors[15] = (cb_ff << 16) | cb_bf;
 #else
         char_colors[0] = (cb_bb << 16) | cb_bb;
         char_colors[1] = (cb_bf << 16) | cb_bb;
@@ -701,10 +702,7 @@ void update_screen()
      graphics.text_video[(graphics.cursor_x * 2) +
      (graphics.cursor_y * 160)];
     Uint32 lines = 0;
-    Uint32 *cursor_offset =
-     (Uint32 *)(graphics.screen->pixels) +
-     (graphics.screen->pitch * ((graphics.screen->h - 350) / 8)) +
-     ((graphics.screen->w - 640) / 8);
+    Uint32 *cursor_offset = old_dest;
     Uint32 i;
     Uint32 cursor_solid = 0xFFFFFFFF;
     Uint32 *char_offset = (Uint32 *)(graphics.charset + (cursor_char * 14));
@@ -871,7 +869,12 @@ Sint32 ec_load_set(char *name)
 
 Sint32 ec_load_set_secondary(char *name, Uint8 *dest)
 {
-  // AUDIT: fsafeopen()?
+  /**
+   * this function is used only by internally loaded files.
+   * theoretically, we trust these. there is no need to
+   * translate these names, but the packaged files become
+   * a case sensitive issue (i.e. default.pal not DEFAULT.PaL).
+   */
   FILE *fp = fopen(name, "rb");
 
   if(fp == NULL)
@@ -1027,10 +1030,24 @@ void update_palette()
   }
 }
 
-void load_palette(char *fname)
+void load_palette(char *fname, int priv)
 {
-  // AUDIT: fsafeopen()?
-  FILE *pal_file = fopen(fname, "rb");
+  FILE *pal_file;
+
+  /**
+   * private "internal" uses of this function can validly
+   * use fopen directly (we trust them). users from inside
+   * robotic cannot be trusted, however, and also require
+   * filename translation on non-win32 platforms.
+   */
+  if(priv)
+  {
+    pal_file = fopen(fname, "rb");
+  }
+  else
+  {
+    pal_file = fsafeopen(fname, "rb");
+  }
 
   if(pal_file)
   {
@@ -1153,7 +1170,7 @@ void set_screen_mode(Uint32 mode)
     if(!graphics.default_smzx_loaded)
     {
       set_palette_intensity(100);
-      load_palette(DEFAULT_SPL);
+      load_palette(SMZX_PAL, 1);
       graphics.default_smzx_loaded = 1;
     }
     update_palette();
@@ -1505,5 +1522,20 @@ void dump_screen()
       break;
   }
   SDL_SaveBMP(graphics.screen, name);
+}
+
+int get_resolution_w()
+{
+  return graphics.screen->w;
+}
+
+int get_resolution_h()
+{
+  return graphics.screen->h;
+}
+
+int get_height_multiplier()
+{
+  return graphics.height_multiplier;
 }
 

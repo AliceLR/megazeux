@@ -26,7 +26,7 @@
 #include "world.h"
 
 int parse_expression(World *mzx_world, char **expression,
- int &error, int id);
+ int *error, int id);
 int parse_argument(World *mzx_world, char **argument, int &type,
  int id);
 void skip_whitespace(char **expression);

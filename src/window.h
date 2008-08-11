@@ -37,7 +37,7 @@ int save_screen();
 int restore_screen();
 int draw_window_box(int x1, int y1, int x2, int y2, int color,
  int dark_color, int corner_color, int shadow, int fill_center);
-int list_menu(char *choices, int choice_size, char *title,
+int list_menu(char **choices, int choice_size, char *title,
   int current, int num_choices, int xpos);
 int char_selection(int current);
 int color_selection(int current, int allow_wild);
@@ -129,8 +129,8 @@ typedef struct dialog dialog;
 //           allowed) Behavior undefined if param 1 >= param 2.
 //DE_LIST- Param 1 is the number of list choices, param 2 is the length in
 //         memory of each choice (IE 25 is 24 chars plus a null, with junk
-//         padding for those < 24 chars) String points to the sequential
-//         list. The first element is the question to place ABOVE the list.
+//         padding for those < 24 chars) String points to the an array of
+//         strings for each list choice. The first element is the list question.
 //         Storage- int* for a numerical answer. The x/y location is
 //         the location of the QUESTION. The list answer is one below.
 //         The list/elements are drawn w/color_string.
@@ -169,8 +169,8 @@ typedef struct dialog dialog;
 // If sfx_alt_t is 1, ALT+T will PLAY_SFX any DE_INPUT.
 // If sfx_alt_t is >1, END jumps to location 0, and HOME to location
 // SFX_ALT_T.
-int run_dialog(World *mzx_world, dialog *di, char reset_curr = 1,
- char sfx_alt_t = 0);
+int run_dialog(World *mzx_world, dialog *di, int reset_curr,
+ int sfx_alt_t, int space_label);
 
 // Characters for dialog box elements
 extern char check_on[4];

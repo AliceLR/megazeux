@@ -18,7 +18,6 @@
 # an explanation. If an option is not chosen at all
 # this default will automatically be used.
 
-
 ### Video options ###
 
 # Resolution MZX uses for fullscreen. Note that MZX will always
@@ -140,14 +139,42 @@
 
 #default_invalid_status = ignore
 
-# Default macros that can be used in the robot editor with
-# F6 through F10.
+# Single line macros
+# These are the traditional MZX macros; they may only
+# occupy one line in their definition in this file. They
+# correspond to parameter-less macros: when you press
+# F6 through F10 the following strings are printed to
+# the editor, verbatim. For instance if you set macro_1 to
+# * "hello", * "hello" will be inserted every time you
+# press F6 in the robot editor.
+# The following are the default singe-line macros.
 
-#macro_one = char\s
-#macro_two = color\s
-#macro_three = goto\s
-#macro_four = send\s
-#macro_five = :\splayershot^
+#macro_1 = char\s
+#macro_2 = color\s
+#macro_3 = goto\s
+#macro_4 = send\s
+#macro_5 = :\splayershot^
+
+# Extended macros:
+# See macro.txt.
+
+# The following is an example extended macro.
+# It sets up a sprite. If you find it useful, remove the #'s.
+
+#macro_1 = Sprite\sSetup
+# (number255 spr_num)
+# (number255 w, h, rx, ry)
+# (number255 cx, cy, cw, ch)
+# (number255 x, y)
+# set spr!spr_num!_width !w!
+# set spr!spr_num!_height !h!
+# set spr!spr_num!_refx !rx!
+# set spr!spr_num!_refy !ry!
+# set spr!spr_num!_cwidth !cw!
+# set spr!spr_num!_cheight !ch!
+# set spr!spr_num!_cx !cx!
+# set spr!spr_num!_cy !cy!
+# put !x1! sprite p!#spr_num! !x! !y!
 
 # Whether or not the palette should be reverted to default
 # when the robot editor is load. If set, SMZX mode 0 will
@@ -224,3 +251,5 @@
 # problems with it don't enable it.
 
 #pause_on_unfocus = 0
+
+include Cmacro.cnf

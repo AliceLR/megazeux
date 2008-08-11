@@ -84,8 +84,6 @@ int cm60[]  = { CMD_ATTACK };
 int cm61[]  = { CMD_PLAYER, IGNORE_TO, DIR };
 int cm62[]  = { CMD_PLAYER, IGNORE_TO, DIR, IGNORE_ELSE, STRING };
 int cm63[]  = { CMD_PLAYER, IGNORE_AT, IMM_S16 | STRING, IMM_S16 | STRING };
-int cm64[]  = { CMD_PLAYER, DIR, STRING };
-int cm65[]  = { CMD_PLAYER, CMD_NOT, DIR, STRING };
 int cm66[]  = { CMD_PLAYER, IGNORE_AT, IMM_S16 | STRING, IMM_S16 | STRING, STRING };
 int cm67[]  = { CMD_PLAYER, DIR };
 int cm68[]  = { DIR, IGNORE_ELSE, STRING };
@@ -350,8 +348,8 @@ mzx_command command_list[] =
   { "move",           2, cm61 },
   { "move",           3, cm62 },
   { "put",            3, cm63 },
-  { "if",             3, cm64 },
-  { "if",             4, cm65 },
+  { "__unused",       0, NULL },
+  { "__unused",       0, NULL },
   { "if",             4, cm66 },
   { "put",            2, cm67 },
   { "try",            2, cm68 },
@@ -843,7 +841,7 @@ int parse_argument(char *cmd_line, char **next, int *arg_translated, int *error,
         *next = cmd_line + 1;
       else
         *next = cmd_line;
-  
+
       *arg_short = S_STRING;
       return STRING;
     }
@@ -863,7 +861,7 @@ int parse_argument(char *cmd_line, char **next, int *arg_translated, int *error,
       // If the first character is a negative sign or a numerical constant,
       // it's an immediate number. I can't figure out the difference between
       // IMM_U16 and IMM_S16 to Robotic so I'm giving IMM_U16 for now.
-  
+
       *arg_translated = strtol(cmd_line, next, 10);
       *arg_short = IMM_U16;
       return IMM_U16;
@@ -923,7 +921,7 @@ int parse_argument(char *cmd_line, char **next, int *arg_translated, int *error,
 
   // Otherwise, it's a word matched parameter
 
-  space_position = cmd_line;  
+  space_position = cmd_line;
 
   do
   {
@@ -1141,7 +1139,7 @@ int match_command(mzx_command *cmd, char *error_buffer)
             }
           }
           else
-  
+
           if(current_command->param_types[i2] & CMD)
           {
             if(cmd->param_types[i3] != current_command->param_types[i2])
@@ -1151,12 +1149,12 @@ int match_command(mzx_command *cmd, char *error_buffer)
                 print_error(i3, error_buffer, cmd->param_types[i3],
                  current_command->param_types[i2]);
               }
-  
+
               break;
             }
           }
           else
-  
+
           if((cmd->param_types[i3] & current_command->param_types[i2]) !=
            cmd->param_types[i3])
           {
@@ -1169,7 +1167,7 @@ int match_command(mzx_command *cmd, char *error_buffer)
               break;
             }
           }
-  
+
           i3++;
         }
         else
@@ -1401,7 +1399,7 @@ int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
             ((char *)param_list[arg_count])[0] =
              current_arg_translation | dir_modifier_buffer;
             ((char *)param_list[arg_count])[1] = 0;
-          
+
             advance = 1;
             dir_modifier_buffer = 0;
           }
@@ -2139,9 +2137,9 @@ search_entry sorted_command_list[] =
   { "write",          1, { 247 } },
   { "zap",            1, { 54 } },
   { "|",              1, { 108 } },
-};                                
+};
 
-const int num_command_names = 
+const int num_command_names =
  sizeof(sorted_command_list) / sizeof(search_entry);
 
 search_entry *find_command(char *name)
@@ -2184,13 +2182,13 @@ search_entry_short sorted_argument_list[] =
   { "><",               5,   S_EQUALITY  },
   { ">=",               3,   S_EQUALITY  },
   { "a",                2,   S_EXTRA     },
-  { "aligned",          5,   S_CONDITION }, 
-  { "alignedew",        7,   S_CONDITION }, 
-  { "alignedns",        6,   S_CONDITION }, 
+  { "aligned",          5,   S_CONDITION },
+  { "alignedew",        7,   S_CONDITION },
+  { "alignedns",        6,   S_CONDITION },
   { "alignedrobot",     47,  S_CMD       },
   { "all",              11,  S_CMD       },
-  { "ammo",             35,  S_THING     }, 
-  { "ammos",            1,   S_ITEM      }, 
+  { "ammo",             35,  S_THING     },
+  { "ammos",            1,   S_ITEM      },
   { "an",               3,   S_EXTRA     },
   { "and",              4,   S_EXTRA     },
   { "any",              1,   S_CMD       },
@@ -2199,122 +2197,122 @@ search_entry_short sorted_argument_list[] =
   { "as",               5,   S_EXTRA     },
   { "at",               6,   S_EXTRA     },
   { "attack",           5,   S_CMD       },
-  { "bear",             94,  S_THING     }, 
-  { "bearcub",          95,  S_THING     }, 
+  { "bear",             94,  S_THING     },
+  { "bearcub",          95,  S_THING     },
   { "beneath",          11,  S_DIR       },
   { "block",            41,  S_CMD       },
-  { "blocked",          4,   S_CONDITION }, 
-  { "bomb",             36,  S_THING     }, 
-  { "boulder",          8,   S_THING     },  
-  { "box",              11,  S_THING     },  
-  { "breakaway",        6,   S_THING     },  
-  { "bullet",           61,  S_THING     }, 
+  { "blocked",          4,   S_CONDITION },
+  { "bomb",             36,  S_THING     },
+  { "boulder",          8,   S_THING     },
+  { "box",              11,  S_THING     },
+  { "breakaway",        6,   S_THING     },
+  { "bullet",           61,  S_THING     },
   { "bulletcolor",      35,  S_CMD       },
   { "bullete",          33,  S_CMD       },
-  { "bulletgun",        92,  S_THING     }, 
+  { "bulletgun",        92,  S_THING     },
   { "bulletn",          31,  S_CMD       },
   { "bullets",          32,  S_CMD       },
   { "bulletw",          34,  S_CMD       },
   { "by",               7,   S_EXTRA     },
-  { "carpet",           14,  S_THING     }, 
-  { "cave",             44,  S_THING     }, 
-  { "ccwrotate",        46,  S_THING     }, 
+  { "carpet",           14,  S_THING     },
+  { "cave",             44,  S_THING     },
+  { "ccwrotate",        46,  S_THING     },
   { "char",             10,  S_CMD       },
-  { "chest",            27,  S_THING     }, 
-  { "coin",             50,  S_THING     }, 
-  { "coins",            8,   S_ITEM      }, 
+  { "chest",            27,  S_THING     },
+  { "coin",             50,  S_THING     },
+  { "coins",            8,   S_ITEM      },
   { "color",            29,  S_CMD       },
   { "column",           28,  S_CMD       },
   { "counter",          66,  S_CMD       },
   { "counters",         18,  S_CMD       },
-  { "crate",            9,   S_THING     },  
-  { "customblock",      5,   S_THING     },  
-  { "custombox",        12,  S_THING     }, 
-  { "custombreak",      7,   S_THING     },  
-  { "customfloor",      17,  S_THING     }, 
-  { "customhurt",       76,  S_THING     }, 
-  { "custompush",       10,  S_THING     },  
+  { "crate",            9,   S_THING     },
+  { "customblock",      5,   S_THING     },
+  { "custombox",        12,  S_THING     },
+  { "custombreak",      7,   S_THING     },
+  { "customfloor",      17,  S_THING     },
+  { "customhurt",       76,  S_THING     },
+  { "custompush",       10,  S_THING     },
   { "cw",               17,  S_DIR       },
-  { "cwrotate",         45,  S_THING     }, 
-  { "delpressed",       15,  S_CONDITION }, 
+  { "cwrotate",         45,  S_THING     },
+  { "delpressed",       15,  S_CONDITION },
   { "dir",              65,  S_CMD       },
-  { "door",             41,  S_THING     }, 
+  { "door",             41,  S_THING     },
   { "down",             2,   S_DIR       },
-  { "downpressed",      13,  S_CONDITION }, 
-  { "dragon",           86,  S_THING     }, 
-  { "duplicate",        67,  S_CMD       }, 
+  { "downpressed",      13,  S_CONDITION },
+  { "dragon",           86,  S_THING     },
+  { "duplicate",        67,  S_CMD       },
   { "e",                3,   S_DIR       },
   { "east",             3,   S_DIR       },
   { "edge",             57,  S_CMD       },
   { "edit",             12,  S_CMD       },
   { "else",             8,   S_EXTRA     },
-  { "emovingwall",      53,  S_THING     }, 
-  { "energizer",        33,  S_THING     }, 
+  { "emovingwall",      53,  S_THING     },
+  { "energizer",        33,  S_THING     },
   { "ew",               4,   S_CMD       },
-  { "ewater",           23,  S_THING     }, 
-  { "explosion",        38,  S_THING     }, 
-  { "eye",              81,  S_THING     }, 
+  { "ewater",           23,  S_THING     },
+  { "explosion",        38,  S_THING     },
+  { "eye",              81,  S_THING     },
   { "fade",             38,  S_CMD       },
-  { "fake",             13,  S_THING     }, 
-  { "fire",             63,  S_THING     }, 
-  { "firewalking",      2,   S_CONDITION }, 
+  { "fake",             13,  S_THING     },
+  { "fire",             63,  S_THING     },
+  { "firewalking",      2,   S_CONDITION },
   { "first",            36,  S_CMD       },
-  { "fish",             87,  S_THING     }, 
-  { "floor",            15,  S_THING     }, 
+  { "fish",             87,  S_THING     },
+  { "floor",            15,  S_THING     },
   { "flow",             13,  S_DIR       },
   { "for",              9,   S_EXTRA     },
-  { "forest",           65,  S_THING     }, 
+  { "forest",           65,  S_THING     },
   { "from",             10,  S_EXTRA     },
-  { "gate",             47,  S_THING     }, 
-  { "gem",              28,  S_THING     }, 
+  { "gate",             47,  S_THING     },
+  { "gem",              28,  S_THING     },
   { "gems",             0,   S_ITEM      },
-  { "ghost",            85,  S_THING     }, 
+  { "ghost",            85,  S_THING     },
   { "go",               48,  S_CMD       },
-  { "goblin",           90,  S_THING     }, 
-  { "goop",             34,  S_THING     }, 
-  { "health",           30,  S_THING     }, 
-  { "healths",          4,   S_ITEM      }, 
-  { "hibombs",          7,   S_ITEM      }, 
+  { "goblin",           90,  S_THING     },
+  { "goop",             34,  S_THING     },
+  { "health",           30,  S_THING     },
+  { "healths",          4,   S_ITEM      },
+  { "hibombs",          7,   S_ITEM      },
   { "high",             61,  S_CMD       },
-  { "ice",              25,  S_THING     }, 
+  { "ice",              25,  S_THING     },
   { "id",               19,  S_CMD       },
   { "idle",             0,   S_DIR       },
-  { "image_file",       100, S_THING     }, 
+  { "image_file",       100, S_THING     },
   { "in",               40,  S_CMD       },
   { "input",            64,  S_CMD       },
   { "intensity",        43,  S_CMD       },
   { "into",             11,  S_EXTRA     },
-  { "inviswall",        71,  S_THING     }, 
+  { "inviswall",        71,  S_THING     },
   { "is",               12,  S_EXTRA     },
   { "item",             6,   S_CMD       },
-  { "key",              39,  S_THING     }, 
+  { "key",              39,  S_THING     },
   { "last",             37,  S_CMD       },
-  { "lastshot",         8,   S_CONDITION }, 
-  { "lasttouch",        9,   S_CONDITION }, 
-  { "lava",             26,  S_THING     }, 
+  { "lastshot",         8,   S_CONDITION },
+  { "lasttouch",        9,   S_CONDITION },
+  { "lava",             26,  S_THING     },
   { "lavawalker",       15,  S_CMD       },
-  { "lazer",            59,  S_THING     }, 
-  { "lazergun",         60,  S_THING     }, 
+  { "lazer",            59,  S_THING     },
+  { "lazergun",         60,  S_THING     },
   { "left",             4,   S_DIR       },
-  { "leftpressed",      11,  S_CONDITION }, 
-  { "life",             66,  S_THING     }, 
-  { "line",             4,   S_THING     },  
-  { "litbomb",          37,  S_THING     }, 
-  { "lives",            5,   S_ITEM      }, 
-  { "lobombs",          6,   S_ITEM      }, 
-  { "lock",             40,  S_THING     }, 
+  { "leftpressed",      11,  S_CONDITION },
+  { "life",             66,  S_THING     },
+  { "line",             4,   S_THING     },
+  { "litbomb",          37,  S_THING     },
+  { "lives",            5,   S_ITEM      },
+  { "lobombs",          6,   S_ITEM      },
+  { "lock",             40,  S_THING     },
   { "loop",             56,  S_CMD       },
-  { "magicgem",         29,  S_THING     }, 
+  { "magicgem",         29,  S_THING     },
   { "matches",          62,  S_CMD       },
   { "maxhealth",        25,  S_CMD       },
   { "mesg",             27,  S_CMD       },
-  { "mine",             74,  S_THING     }, 
-  { "missile",          62,  S_THING     }, 
-  { "missilegun",       97,  S_THING     }, 
+  { "mine",             74,  S_THING     },
+  { "missile",          62,  S_THING     },
+  { "missilegun",       97,  S_THING     },
   { "mod",              20,  S_CMD       },
   { "musicon",          16,  S_CONDITION },
   { "n",                1,   S_DIR       },
-  { "nmovingwall",      51,  S_THING     }, 
+  { "nmovingwall",      51,  S_THING     },
   { "no",               68,  S_CMD       },
   { "nodir",            14,  S_DIR       },
   { "none",             63,  S_CMD       },
@@ -2324,11 +2322,11 @@ search_entry_short sorted_argument_list[] =
   { "north",            1,   S_DIR       },
   { "not",              0,   S_CMD       },
   { "ns",               3,   S_CMD       },
-  { "nwater",           21,  S_THING     }, 
+  { "nwater",           21,  S_THING     },
   { "of",               13,  S_EXTRA     },
   { "on",               51,  S_CMD       },
-  { "opendoor",         42,  S_THING     }, 
-  { "opengate",         48,  S_THING     }, 
+  { "opendoor",         42,  S_THING     },
+  { "opengate",         48,  S_THING     },
   { "opp",              18,  S_DIR       },
   { "order",            21,  S_CMD       },
   { "out",              39,  S_CMD       },
@@ -2339,11 +2337,11 @@ search_entry_short sorted_argument_list[] =
   { "play",             59,  S_CMD       },
   { "player",           2,   S_CMD       },
   { "position",         26,  S_CMD       },
-  { "potion",           32,  S_THING     }, 
-  { "pouch",            55,  S_THING     }, 
+  { "potion",           32,  S_THING     },
+  { "pouch",            55,  S_THING     },
   { "pushable",         13,  S_CMD       },
   { "pushablerobot",    123, S_THING     },
-  { "pusher",           56,  S_THING     }, 
+  { "pusher",           56,  S_THING     },
   { "randany",          10,  S_DIR       },
   { "randb",            15,  S_DIR       },
   { "randew",           6,   S_DIR       },
@@ -2353,87 +2351,87 @@ search_entry_short sorted_argument_list[] =
   { "randns",           5,   S_DIR       },
   { "random",           8,   S_CMD       },
   { "randp",            16,  S_DIR       },
-  { "ricochet",         73,  S_THING     }, 
-  { "ricochetpanel",    72,  S_THING     }, 
+  { "ricochet",         73,  S_THING     },
+  { "ricochetpanel",    72,  S_THING     },
   { "right",            3,   S_DIR       },
-  { "rightpressed",     10,  S_CONDITION }, 
-  { "ring",             31,  S_THING     }, 
+  { "rightpressed",     10,  S_CONDITION },
+  { "ring",             31,  S_THING     },
   { "robot",            124, S_THING     },
   { "row",              17,  S_CMD       },
-  { "runner",           84,  S_THING     }, 
+  { "runner",           84,  S_THING     },
   { "s",                2,   S_DIR       },
   { "sam",              58,  S_CMD       },
   { "saving",           49,  S_CMD       },
-  { "score",            3,   S_ITEM      }, 
+  { "score",            3,   S_ITEM      },
   { "scroll",           126, S_THING     },
   { "seek",             9,   S_DIR       },
-  { "seeker",           79,  S_THING     }, 
+  { "seeker",           79,  S_THING     },
   { "self",             7,   S_CMD       },
-  { "sensor",           122, S_THING     }, 
+  { "sensor",           122, S_THING     },
   { "sensoronly",       50,  S_CMD       },
   { "set",              44,  S_CMD       },
   { "sfx",              42,  S_CMD       },
-  { "shark",            88,  S_THING     }, 
-  { "shootingfire",     78,  S_THING     }, 
+  { "shark",            88,  S_THING     },
+  { "shootingfire",     78,  S_THING     },
   { "sign",             125, S_THING     },
   { "size",             30,  S_CMD       },
-  { "sliderew",         58,  S_THING     }, 
-  { "sliderns",         57,  S_THING     }, 
-  { "slimeblob",        83,  S_THING     }, 
-  { "smovingwall",      52,  S_THING     }, 
-  { "snake",            80,  S_THING     }, 
-  { "solid",            2,   S_THING     }, 
+  { "sliderew",         58,  S_THING     },
+  { "sliderns",         57,  S_THING     },
+  { "slimeblob",        83,  S_THING     },
+  { "smovingwall",      52,  S_THING     },
+  { "snake",            80,  S_THING     },
+  { "solid",            2,   S_THING     },
   { "south",            2,   S_DIR       },
   { "space",            0,   S_THING     },
-  { "spacepressed",     14,  S_CONDITION }, 
-  { "spider",           89,  S_THING     }, 
-  { "spike",            75,  S_THING     }, 
-  { "spinninggun",      93,  S_THING     }, 
-  { "spittingtiger",    91,  S_THING     }, 
-  { "sprite",           98,  S_THING     }, 
-  { "sprite_colliding", 99,  S_THING     }, 
-  { "stairs",           43,  S_THING     }, 
+  { "spacepressed",     14,  S_CONDITION },
+  { "spider",           89,  S_THING     },
+  { "spike",            75,  S_THING     },
+  { "spinninggun",      93,  S_THING     },
+  { "spittingtiger",    91,  S_THING     },
+  { "sprite",           98,  S_THING     },
+  { "sprite_colliding", 99,  S_THING     },
+  { "stairs",           43,  S_THING     },
   { "start",            55,  S_CMD       },
   { "static",           52,  S_CMD       },
-  { "stillwater",       20,  S_THING     }, 
+  { "stillwater",       20,  S_THING     },
   { "string",           9,   S_CMD       },
-  { "swater",           22,  S_THING     }, 
-  { "swimming",         1,   S_CONDITION }, 
-  { "text",             77,  S_THING     }, 
+  { "swater",           22,  S_THING     },
+  { "swimming",         1,   S_CONDITION },
+  { "text",             77,  S_THING     },
   { "the",              14,  S_EXTRA     },
   { "then",             15,  S_EXTRA     },
   { "there",            16,  S_EXTRA     },
   { "thick",            22,  S_CMD       },
-  { "thickweb",         19,  S_THING     }, 
-  { "thief",            82,  S_THING     }, 
+  { "thickweb",         19,  S_THING     },
+  { "thief",            82,  S_THING     },
   { "thin",             24,  S_CMD       },
   { "through",          17,  S_EXTRA     },
   { "thru",             18,  S_EXTRA     },
-  { "tiles",            16,  S_THING     }, 
+  { "tiles",            16,  S_THING     },
   { "time",             2,   S_ITEM      },
   { "to",               19,  S_EXTRA     },
   { "touching",         3,   S_CONDITION },
   { "transparent",      53,  S_CMD       },
-  { "transport",        49,  S_THING     }, 
-  { "tree",             3,   S_THING     }, 
+  { "transport",        49,  S_THING     },
+  { "tree",             3,   S_THING     },
   { "under",            11,  S_DIR       },
   { "up",               1,   S_DIR       },
-  { "uppressed",        12,  S_CONDITION }, 
+  { "uppressed",        12,  S_CONDITION },
   { "w",                4,   S_DIR       },
-  { "walking",          0,   S_CONDITION }, 
-  { "web",              18,  S_THING     }, 
+  { "walking",          0,   S_CONDITION },
+  { "web",              18,  S_THING     },
   { "west",             4,   S_DIR       },
-  { "whirlpool",        67,  S_THING     }, 
-  { "whirlpool2",       68,  S_THING     }, 
-  { "whirlpool3",       69,  S_THING     }, 
-  { "whirlpool4",       70,  S_THING     }, 
+  { "whirlpool",        67,  S_THING     },
+  { "whirlpool2",       68,  S_THING     },
+  { "whirlpool3",       69,  S_THING     },
+  { "whirlpool4",       70,  S_THING     },
   { "with",             20,  S_EXTRA     },
-  { "wmovingwall",      54,  S_THING     }, 
+  { "wmovingwall",      54,  S_THING     },
   { "world",            46,  S_CMD       },
   { "wwater",           24,  S_THING     }
 };
 
-const int num_argument_names = 
+const int num_argument_names =
  sizeof(sorted_argument_list) / sizeof(search_entry_short);
 
 search_entry_short *find_argument(char *name)

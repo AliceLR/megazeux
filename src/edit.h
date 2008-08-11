@@ -47,7 +47,7 @@ void flash_thing(World *mzx_world, int start, int end, int flash_one,
 extern char tmenu_thing_ids[8][18];
 extern char tmenu_num_choices[8];
 extern char *tmenu_titles[8];
-extern char *thing_menus[8];
+extern char *thing_menus[8][20];
 extern char def_colors[128];
 extern char debug_mode; // Debug mode
 extern char debug_x; // Debug box x pos

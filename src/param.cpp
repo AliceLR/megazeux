@@ -330,45 +330,49 @@ void reset_di(void)
   di.num_elements = 3;
 }
 
-#define do_dialog() run_dialog(mzx_world, &di, 0, 2)
+#define do_dialog() run_dialog(mzx_world, &di, 0, 2, 0)
 
-char *potion_fx =
- "No Effect   \0"
- "Invinco     \0"
- "Blast       \0"
- "Health x10  \0"
- "Health x50  \0"
- "Poison      \0"
- "Blind       \0"
- "Kill Enemies\0"
- "Lava Walker \0"
- "Detonate    \0"
- "Banish      \0"
- "Summon      \0"
- "Avalanche   \0"
- "Freeze Time \0"
- "Wind        \0"
- "Slow Time";
+char *potion_fx[16] =
+{
+  "No Effect   ",
+  "Invinco     ",
+  "Blast       ",
+  "Health x10  ",
+  "Health x50  ",
+  "Poison      ",
+  "Blind       ",
+  "Kill Enemies",
+  "Lava Walker ",
+  "Detonate    ",
+  "Banish      ",
+  "Summon      ",
+  "Avalanche   ",
+  "Freeze Time ",
+  "Wind        ",
+  "Slow Time   "
+};
 
 int pe_chest(World *mzx_world, int param)
 {
   int type = param & 0x0F;
   int var = param >> 4;
+
+  char *list[10] =
+  {
+    "Empty               ",
+    "Key                 ",
+    "Coins               ",
+    "Lives               ",
+    "Ammo                ",
+    "Gems                ",
+    "Health              ",
+    "Potion              ",
+    "Ring                ",
+    "Lo Bombs            "
+  };
+
   // First, pick chest contents
-  type = list_menu
-  (
-    "Empty   \0"
-    "Key     \0"
-    "Coins   \0"
-    "Lives   \0"
-    "Ammo    \0"
-    "Gems    \0"
-    "Health  \0"
-    "Potion  \0"
-    "Ring    \0"
-    "Lo Bombs\0"
-    "Hi Bombs", 9, "Choose chest contents", type, 11, 33
-  );
+  type = list_menu(list, 21, "Choose chest contents", type, 10, 27);
 
   if(type < 0)
     return -1;
@@ -1280,8 +1284,8 @@ int edit_robot(World *mzx_world, Robot *cur_robot)
 
   if(intake(cur_robot->robot_name, 14, 34, 13, 15, 1, 0) != SDLK_ESCAPE)
   {
-		restore_screen();
-		save_screen();		
+    restore_screen();
+    save_screen();
     // ...and character.
     new_char = char_selection(cur_robot->robot_char);
     if(new_char < 0)
