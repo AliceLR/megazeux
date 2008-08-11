@@ -40,10 +40,13 @@ void mem_mov(char far *dest,char far *source,unsigned int len,
 //XOR a section of memory with a given code
 void mem_xor(char far *mem,unsigned int len,unsigned char xor_with);
 char _fstricmp(char far *dest,char far *source);//0==equal
+// This will do up to a certain amount; good for "wildcarding" - Exo
+char _fstrnicmp(char far *dest, char far *source, int count);
 void _fstrlwr(char far *str);
 void _fstrupr(char far *str);
 
 #define str_cmp _fstricmp
+#define strn_cmp _fstrnicmp
 #define str_lwr _fstrlwr
 #define str_upr _fstrupr
 

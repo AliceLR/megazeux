@@ -28,13 +28,16 @@
    MZ2 - Ver 2.x MegaZeux
    MZA - Ver 2.51S1 Megazeux
    M\002\011 - 2.5.1spider2+, 2.9.x
-   M\002\062 - MZX 2.62.x
+   M\x02\x3E - MZX 2.62.x
+   M\x02\x41 - MZX 2.65.x
 
    .SAV files:
    MZSV2 - Ver 2.x MegaZeux
    MZXSA - Ver 2.51S1 MegaZeux
    MZS\002\011 - 2.5.1spider2+, 2.9.x
-   MZS\002\062 - MZX 2.62.x
+   MZS\x02\x3E - MZX 2.62.x
+   MZS\x02\x41 - MZX 2.65.x
+
 
  All others are unchanged.
 
@@ -61,8 +64,12 @@
 #include "roballoc.h"
 #include "ems.h"
 #include "counter.h"
-#define VERSION 0x23E
+#include "sprite.h"
+#define VERSION 0x241
 #define SAVE_INDIVIDUAL
+
+int version_loaded;
+
 char sd_types[3]={ DE_INPUT,DE_BUTTON,DE_BUTTON };
 char sd_xs[3]={ 5,15,37 };
 char sd_ys[3]={ 2,4,4 };
@@ -111,7 +118,7 @@ static int save_magic(const char magic_string[5]) {
 			}
 		  case 'X':
 			if ( ( magic_string[3] == 'S' ) && ( magic_string[4] == 'A' ) ) {
-				return 0x023E;
+				return 0x0209;
 			} else {
 				return 0;
 			}
@@ -169,7 +176,7 @@ void save_world(char far *file,char savegame,char faded) {
 	save_screen(current_pg_seg);
 	meter("Saving...",current_pg_seg,meter_curr,meter_target);
 	if (savegame) {
-		fwrite("MZS\002\062",1,5,fp);
+		fwrite("MZS\x02\x41",1,5,fp);
 		fputc(curr_board,fp);
 		xor=0;
 	} else {
@@ -178,7 +185,7 @@ void save_world(char far *file,char savegame,char faded) {
 		//Pw info-
 		write_password(fp);
 		//File type id-
-		fwrite("M\002\062",1,3,fp);
+		fwrite("M\x02\x41",1,3,fp);
 		//Get xor code...
 		xor=get_pw_xor_code();
 	}
@@ -308,13 +315,23 @@ void save_world(char far *file,char savegame,char faded) {
 	    fwrite(&t2, sizeof(int), 1, fp);  //THIS is the # of counters, as an int. Spid
 		for(t1=0;t1<t2;t1++)
 			fwrite(&counters[t1],1,sizeof(Counter),fp);
+    // After the counters, store the sprites. - Exo
 
-
+    // sprite data
+    for(t1 = 0; t1 < 64; t1++)
+    {
+      fwrite(sprites + t1, 1, sizeof(Sprite), fp); 
+    }
+    // total sprites
+    fputc(total_sprites, fp);
+    // y order flag
+    fputc(sprite_y_order, fp);
+    // collision list
+    fwrite(&collision_list, 1, sizeof(Collision_list), fp);
+  }
 
 //            for (t1=0;t1<NUM_COUNTERS;t1++) //Write out every last counter Spid
 //                  fwrite(&counters[t1],1,sizeof(Counter),fp);
-
-		}
 	//Save space for global robot pos.
 	temp3=ftell(fp);
 	fputc(0,fp);
@@ -439,7 +456,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 	if(savegame) {
                 fread(tempstr,1,5,fp);
 		version = save_magic(tempstr);
-		if((version != 0x023E) && (version != 0x0209))
+		if((version < VERSION) && (version != 0x0209) && (version != 0x020B))
     {
 			restore_screen(current_pg_seg);
 			if (!version) {
@@ -450,6 +467,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 			fclose(fp);
 			return 1;
 		}
+    version_loaded = version;
 		curr_board=fgetc(fp);
 		xor=0;
 		refresh_mod_playing = 1;
@@ -487,7 +505,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 			if ( version < 0x0205 ) {
 				sprintf(error_string, "World is from old version (%d.%d); use converter", ( version & 0xff00 ) >> 8, version & 0xff);
 				version = 0;
-			} else if ( version > 0x023E ) {
+			} else if ( version > VERSION ) {
 				sprintf(error_string, "World is from more recent version (%d.%d)", ( version & 0xff00 ) >> 8, version & 0xff);
 				version = 0;
 			} else if ( version == 0 ) {
@@ -502,6 +520,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 				restore_screen(current_pg_seg);
 				return 1;
 			}
+      version_loaded = version;
 		}
 		//Get xor code...
 		xor=get_pw_xor_code();
@@ -622,7 +641,23 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 		if(t1<NUM_COUNTERS)
 			for(;t1<NUM_COUNTERS;t1++)
 				counters[t1].counter_value=0;
+    // I'm putting the sprite info right after the counters.
+    // Only load if version 2.65 or greater!
+    if(version_loaded >= 0x241)
+    {
+      // sprite data
+      for(t1 = 0; t1 < 64; t1++)
+      {
+        fread(sprites + t1, 1, sizeof(Sprite), fp);
+      }
+      // total sprites
+      total_sprites = fgetc(fp);
+      // y order flag
+      sprite_y_order = fgetc(fp);
+      // collision info
+      fread(&collision_list, 1, sizeof(Collision_list), fp);
 		}
+  }
 	update_palette();
 	//Get position of global robot...
 	fread(&gl_rob,4,1,fp);

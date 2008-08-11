@@ -38,6 +38,7 @@
 #include "palette.h"
 #include "game.h"
 #include "counter.h"
+#include "sprite.h"
 
 void set_built_in_messages(int param);
 
@@ -318,6 +319,14 @@ void clear_game_params(void) {
 	//Clear counters
 	for(t1=0;t1<NUM_COUNTERS;t1++)
 		counters[t1].counter_name[0]=counters[t1].counter_value=0;
+  // Clear sprites. - Exo
+  for(t1 = 0; t1 < 64; t1++)
+  {
+    sprites[t1].flags = 0;
+  }
+  total_sprites = 0;
+  sprite_y_order = 0;
+  sprite_num = 0;
 	//Set all nine built-in counters
 	str_cpy(counters[0].counter_name,"GEMS");
 	str_cpy(counters[1].counter_name,"AMMO");

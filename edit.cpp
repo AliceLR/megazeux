@@ -93,6 +93,7 @@ Mem:    0000k³
 EMS:    0000k³
 Robot memory-³
 64.0/64k 100%³
+             ³ <- added for modules - Exo
 ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
  WORLD  BOARD  THING  CURSOR  SHOW  MISC  Drawing:_!_ (_#_ PushableRobot p00)
 ÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄÄ
@@ -331,7 +332,7 @@ void edit_world(void) {
 		//Draw menu (draw debug if view updated)
 		if(update_menu|update_view) {
 			if(debug_mode) {
-				draw_debug_box();
+				draw_debug_box(11);
 				update_view=0;
 				}
 			//Draw box
@@ -506,8 +507,8 @@ void edit_world(void) {
 	no_pflip:
 		//Move cursor done at end of loop
 		if(debug_mode) {
-			write_number(ARRAY_X,EC_DEBUG_NUMBER,debug_x+7,13,current_pg_seg,3);
-			write_number(ARRAY_Y,EC_DEBUG_NUMBER,debug_x+11,13,current_pg_seg,3);
+			write_number(ARRAY_X,EC_DEBUG_NUMBER,debug_x+7,12,current_pg_seg,3);
+			write_number(ARRAY_Y,EC_DEBUG_NUMBER,debug_x+11,12,current_pg_seg,3);
 			}
 		//Highlight cursor - Save old color/char and fiddle with it
 		t1=t2=*(unsigned char far *)MK_FP(current_pg_seg,((x_pos+y_pos*80)<<1)+1);
@@ -1121,13 +1122,42 @@ void edit_world(void) {
 						break;
 					case 1:
 						//Character set
-						add_ext(temp,".CHR");
-						//Open file.
-						if(ec_save_set(temp))
-							error("Error exporting char. set",1,24,current_pg_seg,0x1301);
-						break;
-					case 2:
-						//Ansi file
+            if(temp[0] == '#' && (((temp[1] > 47) && (temp[1] < 58)) ||
+              ((temp[1] > 64) && (temp[1] < 71))) &&
+              (((temp[2] > 47) && (temp[2] < 58)) || ((temp[2] > 64) && (temp[2] < 71))))
+            {
+              int size = 0;
+              if((temp[1] > 47) && (temp[1] < 58)) // is a number
+              {
+                size += (temp[1] - 48) << 4;
+              }
+              else  // is a letter A-F
+              {
+                size += (temp[1] - 55) << 4;
+              }
+              if((temp[2] > 47) && (temp[2] < 58)) // is a number
+              {
+                size += (temp[2] - 48);
+              }
+              else  // is a letter A-F
+              {
+                size += (temp[2] - 55);
+              }
+
+						  add_ext(temp + 3,".CHR");
+              if(ec_save_set_partial(temp + 3, size))
+                error("Error exporting char. set",1,24,current_pg_seg,0x1301);
+            }
+            else
+            {
+						  add_ext(temp,".CHR");
+						  //Open file.
+						  if(ec_save_set(temp))
+							  error("Error exporting char. set",1,24,current_pg_seg,0x1301);
+            }						  
+            break;
+					  case 2:
+						  //Ansi file
 						add_ext(temp,".ANS");
 					case 3:
 						//Text file
@@ -3402,6 +3432,14 @@ void draw_debug_box(char ypos) {
 	write_number(t1/10,EC_DEBUG_NUMBER,debug_x+2,ypos+6,current_pg_seg,
 		0,1);
 	write_number(t1%10,EC_DEBUG_NUMBER,debug_x+4,ypos+6,current_pg_seg,1);
+  if(*mod_playing != 0)
+  {
+	  write_string(mod_playing,debug_x+2,ypos+7,EC_DEBUG_NUMBER,current_pg_seg);
+  }
+  else
+  {
+    write_string("(no module)",debug_x+2,ypos+7, EC_DEBUG_NUMBER, current_pg_seg);
+  }
 	t1=(unsigned int)(robot_free_mem*100L/62464L);
 	write_number(t1,EC_DEBUG_NUMBER,debug_x+12,ypos+6,current_pg_seg,0,1);
 }

@@ -150,7 +150,7 @@ int main(int argc,char **argv) {
 	draw_window_box(2,1,77,3,0xB800,120,127,113,0);
 	draw_window_box(2,4,77,16,0xB800,120,127,113,0);
 	draw_window_box(2,17,77,23,0xB800,120,127,113,0);
-  write_string("MegaZeux version 2.65",27,2,127,0xB800);
+  write_string("MZXRun version 2.65",27,2,127,0xB800);
 // #ifdef BETA
 	write_string("Beta; please distribute",27,17,127,0xB800);
 // #endif

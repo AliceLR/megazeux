@@ -148,7 +148,9 @@
 #define NUM_COUNTERS		1020 // This is a decent # for now. Spid
 #define NUM_STATUS_CNTRS	6
 //The first n counters are reserved for internal use (GEMS, etc)
-#define RESERVED_COUNTERS	9
+// I added strings to reserved. - Exo
+#define RESERVED_COUNTERS	19
+#define STRING_BASE 9
 //ID number for storage of the only copy of the current robot/scroll/sensor
 #define TEMP_STORAGE		0
 //ID number for storage of the global robot

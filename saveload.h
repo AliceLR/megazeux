@@ -37,4 +37,9 @@ char load_world(char far *file,char edit=0,char savegame=0,char *faded=NULL);
 
 //Loading save games DOESN'T select curr_board as current!
 
+// I added this so other things can determine features based on
+//   version, if necessary.. it's to preserve backwards compat. - Exo
+
+extern int version_loaded;
+
 #endif

@@ -561,6 +561,31 @@ arg chr:word,color:word,x_pos:word,y_pos:word,segm:word
 
 endp draw_char
 
+proc draw_char_linear far
+arg chr:byte,color:byte,pos:word,segm:word
+
+	push ax bx es di	; Conserve registers
+                                                                                         
+  push ax
+  push bx
+  push es
+  push di	; Conserve registers              
+                                                      
+	mov ax,[segm]		  ; Load in segment of video memory 
+	mov es,ax                                           
+  mov di, [pos]     ; position
+  shl di, 1
+  mov al, [color]   ; color                           
+  mov ah, [chr]     ; char                            
+                                                      
+	mov [es:di],ax		; Output character/color          
+                                                      
+  @@done:                                               
+	pop di es bx ax	; Restore registers                 
+	ret 
+
+endp draw_char_linear
+
 ;
 ; Function- page_flip
 ;

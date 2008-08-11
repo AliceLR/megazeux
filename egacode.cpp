@@ -241,12 +241,43 @@ char ec_save_set(char far *filename) {
 	return 0;
 }
 
+// Saves a non 256 char character set to disk - Exo
+char ec_save_set_partial(char far *filename, int size)
+{
+  FILE *fp;
+  fp = fopen(filename, "wb");
+  if(fp == NULL) return(-1);
+  fwrite(curr_set, 14, size, fp);  
+  fclose(fp);
+  return(0);
+}
+
 //Load a character set from disk
 char ec_load_set_nou(char far *filename) {
 	FILE *fp;
 	fp=fopen(filename,"rb");
 	if(fp==NULL) return -1;
 	fread(curr_set,14,256,fp);
+	fclose(fp);
+	need_update = 1;
+	return 0;
+}
+
+// Loads a charset into a variable position in the current one - Exo
+char ec_load_set_nou_var(char far *filename, int pos)
+{
+  int size = 255;
+	FILE *fp;
+	fp=fopen(filename,"rb");
+	if(fp==NULL) return -1;
+  fseek(fp, 0, SEEK_END);
+  size = ftell(fp) / 14;
+  fseek(fp, 0, 0);
+  if(size + pos > 256)
+  {
+    size = 255 - pos; 
+  }
+	fread(curr_set + (pos * 14), 14, size, fp);
 	fclose(fp);
 	need_update = 1;
 	return 0;

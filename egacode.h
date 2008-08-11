@@ -43,12 +43,14 @@ void ec_mem_load_set(unsigned char far *chars);
 void ec_load_ascii(void);
 void ec_load_mzx(void);
 char ec_save_set(char far *filename);
+char ec_save_set_partial(char far *filename, int size);
 char ec_load_set(char far *filename);
 
 //Functions that DON'T auto update
 void ec_change_byte_nou(int chr,int byte,int new_value);
 void ec_change_char_nou(int chr,unsigned char far *matrix);
 char ec_load_set_nou(char far *filename);
+char ec_load_set_nou_var(char far *filename, int pos);
 void ec_update_set_if_needed(void);
 void ec_update_set(void);
 

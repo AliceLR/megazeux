@@ -297,9 +297,77 @@ char send_robot_id(int id,char far *mesg,char ignore_lock) {
 	str_cpy(mesgcopy,mesg);
 	prepare_robot_mem(id==NUM_ROBOTS);
 	robot=&robot_mem[robots[id].program_location];
-	do {
-		if(robot[t1+1]==106) {
-			//Label- is it so?
+  // Are we going to a subroutine? Returning? - Exo
+  if(mesgcopy[0] == '#')
+  {
+    char far *robot_begin = robot_mem + robots[id].program_location;
+    // Is there a stack?
+    if((robot_begin[2] == 107) && (robot_begin[4] == '#') &&
+     robot_begin[3] > 4)
+    {
+      int stack_pos = (int)robot_begin[5];
+      // Check if the stack position is unitialized (*)
+      if(stack_pos == '*')
+      {
+        stack_pos = 0;
+      }
+
+      // returning?
+      if((!str_cmp(mesgcopy, "#return")) && (stack_pos != 0))
+      {
+      	// So return there... but the stack pos must NOT be 0...
+        robots[id].cur_prog_line =
+	       *((int far *)(robot_begin + 6 + (stack_pos << 1)));
+	      robots[id].pos_within_line=0;
+	      robots[id].cycle_count=robots[id].robot_cycle-1;
+        prepare_robot_mem(temp);
+        if(robots[id].status==1) robots[id].status=2;
+        // And decrease the stack pos.
+        robot_begin[5] = (char)stack_pos - 1;
+        exit_func();
+        return(0); // "Yippee?" :p
+      }
+      else
+      {
+        // returning to the TOP?
+        if((!str_cmp(mesgcopy, "#top")) && (stack_pos != 0))
+        {
+      	  // So return there... but the stack pos must NOT be 0...
+          robots[id].cur_prog_line =
+	        *((int far *)(robot_begin + 6 + 2));
+	        robots[id].pos_within_line=0;
+	        robots[id].cycle_count=robots[id].robot_cycle-1;
+          prepare_robot_mem(temp);
+          if(robots[id].status==1) robots[id].status=2;
+          // And reset the stack pos.
+          robot_begin[5] = 0;
+          exit_func();
+          return(0); // "Yippee?" :p
+        }
+        else
+        {
+          // Sending.. well it'll continue with the jump, just has to
+          // put the return address on the stack.
+          // Stack must NOT be full though. What's the stack size? (robot_begin[3] - 3)/2.
+          if(stack_pos != ((robot_begin[3] - 3) >> 1))
+          {
+            stack_pos++;
+            // The return position is the NEXT command.
+            *((int far *)(robot_begin + 6 + (stack_pos << 1))) =
+            robots[id].cur_prog_line +
+            *(robot_begin + robots[id].cur_prog_line) + 2;
+            // Fix stack pos.
+            robot_begin[5] = (char)stack_pos;
+            // Continue.
+          }
+        }
+      }
+    }
+  }
+
+  do {
+   if(robot[t1+1]==106) {
+  	//Label- is it so?
 			if(!str_cmp(&robot[t1+3],mesgcopy)) {
 				robots[id].cur_prog_line=t1;
 				robots[id].pos_within_line=0;
@@ -310,7 +378,7 @@ char send_robot_id(int id,char far *mesg,char ignore_lock) {
 				return 0;//Yippe!
 				}
 			}
-	next_cmd:
+	  next_cmd:
 		t1+=robot[t1]+2;
 	} while(robot[t1]);
 	prepare_robot_mem(temp);
@@ -806,19 +874,40 @@ unsigned char far *tr_msg(unsigned char far *orig_mesg,int id,
 				else {
 					//Counter
           // Now could also be a string
-          char temp_str[8];
-          mem_cpy(temp_str, cnam, 7);
-          temp_str[7] = '\0';
-          if(!str_cmp(temp_str, "$string"))
+          if(!strn_cmp(cnam, "$string", 7))
           {
             // Write the value of the counter name
-            int index = cnam[7] + 1000;
+            int index = cnam[7] + STRING_BASE;
             str_cpy(&buffer[dp], counters[index].counter_name);
   					dp+=str_len(counters[index].counter_name);
 					}
           else
           {
-  					itoa(get_counter(cnam,id),cnam,10);
+            // #(counter) is a hex representation.
+            if(cnam[0] == '+')
+            {
+              sprintf(cnam, "%x", get_counter(cnam + 1, id));
+            }
+            else
+            {
+              if(cnam[0] == '#')
+              {              
+                char temp[4];
+                sprintf(temp, "%x", get_counter(cnam + 1, id));
+                if(temp[1] == 0)
+                {
+                  temp[2] = 0;
+                  temp[1] = temp[0];
+                  temp[0] = '0';
+                }
+                mem_cpy(cnam, temp, 4);
+              }
+              else
+              {
+  					    itoa(get_counter(cnam,id),cnam,10);
+              }
+            }
+
 		  			str_cpy(&buffer[dp],cnam);
   					dp+=str_len(cnam);
 					}

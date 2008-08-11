@@ -40,6 +40,7 @@ void color_line(int length,int x_start,int y_start,unsigned char color,
 void fill_line(int length,int x_start,int y_start,unsigned int char_col,
 	unsigned int segment);
 void draw_char(int chr,int color,int x_pos,int y_pos,unsigned int segment);
+void draw_char_linear(int chr,int color,int pos,unsigned int segment);
 void clear_screen(int with,unsigned int segment);
 void page_flip(unsigned int page);
 /* Page segments-
