@@ -26,7 +26,7 @@ name                      r/w      g/n/f/b    i
 "COS"                     r           f       *
 "CURRENT_COLOR"           r w         n       *
 "CURSORSTATE"             r w         n       *
-"C_DIVISIONS"             r w         b       * 
+"C_DIVISIONS"             r w         b       *
 "DATE_DAY"                r           f       *
 "DATE_MONTH"              r           f       *
 "DATE_YEAR"               r           f       *
@@ -57,14 +57,14 @@ name                      r/w      g/n/f/b    i
 "KEYn"                    r           b       *
 "LAVA_WALK"               r w         g       *
 "LIVES"                     w         g       *
-"LOAD_BC"                 r           f				*
-"LOAD_GAME"               r           f				*
+"LOAD_BC"                 r           f       *
+"LOAD_GAME"               r           f       *
 "LOAD_ROBOT"              r           f       *
 "LOCALn"                  r w         b       *
 "LOOPCOUNT"               r w         b       *
 "MBOARDX"                 r           b       *
 "MBOARDY"                 r           b       *
-"MOD_ORDER"               r           b				*
+"MOD_ORDER"               r           b       *
 "MOUSEX"                  r w         b       *
 "MOUSEY"                  r w         b       *
 "MULTIPLIER"              r w         b       *
@@ -84,10 +84,10 @@ name                      r/w      g/n/f/b    i
 "RID<robot name>"         r           b       *
 "ROBOT_ID_<robot name>"   r           b       *
 "Rn.<counter>             r           b       *
-"SAVE_BC"                 r           f				*
-"SAVE_GAME"               r           f				*
-"SAVE_ROBOT"              r           f				*
-"SAVE_WORLD"              r           f				*
+"SAVE_BC"                 r           f       *
+"SAVE_GAME"               r           f       *
+"SAVE_ROBOT"              r           f       *
+"SAVE_WORLD"              r           f       *
 "SCORE"                   r w         b       *
 "SCROLLEDX"               r           b       *
 "SCROLLEDY"               r           b       *
@@ -138,10 +138,10 @@ name                      r/w      g/n/f/b    i
 "VLAYER_WIDTH"            r w         b       *
 "XPOS"                    r w         n       *
 "YPOS"                    r w         n       *
-  
+
 Strings:
 name                      r/w      g/n/f/b    i
-"BOARD_LIST"              r           b       *
+"BOARD_NAME"              r           b       *
 "BOARD_SCAN"              r           b       *
 "INPUT"                   r           b       *
 "MOD_NAME"                r           b       *

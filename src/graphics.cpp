@@ -29,8 +29,18 @@
 #include "delay.h"
 #include "world.h"
 #include "configure.h"
-#include "config.h"
 #include "event.h"
+#include "config.h"
+
+// Base names for MZX's resource files.
+// Prepends SHAREDIR from config.h for you, so these are ready to use.
+
+#define MZX_DEFAULT_CHR SHAREDIR "mzx_default.chr"
+#define MZX_BLANK_CHR   SHAREDIR "mzx_blank.chr"
+#define MZX_SMZX_CHR    SHAREDIR "mzx_smzx.chr"
+#define MZX_ASCII_CHR   SHAREDIR "mzx_ascii.chr"
+#define MZX_EDIT_CHR    SHAREDIR "mzx_edit.chr"
+#define SMZX_PAL        SHAREDIR "smzx.pal"
 
 graphics_data graphics;
 

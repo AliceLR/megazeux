@@ -3,11 +3,12 @@
 #
 
 all: subdir
+debug: subdir-debug
 
 # location of strip (must be defined)
 STRIP     = strip
 
 # standard libraries
 LIBS      = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-            -L${PREFIX}/lib -lSDLmain -lSDL -lpthread \
-            -framework Cocoa
+            -L${PREFIX}/lib -lSDLmain -lSDL -lpthread -lvorbisfile \
+            -lvorbis -logg -framework Cocoa

@@ -280,32 +280,54 @@ void config_enable_oversampling(config_info *conf, char *name, char *value,
   conf->oversampling_on = strtol(value, NULL, 10);
 }
 
-void config_resampling_mode(config_info *conf, char *name, char *value,
+void config_resample_mode(config_info *conf, char *name, char *value,
  char *extended_data)
 {
   if(!strcmp(value, "none"))
   {
-    conf->resampling_mode = 0;
+    conf->resample_mode = 0;
   }
   else
 
   if(!strcmp(value, "linear"))
   {
-    conf->resampling_mode = 1;
+    conf->resample_mode = 1;
   }
   else
 
   if(!strcmp(value, "cubic"))
   {
-    conf->resampling_mode = 2;
+    conf->resample_mode = 2;
+  }
+}
+
+void config_mp_resample_mode(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  if(!strcmp(value, "none"))
+  {
+    conf->modplug_resample_mode = 0;
+  }
+  else
+
+  if(!strcmp(value, "linear"))
+  {
+    conf->modplug_resample_mode = 1;
+  }
+  else
+
+  if(!strcmp(value, "cubic"))
+  {
+    conf->modplug_resample_mode = 2;
   }
   else
 
   if(!strcmp(value, "fir"))
   {
-    conf->resampling_mode = 3;
+    conf->modplug_resample_mode = 3;
   }
 }
+
 
 void redit_hhelp(config_info *conf, char *name, char *value,
  char *extended_data)
@@ -408,9 +430,17 @@ void config_mask_midchars(config_info *conf, char *name,
   conf->mask_midchars = strtol(value, NULL, 10);
 }
 
+void config_set_audio_freq(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  conf->output_frequency = strtol(value, NULL, 10);
+}
+
+
 config_entry config_options[] =
 {
   { "audio_buffer", config_set_audio_buffer },
+  { "audio_sample_rate", config_set_audio_freq },
   { "backup_count", backup_count },
   { "backup_name", backup_name },
   { "backup_interval", backup_interval },
@@ -435,17 +465,19 @@ config_entry config_options[] =
   { "force_resolution", config_set_resolution },
   { "fullscreen", config_set_fullscreen },
   { "include*", include_config },
+  { "include=*", include_config },
   { "joy?1-2axis?1-2", joy_axis_set },
   { "joy?1-2button?1-2", joy_button_set },
   { "macro_*", config_macro },
   { "mask_midchars", config_mask_midchars },
+  { "modplug_resample_mode", config_mp_resample_mode },
   { "music_on", config_set_music },
   { "music_volume", config_set_mod_volume },
   { "mzx_speed", config_set_mzx_speed },
   { "pause_on_unfocus", pause_on_unfocus },
   { "pc_speaker_on", config_set_pc_speaker },
   { "pc_speaker_volume", config_set_sfx_volume },
-  { "resampling_mode", config_resampling_mode },
+  { "resample_mode", config_resample_mode },
   { "robot_editor_hide_help", redit_hhelp },
   { "sample_volume", config_set_sam_volume },
   { "save_file", config_save_file },
@@ -488,8 +520,10 @@ config_info default_options =
   1,
 
   // Audio options
-  2048,
+  44100,
+  4096,
   0,
+  1,
   1,
   8,
   8,

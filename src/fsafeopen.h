@@ -17,16 +17,26 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-#ifndef FSAFEOPEN_H
-#define FSAFEOPEN_H
+#ifndef __FSAFEOPEN_H
+#define __FSAFEOPEN_H
 
 #ifndef __WIN32__
-
-#define MAX_PATH 512
-
+#include <limits.h>
+#define MAX_PATH PATH_MAX
 #endif
 
+enum {
+	FSAFE_SUCCESS = 0,
+	FSAFE_MATCH_FAILED,
+	FSAFE_BRUTE_FORCE_FAILED,
+	FSAFE_INVALID_ARGUMENT,
+	FSAFE_ABSOLUTE_PATH_ERROR,
+	FSAFE_WINDOWS_DRIVE_LETTER_ERROR,
+	FSAFE_PARENT_DIRECTORY_ERROR,
+};
+
+int fsafetest(const char *path, char *newpath);
 int fsafetranslate(const char *path, char *newpath);
 FILE *fsafeopen(const char *path, const char *mode);
 
-#endif
+#endif // __FSAFEOPEN_H

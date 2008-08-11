@@ -3,6 +3,7 @@
 #
 
 all: subdir
+debug: subdir-debug
 
 # windows requires a binary extension
 BINEXT    = .exe
@@ -12,7 +13,7 @@ STRIP     = strip --strip-unneeded
 
 # standard libraries
 LIBS      = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-            -L/usr/lib -lmingw32 -lSDLmain -lSDL
+            -L/usr/lib -lmingw32 -lSDLmain -lSDL -lvorbisfile -lvorbis -logg
 
 # debug does something different
 ifdef DEBUG

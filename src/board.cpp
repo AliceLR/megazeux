@@ -45,12 +45,16 @@ void replace_current_board(World *mzx_world, char *name)
   version_string[3] = 0;
 
   if((first_byte == 0xFF) &&
-   (!strcmp(version_string, world_version_string) ||
+   ((strcmp(version_string, world_version_string) <= 0) ||
    !strcmp(version_string, "MB2")))
   {
     clear_board(src_board);
     src_board = load_board_allocate_direct(input_mzb, 0);
     optimize_null_objects(src_board);
+
+    if(src_board->robot_list)
+      src_board->robot_list[0] = &(mzx_world->global_robot);
+
     mzx_world->current_board = src_board;
     mzx_world->board_list[current_board_id] = src_board;
   }

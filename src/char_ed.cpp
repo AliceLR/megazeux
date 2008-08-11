@@ -89,21 +89,6 @@ void fill_region(char *buffer, int x, int y,
   }
 }
 
-void fill_region_smzx(char *matrix, int x, int y, int check,
- int draw)
-{
-  if((x >= 0) && (x < 8) && (y >= 0) && (y < 14) &&
-   (((matrix[y] << x) & 0xC0) == check))
-  {
-    matrix[y] = (matrix[y] & ~(0xC0 >> x)) | (draw >> x);
-
-    fill_region_smzx(matrix, x - 2, y, check, draw);
-    fill_region_smzx(matrix, x + 2, y, check, draw);
-    fill_region_smzx(matrix, x, y - 1, check, draw);
-    fill_region_smzx(matrix, x, y + 1, check, draw);
-  }
-}
-
 void expand_buffer(char *buffer, int width, int height,
  int cwidth, int cheight, int offset, int smzx)
 {
@@ -746,8 +731,7 @@ int char_editor(World *mzx_world)
     }
 
     // Current character
-    write_number(current_char, 143,
-     info_x + 20, info_y, 3);
+    write_number(current_char, 143, info_x + 20, info_y, 3);
 
     for(i = 0, offset = 0; i < highlight_height; i++)
     {
@@ -1352,11 +1336,14 @@ int char_editor(World *mzx_world)
           if(screen_mode)
             fill = current_pixel;
 
-          fill_region(buffer, x, y, buffer_width, buffer_height,
-           check, fill);
-          collapse_buffer(buffer, current_width,
-           current_height, highlight_width, highlight_height,
-           current_char, screen_mode);
+          if(check != fill)
+          {
+            fill_region(buffer, x, y, buffer_width, buffer_height,
+             check, fill);
+            collapse_buffer(buffer, current_width,
+             current_height, highlight_width, highlight_height,
+             current_char, screen_mode);
+          }
         }
         else
         {
@@ -1588,8 +1575,7 @@ int char_editor(World *mzx_world)
           if(!file_manager(mzx_world, chr_ext, import_string,
            "Import character set(s)", 1, 2, elements, 3, 2, 0))
           {
-            for(i = 0; i < num_files; i++, current_file++,
-             char_offset)
+            for(i = 0; i < num_files; i++, current_file++)
             {
               replace_filenum(import_string, import_name,
                current_file);

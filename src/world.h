@@ -30,7 +30,7 @@
 #include "sfx.h"
 #include "configure.h"
 
-#define VERSION 0x250
+#define VERSION 0x251
 
 extern char version_number_string[20];
 extern char world_version_string[4];
@@ -95,10 +95,10 @@ struct _World
   int player_restart_y;
   int num_counters;
   int num_counters_allocated;
-  Counter **counter_list;
+  counter **counter_list;
   int num_strings;
   int num_strings_allocated;
-  String **string_list;
+  mzx_string **string_list;
   int num_sprites;
   int num_sprites_allocated;
   int sprite_num;
@@ -111,11 +111,12 @@ struct _World
   int divider;
   int c_divisions;
   int bi_mesg_status;
-  char input_file_name[12];
-  char output_file_name[12];
+  char input_file_name[512];
+  char output_file_name[512];
   FILE *input_file;
   FILE *output_file;
   int commands;
+  int vlayer_size;
   int vlayer_width;
   int vlayer_height;
   char *vlayer_chars;
@@ -162,6 +163,9 @@ struct _World
   int mzx_speed;
 
   config_info conf;
+
+  // Keep this open, just once
+  FILE *help_file;
 };
 
 // Taken from the old saveload.h

@@ -32,6 +32,6 @@ void id_clear(Board *src_board, int array_x, int array_y);
 void id_remove_top(World *mzx_world, int array_x, int array_y);
 //"blank" is a junk byte
 void offs_remove_id(World *mzx_world, unsigned int offset);
-void id_remove_under(Board *src_board, int array_x, int array_y);
+void id_remove_under(World *mzx_world, int array_x, int array_y);
 
 #endif

@@ -488,7 +488,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
-      case SDLK_F1: // F1
+      case SDLK_F1:
       {
         m_show();
         help_system(mzx_world);
@@ -1631,7 +1631,7 @@ int validate_lines(robot_state *rstate, int show_none)
   // 2 - next
   // 100-113 - ignore line
   // 200-213 - delete line
-  // 300-313 - ignore line
+  // 300-313 - comment line
 
   if(num_errors > 12)
   {
@@ -2087,9 +2087,6 @@ void paste_buffer(robot_state *rstate)
       {
         rstate->command_buffer = line_buffer;
         src_ptr = src_data;
-
-        //printf("This is the data:\n");
-        //printf("%s\n", src_data);
 
         while(*src_ptr)
         {

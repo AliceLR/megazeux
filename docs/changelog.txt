@@ -1,3 +1,83 @@
+November 20, 2005 - MZX 2.81
+
++ Fixed a bug where MZX world/save names > 12 chars could cause weird
+  things to happen (like doors breaking)
++ Fixed problems with helpfile/charsets loading when loading MZX
+  outside of the directory MZX is in. This should fix file associations
+  on Windows as well.
++ Changed board selector so when board 0 is "(no board)" it doesn't
+  actually refer to the title but to no board.
++ Made import world not overwrite the title string.
++ Fixed bug that causes crash when trying to flood fill an area with
+  the color it already is in the SMZX char editor.
++ Redid audio engine. Everything is unified now, meaning that anything
+  you can use as a mod you can use as a sam and vice-versa.
++ The new audio engine uses its own master resampler that has three
+  interpolation modes - see config.txt for more information.
++ sam 0 filename will play a file at its native frequency (note that
+  SAMs that have been converted from WAVs are set to be played at
+  8363Hz).
++ Added support for OGG vorbis audio files.
++ Fixed bug causing SFX volume control in F2 menu to not work.
++ Removed limitation on number of SAMs that can be played
+  simultaneously.
++ Fixed bug where the mouse got "stuck" in the black border edges of
+  non 640x350 fullscreen resolutions.
++ Fixed issues with message boxes being part default palette part
+  current palette, they now always use the current palette.
++ Added mod_position counter. What these actually set/return is
+  dependant on the type of file loaded. Modules use the current row,
+  OGGs use the current PCM sample.
++ Added mod_frequency counter. There are a few things to note here:
+  Modules have a "nominal" frequency of 44.1KHz. Other data types
+  have their own nominal frequency to prevent output from
+  sounding differently depending on the audio_sample_rate in config.txt.
+  For OGGs and WAVs the nominal frequency is the one the file is
+  encoded at.
+  Changing the frequency can cause a noticeable one time popping sound,
+  so it might not be desirable to slide it. This is much more prominent
+  with lowering the frequency than raising it.
+  This value is capped so it can't reach below 16.
++ Changed alt + L to play back at natural frequency instead of 8363Hz.
++ Fixed bug causing sensor deletion while the player is on top to
+  destroy the player.
++ Fixed bug causing imported boards to possibly crash after being
+  tested.
++ Fixed bug causing save_game and save_world to not work if a file
+  with the given name isn't already present.
++ Changed function counter matching removing restriction on number of
+  digits for parameters. 10+ digit inputs should no longer fail (for
+  instance, abs-123456789)
+- Save files from 2.80 are not compatible due to several changes in
+  the save format.
++ Made counter/string names internally variable length instead of a
+  fixed 14 chars. There is now no longer a name length limitation.
++ Changed alt+8 for mod * to just * in the hotkey listing.
++ Fixed crash when referencing (by param) sprites > 256.
++ The string system has been redone. Strings are now dynamically
+  sized and don't have an artificial maximum length. Writing to
+  string.N will guarantee that the size of the string becomes at
+  least N, while reading in this way will return 0 if out of bounds
+  to maintain the illusion of null termination. Be careful when using
+  this.
++ $str.length returns the length of string $str (this is faster than
+  iterating through it to find when chars hit 0)
++ Vlayer is dynamically sized. The vlayer_width/vlayer_height counters
+  still work as per usual, but the vlayer_size counter has been added
+  to adjust the maximum size. The default is 32768.
++ Fixed bug not allowing things to move over goop.
++ Fixed bugs causing current directory to be changed when importing
+  things from other directories.
++ Properly implemented support for volume "string"
++ Fixed a few commands not working when they should from the global
+  robot (such as put to dir of player)
++ Fixed a bug where going to a label at the end of a robot would treat
+  it as if it's the first of its name in a sequence of labels.
++ Fixed a bug involving moving the a block with the player not moving
+  what was underneath the player.
++ New help file, thanks MUCHLY to Terryn for pulling off this enormous
+  effort!
+
 June 6, 2005 - MZX 2.80h
 
 + Fixed a bug which could cause crashes when quiting the game.

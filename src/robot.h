@@ -32,6 +32,8 @@ typedef struct _World World;
 #define ROBOT_START_STACK 4
 #define ROBOT_MAX_STACK   65536
 
+#define ROBOT_MAX_TR      512
+
 typedef struct
 {
   // Point this to the name in the robot

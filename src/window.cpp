@@ -101,6 +101,14 @@ int restore_screen()
 int draw_window_box(int x1, int y1, int x2, int y2, int color,
  int dark_color, int corner_color, int shadow, int fill_center)
 {
+  return draw_window_box_ext(x1, y1, x2, y2, color, dark_color,
+   corner_color, shadow, fill_center, 256, 16);
+}
+
+int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
+ int dark_color, int corner_color, int shadow, int fill_center,
+ int offset, int c_offset)
+{
   int t1, t2;
   //Validate parameters
   if((x1 < 0) || (y1 < 0) || (x1 > 79) || (y1 > 24)) return 1;
@@ -125,7 +133,7 @@ int draw_window_box(int x1, int y1, int x2, int y2, int color,
     {
       for(t2 = y1 + 1; t2 < y2; t2++)
       {
-        draw_char(' ', color, t1, t2);
+        draw_char_ext(' ', color, t1, t2, offset, c_offset);
       }
     }
   }
@@ -133,29 +141,29 @@ int draw_window_box(int x1, int y1, int x2, int y2, int color,
   // Draw top and bottom edges
   for(t1 = x1 + 1; t1 < x2; t1++)
   {
-    draw_char('\xC4', color, t1, y1);
-    draw_char('\xC4', dark_color, t1, y2);
+    draw_char_ext('\xC4', color, t1, y1, offset, c_offset);
+    draw_char_ext('\xC4', dark_color, t1, y2, offset, c_offset);
   }
 
   // Draw left and right edges
   for(t2 = y1 + 1; t2 < y2; t2++)
   {
-    draw_char('\xB3', color, x1, t2);
-    draw_char('\xB3', dark_color, x2, t2);
+    draw_char_ext('\xB3', color, x1, t2, offset, c_offset);
+    draw_char_ext('\xB3', dark_color, x2, t2, offset, c_offset);
   }
 
   // Draw corners
-  draw_char('\xDA', color, x1, y1);
-  draw_char('\xD9', dark_color, x2, y2);
+  draw_char_ext('\xDA', color, x1, y1, offset, c_offset);
+  draw_char_ext('\xD9', dark_color, x2, y2, offset, c_offset);
   if(corner_color)
   {
-    draw_char('\xC0', corner_color, x1, y2);
-    draw_char('\xBF', corner_color, x2, y1);
+    draw_char_ext('\xC0', corner_color, x1, y2, offset, c_offset);
+    draw_char_ext('\xBF', corner_color, x2, y1, offset, c_offset);
   }
   else
   {
-    draw_char('\xC0', color, x1, y2);
-    draw_char('\xBF', dark_color, x2, y1);
+    draw_char_ext('\xC0', color, x1, y2, offset, c_offset);
+    draw_char_ext('\xBF', dark_color, x2, y1, offset, c_offset);
   }
 
   // Draw shadow if applicable
@@ -166,7 +174,7 @@ int draw_window_box(int x1, int y1, int x2, int y2, int color,
     {
       for(t2 = y1 + 1; t2 <= y2; t2++)
       {
-        draw_char(' ', 0, x2 + 1, t2);
+        draw_char_ext(' ', 0, x2 + 1, t2, offset, c_offset);
       }
     }
 
@@ -175,18 +183,19 @@ int draw_window_box(int x1, int y1, int x2, int y2, int color,
     {
       for(t1 = x1 + 1; t1 <= x2; t1++)
       {
-        draw_char(' ', 0, t1, y2 + 1);
+        draw_char_ext(' ', 0, t1, y2 + 1, offset, c_offset);
       }
     }
 
     // Lower right corner
     if((y2 < 24) && (x2 < 79))
     {
-      draw_char(' ', 0, x2 + 1, y2 + 1);
+      draw_char_ext(' ', 0, x2 + 1, y2 + 1, offset, c_offset);
     }
   }
   return 0;
 }
+
 
 // Strings for drawing different dialog box elements.
 // All parts are assumed 3 wide.
@@ -2892,7 +2901,7 @@ int choose_board(World *mzx_world, int current, char *title, int board0_none)
   // Change top to (none) if needed
   if(board0_none)
   {
-    strcpy(board_names[0], "(none)");
+    strcpy(board_names[0], "(no board)");
   }
 
   // Run the list_menu()
@@ -2911,6 +2920,11 @@ int choose_board(World *mzx_world, int current, char *title, int board0_none)
   }
 
   free(board_names);
+
+  if(board0_none && (current == 0))
+  {
+    return NO_BOARD;
+  }
 
   return current;
 }
@@ -3127,7 +3141,7 @@ void remove_files(char *directory_name, int remove_recursively)
   char current_dir_name[512];
   char *file_name;
 
-  getcwd(current_dir_name, PATHNAME_SIZE);
+  getcwd(current_dir_name, MAX_PATH);
   chdir(directory_name);
 
   do
@@ -3164,6 +3178,13 @@ int choose_file(World *mzx_world, char **wildcards, char *ret,
  char *title, int dirs_okay)
 {
   return file_manager(mzx_world, wildcards, ret, title, dirs_okay,
+   0, NULL, 0, 0, 0);
+}
+
+int choose_file_ch(World *mzx_world, char **wildcards, char *ret,
+ char *title, int dirs_okay)
+{
+  return file_manager(mzx_world, wildcards, ret, title, dirs_okay,
    0, NULL, 0, 0, 1);
 }
 
@@ -3181,8 +3202,8 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
   DIR *current_dir;
   struct stat file_info;
   struct dirent *current_file;
-  char current_dir_name[PATHNAME_SIZE];
-  char previous_dir_name[PATHNAME_SIZE];
+  char current_dir_name[MAX_PATH];
+  char previous_dir_name[MAX_PATH];
   int total_filenames_allocated;
   int total_dirnames_allocated;
   char **file_list;
@@ -3208,7 +3229,7 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
   int drive_letter_bitmap;
 #endif
 
-  getcwd(previous_dir_name, PATHNAME_SIZE);
+  getcwd(previous_dir_name, MAX_PATH);
 
   while(return_value == 1)
   {
@@ -3224,7 +3245,7 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
     chosen_file = 0;
     chosen_dir = 0;
 
-    getcwd(current_dir_name, PATHNAME_SIZE);
+    getcwd(current_dir_name, MAX_PATH);
     current_dir = opendir(current_dir_name);
 
     do
@@ -3581,7 +3602,7 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
 
   if(!allow_dir_change)
   {
-    getcwd(current_dir_name, PATHNAME_SIZE);
+    getcwd(current_dir_name, MAX_PATH);
     if(strcmp(previous_dir_name, current_dir_name))
     {
       char ret_buffer[512] = { 0 };

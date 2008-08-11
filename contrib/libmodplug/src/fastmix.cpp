@@ -2230,6 +2230,7 @@ void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamp
 #define MIXING_LIMITMAX		(0x08100000)
 #define MIXING_LIMITMIN		(-MIXING_LIMITMAX)
 
+#ifdef MSC_VER
 __declspec(naked) UINT MPPASMCALL X86_AGC(int *pBuffer, UINT nSamples, UINT nAGC)
 //-------------------------------------------------------------------------------
 {
@@ -2267,6 +2268,28 @@ agcupdate:
 }
 
 #pragma warning (default:4100)
+#else
+// Version for GCC
+UINT MPPASMCALL X86_AGC(int *pBuffer, UINT nSamples, UINT nAGC)
+{
+	int x;
+
+	while(nSamples)
+	{
+		x = ((long long int)(*pBuffer) * nAGC) >> AGC_PRECISION;
+
+		if((x < MIXING_LIMITMIN) || (x > MIXING_LIMITMAX))
+		nAGC--;
+
+		*pBuffer = x;
+
+		pBuffer++;
+		nSamples--;
+	}
+
+	return nAGC;
+}
+#endif
 
 void CSoundFile::ProcessAGC(int count)
 //------------------------------------

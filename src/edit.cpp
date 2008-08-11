@@ -172,7 +172,7 @@ char *menu_lines[NUM_MENUS][2]=
   },
   {
     " F1:Help    Home\\End:Corner  Alt+A:Select Char Set  Alt+D:Default Colors",
-    " ESC:Exit   Alt+L:Test SAM   Alt+Y:Debug Mode\t  Alt+N:Music  Alt+8:Mod *"
+    " ESC:Exit   Alt+L:Test SAM   Alt+Y:Debug Mode\t  Alt+N:Music    *:Mod *"
   }
 };
 
@@ -362,7 +362,7 @@ char *mod_ext[] =
 {
   ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it",
   ".669", ".ult", ".wav", ".dsm", ".far", ".ams", ".mdl", ".okt" ".dmf",
-  ".ptm", ".dbm", ".amf", ".mt2", ".psm", ".j2b", ".umx", NULL
+  ".ptm", ".dbm", ".amf", ".mt2", ".psm", ".j2b", ".umx", ".ogg", NULL
 };
 
 char drawmode_help[5][32] =
@@ -705,7 +705,7 @@ void edit_world(World *mzx_world)
   char *overlay_color;
   char current_world[128];
   char mzm_name_buffer[128];
-  char current_listening_dir[512];
+  char current_listening_dir[MAX_PATH];
   char current_listening_mod[512];
   int listening_flag = 0;
   int saved_scroll_x[16] = { 0 };
@@ -722,7 +722,7 @@ void edit_world(World *mzx_world)
   char *pal_ext[] = { ".PAL", NULL };
   char *mzm_ext[] = { ".MZM", NULL };
 
-  getcwd(current_listening_dir, PATHNAME_SIZE);
+  getcwd(current_listening_dir, MAX_PATH);
 
   current_world[0] = 0;
 
@@ -1697,7 +1697,7 @@ void edit_world(World *mzx_world)
           if(!choose_file(mzx_world, wav_ext, test_wav,
            "Choose a wav file", 1))
           {
-            play_sample(428, test_wav);
+            play_sample(0, test_wav);
           }
         }
         else
@@ -1750,6 +1750,7 @@ void edit_world(World *mzx_world)
           if(import_number >= 0)
           {
             char import_name[128];
+            import_name[0] = 0;
 
             switch(import_number)
             {
@@ -2007,7 +2008,7 @@ void edit_world(World *mzx_world)
                       fwrite(mzx_world->custom_sfx, 69, 50, sfx_file);
                     else
                       fwrite(sfx_strs, 69, 50, sfx_file);
-  
+
                     fclose(sfx_file);
                   }
                 }
@@ -2065,7 +2066,7 @@ void edit_world(World *mzx_world)
               char current_dir[512];
               char new_mod[128] = { 0 } ;
 
-              getcwd(current_dir, PATHNAME_SIZE);
+              getcwd(current_dir, MAX_PATH);
               chdir(current_listening_dir);
 
               if(!file_manager(mzx_world, mod_ext, new_mod,
@@ -2074,10 +2075,11 @@ void edit_world(World *mzx_world)
               {
                 load_mod(new_mod);
                 strcpy(current_listening_mod, new_mod);
-                getcwd(current_listening_dir, PATHNAME_SIZE);
-                chdir(current_dir);
+                getcwd(current_listening_dir, MAX_PATH);
                 listening_flag = 1;
               }
+
+              chdir(current_dir);
             }
             else
             {
@@ -2921,22 +2923,22 @@ void edit_world(World *mzx_world)
             mzx_world->current_board_id = current_board_id;
             mzx_world->current_board =
              mzx_world->board_list[current_board_id];
-  
+
             if(draw_mode > 3)
               draw_mode = 0;
-  
+
             synchronize_board_values();
             insta_fadein();
             fix_mod();
-  
+
             if(listening_flag)
             {
-              getcwd(current_dir, PATHNAME_SIZE);
+              getcwd(current_dir, MAX_PATH);
               chdir(current_listening_dir);
               load_mod(current_listening_mod);
               chdir(current_dir);
             }
-  
+
             unlink("__test.mzx");
           }
         }

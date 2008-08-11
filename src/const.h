@@ -85,12 +85,12 @@
 #define NO_PLAYING            3
 
 // "SIZE" includes terminating \0
-#define PATHNAME_SIZE         129
+// This is legacy, for world format only
 #define FILENAME_SIZE         13
 #define NUM_BOARDS            250
 #define BOARD_NAME_SIZE       25
+// This is legacy, for status counters only
 #define COUNTER_NAME_SIZE     15
-// Possibly decrease counter name size to gain conventional mem? Spid
 #define NUM_KEYS              16
 
 #define ARRAY_DIR_N           -100

@@ -1150,7 +1150,7 @@ int pe_bullet_gun(World *mzx_world, int param)
   elements[5] = construct_radio_button(15, 11, radio_strings_2,
    2, 13, &type);
 
-  construct_dialog(&di, "Set Bullet Gun/Spinng Gun", 10, 5, 60, 18,
+  construct_dialog(&di, "Set Bullet Gun/Spinning Gun", 10, 5, 60, 18,
    elements, 6, 2);
 
   dialog_result = run_dialog(mzx_world, &di);

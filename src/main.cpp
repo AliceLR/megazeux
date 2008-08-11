@@ -20,6 +20,12 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+#include <string.h>
+#include <stdlib.h>
+#include <stdio.h>
+#include <time.h>
+#include <unistd.h>
+
 #include "configure.h"
 #include "event.h"
 #include "helpsys.h"
@@ -36,28 +42,30 @@
 #include "robo_ed.h"
 #include "config.h"
 
-#include <string.h>
-#include <stdlib.h>
-#include <stdio.h>
-#include <time.h>
-#include <unistd.h>
+// Base name for MZX's help file.
+// Prepends SHAREDIR from config.h for you, so it's ready to use.
+
+#define MZX_HELP_FIL SHAREDIR "mzx_help.fil"
+#define CONFIG_TXT   CONFDIR CONFFILE
 
 int main(int argc, char **argv)
 {
   World mzx_world;
+  char bin_path[512];
+
+#if defined(__WIN32__) && defined(DEBUG)
+  freopen("CON", "wb", stdout);
+#endif
+
+  get_path(argv[0], bin_path);
+  chdir(bin_path);
 
   memset(&mzx_world, 0, sizeof(World));
   default_config(&(mzx_world.conf));
   set_config_from_file(&(mzx_world.conf), CONFIG_TXT);
   set_config_from_command_line(&(mzx_world.conf), argc, argv);
 
-#if defined(__WIN32__) && defined(DEBUG)
-  freopen("CON", "wb", stdout);
-#endif
-
   counter_fsg();
-
-  int i;
 
 #ifdef DEBUG
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK |
@@ -76,18 +84,16 @@ int main(int argc, char **argv)
   // Setup directory strings
   // Get megazeux directory
 
-  getcwd(help_file, PATHNAME_SIZE);
+  // Init video (will init palette too)
+  init_video(&(mzx_world.conf));
+  init_audio(&(mzx_world.conf));
+  cursor_off();
+  default_scroll_values(&mzx_world);
 
-#ifdef __WIN32__
-  strcat(help_file, "\\");
-#else
-  strcat(help_file, "/");
-#endif
-
-  strcat(help_file, MZX_HELP_FIL);
+  help_load(&mzx_world, MZX_HELP_FIL);
 
   // Get current directory and drive (form- C:\DIR\SUBDIR)
-  getcwd(current_dir, PATHNAME_SIZE);
+  getcwd(current_dir, MAX_PATH);
 
   strcpy(curr_file, mzx_world.conf.startup_file);
   strcpy(curr_sav, mzx_world.conf.default_save_name);
@@ -99,13 +105,6 @@ int main(int argc, char **argv)
   mzx_world.mzx_speed = mzx_world.conf.mzx_speed;
 
   memcpy(macros, mzx_world.conf.default_macros, 5 * 64);
-
-  // Init video (will init palette too)
-  init_video(&(mzx_world.conf));
-  init_audio(&(mzx_world.conf));
-  cursor_off();
-  default_scroll_values(&mzx_world);
-
   // Random seed..
 
   srand(time(NULL));

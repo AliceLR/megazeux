@@ -31,6 +31,8 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type);
 void scroll_frame(World *mzx_world, Scroll *scroll, int pos);
 // type == 0 scroll, 1 sign, 2 scroll edit
 void scroll_edging(World *mzx_world, int type);
+void scroll_edging_ext(World *mzx_world, int type, int offset,
+ int c_offset);
 void help_display(World *mzx_world, char *help, int offs,
  char *file, char *label);
 void help_frame(World *mzx_world, char *help, int pos);

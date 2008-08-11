@@ -31,9 +31,6 @@
 #include "game.h"
 #include "world.h"
 
-// FIXME - Collision rectangles against char backgrounds (ccheck1/2)
-// need to be clipped against the edges of the boards...
-
 void plot_sprite(World *mzx_world, Sprite *cur_sprite, int color, int x, int y)
 {
   if(((cur_sprite->width) && (cur_sprite->height)))

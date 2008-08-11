@@ -9,8 +9,8 @@ GDM2S3M   = contrib/gdm2s3m/src
 MODPLUG   = contrib/libmodplug/src
 
 # default target name
-TARGET    = mzx280h
-VERSION   = 2.80h
+TARGET    = mzx281
+VERSION   = 2.81
 
 ifneq ("${DATE}", "0")
 VERSTRING = ${VERSION}\ \(`date +%Y%m%d`\)
@@ -21,15 +21,17 @@ endif
 ifdef DEBUG
 CFLAGS    = -g -Wall -DDEBUG
 CXXFLAGS  = -g -Wall -DDEBUG
+o         = dbg.o
 else
 CFLAGS   += -O2 -Wall
 CXXFLAGS += -O2 -Wall
+o         = o
 endif
 
 .SUFFIXES: .cpp .c
 
-%.o: %.cpp
-	${CXX} ${CXXFLAGS} ${INCLUDES} -c $<
+%.o %.dbg.o: %.cpp
+	${CXX} ${CXXFLAGS} ${INCLUDES} -c $< -o $@
 
-%.o: %.c
-	${CC} ${CFLAGS} ${INCLUDES} -c $<
+%.o %.dbg.o: %.c
+	${CC} ${CFLAGS} ${INCLUDES} -c $< -o $@

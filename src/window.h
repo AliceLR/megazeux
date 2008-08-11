@@ -33,6 +33,9 @@ int save_screen();
 int restore_screen();
 int draw_window_box(int x1, int y1, int x2, int y2, int color,
  int dark_color, int corner_color, int shadow, int fill_center);
+int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
+ int dark_color, int corner_color, int shadow, int fill_center,
+ int offset, int c_offset);
 int list_menu(char **choices, int choice_size, char *title,
   int current, int num_choices, int xpos);
 int char_selection(int current);
@@ -229,6 +232,8 @@ element *construct_board_list(int x, int y,
  char *title, int board_zero_as_none, int *result);
 
 int choose_file(World *mzx_world, char **wildcards, char *ret,
+ char *title, int dirs_okay);
+int choose_file_ch(World *mzx_world, char **wildcards, char *ret,
  char *title, int dirs_okay);
 int new_file(World *mzx_world, char **wildcards, char *ret,
  char *title, int dirs_okay);

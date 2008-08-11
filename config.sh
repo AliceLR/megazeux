@@ -27,33 +27,37 @@ else
 	PREFIX=$2
 fi
 
+if [ "$3" = "" ]; then
+	if [ "$ARCH" = "linux" ]; then
+		echo "Assuming /etc sysconfdir.."
+		SYSCONFDIR=/etc
+	else
+		echo "Assuming config.txt is in working directory.."
+		SYSCONFDIR=.
+	fi
+else
+	SYSCONFDIR=$3
+fi
+
 echo                    >> Makefile.platform
 echo "# install prefix" >> Makefile.platform
 echo "PREFIX=$PREFIX"   >> Makefile.platform
 
+echo "#define CONFDIR  \"$SYSCONFDIR/\"" > src/config.h
+
 if [ "$ARCH" = "win32" -o "$ARCH" = "macos" ]; then
-	echo "#define MZX_DEFAULT_CHR \"mzx_default.chr\"" > src/config.h
-	echo "#define MZX_BLANK_CHR \"mzx_blank.chr\"" >> src/config.h
-	echo "#define MZX_SMZX_CHR \"mzx_smzx.chr\"" >> src/config.h
-	echo "#define MZX_ASCII_CHR \"mzx_ascii.chr\"" >> src/config.h
-	echo "#define MZX_EDIT_CHR \"mzx_edit.chr\"" >> src/config.h
-	echo "#define SMZX_PAL \"smzx.pal\"" >> src/config.h
-	echo "#define MZX_HELP_FIL \"mzx_help.fil\"" >> src/config.h
-	echo "#define CONFIG_TXT \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"./\""         >> src/config.h
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 fi
 
 if [ "$ARCH" = "linux" ]; then
-	echo "#define MZX_DEFAULT_CHR \"$PREFIX/share/megazeux/mzx_default.chr\"" > src/config.h
-	echo "#define MZX_BLANK_CHR \"$PREFIX/share/megazeux/mzx_blank.chr\"" >> src/config.h
-	echo "#define MZX_SMZX_CHR \"$PREFIX/share/megazeux/mzx_smzx.chr\"" >> src/config.h
-	echo "#define MZX_ASCII_CHR \"$PREFIX/share/megazeux/mzx_ascii.chr\"" >> src/config.h
-	echo "#define MZX_EDIT_CHR \"$PREFIX/share/megazeux/mzx_edit.chr\"" >> src/config.h
-	echo "#define SMZX_PAL \"$PREFIX/share/megazeux/smzx.pal\"" >> src/config.h
-	echo "#define MZX_HELP_FIL \"$PREFIX/share/megazeux/mzx_help.fil\"" >> src/config.h
-	echo "#define CONFIG_TXT \"/etc/megazeux-config\"" >> src/config.h
+	echo "#define SHAREDIR \"$PREFIX/share/megazeux/\"" >> src/config.h
+	echo "#define CONFFILE \"megazeux-config\""         >> src/config.h
 
 	echo "TARGET=`grep TARGET Makefile.in | cut -d ' ' -f 6`" \
 		>> Makefile.platform
+
+	echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 fi
 
 if [ "$ARCH" != "win32" ]; then

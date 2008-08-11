@@ -30,7 +30,7 @@
 # You may also try a resolution like 640x700 that multiplies
 # the width, then set the multiplier..
 
-#force_resolution = 640, 350
+#force_resolution = 640,350
 
 # Make it so the display is stretched by this amount (must be
 # integer). This is useful for getting resolutions like 640x700
@@ -46,27 +46,44 @@
 
 ### Audio options ###
 
+# Sampling rate to output audio at. Higher values will sound
+# better but use more resources and may not be supported by
+# your audio card/drivers. Typical values include 22050, 44100,
+# and 48000. If your card supports it you might get away with
+# 96000, or even 192000.
+
+#audio_sample_rate = 44100
+
 # Audio buffer size. Setting this to lower can improve latency,
 # so audio will be heard sooner after it is set to be changed.
 # It is also possible to change PC speaker effects more rapidly
 # with lower values. Lower buffer sizes need more CPU power to
-# process. The default is adequete for PC speaker playback every
+# process. 2048 is adequete for PC speaker playback every
 # command at speed 4.
 
-#audio_buffer = 2048
+#audio_buffer = 4096
 
 # Allow music to be sampled at higher precision. Increases CPU
 # usage but increases audio quality as well.
 
-#enable_oversampling = 1
+#enable_oversampling = 0
 
-# Set resampling mode. Choices are:
+# Set master resample mode. This affects how OGGs and
+# frequency shifted modules sound. Choices are:
+# none (fastest, poor quality)
+# linear (fast, good quality)
+# cubic (slow, great quality)
+
+resample_mode = linear
+
+# Set resample mode for modplug. This affects how modules
+# and WAVs sound. Choices are:
 # none (fastest, poor quality)
 # linear (fast, good quality)
 # cubic (slow, great quality)
 # fir (very slow, excellent quality)
 
-#resampling_mode = linear
+modplug_resample_mode = cubic
 
 # Whether music/samples should be played or not.
 # Does not include PC speaker effects.

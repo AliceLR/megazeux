@@ -20,12 +20,12 @@
  */
 
 // When making new versions, change the number below, and
-// change the number in the version strings to follow. From now on,
+// change the number in the version mzx_strings to follow. From now on,
 // be sure that the last two characters are the hex equivilent of the
 // MINOR version number.
 // Saving/loading worlds- dialogs and functions
 // *** READ THIS!!!! ****
-/* New magic strings
+/* New magic mzx_strings
    .MZX files:
    MZX - Ver 1.x MegaZeux
    MZ2 - Ver 2.x MegaZeux
@@ -38,7 +38,8 @@
    M\x02\x46 - MZX 2.69b
    M\x02\x48 - MZX 2.69c
    M\x02\x49 - MZX 2.70
-   M\x02\x4F - MZX 2.80 (non-DOS)
+   M\x02\x50 - MZX 2.80 (non-DOS)
+   M\x02\x51 - MZX 2.81
 
    .SAV files:
    MZSV2 - Ver 2.x MegaZeux
@@ -51,7 +52,8 @@
    MZS\x02\x46 - MZX 2.69b
    MZS\x02\x48 - MZX 2.69c
    MZS\x02\x49 - MZX 2.70
-   MZS\x02\x4F - MZX 2.80 (non-DOS)
+   MZS\x02\x50 - MZX 2.80 (non-DOS)
+   MZS\x02\x51 - MZX 2.81
 
  All others are unchanged.
  As of 2.80+, all letters after the name denote bug fixes/minor additions
@@ -82,9 +84,10 @@
 #include "decrypt.h"
 #include "fsafeopen.h"
 #include "game.h"
+#include "audio.h"
 
-char save_version_string[6] = "MZS\x02\x50";
-char world_version_string[4] = "M\x02\x50";
+char save_version_string[6] = "MZS\x02\x51";
+char world_version_string[4] = "M\x02\x51";
 char version_number_string[20] = MZX_VERSION;
 
 // Helper functions for file loading.
@@ -222,7 +225,7 @@ int save_world(World *mzx_world, char *file, int savegame, int faded)
 
   if(savegame)
   {
-    // Write magic string
+    // Write magic mzx_string
     fwrite(save_version_string, 1, 5, fp);
     fputc(mzx_world->current_board_id, fp);
   }
@@ -232,7 +235,7 @@ int save_world(World *mzx_world, char *file, int savegame, int faded)
     fwrite(mzx_world->name, BOARD_NAME_SIZE, 1, fp);
     // No protection
     fputc(0, fp);
-    // Write magic string
+    // Write magic mzx_string
     fwrite(world_version_string, 3, 1, fp);
   }
 
@@ -329,20 +332,15 @@ int save_world(World *mzx_world, char *file, int savegame, int faded)
     fputd(mzx_world->num_counters, fp);
     for(i = 0; i < mzx_world->num_counters; i++)
     {
-      // Write name
-      fwrite((mzx_world->counter_list[i])->counter_name, 15, 1, fp);
-      // Write value
-      fputd((mzx_world->counter_list[i])->counter_value, fp);
+      save_counter(fp, mzx_world->counter_list[i]);
     }
 
     // Write strings
     fputd(mzx_world->num_strings, fp);
+
     for(i = 0; i < mzx_world->num_strings; i++)
     {
-      // Write name
-      fwrite((mzx_world->string_list[i])->string_name, 15, 1, fp);
-      // Write contents
-      fwrite((mzx_world->string_list[i])->string_contents, 64, 1, fp);
+      save_string(fp, mzx_world->string_list[i]);
     }
 
     // Sprite data
@@ -405,7 +403,8 @@ int save_world(World *mzx_world, char *file, int savegame, int faded)
     }
 
     fputw(get_screen_mode(), fp);
-    if(get_screen_mode() == 2)
+
+    if(get_screen_mode() > 1)
     {
       // Put SMZX mode 2 palette
       for(i = 0; i < 256; i++)
@@ -417,11 +416,14 @@ int save_world(World *mzx_world, char *file, int savegame, int faded)
       }
     }
 
-    // Vlayer stuff for 2.69c
     fputw(mzx_world->commands, fp);
+
+    vlayer_size = mzx_world->vlayer_size;
+
+    // Vlayer
+    fputd(vlayer_size, fp);
     fputw(mzx_world->vlayer_width, fp);
     fputw(mzx_world->vlayer_height, fp);
-    vlayer_size = mzx_world->vlayer_width * mzx_world->vlayer_height;
 
     fwrite(mzx_world->vlayer_chars, 1, vlayer_size, fp);
     fwrite(mzx_world->vlayer_colors, 1, vlayer_size, fp);
@@ -736,34 +738,26 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
     num_counters = fgetd(fp);
     mzx_world->num_counters = num_counters;
     mzx_world->num_counters_allocated = num_counters;
-    mzx_world->counter_list = (Counter **)malloc(sizeof(Counter *) * num_counters);
+    mzx_world->counter_list = (counter **)malloc(sizeof(counter *) * num_counters);
+
     for(i = 0; i < num_counters; i++)
     {
-      // Allocate counter
-      mzx_world->counter_list[i] = (Counter *)malloc(sizeof(Counter));
-      // Read name
-      fread((mzx_world->counter_list[i])->counter_name, 15, 1, fp);
-      // Read value
-      (mzx_world->counter_list[i])->counter_value = fgetd(fp);
-      (mzx_world->counter_list[i])->counter_gateway_write = NULL;
+      mzx_world->counter_list[i] = load_counter(fp);
     }
 
     // Setup gateway functions
     initialize_gateway_functions(mzx_world);
 
-    // Read strings
+    // Read mzx_strings
     num_strings = fgetd(fp);
     mzx_world->num_strings = num_strings;
     mzx_world->num_strings_allocated = num_strings;
-    mzx_world->string_list = (String **)malloc(sizeof(String *) * num_strings);
+    mzx_world->string_list =
+     (mzx_string **)malloc(sizeof(mzx_string *) * num_strings);
+
     for(i = 0; i < num_strings; i++)
     {
-      // Allocate counter
-      mzx_world->string_list[i] = (String *)malloc(sizeof(String));
-      // Read name
-      fread((mzx_world->string_list[i])->string_name, 15, 1, fp);
-      // Read contents
-      fread((mzx_world->string_list[i])->string_contents, 64, 1, fp);
+      mzx_world->string_list[i] = load_string(fp);
     }
 
     // Allocate space for sprites and clist
@@ -852,6 +846,7 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
     }
 
     screen_mode = fgetw(fp);
+
     // If it's at SMZX mode 2, set default palette as loaded
     // so the .sav one doesn't get overwritten
     if(screen_mode == 2)
@@ -859,7 +854,7 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
 
     set_screen_mode(screen_mode);
     // Also get the palette
-    if(get_screen_mode() == 2)
+    if(screen_mode > 1)
     {
       for(i = 0; i < 256; i++)
       {
@@ -873,9 +868,10 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
 
     // Vlayer stuff for 2.69c
     mzx_world->commands = fgetw(fp);
+    vlayer_size = fgetd(fp);
     mzx_world->vlayer_width = fgetw(fp);
     mzx_world->vlayer_height = fgetw(fp);
-    vlayer_size = mzx_world->vlayer_width * mzx_world->vlayer_height;
+    mzx_world->vlayer_size = vlayer_size;
 
     mzx_world->vlayer_chars = (char *)malloc(vlayer_size);
     mzx_world->vlayer_colors = (char *)malloc(vlayer_size);
@@ -996,8 +992,8 @@ int append_world(World *mzx_world, char *file)
     return 1;
   }
 
-  // Name of game- skip it.
-  fread(mzx_world->name, BOARD_NAME_SIZE, 1, fp);
+  // Name of game - skip it.
+  fseek(fp, BOARD_NAME_SIZE, SEEK_CUR);
   // Get protection method
   protection_method = fgetc(fp);
 
@@ -1061,8 +1057,8 @@ int append_world(World *mzx_world, char *file)
   if(num_boards == 0)
   {
     int sfx_size;
-    // Sfx
-    fseek(fp, 2, SEEK_CUR);     // Skip word size
+    // Sfx skip word size
+    fseek(fp, 2, SEEK_CUR);
 
     // Skip sfx
     for(i = 0; i < NUM_SFX; i++)
@@ -1218,6 +1214,8 @@ void clear_world(World *mzx_world)
     fclose(mzx_world->output_file);
 
   mzx_world->active = 0;
+
+  end_sample();
 }
 
 // This clears the rest of the stuff.
@@ -1228,8 +1226,8 @@ void clear_global_data(World *mzx_world)
   int num_sprites = mzx_world->num_sprites;
   int num_counters = mzx_world->num_counters;
   int num_strings = mzx_world->num_strings;
-  Counter **counter_list = mzx_world->counter_list;
-  String **string_list = mzx_world->string_list;
+  counter **counter_list = mzx_world->counter_list;
+  mzx_string **string_list = mzx_world->string_list;
   Sprite **sprite_list = mzx_world->sprite_list;
 
   free(mzx_world->vlayer_chars);
@@ -1266,6 +1264,7 @@ void clear_global_data(World *mzx_world)
   mzx_world->sprite_list = NULL;
   mzx_world->num_sprites = 0;
 
+  mzx_world->vlayer_size = 0;
   mzx_world->vlayer_width = 0;
   mzx_world->vlayer_height = 0;
 
@@ -1317,6 +1316,7 @@ void default_global_data(World *mzx_world)
 
   // And vlayer
   // Allocate space for vlayer.
+  mzx_world->vlayer_size = 0x8000;
   mzx_world->vlayer_width = 256;
   mzx_world->vlayer_height = 128;
   mzx_world->vlayer_chars = (char *)malloc(0x8000);

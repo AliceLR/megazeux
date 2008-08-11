@@ -37,15 +37,58 @@
 #include "audio.h"
 #include "rasm.h"
 #include "fsafeopen.h"
-//#include "counter_first_letter.h"
+#include "edit_di.h"
 
 typedef int (* builtin_read_function)(World *mzx_world,
- Function_counter *counter, char *name, int id);
+ function_counter *counter, char *name, int id);
 
-int local_read(World *mzx_world, Function_counter *counter,
- char *name, int id)
-{
-  int local_num = 0;
+#define force_string_length(str, length)                        \
+  if(str == NULL)                                               \
+  {                                                             \
+    str = add_string_preallocate(mzx_world, name,               \
+     length, next);                                             \
+  }                                                             \
+  else                                                          \
+                                                                \
+  if(length > str->allocated_length)                            \
+  {                                                             \
+    str = reallocate_string(mzx_world, str, next, length);      \
+  }                                                             \
+      
+
+#define force_string_splice(str, s_length)                      \
+  force_string_length(str, s_length);                           \
+                                                                \
+  if((size == 0) || (size > s_length))                          \
+    size = s_length;                                            \
+                                                                \
+  if((offset == 0) || (offset + size > str->length))            \
+    str->length = offset + size;                                \
+                                                                
+#define force_string_copy(str, src, length)                     \
+  force_string_splice(str, length);                             \
+  memcpy(str->value + offset, src, size);                       \
+
+#define force_string_move(str, src, length)                     \
+  force_string_splice(str, length);                             \
+  memmove(str->value + offset, src, size);                      \
+
+      
+// Please only use string literals with this, thanks.           
+      
+#define special_name(n)                                         \
+  ((src_length == (sizeof(n) - 1)) &&                           \
+   !strncasecmp(src_value, n, sizeof(n) - 1))                   \
+      
+#define special_name_partial(n)                                 \
+  ((src_length >= (int)(sizeof(n) - 1)) &&                      \
+   !strncasecmp(src_value, n, sizeof(n) - 1))                   \
+      
+  
+int local_read(World *mzx_world, function_counter *counter  ,
+ char *name, int id)                                        
+{                                                           
+  int local_num = 0;                                        
 
   if(name[5])
     local_num = (strtol(name + 5, NULL, 10) - 1) & 31;
@@ -53,7 +96,7 @@ int local_read(World *mzx_world, Function_counter *counter,
   return (mzx_world->current_board->robot_list[id])->local[local_num];
 }
 
-void local_write(World *mzx_world, Function_counter *counter,
+void local_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int local_num = 0;
@@ -64,19 +107,19 @@ void local_write(World *mzx_world, Function_counter *counter,
   (mzx_world->current_board->robot_list[id])->local[local_num] = value;
 }
 
-int loopcount_read(World *mzx_world, Function_counter *counter,
+int loopcount_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return (mzx_world->current_board->robot_list[id])->loop_count;
 }
 
-void loopcount_write(World *mzx_world, Function_counter *counter,
+void loopcount_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   (mzx_world->current_board->robot_list[id])->loop_count = value;
 }
 
-int playerdist_read(World *mzx_world, Function_counter *counter,
+int playerdist_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -90,19 +133,19 @@ int playerdist_read(World *mzx_world, Function_counter *counter,
   return abs(player_x - this_x) + abs(player_y - this_y);
 }
 
-int score_read(World *mzx_world, Function_counter *counter,
+int score_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->score;
 }
 
-void score_write(World *mzx_world, Function_counter *counter,
+void score_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   mzx_world->score = value;
 }
 
-int sin_read(World *mzx_world, Function_counter *counter,
+int sin_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int theta = strtol(name + 3, NULL, 10);
@@ -110,7 +153,7 @@ int sin_read(World *mzx_world, Function_counter *counter,
    * mzx_world->multiplier);
 }
 
-int cos_read(World *mzx_world, Function_counter *counter,
+int cos_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int theta = strtol(name + 3, NULL, 10);
@@ -118,7 +161,7 @@ int cos_read(World *mzx_world, Function_counter *counter,
    * mzx_world->multiplier);
 }
 
-int tan_read(World *mzx_world, Function_counter *counter,
+int tan_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int theta = strtol(name + 3, NULL, 10);
@@ -126,7 +169,7 @@ int tan_read(World *mzx_world, Function_counter *counter,
    * mzx_world->multiplier);
 }
 
-int asin_read(World *mzx_world, Function_counter *counter,
+int asin_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int val = strtol(name + 4, NULL, 10);
@@ -134,7 +177,7 @@ int asin_read(World *mzx_world, Function_counter *counter,
    mzx_world->c_divisions) / (2 * M_PI));
 }
 
-int acos_read(World *mzx_world, Function_counter *counter,
+int acos_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int val = strtol(name + 4, NULL, 10);
@@ -142,7 +185,7 @@ int acos_read(World *mzx_world, Function_counter *counter,
    mzx_world->c_divisions) / (2 * M_PI));
 }
 
-int atan_read(World *mzx_world, Function_counter *counter,
+int atan_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int val = strtol(name + 4, NULL, 10);
@@ -150,43 +193,43 @@ int atan_read(World *mzx_world, Function_counter *counter,
    mzx_world->c_divisions) / (2 * M_PI));
 }
 
-int c_divisions_read(World *mzx_world, Function_counter *counter,
+int c_divisions_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->c_divisions;
 }
 
-int divider_read(World *mzx_world, Function_counter *counter,
+int divider_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->divider;
 }
 
-int multiplier_read(World *mzx_world, Function_counter *counter,
+int multiplier_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->multiplier;
 }
 
-void c_divisions_write(World *mzx_world, Function_counter *counter,
+void c_divisions_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   mzx_world->c_divisions = value;
 }
 
-void divider_write(World *mzx_world, Function_counter *counter,
+void divider_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   mzx_world->divider = value;
 }
 
-void multiplier_write(World *mzx_world, Function_counter *counter,
+void multiplier_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   mzx_world->multiplier = value;
 }
 
-int thisx_read(World *mzx_world, Function_counter *counter,
+int thisx_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   if(mzx_world->mid_prefix == 2)
@@ -196,7 +239,7 @@ int thisx_read(World *mzx_world, Function_counter *counter,
   return (mzx_world->current_board->robot_list[id])->xpos;
 }
 
-int thisy_read(World *mzx_world, Function_counter *counter,
+int thisy_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   if(mzx_world->mid_prefix == 2)
@@ -206,25 +249,25 @@ int thisy_read(World *mzx_world, Function_counter *counter,
   return (mzx_world->current_board->robot_list[id])->ypos;
 }
 
-int playerx_read(World *mzx_world, Function_counter *counter,
+int playerx_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->player_x;
 }
 
-int playery_read(World *mzx_world, Function_counter *counter,
+int playery_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->player_y;
 }
 
-int this_char_read(World *mzx_world, Function_counter *counter,
+int this_char_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return (mzx_world->current_board->robot_list[id])->robot_char;
 }
 
-int this_color_read(World *mzx_world, Function_counter *counter,
+int this_color_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -236,27 +279,27 @@ int this_color_read(World *mzx_world, Function_counter *counter,
   return src_board->level_color[offset];
 }
 
-int sqrt_read(World *mzx_world, Function_counter *counter,
+int sqrt_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int val = strtol(name + 4, NULL, 10);
   return (int)(sqrt(val));
 }
 
-int abs_read(World *mzx_world, Function_counter *counter,
+int abs_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int val = strtol(name + 3, NULL, 10);
   return abs(val);
 }
 
-int playerfacedir_read(World *mzx_world, Function_counter *counter,
+int playerfacedir_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->current_board->player_last_dir >> 4;
 }
 
-void playerfacedir_write(World *mzx_world, Function_counter *counter,
+void playerfacedir_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -271,13 +314,13 @@ void playerfacedir_write(World *mzx_world, Function_counter *counter,
    (src_board->player_last_dir & 0x0F) | (value << 4);
 }
 
-int playerlastdir_read(World *mzx_world, Function_counter *counter,
+int playerlastdir_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->current_board->player_last_dir & 0x0F;
 }
 
-void playerlastdir_write(World *mzx_world, Function_counter *counter,
+void playerlastdir_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -292,21 +335,21 @@ void playerlastdir_write(World *mzx_world, Function_counter *counter,
    (src_board->player_last_dir & 0xF0) | value;
 }
 
-int horizpld_read(World *mzx_world, Function_counter *counter,
+int horizpld_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return abs(mzx_world->player_x -
    (mzx_world->current_board->robot_list[id])->xpos);
 }
 
-int vertpld_read(World *mzx_world, Function_counter *counter,
+int vertpld_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return abs(mzx_world->player_y -
    (mzx_world->current_board->robot_list[id])->ypos);
 }
 
-int board_char_read(World *mzx_world, Function_counter *counter,
+int board_char_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -320,7 +363,7 @@ int board_char_read(World *mzx_world, Function_counter *counter,
   return -1;
 }
 
-int board_color_read(World *mzx_world, Function_counter *counter,
+int board_color_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -334,19 +377,19 @@ int board_color_read(World *mzx_world, Function_counter *counter,
   return -1;
 }
 
-int board_w_read(World *mzx_world, Function_counter *counter,
+int board_w_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->current_board->board_width;
 }
 
-int board_h_read(World *mzx_world, Function_counter *counter,
+int board_h_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->current_board->board_height;
 }
 
-int board_id_read(World *mzx_world, Function_counter *counter,
+int board_id_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -360,7 +403,7 @@ int board_id_read(World *mzx_world, Function_counter *counter,
   return -1;
 }
 
-void board_id_write(World *mzx_world, Function_counter *counter,
+void board_id_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -374,7 +417,7 @@ void board_id_write(World *mzx_world, Function_counter *counter,
     src_board->level_id[offset] = value;
 }
 
-int board_param_read(World *mzx_world, Function_counter *counter,
+int board_param_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -388,7 +431,7 @@ int board_param_read(World *mzx_world, Function_counter *counter,
   return -1;
 }
 
-void board_param_write(World *mzx_world, Function_counter *counter,
+void board_param_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -403,28 +446,28 @@ void board_param_write(World *mzx_world, Function_counter *counter,
   }
 }
 
-int red_value_read(World *mzx_world, Function_counter *counter,
+int red_value_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int cur_color = get_counter(mzx_world, "current_color", id);
   return get_red_component(cur_color);
 }
 
-int green_value_read(World *mzx_world, Function_counter *counter,
+int green_value_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
   return get_green_component(cur_color);
 }
 
-int blue_value_read(World *mzx_world, Function_counter *counter,
+int blue_value_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
   return get_blue_component(cur_color);
 }
 
-void red_value_write(World *mzx_world, Function_counter *counter,
+void red_value_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
@@ -432,7 +475,7 @@ void red_value_write(World *mzx_world, Function_counter *counter,
   pal_update = 1;
 }
 
-void green_value_write(World *mzx_world, Function_counter *counter,
+void green_value_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
@@ -440,7 +483,7 @@ void green_value_write(World *mzx_world, Function_counter *counter,
   pal_update = 1;
 }
 
-void blue_value_write(World *mzx_world, Function_counter *counter,
+void blue_value_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
@@ -448,25 +491,25 @@ void blue_value_write(World *mzx_world, Function_counter *counter,
   pal_update = 1;
 }
 
-int overlay_mode_read(World *mzx_world, Function_counter *counter,
+int overlay_mode_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->current_board->overlay_mode;
 }
 
-int mzx_speed_read(World *mzx_world, Function_counter *counter,
+int mzx_speed_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->mzx_speed;
 }
 
-void mzx_speed_write(World *mzx_world, Function_counter *counter,
+void mzx_speed_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   mzx_world->mzx_speed = value;
 }
 
-int overlay_char_read(World *mzx_world, Function_counter *counter,
+int overlay_char_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -480,7 +523,7 @@ int overlay_char_read(World *mzx_world, Function_counter *counter,
   return -1;
 }
 
-int overlay_color_read(World *mzx_world, Function_counter *counter,
+int overlay_color_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -494,40 +537,40 @@ int overlay_color_read(World *mzx_world, Function_counter *counter,
   return -1;
 }
 
-int smzx_mode_read(World *mzx_world, Function_counter *counter,
+int smzx_mode_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return get_screen_mode();
 }
 
-void smzx_mode_write(World *mzx_world, Function_counter *counter,
+void smzx_mode_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   set_screen_mode(value);
 }
 
-int smzx_r_read(World *mzx_world, Function_counter *counter,
+int smzx_r_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int cur_color = strtol(name + 6, NULL, 10);
   return get_red_component(cur_color);
 }
 
-int smzx_g_read(World *mzx_world, Function_counter *counter,
+int smzx_g_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int cur_color = strtol(name + 6, NULL, 10);
   return get_green_component(cur_color);
 }
 
-int smzx_b_read(World *mzx_world, Function_counter *counter,
+int smzx_b_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int cur_color = strtol(name + 6, NULL, 10);
   return get_blue_component(cur_color);
 }
 
-void smzx_r_write(World *mzx_world, Function_counter *counter,
+void smzx_r_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int cur_color = strtol(name + 6, NULL, 10);
@@ -535,7 +578,7 @@ void smzx_r_write(World *mzx_world, Function_counter *counter,
   pal_update = 1;
 }
 
-void smzx_g_write(World *mzx_world, Function_counter *counter,
+void smzx_g_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int cur_color = strtol(name + 6, NULL, 10);
@@ -543,7 +586,7 @@ void smzx_g_write(World *mzx_world, Function_counter *counter,
   pal_update = 1;
 }
 
-void smzx_b_write(World *mzx_world, Function_counter *counter,
+void smzx_b_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int cur_color = strtol(name + 6, NULL, 10);
@@ -551,96 +594,96 @@ void smzx_b_write(World *mzx_world, Function_counter *counter,
   pal_update = 1;
 }
 
-int spr_clist_read(World *mzx_world, Function_counter *counter,
+int spr_clist_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int clist_num = strtol(name + 9, NULL, 10) & (MAX_SPRITES - 1);
   return mzx_world->collision_list[clist_num];
 }
 
-int spr_collisions_read(World *mzx_world, Function_counter *counter,
+int spr_collisions_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->collision_count;
 }
 
-int spr_num_read(World *mzx_world, Function_counter *counter,
+int spr_num_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->sprite_num;
 }
 
-int spr_cx_read(World *mzx_world, Function_counter *counter,
+int spr_cx_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   return (mzx_world->sprite_list[spr_num])->col_x;
 }
 
-int spr_cy_read(World *mzx_world, Function_counter *counter,
+int spr_cy_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   return (mzx_world->sprite_list[spr_num])->col_y;
 }
 
-int spr_width_read(World *mzx_world, Function_counter *counter,
+int spr_width_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   return (mzx_world->sprite_list[spr_num])->width;
 }
 
-int spr_height_read(World *mzx_world, Function_counter *counter,
+int spr_height_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   return (mzx_world->sprite_list[spr_num])->height;
 }
 
-int spr_refx_read(World *mzx_world, Function_counter *counter,
+int spr_refx_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   return (mzx_world->sprite_list[spr_num])->ref_x;
 }
 
-int spr_refy_read(World *mzx_world, Function_counter *counter,
+int spr_refy_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   return (mzx_world->sprite_list[spr_num])->ref_y;
 }
 
-int spr_x_read(World *mzx_world, Function_counter *counter,
+int spr_x_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   return (mzx_world->sprite_list[spr_num])->x;
 }
 
-int spr_y_read(World *mzx_world, Function_counter *counter,
+int spr_y_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   return (mzx_world->sprite_list[spr_num])->y;
 }
 
-int spr_cwidth_read(World *mzx_world, Function_counter *counter,
+int spr_cwidth_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   return (mzx_world->sprite_list[spr_num])->col_width;
 }
 
-int spr_cheight_read(World *mzx_world, Function_counter *counter,
+int spr_cheight_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   return (mzx_world->sprite_list[spr_num])->col_height;
 }
 
-void spr_num_write(World *mzx_world, Function_counter *counter,
+void spr_num_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   value &= 0xFF;
@@ -648,13 +691,13 @@ void spr_num_write(World *mzx_world, Function_counter *counter,
   mzx_world->sprite_num = (unsigned int)value;
 }
 
-void spr_yorder_write(World *mzx_world, Function_counter *counter,
+void spr_yorder_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   mzx_world->sprite_y_order = value & 1;
 }
 
-void spr_ccheck_write(World *mzx_world, Function_counter *counter,
+void spr_ccheck_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
@@ -683,7 +726,7 @@ void spr_ccheck_write(World *mzx_world, Function_counter *counter,
   }
 }
 
-void spr_clist_write(World *mzx_world, Function_counter *counter,
+void spr_clist_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
@@ -692,35 +735,35 @@ void spr_clist_write(World *mzx_world, Function_counter *counter,
    cur_sprite->y);
 }
 
-void spr_cx_write(World *mzx_world, Function_counter *counter,
+void spr_cx_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   (mzx_world->sprite_list[spr_num])->col_x = value;
 }
 
-void spr_cy_write(World *mzx_world, Function_counter *counter,
+void spr_cy_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   (mzx_world->sprite_list[spr_num])->col_y = value;
 }
 
-void spr_height_write(World *mzx_world, Function_counter *counter,
+void spr_height_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   (mzx_world->sprite_list[spr_num])->height = value;
 }
 
-void spr_width_write(World *mzx_world, Function_counter *counter,
+void spr_width_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   (mzx_world->sprite_list[spr_num])->width = value;
 }
 
-void spr_refx_write(World *mzx_world, Function_counter *counter,
+void spr_refx_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
@@ -731,7 +774,7 @@ void spr_refx_write(World *mzx_world, Function_counter *counter,
   (mzx_world->sprite_list[spr_num])->ref_x = value;
 }
 
-void spr_refy_write(World *mzx_world, Function_counter *counter,
+void spr_refy_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
@@ -742,21 +785,21 @@ void spr_refy_write(World *mzx_world, Function_counter *counter,
   (mzx_world->sprite_list[spr_num])->ref_y = value;
 }
 
-void spr_x_write(World *mzx_world, Function_counter *counter,
+void spr_x_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   (mzx_world->sprite_list[spr_num])->x = value;
 }
 
-void spr_y_write(World *mzx_world, Function_counter *counter,
+void spr_y_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   (mzx_world->sprite_list[spr_num])->y = value;
 }
 
-void spr_vlayer_write(World *mzx_world, Function_counter *counter,
+void spr_vlayer_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
@@ -766,7 +809,7 @@ void spr_vlayer_write(World *mzx_world, Function_counter *counter,
     (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_VLAYER;
 }
 
-void spr_static_write(World *mzx_world, Function_counter *counter,
+void spr_static_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
@@ -776,7 +819,7 @@ void spr_static_write(World *mzx_world, Function_counter *counter,
     (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_STATIC;
 }
 
-void spr_overlaid_write(World *mzx_world, Function_counter *counter,
+void spr_overlaid_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
@@ -786,14 +829,14 @@ void spr_overlaid_write(World *mzx_world, Function_counter *counter,
     (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_OVER_OVERLAY;
 }
 
-void spr_off_write(World *mzx_world, Function_counter *counter,
+void spr_off_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_INITIALIZED;
 }
 
-void spr_swap_write(World *mzx_world, Function_counter *counter,
+void spr_swap_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
@@ -803,21 +846,21 @@ void spr_swap_write(World *mzx_world, Function_counter *counter,
   mzx_world->sprite_list[spr_num] = dest;
 }
 
-void spr_cwidth_write(World *mzx_world, Function_counter *counter,
+void spr_cwidth_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   (mzx_world->sprite_list[spr_num])->col_width = value;
 }
 
-void spr_cheight_write(World *mzx_world, Function_counter *counter,
+void spr_cheight_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1) & 0xFF;
   (mzx_world->sprite_list[spr_num])->col_height = value;
 }
 
-void spr_setview_write(World *mzx_world, Function_counter *counter,
+void spr_setview_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -836,44 +879,44 @@ void spr_setview_write(World *mzx_world, Function_counter *counter,
   return;
 }
 
-int bullettype_read(World *mzx_world, Function_counter *counter,
+int bullettype_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return (mzx_world->current_board->robot_list[id])->bullet_type;
 }
 
-void bullettype_write(World *mzx_world, Function_counter *counter,
+void bullettype_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   (mzx_world->current_board->robot_list[id])->bullet_type = value;
 }
 
-int inputsize_read(World *mzx_world, Function_counter *counter,
+int inputsize_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->current_board->input_size;
 }
 
-void inputsize_write(World *mzx_world, Function_counter *counter,
+void inputsize_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   mzx_world->current_board->input_size = value;
 }
 
-int input_read(World *mzx_world, Function_counter *counter,
+int input_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->current_board->num_input;
 }
 
-void input_write(World *mzx_world, Function_counter *counter,
+void input_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   mzx_world->current_board->num_input = value;
   sprintf(mzx_world->current_board->input_string, "%d", value);
 }
 
-int key_read(World *mzx_world, Function_counter *counter,
+int key_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   if(name[3])
@@ -887,32 +930,32 @@ int key_read(World *mzx_world, Function_counter *counter,
   }
 }
 
-void key_write(World *mzx_world, Function_counter *counter,
+void key_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   if(!name[3])
     force_last_key(keycode_SDL, toupper(value));
 }
 
-int key_code_read(World *mzx_world, Function_counter *counter,
+int key_code_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return get_key(keycode_pc_xt);
 }
 
-int key_pressed_read(World *mzx_world, Function_counter *counter,
+int key_pressed_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return get_key(keycode_SDL);
 }
 
-int key_release_read(World *mzx_world, Function_counter *counter,
+int key_release_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return get_last_key_released(keycode_pc_xt);
 }
 
-int scrolledx_read(World *mzx_world, Function_counter *counter,
+int scrolledx_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int scroll_x, scroll_y;
@@ -920,7 +963,7 @@ int scrolledx_read(World *mzx_world, Function_counter *counter,
   return scroll_x;
 }
 
-int scrolledy_read(World *mzx_world, Function_counter *counter,
+int scrolledy_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int scroll_x, scroll_y;
@@ -928,19 +971,19 @@ int scrolledy_read(World *mzx_world, Function_counter *counter,
   return scroll_y;
 }
 
-int timerset_read(World *mzx_world, Function_counter *counter,
+int timerset_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->current_board->time_limit;
 }
 
-void timerset_write(World *mzx_world, Function_counter *counter,
+void timerset_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   mzx_world->current_board->time_limit = value;
 }
 
-int date_day_read(World *mzx_world, Function_counter *counter,
+int date_day_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   time_t e_time = time(NULL);
@@ -948,7 +991,7 @@ int date_day_read(World *mzx_world, Function_counter *counter,
   return t->tm_mday;
 }
 
-int date_year_read(World *mzx_world, Function_counter *counter,
+int date_year_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   time_t e_time = time(NULL);
@@ -956,7 +999,7 @@ int date_year_read(World *mzx_world, Function_counter *counter,
   return t->tm_year + 1900;
 }
 
-int date_month_read(World *mzx_world, Function_counter *counter,
+int date_month_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   time_t e_time = time(NULL);
@@ -964,7 +1007,7 @@ int date_month_read(World *mzx_world, Function_counter *counter,
   return t->tm_mon + 1;
 }
 
-int time_hours_read(World *mzx_world, Function_counter *counter,
+int time_hours_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   time_t e_time = time(NULL);
@@ -972,7 +1015,7 @@ int time_hours_read(World *mzx_world, Function_counter *counter,
   return t->tm_hour;
 }
 
-int time_minutes_read(World *mzx_world, Function_counter *counter,
+int time_minutes_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   time_t e_time = time(NULL);
@@ -980,7 +1023,7 @@ int time_minutes_read(World *mzx_world, Function_counter *counter,
   return t->tm_min;
 }
 
-int time_seconds_read(World *mzx_world, Function_counter *counter,
+int time_seconds_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   time_t e_time = time(NULL);
@@ -988,7 +1031,7 @@ int time_seconds_read(World *mzx_world, Function_counter *counter,
   return t->tm_sec;
 }
 
-int vch_read(World *mzx_world, Function_counter *counter,
+int vch_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   unsigned int x, y;
@@ -1005,7 +1048,7 @@ int vch_read(World *mzx_world, Function_counter *counter,
   return -1;
 }
 
-void vch_write(World *mzx_world, Function_counter *counter,
+void vch_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   unsigned int x, y;
@@ -1020,7 +1063,7 @@ void vch_write(World *mzx_world, Function_counter *counter,
   }
 }
 
-int vco_read(World *mzx_world, Function_counter *counter,
+int vco_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   unsigned int x, y;
@@ -1037,7 +1080,7 @@ int vco_read(World *mzx_world, Function_counter *counter,
   return -1;
 }
 
-void vco_write(World *mzx_world, Function_counter *counter,
+void vco_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   unsigned int x, y;
@@ -1052,21 +1095,21 @@ void vco_write(World *mzx_world, Function_counter *counter,
   }
 }
 
-int char_byte_read(World *mzx_world, Function_counter *counter,
+int char_byte_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return ec_read_byte(get_counter(mzx_world, "CHAR", id),
    get_counter(mzx_world, "BYTE", id));
 }
 
-void char_byte_write(World *mzx_world, Function_counter *counter,
+void char_byte_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   ec_change_byte(get_counter(mzx_world, "CHAR", id),
    get_counter(mzx_world, "BYTE", id), value);
 }
 
-int pixel_read(World *mzx_world, Function_counter *counter,
+int pixel_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int pixel_mask;
@@ -1083,7 +1126,7 @@ int pixel_read(World *mzx_world, Function_counter *counter,
   return (current_byte & pixel_mask) >> (7 - sub_x);
 }
 
-void pixel_write(World *mzx_world, Function_counter *counter,
+void pixel_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   char sub_x, sub_y, current_byte;
@@ -1123,14 +1166,14 @@ void pixel_write(World *mzx_world, Function_counter *counter,
   return;
 }
 
-int int2bin_read(World *mzx_world, Function_counter *counter,
+int int2bin_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int place = get_counter(mzx_world, "BIT_PLACE", id) & 15;
   return ((get_counter(mzx_world, "INT", id) >> place) & 1);
 }
 
-void int2bin_write(World *mzx_world, Function_counter *counter,
+void int2bin_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   unsigned int integer;
@@ -1165,75 +1208,75 @@ void int2bin_write(World *mzx_world, Function_counter *counter,
   set_counter(mzx_world, "INT", integer, id);
 }
 
-int commands_read(World *mzx_world, Function_counter *counter,
+int commands_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->commands;
 }
 
-void commands_write(World *mzx_world, Function_counter *counter,
+void commands_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   mzx_world->commands = value;
 }
 
-int fread_open_read(World *mzx_world, Function_counter *counter,
+int fread_open_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_FREAD;
   return 0;
 }
 
-int fwrite_open_read(World *mzx_world, Function_counter *counter,
+int fwrite_open_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_FWRITE;
   return 0;
 }
 
-int fwrite_append_read(World *mzx_world, Function_counter *counter,
+int fwrite_append_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_FAPPEND;
   return 0;
 }
 
-int fwrite_modify_read(World *mzx_world, Function_counter *counter,
+int fwrite_modify_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_FMODIFY;
   return 0;
 }
 
-int smzx_palette_read(World *mzx_world, Function_counter *counter,
+int smzx_palette_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_SMZX_PALETTE;
   return 0;
 }
 
-int load_game_read(World *mzx_world, Function_counter *counter,
+int load_game_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_LOAD_GAME;
   return 0;
 }
 
-int save_game_read(World *mzx_world, Function_counter *counter,
+int save_game_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_SAVE_GAME;
   return 0;
 }
 
-int save_world_read(World *mzx_world, Function_counter *counter,
+int save_world_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_SAVE_WORLD;
   return 0;
 }
 
-int save_robot_read(World *mzx_world, Function_counter *counter,
+int save_robot_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_SAVE_ROBOT;
@@ -1243,7 +1286,7 @@ int save_robot_read(World *mzx_world, Function_counter *counter,
   return -1;
 }
 
-int load_robot_read(World *mzx_world, Function_counter *counter,
+int load_robot_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_LOAD_ROBOT;
@@ -1253,7 +1296,7 @@ int load_robot_read(World *mzx_world, Function_counter *counter,
   return -1;
 }
 
-int load_bc_read(World *mzx_world, Function_counter *counter,
+int load_bc_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_LOAD_BC;
@@ -1264,7 +1307,7 @@ int load_bc_read(World *mzx_world, Function_counter *counter,
   return -1;
 }
 
-int save_bc_read(World *mzx_world, Function_counter *counter,
+int save_bc_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_SAVE_BC;
@@ -1274,7 +1317,7 @@ int save_bc_read(World *mzx_world, Function_counter *counter,
   return -1;
 }
 
-int fread_read(World *mzx_world, Function_counter *counter,
+int fread_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   if(mzx_world->input_file)
@@ -1283,7 +1326,7 @@ int fread_read(World *mzx_world, Function_counter *counter,
     return -1;
 }
 
-int fread_counter_read(World *mzx_world, Function_counter *counter,
+int fread_counter_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   if(mzx_world->input_file)
@@ -1292,7 +1335,7 @@ int fread_counter_read(World *mzx_world, Function_counter *counter,
     return -1;
 }
 
-int fread_pos_read(World *mzx_world, Function_counter *counter,
+int fread_pos_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   if(mzx_world->input_file)
@@ -1301,7 +1344,7 @@ int fread_pos_read(World *mzx_world, Function_counter *counter,
     return -1;
 }
 
-void fread_pos_write(World *mzx_world, Function_counter *counter,
+void fread_pos_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   if(mzx_world->input_file)
@@ -1313,7 +1356,7 @@ void fread_pos_write(World *mzx_world, Function_counter *counter,
   }
 }
 
-int fwrite_pos_read(World *mzx_world, Function_counter *counter,
+int fwrite_pos_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   if(mzx_world->output_file)
@@ -1322,7 +1365,7 @@ int fwrite_pos_read(World *mzx_world, Function_counter *counter,
     return -1;
 }
 
-void fwrite_pos_write(World *mzx_world, Function_counter *counter,
+void fwrite_pos_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   if(mzx_world->output_file)
@@ -1334,102 +1377,141 @@ void fwrite_pos_write(World *mzx_world, Function_counter *counter,
   }
 }
 
-void fwrite_write(World *mzx_world, Function_counter *counter,
+void fwrite_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   if(mzx_world->output_file)
     fputc(value, mzx_world->output_file);
 }
 
-void fwrite_counter_write(World *mzx_world, Function_counter *counter,
+void fwrite_counter_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   if(mzx_world->output_file)
     fputw(value, mzx_world->output_file);
 }
 
-int lava_walk_read(World *mzx_world, Function_counter *counter,
+int lava_walk_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return (mzx_world->current_board->robot_list[id])->can_lavawalk;
 }
 
-void lava_walk_write(World *mzx_world, Function_counter *counter,
+void lava_walk_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   (mzx_world->current_board->robot_list[id])->can_lavawalk = value;
 }
 
-int robot_id_read(World *mzx_world, Function_counter *counter,
+int robot_id_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return id;
 }
 
-int robot_id_n_read(World *mzx_world, Function_counter *counter,
+int robot_id_n_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return get_robot_id(mzx_world->current_board, name + 9);
 }
 
-int rid_read(World *mzx_world, Function_counter *counter,
+int rid_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return get_robot_id(mzx_world->current_board, name + 3);
 }
 
-int r_read(World *mzx_world, Function_counter *counter,
+int r_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   Board *src_board = mzx_world->current_board;
   char *next;
-  int robot_num = strtol(name + 1, &next, 10);
+  unsigned int robot_num = strtol(name + 1, &next, 10);
 
-  if((robot_num <= src_board->num_robots) &&
+  if((robot_num <= (unsigned int)src_board->num_robots) &&
    (src_board->robot_list[robot_num] != NULL))
+  {
     return get_counter(mzx_world, next + 1, robot_num);
+  }
 
   return -1;
 }
 
-void r_write(World *mzx_world, Function_counter *counter,
+void r_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   Board *src_board = mzx_world->current_board;
   char *next;
-  int robot_num = strtol(name + 1, &next, 10);
-  if((robot_num <= src_board->num_robots) &&
+  unsigned int robot_num = strtol(name + 1, &next, 10);
+
+  if((robot_num <= (unsigned int)src_board->num_robots) &&
    (src_board->robot_list[robot_num] != NULL))
+  {
     set_counter(mzx_world, next + 1, value, robot_num);
+  }
 }
 
-int vlayer_height_read(World *mzx_world, Function_counter *counter,
+int vlayer_height_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->vlayer_height;
 }
 
-int vlayer_width_read(World *mzx_world, Function_counter *counter,
+int vlayer_size_read(World *mzx_world, function_counter *counter,
+ char *name, int id)
+{
+  return mzx_world->vlayer_size;
+}
+
+int vlayer_width_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return mzx_world->vlayer_width;
 }
 
-void vlayer_height_write(World *mzx_world, Function_counter *counter,
+void vlayer_height_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   mzx_world->vlayer_height = value;
-  mzx_world->vlayer_width = 32768 / value;
+  mzx_world->vlayer_width = mzx_world->vlayer_size / value;
 }
 
-void vlayer_width_write(World *mzx_world, Function_counter *counter,
+void vlayer_size_write(World *mzx_world, function_counter *counter,
+ char *name, int value, int id)
+{
+  if(value <= MAX_BOARD_SIZE)
+  {
+    int vlayer_width = mzx_world->vlayer_width;
+    int vlayer_height = mzx_world->vlayer_height;
+  
+    mzx_world->vlayer_chars =
+     (char *)realloc(mzx_world->vlayer_chars, value);
+    mzx_world->vlayer_colors =
+     (char *)realloc(mzx_world->vlayer_colors, value);
+    mzx_world->vlayer_size = value;
+  
+    if(vlayer_width * vlayer_height > value)
+    {
+      vlayer_height = value / vlayer_width;
+      mzx_world->vlayer_height = vlayer_height;
+  
+      if(vlayer_height == 0)
+      {
+        mzx_world->vlayer_width = value;
+        mzx_world->vlayer_height = 1;
+      }
+    }
+  }
+}
+
+void vlayer_width_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   mzx_world->vlayer_width = value;
-  mzx_world->vlayer_height = 32768 / value;
+  mzx_world->vlayer_height = mzx_world->vlayer_size / value;
 }
 
-int buttons_read(World *mzx_world, Function_counter *counter,
+int buttons_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int buttons_current, buttons_formatted = 0;
@@ -1446,19 +1528,19 @@ int buttons_read(World *mzx_world, Function_counter *counter,
   return buttons_formatted;
 }
 
-int mousex_read(World *mzx_world, Function_counter *counter,
+int mousex_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return get_mouse_x();
 }
 
-int mousey_read(World *mzx_world, Function_counter *counter,
+int mousey_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return get_mouse_y();
 }
 
-void mousex_write(World *mzx_world, Function_counter *counter,
+void mousex_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   if(value > 79)
@@ -1470,7 +1552,7 @@ void mousex_write(World *mzx_world, Function_counter *counter,
   warp_mouse_x(value);
 }
 
-void mousey_write(World *mzx_world, Function_counter *counter,
+void mousey_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   if(value > 25)
@@ -1482,7 +1564,7 @@ void mousey_write(World *mzx_world, Function_counter *counter,
   warp_mouse_y(value);
 }
 
-int mboardx_read(World *mzx_world, Function_counter *counter,
+int mboardx_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int scroll_x, scroll_y;
@@ -1491,7 +1573,7 @@ int mboardx_read(World *mzx_world, Function_counter *counter,
    scroll_x - mzx_world->current_board->viewport_x;
 }
 
-int mboardy_read(World *mzx_world, Function_counter *counter,
+int mboardy_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int scroll_x, scroll_y;
@@ -1500,53 +1582,82 @@ int mboardy_read(World *mzx_world, Function_counter *counter,
    scroll_y - mzx_world->current_board->viewport_y;
 }
 
-void bimesg_write(World *mzx_world, Function_counter *counter,
+void bimesg_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   mzx_world->bi_mesg_status = value & 1;
 }
 
-int str_num_read(World *mzx_world, Function_counter *counter,
+int str_num_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   // Is it a single char?
-  int dot_position = 0;
-  int name_position = 1;
-  char cur_char = name[1];
-  char str_buffer[64];
+  char *dot_ptr = NULL;
+  char *name_ptr = name + 1;
+  char cur_char = *name_ptr;
+  mzx_string src;
 
   while(cur_char)
   {
     if(cur_char == '.')
-      dot_position = name_position;
-    name_position++;
-    cur_char = name[name_position];
+      dot_ptr = name_ptr;
+    name_ptr++;
+    cur_char = *name_ptr;
   }
 
-  if(dot_position)
+  if(dot_ptr)
   {
-    // A number
-    int str_num = strtol(name + dot_position + 1, NULL, 10);
-    if(str_num < 63)
+    *dot_ptr = 0;
+    dot_ptr++;
+
+    if(!strncasecmp(dot_ptr, "length", 6))
     {
-      name[dot_position] = 0;
-      get_string(mzx_world, name, id, str_buffer);
-      return str_buffer[str_num];
+      int next;
+      mzx_string *src = find_string(mzx_world, name, &next);
+
+      if(src)
+        return src->length;
     }
+    else
+    {
+      // A number
+      int str_num = strtol(dot_ptr, NULL, 10);
+
+      if(get_string(mzx_world, name, &src, id))
+      {
+        if(str_num >= src.length)
+          return 0;
+
+        return src.value[str_num];
+      }
+    }
+
+    return 0;
   }
 
-  get_string(mzx_world, name, id, str_buffer);
-  return strtol(str_buffer, NULL, 10);
+  if(get_string(mzx_world, name, &src, id))
+  {
+    // Dirty C99, but it works for padding a null terminator.
+    char n_buffer[src.length + 1];
+    memcpy(n_buffer, src.value, src.length);
+    n_buffer[src.length] = 0;
+
+    return strtol(n_buffer, NULL, 10);
+  }
+
+  return 0;
 }
 
-void str_num_write(World *mzx_world, Function_counter *counter,
+void str_num_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
   // Is it a single char?
   int dot_position = 0;
   int name_position = 1;
   int str_num;
+  int next;
   char cur_char = name[1];
+  mzx_string *src;
 
   while(cur_char)
   {
@@ -1558,39 +1669,102 @@ void str_num_write(World *mzx_world, Function_counter *counter,
 
   // A number
   str_num = strtol(name + dot_position + 1, NULL, 10);
-  if(str_num < 63)
+
+  // No size restrictions except it can't be negative. If you
+  // set this to something really large it'll probably crash!
+
+  if(str_num < 0)
+    str_num = 0;
+
+  name[dot_position] = 0;
+
+  src = find_string(mzx_world, name, &next);
+
+  if(src)
   {
-    String *sdest;
-    int next;
+    int allocated_length = src->allocated_length;
 
-    name[dot_position] = 0;
+    // If we're writing out of bounds allocate enough space
+    // to serve what we need. If we're allocating within 2x
+    // what's available double the space. This way iterative
+    // writes won't constantly tax new allocations but writes
+    // into far off space won't allocate twice as much as
+    // needed.
 
-    if(strlen(name) > 14)
-      name[14] = 0;
-
-    sdest = find_string(mzx_world, name, &next);
-    if(sdest)
+    if(str_num >= allocated_length)
     {
-      sdest->string_contents[str_num] = value;
+      if(str_num < (allocated_length * 2))
+      {
+        src = reallocate_string(mzx_world, src, next,
+         allocated_length * 2);
+      }
+      else
+      {
+        src = reallocate_string(mzx_world, src, next,
+         str_num + 1);
+      }
     }
-    else
-    {
-      char str_buffer[64];
-      str_buffer[str_num] = value;
-      add_string(mzx_world, name, str_buffer, next);
-    }
+
+    if(str_num >= src->length)
+      src->length = str_num + 1;
+
+    src->value[str_num] = value;
+  }
+  else
+  {
+    mzx_string new_string;
+    char temp_space[str_num + 1];
+
+    temp_space[str_num] = value;
+    new_string.value = temp_space;
+    new_string.length = str_num + 1;
+
+    add_string(mzx_world, name, &new_string, next);
   }
 }
 
-int mod_order_read(World *mzx_world, Function_counter *counter,
+int mod_order_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   return get_order();
 }
 
+void mod_order_write(World *mzx_world, function_counter *counter,
+ char *name, int value, int id)
+{
+  jump_mod(value);
+}
+
+int mod_position_read(World *mzx_world, function_counter *counter,
+ char *name, int id)
+{
+  return get_position();
+}
+
+void mod_position_write(World *mzx_world, function_counter *counter,
+ char *name, int value, int id)
+{
+  set_position(value);
+}
+
+int mod_freq_read(World *mzx_world, function_counter *counter,
+ char *name, int id)
+{
+  return get_frequency();
+}
+
+void mod_freq_write(World *mzx_world, function_counter *counter,
+ char *name, int value, int id)
+{
+  if((value == 0) || ((value >= 16) && (value <= (2 << 20))))
+    shift_frequency(value);
+}
+
+
+
 // Make sure this is in the right alphabetical (non-case sensitive) order
-// ?A specifies that 0 through A numbers will match at this point
-// ?A-B specifies A through B numbers
+// ? specifies 0 or more numbers
+// ! specifies 1 or more numbers
 // * skips any characters at or after this point, including a null terminator
 // This must be sorted in a case insensitive way, that has special applications
 // for non-letters:
@@ -1598,13 +1772,13 @@ int mod_order_read(World *mzx_world, Function_counter *counter,
 // ? comes before letters
 // numbers come before letters (and before ?)
 
-Function_counter builtin_counters[] =
+function_counter builtin_counters[] =
 {
   { "$*", 0, str_num_read, str_num_write },
-  { "abs?1-9", 0, abs_read, NULL },
-  { "acos?1-9", 0, acos_read, NULL },
-  { "asin?1-9", 0, asin_read, NULL },
-  { "atan?1-9", 0, atan_read, NULL },
+  { "abs!", 0, abs_read, NULL },
+  { "acos!", 0, acos_read, NULL },
+  { "asin!", 0, asin_read, NULL },
+  { "atan!", 0, atan_read, NULL },
   { "bimesg", 0, NULL, bimesg_write },
   { "blue_value", 0, blue_value_read, blue_value_write },
   { "board_char", 0, board_char_read, NULL },
@@ -1617,7 +1791,7 @@ Function_counter builtin_counters[] =
   { "buttons", 0, buttons_read, NULL },
   { "char_byte", 0, char_byte_read, char_byte_write },
   { "commands", 0, commands_read, commands_write },
-  { "cos?1-9", 0, cos_read, NULL },
+  { "cos!", 0, cos_read, NULL },
   { "c_divisions", 0, c_divisions_read, c_divisions_write },
   { "date_day", 0, date_day_read, NULL },
   { "date_month", 0, date_month_read, NULL },
@@ -1638,19 +1812,21 @@ Function_counter builtin_counters[] =
   { "input", 0, input_read, input_write },
   { "inputsize", 0, inputsize_read, inputsize_write },
   { "int2bin", 0, int2bin_read, int2bin_write },
-  { "key?3", 0, key_read, key_write },
+  { "key?", 0, key_read, key_write },
   { "key_code", 0, key_code_read, NULL },
   { "key_pressed", 0, key_pressed_read, NULL },
   { "key_release", 0, key_release_read, NULL },
   { "lava_walk", 0, lava_walk_read, lava_walk_write },
-  { "load_bc?3", 0, load_bc_read, NULL },
+  { "load_bc?", 0, load_bc_read, NULL },
   { "load_game", 0, load_game_read, NULL },
-  { "load_robot?3", 0, load_robot_read, NULL },
-  { "local?2", 0, local_read, local_write },
+  { "load_robot?", 0, load_robot_read, NULL },
+  { "local?", 0, local_read, local_write },
   { "loopcount", 0, loopcount_read, loopcount_write },
   { "mboardx", 0, mboardx_read, NULL },
   { "mboardy", 0, mboardy_read, NULL },
-  { "mod_order", 0, mod_order_read, NULL },
+  { "mod_frequency", 0, mod_freq_read, mod_freq_write },
+  { "mod_order", 0, mod_order_read, mod_order_write },
+  { "mod_position", 0, mod_position_read, mod_position_write },
   { "mousex", 0, mousex_read, mousex_write },
   { "mousey", 0, mousey_read, mousey_write },
   { "multiplier", 0, multiplier_read, multiplier_write },
@@ -1664,49 +1840,49 @@ Function_counter builtin_counters[] =
   { "playerlastdir", 0, playerlastdir_read, playerlastdir_write },
   { "playerx", 0, playerx_read, NULL },
   { "playery", 0, playery_read, NULL },
-  { "r?1-5.*", 0, r_read, r_write },
+  { "r!.*", 0, r_read, r_write },
   { "red_value", 0, red_value_read, red_value_write },
   { "rid*", 0, rid_read, NULL },
   { "robot_id", 0, robot_id_read, NULL },
   { "robot_id_*", 0, robot_id_n_read, NULL },
-  { "save_bc?3", 0, save_bc_read, NULL },
+  { "save_bc?", 0, save_bc_read, NULL },
   { "save_game", 0, save_game_read, NULL },
-  { "save_robot?3", 0, save_robot_read, NULL },
+  { "save_robot?", 0, save_robot_read, NULL },
   { "save_world", 0, save_world_read, NULL },
   { "score", 0, score_read, score_write },
   { "scrolledx", 0, scrolledx_read, NULL },
   { "scrolledy", 0, scrolledy_read, NULL },
-  { "sin?1-9", 0, sin_read, NULL },
-  { "smzx_b?1-3", 0, smzx_b_read, smzx_b_write },
-  { "smzx_g?1-3", 0, smzx_g_read, smzx_g_write },
+  { "sin!", 0, sin_read, NULL },
+  { "smzx_b!", 0, smzx_b_read, smzx_b_write },
+  { "smzx_g!", 0, smzx_g_read, smzx_g_write },
   { "smzx_mode", 0, smzx_mode_read, smzx_mode_write },
   { "smzx_palette", 0, smzx_palette_read, NULL },
-  { "smzx_r?1-3", 0, smzx_r_read, smzx_r_write },
-  { "spr?1-3_ccheck", 0, NULL, spr_ccheck_write },
-  { "spr?1-3_cheight", 0, spr_cheight_read, spr_cheight_write },
-  { "spr?1-3_clist", 0, NULL, spr_clist_write },
-  { "spr?1-3_cwidth", 0, spr_cwidth_read, spr_cwidth_write },
-  { "spr?1-3_cx", 0, spr_cx_read, spr_cx_write },
-  { "spr?1-3_cy", 0, spr_cy_read, spr_cy_write },
-  { "spr?1-3_height", 0, spr_height_read, spr_height_write },
-  { "spr?1-3_off", 0, NULL, spr_off_write },
-  { "spr?1-3_overlaid", 0, NULL, spr_overlaid_write },
-  { "spr?1-3_overlay", 0, NULL, spr_overlaid_write },
-  { "spr?1-3_refx", 0, spr_refx_read, spr_refx_write },
-  { "spr?1-3_refy", 0, spr_refy_read, spr_refy_write },
-  { "spr?1-3_setview", 0, NULL, spr_setview_write },
-  { "spr?1-3_static", 0, NULL, spr_static_write },
-  { "spr?1-3_swap", 0, NULL, spr_swap_write },
-  { "spr?1-3_vlayer", 0, NULL, spr_vlayer_write },
-  { "spr?1-3_width", 0, spr_width_read, spr_width_write },
-  { "spr?1-3_x", 0, spr_x_read, spr_x_write },
-  { "spr?1-3_y", 0, spr_y_read, spr_y_write },
-  { "spr_clist?1-3", 0, spr_clist_read, NULL },
+  { "smzx_r!", 0, smzx_r_read, smzx_r_write },
+  { "spr!_ccheck", 0, NULL, spr_ccheck_write },
+  { "spr!_cheight", 0, spr_cheight_read, spr_cheight_write },
+  { "spr!_clist", 0, NULL, spr_clist_write },
+  { "spr!_cwidth", 0, spr_cwidth_read, spr_cwidth_write },
+  { "spr!_cx", 0, spr_cx_read, spr_cx_write },
+  { "spr!_cy", 0, spr_cy_read, spr_cy_write },
+  { "spr!_height", 0, spr_height_read, spr_height_write },
+  { "spr!_off", 0, NULL, spr_off_write },
+  { "spr!_overlaid", 0, NULL, spr_overlaid_write },
+  { "spr!_overlay", 0, NULL, spr_overlaid_write },
+  { "spr!_refx", 0, spr_refx_read, spr_refx_write },
+  { "spr!_refy", 0, spr_refy_read, spr_refy_write },
+  { "spr!_setview", 0, NULL, spr_setview_write },
+  { "spr!_static", 0, NULL, spr_static_write },
+  { "spr!_swap", 0, NULL, spr_swap_write },
+  { "spr!_vlayer", 0, NULL, spr_vlayer_write },
+  { "spr!_width", 0, spr_width_read, spr_width_write },
+  { "spr!_x", 0, spr_x_read, spr_x_write },
+  { "spr!_y", 0, spr_y_read, spr_y_write },
+  { "spr_clist!", 0, spr_clist_read, NULL },
   { "spr_collisions", 0, spr_collisions_read, NULL },
   { "spr_num", 0, spr_num_read, spr_num_write },
   { "spr_yorder", 0, NULL, spr_yorder_write },
-  { "sqrt?1-9", 0, sqrt_read, NULL },
-  { "tan?1-9", 0, tan_read, NULL },
+  { "sqrt!", 0, sqrt_read, NULL },
+  { "tan!", 0, tan_read, NULL },
   { "thisx", 0, thisx_read, NULL },
   { "thisy", 0, thisy_read, NULL },
   { "this_char", 0, this_char_read, NULL },
@@ -1715,10 +1891,11 @@ Function_counter builtin_counters[] =
   { "time_hours", 0, time_hours_read, NULL },
   { "time_minutes", 0, time_minutes_read, NULL },
   { "time_seconds", 0, time_seconds_read, NULL },
-  { "vch?1-5,?1-5", 0, vch_read, vch_write },
-  { "vco?1-5,?1-5", 0, vco_read, vco_write },
+  { "vch!,!", 0, vch_read, vch_write },
+  { "vco!,!", 0, vco_read, vco_write },
   { "vertpld", 0, vertpld_read, NULL },
   { "vlayer_height", 0, vlayer_height_read, vlayer_height_write },
+  { "vlayer_size", 0, vlayer_size_read, vlayer_size_write },
   { "vlayer_width", 0, vlayer_width_read, vlayer_width_write },
 };
 
@@ -1826,20 +2003,22 @@ int set_counter_special(World *mzx_world, int spec_type,
 
     case FOPEN_SAVE_GAME:
     {
+      char translated_path[512];
       int faded = get_fade_status();
-      char translated_name[MAX_PATH];
 
-      if(!fsafetranslate(char_value, translated_name))
-      {
-        save_world(mzx_world, char_value, 1, faded);
-      }
+      if(!fsafetest(char_value, translated_path))
+        save_world(mzx_world, translated_path, 1, faded);
 
       return 0;
     }
 
     case FOPEN_SAVE_WORLD:
     {
-      save_world(mzx_world, char_value, 0, 0);
+      char translated_path[512];
+
+      if(!fsafetest(char_value, translated_path))
+        save_world(mzx_world, translated_path, 0, 0);
+
       return 0;
     }
 
@@ -2005,9 +2184,9 @@ int set_counter_special(World *mzx_world, int spec_type,
 
 // I don't know yet if this works in pure C
 const int num_builtin_counters =
- sizeof(builtin_counters) / sizeof(Function_counter);
+ sizeof(builtin_counters) / sizeof(function_counter);
 
-int health_gateway(World *mzx_world, Counter *counter, char *name,
+int health_gateway(World *mzx_world, counter *counter, char *name,
  int value, int id)
 {
   // Make sure health is within 0 and max health
@@ -2021,7 +2200,7 @@ int health_gateway(World *mzx_world, Counter *counter, char *name,
   }
 
   // Trying to decrease health?
-  if(value < counter->counter_value)
+  if(value < counter->value)
   {
     // Must not be invincible
     if(get_counter(mzx_world, "INVINCO", 0) <= 0)
@@ -2050,14 +2229,14 @@ int health_gateway(World *mzx_world, Counter *counter, char *name,
     }
     else
     {
-      value = counter->counter_value;
+      value = counter->value;
     }
   }
 
   return value;
 }
 
-int lives_gateway(World *mzx_world, Counter *counter, char *name,
+int lives_gateway(World *mzx_world, counter *counter, char *name,
  int value, int id)
 {
   // Make sure lives is within 0 and max lives
@@ -2073,10 +2252,10 @@ int lives_gateway(World *mzx_world, Counter *counter, char *name,
   return value;
 }
 
-int invinco_gateway(World *mzx_world, Counter *counter, char *name,
+int invinco_gateway(World *mzx_world, counter *counter, char *name,
  int value, int id)
 {
-  if(!counter->counter_value)
+  if(!counter->value)
   {
     mzx_world->saved_pl_color = *player_color;
   }
@@ -2095,7 +2274,7 @@ int invinco_gateway(World *mzx_world, Counter *counter, char *name,
 
 // The other builtins simply can't go below 0
 
-int builtin_gateway(World *mzx_world, Counter *counter, char *name,
+int builtin_gateway(World *mzx_world, counter *counter, char *name,
  int value, int id)
 {
   if(value < 0)
@@ -2109,10 +2288,10 @@ void set_gateway(World *mzx_world, char *name,
  gateway_write_function function)
 {
   int next;
-  Counter *cdest = find_counter(mzx_world, name, &next);
+  counter *cdest = find_counter(mzx_world, name, &next);
   if(cdest)
   {
-    cdest->counter_gateway_write = function;
+    cdest->gateway_write = function;
   }
 }
 
@@ -2130,7 +2309,6 @@ void initialize_gateway_functions(World *mzx_world)
 
 int match_function_counter(char *dest, char *src)
 {
-  int min_num_chars, max_num_chars, char_count;
   int difference;
   char cur_src, cur_dest;
 
@@ -2138,46 +2316,45 @@ int match_function_counter(char *dest, char *src)
   {
     cur_src = *src;
     cur_dest = *dest;
-    // Skip wildcards
 
-    if(cur_src == '?')
+    // Skip 1 or more letters
+    switch(cur_src)
     {
-      max_num_chars = *(src + 1) - '0';
-      if(*(src + 2) == '-')
+      // Make sure the first character is a number
+      case '!':
       {
-        min_num_chars = max_num_chars;
-        max_num_chars = *(src + 3) - '0';
-        src += 4;
-        cur_src = *src;
-      }
-      else
-      {
-        min_num_chars = 0;
-        src += 2;
-        cur_src = *src;
-      }
+        if(((cur_dest < '0') || (cur_dest > '9')) &&
+         (cur_dest != '-'))
+        {
+          return 1;
+        }
 
-      char_count = 0;
-
-      while(((cur_dest >= '0') && (cur_dest <= '9')) ||
-       (cur_dest == '-'))
-      {
-        char_count++;
         dest++;
         cur_dest = *dest;
+
+        // Fall through, skip remaining numbers
       }
 
-      if((char_count < min_num_chars) || (char_count > max_num_chars))
+      // Skip 0 or more number characters
+      case '?':
       {
-        return 1;
-      }
-    }
-    else
+        src++;
+        cur_src = *src;
 
-    if(cur_src == '*')
-    {
-      // Automatic match
-      return 0;
+        while(((cur_dest >= '0') && (cur_dest <= '9')) ||
+         (cur_dest == '-'))
+        {
+          dest++;
+          cur_dest = *dest;
+        }
+        break;
+      }
+
+      // Match anything, instant winner
+      case '*':
+      {
+        return 0;
+      }
     }
 
     if((cur_src | cur_dest) == 0)
@@ -2198,18 +2375,18 @@ int match_function_counter(char *dest, char *src)
   return 0;
 }
 
-Counter *find_counter(World *mzx_world, char *name, int *next)
+counter *find_counter(World *mzx_world, char *name, int *next)
 {
   int bottom = 0, top = (mzx_world->num_counters) - 1, middle = 0;
   int cmpval = 0;
-  Counter **base = mzx_world->counter_list;
-  Counter *current;
+  counter **base = mzx_world->counter_list;
+  counter *current;
 
   while(bottom <= top)
   {
     middle = (top + bottom) / 2;
     current = base[middle];
-    cmpval = strcasecmp(name, current->counter_name);
+    cmpval = strcasecmp(name, current->name);
 
     if(cmpval > 0)
       bottom = middle + 1;
@@ -2229,27 +2406,34 @@ Counter *find_counter(World *mzx_world, char *name, int *next)
   return NULL;
 }
 
-String *find_string(World *mzx_world, char *name, int *next)
+mzx_string *find_string(World *mzx_world, char *name, int *next)
 {
   int bottom = 0, top = (mzx_world->num_strings) - 1, middle = 0;
   int cmpval = 0;
-  String **base = mzx_world->string_list;
-  String *current;
+  mzx_string **base = mzx_world->string_list;
+  mzx_string *current;
 
   while(bottom <= top)
   {
     middle = (top + bottom) / 2;
     current = base[middle];
-    cmpval = strcasecmp(name, current->string_name);
+    cmpval = strcasecmp(name, current->name);
 
     if(cmpval > 0)
+    {
       bottom = middle + 1;
+    }
     else
 
     if(cmpval < 0)
+    {
       top = middle - 1;
+    }
     else
+    {
+      *next = middle;
       return current;
+    }
   }
 
   if(cmpval > 0)
@@ -2260,12 +2444,12 @@ String *find_string(World *mzx_world, char *name, int *next)
   return NULL;
 }
 
-Function_counter *find_function_counter(char *name)
+function_counter *find_function_counter(char *name)
 {
   int bottom, top, middle;
   int first_letter = tolower(name[0]) * 2;
   int cmpval;
-  Function_counter *base = builtin_counters;
+  function_counter *base = builtin_counters;
 
   bottom = counter_first_letter[first_letter];
   top = counter_first_letter[first_letter + 1];
@@ -2275,7 +2459,7 @@ Function_counter *find_function_counter(char *name)
     while(bottom <= top)
     {
       middle = (top + bottom) / 2;
-      cmpval = match_function_counter(name + 1, (base[middle]).counter_name + 1);
+      cmpval = match_function_counter(name + 1, (base[middle]).name + 1);
 
       if(cmpval > 0)
         bottom = middle + 1;
@@ -2295,8 +2479,8 @@ void add_counter(World *mzx_world, char *name, int value, int position)
 {
   int count = mzx_world->num_counters;
   int allocated = mzx_world->num_counters_allocated;
-  Counter **base = mzx_world->counter_list;
-  Counter *cdest;
+  counter **base = mzx_world->counter_list;
+  counter *cdest;
 
   // Need a reallocation?
   if(count == allocated)
@@ -2307,7 +2491,7 @@ void add_counter(World *mzx_world, char *name, int value, int position)
       allocated = MIN_COUNTER_ALLOCATE;
 
     mzx_world->counter_list =
-     (Counter **)realloc(base, sizeof(Counter *) * allocated);
+     (counter **)realloc(base, sizeof(counter *) * allocated);
     base = mzx_world->counter_list;
     mzx_world->num_counters_allocated = allocated;
   }
@@ -2318,25 +2502,26 @@ void add_counter(World *mzx_world, char *name, int value, int position)
   {
     base += position;
     memmove((char *)(base + 1), (char *)base,
-     (count - position) * sizeof(Counter *));
+     (count - position) * sizeof(counter *));
   }
 
-  cdest = (Counter *)malloc(sizeof(Counter));
-  // Allocate a string
-  strcpy(cdest->counter_name, name);
-  cdest->counter_value = value;
-  cdest->counter_gateway_write = NULL;
+  cdest = (counter *)malloc(sizeof(counter) + strlen(name));
+  strcpy(cdest->name, name);
+  cdest->value = value;
+  cdest->gateway_write = NULL;
 
   mzx_world->counter_list[position] = cdest;
   mzx_world->num_counters = count + 1;
 }
 
-void add_string(World *mzx_world, char *name, char *value, int position)
+mzx_string *add_string_preallocate(World *mzx_world, char *name,
+ int length, int position)
 {
   int count = mzx_world->num_strings;
   int allocated = mzx_world->num_strings_allocated;
-  String **base = mzx_world->string_list;
-  String *sdest;
+  int name_length = strlen(name);
+  mzx_string **base = mzx_world->string_list;
+  mzx_string *dest;
 
   // Need a reallocation?
   if(count == allocated)
@@ -2347,7 +2532,7 @@ void add_string(World *mzx_world, char *name, char *value, int position)
       allocated = MIN_STRING_ALLOCATE;
 
     mzx_world->string_list =
-     (String **)realloc(base, sizeof(String *) * allocated);
+     (mzx_string **)realloc(base, sizeof(mzx_string *) * allocated);
     mzx_world->num_strings_allocated = allocated;
     base = mzx_world->string_list;
   }
@@ -2358,45 +2543,76 @@ void add_string(World *mzx_world, char *name, char *value, int position)
   {
     base += position;
     memmove((char *)(base + 1), (char *)base,
-     (count - position) * sizeof(String *));
+     (count - position) * sizeof(mzx_string *));
   }
 
-  sdest = (String *)malloc(sizeof(String));
-  // Allocate a string
-  strcpy(sdest->string_name, name);
-  strcpy(sdest->string_contents, value);
+  // Allocate a mzx_string with room for the name and initial value
+  dest = (mzx_string *)malloc(sizeof(mzx_string) + name_length +
+   length - 1);
 
-  mzx_world->string_list[position] = (String *)sdest;
+  // Copy in the name, including NULL terminator.
+  strcpy(dest->name, name);
+
+  // Copy in the value. It is NOT null terminated!
+  dest->allocated_length = length;
+  dest->length = length;
+
+  dest->value = dest->storage_space + name_length;
+
+  mzx_world->string_list[position] = dest;
   mzx_world->num_strings = count + 1;
+
+  return dest;
+}
+
+void add_string(World *mzx_world, char *name, mzx_string *src, int position)
+{
+  mzx_string *dest = add_string_preallocate(mzx_world, name,
+   src->length, position);
+
+  memcpy(dest->value, src->value, src->length);
+}
+
+mzx_string *reallocate_string(World *mzx_world,
+ mzx_string *src, int pos, int length)
+{
+  // Find the base length (take out the current length)
+  int base_length = (int)(src->value - (char *)src);
+
+  src = (mzx_string *)realloc(src, base_length + length);
+  src->value = (char *)src + base_length;
+  src->allocated_length = length;
+
+  mzx_world->string_list[pos] = src;
+
+  return src;
 }
 
 void set_counter(World *mzx_world, char *name, int value, int id)
 {
-  Function_counter *fdest;
-  Counter *cdest;
+  function_counter *fdest;
+  counter *cdest;
   int next;
 
   fdest = find_function_counter(name);
-  if(fdest && fdest->counter_function_write)
+  if(fdest && fdest->function_write)
   {
     // Call write function
-    fdest->counter_function_write(mzx_world, fdest, name, value, id);
+    fdest->function_write(mzx_world, fdest, name, value, id);
   }
   else
   {
-    if(strlen(name) > 14)
-      name[14] = 0;
-
     cdest = find_counter(mzx_world, name, &next);
 
     if(cdest)
     {
       // See if there's a gateway
-      if(cdest->counter_gateway_write)
+      if(cdest->gateway_write)
       {
-        value = cdest->counter_gateway_write(mzx_world, cdest, name, value, id);
+        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
       }
-      cdest->counter_value = value;
+
+      cdest->value = value;
     }
     else
     {
@@ -2410,7 +2626,7 @@ void get_string_size_offset(char *name, int *ssize, int *soffset)
   // First must strip off/encode offset/size values
   int offset_position = -1, size_position = -1;
   int current_position = 0;
-  int offset = 0, size = 63;
+  int offset, size;
   char *str_next;
   char current_char = name[0];
 
@@ -2436,101 +2652,193 @@ void get_string_size_offset(char *name, int *ssize, int *soffset)
     size = strtol(name + size_position + 1, NULL, 10);
     // Cut off the name here
     name[size_position] = 0;
+    *ssize = size;
   }
 
   if(offset_position != -1)
   {
     offset = strtol(name + offset_position + 1, &str_next, 10);
     name[offset_position] = 0;
+    *soffset = offset;
   }
-
-  if(offset > 62)
-  {
-    offset = 0;
-  }
-
-  if((offset + size) > 63)
-  {
-    size = 63 - offset;
-  }
-
-  *soffset = offset;
-  *ssize = size;
 }
 
-void set_string(World *mzx_world, char *name, char *value, int id)
+void set_string(World *mzx_world, char *name, mzx_string *src, int id)
 {
-  String *sdest;
+  mzx_string *dest;
+  char *src_value = src->value;
+  int src_length = src->length;
   int next;
-  int size, offset;
+  int size = 0, offset = 0;
 
   get_string_size_offset(name, &size, &offset);
 
-  if(strlen(name) > 14)
-    name[14] = 0;
+  dest = find_string(mzx_world, name, &next);
 
-  value[63] = 0;
-  // Finding a string is like finding a normal counter, but it has to be casted
-  sdest = find_string(mzx_world, name, &next);
-
-  if(sdest)
+  // TODO - Make terminating chars variable, but how..
+  if(special_name_partial("fread") && mzx_world->input_file)
   {
-    FILE *output_file = mzx_world->output_file;
-    // This is pretty awful, but necessary to have here, since this is actually
-    // more of a read than a write
-    if(!strncasecmp(value, "fwrite", 6) && output_file)
+    FILE *input_file = mzx_world->input_file;
+
+    if(src_length > 5)
     {
-      char *string_contents = sdest->string_contents;
+      int read_count = strtol(src_value + 5, NULL, 10);
+      int actual_read;
 
-      if(value[6])
-      {
-        int write_count = strtol(value + 6, NULL, 10);
-        fwrite(string_contents, write_count, 1, output_file);
-      }
-      else
-      {
-        char terminate_char = '*';
-        char current_char = string_contents[0];
-        int write_pos = 0;
+      force_string_splice(dest, read_count);
+      
+      actual_read =
+       fread(dest->value + offset, 1, size, input_file);
 
-        while(current_char && (write_pos < 63))
-        {
-          fputc(current_char, output_file);
-          write_pos++;
-          current_char = string_contents[write_pos];
-        }
-        fputc(terminate_char, output_file);
-      }
+      if(offset == 0)
+        dest->length = actual_read; 
     }
-
-    if(!set_function_string(mzx_world, value, id, sdest->string_contents))
+    else
     {
-      // Copy the value, but make sure it doesn't run over first
-      memcpy(sdest->string_contents + offset, value, size);
+      const char terminate_char = '*';
+      char *dest_value;
+      int current_char = 0;
+      int read_pos = 0;
+      int read_allocate;
+      int allocated = 32;
+      int new_allocated = allocated;
+
+      force_string_splice(dest, allocated);
+      dest_value = dest->value;
+
+      while(1)
+      {
+        for(read_allocate = 0; read_allocate < new_allocated;
+         read_allocate++, read_pos++)
+        {
+          current_char = fgetc(input_file);
+
+          if((current_char == terminate_char) ||
+           (current_char == EOF) || (read_pos == size))
+          {
+            if(offset == 0)
+              dest->length = read_pos;
+
+            return;
+          }
+
+          dest_value[read_pos + offset] = current_char;
+        }
+
+        new_allocated = allocated;
+        allocated *= 2;
+
+        dest = reallocate_string(mzx_world, dest, next, allocated);
+
+        dest_value = dest->value;
+      }
     }
   }
   else
+
+  if(special_name("board_name"))
   {
-    char buffer[64];
-    if(set_function_string(mzx_world, value, id, buffer))
-      add_string(mzx_world, name, buffer, next);
-    else
-      add_string(mzx_world, name, value, next);
+    char *board_name = mzx_world->current_board->board_name;
+    int str_length = strlen(board_name);
+    force_string_copy(dest, board_name, str_length);
+  }
+  else
+
+  if(special_name("robot_name"))
+  {
+    char *robot_name =
+     (mzx_world->current_board->robot_list[id])->robot_name;
+    int str_length = strlen(robot_name);
+    force_string_copy(dest, robot_name, str_length);
+  }
+  else
+
+  if(special_name("mod_name"))
+  {
+    char *mod_name = mzx_world->real_mod_playing;
+    int str_length = strlen(mod_name);
+    force_string_copy(dest, mod_name, str_length);
+  }
+  else
+
+  if(special_name("input"))
+  {
+    char *input_string = mzx_world->current_board->input_string;
+    int str_length = strlen(input_string);
+    force_string_copy(dest, input_string, str_length);
+  }
+  else
+
+  // Okay, I implemented this stupid thing, you can all die.
+  if(special_name("board_scan"))
+  {
+    Board *src_board = mzx_world->current_board;
+    int board_width = src_board->board_width;
+    int board_size = board_width * src_board->board_height;
+    int board_pos = get_counter(mzx_world, "board_x", id) +
+     (get_counter(mzx_world, "board_y", id) * board_width);
+    int read_length = 63;
+
+    if(board_pos < board_size)
+    {
+      if((board_pos + read_length) > board_size)
+        read_length = board_size - board_pos;
+
+      load_string_board_direct(mzx_world, dest, next,
+       read_length, 1, '*', src_board->level_param, board_width);
+    }
+  }
+  else
+
+  // This isn't a read (set), it's a write but it fits here now.
+
+  if(special_name_partial("fwrite") && mzx_world->output_file)
+  {
+    // You can't write a string that doesn't exist.
+
+    if(dest != NULL)
+    {
+      FILE *output_file = mzx_world->output_file;
+      char *dest_value = dest->value;
+      int dest_length = dest->length;
+
+      if(src_length > 6)
+        size = strtol(src->name + 6, NULL, 10);
+
+      if(size == 0)
+        size = dest_length;
+
+      if(offset >= dest_length)
+        offset = dest_length - 1;
+
+      if(offset + size > dest_length)
+        size = src_length - offset;
+
+      fwrite(dest_value + offset, size, 1, output_file);
+
+      if(src_length == 6)
+        fputc('*', output_file);
+    }
+  }
+  else  
+  {
+    // Just a normal string here.
+    force_string_move(dest, src_value, src_length);
   }
 }
 
 int get_counter(World *mzx_world, char *name, int id)
 {
-  Function_counter *fdest;
-  Counter *cdest;
+  function_counter *fdest;
+  counter *cdest;
   int next;
 
   fdest = find_function_counter(name);
-  if(fdest && fdest->counter_function_read)
+  if(fdest && fdest->function_read)
   {
     // Call read function
-    if(fdest->counter_function_read)
-      return fdest->counter_function_read(mzx_world, fdest, name, id);
+    if(fdest->function_read)
+      return fdest->function_read(mzx_world, fdest, name, id);
     else
       return 0;
   }
@@ -2538,145 +2846,74 @@ int get_counter(World *mzx_world, char *name, int id)
   cdest = find_counter(mzx_world, name, &next);
 
   if(cdest)
-    return cdest->counter_value;
+    return cdest->value;
 
   return 0;
 }
 
-// There's only a few "function strings" so they'll be handled manually
-// here, for now.
-char *set_function_string(World *mzx_world, char *name, int id, char *buffer)
+int get_string(World *mzx_world, char *name, mzx_string *dest,
+ int id)
 {
-  Board *src_board = mzx_world->current_board;
-  FILE *input_file = mzx_world->input_file;
-
-  // FIXME - Make terminating chars variable
-  if(!strncasecmp(name, "fread", 5) && input_file)
-  {
-    if(name[5])
-    {
-      int read_count = strtol(name + 5, NULL, 10);
-
-      if(read_count > 63)
-        read_count = 63;
-
-      fread(buffer, read_count, 1, input_file);
-      buffer[read_count] = 0;
-    }
-    else
-    {
-      char terminate_char = '*';
-      char current_char;
-      int read_pos = 0;
-
-      do
-      {
-        current_char = fgetc(input_file);
-        if(current_char == terminate_char)
-          buffer[read_pos] = 0;
-        else
-          buffer[read_pos] = current_char;
-
-        read_pos++;
-      } while((current_char != terminate_char) && (read_pos < 63));
-
-    }
-
-    return buffer;
-  }
-
-  if(!strcasecmp(name, "board_name"))
-  {
-    strcpy(buffer, src_board->board_name);
-    return buffer;
-  }
-
-  if(!strcasecmp(name, "robot_name"))
-  {
-    strcpy(buffer, (src_board->robot_list[id])->robot_name);
-    return buffer;
-  }
-
-  if(!strcasecmp(name, "mod_name"))
-  {
-    strcpy(buffer, mzx_world->real_mod_playing);
-    return buffer;
-  }
-
-  if(!strcasecmp(name, "input"))
-  {
-    strcpy(buffer, src_board->input_string);
-    return buffer;
-  }
-
-  // Okay, I implemented this stupid thing, you can all die.
-  if(!strcasecmp(name, "board_scan"))
-  {
-    int board_width = src_board->board_width;
-
-    load_string_board_direct(mzx_world, buffer, 63, 1, '*',
-     src_board->level_param +
-     get_counter(mzx_world, "board_x", id) +
-     (get_counter(mzx_world, "board_y", id) * board_width),
-     board_width, id);
-
-    return buffer;
-  }
-
-  return NULL;
-}
-
-char *get_string(World *mzx_world, char *name, int id, char *buffer)
-{
-  String *sdest;
+  mzx_string *src;
   int next;
-  int size, offset;
+  int size = 0, offset = 0;
+  int src_length;
 
   get_string_size_offset(name, &size, &offset);
 
-  sdest = find_string(mzx_world, name, &next);
+  src = find_string(mzx_world, name, &next);
 
-  if(sdest)
+  if(src)
   {
-    memcpy(buffer, sdest->string_contents + offset, size);
-    buffer[size] = 0;
-    return buffer;
+    src_length = src->length;
+
+    if(size == 0)
+      size = src_length;
+
+    if(offset >= src_length)
+      offset = src_length - 1;
+
+    if(offset + size > src->length)
+      size = src_length - offset;
+
+    dest->value = src->value + offset;
+    dest->length = size;
+
+    return 1;
   }
 
-  strcpy(buffer, "(empty)");
-  return NULL;
+  dest->length = 0;
+  return 0;
 }
 
 void inc_counter(World *mzx_world, char *name, int value, int id)
 {
-  Function_counter *fdest;
-  Counter *cdest;
+  function_counter *fdest;
+  counter *cdest;
   int current_value;
   int next;
 
   fdest = find_function_counter(name);
-  if(fdest && fdest->counter_function_read && fdest->counter_function_write)
+
+  if(fdest && fdest->function_read && fdest->function_write)
   {
     current_value =
-     fdest->counter_function_read(mzx_world, fdest, name, id);
+     fdest->function_read(mzx_world, fdest, name, id);
     current_value += value;
-    fdest->counter_function_write(mzx_world, fdest, name, current_value, id);
+    fdest->function_write(mzx_world, fdest, name, current_value, id);
   }
   else
   {
-    if(strlen(name) > 14)
-      name[14] = 0;
-
     cdest = find_counter(mzx_world, name, &next);
 
     if(cdest)
     {
-      value += cdest->counter_value;
-      if(cdest->counter_gateway_write)
+      value += cdest->value;
+      if(cdest->gateway_write)
       {
-        value = cdest->counter_gateway_write(mzx_world, cdest, name, value, id);
+        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
       }
-      cdest->counter_value = value;
+      cdest->value = value;
     }
     else
     {
@@ -2685,68 +2922,76 @@ void inc_counter(World *mzx_world, char *name, int value, int id)
   }
 }
 
-void inc_string(World *mzx_world, char *name, char *value, int id)
+// You can't increment spliced strings (it's not really useful and
+// would introduce a world of problems..)
+
+void inc_string(World *mzx_world, char *name, mzx_string *src, int id)
 {
-  String *sdest;
+  mzx_string *dest;
   int next;
 
-  value[63] = 0;
+  dest = find_string(mzx_world, name, &next);
 
-  if(strlen(name) > 14)
-    name[14] = 0;
-
-  sdest = find_string(mzx_world, name, &next);
-
-  if(sdest)
+  if(dest)
   {
+    int new_length = src->length + dest->length;
     // Concatenate
-    int len_src = strlen(sdest->string_contents);
-    int len_dest = strlen(value);
-
-    if(len_dest + len_src > 63)
+    if(new_length > dest->allocated_length)
     {
-      len_dest = 63 - len_src;
+      // Handle collisions, for incrementing something by a splice
+      // of itself, which could relocate the string and the value...
+      char *src_end = src->value + src->length;
+      if((src_end <= (dest->value + dest->length)) &&
+       (src_end >= dest->value))
+      {
+        char *old_dest_value = dest->value;
+        dest = reallocate_string(mzx_world, dest, next,
+         new_length);
+        src->value += (int)(dest->value - old_dest_value);
+      }
+      else
+      {
+        dest = reallocate_string(mzx_world, dest, next,
+         new_length);
+      }
     }
 
-    memcpy(sdest->string_contents + len_src, value, len_dest);
-    sdest->string_contents[len_src + len_dest] = 0;
+    memcpy(dest->value + dest->length, src->value, src->length);
+    dest->length = new_length;
   }
   else
   {
-    add_string(mzx_world, name, value, next);
+    add_string(mzx_world, name, src, next);
   }
 }
 
 void dec_counter(World *mzx_world, char *name, int value, int id)
 {
-  Function_counter *fdest;
-  Counter *cdest;
+  function_counter *fdest;
+  counter *cdest;
   int current_value;
   int next;
 
   fdest = find_function_counter(name);
-  if(fdest && fdest->counter_function_read && fdest->counter_function_write)
+  if(fdest && fdest->function_read && fdest->function_write)
   {
     current_value =
-     fdest->counter_function_read(mzx_world, fdest, name, id);
+     fdest->function_read(mzx_world, fdest, name, id);
     current_value -= value;
-    fdest->counter_function_write(mzx_world, fdest, name, current_value, id);
+    fdest->function_write(mzx_world, fdest, name, current_value, id);
   }
   else
   {
-    if(strlen(name) > 14)
-      name[14] = 0;
-
     cdest = find_counter(mzx_world, name, &next);
 
     if(cdest)
     {
-      value = cdest->counter_value - value;
-      if(cdest->counter_gateway_write)
+      value = cdest->value - value;
+      if(cdest->gateway_write)
       {
-        value = cdest->counter_gateway_write(mzx_world, cdest, name, value, id);
+        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
       }
-      cdest->counter_value = value;
+      cdest->value = value;
     }
     else
     {
@@ -2757,40 +3002,35 @@ void dec_counter(World *mzx_world, char *name, int value, int id)
 
 void dec_string_int(World *mzx_world, char *name, int value, int id)
 {
-  String *sdest;
+  mzx_string *dest;
   int next;
 
-  sdest = find_string(mzx_world, name, &next);
+  dest = find_string(mzx_world, name, &next);
 
-  if(sdest)
+  if(dest)
   {
-    // Move null terminator down N chars
-    int len_src = strlen(sdest->string_contents);
-    if(len_src < value)
-    {
-      sdest->string_contents[0] = 0;
-    }
-    else
-    {
-      sdest->string_contents[len_src - value] = 0;
-    }
+    // Simply decrease the length
+    dest->length -= (unsigned)value;
+
+    if(dest->length < 0)
+      dest->length = 0;
   }
 }
 
 void mul_counter(World *mzx_world, char *name, int value, int id)
 {
-  Function_counter *fdest;
-  Counter *cdest;
+  function_counter *fdest;
+  counter *cdest;
   int current_value;
   int next;
 
   fdest = find_function_counter(name);
-  if(fdest && fdest->counter_function_read && fdest->counter_function_write)
+  if(fdest && fdest->function_read && fdest->function_write)
   {
     current_value =
-     fdest->counter_function_read(mzx_world, fdest, name, id);
+     fdest->function_read(mzx_world, fdest, name, id);
     current_value *= value;
-    fdest->counter_function_write(mzx_world, fdest, name, current_value, id);
+    fdest->function_write(mzx_world, fdest, name, current_value, id);
   }
   else
   {
@@ -2798,20 +3038,20 @@ void mul_counter(World *mzx_world, char *name, int value, int id)
 
     if(cdest)
     {
-      value *= cdest->counter_value;
-      if(cdest->counter_gateway_write)
+      value *= cdest->value;
+      if(cdest->gateway_write)
       {
-        value = cdest->counter_gateway_write(mzx_world, cdest, name, value, id);
+        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
       }
-      cdest->counter_value = value;
+      cdest->value = value;
     }
   }
 }
 
 void div_counter(World *mzx_world, char *name, int value, int id)
 {
-  Function_counter *fdest;
-  Counter *cdest;
+  function_counter *fdest;
+  counter *cdest;
   int current_value;
   int next;
 
@@ -2819,12 +3059,12 @@ void div_counter(World *mzx_world, char *name, int value, int id)
     return;
 
   fdest = find_function_counter(name);
-  if(fdest && fdest->counter_function_read && fdest->counter_function_write)
+  if(fdest && fdest->function_read && fdest->function_write)
   {
     current_value =
-     fdest->counter_function_read(mzx_world, fdest, name, id);
+     fdest->function_read(mzx_world, fdest, name, id);
     current_value /= value;
-    fdest->counter_function_write(mzx_world, fdest, name, current_value, id);
+    fdest->function_write(mzx_world, fdest, name, current_value, id);
   }
   else
   {
@@ -2832,20 +3072,20 @@ void div_counter(World *mzx_world, char *name, int value, int id)
 
     if(cdest)
     {
-      value = cdest->counter_value / value;
-      if(cdest->counter_gateway_write)
+      value = cdest->value / value;
+      if(cdest->gateway_write)
       {
-        value = cdest->counter_gateway_write(mzx_world, cdest, name, value, id);
+        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
       }
-      cdest->counter_value = value;
+      cdest->value = value;
     }
   }
 }
 
 void mod_counter(World *mzx_world, char *name, int value, int id)
 {
-  Function_counter *fdest;
-  Counter *cdest;
+  function_counter *fdest;
+  counter *cdest;
   int current_value;
   int next;
 
@@ -2853,12 +3093,12 @@ void mod_counter(World *mzx_world, char *name, int value, int id)
     return;
 
   fdest = find_function_counter(name);
-  if(fdest && fdest->counter_function_read && fdest->counter_function_write)
+  if(fdest && fdest->function_read && fdest->function_write)
   {
     current_value =
-     fdest->counter_function_read(mzx_world, fdest, name, id);
+     fdest->function_read(mzx_world, fdest, name, id);
     current_value %= value;
-    fdest->counter_function_write(mzx_world, fdest, name, current_value, id);
+    fdest->function_write(mzx_world, fdest, name, current_value, id);
   }
   else
   {
@@ -2866,61 +3106,54 @@ void mod_counter(World *mzx_world, char *name, int value, int id)
 
     if(cdest)
     {
-      cdest->counter_value %= value;
+      cdest->value %= value;
     }
   }
 }
 
-void load_string_board(World *mzx_world, char *expression,
- int w, int h, char l, char *src, int width, int id)
+void load_string_board(World *mzx_world, char *name, int w, int h,
+ char l, char *src, int width)
 {
-  char t_buf[64];
-  load_string_board_direct(mzx_world, t_buf, w, h, l,
-   src, width, id);
-  set_string(mzx_world, expression, t_buf, id);
+  int next;
+  mzx_string *src_str = find_string(mzx_world, name, &next);
+
+  force_string_length(src_str, w * h);
+
+  src_str->length =
+   load_string_board_direct(mzx_world, src_str, next, w, h, l,
+   src, width);
 }
 
-void load_string_board_direct(World *mzx_world,
- char *buffer, int w, int h, char l, char *src, int width, int id)
+int load_string_board_direct(World *mzx_world, mzx_string *str,
+ int next, int w, int h, char l, char *src, int width)
 {
   int i;
-  int wl = w;
-  buffer[63] = '\0';
-  char *t_pos = buffer;
+  char *str_value;
+  char *t_pos;
 
-  if((w * h) > 63)
-  {
-    if(w > 63)
-    {
-      w = 63;
-      h = 1;
-    }
-    else
-    {
-      h = (63 / w) + 1;
-      wl = 63 % w;
-    }
-  }
+  str_value = str->value;
+  t_pos = str_value;
 
-  for(i = 0; i < (h - 1); i++)
+  for(i = 0; i < h; i++)
   {
     memcpy(t_pos, src, w);
     t_pos += w;
     src += width;
   }
-  memcpy(t_pos, src, wl);
-  t_pos += wl;
-  *t_pos = '\0';
+
   if(l)
   {
-    for(i = 0; i < ((w * h) + wl); i++)
+    for(i = 0; i < (w * h); i++)
     {
-      if(buffer[i] == l)
-      {
-        buffer[i] = '\0';
+      if(str_value[i] == l)
         break;
-      }
     }
+    
+    return i;
+  }
+  else
+  {
+    return w * h;
   }
 }
 
@@ -2942,7 +3175,7 @@ int translate_coordinates(char *src, unsigned int *x, unsigned int *y)
 
 int is_string(char *buffer)
 {
-  // For something to be a string it has to start with a $ and
+  // For something to be a mzx_string it has to start with a $ and
   // not have a . in its name
   if(buffer[0] == '$')
   {
@@ -2965,7 +3198,7 @@ int is_string(char *buffer)
 
 void counter_fsg()
 {
-  char cur_char = (builtin_counters[0]).counter_name[0];
+  char cur_char = (builtin_counters[0]).name[0];
   char old_char;
   int i, i2;
 
@@ -2984,10 +3217,57 @@ void counter_fsg()
       do
       {
         i2++;
-        cur_char = (builtin_counters[i2]).counter_name[0];
+        cur_char = (builtin_counters[i2]).name[0];
       } while(cur_char == old_char);
 
       counter_first_letter[(i * 2) + 1] = i2 - 1;
     }
   }
+}
+
+counter *load_counter(FILE *fp)
+{
+  int value = fgetd(fp);
+  int name_length = fgetd(fp);
+
+  counter *src_counter =
+   (counter *)malloc(sizeof(counter) + name_length);
+  fread(src_counter->name, name_length, 1, fp);
+  src_counter->name[name_length] = 0;
+  src_counter->value = value;
+
+  src_counter->gateway_write = NULL;
+
+  return src_counter;
+}
+
+mzx_string *load_string(FILE *fp)
+{
+  int name_length = fgetd(fp);
+
+  mzx_string *src_string =
+   (mzx_string *)malloc(sizeof(mzx_string) + name_length);
+  fread(src_string->value, 64, 1, fp);
+  fread(src_string->name, name_length, 1, fp);
+  src_string->name[name_length] = 0;
+
+  return src_string;
+}
+
+void save_counter(FILE *fp, counter *src_counter)
+{
+  int name_length = strlen(src_counter->name);
+
+  fputd(src_counter->value, fp);
+  fputd(name_length, fp);
+  fwrite(src_counter->name, name_length, 1, fp);
+}
+
+void save_string(FILE *fp, mzx_string *src_string)
+{
+  int name_length = strlen(src_string->name);
+
+  fwrite(src_string->value, 64, 1, fp);
+  fputd(name_length, fp);
+  fwrite(src_string->name, name_length, 1, fp);
 }

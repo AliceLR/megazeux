@@ -2,5 +2,6 @@
 
 all:
 	@echo "Please run config.sh before make!"
-	@echo "usage: ./config.sh <linux|win32|macos> <prefix>"
-	@echo " e.g.: ./config.sh win32 /usr"
+	@echo "usage: ./config.sh <linux|win32|macos> <prefix> <sysconfdir>"
+	@echo " e.g.: ./config.sh linux /usr /etc"
+	@echo " e.g.: ./config.sh win32"

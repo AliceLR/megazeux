@@ -98,21 +98,25 @@ Uint32 process_event(SDL_Event *event)
 
     case SDL_MOUSEMOTION:
     {
-      int mx = (event->motion.x - ((get_resolution_w() - 640) / 2));
-      int my = (event->motion.y -
-       ((get_resolution_h() / get_height_multiplier() - 350) / 2));
+      int mx_real = event->motion.x;
+      int my_real = event->motion.y;
+      int w_offset = (get_resolution_w() - 640) / 2;
+      int h_offset = (get_resolution_h() /
+       get_height_multiplier() - 350) / 2;
+      int mx = mx_real - w_offset;
+      int my = my_real - h_offset;
 
       if(mx > 639)
-        mx = 639;
+        SDL_WarpMouse(639 + w_offset, my_real);
 
       if(mx < 0)
-        mx = 0;
+        SDL_WarpMouse(w_offset, my_real);
 
       if(my > 349)
-        my = 349;
+        SDL_WarpMouse(mx_real, 349 + h_offset);
 
       if(my < 0)
-        my = 0;
+        SDL_WarpMouse(mx_real, h_offset);
 
       input.real_mouse_x = mx;
       input.real_mouse_y = my;

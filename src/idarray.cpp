@@ -135,13 +135,27 @@ void offs_remove_id(World *mzx_world, unsigned int offset)
   }
 }
 
-void id_remove_under(Board *src_board, int array_x, int array_y)
+void id_remove_under(World *mzx_world, int array_x, int array_y)
 {
+  Board *src_board = mzx_world->current_board;
   int offset = (array_y * src_board->board_width) + array_x;
 
-  src_board->level_id[offset] = 0;
-  src_board->level_param[offset] = 0;
-  src_board->level_color[offset] = 7;
+  // If removing something under the player place this stuff instead
+  if(src_board->level_id[offset] == 127)
+  {
+    src_board->level_under_id[offset] = mzx_world->under_player_id;
+    src_board->level_under_param[offset] = mzx_world->under_player_param;
+    src_board->level_under_color[offset] = mzx_world->under_player_color;
+    mzx_world->under_player_id = 0;
+    mzx_world->under_player_param = 0;
+    mzx_world->under_player_color = 0;
+  }
+  else
+  {
+    src_board->level_under_id[offset] = 0;
+    src_board->level_under_param[offset] = 0;
+    src_board->level_under_color[offset] = 7;
+  }
 
   update_done[offset] = 1;
 }

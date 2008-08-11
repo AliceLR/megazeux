@@ -32,9 +32,11 @@ struct _config_info
   int height_multiplier;
 
   // Audio options
+  int output_frequency;
   int buffer_size;
   int oversampling_on;
-  int resampling_mode;
+  int resample_mode;
+  int modplug_resample_mode;
   int music_volume;
   int sam_volume;
   int pc_speaker_volume;

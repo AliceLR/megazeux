@@ -360,6 +360,11 @@ char scr_nm_strs[5][12] =
 
 void scroll_edging(World *mzx_world, int type)
 {
+  scroll_edging_ext(mzx_world, type, 256, 16);
+}
+
+void scroll_edging_ext(World *mzx_world, int type, int offset, int c_offset)
+{
   int scroll_base_color = mzx_world->scroll_base_color;
   int scroll_corner_color = mzx_world->scroll_corner_color;
   int scroll_pointer_color = mzx_world->scroll_pointer_color;
@@ -369,59 +374,61 @@ void scroll_edging(World *mzx_world, int type)
   // for Edit Scroll, 3 for Help, 4 for Robot (w/o title)
   // Doesn't save the screen.
   // Box for the title
-  draw_window_box(5, 3, 74, 5, scroll_base_color & 0xF0, scroll_base_color,
-   scroll_corner_color, 1, 1);
+  draw_window_box_ext(5, 3, 74, 5, scroll_base_color & 0xF0, scroll_base_color,
+   scroll_corner_color, 1, 1, offset, c_offset);
   // Main box
-  draw_window_box(5, 5, 74, 19, scroll_base_color, scroll_base_color & 0xF0,
-   scroll_corner_color, 1, 1); /* Text on 6 - 18 */
+  draw_window_box_ext(5, 5, 74, 19, scroll_base_color, scroll_base_color & 0xF0,
+   scroll_corner_color, 1, 1, offset, c_offset); /* Text on 6 - 18 */
   // Shows keys in a box at the bottom
   if(type == 3)
   {
-    draw_window_box(5, 19, 74, 22, scroll_base_color & 0xF0,
-     scroll_base_color, scroll_corner_color, 1, 1);
+    draw_window_box_ext(5, 19, 74, 22, scroll_base_color & 0xF0,
+     scroll_base_color, scroll_corner_color, 1, 1, offset, c_offset);
   }
   else
   {
-    draw_window_box(5, 19, 74, 21, scroll_base_color & 0xF0,
-     scroll_base_color, scroll_corner_color, 1, 1);
+    draw_window_box_ext(5, 19, 74, 21, scroll_base_color & 0xF0,
+     scroll_base_color, scroll_corner_color, 1, 1, offset, c_offset);
   }
 
   // Fix chars on edging
-  draw_char(217, scroll_base_color, 74, 5);
-  draw_char(217, scroll_base_color & 0xF0, 74, 19);
+  draw_char_ext(217, scroll_base_color, 74, 5, offset, c_offset);
+  draw_char_ext(217, scroll_base_color & 0xF0, 74, 19, offset, c_offset);
   // Add arrows
-  draw_char(16, scroll_pointer_color, 6, 12);
-  draw_char(17, scroll_pointer_color, 73, 12);
+  draw_char_ext(16, scroll_pointer_color, 6, 12, offset, c_offset);
+  draw_char_ext(17, scroll_pointer_color, 73, 12, offset, c_offset);
   // Write title
-  write_string(scr_nm_strs[type], 34, 4, scroll_title_color, 0);
+  write_string_ext(scr_nm_strs[type], 34, 4, scroll_title_color, 0,
+   offset, c_offset);
   // Write key reminders
   if(type == 2)
   {
-    write_string(": Move cursor   Alt+C: Character "
-     "  Esc: Done editing", 13, 20, scroll_corner_color, 0);
+    write_string_ext(": Move cursor   Alt+C: Character "
+     "  Esc: Done editing", 13, 20, scroll_corner_color, 0,
+     offset, c_offset);
   }
   else
 
   if(type < 2)
   {
-    write_string(": Scroll text   Esc/Enter: End reading",
-     21, 20, scroll_corner_color, 0);
+    write_string_ext(": Scroll text   Esc/Enter: End reading",
+     21, 20, scroll_corner_color, 0, offset, c_offset);
   }
   else
 
   if(type == 3)
   {
-    write_string(":Scroll text  Esc:Exit help"
+    write_string_ext(":Scroll text  Esc:Exit help"
      "  Enter:Select  Alt+P:Print", 13, 20,
-     scroll_corner_color, 0);
-    write_string("F1:Help on Help "
+     scroll_corner_color, 0, offset, c_offset);
+    write_string_ext("F1:Help on Help "
      " Alt+F1:Table of Contents", 20, 21,
-     scroll_corner_color, 0);
+     scroll_corner_color, 0, offset, c_offset);
   }
   else
   {
-    write_string(":Scroll text  Esc:Exit "
-     "  Enter:Select", 21, 20, scroll_corner_color, 0);
+    write_string_ext(":Scroll text  Esc:Exit "
+     "  Enter:Select", 21, 20, scroll_corner_color, 0, offset, c_offset);
   }
   update_screen();
 }
@@ -559,6 +566,7 @@ void help_display(World *mzx_world, char *help, int offs, char *file,
           }
           // Get label and jump
           strcpy(label, help + pos + 2);
+
           // Search backwards for a 1
           do
           {
@@ -692,7 +700,9 @@ void help_frame(World *mzx_world, char *help, int pos)
     fill_line(64, 8, t1, 32, scroll_base_color);
     // Find NEXT line NOW - Actually get end of this one.
     next_pos = pos;
-    while(help[next_pos] != '\n') next_pos++;
+    while(help[next_pos] != '\n')
+      next_pos++;
+
     // Temp. make a 0
     help[next_pos] = 0;
     // Write- What TYPE is it?

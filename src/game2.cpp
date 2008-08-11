@@ -604,7 +604,9 @@ void update_board(World *mzx_world)
           // Try moving
 
           move_status = move(mzx_world, x, y, direction,
-           4 | 8 | 16 | 128 | 1024 | 2048);
+           MOVE_CAN_LAVAWALK | MOVE_CAN_FIREWALK |
+           MOVE_CAN_WATERWALK | MOVE_REACT_PLAYER |
+           MOVE_CAN_GOOPWALK | MOVE_SPITFIRE);
 
           if(move_status == 2)
           {
@@ -638,9 +640,13 @@ void update_board(World *mzx_world)
         // Missile
         case 62:
         {
+          const int move_params =
+           MOVE_CAN_LAVAWALK | MOVE_CAN_FIREWALK |
+           MOVE_CAN_WATERWALK | MOVE_REACT_PLAYER |
+           MOVE_CAN_GOOPWALK;
           // Param is the direction
           int move_status = move(mzx_world, x, y, current_param,
-           4 | 8 | 16 | 128 | 1024);
+           move_params);
           // Did it hit something that's not the player?
           if((move_status == 1) || (move_status == 3))
           {
@@ -648,14 +654,14 @@ void update_board(World *mzx_world)
             int new_direction = cwturndir[(int)current_param];
             level_param[level_offset] = new_direction;
             move_status = move(mzx_world, x, y, new_direction,
-             4 | 8 | 16 | 128 | 1024);
+             move_params);
             // Did it hit something that's not the player? Try ccw.
             if((move_status == 1) || (move_status == 3))
             {
               new_direction = ccwturndir[(int)current_param];
               level_param[level_offset] = new_direction;
               move_status = move(mzx_world, x, y, new_direction,
-               4 | 8 | 16 | 128 | 1024);
+               move_params);
               if(move_status)
                 move_status = 2;
             }
@@ -686,7 +692,10 @@ void update_board(World *mzx_world)
           {
             level_param[level_offset] = current_param - 1;
             seek_dir = find_seek(mzx_world, x, y);
-            if(move(mzx_world, x, y, seek_dir, 1 | 4 | 8 | 16 | 128 | 1024) == 2)
+            if(move(mzx_world, x, y, seek_dir,
+             MOVE_CAN_PUSH | MOVE_CAN_LAVAWALK |
+             MOVE_CAN_FIREWALK | MOVE_CAN_WATERWALK |
+             MOVE_REACT_PLAYER | MOVE_CAN_GOOPWALK) == 2)
             {
               hurt_player_id(mzx_world, 79);
               id_remove_top(mzx_world, x, y);
@@ -725,7 +734,7 @@ void update_board(World *mzx_world)
         case 56:
         {
           if(slow_down) break;
-          move(mzx_world, x, y, current_param, 1);
+          move(mzx_world, x, y, current_param, MOVE_CAN_PUSH);
 
           break;
         }
@@ -742,7 +751,8 @@ void update_board(World *mzx_world)
           if((current_param & 0x08) || !(current_param & 0x04))
           {
             // Try move
-            move_status = move(mzx_world, x, y, current_param & 0x03, 128);
+            move_status = move(mzx_world, x, y,
+             current_param & 0x03, MOVE_REACT_PLAYER);
             // See if it hit the player
             if(move_status == 2)
             {
@@ -805,7 +815,10 @@ void update_board(World *mzx_world)
               m_dir = rand() & 3;
             }
 
-            if(move(mzx_world, x, y, m_dir, 4 | 8 | 16 | 128 | 1024) == 2)
+            if(move(mzx_world, x, y, m_dir,
+             MOVE_CAN_LAVAWALK | MOVE_CAN_FIREWALK |
+             MOVE_CAN_WATERWALK | MOVE_REACT_PLAYER |
+             MOVE_CAN_GOOPWALK) == 2)
             {
               // Hit the player. Get the blast radius.
               int radius = (current_param & 0x38) << 1;
@@ -847,7 +860,7 @@ void update_board(World *mzx_world)
             }
 
             // Move and see if it hit the player
-            if(move(mzx_world, x, y, m_dir, 128) == 2)
+            if(move(mzx_world, x, y, m_dir, MOVE_REACT_PLAYER) == 2)
             {
               // Get amount of gems to take
               int gems_take = ((current_param & 0x80) >> 7) + 1;
@@ -933,7 +946,8 @@ void update_board(World *mzx_world)
             // Clear cycle
             level_param[level_offset] = current_param & 0xCF;
 
-            move_status = move(mzx_world, x, y, direction, 1 | 2 | 128);
+            move_status = move(mzx_world, x, y, direction,
+             MOVE_CAN_PUSH | MOVE_CAN_TRANSPORT | MOVE_REACT_PLAYER);
             // Did the move not go through?
             if(move_status)
             {
@@ -986,7 +1000,10 @@ void update_board(World *mzx_world)
             }
 
             // Try move, did it hit the player?
-            if(move(mzx_world, x, y, m_dir, 4 | 8 | 16 | 128 | 1024) == 2)
+            if(move(mzx_world, x, y, m_dir,
+             MOVE_CAN_LAVAWALK | MOVE_CAN_FIREWALK |
+             MOVE_CAN_WATERWALK | MOVE_REACT_PLAYER |
+             MOVE_CAN_GOOPWALK) == 2)
             {
               // Take damage
               hurt_player_id(mzx_world, 85);
@@ -1035,7 +1052,9 @@ void update_board(World *mzx_world)
                 m_dir = find_seek(mzx_world, x, y);
               }
 
-              move_status = move(mzx_world, x, y, m_dir, 4 | 8 | 128);
+              move_status = move(mzx_world, x, y, m_dir,
+               MOVE_CAN_LAVAWALK | MOVE_CAN_FIREWALK |
+               MOVE_REACT_PLAYER);
 
               // Is it blocked?
               if(move_status)
@@ -1100,8 +1119,10 @@ void update_board(World *mzx_world)
               }
             }
 
-            // Move. Did it hit the player and does the player hurt fish?
-            if((move(mzx_world, x, y, m_dir, 16 | 128 | 256) == 2) &&
+            // Move. Did it hit the player and does the
+            // player hurt fish?
+            if((move(mzx_world, x, y, m_dir, MOVE_CAN_WATERWALK |
+             MOVE_REACT_PLAYER | MOVE_MUST_WATER) == 2) &&
              (current_param & 0x40))
             {
               hurt_player_id(mzx_world, 87);
@@ -1142,7 +1163,9 @@ void update_board(World *mzx_world)
           }
 
           // Hit player and die
-          move_status = move(mzx_world, x, y, m_dir, 512 | 128 | 4);
+          move_status = move(mzx_world, x, y, m_dir,
+           MOVE_MUST_LAVAGOOP | MOVE_REACT_PLAYER |
+           MOVE_CAN_LAVAWALK);
 
           if(move_status == 2)
           {
@@ -1283,7 +1306,8 @@ void update_board(World *mzx_world)
             }
 
             // Try to move, does it hit the player, etc.
-            if(move(mzx_world, x, y, m_dir, 16 | 128) == 2)
+            if(move(mzx_world, x, y, m_dir, MOVE_CAN_WATERWALK |
+             MOVE_REACT_PLAYER) == 2)
             {
               hurt_player_id(mzx_world, 90);
               id_remove_top(mzx_world, x, y);
@@ -1318,7 +1342,8 @@ void update_board(World *mzx_world)
           }
 
           // Hit player and die
-          move_status = move(mzx_world, x, y, m_dir, 16 | 128);
+          move_status = move(mzx_world, x, y, m_dir,
+           MOVE_CAN_WATERWALK | MOVE_REACT_PLAYER);
 
           if(move_status == 2)
           {
@@ -1466,8 +1491,8 @@ void update_board(World *mzx_world)
             if(player_distance <= sensitivity)
             {
               // Move in the player's direction, always
-              if(move(mzx_world, x, y, find_seek(mzx_world, x, y), 16 | 128)
-               == 2)
+              if(move(mzx_world, x, y, find_seek(mzx_world, x, y),
+               MOVE_CAN_WATERWALK | MOVE_REACT_PLAYER) == 2)
               {
                 hurt_player_id(mzx_world, 94);
                 id_remove_top(mzx_world, x, y);
@@ -1529,7 +1554,8 @@ void update_board(World *mzx_world)
             m_dir = flip_dir(m_dir);
           }
 
-          if(move(mzx_world, x, y, m_dir, 16 | 128) == 2)
+          if(move(mzx_world, x, y, m_dir, MOVE_CAN_WATERWALK |
+           MOVE_REACT_PLAYER) == 2)
           {
             hurt_player_id(mzx_world, 95);
             id_remove_top(mzx_world, x, y);
@@ -1595,7 +1621,9 @@ void update_board(World *mzx_world)
             // Only do this if movement is possible
             if(door_move != 0xFF)
             {
-              if(move(mzx_world, x, y, door_move, 1 | 4 | 8 | 16))
+              if(move(mzx_world, x, y, door_move,
+               MOVE_CAN_PUSH | MOVE_CAN_LAVAWALK |
+               MOVE_CAN_FIREWALK | MOVE_CAN_WATERWALK))
               {
                 // Reset the param and make the door open
                 level_id[level_offset] = 42;
@@ -1636,7 +1664,9 @@ void update_board(World *mzx_world)
           // Get direction
           current_id -= 51;
           // Try the move
-          if(move(mzx_world, x, y, current_id, 1 | 2 | 4 | 8 | 16))
+          if(move(mzx_world, x, y, current_id,
+           MOVE_CAN_PUSH | MOVE_CAN_TRANSPORT | MOVE_CAN_LAVAWALK |
+           MOVE_CAN_FIREWALK | MOVE_CAN_WATERWALK))
           {
             // Can't move; try other direction
             level_id[level_offset] = flip_dir(current_id) + 51;
@@ -1799,7 +1829,8 @@ void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
         if(p_dir != 0)
         {
           // Move the player in the opposite direction
-          move(mzx_world, lx, ly, flip_dir((p_dir - 1)), 1 | 2 | 16);
+          move(mzx_world, lx, ly, flip_dir((p_dir - 1)),
+           MOVE_CAN_PUSH | MOVE_CAN_TRANSPORT | MOVE_CAN_WATERWALK);
         }
       }
 
@@ -2475,7 +2506,6 @@ void shoot_missile(World *mzx_world, int x, int y, int dir)
   {
     id_place(mzx_world, dx, dy, 62, missile_color, dir);
   }
-  else
 
   // Did it hit the player?
   if(d_id == 127)
@@ -2483,19 +2513,6 @@ void shoot_missile(World *mzx_world, int x, int y, int dir)
     hurt_player_id(mzx_world, 62);
   }
 }
-
-#define MOVE_CAN_PUSH           0x001
-#define MOVE_CAN_TRANSPORT      0x002
-#define MOVE_CAN_LAVAWALK       0x004
-#define MOVE_CAN_FIREWALK       0x008
-#define MOVE_CAN_WATERWALK      0x010
-#define MOVE_MUST_WEB           0x020
-#define MOVE_MUST_THICKWEB      0x040
-#define MOVE_REACT_PLAYER       0x080
-#define MOVE_MUST_WATER         0x100
-#define MOVE_MUST_LAVAGOOP      0x200
-#define MOVE_CAN_GOOPWALK       0x400
-#define MOVE_SPITFIRE           0x800
 
 int move(World *mzx_world, int x, int y, int dir, int move_flags)
 {
@@ -2572,7 +2589,7 @@ int move(World *mzx_world, int x, int y, int dir, int move_flags)
       return 1;
 
     // Only must goop can go on goop
-    if((d_id == 34) && !(move_flags & MOVE_MUST_LAVAGOOP))
+    if((d_id == 34) && !(move_flags & MOVE_CAN_GOOPWALK))
       return 1;
   }
   else

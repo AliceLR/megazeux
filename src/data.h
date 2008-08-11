@@ -26,6 +26,12 @@
 #include "robot.h"
 #include "counter.h"
 #include <stdio.h>
+#include <stdlib.h>
+
+#ifndef __WIN32__
+#include <limits.h>
+#define MAX_PATH PATH_MAX
+#endif
 
 /* This first section is for idput.cpp */
 extern unsigned char id_chars[455];
@@ -47,11 +53,9 @@ extern unsigned char sfx_channels;
 extern unsigned char overall_speed;
 extern char curr_file[512];
 extern char curr_sav[512];
-extern char help_file[PATHNAME_SIZE];     // Drive + Path + Filename
-extern char megazeux_dir[PATHNAME_SIZE];  // Directory started in
-extern char current_dir[PATHNAME_SIZE];   // Current directory
-extern unsigned char megazeux_drive;      // Startup drive (0=A...)
-extern unsigned char current_drive;       // Current drive (0=A...)
+extern char help_file[MAX_PATH];              // Drive + Path + Filename
+extern char megazeux_dir[MAX_PATH];           // Directory started in
+extern char current_dir[MAX_PATH];            // Current directory
 
 extern unsigned char scroll_color;        // Current scroll color
 extern unsigned char cheats_active;       // (additive flag)

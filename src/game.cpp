@@ -126,10 +126,15 @@ int pal_update; // Whether to update a palette from robot activity
 
 void load_world_selection(World *mzx_world)
 {
-  // Load
+  char world_name[512];
+
   m_show();
-  if(!choose_file(mzx_world, world_ext, curr_file, "Load World", 1))
+  if(!choose_file_ch(mzx_world, world_ext,
+   world_name, "Load World", 1))
+  {
+    strcpy(curr_file, world_name);
     load_world_file(mzx_world, curr_file);
+  }
 }
 
 void load_world_file(World *mzx_world, char *name)
@@ -166,7 +171,6 @@ void title_screen(World *mzx_world)
   Board *src_board;
 
   debug_mode = 0;
-  error_mode = 2;
 
   // Clear screen
   clear_screen(32, 7);
@@ -249,29 +253,30 @@ void title_screen(World *mzx_world)
         case SDLK_KP_ENTER:
         case SDLK_RETURN: // Enter
         {
-          // Menu
-          // 19x9
-          int key;
-
-          save_screen();
-          draw_window_box(30, 4, 52, 16, 25, 16, 24, 1, 1);
-          write_string(main_menu, 32, 5, 31, 1);
-          write_string(" Main Menu ", 36, 4, 30, 0);
-          update_screen();
-
-          m_show();
-
-          do
-          {
-            update_event_status_delay();
+          if(get_counter(mzx_world, "ENTER_MENU", 0))
+          { 
+            int key;
+  
+            save_screen();
+            draw_window_box(30, 4, 52, 16, 25, 16, 24, 1, 1);
+            write_string(main_menu, 32, 5, 31, 1);
+            write_string(" Main Menu ", 36, 4, 30, 0);
             update_screen();
-            key = get_key(keycode_SDL);
-          } while((key != SDLK_RETURN) &&
-           (key != SDLK_KP_ENTER));
-
-          restore_screen();
-          update_screen();
-          update_event_status();
+  
+            m_show();
+  
+            do
+            {
+              update_event_status_delay();
+              update_screen();
+              key = get_key(keycode_SDL);
+            } while((key != SDLK_RETURN) &&
+             (key != SDLK_KP_ENTER));
+  
+            restore_screen();
+            update_screen();
+            update_event_status();
+          }
           break;
         }
 
@@ -307,7 +312,7 @@ void title_screen(World *mzx_world)
           // Restore
           m_show();
 
-          if(!choose_file(mzx_world, save_ext, save_file_name,
+          if(!choose_file_ch(mzx_world, save_ext, save_file_name,
            "Choose game to restore", 1))
           {
             // Swap out current board...
@@ -467,7 +472,8 @@ void title_screen(World *mzx_world)
 
         case SDLK_F1: // F1
         {
-          if(get_counter(mzx_world, "HELP_MENU", 0))
+          if(get_counter(mzx_world, "HELP_MENU", 0) ||
+            (!mzx_world->active))
           {
             m_show();
             help_system(mzx_world);
@@ -1112,6 +1118,9 @@ void game_settings(World *mzx_world)
         volume_mod(src_board->volume);
     }
 
+    if(sound_volume != get_sound_volume())
+      set_sound_volume(sound_volume);
+
     sfx ^= 1;
     music ^= 1;
 
@@ -1197,7 +1206,8 @@ void play_game(World *mzx_world, int fadein)
         case SDLK_F2: // F2
         {
           // Settings
-          if(get_counter(mzx_world, "F2_MENU", 0))
+          if(get_counter(mzx_world, "F2_MENU", 0) ||
+           (!mzx_world->active))
           {
             m_show();
 
@@ -1294,7 +1304,7 @@ void play_game(World *mzx_world, int fadein)
           char save_file_name[64];
           m_show();
 
-          if(!choose_file(mzx_world, save_ext, save_file_name,
+          if(!choose_file_ch(mzx_world, save_ext, save_file_name,
            "Choose game to restore", 1))
           {
             // Load game

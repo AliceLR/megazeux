@@ -371,6 +371,9 @@ int cmp_labels(const void *dest, const void *src)
   // A match needs to go on a secondary criteria.
   if(!cmp_primary)
   {
+    if(ldest->position == 0)
+      return 1;
+
     return ldest->position - lsrc->position;
   }
   else
@@ -386,6 +389,7 @@ Label **cache_robot_labels(Robot *robot, int *num_labels)
   int cmd;
   int next;
   int i;
+
   char *robot_program = robot->program;
   Label **label_list = (Label **)malloc(sizeof(Label *) * 16);
   Label *current_label;
@@ -1020,7 +1024,7 @@ void send_sensor_command(World *mzx_world, int id, int command)
     {
       if(under)
       {
-        id_remove_under(src_board, x, y);
+        id_remove_under(mzx_world, x, y);
         clear_sensor_id(src_board, id);
       }
       else
@@ -1127,7 +1131,6 @@ int send_robot_direct(Robot *cur_robot, char *mesg, int ignore_lock,
         set_robot_position(cur_robot, cur_robot->stack[0]);
         cur_robot->stack_pointer = 0;
       }
-      // Keep this endian safe for now.
     }
     else
     {
@@ -1561,10 +1564,9 @@ int move_dir(Board *src_board, int *x, int *y, int dir)
 // command)
 // Sign extends the result, for now...
 
-// NOTE- CLIPS COUNTER NAMES!
 int parse_param(World *mzx_world, char *program, int id)
 {
-  char ibuff[256];
+  char ibuff[ROBOT_MAX_TR];
 
   if(program[0] == 0)
   {
@@ -1692,11 +1694,12 @@ void robot_box_display(World *mzx_world, char *program,
     insta_fadein();
   }
 
-  scroll_edging(mzx_world, 4);
+  scroll_edging_ext(mzx_world, 4, 0, 0);
   // Write robot name
   if(!cur_robot->robot_name[0])
   {
-    write_string("Interaction", 35, 4, mzx_world->scroll_title_color, 0);
+    write_string_ext("Interaction", 35, 4,
+     mzx_world->scroll_title_color, 0, 0, 0);
   }
   else
   {
@@ -1959,13 +1962,13 @@ void robot_frame(World *mzx_world, char *program, int id)
   int i, pos = 0;
   int old_pos;
   // Display center line
-  fill_line(64, 8, 12, 32, scroll_base_color);
+  fill_line_ext(64, 8, 12, 32, scroll_base_color, 0, 0);
   display_robot_line(mzx_world, program, 12, id);
 
   // Display lines above center line
   for(i = 11; i >= 6; i--)
   {
-    fill_line(64, 8, i, 32, scroll_base_color);
+    fill_line_ext(64, 8, i, 32, scroll_base_color, 0, 0);
     // Go backward to previous line
     old_pos = pos;
     pos = robot_box_up(program, pos, 1);
@@ -1978,7 +1981,7 @@ void robot_frame(World *mzx_world, char *program, int id)
 
   for(i = 13; i <= 18; i++)
   {
-    fill_line(64, 8, i, 32, scroll_base_color);
+    fill_line_ext(64, 8, i, 32, scroll_base_color, 0, 0);
     old_pos = pos;
     pos = robot_box_down(program, pos, 1);
     if(old_pos != pos)
@@ -2014,7 +2017,7 @@ int num_ccode_chars(char *str)
 
 void display_robot_line(World *mzx_world, char *program, int y, int id)
 {
-  char ibuff[512];
+  char ibuff[ROBOT_MAX_TR];
   char *next;
   int scroll_base_color = mzx_world->scroll_base_color;
   int scroll_arrow_color = mzx_world->scroll_arrow_color;
@@ -2037,7 +2040,7 @@ void display_robot_line(World *mzx_world, char *program, int y, int id)
       tr_msg(mzx_world, next + 1, id, ibuff);
       ibuff[64] = 0; // Clip
       color_string_ext(ibuff, 10, y, scroll_base_color, 0, 0);
-      draw_char('', scroll_arrow_color, 8, y);
+      draw_char_ext('', scroll_arrow_color, 8, y, 0, 0);
       break;
     }
 
@@ -2054,7 +2057,7 @@ void display_robot_line(World *mzx_world, char *program, int y, int id)
         tr_msg(mzx_world, next + 1, id, ibuff);
         ibuff[64] = 0; // Clip
         color_string_ext(ibuff, 10, y, scroll_base_color, 0, 0);
-        draw_char('', scroll_arrow_color, 8, y);
+        draw_char_ext('', scroll_arrow_color, 8, y, 0, 0);
       }
       break;
     }
@@ -2098,18 +2101,20 @@ void step_sensor(World *mzx_world, int id)
 // Translates message at target to the given buffer, returning location
 // of this buffer. && becomes &, &INPUT& becomes the last input string,
 // and &COUNTER& becomes the value of COUNTER. The size of the string is
-// clipped to 80 chars.
+// clipped to 512 chars.
 
 char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer)
 {
   Board *src_board = mzx_world->current_board;
   char name_buffer[256];
   char number_buffer[16];
-  char *src_ptr = mesg, *dest_ptr = buffer;
   char *name_ptr;
-  char *old_ptr;
   char current_char;
+  char *src_ptr = mesg;
+  char *old_ptr;
 
+  int dest_pos = 0;
+  int name_length;
   int error;
   int val;
 
@@ -2121,18 +2126,19 @@ char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer)
     {
       src_ptr++;
       old_ptr = src_ptr;
+
       val = parse_expression(mzx_world, &src_ptr, &error, id);
 
       if(!error)
       {
         sprintf(number_buffer, "%d", val);
-        strcpy(dest_ptr, number_buffer);
-        dest_ptr += strlen(number_buffer);
+        strcpy(buffer + dest_pos, number_buffer);
+        dest_pos += strlen(number_buffer);
       }
       else
       {
-        *dest_ptr = '(';
-        dest_ptr++;
+        buffer[dest_pos] = '(';
+        dest_pos++;
         src_ptr = old_ptr;
       }
 
@@ -2148,8 +2154,8 @@ char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer)
       if(current_char == '&')
       {
         src_ptr++;
-        *dest_ptr = '&';
-        dest_ptr++;
+        buffer[dest_pos] = '&';
+        dest_pos++;
       }
       else
       {
@@ -2192,8 +2198,13 @@ char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer)
         if(!strcasecmp(name_buffer, "INPUT"))
         {
           // Input
-          strcpy(dest_ptr, src_board->input_string);
-          dest_ptr += strlen(src_board->input_string);
+          name_length = strlen(src_board->input_string);
+          if(dest_pos + name_length >= ROBOT_MAX_TR)
+            name_length = ROBOT_MAX_TR - dest_pos - 1;
+
+          memcpy(buffer + dest_pos, src_board->input_string,
+           name_length);
+          dest_pos += name_length;
         }
         else
 
@@ -2201,45 +2212,69 @@ char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer)
         if(is_string(name_buffer))
         {
           // Write the value of the counter name
-          char t_buf[64];
-          t_buf[0] = 0;
-          get_string(mzx_world, name_buffer, 0, t_buf);
-          strcpy(dest_ptr, t_buf);
-          dest_ptr += strlen(t_buf);
+          mzx_string str_src;
+
+          get_string(mzx_world, name_buffer, &str_src, 0);
+
+          name_length = str_src.length;
+          if(dest_pos + name_length >= ROBOT_MAX_TR)
+            name_length = ROBOT_MAX_TR - dest_pos - 1;
+
+          memcpy(buffer + dest_pos, str_src.value, name_length);
+          dest_pos += name_length;
         }
         else
 
         // #(counter) is a hex representation.
         if(name_buffer[0] == '+')
         {
-          sprintf(name_buffer, "%x", get_counter(mzx_world, name_buffer + 1, id));
-          strcpy(dest_ptr, name_buffer);
-          dest_ptr += strlen(name_buffer);
+          sprintf(name_buffer, "%x",
+           get_counter(mzx_world, number_buffer + 1, id));
+          name_length = strlen(number_buffer);
+
+          if(dest_pos + name_length >= ROBOT_MAX_TR)
+            name_length = ROBOT_MAX_TR - dest_pos - 1;
+
+          memcpy(buffer + dest_pos, number_buffer, name_length);
+          dest_pos += name_length;
         }
         else
 
         if(name_buffer[0] == '#')
         {
-          sprintf(dest_ptr, "%02x", get_counter(mzx_world, name_buffer + 1, id));
-          dest_ptr += 2;
+          name_length = 2;
+          if(dest_pos + name_length >= ROBOT_MAX_TR)
+            name_length = ROBOT_MAX_TR - dest_pos - 1;
+
+          sprintf(number_buffer, "%02x",
+           get_counter(mzx_world, name_buffer + 1, id));
+
+          memcpy(buffer + dest_pos, number_buffer, name_length);
+          dest_pos += name_length;
         }
         else
         {
-          sprintf(name_buffer, "%d", get_counter(mzx_world, name_buffer, id));
-          strcpy(dest_ptr, name_buffer);
-          dest_ptr += strlen(name_buffer);
+          sprintf(number_buffer, "%d",
+           get_counter(mzx_world, name_buffer, id));
+
+          name_length = strlen(number_buffer);
+          if(dest_pos + name_length >= ROBOT_MAX_TR)
+            name_length = ROBOT_MAX_TR - dest_pos - 1;
+
+          memcpy(buffer + dest_pos, number_buffer, name_length);
+          dest_pos += name_length;
         }
       }
     }
     else
     {
-      *dest_ptr = current_char;
+      buffer[dest_pos] = current_char;
       src_ptr++;
-      dest_ptr++;
+      dest_pos++;
     }
-  } while(current_char);
+  } while(current_char && (dest_pos < ROBOT_MAX_TR));
 
-  *dest_ptr = 0;
+  buffer[dest_pos] = 0;
   return buffer;
 }
 

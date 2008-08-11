@@ -71,4 +71,17 @@ extern char *world_ext[2];
 
 extern char door_first_movement[8];
 
+#define MOVE_CAN_PUSH           0x001
+#define MOVE_CAN_TRANSPORT      0x002
+#define MOVE_CAN_LAVAWALK       0x004
+#define MOVE_CAN_FIREWALK       0x008
+#define MOVE_CAN_WATERWALK      0x010
+#define MOVE_MUST_WEB           0x020
+#define MOVE_MUST_THICKWEB      0x040
+#define MOVE_REACT_PLAYER       0x080
+#define MOVE_MUST_WATER         0x100
+#define MOVE_MUST_LAVAGOOP      0x200
+#define MOVE_CAN_GOOPWALK       0x400
+#define MOVE_SPITFIRE           0x800
+
 #endif

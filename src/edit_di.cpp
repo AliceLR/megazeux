@@ -124,17 +124,17 @@ void size_pos(World *mzx_world)
 
   int redo = 1;
 
+  int results[6] =
+  {
+    src_board->viewport_x, src_board->viewport_y,
+    src_board->viewport_width, src_board->viewport_height,
+    src_board->board_width, src_board->board_height
+  };
+
   set_context(84);
 
   do
   {
-    int results[6] =
-    {
-      src_board->viewport_x, src_board->viewport_y,
-      src_board->viewport_width, src_board->viewport_height,
-      src_board->board_width, src_board->board_height
-    };
-  
     elements[0] = construct_button(15, 15, "OK", 0);
     elements[1] = construct_button(37, 15, "Center", 1);
     elements[2] = construct_number_box(15, 4, "Viewport X pos: ",
@@ -149,7 +149,7 @@ void size_pos(World *mzx_world)
      0, 32767, 0, results + 4);
     elements[7] = construct_number_box(15, 12, "Board Height:   ",
      0, 32767, 0, results + 5);
-  
+
     construct_dialog(&di, "Board Sizes/Positions", 10, 4, 60, 18,
      elements, 8, 2);
 
