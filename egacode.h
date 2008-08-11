@@ -48,6 +48,8 @@ char ec_load_set(char far *filename);
 //Functions that DON'T auto update
 void ec_change_byte_nou(int chr,int byte,int new_value);
 void ec_change_char_nou(int chr,unsigned char far *matrix);
+char ec_load_set_nou(char far *filename);
+void ec_update_set_if_needed(void);
 void ec_update_set(void);
 
 //The current set (14*256 bytes)

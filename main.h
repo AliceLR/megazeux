@@ -30,4 +30,5 @@ char load_config_file(void);//Returns non-0 if not found
 void save_config_file(void);//Saves the .CFG file
 void update_config_file(void);//Updates the speed setting in the .CFG file
 
+
 #endif

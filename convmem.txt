@@ -1,0 +1,20 @@
+JZig's guide to freeing conventional memory.
+NOTE NOTE: BACK UP CONFIG.SYS AND AUTOEXEC.BAT RIGHT NOW
+
+  The first thing you need to do is back up your config.sys and autoexec.bat
+in your root directory.  Next, take a look at these files.  First, autoexec.
+If you see anything mentioning mscdex, delete that line.  Also, delete any
+line that mentions load, loadhigh, or is a command, that does not appear to
+be important.  Remember, you backed up the files so if something goes wrong
+you can start over.  Copy the lines you removed to c:\windows\dosstart.bat,
+this file is runwhen you select shut down to dos on the shutdown window.
+
+Now, on to config.sys.  Do the same thing, remove anything that doesn't look
+important.  Leave mentions of emm386 and himem in. Okay, now reset your
+computer.  Hopefully, it should work fine, and you should have more memory.
+if it doesn't, figure out what doesn't work and add the line related to that
+device back to config.sys or autoexec.bat.  Okay, good luck, and stop
+complaining about not having enough memory.
+
+-JZig
+

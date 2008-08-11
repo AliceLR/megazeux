@@ -31,6 +31,7 @@
 
 //Current set- No reading of characters ever neccesary!
 unsigned char far *curr_set;//Size- 14*256 bytes
+static volatile int need_update=1;
 
 //Segment of character set memory
 #define CS_Seg  0xb800
@@ -60,7 +61,7 @@ void vga_16p_mode(void) {
 		int 10h
 		mov ax,0003h
 		int 10h
-		}
+	}
 }
 
 //Access the character set part of the graphics memory (internal function)
@@ -135,13 +136,21 @@ void _access_text(void) {
 
 //Copies the set in memory (curr_set) to the real set in graphics memory
 void ec_update_set(void) {
-	int t1,t2;
+	int remaining;
 	unsigned char far *charac=CS_Ptr;
+	unsigned char far *cset=curr_set;
 	_access_char_sets();
-	for(t1=0;t1<256;t1++)
-		for(t2=0;t2<14;t2++)
-			charac[t1*32+t2]=curr_set[t1*14+t2];
+	for ( remaining = 256 ; remaining
+	    ; remaining--, charac += 32, cset += 14 )
+	{
+		mem_cpy(charac, cset, 14);
+	}
 	_access_text();
+	need_update = 0;
+}
+
+void ec_update_set_if_needed(void) {
+	if (need_update) ec_update_set();
 }
 
 //Changes one byte of one character and updates it
@@ -149,33 +158,29 @@ void ec_change_byte(int chr,int byte,int new_value) {
 	unsigned char far *charac=CS_Ptr;
 	curr_set[chr*14+byte]=new_value;
 	_access_char_sets();
-	charac[chr*32+byte]=new_value;
+	charac[(chr<<5)+byte]=new_value;
 	_access_text();
 }
 
 //Changes one entire 14-byte character and updates it
-void ec_change_char(int chr,unsigned char far *matrix) {
-	int t1;
+void ec_change_char(int chr, unsigned char far *matrix) {
 	unsigned char far *charac=CS_Ptr;
+	mem_cpy(curr_set+chr*14, matrix, 14);
 	_access_char_sets();
-	for(t1=0;t1<14;t1++) {
-		curr_set[chr*14+t1]=matrix[t1];
-		charac[chr*32+t1]=matrix[t1];
-		}
+	mem_cpy(charac+(chr<<5), matrix, 14);
 	_access_text();
 }
 
 //Changes one byte of one character WITHOUT updating it
 void ec_change_byte_nou(int chr,int byte,int new_value) {
 	curr_set[chr*14+byte]=new_value;
+	need_update = 1;
 }
 
 //Changes one entire 14-byte character WITHOUT updating it
 void ec_change_char_nou(int chr,unsigned char far *matrix) {
-	int t1;
-	for(t1=0;t1<14;t1++) {
-		curr_set[chr*14+t1]=matrix[t1];
-		}
+	mem_cpy(curr_set+chr*14, matrix, 14); 
+	need_update = 1;
 }
 
 //Reads one byte of a character
@@ -185,8 +190,7 @@ int ec_read_byte(int chr,int byte) {
 
 //Reads an entire 14-byte character
 void ec_read_char(int chr,unsigned char far *matrix) {
-	int t1;
-	for(t1=0;t1<14;t1++) matrix[t1]=curr_set[chr*14+t1];
+	mem_cpy(matrix, curr_set+chr*14, 14);
 }
 
 //Initialization function. Call AFTER setting mode with ega_14p.
@@ -198,7 +202,7 @@ char ec_init(void) {
 	if(curr_set==NULL) return -1;
 	//Copy default mzx to current and update
 	mem_cpy((signed char far *)curr_set,
-		(signed char far *)default_mzx_char_set,3584);
+		(signed char far *)default_mzx_char_set, 3584);
 	ec_update_set();
 	//Done!
 	return 0;
@@ -220,14 +224,21 @@ char ec_save_set(char far *filename) {
 }
 
 //Load a character set from disk
-char ec_load_set(char far *filename) {
+char ec_load_set_nou(char far *filename) {
 	FILE *fp;
 	fp=fopen(filename,"rb");
 	if(fp==NULL) return -1;
 	fread(curr_set,14,256,fp);
-	ec_update_set();
 	fclose(fp);
+	need_update = 1;
 	return 0;
+}
+
+char ec_load_set(char far *filename) {
+	char status;
+	status = ec_load_set_nou(filename);
+	if (!status) ec_update_set();
+	return status;
 }
 
 //Loads a character set directly from memory (stil 3584 bytes)

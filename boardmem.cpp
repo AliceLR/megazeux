@@ -38,6 +38,8 @@
 #include <dos.h>
 #include "mod.h"
 
+#define SAVE_INDIVIDUAL
+
 //Normalize an unsigned char far * ptr-
 #define normalize(x) {\
 	x=(unsigned char far *)MK_FP(FP_SEG(x)+(FP_OFF(x)>>4),FP_OFF(x)&15); }
@@ -472,6 +474,7 @@ char store_current(unsigned char id) {
 			//also included in case this ever fails. To use the individual
 			//code, define the symbol SAVE_INDIVIDUAL.
 #ifndef SAVE_INDIVIDUAL
+
 			mem_cpy((char far *)ptr,mod_playing,207+FILENAME_SIZE);
 			ptr+=207+FILENAME_SIZE;
 #else
@@ -884,13 +887,15 @@ char grab_current(unsigned char id) {
 			//also included in case this ever fails. To use the individual
 			//code, define the symbol SAVE_INDIVIDUAL.
 #ifndef SAVE_INDIVIDUAL
+
 			mem_cpy(mod_playing,(char far *)ptr,207+FILENAME_SIZE);
 			ptr+=207+FILENAME_SIZE;
 #else
 			mem_cpy(mod_playing,(char far *)ptr,FILENAME_SIZE);
 			ptr+=FILENAME_SIZE;
 			viewport_x=*(ptr++);
-			viewport_y=*(ptr++);
+
+                        viewport_y=*(ptr++);
 			viewport_xsiz=*(ptr++);
 			viewport_ysiz=*(ptr++);
 			can_shoot=*(ptr++);
@@ -1055,6 +1060,7 @@ char grab_current(unsigned char id) {
 #else
 			fread(mod_playing,1,FILENAME_SIZE,fp);
 			viewport_x=fgetc(fp);
+
 			viewport_y=fgetc(fp);
 			viewport_xsiz=fgetc(fp);
 			viewport_ysiz=fgetc(fp);

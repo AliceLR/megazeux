@@ -59,9 +59,16 @@ max_bsiz_mode		db 2
 max_bxsiz			dw 100
 max_bysiz			dw 100
 
+; Mouse state stuff
+saved_mouse_x  dw 0
+saved_mouse_y  dw 0
+saved_mouse_buttons dw 0
+
 ; Board "save chunk"
 
 mod_playing       db 0,FILENAME_SIZE-1 dup ( ? )  ;Mod currently playing
+real_mod_playing  db 0,FILENAME_SIZE-1 dup ( ? )  ;Real mod currently playing
+refresh_mod_playing db 1                          ;Load mod no matter what
 viewport_x        db 3                            ;X pos of UL corner of view
 viewport_y        db 2
 viewport_xsiz     db 74                           ;Size of view

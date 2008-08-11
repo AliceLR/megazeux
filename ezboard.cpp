@@ -127,7 +127,7 @@ void select_current(unsigned char id) {
 	int t1;
 	char temp[FILENAME_SIZE];
 	//Save current mod...
-	str_cpy(temp,mod_playing);
+	str_cpy(temp,real_mod_playing);
 	//Does board exist?
 	if(board_where[id]==W_NOWHERE)
 		error("Attempt to load nonexistent board",2,20,current_pg_seg,0x0401);
@@ -149,15 +149,15 @@ void select_current(unsigned char id) {
 	board_where[curr_board=id]=W_CURRENT;
 	board_sizes[id]=0;
 	//Mods-
-	if(str_cmp(mod_playing,temp)) {
+	if( str_cmp(mod_playing,"*") && str_cmp(mod_playing,temp) ) {
 		//Different mod.
 		if(mod_playing[0]==0) end_mod();
 		else {
 			str_cpy(temp,mod_playing);
 			load_mod(temp);
 			volume_mod(volume);
-			}
 		}
+	}
 	find_player();
 	//Done!
 }
@@ -201,7 +201,8 @@ void clear_current(char adopt_settings) {
 	if(!adopt_settings) {
 		end_mod();
 		mod_playing[0]=0;
-		}
+		real_mod_playing[0]=0;
+	}
 	//Clear page
 	for(t1=0;t1<10000;t1++) {
 		level_id[t1]=level_under_id[t1]=level_param[t1]=level_under_param[t1]=0;

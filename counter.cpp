@@ -36,7 +36,6 @@
 #include "game.h"
 #include "game2.h"
 
-
 int player_restart_x=0,player_restart_y=0,gridxsize=1,gridysize=1;
 int myscrolledx=0,myscrolledy=0;
 char was_zapped=0;
@@ -84,9 +83,9 @@ int get_counter(char far *name,unsigned char id) {
 	if(!str_cmp(name,"PLAYERFACEDIR")) return player_last_dir>>4;
 	if(!str_cmp(name,"PLAYERLASTDIR")) return player_last_dir&15;
       // Mouse info Spid
-	if(!str_cmp(name,"MOUSEX")) return mousex;
-	if(!str_cmp(name,"MOUSEY")) return mousey;
-	if(!str_cmp(name,"BUTTONS")) return mybutton;
+	if(!str_cmp(name,"MOUSEX")) return saved_mouse_x;
+	if(!str_cmp(name,"MOUSEY")) return saved_mouse_y;
+	if(!str_cmp(name,"BUTTONS")) return saved_mouse_buttons;
       // scroll_x and scroll_y never work, always return 0. Spid
 	if(!str_cmp(name,"SCROLLEDX")) {
         calculate_xytop(myscrolledx,myscrolledy);
@@ -163,15 +162,17 @@ void set_counter(char far *name,int value,unsigned char id) {
       if(!str_cmp(name,"MOUSEX")) {
             if(value>79) value=79;
             if(value<0) value=0;
+	    saved_mouse_y = value;
             m_move(value,mousey);
             return;
-            }
+      }
       if(!str_cmp(name,"MOUSEY")) {
             if(value>24) value=24;
             if(value<0) value=0;
+	    saved_mouse_x = value;
             m_move(mousex,value);
             return;
-            }
+      }
 	if(!str_cmp(name,"INPUT")) {
 		num_input=value;
 		return;

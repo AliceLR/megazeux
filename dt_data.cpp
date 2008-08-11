@@ -30,6 +30,6 @@ char far *gcard_strs[6]={
 	"EGA mono\0","EGA\0","VGA mono\0",
 	"VGA+\0","MCGA mono\0","MCGA\0" };
 
-char far *proc_strs[5]={
+/*char far *proc_strs[5]={
 	"186\0","286\0","386sx\0","386dx\0",
-	"486+\0" };
+        "486+\0" };*/

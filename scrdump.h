@@ -1,8 +1,8 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 1998 MenTaLguY - mentalg@geocities.com
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -19,24 +19,17 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
-/* DETECT.H- Declarations and #defines for DETECT.ASM */
+#ifndef __SCRDUMP_H
+#define __SCRDUMP_H
 
-#ifndef __DETECT_H
-#define __DETECT_H
+//#ifdef __cplusplus
+//extern "C" {
+//#endif
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+void dump_screen(const char far *filename);
 
-int detect_graphics(void);
-
-#ifdef __cplusplus
-}
-#endif
-
-//Graphics codes- EGA is 3 and above
-#define EGA		3
-#define VGAm	5
-#define VGAc	6
+//#ifdef __cplusplus
+//}
+//#endif
 
 #endif

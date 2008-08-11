@@ -22,15 +22,17 @@
 
 // Saving/loading worlds- dialogs and functions
 // *** READ THIS!!!! ****
-/* New naming conventions:
+/* New magic strings
    .MZX files:
    MZX - Ver 1.x MegaZeux
    MZ2 - Ver 2.x MegaZeux
-   MZA - Ver 2.51S1+ Megazeux, may change to MZB,MZC, up in letters etc.. if neccesary
+   MZA - Ver 2.51S1 Megazeux
+   M\002\011 - 2.5.1spider2+, 2.9.x
 
    .SAV files:
    MZSV2 - Ver 2.x MegaZeux
-   MZXSA - Ver 2.51S1+ MegaZeux, again, may change if necessary
+   MZXSA - Ver 2.51S1 MegaZeux
+   MZS\002\011 - 2.5.1spider2+, 2.9.x
  
  All others are unchanged.
 
@@ -62,7 +64,7 @@
 #include "roballoc.h"
 #include "ems.h"
 #include "counter.h"
-
+#define SAVE_INDIVIDUAL
 char sd_types[3]={ DE_INPUT,DE_BUTTON,DE_BUTTON };
 char sd_xs[3]={ 5,15,37 };
 char sd_ys[3]={ 2,4,4 };
@@ -72,6 +74,56 @@ int sd_p2s=193;
 void far *cf_ptr=(void far *)(curr_file);
 dialog s_di={ 10,8,69,14,"Save World",3,sd_types,sd_xs,sd_ys,sd_strs,sd_p1s,
 	&sd_p2s,&cf_ptr,0 };
+
+static int world_magic(const char magic_string[3]) {
+	if ( magic_string[0] == 'M' ) {
+		if ( magic_string[1] == 'Z' ) {
+			switch (magic_string[2]) {
+			  case 'X':
+				return 0x0100;
+			  case '2':
+				return 0x0205;
+			  case 'A':
+				return 0x0209;
+			  default:
+				return 0;
+			}
+		} else {
+			if ( ( magic_string[1] > 1 ) && ( magic_string[1] < 10 ) ) { // I hope to God that MZX doesn't last beyond 9.x
+				return ( (int)magic_string[1] << 8 ) + (int)magic_string[2];
+			} else {
+				return 0;
+			}
+		}
+	} else {
+		return 0;
+	}
+}
+
+static int save_magic(const char magic_string[5]) {
+	if ( ( magic_string[0] == 'M' ) && ( magic_string[1] == 'Z' ) ) {
+		switch (magic_string[2]) {
+		  case 'S':
+			if ( ( magic_string[3] == 'V' ) && ( magic_string[4] == '2' ) ) {
+				return 0x0205;
+			} else if ( ( magic_string[3] >= 2 ) && ( magic_string[3] <= 10 ) ) {
+				return ( (int)magic_string[3] << 8 ) + magic_string[4];
+			} else {
+				return 0;
+			}
+		  case 'X':
+			if ( ( magic_string[3] == 'S' ) && ( magic_string[4] == 'A' ) ) {
+				return 0x0209;
+			} else {
+				return 0;
+			}
+		  default:
+			return 0;
+		}
+	} else {
+		return 0;
+	}
+}
 
 char save_world_dialog(void) {
 	set_context(76);
@@ -114,25 +166,24 @@ void save_world(char far *file,char savegame,char faded) {
 	if(fp==NULL) {
 		error("Error saving world",1,24,current_pg_seg,0x0C01);
 		return;
-		}
+	}
 	//Save it...
 	save_screen(current_pg_seg);
 	meter("Saving...",current_pg_seg,meter_curr,meter_target);
-	if(savegame) {
-		fwrite("MZXSA",1,6,fp);
+	if (savegame) {
+		fwrite("MZS\002\011",1,5,fp);
 		fputc(curr_board,fp);
 		xor=0;
-		}
-	else {
+	} else {
 		//Name of game-
 		fwrite(board_list,1,BOARD_NAME_SIZE,fp);
 		//Pw info-
 		write_password(fp);
 		//File type id-
-		fwrite("MZA",1,3,fp);
+		fwrite("M\002\011",1,3,fp);
 		//Get xor code...
 		xor=get_pw_xor_code();
-		}
+	}
 	//Rest of file is xor encoded. Write character set...
 	if(xor) mem_xor((char far *)curr_set,3584,xor);
 	fwrite(curr_set,1,3584,fp);
@@ -156,7 +207,8 @@ void save_world(char far *file,char savegame,char faded) {
 		fputc(scroll_pointer_color,fp);
 		fputc(scroll_title_color,fp);
 		fputc(scroll_arrow_color,fp);
-		}
+		fwrite(real_mod_playing,1,FILENAME_SIZE,fp);
+	}
 	if(xor) mem_xor((char far *)&edge_color,24,xor);
 	fwrite(&edge_color,1,24,fp);
 	if(xor) mem_xor((char far *)&edge_color,24,xor);
@@ -182,7 +234,8 @@ void save_world(char far *file,char savegame,char faded) {
 		fputc(scroll_pointer_color,fp);
 		fputc(scroll_title_color,fp);
 		fputc(scroll_arrow_color,fp);
-		}
+		fwrite(real_mod_playing,1,FILENAME_SIZE,fp);
+	}
 	fputc(edge_color^xor,fp);
 	fputc(first_board^xor,fp);
 	fputc(endgame_board^xor,fp);
@@ -353,6 +406,7 @@ void save_world(char far *file,char savegame,char faded) {
 //set edit to -1 to mean swap world; ie for a game but ignore password if
 //it is the same as the current.
 char load_world(char far *file,char edit,char savegame,char *faded) {
+	int version;
 	int t1,t2,nmb;
 	unsigned char xor;
 	unsigned long temp,temp2,gl_rob;
@@ -372,17 +426,22 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 	save_screen(current_pg_seg);
 	meter("Loading...",current_pg_seg,meter_curr,meter_target);
 	if(savegame) {
-		fread(tempstr,1,6,fp);
-		if(str_cmp(tempstr,"MZXSA")) {
+                fread(tempstr,1,5,fp);
+		version = save_magic(tempstr);
+		if ( version != 0x0209 ) {
 			restore_screen(current_pg_seg);
-			error("Error loading save game",1,24,current_pg_seg,0x2101);
+			if (!version) {
+				error(".SAV files from other versions of MZX are not supported",1,24,current_pg_seg,0x2101);
+			} else {
+				error("Unrecognized magic: file may not be .SAV file",1,24,current_pg_seg,0x2101);
+			}
 			fclose(fp);
 			return 1;
-			}
+		}
 		curr_board=fgetc(fp);
 		xor=0;
-		}
-	else {
+		refresh_mod_playing = 1;
+	} else {
 		//Name of game- skip it.
 		fseek(fp,BOARD_NAME_SIZE,SEEK_CUR);
 		//Pw info- Save current...
@@ -408,54 +467,33 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 				}
 			}
 	pw_okay:
-		//File type id- check it.
-		if(fgetc(fp)!='M') {
-			if((protection_method)&&(fgetc(fp)=='M')) {
-				//Could be ver 1.0?
-				if(fgetc(fp)=='Z')
-					if(fgetc(fp)=='X') goto ver1;
-				}
-			restore_screen(current_pg_seg);
-			error("Error loading world",1,24,current_pg_seg,0x0D02);
-			protection_method=p_m;
-			str_cpy(password,tempstr);
-			fclose(fp);
-			return 1;
-		      }
-		if(fgetc(fp)!='Z') {
-			restore_screen(current_pg_seg);
-			error("Error loading world",1,24,current_pg_seg,0x0D03);
-			protection_method=p_m;
-			str_cpy(password,tempstr);
-			fclose(fp);
-			return 1;
+		{
+			char magic[3];
+			char error_string[80];
+			fread(magic,1,3,fp);
+			version = world_magic(magic);
+			if ( version < 0x0205 ) {
+				sprintf(error_string, "World is from old version (%d.%d); use converter", ( version & 0xff00 ) >> 8, version & 0xff);
+				version = 0;
+			} else if ( version > 0x0209 ) {
+				sprintf(error_string, "World is from more recent version (%d.%d)", ( version & 0xff00 ) >> 8, version & 0xff);
+				version = 0;
+			} else if ( version == 0 ) {
+				sprintf(error_string, "Unrecognized magic; file may not be MZX world");
 			}
-		//File type id- check ver...
-		t1=fgetc(fp);
-		if(t1=='X') {
-		ver1:
-			restore_screen(current_pg_seg);
-			//Version 1.02 or earlier
-			error("World is from version 1- Use conversion program",
-				0,24,current_pg_seg,0x1C02);
-			protection_method=p_m;
-			str_cpy(password,tempstr);
-			fclose(fp);
-			return 1;
+			if (!version) {
+				restore_screen(current_pg_seg);
+				error(error_string,1,24,current_pg_seg,0x0D02);
+				protection_method=p_m;
+				str_cpy(password,tempstr);
+				fclose(fp);
+				restore_screen(current_pg_seg);
+				return 1;
 			}
-		else if((t1!='2')&&(t1!='A')) {
-			restore_screen(current_pg_seg);
-			//This is not a version 2.00 file
-			error("World is from a more recent version of MegaZeux",0,24,
-				current_pg_seg,0x0E01);
-			fclose(fp);
-			protection_method=p_m;
-			str_cpy(password,tempstr);
-			return 1;
-			}
+		}
 		//Get xor code...
 		xor=get_pw_xor_code();
-		}
+	}
 	//Version 2.00
 	//Clear gl robot...
 	clear_robot(GLOBAL_ROBOT);
@@ -485,7 +523,8 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 		scroll_pointer_color=fgetc(fp);
 		scroll_title_color=fgetc(fp);
 		scroll_arrow_color=fgetc(fp);
-		}
+                fread(real_mod_playing,1,FILENAME_SIZE,fp);
+	}
 	fread(&edge_color,1,24,fp);
 	if(xor) mem_xor((char far *)&edge_color,24,xor);
 #else
@@ -510,7 +549,8 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 		scroll_pointer_color=fgetc(fp);
 		scroll_title_color=fgetc(fp);
 		scroll_arrow_color=fgetc(fp);
-		}
+                fread(real_mod_playing,1,FILENAME_SIZE,fp);
+	}
 	edge_color=fgetc(fp)^xor;
 	first_board=fgetc(fp)^xor;
 	endgame_board=fgetc(fp)^xor;

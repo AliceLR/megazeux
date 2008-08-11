@@ -25,6 +25,6 @@
 #define __DT_DATA_H
 
 extern char far *gcard_strs[6];
-extern char far *proc_strs[5];
+//extern char far *proc_strs[5];
 
 #endif

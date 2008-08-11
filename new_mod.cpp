@@ -41,6 +41,7 @@
 extern char no_ems;
 extern int rob_global_ems;
 
+
 //Error leniency, 0 is least lenient, 2 is most lenient.
 //
 //Errors in most lenient: (normal game)
@@ -62,6 +63,8 @@ GDMHeader ModHeader;            /* Module header */
 int ErrorFlag;
 int file, MusChans, t1;
 unsigned int Addr=0xFFFF,IRQ=0xFF,DMA=0xFF;
+char refresh_mod_playing;
+//char mod_playing[FILENAME_SIZE];
 
 char sfx_chan[4]={ -1,-1,-1,-1 };//Actual IDs of SFX channels (left)
 char sfx_chan2[4]={ -1,-1,-1,-1 };//Actual IDs of SFX channels (right)
@@ -110,9 +113,28 @@ int ConvertMOD(int file,int type);
 
 void load_mod(char far *filename) {
 	int t1,t2;
+	char temp3[FILENAME_SIZE];
+
 SCDoing|=512;
 SCLoadingName=filename;
 	if(!music_device) music_on=0;
+
+	if (!str_cmp(filename, "*")) {
+		if (refresh_mod_playing) {
+			//str_cpy(temp, real_mod_playing);
+			if (str_cmp(real_mod_playing, "*")) {
+
+				str_cpy(temp3, real_mod_playing);
+				load_mod(temp3);
+			} else { // just so we don't eat ourselves recursively
+				error("load_mod(): real_mod_playing is ``*'' -- this is a bug\n",0,8,current_pg_seg,0x0f00);
+			}
+		}
+		str_cpy(mod_playing, "*");
+		refresh_mod_playing = 0;
+		return;
+	}
+	refresh_mod_playing = 0;
 
 	free_sam_cache(1);//Clear entire sfx cache
 	save_map_state_EMS(rob_global_ems);
@@ -121,21 +143,23 @@ SCLoadingName=filename;
 		StopMusic();
 		StopOutput();
 		UnloadModule();
-		}
+	}
 	mod_active=0;
 
 	mod_playing[0]=0;
+	real_mod_playing[0]=0;
 	if(!music_on) {
 		//Save mod playing...
 		if(filename!=NULL) {
 			str_cpy(mod_playing,filename);
+			str_cpy(real_mod_playing,filename);
 			if(!error_mode) error("Music is off- Module is set for board but not loaded",
 				0,24,current_pg_seg,0x3201);
-			}
+		}
 		restore_map_state_EMS(rob_global_ems);
 SCDoing&=~512;
 		return;
-		}
+	}
 	if(filename==NULL) goto load_empty_mod;
 
 retry_1:
@@ -236,6 +260,7 @@ retry_1:
 	StartOutput(MusChans,0);
 	StartMusic();
 	str_cpy(mod_playing,filename);
+	str_cpy(real_mod_playing,filename);
 	mod_active=2;
 	restore_map_state_EMS(rob_global_ems);
 SCDoing&=~512;
@@ -292,11 +317,14 @@ retry_2:
 		ModHeader.PanMap[(t1<<1)+1]=0xF;
 		sfx_chan[t1]=(t1<<1);
 		sfx_chan2[t1]=(t1<<1)+1;
-		}
+	}
 	//Activate up to 4 SFX channels
 	StartOutput(MusChans,0);
 	StartMusic();
-	if(filename!=NULL) str_cpy(mod_playing,filename);
+	if(filename!=NULL) {
+		str_cpy(mod_playing,filename);
+		str_cpy(real_mod_playing,filename);
+	}
 	mod_active=1;
 	restore_map_state_EMS(rob_global_ems);
 SCDoing&=~512;
@@ -304,7 +332,10 @@ SCDoing&=~512;
 
 load_no_mod:
 	mod_active=actual_num_sfx=0;
-	if(filename!=NULL) str_cpy(mod_playing,filename);
+	if(filename!=NULL) {
+		str_cpy(mod_playing,filename);
+		str_cpy(real_mod_playing,filename);
+	}
 	restore_map_state_EMS(rob_global_ems);
 SCDoing&=~512;
 	return;

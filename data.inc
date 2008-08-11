@@ -134,6 +134,12 @@ global C max_bsiz_mode:byte
 global C max_bxsiz:word
 global C max_bysiz:word
 global C mesg_edges:byte
+; New values for s2
+
+global C saved_mouse_x:word
+global C saved_mouse_y:word
+global C saved_mouse_buttons:word
+global C real_mod_playing:byte
 
 ; These are from DATA2.CPP
 

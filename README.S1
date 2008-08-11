@@ -1,0 +1,46 @@
+
+IMPORNAT NOTICE:
+ PLEASE READ THIS FILE BEFORE TRYING TO USE MZX 2.51S1b! YOU ALREADY DID,
+ DIDN'T YOU? YOU RAN THE PROGRAM AND IT DIDN'T WORK AND NOW YOU'RE ALL
+ UPSET AND YOU THINK IT'S OUR FAULT, DON'T YOU? HA HA HA! SEE IF I HELP
+ YOU OUT! I'M GUESSING THE SOUND DOESN'T WORK, RIGHT? TOO BAD! MAYBE
+ YOU SHOULD HAVE READ THIS FILE EARLIER, THAT'S WHY IT'S NAMED README.1ST!
+
+ Okay, This is sort of a betaish release, in the sense that I'm pretty sure
+ everything works right, but you never know :) It's also the first release
+ since I plan on adding more improvements over time. So even if everything
+ works perfectly, I still get to call it a beta since it's not really done.
+
+ First big thing is that this software is protected by the General Public
+ License, a copy of which has been included for your convenience.
+
+ Second big thing is that as of right now, you must have MZX 2.51 installed
+ on your system. This is because I haven't included all the various support
+ files that MegaZeux needs. In light of this, you MUST copy the included
+ .EXE file into your normal MegaZeux directory, if you don't, your sound
+ will not function, and the help files will be missing, and other nasty
+ things.
+
+ In accordance with the General Public License, the source code for
+ MZX 2.51S1 is available, and you are free to use/modify it under the
+ terms set forth in the General Public License. The source code should be
+ available wherever you got this binary package, if not, you should always
+ be able to obtain the source at:
+ http://www.execpc.com/~tgoetzma/
+ Barring server failures or me changing ISPs or something :)
+
+ Changes are outlined in whatsnew.251. If you find a major bug in the
+ program, please email me at the address below. But ONLY for bugs (or
+ perhaps cash donations, complements, etc...:) PLEASE DO NOT EMAIL me
+ with questions on how to use the new stuff, or amazing ideas that you
+ have for MZX 2.51S2. I may or may not release some more detailed info
+ on using MZX 2.51Sx, or perhaps some kind of FAQ. Keep an eye on any
+ zeux.org or some other popular mzx news page.
+
+ I guess that's it...Enjoy!
+
+ Charles Goetzman
+ tgoetzma@execpc.com
+
+
+ 

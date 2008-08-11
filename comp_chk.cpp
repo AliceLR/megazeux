@@ -35,27 +35,16 @@
 //Global variable for VGA availability
 char vga_avail=0;
 //Card/processor
-char card=0,proc=0;
+char card;
 
 //Some strings for output
-char far *sorry1="\r\n\r\nSorry, MegaZeux requires a 186 processor or better.\r\n$";
+
 char far *sorry2="\r\n\r\nSorry, MegaZeux requires an EGA graphics card or better.\r\n$";
 
 //Check graphics card and processor.
 char computer_check(void) {
 	card=detect_graphics();
-	proc=detect_processor();
 	//Uses DOS services to print stuff
-	if(proc<P186) {
-		asm push ds
-		asm mov dx,SEG sorry1
-		asm mov ds,dx
-		asm lds dx,ds:sorry1
-		asm mov ah,9
-		asm int 21h
-		asm pop ds
-		return -1;
-		}
 	if(card<EGA) {
 		asm push ds
 		asm mov dx,SEG sorry2

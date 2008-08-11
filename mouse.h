@@ -63,6 +63,9 @@ void m_init(void);
 //Deinitialize the mouse routines
 void m_deinit(void);
 
+//Take a snapshot of current mouse state (in saved_mouse_x, etc)
+void m_snapshot(void);
+
 //Change the current video segment
 void m_vidseg(unsigned int newseg);
 

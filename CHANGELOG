@@ -1,3 +1,25 @@
+2.51s2final release:
+
++ Deleted cpu checking code, was unnecesary and caused errors.
++ Fixed bug involving mod * settings being lost when loading
++ Should have fixed ems problems some were reporting, if not, just
+  try to get more conventional memory.
+
+2.5.1s2beta release:
+
++ added MOD "*", which allows a board to use whatever module the previous
+  board was using; this necessitated a change in the .SAV file format
+  (still need changes in the editor UI to access this feature outside of
+   Robotic)
++ inmate's semantics for MOD "SOMETHIN.MOD*" aren't immediately possible,
+  although a rough hack is in already
++ char edits are now not displayed until the beginning of the next cycle;
+  the deferred display should eliminate a lot of flickering
++ an (at least partial) fix for the infamous UNDER bug (thanks JZig!)
++ MOUSEX, MOUSEY and BUTTONS are now buffered.
++ more sane magic handling
++ can load MZX 2.51 and 2.51S1 worlds, but will only save 2.5.1spider2 format
+
 
 2.51S1 release:
  

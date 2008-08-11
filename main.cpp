@@ -58,6 +58,8 @@
 #include "mod.h"
 #include "game.h"
 #include "error.h"
+#define SAVE_INDIVIDUAL
+
 
 //new_settings=1 if Addr IRQ or DMA was updated via CMD line so we
 //should keep them even if config is entered
@@ -66,30 +68,19 @@ jmp_buf exit_jump;//Used in error function and nowhere else
 extern unsigned int Addr,IRQ,DMA;//Sound card parameters (-1=detect)
 
 #ifdef UNREG
-char *unreg_exit_mesg =
-"Thank you for playing MegaZeux! If you enjoy MegaZeux, you should register it.\n"
-"Registration gets you the remaining three games in the Zeux series and pays\n"
-"for the actual MegaZeux program. When you register, you tell us that you enjoy\n"
-"getting such intellegent games at low costs. To register, send 15 dollars, plus\n"
-"2 for shipping/handling (3 outside the US) to:\n\n"
-"\tSoftware Visions\n"
-"\t4875 Sunset Ave.\n"
-"\tLa Crescenta, CA 91214\n\n"
-"Make checks and money orders payable to Gregory Janson. Include a copy of our\n"
-"order form, or a note stating your name and address and the desired product.\n\n"
-"Remember to read CONTEST.TXT about a world design contest!\n\n"
-"See README.TXT if you are having problems with EMS, memory, or bugs/support.\n"
-"See the Frequently Asked Questions section of MEGAZEUX.DOC if you have a\n"
-"problem, before contacting Software Visions.\n\n$";
+char *unreg_exit_mesg=
+"This message should not be displayed, it is a bug, if it is.";
+
+
 #else
-char *reg_exit_mesg =
-"Thank you for registering MegaZeux.\n\n"
-"Remember to read CONTEST.TXT about a world design contest!\n\n"
-"See README.TXT if you are having problems with EMS, memory, or bugs/support.\n"
-"See the Frequently Asked Questions section of MEGAZEUX.DOC if you have a\n"
-"problem, before contacting Software Visions.\n\n"
-" \n\n"
-" MZX2.51S1 improvements by Charles Goetzman \n\n$";
+char *reg_exit_mesg=
+"Thank you for registering MegaZeux.\n\n\n\r"
+"Read the files megazeux.doc and readme.1st if you need help.\n\n\r"
+"Contributors to MZX2.51 version s2:\n\n\r"
+"Charles Goetzman - mzx s1 base and misc. code\n\r"
+"MenTaLguY - anti-flicker code, mouse buffering, mod \"*\"\n\r"
+"Ben Zeigler - under bug fix and getting the thing to run\n\n\r"
+"Visit zeux.org for newer versions of this software\n\n\r$";
 
 #endif
 
@@ -156,7 +147,7 @@ int main(int argc,char **argv) {
 	draw_window_box(2,1,77,3,0xB800,120,127,113,0);
 	draw_window_box(2,4,77,16,0xB800,120,127,113,0);
 	draw_window_box(2,17,77,23,0xB800,120,127,113,0);
-	write_string("MegaZeux version 2.51S1",27,2,127,0xB800);
+	write_string("MegaZeux version 2.51S2",27,2,127,0xB800);
 // #ifdef BETA
 	write_string("BETA- PLEASE DISTRIBUTE",27,17,127,0xB800);
 // #endif
@@ -167,7 +158,7 @@ int main(int argc,char **argv) {
 	write_string("Unregistered Evaluation Copy",25,0,122,0xB800);
 #endif
 	write_string("Graphics card:",4,18,122,0xB800);
-	write_string("Processor:",8,19,122,0xB800);
+        
 	write_string("EMS available:",4,20,122,0xB800);
 	write_string("Core mem free:",4,21,122,0xB800);
 	write_string("Memory allocs:",4,22,122,0xB800);
@@ -192,7 +183,6 @@ int main(int argc,char **argv) {
 	//First, show graphics card and processor
 	if(force_ega) write_string("EGA (command line)",19,18,125,0xB800);
 	else write_string(gcard_strs[card-3],19,18,121,0xB800);
-	write_string(proc_strs[proc-1],19,19,121,0xB800);
 	//Initialize EMS systems
 	if(no_ems) write_string("Forced off",19,20,125,0xB800);
 	else if(setup_EMS()) write_string("None",19,20,124,0xB800);

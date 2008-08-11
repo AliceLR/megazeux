@@ -26,7 +26,7 @@
 
 #include <stdio.h>
 
-char allocate_board_space(long size,unsigned char id,char conv_mem_ok=1);
+char allocate_board_space(long size,unsigned char id,char conv_mem_ok=0);
 void deallocate_board_space(unsigned char id);
 unsigned int RLE2_size(unsigned char far *plane);
 unsigned int RLE2_store(unsigned char far *where,unsigned char far *plane);

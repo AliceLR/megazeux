@@ -63,6 +63,7 @@
 #include "counter.h"
 #include "game2.h"
 #include "timer.h"
+#include "scrdump.h"
 
 char far *main_menu=	"F1/H - Help\n"
 							"Enter- Menu\n"
@@ -110,14 +111,9 @@ char pal_update=0;//Whether to update a palette from robot activity
 void title_screen(void) {
 	char fadein=0;
 	int key=0,t1;
-#ifdef SCREENDUMP
-	unsigned char far *scrn=
-		(unsigned char far *)MK_FP(current_pg_seg,0);
-	int t2,t3,t4,t5,t7,t8;
-	char r,g,b;
-#endif
 	FILE *fp;
 	char temp[FILENAME_SIZE];
+
 #ifdef PROFILE
 	char profiling=0;
 #endif
@@ -147,10 +143,10 @@ void title_screen(void) {
 		set_counter("TIME",time_limit);
 		insta_fadeout();
 		fadein=1;
-		}
+	}
 	else goto world_load;//Choose world to load
 
-	goto menu_mesg;
+	if (0 == 0) goto menu_mesg; //stupid hack to shut up tc
 
 	//Main game loop
 	//Mouse remains hidden unless menu/etc. is invoked
@@ -183,69 +179,9 @@ void title_screen(void) {
 					profiling^=1;
 					break;
 #endif
-#ifdef SCREENDUMP
-			case ']'://Screen .PCX dump
-				fp=fopen("temp.pcx","wb");
-				//header
-				fputc(10,fp);
-				fputc(5,fp);
-				fputc(1,fp);
-				fputc(1,fp);
-				t1=0; fwrite(&t1,1,2,fp);
-				t1=0; fwrite(&t1,1,2,fp);
-				t1=639; fwrite(&t1,1,2,fp);
-				t1=349; fwrite(&t1,1,2,fp);
-				t1=300; fwrite(&t1,1,2,fp);
-				t1=300; fwrite(&t1,1,2,fp);
-				//colormap
-				for(t1=0;t1<16;t1++) {
-					get_rgb(t1,r,g,b);
-					fputc(r<<2,fp);
-					fputc(g<<2,fp);
-					fputc(b<<2,fp);
-					}
-				//header part 2
-				fputc(0,fp);
-				fputc(4,fp);
-				t1=80; fwrite(&t1,1,2,fp);
-				t1=1; fwrite(&t1,1,2,fp);
-				t1=640; fwrite(&t1,1,2,fp);
-				t1=350; fwrite(&t1,1,2,fp);
-				for(t1=0;t1<54;t1++) fputc(0,fp);
-				//picture
-				for(t1=0;t1<25;t1++) {//25 rows
-					for(t5=0;t5<14;t5++) {//14 bitmap rows per char
-						t7=1;
-						for(t2=0;t2<4;t2++) {//4 planes
-							for(t3=0;t3<80;t3++) {//80 columns
-								//Check FG color to see if applicable
-								t4=(scrn[((t1*80+t3)<<1)+1])&t7;
-								if(t4) {
-									//Get character
-									t4=scrn[(t1*80+t3)<<1];
-									//Write character bitmap byte
-									t8=ec_read_byte(t4,t5);
-									}
-								else t8=0;//Byte for this bitplane
-								//Check BK color to see if applicable
-								t4=((scrn[((t1*80+t3)<<1)+1])>>4)&t7;
-								if(t4) {
-									//Get character
-									t4=scrn[(t1*80+t3)<<1];
-									//Write inverse of character bitmap byte
-									t8|=255^ec_read_byte(t4,t5);
-									}
-								//Write byte
-								if(t8>191) fputc(193,fp);
-								fputc(t8,fp);
-								}
-							t7<<=1;//Upgrade bit plane
-							}
-						}
-					}
-				fclose(fp);
-				break;
-#endif
+				case ']'://Screen .PCX dump
+					dump_screen("SCREEN.PCX");
+					break;
 				case 'E'://E
 				case -66://F8
 					//Editor
@@ -399,6 +335,9 @@ void title_screen(void) {
 						if(board_where[curr_board]!=W_NOWHERE)
 							select_current(curr_board);
 						else select_current(0);
+						str_cpy(temp,mod_playing);
+						load_mod(temp);
+
 						send_robot_def(0,10);
 						//Copy filename
 						str_cpy(curr_sav,temp);
@@ -493,6 +432,9 @@ void title_screen(void) {
 					if(board_where[curr_board]!=W_NOWHERE)
 						select_current(curr_board);
 					else select_current(0);
+					str_cpy(temp,mod_playing);
+					load_mod(temp);
+
 					send_robot_def(0,10);
 					dead=0;
 					vquick_fadeout();
@@ -877,21 +819,26 @@ void game_settings(void) {
 	else sfx_on=sfx^1;
 	//Check- turn music on/off?
 	if(music==music_on) {
+		char temp2[FILENAME_SIZE];
 		if(music_on==1) {
 			music_on=0;
 			//Turn off music.
-			str_cpy(temp,mod_playing);
+			str_cpy(temp,real_mod_playing);
+			str_cpy(temp2,mod_playing);
 			end_mod();
-			str_cpy(mod_playing,temp);
-			}
+			str_cpy(real_mod_playing,temp);
+			str_cpy(mod_playing,temp2);
+		}
 		else if(music_device>0) {
 			music_on=1;
 			//Turn on music.
-			str_cpy(temp,mod_playing);
+			str_cpy(temp2,mod_playing);
+			str_cpy(temp,real_mod_playing);
 			load_mod(temp);
-			str_cpy(mod_playing,temp);
-			}
+			str_cpy(real_mod_playing,temp);
+			str_cpy(mod_playing,temp2);
 		}
+	}
 	overall_speed=spd_tmp;
 }
 
@@ -902,16 +849,9 @@ void play_game(char fadein) {
 	//We have the world loaded, on the proper scene.
 	//We are faded out. Commence playing!
 	int t1,key;
-#ifdef SCREENDUMP
-	unsigned char far *scrn=
-		(unsigned char far *)MK_FP(current_pg_seg,0);
-	int t2,t3,t4,t5,t7,t8;
-	char r,g,b;
-#endif
 	FILE *fp;
 	char temp[FILENAME_SIZE];
 	char keylbl[5]="KEY?";
-
 	enter_func("play_game");
 
 	set_context(91);
@@ -939,69 +879,9 @@ void play_game(char fadein) {
 			//...and process
 		process_key:
 			switch(key) {
-#ifdef SCREENDUMP
-			case ']'://Screen .PCX dump
-				fp=fopen("temp.pcx","wb");
-				//header
-				fputc(10,fp);
-				fputc(5,fp);
-				fputc(1,fp);
-				fputc(1,fp);
-				t1=0; fwrite(&t1,1,2,fp);
-				t1=0; fwrite(&t1,1,2,fp);
-				t1=639; fwrite(&t1,1,2,fp);
-				t1=349; fwrite(&t1,1,2,fp);
-				t1=300; fwrite(&t1,1,2,fp);
-				t1=300; fwrite(&t1,1,2,fp);
-				//colormap
-				for(t1=0;t1<16;t1++) {
-					get_rgb(t1,r,g,b);
-					fputc(r<<2,fp);
-					fputc(g<<2,fp);
-					fputc(b<<2,fp);
-					}
-				//header part 2
-				fputc(0,fp);
-				fputc(4,fp);
-				t1=80; fwrite(&t1,1,2,fp);
-				t1=1; fwrite(&t1,1,2,fp);
-				t1=640; fwrite(&t1,1,2,fp);
-				t1=350; fwrite(&t1,1,2,fp);
-				for(t1=0;t1<54;t1++) fputc(0,fp);
-				//picture
-				for(t1=0;t1<25;t1++) {//25 rows
-					for(t5=0;t5<14;t5++) {//14 bitmap rows per char
-						t7=1;
-						for(t2=0;t2<4;t2++) {//4 planes
-							for(t3=0;t3<80;t3++) {//80 columns
-								//Check FG color to see if applicable
-								t4=(scrn[((t1*80+t3)<<1)+1])&t7;
-								if(t4) {
-									//Get character
-									t4=scrn[(t1*80+t3)<<1];
-									//Write character bitmap byte
-									t8=ec_read_byte(t4,t5);
-									}
-								else t8=0;//Byte for this bitplane
-								//Check BK color to see if applicable
-								t4=((scrn[((t1*80+t3)<<1)+1])>>4)&t7;
-								if(t4) {
-									//Get character
-									t4=scrn[(t1*80+t3)<<1];
-									//Write inverse of character bitmap byte
-									t8|=255^ec_read_byte(t4,t5);
-									}
-								//Write byte
-								if(t8>191) fputc(193,fp);
-								fputc(t8,fp);
-								}
-							t7<<=1;//Upgrade bit plane
-							}
-						}
-					}
-				fclose(fp);
-				break;
-#endif
+				case ']'://Screen .PCX dump
+					dump_screen("SCREEN.PCX");
+					break;
 				default:
 					if(key<'1') break;
 					if((key>'9')&&(key<'A')) break;
@@ -1140,6 +1020,9 @@ void play_game(char fadein) {
 						if(board_where[curr_board]!=W_NOWHERE)
 							select_current(curr_board);
 						else select_current(0);
+					str_cpy(temp,mod_playing);
+					load_mod(temp);
+
 						send_robot_def(0,10);
 						//Copy filename
 						str_cpy(curr_sav,temp);
@@ -1259,6 +1142,10 @@ void play_game(char fadein) {
 					if(board_where[curr_board]!=W_NOWHERE)
 						select_current(curr_board);
 					else select_current(0);
+
+					str_cpy(temp,mod_playing);
+					load_mod(temp);
+
 					send_robot_def(0,10);
 					dead=0;
 					vquick_fadeout();
@@ -1937,6 +1824,8 @@ char update(char game,char &fadein) {
 			move_player(t1);
 			}
 		}
+	//No mouse support on title screen
+	if (game) m_snapshot();
 	//The following is during gameplay ONLY
 	if((game)&&(!dead)) {
 		//Shoot
@@ -2191,6 +2080,7 @@ char update(char game,char &fadein) {
 		//visible page!
 		enter_funcn("page_flip",4);
 		page_flip(current_page);
+		ec_update_set_if_needed();
 		exit_func();
 		m_vidseg(current_pg_seg);
 		}
@@ -2203,12 +2093,14 @@ char update(char game,char &fadein) {
 		enter_funcn("(update delay)",6);
 		while(tcycle<(overall_speed-1)*8) ;
 		exit_func();
-		}
-	else if(pal_update) update_palette();
+	} else {
+		if(pal_update) update_palette();
+		ec_update_set_if_needed();
+	}
 	if(fadein) {
 		vquick_fadein();
 		fadein=0;
-		}
+	}
 	if(target_board>=0) {
 		int faded=is_faded();
 		//Aha.. TELEPORT or ENTRANCE.

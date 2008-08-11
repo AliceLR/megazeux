@@ -26,6 +26,7 @@
 #include "beep.h"
 #include <_null.h>
 #include "mouse.h"
+#include "data.h"
 
 #pragma inline
 
@@ -168,6 +169,13 @@ void m_init(void) {
 		driver_activated=1;
 		}
 	//Done!
+}
+
+//Save current mouse state to saved_mouse_* globals
+void m_snapshot(void) {
+	saved_mouse_x = mousex;
+	saved_mouse_y = mousey;
+	saved_mouse_buttons = mybutton;
 }
 
 //Change the current video segment

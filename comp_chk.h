@@ -30,6 +30,6 @@ char computer_check(void);
 //Global variable- Set to 1 for VGA, 0 otherwise
 extern char vga_avail;
 //Card and processor codes
-extern char card,proc;
+extern char card;
 
 #endif

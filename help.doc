@@ -113,32 +113,7 @@ $James "Raptor" Wong
 
 :Please:Registration Info
 
-MegaZeux is being presented as shareware, that is, try before
-you buy. The unregistered version is completely intact- All
-features are available. However, if you continue to use it,
-you are required to pay for it. Your payment not only gets
-you the registered version, including the additional three
-games available by registration only, but it tells us that
-you enjoy getting great games at such low costs.
-
-If you enjoy MegaZeux and wish to register your copy, send
-15 dollars (US) plus $2 shipping and handling in the USA,
-or $3 shipping and handling in all other countries, to:
-
-$Software Visions
-$4875 Sunset Ave.
-$La Crescenta, CA
-$      91214-3052
-
-Make out all checks and money orders to Gregory Janson, or
-your order WILL be returned. Please include a copy of our
-order form or a note stating the desired product.
-
-If this is your legally registered copy of MegaZeux, then we
-thank you for supporting shareware. Please remember that you
-may not distribute the registered copy of MegaZeux or the
-game modules that come with it. (CATACOMB.MZX, FOREST.MZX, and
-CHRONOS.MZX) Thank you for not pirating software.
+Megazeux is now freeware, no registration required.
 
 >072:Table of Contents
 #HELPONHE.HLP
@@ -172,7 +147,7 @@ $~EWelcome to MegaZeux! Use the arrow keys to Scroll
 $~Ethis text, and ESC when you are done reading.
 
 $~BPress END to learn about the NEW FEATURES in
-$~BMegaZeux 2.51!
+$~BMegaZeux 2.51s2!
 
 As you may already know, MegaZeux is a game system which
 allows you to play almost limitless worlds in EGA graphics
@@ -206,7 +181,7 @@ ESC now to exit to the game.
 >#CONTROLS.HLP:091:Controls
 >#THEWORLD.HLP:1st:The World Editor
 
->#NEWINVER.HLP:1st:WHAT'S NEW in version 2.51!
+>#NEWINVER.HLP:1st:WHAT'S NEW in version 2.51s2!
 #CONTROLS.HLP
 :091:Controls
 
@@ -525,6 +500,11 @@ the Left mouse button will bring up a menu from which you
 can select an option. The Right mouse button ALWAYS means
 Escape or Cancel, just as if you had pressed the ESC key.
 This will not work in certain areas.
+
+***ADDENDUM*** as of mzxs1, certain games may make use of
+the mouse. The right mouse button will no longer emulate
+ESC key.  The left likewise does not emulate Enter.
+
 
 >#DIALOGBO.HLP:098:How to use dialog boxes
 >#MAIN.HLP:072:Table of Contents
@@ -1104,28 +1084,9 @@ bugs you find in MegaZeux. We also welcome any comments,
 criticism, or suggestions. We especially appreciate QUALITY
 MegaZeux worlds.
 
-If you want to contact us, you can reach myself, Gregory Janson,
-creator of MegaZeux, at any of the following locations-
+Since greg has left the community, please email me, JZig,
+at jzig@cncn.com if you have any bug reports.
 
-        America On-line: GJanson
-              Internet: GJanson@@aol.com
-
-             US Mail: Software Visions
-                        4875 Sunset Ave.
-                        La Crescenta, CA 91214-3052
-
-             Telephone: 818-249-1030
-             Non-School hours, Pacific Standard Time
-
-These addresses are valid through 6-31-97 or the next release
-of MegaZeux, whichever is first.
-
-If you lead us to fixing a serious bug in MegaZeux (versions
-2.51 and above) we will ship you a free Registered version of
-MegaZeux or another free game if you are already a registered
-user of MegaZeux. Serious bugs are those that cannot easily
-be worked around or can cause damage to hardware or software
-other than MegaZeux itself.
 
 >#MAIN.HLP:072:Table of Contents
 #FAQ.HLP
@@ -1254,6 +1215,7 @@ Counters        50 active (value other than 0) at a time,
                 not including built-in counters such as
                 Ammo. Setting a counter to 0 clears up a
                 spot for another counter.
+Note: counters increased to about 1000 in s1.
 
 >#MAIN.HLP:072:Table of Contents
 #THEWORLD.HLP
@@ -5933,7 +5895,9 @@ Formatting' section for more advanced programming.
 #NEWINVER.HLP
 :1st:NEW in Version 2.51! (Changes Since Version 1.03)
 
-$~ENEW in version 2.50- ALL NEW music/sound code! 32-channels;
+For information on mzx s2, read readme.1st.
+
+$~ENEW in version 2.51- ALL NEW music/sound code! 32-channels;
 $~Ebug-free; support for stereo, 16-bit, GUS, and PAS-16;
 $~Esupport for many formats and effects; up to four
 $~Esimultaneous sound effects!
@@ -5944,9 +5908,39 @@ Sound System' for details on the NEW music system.
 
 >#SOUNDEFX.HLP:1st:MegaZeux's Sound System
 
-Note- This is a direct translation from the file WHATSNEW.250,
+Note- This is a direct translation from the file WHATSNEW.251,
 included with MegaZeux. If you haven't used version 1.03 or
 before, you probably won't understand much of this list.
+
+~E2.51s2final release:
+  
+ + Fixed bug involving mod * settings being lost when loading
+ + Should have fixed ems problems some were reporting, if not,
+  just try to get more conventional memory.  Enclosed document
+  (convmem.txt) should help you.
+ + Fixed a bug involving direction checking.
+ + Pressing ']' at most any time will now save a screenshot to
+   screen.pcx
+ + Pressing alt+8 in the editor will set the current mod to *.  
+
+
+~E2.5.1s2beta release:
+
+ + Added MOD "*", which allows a board to use whatever module
+   the previous board was using; this necessitated a change in
+   the .SAV file format (still need changes in the editor UI
+   to access this feature outside of Robotic)
+ + inmate's semantics for MOD "SOMETHIN.MOD*" aren't
+   immediately possible, although a rough hack is in already
+ + char edits are now not displayed until the beginning of the
+   next cycle; the deferred display should eliminate a lot of
+   flickering
+ + an (at least partial) fix for the infamous UNDER bug 
+ + MOUSEX, MOUSEY and BUTTONS are now buffered.
+ + more sane magic handling
+ + can load MZX 2.51 and 2.51S1 worlds, but will only save
+   2.5.1spider2 format
+
 
 ~ENew in version 2.51: (quick fix before I do 3.00!)
 

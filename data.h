@@ -37,11 +37,16 @@ extern unsigned char bullet_color[3];
 extern unsigned char missile_color;
 extern unsigned char bullet_char[12];
 
+extern char refresh_mod_playing;
 extern char mesg_edges;
+extern unsigned int saved_mouse_x;
+extern unsigned int saved_mouse_y;
+extern unsigned int saved_mouse_buttons;
 extern unsigned char board_where[NUM_BOARDS];
 extern unsigned char keys[NUM_KEYS];
 extern unsigned long score;
 extern char mod_playing[FILENAME_SIZE];
+extern char real_mod_playing[FILENAME_SIZE];
 extern unsigned char curr_board;
 extern char curr_file[FILENAME_SIZE];
 extern char curr_sav[FILENAME_SIZE];
