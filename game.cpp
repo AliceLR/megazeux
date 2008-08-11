@@ -1890,6 +1890,15 @@ char update(char game,char &fadein) {
 	enter_func("update");
 	pal_update=0;
 	tcycle=0;//For speed setting
+
+  // Update mouse motion
+  asm {
+    mov ax, 027h
+    int 33h
+    mov mmx, cx
+    mov mmy, dx
+  }
+
 	if(fadein) {
 		clear_screen(1824,current_pg_seg);
 		insta_fadein();

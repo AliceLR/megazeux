@@ -35,6 +35,7 @@ unsigned int mouseinstalled=0;//Is the mouse installed?
 char driver_activated=0;//Is our driver installed?
 
 volatile int mousex,mousey,mybutton;//Character position of mouse
+volatile int mmx, mmy;
 volatile int mbufin=0,mbufout=0;//Mouse buffer pointers
 char mousefreeze=0;//Is mouse frozen in place?
 mouse_info_rec mbuf[MOUSE_BUFFERSIZE];//Mouse event buffer
@@ -57,6 +58,8 @@ int mouse_count=5000;//Countdown to pseudo-hide from non-activity.
 
 //The new mouse handler.
 static void far mousehandler(void) {
+  int mmx, mmy;
+
 	register int conditionmask;
 	asm {
 		push ds
@@ -245,8 +248,8 @@ void m_move(int newx,int newy) {
 	//Convert x/y to pixels
 	mousex=newx;
 	mousey=newy;
-	newx*=8;
-	newy*=14;
+	newx = (newx * 8) + 4;
+	newy = (newy * 14) + 7;
 
 	m_hide();
 	asm {

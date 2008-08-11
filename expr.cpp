@@ -410,6 +410,10 @@ long int evaluate_operation(long int operand_a, int c_operator,
     // Division
     case 4:
     {
+      if(operand_b == 0)
+      {
+        return 0;
+      }
       return(operand_a / operand_b);
     }
     // Modulo

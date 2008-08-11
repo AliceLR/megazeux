@@ -213,7 +213,7 @@ void init_smzx_mode()
   m_init();
   ec_update_set();
   default_EGA_hardware_pal[6] = 6;
-  //reinit_palette();   
+  reinit_palette();   
   m_show();
 
   if(smzx_mode == 2)

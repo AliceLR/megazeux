@@ -55,6 +55,7 @@ extern char mousehidden;
 extern unsigned int mouseinstalled;
 extern char driver_activated;
 extern volatile int mousex,mousey,mybutton;
+extern volatile int mmx, mmy;
 extern int mouse_count;
 
 //Initialize the mouse routines

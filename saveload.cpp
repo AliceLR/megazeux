@@ -32,6 +32,7 @@
    M\x02\x41 - MZX 2.65
    M\x02\x44 - MZX 2.68
    M\x02\x45 - MZX 2.69
+   M\x02\x46 - MZX 2.69b
 
    .SAV files:
    MZSV2 - Ver 2.x MegaZeux
@@ -41,6 +42,7 @@
    MZS\x02\x41 - MZX 2.65
    MZS\x02\x44 - MZX 2.68
    MZS\x02\x45 - MZX 2.69
+   MZS\x02\x46 - MZX 2.69b
 
 
  All others are unchanged.
@@ -72,10 +74,10 @@
 #include "counter.h"
 #include "mstring.h"
 #include "runrobot.h"
-#define VERSION 0x245
+#define VERSION 0x246
 #define SAVE_INDIVIDUAL
 
-int version_loaded;
+int version_loaded = VERSION;
 
 char sd_types[3]={ DE_INPUT,DE_BUTTON,DE_BUTTON };
 char sd_xs[3]={ 5,15,37 };
@@ -183,7 +185,7 @@ void save_world(char far *file,char savegame,char faded) {
 	save_screen(current_pg_seg);
 	meter("Saving...",current_pg_seg,meter_curr,meter_target);
 	if (savegame) {
-		fwrite("MZS\x02\x45",1,5,fp);
+		fwrite("MZS\x02\x46",1,5,fp);
 		fputc(curr_board,fp);
 		xor=0;
 	} else {
@@ -192,7 +194,7 @@ void save_world(char far *file,char savegame,char faded) {
 		//Pw info-
 		write_password(fp);
 		//File type id-
-		fwrite("M\x02\x45",1,3,fp);
+		fwrite("M\x02\x46",1,3,fp);
 		//Get xor code...
 		xor=get_pw_xor_code();
 	}

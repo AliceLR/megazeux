@@ -361,8 +361,6 @@ do
     case 12://dec c #
       unsigned char far *temp_ptr;
       tr_msg(&cmd_ptr[2], id);
-      if(str_len(ibuff)>=COUNTER_NAME_SIZE)
-        ibuff[COUNTER_NAME_SIZE-1]=0;
       tr_msg(&cmd_ptr[next_param(cmd_ptr,1)], id, ibuff2);
       temp_ptr = ibuff2;
       if(string_type(ibuff) == 1)
@@ -423,6 +421,11 @@ do
             {
               cp = board_list + (curr_board * BOARD_NAME_SIZE);
             }
+            if(!str_cmp(tp_2, "ROBOT_NAME"))
+            {
+              cp = robots[id].robot_name;
+            }
+
             if(!str_cmp(tp_2, "MOD_NAME"))
             {
               if(*mod_playing == 0)
@@ -518,6 +521,8 @@ do
       }
       else
       {
+        if(str_len(ibuff)>=COUNTER_NAME_SIZE)
+         ibuff[COUNTER_NAME_SIZE-1]=0;
         t1=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
         if(cmd==10) set_counter(ibuff,t1,id);
         else if(cmd==11) inc_counter(ibuff,t1,id);

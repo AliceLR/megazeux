@@ -103,11 +103,31 @@ int get_counter(char far *name,unsigned char id)
 
   // They go up here since they're the most important. - Exo
 
-  if (!str_cmp(name,"LOOPCOUNT"))
+  if(!str_cmp(name,"LOOPCOUNT"))
     return robots[id].loop_count;
 
-  if (!str_cmp(name,"LOCAL"))
-    return robots[id].blank;
+  if(!strn_cmp(name, "LOCAL", 5))
+  {
+    if(*(name + 5) == 0)
+    {
+      return robots[id].blank;
+    }
+    if((*(name + 6) == 0) && (version_loaded >= 0x246))
+    {
+      switch(*(name + 5))
+      {
+        case '2':
+        {
+          return(((int)robots[id].walk_dir << 8) | ((unsigned int)robots[id].is_locked));
+        }
+        case '3':
+        {
+          return(((int)robots[id].last_touch_dir << 8) | 
+           ((unsigned int)robots[id].last_shot_dir));
+        }        
+      }
+    }
+  }
 
   //a few counters convert to var's for speed.
   if (!strn_cmp(name,"CHAR_", 5))
@@ -733,6 +753,17 @@ int get_counter(char far *name,unsigned char id)
   // Mouse info Spid
   if(!strn_cmp(name, "MOUSE", 5))
   {
+    if(!strn_cmp(name + 5, "_M", 2))
+    {
+      if(!str_cmp(name + 7, "X"))
+      {
+        return mmx;
+      }
+      if(!str_cmp(name + 7, "Y"))
+      {
+        return mmy;
+      }
+    }
     if(!str_cmp(name + 5,"X")) return saved_mouse_x;
 
     if(!str_cmp(name + 5,"Y")) return saved_mouse_y;
@@ -802,30 +833,26 @@ int get_counter(char far *name,unsigned char id)
     }
   }
 
+  if(!strn_cmp(name, "RID", 3))
+  {
+    int i;
+    for(i = 0; i < NUM_ROBOTS; i++)
+    {
+      if(!str_cmp(robots[i].robot_name, name + 9))
+      {
+        return(i);
+      }
+    }
+  }
+
   if((name[0] == 'R') || (name[0] == 'r'))
   {
-    unsigned int n;
-
-    if(name[2] == '.')
+    char far *next;
+    unsigned int n = strtol(name + 1, &next, 10);
+    if(*next == '.')
     {
-      n = (name[1] - 48);
-      return(get_counter(name + 3, n)); 
+      return(get_counter(next + 1, n));
     }
-
-    if(name[3] == '.')
-    {
-      n = (name[1] - 48) * 10;
-      n += (name[2] - 48);
-      return(get_counter(name + 4, n)); 
-    }
-
-    if(name[4] == '.')
-    {
-      n = (name[1] - 48) * 100;
-      n += (name[2] - 48) * 10;
-      n += (name[3] - 48);
-      return(get_counter(name + 5, n)); 
-    }   
   }
 
   if(!strn_cmp(name, "OVERLAY_", 8))
@@ -1026,7 +1053,7 @@ void set_counter(char far *name,int value,unsigned char id)
           fclose(input_file);
           file_in[0] = 0;
         }
-        input_file = fopen(name,"rb");
+        input_file = fopen(name, "rb");
         str_cpy(file_in, name);
         break;
       }
@@ -1039,7 +1066,7 @@ void set_counter(char far *name,int value,unsigned char id)
           fclose(output_file);
           file_out[0] = 0;
         }
-        output_file = fopen(name,"wb");
+        output_file = fopen(name, "wb");
         str_cpy(file_out, name);
         break;
       }
@@ -1052,8 +1079,9 @@ void set_counter(char far *name,int value,unsigned char id)
           fclose(output_file);
           file_out[0] = 0;
         }
-        output_file = fopen(name,"ab");
+        output_file = fopen(name, "ab");
         str_cpy(file_out, name);
+        break;
       }
       case 4:
       {
@@ -1116,10 +1144,32 @@ void set_counter(char far *name,int value,unsigned char id)
     return;
   }
 
-  if(!str_cmp(name,"LOCAL"))
+  if(!strn_cmp(name, "LOCAL", 5))
   {
-    robots[id].blank=value;
-    return;
+    if(*(name + 5) == 0)
+    {
+      robots[id].blank=value;
+      return;
+    }
+    if((*(name + 6) == 0) && (version_loaded >= 0x246))
+    {
+      switch(*(name + 5))
+      {
+        case '2':
+        {
+          robots[id].walk_dir = (unsigned char)(value >> 8);
+          robots[id].is_locked = (unsigned char)(value & 0xFF);
+          return;
+        }
+        case '3':
+        {
+          robots[id].last_touch_dir = (unsigned char)(value >> 8);
+          robots[id].last_shot_dir = (unsigned char)(value & 0xFF);
+          return;
+        }
+
+      }
+    }
   }
 
   // Char in a string - Exo
