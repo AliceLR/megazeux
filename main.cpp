@@ -91,6 +91,8 @@ char *reg_exit_mesg=
 " Koji - New functions, real distance, etc.\n\r"
 " Exophase - New functions, debugging, etc.\n\r"
 " Inmate2993 - Use all 16 bits of a counter.\n\r"
+"MZX 2.61:\n\r"
+" Koji - Bug fixes and etc.\n\r"
 
 "\nVisit www.Digitalmzx.net for newer versions of this software\n\n\r$";
 
@@ -160,7 +162,7 @@ int main(int argc,char **argv) {
 	draw_window_box(2,1,77,3,0xB800,120,127,113,0);
 	draw_window_box(2,4,77,16,0xB800,120,127,113,0);
 	draw_window_box(2,17,77,23,0xB800,120,127,113,0);
-		  write_string("MegaZeux version 2.6",27,2,127,0xB800);
+		  write_string("MegaZeux version 2.61",27,2,127,0xB800);
 // #ifdef BETA
 	write_string("BETA- PLEASE DISTRIBUTE",27,17,127,0xB800);
 // #endif
@@ -481,10 +483,6 @@ maingame:
 	mixing_rate=mixing_rates[music_device][mixing_rate];
 	if(music_device==0) music_on=0;
 	else music_on=1;
-	//Subliminal message. -Koji
-	// I'm trying to take weak mortal minds and turn them
-	// into my mzx'ing slaves. Bahahahahaha!
-	write_string("Subliminal Message",29,12,112,0xB800);
 	vquick_fadeout();
 	clear_screen(1824,0xB800);
 	//Init mod code
@@ -626,7 +624,7 @@ char scan_options(void) {
 	if(help) {
 		if(help==1) puts("\a");
 		else puts("");
-		puts("MegaZeux version 2.6\tCommand line parameters-\n");
+		puts("MegaZeux version 2.61\tCommand line parameters-\n");
 		puts("      -?  Help with parameters.");
 		puts("-nomouse  Don't use mouse, even if found.");
 		puts("  -noems  Don't use EMS memory, even if available. (NOT RECOMMENDED)");

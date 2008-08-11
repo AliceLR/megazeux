@@ -2188,8 +2188,7 @@ char update(char game,char &fadein) {
 		exit_func();
 		if(pal_update) update_palette(0);
 		enter_funcn("(update delay)",6);
-		//Lets speed things up a tad. Below used to be 8 -Koji
-		while(tcycle<(overall_speed-1)*6);
+		while(tcycle<(overall_speed-1)*8);
 		exit_func();
 	} else {
 		if(pal_update) update_palette();

@@ -34,11 +34,11 @@ $~Aศออออออออออออออออออออออออออออออออออออผ
 >#MEGAZEUX.HLP:1st:MegaZeux Limitations
 >#IFYOUFIN.HLP:1st:If You Find a Bug...
 >Please:Registration Info- MegaZeux is Free !!!
->#NEWINVER.HLP:1st:NEW in Version 2.6!
+>#NEWINVER.HLP:1st:NEW in Version 2.61!
 
 $** Credits and Acknowledgments **
 
-$Mzx 2.6 Thanks & Beta testers:
+$Mzx 2.61 Thanks & Beta testers:
 $Inmate2993
 $Exophase *
 $JESUS
@@ -2600,8 +2600,6 @@ the description.
 >001:Attempt to overwrite board in storage
 >036:Bad Robot command
 >022:Board is from a more recent version of MegaZeux
->032:Can't test password-protected world
->027:Cannot import password protected world
 >062:Cannot overwrite player- move him first
 >034:Code/message is too large to fit into Robot memory
 >007:Error accessing boards
@@ -2632,7 +2630,6 @@ the description.
 >044:Error swapping to next world
 >054:File "MZXBLANK.FIL" not found; Music code compromised
 >037:Invalid "thing" for parameters
->016:Invalid password
 >041:Line too long to import
 >006:Low on memory; Music code compromised
 >050:Music is off- Module is set for board but not loaded
@@ -2755,6 +2752,12 @@ read-only file.
 
 You entered the wrong password for the world.
 
+***ADDENDUM***
+
+Protection is long since removed as it holds no real prtective
+value since megahack and getpw are out.
+		-Koji
+
 :017:~AOverlay mode is not on (see Board Info)
 
 You cannot edit or copy to the Overlay if it is Off; go to
@@ -2802,6 +2805,12 @@ files.
 You cannot import a world with any form of password protection;
 load up the world separately and save it without any protection.
 
+***ADDENDUM***
+
+Protection is long since removed as it holds no real prtective
+value since megahack and getpw are out.
+		-Koji
+
 :028:~AWorld is from version 1- Use conversion program
 
 You tried to load a .MZX file from version 1.00g, 1.01, 1.02, or
@@ -2833,6 +2842,12 @@ bug in MegaZeux.
 
 You cannot test a protected world from the editor; remove the
 protection or play it normally.
+
+***ADDENDUM***
+
+Protection is long since removed as it holds no real prtective
+value since megahack and getpw are out.
+		-Koji
 
 :033:~AError loading save game
 
@@ -5100,6 +5115,10 @@ ACTUALLY : This now can stand for any key on the keyboard
   Use F3 to set down the correct character.
 		-Koji
 
+~EKEYENTER
+
+This is sent When the player pressed the Enter key.
+
 ~EINVINCO
 
 This is sent when the player grabs an energizer.
@@ -6198,9 +6217,23 @@ Formatting' section for more advanced programming.
 #NEWINVER.HLP
 :1st:NEW in Version 2.6! (Changes Since Version 1.03)
 
+VERSION 2.61 :
+
+      This is a bug fix release.
+
+FIXES :
+
+      -Games speeds have been normalized
+      -Password protection has been fully removed! Instead of 
+	 spiders half way hack.
+	-Original startup color scheme implemented!
+	-Redocumentation of a few features left undocumented.
+
+$***
+
 VERSION 2.6 :
 
-	More than anything else this version bends the spin
+  More than anything else this version bends the spin
 off versions of mzx back into line with the original. Instead
 of being a new mzx that some people use and other's dont, this,
 I hope, will be a standard. And hopefully this code will be
@@ -6208,7 +6241,7 @@ used for future versions of mzx.
 
 NEW FEATURES :
 
-	Check out the builtin-counter section for the complete
+  Check out the builtin-counter section for the complete
 run down of these new and exciting mzx features-
 
 File access

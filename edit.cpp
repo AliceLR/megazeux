@@ -19,6 +19,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+//Password completely removed -Koj
 //Took out SMZX -Koji
 //Editing the world!
 
@@ -32,7 +33,7 @@
 #include "game.h"
 #include "fill.h"
 #include "meter.h"
-#include "password.h"
+//#include "password.h"
 #include "egacode.h"
 #include "block.h"
 #include "pal_ed.h"
@@ -66,6 +67,7 @@
 #include <stdio.h>
 #include "blink.h"
 #include "cursor.h"
+#include "counter.h"
 /* Edit menu- (w/box ends on sides) Current menu name is highlighted. The
 	bottom section zooms to show a list of options for the current menu,
 	although all keys are available at all times. PGUP/PGDN changes menu.
@@ -168,7 +170,7 @@ char far block_help2[27]="Press ENTER to place block";
 char far block_help3[26]="Press ENTER to place ANSi";
 char far menu_help[15]="Pgup/Pgdn:Menu";
 char far *menu_lines[NUM_MENUS][2]={ {
-" L:LoadS:Save  G:Global Info    Alt+R:Restart  Alt+T:Test  *:Protection",
+" L:LoadS:Save  G:Global Info    Alt+R:Restart  Alt+T:Test",
 " Alt+S:Status Info  Alt+C:Char Edit  Alt+E:Palette  Alt+F:Sound Effects"
 } , {
 " Alt+Z:Clear   X:Exits  Alt+P:Size/Pos  I:Info  A:Add  D:Delete  V:View",
@@ -261,6 +263,7 @@ void edit_world(void) {
 	cursor_solid();
 	do {
 		//If NOTHING was changed, do NOT page flip
+		set_counter("HELP_MENU",1);
 		if(!(update_view|update_menu|fade_in)) {
 			m_hide();
 			goto no_pflip;
@@ -645,11 +648,11 @@ void edit_world(void) {
 				goto place;
 			case -20://Alt+T
 				//Test
-				if(protection_method!=NO_PROTECTION) {
-					error("Can't test password-protected world",0,24,
-						current_pg_seg,0x2001);
-					break;
-					}
+				//if(protection_method!=NO_PROTECTION) {
+				//	error("Can't test password-protected world",0,24,
+				//		current_pg_seg,0x2001);
+				//	break;
+				//	}
 				if((curr_thing==122)&&(curr_param==0)) {
 					clear_sensor(0);
 					curr_thing=0;
@@ -922,10 +925,10 @@ void edit_world(void) {
 						//Check for password protection and world type
 						fseek(fp,25,SEEK_SET);
 						if(fgetc(fp)!=0) {
-							error("Cannot import password protected world",0,
+							/*error("Cannot import password protected world",0,
 								24,current_pg_seg,0x1B01);
 							fclose(fp);
-							break;
+							break;*/
 							}
 						if(fgetc(fp)!='M') {
 							error("Error importing world",1,24,current_pg_seg,0x1A02);
@@ -1071,7 +1074,7 @@ void edit_world(void) {
 				//Export
 				if(draw_mode&128) break;
 				//Confirm pw
-				if(check_pw()) break;
+				//if(check_pw()) break;
 				//Choose export mode
 				t1=export_type();
 				if(t1==-1) break;
@@ -1167,12 +1170,12 @@ void edit_world(void) {
 						break;
 					}
 				break;
-			case '*'://*
+		      /*case '*':// *
 				//Password
 				if(draw_mode&128) break;
 				password_dialog();
 				changed=1;
-				break;
+				break;*/
 			case -30://AltA
 				//Select char set
 				if(draw_mode&128) break;
@@ -1884,8 +1887,8 @@ void edit_world(void) {
 						break;
 					case 7:
 						//Pw check
-						if(protection_method==NO_SAVING)
-							if(check_pw()) break;
+						//if(protection_method==NO_SAVING)
+							//if(check_pw()) break;
 						//Save as ANSi
 						temp[0]=0;
 						if(save_file_dialog("Block ANSi Save","Save block as: ",temp))
@@ -2211,11 +2214,11 @@ void edit_world(void) {
 						//No room = forget it!
 						if(!copy_scroll(0,curr_param)) curr_param=0;
 					//If pw-protection is NO_SAVING, clear curr_objects
-					if(protection_method==NO_SAVING) {
-						clear_zero_objects();
-						curr_thing=curr_param=0;
-						curr_color=7;
-						}
+					//if(protection_method==NO_SAVING) {
+					//	clear_zero_objects();
+					//	curr_thing=curr_param=0;
+					//	curr_color=7;
+					//	}
 					clear_world();
 					changed=0;
 					update_menu=update_view=1;
@@ -2241,11 +2244,11 @@ void edit_world(void) {
 						//No room = forget it!
 						if(!copy_scroll(0,curr_param)) curr_param=0;
 					//If pw-protection is NO_SAVING, clear curr_objects
-					if(protection_method==NO_SAVING) {
-						clear_zero_objects();
-						curr_thing=curr_param=0;
-						curr_color=7;
-						}
+					//if(protection_method==NO_SAVING) {
+					//	clear_zero_objects();
+					//	curr_thing=curr_param=0;
+					//	curr_color=7;
+					//	}
 					//Swap out current board...
 					store_current();
 					clear_current();
@@ -2268,8 +2271,8 @@ void edit_world(void) {
 			case 'S'://S
 				if(draw_mode&128) break;
 				//Pw check
-				if(protection_method==NO_SAVING)
-					if(check_pw()) break;
+				//if(protection_method==NO_SAVING)
+				//	if(check_pw()) break;
 				//Save world
 				if(!save_world_dialog()) {
 					//Name in curr_file...
