@@ -10,11 +10,10 @@ $~Aศออออออออออออออออออออออออออออออออออออผ
 
 >#HELPONHE.HLP:000:Help on Help (Press F1 Within Help to Read This)
 >#DIALOGBO.HLP:098:How to use dialog boxes
->#MOUSESUP.HLP:1st:Mouse support in MegaZeux
->#1ST_TIME.HLP:071:Overview of MegaZeux- First Time Users Read This!
 >#CONTROLS.HLP:091:Controls
+>#1ST_TIME.HLP:071:Overview of MegaZeux - First Time Users Read This!
 >#ADVANCED.HLP:1st:Advanced Play Info, Tips
->#FRIENDSA.HLP:1st:Friends and Foes- Objects You will Encounter
+>#FRIENDSA.HLP:1st:Friends and Foes - Objects You may Encounter
 >#POTIONFX.HLP:1st:Potion and Ring Effects
 >#THEWORLD.HLP:1st:The World Editor
 >#GENERALE.HLP:1st:General Editing Tips
@@ -26,23 +25,20 @@ $~Aศออออออออออออออออออออออออออออออออออออผ
 >#SOUNDEFX.HLP:1st:MegaZeux's Sound System
 >#TOVERLAY.HLP:081:Editing and Using the Overlay
 >#SCROLLSS.HLP:1st:Signs and Scrolls in the Editor
->#SENSORSW.HLP:094:Sensors- What They Are and How to Use Them
->#ROBOTSWH.HLP:1st:Robots- What They Are and How to Use Them
+>#SENSORSW.HLP:094:Sensors - What They Are and How to Use Them
+>#ROBOTSWH.HLP:1st:Robots - What They Are and How to Use Them
 >#ROBOTICT.HLP:1st:Robotic Tutorial
 >#ROBOTICR.HLP:087:Robotic Reference Manual
+>#MOUSESUP.HLP:1st:Mouse support in MegaZeux
 >#ERRORMES.HLP:1st:Error Messages
 >#MEGAZEUX.HLP:1st:MegaZeux Limitations
+>#GAMTIPS.HLP:1st:Making Games - Some Tips
 >#IFYOUFIN.HLP:1st:If You Find a Bug...
->Please:Registration Info- MegaZeux is Free !!!
->#NEWINVER.HLP:1st:NEW in Version 2.6!
-
-$** Credits and Acknowledgments **
-
-$Mzx 2.6 Thanks & Beta testers:
-$Inmate2993
-$Exophase *
-$JESUS
-$All the little people
+>#NEWINVER.HLP:1st:Version History & What's New in 2.6
+>#HLPUPDAT.HLP:1st:Latest Help File Updates
+>#CREDITS.HLP:1st:Credits
+#CREDITS.HLP
+:1st:~eCredits and Acknowledgments
 
 $Programming and Overall Design by Gregory Janson
 $Music/Sound code by Edward Schlunder
@@ -50,7 +46,7 @@ $Music/Sound code by Edward Schlunder
 $Included Game Modules by Gregory Janson
 $Included Music by Gregory Janson
 
-$Beta Testing and Special thanks:
+$~eBeta Testing and Special thanks
 
 $Jason Albanese
 $Alek Benedict
@@ -71,12 +67,10 @@ $Vic Putz *
 $Robin Rudge *
 $Brian Schweitzer
 $Allen Shirvanian
-$Tim Sweeny (author of ZZT)
+$Tim Sweeney (author of ZZT)
 $Tony Vanvranken
 
-$* = Thanks for the public domain code!
-
-$AOL Beta Testers
+$~eAOL Beta Testers
 
 $Compukid
 $DMcgee1008
@@ -89,8 +83,8 @@ $SkreenNme
 $SpectreB1
 $Spider124
 
-$Version 2.50 Beta Testers
-$(Tons of thanks!)
+$~eVersion 2.50 Beta Testers
+$~e(Tons of thanks!)
 
 $Greg Beauchesne
 $Dave Bishop
@@ -113,17 +107,23 @@ $Dan Patalano
 $Geoff Paulson
 $Kevin Rohleder
 $Mike Sambrone
-$Adam Smith (Aldar)
+$Adam "Aldar" Smith
 $Kevin Vance
 $James "Raptor" Wong
 
-:Please:Registration Info
+$~eMzx 2.61 Thanks & Beta Testers
 
-Megazeux is now freeware, no registration required.
+$Inmate2993
+$Exophase *
+$JESUS
+$Fred Burbidge (help file updater)
+$All the little people
 
->072:Table of Contents
+$* = Thanks for the public domain code!
+
+>#MAIN.HLP:072:Table of Contents
 #HELPONHE.HLP
-:000:Help on Help
+:000:~eHelp on Help
 
 Using MegaZeux's help system is very simple. Press F1 at almost
 any time to bring up help relating to the current situation.
@@ -147,33 +147,43 @@ the current help section.
 
 >#MAIN.HLP:072:Table of Contents
 #1ST_TIME.HLP
-:071:Overview of MegaZeux
+:071:~eOverview of MegaZeux
 
-$~EWelcome to MegaZeux! Use the arrow keys to Scroll
-$~Ethis text, and ESC when you are done reading.
+$Welcome to MegaZeux! Use the arrow keys to Scroll
+$this text, and ESC when you are done reading.
 
-$~BPress END to learn about the NEW FEATURES in
-$~BMegaZeux 2.6!
+$Press END to learn about the NEW FEATURES in MegaZeux 2.6!
 
-As you may already know, MegaZeux is a game system which
+As you may already know, MegaZeux (MZX) is a game system which
 allows you to play almost limitless worlds in EGA graphics
-and with beautiful digitized music and sound. MegaZeux comes
-with worlds, and new worlds are being uploaded every day to
-major on-line services such as America On-line. But the most
-fabulous feature of MegaZeux is the World Editor.
+and with 8-bit digitized music and sound. New games are uploaded 
+frequently to MegaZeux websites all over the Internet, the most
+prominent being ~ewww.digitalmzx.net~f. The most fabulous
+feature of MegaZeux, however, is the World Editor.
 
 Using the World Editor, ANYONE can create the world of their
 dreams. Make it as simple or complex, as easy or difficult,
 as long or short as you please. And we aren't just talking
-about worlds made up of petty, pre-programmed enemies and
-objects. MegaZeux has it's own, easy to use PROGRAMMING
-LANGUAGE called Robotic that allows you to create enemies,
-objects, and worlds that do almost anything you desire.
+about worlds made up of boring, pre-programmed enemies and
+objects. MegaZeux has it's own, easy to use programming
+language called Robotic that allows you to create enemies,
+objects, battle systems or anything you like.
 
-For the new user, I recommend you play Caverns, the first
-included game, to get the feel of MegaZeux. You may wish
-to read the help section entitled "Controls" to learn how
-to play MegaZeux.
+For the new user, I recommend you play Caverns of Zeux,
+the first game ever made for MegaZeux, to get a feel for how
+everything works. You can get it from digitalmzx.net's games
+archive (under digitalMZX's favourite games). I also suggest
+taking a look at the following games too so that you really
+get a feel for what can be achieved:
+
+~e*~f Honor Quest Special Edition
+~e*~f Bernard the Bard
+~e*~f Engine and Engine II: The Second Attack
+~e*~f Xenogenesis
+~e*~f The Dark Corner
+
+You may also wish to read the help section entitled "Controls"
+to learn how to play MegaZeux.
 
 Once you have the feel for the game, however, feel free
 to dive into the World Editor and get messy! You should
@@ -182,14 +192,14 @@ first.
 
 To go to one of these sections now, hit Enter after
 aligning the arrows with one of these choices. Press
-ESC now to exit to the game.
+ESC now to exit back to the game.
 
 >#CONTROLS.HLP:091:Controls
 >#THEWORLD.HLP:1st:The World Editor
 
->#NEWINVER.HLP:1st:WHAT'S NEW in version 2.6!
+>#NEWINVER.HLP:1st:WHAT'S NEW in version 2.62b!
 #CONTROLS.HLP
-:091:Controls
+:091:~eControls
 
 MegaZeux is very easy to play, once you understand the
 simple control system. After that, experimentation will
@@ -199,16 +209,14 @@ everything within Help as well.
 To start a game, press 'P' during the title screen. To
 select another world, press 'L' during the title screen.
 Use ESC during the title screen to exit to DOS, or during
-the game to return to the title screen. You know it is
-the title screen if a message on the bottom says "Press
-F1 for help, Enter for menu". Enter will bring up a menu
-of options on the title screen, also.
+the game to return to the title screen. Enter will 
+usually bring up a menu of options on the title screen,
+unless the game you are playing has disabled this option.
 
-Your character is represented by a little smiley face
-in the included games. @1~B@8~F In other games, he may be
-a stick person, animal, spaceship, or other entity.
-Usually it is obvious where you are, since you are usually
-colored to stand out.
+Your character's appearance differs depending on what game
+you are playing - they could be a smiley face, a spaceship,
+a brave knight or even a banana (no, don't ask..). In most
+games it's obvious who you are since you usually stick out.
 
 To move your character, press one of the arrow keys on
 the keyboard or numeric keypad. If you hold it down, you
@@ -217,26 +225,25 @@ will continue to move in that direction.
 To interact with objects and other characters, you usually
 must stand next to them and touch them. This basically
 means push against them using the arrow keys. Watch out
-for enemies and evil creatures, who will often hurt you
+for enemies and hostile creatures, who will often hurt you
 when you touch them.
 
 To stop enemies, you will usually have some type of weapon,
 often with limited ammunition. The actual weapon depends
-upon the game, and may even differ from game to game, but
-by default you have a small pistol. To fire your weapon,
+upon the game, and may differ from game to game, but by
+default you have a small pistol. To fire your weapon,
 hold Space and press an arrow key. You can also hold the
 arrow key and press Space. You must press both keys TOGETHER.
 
-To see your current status, such as Health points, Coins,
-Gems, Ammunition, and Keys, press Enter. This will bring up
-a box containing all your stats, as well as a menu detailing
-other options you have available.
+The key that allows you to view your statistics in-game many
+vary, once again, depending on what you're playing. By
+default it's Enter.
 
 In some games, you may encounter bombs. (as usual, push
 against them to pick them up.) To use a bomb, press the
 Del key. Then run! The bomb will not actually burn its
 fuse until you step away from it. There are two styles of
-bomb- Low strength and High strength. You can tell which
+bomb - Low strength and High strength. You can tell which
 kind you pick up by the pitch of the sound it makes. To
 change which TYPE of bomb you are using, press Ins. A
 message at the bottom of the screen will inform you of
@@ -246,89 +253,96 @@ Other games may have other controls, such as 'S' to cast
 a spell, or 'J' to jump, but they should be detailed within
 the game. Some basic play tips:
 
-~A*~F Make sure you visit every screen. To get to other screens,
+~e*~F Make sure you visit every screen. To get to other screens,
   enter passageways, stairs, caves, or doors. (by pushing
   against them.) You can also often reach another screen
   by pushing against the edge of the screen, leading to an
   adjacent screen.
 
-~A*~F Touch everything! Even things of seemingly little value
+~e*~F Touch everything! Even things of seemingly little value
   may prove worthy of your attention. If it kills you, then...
   well... hope you saved.
 
-~A*~F Save your game! It is rather simple- Press F3 to save your
+~e*~F Save your game! It's simple - Press F3 to save your
   game to disk at the EXACT point you are at. Press F4 to
   reload a game off of disk. You can use F9 and F10 to
   quick-save and quick-load, which work on the last game
-  you saved. Remember to save often- If something kills you,
-  you'll want a game to go back to.
+  you saved. Remember to save often - If something kills you,
+  you'll want a game to go back to. Some games will only let
+  you save on special save points.
 
-~A*~F Collect supplies! Make sure you grab every coin, gem,
+~e*~F Collect supplies! Make sure you grab every coin, gem,
   ammo dump, bomb, chest, and pouch you see! You will often
   be in want of supplies, so don't push things.
 
-~A*~F Remember how things work. Most things in MegaZeux have
+~e*~F Remember how things work. Most things in MegaZeux have
   patterns, and the same object will usually do the same
   thing all the time. (although two objects may look alike
   and not really be the same thing)
 
-For more help, see one of the following sections-
+For more help, see one of the following sections -
 
 >#ADVANCED.HLP:1st:Advanced Play Info, Tips
->#FRIENDSA.HLP:1st:Friends and Foes- Objects You will Encounter
+>#FRIENDSA.HLP:1st:Friends and Foes - Objects You may Encounter
 #ADVANCED.HLP
-:1st:Advanced Play Info, Tips
+:1st:~eAdvanced Play Info, Tips
 
 You've tried some MegaZeux worlds, and they are fun, but you
-have the feeling you are missing something. This is it- the
+have the feeling you are missing something. This is it - the
 remaining knowledge you might need to survive in a given world.
 
-First, let me warn you that many worlds you get from public
-services or BBSes may not be of a very good quality. They may
-be unfair, boring, have bugs, and/or not give proper
-instructions. My advice is to E-Mail the author and tell him
-what you think of poor quality MegaZeux games. There is no
-problem in MAKING them, but PLEASE don't upload them. Don't
-let a few losers ruin the fun.
+First, let me warn you that some worlds you get from websites
+may not be of a very good quality. They may be unfair, boring,
+have bugs, and/or not give proper instructions. My advice is
+to E-Mail the author and tell him what you think of poor quality 
+MegaZeux games. There is no problem in MAKING them, but PLEASE
+don't upload poor games. Get a few experienced gamers to play-
+test your creations before you upload them to gauge how good
+they are.
 
-Now to cover the game keys, in detail-
+Now to cover the game keys, in detail -
 
-F1- Help
+~eF1 - Help
 Use this at any time to bring up help relating to the current
 situation. Within the game, you will go to the Controls
 section.
 
-Enter- Menu/status
+~eEnter - Menu/status
 Use this to bring up a menu of options and a list of your
-current stats, such as Score, Gems, etc.
+current stats, such as Score, Gems, etc. Some games switch
+this menu off so they can use the Enter key for other
+features.
 
-ESC- Exit to title
+~eESC - Exit to title
 This will quit the current game and return to it's title
 screen.
 
-:092:F2- Settings
+:092:~eF2 - Settings
 This will bring up a dialog box where you can change the
 current game settings, such as Game Speed, Music, and
 Sound. To speed up the game, lower the speed and/or turn
 music off. A speed of 1 will cause flicker in most machines,
 so it is not recommended unless it is your only option.
+Some games switch this menu off too, so if you can't access
+it, exit the game in question first before changing your
+settings.
 
-:096:F3- Save game
+:096:~eF3 - Save game
 This will prompt you for a filename, then save the exact
 state of your current game. Some games may not allow saving
 on some or all of its screens. This lets you quit your game
 in the middle or take precautions against unknown dangers.
 
-F4- Restore game
+~eF4 - Restore game
 This will let you select a saved game from a list of filenames.
 The game will then be reloaded from the same point you left off
 at.
 
-F5 or Ins- Toggle bomb type
+~eF5 or Ins - Toggle bomb type
 This will switch your current bomb type between High Strength
-and Low Strength.
+and Low Strength. Most games don't use bombs.
 
-F6- Debug mode
+~eF6 - Debug mode
 This will bring up a small box in the lower left corner of the
 screen, detailing your position and the current memory
 situation. It is generally only necessary when testing and
@@ -339,100 +353,96 @@ relating to modules and SAMs will be shown. With the debug menu
 on, errors loading modules and SAMs and out of memory conditions
 will be shown.
 
-F9- Quicksave
+~eF9 - Quicksave
 This will save the game, like F3, but to the last filename you
 used, without prompting you for a filename. The old file will
 be overwritten. If no game has been saved since MegaZeux was
 started, a filename of SAVED.SAV will be used.
 
-F10- Quickload
+~eF10 - Quickload
 This will reload the last game saved using F3 or F9. If no
 game has been saved since MegaZeux was started, a filename of
 SAVED.SAV will be used.
 
-Arrows- Move
+~eArrows - Move
 The arrow keys will move your character and allow him to
 interact with most objects.
 
-Space- Shoot
+~eSpace - Shoot
 Use this key in conjunction with an arrow key to fire your
 weapon in the selected direction. Weapons vary from world to
 world.
 
-Del- Bomb
+~eDel - Bomb
 This will drop a bomb of the current type BENEATH the player.
 Move out of the way to see it, then run before it explodes!
 
 The following keys are active at the title screen-
 
-F1- Help (see above)
+~eF1 - Help (see above)
 
-Enter- Menu
+~eEnter - Menu
 This is similar to Enter within the game. However, there is
-no status screen.
+no status screen. As mentioned earlier, sometimes this menu
+is turned off in certain games.
 
-ESC- Exit to DOS
+~eESC - Exit to DOS
 Pressing ESC will exit MegaZeux, returning to the DOS prompt
 or other operating system.
 
-F2 or S- Settings (see above)
+~eF2 or S - Settings (see above)
 
-F3 or L- Load world
+~eF3 or L - Load world
 This will allow you to load up the title screen of any MegaZeux
 world. A list of choices will be presented to you to select
 from. After the world is loaded, you may watch the title
 screen, then press 'P' to play.
 
-F4 or R- Restore game (see above)
+~eF4 or R - Restore game (see above)
 
-F5 or P- Play game
+~eF5 or P - Play game
 This will stop the title screen and actually begin game play.
 
-F6- Debug menu (see above)
+~eF6 - Debug menu (see above)
 
-F8 or E- World editor
+~eF8 or E - World editor
 This will quit the gaming portion of MegaZeux and enter the
 integrated World Editor. For detailed info on using the World
 Editor, view the appropriate help sections.
+
 >#THEWORLD.HLP:1st:The World Editor
 
-F10- Quickload (see above)
+~eF10- Quickload (see above)
 
 We'll close this section with some more playing tips, some
 general hints and others specific to certain sections of
 Caverns of Zeux, the first included game.
 
-* Don't take anything for granted. If it looks like a spike,
+~e*~f Don't take anything for granted. If it looks like a spike,
   it PROBABLY is. PROBABLY. Although it is rare that these
   types of puzzles must be solved to complete a game, there
   are often bonuses, hidden rooms, etc. behind illusions.
 
-* Don't trust anyone. All characters in a game, (including
+~e*~f Don't trust anyone. All characters in a game, (including
   yourself) have the potential to lie, cheat, and backstab.
 
-* Try things twice. Sometimes objects respond differently a
+~e*~f Try things twice. Sometimes objects respond differently a
   second time. If you get a new treasure, go talk to all
   the citizens- maybe one of them will say something new!
 
-* Caverns hint- (DON'T READ UNLESS YOU ARE STUCK!) Many people
-  often get stuck early in the game, after a couple of bosses.
-  If you have the three amulets, did you talk to the dwarf in
-  town who wants them? Make sure you change back to a dwarf
-  by talking to the spirit. Later make sure to lavawalk across
-  the lava on the left of the room where you got the three
-  amulets.
-
 >#MAIN.HLP:072:Table of Contents
 #DIALOGBO.HLP
-:098:How to use dialog boxes
+:098:~eHow to use dialog boxes
 
-A large portion of MegaZeux's interface are dialog boxes. They
-are rather simple and intuitive to use, but instructions for
-the uninformed are included in this section.
+A large portion of MegaZeux's interface is in the form of dialog
+boxes. They are simple and intuitive to use but instructions for
+the uninformed are included in this section. Many recent games
+prefer to use their own, custom-made textboxes rather than
+dialog boxes which are usually progressed by pressing Space.
 
 A dialog box is a form of inputting various information. An
 example of a dialog box is the Save Game box, or the Settings
-box. (both in the game) To use a box is simple- Use TAB and
+box. (both in the game) To use a box is simple - use TAB and
 SHIFT+TAB to highlight an element, and type or use the cursor
 keys to change the value. Press ENTER on a button (Rectangle
 with a label) to exit the dialog or produce an effect.
@@ -447,41 +457,40 @@ dialog box, and End to jump to the OK or NEXT button.
 The different dialog box elements and special related keys
 are explained in detail for the remainder of this section.
 
-INPUT- This is where you type in a series of characters,
+~eINPUT -~f This is where you type in a series of characters,
 usually letters and numbers. You can move the cursor around
 within the line, type to insert characters, move to the start
 with Home, and move to the end with End.
 
-NUMBER- This is where you have a number and you change it
+~eNUMBER -~f This is where you have a number and you change it
 with the arrow keys or mouse clicks on buttons. Up and Down
 will change it by 1, Alt+Up and Alt+Down will change it by
 10, and PageUp and PageDown will change it by 100. You can
 also hold the mouse button down on one of the arrows to
 change the number.
 
-NUMBER LINE- This is a line of numbers, with one highlighted.
+~eNUMBER LINE -~f This is a line of numbers, with one highlighted.
 Similar to the above, but in a limited range.
 
-CHARACTER- This is where you can select a single character.
+~eCHARACTER -~f This is where you can select a single character.
 Press a character to use that character, or click on it or
 press Enter to get a large menu of characters to select from.
 
-COLOR- This is where you can select a single color. Press
+~eCOLOR -~f This is where you can select a single color. Press
 Enter or click on it to get a large menu of colors to choose
 from.
 
-CHECK BOXES- These are On/Off switches. Use Up/Down to move
+~eCHECK BOXES -~f These are On/Off switches. Use Up/Down to move
 within the list of choices, and use Space, Enter, or mouse
 clicks to toggle choices on and off. An [X] means the option
 is currently on.
 
-RADIO BUTTONS- These are similar to Check Boxes, but are
+~eRADIO BUTTONS -~f These are similar to Check Boxes, but are
 mutually exclusive. The mouse or arrow keys will select the
-current and ONLY option that is on. The (
-) shows the current
+current and ONLY option that is on. The ( ) shows the current
 option.
 
-BUTTON- These are rectangles with labels. When selected,
+~eBUTTON -~f These are rectangles with labels. When selected,
 press Enter or click to activate. OK or Done will verify the
 contents of the dialog box. Cancel will cancel any changes
 you've made. (ESC will usually do this as well.) Next and
@@ -489,7 +498,7 @@ Previous move between multiple dialog boxes. Other buttons
 do what their label signifies and are explained in the
 appropriate help section.
 
-LISTS- These show a selection from a list of choices. The
+~eLISTS -~f These show a selection from a list of choices. The
 current selection is shown. Press Enter or click on it to
 bring up a list of choices from which you can select a new
 choice.
@@ -497,26 +506,24 @@ choice.
 >#MOUSESUP.HLP:1st:Mouse support in MegaZeux
 >#MAIN.HLP:072:Table of Contents
 #MOUSESUP.HLP
-:1st:Mouse support in MegaZeux
+:1st:~eMouse support in MegaZeux
 
-The mouse is only supported outside of the gaming functions.
-It's use is very simple. Move the mouse to move the mouse
-cursor. Press the Left mouse button to select something,
-activate something, etc. Within the game or title screen,
-the Left mouse button will bring up a menu from which you
-can select an option. The Right mouse button ALWAYS means
-Escape or Cancel, just as if you had pressed the ESC key.
-This will not work in certain areas.
-
-***ADDENDUM*** as of mzxs1, certain games may make use of
-the mouse. The right mouse button will no longer emulate
-ESC key.  The left likewise does not emulate Enter.
-
+While in the editor you can use the mouse to perform basic
+functions. The mouse cursor is represented by a white
+block which you can move around by pushing the mouse in
+the desired direction. CLick the left mouse button to
+select something and the right mouse button to cancel
+something.
+In games, mouse control is somewhat different. Not all
+support it but those that do usually represent the mouse
+cursor as an arrow, not unlike the default Windows one.
+To activate things, left click. Other options should be
+outlined in the game's documentation.
 
 >#DIALOGBO.HLP:098:How to use dialog boxes
 >#MAIN.HLP:072:Table of Contents
 #FRIENDSA.HLP
-:1st:Friends and Foes- Objects You will Encounter
+:1st:~eFriends and Foes- Objects You will Encounter
 
 The following help section contains a list of the different
 objects, enemies, items, and terrains you will find within
@@ -567,7 +574,7 @@ however, can move through it with ease, clearing a pathway.
 Once the path is cleared, however, enemies may move along it
 at will.
 
-~BInvis. Wall
+~BInvisible Wall
 
 This LOOKS like just an empty space... until you bump into it.
 Then it becomes a normal wall, blocking your path.
@@ -585,7 +592,7 @@ give you one health point apiece when taken.
 
 ~BHealth          ~C
 
-This will improve your outlook dramatically- Your health is
+This will improve your outlook dramatically - Your health is
 increased by a certain amount. The amount varies for different
 hearts.
 
@@ -832,13 +839,13 @@ entered from any side.
 The destination of your transport is rather complex, but the
 search pattern is as follows:
 
-1. If the other side of the entered transport is empty, move
+~e1.~f If the other side of the entered transport is empty, move
    there. If there is something there that can be pushed out
    of the way, move there and push it out of the way.
-2. If the other side is blocked, continue in that direction
+~e2.~f If the other side is blocked, continue in that direction
    looking for the first non-blocked transporter facing the
    OPPOSITE direction, or an "any-direction" transport.
-3. If none can be found, no transport takes place.
+~e3.~f If none can be found, no transport takes place.
 
 $@0~8ฑ ~FElements~8 ฑ@8
 
@@ -1005,10 +1012,10 @@ do something, a Robot can do it better. They can show messages,
 fight the player, play music or sound, and do countless other
 things. See the appropriate help sections for more information.
 
->#ROBOTSWH.HLP:1st:Robots- What They Are and How to Use Them
+>#ROBOTSWH.HLP:1st:Robots - What They Are and How to Use Them
 >#MAIN.HLP:072:Table of Contents
 #POTIONFX.HLP
-:1st:Potion and Ring Effects
+:1st:~ePotion and Ring Effects
 
 All effects are limited to the current room only, except for
 healing, hurting, and invinco.
@@ -1085,122 +1092,123 @@ half normal speed.
 
 >#MAIN.HLP:072:Table of Contents
 #IFYOUFIN.HLP
-:1st:If You Find a Bug...
+:1st:~eIf You Find a Bug...
 
 ...we want to know! We're very interested in any problems or
 bugs you find in MegaZeux. We also welcome any comments,
-criticism, or suggestions. We especially appreciate QUALITY
-MegaZeux worlds.
+criticism, or suggestions.
 
-Since greg has left the community, please email me, JZig,
-at jzig@cncn.com if you have any bug reports.
+MegaZeux's original creator, Greg Janson, left the
+community that grew up around his creation a while ago so
+you can't E-Mail him about any bugs or problems. You can,
+however, E-Mail Exophase, one of the current coders of
+MegaZeux at exophase@@earthlinks.net (or, if you really
+want a reply, kutnick@@andrews.edu) and he'll see what he
+can do. You can also reach him on AIM and the DMZX message
+boards, his screen name being Exophase for both.
 
-Actually, since spider is done with mzx dev, contact me, Koji,
-at Koji_takeo@worldmailer.com
+For any errors involving the help file (glaring spelling
+errors or maybe even something you'd like to add) then E-Mail
+Fred at fredburbidge@@netscapeonline.co.uk and he'll update
+it. You can also catch him on the DMZX boards ("Fred") and
+on AIM (as "Fred969").
 
 >#MAIN.HLP:072:Table of Contents
 #FAQ.HLP
-:1st:Frequently Asked Questions
+:1st:~eFrequently Asked Questions
+
+
 
 The following is a list of questions that I have received
 through mail or E-mail about MegaZeux repetitively.
 
-Q: My robot can't change it's/the player's characters! I
+~eQ:~f My robot can't change it's/the player's characters! I
    use CHAR "A" but it turns invisible!
 
-A: Use CHAR 'A' instead. You MUST use single quotes
+~eA:~f Use CHAR 'A' instead. You MUST use single quotes
    (apostrophes) or it will use the value of the COUNTER
    A which is probably 0.
 
-Q: Can I distribute a world I made with MegaZeux? Is it
+~eQ:~f Can I distribute a world I made with MegaZeux? Is it
    legal? Must I/Can I include MegaZeux with it? Can they
    be shareware worlds?
 
-A: Of course you can distribute your worlds! That is what
+~eA:~f Of course you can distribute your worlds! That is what
    MegaZeux is for! Please refrain from uploading worlds
    that you made as a novice user, if they contain only
-   built-in enemies, items, and no plot/etc. People will
+   built-in enemies, items, and no plot etc. People will
    only yell at you. Get creative and use Robots! Please
    include any SAM, module, and CHR files with the games,
    as well as a short TXT description file if necessary.
    Don't include MegaZeux, but make sure MegaZeux itself
-   is available on any BBS or on-line system that you
-   upload worlds to. (MegaZeux is available on AOL) Your
-   worlds can be freeware, public domain, or shareware,
-   whichever you prefer.
+   is available on any website you upload your files to.
+   Your worlds can be freeware, public domain, or 
+   shareware, whichever you prefer, although I advise
+   releasing your games as freeware since most people
+   aren't prepared to pay for MZX worlds any more.
 
-Q: Can I use the music from Caverns in my games? How about
-   the music from the registered games? How about the SAM
-   files?
+~eQ:~f Can I use music from other people's games?
 
-A: I would prefer it if you did not use Caverns music in
-   any games you distribute, because most people have
-   heard it and it is getting old. The music from the
-   registered games is illegal to distribute. The SAM
-   files are public domain and may be used as you please.
+~eA:~f Yes, so long as it is all public domain and it doesn't
+   you can't. I recommend, though, that you search the
+   web for some tunes rather than take ones that have
+   already been used in games since people will only
+   criticise your lack of originality if you don't.
 
-Q: Where can I get module files?
+~eQ:~f Where can I get module files?
 
-A: If you can't make them, search public BBSes and on-line
-   services for public domain ones. AOL has a large MOD/S3M
-   library, as do many CD-ROM collections. Or employ a
-   friend to do it for you. I myself (Greg Janson) am
-   not available to create module files unless I am being
-   paid well for my time.
+~eA:~f You can either try to make them yourself (which is harder
+   than it sounds), in which case get a decent module
+   tracker to write them or search for some on the 'net.
+   A good site to start your search is www.modarchive.com.
 
-Q: What is some good software to create module files?
+~eQ:~f What is some good software to create module files?
 
-A: For modules, Fast Tracker II by Triton is fairly good, but
+~eA:~f For modules, Fast Tracker II by Triton is fairly good, but
    you have to avoid using the XM features. ScreamTracker 3.0
-   is good for making S3M files.
+   is good for making S3M files. I personally suggest ModPlug
+   tracker, from www.modplug.com if you want a Windows-based
+   tracker.
 
-Q: How do I make SAM files?
+~eQ:~f How do I make SAM files?
 
-A: There are three easy ways to create SAM files. First,
-   you get recording software, a sound card, and a mike.
-   Hook 'em all up (read the instructions) and go for it.
-   Second, you can download them or get them from module
-   files or other games. Third, you can take existing files
-   and change them with effects like echo. Blaster Master
-   is a good piece of software to handle numbers one and
-   three.
+~eA:~f Find a decent sound recording program and get hold of the
+   program CVT2SAM.EXE. Record your sound, export it as an
+   8-bit mono VOC file and drag 'n' drop it into CVT2SAM to
+   convert it to a SAM file.
+   CVT2SAM also accepts 8-bit mono WAV files but an error in
+   the program means they have a tendency to end with a 'CLICK'
+   sound, so avoid converting them.
 
-Q: But I can only find software to make WAVs! (or VOCs)
+~eQ:~f Does MegaZeux have any annual competitions I can enter?
 
-A: There is a nice small program called CVT2SAM which can
-   convert most WAVs and VOCs to SAMs. I believe it is in
-   the public domain. It is available on AOL.
+~eA:~f Yes! There's Day of Zeux (DoZ), Weekend of Zeux (WeoZ)
+   and a whole lot of other stuff going on. Check digitalMZX's
+   message boards for details.
 
-Q: The TELEPORT PLAYER command doesn't work!
+~eQ:~f I need more than 256 characters!
 
-A: It does now. That was a small (er... big) bug in version
-   1.02, which was corrected in version 1.03 and 2.51.
-
-Q: Is the world design contest still going?
-
-A: Until you see a Best of MegaZeux series OR the calendar
-   reaches 1-22-97 without sufficient entries, the contest
-   will continue. So far I've received only one board,
-   which wasn't even acceptable. However, I've received
-   E-mail from several interested parties, so the contest
-   continues. See CONTEST.TXT for details.
-
-Q: I need more than 256 characters!
-
-A: Then you'll need to carefully utilize the Robot command
+~eA:~f Then you'll need to carefully utilize the Robot command
    LOAD CHAR SET and ration your characters carefully. The
    limit of 256 is a hardware limit and cannot easily be
    worked around.
 
+~eQ:~f Is MegaZeux open source? Where do I get the source code if
+   it is?
+
+~eA:~f Yes it is. It's out under the GNUGP licence (read the
+   supplied document for information). The source is available
+   from DigitalMZX.net.
+
 >#MAIN.HLP:072:Table of Contents
 #MEGAZEUX.HLP
-:1st:MegaZeux Limitations
+:1st:~eMegaZeux Limitations
 
-MegaZeux has to impose a number of limitations to insure
+MegaZeux has to impose a number of limitations to ensure
 compatibility. This allows worlds to work on any computer
 that can run MegaZeux.
 
-$Memory Limitations
+$~eMemory Limitations
 
 Module and SAM files must fit in memory (including EMS)
 to play. If they don't fit, they will still be active
@@ -1213,23 +1221,22 @@ other than the Global Robot, cannot exceed 64k. The global
 Robot can be up to 31k. No single Robot, sign, or Scroll can
 exceed 31k in size.
 
-$Quantity Limitations
+$~eQuantity Limitations
 
-Item-           Largest number allowed-
+Item -          Largest number allowed -
 
 Robots          199 per board plus Global Robot
 Scrolls/signs   49 per board
 Sensors         19 per board
 Boards          150 per world
-Counters        50 active (value other than 0) at a time,
-                not including built-in counters such as
-                Ammo. Setting a counter to 0 clears up a
-                spot for another counter.
-Note: counters increased to about 1000 in s1.
+Counters        Well over 1000 active (value other than 0)
+                at a time, not including built-in counters
+                such as Ammo. You're not going to use any
+                more than 1000 counters though.. Er, right?
 
 >#MAIN.HLP:072:Table of Contents
 #THEWORLD.HLP
-:1st:The World Editor
+:1st:~eThe World Editor
 
 Ready to start creating your own worlds? Then let's get
 started! This section is a short editor tutorial, it will teach
@@ -1244,7 +1251,7 @@ various options. Press Alt+R to restart and clear everything.
 
 For your first world, you should start simple. The screen you
 begin on is your title screen, so pick a simple name for your
-game, such as "Mike's World". Move the flashing cursor down a
+game, such as "Dave's World". Move the flashing cursor down a
 few lines and over a few spaces, using the arrow keys. Press C
 and use the arrow keys to select an appropriate color. Press
 Enter to select this color. Now press F2 to write Text. Type
@@ -1292,13 +1299,13 @@ advanced editing info.
 >#GENERALE.HLP:1st:General Editing Tips
 >#MAIN.HLP:072:Table of Contents
 #GENERALE.HLP
-:1st:General Editing Tips
+:1st:~eGeneral Editing Tips
 
 The following is a list of important editing tips. They assume
 you are familiar with MegaZeux's dialog box system, and that
 you can navigate the editor's menus.
 
-$Linking Boards
+$~eLinking Boards
 
 One-board games get boring REAL fast. There are two ways to
 connect multiple boards. The first way is to add stairs, doors,
@@ -1311,13 +1318,13 @@ The other method of connecting boards is with X, the Board Exits
 dialog. Here, you can select boards that you will reach if you
 walk off of the screen in a given direction. The destination
 board shouldn't have anything in the way, and will not
-automatically lead back- You must set the exit on that board
+automatically lead back - You must set the exit on that board
 too.
 
 To add boards, press A, or select (new board) from a board list.
 To switch to other boards, use B.
 
-$Board Sizes
+$~eBoard Sizes
 :sizepos:
 You can change the maximum size, and the view position, of a
 board, with Alt+P. Here you can move and re-size the view, or
@@ -1335,7 +1342,7 @@ size of 200x50, then set the Virtual size to 180x40.
 Note that reducing the size of a board will permanently
 destroy anything outside the new limits.
 
-$Other Important Editing Keys
+$~eOther Important Editing Keys
 
 You can use Ins to "grab" the object beneath the cursor, or
 Enter to edit it and then grab it as well. Use P to modify the
@@ -1348,12 +1355,13 @@ Options with G.
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#MAIN.HLP:072:Table of Contents
 #EDITINGK.HLP
-:080:Editing Keys and Options Reference
+:080:~eEditing Keys and Options Reference
 
 The following is an alphabetical listing of keys within the
 Robot editor. This is followed by a detailed description of
 what each one does.
 
+>_8: Alt+8 - Set music for board to what was last playing
 >_A:    A - Add (board)
 >075:Alt+A - Select Char Set
 >_B:    B - Select Board
@@ -1403,7 +1411,7 @@ what each one does.
 >ShF3:Sh+F3 - Show Fakes
 >ShF4:Sh+F4 - Show Spaces
 
->Ar:Arrow - Move
+>Ar:Arrow Keys - Move
 >AltAr:Alt+Arrow - Move 10
 >BkSp: Backspace - Delete
 >Del:  Del - Delete
@@ -1417,9 +1425,15 @@ what each one does.
 >Tab:  Tab - Draw
 >PgDn: PageDown - Next Menu
 >PgUp: PageUp - Previous Menu
->095:    * - Protection
 
-:_A:    A - Add (board)
+:_8:~eAlt+8 - Set music for board to what was last playing
+
+Press Alt+8 to set the music for the current board to the same
+tune to what is currently playing. This is useful for status
+screens, allowing the same tune to stay playing when you switch
+to it.
+
+:_A:~e    A - Add (board)
 
 Press A or select (new board) from any board list to add another
 board to the current world. You will be asked for the name of
@@ -1431,7 +1445,7 @@ selected (new board) from a list, the new board will be used for
 the setting, but you remain on the current board. There is a
 limit of 150 unique boards per world.
 
-:075:Alt+A - Select Char Set
+:075:~eAlt+A - Select Char Set
 
 Press Alt+A and select one of the three different character
 sets. Select OK to confirm your choice. This will change the
@@ -1441,13 +1455,13 @@ MegaZeux characters. Blank is the MegaZeux default, but with
 most graphical characters blank instead. Text, lines, arrows,
 blocks, and certain other symbols are not affected.
 
-:_B:    B - Select Board
+:_B:~e    B - Select Board
 
 Press B to change the current board by selecting from a list.
 Selecting (new board) will create a new board and then select
 it.
 
-:073:Alt+B - Block
+:073:~eAlt+B - Block
 
 Press Alt+B to start block mode. Then move the cursor to the
 opposite corner of a rectangular block, and press Alt+B again.
@@ -1464,12 +1478,12 @@ ANSi will save the block as an .ANS file, which can later be
 viewed outside of MegaZeux. Destinations for Move and Copy can
 overlap the original block safely.
 
-:_C:    C - Color
+:_C:~e    C - Color
 
 Press C to select a new current color from a menu. The thing
 under the cursor is not affected.
 
-:AltC:Alt+C - Char Edit
+:AltC:~eAlt+C - Char Edit
 
 Press Alt+C to edit the character set. The character editor is a
 separate section of the world editor and is discussed in another
@@ -1477,7 +1491,7 @@ section.
 
 >#CHAREDIT.HLP:079:The Character Editor
 
-:_D:    D - Delete (board)
+:_D:~e    D - Delete (board)
 
 Press D to select a board from a list to be deleted. You cannot
 delete the first board (title screen). A deleted board will be
@@ -1485,7 +1499,7 @@ shown as (no board) in other lists, and cannot be selected. New
 boards will fill up deleted slots first. A deleted board cannot
 be recovered.
 
-:AltD:Alt+D - Default Colors
+:AltD:~eAlt+D - Default Colors
 
 Press Alt+D to toggle default colors on and off. When it is on
 (I.E. the option is highlighted in white) things such as Health
@@ -1493,7 +1507,7 @@ and Ghosts default to their natural colors. When it is off,
 selecting things will not change the current colors. Default
 Colors is on by default.
 
-:AltE:Alt+E - Palette
+:AltE:~eAlt+E - Palette
 
 Press Alt+E to edit the palette (colors). The palette editor is
 a separate section of the world editor and is discussed in
@@ -1501,7 +1515,7 @@ another section.
 
 >#PALEEDIT.HLP:093:The Palette Editor
 
-:_F:    F - Fill
+:_F:~e    F - Fill
 
 Press F to fill in an enclosed area with the current thing and
 color. The area must be completely surrounded by things other
@@ -1511,7 +1525,7 @@ fill command may not work right for very large and complex
 areas- In this case, you must move to the unfilled areas and
 press F to continue filling. This happens very rarely, however.
 
-:097:Alt+F - Sound Effects
+:097:~eAlt+F - Sound Effects
 
 Press Alt+F to enter the sound effects editor. First you must
 decide whether to use the default set of sound effects, or edit
@@ -1524,27 +1538,27 @@ command PLAY. (digitized sounds are allowed here.)
 
 >#SOUNDEFX.HLP:1st:MegaZeux's Sound System
 
-:_G:    G - Global Info
+:_G:~e    G - Global Info
 
 Press G to enter the global info dialog boxes. The global info
 options are covered in another section.
 
 >#GLOBALIN.HLP:086:Global Info Options
 
-:_I:    I - Info (board)
+:_I:~e    I - Info (board)
 
 Press I to enter the board info dialog box. The board info
 options are covered in another section.
 
 >#BOARDINF.HLP:085:Board Info Options
 
-:078:Alt+I - Import
+:078:~eAlt+I - Import
 
 Alt+I allows you to import a number of different file types
 into the current board or world. You can import a board file
 (MZB) unique to MegaZeux. You can import a character set file
-(CHR) which can also be edited with Software Visions' Z-Cel
-editor. You can import an ANSi file (ANS) as either overlay,
+(CHR) which can also be edited with various third-party
+programs. You can import an ANSI file (ANS) as either overlay,
 blocks, text, or floor. You can import another world (MZX)
 which is appended to the list of boards. Note that references
 within the new boards to other boards, within exits and
@@ -1552,29 +1566,29 @@ transports, will NOT be correct. Finally, you can import a
 palette (PAL) file or a sound effects (SFX) file, both unique
 to MegaZeux.
 
-If you select the lowermost option for ANSi import, you will
+If you select the lowermost option for ANSI import, you will
 get to choose where on the board to import it. Move the
-cursor to the desired location and press Enter. The ANSi
+cursor to the desired location and press Enter. The ANSI
 will be clipped automatically.
 
-:_L:    L - Load
+:_L:~e    L - Load
 
 L brings up a list of worlds in the current directory and allows
 you to select one to load. You will be warned if the current
 world has not been saved yet.
 
-:AltL:Alt+L - Test SAM
+:AltL:~eAlt+L - Test SAM
 
 Alt+L brings up a list of SAM files in the current directory.
 Selecting one will play it at a frequency of 420, or middle C.
 This has no effect on the actual board or world.
 
-:AltM:Alt+M - Modify
+:AltM:~eAlt+M - Modify
 
 Alt+M allows you to modify the settings of the thing UNDER the
 cursor. The current thing is not affected in anyway.
 
-:AltN:Alt+N - Music
+:AltN:~eAlt+N - Music
 
 Alt+N brings up a list of module files in the current directory.
 Selecting one will select it as the default music for the
@@ -1582,7 +1596,7 @@ current board. If music is already playing, Alt+N will turn it
 off. The music will still be selected as current even if it
 doesn't fit in memory.
 
-:AltO:Alt+O - Edit Overlay
+:AltO:~eAlt+O - Edit Overlay
 
 Alt+O enters overlay editing mode. The overlay must first be
 turned on within the board info menu. The overlay editing mode
@@ -1592,50 +1606,50 @@ overlay is explained in further detail in another section.
 
 >#TOVERLAY.HLP:081:Editing and Using the Overlay
 
-:_P:    P - Parameter
+:_P:~e    P - Parameter
 
 P allows you to change the settings of the current thing. The
 thing under the cursor is not affected.
 
-:084:Alt+P - Size/Pos
+:084:~eAlt+P - Size/Pos
 
 Alt+P allows you to change the size of the current board and the
 viewport size and location. See another section for details.
 
 >#GENERALE.HLP:sizepos:Board Sizes
 
-:_R:    R - Redraw Screen
+:_R:~e    R - Redraw Screen
 
 R will redraw the screen, erasing any junk or other problems
 that may be on-screen. This option is rarely needed.
 
-:AltR:Alt+R - Restart
+:AltR:~eAlt+R - Restart
 
 Alt+R will clear the entire world. You will be asked for
 confirmation.
 
-:076:    S - Save
+:076:~e    S - Save
 
 S will prompt you for a filename, then save the current world
 as a MZX file. The save option will be highlighted if the world
 has changed since the last save or load.
 
-:082:Alt+S - Status Info
+:082:~eAlt+S - Status Info
 
 Alt+S will allow you to type in six different counters that will
 be shown on the status screen within the game. This allows you
 to have your own items that the player can collect, and see how
-many he has. Counters are discussed in further detail with
-Robots.
+many he has via the Enter menu. Counters are discussed in further
+detail with Robots.
 
-:AltS2:Alt+S - Show Level
+:AltS2:~eAlt+S - Show Level
 
 Alt+S while editing the overlay will toggle whether the level
 beneath the overlay is shown when editing the overlay.
 
 >#TOVERLAY.HLP:081:Editing and Using the Overlay
 
-:AltT:Alt+T - Test
+:AltT:~eAlt+T - Test
 
 Alt+T will allow you to test the current world, starting on the
 current board. You cannot save or restore during this test, but
@@ -1643,13 +1657,13 @@ two "cheat" keys are active- F7 will fill your health, gems,
 etc. to maximum, and F8 will destroy the eight things around the
 player. Quitting will return to the editor.
 
-:_V:    V - View
+:_V:~e    V - View
 
 V will allow you to see the current board as it would appear in
 the game. Use the arrows to Scroll the view, and ESC to return
 to the editor.
 
-:083:    X - Exits
+:083:~e    X - Exits
 
 X will bring up a menu where you can select exits for each board
 direction. For example, selecting a destination board of "City"
@@ -1660,7 +1674,7 @@ you must go to that board and make a south exit back. Make sure
 the linked boards don't obstruct each other's exits, and that
 they are of the same size.
 
-:077:Alt+X - Export
+:077:~eAlt+X - Export
 
 Alt+X will allow you to export a number of different file types.
 You can export a board file (MZB) unique to MegaZeux, good for
@@ -1673,37 +1687,38 @@ text file is better for making maps of your boards. Finally, you
 can export palettes (PAL) and sound effect collections (SFX) for
 transportation, both of them file formats unique to MegaZeux.
 
-:AltY:Alt+Y - Debug Mode
+:AltY:~eAlt+Y - Debug Mode
 
 Alt+Y will toggle a red box in the lower corner of the screen.
 This box shows, on labeled lines, the current position of the
 cursor and the current memory situation. This information is
 quite helpful when programming Robots.
 
-:AltZ:Alt+Z - Clear (board)
+:AltZ:~eAlt+Z - Clear (board)
 
 Alt+Z will clear the current board entirely. You are asked for
 confirmation.
 
-:F1:   F1 - Help
+:F1:~e   F1 - Help
 
 F1 will bring up help on the current action. You can press F1
-at almost any time.
+at almost any time. Some games disable this so they can
+use the F1 key for other features.
 
-:F2:   F2 - Text
+:F2:~e   F2 - Text
 
 F2 will toggle text mode on and off. When text mode is on, Enter
 will go to the next line, and Backspace will delete going
 backwards. All printable characters will type in as text.
 
-:F3:   F3 - Terrain
-:F4:   F4 - Item
-:F5:   F5 - Creature
-:F6:   F6 - Puzzle
-:F7:   F7 - Transport
-:F8:   F8 - Element
-:F9:   F9 - Misc. (thing)
-:F10:  F10 - Objects
+:F3:~e   F3 - Terrain
+:F4:~e   F4 - Item
+:F5:~e   F5 - Creature
+:F6:~e   F6 - Puzzle
+:F7:~e   F7 - Transport
+:F8:~e   F8 - Element
+:F9:~e   F9 - Misc. (thing)
+:F10:~e  F10 - Objects
 
 The above eight keys will bring up a menu of things to select
 from. Selecting one will ask you to enter settings
@@ -1717,71 +1732,71 @@ The settings parameter isn't important except for certain
 Robotic programming situations.
 
 >#SCROLLSS.HLP:1st:Signs and Scrolls in the Editor
->#SENSORSW.HLP:094:Sensors- What They Are and How to Use Them
->#ROBOTSWH.HLP:1st:Robots- What They Are and How to Use Them
+>#SENSORSW.HLP:094:Sensors - What They Are and How to Use Them
+>#ROBOTSWH.HLP:1st:Robots - What They Are and How to Use Them
 >#ROBOTICT.HLP:1st:Robotic Tutorial
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 
-:ShF1:Sh+F1 - Show InvisWalls
-:ShF2:Sh+F2 - Show Robots
-:ShF3:Sh+F3 - Show Fakes
-:ShF4:Sh+F4 - Show Spaces
+:ShF1:~eSh+F1 - Show InvisWalls
+:ShF2:~eSh+F2 - Show Robots
+:ShF3:~eSh+F3 - Show Fakes
+:ShF4:~eSh+F4 - Show Spaces
 
 These four keys will flash on-screen the location of the noted
 thing. They are good for locating "hidden" or camouflaged
 Robots, passages, etc.
 
-:Ar:Arrow - Move
+:Ar:~eArrow Keys - Move
 
 The arrow keys will move the cursor. The edit window will Scroll
 when necessary.
 
-:AltAr:Alt+Arrow - Move 10
+:AltAr:~eAlt+Arrow - Move 10
 
 Alt with the arrow keys will move the cursor up to ten spaces at
 a time.
 
-:BkSp: Backspace - Delete
-:Del:  Del - Delete
+:BkSp:~e Backspace - Delete
+:Del:~e  Del - Delete
 
 These two keys will delete everything under the cursor. The
 current thing is not affected.
 
-:End:  End - L/R Corner
+:End:~e  End - L/R Corner
 
 End will jump the cursor to the lower left corner of the entire
 board.
 
-:En:Enter - Modify+Grab
+:En:~eEnter - Modify+Grab
 
 Enter will modify the settings of the thing under the cursor, if
 applicable, then select that thing as the current thing. It is
 just like pressing Alt+M and then Ins.
 
-:Enter2:Enter - Character
+:Enter2:~eEnter - Character
 
 Enter during Overlay editing mode will change the current
 character. Select it from a menu and then press Enter to confirm
 your choice.
 
-:ESC:  ESC - Exit/Cancel Mode
+:ESC:~e  ESC - Exit/Cancel Mode
 
 ESC will exit the editor, asking for confirmation if your world
 has not been saved. If you are in block, overlay, text, or draw
 mode, ESC will instead cancel the current mode and return to
 normal editing.
 
-:Home: Home - U/L Corner
+:Home:~e Home - U/L Corner
 
 Home will jump the cursor to the upper right corner of the
 entire board.
 
-:Ins:  Ins - Grab
+:Ins:~e  Ins - Grab
 
 Ins will select the thing under the cursor as the current
 thing. The actual thing is not affected.
 
-:Sp:Space - Place
+:Sp:~eSpace - Place
 
 Space will copy the current thing to the location under the
 cursor. Trying to place something over a similar thing will
@@ -1789,45 +1804,25 @@ instead delete it. Placing something over a floor type will
 actually place it OVER the floor, not deleting the floor.
 Other things will be deleted if they are in the way.
 
-:Tab:  Tab - Draw
+:Tab:~e  Tab - Draw
 
 Tab will toggle the current draw mode. When drawing is on, you
 will place a copy of the current thing every time you move the
 cursor.
 
-:PgDn: PageDown - Next Menu
-:PgUp: PageUp - Previous Menu
+:PgDn:~e PageDown - Next Menu
+:PgUp:~e PageUp - Previous Menu
 
 These two keys will cycle through the different menus. The menu
 bar can wrap around. You do not have to be viewing the menu with
 an option before you can use that option- the menus are purely
 for reference.
 
-:095:    * - Protection
-
-Pressing * will access the protection menu. There are three
-forms of protection- No-save, No-edit, and No-play. No-save
-allows someone to edit your game, thereby learning from it. But
-they cannot export or save it, so they cannot directly rip off
-your work. I suggest the use of this mode, since it encourages
-others to learn from your work but not steal it. No-edit
-prevents anyone from looking at your work in the editor, and
-No-play prevents anyone from playing your game at all. The
-password is used to protect the world and is case-insensitive.
-The entire MZX file is encrypted. Please don't distribute or
-upload files that are No-play protected to the general public.
-
-***ADDENDUM***
-
-Protection is long since removed as it holds no real prtective
-value since megahack and getpw are out.
-		-Koji
-
 >#THEWORLD.HLP:1st:The World Editor
 >#GENERALE.HLP:1st:General Editing Tips
 >#MAIN.HLP:072:Table of Contents
 #CHAREDIT.HLP
-:079:The Character Editor
+:079:~eThe Character Editor
 
 The character editor is an important part of MegaZeux. With it,
 you can change the appearance of the character set. For example,
@@ -1848,7 +1843,7 @@ select the current character from the entire set. The current
 character is highlighted on the row in the upper right corner.
 
 Use Del to clear the character. Use N to "negative", or
-inverse, the character, turning all on pixels off and all off
+invert, the character, turning all on pixels off and all off
 pixels on. Use Alt with the arrow keys to shift the entire
 character to one direction. Pixels shifted off of one edge
 wraparound to the other edge.
@@ -1869,19 +1864,19 @@ versa.
 
 The character editor is a key element in creating decent games
 with MegaZeux. If you can't seem to draw well with it, that's
-okay, since it has awkward limitations. You can copy characters
-or character sets from other games as well, or get a friend to
-draw characters for you.
+okay, since it has awkward limitations. If you can't draw, try
+getting someone to do the graphics for you (ask nicely!).
 
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#MAIN.HLP:072:Table of Contents
 #PALEEDIT.HLP
-:093:The Palette Editor
+:093:~eThe Palette Editor
 
-The palette editor, although not needed for most games, can
-certainly spruce up a game. It allows you to change the
-appearance of the 16 different available colors. It is the only
-way to get a decent orange color, for example.
+Editing the palette is widely encouraged since, if used in the
+right way, it can dramatically increase the visual appeal of
+your game. Grass, for instance, looks awful in the default
+palette but if you create your own shades of green in your
+own 16 color palette you can make it look a lot better.
 
 To use it, press Alt+E in the editor. The palette editing screen
 will appear. The current palette will be shown along the top,
@@ -1919,14 +1914,14 @@ Other colors will be shown as the nearest shade possible.
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#MAIN.HLP:072:Table of Contents
 #GLOBALIN.HLP
-:086:Global Info Options
+:086:~eGlobal Info Options
 
 To edit Global options, press G within the editor. This will
 bring up various dialogs where you can edit options that affect
 the entire world. The first dialog you see has the following
 options-
 
-$Death board/X/Y/mode
+$~eDeath board/X/Y/mode
 
 This tells MegaZeux what happens when the player dies. If mode
 is Same position, then the player will simply lose a life. If it
@@ -1935,7 +1930,7 @@ location on the board where he entered. If it is Teleport, the
 player will instead teleport to the board and x/y location
 stated in the above three settings.
 
-$Endgame board/X/Y/mode
+$~eEndgame board/X/Y/mode
 
 This tells MegaZeux what happens when the player runs out of
 lives. If mode is Game over, then the game will simply end. If
@@ -1943,27 +1938,27 @@ it is Teleport, the player will be given one last life and then
 he will be teleported to the board and x/y location stated in
 the above three settings. Next time he dies, the game will end.
 
-$Play game over sfx
+$~ePlay game over sfx
 
 If this option is on, the game over sound effect will be played
 repeatedly when the game has ended and the Game Over message is
 flashing along the bottom of the screen.
 
-$More
+$~eMore
 
 This button leads to another screen of settings.
 
-$Edit Chars
+$~eEdit Chars
 
 :089:This button leads to a series of dialogs where you can edit the
 characters and colors used to represent various internal things.
 
-$Edit Dmg
+$~eEdit Dmg
 
 :090:This button leads to a dialog where you can edit the amount of
 damage done by various internal things.
 
-$Edit Global Robot
+$~eEdit Global Robot
 
 This button allows you to edit the global Robot, which is a very
 special Robot that is present at all times, although it is not
@@ -1973,46 +1968,47 @@ MegaZeux. See the Robotic manual for more information.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 
 :088:The second dialog of settings for global info has the
-following options-
+following options -
 
-$First board
+$~eFirst board
 
 Here is where you select which board will be the starting board
 for the game. The player will start on this board. This defaults
 to the title screen.
 
-$Edging color
+$~eEdging color
 
 This is the color of the border around the entire screen, where
-the viewport does not extend. It defaults to dark gray.
+the viewport does not extend. It defaults to dark gray. Most games
+change it to completely black, since it looks nicest.
 
-$Starting/Maximum lives
+$~eStarting/Maximum lives
 
 This is where you set the number of lives the player starts
 with, and how many lives he can accumulate at any one time.
 
-$Starting/Maximum health
+$~eStarting/Maximum health
 
 Same as above, but for health points.
 
-$Enemies' bullets hurt other enemies
+$~eEnemies' bullets hurt other enemies
 
 If this is on, then bullets shot by enemies, such as tigers,
 will destroy other enemies that they hit. It basically turns
 all Enemy bullets into Neutral bullets.
 
-$Clear messages and projectiles on exit
+$~eClear messages and projectiles on exit
 
 If this is on, the current message and all bullets and shooting
 fire are cleared whenever the player leaves the screen.
 
-$Can only play world from a 'SWAP WORLD'
+$~eCan only play world from a 'SWAP WORLD'
 
 If this is on, then the current world is unplayable in a normal
 fashion. The only way to play it is to swap to it from another
 world, using the Robotic command SWAP WORLD.
 
-$Previous
+$~ePrevious
 
 This will go to the previous global settings dialog.
 
@@ -2039,25 +2035,25 @@ Manual.
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#MAIN.HLP:072:Table of Contents
 #BOARDINF.HLP
-:085:Board Info Options
+:085:~eBoard Info Options
 
 To edit Board options, press I within the editor. This will
 bring up a dialog where you can edit options pertaining to the
-current board. The options are as follows-
+current board. The options are as follows -
 
-$Board name
+$~eBoard name
 
 This is the name of the board. It is mainly for reference;
 However, the name of the first board (the title screen) is
 also used to represent the entire world on a file listing.
 
-$Can shoot/bomb
+$~eCan shoot/bomb
 
 These options determine whether or not the player can utilize
 shooting or bombs. If off, then the player cannot perform the
 noted action.
 
-$Fire burns space/fakes/trees/brown
+$~eFire burns space/fakes/trees/brown
 
 These options determine what fire will and will not burn
 through. Space is empty space, NOT floors. Fakes includes fakes,
@@ -2065,29 +2061,29 @@ floors, carpets, and tiles. Trees are self-explanatory. Brown
 is anything other than the player or a Robot/sign/Scroll that
 is colored brown.
 
-$Forest to floor
+$~eForest to floor
 
 If on, when the player moves through forest, it will become
 floor. If off, the forest will simply disappear.
 
-$Collect bombs
+$~eCollect bombs
 
 If on, the player will collect bombs normally. If off, bombs
 will be instantly lit when touched.
 
-$Fire burns forever
+$~eFire burns forever
 
 If on, fire will never burn out. If off, fire will eventually
 turn into ash, which is actually a dark gray floor. Of course,
 if fire is set to burn fakes, the ash will probably relight
 immediately.
 
-$Restart if hurt
+$~eRestart if hurt
 
 When on, anytime the player loses health, he will be teleported
 to the place on the current board that he entered the board.
 
-$Time limit
+$~eTime limit
 
 If greater than zero, the player has the noted amount of time to
 complete the board. The current time is shown in the lower left
@@ -2098,12 +2094,12 @@ considerably faster than seconds; test the board to get a feel
 for the amount of time needed. The current time is reset if the
 player exits and re-enters the board.
 
-$Explosions to space/ash/fire
+$~eExplosions to space/ash/fire
 
 This determines what explosions will leave in their wake- Empty
 space, ash (dark gray floors), or burning fire.
 
-$Can save/Can't save/Can save on Sensors
+$~eCan save/Can't save/Can save on Sensors
 
 This determines when the player can save his game. The first two
 options are self-explanatory. Can save on Sensors allows the
@@ -2112,7 +2108,7 @@ Sensors are explained in another section.
 
 >#SENSORSW.HLP:094:Sensors- What They Are and How to Use Them
 
-$No/Normal/Static/Transparent overlay
+$~eNo/Normal/Static/Transparent overlay
 
 This sets the type of overlay for the current board. No overlay
 means just that- overlay mode is completely off. Normal overlay
@@ -2127,9 +2123,9 @@ another section.
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#MAIN.HLP:072:Table of Contents
 #SOUNDEFX.HLP
-:1st:MegaZeux's Sound System
+:1st:~eMegaZeux's Sound System
 
-MegaZeux has two types of sound- Digitized sound, played through
+MegaZeux has two types of sound - Digitized sound, played through
 a sound card, and sound effects, played on the PC speaker only.
 
 When MegaZeux starts up, you are prompted for the output device
@@ -2139,23 +2135,25 @@ you are asked for the desired sound quality. Higher qualities
 take more processing power. You can then choose from between 1
 and 4 digitized sound channels. More channels again takes more
 processing power, but sounds cooler and allows more simultaneous
-sound effects. You then determine whether to have regular PC
-speaker sound effects on or off.
+sound effects. Most modern computers can handle all the options
+set to maximum.
+You then determine whether to have regular PC speaker sound
+effects on or off.
 
 Note that since the Gravis Ultrasound does all the processing
 on-board, you automatically get the highest quality at no cost
 of processor power. However, MegaZeux does not support sound
 effects on the GUS.
 
-$Music files
+$~eMusic files
 
 Music files, referred to as MODULES, can be any one of the
 following formats-
 
-* MOD (or NST/WOW/OCT)
-* S3M or STM
-* MTM
-* 669
+~e*~f MOD (or NST/WOW/OCT)
+~e*~f S3M or STM
+~e*~f MTM
+~e*~f 669
 * ULT
 * FAR
 * MED (MMD0)
@@ -2171,16 +2169,16 @@ compatible with any other software. MODs can be loaded
 directly, without prior conversion. This allows older MegaZeux
 games to play without conversion.
 
-$Using sound and music in your own games
+$~eUsing sound and music in your own games
 
 There are three ways to utilize sound and music in your own
 games-
 
-  1- Select default modules for each board.
-  2- Edit the built-in speaker sfx.
-  3- Use Robots to play modules, SAMs, and speaker sfx.
+  1 - Select default modules for each board.
+  2 - Edit the built-in speaker sfx.
+  3 - Use Robots to play modules, SAMs, and speaker sfx.
 
-$Selecting default modules for each board
+$~eSelecting default modules for each board
 
 This is perhaps the easiest method to get music in your games.
 Simply make sure that the proper module files are in the
@@ -2189,20 +2187,20 @@ Press Alt+N to turn it back off again.
 
 >#EDITINGK.HLP:AltN:Details on Alt+N
 
-$Editing the built-in speaker sfx
+$~eEditing the built-in speaker sfx
 
 To edit the built-in speaker sound effects, use Alt+F. The
 format for them is discussed later in this section.
 
 >#EDITINGK.HLP:097:Details on Alt+F
 
-$Using Robots
+$~eUsing Robots
 
 Robotic has a large number of commands for playing modules,
 SAMs, and speaker sfx. A knowledge of Robotic basics is
 required, so see the following sections to learn about Robots.
 
->#ROBOTSWH.HLP:1st:Robots- What They Are and How to Use Them
+>#ROBOTSWH.HLP:1st:Robots - What They Are and How to Use Them
 >#ROBOTICT.HLP:1st:Robotic Tutorial
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 
@@ -2227,14 +2225,17 @@ sound and music.
 >#COMMAND2.HLP:_w3:~AWAIT PLAY
 >#COMMAND2.HLP:_c6:~ACHANGE SFX # "string"
 
-$Format for sound effects
+$~eFormat for sound effects
 
 The sound effects editor and Robotic PLAY commands all use the
 same format for playing sound effects. The format consists of
 a single string of characters, each character representing one
 note or command. Spaces are ignored, and capitalization is not
 important. A knowledge of music is required to use the format
-effectively. The commands-
+effectively. Not many games use PC speaker effects, since
+they don't really sound all that great. I suggest you stick
+with digital sound effects but below are the commands for
+use with PC speaker effects for reference:
 
 ~A  A B C D E F G
     Plays the note stated, at the current octave and duration.
@@ -2361,7 +2362,7 @@ effects are listed below.
 48- Goop
 49- Unused
 
-$SAM frequencies
+$~eSAM frequencies
 
 SAMs played using the SAM command in Robotic need a frequency
 value. Frequencies corresponding to MOD file notes follow-
@@ -2385,7 +2386,7 @@ statement notes-
  5 :  107  101   95   90   85   80   75   71   67   63   60   56
  6 :   53   50   47   45   42   40   37   35   33   31   30   28
 
-$Where to get module and SAM files
+$~eWhere to get module and SAM files
 
 These questions are answered in the Frequently Asked Questions
 section of help.
@@ -2393,7 +2394,7 @@ section of help.
 >#FAQ.HLP:1st:Frequently Asked Questions
 >#MAIN.HLP:072:Table of Contents
 #TOVERLAY.HLP
-:081:Editing and Using the Overlay
+:081:~eEditing and Using the Overlay
 
 The overlay is a rather simple but useful part of a board. If
 you look at Floors and Fakes as a floor layer, and Walls as a
@@ -2403,19 +2404,21 @@ player, enemies, Robots, etc. all move underneath it. The
 overlay is purely for show and graphical effects. For example,
 you could create archways that the player moves under, or have
 a score and lives display that is overlaid over the view at all
-times. (Using Robotic)
+times (using Robotic). The possibilities are great and
+experienced programmers can use it to make great sword effects,
+multi-char players and flashy special effects.
 
 To turn the overlay on, go to board info (I) and set the overlay
 to a mode other than Off. The editor will prevent you from
 editing the overlay if it is Off, since it will not be saved
 if it is. The available overlay modes-
 
-Off- No overlay is saved, none is shown. Default for boards.
-On- The overlay is shown normally, Scrolling along with the rest
+Off - No overlay is saved, none is shown. Default for boards.
+On - The overlay is shown normally, Scrolling along with the rest
     of the board.
-Static- The overlay is shown, but it does not Scroll with the
-    board- It always shows the top left position.
-Transparent- The overlay is saved and can hold info, but is
+Static - The overlay is shown, but it does not Scroll with the
+    board - It always shows the top left position.
+Transparent - The overlay is saved and can hold info, but is
     currently not shown.
 
 Once the overlay is on, press Alt+O in the editor to edit it.
@@ -2423,7 +2426,7 @@ This brings you to the overlay editor. The menu at the bottom
 of the screen will change, and you will have access to the
 following keys and options-
 
-:074:Alt+B - Block
+:074:~eAlt+B - Block
 
 Press Alt+B to start block mode. Then move the cursor to the
 opposite corner of a rectangular block, and press Alt+B again.
@@ -2441,12 +2444,12 @@ will save the block as an .ANS file, which can later be viewed
 outside of MegaZeux. Destinations for Move and Copy can overlap
 the original block safely.
 
-:_C:    C - Color
+:_C:~e    C - Color
 
 Press C to select a new current color from a menu. The character
 under the cursor is not affected.
 
-:_F:    F - Fill
+:_F:~e    F - Fill
 
 Press F to fill in an enclosed area with the current character
 and color. The area must be completely surrounded by characters
@@ -2457,12 +2460,12 @@ complex areas- In this case, you must move to the unfilled areas
 and press F to continue filling. This happens very rarely,
 however.
 
-:AltO:Alt+O - Edit Overlay
+:AltO:~eAlt+O - Edit Overlay
 
 Alt+O will exit overlay mode and return to editing the main
 board.
 
-:AltS2:Alt+S - Show Level
+:AltS2:~eAlt+S - Show Level
 
 Alt+S will toggle whether the level beneath the overlay is
 shown. Without the level, only the overlay is shown, and no
@@ -2470,67 +2473,67 @@ board bits are seen through the holes in the overlay. However
 it is a good idea to show the level to see how it looks beneath
 the overlay.
 
-:F1:   F1 - Help
+:F1:~e   F1 - Help
 
 F1 will bring up help on the current action. You can press F1
 at almost any time.
 
-:F2:   F2 - Text
+:F2:~e   F2 - Text
 
 F2 will toggle text mode on and off. When text mode is on, Enter
 will go to the next line, and Backspace will delete going
 backwards. All printable characters will type in as text.
 
-:Ar:Arrow - Move
+:Ar:~eArrow Keys - Move
 
 The arrow keys will move the cursor. The edit window will Scroll
 when necessary.
 
-:AltAr:Alt+Arrow - Move 10
+:AltAr:~eAlt+Arrow - Move 10
 
 Alt with the arrow keys will move the cursor up to ten spaces at
 a time.
 
-:BkSp: Backspace - Delete
-:Del:  Del - Delete
+:BkSp:~e Backspace - Delete
+:Del:~e  Del - Delete
 
 These two keys will delete everything under the cursor. The
 current character is not affected.
 
-:End:  End - L/R Corner
+:End:~e  End - L/R Corner
 
 End will jump the cursor to the lower left corner of the entire
 overlay.
 
-:Enter2:Enter - Character
+:Enter2:~eEnter - Character
 
 Enter will change the current character. Select it from a menu
 and then press Enter to confirm your choice.
 
-:ESC:  ESC - Exit/Cancel Mode
+:ESC:~e  ESC - Exit/Cancel Mode
 
 ESC will exit overlay mode. If you are in block, text, or draw
 mode, ESC will instead cancel the current mode and return to
 normal overlay editing.
 
-:Home: Home - U/L Corner
+:Home:~e Home - U/L Corner
 
 Home will jump the cursor to the upper right corner of the
 entire overlay.
 
-:Ins:  Ins - Grab
+:Ins:~e  Ins - Grab
 
 Ins will select the character and color under the cursor
 as the current. The actual character is not affected.
 
-:Sp:Space - Place
+:Sp:~eSpace - Place
 
 Space will copy the current character and color to the location
 under the cursor. Trying to place something over itself will
 instead delete it. Other things will be deleted if they are in
 the way.
 
-:Tab:  Tab - Draw
+:Tab:~e  Tab - Draw
 
 Tab will toggle the current draw mode. When drawing is on, you
 will place a copy of the current character every time you move
@@ -2545,7 +2548,7 @@ The overlay and overlay mode can also be changed using Robotic.
 A knowledge of Robotic basics is required, so see the following
 sections to learn about Robots.
 
->#ROBOTSWH.HLP:1st:Robots- What They Are and How to Use Them
+>#ROBOTSWH.HLP:1st:Robots - What They Are and How to Use Them
 >#ROBOTICT.HLP:1st:Robotic Tutorial
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 
@@ -2563,12 +2566,15 @@ overlays.
 
 >#MAIN.HLP:072:Table of Contents
 #SCROLLSS.HLP
-:1st:Signs and Scrolls in the Editor
+:1st:~eSigns and Scrolls in the Editor
 
 Signs and Scrolls are a simple way to get messages across in the
 game. To place them in the editor, press F10 and select Sign or
 Scroll from the list. You must then edit the text of the Sign or
-Scroll.
+Scroll. Bear in mind that using robots to display messages rather
+
+than scrolls and signs is much more flexible and the recommended
+method.
 
 The Scroll editor is very simple. You can move the cursor among
 the different lines and characters. Type to insert text
@@ -2600,15 +2606,13 @@ the description.
 >001:Attempt to overwrite board in storage
 >036:Bad Robot command
 >022:Board is from a more recent version of MegaZeux
->032:Can't test password-protected world
->027:Cannot import password protected world
 >062:Cannot overwrite player- move him first
 >034:Code/message is too large to fit into Robot memory
 >007:Error accessing boards
 >038:Error accessing clipboard file, ~ROBOCLP.TMP
 >047:Error exporting .SFX file
 >048:Error importing .SFX file
->015:Error exporting ANSi
+>015:Error exporting ANSI
 >018:Error exporting board
 >019:Error exporting char. set
 >046:Error exporting palette
@@ -2632,7 +2636,6 @@ the description.
 >044:Error swapping to next world
 >054:File "MZXBLANK.FIL" not found; Music code compromised
 >037:Invalid "thing" for parameters
->016:Invalid password
 >041:Line too long to import
 >006:Low on memory; Music code compromised
 >050:Music is off- Module is set for board but not loaded
@@ -2650,18 +2653,18 @@ the description.
 >056:Sound card I/O address detection failure
 >057:Sound card IRQ level detection failure
 >058:Sound card DMA channel detection failure
->029:Too many boards- only partial import will be done
+>029:Too many boards - only partial import will be done
 >031:Windowing code bug
 >014:World is from a more recent version of MegaZeux
->028:World is from version 1- Use conversion program
+>028:World is from version 1 - Use conversion program
 >049:You can only play this game via a swap from another game
 
 :001:~AAttempt to overwrite board in storage
 
 This is an internal error. It occurs when two boards try to
 occupy the same slot. Try to isolate the reason for the problem
-and notify Software Visions, as this error signifies a bug in
-MegaZeux.
+then see the 'If You Find a Bug...' section for details on how
+to contact the programers.
 
 :002:~AOut of memory and/or disk space
 
@@ -2739,21 +2742,16 @@ files.
 
 :014:~AWorld is from a more recent version of MegaZeux
 
-The .MZX file you tried to load or import is from version 3.00
-or greater of MegaZeux; at this time, version 3.00 does not
-exist and is not planned to exist; however, this error message
-will alert you to its existence if necessary.
+The .MZX file you tried to load or import is from a higher,
+non-compatible version of MegaZeux. To play the game which
+gave you this message, you'll need to get the other version.
 
-:015:~AError exporting ANSi
+:015:~AError exporting ANSI
 
 This is caused by file errors or a hard disk space shortage,
 sometimes caused by TSRs or other programs not closing their
 files. It can also result from an attempt to overwrite a
 read-only file.
-
-:016:~AInvalid password
-
-You entered the wrong password for the world.
 
 :017:~AOverlay mode is not on (see Board Info)
 
@@ -2777,10 +2775,8 @@ files.
 
 :022:~ABoard is from a more recent version of MegaZeux
 
-The .MZB file you tried to load or import is from version 3.00
-or greater of MegaZeux; at this time, version 3.00 does not
-exist and is not planned to exist; however, this error message
-will alert you to its existence if necessary.
+The board is from a higher version of MegaZeux. You cannot us
+it in this version.
 
 :023:~ANo files found to select from
 
@@ -2797,12 +2793,7 @@ This can be caused by file errors or a hard disk space shortage,
 sometimes caused by TSRs or other programs not closing their
 files.
 
-:027:~ACannot import password protected world
-
-You cannot import a world with any form of password protection;
-load up the world separately and save it without any protection.
-
-:028:~AWorld is from version 1- Use conversion program
+:028:~AWorld is from version 1 - Use conversion program
 
 You tried to load a .MZX file from version 1.00g, 1.01, 1.02, or
 1.03 of MegaZeux. In order to use these worlds, they must first
@@ -2810,7 +2801,7 @@ be converted to 2.51 format using the included VER1TO2 program.
 Run VER1TO2 without any command line arguments and it will tell
 you what to do.
 
-:029:~AToo many boards- only partial import will be done
+:029:~AToo many boards - only partial import will be done
 
 You are attempting to import a world, but that world's boards,
 plus the boards in the current world, will total over 150
@@ -2826,13 +2817,8 @@ Sensors per board had already been reached.
 :031:~AWindowing code bug
 
 This is an internal error. Try to isolate the reason for the
-problem and notify Software Visions, as this error signifies a
-bug in MegaZeux.
-
-:032:~ACan't test password-protected world
-
-You cannot test a protected world from the editor; remove the
-protection or play it normally.
+problem and see the 'If You Find A Bug...' section for details
+on how to contact the programmers.
 
 :033:~AError loading save game
 
@@ -2905,7 +2891,7 @@ A SAM file couldn't fit into memory to play. This error will not
 occur in normal game-play unless the debug menu is active. (the
 SAM will simply not play.)
 
-:043:~AMusic is off- SAM cannot play
+:043:~AMusic is off - SAM cannot play
 
 A SAM file couldn't play because music is off. This error will
 only occur in the editor or when testing games from the editor.
@@ -2943,7 +2929,7 @@ option set to disallow normal game-play. The world can only be
 played as a swap from another game. For example, this may be
 the second half of another game.
 
-:050:~AMusic is off- Module is set for board but not loaded
+:050:~AMusic is off - Module is set for board but not loaded
 
 A module file couldn't play because music is off. This error
 will only occur in the editor or when testing games from the
@@ -3033,11 +3019,11 @@ can't be placed over the player.
 
 >#MAIN.HLP:072:Table of Contents
 #SENSORSW.HLP
-:094:Sensors- What They Are and How to Use Them
+:094:~eSensors - What They Are and How to Use Them
 
 Sensors have two real purposes. The first, is to act as save
 points. The second, is to interact with Robots as a type of
-floor. The first use is simple- Just set the board to "Save only
+floor. The first use is simple - Just set the board to "Save only
 on Sensors," and then the player can only save when standing on
 a Sensor.
 
@@ -3052,7 +3038,7 @@ can SEND a message to a Sensor, but the Sensor will only SEND
 messages to the Robot stated in its settings. If you entered a
 Robot of ALL, then it will SEND messages to all Robots.
 
-$Messages TO Sensors
+$~eMessages TO Sensors
 
 The following messages can be sent to a Sensor. A Sensor can
 receive messages even when it is beneath the player.
@@ -3087,7 +3073,7 @@ respectively. If the player is on top of the Sensor, he will
 move along with it. If the Sensor tries to move towards the
 player, it will instead move beneath him.
 
-$Messages FROM Sensors
+$~eMessages FROM Sensors
 
 Sensors will send Robots the following messages.
 
@@ -3106,7 +3092,7 @@ This is sent when the Sensor is told to move, but it is blocked.
 This is sent when something (not the player, of course) pushes
 the Sensor.
 
-$Notes on Sensors
+$~eNotes on Sensors
 
 Only the player can step onto a Sensor; other things will push
 it. The Sensor, when moving, will move UNDER the player if he is
@@ -3115,7 +3101,7 @@ Sensor.
 
 >#MAIN.HLP:072:Table of Contents
 #ROBOTICR.HLP
-:087:Robotic Reference Manual
+:087:~eRobotic Reference Manual
 
 Use the following help links to see your desired topic(s).
 
@@ -3132,13 +3118,15 @@ Use the following help links to see your desired topic(s).
 >#COMMANDS.HLP:con:Conditions
 >#SOUNDEFX.HLP:1st:Sound and Music
 >#BULLETTY.HLP:1st:Bullet Types
->#CHANGECH.HLP:1st:CHANGE CHAR ID- The CHAR ID Table
+>#CHANGECH.HLP:1st:CHANGE CHAR ID - The CHAR ID Table
+>#KEYCODES.HLP:1st:ASCII Key Codes for KEY labels
+>#STRINGIN.HLP:1st:Advanced String Usage
 
->#ROBOTSWH.HLP:1st:Robots- What They Are and How to Use Them
+>#ROBOTSWH.HLP:1st:Robots - What They Are and How to Use Them
 >#ROBOTICT.HLP:1st:Robotic Tutorial
 >#MAIN.HLP:072:Table of Contents
 #COMMANDS.HLP
-:1st:Command Syntax
+:1st:~eCommand Syntax
 
 Commands in Robotic must conform to a certain syntax-
 
@@ -3176,7 +3164,7 @@ $FA9, "Ammo".
 The format for colors is cXX, where X is 0-9, A-F, or ?. The
 first X represents the background color, the second X represents
 the foreground color. The numbers and symbols represent the
-following colors-
+following colors -
 
 0  Black      ~0(color #0)
 1  Blue       ~1(color #1)
@@ -3195,6 +3183,10 @@ following colors-
 14 Yellow     ~E(color #14)
 15 White      ~F(color #15)
 ?  Any color/No change in color
+
+Obviously, if you have changed the palette then the colors
+listed above won't actually be the colors you see - they are
+what the palette colors are by default.
 
 The use of ? is not always a logical option for some commands.
 When used, it signifies to replace it with the current color or
@@ -3473,16 +3465,16 @@ WITH
 >#MAIN.HLP:072:Table of Contents
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 #STRINGSA.HLP
-:1st:Strings and Special Formatting
+:1st:~eStrings and Special Formatting
 
 Generally, a string is a series of symbols within quotes- "BUG",
 "Hi there!", or even "ลเ*A9 _ฑว". There are two special aspects
 or features of strings that may be useful at times.
 
-$Color
+$~eColor
 
 Used in Robotic commands *, %, ?, and &, strings can contain
-color codes. There are two color symbols- ~~ for changing
+color codes. There are two color symbols - ~~ for changing
 foreground, and @@ for changing background. These should be
 followed by one of these characters-
 
@@ -3497,7 +3489,7 @@ followed by one of these characters-
 
 To show a ~~, use a ~~~~. To show a @@, use @@@@.
 
-$Counters
+$~eCounters
 
 Strings can show the values of counters, using the counter name
 surrounded with &'s. For example, if the player has 55 gems,
@@ -5006,7 +4998,7 @@ Number   Changes
 421      Bear Damage
 422      Bear Cub Damage
 
-Do not use any numbers that are not listed above- They may cause
+Do not use any numbers that are not listed above - They may cause
 strange things to happen in the game.
 
 To change a character, use the following form:
@@ -5061,7 +5053,7 @@ lines-
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #BUILTINL.HLP
-:1st:Built-in Labels
+:1st:~eBuilt-in Labels
 
 Robotic has many built-in labels (messages) that are activated
 on certain external events. The cause of each label is listed
@@ -5091,14 +5083,11 @@ This is sent when the Robot is hit with an explosion.
 
 ~EKEY?
 
-This is sent when the player presses a key from A to Z or from 1
-to 9. ? is replaced with the key pressed.
-
-ACTUALLY : This now can stand for any key on the keyboard
-  provided You replace ? with the ASCII symbol of the ASCII key
-  code of the key to be detected... IE : ENTER = ASCII code 13.
-  Use F3 to set down the correct character.
-		-Koji
+This is sent when the player presses any key on the keyboard.
+The ? is the key in question if the key required is from A-Z
+or 0-9. You can also use ASCII key codes for keys like Enter
+and F1: use the key code list to find the number you need if
+this is the case.
 
 ~EINVINCO
 
@@ -5246,7 +5235,8 @@ $Robot Built-in Counters
 ~BBULLETTYPE
 
 The current type of bullet shot by the Robot. 0 for Player, 1
-for Neutral, and 2 for Enemy. (0-255) -Koji
+for Neutral, and 2 for Enemy. It can also be used as a local
+variable (see below).
 
 >#BULLETTY.HLP:1st:Bullet Types
 
@@ -5293,8 +5283,8 @@ effects.
 
 ~BPLAYERFACEDIR
 
-The direction the player is facing- 0 1 2 3 for N S E W. Used to
-determine which player character to display.
+The direction the player is facing - 0 1 2 3 for N S E W. Used
+to determine which player character to display.
 
 ~BMOUSEX
 ~BMOUSEY
@@ -5308,7 +5298,7 @@ The position of the mouse cursor on the board.
 
 ~BBUTTONS
 
-The mouse buttons.
+The current state of the mouse buttons.
 0 - No button pressed
 1 - Left button pressed
 2 - Right button pressed
@@ -5337,51 +5327,35 @@ Turns the built-in messages (such as "Ouch!") on/off.
 0 - Off
 1 - On(default)
 
-
-***REMOVAL BEGIN***
-
-~BMZXAKVERSION
-
-Most important counter added, must be set to 1 for new counters
-to work.
-Included so that all previous games are 100% compatible.
-
-~BMZXak Header
-
-The format to allow auto MZXak support, place code global robot
-Example to load in SMZX mode:
-
-~Bset MZXAKVERSION to 1
-~Bset SMZX_MODE to 1
-
-***REMOVAL END*** -Koji
-
 ~BABS_VALUE
 ~BSQRT_VALUE
 ~BVALUE
 
-Math operations, usage set value or counter to function counter
-    ie ABS_VALUE or SQRT_VALUE.
-    Result is stored in VALUE counter.
-  ABS_VALUE sets VALUE to the absolute value of the number or
-    counter passed in.
-  SQRT_VALUE sets VALUE to the square root of the number or
-    counter passed in.
-  VALUE is normal counter others are READ ONLY.
+Mathematical operations. To use them, set the value or counter
+to the function counter, ie. ABS_VALUE or SQRT_VALUE.
+The result is stored in VALUE counter.
+ABS_VALUE sets VALUE to the absolute value of the number or
+counter passed in.
+SQRT_VALUE sets VALUE to the square root of the number or
+counter passed in.
+VALUE is a normal counter while the others are READ ONLY.
 
 ~BROBOT_ID
 ~BTHIS_COLOR
 ~BTHIS_CHAR
-~BBULLETTYPE -Koji
-~BLAVA_WALK  -Koji
+~BBULLETTYPE
+~BLAVA_WALK
 
-New Local counters
-  ROBOT_ID is READ ONLY, returns the internal id of the robot
-  THIS_COLOR is READ ONLY, returns the color of the robot.
-  THIS_CHAR is READ ONLY, returns the character of the robot.
-  BULLETTYPE allows normal access of robot[id].bullte_type,
-	only can store values (0-255). -Koji
-  LAVA_WALK valiable, can store (0-255). -Koji
+ROBOT_ID is READ ONLY and returns the internal id number of
+the robot.
+THIS_COLOR is READ ONLY and returns the color of the robot.
+THIS_CHAR is also READ ONLY and returns the character of
+the robot.
+BULLETTYPE returns what type of bullet the robot is firing
+and can also store values from 0 to 255.
+LAVA_WALK is used to set the can_lavawalk variable. It can
+also store values from 0 to 255, doubling it up as a local
+counter.
 
 
 ~BCURRENT_COLOR
@@ -5389,95 +5363,57 @@ New Local counters
 ~BGREEN_VALUE
 ~BBLUE_VALUE
 
-Color operations, usage returns the specified value from the
-CURRENT_COLOR
- Requires that CURRENT_COLOR be set to 0-15.
- CURRENT_COLOR is normal counter the value counters are
- READ ONLY.
+Color operations. Using them returns the specified value from
+theCURRENT_COLOR.
+This Requires that CURRENT_COLOR is set to 0-15.
+CURRENT_COLOR is a normal counter while the value counters are
+READ ONLY.
 
 ~BBOARD_X
 ~BBOARD_Y
 ~BBOARD_CHAR
 ~BBOARD_COLOR
 
-Location operations, usage returns color or char from location
-
-  BOARD_X and BOARD_Y must be actual location with in board.
-  BOARD_COLOR is from 0-255
-    (press C in editor to view color table).
-  Takes into account any transparency
-  BOARD_CHAR is from 0-255
-  BOARD_X and BOARD_Y are normal counters,
-   other two are READ ONLY.
+Location operations. Using them returns the color or char from
+the location specified. To specify a location, set BOARD_X to
+it's X co-ordinate and BOARD_Y to its Y co-ordinate.
+BOARD_X and BOARD_Y must be actually located within the board.
+BOARD_COLOR will be a value from 0-255 (press C in editor to
+view the color table). The value will take into account any
+transparency.
+BOARD_CHAR will be a value from 0-255.
+BOARD_X and BOARD_Y are normal counters, the other two are
+READ ONLY.
 
 ~BOVERLAY_X
 ~BOVERLAY_Y
 ~BOVERLAY_CHAR
 ~BOVERLAY_COLOR
 
-Functions the same as BOARD counters only tests the overlays,
-same restrictions and attributes apply.
-
-*** VIEW ADDENDUM BELOW***
-
-~BGET_TARGET_ID
-~BMY_TARGET
-~BTARGET_DIST
-~BTARGET_X
-~BTARGET_XDIR
-~BTARGET_Y
-~BTARGET_YDIR
-
-Target Functions.
-  These counters allow for far better and easier targeting by
-  robots of other robots.
-  All counters use MY_TARGET as target robot's id.
-  To initialize you must set MY_TARGET to GET_TARGET_ID.
-  GET_TARGET_ID uses BOARD_X and BOARD_Y, returns id of robot
-    at BOARD_X BOARD_Y
-  GET_TARGET  can be used with the rel command to base BOARD_X
-    and BOARD_Y around it self, player, or counters.
-  TARGET_X returns x position of MY_TARGET
-  TARGET_Y returns y position of MY_TARGET
-  TARGET_XDIR returns x direction (-1,0,1) of MY_TARGET
-  TARGET_YDIR returns y direction (-1,0,1) of MY_TARGET
-  TARGET_DIST returns the distance of MY_TARGET sum of x
-    distance and y distance
-  ALL TARGET_* counters are READ ONLY, MY_TARGET is a local
-    counter.
-
-***ADDENDUM***
-Inter robot Targeting Functions removed to free up EMS.
-		~Koji
-***END***
+Functions the same as the BOARD counters above only in this
+case it tests the overlay. The same restrictions and
+attributes apply.
 
 ~BDATE_DAY
 ~BDATE_MONTH
 ~BDATE_YEAR
-Date operations returns the day month or year based upon the
-system clock.
- READ ONLY
+
+Date operations that return the day, month or year based upon
+the system clock. All values are READ ONLY.
 
 ~BTIME_HOURS
 ~BTIME_MINUTES
 ~BTIME_SECONDS
-Time operations returns the hours, minutes or seconds based
-upon the system clock.
-  Note TIME_HOURS returns hours in military time (1-24).
-  READ ONLY
+
+Time operations that return the hours, minutes or seconds based
+upon the system clock. The TIME_HOURS counter displays the hours
+using the 24-hour clock (ie. 13 is 1pm). All values are READ
+ONLY.
 
 ~BMZX_SPEED
-Returns current game speed setting.
-  It can't alter the game speed itself.
 
-You can now write to this and change the
-  game speed -Koji
-
-***NEW in 2.6*** -Koji
-
-~BCOMMANDS
-Dictates the max number of commands a robot will
-run in one cycle.
+Returns current game speed setting. Changing this value will
+alter the speed.
 
 ~BFREAD_OPEN
 ~BFREAD
@@ -5485,218 +5421,121 @@ run in one cycle.
 ~BFWRITE_APPEND
 ~BFWRITE
 
-FREAD_OPEN: closes previouse reading file and
-  opens a new one.
-FREAD: reads the opened file
-FWRITE_OPEN: closes previouse writing file
-  and opens a new one.
-FWRITE_APPEND: closes previouse writing file
-  and opens a new one as append.
+These values are for MegaZeux's all-new custom file handling
+function. Their purposes are:
+FREAD_OPEN closes the previous reading file and opens a new
+one for reading.
+FREAD reads the opened file
+FWRITE_OPEN closes the previous writing file and opens a new
+one for writing.
+FWRITE_APPEND closes the previous writing file and opens a
+new one for appending (adding to).
 FWRITE: writes to a file
 
-Usage -
+Usage of these counters is quite compicated to the novice
+programmer so an example is given below to give you a loose
+idea of how to use them:
 
-~4set 'filename.ext' 'FREAD_OPEN'
-~4set 'TEMP' to 'FREAD'
-~4set 'filename.ext' 'FWRITE_OPEN'
-~4set 'FWRITE' to 'TEMP'
+~Eset 'filename.ext' 'FREAD_OPEN'
+~Eset 'TEMP' to 'FREAD'
+~Eset 'filename.ext' 'FWRITE_OPEN'
+~Eset 'FWRITE' to 'TEMP'
+
+This opens up the file FILENAME.EXT, sets TEMP to the first
+value in the file, opens up FILENAME.EXT for writing and then
+writes TEMP to the file.
 
 ~BFREAD_POS
 ~BFREAD_PAGE
 ~BFWRITE_POS
 ~BFWRITE_PAGE
 
-Current Page (0-255) and position on page
-  (0-32767) in the given file.
+Current Page (0-255) and position on the page (0-32767) in
+the given file.
 
 ~FREAD_LENGTH
 ~FWRITE_LENGTH
 
-Length of given file.
+Length of the given file.
 
 ~BCHAR_X
 ~BCHAR_Y
 ~BPIXEL
 
-Set CHAR_X and CHAR_Y to a pixel location
-  in the char set. And set the PIXEL variable
-  to one of the following to edit the pixel.
-    1) Sets the pixel ON.
-    2) Clears the pixel.
-    3) Toggle the pixel.
-  You can also read the PIXEL variable for it
-  to return 1 if there is a pixel set at the
-  location, or 0 if not.
+Set CHAR_X and CHAR_Y to a pixel location in the char set.
+Set the PIXEL variable to one of the following to edit the
+pixel:
+1 - Sets the pixel ON.
+2 - Clears the pixel.
+3 - Toggle the pixel.
+
+You can also read the PIXEL variable, with it returning a
+1 if there is a pixel set at the location and 0 if there
+is not.
 
 ~BINT
 ~BBIT_PLACE
 ~BINT2BIN
 
-Set INT to the number you wish to read or write
-  a given bit. Set BIT_PLACE to a number 0-15 (1
-  of all 16 bit places in a variable), and set
-  INT2BIN to one of the following to edit the bit.
-    1)Sets the bit ON.
-    2)Sets the bit OFF.
-    3)Toggles the bit.
-  You can also read the INT2BIT variable for it
-  to return the bit value.
+Set INT to the number you wish to read or write a given
+bit then set BIT_PLACE to a number (0-15, 1 of all 16
+bit places in a variable) and set INT2BIN to one of
+the following to edit the bit:
+1 - Sets the bit ON.
+2 - Sets the bit OFF.
+3 - Toggles the bit.
+You can also read the INT2BIT variable for it to return
+the bit value.
 
 ~BCHAR_BYTE
 ~BCHAR
 ~BBYTE
 
-Set CHAR to a character position (0-225) and BYTE
-  to a byte position within the char (0-13). You
-  can read or write to the CHAR_BYTE variable to
-  read the chars byte or set it.
+Set CHAR to a character position (0-225) and BYTE to a
+byte position within the char (0-13). You can then read
+or write to the CHAR_BYTE variable to read the char's
+byte or set it.
 
 ~BLAVA_WALK
 
 As mentioned above it sets and reads the can_lavawalk
-  value for the current robot, thus making a new local.
-  (0-255).
+value for the current robot, thus making a new local
+variable.
 
 ~BR_PLAYERDIST
 
-Returns the REAL player distance as far as 129
-  units. After that it only returns 129.
+Returns the REAL player distance as far as 129 units.
+After that it only returns 129.
 
 ~BENTER_MENU
 
 When set to 0 this will deactivate the defalt status
-  screen! If it is set to anything else the defalt
-  status screen is active again.
+screen. Set it to anything else and default status
+screen will be active again. You can then use the
+Enter key for other features, such as a use key.
 
 ~BHELP_MENU
 
-Just like ENTER_MENU only for the help system.
+Just like ENTER_MENU only for the help system,
+freeing up the F1 key for use.
 
 ~BF2_MENU
 
-Just like ENTER_MENU only for the F2 menu.
+Just like ENTER_MENU only for the F2 menu, turning
+off the ability to change the settings and freeing up
+the F2 key for use.
 
 ~BKEY_PRESSED
 
-Returns The ASCII code of ANY key currently being pressed.
+Returns The ASCII key code of ANY key currently being
+pressed.
 
-***NEW in 2.62*** - Exophase
+~BMOD_ORDER
 
-~FStrings
-
-MZX 2.62 has 10 strings. They are referenced as such:
-
-~B$string0
-~B$string1
-...
-~B$string9
-
-Note that they use up actual counter namespace, so if you use
-over 1000 counters you'll probably overwrite the strings.
-
-~FSetting strings
-
-You can set a string to eight things, in the format of
-~Bset $stringN to PARAMETER
-where N is the number of the string and PARAMETER is one of
-the following:
-
-~BINPUT
-The value taken from the "input string" command.
-
-~BBOARD_NAME
-The name of the current board.
-
-~BBOARD_SCAN
-A string scanned in from the board directly.
-Its coordinates are Board_x, Board_y and the string is
-terminated by an asterisk (*)
-
-For example, with a board that has "my string*" at 10, 10:
-set "Board_x" 10
-set "Board_y" 10
-set "$string0" "BOARD_SCAN"
-Will scan "my string" into $string0.
-
-~BFWRITE
-This does not actually set the string to anything, but will
-write the string to the currently open write file.
-
-~BFREAD
-Will read the string in from the currently open read file.
-
-~B"string"
-Will set the string to a literal string, for example:
-~Bset "$string0" "hello!"
-
-~B"$string"
-Will set the string to another string.
-
-~B(number)
-Will set the string to an integer value.
-
-~FOutputting strings
-
-You can output strings in anywhere where MZX supports strings,
-within ampersands. For instance:
-
-set "$string0" "Test"
-write overlay c0f 0 0 "&$string0&"
-
-Will write "Test" at 0, 0 in the overlay.
-
-As mentioned above, you can "set" a string to FWRITE to output 
-it to the current write file.
-
-~FComparing strings
-
-You can use the "if" command with a string, with either 
-another string, a string literal, or a number. Note that 
-the string must be the first paramter, and that you can 
-not use input, board_scan, etc (load them into another 
-string then compare). 
-Also note that you can only use equality (=) or inequality. 
-Any other comparisons will always be FALSE (if you don't 
-like this, blame Greg's limitted str_cmp function :p)
-
-Example:
-input string "Give me a string."
-set "$string0" "Input"
-if "$string0" = "Bob" "Okay"
-end 
-
-~FOther new features
-The "mod_order" counter will report the current order (that is,
-patter) the playing module is at. Used in conjunction with
-the jump mod order command it can be used to save/restore a 
-mod position between boards...
-
-~FNotes/Bugs
-
-- MZX 2.62 files are no longer forward compatible. That means 
-  that a file made in MZX 2.62 will NOT work in any previous 
-  versions (but it WILL work in future versions, so long as 
-  they set the version string correctly)
-
-- The string reading from files may not work correctly on the 
-  first read (that is, it might truncate the first character of 
-  the string). For this reason I suggest putting a junk string 
-  in the first part of the file and reading it first.
-
-- If you run into any other bugs contact me at one of the 
-  following:
-  AIM: Exophase
-  IRC: #mzx on espernet
-  DigitalMZX: Exophase
-  e-mail: exophase@@earthlink.net, or if you really want a 
-  reply, kutnick@@andrews.edu.
-
-  Exophase, 3/9/2002
+Returns the current pattern of the mod playing.
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
-
-
 #USINGTHE.HLP
 :1st:Using the Editor
 
@@ -5742,76 +5581,79 @@ The following keys are active within the editor-
 >_m:Alt+X    - Export
 >_n:Alt+I    - Import
 
-:_a:F1       - Help
+:_a:~eF1       - Help
 
 Use F1 to bring up context-sensitive help at any time.
 
-:_b:F2       - Color
+:_b:~eF2       - Color
 
 F2 will bring up a menu of colors. Select one and press Enter to
 insert a cXX color code into the current line corresponding to
 that color.
 
-:_c:F3       - Character
+:_c:~eF3       - Character
 
 F3 will bring up a menu of characters. Select one and press
 Enter to insert that character into the current line. No quotes
 or apostrophes are added.
 
-:_d:F4       - Parameter
+:_d:~eF4       - Parameter
 
 If you have just typed in the name of a thing, such as Ammo,
 F4 will allow you to select settings for it in order to insert
 a pXX parameter code.
 
-:_e:F5       - Char edit
+:_e:~eF5       - Char edit
 
 Use F5 to insert series of numbers corresponding to character
 pictures, for use with the Robotic CHAR EDIT command.
 
-:_f:F6-F10   - Macro
+:_f:~eF6-F10   - Macro
 
 F6 through F10 will insert short macros, customizable using
 Alt+O.
 
-:_g:Alt+Home - Mark block top
-:_h:Alt+End  - Mark block end
+:_g:~eAlt+Home - Mark block top
+:_h:~eAlt+End  - Mark block end
 
 Alt+Home/End will mark the top or bottom of a block of lines.
 You can then perform various block actions on these lines. The
 marked lines are highlighted.
 
-:_i:Alt+Esc  - Unmark block
+:_i:~eAlt+Esc  - Unmark block
 
 The current block is unmarked.
 
-:_j:Alt+Enter- Block action
+:_j:~eAlt+Enter- Block action
 
-Allows you to perform an action on the current block of lines-
-Copy it to an internal clipboard, Cut it to an internal
-clipboard (copy it and then delete it), Clear it from memory,
-or Export the block to a text file on disk.
+Allows you to perform an action on the current block of
+lines - copy it to an internal clipboard, cut it to an internal
+clipboard (copy it and then delete it), clear it from memory,
+or export the block to a text file on disk. If you're running
+in Windows, you'll have to switch off the Alt+Enter shortcut
+for MegaZeux in the PIF file to enable this shortcut as not
+doing so will zap the program into a window.
 
-:_k:Alt+Ins  - Paste
+:_k:~EAlt+Ins  - Paste
 
 Alt+Ins will paste in the block last copied to the internal
 clipboard. The clipboard is preserved between Robots and even
 between worlds.
 
-:_l:Alt+O    - Options
+:_l:~eAlt+O    - Options
 
 Alt+O will bring up a dialog box where you can edit settings
 pertaining to the Robot editor. You can change the values of
 the five macros here. Use ^ for Enter in the macros.
 
-:_m:Alt+X    - Export
+:_m:~eAlt+X    - Export
 
 Use Alt+X to export either the current block or the entire
 Robot program to a text file on disk. You can then edit the
 program outside of MegaZeux, or use the text file in other
 ways.
 
-:_n:Alt+I    - Import
+:_n:~eAlt+I    - Import
 
 Use Alt+I to import a text file into the current Robot. The
 new lines will be inserted into the current program. Any
@@ -5860,7 +5702,7 @@ Robot program.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #CMDLINE.HLP
-:1st:Command Line Options
+:1st:~eCommand Line Options
 
 The following command line options are available for use when
 starting MegaZeux. To use them, type them in after MEGAZEUX
@@ -5940,7 +5782,7 @@ least 160 EMS handles. A number of 160 or greater is required
 here for MegaZeux to run at maximum efficiency.
 
 To help free up conventional memory, you may need to create a
-boot disk. This is a common procedure for many games, and if a
+boot disk. This is a common procedure for DOS games, and if a
 certain boot disk works for one game, it may work just fine for
 MegaZeux. However, you must remember to include HIMEM and an EMS
 driver if you have EMS, and include a mouse driver if you want
@@ -5978,7 +5820,7 @@ help you, if you can't get the above to work.
 
 >#MAIN.HLP:072:Table of Contents
 #ROBOTSWH.HLP
-:1st:Robots- What They Are and How to Use Them
+:1st:~eRobots - What They Are and How to Use Them
 
 Robots are the heart and soul of MegaZeux. Anything you could
 want to do in MegaZeux, anything you see done in a MegaZeux
@@ -5990,7 +5832,7 @@ Robotic. Robotic is a fairly simple language to learn, somewhere
 along the lines of BASIC, although a bit more complex. If you've
 ever used Epic Megagame's ZZT, Robotic is a bit more complex
 than ZZT-OOP, although it is similar and more logical in style
-and syntax.
+and syntax and certainly more flexible.
 
 To place a Robot in the editor, press F10 and select Robot, or
 Pushable Robot if you want things to be able to push the Robot.
@@ -6002,11 +5844,12 @@ Robot in Robotic.
 >#MAIN.HLP:072:Table of Contents
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 #ROBOTICT.HLP
-:1st:Robotic Tutorial
+:1st:~eRobotic Tutorial
 
-(note- if you've never used Robots before, you should probably
- print this out so you can read it while doing the tutorial in
- the editor.)
+If you've never used Robots before, you should probably
+print this out so you can read it while doing the tutorial in
+the editor. Alternatively, read it beforehand and note down
+the major points.
 
 Robotic has a few concepts that you must understand before you
 begin to program in it. You can skip this if you want, but it
@@ -6014,13 +5857,13 @@ will help you learn Robotic much faster. A large portion of this
 will be obvious to anybody who has ever programmed in any
 language or used computers extensively.
 
-$Commands
+$~eCommands
 
 You can have one command per line. A command is an instruction
 to MegaZeux or the Robot telling it to do something. A program
 is a series of commands, that are run right after another.
 
-$Parameters
+$~eParameters
 
 A parameter is the part of the command that can change, such
 as numbers or colors. They specify how the command should be
@@ -6032,14 +5875,14 @@ WAIT is the command, and 6 is the parameter. Many commands have
 multiple parameters. Parameters are often specified using #,
 "string", or [color] [char] etc.
 
-$Labels
+$~eLabels
 
 A label is a point in a Robotic program that has been given a
 name. It is used as a reference point so the Robot can return
 to that point at any time, to allow repeating sections of
 commands, etc. Labels are written as follows- :"label"
 
-$Messages
+$~eMessages
 
 A message is something one Robot sends to another, or an
 external event sends to a Robot, to tell it to do something.
@@ -6048,7 +5891,7 @@ that message. For example, a Robot can tell another Robot to
 "Bounce"; That Robot will now be executing commands starting
 at the label :"Bounce".
 
-$Coordinates
+$~eCoordinates
 
 X/Y coordinates are a pair of numbers representing a point on
 the current board. 0/0 is the upper left corner of the board,
@@ -6057,26 +5900,26 @@ coordinates easily using Alt+Y in the editor, or F6 in the game.
 X/Y coordinates can be negative, but this is uncommon and used
 for special purposes only.
 
-$Strings
+$~eStrings
 
 A string is a series of letters or characters, inside quotes.
 For example, "STRING", "Booga!", "MegaZeux Rocks", or "[[]]".
 
-$Characters
+$~eCharacters
 
 A character is a single symbol, letter, number, punctuation
 mark, space, graphic, etc. All things are viewed as single
 characters. When using single characters in Robotic, they must
 be enclosed in apostrophes- 'X'.
 
-$Colors
+$~eColors
 
 A color is a code representing a background/foreground color
 pair. They follow the format cXX, where X is 0-9 or A-F. To
 enter color codes easily, use F2 in the Robot editor. The exact
 format of color codes is covered in another section.
 
-$Directions
+$~eDirections
 
 Directions represent one of the four cardinal directions of
 NORTH, SOUTH, EAST, or WEST. They can be abbreviated to N, S,
@@ -6088,7 +5931,7 @@ is essential to program in Robotic. If you don't quite grasp
 it, you can return to it later, but you will need to understand
 it eventually.
 
-$Your First Robotic Program
+$~eYour First Robotic Program
 
 Create a Robot in the editor, and give it the following program-
 
@@ -6122,7 +5965,7 @@ Pretty easy so far, huh? You will probably find that Robotic's
 basics are easy to grasp. Let's try something a little more
 complex.
 
-$Your Second Robotic Program
+$~eYour Second Robotic Program
 
 Try the following Robot program-
 
@@ -6184,7 +6027,7 @@ end of it's program, it will automatically END, so this END is
 not technically necessary. However, it will be important if you
 need the Robot's program to END somewhere in the middle.
 
-$Robot Interaction
+$~eRobot Interaction
 
 Let's get some Robots to interact with each other. Put two
 Robots on a board, right next to each other. Name the left one
@@ -6225,7 +6068,7 @@ For a little practice, see if you can get them each to display
 a message at the start of their dance step. Make the messages
 different for each Robot.
 
-$Some New Commands
+$~eSome New Commands
 
 The following Robot will demonstrate some new commands and
 features. Make sure you put some ammo and bombs on the screen
@@ -6295,7 +6138,7 @@ moving all the enemies and bullets, etc.
 
 The Robot will shoot a bullet in the indicated direction.
 
-$Conclusion
+$~eConclusion
 
 You now should know enough Robotic for simple programs. Even
 more importantly, you should be able to scan the Robotic
@@ -6310,82 +6153,273 @@ manual, as there are many sections not covered in the tutorials.
 Especially of interest will be the 'Strings and Special
 Formatting' section for more advanced programming.
 
+It is also recommended that you examine how others program in
+their games. Don't be afraid to edit others work to see how
+it works, it's the best way to learn!
+
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
+#KEYCODES.HLP
+:1st:~eASCII Key Codes for the KEY Label
+
+New in version 2.6 is the ability to check for any key
+being pressed through the use of the :KEY? label and
+it's updated support for ASCII key codes. For your
+convenience, I have listed all the codes for every key
+on the keyboard, except A-Z and 0-9 since you can just
+enter those as they are. Some keys are not supported.
+These are both Shift keys, both Ctrl keys, Print Screen,
+Scroll Lock, Pause Break and Alt.
+
+~eEnter     : 13
+~eESC       : 27
+~eF1        : -59
+~eF2        : -60
+~eF3        : -61
+~eF4        : -62
+~eF5        : -63
+~eF6        : 64
+~eF7        : 65
+~eF8        : -66
+~eF9        : -67
+~eF10       : -68
+~eF11       : -133
+~eF12       : -134
+~eTab       : 9
+~eBackspace : 8
+~eIns       : 48
+~eHome      : 55
+~eEnd       : 49
+~ePage Up   : 57
+~ePage Down : 51
+~eTilde     : 96 (the key to the left of 1)
+
+>#ROBOTICR.HLP:087:Robotic Reference Manual
+>#MAIN.HLP:072:Table of Contents
+#STRINGIN.HLP
+:1st:~eAdvanced Strings
+
+MegaZeux 2.62b includes better support for strings and can
+now not only handle more than one at a time but can compare
+them, write them to files and put the current board name in
+them. Here's how:
+
+MZX 2.62b has 10 strings. They are referenced as such:
+
+~B$string0
+~B$string1
+...
+~B$string9
+
+Note that they use up actual counter namespace, so if you use
+over 1000 counters you'll probably overwrite the strings.
+
+~eSetting strings
+
+You can set a string to eight things, in the format of:
+~Bset $stringN to PARAMETER
+where N is the number of the string and PARAMETER is one of
+the following:
+
+~BINPUT
+
+The value taken from the "input string" command.
+
+~BBOARD_NAME
+
+The name of the current board.
+
+~BBOARD_SCAN
+
+A string scanned in from the board directly.
+Its coordinates are Board_x, Board_y and the string is
+terminated by an asterisk (*)
+For example, with a board that has "my string*" at 10, 10:
+~Bset "Board_x" 10
+~Bset "Board_y" 10
+~Bset "$string0" "BOARD_SCAN"
+Will scan "my string" into $string0.
+
+~BFWRITE
+
+This does not actually set the string to anything, but will
+write the string to the currently open write file.
+
+~BFREAD
+
+Will read the string in from the currently open read file.
+
+~B"string"
+
+Will set the string to a literal string, for example:
+~Bset "$string0" "hello!"
+
+~B"$string"
+
+Will set the string to another string.
+
+~B(number)
+
+Will set the string to an integer value.
+
+~eOutputting strings
+
+You can output strings in anywhere where MZX supports strings,
+within ampersands. For instance:
+
+~Bset "$string0" "Test"
+~Bwrite overlay c0f 0 0 "&$string0&"
+
+Will write "Test" at 0, 0 in the overlay.
+
+As mentioned above, you can "set" a string to FWRITE to output
+it to the current write file.
+
+~eComparing strings
+
+You can use the "if" command with a string, with either
+another string, a string literal, or a number. Note that the
+string must be the first parameter, and that you can not use
+input, board_scan, etc (load them into another string then
+compare).
+Also note that you can only use equality (=) or inequality.
+Any other comparisons will always be FALSE (if you don't like
+this, blame Greg's limited str_cmp function :p)
+
+Example:
+~Binput string "Give me a string."
+~Bset "$string0" "Input"
+~Bif "$string0" = "Bob" "Okay"
+~Bend 
+
+>#ROBOTICR.HLP:087:Robotic Reference Manual
+>#MAIN.HLP:072:Table of Contents
+#HLPUPDAT.HLP
+:1st:~eLatest Help File Updates
+
+~eNew in version 2.62b (thank you Fred!):
+ + Some width modifications
+ + Grammar and spelling corrected (report any errors)
+ + Added a list of ASCII key codes for :KEY? in the
+   Robotics Reference Manual
+ + Added Help File Updates Section
+ + Gave the credits list it's own section rather than
+   have it tacked onto the end of the contents list
+ + Tweaked the layout a bit
+ + Added a Making Games - Some Tips section
+ + Updated several obsolete sections of the Help File
+ + Removed all references to the old Password Protection
+   option.
+ + Added section detailing improved string support
+ + Fixed error in the bug reporting section
+
+>#MAIN.HLP:072:Table of Contents
+#GAMTIPS.HLP
+:1st:~eMaking Games - Some Tips
+
+ + Playtest your games! This helps you iron out all those
+   irritating bugs and gives you an idea of how good your
+   game actually is
+
+ + Play plenty of other people's games! Not only is it the
+   best way to see what works and what doesn't but you
+   also get a feel for what can be achieved
+
+ + DON'T release your first ever game, they're almost
+   always awful
+
+ + Never use the default character set - make your own!
+
+ + Avoid the default palette too
+
+ + Plan out your game before you start making it! A clear
+   plan of action will help speed up development and will
+   improve your motivation towards getting it finished
+
+ + Don't release a demo of your game until a substantial
+   amount of it is complete
+
+>#MAIN.HLP:072:Table of Contents
 #NEWINVER.HLP
-:1st:NEW in Version 2.6! (Changes Since Version 1.03)
+:1st:~eVersion History
 
-VERSION 2.6 :
+Below are all the changes to MegaZeux from version 2.00 (at
+the bottom of the list) to 2.62 (at the top).
 
-	More than anything else this version bends the spin
-off versions of mzx back into line with the original. Instead
-of being a new mzx that some people use and other's dont, this,
+~eNew in version 2.62:
+
+ + Dramatically improved string support (see the Robotics
+   Reference Manual for full details)
+ + Mod_order counter added
+ + MZX 2.62 files are no longer forward compatible. This
+   means that a file made in MZX 2.62 will NOT work in any
+   previous versions but it WILL work in future versions,
+   so long as they set the version string correctly
+
+~ePossible Bugs in 2.62:
+
+ + The string reading from files may not work correctly on
+   the first read (that is, it might truncate the first
+   character of the string). For this reason I suggest
+   putting a junk string in the first part of the file and
+   reading it first.
+
+~eNew in version 2.61:
+
+ + Completely removed the password protection menu since it
+   serves no purpose plus the shortcut reference was removed
+   from the editor interface.
+ + General bugfixes
+
+~eNew in version 2.6:
+
+ + File access
+ + Built-in Menu activation/deactivation
+ + Current key pressed detection
+ + Easy access to all 16 bits of a counter
+ + Pixel editing of a char set
+ + Single Byte editing of a char.
+ + Real player distance
+
+Check out the builtin-counter section for the complete
+run down of these new and exciting MZX features.
+Also, check the built-in labels section for more on the :"key?"
+label.
+
+More than anything else this version bends the spin-off
+versions of MZX back into line with the original. Instead
+of being a new MZX that some people use and other's don't, this,
 I hope, will be a standard. And hopefully this code will be
-used for future versions of mzx.
+used for future versions of MZX.
 
-NEW FEATURES :
+SMZX mode, inter-robot targetting, the random color
+startup and the new default char set were removed due to
+either not working correctly, looking hideous or simply to
+save on EMS (no-one was using the targetting system anyway).
 
-	Check out the builtin-counter section for the complete
-run down of these new and exciting mzx features-
+~ENew in version 2.51ak:
 
-File access
-Menu activation/deactivation
-Current key pressed detection
-Easy access to all 16 bits of a counter
-Pixel editing of a char set
-Single Byte editing of a char.
-Real player distance
-
-Also check the builtin-lables section for more on the :"key?"
-lable.
-
-REMOVALS :
-
-SMZX (may return if I can get it not to screw up the mouse)
-inter robot targeting (no one uses this)
-Random color start up (It's Ugly as sin)
-
-$****
-
-For information on mzx s3.2, read readme.1st.
-
-$~ENEW in version 2.51- ALL NEW music/sound code! 32-channels;
-$~Ebug-free; support for stereo, 16-bit, GUS, and PAS-16;
-$~Esupport for many formats and effects; up to four
-$~Esimultaneous sound effects!
-
-Note that the new music support requires that you CONVERT all
-non-MOD files using the included program, 2GDM. See 'MegaZeux's
-Sound System' for details on the NEW music system.
-
->#SOUNDEFX.HLP:1st:MegaZeux's Sound System
-
-Note- This is a direct translation from the file WHATSNEW.251,
-included with MegaZeux. If you haven't used version 1.03 or
-before, you probably won't understand much of this list.
-
-~E2.51ak release:
  + Added Numerous new Counters
  + Added new inter robot targeting system
  + Added new SMZX mode, dynamic resolution setting
- + Fixxed fatal crash when taking a picture, also increased
+ + Fixed fatal crash when taking a picture, also increased
    the number of picture you can take to 99
  + Removed Built-in ASCII charset
  + Added Random color start up
 
-~E2.51s3.2 release:
+~ENew in version 2.51s3.2:
 
  + Removed password protection
  + Added new counter BIMesg to turn off built-in messages
 
-~E2.51s3.1 release:
+~ENew in version 2.51s3.1:
 
  + Fixed damage table, now works correctly
  + Fixed unworking alt+s
  + Fixed screenshot name
  + Fixed strange missile color when firing
 
-~E2.51s3 release:
+~ENew in version 2.51s3:
 
  + Fixed bug involving savegame name being overwritten by mod
    name
@@ -6399,7 +6433,7 @@ before, you probably won't understand much of this list.
  + Screen shot saving rotates file name(starts with screen0.pcx)
  + Fixed bug involving incorrect loading of mzx health etc.
 
-~E2.51s3final release:
+~ENew in version 2.51s3 final:
 
  + Fixed bug involving mod * settings being lost when loading
  + Should have fixed ems problems some were reporting, if not,
@@ -6411,7 +6445,7 @@ before, you probably won't understand much of this list.
  + Pressing alt+8 in the editor will set the current mod to *.
 
 
-~E2.5.1s2beta release:
+~ENew in version 2.5.1s2 beta:
 
  + Added MOD "*", which allows a board to use whatever module
    the previous board was using; this necessitated a change in
@@ -6429,7 +6463,7 @@ before, you probably won't understand much of this list.
    2.5.1spider2 format
 
 
-~ENew in version 2.51: (quick fix before I do 3.00!)
+~ENew in version 2.51:
 
  * Bug where moving north or west towards a board that is
    larger than 100 tiles in a dimension may not work properly
@@ -6856,7 +6890,7 @@ before, you probably won't understand much of this list.
  * Command- Can lock/unlock board Scrolling temporarily-
    LOCKSCROLL, UNLOCKSCROLL.
  * IF ALIGNEDROBOT "Robot" "label"
- * Damage editing- Changing the amount of damage things
+ * Damage editing - Changing the amount of damage things
    inflict.
  * Load title screen directly when loading game for title.
    Prevents music on first board from playing, and saves time.
@@ -6954,5 +6988,5 @@ before, you probably won't understand much of this list.
  * Robot commands- DIVIDE, MULTIPLY, MODULO.
  * Different player pics per direction.
 
->#NEWINVER.HLP:1st:New in versions 2.01 to 2.51s3
+>#NEWINVER.HLP:1st:New in versions 2.00 to 2.62b
 >#MAIN.HLP:072:Table of Contents

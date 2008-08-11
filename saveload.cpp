@@ -111,7 +111,7 @@ static int save_magic(const char magic_string[5]) {
 			}
 		  case 'X':
 			if ( ( magic_string[3] == 'S' ) && ( magic_string[4] == 'A' ) ) {
-				return 0x0209;
+				return 0x023E;
 			} else {
 				return 0;
 			}
@@ -439,7 +439,8 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 	if(savegame) {
                 fread(tempstr,1,5,fp);
 		version = save_magic(tempstr);
-		if ( version != 0x023E ) {
+		if((version != 0x023E) && (version != 0x0209))
+    {
 			restore_screen(current_pg_seg);
 			if (!version) {
 				error(".SAV files from other versions of MZX are not supported",1,24,current_pg_seg,0x2101);

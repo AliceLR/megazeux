@@ -1,0 +1,117 @@
+MegaZeux is under the GPL. Please read gnugpl.doc for information.
+You can find the latest binary and source distributions at
+http://www.digitalmzx.net/
+
+And this, I ripped this straight from the help file... :D
+
+***NEW in 2.62*** - Exophase
+
+~FStrings
+
+MZX 2.62 has 10 strings. They are referenced as such:
+
+~B$string0
+~B$string1
+...
+~B$string9
+
+Note that they use up actual counter namespace, so if you use
+over 1000 counters you'll probably overwrite the strings.
+
+~FSetting strings
+
+You can set a string to eight things, in the format of
+~Bset $stringN to PARAMETER
+where N is the number of the string and PARAMETER is one of
+the following:
+
+~BINPUT
+The value taken from the "input string" command.
+
+~BBOARD_NAME
+The name of the current board.
+
+~BBOARD_SCAN
+A string scanned in from the board directly.
+Its coordinates are Board_x, Board_y and the string is
+terminated by an asterisk (*)
+
+For example, with a board that has "my string*" at 10, 10:
+~Bset "Board_x" 10
+~Bset "Board_y" 10
+~Bset "$string0" "BOARD_SCAN"
+Will scan "my string" into $string0.
+
+~BFWRITE
+This does not actually set the string to anything, but will
+write the string to the currently open write file.
+
+~BFREAD
+Will read the string in from the currently open read file.
+
+~B"string"
+Will set the string to a literal string, for example:
+~Bset "$string0" "hello!"
+
+~B"$string"
+Will set the string to another string.
+
+~B(number)
+Will set the string to an integer value.
+
+~FOutputting strings
+
+You can output strings in anywhere where MZX supports strings,
+within ampersands. For instance:
+
+~Bset "$string0" "Test"
+~Bwrite overlay c0f 0 0 "&$string0&"
+
+Will write "Test" at 0, 0 in the overlay.
+
+As mentioned above, you can "set" a string to FWRITE to output it
+to the current write file.
+
+~FComparing strings
+You can use the "if" command with a string, with either another
+string, a string literal, or a number. Note that the string must
+be the first paramter, and that you can not use input, board_scan,
+etc (load them into another string then compare). Also note that
+you can only use equality (=) or inequality. Any other comparisons
+will always be FALSE (if you don't like this, blame Greg's limitted
+str_cmp function :p)
+
+Example:
+~Binput string "Give me a string."
+~Bset "$string0" "Input"
+~Bif "$string0" = "Bob" "Okay"
+~Bend 
+
+~FOther new features
+The "mod_order" counter will report the current order (that is,
+patter) the playing module is at. Used in conjunction with
+the jump mod order command it can be used to save/restore a mod
+position between boards...
+
+~FNotes/Bugs
+
+- MZX 2.62 files are no longer forward compatible. That means that
+  a file made in MZX 2.62 will NOT work in any previous versions
+  (but it WILL work in future versions, so long as they set the
+  version string correctly)
+
+- The string reading from files may not work correctly on the first
+  read (that is, it might truncate the first character of the string)
+  For this reason I suggest putting a junk string in the first part
+  of the file and reading it first.
+
+- If you run into any other bugs contact me at one of the following:
+  AIM: Exophase
+  IRC: #mzx on espernet
+  DigitalMZX: Exophase
+  e-mail: exophase@earthlink.net, or if you really want a reply,
+  kutnick@andrews.edu.
+
+  Exophase, 3/9/2002
+
+Have fun :p

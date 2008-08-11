@@ -1,0 +1,7 @@
+To compile MZXRUN go through game.cpp and main.cpp commenting out lines/sections of code with the comment "Comment for mzxrun" next to them. Make appropriate changes to lines regarding mzxrun.
+
+file menu : compile->Build all
+
+-Koji, 2002
+
+Koji_takeo@worldmailer.com

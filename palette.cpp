@@ -22,7 +22,7 @@
 //Palette code. Works on both the EGA and the VGA, although fading and
 //intensity percentage resolution is much less on the EGA, and rgb values
 //are rounded to 6 bit when output to the graphics card. (VGA rgb values
-//are 18 bit)
+//are 8 bit)
 
 #include "palette.h"
 #include "retrace.h"
@@ -42,7 +42,7 @@ char saved_intensity[16];
 
 //Default EGA hardware palette. Also used for VGA palette refrencing.
 char default_EGA_hardware_pal[16]={
-	0,1,2,3,4,5,20,7,56,57,58,59,60,61,62,63 };
+	0,1,2,3,4,5,6,7,56,57,58,59,60,61,62,63 };
 //Default palette rgbs
 char default_pal[16][3]={
 	{ 00,00,00 },
@@ -54,12 +54,12 @@ char default_pal[16][3]={
 	{ 42,21,00 },
 	{ 42,42,42 },
 	{ 21,21,21 },
-	{ 21,21,63 },
-	{ 21,63,21 },
-	{ 21,63,63 },
-	{ 63,21,21 },
-	{ 63,21,63 },
-	{ 63,63,21 },
+	{ 00,00,63 },
+	{ 00,63,00 },
+	{ 00,63,63 },
+	{ 63,00,00 },
+	{ 63,00,63 },
+	{ 63,63,00 },
 	{ 63,63,63 } };
 
 //Set one EGA palette register. Blanks screen. Sets attr, 0-15, to
@@ -86,11 +86,11 @@ void unblank_screen(void) {
 //Set one VGA DAC palette register.
 void set_vga_register(char color,char r,char g,char b) {
 	//Change color number to DAC register
-   if(smzx_mode==0)
-   {
-   	if(color<0) color=-color;
+	if(smzx_mode==0)
+	{
+		if(color<0) color=-color;
 		else color=default_EGA_hardware_pal[color];
-   }
+	}
 	asm {
 		mov dx,03C8h
 		mov al,color
@@ -129,6 +129,33 @@ void init_palette(void) {
 	faded_out=0;
 	//Palette is now fully at default, and all data is initialized.
 }
+
+void reinit_palette(void) {
+	int t1;
+	//On both EGA and VGA, we must set all 16 registers to the defaults.
+	//Also copy it over to the current palette.
+	insta_fadeout;
+	wait_retrace();
+	for(t1=0;t1<16;t1++) {
+		set_ega_register(t1,default_EGA_hardware_pal[t1]);
+		current_intensity[t1]=saved_intensity[t1]=100;
+
+		set_color_intensity(t1,100);
+
+		if(vga_avail)
+			set_vga_register(t1,current_pal[t1][0],current_pal[t1][1],
+				current_pal[t1][2]);
+		intensity_pal[t1][0]=current_pal[t1][0];
+		intensity_pal[t1][1]=current_pal[t1][1];
+		intensity_pal[t1][2]=current_pal[t1][2];
+		}
+	insta_fadein();
+	unblank_screen();
+	faded_out=0;
+	//Palette is now fully at default, and all data is initialized.
+}
+
+
 
 //Set current palette intensity, internally only.
 void set_palette_intensity(char percent) {
@@ -203,7 +230,9 @@ void update_palette(char wait_for_retrace) {
 
 void normal_update_palette(char wait_for_retrace) {
 	smzx_mode = 0;
+	default_EGA_hardware_pal[6] = 20;
 	int t1,t2,r,g,b;
+
 	if(faded_out) return;
 	//Wait for retrace if applicable
 	if(wait_for_retrace) wait_retrace();
@@ -223,6 +252,48 @@ void normal_update_palette(char wait_for_retrace) {
 				intensity_pal[0][2]);
 		//Done
 		return;
+		}
+			//EGA- turn 18 bit to 6 bit
+	for(t1=0;t1<16;t1++) {
+		t2=0;
+		r=intensity_pal[t1][0];
+		g=intensity_pal[t1][1];
+		b=intensity_pal[t1][2];
+		if(r<16) ;
+		else if(r<32) t2|=32;
+		else if(r<48) t2|=4;
+		else t2|=36;
+		if(g<16) ;
+		else if(g<32) t2|=16;
+		else if(g<48) t2|=2;
+		else t2|=18;
+		if(b<16) ;
+		else if(b<32) t2|=8;
+		else if(b<48) t2|=1;
+		else t2|=9;
+		set_ega_register(t1,t2);
+		}
+	unblank_screen();
+	//Done
+
+}
+
+void smzx_update_palette(char wait_for_retrace) {
+		default_EGA_hardware_pal[6] = 6;
+		smzx_mode = 1;
+		int t1,t2,r,g,b;
+		if(faded_out)return;
+		//Wait for retrace if applicable
+		if(wait_for_retrace)wait_retrace();
+		//VGA
+		if(vga_avail)
+		{
+			for(t1=0;t1<256;t1++)
+			set_vga_register(t1,
+			((intensity_pal[t1&15][0] << 1) + intensity_pal[t1>>4][0])/3 ,
+			((intensity_pal[t1&15][1] << 1) + intensity_pal[t1>>4][1])/3 ,
+			((intensity_pal[t1&15][2] << 1) + intensity_pal[t1>>4][2])/3 );
+			return;
 		}
 	//EGA- turn 18 bit to 6 bit
 	for(t1=0;t1<16;t1++) {
@@ -246,45 +317,6 @@ void normal_update_palette(char wait_for_retrace) {
 		}
 	unblank_screen();
 	//Done
-}
-
-void smzx_update_palette(char wait_for_retrace) {
-		smzx_mode = 1;
-		int t1,t2,r,g,b;
-		if(faded_out)return;
-		//Wait for retrace if applicable
-		if(wait_for_retrace)wait_retrace();
-		//VGA
-		if(vga_avail)
-		{
-			for(t1=0;t1<256;t1++)
-			set_vga_register(t1,
-			((intensity_pal[t1&15][0] << 1) + intensity_pal[t1>>4][0])/3 ,
-			((intensity_pal[t1&15][1] << 1) + intensity_pal[t1>>4][1])/3 ,
-			((intensity_pal[t1&15][2] << 1) + intensity_pal[t1>>4][2])/3 );
-		return;
-		}
-		//EGA- turn 18 bit to 6 bit
-		for(t1=0;t1<16;t1++) {
-		t2=0;
-		r=intensity_pal[t1][0];
-		g=intensity_pal[t1][1];
-		b=intensity_pal[t1][2];
-		if(r<16) ;
-		else if(r<32) t2|=32;
-		else if(r<48) t2|=4;
-		else t2|=36;
-		if(g<16) ;
-		else if(g<32) t2|=16;
-		else if(g<48) t2|=2;
-		else t2|=18;
-		if(b<16) ;
-		else if(b<32) t2|=8;
-		else if(b<48) t2|=1;
-		else t2|=9;
-		set_ega_register(t1,t2);
-		}
-	unblank_screen();
 }
 
 //Very quick fade out. Saves intensity table for fade in. Be sure
@@ -398,6 +430,7 @@ void set_Color_Aspect(char color,char aspect,int value)
 	}
 	update_palette();
 }
+
 int get_Color_Aspect(char color,char aspect)
 {
 	return (int) current_pal[color][aspect];

@@ -26,6 +26,7 @@
 extern char smzx_mode;
 
 void init_palette(void);
+void reinit_palette(void);
 void set_palette_intensity(char percent);
 void set_color_intensity(char color,char percent);
 void set_rgb(char color,char r,char g,char b);

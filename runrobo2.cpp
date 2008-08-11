@@ -324,11 +324,12 @@ redone:
                         case 10://set c #
                         case 11://inc c #
                         case 12://dec c #
-                          unsigned char far *temp_ptr = &cmd_ptr[next_param(cmd_ptr,1)];
-                          tr_msg(&cmd_ptr[2],id);
+                          unsigned char far *temp_ptr;
+                          tr_msg(&cmd_ptr[2], id);
                           if(str_len(ibuff)>=COUNTER_NAME_SIZE)
-                          ibuff[COUNTER_NAME_SIZE-1]=0;
-                          t1 = parse_param(temp_ptr, id);
+                           ibuff[COUNTER_NAME_SIZE-1]=0;
+                          tr_msg(&cmd_ptr[next_param(cmd_ptr,1)], id, ibuff2);
+                          temp_ptr = ibuff2;
                           t2 = 0;
                           if(ibuff[0] == '$')
                           {
@@ -339,6 +340,7 @@ redone:
                             if(!temp_ptr[0])
                             {
                               // set string to (integer representation)
+                              t1 = parse_param(temp_ptr, id);
                               sprintf(temp_str, "%d", t1);
                               str_cpy(counters[index].counter_name, temp_str);
                             }
@@ -351,10 +353,10 @@ redone:
                               }
                               if(!str_cmp(tp_2, "BOARD_SCAN"))
                               {
-                                int bpos = (get_counter("BOARD_Y") * board_xsiz) + get_counter("BOARD_X");
+                                int bpos = (get_counter("BOARD_Y") * max_bxsiz) + get_counter("BOARD_X");
                                 int i;
                                 char c_char;
-                                for(i = 0; i < 14; i++)
+                                for(i = 0; i < COUNTER_NAME_SIZE; i++)
                                 {
                                   c_char = get_id_char(bpos);
                                   if(c_char == '*')
@@ -372,17 +374,39 @@ redone:
                               {
                                 tp_2 = board_list + (curr_board * BOARD_NAME_SIZE);
                               }
+                              if(!str_cmp(tp_2, "MOD_NAME"))
+                              {
+                                tp_2 = mod_playing;
+                              }
                               if(!str_cmp(tp_2, "FREAD") && input_file)
                               {
                                 // Read string in from the read file
-                                fscanf(input_file, "%s", temp_str);
+                                int i, temp;
+                                for(i = 0; i < COUNTER_NAME_SIZE; i++)
+                                {
+                                  temp = fgetc(input_file);
+                                  if((temp == EOF) || (temp == '*'))
+                                  {
+                                    temp_str[i] = 0;
+                                    break;
+                                  }
+                                  else
+                                  {
+                                    temp_str[i] = (char)temp;
+                                  }
+                                }
                                 tp_2 = temp_str;
                               }
                               if(!str_cmp(tp_2, "FWRITE") && output_file)
                               {
                                 // Write string in to write file
-                                fprintf(output_file, "%s ", counters[index].counter_name);
+                                fprintf(output_file, "%s*", counters[index].counter_name);
                                 t2 = 1;
+                              }
+                              if(tp_2[0] == '$')
+                              {
+                                int index2 = tp_2[7] + 1000;
+                                tp_2 = counters[index2].counter_name;
                               }
 
                               if(!t2)
@@ -390,6 +414,10 @@ redone:
                                 mem_cpy(counters[index].counter_name, tp_2, COUNTER_NAME_SIZE);
                               }
                             }
+                          }
+                          else
+                          {
+                            t1=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
                           }
 				if(cmd==10) set_counter(ibuff,t1,id);
 				else if(cmd==11) inc_counter(ibuff,t1,id);

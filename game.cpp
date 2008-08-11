@@ -97,19 +97,20 @@ char far *game_menu=	"F1    - Help\n"
 
 //Easter Egg enter menu -Koji
 // Idea by Exophase.
-char far *lame_menu=	"F1    - HELP!?!?\n"
+// Wasting mem with style :D - Exo
+char far *lame_menu=	"F1    - HELP!!1\n"
 							"etner - TIHS MENUE\n"
-							"EScape- DONT PRESS TIHS LOL\n"
-							"F2    - UR SETTINGS\n"
+							"EScapE- DONT PRESS LOL\n"
+							"f2    - UR SETTINGS\n"
 							"F3    - SAV UR GAEM\n"
-							"F4    - LOAD UR GAEM\n"
-							"F5/Ins- I DONNO!  LOLOLOZ!\n"
-							"F6    - :((((((((\n"
-							"F9    - quickSNAD!\n"
-							"F10   - QUICKLOAD\n"
-							"Arrows- MOVE UR GUY :D :D :D\n"
-							"Space - Shoot UR GUN\n"
-							"Delete- DA BOMB!!!!!!!!111111";
+							"F4    - LOAD UR GAAM\n"
+							"F5-iNs- I DONNO! LOLZ\n"
+							"f6    - :((((((((\n"
+							"f9    - quickSNAD!\n"
+							"ef10  - QUICKLOAD\n"
+							"Arrowz- MOVE UR GUY :D :D\n"
+							"spaec - shoot UR GUN\n"
+							"deleet- DA BOMB!!!111111";
 
 
 int main_menu_keys[11]={ -59,0,27,-60,-61,-62,-63,-64,-65,-66,-68 };

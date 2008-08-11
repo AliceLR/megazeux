@@ -26,7 +26,6 @@
 
 //Mode selection (also resets char sets)
 void ega_14p_mode(void);
-void smzx_14p_mode(void);
 void vga_16p_mode(void);
 
 //Initialization- run AFTER ega_14p_mode, error=out of memory

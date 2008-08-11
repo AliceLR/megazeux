@@ -89,21 +89,24 @@ int get_counter(char far *name,unsigned char id) {
 	//a few counters convert to var's for speed.
 	if(!str_cmp(name,"CHAR_X")) return pixel_x;
 	if(!str_cmp(name,"CHAR_Y")) return pixel_y;
-	if(!str_cmp(name,"PLAYERDIST")) return abs((robots[id].xpos-player_x)
-						  +(robots[id].ypos-player_y));
+	if(!str_cmp(name,"PLAYERDIST")) return (abs(robots[id].xpos-player_x)
+						  + abs(robots[id].ypos-player_y));
 	//REAL distance -Koji
 	// Can only handle real distances up to 129.
-	// Can't seem to help that.
+	// Can't seem to help that. -Koji
+  // Well, when your function is returning a short int.. - Exo
+
 	if(!str_cmp(name,"R_PLAYERDIST"))
 	{
 		long d;
-		d= (long)((robots[id].xpos-player_x)
+		d = long((robots[id].xpos-player_x)
 			 *(robots[id].xpos-player_x));
-		d+=(long)((robots[id].ypos-player_y)
+		d += long((robots[id].ypos-player_y)
 			 *(robots[id].ypos-player_y));
-		if (d < 16384)
-			return sqrt(d);
-		else return 129;
+    d = sqrt(d) << 8;
+    d += 128;
+    d >>= 8;
+		return d;
 	}
 
 	//Reads a single byte of a char -Koji
@@ -343,10 +346,10 @@ int get_counter(char far *name,unsigned char id) {
 		if(!str_cmp(name,"BOARD_CHAR"))
 		{
 			loc = get_counter("BOARD_X",id);
-			if(loc > board_xsiz)
+			if(loc > max_bxsiz)
 				return 0;
 
-			loc += (get_counter("BOARD_Y",id) * board_xsiz);
+			loc += (get_counter("BOARD_Y",id) * max_bxsiz);
 
 			if(loc > (board_xsiz * board_ysiz))
 			  return 0;
@@ -359,9 +362,9 @@ int get_counter(char far *name,unsigned char id) {
 
 			if(loc > board_xsiz)
 				return 0;
-			loc += (get_counter("BOARD_Y",id) * board_xsiz);
+			loc += (get_counter("BOARD_Y",id) * max_bxsiz);
 
-			if(loc > (board_xsiz * board_ysiz))
+			if(loc > (max_bxsiz * max_bysiz))
 			  return 0;
 			return level_color[loc];
 		}
@@ -377,10 +380,6 @@ int get_counter(char far *name,unsigned char id) {
 		if(!str_cmp(name,"BLUE_VALUE"))
 		{
 			return get_Color_Aspect(get_counter("CURRENT_COLOR",id),2);
-		}
-		if(!str_cmp(name,"BULLET_TYPE"))
-		{
-			return robots[id].bullet_type;
 		}
 		//My_target messed with the can_lavawalk local
 		//I'll just make it into a new local with that name -Koji

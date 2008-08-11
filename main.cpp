@@ -93,7 +93,7 @@ char *reg_exit_mesg=
 " Inmate2993 - Use all 16 bits of a counter.\n\r"
 "MZX 2.61:\n\r"
 " Koji - Bug fixes and etc.\n\r"
-"MZX 2.62:\n\r"
+"MZX 2.62b:\n\r"
 " Exophase - Strings, Mod_order, etc.\n\r"
 "\nhttp://www.digitalmzx.net/ for MZX source and binary distributions.\n\r$";
 
@@ -163,9 +163,9 @@ int main(int argc,char **argv) {
 	draw_window_box(2,1,77,3,0xB800,120,127,113,0);
 	draw_window_box(2,4,77,16,0xB800,120,127,113,0);
 	draw_window_box(2,17,77,23,0xB800,120,127,113,0);
-  write_string("MegaZeux version 2.62",27,2,127,0xB800);
+  write_string("MegaZeux version 2.62b",27,2,127,0xB800);
 // #ifdef BETA
-	write_string("Beta - Distribute me please!",27,17,127,0xB800);
+	write_string("Please distribute",27,17,127,0xB800);
 // #endif
 #ifdef GAMMA
 	write_string("GAMMA- MAY CONTAIN BUGz!",27,17,127,0xB800);
@@ -194,67 +194,6 @@ int main(int argc,char **argv) {
 	set_rgb(11,42,63,63);
 	set_rgb(12,63,42,42);
 	set_rgb(13,63,42,63);
-
-	//Fix palette to be nicer.
-
-	//Not if I can help it!
-	//the random palettes are uglier
-	//than sin! Couldn't find the original
-	//so I'll just use the default -Koji
-
-/*	randomize();
-	switch(random(100)%4)
-	{
-		case(0):
-		set_rgb(1,31,0,0);
-		set_rgb(6,53,0,0);
-		set_rgb(7,21,0,0);
-		set_rgb(8,11,0,0);
-		set_rgb(9,63,63,0);
-		set_rgb(10,63,31,0);
-		set_rgb(11,63,21,21);
-		set_rgb(12,63,42,42);
-		set_rgb(13,63,42,21);
-		set_rgb(15,63,0,0);
-		break;
-		case(1):
-		set_rgb(1,46,29,31);  //CORNER
-		set_rgb(6,50,33,35);  //BACKGROUN
-		set_rgb(7,55,38,40);  //MID Edge
-		set_rgb(8,41,24,26);  //DARK Edge
-		set_rgb(9,63,46,48);   //ACTIVE Text
-		set_rgb(10,41,24,26);  //STATIC Text
-		set_rgb(11,55,36,39); //SELECTION Text
-		set_rgb(12,51,34,38); //
-		set_rgb(13,63,46,48); //
-		set_rgb(15,63,46,48); //LIGHT EDGE
-		break;
-		case(2):
-		set_rgb(1,0,31,0);
-		set_rgb(6,0,53,0);
-		set_rgb(7,0,21,0);
-		set_rgb(8,0,11,0);
-		set_rgb(9,0,63,63);
-		set_rgb(10,0,63,31);
-		set_rgb(11,21,63,21);
-		set_rgb(12,42,63,42);
-		set_rgb(13,21,63,42);
-		set_rgb(15,0,63,0);
-		break;
-		case(3):
-		set_rgb(1,0,0,31);
-		set_rgb(6,0,0,53);
-		set_rgb(7,0,0,21);
-		set_rgb(8,0,0,11);
-		set_rgb(9,0,63,63);
-		set_rgb(10,0,31,63);
-		set_rgb(11,21,21,63);
-		set_rgb(12,42,42,63);
-		set_rgb(13,21,42,63);
-		set_rgb(15,0,0,63);
-		break;
-
-	}*/
 	//Fade in
 	vquick_fadein();
 	//Initialize systems and display progess at bottom
