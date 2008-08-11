@@ -28,6 +28,7 @@
 #include "retrace.h"
 #include "comp_chk.h"
 
+char smzx_mode =0;
 //Current palette w/o intensity adjustments (18 bit)
 char current_pal[16][3];
 //Current intensity level (percentage) per color
@@ -85,8 +86,11 @@ void unblank_screen(void) {
 //Set one VGA DAC palette register.
 void set_vga_register(char color,char r,char g,char b) {
 	//Change color number to DAC register
-	if(color<0) color=-color;
-	else color=default_EGA_hardware_pal[color];
+   if(smzx_mode==0)
+   {
+   	if(color<0) color=-color;
+		else color=default_EGA_hardware_pal[color];
+   }
 	asm {
 		mov dx,03C8h
 		mov al,color
@@ -187,6 +191,18 @@ void set_rgb(char color,char r,char g,char b) {
 
 //Update palette onscreen. Waits for retrace if specified. (default)
 void update_palette(char wait_for_retrace) {
+	if(smzx_mode)
+	{
+		smzx_update_palette(wait_for_retrace);
+	}
+	else
+	{
+		normal_update_palette(wait_for_retrace);
+	}
+}
+
+void normal_update_palette(char wait_for_retrace) {
+	smzx_mode = 0;
 	int t1,t2,r,g,b;
 	if(faded_out) return;
 	//Wait for retrace if applicable
@@ -230,6 +246,45 @@ void update_palette(char wait_for_retrace) {
 		}
 	unblank_screen();
 	//Done
+}
+
+void smzx_update_palette(char wait_for_retrace) {
+		smzx_mode = 1;
+		int t1,t2,r,g,b;
+		if(faded_out)return;
+		//Wait for retrace if applicable
+		if(wait_for_retrace)wait_retrace();
+		//VGA
+		if(vga_avail)
+		{
+			for(t1=0;t1<256;t1++)
+			set_vga_register(t1,
+			((intensity_pal[t1&15][0] << 1) + intensity_pal[t1>>4][0])/3 ,
+			((intensity_pal[t1&15][1] << 1) + intensity_pal[t1>>4][1])/3 ,
+			((intensity_pal[t1&15][2] << 1) + intensity_pal[t1>>4][2])/3 );
+		return;
+		}
+		//EGA- turn 18 bit to 6 bit
+		for(t1=0;t1<16;t1++) {
+		t2=0;
+		r=intensity_pal[t1][0];
+		g=intensity_pal[t1][1];
+		b=intensity_pal[t1][2];
+		if(r<16) ;
+		else if(r<32) t2|=32;
+		else if(r<48) t2|=4;
+		else t2|=36;
+		if(g<16) ;
+		else if(g<32) t2|=16;
+		else if(g<48) t2|=2;
+		else t2|=18;
+		if(b<16) ;
+		else if(b<32) t2|=8;
+		else if(b<48) t2|=1;
+		else t2|=9;
+		set_ega_register(t1,t2);
+		}
+	unblank_screen();
 }
 
 //Very quick fade out. Saves intensity table for fade in. Be sure
@@ -323,3 +378,31 @@ void get_rgb(char color,char &r,char &g,char &b) {
 char is_faded(void) {
 	return faded_out;
 }
+
+
+void set_Color_Aspect(char color,char aspect,int value)
+{
+	switch((int) aspect)
+	{
+	case 0:
+	set_rgb(color,(char) value,current_pal[color][1],current_pal[color][2]);
+	break;
+
+	case 1:
+	set_rgb(color,current_pal[color][0],(char) value,current_pal[color][2]);
+	break;
+
+	case 2:
+	set_rgb(color,current_pal[color][0],current_pal[color][1],(char)value);
+	break;
+	}
+	update_palette();
+}
+int get_Color_Aspect(char color,char aspect)
+{
+	return (int) current_pal[color][aspect];
+}
+
+
+
+

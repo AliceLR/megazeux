@@ -69,16 +69,17 @@
 
 int get_built_in_messages(void);
 
-char far *main_menu=	"F1/H - Help\n"
-							"Enter- Menu\n"
+char far *main_menu= "Enter- Menu\n"
 							"Esc  - Exit to DOS\n"
+							"F1/H - Help\n"
 							"F2/S - Settings\n"
 							"F3/L - Load world\n"
 							"F4/R - Restore game\n"
 							"F5/P - Play world\n"
 							"F6   - Debug menu\n"
 							"F8/E - World editor\n"
-							"F10  - Quickload";
+							"F10  - Quickload"
+							"";
 
 char far *game_menu=	"F1    - Help\n"
 							"Enter - Menu/status\n"
@@ -94,7 +95,24 @@ char far *game_menu=	"F1    - Help\n"
 							"Space - Shoot (w/dir)\n"
 							"Delete- Bomb";
 
-int main_menu_keys[10]={ -59,0,27,-60,-61,-62,-63,-64,-66,-68 };
+//Easter Egg enter menu -Koji
+// Idea by Exophase.
+char far *lame_menu=	"F1    - HELP!?!?\n"
+							"etner - TIHS MENUE\n"
+							"EScape- DONT PRESS TIHS LOL\n"
+							"F2    - UR SETTINGS\n"
+							"F3    - SAV UR GAEM\n"
+							"F4    - LOAD UR GAEM\n"
+							"F5/Ins- I DONNO!  LOLOLOZ!\n"
+							"F6    - :((((((((\n"
+							"F9    - quickSNAD!\n"
+							"F10   - QUICKLOAD\n"
+							"Arrows- MOVE UR GUY :D :D :D\n"
+							"Space - Shoot UR GUN\n"
+							"Delete- DA BOMB!!!!!!!!111111";
+
+
+int main_menu_keys[11]={ -59,0,27,-60,-61,-62,-63,-64,-65,-66,-68 };
 int game_menu_keys[13]={ -59,0,27,-60,-61,-62,-63,-64,-67,-68,0,0,0 };
 
 char bomb_type=1;//Start on hi-bombs
@@ -112,12 +130,13 @@ int target_d_color=-1;//For RESTORE/EXCHANGE PLAYER POSITION with DUPLICATION.
 
 char pal_update=0;//Whether to update a palette from robot activity
 
+
 void title_screen(void) {
 	char fadein=0;
 	int key=0,t1;
 	FILE *fp;
 	char temp[FILENAME_SIZE];
-        char temp2[FILENAME_SIZE];
+		  char temp2[FILENAME_SIZE];
 
 #ifdef PROFILE
 	char profiling=0;
@@ -151,7 +170,7 @@ void title_screen(void) {
 	}
 	else goto world_load;//Choose world to load
 
-	if (0 == 0) goto menu_mesg; //stupid hack to shut up tc
+	goto menu_mesg; //stupid hack to shut up tc
 
 	//Main game loop
 	//Mouse remains hidden unless menu/etc. is invoked
@@ -160,14 +179,14 @@ void title_screen(void) {
 		//Update
 		if(update(0,fadein)) continue;
 		// Update stupid variables
-	       //	mynewx= scroll_x;
-	       //	mynewy= scroll_y;
+			 //	mynewx= scroll_x;
+			 //	mynewy= scroll_y;
 		//Keycheck
 		if(keywaiting()) {
 			//Get key...
 			key=getkey();
 			if((key>='a')&&(key<='z')) key-=32;
-			//...and process
+			//...and process*/
 		process_key:
 			switch(key) {
 #ifdef PROFILE
@@ -185,14 +204,14 @@ void title_screen(void) {
 					break;
 #endif
 				case ']'://Screen .PCX dump
-					dump_screen("SCREEN.PCX");
+					dump_screen();
 					break;
 				case -17://AltW
 					//Re-init screen
 					vga_16p_mode();
 					ega_14p_mode();
-                                        cursor_off();
-                                        blink_off();
+					cursor_off();
+					blink_off();
 					ec_update_set();
 					update_palette(0);
 					break;
@@ -245,30 +264,34 @@ void title_screen(void) {
 				case 13://Enter
 					//Menu
 					//19x9
-					save_screen(current_pg_seg);
-					t1=is_faded();
-					if(t1) {
-						clear_screen(1824,current_pg_seg);
-						insta_fadein();
-						}
-					draw_window_box(30,7,52,18,current_pg_seg,25,16,24);
-					write_string(main_menu,32,8,31,current_pg_seg);
-					write_string(" Main Menu ",35,7,30,current_pg_seg);
-					m_show();
-					do {
+					if(get_counter("ENTER_MENU") != 0)
+					{
+						save_screen(current_pg_seg);
+						t1=is_faded();
+						if(t1) {
+							clear_screen(1824,current_pg_seg);
+							insta_fadein();
+							}
+						draw_window_box(30,4,52,16,current_pg_seg,25,16,24);
+						write_string(main_menu,32,5,31,current_pg_seg);
+						write_string(" Main Menu ",36,4,30,current_pg_seg);
+						m_show();
+						do {
 						key=getkey();
-					} while(!key);
-					if(t1) insta_fadeout();
-					if(key==27) key=0;
-					if(key==13) key=0;
-					if(key==MOUSE_EVENT) {
-						if((mouse_event.cx<31)||(mouse_event.cx>51)||
-							(mouse_event.cy<8)||(mouse_event.cy>17)) key=0;
-						else key=main_menu_keys[mouse_event.cy-8];
-						}
-					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
-					restore_screen(current_pg_seg);
-					goto process_key;
+						} while(!key);
+						if(t1) insta_fadeout();
+						if(key==27) key=0;
+						if(key==13) key=0;
+						if(key==MOUSE_EVENT) {
+							if((mouse_event.cx<31)||(mouse_event.cx>51)||
+								(mouse_event.cy<8)||(mouse_event.cy>17)) key=0;
+							else key=main_menu_keys[mouse_event.cy-8];
+							}
+						if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
+						restore_screen(current_pg_seg);
+						goto process_key;
+					}
+					break;
 				case 27://ESC
 					//Quit
 					m_show();
@@ -278,7 +301,10 @@ void title_screen(void) {
 						insta_fadein();
 						}
 					if(confirm("Quit to DOS- Are you sure?")) key=0;
-					if(t1) insta_fadeout();
+					if(t1)
+					{
+						insta_fadeout();
+					}
 					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					break;
 				case 'L'://L
@@ -350,7 +376,7 @@ void title_screen(void) {
 							select_current(curr_board);
 						else select_current(0);
 						str_cpy(temp2,mod_playing);
-                                                load_mod(temp2);
+																load_mod(temp2);
 
 						send_robot_def(0,10);
 						//Copy filename
@@ -425,6 +451,10 @@ void title_screen(void) {
 					if(debug_mode) error_mode=1;
 					else error_mode=2;
 					break;
+/*				case -65://F7
+					//SMZX Mode
+					set_counter("SMZX_MODE",smzx_mode + 1,0);
+					break;*/
 				case -68://F10
 					//Quickload
 					if(curr_sav[0]==0) break;
@@ -446,8 +476,8 @@ void title_screen(void) {
 					if(board_where[curr_board]!=W_NOWHERE)
 						select_current(curr_board);
 					else select_current(0);
-                                        str_cpy(temp2,mod_playing);
-                                        load_mod(temp2);
+					str_cpy(temp2,mod_playing);
+					load_mod(temp2);
 
 					send_robot_def(0,10);
 					dead=0;
@@ -536,8 +566,11 @@ void update_variables(char slowed) {
 	static char slowdown=0;//Slows certain things down to every other cycle
 	unsigned int t1;
 	enter_func("update_variables");
-	//Slowdown
-	slowdown^=1;
+/*	if (get_counter("MZXAKVERSION" == 1)
+	{
+		overall_speed = get_counter("MZX_SPEED")
+	}
+*/	slowdown^=1;
 	//If odd, we...
 	if(!slowdown) {
 		//Change scroll color
@@ -855,7 +888,11 @@ void game_settings(void) {
 			str_cpy(mod_playing,temp2);
 		}
 	}
-	overall_speed=spd_tmp;
+/*	if (get_counter("MZXAVERSION") = 1)
+	{
+		Set_counter("MZX_SPEED", spd_tmp);
+	}
+*/	overall_speed=spd_tmp;
 }
 
 //Number of cycles to make player idle before repeating a directional move
@@ -884,72 +921,101 @@ void play_game(char fadein) {
 
 	//Main game loop
 	//Mouse remains hidden unless menu/etc. is invoked
-
+	//Making the menu functions on by default -Koji
+	set_counter("ENTER_MENU",1);
+	set_counter("HELP_MENU",1);
+	set_counter("F2_MENU",1);
 	do {
 		//Update
 		if(update(1,fadein)) continue;
 		//Keycheck
 		if(keywaiting()) {
 			//Get key...
-			key=getkey();
+			key = getkey();
+			//KEY_PRESSED counter returns Any key pressed
+			// on the keyboard at the time it is called.
+  		//	-Koji
+			set_counter("KEY_PRESSED", key);
 			if((key>='a')&&(key<='z')) key-=32;
 			//...and process
 		process_key:
+			//all Keys accessable -Koji
+      //"KeyEnter" exception - Exophase
+			//if(key<'1') break;
+			//if((key>'9')&&(key<'A')) break;
+			//if(key>'Z') break;
+			keylbl[3]=last_key=key;
+      if(key == 13)
+      {
+        send_robot("ALL", "KeyEnter");
+      }
+			send_robot("ALL",keylbl);
 			switch(key) {
 				case ']'://Screen .PCX dump
-					dump_screen("SCREEN.PCX");
+					dump_screen();
 					break;
-				default:
-					if(key<'1') break;
-					if((key>'9')&&(key<'A')) break;
-					if(key>'Z') break;
-					keylbl[3]=last_key=key;
-					send_robot("ALL",keylbl);
+				default://moved.
+					//all Keys accessable -Koji
+					//if(key<'1') break;
+					//if((key>'9')&&(key<'A')) break;
+					//if(key>'Z') break;
+					//if(key == 13) send_robot("ALL", "EnterKey");
+					//keylbl[3]=last_key=key;
+					//send_robot("ALL",keylbl);
 					break;
 				case -60://F2
 					//Settings
-					m_show();
-					switch_keyb_table(1);
-					t1=is_faded();
-					if(t1) {
-						clear_screen(1824,current_pg_seg);
-						insta_fadein();
-						}
-					game_settings();
-					if(t1) insta_fadeout();
-					switch_keyb_table(0);
-					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
+					if(get_counter("F2_MENU"))
+					{
+						m_show();
+						switch_keyb_table(1);
+						t1=is_faded();
+						if(t1) {
+							clear_screen(1824,current_pg_seg);
+							insta_fadein();
+							}
+						game_settings();
+						if(t1) insta_fadeout();
+						switch_keyb_table(0);
+						if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
+					}
 					break;
 				case 13://Enter
 					//Menu
 					//19x9
-					save_screen(current_pg_seg);
-					t1=is_faded();
-					if(t1) {
-						clear_screen(1824,current_pg_seg);
-						insta_fadein();
-						}
-					draw_window_box(8,5,35,19,current_pg_seg,25,16,24);
-					write_string(game_menu,10,6,31,current_pg_seg);
-					write_string(" Game Menu ",13,5,30,current_pg_seg);
-					show_status();//Status screen too
-					m_show();
-					do {
-						key=getkey();
-					} while(!key);
-					if(t1) insta_fadeout();
-					if(key==27) key=0;
-					if(key==13) key=0;
-					if(key==MOUSE_EVENT) {
-						if((mouse_event.cx<11)||(mouse_event.cx>31)||
-							(mouse_event.cy<6)||(mouse_event.cy>18)) key=0;
-						else key=game_menu_keys[mouse_event.cy-6];
-						}
-					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
-					restore_screen(current_pg_seg);
-					if(t1) insta_fadeout();
-					goto process_key;
-				case 27://ESC
+					if(get_counter ("ENTER_MENU") != 0)
+					{
+						save_screen(current_pg_seg);
+						t1=is_faded();
+						if(t1) {
+							clear_screen(1824,current_pg_seg);
+							insta_fadein();
+							}
+						draw_window_box(8,4,35,18,current_pg_seg,25,16,24);
+						if(get_counter("ENTER_MENU") == 1337) write_string(lame_menu,10,5,31,current_pg_seg);
+						else write_string(game_menu,10,5,31,current_pg_seg);
+						write_string(" Game Menu ",14,4,30,current_pg_seg);
+						show_status();//Status screen too
+						m_show();
+						do {
+							key=getkey();
+						} while(!key);
+						if(t1) insta_fadeout();
+						if(key==27) key=0;
+						if(key==13) key=0;
+						if(key==MOUSE_EVENT) {
+							if((mouse_event.cx<11)||(mouse_event.cx>31)||
+								(mouse_event.cy<6)||(mouse_event.cy>18)) key=0;
+							else key=game_menu_keys[mouse_event.cy-6];
+							}
+						if(get_counter("CURSORSTATE") == 0) m_hide();
+						restore_screen(current_pg_seg);
+						if(t1) insta_fadeout();
+						goto process_key;
+					}
+					break;
+
+				   case 27://ESC
 					//Quit
 					m_show();
 					switch_keyb_table(1);
@@ -1037,7 +1103,7 @@ void play_game(char fadein) {
 						if(board_where[curr_board]!=W_NOWHERE)
 							select_current(curr_board);
 						else select_current(0);
-                                        str_cpy(temp2,mod_playing);
+					str_cpy(temp2,mod_playing);
 					load_mod(temp2);
 
 						send_robot_def(0,10);
@@ -1141,8 +1207,8 @@ void play_game(char fadein) {
 					//Re-init screen
 					vga_16p_mode();
 					ega_14p_mode();
-                                        cursor_off();
-                                        blink_off();
+					cursor_off();
+					blink_off();
 					ec_update_set();
 					update_palette(0);
 					break;
@@ -1180,6 +1246,11 @@ void play_game(char fadein) {
 					if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 					break;
 				}
+			}
+			else
+			{
+				//key pressed counter -Koji
+				set_counter("KEY_PRESSED", 0);
 			}
 	} while(key!=27);
 
@@ -2117,7 +2188,8 @@ char update(char game,char &fadein) {
 		exit_func();
 		if(pal_update) update_palette(0);
 		enter_funcn("(update delay)",6);
-		while(tcycle<(overall_speed-1)*8) ;
+		//Lets speed things up a tad. Below used to be 8 -Koji
+		while(tcycle<(overall_speed-1)*6);
 		exit_func();
 	} else {
 		if(pal_update) update_palette();

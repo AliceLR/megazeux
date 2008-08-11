@@ -25,6 +25,5 @@
 #define __CHARSET_H
 
 extern unsigned char far default_mzx_char_set[];
-extern unsigned char far ascii_set[];
 
 #endif

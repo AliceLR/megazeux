@@ -23,23 +23,23 @@
 #include <stdio.h>
 #include <string.h>
 #include <io.h>
-
 #include <dos.h>
 #include "const.h"
 #include "data.h"
 #include "egacode.h"
 #include "palette.h"
+#include "scrdump.h"
 
 //static volatile char rcsid[] = "$Id: scrdump.c,v 1.4 1999/02/16 05:45:41 mental Exp $";
 
 /* FIXME: not endian-safe */
-void dump_screen(char far *filename) {
-	char fname[10];
+void dump_screen() {
+	char fname[11];
 	FILE *fp;
 	int t1, t2, t3, t4, t5, t7, t8, snum;
 	unsigned char *scrn = (unsigned char*)MK_FP(current_pg_seg,0);
 	char r,g,b;
-	for (snum = 0;snum <= 9;snum++) {
+	for (snum = 0;snum <= 99;snum++) {
 	  sprintf(fname,"screen%d.pcx",snum);
 	  //break;
 	  if (!(access(fname,0) == 0)) break;

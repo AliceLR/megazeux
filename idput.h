@@ -39,6 +39,9 @@ void _draw_edit_window(int array_x,int array_y,void * vid_seg);
 void _draw_game_window(int array_x,int array_y,void * vid_seg);
 
 
+unsigned char get_id_char(int id_offset);
+unsigned char get_id_color(int id_offset);
+
 #ifdef __cplusplus
 }
 #endif

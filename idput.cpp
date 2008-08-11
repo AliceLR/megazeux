@@ -385,13 +385,13 @@ no_spec:
 }
 
 void _id_put(unsigned char x_pos, unsigned char y_pos, int array_x,
-		   int array_y, int ovr_x, int ovr_y, void *vid_seg)
+			int array_y, int ovr_x, int ovr_y, void *vid_seg)
 {
 	int array_offset, overlay_offset;
 	unsigned char c, color;
 	array_offset = array_y * max_bxsiz + array_x;
 	if ( !( overlay_mode & 128 )
-	     && ( overlay_mode & 3 ) && ((overlay_mode & 3) != 3)){
+		  && ( overlay_mode & 3 ) && ((overlay_mode & 3) != 3)){
 		if ( overlay_mode & 2 ) {
 			overlay_offset = ovr_y * max_bxsiz + ovr_x;
 		} else {
@@ -400,16 +400,38 @@ void _id_put(unsigned char x_pos, unsigned char y_pos, int array_x,
 		c = overlay[overlay_offset];
 		color = overlay_color[overlay_offset];
 		if (overlay_mode & 64) {
-		   draw_char(c, color, x_pos, y_pos, (unsigned int)vid_seg);
-		   return;
+			draw_char(c, color, x_pos, y_pos, (unsigned int)vid_seg);
+			return;
 		}
-		if ( c == 32 ) {
-			c = get_id_char(array_offset);
-			color = get_id_color(array_offset);
-		} else {
-			if ( !( color & 0xF0 ) && !( overlay_mode & 64 ) ) {
-				color = ( color & 0x0F )
-				      | ( get_id_color(array_offset) & 0xF0 );
+		if (overlay_mode == 4)
+		{
+			if ( c == 32 )
+			{
+				c = get_id_char(array_offset);
+				color = get_id_color(array_offset);
+			}
+			else
+			{
+				if ( !( color & 0xF0 ) && !( overlay_mode & 64 ) )
+				{
+					c = get_id_char(array_offset);
+					color = ( color & 0x0F )|( get_id_color(array_offset) & 0xF0 );
+				}
+			}
+		}
+		else
+		{
+			if ( c == 32 )
+			{
+				c = get_id_char(array_offset);
+				color = get_id_color(array_offset);
+			}
+			else
+			{
+				if ( !( color & 0xF0 ) && !( overlay_mode & 64 ) )
+				{
+					color = ( color & 0x0F )| ( get_id_color(array_offset) & 0xF0 );
+				}
 			}
 		}
 	} else {
@@ -420,7 +442,7 @@ void _id_put(unsigned char x_pos, unsigned char y_pos, int array_x,
 }
 
 extern "C" void id_put(unsigned char x_pos, unsigned char y_pos, int array_x,
-		       int array_y, int ovr_x, int ovr_y, int vid_seg)
+				 int array_y, int ovr_x, int ovr_y, int vid_seg)
 {
 	_id_put(x_pos, y_pos, array_x, array_y, ovr_x, ovr_y, (void *)vid_seg);
 }

@@ -89,8 +89,8 @@
 //"SIZE" includes terminating \0
 #define PATHNAME_SIZE		129
 #define FILENAME_SIZE		13
-#define NUM_BOARDS		150 //Haven't increased this yet, over 255 causes mzx to crash on load
-                                  //Each board requires considerable amount of conventional mem Spid
+#define NUM_BOARDS		   150 //Haven't increased this yet, over 255 causes mzx to crash on load
+											 //Each board requires considerable amount of conventional mem Spid
 #define BOARD_NAME_SIZE		25
 #define COUNTER_NAME_SIZE	15  //Possibly decrease counter name size to gain conventional mem? Spid
 #define NUM_KEYS				16

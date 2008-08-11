@@ -111,9 +111,9 @@ int rtoo_obj_type(void) {
 char csdi_types[3]={ DE_RADIO,DE_BUTTON,DE_BUTTON };
 char csdi_xs[3]={ 6,5,15 };
 char csdi_ys[3]={ 4,11,11 };
-char far *csdi_strs[3]={ "MegaZeux default\nASCII set\nBlank set",
+char far *csdi_strs[3]={ "MegaZeux default\nBlank set",
 "OK","Cancel" };
-int csdi_p1s[3]={ 3,0,-1 };
+int csdi_p1s[3]={ 2,0,-1 };
 int csdi_p2s[1]={ 16 };
 int cs_type=0;
 void far *csdi_storage[1]={ &cs_type };

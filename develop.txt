@@ -11,3 +11,5 @@ Put the bwsb libs in C:\tc\lib
 Put the bwsb headers in C:\tc\include
 Put Turbo asm into C:\tc\bin
 BUILD ALL the whole thing
+
+All Objects are compiled so you COULD just LINK them if you loose mzx2.6 somehow...

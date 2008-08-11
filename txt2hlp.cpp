@@ -34,7 +34,7 @@ int fgetc2(FILE *fp) {
 }
 #define fgetc(f) fgetc2(f)
 
-void main(int argc,char *argv[]) {
+int main(int argc,char *argv[]) {
 	int t1,t2,t3;
 	char tstr[81]="";
 	long tlong;
@@ -43,7 +43,7 @@ void main(int argc,char *argv[]) {
 
 	if(argc<3) {
 		printf("Usage: TXT2HLP source.txt output.fil\n\n\a");
-		return;
+		return 1;
 		}
 
 	FILE *source;
@@ -52,14 +52,14 @@ void main(int argc,char *argv[]) {
 	source=fopen(argv[1],"rb");
 	if(source==NULL) {
 		printf("Error opening %s for input.\n\n\a",argv[1]);
-		return;
+		return 1;
 		}
 
 	dest=fopen(argv[2],"wb");
 	if(dest==NULL) {
 		fclose(source);
 		printf("Error opening %s for output.\n\n\a",argv[2]);
-		return;
+		return 1;
 		}
 
 	//Source/dest files open. Now scan source for number of filenames.

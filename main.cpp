@@ -4,6 +4,7 @@
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  * Copyright (C) 1999 Charles Goetzman
+ * Copyright (C) 2002 B.D.A. (Koji) - Koji_Takeo@worldmailer.com
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -58,6 +59,7 @@
 #include "mod.h"
 #include "game.h"
 #include "error.h"
+#include <time.h>
 #define SAVE_INDIVIDUAL
 
 
@@ -76,13 +78,21 @@ char *unreg_exit_mesg=
 char *reg_exit_mesg=
 "Thank you for playing MegaZeux.\n\n\n\r"
 "Read the files megazeux.doc and readme.1st if you need help.\n\n\r"
-"Contributors to MZX2.51 version S3.2:\n\n\r"
-"Charles Goetzman - mzx s1 base and misc. code\n\r"
-"MenTaLguY - anti-flicker code, mouse buffering, mod \"*\"\n\r"
-"Ben Zeigler - under bug fix and getting the thing to run\n\r"
-"CapnKev - refresh screen code\n\r"
-"MadBrain - password and message hack\n\n\r"
-"Visit zeux.org for newer versions of this software\n\n\r$";
+"Contributors to MZX:\n\n\r"
+"MZX 1.0-2.51 base code:\n\r"
+" Greg Janson - everything\n\r"
+"MZX spider s1-s3.1 series contributers:\n\r"
+" Charles Goetzman - mzx s1 base and misc. code\n\r"
+" MenTaLguY - anti-flicker code, mouse buffering, mod \"*\"\n\r"
+" Ben Zeigler - under bug fix and getting the thing to run\n\r"
+"MadBrain - MZX s3.2 (BIMSG, etc.)\n\r"
+"Akwende  - MZXAK 1.0 basecode and misc. code\n\r"
+"MZX 2.6:\n\r"
+" Koji - New functions, real distance, etc.\n\r"
+" Exophase - New functions, debugging, etc.\n\r"
+" Inmate2993 - Use all 16 bits of a counter.\n\r"
+
+"\nVisit www.Digitalmzx.net for newer versions of this software\n\n\r$";
 
 #endif
 
@@ -135,6 +145,7 @@ int main(int argc,char **argv) {
 	getcwd(current_dir,PATHNAME_SIZE);
 	str_cpy(megazeux_dir,current_dir);
 	megazeux_drive=current_drive=getdisk();
+	//Disable smzx mode
 	//Switch to EGA 14 point mode and turn off cursor
 	ega_14p_mode();
 	cursor_off();
@@ -149,18 +160,18 @@ int main(int argc,char **argv) {
 	draw_window_box(2,1,77,3,0xB800,120,127,113,0);
 	draw_window_box(2,4,77,16,0xB800,120,127,113,0);
 	draw_window_box(2,17,77,23,0xB800,120,127,113,0);
-        write_string("MegaZeux version 2.51S3.2",27,2,127,0xB800);
+		  write_string("MegaZeux version 2.6",27,2,127,0xB800);
 // #ifdef BETA
 	write_string("BETA- PLEASE DISTRIBUTE",27,17,127,0xB800);
 // #endif
 #ifdef GAMMA
-	write_string("GAMMA- MAY CONTAIN BUGS",27,17,127,0xB800);
+	write_string("GAMMA- MAY CONTAIN BUGz!",27,17,127,0xB800);
 #endif
 #ifdef UNREG
 	write_string("Unregistered Evaluation Copy",25,0,122,0xB800);
 #endif
 	write_string("Graphics card:",4,18,122,0xB800);
-        
+
 	write_string("EMS available:",4,20,122,0xB800);
 	write_string("Core mem free:",4,21,122,0xB800);
 	write_string("Memory allocs:",4,22,122,0xB800);
@@ -169,16 +180,66 @@ int main(int argc,char **argv) {
 	write_string("Sound card port:",42,20,122,0xB800);
 	write_string("Sound card IRQ:",43,21,122,0xB800);
 	write_string("Sound card DMA:",43,22,122,0xB800);
-	//Fix palette to be nicer
-	set_rgb(1,31,31,31);
-	set_rgb(6,63,0,0);
-	set_rgb(7,21,21,21);
-	set_rgb(8,8,8,8);
-	set_rgb(9,42,42,63);
-	set_rgb(10,42,63,42);
-	set_rgb(11,42,63,63);
-	set_rgb(12,63,42,42);
-	set_rgb(13,63,42,63);
+	//Fix palette to be nicer.
+
+	//Not if I can help it!
+	//the random palettes are uglier
+	//than sin! Couldn't find the original
+	//so I'll just use the default -Koji
+
+/*	randomize();
+	switch(random(100)%4)
+	{
+		case(0):
+		set_rgb(1,31,0,0);
+		set_rgb(6,53,0,0);
+		set_rgb(7,21,0,0);
+		set_rgb(8,11,0,0);
+		set_rgb(9,63,63,0);
+		set_rgb(10,63,31,0);
+		set_rgb(11,63,21,21);
+		set_rgb(12,63,42,42);
+		set_rgb(13,63,42,21);
+		set_rgb(15,63,0,0);
+		break;
+		case(1):
+		set_rgb(1,46,29,31);  //CORNER
+		set_rgb(6,50,33,35);  //BACKGROUN
+		set_rgb(7,55,38,40);  //MID Edge
+		set_rgb(8,41,24,26);  //DARK Edge
+		set_rgb(9,63,46,48);   //ACTIVE Text
+		set_rgb(10,41,24,26);  //STATIC Text
+		set_rgb(11,55,36,39); //SELECTION Text
+		set_rgb(12,51,34,38); //
+		set_rgb(13,63,46,48); //
+		set_rgb(15,63,46,48); //LIGHT EDGE
+		break;
+		case(2):
+		set_rgb(1,0,31,0);
+		set_rgb(6,0,53,0);
+		set_rgb(7,0,21,0);
+		set_rgb(8,0,11,0);
+		set_rgb(9,0,63,63);
+		set_rgb(10,0,63,31);
+		set_rgb(11,21,63,21);
+		set_rgb(12,42,63,42);
+		set_rgb(13,21,63,42);
+		set_rgb(15,0,63,0);
+		break;
+		case(3):
+		set_rgb(1,0,0,31);
+		set_rgb(6,0,0,53);
+		set_rgb(7,0,0,21);
+		set_rgb(8,0,0,11);
+		set_rgb(9,0,63,63);
+		set_rgb(10,0,31,63);
+		set_rgb(11,21,21,63);
+		set_rgb(12,42,42,63);
+		set_rgb(13,21,42,63);
+		set_rgb(15,0,0,63);
+		break;
+
+	}*/
 	//Fade in
 	vquick_fadein();
 	//Initialize systems and display progess at bottom
@@ -420,6 +481,10 @@ maingame:
 	mixing_rate=mixing_rates[music_device][mixing_rate];
 	if(music_device==0) music_on=0;
 	else music_on=1;
+	//Subliminal message. -Koji
+	// I'm trying to take weak mortal minds and turn them
+	// into my mzx'ing slaves. Bahahahahaha!
+	write_string("Subliminal Message",29,12,112,0xB800);
 	vquick_fadeout();
 	clear_screen(1824,0xB800);
 	//Init mod code
@@ -561,7 +626,7 @@ char scan_options(void) {
 	if(help) {
 		if(help==1) puts("\a");
 		else puts("");
-		puts("MegaZeux version 2.51\tCommand line parameters-\n");
+		puts("MegaZeux version 2.6\tCommand line parameters-\n");
 		puts("      -?  Help with parameters.");
 		puts("-nomouse  Don't use mouse, even if found.");
 		puts("  -noems  Don't use EMS memory, even if available. (NOT RECOMMENDED)");

@@ -33,10 +33,16 @@ $~Aศออออออออออออออออออออออออออออออออออออผ
 >#ERRORMES.HLP:1st:Error Messages
 >#MEGAZEUX.HLP:1st:MegaZeux Limitations
 >#IFYOUFIN.HLP:1st:If You Find a Bug...
->Please:Registration Info- MegaZeux is Not Free
->#NEWINVER.HLP:1st:NEW in Version 2.51s3.2! (Changes Since Version 1.03)
+>Please:Registration Info- MegaZeux is Free !!!
+>#NEWINVER.HLP:1st:NEW in Version 2.6!
 
 $** Credits and Acknowledgments **
+
+$Mzx 2.6 Thanks & Beta testers:
+$Inmate2993
+$Exophase *
+$JESUS
+$All the little people
 
 $Programming and Overall Design by Gregory Janson
 $Music/Sound code by Edward Schlunder
@@ -147,7 +153,7 @@ $~EWelcome to MegaZeux! Use the arrow keys to Scroll
 $~Ethis text, and ESC when you are done reading.
 
 $~BPress END to learn about the NEW FEATURES in
-$~BMegaZeux 2.51s3.2!
+$~BMegaZeux 2.6!
 
 As you may already know, MegaZeux is a game system which
 allows you to play almost limitless worlds in EGA graphics
@@ -181,7 +187,7 @@ ESC now to exit to the game.
 >#CONTROLS.HLP:091:Controls
 >#THEWORLD.HLP:1st:The World Editor
 
->#NEWINVER.HLP:1st:WHAT'S NEW in version 2.51s3.2!
+>#NEWINVER.HLP:1st:WHAT'S NEW in version 2.6!
 #CONTROLS.HLP
 :091:Controls
 
@@ -471,7 +477,8 @@ is currently on.
 
 RADIO BUTTONS- These are similar to Check Boxes, but are
 mutually exclusive. The mouse or arrow keys will select the
-current and ONLY option that is on. The () shows the current
+current and ONLY option that is on. The (
+) shows the current
 option.
 
 BUTTON- These are rectangles with labels. When selected,
@@ -583,7 +590,7 @@ increased by a certain amount. The amount varies for different
 hearts.
 
 ~BRing            ~Eo
-~BPotion          –
+~BPotion          -
 
 These mystical items will bestow a magical effect on you when
 you wear or drink them. The effect, however, is unknown to
@@ -626,8 +633,7 @@ A lock will only open if you have a key of the same color to
 unlock it. The key can only be used once and will disappear
 along with the lock.
 
-~BCoin            ~E
-
+~BCoin            ~E
 Collecting coins is a good idea- they not only increase your
 score, but can usually be used to purchase valuable items or
 services from vendors.
@@ -642,7 +648,7 @@ MegaZeux.
 A pouch is usually filled with coins and gems. The amount
 varies, but often you will find yourself pleasantly rich...
 
-~BChest           ~6 
+~BChest           ~6
 
 A chest can contain numerous things. The contents will be one
 of the following: Empty, a Key, Coins, Lives, Ammo, Health,
@@ -741,7 +747,7 @@ Bear cubs are very lively, rushing all over the place. Since
 they move so fast in a seemingly random manner, they are often
 hard to kill.
 
-~BBullet Gun ~F”  ” 
+~BBullet Gun ~F"  " 
 
 Bullet guns fire in one direction only and are indestructible.
 They usually fire bullets, but some may fire scorching flame.
@@ -800,7 +806,7 @@ $@0~8ฑ ~FTransport~8 ฑ@8
 
 ~BStairs          ~Fข
 ~BCave (or door)  ~0ก
-~BWhirlpool       ~9@1@—
+~BWhirlpool       ~9@1@-
 
 When you enter any one of these, you are transported to another
 location within the current world. These are not always two-way
@@ -864,7 +870,7 @@ the floor, enveloping trees and chests. It is rather painful
 to stand on or near, but it does not mean instantaneous death.
 Most fire will eventually burn out.
 
-~BLit Bomb        ~0ฉ
+~BLit Bomb        ~0(c)
 
 A lit bomb is an explosion on a fuse. You DON'T want to be
 nearby when the fuse runs out...
@@ -960,7 +966,7 @@ Touch this to read a message. The sign will remain afterwards.
 Missiles fly around the room, turning at obstructions. They will
 explode if they hit you or a dead end.
 
-~BBullet          ~F”
+~BBullet          ~F"
 
 Bullets (or other projectile weapons such as arrows) will fly
 in a straight line until they hit something (and disappear) or
@@ -1089,6 +1095,8 @@ MegaZeux worlds.
 Since greg has left the community, please email me, JZig,
 at jzig@cncn.com if you have any bug reports.
 
+Actually, since spider is done with mzx dev, contact me, Koji,
+at Koji_takeo@worldmailer.com
 
 >#MAIN.HLP:072:Table of Contents
 #FAQ.HLP
@@ -1410,7 +1418,6 @@ what each one does.
 >PgDn: PageDown - Next Menu
 >PgUp: PageUp - Previous Menu
 >095:    * - Protection
-
 
 :_A:    A - Add (board)
 
@@ -1809,6 +1816,12 @@ No-play prevents anyone from playing your game at all. The
 password is used to protect the world and is case-insensitive.
 The entire MZX file is encrypted. Please don't distribute or
 upload files that are No-play protected to the general public.
+
+***ADDENDUM***
+
+Protection is long since removed as it holds no real prtective
+value since megahack and getpw are out.
+		-Koji
 
 >#THEWORLD.HLP:1st:The World Editor
 >#GENERALE.HLP:1st:General Editing Tips
@@ -5081,6 +5094,12 @@ This is sent when the Robot is hit with an explosion.
 This is sent when the player presses a key from A to Z or from 1
 to 9. ? is replaced with the key pressed.
 
+ACTUALLY : This now can stand for any key on the keyboard
+  provided You replace ? with the ASCII symbol of the ASCII key
+  code of the key to be detected... IE : ENTER = ASCII code 13.
+  Use F3 to set down the correct character.
+		-Koji
+
 ~EINVINCO
 
 This is sent when the player grabs an energizer.
@@ -5165,7 +5184,7 @@ Counters are built-in variables, or stored values with names.
 Each counter has a name, such as "Yellow" or "Apple Pies". A
 counter can hold a value from -32768 to 32767, in most cases.
 A counter is "active" when it has a value other than 0. There
-can be up to 50 active counters at any one time, in addition
+can be up to 1000 active counters at any one time, in addition
 to the built-in counters. Counters retain values between
 different boards.
 
@@ -5227,7 +5246,7 @@ $Robot Built-in Counters
 ~BBULLETTYPE
 
 The current type of bullet shot by the Robot. 0 for Player, 1
-for Neutral, and 2 for Enemy.
+for Neutral, and 2 for Enemy. (0-255) -Koji
 
 >#BULLETTY.HLP:1st:Bullet Types
 
@@ -5318,8 +5337,249 @@ Turns the built-in messages (such as "Ouch!") on/off.
 0 - Off
 1 - On(default)
 
+
+***REMOVAL BEGIN***
+
+~BMZXAKVERSION
+
+Most important counter added, must be set to 1 for new counters
+to work.
+Included so that all previous games are 100% compatible.
+
+~BMZXak Header
+
+The format to allow auto MZXak support, place code global robot
+Example to load in SMZX mode:
+
+~Bset MZXAKVERSION to 1
+~Bset SMZX_MODE to 1
+
+***REMOVAL END*** -Koji
+
+~BABS_VALUE
+~BSQRT_VALUE
+~BVALUE
+
+Math operations, usage set value or counter to function counter
+    ie ABS_VALUE or SQRT_VALUE.
+    Result is stored in VALUE counter.
+  ABS_VALUE sets VALUE to the absolute value of the number or
+    counter passed in.
+  SQRT_VALUE sets VALUE to the square root of the number or
+    counter passed in.
+  VALUE is normal counter others are READ ONLY.
+
+~BROBOT_ID
+~BTHIS_COLOR
+~BTHIS_CHAR
+~BBULLETTYPE -Koji
+~BLAVA_WALK  -Koji
+
+New Local counters
+  ROBOT_ID is READ ONLY, returns the internal id of the robot
+  THIS_COLOR is READ ONLY, returns the color of the robot.
+  THIS_CHAR is READ ONLY, returns the character of the robot.
+  BULLETTYPE allows normal access of robot[id].bullte_type,
+	only can store values (0-255). -Koji
+  LAVA_WALK valiable, can store (0-255). -Koji
+
+
+~BCURRENT_COLOR
+~BRED_VALUE
+~BGREEN_VALUE
+~BBLUE_VALUE
+
+Color operations, usage returns the specified value from the
+CURRENT_COLOR
+ Requires that CURRENT_COLOR be set to 0-15.
+ CURRENT_COLOR is normal counter the value counters are
+ READ ONLY.
+
+~BBOARD_X
+~BBOARD_Y
+~BBOARD_CHAR
+~BBOARD_COLOR
+
+Location operations, usage returns color or char from location
+
+  BOARD_X and BOARD_Y must be actual location with in board.
+  BOARD_COLOR is from 0-255
+    (press C in editor to view color table).
+  Takes into account any transparency
+  BOARD_CHAR is from 0-255
+  BOARD_X and BOARD_Y are normal counters,
+   other two are READ ONLY.
+
+~BOVERLAY_X
+~BOVERLAY_Y
+~BOVERLAY_CHAR
+~BOVERLAY_COLOR
+
+Functions the same as BOARD counters only tests the overlays,
+same restrictions and attributes apply.
+
+*** VIEW ADDENDUM BELOW***
+
+~BGET_TARGET_ID
+~BMY_TARGET
+~BTARGET_DIST
+~BTARGET_X
+~BTARGET_XDIR
+~BTARGET_Y
+~BTARGET_YDIR
+
+Target Functions.
+  These counters allow for far better and easier targeting by
+  robots of other robots.
+  All counters use MY_TARGET as target robot's id.
+  To initialize you must set MY_TARGET to GET_TARGET_ID.
+  GET_TARGET_ID uses BOARD_X and BOARD_Y, returns id of robot
+    at BOARD_X BOARD_Y
+  GET_TARGET  can be used with the rel command to base BOARD_X
+    and BOARD_Y around it self, player, or counters.
+  TARGET_X returns x position of MY_TARGET
+  TARGET_Y returns y position of MY_TARGET
+  TARGET_XDIR returns x direction (-1,0,1) of MY_TARGET
+  TARGET_YDIR returns y direction (-1,0,1) of MY_TARGET
+  TARGET_DIST returns the distance of MY_TARGET sum of x
+    distance and y distance
+  ALL TARGET_* counters are READ ONLY, MY_TARGET is a local
+    counter.
+
+***ADDENDUM***
+Inter robot Targeting Functions removed to free up EMS.
+		~Koji
+***END***
+
+~BDATE_DAY
+~BDATE_MONTH
+~BDATE_YEAR
+Date operations returns the day month or year based upon the
+system clock.
+ READ ONLY
+
+~BTIME_HOURS
+~BTIME_MINUTES
+~BTIME_SECONDS
+Time operations returns the hours, minutes or seconds based
+upon the system clock.
+  Note TIME_HOURS returns hours in military time (1-24).
+  READ ONLY
+
+~BMZX_SPEED
+Returns current game speed setting.
+  It can't alter the game speed itself.
+
+You can now write to this and change the
+  game speed -Koji
+
+***NEW in 2.6*** -Koji
+
+~BFREAD_OPEN
+~BFREAD
+~BFWRITE_OPEN
+~BFWRITE_APPEND
+~BFWRITE
+
+FREAD_OPEN: closes previouse reading file and
+  opens a new one.
+FREAD: reads the opened file
+FWRITE_OPEN: closes previouse writing file
+  and opens a new one.
+FWRITE_APPEND: closes previouse writing file
+  and opens a new one as append.
+FWRITE: writes to a file
+
+Usage -
+
+~4set 'filename.ext' 'FREAD_OPEN'
+~4set 'TEMP' to 'FREAD'
+~4set 'filename.ext' 'FWRITE_OPEN'
+~4set 'FWRITE' to 'TEMP'
+
+~BFREAD_POS
+~BFREAD_PAGE
+~BFWRITE_POS
+~BFWRITE_PAGE
+
+Current Page (0-255) and position on page
+  (0-32767) in the given file.
+
+~FREAD_LENGTH
+~FWRITE_LENGTH
+
+Length of given file.
+
+~BCHAR_X
+~BCHAR_Y
+~BPIXEL
+
+Set CHAR_X and CHAR_Y to a pixel location
+  in the char set. And set the PIXEL variable
+  to one of the following to edit the pixel.
+    1) Sets the pixel ON.
+    2) Clears the pixel.
+    3) Toggle the pixel.
+  You can also read the PIXEL variable for it
+  to return 1 if there is a pixel set at the
+  location, or 0 if not.
+
+~BINT
+~BBIT_PLACE
+~BINT2BIN
+
+Set INT to the number you wish to read or write
+  a given bit. Set BIT_PLACE to a number 0-15 (1
+  of all 16 bit places in a variable), and set
+  INT2BIN to one of the following to edit the bit.
+    1)Sets the bit ON.
+    2)Sets the bit OFF.
+    3)Toggles the bit.
+  You can also read the INT2BIT variable for it
+  to return the bit value.
+
+~BCHAR_BYTE
+~BCHAR
+~BBYTE
+
+Set CHAR to a character position (0-225) and BYTE
+  to a byte position within the char (0-13). You
+  can read or write to the CHAR_BYTE variable to
+  read the chars byte or set it.
+
+~BLAVA_WALK
+
+As mentioned above it sets and reads the can_lavawalk
+  value for the current robot, thus making a new local.
+  (0-255).
+
+~BR_PLAYERDIST
+
+Returns the REAL player distance as far as 129
+  units. After that it only returns 129.
+
+~BENTER_MENU
+
+When set to 0 this will deactivate the defalt status
+  screen! If it is set to anything else the defalt
+  status screen is active again.
+
+~BHELP_MENU
+
+Just like ENTER_MENU only for the help system.
+
+~BF2_MENU
+
+Just like ENTER_MENU only for the F2 menu.
+
+~BKEY_PRESSED
+
+Returns The ASCII code of ANY key currently being pressed.
+
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
+
+
 #USINGTHE.HLP
 :1st:Using the Editor
 
@@ -5936,7 +6196,39 @@ Formatting' section for more advanced programming.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #NEWINVER.HLP
-:1st:NEW in Version 2.51! (Changes Since Version 1.03)
+:1st:NEW in Version 2.6! (Changes Since Version 1.03)
+
+VERSION 2.6 :
+
+	More than anything else this version bends the spin
+off versions of mzx back into line with the original. Instead
+of being a new mzx that some people use and other's dont, this,
+I hope, will be a standard. And hopefully this code will be
+used for future versions of mzx.
+
+NEW FEATURES :
+
+	Check out the builtin-counter section for the complete
+run down of these new and exciting mzx features-
+
+File access
+Menu activation/deactivation
+Current key pressed detection
+Easy access to all 16 bits of a counter
+Pixel editing of a char set
+Single Byte editing of a char.
+Real player distance
+
+Also check the builtin-lables section for more on the :"key?"
+lable.
+
+REMOVALS :
+
+SMZX (may return if I can get it not to screw up the mouse)
+inter robot targeting (no one uses this)
+Random color start up (It's Ugly as sin)
+
+$****
 
 For information on mzx s3.2, read readme.1st.
 
@@ -5955,10 +6247,19 @@ Note- This is a direct translation from the file WHATSNEW.251,
 included with MegaZeux. If you haven't used version 1.03 or
 before, you probably won't understand much of this list.
 
+~E2.51ak release:
+ + Added Numerous new Counters
+ + Added new inter robot targeting system
+ + Added new SMZX mode, dynamic resolution setting
+ + Fixxed fatal crash when taking a picture, also increased
+   the number of picture you can take to 99
+ + Removed Built-in ASCII charset
+ + Added Random color start up
+
 ~E2.51s3.2 release:
 
  + Removed password protection
- + Added new counter BIMesg to turn off built-in messages (Such as "Ouch!")
+ + Added new counter BIMesg to turn off built-in messages
 
 ~E2.51s3.1 release:
 
@@ -5974,7 +6275,7 @@ before, you probably won't understand much of this list.
  + Fixed overlay transparency weirdness. Now, background of
    lower layer will ALWAYS show through if background of
    overlay is 0
- + Added in kev's refresh screen support. Press alt+w on the 
+ + Added in kev's refresh screen support. Press alt+w on the
    title screen or editor screen, and = in the game(don't ask,
    has to do with mzx's keybard handler).  Use this if your
    charset gets corrupted in windows.
@@ -5982,7 +6283,7 @@ before, you probably won't understand much of this list.
  + Fixed bug involving incorrect loading of mzx health etc.
 
 ~E2.51s3final release:
-  
+
  + Fixed bug involving mod * settings being lost when loading
  + Should have fixed ems problems some were reporting, if not,
   just try to get more conventional memory.  Enclosed document
@@ -5990,7 +6291,7 @@ before, you probably won't understand much of this list.
  + Fixed a bug involving direction checking.
  + Pressing ']' at most any time will now save a screenshot to
    screen.pcx
- + Pressing alt+8 in the editor will set the current mod to *.  
+ + Pressing alt+8 in the editor will set the current mod to *.
 
 
 ~E2.5.1s2beta release:

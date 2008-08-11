@@ -1,9 +1,17 @@
+2.51ak release:
++ Added Numerous new Counters
++ Added new inter robot targeting system
++ Added new SMZX mode, dynamic resolution setting
++ Added SMZX mode character editor, allowing better editing
++ Fixed fatal crash when taking a picture, also increased
+  the number of picture you can take to 99
++ Removed Built-in ASCII charset
++ Added Random color start up
++ Fixed import World Feature
+
 2.51s3.2 release:
 + Removed password protection (no use for it because of Getpw)
 + New counter: BIMesg. Set to 0 to turn off messages like "Ouch!"
-+ Source code *PATCH* can be found at: www.geocities.com/obinator256/galaxy.html
-  (you must unzip the patch in the source directory, overwriting the original files)
-
 
 2.51s3.1 release:
 + Fixed damage table, now works correctly

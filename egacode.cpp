@@ -22,6 +22,8 @@
 //Code to edit character sets and switch between ega 14 point mode and
 //vga 16 point mode
 
+//SMZX commented out -Koji
+
 #include "meminter.h"
 #include "charset.h"
 #include "string.h"
@@ -52,6 +54,22 @@ void ega_14p_mode(void) {
 		}
 }
 
+
+/*void smzx_14p_mode(void)
+{
+	asm {
+		mov ax,1201h
+		mov bl,30h
+		int 10h
+		mov ax,0003h
+		int 10h
+		mov dx,03C0h
+		mov al,10h
+		out dx,al
+		mov al,4Ch
+		out dx,al
+	}
+} */
 //Enter 16-byte high character mode and reset character sets
 //(VGA native text mode)
 void vga_16p_mode(void) {
@@ -247,10 +265,6 @@ void ec_mem_load_set(unsigned char far *chars) {
 	ec_update_set();
 }
 
-//Loads in the default set (ASCII)
-void ec_load_ascii(void) {
-	ec_mem_load_set(ascii_set);
-}
 
 //Loads in the default set (Megazeux)
 void ec_load_mzx(void) {

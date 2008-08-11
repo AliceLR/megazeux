@@ -18,7 +18,7 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
-
+//I went ahead and commented out the entire smzx char edit stuff -Koji
 //Character editor
 
 #include "helpsys.h"
@@ -32,6 +32,7 @@
 #include "hexchar.h"
 #include "data.h"
 #include "charset.h"
+#include "palette.h"
 
 //-------------------------------------------------
 //     +----------------+ Current char-     (#000)
@@ -48,7 +49,7 @@
 // 000 |................| F2      Copy to buffer
 // 000 |................| F3      Copy from buffer
 // 000 |................| Tab     Draw (off)
-// 000 |................| F4      Revert to Ascii
+// 000 |................|
 //     +----------------+ F5      Revert to MZX
 //-------------------------------------------------
 
@@ -57,7 +58,7 @@
 //       "Current Char-"=Enter
 //       "..0.."=Change char
 
-int ce_menu_cmds[14]={ 0,0,' ',13,-83,'N',0,'M','F',-60,-61,9,-62,-63 };
+int ce_menu_cmds[13]={ 0,0,' ',13,-83,'N',0,'M','F',-60,-61,9,-63 };
 
 int char_editor(void) {
 	unsigned char matrix[14];
@@ -84,22 +85,52 @@ F  'Flip'\n\
 F2 Copy to buffer\n\
 F3 Copy from buffer\n\
 TabDraw\n\
-F4 Revert to Ascii\n\
+\n\
 F5 Revert to MZX",40,4,143,current_pg_seg);
 	m_show();
 	//Get char
 	ec_read_char(chr,matrix);
-	do {
+	do
+	{
 		//Update char
 		m_hide();
-		for(t1=0;t1<8;t1++) {
-			for(t2=0;t2<14;t2++) {
+		/*if (smzx_mode)
+		{
+			for(t2=0;t2<14;t2++)
+			{
+				for(t1=0;t1<8;t1++)
+				{
+					bit = (matrix[t2]&(128>>t1))/(128>>t1) + 2 * (matrix[t2]&(64>>t1))/(64>>t1);
+					switch(bit)
+					{
+						case 3:
+							write_string("€€€€",22+(t1<<1),5+t2,135,current_pg_seg);
+							break;
+						case 2:
+							write_string("≤≤≤≤",22+(t1<<1),5+t2,135,current_pg_seg);
+							break;
+						case 1:
+							write_string("∞∞∞∞",22+(t1<<1),5+t2,135,current_pg_seg);
+							break;
+						default:
+							write_string("˙˙˙˙",22+(t1<<1),5+t2,135,current_pg_seg);
+						break;
+					}
+				t1++;
+				}
+			}
+		}*/
+		for(t1=0;t1<8;t1++)
+		{
+			for(t2=0;t2<14;t2++)
+			{
 				bit=matrix[t2]&(128>>t1);
 				if(bit) write_string("€€",22+(t1<<1),5+t2,135,
 					current_pg_seg);
 				else write_string("˙˙",22+(t1<<1),5+t2,135,current_pg_seg);
-				}
 			}
+		}
+
 		for(t2=0;t2<14;t2++)
 			write_number(matrix[t2],135,17,5+t2,current_pg_seg,3);
 		//Update draw status
@@ -250,12 +281,6 @@ F5 Revert to MZX",40,4,143,current_pg_seg);
 			case 'N':
 				for(t1=0;t1<14;t1++)
 					matrix[t1]^=255;
-				ec_change_char(chr,matrix);
-				break;
-			case -62:
-				//Revert to ascii
-				for(t1=0;t1<14;t1++)
-					matrix[t1]=ascii_set[chr*14+t1];
 				ec_change_char(chr,matrix);
 				break;
 			case -63:

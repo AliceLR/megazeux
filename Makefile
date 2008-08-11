@@ -25,9 +25,9 @@ TLINK = tlink
 .asm.obj:
 	@$(TASM) /jWARN /MX /M5 /ZI /O /T $<,$@
 
-obj  = arrowkey.obj beep.obj blink.obj block.obj boardmem.obj ceh.obj \
-charset.obj char_ed.obj comp_chk.obj counter.obj cursor.obj data.obj \
-data2.obj detect.obj dt_data.obj edit.obj edit_di.obj egacode.obj \
+obj  = admath.obj arrowkey.obj beep.obj blink.obj block.obj boardmem.obj \
+ceh.obj charset.obj char_ed.obj comp_chk.obj counter.obj cursor.obj \
+data.obj data2.obj detect.obj dt_data.obj edit.obj edit_di.obj egacode.obj \
 ems.obj error.obj ezboard.obj fill.obj game.obj game2.obj getkey.obj \
 graphics.obj helpsys.obj hexchar.obj idarray.obj idput.obj intake.obj \
 main.obj meminter.obj meter.obj mouse.obj new_mod.obj palette.obj \
@@ -41,9 +41,9 @@ sfx_edit.obj string.obj timer.obj window.obj
 # list. So it's just copy/pasted. This tr command helps:
 #   tr ' ' '+' << "EOF"
 #
-lobj = arrowkey.obj+beep.obj+blink.obj+block.obj+boardmem.obj+ceh.obj+\
-charset.obj+char_ed.obj+comp_chk.obj+counter.obj+cursor.obj +data.obj+\
-data2.obj+detect.obj+dt_data.obj+edit.obj+edit_di.obj+egacode.obj+\
+lobj = admath.obj+arrowkey.obj+beep.obj+blink.obj+block.obj+boardmem.obj+\
+ceh.obj+charset.obj+char_ed.obj+comp_chk.obj+counter.obj+cursor.obj+\
+data.obj+data2.obj+detect.obj+dt_data.obj+edit.obj+edit_di.obj+egacode.obj+\
 ems.obj+error.obj+ezboard.obj+fill.obj+game.obj+game2.obj+getkey.obj+\
 graphics.obj+helpsys.obj+hexchar.obj+idarray.obj+idput.obj+intake.obj+\
 main.obj+meminter.obj+meter.obj+mouse.obj+new_mod.obj+palette.obj+\

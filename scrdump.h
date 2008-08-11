@@ -26,7 +26,7 @@
 //extern "C" {
 //#endif
 
-void dump_screen(char far *filename);
+void dump_screen();
 
 //#ifdef __cplusplus
 //}

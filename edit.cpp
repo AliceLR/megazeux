@@ -19,6 +19,7 @@
  * Foundation, Inc., 675 Mass Ave, Cambridge, MA 02139, USA.
  */
 
+//Took out SMZX -Koji
 //Editing the world!
 
 #include "helpsys.h"
@@ -575,7 +576,7 @@ void edit_world(void) {
 	re_evaul_key:
 		switch(key) {
 			case ']'://Screen .PCX dump
-				dump_screen("SCREEN.PCX");
+				dump_screen();
 				break;
 			case MOUSE_EVENT://Mouse click
 				//Possibilities-
@@ -713,8 +714,8 @@ void edit_world(void) {
 				//Re-init screen
 				vga_16p_mode();
 				ega_14p_mode();
-                                cursor_off();
-                                blink_off();
+				cursor_off();
+				blink_off();
 				ec_update_set();
 				update_palette(0);
 				changed=1;
@@ -931,21 +932,10 @@ void edit_world(void) {
 							fclose(fp);
 							break;
 							}
-						if(fgetc(fp)!='Z') {
-							error("Error importing world",1,24,current_pg_seg,0x1A03);
-							fclose(fp);
-							break;
-							}
 						t1=fgetc(fp);
 						if(t1=='X') {
 							error("World is from version 1- Use conversion program",
 								0,24,current_pg_seg,0x1C01);
-							fclose(fp);
-							break;
-							}
-						if(t1!='2') {
-							error("World is from a more recent version of MegaZeux",
-								0,24,current_pg_seg,0x0E02);
 							fclose(fp);
 							break;
 							}
@@ -1194,10 +1184,6 @@ void edit_world(void) {
 						ec_load_mzx();
 						break;
 					case 1:
-						//ASCII
-						ec_load_ascii();
-						break;
-					case 2:
 						//Blank
 						ec_load_mzx();
 						//Characters to leave alone-
@@ -2047,7 +2033,11 @@ void edit_world(void) {
 				getkey();
 				id_chars[0]=t1;
 				update_view=1;
-				break;
+				break;/*
+			case -90://ShF7
+				set_counter("SMZX_MODE",smzx_mode + 1, 0);
+				update_view=update_menu=1;
+				break;  */
 			case 'I'://I
 				if(draw_mode&128) break;
 				//Board info

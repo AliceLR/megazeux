@@ -23,6 +23,7 @@
 
 #ifndef __PALETTE_H
 #define __PALETTE_H
+extern char smzx_mode;
 
 void init_palette(void);
 void set_palette_intensity(char percent);
@@ -31,11 +32,15 @@ void set_rgb(char color,char r,char g,char b);
 char get_color_intensity(char color);
 void get_rgb(char color,char &r,char &g,char &b);
 void update_palette(char wait_for_retrace=1);
+void smzx_update_palette(char wait_for_retrace=1);
+void normal_update_palette(char wait_for_retrace=1);
+void update_HIGHpalette(char wait_for_retrace=1);
 void vquick_fadeout(void);
 void vquick_fadein(void);
 void insta_fadeout(void);
 void insta_fadein(void);
 void default_palette(void);
 char is_faded(void);
-
+int  get_Color_Aspect(char color,char aspect);
+void  set_Color_Aspect(char color,char aspect,int value);
 #endif

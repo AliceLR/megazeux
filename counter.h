@@ -29,6 +29,7 @@ extern int player_restart_x;
 extern int player_restart_y;
 extern char was_zapped;
 
+
 #ifdef __cplusplus
 extern "C" {
 #endif

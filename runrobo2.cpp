@@ -188,10 +188,10 @@ redone:
                                                 }
 					}
                                 exit_func();
-                                return;
+				return;
                         case 2://Wait
-                                t1=(unsigned char)parse_param(&cmd_ptr[1],id);
-                                if(t1==robots[id].pos_within_line) break;
+				t1=(unsigned char)parse_param(&cmd_ptr[1],id);
+				if(t1==robots[id].pos_within_line) break;
 				robots[id].pos_within_line++;
 				if(first_cmd) robots[id].status=1;
                                 goto breaker;
@@ -207,10 +207,10 @@ redone:
                                 robots[id].pos_within_line++;
 			case 68://Go dir label
                                 if(id==NUM_ROBOTS) break;
-                                //Parse dir
+				//Parse dir
 				t1=parsedir(cmd_ptr[2],x,y,robots[id].walk_dir);
-                                t1--;
-                                if((t1<0)||(t1>3)) break;
+				t1--;
+				if((t1<0)||(t1>3)) break;
                                 t2=_move(x,y,t1,1|2|8|16|4*robots[id].can_lavawalk);
                                 if((t2>0)&&(cmd==68)) {
                                         //blocked- send to label
@@ -228,7 +228,7 @@ redone:
 			case 5://Walk dir
                                 if(id==NUM_ROBOTS) break;
                                 t1=parsedir(cmd_ptr[2],x,y,robots[id].walk_dir);
-                                if((t1<1)||(t1>4)) {
+				if((t1<1)||(t1>4)) {
 					robots[id].walk_dir=0;
                                         break;
                                         }
@@ -248,7 +248,7 @@ redone:
                                 //Param- Only change if not becoming a robot
                                 if((t6!=123)&&(t6!=124)) {
 					level_param[t1]=(unsigned char)parse_param(&cmd_ptr[t4+3],id);
-                                        clear_robot(id);
+					clear_robot(id);
                                         //If became a scroll, sensor, or sign...
                                         if((t6==122)||(t6==125)||(t6==126)||(t6==127))
                                                 id_remove_top(x,y);
@@ -266,8 +266,8 @@ redone:
                         case 7://Char
                                 robots[id].robot_char=(unsigned char)parse_param(&cmd_ptr[1],id);
 				break;
-                        case 8://Color
-                                if(id==NUM_ROBOTS) break;
+			case 8://Color
+				if(id==NUM_ROBOTS) break;
                                 level_color[x+y*max_bxsiz]=fix_color(parse_param(&cmd_ptr[1],id),
 					level_color[x+y*max_bxsiz]);
                                 break;
@@ -285,8 +285,8 @@ redone:
                                 if((t3==126)||(t3==125)) clear_scroll(t4);
                                 if((t3==123)||(t3==124)) {
                                         clear_robot(t4);
-                                        robot=&robot_mem[robots[id].program_location];
-                                        cmd_ptr=&robot[robots[id].cur_prog_line+1];
+					robot=&robot_mem[robots[id].program_location];
+					cmd_ptr=&robot[robots[id].cur_prog_line+1];
                                         }
                                 if(t3==127) break;//Abort jump if player there
 				//move
@@ -304,8 +304,8 @@ redone:
 				if(cmd==10) set_counter(ibuff,t1,id);
 				else if(cmd==11) inc_counter(ibuff,t1,id);
                                 else dec_counter(ibuff,t1,id);
-                                last_label=-1;//Allows looping "infinitely"
-                                break;
+				last_label=-1;//Allows looping "infinitely"
+				break;
                         case 16://if c?n l
                                 //Get first number
                                 t1=parse_param(&cmd_ptr[1],id);
@@ -323,7 +323,7 @@ redone:
                                         case 2:
                                                 if(t1>t2) t4=1;
                                                 break;
-                                        case 3:
+					case 3:
 						if(t1>=t2) t4=1;
 						break;
                                         case 4:
@@ -342,8 +342,8 @@ redone:
                         case 18://if condition label
                         case 19://if not cond. label
                                 t1=parse_param(&cmd_ptr[1],id);
-                                t2=((unsigned int)t1)>>8;
-                                t1=((unsigned int)t1)&255;
+				t2=((unsigned int)t1)>>8;
+				t1=((unsigned int)t1)&255;
                                 t2=parsedir(t2,x,y,robots[id].walk_dir);
                                 //t1=condition, t2=direction if any (already parsed)
 				t3=0;//Set to 1 for true
@@ -362,7 +362,7 @@ redone:
                                                 break;
                                         case 1://swimming
 						if(id==NUM_ROBOTS) break;
-                                                t2=level_under_id[x+y*max_bxsiz];
+						t2=level_under_id[x+y*max_bxsiz];
                                                 if((t2>19)&&(t2<25)) t3=1;
                                                 break;
                                         case 2://firewalking
@@ -380,8 +380,8 @@ redone:
                                                         break;
                                                         }
 						//either anydir or nodir
-                                                //is player touching at all?
-                                                for(t6=0;t6<4;t6++) {//try all dirs
+						//is player touching at all?
+						for(t6=0;t6<4;t6++) {//try all dirs
                                                         t4=x; t5=y;
                                                         if(move_dir(t4,t5,t6)) continue;
                                                         if((player_x==t4)&&(player_y==t5)) t3=1;
@@ -399,8 +399,8 @@ redone:
                                                                 t4=player_x; t5=player_y;
 								if(!move_dir(t4,t5,t1)) {
                                                                         //Not edge... blocked?
-                                                                        if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
-                                                                        }
+									if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
+									}
 								else _bl[t1]=1;//Edge is considered blocked
                                                                 }
                                                         if((t2<5)&&(t2>0)) {
@@ -418,8 +418,8 @@ redone:
                                                         if(id<NUM_ROBOTS) {
                                                                 for(t1=0;t1<4;t1++) {
                                                                         _bl[t1]=0;
-                                                                        t4=x; t5=y;
-                                                                        if(!move_dir(t4,t5,t1)) {
+									t4=x; t5=y;
+									if(!move_dir(t4,t5,t1)) {
                                                                                 //Not edge... blocked?
 										if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
                                                                                 }
@@ -437,8 +437,8 @@ redone:
 								if(!move_dir(t4,t5,t1)) {
                                                                         //Not edge... blocked?
                                                                         if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
-                                                                        }
-                                                                else _bl[t1]=1;//Edge is considered blocked
+									}
+								else _bl[t1]=1;//Edge is considered blocked
                                                                 }
                                                         if((t2<5)&&(t2>0)) {
                                                                 t3=_bl[t2-1];
@@ -475,8 +475,8 @@ redone:
                                                         t3=_bl[0]|_bl[1]|_bl[2]|_bl[3];
                                                         //t3=1 for anydir
                                                         if((t2==14)||(t2==0)) //We want NODIR though, so
-                                                                t3^=1;             //reverse t3.
-                                                        }
+								t3^=1;             //reverse t3.
+							}
                                                 break;
 					case 5://Aligned
                                                 if(id==NUM_ROBOTS) break;
@@ -494,8 +494,8 @@ redone:
                                                 if(id==NUM_ROBOTS) break;
                                                 if((t2<1)||(t2>4)) break;
 						if(t2==robots[id].last_shot_dir) t3=1;
-                                                break;
-                                        case 9://LASTTOUCH dir (only 1-4 accepted)
+						break;
+					case 9://LASTTOUCH dir (only 1-4 accepted)
                                                 if(id==NUM_ROBOTS) break;
                                                 t2=parsedir(t2,x,y,robots[id].walk_dir);
                                                 if((t2<1)||(t2>4)) break;
@@ -513,8 +513,8 @@ redone:
                                         case 13://dnpressed
 						if(dn_pressed) t3=1;
                                                 break;
-                                        case 14://sppressed
-                                                if(sp_pressed) t3=1;
+					case 14://sppressed
+						if(sp_pressed) t3=1;
                                                 break;
                                         case 15://delpressed
 						if(del_pressed) t3=1;
@@ -532,7 +532,7 @@ redone:
 					gotoed=1;
                                         }
                                 break;
-                        case 20://if any thing label
+			case 20://if any thing label
 			case 21://if no thing label
                                 //Get foreg/backg allowed in t1/t2
                                 t1=parse_param(&cmd_ptr[1],id);//Color
@@ -551,8 +551,8 @@ redone:
                                         t2=t1>>4;
                                         t1=t1&15;
                                         }
-                                t5=cmd-20;
-                                for(t7=0;t7<10000;t7++) {
+				t5=cmd-20;
+				for(t7=0;t7<10000;t7++) {
 					t6=level_id[t7];
                                         if(t6!=t3) continue;
 					t6=level_color[t7];
@@ -570,8 +570,8 @@ redone:
                                         break;
                                         }
                                 if(t5) {
-                                        send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,
-                                                next_param(cmd_ptr,next_param(cmd_ptr,1)))],id),1);
+					send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,
+						next_param(cmd_ptr,next_param(cmd_ptr,1)))],id),1);
                                         gotoed=1;
 					}
 				break;
@@ -684,8 +684,8 @@ redone:
                                 gotoed=1;
                                 break;
                         case 27://double c
-                                tr_msg(&cmd_ptr[2],id);
-                                if(!str_cmp(ibuff,"SCORE")) score<<=1;
+				tr_msg(&cmd_ptr[2],id);
+				if(!str_cmp(ibuff,"SCORE")) score<<=1;
                                 else {
                                         t1=get_counter(ibuff,id);
                                         t1<<=1;
@@ -703,8 +703,8 @@ redone:
                                         }
                                 last_label=-1;//Allows looping "infinitely"
                                 break;
-                        case 29://Goto
-                                send_robot_id(id,tr_msg(&cmd_ptr[2],id),1);
+			case 29://Goto
+				send_robot_id(id,tr_msg(&cmd_ptr[2],id),1);
                                 gotoed=1;
                                 break;
                         case 30://Send robot label
@@ -722,8 +722,8 @@ redone:
                                 if(id==NUM_ROBOTS) break;
                                 //t1=color (w/?) t2=thing t3=param
                                 t0=1;
-                                t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-                                t2=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
+				t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
+				t2=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
                                 t3=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
                                 //t4 x t5 y t6 dir
                         lay_bomb_entry:
@@ -741,8 +741,8 @@ redone:
                                 if((t7==123)||(t7==124)) {
                                         clear_robot(t8);
                                         robot=&robot_mem[robots[id].program_location];
-                                        cmd_ptr=&robot[robots[id].cur_prog_line+1];
-                                        }
+					cmd_ptr=&robot[robots[id].cur_prog_line+1];
+					}
                                 if((t7==125)||(t7==126))
                                         clear_scroll(t8);
                                 if(t8==122)
@@ -760,8 +760,8 @@ redone:
                                         t1=level_param[x+y*max_bxsiz];
                                         if(t1!=id) {
                                                 exit_func();
-                                                return;//Nope.
-                                                }
+						return;//Nope.
+						}
                                         }
                                 //Figure blocked vars
                                 update_blocked=1;
@@ -779,8 +779,8 @@ redone:
                                 t4=0;
                                 if(t2!=3) {
                                         t3=get_counter(item_to_counter[t2]);
-                                        if(t3<t1) t4=1;
-                                        else dec_counter(item_to_counter[t2],t1);
+					if(t3<t1) t4=1;
+					else dec_counter(item_to_counter[t2],t1);
                                         }
                                 else {
                                         if(score<t1) t4=1;
@@ -798,8 +798,8 @@ redone:
                         case 37://Endlife
                                 set_counter("HEALTH",0);
                                 break;
-                        case 38://Mod
-                                magic_load_mod(tr_msg(&cmd_ptr[2],id));
+			case 38://Mod
+				magic_load_mod(tr_msg(&cmd_ptr[2],id));
                                 volume_mod(volume);
                                 break;
                         case 39://sam
@@ -817,8 +817,8 @@ redone:
                         case 42://End sam
                                 end_sample();
                                 break;
-                        case 43://Play notes
-                                play_str(&cmd_ptr[2]);
+			case 43://Play notes
+				play_str(&cmd_ptr[2]);
                                 break;
                         case 44://End play
                                 clear_sfx_queue();
@@ -836,8 +836,8 @@ redone:
                                 break;
                         case 49://play sfx notes
                                 if(!is_playing()) play_str(&cmd_ptr[2]);
-                                break;
-                        case 50://open
+				break;
+			case 50://open
                                 if(id==NUM_ROBOTS) break;
                                 t1=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
                                 if((t1<1)||(t1>4)) break;
@@ -855,8 +855,8 @@ redone:
                                                 t4=x; t5=y;
                                                 if(!move_dir(t4,t5,t1)) {
                                                         //Not edge... robot?
-                                                        if(level_id[t4+t5*max_bxsiz]==123) {
-                                                                if(level_param[t4+t5*max_bxsiz]==id) {
+							if(level_id[t4+t5*max_bxsiz]==123) {
+								if(level_param[t4+t5*max_bxsiz]==id) {
                                                                         x=t4;
                                                                         y=t5;
                                                                         break;
@@ -874,8 +874,8 @@ redone:
                         case 52://Unlockself
                                 robots[id].is_locked=52-cmd;
                                 break;
-                        case 53://Send DIR "label"
-                                if(id==NUM_ROBOTS) break;
+			case 53://Send DIR "label"
+				if(id==NUM_ROBOTS) break;
                                 t1=x; t2=y;
                                 t3=parse_param(&cmd_ptr[1],id);
                                 t4=1+next_param(cmd_ptr,1);
@@ -893,8 +893,8 @@ redone:
                                 send_robot_id(t3,tr_msg(&cmd_ptr[t4],id));
                                  //Use t4 instead of 2 'cuase send
                                  //x y "label" uses 3.
-                                break;
-                        case 54://Zap label num
+				break;
+			case 54://Zap label num
                         case 55://Restore label num
                                 tr_msg(&cmd_ptr[2],id);
                                 t1=(unsigned char)parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
@@ -912,8 +912,8 @@ redone:
                                 break;
                         case 57://unlockplayer
                                 player_ns_locked=player_ew_locked=player_attack_locked=0;
-                                break;
-                        case 58://lockplayer ns
+				break;
+			case 58://lockplayer ns
                                 player_ns_locked=1;
                                 break;
                         case 59://lockplayer ew
@@ -931,8 +931,8 @@ redone:
                                 //is send to another screen!
                                 first_prefix=mid_prefix=last_prefix=0;
                                 robots[id].pos_within_line=0;
-                                robots[id].cur_prog_line+=robot[robots[id].cur_prog_line]+2;
-                                if(!robot[robots[id].cur_prog_line])
+				robots[id].cur_prog_line+=robot[robots[id].cur_prog_line]+2;
+				if(!robot[robots[id].cur_prog_line])
                                         robots[id].cur_prog_line=0;
                                 robots[id].cycle_count=0;
                                 robots[id].xpos=x;
@@ -950,8 +950,8 @@ redone:
                                 exit_func();
                                 return;
                         case 63://Put player x y
-                                t1=parse_param(&cmd_ptr[1],id);
-                                t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
+				t1=parse_param(&cmd_ptr[1],id);
+				t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
                                 prefix_xy(t3,t3,t1,t2,t3,t3,x,y);
                         put_player_XY:
                                 //Put at t1,t2
@@ -969,8 +969,8 @@ redone:
                                         clear_scroll(t4);
                                 if(t3==122) step_sensor(t4);
                                 id_place(t1,t2,127,0,0);
-                                player_x=t1;
-                                player_y=t2;
+				player_x=t1;
+				player_y=t2;
                                 //still alive?
                                 if((player_x==x)&&(player_y==y)) {
                                         exit_func();
@@ -988,8 +988,8 @@ redone:
                                 break;
                         case 67://put player dir
                                 if(id==NUM_ROBOTS) break;
-                                t1=x; t2=y;
-                                t3=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
+				t1=x; t2=y;
+				t3=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
                                 if((t3<1)||(t3>4)) break;
                                 if(move_dir(t1,t2,t3-1)) break;
                                 goto put_player_XY;
@@ -1007,8 +1007,8 @@ redone:
                                 if((t3<1)||(t3>4)) break;
                                 if(move_dir(t1,t2,t3-1)) break;
                                 t6=parsedir(parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id)
-                                        ,x,y,robots[id].walk_dir);
-                                if((t6<1)||(t6>4)) break;
+					,x,y,robots[id].walk_dir);
+				if((t6<1)||(t6>4)) break;
                                 if(move_dir(t4,t5,t6-1)) break;
                                 //Switch t1,t2 with t4,t5
                                 if((t1==t4)&&(t2==t5)) break;
@@ -1026,8 +1026,8 @@ redone:
                                 break;
                         case 72://Shoot
                                 if(id==NUM_ROBOTS) break;
-                                t3=parsedir(cmd_ptr[2],x,y,robots[id].walk_dir);
-                                if((t3<1)||(t3>4)) break;
+				t3=parsedir(cmd_ptr[2],x,y,robots[id].walk_dir);
+				if((t3<1)||(t3>4)) break;
                                 if(_bl[--t3]&2) break;//No shooty a shot
                                 _shoot_c(x,y,t3,robots[id].bullet_type);
                                 //Figure blocked vars
@@ -1045,8 +1045,8 @@ redone:
                                         //underneath
                                         level_under_id[x+y*max_bxsiz]=37;
                                         level_under_param[x+y*max_bxsiz]=t1;
-                                        level_under_color[x+y*max_bxsiz]=8;
-                                        break;
+					level_under_color[x+y*max_bxsiz]=8;
+					break;
                                         }
                                 if((t3<1)||(t3>4)) break;
                                 //Simulate a put
@@ -1064,8 +1064,8 @@ redone:
                                 if(id==NUM_ROBOTS) break;
                                 t3=parsedir(parse_param(&cmd_ptr[1],id),x,y,robots[id].walk_dir);
                                 if((t3<1)||(t3>4)) break;
-                                _shoot_seeker_c(x,y,t3-1);
-                                //Figure blocked vars
+				_shoot_seeker_c(x,y,t3-1);
+				//Figure blocked vars
                                 update_blocked=1;
                                 break;
                         case 77://spit fire
@@ -1083,8 +1083,8 @@ redone:
                                 if((t3<1)||(t3>4)) break;
                                 _shoot_lazer_c(x,y,t3-1,t1,level_color[x+y*max_bxsiz]);
                                 //Figure blocked vars
-                                update_blocked=1;
-                                break;
+				update_blocked=1;
+				break;
                         case 79://put thing at x y
                                 t0=1;
                                 t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
@@ -1102,8 +1102,8 @@ redone:
                                 goto send_at_XY;
                         case 82://copyrobot ""
                                 tr_msg(&cmd_ptr[2],id);
-                                for(t1=0;t1<=NUM_ROBOTS;t1++)
-                                        if(str_cmp(robots[t1].robot_name,ibuff)==0) break;
+				for(t1=0;t1<=NUM_ROBOTS;t1++)
+					if(str_cmp(robots[t1].robot_name,ibuff)==0) break;
                                 if(t1>NUM_ROBOTS) break;
                         copy_robot_num:
                                 if(t1==id) break;
@@ -1121,8 +1121,8 @@ redone:
                         copy_robot_at_XY:
                                 t3=level_id[t1+t2*max_bxsiz];
                                 if((t3!=123)&&(t3!=124)) break;
-                                t1=level_param[t1+t2*max_bxsiz];
-                                goto copy_robot_num;
+				t1=level_param[t1+t2*max_bxsiz];
+				goto copy_robot_num;
                         case 84://copyrobot dir
                                 if(id==NUM_ROBOTS) break;
                                 t1=x; t2=y;
@@ -1140,8 +1140,8 @@ redone:
                         case 86://dupe self xy
                                 t4=parse_param(&cmd_ptr[1],id);
                                 t5=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-                                prefix_xy(t3,t3,t4,t5,t3,t3,x,y);
-                        dupe_at_XY:
+				prefix_xy(t3,t3,t4,t5,t3,t3,x,y);
+			dupe_at_XY:
                                 //Make copy
                                 t3=find_robot();
                                 if(!t3) break;
@@ -1159,8 +1159,8 @@ redone:
                                         }
                                 else {
                                         t1=7;
-                                        t2=124;
-                                        }
+					t2=124;
+					}
                                 goto duplicate_entry;
                         case 87://bulletn
                         case 88://s
@@ -1178,8 +1178,8 @@ redone:
                                                 send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],
                                                         id),1);
                                                 gotoed=1;
-                                                }
-                                break;
+						}
+				break;
                         case 93://takekey col
                         case 94://takekey col "l"
                                 t1=15&parse_param(&cmd_ptr[1],id);//Color
@@ -1197,8 +1197,8 @@ redone:
                                 if(str_len(ibuff)>=COUNTER_NAME_SIZE)
                                         ibuff[COUNTER_NAME_SIZE-1]=0;
                                 t1=next_param(cmd_ptr,1);
-                                //t1 points to low range to set to
-                                t2=parse_param(&cmd_ptr[t1],id);
+				//t1 points to low range to set to
+				t2=parse_param(&cmd_ptr[t1],id);
                                 t1=next_param(cmd_ptr,t1);
                                 t3=parse_param(&cmd_ptr[t1],id);
                                 //Get random number from t2 to t3
@@ -1216,8 +1216,8 @@ redone:
                                 else if(cmd==95) inc_counter(ibuff,t4,id);
                                 else dec_counter(ibuff,t4,id);
                                 last_label=-1;//Allows looping "infinitely"
-                                break;
-                        case 98://Trade givenum givetype takenum taketype poorlabel
+				break;
+			case 98://Trade givenum givetype takenum taketype poorlabel
                                 t1=1;
                                 t2=parse_param(&cmd_ptr[t1],id); t1=next_param(cmd_ptr,t1);
                                 t3=parse_param(&cmd_ptr[t1],id); t1=next_param(cmd_ptr,t1);
@@ -1235,8 +1235,8 @@ redone:
                                         }
                                 if(t9) {
                                         send_robot_id(id,tr_msg(&cmd_ptr[1+t1],id),1);
-                                        gotoed=1;
-                                        }
+					gotoed=1;
+					}
                                 else {
                                         if(t3!=3) inc_counter(item_to_counter[t3],t2);
                                         else score+=t2;
@@ -1254,8 +1254,8 @@ redone:
                                 t2=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
                                 t3=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
                                 t6=parsedir(parse_param(&cmd_ptr[t0],id),x,y,robots[id].walk_dir);
-                                t4=player_x; t5=player_y;
-                                if(t6==11) {
+				t4=player_x; t5=player_y;
+				if(t6==11) {
                                         //Put BENEATH player
                                         if((t2>121)&&(t2<128)) break;
                                         t1=fix_color(t1,level_under_color[t4+t5*max_bxsiz]);
@@ -1273,8 +1273,8 @@ redone:
                         case 101:// /"dirs"
                         case 232://Persistent go [str]
                                 if(id==NUM_ROBOTS) break;
-                                //get next dir char, if none, next cmd
-                                t1=cmd_ptr[++robots[id].pos_within_line+1];
+				//get next dir char, if none, next cmd
+				t1=cmd_ptr[++robots[id].pos_within_line+1];
                                 //t1='n' 's' 'w' 'e' or 'i'
                                 if(t1=='n') t1=0;
                                 else if(t1=='N') t1=0;
@@ -1292,7 +1292,7 @@ redone:
                                         (cmd==232)) robots[id].pos_within_line--;//persistent...
                                 move_dir(x,y,t1);
                                 goto breaker;
-                        case 102://Mesg
+			case 102://Mesg
 					  t12 = get_built_in_messages();
 					  set_built_in_messages(1);
                                 set_mesg(tr_msg(&cmd_ptr[2],id));
@@ -1311,8 +1311,8 @@ redone:
                                 reek:
                                         //At next line- check type
                                         if(!robot[robots[id].cur_prog_line]) goto end_prog;
-                                        t1=robot[robots[id].cur_prog_line+1];
-                                        if((t1!=47)&&(t1!=103)&&(t1!=104)&&(t1!=105)&&(t1!=106)&&(t1!=116)&&(t1!=117)) break;
+					t1=robot[robots[id].cur_prog_line+1];
+					if((t1!=47)&&(t1!=103)&&(t1!=104)&&(t1!=105)&&(t1!=106)&&(t1!=116)&&(t1!=117)) break;
                                 } while(1);
                                 //Labels
                                 if(!temp[0]) goto breaker;
@@ -1330,8 +1330,8 @@ redone:
                                 //Rename robot
                                 if(cmd_ptr[1]<3) {
                                         robots[id].robot_name[0]=0;
-                                        break;
-                                        }
+					break;
+					}
                                 tr_msg(&cmd_ptr[3],id);
                                 if(str_len(ibuff)>14) ibuff[14]=0;
                                 str_cpy(robots[id].robot_name,ibuff);
@@ -1349,8 +1349,8 @@ redone:
                                 t1=parse_param(&cmd_ptr[t4],id);
                                 t2=parse_param(&cmd_ptr[next_param(cmd_ptr,t4)],id);
                                 //x/y=t1/t2 brd=t3
-                                //Prefix the XY pair
-                                t5=board_xsiz;
+				//Prefix the XY pair
+				t5=board_xsiz;
                                 t6=board_ysiz;
                                 board_xsiz=board_ysiz=400;
                                 prefix_xy(t4,t4,t1,t2,t4,t4,x,y);
@@ -1368,8 +1368,8 @@ redone:
                                 if((t3<1)||(t3>4)) break;
                                 t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
 				switch(t3) {
-                                        case 1:
-                                                scroll_y-=t2;
+					case 1:
+						scroll_y-=t2;
                                                 break;
                                         case 2:
                                                 scroll_y+=t2;
@@ -1387,8 +1387,8 @@ redone:
                                 save_screen(current_pg_seg);
                                 if(fad) {
                                         clear_screen(1824,current_pg_seg);
-                                        insta_fadein();
-                                        }
+					insta_fadein();
+					}
                                 draw_window_box(3,11,77,14,current_pg_seg,EC_DEBUG_BOX,
                                         EC_DEBUG_BOX_DARK,EC_DEBUG_BOX_CORNER);
                                 write_string(tr_msg(&cmd_ptr[2],id),5,12,EC_DEBUG_LABEL,
@@ -1406,8 +1406,8 @@ redone:
                                 break;
                         case 112://If string "" "l"
                                 if(!str_cmp(tr_msg(&cmd_ptr[2],id),input_string)) {
-                                        send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],
-                                                id),1);
+					send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],
+						id),1);
                                         gotoed=1;
                                         }
                                 break;
@@ -1425,8 +1425,8 @@ redone:
                                         t2=ibuff[t1];
                                         if((t2>='a')&&(t2<='z')) t2-=32;
                                         t3=input_string[t1];
-                                        if((t3>='a')&&(t3<='z')) t3-=32;
-                                        if(t2=='?') continue;
+					if((t3>='a')&&(t3<='z')) t3-=32;
+					if(t2=='?') continue;
                                         if(t2=='#') {
                                                 if((t3<'0')||(t3>'9')) break;
                                                 continue;
@@ -1444,8 +1444,8 @@ redone:
                                 if(t1<str_len(ibuff)) break;
                                 //Matches
                                 send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],id),1);
-                                gotoed=1;
-                                break;
+				gotoed=1;
+				break;
                         case 115://Player char
                                 t2=(unsigned char)parse_param(&cmd_ptr[1],id);
                                 for(t1=0;t1<4;t1++)
@@ -1463,8 +1463,8 @@ redone:
                                         else {
                                                 t2=t1-16;
                                                 t1=16;
-                                                }
-                                        }
+						}
+					}
                                 else {
                                         t2=t1>>4;
                                         t1=t1&15;
@@ -1482,8 +1482,8 @@ redone:
                                 else {
                                         t6=max_bxsiz*max_bysiz-1; t7=-1; t8=-1;
                                         }
-                                for(;t6!=t7;t6+=t8) {
-                                        if(level_id[t6]!=t3) continue;
+				for(;t6!=t7;t6+=t8) {
+					if(level_id[t6]!=t3) continue;
                                         t9=level_color[t6];
                                         if(t1<16)
                                                 if((t9&15)!=t1) continue;
@@ -1501,8 +1501,8 @@ redone:
                                 t1=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
                                 t2=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
                                 t3=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-                                t4=parse_param(&cmd_ptr[t9],id);
-                                prefix_xy(t1,t2,t9,t9,t3,t4,x,y);
+				t4=parse_param(&cmd_ptr[t9],id);
+				prefix_xy(t1,t2,t9,t9,t3,t4,x,y);
                                 goto copy_XY;
                         case 120://set edge color
                                 edge_color=parse_param(&cmd_ptr[1],id);
@@ -1520,8 +1520,8 @@ redone:
                                                 if(board_where[t1]==W_NOWHERE) continue;
                                                 if(!str_cmp(&board_list[t1*25],ibuff)) break;
                                                 }
-                                        if(t1<NUM_BOARDS) board_dir[t3-1]=t1;
-                                        }
+					if(t1<NUM_BOARDS) board_dir[t3-1]=t1;
+					}
                                 break;
                         case 123://char edit
                                 t2=next_param(cmd_ptr,1);
@@ -1539,8 +1539,8 @@ redone:
                         case 126://blind
                                 blind_dur=parse_param(&cmd_ptr[1],id);
                                 break;
-                        case 127://firewalker
-                                firewalker_dur=parse_param(&cmd_ptr[1],id);
+			case 127://firewalker
+				firewalker_dur=parse_param(&cmd_ptr[1],id);
                                 break;
                         case 128://freezetime
                                 freeze_time_dur=parse_param(&cmd_ptr[1],id);
@@ -1558,8 +1558,8 @@ redone:
                                                 if(random_num()%18==0) {
                                                         t2=t1%max_bxsiz;
                                                         t3=t1/max_bxsiz;
-                                                        if(t2>=board_xsiz) continue;
-                                                        if(t3>=board_ysiz) continue;
+							if(t2>=board_xsiz) continue;
+							if(t3>=board_ysiz) continue;
                                                         id_place(t2,t3,8,7,0);
                                                         }
                                                 }
@@ -1577,8 +1577,8 @@ redone:
                                 if((t5<1)||(t5>4)) break;
                                 if(move_dir(t3,t4,t5-1)) break;
                         copy_XY:
-                                t5=level_id[t1+t2*max_bxsiz];
-                                t6=level_param[t1+t2*max_bxsiz];
+				t5=level_id[t1+t2*max_bxsiz];
+				t6=level_param[t1+t2*max_bxsiz];
                                 t7=level_id[t3+t4*max_bxsiz];
                                 if(t7==127) break;//No copy over player
                                 if(t5==127) break;//No copying player
@@ -1596,8 +1596,8 @@ redone:
                                         copy_robot(t8,t6);// Copy robot
                                         robot=&robot_mem[robots[id].program_location];
                                         cmd_ptr=&robot[robots[id].cur_prog_line+1];
-                                        t6=t8;// Set param to newest copy
-                                        }
+					t6=t8;// Set param to newest copy
+					}
                                 if((t5==125)||(t5==126)) {
                                         /* Replicate a scroll */
                                         t8=find_scroll();
@@ -1615,8 +1615,8 @@ redone:
                                 if((t7==125)||(t7==126))
                                         //delete scroll
                                         clear_scroll(level_param[t3+t4*max_bxsiz]);
-                                if(t7==122)
-                                        //delete sensor
+				if(t7==122)
+					//delete sensor
                                         clear_sensor(level_param[t3+t4*max_bxsiz]);
                                 level_id[t3+t4*max_bxsiz]=t5;
                                 level_param[t3+t4*max_bxsiz]=t6;
@@ -1634,8 +1634,8 @@ redone:
                                 break;
                         case 135://change color thing param color thing param
                                 t9=1;
-                                t1=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-                                t3=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
+				t1=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
+				t3=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
                                 t4=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
                                 t5=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
                                 t7=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
@@ -1653,8 +1653,8 @@ redone:
                                         }
                                 else {
                                         t2=t1>>4;
-                                        t1=t1&15;
-                                        }
+					t1=t1&15;
+					}
                                 if(t5&256) {
                                         t5^=256;
                                         if(t5==32) t5=t6=16;
@@ -1672,8 +1672,8 @@ redone:
                                 //t3    = thing orig
                                 //t4    = param orig
                                 //t5/t6 = fg/bk new
-                                //t7    = thing new
-                                //t8    = param new
+				//t7    = thing new
+				//t8    = param new
                                 //Check for changing between incompatible objects
                                 if((t7==122)&&(t3!=122)) break;
                                 if(((t7==123)||(t7==124))&&(t3!=123)&&(t3!=124)) break;
@@ -1691,8 +1691,8 @@ redone:
                                                 if(level_id[t9]==42) goto cid_okay;
                                         if(t3==67)//Whirlpool finds any of them
                                                 if((level_id[t9]>66)&&(level_id[t9]<71)) goto cid_okay;
-                                        if(level_id[t9]!=t3) continue;
-                                cid_okay:
+					if(level_id[t9]!=t3) continue;
+				cid_okay:
                                         t0=level_color[t9];
                                         if(t1<16)
                                                 if((t0&15)!=t1) continue;
@@ -1710,8 +1710,8 @@ redone:
                                         if((t7==126)&&(t3==125)) goto skip_del;
                                         if((t7==125)&&(t3==126)) goto skip_del;
                                         if((t3==123)||(t3==124)) {
-                                                //delete robot
-                                                clear_robot(level_param[t9]);
+						//delete robot
+						clear_robot(level_param[t9]);
                                                 robot=&robot_mem[robots[id].program_location];
                                                 cmd_ptr=&robot[robots[id].cur_prog_line+1];
                                                 }
@@ -1729,8 +1729,8 @@ redone:
                                                 }
                                         else {
                                                 if(t8<256)
-                                                        if(t7<122)
-                                                                level_param[t9]=t8;
+							if(t7<122)
+								level_param[t9]=t8;
                                                 }
                                         }
                                 //Are we still "alive"?
@@ -1749,7 +1749,7 @@ redone:
                                 if(get_counter("INVINCO",0))
                                         saved_pl_color=fix_color(t1,saved_pl_color);
 				else *player_color=fix_color(t1,*player_color);
-                                break;
+				break;
                         case 137:// bullet color
                                 for(t1=0;t1<3;t1++)
                                         bullet_color[t1]=fix_color(parse_param(&cmd_ptr[1],id),
@@ -1767,8 +1767,8 @@ redone:
                         case 141://REL PLAYER
                         case 142://REL COUNTERS
                                 first_prefix=mid_prefix=last_prefix=cmd-139;
-                                lines_run--;
-                                goto next_cmd_prefix;
+				lines_run--;
+				goto next_cmd_prefix;
                         case 143://set id char # to 'c'
 				t1=parse_param(&cmd_ptr[1],id);
 				if((t1>=0)&&(t1<=454))
@@ -1786,8 +1786,8 @@ redone:
                                         insta_fadein();
                                         }
                                 if(!ask_yes_no(tr_msg(&cmd_ptr[2],id))) send_robot_id(id,"YES",1);
-                                else send_robot_id(id,"NO",1);
-                                gotoed=1;
+				else send_robot_id(id,"NO",1);
+				gotoed=1;
                                 if(fad) insta_fadeout();
                                 break;
                         case 146://fill health
@@ -1805,8 +1805,8 @@ redone:
                                 break;
                         case 149://set max health
                                 health_limit=parse_param(&cmd_ptr[1],id);
-                                set_counter("HEALTH",get_counter("HEALTH"));
-                                break;
+				set_counter("HEALTH",get_counter("HEALTH"));
+				break;
                         case 150://save pos
                                 t0=0;
                         save_pos:
@@ -1824,8 +1824,8 @@ redone:
                                 //Teleport
                                 target_board=t3;
                                 target_x=t1;
-                                target_y=t2;
-                                target_where=0;
+				target_y=t2;
+				target_where=0;
                                 done=1;
                                 break;
                         case 152://exchange
@@ -1843,8 +1843,8 @@ redone:
                                 if(b_mesg_col>79) b_mesg_col=79;
                                 break;
                         case 154://center mesg
-                                b_mesg_col=255;
-                                break;
+				b_mesg_col=255;
+				break;
                         case 155://clear mesg
                                 b_mesg_timer=0;
                                 break;
@@ -1862,8 +1862,8 @@ redone:
                         case 160://scrollcorner
                                 scroll_corner_color=parse_param(&cmd_ptr[1],id);
                                 break;
-                        case 161://scrolltitle
-                                scroll_title_color=parse_param(&cmd_ptr[1],id);
+			case 161://scrolltitle
+				scroll_title_color=parse_param(&cmd_ptr[1],id);
                                 break;
                         case 162://scrollpointer
                                 scroll_pointer_color=parse_param(&cmd_ptr[1],id);
@@ -1881,8 +1881,8 @@ redone:
                                 viewport_xsiz=parse_param(&cmd_ptr[1],id);
                                 viewport_ysiz=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
                                 if(viewport_xsiz<1) viewport_xsiz=1;
-                                if(viewport_ysiz<1) viewport_ysiz=1;
-                                if(viewport_xsiz>80) viewport_xsiz=80;
+				if(viewport_ysiz<1) viewport_ysiz=1;
+				if(viewport_xsiz>80) viewport_xsiz=80;
                                 if(viewport_ysiz>25) viewport_ysiz=25;
                                 if((viewport_x+viewport_xsiz)>80) viewport_x=80-viewport_xsiz;
                                 if((viewport_y+viewport_ysiz)>25) viewport_y=25-viewport_ysiz;
@@ -1900,8 +1900,8 @@ redone:
                                 if((t0<0)||(t0>7)) t0=0;
                                 goto exchange_pos;
                         case 171://restore pos # duplicate self
-                                t0=parse_param(&cmd_ptr[1],id)-1;
-                                if((t0<0)||(t0>7)) t0=0;
+				t0=parse_param(&cmd_ptr[1],id)-1;
+				if((t0<0)||(t0>7)) t0=0;
                                 t1=pl_saved_x[t0];
                                 t2=pl_saved_y[t0];
                                 t3=pl_saved_board[t0];
@@ -1919,8 +1919,8 @@ redone:
                                         robots[t3].pos_within_line=0;
                                         if(id!=GLOBAL_ROBOT) {
                                                 target_d_id=level_id[x+y*max_bxsiz];
-                                                target_d_color=level_color[x+y*max_bxsiz];
-                                                }
+						target_d_color=level_color[x+y*max_bxsiz];
+						}
                                         else {
                                                 target_d_id=124;
                                                 target_d_color=7;
@@ -1938,8 +1938,8 @@ redone:
                                 sailormoon:
                                         if((player_x<board_xsiz)&&(player_y<board_ysiz))
                                                 id_place(player_x,player_y,127,0,0);
-                                        else player_x=player_y=0;
-                                        }
+					else player_x=player_y=0;
+					}
                                 done=1;
                                 break;
                         case 172://exchange pos # duplicate self
@@ -1957,8 +1957,8 @@ redone:
                         case 175://Pl bullete
                         case 176://Pl bulletw
                         case 177://Nu bulletn
-                        case 178://Nu bullets
-                        case 179://Nu bullete
+			case 178://Nu bullets
+			case 179://Nu bullete
                         case 180://Nu bulletw
                         case 181://En bulletn
                         case 182://En bullets
@@ -1976,8 +1976,8 @@ redone:
                         case 195://Rel player first
                         case 197://Rel counters first
                                 first_prefix=((cmd-193)>>1)+5;
-                                lines_run--;
-                                goto next_cmd_prefix;
+				lines_run--;
+				goto next_cmd_prefix;
                         case 194://Rel self last
                                 if(id==NUM_ROBOTS) break;
                         case 196://Rel player last
@@ -1995,8 +1995,8 @@ redone:
                                 magic_load_mod(tr_msg(&cmd_ptr[2],id));
                                 volume_mod(volume=0);
                                 break;
-                        case 201://Copy block sx sy xsiz ysiz dx dy
-                        case 243://Copy overlay block sx sy xs ys dx dy
+			case 201://Copy block sx sy xsiz ysiz dx dy
+			case 243://Copy overlay block sx sy xs ys dx dy
                                 t9=1;
                                 t1=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
                                 t2=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
@@ -2014,8 +2014,8 @@ redone:
                                 if(t1>=board_xsiz) t1=board_xsiz-1;
                                 if(t2>=board_ysiz) t2=board_ysiz-1;
                                 if(t5>=board_xsiz) t5=board_xsiz-1;
-                                if(t6>=board_ysiz) t6=board_ysiz-1;
-                                if(t3<1) t3=1;
+				if(t6>=board_ysiz) t6=board_ysiz-1;
+				if(t3<1) t3=1;
                                 if(t4<1) t4=1;
                                 if((t1+t3)>board_xsiz) t3=board_xsiz-t1;
                                 if((t5+t3)>board_xsiz) t3=board_xsiz-t5;
@@ -2033,8 +2033,8 @@ redone:
                                                         if(cmd==243) {
                                                                 overlay[t0]=overlay[t9];
                                                                 overlay_color[t0]=overlay_color[t9];
-                                                                continue;
-                                                                }
+								continue;
+								}
                                                         //Clear anything there...
                                                         cmd=level_id[t0];
                                                         if(cmd==127) continue;//No copy over player
@@ -2052,8 +2052,8 @@ redone:
                                                         t10=level_param[t9];
                                                         if(cmd==122) {//(sensor)
                                                                 //...make a copy...
-                                                                if(!(t11=find_sensor())) continue;
-                                                                copy_sensor(t11,t10);
+								if(!(t11=find_sensor())) continue;
+								copy_sensor(t11,t10);
                                                                 t10=t11;
                                                                 }
                                                         if((cmd==123)||(cmd==124)) {//(robot)
@@ -2071,8 +2071,8 @@ redone:
                                                         if((cmd==125)||(cmd==126)) {//(scroll)
                                                                 //...make a copy...
                                                                 if(!(t11=find_scroll())) continue;
-                                                                if(copy_scroll(t11,t10)) {
-                                                                        robots[t11].used=0;
+								if(copy_scroll(t11,t10)) {
+									robots[t11].used=0;
                                                                         continue;
                                                                         }
                                                                 t10=t11;
@@ -2090,8 +2090,8 @@ redone:
                                                                 level_color[t0]=level_color[t9];
                                                                 level_under_id[t0]=level_under_id[t9];
                                                                 level_under_color[t0]=level_under_color[t9];
-                                                                level_under_param[t0]=level_under_param[t9];
-                                                                }
+								level_under_param[t0]=level_under_param[t9];
+								}
                                                         //Loop. (whew!)
                                                         }
                                                 }
@@ -2109,8 +2109,8 @@ redone:
                                                                 overlay_color[t0]=overlay_color[t9];
                                                                 continue;
                                                                 }
-                                                        //Clear anything there...
-                                                        cmd=level_id[t0];
+							//Clear anything there...
+							cmd=level_id[t0];
                                                         if(cmd==127) continue;//No copy over player
                                                         if(cmd==122)
                                                                 clear_sensor(level_param[t0]);
@@ -2128,8 +2128,8 @@ redone:
                                                                 //...make a copy...
                                                                 if(!(t11=find_sensor())) continue;
                                                                 copy_sensor(t11,t10);
-                                                                t10=t11;
-                                                                }
+								t10=t11;
+								}
                                                         if((cmd==123)||(cmd==124)) {//(robot)
                                                                 //...make a copy...
                                                                 if(!(t11=find_robot())) continue;
@@ -2147,8 +2147,8 @@ redone:
                                                                 if(!(t11=find_scroll())) continue;
                                                                 if(copy_scroll(t11,t10)) {
                                                                         robots[t11].used=0;
-                                                                        continue;
-                                                                        }
+									continue;
+									}
                                                                 t10=t11;
                                                                 }
                                                         //Player?
@@ -2166,8 +2166,8 @@ redone:
                                                                 level_under_color[t0]=level_under_color[t9];
                                                                 level_under_param[t0]=level_under_param[t9];
                                                                 }
-                                                        //Loop. (whew!)
-                                                        }
+							//Loop. (whew!)
+							}
                                                 }
                                         //Done (UL -> LR)
                                         }
@@ -2185,8 +2185,8 @@ redone:
                                         do {
                                                 if(input_string[t1]!=32) break;
                                         } while((++t1)<input_size);
-                                        }
-                                //Chop UNTIL t1. (t1 points to first No-Chop)
+					}
+				//Chop UNTIL t1. (t1 points to first No-Chop)
                                 str_cpy(input_string,&input_string[t1]);
                                 input_size=str_len(input_string);
                                 num_input=atoi(input_string);
@@ -2204,8 +2204,8 @@ redone:
                                         }
                                 _push(x,y,t1-1,0);
                                 update_blocked=1;
-                                break;
-                        case 204://Scroll char dir
+				break;
+			case 204://Scroll char dir
                                 t9=(unsigned char)parse_param(&cmd_ptr[1],id);
                                 t2=parsedir(parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id),
                                         x,y,robots[id].walk_dir);
@@ -2223,8 +2223,8 @@ redone:
                                                 temp[0]=t1;
                                                 break;
                                         case 3:
-                                                for(t1=0;t1<14;t1++) {
-                                                        t2=temp[t1]&1;
+						for(t1=0;t1<14;t1++) {
+							t2=temp[t1]&1;
                                                         temp[t1]>>=1;
                                                         if(t2) temp[t1]|=128;
                                                         }
@@ -2242,8 +2242,8 @@ redone:
                                 t9=(unsigned char)parse_param(&cmd_ptr[1],id);
                                 t2=parsedir(parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id),
                                         x,y,robots[id].walk_dir);
-                                if((t2<1)||(t2>4)) break;
-                                ec_read_char(t9,temp);
+				if((t2<1)||(t2>4)) break;
+				ec_read_char(t9,temp);
                                 switch(t2) {
                                         case 1:
                                         case 2:
@@ -2261,8 +2261,8 @@ redone:
                                                         for(t2=0;t2<4;t2++) {
                                                                 if((temp[t1]&t3)&&(temp[t1]&t4)) ;/* Both on */
                                                                 else if((temp[t1]&t3)||(temp[t1]&t4)) temp[t1]^=t3+t4;
-                                                                t3>>=1;
-                                                                t4<<=1;
+								t3>>=1;
+								t4<<=1;
                                                                 }
                                                         }
                                         }
@@ -2280,8 +2280,8 @@ redone:
                                 str_cpy(&custom_sfx[parse_param(&cmd_ptr[1],id)*69],&cmd_ptr[t1]);
                                 break;
                         case 211://color intensity #%
-                                set_palette_intensity(parse_param(&cmd_ptr[1],id));
-                                pal_update=1;
+				set_palette_intensity(parse_param(&cmd_ptr[1],id));
+				pal_update=1;
                                 break;
                         case 212://color intensity # #%
                                 set_color_intensity(parse_param(&cmd_ptr[1],id)%16,
@@ -2299,8 +2299,8 @@ redone:
                                 t1=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
                                 t2=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
                                 t3=parse_param(&cmd_ptr[t9],id); t9=next_param(cmd_ptr,t9);
-                                t4=parse_param(&cmd_ptr[t9],id);
-                                t1%=16;
+				t4=parse_param(&cmd_ptr[t9],id);
+				t1%=16;
                                 set_rgb(t1,t2,t3,t4);
                                 pal_update=1;
                                 break;
@@ -2318,8 +2318,8 @@ redone:
                                 t2=parse_param(&cmd_ptr[1],id);
                                 t1=parse_param(&cmd_ptr[t1],id);
                                 if(t1==0) t2=0;
-                                else if(cmd==217) t2=t2*t1;
-                                else if(cmd==218) t2=t2/t1;
+				else if(cmd==217) t2=t2*t1;
+				else if(cmd==218) t2=t2/t1;
                                 else t2=t2%t1;
                                 set_counter(ibuff,t2,id);
                                 last_label=-1;//Allows looping "infinitely"
@@ -2337,8 +2337,8 @@ redone:
                                         t2=fgetc(fp);
                                         t3=fgetc(fp);
                                         t4=fgetc(fp);
-                                        set_rgb(t1,t2,t3,t4);
-                                        }
+					set_rgb(t1,t2,t3,t4);
+					}
                                 pal_update=1;
                                 //Done.
                                 fclose(fp);
@@ -2356,8 +2356,8 @@ redone:
                                 break;
                         case 225://Scrollview x y
                                 t1=parse_param(&cmd_ptr[1],id);
-                                t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
-                                prefix_xy(t3,t3,t1,t2,t3,t3,x,y);
+				t2=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
+				prefix_xy(t3,t3,t1,t2,t3,t3,x,y);
                                 //t1/t2 target to put in upper left corner
                                 //offset off of player position
                                 scroll_x=scroll_y=0;
@@ -2375,8 +2375,8 @@ redone:
                                 if(load_world(temp,-1)) {
                                         t1=error("Error swapping to next world",1,23,current_pg_seg,0x2C01);
                                         if(t1==2) goto redo;
-                                        }
-                                str_cpy(curr_file,temp);
+					}
+				str_cpy(curr_file,temp);
                                 select_current(first_board);
                                 send_robot_def(0,10);
                                 target_where=-2;
@@ -2394,8 +2394,8 @@ redone:
                                                 if(y==robots[t1].ypos) break;
                                                 }
                                         }
-                                if(t1<NUM_ROBOTS) {
-                                        send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],
+				if(t1<NUM_ROBOTS) {
+					send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,1)],
                                                 id),1);
                                         gotoed=1;
                                         }
@@ -2413,8 +2413,8 @@ redone:
                                 scroll_y=t2;
                                 break;
                         case 230://Unlockscroll
-                                locked_x=locked_y=65535;
-                                break;
+				locked_x=locked_y=65535;
+				break;
                         case 231://If first string str str
                                 t1=-1;
                                 if(!input_size) break;
@@ -2432,8 +2432,8 @@ redone:
                                         }
                                 if(t1>=0) input_string[t1]=32;
                                 break;
-                        case 233://Wait mod fade
-                                if(volume!=volume_target) goto breaker;
+			case 233://Wait mod fade
+				if(volume!=volume_target) goto breaker;
                                 break;
                         case 235://Enable saving
                         case 236://Disable saving
@@ -2451,8 +2451,8 @@ redone:
                                 break;
                         case 239://Overlay on
                         case 240://Overlay static
-                        case 241://Overlay transparent
-                                overlay_mode=cmd-238;
+			case 241://Overlay transparent
+				overlay_mode=cmd-238;
                                 break;
                         case 242://put col ch overlay x y
                                 if(!overlay_mode) overlay_mode=3;
@@ -2470,8 +2470,8 @@ redone:
                         case 245://Change overlay col ch col ch
                         case 246://Change overlay col col
                                 if(!overlay_mode) overlay_mode=3;
-                                t0=1;
-                                t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
+				t0=1;
+				t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
                                 if(cmd==245) {
                                         t3=parse_param(&cmd_ptr[t0],id);
                                         t0=next_param(cmd_ptr,t0);
@@ -2489,8 +2489,8 @@ redone:
                                         else {
                                                 t2=t1-16;
                                                 t1=16;
-                                                }
-                                        }
+						}
+					}
                                 else {
                                         t2=t1>>4;
                                         t1=t1&15;
@@ -2508,87 +2508,92 @@ redone:
                                         overlay_color[t9]=t0;
                                         if(cmd==245) overlay[t9]=t7;
                                         }
-                                break;
-                        case 247://Write overlay col str # #
-                                if(!overlay_mode) overlay_mode=3;
-                                t0=1;
-                                t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-                                t2=t0+1; t0=next_param(cmd_ptr,t0);
-                                t3=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
-                                t4=parse_param(&cmd_ptr[t0],id);
-                                prefix_xy(t9,t9,t3,t4,t9,t9,x,y);
-                                //Write str cmd_ptr[t2] at t3/t4 in color t1
-                                t5=str_len(tr_msg(&cmd_ptr[t2],id));
-                                for(t6=0;t6<t5;t6++) {
-                                        t7=t3+t4*max_bxsiz;
-                                        overlay_color[t7]=t1;
-                                        overlay[t7]=ibuff[t6];
-                                        if((++t3)>=board_xsiz) break;
-                                        }
-                                break;
-                        case 251://Loop start
-                                robots[id].loop_count=0;
-                                break;
-                        case 252://Loop #
-                                t1=parse_param(&cmd_ptr[1],id);
-                                if((robots[id].loop_count++)>=t1) break;
-                                //Search backwards for a cmd 251 or start of program
-                                t2=robots[id].cur_prog_line;
-                                do {
-                                        if(robot[t2-1]==0xFF) break;
-                                        t2-=robot[t2-1]+2;
-                                } while(robot[t2+1]!=251);
-                                robots[id].cur_prog_line=t2;
-                                last_label=-1;//Allows looping "infinitely" even w/label inside
-                                break;
-                        case 253://Abort loop
-                                //Search forwards for a cmd 252 or start of program
-                                t2=robots[id].cur_prog_line;
-                                do {
-                                        if(robot[t2]==0) break;
-                                        t2+=robot[t2]+2;
-                                } while(robot[t2+1]!=252);
-                                robots[id].cur_prog_line=t2;
-                                if(!robot[t2]) goto end_prog;
-                                break;
-                        case 254://Disable mesg edge
-                        case 255://Enable mesg edge
-                                mesg_edges=cmd-254;
-                                break;
-                        }
-                //Go to next command! First erase prefixes...
-        next_cmd:
-                first_prefix=mid_prefix=last_prefix=0;
-        next_cmd_prefix:
-                //Next line
-                robots[id].pos_within_line=first_cmd=0;
-                if(old_pos==robots[id].cur_prog_line) gotoed=0;//No move=didn't goto
-                if(!gotoed) robots[id].cur_prog_line+=robot[robots[id].cur_prog_line]+2;
-                if(!robot[robots[id].cur_prog_line]) {
-                        //End of program
-                end_prog:
-                        robots[id].cur_prog_line=0;
-                        break;
-                        }
-                if((update_blocked)&&(id<NUM_ROBOTS)) {
-                        update_blocked=0;
-                        for(t1=0;t1<4;t1++) {
-                                _bl[t1]=0;
-                                t4=x; t5=y;
-                                if(!move_dir(t4,t5,t1)) {
-                                        //Not edge... blocked?
-                                        if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
-                                        }
-                                else _bl[t1]=1;//Edge is considered blocked
-                                }
-                        //Update player position too
-                        if(level_id[player_x+player_y*max_bxsiz]!=127) find_player();
-                        }
-        } while(((++lines_run)<40)&&(!done));
+				break;
+			case 247://Write overlay col str # #
+				if(!overlay_mode) overlay_mode=3;
+				t0=1;
+				t1=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
+				t2=t0+1; t0=next_param(cmd_ptr,t0);
+				t3=parse_param(&cmd_ptr[t0],id); t0=next_param(cmd_ptr,t0);
+				t4=parse_param(&cmd_ptr[t0],id);
+				prefix_xy(t9,t9,t3,t4,t9,t9,x,y);
+				//Write str cmd_ptr[t2] at t3/t4 in color t1
+				t5=str_len(tr_msg(&cmd_ptr[t2],id));
+				for(t6=0;t6<t5;t6++) {
+					t7=t3+t4*max_bxsiz;
+					overlay_color[t7]=t1;
+					overlay[t7]=ibuff[t6];
+					if((++t3)>=board_xsiz) break;
+					}
+				break;
+			case 251://Loop start
+				robots[id].loop_count=0;
+				break;
+			case 252://Loop #
+				t1=parse_param(&cmd_ptr[1],id);
+				if((robots[id].loop_count++)>=t1) break;
+				//Search backwards for a cmd 251 or start of program
+				t2=robots[id].cur_prog_line;
+				do {
+					if(robot[t2-1]==0xFF) break;
+					t2-=robot[t2-1]+2;
+				} while(robot[t2+1]!=251);
+				robots[id].cur_prog_line=t2;
+				last_label=-1;//Allows looping "infinitely" even w/label inside
+				break;
+			case 253://Abort loop
+				//Search forwards for a cmd 252 or start of program
+				t2=robots[id].cur_prog_line;
+				do {
+					if(robot[t2]==0) break;
+					t2+=robot[t2]+2;
+				} while(robot[t2+1]!=252);
+				robots[id].cur_prog_line=t2;
+				if(!robot[t2]) goto end_prog;
+				break;
+			case 254://Disable mesg edge
+			case 255://Enable mesg edge
+				mesg_edges=cmd-254;
+				break;
+			}
+		//Go to next command! First erase prefixes...
+	next_cmd:
+		first_prefix=mid_prefix=last_prefix=0;
+	next_cmd_prefix:
+		//Next line
+		robots[id].pos_within_line=first_cmd=0;
+		if(old_pos==robots[id].cur_prog_line) gotoed=0;//No move=didn't goto
+		if(!gotoed) robots[id].cur_prog_line+=robot[robots[id].cur_prog_line]+2;
+		if(!robot[robots[id].cur_prog_line]) {
+			//End of program
+		end_prog:
+			robots[id].cur_prog_line=0;
+			break;
+			}
+		if((update_blocked)&&(id<NUM_ROBOTS)) {
+			update_blocked=0;
+			for(t1=0;t1<4;t1++) {
+				_bl[t1]=0;
+				t4=x; t5=y;
+				if(!move_dir(t4,t5,t1)) {
+					//Not edge... blocked?
+					if((flags[level_id[t4+t5*max_bxsiz]]&A_UNDER)!=A_UNDER) _bl[t1]=1;
+					}
+				else _bl[t1]=1;//Edge is considered blocked
+				}
+			//Update player position too
+			if(level_id[player_x+player_y*max_bxsiz]!=127) find_player();
+			}
+		if (get_counter("COMMANDS") < 1) set_counter("COMMANDS", 40);
+		t1 = get_counter("COMMANDS");
+	} while(((++lines_run)<t1)&&(!done));
 breaker:
-        robots[id].cycle_count=0;//In case a label changed it
-        //Reset x/y (from movements)
-        robots[id].xpos=x;
-        robots[id].ypos=y;
-        exit_func();
+	//Fix char set (added to fix pixel editing. Optional) -Koji
+	ec_update_set();
+
+	robots[id].cycle_count=0;//In case a label changed it
+	//Reset x/y (from movements)
+	robots[id].xpos=x;
+	robots[id].ypos=y;
+	exit_func();
 }

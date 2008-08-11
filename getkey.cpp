@@ -27,6 +27,7 @@
 #include "getkey.h"
 #include "mouse.h"
 #include <_null.h>
+#include "counter.h"
 
 mouse_info_rec mouse_event={ 0,0,0 };
 char auto_pop_mouse_events=1;
@@ -70,7 +71,7 @@ int getkey(void) {
 	if(t1==0) {
 		t1=-getch();
 		//Help?
-		if((allow_help)&&(t1==-59)) {
+		if((allow_help)&&(t1==-59)&&(get_counter("HELP_MENU"))) {
 			help_system();
 			return 0;
 			}
