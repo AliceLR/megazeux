@@ -1,4 +1,4 @@
-/* $Id$
+/* $Id: idput.h,v 1.2 1999/01/17 20:35:41 mental Exp $
  * MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
@@ -29,9 +29,15 @@ extern "C" {
 #endif
 
 void id_put(unsigned char x_pos,unsigned char y_pos,
-	int array_x,int array_y,int ovr_x,int ovr_y,unsigned int vid_seg);
-void draw_edit_window(int array_x,int array_y,unsigned int vid_seg);
-void draw_game_window(int array_x,int array_y,unsigned int vid_seg);
+	int array_x,int array_y,int ovr_x,int ovr_y,int vid_seg);
+void draw_edit_window(int array_x,int array_y,int vid_seg);
+void draw_game_window(int array_x,int array_y,int vid_seg);
+
+void _id_put(unsigned char x_pos,unsigned char y_pos,
+	int array_x,int array_y,int ovr_x,int ovr_y,void * vid_seg);
+void _draw_edit_window(int array_x,int array_y,void * vid_seg);
+void _draw_game_window(int array_x,int array_y,void * vid_seg);
+
 
 #ifdef __cplusplus
 }

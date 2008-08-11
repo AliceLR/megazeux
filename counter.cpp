@@ -221,11 +221,11 @@ void set_counter(char far *name,int value,unsigned char id) {
 	//Invinco
 	if(!str_cmp(name,"INVINCO")) {
 		if(!get_counter("INVINCO",0))
-			saved_pl_color=player_color;
+			saved_pl_color=*player_color;
 		else if(value==0) {
 			clear_sfx_queue();
 			play_sfx(18);
-			player_color=saved_pl_color;
+			*player_color=saved_pl_color;
 			}
 		}
 	//Now search counter structs

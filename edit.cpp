@@ -63,7 +63,8 @@
 #include "roballoc.h"
 #include "saveload.h"
 #include <stdio.h>
-
+#include "blink.h"
+#include "cursor.h"
 /* Edit menu- (w/box ends on sides) Current menu name is highlighted. The
 	bottom section zooms to show a list of options for the current menu,
 	although all keys are available at all times. PGUP/PGDN changes menu.
@@ -124,6 +125,7 @@ End:			LR corner
 Home:			UL corner
 ESC:			Cancel mode/overlay mode if active (otherwise exit)
 Backspace:	Delete (move left one in text)
+Alt+W:                  redraw screen
 */
 
 /* Editing data */
@@ -706,6 +708,17 @@ void edit_world(void) {
 				//Edit SFX
 				sfx_edit();
 				changed=1;
+				break;
+			case -17://AltW
+				//Re-init screen
+				vga_16p_mode();
+				ega_14p_mode();
+                                cursor_off();
+                                blink_off();
+				ec_update_set();
+				update_palette(0);
+				changed=1;
+				update_menu=1;
 				break;
 			case 'F'://F
 				//Fill
@@ -3214,8 +3227,8 @@ void edit_world(void) {
 				if(mod_playing[0]!=0) end_mod();
 				//...else new module
 				str_cpy(mod_playing,"*");
-                                changed=1;
-                                break;
+				changed=1;
+				break;
 			case -38://AltL
 				if(draw_mode&128) break;
 				//Sample

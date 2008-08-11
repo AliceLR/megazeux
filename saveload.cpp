@@ -189,6 +189,9 @@ void save_world(char far *file,char savegame,char faded) {
 	fwrite(curr_set,1,3584,fp);
 	if(xor) mem_xor((char far *)curr_set,3584,xor);
 	//Idchars array...
+	id_chars[323] = bullet_color[0];
+	id_chars[324] = bullet_color[1];
+	id_chars[325] = bullet_color[2];
 	if(xor) mem_xor((char far *)id_chars,455,xor);
 	fwrite(id_chars,1,455,fp);
 	if(xor) mem_xor((char far *)id_chars,455,xor);
@@ -510,6 +513,9 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 	//Idchars array...
 	fread(id_chars,1,455,fp);
 	if(xor) mem_xor((char far *)id_chars,455,xor);
+	bullet_color[0] = id_chars[323];
+	bullet_color[1] = id_chars[324];
+	bullet_color[2] = id_chars[325];
 	//Status counters...
 	fread(status_shown_counters,COUNTER_NAME_SIZE,NUM_STATUS_CNTRS,fp);
 	if(xor) mem_xor(status_shown_counters,NUM_STATUS_CNTRS*COUNTER_NAME_SIZE,
@@ -523,7 +529,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 		scroll_pointer_color=fgetc(fp);
 		scroll_title_color=fgetc(fp);
 		scroll_arrow_color=fgetc(fp);
-                fread(real_mod_playing,1,FILENAME_SIZE,fp);
+		fread(real_mod_playing,1,FILENAME_SIZE,fp);
 	}
 	fread(&edge_color,1,24,fp);
 	if(xor) mem_xor((char far *)&edge_color,24,xor);
@@ -549,7 +555,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 		scroll_pointer_color=fgetc(fp);
 		scroll_title_color=fgetc(fp);
 		scroll_arrow_color=fgetc(fp);
-                fread(real_mod_playing,1,FILENAME_SIZE,fp);
+		fread(real_mod_playing,1,FILENAME_SIZE,fp);
 	}
 	edge_color=fgetc(fp)^xor;
 	first_board=fgetc(fp)^xor;
@@ -567,11 +573,11 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 	starting_lives=fgetc(fp)^xor;
 	starting_lives+=(fgetc(fp)^xor)<<8;
 	lives_limit=fgetc(fp)^xor;
-	lives_limit+=fgetc(fp)^xor<<8;
+	lives_limit+=(fgetc(fp)^xor)<<8;
 	starting_health=fgetc(fp)^xor;
-	starting_health+=fgetc(fp)^xor<<8;
+	starting_health+=(fgetc(fp)^xor)<<8;
 	health_limit=fgetc(fp)^xor;
-	health_limit+=fgetc(fp)^xor<<8;
+	health_limit+=(fgetc(fp)^xor)<<8;
 	enemy_hurt_enemy=fgetc(fp)^xor;
 	clear_on_exit=fgetc(fp)^xor;
 	only_from_swap=fgetc(fp)^xor;

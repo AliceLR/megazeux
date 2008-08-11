@@ -64,6 +64,8 @@
 #include "game2.h"
 #include "timer.h"
 #include "scrdump.h"
+#include "blink.h"
+#include "cursor.h"
 
 char far *main_menu=	"F1/H - Help\n"
 							"Enter- Menu\n"
@@ -113,6 +115,7 @@ void title_screen(void) {
 	int key=0,t1;
 	FILE *fp;
 	char temp[FILENAME_SIZE];
+        char temp2[FILENAME_SIZE];
 
 #ifdef PROFILE
 	char profiling=0;
@@ -181,6 +184,15 @@ void title_screen(void) {
 #endif
 				case ']'://Screen .PCX dump
 					dump_screen("SCREEN.PCX");
+					break;
+				case -17://AltW
+					//Re-init screen
+					vga_16p_mode();
+					ega_14p_mode();
+                                        cursor_off();
+                                        blink_off();
+					ec_update_set();
+					update_palette(0);
 					break;
 				case 'E'://E
 				case -66://F8
@@ -335,8 +347,8 @@ void title_screen(void) {
 						if(board_where[curr_board]!=W_NOWHERE)
 							select_current(curr_board);
 						else select_current(0);
-						str_cpy(temp,mod_playing);
-						load_mod(temp);
+						str_cpy(temp2,mod_playing);
+                                                load_mod(temp2);
 
 						send_robot_def(0,10);
 						//Copy filename
@@ -432,8 +444,8 @@ void title_screen(void) {
 					if(board_where[curr_board]!=W_NOWHERE)
 						select_current(curr_board);
 					else select_current(0);
-					str_cpy(temp,mod_playing);
-					load_mod(temp);
+                                        str_cpy(temp2,mod_playing);
+                                        load_mod(temp2);
 
 					send_robot_def(0,10);
 					dead=0;
@@ -560,13 +572,13 @@ void update_variables(char slowed) {
 			set_counter("INVINCO");
 			clear_sfx_queue();
 			play_sfx(18);
-			player_color=saved_pl_color;
+			*player_color=saved_pl_color;
 			}
 		else {
 			//Decrease
 			set_counter("INVINCO",t1-1);
 			play_sfx(17);
-			player_color=random_num()&255;
+			*player_color=random_num()&255;
 			}
 		}
 	//Lazerwall start- cycle 0 to 7 then -7 to -1
@@ -851,6 +863,7 @@ void play_game(char fadein) {
 	int t1,key;
 	FILE *fp;
 	char temp[FILENAME_SIZE];
+	char temp2[FILENAME_SIZE];
 	char keylbl[5]="KEY?";
 	enter_func("play_game");
 
@@ -1020,8 +1033,8 @@ void play_game(char fadein) {
 						if(board_where[curr_board]!=W_NOWHERE)
 							select_current(curr_board);
 						else select_current(0);
-					str_cpy(temp,mod_playing);
-					load_mod(temp);
+                                        str_cpy(temp2,mod_playing);
+					load_mod(temp2);
 
 						send_robot_def(0,10);
 						//Copy filename
@@ -1120,6 +1133,15 @@ void play_game(char fadein) {
 						if(get_counter("CURSORSTATE",0) == 0) { m_hide();}
 						}
 					break;
+				case '='://AltW
+					//Re-init screen
+					vga_16p_mode();
+					ega_14p_mode();
+                                        cursor_off();
+                                        blink_off();
+					ec_update_set();
+					update_palette(0);
+					break;
 				case -68://F10
 					//Quickload
 					if(cheats_active>1) break;
@@ -1143,8 +1165,8 @@ void play_game(char fadein) {
 						select_current(curr_board);
 					else select_current(0);
 
-					str_cpy(temp,mod_playing);
-					load_mod(temp);
+					str_cpy(temp2,mod_playing);
+					load_mod(temp2);
 
 					send_robot_def(0,10);
 					dead=0;
@@ -2015,7 +2037,7 @@ char update(char game,char &fadein) {
 		draw_viewport();
 		//Draw screen
 		if(!game) {
-			player_color=0;
+			*player_color=0;
 			player_char[0]=player_char[1]=player_char[2]=player_char[3]=32;
 			}
 		//Figure out x/y of top

@@ -76,10 +76,11 @@ char *unreg_exit_mesg=
 char *reg_exit_mesg=
 "Thank you for registering MegaZeux.\n\n\n\r"
 "Read the files megazeux.doc and readme.1st if you need help.\n\n\r"
-"Contributors to MZX2.51 version s2:\n\n\r"
+"Contributors to MZX2.51 version S3:\n\n\r"
 "Charles Goetzman - mzx s1 base and misc. code\n\r"
 "MenTaLguY - anti-flicker code, mouse buffering, mod \"*\"\n\r"
-"Ben Zeigler - under bug fix and getting the thing to run\n\n\r"
+"Ben Zeigler - under bug fix and getting the thing to run\n\r"
+"CapnKev - refresh screen code\n\n\r"
 "Visit zeux.org for newer versions of this software\n\n\r$";
 
 #endif
@@ -147,7 +148,7 @@ int main(int argc,char **argv) {
 	draw_window_box(2,1,77,3,0xB800,120,127,113,0);
 	draw_window_box(2,4,77,16,0xB800,120,127,113,0);
 	draw_window_box(2,17,77,23,0xB800,120,127,113,0);
-	write_string("MegaZeux version 2.51S2",27,2,127,0xB800);
+        write_string("MegaZeux version 2.51S3",27,2,127,0xB800);
 // #ifdef BETA
 	write_string("BETA- PLEASE DISTRIBUTE",27,17,127,0xB800);
 // #endif

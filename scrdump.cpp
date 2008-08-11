@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <string.h>
+#include <io.h>
 
 #include <dos.h>
 #include "const.h"
@@ -32,14 +33,18 @@
 //static volatile char rcsid[] = "$Id: scrdump.c,v 1.4 1999/02/16 05:45:41 mental Exp $";
 
 /* FIXME: not endian-safe */
-void dump_screen(const char far *filename) {
+void dump_screen(char far *filename) {
+	char fname[10];
 	FILE *fp;
-	int t1, t2, t3, t4, t5, t7, t8;
-        unsigned char *scrn = (unsigned char*)MK_FP(current_pg_seg,0);
-        char r,g,b;
-
-	if (!filename) filename = "screen.pcx";
-	fp=fopen(filename,"wb");
+	int t1, t2, t3, t4, t5, t7, t8, snum;
+	unsigned char *scrn = (unsigned char*)MK_FP(current_pg_seg,0);
+	char r,g,b;
+	for (snum = 0;snum++;snum <= 9) {
+	  sprintf(fname,"screen%d.pcx",snum);
+	  break;
+	  //if (!(access(fname,0) == 0)) break;
+	}
+	fp=fopen("foo.pcx","wb");
 	//header
 	fputc(10,fp);
 	fputc(5,fp);

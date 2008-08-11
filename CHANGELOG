@@ -1,9 +1,25 @@
+2.51s3 release:
+
++ Fixed bug involving savegame name being overwritten by mod name
++ Fixed overlay transparency weirdness. Now, background of lower layer will
+  ALWAYS show through if background of overlay is 0
++ Added in kev's refresh screen support. Press alt+w on the title screen or
+  editor screen, and = in the game(don't ask, has to do with mzx's keybard
+  handler).  Use this if your charset gets corrupted in windows.
++ Screen shot saving rotates file name (starts with screen0.pcx)
++ Fixed bug involving incorrect loading of max_health and others
+
 2.51s2final release:
 
 + Deleted cpu checking code, was unnecesary and caused errors.
 + Fixed bug involving mod * settings being lost when loading
 + Should have fixed ems problems some were reporting, if not, just
-  try to get more conventional memory.
+  try to get more conventional memory.  Enclosed document (convmem.txt)
+  should help you.
++ Fixed a bug involving direction checking.
++ Pressing ']' at most any time will now save a screenshot to screen.pcx
++ Pressing alt+8 in the editor will set the current mod to *.  Trust me.
+
 
 2.5.1s2beta release:
 

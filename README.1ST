@@ -1,6 +1,6 @@
 
 IMPORTANT NOTICE:
- PLEASE READ THIS FILE BEFORE TRYING TO USE MZX 2.51S2! YOU ALREADY DID,
+ PLEASE READ THIS FILE BEFORE TRYING TO USE MZX 2.51S3! YOU ALREADY DID,
  DIDN'T YOU? YOU RAN THE PROGRAM AND IT DIDN'T WORK AND NOW YOU'RE ALL
  UPSET AND YOU THINK IT'S OUR FAULT, DON'T YOU? HA HA HA! SEE IF I HELP
  YOU OUT! I'M GUESSING THE SOUND DOESN'T WORK, RIGHT? TOO BAD! MAYBE
@@ -31,6 +31,15 @@ IMPORTANT NOTICE:
    There are several other internal changes that should not effect the user,
     except by making mzx easier to look at and nicer, read whatsnew.251 for
     details
+
+ Also, changes from s2 to s3:
+   No more bug with the savegame name being the playing mod
+   Overlay transparentcy works now, ie, the background color of the base layer
+    will show through if the background of the overlay is 0
+   Screenshot save name rotates
+   Can refresh screen in editor or title screen with alt+w.  during the game,
+    due to strangeness of code, press =. This reload shte char set in case
+    it gets corrupted by windows
 
  In accordance with the GNU GPL, the full source for this program is
  available.  The download page of zeux.org should have the source, and any
