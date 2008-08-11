@@ -709,7 +709,13 @@ void edit_world(World *mzx_world)
   char *overlay_color;
   char current_world[128];
   char mzm_name_buffer[128];
-
+  int saved_scroll_x[16] = { 0 };
+  int saved_scroll_y[16] = { 0 };
+  int saved_cursor_x[16] = { 0 };
+  int saved_cursor_y[16] = { 0 };
+  int saved_board[16] = { 0 };
+  int saved_debug_x[16] =
+   { 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60 };
   current_world[0] = 0;
 
   copy_robot.used = 0;
@@ -1004,6 +1010,39 @@ void edit_world(World *mzx_world)
           current_param = place_current_at_xy(mzx_world, current_id,
            current_color, current_param, cursor_board_x, cursor_board_y,
            &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+        }
+      }
+    }
+
+    if((key >= SDLK_0) && (key <= SDLK_9))
+    {
+      int s_num = key - SDLK_0;
+
+      if(get_ctrl_status(keycode_SDL))
+      {
+        saved_cursor_x[s_num] = cursor_board_x;
+        saved_cursor_y[s_num] = cursor_board_y;
+        saved_scroll_x[s_num] = scroll_x;
+        saved_scroll_y[s_num] = scroll_y;
+        saved_debug_x[s_num] = debug_x;
+        saved_board[s_num] = mzx_world->current_board_id;
+      }
+      else
+
+      if(get_alt_status(keycode_SDL))
+      {
+        cursor_board_x = saved_cursor_x[s_num];
+        cursor_board_y = saved_cursor_y[s_num];
+        scroll_x = saved_scroll_x[s_num];
+        scroll_y = saved_scroll_y[s_num];
+        debug_x = saved_debug_x[s_num];
+
+        if(mzx_world->current_board_id != saved_board[s_num])
+        {
+          fix_board(saved_board[s_num]);
+          synchronize_board_values();
+          fix_mod();
+          fix_scroll();
         }
       }
     }
@@ -2958,7 +2997,8 @@ void edit_world(World *mzx_world)
       case SDLK_8:
       case SDLK_KP_MULTIPLY:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_shift_status(keycode_SDL) ||
+         (key == SDLK_KP_MULTIPLY))
         {
           if(src_board->mod_playing[0])
             end_mod();

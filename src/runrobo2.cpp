@@ -2111,7 +2111,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         char *p2 = next_param_pos(cmd_ptr + 1);
         tr_msg(mzx_world, p2 + 1, id, sam_name_buffer);
 
-        if(frequency == 0)
+        if(frequency <= 0)
           frequency = 1;
 
         play_sample(frequency, sam_name_buffer);
@@ -3939,8 +3939,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 153: // mesg col
       {
         int b_mesg_col = parse_param(mzx_world, cmd_ptr + 1, id);
+
         if(b_mesg_col > 79)
           b_mesg_col = 79;
+
+        if(b_mesg_col < 0)
+          b_mesg_col = 0;
+
         src_board->b_mesg_col = b_mesg_col;
         break;
       }

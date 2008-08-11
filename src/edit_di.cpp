@@ -260,9 +260,11 @@ void size_pos(World *mzx_world)
 
         if((strg[4] * strg[5]) > MAX_BOARD_SIZE)
         {
-          error("Try something a little smaller, perhaps.", 1, 24, 0x000);
+          if(strg[4] > strg[5])
+            strg[5] = MAX_BOARD_SIZE / strg[4];
+          else
+            strg[4] = MAX_BOARD_SIZE / strg[5];
         }
-        else
 
         if(((strg[4] >= src_board->board_width) &&
           (strg[5] >= src_board->board_height)) ||
@@ -436,6 +438,26 @@ void board_info(World *mzx_world)
 //
 //----------------------------------------------------------
 
+//Next-
+//----------------------------------------------------------
+//
+//     First board-
+//     __________________________!!!   Edging color- _*_
+//
+//     Starting lives-  _00000__!__!_
+//     Maximum lives-   _00000__!__!_
+//
+//     Starting health- _00000__!__!_
+//     Maximum health-  _00000__!__!_  _Previous_
+//
+//     [ ] Enemies' bullets hurt other enemies
+//     [ ] Clear messages and projectiles on exit
+//     [ ] Can only play world from a 'SWAP WORLD'
+//
+//              _OK_                  _Cancel_
+//
+//----------------------------------------------------------
+
 void global_info(World *mzx_world)
 {
   int brd1 = mzx_world->death_board;
@@ -444,9 +466,18 @@ void global_info(World *mzx_world)
   int dy = mzx_world->death_y;
   int ex = mzx_world->endgame_x;
   int ey = mzx_world->endgame_y;
+  int brd = mzx_world->first_board;
+  int col = mzx_world->edge_color;
+  int lv = mzx_world->starting_lives;
+  int mlv = mzx_world->lives_limit;
+  int hl = mzx_world->starting_health;
+  int mhl = mzx_world->health_limit;
   int rad1 = 2;
   int rad2 = 1;
   char chk[1] = { mzx_world->game_over_sfx };
+  char chk2[3] =
+   { mzx_world->enemy_hurt_enemy, mzx_world->clear_on_exit,
+     mzx_world->only_from_swap };
   int dialog_result;
   int redo = 0;
 
@@ -565,14 +596,82 @@ void global_info(World *mzx_world)
     {
       case 2:
       {
-        if(global_next(mzx_world))
+        // Returns 1 for previous                 
+        set_context(88);
+        reset_sdi();
+        sdi_types[2] = DE_BOARD;
+        sdi_types[3] = DE_COLOR;
+        sdi_types[4] = DE_NUMBER;
+        sdi_types[5] = DE_NUMBER;
+        sdi_types[6] = DE_NUMBER;
+        sdi_types[7] = DE_NUMBER;
+        sdi_types[8] = DE_BUTTON;
+        sdi_types[9] = DE_CHECK;
+      
+        sdi_xs[2] = 6;
+        sdi_xs[3] = 38;
+        sdi_xs[4] = 6;
+        sdi_xs[5] = 6;
+        sdi_xs[6] = 6;
+        sdi_xs[7] = 6;
+        sdi_xs[8] = 38;
+        sdi_xs[9] = 6;
+      
+        sdi_ys[2] = 2;
+        sdi_ys[3] = 3;
+        sdi_ys[4] = 5;
+        sdi_ys[5] = 6;
+        sdi_ys[6] = 8;
+        sdi_ys[7] = 9;
+        sdi_ys[8] = 9;
+        sdi_ys[9] = 11;
+      
+        sdi_strs[2] = "First board-";
+        sdi_strs[3] = "Edging color- ";
+        sdi_strs[4] = "Starting lives-  ";
+        sdi_strs[5] = "Maximum lives-   ";
+        sdi_strs[6] = "Starting health- ";
+        sdi_strs[7] = "Maximum health-  ";
+        sdi_strs[8] = "Previous";
+        sdi_strs[9] = "Enemies' bullets hurt other enemies\n"
+         "Clear messages and projectiles on exit\n"
+         "Can only play world from a 'SWAP WORLD'";
+      
+        sdi_p1s[4] = 1;
+        sdi_p1s[5] = 1;
+        sdi_p1s[6] = 1;
+        sdi_p1s[7] = 1;
+        sdi_p1s[8] = 2;
+        sdi_p1s[9] = 3;
+      
+        sdi_p2s[4] = 32767;
+        sdi_p2s[5] = 32767;
+        sdi_p2s[6] = 32767;
+        sdi_p2s[7] = 32767;
+        sdi_p2s[9] = 39;
+      
+        sdi_storage[2] = &brd;
+        sdi_storage[3] = &col;
+        sdi_storage[4] = &lv;
+        sdi_storage[5] = &mlv;
+        sdi_storage[6] = &hl;
+        sdi_storage[7] = &mhl;
+        sdi_storage[9] = chk2;
+      
+        sdi.num_elements = 10;
+        dialog_result = do_dialog();
+        pop_context();
+      
+        if(dialog_result == 2)
         {
           redo = 1;
           break;
         }
-        // Fall through here to set settings.
-      }
 
+        // If okay, fall through and apply settings
+        if(dialog_result == 1)
+          break;
+      }
 
       case 0:
       {
@@ -596,6 +695,23 @@ void global_info(World *mzx_world)
         mzx_world->death_y = dy;
         mzx_world->endgame_y = ey;
         mzx_world->game_over_sfx = chk[0];
+
+        mzx_world->first_board = brd;
+        mzx_world->edge_color = col;
+        mzx_world->starting_lives = lv;
+        mzx_world->lives_limit = mlv;
+        mzx_world->starting_health = hl;
+        mzx_world->health_limit = mhl;
+        mzx_world->enemy_hurt_enemy = chk[0];
+        mzx_world->clear_on_exit = chk[1];
+        mzx_world->only_from_swap = chk[2];
+      
+        if(lv > mlv)
+          mzx_world->starting_lives = mlv;
+      
+        if(hl > mhl)
+          mzx_world->starting_health = mhl;
+
         break;
       }
 
@@ -638,137 +754,6 @@ void global_info(World *mzx_world)
   } while(redo);
 
   pop_context();
-}
-
-//Next-
-//----------------------------------------------------------
-//
-//     First board-
-//     __________________________!!!   Edging color- _*_
-//
-//     Starting lives-  _00000__!__!_
-//     Maximum lives-   _00000__!__!_
-//
-//     Starting health- _00000__!__!_
-//     Maximum health-  _00000__!__!_  _Previous_
-//
-//     [ ] Enemies' bullets hurt other enemies
-//     [ ] Clear messages and projectiles on exit
-//     [ ] Can only play world from a 'SWAP WORLD'
-//
-//              _OK_                  _Cancel_
-//
-//----------------------------------------------------------
-
-int global_next(World *mzx_world)
-{
-  // Returns 1 for previous
-  int brd = mzx_world->first_board;
-  int col = mzx_world->edge_color;
-  int lv = mzx_world->starting_lives;
-  int mlv = mzx_world->lives_limit;
-  int hl = mzx_world->starting_health;
-  int mhl = mzx_world->health_limit;
-
-  char chk[3] =
-   { mzx_world->enemy_hurt_enemy, mzx_world->clear_on_exit,
-     mzx_world->only_from_swap };
-
-  int dialog_result;
-
-  set_context(88);
-  reset_sdi();
-  sdi_types[2] = DE_BOARD;
-  sdi_types[3] = DE_COLOR;
-  sdi_types[4] = DE_NUMBER;
-  sdi_types[5] = DE_NUMBER;
-  sdi_types[6] = DE_NUMBER;
-  sdi_types[7] = DE_NUMBER;
-  sdi_types[8] = DE_BUTTON;
-  sdi_types[9] = DE_CHECK;
-
-  sdi_xs[2] = 6;
-  sdi_xs[3] = 38;
-  sdi_xs[4] = 6;
-  sdi_xs[5] = 6;
-  sdi_xs[6] = 6;
-  sdi_xs[7] = 6;
-  sdi_xs[8] = 38;
-  sdi_xs[9] = 6;
-
-  sdi_ys[2] = 2;
-  sdi_ys[3] = 3;
-  sdi_ys[4] = 5;
-  sdi_ys[5] = 6;
-  sdi_ys[6] = 8;
-  sdi_ys[7] = 9;
-  sdi_ys[8] = 9;
-  sdi_ys[9] = 11;
-
-  sdi_strs[2] = "First board-";
-  sdi_strs[3] = "Edging color- ";
-  sdi_strs[4] = "Starting lives-  ";
-  sdi_strs[5] = "Maximum lives-   ";
-  sdi_strs[6] = "Starting health- ";
-  sdi_strs[7] = "Maximum health-  ";
-  sdi_strs[8] = "Previous";
-  sdi_strs[9] = "Enemies' bullets hurt other enemies\n"
-   "Clear messages and projectiles on exit\n"
-   "Can only play world from a 'SWAP WORLD'";
-
-  sdi_p1s[4] = 1;
-  sdi_p1s[5] = 1;
-  sdi_p1s[6] = 1;
-  sdi_p1s[7] = 1;
-  sdi_p1s[8] = 2;
-  sdi_p1s[9] = 3;
-
-  sdi_p2s[4] = 32767;
-  sdi_p2s[5] = 32767;
-  sdi_p2s[6] = 32767;
-  sdi_p2s[7] = 32767;
-  sdi_p2s[9] = 39;
-
-  sdi_storage[2] = &brd;
-  sdi_storage[3] = &col;
-  sdi_storage[4] = &lv;
-  sdi_storage[5] = &mlv;
-  sdi_storage[6] = &hl;
-  sdi_storage[7] = &mhl;
-  sdi_storage[9] = chk;
-
-  sdi.num_elements = 10;
-  dialog_result = do_dialog();
-  pop_context();
-
-  switch(dialog_result)
-  {
-    case 2:
-    {
-      return 1;
-    }
-
-    case 0:
-    {
-      mzx_world->first_board = brd;
-      mzx_world->edge_color = col;
-      mzx_world->starting_lives = lv;
-      mzx_world->lives_limit = mlv;
-      mzx_world->starting_health = hl;
-      mzx_world->health_limit = mhl;
-      mzx_world->enemy_hurt_enemy = chk[0];
-      mzx_world->clear_on_exit = chk[1];
-      mzx_world->only_from_swap = chk[2];
-
-      if(lv > mlv)
-        mzx_world->starting_lives = mlv;
-
-      if(hl > mhl)
-        mzx_world->starting_health = mhl;
-    }
-  }
-
-  return 0;
 }
 
 //----------------------------------------------------------

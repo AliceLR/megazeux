@@ -293,6 +293,11 @@ void redit_dpalette(config_info *conf, char *name, char *value)
   conf->redit_dpalette = strtol(value, NULL, 10);
 }
 
+void redit_hhelp(config_info *conf, char *name, char *value)
+{
+  conf->redit_hhelp = strtol(value, NULL, 10);
+}
+
 void backup_count(config_info *conf, char *name, char *value)
 {
   conf->backup_count = strtol(value, NULL, 10);
@@ -396,6 +401,7 @@ config_entry config_options[] =
   { "pc_speaker_on", config_set_pc_speaker },
   { "resampling_mode", config_resampling_mode },
   { "robot_editor_default_palette", redit_dpalette },
+  { "robot_editor_hide_help", redit_hhelp },
   { "sample_volume", config_set_sam_volume },
   { "save_file", config_save_file },
   { "startup_file", config_startup_file }
@@ -457,6 +463,7 @@ config_info default_options =
   10,
   1,
   { "char ", "color ", "goto ", "send ", ": playershot^" },
+  0,
   0,
   0,
   60,

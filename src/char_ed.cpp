@@ -63,6 +63,7 @@ char current_char = 1;
 int char_editor(World *mzx_world)
 {
   char matrix[14];
+  char previous[14];
   int x = 3;
   int y = 6;
   int draw = 0;
@@ -97,6 +98,7 @@ int char_editor(World *mzx_world)
   m_show();
   // Get char
   ec_read_char(current_char, matrix);
+  memcpy(previous, matrix, 14);
 
   do
   {
@@ -181,6 +183,7 @@ int char_editor(World *mzx_world)
       {
         if(get_alt_status(keycode_SDL))
         {
+          memcpy(previous, matrix, 14);
           char wrap_bit;
 
           for(i = 0; i < 14; i++)
@@ -190,6 +193,7 @@ int char_editor(World *mzx_world)
             if(wrap_bit)
               matrix[i] |= 1;
           }
+
           ec_change_char(current_char, matrix);
         }
         else
@@ -206,6 +210,7 @@ int char_editor(World *mzx_world)
       {
         if(get_alt_status(keycode_SDL))
         {
+          memcpy(previous, matrix, 14);
           char wrap_bit;
 
           for(i = 0; i < 14; i++)
@@ -231,6 +236,7 @@ int char_editor(World *mzx_world)
       {
         if(get_alt_status(keycode_SDL))
         {
+          memcpy(previous, matrix, 14);
           char wrap_row = matrix[0];
 
           for(i = 0; i < 13; i++)
@@ -238,6 +244,7 @@ int char_editor(World *mzx_world)
             matrix[i] = matrix[i + 1];
           }
           matrix[13] = wrap_row;
+
           ec_change_char(current_char, matrix);
         }
         else
@@ -254,6 +261,7 @@ int char_editor(World *mzx_world)
       {
         if(get_alt_status(keycode_SDL))
         {
+          memcpy(previous, matrix, 14);
           char wrap_row = matrix[13];
 
           for(i = 14; i > 0; i--)
@@ -261,6 +269,7 @@ int char_editor(World *mzx_world)
             matrix[i] = matrix[i - 1];
           }
           matrix[0] = wrap_row;
+
           ec_change_char(current_char, matrix);
         }
         else
@@ -278,6 +287,7 @@ int char_editor(World *mzx_world)
       {
         current_char--;
         ec_read_char(current_char, matrix);
+        memcpy(previous, matrix, 14);
         break;
       }
 
@@ -287,11 +297,14 @@ int char_editor(World *mzx_world)
       {
         current_char++;
         ec_read_char(current_char, matrix);
+        memcpy(previous, matrix, 14);
         break;
       }
 
       case SDLK_SPACE:
       {
+        previous[y] = matrix[y];
+
         matrix[y] = matrix[y] ^ (0x80 >> x);
         ec_change_byte(current_char, y, matrix[y]);
         break;
@@ -305,6 +318,7 @@ int char_editor(World *mzx_world)
           current_char = new_char;
 
         ec_read_char(current_char, matrix);
+        memcpy(previous, matrix, 14);
         break;
       }
 
@@ -316,6 +330,7 @@ int char_editor(World *mzx_world)
 
       case SDLK_DELETE:
       {
+        memcpy(previous, matrix, 14);
         memset(matrix, 0, 14);
         ec_change_char(current_char, matrix);
         break;
@@ -329,6 +344,7 @@ int char_editor(World *mzx_world)
 
       case SDLK_F3:
       {
+        memcpy(previous, matrix, 14);
         memcpy(matrix, buffer, 14);
         ec_change_char(current_char, matrix);
         break;
@@ -337,6 +353,8 @@ int char_editor(World *mzx_world)
       case SDLK_m:
       {
         char current_row;
+        memcpy(previous, matrix, 14);
+
         for(i = 0; i < 14; i++)
         {
           current_row = matrix[i];
@@ -348,20 +366,36 @@ int char_editor(World *mzx_world)
 
           matrix[i] = current_row;
         }
+
         ec_change_char(current_char, matrix);
         break;
       }
 
       case SDLK_f:
       {
-        char current_row;
-        for(i = 0; i < 7; i++)
+        if(get_alt_status(keycode_SDL))
         {
-          current_row = matrix[i];
-          matrix[i] = matrix[13 - i];
-          matrix[13 - i] = current_row;
+          memcpy(previous, matrix, 14);
+
+          // Flood fill
+          int check = (matrix[y] << x) & 0x80;
+
+          fill_region(matrix, x, y, check, check ^ 0x80);
+          ec_change_char(current_char, matrix);
         }
-        ec_change_char(current_char, matrix);
+        else
+        {
+          char current_row;
+          memcpy(previous, matrix, 14);
+
+          for(i = 0; i < 7; i++)
+          {
+            current_row = matrix[i];
+            matrix[i] = matrix[13 - i];
+            matrix[13 - i] = current_row;
+          }
+          ec_change_char(current_char, matrix);
+        }
         break;
       }
 
@@ -377,6 +411,8 @@ int char_editor(World *mzx_world)
 
       case SDLK_n:
       {
+        memcpy(previous, matrix, 14);
+
         for(i = 0; i < 14; i++)
         {
           matrix[i] ^= 0xFF;
@@ -385,8 +421,23 @@ int char_editor(World *mzx_world)
         break;
       }
 
+      case SDLK_u:
+      {
+        // Undo
+        if(get_alt_status(keycode_SDL))
+        {
+          char swap[14];
+          memcpy(swap, matrix, 14);
+          memcpy(matrix, previous, 14);
+          memcpy(previous, swap, 14);
+          ec_change_char(current_char, matrix);
+        }
+        break;
+      }
+
       case SDLK_F4:
       {
+        memcpy(previous, matrix, 14);
         ec_load_char_ascii(current_char);
         ec_read_char(current_char, matrix);
         break;
@@ -394,6 +445,7 @@ int char_editor(World *mzx_world)
 
       case SDLK_F5:
       {
+        memcpy(previous, matrix, 14);
         ec_load_char_mzx(current_char);
         ec_read_char(current_char, matrix);
         break;
@@ -409,6 +461,8 @@ int char_editor(World *mzx_world)
 
     if(draw_new)
     {
+      previous[y] = matrix[y];
+
       switch(draw)
       {
         case 1:
@@ -440,6 +494,7 @@ int char_editor(World *mzx_world)
 int smzx_char_editor(World *mzx_world)
 {
   char matrix[14];
+  char previous[14];
   int x = 2;
   int y = 6;
   int draw = 0;
@@ -475,6 +530,7 @@ int smzx_char_editor(World *mzx_world)
   m_show();
   // Get char
   ec_read_char(current_char, matrix);
+  memcpy(previous, matrix, 14);
 
   do
   {
@@ -593,6 +649,7 @@ int smzx_char_editor(World *mzx_world)
         if(get_alt_status(keycode_SDL))
         {
           char wrap_section;
+          memcpy(previous, matrix, 14);
 
           for(i = 0; i < 14; i++)
           {
@@ -617,6 +674,7 @@ int smzx_char_editor(World *mzx_world)
         if(get_alt_status(keycode_SDL))
         {
           char wrap_section;
+          memcpy(previous, matrix, 14);
 
           for(i = 0; i < 14; i++)
           {
@@ -641,12 +699,14 @@ int smzx_char_editor(World *mzx_world)
         if(get_alt_status(keycode_SDL))
         {
           char wrap_row = matrix[0];
+          memcpy(previous, matrix, 14);
 
           for(i = 0; i < 13; i++)
           {
             matrix[i] = matrix[i + 1];
           }
           matrix[13] = wrap_row;
+          memcpy(previous, matrix, 14);
           ec_change_char(current_char, matrix);
         }
         else
@@ -664,12 +724,14 @@ int smzx_char_editor(World *mzx_world)
         if(get_alt_status(keycode_SDL))
         {
           char wrap_row = matrix[13];
+          memcpy(previous, matrix, 14);
 
           for(i = 14; i > 0; i--)
           {
             matrix[i] = matrix[i - 1];
           }
           matrix[0] = wrap_row;
+          memcpy(previous, matrix, 14);
           ec_change_char(current_char, matrix);
         }
         else
@@ -687,6 +749,7 @@ int smzx_char_editor(World *mzx_world)
       {
         current_char--;
         ec_read_char(current_char, matrix);
+        memcpy(previous, matrix, 14);
         break;
       }
 
@@ -696,11 +759,13 @@ int smzx_char_editor(World *mzx_world)
       {
         current_char++;
         ec_read_char(current_char, matrix);
+        memcpy(previous, matrix, 14);
         break;
       }
 
       case SDLK_SPACE:
       {
+        previous[y] = matrix[y];
         matrix[y] = (matrix[y] & ~(0xC0 >> x)) | (current_type << (6 - x));
         ec_change_byte(current_char, y, matrix[y]);
         break;
@@ -710,10 +775,12 @@ int smzx_char_editor(World *mzx_world)
       case SDLK_RETURN:
       {
         int new_char = char_selection(current_char);
+
         if(new_char >= 0)
           current_char = new_char;
 
         ec_read_char(current_char, matrix);
+        memcpy(previous, matrix, 14);
         break;
       }
 
@@ -725,6 +792,7 @@ int smzx_char_editor(World *mzx_world)
 
       case SDLK_DELETE:
       {
+        memcpy(previous, matrix, 14);
         memset(matrix, 0, 14);
         ec_change_char(current_char, matrix);
         break;
@@ -738,6 +806,7 @@ int smzx_char_editor(World *mzx_world)
 
       case SDLK_F3:
       {
+        memcpy(previous, matrix, 14);
         memcpy(matrix, buffer, 14);
         ec_change_char(current_char, matrix);
         break;
@@ -746,6 +815,8 @@ int smzx_char_editor(World *mzx_world)
       case SDLK_m:
       {
         char current_row;
+        memcpy(previous, matrix, 14);
+
         for(i = 0; i < 14; i++)
         {
           current_row = matrix[i];
@@ -755,20 +826,40 @@ int smzx_char_editor(World *mzx_world)
 
           matrix[i] = current_row;
         }
+
+        memcpy(previous, matrix, 14);
         ec_change_char(current_char, matrix);
         break;
       }
 
       case SDLK_f:
       {
-        char current_row;
-        for(i = 0; i < 7; i++)
+        if(get_alt_status(keycode_SDL))
         {
-          current_row = matrix[i];
-          matrix[i] = matrix[13 - i];
-          matrix[13 - i] = current_row;
+          // Flood fill
+          int check = (matrix[y] << x) & 0xC0;
+          int fill_draw = current_type << 6;
+
+          if(check != fill_draw)
+          {
+            memcpy(previous, matrix, 14);
+            fill_region_smzx(matrix, x, y, check, fill_draw);
+            ec_change_char(current_char, matrix);
+          }
         }
-        ec_change_char(current_char, matrix);
+        else
+        {
+          char current_row;
+          memcpy(previous, matrix, 14);
+
+          for(i = 0; i < 7; i++)
+          {
+            current_row = matrix[i];
+            matrix[i] = matrix[13 - i];
+            matrix[13 - i] = current_row;
+          }
+          ec_change_char(current_char, matrix);
+        }
         break;
       }
 
@@ -781,6 +872,8 @@ int smzx_char_editor(World *mzx_world)
 
       case SDLK_n:
       {
+        memcpy(previous, matrix, 14);
+
         for(i = 0; i < 14; i++)
         {
           matrix[i] ^= 0xFF;
@@ -789,8 +882,23 @@ int smzx_char_editor(World *mzx_world)
         break;
       }
 
+      case SDLK_u:
+      {
+        // Undo
+        if(get_alt_status(keycode_SDL))
+        {
+          char swap[14];
+          memcpy(swap, matrix, 14);
+          memcpy(matrix, previous, 14);
+          memcpy(previous, swap, 14);
+          ec_change_char(current_char, matrix);
+        }
+        break;
+      }
+
       case SDLK_F5:
       {
+        memcpy(previous, matrix, 14);
         ec_load_char_smzx(current_char);
         ec_read_char(current_char, matrix);
         break;
@@ -836,6 +944,7 @@ int smzx_char_editor(World *mzx_world)
 
     if((draw_new) && draw)
     {
+      previous[y] = matrix[y];
       matrix[y] = (matrix[y] & ~(0xC0 >> x)) | (current_type << (6 - x));
       ec_change_byte(current_char, y, matrix[y]);
     }
@@ -843,5 +952,34 @@ int smzx_char_editor(World *mzx_world)
   restore_screen();
   pop_context();
   return current_char;
+}
+
+void fill_region(char *matrix, int x, int y, int check, int draw)
+{
+  if((x >= 0) && (x < 8) && (y >= 0) && (y < 14) &&
+   (((matrix[y] << x) & 0x80) == check))
+  {
+    matrix[y] = (matrix[y] & ~(0x80 >> x)) | (draw >> x);
+
+    fill_region(matrix, x - 1, y, check, draw);
+    fill_region(matrix, x + 1, y, check, draw);
+    fill_region(matrix, x, y - 1, check, draw);
+    fill_region(matrix, x, y + 1, check, draw);
+  }
+}
+
+void fill_region_smzx(char *matrix, int x, int y, int check,
+ int draw)
+{
+  if((x >= 0) && (x < 8) && (y >= 0) && (y < 14) &&
+   (((matrix[y] << x) & 0xC0) == check))
+  {
+    matrix[y] = (matrix[y] & ~(0xC0 >> x)) | (draw >> x);
+
+    fill_region_smzx(matrix, x - 2, y, check, draw);
+    fill_region_smzx(matrix, x + 2, y, check, draw);
+    fill_region_smzx(matrix, x, y - 1, check, draw);
+    fill_region_smzx(matrix, x, y + 1, check, draw);
+  }
 }
 

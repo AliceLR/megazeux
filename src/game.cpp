@@ -216,14 +216,14 @@ void title_screen(World *mzx_world)
     {
       if(update(mzx_world, 0, &fadein))
       {
-        update_event_status();
+        update_event_status_delay();
         continue;
       }
     }
 
     src_board = mzx_world->current_board;
 
-    update_event_status();
+    update_event_status_delay();
 
     // Keycheck
     key = get_key(keycode_SDL);

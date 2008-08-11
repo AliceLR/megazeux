@@ -1354,7 +1354,7 @@ int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
           int str_size;
 
           get_word(temp, current_line_position, ' ');
-          str_size = strlen(temp) - 1;
+          str_size = strlen(temp);
           param_list[arg_count] = (void *)malloc(str_size + 1);
           strcpy((char *)param_list[arg_count], temp);
           advance = 1;

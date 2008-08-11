@@ -155,6 +155,10 @@
 
 #robot_editor_default_palette = 0
 
+# Set to 1 if you want the robot editor to not show the hotkey
+# help and horizontal border by default.
+
+#robot_editor_hide_help = 0
 
 # Backup options
 

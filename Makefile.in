@@ -5,8 +5,8 @@ CC        = gcc
 CPP       = g++
 
 # default target name
-TARGET    = mzx280e
-VERSION   = 2.80e
+TARGET    = mzx280f
+VERSION   = 2.80f
 
 # default optimisations
 CXXFLAGS  = -O2 -funsigned-char -ffast-math -Wall -DMZX_VERSION=\"${VERSION}\"

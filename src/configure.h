@@ -55,6 +55,7 @@ struct _config_info
   int default_invalid_status;
   char default_macros[5][64];
   int redit_dpalette;
+  int redit_hhelp;
 
   // Backup options
   int backup_count;

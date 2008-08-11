@@ -29,7 +29,6 @@
 #include "edit.h"
 #include "graphics.h"
 #include "window.h"
-#include "main.h"
 #include "data.h"
 #include "game.h"
 #include "error.h"

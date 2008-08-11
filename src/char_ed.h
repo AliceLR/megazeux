@@ -26,5 +26,7 @@
 
 int char_editor(World *mzx_world);
 int smzx_char_editor(World *mzx_world);
+void fill_region(char *matrix, int x, int y, int check, int draw);
+void fill_region_smzx(char *matrix, int x, int y, int check, int draw);
 
 #endif

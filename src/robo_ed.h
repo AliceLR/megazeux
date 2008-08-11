@@ -64,6 +64,10 @@ struct _robot_state
   int mark_start;
   int mark_end;
   int show_line_numbers;
+  int scr_line_start;
+  int scr_line_middle;
+  int scr_line_end;
+  int scr_hide_mode;
   robot_line *base;
   robot_line *mark_start_rline;
   robot_line *mark_end_rline;
@@ -100,5 +104,11 @@ void import_block(World *mzx_world, robot_state *rstate);
 void edit_settings(World *mzx_world);
 void goto_line(robot_state *rstate, int line);
 void block_action(World *mzx_world, robot_state *rstate);
+int find_string(robot_state *rstate, char *str, int wrap,
+ int *position, int case_sensitive);
+void find_replace_action(World *mzx_world, robot_state *rstate);
+void str_lower_case(char *str, char *dest);
+void replace_current_line(robot_state *rstate, int r_pos, char *str,
+ char *replace);
 
 #endif

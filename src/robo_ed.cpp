@@ -24,6 +24,7 @@
 #include <string.h>
 #include <stdio.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "robo_ed.h"
 #include "rasm.h"
@@ -47,6 +48,9 @@ char key_help[(81 * 3) + 1] =
   " Alt+Home/S:Mark start  Alt+End/E:Mark end  Alt+U:Unmark   Alt+B:Block Action   \n"
   " Alt+Ins:Paste  Alt+X:Export  Alt+I:Import  Alt+V:Verify  Ctrl+I/D/C:Valid Mark \n"
 };
+
+char key_help_hide[82] =
+  "     Press Alt + H to view hotkey information.  Press F1 for extended help.     \n";
 
 const char top_line_connect = 194;
 const char bottom_line_connect = 193;
@@ -88,6 +92,12 @@ int copy_buffer_lines;
 
 char macros[5][64];
 
+char search_string[256];
+char replace_string[256];
+char wrap_option[1] = { 1 };
+char case_option[1] = { 0 };
+int last_find_option = -1;
+
 void robot_editor(World *mzx_world, Robot *cur_robot)
 {
   int key;
@@ -113,6 +123,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
   int def_palette = mzx_world->conf.redit_dpalette;
   char previous_palette[16][3];
   char text_buffer[512], error_buffer[512];
+  int current_line_color;
 
   robot_state rstate;
 
@@ -138,10 +149,10 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
   rstate.base = &base;
   rstate.command_buffer = rstate.command_buffer_space;
 
-  int current_line_color = combine_colors(rstate.ccodes[0], bg_color);
-
   base.previous = NULL;
   base.line_bytecode_length = -1;
+
+  current_line_color = combine_colors(rstate.ccodes[0], bg_color);
 
   if(def_palette)
   {
@@ -202,7 +213,23 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
   save_screen();
   fill_line(80, 0, 0, top_char, top_color);
-  write_string(key_help, 0, 22, bottom_text_color, 0);
+
+  if(mzx_world->conf.redit_hhelp)
+  {
+    rstate.scr_hide_mode = 1;
+    write_string(key_help_hide, 0, 24, bottom_text_color, 0);
+    rstate.scr_line_start = 1;
+    rstate.scr_line_middle = 12;
+    rstate.scr_line_end = 23;
+  }
+  else
+  {
+    rstate.scr_hide_mode = 0;
+    write_string(key_help, 0, 22, bottom_text_color, 0);
+    rstate.scr_line_start = 2;
+    rstate.scr_line_middle = 11;
+    rstate.scr_line_end = 20;
+  }
 
   sprintf(max_size_buffer, "%05d", rstate.max_size);
   strcpy(rstate.command_buffer, rstate.current_rline->line_text);
@@ -220,14 +247,14 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       draw_char(horizontal_line, line_color, i, 21);
     }
 
-    for(i = 2; i < 11; i++)
+    for(i = rstate.scr_line_start; i < rstate.scr_line_middle; i++)
     {
       draw_char(vertical_line, line_color, 0, i);
       draw_char(vertical_line, line_color, 79, i);
       fill_line(78, 1, i, bg_char, bg_color_solid);
     }
 
-    for(i = 12; i < 21; i++)
+    for(i++; i <= rstate.scr_line_end; i++)
     {
       draw_char(vertical_line, line_color, 0, i);
       draw_char(vertical_line, line_color, 79, i);
@@ -250,15 +277,18 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
     // Now, draw the lines. Start with 9 back from the current.
 
-    if(rstate.current_line >= 10)
+    if(rstate.current_line > 
+      (rstate.scr_line_middle - rstate.scr_line_start))
     {
-      first_line_draw_position = 2;
-      first_line_count_back = 10 - 1;
+      first_line_draw_position = rstate.scr_line_start;
+      first_line_count_back = 
+       rstate.scr_line_middle - rstate.scr_line_start;
     }
     else
     {
       // Or go back as many as we can
-      first_line_draw_position = 2 + (10 - rstate.current_line);
+      first_line_draw_position = 1 +
+       (rstate.scr_line_middle - rstate.current_line);
       first_line_count_back = rstate.current_line - 1;
     }
 
@@ -268,10 +298,11 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       draw_rline = draw_rline->previous;
     }
 
-    // Now draw start - 20 + 1 lines, or until bails
-    for(i = first_line_draw_position; (i < 21) && draw_rline; i++)
+    // Now draw start - scr_end + 1 lines, or until bails
+    for(i = first_line_draw_position; 
+     (i <= rstate.scr_line_end) && draw_rline; i++)
     {
-      if(i != 11)
+      if(i != rstate.scr_line_middle)
         display_robot_line(&rstate, draw_rline, i);
 
       draw_rline = draw_rline->next;
@@ -281,39 +312,59 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
     mark_current_line = 0;
     if(rstate.mark_mode)
     {
-      int draw_start = rstate.current_line - 9;
-      int draw_end = rstate.current_line + 9;
+      int draw_start = rstate.current_line - 
+       (rstate.scr_line_middle - rstate.scr_line_start);
+      int draw_end = rstate.current_line + 
+       (rstate.scr_line_end - rstate.scr_line_middle) + 1;
 
       if(rstate.mark_start <= draw_end)
       {
-        if(rstate.mark_start > draw_start)
-          draw_start = rstate.mark_start;
-
-        if(rstate.mark_end < draw_end)
-          draw_end = rstate.mark_end;
-
-        draw_start += 11 - rstate.current_line;
-        draw_end += 11 - rstate.current_line;
-
-        if(draw_start < 2)
-          draw_start = 2;
-
-        if(draw_end > 20)
-          draw_end = 20;
-
-        if(draw_end > 2)
+        if(rstate.mark_start >= draw_start)
         {
-          for(i = draw_start; i < draw_end + 1; i++)
+          draw_start = rstate.mark_start +
+           rstate.scr_line_middle - rstate.current_line;
+          draw_char('S', mark_color, 0, draw_start);
+        }
+        else
+        {
+          draw_start += rstate.scr_line_middle - rstate.current_line;
+        }
+
+        if(rstate.mark_end <= draw_end)
+        {
+          draw_end = rstate.mark_end + rstate.scr_line_middle - 
+          rstate.current_line;
+        }
+        else
+        {
+          draw_end += rstate.scr_line_middle - rstate.current_line;
+        }
+
+        if(draw_start < rstate.scr_line_start)
+        {
+          draw_start = rstate.scr_line_start;
+        }
+
+        if(draw_end > rstate.scr_line_end)
+        {
+          draw_end = rstate.scr_line_end;
+        }
+        else
+        {
+          if((rstate.mark_start != rstate.mark_end) && 
+           (draw_end >= rstate.scr_line_start))
+            draw_char('E', mark_color, 0, draw_end);
+        }
+
+        if(draw_end >= rstate.scr_line_start)
+        {
+          for(i = draw_start; i <= draw_end; i++)
           {
             color_line(80, 0, i, mark_color);
           }
 
-          draw_char('S', mark_color, 0, draw_start);
-
-          if(draw_start != draw_end)
-            draw_char('E', mark_color, 0, draw_end);
-
-          if((draw_start <= 11) && (draw_end >= 11))
+          if((draw_start <= rstate.scr_line_middle) &&
+           (draw_end >= rstate.scr_line_middle))
             mark_current_line = 1;
         }
       }
@@ -323,15 +374,32 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
     if(mark_current_line)
     {
-      draw_char(bg_char, mark_color, 1, 11);
-      key = intake(rstate.command_buffer, 240, 2, 11, mark_color, 2, 0, 0,
-       &rstate.current_x, 1, rstate.active_macro);
+      draw_char(bg_char, mark_color, 1, rstate.scr_line_middle);
+      key = intake(rstate.command_buffer, 240, 2, 
+       rstate.scr_line_middle, mark_color, 2, 0, 0, &rstate.current_x,
+       1, rstate.active_macro);
     }
     else
     {
-      draw_char(bg_char, bg_color_solid, 1, 11);
-      key = intake(rstate.command_buffer, 240, 2, 11, current_line_color, 2,
-       0, 0, &rstate.current_x, 1, rstate.active_macro);
+      draw_char(bg_char, bg_color_solid, 1, rstate.scr_line_middle);
+      key = intake(rstate.command_buffer, 240, 2, 
+       rstate.scr_line_middle, current_line_color, 2, 0, 0,
+       &rstate.current_x, 1, rstate.active_macro);
+    }
+
+    if(get_mouse_press())
+    {
+      int mouse_x, mouse_y;
+      get_mouse_position(&mouse_x, &mouse_y);
+
+      if((mouse_y >= rstate.scr_line_start) &&
+       (mouse_y <= rstate.scr_line_end) && (mouse_x >= 2) &&
+       (mouse_x <= 78))
+      {
+        move_and_update(&rstate, mouse_y - rstate.scr_line_middle);
+        rstate.current_x = mouse_x - 2;
+        warp_mouse(mouse_x, rstate.scr_line_middle);
+      }
     }
 
     rstate.active_macro = NULL;
@@ -669,36 +737,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
           if(intake(line_number, 7, 38, 13, 15, 1, 0) != SDLK_ESCAPE)
           {
             int line = strtol(line_number, NULL, 10);
-            int num_lines;
-
-            if(line > rstate.total_lines)
-              line = rstate.total_lines;
-
-            if(line < 1)
-              line = 1;
-
-            if(line < rstate.current_line)
-            {
-              num_lines = rstate.current_line - line;
-
-              for(i = 0; i < num_lines; i++)
-              {
-                rstate.current_rline = rstate.current_rline->previous;
-                rstate.current_line--;
-              }
-            }
-            else
-            {
-              num_lines = line - rstate.current_line;
-
-              for(i = 0; i < num_lines; i++)
-              {
-                rstate.current_rline = rstate.current_rline->next;
-                rstate.current_line++;
-              }
-            }           
-
-            strcpy(rstate.command_buffer, rstate.current_rline->line_text);
+            goto_line(&rstate, line);
           }
           restore_screen();
         }
@@ -818,10 +857,9 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
         if(get_ctrl_status(keycode_SDL))
         {
-          if(current_rline->validity_status != valid)
+          if(rstate.current_rline->validity_status != valid)
           {
-            current_rline->validity_status = invalid_uncertain;
-            update_current_line(&rstate);
+            rstate.current_rline->validity_status = invalid_uncertain;
           }
         }
         break;
@@ -859,6 +897,82 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         if(get_alt_status(keycode_SDL))
           rstate.mark_mode = 0;
 
+        break;
+      }
+
+      // Hide
+      case SDLK_h:
+      {
+        if(get_alt_status(keycode_SDL))
+        {
+          if(rstate.scr_hide_mode)
+          {
+            rstate.scr_hide_mode = 0;
+            rstate.scr_line_start = 2;
+            rstate.scr_line_middle = 11;
+            rstate.scr_line_end = 20;
+            write_string(key_help, 0, 22, bottom_text_color, 0);
+          }
+          else
+          {
+            rstate.scr_hide_mode = 1;
+            rstate.scr_line_start = 1;
+            rstate.scr_line_middle = 12;
+            rstate.scr_line_end = 23;
+            write_string(key_help_hide, 0, 24, bottom_text_color, 0);
+          }
+        }         
+        break;
+      }
+
+      case SDLK_f:
+      {
+        if(get_ctrl_status(keycode_SDL))
+          find_replace_action(mzx_world, &rstate);
+
+        break;
+      }
+
+      case SDLK_r:
+      {
+        if(get_ctrl_status(keycode_SDL))
+        {
+          switch(last_find_option)
+          {
+            case 0:
+            {
+              // Find next
+              int l_pos;
+              int l_num = find_string(&rstate, search_string, wrap_option[0],
+               &l_pos, case_option[0]);
+      
+              if(l_num != -1)
+              {
+                goto_line(&rstate, l_num);
+                rstate.current_x = l_pos;
+              }
+              break;
+            }
+
+            case 1:
+            case 2:
+            {
+              // Find and replace next
+              int l_pos;
+              int l_num = find_string(&rstate, search_string, wrap_option[0],
+               &l_pos, case_option[0]);
+        
+              if(l_num != -1)
+              {
+                goto_line(&rstate, l_num);
+                rstate.current_x = l_pos;
+                replace_current_line(&rstate, l_pos, search_string,
+                 replace_string);
+              }
+              break;
+            }
+          }
+        }
         break;
       }
     }
@@ -1116,6 +1230,7 @@ void update_current_line(robot_state *rstate)
    arg_types, &arg_count);
   int last_bytecode_length = current_rline->line_bytecode_length;
   int current_size = rstate->size;
+  validity_types use_type = rstate->default_invalid;
 
   if((bytecode_length != -1) && 
    (current_size + bytecode_length - last_bytecode_length) <=
@@ -1124,15 +1239,17 @@ void update_current_line(robot_state *rstate)
     char *next;
     int line_text_length;
 
-    {
-      disassemble_line(bytecode_buffer, &next, new_command_buffer,
-       error_buffer, &line_text_length, rstate->include_ignores, 
-       arg_types, &arg_count, rstate->disassemble_base);
+    disassemble_line(bytecode_buffer, &next, new_command_buffer,
+     error_buffer, &line_text_length, rstate->include_ignores, 
+     arg_types, &arg_count, rstate->disassemble_base);
   
+    if(line_text_length < 241)
+    {
       current_rline->line_text_length = line_text_length;
-      current_rline->line_bytecode_length = bytecode_length;
       current_rline->line_text =
        (char *)realloc(current_rline->line_text, line_text_length + 1);
+
+      current_rline->line_bytecode_length = bytecode_length;
       current_rline->line_bytecode =
        (char *)realloc(current_rline->line_bytecode, bytecode_length);
       current_rline->num_args = arg_count;
@@ -1144,11 +1261,31 @@ void update_current_line(robot_state *rstate)
   
       rstate->size = current_size + bytecode_length - last_bytecode_length;
     }
+    else
+    {
+      current_rline->line_text_length = 240;
+      current_rline->line_text =
+       (char *)realloc(current_rline->line_text, 240);
+      memcpy(current_rline->line_text, new_command_buffer, 240);
+      current_rline->line_text[240] = 0;
+
+      if((current_rline->validity_status != valid) &&
+       (current_rline->validity_status != invalid_comment))
+      {
+        use_type = current_rline->validity_status;
+      }
+
+      current_rline->line_bytecode_length = 0;
+      current_rline->validity_status = use_type;
+      rstate->size = current_size - last_bytecode_length;
+    }
   }
   else
   {
-    int line_text_length = strlen(command_buffer);
-    validity_types use_type = rstate->default_invalid;
+    int line_text_length;
+
+    command_buffer[240] = 0;
+    line_text_length = strlen(command_buffer);
 
     if(current_rline->validity_status != valid)
       use_type = current_rline->validity_status;
@@ -1156,15 +1293,21 @@ void update_current_line(robot_state *rstate)
     current_rline->line_text =
      (char *)realloc(current_rline->line_text, line_text_length + 1);
 
-    current_rline->line_text_length = line_text_length;
-    strcpy(current_rline->line_text, command_buffer);
-
     if(use_type == invalid_comment &&
      (current_size + (line_text_length + 5) - last_bytecode_length) >
      rstate->max_size)
     {
       use_type = invalid_uncertain;   
     }
+
+    if((use_type == invalid_comment) && (line_text_length > 236))
+    {
+      line_text_length = 236;
+      command_buffer[236] = 0;
+    }
+      
+    current_rline->line_text_length = line_text_length;
+    strcpy(current_rline->line_text, command_buffer);
     
     if(use_type != invalid_comment)
     {
@@ -1197,6 +1340,7 @@ void add_blank_line(robot_state *rstate, int relation)
     new_rline->line_bytecode[2] = 1;
     new_rline->line_bytecode_length = 3;
     new_rline->validity_status = valid;
+    int current_line = rstate->current_line;
   
     rstate->total_lines++;
     rstate->size += 3;
@@ -1212,6 +1356,15 @@ void add_blank_line(robot_state *rstate, int relation)
       current_rline->next = new_rline;  
 
       rstate->current_rline = new_rline;
+
+      if(rstate->mark_mode)
+      {
+        if(rstate->mark_start > current_line)
+          rstate->mark_start++;
+
+        if(rstate->mark_end > current_line)
+          rstate->mark_end++;
+      }
     }
     else
     {
@@ -1220,18 +1373,18 @@ void add_blank_line(robot_state *rstate, int relation)
   
       current_rline->previous->next = new_rline;
       current_rline->previous = new_rline;
+
+      if(rstate->mark_mode)
+      {
+        if(rstate->mark_start >= current_line)
+          rstate->mark_start++;
+
+        if(rstate->mark_end >= current_line)
+          rstate->mark_end++;
+      }
     }
 
-    if(rstate->mark_mode)
-    {
-      if(rstate->mark_start >= rstate->current_line)
-        rstate->mark_start++;
-
-      if(rstate->mark_end >= rstate->current_line)
-        rstate->mark_end++;
-    }
-
-    rstate->current_line++;
+    rstate->current_line = current_line + 1;
   }
 }
 
@@ -1456,13 +1609,13 @@ int validate_lines(World *mzx_world, robot_state *rstate,
         {
           case invalid_uncertain:
           {
-            sprintf(error_messages[start_line + i] + 45, "(ignore)");
+            sprintf(error_messages[start_line + i] + 44, " (ignore)");
             break;
           }
 
           case invalid_discard:
           {
-            sprintf(error_messages[start_line + i] + 45, "(delete)");
+            sprintf(error_messages[start_line + i] + 44, " (delete)");
             break;
           }
 
@@ -1520,7 +1673,7 @@ int validate_lines(World *mzx_world, robot_state *rstate,
         }
 
         sprintf(information, "%d errors found; displaying %d through %d.\n", num_errors,
-         start_line + 1, start_line + 1 + errors_shown);
+         start_line + 1, start_line + errors_shown);
       }
       else
       {
@@ -1625,13 +1778,13 @@ int validate_lines(World *mzx_world, robot_state *rstate,
 
       if(dialog_result == 1)
       {
-        start_line -= 13;
+        start_line -= 12;
       }
       else
 
       if(dialog_result == 2)
       {
-        start_line += 13;
+        start_line += 12;
       }
     } while(redo);
   }
@@ -1765,8 +1918,6 @@ void clear_block(robot_state *rstate)
           rstate->current_line = rstate->mark_start - 1;
           rstate->current_rline = line_before;
         }
-
-        strcpy(rstate->command_buffer, rstate->current_rline->line_text);
       }
       else
       {
@@ -1774,13 +1925,15 @@ void clear_block(robot_state *rstate)
       }
     }
   }
+
+  strcpy(rstate->command_buffer, rstate->current_rline->line_text);
 }
 
 void export_block(World *mzx_world, robot_state *rstate,
  int region_default)
 {
-  robot_line *current_rline = rstate->mark_start_rline;
-  robot_line *end_rline = rstate->mark_end_rline->next;
+  robot_line *current_rline;
+  robot_line *end_rline;
 
   char di_types[6] = { DE_INPUT, DE_RADIO, DE_BUTTON, DE_BUTTON, DE_RADIO };
   char di_xs[5] = { 5, 31, 15, 31, 5 };
@@ -1824,6 +1977,11 @@ void export_block(World *mzx_world, robot_state *rstate,
     {
       current_rline = rstate->base->next;
       end_rline = NULL;
+    }
+    else
+    {
+      current_rline = rstate->mark_start_rline;
+      end_rline = rstate->mark_end_rline;
     }
 
     if(!export_type)
@@ -1958,4 +2116,262 @@ void block_action(World *mzx_world, robot_state *rstate)
       break;
     }
   }
+}
+
+void goto_line(robot_state *rstate, int line)
+{
+  if(line > rstate->total_lines)
+    line = rstate->total_lines;
+
+  if(line < 1)
+    line = 1;
+
+  move_and_update(rstate, line - rstate->current_line);
+}
+
+void find_replace_action(World *mzx_world, robot_state *rstate)
+{
+  char di_types[8] = { DE_INPUT, DE_INPUT, DE_CHECK, DE_CHECK, 
+   DE_BUTTON, DE_BUTTON, DE_BUTTON, DE_BUTTON };
+  char di_xs[8] = { 2, 2, 3, 30, 5, 15, 27, 44, };
+  char di_ys[8] = { 2, 3, 5, 5, 7, 7, 7, 7 };
+
+  char *di_strs[8] =
+  {
+    "Find:    ", "Replace: ", "Wrap around end", "Match case",
+    "Search", "Replace", "Replace All", "Cancel"
+  };
+
+  int di_p1s[8] = { 46, 46, 1, 1, 0, 1, 2, -1 };
+  int di_p2s[8] = { 0, 0, 15, 10, 0, 0, 0, 0 };
+  void *di_storage[8] = { search_string, replace_string, wrap_option,
+   case_option, NULL, NULL, NULL, NULL };
+
+  dialog di =
+  {
+    10, 7, 69, 16, "Search and Replace", 8, di_types, di_xs,
+    di_ys, di_strs, di_p1s, di_p2s, di_storage, 0
+  };
+
+  last_find_option = run_dialog(mzx_world, &di, 0, 0);
+
+  switch(last_find_option)
+  {
+    case 0:
+    {
+      // Find
+      int l_pos;
+      int l_num = find_string(rstate, search_string, wrap_option[0],
+       &l_pos, case_option[0]);
+
+      if(l_num != -1)
+      {
+        goto_line(rstate, l_num);
+        rstate->current_x = l_pos;
+      }
+
+      break;
+    }
+
+    case 1:
+    {
+      // Find & Replace
+      int l_pos;
+      int l_num = find_string(rstate, search_string, wrap_option[0],
+       &l_pos, case_option[0]);
+
+      if(l_num != -1)
+      {
+        goto_line(rstate, l_num);
+        rstate->current_x = l_pos;
+        replace_current_line(rstate, l_pos, search_string, replace_string);
+      }
+
+      break;
+    }
+
+    case 2:
+    {
+      int l_pos;
+      int l_num;
+      int r_len = strlen(replace_string);
+      int s_len = strlen(search_string);
+      int start_line = rstate->current_line;
+      int start_pos = rstate->current_x;
+      int last_line = start_line;
+      int last_pos = start_pos;
+      int dif = r_len - s_len;
+      int wrapped = 0;
+
+      do
+      {
+        l_num = find_string(rstate, search_string, wrap_option[0],
+         &l_pos, case_option[0]);
+
+        // Is it on the starting line and below the starting cursor?
+        // If so modify the starting cursor because the line was
+        // changed.
+        if((l_num == start_line) && (l_num <= start_pos))
+        {
+          start_pos += dif;
+        }
+
+        // A decrease had better indicate a wrap, and you only get one
+        if(((l_num == last_line) && (l_pos < last_pos)) || (l_num < last_line))
+        {
+          if((((l_num == start_line) && (l_pos <= start_pos)) || 
+           (l_num < start_line)) && (!wrapped))
+          {
+            wrapped = 1;
+          }
+          else
+          {
+            break;
+          }
+        }
+
+        // If it has already wrapped don't let it past the start
+        if((((l_num == start_line) && (l_pos > start_pos)) || 
+         (l_num > start_line)) && wrapped)
+        {
+          break;
+        }
+
+        if(l_num != -1)
+        {
+          goto_line(rstate, l_num);
+          rstate->current_x = l_pos;
+          replace_current_line(rstate, l_pos, search_string, replace_string);
+
+          l_pos += r_len - 1;
+          rstate->current_x = l_pos;
+
+          last_line = l_num;
+          last_pos = l_pos;
+        }
+        else
+        {
+          break;
+        }
+      } while(1);
+
+      break;
+    }
+  }
+}
+
+void replace_current_line(robot_state *rstate, int r_pos, char *str,
+ char *replace)
+{
+  robot_line *current_rline = rstate->current_rline;
+
+  int replace_size = strlen(replace);
+  int str_size = strlen(str);
+  char new_buffer[512];
+  
+  strcpy(new_buffer, current_rline->line_text);
+  memmove(new_buffer + r_pos + replace_size,
+   new_buffer + r_pos + str_size, strlen(new_buffer) - r_pos);
+  memcpy(new_buffer + r_pos, replace, replace_size);
+
+  rstate->command_buffer = new_buffer;
+  update_current_line(rstate);
+  strcpy(rstate->command_buffer_space, new_buffer);
+  rstate->command_buffer = rstate->command_buffer_space;  
+}
+
+int find_string(robot_state *rstate, char *str, int wrap,
+ int *position, int case_sensitive)
+{
+  robot_line *current_rline = rstate->current_rline;
+  int current_line = rstate->current_line;
+  char *pos = NULL;
+  char line_buffer[512];
+  char *use_buffer = line_buffer;
+
+  update_current_line(rstate);
+  strcpy(rstate->command_buffer, current_rline->line_text);
+
+  if(!str[0])
+    return -1;
+
+  if(!case_sensitive)
+    str_lower_case(str, str);
+
+  // Check the first line first
+
+  if(!case_sensitive)
+    str_lower_case(current_rline->line_text, line_buffer);
+  else
+    use_buffer = current_rline->line_text;
+
+  pos = strstr(use_buffer + rstate->current_x + 1, str);
+
+  if(pos == NULL)
+  {
+    current_rline = current_rline->next;
+    current_line++;
+
+    // Now check the next lines
+    while(current_rline != NULL)
+    {
+      if(!case_sensitive)
+        str_lower_case(current_rline->line_text, line_buffer);
+      else
+        use_buffer = current_rline->line_text;
+  
+      pos = strstr(use_buffer, str);
+  
+      if(pos)
+        break;
+  
+      current_rline = current_rline->next;
+      current_line++;
+    }
+  }
+
+  // Wrap around?
+  if(wrap && (pos == NULL))
+  {
+    current_rline = rstate->base->next;
+    current_line = 1;
+    while(current_rline != rstate->current_rline->next)
+    {
+      if(!case_sensitive)
+        str_lower_case(current_rline->line_text, line_buffer);
+      else
+        use_buffer = current_rline->line_text;
+
+      pos = strstr(use_buffer, str);
+
+      if(pos)
+        break;
+
+      current_rline = current_rline->next;
+      current_line++;
+    }
+  }
+
+  if(pos)
+  {
+    *position = pos - use_buffer;
+    return current_line;
+  }
+
+  return -1;
+}
+
+void str_lower_case(char *str, char *dest)
+{
+  int i = 0;
+  char c = str[0];
+
+  while(c)
+  {
+    dest[i] = tolower(c);
+    i++;
+    c = str[i];
+  }
+
+  dest[i] = 0;
 }

@@ -1831,9 +1831,11 @@ int set_counter_special(World *mzx_world, int spec_type,
     {
       int faded;
       char translated_name[MAX_PATH];
-      if(fsafetranslate(char_value, translated_name))
+
+      if(!fsafetranslate(char_value, translated_name))
       {
-        reload_savegame(mzx_world, char_value, &faded);
+        printf("loading %s\n", translated_name);
+        reload_savegame(mzx_world, translated_name, &faded);
   
         if(faded)
           insta_fadeout();

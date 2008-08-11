@@ -31,7 +31,6 @@ void board_exits(World *mzx_world);
 void size_pos(World *mzx_world);
 void board_info(World *mzx_world);
 void global_info(World *mzx_world);
-int global_next(World *mzx_world);
 void global_chars(World *mzx_world);
 void global_dmg(World *mzx_world);
 
