@@ -52,6 +52,33 @@ extern int topindex,backindex;
 #include "roballoc.h"
 #include <stdlib.h>
 
+#include <time.h>
+#include <dos.h>
+#include <io.h>
+#include <stdio.h>
+#include <stdlib.h>
+
+#include "counter.h"
+
+#include "egacode.h"
+#include "admath.h"
+#include "blink.h"
+#include "const.h"
+#include "cursor.h"
+#include "data.h"
+#include "game.h"
+#include "game2.h"
+#include "graphics.h"
+#include "idarray.h"
+#include "idput.h"
+#include "mouse.h"
+#include "palette.h"
+#include "runrobot.h"
+#include "sfx.h"
+#include "string.h"
+#include "struct.h"
+#include "conio.h"
+
 #define parsedir(a,b,c,d) parsedir(a,b,c,d,_bl[0],_bl[1],_bl[2],_bl[3])
 
 #pragma warn -sig
@@ -297,16 +324,119 @@ redone:
                         case 10://set c #
                         case 11://inc c #
                         case 12://dec c #
-                                tr_msg(&cmd_ptr[2],id);
-                                if(str_len(ibuff)>=COUNTER_NAME_SIZE)
-                                        ibuff[COUNTER_NAME_SIZE-1]=0;
-                                t1=parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id);
+                          unsigned char far *temp_ptr = &cmd_ptr[next_param(cmd_ptr,1)];
+                          tr_msg(&cmd_ptr[2],id);
+                          if(str_len(ibuff)>=COUNTER_NAME_SIZE)
+                          ibuff[COUNTER_NAME_SIZE-1]=0;
+                          t1 = parse_param(temp_ptr, id);
+                          t2 = 0;
+                          if(ibuff[0] == '$')
+                          {
+                            char temp_str[15];
+                            // set the string index
+                            int index = ibuff[7] + 1000;
+                            // set string
+                            if(!temp_ptr[0])
+                            {
+                              // set string to (integer representation)
+                              sprintf(temp_str, "%d", t1);
+                              str_cpy(counters[index].counter_name, temp_str);
+                            }
+                            else
+                            {
+                              unsigned char far *tp_2 = temp_ptr + 1;
+                              if(!str_cmp(tp_2, "INPUT"))
+                              {
+                                tp_2 = input_string;
+                              }
+                              if(!str_cmp(tp_2, "BOARD_SCAN"))
+                              {
+                                int bpos = (get_counter("BOARD_Y") * board_xsiz) + get_counter("BOARD_X");
+                                int i;
+                                char c_char;
+                                for(i = 0; i < 14; i++)
+                                {
+                                  c_char = get_id_char(bpos);
+                                  if(c_char == '*')
+                                  {
+                                    temp_str[i] = 0;
+                                    break;
+                                  }
+                                  temp_str[i] = c_char;
+                                  bpos++;
+                                }
+                                temp_str[i + 1] = 0;
+                                tp_2 = temp_str;
+                              }
+                              if(!str_cmp(tp_2, "BOARD_NAME"))
+                              {
+                                tp_2 = board_list + (curr_board * BOARD_NAME_SIZE);
+                              }
+                              if(!str_cmp(tp_2, "FREAD") && input_file)
+                              {
+                                // Read string in from the read file
+                                fscanf(input_file, "%s", temp_str);
+                                tp_2 = temp_str;
+                              }
+                              if(!str_cmp(tp_2, "FWRITE") && output_file)
+                              {
+                                // Write string in to write file
+                                fprintf(output_file, "%s ", counters[index].counter_name);
+                                t2 = 1;
+                              }
+
+                              if(!t2)
+                              {
+                                mem_cpy(counters[index].counter_name, tp_2, COUNTER_NAME_SIZE);
+                              }
+                            }
+                          }
 				if(cmd==10) set_counter(ibuff,t1,id);
 				else if(cmd==11) inc_counter(ibuff,t1,id);
                                 else dec_counter(ibuff,t1,id);
 				last_label=-1;//Allows looping "infinitely"
 				break;
                         case 16://if c?n l
+                        // Check for string comparison - Exo
+                          if(cmd_ptr[2] == '$')
+                          {
+                            char far *tp_2 = cmd_ptr + next_param(cmd_ptr, 1) + 3;
+                            signed int eval;
+                            if(!tp_2[0])
+                            {
+                              sprintf(ibuff2, "%d", parse_param(&cmd_ptr[3+next_param(cmd_ptr,1)],id));
+                            }
+                            else
+                            {
+                              if(tp_2[1] == '$')
+                              {
+                                str_cpy(ibuff2, counters[tp_2[8] + 1000].counter_name);
+                              }
+                              else
+                              {
+                                str_cpy(ibuff2, tp_2 + 1);
+                              }
+                            }
+                            str_cpy(ibuff, counters[cmd_ptr[9] + 1000].counter_name);
+                            eval = str_cmp(ibuff, ibuff2);
+                            t4=0;
+                            switch(parse_param(&cmd_ptr[next_param(cmd_ptr,1)],id))
+                            {
+                              case 0:
+                              if(!eval) t4=1;
+                              break;
+                              case 5:
+                              if(eval) t4=1;
+                              break;
+                            }
+                            if(t4)
+                            {
+                              send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr, 3+next_param(cmd_ptr,1))],id),1);
+                              gotoed=1;
+                            }
+                          }
+                          else
+                          {
                                 //Get first number
                                 t1=parse_param(&cmd_ptr[1],id);
                                 //Get second number
@@ -323,9 +453,9 @@ redone:
                                         case 2:
                                                 if(t1>t2) t4=1;
                                                 break;
-					case 3:
-						if(t1>=t2) t4=1;
-						break;
+			                              		case 3:
+                                    						if(t1>=t2) t4=1;
+                                    						break;
                                         case 4:
                                                 if(t1<=t2) t4=1;
                                                 break;
@@ -337,6 +467,7 @@ redone:
                                         send_robot_id(id,tr_msg(&cmd_ptr[1+next_param(cmd_ptr,
 						3+next_param(cmd_ptr,1))],id),1);
                                         gotoed=1;
+            }
 					}
                                 break;
                         case 18://if condition label

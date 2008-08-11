@@ -26,6 +26,8 @@
 #include "const.h"
 #include "struct.h"
 
+extern FILE *output_file = NULL;
+extern FILE *input_file = NULL;
 Robot far *robots=NULL;//NUM_ROBOTS in size
 Scroll far *scrolls=NULL;//NUM_SCROLLS in size
 Counter far *counters=NULL;//NUM_COUNTERS in size

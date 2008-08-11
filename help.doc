@@ -34,11 +34,11 @@ $~Aศออออออออออออออออออออออออออออออออออออผ
 >#MEGAZEUX.HLP:1st:MegaZeux Limitations
 >#IFYOUFIN.HLP:1st:If You Find a Bug...
 >Please:Registration Info- MegaZeux is Free !!!
->#NEWINVER.HLP:1st:NEW in Version 2.61!
+>#NEWINVER.HLP:1st:NEW in Version 2.6!
 
 $** Credits and Acknowledgments **
 
-$Mzx 2.61 Thanks & Beta testers:
+$Mzx 2.6 Thanks & Beta testers:
 $Inmate2993
 $Exophase *
 $JESUS
@@ -2600,6 +2600,8 @@ the description.
 >001:Attempt to overwrite board in storage
 >036:Bad Robot command
 >022:Board is from a more recent version of MegaZeux
+>032:Can't test password-protected world
+>027:Cannot import password protected world
 >062:Cannot overwrite player- move him first
 >034:Code/message is too large to fit into Robot memory
 >007:Error accessing boards
@@ -2630,6 +2632,7 @@ the description.
 >044:Error swapping to next world
 >054:File "MZXBLANK.FIL" not found; Music code compromised
 >037:Invalid "thing" for parameters
+>016:Invalid password
 >041:Line too long to import
 >006:Low on memory; Music code compromised
 >050:Music is off- Module is set for board but not loaded
@@ -2752,12 +2755,6 @@ read-only file.
 
 You entered the wrong password for the world.
 
-***ADDENDUM***
-
-Protection is long since removed as it holds no real prtective
-value since megahack and getpw are out.
-		-Koji
-
 :017:~AOverlay mode is not on (see Board Info)
 
 You cannot edit or copy to the Overlay if it is Off; go to
@@ -2805,12 +2802,6 @@ files.
 You cannot import a world with any form of password protection;
 load up the world separately and save it without any protection.
 
-***ADDENDUM***
-
-Protection is long since removed as it holds no real prtective
-value since megahack and getpw are out.
-		-Koji
-
 :028:~AWorld is from version 1- Use conversion program
 
 You tried to load a .MZX file from version 1.00g, 1.01, 1.02, or
@@ -2842,12 +2833,6 @@ bug in MegaZeux.
 
 You cannot test a protected world from the editor; remove the
 protection or play it normally.
-
-***ADDENDUM***
-
-Protection is long since removed as it holds no real prtective
-value since megahack and getpw are out.
-		-Koji
 
 :033:~AError loading save game
 
@@ -5115,10 +5100,6 @@ ACTUALLY : This now can stand for any key on the keyboard
   Use F3 to set down the correct character.
 		-Koji
 
-~EKEYENTER
-
-This is sent When the player pressed the Enter key.
-
 ~EINVINCO
 
 This is sent when the player grabs an energizer.
@@ -5494,6 +5475,10 @@ You can now write to this and change the
 
 ***NEW in 2.6*** -Koji
 
+~BCOMMANDS
+Dictates the max number of commands a robot will
+run in one cycle.
+
 ~BFREAD_OPEN
 ~BFREAD
 ~BFWRITE_OPEN
@@ -5594,6 +5579,119 @@ Just like ENTER_MENU only for the F2 menu.
 ~BKEY_PRESSED
 
 Returns The ASCII code of ANY key currently being pressed.
+
+***NEW in 2.62*** - Exophase
+
+~FStrings
+
+MZX 2.62 has 10 strings. They are referenced as such:
+
+~B$string0
+~B$string1
+...
+~B$string9
+
+Note that they use up actual counter namespace, so if you use
+over 1000 counters you'll probably overwrite the strings.
+
+~FSetting strings
+
+You can set a string to eight things, in the format of
+~Bset $stringN to PARAMETER
+where N is the number of the string and PARAMETER is one of
+the following:
+
+~BINPUT
+The value taken from the "input string" command.
+
+~BBOARD_NAME
+The name of the current board.
+
+~BBOARD_SCAN
+A string scanned in from the board directly.
+Its coordinates are Board_x, Board_y and the string is
+terminated by an asterisk (*)
+
+For example, with a board that has "my string*" at 10, 10:
+set "Board_x" 10
+set "Board_y" 10
+set "$string0" "BOARD_SCAN"
+Will scan "my string" into $string0.
+
+~BFWRITE
+This does not actually set the string to anything, but will
+write the string to the currently open write file.
+
+~BFREAD
+Will read the string in from the currently open read file.
+
+~B"string"
+Will set the string to a literal string, for example:
+~Bset "$string0" "hello!"
+
+~B"$string"
+Will set the string to another string.
+
+~B(number)
+Will set the string to an integer value.
+
+~FOutputting strings
+
+You can output strings in anywhere where MZX supports strings,
+within ampersands. For instance:
+
+set "$string0" "Test"
+write overlay c0f 0 0 "&$string0&"
+
+Will write "Test" at 0, 0 in the overlay.
+
+As mentioned above, you can "set" a string to FWRITE to output 
+it to the current write file.
+
+~FComparing strings
+
+You can use the "if" command with a string, with either 
+another string, a string literal, or a number. Note that 
+the string must be the first paramter, and that you can 
+not use input, board_scan, etc (load them into another 
+string then compare). 
+Also note that you can only use equality (=) or inequality. 
+Any other comparisons will always be FALSE (if you don't 
+like this, blame Greg's limitted str_cmp function :p)
+
+Example:
+input string "Give me a string."
+set "$string0" "Input"
+if "$string0" = "Bob" "Okay"
+end 
+
+~FOther new features
+The "mod_order" counter will report the current order (that is,
+patter) the playing module is at. Used in conjunction with
+the jump mod order command it can be used to save/restore a 
+mod position between boards...
+
+~FNotes/Bugs
+
+- MZX 2.62 files are no longer forward compatible. That means 
+  that a file made in MZX 2.62 will NOT work in any previous 
+  versions (but it WILL work in future versions, so long as 
+  they set the version string correctly)
+
+- The string reading from files may not work correctly on the 
+  first read (that is, it might truncate the first character of 
+  the string). For this reason I suggest putting a junk string 
+  in the first part of the file and reading it first.
+
+- If you run into any other bugs contact me at one of the 
+  following:
+  AIM: Exophase
+  IRC: #mzx on espernet
+  DigitalMZX: Exophase
+  e-mail: exophase@@earthlink.net, or if you really want a 
+  reply, kutnick@@andrews.edu.
+
+  Exophase, 3/9/2002
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
@@ -6217,23 +6315,9 @@ Formatting' section for more advanced programming.
 #NEWINVER.HLP
 :1st:NEW in Version 2.6! (Changes Since Version 1.03)
 
-VERSION 2.61 :
-
-      This is a bug fix release.
-
-FIXES :
-
-      -Games speeds have been normalized
-      -Password protection has been fully removed! Instead of 
-	 spiders half way hack.
-	-Original startup color scheme implemented!
-	-Redocumentation of a few features left undocumented.
-
-$***
-
 VERSION 2.6 :
 
-  More than anything else this version bends the spin
+	More than anything else this version bends the spin
 off versions of mzx back into line with the original. Instead
 of being a new mzx that some people use and other's dont, this,
 I hope, will be a standard. And hopefully this code will be
@@ -6241,7 +6325,7 @@ used for future versions of mzx.
 
 NEW FEATURES :
 
-  Check out the builtin-counter section for the complete
+	Check out the builtin-counter section for the complete
 run down of these new and exciting mzx features-
 
 File access

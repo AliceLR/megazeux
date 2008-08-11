@@ -805,12 +805,26 @@ unsigned char far *tr_msg(unsigned char far *orig_mesg,int id,
 					}
 				else {
 					//Counter
-					itoa(get_counter(cnam,id),cnam,10);
-					str_cpy(&buffer[dp],cnam);
-					dp+=str_len(cnam);
+          // Now could also be a string
+          char temp_str[8];
+          mem_cpy(temp_str, cnam, 7);
+          temp_str[7] = '\0';
+          if(!str_cmp(temp_str, "$string"))
+          {
+            // Write the value of the counter name
+            int index = cnam[7] + 1000;
+            str_cpy(&buffer[dp], counters[index].counter_name);
+  					dp+=str_len(counters[index].counter_name);
 					}
-				}
-			}
+          else
+          {
+  					itoa(get_counter(cnam,id),cnam,10);
+		  			str_cpy(&buffer[dp],cnam);
+  					dp+=str_len(cnam);
+					}
+  			}
+      }
+    }
 		if(dp>80) {
 			dp=80;
 			break;

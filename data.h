@@ -26,6 +26,7 @@
 
 #include "const.h"
 #include "struct.h"
+#include <stdio.h>
 
 /* This first section is from IDPUT.ASM */
 extern unsigned char id_chars[455];

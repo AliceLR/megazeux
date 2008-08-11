@@ -25,10 +25,13 @@
 #ifndef __COUNTER_H
 #define __COUNTER_H
 
+#include <stdio.h>
+
+extern FILE *input_file;
+extern FILE *output_file;
 extern int player_restart_x;
 extern int player_restart_y;
 extern char was_zapped;
-
 
 #ifdef __cplusplus
 extern "C" {

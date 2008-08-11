@@ -28,20 +28,17 @@
    MZ2 - Ver 2.x MegaZeux
    MZA - Ver 2.51S1 Megazeux
    M\002\011 - 2.5.1spider2+, 2.9.x
+   M\002\062 - MZX 2.62.x
 
    .SAV files:
    MZSV2 - Ver 2.x MegaZeux
    MZXSA - Ver 2.51S1 MegaZeux
    MZS\002\011 - 2.5.1spider2+, 2.9.x
+   MZS\002\062 - MZX 2.62.x
 
  All others are unchanged.
 
 */
-
-
-
-
-
 
 #include "helpsys.h"
 #include "sfx.h"
@@ -64,6 +61,7 @@
 #include "roballoc.h"
 #include "ems.h"
 #include "counter.h"
+#define VERSION 0x23E
 #define SAVE_INDIVIDUAL
 char sd_types[3]={ DE_INPUT,DE_BUTTON,DE_BUTTON };
 char sd_xs[3]={ 5,15,37 };
@@ -171,7 +169,7 @@ void save_world(char far *file,char savegame,char faded) {
 	save_screen(current_pg_seg);
 	meter("Saving...",current_pg_seg,meter_curr,meter_target);
 	if (savegame) {
-		fwrite("MZS\002\011",1,5,fp);
+		fwrite("MZS\002\062",1,5,fp);
 		fputc(curr_board,fp);
 		xor=0;
 	} else {
@@ -180,7 +178,7 @@ void save_world(char far *file,char savegame,char faded) {
 		//Pw info-
 		write_password(fp);
 		//File type id-
-		fwrite("M\002\011",1,3,fp);
+		fwrite("M\002\062",1,3,fp);
 		//Get xor code...
 		xor=get_pw_xor_code();
 	}
@@ -441,7 +439,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 	if(savegame) {
                 fread(tempstr,1,5,fp);
 		version = save_magic(tempstr);
-		if ( version != 0x0209 ) {
+		if ( version != 0x023E ) {
 			restore_screen(current_pg_seg);
 			if (!version) {
 				error(".SAV files from other versions of MZX are not supported",1,24,current_pg_seg,0x2101);
@@ -488,7 +486,7 @@ char load_world(char far *file,char edit,char savegame,char *faded) {
 			if ( version < 0x0205 ) {
 				sprintf(error_string, "World is from old version (%d.%d); use converter", ( version & 0xff00 ) >> 8, version & 0xff);
 				version = 0;
-			} else if ( version > 0x0209 ) {
+			} else if ( version > 0x023E ) {
 				sprintf(error_string, "World is from more recent version (%d.%d)", ( version & 0xff00 ) >> 8, version & 0xff);
 				version = 0;
 			} else if ( version == 0 ) {

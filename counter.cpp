@@ -32,13 +32,13 @@
 
 #include "counter.h"
 
+#include "bwsb.h"
 #include "egacode.h"
 #include "admath.h"
 #include "blink.h"
 #include "const.h"
 #include "cursor.h"
 #include "data.h"
-#include "egacode.h"
 #include "game.h"
 #include "game2.h"
 #include "graphics.h"
@@ -52,6 +52,8 @@
 #include "struct.h"
 #include "conio.h"
 
+long offset;
+char fileio;
 
 // I took away the mzxakversion stuff. So you no longer
 // have to set "mzxakversion" to 1. -Koji
@@ -63,12 +65,6 @@ int dir,dirx,diry,loc;
 struct time t;
 struct date d;
 
-//File stuff
-FILE *inputfile;
-FILE *outputfile;
-long offset;
-char fileio;
-
 void set_built_in_messages(int param);
 
 int player_restart_x=0,player_restart_y=0,gridxsize=1,gridysize=1;
@@ -76,10 +72,10 @@ int myscrolledx=0,myscrolledy=0;
 //int MZXAKWENDEVERSION = 0;
 //Some added variables to speed up pixel editing -Koji
 unsigned char pixel_x = 0, pixel_y = 0;
-//if (inputfile != NULL)
-//	fclose(inputfile);
-//if (outputfile != NULL)
-//	fclose(outputfile);
+//if (input_file != NULL)
+//	fclose(input_file);
+//if (output_file != NULL)
+//	fclose(output_file);
 
 char was_zapped=0;
 extern char mid_prefix;
@@ -133,40 +129,36 @@ int get_counter(char far *name,unsigned char id) {
 	//Read binary positions of "INT" ("bit_place" = 0-15) - Koji
 	if(!str_cmp(name,"INT2BIN"))
 	{
-		unsigned int integer;
-		int bin_mask, place;
-		place = ((get_counter("BIT_PLACE") % 16) * -1) + 15;
-		integer = get_counter("INT") + 32768;
-		bin_mask = (32768 >> place);
-		return (integer & bin_mask) >> (15 - place);
+		int place = (get_counter("BIT_PLACE") & 15);
+		return (get_counter("INT") & (1 << place)) >> place;
 	}
 
-	//Open inputfile! -Koji
+	//Open input_file! -Koji
 	if(!str_cmp(name,"FREAD_OPEN"))
 	{
 		fileio = 1;
 		return 0;
 	}
 
-	//opens outputfile as normal. -Koji
+	//opens output_file as normal. -Koji
 	if(!str_cmp(name,"FWRITE_OPEN"))
 	{
 		fileio = 2;
 		return 0;
 	}
 
-	//Opens outputfile as APPEND. -Koji
+	//Opens output_file as APPEND. -Koji
 	if(!str_cmp(name,"FWRITE_APPEND"))
 	{
 		fileio = 3;
 		return 0;
 	}
 
-	//Reads from inputfile. -Koji
+	//Reads from input_file. -Koji
 	if(!str_cmp(name,"FREAD"))
 	{
-		if(inputfile == NULL) return -1;
-		return fgetc(inputfile);
+		if(input_file == NULL) return -1;
+		return fgetc(input_file);
 	}
 
 	//Ok, ok. I did steal the "pos" within "page" idea from Akwende.
@@ -174,37 +166,37 @@ int get_counter(char far *name,unsigned char id) {
 	//	-Koji
 	if(!str_cmp(name,"FREAD_POS"))
 	{
-		if(inputfile == NULL) return -1;
-		return (ftell(inputfile) % 32767);
+		if(input_file == NULL) return -1;
+		return (ftell(input_file) % 32767);
 	}
 
 	if(!str_cmp(name,"FREAD_PAGE"))
 	{
-		if(inputfile == NULL) return -1;
-		return (ftell(inputfile) / 32767);
+		if(input_file == NULL) return -1;
+		return (ftell(input_file) / 32767);
 	}
 
 	if(!str_cmp(name,"FWRITE_POS"))
 	{
-		if(outputfile == NULL) return -1;
-		return (ftell(outputfile) % 32767);
+		if(output_file == NULL) return -1;
+		return (ftell(output_file) % 32767);
 	}
 
 	if(!str_cmp(name,"FWRITE_PAGE"))
 	{
-		if(outputfile == NULL) return -1;
-		return (ftell(outputfile) / 32767);
+		if(output_file == NULL) return -1;
+		return (ftell(output_file) / 32767);
 	}
 	if(!str_cmp(name,"FREAD_LENGTH"))
 	{
-		if(inputfile == NULL) return -1;
-		return filelength(fileno(inputfile));
+		if(input_file == NULL) return -1;
+		return filelength(fileno(input_file));
 	}
 
 	if(!str_cmp(name,"FWRITE_LENGTH"))
 	{
-		if(outputfile == NULL) return -1;
-		return filelength(fileno(outputfile));
+		if(output_file == NULL) return -1;
+		return filelength(fileno(output_file));
 	}
 
 
@@ -401,6 +393,10 @@ int get_counter(char far *name,unsigned char id) {
 
 		if(!str_cmp(name,"THIS_COLOR"))
 			return level_color[robots[id].ypos * board_xsiz + robots[id].xpos];
+
+    if(!str_cmp(name, "MOD_ORDER"))
+      return MusicOrder(0xFF);
+
 /*
 		if(!str_cmp(name,"GET_TARGET_ID"))
 		{
@@ -484,25 +480,25 @@ void set_counter(char far *name,int value,unsigned char id) {
 		if(fileio == 1)
 		{
 			//read
-			if(inputfile != NULL)
-				fclose(inputfile);
-			inputfile = fopen(name,"rb");
+			if(input_file != NULL)
+				fclose(input_file);
+			input_file = fopen(name,"rb");
 		}
 
 		if(fileio == 2)
 		{
 			//write
-			if(outputfile != NULL)
-				fclose(outputfile);
-			outputfile = fopen(name,"wb");
+			if(output_file != NULL)
+				fclose(output_file);
+			output_file = fopen(name,"wb");
 		}
 
 		if(fileio == 3)
 		{
 			//Append
-			if(outputfile != NULL)
-				fclose(outputfile);
-			outputfile = fopen(name,"ab");
+			if(output_file != NULL)
+				fclose(output_file);
+			output_file = fopen(name,"ab");
 		}
 
 		fileio = 0;
@@ -516,44 +512,44 @@ void set_counter(char far *name,int value,unsigned char id) {
 	//	-Koji
 	if(!str_cmp(name,"FREAD_POS"))
 	{
-		if(inputfile == NULL)
+		if(input_file == NULL)
 			return;
 		offset = 32767 * get_counter("FREAD_PAGE") + value;
-		fseek(inputfile,offset,0);
+		fseek(input_file,offset,0);
 	}
 
 	if(!str_cmp(name,"FREAD_PAGE"))
 	{
 		value %= 256;
-		if(inputfile == NULL)
+		if(input_file == NULL)
 			return;
 		offset = 32767 * value + get_counter("FREAD_POS");
-		fseek(inputfile,offset,0);
+		fseek(input_file,offset,0);
 	}
 
 	if(!str_cmp(name,"FWRITE_POS"))
 	{
-		if(outputfile == NULL)
+		if(output_file == NULL)
 			return;
 		offset = 32767 * get_counter("FWRITE_PAGE") + value;
-		fseek(outputfile,offset,0);
+		fseek(output_file,offset,0);
 	}
 
 	if(!str_cmp(name,"FWRITE_PAGE"))
 	{
 		value %= 256;
-		if(outputfile == NULL)
+		if(output_file == NULL)
 			return;
 		offset = 32767 * value + get_counter("FWRITE_POS");
-		fseek(outputfile,offset,0);
+		fseek(output_file,offset,0);
 	}
 
-	//Writes to the outputfile. -Koji
+	//Writes to the output_file. -Koji
 	if(!str_cmp(name,"FWRITE"))
 	{
-		if(outputfile == NULL)
+		if(output_file == NULL)
 			return;
-		fputc(value % 256,outputfile);
+		fputc(value % 256,output_file);
 		return;
 	}
 
@@ -713,7 +709,7 @@ void set_counter(char far *name,int value,unsigned char id) {
 			return;
 		}
 /*              //Silly Akwende we already have a variable that does
-		//This. It's called "bulltettype" -Koji
+		//This. It's called "bullettype" -Koji
 		if(!str_cmp(name,"BULLET_TYPE"))
 		{
 			robots[id].bullet_type=value;
@@ -744,7 +740,7 @@ void set_counter(char far *name,int value,unsigned char id) {
 			overall_speed=value;
 			return;
 			}
-	//Took out the Number contraints. -Koji
+	//Took out the Number constraints. -Koji
 	if(!str_cmp(name,"BULLETTYPE")) {
 		robots[id].bullet_type=value;
 		return;

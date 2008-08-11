@@ -76,9 +76,9 @@ char *unreg_exit_mesg=
 
 #else
 char *reg_exit_mesg=
-"Thank you for playing MegaZeux.\n\n\n\r"
-"Read the files megazeux.doc and readme.1st if you need help.\n\n\r"
-"Contributors to MZX:\n\n\r"
+"Thank you for playing MegaZeux.\n\r"
+"Read the files help.txt, megazeux.doc and readme.1st if you need help.\n\n\r"
+"Contributors to MZX:\n\r"
 "MZX 1.0-2.51 base code:\n\r"
 " Greg Janson - everything\n\r"
 "MZX spider s1-s3.1 series contributers:\n\r"
@@ -93,8 +93,9 @@ char *reg_exit_mesg=
 " Inmate2993 - Use all 16 bits of a counter.\n\r"
 "MZX 2.61:\n\r"
 " Koji - Bug fixes and etc.\n\r"
-
-"\nVisit www.Digitalmzx.net for newer versions of this software\n\n\r$";
+"MZX 2.62:\n\r"
+" Exophase - Strings, Mod_order, etc.\n\r"
+"\nhttp://www.digitalmzx.net/ for MZX source and binary distributions.\n\r$";
 
 #endif
 
@@ -162,9 +163,9 @@ int main(int argc,char **argv) {
 	draw_window_box(2,1,77,3,0xB800,120,127,113,0);
 	draw_window_box(2,4,77,16,0xB800,120,127,113,0);
 	draw_window_box(2,17,77,23,0xB800,120,127,113,0);
-		  write_string("MegaZeux version 2.61",27,2,127,0xB800);
+  write_string("MegaZeux version 2.62",27,2,127,0xB800);
 // #ifdef BETA
-	write_string("BETA- PLEASE DISTRIBUTE",27,17,127,0xB800);
+	write_string("Beta - Distribute me please!",27,17,127,0xB800);
 // #endif
 #ifdef GAMMA
 	write_string("GAMMA- MAY CONTAIN BUGz!",27,17,127,0xB800);
@@ -182,6 +183,18 @@ int main(int argc,char **argv) {
 	write_string("Sound card port:",42,20,122,0xB800);
 	write_string("Sound card IRQ:",43,21,122,0xB800);
 	write_string("Sound card DMA:",43,22,122,0xB800);
+
+  // I restored the original startup palette... - Exo
+	set_rgb(1,31,31,31);
+	set_rgb(6,63,0,0);
+	set_rgb(7,21,21,21);
+	set_rgb(8,8,8,8);
+	set_rgb(9,42,42,63);
+	set_rgb(10,42,63,42);
+	set_rgb(11,42,63,63);
+	set_rgb(12,63,42,42);
+	set_rgb(13,63,42,63);
+
 	//Fix palette to be nicer.
 
 	//Not if I can help it!
