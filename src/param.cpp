@@ -1,8 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -39,6 +37,7 @@
 #include "robo_ed.h"
 #include "rasm.h"
 #include "event.h"
+#include "edit_di.h"
 
 // Default parameters (-2 = 0 and no edit, -3 = character, -4 = board)
 int def_params[128] =
@@ -295,43 +294,6 @@ int edit_param(World *mzx_world, int id, int param)
   return param;
 }
 
-// Communial dialog
-#define MAX_ELEMS 6
-char di_types[MAX_ELEMS] = { DE_BUTTON, DE_BUTTON };
-char di_xs[MAX_ELEMS] = { 15, 37 };
-char di_ys[MAX_ELEMS] = { 15, 15 };
-char *di_strs[MAX_ELEMS] = { "OK", "Cancel" };
-int di_p1s[MAX_ELEMS] = { 0, -1 };
-int di_p2s[MAX_ELEMS] = { 0, 0 };
-void *di_storage[MAX_ELEMS] = { NULL, NULL };
-dialog di =
-{
-  10, 5, 69, 22, "Choose settings", 3, di_types, di_xs, di_ys,
-  di_strs, di_p1s, di_p2s, di_storage, 2
-};
-
-// Internal- Reset dialog to above settings
-
-void reset_di(void)
-{
-  int i;
-
-  for(i = 2; i < MAX_ELEMS; i++)
-  {
-    di_types[i] = 0;
-    di_xs[i] = 0;
-    di_ys[i] = 0;
-    di_p1s[i] = 0;
-    di_p2s[i] = 0;
-    di_strs[i] = NULL;
-    di_storage[i] = NULL;
-  }
-  di.curr_element = 2;
-  di.num_elements = 3;
-}
-
-#define do_dialog() run_dialog(mzx_world, &di, 0, 2, 0)
-
 char *potion_fx[16] =
 {
   "No Effect   ",
@@ -402,22 +364,31 @@ int pe_chest(World *mzx_world, int param)
 
     default: // Number
     {
-      reset_di();
+      dialog di;
+      element *elements[3];
+      int mult_five = 1;
+      int dialog_result;
+      char *question = "Amount (multiple of five): ";
+
+      set_confirm_buttons(elements);
       if(type == 3)
-        di_types[2] = DE_NUMBER;
-      else
-        di_types[2] = DE_FIVE;
-      di_xs[2] = 5;
-      di_ys[2] = 6;
-      if(type == 3)
-        di_strs[2] = "Number of lives: ";
-      else
-        di_strs[2] = "Amount (multiple of five): ";
-      di_p1s[2] = 0;
-      di_p2s[2] = 15;
-      di_storage[2] = &var;
-      if(do_dialog())
+      {
+        question = "Number of lives: ";
+        mult_five = 0;
+      }
+
+      elements[2] = construct_number_box(5, 6, question,
+       0, 15, mult_five, &var);
+
+      construct_dialog(&di, "Set Quantity", 10, 5, 60, 18,
+       elements, 3, 2);
+
+      dialog_result = run_dialog(mzx_world, &di);
+
+      if(dialog_result)
         var = -1;
+
+      destruct_dialog(&di);
       break;
     }
   }
@@ -430,15 +401,21 @@ int pe_chest(World *mzx_world, int param)
 
 int pe_health(World *mzx_world, int param)
 {
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 6;
-  di_strs[2] = "Amount: ";
-  di_p1s[2] = 0;
-  di_p2s[2] = 255;
-  di_storage[2] = &param;
-  if(do_dialog())
+  dialog di;
+  element *elements[3];
+  int dialog_result;
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 6, "Amount: ",
+   0, 255, 0, &param);
+
+  construct_dialog(&di, "Set Health/Ammo", 10, 5, 60, 18,
+   elements, 3, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return param;
@@ -451,68 +428,81 @@ int pe_ring(World *mzx_world, int param)
 
 int pe_bomb(World *mzx_world, int param)
 {
-  int rad = param;
-  reset_di();
-  di_types[2] = DE_RADIO;
-  di_xs[2] = 15;
-  di_ys[2] = 6;
-  di_strs[2] = "Low strength bomb\nHigh strength bomb";
-  di_p1s[2] = 2;
-  di_p2s[2] = 18;
-  di_storage[2] = &rad;
-  if(do_dialog())
+  dialog di;
+  element *elements[3];
+  int dialog_result;
+  char *radio_strings[] =
+  {
+    "Low strength bomb", "High strength bomb"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_radio_button(15, 6, radio_strings,
+   2, 18, &param);
+
+  construct_dialog(&di, "Set Bomb", 10, 5, 60, 18,
+   elements, 3, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return rad;
+  return param;
 }
 
 int pe_lit_bomb(World *mzx_world, int param)
 {
-  int rad = param >> 7;
+  dialog di;
+  element *elements[4];
+  int dialog_result;
+  int type = param >> 7;
   int stage = 7 - (param & 0x3F);
-  reset_di();
-  di_types[2] = DE_RADIO;
-  di_xs[2] = 15;
-  di_ys[2] = 6;
-  di_strs[2] = "Low strength bomb\nHigh strength bomb";
-  di_p1s[2] = 2;
-  di_p2s[2] = 18;
-  di_storage[2] = &rad;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 9;
-  di_strs[3] = "Fuse length: ";
-  di_p1s[3] = 1;
-  di_p2s[3] = 7;
-  di_storage[3] = &stage;
-  di.num_elements = 4;
-  if(do_dialog())
+  char *radio_strings[] =
+  {
+    "Low strength bomb", "High strength bomb"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_radio_button(15, 6, radio_strings,
+   2, 18, &type);
+  elements[3] = construct_number_box(15, 9, "Fuse length: ",
+   1, 7, 0, &stage);
+
+  construct_dialog(&di, "Set Lit Bomb", 10, 5, 60, 18,
+   elements, 4, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return (rad << 7) | (7 - stage);
+  return (type << 7) | (7 - stage);
 }
 
 int pe_explosion(World *mzx_world, int param)
 {
   int size = param >> 4;
   int stage = (param & 0x0F) + 1;
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 6;
-  di_strs[2] = "Explosion stage: ";
-  di_p1s[2] = 1;
-  di_p2s[2] = 4;
-  di_storage[2] = &stage;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 8;
-  di_strs[3] = "Explosion size:  ";
-  di_p1s[3] = 0;
-  di_p2s[3] = 15;
-  di_storage[3] = &size;
-  di.num_elements = 4;
-  if(do_dialog())
+  dialog di;
+  element *elements[4];
+  int dialog_result;
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 6, "Explosion stage: ",
+   1, 4, 0, &stage);
+  elements[3] = construct_number_box(15, 8, "Explosion size: ",
+   0, 15, 0, &size);
+
+  construct_dialog(&di, "Set Explosion", 10, 5, 60, 18,
+   elements, 4, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return (size << 4) | (stage - 1);
@@ -520,66 +510,87 @@ int pe_explosion(World *mzx_world, int param)
 
 int pe_door(World *mzx_world, int param)
 {
-  int hv = param&1;
+  int alignment = param & 1;
   int opens = (param >> 1) & 0x03;
-  int locked = param >> 3;
-  reset_di();
-  di_types[2] = DE_RADIO;
-  di_xs[2] = 15;
-  di_ys[2] = 3;
-  di_strs[2] = "Horizontal\nVertical";
-  di_p1s[2] = 2;
-  di_p2s[2] = 18;
-  di_storage[2] = &hv;
-  di_types[3] = DE_RADIO;
-  di_xs[3] = 15;
-  di_ys[3] = 6;
-  di_strs[3] = "Opens N/W\nOpens N/E\nOpens S/W\nOpens S/E";
-  di_p1s[3] = 4;
-  di_p2s[3] = 9;
-  di_storage[3] = &opens;
-  di_types[4] = DE_CHECK;
-  di_xs[4] = 15;
-  di_ys[4] = 11;
-  di_strs[4] = "Locked door";
-  di_p1s[4] = 1;
-  di_p2s[4] = 11;
-  di_storage[4] = &locked;
-  di.num_elements = 5;
-  if(do_dialog())
+  int check_results[1] = { param >> 3 };
+  dialog di;
+  element *elements[5];
+  int dialog_result;
+  char *radio_strings_1[] =
+  {
+    "Horizontal", "Vertical"
+  };
+  char *radio_strings_2[] =
+  {
+    "Opens N/W", "Opens N/E", "Opens S/W", "Opens S/E"
+  };
+  char *check_strings[] = { "Locked door" };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_radio_button(15, 3, radio_strings_1,
+   2, 18, &alignment);
+  elements[3] = construct_radio_button(15, 6, radio_strings_2,
+   4, 9, &opens);
+  elements[4] = construct_check_box(15, 11, check_strings,
+   1, 11, check_results);
+
+  construct_dialog(&di, "Set Door", 10, 5, 60, 18,
+   elements, 5, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return hv | (opens << 1) | (locked << 3);
+  return alignment | (opens << 1) | (check_results[0] << 3);
 }
 
 int pe_gate(World *mzx_world, int param)
 {
-  int locked = param;
-  reset_di();
-  di_types[2] = DE_CHECK;
-  di_xs[2] = 15;
-  di_ys[2] = 7;
-  di_strs[2] = "Locked gate";
-  di_p1s[2] = 1;
-  di_p2s[2] = 11;
-  di_storage[2] = &locked;
-  if(do_dialog())
+  int check_results[1] = { param };
+  dialog di;
+  element *elements[3];
+  int dialog_result;
+  char *check_strings[] = { "Locked gate" };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_check_box(15, 7, check_strings,
+   1, 11, check_results);
+
+  construct_dialog(&di, "Set Gate", 10, 5, 60, 18,
+   elements, 3, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return locked;
+  return check_results[0];
 }
 
 int pe_transport(World *mzx_world, int param)
 {
-  reset_di();
-  di_types[2] = DE_RADIO;
-  di_xs[2] = 15;
-  di_ys[2] = 6;
-  di_strs[2] = "North\nSouth\nEast\nWest\nAll";
-  di_p1s[2] = 5;
-  di_p2s[2] = 5;
-  di_storage[2] = &param;
-  if(do_dialog())
+  dialog di;
+  element *elements[3];
+  int dialog_result;
+  char *radio_strings[] =
+  {
+    "North", "South", "East", "West", "All"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_radio_button(15, 6, radio_strings,
+   5, 5, &param);
+
+  construct_dialog(&di, "Set Transport", 10, 5, 60, 18,
+   elements, 3, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return param;
@@ -589,39 +600,49 @@ int pe_pouch(World *mzx_world, int param)
 {
   int coins = param >> 4;
   int gems = param & 0x0F;
-  reset_di();
-  di_types[2] = DE_FIVE;
-  di_xs[2] = 6;
-  di_ys[2] = 6;
-  di_strs[2] = "Number of gems (mult. of 5):  ";
-  di_p1s[2] = 0;
-  di_p2s[2] = 15;
-  di_storage[2] = &gems;
-  di_types[3] = DE_FIVE;
-  di_xs[3] = 6;
-  di_ys[3] = 8;
-  di_strs[3] = "Number of coins (mult. of 5): ";
-  di_p1s[3] = 0;
-  di_p2s[3] = 15;
-  di_storage[3] = &coins;
-  di.num_elements = 4;
-  if(do_dialog())
+  dialog di;
+  element *elements[4];
+  int dialog_result;
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(6, 6,
+   "Number of gems (mult. of 5):  ", 0, 15, 1, &gems);
+  elements[3] = construct_number_box(6, 8,
+   "Number of coins (mult. of 5): ", 0, 15, 1, &coins);
+
+  construct_dialog(&di, "Set Pouch", 10, 5, 60, 18,
+   elements, 4, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return(coins << 4) | gems;
+  return (coins << 4) | gems;
 }
 
 int pe_pusher(World *mzx_world, int param)
 {
-  reset_di();
-  di_types[2] = DE_RADIO;
-  di_xs[2] = 15;
-  di_ys[2] = 6;
-  di_strs[2] = "North\nSouth\nEast\nWest";
-  di_p1s[2] = 4;
-  di_p2s[2] = 5;
-  di_storage[2] = &param;
-  if(do_dialog())
+  dialog di;
+  element *elements[3];
+  int dialog_result;
+  char *radio_strings[] =
+  {
+    "North", "South", "East", "West"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_radio_button(15, 6, radio_strings,
+   4, 5, &param);
+
+  construct_dialog(&di, "Set Pusher/Missle/Spike", 10, 5, 60, 18,
+   elements, 3, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return param;
@@ -632,30 +653,29 @@ int pe_lazer_gun(World *mzx_world, int param)
   int dir = param & 0x03;
   int start = ((param >> 2) & 0x07) + 1;
   int end = (param >> 5) + 1;
-  reset_di();
-  di_types[2] = DE_RADIO;
-  di_xs[2] = 15;
-  di_ys[2] = 4;
-  di_strs[2] = "North\nSouth\nEast\nWest";
-  di_p1s[2] = 4;
-  di_p2s[2] = 5;
-  di_storage[2] = &dir;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 9;
-  di_strs[3] = "Start time: ";
-  di_p1s[3] = 1;
-  di_p2s[3] = 8;
-  di_storage[3] = &start;
-  di_types[4] = DE_NUMBER;
-  di_xs[4] = 15;
-  di_ys[4] = 11;
-  di_strs[4] = "Length on:  ";
-  di_p1s[4] = 1;
-  di_p2s[4] = 7;
-  di_storage[4] = &end;
-  di.num_elements = 5;
-  if(do_dialog())
+  dialog di;
+  element *elements[5];
+  int dialog_result;
+  char *radio_strings[] =
+  {
+    "North", "South", "East", "West"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_radio_button(15, 4, radio_strings,
+   4, 5, &dir);
+  elements[3] = construct_number_box(15, 9, "Start time: ",
+   1, 8, 0, &start);
+  elements[4] = construct_number_box(15, 11, "Length on:  ",
+   1, 7, 0, &end);
+
+  construct_dialog(&di, "Set 'Lazer' Gun", 10, 5, 60, 18,
+   elements, 5, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return dir | ((start - 1) << 2) + ((end - 1) << 5);
@@ -665,23 +685,31 @@ int pe_bullet(World *mzx_world, int param)
 {
   int dir = param & 0x03;
   int type = param >> 2;
-  reset_di();
-  di_types[2] = DE_RADIO;
-  di_xs[2] = 15;
-  di_ys[2] = 5;
-  di_strs[2] = "North\nSouth\nEast\nWest";
-  di_p1s[2] = 4;
-  di_p2s[2] = 5;
-  di_storage[2] = &dir;
-  di_types[3] = DE_RADIO;
-  di_xs[3] = 15;
-  di_ys[3] = 10;
-  di_strs[3] = "Player\nNeutral\nEnemy";
-  di_p1s[3] = 3;
-  di_p2s[3] = 7;
-  di_storage[3] = &type;
-  di.num_elements = 4;
-  if(do_dialog())
+  dialog di;
+  element *elements[4];
+  int dialog_result;
+  char *radio_strings_1[] =
+  {
+    "North", "South", "East", "West"
+  };
+  char *radio_strings_2[] =
+  {
+    "Player", "Neutral", "Enemy"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_radio_button(15, 5, radio_strings_1,
+   4, 5, &dir);
+  elements[3] = construct_radio_button(15, 10, radio_strings_2,
+   3, 7, &type);
+
+  construct_dialog(&di, "Set Bullet", 10, 5, 60, 18,
+   elements, 4, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return dir | (type << 2);
@@ -689,15 +717,25 @@ int pe_bullet(World *mzx_world, int param)
 
 int pe_ricochet_panel(World *mzx_world, int param)
 {
-  reset_di();
-  di_types[2] = DE_RADIO;
-  di_xs[2] = 15;
-  di_ys[2] = 7;
-  di_strs[2] = "Orientation \\\nOrientation /";
-  di_p1s[2] = 2;
-  di_p2s[2] = 13;
-  di_storage[2] = &param;
-  if(do_dialog())
+  dialog di;
+  element *elements[3];
+  int dialog_result;
+  char *radio_strings[] =
+  {
+    "Orientation \\", "Orientation /"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_radio_button(15, 7, radio_strings,
+   2, 13, &param);
+
+  construct_dialog(&di, "Set Ricochet Panel", 10, 5, 60, 18,
+   elements, 3, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return param;
@@ -705,17 +743,23 @@ int pe_ricochet_panel(World *mzx_world, int param)
 
 int pe_mine(World *mzx_world, int param)
 {
-  param >>= 4;
-  param--;
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 7;
-  di_strs[2] = "Blast radius:  ";
-  di_p1s[2] = 1;
-  di_p2s[2] = 8;
-  di_storage[2] = &param;
-  if(do_dialog())
+  dialog di;
+  element *elements[3];
+  int dialog_result;
+
+  param = (param >> 4) + 1;
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 7, "Blast radius:  ",
+   1, 8, 0, &param);
+
+  construct_dialog(&di, "Set Mine", 10, 5, 60, 18,
+   elements, 3, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return (param - 1) << 4;
@@ -725,68 +769,64 @@ int pe_snake(World *mzx_world, int param)
 {
   int dir = param & 0x3;
   int intel = (param >> 4) + 1;
-  int speed = ((param >> 2) & 1) ^ 1;
-  reset_di();
-  di_types[2] = DE_RADIO;
-  di_xs[2] = 15;
-  di_ys[2] = 4;
-  di_strs[2] = "North\nSouth\nEast\nWest";
-  di_p1s[2] = 4;
-  di_p2s[2] = 5;
-  di_storage[2] = &dir;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 9;
-  di_strs[3] = "Intellegence: ";
-  di_p1s[3] = 1;
-  di_p2s[3] = 8;
-  di_storage[3] = &intel;
-  di_types[4] = DE_CHECK;
-  di_xs[4] = 15;
-  di_ys[4] = 11;
-  di_strs[4] = "Fast movement";
-  di_p1s[4] = 1;
-  di_p2s[4] = 13;
-  di_storage[4] = &speed;
-  di.num_elements = 5;
-  if(do_dialog())
+  int check_results[1] = { ((param >> 2) & 1) ^ 1 };
+  dialog di;
+  element *elements[5];
+  int dialog_result;
+  char *radio_strings[] =
+  {
+    "North", "South", "East", "West"
+  };
+  char *check_strings[] = { "Fast movement " };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_radio_button(15, 4, radio_strings,
+   4, 5, &dir);
+  elements[3] = construct_number_box(15, 9, "Intelligence:  ",
+   1, 8, 0, &intel);
+  elements[4] = construct_check_box(15, 11, check_strings,
+   1, 13, check_results);
+
+  construct_dialog(&di, "Set Snake", 10, 5, 60, 18,
+   elements, 5, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return dir | ((speed ^ 1) << 2) | ((intel - 1) << 4);
+  return dir | ((check_results[0] ^ 1) << 2) | ((intel - 1) << 4);
 }
 
 int pe_eye(World *mzx_world, int param)
 {
   int intel = (param & 0x07) + 1;
   int radius = ((param >> 3) & 0x07) + 1;
-  int speed = (param >> 6) ^ 1;
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 6;
-  di_strs[2] = "Intellegence: ";
-  di_p1s[2] = 1;
-  di_p2s[2] = 8;
-  di_storage[2] = &intel;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 8;
-  di_strs[3] = "Blast radius: ";
-  di_p1s[3] = 1;
-  di_p2s[3] = 8;
-  di_storage[3] = &radius;
-  di_types[4] = DE_CHECK;
-  di_xs[4] = 15;
-  di_ys[4] = 10;
-  di_strs[4] = "Fast movement";
-  di_p1s[4] = 1;
-  di_p2s[4] = 13;
-  di_storage[4] = &speed;
-  di.num_elements = 5;
-  if(do_dialog())
+  int check_results[1] = { (param >> 6) ^ 1 };
+  dialog di;
+  element *elements[5];
+  int dialog_result;
+  char *check_strings[] = { "Fast movement " };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 6, "Intelligence: ",
+   1, 8, 0, &intel);
+  elements[3] = construct_number_box(15, 8, "Blast radius: ",
+   1, 8, 0, &radius);
+  elements[4] = construct_check_box(15, 10, check_strings,
+   1, 13, check_results);
+
+  construct_dialog(&di, "Set Eye", 10, 5, 60, 18,
+   elements, 5, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return (intel - 1) | ((radius - 1) << 3) | ((speed ^ 1) << 6);
+  return (intel - 1) | ((radius - 1) << 3) | ((check_results[0] ^ 1) << 6);
 }
 
 int pe_thief(World *mzx_world, int param)
@@ -794,30 +834,25 @@ int pe_thief(World *mzx_world, int param)
   int intel = (param & 0x07) + 1;
   int speed = ((param >> 3) & 0x03) + 1;
   int gems = (param >> 7) + 1;
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 6;
-  di_strs[2] = "Intellegence:   ";
-  di_p1s[2] = 1;
-  di_p2s[2] = 8;
-  di_storage[2] = &intel;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 8;
-  di_strs[3] = "Movement speed: ";
-  di_p1s[3] = 1;
-  di_p2s[3] = 4;
-  di_storage[3] = &speed;
-  di_types[4] = DE_NUMBER;
-  di_xs[4] = 15;
-  di_ys[4] = 10;
-  di_strs[4] = "Gems stolen:    ";
-  di_p1s[4] = 1;
-  di_p2s[4] = 2;
-  di_storage[4] = &gems;
-  di.num_elements = 5;
-  if(do_dialog())
+  dialog di;
+  element *elements[5];
+  int dialog_result;
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 6,  "Intelligence:   ",
+   1, 8, 0, &intel);
+  elements[3] = construct_number_box(15, 8,  "Movement speed: ",
+   1, 4, 0, &speed);
+  elements[4] = construct_number_box(15, 10, "Gems stolen:    ",
+   1, 2, 0, &gems);
+
+  construct_dialog(&di, "Set Thief", 10, 5, 60, 18,
+   elements, 5, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return (intel - 1) | ((speed - 1) << 3) | ((gems - 1) << 7);
@@ -826,27 +861,32 @@ int pe_thief(World *mzx_world, int param)
 int pe_slime_blob(World *mzx_world, int param)
 {
   int speed = (param & 0x07) + 1;
-  char chk[2] = { (param >> 6) & 0x01, (param >> 7) & 0x01 };
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 6;
-  di_strs[2] = "Spread speed: ";
-  di_p1s[2] = 1;
-  di_p2s[2] = 8;
-  di_storage[2] = &speed;
-  di_types[3] = DE_CHECK;
-  di_xs[3] = 15;
-  di_ys[3] = 8;
-  di_strs[3] = "Hurts player\nInvincible";
-  di_p1s[3] = 2;
-  di_p2s[3] = 12;
-  di_storage[3] = chk;
-  di.num_elements = 4;
-  if(do_dialog())
+  int check_results[2] = { (param >> 6) & 0x01, (param >> 7) & 0x01 };
+  dialog di;
+  element *elements[4];
+  int dialog_result;
+  char *check_strings[] =
+  {
+    "Hurts player", "Invincible"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 6, "Spread speed: ",
+   1, 8, 0, &speed);
+  elements[3] = construct_check_box(15, 8, check_strings,
+   2, 12, check_results);
+
+  construct_dialog(&di, "Set Slime Blob", 10, 5, 60, 18,
+   elements, 4, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return (speed - 1) | (chk[0] << 6) | (chk[1] << 7);
+  return (speed - 1) | (check_results[0] << 6) |
+   (check_results[1] << 7);
 }
 
 int pe_runner(World *mzx_world, int param)
@@ -854,30 +894,29 @@ int pe_runner(World *mzx_world, int param)
   int dir = param & 0x03;
   int hp = (param >> 6) + 1;
   int speed = ((param >> 2) & 3) + 1;
-  reset_di();
-  di_types[2] = DE_RADIO;
-  di_xs[2] = 15;
-  di_ys[2] = 4;
-  di_strs[2] = "North\nSouth\nEast\nWest";
-  di_p1s[2] = 4;
-  di_p2s[2] = 5;
-  di_storage[2] = &dir;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 9;
-  di_strs[3] = "Hit points:\t";
-  di_p1s[3] = 1;
-  di_p2s[3] = 4;
-  di_storage[3] = &hp;
-  di_types[4] = DE_NUMBER;
-  di_xs[4] = 15;
-  di_ys[4] = 11;
-  di_strs[4] = "Movement speed: ";
-  di_p1s[4] = 1;
-  di_p2s[4] = 4;
-  di_storage[4] = &speed;
-  di.num_elements = 5;
-  if(do_dialog())
+  dialog di;
+  element *elements[5];
+  int dialog_result;
+  char *radio_strings[] =
+  {
+    "North", "South", "East", "West"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_radio_button(15, 4, radio_strings,
+   4, 5, &dir);
+  elements[3] = construct_number_box(15, 9, "Hit points: ",
+   1, 4, 0, &hp);
+  elements[4] = construct_number_box(15, 11, "Movement speed: ",
+   1, 4, 0, &speed);
+
+  construct_dialog(&di, "Set Runner", 10, 5, 60, 18,
+   elements, 5, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return dir | ((speed - 1) << 2) | ((hp - 1) << 6);
@@ -887,100 +926,98 @@ int pe_ghost(World *mzx_world, int param)
 {
   int intel = (param & 0x07) + 1;
   int speed = ((param >> 4) & 0x03) + 1;
-  int invinco = ((param >> 3) & 0x01);
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 6;
-  di_strs[2] = "Intellegence:  ";
-  di_p1s[2] = 1;
-  di_p2s[2] = 8;
-  di_storage[2] = &intel;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 8;
-  di_strs[3] = "Movement speed: ";
-  di_p1s[3] = 1;
-  di_p2s[3] = 4;
-  di_storage[3] = &speed;
-  di_types[4] = DE_CHECK;
-  di_xs[4] = 15;
-  di_ys[4] = 10;
-  di_strs[4] = "Invincible";
-  di_p1s[4] = 1;
-  di_p2s[4] = 10;
-  di_storage[4] = &invinco;
-  di.num_elements = 5;
-  if(do_dialog())
+  int check_results[] = { (param >> 3) & 0x01 };
+  dialog di;
+  element *elements[5];
+  int dialog_result;
+  char *check_strings[] = { "Invincible" };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 6, "Intelligence:  ",
+   1, 8, 0, &intel);
+  elements[3] = construct_number_box(15, 8, "Movement speed: ",
+   1, 4, 0, &speed);
+  elements[4] = construct_check_box(15, 10, check_strings,
+   1, 10, check_results);
+
+  construct_dialog(&di, "Set Ghost", 10, 5, 60, 18,
+   elements, 5, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return (intel - 1) | ((speed - 1) << 4) | (invinco << 3);
+  return (intel - 1) | ((speed - 1) << 4) | (check_results[0] << 3);
 }
 
 int pe_dragon(World *mzx_world, int param)
 {
   int fire_rate = (param & 0x03) + 1;
   int hp = ((param >> 5) & 0x03) + 1;
-  int moves = ((param >> 2) & 0x01);
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 6;
-  di_strs[2] = "Firing rate: ";
-  di_p1s[2] = 1;
-  di_p2s[2] = 4;
-  di_storage[2] = &fire_rate;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 8;
-  di_strs[3] = "Hit points:  ";
-  di_p1s[3] = 1;
-  di_p2s[3] = 8;
-  di_storage[3] = &hp;
-  di_types[4] = DE_CHECK;
-  di_xs[4] = 15;
-  di_ys[4] = 10;
-  di_strs[4] = "Moves";
-  di_p1s[4] = 1;
-  di_p2s[4] = 5;
-  di_storage[4] = &moves;
-  di.num_elements = 5;
-  if(do_dialog())
+  int check_results[1] = { ((param >> 2) & 0x01) };
+  dialog di;
+  element *elements[5];
+  int dialog_result;
+  char *check_strings[] = { "Moves" };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 6, "Firing rate: ",
+   1, 4, 0, &fire_rate);
+  elements[3] = construct_number_box(15, 8, "Hit points:  ",
+   1, 8, 0, &hp);
+  elements[4] = construct_check_box(15, 10, check_strings,
+   1, 5, check_results);
+
+  construct_dialog(&di, "Set Dragon", 10, 5, 60, 18,
+   elements, 5, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return (fire_rate - 1) | ((hp - 1) << 5) | (moves << 2);
+  return (fire_rate - 1) | ((hp - 1) << 5) | (check_results[0] << 2);
 }
 
 int pe_fish(World *mzx_world, int param)
 {
   int intel = (param & 0x07) + 1;
-  char chk[4] =
+  int check_results[4] =
   {
     (param >> 6) & 0x01, (param >> 5) & 0x01,
     (param >> 7) & 0x01, ((param >> 3) & 0x01) ^ 1
   };
 
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 5;
-  di_strs[2] = "Intellegence: ";
-  di_p1s[2] = 1;
-  di_p2s[2] = 8;
-  di_storage[2] = &intel;
-  di_types[3] = DE_CHECK;
-  di_xs[3] = 15;
-  di_ys[3] = 7;
-  di_strs[3] = "Hurts player\nAffected by current\n2 hit points\nFast movement";
-  di_p1s[3] = 4;
-  di_p2s[3] = 19;
-  di_storage[3] = chk;
-  di.num_elements = 4;
-  if(do_dialog())
+  dialog di;
+  element *elements[4];
+  int dialog_result;
+  char *check_strings[] =
+  {
+    "Hurts player", "Affected by current",
+    "2 hit points", "Fast movement"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 5, "Intelligence: ",
+   1, 8, 0, &intel);
+  elements[3] = construct_check_box(15, 7, check_strings,
+   4, 19, check_results);
+
+  construct_dialog(&di, "Set Fish", 10, 5, 60, 18,
+   elements, 4, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return (intel - 1) | (chk[0] << 6) | (chk[1] << 5) |
-   (chk[2] << 7) | ((chk[3] ^1) << 3);
+  return (intel - 1) | (check_results[0] << 6) |
+   (check_results[1] << 5) | (check_results[2] << 7) |
+   ((check_results[3] ^1) << 3);
 }
 
 int pe_shark(World *mzx_world, int param)
@@ -988,30 +1025,30 @@ int pe_shark(World *mzx_world, int param)
   int intel = (param & 0x03) + 1;
   int fire_rate = ((param >> 5) & 0x03) + 1;
   int fires = ((param >> 3) & 0x03);
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 4;
-  di_strs[2] = "Intellegence: ";
-  di_p1s[2] = 1;
-  di_p2s[2] = 8;
-  di_storage[2] = &intel;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 6;
-  di_strs[3] = "Firing rate:  ";
-  di_p1s[3] = 1;
-  di_p2s[3] = 8;
-  di_storage[3] = &fire_rate;
-  di_types[4] = DE_RADIO;
-  di_xs[4] = 15;
-  di_ys[4] = 8;
-  di_strs[4] = "Fires bullets\nFires seekers\nFires fire\nFires nothing";
-  di_p1s[4] = 4;
-  di_p2s[4] = 13;
-  di_storage[4] = &fires;
-  di.num_elements = 5;
-  if(do_dialog())
+  dialog di;
+  element *elements[5];
+  int dialog_result;
+  char *radio_strings[] =
+  {
+    "Fires bullets", "Fires seekers",
+    "Fires fire", "Fires nothing"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 4, "Intelligence: ",
+   1, 8, 0, &intel);
+  elements[3] = construct_number_box(15, 6, "Firing rate:  ",
+   1, 8, 0, &fire_rate);
+  elements[4] = construct_radio_button(15, 8, radio_strings,
+   4, 13, &fires);
+
+  construct_dialog(&di, "Set Shark/Spitting Tiger", 10, 5, 60, 18,
+   elements, 5, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return (intel - 1) | ((fire_rate - 1) << 5) | (fires << 3);
@@ -1021,57 +1058,65 @@ int pe_spider(World *mzx_world, int param)
 {
   int intel = (param & 0x03) + 1;
   int web = ((param >> 3) & 0x03);
-  char chk[2] = { ((param >> 5) & 0x01) ^ 1, ((param >> 7) & 0x01) };
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 3;
-  di_strs[2] = "Intellegence: ";
-  di_p1s[2] = 1;
-  di_p2s[2] = 8;
-  di_storage[2] = &intel;
-  di_types[3] = DE_RADIO;
-  di_xs[3] = 15;
-  di_ys[3] = 5;
-  di_strs[3] = "Thin web only\nThick web only\nAny web\nAnywhere";
-  di_p1s[3] = 4;
-  di_p2s[3] = 14;
-  di_storage[3] = &web;
-  di_types[4] = DE_CHECK;
-  di_xs[4] = 15;
-  di_ys[4] = 10;
-  di_strs[4] = "Fast movement\n2 hit points\n";
-  di_p1s[4] = 2;
-  di_p2s[4] = 13;
-  di_storage[4] = chk;
-  di.num_elements = 5;
-  if(do_dialog())
+  int check_results[2] =
+  {
+    ((param >> 5) & 0x01) ^ 1, ((param >> 7) & 0x01)
+  };
+
+  dialog di;
+  element *elements[5];
+  int dialog_result;
+  char *radio_strings[] =
+  {
+    "Thin web only", "Thick web only", "Any web", "Anywhere"
+  };
+  char *check_strings[] =
+  {
+    "Fast movement", "2 hit points"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 3, "Intelligence: ",
+   1, 8, 0, &intel);
+  elements[3] = construct_radio_button(15, 5, radio_strings,
+   4, 14, &web);
+  elements[4] = construct_check_box(15, 10, check_strings,
+   2, 13, check_results);
+
+  construct_dialog(&di, "Set Spider", 10, 5, 60, 18,
+   elements, 5, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return (intel - 1) | (web << 3) | ((chk[0] ^ 1) << 5) | (chk[1] << 7);
+  return (intel - 1) | (web << 3) |
+   ((check_results[0] ^ 1) << 5) | (check_results[1] << 7);
 }
 
 int pe_goblin(World *mzx_world, int param)
 {
   int intel = ((param >> 6) & 0x03) + 1;
   int rest_len = (param & 0x03) + 1;
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 7;
-  di_strs[2] = "Intellegence: ";
-  di_p1s[2] = 1;
-  di_p2s[2] = 4;
-  di_storage[2] = &intel;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 9;
-  di_strs[3] = "Rest length:  ";
-  di_p1s[3] = 1;
-  di_p2s[3] = 4;
-  di_storage[3] = &rest_len;
-  di.num_elements = 4;
-  if(do_dialog())
+  dialog di;
+  element *elements[4];
+  int dialog_result;
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 7, "Intelligence: ",
+   1, 4, 0, &intel);
+  elements[3] = construct_number_box(15, 9, "Rest length:  ",
+   1, 4, 0, &rest_len);
+
+  construct_dialog(&di, "Set Goblin", 10, 5, 60, 18,
+   elements, 4, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return (rest_len - 1) | ((intel - 1) << 6);
@@ -1083,37 +1128,35 @@ int pe_bullet_gun(World *mzx_world, int param)
   int intel = ((param >> 5) & 0x03) + 1;
   int fire_rate = (param & 0x07) + 1;
   int type = (param >> 7);
-  reset_di();
-  di_types[2] = DE_RADIO;
-  di_xs[2] = 15;
-  di_ys[2] = 2;
-  di_strs[2] = "North\nSouth\nEast\nWest";
-  di_p1s[2] = 4;
-  di_p2s[2] = 5;
-  di_storage[2] = &dir;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 7;
-  di_strs[3] = "Intellegence: ";
-  di_p1s[3] = 1;
-  di_p2s[3] = 4;
-  di_storage[3] = &intel;
-  di_types[4] = DE_NUMBER;
-  di_xs[4] = 15;
-  di_ys[4] = 9;
-  di_strs[4] = "Firing rate:  ";
-  di_p1s[4] = 1;
-  di_p2s[4] = 8;
-  di_storage[4] = &fire_rate;
-  di_types[5] = DE_RADIO;
-  di_xs[5] = 15;
-  di_ys[5] = 11;
-  di_strs[5] = "Fires bullets\nFires fire";
-  di_p1s[5] = 2;
-  di_p2s[5] = 13;
-  di_storage[5] = &type;
-  di.num_elements = 6;
-  if(do_dialog())
+  dialog di;
+  element *elements[6];
+  int dialog_result;
+  char *radio_strings_1[] =
+  {
+    "North", "South", "East", "West"
+  };
+  char *radio_strings_2[] =
+  {
+    "Fires bullets", "Fires fire"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_radio_button(15, 2, radio_strings_1,
+   4, 5, &dir);
+  elements[3] = construct_number_box(15, 7, "Intelligence: ",
+   1, 4, 0, &intel);
+  elements[4] = construct_number_box(15, 9, "Firing rate:  ",
+   1, 8, 0, &fire_rate);
+  elements[5] = construct_radio_button(15, 11, radio_strings_2,
+   2, 13, &type);
+
+  construct_dialog(&di, "Set Bullet Gun/Spinng Gun", 10, 5, 60, 18,
+   elements, 6, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return (fire_rate - 1) | (dir << 3) + ((intel - 1) << 5) + (type << 7);
@@ -1123,57 +1166,53 @@ int pe_bear(World *mzx_world, int param)
 {
   int sens = (param & 0x07) + 1;
   int speed = ((param >> 3) & 0x03) + 1;
-  int hp = (param >> 7);
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 6;
-  di_strs[2] = "Sensitivity:   ";
-  di_p1s[2] = 1;
-  di_p2s[2] = 8;
-  di_storage[2] = &sens;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 8;
-  di_strs[3] = "Movement speed: ";
-  di_p1s[3] = 1;
-  di_p2s[3] = 4;
-  di_storage[3] = &speed;
-  di_types[4] = DE_CHECK;
-  di_xs[4] = 15;
-  di_ys[4] = 10;
-  di_strs[4] = "2 hit points";
-  di_p1s[4] = 1;
-  di_p2s[4] = 12;
-  di_storage[4] = &hp;
-  di.num_elements = 5;
-  if(do_dialog())
+  int check_results[1] = { (param >> 7) };
+  dialog di;
+  element *elements[5];
+  int dialog_result;
+  char *check_strings[] = { "2 hit points" };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 6, "Sensitivity:   ",
+   1, 8, 0, &sens);
+  elements[3] = construct_number_box(15, 8, "Movement speed: ",
+   1, 4, 0, &speed);
+  elements[4] = construct_check_box(15, 10, check_strings,
+   1, 12, check_results);
+
+  construct_dialog(&di, "Set Bear", 10, 5, 60, 18,
+   elements, 5, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return (sens - 1) | ((speed - 1) << 3) | (hp << 7);
+  return (sens - 1) | ((speed - 1) << 3) | (check_results[0] << 7);
 }
 
 int pe_bear_cub(World *mzx_world, int param)
 {
   int intel = (param & 0x03) + 1;
   int switch_rate = ((param >> 2) & 0x03) + 1;
-  reset_di();
-  di_types[2] = DE_NUMBER;
-  di_xs[2] = 15;
-  di_ys[2] = 7;
-  di_strs[2] = "Intellegence: ";
-  di_p1s[2] = 1;
-  di_p2s[2] = 4;
-  di_storage[2] = &intel;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 9;
-  di_strs[3] = "Switch rate:  ";
-  di_p1s[3] = 1;
-  di_p2s[3] = 4;
-  di_storage[3] = &switch_rate;
-  di.num_elements = 4;
-  if(do_dialog())
+  dialog di;
+  element *elements[4];
+  int dialog_result;
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_number_box(15, 7, "Intelligence: ",
+   1, 4, 0, &intel);
+  elements[3] = construct_number_box(15, 9, "Switch rate:  ",
+   1, 4, 0, &switch_rate);
+
+  construct_dialog(&di, "Set Bear Cub", 10, 5, 60, 18,
+   elements, 4, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
   return (intel - 1) | ((switch_rate - 1) << 2);
@@ -1185,83 +1224,76 @@ int pe_missile_gun(World *mzx_world, int param)
   int intel = ((param >> 5) & 0x03) + 1;
   int fire_rate = (param & 0x07) + 1;
   int type = (param >> 7);
-  reset_di();
-  di_types[2] = DE_RADIO;
-  di_xs[2] = 15;
-  di_ys[2] = 2;
-  di_strs[2] = "North\nSouth\nEast\nWest";
-  di_p1s[2] = 4;
-  di_p2s[2] = 5;
-  di_storage[2] = &dir;
-  di_types[3] = DE_NUMBER;
-  di_xs[3] = 15;
-  di_ys[3] = 7;
-  di_strs[3] = "Intellegence: ";
-  di_p1s[3] = 1;
-  di_p2s[3] = 4;
-  di_storage[3] = &intel;
-  di_types[4] = DE_NUMBER;
-  di_xs[4] = 15;
-  di_ys[4] = 9;
-  di_strs[4] = "Firing rate:  ";
-  di_p1s[4] = 1;
-  di_p2s[4] = 8;
-  di_storage[4] = &fire_rate;
-  di_types[5] = DE_RADIO;
-  di_xs[5] = 15;
-  di_ys[5] = 11;
-  di_strs[5] = "Fires once\nFires multiple";
-  di_p1s[5] = 2;
-  di_p2s[5] = 14;
-  di_storage[5] = &type;
-  di.num_elements = 6;
-  if(do_dialog())
+  dialog di;
+  element *elements[6];
+  int dialog_result;
+  char *radio_strings_1[] =
+  {
+    "North", "South", "East", "West"
+  };
+  char *radio_strings_2[] =
+  {
+    "Fires once", "Fires multiple"
+  };
+
+  set_confirm_buttons(elements);
+  elements[2] = construct_radio_button(15, 2, radio_strings_1,
+   4, 5, &dir);
+  elements[3] = construct_number_box(15, 7, "Intelligence:  ",
+   1, 4, 0, &intel);
+  elements[4] = construct_number_box(15, 9, "Firing rate:   ",
+   1, 8, 0, &fire_rate);
+  elements[5] = construct_radio_button(15, 11, radio_strings_2,
+   2, 14, &type);
+
+  construct_dialog(&di, "Set Missile Gun", 10, 5, 60, 18,
+   elements, 6, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result)
     return -1;
 
-  return (fire_rate - 1) | (dir << 3) | ((intel - 1) << 5) | (type << 7);
+  return (fire_rate - 1) | (dir << 3) |
+   ((intel - 1) << 5) | (type << 7);
 }
 
 int edit_sensor(World *mzx_world, Sensor *cur_sensor)
 {
   char sensor_name[15];
   char sensor_robot[15];
-  char sensor_char = cur_sensor->sensor_char;
+  int sensor_char = cur_sensor->sensor_char;
+  dialog di;
+  element *elements[5];
+  int dialog_result;
 
   set_context(94);
   strcpy(sensor_name, cur_sensor->sensor_name);
   strcpy(sensor_robot, cur_sensor->robot_to_mesg);
-  reset_di();
 
-  di_types[2] = DE_INPUT;
-  di_xs[2] = 15;
-  di_ys[2] = 6;
-  di_strs[2] = "Sensor's name:    ";
-  di_p1s[2] = 14;
-  di_storage[2] = sensor_name;
-  di_types[3] = DE_INPUT;
-  di_xs[3] = 15;
-  di_ys[3] = 8;
-  di_strs[3] = "Robot to message: ";
-  di_p1s[3] = 14;
-  di_storage[3] = sensor_robot;
-  di_types[4] = DE_CHAR;
-  di_xs[4] = 15;
-  di_ys[4] = 10;
-  di_strs[4] = "Sensor character: ";
-  di_p1s[4] = 1;
-  di_storage[4] = &sensor_char;
-  di.num_elements = 5;
+  set_confirm_buttons(elements);
+  elements[2] = construct_input_box(15, 6, "Sensor's name:    ",
+   14, 0, sensor_name);
+  elements[3] = construct_input_box(15, 8, "Robot to message: ",
+   14, 0, sensor_robot);
+  elements[4] = construct_char_box(15, 10, "Sensor character: ",
+   1, &sensor_char);
 
-  if(do_dialog())
-  {
-    pop_context();
+  construct_dialog(&di, "Set Sensor", 10, 5, 60, 18,
+   elements, 5, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  pop_context();
+
+  if(dialog_result)
     return -1;
-  }
 
   strcpy(cur_sensor->sensor_name, sensor_name);
   strcpy(cur_sensor->robot_to_mesg, sensor_robot);
   cur_sensor->sensor_char = sensor_char;
-  pop_context();
   return 0;
 }
 
@@ -1282,7 +1314,8 @@ int edit_robot(World *mzx_world, Robot *cur_robot)
   write_string("Name for robot:", 18, 13, EC_DEBUG_LABEL, 0);
   m_show();
 
-  if(intake(cur_robot->robot_name, 14, 34, 13, 15, 1, 0) != SDLK_ESCAPE)
+  if(intake(mzx_world, cur_robot->robot_name, 14, 34, 13,
+   15, 1, 0, NULL, 0, NULL) != SDLK_ESCAPE)
   {
     restore_screen();
     save_screen();

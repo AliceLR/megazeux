@@ -2,11 +2,12 @@
 # macos makefile generics
 #
 
+all: subdir
+
 # location of strip (must be defined)
 STRIP     = strip
 
-# standard linker includes
-INCLUDES  = -I${PREFIX}/include -I${PREFIX}/include/SDL
-
 # standard libraries
-LIBS      = -L${PREFIX}/lib -lSDLmain -lSDL -lpthread -framework Cocoa
+LIBS      = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
+            -L${PREFIX}/lib -lSDLmain -lSDL -lpthread \
+            -framework Cocoa

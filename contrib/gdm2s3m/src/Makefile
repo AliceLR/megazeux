@@ -1,31 +1,23 @@
-##
-# gdm2s3m Makefile fragment
-##
+#
+# src/ makefile
+#
 
-.PHONY: all clean
+include ../../../Makefile.in
+include ../../../Makefile.platform
 
-.SUFFIXES: .c
+# must be build with c99
+CFLAGS += -std=c99
 
-CFLAGS := -Wall -std=c99
-o := o
+#
+# objects to build
+#
 
-gdm2s3m_base = .
-gdm2s3m_cflags := -W -Wmissing-format-attribute -Wpointer-arith -Wcast-align
-gdm2s3m_cflags += -Wwrite-strings -pedantic -I${gdm2s3m_base}
-gdm2s3m = ${gdm2s3m_base}/libgdm2s3m.a
+objs  = error.o gdm.o s3m.o utility.o gdm2s3m.o
 
-gdm2s3m_objs = \
-    ${gdm2s3m_base}/error.${o} ${gdm2s3m_base}/gdm.${o} \
-    ${gdm2s3m_base}/s3m.${o} ${gdm2s3m_base}/utility.${o} \
-    ${gdm2s3m_base}/gdm2s3m.${o}
+subdir: libs
 
-${gdm2s3m_base}/%.${o}: ${gdm2s3m_base}/%.c
-	${CC} ${CFLAGS} ${gdm2s3m_cflags} -c $< -o $@
-
-all: ${gdm2s3m}
-
-${gdm2s3m}: ${gdm2s3m_objs}
-	ar crus ${gdm2s3m} ${gdm2s3m_objs}
+libs:	${objs}
+	ar crus libgdm2s3m.a ${objs}
 
 clean:
-	rm -f ${gdm2s3m} ${gdm2s3m_objs}
+	rm -f ${objs} libgdm2s3m.a

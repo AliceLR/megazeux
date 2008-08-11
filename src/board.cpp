@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -427,13 +426,17 @@ Board *create_blank_board()
 void save_board_file(Board *cur_board, char *name)
 {
   FILE *board_file = fopen(name, "wb");
-  fputc(0xFF, board_file);
-  fputs(world_version_string, board_file);
-  optimize_null_objects(cur_board);
-  save_board(cur_board, board_file, 0);
-  // Write name
-  fwrite(cur_board->board_name, 25, 1, board_file);
-  fclose(board_file);
+
+  if(board_file)
+  {
+    fputc(0xFF, board_file);
+    fputs(world_version_string, board_file);
+    optimize_null_objects(cur_board);
+    save_board(cur_board, board_file, 0);
+    // Write name
+    fwrite(cur_board->board_name, 25, 1, board_file);
+    fclose(board_file);
+  }
 }
 
 int save_board(Board *cur_board, FILE *fp, int savegame)
@@ -736,7 +739,8 @@ void change_board_size(Board *src_board, int new_width, int new_height)
       int offset;
       int check_id;
 
-      for(offset = new_size; offset < board_size - new_size; offset++)
+      for(offset = new_height * board_width; offset < board_size;
+       offset++)
       {
         check_id = level_id[offset];
 
@@ -951,8 +955,8 @@ void change_board_size(Board *src_board, int new_width, int new_height)
 
       if(overlay_mode)
       {
-        memset(overlay + board_size, 32, size_difference);
-        memset(overlay_color + board_size, 7, size_difference);
+        memset(overlay + offset, 32, size_difference);
+        memset(overlay_color + offset, 7, size_difference);
       }
     }
 

@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -168,13 +167,13 @@ ext_macro *process_macro(char *line_data, char *name, char *label)
             {
               if(*line_position == '\'')
               {
-                variables[num_variables].def.char_storage =
+                variables[num_variables].def.int_storage =
                  *(line_position + 1);
                 line_position += 2;
               }
               else
               {
-                variables[num_variables].def.char_storage =
+                variables[num_variables].def.int_storage =
                  (char)strtol(line_position, &line_position, 10);
               }
 
@@ -210,7 +209,7 @@ ext_macro *process_macro(char *line_data, char *name, char *label)
 
             case character:
             {
-              variables[num_variables].def.char_storage = 0;
+              variables[num_variables].def.int_storage = 0;
               break;
             }
 

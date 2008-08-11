@@ -1,5 +1,4 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 2004 Alistair Strachan <alistair@devzero.co.uk>
  *

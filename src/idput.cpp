@@ -1,5 +1,4 @@
-/* $Id: idput.cc,v 1.2 1999/01/17 20:35:41 mental Exp $
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1998 MenTaLguY - mentalg@geocities.com
  *
@@ -584,7 +583,7 @@ void id_put(Board *src_board, unsigned char x_pos, unsigned char y_pos,
     color = src_board->overlay_color[overlay_offset];
     if(overlay_mode & 64)
     {
-      draw_char(c, color, x_pos, y_pos);
+      draw_char_ext(c, color, x_pos, y_pos, 0, 0);
       return;
     }
 
@@ -628,7 +627,7 @@ void id_put(Board *src_board, unsigned char x_pos, unsigned char y_pos,
     color = get_id_color(src_board, array_offset);
   }
 
-  draw_char(c, color, x_pos, y_pos);
+  draw_char_ext(c, color, x_pos, y_pos, 0, 0);
 }
 
 void draw_edit_window(Board *src_board, int array_x, int array_y,

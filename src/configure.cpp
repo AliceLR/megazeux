@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -308,12 +307,6 @@ void config_resampling_mode(config_info *conf, char *name, char *value,
   }
 }
 
-void redit_dpalette(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->redit_dpalette = strtol(value, NULL, 10);
-}
-
 void redit_hhelp(config_info *conf, char *name, char *value,
  char *extended_data)
 {
@@ -395,6 +388,26 @@ void include_config(config_info *conf, char *name, char *value,
   set_config_from_file(conf, name + 7);
 }
 
+void config_set_sfx_volume(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  int new_volume = strtol(value, NULL, 10);
+
+  if(new_volume < 1)
+    new_volume = 1;
+
+  if(new_volume > 8)
+    new_volume = 8;
+
+  conf->pc_speaker_volume = new_volume;
+}
+
+void config_mask_midchars(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  conf->mask_midchars = strtol(value, NULL, 10);
+}
+
 config_entry config_options[] =
 {
   { "audio_buffer", config_set_audio_buffer },
@@ -425,13 +438,14 @@ config_entry config_options[] =
   { "joy?1-2axis?1-2", joy_axis_set },
   { "joy?1-2button?1-2", joy_button_set },
   { "macro_*", config_macro },
+  { "mask_midchars", config_mask_midchars },
   { "music_on", config_set_music },
   { "music_volume", config_set_mod_volume },
   { "mzx_speed", config_set_mzx_speed },
   { "pause_on_unfocus", pause_on_unfocus },
   { "pc_speaker_on", config_set_pc_speaker },
+  { "pc_speaker_volume", config_set_sfx_volume },
   { "resampling_mode", config_resampling_mode },
-  { "robot_editor_default_palette", redit_dpalette },
   { "robot_editor_hide_help", redit_hhelp },
   { "sample_volume", config_set_sam_volume },
   { "save_file", config_save_file },
@@ -479,6 +493,7 @@ config_info default_options =
   1,
   8,
   8,
+  8,
   1,
   1,
 
@@ -495,13 +510,19 @@ config_info default_options =
   1,
   { "char ", "color ", "goto ", "send ", ": playershot^" },
   0,
-  0,
-  0,
+
+  // Backup options
+  3,
   60,
   "backup",
+
+  // Macro options
   0,
   0,
-  NULL
+  NULL,
+
+  // Misc options
+  1
 };
 
 void default_config(config_info *conf)

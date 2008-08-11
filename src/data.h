@@ -1,8 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -47,8 +45,8 @@ extern unsigned char music_device;
 extern unsigned int  mixing_rate;
 extern unsigned char sfx_channels;
 extern unsigned char overall_speed;
-extern char curr_file[FILENAME_SIZE];
-extern char curr_sav[FILENAME_SIZE];
+extern char curr_file[512];
+extern char curr_sav[512];
 extern char help_file[PATHNAME_SIZE];     // Drive + Path + Filename
 extern char megazeux_dir[PATHNAME_SIZE];  // Directory started in
 extern char current_dir[PATHNAME_SIZE];   // Current directory

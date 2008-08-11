@@ -1,8 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -83,7 +81,7 @@ void palette_editor(World *mzx_world)
       color = ((i & 30) * 8);
       if(i < 20)
         color += 15;
-      draw_char(chr, color, i + 19, i2 + 5);
+      draw_char_ext(chr, color, i + 19, i2 + 5, 256, 0);
     }
   }
 

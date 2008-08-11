@@ -1,8 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -29,12 +27,13 @@
 //Global insert status
 extern char insert_on;
 
+#include "world.h"
+
 // See code for full docs, preserves mouse cursor, be prepared for a
 // MOUSE_EVENT! (must acknowledge_event() it)
-int intake(char *string, int max_len, char x, char y,
- unsigned char color, char exit_type, int filter_type,
- char password = 0, int *return_x_pos = NULL, char robo_intk = 0,
- char *macro = NULL);
+int intake(World *mzx_world, char *string, int max_len,
+ int x, int y, char color, int exit_type, int filter_type,
+ int *return_x_pos, char robo_intk, char *macro);
 
 #endif
 

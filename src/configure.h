@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -38,6 +37,7 @@ struct _config_info
   int resampling_mode;
   int music_volume;
   int sam_volume;
+  int pc_speaker_volume;
   int music_on;
   int pc_speaker_on;
 
@@ -53,7 +53,6 @@ struct _config_info
   int disassemble_base;
   int default_invalid_status;
   char default_macros[5][64];
-  int redit_dpalette;
   int redit_hhelp;
 
   // Backup options
@@ -61,9 +60,13 @@ struct _config_info
   int backup_interval;
   char backup_name[256];
 
+  // Macro options
   int num_extended_macros;
   int num_macros_allocated;
   ext_macro **extended_macros;
+
+  // Misc option
+  int mask_midchars;
 };
 
 typedef void (* config_function)(config_info *conf,

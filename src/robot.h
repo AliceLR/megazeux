@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -50,15 +49,15 @@ typedef struct
   unsigned char robot_char;
   // Location of start of line (pt to FF for none)
   int cur_prog_line;
-  int pos_within_line;   					// Countdown for GO and WAIT
+  int pos_within_line;            // Countdown for GO and WAIT
   int robot_cycle;
   int cycle_count;
   char bullet_type;
   char is_locked;
-  char can_lavawalk;     					// Can always travel on fire
-  char walk_dir;         					// 1-4, of course
-  char last_touch_dir;   					// 1-4, of course
-  char last_shot_dir;    					// 1-4, of course
+  char can_lavawalk;              // Can always travel on fire
+  char walk_dir;                  // 1-4, of course
+  char last_touch_dir;            // 1-4, of course
+  char last_shot_dir;             // 1-4, of course
 
   // Used for IF ALIGNED "robot", THISX/THISY, PLAYERDIST,
   // HORIZPLD, VERTPLD, and others. Keep udpated at all
@@ -91,7 +90,7 @@ typedef struct
 
 typedef struct
 {
-	int num_lines;
+  int num_lines;
 
   // Pointer to scroll's message
   char *mesg;
@@ -143,8 +142,10 @@ int find_zapped_label_position(Robot *cur_robot, char *name);
 int find_label_position(Robot *cur_robot, char *name);
 Label *find_label(Robot *cur_robot, char *name);
 Label *find_zapped_label(Robot *cur_robot, char *name);
-int send_robot_direct(Robot *cur_robot, char *mesg, int ignore_lock);
+int send_robot_direct(Robot *cur_robot, char *mesg, int ignore_lock,
+ int send_self);
 void send_robot_all(World *mzx_world, char *mesg);
+int send_robot_self(World *mzx_world, Robot *src_robot, char *mesg);
 void send_sensors(World *mzx_world, char *name, char *mesg);
 int move_dir(Board *src_board, int *x, int *y, int dir);
 void prefix_first_last_xy(World *mzx_world, int *fx, int *fy,
@@ -252,6 +253,7 @@ void clear_board_block(Board *src_board, int x, int y,
  int width, int height);
 void setup_overlay(Board *src_board, int mode);
 void replace_player(World *mzx_world);
+int num_ccode_chars(char *str);
 
 #endif
 

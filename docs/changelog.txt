@@ -1,3 +1,118 @@
+June 6, 2005 - MZX 2.80h
+
++ Fixed a bug which could cause crashes when quiting the game.
++ Fixed some bugs when changing boards and other things that can
+  cause duplicate players.. I think.
++ Fixed a bug that could cause crashes when adding boards
++ Improved response time in editor for slower computers/high load
+  situations
++ Fixed some endian issues with the GUI
++ Fixed some crash when moving the mouse cursor around in the editor
++ Fixed bug where you if you had a robot whose name is the same as
+  the global robot it wouldn't get messages (fixes yoyo in Weirdness)
++ Fixed debug box not moving with text input
++ Fixed bug with duplicate player appearing when killed and a new one
+  can't be put at 0, 0
++ Added copy/paste for outside of MZX to/from the robot editor. It
+  only works in Windows and X11, and functionality may be limited in
+  X11 right now (currently seems to work in native X11 apps and
+  GTK 2.6 apps but not earlier GTK or QT, also try shift + insert to
+  paste)
++ Fixed bug in resizing involving overlay blanking.
++ Fixed clear messages/projectiles not working (and damaging the game
+  instead)
++ Fixed behavior of P key in editor for wildweasel.
++ Fixed random in Robotic not correctly swapping the range if they're
+  given in the wrong order
++ Fixed clip length in [ messages
++ Fixed crash when changing volume without a game loaded
++ Redid internal GUI system, fixes some minor things
++ New file loading/saving window - press del to delete a file/dir,
+  alt + n to create a new directory, alt + r to rename a file/dir.
++ Added PC speaker volume control to F2 settings and config.txt
++ Fixed yet another crash bug with resizing boards
++ Fixed inability to type * in text placement in the editor
+  (although this adds inability to turn on mod * while F2 is on...)
++ Added ctrl + n in the editor to load a module for listening only
+  (won't set the current board's module, and will let you choose
+  ones from different directories)
++ Fixed crash on macros with more variables than can be displayed
+  in their configuration.
++ Fixed bug that causes char selection cursor to reset to 0 on
+  unhandled keys (and continuously do so for lock keys)
++ Tweaked ctrl + dir in text entry boxes.
++ Added gdm2s3m in-tree to the contrib/ directory. gdm2s3m no longer
+  needs to be installed on the system before compiling mzx.
++ Improved the build system to automatically build .c and .cpp files
+  with compound system CFLAGS/CXXFLAGS, respectively.
++ Made package.sh automatically ship the source package with a
+  Makefile.dist to warn the user that they need to run config.sh before
+  'make'.
++ Rectified inconsistency in source copyrights.
++ Added multicharacter editor. Select multiple keys in the character
+  selection with shift. The char editor also now has the ability to
+  perform operations (delete, copy, scroll, etc) on subblocks. Hold
+  down shift or press alt + b to highlight a region (press escape to
+  remove the latter). Blocks copied like this will be pasted to where
+  the cursor is at. Other small things in chareditor tweaked/changed...
+  No longer press tab to toggle through set/clear/toggle draw modes,
+  instead tab for set mode and shift + tab for clear (no more toggle).
+  Mouse behavior is modified as well. In non-SMZX left click sets,
+  right click clears. Shift + F2 will cut a block (clear + copy)
+
+  alt + x/alt + i can now be used to import/export partial charsets
+  while in the char editor. You can do so for several in series:
+  put a # in the name of the charset then set the First for the
+  first number # will be replaced with and the Count value to
+  indicate how many in series to work with.
+  For instance, saving s#.chr with first = 0, count = 3, starting
+  at offset 100, with a 2x2 char selection will save charsets
+  s0.chr from 100, s1.chr from 104, s2.chr from 108, and
+  s3.chr from 112.
+
+  *** NOTE *** Series import/export will only work correctly with
+  char selections that are one in height (can still be split up
+  another way in the editor itself). So if you want to use
+  partial charsets on your edits it's important that you select
+  all the chars in a row.
+
++ Made characters for the editor/GUI use another charset that's
+  protected. Please notify me if any characters are incorrect.
+  Modify mzx_edit.chr to change this charset.
++ The same thing goes for colors. It doesn't work for SMZX, which
+  also might look a bit different in the editor...
++ Added option (defaults on) to protect chars 32-127 in input
+  boxes and strings in the robot editor.
++ Mouse warping goes to middle instead of top corner now, so there
+  isn't a biased towards moving up.
++ Hopefully fixed another bug with the cursor and changing boards...
++ Fixed module looping problem in modplug...
++ Added libmodplug 0.7 with both patches (see contrib/) in-tree.
+  Removes system dependency on libmodplug.
++ Made auto-backup on by default (3 count)
++ Made if touching idle, beneath always false instead of like nodir
++ Fixed bug that caused bad things to happen if you pressed too many
+  different keys too rapidly.
++ Made mouse wheel emulate up/down in dialog boxes and list menu.
++ Added ctrl + backspace to intake (delete previous word)
++ Made modulo operator use floored instead of truncated mod (uses
+  positive remainder instead of negative)
++ Fixed crash when testing after using ctrl + z to clear a board.
++ Fixed bug where sending other robots to subroutines caused the
+  return address to be to the next instruction like local subroutine
+  calling works.
++ Fixed bug where going to a label on the last line of the robot could
+  screw the game up.
++ Fixed a bug where the editor froze if you tried to fill the board with
+  players (eheh...)
++ Fixed a bug that could cause crashes when sending all sensors something.
++ Fixed some crashes when exporting/saving fails.
++ Fixed import world's ability to go over the board limit and cause
+  crashes.
++ Allowed input of decimal numbers for params.
+
+April 1, 2005 - MZX 2.80g
+
 + Fixed crash on alt + x in robot editor.
 + Fixed missing line on alt + h in robot editor.
 + Introduced incorrect enter action in robot editor (didn't reset to beginning
@@ -53,6 +168,8 @@
 + Fixed crash bugs with placing sensors and maybe scrolls.
 + Fixed sending sensors when you have robots of the same name (fixes
   Weirdness chapter 1)
++ Fixed bug that can screw up your world when placing scrolls or sensors..
+  sometimes.
 
 December 26, 2004 - MZX 2.80f
 

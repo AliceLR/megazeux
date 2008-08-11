@@ -1,9 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
- * Copyright (C) 2002 Gilead Kutnick - exophase@adelphia.net
+ * Copyright (C) 2002 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -65,7 +62,7 @@ int parse_expression(World *mzx_world, char **expression,
     // in which case it's considered + num
     if(current_arg == 2)
     {
-      value = evaluate_operation(value, 1, c_operator);
+      value = evaluate_operation(value, op_addition, c_operator);
     }
     else
     {
@@ -83,7 +80,7 @@ int parse_expression(World *mzx_world, char **expression,
         return -102;
       }
       // Evaluate it.
-      value = evaluate_operation(value, c_operator, operand_val);
+      value = evaluate_operation(value, (op)c_operator, operand_val);
     }
     skip_whitespace(expression);
   }
@@ -106,7 +103,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     {
       type = 1;
       (*argument)++;
-      return 1;
+      return (int)op_addition;
     }
     // Subtraction operator
     case '-':
@@ -129,28 +126,28 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
         }
       }
       type = 1;
-      return 2;
+      return (int)op_subtraction;
     }
     // Multiplication operator
     case '*':
     {
       type = 1;
       (*argument)++;
-      return 3;
+      return (int)op_multiplication;
     }
     // Division operator
     case '/':
     {
       type = 1;
       (*argument)++;
-      return 4;
+      return (int)op_division;
     }
     // Modulus operator
     case '%':
     {
       type = 1;
       (*argument)++;
-      return 5;
+      return (int)op_modulus;
     }
 
     // Exponent operator
@@ -158,7 +155,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     {
       type = 1;
       (*argument)++;
-      return 6;
+      return (int)op_exponentation;
     }
 
     // Bitwise AND operator
@@ -166,7 +163,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     {
       type = 1;
       (*argument)++;
-      return 7;
+      return (int)op_and;
     }
 
     // Bitwise OR operator
@@ -174,7 +171,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     {
       type = 1;
       (*argument)++;
-      return 8;
+      return (int)op_or;
     }
 
     // Bitwise XOR operator
@@ -182,7 +179,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     {
       type = 1;
       (*argument)++;
-      return 9;
+      return (int)op_xor;
     }
 
     // Less than/bitshift left
@@ -193,14 +190,14 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
       if(**argument == '<')
       {
         (*argument)++;
-        return 10;
+        return (int)op_bitshift_left;
       }
       if(**argument == '=')
       {
         (*argument)++;
-        return 14;
+        return (int)op_less_than_or_equal;
       }
-      return 13;
+      return (int)op_less_than;
     }
     // Greater than/bitshift right
     case '>':
@@ -210,21 +207,21 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
       if(**argument == '>')
       {
         (*argument)++;
-        return 11;
+        return (int)op_bitshift_right;
       }
       if(**argument == '=')
       {
         (*argument)++;
-        return 16;
+        return (int)op_greater_than_or_equal;
       }
-      return 15;
+      return (int)op_greater_than;
     }
     // Equality
     case '=':
     {
       type = 1;
       (*argument)++;
-      return 12;
+      return (int)op_equal;
     }
     // Logical negation
     case '!':
@@ -233,7 +230,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
       if(*(*argument + 1) == '=')
       {
         (*argument) += 2;
-        return 17;
+        return (int)op_not_equal;
       }
     }
 
@@ -391,51 +388,63 @@ void skip_whitespace(char **expression)
   }
 }
 
-int evaluate_operation(int operand_a, int c_operator, int operand_b)
+int evaluate_operation(int operand_a, op c_operator, int operand_b)
 {
   switch(c_operator)
   {
-    // Addition
-    case 1:
+    case op_addition:
     {
-      return(operand_a + operand_b);
+      return operand_a + operand_b;
     }
-    // Subtraction
-    case 2:
+    case op_subtraction:
     {
-      return(operand_a - operand_b);
+      return operand_a - operand_b;
     }
-    // Multiplication
-    case 3:
+    case op_multiplication:
     {
-      return(operand_a * operand_b);
+      return operand_a * operand_b;
     }
-    // Division
-    case 4:
+    case op_division:
     {
       if(operand_b == 0)
       {
         return 0;
       }
-      return(operand_a / operand_b);
+      return operand_a / operand_b;
     }
-    // Modulo
-    case 5:
+    case op_modulus:
     {
-      return(operand_a % operand_b);
+      int val = operand_a % operand_b;
+
+      if(operand_b == 0)
+        return 0;
+
+      // Converted C99 regulated truncated modulus to
+      // the more useful (for us) floored modulus
+      // Source:
+      // Division and Modulus for Computer Scientists
+      // DAAN LEIJEN
+      // University of Utrecht
+
+      if((val > 0 && operand_b < 0) ||
+       (val < 0 && operand_b > 0))
+      {
+        return val + operand_b;
+      }
+
+      return val;
     }
-    // Exponent
-    case 6:
+    case op_exponentation:
     {
       int i;
       long int val = 1;
       if(operand_a == 0)
       {
-        return(0);
+        return 0;
       }
       if(operand_a == 1)
       {
-        return(1);
+        return 1;
       }
       if(operand_b < 0)
       {
@@ -455,66 +464,54 @@ int evaluate_operation(int operand_a, int c_operator, int operand_b)
       }
       return val;
     }
-    // Bitwise AND
-    case 7:
+    case op_and:
     {
-      return (operand_a & operand_b);
+      return operand_a & operand_b;
     }
-    // Bitwise OR
-    case 8:
+    case op_or:
     {
-      return (operand_a | operand_b);
+      return operand_a | operand_b;
     }
-    // Bitwise XOR
-    case 9:
+    case op_xor:
     {
       return (operand_a ^ operand_b);
     }
-    // Logical bitshift left
-    case 10:
+    case op_bitshift_left:
     {
-      return (operand_a << operand_b);
+      return operand_a << operand_b;
     }
-    // Locical bitshift right
-    case 11:
+    case op_bitshift_right:
     {
       return (unsigned int)(operand_a) >> operand_b;
     }
-    // Equality
-    case 12:
+    case op_equal:
     {
-      return (operand_a == operand_b);
+      return operand_a == operand_b;
     }
-    // less than
-    case 13:
+    case op_less_than:
     {
-      return (operand_a < operand_b);
+      return operand_a < operand_b;
     }
-    // less than or equal to
-    case 14:
+    case op_less_than_or_equal:
     {
-      return (operand_a <= operand_b);
+      return operand_a <= operand_b;
     }
-    // greater than
-    case 15:
+    case op_greater_than:
     {
-      return (operand_a > operand_b);
+      return operand_a > operand_b;
     }
-    // greater than or equal to
-    case 16:
+    case op_greater_than_or_equal:
     {
-      return (operand_a >= operand_b);
+      return operand_a >= operand_b;
     }
-    // not equal to
-    case 17:
+    case op_not_equal:
     {
-      return (operand_a != operand_b);
+      return operand_a != operand_b;
     }
     default:
     {
-      return(operand_a);
+      return operand_a;
     }
-
   }
 }
 

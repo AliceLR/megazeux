@@ -1,10 +1,8 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  * Copyright (C) 1999 Charles Goetzman
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -83,24 +81,13 @@
 #include "data.h"
 #include "decrypt.h"
 #include "fsafeopen.h"
-
-char sd_types[3] = { DE_INPUT,DE_BUTTON,DE_BUTTON };
-char sd_xs[3] = { 5, 15, 37 };
-char sd_ys[3] = { 2, 4, 4 };
-char *sd_strs[3] = { "Save world as: ", "OK", "Cancel" };
-int sd_p1s[3] = { 32, 0, 1 };
-int sd_p2s = 192;
-void *cf_ptr = (void *)(curr_file);
-dialog s_di = { 10, 8, 69, 14, "Save World", 3, sd_types, sd_xs,
- sd_ys, sd_strs, sd_p1s, &sd_p2s, &cf_ptr, 0 };
+#include "game.h"
 
 char save_version_string[6] = "MZS\x02\x50";
 char world_version_string[4] = "M\x02\x50";
-char version_number_string[10] = MZX_VERSION;
+char version_number_string[20] = MZX_VERSION;
 
 // Helper functions for file loading.
-// FIXME - make endian specific variations
-
 // Get 2 bytes
 
 int fgetw(FILE *fp)
@@ -161,8 +148,9 @@ int world_magic(const char magic_string[3])
     else
     {
       if((magic_string[1] > 1) && (magic_string[1] < 10))
-      { // I hope to God that MZX doesn't last beyond 9.x
-        return((int)magic_string[1] << 8 ) + (int)magic_string[2];
+      {
+        // I hope to God that MZX doesn't last beyond 9.x
+        return ((int)magic_string[1] << 8) + (int)magic_string[2];
       }
       else
       {
@@ -214,31 +202,7 @@ int save_magic(const char magic_string[5])
   }
 }
 
-int save_world_dialog(World *mzx_world, char *name)
-{
-  int dialog_result;
-  set_context(76);
-  cf_ptr = (void *)(name);
-  dialog_result = run_dialog(mzx_world, &s_di, 1, 0, 0);
-  pop_context();
-  return dialog_result;
-}
-
-int save_game_dialog(World *mzx_world)
-{
-  int dialog_result;
-  set_context(96);
-  sd_strs[0] = "Save game as: ";
-  s_di.title = "Save Game";
-  cf_ptr = (void *)(curr_sav);
-  dialog_result = run_dialog(mzx_world, &s_di, 1, 0, 0);
-  pop_context();
-  sd_strs[0] = "Save world as: ";
-  s_di.title = "Save World";
-  return dialog_result;
-}
-
-void save_world(World *mzx_world, char *file, int savegame, int faded)
+int save_world(World *mzx_world, char *file, int savegame, int faded)
 {
   int i, num_boards;
   int gl_rob_position, gl_rob_save_position;
@@ -248,12 +212,12 @@ void save_world(World *mzx_world, char *file, int savegame, int faded)
   unsigned char r, g, b;
   Board *cur_board;
 
-  FILE *fp = fsafeopen(file, "wb");
+  FILE *fp = fopen(file, "wb");
 
   if(fp == NULL)
   {
     error("Error saving world", 1, 24, 0x0D01);
-    return;
+    return -1;
   }
 
   if(savegame)
@@ -316,7 +280,7 @@ void save_world(World *mzx_world, char *file, int savegame, int faded)
     fputc(mzx_world->scroll_pointer_color, fp);
     fputc(mzx_world->scroll_title_color, fp);
     fputc(mzx_world->scroll_arrow_color, fp);
-    fwrite(mzx_world->real_mod_playing, FILENAME_SIZE, 1, fp);
+    fwrite(mzx_world->real_mod_playing, 13, 1, fp);
   }
 
   fputc(mzx_world->edge_color, fp);
@@ -539,6 +503,8 @@ void save_world(World *mzx_world, char *file, int savegame, int faded)
 
   // ...All done!
   fclose(fp);
+
+  return 0;
 }
 
 // Loads a world into a World struct
@@ -569,7 +535,6 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
     if(strcmp(current_dir, file_path))
       chdir(file_path);
   }
-
 
   if(fp == NULL)
   {
@@ -718,7 +683,7 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
     mzx_world->scroll_pointer_color = fgetc(fp);
     mzx_world->scroll_title_color = fgetc(fp);
     mzx_world->scroll_arrow_color = fgetc(fp);
-    fread(mzx_world->real_mod_playing, FILENAME_SIZE, 1, fp);
+    fread(mzx_world->real_mod_playing, 13, 1, fp);
   }
 
   mzx_world->edge_color = fgetc(fp);
@@ -1000,6 +965,9 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
   // Resize this array if necessary
   set_update_done(mzx_world);
 
+  // Find the player
+  find_player(mzx_world);
+
   // ...All done!
   fclose(fp);
 
@@ -1105,16 +1073,21 @@ int append_world(World *mzx_world, char *file)
     num_boards = fgetc(fp);
   }
 
+  // Skip the names for now
+  // Gonna wanna come back to here
+  last_pos = ftell(fp);
+  fseek(fp, num_boards * BOARD_NAME_SIZE, SEEK_CUR);
+
+
+  if(num_boards + old_num_boards >= MAX_BOARDS)
+    num_boards = MAX_BOARDS - old_num_boards;
+
   mzx_world->num_boards += num_boards;
   mzx_world->num_boards_allocated += num_boards;
   mzx_world->board_list =
    (Board **)realloc(mzx_world->board_list,
    sizeof(Board *) * (old_num_boards + num_boards));
 
-  // Skip the names for now
-  // Gonna wanna come back to here
-  last_pos = ftell(fp);
-  fseek(fp, num_boards * BOARD_NAME_SIZE, SEEK_CUR);
 
   // Append boards
   for(i = old_num_boards; i < old_num_boards + num_boards; i++)
@@ -1331,6 +1304,9 @@ void default_global_data(World *mzx_world)
   set_counter(mzx_world, "LOBOMBS", 0, 0);
   set_counter(mzx_world, "COINS", 0, 0);
   set_counter(mzx_world, "TIME", 0, 0);
+  set_counter(mzx_world, "ENTER_MENU", 1, 0);
+  set_counter(mzx_world, "HELP_MENU", 1, 0);
+  set_counter(mzx_world, "F2_MENU", 1, 0);
   // Setup their gateways
   initialize_gateway_functions(mzx_world);
 
@@ -1525,7 +1501,7 @@ void optimize_null_boards(World *mzx_world)
         if(d_flag & A_ENTRANCE)
         {
           d_param = level_param[offset];
-          if(d_param < i2)
+          if(d_param < num_boards)
             level_param[offset] = board_id_translation_list[d_param];
           else
             level_param[offset] = NO_BOARD;
@@ -1554,8 +1530,8 @@ void optimize_null_boards(World *mzx_world)
     }
 
     d_param = mzx_world->first_board;
-    if(d_param >= i2)
-      d_param = i2 - 1;
+    if(d_param >= num_boards)
+      d_param = num_boards - 1;
 
     d_param = board_id_translation_list[d_param];
     mzx_world->first_board = d_param;
@@ -1564,8 +1540,8 @@ void optimize_null_boards(World *mzx_world)
 
     if(d_param != NO_BOARD)
     {
-      if(d_param >= i2)
-        d_param = i2 - 1;
+      if(d_param >= num_boards)
+        d_param = num_boards - 1;
 
       d_param = board_id_translation_list[d_param];
       mzx_world->endgame_board = d_param;
@@ -1575,8 +1551,8 @@ void optimize_null_boards(World *mzx_world)
 
     if(d_param != NO_BOARD)
     {
-      if(d_param >= i2)
-        d_param = i2 - 1;
+      if(d_param >= num_boards)
+        d_param = num_boards - 1;
 
       d_param = board_id_translation_list[d_param];
       mzx_world->death_board = d_param;
@@ -1635,13 +1611,16 @@ void get_path(char *file_name, char *dest)
 {
   int c = strlen(file_name) - 1;
 
-  while((file_name[c] != '/') && (file_name[c] != '\\') && c)
+  if(c != -1)
   {
-    c--;
+    while((file_name[c] != '/') && (file_name[c] != '\\') && c)
+    {
+      c--;
+    }
+
+    if(c)
+      memcpy(dest, file_name, c);
+
+    dest[c] = 0;
   }
-
-  if(c)
-    memcpy(dest, file_name, c);
-
-  dest[c] = 0;
 }

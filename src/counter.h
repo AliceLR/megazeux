@@ -1,8 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  * Copyright (C) 1999 Charles Goetzman
  *
  * This program is free software; you can redistribute it and/or
@@ -106,6 +104,8 @@ int set_counter_special(World *mzx_world, int spec_type,
 int translate_coordinates(char *src, unsigned int *x, unsigned int *y);
 int is_string(char *buffer);
 void get_string_size_offset(char *name, int *ssize, int *soffset);
+
+void counter_fsg();
 
 // Even old games tended to use at least this many.
 #define MIN_COUNTER_ALLOCATE 32

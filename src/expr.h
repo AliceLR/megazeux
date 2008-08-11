@@ -1,9 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
- * Copyright (C) 2002 Gilead Kutnick - exophase@adelphia.net
+ * Copyright (C) 2002 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -25,12 +22,33 @@
 
 #include "world.h"
 
+typedef enum
+{
+  op_addition,
+  op_subtraction,
+  op_multiplication,
+  op_division,
+  op_modulus,
+  op_exponentation,
+  op_and,
+  op_or,
+  op_xor,
+  op_bitshift_left,
+  op_bitshift_right,
+  op_equal,
+  op_less_than,
+  op_greater_than,
+  op_greater_than_or_equal,
+  op_less_than_or_equal,
+  op_not_equal
+} op;
+
 int parse_expression(World *mzx_world, char **expression,
  int *error, int id);
 int parse_argument(World *mzx_world, char **argument, int &type,
  int id);
 void skip_whitespace(char **expression);
-int evaluate_operation(int operand_a, int c_operator, int operand_b);
+int evaluate_operation(int operand_a, op c_operator, int operand_b);
 
 #endif
 

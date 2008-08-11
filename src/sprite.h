@@ -1,10 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
- * Copyright (C) 1999 Charles Goetzman
- * Copyright (C) 2002 B.D.A - Koji_takeo@worldmailer.com
+ * Copyright (C) 2002 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as

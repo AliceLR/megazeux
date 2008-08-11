@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick - exophase@adelphia.net
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -51,7 +50,20 @@ Uint32 update_event_status()
 Uint32 update_event_status_delay()
 {
   int rval = update_event_status();
-  delay(UPDATE_DELAY);
+  int delay_ticks;
+
+  if(!input.last_update_time)
+    input.last_update_time = get_ticks();
+
+  delay_ticks = UPDATE_DELAY -
+   (get_ticks() - input.last_update_time);
+
+  input.last_update_time = get_ticks();
+
+  if(delay_ticks < 0)
+   delay_ticks = 0;
+
+  delay(delay_ticks);
   return rval;
 }
 
@@ -86,39 +98,38 @@ Uint32 process_event(SDL_Event *event)
 
     case SDL_MOUSEMOTION:
     {
-      int mx = (event->motion.x - ((get_resolution_w() - 640) / 2)) / 8;
+      int mx = (event->motion.x - ((get_resolution_w() - 640) / 2));
       int my = (event->motion.y -
-       ((get_resolution_h() / get_height_multiplier() - 350) / 2)) / 14;
+       ((get_resolution_h() / get_height_multiplier() - 350) / 2));
 
-      if(mx > 79)
-        mx = 79;
+      if(mx > 639)
+        mx = 639;
 
       if(mx < 0)
         mx = 0;
 
-      if(my > 24)
-        my = 24;
+      if(my > 349)
+        my = 349;
 
       if(my < 0)
         my = 0;
 
-      m_move(mx, my);
-      input.mouse_x = mx;
-      input.mouse_y = my;
+      input.real_mouse_x = mx;
+      input.real_mouse_y = my;
+      input.mouse_x = mx / 8;
+      input.mouse_y = my / 14;
       input.mouse_moved = 1;
       break;
     }
 
     case SDL_MOUSEBUTTONDOWN:
     {
-      if(event->button.button <= SDL_BUTTON_RIGHT)
-      {
-        input.last_mouse_button = event->button.button;
-        input.last_mouse_repeat = event->button.button;
-        input.mouse_button_state |= 1 << (event->button.button - 1);
-        input.last_mouse_repeat_state = 1;
-        input.last_mouse_time = SDL_GetTicks();
-      }
+      input.last_mouse_button = event->button.button;
+      input.last_mouse_repeat = event->button.button;
+      input.mouse_button_state |= 1 << (event->button.button - 1);
+      input.last_mouse_repeat_state = 1;
+      input.mouse_drag_state = -1;
+      input.last_mouse_time = SDL_GetTicks();
       break;
     }
 
@@ -126,6 +137,7 @@ Uint32 process_event(SDL_Event *event)
     {
       input.mouse_button_state &= ~(1 << (event->button.button - 1));
       input.last_mouse_repeat = 0;
+      input.mouse_drag_state = 0;
       input.last_mouse_repeat_state = 0;
       break;
     }
@@ -157,14 +169,23 @@ Uint32 process_event(SDL_Event *event)
         break;
       }
 
-      if(input.last_SDL_repeat)
+      if(input.last_SDL_repeat &&
+       (input.last_SDL_repeat != SDLK_LSHIFT) &&
+       (input.last_SDL_repeat != SDLK_RSHIFT) &&
+       (input.last_SDL_repeat != SDLK_LALT) &&
+       (input.last_SDL_repeat != SDLK_RALT) &&
+       (input.last_SDL_repeat != SDLK_LCTRL) &&
+       (input.last_SDL_repeat != SDLK_RCTRL))
       {
-        // Stack current repeat key
-        input.last_SDL_repeat_stack[input.repeat_stack_pointer] =
-         input.last_SDL_repeat;
-        input.last_unicode_repeat_stack[input.repeat_stack_pointer] =
-         input.last_unicode_repeat;
-        input.repeat_stack_pointer++;
+        // Stack current repeat key if it isn't shift, alt, or ctrl
+        if(input.repeat_stack_pointer != KEY_REPEAT_STACK_SIZE)
+        {
+          input.last_SDL_repeat_stack[input.repeat_stack_pointer] =
+           input.last_SDL_repeat;
+          input.last_unicode_repeat_stack[input.repeat_stack_pointer] =
+           input.last_unicode_repeat;
+          input.repeat_stack_pointer++;
+        }
       }
 
       input.SDL_keymap[event->key.keysym.sym] = 1;
@@ -382,6 +403,11 @@ Uint32 update_autorepeat()
     Uint32 ms_difference = new_time -
      input.last_mouse_time;
 
+    if(input.mouse_drag_state == -1)
+      input.mouse_drag_state = 0;
+    else
+      input.mouse_drag_state = 1;
+
     if(last_mouse_state == 1)
     {
       if(ms_difference > MOUSE_REPEAT_START)
@@ -525,6 +551,12 @@ void get_mouse_position(int *x, int *y)
   *y = input.mouse_y;
 }
 
+void get_real_mouse_position(int *x, int *y)
+{
+  *x = input.real_mouse_x;
+  *y = input.real_mouse_y;
+}
+
 Uint32 get_mouse_x()
 {
   return input.mouse_x;
@@ -535,36 +567,56 @@ Uint32 get_mouse_y()
   return input.mouse_y;
 }
 
+Uint32 get_mouse_drag()
+{
+  return input.mouse_drag_state;
+}
+
 Uint32 get_mouse_press()
+{
+  if(input.last_mouse_button <= SDL_BUTTON_RIGHT)
+    return input.last_mouse_button;
+  else
+    return 0;
+}
+
+Uint32 get_mouse_press_ext()
 {
   return input.last_mouse_button;
 }
 
 Uint32 get_mouse_status()
 {
+  return (input.mouse_button_state &
+   (SDL_BUTTON(1) | SDL_BUTTON(2) | SDL_BUTTON(3)));
+}
+
+Uint32 get_mouse_status_ext()
+{
   return input.mouse_button_state;
 }
 
 void warp_mouse(Uint32 x, Uint32 y)
 {
-  SDL_WarpMouse(x * 8, y * 14);
   input.mouse_x = x;
   input.mouse_y = y;
-  m_move(x, y);
+  input.real_mouse_x = (x * 8) + 4;
+  input.real_mouse_y = (y * 14) + 7;
+  SDL_WarpMouse(input.real_mouse_x, input.real_mouse_y);
 }
 
 void warp_mouse_x(Uint32 x)
 {
-  SDL_WarpMouse(x * 8, input.mouse_y * 14);
   input.mouse_x = x;
-  m_move(x, input.mouse_y);
+  input.real_mouse_x = (x * 8) + 4;
+  SDL_WarpMouse(input.real_mouse_x, input.real_mouse_y);
 }
 
 void warp_mouse_y(Uint32 y)
 {
-  SDL_WarpMouse(input.mouse_x * 8, y * 14);
   input.mouse_y = y;
-  m_move(input.mouse_x, y);
+  input.real_mouse_y = (y * 14) + 7;
+  SDL_WarpMouse(input.real_mouse_x, input.real_mouse_y);
 }
 
 void force_last_key(keycode_type type, int val)

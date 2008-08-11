@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -33,7 +32,7 @@
 
 #define VERSION 0x250
 
-extern char version_number_string[10];
+extern char version_number_string[20];
 extern char world_version_string[4];
 extern char save_version_string[6];
 
@@ -167,11 +166,7 @@ struct _World
 
 // Taken from the old saveload.h
 
-// Returns 0 for save name in curr_file, 1/-1 for cancel.
-int save_world_dialog(World *mzx_world, char *name);
-int save_game_dialog(World *mzx_world);
-
-void save_world(World *mzx_world, char *file, int savegame, int faded);
+int save_world(World *mzx_world, char *file, int savegame, int faded);
 // Returns non-0 for error so you don't jump to main board
 int load_world(World *mzx_world, char *file, int savegame,
  int *faded);

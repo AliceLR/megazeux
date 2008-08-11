@@ -1,8 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -38,206 +36,143 @@
 // Communial dialog
 #define MAX_ELEMS 15
 
-char sdi_types[MAX_ELEMS] = { DE_BUTTON, DE_BUTTON };
-char sdi_xs[MAX_ELEMS] = { 15, 37 };
-char sdi_ys[MAX_ELEMS] = { 15, 15 };
-char *sdi_strs[MAX_ELEMS] = { "OK", "Cancel" };
-int sdi_p1s[MAX_ELEMS] = { 0, 1 };
-int sdi_p2s[MAX_ELEMS] = { 0, 0 };
-void *sdi_storage[MAX_ELEMS] = { NULL, NULL };
-dialog sdi =
+void set_confirm_buttons(element **elements)
 {
-  10, 4, 69, 21, "Edit settings", 3,
-  sdi_types, sdi_xs, sdi_ys,
-  sdi_strs, sdi_p1s, sdi_p2s, sdi_storage, 2
-};
-
-// Internal- Reset dialog to above settings
-void reset_sdi(void)
-{
-  int i;
-  for(i = 2; i < MAX_ELEMS; i++)
-  {
-    sdi_types[i] = 0;
-    sdi_xs[i] = 0;
-    sdi_ys[i] = 0;
-    sdi_p1s[i] = 0;
-    sdi_p2s[i] = 0;
-    sdi_strs[i] = NULL;
-    sdi_storage[i] = NULL;
-  }
-
-  sdi.curr_element = 2;
-  sdi.num_elements = 3;
+  elements[0] = construct_button(15, 15, "OK", 0);
+  elements[1] = construct_button(37, 15, "Cancel", 1);
 }
-
-#define do_dialog() run_dialog(mzx_world, &sdi, 0, 2, 0)
-
-char *sci_strs[NUM_STATUS_CNTRS] =
-{
-  "Status counter 1: ",
-  "2: ",
-  "3: ",
-  "4: ",
-  "5: ",
-  "6: "
-};
-
-// Status counter info
 
 void status_counter_info(World *mzx_world)
 {
-  int i;
-  set_context(82);
-  reset_sdi();
-  for(i = 0; i < NUM_STATUS_CNTRS; i++)
+  dialog di;
+  element *elements[2 + NUM_STATUS_CNTRS];
+  char *status_counters_strings[NUM_STATUS_CNTRS] =
   {
-    sdi_types[i + 2] = DE_INPUT;
-    if(i)
-      sdi_xs[i + 2] = 27;
-    else
-      sdi_xs[i + 2] = 12;
+    "Status counter 1: ", "2: ", "3: ",
+    "4: ", "5: ", "6: "
+  };
+  int i;
 
-    sdi_ys[i + 2] = i + 5;
-    sdi_strs[i + 2] = sci_strs[i];
-    sdi_p1s[i + 2] = COUNTER_NAME_SIZE - 1;
-    sdi_storage[i + 2] =
-     (void *)mzx_world->status_counters_shown[i];
+  set_confirm_buttons(elements);
+  set_context(82);
+
+  elements[2] = construct_input_box(12, 5,
+   status_counters_strings[0], COUNTER_NAME_SIZE - 1, 0,
+   mzx_world->status_counters_shown[0]);
+
+  for(i = 1; i < NUM_STATUS_CNTRS; i++)
+  {
+    elements[i + 2] = construct_input_box(27, 5 + i,
+     status_counters_strings[i], COUNTER_NAME_SIZE - 1, 0,
+     mzx_world->status_counters_shown[i]);
   }
 
-  sdi.num_elements = 2 + NUM_STATUS_CNTRS;
-  do_dialog();
+  construct_dialog(&di, "Status Counters", 10, 4, 60, 18,
+   elements, 2 + NUM_STATUS_CNTRS, 2);
+
+  run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
   pop_context();
 }
 
-char *be_strs[4] =
-{
-  "Board to north:",
-  "Board to south:",
-  "Board to east:",
-  "Board to west:"
-};
 
 // Board exits
 
 void board_exits(World *mzx_world)
 {
+  dialog di;
+  element *elements[6];
   Board *src_board = mzx_world->current_board;
-  int i;
-  int strg[4];
+  int dialog_result;
+  int exits[4];
 
+  memcpy(exits, src_board->board_dir, sizeof(int) * 4);
+
+  set_confirm_buttons(elements);
   set_context(83);
-  reset_sdi();
 
-  for(i = 0; i < 4; i++)
+  elements[2] = construct_board_list(12, 4, "Board to north:",
+   1, exits + 0);
+  elements[3] = construct_board_list(12, 6, "Board to south:",
+   1, exits + 1);
+  elements[4] = construct_board_list(12, 8, "Board to east:",
+   1, exits + 2);
+  elements[5] = construct_board_list(12, 10, "Board to west:",
+   1, exits + 3);
+  construct_dialog(&di, "Board Exits", 10, 4, 60, 18,
+   elements, 6, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(!dialog_result)
   {
-    sdi_types[i + 2] = DE_BOARD;
-    sdi_xs[i + 2] = 12;
-    sdi_ys[i + 2] = 4 + (i << 1);
-    sdi_strs[i + 2] = be_strs[i];
-    sdi_p1s[i + 2] = 1;
-    sdi_storage[i + 2] = (void *)(strg + i);
-    if(src_board->board_dir[i] == NO_BOARD)
-      strg[i] = 0;
-    else
-      strg[i] = src_board->board_dir[i];
-  }
-
-  sdi.num_elements = 6;
-
-  if(do_dialog())
-  {
-    pop_context();
-    return;
+    memcpy(src_board->board_dir, exits, sizeof(int) * 4);
   }
 
   pop_context();
-
-  for(i = 0; i < 4; i++)
-  {
-    if(strg[i] == 0)
-      src_board->board_dir[i] = NO_BOARD;
-    else
-      src_board->board_dir[i] = strg[i];
-  }
 }
-
-char *sp_strs[6] =
-{
-  "Viewport X pos: ",
-  "Viewport Y pos: ",
-  "Viewport Width: ",
-  "Viewport Height:",
-  "Board Width:    ",
-  "Board Height:   ",
-};
 
 // Size/pos of board/viewport
 void size_pos(World *mzx_world)
 {
   Board *src_board = mzx_world->current_board;
-  int i, y = 2;
-  int strg[6];
+  int dialog_result;
+  element *elements[8];
+  dialog di;
+
   int redo = 1;
-  int ran_dialog;
 
   set_context(84);
-  reset_sdi();
-
-  for(i = 0, y = 4; i < 9; i++, y++)
-  {
-    sdi_types[i + 2] = DE_NUMBER;
-
-    sdi_xs[i + 2] = 15;
-    sdi_ys[i + 2] = y;
-
-    if(i == 3)
-      y += 2;
-
-    sdi_strs[i + 2] = sp_strs[i];
-    sdi_storage[i + 2] = (void *)(strg + i);
-
-    if(i < 2)
-      sdi_p1s[i + 2] = 0;
-    else
-      sdi_p1s[i + 2] = 1;
-  }
-
-  sdi_p2s[2] = 79;
-  sdi_p2s[3] = 24;
-  sdi_p2s[4] = 80;
-  sdi_p2s[5] = 25;
-  sdi_p2s[6] = 32767;
-  sdi_p2s[7] = 32767;
-
-  strg[0] = src_board->viewport_x;
-  strg[1] = src_board->viewport_y;
-  strg[2] = src_board->viewport_width;
-  strg[3] = src_board->viewport_height;
-  strg[4] = src_board->board_width;
-  strg[5] = src_board->board_height;
-
-  sdi_strs[1] = "Center";
-  sdi.num_elements = 8;
 
   do
   {
-    ran_dialog = do_dialog();
-    // Fix sizes
-    if(strg[2] > strg[4]) strg[2] = strg[4];
-    if(strg[3] > strg[5]) strg[3] = strg[5];
-    if((strg[2] + strg[0]) > 80)
-      strg[2] = 80 - strg[0];
-    if((strg[3] + strg[1]) > 25)
-      strg[3] = 25 - strg[1];
+    int results[6] =
+    {
+      src_board->viewport_x, src_board->viewport_y,
+      src_board->viewport_width, src_board->viewport_height,
+      src_board->board_width, src_board->board_height
+    };
+  
+    elements[0] = construct_button(15, 15, "OK", 0);
+    elements[1] = construct_button(37, 15, "Center", 1);
+    elements[2] = construct_number_box(15, 4, "Viewport X pos: ",
+     0, 79, 0, results + 0);
+    elements[3] = construct_number_box(15, 5, "Viewport Y pos: ",
+     0, 24, 0, results + 1);
+    elements[4] = construct_number_box(15, 6, "Viewport Width: ",
+     1, 80, 0, results + 2);
+    elements[5] = construct_number_box(15, 7, "Viewport Height:",
+     1, 25, 0, results + 3);
+    elements[6] = construct_number_box(15, 11, "Board Width:    ",
+     0, 32767, 0, results + 4);
+    elements[7] = construct_number_box(15, 12, "Board Height:   ",
+     0, 32767, 0, results + 5);
+  
+    construct_dialog(&di, "Board Sizes/Positions", 10, 4, 60, 18,
+     elements, 8, 2);
 
-    switch(ran_dialog)
+    dialog_result = run_dialog(mzx_world, &di);
+    destruct_dialog(&di);
+
+    // Fix sizes
+    if(results[2] > results[4])
+      results[2] = results[4];
+    if(results[3] > results[5])
+      results[3] = results[5];
+    if((results[2] + results[0]) > 80)
+      results[2] = 80 - results[0];
+    if((results[3] + results[1]) > 25)
+      results[3] = 25 - results[1];
+
+    switch(dialog_result)
     {
       default:
       {
         // Center
-        strg[0] = 40 - (strg[2] / 2);
-        strg[1] = 12 - (strg[3] / 2);
+        results[0] = 40 - (results[2] / 2);
+        results[1] = 12 - (results[3] / 2);
         break;
       }
 
@@ -255,33 +190,33 @@ void size_pos(World *mzx_world)
         // Hack to prevent multiplies of 256, for now - only relevant
         // with overlay off, but we want to avoid complications if
         // the user turns the overlay off later
-        if((strg[4] % 256) == 0)
-          strg[4]++;
+        if((results[4] % 256) == 0)
+          results[4]++;
 
-        if((strg[4] * strg[5]) > MAX_BOARD_SIZE)
+        if((results[4] * results[5]) > MAX_BOARD_SIZE)
         {
-          if(strg[4] > strg[5])
-            strg[5] = MAX_BOARD_SIZE / strg[4];
+          if(results[4] > results[5])
+            results[5] = MAX_BOARD_SIZE / results[4];
           else
-            strg[4] = MAX_BOARD_SIZE / strg[5];
+            results[4] = MAX_BOARD_SIZE / results[5];
         }
 
-        if(((strg[4] >= src_board->board_width) &&
-          (strg[5] >= src_board->board_height)) ||
+        if(((results[4] >= src_board->board_width) &&
+          (results[5] >= src_board->board_height)) ||
           !confirm(mzx_world, "Reduce board size- Are you sure?"))
         {
           redo = 0;
-          change_board_size(src_board, strg[4], strg[5]);
-          src_board->viewport_x = strg[0];
-          src_board->viewport_y = strg[1];
-          src_board->viewport_width = strg[2];
-          src_board->viewport_height = strg[3];
+          change_board_size(src_board, results[4], results[5]);
+          src_board->viewport_x = results[0];
+          src_board->viewport_y = results[1];
+          src_board->viewport_width = results[2];
+          src_board->viewport_height = results[3];
         }
         break;
       }
     }
   } while(redo);
-  sdi_strs[1] = "Cancel";
+
   pop_context();
 }
 
@@ -305,116 +240,97 @@ void size_pos(World *mzx_world)
 //
 //----------------------------------------------------------
 
-char *bi_cstr = "Can shoot\nCan bomb\nFire burns space\nFire burns fakes\n"
- "Fire burns trees\nFire burns brown\nForest to floor\nCollect bombs\n"
- "Fire burns forever\nRestart if hurt";
-
-char *bi_rstr1 = "Explosions to space\nExplosions to ash\n"
- "Explosions to fire\n";
-
-char *bi_rstr2 = "Can save\nCan't save\nCan save on sensors";
-char *bi_rstr3 = "No overlay\nNormal overlay\nStatic overlay\n"
- "Transparent overlay";
-
 // Board info
 void board_info(World *mzx_world)
 {
   Board *src_board = mzx_world->current_board;
-
-  char chk[10] =
+  int dialog_result;
+  element *elements[8];
+  dialog di;
+  int check_box_results[10] =
   {
-    src_board->can_shoot, src_board->can_bomb, src_board->fire_burn_space,
-    src_board->fire_burn_fakes, src_board->fire_burn_trees,
-    src_board->fire_burn_brown, src_board->forest_becomes,
-    src_board->collect_bombs, src_board->fire_burns,
-    src_board->restart_if_zapped
+    src_board->can_shoot, src_board->can_bomb,
+    src_board->fire_burn_space, src_board->fire_burn_fakes,
+    src_board->fire_burn_trees, src_board->fire_burn_brown,
+    src_board->forest_becomes, src_board->collect_bombs,
+    src_board->fire_burns, src_board->restart_if_zapped
   };
-
-  int rad1 = src_board->explosions_leave;
-  int rad2 = src_board->save_mode;
-  int rad3 = src_board->overlay_mode;
-  int time = src_board->time_limit;
-
-  char tstr[BOARD_NAME_SIZE];
-  set_context(85);
-  reset_sdi();
-
-  sdi_types[2] = DE_INPUT;
-  sdi_types[3] = DE_CHECK;
-  sdi_types[4] = DE_NUMBER;
-  sdi_types[5] = DE_RADIO;
-  sdi_types[6] = DE_RADIO;
-  sdi_types[7] = DE_RADIO;
-
-  sdi_xs[2] = 9;
-  sdi_xs[3] = 5;
-  sdi_xs[4] = 5;
-  sdi_xs[5] = 33;
-  sdi_xs[6] = 33;
-  sdi_xs[7] = 33;
-
-  sdi_ys[2] = 1;
-  sdi_ys[3] = 2;
-  sdi_ys[4] = 13;
-  sdi_ys[5] = 2;
-  sdi_ys[6] = 6;
-  sdi_ys[7] = 10;
-
-  sdi_strs[2] = "Board name- ";
-  sdi_strs[3] = bi_cstr;
-  sdi_strs[4] = "Time limit- ";
-  sdi_strs[5] = bi_rstr1;
-  sdi_strs[6] = bi_rstr2;
-  sdi_strs[7] = bi_rstr3;
-
-  sdi_p1s[2] = BOARD_NAME_SIZE - 1;
-  sdi_p1s[3] = 10;
-  sdi_p1s[5] = 3;
-  sdi_p1s[6] = 3;
-  sdi_p1s[7] = 4;
-
-  sdi_p2s[3] = 18;
-  sdi_p2s[4] = 32767;
-  sdi_p2s[5] = 19;
-  sdi_p2s[6] = 19;
-  sdi_p2s[7] = 19;
-
-  sdi_storage[2] = tstr;
-  sdi_storage[3] = chk;
-  sdi_storage[4] = &time;
-  sdi_storage[5] = &rad1;
-  sdi_storage[6] = &rad2;
-  sdi_storage[7] = &rad3;
-
-  strcpy(tstr, src_board->board_name);
-
-  sdi.num_elements = 8;
-
-  if(!do_dialog())
+  char *check_box_strings[] =
   {
-    strcpy(src_board->board_name, tstr);
-    src_board->can_shoot = chk[0];
-    src_board->can_bomb = chk[1];
-    src_board->fire_burn_space = chk[2];
-    src_board->fire_burn_fakes = chk[3];
-    src_board->fire_burn_trees = chk[4];
-    src_board->fire_burn_brown = chk[5];
-    src_board->forest_becomes = chk[6];
-    src_board->collect_bombs = chk[7];
-    src_board->fire_burns = chk[8];
-    src_board->restart_if_zapped = chk[9];
-    src_board->explosions_leave = rad1;
-    src_board->save_mode = rad2;
+    "Can shoot", "Can bomb", "Fire burns space",
+    "Fire burns fakes", "Fire burns trees", "Fire burns brown",
+    "Forest to floor", "Collect bombs", "Fire burns forever",
+    "Restart if hurt"
+  };
+  char *radio_strings_1[] =
+  {
+    "Explosions to space", "Explosions to ash",
+    "Explosions to fire"
+  };
+  char *radio_strings_2[] =
+  {
+    "Can save", "Can't save", "Can save on sensors"
+  };
+  char *radio_strings_3[] =
+  {
+    "No overlay", "Normal overlay", "Static overlay",
+    "Transparent overlay"
+  };
+  int radio_result_1 = src_board->explosions_leave;
+  int radio_result_2 = src_board->save_mode;
+  int radio_result_3 = src_board->overlay_mode;
+  int time_limit = src_board->time_limit;
+  char title_string[BOARD_NAME_SIZE];
 
-    if(src_board->overlay_mode != rad3)
+  set_confirm_buttons(elements);
+  set_context(85);
+
+  strcpy(title_string, src_board->board_name);
+
+  elements[2] = construct_input_box(9, 1, "Board name- ",
+   BOARD_NAME_SIZE - 1, 0, title_string);
+  elements[3] = construct_check_box(5, 2, check_box_strings,
+   10, 18, check_box_results);
+  elements[4] = construct_number_box(5, 13, "Time limit- ",
+   0, 32767, 0, &time_limit);
+  elements[5] = construct_radio_button(33, 2, radio_strings_1,
+   3, 19, &radio_result_1);
+  elements[6] = construct_radio_button(33, 6, radio_strings_2,
+   3, 19, &radio_result_2);
+  elements[7] = construct_radio_button(33, 10, radio_strings_3,
+   4, 19, &radio_result_3);
+
+  construct_dialog(&di, "Board Settings", 10, 4, 60, 18,
+   elements, 8, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+
+  if(!dialog_result)
+  {
+    strcpy(src_board->board_name, title_string);
+    src_board->can_shoot = check_box_results[0];
+    src_board->can_bomb = check_box_results[1];
+    src_board->fire_burn_space = check_box_results[2];
+    src_board->fire_burn_fakes = check_box_results[3];
+    src_board->fire_burn_trees = check_box_results[4];
+    src_board->fire_burn_brown = check_box_results[5];
+    src_board->forest_becomes = check_box_results[6];
+    src_board->collect_bombs = check_box_results[7];
+    src_board->fire_burns = check_box_results[8];
+    src_board->restart_if_zapped = check_box_results[9];
+    src_board->explosions_leave = radio_result_1;
+    src_board->save_mode = radio_result_2;
+
+    if(src_board->overlay_mode != radio_result_3)
     {
-      setup_overlay(src_board, rad3);
-      src_board->overlay_mode = rad3;
+      setup_overlay(src_board, radio_result_3);
+      src_board->overlay_mode = radio_result_3;
     }
 
-    src_board->time_limit = time;
+    src_board->time_limit = time_limit;
   }
 
+  destruct_dialog(&di);
   pop_context();
 }
 
@@ -460,137 +376,101 @@ void board_info(World *mzx_world)
 
 void global_info(World *mzx_world)
 {
-  int brd1 = mzx_world->death_board;
-  int brd2 = mzx_world->endgame_board;
-  int dx = mzx_world->death_x;
-  int dy = mzx_world->death_y;
-  int ex = mzx_world->endgame_x;
-  int ey = mzx_world->endgame_y;
-  int brd = mzx_world->first_board;
-  int col = mzx_world->edge_color;
-  int lv = mzx_world->starting_lives;
-  int mlv = mzx_world->lives_limit;
-  int hl = mzx_world->starting_health;
-  int mhl = mzx_world->health_limit;
-  int rad1 = 2;
-  int rad2 = 1;
-  char chk[1] = { mzx_world->game_over_sfx };
-  char chk2[3] =
-   { mzx_world->enemy_hurt_enemy, mzx_world->clear_on_exit,
-     mzx_world->only_from_swap };
+  int death_board = mzx_world->death_board;
+  int endgame_board = mzx_world->endgame_board;
+  int death_x = mzx_world->death_x;
+  int death_y = mzx_world->death_y;
+  int endgame_x = mzx_world->endgame_x;
+  int endgame_y = mzx_world->endgame_y;
+  int first_board = mzx_world->first_board;
+  int edge_color = mzx_world->edge_color;
+  int starting_lives = mzx_world->starting_lives;
+  int lives_limit = mzx_world->lives_limit;
+  int starting_health = mzx_world->starting_health;
+  int health_limit = mzx_world->health_limit;
+  int radio_result_1 = 2;
+  int radio_result_2 = 1;
+  int check_box_results_1[1] = { mzx_world->game_over_sfx };
+  int check_box_results_2[3] =
+  {
+    mzx_world->enemy_hurt_enemy, mzx_world->clear_on_exit,
+    mzx_world->only_from_swap
+  };
+  char *radio_strings_1[] =
+  {
+    "Death- Same position", "Death- Restart board",
+    "Death- Teleport"
+  };
+  char *radio_strings_2[] =
+  {
+    "Endgame- Game over", "Endgame- Teleport"
+  };
+  char *check_box_strings_1[] = { "Play game over sfx" };
+  char *check_box_strings_2[] =
+  {
+    "Enemies' bullets hurt other enemies",
+    "Clear messages and projectiles on exit",
+    "Can only play world from a 'SWAP WORLD'"
+  };
+  dialog a_di;
+  dialog b_di;
+  element *a_elements[15];
+  element *b_elements[10];
   int dialog_result;
   int redo = 0;
 
   do
   {
+    set_confirm_buttons(a_elements);
+    a_elements[2] = construct_board_list(1, 2, "Death board-",
+     0, &death_board);
+    a_elements[3] = construct_number_box(1, 5, "Death X- ",
+     0, 32767, 0, &death_x);
+    a_elements[4] = construct_number_box(1, 6, "Death Y- ",
+     0, 32767, 0, &death_y);
+    a_elements[5] = construct_radio_button(1, 8, radio_strings_1,
+     3, 20, &radio_result_1);
+    a_elements[6] = construct_board_list(30, 2, "Endgame board-",
+     0, &endgame_board);
+    a_elements[7] = construct_number_box(30, 5, "Endgame X- ",
+     0, 32767, 0, &endgame_x);
+    a_elements[8] = construct_number_box(30, 6, "Endgame Y- ",
+     0, 32767, 0, &endgame_y);
+    a_elements[9] = construct_radio_button(30, 8, radio_strings_2,
+     2, 18, &radio_result_2);
+    a_elements[10] = construct_check_box(30, 11, check_box_strings_1,
+     1, 18, check_box_results_1);
+    a_elements[11] = construct_button(5, 13, "More", 2);
+    a_elements[12] = construct_button(12, 13, "Edit Chars", 3);
+    a_elements[13] = construct_button(25, 13, "Edit Dmg", 4);
+    a_elements[14] = construct_button(36, 13, "Edit Global Robot", 5);
+
+    construct_dialog(&a_di, "Global Settings", 10, 4, 60, 18,
+     a_elements, 15, 2);
+
     redo = 0;
     set_context(86);
 
-    if(brd1 == DEATH_SAME_POS)
+    if(death_board == DEATH_SAME_POS)
     {
-      brd1 = 0;
-      rad1 = 0;
+      death_board = 0;
+      radio_result_1 = 0;
     }
 
-    if(brd1 == NO_DEATH_BOARD)
+    if(death_board == NO_DEATH_BOARD)
     {
-      brd1 = 0;
-      rad1 = 1;
+      death_board = 0;
+      radio_result_1 = 1;
     }
 
-    if(brd2 == NO_ENDGAME_BOARD)
+    if(endgame_board == NO_ENDGAME_BOARD)
     {
-      brd2 = 0;
-      rad2 = 0;
+      endgame_board = 0;
+      radio_result_2 = 0;
     }
 
-    reset_sdi();
-
-    sdi_types[2] = DE_BOARD;
-    sdi_types[3] = DE_NUMBER;
-    sdi_types[4] = DE_NUMBER;
-    sdi_types[5] = DE_RADIO;
-    sdi_types[6] = DE_BOARD;
-    sdi_types[7] = DE_NUMBER;
-    sdi_types[8] = DE_NUMBER;
-    sdi_types[9] = DE_RADIO;
-    sdi_types[10] = DE_CHECK;
-    sdi_types[11] = DE_BUTTON;
-    sdi_types[12] = DE_BUTTON;
-    sdi_types[13] = DE_BUTTON;
-    sdi_types[14] = DE_BUTTON;
-
-    sdi_xs[2] = 1;
-    sdi_xs[3] = 1;
-    sdi_xs[4] = 1;
-    sdi_xs[5] = 1;
-    sdi_xs[6] = 30;
-    sdi_xs[7] = 30;
-    sdi_xs[8] = 30;
-    sdi_xs[9] = 30;
-    sdi_xs[10] = 30;
-    sdi_xs[11] = 5;
-    sdi_xs[12] = 12;
-    sdi_xs[13] = 25;
-    sdi_xs[14] = 36;
-
-    sdi_ys[2] = 2;
-    sdi_ys[3] = 5;
-    sdi_ys[4] = 6;
-    sdi_ys[5] = 8;
-    sdi_ys[6] = 2;
-    sdi_ys[7] = 5;
-    sdi_ys[8] = 6;
-    sdi_ys[9] = 8;
-    sdi_ys[10] = 11;
-    sdi_ys[11] = 13;
-    sdi_ys[12] = 13;
-    sdi_ys[13] = 13;
-    sdi_ys[14] = 13;
-
-    sdi_strs[2] = "Death board-";
-    sdi_strs[3] = "Death X- ";
-    sdi_strs[4] = "Death Y- ";
-    sdi_strs[5] = "Death- Same position\nDeath- Restart board\nDeath- Teleport";
-    sdi_strs[6] = "Endgame board-";
-    sdi_strs[7] = "Endgame X- ";
-    sdi_strs[8] = "Endgame Y- ";
-    sdi_strs[9] = "Endgame- Game over\nEndgame- Teleport";
-    sdi_strs[10] = "Play game over sfx";
-    sdi_strs[11] = "More";
-    sdi_strs[12] = "Edit Chars";
-    sdi_strs[13] = "Edit Dmg";
-    sdi_strs[14] = "Edit Global Robot";
-
-    sdi_p1s[5] = 3;
-    sdi_p1s[9] = 2;
-    sdi_p1s[10] = 1;
-    sdi_p1s[11] = 2;
-    sdi_p1s[12] = 3;
-    sdi_p1s[13] = 4;
-    sdi_p1s[14] = 5;
-
-    sdi_p2s[3] = 99;
-    sdi_p2s[4] = 99;
-    sdi_p2s[5] = 20;
-    sdi_p2s[7] = 99;
-    sdi_p2s[8] = 99;
-    sdi_p2s[9] = 18;
-    sdi_p2s[10] = 18;
-
-    sdi_storage[2] = &brd1;
-    sdi_storage[3] = &dx;
-    sdi_storage[4] = &dy;
-    sdi_storage[5] = &rad1;
-    sdi_storage[6] = &brd2;
-    sdi_storage[7] = &ex;
-    sdi_storage[8] = &ey;
-    sdi_storage[9] = &rad2;
-    sdi_storage[10] = chk;
-
-    sdi.num_elements = 15;
-
-    dialog_result = do_dialog();
+    dialog_result = run_dialog(mzx_world, &a_di);
+    destruct_dialog(&a_di);
 
     switch(dialog_result)
     {
@@ -598,68 +478,30 @@ void global_info(World *mzx_world)
       {
         // Returns 1 for previous
         set_context(88);
-        reset_sdi();
-        sdi_types[2] = DE_BOARD;
-        sdi_types[3] = DE_COLOR;
-        sdi_types[4] = DE_NUMBER;
-        sdi_types[5] = DE_NUMBER;
-        sdi_types[6] = DE_NUMBER;
-        sdi_types[7] = DE_NUMBER;
-        sdi_types[8] = DE_BUTTON;
-        sdi_types[9] = DE_CHECK;
 
-        sdi_xs[2] = 6;
-        sdi_xs[3] = 38;
-        sdi_xs[4] = 6;
-        sdi_xs[5] = 6;
-        sdi_xs[6] = 6;
-        sdi_xs[7] = 6;
-        sdi_xs[8] = 38;
-        sdi_xs[9] = 6;
+        set_confirm_buttons(b_elements);
+        b_elements[2] = construct_board_list(6, 2, "First board-",
+         0, &first_board);
+        b_elements[3] = construct_color_box(38, 3, "Edging color- ",
+         0, &edge_color);
+        b_elements[4] = construct_number_box(6, 5, "Starting lives-  ",
+         0, 32767, 0, &starting_lives);
+        b_elements[5] = construct_number_box(6, 6, "Maximum lives-   ",
+         0, 32767, 0, &lives_limit);
+        b_elements[6] = construct_number_box(6, 8, "Starting health- ",
+         0, 32767, 0, &starting_health);
+        b_elements[7] = construct_number_box(6, 9, "Maximum health-  ",
+         0, 32767, 0, &health_limit);
+        b_elements[8] = construct_button(38, 9, "Previous", 2);
+        b_elements[9] = construct_check_box(6, 11, check_box_strings_2,
+         3, 39, check_box_results_2);
 
-        sdi_ys[2] = 2;
-        sdi_ys[3] = 3;
-        sdi_ys[4] = 5;
-        sdi_ys[5] = 6;
-        sdi_ys[6] = 8;
-        sdi_ys[7] = 9;
-        sdi_ys[8] = 9;
-        sdi_ys[9] = 11;
+        construct_dialog(&b_di, "Global Settings (Continued)", 10, 4,
+         60, 18, b_elements, 10, 2);
 
-        sdi_strs[2] = "First board-";
-        sdi_strs[3] = "Edging color- ";
-        sdi_strs[4] = "Starting lives-  ";
-        sdi_strs[5] = "Maximum lives-   ";
-        sdi_strs[6] = "Starting health- ";
-        sdi_strs[7] = "Maximum health-  ";
-        sdi_strs[8] = "Previous";
-        sdi_strs[9] = "Enemies' bullets hurt other enemies\n"
-         "Clear messages and projectiles on exit\n"
-         "Can only play world from a 'SWAP WORLD'";
+        dialog_result = run_dialog(mzx_world, &b_di);
+        destruct_dialog(&b_di);
 
-        sdi_p1s[4] = 1;
-        sdi_p1s[5] = 1;
-        sdi_p1s[6] = 1;
-        sdi_p1s[7] = 1;
-        sdi_p1s[8] = 2;
-        sdi_p1s[9] = 3;
-
-        sdi_p2s[4] = 32767;
-        sdi_p2s[5] = 32767;
-        sdi_p2s[6] = 32767;
-        sdi_p2s[7] = 32767;
-        sdi_p2s[9] = 39;
-
-        sdi_storage[2] = &brd;
-        sdi_storage[3] = &col;
-        sdi_storage[4] = &lv;
-        sdi_storage[5] = &mlv;
-        sdi_storage[6] = &hl;
-        sdi_storage[7] = &mhl;
-        sdi_storage[9] = chk2;
-
-        sdi.num_elements = 10;
-        dialog_result = do_dialog();
         pop_context();
 
         if(dialog_result == 2)
@@ -675,42 +517,42 @@ void global_info(World *mzx_world)
 
       case 0:
       {
-        if(rad1 == 2)
-          mzx_world->death_board = brd1;
+        if(radio_result_1 == 2)
+          mzx_world->death_board = death_board;
         else
 
-        if(rad1 == 1)
+        if(radio_result_1 == 1)
           mzx_world->death_board = NO_DEATH_BOARD;
 
         else
           mzx_world->death_board = DEATH_SAME_POS;
 
-        if(rad2 == 1)
-          mzx_world->endgame_board = brd2;
+        if(radio_result_2 == 1)
+          mzx_world->endgame_board = endgame_board;
         else
           mzx_world->endgame_board = NO_ENDGAME_BOARD;
 
-        mzx_world->death_x = dx;
-        mzx_world->endgame_x = ex;
-        mzx_world->death_y = dy;
-        mzx_world->endgame_y = ey;
-        mzx_world->game_over_sfx = chk[0];
+        mzx_world->death_x = death_x;
+        mzx_world->endgame_x = endgame_x;
+        mzx_world->death_y = death_y;
+        mzx_world->endgame_y = endgame_y;
+        mzx_world->game_over_sfx = check_box_results_1[0];
 
-        mzx_world->first_board = brd;
-        mzx_world->edge_color = col;
-        mzx_world->starting_lives = lv;
-        mzx_world->lives_limit = mlv;
-        mzx_world->starting_health = hl;
-        mzx_world->health_limit = mhl;
-        mzx_world->enemy_hurt_enemy = chk2[0];
-        mzx_world->clear_on_exit = chk2[1];
-        mzx_world->only_from_swap = chk2[2];
+        mzx_world->first_board = first_board;
+        mzx_world->edge_color = edge_color;
+        mzx_world->starting_lives = starting_lives;
+        mzx_world->lives_limit = lives_limit;
+        mzx_world->starting_health = starting_health;
+        mzx_world->health_limit = health_limit;
+        mzx_world->enemy_hurt_enemy = check_box_results_2[0];
+        mzx_world->clear_on_exit = check_box_results_2[1];
+        mzx_world->only_from_swap = check_box_results_2[2];
 
-        if(lv > mlv)
-          mzx_world->starting_lives = mlv;
+        if(starting_lives > lives_limit)
+          mzx_world->starting_lives = lives_limit;
 
-        if(hl > mhl)
-          mzx_world->starting_health = mhl;
+        if(starting_health > health_limit)
+          mzx_world->starting_health = health_limit;
 
         break;
       }
@@ -738,7 +580,8 @@ void global_info(World *mzx_world)
         write_string("Name for robot:", 18, 13, EC_DEBUG_LABEL, 0);
         m_show();
 
-        if(intake(cur_robot->robot_name, 14, 34, 13, 15, 1, 0) != SDLK_ESCAPE)
+        if(intake(mzx_world, cur_robot->robot_name,
+         14, 34, 13, 15, 1, 0, NULL, 0, NULL) != SDLK_ESCAPE)
         {
           restore_screen();
           set_context(87);
@@ -774,60 +617,6 @@ void global_info(World *mzx_world)
 //             _Next_    _Previous_    _Done_
 //
 //----------------------------------------------------------
-
-char cdi_types[27] =
-{
-  DE_BUTTON, DE_BUTTON, DE_BUTTON,
-  DE_CHAR, DE_CHAR, DE_CHAR, DE_CHAR, DE_CHAR, DE_CHAR,
-  DE_CHAR, DE_CHAR, DE_CHAR, DE_CHAR, DE_CHAR, DE_CHAR,
-  DE_CHAR, DE_CHAR, DE_CHAR, DE_CHAR, DE_CHAR, DE_CHAR,
-  DE_CHAR, DE_CHAR, DE_CHAR, DE_CHAR, DE_CHAR, DE_CHAR
-};
-
-char cdi_xs[27] =
-{
-  15, 25, 39, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 32, 32,
-  32, 32,32,32, 32, 32, 32, 32, 32, 32
-};
-
-char cdi_ys[27] =
-{
-  15, 15, 15, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 2,
-  3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13
-};
-
-char *cdi_strs[27] = { "Next", "Previous", "Done" };
-
-int cdi_p1s[27] = { 1, 2, 3 };
-void *cdi_storage[27] = { NULL, NULL, NULL };
-
-dialog cdi =
-{
-  9, 4, 70, 21, "Edit characters", 27, cdi_types, cdi_xs,
-  cdi_ys, cdi_strs, cdi_p1s, NULL, cdi_storage, 3
-};
-
-// Internal- Reset dialog to above settings
-
-void reset_cdi(void)
-{
-  int i;
-  for(i = 3; i < 27; i++)
-  {
-    cdi_types[i] = DE_CHAR;
-    cdi_p1s[i] = 0;
-    cdi_strs[i] = NULL;
-    cdi_storage[i] = NULL;
-    cdi_xs[i] = 2;
-    if(i > 14)
-      cdi_xs[i] = 32;
-  }
-
-  cdi.curr_element = 3;
-  cdi.num_elements = 27;
-}
-
-#define do_cdialog() run_dialog(mzx_world, &cdi, 0, 3, 0)
 
 // Info for char funcs, 192 selections (24 per func, 8 funcs)
 char *char_strs[8][24] =
@@ -1260,61 +1049,99 @@ int char_values[8][24] =
 void global_chars(World *mzx_world)
 {
   int i;
-  int cur_id, dialog_result;
-
-  int curr_scr = 0;
-  int temp[24];
-
+  int current_id, dialog_result;
+  int current_menu = 0;
+  int results[24];
+  element *elements[27];
+  dialog di;
   set_context(89);
+
   do
   {
-    reset_cdi();
-    for(i = 0; i < 24; i++)
+    elements[0] = construct_button(15, 15, "Next", 1);
+    elements[1] = construct_button(25, 15, "Previous", 2);
+    elements[2] = construct_button(39, 15, "Done", 3);
+
+    for(i = 0; i < 12; i++)
     {
-      // Set strs, storage, param 1, types, and X position
-      if(char_values[curr_scr][i] & 512)
-        cdi_types[i + 3] = DE_COLOR;
+      if(char_values[current_menu][i] & 512)
+      {
+        elements[i + 3] = construct_color_box(2 +
+         (25 - strlen(char_strs[current_menu][i])), 2 + i,
+         char_strs[current_menu][i], 0, results + i);
+      }
+      else
+      {
+        elements[i + 3] = construct_char_box(2 +
+         (25 - strlen(char_strs[current_menu][i])), 2 + i,
+         char_strs[current_menu][i],
+         char_values[current_menu][i] > 127, results + i);
+      }
+
+      current_id = char_values[current_menu][i] & 511;
+      if(current_id == 323)
+        results[i] = missile_color;
       else
 
-      if(char_values[curr_scr][i] > 127)
-        cdi_p1s[i + 3] = 1;
-      cdi_strs[i + 3] = char_strs[curr_scr][i];
-      cdi_storage[i +3 ] = temp + i;
-      cur_id = char_values[curr_scr][i] & 511;
-      if(cur_id == 323)
-        temp[i] = missile_color;
+      if((current_id >= 324) && (current_id <= 326))
+        results[i] = bullet_color[current_id - 324];
       else
-
-      if((cur_id >= 324) && (cur_id <= 326))
-        temp[i] = bullet_color[cur_id - 324];
-      else
-        temp[i] = id_chars[cur_id];
-      cdi_xs[i + 3] += (25 - strlen(char_strs[curr_scr][i]));
+        results[i] = id_chars[current_id];
     }
+
+    for(; i < 24; i++)
+    {
+      if(char_values[current_menu][i] & 512)
+      {
+        elements[i + 3] = construct_color_box(32 +
+         (25 - strlen(char_strs[current_menu][i])), i - 10,
+         char_strs[current_menu][i], 0, results + i);
+      }
+      else
+      {
+        elements[i + 3] = construct_char_box(32 +
+         (25 - strlen(char_strs[current_menu][i])), i - 10,
+         char_strs[current_menu][i],
+         char_values[current_menu][i] > 127, results + i);
+      }
+
+      current_id = char_values[current_menu][i] & 511;
+      if(current_id == 323)
+        results[i] = missile_color;
+      else
+
+      if((current_id >= 324) && (current_id <= 326))
+        results[i] = bullet_color[current_id - 324];
+      else
+        results[i] = id_chars[current_id];
+    }
+
+    construct_dialog(&di, "Edit Characters", 9, 4, 62, 18,
+     elements, 27, 3);
+
     // Run
-    dialog_result = do_cdialog();
+    dialog_result = run_dialog(mzx_world, &di);
+    destruct_dialog(&di);
+
     if(dialog_result == -1)
-    {
-      pop_context();
-      return;
-    }
+      break;
 
     // Get from storage
     for(i = 0; i < 24; i++)
     {
-      cur_id = char_values[curr_scr][i] & 511;
-      if(cur_id == 323)
-        missile_color = temp[i];
+      current_id = char_values[current_menu][i] & 511;
+      if(current_id == 323)
+        missile_color = results[i];
       else
 
-      if((cur_id >= 324) && (cur_id <= 326))
-        bullet_color[cur_id - 324] = temp[i];
+      if((current_id >= 324) && (current_id <= 326))
+        bullet_color[current_id - 324] = results[i];
       else
-        id_chars[cur_id] = temp[i];
+        id_chars[current_id] = results[i];
     }
 
     // Setup lit bomb sequence or doors
-    if(curr_scr == 2)
+    if(current_menu == 2)
     {
       // Lit bomb
       for(i = 170; i < 176; i++)
@@ -1324,7 +1151,7 @@ void global_chars(World *mzx_world)
     }
     else
 
-    if(curr_scr == 3)
+    if(current_menu == 3)
     {
       // Doors
       id_chars[199] = id_chars[198]; // '/'
@@ -1362,18 +1189,21 @@ void global_chars(World *mzx_world)
     // Next, prev, or done
     if(dialog_result == 1)
     {
-      curr_scr++;
-      if((curr_scr) > 7)
-        curr_scr = 0;
+      current_menu++;
+      if((current_menu) > 7)
+        current_menu = 0;
     }
+    else
 
     if(dialog_result == 2)
     {
-      curr_scr--;
-      if((curr_scr) < 0)
-        curr_scr = 7;
+      current_menu--;
+
+      if((current_menu) < 0)
+        current_menu = 7;
     }
   } while((dialog_result == 1) || (dialog_result == 2));
+
   pop_context();
 }
 
@@ -1404,10 +1234,8 @@ char dmg_ids[22] =
   95
 };
 
-char *dmg_strs[24] =
+char *dmg_strs[22] =
 {
-  "OK",
-  "Cancel",
   "Lava-",
   "Explosion-",
   "Lazer-",
@@ -1432,63 +1260,45 @@ char *dmg_strs[24] =
   "Bear Cub-"
 };
 
-char ddi_types[24] =
-{
-  DE_BUTTON, DE_BUTTON,
-  DE_NUMBER, DE_NUMBER, DE_NUMBER, DE_NUMBER, DE_NUMBER, DE_NUMBER,
-  DE_NUMBER, DE_NUMBER, DE_NUMBER, DE_NUMBER, DE_NUMBER, DE_NUMBER,
-  DE_NUMBER, DE_NUMBER, DE_NUMBER, DE_NUMBER, DE_NUMBER, DE_NUMBER,
-  DE_NUMBER, DE_NUMBER, DE_NUMBER, DE_NUMBER
-};
-
-char ddi_xs[24] =
-{
-  15, 37, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 2, 31, 31, 31, 31, 31, 31,
-  31, 31, 31, 31, 31
-};
-
-char ddi_ys[24] =
-{
-  15, 15, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 2, 3, 4, 5, 6, 7, 8,
-  9, 10, 11, 12
-};
-
-int ddi_p1s[24] = { 0, 1 };
-int ddi_p2s[24] =
-{
-  0, 0, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255,
-  255, 255, 255, 255, 255, 255, 255, 255, 255, 255, 255
-};
-
-void *ddi_storage[24] ={ NULL };
-dialog ddi =
-{
-  10, 4, 69, 21, "Edit damage", 24, ddi_types, ddi_xs, ddi_ys,
-  dmg_strs, ddi_p1s, ddi_p2s, ddi_storage, 2
-};
-
-#define do_ddialog() run_dialog(mzx_world, &ddi, 0, 2, 0)
-
 void global_dmg(World *mzx_world)
 {
+  int dialog_result;
+  element *elements[24];
+  dialog di;
+  int results[22];
   int i;
-  int tmp[22];
 
   set_context(90);
-  for(i = 0; i < 22; i++)
+  set_confirm_buttons(elements);
+
+  for(i = 0; i < 11; i++)
   {
-    ddi_storage[i + 2] = tmp + i;
-    tmp[i] = id_dmg[(int)dmg_ids[i]];
-    ddi_xs[i + 2] = 2 + (14 - strlen(dmg_strs[i + 2]));
-    if(i > 10)
-      ddi_xs[i + 2] += 29;
+    results[i] = id_dmg[(int)dmg_ids[i]];
+    elements[i + 2] = construct_number_box(2 +
+     (14 - strlen(dmg_strs[i])), 2 + i,
+     dmg_strs[i], 0, 255, 0, results + i);
   }
 
-  ddi.curr_element = 2;
-  if(!do_ddialog())
+  for(; i < 22; i++)
+  {
+    results[i] = id_dmg[(int)dmg_ids[i]];
+    elements[i + 2] = construct_number_box(31 +
+     (14 - strlen(dmg_strs[i])), i - 9,
+     dmg_strs[i], 0, 255, 0, results + i);
+  }
+
+  construct_dialog(&di, "Edit Damage", 10, 4, 60, 18,
+   elements, 24, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(!dialog_result)
   {
     for(i = 0; i < 22; i++)
-    id_dmg[(int)dmg_ids[i]] = tmp[i];
+    {
+      id_dmg[(int)dmg_ids[i]] = results[i];
+    }
   }
   pop_context();
 }

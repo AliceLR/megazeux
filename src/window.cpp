@@ -1,8 +1,7 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -28,6 +27,7 @@
 #include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
+#include <ctype.h>
 
 #ifdef __WIN32__
 #include <windows.h>
@@ -44,15 +44,14 @@
 #include "const.h"
 #include "data.h"
 #include "helpsys.h"
+#include "robot.h"
 
 #define NUM_SAVSCR 6
 
 // Big fat hack. This will be initialized to a bunch of 0's, or NULLs.
 // Use this to replace the null strings before they get dereferenced.
 
-void *null_storage[256];
-
-Uint8 screen_storage[NUM_SAVSCR][80 * 25 * 2];
+char_element screen_storage[NUM_SAVSCR][80 * 25];
 int cur_screen = 0; // Current space for save_screen and restore_screen
 signed char vid_usage[80 * 25]; // Mouse video usage array (for dialogs)
 
@@ -134,29 +133,29 @@ int draw_window_box(int x1, int y1, int x2, int y2, int color,
   // Draw top and bottom edges
   for(t1 = x1 + 1; t1 < x2; t1++)
   {
-    draw_char('Ä', color, t1, y1);
-    draw_char('Ä', dark_color, t1, y2);
+    draw_char('\xC4', color, t1, y1);
+    draw_char('\xC4', dark_color, t1, y2);
   }
 
   // Draw left and right edges
   for(t2 = y1 + 1; t2 < y2; t2++)
   {
-    draw_char('³', color, x1, t2);
-    draw_char('³', dark_color, x2, t2);
+    draw_char('\xB3', color, x1, t2);
+    draw_char('\xB3', dark_color, x2, t2);
   }
 
   // Draw corners
-  draw_char('Ú', color, x1, y1);
-  draw_char('Ù', dark_color, x2, y2);
+  draw_char('\xDA', color, x1, y1);
+  draw_char('\xD9', dark_color, x2, y2);
   if(corner_color)
   {
-    draw_char('À', corner_color, x1, y2);
-    draw_char('¿', corner_color, x2, y1);
+    draw_char('\xC0', corner_color, x1, y2);
+    draw_char('\xBF', corner_color, x2, y1);
   }
   else
   {
-    draw_char('À', color, x1, y2);
-    draw_char('¿', dark_color, x2, y1);
+    draw_char('\xC0', color, x1, y2);
+    draw_char('\xBF', dark_color, x2, y1);
   }
 
   // Draw shadow if applicable
@@ -192,15 +191,15 @@ int draw_window_box(int x1, int y1, int x2, int y2, int color,
 // Strings for drawing different dialog box elements.
 // All parts are assumed 3 wide.
 
-#define check_on "[û]"
+#define check_on "[\xFB]"
 #define check_off "[ ]"
-#define radio_on "()"
+#define radio_on "(\x07)"
 #define radio_off "( )"
 #define color_blank ' '
-#define color_wild '?'
-#define color_dot 'þ'
-#define list_button "  "
-#define num_buttons "    "
+#define color_wild '\x3F'
+#define color_dot '\xFE'
+#define list_button " \x1F "
+#define num_buttons " \x18  \x19 "
 
 //Foreground colors that look nice for each background color
 char fg_per_bk[16] =
@@ -208,7 +207,7 @@ char fg_per_bk[16] =
 
 // For list/choice menus-
 
-#define arrow_char ''
+#define arrow_char '\x10'
 
 // List/choice menu colors- Box same as dialog, elements same as
 // inactive question, current element same as active question, pointer
@@ -224,10 +223,11 @@ char fg_per_bk[16] =
 // A progress column is displayed directly to the right of the list, using
 // the following characters. This is mainly used for mouse support.
 
-#define pc_top_arrow ''
-#define pc_bottom_arrow ''
-#define pc_filler '±'
-#define pc_dot 'þ'
+#define pc_top_arrow '\x1E'
+#define pc_bottom_arrow '\x1F'
+#define pc_filler '\xB1'
+#define pc_dot '\xFE'
+#define pc_meter 219
 
 // Mouse support- Click on a choice to move there auto, click on progress
 // column arrows to move one line, click on progress meter itself to move
@@ -238,6 +238,7 @@ int list_menu(char **choices, int choice_size, char *title,
  int current, int num_choices, int xpos)
 {
   char key_buffer[64];
+  int mouse_press;
   int key_position = 0;
   int last_keypress_time = 0;
   int ticks;
@@ -251,7 +252,7 @@ int list_menu(char **choices, int choice_size, char *title,
     width = strlen(title) + 6;
 
   // Save screen
-  if(save_screen()) return OUT_OF_WIN_MEM;
+  save_screen();
 
   // Display box
 
@@ -269,7 +270,7 @@ int list_menu(char **choices, int choice_size, char *title,
   if(num_choices > 1)
   {
     draw_char(pc_top_arrow, DI_PCARROW, xpos + 4 + choice_size, 3);
-    draw_char(pc_bottom_arrow,DI_PCARROW, xpos + 4 + choice_size, 21);
+    draw_char(pc_bottom_arrow,  DI_PCARROW, xpos + 4 + choice_size, 21);
   }
   do
   {
@@ -313,7 +314,9 @@ int list_menu(char **choices, int choice_size, char *title,
     // Act upon it
     key = get_key(keycode_SDL);
 
-    if(get_mouse_press())
+    mouse_press = get_mouse_press_ext();
+
+    if(mouse_press && (mouse_press <= SDL_BUTTON_RIGHT))
     {
       int mouse_x, mouse_y;
       get_mouse_position(&mouse_x, &mouse_y);
@@ -360,6 +363,18 @@ int list_menu(char **choices, int choice_size, char *title,
         if(current < (num_choices - 1))
          current++;
       }
+    }
+    else
+
+    if(mouse_press == SDL_BUTTON_WHEELUP)
+    {
+      key = SDLK_UP;
+    }
+    else
+
+    if(mouse_press == SDL_BUTTON_WHEELDOWN)
+    {
+      key = SDLK_DOWN;
     }
 
     switch(key)
@@ -460,6 +475,7 @@ int list_menu(char **choices, int choice_size, char *title,
 
           key_buffer[key_position] = key;
           key_position++;
+          key_buffer[key_position] = 0;
 
           if(get_shift_status(keycode_SDL))
           {
@@ -497,10 +513,10 @@ int list_menu(char **choices, int choice_size, char *title,
 
 // For char selection screen
 
-#define char_sel_arrows_0 ''
-#define char_sel_arrows_1 ''
-#define char_sel_arrows_2 ''
-#define char_sel_arrows_3 ''
+#define char_sel_arrows_0 '\x1E'
+#define char_sel_arrows_1 '\x1F'
+#define char_sel_arrows_2 '\x10'
+#define char_sel_arrows_3 '\x11'
 
 // Char selection screen colors- Window colors same as dialog, non-current
 // characters same as nonactive, current character same as active, arrows
@@ -512,10 +528,32 @@ int list_menu(char **choices, int choice_size, char *title,
 
 // Mouse support- Click on a character to select it. If it is the current
 // character, it exits.
+
 int char_selection(int current)
 {
+  return char_selection_ext(current, 0, NULL, NULL);
+}
+
+int char_selection_ext(int current, int allow_multichar,
+ int *width_ptr, int *height_ptr)
+{
+  int width = 1;
+  int height = 1;
   int x, y;
+  int i, i2;
   int key;
+  int shifted = 0;
+  int highlight_x = 0;
+  int highlight_y = 0;
+  int start_x = 0;
+  int start_y = 0;
+
+  if(allow_multichar)
+  {
+    width = *width_ptr;
+    height = *height_ptr;
+  }
+
   // Save screen
   save_screen();
 
@@ -529,24 +567,102 @@ int char_selection(int current)
   // Draw box
   draw_window_box(20, 5, 57, 16, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
   // Add title
-  write_string(" Select a character ", 22, 5, DI_TITLE, 0);
-
-  // Draw character set
-  for(x = 0; x < 32; x++)
-  {
-    for(y = 0; y < 8; y++)
-    {
-      draw_char(x + (y * 32), DI_NONACTIVE, x + 23, y + 7);
-    }
-  }
+  if(allow_multichar)
+    write_string(" Select characters ", 22, 5, DI_TITLE, 0);
+  else
+    write_string(" Select a character ", 22, 5, DI_TITLE, 0);
 
   do
   {
+    // Draw character set
+    for(x = 0; x < 32; x++)
+    {
+      for(y = 0; y < 8; y++)
+      {
+        draw_char_ext(x + (y * 32), DI_NONACTIVE,
+         x + 23, y + 7, 0, 16);
+      }
+    }
+
     // Calculate x/y
     x = (current & 31) + 23;
     y = (current >> 5) + 7;
-    // Highlight active character
-    draw_char(current, DI_ACTIVE, x, y);
+    if(get_shift_status(keycode_SDL) && allow_multichar)
+    {
+      if(!shifted)
+      {
+        highlight_x = x;
+        highlight_y = y;
+        start_x = x;
+        start_y = y;
+        shifted = 1;
+      }
+      else
+      {
+        start_x = highlight_x;
+        start_y = highlight_y;
+
+        if(start_x > x)
+        {
+          start_x = x;
+          width = highlight_x - x + 1;
+        }
+        else
+        {
+          width = x - highlight_x + 1;
+        }
+
+        if(start_y > y)
+        {
+          start_y = y;
+          height = highlight_y - y + 1;
+        }
+        else
+        {
+          height = y - highlight_y + 1;
+        }
+
+        for(i = 0; i < height; i++)
+        {
+          color_line(width, start_x, start_y + i, 0x9F);
+        }
+      }
+    }
+    else
+    {
+      // Highlight active character(s)
+      int char_offset;
+      int skip = 32 - width;
+
+      if(shifted == 1)
+      {
+        int size = width * height;
+
+        if((size > 18) || (size == 7) || (size == 11) ||
+         (size == 13) || (size == 14) || (size == 16) ||
+         (size == 17))
+        {
+          width = 1;
+          height = 1;
+        }
+
+        x = start_x;
+        y = start_y;
+        current = ((y - 7) * 32) + (x - 23);
+      }
+
+      char_offset = current;
+      shifted = 0;
+
+      for(i = 0; i < height; i++, char_offset += skip)
+      {
+        for(i2 = 0; i2 < width; i2++, char_offset++)
+        {
+          draw_char_ext(char_offset, DI_ACTIVE,
+           (char_offset & 31) + 23, ((char_offset & 255) >> 5) + 7, 0, 16);
+        }
+      }
+    }
     // Draw arrows
     draw_window_box(22, 6, 55, 15, DI_DARK, DI_MAIN, DI_CORNER, 0, 0);
     draw_char(char_sel_arrows_0, DI_TEXT, x, 15);
@@ -561,9 +677,6 @@ int char_selection(int current)
     // Get key
     update_event_status_delay();
     key = get_key(keycode_SDL);
-
-    // Erase marks
-    draw_char(current, DI_NONACTIVE, x, y);
 
     if(get_mouse_press())
     {
@@ -604,41 +717,57 @@ int char_selection(int current)
       case SDLK_KP_ENTER:
       case SDLK_RETURN:
       {
+        if(get_shift_status(keycode_SDL))
+        {
+          int size = width * height;
+
+          if((size > 18) || (size == 7) || (size == 11) ||
+           (size == 13) || (size == 14) || (size == 16) ||
+           (size == 17))
+          {
+            width = 1;
+            height = 1;
+          }
+
+          x = start_x;
+          y = start_y;
+          current = ((y - 7) * 32) + (x - 23);
+        }
+
         // Selected
         pop_context();
         restore_screen();
+
+        if(allow_multichar)
+        {
+          *width_ptr = width;
+          *height_ptr = height;
+        }
+
         return current;
       }
 
       case SDLK_UP:
       {
-        if(current > 31)
-          current -= 32;
-
+        current = (current - 32) & 255;
         break;
       }
 
       case SDLK_DOWN:
       {
-        if(current < 224)
-          current += 32;
-
+        current = (current + 32) & 255;
         break;
       }
 
       case SDLK_LEFT:
       {
-        if(x > 23)
-          current--;
-
+        current = (current - 1) & 255;
         break;
       }
 
       case SDLK_RIGHT:
       {
-        if(x < 54)
-          current++;
-
+        current = (current + 1) & 255;
         break;
       }
 
@@ -650,21 +779,18 @@ int char_selection(int current)
 
       case SDLK_END:
       {
-        current = 255;
+        current = 288 - width - (height * 32);
         break;
       }
 
       default:
       {
         // If this is from 32 to 255, jump there.
-        if(key > 31)
-          current = get_key(keycode_unicode);
-      }
+        int key_char = get_key(keycode_unicode);
 
-      case SDLK_LSHIFT:
-      case SDLK_RSHIFT:
-      case 0:
-      {
+        if(key_char >= 32)
+          current = key_char;
+
         break;
       }
     }
@@ -673,8 +799,8 @@ int char_selection(int current)
 
 // For color selection screen
 
-#define color_sel_char 'þ'
-#define color_sel_wild '?'
+#define color_sel_char '\xFE'
+#define color_sel_wild '\x3F'
 
 // Color selection screen colors- see char selection screen.
 
@@ -755,23 +881,24 @@ int color_selection(int current, int allow_wild)
         if(x == 16)
         {
           if(y == 16)
-            draw_char(color_sel_wild, 135, 31, 20);
+            draw_char_ext(color_sel_wild, 135, 31, 20, 256, 0);
           else
-            draw_char(color_sel_wild, fg_per_bk[y] + y * 16,
-             31, y + 4);
+            draw_char_ext(color_sel_wild, fg_per_bk[y] + y * 16,
+             31, y + 4, 256, 0);
         }
         else
 
         if(y == 16)
         {
           if(x == 0)
-            draw_char(color_sel_wild, 128, 15, 20);
+            draw_char_ext(color_sel_wild, 128, 15, 20, 256, 0);
           else
-            draw_char(color_sel_wild, x, x + 15, 20);
+            draw_char_ext(color_sel_wild, x, x + 15, 20, 256, 0);
         }
         else
         {
-          draw_char(color_sel_char, x + (y * 16), x + 15, y + 4);
+          draw_char_ext(color_sel_char, x + (y * 16), x + 15,
+           y + 4, 256, 0);
         }
       }
     }
@@ -942,9 +1069,9 @@ void draw_color_box(int color, int q_bit, int x, int y)
       if(color == 0)
         color = 8;
 
-      draw_char(color_wild, color, x, y);
-      draw_char(color_dot, color, x + 1, y);
-      draw_char(color_wild, color, x + 2, y);
+      draw_char_ext(color_wild, color, x, y, 256, 0);
+      draw_char_ext(color_dot, color, x + 1, y, 256, 0);
+      draw_char_ext(color_wild, color, x + 2, y, 256, 0);
     }
     else
 
@@ -954,9 +1081,9 @@ void draw_color_box(int color, int q_bit, int x, int y)
       // Use foreground from array
       color -= 16;
       color = (color << 4) + fg_per_bk[color];
-      draw_char(color_wild, color, x, y);
-      draw_char(color_wild, color, x + 1, y);
-      draw_char(color_wild, color, x + 2, y);
+      draw_char_ext(color_wild, color, x, y, 256, 0);
+      draw_char_ext(color_wild, color, x + 1, y, 256, 0);
+      draw_char_ext(color_wild, color, x + 2, y, 256, 0);
     }
     else
     {
@@ -968,9 +1095,24 @@ void draw_color_box(int color, int q_bit, int x, int y)
   }
   else
   {
-    draw_char(color_blank, color, x, y);
-    draw_char(color_dot, color, x + 1, y);
-    draw_char(color_blank, color, x + 2, y);
+    draw_char_ext(color_blank, color, x, y, 256, 0);
+    draw_char_ext(color_dot, color, x + 1, y, 256, 0);
+    draw_char_ext(color_blank, color, x + 2, y, 256, 0);
+  }
+}
+
+void fill_vid_usage(dialog *di, element *e,
+ signed char *vid_usage, int vid_fill)
+{
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+  signed char *vid_ptr = vid_usage + (y * 80) + x;
+  int i;
+
+  for(i = 0; i < e->height; i++)
+  {
+    memset(vid_ptr, vid_fill, e->width);
+    vid_ptr += 80;
   }
 }
 
@@ -979,949 +1121,1707 @@ void display_element(World *mzx_world, int type, int x, int y,
  char *str, int p1, int p2, void *value, int active, int curr_check,
  int set_vid_usage, int space_label);
 
-// The code that runs the dialog boxes
-// Mouse support- Click to move/select/choose.
-int run_dialog(World *mzx_world, dialog *di, int reset_curr,
- int sfx_alt_t, int space_label)
+void unhighlight_element(World *mzx_world, dialog *di,
+ int current_element_num)
 {
-  int t1, t2 = -1, key;
-  int tlng;
-  // Current radio button or check box
-  int curr_check = 0;
-  // Use these to save time and coding hassle
-  int num_e = di->num_elements;
-  int curr_e = di->curr_element;
-  int x1 = di->x1;
-  int y1 = di->y1;
-  // X pos of title
-  int titlex = x1 + ((di->x2 - x1 + 1) >> 1) -
-   (strlen(di->title) >> 1);
+  (di->elements[current_element_num])->draw_function(mzx_world, di,
+   di->elements[current_element_num], DI_NONACTIVE, 0);
+}
 
-  // Fix broken elements that have null storage
-  if(di->element_storage == NULL)
-    di->element_storage = null_storage;
-  if(di->element_param1s == NULL)
-    di->element_param1s = (int *)null_storage;
-  if(di->element_param2s == NULL)
-    di->element_param2s = (int *)null_storage;
+void highlight_element(World *mzx_world, dialog *di,
+ int current_element_num)
+{
+  (di->elements[current_element_num])->draw_function(mzx_world, di,
+   di->elements[current_element_num], DI_ACTIVE, 1);
+}
 
-  // Save screen
-  save_screen();
+int find_first_element(World *mzx_world, dialog *di,
+ int current_element_num)
+{
+  int i;
+
+  unhighlight_element(mzx_world, di, current_element_num);
+
+  for(i = 0; i < di->num_elements; i++)
+  {
+    if((di->elements[i])->key_function)
+      return i;
+  }
+
+  highlight_element(mzx_world, di, i);
+
+  return -1;
+}
+
+int find_last_element(World *mzx_world, dialog *di,
+ int current_element_num)
+{
+  int i;
+
+  unhighlight_element(mzx_world, di, current_element_num);
+
+  for(i = di->num_elements - 1; i >= 0; i--)
+  {
+    if((di->elements[i])->key_function)
+      return i;
+  }
+
+  highlight_element(mzx_world, di, i);
+
+  return -1;
+}
+
+int change_current_element(World *mzx_world, dialog *di,
+ int current_element_num, int displacement)
+{
+  int increment = 1;
+  int i = 0;
+
+  unhighlight_element(mzx_world, di, current_element_num);
+
+  if(displacement < 0)
+    increment = -1;
+
+  while(i != displacement)
+  {
+    current_element_num += increment;
+
+    if(current_element_num < 0)
+      current_element_num = di->num_elements - 1;
+
+    if(current_element_num == di->num_elements)
+      current_element_num = 0;
+
+    if((di->elements[current_element_num])->key_function)
+      i += increment;
+  }
+
+  highlight_element(mzx_world, di, current_element_num);
+
+  return current_element_num;
+}
+
+int run_dialog(World *mzx_world, dialog *di)
+{
+  int mouse_press;
+  int x = di->x;
+  int y = di->y;
+  int title_x_offset = x + (di->width / 2) - (strlen(di->title) / 2);
+  element *current_element = di->elements[di->current_element];
+
+  int current_element_num = di->current_element;
+  signed char vid_usage[2000];
+  int current_key, new_key;
+  int i;
 
   if(context == 72)
     set_context(98);
   else
     set_context(context);
 
-  // Clear mouse usage array
-  memset(vid_usage, -1, 2000);
-
-  // Turn cursor off
   cursor_off();
 
+  save_screen();
+
+  di->done = 0;
+
   // Draw main box and title
-  draw_window_box(x1, y1, di->x2, di->y2, DI_MAIN,DI_DARK, DI_CORNER,
-   1, 1);
 
-  write_string(di->title, titlex, y1, DI_TITLE, 0);
-  draw_char(' ', DI_TITLE, titlex - 1, y1);
-  draw_char(' ', DI_TITLE, titlex + strlen(di->title), y1);
+  draw_window_box(x, y, x + di->width - 1,
+   y + di->height - 1, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
 
-  // Reset current
-  if(reset_curr) di->curr_element = curr_e = 0;
-  // Initial draw of elements, as well as init of vid_usage
-  for(t1 = 0; t1 < num_e; t1++)
+  write_string(di->title, title_x_offset, y, DI_TITLE, 0);
+  draw_char(' ', DI_TITLE, title_x_offset - 1, y);
+  draw_char(' ', DI_TITLE, title_x_offset + strlen(di->title), y);
+
+  memset(vid_usage, -1, 2000);
+
+  // Draw elements and set vid usage
+  for(i = 0; i < di->num_elements; i++)
   {
-    if(t1 == curr_e)
-    {
-      display_element(mzx_world, di->element_types[t1], x1 + di->element_xs[t1],
-       y1 + di->element_ys[t1], di->element_strs[t1], di->element_param1s[t1],
-       di->element_param2s[t1], di->element_storage[t1], 1, 0, t1 + 1,
-       space_label);
-    }
-    else
-    {
-      display_element(mzx_world, di->element_types[t1], x1 + di->element_xs[t1],
-       y1 + di->element_ys[t1], di->element_strs[t1], di->element_param1s[t1],
-       di->element_param2s[t1], di->element_storage[t1], 0, 0, t1 + 1,
-       space_label);
-    }
+    unhighlight_element(mzx_world, di, i);
+    fill_vid_usage(di, di->elements[i], vid_usage, i);
   }
 
-  // Loop of selection
   do
   {
-    // Check current...
-    do
-    {
-      if(curr_e >= num_e) curr_e = 0;
-      t1 = di->element_types[curr_e];
-      if((t1 == DE_BOX) || (t1 == DE_TEXT) || (t1 == DE_LINE))
-        curr_e++;
-      else
-        break;
-    } while(1);
+    highlight_element(mzx_world, di, current_element_num);
+    update_screen();
 
-    if(t1 == DE_CHECK)
-    {
-      if(curr_check >= di->element_param1s[curr_e])
-        curr_check = 0;
-    }
-
-    // Highlight current...
-    display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
-     y1 + di->element_ys[curr_e], di->element_strs[curr_e],
-     di->element_param1s[curr_e], di->element_param2s[curr_e],
-     di->element_storage[curr_e], 1, curr_check, 0, space_label);
-
+    current_element = di->elements[current_element_num];
     update_event_status_delay();
+    current_key = get_key(keycode_SDL);
 
-    // Get key (through intake for DE_INPUT)
-    if(t1 == DE_INPUT)
-    {
-      key = intake((char *)di->element_storage[curr_e],
-       di->element_param1s[curr_e], x1 + di->element_xs[curr_e] +
-       strlen(di->element_strs[curr_e]) + space_label,
-       y1 + di->element_ys[curr_e], DI_INPUT, 2,
-       di->element_param2s[curr_e]);
-    }
-    else
-    {
-      update_screen();
-      key = get_key(keycode_SDL);
-    }
-      // Process key (t1 still holds element type)
+    new_key = 0;
 
-    if(get_mouse_press() || (key == -1))
+    if(current_element->idle_function)
+    {
+      new_key =
+       current_element->idle_function(mzx_world, di,
+       current_element);
+
+      if(new_key > 0)
+        current_key = new_key;
+    }
+
+    mouse_press = get_mouse_press_ext();
+
+    if(get_mouse_drag() &&
+     (mouse_press <= SDL_BUTTON_RIGHT) &&
+     (current_element->drag_function))
     {
       int mouse_x, mouse_y;
       get_mouse_position(&mouse_x, &mouse_y);
-      int id_over = vid_usage[mouse_x + (mouse_y * 80)];
 
-      // Is it over anything important?
-      if(id_over != -1)
+      new_key = current_element->drag_function(mzx_world,
+       di, current_element, mouse_press,
+       mouse_x - di->x - current_element->x,
+       mouse_y - di->y - current_element->y);
+
+      if(new_key > 0)
+        current_key = new_key;
+    }
+    else
+
+    if((mouse_press && (mouse_press <= SDL_BUTTON_RIGHT))
+     || (new_key == -1))
+    {
+      do
       {
-        // Yes.
-        // Get id number
-        if(id_over != curr_e)
+        int mouse_x, mouse_y;
+        int element_under;
+        get_mouse_position(&mouse_x, &mouse_y);
+
+        element_under = vid_usage[(mouse_y * 80) + mouse_x];
+        new_key = 0;
+
+        if((element_under != -1) &&
+         (element_under != current_element_num) &&
+         ((di->elements[element_under])->key_function))
         {
-          // Unhighlight old element
-          display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
-           y1 + di->element_ys[curr_e], di->element_strs[curr_e],
-           di->element_param1s[curr_e], di->element_param2s[curr_e],
-           di->element_storage[curr_e], 0, curr_check, 0, space_label);
+          unhighlight_element(mzx_world, di, current_element_num);
+          current_element_num = element_under;
+          current_element = di->elements[element_under];
+          highlight_element(mzx_world, di, element_under);
 
-          curr_e = id_over;
-          id_over = -1;
+          new_key = current_element->click_function(mzx_world, di,
+           current_element, mouse_press,
+           mouse_x - di->x - current_element->x,
+           mouse_y - di->y - current_element->y, 1);
+
+          if(new_key > 0)
+            current_key = new_key;
         }
-        // Get type of new one
-        t1 = di->element_types[curr_e];
-        // Code for clicking on something... (t1!=-1 means it was
-        // already current)
+        else
 
-        switch(t1)
+        if((element_under != -1) &&
+         (current_element->click_function))
         {
-          case DE_INPUT:
-            // Nothing special
-            break;
+          current_element_num = element_under;
+          current_element = di->elements[element_under];
 
-          case DE_CHECK:
-            // Move curr_check and toggle
-            curr_check = (mouse_y - y1) - di->element_ys[curr_e];
-            ((char *)di->element_storage[curr_e])[curr_check] ^= 1;
-            break;
+          if(current_element->click_function)
+          {
+            new_key = current_element->click_function(mzx_world, di,
+             current_element, mouse_press,
+             mouse_x - di->x - current_element->x,
+             mouse_y - di->y - current_element->y, 0);
 
-          case DE_RADIO:
-            //Move radio button
-            ((char *)di->element_storage[curr_e])[0]=
-            (mouse_y - y1) - di->element_ys[curr_e];
-            break;
-
-          case DE_COLOR:
-          case DE_CHAR:
-          case DE_LIST:
-          case DE_BOARD:
-            key = SDLK_RETURN;
-            break;
-
-          case DE_BUTTON:
-            // If it was already current, select. (enter)
-            // Otherwise nothing happens.
-            if(id_over != -1)
-              key = SDLK_RETURN;
-            break;
-
-          case DE_NUMBER:
-            // Two types of numeral apply here.
-            if((di->element_param1s[curr_e] == 1) &&
-             (di->element_param2s[curr_e] < 10))
-            {
-              // Number line
-              // Select number IF on the number line itself
-              t2 = mouse_x - x1;
-              t2 -= di->element_xs[curr_e];
-              t2 -= strlen(di->element_strs[curr_e]);
-              if((t2 < di->element_param2s[curr_e]) && (t2 >= 0))
-               ((int *)di->element_storage[curr_e])[0] = t2 + 1;
-              break;
-            }
-
-          case DE_FIVE:
-            // Numeric selector
-            // Go to change_up w/-72 as key for up button
-            // Go to change_down w/-80 as key for down button
-            // Anything else is ignored
-            // Set mouse_held to cycle.
-            t2 = mouse_x - 7 - x1;
-            t2 -= di->element_xs[curr_e];
-            t2 -= strlen(di->element_strs[curr_e]);
-
-            if((t2 >= 0) && (t2 <= 2))
-            {
-              key = SDLK_UP;
-            }
-            else
-
-            if((t2 >= 3) && (t2 <= 5))
-            {
-              key = SDLK_DOWN;
-            }
-            break;
+            if(new_key > 0)
+              current_key = new_key;
+          }
         }
-      }
+      } while(new_key == -1);
+    }
+    else
+
+    if(mouse_press == SDL_BUTTON_WHEELUP)
+    {
+      current_key = SDLK_UP;
+    }
+    else
+
+    if(mouse_press == SDL_BUTTON_WHEELDOWN)
+    {
+      current_key = SDLK_DOWN;
     }
 
-    switch(key)
+    if(current_element->key_function && current_key)
+    {
+      current_key =
+       current_element->key_function(mzx_world, di,
+       current_element, current_key);
+    }
+
+    di->current_element = current_element_num;
+
+    if(di->idle_function)
+    {
+      current_key =
+       di->idle_function(mzx_world, di, current_key);
+
+      current_element_num = di->current_element;
+    }
+
+    switch(current_key)
     {
       case SDLK_TAB: // Tab
       {
         if(get_shift_status(keycode_SDL))
         {
-          prev_elem:
-          // Unhighlight old element
-          display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
-           y1 + di->element_ys[curr_e], di->element_strs[curr_e],
-           di->element_param1s[curr_e], di->element_param2s[curr_e],
-           di->element_storage[curr_e], 0, curr_check, 0, space_label);
-
-          // Move to previous element, going past text/box/line
-          do
-          {
-            curr_e--;
-            if(curr_e < 0) curr_e = num_e - 1;
-            t1 = di->element_types[curr_e];
-            if((t1 == DE_BOX) || (t1 == DE_TEXT) || (t1 == DE_LINE))
-              continue;
-          } while(0);
+          current_element_num = change_current_element(mzx_world,
+           di, current_element_num, -1);
         }
         else
         {
-          next_elem:
-          // Unhighlight old element
-          display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
-           y1 + di->element_ys[curr_e], di->element_strs[curr_e],
-           di->element_param1s[curr_e], di->element_param2s[curr_e],
-           di->element_storage[curr_e], 0, curr_check, 0, space_label);
-          // Move to next element
-          curr_e++;
+          current_element_num = change_current_element(mzx_world,
+           di, current_element_num, 1);
         }
         break;
       }
 
-      case SDLK_SPACE: // Space
+      case SDLK_SPACE:
       case SDLK_KP_ENTER:
-      case SDLK_RETURN: // Enter
+      case SDLK_RETURN:
+      case SDLK_PAGEDOWN:
+      case SDLK_RIGHT:
+      case SDLK_DOWN:
       {
-        // Activate button, choose from list/menu, or toggle check.
-        switch(t1)
-        {
-          case DE_CHECK:
-          {
-            ((char *)di->element_storage[curr_e])[curr_check] ^= 1;
-            break;
-          }
-
-          case DE_COLOR:
-          {
-            int current_color =
-             color_selection(*((int *)di->element_storage[curr_e]),
-             di->element_param1s[curr_e]);
-            if(current_color >= 0)
-              *((int *)di->element_storage[curr_e]) = current_color;
-            break;
-          }
-
-          case DE_CHAR:
-          {
-            int current_char =
-             char_selection((*(char *)di->element_storage[curr_e]));
-            if(current_char == 0)
-              current_char = 1;
-            if((current_char == 255) && (di->element_param1s[curr_e] == 0))
-              current_char = 1;
-            if(current_char >= 0)
-              *((char *)di->element_storage[curr_e]) = current_char;
-            break;
-          }
-
-          case DE_BUTTON:
-          {
-            // Restore screen, set current, and return answer
-            pop_context();
-            restore_screen();
-            di->curr_element = curr_e;
-            return di->element_param1s[curr_e];
-          }
-
-          case DE_BOARD:
-          {
-            int current_board =
-             choose_board(mzx_world, *((int *)di->element_storage[curr_e]),
-             di->element_strs[curr_e], di->element_param1s[curr_e]);
-            if(current_board >= 0)
-              ((int *)di->element_storage[curr_e])[0] = current_board;
-            break;
-          }
-
-          case DE_LIST:
-          {
-            int choice_size = di->element_param2s[curr_e];
-            int result = list_menu(((char **)di->element_strs[curr_e]) + 1,
-             choice_size, ((char **)di->element_strs[curr_e])[0],
-             *((int *)di->element_storage[curr_e]),
-             di->element_param1s[curr_e], 31);
-            if(result >= 0)
-              *((int *)di->element_storage[curr_e]) = result;
-            break;
-          }
-
-          default:
-          {
-            // Same as a tab
-            goto next_elem;
-          }
-        }
+        current_element_num = change_current_element(mzx_world,
+         di, current_element_num, 1);
         break;
       }
 
-      case SDLK_RIGHT:
-      {
-        if((t1 != DE_NUMBER) && (t1 != DE_FIVE))
-          goto change_down;
-      }
-
-      case SDLK_UP:
       case SDLK_PAGEUP:
+      case SDLK_LEFT:
+      case SDLK_UP:
       {
-        change_up:
-        // Change numeric, radio, or current check. Otherwise, move
-        // to previous element.
-
-        switch(t1)
-        {
-          case DE_RADIO:
-          {
-            if(key == SDLK_PAGEUP)
-              ((char *)di->element_storage[curr_e])[0] = 0;
-            else
-            {
-              if(((char *)di->element_storage[curr_e])[0] > 0)
-                ((char *)di->element_storage[curr_e])[0]--;
-            }
-            break;
-          }
-
-          case DE_CHECK:
-          {
-            if(key == SDLK_PAGEUP)
-              curr_check = 0;
-            else
-              if(curr_check > 0)  curr_check--;
-            break;
-          }
-
-          case DE_NUMBER:
-          case DE_FIVE:
-          {
-            switch(key)
-            {
-              case SDLK_RIGHT: // Right
-              case SDLK_UP: // Up
-              {
-                if(get_alt_status(keycode_SDL) ||
-                 get_ctrl_status(keycode_SDL))
-                  t2 = 10;
-                else
-                  t2 = 1;
-                break;
-              }
-
-              case SDLK_PAGEUP:
-              {
-                t2 = 100;
-                break;
-              }
-            }
-            change_num:
-            tlng = ((int *)di->element_storage[curr_e])[0];
-            if((tlng + t2) < di->element_param1s[curr_e])
-            {
-              ((int *)di->element_storage[curr_e])[0] =
-               di->element_param1s[curr_e];
-              break;
-            }
-            if((tlng + t2) > di->element_param2s[curr_e])
-            {
-              ((int *)di->element_storage[curr_e])[0] =
-               di->element_param2s[curr_e];
-              break;
-            }
-            ((int *)di->element_storage[curr_e])[0] += t2;
-            break;
-          }
-
-          default:
-          {
-            goto prev_elem;
-          }
-        }
+        current_element_num = change_current_element(mzx_world,
+         di, current_element_num, -1);
         break;
       }
 
       case SDLK_HOME:
       {
-        // Change numeric, radio, or current check. Otherwise, move
-        // to first element.
-        switch(t1)
-        {
-          case DE_NUMBER:
-          case DE_FIVE:
-          {
-            ((int *)di->element_storage[curr_e])[0] =
-             di->element_param2s[curr_e];
-            break;
-          }
-
-          default:
-          {
-            // Unhighlight old element
-            display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
-             y1 + di->element_ys[curr_e], di->element_strs[curr_e],
-             di->element_param1s[curr_e], di->element_param2s[curr_e],
-             di->element_storage[curr_e], 0, curr_check, 0, space_label);
-            //Jump to first
-            curr_e = 0;
-            if(sfx_alt_t > 1)
-              curr_e = sfx_alt_t;
-            else
-              if(sfx_alt_t == 1)  curr_e = 4;
-            break;
-          }
-        }
-
-        break;
-      }
-
-      case SDLK_LEFT:
-      {
-        if((t1 != DE_NUMBER) && (t1 != DE_FIVE))
-          goto change_up;
-      }
-
-      case SDLK_DOWN:
-      case SDLK_PAGEDOWN:
-      {
-        change_down:
-        // Change numeric, radio, or current check. Otherwise, move
-        // to next element.
-        switch(t1)
-        {
-          case DE_RADIO:
-          {
-            if(key == SDLK_PAGEDOWN)
-            {
-              ((char *)di->element_storage[curr_e])[0] =
-               di->element_param1s[curr_e] - 1;
-            }
-            else
-            {
-              if(((char *)di->element_storage[curr_e])[0] <
-                 di->element_param1s[curr_e] - 1)
-                ((char *)di->element_storage[curr_e])[0]++;
-            }
-            break;
-          }
-
-          case DE_CHECK:
-          {
-            if(key == SDLK_PAGEDOWN)
-             curr_check = di->element_param1s[curr_e] - 1;
-            else
-
-            if(curr_check<di->element_param1s[curr_e] - 1)
-              curr_check++;
-            break;
-          }
-
-          case DE_NUMBER:
-          case DE_FIVE:
-          {
-            switch(key)
-            {
-              case SDLK_LEFT://Left
-              case SDLK_DOWN://Down
-                if(get_alt_status(keycode_SDL) ||
-                 get_ctrl_status(keycode_SDL))
-                  t2 = -10;
-                else
-                  t2 = -1;
-                break;
-              case SDLK_PAGEDOWN://PageDown
-                t2 = -100;
-                break;
-            }
-            goto change_num;
-          }
-
-          default:
-          {
-            goto next_elem;
-          }
-        }
+        current_element_num = find_first_element(mzx_world, di,
+         current_element_num);
         break;
       }
 
       case SDLK_END:
       {
-        // Change numeric, radio, or current check. Otherwise, move
-        // to last element.
-        switch(t1)
-        {
-          case DE_NUMBER:
-          case DE_FIVE:
-          {
-            ((int *)di->element_storage[curr_e])[0] =
-             di->element_param1s[curr_e];
-            break;
-          }
-
-          default:
-          {
-            // Unhighlight old element
-            display_element(mzx_world, t1, x1 + di->element_xs[curr_e],
-             y1 + di->element_ys[curr_e], di->element_strs[curr_e],
-             di->element_param1s[curr_e], di->element_param2s[curr_e],
-             di->element_storage[curr_e], 0, curr_check, 0, space_label);
-            // Jump to end
-            if(sfx_alt_t > 0) curr_e = 0;
-            else
-            {
-              curr_e = num_e - 1;
-              // Work backwards past found text, box, or line
-              do
-              {
-                curr_e--;
-                t1 = di->element_types[curr_e];
-                if((t1 == DE_BOX) || (t1 == DE_TEXT) || (t1 == DE_LINE))
-                  continue;
-              } while(0);
-            }
-            break;
-          }
-        }
+        current_element_num = find_last_element(mzx_world, di,
+         current_element_num);
         break;
       }
 
       case SDLK_ESCAPE: // ESC
       {
         // Restore screen, set current, and return -1
-        restore_screen();
-        di->curr_element = curr_e;
         pop_context();
         return -1;
       }
 
       case SDLK_F1: // F1
       {
-        m_show();
         help_system(mzx_world);
         break;
       }
 
-      case SDLK_t:
-      {
-        if(get_alt_status(keycode_SDL))
-        {
-          // Test sfx
-          if((sfx_alt_t == 1) && (di->element_types[curr_e] == DE_INPUT))
-          {
-            // Play a sfx
-            clear_sfx_queue();
-            play_str((char *)di->element_storage[curr_e], 0);
-          }
-        }
-      }
-
       default:
-      {
-        int key_char = get_key(keycode_unicode);
-
-        // Change character to key.
-        switch(t1)
-        {
-          case DE_CHAR:
-          {
-            *((char *)di->element_storage[curr_e]) =
-             key_char;
-            break;
-          }
-
-          case DE_NUMBER:
-          case DE_FIVE:
-          {
-            int current_value =
-             *((int *)di->element_storage[curr_e]);
-
-            if(key == SDLK_BACKSPACE)
-            {
-              current_value /= 10;
-            }
-
-            if((key_char >= '0') && (key_char <= '9'))
-            {
-              if(current_value == di->element_param2s[curr_e])
-              {
-                current_value = (key_char - '0');
-              }
-              else
-              {
-                current_value = (current_value * 10) +
-                 (key_char - '0');
-              }
-
-              if(current_value < di->element_param1s[curr_e])
-                current_value = di->element_param1s[curr_e];
-
-              if(current_value > di->element_param2s[curr_e])
-                current_value = di->element_param2s[curr_e];
-            }
-
-
-            *((int *)di->element_storage[curr_e]) =
-             current_value;
-
-            break;
-          }
-        }
-        break;
-      }
-
-      case 0:
       {
         break;
       }
     }
-  } while(1);
+  } while(di->done != 1);
+
+  pop_context();
+
+  return di->return_value;
 }
 
-// Internal function to display an element, whether active or not.
-
-void display_element(World *mzx_world, int type, int x, int y,
- char *str, int p1, int p2, void *value, int active, int curr_check,
- int set_vid_usage, int space_label)
+int find_entry(char **choices, char *name, int total_num)
 {
-  // If set_vid_usage is non-0, set the vid_usage array appropriately.
-  // set_vid_usage is equal to the element number plus 1.
-  int t1, t2;
-  char temp[7];
-  // Color for elements (active vs. inactive)
-  int color = DI_NONACTIVE;
+  int bottom = 0, top = total_num - 1, middle = 0;
+  int cmpval = 0;
+  int name_length = strlen(name);
 
-  if(space_label && (type != DE_BUTTON))
+  while(bottom <= top)
   {
-    char str2[512];
-    int len = strlen(str);
-    memcpy(str2, str, len);
-    str2[len] = ' ';
-    str2[len + 1] = 0;
+    middle = (top + bottom) / 2;
 
-    str = str2;
+#ifdef __WIN32__
+    if(choices[middle][1] == ':')
+      cmpval = -1;
+    else
+#endif
+      cmpval = strncasecmp(name, choices[middle], name_length);
+
+    if(cmpval > 0)
+    {
+      bottom = middle + 1;
+    }
+    else
+
+    if(cmpval < 0)
+    {
+      top = middle - 1;
+    }
+    else
+    {
+      while((middle > 0)
+       && !strncasecmp(name, choices[middle - 1], name_length))
+      {
+        middle--;
+      }
+      return middle;
+    }
+  }
+
+  return -1;
+}
+
+// "Member" functions for GUI elements
+
+void draw_label(World *mzx_world, dialog *di, element *e,
+ int color, int active)
+{
+  label *src = (label *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+
+  color_string(src->text, x, y, DI_TEXT);
+}
+
+void draw_box(World *mzx_world, dialog *di, element *e,
+ int color, int active)
+{
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+
+  draw_window_box(x, y, x + e->width - 1, y + e->height - 1,
+   DI_DARK, DI_MAIN, DI_CORNER, 0, 0);
+}
+
+void draw_line(World *mzx_world, dialog *di, element *e,
+ int color, int active)
+{
+  line *src = (line *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+  int i;
+
+  switch(src->alignment)
+  {
+    case vertical:
+    {
+      for(i = 0; i < e->height; i++)
+      {
+        draw_char('\xB3', DI_LINE, x, x + i);
+      }
+      break;
+    }
+
+    case horizontal:
+    {
+      fill_line(e->width, x, y, 196, DI_LINE);
+      break;
+    }
+  }
+}
+
+void draw_input_box(World *mzx_world, dialog *di, element *e,
+ int color, int active)
+{
+  input_box *src = (input_box *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+  int question_length = strlen(src->question) + di->pad_space;
+
+  write_string(src->question, x, y, color, 0);
+  fill_line(src->max_length + 1, x + question_length, y,
+   32, DI_INPUT);
+  write_string(src->result, x + question_length, y,
+   DI_INPUT, 0);
+}
+
+void draw_check_box(World *mzx_world, dialog *di, element *e,
+ int color, int active)
+{
+  check_box *src = (check_box *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+  int i;
+
+  for(i = 0; i < src->num_choices; i++)
+  {
+    if(src->results[i])
+      write_string(check_on, x, y + i, DI_NONACTIVE, 0);
+    else
+      write_string(check_off, x, y + i, DI_NONACTIVE, 0);
+
+    write_string(src->choices[i], x + 4, y + i,
+     DI_NONACTIVE, 0);
   }
 
   if(active)
-    color = DI_ACTIVE;
-
-  // Act according to type, and fill vid_usage array as well if flag set
-  switch(type)
   {
-    case DE_TEXT:
+    color_line(src->max_length + 4, x, y + src->current_choice,
+     DI_ACTIVE);
+  }
+}
+
+void draw_radio_button(World *mzx_world, dialog *di, element *e,
+ int color, int active)
+{
+  radio_button *src = (radio_button *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+  int i;
+
+  for(i = 0; i < src->num_choices; i++)
+  {
+    if(i != *(src->result))
     {
-      color_string(str, x, y, DI_TEXT);
+      write_string(radio_off, x, y + i, DI_NONACTIVE, 0);
+      write_string(src->choices[i], x + 4, y + i,
+       DI_NONACTIVE, 0);
+    }
+    else
+    {
+      write_string(radio_on, x, y + *(src->result),
+       DI_NONACTIVE, 0);
+      write_string(src->choices[i], x + 4, y + i,
+       DI_NONACTIVE, 0);
+    }
+  }
+
+  if(active)
+  {
+    color_line(src->max_length + 4, x, y + *(src->result),
+     DI_ACTIVE);
+  }
+}
+
+void draw_char_box(World *mzx_world, dialog *di, element *e,
+ int color, int active)
+{
+  char_box *src = (char_box *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+  int question_len = strlen(src->question) + di->pad_space;
+
+  write_string(src->question, x, y, color, 0);
+  draw_char_ext(*(src->result), DI_CHAR,
+   x + question_len + 1, y, 0, 16);
+  draw_char(' ', DI_CHAR, x + question_len, y);
+  draw_char(' ', DI_CHAR, x + question_len + 2, y);
+}
+
+void draw_color_box_element(World *mzx_world, dialog *di,
+ element *e, int color, int active)
+{
+  color_box *src = (color_box *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+  int current_color = *(src->result);
+
+  write_string(src->question, x, y, color, 0);
+  draw_color_box(current_color & 0xFF, current_color >> 8,
+   x + strlen(src->question) + di->pad_space, y);
+}
+
+void draw_button(World *mzx_world, dialog *di, element *e,
+ int color, int active)
+{
+  button *src = (button *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+
+  if(active)
+    color = DI_ACTIVEBUTTON;
+  else
+    color = DI_BUTTON;
+
+  write_string(src->label, x + 1, y, color, 0);
+  draw_char(' ', color, x, y);
+  draw_char(' ', color, x + strlen(src->label) + 1, y);
+}
+
+void draw_number_box(World *mzx_world, dialog *di,
+ element *e, int color, int active)
+{
+  number_box *src = (number_box *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+  int increment = 1;
+  int i;
+
+  if(src->mult_five)
+    increment = 5;
+
+  write_string(src->question, x, y, color, 0);
+
+  x += strlen(src->question) + di->pad_space;
+
+  if((src->lower_limit == 1) && (src->upper_limit < 10) &&
+   (increment == 1))
+  {
+    // Draw a number line
+    for(i = 1; i <= src->upper_limit; i++)
+    {
+      if(i == *(src->result))
+        draw_char('0' + i, DI_ACTIVE, x + i - 1, y);
+      else
+        draw_char('0' + i, DI_NONACTIVE, x + i - 1, y);
+    }
+  }
+  else
+  {
+    // Draw a number
+    char num_buffer[32];
+    sprintf(num_buffer, "%d", *(src->result) * increment);
+    fill_line(7, x, y, 32, DI_NUMERIC);
+    write_string(num_buffer, x + 6 - strlen(num_buffer), y,
+     DI_NUMERIC, 0);
+    // Buttons
+    write_string(num_buttons, x + 7, y, DI_ARROWBUTTON, 0);
+  }
+}
+
+void draw_list_box(World *mzx_world, dialog *di,
+ element *e, int color, int active)
+{
+  list_box *src = (list_box *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+  int choice_length = src->choice_length;
+  int num_choices = src->num_choices;
+  int num_choices_visible = src->num_choices_visible;
+  int current_choice = *(src->result);
+  int scroll_offset = src->scroll_offset;
+  char **choices = src->choices;
+  int i, num_draw;
+  int draw_width = choice_length;
+  int current_in_window = current_choice - scroll_offset;
+  char name_buffer[512];
+
+  num_draw = num_choices_visible;
+
+  if(num_choices_visible >= num_choices)
+    num_draw = num_choices;
+
+  current_in_window = current_choice - scroll_offset;
+
+  // Draw choices
+  for(i = 0; i < num_draw; i++)
+  {
+    fill_line(choice_length, x, y + i, 32, DI_LIST);
+    strcpy(name_buffer, choices[scroll_offset + i]);
+    name_buffer[draw_width - 1] = 0;
+    color_string(name_buffer, x, y + i, DI_LIST);
+  }
+
+  for(; i < num_choices_visible; i++)
+  {
+    fill_line(choice_length, x, y + i, 32, DI_LIST);
+  }
+
+  if(num_choices)
+  {
+    if(active)
+      color = DI_ACTIVELIST;
+    else
+      color = DI_SEMIACTIVELIST;
+
+    fill_line(choice_length, x, y + current_in_window,
+     32, color);
+    strcpy(name_buffer, choices[current_choice]);
+    name_buffer[draw_width - 1] = 0;
+    color_string(name_buffer, x,
+     y + current_in_window, color);
+  }
+
+  if(num_choices > num_choices_visible)
+  {
+    int side_length = num_choices_visible - 2;
+    int progress_bar_size = (side_length * side_length +
+     (side_length / 2)) / num_choices;
+    int progress_bar_offset = ((scroll_offset *
+     (side_length - progress_bar_size)) +
+     ((num_choices - num_choices_visible) / 2)) /
+     (num_choices - num_choices_visible) + y + 1;
+
+    draw_char(pc_top_arrow, DI_PCARROW, x + choice_length, y);
+    draw_char(pc_bottom_arrow, DI_PCARROW, x + choice_length,
+     y + side_length + 1);
+
+    for(i = 0; i < side_length; i++)
+    {
+      draw_char(pc_filler, DI_PCFILLER, x + choice_length, y + i + 1);
+    }
+
+    for(i = 0; i < progress_bar_size; i++,
+     progress_bar_offset++)
+    {
+      draw_char(pc_meter, DI_PCDOT, x + choice_length,
+       progress_bar_offset);
+    }
+  }
+}
+
+void draw_board_list(World *mzx_world, dialog *di,
+ element *e, int color, int active)
+{
+  board_list *src = (board_list *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+  int current_board = *(src->result);
+
+  Board *src_board;
+  char board_name[BOARD_NAME_SIZE] = "(none)";
+
+  if(current_board || (!src->board_zero_as_none))
+  {
+    if(current_board <= mzx_world->num_boards)
+    {
+      src_board = mzx_world->board_list[current_board];
+      strcpy(board_name, src_board->board_name);
+    }
+    else
+    {
+      strcpy(board_name, "(no board)");
+    }
+  }
+
+  write_string(src->title, x, y, color, 0);
+  fill_line(BOARD_NAME_SIZE + 1, x, y + 1, 32, DI_LIST);
+
+  color_string(board_name, x + 1, y + 1, DI_LIST);
+
+  // Draw button
+  write_string(list_button, x + BOARD_NAME_SIZE + 1, y + 1,
+   DI_ARROWBUTTON, 0);
+}
+
+int key_input_box(World *mzx_world, dialog *di, element *e,
+ int key)
+{
+  input_box *src = (input_box *)e;
+
+  if(get_alt_status(keycode_SDL) && (key == SDLK_t) &&
+   di->sfx_test_for_input)
+  {
+    // Play a sfx
+    clear_sfx_queue();
+    play_str(src->result, 0);
+  }
+
+  return key;
+}
+
+int key_check_box(World *mzx_world, dialog *di, element *e,
+ int key)
+{
+  check_box *src = (check_box *)e;
+
+  switch(key)
+  {
+    case SDLK_SPACE:
+    case SDLK_KP_ENTER:
+    case SDLK_RETURN:
+    {
+      src->results[src->current_choice] ^= 1;
       break;
     }
 
-    case DE_BOX:
+    case SDLK_PAGEUP:
     {
-      draw_window_box(x, y, x + p1 - 1, y + p2 - 1, DI_DARK, DI_MAIN,
-       DI_CORNER, 0, 0);
+      src->current_choice = 0;
       break;
     }
 
-    case DE_LINE:
+    case SDLK_LEFT:
+    case SDLK_UP:
     {
-      if(p2)
+      if(src->current_choice)
+        src->current_choice--;
+
+      break;
+    }
+
+    case SDLK_PAGEDOWN:
+    {
+      src->current_choice = src->num_choices - 1;
+      break;
+    }
+
+    case SDLK_RIGHT:
+    case SDLK_DOWN:
+    {
+      if(src->current_choice < (src->num_choices - 1))
+        src->current_choice++;
+
+      break;
+    }
+
+    default:
+    {
+      return key;
+    }
+  }
+
+  return 0;
+}
+
+int key_radio_button(World *mzx_world, dialog *di, element *e,
+ int key)
+{
+  radio_button *src = (radio_button *)e;
+
+  switch(key)
+  {
+    case SDLK_PAGEUP:
+    {
+      *(src->result) = 0;
+      break;
+    }
+
+    case SDLK_LEFT:
+    case SDLK_UP:
+    {
+      if(*(src->result))
+        (*(src->result))--;
+
+      break;
+    }
+
+    case SDLK_PAGEDOWN:
+    {
+      *(src->result) = src->num_choices - 1;
+      break;
+    }
+
+    case SDLK_RIGHT:
+    case SDLK_DOWN:
+    {
+      if(*(src->result) < (src->num_choices - 1))
+        (*(src->result))++;
+
+      break;
+    }
+
+    default:
+    {
+      return key;
+    }
+  }
+
+  return 0;
+}
+
+
+int key_char_box(World *mzx_world, dialog *di, element *e,
+ int key)
+{
+  char_box *src = (char_box *)e;
+
+  switch(key)
+  {
+    case SDLK_SPACE:
+    case SDLK_KP_ENTER:
+    case SDLK_RETURN:
+    {
+      int current_char =
+       char_selection(*(src->result));
+
+      if((current_char == 0) ||
+       ((current_char == 255) && (!src->allow_char_255)))
       {
-        // Vertical
-        for(t1 = 0; t1 < p1; t1++)
-          draw_char('³', DI_LINE, x, y + t1);
+        current_char = 1;
+      }
+
+      if(current_char >= 0)
+        *(src->result) = current_char;
+      break;
+    }
+
+    default:
+    {
+      int key_char = get_key(keycode_unicode);
+
+      if(key_char >= 32)
+      {
+        *(src->result) = key_char;
+        break;
+      }
+
+      return key;
+    }
+  }
+
+  return 0;
+}
+
+int key_color_box(World *mzx_world, dialog *di, element *e,
+ int key)
+{
+  color_box *src = (color_box *)e;
+
+  switch(key)
+  {
+    case SDLK_SPACE:
+    case SDLK_KP_ENTER:
+    case SDLK_RETURN:
+    {
+      int current_color =
+       color_selection(*(src->result), src->allow_wildcard);
+
+      if(current_color >= 0)
+        *(src->result) = current_color;
+      break;
+    }
+
+    default:
+    {
+      return key;
+    }
+  }
+
+  return 0;
+}
+
+int key_button(World *mzx_world, dialog *di, element *e,
+ int key)
+{
+  button *src = (button *)e;
+
+  switch(key)
+  {
+    case SDLK_SPACE:
+    case SDLK_KP_ENTER:
+    case SDLK_RETURN:
+    {
+      // Flag that the dialog is done processing
+      di->done = 1;
+      di->return_value = src->return_value;
+      break;
+    }
+
+    default:
+    {
+      return key;
+    }
+  }
+
+  return 0;
+}
+
+int key_number_box(World *mzx_world, dialog *di, element *e,
+ int key)
+{
+  number_box *src = (number_box *)e;
+  int increment_value = 0;
+  int current_value = *(src->result);
+
+  switch(key)
+  {
+    case SDLK_HOME:
+    {
+      *(src->result) = src->lower_limit;
+      break;
+    }
+
+    case SDLK_END:
+    {
+      *(src->result) = src->upper_limit;
+      break;
+    }
+
+    case SDLK_RIGHT:
+    case SDLK_UP:
+    {
+      if(get_alt_status(keycode_SDL) ||
+        get_ctrl_status(keycode_SDL))
+      {
+        increment_value = 10;
       }
       else
       {
-        // Horizontal
-        fill_line(p1, x, y, 196, DI_LINE);
+        increment_value = 1;
       }
+
       break;
     }
 
-    case DE_INPUT:
+    case SDLK_PAGEUP:
     {
-      write_string(str, x, y, color, 0);
-      write_string((char *)value, x + strlen(str), y, DI_INPUT, 0);
-      fill_line(p1 - strlen((char *)value) + 1,
-       x + strlen(str) + strlen((char *)value), y, 32, DI_INPUT);
-      // Fill vid_usage
-      if(set_vid_usage)
+      increment_value = 100;
+      break;
+    }
+
+    case SDLK_LEFT:
+    case SDLK_DOWN:
+    {
+      if(get_alt_status(keycode_SDL) ||
+       get_ctrl_status(keycode_SDL))
       {
-        for(t1 = 0; (unsigned int)t1 <= p1 + strlen(str); t1++)
+        increment_value = -10;
+      }
+      else
+      {
+        increment_value = -1;
+      }
+
+      break;
+    }
+
+    case SDLK_PAGEDOWN:
+    {
+      increment_value = -100;
+      break;
+    }
+
+    case SDLK_BACKSPACE:
+    {
+      *(src->result) = current_value / 10;
+    }
+
+    default:
+    {
+      int key_char = get_key(keycode_unicode);
+
+      if((key >= '0') && (key <= '9'))
+      {
+        if(current_value == src->upper_limit)
         {
-          vid_usage[t1 + x + y * 80] = set_vid_usage - 1;
+          current_value = (key_char - '0');
         }
-      }
-      break;
-    }
-
-    case DE_CHECK:
-    {
-      write_string(str, x + 4, y, DI_NONACTIVE, 0);
-      // Draw boxes
-      for(t1 = 0; t1 < p1; t1++)
-      {
-        if(((char *)value)[t1]) write_string(check_on, x, y + t1,
-         DI_NONACTIVE, 0);
-        else write_string(check_off, x, y + t1, DI_NONACTIVE, 0);
-      }
-      // Highlight current
-      if(active)
-      {
-        if(curr_check >= p1)
-          curr_check = p1 - 1;
-        color_line(p2 + 4, x, y + curr_check, DI_ACTIVE);
-      }
-      // Fill vid_usage
-      if(set_vid_usage)
-      {
-        for(t1 = 0; t1 < p1; t1++)
-          for(t2 = 0; t2 < p2 + 4; t2++)
-            vid_usage[t2 + x + (t1 + y) * 80] = set_vid_usage - 1;
-      }
-      break;
-    }
-
-    case DE_RADIO:
-    {
-      write_string(str, x + 4, y, DI_NONACTIVE, 0);
-      // Draw boxes
-      for(t1 = 0; t1 < p1; t1++)
-      {
-        if(t1 == ((char *)value)[0])
-         write_string(radio_on, x, y + t1, DI_NONACTIVE, 0);
         else
-          write_string(radio_off, x, y + t1,DI_NONACTIVE, 0);
+        {
+          current_value = (current_value * 10) +
+           (key_char - '0');
+        }
+
+        if(src->mult_five)
+          current_value -= current_value % 5;
+
+        if(current_value < src->lower_limit)
+          current_value = src->lower_limit;
+
+        if(current_value > src->upper_limit)
+          current_value = src->upper_limit;
+
+        *(src->result) = current_value;
+        break;
       }
-      // Highlight current
-      if(active)
+
+      return key;
+    }
+  }
+
+  if(increment_value)
+  {
+    current_value += increment_value;
+
+    if(current_value < src->lower_limit)
+      current_value = src->lower_limit;
+
+    if(current_value > src->upper_limit)
+      current_value = src->upper_limit;
+
+    *(src->result) = current_value;
+  }
+
+  return 0;
+}
+
+int key_list_box(World *mzx_world, dialog *di, element *e,
+ int key)
+{
+  list_box *src = (list_box *)e;
+  int current_choice = *(src->result);
+  int num_choices = src->num_choices;
+  int num_choices_visible = src->num_choices_visible;
+
+  switch(key)
+  {
+    case SDLK_UP:
+    {
+      if(current_choice)
       {
-        color_line(p2 + 4, x, y + ((char *)value)[0], DI_ACTIVE);
-      }
-      // Fill vid_usage
-      if(set_vid_usage)
-      {
-        for(t1 = 0; t1 < p1; t1++)
-          for(t2 = 0; t2 < p2 + 4; t2++)
-            vid_usage[t2 + x + (t1 + y) * 80] = set_vid_usage - 1;
+        if(src->scroll_offset == current_choice)
+          (src->scroll_offset)--;
+        current_choice--;
       }
       break;
     }
 
-    case DE_COLOR:
+    case SDLK_DOWN:
     {
-      write_string(str, x, y, color, 0);
-      t1 = ((int *)value)[0];
-      if((t1 & 256) == 256)
+      if(current_choice < (num_choices - 1))
       {
-        draw_color_box(t1 & 255, 1, x + strlen(str), y);
+        if(current_choice ==
+         (src->scroll_offset + num_choices_visible - 1))
+        {
+          (src->scroll_offset)++;
+        }
+        current_choice++;
+      }
+      break;
+    }
+
+    case SDLK_LEFT:
+    {
+      return SDLK_LEFT;
+    }
+
+    case SDLK_RIGHT:
+    {
+      return SDLK_RIGHT;
+    }
+
+    case SDLK_HOME:
+    {
+      current_choice = 0;
+      src->scroll_offset = 0;
+      break;
+    }
+
+    case SDLK_END:
+    {
+      current_choice = num_choices - 1;
+      src->scroll_offset =
+       num_choices - num_choices_visible;
+      if(src->scroll_offset < 0)
+        src->scroll_offset = 0;
+      break;
+    }
+
+    case SDLK_PAGEUP:
+    {
+      current_choice -= num_choices_visible;
+      src->scroll_offset -= num_choices_visible;
+
+      if(src->scroll_offset < 0)
+      {
+        src->scroll_offset = 0;
+      }
+
+      if(current_choice < 0)
+      {
+        current_choice = 0;
+      }
+      break;
+    }
+
+    case SDLK_PAGEDOWN:
+    {
+      current_choice += num_choices_visible;
+      src->scroll_offset += num_choices_visible;
+
+      if(src->scroll_offset + num_choices_visible >
+       num_choices)
+      {
+        src->scroll_offset =
+         num_choices - num_choices_visible;
+        if(src->scroll_offset < 0)
+          src->scroll_offset = 0;
+      }
+
+      if(current_choice >= num_choices)
+      {
+        current_choice = num_choices - 1;
+      }
+
+      break;
+    }
+
+    case SDLK_SPACE:
+    case SDLK_KP_ENTER:
+    case SDLK_RETURN:
+    {
+      di->return_value = src->return_value;
+      di->done = 1;
+      break;
+    }
+
+    default:
+    {
+      int key_char = get_key(keycode_unicode);
+      if(!get_alt_status(keycode_SDL) && (key_char >= 32))
+      {
+        char *key_buffer = src->key_buffer;
+        char key_position = src->key_position;
+        int last_keypress_time = src->last_keypress_time;
+        int ticks = SDL_GetTicks();
+        int new_choice;
+
+        if(((ticks - last_keypress_time) >= TIME_SUSPEND) ||
+         (key_position == 63))
+        {
+          // Go back to zero
+          key_position = 0;
+        }
+
+        src->last_keypress_time = ticks;
+        key_buffer[key_position] = key_char;
+        key_position++;
+        key_buffer[key_position] = 0;
+        src->key_position = key_position;
+
+        new_choice =
+         find_entry(src->choices, key_buffer, num_choices);
+
+        if(new_choice != -1)
+          current_choice = new_choice;
+
+        if((current_choice < src->scroll_offset) ||
+         (current_choice >= (src->scroll_offset +
+         num_choices_visible)))
+        {
+          src->scroll_offset =
+           current_choice - num_choices_visible / 2;
+
+          if(src->scroll_offset < 0)
+            src->scroll_offset = 0;
+
+          if(src->scroll_offset + num_choices_visible >
+           num_choices)
+          {
+            src->scroll_offset =
+             num_choices - num_choices_visible;
+            if(src->scroll_offset < 0)
+              src->scroll_offset = 0;
+          }
+        }
       }
       else
       {
-        draw_color_box(t1 & 255, 0, x + strlen(str), y);
-      }
-
-      // Fill vid_usage
-      if(set_vid_usage)
-      {
-        t2 = strlen(str) + 3;
-        for(t1 = 0; t1 < t2; t1++)
-          vid_usage[t1 + x + y * 80] = set_vid_usage - 1;
-      }
-      break;
-    }
-
-    case DE_CHAR:
-    {
-      write_string(str, x, y, color, 0);
-      draw_char(((unsigned char *)value)[0], DI_CHAR, x +
-       strlen(str) + 1, y);
-      draw_char(' ', DI_CHAR, x + strlen(str), y);
-      draw_char(' ', DI_CHAR, x + strlen(str) + 2, y);
-      // Fill vid_usage
-      if(set_vid_usage)
-      {
-        t2 = strlen(str) + 3;
-        for(t1 = 0; t1 < t2; t1++)
-          vid_usage[t1 + x + y * 80] = set_vid_usage - 1;
-      }
-      break;
-    }
-
-    case DE_BUTTON:
-    {
-      if(active)
-        color = DI_ACTIVEBUTTON;
-      else
-        color = DI_BUTTON;
-
-      write_string(str, x + 1, y, color, 0);
-      draw_char(' ', color, x, y);
-      draw_char(' ', color, x + strlen(str) + 1, y);
-      // Fill vid_usage
-      if(set_vid_usage)
-      {
-        t2 = strlen(str) + 2;
-        for(t1 = 0; t1 < t2; t1++)
-          vid_usage[t1 + x + y * 80] = set_vid_usage - 1;
-      }
-
-      break;
-    }
-
-    case DE_NUMBER:
-    case DE_FIVE:
-    {
-      t1 = 1;
-      if(type == DE_FIVE) t1 = 5;
-      write_string(str, x, y, color, 0);
-      x += strlen(str);
-      if((p1 == 1) && (p2 < 10) && (t1 == 1))
-      {
-        // Number line
-        for(t1 = 1; t1 <= p2; t1++)
-        {
-          if(t1 == ((int *)value)[0])
-            draw_char(t1 + '0', DI_ACTIVE, x + t1 - 1, y);
-          else
-            draw_char(t1 + '0', DI_NONACTIVE, x + t1 - 1, y);
-        }
-        // Fill vid_usage
-        if(set_vid_usage)
-        {
-          t2 = strlen(str);
-          x -= t2;
-          t2 += p2;
-          for(t1 = 0; t1 < t2; t1++)
-            vid_usage[t1 + x + y * 80] = set_vid_usage - 1;
-        }
-      }
-      else
-      {
-        // Number
-        sprintf(temp, "%d", *((int *)value) * t1);
-        fill_line(7, x, y, 32, DI_NUMERIC);
-        write_string(temp, x + 6 - strlen(temp), y, DI_NUMERIC, 0);
-        // Buttons
-        write_string(num_buttons, x + 7, y, DI_ARROWBUTTON, 0);
-        // Fill vid_usage
-        if(set_vid_usage)
-        {
-          t2 = strlen(str);
-          x -= t2;
-          t2 += 13;
-          for(t1 = 0; t1 < t2; t1++)
-            vid_usage[t1 + x + y * 80] = set_vid_usage - 1;
-        }
-      }
-      break;
-    }
-
-    case DE_LIST:
-    {
-      write_string(str, x , y, color, 0);
-      // Draw in current choice
-      t1 = p2 * (((int *)value)[0] + 1);
-      fill_line(p2 + 1, x, y + 1, 32, DI_LIST);
-      color_string(str + t1, x + 1, y + 1, DI_LIST);
-      // Draw button
-      write_string(list_button, x + p2 + 1, y + 1, DI_ARROWBUTTON, 0);
-      // Fill vid_usage
-      if(set_vid_usage)
-      {
-        for(t1 = 0; t1 <= p2 + 3; t1++)
-        {
-          vid_usage[t1 + x + y * 80] = set_vid_usage - 1;
-          vid_usage[t1 + x + (y + 1) * 80] = set_vid_usage - 1;
-        }
-      }
-      break;
-    }
-
-    case DE_BOARD:
-    {
-      int board_number = *((int *)value);
-      Board *src_board;
-      char board_name[BOARD_NAME_SIZE] = "(none)";
-
-      if(board_number)
-      {
-        if(board_number <= mzx_world->num_boards)
-        {
-          src_board = mzx_world->board_list[board_number];
-          strcpy(board_name, src_board->board_name);
-        }
-        else
-        {
-          strcpy(board_name, "(no board");
-        }
-      }
-
-      write_string(str, x, y, color, 0);
-      fill_line(BOARD_NAME_SIZE + 1, x, y + 1, 32, DI_LIST);
-
-      color_string(board_name, x + 1, y + 1, DI_LIST);
-
-      // Draw button
-      write_string(list_button, x + BOARD_NAME_SIZE + 1, y + 1,
-       DI_ARROWBUTTON, 0);
-      // Fill vid_usage
-      if(set_vid_usage)
-      {
-        for(t1 = 0; t1 <= BOARD_NAME_SIZE + 3; t1++)
-        {
-          vid_usage[t1 + x + y * 80] = set_vid_usage - 1;
-          vid_usage[t1 + x + (y + 1) * 80] = set_vid_usage - 1;
-        }
+        return key;
       }
       break;
     }
   }
+
+  *(src->result) = current_choice;
+
+  return 0;
+}
+
+int key_board_list(World *mzx_world, dialog *di, element *e,
+ int key)
+{
+  board_list *src = (board_list *)e;
+
+  switch(key)
+  {
+    case SDLK_SPACE:
+    case SDLK_KP_ENTER:
+    case SDLK_RETURN:
+    {
+      int current_board =
+       choose_board(mzx_world, *(src->result),
+       src->title, src->board_zero_as_none);
+
+      if(current_board >= 0)
+        *(src->result) = current_board;
+
+      break;
+    }
+
+    default:
+    {
+      return key;
+    }
+  }
+
+  return 0;
+}
+
+int click_input_box(World *mzx_world, dialog *di,
+ element *e, int mouse_button, int mouse_x, int mouse_y,
+ int new_active)
+{
+  input_box *src = (input_box *)e;
+  int question_len = strlen(src->question);
+  int start_x = mouse_x - question_len;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+
+  return intake(mzx_world, src->result, src->max_length, x +
+   question_len, y, DI_INPUT, 2, src->input_flags,
+   &start_x, 0, NULL);
+}
+
+int click_check_box(World *mzx_world, dialog *di,
+ element *e, int mouse_button, int mouse_x, int mouse_y,
+ int new_active)
+{
+  check_box *src = (check_box *)e;
+
+  src->current_choice = mouse_y;
+  src->results[src->current_choice] ^= 1;
+
+  return 0;
+}
+
+int click_radio_button(World *mzx_world, dialog *di,
+ element *e, int mouse_button, int mouse_x, int mouse_y,
+ int new_active)
+{
+  radio_button *src = (radio_button *)e;
+  *(src->result) = mouse_y;
+
+  return 0;
+}
+
+int click_char_box(World *mzx_world, dialog *di,
+ element *e, int mouse_button, int mouse_x, int mouse_y,
+ int new_active)
+{
+  return SDLK_RETURN;
+}
+
+int click_color_box(World *mzx_world, dialog *di,
+ element *e, int mouse_button, int mouse_x, int mouse_y,
+ int new_active)
+{
+  return SDLK_RETURN;
+}
+
+int click_button(World *mzx_world, dialog *di,
+ element *e, int mouse_button, int mouse_x, int mouse_y,
+ int new_active)
+{
+  if(!new_active)
+  {
+    di->done = 1;
+    return SDLK_RETURN;
+  }
+
+  return 0;
+}
+
+int click_number_box(World *mzx_world, dialog *di,
+ element *e, int mouse_button, int mouse_x, int mouse_y,
+ int new_active)
+{
+  number_box *src = (number_box *)e;
+  mouse_x -= strlen(src->question) + 7;
+
+  if((src->lower_limit == 1) &&
+    (src->upper_limit < 10) && (!src->mult_five))
+  {
+    // Select number IF on the number line itself
+    mouse_x -= strlen(src->question);
+    if((mouse_x < src->upper_limit) && (mouse_x >= 0))
+      *(src->result) = mouse_x + 1;
+  }
+  else
+
+  if((mouse_x >= 0) && (mouse_x <= 2))
+  {
+    return SDLK_UP;
+  }
+  else
+
+  if((mouse_x >= 3) && (mouse_y <= 5))
+  {
+    return SDLK_DOWN;
+  }
+
+  return 0;
+}
+
+int click_list_box(World *mzx_world, dialog *di,
+ element *e, int mouse_button, int mouse_x, int mouse_y,
+ int new_active)
+{
+  list_box *src = (list_box *)e;
+  int scroll_offset = src->scroll_offset;
+  int choice_length = src->choice_length;
+  int num_choices = src->num_choices;
+  int num_choices_visible = src->num_choices_visible;
+  int current_in_window = *(src->result) - scroll_offset;
+
+  src->clicked_scrollbar = 0;
+
+  if((num_choices > num_choices_visible) &&
+   (mouse_x == choice_length))
+  {
+    if(mouse_y == 0)
+      return SDLK_UP;
+
+    if(mouse_y == (num_choices_visible - 1))
+      return SDLK_DOWN;
+
+    src->clicked_scrollbar = 1;
+
+    scroll_offset =
+     (mouse_y - 1) *
+     (num_choices + ((num_choices_visible - 2) / 2)) /
+     (num_choices_visible - 2) - (num_choices_visible / 2);
+
+    if(scroll_offset < 0)
+      scroll_offset = 0;
+
+    if(scroll_offset + num_choices_visible >
+     num_choices)
+    {
+      scroll_offset = num_choices - num_choices_visible;
+      if(scroll_offset < 0)
+        scroll_offset = 0;
+    }
+
+    src->scroll_offset = scroll_offset;
+    *(src->result) = scroll_offset + (num_choices_visible / 2);
+  }
+  else
+  {
+    if(src->num_choices)
+    {
+      int offset = (mouse_y - current_in_window);
+      if(offset)
+      {
+        int current_choice = *(src->result) + offset;
+        if(current_choice < src->num_choices)
+          *(src->result) = current_choice;
+      }
+      else
+      {
+        if(!new_active)
+        {
+          di->return_value = src->return_value;
+          di->done = 1;
+        }
+      }
+    }
+  }
+
+  return 0;
+}
+
+int click_board_list(World *mzx_world, dialog *di,
+ element *e, int mouse_button, int mouse_x, int mouse_y,
+ int new_active)
+{
+  return SDLK_RETURN;
+}
+
+int drag_list_box(World *mzx_world, dialog *di,
+ element *e, int mouse_button, int mouse_x, int mouse_y)
+{
+  list_box *src = (list_box *)e;
+
+  if(src->clicked_scrollbar)
+  {
+    if((mouse_y > 0) &&
+     (mouse_y < src->num_choices_visible - 1))
+    {
+      click_list_box(mzx_world, di, e, mouse_button,
+       src->choice_length, mouse_y, 0);
+      src->clicked_scrollbar = 1;
+    }
+  }
+  else
+
+  if((mouse_y >= 0) && (mouse_y < e->height) &&
+   (mouse_x >= 0))
+  {
+    if( ((mouse_x < e->width - 1) &&
+     (mouse_y != *(src->result) - src->scroll_offset)) ||
+     ((mouse_x == e->width - 1) && mouse_button)  )
+    {
+      return click_list_box(mzx_world, di, e, mouse_button,
+       mouse_x, mouse_y, 0);
+    }
+  }
+
+  return 0;
+}
+
+int idle_input_box(World *mzx_world, dialog *di, element *e)
+{
+  input_box *src = (input_box *)e;
+  int x = di->x + e->x;
+  int y = di->y + e->y;
+
+  return intake(mzx_world, src->result, src->max_length, x +
+   strlen(src->question), y, DI_INPUT, 2, src->input_flags,
+   NULL, 0, NULL);
+}
+
+void construct_dialog(dialog *src, char *title, int x, int y,
+ int width, int height, element **elements, int num_elements,
+ int start_element)
+{
+  src->title = title;
+  src->x = x;
+  src->y = y;
+  src->width = width;
+  src->height = height;
+  src->elements = elements;
+  src->num_elements = num_elements;
+  src->sfx_test_for_input = 0;
+  src->pad_space = 0;
+  src->done = 0;
+  src->return_value = 0;
+  src->current_element = start_element;
+  src->idle_function = NULL;
+}
+
+void construct_dialog_ext(dialog *src, char *title, int x, int y,
+ int width, int height, element **elements, int num_elements,
+ int sfx_test_for_input, int pad_space, int start_element,
+ int (* idle_function)(World *mzx_world, dialog *di, int key))
+{
+  src->title = title;
+  src->x = x;
+  src->y = y;
+  src->width = width;
+  src->height = height;
+  src->elements = elements;
+  src->num_elements = num_elements;
+  src->sfx_test_for_input = sfx_test_for_input;
+  src->pad_space = pad_space;
+  src->done = 0;
+  src->return_value = 0;
+  src->current_element = start_element;
+  src->idle_function = idle_function;
+}
+
+void destruct_dialog(dialog *src)
+{
+  int i;
+
+  for(i = 0; i < src->num_elements; i++)
+  {
+    free(src->elements[i]);
+  }
+
+  restore_screen();
+}
+
+void construct_element(element *e, int x, int y,
+ int width, int height,
+ void (* draw_function)(World *mzx_world, dialog *di,
+  element *e, int color, int active),
+ int (* key_function)(World *mzx_world, dialog *di,
+  element *e, int key),
+ int (* click_function)(World *mzx_world, dialog *di,
+  element *e, int mouse_button, int mouse_x, int mouse_y,
+  int new_active),
+ int (* drag_function)(World *mzx_world, dialog *di,
+  element *e, int mouse_button, int mouse_x, int mouse_y),
+ int (* idle_function)(World *mzx_world, dialog *di,
+  element *e))
+{
+  e->x = x;
+  e->y = y;
+  e->width = width;
+  e->height = height;
+  e->draw_function = draw_function;
+  e->key_function = key_function;
+  e->click_function = click_function;
+  e->drag_function = drag_function;
+  e->idle_function = idle_function;
+}
+
+
+element *construct_label(int x, int y, char *text)
+{
+  label *src = (label *)malloc(sizeof(label));
+  src->text = text;
+  construct_element(&(src->e), x, y, strlen(text), 1,
+   draw_label, NULL, NULL, NULL, NULL);
+
+  return (element *)src;
+}
+
+element *construct_box(int x, int y, int width, int height)
+{
+  box *src = (box *)malloc(sizeof(box));
+  construct_element(&(src->e), x, y, width, height,
+   draw_box, NULL, NULL, NULL, NULL);
+
+  return (element *)src;
+}
+
+element *construct_line(int x, int y, align alignment,
+ int length)
+{
+  line *src = (line *)malloc(sizeof(line));
+  int width = 0, height = 0;
+  src->alignment = alignment;
+
+  switch(alignment)
+  {
+    case horizontal:
+    {
+      width = length;
+      height = 1;
+      break;
+    }
+
+    case vertical:
+    {
+      height = length;
+      width = 1;
+      break;
+    }
+  }
+
+  construct_element(&(src->e), x, y, width, height,
+   draw_line, NULL, NULL, NULL, NULL);
+
+  return (element *)src;
+}
+
+element *construct_input_box(int x, int y, char *question,
+ int max_length, int input_flags, char *result)
+{
+  input_box *src = (input_box *)malloc(sizeof(input_box));
+  src->question = question;
+  src->input_flags = input_flags;
+  src->max_length = max_length;
+  src->result = result;
+  construct_element(&(src->e), x, y,
+   max_length + strlen(question) + 1, 1,
+   draw_input_box, key_input_box, click_input_box,
+   NULL, idle_input_box);
+
+  return (element *)src;
+}
+
+element *construct_check_box(int x, int y, char **choices,
+ int num_choices, int max_length, int *results)
+{
+  check_box *src = (check_box *)malloc(sizeof(check_box));
+  src->current_choice = 0;
+  src->choices = choices;
+  src->num_choices = num_choices;
+  src->results = results;
+  src->max_length = max_length;
+  construct_element(&(src->e), x, y, max_length + 4, num_choices,
+   draw_check_box, key_check_box, click_check_box, NULL, NULL);
+
+  return (element *)src;
+}
+
+element *construct_radio_button(int x, int y,
+ char **choices, int num_choices, int max_length, int *result)
+{
+  radio_button *src = (radio_button *)malloc(sizeof(radio_button));
+  src->choices = choices;
+  src->num_choices = num_choices;
+  src->result = result;
+  src->max_length = max_length;
+  construct_element(&(src->e), x, y, max_length + 4,
+   num_choices, draw_radio_button, key_radio_button,
+   click_radio_button, NULL, NULL);
+
+  return (element *)src;
+}
+
+element *construct_char_box(int x, int y, char *question,
+ int allow_char_255, int *result)
+{
+  char_box *src = (char_box *)malloc(sizeof(char_box));
+  src->question = question;
+  src->allow_char_255 = allow_char_255;
+  src->result = result;
+  construct_element(&(src->e), x, y, strlen(question) + 4,
+   1, draw_char_box, key_char_box, click_char_box, NULL, NULL);
+
+  return (element *)src;
+}
+
+element *construct_color_box(int x, int y,
+ char *question, int allow_wildcard, int *result)
+{
+  color_box *src = (color_box *)malloc(sizeof(color_box));
+  src->question = question;
+  src->allow_wildcard = allow_wildcard;
+  src->result = result;
+  construct_element(&(src->e), x, y, strlen(question) + 4,
+   1, draw_color_box_element, key_color_box, click_color_box,
+   NULL, NULL);
+
+  return (element *)src;
+}
+
+element *construct_button(int x, int y, char *label,
+ int return_value)
+{
+  button *src = (button *)malloc(sizeof(button));
+  src->label = label;
+  src->return_value = return_value;
+
+  construct_element(&(src->e), x, y, strlen(src->label) + 2,
+   1, draw_button, key_button, click_button, NULL, NULL);
+
+  return (element *)src;
+}
+
+element *construct_number_box(int x, int y,
+ char *question, int lower_limit, int upper_limit,
+ int mult_five, int *result)
+{
+  number_box *src = (number_box *)malloc(sizeof(number_box));
+  src->question = question;
+  src->lower_limit = lower_limit;
+  src->upper_limit = upper_limit;
+  src->mult_five = mult_five;
+  src->result = result;
+  int width = strlen(question) + 1;
+
+  if((lower_limit == 1) && (upper_limit < 10))
+    width += upper_limit - 1;
+  else
+    width += 13;
+
+  construct_element(&(src->e), x, y, width, 1,
+   draw_number_box, key_number_box, click_number_box, NULL, NULL);
+
+  return (element *)src;
+}
+
+element *construct_list_box(int x, int y, char **choices,
+ int num_choices, int num_choices_visible, int choice_length,
+ int return_value, int *result)
+{
+  list_box *src = (list_box *)malloc(sizeof(list_box));
+  src->choices = choices;
+  src->num_choices = num_choices;
+  src->num_choices_visible = num_choices_visible;
+  src->choice_length = choice_length;
+  src->result = result;
+  src->return_value = return_value;
+  src->scroll_offset = 0;
+  src->key_position = 0;
+  src->last_keypress_time = 0;
+  src->clicked_scrollbar = 0;
+
+  construct_element(&(src->e), x, y, choice_length + 1,
+   num_choices_visible, draw_list_box, key_list_box,
+   click_list_box, drag_list_box, NULL);
+
+  return (element *)src;
+}
+
+element *construct_board_list(int x, int y,
+ char *title, int board_zero_as_none, int *result)
+{
+  board_list *src = (board_list *)malloc(sizeof(board_list));
+  src->title = title;
+  src->board_zero_as_none = board_zero_as_none;
+  src->result = result;
+  construct_element(&(src->e), x, y, BOARD_NAME_SIZE + 3,
+   2, draw_board_list, key_board_list, click_board_list,
+   NULL, NULL);
+
+  return (element *)src;
 }
 
 int add_board(World *mzx_world, int current)
@@ -1933,8 +2833,8 @@ int add_board(World *mzx_world, int current)
   draw_window_box(16, 12, 64, 14, 79, 64, 70, 1, 1);
   write_string("Name for new board:", 18, 13, 78, 0);
   temp_board_str[0] = 0;
-  if(intake(temp_board_str, BOARD_NAME_SIZE - 1,
-   38, 13, 15, 1, 0) == SDLK_ESCAPE)
+  if(intake(mzx_world, temp_board_str, BOARD_NAME_SIZE - 1,
+   38, 13, 15, 1, 0, NULL, 0, NULL) == SDLK_ESCAPE)
   {
     restore_screen();
     return -1;
@@ -1963,10 +2863,11 @@ int choose_board(World *mzx_world, int current, char *title, int board0_none)
   int i;
   char **board_names =
    (char **)malloc((mzx_world->num_boards + 1) * sizeof(char *));
+  int num_boards = mzx_world->num_boards;
 
   // Go through - blank boards get a (no board) marker. t2 keeps track
   // of the number of boards.
-  for(i = 0; i < mzx_world->num_boards; i++)
+  for(i = 0; i < num_boards; i++)
   {
     board_names[i] = (char *)malloc(BOARD_NAME_SIZE);
 
@@ -1998,13 +2899,13 @@ int choose_board(World *mzx_world, int current, char *title, int board0_none)
   current = list_menu(board_names, BOARD_NAME_SIZE, title, current, i, 27);
 
   // New board? (if select no board or add board)
-  if((current == mzx_world->num_boards) ||
+  if((current == num_boards) ||
    (current >= 0) && (mzx_world->board_list[current] == NULL))
   {
     current = add_board(mzx_world, current);
   }
 
-  for(i = 0; i < (mzx_world->num_boards + 1); i++)
+  for(i = 0; i < num_boards + 1; i++)
   {
     free(board_names[i]);
   }
@@ -2014,63 +2915,52 @@ int choose_board(World *mzx_world, int current, char *title, int board0_none)
   return current;
 }
 
-char cd_types[2] = { DE_BUTTON, DE_BUTTON };
-char cd_xs[2] = { 15, 37 };
-char cd_ys[2] = { 2, 2 };
-char *cd_strs[2] = { "OK", "Cancel" };
-int cd_p1s[2] = { 0, 1 };
-dialog c_di =
-{ 10, 9, 69, 13, NULL, 2, cd_types, cd_xs, cd_ys, cd_strs, cd_p1s, NULL, NULL, 0 };
-
 // Shell for run_dialog()
-char confirm(World *mzx_world, char *str)
+int confirm(World *mzx_world, char *str)
 {
-  c_di.title = str;
-  return run_dialog(mzx_world, &c_di, 1, 0, 0);
+  dialog di;
+  element *elements[2];
+  int dialog_result;
+
+  elements[0] = construct_button(15, 2, "OK", 0);
+  elements[1] = construct_button(37, 2, "Cancel", 1);
+  construct_dialog(&di, str, 10, 9, 60, 5, elements,
+   2, 0);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  return dialog_result;
 }
 
-char yn_types[2] = { DE_BUTTON, DE_BUTTON };
-char yn_xs[2] = { 15, 37 };
-char yn_ys[2] = { 2, 2 };
-char *yn_strs[2] = { "Yes", "No" };
-int yn_p1s[2] = { 0, 1 };
-dialog yn_di =
-{ 10, 9, 69, 13, NULL, 2, yn_types, yn_xs, yn_ys, yn_strs, yn_p1s, NULL,
- NULL, 0 };
-
 // Shell for run_dialog()
-char ask_yes_no(World *mzx_world, char *str)
+int ask_yes_no(World *mzx_world, char *str)
 {
-  yn_di.title = str;
-  return run_dialog(mzx_world, &yn_di, 1, 0, 0);
+  dialog di;
+  element *elements[2];
+  int dialog_result;
+
+  elements[0] = construct_button(15, 2, "Yes", 0);
+  elements[1] = construct_button(37, 2, "No", 1);
+  construct_dialog(&di, str, 10, 9, 60, 5, elements,
+   2, 0);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  return dialog_result;
 }
 
-// Sort function for below use in qsort
 int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
 {
   char *dest_str = *((char **)dest_str_ptr);
   char *src_str = *((char **)src_str_ptr);
 
-  // Space is greater if the other is not a space
-  // Space then dot dot is lower if the other is not a dot
-
-  if((*src_str == ' ') && (*dest_str != ' '))
-    return -1;
-
-  if((*dest_str == ' ') && (*src_str != ' '))
+  if(src_str[0] == '.')
     return 1;
 
-  if(!strncmp(src_str, " .. ", 4) && (*dest_str == ' '))
-    return 1;
-
-  if(!strncmp(dest_str, " .. ", 4) && (*src_str == ' '))
+  if(dest_str[0] == '.')
     return -1;
-
-  if((*src_str == ' ') && (*dest_str != ' '))
-    return -1;
-
-  if((*dest_str == ' ') && (*src_str != ' '))
-    return 1;
 
   return strcasecmp(dest_str, src_str);
 }
@@ -2078,8 +2968,215 @@ int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
 // Shell for list_menu() (copies file chosen to ret and returns -1 for ESC)
 // dirs_okay of 1 means drive and directory changing is allowed.
 
-int choose_file(char **wildcards, char *ret, char *title,
- int dirs_okay)
+#define FILESEL_MAX_ELEMENTS  64
+#define FILESEL_BASE_ELEMENTS 7
+#define FILESEL_FILE_LIST     0
+#define FILESEL_DIR_LIST      1
+#define FILESEL_FILENAME      2
+#define FILESEL_OKAY_BUTTON   3
+#define FILESEL_CANCEL_BUTTON 4
+#define FILESEL_FILES_LABEL   5
+#define FILESEL_DIRS_LABEL    6
+
+int file_dialog_function(World *mzx_world, dialog *di, int key)
+{
+  int current_element_num = di->current_element;
+  element *current_element = di->elements[current_element_num];
+
+  switch(current_element_num)
+  {
+    case FILESEL_DIR_LIST:
+    case FILESEL_FILE_LIST:
+    {
+      list_box *src = (list_box *)current_element;
+      input_box *dest =
+       (input_box *)di->elements[FILESEL_FILENAME];
+      element *e = (element *)dest;
+
+      if(src->num_choices)
+      {
+        char *file_name = src->choices[*(src->result)];
+
+        if(get_alt_status(keycode_SDL))
+        {
+          switch(key)
+          {
+            case SDLK_r:
+            {
+              char new_name[512];
+              int width = 29;
+              strcpy(new_name, file_name + 56);
+
+              if(current_element_num == FILESEL_DIR_LIST)
+                width = 14;
+
+              intake(mzx_world, new_name, width,
+               src->e.x + di->x, src->e.y + di->y + *(src->result)
+               - src->scroll_offset, DI_ACTIVELIST, 2, 0, NULL, 0,
+               NULL);
+              rename(file_name + 56, new_name);
+
+              di->done = 1;
+              di->return_value = 5;
+              return 0;
+            }
+
+            case SDLK_d:
+            {
+              di->done = 1;
+              di->return_value = 4;
+              break;
+            }
+
+            case SDLK_n:
+            {
+              di->done = 1;
+              di->return_value = 3;
+              break;
+            }
+          }
+        }
+
+        if(current_element_num == FILESEL_FILE_LIST)
+        {
+          strcpy(dest->result, file_name + 56);
+          e->draw_function(mzx_world, di, e, DI_NONACTIVE, 0);
+        }
+      }
+      else
+      {
+        dest->result[0] = 0;
+        e->draw_function(mzx_world, di, e, DI_NONACTIVE, 0);
+      }
+
+      if(key == SDLK_DELETE)
+      {
+        if(current_element_num == FILESEL_DIR_LIST)
+          di->return_value = 6;
+        else
+          di->return_value = 4;
+
+        di->done = 1;
+      }
+
+      if(key == SDLK_BACKSPACE)
+      {
+        di->done = 1;
+        di->return_value = -2;
+        return 0;
+      }
+
+      break;
+    }
+
+    case FILESEL_FILENAME:
+    {
+      input_box *src = (input_box *)current_element;
+      list_box *dest =
+       (list_box *)di->elements[FILESEL_FILE_LIST];
+      element *e = (element *)dest;
+      int current_choice = *(dest->result);
+      int new_choice =
+       find_entry(dest->choices, src->result, dest->num_choices);
+
+      if(new_choice != -1)
+        current_choice = new_choice;
+
+      if((current_choice < dest->scroll_offset) ||
+       (current_choice >= (dest->scroll_offset +
+       dest->num_choices_visible)))
+      {
+        dest->scroll_offset =
+         current_choice - (dest->num_choices_visible / 2);
+
+        if(dest->scroll_offset < 0)
+          dest->scroll_offset = 0;
+
+        if(dest->scroll_offset + dest->num_choices_visible >
+         dest->num_choices)
+        {
+          dest->scroll_offset =
+           dest->num_choices - dest->num_choices_visible;
+          if(dest->scroll_offset < 0)
+            dest->scroll_offset = 0;
+        }
+      }
+
+      *(dest->result) = current_choice;
+      e->draw_function(mzx_world, di, e, DI_NONACTIVE, 0);
+
+      if(key == SDLK_RETURN)
+      {
+        di->done = 1;
+        di->return_value = 0;
+        return 0;
+      }
+
+      break;
+    }
+  }
+
+  return key;
+}
+
+void remove_files(char *directory_name, int remove_recursively)
+{
+  DIR *current_dir = opendir(directory_name);
+  struct stat file_info;
+  struct dirent *current_file;
+  char current_dir_name[512];
+  char *file_name;
+
+  getcwd(current_dir_name, PATHNAME_SIZE);
+  chdir(directory_name);
+
+  do
+  {
+    current_file = readdir(current_dir);
+    file_name = current_file->d_name;
+
+    if(current_file)
+    {
+      if(stat(file_name, &file_info) >= 0)
+      {
+        if(S_ISDIR(file_info.st_mode))
+        {
+          if(remove_recursively && strcmp(file_name, ".") &&
+           strcmp(file_name, ".."))
+          {
+            remove_files(file_name, 1);
+            rmdir(file_name);
+          }
+        }
+        else
+        {
+          unlink(file_name);
+        }
+      }
+    }
+  } while(current_file);
+
+  closedir(current_dir);
+  chdir(current_dir_name);
+}
+
+int choose_file(World *mzx_world, char **wildcards, char *ret,
+ char *title, int dirs_okay)
+{
+  return file_manager(mzx_world, wildcards, ret, title, dirs_okay,
+   0, NULL, 0, 0, 1);
+}
+
+int new_file(World *mzx_world, char **wildcards, char *ret,
+ char *title, int dirs_okay)
+{
+  return file_manager(mzx_world, wildcards, ret, title, dirs_okay,
+   1, NULL, 0, 0, 0);
+}
+
+int file_manager(World *mzx_world, char **wildcards, char *ret,
+ char *title, int dirs_okay, int allow_new, element **dialog_ext,
+ int num_ext, int ext_height, int allow_dir_change)
 {
   DIR *current_dir;
   struct stat file_info;
@@ -2087,14 +3184,25 @@ int choose_file(char **wildcards, char *ret, char *title,
   char current_dir_name[PATHNAME_SIZE];
   char previous_dir_name[PATHNAME_SIZE];
   int total_filenames_allocated;
-  char **list;
+  int total_dirnames_allocated;
+  char **file_list;
+  char **dir_list;
   int num_files;
+  int num_dirs;
   char *file_name;
   int file_name_length;
   int ext_pos = -1;
-  int chosen;
-  int ret_val = 1;
+  int chosen_file, chosen_dir;
+  int dialog_result = 1;
+  int return_value = 1;
+  dialog di;
+  element *elements[FILESEL_MAX_ELEMENTS];
+  int list_length = 17 - ext_height;
+  int last_element = FILESEL_FILE_LIST;
   int i;
+
+  if(allow_new)
+    last_element = FILESEL_FILENAME;
 
 #ifdef __WIN32__
   int drive_letter_bitmap;
@@ -2102,46 +3210,47 @@ int choose_file(char **wildcards, char *ret, char *title,
 
   getcwd(previous_dir_name, PATHNAME_SIZE);
 
-  while(ret_val == 1)
+  while(return_value == 1)
   {
     total_filenames_allocated = 32;
-    list = (char **)malloc(sizeof(char *) * 32);
-
-    for(i = 0; i < 32; i++)
-    {
-      list[i] = (char *)malloc(60);
-    }
+    total_dirnames_allocated = 32;
+    file_list = (char **)malloc(sizeof(char *) * 32);
+    dir_list = (char **)malloc(sizeof(char *) * 32);
+    memset(file_list, 0, sizeof(char *) * 32);
+    memset(dir_list, 0, sizeof(char *) * 32);
 
     num_files = 0;
+    num_dirs = 0;
+    chosen_file = 0;
+    chosen_dir = 0;
 
     getcwd(current_dir_name, PATHNAME_SIZE);
     current_dir = opendir(current_dir_name);
 
     do
     {
-      memset(list[num_files], ' ', 58);
-      list[num_files][58] = 0;
+      if(current_dir)
+        current_file = readdir(current_dir);
+      else
+        current_file = NULL;
 
-      current_file = readdir(current_dir);
       if(current_file)
       {
         file_name = current_file->d_name;
         file_name_length = strlen(current_file->d_name);
 
-        if(file_name_length > 32)
-          file_name_length = 32;
-
-        if(stat(current_file->d_name, &file_info) >= 0)
+        if((stat(file_name, &file_info) >= 0) &&
+         ((file_name[0] != '.') || (file_name[1] == '.')))
         {
           if(S_ISDIR(file_info.st_mode))
           {
-            if(dirs_okay && strcmp(file_name, "."))
+            if(dirs_okay)
             {
-              memcpy(list[num_files] + 1, file_name, file_name_length);
-              strcpy(list[num_files] + 34, "[subdirectory]");
-              list[num_files][59] = file_name_length;
+              dir_list[num_dirs] =
+               (char *)malloc(file_name_length + 1);
+              strcpy(dir_list[num_dirs], file_name);
 
-              num_files++;
+              num_dirs++;
             }
           }
           else
@@ -2156,23 +3265,37 @@ int choose_file(char **wildcards, char *ret, char *title,
               if(file_name[file_name_length - 3] == '.')
                 ext_pos = file_name_length - 3;
 
+              else
+                ext_pos = 0;
+
               for(i = 0; wildcards[i] != NULL; i++)
               {
                 if(!strcasecmp((file_name + ext_pos),
                  wildcards[i]))
                 {
-                  memcpy(list[num_files], file_name, file_name_length);
-                  // Is it a .mzx? If so try to display title
-                  if(!strcasecmp(file_name + file_name_length - 4, ".mzx"))
+                  file_list[num_files] =
+                   (char *)malloc(56 + file_name_length + 1);
+
+                  if(!strcasecmp(file_name + file_name_length - 4,
+                   ".mzx"))
                   {
                     FILE *mzx_file = fopen(file_name, "rb");
-                    list[num_files][file_name_length] = ' ';
-                    fread(list[num_files] + 34, 1, 24, mzx_file);
-                    list[num_files][58] = 0;
+
+                    file_list[num_files] =
+                     (char *)malloc(56 + file_name_length + 1);
+                    memset(file_list[num_files], ' ', 55);
+                    strcpy(file_list[num_files], file_name);
+                    file_list[num_files][file_name_length] = ' ';
+                    fread(file_list[num_files] + 30, 1, 24, mzx_file);
+                    file_list[num_files][55] = 0;
                     fclose(mzx_file);
                   }
+                  else
+                  {
+                    strcpy(file_list[num_files], file_name);
+                  }
+                  strcpy(file_list[num_files] + 56, file_name);
 
-                  list[num_files][59] = file_name_length;
                   num_files++;
                   break;
                 }
@@ -2183,85 +3306,296 @@ int choose_file(char **wildcards, char *ret, char *title,
 
         if(num_files == total_filenames_allocated)
         {
-          list = (char **)realloc(list, sizeof(char *) *
+          file_list = (char **)realloc(file_list, sizeof(char *) *
            total_filenames_allocated * 2);
-
-          for(i = total_filenames_allocated;
-           i < total_filenames_allocated * 2; i++)
-          {
-            list[i] = (char *)malloc(60);
-          }
-
+          memset(file_list + total_filenames_allocated, 0,
+           sizeof(char *) * total_filenames_allocated);
           total_filenames_allocated *= 2;
+        }
+
+        if(num_dirs == total_dirnames_allocated)
+        {
+          dir_list = (char **)realloc(dir_list, sizeof(char *) *
+           total_dirnames_allocated * 2);
+          memset(dir_list + total_dirnames_allocated, 0,
+           sizeof(char *) * total_dirnames_allocated);
+          total_dirnames_allocated *= 2;
         }
       }
     } while(current_file);
 
-    qsort((void *)list, num_files, sizeof(char *), sort_function);
+    qsort((void *)file_list, num_files, sizeof(char *), sort_function);
+    qsort((void *)dir_list, num_dirs, sizeof(char *), sort_function);
 
 #ifdef __WIN32__
-    drive_letter_bitmap = GetLogicalDrives();
-
-    for(i = 0; i < 32; i++)
+    if(dirs_okay)
     {
-      if(drive_letter_bitmap & (1 << i))
-      {
-        memset(list[num_files], ' ', 58);
-        list[num_files][58] = 0;
-        list[num_files][59] = 3;
-        sprintf(list[num_files], " %c:", 'A' + i);
-        list[num_files][3] = ' ';
-        strcpy(list[num_files] + 34, "[drive]");
-        num_files++;
+      drive_letter_bitmap = GetLogicalDrives();
 
-        if(num_files == total_filenames_allocated)
+      for(i = 0; i < 32; i++)
+      {
+        if(drive_letter_bitmap & (1 << i))
         {
-          list = (char **)realloc(list, sizeof(char *) *
-          total_filenames_allocated * 2);
-    
-          for(i = total_filenames_allocated;
-           i < total_filenames_allocated * 2; i++)
+          dir_list[num_dirs] = (char *)malloc(3);
+          sprintf(dir_list[num_dirs], "%c:", 'A' + i);
+
+          num_dirs++;
+
+          if(num_dirs == total_dirnames_allocated)
           {
-            list[i] = (char *)malloc(60);
+            dir_list = (char **)realloc(dir_list, sizeof(char *) *
+             total_dirnames_allocated * 2);
+            memset(dir_list + total_dirnames_allocated, 0,
+             sizeof(char *) * total_dirnames_allocated);
+            total_dirnames_allocated *= 2;
           }
-  
-          total_filenames_allocated *= 2;
         }
       }
     }
 #endif
 
-    chosen = list_menu(list, 60, title, 0, num_files, 7);
+    closedir(current_dir);
 
-    if(chosen < 0)
-    {
-      closedir(current_dir);
-      chdir(previous_dir_name);
-      ret_val = -1;
-    }
-    else
+    elements[FILESEL_FILE_LIST] =
+     construct_list_box(2, 2, file_list, num_files,
+     list_length, 55, 1, &chosen_file);
+    elements[FILESEL_DIR_LIST] =
+     construct_list_box(59, 2, dir_list, num_dirs,
+     list_length, 15, 2, &chosen_dir);
+    elements[FILESEL_FILENAME] =
+     construct_input_box(2, list_length + 3, "", 55,
+     0, ret);
+    elements[FILESEL_OKAY_BUTTON] =
+     construct_button(60, list_length + 3, "OK", 0);
+    elements[FILESEL_CANCEL_BUTTON] =
+     construct_button(65, list_length + 3, "Cancel", -1);
+    elements[FILESEL_FILES_LABEL] =
+     construct_label(2, 1, current_dir_name);
+    elements[FILESEL_DIRS_LABEL] =
+     construct_label(59, 1, "Directories");
 
-    // Directory or drive
-    if(list[chosen][0] == ' ')
+    if(num_ext)
     {
-      list[chosen][list[chosen][59] + 1] = 0;
-      chdir(list[chosen] + 1);
-      closedir(current_dir);
-      ret_val = 1;
+      memcpy(elements + FILESEL_BASE_ELEMENTS, dialog_ext,
+       sizeof(element *) * num_ext);
     }
-    else
+
+    construct_dialog_ext(&di, title, 2, 1, 76, 23,
+     elements, FILESEL_BASE_ELEMENTS + num_ext, 0, 0,
+     last_element, file_dialog_function);
+
+    dialog_result = run_dialog(mzx_world, &di);
+
+    switch(dialog_result)
     {
-      memcpy(ret, list[chosen], list[chosen][59]);
-      ret[list[chosen][59]] = 0;
-      ret_val = 0;
+      case -2:
+      {
+        if(dirs_okay)
+          chdir("..");
+
+        break;
+      }
+
+      case -1:
+      {
+        return_value = -1;
+        break;
+      }
+
+      case 0:
+      case 1:
+      {
+        int stat_result;
+        char path[512] = { 0 };
+        get_path(ret, path);
+
+        stat_result = stat(ret, &file_info);
+
+        if((stat_result >= 0) && S_ISDIR(file_info.st_mode))
+        {
+          chdir(ret);
+          break;
+        }
+
+        if(allow_new)
+        {
+          if(path[0])
+          {
+            int path_len = strlen(path);
+            chdir(path);
+            memmove(ret, ret + path_len + 1, strlen(ret) - path_len);
+          }
+          else
+
+          if((stat_result >= 0) && (allow_new == 1))
+          {
+            char confirm_string[512];
+            sprintf(confirm_string, "%s already exists, overwrite?", ret);
+            if(!ask_yes_no(mzx_world, confirm_string))
+              return_value = 0;
+          }
+          else
+          {
+            if(ret[0])
+              return_value = 0;
+          }
+        }
+        else
+
+        if(stat_result >= 0)
+        {
+          if(path[0])
+            chdir(path);
+
+          return_value = 0;
+        }
+        else
+        {
+          ret[0] = 0;
+        }
+        break;
+      }
+
+      case 2:
+      {
+        chdir(dir_list[chosen_dir]);
+        break;
+      }
+
+      case 3:
+      {
+        int b_dialog_result;
+        element *b_elements[3];
+        char new_name[512] = { 0 };
+        dialog b_di;
+
+        b_elements[0] = construct_input_box(2, 2,
+         "New directory name: ", 32, 0, new_name);
+        b_elements[1] = construct_button(15, 4, "OK", 0);
+        b_elements[2] = construct_button(37, 4, "Cancel", -1);
+
+        construct_dialog(&b_di, "Create New Directory",
+         11, 8, 57, 7, b_elements, 3, 0);
+
+        b_dialog_result = run_dialog(mzx_world, &b_di);
+        destruct_dialog(&b_di);
+
+        if(!b_dialog_result)
+        {
+          if(stat(new_name, &file_info) < 0)
+          {
+#ifdef __WIN32__
+            mkdir(new_name);
+#else
+            mkdir(new_name, 0777);
+#endif
+          }
+          else
+          {
+            char error_str[512];
+            sprintf(error_str, "%s already exists.", ret);
+            error(error_str, 2, 20, 0x0000);
+          }
+        }
+        break;
+      }
+
+      case 4:
+      {
+        if((stat(ret, &file_info) >= 0) && strcmp(ret, "..") &&
+         strcmp(ret, "."))
+        {
+          char confirm_string[512];
+          sprintf(confirm_string, "Delete %s - are you sure?", ret);
+          if(!confirm(mzx_world, confirm_string))
+          {
+            unlink(ret);
+          }
+        }
+        break;
+      }
+
+      case 5:
+      {
+        break;
+      }
+
+      case 6:
+      {
+        char *file_name = dir_list[chosen_dir];
+        if(strcmp(file_name, ".."))
+        {
+          char confirm_string[512];
+          sprintf(confirm_string, "Delete %s - are you sure?",
+           file_name);
+          if(!confirm(mzx_world, confirm_string))
+          {
+            if(!ask_yes_no(mzx_world,
+             "Delete subdirectories recursively?"))
+            {
+              remove_files(file_name, 1);
+              rmdir(file_name);
+            }
+            else
+            {
+              remove_files(file_name, 0);
+            }
+          }
+        }
+        break;
+      }
     }
+
+    // Hack - don't allow the added elements to be destroyed
+    di.num_elements = FILESEL_BASE_ELEMENTS;
+    last_element = di.current_element;
 
     for(i = 0; i < total_filenames_allocated; i++)
     {
-      free(list[i]);
+      if(file_list[i])
+        free(file_list[i]);
     }
-    free(list);
+    free(file_list);
+
+    for(i = 0; i < total_dirnames_allocated; i++)
+    {
+      if(dir_list[i])
+        free(dir_list[i]);
+    }
+    free(dir_list);
+
+    destruct_dialog(&di);
   }
 
-  return ret_val;
+  // Now we can destroy the additional elements
+  for(i = 0; i < num_ext; i++)
+  {
+    free(dialog_ext[i]);
+  }
+
+  if(return_value == -1)
+  {
+    ret[0] = 0;
+    chdir(previous_dir_name);
+  }
+
+  if(!allow_dir_change)
+  {
+    getcwd(current_dir_name, PATHNAME_SIZE);
+    if(strcmp(previous_dir_name, current_dir_name))
+    {
+      char ret_buffer[512] = { 0 };
+      strcpy(ret_buffer, ret);
+
+#ifdef __WIN32__
+      sprintf(ret, "%s\\%s", current_dir_name, ret_buffer);
+#else
+      sprintf(ret, "%s/%s", current_dir_name, ret_buffer);
+#endif
+
+      chdir(previous_dir_name);
+    }
+  }
+
+  return return_value;
 }

@@ -1,5 +1,4 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 2004 Alistair Strachan <alistair@devzero.co.uk>
  *
@@ -121,7 +120,7 @@ int case5(char *path, char *string)
   DIR *wd;
 
   // reconstruct wd
-  memcpy(newpath, "./", 2);
+  strcpy(newpath, "./");
 
   // copy everything sans last token
   if(dirlen > 0)

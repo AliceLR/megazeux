@@ -1,9 +1,8 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  * Copyright (C) 1999 Charles Goetzman
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -69,5 +68,7 @@ extern int target_d_color;
 extern int dead;
 extern int pal_update;
 extern char *world_ext[2];
+
+extern char door_first_movement[8];
 
 #endif

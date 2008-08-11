@@ -1,8 +1,7 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -25,6 +24,7 @@
 #define __CHAR_ED_H
 
 int char_editor(World *mzx_world);
+int char_editor_ext(World *mzx_world);
 int smzx_char_editor(World *mzx_world);
 void fill_region(char *matrix, int x, int y, int check, int draw);
 void fill_region_smzx(char *matrix, int x, int y, int check, int draw);

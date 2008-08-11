@@ -1,9 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
- * Copyright (C) 2002 Gilead Kutnick - exophase@adelphia.net
+ * Copyright (C) 2002 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -251,7 +248,7 @@ void draw_sprites(World *mzx_world)
               {
                 if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
                 {
-                  draw_char_linear(color, ch, i5);
+                  draw_char_linear_ext(color, ch, i5, 0, 0);
                 }
               }
               i4++;
@@ -289,7 +286,7 @@ void draw_sprites(World *mzx_world)
               {
                 if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
                 {
-                  draw_char_linear(color, ch, i5);
+                  draw_char_linear_ext(color, ch, i5, 0, 0);
                 }
               }
               i4++;
@@ -331,7 +328,7 @@ void draw_sprites(World *mzx_world)
               {
                 if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
                 {
-                  draw_char_linear(dcolor, ch, i5);
+                  draw_char_linear_ext(dcolor, ch, i5, 0, 0);
                 }
               }
               i4++;
@@ -371,7 +368,7 @@ void draw_sprites(World *mzx_world)
               {
                 if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
                 {
-                  draw_char_linear(dcolor, ch, i5);
+                  draw_char_linear_ext(dcolor, ch, i5, 0, 0);
                 }
               }
               i4++;
@@ -535,7 +532,7 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
          (check_sprite->col_width & x_lmask);
         hg = (cur_sprite->col_height & y_gmask) |
          (check_sprite->col_height & y_lmask);
-  
+
         if((unsigned int)mw > wg)
         {
           mw = wg;

@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2002 Gilead Kutnick - exophase@adelphia.net
+ * Copyright (C) 2002 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -29,7 +28,7 @@
 #define MOUSE_REPEAT_START 200
 #define MOUSE_REPEAT_RATE 10
 
-#define UPDATE_DELAY 5
+#define UPDATE_DELAY 15
 
 #define KEY_REPEAT_STACK_SIZE 32
 
@@ -48,11 +47,14 @@ typedef struct
   Uint32 last_keypress_time;
   Uint32 mouse_x;
   Uint32 mouse_y;
+  Uint32 real_mouse_x;
+  Uint32 real_mouse_y;
   Uint32 mouse_moved;
   Uint32 last_mouse_button;
   Uint32 last_mouse_repeat;
   Uint32 last_mouse_repeat_state;
   Uint32 last_mouse_time;
+  Sint32 mouse_drag_state;
   Uint32 mouse_button_state;
   Uint32 caps_status;
   Uint32 unfocus_pause;
@@ -61,6 +63,8 @@ typedef struct
   SDLKey joystick_button_map[16][256];
   SDLKey joystick_axis_map[16][16][2];
   Uint32 last_axis[16][16];
+
+  Uint32 last_update_time;
 } input_status;
 
 typedef enum
@@ -81,13 +85,17 @@ void force_last_key(keycode_type type, int val);
 Uint32 get_key_status(keycode_type type, Uint32 index);
 Uint32 get_mouse_movement(int *x, int *y);
 void get_mouse_position(int *x, int *y);
+void get_real_mouse_position(int *x, int *y);
 Uint32 get_mouse_press();
+Uint32 get_mouse_press_ext();
 Uint32 get_mouse_status();
+Uint32 get_mouse_status_ext();
 void warp_mouse(Uint32 x, Uint32 y);
 void warp_mouse_x(Uint32 x);
 void warp_mouse_y(Uint32 y);
 Uint32 get_mouse_x();
 Uint32 get_mouse_y();
+Uint32 get_mouse_drag();
 Uint32 convert_SDL_xt(SDLKey key);
 SDLKey convert_xt_SDL(Uint32 key, SDLKey *second);
 Uint32 get_last_key_released(keycode_type type);

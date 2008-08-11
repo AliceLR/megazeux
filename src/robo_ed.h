@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick - exophase@adelphia.net
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -105,7 +104,7 @@ void paste_buffer(robot_state *rstate);
 void copy_block_to_buffer(robot_state *rstate);
 void clear_block(robot_state *rstate);
 void export_block(robot_state *rstate, int region_default);
-void import_block(robot_state *rstate);
+void import_block(World *mzx_world, robot_state *rstate);
 void edit_settings(World *mzx_world);
 void goto_line(robot_state *rstate, int line);
 void block_action(robot_state *rstate);

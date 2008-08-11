@@ -1,8 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -285,6 +283,9 @@ void fill_area(World *mzx_world, int id, int color, int param,
   }
   else
   {
+    if(id == 127)
+      return;
+
     id_check = src_board->level_id;
     param_check = src_board->level_param;
     color_check = src_board->level_color;

@@ -36,6 +36,7 @@ if [ "$ARCH" = "win32" -o "$ARCH" = "macos" ]; then
 	echo "#define MZX_BLANK_CHR \"mzx_blank.chr\"" >> src/config.h
 	echo "#define MZX_SMZX_CHR \"mzx_smzx.chr\"" >> src/config.h
 	echo "#define MZX_ASCII_CHR \"mzx_ascii.chr\"" >> src/config.h
+	echo "#define MZX_EDIT_CHR \"mzx_edit.chr\"" >> src/config.h
 	echo "#define SMZX_PAL \"smzx.pal\"" >> src/config.h
 	echo "#define MZX_HELP_FIL \"mzx_help.fil\"" >> src/config.h
 	echo "#define CONFIG_TXT \"config.txt\"" >> src/config.h
@@ -46,9 +47,23 @@ if [ "$ARCH" = "linux" ]; then
 	echo "#define MZX_BLANK_CHR \"$PREFIX/share/megazeux/mzx_blank.chr\"" >> src/config.h
 	echo "#define MZX_SMZX_CHR \"$PREFIX/share/megazeux/mzx_smzx.chr\"" >> src/config.h
 	echo "#define MZX_ASCII_CHR \"$PREFIX/share/megazeux/mzx_ascii.chr\"" >> src/config.h
+	echo "#define MZX_EDIT_CHR \"$PREFIX/share/megazeux/mzx_edit.chr\"" >> src/config.h
 	echo "#define SMZX_PAL \"$PREFIX/share/megazeux/smzx.pal\"" >> src/config.h
 	echo "#define MZX_HELP_FIL \"$PREFIX/share/megazeux/mzx_help.fil\"" >> src/config.h
 	echo "#define CONFIG_TXT \"/etc/megazeux-config\"" >> src/config.h
+
+	echo "TARGET=`grep TARGET Makefile.in | cut -d ' ' -f 6`" \
+		>> Makefile.platform
+fi
+
+if [ "$ARCH" != "win32" ]; then
+	# try to run X
+	X -version >/dev/null 2>&1
+
+	# X queried successfully
+	if [ "$?" = "0" ]; then
+		echo "#define CONFIG_X11" >> src/config.h
+	fi
 fi
 
 echo "All done!"

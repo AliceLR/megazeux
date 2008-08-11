@@ -1,11 +1,9 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  * Copyright (C) 1999 Charles Goetzman
  * Copyright (C) 2002 B.D.A. (Koji) - Koji_Takeo@worldmailer.com
- * Copyright (C) 2002 Gilead Kutnick - exophase@adelphia.net
+ * Copyright (C) 2002 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -44,32 +42,22 @@
 #include <time.h>
 #include <unistd.h>
 
-#define SAVE_INDIVIDUAL
-
-char *reg_exit_mesg =
-  "Thank you for playing MegaZeux.\n\r"
-  "Read the files help.txt, megazeux.doc and readme.1st if you need help.\n\n\r"
-  "MegaZeux, by Greg Janson\n\r"
-  "Additional contributors:\n\r"
-  "\tSpider124, CapnKev, MenTaLguY, JZig, Akwende, Koji, Exophase\n\n\r"
-  "Check the whatsnew file for new additions.\n\n\r"
-  "Check http://www.digitalmzx.net/ for MZX source and binary distributions.\n\r$";
-
 int main(int argc, char **argv)
 {
-  int i;
   World mzx_world;
-
-#if defined(__WIN32__) && defined(DEBUG)
-  freopen("CON", "wb", stdout);
-#endif
 
   memset(&mzx_world, 0, sizeof(World));
   default_config(&(mzx_world.conf));
   set_config_from_file(&(mzx_world.conf), CONFIG_TXT);
   set_config_from_command_line(&(mzx_world.conf), argc, argv);
 
+#if defined(__WIN32__) && defined(DEBUG)
+  freopen("CON", "wb", stdout);
+#endif
+
   counter_fsg();
+
+  int i;
 
 #ifdef DEBUG
   SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK |
@@ -82,27 +70,24 @@ int main(int argc, char **argv)
 
   initialize_joysticks();
 
+  set_mouse_mul(8, 14);
   warp_mouse(39, 12);
 
   // Setup directory strings
   // Get megazeux directory
 
-  strcpy(help_file, argv[0]);
+  getcwd(help_file, PATHNAME_SIZE);
 
-  // Chop at last backslash
-  for(i = strlen(help_file); i >= 0; i--)
-  {
-    if(help_file[i] == '\\')
-      break;
-  }
-
-  help_file[i + 1] = 0;
+#ifdef __WIN32__
+  strcat(help_file, "\\");
+#else
+  strcat(help_file, "/");
+#endif
 
   strcat(help_file, MZX_HELP_FIL);
+
   // Get current directory and drive (form- C:\DIR\SUBDIR)
   getcwd(current_dir, PATHNAME_SIZE);
-  strcpy(megazeux_dir, current_dir);
-  megazeux_drive = current_drive;
 
   strcpy(curr_file, mzx_world.conf.startup_file);
   strcpy(curr_sav, mzx_world.conf.default_save_name);
@@ -110,6 +95,7 @@ int main(int argc, char **argv)
   set_sound_volume(mzx_world.conf.sam_volume);
   set_music_on(mzx_world.conf.music_on);
   set_sfx_on(mzx_world.conf.pc_speaker_on);
+  set_sfx_volume(mzx_world.conf.pc_speaker_volume);
   mzx_world.mzx_speed = mzx_world.conf.mzx_speed;
 
   memcpy(macros, mzx_world.conf.default_macros, 5 * 64);

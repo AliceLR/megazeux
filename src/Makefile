@@ -1,8 +1,15 @@
 #
 # core MegaZeux makefile
 #
-include ../Makefile.platform
 include ../Makefile.in
+include ../Makefile.platform
+
+# MZX requires some additional flags
+CXXFLAGS += -ffast-math -funsigned-char -DMZX_VERSION=\"${VERSTRING}\"
+
+# standard MZX includes
+INCLUDES  = -I${PREFIX}/include -I../${MODPLUG} -I../${GDM2S3M} \
+            -I../${MODPLUG}/libmodplug -I${PREFIX}/include/SDL
 
 OBJS      = main.o graphics.o window.o hexchar.o event.o         \
             error.o helpsys.o world.o board.o robot.o idput.o    \
@@ -13,8 +20,8 @@ OBJS      = main.o graphics.o window.o hexchar.o event.o         \
             robo_ed.o configure.o fsafeopen.o macro.o
 
 MZX       = ../${TARGET}
-            
-all:	mzx
+
+subdir:	mzx
 
 ifdef DEBUG
 mzx:	${OBJS}

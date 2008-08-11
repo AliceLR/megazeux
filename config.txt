@@ -83,6 +83,9 @@
 # Volume samples play at
 #sample_volume = 8
 
+# Volume PC speaker SFX play at
+#pc_speaker_volume = 8
+
 
 ### Game options ###
 
@@ -199,7 +202,7 @@
 
 # How many backups to be made. Set to zero to disable backups.
 
-#backup_count = 0
+#backup_count = 3
 
 # How often (in seconds) backups should be made
 
@@ -252,4 +255,9 @@
 
 #pause_on_unfocus = 0
 
-include Cmacro.cnf
+# Set to 0 if you want input boxes and strings in the robot editor
+# to use the game set for characters 32-127, as opposed to the protected
+# GUI set.
+
+#mask_midchars = 1
+

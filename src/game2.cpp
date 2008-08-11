@@ -1,9 +1,7 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -1747,7 +1745,7 @@ void update_board(World *mzx_world)
     {
       current_id = level_id[level_offset];
       if((current_id == 123) || (current_id == 124))
-      { 
+      {
         current_param = level_param[level_offset];
         // May change the source board (with swap world or load game)
         run_robot(mzx_world, -current_param, x, y);

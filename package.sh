@@ -21,7 +21,7 @@ fi
 # build deps below.
 #
 BINARY_DEPS="smzx.pal mzx_ascii.chr mzx_blank.chr mzx_default.chr \
-             mzx_help.fil mzx_smzx.chr config.txt"
+             mzx_help.fil mzx_smzx.chr mzx_edit.chr config.txt"
 
 #
 # Documents that the binary zip should contain (pathname will be stored too).
@@ -48,7 +48,7 @@ SUBDIRS="arch contrib docs"
 # What we actually care about; the complete sources to MegaZeux. Try to
 # extract crap Exo's left in the wrong place. Feel free to update this.
 #
-SRC="src/*.cpp src/*.h src/makefile"
+SRC="src/*.cpp src/*.h src/Makefile"
 
 echo Generating sources in $TARGET and binary package with $TARGET.exe..
 
@@ -67,7 +67,14 @@ mkdir -p dist/$TARGET &&
 mkdir -p dist/$TARGET/src &&
 cp -pv $BINARY_DEPS $BUILD_DEPS dist/$TARGET &&
 cp -pvr $SUBDIRS dist/$TARGET &&
-cp -pv $SRC dist/$TARGET/src
+cp -pv $SRC dist/$TARGET/src &&
+
+# hack for gdm2s3m & libmodplug
+rm -f dist/$TARGET/contrib/gdm2s3m/src/{*.a,*.o} &&
+rm -f dist/$TARGET/contrib/libmodplug/src/{*.a,*.o} &&
+
+# hack for "dist" makefile
+cp dist/$TARGET/arch/Makefile.dist dist/$TARGET/Makefile.platform
 
 if [ "$?" != "0" ]; then
 	echo Some error occured during source build, aborted.
@@ -79,7 +86,7 @@ rm -f dist/$TARGET/src/config.h
 echo Creating source tar ${TARGET}src.tar.gz..
 
 cd dist
-tar -zcvf ${TARGET}src.tar.gz $TARGET
+tar --exclude CVS -jcvf ${TARGET}src.tar.bz2 $TARGET
 cd ..
 
 if [ "$?" != "0" ]; then
@@ -90,6 +97,12 @@ fi
 rm -rf dist/$TARGET
 
 echo Built source distribution successfully!
+
+
+# no binary package is required
+if [ "$1" != "-b" ]; then
+	exit 0
+fi
 
 #
 # Do binary package.

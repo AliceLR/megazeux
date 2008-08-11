@@ -2,11 +2,27 @@
 # linux makefile generics
 #
 
+all: subdir
+
 # location of strip (must be defined)
 STRIP     = strip --strip-unneeded
 
-# standard linker includes
-INCLUDES  = -I${PREFIX}/include -I${PREFIX}/include/SDL
-
 # standard libraries
-LIBS      = -L${PREFIX}/lib -lSDL -lpthread
+LIBS      = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
+            -L${PREFIX}/lib -lSDL -lpthread -lX11
+
+# linux os specific install target
+install:
+	mkdir -p ${PREFIX}/share/megazeux && \
+	chown root:root ${PREFIX}/share/megazeux && \
+	chmod 0755 ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 mzx_default.chr ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 mzx_blank.chr ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 mzx_smzx.chr ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 mzx_ascii.chr ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 mzx_edit.chr ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 smzx.pal ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 mzx_help.fil ${PREFIX}/share/megazeux && \
+	install -o root -m 0644 config.txt /etc/megazeux-config && \
+	install -o root -m 0755 ${TARGET} ${PREFIX}/bin && \
+	ln -sf ${TARGET} ${PREFIX}/bin/megazeux

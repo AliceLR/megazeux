@@ -1,8 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,6 +25,6 @@
 
 void sfx_edit(World *mzx_world);
 
-extern char sfx_names[NUM_SFX * 10];
+extern char *sfx_names[NUM_SFX];
 
 #endif

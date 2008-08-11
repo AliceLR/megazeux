@@ -4,24 +4,32 @@
 CC        = gcc
 CXX       = g++
 
-# default target name
-TARGET    = mzx280g
-VERSION   = 2.80g
+# path to gdm2s3m sources
+GDM2S3M   = contrib/gdm2s3m/src
+MODPLUG   = contrib/libmodplug/src
 
-ifdef DEBUG
-# debug C++ flags
-CXXFLAGS  = -g -funsigned-char -Wall -DMZX_VERSION=\"${VERSION}\" -DDEBUG
+# default target name
+TARGET    = mzx280h
+VERSION   = 2.80h
+
+ifneq ("${DATE}", "0")
+VERSTRING = ${VERSION}\ \(`date +%Y%m%d`\)
 else
-# optimised C++ flags
-CXXFLAGS  = -O2 -funsigned-char -ffast-math -Wall -DMZX_VERSION=\"${VERSION}\"
+VERSTRING = ${VERSION}
 endif
 
-CXXFLAGS += -I../contrib/libmodplug/src -I../contrib/libmodplug/src/include
-CXXFLAGS += -I../contrib/gdm2s3m/src
-LIBS     += ../contrib/libmodplug/src/libmodplug.a
-LIBS     += ../contrib/gdm2s3m/src/libgdm2s3m.a
+ifdef DEBUG
+CFLAGS    = -g -Wall -DDEBUG
+CXXFLAGS  = -g -Wall -DDEBUG
+else
+CFLAGS   += -O2 -Wall
+CXXFLAGS += -O2 -Wall
+endif
 
-.SUFFIXES: .cpp
+.SUFFIXES: .cpp .c
 
 %.o: %.cpp
 	${CXX} ${CXXFLAGS} ${INCLUDES} -c $<
+
+%.o: %.c
+	${CC} ${CFLAGS} ${INCLUDES} -c $<

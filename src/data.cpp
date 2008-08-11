@@ -1,9 +1,8 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
- * Copyright (C) 2004 B.D.A - Gilead Kutnick
+ * Copyright (C) 2004 B.D.A
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -28,15 +27,15 @@
 // Some globals that still lurk.. should be moved to other places.
 
 // Current MZX file information
-char curr_file[FILENAME_SIZE] = "CAVERNS.MZX";
+char curr_file[512] = "CAVERNS.MZX";
 // Current SAVE file
-char curr_sav[FILENAME_SIZE] = "SAVED.SAV";
+char curr_sav[512] = "SAVED.SAV";
 char help_file[PATHNAME_SIZE];                  // Drive + Path + Filename
 char megazeux_dir[PATHNAME_SIZE];               // Directory started in
 char current_dir[PATHNAME_SIZE];                // Current directory
 unsigned char megazeux_drive = 2;               // Startup drive (0=A...)
 unsigned char current_drive = 2;                // Current drive (0=A...)
-char quicksave_file[FILENAME_SIZE];             // Current quicksave filename
+char quicksave_file[512];                       // Current quicksave filename
 
 // Some global world values that haven't been removed yet.
 

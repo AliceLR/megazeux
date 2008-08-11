@@ -1,8 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -26,6 +24,9 @@
 
 #define MAX_BOARD_SIZE 16 * 1024 * 1024
 
+#include "window.h"
+
+void set_confirm_buttons(element **elements);
 void status_counter_info(World *mzx_world);
 void board_exits(World *mzx_world);
 void size_pos(World *mzx_world);

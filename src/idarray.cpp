@@ -1,9 +1,7 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -34,6 +32,7 @@ void id_place(World *mzx_world, int array_x, int array_y, char id, char color,
 {
   Board *src_board = mzx_world->current_board;
   // Calculate offset
+
   int offset = (array_y * src_board->board_width) + array_x;
   offs_place_id(mzx_world, offset, id, color, param);
 }
@@ -103,6 +102,7 @@ void id_remove_top(World *mzx_world, int array_x, int array_y)
 {
   Board *current_board = mzx_world->current_board;
   int offset = (array_y * current_board->board_width) + array_x;
+
   offs_remove_id(mzx_world, offset);
 }
 

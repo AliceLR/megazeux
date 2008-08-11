@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2004 madbrain
  *
  * This program is free software; you can redistribute it and/or
@@ -29,8 +28,8 @@
 
 #include "audio.h"
 #include "modplug.h"
-#include "libmodplug/stdafx.h"
-#include "libmodplug/sndfile.h"
+#include "stdafx.h"
+#include "sndfile.h"
 #include "SDL.h"
 #include "sfx.h"
 #include "data.h"
@@ -62,9 +61,13 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
   Sint32 cur_sample;
   int sample_duration, end_duration;
   int increment_value, increment_buffer;
+  int sfx_scale = audio.sfx_volume * 1024;
+  int sfx_scale_half = sfx_scale / 2;
 
   if(audio.mod_playing && audio.music_on)
   {
+    memset(audio.mod_buffer, -1, len / 2);
+
     int read_len =
      ModPlug_Read(audio.current_mod, audio.mod_buffer, len);
 
@@ -113,7 +116,8 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 
     for(i = 0; i < sample_duration; i++)
     {
-      cur_sample = (Uint32)((increment_buffer & 0x80000000) >> 18) - 4096;
+      cur_sample = (Uint32)((increment_buffer & 0x80000000) >> 31) *
+       sfx_scale - sfx_scale_half;
       *mix_dest_ptr += cur_sample;
       *(mix_dest_ptr + 1) += cur_sample;
       increment_buffer += increment_value;
@@ -156,7 +160,8 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 
       for(i = 0; i < sample_duration; i++)
       {
-        cur_sample = (Uint32)((increment_buffer & 0x80000000) >> 18) - 4096;
+        cur_sample = (Uint32)((increment_buffer & 0x80000000) >> 31) *
+         sfx_scale - sfx_scale_half;
         *mix_dest_ptr += cur_sample;
         *(mix_dest_ptr + 1) += cur_sample;
         increment_buffer += increment_value;
@@ -402,6 +407,8 @@ void play_sample(int freq, char *filename)
 
     if(sample_loaded)
     {
+      // These shouldn't repeat
+      sample_loaded->mSoundFile.SetRepeatCount(0);
       // A little hack to modify the pitch
       sample_loaded->mSoundFile.Ins[1].nC4Speed = (freq_conversion / freq) / 2;
       sample_loaded->mSoundFile.Ins[2].nC4Speed = (freq_conversion / freq) / 2;
@@ -625,6 +632,11 @@ int get_sound_volume()
   return audio.sound_volume;
 }
 
+int get_sfx_volume()
+{
+  return audio.sfx_volume;
+}
+
 void set_music_volume(int volume)
 {
   audio.music_volume = volume;
@@ -634,4 +646,10 @@ void set_sound_volume(int volume)
 {
   audio.sound_volume = volume;
 }
+
+void set_sfx_volume(int volume)
+{
+  audio.sfx_volume = volume;
+}
+
 

@@ -1,8 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -83,7 +81,8 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
       where[pos + t1] = 0;
       strcpy(line, where + pos);
       where[pos + t1] = '\n';
-      key = intake(line, 64, 8, 12, scroll_base_color, 2, 0, 0, &currx);
+      key = intake(mzx_world, line, 64, 8, 12, scroll_base_color,
+       2, 0, &currx, 0, NULL);
       // Modify scroll to hold new line (give errors here)
       t2 = strlen(line); // Get length of NEW line
       // Resize and move
@@ -172,7 +171,8 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
           reallocate_scroll(scroll, t3 + 1);
           where = scroll->mesg;
           // Move all at pos + currx up a space
-          memmove(where + pos + currx + 1, where + pos + currx, t3 - pos - currx);
+          memmove(where + pos + currx + 1, where + pos + currx,
+           t3 - pos - currx);
           // Insert a \n
           where[pos + currx] = '\n';
           // Change pos and currx
@@ -348,7 +348,9 @@ void scroll_frame(World *mzx_world, Scroll *scroll, int pos)
     // At end of current. If next is a 0, don't show nuthin'.
     pos++;
     if(where[pos])
+    {
       write_line(where + pos, 8, t1, scroll_base_color, 1);
+    }
     // Next line...
   }
 }
@@ -395,8 +397,8 @@ void scroll_edging(World *mzx_world, int type)
   // Write key reminders
   if(type == 2)
   {
-    write_string(": Move cursor   Alt+C: Character   Esc: Done editing",
-     13, 20, scroll_corner_color, 0);
+    write_string(": Move cursor   Alt+C: Character "
+     "  Esc: Done editing", 13, 20, scroll_corner_color, 0);
   }
   else
 
@@ -409,15 +411,17 @@ void scroll_edging(World *mzx_world, int type)
 
   if(type == 3)
   {
-    write_string(":Scroll text  Esc:Exit help  Enter:Select  Alt+P:Print",
-     13, 20, scroll_corner_color, 0);
-    write_string("F1:Help on Help  Alt+F1:Table of Contents",
-     20, 21, scroll_corner_color, 0);
+    write_string(":Scroll text  Esc:Exit help"
+     "  Enter:Select  Alt+P:Print", 13, 20,
+     scroll_corner_color, 0);
+    write_string("F1:Help on Help "
+     " Alt+F1:Table of Contents", 20, 21,
+     scroll_corner_color, 0);
   }
   else
   {
-    write_string(":Scroll text  Esc:Exit  Enter:Select", 21, 20,
-     scroll_corner_color, 0);
+    write_string(":Scroll text  Esc:Exit "
+     "  Enter:Select", 21, 20, scroll_corner_color, 0);
   }
   update_screen();
 }

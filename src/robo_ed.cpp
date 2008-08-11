@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick - exophase@adelphia.net
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -41,6 +40,17 @@
 #include "configure.h"
 #include "math.h"
 #include "delay.h"
+#include "config.h"
+
+#ifdef __WIN32__
+#include <windows.h>
+#endif
+
+#ifdef CONFIG_X11
+#include <X11/X.h>
+#include <limits.h>
+#include "SDL_syswm.h"
+#endif
 
 #define combine_colors(a, b)  \
   (a) | (b << 4)              \
@@ -92,13 +102,14 @@ const int max_size = 65535;
 
 char **copy_buffer = NULL;
 int copy_buffer_lines;
+int copy_buffer_total_length;
 
 char macros[5][64];
 
 char search_string[256];
 char replace_string[256];
-char wrap_option[1] = { 1 };
-char case_option[1] = { 0 };
+int wrap_option = 1;
+int case_option = 0;
 int last_find_option = -1;
 
 void robot_editor(World *mzx_world, Robot *cur_robot)
@@ -123,8 +134,6 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
   robot_line *draw_rline;
   robot_line *next_line;
   int mark_current_line;
-  int def_palette = mzx_world->conf.redit_dpalette;
-  char previous_palette[16][3];
   char text_buffer[512], error_buffer[512];
   int current_line_color;
   robot_state rstate;
@@ -156,13 +165,6 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
   base.line_bytecode_length = -1;
 
   current_line_color = combine_colors(rstate.ccodes[0], bg_color);
-
-  if(def_palette)
-  {
-    save_palette_mem(previous_palette, 16);
-    default_palette();
-    update_palette();
-  }
 
   // Disassemble robots into lines
   do
@@ -380,15 +382,15 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
     if(mark_current_line)
     {
       draw_char(bg_char, mark_color, 1, rstate.scr_line_middle);
-      key = intake(rstate.command_buffer, 240, 2,
-       rstate.scr_line_middle, mark_color, 2, 0, 0, &rstate.current_x,
+      key = intake(mzx_world, rstate.command_buffer, 240, 2,
+       rstate.scr_line_middle, mark_color, 2, 0, &rstate.current_x,
        1, rstate.active_macro);
     }
     else
     {
       draw_char(bg_char, bg_color_solid, 1, rstate.scr_line_middle);
-      key = intake(rstate.command_buffer, 240, 2,
-       rstate.scr_line_middle, current_line_color, 2, 0, 0,
+      key = intake(mzx_world, rstate.command_buffer, 240, 2,
+       rstate.scr_line_middle, current_line_color, 2, 0,
        &rstate.current_x, 1, rstate.active_macro);
     }
 
@@ -497,12 +499,6 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       {
         int new_color;
 
-        if(def_palette)
-        {
-          load_palette_mem(previous_palette, 16);
-          update_palette();
-        }
-
         new_color = color_selection(last_color, 1);
         if(new_color >= 0)
         {
@@ -510,12 +506,6 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
           last_color = new_color;
           print_color(new_color, color_buffer);
           insert_string(rstate.command_buffer, color_buffer, &rstate.current_x);
-        }
-
-        if(def_palette)
-        {
-          default_palette();
-          update_palette();
         }
 
         break;
@@ -583,10 +573,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         char char_string_buffer[64];
         char *char_string_buffer_position = char_string_buffer;
 
-        if(!get_screen_mode())
-          char_edited = char_editor(mzx_world);
-        else
-          char_edited = smzx_char_editor(mzx_world);
+        char_edited = char_editor(mzx_world);
 
         ec_read_char(char_edited, char_buffer);
 
@@ -741,7 +728,8 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
            EC_DEBUG_BOX_CORNER, 1, 1);
           write_string("Goto line number:", 20, 13, EC_DEBUG_LABEL, 0);
 
-          if(intake(line_number, 7, 38, 13, 15, 1, 0) != SDLK_ESCAPE)
+          if(intake(mzx_world, line_number, 7, 38, 13, 15, 1, 0,
+           NULL, 0, NULL) != SDLK_ESCAPE)
           {
             int line = strtol(line_number, NULL, 10);
             goto_line(&rstate, line);
@@ -846,7 +834,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       case SDLK_p:
       case SDLK_INSERT:
       {
-        if(get_alt_status(keycode_SDL) && copy_buffer)
+        if(get_alt_status(keycode_SDL))
         {
           paste_buffer(&rstate);
         }
@@ -858,7 +846,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       {
         if(get_alt_status(keycode_SDL))
         {
-          import_block(&rstate);
+          import_block(mzx_world, &rstate);
         }
         else
 
@@ -950,8 +938,8 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
             {
               // Find next
               int l_pos;
-              int l_num = find_string(&rstate, search_string, wrap_option[0],
-               &l_pos, case_option[0]);
+              int l_num = find_string(&rstate, search_string, wrap_option,
+               &l_pos, case_option);
 
               if(l_num != -1)
               {
@@ -966,8 +954,8 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
             {
               // Find and replace next
               int l_pos;
-              int l_num = find_string(&rstate, search_string, wrap_option[0],
-               &l_pos, case_option[0]);
+              int l_num = find_string(&rstate, search_string, wrap_option,
+               &l_pos, case_option);
 
               if(l_num != -1)
               {
@@ -996,7 +984,8 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
            EC_DEBUG_BOX_CORNER, 1, 1);
           write_string("Configure macro:", 17, 12, EC_DEBUG_LABEL, 0);
 
-          if(intake(macro_line, 29, 34, 12, 15, 1, 0) != SDLK_ESCAPE)
+          if(intake(mzx_world, macro_line, 29, 34, 12, 15, 1, 0, NULL,
+           0, NULL) != SDLK_ESCAPE)
           {
             int next;
             restore_screen();
@@ -1073,12 +1062,6 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
     cur_robot->label_list = cache_robot_labels(cur_robot, &(cur_robot->num_labels));
   }
 
-  if(def_palette)
-  {
-    load_palette_mem(previous_palette, 16);
-    update_palette();
-  }
-
   restore_screen();
 }
 
@@ -1140,7 +1123,9 @@ void display_robot_line(robot_state *rstate, robot_line *current_rline,
   char temp_buffer[512];
   char temp_char;
   char *line_pos = current_rline->line_text;
+  int chars_offset = 0;
   int arg_length;
+  int use_mask;
 
   if(current_rline->line_text[0] != 0)
   {
@@ -1154,16 +1139,19 @@ void display_robot_line(robot_state *rstate, robot_line *current_rline,
       {
         temp_char = current_rline->line_text[76];
         current_rline->line_text[76] = 0;
-        write_string(current_rline->line_text, x, y, current_color, 0);
+        write_string_mask(current_rline->line_text, x,
+         y, current_color, 0);
         current_rline->line_text[76] = temp_char;
       }
       else
       {
-        write_string(current_rline->line_text, x, y, current_color, 0);
+        write_string_mask(current_rline->line_text, x,
+         y, current_color, 0);
       }
     }
     else
     {
+      use_mask = 0;
       arg_length = 0;
 
       if(!color_code)
@@ -1195,6 +1183,8 @@ void display_robot_line(robot_state *rstate, robot_line *current_rline,
           temp_buffer[arg_length] = '"';
           temp_buffer[arg_length + 1] = 0;
           arg_length += 2;
+          chars_offset = 0;
+          use_mask = rstate->mzx_world->conf.mask_midchars;
         }
         else
 
@@ -1203,11 +1193,13 @@ void display_robot_line(robot_state *rstate, robot_line *current_rline,
           memcpy(temp_buffer, line_pos, 3);
           temp_buffer[3] = 0;
           arg_length = 4;
+          chars_offset = 0;
         }
         else
         {
           get_word(temp_buffer, line_pos, ' ');
           arg_length = strlen(temp_buffer) + 1;
+          chars_offset = 256;
         }
 
         if((current_arg == S_COLOR) && (color_codes[current_arg + 1] == 255))
@@ -1226,11 +1218,27 @@ void display_robot_line(robot_state *rstate, robot_line *current_rline,
           if((x + arg_length) > 78)
           {
             temp_buffer[78 - x] = 0;
-            write_string(temp_buffer, x, y, current_color, 0);
+            if(use_mask)
+            {
+              write_string_mask(temp_buffer, x, y, current_color, 0);
+            }
+            else
+            {
+              write_string_ext(temp_buffer, x, y, current_color,
+               0, chars_offset, 16);
+            }
             break;
           }
 
-          write_string(temp_buffer, x, y, current_color, 0);
+          if(use_mask)
+          {
+            write_string_mask(temp_buffer, x, y, current_color, 0);
+          }
+          else
+          {
+            write_string_ext(temp_buffer, x, y, current_color,
+             0, chars_offset, 16);
+          }
         }
         line_pos += arg_length;
         x += arg_length;
@@ -1569,14 +1577,9 @@ int validate_lines(robot_state *rstate, int show_none)
   // lines exceeds MAX_ERRORS.
 
   World *mzx_world = rstate->mzx_world;
+  element *elements[VALIDATE_ELEMENTS];
+  dialog di;
   char information[64];
-  char di_types[VALIDATE_ELEMENTS] = { DE_TEXT, DE_BUTTON, DE_BUTTON };
-  char di_xs[VALIDATE_ELEMENTS] = { 5, 28, 38 };
-  char di_ys[VALIDATE_ELEMENTS] = { 2, 18, 18 };
-  char *di_strs[VALIDATE_ELEMENTS] = { information, "OK", "Cancel" };
-  int di_p1s[VALIDATE_ELEMENTS] = { 0, 0, -1 };
-  int di_p2s[VALIDATE_ELEMENTS] = { 0 };
-  void *di_storage[VALIDATE_ELEMENTS] = { NULL };
   int start_line = 0;
   int num_errors = 0;
   char error_messages[MAX_ERRORS][64];
@@ -1593,12 +1596,6 @@ int validate_lines(robot_state *rstate, int show_none)
   int num_ignore = 0;
   int current_size = rstate->size;
   int i;
-
-  dialog di =
-  {
-    5, 2, 74, 22, "Command summary", 3, di_types, di_xs, di_ys,
-    di_strs, di_p1s, di_p2s, di_storage, 0
-  };
 
   // First, collect the number of errors, and process error messages
   // by calling assemble_line.
@@ -1650,18 +1647,13 @@ int validate_lines(robot_state *rstate, int show_none)
       if(errors_shown > 12)
         errors_shown = 12;
 
+      elements[0] = construct_label(5, 2, information);
+      elements[1] = construct_button(28, 18, "OK", 0);
+      elements[2] = construct_button(38, 18, "Cancel", -1);
+
       for(i = 0, element_pos = 3; i < errors_shown; i++,
        element_pos += 4)
       {
-        // Text line
-        di_types[element_pos] = DE_TEXT;
-
-        // Validation buttons
-        di_types[element_pos + 1] = DE_BUTTON;
-        di_types[element_pos + 2] = DE_BUTTON;
-        di_types[element_pos + 3] = DE_BUTTON;
-
-        di_strs[element_pos] = error_messages[start_line + i];
         switch(validity_options[start_line + i])
         {
           case invalid_uncertain:
@@ -1688,49 +1680,34 @@ int validate_lines(robot_state *rstate, int show_none)
           }
         }
 
-        di_strs[element_pos + 1] = "I";
-        di_strs[element_pos + 2] = "D";
-        di_strs[element_pos + 3] = "C";
-
-        di_xs[element_pos] = 2;
-        di_xs[element_pos + 1] = 56;
-        di_xs[element_pos + 2] = 60;
-        di_xs[element_pos + 3] = 64;
-
-        di_ys[element_pos] = i + 4;
-        di_ys[element_pos + 1] = i + 4;
-        di_ys[element_pos + 2] = i + 4;
-        di_ys[element_pos + 3] = i + 4;
-
-        di_p1s[element_pos + 1] = start_line + i + 100;
-        di_p1s[element_pos + 2] = start_line + i + 200;
-        di_p1s[element_pos + 3] = start_line + i + 300;
+        elements[element_pos] = construct_label(2, i + 4,
+         error_messages[start_line + i]);
+        elements[element_pos + 1] =
+         construct_button(56, i + 4, "I", start_line + i + 100);
+        elements[element_pos + 2] =
+         construct_button(60, i + 4, "D", start_line + i + 200);
+        elements[element_pos + 3] =
+         construct_button(64, i + 4, "C", start_line + i + 300);
       }
 
       if(multi_pages)
       {
         if(start_line)
         {
-          di_types[element_pos] = DE_BUTTON;
-          di_strs[element_pos] = "Previous";
-          di_xs[element_pos] = 5;
-          di_ys[element_pos] = 17;
-          di_p1s[element_pos] = 1;
+          elements[element_pos] =
+           construct_button(5, 17, "Previous", 1);
           element_pos++;
         }
 
         if((start_line + 12) < num_errors)
         {
-          di_types[element_pos] = DE_BUTTON;
-          di_strs[element_pos] = "Next";
-          di_xs[element_pos] = 61;
-          di_ys[element_pos] = 17;
-          di_p1s[element_pos] = 2;
+          elements[element_pos] =
+           construct_button(61, 17, "Next", 2);
           element_pos++;
         }
 
-        sprintf(information, "%d errors found; displaying %d through %d.\n", num_errors,
-         start_line + 1, start_line + errors_shown);
+        sprintf(information, "%d errors found; displaying %d through %d.\n",
+         num_errors, start_line + 1, start_line + errors_shown);
       }
       else
       {
@@ -1750,9 +1727,11 @@ int validate_lines(robot_state *rstate, int show_none)
         }
       }
 
-      di.num_elements = element_pos;
+      construct_dialog(&di, "Command Summary", 5, 2, 70, 21,
+       elements, element_pos, 1);
 
-      dialog_result = run_dialog(mzx_world, &di, 0, 0, 0);
+      dialog_result = run_dialog(mzx_world, &di);
+      destruct_dialog(&di);
 
       if(dialog_result == -1)
       {
@@ -1850,35 +1829,94 @@ int validate_lines(robot_state *rstate, int show_none)
 
 int block_menu(World *mzx_world)
 {
-  char di_types[3] = { DE_RADIO, DE_BUTTON, DE_BUTTON };
-  char di_xs[3] = { 2, 5, 15 };
-  char di_ys[3] = { 2, 7, 7 };
-
-  char *di_strs[3] =
+  int dialog_result, block_op = 0;
+  dialog di;
+  char *radio_strings[] =
   {
-    "Copy block\n"
-    "Cut block\n"
-    "Clear block\n"
-    "Export block\n",
-    "OK", "Cancel"
+    "Copy block", "Cut block",
+    "Clear block", "Export block"
+  };
+  element *elements[3] =
+  {
+    construct_radio_button(2, 2, radio_strings,
+     4, 21, &block_op),
+    construct_button(5, 7, "OK", 0),
+    construct_button(15, 7, "Cancel", -1)
   };
 
-  int di_p1s[3] = { 4, 0, -1 };
-  int di_p2s[1] = { 21 };
-  int block_op = 0;
-  void *di_storage[1] = { &block_op };
+  construct_dialog(&di, "Choose Block Command", 26, 6, 28, 10,
+   elements, 3, 0);
 
-  dialog di =
-  {
-    26, 6, 53, 15, "Choose block command", 3, di_types, di_xs,
-    di_ys, di_strs, di_p1s, di_p2s, di_storage, 0
-  };
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
 
-  if(run_dialog(mzx_world, &di, 0, 0, 0) == -1)
+  if(dialog_result == -1)
     return -1;
   else
     return block_op;
 }
+
+#ifdef CONFIG_X11
+int copy_buffer_to_X11_selection(const SDL_Event *event)
+{
+  if(event->type != SDL_SYSWMEVENT)
+    return 1;
+
+  if((event->syswm.msg->event.xevent.type == SelectionRequest) &&
+   copy_buffer)
+  {
+    SDL_SysWMinfo info;
+    Display *display;
+    Window window;
+    char *dest_data, *dest_ptr;
+    XSelectionRequestEvent *request;
+    XEvent response;
+    int i, line_length;
+
+    SDL_VERSION(&info.version);
+    SDL_GetWMInfo(&info);
+
+    display = info.info.x11.display;
+    window = info.info.x11.window;
+    dest_data = (char *)malloc(copy_buffer_total_length + 1);
+    dest_ptr = dest_data;
+
+    for(i = 0; i < copy_buffer_lines - 1; i++)
+    {
+      line_length = strlen(copy_buffer[i]);
+      memcpy(dest_ptr, copy_buffer[i], line_length);
+      dest_ptr += line_length;
+
+      dest_ptr[0] = '\n';
+      dest_ptr++;
+    }
+
+    line_length = strlen(copy_buffer[i]);
+    memcpy(dest_ptr, copy_buffer[i], line_length);
+    dest_ptr[line_length] = 0;
+
+    request = &(event->syswm.msg->event.xevent.xselectionrequest);
+    response.xselection.type = SelectionNotify;
+    response.xselection.display = request->display;
+    response.xselection.selection = request->selection;
+    response.xselection.target = XA_STRING;
+    response.xselection.property = request->property;
+    response.xselection.requestor = request->requestor;
+    response.xselection.time = request->time;
+
+    XChangeProperty(display, request->requestor, request->property,
+     XA_STRING, 8, PropModeReplace, (const unsigned char *)dest_data,
+     copy_buffer_total_length);
+
+    free(dest_data);
+
+    XSendEvent(display, request->requestor, False, 0, &response);
+    XFlush(display);
+  }
+
+  return 0;
+}
+#endif /* CONFIG_X11 */
 
 void copy_block_to_buffer(robot_state *rstate)
 {
@@ -1886,6 +1924,13 @@ void copy_block_to_buffer(robot_state *rstate)
   int num_lines = (rstate->mark_end - rstate->mark_start) + 1;
   int line_length;
   int i;
+
+#ifdef CONFIG_X11
+  SDL_SysWMinfo info;
+  SDL_VERSION(&info.version);
+#endif
+
+  copy_buffer_total_length = 0;
 
   // First, if there's something already there, clear all the lines and
   // the buffer.
@@ -1908,17 +1953,173 @@ void copy_block_to_buffer(robot_state *rstate)
     copy_buffer[i] = (char *)malloc(line_length);
     memcpy(copy_buffer[i], current_rline->line_text, line_length);
     current_rline = current_rline->next;
+
+    copy_buffer_total_length += line_length;
   }
+
+#ifdef __WIN32__
+  if(OpenClipboard(NULL))
+  {
+    HANDLE global_memory;
+    char *dest_data;
+    char *dest_ptr;
+
+    // Room for \r's
+    copy_buffer_total_length += num_lines - 1;
+
+    global_memory = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE,
+     copy_buffer_total_length);
+    if(global_memory)
+    {
+      dest_data = (char *)GlobalLock(global_memory);
+      dest_ptr = dest_data;
+
+      current_rline = rstate->mark_start_rline;
+
+      for(i = 0; i < num_lines - 1; i++)
+      {
+        line_length = current_rline->line_text_length;
+        memcpy(dest_ptr, current_rline->line_text, line_length);
+        dest_ptr += line_length;
+
+        dest_ptr[0] = '\r';
+        dest_ptr[1] = '\n';
+        dest_ptr += 2;
+
+        current_rline = current_rline->next;
+      }
+
+      line_length = current_rline->line_text_length;
+      memcpy(dest_ptr, current_rline->line_text, line_length);
+      dest_ptr += line_length;
+      dest_ptr[0] = 0;
+
+      GlobalUnlock(global_memory);
+      EmptyClipboard();
+      SetClipboardData(CF_TEXT, global_memory);
+    }
+    CloseClipboard();
+  }
+#elif defined(CONFIG_X11)
+  if(SDL_GetWMInfo(&info) && (info.subsystem == SDL_SYSWM_X11))
+  {
+    XSetSelectionOwner(info.info.x11.display, XA_PRIMARY,
+     info.info.x11.window, CurrentTime);
+
+    SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
+    SDL_SetEventFilter(copy_buffer_to_X11_selection);
+  }
+#endif
 }
 
 void paste_buffer(robot_state *rstate)
 {
   int i;
 
-  for(i = 0; i < copy_buffer_lines; i++)
+#ifdef __WIN32__
+  if(IsClipboardFormatAvailable(CF_TEXT) && OpenClipboard(NULL))
   {
-    rstate->command_buffer = copy_buffer[i];
-    add_line(rstate);
+    HANDLE global_memory;
+    char *src_data, *src_ptr;
+    char line_buffer[512];
+    int line_length;
+
+    rstate->command_buffer = line_buffer;
+
+    global_memory = GetClipboardData(CF_TEXT);
+    if(global_memory != NULL )
+    {
+      src_data = (char *)GlobalLock(global_memory);
+      src_ptr = src_data;
+
+      while(*src_ptr)
+      {
+        get_word(line_buffer, src_ptr, '\r');
+        line_length = strlen(line_buffer);
+        add_line(rstate);
+        src_ptr += line_length;
+        if(*src_ptr)
+          src_ptr += 2;
+      }
+
+      GlobalUnlock(global_memory);
+      CloseClipboard();
+    }
+
+    rstate->command_buffer = rstate->command_buffer_space;
+
+    return;
+  }
+#elif defined(CONFIG_X11)
+  SDL_SysWMinfo info;
+  SDL_VERSION(&info.version);
+
+  if(SDL_GetWMInfo(&info) && (info.subsystem == SDL_SYSWM_X11))
+  {
+    Display *display = info.info.x11.display;
+    Window window = info.info.x11.window;
+    Window owner = XGetSelectionOwner(display, XA_PRIMARY);
+
+    if((owner != None) && (owner != window))
+    {
+      Atom selection_type;
+      int selection_format;
+      unsigned long int nbytes;
+      unsigned long int overflow;
+      char *src_data, *src_ptr;
+      char line_buffer[512];
+      int line_length;
+      int ret_type;
+
+      XConvertSelection(display, XA_PRIMARY, XA_STRING, None,
+       owner, CurrentTime);
+
+      info.info.x11.lock_func();
+      ret_type =
+       XGetWindowProperty(display, owner,
+       XA_STRING, 0, INT_MAX / 4, False, AnyPropertyType, &selection_type,
+       &selection_format, &nbytes, &overflow, (unsigned char **)&src_data);
+
+      if((ret_type == Success) && ((selection_type == XA_STRING) ||
+       (selection_type == XInternAtom(display, "TEXT", False)) ||
+       (selection_type == XInternAtom(display, "COMPOUND_TEXT", False)) ||
+       (selection_type == XInternAtom(display, "UTF8_STRING", False))))
+      {
+        rstate->command_buffer = line_buffer;
+        src_ptr = src_data;
+
+        //printf("This is the data:\n");
+        //printf("%s\n", src_data);
+
+        while(*src_ptr)
+        {
+          get_word(line_buffer, src_ptr, '\n');
+          line_length = strlen(line_buffer);
+          add_line(rstate);
+          src_ptr += line_length;
+          if(*src_ptr)
+            src_ptr++;
+        }
+
+        XFree(src_data);
+
+        rstate->command_buffer = rstate->command_buffer_space;
+        info.info.x11.unlock_func();
+        return;
+      }
+
+      info.info.x11.unlock_func();
+    }
+  }
+#endif /* CONFIG_X11 */
+
+  if(copy_buffer)
+  {
+    for(i = 0; i < copy_buffer_lines; i++)
+    {
+      rstate->command_buffer = copy_buffer[i];
+      add_line(rstate);
+    }
   }
 
   rstate->command_buffer = rstate->command_buffer_space;
@@ -1990,42 +2191,46 @@ void export_block(robot_state *rstate, int region_default)
   World *mzx_world = rstate->mzx_world;
   robot_line *current_rline;
   robot_line *end_rline;
-
-  char di_types[6] = { DE_INPUT, DE_RADIO, DE_BUTTON, DE_BUTTON, DE_RADIO };
-  char di_xs[5] = { 5, 31, 15, 31, 5 };
-  char di_ys[5] = { 2, 4, 7, 7, 4 };
-
-  char *di_strs[5] =
-  {
-    "Export robot as: ",
-    "Text\n"
-    "Bytecode",
-    "OK", "Cancel",
-    "Entire robot\n"
-    "Current block"
-  };
-
-  int di_p1s[5] = { 32, 2, 0, -1, 2 };
-  int di_p2s[5] = { 192, 8, 0, 0, 13 };
   int export_region = region_default;
   int export_type = 0;
   char export_name[64];
-  void *di_storage[5] = { export_name, &export_type, NULL, NULL, &export_region };
-
-  dialog di =
+  int num_elements;
+  char *export_ext[] = { ".TXT", ".BC", NULL };
+  char *radio_strings_1[] =
   {
-    10, 8, 69, 17, "Export Robot", 5, di_types, di_xs,
-    di_ys, di_strs, di_p1s, di_p2s, di_storage, 0
+    "Text", "Bytecode"
   };
+  char *radio_strings_2[] =
+  {
+    "Entire robot", "Current block"
+  };
+  element *elements[4];
+
+  if(region_default)
+  {
+    elements[0] = construct_label(45, 19,
+     "Export\nregion as: ");
+    elements[1] = construct_radio_button(56,
+     19, radio_strings_1, 2, 8, &export_type);
+    elements[2] = construct_label(4, 19,
+     "Export the\nfollowing region: ");
+    elements[3] = construct_radio_button(22, 19,
+     radio_strings_2, 2, 13, &export_region);
+    num_elements = 4;
+  }
+  else
+  {
+    elements[0] = construct_label(25, 19,
+     "Export\nregion as: ");
+    elements[1] = construct_radio_button(36,
+     19, radio_strings_1, 2, 8, &export_type);
+    num_elements = 2;
+  }
 
   export_name[0] = 0;
 
-  if(!region_default)
-  {
-    di.num_elements = 4;
-  }
-
-  if(!run_dialog(mzx_world, &di, 0, 0, 0))
+  if(!file_manager(mzx_world, export_ext, export_name,
+   "Export robot", 1, 1, elements, num_elements, 3, 0))
   {
     FILE *export_file;
 
@@ -2073,12 +2278,13 @@ void export_block(robot_state *rstate, int region_default)
   }
 }
 
-void import_block(robot_state *rstate)
+void import_block(World *mzx_world, robot_state *rstate)
 {
   char import_name[128];
   char *txt_ext[] = { ".TXT", NULL };
 
-  if(!choose_file(txt_ext, import_name, "Import Robot", 0))
+  if(!choose_file(mzx_world, txt_ext, import_name,
+   "Import Robot", 0))
   {
     FILE *import_file = fsafeopen(import_name, "rt");
     char line_buffer[256];
@@ -2099,33 +2305,30 @@ void import_block(robot_state *rstate)
 void edit_settings(World *mzx_world)
 {
   // 38 x 12
-  char di_types[8] = { DE_TEXT, DE_INPUT, DE_INPUT, DE_INPUT, DE_INPUT,
-   DE_INPUT, DE_BUTTON, DE_BUTTON };
-  char di_xs[8] = { 5, 5, 5, 5, 5, 5, 15, 37 };
-  char di_ys[8] = { 2, 4, 5, 6, 7, 8, 10, 10 };
+  int dialog_result;
+  dialog di;
+  element *elements[8] =
+  {
+    construct_label(5, 2, "Macros:"),
+    construct_input_box(5, 4, "F6-  ", 43, 0, macros[0]),
+    construct_input_box(5, 5, "F7-  ", 43, 0, macros[1]),
+    construct_input_box(5, 6, "F8-  ", 43, 0, macros[2]),
+    construct_input_box(5, 7, "F9-  ", 43, 0, macros[3]),
+    construct_input_box(5, 8, "F10- ", 43, 0, macros[4]),
+    construct_button(15, 10, "OK", 0),
+    construct_button(37, 10, "Cancel", -1)
+  };
   char new_macros[5][64];
 
   memcpy(new_macros, macros, 64 * 5);
 
-  char *di_strs[8] =
-  {
-    "Macros:",
-    "F6-  ", "F7-  ", "F8-  ", "F9-  ", "F10- ",
-    "OK", "Cancel"
-  };
+  construct_dialog(&di, "Edit Settings", 10, 6, 60, 12,
+   elements, 8, 1);
 
-  int di_p1s[8] = { 0, 43, 43, 43, 43, 43, 0, -1 };
-  int di_p2s[8] = { 0 };
-  void *di_storage[8] = { 0, new_macros[0], new_macros[1], new_macros[2],
-   new_macros[3], new_macros[4] };
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
 
-  dialog di =
-  {
-    10, 6, 69, 17, "Edit settings", 8, di_types, di_xs,
-    di_ys, di_strs, di_p1s, di_p2s, di_storage, 1
-  };
-
-  if(!run_dialog(mzx_world, &di, 0, 0, 0))
+  if(dialog_result)
     memcpy(macros, new_macros, 64 * 5);
 }
 
@@ -2190,30 +2393,35 @@ void goto_line(robot_state *rstate, int line)
 
 void find_replace_action(robot_state *rstate)
 {
-  World *mzx_world = rstate->mzx_world;
-  char di_types[8] = { DE_INPUT, DE_INPUT, DE_CHECK, DE_CHECK,
-   DE_BUTTON, DE_BUTTON, DE_BUTTON, DE_BUTTON };
-  char di_xs[8] = { 2, 2, 3, 30, 5, 15, 27, 44, };
-  char di_ys[8] = { 2, 3, 5, 5, 7, 7, 7, 7 };
-
-  char *di_strs[8] =
+  dialog di;
+  char *check_strings_1[] = { "Wrap around end" };
+  char *check_strings_2[] = { "Match case" };
+  int check_result_1[] = { wrap_option };
+  int check_result_2[] = { case_option };
+  element *elements[8] =
   {
-    "Find:    ", "Replace: ", "Wrap around end", "Match case",
-    "Search", "Replace", "Replace All", "Cancel"
+    construct_input_box(2, 2, "Find:    ",
+     46, 0, search_string),
+    construct_input_box(2, 3, "Replace: ",
+     46, 0, replace_string),
+    construct_check_box(3, 5, check_strings_1,
+     1, 15, check_result_1),
+    construct_check_box(30, 5, check_strings_2,
+     1, 10, check_result_2),
+    construct_button(5, 7, "Search", 0),
+    construct_button(15, 7, "Replace", 1),
+    construct_button(27, 7, "Replace All", 2),
+    construct_button(44, 7, "Cancel", -1)
   };
 
-  int di_p1s[8] = { 46, 46, 1, 1, 0, 1, 2, -1 };
-  int di_p2s[8] = { 0, 0, 15, 10, 0, 0, 0, 0 };
-  void *di_storage[8] = { search_string, replace_string, wrap_option,
-   case_option, NULL, NULL, NULL, NULL };
+  construct_dialog(&di, "Search and Replace", 10, 7, 70, 10,
+   elements, 8, 0);
 
-  dialog di =
-  {
-    10, 7, 69, 16, "Search and Replace", 8, di_types, di_xs,
-    di_ys, di_strs, di_p1s, di_p2s, di_storage, 0
-  };
+  last_find_option = run_dialog(rstate->mzx_world, &di);
+  destruct_dialog(&di);
 
-  last_find_option = run_dialog(mzx_world, &di, 0, 0, 0);
+  wrap_option = check_result_1[0];
+  case_option = check_result_2[0];
 
   switch(last_find_option)
   {
@@ -2221,8 +2429,8 @@ void find_replace_action(robot_state *rstate)
     {
       // Find
       int l_pos;
-      int l_num = find_string(rstate, search_string, wrap_option[0],
-       &l_pos, case_option[0]);
+      int l_num = find_string(rstate, search_string, wrap_option,
+       &l_pos, case_option);
 
       if(l_num != -1)
       {
@@ -2237,8 +2445,8 @@ void find_replace_action(robot_state *rstate)
     {
       // Find & Replace
       int l_pos;
-      int l_num = find_string(rstate, search_string, wrap_option[0],
-       &l_pos, case_option[0]);
+      int l_num = find_string(rstate, search_string, wrap_option,
+       &l_pos, case_option);
 
       if(l_num != -1)
       {
@@ -2265,8 +2473,8 @@ void find_replace_action(robot_state *rstate)
 
       do
       {
-        l_num = find_string(rstate, search_string, wrap_option[0],
-         &l_pos, case_option[0]);
+        l_num = find_string(rstate, search_string, wrap_option,
+         &l_pos, case_option);
 
         // Is it on the starting line and below the starting cursor?
         // If so modify the starting cursor because the line was
@@ -2471,15 +2679,9 @@ void execute_macro(robot_state *rstate, ext_macro *macro_src)
   //    and the box will be centered.
   // The first two dialogue elements are reserved for okay/cancel
 
-  int total_dialogue_elements = macro_src->total_variables + 3;
+  int total_dialog_elements = macro_src->total_variables + 3;
   int num_types = macro_src->num_types;
-  char di_types[total_dialogue_elements];
-  char di_xs[total_dialogue_elements];
-  char di_ys[total_dialogue_elements];
-  char *di_strs[total_dialogue_elements];
-  int di_p1s[total_dialogue_elements];
-  int di_p2s[total_dialogue_elements];
-  void *di_storage[total_dialogue_elements];
+  element *elements[total_dialog_elements];
   macro_type *current_type;
   int nominal_column_widths[num_types];
   int nominal_column_subwidths[num_types];
@@ -2494,12 +2696,12 @@ void execute_macro(robot_state *rstate, ext_macro *macro_src)
   int largest;
   int current_len;
   double optimal_delta, old_optimal_delta = 1000000.0;
-  int x, y, dialogue_index = 2;
+  int x, y, dialog_index = 2;
   macro_variable *current_variable;
   int draw_on_line;
   int start_x, start_y;
   dialog di;
-  int dialogue_value;
+  int dialog_value;
   int label_size = strlen(macro_src->label) + 1;
   int subwidths[3];
 
@@ -2591,7 +2793,8 @@ void execute_macro(robot_state *rstate, ext_macro *macro_src)
     // two for borders
     nominal_height = total_lines_needed + 5;
 
-    optimal_delta = fabs((80.0 / 25) - (double)(nominal_width + 3) / nominal_height);
+    optimal_delta = fabs((80.0 / 25) -
+     (double)(nominal_width + 3) / nominal_height);
 
     if((old_optimal_delta < optimal_delta) ||
      (nominal_width < largest_column_width) || (nominal_height > 25))
@@ -2634,7 +2837,7 @@ void execute_macro(robot_state *rstate, ext_macro *macro_src)
   nominal_width += 3;
 
   // Generate the dialogue box
-  start_x = 39 - (nominal_width / 2);
+  start_x = 40 - (nominal_width / 2);
   start_y = 12 - (nominal_height / 2);
 
   x = 2;
@@ -2642,7 +2845,7 @@ void execute_macro(robot_state *rstate, ext_macro *macro_src)
 
   current_type = macro_src->types;
 
-  for(i = 0, dialogue_index = 3; i < num_types; i++, current_type++)
+  for(i = 0, dialog_index = 3; i < num_types; i++, current_type++)
   {
     current_variable = current_type->variables;
     // Draw this many
@@ -2650,117 +2853,97 @@ void execute_macro(robot_state *rstate, ext_macro *macro_src)
     for(i2 = current_type->num_variables; i2 > 0; i2 -= draw_on_line,
      y++)
     {
-      if(i2 < draw_on_line)
+      if(y >= (nominal_height - 3))
+      {
+        total_dialog_elements = dialog_index;
+        break;
+      }
 
+      if(i2 < draw_on_line)
         draw_on_line = i2;
 
       x += ((nominal_width - 3) / 2) -
        ((nominal_column_widths[i] * draw_on_line) / 2);
 
       for(i3 = 0; i3 < draw_on_line; i3++, current_variable++,
-       dialogue_index++)
+       dialog_index++)
       {
         current_len = nominal_column_subwidths[i] -
          strlen(current_variable->name);
         x += current_len;
 
-        di_strs[dialogue_index] = current_variable->name;
-        di_xs[dialogue_index] = x;
-        di_ys[dialogue_index] = y;
-
-        x += nominal_column_widths[i] - current_len;
-
         switch(current_type->type)
         {
           case number:
           {
-            di_types[dialogue_index] = DE_NUMBER;
-            di_p1s[dialogue_index] = current_type->type_attributes[0];
-            di_p2s[dialogue_index] = current_type->type_attributes[1];
-            di_storage[dialogue_index] =
-             (void *)(&(current_variable->storage.int_storage));
+            elements[dialog_index] =
+             construct_number_box(x, y, current_variable->name,
+             current_type->type_attributes[0],
+             current_type->type_attributes[1], 0,
+             &(current_variable->storage.int_storage));
             break;
           }
 
           case string:
           {
-            di_types[dialogue_index] = DE_INPUT;
-            di_p1s[dialogue_index] = current_type->type_attributes[0];
-            di_storage[dialogue_index] =
-             (void *)(current_variable->storage.str_storage);
-            di_p2s[dialogue_index] = 0;
+            elements[dialog_index] =
+             construct_input_box(x, y, current_variable->name,
+             current_type->type_attributes[0], 0,
+             current_variable->storage.str_storage);
             break;
           }
 
           case character:
           {
-            di_types[dialogue_index] = DE_CHAR;
-            di_storage[dialogue_index] =
-             (void *)(&(current_variable->storage.char_storage));
+            elements[dialog_index] =
+             construct_char_box(x, y, current_variable->name,
+             1, &(current_variable->storage.int_storage));
             break;
           }
 
           case color:
           {
-            di_types[dialogue_index] = DE_COLOR;
-            di_p1s[dialogue_index] = 1;
-            di_storage[dialogue_index] =
-             (void *)(&(current_variable->storage.int_storage));
+            elements[dialog_index] =
+             construct_color_box(x, y, current_variable->name,
+             1, &(current_variable->storage.int_storage));
             break;
           }
         }
+
+        x += nominal_column_widths[i] - current_len;
       }
       // Start over on next line
       x = 2;
     }
     // Start over after skipping a line
     x = 2;
+
+    if(y >= (nominal_height - 3))
+      break;
+
     y++;
   }
 
   // Place OK/Cancel/Default
 
-  di_xs[0] = subwidths[0] / 2;
-  di_xs[1] = subwidths[0] + (subwidths[1] / 2) - 2;
-  di_xs[2] = subwidths[0] + subwidths[1] + (subwidths[1] / 2) - 3;
+  elements[0] =
+   construct_button(subwidths[0] / 2, y, "OK", 0);
+  elements[1] =
+   construct_button(subwidths[0] + (subwidths[1] / 2) - 2, y,
+   "Cancel", -1);
+  elements[2] =
+   construct_button(subwidths[0] + subwidths[1] +
+   (subwidths[1] / 2) - 3, y, "Default", -2);
 
-  di_ys[0] = y;
-  di_types[0] = DE_BUTTON;
-  di_strs[0] = "OK";
-  di_p1s[0] = 0;
-
-  di_ys[1] = y;
-  di_types[1] = DE_BUTTON;
-  di_strs[1] = "Cancel";
-  di_p1s[1] = -1;
-
-  di_ys[2] = y;
-  di_types[2] = DE_BUTTON;
-  di_strs[2] = "Default";
-  di_p1s[2] = -2;
-
-  // Setup and run the dialogue box.
-
-  di.x1 = start_x;
-  di.y1 = start_y;
-  di.x2 = start_x + nominal_width - 1;
-  di.y2 = start_y + nominal_height - 1;
-  di.title = macro_src->label;
-  di.num_elements = total_dialogue_elements;
-  di.element_types = di_types;
-  di.element_xs = di_xs;
-  di.element_ys = di_ys;
-  di.element_strs = di_strs;
-  di.element_storage = di_storage;
-  di.element_param1s = di_p1s;
-  di.element_param2s = di_p2s;
-  di.curr_element = 0;
+  construct_dialog_ext(&di, macro_src->label, start_x,
+   start_y, nominal_width, nominal_height, elements,
+   total_dialog_elements, 0, 1, 3, NULL);
 
   do
   {
-    dialogue_value = run_dialog(mzx_world, &di, 0, 0, 1);
+    dialog_value = run_dialog(mzx_world, &di);
 
-    switch(dialogue_value)
+    switch(dialog_value)
     {
       case 0:
       {
@@ -2776,7 +2959,9 @@ void execute_macro(robot_state *rstate, ext_macro *macro_src)
         break;
       }
     }
-  } while(dialogue_value == -2);
+  } while(dialog_value == -2);
+
+  destruct_dialog(&di);
 }
 
 void output_macro(robot_state *rstate, ext_macro *macro_src)
@@ -2851,7 +3036,7 @@ void output_macro(robot_state *rstate, ext_macro *macro_src)
           case character:
           {
             sprintf(line_pos, "'%c'",
-             current_reference->storage->char_storage);
+             current_reference->storage->int_storage);
             line_pos += 3;
             break;
           }
@@ -2894,7 +3079,7 @@ void execute_named_macro(robot_state *rstate, char *macro_name)
   int next;
   char *line_pos, *line_pos_old;
   char last_char;
-  macro_type *param_type;
+  macro_type *param_type = NULL;
 
   line_pos = skip_to_next(macro_name, ',', '(', 0);
   last_char = *line_pos;
@@ -2915,7 +3100,7 @@ void execute_named_macro(robot_state *rstate, char *macro_name)
       int param_current_type = 0;
       int param_current_var = 0;
       int i;
-      char *value;
+      char *value = NULL;
 
       // Get name, may stop at equals sign first
       while(1)
@@ -3008,12 +3193,12 @@ void execute_named_macro(robot_state *rstate, char *macro_name)
             {
               if(*value == '\'')
               {
-                param_storage->char_storage =
+                param_storage->int_storage =
                  *(value + 1);
               }
               else
               {
-                param_storage->char_storage =
+                param_storage->int_storage =
                  strtol(value, NULL, 10);
               }
               break;
@@ -3071,3 +3256,4 @@ void macro_default_values(robot_state *rstate, ext_macro *macro_src)
     }
   }
 }
+

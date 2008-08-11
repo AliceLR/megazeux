@@ -1,8 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -22,6 +20,7 @@
 // Code to the intake function, which inputs text with friendliness.
 
 #include <string.h>
+#include <ctype.h>
 
 #include "event.h"
 #include "intake.h"
@@ -69,9 +68,9 @@ char insert_on = 1;
 // Also, if robo_intk is set, then ANY line consisting of ONLY semicolons,
 // commas, and spaces is returned as a blank line (0 length)
 
-int intake(char *string, int max_len, char x, char y,
- unsigned char color, char exit_type, int filter_type,
- char password, int *return_x_pos, char robo_intk, char *macro)
+int intake(World *mzx_world, char *string, int max_len,
+ int x, int y, char color, int exit_type, int filter_type,
+ int *return_x_pos, char robo_intk, char *macro)
 {
   int currx, key, curr_len, i;
   int macro_position = -1;
@@ -79,6 +78,7 @@ int intake(char *string, int max_len, char x, char y,
   char cur_char = 0;
   char temp_char;
   int in_macro;
+  int use_mask = mzx_world->conf.mask_midchars;
 
   if(macro != NULL)
     macro_position = 0;
@@ -107,16 +107,12 @@ int intake(char *string, int max_len, char x, char y,
 
   do
   {
-    // Draw current string
-    if(password)
-    {
-      fill_line(curr_len, x, y, PW_CHAR, color);
-    }
-    else
-
     if(!robo_intk)
     {
-      write_string(string, x, y, color, 0);
+      if(use_mask)
+        write_string_mask(string, x, y, color, 0);
+      else
+        write_string_ext(string, x, y, color, 0, 0, 16);
     }
     else
     {
@@ -127,14 +123,20 @@ int intake(char *string, int max_len, char x, char y,
 
         if(curr_len < 76)
         {
-          write_line(string, x, y, color, 0);
+          if(use_mask)
+            write_line_mask(string, x, y, color, 0);
+          else
+            write_line_ext(string, x, y, color, 0, 0, 16);
           fill_line(76 - curr_len, x + curr_len, y, 32, color);
         }
         else
         {
           temp_char = string[76];
           string[76] = 0;
-          write_line(string, x, y, color, 0);
+          if(use_mask)
+            write_line_mask(string, x, y, color, 0);
+          else
+            write_line_ext(string, x, y, color, 0, 0, 16);
           string[76] = temp_char;
 
           draw_char('¯', color, 79, y);
@@ -147,12 +149,28 @@ int intake(char *string, int max_len, char x, char y,
         {
           temp_char = string[currx + 1];
           string[currx + 1] = 0;
-          write_line(string + currx - 75, x, y, color, 0);
+          if(use_mask)
+          {
+            write_line_mask(string + currx - 75, x, y, color, 0);
+          }
+          else
+          {
+            write_line_ext(string + currx - 75, x, y,
+             color, 0, 0, 16);
+          }
           string[currx + 1] = temp_char;
         }
         else
         {
-          write_line(string + currx - 75, x, y, color, 0);
+          if(use_mask)
+          {
+            write_line_mask(string + currx - 75, x, y, color, 0);
+          }
+          else
+          {
+            write_line_ext(string + currx - 75, x, y,
+             color, 0, 0, 16);
+          }
         }
         draw_char('®', color, 0, y);
         if(currx < curr_len)
@@ -272,11 +290,23 @@ int intake(char *string, int max_len, char x, char y,
           {
             char *current_position = string + currx;
 
+            if(currx)
+              current_position--;
+
+            if(!isalnum(*current_position))
+            {
+              while(currx && !isalnum(*current_position))
+              {
+                current_position--;
+                currx--;
+              }
+            }
+
             do
             {
               current_position--;
               currx--;
-            } while(currx && (*current_position != ' '));
+            } while(currx && isalnum(*current_position));
           }
         }
         else
@@ -297,14 +327,23 @@ int intake(char *string, int max_len, char x, char y,
           if(currx < curr_len)
           {
             char *current_position = string + currx;
-            char current_char;
+            char current_char = *current_position;
+            if(!isalnum(current_char))
+            {
+              do
+              {
+                current_position++;
+                currx++;
+                current_char = *current_position;
+              } while(current_char && !isalnum(current_char));
+            }
 
-            do
+            while(current_char && isalnum(current_char))
             {
               current_position++;
               currx++;
               current_char = *current_position;
-            } while(current_char && (current_char != ' '));
+            }
           }
         }
         else
@@ -369,6 +408,34 @@ int intake(char *string, int max_len, char x, char y,
         }
         else
 
+        if(get_ctrl_status(keycode_SDL))
+        {
+          // Find nearest space to the left
+          if(currx)
+          {
+            int old_position = currx;
+
+            if(!isalnum(string[currx]))
+            {
+              while(currx && !isalnum(string[currx]))
+              {
+                currx--;
+              }
+            }
+
+            while(currx && isalnum(string[currx]))
+            {
+              currx--;
+            }
+
+            curr_len -= old_position - currx;
+
+            memmove(string + currx, string + old_position,
+             strlen(string + old_position) + 1);
+          }
+        }
+        else
+
         if(currx == 0)
         {
           if(exit_type == 2)
@@ -376,7 +443,6 @@ int intake(char *string, int max_len, char x, char y,
             done = 1;
           }
         }
-
         else
         {
           // Move all back 1, decreasing string length

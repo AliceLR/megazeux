@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -38,13 +37,12 @@ typedef enum
 typedef enum
 {
   decimal,
-  hexidecimal,
+  hexidecimal
 } reference_mode;
 
 typedef union
 {
   int int_storage;
-  char char_storage;
   char *str_storage;
 } variable_storage;
 

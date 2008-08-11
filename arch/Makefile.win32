@@ -2,17 +2,17 @@
 # win32 makefile generics
 #
 
+all: subdir
+
 # windows requires a binary extension
 BINEXT    = .exe
 
 # location of strip (must be defined)
 STRIP     = strip --strip-unneeded
 
-# standard linker includes
-INCLUDES  = -I${PREFIX}/include -I${PREFIX}/include/SDL
-
 # standard libraries
-LIBS      = -L${PREFIX}/lib -lmingw32 -lSDLmain -lSDL
+LIBS      = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
+            -L/usr/lib -lmingw32 -lSDLmain -lSDL
 
 # debug does something different
 ifdef DEBUG

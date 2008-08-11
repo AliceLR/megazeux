@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -398,9 +397,10 @@ void board_param_write(World *mzx_world, Function_counter *counter,
   int board_size = src_board->board_width * src_board->board_height;
 
   if((src_board->level_id[offset] < 122) &&
-   (src_board->level_id[offset] < 122) && (offset >= 0) &&
-   (offset < board_size))
+   (offset >= 0) && (offset < board_size))
+  {
     src_board->level_param[offset] = value;
+  }
 }
 
 int red_value_read(World *mzx_world, Function_counter *counter,
@@ -1819,7 +1819,7 @@ int set_counter_special(World *mzx_world, int spec_type,
 
     case FOPEN_SMZX_PALETTE:
     {
-      load_palette(char_value, 0);
+      load_palette(char_value);
       pal_update = 1;
       return 0;
     }
@@ -1827,7 +1827,13 @@ int set_counter_special(World *mzx_world, int spec_type,
     case FOPEN_SAVE_GAME:
     {
       int faded = get_fade_status();
-      save_world(mzx_world, char_value, 1, faded);
+      char translated_name[MAX_PATH];
+
+      if(!fsafetranslate(char_value, translated_name))
+      {
+        save_world(mzx_world, char_value, 1, faded);
+      }
+
       return 0;
     }
 
@@ -2955,4 +2961,33 @@ int is_string(char *buffer)
     return 1;
   }
   return 0;
+}
+
+void counter_fsg()
+{
+  char cur_char = (builtin_counters[0]).counter_name[0];
+  char old_char;
+  int i, i2;
+
+  for(i = 0, i2 = 0; i < 256; i++)
+  {
+    if(i != cur_char)
+    {
+      counter_first_letter[i * 2] = -1;
+      counter_first_letter[(i * 2) + 1] = -1;
+    }
+    else
+    {
+      counter_first_letter[i * 2] = i2;
+      old_char = cur_char;
+
+      do
+      {
+        i2++;
+        cur_char = (builtin_counters[i2]).counter_name[0];
+      } while(cur_char == old_char);
+
+      counter_first_letter[(i * 2) + 1] = i2 - 1;
+    }
+  }
 }

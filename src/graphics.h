@@ -1,7 +1,6 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -32,10 +31,17 @@ typedef enum
 
 typedef struct
 {
+  Uint16 char_value;
+  Uint8 bg_color;
+  Uint8 fg_color;
+} char_element;
+
+typedef struct
+{
   SDL_Surface *screen;
   Uint32 screen_mode;
-  Uint8 text_video[80 * 25 * 2];
-  Uint8 charset[3584];
+  char_element text_video[80 * 25 * 2];
+  Uint8 charset[14 * 256 * 16];
   SDL_Color palette[256];
   SDL_Color intensity_palette[256];
   SDL_Color backup_palette[256];
@@ -47,8 +53,8 @@ typedef struct
   Uint32 fade_status;
   Uint32 cursor_x;
   Uint32 cursor_y;
-  Uint32 mouse_x;
-  Uint32 mouse_y;
+  Uint32 mouse_width_mul;
+  Uint32 mouse_height_mul;
   Uint32 mouse_status;
   Uint32 fullscreen;
   Uint32 resolution_x;
@@ -58,10 +64,10 @@ typedef struct
   Uint32 cursor_flipflop;
   Uint32 default_smzx_loaded;
 
-  Uint8 default_charset[3584];
-  Uint8 blank_charset[3584];
-  Uint8 smzx_charset[3584];
-  Uint8 ascii_charset[3584];
+  Uint8 default_charset[14 * 256];
+  Uint8 blank_charset[14 * 256];
+  Uint8 smzx_charset[14 * 256];
+  Uint8 ascii_charset[14 * 256];
 } graphics_data;
 
 void color_string(char *string, Uint32 x, Uint32 y, Uint8 color);
@@ -73,8 +79,32 @@ void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color);
 void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
  Uint8 color);
 void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y);
-void draw_char_linear(Uint8 chr, Uint8 color, Uint32 offset);
+void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset);
 void draw_char_nocolor(Uint8 chr, Uint32 x, Uint32 y);
+
+void color_string_ext(char *string, Uint32 x, Uint32 y,
+ Uint8 color, Uint32 offset, Uint32 c_offset);
+void write_string_ext(char *string, Uint32 x, Uint32 y,
+ Uint8 color, Uint32 tab_allowed, Uint32 offset,
+ Uint32 c_offset);
+void write_line_ext(char *string, Uint32 x, Uint32 y,
+ Uint8 color, Uint32 tab_allowed, Uint32 offset,
+ Uint32 c_offset);
+void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
+ Uint8 color, Uint32 offset, Uint32 c_offset);
+void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
+ Uint8 chr, Uint8 color, Uint32 offset, Uint32 c_offset);
+void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
+ Uint32 y, Uint32 offset, Uint32 c_offset);
+void draw_char_linear_ext(Uint8 color, Uint8 chr,
+ Uint32 offset, Uint32 offset_b, Uint32 c_offset);
+void draw_char_nocolor_ext(Uint8 chr, Uint32 x, Uint32 y,
+ Uint32 offset, Uint32 c_offset);
+void write_line_mask(char *str, Uint32 x, Uint32 y,
+ Uint8 color, Uint32 tab_allowed);
+void write_string_mask(char *str, Uint32 x, Uint32 y,
+ Uint8 color, Uint32 tab_allowed);
+
 Uint8 get_char(Uint32 x, Uint32 y);
 Uint8 get_color(Uint32 x, Uint32 y);
 Uint8 get_char_linear(Uint32 offset);
@@ -92,8 +122,8 @@ cursor_mode_types get_cursor_mode();
 void init_video(config_info *conf);
 void toggle_fullscreen();
 void update_screen();
-void set_screen(Uint8 *src);
-void get_screen(Uint8 *dest);
+void set_screen(char_element *src);
+void get_screen(char_element *dest);
 
 void ec_change_byte(Uint8 chr, Uint8 byte, Uint8 new_value);
 Uint8 ec_read_byte(Uint8 chr, Uint8 byte);
@@ -102,6 +132,7 @@ void ec_change_char(Uint8 chr, char *matrix);
 void ec_init(void);
 Sint32 ec_load_set(char *name);
 Sint32 ec_load_set_var(char *name, Uint8 pos);
+Sint32 ec_load_set_ext(char *name, Uint8 pos);
 void ec_mem_load_set(Uint8 *chars);
 void ec_mem_save_set(Uint8 *chars);
 void ec_save_set(char *name);
@@ -116,7 +147,7 @@ void ec_load_char_ascii(Uint32 char_number);
 Sint32 ec_load_set_secondary(char *name, Uint8 *dest);
 
 void update_palette();
-void load_palette(char *fname, int priv);
+void load_palette(char *fname);
 void load_palette_mem(char mem_pal[][3], int count);
 void save_palette(char *fname);
 void save_palette_mem(char mem_pal[][3], int count);
@@ -146,10 +177,10 @@ void default_palette(void);
 
 void m_hide(void);
 void m_show(void);
-void m_move(int x, int y);
 void dump_screen();
 
 int get_resolution_w();
 int get_resolution_h();
 int get_height_multiplier();
+void set_mouse_mul(int width_mul, int height_mul);
 

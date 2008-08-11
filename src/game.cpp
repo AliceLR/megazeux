@@ -1,10 +1,8 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
  * Copyright (C) 1999 Charles Goetzman
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -92,7 +90,7 @@ char *save_ext[] = { ".SAV", NULL };
 //Easter Egg enter menu -Koji
 // Idea by Exophase.
 // Wasting mem with style.. okay, not anymore :( - Exo
-/* char *lame_menu= "F1    - HELP!!1\n"
+char *lame_menu= "F1    - HELP!!1\n"
               "etner - TIHS MENUE\n"
               "EScapE- DONT PRESS LOL\n"
               "f2    - UR SETTINGS\n"
@@ -104,7 +102,7 @@ char *save_ext[] = { ".SAV", NULL };
               "ef10  - QUICKLOAD\n"
               "Arrowz- MOVE UR GUY :D :D\n"
               "spaec - shoot UR GUN\n"
-              "deleet- DA BOMB!!!111111"; */
+              "deleet- DA BOMB!!!111111";
 
 
 char debug_mode = 0;
@@ -124,26 +122,14 @@ int target_d_id = -1;
 // For RESTORE/EXCHANGE PLAYER POSITION with DUPLICATION.
 int target_d_color = -1;
 
-
 int pal_update; // Whether to update a palette from robot activity
 
 void load_world_selection(World *mzx_world)
 {
-  int fade_status = get_fade_status();
-
   // Load
   m_show();
-  if(fade_status)
-  {
-    clear_screen(32, 7);
-    insta_fadein();
-  }
-
-  if(!choose_file(world_ext, curr_file, "Load World", 1))
+  if(!choose_file(mzx_world, world_ext, curr_file, "Load World", 1))
     load_world_file(mzx_world, curr_file);
-
-  if(fade_status)
-    insta_fadeout();
 }
 
 void load_world_file(World *mzx_world, char *name)
@@ -196,18 +182,12 @@ void title_screen(World *mzx_world)
     load_world_selection(mzx_world);
   }
 
-  // Main game loop
-  // Mouse remains hidden unless menu/etc. is invoked
-  // Making the menu functions on by default -Koji
-  // Do it HERE too - Exo
-  set_counter(mzx_world, "ENTER_MENU", 1, 0);
-  set_counter(mzx_world, "HELP_MENU", 1, 0);
-  set_counter(mzx_world, "F2_MENU", 1, 0);
-
   src_board = mzx_world->current_board;
 
   // Main game loop
   // Mouse remains hidden unless menu/etc. is invoked
+
+  update_screen();
 
   do
   {
@@ -216,9 +196,14 @@ void title_screen(World *mzx_world)
     {
       if(update(mzx_world, 0, &fadein))
       {
-        update_event_status_delay();
+        update_event_status();
         continue;
       }
+    }
+    else
+    {
+      // Give some delay time if nothing's loaded
+      update_event_status_delay();
     }
 
     src_board = mzx_world->current_board;
@@ -251,20 +236,12 @@ void title_screen(World *mzx_world)
         case SDLK_s: // S
         case SDLK_F2: // F2
         {
-          int fade_status = get_fade_status();
           // Settings
           m_show();
 
-          if(fade_status)
-          {
-            clear_screen(32, 7);
-            insta_fadein();
-          }
-
           game_settings(mzx_world);
-          if(fade_status)
-            insta_fadeout();
 
+          update_screen();
           update_event_status();
           break;
         }
@@ -272,16 +249,11 @@ void title_screen(World *mzx_world)
         case SDLK_KP_ENTER:
         case SDLK_RETURN: // Enter
         {
-          int fade_status = get_fade_status();
           // Menu
           // 19x9
+          int key;
 
           save_screen();
-          if(fade_status)
-          {
-            clear_screen(32, 7);
-            insta_fadein();
-          }
           draw_window_box(30, 4, 52, 16, 25, 16, 24, 1, 1);
           write_string(main_menu, 32, 5, 31, 1);
           write_string(" Main Menu ", 36, 4, 30, 0);
@@ -293,35 +265,25 @@ void title_screen(World *mzx_world)
           {
             update_event_status_delay();
             update_screen();
-          } while(!get_key(keycode_SDL) && !get_mouse_press());
-
-          if(fade_status)
-            insta_fadeout();
+            key = get_key(keycode_SDL);
+          } while((key != SDLK_RETURN) &&
+           (key != SDLK_KP_ENTER));
 
           restore_screen();
+          update_screen();
           update_event_status();
           break;
         }
 
         case SDLK_ESCAPE: // ESC
         {
-          int fade_status = get_fade_status();
-
           // Quit
           m_show();
-
-          if(fade_status)
-          {
-            clear_screen(32, 7);
-            insta_fadein();
-          }
 
           if(confirm(mzx_world, "Exit MegaZeux - Are you sure?"))
             key = 0;
 
-          if(fade_status)
-            insta_fadeout();
-
+          update_screen();
           update_event_status();
           break;
         }
@@ -332,6 +294,7 @@ void title_screen(World *mzx_world)
           load_world_selection(mzx_world);
           fadein = 1;
           src_board = mzx_world->current_board;
+          update_screen();
           update_event_status();
           break;
         }
@@ -339,18 +302,13 @@ void title_screen(World *mzx_world)
         case SDLK_r: // R
         case SDLK_F4: // F4
         {
-          int fade_status = get_fade_status();
           char save_file_name[64];
 
           // Restore
           m_show();
-          if(fade_status)
-          {
-            clear_screen(32, 7);
-            insta_fadein();
-          }
 
-          if(!choose_file(save_ext, save_file_name, "Choose game to restore", 1))
+          if(!choose_file(mzx_world, save_ext, save_file_name,
+           "Choose game to restore", 1))
           {
             // Swap out current board...
             clear_sfx_queue();
@@ -397,6 +355,7 @@ void title_screen(World *mzx_world)
               if(!stat(curr_file, &file_info))
               {
                 reload_world(mzx_world, curr_file, &fade);
+
                 src_board = mzx_world->current_board;
                 load_mod(src_board->mod_playing);
                 strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
@@ -413,9 +372,7 @@ void title_screen(World *mzx_world)
             break;
           }
 
-          if(fade_status)
-            insta_fadeout();
-
+          update_screen();
           update_event_status();
           break;
         }
@@ -473,7 +430,6 @@ void title_screen(World *mzx_world)
             vquick_fadeout();
 
             play_game(mzx_world, 1);
-
             // Done playing- load world again
             // Already faded out from play_game()
             end_mod();
@@ -515,6 +471,7 @@ void title_screen(World *mzx_world)
           {
             m_show();
             help_system(mzx_world);
+            update_screen();
           }
           break;
         }
@@ -522,15 +479,8 @@ void title_screen(World *mzx_world)
         // Quick load
         case SDLK_F10: // F4
         {
-          int fade_status = get_fade_status();
-
           // Restore
           m_show();
-          if(fade_status)
-          {
-            clear_screen(32, 7);
-            insta_fadein();
-          }
 
           // Swap out current board...
           clear_sfx_queue();
@@ -588,10 +538,13 @@ void title_screen(World *mzx_world)
             fadein = 1;
             dead = 0;
           }
+
+          update_screen();
+          update_event_status();
+
           break;
         }
       }
-      update_event_status();
     }
   } while(key != SDLK_ESCAPE);
 
@@ -601,7 +554,7 @@ void title_screen(World *mzx_world)
 
 void draw_viewport(World *mzx_world)
 {
-  int t1, t2;
+  int i, i2;
   Board *src_board = mzx_world->current_board;
   int viewport_x = src_board->viewport_x;
   int viewport_y = src_board->viewport_y;
@@ -613,65 +566,96 @@ void draw_viewport(World *mzx_world)
   if(viewport_y > 1)
   {
     // Top
-    for(t1 = 0; t1 < viewport_y; t1++)
-      fill_line(80, 0, t1, 177, edge_color);
+    for(i = 0; i < viewport_y; i++)
+      fill_line_ext(80, 0, i, 177, edge_color, 0, 0);
   }
 
   if((viewport_y + viewport_height) < 24)
   {
     // Bottom
-    for(t1 = viewport_y + viewport_height + 1; t1 < 25; t1++)
-      fill_line(80, 0, t1, 177, edge_color);
+    for(i = viewport_y + viewport_height + 1; i < 25; i++)
+      fill_line_ext(80, 0, i, 177, edge_color, 0, 0);
   }
 
   if(viewport_x > 1)
   {
     // Left
-    for(t1 = 0; t1 < 25; t1++)
-      fill_line(viewport_x, 0, t1, 177, edge_color);
+    for(i = 0; i < 25; i++)
+      fill_line_ext(viewport_x, 0, i, 177, edge_color, 0, 0);
   }
 
   if((viewport_x + viewport_width) < 79)
   {
     // Right
-    t2 = viewport_x + viewport_width + 1;
-    for(t1 = 0; t1 < 25; t1++)
-      fill_line(80 - t2, t2, t1, 177, edge_color);
+    i2 = viewport_x + viewport_width + 1;
+    for(i = 0; i < 25; i++)
+    {
+      fill_line_ext(80 - i2, i2, i, 177, edge_color, 0, 0);
+    }
   }
 
   // Draw the box
   if(viewport_x > 0)
   {
     // left
-    for(t1 = 0; t1 < viewport_height; t1++)
-      draw_char('º', edge_color, viewport_x - 1, t1 + viewport_y);
+    for(i = 0; i < viewport_height; i++)
+    {
+      draw_char_ext('º', edge_color, viewport_x - 1,
+       i + viewport_y, 0, 0);
+    }
+
     if(viewport_y > 0)
-      draw_char('É', edge_color, viewport_x - 1, viewport_y - 1);
+    {
+      draw_char_ext('É', edge_color, viewport_x - 1,
+       viewport_y - 1, 0, 0);
+    }
   }
   if((viewport_x + viewport_width) < 80)
   {
     // right
-    for(t1 = 0; t1 < viewport_height; t1++)
-      draw_char('º', edge_color, viewport_x + viewport_width, t1 + viewport_y);
+    for(i = 0; i < viewport_height; i++)
+    {
+      draw_char_ext('º', edge_color,
+       viewport_x + viewport_width, i + viewport_y, 0, 0);
+    }
+
     if(viewport_y > 0)
-      draw_char('»', edge_color, viewport_x + viewport_width, viewport_y - 1);
+    {
+      draw_char_ext('»', edge_color,
+       viewport_x + viewport_width, viewport_y - 1, 0, 0);
+    }
   }
+
   if(viewport_y > 0)
   {
     // top
-    for(t1 = 0; t1 < viewport_width; t1++)
-      draw_char('Í', edge_color, viewport_x + t1, viewport_y - 1);
+    for(i = 0; i < viewport_width; i++)
+    {
+      draw_char_ext('Í', edge_color, viewport_x + i,
+       viewport_y - 1, 0, 0);
+    }
   }
+
   if((viewport_y + viewport_height) < 25)
   {
     // bottom
-    for(t1 = 0; t1 < viewport_width; t1++)
-      draw_char('Í', edge_color, viewport_x + t1, viewport_y + viewport_height);
+    for(i = 0; i < viewport_width; i++)
+    {
+      draw_char_ext('Í', edge_color, viewport_x + i,
+       viewport_y + viewport_height, 0, 0);
+    }
+
     if(viewport_x > 0)
-      draw_char('È', edge_color, viewport_x - 1, viewport_y + viewport_height);
+    {
+      draw_char_ext('È', edge_color, viewport_x - 1,
+       viewport_y + viewport_height, 0, 0);
+    }
+
     if((viewport_x + viewport_width) < 80)
-      draw_char('¼', edge_color, viewport_x + viewport_width,
-       viewport_y + viewport_height);
+    {
+      draw_char_ext('¼', edge_color, viewport_x + viewport_width,
+       viewport_y + viewport_height, 0, 0);
+    }
   }
 }
 
@@ -1046,21 +1030,7 @@ void update_player(World *mzx_world)
   find_player(mzx_world);
 }
 
-//Settings dialog-
-
-//------------------------
-//
-//  Speed- 123456789
-//
-//   ( ) Music on
-//   ( ) Music off
-//
-//   ( ) SFX on
-//   ( ) SFX off
-//
-//    OK        Cancel
-//
-//------------------------
+// Settings dialog-
 
 //----------------------------
 //
@@ -1084,37 +1054,39 @@ void update_player(World *mzx_world)
 void game_settings(World *mzx_world)
 {
   Board *src_board = mzx_world->current_board;
-  int mzx_speed, music, sfx, music_volume, sound_volume;
-
-  char stdi_types[8] =
+  int mzx_speed, music, sfx;
+  int music_volume, sound_volume, sfx_volume;
+  dialog di;
+  int dialog_result;
+  char *radio_strings_1[2] =
   {
-    DE_NUMBER, DE_RADIO, DE_RADIO, DE_TEXT, DE_NUMBER,
-    DE_NUMBER, DE_BUTTON, DE_BUTTON
+    "Digitized music on", "Digitized music off"
+  };
+  char *radio_strings_2[2] =
+  {
+    "PC speaker SFX on", "PC speaker SFX off"
+  };
+  element *elements[9] =
+  {
+    construct_number_box(3, 2, "Speed- ", 1, 9,
+     0, &mzx_speed),
+    construct_radio_button(4, 4, radio_strings_1, 2, 19,
+     &music),
+    construct_radio_button(4, 7, radio_strings_2, 2, 18,
+     &sfx),
+    construct_label(3, 10, "Audio volumes-"),
+    construct_number_box(3, 11, "Overall volume- ",
+     1, 8, 0, &music_volume),
+    construct_number_box(3, 12, "SoundFX volume- ",
+     1, 8, 0, &sound_volume),
+    construct_number_box(3, 13, "PC Speaker SFX- ",
+     1, 8, 0, &sfx_volume),
+    construct_button(4, 15, "OK", 0),
+    construct_button(14, 15, "Cancel", 1)
   };
 
-  char stdi_xs[8] = { 3, 4, 4, 3, 3, 3, 4, 14 };
-  char stdi_ys[8] = { 2, 4, 7, 10, 11, 12, 14, 14 };
-
-  char *stdi_strs[8] =
-  {
-    "Speed- ",
-    "Digitized music on\nDigitized music off",
-    "PC speaker SFX on\nPC speaker SFX off",
-    "Sound card volumes-",
-    "Overall volume- ", "SoundFX volume- ", "OK", "Cancel"
-  };
-
-  int stdi_p1s[8] = { 1, 2, 2, 0, 1, 1, 0, 1 };
-  int stdi_p2s[6]= { 9, 9, 7, 0, 8, 8 };
-  void *stdi_storage[6] = { &mzx_speed, &music, &sfx, NULL,
-   &music_volume, &sound_volume };
-
-  dialog stdi =
-  {
-    25, 4, 54, 20, "Game settings", 8,
-    stdi_types, stdi_xs, stdi_ys,
-    stdi_strs, stdi_p1s, stdi_p2s, stdi_storage, 0
-  };
+  construct_dialog(&di, "Game Settings", 25, 4, 30, 18,
+   elements, 9, 0);
 
   set_context(92);
   mzx_speed = mzx_world->mzx_speed;
@@ -1122,44 +1094,47 @@ void game_settings(World *mzx_world)
   sfx = get_sfx_on_state() ^ 1;
   music_volume = get_music_volume();
   sound_volume = get_sound_volume();
+  sfx_volume = get_sfx_volume();
 
-  if(run_dialog(mzx_world, &stdi, 1, 0, 0))
-  {
-    pop_context();
-    return;
-  }
-
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
   pop_context();
-  set_sound_volume(sound_volume);
 
-  if(music_volume != get_music_volume())
+  if(!dialog_result)
   {
-    set_music_volume(music_volume);
-    volume_mod(src_board->volume);
+    set_sfx_volume(sfx_volume);
+
+    if(music_volume != get_music_volume())
+    {
+      set_music_volume(music_volume);
+
+      if(mzx_world->active)
+        volume_mod(src_board->volume);
+    }
+
+    sfx ^= 1;
+    music ^= 1;
+
+    set_sfx_on(sfx);
+
+    if(!music)
+    {
+      // Turn off music.
+      if(get_music_on_state() && (mzx_world->active))
+        end_mod();
+    }
+    else
+
+    if(!get_music_on_state() && (mzx_world->active))
+    {
+      // Turn on music.
+      strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+      load_mod(mzx_world->real_mod_playing);
+    }
+
+    set_music_on(music);
+    mzx_world->mzx_speed = mzx_speed;
   }
-
-  sfx ^= 1;
-  music ^= 1;
-
-  set_sfx_on(sfx);
-
-  if(!music)
-  {
-    // Turn off music.
-    if(get_music_on_state())
-      end_mod();
-  }
-  else
-
-  if(!get_music_on_state())
-  {
-    // Turn on music.
-    strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-    load_mod(mzx_world->real_mod_playing);
-  }
-
-  set_music_on(music);
-  mzx_world->mzx_speed = mzx_speed;
 }
 
 // Number of cycles to make player idle before repeating a directional move
@@ -1171,17 +1146,11 @@ void play_game(World *mzx_world, int fadein)
   // We have the world loaded, on the proper scene.
   // We are faded out. Commence playing!
   int key = -1;
-  FILE *fp;
   char keylbl[5] = "KEY?";
   Board *src_board;
 
   // Main game loop
   // Mouse remains hidden unless menu/etc. is invoked
-  // Making the menu functions on by default -Koji
-
-  set_counter(mzx_world, "ENTER_MENU", 1, 0);
-  set_counter(mzx_world, "HELP_MENU", 1, 0);
-  set_counter(mzx_world, "F2_MENU", 1, 0);
 
   set_context(91);
 
@@ -1230,18 +1199,9 @@ void play_game(World *mzx_world, int fadein)
           // Settings
           if(get_counter(mzx_world, "F2_MENU", 0))
           {
-            int fade_status = get_fade_status();
-
             m_show();
 
-            if(fade_status)
-            {
-              clear_screen(32, 7);
-              insta_fadein();
-            }
             game_settings(mzx_world);
-            if(fade_status)
-              insta_fadeout();
 
             update_event_status();
           }
@@ -1251,22 +1211,21 @@ void play_game(World *mzx_world, int fadein)
         case SDLK_KP_ENTER:
         case SDLK_RETURN: // Enter
         {
+          int enter_menu_status =
+           get_counter(mzx_world, "ENTER_MENU", 0);
           send_robot_all(mzx_world, "KeyEnter");
           // Menu
           // 19x9
-          if(get_counter(mzx_world, "ENTER_MENU", 0))
+          if(enter_menu_status)
           {
-            int fade_status = get_fade_status();
+            int key;
             save_screen();
 
-            if(fade_status)
-            {
-              clear_screen(32, 7);
-              insta_fadein();
-            }
-
             draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
-            write_string(game_menu, 10, 5, 31, 1);
+            if(enter_menu_status == 1337)
+              write_string(lame_menu, 10, 5, 31, 1);
+            else
+              write_string(game_menu, 10, 5, 31, 1);
             write_string(" Game Menu ", 14, 4, 30, 0);
             show_status(mzx_world); // Status screen too
             update_screen();
@@ -1275,14 +1234,11 @@ void play_game(World *mzx_world, int fadein)
             {
               update_event_status_delay();
               update_screen();
-            } while(!get_key(keycode_SDL) && !get_mouse_press());
-
-            if(fade_status)
-              insta_fadeout();
+              key = get_key(keycode_SDL);
+            } while((key != SDLK_RETURN) &&
+             (key != SDLK_KP_ENTER));
 
             restore_screen();
-            if(fade_status)
-              insta_fadeout();
 
             update_event_status();
           }
@@ -1291,21 +1247,11 @@ void play_game(World *mzx_world, int fadein)
 
         case SDLK_ESCAPE: // ESC
         {
-          int fade_status = get_fade_status();
           // Quit
           m_show();
 
-          if(fade_status)
-          {
-            clear_screen(32, 7);
-            insta_fadein();
-          }
-
           if(confirm(mzx_world, "Quit playing- Are you sure?"))
             key = 0;
-
-          if(fade_status)
-            insta_fadeout();
 
           update_event_status();
           break;
@@ -1322,42 +1268,20 @@ void play_game(World *mzx_world, int fadein)
              (src_board->level_under_id[mzx_world->player_x +
              (src_board->board_width * mzx_world->player_y)] == 122)))
             {
-              int fade_status = get_fade_status();
-              struct stat file_info;
-              m_show();
-              // If faded...
-              if(fade_status)
-              {
-                clear_screen(32, 7);
-                insta_fadein();
-              }
-              if(!save_game_dialog(mzx_world))
-              {
-                // Name in curr_sav....
-                if(curr_sav[0] == 0)
-                {
-                  if(fade_status)
-                    insta_fadeout();
-                  break;
-                }
-                add_ext(curr_sav, ".sav");
-                // Check for an overwrite
-                fp = fsafeopen(curr_sav, "rb");
+              char save_game[512];
 
-                if(!stat(curr_sav, &file_info))
-                {
-                  if(confirm(mzx_world, "File exists- Overwrite?"))
-                  {
-                    if(fade_status)
-                      insta_fadeout();
-                    break;
-                  }
-                }
+              strcpy(save_game, curr_sav);
+
+              m_show();
+              if(!new_file(mzx_world, save_ext, save_game,
+               "Save game", 1))
+              {
+                strcpy(curr_sav, save_game);
+                // Name in curr_sav....
+                add_ext(curr_sav, ".sav");
                 // Save entire game
-                save_world(mzx_world, curr_sav, 1, fade_status);
+                save_world(mzx_world, curr_sav, 1, get_fade_status());
               }
-              if(fade_status)
-                insta_fadeout();
             }
           }
           update_event_status();
@@ -1368,16 +1292,9 @@ void play_game(World *mzx_world, int fadein)
         {
           // Restore
           char save_file_name[64];
-          int fade_status = get_fade_status();
           m_show();
 
-          if(fade_status)
-          {
-            clear_screen(32, 7);
-            insta_fadein();
-          }
-
-          if(!choose_file(save_ext, save_file_name,
+          if(!choose_file(mzx_world, save_ext, save_file_name,
            "Choose game to restore", 1))
           {
             // Load game
@@ -1401,8 +1318,6 @@ void play_game(World *mzx_world, int fadein)
             dead = 0;
             fadein ^= 1;
           }
-          if(fade_status)
-            insta_fadeout();
 
           update_event_status();
           break;
@@ -1511,10 +1426,8 @@ void play_game(World *mzx_world, int fadein)
              (src_board->level_under_id[mzx_world->player_x +
              (src_board->board_width * mzx_world->player_y)] == 122)))
             {
-              int fade_status = get_fade_status();
-
               // Save entire game
-              save_world(mzx_world, curr_sav, 1, fade_status);
+              save_world(mzx_world, curr_sav, 1, get_fade_status());
             }
           }
           break;
@@ -2023,7 +1936,6 @@ int grab_item(World *mzx_world, int offset, int dir)
   char id = src_board->level_id[offset];
   char param = src_board->level_param[offset];
   char color = src_board->level_color[offset];
-  int fade = get_fade_status();
   int remove = 0;
 
   char tmp[81];
@@ -2106,20 +2018,11 @@ int grab_item(World *mzx_world, int offset, int dir)
         {
           int answer;
           m_show();
-          if(fade)
-          {
-            clear_screen(32, 7);
-            insta_fadein();
-          }
           answer = confirm(mzx_world,
            "Inside the chest you find a potion. Drink it?");
-          if(fade)
-            insta_fadeout();
 
           if(answer)
-          {
             return 0;
-          }
 
           src_board->level_param[offset] = 0;
           give_potion(mzx_world, item);
@@ -2131,21 +2034,12 @@ int grab_item(World *mzx_world, int offset, int dir)
           int answer;
 
           m_show();
-          if(fade)
-          {
-            clear_screen(32, 7);
-            insta_fadein();
-          }
 
-          answer = confirm(mzx_world, "Inside the chest you find a ring. Wear it?");
-
-          if(fade)
-            insta_fadeout();
+          answer = confirm(mzx_world,
+           "Inside the chest you find a ring. Wear it?");
 
           if(answer)
-          {
             return 0;
-          }
 
           src_board->level_param[offset] = 0;
           give_potion(mzx_world, item);
@@ -2994,11 +2888,6 @@ int update(World *mzx_world, int game, int *fadein)
   {
     int top_x, top_y;
 
-    if(get_fade_status())
-    {
-      insta_fadeout();
-    }
-
     // Draw border
     draw_viewport(mzx_world);
 
@@ -3080,7 +2969,8 @@ int update(World *mzx_world, int game, int *fadein)
       if(mesg_x == -1)
         mesg_x = 40 - (mesg_length / 2);
 
-      color_string(bottom_mesg, mesg_x, mesg_y, scroll_color);
+      color_string_ext(bottom_mesg, mesg_x,
+       mesg_y, scroll_color, 0, 0);
 
       if((mesg_x > 0) && (mesg_edges))
         draw_char(' ', scroll_color, mesg_x - 1, mesg_y);
@@ -3154,14 +3044,14 @@ int update(World *mzx_world, int game, int *fadein)
 
     if(mzx_world->clear_on_exit)
     {
-      int i;
+      int offset;
       char d_id;
       src_board->b_mesg_timer = 0;
-      for(i = 0; i < (board_width * board_height); i++)
+      for(offset = 0; offset < (board_width * board_height); offset++)
       {
-        d_id = level_id[i];
+        d_id = level_id[offset];
         if((d_id == 78) || (d_id == 61))
-          offs_remove_id(mzx_world, 0);
+          offs_remove_id(mzx_world, offset);
       }
     }
 
@@ -3388,53 +3278,34 @@ int update(World *mzx_world, int game, int *fadein)
 void find_player(World *mzx_world)
 {
   Board *src_board = mzx_world->current_board;
-  int board_width = src_board->board_width;;
+  int board_width = src_board->board_width;
   int board_height = src_board->board_height;
-  int board_size = board_width * board_height;
   char *level_id = src_board->level_id;
-  int offset;
+  int dx, dy, offset;
 
-  if((mzx_world->player_x > board_width) ||
-   (mzx_world->player_y > board_height))
-  {
+  if(mzx_world->player_x >= board_width)
     mzx_world->player_x = 0;
+
+  if(mzx_world->player_y >= board_height)
     mzx_world->player_y = 0;
-  }
 
   if(level_id[mzx_world->player_x +
    (mzx_world->player_y * board_width)] != 127)
   {
-    for(offset = 0; offset < board_size; offset++)
+    for(dy = 0, offset = 0; dy < board_height; dy++)
     {
-      if(level_id[offset] == 127)
-        break;
-    }
-
-    if(offset == board_size)
-    {
-      int d_id = level_id[0];
-      mzx_world->player_x = 0;
-      mzx_world->player_y = 0;
-
-      if((d_id == 123) || (d_id == 124)) // (robot)
+      for(dx = 0; dx < board_width; dx++, offset++)
       {
-        clear_robot_id(src_board, src_board->level_param[0]);
+        if(level_id[offset] == 127)
+        {
+          mzx_world->player_x = dx;
+          mzx_world->player_y = dy;
+          return;
+        }
       }
-      else
-
-      if((d_id == 125) || (d_id == 126)) // (scroll)
-      {
-        clear_scroll_id(src_board, src_board->level_param[0]);
-      }
-
-      // Place.
-      id_place(mzx_world, 0, 0, 127, 0, 0);
     }
-    else
-    {
-      mzx_world->player_x = offset % board_width;
-      mzx_world->player_y = offset / board_width;
-    }
+
+    replace_player(mzx_world);
   }
 }
 

@@ -1,46 +1,29 @@
-##
-# libmodplug Makefile fragment
-##
+#
+# src/ makefile
+#
 
-.PHONY: all clean
+include ../../../Makefile.in
+include ../../../Makefile.platform
 
-.SUFFIXES: .cpp
+# need to include local headers
+INCLUDES += -Ilibmodplug -I.
 
-CXXFLAGS := -Wall
-o := o
+#
+# objects to build
+#
 
-libmodplug_base = .
+objs  = fastmix.o load_669.o load_amf.o load_ams.o load_dbm.o \
+        load_dmf.o load_dsm.o load_far.o load_it.o load_j2b.o \
+        load_mdl.o load_med.o load_mod.o load_mt2.o load_mtm.o \
+        load_okt.o load_psm.o load_ptm.o load_s3m.o load_stm.o \
+        load_ult.o load_umx.o load_wav.o load_xm.o mmcmp.o \
+        modplug.o snd_dsp.o sndfile.o snd_flt.o snd_fx.o \
+        sndmix.o tables.o
 
-libmodplug_cflags = -DHAVE_INTTYPES_H -I${libmodplug_base} \
-                    -I${libmodplug_base}/libmodplug
+subdir: libs
 
-libmodplug_objs = \
-    ${libmodplug_base}/fastmix.${o} ${libmodplug_base}/load_669.${o} \
-    ${libmodplug_base}/load_amf.${o} ${libmodplug_base}/load_ams.${o} \
-    ${libmodplug_base}/load_dbm.${o} ${libmodplug_base}/load_dmf.${o} \
-    ${libmodplug_base}/load_dsm.${o} ${libmodplug_base}/load_far.${o} \
-    ${libmodplug_base}/load_it.${o} ${libmodplug_base}/load_mdl.${o} \
-    ${libmodplug_base}/load_med.${o} ${libmodplug_base}/load_mod.${o} \
-    ${libmodplug_base}/load_mt2.${o} ${libmodplug_base}/load_mtm.${o} \
-    ${libmodplug_base}/load_okt.${o} ${libmodplug_base}/load_psm.${o} \
-    ${libmodplug_base}/load_ptm.${o} ${libmodplug_base}/load_s3m.${o} \
-    ${libmodplug_base}/load_stm.${o} ${libmodplug_base}/load_ult.${o} \
-    ${libmodplug_base}/load_umx.${o} ${libmodplug_base}/load_wav.${o} \
-    ${libmodplug_base}/load_xm.${o} ${libmodplug_base}/mmcmp.${o} \
-    ${libmodplug_base}/modplug.${o} ${libmodplug_base}/snd_dsp.${o} \
-    ${libmodplug_base}/sndfile.${o} ${libmodplug_base}/snd_flt.${o} \
-    ${libmodplug_base}/snd_fx.${o} ${libmodplug_base}/sndmix.${o} \
-    ${libmodplug_base}/tables.${o}
-
-libmodplug = ${libmodplug_base}/libmodplug.a
-
-${libmodplug_base}/%.${o}: ${libmodplug_base}/%.cpp
-	${CXX} ${CXXFLAGS} ${libmodplug_cflags} -c $< -o $@
-
-${libmodplug}: ${libmodplug_objs}
-	ar crus ${libmodplug} ${libmodplug_objs}
-
-all: ${libmodplug}
+libs:	${objs}
+	ar crus libmodplug.a ${objs}
 
 clean:
-	rm -f ${libmodplug_objs} ${libmodplug}
+	rm -f ${objs} libmodplug.a

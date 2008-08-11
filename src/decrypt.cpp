@@ -1,10 +1,7 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
- * Copyright (C) 1999 Charles Goetzman
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -25,12 +22,8 @@
 #include <string.h>
 #include <stdlib.h>
 
-char magic_code[16] = "æRëòmMJ·‡²’ˆÞ‘$";
-
-/* Replacement - test this before using it.
-char magic_code[16] = 
+char magic_code[16] =
  "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
-*/
 
 int get_pw_xor_code(char *password, int pro_method)
 {

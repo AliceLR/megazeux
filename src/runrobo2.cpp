@@ -1,9 +1,7 @@
-/* $Id$
- * MegaZeux
+/* MegaZeux
  *
  * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1998 Matthew D. Williams - dbwilli@scsn.net
- * Copyright (C) 2004 Gilead Kutnick
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -314,9 +312,14 @@ int get_random_range(int min_value, int max_value)
   else
   {
     if(max_value > min_value)
+    {
       difference = max_value - min_value;
+    }
     else
+    {
       difference = min_value - max_value;
+      min_value = max_value;
+    }
 
     if(difference)
       result = (rand() % (difference + 1)) + min_value;
@@ -332,10 +335,15 @@ int send_self_label_tr(World *mzx_world, char *param, int id)
   char label_buffer[256];
   tr_msg(mzx_world, param, id, label_buffer);
 
-  if(send_robot_id(mzx_world, id, label_buffer, 1))
+  if(send_robot_self(mzx_world,
+   mzx_world->current_board->robot_list[id], label_buffer))
+  {
     return 0;
+  }
   else
+  {
     return 1;
+  }
 }
 
 void split_colors(int color, int *fg, int *bg)
@@ -861,9 +869,8 @@ void replace_player(World *mzx_world)
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
   int dx, dy, offset;
-  int ldone = 0;
 
-  for(dy = 0, offset = 0; (dy < board_height) && (!ldone); dy++)
+  for(dy = 0, offset = 0; dy < board_height; dy++)
   {
     for(dx = 0; dx < board_width; dx++, offset++)
     {
@@ -872,10 +879,8 @@ void replace_player(World *mzx_world)
         // Place the player here
         mzx_world->player_x = dx;
         mzx_world->player_y = dy;
-        id_place(mzx_world, mzx_world->player_x, mzx_world->player_y,
-         127, 0, 0);
-        ldone = 1;
-        break;
+        id_place(mzx_world, dx, dy, 127, 0, 0);
+        return;
       }
     }
   }
@@ -1034,7 +1039,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
     cmd = cmd_ptr[0];
     // Act according to command
 
-    //printf("running cmd %d (id %d) at %d\n", cmd, id, old_pos);
+    //printf("running cmd %d (id %d) at %d, board %d\n",
 
     switch(cmd)
     {
@@ -1071,6 +1076,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int wait_time = parse_param(mzx_world, cmd_ptr + 1, id) & 0xFF;
         if(wait_time == cur_robot->pos_within_line)
           break;
+
         cur_robot->pos_within_line++;
         if(first_cmd)
           cur_robot->status = 1;
@@ -1508,7 +1514,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             break;
           }
 
-          case 3: // touching dir
+            case 3: // touching dir
           {
             if(id)
             {
@@ -1529,25 +1535,34 @@ void run_robot(World *mzx_world, int id, int x, int y)
               }
               else
               {
-                int i;
-                // either anydir or nodir
-                // is player touching at all?
-                for(i = 0; i < 4; i++)
+                if(direction >= 12)
                 {
-                  // try all dirs
-                  new_x = x;
-                  new_y = y;
-                  if(!move_dir(src_board, &new_x, &new_y, i))
+                  int i;
+                  // either anydir or nodir
+                  // is player touching at all?
+                  for(i = 0; i < 4; i++)
                   {
-                    if((mzx_world->player_x == new_x) &&
-                     (mzx_world->player_y == new_y))
-                    success = 1;
+                    // try all dirs
+                    new_x = x;
+                    new_y = y;
+                    if(!move_dir(src_board, &new_x, &new_y, i))
+                    {
+                      if((mzx_world->player_x == new_x) &&
+                       (mzx_world->player_y == new_y))
+                      {
+                        success = 1;
+                      }
+                    }
                   }
-                }
 
-              // We want NODIR though, so reverse success
-              if((direction == 14) || (direction == 0))
-                success ^= 1;
+                  // We want NODIR though, so reverse success
+                  if(direction == 14)
+                    success ^= 1;
+                }
+                else
+                {
+                  success = 0;
+                }
               }
             }
             break;
@@ -2530,16 +2545,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
         if(id)
         {
           int direction = parsedir(cmd_ptr[2], x, y, cur_robot->walk_dir) - 1;
-          if((direction >= 0) && (direction <= 3))
+          if((direction >= 0) && (direction <= 3) && !(_bl[direction] & 2))
           {
-
-            if(!(_bl[direction] & 2))
-            {
-              // Block
-              shoot(mzx_world, x, y, direction, cur_robot->bullet_type);
-              if(_bl[direction])
-                _bl[direction] = 3;
-            }
+            // Block
+            shoot(mzx_world, x, y, direction, cur_robot->bullet_type);
+            if(_bl[direction])
+              _bl[direction] = 3;
           }
         }
         break;
@@ -3080,9 +3091,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
         if(id)
         {
           int current_char, direction;
+          char dir_str_buffer[256];
+
+          tr_msg(mzx_world, cmd_ptr + 2, id, dir_str_buffer);
+
           // get next dir char, if none, next cmd
+          current_char = dir_str_buffer[cur_robot->pos_within_line];
           cur_robot->pos_within_line++;
-          current_char = cmd_ptr[cur_robot->pos_within_line + 1];
           // current_char must be 'n', 's', 'w', 'e' or 'i'
           switch(current_char)
           {
@@ -3273,7 +3288,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         m_show();
         src_board->input_string[0] = 0;
 
-        intake(src_board->input_string, 70, 5, 13, 15, 1, 0);
+        intake(mzx_world, src_board->input_string,
+         70, 5, 13, 15, 1, 0, NULL, 0, NULL);
         if(fade)
           insta_fadeout();
 
@@ -5054,6 +5070,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 216: // Load char set ""
       {
         char charset_name[256];
+        char translated_name[256];
 
         tr_msg(mzx_world, cmd_ptr + 2, id, charset_name);
 
@@ -5067,7 +5084,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
           charset_name[3] = 0;
           pos = (int)strtol(charset_name + 1, &next, 16);
           charset_name[3] = tempc;
-          ec_load_set_var(next, pos);
+          if(!fsafetranslate(next, translated_name))
+            ec_load_set_var(translated_name, pos);
         }
         else
 
@@ -5080,11 +5098,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
           charset_name[4] = 0;
           pos = (int)strtol(charset_name + 1, &next, 10);
           charset_name[4] = tempc;
-          ec_load_set_var(next, pos);
+          if(!fsafetranslate(next, translated_name))
+            ec_load_set_var(translated_name, pos);
         }
         else
         {
-          ec_load_set(charset_name);
+          if(!fsafetranslate(charset_name, translated_name))
+            ec_load_set(translated_name);
         }
         break;
       }
@@ -5144,9 +5164,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 222: // Load palette
       {
         char name_buffer[256];
+        char translated_name[256];
 
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
-        load_palette(name_buffer, 0);
+
+        if(!fsafetranslate(name_buffer, translated_name))
+          load_palette(translated_name);
+
         pal_update = 1;
 
         // Done.

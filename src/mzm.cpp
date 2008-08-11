@@ -1,7 +1,6 @@
-/* $Id: idput.h,v 1.2 1999/01/17 20:35:41 mental Exp $
- * MegaZeux
+/* MegaZeux
  *
- * Copyright (C) 2002 Gilead Kutnick - exophase@adelphia.net
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -52,7 +51,7 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
     fputc(storage_mode, output_file);
     fputc(0, output_file);
     fseek(output_file, 1, SEEK_CUR);
-  
+
     switch(mode)
     {
       // Board, raw
@@ -78,7 +77,7 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
         for(y = 0; y < height; y++)
         {
           for(x = 0; x < width; x++, offset++)
-          {           
+          {
             current_id = level_id[offset];
 
             if((current_id == 123) || (current_id == 124))
@@ -86,7 +85,7 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
               // Robot
               robot_numbers[num_robots] = level_param[offset];
               num_robots++;
-              
+
               fputc(current_id, output_file);
               fputc(0, output_file);
               fputc(level_color[offset], output_file);
@@ -138,7 +137,7 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
 
           // Back to robot table position
           fseek(output_file, robot_table_position, SEEK_SET);
-    
+
           for(i = 0; i < num_robots; i++)
           {
             // Save each robot
@@ -240,7 +239,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
 
     fread(magic_string, 4, 1, input_file);
     magic_string[4] = 0;
-    
+
     if(!strncmp(magic_string, "MZMX", 4))
     {
       // An MZM1 file is always storage mode 0
@@ -270,7 +269,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
       fclose(input_file);
       return -1;
     }
-        
+
     switch(mode)
     {
       // Write to board
@@ -297,10 +296,10 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
 
         if((effective_width + start_x) >= board_width)
           effective_width = board_width - start_x;
-      
+
         if((effective_height + start_y) >= board_height)
           effective_height = board_height - start_y;
-      
+
         line_skip = board_width - effective_width;
 
         switch(storage_mode)
@@ -321,7 +320,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
             {
               for(x = 0; x < effective_width; x++, offset++)
               {
-                current_id = fgetc(input_file);               
+                current_id = fgetc(input_file);
                 if((current_id == 123) || (current_id == 124))
                 {
                   robot_x_locations[current_robot_loaded] = x + start_x;
@@ -356,7 +355,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
                 {
                   fseek(input_file, 5, SEEK_CUR);
                 }
-              }             
+              }
 
               offset += line_skip;
 
@@ -398,7 +397,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
                 {
                   new_param = find_free_robot(src_board);
                   offset = current_x + (current_y * board_width);
-                  
+
                   if(new_param != -1)
                   {
                     if(level_id[offset] != 127)
@@ -408,7 +407,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
                       src_board->robot_list[new_param] = cur_robot;
                       cur_robot->xpos = current_x;
                       cur_robot->ypos = current_y;
-                      level_param[offset] = 
+                      level_param[offset] =
                        new_param;
                     }
                     else
@@ -428,7 +427,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
                 {
                   clear_robot(cur_robot);
                 }
-              }  
+              }
             }
             break;
           }
@@ -475,7 +474,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
 
               offset += line_skip;
               fseek(input_file, file_line_skip, SEEK_CUR);
-            }           
+            }
             break;
           }
         }
@@ -524,10 +523,10 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
 
         if((effective_width + start_x) >= dest_width)
           effective_width = dest_width - start_x;
-      
+
         if((effective_height + start_y) >= dest_height)
           effective_height = dest_height - start_y;
-      
+
         line_skip = dest_width - effective_width;
 
         switch(storage_mode)
@@ -548,11 +547,11 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
                 dest_colors[offset] = fgetc(input_file);
                 // Skip under parts
                 fseek(input_file, 3, SEEK_CUR);
-              }             
-  
+              }
+
               offset += line_skip;
               fseek(input_file, file_line_skip, SEEK_CUR);
-            }           
+            }
             break;
           }
 
@@ -568,15 +567,15 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
               {
                 dest_chars[offset] = fgetc(input_file);
                 dest_colors[offset] = fgetc(input_file);
-              }             
-  
+              }
+
               offset += line_skip;
               fseek(input_file, file_line_skip, SEEK_CUR);
-            }           
+            }
             break;
           }
 
-        }     
+        }
         break;
       }
     }
