@@ -201,6 +201,7 @@ Sensor *create_blank_sensor();
 void create_blank_sensor_direct(Sensor *cur_sensor);
 void clear_robot_contents(Robot *cur_robot);
 void clear_scroll_contents(Scroll *cur_scroll);
+int get_robot_id(Board *src_board, char *name);
 
 // These are part of runrobo2.cpp
 void magic_load_mod(World *mzx_world, char *filename);

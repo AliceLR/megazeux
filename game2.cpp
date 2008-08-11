@@ -1740,16 +1740,20 @@ void update_board(World *mzx_world)
 
   for(y = board_height - 1; y >= 0; y--)
   {
-    last_offset = level_offset;
     for(x = board_width - 1; x >= 0; x--)
     {
       current_id = level_id[level_offset];
       if((current_id == 123) || (current_id == 124))
-      {
+      { 
         current_param = level_param[level_offset];
         // May change the source board (with swap world or load game)
         run_robot(mzx_world, -current_param, x, y);
-        src_board = mzx_world->current_board;
+
+        if(mzx_world->swapped)
+        {
+          // Swapped world; get out of here
+          return;
+        }
       }
       level_offset--;
     }

@@ -228,6 +228,7 @@ int intake(char *string, int max_len, char x, char y,
         break;
       }
 
+			case SDLK_KP_ENTER:
       case SDLK_RETURN:
       {
         // Enter
@@ -361,21 +362,22 @@ int intake(char *string, int max_len, char x, char y,
       case SDLK_BACKSPACE:
       {
         // Backspace, at 0 it might exit
-        if(currx == 0)
-        {
-          if(exit_type == 2)
-          {
-            done = 1;
-          }
-        }
-        else
-
         if(get_alt_status(keycode_SDL))
         {
           // Alt-backspace, erase input
           curr_len = currx = 0;
           string[0] = 0;
         }
+				else
+
+				if(currx == 0)
+        {
+          if(exit_type == 2)
+          {
+            done = 1;
+          }
+        }
+
         else
         {
           // Move all back 1, decreasing string length

@@ -53,6 +53,19 @@
 
 #audio_buffer = 2048
 
+# Allow music to be sampled at higher precision. Increases CPU
+# usage but increases audio quality as well.
+
+#enable_oversampling = 0
+
+# Set resampling mode. Choices are:
+# none (fastest, poor quality)
+# linear (fast, good quality)
+# cubic (slow, great quality)
+# fir (very slow, excellent quality)
+
+#resampling_mode = linear
+
 # Whether music/samples should be played or not.
 # Does not include PC speaker effects.
 

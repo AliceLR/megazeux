@@ -10,10 +10,15 @@ Next, you need the correct libraries installed, which are the
 
 SDL: http://www.libsdl.org/
 
-libmodplug: http://sourceforge.net/projects/libmodplug/
+libmodplug: http://prdownloads.sourceforge.net/modplug-xmms/
 
 gdm2s3m: http://mzx.bitpack.net/gdm2s3m-1.1.tar.gz
 (should also show up on other sites soon)
+
+NOTE: As of this writing, libmodplug (version 0.7) has a bug that
+doesn't allow it to correctly load 2-channel FT2 saved mods. There
+is a patch included to rectify this; you should patch libmodplug
+before building if you have this version.
 
 Now, you need GCC installed and GNU make to actually build. Currently,
 GCC on Windows and Linux are supported. Use Makefile.linux to build on

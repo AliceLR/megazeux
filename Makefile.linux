@@ -6,11 +6,11 @@ OBJS      = main.o graphics.o window.o hexchar.o event.o         \
             idarray.o delay.o game2.o expr.o sprite.o runrobo2.o \
             mzm.o decrypt.o audio.o edit.o edit_di.o block.o     \
             char_ed.o pal_ed.o param.o sfx_edit.o fill.o rasm.o  \
-            robo_ed.o configure.o
+            robo_ed.o configure.o fsafeopen.o
 
 PREFIX    = /usr
 
-BIN       = mzx280b
+BIN       = mzx280c
 
 CC        = gcc
 CPP       = g++

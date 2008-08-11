@@ -255,6 +255,37 @@ void config_startup_file(config_info *conf, char *name, char *value)
   strcpy(conf->startup_file, value);
 }
 
+void config_enable_oversampling(config_info *conf, char *name, char *value)
+{
+	conf->oversampling_on = strtol(value, NULL, 10);
+}
+
+void config_resampling_mode(config_info *conf, char *name, char *value)
+{
+	if(!strcmp(value, "none"))
+	{
+		conf->resampling_mode = 0;
+	}	
+	else
+
+	if(!strcmp(value, "linear"))
+	{
+		conf->resampling_mode = 1;
+	}
+	else
+
+	if(!strcmp(value, "cubic"))
+	{
+		conf->resampling_mode = 2;
+	}
+	else
+
+	if(!strcmp(value, "fir"))
+	{
+		conf->resampling_mode = 3;
+	}
+}
+
 config_entry config_options[] =
 {
   { "audio_buffer", config_set_audio_buffer },
@@ -274,6 +305,7 @@ config_entry config_options[] =
   { "default_invalid_status", config_default_invald },
   { "disassemble_base", config_disassemble_base },
   { "disassemble_extras", config_disassemble_extras },
+	{ "enable_oversampling", config_enable_oversampling },
   { "force_height_multiplier", config_set_multiplier },
   { "force_resolution", config_set_resolution },
   { "fullscreen", config_set_fullscreen },
@@ -286,6 +318,7 @@ config_entry config_options[] =
   { "music_volume", config_set_mod_volume },
   { "mzx_speed", config_set_mzx_speed },
   { "pc_speaker_on", config_set_pc_speaker },
+	{ "resampling_mode", config_resampling_mode },
   { "sample_volume", config_set_sam_volume },
   { "save_file", config_save_file },
   { "startup_file", config_startup_file }
@@ -328,6 +361,8 @@ config_info default_options =
 
   // Audio options
   2048,
+	0,
+	1,
   7,
   7,
   1,

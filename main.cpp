@@ -115,5 +115,13 @@ int main(int argc, char **argv)
 
   vquick_fadeout();
 
+	if(mzx_world.active)
+	{
+		clear_world(&mzx_world);
+    clear_global_data(&mzx_world);
+	}
+
+	SDL_Quit();
+
   return 0;
 }

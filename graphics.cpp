@@ -30,6 +30,7 @@
 #include "delay.h"
 #include "world.h"
 #include "configure.h"
+#include "fsafeopen.h"
 
 graphics_data graphics;
 
@@ -795,7 +796,7 @@ void ec_read_char(Uint8 chr, char *matrix)
 
 Sint32 ec_load_set(char *name)
 {
-	FILE *fp = fopen(name, "rb");
+	FILE *fp = fsafeopen(name, "rb");
 
 	if(fp == NULL)
 	 return -1;
@@ -808,7 +809,7 @@ Sint32 ec_load_set(char *name)
 
 Sint32 ec_load_set_secondary(char *name, Uint8 *dest)
 {
-	FILE *fp = fopen(name, "rb");
+	FILE *fp = fsafeopen(name, "rb");
 
 	if(fp == NULL)
 	 return -1;
@@ -822,7 +823,7 @@ Sint32 ec_load_set_secondary(char *name, Uint8 *dest)
 Sint32 ec_load_set_var(char *name, Uint8 pos)
 {
 	Uint32 size = 256;
-	FILE *fp = fopen(name, "rb");
+	FILE *fp = fsafeopen(name, "rb");
 
 	if(fp == NULL)
 	 return -1;
@@ -965,7 +966,7 @@ void update_palette()
 
 void load_palette(char *fname)
 {
-	FILE *pal_file = fopen(fname, "rb");
+	FILE *pal_file = fsafeopen(fname, "rb");
 
 	if(pal_file)
 	{
@@ -1396,7 +1397,6 @@ void m_move(int x, int y)
 	graphics.mouse_y = y;
 }
 
-// FIXME - Implement this using SDL
 void dump_screen()
 {
 	int i;

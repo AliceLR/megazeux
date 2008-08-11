@@ -82,7 +82,7 @@ void draw_sprites(World *mzx_world)
   int i, i2, i3, i4, i5, i6, st_x, st_y, of_x, of_y, d;
   int skip, skip2, skip3;
   int dr_w, dr_h, ref_x, ref_y, scr_x, scr_y;
-  int bwidth, use_chars = 1;
+  int bwidth, bheight, use_chars = 1;
   int uvlayer = 0;
   Sprite **sprite_list = mzx_world->sprite_list;
   Sprite *dr_order[MAX_SPRITES];
@@ -103,7 +103,6 @@ void draw_sprites(World *mzx_world)
   if(mzx_world->sprite_y_order)
   {
     // Switched to stdlib qsort. Hooray!
-
     // Fill it with the active sprites in the beginning
     // and the inactive sprites in the end.
     for(i = 0, i2 = 0, i3 = MAX_SPRITES - 1; i < MAX_SPRITES; i++)
@@ -191,6 +190,7 @@ void draw_sprites(World *mzx_world)
       {
         use_chars = 1;
         bwidth = mzx_world->vlayer_width;
+				bheight = mzx_world->vlayer_height;
         src_chars = mzx_world->vlayer_chars;
         src_colors = mzx_world->vlayer_colors;
       }
@@ -198,9 +198,16 @@ void draw_sprites(World *mzx_world)
       {
         use_chars = 0;
         bwidth = board_width;
-        src_chars = src_board->level_param;
+				bheight = src_board->board_width;
+				src_chars = src_board->level_param;
         src_colors = src_board->level_color;
       }
+
+			if((ref_x + dr_w) > bwidth)
+				dr_w = bwidth - ref_x;
+
+			if((ref_y + dr_h) > bheight)
+				dr_h = bheight - ref_y;
 
       i4 = ((ref_y + of_y) * bwidth) + ref_x + of_x;
       i5 = (st_y * 80) + st_x;

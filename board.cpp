@@ -201,6 +201,7 @@ void load_board_direct(Board *cur_board, FILE *fp, int savegame)
   {
     cur_board->board_dir[i] = fgetc(fp);
   }
+
   cur_board->restart_if_zapped = fgetc(fp);
   cur_board->time_limit = fgetw(fp);
   cur_board->last_key = fgetc(fp);
@@ -598,8 +599,8 @@ void save_RLE2_plane(char *plane, FILE *fp, int size)
     current_char = plane[i];
     runsize = 1;
 
-    while((plane[i + 1] == current_char) && (runsize < 127) &&
-     (i < (size - 1)))
+    while((i < (size - 1)) && (plane[i + 1] == current_char) &&
+		 (runsize < 127))
     {
       i++;
       runsize++;

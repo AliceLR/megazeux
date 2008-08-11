@@ -4,6 +4,7 @@
 #include <stdlib.h>
 
 #include "rasm.h"
+#include "fsafeopen.h"
 
 int cm3[]   = { IGNORE_FOR, IMM_U16 | STRING };
 int cm4[]   = { IMM_U16 | STRING };
@@ -1324,10 +1325,14 @@ int match_command(mzx_command *cmd, char *error_buffer)
         if((cmd->param_types[i3] & command_list[i].param_types[i2]) !=
          cmd->param_types[i3])
         {
-          print_error(i3, error_buffer, cmd->param_types[i3],
-           command_list[i].param_types[i2]);
-
-          break;
+					// Can allow char if imm is allowed
+					if(!((cmd->param_types[i3] & CHARACTER) &&
+					 (command_list[i].param_types[i2] & (IMM_S16 | IMM_U16))))
+					{
+						print_error(i3, error_buffer, cmd->param_types[i3],
+						 command_list[i].param_types[i2]);
+						break;
+					}
         }
 
         i3++;
@@ -1727,7 +1732,7 @@ int assemble_command(int command_number, mzx_command *cmd, void *params[32],
 
 char *assemble_file(char *name, int *size)
 {
-  FILE *input_file = fopen(name, "rt");
+  FILE *input_file = fsafeopen(name, "rt");
   char line_buffer[256];
   char bytecode_buffer[256];
   char error_buffer[256];

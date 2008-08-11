@@ -54,9 +54,6 @@ extern int topindex, backindex;
 #define parsedir(a, b, c, d) \
 parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3]) \
 
-// Commands per cycle - Exo
-int commands = 40;
-
 char *item_to_counter[9] =
 {
   "GEMS",
@@ -181,7 +178,9 @@ int place_at_xy(World *mzx_world, int id, int color, int param, int x, int y)
   else
 
   if(new_id == 127)
+	{
     return 0; // Don't allow the player to be overwritten
+	}
 
   if(param == 256)
   {
@@ -190,6 +189,7 @@ int place_at_xy(World *mzx_world, int id, int color, int param, int x, int y)
 
   id_place(mzx_world, x, y, id,
    fix_color(color, src_board->level_color[offset]), param);
+
   return 1;
 }
 
@@ -287,7 +287,7 @@ void send_at_xy(World *mzx_world, int id, int x, int y, char *label)
 
   if((d_id == 123) || (d_id == 124))
   {
-    char label_buffer[128];
+    char label_buffer[256];
     tr_msg(mzx_world, label, id, label_buffer);
     send_robot_id(mzx_world, src_board->level_param[offset], label_buffer, 0);
   }
@@ -320,7 +320,7 @@ int get_random_range(int min_value, int max_value)
 
 int send_self_label_tr(World *mzx_world, char *param, int id)
 {
-  char label_buffer[128];
+  char label_buffer[256];
   tr_msg(mzx_world, param, id, label_buffer);
 
   if(send_robot_id(mzx_world, id, label_buffer, 1))
@@ -873,7 +873,7 @@ void replace_player(World *mzx_world)
 void run_robot(World *mzx_world, int id, int x, int y)
 {
   Board *src_board = mzx_world->current_board;
-  Robot *cur_robot = src_board->robot_list[id];
+  Robot *cur_robot;
   int i, fade = get_fade_status();
   int cmd; // Command to run
   int lines_run = 0; // For preventing infinite loops
@@ -915,7 +915,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
   }
   else
   {
-    int walk_dir = cur_robot->walk_dir;
+		int walk_dir;
+		cur_robot = src_board->robot_list[id];
+    walk_dir = cur_robot->walk_dir;
+
     // Reset x/y
     cur_robot->xpos = x;
     cur_robot->ypos = y;
@@ -950,8 +953,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
       else
 
       if(move_status > 0)
+			{
         send_robot_id(mzx_world, id, "thud", 1);
-
+			}
       else
       {
         // Update x/y
@@ -1206,12 +1210,15 @@ void run_robot(World *mzx_world, int id, int x, int y)
             // delete at x y
             int offset = x + (y * board_width);
             int new_id = level_id[offset];
-            int param = level_param[offset];
             int color = level_color[offset];
-            if(place_at_xy(mzx_world, new_id, color, param, new_x, new_y))
+            if(place_at_xy(mzx_world, new_id, color, id, new_x, new_y))
+						{
               id_remove_top(mzx_world, x, y);
-            done = 1;
+							x = new_x;
+							y = new_y;
+						}
           }
+          done = 1;
         }
         break;
       }
@@ -1220,8 +1227,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = next_param_pos(cmd_ptr + 1);
-        char src_buffer[128];
-        char dest_buffer[128];
+        char src_buffer[256];
+        char dest_buffer[256];
         tr_msg(mzx_world, dest_string, id, dest_buffer);
 
         // Setting a string
@@ -1252,6 +1259,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           int value;
           mzx_world->special_counter_return = NONE;
           value = parse_param(mzx_world, src_string, id);
+
           if(mzx_world->special_counter_return != NONE)
           {
             gotoed = set_counter_special(mzx_world,
@@ -1276,8 +1284,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = next_param_pos(cmd_ptr + 1);
-        char src_buffer[128];
-        char dest_buffer[128];
+        char src_buffer[256];
+        char dest_buffer[256];
         tr_msg(mzx_world, dest_string, id, dest_buffer);
 
         // Incrementing a string
@@ -1311,8 +1319,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = next_param_pos(cmd_ptr + 1);
-        char src_buffer[128];
-        char dest_buffer[128];
+        char src_buffer[256];
+        char dest_buffer[256];
         tr_msg(mzx_world, dest_string, id, dest_buffer);
         int value = parse_param(mzx_world, src_string, id);
 
@@ -1337,8 +1345,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         char *p2 = next_param_pos(cmd_ptr + 1);
         char *src_string = p2 + 3;
         int comparison = parse_param(mzx_world, p2, id);
-        char src_buffer[128];
-        char dest_buffer[128];
+        char src_buffer[256];
+        char dest_buffer[256];
         int success = 0;
 
         if(is_string(dest_string))
@@ -1948,7 +1956,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 27: // double c
       {
-        char dest_buffer[128];
+        char dest_buffer[256];
         tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
         mul_counter(mzx_world, dest_buffer, 2, id);
         break;
@@ -1956,7 +1964,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 28: // half c
       {
-        char dest_buffer[128];
+        char dest_buffer[256];
         tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
         div_counter(mzx_world, dest_buffer, 2, id);
         break;
@@ -1970,8 +1978,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 30: // Send robot label
       {
-        char robot_name_buffer[128];
-        char label_buffer[128];
+        char robot_name_buffer[256];
+        char label_buffer[256];
         char *p2 = next_param_pos(cmd_ptr + 1);
         tr_msg(mzx_world, cmd_ptr + 2, id, robot_name_buffer);
         tr_msg(mzx_world, p2 + 1, id, label_buffer);
@@ -2078,7 +2086,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       // FIXME - Get sound system working, of course...
       case 38: // Mod
       {
-        char mod_name_buffer[128];
+        char mod_name_buffer[256];
         tr_msg(mzx_world, cmd_ptr + 2, id, mod_name_buffer);
         magic_load_mod(mzx_world, mod_name_buffer);
         volume_mod(src_board->volume);
@@ -2087,7 +2095,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 39: // sam
       {
-        char sam_name_buffer[128];
+        char sam_name_buffer[256];
         int frequency = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
         tr_msg(mzx_world, p2 + 1, id, sam_name_buffer);
@@ -2263,7 +2271,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 54: // Zap label num
       {
-        char label_buffer[128];
+        char label_buffer[256];
         char *p2 = next_param_pos(cmd_ptr + 1);
         int num_times = parse_param(mzx_world, p2, id);
         int i;
@@ -2279,7 +2287,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 55: // Restore label num
       {
-        char label_buffer[128];
+        char label_buffer[256];
         char *p2 = next_param_pos(cmd_ptr + 1);
         int num_times = parse_param(mzx_world, p2, id);
         int i;
@@ -2339,7 +2347,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           int old_board = mzx_world->current_board_id;
           int old_target = target_where;
           // Have to fix vars and move to next command NOW, in case player
-          // is send to another screen!
+          // is sent to another screen!
           mzx_world->first_prefix = 0;
           mzx_world->mid_prefix = 0;
           mzx_world->last_prefix = 0;
@@ -2348,6 +2356,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           if(!program[cur_robot->cur_prog_line])
             cur_robot->cur_prog_line = 0;
+
           cur_robot->cycle_count = 0;
           cur_robot->xpos = x;
           cur_robot->ypos = y;
@@ -2625,7 +2634,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         if((put_id == 100) && *(cmd_ptr + 1) && (*(cmd_ptr + 2) == '@'))
         {
           int dest_width, dest_height;
-          char mzm_name_buffer[128];
+          char mzm_name_buffer[256];
           // "Type" must be 0, 1, or 2; board, overlay, or vlayer
           put_param %= 3;
 
@@ -2677,19 +2686,17 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 81: // Send x y "label"
       {
-        if(id)
-        {
-          int send_x = parse_param(mzx_world, cmd_ptr + 1, id);
-          char *p2 = next_param_pos(cmd_ptr + 1);
-          int send_y = parse_param(mzx_world, p2, id);
-          char *p3 = next_param_pos(p2);
-          prefix_mid_xy(mzx_world, &send_x, &send_y, x, y);
+        int send_x = parse_param(mzx_world, cmd_ptr + 1, id);
+        char *p2 = next_param_pos(cmd_ptr + 1);
+        int send_y = parse_param(mzx_world, p2, id);
+        char *p3 = next_param_pos(p2);
+        prefix_mid_xy(mzx_world, &send_x, &send_y, x, y);
 
-          send_at_xy(mzx_world, id, send_x, send_y, p3 + 1);
-          // Did the position get changed? (send to self)
-          if(old_pos != cur_robot->cur_prog_line)
-            gotoed = 1;
-        }
+        send_at_xy(mzx_world, id, send_x, send_y, p3 + 1);
+        // Did the position get changed? (send to self)
+        if(old_pos != cur_robot->cur_prog_line)
+          gotoed = 1;
+
         break;
       }
 
@@ -2697,7 +2704,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         Robot *dest_robot;
         int first, last;
-        char robot_name_buffer[128];
+        char robot_name_buffer[256];
         // Get the robot name
         tr_msg(mzx_world, cmd_ptr + 2, id, robot_name_buffer);
 
@@ -2915,7 +2922,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 95: // inc c r
       {
-        char dest_buffer[128];
+        char dest_buffer[256];
         char *p2 = next_param_pos(cmd_ptr + 1);
         char *p3 = next_param_pos(p2);
         int min_value = parse_param(mzx_world, p2, id);
@@ -2930,7 +2937,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 96: // dec c r
       {
-        char dest_buffer[128];
+        char dest_buffer[256];
         char *p2 = next_param_pos(cmd_ptr + 1);
         char *p3 = next_param_pos(p2);
         int min_value = parse_param(mzx_world, p2, id);
@@ -2945,7 +2952,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 97: // set c r
       {
-        char dest_buffer[128];
+        char dest_buffer[256];
         char *p2 = next_param_pos(cmd_ptr + 1);
         char *p3 = next_param_pos(p2);
         int min_value = parse_param(mzx_world, p2, id);
@@ -3076,7 +3083,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 102: // Mesg
       {
-        char message_buffer[128];
+        char message_buffer[256];
         tr_msg(mzx_world, cmd_ptr + 2, id, message_buffer);
         set_mesg_direct(src_board, message_buffer);
         break;
@@ -3089,7 +3096,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 117:
       {
         // Box messages!
-        char label_buffer[128];
+        char label_buffer[256];
         int cur_prog_line = cur_robot->cur_prog_line;
         int next_cmd = 0;
 
@@ -3123,7 +3130,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         // (unless first char is a @)
         if(cmd_ptr[2] == '@')
         {
-          char name_buffer[128];
+          char name_buffer[256];
           tr_msg(mzx_world, cmd_ptr + 3, id, name_buffer);
           name_buffer[15] = 0;
 
@@ -3142,7 +3149,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 109: // teleport
       {
-        char board_dest_buffer[128];
+        char board_dest_buffer[256];
         char *p2 = next_param_pos(cmd_ptr + 1);
         int teleport_x = parse_param(mzx_world, p2, id);
         char *p3 = next_param_pos(p2);
@@ -3202,7 +3209,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 111: // input string
       {
-        char input_buffer[128];
+        char input_buffer[256];
 
         m_hide();
         save_screen();
@@ -3230,7 +3237,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 112: // If string "" "l"
       {
-        char cmp_buffer[128];
+        char cmp_buffer[256];
         tr_msg(mzx_world, cmd_ptr + 2, id, cmp_buffer);
         if(!strcasecmp(cmp_buffer, src_board->input_string))
         {
@@ -3242,7 +3249,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 113: // If string not "" "l"
       {
-        char cmp_buffer[128];
+        char cmp_buffer[256];
         tr_msg(mzx_world, cmd_ptr + 2, id, cmp_buffer);
         if(strcasecmp(cmp_buffer, src_board->input_string))
         {
@@ -3255,7 +3262,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 114: // If string matches "" "l"
       {
         // compare
-        char cmp_buffer[128];
+        char cmp_buffer[256];
         char *input_string = src_board->input_string;
         tr_msg(mzx_world, cmd_ptr + 2, id, cmp_buffer);
         char current_char;
@@ -3330,7 +3337,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int offset;
         int dcolor;
 
-        parsedir(move_dir, x, y, cur_robot->walk_dir);
+        move_dir = parsedir(move_dir, x, y, cur_robot->walk_dir);
         split_colors(move_color, &fg, &bg);
 
         if((move_dir >= 1) && (move_dir <= 4))
@@ -3392,6 +3399,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
          &dest_x, &dest_y, x, y);
 
         copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
+
+				if((dest_x == x) && (dest_y == y))
+					return;
+
         update_blocked = 1;
         break;
       }
@@ -3409,7 +3420,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         if((direction >= 1) && (direction <= 4))
         {
           char *p2 = next_param_pos(cmd_ptr + 1);
-          char board_name_buffer[128];
+          char board_name_buffer[256];
           int board_number;
 
           tr_msg(mzx_world, p2 + 1, id, board_name_buffer);
@@ -3540,7 +3551,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
              !move_dir(src_board, &dest_x, &dest_y, dest_dir - 1))
             {
               copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
-            }
+						
+							if((dest_x == x) && (dest_y == y))
+								return;
+						}
           }
         }
         update_blocked = 1;
@@ -3782,7 +3796,6 @@ void run_robot(World *mzx_world, int id, int x, int y)
         break;
       }
 
-      // FIXME - how to make this work..?
       case 144: // jump mod order #
       {
         jump_mod(parse_param(mzx_world, cmd_ptr + 1, id));
@@ -3791,7 +3804,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 145: // ask yes/no
       {
-        char question_buffer[128];
+        char question_buffer[256];
         int send_status;
 
         if(fade)
@@ -4062,6 +4075,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
           level_color[offset] = duplicate_color;
           level_param[offset] = dest_id;
 
+					x = duplicate_x;
+					y = duplicate_y;
+
           replace_player(mzx_world);
 
           done = 1;
@@ -4103,6 +4119,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
           level_id[offset] = duplicate_id;
           level_color[offset] = duplicate_color;
           level_param[offset] = dest_id;
+
+					x = duplicate_x;
+					y = duplicate_y;
 
           replace_player(mzx_world);
 
@@ -4196,7 +4215,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 200: // Mod fade in
       {
-        char name_buffer[128];
+        char name_buffer[256];
         src_board->volume_inc = 8;
         src_board->volume_target = 255;
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
@@ -4228,7 +4247,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int src_type = 0, dest_type = 0;
         if((*p1) && (*(p1 + 1) == '#'))
         {
-          char src_char_buffer[128];
+          char src_char_buffer[256];
           src_width = mzx_world->vlayer_width;
           src_height = mzx_world->vlayer_height;
           src_type = 2;
@@ -4242,7 +4261,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if((*p2) && (*(p2 + 1) == '#'))
         {
-          char src_char_buffer[128];
+          char src_char_buffer[256];
           src_width = mzx_world->vlayer_width;
           src_height = mzx_world->vlayer_height;
           src_type = 2;
@@ -4273,7 +4292,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           if(*(p5 + 1) == '@')
           {
             int copy_type = parse_param(mzx_world, p6, id);
-            char name_buffer[128];
+            char name_buffer[256];
             tr_msg(mzx_world, p5 + 2, id, name_buffer);
             prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
              src_width, src_height);
@@ -4285,7 +4304,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           if(is_string(p5 + 1))
           {
-            char str_buffer[128];
+            char str_buffer[256];
             int t_char = parse_param(mzx_world, p6, id);
             prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
              src_width, src_height);
@@ -4331,7 +4350,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if(dest_type)
         {
-          char dest_char_buffer[128];
+          char dest_char_buffer[256];
           tr_msg(mzx_world, p5 + 1, id, dest_char_buffer);
           dest_x = strtol(dest_char_buffer + 1, NULL, 10);
           tr_msg(mzx_world, p6 + 1, id, dest_char_buffer);
@@ -4442,6 +4461,20 @@ void run_robot(World *mzx_world, int id, int x, int y)
             break;
           }
         }
+
+        // If we got deleted, exit
+        if(id)
+        {
+					int offset = x + (y * board_width);
+          int d_id = level_id[offset];
+					int d_param = level_param[offset];
+
+          if(((d_id != 123) && (d_id != 124)) || (d_param != id))
+            return;
+
+          update_blocked = 1;
+        }
+
         break;
       }
 
@@ -4466,7 +4499,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int src_type = 1, dest_type = 1;
         if((*p1) && (*(p1 + 1) == '#'))
         {
-          char src_char_buffer[128];
+          char src_char_buffer[256];
           src_width = mzx_world->vlayer_width;
           src_height = mzx_world->vlayer_height;
           src_type = 2;
@@ -4480,7 +4513,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if((*p2) && (*(p2 + 1) == '#'))
         {
-          char src_char_buffer[128];
+          char src_char_buffer[256];
           src_width = mzx_world->vlayer_width;
           src_height = mzx_world->vlayer_height;
           src_type = 2;
@@ -4510,7 +4543,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           if(*(p5 + 1) == '@')
           {
             int copy_type = parse_param(mzx_world, p6, id);
-            char name_buffer[128];
+            char name_buffer[256];
             tr_msg(mzx_world, p5 + 2, id, name_buffer);
             prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
              src_width, src_height);
@@ -4521,7 +4554,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           if(is_string(p5 + 1))
           {
-            char str_buffer[128];
+            char str_buffer[256];
             int t_char = parse_param(mzx_world, p6, id);
             tr_msg(mzx_world, p5 + 1, id, str_buffer);
             prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
@@ -4567,7 +4600,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if((dest_type == 0) || (dest_type == 2))
         {
-          char dest_char_buffer[128];
+          char dest_char_buffer[256];
           tr_msg(mzx_world, p5 + 2, id, dest_char_buffer);
           dest_x = strtol(dest_char_buffer, NULL, 10);
           tr_msg(mzx_world, p6 + 2, id, dest_char_buffer);
@@ -4947,7 +4980,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 216: // Load char set ""
       {
-        char charset_name[128];
+        char charset_name[256];
 
         tr_msg(mzx_world, cmd_ptr + 2, id, charset_name);
 
@@ -4987,8 +5020,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = cmd_ptr + next_param(cmd_ptr, 1);
-        char src_buffer[128];
-        char dest_buffer[128];
+        char src_buffer[256];
+        char dest_buffer[256];
         int value = parse_param(mzx_world, src_string + 1, id);
         tr_msg(mzx_world, dest_string, id, dest_buffer);
 
@@ -5000,8 +5033,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = cmd_ptr + next_param(cmd_ptr, 1);
-        char src_buffer[128];
-        char dest_buffer[128];
+        char src_buffer[256];
+        char dest_buffer[256];
         int value = parse_param(mzx_world, src_string + 1, id);
         tr_msg(mzx_world, dest_string, id, dest_buffer);
 
@@ -5013,8 +5046,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = cmd_ptr + next_param(cmd_ptr, 1);
-        char src_buffer[128];
-        char dest_buffer[128];
+        char src_buffer[256];
+        char dest_buffer[256];
         int value = parse_param(mzx_world, src_string + 1, id);
         tr_msg(mzx_world, dest_string, id, dest_buffer);
 
@@ -5040,7 +5073,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       // determine how many to load.
       case 222: // Load palette
       {
-        char name_buffer[128];
+        char name_buffer[256];
 
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
         load_palette(name_buffer);
@@ -5099,7 +5132,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 226: // Swap world str
       {
         int redo_load = 0;
-        char name_buffer[128];
+        char name_buffer[256];
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
 
         do
@@ -5112,6 +5145,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         strcpy(curr_file, name_buffer);
         mzx_world->swapped = 1;
+
         return;
       }
 
@@ -5121,7 +5155,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           Robot *dest_robot;
           int first, last;
-          char robot_name_buffer[128];
+          char robot_name_buffer[256];
           tr_msg(mzx_world, cmd_ptr + 2, id, robot_name_buffer);
 
           find_robot(src_board, robot_name_buffer, &first, &last);
@@ -5167,7 +5201,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 231: // If first string str str
       {
         char *input_string = src_board->input_string;
-        char match_string_buffer[128];
+        char match_string_buffer[256];
         int i = 0;
 
         if(src_board->input_size)
@@ -5230,7 +5264,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         if((counter_slot >= 1) && (counter_slot <= 6))
         {
           char *p2 = next_param_pos(cmd_ptr + 1);
-          char counter_name[128];
+          char counter_name[256];
           tr_msg(mzx_world, p2 + 1, id, counter_name);
 
           if(strlen(counter_name) >= COUNTER_NAME_SIZE)
@@ -5360,7 +5394,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         char *p4 = next_param_pos(p3);
         int write_y = parse_param(mzx_world, p4, id);
         int offset;
-        char string_buffer[128];
+        char string_buffer[256];
         char current_char;
         char *overlay, *overlay_color;
 
@@ -5481,7 +5515,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
     }
     find_player(mzx_world);
 
-  } while(((++lines_run) < commands) && (!done));
+  } while(((++lines_run) < mzx_world->commands) && (!done));
 
   breaker:
 

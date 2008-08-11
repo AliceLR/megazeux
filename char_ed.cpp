@@ -297,6 +297,7 @@ int char_editor(World *mzx_world)
         break;
       }
 
+			case SDLK_KP_ENTER:
       case SDLK_RETURN:
       {
         int new_char = char_selection(current_char);
@@ -705,6 +706,7 @@ int smzx_char_editor(World *mzx_world)
         break;
       }
 
+			case SDLK_KP_ENTER:
       case SDLK_RETURN:
       {
         int new_char = char_selection(current_char);

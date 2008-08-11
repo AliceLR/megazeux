@@ -34,7 +34,9 @@ int get_pw_xor_code(char *password, int pro_method)
   // Clear pw after first null
 
   for(i = strlen(password); i < 16; i++)
+	{
     password[i] = 0;
+	}
 
   for(i = 0; i < 15; i++)
   {
@@ -46,13 +48,13 @@ int get_pw_xor_code(char *password, int pro_method)
 
     if(i & 1)
     {
-      work += password[i]; // Add (even byte)
+      work += (signed char)password[i]; // Add (even byte)
       if(work > 255)
         work ^= 257; // Wraparound from add
     }
     else
     {
-      work ^= password[i]; // XOR (odd byte);
+      work ^= (signed char)password[i]; // XOR (odd byte);
     }
   }
   // To factor in protection method, add it in and roll one last time
@@ -79,9 +81,9 @@ void decrypt(char *file_name)
   int pro_method;
   int i;
   int len;
-  int num_boards;
-  int offset_low_byte;
-  int xor_val;
+  char num_boards;
+  char offset_low_byte;
+  char xor_val;
   char password[15];
   char *file_buffer;
   char *src_ptr;
@@ -148,14 +150,14 @@ void decrypt(char *file_name)
 
   src_ptr += 4;
 
-  num_boards = (*src_ptr) ^ xor_val;
+  num_boards = ((*src_ptr) ^ xor_val);
   src_ptr++;
 
   // If custom SFX is there, run through and skip it
   if(!num_boards)
   {
-    int sfx_length = src_ptr[0] ^ xor_val;
-    sfx_length |= (src_ptr[1] ^ xor_val) << 8;
+    int sfx_length = (char)(src_ptr[0] ^ xor_val);
+    sfx_length |= ((char)(src_ptr[1] ^ xor_val)) << 8;
     src_ptr += sfx_length + 2;
     num_boards = (*src_ptr) ^ xor_val;
     src_ptr++;

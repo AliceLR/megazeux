@@ -380,6 +380,7 @@ int list_menu(char *choices, int choice_size, char *title,
         current = i;
       }
 
+			case SDLK_KP_ENTER:
       case SDLK_RETURN:
         // Selected
         restore_screen();
@@ -573,6 +574,7 @@ int char_selection(unsigned char current)
          return -current;
 
       case SDLK_SPACE:
+			case SDLK_KP_ENTER:
       case SDLK_RETURN:
         enter:
         // Selected
@@ -784,6 +786,7 @@ int color_selection(int current, int allow_wild)
       // ESC
       case SDLK_ESCAPE:
       case SDLK_SPACE:
+			case SDLK_KP_ENTER:
       case SDLK_RETURN:
         enter:
         pop_context();
@@ -1154,6 +1157,7 @@ int run_dialog(World *mzx_world, dialog *di, char reset_curr,
         break;
 
       case SDLK_SPACE: // Space
+			case SDLK_KP_ENTER:
       case SDLK_RETURN: // Enter
         enter:
         // Activate button, choose from list/menu, or toggle check.

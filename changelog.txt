@@ -1,3 +1,55 @@
++ Fixed issues with the commands counter not being reset
++ Color intensity now gets reset when you enter the editor
++ SAMs got cutoff sometimes now.. fixed
++ Fixed bug where loading a world with empty boards could change the starting,
+  endgame, and death boards
++ Fixed bug where you could text enter off the bottom of the board, causing
+  problems
++ Fixed bug involving cutting/clearing the entire robot in the robot editor
+  while not at the first line
++ Fixed robot name entry for global robot not disappearing on small boards
++ Fixed bug where you could duplicate the player by holding down a direction
+  as a saved game loads
++ Fixed bug where you could go to line 0 in the robot editor
++ Saving an MZM now auto-adds the .mzm extension...
++ Fixed black screen on quicksave
++ Fixed bug where opening a file didn't close the old one if one was open
+  (so it'd eventually crash MZX)
++ Changed alt+backspace behavior in intake so it doesn't exit
++ Added clipping for refx/refy/width/height for sprites (less than 0 at
+  initialization, greater than board width/height at draw)
++ Fixed direction parsing for move all
++ Fixed bug where creating things on top of the player would use a slot
+  for robots/scrolls/signs/sensors instead of just copy to the buffer
++ Added ability to use chars as immediates in Robotic commands
+  (ie, set "$str.0" 'a')
++ Added options to enable oversampling and specify resampling mode in
+  the config file (higher quality audio)
++ Building with patched modplug that fixes loading 2-channel mods
+  outputted by FT2. If you're building yourself, see build.txt.
++ Fixed inability to mouse click in alt + h mode
++ Fixed ability to mouse click outside of board range
++ Should work better for Linux users; case insensitivity for file opens
+  has been added.
++ Fixed close bug that was affecting Linux builds (may affect more)
++ Keypad enter works where normal enter works now
++ Fixed disappearing cursor when cancelling out of abandon changes box
+  when loading a new world in the editor
++ Fixed problems when loading/saving robots outside of ID range (do not
+  hardcode ID's people)
++ Fixed problem with NO BOARD exits being set to something else when
+  empty boards were being stripped or when worlds were being imported
++ Fixed bug where auto-decrypting worlds didn't work if the XOR value
+  was negative
++ Fixed problem with rid not working the first cycle
++ Fixed inability to interpolate (with &&'s) counter names larger than
+  14
++ Added new robot mem counter in debug box (only kb precise, rounds up)
++ Fixed ability to clone the player on non-title board after testing
++ Lengthened size of mod name buffers
++ Fixed bug where send x y doesn't work from the global robot
++ Fixed a few bugs that could cause MZX to crash
+
 August 11, 2004 - MZX 2.80b
 
 + Made it possible for robots to move through teleporters

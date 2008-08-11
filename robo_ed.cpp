@@ -36,6 +36,7 @@
 #include "char_ed.h"
 #include "helpsys.h"
 #include "edit.h"
+#include "fsafeopen.h"
 
 #define combine_colors(a, b)  \
   (a) | (b << 4)              \
@@ -471,6 +472,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
+			case SDLK_KP_ENTER:
       case SDLK_RETURN:
       {
         if(current_x)
@@ -799,8 +801,8 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 						if(line > total_lines)
 							line = total_lines;
 
-						if(line < 0)
-							line = 0;
+						if(line < 1)
+							line = 1;
 
 						if(line < current_line)
 					  {
@@ -1782,6 +1784,7 @@ robot_line *clear_block(int first_line, robot_line *first_rline,
     if(add_blank_line(NULL, previous, size))
       *total_lines = 1;
 
+		*current_line = 1;
 		cursor_rline = previous->next;
   }
 	else
@@ -1908,7 +1911,7 @@ void import_block(World *mzx_world, robot_line *current_rline,
 
   if(!choose_file(txt_ext, import_name, "Import Robot", 0))
   {
-    FILE *import_file = fopen(import_name, "rt");
+    FILE *import_file = fsafeopen(import_name, "rt");
     char line_buffer[256];
     int i;
 

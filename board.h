@@ -32,7 +32,7 @@ struct _Board
 {
   int size;
 
-  char board_name[BOARD_NAME_SIZE];
+  char board_name[32];
 
   int board_width;
   int board_height;
@@ -47,7 +47,7 @@ struct _Board
   char *overlay;
   char *overlay_color;
 
-  char mod_playing[FILENAME_SIZE];
+  char mod_playing[256];
   int viewport_x;
   int viewport_y;
   int viewport_width;

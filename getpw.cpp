@@ -22,7 +22,6 @@
 #include <stdio.h>
 #include <dir.h>
 #include <string.h>
-#include "meminter.h"
 
 char magic_code[16] = "æRëòmMJ·‡²’ˆÞ‘$";
 int pro_method, pw_size;
@@ -77,6 +76,7 @@ int main(int argc, char *argv[])
 {
   FILE *source;
   FILE *dest;
+
   int i;
   int len;
   printf("\n\n");
@@ -92,7 +92,8 @@ int main(int argc, char *argv[])
 
   if(pro_method)
   {
-    //Password
+		printf("deprotecting %d\n", pro_method);
+    // Password
     fread(password, 1, 15, source);
     // First, normalize password...
     for(i = 0; i < 15; i++)
@@ -104,6 +105,13 @@ int main(int argc, char *argv[])
 
     // Show!
     printf("Password: %s\n", password);
+
+		for(i = 0; i < strlen(password); i++)
+		{
+			printf("(%d) ", (unsigned char)password[i]);
+		}
+
+		printf("\n");
 
     // Deprotect?
     if((argc > 2) && ((argv[2][1] == 'd') || (argv[2][1] == 'D')))
@@ -128,8 +136,12 @@ int main(int argc, char *argv[])
 
       fputc(0, dest);
       fseek(source, 19, SEEK_CUR);
+			printf("saving magic string\n");
       fputs("M\x02\x11", dest);
       len -= 44;
+
+			printf("saving decrypted file\n");
+
       for(; len > 0; len--)
       {
         fputc(fgetc(source) ^ xor_val, dest);
@@ -140,7 +152,9 @@ int main(int argc, char *argv[])
       fseek(source, 4245, SEEK_SET);
       fseek(dest, 4230, SEEK_SET);
 
-      offset_low_byte = fgetc(source) ^ xor_val;
+			printf("fixing global robot offset\n");
+
+      offset_low_byte = (fgetc(source) ^ xor_val) & 0xFF;
       fputc(offset_low_byte - 15, dest);
       if(offset_low_byte < 15)
       {
@@ -154,18 +168,19 @@ int main(int argc, char *argv[])
       fputc(fgetc(source) ^ xor_val, dest);
       fputc(fgetc(source) ^ xor_val, dest);
 
-      num_boards = fgetc(source) ^ xor_val;
+			num_boards = (fgetc(source) ^ xor_val) & 0xFF;
+
       // If custom SFX is there, run through and skip it
       if(!num_boards)
       {
-        int sfx_length = fgetc(source) ^ xor_val;
-        sfx_length |= (fgetc(source) ^ xor_val) << 8;
+        int sfx_length = (fgetc(source) ^ xor_val) & 0xFF;
+        sfx_length |= ((fgetc(source) ^ xor_val) & 0xFF) << 8;
         fseek(source, sfx_length, SEEK_CUR);
         printf("%d\n", sfx_length);
-        num_boards = fgetc(source) ^ xor_val;
+        num_boards = (fgetc(source) ^ xor_val) & 0xFF;
       }
 
-      printf("%d\n", num_boards);
+      printf("fixing boards, %d boards\n", num_boards);
 
       // Skip titles
       fseek(source, 25 * num_boards, SEEK_CUR);
@@ -180,11 +195,9 @@ int main(int argc, char *argv[])
         // Skip length
         fseek(source, 4, SEEK_CUR);
         fseek(dest, 4, SEEK_CUR);
-        printf("dest %d\n", ftell(dest));
-        printf("source %d\n", ftell(source));
 
         // Get offset
-        offset_low_byte = fgetc(source) ^ xor_val;
+        offset_low_byte = (fgetc(source) ^ xor_val) & 0xFF;
         fputc(offset_low_byte - 15, dest);
         if(offset_low_byte < 15)
         {
@@ -202,7 +215,9 @@ int main(int argc, char *argv[])
     }
   }
   else
+	{
     printf("No password!\n\a");
+	}
 
   fclose(source);
 

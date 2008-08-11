@@ -36,6 +36,7 @@
 #include "data.h"
 #include "configure.h"
 #include "gdm2s3m.h"
+#include "fsafeopen.h"
 
 struct _ModPlugFile
 {
@@ -72,8 +73,8 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
       // Reset position
       audio.current_mod->mSoundFile.SetCurrentPos(0);
       // Read anew remaining bytes
-	  	ModPlug_Read(audio.current_mod, audio.mod_buffer + read_len,
-			 len - read_len);
+      ModPlug_Read(audio.current_mod, audio.mod_buffer + read_len,
+       len - read_len);
     }
   }
   else
@@ -232,10 +233,42 @@ void init_audio(config_info *conf)
     NULL
   };
 
+  if(conf->oversampling_on)
+  {
+    audio.mod_settings.mFlags = MODPLUG_ENABLE_OVERSAMPLING;
+  }
+
   audio.mod_settings.mFrequency = 44100;
   audio.mod_settings.mChannels = 2;
   audio.mod_settings.mBits = 16;
-  audio.mod_settings.mResamplingMode = MODPLUG_RESAMPLE_LINEAR;
+
+  switch(conf->resampling_mode)
+  {
+    case 0:
+    {
+      audio.mod_settings.mResamplingMode = MODPLUG_RESAMPLE_NEAREST;
+      break;
+    }
+
+    case 1:
+    {
+      audio.mod_settings.mResamplingMode = MODPLUG_RESAMPLE_LINEAR;
+      break;
+    }
+
+    case 2:
+    {
+      audio.mod_settings.mResamplingMode = MODPLUG_RESAMPLE_SPLINE;
+      break;
+    }
+
+    case 3:
+    {
+      audio.mod_settings.mResamplingMode = MODPLUG_RESAMPLE_FIR;
+      break;
+    }
+  }
+  
   audio.mod_settings.mLoopCount = -1;
 
   ModPlug_SetSettings(&audio.mod_settings);
@@ -252,20 +285,23 @@ void load_mod(char *filename)
   char *input_buffer;
   int file_size;
   int extension_pos = strlen(filename) - 4;
-  char new_file[256];
+  char new_file[MAX_PATH];
 
   if(extension_pos && !strcasecmp(filename + extension_pos, ".gdm"))
   {
-		struct stat file_info;
+    char translated_filename_src[MAX_PATH];
+    char translated_filename_dest[MAX_PATH];
 
     // GDM -> S3M
     strcpy(new_file, filename);
     memcpy(new_file + extension_pos, ".s3m", 4);
 
-    if(stat(new_file, &file_info))
+    fsafetranslate(filename, translated_filename_src);
+
+    if(fsafetranslate(new_file, translated_filename_dest) < 0)
     {
       // If it doesn't exist, create it by converting.
-			convert_gdm_s3m(filename, new_file);
+      convert_gdm_s3m(translated_filename_src, new_file);
     }
 
     filename = new_file;
@@ -274,7 +310,7 @@ void load_mod(char *filename)
   if(audio.mod_playing)
     end_mod();
 
-  input_file = fopen(filename, "rb");
+  input_file = fsafeopen(filename, "rb");
 
   if(input_file)
   {
@@ -304,7 +340,6 @@ void end_mod(void)
 
 void play_sample(int freq, char *filename)
 {
-  struct stat file_info;
   FILE *input_file;
   char *input_buffer;
   int file_size;
@@ -313,23 +348,29 @@ void play_sample(int freq, char *filename)
 
   // FIXME - destroy least recently used?
   if(audio.num_samples_playing >= MAX_SAMS)
-		return;
+    return;
 
-  if((extension_pos >= 0) && !strcasecmp(filename + extension_pos, ".sam"))
+  if(extension_pos && !strcasecmp(filename + extension_pos, ".sam"))
   {
-    // SAM -> WAV
+    char translated_filename_src[MAX_PATH];
+    char translated_filename_dest[MAX_PATH];
+
+    // GDM -> S3M
     strcpy(new_file, filename);
     memcpy(new_file + extension_pos, ".wav", 4);
 
-    if(stat(new_file, &file_info))
+    fsafetranslate(filename, translated_filename_src);
+
+    if(fsafetranslate(new_file, translated_filename_dest) < 0)
     {
-      // Create it
-      convert_sam_to_wav(filename, new_file);
+      // If it doesn't exist, create it by converting.
+      convert_sam_to_wav(translated_filename_src, new_file);
     }
+
     filename = new_file;
   }
 
-  input_file = fopen(filename, "rb");
+  input_file = fsafeopen(filename, "rb");
 
   if(input_file)
   {
@@ -344,31 +385,14 @@ void play_sample(int freq, char *filename)
 
     if(sample_loaded)
     {
-			int sample_length = sample_loaded->mSoundFile.Ins[1].nLength; 
-
       // A little hack to modify the pitch
       sample_loaded->mSoundFile.Ins[1].nC4Speed = (freq_conversion / freq) / 2;
       sample_loaded->mSoundFile.Ins[2].nC4Speed = (freq_conversion / freq) / 2;
       sample_loaded->mSoundFile.Ins[1].nVolume = (256 * sound_gvol) / 8;
       sample_loaded->mSoundFile.Ins[2].nVolume = (256 * sound_gvol) / 8;
 
-			// This number is pretty much obtained via experimentation. It can probably
-			// stand to be a little higher.
-			sample_length /= 110;
-
-			if(sample_length < 256)
-			{
-				sample_loaded->mSoundFile.Patterns[0][0].param = sample_length;
-				sample_loaded->mSoundFile.Patterns[0][2].command = CMD_PATTERNBREAK;
-			}
-			else
-			{
-				int row_duration = sample_length / 255;
-				sample_loaded->mSoundFile.Patterns[0][0].param = 255;
-				if(row_duration < 62)
-					sample_loaded->mSoundFile.Patterns[0][2 + row_duration].command =
-					 CMD_PATTERNBREAK;
-			}
+      // This number is pretty much obtained via experimentation. It can probably
+      // stand to be a little higher.
 
       // Find a free position to put it
       for(i = 0; i < 16; i++)
@@ -384,7 +408,7 @@ void play_sample(int freq, char *filename)
     }
 
     free(input_buffer);
-		fclose(input_file);
+    fclose(input_file);
   }
 }
 
@@ -567,4 +591,3 @@ void convert_sam_to_wav(char *source_name, char *dest_name)
   fclose(source);
   fclose(dest);
 }
-

@@ -269,6 +269,7 @@ void title_screen(World *mzx_world)
           break;
         }
 
+				case SDLK_KP_ENTER:
         case SDLK_RETURN: // Enter
         {
           int fade_status = get_fade_status();
@@ -534,7 +535,7 @@ void title_screen(World *mzx_world)
 
 					if(reload_savegame(mzx_world, curr_sav, &fadein))
 					{
-             vquick_fadeout();
+						vquick_fadeout();
           }
           else
           {
@@ -1234,6 +1235,7 @@ void play_game(World *mzx_world, int fadein)
           break;
         }
 
+				case SDLK_KP_ENTER:
         case SDLK_RETURN: // Enter
         {
           send_robot_all(mzx_world, "KeyEnter");
@@ -1381,6 +1383,8 @@ void play_game(World *mzx_world, int fadein)
               load_mod(src_board->mod_playing);
               strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
 
+							find_player(mzx_world);
+
               strcpy(curr_sav, save_file_name);
               send_robot_def(mzx_world, 0, 10);
               dead = 0;
@@ -1496,13 +1500,10 @@ void play_game(World *mzx_world, int fadein)
              (src_board->level_under_id[mzx_world->player_x +
              (src_board->board_width * mzx_world->player_y)] == 122)))
             {
-							int fade_status;
+							int fade_status = get_fade_status();
 
               // Save entire game
               save_world(mzx_world, curr_sav, 1, fade_status);
-
-              if(fade_status)
-                insta_fadeout();
             }
 					}
 					break;
@@ -1525,6 +1526,9 @@ void play_game(World *mzx_world, int fadein)
 	
 						// Reset this
 						src_board = mzx_world->current_board;
+
+						find_player(mzx_world);
+
 						// Swap in starting board
 						load_mod(src_board->mod_playing);
 						strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
@@ -3108,9 +3112,6 @@ int update(World *mzx_world, int game, int *fadein)
 
   if(mzx_world->swapped)
   {
-    mzx_world->current_board_id = mzx_world->first_board;
-    mzx_world->current_board =
-    mzx_world->board_list[mzx_world->current_board_id];
     src_board = mzx_world->current_board;
     load_mod(src_board->mod_playing);
     strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
@@ -3156,6 +3157,7 @@ int update(World *mzx_world, int game, int *fadein)
     if(strcasecmp(mzx_world->real_mod_playing, src_board->mod_playing) &&
      strcmp(src_board->mod_playing, "*"))
       update_music = 1;
+
 
     level_id = src_board->level_id;
     level_param = src_board->level_param;
@@ -3373,6 +3375,13 @@ void find_player(World *mzx_world)
   char *level_id = src_board->level_id;
   int offset;
 
+	if((mzx_world->player_x > board_width) ||
+	 (mzx_world->player_y > board_height))
+	{
+		mzx_world->player_x = 0;
+		mzx_world->player_y = 0;
+	}
+
   if(level_id[mzx_world->player_x +
    (mzx_world->player_y * board_width)] != 127)
   {
@@ -3454,19 +3463,30 @@ int give_key(World *mzx_world, int color)
 void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y)
 {
   Board *src_board = mzx_world->current_board;
+	int i;
+	int robot_mem = 0;
+
   draw_window_box(x, y, x + 19, y + 5, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
    EC_DEBUG_BOX_CORNER, 0, 1);
 
   write_string
   (
-    "X/Y:        /\n"
-    "Board:\n",
+    "X/Y:        /     \n"
+    "Board:            \n"
+		"Robot mem:      kb\n",
     x + 1, y + 1, EC_DEBUG_LABEL, 0
   );
 
   write_number(d_x, EC_DEBUG_NUMBER, x + 8, y + 1, 5);
   write_number(d_y, EC_DEBUG_NUMBER, x + 14, y + 1, 5);
   write_number(mzx_world->current_board_id, EC_DEBUG_NUMBER, x + 18, y + 2, 0, 1);
+
+	for(i = 0; i < src_board->num_robots; i++)
+	{
+		robot_mem += (src_board->robot_list_name_sorted[i])->program_length;
+	}
+
+  write_number((robot_mem + 512) / 1024, EC_DEBUG_NUMBER, x + 12, y + 3, 5, 0);
 
   if(*(src_board->mod_playing) != 0)
   {

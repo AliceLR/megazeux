@@ -175,6 +175,10 @@ int error(char *string, char type, char options, unsigned int code)
   restore_screen();
   m_show();
   if(ret == 4) // Exit the program
+	{
+		SDL_Quit();
     exit(-1);
+	}
+
   return ret;
 }

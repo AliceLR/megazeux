@@ -71,7 +71,7 @@ struct _World
   int scroll_pointer_color;
   int scroll_title_color;
   int scroll_arrow_color;
-  char real_mod_playing[FILENAME_SIZE];
+  char real_mod_playing[256];
 
   int edge_color;
   int first_board;

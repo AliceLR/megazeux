@@ -35,6 +35,8 @@ struct _config_info
 
   // Audio options
   int buffer_size;
+	int oversampling_on;
+	int resampling_mode;
   int music_volume;
   int sam_volume;
   int music_on;

@@ -231,10 +231,11 @@ void save_robot(Robot *cur_robot, FILE *fp, int savegame)
     fputc(0, fp);
     fputc(0, fp);
     fputc(0, fp);
-    fputw(0, fp);
-    fputw(0, fp);
+    fputw(cur_robot->xpos, fp);
+    fputw(cur_robot->ypos, fp);
     fputc(0, fp);
   }
+
   // Junk local
   fputw(0, fp);
   fputc(cur_robot->used, fp);
@@ -1989,7 +1990,7 @@ char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer)
 {
   Board *src_board = mzx_world->current_board;
   int sp = 0, dp = 0, i;
-  char counter_name[64];
+  char counter_name[256];
 
   do
   {
@@ -2023,7 +2024,7 @@ char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer)
       else
       {
         // Input or Counter?
-        for(i = 0; i < (COUNTER_NAME_SIZE - 1); i++)
+        for(i = 0; i < 128; i++)
         {
           counter_name[i] = mesg[sp++];
           if(mesg[sp])
@@ -2123,7 +2124,6 @@ void add_robot_name_entry(Board *src_board, Robot *cur_robot, char *name)
   }
   name_list[first] = cur_robot;
   src_board->num_robots_active = active + 1;
-
 }
 
 // Does not remove entry from the normal list
@@ -2569,7 +2569,7 @@ void optimize_null_objects(Board *src_board)
 
   if(i2 != i)
   {
-    do_modify |= 1;
+		do_modify |= 1;
     optimized_robot_list[0] = robot_list[0];
     free(robot_list);
     src_board->robot_list =
@@ -2595,7 +2595,7 @@ void optimize_null_objects(Board *src_board)
 
   if(i2 != i)
   {
-    do_modify |= 1;
+		do_modify |= 1;
     optimized_scroll_list[0] = scroll_list[0];
     free(scroll_list);
     src_board->scroll_list =
@@ -2622,7 +2622,7 @@ void optimize_null_objects(Board *src_board)
 
   if(i2 != i)
   {
-    do_modify |= 1;
+		do_modify |= 1;
     optimized_sensor_list[0] = sensor_list[0];
     free(sensor_list);
     src_board->sensor_list =
@@ -2638,47 +2638,47 @@ void optimize_null_objects(Board *src_board)
   // Make sure this is up to date
   robot_list = src_board->robot_list;
 
-  if(do_modify)
-  {
-    // Now, physically modify all references on the board
-    for(y = 0, offset = 0; y < board_height; y++)
-    {
-      for(x = 0; x < board_width; x++, offset++)
-      {
-        d_id = level_id[offset];
-        // Is it a robot?
-        if((d_id == 123) || (d_id == 124))
-        {
-          d_param = level_param[offset];
-          d_new_param = robot_id_translation_list[d_param];
-          level_param[offset] = d_new_param;
-          // Also, as a service, set the x/y coordinates, just in case
-          // they haven't been initialized (this is a potential pitfall)
-          cur_robot = robot_list[d_new_param];
-          cur_robot->xpos = x;
-          cur_robot->ypos = y;
-        }
-        else
-
-        // Is it a scoll?
-        if((d_id == 125) || (d_id == 126))
-        {
-          d_param = level_param[offset];
-          d_new_param = scroll_id_translation_list[d_param];
-          level_param[offset] = d_new_param;
-        }
-        else
-
-        // Is it a sensor?
-        if(d_id == 122)
-        {
-          d_param = level_param[offset];
-          d_new_param = sensor_id_translation_list[d_param];
-          level_param[offset] = d_new_param;
-        }
-      }
-    }
-  }
+	if(do_modify)
+	{
+		// Now, physically modify all references on the board
+		for(y = 0, offset = 0; y < board_height; y++)
+		{
+			for(x = 0; x < board_width; x++, offset++)
+			{
+				d_id = level_id[offset];
+				// Is it a robot?
+				if((d_id == 123) || (d_id == 124))
+				{
+					d_param = level_param[offset];
+					d_new_param = robot_id_translation_list[d_param];
+					level_param[offset] = d_new_param;
+					// Also, as a service, set the x/y coordinates, just in case
+					// they haven't been initialized (this is a potential pitfall)
+					cur_robot = robot_list[d_new_param];
+					cur_robot->xpos = x;
+					cur_robot->ypos = y;
+				}
+				else
+	
+				// Is it a scoll?
+				if((d_id == 125) || (d_id == 126))
+				{
+					d_param = level_param[offset];
+					d_new_param = scroll_id_translation_list[d_param];
+					level_param[offset] = d_new_param;
+				}
+				else
+	
+				// Is it a sensor?
+				if(d_id == 122)
+				{
+					d_param = level_param[offset];
+					d_new_param = sensor_id_translation_list[d_param];
+					level_param[offset] = d_new_param;
+				}
+			}
+		}
+	}
 
   // Free the lists
   free(robot_id_translation_list);
@@ -2741,3 +2741,33 @@ void create_blank_sensor_direct(Sensor *cur_sensor)
   memset(cur_sensor, 0, sizeof(Sensor));
 }
 
+int get_robot_id(Board *src_board, char *name)
+{
+  int first, last;
+
+  if(find_robot(src_board, name, &first, &last))
+  {
+    Robot *cur_robot = src_board->robot_list_name_sorted[first];
+    // This is a cheap trick for now since robots don't have
+    // a back-reference for ID's
+    int offset = cur_robot->xpos +
+     (cur_robot->ypos * src_board->board_width);
+		int d_id = src_board->level_id[offset];
+
+		if((d_id == 123) || (d_id == 124))
+		{
+			return src_board->level_param[offset];
+		}
+		else
+		{
+			int i;
+			for(i = 1; i <= src_board->num_robots; i++)
+			{
+				if(!strcmp(name, (src_board->robot_list[i])->robot_name))
+					return i;
+			}
+		}
+  }
+
+  return -1;
+}

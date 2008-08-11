@@ -602,36 +602,14 @@ void global_info(World *mzx_world)
 
       if(intake(cur_robot->robot_name, 14, 34, 13, 15, 1, 0) != SDLK_ESCAPE)
       {
+				restore_screen();
+				save_screen();
         set_context(87);
         robot_editor(mzx_world, cur_robot);
         pop_context();
       }
     }
   } while(redo);
-
-// FIXME - global robot editing
-/*
-  if(ran_dialog == 5)
-  {
-    m_hide();
-    save_screen();
-    draw_window_box(16, 12, 50, 14, EC_DEBUG_BOX,
-      EC_DEBUG_BOX_DARK, EC_DEBUG_BOX_CORNER, 1, 1);
-    write_string("Name for robot:", 18, 13, EC_DEBUG_LABEL, 0);
-    m_show();
-    if(intake(robots[NUM_ROBOTS].robot_name,14,34,13,current_pg_seg,15,1,
-              0)==27)
-    {
-      restore_screen(current_pg_seg);
-      pop_context();
-      return;
-    }
-    restore_screen(current_pg_seg);
-    set_context(87);
-    robot_editor(NUM_ROBOTS);//Global robot
-    pop_context();
-  }
-*/
 
   pop_context();
 }

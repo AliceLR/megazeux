@@ -156,6 +156,8 @@ are the changes:
 - The same goes for strings, which may now have any name, so long as
   it begins with a dollar sign ($). The same conventions regarding
   strings in 2.68+ still apply (see 268_info.txt for more information)
+- Local2 and local3 no longer have dangerous side-effects. Local4
+  through local32 are also available per-robot now.
 
 A warning: I have tried my best to make it impossible to exceed these
 limits, however, you may be able to somehow. If you do, don't save the
@@ -253,6 +255,10 @@ original as possible. These are the differences:
   in the char editor. You may also select a default SMZX charset.
 - Anywhere you can enter a line of text you can now press ctrl + left
   and ctrl + right to go to the previous/next word.
+- This isn't totally limited to the editor, but now everywhere a
+  selection box shows up (such as for files, boards, items) you can
+  press multiple keys to seek to a specific entry. Furthermore, in
+  file selection boxes you can press backspace to go up a directory.
 
 - The SMZX char editor has been changed quite a bit. First, to use, you
   must be in SMZX modes 1-3 (toggle using F11).

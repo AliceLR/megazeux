@@ -115,7 +115,6 @@ void play_str(char *str, int sfx_play)
     {
       // Note
       note = nn[chr - 65]; // Convert to 1-12
-			printf("playing note %d\n", note);
       t2 = oct; // Save old octave in case # or $ changes it
       if(str[t1 + 1] == '#')
       {
