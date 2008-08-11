@@ -165,7 +165,7 @@ int char_editor(World *mzx_world)
       }
       else
 
-      if(((mouse_x > 43) && (mouse_x < 64)) &&
+      if(((mouse_x > 43) && (mouse_x < 65)) &&
        (mouse_y == 5))
       {
         current_char += mouse_x - 53;
@@ -190,6 +190,7 @@ int char_editor(World *mzx_world)
             if(wrap_bit)
               matrix[i] |= 1;
           }
+					ec_change_char(current_char, matrix);
         }
         else
         {
@@ -214,6 +215,7 @@ int char_editor(World *mzx_world)
             if(wrap_bit)
               matrix[i] |= 0x80;
           }
+					ec_change_char(current_char, matrix);
         }
         else
         {
@@ -236,6 +238,7 @@ int char_editor(World *mzx_world)
             matrix[i] = matrix[i + 1];
           }
           matrix[13] = wrap_row;
+					ec_change_char(current_char, matrix);
         }
         else
         {
@@ -258,6 +261,7 @@ int char_editor(World *mzx_world)
             matrix[i] = matrix[i - 1];
           }
           matrix[0] = wrap_row;
+					ec_change_char(current_char, matrix);
         }
         else
         {
@@ -279,6 +283,7 @@ int char_editor(World *mzx_world)
 
       case SDLK_KP_PLUS:
       case SDLK_EQUALS:
+			case SDLK_PLUS:
       {
         current_char++;
         ec_read_char(current_char, matrix);
@@ -570,7 +575,7 @@ int smzx_char_editor(World *mzx_world)
       }
       else
 
-      if(((mouse_x > 43) && (mouse_x < 64)) &&
+      if(((mouse_x > 43) && (mouse_x < 65)) &&
        (mouse_y == 5))
       {
         current_char += mouse_x - 53;
@@ -590,10 +595,11 @@ int smzx_char_editor(World *mzx_world)
 
           for(i = 0; i < 14; i++)
           {
-            wrap_section = matrix[i] & 0xC0;
+            wrap_section = (matrix[i] & 0xC0) >> 6;
             matrix[i] <<= 2;
             matrix[i] |= wrap_section;
           }
+					ec_change_char(current_char, matrix);
         }
         else
         {
@@ -617,6 +623,7 @@ int smzx_char_editor(World *mzx_world)
             matrix[i] >>= 2;
             matrix[i] |= (wrap_section << 6);
           }
+					ec_change_char(current_char, matrix);
         }
         else
         {
@@ -639,6 +646,7 @@ int smzx_char_editor(World *mzx_world)
             matrix[i] = matrix[i + 1];
           }
           matrix[13] = wrap_row;
+					ec_change_char(current_char, matrix);
         }
         else
         {
@@ -661,6 +669,7 @@ int smzx_char_editor(World *mzx_world)
             matrix[i] = matrix[i - 1];
           }
           matrix[0] = wrap_row;
+					ec_change_char(current_char, matrix);
         }
         else
         {
@@ -680,6 +689,7 @@ int smzx_char_editor(World *mzx_world)
         break;
       }
 
+			case SDLK_PLUS:
       case SDLK_KP_PLUS:
       case SDLK_EQUALS:
       {

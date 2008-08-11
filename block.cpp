@@ -206,25 +206,24 @@ char col2ansi[8] = { 0, 4, 2, 6, 1, 5, 3, 7 };
 
 char exdi_types[3] = { DE_RADIO, DE_BUTTON, DE_BUTTON };
 char exdi_xs[3] = { 2, 5, 15 };
-char exdi_ys[3] = { 3, 9, 9 };
+char exdi_ys[3] = { 3, 8, 8 };
 
 char *exdi_strs[3] =
 {
   "Board file (MZB)\n"
   "Character set (CHR)\n"
-  "Text file (TXT)\n"
   "Palette (PAL)\n"
   "Sound effects (SFX)",
   "OK", "Cancel"
 };
 
-int exdi_p1s[3] = { 5, 0, -1 };
+int exdi_p1s[3] = { 4, 0, -1 };
 int exdi_p2s[1] = { 19 };
 void *exdi_storage[1] = { NULL };
 
 dialog exdi =
 {
-  26, 4, 53, 15, "Export as:", 3, exdi_types, exdi_xs, exdi_ys,
+  26, 5, 53, 15, "Export as:", 3, exdi_types, exdi_xs, exdi_ys,
   exdi_strs, exdi_p1s, exdi_p2s, exdi_storage, 0
 };
 

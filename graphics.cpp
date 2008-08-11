@@ -849,7 +849,7 @@ void ec_save_set(char *name)
 	fclose(fp);
 }
 
-void ec_save_set_var(char *name, Uint8 offset, Uint8 size)
+void ec_save_set_var(char *name, Uint8 offset, Uint32 size)
 {
 	FILE *fp = fopen(name, "wb");
 

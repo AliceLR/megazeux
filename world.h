@@ -33,7 +33,7 @@
 
 #define VERSION 0x250
 
-extern char version_number_string[5];
+extern char version_number_string[10];
 extern char world_version_string[4];
 extern char save_version_string[6];
 

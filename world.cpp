@@ -56,6 +56,9 @@
    MZS\x02\x4F - MZX 2.80 (non-DOS)
 
  All others are unchanged.
+ As of 2.80+, all letters after the name denote bug fixes/minor additions
+ and do not have different save formats. If a save format change is
+ necessitated, a numerical change must be enacted.
 
 */
 
@@ -81,7 +84,7 @@ char sd_types[3] = { DE_INPUT,DE_BUTTON,DE_BUTTON };
 char sd_xs[3] = { 5, 15, 37 };
 char sd_ys[3] = { 2, 4, 4 };
 char *sd_strs[3] = { "Save world as: ", "OK", "Cancel" };
-int sd_p1s[3] = { FILENAME_SIZE - 1, 0, 1 };
+int sd_p1s[3] = { 32, 0, 1 };
 int sd_p2s = 192;
 void *cf_ptr = (void *)(curr_file);
 dialog s_di = { 10, 8, 69, 14, "Save World", 3, sd_types, sd_xs,
@@ -89,7 +92,7 @@ dialog s_di = { 10, 8, 69, 14, "Save World", 3, sd_types, sd_xs,
 
 char save_version_string[6] = "MZS\x02\x50";
 char world_version_string[4] = "M\x02\x50";
-char version_number_string[5] = "2.80";
+char version_number_string[10] = "2.80b";
 
 // Helper functions for file loading.
 // FIXME - make endian specific variations
@@ -926,16 +929,19 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
   fseek(fp, gl_rob, SEEK_SET);
   load_robot(&mzx_world->global_robot, fp, savegame);
 
+  mzx_world->current_board =
+   mzx_world->board_list[mzx_world->current_board_id];
+
   // Go back to where the names are
   fseek(fp, last_pos, SEEK_SET);
   for(i = 0; i < num_boards; i++)
   {
     cur_board = mzx_world->board_list[i];
-    fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp);
     // Look at the name, width, and height of the just loaded board
 
     if(cur_board)
     {
+			fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp);
       // Also patch a pointer to the global robot
       if(cur_board->robot_list)
       {
@@ -944,11 +950,13 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
       // Also optimize out null objects
       optimize_null_objects(mzx_world->board_list[i]);
     }
+		else
+		{
+			fseek(fp, BOARD_NAME_SIZE, SEEK_CUR);
+		}
   }
 
   mzx_world->active = 1;
-  mzx_world->current_board =
-   mzx_world->board_list[mzx_world->current_board_id];
 
   // Remove any null boards
   optimize_null_boards(mzx_world);
@@ -1140,8 +1148,13 @@ int reload_world(World *mzx_world, char *file, int *faded)
     clear_world(mzx_world);
     clear_global_data(mzx_world);
   }
+
+  set_palette_intensity(100);
+
   rval = load_world(mzx_world, file, 0, faded);
+
   default_global_data(mzx_world);
+
   *faded = 0;
   return rval;
 }
@@ -1313,7 +1326,6 @@ void default_global_data(World *mzx_world)
   mzx_world->under_player_color = 7;
   mzx_world->under_player_param = 0;
 
-  set_palette_intensity(100);
   set_screen_mode(0);
   smzx_palette_loaded(0);
   default_scroll_values(mzx_world);

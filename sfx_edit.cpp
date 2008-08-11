@@ -236,13 +236,16 @@ void sfx_edit(World *mzx_world)
         {
           case 1:
             pg++;
+						if(pg > 2)
+							pg = 0;
             break;
 
           case 2:
             pg--;
+						if(pg < 0)
+							pg = 2;
             break;
         }
-        pg %= 3;
       } while(dialog_result > 0);
     }
   }

@@ -70,21 +70,27 @@ char *item_to_counter[9] =
   "COINS"
 };
 
-// side-effects: mangles the input string
-// bleah; this is so unreadable; just a very quick dirty hack
-static void magic_load_mod(char *filename)
+void magic_load_mod(World *mzx_world, char *filename)
 {
+	Board *src_board = mzx_world->current_board;
   int mod_name_size = strlen(filename);
   if((mod_name_size > 1) && (filename[mod_name_size - 1] == '*'))
   {
-    filename[mod_name_size - 1] = '\000';
-    load_mod(filename);
-    load_mod("*");
+    filename[mod_name_size - 1] = 0;
+		if(strcmp(src_board->mod_playing, filename))
+			load_mod(filename);
+
+		src_board->mod_playing[0] = '*';
   }
   else
   {
-    load_mod(filename);
+		if(filename[0] != '*')
+			load_mod(filename);
+		
+		strcpy(src_board->mod_playing, filename);
   }
+
+	strcpy(mzx_world->real_mod_playing, filename);
 }
 
 void save_player_position(World *mzx_world, int pos)
@@ -195,27 +201,19 @@ int place_under_xy(Board *src_board, int id, int color, int param, int x,
   char *level_under_color = src_board->level_under_color;
   char *level_under_param = src_board->level_under_param;
 
-  // This is kinda a new addition, maybe not necessary
-  // Dest must be underable, and the source must not be
-  if(flags[id] & A_UNDER)
-  {
-    int offset = x + (y * board_width);
-    if(param == 256)
-      param = level_under_param[offset];
+  int offset = x + (y * board_width);
+  if(param == 256)
+    param = level_under_param[offset];
 
-    color = fix_color(color, level_under_color[offset]);
-    if(level_under_id[offset] == 122)
-      clear_sensor_id(src_board, level_under_param[offset]);
+  color = fix_color(color, level_under_color[offset]);
+  if(level_under_id[offset] == 122)
+    clear_sensor_id(src_board, level_under_param[offset]);
 
-    // Put it now.
-    level_under_id[offset] = id;
-    level_under_color[offset] = color;
-    level_under_param[offset] = param;
+  level_under_id[offset] = id;
+  level_under_color[offset] = color;
+  level_under_param[offset] = param;
 
-    return 1;
-  }
-
-  return 0;
+  return 1;
 }
 
 int place_dir_xy(World *mzx_world, int id, int color, int param, int x, int y,
@@ -1668,13 +1666,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           case 14: // sppressed
           {
-            success = get_key_status(keycode_SDL, SDLK_SPACE);
+            success = get_key_status(keycode_SDL, SDLK_SPACE) > 0;
             break;
           }
 
           case 15: // delpressed
           {
-            success = get_key_status(keycode_SDL, SDLK_DELETE);
+            success = get_key_status(keycode_SDL, SDLK_DELETE) > 0;
             break;
           }
 
@@ -1832,6 +1830,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           if(check_param == 256)
           {
             int i;
+
             for(i = check_color; i < MAX_SPRITES; i++)
             {
               if(sprite_at_xy(mzx_world->sprite_list[i], check_x,
@@ -1901,11 +1900,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
           if(check_at_xy(src_board, check_id, fg, bg, check_param,
            offset))
           {
-
             char *p6 = next_param_pos(p5);
             gotoed = send_self_label_tr(mzx_world, p6 + 1, id);
           }
         }
+
         break;
       }
 
@@ -2081,9 +2080,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         char mod_name_buffer[128];
         tr_msg(mzx_world, cmd_ptr + 2, id, mod_name_buffer);
-        magic_load_mod(mod_name_buffer);
-        strcpy(src_board->mod_playing, mod_name_buffer);
-        strcpy(mzx_world->real_mod_playing, mod_name_buffer);
+        magic_load_mod(mzx_world, mod_name_buffer);
         volume_mod(src_board->volume);
         break;
       }
@@ -2418,7 +2415,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
             if(!move_dir(src_board, &put_x, &put_y, put_dir - 1))
             {
               if(place_player_xy(mzx_world, put_x, put_y))
+							{
+								if((mzx_world->player_x == x) && (mzx_world->player_y == y))
+								{
+									return;
+								}
                 done = 1;
+							}
             }
           }
         }
@@ -4198,9 +4201,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         src_board->volume_target = 255;
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
 
-        magic_load_mod(name_buffer);
-        strcpy(src_board->mod_playing, name_buffer);
-        strcpy(mzx_world->real_mod_playing, name_buffer);
+        magic_load_mod(mzx_world, name_buffer);
         src_board->volume = 0;
         volume_mod(0);
         break;
@@ -4721,13 +4722,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
               int d_id = level_id[offset];
               int d_flag = flags[d_id];
 
-              if((d_id != 123) && (d_id != 127))
-              {
-                if(((push_dir < 2) && (d_flag & A_PUSHNS)) ||
-                 ((push_dir >= 2) && (d_flag & A_PUSHEW)))
-
-                push(mzx_world, x, y, push_dir, 0);
-                update_blocked = 1;
+              if((d_id == 123) || (d_id == 127) || 
+							 ((push_dir < 2) && (d_flag & A_PUSHNS)) ||
+               ((push_dir >= 2) && (d_flag & A_PUSHEW)))
+              { 
+								push(mzx_world, x, y, push_dir, 0);
+								update_blocked = 1;
               }
             }
           }

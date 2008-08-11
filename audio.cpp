@@ -24,6 +24,7 @@
 
 #include <math.h>
 #include <stdlib.h>
+#include <string.h>
 #include <sys/stat.h>
 
 #include "audio.h"
@@ -70,8 +71,9 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
     {
       // Reset position
       audio.current_mod->mSoundFile.SetCurrentPos(0);
-      // Zero out remainder bytes
-      memset(audio.mod_buffer + read_len, 0, len - read_len);
+      // Read anew remaining bytes
+	  	ModPlug_Read(audio.current_mod, audio.mod_buffer + read_len,
+			 len - read_len);
     }
   }
   else
@@ -311,11 +313,7 @@ void play_sample(int freq, char *filename)
 
   // FIXME - destroy least recently used?
   if(audio.num_samples_playing >= MAX_SAMS)
-  {
-    // Out of samples, so destroy a random existing one.
-    int r = rand() % 16;
-    end_individual_sample(r);
-  }
+		return;
 
   if((extension_pos >= 0) && !strcasecmp(filename + extension_pos, ".sam"))
   {
@@ -346,11 +344,32 @@ void play_sample(int freq, char *filename)
 
     if(sample_loaded)
     {
+			int sample_length = sample_loaded->mSoundFile.Ins[1].nLength; 
+
       // A little hack to modify the pitch
       sample_loaded->mSoundFile.Ins[1].nC4Speed = (freq_conversion / freq) / 2;
       sample_loaded->mSoundFile.Ins[2].nC4Speed = (freq_conversion / freq) / 2;
       sample_loaded->mSoundFile.Ins[1].nVolume = (256 * sound_gvol) / 8;
       sample_loaded->mSoundFile.Ins[2].nVolume = (256 * sound_gvol) / 8;
+
+			// This number is pretty much obtained via experimentation. It can probably
+			// stand to be a little higher.
+			sample_length /= 110;
+
+			if(sample_length < 256)
+			{
+				sample_loaded->mSoundFile.Patterns[0][0].param = sample_length;
+				sample_loaded->mSoundFile.Patterns[0][2].command = CMD_PATTERNBREAK;
+			}
+			else
+			{
+				int row_duration = sample_length / 255;
+				sample_loaded->mSoundFile.Patterns[0][0].param = 255;
+				if(row_duration < 62)
+					sample_loaded->mSoundFile.Patterns[0][2 + row_duration].command =
+					 CMD_PATTERNBREAK;
+			}
+
       // Find a free position to put it
       for(i = 0; i < 16; i++)
       {
@@ -365,6 +384,7 @@ void play_sample(int freq, char *filename)
     }
 
     free(input_buffer);
+		fclose(input_file);
   }
 }
 

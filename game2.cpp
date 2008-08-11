@@ -2409,7 +2409,7 @@ void shoot_fire(World *mzx_world, int x, int y, int dir)
   else
 
   // Did it hit a robot?
-  if((d_param == 123) || (d_param == 124))
+  if((d_id == 123) || (d_id == 124))
   {
     // Send the spitfire label
     send_robot_def(mzx_world, d_param, 9);
@@ -2417,7 +2417,7 @@ void shoot_fire(World *mzx_world, int x, int y, int dir)
   else
 
   // Did it hit the player?
-  if(d_param == 127)
+  if(d_id == 127)
   {
     hurt_player_id(mzx_world, 78);
   }
@@ -2449,7 +2449,7 @@ void shoot_seeker(World *mzx_world, int x, int y, int dir)
   else
 
   // Did it hit the player?
-  if(d_param == 127)
+  if(d_id == 127)
   {
     hurt_player_id(mzx_world, 79);
   }
@@ -2482,7 +2482,7 @@ void shoot_missile(World *mzx_world, int x, int y, int dir)
   else
 
   // Did it hit the player?
-  if(d_param == 127)
+  if(d_id == 127)
   {
     hurt_player_id(mzx_world, 62);
   }
@@ -2594,7 +2594,7 @@ int move(World *mzx_world, int x, int y, int dir, int move_flags)
         can_push = 1;
 
       // If it can transport, do it
-      if(!transport(mzx_world, x, y, dir, p_id, p_param, p_color, can_push))
+      if(!transport(mzx_world, dx, dy, dir, p_id, p_param, p_color, can_push))
       {
         id_remove_top(mzx_world, x, y);
         return 0;

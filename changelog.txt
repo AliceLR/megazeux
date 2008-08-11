@@ -1,0 +1,66 @@
+August 11, 2004 - MZX 2.80b
+
++ Made it possible for robots to move through teleporters
++ Fixed bug with pressing shift in text entry boxes
++ Made it so alt + tab does not switch draw modes in editor
++ Fixed a disassembly error for color intensity N percent command
++ Fixed problem with looping on mods that do not loop explicitely
++ Fixed alt + dir scrolling in the char editor
++ Fixed not being able to click the rightmost char in the char editor
++ Readded unmark (alt + u) to robot editor (mysteriously disappeared??)
++ Fixed key label so it returns proper unicode values
++ The player and pushable robots can now be pushed by the push command
++ Fixed bug where you could clone the player by switching boards
++ Fixed bug where you could either turn off overlay or switch to boards
+	that don't have it while in overlay edit mode...
++ Fixed bug where remains of debug window would not be cleared in editor
+	if the board width is too small
++ Fixed bug where turning off the menu with a board too small would mess
+	things up
++ Fixed bug where run lengths were saved one too large... this could fix
+	stability problems in at least occasional cases (with saved worlds or
+	save games, at least)
++ Fixed placing solid things beneath robots (like bombs)
++ Added support for a keyboard plus in the char editors
++ Fixed previous button in SFX editor
++ Made robot name box disappear when robot char box comes up...
++ Fixed bug where mods restart after pressing P if they're the same mod
+	as what was playing before
++ Fixed problem with changing params (with P) in the editor.
++ Fixed bug where null boards were not being pruned from old worlds upon
+	load
++ Made file name saving box larger (for saving games and worlds)
++ Fixed bug where default (100%) palette intensity values would not be
+  applied to the palette a game loads with
++ Fixed bug where exporting char sets that are full size caused a 0
+	byte charset to be exported (8bit wraparound)
+- Removed export text in the board editor. Don't think anyone wanted it...
++ Added support for forms such as :line
++ Fixed sporadic incompletion of strings without trailing quotes at the
+  end of the line
++ Fixed bug where clearing/cutting the last line of a robot crashed MZX
++ F4 in robot editor now works more generally
++ Made line numbers in robot editor error report start at 1
++ Added ctrl + G to go to a line in the robot editor (ala nano)
++ Made it possible to change a robot's color in the editor
++ Fixed bug where spitfire, seekers, and missiles didn't hurt something
+  immediate adjacent to whatever shot it
++ Fixed editing of spitfires
++ Made default speed 4 again (5, bleh)
++ Readded quicksave/quickload
++ Readded F8 clear (always works - be careful)
++ Fixed autorepeat problems for spacepressed/delpressed.
++ Wrapped around sprite values so LogiCow's bad code would work (HTMCIAB)
++ Cleared block commands inbetween board changing and other things like
+  that
++ Fixed bug where MZX would crash if put dir player overwrote the robot
+  doing it
++ Fixed bug where playing SAMs would eventually crash MZX
++ Fixed some mod * problems (hopefully?)
++ Fixed bug where pasting blocks over the edge of the board in the editor
+  would cause MZX to crash
++ Uses new GDM2S3M source that fixes some bugs. If your converted GDM's
+  have problems, delete the S3M's it generated.
+
+August 9, 2004 - First release, MZX 2.80 BETA
+

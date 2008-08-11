@@ -62,6 +62,12 @@ Board *load_board_allocate(FILE *fp, int savegame)
   Board *cur_board = (Board *)malloc(sizeof(Board));
   load_board(cur_board, fp, savegame);
 
+	if(!cur_board->board_width)
+	{
+		free(cur_board);
+		return NULL;
+	}
+
   return cur_board;
 }
 
@@ -79,6 +85,7 @@ Board *load_board_allocate_direct(FILE *fp, int savegame)
 void load_board(Board *cur_board, FILE *fp, int savegame)
 {
   int board_size = fgetd(fp);
+
   if(board_size)
   {
     int board_location, last_location;
@@ -92,7 +99,7 @@ void load_board(Board *cur_board, FILE *fp, int savegame)
   }
   else
   {
-    memset(cur_board, 0, sizeof(Board));
+		cur_board->board_width = 0;
     // And skip board location
     fseek(fp, 4, SEEK_CUR);
   }
@@ -108,24 +115,35 @@ void load_board_direct(Board *cur_board, FILE *fp, int savegame)
   Scroll *cur_scroll;
   Sensor *cur_sensor;
 
+	char *test_buffer;
+
   board_mode = fgetc(fp);
 
   overlay_mode = fgetc(fp);
 
   if(!overlay_mode)
   {
+    int overlay_width;
+    int overlay_height;
+
     overlay_mode = fgetc(fp);
-    int overlay_width = fgetw(fp);
-    int overlay_height = fgetw(fp);
+		overlay_width = fgetw(fp);
+    overlay_height = fgetw(fp);
+
     size = overlay_width * overlay_height;
 
     cur_board->overlay = (char *)malloc(size);
     cur_board->overlay_color = (char *)malloc(size);
 
     load_RLE2_plane(cur_board->overlay, fp, size);
+		test_buffer = (char *)malloc(1024);
+		free(test_buffer);
+
     // Skip sizes
     fseek(fp, 4, SEEK_CUR);
-    load_RLE2_plane(cur_board->overlay_color, fp, size);
+    load_RLE2_plane(cur_board->overlay_color, fp, size);	
+		test_buffer = (char *)malloc(1024);
+		free(test_buffer);
   }
   else
   {
@@ -579,12 +597,14 @@ void save_RLE2_plane(char *plane, FILE *fp, int size)
   {
     current_char = plane[i];
     runsize = 1;
+
     while((plane[i + 1] == current_char) && (runsize < 127) &&
-     (i < size))
+     (i < (size - 1)))
     {
       i++;
       runsize++;
     }
+
     // Put the runsize if necessary
     if((runsize > 1) || current_char & 0x80)
     {
@@ -617,7 +637,7 @@ void clear_board(Board *cur_board)
   free(cur_board->level_under_id);
   free(cur_board->level_under_param);
   free(cur_board->level_under_color);
-
+						 
   if(cur_board->overlay_mode)
   {
     free(cur_board->overlay);

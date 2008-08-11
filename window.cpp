@@ -41,14 +41,12 @@
 #include "data.h"
 #include "helpsys.h"
 
-#define NUM_SAVSCR 4
+#define NUM_SAVSCR 6
 
 // Big fat hack. This will be initialized to a bunch of 0's, or NULLs.
 // Use this to replace the null strings before they get dereferenced.
 
 void *null_storage[256];
-
-// Storage for NUM_SAVSCR saved screens- dynamically allocated at runtime
 
 Uint8 screen_storage[NUM_SAVSCR][80 * 25 * 2];
 char cur_screen = 0; // Current space for save_screen and restore_screen

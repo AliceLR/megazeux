@@ -218,7 +218,7 @@ int cm206[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16, DIR };
 int cm207[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16,
  IGNORE_TO, CHARACTER | STRING | IMM_U16 };
 int cm211[] = { CMD_SFX, IMM_U16 | STRING, IGNORE_TO, STRING };
-int cm212[] = { CMD_INTENSITY, IMM_U16 | STRING, IGNORE_IS, IGNORE_AT,
+int cm212[] = { CMD_INTENSITY, IGNORE_IS, IGNORE_AT, IMM_U16 | STRING,
  CMD_PERCENT };
 int cm213[] = { CMD_INTENSITY, IMM_U16 | STRING, IGNORE_IS, IGNORE_AT,
  IMM_U16 | STRING, CMD_PERCENT };
@@ -776,6 +776,30 @@ char *command_fragments[69] =
   "no"
 };
 
+/*
+	0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
+*/
+
+char special_first_char[256] =
+{
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		// 0x00-0x0F
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		// 0x10-0x1F
+	0, 0, 0, 0, 0, 1, 1, 0, 0, 0, 1, 0, 0, 0, 1, 1, 	// 0x20-0x2F
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0,		// 0x30-0x3F
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		// 0x40-0x4F
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0,		// 0x50-0x5F
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		// 0x60-0x6F
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		// 0x70-0x7F
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		// 0x80-0x8F
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		// 0x90-0x9F
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		// 0xA0-0xAF
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		// 0xB0-0xBF
+	0, 0, 0, 0, 0, 0, 0, 1, 0, 0, 0, 0, 0, 0, 0, 0,		// 0xC0-0xCF
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		// 0xD0-0xDF
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,		// 0xE0-0xEF
+	0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0		// 0xF0-0xFF
+};
+
 char *ignore_list[21] =
 {
   ",", ";", "a", "an", "and", "as", "at", "by", "else", "for", "from",
@@ -801,13 +825,16 @@ int parse_argument(char *cmd_line, char **next, int *arg_translated, int *error,
       cmd_line++;
       current = *cmd_line;
       if((current == '\\') && (cmd_line[1] == '"'))
-      {
         cmd_line++;
-      }
+
     } while((current != '"') && current);
 
     *arg_translated = 0;
-    *next = cmd_line + 1;
+		if(current)
+			*next = cmd_line + 1;
+		else
+			*next = cmd_line;
+
     *arg_short = S_STRING;
     return STRING;
   }
@@ -1420,7 +1447,32 @@ int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
     arg_count = 0;
   }
   else
-  {
+
+	if(special_first_char[cpos[0]] && (cpos[1] != ' '))
+	{
+		int str_size;
+
+		current_command.name[0] = cpos[0];
+		current_command.name[1] = 0;
+		current_command.parameters = 1;
+
+		str_size = strlen(cpos + 1) + 1;
+		param_list[0] = (void *)malloc(str_size);
+		memcpy((char *)param_list[0], cpos + 1, str_size);
+    current_command.param_types[0] = STRING;
+
+		arg_count = 1;
+
+    if(param_listing)
+		{
+      param_listing[0] = S_STRING;
+			words = 1;
+		}
+
+    translated_command = match_command(&current_command, error_buffer);
+	}
+	else
+	{
     current_line_position = cpos;
 
     get_word(current_command.name, current_line_position, ' ');

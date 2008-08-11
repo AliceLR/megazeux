@@ -171,7 +171,7 @@ int edit_param(World *mzx_world, int id, int param)
 
     case 78: // Shooting fire
     {
-      param = pe_pusher(mzx_world, param) << 1;
+      param = pe_pusher(mzx_world, param >> 1) << 1;
       break;
     }
 
@@ -1280,6 +1280,8 @@ int edit_robot(World *mzx_world, Robot *cur_robot)
 
   if(intake(cur_robot->robot_name, 14, 34, 13, 15, 1, 0) != SDLK_ESCAPE)
   {
+		restore_screen();
+		save_screen();		
     // ...and character.
     new_char = char_selection(cur_robot->robot_char);
     if(new_char < 0)

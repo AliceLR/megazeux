@@ -72,7 +72,7 @@
 #save_file = saved.sav
 
 # Speed MZX should start at (1 through 9)
-#mzx_speed = 5
+#mzx_speed = 4
 
 
 ### Robot editor options ###

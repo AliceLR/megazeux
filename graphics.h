@@ -105,7 +105,7 @@ Sint32 ec_load_set_var(char *name, Uint8 pos);
 void ec_mem_load_set(Uint8 *chars);
 void ec_mem_save_set(Uint8 *chars);
 void ec_save_set(char *name);
-void ec_save_set_var(char *name, Uint8 offset, Uint8 size);
+void ec_save_set_var(char *name, Uint8 offset, Uint32 size);
 void ec_load_mzx(void);
 void ec_load_smzx(void);
 void ec_load_blank(void);

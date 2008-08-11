@@ -336,7 +336,7 @@ config_info default_options =
   // Game options
   "caverns.mzx",
   "saved.sav",
-  5,
+  4,
 
   // Robot editor options
   { 11, 10, 10, 14, 255, 3, 11, 2, 14, 0, 15, 11, 7, 15, 1, 2, 3 },

@@ -203,7 +203,7 @@ void clear_robot_contents(Robot *cur_robot);
 void clear_scroll_contents(Scroll *cur_scroll);
 
 // These are part of runrobo2.cpp
-static void magic_load_mod(char *filename);
+void magic_load_mod(World *mzx_world, char *filename);
 void save_player_position(World *mzx_world, int pos);
 void restore_player_position(World *mzx_world, int pos);
 void calculate_blocked(World *mzx_world, int x, int y, int id, int bl[4]);

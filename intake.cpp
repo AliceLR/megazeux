@@ -450,7 +450,8 @@ int intake(char *string, int max_len, char x, char y,
         break;
       }
 
-      case SDLK_u:
+			case SDLK_l:
+			case SDLK_g:
       case SDLK_d:
       {
         if(get_ctrl_status(keycode_SDL) && robo_intk)
@@ -478,6 +479,7 @@ int intake(char *string, int max_len, char x, char y,
         break;
       }
 
+      case SDLK_u:
       case SDLK_o:
       case SDLK_x:
       case SDLK_b:
@@ -497,6 +499,8 @@ int intake(char *string, int max_len, char x, char y,
         break;
       }
 
+			case SDLK_LSHIFT:
+			case SDLK_RSHIFT:
       case 0:
       {
         place = 0;
@@ -506,7 +510,7 @@ int intake(char *string, int max_len, char x, char y,
       default:
       {
         // Place the char
-        place = 1;
+				place = 1;
         break;
       }
     }
@@ -523,12 +527,14 @@ int intake(char *string, int max_len, char x, char y,
       // Keycode.. Filter.
       if(filter_type & 1)
       {
-        if((cur_char >= 'a') && (cur_char <= 'z')) cur_char -= 32;
+        if((cur_char >= 'a') && (cur_char <= 'z'))
+					cur_char -= 32;
       }
 
       if(filter_type & 2)
       {
-        if((cur_char >= 'A') && (cur_char <= 'Z')) cur_char += 32;
+        if((cur_char >= 'A') && (cur_char <= 'Z'))
+					cur_char += 32;
       }
 
       // Block numbers

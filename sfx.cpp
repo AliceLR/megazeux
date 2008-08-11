@@ -115,6 +115,7 @@ void play_str(char *str, int sfx_play)
     {
       // Note
       note = nn[chr - 65]; // Convert to 1-12
+			printf("playing note %d\n", note);
       t2 = oct; // Save old octave in case # or $ changes it
       if(str[t1 + 1] == '#')
       {
@@ -146,7 +147,6 @@ void play_str(char *str, int sfx_play)
         str[digi_end] = 0;
         play_sample(sam_freq[note - 1] >> oct, str + digi_st);
         str[digi_end] = '&';
-        digi_st = 0;
       }
       else
 

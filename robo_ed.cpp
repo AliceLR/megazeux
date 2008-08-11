@@ -35,6 +35,7 @@
 #include "param.h"
 #include "char_ed.h"
 #include "helpsys.h"
+#include "edit.h"
 
 #define combine_colors(a, b)  \
   (a) | (b << 4)              \
@@ -130,6 +131,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
   int mark_start;
   int mark_end;
   int mark_current_line;
+	int show_line_numbers = 0;
   robot_line *mark_start_rline;
   robot_line *mark_end_rline;
   char *ccodes = mzx_world->conf.color_codes;
@@ -263,9 +265,8 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
     for(i = first_line_draw_position; (i < 21) && draw_rline; i++)
     {
       if(i != 11)
-      {
-        display_robot_line(draw_rline, i, color_code, ccodes);
-      }
+				display_robot_line(draw_rline, i, color_code, ccodes);
+
       draw_rline = draw_rline->next;
     }
 
@@ -320,13 +321,13 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
     {
       draw_char(bg_char, mark_color, 1, 11);
       key = intake(command_buffer, 240, 2, 11, mark_color, 2, 0, 0,
-       &current_x, 1, active_macro);
+			 &current_x, 1, active_macro);
     }
     else
     {
       draw_char(bg_char, bg_color_solid, 1, 11);
-      key = intake(command_buffer, 240, 2, 11, current_line_color,
-       2, 0, 0, &current_x, 1, active_macro);
+      key = intake(command_buffer, 240, 2, 11, current_line_color, 2,
+			 0, 0, &current_x, 1, active_macro);
     }
     active_macro = NULL;
 
@@ -541,6 +542,12 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         int matched_thing;
         char *next;
         char temp_char = command_buffer[current_x];
+
+				if(!command_buffer[start_x])
+					start_x--;
+
+				while(start_x && (command_buffer[start_x] == ' '))
+					start_x--;
 
         while(start_x && (command_buffer[start_x] != ' '))
           start_x--;
@@ -771,6 +778,66 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
+			case SDLK_g:
+			{
+				if(get_ctrl_status(keycode_SDL))
+				{
+					char line_number[16];
+
+					line_number[0] = 0;
+
+					save_screen();
+					draw_window_box(18, 12, 47, 14, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
+					 EC_DEBUG_BOX_CORNER, 1, 1);
+					write_string("Goto line number:", 20, 13, EC_DEBUG_LABEL, 0);
+
+					if(intake(line_number, 7, 38, 13, 15, 1, 0) != SDLK_ESCAPE)
+					{
+						int line = strtol(line_number, NULL, 10);
+						int num_lines;
+
+						if(line > total_lines)
+							line = total_lines;
+
+						if(line < 0)
+							line = 0;
+
+						if(line < current_line)
+					  {
+							num_lines = current_line - line;
+
+ 							for(i = 0; i < num_lines; i++)
+							{
+								current_rline = current_rline->previous;
+								current_line--;
+							}
+						}
+						else
+						{
+							num_lines = line - current_line;
+
+							for(i = 0; i < num_lines; i++)
+							{
+								current_rline = current_rline->next;
+								current_line++;
+							}
+						}						
+
+						strcpy(command_buffer, current_rline->line_text);
+					}
+					restore_screen();
+				}
+				break;
+			}
+
+			case SDLK_l:
+			{
+				if(get_ctrl_status(keycode_SDL))
+					show_line_numbers ^= 1;
+
+				break;
+			}
+
       case SDLK_d:
       {
         if(current_rline->validity_status != valid)
@@ -918,6 +985,15 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
         break;
       }
+
+			// Unmark
+			case SDLK_u:
+			{
+				if(get_alt_status(keycode_SDL))
+					mark_mode = 0;
+
+				break;
+			}
     }
   } while(key != SDLK_ESCAPE);
 
@@ -1056,12 +1132,12 @@ void display_robot_line(robot_line *current_rline, int y,
       {
         temp_char = current_rline->line_text[76];
         current_rline->line_text[76] = 0;
-        write_string(current_rline->line_text, 2, y, current_color, 0);
+        write_string(current_rline->line_text, x, y, current_color, 0);
         current_rline->line_text[76] = temp_char;
       }
       else
       {
-        write_string(current_rline->line_text, 2, y, current_color, 0);
+        write_string(current_rline->line_text, x, y, current_color, 0);
       }
     }
     else
@@ -1079,10 +1155,11 @@ void display_robot_line(robot_line *current_rline, int y,
 
       get_word(temp_buffer, line_pos, ' ');
       arg_length = strlen(temp_buffer) + 1;
+
+      write_string(temp_buffer, x, y, current_color, 0);
+
       line_pos += arg_length;
       x += arg_length;
-
-      write_string(temp_buffer, 2, y, current_color, 0);
 
       for(i = 0; i < current_rline->num_args; i++)
       {
@@ -1362,7 +1439,7 @@ int validate_lines(World *mzx_world, robot_line *current_rline,
     if(current_rline->validity_status != valid)
     {
       memset(error_messages[num_errors], ' ', 64);
-      sprintf(error_messages[num_errors], "%05d: ", line_number);
+      sprintf(error_messages[num_errors], "%05d: ", line_number + 1);
       assemble_line(current_rline->line_text, null_buffer,
        error_messages[num_errors] + 7, NULL, NULL);
       error_messages[num_errors][strlen(error_messages[num_errors])] = ' ';
@@ -1699,6 +1776,16 @@ robot_line *clear_block(int first_line, robot_line *first_rline,
     current_rline = next_line;
   }
 
+  if(*total_lines == 0)
+  {
+    // Add a new line
+    if(add_blank_line(NULL, previous, size))
+      *total_lines = 1;
+
+		cursor_rline = previous->next;
+  }
+	else
+
   if(n_current_line >= first_line)
   {
     if(n_current_line > (first_line + num_lines))
@@ -1708,17 +1795,17 @@ robot_line *clear_block(int first_line, robot_line *first_rline,
     else
     {
       *current_line = first_line;
-      cursor_rline = current_rline;
+
+			if(current_rline)
+			{
+				cursor_rline = current_rline;
+			}
+			else
+			{
+				cursor_rline = previous;
+				*current_line = first_line - 1;
+			}
     }
-  }
-
-  if(*total_lines == 0)
-  {
-    // Add a new line
-    if(add_blank_line(NULL, previous, size))
-      *total_lines = 1;
-
-    cursor_rline = previous->next;
   }
 
   return cursor_rline;
