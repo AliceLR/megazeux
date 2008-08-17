@@ -30,7 +30,7 @@
 # You may also try a resolution like 640x700 that multiplies
 # the width, then set the multiplier..
 
-#force_resolution = 640,700
+#force_resolution = 640,350
 
 # Make it so the display is stretched by this amount (must be
 # integer). This is useful for getting resolutions like 640x700
@@ -201,7 +201,7 @@ modplug_resample_mode = cubic
 # set spr!spr_num!_cx !cx!
 # set spr!spr_num!_cy !cy!
 # put !x1! sprite p!#spr_num! !x! !y!
-
+ 
 # Whether or not the palette should be reverted to default
 # when the robot editor is load. If set, SMZX mode 0 will
 # also be enforced.
@@ -288,3 +288,6 @@ modplug_resample_mode = cubic
 # GUI set.
 
 #mask_midchars = 1
+
+include pad.config
+include ~/.megazeux

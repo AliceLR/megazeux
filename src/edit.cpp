@@ -395,6 +395,14 @@ char *mod_ext[] =
   ".ptm", ".dbm", ".amf", ".mt2", ".psm", ".j2b", ".umx", ".ogg", NULL
 };
 
+char *mod_gdm_ext[] =
+{
+  ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it", ".669", ".ult",
+  ".wav", ".dsm", ".far", ".ams", ".mdl", ".okt" ".dmf", ".ptm", ".dbm",
+  ".amf", ".mt2", ".psm", ".j2b", ".umx", ".ogg", ".gdm", NULL
+};
+
+
 char drawmode_help[5][32] =
 {
   "Type to place text",
@@ -535,7 +543,12 @@ void grab_at_xy(World *mzx_world, mzx_thing *new_id, int *new_color,
   {
     mzx_thing grab_id = (mzx_thing)src_board->level_id[offset];
     int grab_param = src_board->level_param[offset];
-    *new_color = get_id_color(src_board, offset);
+
+    // Hack.
+    if(grab_id != PLAYER)
+      *new_color = src_board->level_color[offset];
+    else
+      *new_color = get_id_color(src_board, offset);
 
     // First, clear the existing copies, unless the new id AND param
     // matches, because in that case it's the same thing
@@ -1959,10 +1972,14 @@ void edit_world(World *mzx_world)
 
           if(!overlay_edit)
           {
-            if(current_id < 122)
+            if(current_id < SENSOR)
             {
-              current_param = change_param(mzx_world, current_id,
+              int new_param = change_param(mzx_world, current_id,
                current_param, NULL, NULL, NULL);
+
+              if(new_param >= 0)
+                current_param = new_param;
+
               modified = 1;
             }
           }
@@ -2113,7 +2130,7 @@ void edit_world(World *mzx_world)
               getcwd(current_dir, MAX_PATH);
               chdir(current_listening_dir);
 
-              if(!file_manager(mzx_world, mod_ext, new_mod,
+              if(!file_manager(mzx_world, mod_gdm_ext, new_mod,
                "Choose a module file (listening only)", 1, 0,
                NULL, 0, 0, 1))
               {
@@ -2706,10 +2723,6 @@ void edit_world(World *mzx_world)
                  under_color_buffer, src_board);
                 clear_board_block(block_board, start_x, start_y,
                  original_width, original_height);
-                copy_board_buffer_to_board(src_board, dest_x, dest_y,
-                 block_width, block_height, id_buffer, param_buffer,
-                 color_buffer, under_id_buffer, under_param_buffer,
-                 under_color_buffer);
 
                 // Work around to move the player
                 if((mzx_world->player_x >= start_x) &&
@@ -2717,11 +2730,16 @@ void edit_world(World *mzx_world)
                  (mzx_world->player_x < (start_x + block_width)) &&
                  (mzx_world->player_y < (start_y + block_height)) &&
                  (block_board == src_board))
-                {
+                {                 
                   place_player_xy(mzx_world,
                    mzx_world->player_x - start_x + dest_x,
                    mzx_world->player_y - start_y + dest_y);
                 }
+
+                copy_board_buffer_to_board(src_board, dest_x, dest_y,
+                 block_width, block_height, id_buffer, param_buffer,
+                 color_buffer, under_id_buffer, under_param_buffer,
+                 under_color_buffer);
 
                 modified = 1;
                 break;
@@ -2781,24 +2799,28 @@ void edit_world(World *mzx_world)
           }
           else
           {
+            int new_param;
+
             grab_at_xy(mzx_world, &current_id, &current_color,
              &current_param, &copy_robot, &copy_scroll, &copy_sensor,
              cursor_board_x, cursor_board_y, overlay_edit);
 
-            current_param =
+            new_param =
              change_param(mzx_world, current_id, current_param,
              &copy_robot, &copy_scroll, &copy_sensor);
 
             // Kinda a hack, but should get the job done.
-            if(is_storageless(current_id))
-            {           
+            if(is_storageless(current_id) && (new_param >= 0))
+            {
               src_board->level_param[(cursor_board_y * board_width) +
-               cursor_board_x] = current_param;
+               cursor_board_x] = new_param;
+
+              current_param = new_param;
             }
             else
             {
               current_param = place_current_at_xy(mzx_world,
-               current_id, current_color, current_param, cursor_board_x,
+               current_id, current_color, new_param, cursor_board_x,
                cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor, 0);
             }
 

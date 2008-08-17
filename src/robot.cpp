@@ -723,7 +723,7 @@ void send_robot_def(World *mzx_world, int robot_id, int mesg_id)
       break;
 
     case 2:
-      send_robot_all(mzx_world, "INVINCO");
+      send_robot_all(mzx_world, "INVINCO", NULL);
       break;
 
     case 3:
@@ -752,7 +752,7 @@ void send_robot_def(World *mzx_world, int robot_id, int mesg_id)
       break;
 
     case 7:
-      send_robot_all(mzx_world, "PLAYERHIT");
+      send_robot_all(mzx_world, "PLAYERHIT", NULL);
       break;
 
     case 8:
@@ -764,32 +764,33 @@ void send_robot_def(World *mzx_world, int robot_id, int mesg_id)
       break;
 
     case 10:
-      send_robot_all(mzx_world, "JUSTLOADED");
+      send_robot_all(mzx_world, "JUSTLOADED", NULL);
       break;
 
     case 11:
-      send_robot_all(mzx_world, "JUSTENTERED");
+      send_robot_all(mzx_world, "JUSTENTERED", NULL);
       break;
 
     case 12:
-      send_robot_all(mzx_world, "GOOPTOUCHED");
+      send_robot_all(mzx_world, "GOOPTOUCHED", NULL);
       break;
 
     case 13:
-      send_robot_all(mzx_world, "PLAYERHURT");
+      send_robot_all(mzx_world, "PLAYERHURT", NULL);
       break;
   }
 }
 
 void send_robot(World *mzx_world, char *name, char *mesg,
- int ignore_lock)
+ int ignore_lock, Robot *src_robot)
 {
   Board *src_board = mzx_world->current_board;
+  Robot *cur_robot;
   int first, last;
 
   if(!strcasecmp(name, "all"))
   {
-    send_robot_all(mzx_world, mesg);
+    send_robot_all(mzx_world, mesg, src_robot);
   }
   else
   {
@@ -797,16 +798,32 @@ void send_robot(World *mzx_world, char *name, char *mesg,
     if(!strcasecmp(name, mzx_world->global_robot.robot_name) &&
      mzx_world->global_robot.used)
     {
-      send_robot_direct(&mzx_world->global_robot, mesg,
-       ignore_lock, 0);
+      cur_robot = &mzx_world->global_robot;
+
+      if(cur_robot == src_robot)
+      {
+        send_robot_direct(cur_robot, mesg, ignore_lock, 1);
+      }
+      else
+      {
+        send_robot_direct(cur_robot, mesg, ignore_lock, 0);
+      }
     }
 
     if(find_robot(src_board, name, &first, &last))
     {
       while(first <= last)
       {
-        send_robot_direct(src_board->robot_list_name_sorted[first],
-         mesg, ignore_lock, 0);
+        cur_robot = src_board->robot_list_name_sorted[first];
+
+        if(cur_robot == src_robot)
+        {
+          send_robot_direct(cur_robot, mesg, ignore_lock, 1);
+        }
+        else
+        {
+          send_robot_direct(cur_robot, mesg, ignore_lock, 0);
+        }
         first++;
       }
     }
@@ -993,7 +1010,8 @@ void send_sensor_command(World *mzx_world, int id, int command)
         }
         else
         {
-          send_robot(mzx_world, cur_sensor->robot_to_mesg, "SENSORTHUD", 0);
+          send_robot(mzx_world, cur_sensor->robot_to_mesg, "SENSORTHUD",
+           0, NULL);
         }
         move_status = 2;
       }
@@ -1024,7 +1042,8 @@ void send_sensor_command(World *mzx_world, int id, int command)
       if(move_status != 0)
       {
         // Sensorthud!
-        send_robot(mzx_world, cur_sensor->robot_to_mesg, "SENSORTHUD", 0);
+        send_robot(mzx_world, cur_sensor->robot_to_mesg, "SENSORTHUD",
+         0, NULL);
       }
       break;
     }
@@ -1078,19 +1097,34 @@ int send_robot_self(World *mzx_world, Robot *src_robot, char *mesg)
   return send_robot_direct(src_robot, mesg, 1, 1);
 }
 
-void send_robot_all(World *mzx_world, char *mesg)
+void send_robot_all(World *mzx_world, char *mesg, Robot *src_robot)
 {
   Board *src_board = mzx_world->current_board;
+  Robot *cur_robot;
   int i;
 
   if(mzx_world->global_robot.used)
   {
-    send_robot_direct(&(mzx_world->global_robot), mesg, 0, 0);
+    cur_robot = &(mzx_world->global_robot);
+
+    if(src_robot == cur_robot)
+      send_robot_direct(cur_robot, mesg, 1, 1);
+    else      
+      send_robot_direct(cur_robot, mesg, 0, 0);
   }
 
   for(i = 0; i < src_board->num_robots_active; i++)
   {
-    send_robot_direct(src_board->robot_list_name_sorted[i], mesg, 0, 0);
+    cur_robot = src_board->robot_list_name_sorted[i];
+
+    if(cur_robot == src_robot)
+    {
+      send_robot_direct(cur_robot, mesg, 1, 1);
+    }
+    else
+    {
+      send_robot_direct(cur_robot, mesg, 0, 0);
+    }
   }
 }
 
@@ -1126,6 +1160,7 @@ int send_robot_direct(Robot *cur_robot, char *mesg, int ignore_lock,
       if(cur_robot->stack_pointer)
       {
         int return_pos = robot_stack_pop(cur_robot);
+
         set_robot_position(cur_robot, return_pos);
       }
     }
@@ -2135,14 +2170,14 @@ void push_sensor(World *mzx_world, int id)
 {
   Board *src_board = mzx_world->current_board;
   send_robot(mzx_world, (src_board->sensor_list[id])->robot_to_mesg,
-   "SENSORPUSHED", 0);
+   "SENSORPUSHED", 0, NULL);
 }
 
 void step_sensor(World *mzx_world, int id)
 {
   Board *src_board = mzx_world->current_board;
   send_robot(mzx_world, (src_board->sensor_list[id])->robot_to_mesg,
-   "SENSORON", 0);
+   "SENSORON", 0, NULL);
 }
 
 // Translates message at target to the given buffer, returning location

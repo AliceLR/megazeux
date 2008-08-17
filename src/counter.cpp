@@ -38,6 +38,8 @@
 #include "rasm.h"
 #include "fsafeopen.h"
 #include "edit_di.h"
+#include "edit.h"
+#include "intake.h"
 
 typedef int (* builtin_read_function)(World *mzx_world,
  function_counter *counter, char *name, int id);
@@ -173,7 +175,7 @@ int asin_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int val = strtol(name + 4, NULL, 10);
-  return (int)((asin((double)val / mzx_world->divider) *
+  return (int)((asinf((float)val / mzx_world->divider) *
    mzx_world->c_divisions) / (2 * M_PI));
 }
 
@@ -181,7 +183,7 @@ int acos_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int val = strtol(name + 4, NULL, 10);
-  return (int)((acos((double)val / mzx_world->divider) *
+  return (int)((acosf((float)val / mzx_world->divider) *
    mzx_world->c_divisions) / (2 * M_PI));
 }
 
@@ -189,7 +191,7 @@ int atan_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   int val = strtol(name + 4, NULL, 10);
-  return (int)((atan2((double)val, mzx_world->divider) *
+  return (int)((atan2f((float)val, mzx_world->divider) *
    mzx_world->c_divisions) / (2 * M_PI));
 }
 
@@ -1621,7 +1623,7 @@ int str_num_read(World *mzx_world, function_counter *counter,
     else
     {
       // A number
-      int str_num = strtol(dot_ptr, NULL, 10);
+      unsigned int str_num = strtol(dot_ptr, NULL, 10);
 
       if(get_string(mzx_world, name, &src, id))
       {
@@ -1657,8 +1659,8 @@ void str_num_write(World *mzx_world, function_counter *counter,
   if(dot_ptr)
   {
     mzx_string *src;
-    int old_length, new_length;
-    int str_num;
+    unsigned int old_length, new_length;
+    unsigned int str_num;
     int next;
 
     *dot_ptr = 0;
@@ -1796,7 +1798,7 @@ function_counter builtin_counters[] =
   { "input", 0, input_read, input_write },
   { "inputsize", 0, inputsize_read, inputsize_write },
   { "int2bin", 0, int2bin_read, int2bin_write },
-  { "key?", 0, key_read, key_write },
+  { "key?", 0x244, key_read, key_write },
   { "key_code", 0, key_code_read, NULL },
   { "key_pressed", 0, key_pressed_read, NULL },
   { "key_release", 0, key_release_read, NULL },
@@ -1826,7 +1828,7 @@ function_counter builtin_counters[] =
   { "playery", 0, playery_read, NULL },
   { "r!.*", 0, r_read, r_write },
   { "red_value", 0, red_value_read, red_value_write },
-  { "rid*", 0, rid_read, NULL },
+  { "rid*", 0x245, rid_read, NULL },
   { "robot_id", 0, robot_id_read, NULL },
   { "robot_id_*", 0, robot_id_n_read, NULL },
   { "save_bc?", 0, save_bc_read, NULL },
@@ -2580,7 +2582,8 @@ void set_counter(World *mzx_world, char *name, int value, int id)
   int next;
 
   fdest = find_function_counter(name);
-  if(fdest && fdest->function_write)
+  if(fdest && fdest->function_write &&
+   (mzx_world->version >= fdest->minimum_version))
   {
     // Call write function
     fdest->function_write(mzx_world, fdest, name, value, id);
@@ -2606,12 +2609,13 @@ void set_counter(World *mzx_world, char *name, int value, int id)
   }
 }
 
-void get_string_size_offset(char *name, int *ssize, int *soffset)
+void get_string_size_offset(char *name, unsigned int *ssize,
+ unsigned int *soffset)
 {
   // First must strip off/encode offset/size values
   int offset_position = -1, size_position = -1;
   int current_position = 0;
-  int offset, size;
+  unsigned int offset, size;
   char *str_next;
   char current_char = name[0];
 
@@ -2652,9 +2656,9 @@ void set_string(World *mzx_world, char *name, mzx_string *src, int id)
 {
   mzx_string *dest;
   char *src_value = src->value;
-  int src_length = src->length;
+  unsigned int src_length = src->length;
   int next;
-  int size = 0, offset = 0;
+  unsigned int size = 0, offset = 0;
 
   get_string_size_offset(name, &size, &offset);
 
@@ -2667,7 +2671,7 @@ void set_string(World *mzx_world, char *name, mzx_string *src, int id)
 
     if(src_length > 5)
     {
-      int read_count = strtol(src_value + 5, NULL, 10);
+      unsigned int read_count = strtol(src_value + 5, NULL, 10);
       int actual_read;
 
       force_string_splice(dest, read_count);
@@ -2683,10 +2687,10 @@ void set_string(World *mzx_world, char *name, mzx_string *src, int id)
       const char terminate_char = '*';
       char *dest_value;
       int current_char = 0;
-      int read_pos = 0;
-      int read_allocate;
-      int allocated = 32;
-      int new_allocated = allocated;
+      unsigned int read_pos = 0;
+      unsigned int read_allocate;
+      unsigned int allocated = 32;
+      unsigned int new_allocated = allocated;
 
       force_string_splice(dest, allocated);
       dest_value = dest->value;
@@ -2724,7 +2728,7 @@ void set_string(World *mzx_world, char *name, mzx_string *src, int id)
   if(special_name("board_name"))
   {
     char *board_name = mzx_world->current_board->board_name;
-    int str_length = strlen(board_name);
+    unsigned int str_length = strlen(board_name);
     force_string_copy(dest, board_name, str_length);
   }
   else
@@ -2733,7 +2737,7 @@ void set_string(World *mzx_world, char *name, mzx_string *src, int id)
   {
     char *robot_name =
      (mzx_world->current_board->robot_list[id])->robot_name;
-    int str_length = strlen(robot_name);
+    unsigned int str_length = strlen(robot_name);
     force_string_copy(dest, robot_name, str_length);
   }
   else
@@ -2741,7 +2745,7 @@ void set_string(World *mzx_world, char *name, mzx_string *src, int id)
   if(special_name("mod_name"))
   {
     char *mod_name = mzx_world->real_mod_playing;
-    int str_length = strlen(mod_name);
+    unsigned int str_length = strlen(mod_name);
     force_string_copy(dest, mod_name, str_length);
   }
   else
@@ -2749,7 +2753,7 @@ void set_string(World *mzx_world, char *name, mzx_string *src, int id)
   if(special_name("input"))
   {
     char *input_string = mzx_world->current_board->input_string;
-    int str_length = strlen(input_string);
+    unsigned int str_length = strlen(input_string);
     force_string_copy(dest, input_string, str_length);
   }
   else
@@ -2759,10 +2763,10 @@ void set_string(World *mzx_world, char *name, mzx_string *src, int id)
   {
     Board *src_board = mzx_world->current_board;
     int board_width = src_board->board_width;
-    int board_size = board_width * src_board->board_height;
-    int board_pos = get_counter(mzx_world, "board_x", id) +
+    unsigned int board_size = board_width * src_board->board_height;
+    unsigned int board_pos = get_counter(mzx_world, "board_x", id) +
      (get_counter(mzx_world, "board_y", id) * board_width);
-    int read_length = 63;
+    unsigned int read_length = 63;
 
     force_string_length(dest, read_length);
 
@@ -2788,7 +2792,7 @@ void set_string(World *mzx_world, char *name, mzx_string *src, int id)
     {
       FILE *output_file = mzx_world->output_file;
       char *dest_value = dest->value;
-      int dest_length = dest->length;
+      unsigned int dest_length = dest->length;
 
       if(src_length > 6)
         size = strtol(src->name + 6, NULL, 10);
@@ -2822,7 +2826,8 @@ int get_counter(World *mzx_world, char *name, int id)
   int next;
 
   fdest = find_function_counter(name);
-  if(fdest && fdest->function_read)
+  if(fdest && fdest->function_read &&
+   (mzx_world->version >= fdest->minimum_version))
   {
     // Call read function
     if(fdest->function_read)
@@ -2844,8 +2849,8 @@ int get_string(World *mzx_world, char *name, mzx_string *dest,
 {
   mzx_string *src;
   int next;
-  int size = 0, offset = 0;
-  int src_length;
+  unsigned int size = 0, offset = 0;
+  unsigned int src_length;
 
   get_string_size_offset(name, &size, &offset);
 
@@ -2921,7 +2926,7 @@ void inc_string(World *mzx_world, char *name, mzx_string *src, int id)
 
   if(dest)
   {
-    int new_length = src->length + dest->length;
+    unsigned int new_length = src->length + dest->length;
     // Concatenate
     if(new_length > dest->allocated_length)
     {
@@ -3103,9 +3108,9 @@ int compare_strings(mzx_string *dest, mzx_string *src)
   Uint32 val_src_32b, val_dest_32b;
   Uint32 difference;
   char val_src, val_dest;
-  int cmp_length = dest->length;
-  int length_32b;
-  int i;
+  unsigned int cmp_length = dest->length;
+  unsigned int length_32b;
+  unsigned int i;
 
   if(src->length < cmp_length)
     return 1;
@@ -3178,7 +3183,7 @@ void load_string_board(World *mzx_world, char *name, int w, int h,
   int next;
   mzx_string *src_str = find_string(mzx_world, name, &next);
 
-  force_string_length(src_str, w * h);
+  force_string_length(src_str, (unsigned)w * h);
 
   src_str->length =
    load_string_board_direct(mzx_world, src_str, next, w, h, l,
@@ -3333,3 +3338,188 @@ void save_string(FILE *fp, mzx_string *src_string)
   fwrite(src_string->name, name_length, 1, fp);
   fwrite(src_string->value, str_length, 1, fp);
 }
+
+void debug_counters(World *mzx_world)
+{
+  int num_vars =
+   mzx_world->num_counters + mzx_world->num_strings;
+  char **var_list = (char **)malloc(num_vars * sizeof(char *));
+  int dialog_result;
+  int cp_len;
+  int selected = 0;
+  int i, i2;
+
+  m_show();
+
+  dialog di;
+  element *elements[3];
+
+  for(i = 0; i < mzx_world->num_counters; i++)
+  {
+    var_list[i] = (char *)malloc(76);
+    cp_len = strlen(mzx_world->counter_list[i]->name);
+    memset(var_list[i], ' ', 75);
+
+    if(cp_len > 64)
+      cp_len = 64;
+
+    memcpy(var_list[i],
+     mzx_world->counter_list[i]->name, cp_len);
+
+    var_list[i][cp_len] = ' ';
+    sprintf(var_list[i] + 64, "%d",
+     mzx_world->counter_list[i]->value);
+  }
+
+  for(i2 = 0; i2 < mzx_world->num_strings; i2++, i++)
+  {
+    var_list[i] = (char *)malloc(76);
+    cp_len = strlen(mzx_world->string_list[i2]->name);
+    memset(var_list[i], ' ', 75);
+
+    if(cp_len > 16)
+      cp_len = 16;
+
+    memcpy(var_list[i],
+     mzx_world->string_list[i2]->name, cp_len);
+
+    var_list[i][cp_len] = ' ';
+
+    cp_len = mzx_world->string_list[i2]->length;
+
+    if(cp_len > 58)
+      cp_len = 58;
+
+    memcpy(var_list[i] + 17,
+     mzx_world->string_list[i2]->value, cp_len);
+    var_list[i][17 + cp_len] = 0;
+  }
+
+  do
+  {
+    elements[0] = construct_list_box(2, 2, var_list, num_vars,
+     19, 75, 0, &selected);
+    elements[1] = construct_button(23, 22, "Export", 1);
+    elements[2] = construct_button(45, 22, "Done", -1);
+
+    construct_dialog_ext(&di, "Debug Variables", 0, 0,
+     80, 25, elements, 3, 0, 0, 0, NULL);
+
+    dialog_result = run_dialog(mzx_world, &di);
+
+    if(dialog_result == 0)
+    {
+      char new_value[70];
+      char name[70] = "Edit ";
+      int edit_type = 0;
+      int offset = selected;
+
+      if(selected >= mzx_world->num_counters)
+      {
+        offset -= mzx_world->num_counters;
+        edit_type = 1;
+
+        snprintf(name + 5, 70 - 5, "string %s",
+         mzx_world->string_list[offset]->name);
+
+        cp_len = mzx_world->string_list[offset]->length;
+
+        if(cp_len > 68)
+          cp_len = 68;
+
+        memcpy(new_value,
+         mzx_world->string_list[offset]->value, cp_len);
+
+        new_value[cp_len] = 0;
+      }
+      else
+      {
+        snprintf(name + 5, 70 - 5, "counter %s",
+         mzx_world->counter_list[offset]->name);
+        sprintf(new_value, "%d",
+         mzx_world->counter_list[offset]->value);
+      }
+
+      name[69] = 0;
+      save_screen();
+      draw_window_box(4, 12, 76, 14, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
+       EC_DEBUG_BOX_CORNER, 1, 1);
+      write_string(name, 6, 12, EC_DEBUG_LABEL, 0);
+
+      if(intake(mzx_world, new_value, 68, 6, 13, 15, 1, 0,
+       NULL, 0, NULL) != SDLK_ESCAPE)
+      {
+        if(edit_type)
+        {
+          mzx_string src = { strlen(new_value), 0, new_value };
+          set_string(mzx_world,
+           mzx_world->string_list[offset]->name, &src, 0);
+
+          cp_len = mzx_world->string_list[offset]->length;
+
+          if(cp_len > 58)
+            cp_len = 58;
+
+          memcpy(var_list[selected] + 17,
+           mzx_world->string_list[offset]->value,
+           cp_len);
+          var_list[selected][17 + cp_len] = 0;
+        }
+        else
+        {
+          int counter_value = strtol(new_value, NULL, 10);
+          set_counter(mzx_world,
+           mzx_world->counter_list[offset]->name, counter_value, 0);
+
+          sprintf(var_list[offset] + 64, "%d", counter_value);
+        }
+      }
+
+      restore_screen();
+    }
+    else
+
+    if(dialog_result == 1)
+    {
+      char export_name[128];
+      char *txt_ext[] = { ".TXT", NULL };
+
+      export_name[0] = 0;
+
+      if(!new_file(mzx_world, txt_ext, export_name,
+       "Export counters/strings", 1))
+      {
+        add_ext(export_name, ".txt");
+
+        FILE *fp = fopen(export_name, "wb");
+
+        for(i = 0; i < mzx_world->num_counters; i++)
+        {
+          fprintf(fp, "set \"%s\" to %d\n",
+           mzx_world->counter_list[i]->name,
+           mzx_world->counter_list[i]->value);
+        }
+
+        for(i = 0; i < mzx_world->num_strings; i++)
+        {
+          fprintf(fp, "set \"%s\" to \"",
+           mzx_world->string_list[i]->name);
+
+          fwrite(mzx_world->string_list[i]->value,
+           mzx_world->string_list[i]->length, 1, fp);
+
+          fprintf(fp, "\"\n");
+        }
+
+        fclose(fp);
+      }
+
+    }
+
+    destruct_dialog(&di);
+
+  } while(dialog_result != -1);
+
+  m_hide();
+}
+

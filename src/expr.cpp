@@ -414,10 +414,12 @@ int evaluate_operation(int operand_a, op c_operator, int operand_b)
     }
     case op_modulus:
     {
-      int val = operand_a % operand_b;
+      int val;
 
       if(operand_b == 0)
         return 0;
+
+      val = operand_a % operand_b;
 
       // Converted C99 regulated truncated modulus to
       // the more useful (for us) floored modulus
@@ -426,11 +428,8 @@ int evaluate_operation(int operand_a, op c_operator, int operand_b)
       // DAAN LEIJEN
       // University of Utrecht
 
-      if((val > 0 && operand_b < 0) ||
-       (val < 0 && operand_b > 0))
-      {
+      if((val < 0) ^ (operand_b < 0))
         return val + operand_b;
-      }
 
       return val;
     }

@@ -387,10 +387,10 @@ void joy_axis_set(config_info *conf, char *name, char *value,
 void joy_button_set(config_info *conf, char *name, char *value,
  char *extended_data)
 {
-  int joy_num, joy_axis;
+  int joy_num, joy_button;
   int joy_key;
 
-  sscanf(name, "joy%dbutton%d", &joy_num, &joy_axis);
+  sscanf(name, "joy%dbutton%d", &joy_num, &joy_button);
   joy_key = (SDLKey)strtol(value, NULL, 10);
 
   if(joy_num < 1)
@@ -399,7 +399,7 @@ void joy_button_set(config_info *conf, char *name, char *value,
   if(joy_num > 16)
     joy_num = 16;
 
-  map_joystick_button(joy_num - 1, joy_axis - 1, (SDLKey)joy_key);
+  map_joystick_button(joy_num - 1, joy_button - 1, (SDLKey)joy_key);
 }
 
 void pause_on_unfocus(config_info *conf, char *name, char *value,
@@ -455,7 +455,6 @@ void config_force_32bpp(config_info *conf, char *name,
 {
   conf->force_32bpp = strtol(value, NULL, 10);
 }
-
 
 config_entry config_options[] =
 {
@@ -628,7 +627,7 @@ void set_config_from_file(config_info *conf, char *conf_file_name)
               current_char = ' ';
             }
 
-            if(current_char == '=')
+            if((current_char == '=') && (equals_position == NULL))
               equals_position = output_position;
 
             *output_position = current_char;
@@ -724,7 +723,7 @@ void set_config_from_command_line(config_info *conf, int argc,
         current_char = ' ';
       }
 
-      if(current_char == '=')
+      if((current_char == '=') && (equals_position == NULL))
         equals_position = output_position;
 
       *output_position = current_char;

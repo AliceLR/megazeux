@@ -1,8 +1,26 @@
-December 10, 2006 - MZX 2.81d
++ Made grabbing in the editor not combine background color, only uses
+  "special" in game colors for player, tell me if anything ends up being
+  weird because of this.
++ Possibly fixed an obscure bug where moving something happened
+  immediately if it was sent to a label by a robot further east/south than
+  it and it moved north or west (has to do with the way robots are
+  reverse scanned). Tell me if this changed any behavior for the worse and
+  I'll change it back or try to work out something new.
++ Added GDMs to ctrl + n, this will of course auto convert and play the
+  s3m.
++ Added ability to preset player locked status from board settings.
+- Removed ability to change SMZX mode ingame (F11)
++ Instead added ability to debug variables (counters and strings)
+  ingame with F11. There's also an option to export the current variables
+  to Robotic program that sets them.
++ Fixed bug where moving a block with the player into an overlapping
+  region leaves a space where the player was.
++ Fixed bug with a robot indirectly sending itself to a subroutine via
+  send all or send name causing it to loop the send.
++ Added compatability hacks for key# prior to MZX 2.69 worlds and
+  ridNAME falling through in MZX 2.70 and earlier worlds.
 
-NOTE: This release was made by Alistair Strachan (ajs) and not by
-      Exophase. As such, any problems present in this release that
-      were not present in 2.81c should be reported directly to ajs.
+December 10, 2006 - MZX 2.81d
 
 + Fixed a compilation failure on Linux, due to SDL no longer depending
   on libX11. Now we manually link X11 into MZX if necessary.
@@ -17,6 +35,7 @@ NOTE: This release was made by Alistair Strachan (ajs) and not by
 + Update the build.txt documentation.
 + Address documentation bugs found in the internal MZX help system (Terryn).
 + Fixed a recently introduced bug breaking the open command.
++ Fixed some bugs with changing params and pressing escape.
 
 December 14, 2005 - MZX 2.81c
 

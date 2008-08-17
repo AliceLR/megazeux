@@ -120,5 +120,6 @@ void execute_numbered_macro(robot_state *rstate, int num);
 void output_macro(robot_state *rstate, ext_macro *macro_src);
 void execute_named_macro(robot_state *rstate, char *macro_name);
 void macro_default_values(robot_state *rstate, ext_macro *macro_src);
+void goto_position(World *mzx_world, robot_state *rstate);
 
 #endif

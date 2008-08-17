@@ -22,8 +22,6 @@ OBJS      = main.${o} graphics.${o} window.${o} hexchar.${o} event.${o} \
 
 MZX       = ../${TARGET}
 
-subdir:	mzx
-
 ifdef DEBUG
 mzx:	${OBJS}
 	${CXX} ${OBJS} ${LIBS} -o ${MZX}.dbg${BINEXT}

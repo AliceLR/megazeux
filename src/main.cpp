@@ -26,6 +26,12 @@
 #include <time.h>
 #include <unistd.h>
 
+#ifdef PSP_BUILD
+
+#include <psppower.h>
+
+#endif
+
 #include "configure.h"
 #include "event.h"
 #include "helpsys.h"
@@ -48,80 +54,87 @@
 #define MZX_HELP_FIL SHAREDIR "mzx_help.fil"
 #define CONFIG_TXT   CONFDIR CONFFILE
 
-int main(int argc, char **argv)
+extern "C"
 {
-  World mzx_world;
-  char bin_path[512];
-
-#if defined(__WIN32__) && defined(DEBUG)
-  freopen("CON", "wb", stdout);
-#endif
-
-  get_path(argv[0], bin_path);
-  chdir(bin_path);
-
-  memset(&mzx_world, 0, sizeof(World));
-  default_config(&(mzx_world.conf));
-  set_config_from_file(&(mzx_world.conf), CONFIG_TXT);
-  set_config_from_command_line(&(mzx_world.conf), argc, argv);
-
-  counter_fsg();
+  int main(int argc, char **argv)
+  {
+    World mzx_world;
+    char bin_path[512];
 
 #ifdef DEBUG
-  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK |
-   SDL_INIT_NOPARACHUTE);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK |
+     SDL_INIT_NOPARACHUTE);
 #else
-  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
 #endif
 
-  SDL_EnableUNICODE(1);
+#if defined(__WIN32__) && defined(DEBUG)
+    freopen("CON", "wb", stdout);
+#endif
 
-  initialize_joysticks();
+#ifdef PSP_BUILD
+    scePowerSetClockFrequency(333, 333, 166);
+#endif
+    
+    get_path(argv[0], bin_path);
+    chdir(bin_path);
 
-  set_mouse_mul(8, 14);
-  warp_mouse(39, 12);
+    memset(&mzx_world, 0, sizeof(World));
+    default_config(&(mzx_world.conf));
+    set_config_from_file(&(mzx_world.conf), CONFIG_TXT);
+    set_config_from_command_line(&(mzx_world.conf), argc, argv);
 
-  // Setup directory strings
-  // Get megazeux directory
+    counter_fsg();
 
-  // Init video (will init palette too)
-  init_video(&(mzx_world.conf));
-  init_audio(&(mzx_world.conf));
-  cursor_off();
-  default_scroll_values(&mzx_world);
+    SDL_EnableUNICODE(1);
 
-  help_load(&mzx_world, MZX_HELP_FIL);
+    initialize_joysticks();
 
-  // Get current directory and drive (form- C:\DIR\SUBDIR)
-  getcwd(current_dir, MAX_PATH);
+    set_mouse_mul(8, 14);
+    warp_mouse(39, 12);
 
-  strcpy(curr_file, mzx_world.conf.startup_file);
-  strcpy(curr_sav, mzx_world.conf.default_save_name);
-  set_music_volume(mzx_world.conf.music_volume);
-  set_sound_volume(mzx_world.conf.sam_volume);
-  set_music_on(mzx_world.conf.music_on);
-  set_sfx_on(mzx_world.conf.pc_speaker_on);
-  set_sfx_volume(mzx_world.conf.pc_speaker_volume);
-  mzx_world.mzx_speed = mzx_world.conf.mzx_speed;
-  mzx_world.default_speed = mzx_world.mzx_speed;
+    // Setup directory strings
+    // Get megazeux directory
 
-  memcpy(macros, mzx_world.conf.default_macros, 5 * 64);
-  // Random seed..
+    // Init video (will init palette too)
+    init_video(&(mzx_world.conf));
+    init_audio(&(mzx_world.conf));
+    cursor_off();
+    default_scroll_values(&mzx_world);
 
-  srand(time(NULL));
+    help_load(&mzx_world, MZX_HELP_FIL);
 
-  // Run main game (mouse is hidden and palette is faded)
-  title_screen(&mzx_world);
+    // Get current directory and drive (form- C:\DIR\SUBDIR)
+    getcwd(current_dir, MAX_PATH);
 
-  vquick_fadeout();
+    strcpy(curr_file, mzx_world.conf.startup_file);
+    strcpy(curr_sav, mzx_world.conf.default_save_name);
+    set_music_volume(mzx_world.conf.music_volume);
+    set_sound_volume(mzx_world.conf.sam_volume);
+    set_music_on(mzx_world.conf.music_on);
+    set_sfx_on(mzx_world.conf.pc_speaker_on);
+    set_sfx_volume(mzx_world.conf.pc_speaker_volume);
+    mzx_world.mzx_speed = mzx_world.conf.mzx_speed;
+    mzx_world.default_speed = mzx_world.mzx_speed;
 
-  if(mzx_world.active)
-  {
-    clear_world(&mzx_world);
-    clear_global_data(&mzx_world);
+    memcpy(macros, mzx_world.conf.default_macros, 5 * 64);
+    // Random seed..
+
+    srand(time(NULL));
+
+    // Run main game (mouse is hidden and palette is faded)
+    title_screen(&mzx_world);
+
+    vquick_fadeout();
+
+    if(mzx_world.active)
+    {
+      clear_world(&mzx_world);
+      clear_global_data(&mzx_world);
+    }
+
+    SDL_Quit();
+
+    return 0;
   }
-
-  SDL_Quit();
-
-  return 0;
 }

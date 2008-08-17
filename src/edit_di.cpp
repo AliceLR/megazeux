@@ -247,20 +247,23 @@ void board_info(World *mzx_world)
   int dialog_result;
   element *elements[8];
   dialog di;
-  int check_box_results[10] =
+  int check_box_results[13] =
   {
     src_board->can_shoot, src_board->can_bomb,
     src_board->fire_burn_space, src_board->fire_burn_fakes,
     src_board->fire_burn_trees, src_board->fire_burn_brown,
     src_board->forest_becomes, src_board->collect_bombs,
-    src_board->fire_burns, src_board->restart_if_zapped
+    src_board->fire_burns, src_board->restart_if_zapped,
+    src_board->player_ns_locked, src_board->player_ew_locked,
+    src_board->player_attack_locked
   };
   char *check_box_strings[] =
   {
     "Can shoot", "Can bomb", "Fire burns space",
     "Fire burns fakes", "Fire burns trees", "Fire burns brown",
     "Forest to floor", "Collect bombs", "Fire burns forever",
-    "Restart if hurt"
+    "Restart if hurt", "Player locked N/S", "Player locked E/W",
+    "Player attack locked"
   };
   char *radio_strings_1[] =
   {
@@ -282,25 +285,26 @@ void board_info(World *mzx_world)
   int time_limit = src_board->time_limit;
   char title_string[BOARD_NAME_SIZE];
 
-  set_confirm_buttons(elements);
   set_context(85);
 
   strcpy(title_string, src_board->board_name);
 
+  elements[0] = construct_button(15, 18, "OK", 0);
+  elements[1] = construct_button(37, 18, "Cancel", 1);
   elements[2] = construct_input_box(9, 1, "Board name- ",
    BOARD_NAME_SIZE - 1, 0, title_string);
   elements[3] = construct_check_box(5, 2, check_box_strings,
-   10, 18, check_box_results);
-  elements[4] = construct_number_box(5, 13, "Time limit- ",
+   13, 20, check_box_results);
+  elements[4] = construct_number_box(5, 16, "Time limit- ",
    0, 32767, 0, &time_limit);
-  elements[5] = construct_radio_button(33, 2, radio_strings_1,
+  elements[5] = construct_radio_button(33, 3, radio_strings_1,
    3, 19, &radio_result_1);
-  elements[6] = construct_radio_button(33, 6, radio_strings_2,
+  elements[6] = construct_radio_button(33, 8, radio_strings_2,
    3, 19, &radio_result_2);
-  elements[7] = construct_radio_button(33, 10, radio_strings_3,
+  elements[7] = construct_radio_button(33, 13, radio_strings_3,
    4, 19, &radio_result_3);
 
-  construct_dialog(&di, "Board Settings", 10, 4, 60, 18,
+  construct_dialog(&di, "Board Settings", 10, 2, 60, 21,
    elements, 8, 2);
 
   dialog_result = run_dialog(mzx_world, &di);
@@ -318,6 +322,9 @@ void board_info(World *mzx_world)
     src_board->collect_bombs = check_box_results[7];
     src_board->fire_burns = check_box_results[8];
     src_board->restart_if_zapped = check_box_results[9];
+    src_board->player_ns_locked = check_box_results[10];
+    src_board->player_ew_locked = check_box_results[11];
+    src_board->player_attack_locked = check_box_results[12];
     src_board->explosions_leave = radio_result_1;
     src_board->save_mode = radio_result_2;
 

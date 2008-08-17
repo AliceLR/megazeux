@@ -71,6 +71,13 @@ void init_video(config_info *conf)
   int force_32bpp = conf->force_32bpp;
   int fullscreen = conf->fullscreen;
 
+#ifdef PSP_BUILD
+  res_x = 640;
+  res_y = 363;
+  force_32bpp = 0;
+  fullscreen = 1;
+#endif
+
   char temp[64];
 
   if(!fullscreen)
@@ -628,15 +635,19 @@ void update_screen8()
   Uint32 row_advance = (graphics.screen->pitch * 14) / 4;
   Uint32 ticks = SDL_GetTicks();
   Uint32 *old_dest = NULL;
+  Uint32 height_multiplier = graphics.height_multiplier;
 
-  if((graphics.height_multiplier > 1) && (graphics.fullscreen))
+  if(!graphics.fullscreen)
+    height_multiplier = 1;
+
+  if(height_multiplier > 1)
   {
     dest = (Uint32 *)(graphics.screen->pixels) +
      (graphics.screen->pitch * (((graphics.screen->h /
-     graphics.height_multiplier) - 350) / 8)) +
+     height_multiplier) - 350) / 8)) +
      ((graphics.screen->w - 640) / 8);
-    line_advance *= graphics.height_multiplier;
-    row_advance *= graphics.height_multiplier;
+    line_advance *= height_multiplier;
+    row_advance *= height_multiplier;
   }
   else
   {
@@ -988,7 +999,7 @@ void update_screen8()
     }
   }
 
-  if((graphics.height_multiplier > 1) && (graphics.fullscreen))
+  if(height_multiplier > 1)
   {
     // Duplicate the screen
     Uint32 *dest2;
@@ -998,7 +1009,7 @@ void update_screen8()
 
     for(i = 0; i < 350; i++)
     {
-      for(i2 = 0; i2 < graphics.height_multiplier - 1; i2++)
+      for(i2 = 0; i2 < height_multiplier - 1; i2++)
       {
         memcpy(dest2, dest, 640);
         dest2 += line_advance2;
@@ -1031,15 +1042,19 @@ void update_screen32()
   Uint32 row_advance = ((graphics.screen->pitch / sizeof(Uint32)) * 14);
   Uint32 ticks = SDL_GetTicks();
   Uint32 *old_dest = NULL;
+  Uint32 height_multiplier = graphics.height_multiplier;
 
-  if((graphics.height_multiplier > 1) && graphics.fullscreen)
+  if(!graphics.fullscreen)
+    height_multiplier = 1;
+
+  if(height_multiplier > 1)
   {
     dest = (Uint32 *)(graphics.screen->pixels) +
      (graphics.screen->pitch * (((graphics.screen->h /
-     graphics.height_multiplier) - 350) / 2)) +
+     height_multiplier) - 350) / 2)) +
      ((graphics.screen->w - 640) / 2);
-    line_advance *= graphics.height_multiplier;
-    row_advance *= graphics.height_multiplier;
+    line_advance *= height_multiplier;
+    row_advance *= height_multiplier;
   }
   else
   {
@@ -1288,7 +1303,7 @@ void update_screen32()
     }
   }
 
-  if((graphics.height_multiplier > 1) && (graphics.fullscreen))
+  if(height_multiplier > 1)
   {
     // Duplicate the screen
     Uint32 *dest2;
@@ -1298,7 +1313,7 @@ void update_screen32()
 
     for(i = 0; i < 350; i++)
     {
-      for(i2 = 0; i2 < graphics.height_multiplier - 1; i2++)
+      for(i2 = 0; i2 < height_multiplier - 1; i2++)
       {
         memcpy(dest2, dest, 640 * sizeof(Uint32));
         dest2 += line_advance2;
@@ -2107,7 +2122,10 @@ int get_resolution_h()
 
 int get_height_multiplier()
 {
-  return graphics.height_multiplier;
+  if(graphics.fullscreen)
+    return graphics.height_multiplier;
+
+  return 1;
 }
 
 void set_mouse_mul(int width_mul, int height_mul)

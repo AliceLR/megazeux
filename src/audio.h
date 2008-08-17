@@ -22,8 +22,17 @@
 #ifndef AUDIO_H
 #define AUDIO_H
 
+#ifdef USE_TREMOR
+
+#include <ivorbiscodec.h>
+#include <ivorbisfile.h>
+
+#else
+
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
+
+#endif
 
 #include "SDL.h"
 #include "modplug.h"

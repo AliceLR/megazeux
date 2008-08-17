@@ -736,24 +736,41 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       case SDLK_g:
       {
         if(get_ctrl_status(keycode_SDL))
-        {
-          char line_number[16];
+          goto_position(mzx_world, &rstate);
 
-          line_number[0] = 0;
+        /*
+          char new_position[16];
+
+          new_position[0] = 0;
 
           save_screen();
-          draw_window_box(18, 12, 47, 14, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
+          draw_window_box(13, 12, 65, 14, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
            EC_DEBUG_BOX_CORNER, 1, 1);
-          write_string("Goto line number:", 20, 13, EC_DEBUG_LABEL, 0);
+          write_string("Goto line number, column number:",
+           15, 13, EC_DEBUG_LABEL, 0);
 
-          if(intake(mzx_world, line_number, 7, 38, 13, 15, 1, 0,
+          if(intake(mzx_world, new_position, 15, 48, 13, 15, 1, 0,
            NULL, 0, NULL) != SDLK_ESCAPE)
           {
-            int line = strtol(line_number, NULL, 10);
-            goto_line(&rstate, line);
+            char *comma_position = strchr(new_position, ',');
+
+            if(comma_position)
+            {
+              int column_number = strtol(comma_position + 1, NULL, 10);
+
+              if(column_number < 0)
+                column_number = 0;
+
+              rstate.current_x = column_number;
+
+              *comma_position = 0;
+            }
+
+            goto_line(&rstate, strtol(new_position, NULL, 10));
           }
           restore_screen();
         }
+        */
         break;
       }
 
@@ -2106,8 +2123,8 @@ void paste_buffer(robot_state *rstate)
       int selection_format;
       unsigned long int nbytes;
       unsigned long int overflow;
-      unsigned char *src_data;
-      char *src_ptr, line_buffer[512];
+      unsigned char *src_data, *src_ptr;
+      char line_buffer[512];
       int line_length;
       int ret_type;
 
@@ -2126,11 +2143,11 @@ void paste_buffer(robot_state *rstate)
        (selection_type == XInternAtom(display, "UTF8_STRING", False))))
       {
         rstate->command_buffer = line_buffer;
-        src_ptr = (char *) src_data;
+        src_ptr = src_data;
 
         while(*src_ptr)
         {
-          line_length = strcspn(src_ptr, "\n");
+          line_length = strcspn((const char *)src_ptr, "\n");
           memcpy(line_buffer, src_ptr, line_length);
           line_buffer[line_length] = 0;
           add_line(rstate);
@@ -2427,6 +2444,35 @@ void goto_line(robot_state *rstate, int line)
     line = 1;
 
   move_and_update(rstate, line - rstate->current_line);
+}
+
+void goto_position(World *mzx_world, robot_state *rstate)
+{
+  int dialog_result;
+  int line_number = rstate->current_line;
+  int column_number = rstate->current_x;
+  dialog di;
+
+  element *elements[4] =
+  {
+    construct_number_box(2, 2, "Line:   ", 0, rstate->total_lines,
+     0, &line_number),
+    construct_number_box(2, 3, "Column: ", 0, 240, 0, &column_number),
+    construct_button(3, 5, "OK", 0),
+    construct_button(14, 5, "Cancel", -1)
+  };
+
+  construct_dialog(&di, "Goto position", 28, 8, 25, 7,
+   elements, 4, 0);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(dialog_result != -1)
+  {
+    rstate->current_x = column_number;
+    goto_line(rstate, line_number);
+  }
 }
 
 void find_replace_action(robot_state *rstate)
@@ -2733,7 +2779,7 @@ void execute_macro(robot_state *rstate, ext_macro *macro_src)
   int total_lines_needed;
   int largest;
   int current_len;
-  double optimal_delta, old_optimal_delta = 1000000.0;
+  float optimal_delta, old_optimal_delta = 1000000.0;
   int x, y, dialog_index = 2;
   macro_variable *current_variable;
   int draw_on_line;
@@ -2832,7 +2878,7 @@ void execute_macro(robot_state *rstate, ext_macro *macro_src)
     nominal_height = total_lines_needed + 5;
 
     optimal_delta = fabs((80.0 / 25) -
-     (double)(nominal_width + 3) / nominal_height);
+     (float)(nominal_width + 3) / nominal_height);
 
     if((old_optimal_delta < optimal_delta) ||
      (nominal_width < largest_column_width) || (nominal_height > 25))

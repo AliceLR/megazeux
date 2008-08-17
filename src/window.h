@@ -227,7 +227,7 @@ element *construct_number_box(int x, int y,
  int mult_five, int *result);
 element *construct_list_box(int x, int y, char **choices,
  int num_choices, int num_choices_visible, int choice_length,
- int *result);
+ int return_value, int *result);
 element *construct_board_list(int x, int y,
  char *title, int board_zero_as_none, int *result);
 

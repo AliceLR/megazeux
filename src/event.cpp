@@ -261,14 +261,17 @@ Uint32 process_event(SDL_Event *event)
 
         if(stuffed_key)
         {
-          input.last_SDL_pressed = stuffed_key;
-          input.last_SDL = stuffed_key;
-          input.last_unicode = stuffed_key;
-          input.last_SDL_repeat = stuffed_key;
-          input.last_unicode_repeat = stuffed_key;
-          input.SDL_keymap[stuffed_key] = 1;
-          input.last_keypress_time = SDL_GetTicks();
-          input.last_SDL_release = (SDLKey)0;
+          if(input.SDL_keymap[stuffed_key] == 0)
+          {
+            input.last_SDL_pressed = stuffed_key;
+            input.last_SDL = stuffed_key;
+            input.last_unicode = stuffed_key;
+            input.last_SDL_repeat = stuffed_key;
+            input.last_unicode_repeat = stuffed_key;
+            input.SDL_keymap[stuffed_key] = 1;
+            input.last_keypress_time = SDL_GetTicks();
+            input.last_SDL_release = (SDLKey)0;
+          }
 
           if(last_axis == (digital_value ^ 1))
           {
@@ -308,7 +311,7 @@ Uint32 process_event(SDL_Event *event)
       SDLKey stuffed_key =
         input.joystick_button_map[which][button];
 
-      if(stuffed_key)
+      if(stuffed_key && (input.SDL_keymap[stuffed_key] == 0))
       {
         input.last_SDL_pressed = stuffed_key;
         input.last_SDL = stuffed_key;

@@ -26,8 +26,17 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#ifdef USE_TREMOR
+
+#include <ivorbiscodec.h>
+#include <ivorbisfile.h>
+
+#else
+
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
+
+#endif
 
 #include "audio.h"
 #include "modplug.h"
@@ -239,7 +248,7 @@ void sampled_set_buffer(sampled_stream *s_src)
   s_src->negative_comp = 0;
 
   data_window_length =
-   (Uint32)(ceil((double)audio.audio_settings.samples *
+   (Uint32)(ceil((float)audio.audio_settings.samples *
    frequency / audio.output_frequency) * bytes_per_sample);
 
   prologue_length += (Uint32)(ceil(frequency_delta) * bytes_per_sample);
@@ -385,7 +394,7 @@ void mp_set_frequency(sampled_stream *s_src, Uint32 frequency)
   else
   {
     ((modplug_stream *)s_src)->effective_frequency = frequency;
-    frequency = (Uint32)((double)frequency *
+    frequency = (Uint32)((float)frequency *
      audio.output_frequency / 44100);
   }
 
@@ -424,9 +433,16 @@ Uint32 vorbis_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
   do
   {
     read_wanted -= read_len;
+
+#ifdef USE_TREMOR
+    read_len =
+     ov_read(&(v_stream->vorbis_file_handle), read_buffer,
+     read_wanted, &current_section);
+#else
     read_len =
      ov_read(&(v_stream->vorbis_file_handle), read_buffer,
      read_wanted, 0, 2, 1, &current_section);
+#endif
 
     // If it hit the end go back to the beginning if repeat is on
 
@@ -438,9 +454,15 @@ Uint32 vorbis_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
 
         if(read_wanted)
         {
+#ifdef USE_TREMOR
+          read_len =
+           ov_read(&(v_stream->vorbis_file_handle), read_buffer,
+           read_wanted, &current_section);
+#else
           read_len =
            ov_read(&(v_stream->vorbis_file_handle), read_buffer,
            read_wanted, 0, 2, 1, &current_section);
+#endif
         }
       }
       else
@@ -642,7 +664,7 @@ Uint32 pcs_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
   if(pcs_stream->last_playing)
   {
     increment_value =
-     (Uint32)((double)pcs_stream->last_frequency /
+     (Uint32)((float)pcs_stream->last_frequency /
      (audio.output_frequency) * 4294967296.0);
 
     increment_buffer = pcs_stream->last_increment_buffer;
@@ -671,7 +693,7 @@ Uint32 pcs_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
   while(offset < len / 4)
   {
     sound_system();
-    sample_duration = (Uint32)((double)audio.output_frequency / 500 *
+    sample_duration = (Uint32)((float)audio.output_frequency / 500 *
      pcs_stream->note_duration);
 
     if(offset + sample_duration >= len / 4)
@@ -689,7 +711,7 @@ Uint32 pcs_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
     if(pcs_stream->playing)
     {
       increment_value =
-       (Uint32)((double)pcs_stream->frequency /
+       (Uint32)((float)pcs_stream->frequency /
        audio.output_frequency * 4294967296.0);
       increment_buffer = 0;
 

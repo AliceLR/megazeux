@@ -673,7 +673,10 @@ void update_variables(World *mzx_world, int slowed)
   if(!slowdown)
   {
     // Change scroll color
-    if(++scroll_color > 15) scroll_color = 7;
+    scroll_color++;
+
+    if(scroll_color > 15)
+      scroll_color = 7;
 
     // Decrease time limit
     if(!slowed)
@@ -1201,7 +1204,7 @@ void play_game(World *mzx_world, int fadein)
       if(key_char)
       {
         keylbl[3] = key_char;
-        send_robot_all(mzx_world, keylbl);
+        send_robot_all(mzx_world, keylbl, NULL);
       }
 
       switch(key)
@@ -1236,7 +1239,7 @@ void play_game(World *mzx_world, int fadein)
         {
           int enter_menu_status =
            get_counter(mzx_world, "ENTER_MENU", 0);
-          send_robot_all(mzx_world, "KeyEnter");
+          send_robot_all(mzx_world, "KeyEnter", NULL);
           // Menu
           // 19x9
           if(enter_menu_status)
@@ -1519,8 +1522,7 @@ void play_game(World *mzx_world, int fadein)
 
         case SDLK_F11:
         {
-          // SMZX Mode
-          set_screen_mode(get_screen_mode() + 1);
+          debug_counters(mzx_world);
           break;
         }
       }
@@ -1640,7 +1642,7 @@ int move_player(World *mzx_world, int dir)
       char d_param = src_board->level_param[d_offset];
       send_robot(mzx_world,
        (src_board->sensor_list[d_param])->robot_to_mesg,
-       "SENSORON", 0);
+       "SENSORON", 0, NULL);
       place_player(mzx_world, new_x, new_y, dir);
     }
     else

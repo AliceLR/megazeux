@@ -23,6 +23,10 @@
 #ifndef __CONST_H
 #define __CONST_H
 
+#ifdef PSP_BUILD
+#define PATH_MAX 512
+#endif
+
 #ifndef __WIN32__
 #include <limits.h>
 #define MAX_PATH PATH_MAX

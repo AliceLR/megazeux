@@ -299,9 +299,20 @@ void send_at_xy(World *mzx_world, int id, int x, int y,
   if(is_robot(d_id))
   {
     char label_buffer[ROBOT_MAX_TR];
+    int d_param = src_board->level_param[offset];
+
     tr_msg(mzx_world, label, id, label_buffer);
-    send_robot_id(mzx_world, src_board->level_param[offset],
-     label_buffer, 0);
+
+    if(d_param == id)
+    {
+      send_robot_self(mzx_world,
+       mzx_world->current_board->robot_list[id], label_buffer);
+    }
+    else
+    {
+      send_robot_id(mzx_world, src_board->level_param[offset],
+       label_buffer, 0);
+    }
   }
 }
 
@@ -941,6 +952,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
     cur_robot->xpos = x;
     cur_robot->ypos = y;
     cur_robot->cycle_count = 0;
+
+    src_board->robot_list[id]->status = 0;
   }
   else
   {
@@ -1114,26 +1127,27 @@ void run_robot(World *mzx_world, int id, int x, int y)
            parsedir((mzx_dir)cmd_ptr[2], x, y, cur_robot->walk_dir);
           char *p2 = next_param_pos(cmd_ptr + 1);
           int num = parse_param(mzx_world, p2, id);
+
           // Inc. pos. or break
           if(num != cur_robot->pos_within_line)
           {
             cur_robot->pos_within_line++;
+
+            // Parse dir
+            if(is_cardinal_dir(direction))
             {
-              // Parse dir
-              if(is_cardinal_dir(direction))
+              move_status status;
+
+              status = move(mzx_world, x, y, dir_to_int(direction),
+               CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK |
+               CAN_WATERWALK | CAN_LAVAWALK * cur_robot->can_lavawalk);
+
+              if(status == NO_HIT)
               {
-                move_status status;
-
-                status = move(mzx_world, x, y, dir_to_int(direction),
-                 CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK |
-                 CAN_WATERWALK | CAN_LAVAWALK * cur_robot->can_lavawalk);
-
-                if(status == NO_HIT)
-                {
-                  move_dir(src_board, &x, &y, dir_to_int(direction));
-                }
+                move_dir(src_board, &x, &y, dir_to_int(direction));
               }
             }
+
             goto breaker;
           }
         }
@@ -2081,7 +2095,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         tr_msg(mzx_world, cmd_ptr + 2, id, robot_name_buffer);
         tr_msg(mzx_world, p2 + 1, id, label_buffer);
 
-        send_robot(mzx_world, robot_name_buffer, label_buffer, 0);
+        send_robot(mzx_world, robot_name_buffer, label_buffer,
+         0, cur_robot);
         // Did the position get changed? (send to self)
         if(old_pos != cur_robot->cur_prog_line)
           gotoed = 1;
@@ -2310,10 +2325,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
                 // Become pushable for right now
                 int offset = x + (y * board_width);
                 mzx_thing old_id = (mzx_thing)level_id[offset];
-                level_id[offset] = (char)ROBOT;
+                level_id[offset] = (char)ROBOT_PUSHABLE;
                 grab_item(mzx_world, new_offset, 0);
                 // Find the robot
-                if(level_id[offset] != ROBOT)
+                if(level_id[offset] != ROBOT_PUSHABLE)
                 {
                   int i;
                   for(i = 0; i < 4; i++)
@@ -2324,7 +2339,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
                     {
                       // Not edge... robot?
                       new_offset = new_x + (new_y * board_width);
-                      if((level_id[new_offset] == ROBOT) &&
+                      if((level_id[new_offset] == ROBOT_PUSHABLE) &&
                        (level_param[new_offset] == id))
                       {
                         offset = new_offset;
@@ -5226,8 +5241,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         // This will load a charset to a different position - Exo
         if(charset_name[0] == '+')
         {
-          char *next;
           char tempc = charset_name[3];
+          char *next;
           int pos;
 
           charset_name[3] = 0;
@@ -5241,8 +5256,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if(charset_name[0] == '@')
         {
-          char *next;
           char tempc = charset_name[4];
+          char *next;
           int pos;
 
           charset_name[4] = 0;

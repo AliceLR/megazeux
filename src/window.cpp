@@ -24,10 +24,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dirent.h>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <ctype.h>
+#include <dirent.h>
 
 #ifdef __WIN32__
 #include <windows.h>
@@ -2359,8 +2359,8 @@ int click_input_box(World *mzx_world, dialog *di,
   int y = di->y + e->y;
 
   return intake(mzx_world, src->result, src->max_length, x +
-   question_len, y, DI_INPUT, 2, src->input_flags,
-   &start_x, 0, NULL);
+   question_len + di->pad_space, y, DI_INPUT, 2,
+   src->input_flags, &start_x, 0, NULL);
 }
 
 int click_check_box(World *mzx_world, dialog *di,
@@ -2557,8 +2557,8 @@ int idle_input_box(World *mzx_world, dialog *di, element *e)
   int y = di->y + e->y;
 
   return intake(mzx_world, src->result, src->max_length, x +
-   strlen(src->question), y, DI_INPUT, 2, src->input_flags,
-   NULL, 0, NULL);
+   strlen(src->question) + di->pad_space, y, DI_INPUT, 2,
+   src->input_flags, NULL, 0, NULL);
 }
 
 void construct_dialog(dialog *src, char *title, int x, int y,
@@ -2800,6 +2800,8 @@ element *construct_list_box(int x, int y, char **choices,
  int num_choices, int num_choices_visible, int choice_length,
  int return_value, int *result)
 {
+  int scroll_offset = *result - (num_choices_visible / 2);
+
   list_box *src = (list_box *)malloc(sizeof(list_box));
   src->choices = choices;
   src->num_choices = num_choices;
@@ -2807,10 +2809,23 @@ element *construct_list_box(int x, int y, char **choices,
   src->choice_length = choice_length;
   src->result = result;
   src->return_value = return_value;
-  src->scroll_offset = 0;
   src->key_position = 0;
   src->last_keypress_time = 0;
   src->clicked_scrollbar = 0;
+
+  if(scroll_offset < 0)
+    scroll_offset = 0;
+
+  if(scroll_offset + num_choices_visible > num_choices)
+  {
+    scroll_offset =
+      num_choices - num_choices_visible;
+
+    if(scroll_offset < 0)
+      scroll_offset = 0;
+  }
+
+  src->scroll_offset = scroll_offset;
 
   construct_element(&(src->e), x, y, choice_length + 1,
    num_choices_visible, draw_list_box, key_list_box,
@@ -3136,8 +3151,9 @@ int file_dialog_function(World *mzx_world, dialog *di, int key)
 void remove_files(char *directory_name, int remove_recursively)
 {
   DIR *current_dir = opendir(directory_name);
-  struct stat file_info;
   struct dirent *current_file;
+
+  struct stat file_info;
   char current_dir_name[512];
   char *file_name;
 
@@ -3200,8 +3216,8 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
  int num_ext, int ext_height, int allow_dir_change)
 {
   DIR *current_dir;
-  struct stat file_info;
   struct dirent *current_file;
+  struct stat file_info;
   char current_dir_name[MAX_PATH];
   char current_dir_short[56];
   int current_dir_length;
@@ -3248,6 +3264,7 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
     chosen_dir = 0;
 
     getcwd(current_dir_name, MAX_PATH);
+
     current_dir = opendir(current_dir_name);
 
     do
@@ -3260,7 +3277,7 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
       if(current_file)
       {
         file_name = current_file->d_name;
-        file_name_length = strlen(current_file->d_name);
+        file_name_length = strlen(file_name);
 
         if((stat(file_name, &file_info) >= 0) &&
          ((file_name[0] != '.') || (file_name[1] == '.')))

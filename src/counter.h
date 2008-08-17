@@ -77,8 +77,8 @@ struct _counter
 
 struct _mzx_string
 {
-  int length;
-  int allocated_length;
+  unsigned int length;
+  unsigned int allocated_length;
   char *value;
 
   char name[1];
@@ -96,7 +96,7 @@ typedef void (* builtin_write_function)(World *mzx_world,
 struct _function_counter
 {
   char name[20];
-  int value;
+  int minimum_version;
   builtin_read_function function_read;
   builtin_write_function function_write;
 };
@@ -144,9 +144,12 @@ int set_counter_special(World *mzx_world, int spec_type,
  char *char_value, int value, int id);
 int translate_coordinates(char *src, unsigned int *x, unsigned int *y);
 int is_string(char *buffer);
-void get_string_size_offset(char *name, int *ssize, int *soffset);
+void get_string_size_offset(char *name, unsigned int *ssize,
+ unsigned int *soffset);
 
 void counter_fsg();
+
+void debug_counters(World *mzx_world);
 
 counter *load_counter(FILE *fp);
 mzx_string *load_string(FILE *fp);
