@@ -27,21 +27,29 @@ function createpspzip {
 # createzip /path/to/SDL.dll
 #
 function createzip {
+	WINDIB_BAT="windib.bat"
+
 	#
 	# Copy SDL here temporarily.
 	#
 	cp -f $1 SDL.dll &&
 
 	#
+	# Generate a suitable windib.bat
+	#
+	echo "set SDL_VIDEODRIVER=windib" > $WINDIB_BAT &&
+	echo "start $TARGET.exe"         >> $WINDIB_BAT &&
+
+	#
 	# Create the binary package.
 	#
 	$SEVENZIP a -tzip dist/$TARGET.zip \
-		$BINARY_DEPS $DOCS $TARGET.exe SDL.dll &&
+		$BINARY_DEPS $DOCS $TARGET.exe SDL.dll WINDIB_BAT &&
 
 	#
-	# Remove SDL.
+	# Remove SDL, and the bat file.
 	#
-	rm -f SDL.dll
+	rm -f SDL.dll $WINDIB_BAT
 }
 
 #
@@ -102,7 +110,7 @@ fi
 # build deps below.
 #
 BINARY_DEPS="smzx.pal mzx_ascii.chr mzx_blank.chr mzx_default.chr \
-             mzx_help.fil mzx_smzx.chr mzx_edit.chr config.txt windib.bat"
+             mzx_help.fil mzx_smzx.chr mzx_edit.chr config.txt"
 
 #
 # Documents that the binary zip should contain (pathname will be stored too).
