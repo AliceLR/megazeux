@@ -112,7 +112,7 @@ DOCS="docs/COPYING.DOC docs/changelog.txt docs/port.txt docs/macro.txt"
 #
 # Name of the PSP's Pad Configuration mapping file.
 #
-PADCONFIG="pad.config"
+PADCONFIG="" # pad.config
 
 #
 # MegaZeux's build system dependencies; these are packaged in

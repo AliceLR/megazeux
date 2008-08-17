@@ -15,6 +15,8 @@ NOTE: This release was made by Alistair Strachan (ajs) and not by
 + Update the GPL boilerplates project-wide to the newest FSF address.
 + Fix a string range check causing an obscure crash in certain games.
 + Update the build.txt documentation.
++ Address documentation bugs found in the internal MZX help system (Terryn).
++ Fixed a recently introduced bug breaking the open command.
 
 December 14, 2005 - MZX 2.81c
 

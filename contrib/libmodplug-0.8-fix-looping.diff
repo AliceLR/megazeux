@@ -1,6 +1,6 @@
-diff -Nudr -U3 libmodplug-0.7.orig/src/sndmix.cpp libmodplug-0.7/src/sndmix.cpp
---- libmodplug-0.7.orig/src/sndmix.cpp	2003-10-11 03:26:20.000000000 +0100
-+++ libmodplug-0.7/src/sndmix.cpp	2005-05-23 19:50:38.097948768 +0100
+diff -Nudr -U3 libmodplug-0.8.orig/src/sndmix.cpp libmodplug-0.8/src/sndmix.cpp
+--- libmodplug-0.8.orig/src/sndmix.cpp	2003-10-11 03:26:20.000000000 +0100
++++ libmodplug-0.8/src/sndmix.cpp	2005-05-23 19:50:38.097948768 +0100
 @@ -373,7 +373,7 @@
  				// End of song ?
  				if ((m_nPattern == 0xFF) || (m_nCurrentPattern >= MAX_ORDERS))
