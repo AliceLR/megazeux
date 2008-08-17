@@ -10,7 +10,7 @@ STRIP    = strip --strip-unneeded
 
 # standard libraries
 LIBS     = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-           -L${PREFIX}/lib `sdl-config --libs` -lvorbisfile -lvorbis -logg -lGL
+           -L${PREFIX}/lib `sdl-config --libs` -lvorbisfile -lvorbis -logg
 
 # override includes for SDL
 INCLUDES = `sdl-config --cflags`
