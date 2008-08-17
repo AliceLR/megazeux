@@ -1,26 +1,16 @@
 MZX can currently be built on Windows (9x/2k/XP), Linux, and MacOS X.
 
-How to build MegaZeux 2.80+:
+How to build MegaZeux 2.81d+:
 
 First, you need the source for MZX, obviously, which can be found on
-http://www.digitalmzx.net/ and http://www.zeuxworld.com/
-(as of this writing. It should show up on megazeux.sourceforge.net
-eventually)
+http://www.digitalmzx.net/ and http://sourceforge.net/projects/megazeux/
 
 Next, you need the correct libraries installed, which are the
- following:
+following:
 
 SDL: http://www.libsdl.org/
 
-libmodplug: http://prdownloads.sourceforge.net/modplug-xmms/
-
-gdm2s3m: http://mzx.bitpack.net/gdm2s3m/
-(might also show up on other sites one day)
-
-NOTE: As of this writing, libmodplug (version 0.7) has a bug that
-doesn't allow it to correctly load 2-channel FT2 saved mods. There
-is a patch included to rectify this; you should patch libmodplug
-before building if you have this version.
+libogg/libvorbis: http://xiph.org/downloads/
 
 Now, you need to run the config script config.sh to begin the
 installation process; this is only absolutely necessary on
@@ -29,9 +19,9 @@ can run it in msys's rxvt shell. Run as following:
 
 config.sh <platform> <prefix>
 
-Where platform is win32, linux, or macos and prefix is typically /usr
-(supply the prefix where system directories lib, include, bin, etc
-are located).
+Where platform is win32, linux, or macos and prefix is
+typically /usr (supply the prefix where system directories lib,
+include, bin, etc are located).
 
 Now, you need GCC installed and GNU make to actually build. Currently,
 GCC on Windows and Linux are supported. Type make and if you wish to
@@ -41,5 +31,7 @@ I suggest anyone who's interested in building on Windows uses it:
 
 http://www.mingw.org/
 
+If you have any other questions, e-mail me at exophase@gmail.com.
 
-If you have any other questions, e-mail me at exophase@adelphia.net.
+If you have any questions regarding building on Linux, Mac OS X or other
+UNIX based operating systems, please e-mail alistair@devzero.co.uk.

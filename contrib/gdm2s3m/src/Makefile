@@ -14,10 +14,8 @@ CFLAGS += -std=c99
 
 objs  = error.${o} gdm.${o} s3m.${o} utility.${o} gdm2s3m.${o}
 
-subdir: libs
-
 libs:	${objs}
-	ar crus libgdm2s3m.a ${objs}
+	${AR} crus libgdm2s3m.a ${objs}
 
 clean: dclean
 	rm -f *.o *~ libgdm2s3m.a

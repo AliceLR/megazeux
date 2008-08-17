@@ -5,14 +5,14 @@
 include Makefile.platform
 
 subdir:
-	cd contrib/libmodplug/src && ${MAKE} && cd ../../..
-	cd contrib/gdm2s3m/src    && ${MAKE} && cd ../../..
-	cd src                    && ${MAKE} && cd ..
+	cd contrib/libmodplug/src && ${MAKE} libs && cd ../../..
+	cd contrib/gdm2s3m/src    && ${MAKE} libs && cd ../../..
+	cd src                    && ${MAKE} mzx && cd ..
 
 subdir-debug:
-	cd contrib/libmodplug/src && ${MAKE} DEBUG=1 && cd ../../..
-	cd contrib/gdm2s3m/src    && ${MAKE} DEBUG=1 && cd ../../..
-	cd src                    && ${MAKE} DEBUG=1 && cd ..
+	cd contrib/libmodplug/src && ${MAKE} libs DEBUG=1 && cd ../../..
+	cd contrib/gdm2s3m/src    && ${MAKE} libs DEBUG=1 && cd ../../..
+	cd src                    && ${MAKE} mzx DEBUG=1 && cd ..
 
 clean:
 	cd contrib/libmodplug/src && ${MAKE} clean && cd ../../..

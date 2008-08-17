@@ -20,10 +20,8 @@ objs  = fastmix.${o} load_669.${o} load_amf.${o} load_ams.${o} load_dbm.${o} \
         snd_dsp.${o} sndfile.${o} snd_flt.${o} snd_fx.${o} sndmix.${o} \
         tables.${o}
 
-subdir: libs
-
 libs:	${objs}
-	ar crus libmodplug.a ${objs}
+	${AR} crus libmodplug.a ${objs}
 
 clean: dclean
 	rm -f *.o *~ libmodplug.a

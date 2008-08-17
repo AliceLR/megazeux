@@ -13,6 +13,17 @@ function usage {
 }
 
 #
+# createpspzip
+#
+function createpspzip {
+	#
+	# Create the binary package.
+	#
+	$SEVENZIP a -tzip dist/$TARGET-psp.zip \
+		$BINARY_DEPS $DOCS EBOOT.PBP $PADCONFIG
+}
+
+#
 # createzip /path/to/SDL.dll
 #
 function createzip {
@@ -24,7 +35,7 @@ function createzip {
 	#
 	# Create the binary package.
 	#
-	7za.exe a -tzip dist/$TARGET.zip \
+	$SEVENZIP a -tzip dist/$TARGET.zip \
 		$BINARY_DEPS $DOCS $TARGET.exe SDL.dll &&
 
 	#
@@ -99,10 +110,15 @@ BINARY_DEPS="smzx.pal mzx_ascii.chr mzx_blank.chr mzx_default.chr \
 DOCS="docs/COPYING.DOC docs/changelog.txt docs/port.txt docs/macro.txt"
 
 #
+# Name of the PSP's Pad Configuration mapping file.
+#
+PADCONFIG="pad.config"
+
+#
 # MegaZeux's build system dependencies; these are packaged in
 # addition to binary deps above to complete the source package.
 #
-BUILD_DEPS="config.sh Makefile Makefile.in package.sh"
+BUILD_DEPS="config.sh Makefile Makefile.in package.sh $PADCONFIG"
 
 #
 # These directories are purely for source distributions.
@@ -114,6 +130,14 @@ SUBDIRS="arch contrib docs"
 # extract crap Exo's left in the wrong place. Feel free to update this.
 #
 SRC="src/*.cpp src/*.h src/Makefile"
+
+#
+# Name of the 7zip extractor. On Windows, this is '7za.exe'. On Linux, this is
+# _usually_ '7za', but if you're using a compatible replacement, change this
+# here. Only affects Windows binary distributions and PSP binary distributions,
+# otherwise GNU tar is used instead.
+#
+SEVENZIP="7za"
 
 #
 # Do source package.
@@ -176,6 +200,14 @@ fi
 ################################################################################
 
 echo "Generating binary package for $2.."
+
+#
+# PSP, using ZIP compression via 7ZIP compressor (add pad config)
+#
+if [ "$2" = "psp" ]; then
+	createpspzip
+	exit
+fi
 
 #
 # Windows, using ZIP compression via 7ZIP compressor

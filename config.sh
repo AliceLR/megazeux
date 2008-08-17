@@ -50,7 +50,8 @@ echo "#define CONFDIR  \"$SYSCONFDIR/\"" > src/config.h
 # relative to their install directory. Every other platform
 # wants to read from a /usr tree, and rename config.txt.
 #
-if [ "$ARCH" = "win32" -o "$ARCH" = "macos" -o "$ARCH" = "linux-static" ]; then
+if [ "$ARCH" = "win32" -o "$ARCH" = "macos" -o "$ARCH" = "linux-static" \
+     -o "$ARCH" = "psp" ]; then
 	echo "#define SHAREDIR \"./\""         >> src/config.h
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 else
@@ -61,13 +62,13 @@ fi
 #
 # linux target has "make install", which requires these features
 #
-if [ "$ARCH" = "linux" ]; then
+if [ "$ARCH" = "linux" -o "$ARCH" = "psp" ]; then
 	echo "TARGET=`grep TARGET Makefile.in | cut -d ' ' -f 6`" \
 		>> Makefile.platform
 	echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 fi
 
-if [ "$ARCH" != "win32" ]; then
+if [ "$ARCH" != "win32" -a "$ARCH" != "psp" ]; then
 	# try to run X
 	X -version >/dev/null 2>&1
 
