@@ -1278,13 +1278,7 @@ static int gl2_linear_filter_method(void)
 // FIXME: Many magic numbers
 void gl2_resize_screen(int viewport_width, int viewport_height)
 {
-  // Our goal is to have 0, 0 to be the top left of the screen and
-  // 640, 350 to be the bottom right. However, if we're going to use
-  // linear filtering, we're gonna have to make it 640, 350.
-  if (gl2_linear_filter_method())
-    gl.glViewport(0, 0, 640, 350);
-  else
-    gl.glViewport(0, 0, viewport_width, viewport_height);
+  gl.glViewport(0, 0, viewport_width, viewport_height);
 
   gl.glMatrixMode(GL_PROJECTION);
   gl.glLoadIdentity();
@@ -1404,6 +1398,9 @@ static void gl2_update_screen(void)
 
   if(!graphics.screen_mode)
   {
+    if (gl2_linear_filter_method())
+      gl.glViewport(0, 0, 640, 350);
+
     gl.glDisable(GL_TEXTURE_2D);
     gl.glDisable(GL_BLEND);
 
@@ -1561,46 +1558,55 @@ static void gl2_update_screen(void)
 
     gl.glColor4f(1.0, 1.0, 1.0, 1.0);
 
+    gl.glDisable(GL_BLEND);
+
     gl.glBegin(GL_QUADS);
-      gl.glTexCoord2f(0,0.68359375);
-      gl.glVertex3i(0,350,-1);
-      gl.glTexCoord2f(0,0);
-      gl.glVertex3i(0,0,-1);
-      gl.glTexCoord2f(0.625,0);
-      gl.glVertex3i(640,0,-1);
-      gl.glTexCoord2f(0.625,0.68359375);
-      gl.glVertex3i(640,350,-1);
+      gl.glTexCoord2f(0, 0.68359375);
+      gl.glVertex3i(0, 350, -1);
+      gl.glTexCoord2f(0, 0);
+      gl.glVertex3i(0, 0, -1);
+      gl.glTexCoord2f(0.625, 0);
+      gl.glVertex3i(640, 0, -1);
+      gl.glTexCoord2f(0.625, 0.68359375);
+      gl.glVertex3i(640, 350, -1);
     gl.glEnd();
 
     gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[1]);
+    gl.glEnable(GL_BLEND);
     gl.glBegin(GL_QUADS);
   }
 
   if(graphics.mouse_status)
   {
-    int mouse_x, mouse_y;
+    int mouse_x, mouse_y, mxb, myb, mw, mh;
 
     get_real_mouse_position(&mouse_x, &mouse_y);
 
+    mxb = (mouse_x / graphics.mouse_width_mul) * graphics.mouse_width_mul;
+    myb = (mouse_y / graphics.mouse_height_mul) * graphics.mouse_height_mul;
+
+    mw = graphics.mouse_width_mul;
+    mh = graphics.mouse_height_mul;
+
     gl.glColor4ub(32, 32, 32, 64);
     gl.glTexCoord2f(0, 0.8755);
-    gl.glVertex3i((mouse_x / 8) * 8,     (mouse_y / 14) * 14 + 14, -1);
+    gl.glVertex3i(mxb,      myb + mh, -1);
     gl.glTexCoord2f(0, 0.8755);
-    gl.glVertex3i((mouse_x / 8) * 8,     (mouse_y / 14) * 14,      -1);
+    gl.glVertex3i(mxb,      myb,      -1);
     gl.glTexCoord2f(0, 0.8755);
-    gl.glVertex3i((mouse_x / 8) * 8 + 8, (mouse_y / 14) * 14,      -1);
+    gl.glVertex3i(mxb + mw, myb,      -1);
     gl.glTexCoord2f(0, 0.8755);
-    gl.glVertex3i((mouse_x / 8) * 8 + 8, (mouse_y / 14) * 14 + 14, -1);
+    gl.glVertex3i(mxb + mw, myb + mh, -1);
 
     gl.glColor4ub(223, 223, 223, 24);
     gl.glTexCoord2f(0, 0.8755);
-    gl.glVertex3i((mouse_x / 8) * 8 + 1, (mouse_y / 14) * 14 + 13, -1);
+    gl.glVertex3i(mxb + 1,      myb + mh - 1, -1);
     gl.glTexCoord2f(0, 0.8755);
-    gl.glVertex3i((mouse_x / 8) * 8 + 1, (mouse_y / 14) * 14 + 1,  -1);
+    gl.glVertex3i(mxb + 1,      myb + 1,      -1);
     gl.glTexCoord2f(0, 0.8755);
-    gl.glVertex3i((mouse_x / 8) * 8 + 7, (mouse_y / 14) * 14 + 1,  -1);
+    gl.glVertex3i(mxb + mw - 1, myb + 1,      -1);
     gl.glTexCoord2f(0, 0.8755);
-    gl.glVertex3i((mouse_x / 8) * 8 + 7, (mouse_y / 14) * 14 + 13, -1);
+    gl.glVertex3i(mxb + mw - 1, myb + mh - 1, -1);
 
     gl.glColor4ub(255, 0, 0, 196);
     gl.glTexCoord2f(0, 0.8755);
@@ -1628,7 +1634,7 @@ static void gl2_update_screen(void)
     Uint32 cursor_solid = 0xFFFFFFFF;
     Uint32 *char_offset = (Uint32 *)(graphics.charset + (cursor_char * 14));
     Uint32 bg_color = cursor_element->bg_color;
-    cursor_offset += (graphics.cursor_x * 8) + (graphics.cursor_y * row_advance);
+    cursor_offset += (graphics.cursor_x * 8) + (graphics.cursor_y *row_advance);
 
     // Choose FG
     cursor_color = cursor_element->fg_color;
@@ -1697,7 +1703,7 @@ static void gl2_update_screen(void)
   //use glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 640, 350, 0);
   //set the viewport back to the original resolution,
   //display it on a quad.
-  if (gl2_linear_filter_method())
+  if (gl2_linear_filter_method() && !graphics.screen_mode)
   {
     gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[0]);
     gl.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 1024, 512, 0);
@@ -1722,7 +1728,6 @@ static void gl2_update_screen(void)
     gl.glEnd();
 
     gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[1]);
-    gl.glViewport(0, 0, 640, 350);
   }
 
   SDL_UnlockSurface(graphics.screen);
