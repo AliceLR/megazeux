@@ -2106,8 +2106,8 @@ void paste_buffer(robot_state *rstate)
       int selection_format;
       unsigned long int nbytes;
       unsigned long int overflow;
-      char *src_data, *src_ptr;
-      char line_buffer[512];
+      unsigned char *src_data;
+      char *src_ptr, line_buffer[512];
       int line_length;
       int ret_type;
 
@@ -2118,7 +2118,7 @@ void paste_buffer(robot_state *rstate)
       ret_type =
        XGetWindowProperty(display, owner,
        XA_STRING, 0, INT_MAX / 4, False, AnyPropertyType, &selection_type,
-       &selection_format, &nbytes, &overflow, (unsigned char **)&src_data);
+       &selection_format, &nbytes, &overflow, &src_data);
 
       if((ret_type == Success) && ((selection_type == XA_STRING) ||
        (selection_type == XInternAtom(display, "TEXT", False)) ||
@@ -2126,7 +2126,7 @@ void paste_buffer(robot_state *rstate)
        (selection_type == XInternAtom(display, "UTF8_STRING", False))))
       {
         rstate->command_buffer = line_buffer;
-        src_ptr = src_data;
+        src_ptr = (char *) src_data;
 
         while(*src_ptr)
         {
