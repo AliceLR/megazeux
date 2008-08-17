@@ -62,13 +62,6 @@ extern "C"
     World mzx_world;
     char bin_path[512];
 
-#ifdef DEBUG
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK |
-     SDL_INIT_NOPARACHUTE);
-#else
-    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
-#endif
-
 #if defined(__WIN32__) && defined(DEBUG)
     freopen("CON", "wb", stdout);
 #endif
@@ -85,6 +78,13 @@ extern "C"
     char *sdl_vd = getenv("SDL_VIDEODRIVER");
     if (!sdl_vd)
       putenv("SDL_VIDEODRIVER=directx");
+#endif
+
+#ifdef DEBUG
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK |
+     SDL_INIT_NOPARACHUTE);
+#else
+    SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
 #endif
 
     get_path(argv[0], bin_path);
