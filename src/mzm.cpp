@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "mzm.h"
+#include "data.h"
 #include "idput.h"
 #include "world.h"
 
@@ -70,16 +71,16 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
         int num_robots = 0;
         char robot_numbers[256];
         int robot_table_position;
-        int current_id;
+        mzx_thing current_id;
         int i;
 
         for(y = 0; y < height; y++)
         {
           for(x = 0; x < width; x++, offset++)
           {
-            current_id = level_id[offset];
+            current_id = (mzx_thing)level_id[offset];
 
-            if((current_id == 123) || (current_id == 124))
+            if(is_robot(current_id))
             {
               // Robot
               robot_numbers[num_robots] = level_param[offset];
@@ -94,11 +95,12 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
             }
             else
 
-            if((current_id == 122) || (current_id >= 125))
+            if((current_id == SENSOR) || is_signscroll(current_id) ||
+             (current_id == PLAYER))
             {
               // Sensor, scroll, sign, or player
               // Put customblock fake
-              fputc(5, output_file);
+              fputc((int)CUSTOM_BLOCK, output_file);
               fputc(get_id_char(src_board, offset), output_file);
               fputc(get_id_color(src_board, offset), output_file);
               fputc(level_under_id[offset], output_file);
@@ -289,7 +291,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
         char *level_under_id = src_board->level_under_id;
         char *level_under_param = src_board->level_under_param;
         char *level_under_color = src_board->level_under_color;
-        int src_id;
+        mzx_thing src_id;
 
         // Clip
 
@@ -306,7 +308,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
           case 0:
           {
             // Board style, write as is
-            int current_id;
+            mzx_thing current_id;
             int current_robot_loaded = 0;
             int robot_x_locations[256];
             int robot_y_locations[256];
@@ -319,29 +321,29 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
             {
               for(x = 0; x < effective_width; x++, offset++)
               {
-                current_id = fgetc(input_file);
-                if((current_id == 123) || (current_id == 124))
+                current_id = (mzx_thing)fgetc(input_file);
+                if(is_robot(current_id))
                 {
                   robot_x_locations[current_robot_loaded] = x + start_x;
                   robot_y_locations[current_robot_loaded] = y + start_y;
                   current_robot_loaded++;
                 }
 
-                src_id = level_id[offset];
+                src_id = (mzx_thing)level_id[offset];
 
-                if(src_id == 122)
+                if(src_id == SENSOR)
                   clear_sensor_id(src_board, level_param[offset]);
                 else
 
-                if((src_id == 126) || (src_id == 125))
+                if(is_signscroll(src_id))
                   clear_scroll_id(src_board, level_param[offset]);
                 else
 
-                if((src_id == 123) || (src_id == 124))
+                if(is_robot(src_id))
                   clear_robot_id(src_board, level_param[offset]);
 
                 // Don't allow the player to be overwritten
-                if(src_id != 127)
+                if(src_id != PLAYER)
                 {
                   level_id[offset] = current_id;
                   level_param[offset] = fgetc(input_file);
@@ -361,10 +363,10 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
               // Gotta run through and mark the next robots to be skipped
               for(i = 0; i < width_difference; i++)
               {
-                current_id = fgetc(input_file);
+                current_id = (mzx_thing)fgetc(input_file);
                 fseek(input_file, 5, SEEK_CUR);
 
-                if((current_id == 123) || (current_id == 124))
+                if(is_robot(current_id))
                 {
                   robot_x_locations[current_robot_loaded] = -1;
                   current_robot_loaded++;
@@ -399,7 +401,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
 
                   if(new_param != -1)
                   {
-                    if(level_id[offset] != 127)
+                    if((mzx_thing)level_id[offset] != PLAYER)
                     {
                       add_robot_name_entry(src_board, cur_robot,
                        cur_robot->robot_name);
@@ -442,23 +444,23 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
             {
               for(x = 0; x < effective_width; x++, offset++)
               {
-                src_id = level_id[offset];
+                src_id = (mzx_thing)level_id[offset];
 
-                if(src_id == 122)
+                if(src_id == SENSOR)
                   clear_sensor_id(src_board, level_param[offset]);
                 else
 
-                if((src_id == 126) || (src_id == 125))
+                if(is_signscroll(src_id))
                   clear_scroll_id(src_board, level_param[offset]);
                 else
 
-                if((src_id == 123) || (src_id == 124))
+                if(is_robot(src_id))
                   clear_robot_id(src_board, level_param[offset]);
 
                 // Don't allow the player to be overwritten
-                if(src_id != 127)
+                if(src_id != PLAYER)
                 {
-                  level_id[offset] = 5;
+                  level_id[offset] = CUSTOM_BLOCK;
                   level_param[offset] = fgetc(input_file);
                   level_color[offset] = fgetc(input_file);
                   level_under_id[offset] = 0;

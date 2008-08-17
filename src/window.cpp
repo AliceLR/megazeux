@@ -2358,9 +2358,16 @@ int click_input_box(World *mzx_world, dialog *di,
   int x = di->x + e->x;
   int y = di->y + e->y;
 
-  return intake(mzx_world, src->result, src->max_length, x +
-   question_len + di->pad_space, y, DI_INPUT, 2,
-   src->input_flags, &start_x, 0, NULL);
+  if(start_x >= 0)
+  {
+    return intake(mzx_world, src->result, src->max_length, x +
+     question_len + di->pad_space, y, DI_INPUT, 2,
+     src->input_flags, &start_x, 0, NULL);
+  }
+  else
+  {
+    return 0;
+  }
 }
 
 int click_check_box(World *mzx_world, dialog *di,

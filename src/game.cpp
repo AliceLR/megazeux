@@ -154,12 +154,19 @@ void title_screen(World *mzx_world)
   int fade;
   struct stat file_info;
   Board *src_board;
+  char current_dir[MAX_PATH];
 
   debug_mode = 0;
 
   // Clear screen
   clear_screen(32, 7);
   default_palette();
+
+  getcwd(current_dir, MAX_PATH);
+
+  chdir(config_dir);
+  set_config_from_file(&(mzx_world->conf), "title.cnf");
+  chdir(current_dir);
 
   // Try to load curr_file
   if(!stat(curr_file, &file_info))
@@ -304,6 +311,12 @@ void title_screen(World *mzx_world)
             // Load game
             fadein = 0;
 
+            getcwd(current_dir, MAX_PATH);
+
+            chdir(config_dir);
+            set_config_from_file(&(mzx_world->conf), "game.cnf");
+            chdir(current_dir);
+
             if(reload_savegame(mzx_world, save_file_name, &fadein))
             {
               vquick_fadeout();
@@ -394,6 +407,12 @@ void title_screen(World *mzx_world)
             // Palette
             default_palette();
 
+            getcwd(current_dir, MAX_PATH);
+
+            chdir(config_dir);
+            set_config_from_file(&(mzx_world->conf), "game.cnf");
+            chdir(current_dir);
+
             reload_world(mzx_world, curr_file, &fade);
 
             mzx_world->current_board_id = mzx_world->first_board;
@@ -448,13 +467,6 @@ void title_screen(World *mzx_world)
           break;
         }
 
-        case SDLK_F7:
-        {
-          // SMZX Mode
-          set_screen_mode(get_screen_mode() + 1);
-          break;
-        }
-
         case SDLK_F1:
         {
           if(get_counter(mzx_world, "HELP_MENU", 0) ||
@@ -477,6 +489,12 @@ void title_screen(World *mzx_world)
           clear_sfx_queue();
           // Load game
           fadein = 0;
+
+          getcwd(current_dir, MAX_PATH);
+
+          chdir(config_dir);
+          set_config_from_file(&(mzx_world->conf), "game.cnf");
+          chdir(current_dir);
 
           if(reload_savegame(mzx_world, curr_sav, &fadein))
           {
@@ -1378,93 +1396,102 @@ void play_game(World *mzx_world, int fadein)
 
         case SDLK_F6:
         {
-          // Debug menu
-          debug_mode ^= 1;
-          break;
+          if(mzx_world->editing)
+          {
+            // Debug information
+            debug_mode ^= 1;
+            break;
+          }
         }
 
         case SDLK_F7:
         {
-          int i;
-
-          // Cheat #1- Give all
-          set_counter(mzx_world, "GEMS", 32767, 1);
-          set_counter(mzx_world, "AMMO", 32767, 1);
-          set_counter(mzx_world, "HEALTH", 32767, 1);
-          set_counter(mzx_world, "COINS", 32767, 1);
-          set_counter(mzx_world, "LIVES", 32767, 1);
-          set_counter(mzx_world, "TIME", src_board->time_limit, 1);
-          set_counter(mzx_world, "LOBOMBS", 32767, 1);
-          set_counter(mzx_world, "HIBOMBS", 32767, 1);
-
-          mzx_world->score = 0;
-          mzx_world->dead = 0;
-
-          for(i = 0; i < 16; i++)
+          if(mzx_world->editing)
           {
-            mzx_world->keys[i] = i;
-          }
+            int i;
 
-          src_board->player_ns_locked = 0;
-          src_board->player_ew_locked = 0;
-          src_board->player_attack_locked = 0;
+            // Cheat #1- Give all
+            set_counter(mzx_world, "GEMS", 32767, 1);
+            set_counter(mzx_world, "AMMO", 32767, 1);
+            set_counter(mzx_world, "HEALTH", 32767, 1);
+            set_counter(mzx_world, "COINS", 32767, 1);
+            set_counter(mzx_world, "LIVES", 32767, 1);
+            set_counter(mzx_world, "TIME", src_board->time_limit, 1);
+            set_counter(mzx_world, "LOBOMBS", 32767, 1);
+            set_counter(mzx_world, "HIBOMBS", 32767, 1);
+
+            mzx_world->score = 0;
+            mzx_world->dead = 0;
+
+            for(i = 0; i < 16; i++)
+            {
+              mzx_world->keys[i] = i;
+            }
+
+            src_board->player_ns_locked = 0;
+            src_board->player_ew_locked = 0;
+            src_board->player_attack_locked = 0;
+          }
 
           break;
         }
 
         case SDLK_F8:
         {
-          int player_x = mzx_world->player_x;
-          int player_y = mzx_world->player_y;
-          int board_width = src_board->board_width;
-          int board_height = src_board->board_height;
-
-          if(player_x > 0)
+          if(mzx_world->editing)
           {
-            place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
-             player_y);
+            int player_x = mzx_world->player_x;
+            int player_y = mzx_world->player_y;
+            int board_width = src_board->board_width;
+            int board_height = src_board->board_height;
 
-            if(player_y > 0)
+            if(player_x > 0)
             {
               place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
-               player_y - 1);
+               player_y);
+
+              if(player_y > 0)
+              {
+                place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
+                 player_y - 1);
+              }
+
+              if(player_y < (board_height - 1))
+              {
+                place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
+                 player_y + 1);
+              }
             }
 
-            if(player_y < (board_height - 1))
+            if(player_x < (board_width - 1))
             {
-              place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
-               player_y + 1);
-            }
-          }
+              place_at_xy(mzx_world, SPACE, 7, 0, player_x + 1,
+               player_y);
 
-          if(player_x < (board_width - 1))
-          {
-            place_at_xy(mzx_world, SPACE, 7, 0, player_x + 1,
-             player_y);
+              if(player_y > 0)
+              {
+                place_at_xy(mzx_world, SPACE, 7, 0,
+                 player_x + 1, player_y - 1);
+              }
+
+              if(player_y < (board_height - 1))
+              {
+                place_at_xy(mzx_world, SPACE, 7, 0,
+                 player_x + 1, player_y + 1);
+              }
+            }
 
             if(player_y > 0)
             {
               place_at_xy(mzx_world, SPACE, 7, 0,
-               player_x + 1, player_y - 1);
+               player_x, player_y - 1);
             }
 
             if(player_y < (board_height - 1))
             {
               place_at_xy(mzx_world, SPACE, 7, 0,
-               player_x + 1, player_y + 1);
+               player_x, player_y + 1);
             }
-          }
-
-          if(player_y > 0)
-          {
-            place_at_xy(mzx_world, SPACE, 7, 0,
-             player_x, player_y - 1);
-          }
-
-          if(player_y < (board_height - 1))
-          {
-            place_at_xy(mzx_world, SPACE, 7, 0,
-             player_x, player_y + 1);
           }
 
           break;
@@ -1522,7 +1549,9 @@ void play_game(World *mzx_world, int fadein)
 
         case SDLK_F11:
         {
-          debug_counters(mzx_world);
+          if(mzx_world->editing)
+            debug_counters(mzx_world);
+
           break;
         }
       }

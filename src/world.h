@@ -193,6 +193,9 @@ struct _World
   // An array for game2.cpp
   char *update_done;
   int update_done_size;
+
+  // Determines if you're in the editor or not
+  int editing;
 };
 
 // Taken from the old saveload.h

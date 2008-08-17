@@ -771,6 +771,10 @@ void edit_world(World *mzx_world)
 
   getcwd(current_listening_dir, MAX_PATH);
 
+  chdir(config_dir);
+  set_config_from_file(&(mzx_world->conf), "editor.cnf");
+  chdir(current_listening_dir);
+
   current_world[0] = 0;
 
   copy_robot.used = 0;
@@ -1284,21 +1288,9 @@ void edit_world(World *mzx_world)
         }
         else
         {
-          int offset = cursor_board_x + (cursor_board_y * board_width);
-
-          if((!overlay_edit) && (current_id == level_id[offset]) &&
-           (current_color == level_color[offset]))
-          {
-            place_current_at_xy(mzx_world, SPACE, 7, 0, cursor_board_x,
-             cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
-             overlay_edit);
-          }
-          else
-          {
-            current_param = place_current_at_xy(mzx_world, current_id,
-             current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
-          }
+          current_param = place_current_at_xy(mzx_world, current_id,
+           current_color, current_param, cursor_board_x, cursor_board_y,
+           &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
         }
         modified = 1;
         break;
@@ -2306,7 +2298,6 @@ void edit_world(World *mzx_world)
                 }
               }
 
-              free(temp_buffer);
               draw_mode = 0;
               modified = 1;
               break;
@@ -2730,7 +2721,7 @@ void edit_world(World *mzx_world)
                  (mzx_world->player_x < (start_x + block_width)) &&
                  (mzx_world->player_y < (start_y + block_height)) &&
                  (block_board == src_board))
-                {                 
+                {
                   place_player_xy(mzx_world,
                    mzx_world->player_x - start_x + dest_x,
                    mzx_world->player_y - start_y + dest_y);
@@ -2997,7 +2988,12 @@ void edit_world(World *mzx_world)
             strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
             load_mod(mzx_world->real_mod_playing);
 
+            mzx_world->editing = 1;
+
             play_game(mzx_world, 1);
+
+            mzx_world->editing = 0;
+
             reload_world(mzx_world, "__test.mzx", &fade);
             scroll_color = 15;
             mzx_world->current_board_id = current_board_id;

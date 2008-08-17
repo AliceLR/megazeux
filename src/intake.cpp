@@ -313,6 +313,9 @@ int intake(World *mzx_world, char *string, int max_len,
               current_position--;
               currx--;
             } while(currx && isalnum(*current_position));
+
+            if(currx < 0)
+              currx = 0;
           }
         }
         else

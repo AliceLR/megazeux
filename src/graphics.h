@@ -57,8 +57,13 @@ typedef struct
   Uint32 mouse_height_mul;
   Uint32 mouse_status;
   Uint32 fullscreen;
-  Uint32 resolution_x;
-  Uint32 resolution_y;
+  Uint32 resolution_width;
+  Uint32 resolution_height;
+  Uint32 window_width;
+  Uint32 window_height;
+  Uint32 bits_per_pixel;
+  Uint32 hardware_stretch;
+  Uint32 allow_resize;
   Uint32 height_multiplier;
   Uint32 cursor_timestamp;
   Uint32 cursor_flipflop;
@@ -69,7 +74,6 @@ typedef struct
   Uint8 smzx_charset[14 * 256];
   Uint8 ascii_charset[14 * 256];
 
-  Uint32 force_32bpp;
   Uint32 flat_intensity_palette[256];
 } graphics_data;
 
@@ -123,7 +127,9 @@ void set_cursor_mode(cursor_mode_types mode);
 cursor_mode_types get_cursor_mode();
 
 void init_video(config_info *conf);
+void set_video_mode();
 void toggle_fullscreen();
+void resize_screen(Uint32 w, Uint32 h);
 void update_screen();
 void set_screen(char_element *src);
 void get_screen(char_element *dest);
@@ -182,8 +188,7 @@ void m_hide(void);
 void m_show(void);
 void dump_screen();
 
-int get_resolution_w();
-int get_resolution_h();
-int get_height_multiplier();
+void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
+ int *min_x, int *min_y, int *max_x, int *max_y);
 void set_mouse_mul(int width_mul, int height_mul);
 

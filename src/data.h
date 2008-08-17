@@ -17,8 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* Declarations for DATA.ASM (most global data) */
-
 #ifndef __DATA_H
 #define __DATA_H
 
@@ -41,6 +39,7 @@ extern char curr_sav[512];
 extern char help_file[MAX_PATH];
 extern char megazeux_dir[MAX_PATH];
 extern char current_dir[MAX_PATH];
+extern char config_dir[MAX_PATH];
 
 extern unsigned char scroll_color;        // Current scroll color
 extern unsigned char cheats_active;       // (additive flag)

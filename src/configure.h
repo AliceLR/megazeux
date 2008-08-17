@@ -27,8 +27,12 @@ struct _config_info
 {
   // Video options
   int fullscreen;
-  int resolution_x;
-  int resolution_y;
+  int resolution_width;
+  int resolution_height;
+  int window_width;
+  int window_height;
+  int allow_resize;
+  int hardware_stretch;
   int height_multiplier;
   int force_32bpp;
 

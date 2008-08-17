@@ -566,12 +566,6 @@ int char_editor(World *mzx_world)
     buffer_height = current_height * 14;
     buffer_size = buffer_width * buffer_height;
 
-    if(x >= buffer_width)
-      x = buffer_width - 1;
-
-    if(y >= buffer_height)
-      y = buffer_height - 1;
-
     if((current_height == 1) &&
      (current_width <= 3))
     {
@@ -590,6 +584,12 @@ int char_editor(World *mzx_world)
 
     if(screen_mode)
       buffer_width /= 2;
+
+    if(x >= buffer_width)
+      x = buffer_width - 1;
+
+    if(y >= buffer_height)
+      y = buffer_height - 1;
 
     dialog_width = chars_width + 4 + 27;
     dialog_height = chars_height + 4;
@@ -1201,6 +1201,7 @@ int char_editor(World *mzx_world)
 
         expand_buffer(buffer, current_width, current_height,
          highlight_width, highlight_height, current_char, screen_mode);
+
         memcpy(previous, buffer, buffer_size);
         break;
       }

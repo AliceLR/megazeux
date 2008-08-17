@@ -96,27 +96,31 @@ Uint32 process_event(SDL_Event *event)
       break;
     }
 
+    case SDL_VIDEORESIZE:
+    {
+      resize_screen(event->resize.w, event->resize.h);
+      break;
+    }
+
     case SDL_MOUSEMOTION:
     {
       int mx_real = event->motion.x;
       int my_real = event->motion.y;
-      int w_offset = (get_resolution_w() - 640) / 2;
-      int h_offset = (get_resolution_h() /
-       get_height_multiplier() - 350) / 2;
-      int mx = mx_real - w_offset;
-      int my = my_real - h_offset;
+      int mx, my, min_x, min_y, max_x, max_y;
+      get_screen_coords(mx_real, my_real, &mx, &my, &min_x,
+       &min_y, &max_x, &max_y);
 
       if(mx > 639)
-        SDL_WarpMouse(639 + w_offset, my_real);
+        SDL_WarpMouse(max_x, my_real);
 
       if(mx < 0)
-        SDL_WarpMouse(w_offset, my_real);
+        SDL_WarpMouse(min_x, my_real);
 
       if(my > 349)
-        SDL_WarpMouse(mx_real, 349 + h_offset);
+        SDL_WarpMouse(mx_real, max_y);
 
       if(my < 0)
-        SDL_WarpMouse(mx_real, h_offset);
+        SDL_WarpMouse(mx_real, min_y);
 
       input.real_mouse_x = mx;
       input.real_mouse_y = my;
@@ -283,7 +287,6 @@ Uint32 process_event(SDL_Event *event)
             input.last_unicode_repeat = 0;
             input.last_SDL_release = stuffed_key;
           }
-
         }
       }
       else
@@ -307,7 +310,7 @@ Uint32 process_event(SDL_Event *event)
     case SDL_JOYBUTTONDOWN:
     {
       int which = event->jbutton.which;
-      int button = event->jaxis.axis;
+      int button = event->jbutton.button;
       SDLKey stuffed_key =
         input.joystick_button_map[which][button];
 
@@ -330,7 +333,7 @@ Uint32 process_event(SDL_Event *event)
     {
 
       int which = event->jbutton.which;
-      int button = event->jaxis.axis;
+      int button = event->jbutton.button;
       SDLKey stuffed_key =
         input.joystick_button_map[which][button];
 

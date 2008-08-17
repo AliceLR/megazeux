@@ -75,9 +75,14 @@ extern "C"
 #ifdef PSP_BUILD
     scePowerSetClockFrequency(333, 333, 166);
 #endif
-    
+
     get_path(argv[0], bin_path);
     chdir(bin_path);
+
+    if((CONFDIR[0] == '/') || (CONFDIR[0] == '~'))
+      strcpy(config_dir, CONFDIR);
+    else
+      strcpy(config_dir, bin_path);
 
     memset(&mzx_world, 0, sizeof(World));
     default_config(&(mzx_world.conf));

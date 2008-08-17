@@ -25,6 +25,7 @@
 #include <unistd.h>
 
 #include "SDL.h"
+#include "SDL_opengl.h"
 #include "graphics.h"
 #include "delay.h"
 #include "world.h"
@@ -66,54 +67,52 @@ SDL_Color default_pal[16] =
 
 void init_video(config_info *conf)
 {
-  int res_x = conf->resolution_x;
-  int res_y = conf->resolution_y;
-  int force_32bpp = conf->force_32bpp;
-  int fullscreen = conf->fullscreen;
-
-#ifdef PSP_BUILD
-  res_x = 640;
-  res_y = 363;
-  force_32bpp = 0;
-  fullscreen = 1;
-#endif
-
   char temp[64];
 
-  if(!fullscreen)
-  {
-    if(force_32bpp)
-      graphics.screen = SDL_SetVideoMode(640, 350, 32, 0);
-    else
-      graphics.screen = SDL_SetVideoMode(640, 350, 8, 0);
-  }
+  graphics.screen_mode = 0;
+  graphics.fullscreen = conf->fullscreen;
+  graphics.resolution_width = conf->resolution_width;
+  graphics.resolution_height = conf->resolution_height;
+  graphics.window_width = conf->window_width;
+  graphics.window_height = conf->window_height;
+  graphics.height_multiplier = conf->height_multiplier;
+  graphics.mouse_status = 0;
+  graphics.cursor_timestamp = SDL_GetTicks();
+  graphics.cursor_flipflop = 1;
+  graphics.hardware_stretch = conf->hardware_stretch;
+  graphics.allow_resize = conf->allow_resize;
+
+  if(conf->force_32bpp || graphics.hardware_stretch)
+    graphics.bits_per_pixel = 32;
   else
+    graphics.bits_per_pixel = 8;
+
+  set_video_mode();
+
+  if(graphics.hardware_stretch)
   {
-    if(force_32bpp)
+    int internal_width, internal_height;
+    const char *extensions = (const char *)glGetString(GL_EXTENSIONS);
+
+    if(extensions &&
+     strstr(extensions, "GL_ARB_texture_non_power_of_two"))
     {
-      graphics.screen = SDL_SetVideoMode(res_x, res_y, 32,
-       SDL_FULLSCREEN);
+      internal_width = 640;
+      internal_height = 350;
     }
     else
     {
-      graphics.screen = SDL_SetVideoMode(res_x, res_y, 8,
-       SDL_FULLSCREEN | SDL_HWPALETTE);
+      internal_width = 1024;
+      internal_height = 512;
     }
+
+    graphics.screen = SDL_CreateRGBSurface(SDL_HWSURFACE,
+     internal_width, internal_height, 32, 0, 0, 0, 0);
   }
 
   sprintf(temp, "MegaZeux %s", version_number_string);
   SDL_WM_SetCaption(temp, "MZX");
   SDL_ShowCursor(SDL_DISABLE);
-
-  graphics.screen_mode = 0;
-  graphics.fullscreen = fullscreen;
-  graphics.resolution_x = res_x;
-  graphics.resolution_y = res_y;
-  graphics.force_32bpp = force_32bpp;
-  graphics.height_multiplier = conf->height_multiplier;
-  graphics.mouse_status = 0;
-  graphics.cursor_timestamp = SDL_GetTicks();
-  graphics.cursor_flipflop = 1;
 
   ec_load_set_secondary(MZX_DEFAULT_CHR, graphics.default_charset);
   ec_load_set_secondary(MZX_BLANK_CHR, graphics.blank_charset);
@@ -121,40 +120,96 @@ void init_video(config_info *conf)
   ec_load_set_secondary(MZX_ASCII_CHR, graphics.ascii_charset);
   ec_load_set_secondary(MZX_EDIT_CHR, graphics.charset + (256 * 14));
   ec_load_mzx();
+
   init_palette();
+}
+
+void set_video_mode()
+{
+  int target_width, target_height;
+  int target_depth = graphics.bits_per_pixel;
+  int hardware_stretch = graphics.hardware_stretch;
+  int target_flags = 0;
+  int fullscreen = graphics.fullscreen;
+
+  if(fullscreen)
+  {
+    target_width = graphics.resolution_width;
+    target_height = graphics.resolution_height;
+    target_flags |= SDL_FULLSCREEN;
+
+    if(target_depth == 8)
+      target_flags |= SDL_HWPALETTE;
+  }
+  else
+  {
+    if(graphics.allow_resize)
+      target_flags |= SDL_RESIZABLE;
+
+    target_width = graphics.window_width;
+    target_height = graphics.window_height;
+  }
+
+#ifdef PSP_BUILD
+  target_width = 640;
+  target_height = 363;
+  target_depth = 8;
+  fullscreen = 1;
+  hardware_stretch = 0;
+#endif
+
+  if(hardware_stretch)
+  {
+    GLuint texture_number;
+
+    SDL_SetVideoMode(target_width, target_height, 32,
+     target_flags | SDL_OPENGL);
+
+    SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
+    SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+    glEnable(GL_TEXTURE_2D);
+
+    glGenTextures(1, &texture_number);
+    glBindTexture(GL_TEXTURE_2D, texture_number);
+
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  }
+  else
+  {
+    graphics.screen = SDL_SetVideoMode(target_width, target_height,
+     target_depth, target_flags);
+
+    if(fullscreen)
+    {
+      graphics.resolution_width = graphics.screen->w;
+      graphics.resolution_height = graphics.screen->h;
+    }
+  }
 }
 
 void toggle_fullscreen()
 {
-  if(graphics.fullscreen)
-  {
-    if(graphics.force_32bpp)
-      graphics.screen = SDL_SetVideoMode(640, 350, 32, 0);
-    else
-      graphics.screen = SDL_SetVideoMode(640, 350, 8, 0);
-
-    graphics.fullscreen = 0;
-  }
-  else
-  {
-    int res_x = graphics.resolution_x;
-    int res_y = graphics.resolution_y;
-
-    if(graphics.force_32bpp)
-    {
-      graphics.screen = SDL_SetVideoMode(res_x, res_y, 32,
-       SDL_FULLSCREEN);
-    }
-    else
-    {
-      graphics.screen = SDL_SetVideoMode(res_x, res_y, 8,
-       SDL_FULLSCREEN | SDL_HWPALETTE);
-    }
-
-    graphics.fullscreen = 1;
-  }
+  graphics.fullscreen ^= 1;
+  set_video_mode();
   update_screen();
   update_palette();
+}
+
+void resize_screen(Uint32 w, Uint32 h)
+{
+  if(!graphics.fullscreen && graphics.hardware_stretch)
+  {
+    printf("resizing to %d %d\n", w, h);
+    graphics.window_width = w;
+    graphics.window_height = h;
+    set_video_mode();
+    update_screen();
+    update_palette();
+  }
 }
 
 void color_string(char *string, Uint32 x, Uint32 y, Uint8 color)
@@ -664,8 +719,6 @@ void update_screen8()
     graphics.cursor_timestamp = ticks;
   }
 
-  SDL_LockSurface(graphics.screen);
-
   if(!graphics.screen_mode)
   {
     for(i = 0; i < 25; i++)
@@ -1018,10 +1071,6 @@ void update_screen8()
       dest += line_advance;
     }
   }
-
-  SDL_Flip(graphics.screen);
-
-  SDL_UnlockSurface(graphics.screen);
 }
 
 // Slower but more compatible version for 32bpp
@@ -1047,6 +1096,12 @@ void update_screen32()
   if(!graphics.fullscreen)
     height_multiplier = 1;
 
+  if(graphics.hardware_stretch)
+  {
+    dest = (Uint32 *)graphics.screen->pixels;
+  }
+  else
+
   if(height_multiplier > 1)
   {
     dest = (Uint32 *)(graphics.screen->pixels) +
@@ -1061,8 +1116,6 @@ void update_screen32()
     dest = (Uint32 *)(graphics.screen->pixels) +
      (line_advance * ((graphics.screen->h - 350) / 2)) +
      ((graphics.screen->w - 640) / 2);
-
-    dest = (Uint32 *)graphics.screen->pixels;
   }
 
   line_advance_sub = line_advance - 8;
@@ -1074,8 +1127,6 @@ void update_screen32()
     graphics.cursor_flipflop ^= 1;
     graphics.cursor_timestamp = ticks;
   }
-
-  SDL_LockSurface(graphics.screen);
 
   if(!graphics.screen_mode)
   {
@@ -1322,18 +1373,51 @@ void update_screen32()
       dest += line_advance;
     }
   }
-
-  SDL_Flip(graphics.screen);
-
-  SDL_UnlockSurface(graphics.screen);
 }
 
 void update_screen()
 {
-  if(graphics.force_32bpp)
+  Sint32 should_lock = SDL_LockSurface(graphics.screen);
+
+  if(graphics.bits_per_pixel == 32)
     update_screen32();
   else
     update_screen8();
+
+  if(graphics.hardware_stretch)
+  {
+    float texture_width;
+    float texture_height;
+
+    texture_width = (float)640 / graphics.screen->w;
+    texture_height = (float)350 / graphics.screen->h;
+
+    glTexImage2D(GL_TEXTURE_2D, 0, 3, graphics.screen->w, graphics.screen->h,
+     0, GL_BGRA, GL_UNSIGNED_BYTE, graphics.screen->pixels);
+
+    glBegin(GL_QUADS);
+      glTexCoord2f(0.0, texture_height);
+      glVertex3f(-1.0, -1.0, 0.0);
+
+      glTexCoord2f(texture_width, texture_height);
+      glVertex3f(1.0, -1.0, 0.0);
+
+      glTexCoord2f(texture_width, 0.0);
+      glVertex3f(1.0, 1.0, 0.0);
+
+      glTexCoord2f(0.0, 0.0);
+      glVertex3f(-1.0, 1.0, 0.0);
+    glEnd();
+
+    SDL_GL_SwapBuffers();
+  }
+  else
+  {
+    SDL_Flip(graphics.screen);
+  }
+
+  if(should_lock != -1)
+    SDL_UnlockSurface(graphics.screen);
 }
 
 void cursor_underline(void)
@@ -1562,7 +1646,7 @@ void init_palette(void)
 void update_colors(SDL_Surface *screen, SDL_Color *palette,
  Uint32 count)
 {
-  if(graphics.force_32bpp)
+  if(graphics.bits_per_pixel == 32)
   {
     Uint32 i;
     for(i = 0; i < count; i++)
@@ -2045,7 +2129,7 @@ void insta_fadeout(void)
     delay(1);
     update_palette();
 
-    if(graphics.force_32bpp)
+    if(graphics.bits_per_pixel == 32)
       update_screen();
 
     graphics.fade_status = 1;
@@ -2073,7 +2157,7 @@ void insta_fadein(void)
 
     update_palette();
 
-    if(graphics.force_32bpp)
+    if(graphics.bits_per_pixel == 32)
       update_screen();
   }
 }
@@ -2110,22 +2194,41 @@ void dump_screen()
   SDL_SaveBMP(graphics.screen, name);
 }
 
-int get_resolution_w()
+void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
+ int *min_x, int *min_y, int *max_x, int *max_y)
 {
-  return graphics.screen->w;
-}
+  int target_width = graphics.window_width;
+  int target_height = graphics.window_height;
 
-int get_resolution_h()
-{
-  return graphics.screen->h;
-}
-
-int get_height_multiplier()
-{
   if(graphics.fullscreen)
-    return graphics.height_multiplier;
+  {
+    target_width = graphics.resolution_width;
+    target_height = graphics.resolution_height;
+  }
 
-  return 1;
+  if(graphics.hardware_stretch)
+  {
+    *x = screen_x * 640 / target_width;
+    *y = screen_y * 350 / target_height;
+    *min_x = 0;
+    *min_y = 0;
+    *max_x = target_width - 1;
+    *max_y = target_height - 1;
+  }
+  else
+  {
+    int w_offset = (target_width - 640) / 2;
+    int h_offset = ((target_height /
+     graphics.height_multiplier) - 350) / 2;
+
+    *x = screen_x - w_offset;
+    *y = screen_y - h_offset;
+
+    *min_x = w_offset;
+    *min_y = h_offset;
+    *max_x = 639 + w_offset;
+    *max_y = 349 + h_offset;
+  }
 }
 
 void set_mouse_mul(int width_mul, int height_mul)

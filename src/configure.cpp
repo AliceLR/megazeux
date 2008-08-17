@@ -173,8 +173,8 @@ void config_set_resolution(config_info *conf, char *name, char *value,
  char *extended_data)
 {
   char *next;
-  conf->resolution_x = strtol(value, &next, 10);
-  conf->resolution_y = strtol(next + 1, NULL, 10);
+  conf->resolution_width = strtol(value, &next, 10);
+  conf->resolution_height = strtol(next + 1, NULL, 10);
 }
 
 void config_set_multiplier(config_info *conf, char *name, char *value,
@@ -456,6 +456,26 @@ void config_force_32bpp(config_info *conf, char *name,
   conf->force_32bpp = strtol(value, NULL, 10);
 }
 
+void config_window_resolution(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  char *next;
+  conf->window_width = strtol(value, &next, 10);
+  conf->window_height = strtol(next + 1, NULL, 10);
+}
+
+void config_set_hardware_stretch(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  conf->hardware_stretch = strtol(value, NULL, 10);
+}
+
+void config_enable_resizing(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  conf->allow_resize = strtol(value, NULL, 10);
+}
+
 config_entry config_options[] =
 {
   { "audio_buffer", config_set_audio_buffer },
@@ -481,10 +501,12 @@ config_entry config_options[] =
   { "disassemble_base", config_disassemble_base },
   { "disassemble_extras", config_disassemble_extras },
   { "enable_oversampling", config_enable_oversampling },
+  { "enable_resizing", config_enable_resizing },
   { "force_32bpp", config_force_32bpp },
   { "force_height_multiplier", config_set_multiplier },
   { "force_resolution", config_set_resolution },
   { "fullscreen", config_set_fullscreen },
+  { "hardware_stretch", config_set_hardware_stretch },
   { "include", include2_config },
   { "include*", include_config },
   { "joy!axis!", joy_axis_set },
@@ -502,7 +524,8 @@ config_entry config_options[] =
   { "robot_editor_hide_help", redit_hhelp },
   { "sample_volume", config_set_sam_volume },
   { "save_file", config_save_file },
-  { "startup_file", config_startup_file }
+  { "startup_file", config_startup_file },
+  { "window_resolution", config_window_resolution }
 };
 
 const int num_config_options =
@@ -536,8 +559,12 @@ config_info default_options =
 {
   // Video options
   0,
+  1600,
+  1200,
   640,
   350,
+  0,
+  0,
   1,
   0,
 

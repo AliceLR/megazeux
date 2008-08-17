@@ -3189,9 +3189,15 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if(put_id < SENSOR)
         {
+          int player_bl[4];
+          calculate_blocked(mzx_world, mzx_world->player_x,
+           mzx_world->player_y, 1, player_bl);
+
           place_dir_xy(mzx_world, put_id, put_color, put_param,
            mzx_world->player_x, mzx_world->player_y, direction,
-           cur_robot, _bl);
+           cur_robot, player_bl);
+          if(!is_robot(level_id[x + (y * board_width)]))
+            return;
         }
         update_blocked = 1;
 
