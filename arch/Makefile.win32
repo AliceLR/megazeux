@@ -12,11 +12,8 @@ BINEXT    = .exe
 STRIP     = strip --strip-unneeded
 
 # standard libraries
-LIBS      = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-            `sdl-config --libs` -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
-
-# override INCLUDES
-INCLUDES  = `sdl-config --cflags`
+LIBS     += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
+            -lvorbisfile -lvorbis -logg -lopengl32
 
 # debug does something different
 ifdef DEBUG

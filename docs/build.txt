@@ -1,4 +1,5 @@
-MZX can currently be built on Windows (9x/2k/XP), Linux, and MacOS X.
+MZX can currently be built on Windows (9x/2k/XP), Linux, MacOS X,
+and PSP.
 
 How to build MegaZeux 2.81d+:
 
@@ -6,7 +7,7 @@ First, you need the source for MZX, obviously, which can be found on
 http://www.digitalmzx.net/ and http://sourceforge.net/projects/megazeux/
 
 Next, you need the correct libraries installed, which are the
-following:
+ following:
 
 SDL: http://www.libsdl.org/
 
@@ -19,7 +20,7 @@ can run it in msys's rxvt shell. Run as following:
 
 config.sh <platform> <prefix>
 
-Where platform is win32, linux, or macos and prefix is
+Where platform is win32, linux, macos, or psp and prefix is
 typically /usr (supply the prefix where system directories lib,
 include, bin, etc are located).
 
@@ -30,6 +31,28 @@ writing, the only compiler that has been tested on Windows is mingw.
 I suggest anyone who's interested in building on Windows uses it:
 
 http://www.mingw.org/
+
+
+How to build for PSP:
+
+To build for PSP you will want the PSP toolchain installed,
+instructions on how to do so can be found at wiki.pspdev.org. For
+Windows this should be installed under the Cygwin environment; an
+alternative is DevkitPro which can be installed under mingw but this
+is less supported and has only more recently matured and thus I haven't
+been able to work with it yet.
+
+For PSP builds you will need the PSP distribution of SDL and
+libTremor instead of ogg/vorbis. Both can be found via SVN at
+
+svn://svn.ps2dev.org
+
+Once the proper libraries are installed run MZX's config script as
+follows:
+
+config.sh psp `psp-config --psp-prefix`
+
+Then a simple make will generate a PSP 1.0 EBOOT.PBP file.
 
 If you have any other questions, e-mail me at exophase@gmail.com.
 

@@ -9,8 +9,7 @@ debug: subdir-debug
 STRIP     = strip --strip-unneeded
 
 # standard libraries
-LIBS      = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
+LIBS      = `sdl-config --static-libs` \
+            ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
             ${PREFIX}/lib/libvorbisfile.a ${PREFIX}/lib/libvorbis.a \
-            ${PREFIX}/lib/libogg.a ${PREFIX}/lib/libstdc++.a \
-            -L${PREFIX}/lib -lSDL -lpthread
-
+            ${PREFIX}/lib/libogg.a ${PREFIX}/lib/libstdc++.a

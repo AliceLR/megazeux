@@ -6,7 +6,7 @@ include ../../../Makefile.in
 include ../../../Makefile.platform
 
 # need to include local headers
-INCLUDES = -Ilibmodplug
+INCLUDES = -I. -Ilibmodplug
 
 #
 # objects to build

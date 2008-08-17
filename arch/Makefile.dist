@@ -10,6 +10,7 @@ all:
 	@echo "  linux          Linux"
 	@echo "  macos          Macintosh OS X (not Classic)"
 	@echo "  linux-static   Linux (statically linked)"
+	@echo "  psp		Experimental PSP port"
 	@echo
 	@echo "Supported <option> values:"
 	@echo "  -nox11         Disables X11, removing binary dependency."

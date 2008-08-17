@@ -8,6 +8,7 @@ debug:	subdir-debug
 #
 # psp toolchain overrides
 #
+
 CC  = psp-gcc
 CXX = psp-g++
 AR  = psp-ar
@@ -19,17 +20,12 @@ BINNAME_STRIP = ${TARGET}${BINEXT}.strip
 # we want to do other things before the strip, so override it.
 STRIP     = /bin/true 
 
-# PSP dev kit bin directory
-PSPBIN    = ${PSPDEV}/psp/bin
-
 # standard libraries
-LIBS      = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-            -lc `${PSPBIN}/sdl-config --libs` -lpsppower \
-            -lvorbisidec
+LIBS     += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
+            -lc -lpsppower -lvorbisidec
 
 # additional flags
-INCLUDES  = -DPSP_BUILD -DUSE_TREMOR -I${PREFIX}/sdk/include \
-            `${PSPBIN}/sdl-config --cflags`
+INCLUDES += -DPSP_BUILD -DUSE_TREMOR -I${PREFIX}/sdk/include
 
 package-pbp:
 	psp-fixup-imports ${BINNAME}

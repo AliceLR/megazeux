@@ -9,6 +9,5 @@ debug: subdir-debug
 STRIP     = strip
 
 # standard libraries
-LIBS      = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-            -L${PREFIX}/lib -lSDLmain -lSDL -lpthread -lvorbisfile \
-            -lvorbis -logg -framework Cocoa
+LIBS     += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
+            -L${PREFIX}/lib -lvorbis -logg -framework Cocoa

@@ -85,7 +85,7 @@ function breakout {
 #
 # The basename for the source and binary packages.
 #
-TARGET=`cat Makefile.in | grep TARGET | sed "s/ //g" | cut -d "=" -f 2`
+TARGET=`grep TARGET Makefile.in | sed "s/ //g" | cut -d "=" -f 2`
 
 if [ "$TARGET" == "" ]; then
 	breakout 1

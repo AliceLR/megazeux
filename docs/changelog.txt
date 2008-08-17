@@ -1,3 +1,5 @@
+January 18, 2007 - MZX 2.81e
+
 + Made grabbing in the editor not combine background color, only uses
   "special" in game colors for player, tell me if anything ends up being
   weird because of this.
@@ -19,6 +21,28 @@
   send all or send name causing it to loop the send.
 + Added compatability hacks for key# prior to MZX 2.69 worlds and
   ridNAME falling through in MZX 2.70 and earlier worlds.
++ F6, F7, F8, and F11 debug/cheat keys only work in editing mode now
+  (as things were prior to the port) You can still save/load in the editor
+  so if you want all of these things you can play the game from the start
+  there.
++ Space in the editor no longer deletes something of similar type that is
+  beneath not sure what the point of this was anyway.
++ Fixed bug causing cursor to clipped be out of bounds in SMZX char editor
+  if changing to smaller multichar edit region.
++ Accidentally messed up screen centering in fullscreen for 32bpp mode,
+  fixed.
++ Added hardware scaling option. You can now supply a window resolution
+  besides 640x350 and allow for window resizing if hardware scaling is on;
+  this will also scale fullscreen output to fill the entire screen. This
+  can slow down rendering somewhat.
++ Fixed bug causing flip block to crash in the editor.
++ Made blocked directions relative to the player for put dir player.
++ Fixed bug where putting something to a direction relative the player
+  overwriting the robot could crash MZX.
++ Fixed ability to input in input boxes by clicking on their question
+  string.
++ Removed the bogus patch to Modplug and correctly fixed it in the build
+  system.
 
 December 10, 2006 - MZX 2.81d
 

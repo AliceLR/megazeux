@@ -63,7 +63,7 @@ fi
 # linux target has "make install", which requires these features
 #
 if [ "$ARCH" = "linux" -o "$ARCH" = "psp" ]; then
-	echo "TARGET=`grep TARGET Makefile.in | cut -d ' ' -f 6`" \
+	echo "TARGET=`grep TARGET Makefile.in | sed "s/ //g" | cut -d "=" -f 2`" \
 		>> Makefile.platform
 	echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 fi

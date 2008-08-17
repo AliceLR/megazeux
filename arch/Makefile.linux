@@ -9,11 +9,8 @@ debug: subdir-debug
 STRIP    = strip --strip-unneeded
 
 # standard libraries
-LIBS     = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-           -L${PREFIX}/lib `sdl-config --libs` -lvorbisfile -lvorbis -logg
-
-# override includes for SDL
-INCLUDES = `sdl-config --cflags`
+LIBS    += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
+            -L${PREFIX}/lib -lvorbisfile -lvorbis -logg -lGL
 
 # linux os specific install target
 install:
