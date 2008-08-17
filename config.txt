@@ -53,7 +53,7 @@
 # of chroma subsampling instead of a full YUV encode.
 #
 # video_output = overlay1
-video_output = overlay2
+# video_output = overlay2
 #
 # The OpenGL renderer is a good choice if you want a highly configurable,
 # cheap (in terms of CPU cycles) renderer and have a fairly good video
@@ -61,7 +61,15 @@ video_output = overlay2
 # on all platforms with a compliant OpenGL 1.1 implementation. Uncomment
 # the line below:
 #
-# video_output = opengl
+video_output = opengl1
+
+# The OpenGL will, by default, linearly interpolate pixels as it upscales
+# to your requested resolution. This creates an output with more "blur",
+# which some people dislike. If you are using a sufficiently high target
+# resolution, preferably an integer multiple of 640x350, you may find
+# "nearest" more pleasing, which will have no "blur".
+#
+# gl_filter_method = linear
 
 # Resolution MZX uses for fullscreen. Note that MZX will always
 # be 640x350 centered within the resolution you choose
@@ -92,9 +100,10 @@ enable_resizing = 1
 # rendering to 32bit if your video card has difficulty with 8bit
 # resolutions. Using 32bit colour is slower, but not by much.
 # NOTE: This option may be ignored by one or more of the above
-# renderers, but it is guaranteed to apply to "software".
+# renderers, but it is guaranteed to apply to "software". Valid
+# settings are usually '8' or '32'.
 
-force_32bpp = 1
+force_bpp = 32
 
 # Make it so the display is stretched by this amount (must be
 # integer). This is useful for getting resolutions like 640x700
@@ -106,13 +115,6 @@ force_32bpp = 1
 # Press ctrl-alt-enterWh to toggle fullscreen as MZX runs.
 
 #fullscreen = 0
-
-# Forces the screen to be rendered in 32bpp instead of 8bpp. Is
-# slower but may be more compatible, try it if you're getting
-# visual problems (particularly in fullscreen)
-
-#force_32bpp = 0
-
 
 ### Audio options ###
 

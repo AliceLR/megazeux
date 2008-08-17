@@ -24,14 +24,19 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
+#define OPENGL 1
+
+// FIXME: Move me elsewhere
+#ifdef OPENGL
+#include "SDL_opengl.h"
+#endif
+
 #include "graphics.h"
 #include "delay.h"
 #include "world.h"
 #include "configure.h"
 #include "event.h"
 #include "config.h"
-
-#define OPENGL 1
 
 // Base names for MZX's resource files.
 // Prepends SHAREDIR from config.h for you, so these are ready to use.
@@ -67,7 +72,7 @@ static SDL_Color default_pal[16] =
 
 /* SOFTWARE RENDERER CODE ****************************************************/
 
-void update_screen8(Uint8 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
+static void update_screen8(Uint8 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
 {
   Uint32 *dest;
   Uint32 *ldest, *ldest2;
@@ -462,7 +467,7 @@ void update_screen8(Uint8 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
   }
 }
 
-void update_screen32(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
+static void update_screen32(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
 {
   Uint32 *dest;
   Uint32 *ldest, *ldest2;
@@ -757,6 +762,8 @@ void update_screen32(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
 
 static int soft_init_video(config_info *conf)
 {
+  graphics.bits_per_pixel = 32;
+
   if (conf->height_multiplier >= 0)
   {
     if ((graphics.resolution_height / conf->height_multiplier) >= 350)
@@ -765,10 +772,9 @@ static int soft_init_video(config_info *conf)
     }
   }
 
-  if (conf->force_32bpp)
-    graphics.bits_per_pixel = 32;
-  else
-    graphics.bits_per_pixel = 8;
+  // we only have 8bit and 32bit software renderers
+  if (conf->force_bpp == 8 || conf->force_bpp == 32)
+    graphics.bits_per_pixel = conf->force_bpp;
 
   return set_video_mode();
 }
@@ -821,9 +827,7 @@ static void soft_update_colors(SDL_Color *palette, Uint32 count)
 
 #if defined(OPENGL) && !defined(PSP_BUILD)
 
-/* OPENGL RENDERER CODE ******************************************************/
-
-#include "SDL_opengl.h"
+/* OPENGL RENDERER #1 CODE ***************************************************/
 
 #define GL_NON_POWER_2_WIDTH	640
 #define GL_NON_POWER_2_HEIGHT	350
@@ -1084,12 +1088,38 @@ static int load_gl_syms(void)
   return true;
 }
 
-static int gl_init_video(config_info *conf)
+static int gl_strip_flags(int flags)
+{
+  int new_flags = 0;
+
+  if (flags & SDL_OPENGL)
+    new_flags |= SDL_OPENGL;
+  if (flags & SDL_FULLSCREEN)
+    new_flags |= SDL_FULLSCREEN;
+  if (flags & SDL_RESIZABLE)
+    new_flags |= SDL_RESIZABLE;
+
+  return new_flags;
+}
+
+static void gl_set_filter_method(char *method)
+{
+  GLint gl_filter_method = GL_LINEAR;
+
+  if (!strcmp(method, "nearest"))
+    gl_filter_method = GL_NEAREST;
+
+  gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_method);
+  gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_method);
+}
+
+static int gl1_init_video(config_info *conf)
 {
   int internal_width, internal_height;
 
   graphics.allow_resize = conf->allow_resize;
   graphics.gl_filter_method = conf->gl_filter_method;
+  graphics.bits_per_pixel = 32;
 
   if (!load_gl_syms())
     return false;
@@ -1102,13 +1132,14 @@ static int gl_init_video(config_info *conf)
   const char *extensions = (const char *)gl.glGetString(GL_EXTENSIONS);
 
   // we need a specific "version" of OpenGL compatibility
-  if (atof(version) < 1.2)
+  if (version && atof(version) < 1.2)
   {
     fprintf(stderr, "Your OpenGL implementation is too old (need v1.2).\n");
     return false;
   }
 
   // we also might be able to utilise an extension
+/*
   if (extensions && strstr(extensions, "GL_ARB_texture_non_power_of_two"))
   {
     internal_width = GL_NON_POWER_2_WIDTH;
@@ -1116,35 +1147,35 @@ static int gl_init_video(config_info *conf)
   }
   else
   {
+*/
     internal_width = GL_POWER_2_WIDTH;
     internal_height = GL_POWER_2_HEIGHT;
-  }
+  //}
 
+  // OpenGL only supports 16/32bit colour
+  if (conf->force_bpp == 16 || conf->force_bpp == 32)
+    graphics.bits_per_pixel = conf->force_bpp;
+
+  // FIXME: 32bit is hardcoded, is this right?
   graphics.screen = SDL_CreateRGBSurface(SDL_SWSURFACE, internal_width,
    internal_height, 32, 0, 0, 0, 0);
 
   return true;
 }
 
-static int gl_check_video_mode(int width, int height, int depth, int flags)
+static int gl1_check_video_mode(int width, int height, int depth, int flags)
 {
-  return SDL_VideoModeOK(width, height, 32, flags | SDL_OPENGL);
+  // FIXME: 32bit is hardcoded, is this right?
+  return SDL_VideoModeOK(width, height, 32, gl_strip_flags(flags) | SDL_OPENGL);
 }
 
-static int gl_set_video_mode(int width, int height, int depth, int flags,
-                             int fullscreen)
+static int gl1_set_video_mode(int width, int height, int depth, int flags,
+                              int fullscreen)
 {
-  GLint gl_filter_method = GL_LINEAR;
-  int new_flags = SDL_OPENGL;
   GLuint texture_number;
 
-  // filter out meaningless flags, just in case SDL is doing something silly
-  if (flags & SDL_FULLSCREEN)
-    new_flags |= SDL_FULLSCREEN;
-  if (flags & SDL_RESIZABLE)
-    new_flags |= SDL_RESIZABLE;
-
-  if (!SDL_SetVideoMode(width, height, 32, new_flags))
+  // FIXME: 32bit is hardcoded, is this right?
+  if (!SDL_SetVideoMode(width, height, 32, gl_strip_flags(flags | SDL_OPENGL)))
     return false;
 
   gl.glViewport(0, 0, width, height);
@@ -1154,16 +1185,12 @@ static int gl_set_video_mode(int width, int height, int depth, int flags,
   gl.glGenTextures(1, &texture_number);
   gl.glBindTexture(GL_TEXTURE_2D, texture_number);
 
-  if (!strcmp(graphics.gl_filter_method, "nearest"))
-    gl_filter_method = GL_NEAREST;
-
-  gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_method);
-  gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_method);
+  gl_set_filter_method(graphics.gl_filter_method);
 
   return true;
 }
 
-static void gl_update_screen(void)
+static void gl1_update_screen(void)
 {
   float texture_width;
   float texture_height;
@@ -1198,11 +1225,529 @@ static void gl_update_screen(void)
   SDL_GL_SwapBuffers();
 }
 
-static void gl_update_colors(SDL_Color *palette, Uint32 count)
+static void gl1_update_colors(SDL_Color *palette, Uint32 count)
 {
   for (Uint32 i = 0; i < count; i++)
     graphics.flat_intensity_palette[i] = SDL_MapRGBA(graphics.screen->format,
       palette[i].r, palette[i].g, palette[i].b, 255);
+}
+
+/* OPENGL RENDERER #2 CODE ***************************************************/
+
+#define SAFE_TEXTURE_MARGIN_X	0.0004
+#define SAFE_TEXTURE_MARGIN_Y	0.0002
+
+// FIXME: Why two textures?
+static GLuint gl2_texture_number[2];
+
+static void gl2_remap_charset_range(unsigned int range)
+{
+  signed char *c = (signed char *)graphics.charset;
+  char *p = (char *)graphics.charset_texture;
+  unsigned int i, i2, i3;
+
+  for(i = 0; i < range; i++)
+  {
+    for(i2 = 0; i2 < 14; i2++)
+    {
+      for(i3 = 0; i3 < 32; i3++)
+      {
+        // This tests the 7th bit, if 0, result is 0.
+        // If 1, result is 255 (because of sign extended bit shift!).
+        // Note the use of char constants to force 8bit calculation.
+        *(p++) = *c << 24 >> 31;
+        *(p++) = *c << 25 >> 31;
+        *(p++) = *c << 26 >> 31;
+        *(p++) = *c << 27 >> 31;
+        *(p++) = *c << 28 >> 31;
+        *(p++) = *c << 29 >> 31;
+        *(p++) = *c << 30 >> 31;
+        *(p++) = *c << 31 >> 31;
+        c += 14;
+      }
+
+      // Go back 32 chars, then down 1 line
+      c += -32 * 14 + 1; 
+    }
+
+    // After finishing 32 chars, the pointer has advanced 1 full char.
+    //We want it to advance 32 full chars instead.
+    c += -14 + 32 * 14;
+  }
+}
+
+static void gl2_remap_both_charsets(void)
+{
+  gl2_remap_charset_range(16);
+
+  gl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 224, GL_ALPHA,
+    GL_UNSIGNED_BYTE, graphics.charset_texture);
+}
+
+static void gl2_remap_primary_charset(void)
+{
+  gl2_remap_charset_range(8);
+
+  gl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 112, GL_ALPHA,
+    GL_UNSIGNED_BYTE, graphics.charset_texture);
+
+  // FIXME: Why?
+  gl2_remap_both_charsets();
+}
+
+static int gl2_linear_filter_method(void)
+{
+  return (strcmp(graphics.gl_filter_method, "linear") == 0);
+}
+
+// FIXME: Many magic numbers
+void gl2_opengl_resize(int viewport_width, int viewport_height)
+{
+  // Our goal is to have 0, 0 to be the top left of the screen and
+  // 640, 350 to be the bottom right. However, if we're going to use
+  // linear filtering, we're gonna have to make it 640, 350.
+  if (gl2_linear_filter_method())
+    gl.glViewport(0, 0, 640, 350);
+  else
+    gl.glViewport(0, 0, viewport_width, viewport_height);
+
+  gl.glMatrixMode(GL_PROJECTION);
+  gl.glLoadIdentity();
+
+  gl.glFrustum(-320, 320, 175, -175, 1, 100);
+
+  gl.glMatrixMode(GL_MODELVIEW);
+  gl.glLoadIdentity();
+
+  gl.glTranslatef(-320, -175, 0);
+
+  gl.glGenTextures(2, gl2_texture_number);
+
+  gl.glBindTexture(GL_TEXTURE_2D, gl2_texture_number[0]);
+
+  gl_set_filter_method(graphics.gl_filter_method);
+
+/*
+  if(LINEARFILTERING)
+  {
+    gl.glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
+    gl.glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
+  }
+  else
+  {
+    gl.glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
+    gl.glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
+  }
+*/
+  gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  gl.glEnable(GL_TEXTURE_2D);
+
+  gl.glEnable(GL_BLEND);
+
+  gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+
+  SDL_LockSurface(graphics.screen);
+
+    SDL_FillRect(graphics.screen, NULL, ~0);
+
+    gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 512, 0, GL_BGRA,
+      GL_UNSIGNED_BYTE, graphics.screen->pixels);
+
+  SDL_UnlockSurface(graphics.screen);
+
+  gl.glBindTexture(GL_TEXTURE_2D, gl2_texture_number[1]);
+
+  gl_set_filter_method(graphics.gl_filter_method);
+/*
+  gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
+  gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
+*/
+  gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  SDL_LockSurface(graphics.screen);
+
+    gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 256, 256, 0, GL_ALPHA,
+      GL_UNSIGNED_BYTE, graphics.screen->pixels);
+
+  SDL_UnlockSurface(graphics.screen);
+
+  gl2_remap_both_charsets();
+}
+
+static void gl2_update_screen(void)
+{
+  Uint32 *dest;
+  Uint32 *ldest, *ldest2;
+  char_element *src = graphics.text_video;
+  Uint8 *char_ptr;
+  Uint32 char_colors[4];
+  Uint32 current_char_byte;
+  Uint8 current_color;
+  Uint32 i, i2, i3;
+  Sint32 i4;
+  Uint32 line_advance = 640;
+  Uint32 line_advance_sub;
+  Uint32 row_advance = 8960;
+  Uint32 ticks = SDL_GetTicks();
+  Uint32 *old_dest = NULL;
+
+  SDL_LockSurface(graphics.screen);
+
+  dest = (Uint32 *)graphics.screen->pixels;
+
+  line_advance_sub = line_advance - 8;
+
+  old_dest = dest;
+
+  if((ticks - graphics.cursor_timestamp) > CURSOR_BLINK_RATE)
+  {
+    graphics.cursor_flipflop ^= 1;
+    graphics.cursor_timestamp = ticks;
+  }
+
+  if(!graphics.screen_mode)
+  {
+    gl.glDisable(GL_TEXTURE_2D);
+    gl.glDisable(GL_BLEND);
+
+    gl.glBegin(GL_QUADS);
+      for(i = 0; i < 350; i = i + 14)
+      {
+        for(i2 = 0; i2 < 640; i2 = i2 + 8)
+        {
+          gl.glColor3ubv(&graphics.gl_palette[src->bg_color *3]);
+          gl.glVertex3i(i2,i+14,-1);
+          gl.glVertex3i(i2,i,-1);
+          gl.glVertex3i(i2+8,i,-1);
+          gl.glVertex3i(i2+8,i+14,-1);
+          src++;
+        }
+      }
+    gl.glEnd();
+
+    gl.glEnable(GL_TEXTURE_2D);
+    gl.glEnable(GL_BLEND);
+
+    gl.glBegin(GL_QUADS);
+      src = graphics.text_video;
+      for(i = 0; i < 350; i = i + 14)
+      {
+        for(i2 = 0; i2 < 640; i2 = i2 + 8)
+        {
+          gl.glColor3ubv(&graphics.gl_palette[src->fg_color * 3]);
+
+          gl.glTexCoord2f(
+            ((src->char_value % 32) + 1) * 0.03125   - SAFE_TEXTURE_MARGIN_X,
+            ((src->char_value / 32) + 1) * 0.0546875 - SAFE_TEXTURE_MARGIN_Y
+          );
+          gl.glVertex3i(i2 + 8,i + 14, -1);
+
+          gl.glTexCoord2f(
+            ((src->char_value % 32) + 1) * 0.03125   - SAFE_TEXTURE_MARGIN_X,
+             (src->char_value / 32)      * 0.0546875 + SAFE_TEXTURE_MARGIN_Y
+          );
+          gl.glVertex3i(i2 + 8, i, -1);
+
+          gl.glTexCoord2f(
+             (src->char_value % 32)      * 0.03125   + SAFE_TEXTURE_MARGIN_X,
+             (src->char_value / 32)      * 0.0546875 + SAFE_TEXTURE_MARGIN_Y
+          );
+          gl.glVertex3i(i2, i, -1);
+
+          gl.glTexCoord2f(
+             (src->char_value % 32)      * 0.03125   + SAFE_TEXTURE_MARGIN_X,
+            ((src->char_value / 32) + 1) * 0.0546875 - SAFE_TEXTURE_MARGIN_Y
+          );
+          gl.glVertex3i(i2, i + 14, -1);
+          src++;
+        }
+      }
+  }
+  else
+  {
+    if (graphics.screen_mode != 3)
+    {
+      Uint32 cb_bg, cb_fg;
+      Uint32 c_color;
+
+      for(i = 0; i < 25; i++)
+      {
+        ldest2 = dest;
+        for(i2 = 0; i2 < 80; i2++)
+        {
+          ldest = dest;
+          cb_bg = (src->bg_color & 0x0F);
+          cb_fg = (src->fg_color & 0x0F);
+          char_colors[0] =
+           graphics.flat_intensity_palette[(cb_bg << 4) | cb_bg];
+          char_colors[1] =
+           graphics.flat_intensity_palette[(cb_bg << 4) | cb_fg];
+          char_colors[2] =
+           graphics.flat_intensity_palette[(cb_fg << 4) | cb_bg];
+          char_colors[3] =
+           graphics.flat_intensity_palette[(cb_fg << 4) | cb_fg];
+
+          // Fill in foreground color
+          char_ptr = graphics.charset + (src->char_value * 14);
+          src++;
+
+          for(i3 = 0; i3 < 14; i3++)
+          {
+            current_char_byte = *char_ptr;
+            char_ptr++;
+
+            for(i4 = 6; i4 >= 0; i4 -= 2, dest += 2)
+            {
+              c_color = char_colors[(current_char_byte >> i4) & 0x03];
+              *dest = c_color;
+              *(dest + 1) = c_color;
+            }
+            dest += line_advance_sub;
+          }
+          dest = ldest + 8;
+        }
+        dest = ldest2 + row_advance;
+      }
+    }
+    else
+    {
+      Uint32 c_color;
+
+      for(i = 0; i < 25; i++)
+      {
+        ldest2 = dest;
+        for(i2 = 0; i2 < 80; i2++)
+        {
+          ldest = dest;
+          current_color = (src->bg_color << 4) | (src->fg_color & 0x0F);
+
+          // Fill in background color
+          char_colors[0] =
+           graphics.flat_intensity_palette[current_color];
+          char_colors[1] =
+           graphics.flat_intensity_palette[(current_color + 2) & 0xFF];
+          char_colors[2] =
+           graphics.flat_intensity_palette[(current_color + 1) & 0xFF];
+          char_colors[3] =
+           graphics.flat_intensity_palette[(current_color + 3) & 0xFF];
+
+          // Fill in foreground color
+          char_ptr = graphics.charset + (src->char_value * 14);
+          src++;
+
+          for(i3 = 0; i3 < 14; i3++)
+          {
+            current_char_byte = *char_ptr;
+            char_ptr++;
+
+            for(i4 = 6; i4 >= 0; i4 -= 2, dest += 2)
+            {
+              c_color = char_colors[(current_char_byte >> i4) & 0x03];
+              *dest = c_color;
+              *(dest + 1) = c_color;
+            }
+            dest += line_advance_sub;
+          }
+          dest = ldest + 8;
+        }
+        dest = ldest2 + row_advance;
+      }
+    }
+  }
+
+  if (graphics.screen_mode)
+  {
+    gl.glBindTexture(GL_TEXTURE_2D, gl2_texture_number[0]);
+
+    gl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 640, 350, GL_BGRA,
+      GL_UNSIGNED_BYTE, graphics.screen->pixels);
+
+    gl.glColor4f(1.0, 1.0, 1.0, 1.0);
+
+    gl.glBegin(GL_QUADS);
+      gl.glTexCoord2f(0,0.68359375);
+      gl.glVertex3i(0,350,-1);
+      gl.glTexCoord2f(0,0);
+      gl.glVertex3i(0,0,-1);
+      gl.glTexCoord2f(0.625,0);
+      gl.glVertex3i(640,0,-1);
+      gl.glTexCoord2f(0.625,0.68359375);
+      gl.glVertex3i(640,350,-1);
+    gl.glEnd();
+
+    gl.glBindTexture(GL_TEXTURE_2D, gl2_texture_number[1]);
+    gl.glBegin(GL_QUADS);
+  }
+
+  if(graphics.mouse_status)
+  {
+    int mouse_x, mouse_y;
+
+    get_real_mouse_position(&mouse_x, &mouse_y);
+
+    gl.glColor4ub(32, 32, 32, 64);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i((mouse_x / 8) * 8,     (mouse_y / 14) * 14 + 14, -1);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i((mouse_x / 8) * 8,     (mouse_y / 14) * 14,      -1);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i((mouse_x / 8) * 8 + 8, (mouse_y / 14) * 14,      -1);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i((mouse_x / 8) * 8 + 8, (mouse_y / 14) * 14 + 14, -1);
+
+    gl.glColor4ub(223, 223, 223, 24);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i((mouse_x / 8) * 8 + 1, (mouse_y / 14) * 14 + 13, -1);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i((mouse_x / 8) * 8 + 1, (mouse_y / 14) * 14 + 1,  -1);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i((mouse_x / 8) * 8 + 7, (mouse_y / 14) * 14 + 1,  -1);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i((mouse_x / 8) * 8 + 7, (mouse_y / 14) * 14 + 13, -1);
+
+    gl.glColor4ub(255, 0, 0, 196);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i(mouse_x,      mouse_y + 12, -1);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i(mouse_x,      mouse_y,      -1);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i(mouse_x + 10, mouse_y + 8,  -1);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i(mouse_x + 4,  mouse_y + 8,  -1);
+  }
+
+  // Draw cursor perhaps
+  if (graphics.cursor_flipflop &&
+      (graphics.cursor_mode != cursor_mode_invisible))
+  {
+    char_element *cursor_element = graphics.text_video + graphics.cursor_x + 
+                                   (graphics.cursor_y * 80);
+    Uint32 cursor_color;
+    Uint32 cursor_char = cursor_element->char_value;
+    Uint32 lines = 0;
+    Uint32 addy = 0;
+    Uint32 *cursor_offset = old_dest;
+    Uint32 i;
+    Uint32 cursor_solid = 0xFFFFFFFF;
+    Uint32 *char_offset = (Uint32 *)(graphics.charset + (cursor_char * 14));
+    Uint32 bg_color = cursor_element->bg_color;
+    cursor_offset += (graphics.cursor_x * 8) + (graphics.cursor_y * row_advance);
+
+    // Choose FG
+    cursor_color = cursor_element->fg_color;
+
+    // See if the cursor char is completely solid or completely
+    // empty
+    for(i = 0; i < 3; i++)
+    {
+      cursor_solid &= *char_offset;
+      char_offset++;
+    }
+
+    // Get the last bit
+    cursor_solid &= (*((Uint16 *)char_offset)) | 0xFFFF0000;
+
+    // Solid cursor, use BG instead
+    if(cursor_solid == 0xFFFFFFFF)
+    {
+      // But wait! What if the background is the same as the foreground?
+      // If so, use +8 instead.
+      if(bg_color == cursor_color)
+        cursor_color = (bg_color + 8) & 0x0F;
+      else
+        cursor_color = bg_color;
+    }
+    else
+    {
+      // What if the foreground is the same as the background?
+      // It needs to flash +8 then
+      if(bg_color == cursor_color)
+        cursor_color = (cursor_color + 8) & 0x0F;
+    }
+
+    switch(graphics.cursor_mode)
+    {
+      case cursor_mode_underline:
+        lines = 2;
+        cursor_offset += (12 * line_advance);
+        addy = 12;
+        break;
+
+      case cursor_mode_solid:
+        lines = 14;
+        break;
+
+      case cursor_mode_invisible:
+        // FIXME: Should we do nothing?
+        break;
+    }
+
+    gl.glColor3ubv(&graphics.gl_palette[cursor_color * 3]);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i(graphics.cursor_x * 8,     graphics.cursor_y * 14 + lines + addy, -1);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i(graphics.cursor_x * 8,     graphics.cursor_y * 14 + addy,         -1);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i(graphics.cursor_x * 8 + 8, graphics.cursor_y * 14 + addy,         -1);
+    gl.glTexCoord2f(0, 0.8755);
+    gl.glVertex3i(graphics.cursor_x * 8 + 8, graphics.cursor_y * 14 + lines + addy, -1);
+  }
+
+  gl.glEnd();
+
+  //If you want linear filtering, you need to set the viewport to 640, 350 before rendering. 
+  //Then, bind texture_number[0],
+  //use glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 640, 350, 0);
+  //set the viewport back to the original resolution,
+  //display it on a quad.
+  if (gl2_linear_filter_method())
+  {
+    gl.glBindTexture(GL_TEXTURE_2D, gl2_texture_number[0]);
+    gl.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 1024, 512, 0);
+
+    if(!graphics.fullscreen)
+      gl.glViewport(0, 0, graphics.window_width, graphics.window_height);
+    else
+      gl.glViewport(0, 0, graphics.resolution_width,graphics.resolution_height);
+
+    gl.glColor4f(1.0, 1.0, 1.0, 1.0);
+    gl.glDisable(GL_BLEND);
+
+    gl.glBegin(GL_QUADS);
+      gl.glTexCoord2f(0,0.68359375);
+      gl.glVertex3i(0,0,-1);
+      gl.glTexCoord2f(0,0);
+      gl.glVertex3i(0,350,-1);
+      gl.glTexCoord2f(0.625,0);
+      gl.glVertex3i(640,350,-1);
+      gl.glTexCoord2f(0.625,0.68359375);
+      gl.glVertex3i(640,0,-1);
+    gl.glEnd();
+
+    gl.glBindTexture(GL_TEXTURE_2D, gl2_texture_number[1]);
+    gl.glViewport(0, 0, 640, 350);
+  }
+
+  SDL_UnlockSurface(graphics.screen);
+
+  SDL_GL_SwapBuffers();
+
+  gl.glClear(GL_COLOR_BUFFER_BIT);
+}
+
+static int gl2_set_video_mode(int width, int height, int depth, int flags,
+                              int fullscreen)
+{
+  // FIXME: 32bit is hardcoded, is this right?
+  if (!SDL_SetVideoMode(width, height, 32, gl_strip_flags(flags)))
+    return false;
+
+  gl2_opengl_resize(width, height);
+
+  return true;
 }
 
 #endif // OPENGL && !PSP_BUILD
@@ -1222,8 +1767,8 @@ static void gl_update_colors(SDL_Color *palette, Uint32 count)
 
 // Optimized for packed-pixel 4:2:2 YUV [No height multiplier]
 
-void update_screen_yuv(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h,
-                       Uint32 y1)
+static void update_screen_yuv(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h,
+                              Uint32 y1)
 {
   Uint32 *dest;
   Uint32 *ldest, *ldest2;
@@ -1343,9 +1888,9 @@ void update_screen_yuv(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h,
         // the mode 1/2 renderer.
 
         char_colors[0] = graphics.flat_intensity_palette[current_color];
-        char_colors[1] = graphics.flat_intensity_palette[(current_color + 1) &
+        char_colors[1] = graphics.flat_intensity_palette[(current_color + 2) &
          0xFF];
-        char_colors[2] = graphics.flat_intensity_palette[(current_color + 2) &
+        char_colors[2] = graphics.flat_intensity_palette[(current_color + 1) &
          0xFF];
         char_colors[3] = graphics.flat_intensity_palette[(current_color + 3) &
          0xFF];
@@ -1476,6 +2021,7 @@ static int yuv_set_video_mode_size(int width, int height, int depth, int flags,
                                    int fullscreen, int yuv_width,
                                    int yuv_height)
 {
+  // the YUV renderer _requires_ 32bit colour
   graphics.screen = SDL_SetVideoMode(width, height, 32, flags | SDL_ANYFORMAT);
 
   if (!graphics.screen)
@@ -1515,6 +2061,7 @@ static int yuv1_init_video(config_info *conf)
 
 static int yuv1_check_video_mode(int width, int height, int depth, int flags)
 {
+  // requires 32bit colour
   return SDL_VideoModeOK(width, height, 32, flags | SDL_ANYFORMAT);
 }
 
@@ -1632,13 +2179,22 @@ static void set_graphics_output(char *video_output)
   // Try to load system GL. if we succeed..
   if (SDL_GL_LoadLibrary(GL_SHARED_OBJECT) >= 0)
   {
-    if (!strcmp(video_output, "opengl"))
+    if (!strcmp(video_output, "opengl1"))
     {
-      graphics.init_video = gl_init_video;
-      graphics.check_video_mode = gl_check_video_mode;
-      graphics.set_video_mode = gl_set_video_mode;
-      graphics.update_screen = gl_update_screen;
-      graphics.update_colors = gl_update_colors;
+      graphics.init_video = gl1_init_video;
+      graphics.check_video_mode = gl1_check_video_mode;
+      graphics.set_video_mode = gl1_set_video_mode;
+      graphics.update_screen = gl1_update_screen;
+      graphics.update_colors = gl1_update_colors;
+    }
+
+    if (!strcmp(video_output, "opengl2"))
+    {
+      graphics.init_video = gl1_init_video;
+      graphics.check_video_mode = gl1_check_video_mode;
+      graphics.set_video_mode = gl2_set_video_mode;
+      graphics.update_screen = gl2_update_screen;
+      graphics.update_colors = gl1_update_colors;
     }
   }
 #ifdef DEBUG
@@ -2479,7 +3035,7 @@ void update_colors(SDL_Surface *screen, SDL_Color *palette,
   graphics.update_colors(palette, count);
 }
 
-void update_palette()
+void update_palette(void)
 {
   Uint32 i;
 
@@ -2946,6 +3502,7 @@ void insta_fadeout(void)
     delay(1);
     update_palette();
 
+    // FIXME: Why do we only do this in 32bit mode?
     if(graphics.bits_per_pixel == 32)
       update_screen();
 
@@ -2974,6 +3531,7 @@ void insta_fadein(void)
 
     update_palette();
 
+    // FIXME: Why do we only do this in 32bit mode?
     if(graphics.bits_per_pixel == 32)
       update_screen();
   }

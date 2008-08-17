@@ -450,10 +450,10 @@ void config_set_audio_freq(config_info *conf, char *name,
   conf->output_frequency = strtol(value, NULL, 10);
 }
 
-void config_force_32bpp(config_info *conf, char *name,
+void config_force_bpp(config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  conf->force_32bpp = strtol(value, NULL, 10);
+  conf->force_bpp = strtol(value, NULL, 10);
 }
 
 void config_window_resolution(config_info *conf, char *name, char *value,
@@ -474,6 +474,12 @@ void config_enable_resizing(config_info *conf, char *name, char *value,
  char *extended_data)
 {
   conf->allow_resize = strtol(value, NULL, 10);
+}
+
+void config_set_gl_filter_method(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  strncpy(conf->gl_filter_method, value, 16);
 }
 
 config_entry config_options[] =
@@ -502,10 +508,11 @@ config_entry config_options[] =
   { "disassemble_extras", config_disassemble_extras },
   { "enable_oversampling", config_enable_oversampling },
   { "enable_resizing", config_enable_resizing },
-  { "force_32bpp", config_force_32bpp },
+  { "force_bpp", config_force_bpp },
   { "force_height_multiplier", config_set_multiplier },
   { "force_resolution", config_set_resolution },
   { "fullscreen", config_set_fullscreen },
+  { "gl_filter_method", config_set_gl_filter_method },
   { "include", include2_config },
   { "include*", include_config },
   { "joy!axis!", joy_axis_set },
@@ -566,7 +573,8 @@ config_info default_options =
   0,				// allow_resize
   "software",			// video_output
   1,				// height_multiplier
-  1,				// force_32bpp
+  32,				// force_bpp
+  "linear",			// opengl filter method
 
   // Audio options
   44100,			// output_frequency
