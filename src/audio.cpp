@@ -71,13 +71,53 @@ struct _ModPlugFile
 
 audio_struct audio;
 
-#ifndef PTHREAD_MUTEXES
-#define UP()   SDL_LockMutex(audio.audio_mutex)
-#define DOWN() SDL_UnlockMutex(audio.audio_mutex)
+#ifdef PTHREAD_MUTEXES
+#define __lock()      pthread_mutex_lock(&audio.audio_mutex)
+#define __unlock()    pthread_mutex_unlock(&audio.audio_mutex)
 #else
-#define UP()   pthread_mutex_lock(&audio.audio_mutex)
-#define DOWN() pthread_mutex_unlock(&audio.audio_mutex)
+#define __lock()      SDL_LockMutex(audio.audio_mutex);
+#define __unlock()    SDL_UnlockMutex(audio.audio_mutex);
 #endif
+
+#ifdef DEBUG
+
+#define LOCK()   lock(__FILE__, __LINE__)
+#define UNLOCK() unlock(__FILE__, __LINE__)
+
+static int locked = 0;
+static char last_lock[16];
+
+static void lock(const char *file, int line)
+{
+  // lock should _not_ be held here
+  if (locked)
+    fprintf(stderr, "%s:%d: locked at %s already!\n", file, line, last_lock);
+
+  // acquire the mutex
+  __lock();
+  locked = 1;
+
+  // store information on this lock
+  snprintf(last_lock, 16, "%s:%d", file, line);
+}
+
+static void unlock(const char *file, int line)
+{
+  // lock should be held here
+  if (!locked)
+    fprintf(stderr, "%s:%d: tried to unlock when not locked!\n", file, line);
+
+  // all ok, unlock this mutex
+  locked = 0;
+  __unlock();
+}
+
+#else // !DEBUG
+
+#define LOCK()     __lock()
+#define UNLOCK()   __unlock()
+
+#endif // DEBUG
 
 const int freq_conversion = 3579364;
 
@@ -1165,7 +1205,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
   Uint32 destroy_flag;
   audio_stream *current_astream;
 
-  UP();
+  LOCK();
 
   current_astream = audio.stream_list_base;
 
@@ -1193,7 +1233,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
     clip_buffer((Sint16 *)stream, audio.mix_buffer, len / 2);
   }
 
-  DOWN();
+  UNLOCK();
 }
 
 void init_modplug(config_info *conf)
@@ -1282,10 +1322,10 @@ void load_mod(char *filename)
 
   if(filename && filename[0])
   {
-    UP();
+    LOCK();
     audio.primary_stream = construct_stream_audio_file(filename, 0,
      audio.music_volume * 255 / 8, 1);
-    DOWN();
+    UNLOCK();
   }
 }
 
@@ -1293,9 +1333,9 @@ void end_mod(void)
 {
   if(audio.primary_stream)
   {
-    UP();
+    LOCK();
     audio.primary_stream->destruct(audio.primary_stream);
-    DOWN();
+    UNLOCK();
   }
 
   audio.primary_stream = NULL;
@@ -1306,7 +1346,7 @@ void play_sample(int freq, char *filename)
   audio_stream *a_src;
   Uint32 vol = 255 * audio.sound_volume / 8;
 
-  UP();
+  LOCK();
 
   if(freq == 0)
   {
@@ -1318,7 +1358,7 @@ void play_sample(int freq, char *filename)
      (freq_conversion / freq) / 2, vol, 0);
   }
 
-  DOWN();
+  UNLOCK();
 }
 
 void end_sample()
@@ -1330,7 +1370,7 @@ void end_sample()
   audio_stream *current_astream = audio.stream_list_base;
   audio_stream *next_astream;
 
-  UP();
+  LOCK();
 
   while(current_astream)
   {
@@ -1345,7 +1385,7 @@ void end_sample()
     current_astream = next_astream;
   }
 
-  DOWN();
+  UNLOCK();
 }
 
 void jump_mod(int order)
@@ -1356,9 +1396,9 @@ void jump_mod(int order)
 
   if(audio.primary_stream && audio.primary_stream->set_order)
   {
-    UP();
+    LOCK();
     audio.primary_stream->set_order(audio.primary_stream, order);
-    DOWN();
+    UNLOCK();
   }
 }
 
@@ -1368,9 +1408,9 @@ int get_order()
   {
     int order;
 
-    UP();
+    LOCK();
     order = audio.primary_stream->get_order(audio.primary_stream);
-    DOWN();
+    UNLOCK();
 
     return order;
   }
@@ -1384,10 +1424,10 @@ void volume_mod(int vol)
 {
   if(audio.primary_stream)
   {
-    UP();
+    LOCK();
     audio.primary_stream->set_volume(audio.primary_stream,
      vol * audio.music_volume / 8);
-    DOWN();
+    UNLOCK();
   }
 }
 
@@ -1429,11 +1469,11 @@ void shift_frequency(int freq)
 
   if(audio.primary_stream && freq >= 16)
   {
-    UP();
+    LOCK();
     ((sampled_stream *)audio.primary_stream)->
      set_frequency((sampled_stream *)audio.primary_stream,
      freq);
-    DOWN();
+    UNLOCK();
   }
 }
 
@@ -1443,10 +1483,10 @@ int get_frequency()
   {
     int freq;
 
-    UP();
+    LOCK();
     freq = ((sampled_stream *)audio.primary_stream)->
      get_frequency((sampled_stream *)audio.primary_stream);
-    DOWN();
+    UNLOCK();
 
     return freq;
   }
@@ -1463,9 +1503,9 @@ void set_position(int pos)
 
   if(audio.primary_stream && audio.primary_stream->set_position)
   {
-    UP();
+    LOCK();
     audio.primary_stream->set_position(audio.primary_stream, pos);
-    DOWN();
+    UNLOCK();
   }
 }
 
@@ -1475,9 +1515,9 @@ int get_position()
   {
     int pos;
 
-    UP();
+    LOCK();
     pos = audio.primary_stream->get_position(audio.primary_stream);
-    DOWN();
+    UNLOCK();
 
     return pos;
   }
@@ -1487,15 +1527,17 @@ int get_position()
   }
 }
 
+// BIG FAT NOTE:
+// This function is only used in sfx() under lock, DO NOT ADD LOCKING!
 void sound(int frequency, int duration)
 {
-  UP();
   audio.pcs_stream->playing = 1;
   audio.pcs_stream->frequency = frequency;
   audio.pcs_stream->note_duration = duration;
-  DOWN();
 }
 
+// BIG FAT NOTE:
+// This function is only used in sfx() under lock, DO NOT ADD LOCKING!
 void nosound(int duration)
 {
   audio.pcs_stream->playing = 0;
@@ -1596,16 +1638,16 @@ void convert_sam_to_wav(char *source_name, char *dest_name)
 
 void set_music_on(int val)
 {
-  UP();
+  LOCK();
   audio.music_on = val;
-  DOWN();
+  UNLOCK();
 }
 
 void set_sfx_on(int val)
 {
-  UP();
+  LOCK();
   audio.sfx_on = val;
-  DOWN();
+  UNLOCK();
 }
 
 // These don't have to be locked because only the same thread can
@@ -1638,16 +1680,16 @@ int get_sfx_volume()
 
 void set_music_volume(int volume)
 {
-  UP();
+  LOCK();
   audio.music_volume = volume;
-  DOWN();
+  UNLOCK();
 }
 
 void set_sound_volume(int volume)
 {
   audio_stream *current_astream = audio.stream_list_base;
 
-  UP();
+  LOCK();
 
   audio.sound_volume = volume;
 
@@ -1663,16 +1705,16 @@ void set_sound_volume(int volume)
     current_astream = current_astream->next;
   }
 
-  DOWN();
+  UNLOCK();
 }
 
 void set_sfx_volume(int volume)
 {
-  UP();
+  LOCK();
   audio.sfx_volume = volume;
   audio.pcs_stream->a.set_volume((audio_stream *)audio.pcs_stream,
    volume * 255 / 8);
-  DOWN();
+  UNLOCK();
 }
 
 
