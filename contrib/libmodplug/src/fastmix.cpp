@@ -1,5 +1,8 @@
 /*
- * This source code is public domain.
+ * This program is  free software; you can redistribute it  and modify it
+ * under the terms of the GNU  General Public License as published by the
+ * Free Software Foundation; either version 2  of the license or (at your
+ * option) any later version.
  *
  * Authors: Olivier Lapicque <olivierl@jps.net>
  *          Markus Fick <webmaster@mark-f.de> spline + fir-resampler
@@ -1852,10 +1855,32 @@ cliphigh:
 }
 #else //MSC_VER
 //---GCCFIX: Asm replaced with C function
-// 24-bit audio not supported.
 DWORD MPPASMCALL X86_Convert32To24(LPVOID lp16, int *pBuffer, DWORD lSampleCount, LPLONG lpMin, LPLONG lpMax)
 {
-	return 0;
+	UINT i ;
+	int vumin = *lpMin, vumax = *lpMax;
+	int n,p ;
+	unsigned char* buf = (unsigned char*)lp16 ;
+	
+	for ( i=0; i<lSampleCount; i++)
+	{
+		n = pBuffer[i];
+		if (n < MIXING_CLIPMIN)
+			n = MIXING_CLIPMIN;
+		else if (n > MIXING_CLIPMAX)
+			n = MIXING_CLIPMAX;
+		if (n < vumin)
+			vumin = n;
+		else if (n > vumax)
+			vumax = n;
+		p = n >> (8-MIXING_ATTENUATION) ; // 24-bit signed
+		buf[i*3]   = p & 0xFF0000 ;
+		buf[i*3+1] = p & 0x00FF00 ;
+		buf[i*3+2] = p & 0x0000FF ;
+	}
+	*lpMin = vumin;
+	*lpMax = vumax;
+	return lSampleCount * 3;
 }
 #endif
 
@@ -1923,10 +1948,28 @@ cliphigh:
 }
 #else
 //---GCCFIX: Asm replaced with C function
-// 32-bit audio not supported
 DWORD MPPASMCALL X86_Convert32To32(LPVOID lp16, int *pBuffer, DWORD lSampleCount, LPLONG lpMin, LPLONG lpMax)
 {
-	return 0;
+	UINT i ;
+	int vumin = *lpMin, vumax = *lpMax;
+	signed long *p = (signed long *)lp16;
+	
+	for ( i=0; i<lSampleCount; i++)
+	{
+		int n = pBuffer[i];
+		if (n < MIXING_CLIPMIN)
+			n = MIXING_CLIPMIN;
+		else if (n > MIXING_CLIPMAX)
+			n = MIXING_CLIPMAX;
+		if (n < vumin)
+			vumin = n;
+		else if (n > vumax)
+			vumax = n;
+		p[i] = n << MIXING_ATTENUATION;	// 32-bit signed
+	}
+	*lpMin = vumin;
+	*lpMax = vumax;
+	return lSampleCount * 4;
 }
 #endif
 
@@ -2325,4 +2368,3 @@ void CSoundFile::ResetAGC()
 }
 
 #endif // NO_AGC
-

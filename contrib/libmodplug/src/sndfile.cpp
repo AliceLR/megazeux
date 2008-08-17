@@ -137,8 +137,8 @@ BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
 		BOOL bMMCmp = MMCMP_Unpack(&lpStream, &dwMemLength);
 #endif
 		if ((!ReadXM(lpStream, dwMemLength))
-		 && (!ReadIT(lpStream, dwMemLength))
 		 && (!ReadS3M(lpStream, dwMemLength))
+		 && (!ReadIT(lpStream, dwMemLength))
 		 && (!ReadWav(lpStream, dwMemLength))
 #ifndef MODPLUG_BASIC_SUPPORT
 		 && (!ReadSTM(lpStream, dwMemLength))
@@ -922,11 +922,13 @@ UINT CSoundFile::WriteSample(FILE *f, MODINSTRUMENT *pins, UINT nFlags, UINT nMa
 				}
 				if (nFlags == RS_PCM16D)
 				{
-					*((short *)(&buffer[bufcount])) = (short)(s_new - s_old);
+					short temp = bswapLE16((short)(s_new - s_old));
+					*((short *)(&buffer[bufcount])) = temp;
 					s_old = s_new;
 				} else
 				{
-					*((short *)(&buffer[bufcount])) = (short)(s_new + s_ofs);
+					short temp = bswapLE16((short)(s_new + s_ofs));
+					*((short *)(&buffer[bufcount])) = temp;
 				}
 				bufcount += 2;
 				if (bufcount >= sizeof(buffer) - 1)
@@ -994,11 +996,13 @@ UINT CSoundFile::WriteSample(FILE *f, MODINSTRUMENT *pins, UINT nFlags, UINT nMa
 					p += 2;
 					if (nFlags == RS_STPCM16D)
 					{
-						*((short *)(&buffer[bufcount])) = (short)(s_new - s_old);
+						short temp = bswapLE16((short)(s_new - s_old));
+						*((short *)(&buffer[bufcount])) = temp;
 						s_old = s_new;
 					} else
 					{
-						*((short *)(&buffer[bufcount])) = (short)(s_new + s_ofs);
+						short temp = bswapLE16((short)(s_new - s_ofs));
+						*((short *)(&buffer[bufcount])) = temp;
 					}
 					bufcount += 2;
 					if (bufcount >= sizeof(buffer))
