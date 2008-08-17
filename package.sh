@@ -118,7 +118,7 @@ PADCONFIG="pad.config"
 # MegaZeux's build system dependencies; these are packaged in
 # addition to binary deps above to complete the source package.
 #
-BUILD_DEPS="config.sh Makefile Makefile.in package.sh $PADCONFIG"
+BUILD_DEPS="config.sh Makefile Makefile.in package.sh $PADCONFIG macosx.zip"
 
 #
 # These directories are purely for source distributions.
