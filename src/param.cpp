@@ -517,7 +517,7 @@ int pe_door(World *mzx_world, int param)
 {
   int alignment = param & 1;
   int opens = (param >> 1) & 0x03;
-  int check_results[1] = { param >> 3 };
+  int check_results[1] = { (param >> 3) & 0x01 };
   dialog di;
   element *elements[5];
   int dialog_result;
