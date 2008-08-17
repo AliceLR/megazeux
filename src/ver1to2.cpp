@@ -61,7 +61,7 @@ void main(int argc,char *argv[]) {
   farfree(newboard);
 }
 
-unsigned char far magic_code[16]="æRëòmMJ·‡²’ˆÞ‘$";
+unsigned char far magic_code[16]="\xe6\x52\xeb\xf2\x6d\x4d\x4a\xb7\x87\xb2\x92\x88\xde\x91\x24";
 unsigned char far id_dmg[128]={
   0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,0,
   0,0,0,0,0,0,0,0,0,0,100,0,0,0,0,0,

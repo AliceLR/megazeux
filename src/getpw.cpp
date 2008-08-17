@@ -21,7 +21,7 @@
 #include <dir.h>
 #include <string.h>
 
-char magic_code[16] = "æRëòmMJ·‡²’ˆÞ‘$";
+char magic_code[16]="\xe6\x52\xeb\xf2\x6d\x4d\x4a\xb7\x87\xb2\x92\x88\xde\x91\x24";
 int pro_method, pw_size;
 char password[16], xor_val;
 
@@ -90,9 +90,9 @@ int main(int argc, char *argv[])
 
   if(pro_method)
   {
-		printf("deprotecting %d\n", pro_method);
     // Password
     fread(password, 1, 15, source);
+
     // First, normalize password...
     for(i = 0; i < 15; i++)
     {
@@ -103,13 +103,6 @@ int main(int argc, char *argv[])
 
     // Show!
     printf("Password: %s\n", password);
-
-		for(i = 0; i < strlen(password); i++)
-		{
-			printf("(%d) ", (unsigned char)password[i]);
-		}
-
-		printf("\n");
 
     // Deprotect?
     if((argc > 2) && ((argv[2][1] == 'd') || (argv[2][1] == 'D')))
@@ -134,11 +127,9 @@ int main(int argc, char *argv[])
 
       fputc(0, dest);
       fseek(source, 19, SEEK_CUR);
-			printf("saving magic string\n");
+
       fputs("M\x02\x11", dest);
       len -= 44;
-
-			printf("saving decrypted file\n");
 
       for(; len > 0; len--)
       {
@@ -150,7 +141,6 @@ int main(int argc, char *argv[])
       fseek(source, 4245, SEEK_SET);
       fseek(dest, 4230, SEEK_SET);
 
-			printf("fixing global robot offset\n");
 
       offset_low_byte = (fgetc(source) ^ xor_val) & 0xFF;
       fputc(offset_low_byte - 15, dest);
@@ -166,7 +156,7 @@ int main(int argc, char *argv[])
       fputc(fgetc(source) ^ xor_val, dest);
       fputc(fgetc(source) ^ xor_val, dest);
 
-			num_boards = (fgetc(source) ^ xor_val) & 0xFF;
+      num_boards = (fgetc(source) ^ xor_val) & 0xFF;
 
       // If custom SFX is there, run through and skip it
       if(!num_boards)
@@ -177,8 +167,6 @@ int main(int argc, char *argv[])
         printf("%d\n", sfx_length);
         num_boards = (fgetc(source) ^ xor_val) & 0xFF;
       }
-
-      printf("fixing boards, %d boards\n", num_boards);
 
       // Skip titles
       fseek(source, 25 * num_boards, SEEK_CUR);
@@ -212,10 +200,6 @@ int main(int argc, char *argv[])
       fclose(dest);
     }
   }
-  else
-	{
-    printf("No password!\n\a");
-	}
 
   fclose(source);
 

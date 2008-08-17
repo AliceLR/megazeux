@@ -21,7 +21,7 @@
 #include <stdio.h>
 #include <dir.h>
 
-char magic_code[16]="æRëòmMJ·‡²’ˆÞ‘$";
+char magic_code[16]="\xe6\x52\xeb\xf2\x6d\x4d\x4a\xb7\x87\xb2\x92\x88\xde\x91\x24";
 long brd_pos[150];
 
 void skip_layer(FILE *fp,unsigned char xor) {
