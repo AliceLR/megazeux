@@ -40,6 +40,8 @@ typedef struct
                                 GLenum type, const GLvoid *pixels);
   void (APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
   void (APIENTRY *glVertex3f)(GLfloat x, GLfloat y, GLfloat z);
+  void (APIENTRY *glViewport)(GLint x, GLint y, GLsizei width,
+                              GLsizei height);
 } gl_syms;
 
 typedef enum

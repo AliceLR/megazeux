@@ -137,7 +137,11 @@ typedef struct
   audio_stream *stream_list_base;
   audio_stream *stream_list_end;
 
+#ifndef PTHREAD_MUTEXES
   SDL_mutex *audio_mutex;
+#else
+  pthread_mutex_t audio_mutex;
+#endif
 
   Uint32 music_on;
   Uint32 sfx_on;

@@ -87,6 +87,10 @@ static void load_gl_syms(gl_syms *gl)
 
   gl->glVertex3f = (void (APIENTRY *)(GLfloat x, GLfloat y, GLfloat z))
    SDL_GL_GetProcAddress("glVertex3f");
+
+  gl->glViewport = (void (APIENTRY *)(GLint x, GLint y, GLsizei width,
+                                      GLsizei height))
+   SDL_GL_GetProcAddress("glViewport");
 }
 
 SDL_Color default_pal[16] =
@@ -215,6 +219,7 @@ void set_video_mode()
 
     SDL_SetVideoMode(target_width, target_height, 32,
      target_flags | SDL_OPENGL);
+    gl.glViewport(0, 0, target_width, target_height);
 
     SDL_GL_SetAttribute(SDL_GL_RED_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_GREEN_SIZE, 8);
@@ -254,7 +259,6 @@ void resize_screen(Uint32 w, Uint32 h)
 {
   if(!graphics.fullscreen && graphics.hardware_stretch)
   {
-    printf("resizing to %d %d\n", w, h);
     graphics.window_width = w;
     graphics.window_height = h;
     set_video_mode();

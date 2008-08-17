@@ -12,4 +12,7 @@ STRIP     = strip --strip-unneeded
 LIBS      = `sdl-config --static-libs` \
             ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
             ${PREFIX}/lib/libvorbisfile.a ${PREFIX}/lib/libvorbis.a \
-            ${PREFIX}/lib/libogg.a ${PREFIX}/lib/libstdc++.a
+            ${PREFIX}/lib/libogg.a
+
+# switch locking method
+INCLUDES += -DPTHREAD_MUTEXES

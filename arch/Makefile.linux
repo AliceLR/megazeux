@@ -12,6 +12,9 @@ STRIP    = strip --strip-unneeded
 LIBS    += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
             -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
 
+# switch locking method
+INCLUDES+= -DPTHREAD_MUTEXES
+
 # linux os specific install target
 install:
 	@install -m 0755 -d ${PREFIX}/bin && \
