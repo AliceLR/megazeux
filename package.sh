@@ -5,7 +5,7 @@
 ################################################################################
 
 function usage {
-	echo "usage: $0 [-b win32 | macos | linux-i686 | linux-amd64]"
+	echo "usage: $0 [-b win32 | macos | psp | linux-i686 | linux-amd64]"
 	echo
 	echo "	-b	Builds a binary distribution for the specified arch."
 	echo "	-h	Displays this help text."

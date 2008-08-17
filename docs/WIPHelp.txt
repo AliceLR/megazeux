@@ -459,7 +459,8 @@ This will give the player all keys, full ammo, full coins, full
 gems,  full bombs, full health (set to maxhealth) and full
 lives (set to maxlives). This is a cheating function, so do not
 use unless fully necessary; a few games punish the player for
-using this function. 
+using this function. This will only work during playtesting in
+the editor.
 
 F8 - Zap Cheat
 
@@ -467,7 +468,8 @@ This will destroy everything all in eight directions directly
 around the player, replacing all eight squares with spaces.
 This is a cheating function, so do not use unless fully
 necessary; a few games punish the player for using this
-function. 
+function. This will only work during playtesting in
+the editor.
 
 F9 - Quicksave
 This will save the game, like F3, but to the last filename you
@@ -480,7 +482,13 @@ F10 - Quickload
 This will reload the last game saved using F3 or F9. If no
 game has been saved since MegaZeux was started, the default
 save filename will be used.
->#CONFGINI.HLP:1st:The Config File
+
+F11 - Counter Debug Mode
+This will load a screen listing which counters are set.
+Highlight any counter and press Enter to change its value. The
+Export button allows exporting Robotic code, which sets all of
+the shown counters at their shown values to a text file. This
+will only work during playtesting in the editor.
 
 Arrows - Move
 The arrow keys will move your character and allow him/her/it to
@@ -1230,9 +1238,9 @@ A: Make sure the pound / hash sign in front of the command is
 Q: Why doesn't my music play?
 
 A: Likely it's because the music file's filename is over 12
-.  characters long in total. Shorten the name if so, If you
+.  characters long in total. Shorten the name if so. If you
 .  still have problems, see if the file will load at all in an
-.  appropriate player, If all else fails, inform the coder(s).
+.  appropriate player. If all else fails, inform the coder(s).
 
 Q: Can I distribute a world I made with MegaZeux? Is it
 .  legal? Must I/can I include MegaZeux with it? Can they
@@ -1407,6 +1415,8 @@ A: Then you'll need to carefully utilize the Robot command
 .  characters you WILL use (such as the alphanumeric
 .  characters).
 
+>#PARTIAL.HLP:par:Partial Character Sets
+
 Q: Why does MegaZeux slow to a crawl when I set the "commands"
 .  counter to a high value?
 
@@ -1421,7 +1431,14 @@ Q: What's with these "~roboclp.tmp" files packed with so many
 A: Those held clipboard information in DOS versions of MegaZeux.
 .  They are useless and should be freely deleted.
 
->#PARTIAL.HLP:par:Partial Character Sets
+Q: Is adding network capabilities to MegaZeux planned?
+
+A: Short answer: No. This has been discussed at-length;
+.  the biggest problems with adding these are thorny 
+.  implementation issues (how the MZX programmer would insert
+.  network capabilities into a MegaZeux world, as well as the
+.  structure in general). It's definitely possible, and possible
+.  to do soundly, but developers aren't interested in it.
 
 >#MAIN.HLP:072:Table of Contents
 #MEGAZEUX.HLP
@@ -1874,7 +1891,8 @@ doesn't fit in memory.
 Ctrl+N does the same as Alt+N, except it only plays the
 selected module. It does not set the board module to the
 selected module. It also remembers the last-used directory to
-maintain a current listening directory. 
+maintain a current listening directory. If a GDM is tested, it
+will be auto-converted to S3M format.
 
 :AltO:~EAlt+O - Edit Overlay
 
@@ -2030,7 +2048,8 @@ Robotic programming situations.
 
 Pressing F11 will change the currently set SMZX mode, in this
 order: From OFF to Mode 1; From Mode 1 to Mode 2; From Mode 2
-to Mode 3; From Mode 3 to OFF.
+to Mode 3; From Mode 3 to OFF. This setting only holds for the
+editor; it will not carry onto games by itself.
 
 :ShF1:~ESh+F1 - Show InvisWalls
 :ShF2:~ESh+F2 - Show Robots
@@ -3479,7 +3498,7 @@ as floors. Used with:
 >#COMMANDS.HLP:con:Conditions
 
 Most directions can be used with the following modifying
-prefixes-
+prefixes:
 
 ~BOPP
 
@@ -3861,10 +3880,15 @@ command reference is split into two parts.
 >#COMMAND2.HLP:_cL:COPY OVERLAY BLOCK # # # # # #
 >#COMMAND2.HLP:_cQ:COPY BLOCK # # # # "@@filename" #
 >#COMMAND2.HLP:_cR:COPY OVERLAY BLOCK # # # # "@@filename" #
->#COMMAND2.HLP:_cS:COPY BLOCK "#x" "#y" # # "@@filename" m
->#COMMAND2.HLP:_cT:COPY OVERLAY BLOCK "#x" "#y" # # "@@filename" m
->#COMMAND2.HLP:_cU:COPY BLOCK # # # # "$stringX" #
->#COMMAND2.HLP:_cV:COPY OVERLAY BLOCK # # # # "$stringX" #
+>#COMMAND2.HLP:_cS:COPY (OVERLAY) BLOCK "#x" "#y" # # "@@filename" #
+>#COMMAND2.HLP:_cT:COPY BLOCK # # # # "$stringX" #
+>#COMMAND2.HLP:_cU:COPY OVERLAY BLOCK # # # # "$stringX" #
+>#COMMAND2.HLP:_cV:COPY (OVERLAY) BLOCK "#x" "#y" # # "$stringX" #
+>#COMMAND2.HLP:_cW:COPY BLOCK # # # # "#x" "#y"
+>#COMMAND2.HLP:_cX:COPY OVERLAY BLOCK # # # # "#x" "#y"
+>#COMMAND2.HLP:_cY:COPY BLOCK "#x" "#y" # # # #
+>#COMMAND2.HLP:_cZ:COPY OVERLAY BLOCK "#x" "#y" # # # #
+>#COMMAND2.HLP:_cAA:COPY (OVERLAY) BLOCK "#x1" "#y1" # # "#x2" "#y2"
 >_cM:COPYROBOT "Robot"
 >_cN:COPYROBOT # #
 >_cO:COPYROBOT [dir]
@@ -4128,7 +4152,8 @@ called "messaging" a Robot, and the label given is the
 as listed above respectively:
 
 1- State the target Robot's name. Use "ALL" to message all
-.  Robots.
+.  Robots, including the Robot which does the SEND "All"
+.  command.
 2- State the direction of target Robot.
 3- State the direction of target Robot, relative to the player.
 4- State the x/y coordinates of target Robot.
@@ -4328,18 +4353,18 @@ location can be given in one of three ways:
 
 :_m3:~AMOD "file"
 
-Load up the given module file as background music. The biggest
-difference between MOD and SAM commands is that for a file
-loaded with MOD one can use related commands like VOLUME and
-MOD ORDER; the music loops as well.
+Load up the given module/OGG file as background music. The
+biggest difference between MOD and SAM commands is that for a
+file loaded with MOD one can use related commands like VOLUME
+and MOD ORDER; the music loops as well.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
 
 :_s1:~ASAM # "file"
 
-Play the given SAM/WAV file at a given frequency. 0 is natural
-frequency. Music loaded as SAM will not loop.
+Play the given SAM/WAV/OGG file at a given frequency. 0 is
+natural frequency. Music loaded as SAM will not loop.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 
@@ -4347,8 +4372,8 @@ frequency. Music loaded as SAM will not loop.
 :_e4:~AEND SAM
 :_e3:~AEND PLAY
 
-Ends the playing of the current module, SAM/WAV, or PC speaker
-sound effects, respectively.
+Ends the playing of the current module/OGG music, SAM/WAV/OGG
+sound, or PC speaker sound effects (respectively).
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 
@@ -4376,11 +4401,11 @@ remainder of 1.
 :_p3:~APLAY SFX "string"
 :_w4:~AWAIT PLAY "string"
 
-These all play a series of PC speaker sound effects notes. PLAY
-SFX will only play if there are no other notes currently
-playing, while PLAY will add its notes to the end of the
-current sound effects queue. WAIT PLAY will wait until the
-queue is almost empty before adding its notes.
+These all play sound effects, PC speaker notes, or a
+combination thereof. PLAY SFX will only play if there are no
+other notes currently playing, while PLAY will add its notes to
+the end of the current sound effects queue. WAIT PLAY will wait
+until the queue is almost empty before adding its notes.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 
@@ -4781,6 +4806,8 @@ For example, JUMP MOD ORDER 3 will begin playing the fourth
 order in the module, which is the fourth section of the module.
 Sometimes your music editor will refer to this as 'Pattern' or
 'Track'.
+With OGG music, this command makes OGGs jump to the stated
+frame.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 
@@ -4825,9 +4852,9 @@ copy to start where the parent left off.
 
 Copies a block of things from one location on the board or
 overlay to another section. The first two numbers state the
-upper-left corner, the second two numbers state the size of
-the block, and the third two numbers state the destination
-block's upper-left corner.
+upper-left corner of the block to be copied, the second two
+numbers state the size of the block, and the third two numbers
+state the destination block's upper-left corner.
 
 COPY BLOCK and COPY OVERLAY BLOCK can copy from board to
 overlay and from overlay to board (respectively). The last two
@@ -4840,12 +4867,45 @@ This command can slow down the game if used too much.
 
 >#TOVERLAY.HLP:081:Editing and Using the Overlay
 
+:_cW:COPY BLOCK # # # # "#x" "#y"
+:_cX:COPY OVERLAY BLOCK # # # # "#x" "#y"
+
+These commands copy from the board or overlay (respectively) to
+the vlayer. The first two numbers are the [x,y] coordinates of
+the upper-left corner of the block to be copied; the next two
+numbers are the respective width and height of the block; the
+"#x" and "#y" are the [x,y] coordinates of the destination
+block's upper-left corner. The pound sign in "#x" and "#y" MUST
+be included.
+
+:_cY:COPY BLOCK "#x" "#y" # # # #
+:_cZ:COPY OVERLAY BLOCK "#x" "#y" # # # #
+
+These commands similarly copy from the vlayer to the board or
+overlay (respectively).
+
+>#TOVERLAY.HLP:081:Editing and Using the Overlay
+>#VLAYER.HLP:vla:The Vlayer and Its Uses
+
+:_cAA:COPY (OVERLAY) BLOCK "#x1" "#y1" # # "#x2" "#y2"
+
+This command copies a block from the vlayer and copies it onto
+a different spot on the vlayer. "#x1" and "#y1" are the [x,y]
+coordinates of the upper-left corner of the copied block; the
+next two numbers are the respective width and height of the
+copied area; "#x2" and "#y2" are the [x,y] cooridnates of the
+destination block's upper-left corner. The pound sign in #x1",
+"#y1", "#x2" and "#y2" MUST be included.
+
+>#VLAYER.HLP:vla:The Vlayer and Its Uses
+
 :_cQ:~ACOPY BLOCK # # # # "@@filename" #
 :_cR:~ACOPY OVERLAY BLOCK # # # # "@@filename" #
 
-The first two numbers are the [x,y] coordinates of the block's
-upper-left corner; # # is the respective length and width of
-the block; filename is the name of the file - the @@ is
+These commands copy from the board or overlay (respectively)
+to an MZM. The first two numbers are the [x,y] coordinates of
+the block's upper-left corner; # # is the respective length and
+width of the block; filename is the name of the file - the @@ is
 required. Finally, the last number determines the MZM type.
 1 saves as layer; 0 saves as board. 0 is integral for copying
 non-graphical data (primarily Robots); 1 is proper for copying
@@ -4855,26 +4915,25 @@ as it was when saved.
 >#MZM.HLP:mzm:Using MZMs
 >#TOVERLAY.HLP:081:Editing and Using the Overlay
 
-:_cS:~ACOPY BLOCK "#x" "#y" # # "@@filename" m
-:_cT:~ACOPY OVERLAY BLOCK "#x" "#y" # # "@@filename" m
+:_cS:~ACOPY (OVERLAY) BLOCK "#x" "#y" # # "@@filename" #
 
-X and Y are the coordinates of the block's upper-left corner
-(the hashes MUST be included); # # is the respective length and
-width of the block; filename is the name of the file (the @@ is
-required); finally, the m MUST exist.
+These commands act much like the above two commands, but they
+copy from the vlayer to an MZM instead.
 
+>#MZM.HLP:mzm:Using MZMs
 >#VLAYER.HLP:vla:The Vlayer and Its Uses
->#TOVERLAY.HLP:081:Editing and Using the Overlay
 
-:_cU:~ACOPY BLOCK # # # # "$stringX" #
-:_cV:~ACOPY OVERLAY BLOCK # # # # "$stringX" #
+:_cT:~ACOPY BLOCK # # # # "$stringX" #
+:_cU:~ACOPY OVERLAY BLOCK # # # # "$stringX" #
+:_cV:~ACOPY (OVERLAY) BLOCK "#x" "#y" # # "$stringX" #
 
-These commands copy information from the board or overlay,
-respectively, to a given string. The first two numbers are the
-[x,y] coordinates of the upper-left corner of the block; the
-third and fourth are its respective width and length; the last
-is the terminating character's char value (i.e. a number from
-0-255).
+These commands copy information from the board, overlay, or
+vlayer (respectively) to a given string. The first two numbers
+are the [x,y] coordinates of the upper-left corner of the
+block; the third and fourth are its respective width and
+length; the last is the terminating character's char value
+(i.e. a number from 0-255). For the vlayer command, the pound
+sign is REQUIRED.
 
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
 >#TOVERLAY.HLP:081:Editing and Using the Overlay
@@ -4999,24 +5058,25 @@ press ESC.
 
 :_m5:~AMOD FADE IN "file"
 
-Fades in the stated module file, from 0 volume to 255 volume.
+Fades in the stated module/OGG music file, from 0 volume to 255
+volume.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
 
 :_m6:~AMOD FADE OUT
 
-Fades out the current module file, from current volume to 0
-volume.
+Fades out the current module/OGG music file, from current
+volume to 0 volume.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 
 :_m4:~AMOD FADE # #
 
-Fades the current module file to a given volume at the given
-rate. The first number is the target volume, the second number
-is the speed at which to fade. All numbers over 255 will wrap
-around.
+Fades the current module/OGG music file to a given volume at
+the given rate. The first number is the target volume, the
+second number is the speed at which to fade. All numbers over
+255 will wrap around.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 
@@ -5045,14 +5105,17 @@ Changes the player's health limit, or maximum health rating.
 
 :_w2:~AWAIT MOD FADE
 
-Waits for the module to finish its fading. (see MOD FADE IN,
-MOD FADE OUT, and MOD FADE)
+Waits for the module/OGG music to finish its fading. (see MOD
+FADE IN, MOD FADE OUT, and MOD FADE)
 
 >#SOUNDEFX.HLP:1st:Sound and Music
+>#COMMAND2.HLP:_m5:~AMOD FADE IN "file"
+>#COMMAND2.HLP:_m6:~AMOD FADE OUT
+>#COMMAND2.HLP:_m4:~AMOD FADE # #
 
 :_w3:~AWAIT PLAY
 
-Waits for all queued PC speaker sound effects to finish playing.
+Waits for all queued sound effects to finish playing.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 
@@ -5100,9 +5163,9 @@ and is covered in another section.
 
 :_c6:~ACHANGE SFX # "string"
 
-The PC speaker sound effect referenced by the given number is
-changed to the new string. This is the same as editing sound
-effects with Alt+F in the world editor.
+The sound effect referenced by the given number is changed to
+the new string. This is the same as editing sound effects with
+Alt+F in the world editor.
 
 >#SOUNDEFX.HLP:1st:Sound and Music
 
@@ -5748,8 +5811,8 @@ effects.
 
 ~BPLAYERFACEDIR
 
-The direction the player is facing- 0 1 2 3 for N S E W. Used to
-determine which player character to display.
+The direction the player is facing - 0 1 2 3 for N S E W. Used
+to determine which player character to display.
 
 ~BPLAYERX (read-only)
 ~BPLAYERY (read-only)
@@ -5773,11 +5836,11 @@ player, in spaces.
 ~BTHISY (read-only, local)
 
 The current X or Y coordinate of the Robot. Affected by
-prefixes- If a command that uses THISX and THISY is prefaced
+prefixes - If a command that uses THISX and THISY is prefaced
 with a REL PLAYER command, THISX and THISY will be generated
 based on the player's current position. For example, if the
-player is at 2,2 and the Robot is at 5,5, THISX and THISY
-will be 3. If the player is at 8,8, THISX and THISY will be
+player is at [2,2] and the Robot is at [5,5], THISX and THISY
+will be 3. If the player is at [8,8], THISX and THISY will be
 -3. If a command that uses THISX and THISY is prefaced with
 a REL COUNTERS command, THISX and THISY will be generated
 based on XPOS and YPOS. Basically, THISX and THISY will be
@@ -5928,7 +5991,8 @@ currently playing mod.
 
 ~BMOD_FREQUENCY
 
-Controls the frequency (in Hz) of the currently playing module.
+Controls the frequency (in Hz) of the currently playing module/
+OGG music.
 
 >#SOUNDEFX.HLP:frq:SAM, OGG, MOD and WAV Frequencies
 
@@ -6051,9 +6115,9 @@ $Sprite Counters
 ~BSPR_CLISTn (read-only)
 
 A list of flagged collisions after a collision test was
-performed. Values of n from 0 to SPR_COLLISIONS - 1 are valid.
-If the background collided SPR_CLIST0 is always set to -1 to
-indicate this.
+performed. Values of n from 0 to (SPR_COLLISIONS - 1) are
+valid. If the background collided SPR_CLIST0 is always set to
+-1 to indicate this.
 
 ~BSPR_COLLISIONS (read-only)
 
@@ -7135,7 +7199,7 @@ subroutine can be called.
 
 Another way to think about it is a label with a placemarker.
 Going to this label marks your previous place; when done, the
-program goes straight to the placemarker and return where it
+program goes straight to the placemarker and returns where it
 left off.
 
 Subroutines are accessed by using the # sign as the first
@@ -7231,7 +7295,7 @@ Binary operators (value-argument-value):
  x  Bitwise XOR (not logical XOR)
 
 All of the either-or operators (i.e. "greater then" on down)
-output 1 for true and 0 for false.
+output a non-zero value for true and 0 for false.
 
 Unary operators (operator followed by value):
 
@@ -7804,6 +7868,99 @@ replace in the target character set.
 >#MAIN.HLP:072:Table of Contents
 #NEWINVER.HLP
 :1st:NEW in MegaZeux!
+
+January 19, 2007 - MZX 2.81e
+ 
++ Made grabbing in the editor not combine background color
+  - only uses "special" in game colors for player. tell me if
+  anything ends up being weird because of this.
++ Possibly fixed an obscure bug where moving something happened
+  immediately if it was sent to a label by a robot further
+  east/south than it and it moved north or west (has to do with
+  the way robots are reverse scanned). Tell me if this changed
+  any behavior for the worse and I'll change it back or try to
+  work out something new.
++ Added GDMs to ctrl + n; this will, of course, auto convert
+  and play the s3m.
++ Added ability to preset player locked status from board
+  settings.
++ Instead added ability to debug variables (counters and
+  strings) ingame with F11. There's also an option to export
+  the current variables to Robotic program that sets them.
++ Fixed bug where moving a block with the player into an
+  overlapping region leaves a space where the player was.
++ Fixed bug with a robot indirectly sending itself to a
+  subroutine via send all or send name causing it to loop the
+  send.
++ Added compatability hacks for key# prior to MZX 2.69 worlds
+  and ridNAME falling through in MZX 2.70 and earlier worlds.
++ F6, F7, F8, and F11 debug/cheat keys only work in editing
+  mode now (as things were prior to the port) You can still
+  save/load in the editor so if you want all of these things
+  you can play the game from the start there.
++ Space in the editor no longer deletes something of similar
+  type that is beneath; not sure what the point of this was
+  anyway.
++ Fixed bug causing cursor to clipped be out of bounds in SMZX
+  char editor if changing to smaller multichar edit region.
++ Accidentally messed up screen centering in fullscreen for
+  32bpp mode, fixed.
++ Added hardware scaling option. You can now supply a window
+  resolution besides 640x350 and allow for window resizing if
+  hardware scaling is on; this will also scale fullscreen
+  output to fill the entire screen. This can slow down
+  rendering somewhat.
++ Fixed bug causing flip block to crash in the editor.
++ Made blocked directions relative to the player for put dir
+  player.
++ Fixed bug where putting something to a direction relative the
+  player overwriting the robot could crash MZX.
++ Fixed ability to input in input boxes by clicking on their
+  question string.
++ Removed the bogus patch to Modplug and correctly fixed it in
+  the build system.
++ Added 'debian' subdirectory for building Debian and Ubuntu
+  upstream packages. Hopefully MegaZeux will be in the primary
+  pool in a few months.
++ Added OS X xcode project files (see 'macosx.zip'). Fixed many
+  bugs relating to endian that caused MegaZeux to be buggy on
+  big-endian architectures (like PPC). Credit goes to Quantum P
+  for finding these bugs and engineering high quality
+  solutions.
++ Made 'directx' the default video render again on Windows.
+  NOTE: This overrides the default SDL behaviour, but will not
+  be applied if you set SDL_VIDEODRIVER yourself.
++ Repaired the 'linux-static' target so that it no longer
+  includes a system C++ library, which caused unpredictable
+  results on distros without a static version.
++ Fixed a locking bug with the audio code that caused hangs at
+  startup on OS X. Also provided a mutex implementation using
+  GNU pthreads as a temporary workaround for an SDL bug on the
+  Linux platform.
++ Added PlayStation Portable (PSP) port. This code was written
+  by Exophase and is highly experimental. It may not work at
+  all for you. Please see docs/build.txt for more information
+  regarding this port.
++ Fixed mouse movement from being affected by height_multiplier
+  when not in fullscreen mode.
++ Fixed height_multiplier config.txt option allowing you to
+  enter really stupid values (like negatives, 0, and values too
+  large for the resolution).
++ Added in an extra video mode check to stop MZX from crashing
+  on video modes that the video card can not reproduce.
++ Fixed Avalanche to a constant placement rate of 1/18 (this
+  caused MZX to deliver an uneven number of boulders, and to
+  crash with certain board sizes).
++ Fixed sprite collision box to stop MZX from crashing when
+  stupid values are entered
++ Fixed setting the viewport size to weird values like some old
+  MZX games do.
++ Default fullscreen resolution is now 640x480; this can be
+  changed in config.txt .
++ The config.txt option force_32bpp is now enabled by default.
++ Seeking with mod_position when using a .WAV file as
+  background music fixed (thanks Mr_Alert).
+- Removed ability to change SMZX mode ingame (F11).
 
 December 10, 2006 - MZX 2.81d
 
