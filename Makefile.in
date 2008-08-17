@@ -1,17 +1,21 @@
 #
 # used by all makefiles
 #
-CC        = gcc
-CXX       = g++
-AR        = ar
+CC       ?= gcc
+CXX      ?= g++
+AR       ?= ar
 
 # path to gdm2s3m sources
 GDM2S3M   = contrib/gdm2s3m/src
 MODPLUG   = contrib/libmodplug/src
 
 # default target name
-TARGET    = mzx281e
-VERSION   = 2.81e
+TARGET   ?= mzx281e
+VERSION  ?= 2.81e
+
+# base includes for SDL, override as necessary
+INCLUDES ?= `sdl-config --cflags`
+LIBS     ?= `sdl-config --libs`
 
 ifneq ("${DATE}", "0")
 VERSTRING = ${VERSION}\ \(`date +%Y%m%d`\)

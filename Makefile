@@ -24,6 +24,6 @@ dclean:
 	cd contrib/gdm2s3m/src    && ${MAKE} dclean && cd ../../..
 	cd src                    && ${MAKE} dclean && cd ..
 
-distclean: clean
+distclean: clean dclean
 	rm -f src/config.h
 	cp -f arch/Makefile.dist Makefile.platform
