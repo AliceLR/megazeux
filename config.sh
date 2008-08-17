@@ -69,11 +69,27 @@ if [ "$ARCH" = "linux" -o "$ARCH" = "psp" ]; then
 fi
 
 if [ "$ARCH" != "win32" -a "$ARCH" != "psp" ]; then
-	# try to run X
-	X -version >/dev/null 2>&1
+	# default, enable X support
+	X11="true"
 
-	# X queried successfully
-	if [ "$?" = "0" ]; then
+	# attempt auto-detection
+	if [ "$4" = "" ]; then
+		# try to run X
+		X -version >/dev/null 2>&1
+
+		# X queried successfully
+		if [ "$?" != "0" ]; then
+			X11="false"
+		fi
+	fi
+
+	# don't autodetect, force off
+	if [ "$4" = "-nox11" ]; then
+		X11="false"
+	fi
+
+	# asked for X11?
+	if [ "$X11" = "true" ]; then
 		# enable the C++ bits
 		echo "#define CONFIG_X11" >> src/config.h
 
@@ -88,3 +104,4 @@ if [ "$ARCH" != "win32" -a "$ARCH" != "psp" ]; then
 fi
 
 echo "All done!"
+

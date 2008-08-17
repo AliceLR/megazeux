@@ -2,6 +2,19 @@
 
 all:
 	@echo "Please run config.sh before make!"
-	@echo "usage: ./config.sh <linux|win32|macos> <prefix> <sysconfdir>"
-	@echo " e.g.: ./config.sh linux /usr /etc"
-	@echo " e.g.: ./config.sh win32"
+	@echo "usage: ./config.sh [platform] <prefix> <sysconfdir> <option..>"
+	@echo
+	@echo "Supported <platform> values:"
+	@echo
+	@echo "  win32          Microsoft Windows"
+	@echo "  linux          Linux"
+	@echo "  macos          Macintosh OS X (not Classic)"
+	@echo "  linux-static   Linux (statically linked)"
+	@echo
+	@echo "Supported <option> values:"
+	@echo "  -nox11         Disables X11, removing binary dependency."
+	@echo "  -x11           Forces X11 support, even if 'X' isn't found."
+	@echo
+	@echo "e.g.: ./config.sh linux /usr /etc -nox11"
+	@echo "e.g.: ./config.sh win32"
+	@echo
