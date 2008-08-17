@@ -10,7 +10,7 @@ STRIP    = strip --strip-unneeded
 
 # standard libraries
 LIBS    += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-            -L${PREFIX}/lib -lvorbisfile -lvorbis -logg -lGL
+            -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
 
 # linux os specific install target
 install:

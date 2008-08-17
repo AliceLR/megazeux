@@ -24,8 +24,6 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#include "SDL.h"
-#include "SDL_opengl.h"
 #include "graphics.h"
 #include "delay.h"
 #include "world.h"
@@ -44,6 +42,52 @@
 #define SMZX_PAL        SHAREDIR "smzx.pal"
 
 graphics_data graphics;
+
+static gl_syms gl;
+
+/* Here go the the loading of symbols from the shared object, that we care
+ * about. It's unfortunate we can't recycle the function prototypes from GL.h,
+ * but these are copied directly from it. If you want to access a GL function,
+ * add it to the list here and then call gl->FunctionName, instead of calling
+ * the function directly.
+ */
+static void load_gl_syms(gl_syms *gl)
+{
+  gl->glBegin = (void (APIENTRY *)(GLenum mode))
+   SDL_GL_GetProcAddress("glBegin");
+
+  gl->glBindTexture = (void (APIENTRY *)(GLenum target, GLuint texture))
+   SDL_GL_GetProcAddress("glBindTexture");
+
+  gl->glEnable = (void (APIENTRY *)(GLenum cap))
+   SDL_GL_GetProcAddress("glEnable");
+
+  gl->glEnd = (void (APIENTRY *)(void))
+   SDL_GL_GetProcAddress("glEnd");
+
+  gl->glGenTextures = (void (APIENTRY *)(GLsizei n, GLuint *textures))
+   SDL_GL_GetProcAddress("glGenTextures");
+
+  gl->glGetString = (GLubyte *(APIENTRY *)(GLenum name))
+   SDL_GL_GetProcAddress("glGetString");
+
+  gl->glTexCoord2f = (void (APIENTRY *)(GLfloat s, GLfloat t))
+   SDL_GL_GetProcAddress("glTexCoord2f");
+
+  gl->glTexImage2D = (void (APIENTRY *)(GLenum target, GLint level,
+                                        GLint internalformat, GLsizei width,
+                                        GLsizei height, GLint border,
+                                        GLenum format, GLenum type,
+                                        const GLvoid *pixels))
+   SDL_GL_GetProcAddress("glTexImage2D");
+
+  gl->glTexParameteri = (void (APIENTRY *)(GLenum target, GLenum pname,
+                                           GLint param))
+   SDL_GL_GetProcAddress("glTexParameteri");
+
+  gl->glVertex3f = (void (APIENTRY *)(GLfloat x, GLfloat y, GLfloat z))
+   SDL_GL_GetProcAddress("glVertex3f");
+}
 
 SDL_Color default_pal[16] =
 {
@@ -65,7 +109,7 @@ SDL_Color default_pal[16] =
   { 255, 255, 255 }
 };
 
-void init_video(config_info *conf)
+void init_video(config_info *conf, int gl_enabled)
 {
   char temp[64];
 
@@ -82,6 +126,13 @@ void init_video(config_info *conf)
   graphics.hardware_stretch = conf->hardware_stretch;
   graphics.allow_resize = conf->allow_resize;
 
+  if (gl_enabled)
+    load_gl_syms(&gl);
+  else {
+    // no platform GL support, so don't alow stretching
+    graphics.hardware_stretch = 0;
+  }
+
   if(conf->force_32bpp || graphics.hardware_stretch)
     graphics.bits_per_pixel = 32;
   else
@@ -92,7 +143,7 @@ void init_video(config_info *conf)
   if(graphics.hardware_stretch)
   {
     int internal_width, internal_height;
-    const char *extensions = (const char *)glGetString(GL_EXTENSIONS);
+    const char *extensions = (const char *)gl.glGetString(GL_EXTENSIONS);
 
     if(extensions &&
      strstr(extensions, "GL_ARB_texture_non_power_of_two"))
@@ -170,13 +221,13 @@ void set_video_mode()
     SDL_GL_SetAttribute(SDL_GL_BLUE_SIZE, 8);
     SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-    glEnable(GL_TEXTURE_2D);
+    gl.glEnable(GL_TEXTURE_2D);
 
-    glGenTextures(1, &texture_number);
-    glBindTexture(GL_TEXTURE_2D, texture_number);
+    gl.glGenTextures(1, &texture_number);
+    gl.glBindTexture(GL_TEXTURE_2D, texture_number);
 
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-    glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+    gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
+    gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
   }
   else
   {
@@ -1392,22 +1443,22 @@ void update_screen()
     texture_width = (float)640 / graphics.screen->w;
     texture_height = (float)350 / graphics.screen->h;
 
-    glTexImage2D(GL_TEXTURE_2D, 0, 3, graphics.screen->w, graphics.screen->h,
+    gl.glTexImage2D(GL_TEXTURE_2D, 0, 3, graphics.screen->w, graphics.screen->h,
      0, GL_BGRA, GL_UNSIGNED_BYTE, graphics.screen->pixels);
 
-    glBegin(GL_QUADS);
-      glTexCoord2f(0.0, texture_height);
-      glVertex3f(-1.0, -1.0, 0.0);
+    gl.glBegin(GL_QUADS);
+      gl.glTexCoord2f(0.0, texture_height);
+      gl.glVertex3f(-1.0, -1.0, 0.0);
 
-      glTexCoord2f(texture_width, texture_height);
-      glVertex3f(1.0, -1.0, 0.0);
+      gl.glTexCoord2f(texture_width, texture_height);
+      gl.glVertex3f(1.0, -1.0, 0.0);
 
-      glTexCoord2f(texture_width, 0.0);
-      glVertex3f(1.0, 1.0, 0.0);
+      gl.glTexCoord2f(texture_width, 0.0);
+      gl.glVertex3f(1.0, 1.0, 0.0);
 
-      glTexCoord2f(0.0, 0.0);
-      glVertex3f(-1.0, 1.0, 0.0);
-    glEnd();
+      gl.glTexCoord2f(0.0, 0.0);
+      gl.glVertex3f(-1.0, 1.0, 0.0);
+    gl.glEnd();
 
     SDL_GL_SwapBuffers();
   }

@@ -17,8 +17,30 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#ifndef __GRAPHICS_H
+#define __GRAPHICS_H
+
 #include "SDL.h"
+#include "SDL_opengl.h"
+#include "SDL_loadso.h"
 #include "configure.h"
+
+typedef struct
+{
+  void (APIENTRY *glBegin)(GLenum mode);
+  void (APIENTRY *glBindTexture)(GLenum target, GLuint texture);
+  void (APIENTRY *glEnable)(GLenum cap);
+  void (APIENTRY *glEnd)(void);
+  void (APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
+  GLubyte* (APIENTRY *glGetString)(GLenum name);
+  void (APIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
+  void (APIENTRY *glTexImage2D)(GLenum target, GLint level,
+                                GLint internalformat, GLsizei width,
+                                GLsizei height, GLint border, GLenum format,
+                                GLenum type, const GLvoid *pixels);
+  void (APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
+  void (APIENTRY *glVertex3f)(GLfloat x, GLfloat y, GLfloat z);
+} gl_syms;
 
 typedef enum
 {
@@ -126,7 +148,7 @@ void move_cursor(Uint32 x, Uint32 y);
 void set_cursor_mode(cursor_mode_types mode);
 cursor_mode_types get_cursor_mode();
 
-void init_video(config_info *conf);
+void init_video(config_info *conf, int gl_enable);
 void set_video_mode();
 void toggle_fullscreen();
 void resize_screen(Uint32 w, Uint32 h);
@@ -192,3 +214,4 @@ void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y);
 void set_mouse_mul(int width_mul, int height_mul);
 
+#endif // __GRAPHICS_H
