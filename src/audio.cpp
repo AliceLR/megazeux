@@ -214,6 +214,16 @@ case num:                                                               \
   SETUP_MIXER(type, (num * 4) + 2, VOL)                                 \
   SETUP_MIXER_MONO(type, (num * 4) + 3, VOL)                            \
 
+// ov_read() documentation states the 'bigendianp' argument..
+//   "Specifies big or little endian byte packing.
+//   0 for little endian, 1 for big endian. Typical value is 0."
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+static const int ENDIAN_PACKING = 1;
+#else
+static const int ENDIAN_PACKING = 0;
+#endif
+
 void sampled_negative_threshold(sampled_stream *s_src)
 {
   Sint32 negative_threshold =
@@ -441,7 +451,7 @@ Uint32 vorbis_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
 #else
     read_len =
      ov_read(&(v_stream->vorbis_file_handle), read_buffer,
-     read_wanted, 0, 2, 1, &current_section);
+     read_wanted, ENDIAN_PACKING, 2, 1, &current_section);
 #endif
 
     // If it hit the end go back to the beginning if repeat is on
@@ -461,7 +471,7 @@ Uint32 vorbis_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
 #else
           read_len =
            ov_read(&(v_stream->vorbis_file_handle), read_buffer,
-           read_wanted, 0, 2, 1, &current_section);
+           read_wanted, ENDIAN_PACKING, 2, 1, &current_section);
 #endif
         }
       }
@@ -520,6 +530,7 @@ Uint32 vorbis_get_frequency(sampled_stream *s_src)
 
 Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len)
 {
+  Uint8 *src = (Uint8 *)w_stream->wav_data + w_stream->data_offset;
   Uint32 data_read;
   Uint32 read_len = len;
   Uint32 i;
@@ -528,8 +539,6 @@ Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len)
   {
     case AUDIO_U8:
     {
-      Uint8 *src =
-       (Uint8 *)w_stream->wav_data + w_stream->data_offset;
       Sint16 *dest = (Sint16 *)buffer;
 
       read_len /= 2;
@@ -549,11 +558,22 @@ Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len)
 
     default:
     {
+      Uint8 *dest = (Uint8 *) buffer;
+
       if(w_stream->data_offset + read_len > w_stream->data_length)
         read_len = w_stream->data_length - w_stream->data_offset;
 
-      memcpy(buffer, w_stream->wav_data + w_stream->data_offset,
-       read_len);
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+      // swap bytes on big endian machines
+      for (i = 0; i < read_len; i += 2)
+      {
+        dest[i] = src[i + 1];
+        dest[i + 1] = src[i];
+      }
+#else
+      // no swap necessary on little endian machines
+      memcpy(dest, src, read_len);
+#endif
 
       data_read = read_len;
 

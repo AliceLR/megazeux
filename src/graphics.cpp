@@ -768,11 +768,11 @@ void update_screen8()
         char_colors[8] = (cb_fb << 16) | cb_bb;
         char_colors[9] = (cb_fb << 16) | cb_bf;
         char_colors[10] = (cb_fb << 16) | cb_fb;
-        char_colors[11] = (cb_fb << 16) | cb_bb;
+        char_colors[11] = (cb_fb << 16) | cb_ff;
         char_colors[12] = (cb_ff << 16) | cb_bb;
         char_colors[13] = (cb_ff << 16) | cb_bf;
         char_colors[14] = (cb_ff << 16) | cb_fb;
-        char_colors[15] = (cb_ff << 16) | cb_bf;
+        char_colors[15] = (cb_ff << 16) | cb_ff;
 #else
         char_colors[0] = (cb_bb << 16) | cb_bb;
         char_colors[1] = (cb_bf << 16) | cb_bb;

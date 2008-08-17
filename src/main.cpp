@@ -118,9 +118,17 @@ extern "C"
     mzx_world.default_speed = mzx_world.mzx_speed;
 
     memcpy(macros, mzx_world.conf.default_macros, 5 * 64);
-    // Random seed..
 
+    // Random seed..
     srand(time(NULL));
+
+#if defined(__MACOSX__)
+    // In Mac OS X, applications are packages, or folders that
+    // look like single files. This code gets the user out of
+    // the bundle and into a directory he/she will recognize.
+    chdir("../../..");
+    getcwd(current_dir, MAX_PATH);
+#endif
 
     // Run main game (mouse is hidden and palette is faded)
     title_screen(&mzx_world);
