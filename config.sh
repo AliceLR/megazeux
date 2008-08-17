@@ -39,9 +39,9 @@ else
 	SYSCONFDIR=$3
 fi
 
-echo                    >> Makefile.platform
-echo "# install prefix" >> Makefile.platform
-echo "PREFIX=$PREFIX"   >> Makefile.platform
+echo                       >> Makefile.platform
+echo "# config time stuff" >> Makefile.platform
+echo "PREFIX=$PREFIX"      >> Makefile.platform
 
 echo "#define CONFDIR  \"$SYSCONFDIR/\"" > src/config.h
 
@@ -74,7 +74,16 @@ if [ "$ARCH" != "win32" -a "$ARCH" != "psp" ]; then
 
 	# X queried successfully
 	if [ "$?" = "0" ]; then
+		# enable the C++ bits
 		echo "#define CONFIG_X11" >> src/config.h
+
+		# figure out where X11 is prefixed
+		X11=`which X`
+		X11DIR=`dirname $X11`
+		X11LIB="$X11DIR/../lib"
+
+		# add a flag for linking against X11
+		echo "LIBS+=-L$X11LIB -lX11" >> Makefile.platform
 	fi
 fi
 
