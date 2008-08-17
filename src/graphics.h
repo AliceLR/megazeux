@@ -71,6 +71,7 @@ typedef struct
   Uint32 cursor_timestamp;
   Uint32 cursor_flipflop;
   Uint32 default_smzx_loaded;
+  char *gl_filter_method;
 
   Uint8 default_charset[14 * 256];
   Uint8 blank_charset[14 * 256];
@@ -81,7 +82,7 @@ typedef struct
 
   int  (*init_video)       (config_info*);
   int  (*check_video_mode) (int, int, int, int);
-  void (*set_video_mode)   (int, int, int, int, int);
+  int  (*set_video_mode)   (int, int, int, int, int);
   void (*update_screen)    (void);
   void (*update_colors)    (SDL_Color *, Uint32);
 } graphics_data;
@@ -136,10 +137,10 @@ void set_cursor_mode(cursor_mode_types mode);
 cursor_mode_types get_cursor_mode();
 
 void init_video(config_info *conf);
-void set_video_mode();
-void toggle_fullscreen();
+int set_video_mode(void);
+void toggle_fullscreen(void);
 void resize_screen(Uint32 w, Uint32 h);
-void update_screen();
+void update_screen(void);
 void set_screen(char_element *src);
 void get_screen(char_element *dest);
 

@@ -770,9 +770,7 @@ static int soft_init_video(config_info *conf)
   else
     graphics.bits_per_pixel = 8;
 
-  set_video_mode();
-
-  return 1;
+  return set_video_mode();
 }
 
 static int soft_check_video_mode(int width, int height, int depth, int flags)
@@ -780,10 +778,11 @@ static int soft_check_video_mode(int width, int height, int depth, int flags)
   return SDL_VideoModeOK(width, height, depth, flags);
 }
 
-static void soft_set_video_mode(int width, int height, int depth, int flags,
+static int soft_set_video_mode(int width, int height, int depth, int flags,
                                 int fullscreen)
 {
   graphics.screen = SDL_SetVideoMode(width, height, depth, flags);
+  return graphics.screen != NULL;
 }
 
 static void soft_update_screen(void)
@@ -845,18 +844,43 @@ static void soft_update_colors(SDL_Color *palette, Uint32 count)
 typedef struct
 {
   void (APIENTRY *glBegin)(GLenum mode);
+  void (APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
   void (APIENTRY *glBindTexture)(GLenum target, GLuint texture);
+  void (APIENTRY *glClear)(GLbitfield mask);
+  void (APIENTRY *glColor3ubv)(const GLubyte *v) ;
+  void (APIENTRY *glColor4f)(GLfloat red, GLfloat green, GLfloat blue,
+                             GLfloat alpha);
+  void (APIENTRY *glColor4ub)(GLubyte red, GLubyte green, GLubyte blue,
+                              GLubyte alpha);
+  void (APIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
+                                    GLenum internalFormat, GLint x, GLint y,
+                                    GLsizei width, GLsizei height,
+                                    GLint border);
+  void (APIENTRY *glDisable)(GLenum cap);
   void (APIENTRY *glEnable)(GLenum cap);
   void (APIENTRY *glEnd)(void);
+  void (APIENTRY *glFrustum)(GLdouble left, GLdouble right, GLdouble bottom,
+                             GLdouble top, GLdouble near, GLdouble far);
   void (APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
   GLubyte* (APIENTRY *glGetString)(GLenum name);
+  void (APIENTRY *glLoadIdentity)(void);
+  void (APIENTRY *glMatrixMode)(GLenum mode);
+  void (APIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
+  void (APIENTRY *glPushMatrix)(void);
   void (APIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
+  void (APIENTRY *glTexEnvf)(GLenum target, GLenum pname, GLfloat param);
   void (APIENTRY *glTexImage2D)(GLenum target, GLint level,
                                 GLint internalformat, GLsizei width,
                                 GLsizei height, GLint border, GLenum format,
                                 GLenum type, const GLvoid *pixels);
+  void (APIENTRY *glTexSubImage2D)(GLenum target, GLint level, GLint xoffset,
+                                   GLint yoffset, GLsizei width, GLsizei height,
+                                   GLenum format, GLenum type,
+                                   const GLvoid *pixels);
+  void (APIENTRY *glTranslatef)(GLfloat x, GLfloat y, GLfloat z);
   void (APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
   void (APIENTRY *glVertex3f)(GLfloat x, GLfloat y, GLfloat z);
+  void (APIENTRY *glVertex3i)(GLint x, GLint y, GLint z);
   void (APIENTRY *glViewport)(GLint x, GLint y, GLsizei width,
                               GLsizei height);
 } gl_syms;
@@ -869,59 +893,222 @@ static gl_syms gl;
  * add it to the list here and then call gl.FunctionName, instead of calling
  * the function directly.
  */
-static void load_gl_syms(void)
+static int load_gl_syms(void)
 {
+  // Since 1.0
   gl.glBegin = (void (APIENTRY *)(GLenum mode))
    SDL_GL_GetProcAddress("glBegin");
+  if (!gl.glBegin)
+    return false;
 
+  // Since 1.1
   gl.glBindTexture = (void (APIENTRY *)(GLenum target, GLuint texture))
    SDL_GL_GetProcAddress("glBindTexture");
+  if (!gl.glBindTexture)
+    return false;
 
+  // Since 1.0
+  gl.glBlendFunc = (void (APIENTRY *)(GLenum sfactor, GLenum dfactor))
+   SDL_GL_GetProcAddress("glBlendFunc");
+  if (!gl.glBlendFunc)
+    return false;
+
+  // Since 1.0
+  gl.glClear = (void (APIENTRY *)(GLbitfield mask))
+   SDL_GL_GetProcAddress("glClear");
+  if (!gl.glClear)
+    return false;
+
+  // Since 1.0
+  gl.glColor3ubv = (void (APIENTRY *)(const GLubyte *v))
+   SDL_GL_GetProcAddress("glColor3ubv");
+  if (!gl.glColor3ubv)
+    return false;
+
+  // Since 1.0
+  gl.glColor4f = (void (APIENTRY *)(GLfloat red, GLfloat green, GLfloat blue,
+                                     GLfloat alpha))
+   SDL_GL_GetProcAddress("glColor4f");
+  if (!gl.glColor4f)
+    return false;
+
+  // Since 1.0
+  gl.glColor4ub = (void (APIENTRY *)(GLubyte red, GLubyte green, GLubyte blue,
+                                      GLubyte alpha))
+   SDL_GL_GetProcAddress("glColor4ub");
+  if (!gl.glColor4ub)
+    return false;
+
+  // Since 1.1
+  gl.glCopyTexImage2D = (void (APIENTRY *)(GLenum target, GLint level,
+                                            GLenum internalFormat, GLint x,
+                                            GLint y, GLsizei width,
+                                            GLsizei height, GLint border))
+   SDL_GL_GetProcAddress("glCopyTexImage2D");
+  if (!gl.glCopyTexImage2D)
+    return false;
+
+  // Since 1.0 (parameters may require more recent version)
+  gl.glDisable = (void (APIENTRY *)(GLenum cap))
+   SDL_GL_GetProcAddress("glDisable");
+  if (!gl.glDisable)
+    return false;
+
+  // Since 1.0 (parameters may require more recent version)
   gl.glEnable = (void (APIENTRY *)(GLenum cap))
    SDL_GL_GetProcAddress("glEnable");
+  if (!gl.glEnable)
+    return false;
 
+  // Since 1.0
   gl.glEnd = (void (APIENTRY *)(void))
    SDL_GL_GetProcAddress("glEnd");
+  if (!gl.glEnd)
+    return false;
 
+  // Since 1.0
+  gl.glFrustum = (void (APIENTRY *)(GLdouble left, GLdouble right,
+                                     GLdouble bottom, GLdouble top,
+                                     GLdouble near, GLdouble far))
+   SDL_GL_GetProcAddress("glFrustum");
+  if (!gl.glFrustum)
+    return false;
+
+  // Since 1.1
   gl.glGenTextures = (void (APIENTRY *)(GLsizei n, GLuint *textures))
    SDL_GL_GetProcAddress("glGenTextures");
+  if (!gl.glGenTextures)
+    return false;
 
+  // Since 1.0
   gl.glGetString = (GLubyte *(APIENTRY *)(GLenum name))
    SDL_GL_GetProcAddress("glGetString");
+  if (!gl.glGetString)
+    return false;
 
+  // Since 1.0
+  gl.glLoadIdentity = (void (APIENTRY *)(void))
+   SDL_GL_GetProcAddress("glLoadIdentity");
+  if (!gl.glLoadIdentity)
+    return false;
+
+  // Since 1.0
+  gl.glMatrixMode = (void (APIENTRY *)(GLenum mode))
+   SDL_GL_GetProcAddress("glMatrixMode");
+  if (!gl.glMatrixMode)
+    return false;
+
+  // Since 1.0
+  gl.glPushMatrix = (void (APIENTRY *)())
+   SDL_GL_GetProcAddress("glPushMatrix");
+  if (!gl.glPushMatrix)
+    return false;
+
+  // Since 1.0
   gl.glTexCoord2f = (void (APIENTRY *)(GLfloat s, GLfloat t))
    SDL_GL_GetProcAddress("glTexCoord2f");
+  if (!gl.glTexCoord2f)
+    return false;
 
+  // Since 1.0 (parameters may require more recent version)
+  gl.glTexEnvf = (void (APIENTRY *)(GLenum target, GLenum pname,
+                                     GLfloat param))
+   SDL_GL_GetProcAddress("glTexEnvf");
+  if (!gl.glTexEnvf)
+    return false;
+
+  // Since 1.0 (parameters may require more recent version)
   gl.glTexImage2D = (void (APIENTRY *)(GLenum target, GLint level,
-                                        GLint internalformat, GLsizei width,
-                                        GLsizei height, GLint border,
-                                        GLenum format, GLenum type,
-                                        const GLvoid *pixels))
+                                       GLint internalformat, GLsizei width,
+                                       GLsizei height, GLint border,
+                                       GLenum format, GLenum type,
+                                       const GLvoid *pixels))
    SDL_GL_GetProcAddress("glTexImage2D");
+  if (!gl.glTexImage2D)
+    return false;
 
+  // Since 1.0
+  gl.glTexParameterf = (void (APIENTRY *)(GLenum target, GLenum pname,
+                                           GLfloat param))
+   SDL_GL_GetProcAddress("glTexParameterf");
+  if (!gl.glTexParameterf)
+    return false;
+
+  // Since 1.0
   gl.glTexParameteri = (void (APIENTRY *)(GLenum target, GLenum pname,
                                            GLint param))
    SDL_GL_GetProcAddress("glTexParameteri");
+  if (!gl.glTexParameteri)
+    return false;
 
+  // Since 1.1
+  gl.glTexSubImage2D = (void (APIENTRY *)(GLenum target, GLint level,
+                                           GLint xoffset, GLint yoffset,
+                                           GLsizei width, GLsizei height,
+                                           GLenum format, GLenum type,
+                                           const GLvoid *pixels))
+   SDL_GL_GetProcAddress("glTexSubImage2D");
+  if (!gl.glTexSubImage2D)
+    return false;
+
+  // Since 1.0
+  gl.glTranslatef = (void (APIENTRY *)(GLfloat x, GLfloat y, GLfloat z))
+   SDL_GL_GetProcAddress("glTranslatef");
+  if (!gl.glTranslatef)
+    return false;
+
+  // Since 1.0
   gl.glVertex3f = (void (APIENTRY *)(GLfloat x, GLfloat y, GLfloat z))
    SDL_GL_GetProcAddress("glVertex3f");
+  if (!gl.glVertex3f)
+    return false;
 
+  // Since 1.0
+  gl.glVertex3i = (void (APIENTRY *)(GLint x, GLint y, GLint z))
+   SDL_GL_GetProcAddress("glVertex3i");
+  if (!gl.glVertex3i)
+    return false;
+
+  // Since 1.0
   gl.glViewport = (void (APIENTRY *)(GLint x, GLint y, GLsizei width,
                                       GLsizei height))
    SDL_GL_GetProcAddress("glViewport");
+  if (!gl.glViewport)
+    return false;
+
+#ifdef DEBUG
+  fprintf(stdout, "Loaded OpenGL symbol table successfully.\n");
+#endif
+
+  // all loaded fine
+  return true;
 }
 
 static int gl_init_video(config_info *conf)
 {
   int internal_width, internal_height;
-  const char *extensions;
 
   graphics.allow_resize = conf->allow_resize;
+  graphics.gl_filter_method = conf->gl_filter_method;
 
-  load_gl_syms();
-  set_video_mode();
+  if (!load_gl_syms())
+    return false;
 
-  extensions = (const char *)gl.glGetString(GL_EXTENSIONS);
+  if (!set_video_mode())
+    return false;
+
+  // NOTE: These must come AFTER set_video_mode()!
+  const char *version = (const char *)gl.glGetString(GL_VERSION);
+  const char *extensions = (const char *)gl.glGetString(GL_EXTENSIONS);
+
+  // we need a specific "version" of OpenGL compatibility
+  if (atof(version) < 1.2)
+  {
+    fprintf(stderr, "Your OpenGL implementation is too old (need v1.2).\n");
+    return false;
+  }
+
+  // we also might be able to utilise an extension
   if (extensions && strstr(extensions, "GL_ARB_texture_non_power_of_two"))
   {
     internal_width = GL_NON_POWER_2_WIDTH;
@@ -936,7 +1123,7 @@ static int gl_init_video(config_info *conf)
   graphics.screen = SDL_CreateRGBSurface(SDL_SWSURFACE, internal_width,
    internal_height, 32, 0, 0, 0, 0);
 
-  return 1;
+  return true;
 }
 
 static int gl_check_video_mode(int width, int height, int depth, int flags)
@@ -944,17 +1131,22 @@ static int gl_check_video_mode(int width, int height, int depth, int flags)
   return SDL_VideoModeOK(width, height, 32, flags | SDL_OPENGL);
 }
 
-static void gl_set_video_mode(int width, int height, int depth, int flags,
-                              int fullscreen)
+static int gl_set_video_mode(int width, int height, int depth, int flags,
+                             int fullscreen)
 {
-  GLuint texture_number;
+  GLint gl_filter_method = GL_LINEAR;
   int new_flags = SDL_OPENGL;
+  GLuint texture_number;
 
   // filter out meaningless flags, just in case SDL is doing something silly
   if (flags & SDL_FULLSCREEN)
     new_flags |= SDL_FULLSCREEN;
+  if (flags & SDL_RESIZABLE)
+    new_flags |= SDL_RESIZABLE;
 
-  SDL_SetVideoMode(width, height, 32, new_flags);
+  if (!SDL_SetVideoMode(width, height, 32, new_flags))
+    return false;
+
   gl.glViewport(0, 0, width, height);
 
   gl.glEnable(GL_TEXTURE_2D);
@@ -962,8 +1154,13 @@ static void gl_set_video_mode(int width, int height, int depth, int flags,
   gl.glGenTextures(1, &texture_number);
   gl.glBindTexture(GL_TEXTURE_2D, texture_number);
 
-  gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR);
-  gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR);
+  if (!strcmp(graphics.gl_filter_method, "nearest"))
+    gl_filter_method = GL_NEAREST;
+
+  gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_method);
+  gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_method);
+
+  return true;
 }
 
 static void gl_update_screen(void)
@@ -1275,11 +1472,14 @@ void update_screen_yuv(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h,
   // Line multiplier would go here
 }
 
-static void yuv_set_video_mode_size(int width, int height, int depth, int flags,
-                                    int fullscreen, int yuv_width,
-                                    int yuv_height)
+static int yuv_set_video_mode_size(int width, int height, int depth, int flags,
+                                   int fullscreen, int yuv_width,
+                                   int yuv_height)
 {
   graphics.screen = SDL_SetVideoMode(width, height, 32, flags | SDL_ANYFORMAT);
+
+  if (!graphics.screen)
+    return false;
 
   // try with a YUY2 pixel format first
   graphics.overlay = SDL_CreateYUVOverlay(yuv_width, yuv_height,
@@ -1292,11 +1492,9 @@ static void yuv_set_video_mode_size(int width, int height, int depth, int flags,
 
   // failed to create an overlay
   if (!graphics.overlay)
-  {
-    // FIXME: Make this return a checked value
-    printf("Overlay creation failed.\n");
-    exit(1);
-  }
+    return false;
+
+  return true;
 }
 
 static inline void rgb_to_yuv(Uint8 r, Uint8 g, Uint8 b,
@@ -1312,8 +1510,7 @@ static inline void rgb_to_yuv(Uint8 r, Uint8 g, Uint8 b,
 static int yuv1_init_video(config_info *conf)
 {
   graphics.allow_resize = conf->allow_resize;
-  set_video_mode();
-  return 1;
+  return set_video_mode();
 }
 
 static int yuv1_check_video_mode(int width, int height, int depth, int flags)
@@ -1321,11 +1518,11 @@ static int yuv1_check_video_mode(int width, int height, int depth, int flags)
   return SDL_VideoModeOK(width, height, 32, flags | SDL_ANYFORMAT);
 }
 
-static void yuv1_set_video_mode(int width, int height, int depth, int flags,
+static int yuv1_set_video_mode(int width, int height, int depth, int flags,
                                 int fullscreen)
 {
-  yuv_set_video_mode_size(width, height, depth, flags, fullscreen,
-    YUV1_OVERLAY_WIDTH, YUV1_OVERLAY_HEIGHT);
+  return yuv_set_video_mode_size(width, height, depth, flags, fullscreen,
+                                 YUV1_OVERLAY_WIDTH, YUV1_OVERLAY_HEIGHT);
 }
 
 static void yuv1_update_screen(void)
@@ -1385,24 +1582,14 @@ static void yuv1_update_colors(SDL_Color *palette, Uint32 count)
 
 /* YUV RENDERER #2 CODE ******************************************************/
 
-static int yuv2_init_video(config_info *conf)
+static int yuv2_set_video_mode(int width, int height, int depth, int flags,
+                               int fullscreen)
 {
-  return yuv1_init_video(conf);
+  return yuv_set_video_mode_size(width, height, depth, flags, fullscreen,
+                                 YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT);
 }
 
-static int yuv2_check_video_mode(int width, int height, int depth, int flags)
-{
-  return yuv1_check_video_mode(width, height, depth, flags);
-}
-
-static void yuv2_set_video_mode(int width, int height, int depth, int flags,
-                                int fullscreen)
-{
-  yuv_set_video_mode_size(width, height, depth, flags, fullscreen,
-    YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT);
-}
-
-static void yuv2_update_screen()
+static void yuv2_update_screen(void)
 {
   SDL_Rect rect = { 0, 0, graphics.screen->w, graphics.screen->h };
 
@@ -1422,11 +1609,6 @@ static void yuv2_update_screen()
   SDL_UnlockYUVOverlay(graphics.overlay);
 
   SDL_DisplayYUVOverlay(graphics.overlay, &rect);
-}
-
-static void yuv2_update_colors(SDL_Color *palette, Uint32 count)
-{
-  yuv1_update_colors(palette, count);
 }
 
 #endif // PSP_BUILD
@@ -1484,11 +1666,11 @@ static void set_graphics_output(char *video_output)
   // Low res YUV overlay renderer
   if (!strcmp(video_output, "overlay2"))
   {
-    graphics.init_video = yuv2_init_video;
-    graphics.check_video_mode = yuv2_check_video_mode;
+    graphics.init_video = yuv1_init_video;
+    graphics.check_video_mode = yuv1_check_video_mode;
     graphics.set_video_mode = yuv2_set_video_mode;
     graphics.update_screen = yuv2_update_screen;
-    graphics.update_colors = yuv2_update_colors;
+    graphics.update_colors = yuv1_update_colors;
   }
 #endif
 }
@@ -1530,7 +1712,7 @@ void init_video(config_info *conf)
   init_palette();
 }
 
-void set_video_mode()
+int set_video_mode(void)
 {
   int target_width, target_height;
   int target_depth = graphics.bits_per_pixel;
@@ -1564,7 +1746,7 @@ void set_video_mode()
 
   // If video mode fails, replace it with 'safe' defaults
   if (!(graphics.check_video_mode(target_width, target_height, target_depth,
-   target_flags)))
+                                  target_flags)))
   {
     target_width = 640;
     target_height = 350;
@@ -1579,8 +1761,8 @@ void set_video_mode()
     target_flags = SDL_SWSURFACE;
   }
 
-  graphics.set_video_mode(target_width, target_height, target_depth,
-   target_flags, fullscreen);
+  return graphics.set_video_mode(target_width, target_height, target_depth,
+                                 target_flags, fullscreen);
 }
 
 void toggle_fullscreen()
