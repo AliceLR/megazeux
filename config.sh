@@ -1,5 +1,7 @@
 #!/bin/sh
 
+### PARSE PLATFORM DEFINITION #################################################
+
 if [ "$1" = "" ]; then
 	if [ "`uname -o`" = "GNU/Linux" ]; then
 		echo "Assuming Linux operating system.."
@@ -20,14 +22,22 @@ if [ ! -f Makefile.platform ]; then
 	exit 1
 fi
 
-if [ "$2" = "" ]; then
+shift
+
+### PARSE DEPENDENCY PREFIX ###################################################
+
+if [ "$1" = "" ]; then
 	echo "Assuming /usr prefix.."
 	PREFIX=/usr
 else
-	PREFIX=$2
+	PREFIX=$1
 fi
 
-if [ "$3" = "" ]; then
+shift
+
+### PARSE SYSTEM CONFIG DIRECTORY #############################################
+
+if [ "$1" = "" ]; then
 	if [ "$ARCH" = "linux" ]; then
 		echo "Assuming /etc sysconfdir.."
 		SYSCONFDIR=/etc
@@ -36,8 +46,17 @@ if [ "$3" = "" ]; then
 		SYSCONFDIR=.
 	fi
 else
-	SYSCONFDIR=$3
+	if [ "$ARCH" = "linux-static" ]; then
+		echo "Ignoring setting, using working directory.."
+		SYSCONFDIR=.
+	else
+		SYSCONFDIR=$1
+	fi
 fi
+
+shift
+
+### GENERATE CONFIG.H HEADER ##################################################
 
 echo                       >> Makefile.platform
 echo "# config time stuff" >> Makefile.platform
@@ -68,28 +87,49 @@ if [ "$ARCH" = "linux" -o "$ARCH" = "psp" ]; then
 	echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 fi
 
-if [ "$ARCH" != "win32" -a "$ARCH" != "psp" ]; then
-	# default, enable X support
-	X11="true"
+### CHOMP REMAINING FLAGS #####################################################
 
+#
+# Default settings for flags (used if unspecified)
+#
+X11="true"
+OPENGL="false"
+
+#
+# User may override above settings
+#
+while [ "$1" != "" ]; do
+	[ "$1" = "-nox11" ] && X11="false"
+	[ "$1" = "-x11" ]   && X11="true"
+
+	[ "$1" = "-nogl" ]  && OPENGL="false"
+	[ "$1" = "-gl" ]    && OPENGL="true"
+
+	shift
+done
+
+#
+# X11 support (linked against and needs headers installed)
+#
+if [ "$ARCH" != "win32" -a "$ARCH" != "psp" ]; then
 	# attempt auto-detection
-	if [ "$4" = "" ]; then
+	if [ "$X11" = "true" ]; then
 		# try to run X
 		X -version >/dev/null 2>&1
 
 		# X queried successfully
 		if [ "$?" != "0" ]; then
+			echo "X11 could not be queried, disabling."
 			X11="false"
 		fi
-	fi
-
-	# don't autodetect, force off
-	if [ "$4" = "-nox11" ]; then
-		X11="false"
+	else
+		echo "X11 support disabled."
 	fi
 
 	# asked for X11?
 	if [ "$X11" = "true" ]; then
+		echo "X11 support enabled."
+
 		# enable the C++ bits
 		echo "#define CONFIG_X11" >> src/config.h
 
@@ -103,5 +143,19 @@ if [ "$ARCH" != "win32" -a "$ARCH" != "psp" ]; then
 	fi
 fi
 
-echo "All done!"
+#
+# OpenGL support (not linked against GL, but needs headers installed)
+#
+if [ "$ARCH" != "psp" ]; then
+	# asked for opengl?
+	if [ "$OPENGL" = "true" ]; then
+		echo "OpenGL support enabled."
 
+		# enable the C++ bits
+		echo "#define CONFIG_OPENGL" >> src/config.h
+	else
+		echo "OpenGL support disabled."
+	fi
+fi
+
+echo "All done!"

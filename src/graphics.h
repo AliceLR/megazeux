@@ -80,17 +80,13 @@ typedef struct
 
   Uint32 flat_intensity_palette[256];
 
-  // FIXME: Move elsewhere later
-#ifdef OPENGL
-  Uint8 charset_texture[14 * 256 * 16];
-  GLubyte gl_palette[3*256];
-#endif
-
   int  (*init_video)       (config_info*);
   int  (*check_video_mode) (int, int, int, int);
   int  (*set_video_mode)   (int, int, int, int, int);
   void (*update_screen)    (void);
   void (*update_colors)    (SDL_Color *, Uint32);
+  void (*resize_screen)    (int, int);
+  void (*remap_charsets)   (void);
 } graphics_data;
 
 void color_string(char *string, Uint32 x, Uint32 y, Uint8 color);

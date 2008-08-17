@@ -24,19 +24,12 @@
 #include <sys/stat.h>
 #include <unistd.h>
 
-#define OPENGL 1
-
-// FIXME: Move me elsewhere
-#ifdef OPENGL
-#include "SDL_opengl.h"
-#endif
-
+#include "config.h"
 #include "graphics.h"
 #include "delay.h"
 #include "world.h"
 #include "configure.h"
 #include "event.h"
-#include "config.h"
 
 // Base names for MZX's resource files.
 // Prepends SHAREDIR from config.h for you, so these are ready to use.
@@ -172,6 +165,7 @@ static void update_screen8(Uint8 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
           *(dest + 1) = char_colors[current_char_byte & 0x0F];
           dest += line_advance;
         }
+
         dest = ldest + 2;
       }
       dest = ldest2 + row_advance;
@@ -825,9 +819,17 @@ static void soft_update_colors(SDL_Color *palette, Uint32 count)
   }
 }
 
-#if defined(OPENGL) && !defined(PSP_BUILD)
+static void soft_resize_screen(int w, int h)
+{
+  update_screen();
+  update_palette();
+}
+
+#if defined(CONFIG_OPENGL) && !defined(PSP_BUILD)
 
 /* OPENGL RENDERER #1 CODE ***************************************************/
+
+#include "SDL_opengl.h"
 
 #define GL_NON_POWER_2_WIDTH	640
 #define GL_NON_POWER_2_HEIGHT	350
@@ -1092,14 +1094,11 @@ static int gl_strip_flags(int flags)
 {
   int new_flags = 0;
 
-  if (flags & SDL_OPENGL)
-    new_flags |= SDL_OPENGL;
   if (flags & SDL_FULLSCREEN)
     new_flags |= SDL_FULLSCREEN;
   if (flags & SDL_RESIZABLE)
     new_flags |= SDL_RESIZABLE;
-
-  return new_flags;
+  return new_flags | SDL_OPENGL;
 }
 
 static void gl_set_filter_method(char *method)
@@ -1121,6 +1120,10 @@ static int gl1_init_video(config_info *conf)
   graphics.gl_filter_method = conf->gl_filter_method;
   graphics.bits_per_pixel = 32;
 
+  // OpenGL only supports 16/32bit colour
+  if (conf->force_bpp == 16 || conf->force_bpp == 32)
+    graphics.bits_per_pixel = conf->force_bpp;
+
   if (!load_gl_syms())
     return false;
 
@@ -1132,14 +1135,13 @@ static int gl1_init_video(config_info *conf)
   const char *extensions = (const char *)gl.glGetString(GL_EXTENSIONS);
 
   // we need a specific "version" of OpenGL compatibility
-  if (version && atof(version) < 1.2)
+  if (version && atof(version) < 1.1)
   {
-    fprintf(stderr, "Your OpenGL implementation is too old (need v1.2).\n");
+    fprintf(stderr, "Your OpenGL implementation is too old (need v1.1).\n");
     return false;
   }
 
   // we also might be able to utilise an extension
-/*
   if (extensions && strstr(extensions, "GL_ARB_texture_non_power_of_two"))
   {
     internal_width = GL_NON_POWER_2_WIDTH;
@@ -1147,16 +1149,11 @@ static int gl1_init_video(config_info *conf)
   }
   else
   {
-*/
     internal_width = GL_POWER_2_WIDTH;
     internal_height = GL_POWER_2_HEIGHT;
-  //}
+  }
 
-  // OpenGL only supports 16/32bit colour
-  if (conf->force_bpp == 16 || conf->force_bpp == 32)
-    graphics.bits_per_pixel = conf->force_bpp;
-
-  // FIXME: 32bit is hardcoded, is this right?
+  // We want to deal internally with 32bit surfaces
   graphics.screen = SDL_CreateRGBSurface(SDL_SWSURFACE, internal_width,
    internal_height, 32, 0, 0, 0, 0);
 
@@ -1165,8 +1162,7 @@ static int gl1_init_video(config_info *conf)
 
 static int gl1_check_video_mode(int width, int height, int depth, int flags)
 {
-  // FIXME: 32bit is hardcoded, is this right?
-  return SDL_VideoModeOK(width, height, 32, gl_strip_flags(flags) | SDL_OPENGL);
+  return SDL_VideoModeOK(width, height, depth, gl_strip_flags(flags));
 }
 
 static int gl1_set_video_mode(int width, int height, int depth, int flags,
@@ -1174,8 +1170,7 @@ static int gl1_set_video_mode(int width, int height, int depth, int flags,
 {
   GLuint texture_number;
 
-  // FIXME: 32bit is hardcoded, is this right?
-  if (!SDL_SetVideoMode(width, height, 32, gl_strip_flags(flags | SDL_OPENGL)))
+  if (!SDL_SetVideoMode(width, height, depth, gl_strip_flags(flags)))
     return false;
 
   gl.glViewport(0, 0, width, height);
@@ -1237,62 +1232,42 @@ static void gl1_update_colors(SDL_Color *palette, Uint32 count)
 #define SAFE_TEXTURE_MARGIN_X	0.0004
 #define SAFE_TEXTURE_MARGIN_Y	0.0002
 
-// FIXME: Why two textures?
-static GLuint gl2_texture_number[2];
+static struct
+{
+  Uint8 charset_texture[14 * 256 * 16];
+  GLuint texture_number[2];
+  GLubyte palette[3*256];
+} gl_state;
 
-static void gl2_remap_charset_range(unsigned int range)
+static inline char *gl2_char_bitmask_to_texture(signed char *c, char *p)
+{
+  // This tests the 7th bit, if 0, result is 0.
+  // If 1, result is 255 (because of sign extended bit shift!).
+  // Note the use of char constants to force 8bit calculation.
+  *(p++) = *c << 24 >> 31;
+  *(p++) = *c << 25 >> 31;
+  *(p++) = *c << 26 >> 31;
+  *(p++) = *c << 27 >> 31;
+  *(p++) = *c << 28 >> 31;
+  *(p++) = *c << 29 >> 31;
+  *(p++) = *c << 30 >> 31;
+  *(p++) = *c << 31 >> 31;
+  return p;
+}
+
+static void gl2_remap_charsets(void)
 {
   signed char *c = (signed char *)graphics.charset;
-  char *p = (char *)graphics.charset_texture;
-  unsigned int i, i2, i3;
+  char *p = (char *)gl_state.charset_texture;
+  unsigned int i, j, k;
 
-  for(i = 0; i < range; i++)
-  {
-    for(i2 = 0; i2 < 14; i2++)
-    {
-      for(i3 = 0; i3 < 32; i3++)
-      {
-        // This tests the 7th bit, if 0, result is 0.
-        // If 1, result is 255 (because of sign extended bit shift!).
-        // Note the use of char constants to force 8bit calculation.
-        *(p++) = *c << 24 >> 31;
-        *(p++) = *c << 25 >> 31;
-        *(p++) = *c << 26 >> 31;
-        *(p++) = *c << 27 >> 31;
-        *(p++) = *c << 28 >> 31;
-        *(p++) = *c << 29 >> 31;
-        *(p++) = *c << 30 >> 31;
-        *(p++) = *c << 31 >> 31;
-        c += 14;
-      }
+  for (i = 0; i < 16; i++, c += -14 + 32 * 14)
+    for (j = 0; j < 14; j++, c += -32 * 14 + 1)
+      for (k = 0; k < 32; k++, c += 14)
+        p = gl2_char_bitmask_to_texture(c, p);
 
-      // Go back 32 chars, then down 1 line
-      c += -32 * 14 + 1; 
-    }
-
-    // After finishing 32 chars, the pointer has advanced 1 full char.
-    //We want it to advance 32 full chars instead.
-    c += -14 + 32 * 14;
-  }
-}
-
-static void gl2_remap_both_charsets(void)
-{
-  gl2_remap_charset_range(16);
-
-  gl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 224, GL_ALPHA,
-    GL_UNSIGNED_BYTE, graphics.charset_texture);
-}
-
-static void gl2_remap_primary_charset(void)
-{
-  gl2_remap_charset_range(8);
-
-  gl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 256, 112, GL_ALPHA,
-    GL_UNSIGNED_BYTE, graphics.charset_texture);
-
-  // FIXME: Why?
-  gl2_remap_both_charsets();
+  gl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 32 * 8, 16 * 14, GL_ALPHA,
+    GL_UNSIGNED_BYTE, gl_state.charset_texture);
 }
 
 static int gl2_linear_filter_method(void)
@@ -1301,7 +1276,7 @@ static int gl2_linear_filter_method(void)
 }
 
 // FIXME: Many magic numbers
-void gl2_opengl_resize(int viewport_width, int viewport_height)
+void gl2_resize_screen(int viewport_width, int viewport_height)
 {
   // Our goal is to have 0, 0 to be the top left of the screen and
   // 640, 350 to be the bottom right. However, if we're going to use
@@ -1321,24 +1296,12 @@ void gl2_opengl_resize(int viewport_width, int viewport_height)
 
   gl.glTranslatef(-320, -175, 0);
 
-  gl.glGenTextures(2, gl2_texture_number);
+  gl.glGenTextures(2, gl_state.texture_number);
 
-  gl.glBindTexture(GL_TEXTURE_2D, gl2_texture_number[0]);
+  gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[0]);
 
   gl_set_filter_method(graphics.gl_filter_method);
 
-/*
-  if(LINEARFILTERING)
-  {
-    gl.glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_LINEAR );
-    gl.glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_LINEAR );
-  }
-  else
-  {
-    gl.glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST );
-    gl.glTexParameterf( GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST );
-  }
-*/
   gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
@@ -1352,18 +1315,16 @@ void gl2_opengl_resize(int viewport_width, int viewport_height)
 
     SDL_FillRect(graphics.screen, NULL, ~0);
 
-    gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 1024, 512, 0, GL_BGRA,
-      GL_UNSIGNED_BYTE, graphics.screen->pixels);
+    gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, GL_POWER_2_WIDTH,
+      GL_POWER_2_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+      graphics.screen->pixels);
 
   SDL_UnlockSurface(graphics.screen);
 
-  gl.glBindTexture(GL_TEXTURE_2D, gl2_texture_number[1]);
+  gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[1]);
 
   gl_set_filter_method(graphics.gl_filter_method);
-/*
-  gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, GL_NEAREST);
-  gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, GL_NEAREST);
-*/
+
   gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
@@ -1374,7 +1335,40 @@ void gl2_opengl_resize(int viewport_width, int viewport_height)
 
   SDL_UnlockSurface(graphics.screen);
 
-  gl2_remap_both_charsets();
+  gl2_remap_charsets();
+}
+
+static int gl2_init_video(config_info *conf)
+{
+  graphics.allow_resize = conf->allow_resize;
+  graphics.gl_filter_method = conf->gl_filter_method;
+  graphics.bits_per_pixel = 32;
+
+  // OpenGL only supports 16/32bit colour
+  if (conf->force_bpp == 16 || conf->force_bpp == 32)
+    graphics.bits_per_pixel = conf->force_bpp;
+
+  if (!load_gl_syms())
+    return false;
+
+  // We want to deal internally with 32bit surfaces
+  graphics.screen = SDL_CreateRGBSurface(SDL_SWSURFACE, GL_POWER_2_WIDTH,
+   GL_POWER_2_HEIGHT, 32, 0, 0, 0, 0);
+
+  if (!set_video_mode())
+    return false;
+
+  // NOTE: This must come AFTER set_video_mode()!
+  const char *version = (const char *)gl.glGetString(GL_VERSION);
+
+  // we need a specific "version" of OpenGL compatibility
+  if (version && atof(version) < 1.1)
+  {
+    fprintf(stderr, "Your OpenGL implementation is too old (need v1.1).\n");
+    return false;
+  }
+
+  return true;
 }
 
 static void gl2_update_screen(void)
@@ -1418,11 +1412,11 @@ static void gl2_update_screen(void)
       {
         for(i2 = 0; i2 < 640; i2 = i2 + 8)
         {
-          gl.glColor3ubv(&graphics.gl_palette[src->bg_color *3]);
-          gl.glVertex3i(i2,i+14,-1);
-          gl.glVertex3i(i2,i,-1);
-          gl.glVertex3i(i2+8,i,-1);
-          gl.glVertex3i(i2+8,i+14,-1);
+          gl.glColor3ubv(&gl_state.palette[src->bg_color *3]);
+          gl.glVertex3i(i2,     i + 14, -1);
+          gl.glVertex3i(i2,     i,      -1);
+          gl.glVertex3i(i2 + 8, i,      -1);
+          gl.glVertex3i(i2 + 8, i + 14, -1);
           src++;
         }
       }
@@ -1437,7 +1431,7 @@ static void gl2_update_screen(void)
       {
         for(i2 = 0; i2 < 640; i2 = i2 + 8)
         {
-          gl.glColor3ubv(&graphics.gl_palette[src->fg_color * 3]);
+          gl.glColor3ubv(&gl_state.palette[src->fg_color * 3]);
 
           gl.glTexCoord2f(
             ((src->char_value % 32) + 1) * 0.03125   - SAFE_TEXTURE_MARGIN_X,
@@ -1560,7 +1554,7 @@ static void gl2_update_screen(void)
 
   if (graphics.screen_mode)
   {
-    gl.glBindTexture(GL_TEXTURE_2D, gl2_texture_number[0]);
+    gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[0]);
 
     gl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 640, 350, GL_BGRA,
       GL_UNSIGNED_BYTE, graphics.screen->pixels);
@@ -1578,7 +1572,7 @@ static void gl2_update_screen(void)
       gl.glVertex3i(640,350,-1);
     gl.glEnd();
 
-    gl.glBindTexture(GL_TEXTURE_2D, gl2_texture_number[1]);
+    gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[1]);
     gl.glBegin(GL_QUADS);
   }
 
@@ -1685,7 +1679,7 @@ static void gl2_update_screen(void)
         break;
     }
 
-    gl.glColor3ubv(&graphics.gl_palette[cursor_color * 3]);
+    gl.glColor3ubv(&gl_state.palette[cursor_color * 3]);
     gl.glTexCoord2f(0, 0.8755);
     gl.glVertex3i(graphics.cursor_x * 8,     graphics.cursor_y * 14 + lines + addy, -1);
     gl.glTexCoord2f(0, 0.8755);
@@ -1705,7 +1699,7 @@ static void gl2_update_screen(void)
   //display it on a quad.
   if (gl2_linear_filter_method())
   {
-    gl.glBindTexture(GL_TEXTURE_2D, gl2_texture_number[0]);
+    gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[0]);
     gl.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 1024, 512, 0);
 
     if(!graphics.fullscreen)
@@ -1727,7 +1721,7 @@ static void gl2_update_screen(void)
       gl.glVertex3i(640,0,-1);
     gl.glEnd();
 
-    gl.glBindTexture(GL_TEXTURE_2D, gl2_texture_number[1]);
+    gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[1]);
     gl.glViewport(0, 0, 640, 350);
   }
 
@@ -1741,16 +1735,25 @@ static void gl2_update_screen(void)
 static int gl2_set_video_mode(int width, int height, int depth, int flags,
                               int fullscreen)
 {
-  // FIXME: 32bit is hardcoded, is this right?
-  if (!SDL_SetVideoMode(width, height, 32, gl_strip_flags(flags)))
+  if (!SDL_SetVideoMode(width, height, depth, gl_strip_flags(flags)))
     return false;
-
-  gl2_opengl_resize(width, height);
-
+  gl2_resize_screen(width, height);
   return true;
 }
 
-#endif // OPENGL && !PSP_BUILD
+static void gl2_update_colors(SDL_Color *palette, Uint32 count)
+{
+  for (Uint32 i = 0; i < count; i++)
+  {
+    graphics.flat_intensity_palette[i] = SDL_MapRGBA(graphics.screen->format,
+      palette[i].r, palette[i].g, palette[i].b, 255) | 0xff000000;
+    gl_state.palette[i*3  ] = (GLubyte)palette[i].r;
+    gl_state.palette[i*3+1] = (GLubyte)palette[i].g;
+    gl_state.palette[i*3+2] = (GLubyte)palette[i].b;
+  }
+}
+
+#endif // CONFIG_OPENGL && !PSP_BUILD
 
 #if !defined(PSP_BUILD)
 
@@ -2164,9 +2167,7 @@ static void yuv2_update_screen(void)
 
 static void set_graphics_output(char *video_output)
 {
-#ifdef DEBUG
-  fprintf(stdout, "Selected video output: %s\n", video_output);
-#endif
+  char *selected_output = "software";
 
   // Default software renderer
   graphics.init_video = soft_init_video;
@@ -2174,8 +2175,10 @@ static void set_graphics_output(char *video_output)
   graphics.set_video_mode = soft_set_video_mode;
   graphics.update_screen = soft_update_screen;
   graphics.update_colors = soft_update_colors;
+  graphics.resize_screen = soft_resize_screen;
+  graphics.remap_charsets = NULL;
 
-#if defined(OPENGL) && !defined(PSP_BUILD)
+#if defined(CONFIG_OPENGL) && !defined(PSP_BUILD)
   // Try to load system GL. if we succeed..
   if (SDL_GL_LoadLibrary(GL_SHARED_OBJECT) >= 0)
   {
@@ -2186,15 +2189,19 @@ static void set_graphics_output(char *video_output)
       graphics.set_video_mode = gl1_set_video_mode;
       graphics.update_screen = gl1_update_screen;
       graphics.update_colors = gl1_update_colors;
+      selected_output = video_output;
     }
 
     if (!strcmp(video_output, "opengl2"))
     {
-      graphics.init_video = gl1_init_video;
+      graphics.init_video = gl2_init_video;
       graphics.check_video_mode = gl1_check_video_mode;
       graphics.set_video_mode = gl2_set_video_mode;
       graphics.update_screen = gl2_update_screen;
-      graphics.update_colors = gl1_update_colors;
+      graphics.update_colors = gl2_update_colors;
+      graphics.resize_screen = gl2_resize_screen;
+      graphics.remap_charsets = gl2_remap_charsets;
+      selected_output = video_output;
     }
   }
 #ifdef DEBUG
@@ -2204,7 +2211,7 @@ static void set_graphics_output(char *video_output)
   }
 #endif
 
-#endif // OPENGL && !PSP_BUILD
+#endif // CONFIG_OPENGL && !PSP_BUILD
 
 #if !defined(PSP_BUILD)
   // YUV overlay renderer
@@ -2215,6 +2222,7 @@ static void set_graphics_output(char *video_output)
     graphics.set_video_mode = yuv1_set_video_mode;
     graphics.update_screen = yuv1_update_screen;
     graphics.update_colors = yuv1_update_colors;
+    selected_output = video_output;
   }
 #endif
 
@@ -2227,7 +2235,12 @@ static void set_graphics_output(char *video_output)
     graphics.set_video_mode = yuv2_set_video_mode;
     graphics.update_screen = yuv2_update_screen;
     graphics.update_colors = yuv1_update_colors;
+    selected_output = video_output;
   }
+#endif
+
+#ifdef DEBUG
+  fprintf(stdout, "Selected video output: %s\n", selected_output);
 #endif
 }
 
@@ -2336,8 +2349,7 @@ void resize_screen(Uint32 w, Uint32 h)
     graphics.window_width = w;
     graphics.window_height = h;
     set_video_mode();
-    update_screen();
-    update_palette();
+    graphics.resize_screen(w, h);
   }
 }
 
@@ -2840,11 +2852,44 @@ cursor_mode_types get_cursor_mode()
 void ec_change_byte(Uint8 chr, Uint8 byte, Uint8 new_value)
 {
   graphics.charset[(chr * 14) + byte] = new_value;
+
+#ifdef CONFIG_OPENGL
+  // FIXME: This should be a function pointer stub
+  if (graphics.remap_charsets)
+  {
+    char *p = (char *)gl_state.charset_texture;
+    signed char *c = (signed char *)graphics.charset + (chr * 14) + byte;
+
+    gl2_char_bitmask_to_texture(c, p);
+
+    gl.glTexSubImage2D(GL_TEXTURE_2D, 0, (chr % 32) * 8, (chr / 32) * 14 + byte,
+      8, 1, GL_ALPHA, GL_UNSIGNED_BYTE, gl_state.charset_texture);
+  }
+#endif // CONFIG_OPENGL
 }
 
 void ec_change_char(Uint8 chr, char *matrix)
 {
   memcpy(graphics.charset + (chr * 14), matrix, 14);
+
+#ifdef CONFIG_OPENGL
+  // FIXME: This should be a function pointer stub
+  if (graphics.remap_charsets)
+  {
+    unsigned int i;
+    char *p = (char *)gl_state.charset_texture;
+    signed char *c = (signed char *)graphics.charset;
+
+    for(i=0; i<14; i++)
+    {
+      p = gl2_char_bitmask_to_texture(c++, p);
+      c++;
+    }
+
+    gl.glTexSubImage2D(GL_TEXTURE_2D, 0, (chr % 32) * 8, (chr / 32) * 14, 8,
+      14, GL_ALPHA, GL_UNSIGNED_BYTE, gl_state.charset_texture);
+  }
+#endif // CONFIG_OPENGL
 }
 
 Uint8 ec_read_byte(Uint8 chr, Uint8 byte)
@@ -2867,6 +2912,11 @@ Sint32 ec_load_set(char *name)
   fread(graphics.charset, 14, 256, fp);
 
   fclose(fp);
+
+  // some renderers may want to map charsets to textures
+  if (graphics.remap_charsets)
+    graphics.remap_charsets();
+
   return 0;
 }
 
@@ -2880,6 +2930,11 @@ Sint32 ec_load_set_secondary(char *name, Uint8 *dest)
   fread(dest, 14, 256, fp);
 
   fclose(fp);
+
+  // some renderers may want to map charsets to textures
+  if (graphics.remap_charsets)
+    graphics.remap_charsets();
+
   return 0;
 }
 
@@ -2901,6 +2956,50 @@ Sint32 ec_load_set_var(char *name, Uint8 pos)
   }
   fread(graphics.charset + (pos * 14), 14, size, fp);
   fclose(fp);
+
+#ifdef CONFIG_OPENGL
+  // FIXME: This should be a function pointer stub
+  if (graphics.remap_charsets)
+  {
+    int barst, barlen, i2, i3;
+    unsigned int bar;
+    signed char *c;
+    char *p;
+
+    for(bar = pos >> 5; bar < (pos + size + 31) >> 5; bar++)
+    {
+      barst = pos - bar*32;
+
+      if (barst < 0)
+        barst = 0;
+
+      barlen = pos+size - bar*32;
+
+      if (barlen > 32)
+        barlen = 32;
+
+      barlen -= barst;
+
+      p = (char *)gl_state.charset_texture;
+      c = (signed char *)graphics.charset + (bar * 32 + barst) * 14;
+
+      for (i2=0;i2<14;i2++)
+      {
+        for (i3=barst; i3<barlen; i3++)
+        {
+          p = gl2_char_bitmask_to_texture(c, p);
+          *(p++) = (signed char)(*c << 7) >> 7;
+          c += 14;
+        }
+
+        c += -barlen * 14 + 1; // Go back x chars, then down 1 line
+      }
+
+      gl.glTexSubImage2D(GL_TEXTURE_2D, 0, barst * 8, bar * 14, barlen * 8, 14,
+        GL_ALPHA, GL_UNSIGNED_BYTE, gl_state.charset_texture);
+    }
+  }
+#endif // CONFIG_OPENGL
 
   return size;
 }
@@ -2924,6 +3023,10 @@ Sint32 ec_load_set_ext(char *name, Uint8 offset)
 
   fread(graphics.charset + (offset * 14), 14, size, fp);
   fclose(fp);
+
+  // some renderers may want to map charsets to textures
+  if (graphics.remap_charsets)
+    graphics.remap_charsets();
 
   return size;
 }
@@ -2958,6 +3061,10 @@ void ec_save_set_var(char *name, Uint8 offset, Uint32 size)
 void ec_mem_load_set(Uint8 *chars)
 {
   memcpy(graphics.charset, chars, 3584);
+
+  // some renderers may want to map charsets to textures
+  if (graphics.remap_charsets)
+    graphics.remap_charsets();
 }
 
 void ec_mem_save_set(Uint8 *chars)
@@ -2989,18 +3096,30 @@ void ec_load_char_mzx(Uint32 char_number)
 {
   memcpy(graphics.charset + (char_number * 14),
    graphics.default_charset + (char_number * 14), 14);
+
+  // some renderers may want to map charsets to textures
+  if (graphics.remap_charsets)
+    graphics.remap_charsets();
 }
 
 void ec_load_char_smzx(Uint32 char_number)
 {
   memcpy(graphics.charset + (char_number * 14),
    graphics.smzx_charset + (char_number * 14), 14);
+
+  // some renderers may want to map charsets to textures
+  if (graphics.remap_charsets)
+    graphics.remap_charsets();
 }
 
 void ec_load_char_ascii(Uint32 char_number)
 {
   memcpy(graphics.charset + (char_number * 14),
    graphics.ascii_charset + (char_number * 14), 14);
+
+  // some renderers may want to map charsets to textures
+  if (graphics.remap_charsets)
+    graphics.remap_charsets();
 }
 
 void init_palette(void)
@@ -3015,14 +3134,10 @@ void init_palette(void)
   memset(graphics.current_intensity, 0, sizeof(Uint32) * 16);
 
   for(i = 0; i < 256; i++)
-  {
     graphics.saved_intensity[i] = 100;
-  }
 
   for(i = 16; i < 32; i++)
-  {
     graphics.current_intensity[i] = 100;
-  }
 
   graphics.fade_status = 1;
 
@@ -3485,56 +3600,46 @@ void vquick_fadein(void)
 // Instant fade out
 void insta_fadeout(void)
 {
-  if(!graphics.fade_status)
-  {
-    Uint32 i, num_colors;
+  Uint32 i, num_colors;
 
-    if(graphics.screen_mode >= 2)
-      num_colors = 256;
-    else
-      num_colors = 16;
+  if(graphics.fade_status)
+    return;
 
-    for(i = 0; i < num_colors; i++)
-    {
-      set_color_intensity(i, 0);
-    }
+  if(graphics.screen_mode >= 2)
+    num_colors = 256;
+  else
+    num_colors = 16;
 
-    delay(1);
-    update_palette();
+  for(i = 0; i < num_colors; i++)
+    set_color_intensity(i, 0);
 
-    // FIXME: Why do we only do this in 32bit mode?
-    if(graphics.bits_per_pixel == 32)
-      update_screen();
+  delay(1);
+  update_palette();
+  update_screen(); // NOTE: this was called conditionally in 2.81e
 
-    graphics.fade_status = 1;
-  }
+  graphics.fade_status = true;
 }
 
 // Instant fade in
 void insta_fadein(void)
 {
-  if(graphics.fade_status)
-  {
-    Uint32 i, num_colors;
+  Uint32 i, num_colors;
 
-    graphics.fade_status = 0;
+  if(!graphics.fade_status)
+    return;
 
-    if(graphics.screen_mode >= 2)
-      num_colors = 256;
-    else
-      num_colors = 16;
+  graphics.fade_status = false;
 
-    for(i = 0; i < num_colors; i++)
-    {
-      set_color_intensity(i, graphics.saved_intensity[i]);
-    }
+  if(graphics.screen_mode >= 2)
+    num_colors = 256;
+  else
+    num_colors = 16;
 
-    update_palette();
+  for(i = 0; i < num_colors; i++)
+    set_color_intensity(i, graphics.saved_intensity[i]);
 
-    // FIXME: Why do we only do this in 32bit mode?
-    if(graphics.bits_per_pixel == 32)
-      update_screen();
-  }
+  update_palette();
+  update_screen(); // NOTE: this was called conditionally in 2.81e
 }
 
 void default_palette(void)
