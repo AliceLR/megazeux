@@ -1297,6 +1297,12 @@ void init_audio(config_info *conf)
     NULL
   };
 
+#ifndef PTHREAD_MUTEXES
+  audio.audio_mutex = SDL_CreateMutex();
+#else
+  pthread_mutex_init(&audio.audio_mutex, NULL);
+#endif
+
   audio.output_frequency = conf->output_frequency;
   audio.master_resample_mode = conf->resample_mode;
   desired_spec.freq = audio.output_frequency;
@@ -1307,10 +1313,8 @@ void init_audio(config_info *conf)
   SDL_OpenAudio(&desired_spec, &audio.audio_settings);
   audio.mix_buffer = (Sint32 *)malloc(audio.audio_settings.size * 2);
 
-#ifndef PTHREAD_MUTEXES
-  audio.audio_mutex = SDL_CreateMutex();
-#else
-  pthread_mutex_init(&audio.audio_mutex, NULL);
+#ifdef DEBUG
+  fprintf(stdout, "Started audio subsystem\n");
 #endif
 
   SDL_PauseAudio(0);
