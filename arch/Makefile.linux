@@ -6,24 +6,37 @@ all: subdir
 debug: subdir-debug
 
 # location of strip (must be defined)
-STRIP     = strip --strip-unneeded
+STRIP    = strip --strip-unneeded
 
 # standard libraries
-LIBS      = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-            -L${PREFIX}/lib -lSDL -lpthread -lvorbisfile -lvorbis -logg
+LIBS     = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
+            -L${PREFIX}/lib `sdl-config --libs` -lvorbisfile -lvorbis -logg
+
+# override includes for SDL
+INCLUDES = `sdl-config --cflags`
 
 # linux os specific install target
 install:
-	mkdir -p ${PREFIX}/share/megazeux && \
-	chown root:root ${PREFIX}/share/megazeux && \
-	chmod 0755 ${PREFIX}/share/megazeux && \
-	install -o root -m 0644 mzx_default.chr ${PREFIX}/share/megazeux && \
-	install -o root -m 0644 mzx_blank.chr ${PREFIX}/share/megazeux && \
-	install -o root -m 0644 mzx_smzx.chr ${PREFIX}/share/megazeux && \
-	install -o root -m 0644 mzx_ascii.chr ${PREFIX}/share/megazeux && \
-	install -o root -m 0644 mzx_edit.chr ${PREFIX}/share/megazeux && \
-	install -o root -m 0644 smzx.pal ${PREFIX}/share/megazeux && \
-	install -o root -m 0644 mzx_help.fil ${PREFIX}/share/megazeux && \
-	install -o root -m 0644 config.txt ${SYSCONFDIR}/megazeux-config && \
-	install -o root -m 0755 ${TARGET} ${PREFIX}/bin && \
-	ln -sf ${TARGET} ${PREFIX}/bin/megazeux
+	@install -m 0755 -d ${PREFIX}/bin && \
+	 install -m 0755 -d ${PREFIX}/share && \
+	 install -m 0755 -d ${PREFIX}/share/megazeux && \
+	 install -m 0644 mzx_default.chr ${PREFIX}/share/megazeux && \
+	 install -m 0644 mzx_blank.chr ${PREFIX}/share/megazeux && \
+	 install -m 0644 mzx_smzx.chr ${PREFIX}/share/megazeux && \
+	 install -m 0644 mzx_ascii.chr ${PREFIX}/share/megazeux && \
+	 install -m 0644 mzx_edit.chr ${PREFIX}/share/megazeux && \
+	 install -m 0644 smzx.pal ${PREFIX}/share/megazeux && \
+	 install -m 0644 mzx_help.fil ${PREFIX}/share/megazeux && \
+	 install -m 0644 config.txt ${SYSCONFDIR}/megazeux-config && \
+	 install -m 0755 ${TARGET} ${PREFIX}/bin && \
+	 ln -sf ${TARGET} ${PREFIX}/bin/megazeux
+
+	@echo "Installed MegaZeux to ${PREFIX} successfully."
+	@echo
+	@echo "Changing ownership (will fail if you are not root)."
+	@echo "If it fails, it's okay."
+	@echo
+
+	@chown -f  root:root ${SYSCONFDIR}/megazeux-config
+	@chown -f  root:root ${PREFIX}/bin/${TARGET}
+	@chown -fR root:root ${PREFIX}/share/megazeux

@@ -13,7 +13,10 @@ STRIP     = strip --strip-unneeded
 
 # standard libraries
 LIBS      = ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-            -L/usr/lib -lmingw32 -lSDLmain -lSDL -lvorbisfile -lvorbis -logg
+            `sdl-config --libs` -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
+
+# override INCLUDES
+INCLUDES  = `sdl-config --cflags`
 
 # debug does something different
 ifdef DEBUG

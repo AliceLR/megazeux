@@ -27,4 +27,3 @@ dclean:
 distclean: clean
 	rm -f src/config.h
 	cp -f arch/Makefile.dist Makefile.platform
-

@@ -8,8 +8,8 @@ include ../Makefile.platform
 CXXFLAGS += -ffast-math -funsigned-char -DMZX_VERSION=\"${VERSTRING}\"
 
 # standard MZX includes
-INCLUDES  = -I${PREFIX}/include -I../${MODPLUG} -I../${GDM2S3M} \
-            -I../${MODPLUG}/libmodplug -I${PREFIX}/include/SDL
+INCLUDES += -I${PREFIX}/include -I../${MODPLUG} -I../${GDM2S3M} \
+            -I../${MODPLUG}/libmodplug
 
 OBJS      = main.${o} graphics.${o} window.${o} hexchar.${o} event.${o} \
             error.${o} helpsys.${o} world.${o} board.${o} robot.${o} \
@@ -39,4 +39,3 @@ clean: dclean
 
 dclean:
 	rm -f *.dbg.o ${MZX}.dbg${BINEXT}
-

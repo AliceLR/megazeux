@@ -6,7 +6,10 @@ include ../../../Makefile.in
 include ../../../Makefile.platform
 
 # must be build with c99
-CFLAGS += -std=c99
+CFLAGS  += -std=c99
+
+# don't want to pull in SDL here
+INCLUDES =
 
 #
 # objects to build
@@ -22,4 +25,3 @@ clean: dclean
 
 dclean:
 	rm -f *.dbg.o libgdm2s3m.a
-
