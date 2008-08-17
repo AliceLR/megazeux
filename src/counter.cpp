@@ -2858,7 +2858,7 @@ int get_string(World *mzx_world, char *name, mzx_string *dest,
     if(size == 0)
       size = src_length;
 
-    if(offset >= src_length)
+    if(offset >= src_length && src_length != 0)
       offset = src_length - 1;
 
     if(offset + size > src->length)
