@@ -43,6 +43,25 @@ January 18, 2007 - MZX 2.81e
   string.
 + Removed the bogus patch to Modplug and correctly fixed it in the build
   system.
++ Added 'debian' subdirectory for building Debian and Ubuntu upstream
+  packages. Hopefully MegaZeux will be in the primary pool in a few
+  months.
++ Added OS X xcode project files (see 'macosx.zip'). Fixed many bugs
+  relating to endian that caused MegaZeux to be buggy on big-endian
+  architectures (like PPC). Credit goes to Quantum P for finding these
+  bugs and engineering high quality solutions.
++ Made 'directx' the default video render again on Windows. NOTE: This
+  overrides the default SDL behaviour, but will not be applied if you
+  set SDL_VIDEODRIVER yourself.
++ Repaired the 'linux-static' target so that it no longer includes a
+  system C++ library, which caused unpredictable results on distros
+  without a static version.
++ Fixed a locking bug with the audio code that caused hangs at startup
+  on OS X. Also provided a mutex implementation using GNU pthreads as
+  a temporary workaround for an SDL bug on the Linux platform.
++ Added PlayStation Portable (PSP) port. This code was written by Exophase
+  and is highly experimental. It may not work at all for you. Please
+  see docs/build.txt for more information regarding this port.
 
 December 10, 2006 - MZX 2.81d
 
