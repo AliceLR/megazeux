@@ -10,8 +10,8 @@ GDM2S3M   = contrib/gdm2s3m/src
 MODPLUG   = contrib/libmodplug/src
 
 # default target name
-TARGET    = mzx281d
-VERSION   = 2.81d
+TARGET    = mzx281e
+VERSION   = 2.81e
 
 ifneq ("${DATE}", "0")
 VERSTRING = ${VERSION}\ \(`date +%Y%m%d`\)
