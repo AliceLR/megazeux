@@ -62,6 +62,25 @@ January 18, 2007 - MZX 2.81e
 + Added PlayStation Portable (PSP) port. This code was written by Exophase
   and is highly experimental. It may not work at all for you. Please
   see docs/build.txt for more information regarding this port.
++ Fixed mouse movement from being affected by height_multiplier when
+  not in fullscreen mode
++ Fixed height_multiplier config.txt option allowing you to enter really
+  stupid values (like negatives, 0, and values too large for the
+  resolution)
++ Added in an extra video mode check to stop MZX crashing on video modes
+  that the video card can not reproduce
++ Fixed Avalanche to a constant placement rate of 1/18 (this caused MZX
+  to deliver an uneven number of boulders, and crash with certain board
+  sizes
++ Fixed sprite collision box to stop MZX from crashing when stupid values
+  are entered
++ Fixed setting the viewport size to weird values like some old MZX games
+  do
++ Default fullscreen resolution is now 640x480, this can be changed in
+  config.txt
++ The config.txt option force_32bpp is now enabled by default
++ Seeking with mod_position when using a .WAV file as background music
+  now works (thanks Mr_Alert)
 
 December 10, 2006 - MZX 2.81d
 

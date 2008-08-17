@@ -29,6 +29,7 @@
 #ifdef PSP_BUILD
 
 #include <psppower.h>
+#define PSP_MAIN_THREAD_STACK_SIZE_KB(512)
 
 #endif
 

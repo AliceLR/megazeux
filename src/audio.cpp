@@ -649,7 +649,7 @@ void wav_set_position(audio_stream *a_src, Uint32 position)
   wav_stream *w_stream = (wav_stream *)a_src;
 
   if(position < (w_stream->data_length / w_stream->bytes_per_sample))
-    w_stream->data_offset = position / w_stream->bytes_per_sample;
+    w_stream->data_offset = position * w_stream->bytes_per_sample;
 }
 
 void wav_set_frequency(sampled_stream *s_src, Uint32 frequency)

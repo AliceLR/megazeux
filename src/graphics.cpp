@@ -123,12 +123,29 @@ void init_video(config_info *conf, int gl_enabled)
   graphics.resolution_height = conf->resolution_height;
   graphics.window_width = conf->window_width;
   graphics.window_height = conf->window_height;
-  graphics.height_multiplier = conf->height_multiplier;
   graphics.mouse_status = 0;
   graphics.cursor_timestamp = SDL_GetTicks();
   graphics.cursor_flipflop = 1;
   graphics.hardware_stretch = conf->hardware_stretch;
-  graphics.allow_resize = conf->allow_resize;
+  graphics.height_multiplier = 1;
+  
+  if (conf->hardware_stretch)
+  {
+    graphics.allow_resize = conf->allow_resize;
+  }
+  else
+  {
+    graphics.allow_resize = 0;
+    // Check that the height multiplier is valid
+    
+    if (conf->height_multiplier >= 0)
+    {
+	  if ((graphics.resolution_height / conf->height_multiplier) >= 350)
+	  {
+	    graphics.height_multiplier = conf->height_multiplier;
+	  }
+    }
+  }
 
   if (gl_enabled)
     load_gl_syms(&gl);
@@ -186,6 +203,7 @@ void set_video_mode()
   int hardware_stretch = graphics.hardware_stretch;
   int target_flags = 0;
   int fullscreen = graphics.fullscreen;
+  int video_mode_ok = 1;
 
   if(fullscreen)
   {
@@ -212,6 +230,42 @@ void set_video_mode()
   fullscreen = 1;
   hardware_stretch = 0;
 #endif
+  // Check video mode compatibility first
+  
+  if(hardware_stretch)
+  {
+    if (!SDL_VideoModeOK(target_width, target_height, 32, target_flags | SDL_OPENGL))
+    {
+      video_mode_ok = 0;
+    }
+  }
+  else
+  {
+	if (!SDL_VideoModeOK(target_width, target_height, target_depth, target_flags))
+    {
+      video_mode_ok = 0;
+    }
+  }
+  
+  // If video mode fails, replace it with 'safe' defaults
+  
+  if (!video_mode_ok)
+  {
+    target_width = 640;
+    target_height = 350;
+    target_depth = 8;
+    fullscreen = 0;
+    hardware_stretch = 0;
+    
+    graphics.resolution_width = target_width;
+    graphics.resolution_height = target_height;
+    graphics.bits_per_pixel = target_depth;
+    graphics.fullscreen = fullscreen;
+    graphics.hardware_stretch = hardware_stretch;
+    
+    target_flags = SDL_SWSURFACE;
+
+  }
 
   if(hardware_stretch)
   {

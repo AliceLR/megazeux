@@ -1839,8 +1839,8 @@ void give_potion(World *mzx_world, mzx_potion type)
       mzx_thing d_id;
       int d_flag;
 
-      // Adjust the rate for board size - it was hardcoded for 10000
-      int placement_rate = 18 * (board_width * board_height) / 10000;
+      // Set the placement rate
+      int placement_rate = 18;
       for(y = 0, offset = 0; y < board_height; y++)
       {
         for(x = 0; x < board_width; x++, offset++)

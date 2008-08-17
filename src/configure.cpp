@@ -558,51 +558,51 @@ config_entry *find_option(char *name)
 config_info default_options =
 {
   // Video options
-  0,
-  1600,
-  1200,
-  640,
-  350,
-  0,
-  0,
-  1,
-  0,
+  0,				// fullscreen
+  640,				// resolution_width
+  480,				// resolution_height
+  640,				// window_width
+  350,				// window_height
+  0,				// allow_resize
+  0,				// hardware_stretch
+  1,				// height_multiplier
+  1,				// force_32bpp
 
   // Audio options
-  44100,
-  4096,
-  0,
-  1,
-  1,
-  8,
-  8,
-  8,
-  1,
-  1,
+  44100,			// output_frequency
+  4096,				// buffer_size
+  0,				// oversampling_on
+  1,				// resample_mode
+  1,				// modplug_resample_mode
+  8,				// music_volume
+  8,				// sam_volume
+  8,				// pc_speaker_volume
+  1,				// music_on
+  1,				// pc_speaker_on
 
   // Game options
-  "caverns.mzx",
-  "saved.sav",
-  4,
+  "caverns.mzx",	// startup_file
+  "saved.sav",		// default_save_name
+  4,				// mzx_speed
 
   // Robot editor options
   { 11, 10, 10, 14, 255, 3, 11, 2, 14, 0, 15, 11, 7, 15, 1, 2, 3 },
-  1,
-  1,
-  10,
-  1,
+  1,				// color_coding_on
+  1,				// disassemble_extras
+  10,				// disassemble_base
+  1,				// default_invalid_status
   { "char ", "color ", "goto ", "send ", ": playershot^" },
-  0,
+  0,				// redit_hhelp
 
   // Backup options
-  3,
-  60,
-  "backup",
-  ".mzx",
+  3,				// backup_count
+  60,				// backup_interval
+  "backup",			// backup_name
+  ".mzx",			// backup_ext
 
   // Macro options
-  0,
-  0,
+  0,				// num_extended_macros
+  0,				
   NULL,
 
   // Misc options

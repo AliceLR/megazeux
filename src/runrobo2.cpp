@@ -3711,8 +3711,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 131: // avalanche
       {
         int x, y, offset;
-        // Adjust the rate for board size - it was hardcoded for 10000
-        int placement_rate = 18 * (board_width * board_height) / 10000;
+        // Set the placement rate
+        int placement_rate = 18;
         int d_flag;
 
         for(y = 0, offset = 0; y < board_height; y++)
@@ -4213,11 +4213,17 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int viewport_x = src_board->viewport_x;
         int viewport_y = src_board->viewport_y;
 
-        if((viewport_width < 1) || (viewport_width > 80))
+        if((viewport_width < 0) || (viewport_width > 80))
           viewport_width = 80;
-
-        if((viewport_height < 1) || (viewport_height > 25))
+          
+        if((viewport_height < 0) || (viewport_height > 25))
           viewport_height = 25;
+          
+        if(viewport_width == 0)
+          viewport_width = 1;
+          
+        if(viewport_height == 0)
+          viewport_height = 1;
 
         if((viewport_x + viewport_width) > 80)
           src_board->viewport_x = 80 - viewport_width;

@@ -102,7 +102,7 @@ fi
 # build deps below.
 #
 BINARY_DEPS="smzx.pal mzx_ascii.chr mzx_blank.chr mzx_default.chr \
-             mzx_help.fil mzx_smzx.chr mzx_edit.chr config.txt"
+             mzx_help.fil mzx_smzx.chr mzx_edit.chr config.txt windib.bat"
 
 #
 # Documents that the binary zip should contain (pathname will be stored too).
@@ -213,7 +213,7 @@ fi
 # Windows, using ZIP compression via 7ZIP compressor
 #
 if [ "$2" = "win32" ]; then
-	LIBSDL="/usr/lib/SDL.dll"		# Exo's mingw install
+	LIBSDL="`sdl-config --prefix`/bin/SDL.dll"
 	createzip $LIBSDL
 	exit
 fi
@@ -226,11 +226,6 @@ if [ "$2" = "macos" ]; then
 	createtbz osx-ppc $LIBSDL
 	exit
 fi
-
-#
-# NOTE: THE LINUX BUILDS SHOULD HAVE STDC++ STATICALLY LINKED!
-# NOTE: THEY MUST ALSO HAVE RELATIVE DIRECTORY LOOKUPS ENABLED!
-#
 
 #
 # Linux/i686, using tar.bz2 compression (NO SDL)

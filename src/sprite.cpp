@@ -398,10 +398,18 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
   {
     bwidth = board_width;
   }
+  
+  // Check for <= 0 width or height (prevent crashing)
+  
+  if ((check_sprite->col_width <= 0) || (check_sprite->col_height <= 0))
+  {
+    mzx_world->collision_count = 0;
+    return 0;
+  }
 
   // Scan board area
 
-  skip = board_width - check_sprite->col_width;;
+  skip = board_width - check_sprite->col_width;
   skip2 = bwidth - check_sprite->col_width;
 
   i3 = ((y + check_sprite->col_y) * board_width) + x + check_sprite->col_x;
