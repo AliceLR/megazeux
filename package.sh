@@ -123,7 +123,7 @@ BUILD_DEPS="config.sh Makefile Makefile.in package.sh $PADCONFIG"
 #
 # These directories are purely for source distributions.
 #
-SUBDIRS="arch contrib docs"
+SUBDIRS="arch contrib debian docs"
 
 #
 # What we actually care about; the complete sources to MegaZeux. Try to
