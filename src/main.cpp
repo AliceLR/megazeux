@@ -49,17 +49,6 @@
 #include "robo_ed.h"
 #include "config.h"
 
-#if defined(__linux__)
-#define GL_SHARED_OBJECT "libGL.so"
-#elif defined(__WIN32__)
-#define GL_SHARED_OBJECT "opengl32.dll"
-#elif defined(__MACOSX__)
-#define GL_SHARED_OBJECT "libGL.dylib"
-#else
-#warning This platform cannot use OpenGL hardware scaling!
-#define GL_SHARED_OBJECT ""
-#endif
-
 // Base name for MZX's help file.
 // Prepends SHAREDIR from config.h for you, so it's ready to use.
 
@@ -72,7 +61,6 @@ extern "C"
   {
     World mzx_world;
     char bin_path[512];
-    int gl_enable = 1;
 
 #ifdef DEBUG
     SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK |
@@ -124,12 +112,8 @@ extern "C"
     // Setup directory strings
     // Get megazeux directory
 
-    // try to load OpenGL shared library
-    if (SDL_GL_LoadLibrary(GL_SHARED_OBJECT) < 0)
-      gl_enable = 0;
-
     // Init video (will init palette too)
-    init_video(&(mzx_world.conf), gl_enable);
+    init_video(&(mzx_world.conf));
     init_audio(&(mzx_world.conf));
     cursor_off();
     default_scroll_values(&mzx_world);

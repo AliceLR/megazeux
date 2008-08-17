@@ -464,10 +464,10 @@ void config_window_resolution(config_info *conf, char *name, char *value,
   conf->window_height = strtol(next + 1, NULL, 10);
 }
 
-void config_set_hardware_stretch(config_info *conf, char *name, char *value,
+void config_set_video_output(config_info *conf, char *name, char *value,
  char *extended_data)
 {
-  conf->hardware_stretch = strtol(value, NULL, 10);
+  strncpy(conf->video_output, value, 16);
 }
 
 void config_enable_resizing(config_info *conf, char *name, char *value,
@@ -506,7 +506,6 @@ config_entry config_options[] =
   { "force_height_multiplier", config_set_multiplier },
   { "force_resolution", config_set_resolution },
   { "fullscreen", config_set_fullscreen },
-  { "hardware_stretch", config_set_hardware_stretch },
   { "include", include2_config },
   { "include*", include_config },
   { "joy!axis!", joy_axis_set },
@@ -525,6 +524,7 @@ config_entry config_options[] =
   { "sample_volume", config_set_sam_volume },
   { "save_file", config_save_file },
   { "startup_file", config_startup_file },
+  { "video_output", config_set_video_output },
   { "window_resolution", config_window_resolution }
 };
 
@@ -564,7 +564,7 @@ config_info default_options =
   640,				// window_width
   350,				// window_height
   0,				// allow_resize
-  0,				// hardware_stretch
+  "software",			// video_output
   1,				// height_multiplier
   1,				// force_32bpp
 

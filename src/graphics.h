@@ -21,28 +21,7 @@
 #define __GRAPHICS_H
 
 #include "SDL.h"
-#include "SDL_opengl.h"
-#include "SDL_loadso.h"
 #include "configure.h"
-
-typedef struct
-{
-  void (APIENTRY *glBegin)(GLenum mode);
-  void (APIENTRY *glBindTexture)(GLenum target, GLuint texture);
-  void (APIENTRY *glEnable)(GLenum cap);
-  void (APIENTRY *glEnd)(void);
-  void (APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
-  GLubyte* (APIENTRY *glGetString)(GLenum name);
-  void (APIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
-  void (APIENTRY *glTexImage2D)(GLenum target, GLint level,
-                                GLint internalformat, GLsizei width,
-                                GLsizei height, GLint border, GLenum format,
-                                GLenum type, const GLvoid *pixels);
-  void (APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
-  void (APIENTRY *glVertex3f)(GLfloat x, GLfloat y, GLfloat z);
-  void (APIENTRY *glViewport)(GLint x, GLint y, GLsizei width,
-                              GLsizei height);
-} gl_syms;
 
 typedef enum
 {
@@ -63,6 +42,7 @@ typedef struct
 typedef struct
 {
   SDL_Surface *screen;
+  SDL_Overlay *overlay;
   Uint32 screen_mode;
   char_element text_video[80 * 25 * 2];
   Uint8 charset[14 * 256 * 16];
@@ -86,7 +66,6 @@ typedef struct
   Uint32 window_width;
   Uint32 window_height;
   Uint32 bits_per_pixel;
-  Uint32 hardware_stretch;
   Uint32 allow_resize;
   Uint32 height_multiplier;
   Uint32 cursor_timestamp;
@@ -99,6 +78,12 @@ typedef struct
   Uint8 ascii_charset[14 * 256];
 
   Uint32 flat_intensity_palette[256];
+
+  int  (*init_video)       (config_info*);
+  int  (*check_video_mode) (int, int, int, int);
+  void (*set_video_mode)   (int, int, int, int, int);
+  void (*update_screen)    (void);
+  void (*update_colors)    (SDL_Color *, Uint32);
 } graphics_data;
 
 void color_string(char *string, Uint32 x, Uint32 y, Uint8 color);
@@ -150,7 +135,7 @@ void move_cursor(Uint32 x, Uint32 y);
 void set_cursor_mode(cursor_mode_types mode);
 cursor_mode_types get_cursor_mode();
 
-void init_video(config_info *conf, int gl_enable);
+void init_video(config_info *conf);
 void set_video_mode();
 void toggle_fullscreen();
 void resize_screen(Uint32 w, Uint32 h);

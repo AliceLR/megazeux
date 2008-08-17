@@ -32,7 +32,7 @@ struct _config_info
   int window_width;
   int window_height;
   int allow_resize;
-  int hardware_stretch;
+  char video_output[16];
   int height_multiplier;
   int force_32bpp;
 
