@@ -3653,6 +3653,7 @@ void dump_screen()
   int i;
   char name[16];
   struct stat file_info;
+  SDL_Surface *ss;
 
   for(i = 0; i < 99999; i++)
   {
@@ -3660,7 +3661,34 @@ void dump_screen()
     if(stat(name, &file_info))
       break;
   }
-  SDL_SaveBMP(graphics.screen, name);
+  ss = SDL_CreateRGBSurface(SDL_SWSURFACE, 640, 350, 8, 0, 0, 0, 0);
+  if (ss)
+  {
+    if (graphics.screen_mode == 1)
+    {
+      SDL_Color new_palette[256];
+      for(i = 0; i < 256; i++)
+      {
+        new_palette[i].r =
+         ((graphics.intensity_palette[i & 15].r << 1) +
+          graphics.intensity_palette[i >> 4].r) / 3;
+        new_palette[i].g =
+         ((graphics.intensity_palette[i & 15].g << 1) +
+          graphics.intensity_palette[i >> 4].g) / 3;
+        new_palette[i].b =
+         ((graphics.intensity_palette[i & 15].b << 1) +
+          graphics.intensity_palette[i >> 4].b) / 3;
+      }
+      SDL_SetColors(ss, new_palette, 0, 256);
+    }
+    else
+      SDL_SetColors(ss,graphics.intensity_palette, 0, 256);
+    SDL_LockSurface(ss);
+    update_screen8((Uint8*)ss->pixels, ss->pitch, 640, 350);
+    SDL_UnlockSurface(ss);
+    SDL_SaveBMP(ss, name);
+    SDL_FreeSurface(ss);
+  }
 }
 
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,

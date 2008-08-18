@@ -5,6 +5,10 @@ USERS
   which cannot natively alter their volumes.
 + Fixed a regression in the overlay editor caused by the new editor space
   semantics.
++ Screenshots are now rendered to a separate texture using the 8bit software
+  renderer. This means that the hardware scalers will not affect the quality
+  of the screenshot. It also fixes a bug when using opengl2, which would dump
+  only a white screen.
 
 DEVELOPERS
 
