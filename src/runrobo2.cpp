@@ -3197,7 +3197,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
            mzx_world->player_x, mzx_world->player_y, direction,
            cur_robot, player_bl);
           if(!is_robot(level_id[x + (y * board_width)]))
-            return;
+            goto next_cmd;
         }
         update_blocked = 1;
 

@@ -57,7 +57,7 @@ struct _config_info
   int mzx_speed;
 
   // World editor options
-  int editor_space_replaces;
+  int editor_space_toggles;
 
   // Robot editor options
   char color_codes[32];

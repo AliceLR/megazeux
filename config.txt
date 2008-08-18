@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# January 28th, 2007 --ajs.
+# January 30th, 2007 --ajs.
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -82,7 +82,7 @@ video_output = opengl2
 # resolution, preferably an integer multiple of 640x350, you may find
 # "nearest" more pleasing, which will have no "blur". The default 
 # setting is "linear".
-#
+
 # gl_filter_method = nearest
 
 # Resolution MZX uses for fullscreen. With the software renderer, this
@@ -276,13 +276,16 @@ modplug_resample_mode = cubic
 # set spr!spr_num!_cy !cy!
 # put !x1! sprite p!#spr_num! !x! !y!
 
-# Whether or not space can be used to replace a tile in the
-# world editor. Enabling this can allow accidental deletion
-# of robots, so it is not recommended (use delete instead).
-# However, some users prefer the classic MZX behavior.
-# Defaults off.
+# Whether or not the spacebar can be used to toggle between
+# your active buffer and the meta character "SPACE". If you
+# set this, it will behave like older MegaZeux's, but it will
+# allow you to overwrite robots, for instance.
+#
+# If the setting is disabled (the default), replacing params
+# will your new buffer will not require a toggle, and robots
+# can only be deleted with the Delete key.
 
-#editor_space_replaces = 1
+#editor_space_toggles = 1
 
 # Whether or not the palette should be reverted to default
 # when the robot editor is load. If set, SMZX mode 0 will

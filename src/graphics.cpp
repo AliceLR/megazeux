@@ -1,6 +1,13 @@
 /* MegaZeux
  *
- * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2004-2006 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+ *
+ * YUV Renderers:
+ *   Copyright (C) 2007 Alan Williams <mralert@gmail.com>
+ *
+ * OpenGL #2 Renderer:
+ *   Copyright (C) 2007 Joel Bouchard Lamontagne <logicow@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -1095,6 +1102,8 @@ static inline int can_use_opengl(void)
 
 #endif // !OPENGL_LINKED
 
+/* Prevent renderers from setting unsupported flags in GL mode.
+ */
 static int gl_strip_flags(int flags)
 {
   int new_flags = 0;
@@ -1106,6 +1115,11 @@ static int gl_strip_flags(int flags)
   return new_flags | SDL_OPENGL;
 }
 
+/* The OpenGL renderers support two modes of filtering. Filtering
+ * affects the interpolation used during scaling. "linear" will use
+ * linear interpolation, and "nearest" will use nearest neighbour
+ * approximation.
+ */
 static void gl_set_filter_method(char *method)
 {
   GLint gl_filter_method = GL_LINEAR;
@@ -2905,10 +2919,10 @@ void ec_change_char(Uint8 chr, char *matrix)
   {
     unsigned int i;
     char *p = (char *)gl_state.charset_texture;
-    signed char *c = (signed char *)graphics.charset;
+    signed char *c = (signed char *)graphics.charset + (chr * 14);
 
-    for (i = 0; i < 14; i++)
-      p = gl2_char_bitmask_to_texture(c++, p);
+    for (i = 0; i < 14; i++, c++)
+      p = gl2_char_bitmask_to_texture(c, p);
 
     gl.glTexSubImage2D(GL_TEXTURE_2D, 0, (chr % 32) * 8, (chr / 32) * 14, 8,
       14, GL_ALPHA, GL_UNSIGNED_BYTE, gl_state.charset_texture);

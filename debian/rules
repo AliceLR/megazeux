@@ -14,7 +14,7 @@ endif
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
-	./config.sh linux /usr /etc
+	./config.sh --platform linux
 	touch configure-stamp
 
 build: build-stamp
@@ -53,6 +53,7 @@ binary-arch: build install
 	dh_compress
 	dh_fixperms
 	dh_installdeb
+	dh_shlibdeps
 	dh_gencontrol
 	dh_md5sums
 	dh_builddeb

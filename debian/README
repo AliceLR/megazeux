@@ -1,8 +1,8 @@
 BUILDING MEGAZEUX FOR DEBIAN
 
 MegaZeux was tested as building on Debian Etch as of January, 2007. You must
-first rename the source directory "megazeux-2.81e", for example, to match the
-required Debian standard. MegaZeux is usually shipped as "mzx281e", for
+first rename the source directory "megazeux-2.81f", for example, to match the
+required Debian standard. MegaZeux is usually shipped as "mzx281f", for
 historical reasons.
 
 You can then generate a deb file for your architecture by typing:

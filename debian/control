@@ -6,8 +6,8 @@ Build-Depends: debhelper (>= 5), libsdl1.2-dev, libvorbis-dev
 Standards-Version: 3.7.2
 
 Package: megazeux
-Architecture: i386 amd64 source
-Depends: libsdl1.2debian (>= 1.2.11), libogg0, libvorbisfile3
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
 Description: A simple game creation system (GCS).
  MegaZeux is a Game Creation System (GCS), inspired by Epic MegaGames' ZZT.
  It was recently ported from 16bit MSDOS C/ASM to portable SDL C++, which has

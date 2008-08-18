@@ -1288,17 +1288,27 @@ void edit_world(World *mzx_world)
         }
         else
         {
-          /* In MZX 2.81e, the code before the }else{ here was removed.
-           * This code allows one to replace the edit underneath the cursor
-           * by pressing the space key -- there have been some arguments
-           * about whether this was error prone, but people have requested
-           * that the feature be re-added. So I've made it configurable. --ajs
+          /* There are two editor placement modes. This behavior can be
+           * toggled with the "editor_space_toggles" config.txt option.
+           *
+           * The legacy mode (editor_space_toggles = 1) allows users to 
+           * toggle between their param buffer and space, under any
+           * situation.
+           *
+           * The new mode (editor_space_toggles = 0) disallows accidental
+           * rewriting of robots (you must press Delete instead) and otherwise
+           * implicitly writes the param. This makes placing new blocks with
+           * the same ID (but different colour, say) faster.
            */
-	  int offset = cursor_board_x + (cursor_board_y * board_width);
+          int offset = cursor_board_x + (cursor_board_y * board_width);
 
+          /* If it's not an overlay edit, and we're placing an identical
+           * block, and the user has selected legacy placement mode, toggle
+           * the current param type with SPACE.
+           */
           if((!overlay_edit) && (current_id == level_id[offset]) &&
              (current_color == level_color[offset]) &&
-             mzx_world->conf.editor_space_replaces)
+             mzx_world->conf.editor_space_toggles)
           {
             place_current_at_xy(mzx_world, SPACE, 7, 0, cursor_board_x,
              cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
@@ -1306,9 +1316,18 @@ void edit_world(World *mzx_world)
           }
           else
           {
-            current_param = place_current_at_xy(mzx_world, current_id,
-             current_color, current_param, cursor_board_x, cursor_board_y,
-             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+            /* If what we're trying to overwrite is a robot, only allow
+             * the user to press "Delete" to remove it. Disallow rewrites
+             * and toggling in this mode. Otherwise, just write through
+             * as usual.
+             */
+            if (!(is_robot(level_id[offset]) &&
+                  !mzx_world->conf.editor_space_toggles))
+            {
+              current_param = place_current_at_xy(mzx_world, current_id,
+               current_color, current_param, cursor_board_x, cursor_board_y,
+               &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+            }
           }
         }
         modified = 1;

@@ -1,4 +1,4 @@
-January 27, 2007 - MZX 2.81f
+January 30, 2007 - MZX 2.81f
 
 This release is mostly about the new renderers, the first of which was
 introduced in the previous version. There's also a few important bugfixes,
@@ -32,6 +32,17 @@ USERS
   nearest-neighbour approximation occurs, looks "sharp").
 + Mouse warping was broken when using any of the hardware renderers. There
   should be code in there now to take account of this (thanks Mr_Alert).
++ Added an option 'editor_spaces_toggle' which allows you to revert MZX's
+  space overwrite behavior to the semantics of 'd' (the feature was
+  removed in 'e'). By default, the behavior is unchanged.
++ F6 (the debug menu) can now no longer be enabled anywhere but in the
+  editor Alt-T test mode. In 'e', it was possible to enable on the title
+  screen, but could not be enabled in a game. Like the cheats, this option
+  is now visible only in test mode.
+- Removed the 'lame/1337' menu feature.
++ Fixed a bug where the global robot could be exited via some legal commands,
+  in an abnormal fashion. The bug resulted in all the code up to the offending
+  command being executed over and over.
 
 DEVELOPERS
 

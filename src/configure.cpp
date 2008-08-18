@@ -476,10 +476,10 @@ void config_set_gl_filter_method(config_info *conf, char *name, char *value,
   strncpy(conf->gl_filter_method, value, 16);
 }
 
-void config_editor_space_replaces(config_info *conf, char *name, char *value,
+void config_editor_space_toggles(config_info *conf, char *name, char *value,
  char *extended_data)
 {
-  conf->editor_space_replaces = strtol(value, NULL, 10);
+  conf->editor_space_toggles = strtol(value, NULL, 10);
 }
 
 config_entry config_options[] =
@@ -506,7 +506,7 @@ config_entry config_options[] =
   { "default_invalid_status", config_default_invald },
   { "disassemble_base", config_disassemble_base },
   { "disassemble_extras", config_disassemble_extras },
-  { "editor_space_replaces", config_editor_space_replaces },
+  { "editor_space_toggles", config_editor_space_toggles },
   { "enable_oversampling", config_enable_oversampling },
   { "enable_resizing", config_enable_resizing },
   { "force_bpp", config_force_bpp },
@@ -593,7 +593,7 @@ config_info default_options =
   4,				// mzx_speed
 
   // World editor options
-  0,				// editor_space_replaces
+  0,				// editor_space_toggles
 
   // Robot editor options
   { 11, 10, 10, 14, 255, 3, 11, 2, 14, 0, 15, 11, 7, 15, 1, 2, 3 },
