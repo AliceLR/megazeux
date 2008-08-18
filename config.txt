@@ -276,6 +276,14 @@ modplug_resample_mode = cubic
 # set spr!spr_num!_cy !cy!
 # put !x1! sprite p!#spr_num! !x! !y!
 
+# Whether or not space can be used to replace a tile in the
+# world editor. Enabling this can allow accidental deletion
+# of robots, so it is not recommended (use delete instead).
+# However, some users prefer the classic MZX behavior.
+# Defaults off.
+
+#editor_space_replaces = 1
+
 # Whether or not the palette should be reverted to default
 # when the robot editor is load. If set, SMZX mode 0 will
 # also be enforced.

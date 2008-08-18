@@ -1288,9 +1288,28 @@ void edit_world(World *mzx_world)
         }
         else
         {
-          current_param = place_current_at_xy(mzx_world, current_id,
-           current_color, current_param, cursor_board_x, cursor_board_y,
-           &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+          /* In MZX 2.81e, the code before the }else{ here was removed.
+           * This code allows one to replace the edit underneath the cursor
+           * by pressing the space key -- there have been some arguments
+           * about whether this was error prone, but people have requested
+           * that the feature be re-added. So I've made it configurable. --ajs
+           */
+	  int offset = cursor_board_x + (cursor_board_y * board_width);
+
+          if((!overlay_edit) && (current_id == level_id[offset]) &&
+             (current_color == level_color[offset]) &&
+             mzx_world->conf.editor_space_replaces)
+          {
+            place_current_at_xy(mzx_world, SPACE, 7, 0, cursor_board_x,
+             cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
+             overlay_edit);
+          }
+          else
+          {
+            current_param = place_current_at_xy(mzx_world, current_id,
+             current_color, current_param, cursor_board_x, cursor_board_y,
+             &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+          }
         }
         modified = 1;
         break;

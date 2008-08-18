@@ -51,51 +51,52 @@
 #include "robot.h"
 #include "fsafeopen.h"
 
-char *main_menu = "Enter- Menu\n"
-                  "Esc  - Exit to DOS\n"
-                  "F1/H - Help\n"
-                  "F2/S - Settings\n"
-                  "F3/L - Load world\n"
-                  "F4/R - Restore game\n"
-                  "F5/P - Play world\n"
-                  "F6   - Debug menu\n"
-                  "F8/E - World editor\n"
-                  "F10  - Quickload"
-                  "";
+static char main_menu[] =
+ "Enter- Menu\n"
+ "Esc  - Exit to DOS\n"
+ "F1/H - Help\n"
+ "F2/S - Settings\n"
+ "F3/L - Load world\n"
+ "F4/R - Restore game\n"
+ "F5/P - Play world\n"
+ "F8/E - World editor\n"
+ "F10  - Quickload\n"
+ ""  // unused
+ ""; // unused
 
-char *game_menu =  "F1    - Help\n"
-                  "Enter - Menu/status\n"
-                  "Esc   - Exit to title\n"
-                  "F2    - Settings\n"
-                  "F3    - Save game\n"
-                  "F4    - Restore game\n"
-                  "F5/Ins- Toggle bomb type\n"
-                  "F6    - Debug menu\n"
-                  "F9    - Quicksave\n"
-                  "F10   - Quickload\n"
-                  "Arrows- Move\n"
-                  "Space - Shoot (w/dir)\n"
-                  "Delete- Bomb";
+static char game_menu[] =
+ "F1    - Help\n"
+ "Enter - Menu/status\n"
+ "Esc   - Exit to title\n"
+ "F2    - Settings\n"
+ "F3    - Save game\n"
+ "F4    - Restore game\n"
+ "F5/Ins- Toggle bomb type\n"
+ "\n"  // Debug Menu (disabled in game)
+ "F9    - Quicksave\n"
+ "F10   - Quickload\n"
+ "Arrows- Move\n"
+ "Space - Shoot (w/dir)\n"
+ "Delete- Bomb";
+
+static char editing_menu[] =
+ "F1    - Help\n"
+ "Enter - Menu/status\n"
+ "Esc   - Exit to title\n"
+ "F2    - Settings\n"
+ "F3    - Save game\n"
+ "F4    - Restore game\n"
+ "F5/Ins- Toggle bomb type\n"
+ "F6    - Debug Menu\n"
+ "F9    - Quicksave\n"
+ "F10   - Quickload\n"
+ "Arrows- Move\n"
+ "Space - Shoot (w/dir)\n"
+ "Delete- Bomb";
 
 char *world_ext[] = { ".MZX", NULL };
 
 char *save_ext[] = { ".SAV", NULL };
-
-// Oh boy, the 1337 menu. Have fun with this.
-char *lame_menu= "F1    - HELP!!1\n"
-              "etner - TIHS MENUE\n"
-              "EScapE- DONT PRESS LOL\n"
-              "f2    - UR SETTINGS\n"
-              "F3    - SAV UR GAEM\n"
-              "F4    - LOAD UR GAAM\n"
-              "F5-iNs- I DONNO! LOLZ\n"
-              "f6    - :((((((((\n"
-              "f9    - quickSNAD!\n"
-              "ef10  - QUICKLOAD\n"
-              "Arrowz- MOVE UR GUY :D :D\n"
-              "spaec - shoot UR GUN\n"
-              "deleet- DA BOMB!!!111111";
-
 
 char debug_mode = 0;
 
@@ -457,13 +458,6 @@ void title_screen(World *mzx_world)
             vquick_fadeout();
             fadein = 1;
           }
-          break;
-        }
-
-        case SDLK_F6:
-        {
-          // Debug menu
-          debug_mode ^= 1;
           break;
         }
 
@@ -1266,8 +1260,8 @@ void play_game(World *mzx_world, int fadein)
             save_screen();
 
             draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
-            if(enter_menu_status == 1337)
-              write_string(lame_menu, 10, 5, 31, 1);
+            if (mzx_world->editing)
+              write_string(editing_menu, 10, 5, 31, 1);
             else
               write_string(game_menu, 10, 5, 31, 1);
             write_string(" Game Menu ", 14, 4, 30, 0);
