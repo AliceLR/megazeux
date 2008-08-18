@@ -27,12 +27,15 @@
 
 __M_BEGIN_DECLS
 
-#ifdef PSP_BUILD
+#ifndef __WIN32__
+#include <limits.h>
+#endif
+
+#ifndef PATH_MAX
 #define PATH_MAX 512
 #endif
 
-#ifndef __WIN32__
-#include <limits.h>
+#ifndef MAX_PATH
 #define MAX_PATH PATH_MAX
 #endif
 
