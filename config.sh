@@ -1,60 +1,106 @@
 #!/bin/sh
 
-### PARSE PLATFORM DEFINITION #################################################
+### CONFIG.SH HELP TEXT #######################################################
 
-if [ "$1" = "" ]; then
-	if [ "`uname -o`" = "GNU/Linux" ]; then
-		echo "Assuming Linux operating system.."
-		cp -f arch/Makefile.linux Makefile.platform
-		ARCH=linux
-	else
-		echo "Assuming Windows operating system.."
-		cp -f arch/Makefile.win32 Makefile.platform
-		ARCH=win32
+function usage {
+	echo "usage: ./config.sh --platform [platform] <--prefix prefix>"
+	echo "                   <--sysconfdir sysconfdir> <option..>"
+	echo
+	echo " <prefix>        Where MegaZeux's dependencies should be found." 
+	echo " <sysconfdir>    Where MegaZeux's config should be read from."
+	echo
+	echo "Supported [platform] values:"
+	echo
+	echo "  win32          Microsoft Windows"
+	echo "  linux          Linux"
+	echo "  macos          Macintosh OS X (not Classic)"
+	echo "  linux-static   Linux (statically linked)"
+	echo "  psp            Experimental PSP port"
+	echo
+	echo "Supported <option> values:"
+	echo "  --disable-x11  Disables X11, removing binary dependency."
+	echo "  --enable-x11   Enables X11 support (default)."
+	echo
+	echo "  --disable-gl   Disables all OpenGL renderers."
+	echo "  --enable-gl    Enables OpenGL, runtime loaded (default)."
+	echo
+	echo "e.g.: ./config.sh --platform linux --prefix /usr"
+	echo "                  --sysconfdir /etc --disable-x11"
+	echo "e.g.: ./config.sh --platform win32"
+	echo
+}
+
+### CHOMP CONFIG.SH FLAGS #####################################################
+
+#
+# Default settings for flags (used if unspecified)
+#
+PLATFORM=""
+PREFIX="/usr"
+SYSCONFDIR="/etc"
+X11="true"
+OPENGL="true"
+
+#
+# User may override above settings
+#
+while [ "$1" != "" ]; do
+	# e.g. --platform linux-static
+	if [ "$1" = "--platform" ]; then
+		shift
+		PLATFORM="$1"
 	fi
-else
-	cp -f arch/Makefile.$1 Makefile.platform
-	ARCH=$1
+
+	# e.g. --prefix /usr
+	if [ "$1" = "--prefix" ]; then
+		shift
+		PREFIX="$1"
+	fi
+
+	# e.g. --sysconfdir /etc
+	if [ "$1" = "--sysconfdir" ]; then
+		shift
+		SYSCONFDIR="$1"
+	fi
+
+	[ "$1" = "--disable-x11" ] && X11="false"
+	[ "$1" = "--enable-x11" ]  && X11="true"
+
+	[ "$1" = "--disable-gl" ] && OPENGL="false"
+	[ "$1" = "--enable-gl" ]  && OPENGL="true"
+
+	shift
+done
+
+#
+# Platform cannot be sanely omitted
+#
+if [ "$PLATFORM" = "" ]; then
+	usage
+	exit 0
 fi
+
+### PLATFORM DEFINITION #######################################################
+
+cp -f arch/Makefile.$PLATFORM Makefile.platform
 
 if [ ! -f Makefile.platform ]; then
 	echo "Invalid platform selection (see arch/)"
 	exit 1
 fi
 
-shift
+### SYSTEM CONFIG DIRECTORY ###################################################
 
-### PARSE DEPENDENCY PREFIX ###################################################
-
-if [ "$1" = "" ]; then
-	echo "Assuming /usr prefix.."
-	PREFIX=/usr
-else
-	PREFIX=$1
+if [ "$PLATFORM" != "linux" ]; then
+	SYSCONFDIR="."
 fi
 
-shift
+### SUMMARY OF OPTIONS ########################################################
 
-### PARSE SYSTEM CONFIG DIRECTORY #############################################
-
-if [ "$1" = "" ]; then
-	if [ "$ARCH" = "linux" ]; then
-		echo "Assuming /etc sysconfdir.."
-		SYSCONFDIR=/etc
-	else
-		echo "Assuming config.txt is in working directory.."
-		SYSCONFDIR=.
-	fi
-else
-	if [ "$ARCH" = "linux-static" ]; then
-		echo "Ignoring setting, using working directory.."
-		SYSCONFDIR=.
-	else
-		SYSCONFDIR=$1
-	fi
-fi
-
-shift
+echo "Building for platform:   $PLATFORM"
+echo "Using prefix:            $PREFIX"
+echo "Using sysconfdir:        $SYSCONFDIR"
+echo
 
 ### GENERATE CONFIG.H HEADER ##################################################
 
@@ -65,53 +111,27 @@ echo "PREFIX=$PREFIX"      >> Makefile.platform
 echo "#define CONFDIR  \"$SYSCONFDIR/\"" > src/config.h
 
 #
-# Windows, MacOS X and Linux-Static all want to read files
-# relative to their install directory. Every other platform
-# wants to read from a /usr tree, and rename config.txt.
+# Only Linux wants to use a system prefix hierarchy currently
 #
-if [ "$ARCH" = "win32" -o "$ARCH" = "macos" -o "$ARCH" = "linux-static" \
-     -o "$ARCH" = "psp" ]; then
-	echo "#define SHAREDIR \"./\""         >> src/config.h
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
-else
+if [ "$PLATFORM" = "linux" ]; then
 	echo "#define SHAREDIR \"$PREFIX/share/megazeux/\"" >> src/config.h
 	echo "#define CONFFILE \"megazeux-config\""         >> src/config.h
+else
+	echo "#define SHAREDIR \"./\""         >> src/config.h
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 fi
 
 #
-# linux target has "make install", which requires these features
+# Some architectures define an "install" target, and need these.
 #
-if [ "$ARCH" = "linux" -o "$ARCH" = "psp" ]; then
-	echo "TARGET=`grep TARGET Makefile.in | sed "s/ //g" | cut -d "=" -f 2`" \
-		>> Makefile.platform
-	echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
-fi
-
-### CHOMP REMAINING FLAGS #####################################################
-
-#
-# Default settings for flags (used if unspecified)
-#
-X11="true"
-OPENGL="false"
-
-#
-# User may override above settings
-#
-while [ "$1" != "" ]; do
-	[ "$1" = "-nox11" ] && X11="false"
-	[ "$1" = "-x11" ]   && X11="true"
-
-	[ "$1" = "-nogl" ]  && OPENGL="false"
-	[ "$1" = "-gl" ]    && OPENGL="true"
-
-	shift
-done
+echo "TARGET=`grep TARGET Makefile.in | sed "s/ //g" | cut -d "=" -f 2`" \
+	>> Makefile.platform
+echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 
 #
 # X11 support (linked against and needs headers installed)
 #
-if [ "$ARCH" != "win32" -a "$ARCH" != "psp" ]; then
+if [ "$PLATFORM" != "win32" -a "$PLATFORM" != "psp" ]; then
 	# attempt auto-detection
 	if [ "$X11" = "true" ]; then
 		# try to run X
@@ -146,7 +166,7 @@ fi
 #
 # OpenGL support (not linked against GL, but needs headers installed)
 #
-if [ "$ARCH" != "psp" ]; then
+if [ "$PLATFORM" != "psp" ]; then
 	# asked for opengl?
 	if [ "$OPENGL" = "true" ]; then
 		echo "OpenGL support enabled."
@@ -158,4 +178,5 @@ if [ "$ARCH" != "psp" ]; then
 	fi
 fi
 
-echo "All done!"
+echo
+echo "Now type \"make\"."

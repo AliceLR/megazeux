@@ -2,26 +2,5 @@
 
 all:
 	@echo "Please run config.sh before make!"
-	@echo "usage: ./config.sh [platform] <prefix> <sysconfdir> <option..>"
 	@echo
-	@echo "Supported <platform> values:"
-	@echo
-	@echo "  win32          Microsoft Windows"
-	@echo "  linux          Linux"
-	@echo "  macos          Macintosh OS X (not Classic)"
-	@echo "  linux-static   Linux (statically linked)"
-	@echo "  psp            Experimental PSP port"
-	@echo
-	@echo "Supported <option> values:"
-	@echo "  -nox11         Disables X11, removing binary dependency."
-	@echo "  -x11           Enables X11 support (default)."
-	@echo
-	@echo "  -nogl          Disables OpenGL (default)."
-	@echo "  -gl            Enables OpenGL, runtime loaded."
-	@echo
-	@echo "e.g.: ./config.sh linux /usr /etc -nox11 -gl"
-	@echo "e.g.: ./config.sh win32"
-	@echo
-	@echo "NOTE: Due to technical restrictions, you must specify"
-	@echo "      prefix + sysconfdir before you can specify options."
-	@echo
+	@echo "Type ./config.sh for more information."
