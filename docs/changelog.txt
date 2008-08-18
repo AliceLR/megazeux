@@ -1,3 +1,17 @@
+USERS
+
++ Fixed a bug in the audio code. The linear resampler was not taking volume
+  into account, which broke changing the volume of samples (WAV and Vorbis)
+  which cannot natively alter their volumes.
++ Fixed a regression in the overlay editor caused by the new editor space
+  semantics.
+
+DEVELOPERS
+
++ Fixed an invalid assumption in config.sh where /bin/sh was chosen as the
+  shell script interpreter. This should have been /bin/bash, as 'sh' is not
+  required to support functions, which config.sh uses.
+
 January 30, 2007 - MZX 2.81f
 
 This release is mostly about the new renderers, the first of which was
