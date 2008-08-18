@@ -37,7 +37,6 @@ struct _config_info
   int window_height;
   int allow_resize;
   char video_output[16];
-  int height_multiplier;
   int force_32bpp;
 
   // Audio options

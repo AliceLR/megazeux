@@ -107,7 +107,6 @@ extern "C"
     initialize_joysticks();
 
     set_mouse_mul(8, 14);
-    warp_mouse(39, 12);
 
     // Setup directory strings
     // Get megazeux directory
@@ -115,6 +114,7 @@ extern "C"
     // Init video (will init palette too)
     init_video(&(mzx_world.conf));
     init_audio(&(mzx_world.conf));
+    warp_mouse(39, 12);
     cursor_off();
     default_scroll_values(&mzx_world);
 

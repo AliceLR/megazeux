@@ -81,22 +81,8 @@ static void update_screen8(Uint8 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
   Uint32 row_advance = (pitch * 14) / 4;
   Uint32 ticks = SDL_GetTicks();
   Uint32 *old_dest = NULL;
-  Uint32 height_multiplier = graphics.height_multiplier;
 
-  if(!graphics.fullscreen)
-    height_multiplier = 1;
-
-  if(height_multiplier > 1)
-  {
-    dest = (Uint32 *)(pixels) + (pitch * (((h / height_multiplier) - 350) / 8))
-     + ((w - 640) / 8);
-    line_advance *= height_multiplier;
-    row_advance *= height_multiplier;
-  }
-  else
-  {
-    dest = (Uint32 *)(pixels) + (pitch * ((h - 350) / 8)) + ((w - 640) / 8);
-  }
+  dest = (Uint32 *)(pixels) + (pitch * ((h - 350) / 8)) + ((w - 640) / 8);
 
   old_dest = dest;
 
@@ -439,26 +425,6 @@ static void update_screen8(Uint8 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
       cursor_offset += line_advance;
     }
   }
-
-  if(height_multiplier > 1)
-  {
-    // Duplicate the screen
-    Uint32 *dest2;
-    Uint32 line_advance2 = pitch / 4;
-    dest = old_dest;
-    dest2 = dest + line_advance2;
-
-    for(i = 0; i < 350; i++)
-    {
-      for(i2 = 0; i2 < height_multiplier - 1; i2++)
-      {
-        memcpy(dest2, dest, 640);
-        dest2 += line_advance2;
-      }
-      dest2 += line_advance2;
-      dest += line_advance;
-    }
-  }
 }
 
 static void update_screen32(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
@@ -477,23 +443,9 @@ static void update_screen32(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
   Uint32 row_advance = ((pitch / sizeof(Uint32)) * 14);
   Uint32 ticks = SDL_GetTicks();
   Uint32 *old_dest = NULL;
-  Uint32 height_multiplier = graphics.height_multiplier;
 
-  if(!graphics.fullscreen)
-    height_multiplier = 1;
-
-  if(height_multiplier > 1)
-  {
-    dest = (Uint32 *)(pixels) + (pitch * (((h / height_multiplier) - 350) / 2))
-     + ((w - 640) / 2);
-    line_advance *= height_multiplier;
-    row_advance *= height_multiplier;
-  }
-  else
-  {
-    dest = (Uint32 *)(pixels) + (line_advance * ((h - 350) / 2)) + ((w - 640) /
-     2);
-  }
+  dest = (Uint32 *)(pixels) + (line_advance * ((h - 350) / 2)) + ((w - 640) /
+   2);
 
   line_advance_sub = line_advance - 8;
 
@@ -730,26 +682,6 @@ static void update_screen32(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
       cursor_offset += line_advance_sub;
     }
   }
-
-  if(height_multiplier > 1)
-  {
-    // Duplicate the screen
-    Uint32 *dest2;
-    Uint32 line_advance2 = pitch / sizeof(Uint32);
-    dest = old_dest;
-    dest2 = dest + line_advance2;
-
-    for(i = 0; i < 350; i++)
-    {
-      for(i2 = 0; i2 < height_multiplier - 1; i2++)
-      {
-        memcpy(dest2, dest, 640 * sizeof(Uint32));
-        dest2 += line_advance2;
-      }
-      dest2 += line_advance2;
-      dest += line_advance;
-    }
-  }
 }
 
 /* SOFTWARE RENDERER CODE ****************************************************/
@@ -757,14 +689,6 @@ static void update_screen32(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
 static int soft_init_video(config_info *conf)
 {
   graphics.bits_per_pixel = 32;
-
-  if (conf->height_multiplier >= 0)
-  {
-    if ((graphics.resolution_height / conf->height_multiplier) >= 350)
-    {
-      graphics.height_multiplier = conf->height_multiplier;
-    }
-  }
 
   // we only have 8bit and 32bit software renderers
   if (conf->force_bpp == 8 || conf->force_bpp == 32)
@@ -823,6 +747,36 @@ static void soft_resize_screen(int w, int h)
 {
   update_screen();
   update_palette();
+}
+
+static void soft_set_screen_coords(int x, int y, int *screen_x, int *screen_y)
+{
+  int target_width = graphics.window_width;
+  int target_height = graphics.window_height;
+
+  if(graphics.fullscreen)
+  {
+    target_width = graphics.resolution_width;
+    target_height = graphics.resolution_height;
+  }
+
+  *screen_x = x + (target_width - 640) / 2;
+  *screen_y = y + (target_height - 350) / 2;
+}
+
+static void hard_set_screen_coords(int x, int y, int *screen_x, int *screen_y)
+{
+  int target_width = graphics.window_width;
+  int target_height = graphics.window_height;
+
+  if(graphics.fullscreen)
+  {
+    target_width = graphics.resolution_width;
+    target_height = graphics.resolution_height;
+  }
+
+  *screen_x = x * target_width / 640;
+  *screen_y = y * target_height / 350;
 }
 
 #if defined(CONFIG_OPENGL) && !defined(PSP_BUILD)
@@ -1588,7 +1542,7 @@ static void gl2_update_screen(void)
     mw = graphics.mouse_width_mul;
     mh = graphics.mouse_height_mul;
 
-    gl.glColor4ub(32, 32, 32, 64);
+    gl.glColor4ub(0, 0, 0, 128);
     gl.glTexCoord2f(0, 0.8755);
     gl.glVertex3i(mxb,      myb + mh, -1);
     gl.glTexCoord2f(0, 0.8755);
@@ -1598,7 +1552,7 @@ static void gl2_update_screen(void)
     gl.glTexCoord2f(0, 0.8755);
     gl.glVertex3i(mxb + mw, myb + mh, -1);
 
-    gl.glColor4ub(223, 223, 223, 24);
+    gl.glColor4ub(255, 255, 0, 255);
     gl.glTexCoord2f(0, 0.8755);
     gl.glVertex3i(mxb + 1,      myb + mh - 1, -1);
     gl.glTexCoord2f(0, 0.8755);
@@ -1607,16 +1561,6 @@ static void gl2_update_screen(void)
     gl.glVertex3i(mxb + mw - 1, myb + 1,      -1);
     gl.glTexCoord2f(0, 0.8755);
     gl.glVertex3i(mxb + mw - 1, myb + mh - 1, -1);
-
-    gl.glColor4ub(255, 0, 0, 196);
-    gl.glTexCoord2f(0, 0.8755);
-    gl.glVertex3i(mouse_x,      mouse_y + 12, -1);
-    gl.glTexCoord2f(0, 0.8755);
-    gl.glVertex3i(mouse_x,      mouse_y,      -1);
-    gl.glTexCoord2f(0, 0.8755);
-    gl.glVertex3i(mouse_x + 10, mouse_y + 8,  -1);
-    gl.glTexCoord2f(0, 0.8755);
-    gl.glVertex3i(mouse_x + 4,  mouse_y + 8,  -1);
   }
 
   // Draw cursor perhaps
@@ -2181,6 +2125,7 @@ static void set_graphics_output(char *video_output)
   graphics.update_screen = soft_update_screen;
   graphics.update_colors = soft_update_colors;
   graphics.resize_screen = soft_resize_screen;
+  graphics.set_screen_coords = soft_set_screen_coords;
   graphics.remap_charsets = NULL;
 
 #if defined(CONFIG_OPENGL) && !defined(PSP_BUILD)
@@ -2194,6 +2139,7 @@ static void set_graphics_output(char *video_output)
       graphics.set_video_mode = gl1_set_video_mode;
       graphics.update_screen = gl1_update_screen;
       graphics.update_colors = gl1_update_colors;
+      graphics.set_screen_coords = hard_set_screen_coords;
       selected_output = video_output;
     }
 
@@ -2206,6 +2152,7 @@ static void set_graphics_output(char *video_output)
       graphics.update_colors = gl2_update_colors;
       graphics.resize_screen = gl2_resize_screen;
       graphics.remap_charsets = gl2_remap_charsets;
+      graphics.set_screen_coords = hard_set_screen_coords;
       selected_output = video_output;
     }
   }
@@ -2227,6 +2174,7 @@ static void set_graphics_output(char *video_output)
     graphics.set_video_mode = yuv1_set_video_mode;
     graphics.update_screen = yuv1_update_screen;
     graphics.update_colors = yuv1_update_colors;
+    graphics.set_screen_coords = hard_set_screen_coords;
     selected_output = video_output;
   }
 #endif
@@ -2240,6 +2188,7 @@ static void set_graphics_output(char *video_output)
     graphics.set_video_mode = yuv2_set_video_mode;
     graphics.update_screen = yuv2_update_screen;
     graphics.update_colors = yuv1_update_colors;
+    graphics.set_screen_coords = hard_set_screen_coords;
     selected_output = video_output;
   }
 #endif
@@ -2262,7 +2211,6 @@ void init_video(config_info *conf)
   graphics.mouse_status = 0;
   graphics.cursor_timestamp = SDL_GetTicks();
   graphics.cursor_flipflop = 1;
-  graphics.height_multiplier = 1;
 
   set_graphics_output(conf->video_output);
 
@@ -3697,8 +3645,7 @@ void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
   else
   {
     int w_offset = (target_width - 640) / 2;
-    int h_offset = ((target_height /
-     graphics.height_multiplier) - 350) / 2;
+    int h_offset = (target_height - 350) / 2;
 
     *x = screen_x - w_offset;
     *y = screen_y - h_offset;
@@ -3710,10 +3657,13 @@ void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
   }
 }
 
+void set_screen_coords(int x, int y, int *screen_x, int *screen_y)
+{
+  graphics.set_screen_coords(x, y, screen_x, screen_y);
+}
+
 void set_mouse_mul(int width_mul, int height_mul)
 {
   graphics.mouse_width_mul = width_mul;
   graphics.mouse_height_mul = height_mul;
 }
-
-/* GL RENDERER CODE **********************************************************/

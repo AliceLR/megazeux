@@ -177,12 +177,6 @@ void config_set_resolution(config_info *conf, char *name, char *value,
   conf->resolution_height = strtol(next + 1, NULL, 10);
 }
 
-void config_set_multiplier(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->height_multiplier = strtol(value, NULL, 10);
-}
-
 void config_set_fullscreen(config_info *conf, char *name, char *value,
  char *extended_data)
 {
@@ -509,7 +503,6 @@ config_entry config_options[] =
   { "enable_oversampling", config_enable_oversampling },
   { "enable_resizing", config_enable_resizing },
   { "force_bpp", config_force_bpp },
-  { "force_height_multiplier", config_set_multiplier },
   { "force_resolution", config_set_resolution },
   { "fullscreen", config_set_fullscreen },
   { "gl_filter_method", config_set_gl_filter_method },
@@ -572,7 +565,6 @@ config_info default_options =
   350,				// window_height
   0,				// allow_resize
   "software",			// video_output
-  1,				// height_multiplier
   32,				// force_bpp
   "linear",			// opengl filter method
 

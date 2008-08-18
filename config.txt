@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# January 22nd, 2007 --ajs.
+# January 28th, 2007 --ajs.
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -36,9 +36,9 @@
 # hardware. It also requires no overlay or 3D hardware support. If you're
 # on a slow computer or a handheld portable, you definitely want to use
 # this. To use it, either do nothing, or uncomment the line below.
-# 
+ 
 # video_output = software
-#
+
 # The YUV overlay renderer is a good substitute if you want scaling
 # at low cost. The quality of the scaling is poor, and can sometimes be
 # very poor depending on your video hardware. On video hardware that
@@ -51,35 +51,49 @@
 # Uncomment either of the lines below (but not both) if you want to try it.
 # The "overlay2" mode is cheaper, but will be less accurate due to the use
 # of chroma subsampling instead of a full YUV encode.
-#
+
 # video_output = overlay1
 # video_output = overlay2
-#
-# The OpenGL renderer is a good choice if you want a highly configurable,
+
+# An OpenGL renderer is a good choice if you want a highly configurable,
 # cheap (in terms of CPU cycles) renderer and have a fairly good video
 # card. This method provides the highest quality scaler and should work
-# on all platforms with a compliant OpenGL 1.1 implementation. Uncomment
-# the line below:
+# on all platforms with a compliant OpenGL 1.1 implementation.
 #
-video_output = opengl1
+# MegaZeux provides two OpenGL scalers, one by Exophase which renders the
+# whole game to a GL texture and then uses OpenGL to stretch it. This render
+# is called "opengl1", and is high quality but quite slow.
+#
+# The second OpenGL scaler was written by LogiCow, and it more extensively
+# remaps all the character sets to textures and uses more GL features to
+# do the tiling entirely in OpenGL. This yields a performance increase, at
+# the cost of compatibility. It's been tested and works well on NVIDIA and
+# ATI video cards, but your mileage might vary. This renderer is called
+# "opengl2".
+#
+# Uncomment ONE of the lines below:
 
-# The OpenGL will, by default, linearly interpolate pixels as it upscales
+# video_output = opengl1
+video_output = opengl2
+
+# OpenGL will, by default, linearly interpolate pixels as it upscales
 # to your requested resolution. This creates an output with more "blur",
 # which some people dislike. If you are using a sufficiently high target
 # resolution, preferably an integer multiple of 640x350, you may find
-# "nearest" more pleasing, which will have no "blur".
+# "nearest" more pleasing, which will have no "blur". The default 
+# setting is "linear".
 #
-# gl_filter_method = linear
+# gl_filter_method = nearest
 
-# Resolution MZX uses for fullscreen. Note that MZX will always
-# be 640x350 centered within the resolution you choose
-# (in other words, it won't be stretched). Give in x, y format.
-# Use this if the default is giving you problems. Suggested
-# values are 640, 400 and 640, 480.
+# Resolution MZX uses for fullscreen. With the software renderer, this
+# will center MZX on the screen, and will not scale it.
+# However, with the hardware renderers above, MZX will attempt to scale
+# itself to match this resolution. Best results are obtained with
+# multiples of 640x350, but any supported screen mode should work.
+# Give in x,y format. Use this if the defaults are giving you problems,
+# especially in the software renderer.
 # This resolution may not actually work; if it doesn't, you will
 # get the nearest that does.
-# You may also try a resolution like 640x700 that multiplies
-# the width, then set the multiplier..
 
 force_resolution = 1024,768
 
@@ -105,16 +119,10 @@ enable_resizing = 1
 
 force_bpp = 32
 
-# Make it so the display is stretched by this amount (must be
-# integer). This is useful for getting resolutions like 640x700
-# to look correct (set to 2).
-
-#force_height_multiplier = 1
-
 # Whether MZX should start up in fullscreen or not.
-# Press ctrl-alt-enterWh to toggle fullscreen as MZX runs.
+# Press ctrl-alt-enter to toggle fullscreen as MZX runs.
 
-#fullscreen = 0
+# fullscreen = 1
 
 ### Audio options ###
 

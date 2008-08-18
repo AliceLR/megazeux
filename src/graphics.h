@@ -71,7 +71,6 @@ typedef struct
   Uint32 window_height;
   Uint32 bits_per_pixel;
   Uint32 allow_resize;
-  Uint32 height_multiplier;
   Uint32 cursor_timestamp;
   Uint32 cursor_flipflop;
   Uint32 default_smzx_loaded;
@@ -91,6 +90,7 @@ typedef struct
   void (*update_colors)    (SDL_Color *, Uint32);
   void (*resize_screen)    (int, int);
   void (*remap_charsets)   (void);
+  void (*set_screen_coords)(int, int, int *, int *);
 } graphics_data;
 
 void color_string(char *string, Uint32 x, Uint32 y, Uint8 color);
@@ -205,6 +205,7 @@ void dump_screen();
 
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y);
+void set_screen_coords(int x, int y, int *screen_x, int *screen_y);
 void set_mouse_mul(int width_mul, int height_mul);
 
 __M_END_DECLS

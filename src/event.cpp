@@ -608,25 +608,35 @@ Uint32 get_mouse_status_ext()
 
 void warp_mouse(Uint32 x, Uint32 y)
 {
+  int mx = (x * 8) + 4;
+  int my = (y * 14) + 7;
+  int mx_real, my_real;
   input.mouse_x = x;
   input.mouse_y = y;
-  input.real_mouse_x = (x * 8) + 4;
-  input.real_mouse_y = (y * 14) + 7;
-  SDL_WarpMouse(input.real_mouse_x, input.real_mouse_y);
+  input.real_mouse_x = mx;
+  input.real_mouse_y = my;
+  set_screen_coords(mx, my, &mx_real, &my_real);
+  SDL_WarpMouse(mx_real, my_real);
 }
 
 void warp_mouse_x(Uint32 x)
 {
+  int mx = (x * 8) + 4;
+  int mx_real, my_real;
   input.mouse_x = x;
-  input.real_mouse_x = (x * 8) + 4;
-  SDL_WarpMouse(input.real_mouse_x, input.real_mouse_y);
+  input.real_mouse_x = mx;
+  set_screen_coords(mx, input.real_mouse_y, &mx_real, &my_real);
+  SDL_WarpMouse(mx_real, my_real);
 }
 
 void warp_mouse_y(Uint32 y)
 {
+  int my = (y * 14) + 7;
+  int mx_real, my_real;
   input.mouse_y = y;
-  input.real_mouse_y = (y * 14) + 7;
-  SDL_WarpMouse(input.real_mouse_x, input.real_mouse_y);
+  input.real_mouse_y = my;
+  set_screen_coords(input.real_mouse_x, my, &mx_real, &my_real);
+  SDL_WarpMouse(mx_real, my_real);
 }
 
 void force_last_key(keycode_type type, int val)
