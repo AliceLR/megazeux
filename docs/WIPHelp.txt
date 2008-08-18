@@ -451,7 +451,8 @@ This will bring up a small box in the lower left corner of the
 screen, detailing your position, board number, the currently
 playing module and the amount of memory used by Robots. It is
 generally only necessary when testing and fixing your own
-games. Press F6 again to turn the box off. 
+games. Press F6 again to turn the box off. This will only work
+during playtesting in the editor.
 
 F7 - Items Cheat
 
@@ -2116,9 +2117,15 @@ thing. The actual thing is not affected.
 
 Space will copy the current thing to the location under the
 cursor. Trying to place something over a similar thing will
-instead delete it. Placing something over a floor type will
-actually place it OVER the floor, not deleting the floor.
-Other things will be deleted if they are in the way.
+instead replace the object under the cursor by default. (Robots
+and Pushable Robots are the exception; they will never be
+replaced.) Placing something over a floor type will actually
+place it OVER the floor, not deleting the floor. Other things
+will be deleted if they are in the way.
+Space can also replace similar objects under the cursor with a
+space; this can be set in the configuration file.
+
+>#CONFGINI.HLP:1st:The Config File
 
 :Tab:~ETab - Draw
 
@@ -6430,12 +6437,12 @@ then width.
 ~BVCHx,y
 
 Allows reading and writing of single characters to the vlayer
-with regards to coordinates x,y.
+with regards to coordinates x,y; the comma must be included.
 
 ~BVCOx,y
 
 Allows reading and writing of single colors to the vlayer with
-regards to coordinates x,y.
+regards to coordinates x,y; the comma must be included.
 
 >#VLAYER.HLP:vla:The Vlayer and Its Uses
 
@@ -6820,9 +6827,10 @@ $Coordinates
 X/Y coordinates are a pair of numbers representing a point on
 the current board. 0/0 is the upper left corner of the board,
 and the coordinates increase going down and right. You can find
-coordinates easily using Alt+Y in the editor, or F6 in the game.
-X/Y coordinates can be negative, but this is uncommon and used
-for special purposes only.
+coordinates easily using Alt+Y in the editor, or F6 in the game
+(only in editor playthroughs). X/Y coordinates can be negative,
+but this is uncommon and used for special purposes only (e.g.
+REL commands).
 
 $Strings
 
@@ -7868,6 +7876,95 @@ replace in the target character set.
 >#MAIN.HLP:072:Table of Contents
 #NEWINVER.HLP
 :1st:NEW in MegaZeux!
+
+January 30, 2007 - MZX 2.81f
+
+This release is mostly about the new renderers, the first of
+which was introduced in the previous version. There's also a
+few important bugfixes, and a lot of internal tidy-up work. I'd
+like to thank Mr_Alert, Quantum P. and LogiCow for contributing
+to this release. Thanks guys.
+
+USERS
+
++ Renamed the force_32bpp config option to force_bpp, in
+  preparation for 16bit OpenGL render modes. This option now
+  takes 8, 16 or 32. 16 is reportedly broken on Windows, so
+  stick to 32 for now.
++ Added infrastructure for "pluggable" renderers. This code
+  isn't perfect, but it's far better than the mess in 'e'.
+  Defaults to the 'software' render mode.
++ Added Logicow's alternative OpenGL renderer. For more
+  information about this renderer, see config.txt. NOTE: This
+  code may be buggy! Please test!
++ Added Mr Alert's YUV overlay renderers. One does full YUV
+  macropixel approximation, the other (faster) render does
+  chroma supersampling. See config.txt for more information.
+  NOTE: This code may be buggy! Please test!
++ Simplified Exophase's OpenGL renderer present in 'e', and
+  fixed a few bugs that caused it to not work for some people.
++ Really made MegaZeux use 'directx' by default on Windows. The
+  code in 'e' was non-functional. Use 'windib.bat' to run
+  MegaZeux with the SDL windib driver.
++ The OpenGL renderers now have a 'filter' option that allows
+  you to choose linear (where pixels are interpolated, looks
+  "blurred") or nearest (where nearest-neighbour approximation
+  occurs, looks "sharp").
++ Mouse warping was broken when using any of the hardware
+  renderers. There should be code in there now to take account
+  of this (thanks Mr_Alert).
++ Added an option 'editor_spaces_replace' which allows you to
+  revert MZX's space overwrite behavior to the semantics of 'd'
+  (the feature was removed in 'e'). By default, the behavior is
+  unchanged (the same as 'e').
++ F6 (the debug menu) can now no longer be enabled anywhere but
+  in the editor Alt-T test mode. In 'e', it was possible to
+  enable on the title screen, but could not be enabled in a
+  game. Like the cheats, this option is now visible only in
+  test mode.
++ Fixed a bug where the global robot could be exited via some
+  legal commands, in an abnormal fashion. The bug resulted in
+  all the code up to the offending command being executed over
+  and over.
+- The force_height_multiplier option has been removed. A lot of
+  code wasn't properly designed to handle it, there have been
+  mouse warp bugs with it for years, and nobody seems to use
+  it. If people want stretching, they can choose one of the
+  four hardware renderers to achieve this.
+- Removed the 'lame/1337' menu feature.
+
+DEVELOPERS
+
++ OpenGL can now be disabled via config.sh. This allows
+  MegaZeux ebuilds to be constructed on systems that do not
+  have any form of OpenGL support. (Although MZX runtime loads
+  the OpenGL library, 'e' required the headers to build
+  correctly. This is now no longer the case.)
++ On Windows, due to an ATi driver bug, I have provided a means
+  of linking directly to opengl32.dll, instead of relying on
+  the dynamic loader. This reduces binary portability, but
+  fixes many bug reports of being unable to fullscreen on ATi
+  video cards. See OPENGL_LINKING for more information.
++ Improved support for cross compiling with mingw32 on Linux,
+  combined the win32 Makefile with this new support.
++ Rewrote the config.sh script. All of the options have
+  changed, and the broken platform auto-detection has been
+  removed. See ./config.sh for more information.
++ Rejigged MegaZeux's headers so that they can be used in both
+  C and C++ mode. Renamed fsafeopen.cpp to fsafeopen.c.
+  Hopefully by 'g' most of MegaZeux should be ported back to C,
+  instead of the "C++" it is now.
++ Fixed up the 'txt2hlp' utility which Terryn has been using a
+  version of to build the internal MZX help system. This binary
+  is built in the source distribution, but it is not
+  distributed with the MegaZeux binaries.
++ Moved some antiquated Greg code out into 'old'. No attempt
+  has been made to make it compile, it is provided purely for
+  reference.
++ For the windows binaries, "windib.bat" is now generated by
+  package.sh and auto-generated for the name of the MegaZeux
+  executable.
++ Updated Xcode package from Quantum P. (see macosx.zip).
 
 January 19, 2007 - MZX 2.81e
  
