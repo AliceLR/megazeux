@@ -22,8 +22,14 @@
 #ifndef __HEXCHAR_H
 #define __HEXCHAR_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 void write_hex_byte(char byte, char color, int x, int y);
 void write_number(int number, char color, int x, int y,
- int minlen = 0, int rightalign = 0, int base = 10);
+ int minlen, int rightalign, int base); // 0, 0, 10
 
-#endif
+__M_END_DECLS
+
+#endif // __HEXCHAR_H

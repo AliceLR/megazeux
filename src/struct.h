@@ -22,6 +22,10 @@
 #ifndef __STRUCT_H
 #define __STRUCT_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 struct Robot
 {
   unsigned int program_length;
@@ -78,4 +82,6 @@ struct Sensor
 };
 typedef struct Sensor Sensor;
 
-#endif
+__M_END_DECLS
+
+#endif // __STRUCT_H

@@ -25,6 +25,10 @@
 #include "rasm.h"
 #include "fsafeopen.h"
 
+void rasm_skip_whitespace(char *cpos, char **next);
+int rasm_parse_argument(char *cmd_line, char **next, int *arg_translated,
+ int *error, int *arg_short);
+
 int cm2[]   = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
 int cm3[]   = { IMM_U16 | STRING };
 int cm4[]   = { DIR, IGNORE_TYPE_FOR, IMM_U16 | STRING };
@@ -810,8 +814,8 @@ char *ignore_list[21] =
   "into", "is", "of", "the", "then", "there", "through", "thru", "to", "with"
 };
 
-int parse_argument(char *cmd_line, char **next, int *arg_translated, int *error,
- int *arg_short)
+int rasm_parse_argument(char *cmd_line, char **next, int *arg_translated,
+ int *error, int *arg_short)
 {
   char current = *cmd_line;
   char *space_position;
@@ -1279,7 +1283,7 @@ int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
   current_command.name = command_name;
   current_command.param_types = command_params;
 
-  skip_whitespace(cpos + 1, &first_non_space);
+  rasm_skip_whitespace(cpos + 1, &first_non_space);
 
   if(cpos[0] == 0)
   {
@@ -1324,12 +1328,12 @@ int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
 
     while(*current_line_position != 0)
     {
-      skip_whitespace(current_line_position, &current_line_position);
+      rasm_skip_whitespace(current_line_position, &current_line_position);
 
       if(*current_line_position == 0)
         break;
 
-      current_arg_type = parse_argument(current_line_position,
+      current_arg_type = rasm_parse_argument(current_line_position,
        &next_line_position, &current_arg_translation, &error,
        &current_arg_short);
 
@@ -1600,7 +1604,7 @@ int get_line(char *buffer, FILE *fp)
   return -2;
 }
 
-void skip_whitespace(char *cpos, char **next)
+void rasm_skip_whitespace(char *cpos, char **next)
 {
   while(*cpos == ' ')
   {

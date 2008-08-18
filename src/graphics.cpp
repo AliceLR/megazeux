@@ -2749,12 +2749,6 @@ Uint8 get_char(Uint32 x, Uint32 y)
   return dest->char_value;
 }
 
-Uint8 get_color(Uint32 x, Uint32 y)
-{
-  char_element *dest = graphics.text_video + (y * 80) + x;
-  return (dest->bg_color << 4) | (dest->fg_color & 0x0F);
-}
-
 Uint8 get_char_linear(Uint32 offset)
 {
   char_element *dest = graphics.text_video + offset;

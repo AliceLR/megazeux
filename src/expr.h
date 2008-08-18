@@ -17,8 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef EXPR_H
-#define EXPR_H
+#ifndef __EXPR_H
+#define __EXPR_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 #include "world.h"
 
@@ -47,8 +51,8 @@ int parse_expression(World *mzx_world, char **expression,
  int *error, int id);
 int parse_argument(World *mzx_world, char **argument, int &type,
  int id);
-void skip_whitespace(char **expression);
 int evaluate_operation(int operand_a, op c_operator, int operand_b);
 
-#endif
+__M_END_DECLS
 
+#endif // __EXPR_H

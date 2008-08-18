@@ -17,8 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef EVENT_H
-#define EVENT_H
+#ifndef __EVENT_H
+#define __EVENT_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 #include "SDL.h"
 
@@ -110,4 +114,6 @@ void set_refocus_pause(int val);
 
 extern input_status input;
 
-#endif
+__M_END_DECLS
+
+#endif // __EVENT_H

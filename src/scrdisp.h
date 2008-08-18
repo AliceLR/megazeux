@@ -22,6 +22,10 @@
 #ifndef __SCRDISP_H
 #define __SCRDISP_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #include "world.h"
 #include "robot.h"
 
@@ -39,4 +43,6 @@ void help_frame(World *mzx_world, char *help, int pos);
 char print(char *str);
 int strlencolor(char *str);
 
-#endif
+__M_END_DECLS
+
+#endif // __SCRDISP_H

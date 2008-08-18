@@ -22,6 +22,10 @@
 #ifndef __EDIT_DI_H
 #define __EDIT_DI_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #define MAX_BOARD_SIZE 16 * 1024 * 1024
 
 #include "window.h"
@@ -35,5 +39,6 @@ void global_info(World *mzx_world);
 void global_chars(World *mzx_world);
 void global_dmg(World *mzx_world);
 
-#endif
+__M_END_DECLS
 
+#endif // __EDIT_DI_H

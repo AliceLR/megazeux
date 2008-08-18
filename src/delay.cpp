@@ -19,6 +19,8 @@
 
 // Handles delays in a precise manner, using SDL and spinlocks.
 
+#include "delay.h"
+
 #include "SDL.h"
 
 // Currently, just does a cheap delay..

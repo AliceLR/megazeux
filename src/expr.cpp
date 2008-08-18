@@ -26,6 +26,8 @@
 #include "counter.h"
 #include "robot.h"
 
+void expr_skip_whitespace(char **expression);
+
 int last_val;
 
 int parse_expression(World *mzx_world, char **expression,
@@ -39,7 +41,7 @@ int parse_expression(World *mzx_world, char **expression,
   *error = 0;
 
   // Skip initial whitespace..
-  skip_whitespace(expression);
+  expr_skip_whitespace(expression);
   value = parse_argument(mzx_world, expression, current_arg, id);
   if((current_arg != 0) && (current_arg != 2))
   {
@@ -47,7 +49,7 @@ int parse_expression(World *mzx_world, char **expression,
     *error = 1;
     return -99;
   }
-  skip_whitespace(expression);
+  expr_skip_whitespace(expression);
 
   while(1)
   {
@@ -71,7 +73,7 @@ int parse_expression(World *mzx_world, char **expression,
         *error = 2;
         return -100;
       }
-      skip_whitespace(expression);
+      expr_skip_whitespace(expression);
       operand_val = parse_argument(mzx_world, expression, current_arg, id);
       // And now it must be an integer.
       if((current_arg != 0) && (current_arg != 2))
@@ -82,7 +84,7 @@ int parse_expression(World *mzx_world, char **expression,
       // Evaluate it.
       value = evaluate_operation(value, (op)c_operator, operand_val);
     }
-    skip_whitespace(expression);
+    expr_skip_whitespace(expression);
   }
 
   last_val = value;
@@ -380,7 +382,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
   }
 }
 
-void skip_whitespace(char **expression)
+void expr_skip_whitespace(char **expression)
 {
   while(isspace(**expression))
   {

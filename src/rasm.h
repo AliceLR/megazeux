@@ -1,5 +1,28 @@
-#ifndef RASM_H
-#define RASM_H
+/* MegaZeux
+ *
+ * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ *
+ * This program is free software; you can redistribute it and/or
+ * modify it under the terms of the GNU General Public License as
+ * published by the Free Software Foundation; either version 2 of
+ * the License, or (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU
+ * General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program; if not, write to the Free Software
+ * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
+ */
+
+#ifndef __RASM_H
+#define __RASM_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 #include <stdio.h>
 
@@ -167,15 +190,12 @@ int is_extra(char *cmd_line, char **next);
 int get_color(char *cmd_line);
 int get_param(char *cmd_line);
 
-int parse_argument(char *cmd_line, char **next, int *arg_translated,
- int *error, int *arg_short);
 int get_word(char *str, char *source, char t);
 int match_command(mzx_command *cmd, char *error_buffer);
 int assemble_text(char *input_name, char *output_name);
 int assemble_command(int command_number, mzx_command *cmd, void *params[32],
  char *obj_pos, char **next_obj_pos);
 void print_command(mzx_command *cmd);
-void skip_whitespace(char *cpos, char **next);
 int get_line(char *buffer, FILE *fp);
 int disassemble_line(char *cpos, char **next, char *output_buffer,
  char *error_buffer, int *total_bytes, int print_ignores, char *arg_types,
@@ -198,4 +218,6 @@ int unescape_char(char *dest, char c);
 
 extern mzx_command command_list[256];
 
-#endif
+__M_END_DECLS
+
+#endif // __RASM_H

@@ -19,8 +19,12 @@
 
 /* Declarations for IDARRAY.ASM */
 
-#ifndef IDARRAY_H
-#define IDARRAY_H
+#ifndef __IDARRAY_H
+#define __IDARRAY_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 #include "world.h"
 
@@ -34,4 +38,6 @@ void id_remove_top(World *mzx_world, int array_x, int array_y);
 void offs_remove_id(World *mzx_world, unsigned int offset);
 void id_remove_under(World *mzx_world, int array_x, int array_y);
 
-#endif
+__M_END_DECLS
+
+#endif // __IDARRAY_H

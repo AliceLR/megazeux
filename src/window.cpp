@@ -679,7 +679,7 @@ int char_selection_ext(int current, int allow_multichar,
     draw_char(char_sel_arrows_2, DI_TEXT, 22, y);
     draw_char(char_sel_arrows_3, DI_TEXT, 55, y);
     // Write number of character
-    write_number(current, DI_MAIN, 53, 16, 3);
+    write_number(current, DI_MAIN, 53, 16, 3, 0, 10);
 
     update_screen();
 
@@ -937,7 +937,7 @@ int color_selection(int current, int allow_wild)
       selected = currx + (curry * 16);
     }
 
-    write_number(selected, DI_MAIN, 28 + allow_wild, 21 + allow_wild, 3);
+    write_number(selected, DI_MAIN, 28 + allow_wild, 21 + allow_wild, 3, 0, 10);
     update_screen();
 
     // Get key

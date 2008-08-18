@@ -163,8 +163,8 @@ char *menu_lines[NUM_MENUS][2]=
     " F9:Misc\tF10:Objects  P:Parameter  C:Color"
   },
   {
-    " :Move  Space:Place  Enter:Modify+Grab  Alt+M:Modify  Ins:Grab  Del:Delete",
-    " F:Fill   Tab:Draw\tF2:Text\t\t  Alt+B:Block   Alt+:Move 10"
+    " \x12\x1d:Move  Space:Place  Enter:Modify+Grab  Alt+M:Modify  Ins:Grab  Del:Delete",
+    " F:Fill   Tab:Draw\tF2:Text\t\t  Alt+B:Block   Alt+\x12\x1d:Move 10"
   },
   {
     " Shift+F1:Show InvisWalls  Shift+F2:Show Robots  Shift+F3:Show Fakes",
@@ -179,8 +179,8 @@ char *menu_lines[NUM_MENUS][2]=
 char *overlay_menu_lines[4] =
 {
   " OVERLAY EDITING- (Alt+O to end)",
-  " :Move  Space:Place  Ins:Grab  Enter:Character  Del:Delete\t   F:Fill",
-  " C:Color  Alt+B:Block  Tab:Draw  Alt+:Move 10   Alt+S:Show level  F2:Text",
+  " \x12\x1d:Move  Space:Place  Ins:Grab  Enter:Character  Del:Delete\t   F:Fill",
+  " C:Color  Alt+B:Block  Tab:Draw  Alt+\x12\x1d:Move 10   Alt+S:Show level  F2:Text",
   "Character"
 };
 
@@ -271,7 +271,7 @@ char *thing_menus[8][20] =
   // Tranport (F7)
   {
     "Stairs          ~A\xA2",
-    "Cave            ~6¡",
+    "Cave            ~6\xA1",
     "Transport       ~E<",
     "Whirlpool       ~B\x97",
     "CWRotate        ~9/",
@@ -3396,4 +3396,3 @@ void edit_world(World *mzx_world)
   insta_fadeout();
   strcpy(curr_file, current_world);
 }
-

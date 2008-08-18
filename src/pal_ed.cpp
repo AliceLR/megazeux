@@ -92,7 +92,7 @@ void palette_editor(World *mzx_world)
   // Write menu
   write_string
   (
-    "- Select color   Alt+D- Default palette\n"
+    "\x1d- Select color   Alt+D- Default palette\n"
     "R- Increase Red   Alt+R- Decrease Red\n"
     "G- Increase Grn   Alt+G- Decrease Grn\n"
     "B- Increase Blu   Alt+B- Decrease Blu\n"
@@ -105,18 +105,18 @@ void palette_editor(World *mzx_world)
   {
     // Write rgb and color #
     get_rgb(current_color, &current_r, &current_g, &current_b);
-    write_number(current_color, 143, 60, 5, 2, 1);
-    write_number(current_r, 143, 58, 6, 2, 1);
-    write_number(current_g, 143, 58, 7, 2, 1);
-    write_number(current_b, 143, 58, 8, 2, 1);
+    write_number(current_color, 143, 60, 5, 2, 1, 10);
+    write_number(current_r, 143, 58, 6, 2, 1, 10);
+    write_number(current_g, 143, 58, 7, 2, 1, 10);
+    write_number(current_b, 143, 58, 8, 2, 1, 10);
     // Draw '^^', get key, erase '^^'
-    write_string("", (current_color * 2) + 19, 9, 143, 0);
+    write_string("\x1e\x1e", (current_color * 2) + 19, 9, 143, 0);
 
     update_screen();
     update_event_status_delay();
 
     key = get_key(keycode_SDL);
-    write_string("  ", (current_color * 2) + 19, 9, 143, 0);
+    write_string("\x20\x20", (current_color * 2) + 19, 9, 143, 0);
     // Process
 
     if(get_mouse_press())

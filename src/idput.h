@@ -19,11 +19,15 @@
 
 /* Declarations for IDPUT.ASM */
 
+#ifndef __IDPUT_H
+#define __IDPUT_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #include "world.h"
 #include "board.h"
-
-#ifndef IDPUT_H
-#define IDPUT_H
 
 void id_put(Board *src_board, unsigned char x_pos, unsigned char y_pos,
   int array_x, int array_y, int ovr_x, int ovr_y);
@@ -34,4 +38,6 @@ void draw_edit_window(Board *src_board, int array_x, int array_y,
 unsigned char get_id_char(Board *src_board, int id_offset);
 unsigned char get_id_color(Board *src_board, int id_offset);
 
-#endif
+__M_END_DECLS
+
+#endif // __IDPUT_H

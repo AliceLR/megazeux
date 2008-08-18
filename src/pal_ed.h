@@ -22,6 +22,12 @@
 #ifndef __PAL_ED_H
 #define __PAL_ED_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 void palette_editor(World *mzx_world);
 
-#endif
+__M_END_DECLS
+
+#endif // __PAL_ED_H

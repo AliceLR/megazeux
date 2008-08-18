@@ -2122,7 +2122,7 @@ void display_robot_line(World *mzx_world, char *program, int y, int id)
       tr_msg(mzx_world, next + 1, id, ibuff);
       ibuff[64] = 0; // Clip
       color_string_ext(ibuff, 10, y, scroll_base_color, 0, 0);
-      draw_char_ext('', scroll_arrow_color, 8, y, 0, 0);
+      draw_char_ext('\x10', scroll_arrow_color, 8, y, 0, 0);
       break;
     }
 
@@ -2139,7 +2139,7 @@ void display_robot_line(World *mzx_world, char *program, int y, int id)
         tr_msg(mzx_world, next + 1, id, ibuff);
         ibuff[64] = 0; // Clip
         color_string_ext(ibuff, 10, y, scroll_base_color, 0, 0);
-        draw_char_ext('', scroll_arrow_color, 8, y, 0, 0);
+        draw_char_ext('\x10', scroll_arrow_color, 8, y, 0, 0);
       }
       break;
     }

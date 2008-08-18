@@ -20,6 +20,10 @@
 #ifndef __ROBO_ED_H
 #define __ROBO_ED_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #include "rasm.h"
 #include "world.h"
 
@@ -93,8 +97,6 @@ void move_line_down(robot_state *rstate, int count);
 void strip_ccodes(char *dest, char *src);
 int update_current_line(robot_state *rstate);
 void add_blank_line(robot_state *rstate, int relation);
-void display_robot_line(robot_state *rstate,
- robot_line *current_rline, int y);
 void delete_current_line(robot_state *rstate, int move);
 int validate_lines(robot_state *rstate, int show_none);
 void insert_string(char *dest, char *string, int *position);
@@ -108,8 +110,6 @@ void import_block(World *mzx_world, robot_state *rstate);
 void edit_settings(World *mzx_world);
 void goto_line(robot_state *rstate, int line);
 void block_action(robot_state *rstate);
-int find_string(robot_state *rstate, char *str, int wrap,
- int *position, int case_sensitive);
 void find_replace_action(robot_state *rstate);
 void str_lower_case(char *str, char *dest);
 void replace_current_line(robot_state *rstate, int r_pos, char *str,
@@ -122,4 +122,6 @@ void execute_named_macro(robot_state *rstate, char *macro_name);
 void macro_default_values(robot_state *rstate, ext_macro *macro_src);
 void goto_position(World *mzx_world, robot_state *rstate);
 
-#endif
+__M_END_DECLS
+
+#endif // __ROBO_ED_H

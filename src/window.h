@@ -23,6 +23,10 @@
 #ifndef __WINDOW_H
 #define __WINDOW_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #include "world.h"
 
 // For name seeking in list_menu
@@ -280,4 +284,6 @@ extern char num_buttons[7];
 // Foreground colors that look nice for each background color
 extern char fg_per_bk[16];
 
-#endif
+__M_END_DECLS
+
+#endif // __WINDOW_H

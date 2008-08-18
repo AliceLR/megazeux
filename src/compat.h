@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
+ * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,17 +17,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* CHARSET.H- Extern for CHARSET.CPP */
+// Provide some compatibility macros for combined C/C++ binary
 
-#ifndef __CHARSET_H
-#define __CHARSET_H
+#ifndef __COMPAT_H
+#define __COMPAT_H
 
-#include "compat.h"
+#ifdef __cplusplus
+#define __M_BEGIN_DECLS extern "C" {
+#define __M_END_DECLS   }
+#else
+#define __M_BEGIN_DECLS
+#define __M_END_DECLS
+typedef unsigned int bool;
+#define true 1
+#define false 0
+#endif /* __cplusplus */
 
-__M_BEGIN_DECLS
-
-extern unsigned char default_mzx_char_set[];
-
-__M_END_DECLS
-
-#endif // __CHARSET_H
+#endif // __COMPAT_H

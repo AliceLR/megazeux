@@ -610,13 +610,13 @@ void draw_viewport(World *mzx_world)
     // left
     for(i = 0; i < viewport_height; i++)
     {
-      draw_char_ext('º', edge_color, viewport_x - 1,
+      draw_char_ext('\xba', edge_color, viewport_x - 1,
        i + viewport_y, 0, 0);
     }
 
     if(viewport_y > 0)
     {
-      draw_char_ext('É', edge_color, viewport_x - 1,
+      draw_char_ext('\xc9', edge_color, viewport_x - 1,
        viewport_y - 1, 0, 0);
     }
   }
@@ -625,13 +625,13 @@ void draw_viewport(World *mzx_world)
     // right
     for(i = 0; i < viewport_height; i++)
     {
-      draw_char_ext('º', edge_color,
+      draw_char_ext('\xba', edge_color,
        viewport_x + viewport_width, i + viewport_y, 0, 0);
     }
 
     if(viewport_y > 0)
     {
-      draw_char_ext('»', edge_color,
+      draw_char_ext('\xbb', edge_color,
        viewport_x + viewport_width, viewport_y - 1, 0, 0);
     }
   }
@@ -641,7 +641,7 @@ void draw_viewport(World *mzx_world)
     // top
     for(i = 0; i < viewport_width; i++)
     {
-      draw_char_ext('Í', edge_color, viewport_x + i,
+      draw_char_ext('\xcd', edge_color, viewport_x + i,
        viewport_y - 1, 0, 0);
     }
   }
@@ -651,19 +651,19 @@ void draw_viewport(World *mzx_world)
     // bottom
     for(i = 0; i < viewport_width; i++)
     {
-      draw_char_ext('Í', edge_color, viewport_x + i,
+      draw_char_ext('\xcd', edge_color, viewport_x + i,
        viewport_y + viewport_height, 0, 0);
     }
 
     if(viewport_x > 0)
     {
-      draw_char_ext('È', edge_color, viewport_x - 1,
+      draw_char_ext('\xc8', edge_color, viewport_x - 1,
        viewport_y + viewport_height, 0, 0);
     }
 
     if((viewport_x + viewport_width) < 80)
     {
-      draw_char_ext('¼', edge_color, viewport_x + viewport_width,
+      draw_char_ext('\xbc', edge_color, viewport_x + viewport_width,
        viewport_y + viewport_height, 0, 0);
     }
   }
@@ -2588,7 +2588,7 @@ void show_counter(World *mzx_world, char *str, int x, int y,
     return;
   write_string(str, x, y, 27, 0); // Name
 
-  write_number(counter_value, 31, x + 16, y, 1); // Value
+  write_number(counter_value, 31, x + 16, y, 1, 0, 10); // Value
 }
 
 // Returns non-0 to skip all keys this cycle
@@ -3465,10 +3465,10 @@ void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y)
     x + 1, y + 1, EC_DEBUG_LABEL, 0
   );
 
-  write_number(d_x, EC_DEBUG_NUMBER, x + 8, y + 1, 5);
-  write_number(d_y, EC_DEBUG_NUMBER, x + 14, y + 1, 5);
+  write_number(d_x, EC_DEBUG_NUMBER, x + 8, y + 1, 5, 0, 10);
+  write_number(d_y, EC_DEBUG_NUMBER, x + 14, y + 1, 5, 0, 10);
   write_number(mzx_world->current_board_id, EC_DEBUG_NUMBER,
-   x + 18, y + 2, 0, 1);
+   x + 18, y + 2, 0, 1, 10);
 
   for(i = 0; i < src_board->num_robots_active; i++)
   {
@@ -3476,7 +3476,7 @@ void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y)
   }
 
   write_number((robot_mem + 512) / 1024, EC_DEBUG_NUMBER,
-   x + 12, y + 3, 5, 0);
+   x + 12, y + 3, 5, 0, 10);
 
   if(*(src_board->mod_playing) != 0)
   {

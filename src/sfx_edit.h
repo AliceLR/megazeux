@@ -20,6 +20,10 @@
 #ifndef __SFX_EDIT_H
 #define __SFX_EDIT_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #include "sfx.h"
 #include "world.h"
 
@@ -27,4 +31,6 @@ void sfx_edit(World *mzx_world);
 
 extern char *sfx_names[NUM_SFX];
 
-#endif
+__M_END_DECLS
+
+#endif // __SFX_EDIT_H

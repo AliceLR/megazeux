@@ -17,8 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef SPRITE_H
-#define SPRITE_H
+#ifndef __SPRITE_H
+#define __SPRITE_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 // sprite.h, by Exophase
 
@@ -82,6 +86,6 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite,
  int x, int y);
 int is_blank(char c);
 
-// global data types
+__M_END_DECLS
 
-#endif
+#endif // __SPRITE_H

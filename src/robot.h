@@ -17,8 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef ROBOT_H
-#define ROBOT_H
+#ifndef __ROBOT_H
+#define __ROBOT_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 #include "data.h"
 
@@ -262,5 +266,6 @@ void setup_overlay(Board *src_board, int mode);
 void replace_player(World *mzx_world);
 int num_ccode_chars(char *str);
 
-#endif
+__M_END_DECLS
 
+#endif // __ROBOT_H

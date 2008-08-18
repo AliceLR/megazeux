@@ -17,11 +17,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef DELAY_H
-#define DELAY_H
+#ifndef __DELAY_H
+#define __DELAY_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 void delay(int ms);
 int get_ticks(void);
 
-#endif
+__M_END_DECLS
 
+#endif // __DELAY_H

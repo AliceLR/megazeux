@@ -19,8 +19,12 @@
 
 // Definitions for audio.cpp
 
-#ifndef AUDIO_H
-#define AUDIO_H
+#ifndef __AUDIO_H
+#define __AUDIO_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 #ifdef USE_TREMOR
 
@@ -184,5 +188,6 @@ void set_sfx_volume(int volume);
 
 extern int error_mode;
 
-#endif
+__M_END_DECLS
 
+#endif // __AUDIO_H

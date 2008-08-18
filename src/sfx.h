@@ -22,14 +22,20 @@
 #ifndef __SFX_H
 #define __SFX_H
 
-#ifdef __cplusplus
-extern "C" {
-#endif
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 // Number of unique sound effects
 #define NUM_SFX         50
 
 #include "world.h"
+
+// Size of sound queue
+#define NOISEMAX        4096
+
+// Special freqs
+#define F_REST          1
 
 void play_sfx(World *mzx_world, int sfx);
 void clear_sfx_queue(void);
@@ -39,16 +45,7 @@ void submit_sound(int freq, int delay);
 char sfx_init(void);
 void sfx_exit(void);
 char is_playing(void);
-
-#ifdef __cplusplus
-}
-
 void play_str(char *str, int sfx_play);
-
-#endif
-
-// Size of sound queue
-#define NOISEMAX        4096
 
 typedef struct
 {
@@ -56,11 +53,10 @@ typedef struct
   int freq;
 } noise;
 
-// Special freqs
-#define F_REST          1
-
 extern char *sfx_strs[NUM_SFX];
 extern char *custom_sfx; //Ref. in chunks of 69
 extern int custom_sfx_on; //1 to turn on custom sfx
 
-#endif
+__M_END_DECLS
+
+#endif // __SFX_H

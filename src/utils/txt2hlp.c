@@ -148,14 +148,16 @@ int main(int argc, char *argv[])
 
       case ':':
       {
+        int link;
+
         // Get upcoming link
-        int link = fscanf(source, "%3d");
+        fscanf(source, "%3d", &link);
 
         // Get next char
         current_char = fgetc(source);
         
         if(((current_char == '\n') || (current_char == ':')) &&
-         link >= numlinks))
+         link >= num_links)
         {
           num_links = link + 1;
         }
@@ -165,24 +167,24 @@ int main(int argc, char *argv[])
     // Get the rest of the line
     while((current_char != '\n') && (current_char != -1))
     {
-      current_char == fgetc(source);
+      current_char = fgetc(source);
     }
   } while(current_char != -1);
 
-  printf("Files: %d  Links: %d\n", numfiles, numlinks);
+  printf("Files: %d  Links: %d\n", num_files, num_links);
 
   // Number of files obtained. Write header, with room, to dest. This
   // includes number of links and blank spaces to add in filenames and
   // link info.
 
   fputw(num_files, dest);
-  for(i = 0; i < numfiles; i++)
+  for(i = 0; i < num_files; i++)
   {
     fwrite("\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0\0", 21, 1, dest);
   }
 
   fputw(num_links, dest);
-  if(numlinks > 0)
+  if(num_links > 0)
   {
     for(i = 0; i < num_links; i++)
     {
@@ -198,7 +200,7 @@ int main(int argc, char *argv[])
   long curr_file_storage=2;//Location to store current file's info
   int curr_lnum=1;//For error/warning info
   //Links info-
-  char curr_link_ref=0;//Ref- not actual link number
+  int curr_link_ref=0;//Ref- not actual link number
   int link_numbers[1000];//Actual numbers of the links
   long link_offsets[1000];//Offsets within current file
   //Current line info-
@@ -338,7 +340,7 @@ int main(int argc, char *argv[])
         //Write in links info
         for(t1=0;t1<curr_link_ref;t1++)
         {
-          fseek(dest,4+numfiles*21+link_numbers[t1]*12,SEEK_SET);
+          fseek(dest,4+num_files*21+link_numbers[t1]*12,SEEK_SET);
           fwrite(&file_offs,1,4,dest);
           fwrite(&file_len,1,4,dest);
           fwrite(&link_offsets[t1],1,4,dest);
@@ -390,7 +392,7 @@ int main(int argc, char *argv[])
   //Write in links info
   for(t1=0;t1<curr_link_ref;t1++)
   {
-    fseek(dest,4+numfiles*21+link_numbers[t1]*12,SEEK_SET);
+    fseek(dest,4+num_files*21+link_numbers[t1]*12,SEEK_SET);
     fwrite(&file_offs,1,4,dest);
     fwrite(&file_len,1,4,dest);
     fwrite(&link_offsets[t1],1,4,dest);

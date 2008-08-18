@@ -119,10 +119,10 @@ int intake(World *mzx_world, char *string, int max_len,
     }
     else
     {
-      draw_char('', color, 79, y);
+      draw_char('\x11', color, 79, y);
       if((curr_len < 76) || (currx < 76))
       {
-        draw_char('', color, 0, y);
+        draw_char('\x10', color, 0, y);
 
         if(curr_len < 76)
         {
@@ -142,12 +142,12 @@ int intake(World *mzx_world, char *string, int max_len,
             write_line_ext(string, x, y, color, 0, 0, 16);
           string[76] = temp_char;
 
-          draw_char('¯', color, 79, y);
+          draw_char('\xaf', color, 79, y);
         }
       }
       else
       {
-        draw_char(' ', color, 77, y);
+        draw_char('\x20', color, 77, y);
         if(strlen(string + currx - 75) > 78)
         {
           temp_char = string[currx + 1];
@@ -175,11 +175,11 @@ int intake(World *mzx_world, char *string, int max_len,
              color, 0, 0, 16);
           }
         }
-        draw_char('®', color, 0, y);
+        draw_char('\xae', color, 0, y);
         if(currx < curr_len)
-          draw_char('¯', color, 79, y);
+          draw_char('\xaf', color, 79, y);
       }
-      draw_char(' ', color, 78, y);
+      draw_char('\x20', color, 78, y);
     }
 
     if(!robo_intk)
@@ -188,8 +188,8 @@ int intake(World *mzx_world, char *string, int max_len,
     }
     else
     {
-      write_number(currx + 1, 79, 37, 0, 3);
-      write_number(curr_len + 1, 79, 41, 0, 3);
+      write_number(currx + 1, 79, 37, 0, 3, 0, 10);
+      write_number(curr_len + 1, 79, 41, 0, 3, 0, 10);
     }
 
     in_macro = 0;

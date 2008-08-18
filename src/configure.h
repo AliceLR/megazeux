@@ -17,8 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef CONFIG_H
-#define CONFIG_H
+#ifndef __CONFIGURE_H
+#define __CONFIGURE_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 #include "SDL.h"
 #include "macro.h"
@@ -92,4 +96,6 @@ void default_config(config_info *conf);
 void set_config_from_command_line(config_info *conf, int argc,
  char *argv[]);
 
-#endif
+__M_END_DECLS
+
+#endif // __CONFIGURE_H

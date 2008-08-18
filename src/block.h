@@ -22,6 +22,10 @@
 #ifndef __BLOCK_H
 #define __BLOCK_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 int block_cmd(World *mzx_world);
 int rtoo_obj_type(World *mzx_world);
 int choose_char_set(World *mzx_world);
@@ -32,4 +36,6 @@ int export_type(World *mzx_world);
 int import_type(World *mzx_world);
 int import_mzm_obj_type(World *mzx_world);
 
-#endif
+__M_END_DECLS
+
+#endif  // __BLOCK_H

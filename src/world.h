@@ -17,8 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef WORLD_H
-#define WORLD_H
+#ifndef __WORLD_H
+#define __WORLD_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 #include <stdio.h>
 
@@ -226,4 +230,6 @@ void fputd(int src, FILE *fp);
 void add_ext(char *src, char *ext);
 void get_path(char *file_name, char *dest);
 
-#endif
+__M_END_DECLS
+
+#endif // __WORLD_H

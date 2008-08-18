@@ -21,8 +21,12 @@
 
 /* Declarations for GAME.CPP */
 
-#ifndef GAME_H
-#define GAME_H
+#ifndef __GAME_H
+#define __GAME_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 #include "world.h"
 
@@ -57,4 +61,6 @@ void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y);
 extern int pal_update;
 extern char *world_ext[2];
 
-#endif
+__M_END_DECLS
+
+#endif // __GAME_H

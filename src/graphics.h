@@ -20,6 +20,10 @@
 #ifndef __GRAPHICS_H
 #define __GRAPHICS_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #include "SDL.h"
 #include "configure.h"
 
@@ -125,7 +129,6 @@ void write_string_mask(char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed);
 
 Uint8 get_char(Uint32 x, Uint32 y);
-Uint8 get_color(Uint32 x, Uint32 y);
 Uint8 get_char_linear(Uint32 offset);
 Uint8 get_color_linear(Uint32 offset);
 void clear_screen(Uint8 chr, Uint8 color);
@@ -203,5 +206,7 @@ void dump_screen();
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y);
 void set_mouse_mul(int width_mul, int height_mul);
+
+__M_END_DECLS
 
 #endif // __GRAPHICS_H

@@ -17,8 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef MACRO_H
-#define MACRO_H
+#ifndef __MACRO_H
+#define __MACRO_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 typedef struct _config_info config_info;
 typedef struct _ext_macro ext_macro;
@@ -93,4 +97,6 @@ void add_ext_macro(config_info *conf, char *name, char *line_data,
  char *label);
 ext_macro *find_macro(config_info *conf, char *name, int *next);
 
-#endif
+__M_END_DECLS
+
+#endif // __MACRO_H

@@ -22,8 +22,14 @@
 #ifndef __FILL_H
 #define __FILL_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 void fill_area(World *mzx_world, mzx_thing id, int color, int param,
  int x, int y, Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor,
  int overlay_edit);
 
-#endif
+__M_END_DECLS
+
+#endif // __FILL_H

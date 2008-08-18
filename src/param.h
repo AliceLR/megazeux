@@ -22,6 +22,10 @@
 #ifndef __PARAM_H
 #define __PARAM_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 extern int def_params[128];
 int edit_param(World *mzx_world, int id, int param);
 
@@ -60,4 +64,6 @@ int edit_sensor(World *mzx_world, Sensor *cur_sensor);
 int edit_scroll(World *mzx_world, Scroll *cur_scroll);
 int edit_robot(World *mzx_world, Robot *cur_robot);
 
-#endif
+__M_END_DECLS
+
+#endif // __PARAM_H

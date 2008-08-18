@@ -20,6 +20,10 @@
 #ifndef __FSAFEOPEN_H
 #define __FSAFEOPEN_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 enum
 {
   FSAFE_SUCCESS = 0,
@@ -34,5 +38,7 @@ enum
 int fsafetest(const char *path, char *newpath);
 int fsafetranslate(const char *path, char *newpath);
 FILE *fsafeopen(const char *path, const char *mode);
+
+__M_END_DECLS
 
 #endif // __FSAFEOPEN_H

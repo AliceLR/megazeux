@@ -20,10 +20,13 @@
 #ifndef __DATA_H
 #define __DATA_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #include "const.h"
 #include <stdio.h>
 #include <stdlib.h>
-
 
 /* This first section is for idput.cpp */
 extern unsigned char id_chars[455];
@@ -560,4 +563,6 @@ typedef enum
 
 */
 
-#endif
+__M_END_DECLS
+
+#endif // __DATA_H

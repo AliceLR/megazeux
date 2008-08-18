@@ -23,10 +23,16 @@
 #ifndef __CHAR_ED_H
 #define __CHAR_ED_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 int char_editor(World *mzx_world);
 int char_editor_ext(World *mzx_world);
 int smzx_char_editor(World *mzx_world);
 void fill_region(char *matrix, int x, int y, int check, int draw);
 void fill_region_smzx(char *matrix, int x, int y, int check, int draw);
 
-#endif
+__M_END_DECLS
+
+#endif // __CHAR_ED_H

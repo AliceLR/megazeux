@@ -23,6 +23,10 @@
 #ifndef __CONST_H
 #define __CONST_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #ifdef PSP_BUILD
 #define PATH_MAX 512
 #endif
@@ -131,4 +135,6 @@
 #define GLOBAL_ROBOT          0
 #define NUM_STATUS_CNTRS      6
 
-#endif
+__M_END_DECLS
+
+#endif // __CONST_H

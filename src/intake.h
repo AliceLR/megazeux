@@ -22,6 +22,10 @@
 #ifndef __INTAKE_H
 #define __INTAKE_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #include <stdlib.h>
 
 //Global insert status
@@ -35,5 +39,7 @@ int intake(World *mzx_world, char *string, int max_len,
  int x, int y, char color, int exit_type, int filter_type,
  int *return_x_pos, char robo_intk, char *macro);
 
-#endif
+__M_END_DECLS
+
+#endif // __INTAKE_H
 

@@ -22,6 +22,10 @@
 #ifndef __HELPSYS_H
 #define __HELPSYS_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #include "world.h"
 
 extern int context;//Current context link. 72="No" context link
@@ -30,4 +34,6 @@ void pop_context(void);
 void help_load(World *mzx_world, char *file_name);
 void help_system(World *mzx_world);
 
-#endif
+__M_END_DECLS
+
+#endif // __HELPSYS_H

@@ -55,6 +55,11 @@
 #define combine_colors(a, b)  \
   (a) | (b << 4)              \
 
+void robo_ed_display_robot_line(robot_state *rstate,
+ robot_line *current_rline, int y);
+int robo_ed_find_string(robot_state *rstate, char *str, int wrap,
+ int *position, int case_sensitive);
+
 char key_help[(81 * 3) + 1] =
 {
   " F1:Help  F2:Color  F3:Char  F4:Param  F5:Char edit  F6-F10:Macros  (see Alt+O) \n"
@@ -309,7 +314,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
      (i <= rstate.scr_line_end) && draw_rline; i++)
     {
       if(i != rstate.scr_line_middle)
-        display_robot_line(&rstate, draw_rline, i);
+        robo_ed_display_robot_line(&rstate, draw_rline, i);
 
       draw_rline = draw_rline->next;
     }
@@ -980,8 +985,8 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
             {
               // Find next
               int l_pos;
-              int l_num = find_string(&rstate, search_string, wrap_option,
-               &l_pos, case_option);
+              int l_num = robo_ed_find_string(&rstate, search_string,
+               wrap_option, &l_pos, case_option);
 
               if(l_num != -1)
               {
@@ -996,8 +1001,8 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
             {
               // Find and replace next
               int l_pos;
-              int l_num = find_string(&rstate, search_string, wrap_option,
-               &l_pos, case_option);
+              int l_num = robo_ed_find_string(&rstate, search_string,
+               wrap_option, &l_pos, case_option);
 
               if(l_num != -1)
               {
@@ -1154,7 +1159,7 @@ void move_line_down(robot_state *rstate, int count)
   rstate->current_line += i;
 }
 
-void display_robot_line(robot_state *rstate, robot_line *current_rline,
+void robo_ed_display_robot_line(robot_state *rstate, robot_line *current_rline,
  int y)
 {
   int i;
@@ -2513,7 +2518,7 @@ void find_replace_action(robot_state *rstate)
     {
       // Find
       int l_pos;
-      int l_num = find_string(rstate, search_string, wrap_option,
+      int l_num = robo_ed_find_string(rstate, search_string, wrap_option,
        &l_pos, case_option);
 
       if(l_num != -1)
@@ -2529,7 +2534,7 @@ void find_replace_action(robot_state *rstate)
     {
       // Find & Replace
       int l_pos;
-      int l_num = find_string(rstate, search_string, wrap_option,
+      int l_num = robo_ed_find_string(rstate, search_string, wrap_option,
        &l_pos, case_option);
 
       if(l_num != -1)
@@ -2557,7 +2562,7 @@ void find_replace_action(robot_state *rstate)
 
       do
       {
-        l_num = find_string(rstate, search_string, wrap_option,
+        l_num = robo_ed_find_string(rstate, search_string, wrap_option,
          &l_pos, case_option);
 
         // Is it on the starting line and below the starting cursor?
@@ -2632,7 +2637,7 @@ void replace_current_line(robot_state *rstate, int r_pos, char *str,
   rstate->command_buffer = rstate->command_buffer_space;
 }
 
-int find_string(robot_state *rstate, char *str, int wrap,
+int robo_ed_find_string(robot_state *rstate, char *str, int wrap,
  int *position, int case_sensitive)
 {
   robot_line *current_rline = rstate->current_rline;

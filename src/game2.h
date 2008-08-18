@@ -22,6 +22,10 @@
 #ifndef __GAME2_H
 #define __GAME2_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 void hurt_player_id(World *mzx_world, mzx_thing id);
 int find_seek(World *mzx_world, int x, int y);
 int inc_param(int param, int max);
@@ -45,4 +49,6 @@ move_status move(World *mzx_world, int x, int y, int dir,
 mzx_dir parsedir(World *mzx_world, mzx_dir old_dir, int x, int y,
  mzx_dir flow_dir, int bln, int bls, int ble, int blw);
 
-#endif
+__M_END_DECLS
+
+#endif // __GAME2_H

@@ -19,9 +19,15 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef DECRYPT_H
-#define DECRYPT_H
+#ifndef __DECRYPT_H
+#define __DECRYPT_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 void decrypt(char *file_name);
 
-#endif
+__M_END_DECLS
+
+#endif // __DECRYPT_H

@@ -22,12 +22,18 @@
 #ifndef __ERROR_H
 #define __ERROR_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 //Call for an error OR a warning. Type=0 for a warning, 1 for a recoverable
 //error, 2 for a fatal error. Options are (bits set in options and returned
 //as action) FAIL=1, RETRY=2, EXIT TO DOS=4, OK=8, HELP=16 (OK is for usually
 //only for warnings) Code is a specialized error code for debugging purposes.
 //Type of 3 for a critical error.
 
-int error(char *string, char type, char options, unsigned int code = 0);
+int error(char *string, char type, char options, unsigned int code);
 
-#endif
+__M_END_DECLS
+
+#endif // __ERROR_H

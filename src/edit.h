@@ -22,10 +22,13 @@
 #ifndef __EDIT_H
 #define __EDIT_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #include "world.h"
 
 void edit_world(World *mzx_world);
-void draw_debug_box(int ypos);
 int change_param(World *mzx_world, mzx_thing id, int param,
  Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor);
 int change_param(World *mzx_world, mzx_thing id, int param,
@@ -68,4 +71,6 @@ extern char debug_x; // Debug box x pos
 #define EC_DEBUG_NUMBER       79
 #define EC_NA_FILL            1
 
-#endif
+__M_END_DECLS
+
+#endif // __EDIT_H

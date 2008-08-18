@@ -632,13 +632,13 @@ int char_editor(World *mzx_world)
     {
       write_string
       (
-        "\t Move cursor\n"
+        "\x12\x1d\t Move cursor\n"
         "-+\t Change char\n"
         "Space   Place pixel\n"
         "Enter   Select char\n"
         "Del\tClear char\n"
         "N\t  'Negative'\n"
-        "Alt+  Shift char\n"
+        "Alt+\x12\x1d  Shift char\n"
         "M\t  'Mirror'\n"
         "F\t  'Flip'\n"
         "F2\t Copy to buffer\n"
@@ -664,13 +664,13 @@ int char_editor(World *mzx_world)
     {
       write_string
       (
-        "\t Move cursor\n"
+        "\x12\x1d\t Move cursor\n"
         "-+\t Change char\n"
         "Space   Toggle pixel\n"
         "Enter   Select char\n"
         "Del\tClear char\n"
         "N\t  'Negative'\n"
-        "Alt+  Shift char\n"
+        "Alt+\x12\x1d  Shift char\n"
         "M\t  'Mirror'\n"
         "F\t  'Flip'\n"
         "F2\t Copy to buffer\n"
@@ -731,7 +731,7 @@ int char_editor(World *mzx_world)
     }
 
     // Current character
-    write_number(current_char, 143, info_x + 20, info_y, 3);
+    write_number(current_char, 143, info_x + 20, info_y, 3, 0, 10);
 
     for(i = 0, offset = 0; i < highlight_height; i++)
     {

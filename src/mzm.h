@@ -17,8 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef MZM_H
-#define MZM_H
+#ifndef __MZM_H
+#define __MZM_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 #include "world.h"
 
@@ -27,4 +31,6 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
 int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
  int mode, int savegame);
 
-#endif
+__M_END_DECLS
+
+#endif // __MZM_H

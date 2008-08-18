@@ -405,7 +405,7 @@ void scroll_edging_ext(World *mzx_world, int type, int offset, int c_offset)
   // Write key reminders
   if(type == 2)
   {
-    write_string_ext(": Move cursor   Alt+C: Character "
+    write_string_ext("\x12\x1d: Move cursor   Alt+C: Character "
      "  Esc: Done editing", 13, 20, scroll_corner_color, 0,
      offset, c_offset);
   }
@@ -413,14 +413,14 @@ void scroll_edging_ext(World *mzx_world, int type, int offset, int c_offset)
 
   if(type < 2)
   {
-    write_string_ext(": Scroll text   Esc/Enter: End reading",
+    write_string_ext("\x12: Scroll text   Esc/Enter: End reading",
      21, 20, scroll_corner_color, 0, offset, c_offset);
   }
   else
 
   if(type == 3)
   {
-    write_string_ext(":Scroll text  Esc:Exit help"
+    write_string_ext("\x12:Scroll text  Esc:Exit help"
      "  Enter:Select  Alt+P:Print", 13, 20,
      scroll_corner_color, 0, offset, c_offset);
     write_string_ext("F1:Help on Help "
@@ -429,7 +429,7 @@ void scroll_edging_ext(World *mzx_world, int type, int offset, int c_offset)
   }
   else
   {
-    write_string_ext(":Scroll text  Esc:Exit "
+    write_string_ext("\x12:Scroll text  Esc:Exit "
      "  Enter:Select", 21, 20, scroll_corner_color, 0, offset, c_offset);
   }
   update_screen();
@@ -728,7 +728,7 @@ void help_frame(World *mzx_world, char *help, int pos)
           // Now show, two spaces over
           color_string(help + pos, 10, t1, scroll_base_color);
           // Add arrow
-          draw_char('', scroll_arrow_color, 8, t1);
+          draw_char('\x10', scroll_arrow_color, 8, t1);
           break;
         case ':':
           // Label- Jump to mesg and show

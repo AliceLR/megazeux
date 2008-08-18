@@ -17,8 +17,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef BOARD_H
-#define BOARD_H
+#ifndef __BOARD_H
+#define __BOARD_H
+
+#include "compat.h"
+
+__M_BEGIN_DECLS
 
 #include "const.h"
 #include "robot.h"
@@ -113,4 +117,6 @@ void clear_board(Board *cur_board);
 int find_board(World *mzx_world, char *name);
 void change_board_size(Board *src_board, int new_width, int new_height);
 
-#endif
+__M_END_DECLS
+
+#endif // __BOARD_H

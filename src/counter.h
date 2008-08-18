@@ -23,6 +23,10 @@
 #ifndef __COUNTER_H
 #define __COUNTER_H
 
+#include "compat.h"
+
+__M_BEGIN_DECLS
+
 #include <stdio.h>
 
 const int STRING_INITIAL_ALLOCATE = 16;
@@ -178,5 +182,6 @@ void save_string(FILE *fp, mzx_string *src_string);
 #define FOPEN_LOAD_BC      11
 #define FOPEN_SAVE_BC      12
 
-#endif
+__M_END_DECLS
 
+#endif // __COUNTER_H
