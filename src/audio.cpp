@@ -153,9 +153,9 @@ const int freq_conversion = 3579364;
 
 #define LINEAR_MIX_SAMPLE(dest, channels, offset)                       \
   right_sample = src_buffer[int_index + offset];                        \
-  dest right_sample + ((frac_index *                                    \
+  dest (right_sample + ((frac_index *                                    \
    (src_buffer[int_index + channels + offset] - right_sample)) >>       \
-   FP_SHIFT)                                                            \
+   FP_SHIFT))                                                            \
 
 #define CUBIC_MIX_SAMPLE(dest, channels, offset)                        \
   s0 = src_buffer[int_index - channels + offset] << FP_SHIFT;           \
