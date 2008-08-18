@@ -9,6 +9,11 @@ USERS
   renderer. This means that the hardware scalers will not affect the quality
   of the screenshot. It also fixes a bug when using opengl2, which would dump
   only a white screen.
++ Temporarily reverted a bugfix that broke Zeux IV - Forest of Ruin. I'm not
+  dropping the bugfix, I just can't immediately see what's wrong.
++ Fixed a bug that permitted the mouse y coordinate to be warped to row 25,
+  which does not exist. This bug caused some of the renderers to crash, and
+  the software renderer to draw in memory it did not possess.
 
 DEVELOPERS
 

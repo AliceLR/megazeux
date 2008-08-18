@@ -1216,7 +1216,7 @@ void play_game(World *mzx_world, int fadein)
       if(key_char)
       {
         keylbl[3] = key_char;
-        send_robot_all(mzx_world, keylbl, NULL);
+        send_robot_all(mzx_world, keylbl);
       }
 
       switch(key)
@@ -1251,7 +1251,7 @@ void play_game(World *mzx_world, int fadein)
         {
           int enter_menu_status =
            get_counter(mzx_world, "ENTER_MENU", 0);
-          send_robot_all(mzx_world, "KeyEnter", NULL);
+          send_robot_all(mzx_world, "KeyEnter");
           // Menu
           // 19x9
           if(enter_menu_status)
@@ -1665,7 +1665,7 @@ int move_player(World *mzx_world, int dir)
       char d_param = src_board->level_param[d_offset];
       send_robot(mzx_world,
        (src_board->sensor_list[d_param])->robot_to_mesg,
-       "SENSORON", 0, NULL);
+       "SENSORON", 0);
       place_player(mzx_world, new_x, new_y, dir);
     }
     else

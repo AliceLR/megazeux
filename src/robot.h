@@ -138,7 +138,7 @@ void clear_label_cache(Label **label_list, int num_labels);
 int find_robot(Board *src_board, char *name, int *first, int *last);
 void send_sensor_command(World *mzx_world, int id, int command);
 void send_robot(World *mzx_world, char *name, char *mesg,
- int ignore_lock, Robot *src_robot);
+ int ignore_lock);
 int send_robot_id(World *mzx_world, int id, char *mesg, int ignore_lock);
 void send_robot_def(World *mzx_world, int robot_id, int mesg_id);
 void set_robot_position(Robot *cur_robot, int position);
@@ -148,7 +148,7 @@ Label *find_label(Robot *cur_robot, char *name);
 Label *find_zapped_label(Robot *cur_robot, char *name);
 int send_robot_direct(Robot *cur_robot, char *mesg, int ignore_lock,
  int send_self);
-void send_robot_all(World *mzx_world, char *mesg, Robot *src_robot);
+void send_robot_all(World *mzx_world, char *mesg);
 int send_robot_self(World *mzx_world, Robot *src_robot, char *mesg);
 void send_sensors(World *mzx_world, char *name, char *mesg);
 int move_dir(Board *src_board, int *x, int *y, int dir);
