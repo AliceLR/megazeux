@@ -37,7 +37,8 @@ struct _config_info
   int window_height;
   int allow_resize;
   char video_output[16];
-  int force_32bpp;
+  int force_bpp;
+  char gl_filter_method[16];
 
   // Audio options
   int output_frequency;
