@@ -23,18 +23,22 @@ OBJS      = main.${o} graphics.${o} window.${o} hexchar.${o} event.${o} \
 
 MZX       = ../${TARGET}
 
+TXT2HLPOBJS = utils/txt2hlp.${o}
+TXT2HLP     = utils/txt2hlp
+
 ifdef DEBUG
-mzx:	${OBJS}
+mzx:	${OBJS} ${TXT2HLPOBJS}
+	${CXX} ${TXT2HLPOBJS} -o ${TXT2HLP}.dbg${BINEXT}
 	${CXX} ${OBJS} ${LIBS} -o ${MZX}.dbg${BINEXT}
 	@echo "DEBUG BUILD AVAILABLE AT ${MZX}.dbg${BINEXT}"
 else
-mzx:	${OBJS}
+mzx:	${OBJS} ${TXT2HLPOBJS}
+	${CXX} ${TXT2HLPOBJS} -o ${TXT2HLP}${BINEXT}
 	${CXX} ${OBJS} ${LIBS} -o ${MZX}${BINEXT}
-	${STRIP} ${MZX}${BINEXT}
+	${STRIP} ${MZX}${BINEXT} ${TXT2HLP}${BINEXT}
 endif
 
-clean: dclean
-	rm -f *.o *~ ${MZX}${BINEXT}
-
-dclean:
-	rm -f *.dbg.o ${MZX}.dbg${BINEXT}
+clean:
+	rm -f ${OBJS} ${TXT2HLPOBJS} *~
+	rm -f ${MZX}${BINEXT} ${TXT2HLP}${BINEXT}
+	rm -f ${MZX}.dbg${BINEXT} ${TXT2HLP}.dbg${BINEXT}

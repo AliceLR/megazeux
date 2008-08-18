@@ -23,8 +23,5 @@ objs  = fastmix.${o} load_669.${o} load_amf.${o} load_ams.${o} load_dbm.${o} \
 libs:	${objs}
 	${AR} crus libmodplug.a ${objs}
 
-clean: dclean
-	rm -f *.o *~ libmodplug.a
-
-dclean:
-	rm -f *.dbg.o libmodplug.a
+clean:
+	rm -f ${objs} *~ libmodplug.a

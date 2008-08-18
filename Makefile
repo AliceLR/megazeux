@@ -20,9 +20,9 @@ clean:
 	cd src                    && ${MAKE} clean && cd ..
 
 dclean:
-	cd contrib/libmodplug/src && ${MAKE} dclean && cd ../../..
-	cd contrib/gdm2s3m/src    && ${MAKE} dclean && cd ../../..
-	cd src                    && ${MAKE} dclean && cd ..
+	cd contrib/libmodplug/src && ${MAKE} clean DEBUG=1 && cd ../../..
+	cd contrib/gdm2s3m/src    && ${MAKE} clean DEBUG=1 && cd ../../..
+	cd src                    && ${MAKE} clean DEBUG=1 && cd ..
 
 distclean: clean dclean
 	rm -f src/config.h

@@ -137,7 +137,7 @@ SUBDIRS="arch contrib debian docs"
 # What we actually care about; the complete sources to MegaZeux. Try to
 # extract crap Exo's left in the wrong place. Feel free to update this.
 #
-SRC="src/*.cpp src/*.h src/Makefile"
+SRC="src/*.c src/*.cpp src/*.h src/Makefile src/old src/utils"
 
 #
 # Name of the 7zip extractor. On Windows, this is '7za.exe'. On Linux, this is
@@ -165,11 +165,13 @@ fi
 mkdir -p dist/$TARGET/src &&
 cp -pv $BINARY_DEPS $BUILD_DEPS dist/$TARGET &&
 cp -pvr $SUBDIRS dist/$TARGET &&
-cp -pv $SRC dist/$TARGET/src &&
+cp -pvr $SRC dist/$TARGET/src &&
 
-# hack for gdm2s3m & libmodplug
+# hack for gdm2s3m & libmodplug & misc
 rm -f dist/$TARGET/contrib/gdm2s3m/src/{*.a,*.o} &&
 rm -f dist/$TARGET/contrib/libmodplug/src/{*.a,*.o} &&
+rm -f dist/$TARGET/src/utils/*.o dist/$TARGET/src/utils/txt2hlp{,.exe} &&
+rm -f dist/$TARGET/src/utils/txt2hlp.dbg{,.exe} &&
 
 # hack for "dist" makefile
 cp dist/$TARGET/arch/Makefile.dist dist/$TARGET/Makefile.platform
@@ -183,7 +185,7 @@ rm -f dist/$TARGET/src/config.h
 echo "Creating source (${TARGET}src.tar.bz2).."
 
 cd dist
-tar --exclude CVS -jcvf ${TARGET}src.tar.bz2 $TARGET
+tar --exclude CVS --exclude .cvsignore -jcvf ${TARGET}src.tar.bz2 $TARGET
 cd ..
 
 if [ "$?" != "0" ]; then
