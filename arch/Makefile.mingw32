@@ -1,0 +1,29 @@
+#
+# mingw32 makefile generics
+#
+
+all: subdir
+debug: subdir-debug
+
+# you might want to override this..
+MINGWBASE ?= i586-mingw32msvc-
+
+# .. because we will use them here
+CC    = ${MINGWBASE}gcc
+CXX   = ${MINGWBASE}g++
+AR    = ${MINGWBASE}ar
+STRIP = ${MINGWBASE}strip --strip-unneeded
+
+# windows requires a binary extension
+BINEXT = .exe
+
+# standard libraries
+LIBS += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
+        -lvorbisfile -lvorbis -logg
+
+# debug does something different
+ifdef DEBUG
+LIBS     += -mconsole
+else
+LIBS     += -mwindows
+endif

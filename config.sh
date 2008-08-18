@@ -16,6 +16,7 @@ function usage {
 	echo "  macos          Macintosh OS X (not Classic)"
 	echo "  linux-static   Linux (statically linked)"
 	echo "  psp            Experimental PSP port"
+	echo "  mingw32        Use MinGW32 on Linux, to build for win32"
 	echo
 	echo "Supported <option> values:"
 	echo "  --disable-x11  Disables X11, removing binary dependency."
@@ -82,11 +83,19 @@ fi
 
 ### PLATFORM DEFINITION #######################################################
 
-cp -f arch/Makefile.$PLATFORM Makefile.platform
+# hack for win32
+if [ "$PLATFORM" = "win32" ]; then
+	echo "MINGWBASE="          > Makefile.platform
+	echo                      >> Makefile.platform
+	cat arch/Makefile.mingw32 >> Makefile.platform
+	PLATFORM="mingw32"
+else
+	cp -f arch/Makefile.$PLATFORM Makefile.platform
 
-if [ ! -f Makefile.platform ]; then
-	echo "Invalid platform selection (see arch/)"
-	exit 1
+	if [ ! -f Makefile.platform ]; then
+		echo "Invalid platform selection (see arch/)."
+		exit 1
+	fi
 fi
 
 ### SYSTEM CONFIG DIRECTORY ###################################################
@@ -131,7 +140,7 @@ echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 #
 # X11 support (linked against and needs headers installed)
 #
-if [ "$PLATFORM" != "win32" -a "$PLATFORM" != "psp" ]; then
+if [ "$PLATFORM" != "mingw32" -a "$PLATFORM" != "psp" ]; then
 	# attempt auto-detection
 	if [ "$X11" = "true" ]; then
 		# try to run X
