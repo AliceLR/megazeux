@@ -23,22 +23,31 @@ OBJS      = main.${o} graphics.${o} window.${o} hexchar.${o} event.${o} \
 
 MZX       = ../${TARGET}
 
-TXT2HLPOBJS = utils/txt2hlp.${o}
-TXT2HLP     = utils/txt2hlp
-
 ifdef DEBUG
-mzx:	${OBJS} ${TXT2HLPOBJS}
-	${CXX} ${TXT2HLPOBJS} -o ${TXT2HLP}.dbg${BINEXT}
+
+subdir:
+	cd utils && ${MAKE} utils DEBUG=1 && cd ../../..
+
+subdir-clean:
+	cd utils && ${MAKE} clean DEBUG=1 && cd ../../..
+
+mzx:	subdir ${OBJS}
 	${CXX} ${OBJS} ${LIBS} -o ${MZX}.dbg${BINEXT}
 	@echo "DEBUG BUILD AVAILABLE AT ${MZX}.dbg${BINEXT}"
+
 else
-mzx:	${OBJS} ${TXT2HLPOBJS}
-	${CXX} ${TXT2HLPOBJS} -o ${TXT2HLP}${BINEXT}
+
+subdir:
+	cd utils && ${MAKE} utils && cd ../../..
+
+subdir-clean:
+	cd utils && ${MAKE} clean && cd ../../..
+
+mzx:	subdir ${OBJS}
 	${CXX} ${OBJS} ${LIBS} -o ${MZX}${BINEXT}
-	${STRIP} ${MZX}${BINEXT} ${TXT2HLP}${BINEXT}
+	${STRIP} ${MZX}${BINEXT} 
+
 endif
 
-clean:
-	rm -f ${OBJS} ${TXT2HLPOBJS} *~
-	rm -f ${MZX}${BINEXT} ${TXT2HLP}${BINEXT}
-	rm -f ${MZX}.dbg${BINEXT} ${TXT2HLP}.dbg${BINEXT}
+clean: subdir-clean
+	rm -f ${OBJS} *~ ${MZX}${BINEXT} ${MZX}.dbg${BINEXT} 
