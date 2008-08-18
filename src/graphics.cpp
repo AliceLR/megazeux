@@ -837,7 +837,7 @@ static void soft_resize_screen(int w, int h)
 #define GL_POWER_2_HEIGHT	512
 
 #if defined(__linux__)
-#define GL_SHARED_OBJECT "libGL.so"
+#define GL_SHARED_OBJECT "libGL.so.1"
 #elif defined(__WIN32__)
 #define GL_SHARED_OBJECT "opengl32.dll"
 #elif defined(__MACOSX__)
