@@ -44,7 +44,7 @@ function createzip {
 	# Create the binary package.
 	#
 	$SEVENZIP a -tzip dist/$TARGET.zip \
-		$BINARY_DEPS $DOCS $TARGET.exe SDL.dll WINDIB_BAT &&
+		$BINARY_DEPS $DOCS $TARGET.exe SDL.dll $WINDIB_BAT &&
 
 	#
 	# Remove SDL, and the bat file.
