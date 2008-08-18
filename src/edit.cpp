@@ -1321,7 +1321,7 @@ void edit_world(World *mzx_world)
              * and toggling in this mode. Otherwise, just write through
              * as usual.
              */
-            if (!(is_robot(level_id[offset]) &&
+            if (!((is_robot(level_id[offset]) && (!overlay_edit)) &&
                   !mzx_world->conf.editor_space_toggles))
             {
               current_param = place_current_at_xy(mzx_world, current_id,
