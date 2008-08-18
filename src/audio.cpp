@@ -69,7 +69,7 @@ struct _ModPlugFile
   CSoundFile mSoundFile;
 };
 
-audio_struct audio;
+static audio_struct audio;
 
 #ifdef PTHREAD_MUTEXES
 #define __lock()      pthread_mutex_lock(&audio.audio_mutex)
@@ -84,8 +84,8 @@ audio_struct audio;
 #define LOCK()   lock(__FILE__, __LINE__)
 #define UNLOCK() unlock(__FILE__, __LINE__)
 
-static int locked = 0;
-static char last_lock[16];
+static volatile int locked = 0;
+static volatile char last_lock[16];
 
 static void lock(const char *file, int line)
 {
@@ -98,7 +98,7 @@ static void lock(const char *file, int line)
   locked = 1;
 
   // store information on this lock
-  snprintf(last_lock, 16, "%s:%d", file, line);
+  snprintf((char *)last_lock, 16, "%s:%d", file, line);
 }
 
 static void unlock(const char *file, int line)
@@ -974,7 +974,7 @@ audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
   {
     ModPlugFile *open_file;
 
-    file_size = filelength(input_file);
+    file_size = file_length(input_file);
 
     input_buffer = (char *)malloc(file_size);
     fread(input_buffer, file_size, 1, input_file);
@@ -1202,7 +1202,7 @@ void clip_buffer(Sint16 *dest, Sint32 *src, int len)
 
 void audio_callback(void *userdata, Uint8 *stream, int len)
 {
-  Uint32 destroy_flag;
+  Uint32 destroy_flag, loops = 0;
   audio_stream *current_astream;
 
   LOCK();
@@ -1215,6 +1215,9 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 
     while(current_astream != NULL)
     {
+      if (loops++ > 100)
+        fprintf(stderr, "looping forever..\n");
+
       destroy_flag = current_astream->mix_data(current_astream,
        audio.mix_buffer, len);
 
@@ -1316,8 +1319,6 @@ void init_audio(config_info *conf)
 #ifdef DEBUG
   fprintf(stdout, "Started audio subsystem\n");
 #endif
-
-  SDL_PauseAudio(0);
 }
 
 void load_mod(char *filename)
@@ -1548,7 +1549,7 @@ void nosound(int duration)
   audio.pcs_stream->note_duration = duration;
 }
 
-int filelength(FILE *fp)
+int file_length(FILE *fp)
 {
   int length;
 
@@ -1599,7 +1600,7 @@ void convert_sam_to_wav(char *source_name, char *dest_name)
 
   dest = fopen(dest_name, "wb");
 
-  source_length = filelength(source);
+  source_length = file_length(source);
 
   frequency = freq_conversion / default_period;
   dest_length = source_length + 44;

@@ -146,6 +146,9 @@ extern "C"
     getcwd(current_dir, MAX_PATH);
 #endif
 
+    // now set the audio going
+    SDL_PauseAudio(0);
+
     // Run main game (mouse is hidden and palette is faded)
     title_screen(&mzx_world);
 

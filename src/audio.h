@@ -173,7 +173,7 @@ int free_sam_cache(char clear_all);
 void fix_global_volumes(void);
 void sound(int frequency, int duration);
 void nosound(int duration);
-int filelength(FILE *fp);
+int file_length(FILE *fp);
 void convert_sam_to_wav(char *source_name, char *dest_name);
 void set_music_on(int val);
 void set_sfx_on(int val);
