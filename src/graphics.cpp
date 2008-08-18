@@ -790,17 +790,6 @@ static void hard_set_screen_coords(int x, int y, int *screen_x, int *screen_y)
 #define GL_POWER_2_WIDTH	1024
 #define GL_POWER_2_HEIGHT	512
 
-#if defined(__linux__)
-#define GL_SHARED_OBJECT "libGL.so.1"
-#elif defined(__WIN32__)
-#define GL_SHARED_OBJECT "opengl32.dll"
-#elif defined(__MACOSX__)
-#define GL_SHARED_OBJECT "libGL.dylib"
-#else
-#warning This platform cannot use OpenGL hardware scaling!
-#define GL_SHARED_OBJECT ""
-#endif
-
 typedef struct
 {
   void (APIENTRY *glBegin)(GLenum mode);
@@ -822,7 +811,7 @@ typedef struct
   void (APIENTRY *glFrustum)(GLdouble left, GLdouble right, GLdouble bottom,
                              GLdouble top, GLdouble near, GLdouble far);
   void (APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
-  GLubyte* (APIENTRY *glGetString)(GLenum name);
+  const GLubyte* (APIENTRY *glGetString)(GLenum name);
   void (APIENTRY *glLoadIdentity)(void);
   void (APIENTRY *glMatrixMode)(GLenum mode);
   void (APIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
@@ -847,6 +836,58 @@ typedef struct
 
 static gl_syms gl;
 
+#ifdef OPENGL_LINKED
+
+#include "GL/gl.h"
+
+/* On Windows, with ATi video cards, it seems that dynamically loading the
+ * OpenGL symbols just doesn't work. There's no good reason why it doesn't
+ * work, but it doesn't. So on win32, we'll link to GL, and we'll just
+ * add one level of indirection (which should be optimized out anyway).
+ */
+static int load_gl_syms(void)
+{
+  // map to the actual OpenGL symbols
+  gl.glBegin = glBegin;
+  gl.glBlendFunc = glBlendFunc;
+  gl.glBindTexture = glBindTexture;
+  gl.glClear = glClear;
+  gl.glColor3ubv = glColor3ubv;
+  gl.glColor4f = glColor4f;
+  gl.glColor4ub = glColor4ub;
+  gl.glCopyTexImage2D = glCopyTexImage2D;
+  gl.glDisable = glDisable;
+  gl.glEnable = glEnable;
+  gl.glEnd = glEnd;
+  gl.glFrustum = glFrustum;
+  gl.glGenTextures = glGenTextures;
+  gl.glGetString = glGetString;
+  gl.glLoadIdentity = glLoadIdentity;
+  gl.glMatrixMode = glMatrixMode;
+  gl.glTexParameterf = glTexParameterf;
+  gl.glPushMatrix = glPushMatrix;
+  gl.glTexCoord2f = glTexCoord2f;
+  gl.glTexEnvf = glTexEnvf;
+  gl.glTexImage2D = glTexImage2D;
+  gl.glTexSubImage2D = glTexSubImage2D;
+  gl.glTranslatef = glTranslatef;
+  gl.glTexParameteri = glTexParameteri;
+  gl.glVertex3f = glVertex3f;
+  gl.glVertex3i = glVertex3i;
+  gl.glViewport = glViewport;
+
+  return true;
+}
+
+static inline int can_use_opengl(void)
+{
+  return true;
+}
+
+#else // !OPENGL_LINKED
+
+static int gl_syms_loaded = false;
+
 /* Here go the the loading of symbols from the shared object, that we care
  * about. It's unfortunate we can't recycle the function prototypes from GL.h,
  * but these are copied directly from it. If you want to access a GL function,
@@ -855,6 +896,9 @@ static gl_syms gl;
  */
 static int load_gl_syms(void)
 {
+  if (gl_syms_loaded)
+    return true;
+
   // Since 1.0
   gl.glBegin = (void (APIENTRY *)(GLenum mode))
    SDL_GL_GetProcAddress("glBegin");
@@ -941,7 +985,7 @@ static int load_gl_syms(void)
     return false;
 
   // Since 1.0
-  gl.glGetString = (GLubyte *(APIENTRY *)(GLenum name))
+  gl.glGetString = (const GLubyte *(APIENTRY *)(GLenum name))
    SDL_GL_GetProcAddress("glGetString");
   if (!gl.glGetString)
     return false;
@@ -1040,9 +1084,16 @@ static int load_gl_syms(void)
   fprintf(stdout, "Loaded OpenGL symbol table successfully.\n");
 #endif
 
-  // all loaded fine
+  gl_syms_loaded = true;
   return true;
 }
+
+static inline int can_use_opengl(void)
+{
+  return SDL_GL_LoadLibrary(NULL) >= 0;
+}
+
+#endif // !OPENGL_LINKED
 
 static int gl_strip_flags(int flags)
 {
@@ -1077,9 +1128,6 @@ static int gl1_init_video(config_info *conf)
   // OpenGL only supports 16/32bit colour
   if (conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics.bits_per_pixel = conf->force_bpp;
-
-  if (!load_gl_syms())
-    return false;
 
   if (!set_video_mode())
     return false;
@@ -1124,7 +1172,12 @@ static int gl1_set_video_mode(int width, int height, int depth, int flags,
 {
   GLuint texture_number;
 
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
   if (!SDL_SetVideoMode(width, height, depth, gl_strip_flags(flags)))
+    return false;
+
+  if (!load_gl_syms())
     return false;
 
   gl.glViewport(0, 0, width, height);
@@ -1191,9 +1244,11 @@ static struct
   Uint8 charset_texture[14 * 256 * 16];
   GLuint texture_number[2];
   GLubyte palette[3*256];
+  Uint8 remap_texture;
+  Uint8 ignore_linear;
 } gl_state;
 
-static inline char *gl2_char_bitmask_to_texture(signed char *c, char *p)
+static char *gl2_char_bitmask_to_texture(signed char *c, char *p)
 {
   // This tests the 7th bit, if 0, result is 0.
   // If 1, result is 255 (because of sign extended bit shift!).
@@ -1209,7 +1264,7 @@ static inline char *gl2_char_bitmask_to_texture(signed char *c, char *p)
   return p;
 }
 
-static void gl2_remap_charsets(void)
+static inline void gl2_do_remap_charsets(void)
 {
   signed char *c = (signed char *)graphics.charset;
   char *p = (char *)gl_state.charset_texture;
@@ -1224,14 +1279,27 @@ static void gl2_remap_charsets(void)
     GL_UNSIGNED_BYTE, gl_state.charset_texture);
 }
 
+static void gl2_remap_charsets(void)
+{
+  gl_state.remap_texture = true;
+}
+
 static int gl2_linear_filter_method(void)
 {
+  if (gl_state.ignore_linear)
+    return false;
   return (strcmp(graphics.gl_filter_method, "linear") == 0);
 }
 
 // FIXME: Many magic numbers
 void gl2_resize_screen(int viewport_width, int viewport_height)
 {
+  // this overrides the user's setting if they choose linear
+  if (viewport_width < 640 || viewport_height < 350)
+    gl_state.ignore_linear = true;
+  else
+    gl_state.ignore_linear = false;
+
   gl.glViewport(0, 0, viewport_width, viewport_height);
 
   gl.glMatrixMode(GL_PROJECTION);
@@ -1296,9 +1364,6 @@ static int gl2_init_video(config_info *conf)
   if (conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics.bits_per_pixel = conf->force_bpp;
 
-  if (!load_gl_syms())
-    return false;
-
   // We want to deal internally with 32bit surfaces
   graphics.screen = SDL_CreateRGBSurface(SDL_SWSURFACE, GL_POWER_2_WIDTH,
    GL_POWER_2_HEIGHT, 32, 0, 0, 0, 0);
@@ -1352,6 +1417,12 @@ static void gl2_update_screen(void)
 
   if(!graphics.screen_mode)
   {
+    if (gl_state.remap_texture)
+    {
+      gl2_do_remap_charsets();
+      gl_state.remap_texture = false;
+    }
+
     if (gl2_linear_filter_method())
       gl.glViewport(0, 0, 640, 350);
 
@@ -1684,9 +1755,16 @@ static void gl2_update_screen(void)
 static int gl2_set_video_mode(int width, int height, int depth, int flags,
                               int fullscreen)
 {
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
   if (!SDL_SetVideoMode(width, height, depth, gl_strip_flags(flags)))
     return false;
+
+  if (!load_gl_syms())
+    return false;
+
   gl2_resize_screen(width, height);
+
   return true;
 }
 
@@ -2129,8 +2207,9 @@ static void set_graphics_output(char *video_output)
   graphics.remap_charsets = NULL;
 
 #if defined(CONFIG_OPENGL) && !defined(PSP_BUILD)
+
   // Try to load system GL. if we succeed..
-  if (SDL_GL_LoadLibrary(GL_SHARED_OBJECT) >= 0)
+  if (can_use_opengl())
   {
     if (!strcmp(video_output, "opengl1"))
     {
@@ -2156,6 +2235,7 @@ static void set_graphics_output(char *video_output)
       selected_output = video_output;
     }
   }
+
 #ifdef DEBUG
   else
   {
@@ -2827,11 +2907,8 @@ void ec_change_char(Uint8 chr, char *matrix)
     char *p = (char *)gl_state.charset_texture;
     signed char *c = (signed char *)graphics.charset;
 
-    for(i=0; i<14; i++)
-    {
+    for (i = 0; i < 14; i++)
       p = gl2_char_bitmask_to_texture(c++, p);
-      c++;
-    }
 
     gl.glTexSubImage2D(GL_TEXTURE_2D, 0, (chr % 32) * 8, (chr / 32) * 14, 8,
       14, GL_ALPHA, GL_UNSIGNED_BYTE, gl_state.charset_texture);
@@ -2898,55 +2975,14 @@ Sint32 ec_load_set_var(char *name, Uint8 pos)
   fseek(fp, 0, 0);
 
   if(size + pos > 256)
-  {
     size = 256 - pos;
-  }
+
   fread(graphics.charset + (pos * 14), 14, size, fp);
   fclose(fp);
 
-#ifdef CONFIG_OPENGL
-  // FIXME: This should be a function pointer stub
+  // some renderers may want to map charsets to textures
   if (graphics.remap_charsets)
-  {
-    int barst, barlen, i2, i3;
-    unsigned int bar;
-    signed char *c;
-    char *p;
-
-    for(bar = pos >> 5; bar < (pos + size + 31) >> 5; bar++)
-    {
-      barst = pos - bar*32;
-
-      if (barst < 0)
-        barst = 0;
-
-      barlen = pos+size - bar*32;
-
-      if (barlen > 32)
-        barlen = 32;
-
-      barlen -= barst;
-
-      p = (char *)gl_state.charset_texture;
-      c = (signed char *)graphics.charset + (bar * 32 + barst) * 14;
-
-      for (i2=0;i2<14;i2++)
-      {
-        for (i3=barst; i3<barlen; i3++)
-        {
-          p = gl2_char_bitmask_to_texture(c, p);
-          *(p++) = (signed char)(*c << 7) >> 7;
-          c += 14;
-        }
-
-        c += -barlen * 14 + 1; // Go back x chars, then down 1 line
-      }
-
-      gl.glTexSubImage2D(GL_TEXTURE_2D, 0, barst * 8, bar * 14, barlen * 8, 14,
-        GL_ALPHA, GL_UNSIGNED_BYTE, gl_state.charset_texture);
-    }
-  }
-#endif // CONFIG_OPENGL
+    graphics.remap_charsets();
 
   return size;
 }

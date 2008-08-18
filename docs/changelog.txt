@@ -39,6 +39,10 @@ DEVELOPERS
   to be constructed on systems that do not have any form of OpenGL support.
   (Although MZX runtime loads the OpenGL library, 'e' required the headers
    to build correctly. This is now no longer the case.)
++ On Windows, due to an ATi driver bug, I have provided a means of linking
+  directly to opengl32.dll, instead of relying on the dynamic loader. This
+  reduces binary portability, but fixes many bug reports of being unable
+  to fullscreen on ATi video cards. See OPENGL_LINKING for more information.
 + Improved support for cross compiling with mingw32 on Linux, combined the
   win32 Makefile with this new support.
 + Rewrote the config.sh script. All of the options have changed, and the

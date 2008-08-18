@@ -17,9 +17,12 @@ STRIP = ${MINGWBASE}strip --strip-unneeded
 # windows requires a binary extension
 BINEXT = .exe
 
+# OpenGL must be linked to MZX
+INCLUDES += -DOPENGL_LINKED
+
 # standard libraries
 LIBS += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-        -lvorbisfile -lvorbis -logg
+        -lvorbisfile -lvorbis -logg -lopengl32
 
 # debug does something different
 ifdef DEBUG
