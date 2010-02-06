@@ -4189,16 +4189,15 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 164: // viewport x y
       {
-        unsigned int viewport_x =
-         parse_param(mzx_world, cmd_ptr + 1, id);
+        int viewport_x = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
-        unsigned int viewport_y = parse_param(mzx_world, p2, id);
+        int viewport_y = parse_param(mzx_world, p2, id);
         unsigned int viewport_width = src_board->viewport_width;
         unsigned int viewport_height = src_board->viewport_height;
 
-        if((viewport_x + viewport_width) > 80)
+        if(viewport_x < 0 || (viewport_x + viewport_width) > 80)
           viewport_x = 80 - viewport_width;
-        if((viewport_y + viewport_height) > 25)
+        if(viewport_y < 0 || (viewport_y + viewport_height) > 25)
           viewport_y = 25 - viewport_height;
 
         src_board->viewport_x = viewport_x;

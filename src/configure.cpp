@@ -588,8 +588,8 @@ config_info default_options =
   1,				// pc_speaker_on
 
   // Game options
-  "caverns.mzx",	// startup_file
-  "saved.sav",		// default_save_name
+  "caverns.mzx",		// startup_file
+  "saved.sav",			// default_save_name
   4,				// mzx_speed
 
   // World editor options
