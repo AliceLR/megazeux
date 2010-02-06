@@ -3020,36 +3020,36 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 87: // bulletn
       {
         int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
-        bullet_char[0] = new_char;
-        bullet_char[4] = new_char;
-        bullet_char[8] = new_char;
+        id_chars[bullet_char + 0] = new_char;
+        id_chars[bullet_char + 4] = new_char;
+        id_chars[bullet_char + 8] = new_char;
         break;
       }
 
       case 88: // bullets
       {
         int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
-        bullet_char[1] = new_char;
-        bullet_char[5] = new_char;
-        bullet_char[9] = new_char;
+        id_chars[bullet_char + 1] = new_char;
+        id_chars[bullet_char + 5] = new_char;
+        id_chars[bullet_char + 9] = new_char;
         break;
       }
 
       case 89: // bullete
       {
         int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
-        bullet_char[2] = new_char;
-        bullet_char[6] = new_char;
-        bullet_char[10] = new_char;
+        id_chars[bullet_char + 2] = new_char;
+        id_chars[bullet_char + 6] = new_char;
+        id_chars[bullet_char + 10] = new_char;
         break;
       }
 
       case 90: // bulletw
       {
         int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
-        bullet_char[3] = new_char;
-        bullet_char[7] = new_char;
-        bullet_char[11] = new_char;
+        id_chars[bullet_char + 3] = new_char;
+        id_chars[bullet_char + 7] = new_char;
+        id_chars[bullet_char + 11] = new_char;
         break;
       }
 
@@ -3510,7 +3510,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         for(i = 0; i < 4; i++)
         {
-          player_char[i] = new_char;
+          id_chars[player_char + i] = new_char;
         }
         break;
       }
@@ -3922,7 +3922,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         }
         else
         {
-          *player_color = fix_color(new_color, *player_color);
+          id_chars[player_color] = fix_color(new_color, id_chars[player_color]);
         }
         break;
       }
@@ -4375,7 +4375,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 184: // En bulletw
       {
         // Id' make these all separate, but this is really too convenient
-        bullet_char[cmd - 173] = parse_param(mzx_world, cmd_ptr + 1, id);
+        id_chars[bullet_char + (cmd - 173)] =
+	 parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
@@ -5333,7 +5334,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if(is_cardinal_dir(direction))
         {
-          player_char[dir_to_int(direction)] = new_char;
+          id_chars[player_char + dir_to_int(direction)] = new_char;
         }
         break;
       }

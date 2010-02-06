@@ -32,6 +32,7 @@
 #include "hexchar.h"
 #include "data.h"
 #include "event.h"
+#include "world.h"
 
 //----------------------------------------------
 //  +----------------+ Current char-     (#000)

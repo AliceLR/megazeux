@@ -26,7 +26,7 @@
 
 __M_BEGIN_DECLS
 
-#include "world.h"
+#include "world_struct.h"
 
 extern int context;//Current context link. 72="No" context link
 void set_context(int con);

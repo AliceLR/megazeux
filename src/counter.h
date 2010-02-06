@@ -18,8 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* Declarations for COUNTER.CPP */
-
 #ifndef __COUNTER_H
 #define __COUNTER_H
 
@@ -29,86 +27,29 @@ __M_BEGIN_DECLS
 
 #include <stdio.h>
 
-const int STRING_INITIAL_ALLOCATE = 16;
+static const int STRING_INITIAL_ALLOCATE = 16;
 
-typedef struct _counter counter;
-typedef struct _mzx_string mzx_string;
+#include "counter_struct.h"
+#include "world_struct.h"
 
-#include "world.h"
-
-typedef int (* gateway_write_function)(World *mzx_world,
- counter *counter, char *name, int value, int id);
-
-struct _counter
-{
-  int value;
-  gateway_write_function gateway_write;
-  char name[1];
-};
-
-// TODO - Give strings a dynamic length. It would expand
-// set ends up being larger than the current size.
-
-// "storage_space" is just there for show.. the truth is,
-// name and storage share space. It's messy, but fast and
-// space efficient.
-
-// storage_space doesn't actually have to have anything,
-// however (in fact, neither does name). mzx_strings can
-// be used as pointers to hold intermediate or immediate
-// values. For instance, string literals and spliced
-// strings. Anyone who uses strings in this way has a few
-// responsibilities, however:
-// The string must be properly initialized so length and
-// value are set (allocated_length need not be set)
-// The actual string list must not contain any of these
-// kinds of temporary strings.
-// Any deallocation (of value?) must be done by the
-// initializer.
-// get_string returns temporary strings like this (for
-// speed and memory efficiency reasons), and the string
-// mutating functions work on strings of this format as
-// the second operand.
-
-// In a normal (persistent string, initialized by
-// add_string) string the struct will be over-initialized
-// to contain room for both the name and the value; value
-// will then point into the storage space somewhere. The
-// name comes first and is a fixed size. The value comes
-// after it and is of a dynamic length (allocated_length).
-// Allocated_length will typically end up larger than
-// length if the string's size is changed.
-
-struct _mzx_string
-{
-  unsigned int length;
-  unsigned int allocated_length;
-  char *value;
-
-  char name[1];
-  char storage_space[1];
-};
-
-typedef struct _function_counter function_counter;
-
-typedef int (* builtin_read_function)(World *mzx_world,
- function_counter *counter, char *name, int id);
-
-typedef void (* builtin_write_function)(World *mzx_world,
- function_counter *counter, char *name, int value, int id);
-
-struct _function_counter
+typedef struct _function_counter
 {
   char name[20];
   int minimum_version;
-  builtin_read_function function_read;
-  builtin_write_function function_write;
-};
+  int (*function_read)(World *mzx_world, struct _function_counter *counter,
+   char *name, int id);
+  void (*function_write)(World *mzx_world, struct _function_counter *counter,
+   char *name, int value, int id);
+} function_counter;
+
+typedef int (*gateway_write_function)(World *mzx_world,
+ counter *counter, char *name, int value, int id);
+
+// functions
 
 int match_function_counter(char *dest, char *src);
-
 void set_gateway(World *mzx_world, char *name,
- gateway_write_function *function);
+ gateway_write_function function);
 void initialize_gateway_functions(World *mzx_world);
 // Return a pointer to the list position of the named counter
 counter *find_counter(World *mzx_world, char *name, int *next);

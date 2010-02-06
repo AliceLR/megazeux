@@ -26,8 +26,9 @@
 
 __M_BEGIN_DECLS
 
-#include "world.h"
-#include "board.h"
+#include "world_struct.h"
+#include "board_struct.h"
+#include "data.h"
 
 void id_put(Board *src_board, unsigned char x_pos, unsigned char y_pos,
   int array_x, int array_y, int ovr_x, int ovr_y);

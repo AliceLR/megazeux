@@ -24,7 +24,7 @@
 
 __M_BEGIN_DECLS
 
-#include "world.h"
+#include "world_struct.h"
 
 void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
  int width, int height, int mode, int savegame);

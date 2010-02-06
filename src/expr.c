@@ -21,8 +21,9 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "world.h"
 #include "expr.h"
+
+#include "world_struct.h"
 #include "counter.h"
 #include "robot.h"
 
@@ -30,69 +31,7 @@ void expr_skip_whitespace(char **expression);
 
 int last_val;
 
-int parse_expression(World *mzx_world, char **expression,
- int *error, int id)
-{
-  long int operand_val;
-  int current_arg;
-  long int c_operator;
-  long int value;
-
-  *error = 0;
-
-  // Skip initial whitespace..
-  expr_skip_whitespace(expression);
-  value = parse_argument(mzx_world, expression, current_arg, id);
-  if((current_arg != 0) && (current_arg != 2))
-  {
-    // First argument must be a value type.
-    *error = 1;
-    return -99;
-  }
-  expr_skip_whitespace(expression);
-
-  while(1)
-  {
-    if(**expression == ')')
-    {
-      (*expression)++;
-      break;
-    }
-
-    c_operator = parse_argument(mzx_world, expression, current_arg, id);
-    // Next arg must be an operator, unless it's a negative number,
-    // in which case it's considered + num
-    if(current_arg == 2)
-    {
-      value = evaluate_operation(value, op_addition, c_operator);
-    }
-    else
-    {
-      if(current_arg != 1)
-      {
-        *error = 2;
-        return -100;
-      }
-      expr_skip_whitespace(expression);
-      operand_val = parse_argument(mzx_world, expression, current_arg, id);
-      // And now it must be an integer.
-      if((current_arg != 0) && (current_arg != 2))
-      {
-        *error = 3;
-        return -102;
-      }
-      // Evaluate it.
-      value = evaluate_operation(value, (op)c_operator, operand_val);
-    }
-    expr_skip_whitespace(expression);
-  }
-
-  last_val = value;
-
-  return value;
-}
-
-int parse_argument(World *mzx_world, char **argument, int &type, int id)
+int parse_argument(World *mzx_world, char **argument, int *type, int id)
 {
   int first_char = **argument;
 
@@ -103,7 +42,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     // Addition operator
     case '+':
     {
-      type = 1;
+      *type = 1;
       (*argument)++;
       return (int)op_addition;
     }
@@ -113,41 +52,40 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
       (*argument)++;
       if(!isspace(**argument))
       {
-        int t2;
-        long int val = parse_argument(mzx_world, argument, t2, id);
+        int t2, val = parse_argument(mzx_world, argument, &t2, id);
         if((t2 == 0) || (t2 == 2))
         {
           val = -val;
-          type = 2;
+          *type = 2;
           return val;
         }
         else
         {
-          type = -1;
+          *type = -1;
           return -1;
         }
       }
-      type = 1;
+      *type = 1;
       return (int)op_subtraction;
     }
     // Multiplication operator
     case '*':
     {
-      type = 1;
+      *type = 1;
       (*argument)++;
       return (int)op_multiplication;
     }
     // Division operator
     case '/':
     {
-      type = 1;
+      *type = 1;
       (*argument)++;
       return (int)op_division;
     }
     // Modulus operator
     case '%':
     {
-      type = 1;
+      *type = 1;
       (*argument)++;
       return (int)op_modulus;
     }
@@ -155,7 +93,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     // Exponent operator
     case '^':
     {
-      type = 1;
+      *type = 1;
       (*argument)++;
       return (int)op_exponentation;
     }
@@ -163,7 +101,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     // Bitwise AND operator
     case 'a':
     {
-      type = 1;
+      *type = 1;
       (*argument)++;
       return (int)op_and;
     }
@@ -171,7 +109,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     // Bitwise OR operator
     case 'o':
     {
-      type = 1;
+      *type = 1;
       (*argument)++;
       return (int)op_or;
     }
@@ -179,7 +117,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     // Bitwise XOR operator
     case 'x':
     {
-      type = 1;
+      *type = 1;
       (*argument)++;
       return (int)op_xor;
     }
@@ -187,7 +125,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     // Less than/bitshift left
     case '<':
     {
-      type = 1;
+      *type = 1;
       (*argument)++;
       if(**argument == '<')
       {
@@ -204,7 +142,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     // Greater than/bitshift right
     case '>':
     {
-      type = 1;
+      *type = 1;
       (*argument)++;
       if(**argument == '>')
       {
@@ -221,14 +159,14 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     // Equality
     case '=':
     {
-      type = 1;
+      *type = 1;
       (*argument)++;
       return (int)op_equal;
     }
     // Logical negation
     case '!':
     {
-      type = 1;
+      *type = 1;
       if(*(*argument + 1) == '=')
       {
         (*argument) += 2;
@@ -242,17 +180,16 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
       (*argument)++;
       if(!isspace(**argument))
       {
-        int t2;
-        long int val = parse_argument(mzx_world, argument, t2, id);
+        int t2, val = parse_argument(mzx_world, argument, &t2, id);
         if((t2 == 0) || (t2 == 2))
         {
           val = ~val;
-          type = 2;
+          *type = 2;
           return val;
         }
         else
         {
-          type = -1;
+          *type = -1;
           return -1;
         }
       }
@@ -261,7 +198,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     // # is the last expression value, 32bit.
     case '#':
     {
-      type = 0;
+      *type = 0;
       (*argument)++;
       return last_val;
     }
@@ -269,7 +206,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
     // The evil null terminator...
     case '\0':
     {
-      type = -1;
+      *type = -1;
       return -1;
     }
 
@@ -283,13 +220,13 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
       val = parse_expression(mzx_world, &a_ptr, &error, id);
       if(error)
       {
-        type = -1;
+        *type = -1;
         return -1;
       }
       else
       {
         *argument = a_ptr;
-        type = 0;
+        *type = 0;
         return val;
       }
     }
@@ -324,7 +261,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
             {
               case '\0':
               {
-                type = -1;
+                *type = -1;
                 return -1;
               }
               case ')':
@@ -344,7 +281,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
         {
           if(**argument == '\0')
           {
-            type = -1;
+            *type = -1;
             return -1;
           }
 
@@ -353,7 +290,7 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
           count++;
         }
       }
-      type = 0;
+      *type = 0;
       (*argument)++;
       temp[count] = '\0';
       tr_msg(mzx_world, temp, id, temp2);
@@ -369,13 +306,13 @@ int parse_argument(World *mzx_world, char **argument, int &type, int id)
         char *end_p;
         long int val = strtol(*argument, &end_p, 0);
         *argument = end_p;
-        type = 0;
+        *type = 0;
         return val;
       }
       else
       {
         // It's not so good..
-        type = -1;
+        *type = -1;
         return -1;
       }
     }
@@ -516,3 +453,64 @@ int evaluate_operation(int operand_a, op c_operator, int operand_b)
   }
 }
 
+int parse_expression(World *mzx_world, char **expression,
+ int *error, int id)
+{
+  long int operand_val;
+  int current_arg;
+  long int c_operator;
+  long int value;
+
+  *error = 0;
+
+  // Skip initial whitespace..
+  expr_skip_whitespace(expression);
+  value = parse_argument(mzx_world, expression, &current_arg, id);
+  if((current_arg != 0) && (current_arg != 2))
+  {
+    // First argument must be a value type.
+    *error = 1;
+    return -99;
+  }
+  expr_skip_whitespace(expression);
+
+  while(1)
+  {
+    if(**expression == ')')
+    {
+      (*expression)++;
+      break;
+    }
+
+    c_operator = parse_argument(mzx_world, expression, &current_arg, id);
+    // Next arg must be an operator, unless it's a negative number,
+    // in which case it's considered + num
+    if(current_arg == 2)
+    {
+      value = evaluate_operation(value, op_addition, c_operator);
+    }
+    else
+    {
+      if(current_arg != 1)
+      {
+        *error = 2;
+        return -100;
+      }
+      expr_skip_whitespace(expression);
+      operand_val = parse_argument(mzx_world, expression, &current_arg, id);
+      // And now it must be an integer.
+      if((current_arg != 0) && (current_arg != 2))
+      {
+        *error = 3;
+        return -102;
+      }
+      // Evaluate it.
+      value = evaluate_operation(value, (op)c_operator, operand_val);
+    }
+    expr_skip_whitespace(expression);
+  }
+
+  last_val = value;
+
+  return value;
+}

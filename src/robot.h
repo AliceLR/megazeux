@@ -24,12 +24,9 @@
 
 __M_BEGIN_DECLS
 
-#include "data.h"
-
-#include <stdio.h>
-
-typedef struct _Board Board;
-typedef struct _World World;
+#include "robot_struct.h"
+#include "board_struct.h"
+#include "world_struct.h"
 
 // Let's not let a robot's stack get larger than 64k right now.
 // The value is a bit arbitrary, but it's mainly there to prevent MZX from
@@ -37,84 +34,7 @@ typedef struct _World World;
 
 #define ROBOT_START_STACK 4
 #define ROBOT_MAX_STACK   65536
-
 #define ROBOT_MAX_TR      512
-
-typedef struct
-{
-  // Point this to the name in the robot
-  char *name;
-  int position;
-  // Set to 1 if zapped
-  int zapped;
-} Label;
-
-typedef struct
-{
-  int program_length;
-  char *program;                  // Pointer to robot's program
-  char robot_name[15];
-  unsigned char robot_char;
-  // Location of start of line (pt to FF for none)
-  int cur_prog_line;
-  int pos_within_line;            // Countdown for GO and WAIT
-  int robot_cycle;
-  int cycle_count;
-  char bullet_type;
-  char is_locked;
-  char can_lavawalk;              // Can always travel on fire
-  mzx_dir walk_dir;
-  mzx_dir last_touch_dir;
-  mzx_dir last_shot_dir;
-
-  // Used for IF ALIGNED "robot", THISX/THISY, PLAYERDIST,
-  // HORIZPLD, VERTPLD, and others. Keep udpated at all
-  // times. Set to -1/-1 for global robot.
-  int xpos, ypos;
-
-  // 0 = Un-run yet, 1=Was run but only END'd, WAIT'd, or was
-  // inactive, 2=To be re-run on a second robot-run due to a
-  // rec'd message
-  char status;
-
-  // This is deprecated. It's only there for legacy reasons.
-  char used;
-
-  // Loop count. Loops go back to first seen LOOP
-  // START, loop at first seen LOOP #, and an ABORT
-  // LOOP jumps to right after first seen LOOP #.
-  int loop_count;
-
-  int num_labels;
-  Label **label_list;
-
-  int stack_size;
-  int stack_pointer;
-  int *stack;
-
-  // Local counters - store in save file
-  int local[32];
-} Robot;
-
-typedef struct
-{
-  int num_lines;
-
-  // Pointer to scroll's message
-  char *mesg;
-  int mesg_size;
-
-  char used;
-} Scroll;
-
-typedef struct
-{
-  char sensor_name[15];
-  char sensor_char;
-  char robot_to_mesg[15];
-
-  char used;
-} Sensor;
 
 Robot *load_robot_allocate(FILE *fp, int savegame);
 void load_robot(Robot *cur_robot, FILE *fp, int savegame);
@@ -224,7 +144,7 @@ int place_at_xy(World *mzx_world, mzx_thing id, int color,
 int place_under_xy(Board *src_board, mzx_thing id, int color,
  int param, int x, int y);
 int place_dir_xy(World *mzx_world, mzx_thing id, int color,
- int param, int x, int y, mzx_dir direction);
+ int param, int x, int y, mzx_dir direction, Robot *cur_robot, int *_bl);
 int place_player_xy(World *mzx_world, int x, int y);
 int get_random_range(int min_value, int max_value);
 int send_self_label_tr(World *mzx_world, char *param, int id);
@@ -234,8 +154,8 @@ int check_at_xy(Board *src_board, mzx_thing id, int fg, int bg,
  int param, int offset);
 int check_under_xy(Board *src_board, mzx_thing id, int fg, int bg,
  int param, int offset);
-int check_dir_xy(Board *src_board, mzx_thing id, int color,
- int param, int x, int y, mzx_dir direction);
+int check_dir_xy(World *mzx_world, mzx_thing id, int color,
+ int param, int x, int y, mzx_dir direction, Robot *cur_robot, int *_bl);
 void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
  int dest_x, int dest_y);
 void copy_board_to_board_buffer(Board *src_board, int x, int y,

@@ -683,7 +683,7 @@ int pe_lazer_gun(World *mzx_world, int param)
   if(dialog_result)
     return -1;
 
-  return dir | ((start - 1) << 2) + ((end - 1) << 5);
+  return dir | (((start - 1) << 2) + ((end - 1) << 5));
 }
 
 int pe_bullet(World *mzx_world, int param)
@@ -1164,7 +1164,7 @@ int pe_bullet_gun(World *mzx_world, int param)
   if(dialog_result)
     return -1;
 
-  return (fire_rate - 1) | (dir << 3) + ((intel - 1) << 5) + (type << 7);
+  return (fire_rate - 1) | ((dir << 3) + ((intel - 1) << 5) + (type << 7));
 }
 
 int pe_bear(World *mzx_world, int param)

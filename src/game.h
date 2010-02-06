@@ -28,7 +28,7 @@
 
 __M_BEGIN_DECLS
 
-#include "world.h"
+#include "world_struct.h"
 
 void place_player(World *mzx_world, int x, int y, int dir);
 void load_world_selection(World *mzx_world);
@@ -42,14 +42,14 @@ void game_settings(World *mzx_world);
 void play_game(World *mzx_world, int fadein);
 int move_player(World *mzx_world, int dir);
 // Dir is for transporter
-void give_potion(World *mzx_world, int type);
+void give_potion(World *mzx_world, mzx_potion type);
 int grab_item(World *mzx_world, int offset, int dir);
 void show_status(World *mzx_world);
 void show_counter(World *mzx_world, char *str, int x, int y,
  int skip_if_zero);
 int update(World *mzx_world, int game, int *fadein);
 void set_mesg(World *mzx_world, char *str);
-void set_3_mesg(Board *src_board, char *str1, int num, char *str2);
+void set_3_mesg(World *mzx_world, char *str1, int num, char *str2);
 void set_mesg_direct(Board *src_board, char *str);
 void rotate(World *mzx_world, int x, int y, int dir);
 void check_find_player(World *mzx_world);

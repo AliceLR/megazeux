@@ -26,6 +26,9 @@
 
 __M_BEGIN_DECLS
 
+#include "data.h"
+#include "world_struct.h"
+
 void hurt_player_id(World *mzx_world, mzx_thing id);
 int find_seek(World *mzx_world, int x, int y);
 int inc_param(int param, int max);

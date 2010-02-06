@@ -16,7 +16,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-/* edited for mzx s3 by JZig */
 
 #include <stdlib.h>
 
@@ -27,50 +26,7 @@
 #include "world.h"
 #include "board.h"
 
-#define OMIT_IDCHAR_DECLARATIONS
-
-/* Unfortunately, this needs to be C++, since C doesn't consider the below
-   to be true constants */
 unsigned char id_chars[455];
-unsigned char const *thin_line = id_chars + 128;
-unsigned char const *thick_line = thin_line + 16;
-unsigned char const *ice_anim = thick_line + 16;
-unsigned char const *lava_anim = ice_anim + 4;
-unsigned char const *low_ammo = lava_anim + 3;
-unsigned char const *hi_ammo = low_ammo + 1;
-unsigned char const *lit_bomb = hi_ammo + 1;
-unsigned char const *energizer_glow = lit_bomb + 7;
-unsigned char const *explosion_colors = energizer_glow + 8;
-unsigned char const *horiz_door = explosion_colors + 4;
-unsigned char const *vert_door = horiz_door + 1;
-unsigned char const *cw_anim = vert_door + 1;
-unsigned char const *ccw_anim = cw_anim + 4;
-unsigned char const *open_door = ccw_anim + 4;
-unsigned char const *transport_anims = open_door + 32;
-unsigned char const *trans_north = transport_anims;
-unsigned char const *trans_south = trans_north + 4;
-unsigned char const *trans_east = trans_south + 4;
-unsigned char const *trans_west = trans_east + 4;
-unsigned char const *trans_all = trans_west + 4;
-unsigned char const *thick_arrow = transport_anims + 20;
-unsigned char const *thin_arrow = thick_arrow + 4;
-unsigned char const *horiz_lazer = thin_arrow + 4;
-unsigned char const *vert_lazer = horiz_lazer + 4;
-unsigned char const *fire_anim = vert_lazer + 4;
-unsigned char const *fire_colors = fire_anim + 6;
-unsigned char const *life_anim = fire_colors + 6;
-unsigned char const *life_colors = life_anim + 4;
-unsigned char const *ricochet_panels = life_colors + 4;
-unsigned char const *mine_anim = ricochet_panels + 2;
-unsigned char const *shooting_fire_anim = mine_anim + 2;
-unsigned char const *shooting_fire_colors = shooting_fire_anim + 2;
-unsigned char const *seeker_anim = shooting_fire_colors + 2;
-unsigned char const *seeker_colors = seeker_anim + 4;
-unsigned char const *whirlpool_glow = seeker_colors + 4;
-unsigned char *bullet_char = (unsigned char *)whirlpool_glow + 4;
-unsigned char *player_char = bullet_char + 12;
-unsigned char *player_color = player_char + 4;
-unsigned char missile_color = 8;
 
 unsigned char def_id_chars[455] =
 {
@@ -184,6 +140,7 @@ unsigned char def_id_chars[455] =
 };
 
 unsigned char bullet_color[3] = { 15, 15, 15 };
+unsigned char missile_color = 8;
 unsigned char id_dmg[128];
 
 unsigned char get_special_id_char(Board *src_board, mzx_thing cell_id,
@@ -244,7 +201,7 @@ unsigned char get_special_id_char(Board *src_board, mzx_thing cell_id,
         bits |= 4;
       }
 
-      return thick_line[bits];
+      return id_chars[thick_line + bits];
     }
 
     case WEB:
@@ -298,54 +255,54 @@ unsigned char get_special_id_char(Board *src_board, mzx_thing cell_id,
       }
 
       if(cell_id == 18)
-        return thin_line[bits];
-      return thick_line[bits];
+        return id_chars[thin_line + bits];
+      return id_chars[thick_line + bits];
     }
 
     case ICE:
     {
-      return ice_anim[level_param[offset]];
+      return id_chars[ice_anim + level_param[offset]];
     }
 
     case LAVA:
     {
-      return lava_anim[level_param[offset]];
+      return id_chars[lava_anim + level_param[offset]];
     }
 
     case AMMO:
     {
       if(level_param[offset] < 10)
-        return *low_ammo;
+        return id_chars[low_ammo];
       else
-        return *hi_ammo;
+        return id_chars[hi_ammo];
     }
 
     case LIT_BOMB:
     {
-      return lit_bomb[level_param[offset] & 0x0F];
+      return id_chars[lit_bomb + (level_param[offset] & 0x0F)];
     }
 
     case DOOR:
     {
       if(level_param[offset] & 1)
-        return *vert_door;
+        return id_chars[vert_door];
       else
-        return *horiz_door;
+        return id_chars[horiz_door];
     }
 
     case OPEN_DOOR:
     {
-      return open_door[level_param[offset] & 0x1F];
+      return id_chars[open_door + (level_param[offset] & 0x1F)];
     }
 
     case CW_ROTATE:
     {
-      return cw_anim[level_param[offset]];
+      return id_chars[cw_anim + level_param[offset]];
     }
 
     case CCW_ROTATE:
     {
-      return ccw_anim[level_param[offset]];
+      return id_chars[ccw_anim + level_param[offset]];
     }
 
     case TRANSPORT:
@@ -353,15 +310,15 @@ unsigned char get_special_id_char(Board *src_board, mzx_thing cell_id,
       switch(level_param[offset] & 0x07)
       {
         case 0:
-          return trans_north[(level_param[offset] >> 3) & 0x03];
+          return id_chars[trans_north + ((level_param[offset] >> 3) & 0x03)];
         case 1:
-          return trans_south[(level_param[offset] >> 3) & 0x03];
+          return id_chars[trans_south + ((level_param[offset] >> 3) & 0x03)];
         case 2:
-          return trans_east[(level_param[offset] >> 3) & 0x03];
+          return id_chars[trans_east  + ((level_param[offset] >> 3) & 0x03)];
         case 3:
-          return trans_west[(level_param[offset] >> 3) & 0x03];
+          return id_chars[trans_west  + ((level_param[offset] >> 3) & 0x03)];
         default:
-          return trans_all[(level_param[offset] >> 3) & 0x03];
+          return id_chars[trans_all   + ((level_param[offset] >> 3) & 0x03)];
       }
     }
 
@@ -369,61 +326,61 @@ unsigned char get_special_id_char(Board *src_board, mzx_thing cell_id,
     case MISSILE:
     case SPIKE:
     {
-      return thick_arrow[level_param[offset]];
+      return id_chars[thick_arrow + level_param[offset]];
     }
 
     case LAZER:
     {
       if(level_param[offset] & 1)
-        return vert_lazer[(level_param[offset] >> 1) & 0x03];
+        return id_chars[vert_lazer + ((level_param[offset] >> 1) & 0x03)];
       else
-        return horiz_lazer[(level_param[offset] >> 1)&0x03];
+        return id_chars[horiz_lazer + ((level_param[offset] >> 1) & 0x03)];
     }
 
     case BULLET:
     {
-      return bullet_char[level_param[offset]];
+      return id_chars[bullet_char + level_param[offset]];
     }
 
     case FIRE:
     {
-      return fire_anim[level_param[offset]];
+      return id_chars[fire_anim + level_param[offset]];
     }
 
     case LIFE:
     {
-      return life_anim[level_param[offset]];
+      return id_chars[life_anim + level_param[offset]];
     }
 
     case RICOCHET_PANEL:
     {
-      return ricochet_panels[level_param[offset]];
+      return id_chars[ricochet_panels + level_param[offset]];
     }
 
     case MINE:
     {
-      return mine_anim[level_param[offset] & 1];
+      return id_chars[mine_anim + (level_param[offset] & 0x01)];
     }
 
     case SHOOTING_FIRE:
     {
-      return shooting_fire_anim[level_param[offset] & 0x01];
+      return id_chars[shooting_fire_anim + (level_param[offset] & 0x01)];
     }
 
     case SEEKER:
     {
-      return seeker_anim[level_param[offset] & 0x03];
+      return id_chars[seeker_anim + (level_param[offset] & 0x03)];
     }
 
     case BULLET_GUN:
     case SPINNING_GUN:
     {
-      return thin_arrow[(level_param[offset]>>3) & 0x03];
+      return id_chars[thin_arrow + ((level_param[offset] >> 3) & 0x03)];
     }
 
     case MISSILE_GUN:
     {
-      return thick_arrow[(level_param[offset] >> 3) & 0x03];
+      return id_chars[thick_arrow + ((level_param[offset] >> 3) & 0x03)];
     }
 
     case SENSOR:
@@ -439,7 +396,7 @@ unsigned char get_special_id_char(Board *src_board, mzx_thing cell_id,
 
     case PLAYER:
     {
-      return player_char[(src_board->player_last_dir >> 4)];
+      return id_chars[player_char + (src_board->player_last_dir >> 4)];
     }
 
     // everything else
@@ -477,37 +434,37 @@ unsigned char get_id_color(Board *src_board, int id_offset)
   switch(cell_id)
   {
     case ENERGIZER:
-      spec_color = energizer_glow[src_board->level_param[id_offset]];
+      spec_color = id_chars[energizer_glow + src_board->level_param[id_offset]];
       break;
 
     case EXPLOSION:
       normal_color =
-        explosion_colors[src_board->level_param[id_offset]&0x0F];
+        id_chars[explosion_colors + (src_board->level_param[id_offset] & 0x0F)];
       goto no_spec;
 
     case FIRE:
-      spec_color = fire_colors[src_board->level_param[id_offset]];
+      spec_color = id_chars[fire_colors + src_board->level_param[id_offset]];
       break;
 
     case LIFE:
-      spec_color = life_colors[src_board->level_param[id_offset]];
+      spec_color = id_chars[life_colors + src_board->level_param[id_offset]];
       break;
 
     case WHIRLPOOL_1:
     case WHIRLPOOL_2:
     case WHIRLPOOL_3:
     case WHIRLPOOL_4:
-      spec_color = whirlpool_glow[cell_id - 67];
+      spec_color = id_chars[whirlpool_glow + (cell_id - 67)];
       break;
 
     case SHOOTING_FIRE:
       spec_color =
-        shooting_fire_colors[src_board->level_param[id_offset]&1];
+        id_chars[shooting_fire_colors + (src_board->level_param[id_offset]&1)];
       break;
 
     case SEEKER:
       spec_color =
-        seeker_colors[src_board->level_param[id_offset] & 0x03];
+        id_chars[seeker_colors + (src_board->level_param[id_offset] & 0x03)];
       break;
 
     case SCROLL:
@@ -515,7 +472,7 @@ unsigned char get_id_color(Board *src_board, int id_offset)
       break;
 
     case PLAYER: /* player */
-      normal_color = *player_color;
+      normal_color = id_chars[player_color];
 
     default:
       goto no_spec;

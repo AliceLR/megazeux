@@ -33,13 +33,20 @@
 #include "game.h"
 #include "event.h"
 #include "time.h"
-#include "robot.h"
 #include "audio.h"
 #include "rasm.h"
 #include "fsafeopen.h"
 #include "edit_di.h"
 #include "edit.h"
 #include "intake.h"
+
+#include "robot.h"
+#include "sprite.h"
+#include "world.h"
+
+#ifndef M_PI
+#define M_PI 3.14159265358979323846
+#endif
 
 typedef int (* builtin_read_function)(World *mzx_world,
  function_counter *counter, char *name, int id);
@@ -999,7 +1006,7 @@ int date_day_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   time_t e_time = time(NULL);
-  tm *t = localtime(&e_time);
+  struct tm *t = localtime(&e_time);
   return t->tm_mday;
 }
 
@@ -1007,7 +1014,7 @@ int date_year_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   time_t e_time = time(NULL);
-  tm *t = localtime(&e_time);
+  struct tm *t = localtime(&e_time);
   return t->tm_year + 1900;
 }
 
@@ -1015,7 +1022,7 @@ int date_month_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   time_t e_time = time(NULL);
-  tm *t = localtime(&e_time);
+  struct tm *t = localtime(&e_time);
   return t->tm_mon + 1;
 }
 
@@ -1023,7 +1030,7 @@ int time_hours_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   time_t e_time = time(NULL);
-  tm *t = localtime(&e_time);
+  struct tm *t = localtime(&e_time);
   return t->tm_hour;
 }
 
@@ -1031,7 +1038,7 @@ int time_minutes_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   time_t e_time = time(NULL);
-  tm *t = localtime(&e_time);
+  struct tm *t = localtime(&e_time);
   return t->tm_min;
 }
 
@@ -1039,7 +1046,7 @@ int time_seconds_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
   time_t e_time = time(NULL);
-  tm *t = localtime(&e_time);
+  struct tm *t = localtime(&e_time);
   return t->tm_sec;
 }
 
@@ -2244,7 +2251,7 @@ int invinco_gateway(World *mzx_world, counter *counter, char *name,
 {
   if(!counter->value)
   {
-    mzx_world->saved_pl_color = *player_color;
+    mzx_world->saved_pl_color = player_color;
   }
   else
   {
@@ -2252,7 +2259,7 @@ int invinco_gateway(World *mzx_world, counter *counter, char *name,
     {
       clear_sfx_queue();
       play_sfx(mzx_world, 18);
-      *player_color = mzx_world->saved_pl_color;
+      id_chars[player_color] = mzx_world->saved_pl_color;
     }
   }
 
@@ -2278,7 +2285,7 @@ void set_gateway(World *mzx_world, char *name,
   counter *cdest = find_counter(mzx_world, name, &next);
   if(cdest)
   {
-    cdest->gateway_write = function;
+    cdest->gateway_write = (void*)function;
   }
 }
 
@@ -2597,7 +2604,9 @@ void set_counter(World *mzx_world, char *name, int value, int id)
       // See if there's a gateway
       if(cdest->gateway_write)
       {
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+        gateway_write_function gateway_write =
+         (gateway_write_function)cdest->gateway_write;
+        value = gateway_write(mzx_world, cdest, name, value, id);
       }
 
       cdest->value = value;
@@ -2907,8 +2916,13 @@ void inc_counter(World *mzx_world, char *name, int value, int id)
     if(cdest)
     {
       value += cdest->value;
+
       if(cdest->gateway_write)
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+      {
+        gateway_write_function gateway_write =
+         (gateway_write_function)cdest->gateway_write;
+        value = gateway_write(mzx_world, cdest, name, value, id);
+      }
 
       cdest->value = value;
     }
@@ -2984,8 +2998,13 @@ void dec_counter(World *mzx_world, char *name, int value, int id)
     if(cdest)
     {
       value = cdest->value - value;
+
       if(cdest->gateway_write)
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+      {
+        gateway_write_function gateway_write =
+         (gateway_write_function)cdest->gateway_write;
+        value = gateway_write(mzx_world, cdest, name, value, id);
+      }
 
       cdest->value = value;
     }
@@ -3036,7 +3055,11 @@ void mul_counter(World *mzx_world, char *name, int value, int id)
     {
       value *= cdest->value;
       if(cdest->gateway_write)
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+      {
+        gateway_write_function gateway_write =
+         (gateway_write_function)cdest->gateway_write;
+        value = gateway_write(mzx_world, cdest, name, value, id);
+      }
 
       cdest->value = value;
     }
@@ -3068,8 +3091,13 @@ void div_counter(World *mzx_world, char *name, int value, int id)
     if(cdest)
     {
       value = cdest->value / value;
+
       if(cdest->gateway_write)
-        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
+      {
+        gateway_write_function gateway_write =
+         (gateway_write_function)cdest->gateway_write;
+        value = gateway_write(mzx_world, cdest, name, value, id);
+      }
 
       cdest->value = value;
     }

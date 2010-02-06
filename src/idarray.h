@@ -26,7 +26,7 @@
 
 __M_BEGIN_DECLS
 
-#include "world.h"
+#include "world_struct.h"
 
 void id_place(World *mzx_world, int array_x, int array_y,
  mzx_thing id, char color, char param);

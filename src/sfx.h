@@ -29,7 +29,7 @@ __M_BEGIN_DECLS
 // Number of unique sound effects
 #define NUM_SFX         50
 
-#include "world.h"
+#include "world_struct.h"
 
 // Size of sound queue
 #define NOISEMAX        4096

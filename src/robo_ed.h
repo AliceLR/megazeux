@@ -25,7 +25,7 @@
 __M_BEGIN_DECLS
 
 #include "rasm.h"
-#include "world.h"
+#include "world_struct.h"
 
 #define MAX_MACRO_RECURSION 16
 #define MAX_MACRO_REPEAT 128

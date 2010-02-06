@@ -25,7 +25,7 @@
 __M_BEGIN_DECLS
 
 #include "sfx.h"
-#include "world.h"
+#include "world_struct.h"
 
 void sfx_edit(World *mzx_world);
 

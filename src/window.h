@@ -27,7 +27,7 @@
 
 __M_BEGIN_DECLS
 
-#include "world.h"
+#include "world_struct.h"
 
 // For name seeking in list_menu
 #define TIME_SUSPEND 300

@@ -26,7 +26,7 @@
 
 __M_BEGIN_DECLS
 
-#include "world.h"
+#include "world_struct.h"
 
 void edit_world(World *mzx_world);
 int change_param(World *mzx_world, mzx_thing id, int param,

@@ -24,13 +24,15 @@
 #define __CHAR_ED_H
 
 #include "compat.h"
+#include "world_struct.h"
 
 __M_BEGIN_DECLS
 
 int char_editor(World *mzx_world);
 int char_editor_ext(World *mzx_world);
 int smzx_char_editor(World *mzx_world);
-void fill_region(char *matrix, int x, int y, int check, int draw);
+void fill_region(char *matrix, int x, int y, int buffer_width,
+ int buffer_height, int check, int draw);
 void fill_region_smzx(char *matrix, int x, int y, int check, int draw);
 
 __M_END_DECLS

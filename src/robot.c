@@ -21,11 +21,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <ctype.h>
 
-#include "robot.h"
 #include "const.h"
-#include "board.h"
 #include "game.h"
 #include "game2.h"
 #include "idarray.h"
@@ -34,6 +33,10 @@
 #include "expr.h"
 #include "window.h"
 #include "scrdisp.h"
+
+#include "robot.h"
+#include "board.h"
+#include "world.h"
 
 Robot *load_robot_allocate(FILE *fp, int savegame)
 {
@@ -863,13 +866,13 @@ void send_sensors(World *mzx_world, char *name, char *mesg)
       if(mesg[4] == '\'')
         command = 0x100 | mesg[5];
       else
-        command = 0x100 | strtol(mesg + 4, NULL, 10) & 0xFF;
+        command = 0x100 | (strtol(mesg + 4, NULL, 10) & 0xFF);
     }
 
     // Color__? (__ is hex)
     if(!strncasecmp("COLOR", mesg, 5))
     {
-      command = 512 | strtol(mesg + 5, NULL, 16) & 0xFF;
+      command = 512 | (strtol(mesg + 5, NULL, 16) & 0xFF);
     }
 
     if(command != -1)

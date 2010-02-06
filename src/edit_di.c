@@ -29,9 +29,12 @@
 #include "edit_di.h"
 #include "data.h"
 #include "const.h"
-#include "world.h"
+#include "world_struct.h"
 #include "robo_ed.h"
 #include "error.h"
+
+#include "board.h"
+#include "world.h"
 
 // Communial dialog
 #define MAX_ELEMS 15

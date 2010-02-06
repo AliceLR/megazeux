@@ -20,9 +20,10 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 
-#include "world.h"
 #include "board.h"
+#include "world.h"
 #include "const.h"
 
 int cmp_robots(const void *dest, const void *src)

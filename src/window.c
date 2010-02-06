@@ -24,6 +24,7 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
+#include <strings.h>
 #include <unistd.h>
 #include <ctype.h>
 #include <dirent.h>
@@ -44,7 +45,10 @@
 #include "const.h"
 #include "data.h"
 #include "helpsys.h"
+
 #include "robot.h"
+#include "board.h"
+#include "world.h"
 
 #define NUM_SAVSCR 6
 
@@ -2931,7 +2935,7 @@ int choose_board(World *mzx_world, int current, char *title, int board0_none)
 
   // New board? (if select no board or add board)
   if((current == num_boards) ||
-   (current >= 0) && (mzx_world->board_list[current] == NULL))
+   ((current >= 0) && (mzx_world->board_list[current] == NULL)))
   {
     current = add_board(mzx_world, current);
   }

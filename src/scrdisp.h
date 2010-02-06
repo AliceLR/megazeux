@@ -26,8 +26,8 @@
 
 __M_BEGIN_DECLS
 
-#include "world.h"
-#include "robot.h"
+#include "world_struct.h"
+#include "robot_struct.h"
 
 // Type 0/1 to DISPLAY a scroll/sign
 

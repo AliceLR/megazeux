@@ -746,7 +746,7 @@ void update_variables(World *mzx_world, int slowed)
       // Decrease
       dec_counter(mzx_world, "INVINCO", 1, 0);
       play_sfx(mzx_world, 17);
-      *player_color = rand() & 255;
+      id_chars[player_color] = rand() & 255;
     }
   }
   // Lazerwall start- cycle 0 to 7 then -7 to -1
@@ -3007,11 +3007,11 @@ int update(World *mzx_world, int game, int *fadein)
     // Draw screen
     if(!game)
     {
-      *player_color = 0;
-      player_char[0] = 32;
-      player_char[1] = 32;
-      player_char[2] = 32;
-      player_char[3] = 32;
+      id_chars[player_color] = 0;
+      id_chars[player_char + 0] = 32;
+      id_chars[player_char + 1] = 32;
+      id_chars[player_char + 2] = 32;
+      id_chars[player_char + 3] = 32;
     }
 
     // Figure out x/y of top

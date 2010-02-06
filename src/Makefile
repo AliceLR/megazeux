@@ -5,7 +5,7 @@ include ../Makefile.in
 include ../Makefile.platform
 
 # MZX requires some additional flags
-CXXFLAGS += -ffast-math -funsigned-char -DMZX_VERSION=\"${VERSTRING}\"
+CXXFLAGS += -Wno-char-subscripts -ffast-math -funsigned-char -DMZX_VERSION=\"${VERSTRING}\"
 CFLAGS   += -std=c99 ${CXXFLAGS}
 
 # standard MZX includes

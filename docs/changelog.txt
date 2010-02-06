@@ -19,6 +19,12 @@ DEVELOPERS
 + Fixed an invalid assumption in config.sh where /bin/sh was chosen as the
   shell script interpreter. This should have been /bin/bash, as 'sh' is not
   required to support functions, which config.sh uses.
++ Ported most of MegaZeux back to C. Many more changes were required than I
+  anticipated; MZX was using more C++ features than I expected. The only
+  exception is audio.cpp, which cannot be ported back to C because it uses
+  ModPlug's C++ classes directly (but I plan to split this file up shortly).
+  NOTE: The changes required were enormous, so I might have introduced some
+        weird bugs! Please test!
 
 January 30, 2007 - MZX 2.81f
 

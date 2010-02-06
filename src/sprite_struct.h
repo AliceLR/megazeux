@@ -17,40 +17,37 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __EXPR_H
-#define __EXPR_H
+#ifndef __SPRITE_STRUCT_H
+#define __SPRITE_STRUCT_H
 
 #include "compat.h"
 
 __M_BEGIN_DECLS
 
-#include "world_struct.h"
+#define MAX_SPRITES         256
 
-typedef enum
+typedef struct
 {
-  op_addition,
-  op_subtraction,
-  op_multiplication,
-  op_division,
-  op_modulus,
-  op_exponentation,
-  op_and,
-  op_or,
-  op_xor,
-  op_bitshift_left,
-  op_bitshift_right,
-  op_equal,
-  op_less_than,
-  op_greater_than,
-  op_greater_than_or_equal,
-  op_less_than_or_equal,
-  op_not_equal
-} op;
+  int x;
+  int y;
+  int ref_x;
+  int ref_y;
+  char color;
+  char flags;
+  char width;
+  char height;
+  signed char col_x;
+  signed char col_y;
+  char col_width;
+  char col_height;
+} Sprite;
 
-int parse_expression(World *mzx_world, char **expression, int *error, int id);
-int parse_argument(World *mzx_world, char **argument, int *type, int id);
-int evaluate_operation(int operand_a, op c_operator, int operand_b);
+typedef struct
+{
+  int num;
+  int collisions[MAX_SPRITES];
+} Collision_list;
 
 __M_END_DECLS
 
-#endif // __EXPR_H
+#endif // __SPRITE_STRUCT_H

@@ -24,6 +24,9 @@
 
 __M_BEGIN_DECLS
 
+#include "sprite_struct.h"
+#include "world_struct.h"
+
 // sprite.h, by Exophase
 
 // structures
@@ -45,38 +48,6 @@ __M_BEGIN_DECLS
 #define SPRITE_STATIC       0x10
 #define SPRITE_CHAR_CHECK2  0x20
 #define SPRITE_VLAYER       0x40
-
-#define MAX_SPRITES         256
-
-struct Sprite
-{
-  int x;
-  int y;
-  int ref_x;
-  int ref_y;
-  char color;
-  char flags;
-  char width;
-  char height;
-  signed char col_x;
-  signed char col_y;
-  char col_width;
-  char col_height;
-};
-
-typedef struct Sprite Sprite;
-
-struct Collision_list
-{
-  int num;
-  int collisions[MAX_SPRITES];
-};
-
-typedef struct Collision_list Collision_list;
-
-typedef struct _World World;
-
-// functions
 
 void plot_sprite(World *mzx_world, Sprite *cur_sprite, int color,
  int x, int y);

@@ -334,7 +334,7 @@ int fsafetest(const char *path, char *newpath)
 
 int fsafetranslate(const char *path, char *newpath)
 {
-  static struct stat inode;
+  struct stat inode;
   int ret;
 
   // fsafetest failed
@@ -356,7 +356,7 @@ int fsafetranslate(const char *path, char *newpath)
 
 FILE *fsafeopen(const char *path, const char *mode)
 {
-  static char newpath[MAX_PATH];
+  char newpath[MAX_PATH];
   int i, ret;
 
   // validate pathname, and optionally retrieve a better name

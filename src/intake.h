@@ -31,7 +31,7 @@ __M_BEGIN_DECLS
 //Global insert status
 extern char insert_on;
 
-#include "world.h"
+#include "world_struct.h"
 
 // See code for full docs, preserves mouse cursor, be prepared for a
 // MOUSE_EVENT! (must acknowledge_event() it)

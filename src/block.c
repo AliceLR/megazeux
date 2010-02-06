@@ -28,7 +28,7 @@
 #include "window.h"
 #include "data.h"
 #include "idarray.h"
-#include "world.h"
+#include "world_struct.h"
 
 //--------------------------
 //
