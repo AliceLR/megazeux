@@ -30,16 +30,9 @@ __M_BEGIN_DECLS
 #include "world_struct.h"
 
 void hurt_player_id(World *mzx_world, mzx_thing id);
-int find_seek(World *mzx_world, int x, int y);
-int inc_param(int param, int max);
-int xy2array2(Board *src_board, int x, int y);
-int arraydir2(Board *src_board, int x, int y, int *ret_x, int *ret_y,
- int direction);
 void update_board(World *mzx_world);
 void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
  int color);
-int try_transport(World *mzx_world, int x, int y, int push_status,
- int can_push, mzx_thing id, int dir);
 int transport(World *mzx_world, int x, int y, int dir, mzx_thing id,
  int param, int color, int can_push);
 int push(World *mzx_world, int x, int y, int dir, int checking);

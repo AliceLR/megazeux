@@ -216,31 +216,3 @@ int import_type(World *mzx_world)
 
   return import_choice;
 }
-
-int import_mzm_obj_type(World *mzx_world)
-{
-  int import_choice = 0;
-  int dialog_result;
-  element *elements[3];
-  dialog di;
-  char *radio_strings[] = { "Board", "Overlay" };
-
-  set_context(78);
-
-  elements[0] = construct_radio_button(6, 5, radio_strings,
-   2, 19, &import_choice);
-  elements[1] = construct_button(5, 11, "OK", 0);
-  elements[2] = construct_button(15, 11, "Cancel", -1);
-
-  construct_dialog(&di, "Import MZM as-", 26, 4, 28, 13,
-   elements, 3, 0);
-
-  dialog_result = run_dialog(mzx_world, &di);
-  destruct_dialog(&di);
-  pop_context();
-
-  if(dialog_result)
-    return -1;
-
-  return import_choice;
-}

@@ -27,11 +27,17 @@
 #include "counter.h"
 #include "robot.h"
 
-void expr_skip_whitespace(char **expression);
+static int last_val;
 
-int last_val;
+static void expr_skip_whitespace(char **expression)
+{
+  while(isspace(**expression))
+  {
+    (*expression)++;
+  }
+}
 
-int parse_argument(World *mzx_world, char **argument, int *type, int id)
+static int parse_argument(World *mzx_world, char **argument, int *type, int id)
 {
   int first_char = **argument;
 
@@ -319,15 +325,7 @@ int parse_argument(World *mzx_world, char **argument, int *type, int id)
   }
 }
 
-void expr_skip_whitespace(char **expression)
-{
-  while(isspace(**expression))
-  {
-    (*expression)++;
-  }
-}
-
-int evaluate_operation(int operand_a, op c_operator, int operand_b)
+static int evaluate_operation(int operand_a, op c_operator, int operand_b)
 {
   switch(c_operator)
   {

@@ -36,13 +36,13 @@
 
 // For missile turning (directions)
 
-int cwturndir[4] = { 2, 3, 1, 0 };
-int ccwturndir[4] = { 3, 2, 0, 1 };
+static int cwturndir[4] = { 2, 3, 1, 0 };
+static int ccwturndir[4] = { 3, 2, 0, 1 };
 
 // OPEN DOOR movement directions, use bits 1,2,4,8,16 to index it.
 // 0ffh=no movement.
 
-char open_door_movement[] =
+static char open_door_movement[] =
 {
   3   , 0   , 2   , 0   , 3   , 1   , 2   , 1   ,
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -52,7 +52,7 @@ char open_door_movement[] =
 
 // Bits for WAIT, in proper bit form, for opening doors. Use bits 1-16.
 
-char open_door_max_wait[] =
+static char open_door_max_wait[] =
 {
   32 , 32 , 32 , 32 , 32 , 32 , 32 , 32 ,
   224, 224, 224, 224, 224, 224, 224, 224,
@@ -70,7 +70,7 @@ void hurt_player_id(World *mzx_world, mzx_thing id)
 
 // Return the seek dir relative to the player.
 
-int find_seek(World *mzx_world, int x, int y)
+static int find_seek(World *mzx_world, int x, int y)
 {
   int dir;
   int player_x = mzx_world->player_x;
@@ -124,7 +124,7 @@ int flip_dir(int dir)
 
 // Increases current parameter and stores
 
-int inc_param(int param, int max)
+static int inc_param(int param, int max)
 {
   if(param == max)
   {
@@ -139,7 +139,7 @@ int inc_param(int param, int max)
 // Function to take an x/y position and return an array offset
 // (within the board)
 
-int xy2array2(Board *src_board, int x, int y)
+static int xy2array2(Board *src_board, int x, int y)
 {
   return (y * src_board->board_width) + x;
 }
@@ -148,7 +148,7 @@ int xy2array2(Board *src_board, int x, int y)
 // what ret_x/ret_y point to)
 // Returns -1 if offscreen, 0 otherwise.
 
-int arraydir2(Board *src_board, int x, int y, int *ret_x, int *ret_y,
+static int arraydir2(Board *src_board, int x, int y, int *ret_x, int *ret_y,
  int direction)
 {
   int new_x = x, new_y = y;
@@ -1906,7 +1906,7 @@ void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
 // This is an additional helper function to try to sanitize transport
 // Returns 1 if successful, 0 if not
 
-int try_transport(World *mzx_world, int x, int y, int push_status,
+static int try_transport(World *mzx_world, int x, int y, int push_status,
  int can_push, mzx_thing id, int dir)
 {
   Board *src_board = mzx_world->current_board;
@@ -2017,7 +2017,7 @@ int transport(World *mzx_world, int x, int y, int dir, mzx_thing id,
   return 0;
 }
 
-void push_player_sensor(World *mzx_world, int p_offset,
+static void push_player_sensor(World *mzx_world, int p_offset,
  int d_offset, char param, char color)
 {
   Board *src_board = mzx_world->current_board;

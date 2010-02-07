@@ -28,17 +28,40 @@
 #include "audio.h"
 
 // Frequencies of 6C thru 6B
-int note_freq[12] =
-{ 2032, 2152, 2280, 2416, 2560, 2712, 2880, 3048, 3232, 3424, 3624, 3840 };
-// Sample frequencies of 0C thru 0B
-int sam_freq[12] =
-{ 3424, 3232, 3048, 2880, 2712, 2560, 2416, 2280, 2152, 2032, 1920, 1812 };
+static int note_freq[12] =
+ { 2032, 2152, 2280, 2416, 2560, 2712, 2880, 3048, 3232, 3424, 3624, 3840 };
 
-noise background[NOISEMAX];     // The sound queue itself
-int topindex = 0;               // Marks the top of the queue
-int backduration = 0;           // Keeps track of duration of sound
-int backindex = 0;              // Marks bottom of queue
-int sound_in_queue = 0;         // Tells if sound in queue
+// Sample frequencies of 0C thru 0B
+static int sam_freq[12] =
+ { 3424, 3232, 3048, 2880, 2712, 2560, 2416, 2280, 2152, 2032, 1920, 1812 };
+
+static noise background[NOISEMAX]; // The sound queue itself
+static int sound_in_queue = 0;     // Tells if sound in queue
+
+int topindex = 0;  // Marks the top of the queue
+int backindex = 0; // Marks bottom of queue
+
+static void submit_sound(int freq, int delay)
+{
+  if((backindex == 0) && (topindex == NOISEMAX))
+    return;
+  if(topindex != (backindex - 1))
+  {
+    // Queue full?
+    background[topindex].freq = freq; // No, put it in queue
+    background[topindex++].duration = delay;
+    if(topindex == NOISEMAX)
+      topindex = 0; // Wraparound
+    sound_in_queue = 1; // Note sound in queue
+  }
+}
+
+static void play_note(int note, int octave, int delay)
+{
+  // Note is # 1-12
+  // Octave #0-6
+  submit_sound(note_freq[note - 1] >> (6 - octave), delay);
+}
 
 void play_sfx(World *mzx_world, int sfxn)
 {
@@ -263,27 +286,6 @@ void clear_sfx_queue(void)
   nosound(1);
 }
 
-void play_note(int note, int octave, int delay)
-{
-  // Note is # 1-12
-  // Octave #0-6
-  submit_sound(note_freq[note - 1] >> (6 - octave), delay);
-}
-
-void submit_sound(int freq, int delay)
-{
-  if((backindex == 0) && (topindex == NOISEMAX)) return;
-  if(topindex != (backindex - 1))
-  {
-    // Queue full?
-    background[topindex].freq = freq; // No, put it in queue
-    background[topindex++].duration = delay;
-    if(topindex == NOISEMAX)
-      topindex = 0; // Wraparound
-    sound_in_queue = 1; // Note sound in queue
-  }
-}
-
 void sound_system(void)
 {
   int sfx_on = get_sfx_on_state();
@@ -377,21 +379,6 @@ char sfx_strs[NUM_SFX][69] =
 
 char *custom_sfx = NULL;
 int custom_sfx_on = 0; // 1 to turn on custom sfx
-
-char sfx_init(void)
-{
-  custom_sfx = (char *)malloc(NUM_SFX * 69);
-  if(custom_sfx == NULL)
-    return 1;
-  return 0;
-}
-
-void sfx_exit(void)
-{
-  if(custom_sfx != NULL)
-    free(custom_sfx);
-  custom_sfx = NULL;
-}
 
 char is_playing(void)
 {

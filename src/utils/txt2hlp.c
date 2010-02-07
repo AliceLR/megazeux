@@ -25,40 +25,15 @@
 
 // Cleaned up/revised txt2hlp.cpp for compiling outside of DOS
 
-// Endian safe file readers taken from world.cpp..
-int fgetw(FILE *fp)
-{
-  int r = fgetc(fp);
-  r |= fgetc(fp) << 8;
-  return r;
-}
-
-int fgetd(FILE *fp)
-{
-  int r = fgetc(fp);
-  r |= fgetc(fp) << 8;
-  r |= fgetc(fp) << 16;
-  r |= fgetc(fp) << 24;
-
-  return r;
-}
-
-void fputw(int src, FILE *fp)
+static void fputw(int src, FILE *fp)
 {
   fputc(src & 0xFF, fp);
   fputc(src >> 8, fp);
 }
 
-void fputd(int src, FILE *fp)
-{
-  fputc(src & 0xFF, fp);
-  fputc((src >> 8) & 0xFF, fp);
-  fputc((src >> 16) & 0xFF, fp);
-  fputc((src >> 24) & 0xFF, fp);
-}
-
 // Custom fgetc function to dump \r's and replace \xFF's and /x1's.
-int fgetc2(FILE *fp)
+
+static int fgetc2(FILE *fp)
 {
   int current_char = fgetc(fp);
   switch(current_char)
@@ -155,7 +130,7 @@ int main(int argc, char *argv[])
 
         // Get next char
         current_char = fgetc(source);
-        
+
         if(((current_char == '\n') || (current_char == ':')) &&
          link >= num_links)
         {

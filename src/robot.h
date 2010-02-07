@@ -134,30 +134,10 @@ void clear_scroll_contents(Scroll *cur_scroll);
 int get_robot_id(Board *src_board, char *name);
 
 // These are part of runrobo2.cpp
-void magic_load_mod(World *mzx_world, char *filename);
-void save_player_position(World *mzx_world, int pos);
-void restore_player_position(World *mzx_world, int pos);
-void calculate_blocked(World *mzx_world, int x, int y,
- int id, int bl[4]);
 int place_at_xy(World *mzx_world, mzx_thing id, int color,
  int param, int x, int y);
-int place_under_xy(Board *src_board, mzx_thing id, int color,
- int param, int x, int y);
-int place_dir_xy(World *mzx_world, mzx_thing id, int color,
- int param, int x, int y, mzx_dir direction, Robot *cur_robot, int *_bl);
 int place_player_xy(World *mzx_world, int x, int y);
-int get_random_range(int min_value, int max_value);
-int send_self_label_tr(World *mzx_world, char *param, int id);
 void run_robot(World *mzx_world, int id, int x, int y);
-void split_colors(int color, int *fg, int *bg);
-int check_at_xy(Board *src_board, mzx_thing id, int fg, int bg,
- int param, int offset);
-int check_under_xy(Board *src_board, mzx_thing id, int fg, int bg,
- int param, int offset);
-int check_dir_xy(World *mzx_world, mzx_thing id, int color,
- int param, int x, int y, mzx_dir direction, Robot *cur_robot, int *_bl);
-void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
- int dest_x, int dest_y);
 void copy_board_to_board_buffer(Board *src_board, int x, int y,
  int width, int height, char *dest_id, char *dest_param,
  char *dest_color, char *dest_under_id, char *dest_under_param,

@@ -73,15 +73,10 @@ extern unsigned char id_chars[455];
 /* This second section is also for idput.cpp */
 extern unsigned char id_dmg[128];
 extern unsigned char def_id_chars[455];
-//extern unsigned char *player_color;
-//extern unsigned char *player_char;
 extern unsigned char bullet_color[3];
 extern unsigned char missile_color;
-//extern unsigned char *bullet_char;
 extern char curr_file[MAX_PATH];
 extern char curr_sav[MAX_PATH];
-extern char help_file[MAX_PATH];
-extern char megazeux_dir[MAX_PATH];
 extern char current_dir[MAX_PATH];
 extern char config_dir[MAX_PATH];
 

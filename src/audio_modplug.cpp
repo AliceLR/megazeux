@@ -41,7 +41,7 @@ typedef struct
   Uint32 effective_frequency;
 } modplug_stream;
 
-Uint32 mp_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
+static Uint32 mp_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
 {
   Uint32 read_len;
   modplug_stream *mp_stream = (modplug_stream *)a_src;
@@ -79,7 +79,7 @@ Uint32 mp_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
   return r_val;
 }
 
-void mp_set_volume(audio_stream *a_src, Uint32 volume)
+static void mp_set_volume(audio_stream *a_src, Uint32 volume)
 {
   ModPlugFile *mp_file = ((modplug_stream *)a_src)->module_data;
 
@@ -87,7 +87,7 @@ void mp_set_volume(audio_stream *a_src, Uint32 volume)
   mp_file->mSoundFile.SetMasterVolume(volume);
 }
 
-void mp_set_repeat(audio_stream *a_src, Uint32 repeat)
+static void mp_set_repeat(audio_stream *a_src, Uint32 repeat)
 {
   ModPlugFile *mp_file = ((modplug_stream *)a_src)->module_data;
 
@@ -99,19 +99,19 @@ void mp_set_repeat(audio_stream *a_src, Uint32 repeat)
     mp_file->mSoundFile.SetRepeatCount(0);
 }
 
-void mp_set_order(audio_stream *a_src, Uint32 order)
+static void mp_set_order(audio_stream *a_src, Uint32 order)
 {
   ((modplug_stream *)a_src)->module_data->
    mSoundFile.SetCurrentOrder(order);
 }
 
-void mp_set_position(audio_stream *a_src, Uint32 position)
+static void mp_set_position(audio_stream *a_src, Uint32 position)
 {
   ((modplug_stream *)a_src)->module_data->
    mSoundFile.SetCurrentPos(position);
 }
 
-void mp_set_frequency(sampled_stream *s_src, Uint32 frequency)
+static void mp_set_frequency(sampled_stream *s_src, Uint32 frequency)
 {
   if(frequency == 0)
   {
@@ -130,24 +130,24 @@ void mp_set_frequency(sampled_stream *s_src, Uint32 frequency)
   sampled_set_buffer(s_src);
 }
 
-Uint32 mp_get_order(audio_stream *a_src)
+static Uint32 mp_get_order(audio_stream *a_src)
 {
   return ((modplug_stream *)a_src)->module_data->
    mSoundFile.GetCurrentOrder();
 }
 
-Uint32 mp_get_position(audio_stream *a_src)
+static Uint32 mp_get_position(audio_stream *a_src)
 {
   return ((modplug_stream *)a_src)->module_data->
    mSoundFile.GetCurrentPos();
 }
 
-Uint32 mp_get_frequency(sampled_stream *s_src)
+static Uint32 mp_get_frequency(sampled_stream *s_src)
 {
   return ((modplug_stream *)s_src)->effective_frequency;
 }
 
-void mp_destruct(audio_stream *a_src)
+static void mp_destruct(audio_stream *a_src)
 {
   modplug_stream *mp_stream = (modplug_stream *)a_src;
   ModPlug_Unload(mp_stream->module_data);

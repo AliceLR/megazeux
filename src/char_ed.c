@@ -58,18 +58,19 @@
 //       "Current Char-"=Enter
 //       "..0.."=Change char
 
-char char_copy_buffer[8 * 14 * 32];
-int char_copy_width = 8;
-int char_copy_height = 14;
-int char_copy_use_offset = 0;
-char current_char = 1;
-int current_width = 1;
-int current_height = 1;
-int highlight_width = 1;
-int highlight_height = 1;
-int num_files = 1;
+static char char_copy_buffer[8 * 14 * 32];
+static int char_copy_width = 8;
+static int char_copy_height = 14;
+static char current_char = 1;
+static int current_width = 1;
+static int current_height = 1;
+static int highlight_width = 1;
+static int highlight_height = 1;
+static int num_files = 1;
 
-void fill_region(char *buffer, int x, int y,
+int char_copy_use_offset = 0;
+
+static void fill_region(char *buffer, int x, int y,
  int buffer_width, int buffer_height, int check, int draw)
 {
   int offset = x + (y * buffer_width);
@@ -90,7 +91,7 @@ void fill_region(char *buffer, int x, int y,
   }
 }
 
-void expand_buffer(char *buffer, int width, int height,
+static void expand_buffer(char *buffer, int width, int height,
  int cwidth, int cheight, int offset, int smzx)
 {
   char char_buffer[32 * 14];
@@ -162,7 +163,7 @@ void expand_buffer(char *buffer, int width, int height,
   }
 }
 
-void collapse_buffer(char *buffer, int width, int height,
+static void collapse_buffer(char *buffer, int width, int height,
  int cwidth, int cheight, int offset, int smzx)
 {
   char char_buffer[32 * 14];
@@ -240,7 +241,7 @@ void collapse_buffer(char *buffer, int width, int height,
   }
 }
 
-void draw_multichar(char *buffer, int start_x, int start_y,
+static void draw_multichar(char *buffer, int start_x, int start_y,
  int width, int height, int current_x, int current_y,
  int highlight_width, int highlight_height)
 {
@@ -329,7 +330,7 @@ void draw_multichar(char *buffer, int start_x, int start_y,
   }
 }
 
-void draw_multichar_smzx(char *buffer, int start_x, int start_y,
+static void draw_multichar_smzx(char *buffer, int start_x, int start_y,
  int width, int height, int current_x, int current_y,
  int highlight_width, int highlight_height)
 {
@@ -471,7 +472,7 @@ void draw_multichar_smzx(char *buffer, int start_x, int start_y,
   }
 }
 
-void replace_filenum(char *src, char *dest, int num)
+static void replace_filenum(char *src, char *dest, int num)
 {
   char *src_ptr = src;
   char *dest_ptr = dest;

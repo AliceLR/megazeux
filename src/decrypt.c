@@ -25,10 +25,10 @@
 #include <string.h>
 #include <stdlib.h>
 
-char magic_code[16] =
+static char magic_code[16] =
  "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
 
-int get_pw_xor_code(char *password, int pro_method)
+static int get_pw_xor_code(char *password, int pro_method)
 {
   int work = 85; // Start with 85... (01010101)
   int i;

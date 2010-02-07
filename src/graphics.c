@@ -88,6 +88,14 @@ static const SDL_Color default_pal[16] =
   { 255, 255, 255, 0 }
 };
 
+static void (*set_colors8[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+{
+  set_colors8_mzx,
+  set_colors8_smzx,
+  set_colors8_smzx,
+  set_colors8_smzx3
+};
+
 void ec_change_byte(Uint8 chr, Uint8 byte, Uint8 new_value)
 {
   graphics.charset[(chr * CHAR_SIZE) + byte] = new_value;
@@ -229,16 +237,6 @@ void ec_load_char_mzx(Uint32 char_number)
 {
   memcpy(graphics.charset + (char_number * CHAR_SIZE),
    graphics.default_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
-
-  // some renderers may want to map charsets to textures
-  if (graphics.remap_charsets)
-    graphics.remap_charsets(&graphics);
-}
-
-void ec_load_char_smzx(Uint32 char_number)
-{
-  memcpy(graphics.charset + (char_number * CHAR_SIZE),
-   graphics.smzx_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
 
   // some renderers may want to map charsets to textures
   if (graphics.remap_charsets)
@@ -517,7 +515,7 @@ void smzx_palette_loaded(int val)
   graphics.default_smzx_loaded = val;
 }
 
-void update_intensity_palette()
+static void update_intensity_palette(void)
 {
   int i;
   for(i = 0; i < SMZX_PAL_SIZE; i++)
@@ -1245,7 +1243,7 @@ void write_line_mask(char *str, Uint32 x, Uint32 y,
   }
 }
 
-void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
+static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
  Uint8 color, Uint32 offset, Uint32 c_offset)
 {
   char_element *dest = graphics.text_video + (y * 80) + x;
@@ -1285,13 +1283,6 @@ void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
   dest->char_value = chr + offset;
   dest->bg_color = (color >> 4) + c_offset;
   dest->fg_color = (color & 0x0F) + c_offset;
-}
-
-void draw_char_nocolor_ext(Uint8 chr, Uint32 x, Uint32 y,
- Uint32 offset, Uint32 c_offset)
-{
-  char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
-  dest->char_value = chr + offset;
 }
 
 void draw_char_linear_ext(Uint8 color, Uint8 chr,

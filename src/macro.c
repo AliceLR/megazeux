@@ -27,7 +27,7 @@
 #include "macro.h"
 #include "rasm.h"
 
-int cmp_variables(const void *dest, const void *src)
+static int cmp_variables(const void *dest, const void *src)
 {
   macro_variable *m_src = *((macro_variable **)src);
   macro_variable *m_dest = *((macro_variable **)dest);
@@ -35,7 +35,43 @@ int cmp_variables(const void *dest, const void *src)
   return strcasecmp(m_dest->name, m_src->name);
 }
 
-ext_macro *process_macro(char *line_data, char *name, char *label)
+static void free_macro(ext_macro *macro_src)
+{
+  int i, i2;
+
+  free(macro_src->name);
+  for(i = 0; i < macro_src->num_lines; i++)
+  {
+    free(macro_src->lines[i]);
+    free(macro_src->variable_references[i]);
+  }
+
+  free(macro_src->lines);
+  free(macro_src->variable_references);
+
+  free(macro_src->line_element_count);
+
+  for(i = 0; i < macro_src->num_types; i++)
+  {
+    if(macro_src->types[i].type == string)
+    {
+      for(i2 = 0; i2 < macro_src->types[i].num_variables; i2++)
+      {
+        free(macro_src->types[i].variables[i2].storage.str_storage);
+
+        if(macro_src->types[i].variables[i2].def.str_storage)
+          free(macro_src->types[i].variables[i2].def.str_storage);
+      }
+    }
+
+    free(macro_src->types[i].variables);
+
+  }
+
+  free(macro_src->text);
+}
+
+static ext_macro *process_macro(char *line_data, char *name, char *label)
 {
   char *line_position, *line_position_old;
   macro_variable variables[256];
@@ -423,66 +459,6 @@ ext_macro *process_macro(char *line_data, char *name, char *label)
   macro_dest->num_types = num_types;
 
   return macro_dest;
-}
-
-void free_macro(ext_macro *macro_src)
-{
-  int i, i2;
-
-  free(macro_src->name);
-  for(i = 0; i < macro_src->num_lines; i++)
-  {
-    free(macro_src->lines[i]);
-    free(macro_src->variable_references[i]);
-  }
-
-  free(macro_src->lines);
-  free(macro_src->variable_references);
-
-  free(macro_src->line_element_count);
-
-  for(i = 0; i < macro_src->num_types; i++)
-  {
-    if(macro_src->types[i].type == string)
-    {
-      for(i2 = 0; i2 < macro_src->types[i].num_variables; i2++)
-      {
-        free(macro_src->types[i].variables[i2].storage.str_storage);
-
-        if(macro_src->types[i].variables[i2].def.str_storage)
-          free(macro_src->types[i].variables[i2].def.str_storage);
-      }
-    }
-
-    free(macro_src->types[i].variables);
-
-  }
-
-  free(macro_src->text);
-}
-
-char *remove_whitespace(char *src, char *dest, char t)
-{
-  char *src_pos = src;
-  char *dest_pos = dest;
-
-  char current_char = *src_pos;
-
-  while(current_char && (current_char != t))
-  {
-    if(!isspace(current_char))
-    {
-      *dest_pos = current_char;
-      dest_pos++;
-    }
-    src_pos++;
-
-    current_char = *src_pos;
-  }
-
-  *dest_pos = 0;
-
-  return src_pos;
 }
 
 char *skip_to_next(char *src, char t, char a, char b)

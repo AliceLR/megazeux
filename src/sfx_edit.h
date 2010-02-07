@@ -29,8 +29,6 @@ __M_BEGIN_DECLS
 
 void sfx_edit(World *mzx_world);
 
-extern char *sfx_names[NUM_SFX];
-
 __M_END_DECLS
 
 #endif // __SFX_EDIT_H

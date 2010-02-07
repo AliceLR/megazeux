@@ -192,7 +192,6 @@ void set_sfx_volume(int volume);
 
 extern audio_struct audio;
 
-void sampled_negative_threshold(sampled_stream *s_src);
 void sampled_set_buffer(sampled_stream *s_src);
 void sampled_mix_data(sampled_stream *s_src, Sint32 *dest_buffer,
  Uint32 len);

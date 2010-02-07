@@ -133,16 +133,12 @@ void write_string_ext(char *string, Uint32 x, Uint32 y,
 void write_line_ext(char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset,
  Uint32 c_offset);
-void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
- Uint8 color, Uint32 offset, Uint32 c_offset);
 void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
  Uint8 chr, Uint8 color, Uint32 offset, Uint32 c_offset);
 void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
  Uint32 y, Uint32 offset, Uint32 c_offset);
 void draw_char_linear_ext(Uint8 color, Uint8 chr,
  Uint32 offset, Uint32 offset_b, Uint32 c_offset);
-void draw_char_nocolor_ext(Uint8 chr, Uint32 x, Uint32 y,
- Uint32 offset, Uint32 c_offset);
 void write_line_mask(char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed);
 void write_string_mask(char *str, Uint32 x, Uint32 y,
@@ -181,7 +177,6 @@ void ec_load_smzx(void);
 void ec_load_blank(void);
 void ec_load_ascii(void);
 void ec_load_char_mzx(Uint32 char_number);
-void ec_load_char_smzx(Uint32 char_number);
 void ec_load_char_ascii(Uint32 char_number);
 
 void update_palette();

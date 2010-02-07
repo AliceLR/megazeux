@@ -91,36 +91,6 @@ struct _robot_state
 extern char macros[5][64];
 
 void robot_editor(World *mzx_world, Robot *cur_robot);
-void move_and_update(robot_state *rstate, int count);
-void move_line_up(robot_state *rstate, int count);
-void move_line_down(robot_state *rstate, int count);
-void strip_ccodes(char *dest, char *src);
-int update_current_line(robot_state *rstate);
-void add_blank_line(robot_state *rstate, int relation);
-void delete_current_line(robot_state *rstate, int move);
-int validate_lines(robot_state *rstate, int show_none);
-void insert_string(char *dest, char *string, int *position);
-int block_menu(World *mzx_world);
-void add_line(robot_state *rstate);
-void paste_buffer(robot_state *rstate);
-void copy_block_to_buffer(robot_state *rstate);
-void clear_block(robot_state *rstate);
-void export_block(robot_state *rstate, int region_default);
-void import_block(World *mzx_world, robot_state *rstate);
-void edit_settings(World *mzx_world);
-void goto_line(robot_state *rstate, int line);
-void block_action(robot_state *rstate);
-void find_replace_action(robot_state *rstate);
-void str_lower_case(char *str, char *dest);
-void replace_current_line(robot_state *rstate, int r_pos, char *str,
- char *replace);
-void execute_macro(robot_state *rstate,
- ext_macro *macro_src);
-void execute_numbered_macro(robot_state *rstate, int num);
-void output_macro(robot_state *rstate, ext_macro *macro_src);
-void execute_named_macro(robot_state *rstate, char *macro_name);
-void macro_default_values(robot_state *rstate, ext_macro *macro_src);
-void goto_position(World *mzx_world, robot_state *rstate);
 
 __M_END_DECLS
 

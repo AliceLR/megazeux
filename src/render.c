@@ -166,14 +166,6 @@ void set_colors8_smzx3 (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
 #endif
 }
 
-void (*set_colors8[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
-{
-  set_colors8_mzx,
-  set_colors8_smzx,
-  set_colors8_smzx,
-  set_colors8_smzx3
-};
-
 void set_colors16_mzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
  Uint8 fg)
 {
@@ -230,14 +222,6 @@ void set_colors16_smzx3 (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
   char_colors[3] = (char_colors[3] << 16) | char_colors[3];
 }
 
-void (*set_colors16[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
-{
-  set_colors16_mzx,
-  set_colors16_smzx,
-  set_colors16_smzx,
-  set_colors16_smzx3
-};
-
 void set_colors32_mzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
  Uint8 fg)
 {
@@ -269,14 +253,6 @@ void set_colors32_smzx3 (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
   char_colors[2] = graphics->flat_intensity_palette[(base + 1) & 0xFF];
   char_colors[3] = graphics->flat_intensity_palette[(base + 3) & 0xFF];
 }
-
-void (*set_colors32[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
-{
-  set_colors32_mzx,
-  set_colors32_smzx,
-  set_colors32_smzx,
-  set_colors32_smzx3
-};
 
 // Nominally 8-bit (Character graphics 8 bytes wide)
 void render_graph8(Uint8 *pixels, Uint32 pitch, graphics_data *graphics,

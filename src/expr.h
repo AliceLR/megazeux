@@ -48,8 +48,6 @@ typedef enum
 } op;
 
 int parse_expression(World *mzx_world, char **expression, int *error, int id);
-int parse_argument(World *mzx_world, char **argument, int *type, int id);
-int evaluate_operation(int operand_a, op c_operator, int operand_b);
 
 __M_END_DECLS
 

@@ -78,30 +78,24 @@ typedef enum
   keycode_unicode
 } keycode_type;
 
-Uint32 process_event(SDL_Event *event);
 void wait_event();
-Uint32 update_autorepeat();
 Uint32 update_event_status();
 Uint32 update_event_status_delay();
 Uint32 get_key(keycode_type type);
 Uint32 get_last_key(keycode_type type);
 void force_last_key(keycode_type type, int val);
 Uint32 get_key_status(keycode_type type, Uint32 index);
-Uint32 get_mouse_movement(int *x, int *y);
 void get_mouse_position(int *x, int *y);
 void get_real_mouse_position(int *x, int *y);
 Uint32 get_mouse_press();
 Uint32 get_mouse_press_ext();
 Uint32 get_mouse_status();
-Uint32 get_mouse_status_ext();
 void warp_mouse(Uint32 x, Uint32 y);
 void warp_mouse_x(Uint32 x);
 void warp_mouse_y(Uint32 y);
 Uint32 get_mouse_x();
 Uint32 get_mouse_y();
 Uint32 get_mouse_drag();
-Uint32 convert_SDL_xt(SDLKey key);
-SDLKey convert_xt_SDL(Uint32 key, SDLKey *second);
 Uint32 get_last_key_released(keycode_type type);
 int get_alt_status(keycode_type type);
 int get_shift_status(keycode_type type);
@@ -111,8 +105,6 @@ void map_joystick_axis(int joystick, int axis, SDLKey min_key,
  SDLKey max_key);
 void map_joystick_button(int joystick, int button, SDLKey key);
 void set_refocus_pause(int val);
-
-extern input_status input;
 
 __M_END_DECLS
 

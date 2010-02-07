@@ -40,10 +40,6 @@ __M_BEGIN_DECLS
 void play_sfx(World *mzx_world, int sfx);
 void clear_sfx_queue(void);
 void sound_system(void);
-void play_note(int note, int octave, int delay);
-void submit_sound(int freq, int delay);
-char sfx_init(void);
-void sfx_exit(void);
 char is_playing(void);
 void play_str(char *str, int sfx_play);
 

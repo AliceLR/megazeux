@@ -52,9 +52,9 @@
 //       Menu=Do command
 //       RGB #'s=Raise/Lower R/G/B
 
-int saved_r = -1;
-int saved_g = -1;
-int saved_b = -1;
+static int saved_r = -1;
+static int saved_g = -1;
+static int saved_b = -1;
 
 void palette_editor(World *mzx_world)
 {

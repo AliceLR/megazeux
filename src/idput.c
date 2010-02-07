@@ -143,7 +143,7 @@ unsigned char bullet_color[3] = { 15, 15, 15 };
 unsigned char missile_color = 8;
 unsigned char id_dmg[128];
 
-unsigned char get_special_id_char(Board *src_board, mzx_thing cell_id,
+static unsigned char get_special_id_char(Board *src_board, mzx_thing cell_id,
  int offset)
 {
   char *level_id = src_board->level_id;

@@ -23,6 +23,14 @@
 #include "render_yuv.h"
 #include "renderers.h"
 
+static void (*set_colors32[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+{
+  set_colors32_mzx,
+  set_colors32_smzx,
+  set_colors32_smzx,
+  set_colors32_smzx3
+};
+
 static int yuv1_set_video_mode(graphics_data *graphics, int width, int height,
  int depth, int flags, int fullscreen)
 {

@@ -32,17 +32,12 @@ __M_BEGIN_DECLS
 
 void replace_current_board(World *mzx_world, char *name);
 Board *load_board_allocate(FILE *fp, int savegame);
-Board *load_board_allocate_direct(FILE *fp, int savegame);
-void load_board(Board *cur_board, FILE *fp, int savegame);
-void load_board_direct(Board *cur_board, FILE *fp, int savegame);
-Board *create_blank_board();
 void save_board_file(Board *cur_board, char *name);
 int save_board(Board *cur_board, FILE *fp, int savegame);
-void load_RLE2_plane(char *plane, FILE *fp, int size);
-void save_RLE2_plane(char *plane, FILE *fp, int size);
 void clear_board(Board *cur_board);
 int find_board(World *mzx_world, char *name);
 void change_board_size(Board *src_board, int new_width, int new_height);
+Board *create_blank_board(void);
 
 __M_END_DECLS
 

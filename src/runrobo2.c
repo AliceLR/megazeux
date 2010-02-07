@@ -53,7 +53,7 @@ extern int topindex, backindex;
 #define parsedir(a, b, c, d) \
 parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3]) \
 
-char *item_to_counter[9] =
+static char *item_to_counter[9] =
 {
   "GEMS",
   "AMMO",
@@ -66,7 +66,7 @@ char *item_to_counter[9] =
   "COINS"
 };
 
-void magic_load_mod(World *mzx_world, char *filename)
+static void magic_load_mod(World *mzx_world, char *filename)
 {
   Board *src_board = mzx_world->current_board;
   int mod_name_size = strlen(filename);
@@ -89,14 +89,14 @@ void magic_load_mod(World *mzx_world, char *filename)
   strcpy(mzx_world->real_mod_playing, filename);
 }
 
-void save_player_position(World *mzx_world, int pos)
+static void save_player_position(World *mzx_world, int pos)
 {
   mzx_world->pl_saved_x[pos] = mzx_world->player_x;
   mzx_world->pl_saved_y[pos] = mzx_world->player_y;
   mzx_world->pl_saved_board[pos] = mzx_world->current_board_id;
 }
 
-void restore_player_position(World *mzx_world, int pos)
+static void restore_player_position(World *mzx_world, int pos)
 {
   mzx_world->target_x = mzx_world->pl_saved_x[pos];
   mzx_world->target_y = mzx_world->pl_saved_y[pos];
@@ -104,8 +104,7 @@ void restore_player_position(World *mzx_world, int pos)
   mzx_world->target_where = TARGET_POSITION;
 }
 
-void calculate_blocked(World *mzx_world, int x, int y,
- int id, int bl[4])
+static void calculate_blocked(World *mzx_world, int x, int y, int id, int bl[4])
 {
   Board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
@@ -201,7 +200,7 @@ int place_at_xy(World *mzx_world, mzx_thing id, int color,
   return 1;
 }
 
-int place_under_xy(Board *src_board, mzx_thing id, int color,
+static int place_under_xy(Board *src_board, mzx_thing id, int color,
  int param, int x, int y)
 {
   int board_width = src_board->board_width;
@@ -224,7 +223,7 @@ int place_under_xy(Board *src_board, mzx_thing id, int color,
   return 1;
 }
 
-int place_dir_xy(World *mzx_world, mzx_thing id, int color, int param,
+static int place_dir_xy(World *mzx_world, mzx_thing id, int color, int param,
  int x, int y, mzx_dir direction, Robot *cur_robot, int *_bl)
 {
   Board *src_board = mzx_world->current_board;
@@ -289,8 +288,7 @@ int place_player_xy(World *mzx_world, int x, int y)
   return 0;
 }
 
-void send_at_xy(World *mzx_world, int id, int x, int y,
- char *label)
+static void send_at_xy(World *mzx_world, int id, int x, int y, char *label)
 {
   Board *src_board = mzx_world->current_board;
   int offset = x + (y * src_board->board_width);
@@ -316,7 +314,7 @@ void send_at_xy(World *mzx_world, int id, int x, int y,
   }
 }
 
-int get_random_range(int min_value, int max_value)
+static int get_random_range(int min_value, int max_value)
 {
   int result;
   unsigned int difference;
@@ -343,7 +341,7 @@ int get_random_range(int min_value, int max_value)
   return result;
 }
 
-int send_self_label_tr(World *mzx_world, char *param, int id)
+static int send_self_label_tr(World *mzx_world, char *param, int id)
 {
   char label_buffer[ROBOT_MAX_TR];
   tr_msg(mzx_world, param, id, label_buffer);
@@ -359,7 +357,7 @@ int send_self_label_tr(World *mzx_world, char *param, int id)
   }
 }
 
-void split_colors(int color, int *fg, int *bg)
+static void split_colors(int color, int *fg, int *bg)
 {
   if(color & 256)
   {
@@ -389,7 +387,7 @@ void split_colors(int color, int *fg, int *bg)
   }
 }
 
-int check_at_xy(Board *src_board, mzx_thing id, int fg, int bg,
+static int check_at_xy(Board *src_board, mzx_thing id, int fg, int bg,
  int param, int offset)
 {
   mzx_thing d_id = (mzx_thing)src_board->level_id[offset];
@@ -410,7 +408,7 @@ int check_at_xy(Board *src_board, mzx_thing id, int fg, int bg,
   return 0;
 }
 
-int check_under_xy(Board *src_board, mzx_thing id, int fg, int bg,
+static int check_under_xy(Board *src_board, mzx_thing id, int fg, int bg,
  int param, int offset)
 {
   mzx_thing did = (mzx_thing)src_board->level_under_id[offset];
@@ -425,9 +423,8 @@ int check_under_xy(Board *src_board, mzx_thing id, int fg, int bg,
   return 0;
 }
 
-int check_dir_xy(World *mzx_world, mzx_thing id, int color,
- int param, int x, int y, mzx_dir direction, Robot *cur_robot,
- int *_bl)
+static int check_dir_xy(World *mzx_world, mzx_thing id, int color, int param,
+ int x, int y, mzx_dir direction, Robot *cur_robot, int *_bl)
 {
   Board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
@@ -462,7 +459,7 @@ int check_dir_xy(World *mzx_world, mzx_thing id, int color,
   }
 }
 
-void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
+static void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
  int dest_x, int dest_y)
 {
   Board *src_board = mzx_world->current_board;
@@ -690,10 +687,9 @@ void copy_buffer_to_layer(int x, int y, int width,
   }
 }
 
-void copy_layer_to_layer(int src_x, int src_y,
- int dest_x, int dest_y, int width, int height, char *src_char,
- char *src_color, char *dest_char, char *dest_color, int src_width,
- int dest_width)
+static void copy_layer_to_layer(int src_x, int src_y, int dest_x, int dest_y,
+ int width, int height, char *src_char, char *src_color, char *dest_char,
+ char *dest_color, int src_width, int dest_width)
 {
   int dest_offset = dest_x + (dest_y * dest_width);
   int dest_skip = dest_width - width;

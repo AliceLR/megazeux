@@ -87,9 +87,6 @@ struct _ext_macro
   char *text;
 };
 
-ext_macro *process_macro(char *line_data, char *name, char *label);
-void free_macro(ext_macro *macro_src);
-char *remove_whitespace(char *src, char *dest, char t);
 char *skip_to_next(char *src, char t, char a, char b);
 char *skip_whitespace(char *src);
 variable_storage *find_macro_variable(char *name, macro_type *m);

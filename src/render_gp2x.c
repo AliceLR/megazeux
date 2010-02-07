@@ -247,7 +247,7 @@ static void gp2x_update_colors(graphics_data *graphics, SDL_Color *palette,
      palette[i].b, 255);
 }
 
-void gp2x_get_screen_coords(graphics_data *graphics, int screen_x,
+static void gp2x_get_screen_coords(graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y)
 {
   *x = screen_x * 2;
@@ -258,7 +258,7 @@ void gp2x_get_screen_coords(graphics_data *graphics, int screen_x,
   *max_y = 349;
 }
 
-void gp2x_set_screen_coords(graphics_data *graphics, int x, int y,
+static void gp2x_set_screen_coords(graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y)
 {
   *screen_x = x / 2;

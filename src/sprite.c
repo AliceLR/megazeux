@@ -31,6 +31,32 @@
 #include "game.h"
 #include "world.h"
 
+// For the qsort.
+static int compare_spr(const void *dest, const void *src)
+{
+  Sprite *spr_dest = *((Sprite **)dest);
+  Sprite *spr_src = *((Sprite **)src);
+
+  return ((spr_dest->y + spr_dest->col_y) -
+   (spr_src->y + spr_src->col_y));
+}
+
+static int is_blank(char c)
+{
+  int cp[4];
+  int blank = 0;
+
+  cp[3] = 0;
+  ec_read_char(c, (char *)cp);
+
+  blank |= cp[0];
+  blank |= cp[1];
+  blank |= cp[2];
+  blank |= cp[3];
+
+  return !blank;
+}
+
 void plot_sprite(World *mzx_world, Sprite *cur_sprite, int color, int x, int y)
 {
   if(((cur_sprite->width) && (cur_sprite->height)))
@@ -54,19 +80,6 @@ void plot_sprite(World *mzx_world, Sprite *cur_sprite, int color, int x, int y)
       mzx_world->active_sprites++;
     }
   }
-}
-
-// For the qsort.
-
-int compare_spr(const void *dest, const void *src);
-
-int compare_spr(const void *dest, const void *src)
-{
-  Sprite *spr_dest = *((Sprite **)dest);
-  Sprite *spr_src = *((Sprite **)src);
-
-  return ((spr_dest->y + spr_dest->col_y) -
-   (spr_src->y + spr_src->col_y));
 }
 
 void draw_sprites(World *mzx_world)
@@ -629,22 +642,3 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
   mzx_world->collision_count = colliding;
   return colliding;
 }
-
-int is_blank(char c)
-{
-  int cp[4];
-  int blank = 0;
-
-  cp[3] = 0;
-  ec_read_char(c, (char *)cp);
-
-  blank |= cp[0];
-  blank |= cp[1];
-  blank |= cp[2];
-  blank |= cp[3];
-
-  return !blank;
-}
-
-
-

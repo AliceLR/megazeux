@@ -29,7 +29,7 @@
 
 // 8 char names per sfx
 
-char *sfx_names[NUM_SFX] =
+static char *sfx_names[NUM_SFX] =
 {
   "Gem      ",
   "MagicGem ",

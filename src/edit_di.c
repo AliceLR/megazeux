@@ -36,8 +36,486 @@
 #include "board.h"
 #include "world.h"
 
-// Communial dialog
 #define MAX_ELEMS 15
+
+// The 8th bit set indicates that it's a color, not a char
+static int char_values[8][24] =
+{
+  {
+    0,
+    1,
+    2,
+    3,
+    6,
+    8,
+    9,
+    11,
+    13,
+    14,
+    15,
+    16,
+    20,
+    21,
+    22,
+    23,
+    24,
+    27,
+    28,
+    29,
+    30,
+    31,
+    32,
+    33
+  },
+  {
+    34,
+    36,
+    38,
+    39,
+    40,
+    43,
+    44,
+    47,
+    48,
+    50,
+    55,
+    57,
+    58,
+    60,
+    65,
+    67,
+    68,
+    69,
+    70,
+    71,
+    73,
+    80,
+    81,
+    82
+  },
+  {
+    83,
+    84,
+    85,
+    86,
+    87,
+    88,
+    89,
+    90,
+    91,
+    94,
+    95,
+    125,
+    126,
+    160,
+    161,
+    162,
+    163,
+    164,
+    165,
+    166,
+    167,
+    168,
+    169, // Special
+    176 | 512
+  },
+  {
+    177 | 512,
+    178 | 512,
+    179 | 512,
+    180 | 512,
+    181 | 512,
+    182 | 512,
+    183 | 512,
+    184 | 512,
+    185 | 512,
+    186 | 512,
+    187 | 512,
+    188, // Special
+    189, // Special
+    198, // Special
+    200, // Special
+    190,
+    191,
+    192,
+    193,
+    194,
+    195,
+    196,
+    197,
+    230
+  },
+  {
+    231,
+    232,
+    233,
+    234,
+    235,
+    236,
+    237,
+    238,
+    239,
+    240,
+    241,
+    242,
+    243,
+    244,
+    245,
+    246,
+    247,
+    248,
+    249,
+    250,
+    251,
+    252,
+    253,
+    254
+  },
+  {
+    255,
+    256,
+    257,
+    258,
+    259,
+    260,
+    261,
+    262,
+    263,
+    264,
+    265,
+    266,
+    267,
+    268,
+    269,
+    270,
+    271,
+    272 | 512,
+    273 | 512,
+    274 | 512,
+    275 | 512,
+    276 | 512,
+    277 | 512,
+    278
+  },
+  {
+    279,
+    280,
+    281,
+    282 | 512,
+    283 | 512,
+    284 | 512,
+    285 | 512,
+    286,
+    287,
+    288,
+    289,
+    290,
+    291,
+    292 | 512,
+    293 | 512,
+    294,
+    295,
+    296,
+    297,
+    298 | 512,
+    299 | 512,
+    300 | 512,
+    301 | 512,
+    302 | 512
+  },
+  {
+    303 | 512,
+    304 | 512,
+    305 | 512,
+    306,
+    307,
+    308,
+    309,
+    310,
+    311,
+    312,
+    313,
+    314,
+    315,
+    316,
+    317,
+    318,
+    319,
+    320,
+    321,
+    322 | 512,
+    323 | 512,
+    324 | 512,
+    325 | 512,
+    326 | 512
+  }
+};
+
+// Info for char funcs, 192 selections (24 per func, 8 funcs)
+static char *char_strs[8][24] =
+{
+  {
+    "Space (000)-",
+    "Normal (001)-",
+    "Solid (002)-",
+    "Tree (003)-",
+    "Breakaway (006)-",
+    "Boulder (008)-",
+    "Crate (009)-",
+    "Box (011)-",
+    "Fake (013)-",
+    "Carpet (014)-",
+    "Floor (015)-",
+    "Tiles (016)-",
+    "Still Water (020)-",
+    "N Water (021)-",
+    "S Water (022)-",
+    "E Water (023)-",
+    "W Water (024)-",
+    "Chest (027)-",
+    "Gem (028)-",
+    "Magic Gem (029)-",
+    "Health (030)-",
+    "Ring (031)-",
+    "Potion (032)-",
+    "Energizer (033)-"
+  },
+  {
+    "Goop (034)-",
+    "Bomb (036)-",
+    "Explosion (038)-",
+    "Key (039)-",
+    "Lock (040)-",
+    "Stairs (043)-",
+    "Cave (044)-",
+    "Gate (047)-",
+    "Open Gate (048)-",
+    "Coin (050)-",
+    "Pouch (055)-",
+    "Slider NS (057)-",
+    "Slider EW (058)-",
+    "Lazer Gun (060)-",
+    "Forest (065)-",
+    "Whirlpool 1 (067)-",
+    "Whirlpool 2 (068)-",
+    "Whirlpool 3 (069)-",
+    "Whirlpool 4 (070)-",
+    "Invis. Wall (071)-",
+    "Ricochet (073)-",
+    "Snake (080)-",
+    "Eye (081)-",
+    "Thief (082)-"
+  },
+  {
+    "Slime Blob (083)-",
+    "Runner (084)-",
+    "Ghost (085)-",
+    "Dragon (086)-",
+    "Fish (087)-",
+    "Shark (088)-",
+    "Spider (089)-",
+    "Goblin (090)-",
+    "Spitting Tiger (091)-",
+    "Bear (094)-",
+    "Bear Cub (095)-",
+    "Sign (125)-",
+    "Scroll (126)-",
+    "Blank Ice (160)-",
+    "Ice Anim 1 (161)-",
+    "Ice Anim 2 (162)-",
+    "Ice Anim 3 (163)-",
+    "Lava Anim 1 (164)-",
+    "Lava Anim 2 (165)-",
+    "Lava Anim 3 (166)-",
+    "Small Ammo (167)-",
+    "Large Ammo (168)-",
+    "Lit Bomb Anim 1 (169)-", // Special
+    "Energizer Color 1 (176)-"
+  },
+  {
+    "Energizer Color 2 (177)-",
+    "Energizer Color 3 (178)-",
+    "Energizer Color 4 (179)-",
+    "Energizer Color 5 (180)-",
+    "Energizer Color 6 (181)-",
+    "Energizer Color 7 (182)-",
+    "Energizer Color 8 (183)-",
+    "Explosion Stage 1 (184)-",
+    "Explosion Stage 2 (185)-",
+    "Explosion Stage 3 (186)-",
+    "Explosion Stage 4 (187)-",
+    "Horizontal Door (\?\?\?)-",//Special
+    "Vertical Door (\?\?\?)-",//Special
+    "Diagonal Door / (\?\?\?)-",//Special
+    "Diagonal Door \\ (\?\?\?)-",//Special
+    "CW Anim 1 (190)-",
+    "CW Anim 2 (191)-",
+    "CW Anim 3 (192)-",
+    "CW Anim 4 (193)-",
+    "CCW Anim 1 (194)-",
+    "CCW Anim 2 (195)-",
+    "CCW Anim 3 (196)-",
+    "CCW Anim 4 (197)-",
+    "N Transport Anim 1 (230)-"
+  },
+  {
+    "N Transport Anim 2 (231)-",
+    "N Transport Anim 3 (232)-",
+    "N Transport Anim 4 (233)-",
+    "S Transport Anim 1 (234)-",
+    "S Transport Anim 2 (235)-",
+    "S Transport Anim 3 (236)-",
+    "S Transport Anim 4 (237)-",
+    "E Transport Anim 1 (238)-",
+    "E Transport Anim 2 (239)-",
+    "E Transport Anim 3 (240)-",
+    "E Transport Anim 4 (241)-",
+    "W Transport Anim 1 (242)-",
+    "W Transport Anim 2 (243)-",
+    "W Transport Anim 3 (244)-",
+    "W Transport Anim 4 (245)-",
+    "A.Transport Anim 1 (246)-",
+    "A.Transport Anim 2 (247)-",
+    "A.Transport Anim 3 (248)-",
+    "A.Transport Anim 4 (249)-",
+    "N Thick Arrow (250)-",
+    "S Thick Arrow (251)-",
+    "E Thick Arrow (252)-",
+    "W Thick Arrow (253)-",
+    "N Thin Arrow (254)-"
+  },
+  {
+    "S Thin Arrow (255)-",
+    "E Thin Arrow (256)-",
+    "W Thin Arrow (257)-",
+    "Horiz Lazer Anim 1 (258)-",
+    "Horiz Lazer Anim 2 (259)-",
+    "Horiz Lazer Anim 3 (260)-",
+    "Horiz Lazer Anim 4 (261)-",
+    "Vert Lazer Anim 1 (262)-",
+    "Vert Lazer Anim 2 (263)-",
+    "Vert Lazer Anim 3 (264)-",
+    "Vert Lazer Anim 4 (265)-",
+    "Fire Anim 1 (266)-",
+    "Fire Anim 2 (267)-",
+    "Fire Anim 3 (268)-",
+    "Fire Anim 4 (269)-",
+    "Fire Anim 5 (270)-",
+    "Fire Anim 6 (271)-",
+    "Fire Color 1 (272)-",
+    "Fire Color 2 (273)-",
+    "Fire Color 3 (274)-",
+    "Fire Color 4 (275)-",
+    "Fire Color 5 (276)-",
+    "Fire Color 6 (277)-",
+    "Life Anim 1 (278)-"
+  },
+  {
+    "Life Anim 2 (279)-",
+    "Life Anim 3 (280)-",
+    "Life Anim 4 (281)-",
+    "Life Color 1 (282)-",
+    "Life Color 2 (283)-",
+    "Life Color 3 (284)-",
+    "Life Color 4 (285)-",
+    "Ricochet Panel \\ (286)-",
+    "Ricochet Panel / (287)-",
+    "Mine Anim 1 (288)-",
+    "Mine Anim 2 (289)-",
+    "Spit Fire Anim 1 (290)-",
+    "Spit Fire Anim 2 (291)-",
+    "Spit Fire Color 1 (292)-",
+    "Spit Fire Color 2 (293)-",
+    "Seeker Anim 1 (294)-",
+    "Seeker Anim 2 (295)-",
+    "Seeker Anim 3 (296)-",
+    "Seeker Anim 4 (297)-",
+    "Seeker Color 1 (298)-",
+    "Seeker Color 2 (299)-",
+    "Seeker Color 3 (300)-",
+    "Seeker Color 4 (301)-",
+    "Whirlpool Color 1 (302)-"
+  },
+  {
+    "Whirlpool Color 2 (303)-",
+    "Whirlpool Color 3 (304)-",
+    "Whirlpool Color 4 (305)-",
+    "N Player Bullet (306)-",
+    "S Player Bullet (307)-",
+    "E Player Bullet (308)-",
+    "W Player Bullet (309)-",
+    "N Neutral Bullet (310)-",
+    "S Neutral Bullet (311)-",
+    "E Neutral Bullet (312)-",
+    "W Neutral Bullet (313)-",
+    "N Enemy Bullet (314)-",
+    "S Enemy Bullet (315)-",
+    "E Enemy Bullet (316)-",
+    "W Enemy Bullet (317)-",
+    "N Player Char (318)-",
+    "S Player Char (319)-",
+    "E Player Char (320)-",
+    "W Player Char (321)-",
+    "Player Color (322)-",
+    "Missile Color (323)-",
+    "Player Bullet Color (324)-",
+    "Neutral Bullet Color (325)-",
+    "Enemy Bullet Color (326)-"
+  }
+};
+
+// Info for damage editing
+static char dmg_ids[22] =
+{
+  26,
+  38,
+  59,
+  61,
+  62,
+  63,
+  75,
+  76,
+  78,
+  79,
+  80,
+  83,
+  84,
+  85,
+  86,
+  87,
+  88,
+  89,
+  90,
+  91,
+  94,
+  95
+};
+
+static char *dmg_strs[22] =
+{
+  "Lava-",
+  "Explosion-",
+  "Lazer-",
+  "Bullet-",
+  "Missile-",
+  "Fire-",
+  "Spike-",
+  "Custom Hurt-",
+  "Shooting Fire-",
+  "Seeker-",
+  "Snake-",
+  "Slime Blob-",
+  "Runner-",
+  "Ghost-",
+  "Dragon-",
+  "Fish-",
+  "Shark-",
+  "Spider-",
+  "Goblin-",
+  "Spitting Tiger-",
+  "Bear-",
+  "Bear Cub-"
+};
 
 void set_confirm_buttons(element **elements)
 {
@@ -344,45 +822,210 @@ void board_info(World *mzx_world)
   pop_context();
 }
 
-//Dialog- (global info)
-//----------------------------------------------------------
-//
-// Death board-                 Endgame board-
-//__________________________!!!__________________________!!!
-//
-//Death X- _00000__!__!_       Endgame X- _00000__!__!_
-//Death Y- _00000__!__!_       Endgame Y- _00000__!__!_
-//
-//( ) Death- Same position     ( ) Endgame- Game over
-//( ) Death- Restart board     ( ) Endgame- Teleport
-//( ) Death- Teleport
-//                             [ ] Play game over sfx
-//
-//    _More_ _Edit Chars_ _Edit Dmg_ _Edit Global Robot_
-//
-//              _OK_                  _Cancel_
-//
-//----------------------------------------------------------
+// Chars #1-8
+static void global_chars(World *mzx_world)
+{
+  int i;
+  int current_id, dialog_result;
+  int current_menu = 0;
+  int results[24];
+  element *elements[27];
+  dialog di;
+  set_context(89);
 
-//Next-
-//----------------------------------------------------------
-//
-//     First board-
-//     __________________________!!!   Edging color- _*_
-//
-//     Starting lives-  _00000__!__!_
-//     Maximum lives-   _00000__!__!_
-//
-//     Starting health- _00000__!__!_
-//     Maximum health-  _00000__!__!_  _Previous_
-//
-//     [ ] Enemies' bullets hurt other enemies
-//     [ ] Clear messages and projectiles on exit
-//     [ ] Can only play world from a 'SWAP WORLD'
-//
-//              _OK_                  _Cancel_
-//
-//----------------------------------------------------------
+  do
+  {
+    elements[0] = construct_button(15, 15, "Next", 1);
+    elements[1] = construct_button(25, 15, "Previous", 2);
+    elements[2] = construct_button(39, 15, "Done", 3);
+
+    for(i = 0; i < 12; i++)
+    {
+      if(char_values[current_menu][i] & 512)
+      {
+        elements[i + 3] = construct_color_box(2 +
+         (25 - strlen(char_strs[current_menu][i])), 2 + i,
+         char_strs[current_menu][i], 0, results + i);
+      }
+      else
+      {
+        elements[i + 3] = construct_char_box(2 +
+         (25 - strlen(char_strs[current_menu][i])), 2 + i,
+         char_strs[current_menu][i],
+         char_values[current_menu][i] > 127, results + i);
+      }
+
+      current_id = char_values[current_menu][i] & 511;
+      if(current_id == 323)
+        results[i] = missile_color;
+      else
+
+      if((current_id >= 324) && (current_id <= 326))
+        results[i] = bullet_color[current_id - 324];
+      else
+        results[i] = id_chars[current_id];
+    }
+
+    for(; i < 24; i++)
+    {
+      if(char_values[current_menu][i] & 512)
+      {
+        elements[i + 3] = construct_color_box(32 +
+         (25 - strlen(char_strs[current_menu][i])), i - 10,
+         char_strs[current_menu][i], 0, results + i);
+      }
+      else
+      {
+        elements[i + 3] = construct_char_box(32 +
+         (25 - strlen(char_strs[current_menu][i])), i - 10,
+         char_strs[current_menu][i],
+         char_values[current_menu][i] > 127, results + i);
+      }
+
+      current_id = char_values[current_menu][i] & 511;
+      if(current_id == 323)
+        results[i] = missile_color;
+      else
+
+      if((current_id >= 324) && (current_id <= 326))
+        results[i] = bullet_color[current_id - 324];
+      else
+        results[i] = id_chars[current_id];
+    }
+
+    construct_dialog(&di, "Edit Characters", 9, 4, 62, 18,
+     elements, 27, 3);
+
+    // Run
+    dialog_result = run_dialog(mzx_world, &di);
+    destruct_dialog(&di);
+
+    if(dialog_result == -1)
+      break;
+
+    // Get from storage
+    for(i = 0; i < 24; i++)
+    {
+      current_id = char_values[current_menu][i] & 511;
+      if(current_id == 323)
+        missile_color = results[i];
+      else
+
+      if((current_id >= 324) && (current_id <= 326))
+        bullet_color[current_id - 324] = results[i];
+      else
+        id_chars[current_id] = results[i];
+    }
+
+    // Setup lit bomb sequence or doors
+    if(current_menu == 2)
+    {
+      // Lit bomb
+      for(i = 170; i < 176; i++)
+      {
+        id_chars[i] = id_chars[i - 1] - 1;
+      }
+    }
+    else
+
+    if(current_menu == 3)
+    {
+      // Doors
+      id_chars[199] = id_chars[198]; // '/'
+      id_chars[201] = id_chars[200]; // '\'
+      id_chars[202] = id_chars[200]; // '\'
+      id_chars[203] = id_chars[200]; // '\'
+      id_chars[204] = id_chars[198]; // '/'
+      id_chars[205] = id_chars[198]; // '/'
+      id_chars[206] = id_chars[189]; // '|'
+      id_chars[207] = id_chars[188]; // '-'
+      id_chars[208] = id_chars[189]; // '|'
+      id_chars[209] = id_chars[188]; // '-'
+      id_chars[210] = id_chars[189]; // '|'
+      id_chars[211] = id_chars[188]; // '-'
+      id_chars[212] = id_chars[189]; // '|'
+      id_chars[213] = id_chars[188]; // '-'
+      id_chars[214] = id_chars[189]; // '|'
+      id_chars[215] = id_chars[188]; // '-'
+      id_chars[216] = id_chars[189]; // '|'
+      id_chars[217] = id_chars[188]; // '-'
+      id_chars[218] = id_chars[189]; // '|'
+      id_chars[219] = id_chars[188]; // '-'
+      id_chars[220] = id_chars[189]; // '|'
+      id_chars[221] = id_chars[188]; // '-'
+      id_chars[222] = id_chars[198]; // '/'
+      id_chars[223] = id_chars[198]; // '/'
+      id_chars[224] = id_chars[200]; // '\'
+      id_chars[225] = id_chars[200]; // '\'
+      id_chars[226] = id_chars[200]; // '\'
+      id_chars[227] = id_chars[200]; // '\'
+      id_chars[228] = id_chars[198]; // '/'
+      id_chars[229] = id_chars[198]; // '/'
+    }
+
+    // Next, prev, or done
+    if(dialog_result == 1)
+    {
+      current_menu++;
+      if((current_menu) > 7)
+        current_menu = 0;
+    }
+    else
+
+    if(dialog_result == 2)
+    {
+      current_menu--;
+
+      if((current_menu) < 0)
+        current_menu = 7;
+    }
+  } while((dialog_result == 1) || (dialog_result == 2));
+
+  pop_context();
+}
+
+static void global_dmg(World *mzx_world)
+{
+  int dialog_result;
+  element *elements[24];
+  dialog di;
+  int results[22];
+  int i;
+
+  set_context(90);
+  set_confirm_buttons(elements);
+
+  for(i = 0; i < 11; i++)
+  {
+    results[i] = id_dmg[(int)dmg_ids[i]];
+    elements[i + 2] = construct_number_box(2 +
+     (14 - strlen(dmg_strs[i])), 2 + i,
+     dmg_strs[i], 0, 255, 0, results + i);
+  }
+
+  for(; i < 22; i++)
+  {
+    results[i] = id_dmg[(int)dmg_ids[i]];
+    elements[i + 2] = construct_number_box(31 +
+     (14 - strlen(dmg_strs[i])), i - 9,
+     dmg_strs[i], 0, 255, 0, results + i);
+  }
+
+  construct_dialog(&di, "Edit Damage", 10, 4, 60, 18,
+   elements, 24, 2);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(!dialog_result)
+  {
+    for(i = 0; i < 22; i++)
+    {
+      id_dmg[(int)dmg_ids[i]] = results[i];
+    }
+  }
+  pop_context();
+}
 
 void global_info(World *mzx_world)
 {
@@ -615,708 +1258,3 @@ void global_info(World *mzx_world)
 
   pop_context();
 }
-
-//----------------------------------------------------------
-// (Note- The numbers in parenthesis are the codes to use
-//        with the CHANGE CHAR ID robot command)
-//
-//Energizer color #1 (200)-_*_  Energizer color #1 (200)-_*_
-// .                             .
-// .                             .
-// .                             .
-// .                             .
-// .                             .
-// .                             .
-// .                             .
-// .                             .
-// .                             .
-//
-//             _Next_    _Previous_    _Done_
-//
-//----------------------------------------------------------
-
-// Info for char funcs, 192 selections (24 per func, 8 funcs)
-char *char_strs[8][24] =
-{
-  {
-    "Space (000)-",
-    "Normal (001)-",
-    "Solid (002)-",
-    "Tree (003)-",
-    "Breakaway (006)-",
-    "Boulder (008)-",
-    "Crate (009)-",
-    "Box (011)-",
-    "Fake (013)-",
-    "Carpet (014)-",
-    "Floor (015)-",
-    "Tiles (016)-",
-    "Still Water (020)-",
-    "N Water (021)-",
-    "S Water (022)-",
-    "E Water (023)-",
-    "W Water (024)-",
-    "Chest (027)-",
-    "Gem (028)-",
-    "Magic Gem (029)-",
-    "Health (030)-",
-    "Ring (031)-",
-    "Potion (032)-",
-    "Energizer (033)-"
-  },
-  {
-    "Goop (034)-",
-    "Bomb (036)-",
-    "Explosion (038)-",
-    "Key (039)-",
-    "Lock (040)-",
-    "Stairs (043)-",
-    "Cave (044)-",
-    "Gate (047)-",
-    "Open Gate (048)-",
-    "Coin (050)-",
-    "Pouch (055)-",
-    "Slider NS (057)-",
-    "Slider EW (058)-",
-    "Lazer Gun (060)-",
-    "Forest (065)-",
-    "Whirlpool 1 (067)-",
-    "Whirlpool 2 (068)-",
-    "Whirlpool 3 (069)-",
-    "Whirlpool 4 (070)-",
-    "Invis. Wall (071)-",
-    "Ricochet (073)-",
-    "Snake (080)-",
-    "Eye (081)-",
-    "Thief (082)-"
-  },
-  {
-    "Slime Blob (083)-",
-    "Runner (084)-",
-    "Ghost (085)-",
-    "Dragon (086)-",
-    "Fish (087)-",
-    "Shark (088)-",
-    "Spider (089)-",
-    "Goblin (090)-",
-    "Spitting Tiger (091)-",
-    "Bear (094)-",
-    "Bear Cub (095)-",
-    "Sign (125)-",
-    "Scroll (126)-",
-    "Blank Ice (160)-",
-    "Ice Anim 1 (161)-",
-    "Ice Anim 2 (162)-",
-    "Ice Anim 3 (163)-",
-    "Lava Anim 1 (164)-",
-    "Lava Anim 2 (165)-",
-    "Lava Anim 3 (166)-",
-    "Small Ammo (167)-",
-    "Large Ammo (168)-",
-    "Lit Bomb Anim 1 (169)-", // Special
-    "Energizer Color 1 (176)-"
-  },
-  {
-    "Energizer Color 2 (177)-",
-    "Energizer Color 3 (178)-",
-    "Energizer Color 4 (179)-",
-    "Energizer Color 5 (180)-",
-    "Energizer Color 6 (181)-",
-    "Energizer Color 7 (182)-",
-    "Energizer Color 8 (183)-",
-    "Explosion Stage 1 (184)-",
-    "Explosion Stage 2 (185)-",
-    "Explosion Stage 3 (186)-",
-    "Explosion Stage 4 (187)-",
-    "Horizontal Door (\?\?\?)-",//Special
-    "Vertical Door (\?\?\?)-",//Special
-    "Diagonal Door / (\?\?\?)-",//Special
-    "Diagonal Door \\ (\?\?\?)-",//Special
-    "CW Anim 1 (190)-",
-    "CW Anim 2 (191)-",
-    "CW Anim 3 (192)-",
-    "CW Anim 4 (193)-",
-    "CCW Anim 1 (194)-",
-    "CCW Anim 2 (195)-",
-    "CCW Anim 3 (196)-",
-    "CCW Anim 4 (197)-",
-    "N Transport Anim 1 (230)-"
-  },
-  {
-    "N Transport Anim 2 (231)-",
-    "N Transport Anim 3 (232)-",
-    "N Transport Anim 4 (233)-",
-    "S Transport Anim 1 (234)-",
-    "S Transport Anim 2 (235)-",
-    "S Transport Anim 3 (236)-",
-    "S Transport Anim 4 (237)-",
-    "E Transport Anim 1 (238)-",
-    "E Transport Anim 2 (239)-",
-    "E Transport Anim 3 (240)-",
-    "E Transport Anim 4 (241)-",
-    "W Transport Anim 1 (242)-",
-    "W Transport Anim 2 (243)-",
-    "W Transport Anim 3 (244)-",
-    "W Transport Anim 4 (245)-",
-    "A.Transport Anim 1 (246)-",
-    "A.Transport Anim 2 (247)-",
-    "A.Transport Anim 3 (248)-",
-    "A.Transport Anim 4 (249)-",
-    "N Thick Arrow (250)-",
-    "S Thick Arrow (251)-",
-    "E Thick Arrow (252)-",
-    "W Thick Arrow (253)-",
-    "N Thin Arrow (254)-"
-  },
-  {
-    "S Thin Arrow (255)-",
-    "E Thin Arrow (256)-",
-    "W Thin Arrow (257)-",
-    "Horiz Lazer Anim 1 (258)-",
-    "Horiz Lazer Anim 2 (259)-",
-    "Horiz Lazer Anim 3 (260)-",
-    "Horiz Lazer Anim 4 (261)-",
-    "Vert Lazer Anim 1 (262)-",
-    "Vert Lazer Anim 2 (263)-",
-    "Vert Lazer Anim 3 (264)-",
-    "Vert Lazer Anim 4 (265)-",
-    "Fire Anim 1 (266)-",
-    "Fire Anim 2 (267)-",
-    "Fire Anim 3 (268)-",
-    "Fire Anim 4 (269)-",
-    "Fire Anim 5 (270)-",
-    "Fire Anim 6 (271)-",
-    "Fire Color 1 (272)-",
-    "Fire Color 2 (273)-",
-    "Fire Color 3 (274)-",
-    "Fire Color 4 (275)-",
-    "Fire Color 5 (276)-",
-    "Fire Color 6 (277)-",
-    "Life Anim 1 (278)-"
-  },
-  {
-    "Life Anim 2 (279)-",
-    "Life Anim 3 (280)-",
-    "Life Anim 4 (281)-",
-    "Life Color 1 (282)-",
-    "Life Color 2 (283)-",
-    "Life Color 3 (284)-",
-    "Life Color 4 (285)-",
-    "Ricochet Panel \\ (286)-",
-    "Ricochet Panel / (287)-",
-    "Mine Anim 1 (288)-",
-    "Mine Anim 2 (289)-",
-    "Spit Fire Anim 1 (290)-",
-    "Spit Fire Anim 2 (291)-",
-    "Spit Fire Color 1 (292)-",
-    "Spit Fire Color 2 (293)-",
-    "Seeker Anim 1 (294)-",
-    "Seeker Anim 2 (295)-",
-    "Seeker Anim 3 (296)-",
-    "Seeker Anim 4 (297)-",
-    "Seeker Color 1 (298)-",
-    "Seeker Color 2 (299)-",
-    "Seeker Color 3 (300)-",
-    "Seeker Color 4 (301)-",
-    "Whirlpool Color 1 (302)-"
-  },
-  {
-    "Whirlpool Color 2 (303)-",
-    "Whirlpool Color 3 (304)-",
-    "Whirlpool Color 4 (305)-",
-    "N Player Bullet (306)-",
-    "S Player Bullet (307)-",
-    "E Player Bullet (308)-",
-    "W Player Bullet (309)-",
-    "N Neutral Bullet (310)-",
-    "S Neutral Bullet (311)-",
-    "E Neutral Bullet (312)-",
-    "W Neutral Bullet (313)-",
-    "N Enemy Bullet (314)-",
-    "S Enemy Bullet (315)-",
-    "E Enemy Bullet (316)-",
-    "W Enemy Bullet (317)-",
-    "N Player Char (318)-",
-    "S Player Char (319)-",
-    "E Player Char (320)-",
-    "W Player Char (321)-",
-    "Player Color (322)-",
-    "Missile Color (323)-",
-    "Player Bullet Color (324)-",
-    "Neutral Bullet Color (325)-",
-    "Enemy Bullet Color (326)-"
-  }
-};
-
-// The 8th bit set indicates that it's a color, not a char
-
-int char_values[8][24] =
-{
-  {
-    0,
-    1,
-    2,
-    3,
-    6,
-    8,
-    9,
-    11,
-    13,
-    14,
-    15,
-    16,
-    20,
-    21,
-    22,
-    23,
-    24,
-    27,
-    28,
-    29,
-    30,
-    31,
-    32,
-    33
-  },
-  {
-    34,
-    36,
-    38,
-    39,
-    40,
-    43,
-    44,
-    47,
-    48,
-    50,
-    55,
-    57,
-    58,
-    60,
-    65,
-    67,
-    68,
-    69,
-    70,
-    71,
-    73,
-    80,
-    81,
-    82
-  },
-  {
-    83,
-    84,
-    85,
-    86,
-    87,
-    88,
-    89,
-    90,
-    91,
-    94,
-    95,
-    125,
-    126,
-    160,
-    161,
-    162,
-    163,
-    164,
-    165,
-    166,
-    167,
-    168,
-    169, // Special
-    176 | 512
-  },
-  {
-    177 | 512,
-    178 | 512,
-    179 | 512,
-    180 | 512,
-    181 | 512,
-    182 | 512,
-    183 | 512,
-    184 | 512,
-    185 | 512,
-    186 | 512,
-    187 | 512,
-    188, // Special
-    189, // Special
-    198, // Special
-    200, // Special
-    190,
-    191,
-    192,
-    193,
-    194,
-    195,
-    196,
-    197,
-    230
-  },
-  {
-    231,
-    232,
-    233,
-    234,
-    235,
-    236,
-    237,
-    238,
-    239,
-    240,
-    241,
-    242,
-    243,
-    244,
-    245,
-    246,
-    247,
-    248,
-    249,
-    250,
-    251,
-    252,
-    253,
-    254
-  },
-  {
-    255,
-    256,
-    257,
-    258,
-    259,
-    260,
-    261,
-    262,
-    263,
-    264,
-    265,
-    266,
-    267,
-    268,
-    269,
-    270,
-    271,
-    272 | 512,
-    273 | 512,
-    274 | 512,
-    275 | 512,
-    276 | 512,
-    277 | 512,
-    278
-  },
-  {
-    279,
-    280,
-    281,
-    282 | 512,
-    283 | 512,
-    284 | 512,
-    285 | 512,
-    286,
-    287,
-    288,
-    289,
-    290,
-    291,
-    292 | 512,
-    293 | 512,
-    294,
-    295,
-    296,
-    297,
-    298 | 512,
-    299 | 512,
-    300 | 512,
-    301 | 512,
-    302 | 512
-  },
-  {
-    303 | 512,
-    304 | 512,
-    305 | 512,
-    306,
-    307,
-    308,
-    309,
-    310,
-    311,
-    312,
-    313,
-    314,
-    315,
-    316,
-    317,
-    318,
-    319,
-    320,
-    321,
-    322 | 512,
-    323 | 512,
-    324 | 512,
-    325 | 512,
-    326 | 512
-  }
-};
-
-// Chars #1-8
-void global_chars(World *mzx_world)
-{
-  int i;
-  int current_id, dialog_result;
-  int current_menu = 0;
-  int results[24];
-  element *elements[27];
-  dialog di;
-  set_context(89);
-
-  do
-  {
-    elements[0] = construct_button(15, 15, "Next", 1);
-    elements[1] = construct_button(25, 15, "Previous", 2);
-    elements[2] = construct_button(39, 15, "Done", 3);
-
-    for(i = 0; i < 12; i++)
-    {
-      if(char_values[current_menu][i] & 512)
-      {
-        elements[i + 3] = construct_color_box(2 +
-         (25 - strlen(char_strs[current_menu][i])), 2 + i,
-         char_strs[current_menu][i], 0, results + i);
-      }
-      else
-      {
-        elements[i + 3] = construct_char_box(2 +
-         (25 - strlen(char_strs[current_menu][i])), 2 + i,
-         char_strs[current_menu][i],
-         char_values[current_menu][i] > 127, results + i);
-      }
-
-      current_id = char_values[current_menu][i] & 511;
-      if(current_id == 323)
-        results[i] = missile_color;
-      else
-
-      if((current_id >= 324) && (current_id <= 326))
-        results[i] = bullet_color[current_id - 324];
-      else
-        results[i] = id_chars[current_id];
-    }
-
-    for(; i < 24; i++)
-    {
-      if(char_values[current_menu][i] & 512)
-      {
-        elements[i + 3] = construct_color_box(32 +
-         (25 - strlen(char_strs[current_menu][i])), i - 10,
-         char_strs[current_menu][i], 0, results + i);
-      }
-      else
-      {
-        elements[i + 3] = construct_char_box(32 +
-         (25 - strlen(char_strs[current_menu][i])), i - 10,
-         char_strs[current_menu][i],
-         char_values[current_menu][i] > 127, results + i);
-      }
-
-      current_id = char_values[current_menu][i] & 511;
-      if(current_id == 323)
-        results[i] = missile_color;
-      else
-
-      if((current_id >= 324) && (current_id <= 326))
-        results[i] = bullet_color[current_id - 324];
-      else
-        results[i] = id_chars[current_id];
-    }
-
-    construct_dialog(&di, "Edit Characters", 9, 4, 62, 18,
-     elements, 27, 3);
-
-    // Run
-    dialog_result = run_dialog(mzx_world, &di);
-    destruct_dialog(&di);
-
-    if(dialog_result == -1)
-      break;
-
-    // Get from storage
-    for(i = 0; i < 24; i++)
-    {
-      current_id = char_values[current_menu][i] & 511;
-      if(current_id == 323)
-        missile_color = results[i];
-      else
-
-      if((current_id >= 324) && (current_id <= 326))
-        bullet_color[current_id - 324] = results[i];
-      else
-        id_chars[current_id] = results[i];
-    }
-
-    // Setup lit bomb sequence or doors
-    if(current_menu == 2)
-    {
-      // Lit bomb
-      for(i = 170; i < 176; i++)
-      {
-        id_chars[i] = id_chars[i - 1] - 1;
-      }
-    }
-    else
-
-    if(current_menu == 3)
-    {
-      // Doors
-      id_chars[199] = id_chars[198]; // '/'
-      id_chars[201] = id_chars[200]; // '\'
-      id_chars[202] = id_chars[200]; // '\'
-      id_chars[203] = id_chars[200]; // '\'
-      id_chars[204] = id_chars[198]; // '/'
-      id_chars[205] = id_chars[198]; // '/'
-      id_chars[206] = id_chars[189]; // '|'
-      id_chars[207] = id_chars[188]; // '-'
-      id_chars[208] = id_chars[189]; // '|'
-      id_chars[209] = id_chars[188]; // '-'
-      id_chars[210] = id_chars[189]; // '|'
-      id_chars[211] = id_chars[188]; // '-'
-      id_chars[212] = id_chars[189]; // '|'
-      id_chars[213] = id_chars[188]; // '-'
-      id_chars[214] = id_chars[189]; // '|'
-      id_chars[215] = id_chars[188]; // '-'
-      id_chars[216] = id_chars[189]; // '|'
-      id_chars[217] = id_chars[188]; // '-'
-      id_chars[218] = id_chars[189]; // '|'
-      id_chars[219] = id_chars[188]; // '-'
-      id_chars[220] = id_chars[189]; // '|'
-      id_chars[221] = id_chars[188]; // '-'
-      id_chars[222] = id_chars[198]; // '/'
-      id_chars[223] = id_chars[198]; // '/'
-      id_chars[224] = id_chars[200]; // '\'
-      id_chars[225] = id_chars[200]; // '\'
-      id_chars[226] = id_chars[200]; // '\'
-      id_chars[227] = id_chars[200]; // '\'
-      id_chars[228] = id_chars[198]; // '/'
-      id_chars[229] = id_chars[198]; // '/'
-    }
-
-    // Next, prev, or done
-    if(dialog_result == 1)
-    {
-      current_menu++;
-      if((current_menu) > 7)
-        current_menu = 0;
-    }
-    else
-
-    if(dialog_result == 2)
-    {
-      current_menu--;
-
-      if((current_menu) < 0)
-        current_menu = 7;
-    }
-  } while((dialog_result == 1) || (dialog_result == 2));
-
-  pop_context();
-}
-
-// Info for damage editing
-char dmg_ids[22] =
-{
-  26,
-  38,
-  59,
-  61,
-  62,
-  63,
-  75,
-  76,
-  78,
-  79,
-  80,
-  83,
-  84,
-  85,
-  86,
-  87,
-  88,
-  89,
-  90,
-  91,
-  94,
-  95
-};
-
-char *dmg_strs[22] =
-{
-  "Lava-",
-  "Explosion-",
-  "Lazer-",
-  "Bullet-",
-  "Missile-",
-  "Fire-",
-  "Spike-",
-  "Custom Hurt-",
-  "Shooting Fire-",
-  "Seeker-",
-  "Snake-",
-  "Slime Blob-",
-  "Runner-",
-  "Ghost-",
-  "Dragon-",
-  "Fish-",
-  "Shark-",
-  "Spider-",
-  "Goblin-",
-  "Spitting Tiger-",
-  "Bear-",
-  "Bear Cub-"
-};
-
-void global_dmg(World *mzx_world)
-{
-  int dialog_result;
-  element *elements[24];
-  dialog di;
-  int results[22];
-  int i;
-
-  set_context(90);
-  set_confirm_buttons(elements);
-
-  for(i = 0; i < 11; i++)
-  {
-    results[i] = id_dmg[(int)dmg_ids[i]];
-    elements[i + 2] = construct_number_box(2 +
-     (14 - strlen(dmg_strs[i])), 2 + i,
-     dmg_strs[i], 0, 255, 0, results + i);
-  }
-
-  for(; i < 22; i++)
-  {
-    results[i] = id_dmg[(int)dmg_ids[i]];
-    elements[i + 2] = construct_number_box(31 +
-     (14 - strlen(dmg_strs[i])), i - 9,
-     dmg_strs[i], 0, 255, 0, results + i);
-  }
-
-  construct_dialog(&di, "Edit Damage", 10, 4, 60, 18,
-   elements, 24, 2);
-
-  dialog_result = run_dialog(mzx_world, &di);
-  destruct_dialog(&di);
-
-  if(!dialog_result)
-  {
-    for(i = 0; i < 22; i++)
-    {
-      id_dmg[(int)dmg_ids[i]] = results[i];
-    }
-  }
-  pop_context();
-}
-

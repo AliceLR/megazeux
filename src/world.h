@@ -40,25 +40,19 @@ __M_BEGIN_DECLS
 
 extern char version_number_string[20];
 extern char world_version_string[4];
-extern char save_version_string[6];
 
 // Taken from the old saveload.h
 
 int save_world(World *mzx_world, char *file, int savegame, int faded);
-// Returns non-0 for error so you don't jump to main board
-int load_world(World *mzx_world, char *file, int savegame,
- int *faded);
 int append_world(World *mzx_world, char *file);
 int reload_world(World *mzx_world, char *file, int *faded);
 int reload_savegame(World *mzx_world, char *file, int *faded);
 int reload_swap(World *mzx_world, char *file, int *faded);
 void clear_world(World *mzx_world);
 void clear_global_data(World *mzx_world);
-void default_global_data(World *mzx_world);
 void default_scroll_values(World *mzx_world);
 void create_blank_world(World *mzx_world);
 void optimize_null_boards(World *mzx_world);
-void set_update_done(World *mzx_world);
 void set_update_done_current(World *mzx_world);
 
 // Code to load multi-byte ints from little endian file

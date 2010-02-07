@@ -28,9 +28,6 @@ __M_BEGIN_DECLS
 
 #include <stdlib.h>
 
-//Global insert status
-extern char insert_on;
-
 #include "world_struct.h"
 
 // See code for full docs, preserves mouse cursor, be prepared for a

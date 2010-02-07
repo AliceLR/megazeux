@@ -29,9 +29,10 @@
 #include "graphics.h"
 #include "world.h"
 
+static int contexts[128];
+
 int context = 72; // 72 = "No" context link
 char *help = NULL;
-int contexts[128];
 int curr_context = 0;
 
 void set_context(int con)

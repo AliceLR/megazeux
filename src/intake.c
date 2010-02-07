@@ -29,7 +29,7 @@
 #include "hexchar.h"
 
 // Global status of insert
-char insert_on = 1;
+static char insert_on = 1;
 
 char last_char = 0;
 

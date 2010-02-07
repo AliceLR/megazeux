@@ -82,22 +82,6 @@ void offs_place_id(World *mzx_world, unsigned int offset,
   src_board->level_color[offset] = color;
 }
 
-// Clear main and under at a position
-void id_clear(World *mzx_world, int array_x, int array_y)
-{
-  Board *current_board = mzx_world->current_board;
-  int offset = (array_y * current_board->board_width) + array_x;
-  current_board->level_id[offset] = 0;
-  current_board->level_param[offset] = 0;
-  current_board->level_color[offset] = 7;
-  current_board->level_under_id[offset] = 0;
-  current_board->level_under_param[offset] = 0;
-  current_board->level_under_color[offset] = 7;
-
-  // Mark as updated
-  mzx_world->update_done[offset] = 1;
-}
-
 // Remove the top thing at a position
 void id_remove_top(World *mzx_world, int array_x, int array_y)
 {

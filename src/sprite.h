@@ -55,7 +55,6 @@ void draw_sprites(World *mzx_world);
 int sprite_at_xy(Sprite *cur_sprite, int x, int y);
 int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite,
  int x, int y);
-int is_blank(char c);
 
 __M_END_DECLS
 

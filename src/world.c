@@ -86,7 +86,8 @@
 #include "game.h"
 #include "audio.h"
 
-char save_version_string[6] = "MZS\x02\x51";
+static char save_version_string[6] = "MZS\x02\x51";
+
 char world_version_string[4] = "M\x02\x51";
 char version_number_string[20] = MZX_VERSION;
 
@@ -130,7 +131,7 @@ void fputd(int src, FILE *fp)
   fputc((src >> 24) & 0xFF, fp);
 }
 
-int world_magic(const char magic_string[3])
+static int world_magic(const char magic_string[3])
 {
   if(magic_string[0] == 'M')
   {
@@ -159,44 +160,6 @@ int world_magic(const char magic_string[3])
       {
         return 0;
       }
-    }
-  }
-  else
-  {
-    return 0;
-  }
-}
-
-int save_magic(const char magic_string[5])
-{
-  if((magic_string[0] == 'M') && (magic_string[1] == 'Z'))
-  {
-    switch(magic_string[2])
-    {
-      case 'S':
-        if((magic_string[3] == 'V') && (magic_string[4] == '2'))
-        {
-          return 0x0205;
-        }
-        else if((magic_string[3] >= 2) && (magic_string[3] <= 10))
-        {
-          return((int)magic_string[3] << 8 ) + magic_string[4];
-        }
-        else
-        {
-          return 0;
-        }
-      case 'X':
-        if((magic_string[3] == 'S') && (magic_string[4] == 'A'))
-        {
-          return 0x0209;
-        }
-        else
-        {
-          return 0;
-        }
-      default:
-        return 0;
     }
   }
   else
@@ -509,9 +472,80 @@ int save_world(World *mzx_world, char *file, int savegame, int faded)
   return 0;
 }
 
+static int save_magic(const char magic_string[5])
+{
+  if((magic_string[0] == 'M') && (magic_string[1] == 'Z'))
+  {
+    switch(magic_string[2])
+    {
+      case 'S':
+        if((magic_string[3] == 'V') && (magic_string[4] == '2'))
+        {
+          return 0x0205;
+        }
+        else if((magic_string[3] >= 2) && (magic_string[3] <= 10))
+        {
+          return((int)magic_string[3] << 8 ) + magic_string[4];
+        }
+        else
+        {
+          return 0;
+        }
+      case 'X':
+        if((magic_string[3] == 'S') && (magic_string[4] == 'A'))
+        {
+          return 0x0209;
+        }
+        else
+        {
+          return 0;
+        }
+      default:
+        return 0;
+    }
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+static void set_update_done(World *mzx_world)
+{
+  Board **board_list = mzx_world->board_list;
+  Board *cur_board;
+  int max_size = 0;
+  int cur_size;
+  int i;
+
+  for(i = 0; i < mzx_world->num_boards; i++)
+  {
+    cur_board = board_list[i];
+    cur_size = cur_board->board_width * cur_board->board_height;
+
+    if(cur_size > max_size)
+      max_size = cur_size;
+  }
+
+  if(max_size > mzx_world->update_done_size)
+  {
+    if(mzx_world->update_done == NULL)
+    {
+      mzx_world->update_done = (char *)malloc(max_size);
+    }
+    else
+    {
+      mzx_world->update_done =
+       (char *)realloc(mzx_world->update_done, max_size);
+    }
+
+    mzx_world->update_done_size = max_size;
+  }
+}
+
 // Loads a world into a World struct
 
-int load_world(World *mzx_world, char *file, int savegame, int *faded)
+static int load_world(World *mzx_world, char *file, int savegame, int *faded)
 {
   int version;
   int i;
@@ -1142,6 +1176,101 @@ int append_world(World *mzx_world, char *file)
   return 0;
 }
 
+// After clearing the above, use this to get default values. Use
+// for loading of worlds (as opposed to save games).
+
+static void default_global_data(World *mzx_world)
+{
+  int i;
+
+  // Allocate space for sprites and give them default values (all 0's)
+  mzx_world->num_sprites = 256;
+  mzx_world->sprite_list = (Sprite **)malloc(sizeof(Sprite *) * 256);
+
+  for(i = 0; i < 256; i++)
+  {
+    mzx_world->sprite_list[i] = (Sprite *)malloc(sizeof(Sprite));
+    memset(mzx_world->sprite_list[i], 0, sizeof(Sprite));
+  }
+  mzx_world->collision_list = (int *)malloc(sizeof(int) * 256);
+  mzx_world->sprite_num = 0;
+
+  // Set some default counter values
+  // The others have to be here so their gateway functions will stick
+  set_counter(mzx_world, "LIVES", mzx_world->starting_lives, 0);
+  set_counter(mzx_world, "HEALTH", mzx_world->starting_health, 0);
+  set_counter(mzx_world, "INVINCO", 0, 0);
+  set_counter(mzx_world, "GEMS", 0, 0);
+  set_counter(mzx_world, "HIBOMBS", 0, 0);
+  set_counter(mzx_world, "LOBOMBS", 0, 0);
+  set_counter(mzx_world, "COINS", 0, 0);
+  set_counter(mzx_world, "TIME", 0, 0);
+  set_counter(mzx_world, "ENTER_MENU", 1, 0);
+  set_counter(mzx_world, "HELP_MENU", 1, 0);
+  set_counter(mzx_world, "F2_MENU", 1, 0);
+  // Setup their gateways
+  initialize_gateway_functions(mzx_world);
+
+  mzx_world->multiplier = 10000;
+  mzx_world->divider = 10000;
+  mzx_world->c_divisions = 360;
+  mzx_world->bi_mesg_status = 1;
+
+  // And vlayer
+  // Allocate space for vlayer.
+  mzx_world->vlayer_size = 0x8000;
+  mzx_world->vlayer_width = 256;
+  mzx_world->vlayer_height = 128;
+  mzx_world->vlayer_chars = (char *)malloc(0x8000);
+  mzx_world->vlayer_colors = (char *)malloc(0x8000);
+  memset(mzx_world->vlayer_chars, 32, 0x8000);
+  memset(mzx_world->vlayer_colors, 7, 0x8000);
+
+  // Default values for global params
+  memset(mzx_world->keys, NO_KEY, NUM_KEYS);
+  mzx_world->mesg_edges = 1;
+  mzx_world->real_mod_playing[0] = 0;
+
+  mzx_world->score = 0;
+  mzx_world->blind_dur = 0;
+  mzx_world->firewalker_dur = 0;
+  mzx_world->freeze_time_dur = 0;
+  mzx_world->slow_time_dur = 0;
+  mzx_world->wind_dur = 0;
+  for(i = 0; i < 8; i++)
+  {
+    mzx_world->pl_saved_x[i] = 0;
+  }
+
+  for(i = 0; i < 8; i++)
+  {
+    mzx_world->pl_saved_y[i] = 0;
+  }
+  memset(mzx_world->pl_saved_board, 0, 8);
+  mzx_world->saved_pl_color = 27;
+  mzx_world->player_restart_x = 0;
+  mzx_world->player_restart_y = 0;
+  mzx_world->under_player_id = 0;
+  mzx_world->under_player_color = 7;
+  mzx_world->under_player_param = 0;
+
+  mzx_world->commands = 40;
+
+  set_screen_mode(0);
+  smzx_palette_loaded(0);
+  default_scroll_values(mzx_world);
+
+  scroll_color = 15;
+
+  mzx_world->lock_speed = 0;
+  mzx_world->mzx_speed = mzx_world->default_speed;
+
+  mzx_world->input_file = NULL;
+  mzx_world->output_file = NULL;
+
+  mzx_world->target_where = TARGET_NONE;
+}
+
 int reload_world(World *mzx_world, char *file, int *faded)
 {
   int rval;
@@ -1283,101 +1412,6 @@ void clear_global_data(World *mzx_world)
 
   mzx_world->bomb_type = 1;
   mzx_world->dead = 0;
-}
-
-// After clearing the above, use this to get default values. Use
-// for loading of worlds (as opposed to save games).
-
-void default_global_data(World *mzx_world)
-{
-  int i;
-
-  // Allocate space for sprites and give them default values (all 0's)
-  mzx_world->num_sprites = 256;
-  mzx_world->sprite_list = (Sprite **)malloc(sizeof(Sprite *) * 256);
-
-  for(i = 0; i < 256; i++)
-  {
-    mzx_world->sprite_list[i] = (Sprite *)malloc(sizeof(Sprite));
-    memset(mzx_world->sprite_list[i], 0, sizeof(Sprite));
-  }
-  mzx_world->collision_list = (int *)malloc(sizeof(int) * 256);
-  mzx_world->sprite_num = 0;
-
-  // Set some default counter values
-  // The others have to be here so their gateway functions will stick
-  set_counter(mzx_world, "LIVES", mzx_world->starting_lives, 0);
-  set_counter(mzx_world, "HEALTH", mzx_world->starting_health, 0);
-  set_counter(mzx_world, "INVINCO", 0, 0);
-  set_counter(mzx_world, "GEMS", 0, 0);
-  set_counter(mzx_world, "HIBOMBS", 0, 0);
-  set_counter(mzx_world, "LOBOMBS", 0, 0);
-  set_counter(mzx_world, "COINS", 0, 0);
-  set_counter(mzx_world, "TIME", 0, 0);
-  set_counter(mzx_world, "ENTER_MENU", 1, 0);
-  set_counter(mzx_world, "HELP_MENU", 1, 0);
-  set_counter(mzx_world, "F2_MENU", 1, 0);
-  // Setup their gateways
-  initialize_gateway_functions(mzx_world);
-
-  mzx_world->multiplier = 10000;
-  mzx_world->divider = 10000;
-  mzx_world->c_divisions = 360;
-  mzx_world->bi_mesg_status = 1;
-
-  // And vlayer
-  // Allocate space for vlayer.
-  mzx_world->vlayer_size = 0x8000;
-  mzx_world->vlayer_width = 256;
-  mzx_world->vlayer_height = 128;
-  mzx_world->vlayer_chars = (char *)malloc(0x8000);
-  mzx_world->vlayer_colors = (char *)malloc(0x8000);
-  memset(mzx_world->vlayer_chars, 32, 0x8000);
-  memset(mzx_world->vlayer_colors, 7, 0x8000);
-
-  // Default values for global params
-  memset(mzx_world->keys, NO_KEY, NUM_KEYS);
-  mzx_world->mesg_edges = 1;
-  mzx_world->real_mod_playing[0] = 0;
-
-  mzx_world->score = 0;
-  mzx_world->blind_dur = 0;
-  mzx_world->firewalker_dur = 0;
-  mzx_world->freeze_time_dur = 0;
-  mzx_world->slow_time_dur = 0;
-  mzx_world->wind_dur = 0;
-  for(i = 0; i < 8; i++)
-  {
-    mzx_world->pl_saved_x[i] = 0;
-  }
-
-  for(i = 0; i < 8; i++)
-  {
-    mzx_world->pl_saved_y[i] = 0;
-  }
-  memset(mzx_world->pl_saved_board, 0, 8);
-  mzx_world->saved_pl_color = 27;
-  mzx_world->player_restart_x = 0;
-  mzx_world->player_restart_y = 0;
-  mzx_world->under_player_id = 0;
-  mzx_world->under_player_color = 7;
-  mzx_world->under_player_param = 0;
-
-  mzx_world->commands = 40;
-
-  set_screen_mode(0);
-  smzx_palette_loaded(0);
-  default_scroll_values(mzx_world);
-
-  scroll_color = 15;
-
-  mzx_world->lock_speed = 0;
-  mzx_world->mzx_speed = mzx_world->default_speed;
-
-  mzx_world->input_file = NULL;
-  mzx_world->output_file = NULL;
-
-  mzx_world->target_where = TARGET_NONE;
 }
 
 void default_scroll_values(World *mzx_world)
@@ -1595,39 +1629,6 @@ void add_ext(char *src, char *ext)
    && (src[len - 2] != '.')))
   {
     strncat(src, ext, 4);
-  }
-}
-
-void set_update_done(World *mzx_world)
-{
-  Board **board_list = mzx_world->board_list;
-  Board *cur_board;
-  int max_size = 0;
-  int cur_size;
-  int i;
-
-  for(i = 0; i < mzx_world->num_boards; i++)
-  {
-    cur_board = board_list[i];
-    cur_size = cur_board->board_width * cur_board->board_height;
-
-    if(cur_size > max_size)
-      max_size = cur_size;
-  }
-
-  if(max_size > mzx_world->update_done_size)
-  {
-    if(mzx_world->update_done == NULL)
-    {
-      mzx_world->update_done = (char *)malloc(max_size);
-    }
-    else
-    {
-      mzx_world->update_done =
-       (char *)realloc(mzx_world->update_done, max_size);
-    }
-
-    mzx_world->update_done_size = max_size;
   }
 }
 

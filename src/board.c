@@ -26,95 +26,38 @@
 #include "world.h"
 #include "const.h"
 
-int cmp_robots(const void *dest, const void *src)
+static int cmp_robots(const void *dest, const void *src)
 {
   Robot *rsrc = *((Robot **)src);
   Robot *rdest = *((Robot **)dest);
-
   return strcasecmp(rdest->robot_name, rsrc->robot_name);
 }
 
-void replace_current_board(World *mzx_world, char *name)
+static void load_RLE2_plane(char *plane, FILE *fp, int size)
 {
-  Board *src_board = mzx_world->current_board;
-  FILE *input_mzb = fopen(name, "rb");
-  int first_byte = fgetc(input_mzb);
-  char version_string[4];
-  int current_board_id = mzx_world->current_board_id;
+  int i, runsize;
+  char current_char;
 
-  fread(version_string, 3, 1, input_mzb);
-  version_string[3] = 0;
-
-  if((first_byte == 0xFF) &&
-   ((strcmp(version_string, world_version_string) <= 0) ||
-   !strcmp(version_string, "MB2")))
+  for(i = 0; i < size; i++)
   {
-    clear_board(src_board);
-    src_board = load_board_allocate_direct(input_mzb, 0);
-    optimize_null_objects(src_board);
-
-    set_update_done_current(mzx_world);
-
-    if(src_board->robot_list)
-      src_board->robot_list[0] = &(mzx_world->global_robot);
-
-    mzx_world->current_board = src_board;
-    mzx_world->board_list[current_board_id] = src_board;
-  }
-
-  fclose(input_mzb);
-}
-
-Board *load_board_allocate(FILE *fp, int savegame)
-{
-  Board *cur_board = (Board *)malloc(sizeof(Board));
-  load_board(cur_board, fp, savegame);
-
-  if(!cur_board->board_width)
-  {
-    free(cur_board);
-    return NULL;
-  }
-
-  return cur_board;
-}
-
-Board *load_board_allocate_direct(FILE *fp, int savegame)
-{
-  Board *cur_board = (Board *)malloc(sizeof(Board));
-  load_board_direct(cur_board, fp, savegame);
-  fread(cur_board->board_name, 25, 1, fp);
-
-  return cur_board;
-}
-
-// The file given should point to a name/location combo. This will
-// restore the file position to after the name/location.
-
-void load_board(Board *cur_board, FILE *fp, int savegame)
-{
-  int board_size = fgetd(fp);
-
-  if(board_size)
-  {
-    int board_location, last_location;
-
-    board_location = fgetd(fp);
-    last_location = ftell(fp);
-
-    fseek(fp, board_location, SEEK_SET);
-    load_board_direct(cur_board, fp, savegame);
-    fseek(fp, last_location, SEEK_SET);
-  }
-  else
-  {
-    cur_board->board_width = 0;
-    // And skip board location
-    fseek(fp, 4, SEEK_CUR);
+    current_char = fgetc(fp);
+    if(!(current_char & 0x80))
+    {
+      // Regular character
+      plane[i] = current_char;
+    }
+    else
+    {
+      // A run
+      runsize = current_char & 0x7F;
+      current_char = fgetc(fp);
+      memset(plane + i, current_char, runsize);
+      i += (runsize - 1);
+    }
   }
 }
 
-void load_board_direct(Board *cur_board, FILE *fp, int savegame)
+static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
 {
   int num_robots, num_scrolls, num_sensors, num_robots_active;
   int overlay_mode, board_mode;
@@ -341,7 +284,86 @@ void load_board_direct(Board *cur_board, FILE *fp, int savegame)
   cur_board->num_sensors_allocated = num_sensors;
 }
 
-Board *create_blank_board()
+static Board *load_board_allocate_direct(FILE *fp, int savegame)
+{
+  Board *cur_board = (Board *)malloc(sizeof(Board));
+  load_board_direct(cur_board, fp, savegame);
+  fread(cur_board->board_name, 25, 1, fp);
+  return cur_board;
+}
+
+// The file given should point to a name/location combo. This will
+// restore the file position to after the name/location.
+
+static void load_board(Board *cur_board, FILE *fp, int savegame)
+{
+  int board_size = fgetd(fp);
+
+  if(board_size)
+  {
+    int board_location, last_location;
+
+    board_location = fgetd(fp);
+    last_location = ftell(fp);
+
+    fseek(fp, board_location, SEEK_SET);
+    load_board_direct(cur_board, fp, savegame);
+    fseek(fp, last_location, SEEK_SET);
+  }
+  else
+  {
+    cur_board->board_width = 0;
+    // And skip board location
+    fseek(fp, 4, SEEK_CUR);
+  }
+}
+
+void replace_current_board(World *mzx_world, char *name)
+{
+  Board *src_board = mzx_world->current_board;
+  FILE *input_mzb = fopen(name, "rb");
+  int first_byte = fgetc(input_mzb);
+  char version_string[4];
+  int current_board_id = mzx_world->current_board_id;
+
+  fread(version_string, 3, 1, input_mzb);
+  version_string[3] = 0;
+
+  if((first_byte == 0xFF) &&
+   ((strcmp(version_string, world_version_string) <= 0) ||
+   !strcmp(version_string, "MB2")))
+  {
+    clear_board(src_board);
+    src_board = load_board_allocate_direct(input_mzb, 0);
+    optimize_null_objects(src_board);
+
+    set_update_done_current(mzx_world);
+
+    if(src_board->robot_list)
+      src_board->robot_list[0] = &(mzx_world->global_robot);
+
+    mzx_world->current_board = src_board;
+    mzx_world->board_list[current_board_id] = src_board;
+  }
+
+  fclose(input_mzb);
+}
+
+Board *load_board_allocate(FILE *fp, int savegame)
+{
+  Board *cur_board = (Board *)malloc(sizeof(Board));
+  load_board(cur_board, fp, savegame);
+
+  if(!cur_board->board_width)
+  {
+    free(cur_board);
+    return NULL;
+  }
+
+  return cur_board;
+}
+
+Board *create_blank_board(void)
 {
   Board *cur_board = (Board *)malloc(sizeof(Board));
   int i;
@@ -443,6 +465,37 @@ void save_board_file(Board *cur_board, char *name)
     // Write name
     fwrite(cur_board->board_name, 25, 1, board_file);
     fclose(board_file);
+  }
+}
+
+static void save_RLE2_plane(char *plane, FILE *fp, int size)
+{
+  int i, runsize;
+  char current_char;
+
+  for(i = 0; i < size; i++)
+  {
+    current_char = plane[i];
+    runsize = 1;
+
+    while((i < (size - 1)) && (plane[i + 1] == current_char) &&
+     (runsize < 127))
+    {
+      i++;
+      runsize++;
+    }
+
+    // Put the runsize if necessary
+    if((runsize > 1) || current_char & 0x80)
+    {
+      fputc(runsize | 0x80, fp);
+      // Put the run character
+      fputc(current_char, fp);
+    }
+    else
+    {
+      fputc(current_char, fp);
+    }
   }
 }
 
@@ -581,61 +634,6 @@ int save_board(Board *cur_board, FILE *fp, int savegame)
   }
 
   return (ftell(fp) - start_location);
-}
-
-void load_RLE2_plane(char *plane, FILE *fp, int size)
-{
-  int i, runsize;
-  char current_char;
-
-  for(i = 0; i < size; i++)
-  {
-    current_char = fgetc(fp);
-    if(!(current_char & 0x80))
-    {
-      // Regular character
-      plane[i] = current_char;
-    }
-    else
-    {
-      // A run
-      runsize = current_char & 0x7F;
-      current_char = fgetc(fp);
-      memset(plane + i, current_char, runsize);
-      i += (runsize - 1);
-    }
-  }
-}
-
-void save_RLE2_plane(char *plane, FILE *fp, int size)
-{
-  int i, runsize;
-  char current_char;
-
-  for(i = 0; i < size; i++)
-  {
-    current_char = plane[i];
-    runsize = 1;
-
-    while((i < (size - 1)) && (plane[i + 1] == current_char) &&
-     (runsize < 127))
-    {
-      i++;
-      runsize++;
-    }
-
-    // Put the runsize if necessary
-    if((runsize > 1) || current_char & 0x80)
-    {
-      fputc(runsize | 0x80, fp);
-      // Put the run character
-      fputc(current_char, fp);
-    }
-    else
-    {
-      fputc(current_char, fp);
-    }
-  }
 }
 
 void clear_board(Board *cur_board)

@@ -29,11 +29,8 @@
 // Current MZX file information
 char curr_file[MAX_PATH] = "CAVERNS.MZX";
 char curr_sav[MAX_PATH] = "SAVED.SAV";
-char help_file[MAX_PATH];                       // Drive + Path + Filename
-char megazeux_dir[MAX_PATH];                    // Directory started in
 char current_dir[MAX_PATH];                     // Current directory
 char config_dir[MAX_PATH];                      // Config file path
-char quicksave_file[512];                       // Current quicksave filename
 
 // Some global world values that haven't been removed yet.
 

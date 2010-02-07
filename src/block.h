@@ -34,7 +34,6 @@ int save_char_dialog(World *mzx_world, char *dest, int *char_offset,
  int *char_size);
 int export_type(World *mzx_world);
 int import_type(World *mzx_world);
-int import_mzm_obj_type(World *mzx_world);
 
 __M_END_DECLS
 

@@ -45,10 +45,6 @@ void set_colors32_smzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
 void set_colors32_smzx3 (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
  Uint8 fg);
 
-void (*set_colors8[4])(graphics_data *, Uint32 *, Uint8, Uint8);
-void (*set_colors16[4])(graphics_data *, Uint32 *, Uint8, Uint8);
-void (*set_colors32[4])(graphics_data *, Uint32 *, Uint8, Uint8);
-
 void render_graph8(Uint8 *pixels, Uint32 pitch, graphics_data *graphics,
  void (*set_colors)(graphics_data *, Uint32 *, Uint8, Uint8));
 void render_graph16(Uint16 *pixels, Uint32 pitch, graphics_data *graphics,

@@ -136,19 +136,20 @@
 
 
 #define NUM_MENUS 6
-char menu_names[NUM_MENUS][9] =
+
+static char menu_names[NUM_MENUS][9] =
 {
   " WORLD ", " BOARD ", " THING ", " CURSOR ", " SHOW ", " MISC "
 };
 
-char menu_positions[] = "11111112222222333333344444444555555666666";
+static char menu_positions[] = "11111112222222333333344444444555555666666";
 
-char draw_names[7][10] =
+static char draw_names[7][10] =
 {
   " Current:", " Drawing:", "    Text:", "   Block:", "   Block:", " Import:"
 };
 
-char *menu_lines[NUM_MENUS][2]=
+static char *menu_lines[NUM_MENUS][2]=
 {
   {
     " L:Load\tS:Save  G:Global Info    Alt+R:Restart  Alt+T:Test",
@@ -176,7 +177,7 @@ char *menu_lines[NUM_MENUS][2]=
   }
 };
 
-char *overlay_menu_lines[4] =
+static char *overlay_menu_lines[4] =
 {
   " OVERLAY EDITING- (Alt+O to end)",
   " \x12\x1d:Move  Space:Place  Ins:Grab  Enter:Character  Del:Delete\t   F:Fill",
@@ -185,15 +186,16 @@ char *overlay_menu_lines[4] =
 };
 
 // Arrays for 'thing' menus
-char tmenu_num_choices[8] = { 17, 14, 18, 8, 6, 11, 12, 10 };
-char *tmenu_titles[8] =
+static char tmenu_num_choices[8] = { 17, 14, 18, 8, 6, 11, 12, 10 };
+
+static char *tmenu_titles[8] =
 {
   "Terrains", "Items", "Creatures", "Puzzle Pieces",
   "Transport", "Elements", "Miscellaneous", "Objects"
 };
 
 // Each 'item' is 20 char long, including '\0'.
-char *thing_menus[8][20] =
+static char *thing_menus[8][20] =
 {
   // Terrain (F3)
   {
@@ -324,7 +326,7 @@ char *thing_menus[8][20] =
   }
 };
 
-mzx_thing tmenu_thing_ids[8][18] =
+static mzx_thing tmenu_thing_ids[8][18] =
 {
   // Terrain (F3)
   {
@@ -376,7 +378,7 @@ mzx_thing tmenu_thing_ids[8][18] =
 };
 
 // Default colors
-char def_colors[128] =
+static char def_colors[128] =
 {
   7 , 0 , 0 , 10, 0 , 0 , 0 , 0 , 7 , 6 , 0 , 0 , 0 , 0 , 0 , 0 ,   // 0x00-0x0F
   0 , 0 , 7 , 7 , 25, 25, 25, 25, 25, 59, 76, 6 , 0 , 0 , 12, 14,   // 0x10-0x1F
@@ -388,22 +390,21 @@ char def_colors[128] =
   0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 6 , 15, 27    // 0x70-0x7F
 };
 
-char *mod_ext[] =
+static char *mod_ext[] =
 {
   ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it",
   ".669", ".ult", ".wav", ".dsm", ".far", ".ams", ".mdl", ".okt" ".dmf",
   ".ptm", ".dbm", ".amf", ".mt2", ".psm", ".j2b", ".umx", ".ogg", NULL
 };
 
-char *mod_gdm_ext[] =
+static char *mod_gdm_ext[] =
 {
   ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it", ".669", ".ult",
   ".wav", ".dsm", ".far", ".ams", ".mdl", ".okt" ".dmf", ".ptm", ".dbm",
   ".amf", ".mt2", ".psm", ".j2b", ".umx", ".ogg", ".gdm", NULL
 };
 
-
-char drawmode_help[5][32] =
+static char drawmode_help[5][32] =
 {
   "Type to place text",
   "Press ENTER on other corner",
@@ -411,7 +412,7 @@ char drawmode_help[5][32] =
   "Press ENTER to place MZM"
 };
 
-int truncate_filename(const char *old_name, char *new_name,
+static int truncate_filename(const char *old_name, char *new_name,
  unsigned int length)
 {
   char trnc_name[256] = {};
@@ -471,7 +472,7 @@ int truncate_filename(const char *old_name, char *new_name,
 // It's important that after changing the param the thing is placed (using
 // place_current_at_xy) so that scrolls/sensors/robots get copied.
 
-int change_param(World *mzx_world, mzx_thing id, int param,
+static int change_param(World *mzx_world, mzx_thing id, int param,
  Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor)
 {
   if(id == SENSOR)
@@ -586,7 +587,7 @@ int place_current_at_xy(World *mzx_world, mzx_thing id, int color,
   return param;
 }
 
-void grab_at_xy(World *mzx_world, mzx_thing *new_id, int *new_color,
+static void grab_at_xy(World *mzx_world, mzx_thing *new_id, int *new_color,
  int *new_param, Robot *copy_robot, Scroll *copy_scroll,
  Sensor *copy_sensor, int x, int y, int overlay_edit)
 {
@@ -652,7 +653,7 @@ void grab_at_xy(World *mzx_world, mzx_thing *new_id, int *new_color,
   }
 }
 
-void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
+static void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
  int *new_color, int *new_param, Robot *copy_robot, Scroll *copy_scroll,
  Sensor *copy_sensor, int x, int y)
 {
@@ -717,7 +718,7 @@ void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
   }
 }
 
-void flash_thing(World *mzx_world, int start, int end,
+static void flash_thing(World *mzx_world, int start, int end,
  int flash_one, int flash_two, int scroll_x, int scroll_y,
  int edit_screen_height)
 {

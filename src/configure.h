@@ -93,7 +93,6 @@ typedef struct
   config_function change_option;
 } config_entry;
 
-config_entry *find_option(char *name);
 void set_config_from_file(config_info *conf, char *conf_file_name);
 void default_config(config_info *conf);
 void set_config_from_command_line(config_info *conf, int argc,

@@ -33,6 +33,68 @@
 #include "world.h"
 #include "robot.h"
 
+static char scr_nm_strs[5][12] =
+ { "  Scroll   ", "   Sign    ", "Edit Scroll", "   Help    ", "" };
+
+static void scroll_edging(World *mzx_world, int type)
+{
+  scroll_edging_ext(mzx_world, type, 256, 16);
+}
+
+static void scroll_frame(World *mzx_world, Scroll *scroll, int pos)
+{
+  // Displays one frame of a scroll. The scroll edging, arrows, and title
+  // must already be shown. Simply prints each line. POS is the position
+  // of the scroll's line in the text. This is of the center line.
+  int t1;
+  unsigned int old_pos = pos;
+  char *where;
+  int scroll_base_color = mzx_world->scroll_base_color;
+
+  where = scroll->mesg;
+
+  // Display center line
+  fill_line(64, 8, 12, 32, scroll_base_color);
+  write_line_mask(where + pos, 8, 12, scroll_base_color, 1);
+  // Display lines above center line
+  for(t1 = 11; t1 >= 6; t1--)
+  {
+    fill_line(64, 8, t1, 32, scroll_base_color);
+    // Go backward to previous line
+    if(where[pos] != 1)
+    {
+      pos--;
+      if(where[pos] == '\n')
+      {
+        do
+        {
+          pos--;
+        } while((where[pos] != '\n') && (where[pos] != 1));
+        // At start of prev. line -1. Display.
+        pos++;
+        write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
+      }
+    }
+    // Next line...
+  }
+  // Display lines below center line
+  pos = old_pos;
+  for(t1 = 13; t1 <= 18; t1++)
+  {
+    fill_line(64, 8, t1, 32, scroll_base_color);
+    if(where[pos] == 0) continue;
+    // Go forward to next line
+    while(where[pos] != '\n') pos++;
+    // At end of current. If next is a 0, don't show nuthin'.
+    pos++;
+    if(where[pos])
+    {
+      write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
+    }
+    // Next line...
+  }
+}
+
 // Also used to display scrolls. Use a type of 0 for Show Scroll, 1 for Show
 // Sign, 2 for Edit Scroll.
 
@@ -303,68 +365,6 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
     insta_fadeout();
 }
 
-void scroll_frame(World *mzx_world, Scroll *scroll, int pos)
-{
-  // Displays one frame of a scroll. The scroll edging, arrows, and title
-  // must already be shown. Simply prints each line. POS is the position
-  // of the scroll's line in the text. This is of the center line.
-  int t1;
-  unsigned int old_pos = pos;
-  char *where;
-  int scroll_base_color = mzx_world->scroll_base_color;
-
-  where = scroll->mesg;
-
-  // Display center line
-  fill_line(64, 8, 12, 32, scroll_base_color);
-  write_line_mask(where + pos, 8, 12, scroll_base_color, 1);
-  // Display lines above center line
-  for(t1 = 11; t1 >= 6; t1--)
-  {
-    fill_line(64, 8, t1, 32, scroll_base_color);
-    // Go backward to previous line
-    if(where[pos] != 1)
-    {
-      pos--;
-      if(where[pos] == '\n')
-      {
-        do
-        {
-          pos--;
-        } while((where[pos] != '\n') && (where[pos] != 1));
-        // At start of prev. line -1. Display.
-        pos++;
-        write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
-      }
-    }
-    // Next line...
-  }
-  // Display lines below center line
-  pos = old_pos;
-  for(t1 = 13; t1 <= 18; t1++)
-  {
-    fill_line(64, 8, t1, 32, scroll_base_color);
-    if(where[pos] == 0) continue;
-    // Go forward to next line
-    while(where[pos] != '\n') pos++;
-    // At end of current. If next is a 0, don't show nuthin'.
-    pos++;
-    if(where[pos])
-    {
-      write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
-    }
-    // Next line...
-  }
-}
-
-char scr_nm_strs[5][12] =
-{ "  Scroll   ", "   Sign    ", "Edit Scroll", "   Help    ", "" };
-
-void scroll_edging(World *mzx_world, int type)
-{
-  scroll_edging_ext(mzx_world, type, 256, 16);
-}
-
 void scroll_edging_ext(World *mzx_world, int type, int offset, int c_offset)
 {
   int scroll_base_color = mzx_world->scroll_base_color;
@@ -432,6 +432,94 @@ void scroll_edging_ext(World *mzx_world, int type, int offset, int c_offset)
     write_string_ext("\x12:Scroll text  Esc:Exit "
      "  Enter:Select", 21, 20, scroll_corner_color, 0, offset, c_offset);
   }
+  update_screen();
+}
+
+static void help_frame(World *mzx_world, char *help, int pos)
+{
+  // Displays one frame of the help. Simply prints each line. POS is the
+  // position of the center line.
+  int t1, t2;
+  int first = 12;
+  int scroll_base_color = mzx_world->scroll_base_color;
+  int scroll_arrow_color = mzx_world->scroll_arrow_color;
+  unsigned int next_pos;
+
+  // Work backwards to line
+  do
+  {
+    if(help[pos - 1] == 1) break; // Can't.
+    pos--;
+    // Go to start of this line.
+    do
+    {
+      pos--;
+    } while((help[pos] != '\n') && (help[pos] != 1));
+    pos++;
+    //Back a line!
+    first--;
+  } while(first > 6);
+  //First holds first line pos (6-12) to draw
+  if(first > 6)
+  {
+    for(t1 = 6; t1 < first; t1++)
+      fill_line(64, 8, t1, 32, scroll_base_color);
+  }
+  // Display from First to either 18 or end of help
+  for(t1 = first; t1 < 19; t1++)
+  {
+    // Fill...
+    fill_line(64, 8, t1, 32, scroll_base_color);
+    // Find NEXT line NOW - Actually get end of this one.
+    next_pos = pos;
+    while(help[next_pos] != '\n')
+      next_pos++;
+
+    // Temp. make a 0
+    help[next_pos] = 0;
+    // Write- What TYPE is it?
+    if(help[pos] != 255) //Normal
+      color_string(help + pos, 8, t1, scroll_base_color);
+    else
+    {
+      pos++;
+      switch(help[pos])
+      {
+        case '$':
+          // Centered. :)
+          pos++;
+          t2 = strlencolor(help + pos);
+          color_string(help + pos, 40 - (t2 >> 1), t1, scroll_base_color);
+          break;
+        case '>':
+        case '<':
+          // Option- Jump to AFTER dest. label/fill
+          pos += help[pos + 1] + 3;
+          // Now show, two spaces over
+          color_string(help + pos, 10, t1, scroll_base_color);
+          // Add arrow
+          draw_char('\x10', scroll_arrow_color, 8, t1);
+          break;
+        case ':':
+          // Label- Jump to mesg and show
+          pos += help[pos + 1] + 3;
+          color_string(help + pos, 8, t1, scroll_base_color);
+          break;
+      }
+    }
+    // Now fix EOS to be a \n
+    help[next_pos] = '\n';
+    // Next line...
+    next_pos++;
+    pos = next_pos;
+    if(help[pos] == 0)  break;
+  }
+  if(t1 < 19)
+  {
+    for(t1 += 1; t1 < 19; t1++)
+      fill_line(64, 8, t1, 32, scroll_base_color);
+  }
+
   update_screen();
 }
 
@@ -663,94 +751,6 @@ void help_display(World *mzx_world, char *help, int offs, char *file,
     insta_fadeout();
 
   restore_screen();
-}
-
-void help_frame(World *mzx_world, char *help, int pos)
-{
-  // Displays one frame of the help. Simply prints each line. POS is the
-  // position of the center line.
-  int t1, t2;
-  int first = 12;
-  int scroll_base_color = mzx_world->scroll_base_color;
-  int scroll_arrow_color = mzx_world->scroll_arrow_color;
-  unsigned int next_pos;
-
-  // Work backwards to line
-  do
-  {
-    if(help[pos - 1] == 1) break; // Can't.
-    pos--;
-    // Go to start of this line.
-    do
-    {
-      pos--;
-    } while((help[pos] != '\n') && (help[pos] != 1));
-    pos++;
-    //Back a line!
-    first--;
-  } while(first > 6);
-  //First holds first line pos (6-12) to draw
-  if(first > 6)
-  {
-    for(t1 = 6; t1 < first; t1++)
-      fill_line(64, 8, t1, 32, scroll_base_color);
-  }
-  // Display from First to either 18 or end of help
-  for(t1 = first; t1 < 19; t1++)
-  {
-    // Fill...
-    fill_line(64, 8, t1, 32, scroll_base_color);
-    // Find NEXT line NOW - Actually get end of this one.
-    next_pos = pos;
-    while(help[next_pos] != '\n')
-      next_pos++;
-
-    // Temp. make a 0
-    help[next_pos] = 0;
-    // Write- What TYPE is it?
-    if(help[pos] != 255) //Normal
-      color_string(help + pos, 8, t1, scroll_base_color);
-    else
-    {
-      pos++;
-      switch(help[pos])
-      {
-        case '$':
-          // Centered. :)
-          pos++;
-          t2 = strlencolor(help + pos);
-          color_string(help + pos, 40 - (t2 >> 1), t1, scroll_base_color);
-          break;
-        case '>':
-        case '<':
-          // Option- Jump to AFTER dest. label/fill
-          pos += help[pos + 1] + 3;
-          // Now show, two spaces over
-          color_string(help + pos, 10, t1, scroll_base_color);
-          // Add arrow
-          draw_char('\x10', scroll_arrow_color, 8, t1);
-          break;
-        case ':':
-          // Label- Jump to mesg and show
-          pos += help[pos + 1] + 3;
-          color_string(help + pos, 8, t1, scroll_base_color);
-          break;
-      }
-    }
-    // Now fix EOS to be a \n
-    help[next_pos] = '\n';
-    // Next line...
-    next_pos++;
-    pos = next_pos;
-    if(help[pos] == 0)  break;
-  }
-  if(t1 < 19)
-  {
-    for(t1 += 1; t1 < 19; t1++)
-      fill_line(64, 8, t1, 32, scroll_base_color);
-  }
-
-  update_screen();
 }
 
 int strlencolor(char *str)

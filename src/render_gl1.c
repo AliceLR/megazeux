@@ -28,6 +28,14 @@
 #include "render_gl.h"
 #include "renderers.h"
 
+static void (*set_colors32[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+{
+  set_colors32_mzx,
+  set_colors32_smzx,
+  set_colors32_smzx,
+  set_colors32_smzx3
+};
+
 typedef struct
 {
   int syms_loaded;

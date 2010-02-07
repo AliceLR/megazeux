@@ -270,7 +270,7 @@ static const int ENDIAN_PACKING = 1;
 static const int ENDIAN_PACKING = 0;
 #endif
 
-void sampled_negative_threshold(sampled_stream *s_src)
+static void sampled_negative_threshold(sampled_stream *s_src)
 {
   Sint32 negative_threshold =
    ((s_src->frequency_delta + FP_AND) & ~FP_AND);
@@ -370,7 +370,7 @@ void sampled_mix_data(sampled_stream *s_src, Sint32 *dest_buffer,
    s_src->stream_offset);
 }
 
-Uint32 vorbis_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
+static Uint32 vorbis_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
 {
   Uint32 read_len = 0;
   vorbis_stream *v_stream = (vorbis_stream *)a_src;
@@ -432,23 +432,23 @@ Uint32 vorbis_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
   return 0;
 }
 
-void vorbis_set_volume(audio_stream *a_src, Uint32 volume)
+static void vorbis_set_volume(audio_stream *a_src, Uint32 volume)
 {
   a_src->volume = volume * 256 / 255;
 }
 
-void vorbis_set_repeat(audio_stream *a_src, Uint32 repeat)
+static void vorbis_set_repeat(audio_stream *a_src, Uint32 repeat)
 {
   a_src->repeat = repeat;
 }
 
-void vorbis_set_position(audio_stream *a_src, Uint32 position)
+static void vorbis_set_position(audio_stream *a_src, Uint32 position)
 {
   ov_pcm_seek(&(((vorbis_stream *)a_src)->vorbis_file_handle),
    (ogg_int64_t)position);
 }
 
-void vorbis_set_frequency(sampled_stream *s_src, Uint32 frequency)
+static void vorbis_set_frequency(sampled_stream *s_src, Uint32 frequency)
 {
   if(frequency == 0)
     frequency = ((vorbis_stream *)s_src)->vorbis_file_info->rate;
@@ -458,17 +458,17 @@ void vorbis_set_frequency(sampled_stream *s_src, Uint32 frequency)
   sampled_set_buffer(s_src);
 }
 
-Uint32 vorbis_get_position(audio_stream *a_src)
+static Uint32 vorbis_get_position(audio_stream *a_src)
 {
   return ov_pcm_tell(&(((vorbis_stream *)a_src)->vorbis_file_handle));
 }
 
-Uint32 vorbis_get_frequency(sampled_stream *s_src)
+static Uint32 vorbis_get_frequency(sampled_stream *s_src)
 {
   return s_src->frequency;
 }
 
-Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len)
+static Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len)
 {
   Uint8 *src = (Uint8 *)w_stream->wav_data + w_stream->data_offset;
   Uint32 data_read;
@@ -526,7 +526,7 @@ Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len)
   return data_read;
 }
 
-Uint32 wav_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
+static Uint32 wav_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
 {
   Uint32 read_len = 0;
   wav_stream *w_stream = (wav_stream *)a_src;
@@ -562,17 +562,17 @@ Uint32 wav_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
   return 0;
 }
 
-void wav_set_volume(audio_stream *a_src, Uint32 volume)
+static void wav_set_volume(audio_stream *a_src, Uint32 volume)
 {
   a_src->volume = volume * 256 / 255;
 }
 
-void wav_set_repeat(audio_stream *a_src, Uint32 repeat)
+static void wav_set_repeat(audio_stream *a_src, Uint32 repeat)
 {
   a_src->repeat = repeat;
 }
 
-void wav_set_position(audio_stream *a_src, Uint32 position)
+static void wav_set_position(audio_stream *a_src, Uint32 position)
 {
   wav_stream *w_stream = (wav_stream *)a_src;
 
@@ -580,7 +580,7 @@ void wav_set_position(audio_stream *a_src, Uint32 position)
     w_stream->data_offset = position * w_stream->bytes_per_sample;
 }
 
-void wav_set_frequency(sampled_stream *s_src, Uint32 frequency)
+static void wav_set_frequency(sampled_stream *s_src, Uint32 frequency)
 {
   if(frequency == 0)
     frequency = ((wav_stream *)s_src)->natural_frequency;
@@ -590,19 +590,19 @@ void wav_set_frequency(sampled_stream *s_src, Uint32 frequency)
   sampled_set_buffer(s_src);
 }
 
-Uint32 wav_get_position(audio_stream *a_src)
+static Uint32 wav_get_position(audio_stream *a_src)
 {
   wav_stream *w_stream = (wav_stream *)a_src;
 
   return w_stream->data_offset / w_stream->bytes_per_sample;
 }
 
-Uint32 wav_get_frequency(sampled_stream *s_src)
+static Uint32 wav_get_frequency(sampled_stream *s_src)
 {
   return s_src->frequency;
 }
 
-Uint32 pcs_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
+static Uint32 pcs_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
 {
   pc_speaker_stream *pcs_stream = (pc_speaker_stream *)a_src;
   Uint32 offset = 0, i;
@@ -695,12 +695,12 @@ Uint32 pcs_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
   return 0;
 }
 
-void pcs_set_volume(audio_stream *a_src, Uint32 volume)
+static void pcs_set_volume(audio_stream *a_src, Uint32 volume)
 {
   ((pc_speaker_stream *)a_src)->volume = volume;
 }
 
-void destruct_audio_stream(audio_stream *a_src)
+static void destruct_audio_stream(audio_stream *a_src)
 {
   if(a_src == audio.stream_list_base)
     audio.stream_list_base = a_src->next;
@@ -724,21 +724,21 @@ void sampled_destruct(audio_stream *a_src)
   destruct_audio_stream(a_src);
 }
 
-void vorbis_destruct(audio_stream *a_src)
+static void vorbis_destruct(audio_stream *a_src)
 {
   vorbis_stream *v_stream = (vorbis_stream *)a_src;
   ov_clear(&(v_stream->vorbis_file_handle));
   sampled_destruct(a_src);
 }
 
-void wav_destruct(audio_stream *a_src)
+static void wav_destruct(audio_stream *a_src)
 {
   wav_stream *w_stream = (wav_stream *)a_src;
   free(w_stream->wav_data);
   sampled_destruct(a_src);
 }
 
-void pcs_destruct(audio_stream *a_src)
+static void pcs_destruct(audio_stream *a_src)
 {
   destruct_audio_stream(a_src);
 }
@@ -801,7 +801,7 @@ void initialize_sampled_stream(sampled_stream *s_src,
   memset(s_src->output_data, 0, s_src->prologue_length);
 }
 
-audio_stream *construct_vorbis_stream(char *filename, Uint32 frequency,
+static audio_stream *construct_vorbis_stream(char *filename, Uint32 frequency,
  Uint32 volume, Uint32 repeat)
 {
   FILE *input_file = fsafeopen(filename, "rb");
@@ -849,23 +849,22 @@ audio_stream *construct_vorbis_stream(char *filename, Uint32 frequency,
   return ret_val;
 }
 
-int read_little_endian32(char *buf)
+static int read_little_endian32(char *buf)
 {
   unsigned char *b = (unsigned char *)buf;
   int i, s = 0;
-  for(i=3;i>=0;i--)
+  for(i = 3; i >= 0; i--)
     s = (s << 8) | b[i];
-
   return s;
 }
 
-int read_little_endian16(char *buf)
+static int read_little_endian16(char *buf)
 {
   unsigned char *b = (unsigned char *)buf;
   return (b[1] << 8) | b[0];
 }
 
-void* get_riff_chunk(FILE *fp, int filesize, char *id, int *size)
+static void* get_riff_chunk(FILE *fp, int filesize, char *id, int *size)
 {
   int maxsize = filesize - ftell(fp) - 8;
   char size_buf[4];
@@ -891,7 +890,7 @@ void* get_riff_chunk(FILE *fp, int filesize, char *id, int *size)
   return buf;
 }
 
-int get_next_riff_chunk_id(FILE *fp, int filesize, char *id)
+static int get_next_riff_chunk_id(FILE *fp, int filesize, char *id)
 {
   if(filesize - ftell(fp) < 8)
     return 0;
@@ -901,7 +900,7 @@ int get_next_riff_chunk_id(FILE *fp, int filesize, char *id)
   return 1;
 }
 
-void skip_riff_chunk(FILE *fp, int filesize)
+static void skip_riff_chunk(FILE *fp, int filesize)
 {
   int s;
   int maxsize = filesize - ftell(fp) - 8;
@@ -918,7 +917,8 @@ void skip_riff_chunk(FILE *fp, int filesize)
   }
 }
 
-void* get_riff_chunk_by_id(FILE *fp, int filesize, const char *id, int *size)
+static void* get_riff_chunk_by_id(FILE *fp, int filesize,
+ const char *id, int *size)
 {
   int i;
   char id_buf[4];
@@ -939,7 +939,7 @@ void* get_riff_chunk_by_id(FILE *fp, int filesize, const char *id, int *size)
 
 // More lenient than SDL's WAV loader, but only supports uncompressed PCM
 // files (for now.)
-SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
+static SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
  Uint8 **audio_buf, Uint32 *audio_len)
 {
   int data_size;
@@ -1065,7 +1065,7 @@ SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
   return spec;
 }
 
-audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
+static audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
  Uint32 volume, Uint32 repeat)
 {
   Uint32 data_length;
@@ -1136,7 +1136,7 @@ audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
   return ret_val;
 }
 
-audio_stream *construct_pc_speaker_stream()
+static audio_stream *construct_pc_speaker_stream()
 {
   pc_speaker_stream *pcs_stream =
    (pc_speaker_stream *)malloc(sizeof(pc_speaker_stream));
@@ -1150,7 +1150,7 @@ audio_stream *construct_pc_speaker_stream()
   return (audio_stream *)pcs_stream;
 }
 
-audio_stream *construct_stream_audio_file(char *filename,
+static audio_stream *construct_stream_audio_file(char *filename,
  Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
   Sint32 ext_pos = strlen(filename) - 4;
@@ -1205,7 +1205,7 @@ audio_stream *construct_stream_audio_file(char *filename,
   return a_return;
 }
 
-void clip_buffer(Sint16 *dest, Sint32 *src, int len)
+static void clip_buffer(Sint16 *dest, Sint32 *src, int len)
 {
   Sint32 cur_sample;
   int i;
@@ -1223,7 +1223,7 @@ void clip_buffer(Sint16 *dest, Sint32 *src, int len)
   }
 }
 
-void audio_callback(void *userdata, Uint8 *stream, int len)
+static void audio_callback(void *userdata, Uint8 *stream, int len)
 {
   Uint32 destroy_flag;
   audio_stream *current_astream;
@@ -1262,7 +1262,7 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
   UNLOCK();
 }
 
-void init_pc_speaker(config_info *conf)
+static void init_pc_speaker(config_info *conf)
 {
   audio.pcs_stream = (pc_speaker_stream *)construct_pc_speaker_stream();
 }
@@ -1554,7 +1554,7 @@ const int default_period = 428;
 // Props to madbrain for his WAV writing code which the following
 // is loosely based off of.
 
-void write_little_endian32(Uint8 *dest, Uint32 value)
+static void write_little_endian32(Uint8 *dest, Uint32 value)
 {
   dest[0] = value;
   dest[1] = value >> 8;
@@ -1562,7 +1562,7 @@ void write_little_endian32(Uint8 *dest, Uint32 value)
   dest[3] = value >> 24;
 }
 
-void write_little_endian16(Uint8 *dest, Uint32 value)
+static void write_little_endian16(Uint8 *dest, Uint32 value)
 {
   dest[0] = value;
   dest[1] = value >> 8;
