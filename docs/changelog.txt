@@ -22,6 +22,7 @@ USERS
 + Fixed a bug where an ENERGIZER item or use of the INVINCO counter would
   cause the original player color to be corrupted at the end of the colour
   blitz.
++ Fixed a bug where WALK [dir] would not end a cycle.
 
 DEVELOPERS
 

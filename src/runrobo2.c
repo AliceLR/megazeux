@@ -1192,6 +1192,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           {
             cur_robot->walk_dir = direction;
           }
+	  done = 1;
         }
         break;
       }
