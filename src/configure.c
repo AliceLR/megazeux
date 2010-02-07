@@ -512,6 +512,7 @@ config_entry config_options[] =
   { "enable_resizing", config_enable_resizing },
   { "force_bpp", config_force_bpp },
   { "fullscreen_resolution", config_set_resolution },
+  { "force_resolution", config_set_resolution }, /* backwards compatibility */
   { "fullscreen", config_set_fullscreen },
   { "gl_filter_method", config_set_gl_filter_method },
   { "include", include2_config },
