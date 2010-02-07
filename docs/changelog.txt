@@ -35,6 +35,9 @@ USERS
   semantics with the scaling renderers. The new name is less accurate for
   software render modes, but most people using software will not want to
   change it from the default anyway.
++ Fix a bug where the variable-length string allocator would prematurely
+  bail out when reading a string (of indeterminate length) from a file with
+  the set "$var" to "FREAD" syntax.
 
 DEVELOPERS
 

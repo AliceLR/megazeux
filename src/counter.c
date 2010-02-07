@@ -2712,8 +2712,7 @@ void set_string(World *mzx_world, char *name, mzx_string *src, int id)
         {
           current_char = fgetc(input_file);
 
-          if((current_char == terminate_char) ||
-           (current_char == EOF) || (read_pos == size))
+          if((current_char == terminate_char) || (current_char == EOF))
           {
             if(offset == 0)
               dest->length = read_pos;
