@@ -59,8 +59,11 @@ cd megazeux
             --enable-mikmod --disable-libpng --disable-utils
 make
 
-PACKAGING??
+PACKAGING THE BUILD
 
-Write me
+You can use "./package.sh -b psp" to build a dist/mzxsvn-psp.zip file for
+distribution. Please note that this does NOT include EBOOT.PBP, which is
+illegal to distribute. This file must be obtained (legally, of course) and
+copied into the same directory on the memory stick.
 
 --ajs (20071021)
