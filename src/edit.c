@@ -76,67 +76,67 @@
   overlay commands on overlay mode.
 */
 
-#define synchronize_board_values()              \
-  src_board = mzx_world->current_board;         \
-  board_width = src_board->board_width;         \
-  board_height = src_board->board_height;       \
-  level_id = src_board->level_id;               \
-  level_param = src_board->level_param;         \
-  level_color = src_board->level_color;         \
-  overlay = src_board->overlay;                 \
-  overlay_color = src_board->overlay_color;     \
-  clear_screen_no_update(177, 1);               \
+static void synchronize_board_values(World *mzx_world, Board **src_board,
+ int *board_width, int *board_height, char **level_id, char **level_param,
+ char **level_color, char **overlay, char **overlay_color)
+{
+  *src_board = mzx_world->current_board;
+  *board_width = (*src_board)->board_width;
+  *board_height = (*src_board)->board_height;
+  *level_id = (*src_board)->level_id;
+  *level_param = (*src_board)->level_param;
+  *level_color = (*src_board)->level_color;
+  *overlay = (*src_board)->overlay;
+  *overlay_color = (*src_board)->overlay_color;
+  clear_screen_no_update(177, 1);
+}
 
-#define fix_scroll()                            \
-  if(cursor_board_x >= board_width)             \
-  {                                             \
-    cursor_board_x = (board_width - 1);         \
-    scroll_x = (board_width - 80);              \
-                                                \
-    if(scroll_x < 0)                            \
-      scroll_x = 0;                             \
-  }                                             \
-                                                \
-  if(cursor_board_y >= board_height)            \
-  {                                             \
-    cursor_board_y = (board_height - 1);        \
-    scroll_y =                                  \
-     (board_height - edit_screen_height);       \
-                                                \
-    if(scroll_y < 0)                            \
-      scroll_y = 0;                             \
-  }                                             \
-                                                \
-  if((cursor_x + scroll_x)                      \
-   >= board_width)                              \
-  {                                             \
-    scroll_x = (board_width - 80);              \
-  }                                             \
-                                                \
-  if((cursor_y + scroll_y)                      \
-   >= board_height)                             \
-  {                                             \
-    scroll_y =                                  \
-     (board_height - edit_screen_height);       \
-  }                                             \
-                                                \
-  if(scroll_x < 0)                              \
-    scroll_x = 0;                               \
-                                                \
-  if(scroll_y < 0)                              \
-    scroll_y = 0;                               \
+static void fix_scroll(int *cursor_board_x, int *cursor_board_y,
+ int *scroll_x, int *scroll_y, int cursor_x, int cursor_y,
+ int board_width, int board_height, int edit_screen_height)
+{
+  if(*cursor_board_x >= board_width)
+  {
+    *cursor_board_x = (board_width - 1);
+    *scroll_x = (board_width - 80);
 
+    if(*scroll_x < 0)
+      *scroll_x = 0;
+  }
 
-#define fix_board(new_board)                    \
-  mzx_world->current_board_id = new_board;      \
-  mzx_world->current_board =                    \
-   mzx_world->board_list[new_board];            \
+  if(*cursor_board_y >= board_height)
+  {
+    *cursor_board_y = (board_height - 1);
+    *scroll_y = (board_height - edit_screen_height);
 
-#define fix_mod()                               \
-  load_module(src_board->mod_playing);          \
-  strcpy(mzx_world->real_mod_playing,           \
-   src_board->mod_playing);                     \
+    if(*scroll_y < 0)
+      *scroll_y = 0;
+  }
 
+  if((cursor_x + *scroll_x) >= board_width)
+    *scroll_x = (board_width - 80);
+
+  if((cursor_y + *scroll_y) >= board_height)
+    *scroll_y = (board_height - edit_screen_height);
+
+  if(*scroll_x < 0)
+    *scroll_x = 0;
+
+  if(*scroll_y < 0)
+    *scroll_y = 0;
+}
+
+static void fix_board(World *mzx_world, int new_board)
+{
+  mzx_world->current_board_id = new_board;
+  mzx_world->current_board = mzx_world->board_list[new_board];
+}
+
+static void fix_mod(World *mzx_world, Board *src_board)
+{
+  load_module(src_board->mod_playing);
+  strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+}
 
 #define NUM_MENUS 6
 
@@ -871,7 +871,9 @@ void edit_world(World *mzx_world)
 
   end_module();
 
-  synchronize_board_values();
+  synchronize_board_values(mzx_world, &src_board, &board_width, &board_height,
+   &level_id, &level_param, &level_color, &overlay, &overlay_color);
+
   update_screen();
 
   default_palette();
@@ -1198,10 +1200,13 @@ void edit_world(World *mzx_world)
 
         if(mzx_world->current_board_id != saved_board[s_num])
         {
-          fix_board(saved_board[s_num]);
-          synchronize_board_values();
-          fix_mod();
-          fix_scroll();
+          fix_board(mzx_world, saved_board[s_num]);
+          synchronize_board_values(mzx_world, &src_board, &board_width,
+           &board_height, &level_id, &level_param, &level_color, &overlay,
+           &overlay_color);
+          fix_mod(mzx_world, src_board);
+          fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+           cursor_x, cursor_y, board_width, board_height, edit_screen_height);
         }
       }
     }
@@ -1818,19 +1823,24 @@ void edit_world(World *mzx_world)
 
             if(new_board >= 0)
             {
-              fix_board(new_board);
-              synchronize_board_values();
+              fix_board(mzx_world, new_board);
+
+              synchronize_board_values(mzx_world, &src_board, &board_width,
+               &board_height, &level_id, &level_param, &level_color, &overlay,
+               &overlay_color);
+
               if(strcmp(src_board->mod_playing, "*") &&
                strcasecmp(src_board->mod_playing,
                mzx_world->real_mod_playing))
-              {
-                fix_mod();
-              }
+                fix_mod(mzx_world, src_board);
 
               if(!src_board->overlay_mode)
                 overlay_edit = 0;
 
-              fix_scroll();
+              fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+               &scroll_y, cursor_x, cursor_y, board_width, board_height,
+               edit_screen_height);
+
               modified = 1;
             }
           }
@@ -1880,9 +1890,16 @@ void edit_world(World *mzx_world)
                 draw_mode = 0;
 
               insta_fadein();
-              synchronize_board_values();
-              fix_mod();
-              fix_scroll();
+
+              synchronize_board_values(mzx_world, &src_board, &board_width,
+               &board_height, &level_id, &level_param, &level_color,
+               &overlay, &overlay_color);
+
+              fix_mod(mzx_world, src_board);
+
+              fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+               &scroll_y, cursor_x, cursor_y, board_width, board_height,
+               edit_screen_height);
 
               if(!src_board->overlay_mode)
                 overlay_edit = 0;
@@ -1916,21 +1933,23 @@ void edit_world(World *mzx_world)
                  "Choose board to import", 1))
                 {
                   replace_current_board(mzx_world, import_name);
-                  synchronize_board_values();
+
+                  synchronize_board_values(mzx_world, &src_board, &board_width,
+                   &board_height, &level_id, &level_param, &level_color,
+                   &overlay, &overlay_color);
 
                   if(strcmp(src_board->mod_playing, "*") &&
                    strcasecmp(src_board->mod_playing,
                    mzx_world->real_mod_playing))
-                  {
-                    fix_mod();
-                  }
-                  fix_scroll();
+                    fix_mod(mzx_world, src_board);
+
+                  fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+                   &scroll_y, cursor_x, cursor_y, board_width, board_height,
+                   edit_screen_height);
 
                   if((draw_mode > 3) &&
                    (block_board == (mzx_world->current_board)))
-                  {
                     draw_mode = 0;
-                  }
 
                   modified = 1;
                 }
@@ -2065,8 +2084,11 @@ void edit_world(World *mzx_world)
           {
             size_pos(mzx_world);
             set_update_done_current(mzx_world);
-            synchronize_board_values();
-            fix_scroll();
+            synchronize_board_values(mzx_world, &src_board, &board_width,
+             &board_height, &level_id, &level_param, &level_color,
+             &overlay, &overlay_color);
+            fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+             cursor_x, cursor_y, board_width, board_height, edit_screen_height);
 
             if(draw_mode > 3)
               draw_mode = 0;
@@ -3114,7 +3136,7 @@ void edit_world(World *mzx_world)
             vquick_fadeout();
             cursor_off();
             src_board = mzx_world->board_list[current_board_id];
-            fix_board(current_board_id);
+            fix_board(mzx_world, current_board_id);
             set_counter(mzx_world, "TIME", src_board->time_limit, 0);
             send_robot_def(mzx_world, 0, 11);
             send_robot_def(mzx_world, 0, 10);
@@ -3149,9 +3171,13 @@ void edit_world(World *mzx_world)
             if(draw_mode > 3)
               draw_mode = 0;
 
-            synchronize_board_values();
+            synchronize_board_values(mzx_world, &src_board, &board_width,
+             &board_height, &level_id, &level_param, &level_color, &overlay,
+             &overlay_color);
+
             insta_fadein();
-            fix_mod();
+
+            fix_mod(mzx_world, src_board);
 
             if(listening_flag)
             {
@@ -3224,10 +3250,17 @@ void edit_world(World *mzx_world)
           {
             if(add_board(mzx_world, i) >= 0)
             {
-              fix_board(i);
-              synchronize_board_values();
-              fix_mod();
-              fix_scroll();
+              fix_board(mzx_world, i);
+
+              synchronize_board_values(mzx_world, &src_board, &board_width,
+               &board_height, &level_id, &level_param, &level_color, &overlay,
+               &overlay_color);
+
+              fix_mod(mzx_world, src_board);
+
+              fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+               &scroll_y, cursor_x, cursor_y, board_width, board_height,
+               edit_screen_height);
 
               modified = 1;
             }
@@ -3267,22 +3300,29 @@ void edit_world(World *mzx_world)
 
               if(del_board == current_board_id)
               {
-                fix_board(0);
-                synchronize_board_values();
+                fix_board(mzx_world, 0);
+
+                synchronize_board_values(mzx_world, &src_board, &board_width,
+                 &board_height, &level_id, &level_param, &level_color,
+                 &overlay, &overlay_color);
+
                 if(strcmp(src_board->mod_playing, "*") &&
                  strcasecmp(src_board->mod_playing,
                  mzx_world->real_mod_playing))
-                {
-                  fix_mod();
-                }
-                fix_scroll();
+                  fix_mod(mzx_world, src_board);
+
+                fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+                 &scroll_y, cursor_x, cursor_y, board_width, board_height,
+                 edit_screen_height);
 
                 if(!src_board->overlay_mode)
                   overlay_edit = 0;
               }
               else
               {
-                synchronize_board_values();
+                synchronize_board_values(mzx_world, &src_board, &board_width,
+                 &board_height, &level_id, &level_param, &level_color,
+                 &overlay, &overlay_color);
               }
             }
           }
@@ -3310,8 +3350,11 @@ void edit_world(World *mzx_world)
             mzx_world->board_list[mzx_world->current_board_id] =
              src_board;
             mzx_world->current_board = src_board;
-            synchronize_board_values();
-            fix_scroll();
+            synchronize_board_values(mzx_world, &src_board, &board_width,
+             &board_height, &level_id, &level_param, &level_color, &overlay,
+             &overlay_color);
+            fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+             cursor_x, cursor_y, board_width, board_height, edit_screen_height);
             end_module();
             src_board->mod_playing[0] = 0;
             strcpy(mzx_world->real_mod_playing,
@@ -3348,8 +3391,11 @@ void edit_world(World *mzx_world)
             if(draw_mode > 3)
               draw_mode = 0;
 
-            synchronize_board_values();
-            fix_scroll();
+            synchronize_board_values(mzx_world, &src_board, &board_width,
+             &board_height, &level_id, &level_param, &level_color, &overlay,
+             &overlay_color);
+            fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+             cursor_x, cursor_y, board_width, board_height, edit_screen_height);
             end_module();
           }
 
