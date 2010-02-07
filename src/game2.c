@@ -1160,7 +1160,7 @@ void update_board(World *mzx_world)
           int rval;
           int m_dir;
           move_status status;
-          int new_x, new_y;
+          int new_x = 0, new_y = 0;
           int fire_rate;
           int shoot_type;
 
@@ -1338,7 +1338,7 @@ void update_board(World *mzx_world)
           int rval;
           int m_dir;
           move_status status;
-          int new_x, new_y;
+          int new_x = 0, new_y = 0;
           int fire_rate;
           int shoot_type;
 
@@ -1937,7 +1937,7 @@ static int try_transport(World *mzx_world, int x, int y, int push_status,
         // Okay, try pushing it.. if it can be pushed
         if(can_push == 1)
         {
-          int px, py;
+          int px = 0, py = 0;
           arraydir2(src_board, x, y, &px, &py, flip_dir(dir));
           // Try to push it
           if(push(mzx_world, px, py, dir, 0) == 0)
