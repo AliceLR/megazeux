@@ -3190,7 +3190,7 @@ void remove_files(char *directory_name, int remove_recursively)
   struct dirent *current_file;
 
   struct stat file_info;
-  char current_dir_name[512];
+  char current_dir_name[MAX_PATH];
   char *file_name;
 
   getcwd(current_dir_name, MAX_PATH);

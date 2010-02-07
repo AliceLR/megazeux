@@ -848,9 +848,11 @@ static void set_graphics_output(char *video_output) {
 #endif
 }
 
+#define MAX_VERSION_LENGTH 64
+
 void init_video(config_info *conf)
 {
-  char temp[64];
+  char temp[MAX_VERSION_LENGTH];
 
   graphics.screen_mode = 0;
   graphics.fullscreen = conf->fullscreen;
@@ -864,7 +866,9 @@ void init_video(config_info *conf)
 
   set_graphics_output(conf->video_output);
 
-  sprintf(temp, "MegaZeux %s", version_number_string);
+  snprintf(temp, "MegaZeux %s", version_number_string, MAX_VERSION_LENGTH - 1);
+  temp[MAX_VERSION_LENGTH] = '\0';
+
   SDL_WM_SetCaption(temp, "MZX");
   SDL_ShowCursor(SDL_DISABLE);
 

@@ -60,7 +60,7 @@
 int main(int argc, char **argv)
 {
   World mzx_world;
-  char bin_path[512];
+  char bin_path[MAX_PATH];
 
 #if defined(__WIN32__) && defined(DEBUG)
   freopen("CON", "wb", stdout);
@@ -91,9 +91,10 @@ int main(int argc, char **argv)
   chdir(bin_path);
 
   if((CONFDIR[0] == '/') || (CONFDIR[0] == '~'))
-    strcpy(config_dir, CONFDIR);
+    strncpy(config_dir, CONFDIR, MAX_PATH - 1);
   else
-    strcpy(config_dir, bin_path);
+    strncpy(config_dir, bin_path, MAX_PATH - 1);
+  config_dir[MAX_PATH] = '\0';
 
   memset(&mzx_world, 0, sizeof(World));
   default_config(&(mzx_world.conf));

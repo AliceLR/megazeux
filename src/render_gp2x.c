@@ -22,6 +22,8 @@
 #include "render.h"
 #include "renderers.h"
 
+#include <stdlib.h>
+
 typedef struct
 {
   SDL_Surface *screen;

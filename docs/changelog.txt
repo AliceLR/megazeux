@@ -14,6 +14,8 @@ USERS
 + If selecting a module with a non 8.3 filename, MZX will now ask you if you
   want to rename it to 8.3, and do so in an intelligent way. This means that
   music can be selected in the editor and correctly saved (Wervyn).
++ The OpenBSD compiler detected some serious string bugs in MegaZeux. These
+  have now been fixed and should eliminate some more potential crashes.
 
 DEVELOPERS
 

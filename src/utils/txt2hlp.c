@@ -328,7 +328,8 @@ int main(int argc, char *argv[])
         if(file_len>biggest_file)
         {
           biggest_file=file_len;
-          strcpy(max_file,curr_file);
+          strncpy(max_file,curr_file,12);
+	  max_file[12] = '\0';
         }
         //Put it's info at the start
         tlong=ftell(dest);

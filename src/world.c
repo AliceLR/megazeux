@@ -524,15 +524,15 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
   char config_file_name[256];
   int file_name_len = strlen(file) - 4;
   struct stat file_info;
-  char file_path[256];
-  char current_dir[256];
+  char file_path[MAX_PATH];
+  char current_dir[MAX_PATH];
   FILE *fp = fopen(file, "rb");
 
   get_path(file, file_path);
 
   if(file_path[0])
   {
-    getcwd(current_dir, 256);
+    getcwd(current_dir, MAX_PATH);
 
     if(strcmp(current_dir, file_path))
       chdir(file_path);
