@@ -154,7 +154,7 @@ echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 #
 # X11 support (linked against and needs headers installed)
 #
-if [ "$PLATFORM" != "mingw32" -a "$PLATFORM" != "psp" ]; then
+if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "macos" ]; then
 	# attempt auto-detection
 	if [ "$X11" = "true" ]; then
 		# try to run X
@@ -184,12 +184,14 @@ if [ "$PLATFORM" != "mingw32" -a "$PLATFORM" != "psp" ]; then
 		# add a flag for linking against X11
 		echo "LIBS+=-L$X11LIB -lX11" >> Makefile.platform
 	fi
+else
+	echo "X11 support disabled (unsupported platform)."
 fi
 
 #
 # OpenGL support (not linked against GL, but needs headers installed)
 #
-if [ "$PLATFORM" != "psp" ]; then
+if [ "$PLATFORM" != "psp" -a "$PLATFORM" != "gp2x" ]; then
 	# asked for opengl?
 	if [ "$OPENGL" = "true" ]; then
 		echo "OpenGL support enabled."
@@ -197,6 +199,8 @@ if [ "$PLATFORM" != "psp" ]; then
 	else
 		echo "OpenGL support disabled."
 	fi
+else
+	echo "OpenGL support disabled (unsupported platform)."
 fi
 
 #

@@ -1,0 +1,22 @@
+#
+# gp2x makefile generics
+#
+
+all:	subdir
+debug:	subdir-debug
+
+# gp2x toolchain overrides
+CC    = arm-linux-gcc
+CXX   = arm-linux-g++
+STRIP = arm-linux-strip --strip-unneeded
+
+# name of resulting binary
+BINEXT        = .gpe
+BINNAME       = ${TARGET}${BINEXT}
+
+# standard libraries
+LIBS += -L${PREFIX}/lib -lSDL -lm -static -lpthread -lmikmod -lvorbisidec
+
+# additional flags
+INCLUDES += -I${PREFIX}/include -I${PREFIX}/include/SDL
+INCLUDES += -DUSE_TREMOR -I${PREFIX}/include/tremor
