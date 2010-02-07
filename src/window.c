@@ -3122,7 +3122,8 @@ int file_dialog_function(World *mzx_world, dialog *di, int key)
 
         if(current_element_num == FILESEL_FILE_LIST)
         {
-          strcpy(dest->result, file_name + 56);
+          strncpy(dest->result, file_name + 56, dest->max_length - 1);
+	  dest->result[dest->max_length - 1] = '\0';
           e->draw_function(mzx_world, di, e, DI_NONACTIVE, 0);
         }
       }
@@ -3340,9 +3341,9 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
           {
             if(dirs_okay)
             {
-              dir_list[num_dirs] =
-               (char *)malloc(file_name_length + 1);
-              strcpy(dir_list[num_dirs], file_name);
+              dir_list[num_dirs] = (char *)malloc(file_name_length + 1);
+              strncpy(dir_list[num_dirs], file_name, file_name_length);
+	      dir_list[num_dirs][file_name_length] = '\0';
 
               num_dirs++;
             }
@@ -3376,7 +3377,7 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
                     FILE *mzx_file = fopen(file_name, "rb");
 
                     memset(file_list[num_files], ' ', 55);
-                    strcpy(file_list[num_files], file_name);
+                    strncpy(file_list[num_files], file_name, file_name_length);
                     file_list[num_files][file_name_length] = ' ';
                     fread(file_list[num_files] + 30, 1, 24, mzx_file);
                     file_list[num_files][55] = 0;
@@ -3384,9 +3385,12 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
                   }
                   else
                   {
-                    strcpy(file_list[num_files], file_name);
+                    strncpy(file_list[num_files], file_name, file_name_length);
+		    file_list[num_files][file_name_length] = '\0';
                   }
-                  strcpy(file_list[num_files] + 56, file_name);
+                  strncpy(file_list[num_files] + 56, file_name,
+		   file_name_length);
+		  (file_list[num_files] + 56)[file_name_length] = '\0';
 
                   num_files++;
                   break;
@@ -3691,8 +3695,9 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
     getcwd(current_dir_name, MAX_PATH);
     if(strcmp(previous_dir_name, current_dir_name))
     {
-      char ret_buffer[512] = { 0 };
-      strcpy(ret_buffer, ret);
+      char ret_buffer[MAX_PATH];
+      strncpy(ret_buffer, ret, MAX_PATH - 1);
+      ret_buffer[MAX_PATH - 1] = '\0';
 
 #ifdef __WIN32__
       sprintf(ret, "%s\\%s", current_dir_name, ret_buffer);
