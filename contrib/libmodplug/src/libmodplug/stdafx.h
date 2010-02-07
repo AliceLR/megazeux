@@ -77,7 +77,10 @@ typedef void VOID;
 #define lstrcpyA	strcpy
 #define lstrcmpA	strcmp
 #define wsprintfA	sprintf
+
+#ifndef strnicmp
 #define strnicmp(a,b,c)	strncasecmp(a,b,c)
+#endif
 
 #define GHND		0
 
