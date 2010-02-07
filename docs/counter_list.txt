@@ -2,6 +2,7 @@ Counters:
 name                      r/w      g/n/f/b    i
 "ABSn"                    r           f       *
 "ACOS"                    r           f       *
+"AMMO"                    r w         n       *
 "ASIN"                    r           f       *
 "ATAN"                    r           f       *
 "BIMESG"                    w         f       *
@@ -10,8 +11,8 @@ name                      r/w      g/n/f/b    i
 "BOARD_CHAR"              r           b       *
 "BOARD_COLOR"             r           b       *
 "BOARD_H"                 r           b       *
-"BOARD_ID"                w           b       *
-"BOARD_PARAM"             w           b       *
+"BOARD_ID"                  w         b       *
+"BOARD_PARAM"               w         b       *
 "BOARD_W"                 r           b       *
 "BOARD_X"                 r           n       *
 "BOARD_Y"                 r           n       *
@@ -22,6 +23,7 @@ name                      r/w      g/n/f/b    i
 "CHAR_BYTE"                           f       *
 "CHAR_X"                  r w         b       *
 "CHAR_Y"                  r w         b       *
+"COINS"                   r w         n       *
 "COMMANDS"                  w         b       *
 "COS"                     r           f       *
 "CURRENT_COLOR"           r w         n       *
@@ -31,35 +33,43 @@ name                      r/w      g/n/f/b    i
 "DATE_MONTH"              r           f       *
 "DATE_YEAR"               r           f       *
 "DIVIDER"                 r w         b       *
+"ENTER_MENU"              r w         n       *
+"F2_MENU"                 r w         n       *
+"FIRSTXPOS"               r w         n       *
+"FIRSTYPOS"               r w         n       *
 "FREAD"                   r           f       *
 "FREAD_COUNTER"           r           f       *
 "FREAD_OPEN"              r           f       *
-"FREAD_PAGE"                w         b       *
 "FREAD_POS"                 w         b       *
 "FWRITE"                    w         f       *
 "FWRITE_APPEND"           r           f       *
 "FWRITE_COUNTER"          r w         f       *
 "FWRITE_MODIFY"           r           f       *
 "FWRITE_OPEN"             r           f       *
-"FWRITE_PAGE"             r w         b       *
 "FWRITE_POS"              r w         b       *
+"GEMS"                    r w         n       *
 "GREEN_VALUE"             r w         f       *
 "HEALTH"                    w         g       *
+"HELP_MENU"               r w         n       *
+"HIBOMBS"                 r w         n       *
 "HORIZPLD"                r           b       *
 "INPUT"                   r w         b       *
 "INPUTSIZE"               r w         b       *
 "INT"                     r w         n       *
 "INT2BIN"                 r w         f       *
 "INVINCO"                   w         g       *
-"KEY"                     r w         b       *
 "KEY_CODE"                r           b       *
 "KEY_PRESSED"             r           b       *
+"KEY_RELEASE"             r           b       *
 "KEYn"                    r           b       *
+"LASTXPOS"                r w         n       *
+"LASTYPOS"                r w         n       *
 "LAVA_WALK"               r w         g       *
-"LIVES"                     w         g       *
+"LIVES"                   r w         g       *
 "LOAD_BC"                 r           f       *
 "LOAD_GAME"               r           f       *
 "LOAD_ROBOT"              r           f       *
+"LOBOMBS"                 r w         n       *
 "LOCALn"                  r w         b       *
 "LOOPCOUNT"               r w         b       *
 "MBOARDX"                 r           b       *
@@ -137,6 +147,7 @@ name                      r/w      g/n/f/b    i
 "VCOn,n"                  r w         b       *
 "VERTPLD"                 r           b       *
 "VLAYER_HEIGHT"           r w         b       *
+"VLAYER_SIZE"             r w         b       *
 "VLAYER_WIDTH"            r w         b       *
 "XPOS"                    r w         n       *
 "YPOS"                    r w         n       *
@@ -150,3 +161,10 @@ name                      r/w      g/n/f/b    i
 "ROBOT_NAME"              r           b       *
 "FREAD"                   r           f       *
 "FWRITE"                    w         f       *
+
+Legend:
+
+g - Normal counter with side-effects
+n - Normal counter
+f - Function counter
+b - Points to a C variable

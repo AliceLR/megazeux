@@ -90,6 +90,7 @@ USERS
   PushableRobot or vice versa would freeze (Mr_Alert).
 + Fixed memory leaks in the file selection dialog, the counter debugger, the
   collision list and the global robot (Mr_Alert).
++ Updated counter list (see docs/counter_list.txt in the source) (Terryn).
 
 DEVELOPERS
 
