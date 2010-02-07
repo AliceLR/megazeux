@@ -47,6 +47,7 @@
 #define MZX_ASCII_CHR   SHAREDIR "mzx_ascii.chr"
 #define MZX_EDIT_CHR    SHAREDIR "mzx_edit.chr"
 #define SMZX_PAL        SHAREDIR "smzx.pal"
+#define ICON_BMP	SHAREDIR "icon.bmp"
 
 static graphics_data graphics;
 
@@ -2307,15 +2308,16 @@ void init_video(config_info *conf)
 
   set_graphics_output(conf->video_output);
 
+  sprintf(temp, "MegaZeux %s", version_number_string);
+  SDL_WM_SetCaption(temp, "MZX");
+  SDL_ShowCursor(SDL_DISABLE);
+  SDL_WM_SetIcon(SDL_LoadBMP(ICON_BMP), NULL);
+
   if (!(graphics.init_video(conf)))
   {
     set_graphics_output("");
     graphics.init_video(conf);
   }
-
-  sprintf(temp, "MegaZeux %s", version_number_string);
-  SDL_WM_SetCaption(temp, "MZX");
-  SDL_ShowCursor(SDL_DISABLE);
 
   ec_load_set_secondary(MZX_DEFAULT_CHR, graphics.default_charset);
   ec_load_set_secondary(MZX_BLANK_CHR, graphics.blank_charset);
