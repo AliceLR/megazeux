@@ -4,7 +4,7 @@
 #
 ################################################################################
 
-function usage {
+usage() {
 	echo "usage: $0 [-b win32 | macos | psp | linux-i686 | linux-amd64]"
 	echo
 	echo "	-b	Builds a binary distribution for the specified arch."
@@ -15,7 +15,7 @@ function usage {
 #
 # createpspzip
 #
-function createpspzip {
+createpspzip() {
 	#
 	# Create the binary package.
 	#
@@ -26,7 +26,7 @@ function createpspzip {
 #
 # createzip /path/to/SDL.dll
 #
-function createzip {
+createzip() {
 	WINDIB_BAT="windib.bat"
 
 	#
@@ -60,7 +60,7 @@ function createzip {
 #
 # createtbz tar-name-ext [extra-binary]
 #
-function createtbz {
+createtbz() {
 	#
 	# create temporary directory
 	#
@@ -90,7 +90,7 @@ function createtbz {
 #
 # in case of error; breakout CODE
 #
-function breakout {
+breakout() {
 	echo "Error $1 occured during packaging, aborted."
 	exit $1
 }
