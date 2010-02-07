@@ -304,9 +304,9 @@ static void macro_default_values(robot_state *rstate, ext_macro *macro_src)
 
 static int update_current_line(robot_state *rstate)
 {
-  char bytecode_buffer[512];
-  char error_buffer[512];
-  char new_command_buffer[512];
+  char bytecode_buffer[COMMAND_BUFFER_LEN];
+  char error_buffer[COMMAND_BUFFER_LEN];
+  char new_command_buffer[COMMAND_BUFFER_LEN];
   char arg_types[32];
   robot_line *current_rline = rstate->current_rline;
   char *command_buffer = rstate->command_buffer;
@@ -464,7 +464,7 @@ static void add_line(robot_state *rstate)
 static void output_macro(robot_state *rstate, ext_macro *macro_src)
 {
   int num_lines = macro_src->num_lines;
-  char line_buffer[512];
+  char line_buffer[COMMAND_BUFFER_LEN];
   char number_buffer[16];
   char *line_pos, *line_pos_old;
   char *old_buffer_space = rstate->command_buffer;
@@ -1264,21 +1264,23 @@ static void replace_current_line(robot_state *rstate, int r_pos, char *str,
  char *replace)
 {
   robot_line *current_rline = rstate->current_rline;
-
+  char new_buffer[COMMAND_BUFFER_LEN];
   int replace_size = strlen(replace);
   int str_size = strlen(str);
-  char new_buffer[512];
 
-  strcpy(new_buffer, current_rline->line_text);
+  strncpy(new_buffer, current_rline->line_text, COMMAND_BUFFER_LEN - 1);
+  new_buffer[COMMAND_BUFFER_LEN - 1] = '\0';
+
   memmove(new_buffer + r_pos + replace_size,
    new_buffer + r_pos + str_size, strlen(new_buffer) - r_pos);
   memcpy(new_buffer + r_pos, replace, replace_size);
-
-  new_buffer[241] = 0;
+  new_buffer[240] = '\0';
 
   rstate->command_buffer = new_buffer;
   update_current_line(rstate);
-  strcpy(rstate->command_buffer_space, new_buffer);
+
+  strncpy(rstate->command_buffer_space, new_buffer, COMMAND_BUFFER_LEN - 1);
+  rstate->command_buffer_space[COMMAND_BUFFER_LEN - 1] = '\0';
   rstate->command_buffer = rstate->command_buffer_space;
 }
 
@@ -1288,7 +1290,7 @@ static int robo_ed_find_string(robot_state *rstate, char *str, int wrap,
   robot_line *current_rline = rstate->current_rline;
   int current_line = rstate->current_line;
   char *pos = NULL;
-  char line_buffer[512];
+  char line_buffer[COMMAND_BUFFER_LEN];
   char *use_buffer = line_buffer;
 
   update_current_line(rstate);
@@ -1477,7 +1479,7 @@ static void find_replace_action(robot_state *rstate)
           break;
         }
 
-        if(l_num != -1)
+        if(l_num != -1 && l_pos <= 240)
         {
           goto_line(rstate, l_num);
           rstate->current_x = l_pos;
@@ -1829,7 +1831,7 @@ static void robo_ed_display_robot_line(robot_state *rstate,
   int color_code = rstate->color_code;
   char *color_codes = rstate->ccodes;
   char temp_char;
-  char temp_buffer[512];
+  char temp_buffer[COMMAND_BUFFER_LEN];
   char *line_pos = current_rline->line_text;
   int chars_offset = 0;
   int arg_length;
@@ -2250,7 +2252,7 @@ static void paste_buffer(robot_state *rstate)
   {
     HANDLE global_memory;
     char *src_data, *src_ptr;
-    char line_buffer[512];
+    char line_buffer[COMMAND_BUFFER_LEN];
     int line_length;
 
     rstate->command_buffer = line_buffer;
@@ -2297,7 +2299,7 @@ static void paste_buffer(robot_state *rstate)
       unsigned long int nbytes;
       unsigned long int overflow;
       unsigned char *src_data, *src_ptr;
-      char line_buffer[512];
+      char line_buffer[COMMAND_BUFFER_LEN];
       int line_length;
       int ret_type;
 
@@ -2376,7 +2378,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
   robot_line *draw_rline;
   robot_line *next_line;
   int mark_current_line;
-  char text_buffer[512], error_buffer[512];
+  char text_buffer[COMMAND_BUFFER_LEN], error_buffer[COMMAND_BUFFER_LEN];
   int current_line_color;
   robot_state rstate;
 
@@ -3014,7 +3016,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
         if(rstate.command_buffer[0] != '.')
         {
-          char comment_buffer[512];
+          char comment_buffer[COMMAND_BUFFER_LEN];
           char current_char;
           char *in_position = rstate.command_buffer;
           char *out_position = comment_buffer + 3;
@@ -3050,7 +3052,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
          (rstate.command_buffer[2] == '"') &&
          (rstate.command_buffer[strlen(rstate.command_buffer) - 1] == '"'))
         {
-          char uncomment_buffer[512];
+          char uncomment_buffer[COMMAND_BUFFER_LEN];
           char current_char;
           char *in_position = rstate.command_buffer + 3;
           char *out_position = uncomment_buffer;

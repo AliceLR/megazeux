@@ -29,6 +29,7 @@ __M_BEGIN_DECLS
 
 #define MAX_MACRO_RECURSION 16
 #define MAX_MACRO_REPEAT 128
+#define COMMAND_BUFFER_LEN 512
 
 typedef struct _robot_line robot_line;
 typedef struct _robot_state robot_state;
@@ -81,7 +82,7 @@ struct _robot_state
   validity_types default_invalid;
   char *active_macro;
   char *command_buffer;
-  char command_buffer_space[512];
+  char command_buffer_space[COMMAND_BUFFER_LEN];
   int macro_recurse_level;
   int macro_repeat_level;
 
