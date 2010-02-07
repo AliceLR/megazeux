@@ -20,7 +20,7 @@ createpspzip() {
 	# Create the binary package.
 	#
 	$SEVENZIP a -tzip dist/$TARGET-psp.zip \
-		$BINARY_DEPS $TARGET.elf $DOCS $PSPPAD
+		$BINARY_DEPS EBOOT.PBP $DOCS $PSPPAD
 }
 
 #

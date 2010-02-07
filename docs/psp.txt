@@ -61,9 +61,13 @@ make
 
 PACKAGING THE BUILD
 
-You can use "./package.sh -b psp" to build a dist/mzxsvn-psp.zip file for
-distribution. Please note that this does NOT include EBOOT.PBP, which is
-illegal to distribute. This file must be obtained (legally, of course) and
-copied into the same directory on the memory stick.
+Type:
+
+make package-pbp
+
+To construct a bootable EBOOT.PBP file.
+
+You can then use "./package.sh -b psp" to build a dist/mzxsvn-psp.zip file for
+distribution.
 
 --ajs (20071021)
