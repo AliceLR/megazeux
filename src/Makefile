@@ -7,7 +7,7 @@ include ../Makefile.platform
 # MZX requires some additional flags
 CXXFLAGS += -Wno-char-subscripts
 CXXFLAGS += -ffast-math -funsigned-char -DMZX_VERSION=\"${VERSTRING}\"
-CFLAGS   += -std=gnu99 ${CXXFLAGS}
+CFLAGS = ${CXXFLAGS}
 
 # standard MZX includes
 INCLUDES += -I${PREFIX}/include -I../${MODPLUG} -I../${GDM2S3M} \

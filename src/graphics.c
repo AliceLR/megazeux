@@ -738,9 +738,11 @@ static void soft_update_screen(void)
 
 static void soft_update_colors(SDL_Color *palette, Uint32 count)
 {
+  Uint32 i;
+
   if (graphics.bits_per_pixel == 32)
   {
-    for (Uint32 i = 0; i < count; i++)
+    for (i = 0; i < count; i++)
       graphics.flat_intensity_palette[i] = SDL_MapRGBA(graphics.screen->format,
        palette[i].r, palette[i].g, palette[i].b, 255);
   }
@@ -1243,7 +1245,9 @@ static void gl1_update_screen(void)
 
 static void gl1_update_colors(SDL_Color *palette, Uint32 count)
 {
-  for (Uint32 i = 0; i < count; i++)
+  Uint32 i;
+
+  for (i = 0; i < count; i++)
     graphics.flat_intensity_palette[i] = SDL_MapRGBA(graphics.screen->format,
       palette[i].r, palette[i].g, palette[i].b, 255);
 }
@@ -1776,7 +1780,9 @@ static int gl2_set_video_mode(int width, int height, int depth, int flags,
 
 static void gl2_update_colors(SDL_Color *palette, Uint32 count)
 {
-  for (Uint32 i = 0; i < count; i++)
+  Uint32 i;
+
+  for (i = 0; i < count; i++)
   {
     graphics.flat_intensity_palette[i] = SDL_MapRGBA(graphics.screen->format,
       palette[i].r, palette[i].g, palette[i].b, 255) | 0xff000000;
