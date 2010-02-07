@@ -82,8 +82,6 @@ struct S3M_sample {
 /* function prototypes */
 uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len);
 struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm);
-void remap_effects (uint8_t gdm_effect, uint8_t gdm_param,
-                    uint8_t *dest_effect, uint8_t *dest_param);
 void free_s3m (struct S3M_file *s3m);
 
 __G_END_DECLS

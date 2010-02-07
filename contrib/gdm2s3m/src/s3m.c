@@ -283,6 +283,213 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
   return backup;
 }
 
+/**
+ * written by madbrain; contact him if something here isn't right
+ */
+static void remap_effects (uint8_t gdm_effect, uint8_t gdm_param,
+                           uint8_t *dest_effect, uint8_t *dest_param)
+{
+  uint8_t s3m_effect = 0;
+  uint8_t s3m_param = 0;
+
+  switch(gdm_effect)
+  {
+    case 0: // "No Effect"
+      s3m_effect=0;
+      s3m_param=gdm_param;
+      break;
+
+    case 1: // Portamento up
+      s3m_effect='F'-'@';
+      s3m_param=gdm_param;
+      if(s3m_param>=0xE0)
+        s3m_param=0xDF;
+      break;
+
+    case 2: // Portamento down
+      s3m_effect='E'-'@';
+      s3m_param=gdm_param;
+      if(s3m_param>=0xE0)
+        s3m_param=0xDF;
+      break;
+
+    case 3: // Glissando
+      s3m_effect='G'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 4: // Vibrato
+      s3m_effect='H'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 5: // Portamento + volume slide
+      s3m_effect='L'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 6: // Vibrato + volume slide
+      s3m_effect='K'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 7: // Tremolo
+      s3m_effect='R'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 8: // Tremor/stupid effect nobody uses
+      s3m_effect='I'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 9: // Sample offset
+      s3m_effect='O'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 0xa: // Volume slide
+      s3m_effect='D'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 0xb: // Order jump
+      s3m_effect='B'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 0xd: // Pattern break
+      s3m_effect='C'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 0xe: // EXTENDED EFFECTS, DO THIS LATER
+      switch(gdm_param>>4)
+      {
+        case 0: // Set filter (AMIGA!)
+          s3m_effect='S'-'@';
+          s3m_param= 0x00 + (gdm_param & 15);
+          break;
+        case 1: // Fine slide up
+          s3m_effect='F'-'@';
+          s3m_param= 0xF0 + (gdm_param & 15);
+          break;
+        case 2: // Fine slide down
+          s3m_effect='E'-'@';
+          s3m_param= 0xF0 + (gdm_param & 15);
+          break;
+        case 3: // Glissando control
+          s3m_effect='S'-'@';
+          s3m_param= 0x10 + (gdm_param & 15);
+          break;
+        case 4: // Vibrato waveform
+          s3m_effect='S'-'@';
+          s3m_param= 0x30 + (gdm_param & 15);
+          break;
+        case 5: // Set finetune
+          s3m_effect='S'-'@';
+          s3m_param= 0x20 + (gdm_param & 15);
+          break;
+        case 6: // Pattern loop
+          s3m_effect='S'-'@';
+          s3m_param= 0xB0 + (gdm_param & 15);
+          break;
+        case 7: // Tremolo waveform
+          s3m_effect='S'-'@';
+          s3m_param= 0x40 + (gdm_param & 15);
+          break;
+        case 8: // Extra Fine slide up
+          s3m_effect='F'-'@';
+          s3m_param= 0xE0 + (gdm_param & 15);
+          break;
+        case 9: // Extra Fine slide down
+          s3m_effect='E'-'@';
+          s3m_param= 0xE0 + (gdm_param & 15);
+          break;
+        case 0xA: // Fine volume up
+          s3m_effect='D'-'@';
+          s3m_param= 0x0F + ((gdm_param & 15) << 4);
+          break;
+        case 0xB: // Fine volume down
+          s3m_effect='D'-'@';
+          s3m_param= 0xF0 + (gdm_param & 15);
+          break;
+        case 0xC: // Cut note after x ticks
+          s3m_effect='S'-'@';
+          s3m_param= 0xC0 + (gdm_param & 15);
+          break;
+        case 0xD: // Delay note for x ticks
+          s3m_effect='S'-'@';
+          s3m_param= 0xD0 + (gdm_param & 15);
+          break;
+        case 0xE: // Delay whole pattern, in ticks???!?
+          s3m_effect='S'-'@';
+          s3m_param= 0xE0 + (gdm_param & 15);
+          break;
+        case 0xF: // Invert loop?!? Funk repeat?!?
+          s3m_effect='S'-'@';
+          s3m_param= 0xF0 + (gdm_param & 15);
+          break;
+      }
+      break;
+
+    case 0xf: // "Set tempo", apparently sets speed
+      s3m_effect='A'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 0x10: // Arpeggio
+      s3m_effect='J'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 0x11: // Set internal flag, no idea what this is
+      s3m_effect=0; // Convert to no effect
+      s3m_param=gdm_param;
+      break;
+
+    case 0x12: // Retrigger note
+      s3m_effect='Q'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 0x13: // Global volume, 0-63 in both s3m and gdm
+      s3m_effect='V'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 0x14: // Fine vibrato, crashes mzx
+      s3m_effect='U'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    case 0x1e: // Special
+      if((gdm_param>>4)==8)
+      {
+        s3m_effect='S'-'@';
+        s3m_param= 0x80 + (gdm_param & 15);
+      }
+      else
+      {
+        s3m_effect=0;
+        s3m_param=gdm_param;
+      }
+      break;
+
+    case 0x1f: // Set bpm, ie set tempo?!?
+      s3m_effect='T'-'@';
+      s3m_param=gdm_param;
+      break;
+
+    default:
+      fprintf (stderr, "gdm2s3m: implemented effect! (contact ajs)\n");
+      break;
+  }
+
+  *dest_effect = s3m_effect;
+  *dest_param = s3m_param;
+}
+
 struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm)
 {
   struct S3M_file *s3m;
@@ -501,216 +708,6 @@ struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm)
 
   /* return new s3m struct */
   return s3m;
-}
-
-/**
- * written by madbrain; contact him if something here isn't right
- */
-
-void remap_effects (uint8_t gdm_effect, uint8_t gdm_param,
-                    uint8_t *dest_effect, uint8_t *dest_param)
-{
-  uint8_t s3m_effect = 0;
-  uint8_t s3m_param = 0;
-
-  switch(gdm_effect)
-  {
-    case 0: // "No Effect"
-      s3m_effect=0;
-      s3m_param=gdm_param;
-      break;
-
-    case 1: // Portamento up
-      s3m_effect='F'-'@';
-      s3m_param=gdm_param;
-      if(s3m_param>=0xE0)
-        s3m_param=0xDF;
-      break;
-
-    case 2: // Portamento down
-      s3m_effect='E'-'@';
-      s3m_param=gdm_param;
-      if(s3m_param>=0xE0)
-        s3m_param=0xDF;
-      break;
-
-    case 3: // Glissando
-      s3m_effect='G'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 4: // Vibrato
-      s3m_effect='H'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 5: // Portamento + volume slide
-      s3m_effect='L'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 6: // Vibrato + volume slide
-      s3m_effect='K'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 7: // Tremolo
-      s3m_effect='R'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 8: // Tremor/stupid effect nobody uses
-      s3m_effect='I'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 9: // Sample offset
-      s3m_effect='O'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 0xa: // Volume slide
-      s3m_effect='D'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 0xb: // Order jump
-      s3m_effect='B'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 0xd: // Pattern break
-      s3m_effect='C'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 0xe: // EXTENDED EFFECTS, DO THIS LATER
-      switch(gdm_param>>4)
-      {
-        case 0: // Set filter (AMIGA!)
-          s3m_effect='S'-'@';
-          s3m_param= 0x00 + (gdm_param & 15);
-          break;
-        case 1: // Fine slide up
-          s3m_effect='F'-'@';
-          s3m_param= 0xF0 + (gdm_param & 15);
-          break;
-        case 2: // Fine slide down
-          s3m_effect='E'-'@';
-          s3m_param= 0xF0 + (gdm_param & 15);
-          break;
-        case 3: // Glissando control
-          s3m_effect='S'-'@';
-          s3m_param= 0x10 + (gdm_param & 15);
-          break;
-        case 4: // Vibrato waveform
-          s3m_effect='S'-'@';
-          s3m_param= 0x30 + (gdm_param & 15);
-          break;
-        case 5: // Set finetune
-          s3m_effect='S'-'@';
-          s3m_param= 0x20 + (gdm_param & 15);
-          break;
-        case 6: // Pattern loop
-          s3m_effect='S'-'@';
-          s3m_param= 0xB0 + (gdm_param & 15);
-          break;
-        case 7: // Tremolo waveform
-          s3m_effect='S'-'@';
-          s3m_param= 0x40 + (gdm_param & 15);
-          break;
-        case 8: // Extra Fine slide up
-          s3m_effect='F'-'@';
-          s3m_param= 0xE0 + (gdm_param & 15);
-          break;
-        case 9: // Extra Fine slide down
-          s3m_effect='E'-'@';
-          s3m_param= 0xE0 + (gdm_param & 15);
-          break;
-        case 0xA: // Fine volume up
-          s3m_effect='D'-'@';
-          s3m_param= 0x0F + ((gdm_param & 15) << 4);
-          break;
-        case 0xB: // Fine volume down
-          s3m_effect='D'-'@';
-          s3m_param= 0xF0 + (gdm_param & 15);
-          break;
-        case 0xC: // Cut note after x ticks
-          s3m_effect='S'-'@';
-          s3m_param= 0xC0 + (gdm_param & 15);
-          break;
-        case 0xD: // Delay note for x ticks
-          s3m_effect='S'-'@';
-          s3m_param= 0xD0 + (gdm_param & 15);
-          break;
-        case 0xE: // Delay whole pattern, in ticks???!?
-          s3m_effect='S'-'@';
-          s3m_param= 0xE0 + (gdm_param & 15);
-          break;
-        case 0xF: // Invert loop?!? Funk repeat?!?
-          s3m_effect='S'-'@';
-          s3m_param= 0xF0 + (gdm_param & 15);
-          break;
-      }
-      break;
-
-    case 0xf: // "Set tempo", apparently sets speed
-      s3m_effect='A'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 0x10: // Arpeggio
-      s3m_effect='J'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 0x11: // Set internal flag, no idea what this is
-      s3m_effect=0; // Convert to no effect
-      s3m_param=gdm_param;
-      break;
-
-    case 0x12: // Retrigger note
-      s3m_effect='Q'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 0x13: // Global volume, 0-63 in both s3m and gdm
-      s3m_effect='V'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 0x14: // Fine vibrato, crashes mzx
-      s3m_effect='U'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    case 0x1e: // Special
-      if((gdm_param>>4)==8)
-      {
-        s3m_effect='S'-'@';
-        s3m_param= 0x80 + (gdm_param & 15);
-      }
-      else
-      {
-        s3m_effect=0;
-        s3m_param=gdm_param;
-      }
-      break;
-
-    case 0x1f: // Set bpm, ie set tempo?!?
-      s3m_effect='T'-'@';
-      s3m_param=gdm_param;
-      break;
-
-    default:
-      fprintf (stderr, "gdm2s3m: implemented effect! (contact ajs)\n");
-      break;
-  }
-
-  *dest_effect = s3m_effect;
-  *dest_param = s3m_param;
-
-  return;
 }
 
 void free_s3m (struct S3M_file *s3m)

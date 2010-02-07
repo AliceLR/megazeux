@@ -25,10 +25,6 @@
 #include "rasm.h"
 #include "fsafeopen.h"
 
-void rasm_skip_whitespace(char *cpos, char **next);
-int rasm_parse_argument(char *cmd_line, char **next, int *arg_translated,
- int *error, int *arg_short);
-
 static int cm2[]   = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
 static int cm3[]   = { IMM_U16 | STRING };
 static int cm4[]   = { DIR, IGNORE_TYPE_FOR, IMM_U16 | STRING };
@@ -326,7 +322,7 @@ static int cm253[] = { CMD_LOOP };
 static int cm254[] = { CMD_MESG, CMD_EDGE };
 static int cm255[] = { CMD_MESG, CMD_EDGE };
 
-mzx_command command_list[] =
+static mzx_command command_list[] =
 {
   { "end",            0, NULL },
   { "die",            0, NULL },
@@ -586,41 +582,33 @@ mzx_command command_list[] =
   { "enable",         2, cm255 }
 };
 
-char *dir_types[20] =
+static char *dir_types[20] =
 {
-  "IDLE", "NORTH", "SOUTH", "EAST", "WEST", "RANDNS", "RANDEW", "RANDNE", "RANDNB",
-  "SEEK", "RANDANY", "BENEATH", "ANYDIR", "FLOW", "NODIR", "RANDB", "RANDP", "CW",
-  "OPP", "RANDNOT"
+  "IDLE", "NORTH", "SOUTH", "EAST", "WEST", "RANDNS", "RANDEW", "RANDNE",
+  "RANDNB", "SEEK", "RANDANY", "BENEATH", "ANYDIR", "FLOW", "NODIR", "RANDB",
+  "RANDP", "CW", "OPP", "RANDNOT"
 };
 
-char *equality_types[6] =
+static char *equality_types[6] =
 {
   "=", "<", ">", ">=", "<=", "!="
 };
 
-char *equality_types2[6] =
+static char *condition_types[18] =
 {
-  "==", "<", ">", "=>", "=<", "<>"
+  "walking", "swimming", "firewalking", "touching", "blocked", "aligned",
+  "alignedns", "alignedew", "lastshot", "lasttouch", "rightpressed",
+  "leftpressed", "uppressed", "downpressed", "spacepressed", "delpressed",
+  "musicon", "pcsfxon"
 };
 
-char *equality_types3[6] =
+static char *item_types[9] =
 {
-  "=", "<", ">", ">=", "<=", "><"
+  "GEMS", "AMMOS", "TIME", "SCORE", "HEALTHS", "LIVES", "LOBOMBS", "HIBOMBS",
+  "COINS"
 };
 
-char *condition_types[18] =
-{
-  "walking", "swimming", "firewalking", "touching", "blocked", "aligned", "alignedns",
-  "alignedew", "lastshot", "lasttouch", "rightpressed", "leftpressed", "uppressed",
-  "downpressed", "spacepressed", "delpressed", "musicon", "pcsfxon"
-};
-
-char *item_types[9] =
-{
-  "GEMS", "AMMOS", "TIME", "SCORE", "HEALTHS", "LIVES", "LOBOMBS", "HIBOMBS", "COINS"
-};
-
-char *thing_types[128] =
+static char *thing_types[128] =
 {
   "Space",
   "Normal",
@@ -752,7 +740,7 @@ char *thing_types[128] =
   "Player"
 };
 
-char *command_fragments[69] =
+static char *command_fragments[69] =
 {
   "not",
   "any",
@@ -829,7 +817,7 @@ char *command_fragments[69] =
   0  1  2  3  4  5  6  7  8  9  A  B  C  D  E  F
 */
 
-char special_first_char[256] =
+static char special_first_char[256] =
 {
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 0x00-0x0F
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 0x10-0x1F
@@ -849,13 +837,89 @@ char special_first_char[256] =
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0    // 0xF0-0xFF
 };
 
-char *ignore_list[21] =
+static char *ignore_list[21] =
 {
   ",", ";", "a", "an", "and", "as", "at", "by", "else", "for", "from",
   "into", "is", "of", "the", "then", "there", "through", "thru", "to", "with"
 };
 
-int rasm_parse_argument(char *cmd_line, char **next, int *arg_translated,
+static int escape_chars(char *dest, char *src)
+{
+  if(src[0] == '\\')
+  {
+    switch(src[1])
+    {
+      case '"':
+        *dest = '"';
+        return 2;
+
+      case '0':
+        *dest = 0;
+        return 2;
+
+      case 'n':
+        *dest = '\n';
+        return 2;
+
+      case 'r':
+        *dest = '\r';
+        return 2;
+
+      case 't':
+        *dest = '\t';
+        return 2;
+
+      case '\\':
+        *dest = '\\';
+        return 2;
+    }
+  }
+
+  *dest = *src;
+  return 1;
+}
+
+static int get_param(char *cmd_line)
+{
+  if((cmd_line[1] == '?') && (cmd_line[2] == '?'))
+  {
+    return 256;
+  }
+
+  return strtol(cmd_line + 1, NULL, 16);
+}
+
+static int is_color(char *cmd_line)
+{
+  if( (cmd_line[0] == 'c') &&
+  ( (isxdigit(cmd_line[1]) && (cmd_line[2] == '?'))  ||
+    (isxdigit(cmd_line[2]) && (cmd_line[1] == '?'))  ||
+    (isxdigit(cmd_line[1]) && isxdigit(cmd_line[2])) ||
+    ((cmd_line[1] == '?') && (cmd_line[2] == '?')) ) )
+  {
+    return 1;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+static int is_param(char *cmd_line)
+{
+  if((cmd_line[0] == 'p') &&
+   ((isxdigit(cmd_line[1]) && isxdigit(cmd_line[2])) ||
+   ((cmd_line[1] == '?') && (cmd_line[2] == '?'))))
+  {
+    return 1;
+  }
+  else
+  {
+    return 0;
+  }
+}
+
+static int rasm_parse_argument(char *cmd_line, char **next, int *arg_translated,
  int *error, int *arg_short)
 {
   char current = *cmd_line;
@@ -1007,22 +1071,6 @@ int rasm_parse_argument(char *cmd_line, char **next, int *arg_translated,
   return UNDEFINED;
 }
 
-int is_color(char *cmd_line)
-{
-  if( (cmd_line[0] == 'c') &&
-  ( (isxdigit(cmd_line[1]) && (cmd_line[2] == '?'))  ||
-    (isxdigit(cmd_line[2]) && (cmd_line[1] == '?'))  ||
-    (isxdigit(cmd_line[1]) && isxdigit(cmd_line[2])) ||
-    ((cmd_line[1] == '?') && (cmd_line[2] == '?')) ) )
-  {
-    return 1;
-  }
-  else
-  {
-    return 0;
-  }
-}
-
 int get_color(char *cmd_line)
 {
   if(cmd_line[1] == '?')
@@ -1048,52 +1096,7 @@ int get_color(char *cmd_line)
   return strtol(cmd_line + 1, NULL, 16);
 }
 
-int is_param(char *cmd_line)
-{
-  if((cmd_line[0] == 'p') &&
-   ((isxdigit(cmd_line[1]) && isxdigit(cmd_line[2])) ||
-   ((cmd_line[1] == '?') && (cmd_line[2] == '?'))))
-  {
-    return 1;
-  }
-  else
-  {
-    return 0;
-  }
-}
-
-int get_param(char *cmd_line)
-{
-  if((cmd_line[1] == '?') && (cmd_line[2] == '?'))
-  {
-    return 256;
-  }
-
-  return strtol(cmd_line + 1, NULL, 16);
-}
-
-int is_thing(char *cmd_line, char **next)
-{
-  char temp[256];
-  int i = 0;
-
-  get_word(temp, cmd_line, ' ');
-
-  // It shouldn't actually check thing #127, the player.
-
-  for(i = 0; i < 127; i++)
-  {
-    if(!strcasecmp(temp, thing_types[i]))
-    {
-      *next = cmd_line + strlen(temp);
-      return i;
-    }
-  }
-
-  return -1;
-}
-
-int get_word(char *str, char *source, char t)
+static int get_word(char *str, char *source, char t)
 {
   int i = 0;
   char current;
@@ -1113,7 +1116,220 @@ int get_word(char *str, char *source, char t)
   return i;
 }
 
-int match_command(mzx_command *cmd, char *error_buffer)
+static search_entry sorted_command_list[] =
+{
+  { "%",              1, { 116 } },
+  { "&",              1, { 117 } },
+  { "*",              1, { 102 } },
+  { ".",              1, { 107 } },
+  { "/",              1, { 101 } },
+  { ":",              1, { 106 } },
+  { "?",              2, { 104, 105 } },
+  { "[",              1, { 103 } },
+  { "abort",          1, { 253 } },
+  { "ask",            1, { 145 } },
+  { "avalanche",      1, { 131 } },
+  { "become",         5, { 124, 125, 133, 134, 6 } },
+  { "blind",          1, { 126 } },
+  { "board",          2, { 121, 122 } },
+  { "bulletcolor",    1, { 137 } },
+  { "bullete",        1, { 89 } },
+  { "bulletn",        1, { 87 } },
+  { "bullets",        1, { 88 } },
+  { "bulletw",        1, { 90 } },
+  { "center",         1, { 154 } },
+  { "change",         7, { 135, 143, 147, 148, 210, 245, 246 } },
+  { "char",           2, { 123, 7 } },
+  { "clear",          1, { 155 } },
+  { "clip",           1, { 202 } },
+  { "color",          5, { 211, 212, 213, 214, 8 } },
+  { "copy",           5, { 119, 132, 201, 206, 243 } },
+  { "copyrobot",      3, { 82, 83, 84 } },
+  { "cycle",          1, { 3 } },
+  { "dec",            3, { 12, 15, 96 } },
+  { "die",            2, { 1, 80 } },
+  { "disable",        2, { 236, 254 } },
+  { "divide",         1, { 218 } },
+  { "double",         1, { 27 } },
+  { "duplicate",      2, { 85, 86 } },
+  { "enable",         3, { 235, 237, 255 } },
+  { "end",            4, { 0, 41, 42, 44 } },
+  { "endgame",        1, { 36 } },
+  { "endlife",        1, { 37 } },
+  { "enemy",          5, { 181, 182, 183, 184, 187 } },
+  { "exchange",       3, { 152, 170, 172 } },
+  { "explode",        1, { 31 } },
+  { "fillhealth",     1, { 146 } },
+  { "firewalker",     1, { 127 } },
+  { "flip",           1, { 205 } },
+  { "freezetime",     1, { 128 } },
+  { "give",           1, { 33 } },
+  { "givekey",        2, { 91, 92 } },
+  { "go",             1, { 4 } },
+  { "goto",           1, { 29 } },
+  { "gotoxy",         1, { 9 } },
+  { "half",           1, { 28 } },
+  { "if",             19, { 112, 113, 114, 16, 17, 18, 19, 20, 21, 22,
+   227, 23, 231, 24, 25, 26, 64, 65, 66 } },
+  { "inc",            3, { 11, 14, 95 } },
+  { "input",          1, { 111 } },
+  { "jump",           1, { 144 } },
+  { "laybomb",        2, { 73, 74 } },
+  { "lazerwall",      1, { 78 } },
+  { "load",           2, { 216, 222 } },
+  { "lockplayer",     4, { 56, 58, 59, 60 } },
+  { "lockscroll",     1, { 229 } },
+  { "lockself",       1, { 51 } },
+  { "loop",           2, { 251, 252 } },
+  { "message",        2, { 139, 167 } },
+  { "missilecolor",   1, { 138 } },
+  { "mod",            5, { 199, 200, 224, 38, 157 } },
+  { "modulo",         1, { 219 } },
+  { "move",           3, { 118, 61, 62 } },
+  { "multiply",       1, { 217 } },
+  { "neutral",        5, { 177, 178, 179, 180, 186 } },
+  { "open",           1, { 50 } },
+  { "overlay",        3, { 239, 240, 241 } },
+  { "persistent",     1, { 232 } },
+  { "play",           2, { 43, 49 } },
+  { "player",         7, { 115, 173, 174, 175, 176, 185, 220 } },
+  { "playercolor",    1, { 136 } },
+  { "push",           1, { 203 } },
+  { "put",            6, { 100, 242, 32, 63, 67, 79 } },
+  { "rel",            9, { 140, 141, 142, 193, 194, 195, 196, 197, 198 } },
+  { "resetview",      1, { 156 } },
+  { "restore",        4, { 151, 169, 171, 55 } },
+  { "rotateccw",      1, { 70 } },
+  { "rotatecw",       1, { 69 } },
+  { "sam",            1, { 39 } },
+  { "save",           2, { 150, 168 } },
+  { "scroll",         1, { 204 } },
+  { "scrollarrow",    1, { 163 } },
+  { "scrollbase",     1, { 159 } },
+  { "scrollcorner",   1, { 160 } },
+  { "scrollpointer",  1, { 162 } },
+  { "scrolltitle",    1, { 161 } },
+  { "scrollview",     2, { 110, 225 } },
+  { "send",           4, { 30, 53, 81, 99 } },
+  { "set",            8, { 10, 120, 13, 149, 153, 166, 215, 97 } },
+  { "sfx",            1, { 48 } },
+  { "shoot",          1, { 72 } },
+  { "shootmissile",   1, { 75 } },
+  { "shootseeker",    1, { 76 } },
+  { "slowtime",       1, { 129 } },
+  { "spitfire",       1, { 77 } },
+  { "status",         1, { 238 } },
+  { "swap",           1, { 226 } },
+  { "switch",         1, { 71 } },
+  { "take",           2, { 34, 35 } },
+  { "takekey",        2, { 93, 94 } },
+  { "teleport",       1, { 109 } },
+  { "trade",          1, { 98 } },
+  { "try",            1, { 68 } },
+  { "unlockplayer",   1, { 57 } },
+  { "unlockscroll",   1, { 230 } },
+  { "unlockself",     1, { 52 } },
+  { "viewport",       2, { 164, 165 } },
+  { "volume",         2, { 158, 40 } },
+  { "wait",           4, { 2, 233, 45, 46 } },
+  { "walk",           1, { 5 } },
+  { "wind",           1, { 130 } },
+  { "write",          1, { 247 } },
+  { "zap",            1, { 54 } },
+  { "|",              1, { 108 } },
+};
+
+static const int num_command_names =
+ sizeof(sorted_command_list) / sizeof(search_entry);
+
+static search_entry *find_command(char *name)
+{
+  int bottom = 0, top = num_command_names - 1, middle;
+  int cmpval;
+  search_entry *base = sorted_command_list;
+
+  while(bottom <= top)
+  {
+    middle = (top + bottom) / 2;
+    cmpval = strcasecmp(name, (sorted_command_list[middle]).name);
+
+    if(cmpval > 0)
+      bottom = middle + 1;
+    else
+
+    if(cmpval < 0)
+      top = middle - 1;
+    else
+      return base + middle;
+  }
+
+  return NULL;
+}
+
+static char *type_names[] =
+{
+  "imm",
+  "imm",
+  "char",
+  "color",
+  "dir",
+  "thing",
+  "param",
+  "str",
+  "equ",
+  "cond",
+  "item",
+  "extra",
+  "undef",
+  "undef"
+};
+
+static void get_wanted_arg(char *buffer, int arg)
+{
+  char *str_position = buffer;
+  int multi = 0;
+  int i;
+
+  if(arg & CMD)
+  {
+    sprintf(buffer, "\'%s\'", command_fragments[arg & ~CMD]);
+  }
+  else
+
+  for(i = 0; i < 14; i++)
+  {
+    if(arg & (1 << i))
+    {
+      if(multi)
+      {
+        *str_position = '/';
+        str_position++;
+      }
+      else
+      {
+        multi = 1;
+      }
+
+      strcpy(str_position, type_names[i]);
+      str_position += strlen(type_names[i]);
+    }
+  }
+}
+
+static void print_error(int arg_number, char *error_buffer, int bad_arg,
+ int correct_arg)
+{
+  char bad_arg_err[64];
+  char correct_arg_err[64];
+
+  get_wanted_arg(bad_arg_err, bad_arg);
+  get_wanted_arg(correct_arg_err, correct_arg);
+
+  sprintf(error_buffer, "a%d: expected %s, got %s", arg_number + 1,
+   correct_arg_err, bad_arg_err);
+}
+
+static int match_command(mzx_command *cmd, char *error_buffer)
 {
   int i, i2, i3;
   int num_params;
@@ -1234,67 +1450,52 @@ int match_command(mzx_command *cmd, char *error_buffer)
   return -1;
 }
 
-void print_error(int arg_number, char *error_buffer, int bad_arg,
- int correct_arg)
+static void rasm_skip_whitespace(char *cpos, char **next)
 {
-  char bad_arg_err[64];
-  char correct_arg_err[64];
-
-  get_wanted_arg(bad_arg_err, bad_arg);
-  get_wanted_arg(correct_arg_err, correct_arg);
-
-  sprintf(error_buffer, "a%d: expected %s, got %s", arg_number + 1,
-   correct_arg_err, bad_arg_err);
+  while(*cpos == ' ')
+  {
+    cpos++;
+  }
+  *next = cpos;
 }
 
-char *type_names[] =
+static int assemble_command(int command_number, mzx_command *cmd,
+ void *params[32], char *obj_pos, char **next_obj_pos)
 {
-  "imm",
-  "imm",
-  "char",
-  "color",
-  "dir",
-  "thing",
-  "param",
-  "str",
-  "equ",
-  "cond",
-  "item",
-  "extra",
-  "undef",
-  "undef"
-};
-
-void get_wanted_arg(char *buffer, int arg)
-{
-  char *str_position = buffer;
-  int multi = 0;
   int i;
+  int size;
+  char *c_obj_pos = obj_pos + 2;
 
-  if(arg & CMD)
-  {
-    sprintf(buffer, "\'%s\'", command_fragments[arg & ~CMD]);
-  }
-  else
+  obj_pos[1] = (char)command_number;
 
-  for(i = 0; i < 14; i++)
+  for(i = 0; i < cmd->parameters; i++)
   {
-    if(arg & (1 << i))
+    if(cmd->param_types[i] & (STRING | UNDEFINED))
     {
-      if(multi)
+      int str_size = strlen((char *)params[i]);
+      *(c_obj_pos) = str_size + 1;
+      strcpy(c_obj_pos + 1, (char *)params[i]);
+      c_obj_pos += str_size + 2;
+    }
+    else
+    {
+      if(!(cmd->param_types[i] & CMD))
       {
-        *str_position = '/';
-        str_position++;
+        // It's not a command fragment
+        *c_obj_pos = 0;
+        memcpy(c_obj_pos + 1, (char *)params[i], 2);
+        c_obj_pos += 3;
       }
-      else
-      {
-        multi = 1;
-      }
-
-      strcpy(str_position, type_names[i]);
-      str_position += strlen(type_names[i]);
     }
   }
+
+  size = c_obj_pos - obj_pos - 1;
+  *obj_pos = size;
+  *c_obj_pos = size;
+
+  *next_obj_pos = c_obj_pos + 1;
+
+  return size + 2;
 }
 
 int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
@@ -1499,45 +1700,6 @@ int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
   return bytes_assembled;
 }
 
-int assemble_command(int command_number, mzx_command *cmd, void *params[32],
- char *obj_pos, char **next_obj_pos)
-{
-  int i;
-  int size;
-  char *c_obj_pos = obj_pos + 2;
-
-  obj_pos[1] = (char)command_number;
-
-  for(i = 0; i < cmd->parameters; i++)
-  {
-    if(cmd->param_types[i] & (STRING | UNDEFINED))
-    {
-      int str_size = strlen((char *)params[i]);
-      *(c_obj_pos) = str_size + 1;
-      strcpy(c_obj_pos + 1, (char *)params[i]);
-      c_obj_pos += str_size + 2;
-    }
-    else
-    {
-      if(!(cmd->param_types[i] & CMD))
-      {
-        // It's not a command fragment
-        *c_obj_pos = 0;
-        memcpy(c_obj_pos + 1, (char *)params[i], 2);
-        c_obj_pos += 3;
-      }
-    }
-  }
-
-  size = c_obj_pos - obj_pos - 1;
-  *obj_pos = size;
-  *c_obj_pos = size;
-
-  *next_obj_pos = c_obj_pos + 1;
-
-  return size + 2;
-}
-
 char *assemble_file(char *name, int *size)
 {
   FILE *input_file = fsafeopen(name, "rt"); // 'rt' is a borland text mode
@@ -1596,64 +1758,6 @@ char *assemble_file(char *name, int *size)
   }
 }
 
-int get_line(char *buffer, FILE *fp)
-{
-  int current;
-  int escape_1 = 0;
-  int i;
-
-  // Should ignore \0, \n, and \r while in ' or "
-
-  for(i = 0; i < 256; i++)
-  {
-    current = fgetc(fp);
-    if(current == -1)
-    {
-      return -1;
-    }
-    if(current == '\"')
-    {
-      if(escape_1 == 0)
-      {
-        escape_1 = 1;
-      }
-      else
-      {
-        escape_1 = 0;
-      }
-    }
-
-    if(!escape_1)
-    {
-      if(current == '\r')
-      {
-        fgetc(fp);
-        buffer[i] = 0;
-        return 0;
-      }
-
-      if(current == '\n')
-      {
-        buffer[i] = 0;
-        return 0;
-      }
-    }
-    buffer[i] = current;
-  }
-  buffer[255] = 0;
-
-  return -2;
-}
-
-void rasm_skip_whitespace(char *cpos, char **next)
-{
-  while(*cpos == ' ')
-  {
-    cpos++;
-  }
-  *next = cpos;
-}
-
 void print_color(int color, char *color_buffer)
 {
   if(color & 0x100)
@@ -1680,7 +1784,7 @@ void print_color(int color, char *color_buffer)
   }
 }
 
-int print_dir(int dir, char *dir_buffer, char *arg_types,
+static int print_dir(int dir, char *dir_buffer, char *arg_types,
  int arg_place)
 {
   char *dir_write = dir_buffer;
@@ -1735,42 +1839,6 @@ int print_dir(int dir, char *dir_buffer, char *arg_types,
   sprintf(dir_write, "%s", dir_types[dir & 0x0F]);
 
   return arg_place;
-}
-
-int escape_chars(char *dest, char *src)
-{
-  if(src[0] == '\\')
-  {
-    switch(src[1])
-    {
-      case '"':
-        *dest = '"';
-        return 2;
-
-      case '0':
-        *dest = 0;
-        return 2;
-
-      case 'n':
-        *dest = '\n';
-        return 2;
-
-      case 'r':
-        *dest = '\r';
-        return 2;
-
-      case 't':
-        *dest = '\t';
-        return 2;
-
-      case '\\':
-        *dest = '\\';
-        return 2;
-    }
-  }
-
-  *dest = *src;
-  return 1;
 }
 
 int unescape_char(char *dest, char c)
@@ -2136,157 +2204,7 @@ void disassemble_file(char *name, char *program, int allow_ignores,
   }
 }
 
-search_entry sorted_command_list[] =
-{
-  { "%",              1, { 116 } },
-  { "&",              1, { 117 } },
-  { "*",              1, { 102 } },
-  { ".",              1, { 107 } },
-  { "/",              1, { 101 } },
-  { ":",              1, { 106 } },
-  { "?",              2, { 104, 105 } },
-  { "[",              1, { 103 } },
-  { "abort",          1, { 253 } },
-  { "ask",            1, { 145 } },
-  { "avalanche",      1, { 131 } },
-  { "become",         5, { 124, 125, 133, 134, 6 } },
-  { "blind",          1, { 126 } },
-  { "board",          2, { 121, 122 } },
-  { "bulletcolor",    1, { 137 } },
-  { "bullete",        1, { 89 } },
-  { "bulletn",        1, { 87 } },
-  { "bullets",        1, { 88 } },
-  { "bulletw",        1, { 90 } },
-  { "center",         1, { 154 } },
-  { "change",         7, { 135, 143, 147, 148, 210, 245, 246 } },
-  { "char",           2, { 123, 7 } },
-  { "clear",          1, { 155 } },
-  { "clip",           1, { 202 } },
-  { "color",          5, { 211, 212, 213, 214, 8 } },
-  { "copy",           5, { 119, 132, 201, 206, 243 } },
-  { "copyrobot",      3, { 82, 83, 84 } },
-  { "cycle",          1, { 3 } },
-  { "dec",            3, { 12, 15, 96 } },
-  { "die",            2, { 1, 80 } },
-  { "disable",        2, { 236, 254 } },
-  { "divide",         1, { 218 } },
-  { "double",         1, { 27 } },
-  { "duplicate",      2, { 85, 86 } },
-  { "enable",         3, { 235, 237, 255 } },
-  { "end",            4, { 0, 41, 42, 44 } },
-  { "endgame",        1, { 36 } },
-  { "endlife",        1, { 37 } },
-  { "enemy",          5, { 181, 182, 183, 184, 187 } },
-  { "exchange",       3, { 152, 170, 172 } },
-  { "explode",        1, { 31 } },
-  { "fillhealth",     1, { 146 } },
-  { "firewalker",     1, { 127 } },
-  { "flip",           1, { 205 } },
-  { "freezetime",     1, { 128 } },
-  { "give",           1, { 33 } },
-  { "givekey",        2, { 91, 92 } },
-  { "go",             1, { 4 } },
-  { "goto",           1, { 29 } },
-  { "gotoxy",         1, { 9 } },
-  { "half",           1, { 28 } },
-  { "if",             19, { 112, 113, 114, 16, 17, 18, 19, 20, 21, 22,
-   227, 23, 231, 24, 25, 26, 64, 65, 66 } },
-  { "inc",            3, { 11, 14, 95 } },
-  { "input",          1, { 111 } },
-  { "jump",           1, { 144 } },
-  { "laybomb",        2, { 73, 74 } },
-  { "lazerwall",      1, { 78 } },
-  { "load",           2, { 216, 222 } },
-  { "lockplayer",     4, { 56, 58, 59, 60 } },
-  { "lockscroll",     1, { 229 } },
-  { "lockself",       1, { 51 } },
-  { "loop",           2, { 251, 252 } },
-  { "message",        2, { 139, 167 } },
-  { "missilecolor",   1, { 138 } },
-  { "mod",            5, { 199, 200, 224, 38, 157 } },
-  { "modulo",         1, { 219 } },
-  { "move",           3, { 118, 61, 62 } },
-  { "multiply",       1, { 217 } },
-  { "neutral",        5, { 177, 178, 179, 180, 186 } },
-  { "open",           1, { 50 } },
-  { "overlay",        3, { 239, 240, 241 } },
-  { "persistent",     1, { 232 } },
-  { "play",           2, { 43, 49 } },
-  { "player",         7, { 115, 173, 174, 175, 176, 185, 220 } },
-  { "playercolor",    1, { 136 } },
-  { "push",           1, { 203 } },
-  { "put",            6, { 100, 242, 32, 63, 67, 79 } },
-  { "rel",            9, { 140, 141, 142, 193, 194, 195, 196, 197, 198 } },
-  { "resetview",      1, { 156 } },
-  { "restore",        4, { 151, 169, 171, 55 } },
-  { "rotateccw",      1, { 70 } },
-  { "rotatecw",       1, { 69 } },
-  { "sam",            1, { 39 } },
-  { "save",           2, { 150, 168 } },
-  { "scroll",         1, { 204 } },
-  { "scrollarrow",    1, { 163 } },
-  { "scrollbase",     1, { 159 } },
-  { "scrollcorner",   1, { 160 } },
-  { "scrollpointer",  1, { 162 } },
-  { "scrolltitle",    1, { 161 } },
-  { "scrollview",     2, { 110, 225 } },
-  { "send",           4, { 30, 53, 81, 99 } },
-  { "set",            8, { 10, 120, 13, 149, 153, 166, 215, 97 } },
-  { "sfx",            1, { 48 } },
-  { "shoot",          1, { 72 } },
-  { "shootmissile",   1, { 75 } },
-  { "shootseeker",    1, { 76 } },
-  { "slowtime",       1, { 129 } },
-  { "spitfire",       1, { 77 } },
-  { "status",         1, { 238 } },
-  { "swap",           1, { 226 } },
-  { "switch",         1, { 71 } },
-  { "take",           2, { 34, 35 } },
-  { "takekey",        2, { 93, 94 } },
-  { "teleport",       1, { 109 } },
-  { "trade",          1, { 98 } },
-  { "try",            1, { 68 } },
-  { "unlockplayer",   1, { 57 } },
-  { "unlockscroll",   1, { 230 } },
-  { "unlockself",     1, { 52 } },
-  { "viewport",       2, { 164, 165 } },
-  { "volume",         2, { 158, 40 } },
-  { "wait",           4, { 2, 233, 45, 46 } },
-  { "walk",           1, { 5 } },
-  { "wind",           1, { 130 } },
-  { "write",          1, { 247 } },
-  { "zap",            1, { 54 } },
-  { "|",              1, { 108 } },
-};
-
-const int num_command_names =
- sizeof(sorted_command_list) / sizeof(search_entry);
-
-search_entry *find_command(char *name)
-{
-  int bottom = 0, top = num_command_names - 1, middle;
-  int cmpval;
-  search_entry *base = sorted_command_list;
-
-  while(bottom <= top)
-  {
-    middle = (top + bottom) / 2;
-    cmpval = strcasecmp(name, (sorted_command_list[middle]).name);
-
-    if(cmpval > 0)
-      bottom = middle + 1;
-    else
-
-    if(cmpval < 0)
-      top = middle - 1;
-    else
-      return base + middle;
-  }
-
-  return NULL;
-}
-
-search_entry_short sorted_argument_list[] =
+static search_entry_short sorted_argument_list[] =
 {
   { "!=",               5,   S_EQUALITY  },
   { ",",                0,   S_EXTRA     },

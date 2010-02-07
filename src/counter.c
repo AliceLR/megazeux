@@ -1050,6 +1050,22 @@ static int time_seconds_read(World *mzx_world, function_counter *counter,
   return t->tm_sec;
 }
 
+static int translate_coordinates(char *src, unsigned int *x, unsigned int *y)
+{
+  char *next;
+
+  *x = strtol(src, &next, 10);
+  if(*next == ',')
+  {
+    *y = strtol(next + 1, NULL, 10);
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
+}
+
 static int vch_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
@@ -1614,6 +1630,44 @@ static void bimesg_write(World *mzx_world, function_counter *counter,
   mzx_world->bi_mesg_status = value & 1;
 }
 
+static mzx_string *find_string(World *mzx_world, char *name, int *next)
+{
+  int bottom = 0, top = (mzx_world->num_strings) - 1, middle = 0;
+  int cmpval = 0;
+  mzx_string **base = mzx_world->string_list;
+  mzx_string *current;
+
+  while(bottom <= top)
+  {
+    middle = (top + bottom) / 2;
+    current = base[middle];
+    cmpval = strcasecmp(name, current->name);
+
+    if(cmpval > 0)
+    {
+      bottom = middle + 1;
+    }
+    else
+
+    if(cmpval < 0)
+    {
+      top = middle - 1;
+    }
+    else
+    {
+      *next = middle;
+      return current;
+    }
+  }
+
+  if(cmpval > 0)
+    *next = middle + 1;
+  else
+    *next = middle;
+
+  return NULL;
+}
+
 static int str_num_read(World *mzx_world, function_counter *counter,
  char *name, int id)
 {
@@ -1662,6 +1716,72 @@ static int str_num_read(World *mzx_world, function_counter *counter,
   }
 
   return 0;
+}
+
+static mzx_string *add_string_preallocate(World *mzx_world, char *name,
+ int length, int position)
+{
+  int count = mzx_world->num_strings;
+  int allocated = mzx_world->num_strings_allocated;
+  int name_length = strlen(name);
+  mzx_string **base = mzx_world->string_list;
+  mzx_string *dest;
+
+  // Need a reallocation?
+  if(count == allocated)
+  {
+    if(allocated)
+      allocated *= 2;
+    else
+      allocated = MIN_STRING_ALLOCATE;
+
+    mzx_world->string_list =
+     (mzx_string **)realloc(base, sizeof(mzx_string *) * allocated);
+    mzx_world->num_strings_allocated = allocated;
+    base = mzx_world->string_list;
+  }
+
+  // Doesn't exist, so create it
+  // First make space for it if it's not at the top
+  if(position != count)
+  {
+    base += position;
+    memmove((char *)(base + 1), (char *)base,
+     (count - position) * sizeof(mzx_string *));
+  }
+
+  // Allocate a mzx_string with room for the name and initial value
+  dest = (mzx_string *)malloc(sizeof(mzx_string) + name_length +
+   length - 1);
+
+  // Copy in the name, including NULL terminator.
+  strcpy(dest->name, name);
+
+  // Copy in the value. It is NOT null terminated!
+  dest->allocated_length = length;
+  dest->length = length;
+
+  dest->value = dest->storage_space + name_length;
+
+  mzx_world->string_list[position] = dest;
+  mzx_world->num_strings = count + 1;
+
+  return dest;
+}
+
+static mzx_string *reallocate_string(World *mzx_world,
+ mzx_string *src, int pos, int length)
+{
+  // Find the base length (take out the current length)
+  int base_length = (int)(src->value - (char *)src);
+
+  src = (mzx_string *)realloc(src, base_length + length);
+  src->value = (char *)src + base_length;
+  src->allocated_length = length;
+
+  mzx_world->string_list[pos] = src;
+
+  return src;
 }
 
 static void str_num_write(World *mzx_world, function_counter *counter,
@@ -1770,7 +1890,7 @@ static void mod_freq_write(World *mzx_world, function_counter *counter,
 // ? comes before letters
 // numbers come before letters (and before ?)
 
-function_counter builtin_counters[] =
+static function_counter builtin_counters[] =
 {
   { "$*", 0, str_num_read, str_num_write },
   { "abs!", 0, abs_read, NULL },
@@ -1897,7 +2017,7 @@ function_counter builtin_counters[] =
   { "vlayer_width", 0, vlayer_width_read, vlayer_width_write },
 };
 
-int counter_first_letter[512];
+static int counter_first_letter[512];
 
 int set_counter_special(World *mzx_world, int spec_type,
  char *char_value, int value, int id)
@@ -2184,7 +2304,7 @@ int set_counter_special(World *mzx_world, int spec_type,
 const int num_builtin_counters =
  sizeof(builtin_counters) / sizeof(function_counter);
 
-int hurt_player(World *mzx_world, int value)
+static int hurt_player(World *mzx_world, int value)
 {
   // Must not be invincible
   if(get_counter(mzx_world, "INVINCO", 0) <= 0)
@@ -2218,7 +2338,20 @@ int hurt_player(World *mzx_world, int value)
   return value;
 }
 
-int health_gateway(World *mzx_world, counter *counter, char *name,
+static int health_dec_gateway(World *mzx_world, counter *counter, char *name,
+ int value, int id)
+{
+  // Trying to decrease health? (legacy support)
+  // Only handle here if MZX world version <= 2.70
+  // Otherwise, it will be handled in health_gateway()
+  if((value > 0) && (mzx_world->version <= 0x0249))
+  {
+    value = hurt_player(mzx_world, value);
+  }
+  return value;
+}
+
+static int health_gateway(World *mzx_world, counter *counter, char *name,
  int value, int id)
 {
   // Make sure health is within 0 and max health
@@ -2242,20 +2375,7 @@ int health_gateway(World *mzx_world, counter *counter, char *name,
   return value;
 }
 
-int health_dec_gateway(World *mzx_world, counter *counter, char *name,
- int value, int id)
-{
-  // Trying to decrease health? (legacy support)
-  // Only handle here if MZX world version <= 2.70
-  // Otherwise, it will be handled in health_gateway()
-  if((value > 0) && (mzx_world->version <= 0x0249))
-  {
-    value = hurt_player(mzx_world, value);
-  }
-  return value;
-}
-
-int lives_gateway(World *mzx_world, counter *counter, char *name,
+static int lives_gateway(World *mzx_world, counter *counter, char *name,
  int value, int id)
 {
   // Make sure lives is within 0 and max lives
@@ -2271,7 +2391,7 @@ int lives_gateway(World *mzx_world, counter *counter, char *name,
   return value;
 }
 
-int invinco_gateway(World *mzx_world, counter *counter, char *name,
+static int invinco_gateway(World *mzx_world, counter *counter, char *name,
  int value, int id)
 {
   if(!counter->value)
@@ -2293,7 +2413,7 @@ int invinco_gateway(World *mzx_world, counter *counter, char *name,
 
 // The other builtins simply can't go below 0
 
-int builtin_gateway(World *mzx_world, counter *counter, char *name,
+static int builtin_gateway(World *mzx_world, counter *counter, char *name,
  int value, int id)
 {
   if(value < 0)
@@ -2302,8 +2422,39 @@ int builtin_gateway(World *mzx_world, counter *counter, char *name,
     return value;
 }
 
+static counter *find_counter(World *mzx_world, char *name, int *next)
+{
+  int bottom = 0, top = (mzx_world->num_counters) - 1, middle = 0;
+  int cmpval = 0;
+  counter **base = mzx_world->counter_list;
+  counter *current;
+
+  while(bottom <= top)
+  {
+    middle = (top + bottom) / 2;
+    current = base[middle];
+    cmpval = strcasecmp(name, current->name);
+
+    if(cmpval > 0)
+      bottom = middle + 1;
+    else
+
+    if(cmpval < 0)
+      top = middle - 1;
+    else
+      return current;
+  }
+
+  if(cmpval > 0)
+    *next = middle + 1;
+  else
+    *next = middle;
+
+  return NULL;
+}
+
 // Setup builtin gateway functions
-void set_gateway(World *mzx_world, char *name,
+static void set_gateway(World *mzx_world, char *name,
  gateway_write_function function)
 {
   int next;
@@ -2314,7 +2465,7 @@ void set_gateway(World *mzx_world, char *name,
   }
 }
 
-void set_dec_gateway(World *mzx_world, char *name,
+static void set_dec_gateway(World *mzx_world, char *name,
  gateway_dec_function function)
 {
   int next;
@@ -2406,76 +2557,7 @@ int match_function_counter(char *dest, char *src)
   return 0;
 }
 
-counter *find_counter(World *mzx_world, char *name, int *next)
-{
-  int bottom = 0, top = (mzx_world->num_counters) - 1, middle = 0;
-  int cmpval = 0;
-  counter **base = mzx_world->counter_list;
-  counter *current;
-
-  while(bottom <= top)
-  {
-    middle = (top + bottom) / 2;
-    current = base[middle];
-    cmpval = strcasecmp(name, current->name);
-
-    if(cmpval > 0)
-      bottom = middle + 1;
-    else
-
-    if(cmpval < 0)
-      top = middle - 1;
-    else
-      return current;
-  }
-
-  if(cmpval > 0)
-    *next = middle + 1;
-  else
-    *next = middle;
-
-  return NULL;
-}
-
-mzx_string *find_string(World *mzx_world, char *name, int *next)
-{
-  int bottom = 0, top = (mzx_world->num_strings) - 1, middle = 0;
-  int cmpval = 0;
-  mzx_string **base = mzx_world->string_list;
-  mzx_string *current;
-
-  while(bottom <= top)
-  {
-    middle = (top + bottom) / 2;
-    current = base[middle];
-    cmpval = strcasecmp(name, current->name);
-
-    if(cmpval > 0)
-    {
-      bottom = middle + 1;
-    }
-    else
-
-    if(cmpval < 0)
-    {
-      top = middle - 1;
-    }
-    else
-    {
-      *next = middle;
-      return current;
-    }
-  }
-
-  if(cmpval > 0)
-    *next = middle + 1;
-  else
-    *next = middle;
-
-  return NULL;
-}
-
-function_counter *find_function_counter(char *name)
+static function_counter *find_function_counter(char *name)
 {
   int bottom, top, middle;
   int first_letter = tolower(name[0]) * 2;
@@ -2506,7 +2588,7 @@ function_counter *find_function_counter(char *name)
   return NULL;
 }
 
-void add_counter(World *mzx_world, char *name, int value, int position)
+static void add_counter(World *mzx_world, char *name, int value, int position)
 {
   int count = mzx_world->num_counters;
   int allocated = mzx_world->num_counters_allocated;
@@ -2546,78 +2628,12 @@ void add_counter(World *mzx_world, char *name, int value, int position)
   mzx_world->num_counters = count + 1;
 }
 
-mzx_string *add_string_preallocate(World *mzx_world, char *name,
- int length, int position)
-{
-  int count = mzx_world->num_strings;
-  int allocated = mzx_world->num_strings_allocated;
-  int name_length = strlen(name);
-  mzx_string **base = mzx_world->string_list;
-  mzx_string *dest;
-
-  // Need a reallocation?
-  if(count == allocated)
-  {
-    if(allocated)
-      allocated *= 2;
-    else
-      allocated = MIN_STRING_ALLOCATE;
-
-    mzx_world->string_list =
-     (mzx_string **)realloc(base, sizeof(mzx_string *) * allocated);
-    mzx_world->num_strings_allocated = allocated;
-    base = mzx_world->string_list;
-  }
-
-  // Doesn't exist, so create it
-  // First make space for it if it's not at the top
-  if(position != count)
-  {
-    base += position;
-    memmove((char *)(base + 1), (char *)base,
-     (count - position) * sizeof(mzx_string *));
-  }
-
-  // Allocate a mzx_string with room for the name and initial value
-  dest = (mzx_string *)malloc(sizeof(mzx_string) + name_length +
-   length - 1);
-
-  // Copy in the name, including NULL terminator.
-  strcpy(dest->name, name);
-
-  // Copy in the value. It is NOT null terminated!
-  dest->allocated_length = length;
-  dest->length = length;
-
-  dest->value = dest->storage_space + name_length;
-
-  mzx_world->string_list[position] = dest;
-  mzx_world->num_strings = count + 1;
-
-  return dest;
-}
-
-void add_string(World *mzx_world, char *name, mzx_string *src, int position)
+static void add_string(World *mzx_world, char *name, mzx_string *src, int position)
 {
   mzx_string *dest = add_string_preallocate(mzx_world, name,
    src->length, position);
 
   memcpy(dest->value, src->value, src->length);
-}
-
-mzx_string *reallocate_string(World *mzx_world,
- mzx_string *src, int pos, int length)
-{
-  // Find the base length (take out the current length)
-  int base_length = (int)(src->value - (char *)src);
-
-  src = (mzx_string *)realloc(src, base_length + length);
-  src->value = (char *)src + base_length;
-  src->allocated_length = length;
-
-  mzx_world->string_list[pos] = src;
-
-  return src;
 }
 
 void set_counter(World *mzx_world, char *name, int value, int id)
@@ -2657,7 +2673,7 @@ void set_counter(World *mzx_world, char *name, int value, int id)
   }
 }
 
-void get_string_size_offset(char *name, unsigned int *ssize,
+static void get_string_size_offset(char *name, unsigned int *ssize,
  unsigned int *soffset)
 {
   // First must strip off/encode offset/size values
@@ -2697,6 +2713,42 @@ void get_string_size_offset(char *name, unsigned int *ssize,
     offset = strtol(name + offset_position + 1, &str_next, 10);
     name[offset_position] = 0;
     *soffset = offset;
+  }
+}
+
+static int load_string_board_direct(World *mzx_world, mzx_string *str,
+ int next, int w, int h, char l, char *src, int width)
+{
+  int i;
+  int size = w * h;
+  char *str_value;
+  char *t_pos;
+
+  str_value = str->value;
+  t_pos = str_value;
+
+  for(i = 0; i < h; i++)
+  {
+    memcpy(t_pos, src, w);
+    t_pos += w;
+    src += width;
+  }
+
+  if(l)
+  {
+    for(i = 0; i < size; i++)
+    {
+      if(str_value[i] == l)
+        break;
+    }
+
+    str->length = i;
+    return i;
+  }
+  else
+  {
+    str->length = size;
+    return size;
   }
 }
 
@@ -3276,58 +3328,6 @@ void load_string_board(World *mzx_world, char *name, int w, int h,
   src_str->length =
    load_string_board_direct(mzx_world, src_str, next, w, h, l,
    src, width);
-}
-
-int load_string_board_direct(World *mzx_world, mzx_string *str,
- int next, int w, int h, char l, char *src, int width)
-{
-  int i;
-  int size = w * h;
-  char *str_value;
-  char *t_pos;
-
-  str_value = str->value;
-  t_pos = str_value;
-
-  for(i = 0; i < h; i++)
-  {
-    memcpy(t_pos, src, w);
-    t_pos += w;
-    src += width;
-  }
-
-  if(l)
-  {
-    for(i = 0; i < size; i++)
-    {
-      if(str_value[i] == l)
-        break;
-    }
-
-    str->length = i;
-    return i;
-  }
-  else
-  {
-    str->length = size;
-    return size;
-  }
-}
-
-int translate_coordinates(char *src, unsigned int *x, unsigned int *y)
-{
-  char *next;
-
-  *x = strtol(src, &next, 10);
-  if(*next == ',')
-  {
-    *y = strtol(next + 1, NULL, 10);
-    return 0;
-  }
-  else
-  {
-    return -1;
-  }
 }
 
 int is_string(char *buffer)

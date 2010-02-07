@@ -23,7 +23,7 @@
 #include "utility.h"
 #include "error.h"
 
-void stream_to_alloc (void *dest, uint8_t **src, uint32_t n)
+static void stream_to_alloc (void *dest, uint8_t **src, uint32_t n)
 {
   /* copy count blocks */
   memcpy (dest, *src, n);
@@ -32,7 +32,7 @@ void stream_to_alloc (void *dest, uint8_t **src, uint32_t n)
   *src += n;
 }
 
-void alloc_to_stream (void *src, uint8_t **dest, uint32_t n)
+static void alloc_to_stream (void *src, uint8_t **dest, uint32_t n)
 {
   /* copy count blocks */
   memcpy (*dest, src, n);

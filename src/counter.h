@@ -50,15 +50,7 @@ typedef int (*gateway_dec_function)(World *mzx_world,
 // functions
 
 int match_function_counter(char *dest, char *src);
-void set_gateway(World *mzx_world, char *name,
- gateway_write_function function);
 void initialize_gateway_functions(World *mzx_world);
-// Return a pointer to the list position of the named counter
-counter *find_counter(World *mzx_world, char *name, int *next);
-// Return a pointer to the named function counter
-function_counter *find_function_counter(char *name);
-// Return a pointer to the list position of the named string
-mzx_string *find_string(World *mzx_world, char *name, int *next);
 // Get the contents of a counter. Include robot id (0 if unimportant)
 int get_counter(World *mzx_world, char *name, int id);
 // Sets the value of a counter. Include robot id if a robot is running.
@@ -69,12 +61,6 @@ void dec_counter(World *mzx_world, char *name, int value, int id);
 void mul_counter(World *mzx_world, char *name, int value, int id);
 void div_counter(World *mzx_world, char *name, int value, int id);
 void mod_counter(World *mzx_world, char *name, int value, int id);
-void add_counter(World *mzx_world, char *name, int value, int position);
-mzx_string *add_string_preallocate(World *mzx_world, char *name,
- int length, int position);
-void add_string(World *mzx_world, char *name, mzx_string *src, int position);
-mzx_string *reallocate_string(World *mzx_world, mzx_string *src, int pos,
- int length);
 char *set_function_string(World *mzx_world, char *name, int id, char *buffer);
 int get_string(World *mzx_world, char *name, mzx_string *dest, int id);
 void set_string(World *mzx_world, char *name, mzx_string *src, int id);
@@ -83,16 +69,11 @@ void inc_string(World *mzx_world, char *name, mzx_string *src, int id);
 // Decreases the end of a string by N characters
 void dec_string_int(World *mzx_world, char *name, int value, int id);
 int compare_strings(mzx_string *dest, mzx_string *src);
-int load_string_board_direct(World *mzx_world, mzx_string *str,
- int next, int w, int h, char l, char *src, int width);
 void load_string_board(World *mzx_world, char *expression,
  int w, int h, char l, char *src, int width);
 int set_counter_special(World *mzx_world, int spec_type,
  char *char_value, int value, int id);
-int translate_coordinates(char *src, unsigned int *x, unsigned int *y);
 int is_string(char *buffer);
-void get_string_size_offset(char *name, unsigned int *ssize,
- unsigned int *soffset);
 
 void counter_fsg();
 

@@ -34,6 +34,8 @@ DEVELOPERS
 + Switched GDM2S3M over to use inttypes.h instead of home-brewing types.
   Improves portability to BSD.
 + MegaZeux now compiles on OpenBSD (and probably other BSDs), use --disable-gl.
++ Made all unnecessary global symbols static. This should improve compiler
+  optimisations and correctness (Mr_Alert, ajs).
 
 July 4, 2007 - MZX 2.81g
 

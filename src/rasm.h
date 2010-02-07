@@ -177,46 +177,28 @@ typedef struct
   int type;
 } search_entry_short;
 
-int is_color(char *cmd_line);
-int is_param(char *cmd_line);
 int is_dir(char *cmd_line, char **next);
 int is_condition(char *cmd_line, char **next);
 int is_equality(char *cmd_line, char **next);
-int is_thing(char *cmd_line, char **next);
 int is_item(char *cmd_line, char **next);
 int is_command_fragment(char *cmd_line, char **next);
 int is_extra(char *cmd_line, char **next);
 
 int get_color(char *cmd_line);
-int get_param(char *cmd_line);
 
-int get_word(char *str, char *source, char t);
-int match_command(mzx_command *cmd, char *error_buffer);
 int assemble_text(char *input_name, char *output_name);
-int assemble_command(int command_number, mzx_command *cmd, void *params[32],
- char *obj_pos, char **next_obj_pos);
 void print_command(mzx_command *cmd);
-int get_line(char *buffer, FILE *fp);
 int disassemble_line(char *cpos, char **next, char *output_buffer,
  char *error_buffer, int *total_bytes, int print_ignores, char *arg_types,
  int *arg_count, int base);
 int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
  char *param_listing, int *arg_count_ext);
 void print_color(int color, char *color_buffer);
-int print_dir(int dir, char *dir_buffer, char *arg_types,
- int arg_place);
-void print_error(int arg_number, char *error_buffer, int bad_arg,
- int correct_arg);
-void get_wanted_arg(char *buffer, int arg);
 char *assemble_file(char *name, int *size);
 void disassemble_file(char *name, char *program, int allow_ignores,
  int base);
-search_entry *find_command(char *name);
 search_entry_short *find_argument(char *name);
-int escape_chars(char *dest, char *src);
 int unescape_char(char *dest, char c);
-
-extern mzx_command command_list[256];
 
 __M_END_DECLS
 

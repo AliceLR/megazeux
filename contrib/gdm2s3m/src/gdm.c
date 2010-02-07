@@ -201,6 +201,7 @@ struct GDM_file *load_gdm (uint8_t *stream, uint32_t stream_len)
   return gdm;
 }
 
+#if 0
 void info_gdm (struct GDM_file *gdm)
 {
   struct GDM_header *header = &gdm->header;
@@ -298,6 +299,7 @@ void info_gdm (struct GDM_file *gdm)
 
   PRINT_OUT ("\n");
 }
+#endif // 0
 
 void free_gdm (struct GDM_file *gdm)
 {

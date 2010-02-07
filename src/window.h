@@ -211,9 +211,6 @@ void construct_dialog_ext(dialog *src, char *title, int x, int y,
 void destruct_dialog(dialog *src);
 
 element *construct_label(int x, int y, char *text);
-element *construct_box(int x, int y, int width, int height);
-element *construct_line(int x, int y, align alignment,
- int length);
 element *construct_input_box(int x, int y, char *question,
  int max_length, int input_flags, char *result);
 element *construct_check_box(int x, int y, char **choices,
@@ -280,9 +277,6 @@ extern unsigned char color_wild;
 extern unsigned char color_dot;
 extern char list_button[4];
 extern char num_buttons[7];
-
-// Foreground colors that look nice for each background color
-extern char fg_per_bk[16];
 
 __M_END_DECLS
 

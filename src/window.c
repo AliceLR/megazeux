@@ -55,9 +55,8 @@
 // Big fat hack. This will be initialized to a bunch of 0's, or NULLs.
 // Use this to replace the null strings before they get dereferenced.
 
-char_element screen_storage[NUM_SAVSCR][80 * 25];
+static char_element screen_storage[NUM_SAVSCR][80 * 25];
 int cur_screen = 0; // Current space for save_screen and restore_screen
-signed char vid_usage[80 * 25]; // Mouse video usage array (for dialogs)
 
 // Free up memory.
 
@@ -215,7 +214,7 @@ int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
 #define num_buttons " \x18  \x19 "
 
 //Foreground colors that look nice for each background color
-char fg_per_bk[16] =
+static char fg_per_bk[16] =
  { 15, 15, 15, 15, 15, 15, 15, 0, 15, 15, 0, 0, 15, 15, 0, 0 };
 
 // For list/choice menus-
@@ -1114,7 +1113,7 @@ void draw_color_box(int color, int q_bit, int x, int y)
   }
 }
 
-void fill_vid_usage(dialog *di, element *e,
+static void fill_vid_usage(dialog *di, element *e,
  signed char *vid_usage, int vid_fill)
 {
   int x = di->x + e->x;
@@ -1134,21 +1133,21 @@ void display_element(World *mzx_world, int type, int x, int y,
  char *str, int p1, int p2, void *value, int active, int curr_check,
  int set_vid_usage, int space_label);
 
-void unhighlight_element(World *mzx_world, dialog *di,
+static void unhighlight_element(World *mzx_world, dialog *di,
  int current_element_num)
 {
   (di->elements[current_element_num])->draw_function(mzx_world, di,
    di->elements[current_element_num], DI_NONACTIVE, 0);
 }
 
-void highlight_element(World *mzx_world, dialog *di,
+static void highlight_element(World *mzx_world, dialog *di,
  int current_element_num)
 {
   (di->elements[current_element_num])->draw_function(mzx_world, di,
    di->elements[current_element_num], DI_ACTIVE, 1);
 }
 
-int find_first_element(World *mzx_world, dialog *di,
+static int find_first_element(World *mzx_world, dialog *di,
  int current_element_num)
 {
   int i;
@@ -1166,7 +1165,7 @@ int find_first_element(World *mzx_world, dialog *di,
   return -1;
 }
 
-int find_last_element(World *mzx_world, dialog *di,
+static int find_last_element(World *mzx_world, dialog *di,
  int current_element_num)
 {
   int i;
@@ -1184,7 +1183,7 @@ int find_last_element(World *mzx_world, dialog *di,
   return -1;
 }
 
-int change_current_element(World *mzx_world, dialog *di,
+static int change_current_element(World *mzx_world, dialog *di,
  int current_element_num, int displacement)
 {
   int increment = 1;
@@ -1453,7 +1452,7 @@ int run_dialog(World *mzx_world, dialog *di)
   return di->return_value;
 }
 
-int find_entry(char **choices, char *name, int total_num)
+static int find_entry(char **choices, char *name, int total_num)
 {
   int current_entry;
   int cmpval = 0;
@@ -1485,7 +1484,7 @@ int find_entry(char **choices, char *name, int total_num)
 
 // "Member" functions for GUI elements
 
-void draw_label(World *mzx_world, dialog *di, element *e,
+static void draw_label(World *mzx_world, dialog *di, element *e,
  int color, int active)
 {
   label *src = (label *)e;
@@ -1495,44 +1494,7 @@ void draw_label(World *mzx_world, dialog *di, element *e,
   color_string(src->text, x, y, DI_TEXT);
 }
 
-void draw_box(World *mzx_world, dialog *di, element *e,
- int color, int active)
-{
-  int x = di->x + e->x;
-  int y = di->y + e->y;
-
-  draw_window_box(x, y, x + e->width - 1, y + e->height - 1,
-   DI_DARK, DI_MAIN, DI_CORNER, 0, 0);
-}
-
-void draw_line(World *mzx_world, dialog *di, element *e,
- int color, int active)
-{
-  line *src = (line *)e;
-  int x = di->x + e->x;
-  int y = di->y + e->y;
-  int i;
-
-  switch(src->alignment)
-  {
-    case vertical:
-    {
-      for(i = 0; i < e->height; i++)
-      {
-        draw_char('\xB3', DI_LINE, x, x + i);
-      }
-      break;
-    }
-
-    case horizontal:
-    {
-      fill_line(e->width, x, y, 196, DI_LINE);
-      break;
-    }
-  }
-}
-
-void draw_input_box(World *mzx_world, dialog *di, element *e,
+static void draw_input_box(World *mzx_world, dialog *di, element *e,
  int color, int active)
 {
   input_box *src = (input_box *)e;
@@ -1547,7 +1509,7 @@ void draw_input_box(World *mzx_world, dialog *di, element *e,
    DI_INPUT, 0);
 }
 
-void draw_check_box(World *mzx_world, dialog *di, element *e,
+static void draw_check_box(World *mzx_world, dialog *di, element *e,
  int color, int active)
 {
   check_box *src = (check_box *)e;
@@ -1573,7 +1535,7 @@ void draw_check_box(World *mzx_world, dialog *di, element *e,
   }
 }
 
-void draw_radio_button(World *mzx_world, dialog *di, element *e,
+static void draw_radio_button(World *mzx_world, dialog *di, element *e,
  int color, int active)
 {
   radio_button *src = (radio_button *)e;
@@ -1605,7 +1567,7 @@ void draw_radio_button(World *mzx_world, dialog *di, element *e,
   }
 }
 
-void draw_char_box(World *mzx_world, dialog *di, element *e,
+static void draw_char_box(World *mzx_world, dialog *di, element *e,
  int color, int active)
 {
   char_box *src = (char_box *)e;
@@ -1620,7 +1582,7 @@ void draw_char_box(World *mzx_world, dialog *di, element *e,
   draw_char(' ', DI_CHAR, x + question_len + 2, y);
 }
 
-void draw_color_box_element(World *mzx_world, dialog *di,
+static void draw_color_box_element(World *mzx_world, dialog *di,
  element *e, int color, int active)
 {
   color_box *src = (color_box *)e;
@@ -1633,7 +1595,7 @@ void draw_color_box_element(World *mzx_world, dialog *di,
    x + strlen(src->question) + di->pad_space, y);
 }
 
-void draw_button(World *mzx_world, dialog *di, element *e,
+static void draw_button(World *mzx_world, dialog *di, element *e,
  int color, int active)
 {
   button *src = (button *)e;
@@ -1650,7 +1612,7 @@ void draw_button(World *mzx_world, dialog *di, element *e,
   draw_char(' ', color, x + strlen(src->label) + 1, y);
 }
 
-void draw_number_box(World *mzx_world, dialog *di,
+static void draw_number_box(World *mzx_world, dialog *di,
  element *e, int color, int active)
 {
   number_box *src = (number_box *)e;
@@ -1693,7 +1655,7 @@ void draw_number_box(World *mzx_world, dialog *di,
 
 #define MAX_NAME_BUFFER 512
 
-void draw_list_box(World *mzx_world, dialog *di,
+static void draw_list_box(World *mzx_world, dialog *di,
  element *e, int color, int active)
 {
   list_box *src = (list_box *)e;
@@ -1780,7 +1742,7 @@ void draw_list_box(World *mzx_world, dialog *di,
   }
 }
 
-void draw_board_list(World *mzx_world, dialog *di,
+static void draw_board_list(World *mzx_world, dialog *di,
  element *e, int color, int active)
 {
   board_list *src = (board_list *)e;
@@ -1815,8 +1777,7 @@ void draw_board_list(World *mzx_world, dialog *di,
    DI_ARROWBUTTON, 0);
 }
 
-int key_input_box(World *mzx_world, dialog *di, element *e,
- int key)
+static int key_input_box(World *mzx_world, dialog *di, element *e, int key)
 {
   input_box *src = (input_box *)e;
 
@@ -1831,8 +1792,7 @@ int key_input_box(World *mzx_world, dialog *di, element *e,
   return key;
 }
 
-int key_check_box(World *mzx_world, dialog *di, element *e,
- int key)
+static int key_check_box(World *mzx_world, dialog *di, element *e, int key)
 {
   check_box *src = (check_box *)e;
 
@@ -1885,8 +1845,7 @@ int key_check_box(World *mzx_world, dialog *di, element *e,
   return 0;
 }
 
-int key_radio_button(World *mzx_world, dialog *di, element *e,
- int key)
+static int key_radio_button(World *mzx_world, dialog *di, element *e, int key)
 {
   radio_button *src = (radio_button *)e;
 
@@ -1932,8 +1891,7 @@ int key_radio_button(World *mzx_world, dialog *di, element *e,
 }
 
 
-int key_char_box(World *mzx_world, dialog *di, element *e,
- int key)
+static int key_char_box(World *mzx_world, dialog *di, element *e, int key)
 {
   char_box *src = (char_box *)e;
 
@@ -1974,8 +1932,7 @@ int key_char_box(World *mzx_world, dialog *di, element *e,
   return 0;
 }
 
-int key_color_box(World *mzx_world, dialog *di, element *e,
- int key)
+static int key_color_box(World *mzx_world, dialog *di, element *e, int key)
 {
   color_box *src = (color_box *)e;
 
@@ -2002,8 +1959,7 @@ int key_color_box(World *mzx_world, dialog *di, element *e,
   return 0;
 }
 
-int key_button(World *mzx_world, dialog *di, element *e,
- int key)
+static int key_button(World *mzx_world, dialog *di, element *e, int key)
 {
   button *src = (button *)e;
 
@@ -2028,8 +1984,7 @@ int key_button(World *mzx_world, dialog *di, element *e,
   return 0;
 }
 
-int key_number_box(World *mzx_world, dialog *di, element *e,
- int key)
+static int key_number_box(World *mzx_world, dialog *di, element *e, int key)
 {
   number_box *src = (number_box *)e;
   int increment_value = 0;
@@ -2147,8 +2102,7 @@ int key_number_box(World *mzx_world, dialog *di, element *e,
   return 0;
 }
 
-int key_list_box(World *mzx_world, dialog *di, element *e,
- int key)
+static int key_list_box(World *mzx_world, dialog *di, element *e, int key)
 {
   list_box *src = (list_box *)e;
   int current_choice = *(src->result);
@@ -2320,8 +2274,7 @@ int key_list_box(World *mzx_world, dialog *di, element *e,
   return 0;
 }
 
-int key_board_list(World *mzx_world, dialog *di, element *e,
- int key)
+static int key_board_list(World *mzx_world, dialog *di, element *e, int key)
 {
   board_list *src = (board_list *)e;
 
@@ -2350,7 +2303,7 @@ int key_board_list(World *mzx_world, dialog *di, element *e,
   return 0;
 }
 
-int click_input_box(World *mzx_world, dialog *di,
+static int click_input_box(World *mzx_world, dialog *di,
  element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
@@ -2372,7 +2325,7 @@ int click_input_box(World *mzx_world, dialog *di,
   }
 }
 
-int click_check_box(World *mzx_world, dialog *di,
+static int click_check_box(World *mzx_world, dialog *di,
  element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
@@ -2384,7 +2337,7 @@ int click_check_box(World *mzx_world, dialog *di,
   return 0;
 }
 
-int click_radio_button(World *mzx_world, dialog *di,
+static int click_radio_button(World *mzx_world, dialog *di,
  element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
@@ -2394,21 +2347,21 @@ int click_radio_button(World *mzx_world, dialog *di,
   return 0;
 }
 
-int click_char_box(World *mzx_world, dialog *di,
+static int click_char_box(World *mzx_world, dialog *di,
  element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
   return SDLK_RETURN;
 }
 
-int click_color_box(World *mzx_world, dialog *di,
+static int click_color_box(World *mzx_world, dialog *di,
  element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
   return SDLK_RETURN;
 }
 
-int click_button(World *mzx_world, dialog *di,
+static int click_button(World *mzx_world, dialog *di,
  element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
@@ -2421,7 +2374,7 @@ int click_button(World *mzx_world, dialog *di,
   return 0;
 }
 
-int click_number_box(World *mzx_world, dialog *di,
+static int click_number_box(World *mzx_world, dialog *di,
  element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
@@ -2452,7 +2405,7 @@ int click_number_box(World *mzx_world, dialog *di,
   return 0;
 }
 
-int click_list_box(World *mzx_world, dialog *di,
+static int click_list_box(World *mzx_world, dialog *di,
  element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
@@ -2520,14 +2473,7 @@ int click_list_box(World *mzx_world, dialog *di,
   return 0;
 }
 
-int click_board_list(World *mzx_world, dialog *di,
- element *e, int mouse_button, int mouse_x, int mouse_y,
- int new_active)
-{
-  return SDLK_RETURN;
-}
-
-int drag_list_box(World *mzx_world, dialog *di,
+static int drag_list_box(World *mzx_world, dialog *di,
  element *e, int mouse_button, int mouse_x, int mouse_y)
 {
   list_box *src = (list_box *)e;
@@ -2559,7 +2505,7 @@ int drag_list_box(World *mzx_world, dialog *di,
   return 0;
 }
 
-int idle_input_box(World *mzx_world, dialog *di, element *e)
+static int idle_input_box(World *mzx_world, dialog *di, element *e)
 {
   input_box *src = (input_box *)e;
   int x = di->x + e->x;
@@ -2621,7 +2567,7 @@ void destruct_dialog(dialog *src)
   restore_screen();
 }
 
-void construct_element(element *e, int x, int y,
+static void construct_element(element *e, int x, int y,
  int width, int height,
  void (* draw_function)(World *mzx_world, dialog *di,
   element *e, int color, int active),
@@ -2653,45 +2599,6 @@ element *construct_label(int x, int y, char *text)
   src->text = text;
   construct_element(&(src->e), x, y, strlen(text), 1,
    draw_label, NULL, NULL, NULL, NULL);
-
-  return (element *)src;
-}
-
-element *construct_box(int x, int y, int width, int height)
-{
-  box *src = (box *)malloc(sizeof(box));
-  construct_element(&(src->e), x, y, width, height,
-   draw_box, NULL, NULL, NULL, NULL);
-
-  return (element *)src;
-}
-
-element *construct_line(int x, int y, align alignment,
- int length)
-{
-  line *src = (line *)malloc(sizeof(line));
-  int width = 0, height = 0;
-  src->alignment = alignment;
-
-  switch(alignment)
-  {
-    case horizontal:
-    {
-      width = length;
-      height = 1;
-      break;
-    }
-
-    case vertical:
-    {
-      height = length;
-      width = 1;
-      break;
-    }
-  }
-
-  construct_element(&(src->e), x, y, width, height,
-   draw_line, NULL, NULL, NULL, NULL);
 
   return (element *)src;
 }
@@ -2841,6 +2748,13 @@ element *construct_list_box(int x, int y, char **choices,
    click_list_box, drag_list_box, NULL);
 
   return (element *)src;
+}
+
+static int click_board_list(World *mzx_world, dialog *di,
+ element *e, int mouse_button, int mouse_x, int mouse_y,
+ int new_active)
+{
+  return SDLK_RETURN;
 }
 
 element *construct_board_list(int x, int y,
@@ -3032,7 +2946,7 @@ int ask_yes_no(World *mzx_world, char *str)
   return dialog_result;
 }
 
-int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
+static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
 {
   char *dest_str = *((char **)dest_str_ptr);
   char *src_str = *((char **)src_str_ptr);
@@ -3059,7 +2973,7 @@ int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
 #define FILESEL_FILES_LABEL   5
 #define FILESEL_DIRS_LABEL    6
 
-int file_dialog_function(World *mzx_world, dialog *di, int key)
+static int file_dialog_function(World *mzx_world, dialog *di, int key)
 {
   int current_element_num = di->current_element;
   element *current_element = di->elements[current_element_num];
@@ -3203,7 +3117,7 @@ int file_dialog_function(World *mzx_world, dialog *di, int key)
   return key;
 }
 
-void remove_files(char *directory_name, int remove_recursively)
+static void remove_files(char *directory_name, int remove_recursively)
 {
   DIR *current_dir = opendir(directory_name);
   struct dirent *current_file;
