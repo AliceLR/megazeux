@@ -33,4 +33,24 @@ typedef unsigned int bool;
 #define false 0
 #endif /* __cplusplus */
 
+#include <time.h>
+
+// Random function, returns an integer between 0 and Range
+static inline int Random(int Range)
+{
+  static unsigned long long seed = 0;
+  unsigned long long value;
+
+  // If the seed is 0, initialise it with time and clock
+  if (seed == 0)
+  {
+    seed = time(NULL) + clock();
+  }
+
+  seed = seed * 1664525 + 1013904223;
+
+  value = (seed & 0xFFFFFFFF) * Range / 0xFFFFFFFF;
+  return (int)value;
+}
+
 #endif // __COMPAT_H

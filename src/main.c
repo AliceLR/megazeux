@@ -135,9 +135,6 @@ int main(int argc, char **argv)
 
   memcpy(macros, mzx_world.conf.default_macros, 5 * 64);
 
-  // Random seed..
-  srand(time(NULL));
-
 #if defined(__MACOSX__)
   // In Mac OS X, applications are packages, or folders that
   // look like single files. This code gets the user out of

@@ -79,6 +79,8 @@ DEVELOPERS
   breaks compatibility with GCC 3.x, but you can just remove the flag if you
   don't want to use it (the stack protector will improve stack corruption
   detection and provide more usable debug traces).
++ Custom Random() implementation to provide a more uniform number
+  distribution. Factored out for future (better) implementations.
 
 January 30, 2007 - MZX 2.81f
 

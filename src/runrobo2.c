@@ -319,7 +319,7 @@ void send_at_xy(World *mzx_world, int id, int x, int y,
 int get_random_range(int min_value, int max_value)
 {
   int result;
-  int difference;
+  unsigned int difference;
 
   if(min_value == max_value)
   {
@@ -337,10 +337,7 @@ int get_random_range(int min_value, int max_value)
       min_value = max_value;
     }
 
-    if(difference)
-      result = (rand() % (difference + 1)) + min_value;
-    else
-      result = rand();
+    result = (Random(difference + 1)) + min_value;
   }
 
   return result;
@@ -3723,7 +3720,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             d_flag = flags[(int)level_id[offset]];
 
             if((d_flag & A_UNDER) && !(d_flag & A_ENTRANCE) &&
-             (rand() % placement_rate) == 0)
+             (Random(placement_rate)) == 0)
             {
               id_place(mzx_world, x, y, BOULDER, 7, 0);
             }

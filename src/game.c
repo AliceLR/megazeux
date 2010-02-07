@@ -746,7 +746,7 @@ void update_variables(World *mzx_world, int slowed)
       // Decrease
       dec_counter(mzx_world, "INVINCO", 1, 0);
       play_sfx(mzx_world, 17);
-      id_chars[player_color] = rand() & 255;
+      id_chars[player_color] = Random(256);
     }
   }
   // Lazerwall start- cycle 0 to 7 then -7 to -1
@@ -1846,10 +1846,10 @@ void give_potion(World *mzx_world, mzx_potion type)
           {
             // Adjust the ratio for board size
 
-            if((rand() % placement_rate) == 0)
+            if(Random(placement_rate) == 0)
             {
               id_place(mzx_world, x, y, EXPLOSION, 0,
-               16 * ((rand() % 5) + 2));
+               16 * ((Random(5)) + 2));
             }
           }
         }
@@ -1988,7 +1988,7 @@ void give_potion(World *mzx_world, mzx_potion type)
 
           if((d_flag & A_UNDER) && !(d_flag & A_ENTRANCE))
           {
-            if((rand() % placement_rate) == 0)
+            if((Random(placement_rate)) == 0)
             {
               id_place(mzx_world, x, y, BOULDER, 7, 0);
             }
@@ -2662,7 +2662,7 @@ int update(World *mzx_world, int game, int *fadein)
   if(mzx_world->wind_dur > 0)
   {
     // Wind
-    int wind_dir = rand() % 9;
+    int wind_dir = Random(9);
     if(wind_dir < 4)
     {
       // No wind this turn if above 3

@@ -87,8 +87,7 @@ int find_seek(World *mzx_world, int x, int y)
   }
   else
   {
-    int r_num = rand();
-    dir = r_num & 1;        // Go random horizontal or vertical
+    dir = Random(2);        // Go random horizontal or vertical
   }
 
   if(dir)
@@ -260,7 +259,7 @@ void update_board(World *mzx_world)
           // Start ice animation
           if(current_param == 0)
           {
-            int rval = rand() & 0xFF;
+            int rval = Random(256);
             if(rval == 0)
             {
               // Start anim at 1
@@ -290,7 +289,7 @@ void update_board(World *mzx_world)
 
           if(slow_down) break;
 
-          r_val = rand() & 0xFF;
+          r_val = Random(256);
 
           if(r_val >= 20)
           {
@@ -309,7 +308,7 @@ void update_board(World *mzx_world)
         case FIRE:
         {
           // Get a random number
-          int rval = rand() & 0xFF;
+          int rval = Random(256);
           int new_x, new_y;
           // If it's less than 20, don't animate
           if(rval >= 20)
@@ -344,7 +343,7 @@ void update_board(World *mzx_world)
 
           // Otherwise the fire hurts and spreads and stuff, maybe dies
           // Random number says it might die or spread
-          rval = rand() & 0xFF;
+          rval = Random(256);
           // No spread here
           if(rval > 8) break;
           // If it's 1, it should die, if fire doesn't burn forever
@@ -789,7 +788,7 @@ void update_board(World *mzx_world)
               // Mask out direction
               current_param &= 0xFC;
               // Get number between 0 and 7
-              int rval = rand() & 7;
+              int rval = Random(8);
 
               // If it's less than intelligence, make a "smart" move
               if(rval < intelligence)
@@ -799,7 +798,7 @@ void update_board(World *mzx_world)
               else
               {
                 // Get a number between 0 and 3
-                m_dir = rand() & 3;
+                m_dir = Random(4);
               }
 
               // Set direction
@@ -820,7 +819,7 @@ void update_board(World *mzx_world)
           if((current_param & 0x80) || !(current_param & 0x40))
           {
             int intelligence = current_param & 7;
-            int rval = rand() & 7;
+            int rval = Random(8);
             int m_dir;
 
             if(rval < intelligence)
@@ -830,7 +829,7 @@ void update_board(World *mzx_world)
             else
             {
               // Get a number between 0 and 3
-              m_dir = rand() & 3;
+              m_dir = Random(4);
             }
 
             if(move(mzx_world, x, y, m_dir,
@@ -863,7 +862,7 @@ void update_board(World *mzx_world)
             // Get intelligence
             int intelligence = current_param & 0x07;
             // Get a random number 0 through 7
-            int rval = rand() & 7;
+            int rval = Random(8);
             int m_dir;
 
             // See if a "smart move" should be made
@@ -873,7 +872,7 @@ void update_board(World *mzx_world)
             }
             else
             {
-              m_dir = rand() & 3;
+              m_dir = Random(4);
             }
 
             // Move and see if it hit the player
@@ -1003,7 +1002,7 @@ void update_board(World *mzx_world)
           {
             // Get intelligence
             int intelligence = current_param & 0x07;
-            int rval = rand() & 7;
+            int rval = Random(8);
             int m_dir;
             // Clear cycle
             level_param[level_offset] = current_param & 0x3F;
@@ -1015,7 +1014,7 @@ void update_board(World *mzx_world)
             }
             else
             {
-              m_dir = rand() & 3;
+              m_dir = Random(4);
             }
 
             // Try move, did it hit the player?
@@ -1062,7 +1061,7 @@ void update_board(World *mzx_world)
 
               if(!(rval & 0x07))
               {
-                m_dir = rand() & 0x03;
+                m_dir = Random(4);
               }
               else
               {
@@ -1095,7 +1094,7 @@ void update_board(World *mzx_world)
 
           // Shoot; get the fire rate
           fire_rate = current_param & 0x03;
-          rval = rand() & 0x0F;
+          rval = Random(16);
 
           // Should it fire?
           if(rval < fire_rate)
@@ -1125,14 +1124,14 @@ void update_board(World *mzx_world)
             if(!(current_param & 0x20) || (m_dir > 3))
             {
               int intelligence = current_param & 0x07;
-              int rval = rand() & 0x07;
+              int rval = Random(8);
               if(rval < intelligence)
               {
                 m_dir = find_seek(mzx_world, x, y);
               }
               else
               {
-                m_dir = rand() & 0x03;
+                m_dir = Random(4);
               }
             }
 
@@ -1168,7 +1167,7 @@ void update_board(World *mzx_world)
           if(slow_down) break;
 
           intelligence = current_param & 0x07;
-          rval = rand() & 0x07;
+          rval = Random(8);
 
           if(rval < intelligence)
           {
@@ -1176,7 +1175,7 @@ void update_board(World *mzx_world)
           }
           else
           {
-            m_dir = rand() & 3;
+            m_dir = Random(4);
           }
 
           // Hit player and die
@@ -1208,7 +1207,7 @@ void update_board(World *mzx_world)
           // Get the type of thing it shoots
           shoot_type = current_param & 0x18;
           // Get a number between 0 and 31
-          rval = rand() & 0x1F;
+          rval = Random(32);
 
           // Is the random number <= the rate? Also, does it shoot?
           if((rval <= fire_rate) && (shoot_type != 24))
@@ -1246,7 +1245,7 @@ void update_board(World *mzx_world)
           if((current_param & 0x40) || !(current_param & 0x20))
           {
             int intelligence = current_param & 0x07;
-            int rval = rand() & 7;
+            int rval = Random(8);
             int m_dir;
             // Set these flags
             int flags = 128;
@@ -1257,7 +1256,7 @@ void update_board(World *mzx_world)
             }
             else
             {
-              m_dir = rand() & 3;
+              m_dir = Random(4);
             }
             flags |= ((current_param & 0x18) << 2) + 32;
 
@@ -1298,7 +1297,7 @@ void update_board(World *mzx_world)
           else
           {
             int intelligence = (current_param & 0xC0) >> 6;
-            int rval = rand() & 3;
+            int rval = Random(4);
             int m_dir;
 
             // Otherwise, move
@@ -1318,7 +1317,7 @@ void update_board(World *mzx_world)
             }
             else
             {
-              m_dir = rand() & 3;
+              m_dir = Random(4);
             }
 
             // Try to move, does it hit the player, etc.
@@ -1346,7 +1345,7 @@ void update_board(World *mzx_world)
           if(slow_down) break;
 
           intelligence = current_param & 0x07;
-          rval = rand() & 7;
+          rval = Random(8);
 
           if(rval < intelligence)
           {
@@ -1354,7 +1353,7 @@ void update_board(World *mzx_world)
           }
           else
           {
-            m_dir = rand() & 7;
+            m_dir = Random(8);
           }
 
           // Hit player and die
@@ -1386,7 +1385,7 @@ void update_board(World *mzx_world)
           // Get the type of thing it shoots
           shoot_type = current_param & 0x18;
           // Get a number between 0 and 31
-          rval = rand() & 0x1F;
+          rval = Random(32);
 
           // Is the random number <= the rate? Also, does it shoot?
           if((rval <= fire_rate) && (shoot_type != 24))
@@ -1445,7 +1444,7 @@ void update_board(World *mzx_world)
             break;
 
           shoot_rate = current_param & 0x07;
-          rval = rand() & 0x0F;
+          rval = Random(16);
 
           // Shoot now.. maybe
           if(rval <= shoot_rate)
@@ -1453,7 +1452,7 @@ void update_board(World *mzx_world)
             int intelligence = current_param & 0x60;
             int should_shoot = 0;
             int direction = (current_param & 0x18) >> 3;
-            rval = rand() & 0x60;
+            rval = Random(4) << 5;
 
             // Is the player aligned with the gun?
             if(find_seek(mzx_world, x, y) == direction)
@@ -1555,7 +1554,7 @@ void update_board(World *mzx_world)
           level_param[level_offset] = current_param;
 
           intelligence = current_param & 0x03;
-          rval = rand() & 3;
+          rval = Random(4);
 
           if(rval < intelligence)
           {
@@ -1563,7 +1562,7 @@ void update_board(World *mzx_world)
           }
           else
           {
-            m_dir = rand() & 3;
+            m_dir = Random(4);
           }
 
           // Should it run in that direction or the opposite one?
@@ -1768,7 +1767,7 @@ void update_board(World *mzx_world)
           if(!slow_down)
           {
             fire_rate = current_param & 0x07;
-            rval = rand() & 0x20;
+            rval = Random(2) << 5;
             m_dir = find_seek(mzx_world, x, y);
 
             // Fire rate of seven means always shoot
@@ -2719,15 +2718,15 @@ mzx_dir parsedir(World *mzx_world, mzx_dir old_dir, int x, int y,
       break;
 
     case RANDNS:
-      n_dir = rand() & 1;
+      n_dir = Random(2);
       break;
 
     case RANDEW:
-      n_dir = (rand() & 1) + 2;
+      n_dir = (Random(2)) + 2;
       break;
 
     case RANDNE:
-      n_dir = rand() & 2;
+      n_dir = Random(2) << 1;
       break;
 
     case RANDNB:
@@ -2741,7 +2740,7 @@ mzx_dir parsedir(World *mzx_world, mzx_dir old_dir, int x, int y,
       int bl_sum = bln + bls + ble + blw;
       if(bl_sum)
       {
-        n_dir = rand() % bl_sum;
+        n_dir = Random(bl_sum);
         if(!bln)
           n_dir++;
         if(!bls && n_dir)
@@ -2761,7 +2760,7 @@ mzx_dir parsedir(World *mzx_world, mzx_dir old_dir, int x, int y,
       break;
 
     case RANDANY:
-      n_dir = rand() & 3;
+      n_dir = Random(4);
       break;
 
     case FLOW:
@@ -2790,9 +2789,8 @@ mzx_dir parsedir(World *mzx_world, mzx_dir old_dir, int x, int y,
   // Randp
   if(old_dir & RANDP)
   {
-    int rval = rand();
     n_dir ^= 2;
-    if(rval & 1)
+    if(Random(2) == 1)
     {
       n_dir ^= 1;
     }
@@ -2800,7 +2798,7 @@ mzx_dir parsedir(World *mzx_world, mzx_dir old_dir, int x, int y,
 
   if(old_dir & RANDNOT)
   {
-    int rval = (rand() & 3);
+    int rval = Random(4);
     if(n_dir != rval)
     {
       n_dir = rval;
