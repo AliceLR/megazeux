@@ -1,5 +1,7 @@
 # placebo makefile
 
+SUPPRESS_BUILD=1
+
 all:
 	@echo "Please run config.sh before make!"
 	@echo

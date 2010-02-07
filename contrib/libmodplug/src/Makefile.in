@@ -1,0 +1,49 @@
+##
+# libmodplug Makefile fragment
+##
+
+.PHONY: ${libmodplug}_clean
+
+CFLAGS += ${libmodplug_includes}
+CXXFLAGS += ${libmodplug_includes}
+
+libmodplug_base = contrib/libmodplug/src
+libmodplug = ${libmodplug_base}/libmodplug.a
+
+libmodplug_includes = -DHAVE_INTTYPES_H -I${libmodplug_base} \
+                      -I${libmodplug_base}/libmodplug
+
+libmodplug_objs = \
+    ${libmodplug_base}/fastmix.${o} ${libmodplug_base}/load_669.${o} \
+    ${libmodplug_base}/load_amf.${o} ${libmodplug_base}/load_ams.${o} \
+    ${libmodplug_base}/load_dbm.${o} ${libmodplug_base}/load_dmf.${o} \
+    ${libmodplug_base}/load_dsm.${o} ${libmodplug_base}/load_far.${o} \
+    ${libmodplug_base}/load_it.${o} ${libmodplug_base}/load_mdl.${o} \
+    ${libmodplug_base}/load_med.${o} ${libmodplug_base}/load_mod.${o} \
+    ${libmodplug_base}/load_mt2.${o} ${libmodplug_base}/load_mtm.${o} \
+    ${libmodplug_base}/load_okt.${o} ${libmodplug_base}/load_psm.${o} \
+    ${libmodplug_base}/load_ptm.${o} ${libmodplug_base}/load_s3m.${o} \
+    ${libmodplug_base}/load_stm.${o} ${libmodplug_base}/load_ult.${o} \
+    ${libmodplug_base}/load_umx.${o} ${libmodplug_base}/load_wav.${o} \
+    ${libmodplug_base}/load_xm.${o} ${libmodplug_base}/mmcmp.${o} \
+    ${libmodplug_base}/modplug.${o} ${libmodplug_base}/snd_dsp.${o} \
+    ${libmodplug_base}/sndfile.${o} ${libmodplug_base}/snd_flt.${o} \
+    ${libmodplug_base}/snd_fx.${o} ${libmodplug_base}/sndmix.${o} \
+    ${libmodplug_base}/tables.${o}
+
+ifeq (${BUILD_MODPLUG},1)
+${libmodplug}: ${libmodplug_objs}
+ifeq (${V},1)
+	${AR} crus ${libmodplug} ${libmodplug_objs}
+else
+	@echo "  AR      " ${libmodplug}
+	@${AR} crus ${libmodplug} ${libmodplug_objs}
+endif
+else
+${libmodplug}:
+	@echo "--> Building of libmodplug disabled."
+endif
+
+${libmodplug}_clean:
+	@echo "  CLEAN   " ${libmodplug_base}
+	@rm -f ${libmodplug} ${libmodplug_objs}

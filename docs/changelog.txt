@@ -12,6 +12,9 @@ DEVELOPERS
   make warnings (due to coding errors) easier to identify. If you don't like
   the new syntax, or need the command debug, you can build with "make V=1".
 + Updated Win32 builds to use SDL 1.2.12.
++ Rewrote the build system to not use recursive Makefiles, because variable
+  propagation was starting to be a problem, and a recursive design is generally
+  discouraged.
 
 July 4, 2007 - MZX 2.81g
 

@@ -1,0 +1,93 @@
+##
+# MegaZeux Makefile fragment
+##
+
+all: mzx281g
+
+include contrib/gdm2s3m/src/Makefile.in
+include contrib/libmodplug/src/Makefile.in
+
+.PHONY: ${mzx}_clean ${txt2hlp}_clean
+
+CFLAGS += ${mzx_cflags} ${mzx_includes}
+CXXFLAGS += ${mzx_cxxflags} ${mzx_includes}
+
+ifneq (${DEBUG},1)
+mzx = ${TARGET}${BINEXT}
+else
+mzx = ${TARGET}.dbg${BINEXT}
+endif
+
+mzx_base     = src
+mzx_cflags   = -W -Wno-unused-parameter
+mzx_cflags  += -ffast-math -funsigned-char -DMZX_VERSION=\"${VERSTRING}\"
+mzx_includes = -I${mzx_base} -I${PREFIX}/include
+mzx_ldflags  = ${LIBS}
+mzx_cxxflags = ${mzx_cflags}
+
+# FIXME: Sort alphabetically
+mzx_objs = \
+    ${mzx_base}/main.${o} ${mzx_base}/graphics.${o} ${mzx_base}/window.${o} \
+    ${mzx_base}/hexchar.${o} ${mzx_base}/event.${o} ${mzx_base}/error.${o} \
+    ${mzx_base}/helpsys.${o} ${mzx_base}/world.${o} ${mzx_base}/board.${o} \
+    ${mzx_base}/robot.${o} ${mzx_base}/idput.${o} ${mzx_base}/intake.${o} \
+    ${mzx_base}/sfx.${o} ${mzx_base}/scrdisp.${o} ${mzx_base}/data.${o} \
+    ${mzx_base}/game.${o} ${mzx_base}/counter.${o} ${mzx_base}/idarray.${o} \
+    ${mzx_base}/delay.${o} ${mzx_base}/game2.${o} ${mzx_base}/expr.${o} \
+    ${mzx_base}/sprite.${o} ${mzx_base}/runrobo2.${o} ${mzx_base}/mzm.${o} \
+    ${mzx_base}/decrypt.${o} ${mzx_base}/audio.${o} ${mzx_base}/edit.${o} \
+    ${mzx_base}/edit_di.${o} ${mzx_base}/block.${o} ${mzx_base}/char_ed.${o} \
+    ${mzx_base}/pal_ed.${o} ${mzx_base}/param.${o} ${mzx_base}/sfx_edit.${o} \
+    ${mzx_base}/fill.${o} ${mzx_base}/rasm.${o} ${mzx_base}/robo_ed.${o} \
+    ${mzx_base}/configure.${o} ${mzx_base}/fsafeopen.${o} \
+    ${mzx_base}/macro.${o}
+
+# Build the TXT->HLP converter
+txt2hlp_base = src/utils
+txt2hlp = ${txt2hlp_base}/txt2hlp
+txt2hlp_objs = ${txt2hlp_base}/txt2hlp.o
+
+ifeq (${BUILD_MODPLUG},1)
+mzx_ldflags += ${gdm2s3m} ${libmodplug} -lstdc++
+mzx_objs += ${mzx_base}/audio_modplug.${o}
+endif
+
+ifeq (${BUILD_MIKMOD},1)
+mzx_ldflags += -L${PREFIX} -lmikmod
+mzx_objs += ${mzx_base}/audio_mikmod.${o}
+endif
+
+${txt2hlp}: ${txt2hlp_objs}
+ifeq (${V},1)
+	${CC} ${txt2hlp_objs} -o ${txt2hlp}
+	${STRIP} ${txt2hlp}
+else
+	@echo "  LINK    " ${txt2hlp}
+	@${CC} ${txt2hlp_objs} -o ${txt2hlp}
+	@echo "  STRIP   " ${txt2hlp}
+	@${STRIP} ${txt2hlp}
+endif
+
+${mzx}: ${gdm2s3m} ${libmodplug} ${mzx_objs} ${txt2hlp}
+ifeq (${V},1)
+	${CC} ${mzx_objs} ${mzx_ldflags} -o ${mzx}
+else
+	@echo "  LINK    " ${mzx}
+	@${CC} ${mzx_objs} ${mzx_ldflags} -o ${mzx}
+endif
+ifneq (${DEBUG},1)
+ifeq (${V},1)
+	${STRIP} ${mzx}
+else
+	@echo "  STRIP   " ${mzx}
+	@${STRIP} ${mzx}
+endif
+endif
+
+${txt2hlp}_clean:
+	@echo "  CLEAN   " ${txt2hlp_base}
+	@rm -f ${txt2hlp_objs} ${txt2hlp}
+
+${mzx}_clean: ${txt2hlp}_clean
+	@echo "  CLEAN   " ${mzx_base}
+	@rm -f ${mzx_objs} ${mzx}

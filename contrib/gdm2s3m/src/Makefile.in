@@ -1,0 +1,36 @@
+##
+# gdm2s3m Makefile fragment
+##
+
+.PHONY: ${gdm2s3m}_clean
+
+CFLAGS += ${gdm2s3m_cflags} ${gdm2s3m_includes}
+CXXFLAGS += ${gdm2s3m_cflags} ${gdm2s3m_includes}
+
+gdm2s3m_base = contrib/gdm2s3m/src
+gdm2s3m = ${gdm2s3m_base}/libgdm2s3m.a
+
+gdm2s3m_cflags = -std=c99
+gdm2s3m_includes = -I${gdm2s3m_base}
+
+gdm2s3m_objs = \
+    ${gdm2s3m_base}/error.${o} ${gdm2s3m_base}/gdm.${o} \
+    ${gdm2s3m_base}/s3m.${o} ${gdm2s3m_base}/utility.${o} \
+    ${gdm2s3m_base}/gdm2s3m.${o}
+
+ifeq (${BUILD_GDM2S3M},1)
+${gdm2s3m}: ${gdm2s3m_objs}
+ifeq (${V},1)
+	${AR} crus ${gdm2s3m} ${gdm2s3m_objs}
+else
+	@echo "  LINK    " ${gdm2s3m}
+	@${AR} crus ${gdm2s3m} ${gdm2s3m_objs}
+endif
+else
+${gdm2s3m}:
+	@echo "--> Building of GDM2S3M disabled."
+endif
+
+${gdm2s3m}_clean:
+	@echo "  CLEAN   " ${gdm2s3m_base}
+	@rm -f ${gdm2s3m} ${gdm2s3m_objs}

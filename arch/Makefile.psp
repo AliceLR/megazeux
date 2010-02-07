@@ -2,23 +2,17 @@
 # psp makefile generics
 #
 
-all:	subdir package-pbp
-debug:	subdir-debug
-
-#
 # psp toolchain overrides
-#
-
 CC  = psp-gcc
 CXX = psp-g++
 AR  = psp-ar
 
-BINEXT        = .elf
-BINNAME       = ${TARGET}${BINEXT}
+BINEXT = .elf
+BINNAME = ${TARGET}${BINEXT}
 BINNAME_STRIP = ${TARGET}${BINEXT}.strip
 
 # we want to do other things before the strip, so override it.
-STRIP = /bin/true 
+STRIP = /bin/true
 
 # standard libraries
 LIBS += -lc -lpsppower -lvorbisidec

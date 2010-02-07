@@ -2,9 +2,6 @@
 # mingw32 makefile generics
 #
 
-all: subdir
-debug: subdir-debug
-
 # you might want to override this..
 MINGWBASE ?= i586-mingw32msvc-
 

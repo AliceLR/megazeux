@@ -2,17 +2,14 @@
 # linux makefile generics
 #
 
-all: subdir
-debug: subdir-debug
-
 # location of strip (must be defined)
-STRIP    ?= strip --strip-unneeded
+STRIP ?= strip --strip-unneeded
 
 # standard libraries
-LIBS     += -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
+LIBS += -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
 
 # switch locking method
-INCLUDES += -DPTHREAD_MUTEXES
+mzx_includes += -DPTHREAD_MUTEXES
 
 # enable stack protector for debug builds
 ifdef DEBUG

@@ -147,7 +147,7 @@ fi
 #
 # Some architectures define an "install" target, and need these.
 #
-echo "TARGET=`grep TARGET Makefile.in | sed "s/ //g" | cut -d "=" -f 2`" \
+echo "TARGET=`grep TARGET Makefile | sed "s/ //g" | cut -d "=" -f 2`" \
 	>> Makefile.platform
 echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 

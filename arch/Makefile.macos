@@ -2,11 +2,8 @@
 # macos makefile generics
 #
 
-all: subdir
-debug: subdir-debug
-
 # location of strip (must be defined)
 STRIP ?= strip
 
 # standard libraries
-LIBS  += -L${PREFIX}/lib -lvorbis -logg -framework Cocoa
+LIBS += -L${PREFIX}/lib -lvorbis -logg -framework Cocoa

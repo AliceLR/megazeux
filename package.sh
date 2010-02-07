@@ -98,7 +98,7 @@ breakout() {
 #
 # The basename for the source and binary packages.
 #
-TARGET=`grep TARGET Makefile.in | sed "s/ //g" | cut -d "=" -f 2`
+TARGET=`grep TARGET Makefile | sed "s/ //g" | cut -d "=" -f 2`
 
 if [ "$TARGET" == "" ]; then
 	breakout 1
@@ -132,8 +132,7 @@ GP2XPAD="pad.config.gp2x"
 # MegaZeux's build system dependencies; these are packaged in
 # addition to binary deps above to complete the source package.
 #
-BUILD_DEPS="config.sh Makefile Makefile.in package.sh $PSPPAD $GP2XPAD \
-            macosx.zip"
+BUILD_DEPS="config.sh Makefile package.sh $PSPPAD $GP2XPAD macosx.zip"
 
 #
 # These directories are purely for source distributions.
@@ -144,7 +143,7 @@ SUBDIRS="arch contrib debian docs"
 # What we actually care about; the complete sources to MegaZeux. Try to
 # extract crap Exo's left in the wrong place. Feel free to update this.
 #
-SRC="src/*.c src/*.cpp src/*.h src/Makefile src/old src/utils"
+SRC="src/*.c src/*.cpp src/*.h src/Makefile.in src/old src/utils"
 
 #
 # Name of the 7zip extractor. On Windows, this is '7za.exe'. On Linux, this is
