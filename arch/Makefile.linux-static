@@ -11,7 +11,7 @@ VORBIS_LDFLAGS = ${PREFIX}/lib/libvorbisfile.a \
                  ${PREFIX}/lib/libvorbis.a ${PREFIX}/lib/libogg.a
 
 # switch locking method
-mzx_includes += -DPTHREAD_MUTEXES
+mzx_cflags += -DPTHREAD_MUTEXES
 
 # enable stack protector for debug builds
 ifdef DEBUG
