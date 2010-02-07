@@ -1499,7 +1499,7 @@ int assemble_command(int command_number, mzx_command *cmd, void *params[32],
 
 char *assemble_file(char *name, int *size)
 {
-  FILE *input_file = fsafeopen(name, "rt");
+  FILE *input_file = fsafeopen(name, "rt"); // 'rt' is a borland text mode
   char line_buffer[256];
   char bytecode_buffer[256];
   char error_buffer[256];
@@ -1514,7 +1514,7 @@ char *assemble_file(char *name, int *size)
     buffer = (char *)malloc(1024);
     buffer[0] = 0xFF;
 
-    while(fgets(line_buffer, 255, input_file))
+    while(fsafegets(line_buffer, 255, input_file))
     {
       line_buffer[strlen(line_buffer) - 1] = 0;
 

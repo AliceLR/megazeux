@@ -30,6 +30,7 @@
 #include "event.h"
 #include "rasm.h"
 #include "macro.h"
+#include "fsafeopen.h"
 
 void config_set_audio_buffer(config_info *conf, char *name, char *value,
  char *extended_data)
@@ -644,7 +645,7 @@ void set_config_from_file(config_info *conf, char *conf_file_name)
     int extended_buffer_offset;
     char *use_extended_buffer;
 
-    while(fgets(line_buffer_alternate, 255, conf_file))
+    while(fsafegets(line_buffer_alternate, 255, conf_file))
     {
       if(line_buffer_alternate[0] != '#')
       {
@@ -695,7 +696,7 @@ void set_config_from_file(config_info *conf, char *conf_file_name)
           {
             // Extended data line
             use_extended_buffer = extended_buffer;
-            if(fgets(line_buffer_alternate, 255, conf_file))
+            if(fsafegets(line_buffer_alternate, 255, conf_file))
             {
               line_size = strlen(line_buffer_alternate);
               extended_size += line_size;

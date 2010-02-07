@@ -28,6 +28,9 @@ USERS
   convoluted 3D drawing commands and replacing them with 2D ones. Reduced the
   quad count by using an intermediary 80x25 texture. MegaZeux now depends on
   fewer GL features. [LogiCow]
++ Introduced an "fsafegets" to work around problems where robots exported by
+  a Windows version of MegaZeux would not load on other platforms. This was
+  due to differing EOL style and broke at least one game (Termination).
 
 DEVELOPERS
 

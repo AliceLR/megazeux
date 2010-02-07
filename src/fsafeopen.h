@@ -38,6 +38,7 @@ enum
 int fsafetest(const char *path, char *newpath);
 int fsafetranslate(const char *path, char *newpath);
 FILE *fsafeopen(const char *path, const char *mode);
+char *fsafegets(char *s, int size, FILE *stream);
 
 __M_END_DECLS
 

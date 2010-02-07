@@ -394,3 +394,24 @@ FILE *fsafeopen(const char *path, const char *mode)
   // try opening the file
   return fopen(newpath, mode);
 }
+
+/* It's conceivable that on some platforms (like Linux, or Macintosh classic),
+ * fgets may return a string that still contains "EOL" characters considered
+ * by another platform. For example, if a file is written out by Windows,
+ * and a Linux user reads it, the buffers will not remove the \r character.
+ * 
+ * This function provides a "safe" wrapper that removes all type of line
+ * endings from the second last character in the buffer, and should work at
+ * least until somebody invents a new three byte string terminator ;-(
+ */
+char *fsafegets(char *s, int size, FILE *stream)
+{
+  char *ret = fgets(s, size, stream);
+  if (ret) {
+    int len = strlen(ret);
+    if (len > 0 && (s[len - 1] == '\r' || s[len - 1] == '\n'))
+      s[len - 1] = '\0';
+  }
+  return ret;
+}
+
