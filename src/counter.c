@@ -1574,8 +1574,8 @@ void mousex_write(World *mzx_world, function_counter *counter,
 void mousey_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  if(value > 25)
-    value = 25;
+  if(value > 24)
+    value = 24;
 
   if(value < 0)
     value = 0;

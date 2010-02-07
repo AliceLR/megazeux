@@ -13,6 +13,9 @@ USERS
   dropping the bugfix, I just can't immediately see what's wrong.
 + Fixed a bug where setting the viewport to negative coordinates would crash
   MegaZeux. There was code to handle this, but it was wrong.
++ Fixed a bug that permitted the mouse y coordinate to be warped to row 25,
+  which does not exist. This bug caused some of the renderers to crash, and
+  the software renderer to draw in memory it did not possess.
 
 DEVELOPERS
 
