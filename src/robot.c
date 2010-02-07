@@ -658,20 +658,6 @@ static Label *find_zapped_label(Robot *cur_robot, char *name)
   return NULL;
 }
 
-static int find_zapped_label_position(Robot *cur_robot, char *name)
-{
-  Label *cur_label = find_zapped_label(cur_robot, name);
-
-  if(cur_label)
-  {
-    return cur_label->position;
-  }
-  else
-  {
-    return -1;
-  }
-}
-
 // Returns 1 if found, first is the first robot in the list,
 // last is the last. If not found, first and last are the position to place
 // into.
@@ -2664,90 +2650,6 @@ int duplicate_sensor(Board *src_board, Sensor *cur_sensor)
   return dest_id;
 }
 
-// These aren't really needed right now, I think, but they're there...
-
-static int get_robot_board_offset(Board *src_board, Robot *cur_robot)
-{
-  int x = cur_robot->xpos;
-  int y = cur_robot->ypos;
-  int board_width = src_board->board_width;
-  int offset = x + (y * board_width);
-  char *level_id = src_board->level_id;
-  char *level_param = src_board->level_param;
-  Robot **robot_list = src_board->robot_list;
-  mzx_thing d_id = (mzx_thing)level_id[offset];
-
-  if(is_robot(d_id))
-  {
-    int idx = level_param[offset];
-    if(robot_list[idx] == cur_robot)
-      return offset;
-  }
-  else
-  {
-    int board_size = board_width * (src_board->board_height);
-
-    for(offset = 0; offset < board_size; offset++)
-    {
-      d_id = (mzx_thing)level_id[offset];
-      if(is_robot(d_id))
-      {
-        int idx = level_param[offset];
-        if(robot_list[idx] == cur_robot)
-          return offset;
-      }
-    }
-  }
-
-  return -1;
-}
-
-static int get_scroll_board_offset(Board *src_board, Scroll *cur_scroll)
-{
-  char *level_id = src_board->level_id;
-  char *level_param = src_board->level_param;
-  Scroll **scroll_list = src_board->scroll_list;
-  int offset;
-  mzx_thing d_id;
-  int board_size = src_board->board_width * src_board->board_height;
-
-  for(offset = 0; offset < board_size; offset++)
-  {
-    d_id = (mzx_thing)level_id[offset];
-    if(is_signscroll(d_id))
-    {
-      int idx = level_param[offset];
-      if(scroll_list[idx] == cur_scroll)
-        return offset;
-    }
-  }
-
-  return -1;
-}
-
-static int get_sensor_board_offset(Board *src_board, Sensor *cur_sensor)
-{
-  char *level_id = src_board->level_id;
-  char *level_param = src_board->level_param;
-  Sensor **sensor_list = src_board->sensor_list;
-  int offset;
-  mzx_thing d_id;
-  int board_size = src_board->board_width * src_board->board_height;
-
-  for(offset = 0; offset < board_size; offset++)
-  {
-    d_id = (mzx_thing)level_id[offset];
-    if(d_id == SENSOR)
-    {
-      int idx = level_param[offset];
-      if(sensor_list[idx] == cur_sensor)
-        return offset;
-    }
-  }
-
-  return -1;
-}
-
 // This function will remove any null entries in the object lists
 // (for robots, scrolls, and sensors), and adjust all of the board
 // params to compensate. This should always be used before saving
@@ -2916,13 +2818,6 @@ void optimize_null_objects(Board *src_board)
   free(sensor_id_translation_list);
 }
 
-static Robot *create_blank_robot(int x, int y)
-{
-  Robot *cur_robot = (Robot *)malloc(sizeof(Robot));
-  create_blank_robot_direct(cur_robot, x, y);
-  return cur_robot;
-}
-
 void create_blank_robot_direct(Robot *cur_robot, int x, int y)
 {
   char *program = (char *)malloc(2);
@@ -2942,13 +2837,6 @@ void create_blank_robot_direct(Robot *cur_robot, int x, int y)
   cur_robot->used = 1;
 }
 
-static Scroll *create_blank_scroll()
-{
-  Scroll *cur_scroll = (Scroll *)malloc(sizeof(Scroll));
-  create_blank_scroll_direct(cur_scroll);
-  return cur_scroll;
-}
-
 void create_blank_scroll_direct(Scroll *cur_scroll)
 {
   char *message = (char *)malloc(3);
@@ -2962,13 +2850,6 @@ void create_blank_scroll_direct(Scroll *cur_scroll)
   message[0] = 0x01;
   message[1] = '\n';
   message[2] = 0x00;
-}
-
-static Sensor *create_blank_sensor()
-{
-  Sensor *cur_sensor = (Sensor *)malloc(sizeof(Sensor));
-  create_blank_sensor_direct(cur_sensor);
-  return cur_sensor;
 }
 
 void create_blank_sensor_direct(Sensor *cur_sensor)
