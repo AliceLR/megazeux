@@ -16,6 +16,7 @@ usage() {
 	echo "  macos          Macintosh OS X (not Classic)"
 	echo "  linux-static   Linux (statically linked)"
 	echo "  psp            Experimental PSP port"
+	echo "  gp2x           Experimental GP2X port"
 	echo "  mingw32        Use MinGW32 on Linux, to build for win32"
 	echo
 	echo "Supported <option> values:"
