@@ -1820,14 +1820,14 @@ static void gl2_update_colors(SDL_Color *palette, Uint32 count)
 // Optimized for packed-pixel 4:2:2 YUV [No height multiplier]
 
 static void update_screen_yuv(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h,
-                              Uint32 y1)
+                              Uint32 y0mask, Uint32 y1mask)
 {
   Uint32 *dest;
   Uint32 *ldest, *ldest2;
   Uint32 cb_bg;
   Uint32 cb_fg;
-  Uint32 y_bg;
-  Uint32 y_fg;
+  Uint32 cb_mix;
+  Uint32 ymask = ~(y0mask | y1mask);
   char_element *src = graphics.text_video;
   Uint8 *char_ptr;
   Uint32 char_colors[4];
@@ -1860,17 +1860,12 @@ static void update_screen_yuv(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h,
         // Fill in background color?
         cb_bg = graphics.flat_intensity_palette[src->bg_color];
         cb_fg = graphics.flat_intensity_palette[src->fg_color];
-        y_bg = ((Uint8*)(graphics.flat_intensity_palette + src->bg_color))[y1];
-        y_fg = ((Uint8*)(graphics.flat_intensity_palette + src->fg_color))[y1];
+        cb_mix = (((cb_bg & ymask) >> 1) + ((cb_fg & ymask) >> 1)) & ymask;
 
         char_colors[0] = cb_bg;
-        char_colors[1] = cb_bg;
-        char_colors[2] = cb_fg;
+        char_colors[1] = cb_mix | (cb_bg & y0mask) | (cb_fg & y1mask);
+        char_colors[2] = cb_mix | (cb_fg & y0mask) | (cb_bg & y1mask);
         char_colors[3] = cb_fg;
-        ((Uint8*)(char_colors + 0))[y1] = y_bg;
-        ((Uint8*)(char_colors + 1))[y1] = y_fg;
-        ((Uint8*)(char_colors + 2))[y1] = y_bg;
-        ((Uint8*)(char_colors + 3))[y1] = y_fg;
 
         // Fill in foreground color?
         char_ptr = graphics.charset + (src->char_value * 14);
@@ -2196,13 +2191,27 @@ static void yuv2_update_screen(void)
 
   if (graphics.overlay->format == SDL_YUY2_OVERLAY)
   {
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
     update_screen_yuv((Uint32*)graphics.overlay->pixels[0],
-     graphics.overlay->pitches[0], YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT, 2);
+     graphics.overlay->pitches[0], YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT,
+     0xFF000000, 0x0000FF00);
   }
   else
   {
     update_screen_yuv((Uint32*)graphics.overlay->pixels[0],
-     graphics.overlay->pitches[0], YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT, 3);
+     graphics.overlay->pitches[0], YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT,
+     0x00FF0000, 0x000000FF);
+#else
+    update_screen_yuv((Uint32*)graphics.overlay->pixels[0],
+     graphics.overlay->pitches[0], YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT,
+     0x000000FF, 0x00FF0000);
+  }
+  else
+  {
+    update_screen_yuv((Uint32*)graphics.overlay->pixels[0],
+     graphics.overlay->pitches[0], YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT,
+     0x0000FF00, 0xFF000000);
+#endif
   }
 
   SDL_UnlockYUVOverlay(graphics.overlay);
