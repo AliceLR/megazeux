@@ -8,8 +8,8 @@
 
 .PHONY: clean
 
-VERSION=2.82
-TARGET=mzx282
+VERSION=SVN
+TARGET=mzxsvn
 
 all: mzx
 
