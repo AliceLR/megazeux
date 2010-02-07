@@ -32,16 +32,20 @@ typedef struct
   void (*reg)(graphics_data *);
 } renderer_data;
 
+#if defined(CONFIG_SOFTWARE)
 void render_soft_register(graphics_data *graphics);
-#if defined(CONFIG_OPENGL) && !defined(PSP_BUILD)
+#endif
+#if defined(CONFIG_OPENGL)
 void render_gl1_register(graphics_data *graphics);
 void render_gl2_register(graphics_data *graphics);
 #endif
-#if !defined(PSP_BUILD)
+#if defined(CONFIG_OVERLAY)
 void render_yuv1_register(graphics_data *graphics);
 void render_yuv2_register(graphics_data *graphics);
 #endif
+#if defined(CONFIG_GP2X)
 void render_gp2x_register(graphics_data *graphics);
+#endif
 
 __M_END_DECLS
 
