@@ -11,9 +11,9 @@ CONFIGURATION
 
 The configuration (config.txt) must be modified in the following ways:
 
-  - "video_output = software"	Other renderers will fail
-  - "audio_buffer = 128"	Improves performance
-  - "force_bpp = 8"		Improves performance
+  - "video_output = software"   Other renderers will fail
+  - "audio_buffer = 128"        Improves performance
+  - "force_bpp = 8"             Improves performance
 
 Additionally, pad.config must be over-written with pad.config.gp2x. This file
 contains necessary pad mappings for the GP2X controls (the original is for the
@@ -21,13 +21,21 @@ PSP platform).
 
 COMPILATION
 
-A suitable cross-compiler for ARM (which may be GP2X specific) must be
+A suitable cross-compiler for ARM (which may be `devkitPro' for GP2X) must be
 installed and added to your environment's PATH variable. For example, if you
 have `arm-linux-gcc' in /usr/arm-linux/bin, you should do the following:
 
   export PATH=/usr/arm-linux/bin:$PATH
 
-Prior to running config.sh. The configuration script (config.sh) for the GP2X
+It is now necessary to compile `SDL', `libmikmod', `tremor' and `glibc'.
+Compilation of these libraries is not covered in this document.
+
+  http://libsdl.org/ (1.2.10 or later)
+  http://mikmod.raphnet.net/ (3.1.11 or later)
+  http://svn.xiph.org/trunk/Tremor/
+  http://www.gnu.org/software/libc/
+
+Now you must run `config.sh'. The configuration script (config.sh) for the GP2X
 platform assumes that --prefix will specify the path to the GP2X SDK. For
 example, if you have the SDK installed to /home/alistair/bin/gp2x-sdk, you
 should specify:
