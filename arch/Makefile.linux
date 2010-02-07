@@ -12,8 +12,8 @@ mzx_cflags += -DPTHREAD_MUTEXES
 
 # enable stack protector for debug builds
 ifdef DEBUG
-CFLAGS   += -fstack-protector-all
-CXXFLAGS += -fstack-protector-all
+ARCH_CFLAGS   += -fstack-protector-all
+ARCH_CXXFLAGS += ${ARCH_CFLAGS}
 endif
 
 # linux os specific install target

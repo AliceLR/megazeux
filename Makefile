@@ -26,12 +26,12 @@ VORBIS_CFLAGS  ?= -I${PREFIX}/include
 VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
 
 ifeq (${DEBUG},1)
-CFLAGS    = -g -Wall -std=gnu99 -DDEBUG
-CXXFLAGS  = -g -Wall -DDEBUG
+CFLAGS    = -g -Wall -std=gnu99 -DDEBUG ${ARCH_CFLAGS}
+CXXFLAGS  = -g -Wall -DDEBUG ${ARCH_CXXFLAGS}
 o         = dbg.o
 else
-CFLAGS   += -O2 -Wall -std=gnu99
-CXXFLAGS += -O2 -Wall
+CFLAGS   += -O2 -Wall -std=gnu99 ${ARCH_CFLAGS}
+CXXFLAGS += -O2 -Wall ${ARCH_CXXFLAGS}
 o         = o
 endif
 
