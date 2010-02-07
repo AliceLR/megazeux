@@ -24,9 +24,9 @@ createpspzip() {
 }
 
 #
-# createzip /path/to/SDL.dll
+# createzip_dynamic_sdl </path/to/SDL.dll> <POSTFIX>
 #
-createzip() {
+createzip_dynamic_sdl() {
 	WINDIB_BAT="windib.bat"
 
 	#
@@ -55,6 +55,35 @@ createzip() {
 	# Remove SDL, and the bat file.
 	#
 	rm -f SDL.dll $WINDIB_BAT
+}
+
+#
+# createzip_dynamic_sdl <POSTFIX>
+#
+createzip_static_sdl() {
+	WINDIB_BAT="windib.bat"
+
+	#
+	# Generate a suitable windib.bat
+	#
+	echo "set SDL_VIDEODRIVER=windib" > $WINDIB_BAT &&
+	echo "start $TARGET.exe"         >> $WINDIB_BAT &&
+
+	#
+	# pack the EXE
+	#
+	( $UPX --best $TARGET.exe || echo "UPX isn't available, skipped." ) &&
+
+	#
+	# Create the binary package.
+	#
+	$SEVENZIP a -tzip dist/$TARGET-$1.zip \
+		$BINARY_DEPS $DOCS $TARGET.exe $WINDIB_BAT &&
+
+	#
+	# Remove SDL, and the bat file.
+	#
+	rm -f $WINDIB_BAT
 }
 
 #
@@ -238,7 +267,7 @@ fi
 #
 if [ "$2" = "win32" ]; then
 	LIBSDL="`sdl-config --prefix`/bin/SDL.dll"
-	createzip $LIBSDL x86
+	createzip_dynamic_sdl $LIBSDL x86
 	exit
 fi
 
@@ -246,8 +275,7 @@ fi
 # Windows x64, using ZIP compression via 7ZIP compressor
 #
 if [ "$2" = "win64" ]; then
-	LIBSDL="`sdl-config --prefix`/bin/SDL.dll"
-	createzip $LIBSDL x64
+	createzip_static_sdl x64
 	exit
 fi
 
