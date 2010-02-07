@@ -60,12 +60,17 @@ endif
 ${txt2hlp}: ${txt2hlp_objs}
 ifeq (${V},1)
 	${CC} ${txt2hlp_objs} -o ${txt2hlp}
-	${STRIP} ${txt2hlp}
 else
 	@echo "  LINK    " ${txt2hlp}
 	@${CC} ${txt2hlp_objs} -o ${txt2hlp}
+endif
+ifneq (${DEBUG},1)
+ifeq (${V},1)
+	${STRIP} ${txt2hlp}
+else
 	@echo "  STRIP   " ${txt2hlp}
 	@${STRIP} ${txt2hlp}
+endif
 endif
 
 ${mzx}: ${gdm2s3m} ${libmodplug} ${mzx_objs} ${txt2hlp}
