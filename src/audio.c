@@ -27,18 +27,11 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#ifdef USE_TREMOR
-#include <tremor/ivorbiscodec.h>
-#include <tremor/ivorbisfile.h>
-#else
-#include <vorbis/codec.h>
-#include <vorbis/vorbisfile.h>
-#endif
-
 #ifdef PTHREAD_MUTEXES
 #include "pthread.h"
 #endif
 
+#include "config.h"
 #include "audio.h"
 #include "SDL.h"
 #include "sfx.h"
@@ -46,6 +39,15 @@
 #include "configure.h"
 #include "fsafeopen.h"
 #include "delay.h"
+
+#ifdef CONFIG_TREMOR
+#include <tremor/ivorbiscodec.h>
+#include <tremor/ivorbisfile.h>
+#else
+#include <vorbis/codec.h>
+#include <vorbis/vorbisfile.h>
+#endif
+
 
 #if defined(CONFIG_MODPLUG) && defined(CONFIG_MIKMOD)
 #error Can only have one module system enabled concurrently!
@@ -406,7 +408,7 @@ static Uint32 vorbis_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
   {
     read_wanted -= read_len;
 
-#ifdef USE_TREMOR
+#ifdef CONFIG_TREMOR
     read_len =
      ov_read(&(v_stream->vorbis_file_handle), read_buffer,
      read_wanted, &current_section);
@@ -426,7 +428,7 @@ static Uint32 vorbis_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
 
         if(read_wanted)
         {
-#ifdef USE_TREMOR
+#ifdef CONFIG_TREMOR
           read_len =
            ov_read(&(v_stream->vorbis_file_handle), read_buffer,
            read_wanted, &current_section);

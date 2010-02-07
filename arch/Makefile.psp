@@ -16,10 +16,6 @@ BINNAME_STRIP = ${TARGET}${BINEXT}.strip
 # we want to do other things before the strip, so override it
 STRIP = /bin/true
 
-# psp overrides for vorbis
-VORBIS_CFLAGS  = -DUSE_TREMOR
-VORBIS_LDFLAGS = -lvorbisidec
-
 # flag PSP build and link in c/psppower
 mzx_cflags  += -G0 -I${PREFIX}/sdk/include -DPSP_BUILD
 mzx_ldflags += -lc -lpsppower

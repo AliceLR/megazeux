@@ -23,7 +23,11 @@ SDL_CFLAGS  ?= `sdl-config --cflags`
 SDL_LDFLAGS ?= `sdl-config --libs`
 
 VORBIS_CFLAGS  ?= -I${PREFIX}/include
+ifeq (${TREMOR},0)
 VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
+else
+VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisidec
+endif
 
 ifeq (${LIBPNG},1)
 LIBPNG_CFLAGS ?= `libpng12-config --cflags`

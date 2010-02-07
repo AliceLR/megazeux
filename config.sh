@@ -56,6 +56,9 @@ usage() {
 	echo "  --disable-audio      Disables all audio (sound + music)."
 	echo "  --enable-audio       Audio (sound + music) is enabled (default)."
 	echo
+	echo "  --enable-tremor      Switches libvorbis for libtremor."
+	echo "  --disable-tremor     Switches libvorbis for libtremor (default)."
+	echo
 	echo "e.g.: ./config.sh --platform linux --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
 	echo "e.g.: ./config.sh --platform win32"
@@ -82,6 +85,7 @@ MODPLUG="true"
 MIKMOD="false"
 LIBPNG="true"
 AUDIO="true"
+TREMOR="false"
 
 #
 # User may override above settings
@@ -138,6 +142,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-audio" ] && AUDIO="false"
 	[ "$1" = "--enable-audio" ] && AUDIO="true"
+
+	[ "$1" = "--disable-tremor" ] && TREMOR="false"
+	[ "$1" = "--enable-tremor" ] && TREMOR="true"
 
 	shift
 done
@@ -299,6 +306,14 @@ if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
 fi
 
 #
+# Force-enable tremor on PSP/GP2X
+#
+if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" ]; then
+	echo "Force-switching ogg/vorbis to tremor."
+	TREMOR="true"
+fi
+
+#
 # Force-disable modplug/mikmod if audio is disabled
 #
 if [ "$AUDIO" = "false" ]; then
@@ -392,6 +407,18 @@ if [ "$LIBPNG" = "true" ]; then
 else
 	echo "PNG screendump support disabled."
 	echo "LIBPNG=0" >> Makefile.platform
+fi
+
+#
+# Handle libtremor support, if enabled
+#
+if [ "$TREMOR" = "true" ]; then
+	echo "Using tremor in place of ogg/vorbis."
+	echo "#define CONFIG_TREMOR" >> src/config.h
+	echo "TREMOR=1" >> Makefile.platform
+else
+	echo "Not using tremor in place of ogg/vorbis."
+	echo "TREMOR=0" >> Makefile.platform
 fi
 
 echo
