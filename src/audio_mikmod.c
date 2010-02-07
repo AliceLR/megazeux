@@ -234,31 +234,8 @@ void init_mikmod(config_info *conf)
   md_reverb = 0;
   md_mode |= DMODE_HQMIXER|DMODE_SOFT_MUSIC|DMODE_SURROUND;
 
-  CHAR *list;
-
-  list = MikMod_InfoDriver();
-  if (list)
-  {
-    free(list);
-  }
-  else
-  {
-    MikMod_RegisterDriver(&drv_nos);
-  }
-
-  list = MikMod_InfoLoader();
-  if (list)
-  {
-    free(list);
-  }
-  else
-  {
-    MikMod_RegisterLoader(&load_it);
-    MikMod_RegisterLoader(&load_xm);
-    MikMod_RegisterLoader(&load_s3m);
-    MikMod_RegisterLoader(&load_mod);
-    MikMod_RegisterLoader(&load_m15);
-  }
+  MikMod_RegisterDriver(&drv_nos);
+  MikMod_RegisterAllLoaders();
 
   // FIXME: Should break a lot more here
   if (MikMod_Init(NULL))
