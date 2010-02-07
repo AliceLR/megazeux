@@ -1,0 +1,64 @@
+Modplug generates a few warnings through dubious use of the C++ language.
+
+Silence these warnings in a elegant (though slightly slower) way.
+
+--ajs.
+
+Index: libmodplug/src/load_ptm.cpp
+===================================================================
+RCS file: /cvsroot/megazeux/megazeux2/contrib/libmodplug/src/load_ptm.cpp,v
+retrieving revision 1.1
+diff -u -d -r1.1 load_ptm.cpp
+--- libmodplug/src/load_ptm.cpp	23 May 2005 19:11:47 -0000	1.1
++++ libmodplug/src/load_ptm.cpp	1 May 2007 13:26:03 -0000
+@@ -115,10 +115,19 @@
+ 		{
+ 			UINT smpflg = RS_PCM8D;
+ 			DWORD samplepos;
+-			pins->nLength = bswapLE32(*(LPDWORD)(psmp->length));
+-			pins->nLoopStart = bswapLE32(*(LPDWORD)(psmp->loopbeg));
+-			pins->nLoopEnd = bswapLE32(*(LPDWORD)(psmp->loopend));
+-			samplepos = bswapLE32(*(LPDWORD)(&psmp->fileofs));
++			DWORD tmp;
++
++			// memcpy mess required to work around type-punning
++			// warnings (psmp->XX is an array of two shorts).
++			memcpy(&tmp, psmp->length, sizeof(DWORD));
++			pins->nLength = bswapLE32(tmp);
++			memcpy(&tmp, psmp->loopbeg, sizeof(DWORD));
++			pins->nLoopStart = bswapLE32(tmp);
++			memcpy(&tmp, psmp->loopend, sizeof(DWORD));
++			pins->nLoopEnd = bswapLE32(tmp);
++			memcpy(&tmp, psmp->fileofs, sizeof(DWORD));
++			samplepos = bswapLE32(tmp);
++
+ 			if (psmp->sampletype & 4) pins->uFlags |= CHN_LOOP;
+ 			if (psmp->sampletype & 8) pins->uFlags |= CHN_PINGPONGLOOP;
+ 			if (psmp->sampletype & 16)
+Index: libmodplug/src/sndfile.cpp
+===================================================================
+RCS file: /cvsroot/megazeux/megazeux2/contrib/libmodplug/src/sndfile.cpp,v
+retrieving revision 1.6
+diff -u -d -r1.6 sndfile.cpp
+--- libmodplug/src/sndfile.cpp	19 Apr 2007 02:26:03 -0000	1.6
++++ libmodplug/src/sndfile.cpp	1 May 2007 13:26:10 -0000
+@@ -1181,7 +1181,8 @@
+ 			short int *pSample = (short int *)pIns->pSample;
+ 			for (UINT j=0; j<len; j+=2)
+ 			{
+-			        *pSample++ = bswapLE16(*pSample);
++			        *pSample = bswapLE16(*pSample);
++				pSample++;
+ 			}
+ 		}
+ 		break;
+@@ -1372,7 +1373,8 @@
+ 			WORD *pSampleW = (WORD *)pIns->pSample;
+ 			for (UINT j=0; j<len; j+=2)   // swaparoni!
+ 			{
+-			        *pSampleW++ = bswapLE16(*pSampleW);
++			        *pSampleW = bswapLE16(*pSampleW);
++				pSampleW++;
+ 			}
+ 		}
+ 		break;
