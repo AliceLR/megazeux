@@ -9,7 +9,6 @@
 #ifndef _STDAFX_H_
 #define _STDAFX_H_
 
-
 #ifdef MSC_VER
 
 #pragma warning (disable:4201)
@@ -37,6 +36,17 @@ inline void ProcessPlugins(int n) {}
 #include <stdio.h>
 #include <string.h>
 
+#ifdef __WIN32__
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+#define sleep Sleep
+
+#else // !__WIN32__
+
+#include <unistd.h> // for sleep()
+
 typedef int8_t CHAR;
 typedef uint8_t UCHAR;
 typedef uint8_t* PUCHAR;
@@ -59,6 +69,16 @@ typedef const char* LPCSTR;
 typedef void* PVOID;
 typedef void VOID;
 
+#define lstrcpyn	strncpy
+#define lstrcpy		strcpy
+#define lstrcmp		strcmp
+#define wsprintf	sprintf
+#define strnicmp(a,b,c)	strncasecmp(a,b,c)
+
+#define GHND		0
+
+#endif // !__WIN32__
+
 inline LONG MulDiv (long a, long b, long c)
 {
   // if (!c) return 0;
@@ -68,13 +88,8 @@ inline LONG MulDiv (long a, long b, long c)
 #define MODPLUG_NO_FILESAVE
 #define NO_AGC
 #define LPCTSTR LPCSTR
-#define lstrcpyn strncpy
-#define lstrcpy strcpy
-#define lstrcmp strcmp
 #define WAVE_FORMAT_PCM 1
 //#define ENABLE_EQ
-
-#define  GHND   0
 
 inline int8_t * GlobalAllocPtr(unsigned int, size_t size)
 {
@@ -88,9 +103,6 @@ inline void ProcessPlugins(int n) {}
 
 #define GlobalFreePtr(p) free((void *)(p))
 
-#define strnicmp(a,b,c)		strncasecmp(a,b,c)
-#define wsprintf			sprintf
-
 #ifndef FALSE
 #define FALSE	false
 #endif
@@ -102,6 +114,3 @@ inline void ProcessPlugins(int n) {}
 #endif // MSC_VER
 
 #endif
-
-
-
