@@ -1791,7 +1791,8 @@ void edit_world(World *mzx_world)
               int fade;
               // Load world curr_file
               end_module();
-              reload_world(mzx_world, current_world, &fade);
+              if (reload_world(mzx_world, current_world, &fade))
+                create_blank_world(mzx_world);
 
               mzx_world->current_board_id = mzx_world->first_board;
               mzx_world->current_board =
@@ -3034,7 +3035,13 @@ void edit_world(World *mzx_world)
 
             mzx_world->editing = 0;
 
-            reload_world(mzx_world, "__test.mzx", &fade);
+            if (reload_world(mzx_world, "__test.mzx", &fade))
+            {
+              create_blank_world(mzx_world);
+              current_board_id = mzx_world->current_board_id;
+              modified = 0;
+            }
+
             scroll_color = 15;
             mzx_world->current_board_id = current_board_id;
             mzx_world->current_board =

@@ -359,14 +359,15 @@ void title_screen(World *mzx_world)
               // Reload original file
               if(!stat(curr_file, &file_info))
               {
-                reload_world(mzx_world, curr_file, &fade);
-
-                src_board = mzx_world->current_board;
-                load_module(src_board->mod_playing);
-                strcpy(mzx_world->real_mod_playing,
-                 src_board->mod_playing);
-                set_counter(mzx_world, "TIME",
-                 src_board->time_limit, 0);
+                if(!reload_world(mzx_world, curr_file, &fade))
+                {
+                  src_board = mzx_world->current_board;
+                  load_module(src_board->mod_playing);
+                  strcpy(mzx_world->real_mod_playing,
+                   src_board->mod_playing);
+                  set_counter(mzx_world, "TIME",
+                   src_board->time_limit, 0);
+                }
               }
               else
               {
@@ -416,49 +417,57 @@ void title_screen(World *mzx_world)
             set_config_from_file(&(mzx_world->conf), "game.cnf");
             chdir(current_dir);
 
-            reload_world(mzx_world, curr_file, &fade);
+            if(!reload_world(mzx_world, curr_file, &fade))
+            {
+              mzx_world->current_board_id = mzx_world->first_board;
+              mzx_world->current_board =
+               mzx_world->board_list[mzx_world->current_board_id];
+              src_board = mzx_world->current_board;
 
-            mzx_world->current_board_id = mzx_world->first_board;
-            mzx_world->current_board =
-             mzx_world->board_list[mzx_world->current_board_id];
-            src_board = mzx_world->current_board;
+              send_robot_def(mzx_world, 0, 11);
+              send_robot_def(mzx_world, 0, 10);
 
-            send_robot_def(mzx_world, 0, 11);
-            send_robot_def(mzx_world, 0, 10);
+              if(strcmp(src_board->mod_playing, "*") &&
+               strcmp(src_board->mod_playing, old_mod_playing))
+                load_module(src_board->mod_playing);
 
-            if(strcmp(src_board->mod_playing, "*") &&
-             strcmp(src_board->mod_playing, old_mod_playing))
-              load_module(src_board->mod_playing);
+              strcpy(mzx_world->real_mod_playing,
+               src_board->mod_playing);
 
-            strcpy(mzx_world->real_mod_playing,
-             src_board->mod_playing);
+              set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
-            set_counter(mzx_world, "TIME", src_board->time_limit, 0);
+              clear_sfx_queue();
+              find_player(mzx_world);
+              mzx_world->player_restart_x = mzx_world->player_x;
+              mzx_world->player_restart_y = mzx_world->player_y;
+              vquick_fadeout();
 
-            clear_sfx_queue();
-            find_player(mzx_world);
-            mzx_world->player_restart_x = mzx_world->player_x;
-            mzx_world->player_restart_y = mzx_world->player_y;
-            vquick_fadeout();
-
-            play_game(mzx_world, 1);
-            // Done playing- load world again
-            // Already faded out from play_game()
-            end_module();
-            // Clear screen
-            clear_screen(32, 7);
-            // Palette
-            default_palette();
-            insta_fadein();
-            // Reload original file
-            reload_world(mzx_world, curr_file, &fade);
-            src_board = mzx_world->current_board;
-            load_module(src_board->mod_playing);
-            strcpy(mzx_world->real_mod_playing,
-             src_board->mod_playing);
-            set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-            vquick_fadeout();
-            fadein = 1;
+              play_game(mzx_world, 1);
+              // Done playing- load world again
+              // Already faded out from play_game()
+              end_module();
+              // Clear screen
+              clear_screen(32, 7);
+              // Palette
+              default_palette();
+              insta_fadein();
+              // Reload original file
+              if(!reload_world(mzx_world, curr_file, &fade))
+              {
+                src_board = mzx_world->current_board;
+                load_module(src_board->mod_playing);
+                strcpy(mzx_world->real_mod_playing,
+                 src_board->mod_playing);
+                set_counter(mzx_world, "TIME", src_board->time_limit, 0);
+              }
+              vquick_fadeout();
+              fadein = 1;
+            }
+            else
+            {
+              end_module();
+              clear_screen(32, 7);
+            }
           }
           break;
         }
@@ -529,13 +538,15 @@ void title_screen(World *mzx_world)
             // Reload original file
             if(!stat(curr_file, &file_info))
             {
-              reload_world(mzx_world, curr_file, &fade);
-              src_board = mzx_world->current_board;
-              load_module(src_board->mod_playing);
-              strcpy(mzx_world->real_mod_playing,
-               src_board->mod_playing);
-              set_counter(mzx_world, "TIME",
-               src_board->time_limit, 0);
+              if(!reload_world(mzx_world, curr_file, &fade))
+              {
+                src_board = mzx_world->current_board;
+                load_module(src_board->mod_playing);
+                strcpy(mzx_world->real_mod_playing,
+                 src_board->mod_playing);
+                set_counter(mzx_world, "TIME",
+                 src_board->time_limit, 0);
+              }
             }
             else
             {
