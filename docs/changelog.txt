@@ -22,7 +22,6 @@ USERS
 + Fixed a bug where an ENERGIZER item or use of the INVINCO counter would
   cause the original player color to be corrupted at the end of the colour
   blitz.
-+ Fixed a bug where WALK [dir] would not end a cycle.
 + Fixed a long-standing bug where set "$string" to "FWRITEn" would be
   cheerfully ignored.
 + Fixed a bug where a corrupt robot list could crash MegaZeux (e.g. the
@@ -71,6 +70,8 @@ DEVELOPERS
   enabled (though useless) until editor modularity is implemented.
   This reduces the size of a stripped AMD64 binary from 856896b (with all
   features enabled) to 448488b (with all features disabled) (~47% smaller).
++ The PSP port is now officially supported, and compiles out of the box.
+  See docs/psp.txt.
 
 July 4, 2007 - MZX 2.81g
 
