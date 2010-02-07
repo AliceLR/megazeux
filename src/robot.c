@@ -118,7 +118,7 @@ void load_robot(Robot *cur_robot, FILE *fp, int savegame)
     cur_robot->label_list = cache_robot_labels(cur_robot, &(cur_robot->num_labels));
 }
 
-void robot_stack_push(Robot *cur_robot, int value)
+static void robot_stack_push(Robot *cur_robot, int value)
 {
   int stack_pointer = cur_robot->stack_pointer;
   int stack_size = cur_robot->stack_size;
@@ -139,7 +139,7 @@ void robot_stack_push(Robot *cur_robot, int value)
   cur_robot->stack_pointer = stack_pointer + 1;
 }
 
-int robot_stack_pop(Robot *cur_robot)
+static int robot_stack_pop(Robot *cur_robot)
 {
   int stack_pointer = cur_robot->stack_pointer;
 
@@ -155,15 +155,7 @@ int robot_stack_pop(Robot *cur_robot)
   }
 }
 
-Scroll *load_scroll_allocate(FILE *fp, int savegame)
-{
-  Scroll *cur_scroll = (Scroll *)malloc(sizeof(Scroll));
-  load_scroll(cur_scroll, fp, savegame);
-
-  return cur_scroll;
-}
-
-void load_scroll(Scroll *cur_scroll, FILE *fp, int savegame)
+static void load_scroll(Scroll *cur_scroll, FILE *fp, int savegame)
 {
   int scroll_size;
 
@@ -178,21 +170,29 @@ void load_scroll(Scroll *cur_scroll, FILE *fp, int savegame)
   fread(cur_scroll->mesg, scroll_size, 1, fp);
 }
 
-Sensor *load_sensor_allocate(FILE *fp, int savegame)
+Scroll *load_scroll_allocate(FILE *fp, int savegame)
 {
-  Sensor *cur_sensor = (Sensor *)malloc(sizeof(Sensor));
-  load_sensor(cur_sensor, fp, savegame);
+  Scroll *cur_scroll = (Scroll *)malloc(sizeof(Scroll));
+  load_scroll(cur_scroll, fp, savegame);
 
-  return cur_sensor;
+  return cur_scroll;
 }
 
-void load_sensor(Sensor *cur_sensor, FILE *fp, int savegame)
+static void load_sensor(Sensor *cur_sensor, FILE *fp, int savegame)
 {
   fread(cur_sensor->sensor_name, 15, 1, fp);
   cur_sensor->sensor_char = fgetc(fp);
   fread(cur_sensor->robot_to_mesg, 15, 1, fp);
 
   cur_sensor->used = fgetc(fp);
+}
+
+Sensor *load_sensor_allocate(FILE *fp, int savegame)
+{
+  Sensor *cur_sensor = (Sensor *)malloc(sizeof(Sensor));
+  load_sensor(cur_sensor, fp, savegame);
+
+  return cur_sensor;
 }
 
 void save_robot(Robot *cur_robot, FILE *fp, int savegame)
@@ -319,6 +319,32 @@ void clear_scroll(Scroll *cur_scroll)
   free(cur_scroll);
 }
 
+// Does not remove entry from the normal list
+static void remove_robot_name_entry(Board *src_board, Robot *cur_robot,
+ char *name)
+{
+  // Find the position
+  int first, last;
+  int active = src_board->num_robots_active;
+  Robot **name_list = src_board->robot_list_name_sorted;
+
+  find_robot(src_board, name, &first, &last);
+
+  // Find the one that matches the robot
+  while(name_list[first] != cur_robot)
+    first++;
+
+  // Remove from name list
+  active--;
+
+  if(first != active)
+  {
+    memmove(name_list + first, name_list + first + 1,
+     (active - first) * sizeof(Robot *));
+  }
+  src_board->num_robots_active = active;
+}
+
 void clear_robot_id(Board *src_board, int id)
 {
   Robot *cur_robot = src_board->robot_list[id];
@@ -365,7 +391,7 @@ void reallocate_scroll(Scroll *scroll, int size)
   scroll->mesg_size = size;
 }
 
-int cmp_labels(const void *dest, const void *src)
+static int cmp_labels(const void *dest, const void *src)
 {
   Label *lsrc = *((Label **)src);
   Label *ldest = *((Label **)dest);
@@ -472,35 +498,7 @@ void clear_label_cache(Label **label_list, int num_labels)
   }
 }
 
-int find_label_position(Robot *cur_robot, char *name)
-{
-  Label *cur_label = find_label(cur_robot, name);
-
-  if(cur_label)
-  {
-    return cur_label->position;
-  }
-  else
-  {
-    return -1;
-  }
-}
-
-int find_zapped_label_position(Robot *cur_robot, char *name)
-{
-  Label *cur_label = find_zapped_label(cur_robot, name);
-
-  if(cur_label)
-  {
-    return cur_label->position;
-  }
-  else
-  {
-    return -1;
-  }
-}
-
-Label *find_label(Robot *cur_robot, char *name)
+static Label *find_label(Robot *cur_robot, char *name)
 {
   int total = cur_robot->num_labels - 1;
   int bottom = 0, top = total, middle = 0;
@@ -572,10 +570,24 @@ Label *find_label(Robot *cur_robot, char *name)
   return NULL;
 }
 
+static int find_label_position(Robot *cur_robot, char *name)
+{
+  Label *cur_label = find_label(cur_robot, name);
+
+  if(cur_label)
+  {
+    return cur_label->position;
+  }
+  else
+  {
+    return -1;
+  }
+}
+
 // This should return the last zapped label found, for restore label
 // to work correctly.
 
-Label *find_zapped_label(Robot *cur_robot, char *name)
+static Label *find_zapped_label(Robot *cur_robot, char *name)
 {
   int total = cur_robot->num_labels - 1;
   int bottom = 0, top = total, middle = 0;
@@ -644,6 +656,20 @@ Label *find_zapped_label(Robot *cur_robot, char *name)
   }
 
   return NULL;
+}
+
+static int find_zapped_label_position(Robot *cur_robot, char *name)
+{
+  Label *cur_label = find_zapped_label(cur_robot, name);
+
+  if(cur_label)
+  {
+    return cur_label->position;
+  }
+  else
+  {
+    return -1;
+  }
 }
 
 // Returns 1 if found, first is the first robot in the list,
@@ -784,132 +810,7 @@ void send_robot_def(World *mzx_world, int robot_id, int mesg_id)
   }
 }
 
-void send_robot(World *mzx_world, char *name, char *mesg,
- int ignore_lock)
-{
-  Board *src_board = mzx_world->current_board;
-  int first, last;
-
-  if(!strcasecmp(name, "all"))
-  {
-    send_robot_all(mzx_world, mesg);
-  }
-  else
-  {
-    // See if it's the global robot
-    if(!strcasecmp(name, mzx_world->global_robot.robot_name) &&
-     mzx_world->global_robot.used)
-    {
-      send_robot_direct(&mzx_world->global_robot, mesg,
-       ignore_lock, 0);
-    }
-
-    if(find_robot(src_board, name, &first, &last))
-    {
-      while(first <= last)
-      {
-        send_robot_direct(src_board->robot_list_name_sorted[first],
-	 mesg, ignore_lock, 0);
-        first++;
-      }
-    }
-  }
-
-  send_sensors(mzx_world, name, mesg);
-}
-
-void send_sensors(World *mzx_world, char *name, char *mesg)
-{
-  Board *src_board = mzx_world->current_board;
-
-  if(src_board->num_sensors)
-  {
-    // Sensors
-    // Set command- 0-3 move, 4 die, 256 | # char, 512 | # color (hex)
-    int command = -1; // No command yet
-
-    // Check movement commands
-    if(mesg[1] == 0)
-    {
-      char first_letter = mesg[0];
-      if((first_letter >= 'a') && (first_letter <= 'z'))
-        first_letter -= 32;
-
-      switch(first_letter)
-      {
-        case 'N':
-          command = 0;
-          break;
-
-        case 'S':
-          command = 1;
-          break;
-
-        case 'E':
-          command = 2;
-          break;
-
-        case 'W':
-          command = 3;
-          break;
-      }
-    }
-
-    // Die?
-    if(!strcasecmp("DIE", mesg))
-      command = 4;
-
-    // Char___? (___ can be ### or 'c')
-    if(!strncasecmp("CHAR", mesg, 4))
-    {
-     command = 256;
-      if(mesg[4] == '\'')
-        command = 0x100 | mesg[5];
-      else
-        command = 0x100 | (strtol(mesg + 4, NULL, 10) & 0xFF);
-    }
-
-    // Color__? (__ is hex)
-    if(!strncasecmp("COLOR", mesg, 5))
-    {
-      command = 512 | (strtol(mesg + 5, NULL, 16) & 0xFF);
-    }
-
-    if(command != -1)
-    {
-      Sensor **sensor_list = src_board->sensor_list;
-      Sensor *current_sensor;
-      int i;
-
-      if(!strcasecmp(name, "ALL"))
-      {
-        for(i = 1; i <= src_board->num_sensors; i++)
-        {
-          current_sensor = sensor_list[i];
-
-          if(current_sensor)
-          {
-            send_sensor_command(mzx_world, i, command);
-          }
-        }
-      }
-      else
-      {
-        for(i = 1; i <= src_board->num_sensors; i++)
-        {
-          current_sensor = sensor_list[i];
-          if((current_sensor != NULL) &&
-           !strcasecmp(name, current_sensor->sensor_name))
-          {
-            send_sensor_command(mzx_world, i, command);
-          }
-        }
-      }
-    }
-  }
-}
-
-void send_sensor_command(World *mzx_world, int id, int command)
+static void send_sensor_command(World *mzx_world, int id, int command)
 {
   Board *src_board = mzx_world->current_board;
   Sensor *cur_sensor = src_board->sensor_list[id];
@@ -1070,34 +971,98 @@ void send_sensor_command(World *mzx_world, int id, int command)
   }
 }
 
-int send_robot_id(World *mzx_world, int id, char *mesg, int ignore_lock)
-{
-  Robot *cur_robot = mzx_world->current_board->robot_list[id];
-  return send_robot_direct(cur_robot, mesg, ignore_lock, 0);
-}
-
-int send_robot_self(World *mzx_world, Robot *src_robot, char *mesg)
-{
-  return send_robot_direct(src_robot, mesg, 1, 1);
-}
-
-void send_robot_all(World *mzx_world, char *mesg)
+static void send_sensors(World *mzx_world, char *name, char *mesg)
 {
   Board *src_board = mzx_world->current_board;
-  int i;
 
-  if(mzx_world->global_robot.used)
+  if(src_board->num_sensors)
   {
-    send_robot_direct(&(mzx_world->global_robot), mesg, 0, 0);
-  }
+    // Sensors
+    // Set command- 0-3 move, 4 die, 256 | # char, 512 | # color (hex)
+    int command = -1; // No command yet
 
-  for(i = 0; i < src_board->num_robots_active; i++)
-  {
-    send_robot_direct(src_board->robot_list_name_sorted[i], mesg, 0, 0);
+    // Check movement commands
+    if(mesg[1] == 0)
+    {
+      char first_letter = mesg[0];
+      if((first_letter >= 'a') && (first_letter <= 'z'))
+        first_letter -= 32;
+
+      switch(first_letter)
+      {
+        case 'N':
+          command = 0;
+          break;
+
+        case 'S':
+          command = 1;
+          break;
+
+        case 'E':
+          command = 2;
+          break;
+
+        case 'W':
+          command = 3;
+          break;
+      }
+    }
+
+    // Die?
+    if(!strcasecmp("DIE", mesg))
+      command = 4;
+
+    // Char___? (___ can be ### or 'c')
+    if(!strncasecmp("CHAR", mesg, 4))
+    {
+     command = 256;
+      if(mesg[4] == '\'')
+        command = 0x100 | mesg[5];
+      else
+        command = 0x100 | (strtol(mesg + 4, NULL, 10) & 0xFF);
+    }
+
+    // Color__? (__ is hex)
+    if(!strncasecmp("COLOR", mesg, 5))
+    {
+      command = 512 | (strtol(mesg + 5, NULL, 16) & 0xFF);
+    }
+
+    if(command != -1)
+    {
+      Sensor **sensor_list = src_board->sensor_list;
+      Sensor *current_sensor;
+      int i;
+
+      if(!strcasecmp(name, "ALL"))
+      {
+        for(i = 1; i <= src_board->num_sensors; i++)
+        {
+          current_sensor = sensor_list[i];
+
+          if(current_sensor)
+          {
+            send_sensor_command(mzx_world, i, command);
+          }
+        }
+      }
+      else
+      {
+        for(i = 1; i <= src_board->num_sensors; i++)
+        {
+          current_sensor = sensor_list[i];
+          if((current_sensor != NULL) &&
+           !strcasecmp(name, current_sensor->sensor_name))
+          {
+            send_sensor_command(mzx_world, i, command);
+          }
+        }
+      }
+    }
   }
 }
 
-void set_robot_position(Robot *cur_robot, int position)
+static void set_robot_position(Robot *cur_robot, int position)
 {
   cur_robot->cur_prog_line = position;
   cur_robot->pos_within_line = 0;
@@ -1107,7 +1072,7 @@ void set_robot_position(Robot *cur_robot, int position)
     cur_robot->status = 2;
 }
 
-int send_robot_direct(Robot *cur_robot, char *mesg, int ignore_lock,
+static int send_robot_direct(Robot *cur_robot, char *mesg, int ignore_lock,
  int send_self)
 {
   char *robot_program = cur_robot->program;
@@ -1191,6 +1156,67 @@ int send_robot_direct(Robot *cur_robot, char *mesg, int ignore_lock,
   }
 
   return 0;
+}
+
+void send_robot(World *mzx_world, char *name, char *mesg,
+ int ignore_lock)
+{
+  Board *src_board = mzx_world->current_board;
+  int first, last;
+
+  if(!strcasecmp(name, "all"))
+  {
+    send_robot_all(mzx_world, mesg);
+  }
+  else
+  {
+    // See if it's the global robot
+    if(!strcasecmp(name, mzx_world->global_robot.robot_name) &&
+     mzx_world->global_robot.used)
+    {
+      send_robot_direct(&mzx_world->global_robot, mesg,
+       ignore_lock, 0);
+    }
+
+    if(find_robot(src_board, name, &first, &last))
+    {
+      while(first <= last)
+      {
+        send_robot_direct(src_board->robot_list_name_sorted[first],
+	 mesg, ignore_lock, 0);
+        first++;
+      }
+    }
+  }
+
+  send_sensors(mzx_world, name, mesg);
+}
+
+int send_robot_id(World *mzx_world, int id, char *mesg, int ignore_lock)
+{
+  Robot *cur_robot = mzx_world->current_board->robot_list[id];
+  return send_robot_direct(cur_robot, mesg, ignore_lock, 0);
+}
+
+int send_robot_self(World *mzx_world, Robot *src_robot, char *mesg)
+{
+  return send_robot_direct(src_robot, mesg, 1, 1);
+}
+
+void send_robot_all(World *mzx_world, char *mesg)
+{
+  Board *src_board = mzx_world->current_board;
+  int i;
+
+  if(mzx_world->global_robot.used)
+  {
+    send_robot_direct(&(mzx_world->global_robot), mesg, 0, 0);
+  }
+
+  for(i = 0; i < src_board->num_robots_active; i++)
+  {
+    send_robot_direct(src_board->robot_list_name_sorted[i], mesg, 0, 0);
+  }
 }
 
 // Run a set of x/y pairs through the prefixes
@@ -1709,6 +1735,213 @@ int fix_color(int color, int def)
   return def;
 }
 
+static int robot_box_down(char *program, int pos, int count)
+{
+  int i, cur_cmd = -1;
+  int old_pos;
+  int done = 0;
+
+  for(i = 0; (i < count) && (!done); i++)
+  {
+    old_pos = pos;
+    do
+    {
+      // Go forward a line (if possible)
+      pos += program[pos] + 2;
+      if(program[pos] == 0)
+      {
+        pos = old_pos;
+        done = 1;
+      }
+      else
+      {
+        cur_cmd = program[pos + 1];
+        if(((cur_cmd < 103) && (cur_cmd != 47)) ||
+         ((cur_cmd > 106) && (cur_cmd < 116)) ||
+         ((cur_cmd > 117) && (cur_cmd != 249)))
+        {
+          pos = old_pos;
+          done = 1;
+        }
+      }
+    } while(((cur_cmd == 106) || (cur_cmd == 249)) && (!done));
+
+    if(i == 100000)
+      i = 99999;
+  }
+
+  return pos;
+}
+
+static int robot_box_up(char *program, int pos, int count)
+{
+  int i, cur_cmd = -1;
+  int old_pos;
+  int done = 0;
+
+  for(i = 0; (i < count) && (!done); i++)
+  {
+    old_pos = pos;
+    do
+    {
+      // Go backwards a line (if possible)
+      if(program[pos - 1] == 0xFF)
+      {
+        pos = old_pos;
+        done = 1;
+      }
+      else
+      {
+        pos -= program[pos - 1] + 2;
+        cur_cmd = program[pos + 1];
+        if(((cur_cmd < 103) && (cur_cmd != 47)) ||
+         ((cur_cmd > 106) && (cur_cmd < 116)) ||
+         ((cur_cmd > 117) && (cur_cmd != 249)))
+        {
+          pos = old_pos;
+          done = 1;
+        }
+      }
+    } while(((cur_cmd == 106) || (cur_cmd == 249)) && (!done));
+
+    if(i == 100000)
+      i = 99999;
+  }
+
+  return pos;
+}
+
+static int num_ccode_chars(char *str)
+{
+  char current_char = *str;
+  char *str_pos = str;
+  int count = 0;
+
+  while(current_char)
+  {
+    if((current_char == '~') || (current_char == '@'))
+    {
+      count++;
+
+      if(isxdigit(str_pos[1]))
+      {
+        count++;
+        str_pos++;
+      }
+    }
+
+    str_pos++;
+    current_char = *str_pos;
+  }
+
+  return count;
+}
+
+static void display_robot_line(World *mzx_world, char *program, int y, int id)
+{
+  char ibuff[ROBOT_MAX_TR];
+  char *next;
+  int scroll_base_color = mzx_world->scroll_base_color;
+  int scroll_arrow_color = mzx_world->scroll_arrow_color;
+
+  switch(program[1])
+  {
+    case 103: // Normal message
+    {
+      tr_msg(mzx_world, program + 3, id, ibuff);
+      ibuff[64] = 0; // Clip
+      write_string_ext(ibuff, 8, y, scroll_base_color, 1, 0, 0);
+      break;
+    }
+
+    case 104: // Option
+    {
+      // Skip over label...
+      // next is pos of string
+      next = next_param_pos(program + 2);
+      tr_msg(mzx_world, next + 1, id, ibuff);
+      ibuff[62] = 0; // Clip
+      color_string_ext(ibuff, 10, y, scroll_base_color, 0, 0);
+      draw_char_ext('\x10', scroll_arrow_color, 8, y, 0, 0);
+      break;
+    }
+
+    case 105: // Counter-based option
+    {
+      // Check counter
+      int val = parse_param(mzx_world, program + 2, id);
+      if(val)
+      {
+        // Skip over counter and label...
+        // next is pos of string
+        next = next_param_pos(program + 2);
+        next = next_param_pos(next);
+        tr_msg(mzx_world, next + 1, id, ibuff);
+        ibuff[62] = 0; // Clip
+        color_string_ext(ibuff, 10, y, scroll_base_color, 0, 0);
+        draw_char_ext('\x10', scroll_arrow_color, 8, y, 0, 0);
+      }
+      break;
+    }
+
+    case 116: // Colored message
+    {
+      tr_msg(mzx_world, program + 3, id, ibuff);
+      ibuff[64 + num_ccode_chars(ibuff)] = 0; // Clip
+      color_string_ext(ibuff, 8, y, scroll_base_color, 0, 0);
+      break;
+    }
+
+    case 117: // Centered message
+    {
+      int length, x_position;
+      tr_msg(mzx_world, program + 3, id, ibuff);
+      ibuff[64 + num_ccode_chars(ibuff)] = 0; // Clip
+      length = strlencolor(ibuff);
+      x_position = 40 - (length / 2);
+      color_string_ext(ibuff, x_position, y, scroll_base_color, 0, 0);
+      break;
+    }
+  }
+  // Others, like 47 and 106, are blank lines
+}
+
+static void robot_frame(World *mzx_world, char *program, int id)
+{
+  // Displays one frame of a robot. The scroll edging, arrows, and title
+  // must already be shown. Simply prints each line. The pointer points
+  // to the center line.
+  int scroll_base_color = mzx_world->scroll_base_color;
+  int i, pos = 0;
+  int old_pos;
+  // Display center line
+  fill_line_ext(64, 8, 12, 32, scroll_base_color, 0, 0);
+  display_robot_line(mzx_world, program, 12, id);
+
+  // Display lines above center line
+  for(i = 11; i >= 6; i--)
+  {
+    fill_line_ext(64, 8, i, 32, scroll_base_color, 0, 0);
+    // Go backward to previous line
+    old_pos = pos;
+    pos = robot_box_up(program, pos, 1);
+    if(old_pos != pos)
+      display_robot_line(mzx_world, program + pos, i, id);
+  }
+
+  // Display lines below center line
+  pos = 0;
+
+  for(i = 13; i <= 18; i++)
+  {
+    fill_line_ext(64, 8, i, 32, scroll_base_color, 0, 0);
+    old_pos = pos;
+    pos = robot_box_down(program, pos, 1);
+    if(old_pos != pos)
+      display_robot_line(mzx_world, program + pos, i, id);
+  }
+}
+
 void robot_box_display(World *mzx_world, char *program,
  char *label_storage, int id)
 {
@@ -1928,213 +2161,6 @@ void robot_box_display(World *mzx_world, char *program,
   update_event_status();
 }
 
-int robot_box_up(char *program, int pos, int count)
-{
-  int i, cur_cmd = -1;
-  int old_pos;
-  int done = 0;
-
-  for(i = 0; (i < count) && (!done); i++)
-  {
-    old_pos = pos;
-    do
-    {
-      // Go backwards a line (if possible)
-      if(program[pos - 1] == 0xFF)
-      {
-        pos = old_pos;
-        done = 1;
-      }
-      else
-      {
-        pos -= program[pos - 1] + 2;
-        cur_cmd = program[pos + 1];
-        if(((cur_cmd < 103) && (cur_cmd != 47)) ||
-         ((cur_cmd > 106) && (cur_cmd < 116)) ||
-         ((cur_cmd > 117) && (cur_cmd != 249)))
-        {
-          pos = old_pos;
-          done = 1;
-        }
-      }
-    } while(((cur_cmd == 106) || (cur_cmd == 249)) && (!done));
-
-    if(i == 100000)
-      i = 99999;
-  }
-
-  return pos;
-}
-
-int robot_box_down(char *program, int pos, int count)
-{
-  int i, cur_cmd = -1;
-  int old_pos;
-  int done = 0;
-
-  for(i = 0; (i < count) && (!done); i++)
-  {
-    old_pos = pos;
-    do
-    {
-      // Go forward a line (if possible)
-      pos += program[pos] + 2;
-      if(program[pos] == 0)
-      {
-        pos = old_pos;
-        done = 1;
-      }
-      else
-      {
-        cur_cmd = program[pos + 1];
-        if(((cur_cmd < 103) && (cur_cmd != 47)) ||
-         ((cur_cmd > 106) && (cur_cmd < 116)) ||
-         ((cur_cmd > 117) && (cur_cmd != 249)))
-        {
-          pos = old_pos;
-          done = 1;
-        }
-      }
-    } while(((cur_cmd == 106) || (cur_cmd == 249)) && (!done));
-
-    if(i == 100000)
-      i = 99999;
-  }
-
-  return pos;
-}
-
-void robot_frame(World *mzx_world, char *program, int id)
-{
-  // Displays one frame of a robot. The scroll edging, arrows, and title
-  // must already be shown. Simply prints each line. The pointer points
-  // to the center line.
-  int scroll_base_color = mzx_world->scroll_base_color;
-  int i, pos = 0;
-  int old_pos;
-  // Display center line
-  fill_line_ext(64, 8, 12, 32, scroll_base_color, 0, 0);
-  display_robot_line(mzx_world, program, 12, id);
-
-  // Display lines above center line
-  for(i = 11; i >= 6; i--)
-  {
-    fill_line_ext(64, 8, i, 32, scroll_base_color, 0, 0);
-    // Go backward to previous line
-    old_pos = pos;
-    pos = robot_box_up(program, pos, 1);
-    if(old_pos != pos)
-      display_robot_line(mzx_world, program + pos, i, id);
-  }
-
-  // Display lines below center line
-  pos = 0;
-
-  for(i = 13; i <= 18; i++)
-  {
-    fill_line_ext(64, 8, i, 32, scroll_base_color, 0, 0);
-    old_pos = pos;
-    pos = robot_box_down(program, pos, 1);
-    if(old_pos != pos)
-      display_robot_line(mzx_world, program + pos, i, id);
-  }
-}
-
-int num_ccode_chars(char *str)
-{
-  char current_char = *str;
-  char *str_pos = str;
-  int count = 0;
-
-  while(current_char)
-  {
-    if((current_char == '~') || (current_char == '@'))
-    {
-      count++;
-
-      if(isxdigit(str_pos[1]))
-      {
-        count++;
-        str_pos++;
-      }
-    }
-
-    str_pos++;
-    current_char = *str_pos;
-  }
-
-  return count;
-}
-
-void display_robot_line(World *mzx_world, char *program, int y, int id)
-{
-  char ibuff[ROBOT_MAX_TR];
-  char *next;
-  int scroll_base_color = mzx_world->scroll_base_color;
-  int scroll_arrow_color = mzx_world->scroll_arrow_color;
-
-  switch(program[1])
-  {
-    case 103: // Normal message
-    {
-      tr_msg(mzx_world, program + 3, id, ibuff);
-      ibuff[64] = 0; // Clip
-      write_string_ext(ibuff, 8, y, scroll_base_color, 1, 0, 0);
-      break;
-    }
-
-    case 104: // Option
-    {
-      // Skip over label...
-      // next is pos of string
-      next = next_param_pos(program + 2);
-      tr_msg(mzx_world, next + 1, id, ibuff);
-      ibuff[62] = 0; // Clip
-      color_string_ext(ibuff, 10, y, scroll_base_color, 0, 0);
-      draw_char_ext('\x10', scroll_arrow_color, 8, y, 0, 0);
-      break;
-    }
-
-    case 105: // Counter-based option
-    {
-      // Check counter
-      int val = parse_param(mzx_world, program + 2, id);
-      if(val)
-      {
-        // Skip over counter and label...
-        // next is pos of string
-        next = next_param_pos(program + 2);
-        next = next_param_pos(next);
-        tr_msg(mzx_world, next + 1, id, ibuff);
-        ibuff[62] = 0; // Clip
-        color_string_ext(ibuff, 10, y, scroll_base_color, 0, 0);
-        draw_char_ext('\x10', scroll_arrow_color, 8, y, 0, 0);
-      }
-      break;
-    }
-
-    case 116: // Colored message
-    {
-      tr_msg(mzx_world, program + 3, id, ibuff);
-      ibuff[64 + num_ccode_chars(ibuff)] = 0; // Clip
-      color_string_ext(ibuff, 8, y, scroll_base_color, 0, 0);
-      break;
-    }
-
-    case 117: // Centered message
-    {
-      int length, x_position;
-      tr_msg(mzx_world, program + 3, id, ibuff);
-      ibuff[64 + num_ccode_chars(ibuff)] = 0; // Clip
-      length = strlencolor(ibuff);
-      x_position = 40 - (length / 2);
-      color_string_ext(ibuff, x_position, y, scroll_base_color, 0, 0);
-      break;
-    }
-  }
-  // Others, like 47 and 106, are blank lines
-}
-
 void push_sensor(World *mzx_world, int id)
 {
   Board *src_board = mzx_world->current_board;
@@ -2350,31 +2376,6 @@ void add_robot_name_entry(Board *src_board, Robot *cur_robot, char *name)
   src_board->num_robots_active = active + 1;
 }
 
-// Does not remove entry from the normal list
-void remove_robot_name_entry(Board *src_board, Robot *cur_robot, char *name)
-{
-  // Find the position
-  int first, last;
-  int active = src_board->num_robots_active;
-  Robot **name_list = src_board->robot_list_name_sorted;
-
-  find_robot(src_board, name, &first, &last);
-
-  // Find the one that matches the robot
-  while(name_list[first] != cur_robot)
-    first++;
-
-  // Remove from name list
-  active--;
-
-  if(first != active)
-  {
-    memmove(name_list + first, name_list + first + 1,
-     (active - first) * sizeof(Robot *));
-  }
-  src_board->num_robots_active = active;
-}
-
 // This could probably be done in a more efficient manner.
 void change_robot_name(Board *src_board, Robot *cur_robot, char *new_name)
 {
@@ -2430,7 +2431,7 @@ int find_free_robot(Board *src_board)
 
 // Like find_free_robot, but for scrolls. Will also expand the list if
 // necessary.
-int find_free_scroll(Board *src_board)
+static int find_free_scroll(Board *src_board)
 {
   int num_scrolls = src_board->num_scrolls;
   int i;
@@ -2469,7 +2470,7 @@ int find_free_scroll(Board *src_board)
 
 // Like find_free_robot, but for sensors. Will also expand the list if
 // necessary.
-int find_free_sensor(Board *src_board)
+static int find_free_sensor(Board *src_board)
 {
   int num_sensors = src_board->num_sensors;
   int i;
@@ -2665,7 +2666,7 @@ int duplicate_sensor(Board *src_board, Sensor *cur_sensor)
 
 // These aren't really needed right now, I think, but they're there...
 
-int get_robot_board_offset(Board *src_board, Robot *cur_robot)
+static int get_robot_board_offset(Board *src_board, Robot *cur_robot)
 {
   int x = cur_robot->xpos;
   int y = cur_robot->ypos;
@@ -2701,7 +2702,7 @@ int get_robot_board_offset(Board *src_board, Robot *cur_robot)
   return -1;
 }
 
-int get_scroll_board_offset(Board *src_board, Scroll *cur_scroll)
+static int get_scroll_board_offset(Board *src_board, Scroll *cur_scroll)
 {
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
@@ -2724,7 +2725,7 @@ int get_scroll_board_offset(Board *src_board, Scroll *cur_scroll)
   return -1;
 }
 
-int get_sensor_board_offset(Board *src_board, Sensor *cur_sensor)
+static int get_sensor_board_offset(Board *src_board, Sensor *cur_sensor)
 {
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
@@ -2915,7 +2916,7 @@ void optimize_null_objects(Board *src_board)
   free(sensor_id_translation_list);
 }
 
-Robot *create_blank_robot(int x, int y)
+static Robot *create_blank_robot(int x, int y)
 {
   Robot *cur_robot = (Robot *)malloc(sizeof(Robot));
   create_blank_robot_direct(cur_robot, x, y);
@@ -2941,7 +2942,7 @@ void create_blank_robot_direct(Robot *cur_robot, int x, int y)
   cur_robot->used = 1;
 }
 
-Scroll *create_blank_scroll()
+static Scroll *create_blank_scroll()
 {
   Scroll *cur_scroll = (Scroll *)malloc(sizeof(Scroll));
   create_blank_scroll_direct(cur_scroll);
@@ -2963,7 +2964,7 @@ void create_blank_scroll_direct(Scroll *cur_scroll)
   message[2] = 0x00;
 }
 
-Sensor *create_blank_sensor()
+static Sensor *create_blank_sensor()
 {
   Sensor *cur_sensor = (Sensor *)malloc(sizeof(Sensor));
   create_blank_sensor_direct(cur_sensor);

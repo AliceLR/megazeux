@@ -39,9 +39,7 @@ __M_BEGIN_DECLS
 Robot *load_robot_allocate(FILE *fp, int savegame);
 void load_robot(Robot *cur_robot, FILE *fp, int savegame);
 Scroll *load_scroll_allocate(FILE *fp, int savegame);
-void load_scroll(Scroll *cur_scroll, FILE *fp, int savegame);
 Sensor *load_sensor_allocate(FILE *fp, int savegame);
-void load_sensor(Sensor *cur_sensor, FILE *fp, int savegame);
 void save_robot(Robot *cur_robot, FILE *fp, int savegame);
 void save_scroll(Scroll *cur_scroll, FILE *fp, int savegame);
 void save_sensor(Sensor *cur_sensor, FILE *fp, int savegame);
@@ -56,21 +54,12 @@ void reallocate_robot(Robot *robot, int size);
 Label **cache_robot_labels(Robot *robot, int *num_labels);
 void clear_label_cache(Label **label_list, int num_labels);
 int find_robot(Board *src_board, char *name, int *first, int *last);
-void send_sensor_command(World *mzx_world, int id, int command);
 void send_robot(World *mzx_world, char *name, char *mesg,
  int ignore_lock);
 int send_robot_id(World *mzx_world, int id, char *mesg, int ignore_lock);
 void send_robot_def(World *mzx_world, int robot_id, int mesg_id);
-void set_robot_position(Robot *cur_robot, int position);
-int find_zapped_label_position(Robot *cur_robot, char *name);
-int find_label_position(Robot *cur_robot, char *name);
-Label *find_label(Robot *cur_robot, char *name);
-Label *find_zapped_label(Robot *cur_robot, char *name);
-int send_robot_direct(Robot *cur_robot, char *mesg, int ignore_lock,
- int send_self);
 void send_robot_all(World *mzx_world, char *mesg);
 int send_robot_self(World *mzx_world, Robot *src_robot, char *mesg);
-void send_sensors(World *mzx_world, char *name, char *mesg);
 int move_dir(Board *src_board, int *x, int *y, int dir);
 void prefix_first_last_xy(World *mzx_world, int *fx, int *fy,
  int *lx, int *ly, int robotx, int roboty);
@@ -94,21 +83,12 @@ mzx_condition parse_param_cond(World *mzx_world, char *program,
  mzx_dir *direction);
 void robot_box_display(World *mzx_world, char *program,
  char *label_storage, int id);
-int robot_box_down(char *program, int pos, int count);
-int robot_box_up(char *program, int pos, int count);
-void robot_frame(World *mzx_world, char *program, int id);
-void display_robot_line(World *mzx_world, char *program, int y, int id);
 void push_sensor(World *mzx_world, int id);
 void step_sensor(World *mzx_world, int id);
 char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer);
 void add_robot_name_entry(Board *src_board, Robot *cur_robot, char *name);
-void remove_robot_name_entry(Board *src_board, Robot *cur_robot, char *name);
 void change_robot_name(Board *src_board, Robot *cur_robot, char *new_name);
-void robot_stack_push(Robot *cur_robot, int value);
-int robot_stack_pop(Robot *cur_robot);
 int find_free_robot(Board *src_board);
-int find_free_scroll(Board *src_board);
-int find_free_sensor(Board *src_board);
 void duplicate_robot_direct(Robot *cur_robot, Robot *copy_robot,
  int x, int y);
 int duplicate_robot(Board *src_board, Robot *cur_robot, int x, int y);
@@ -119,15 +99,9 @@ void duplicate_scroll_direct(Scroll *cur_scroll, Scroll *copy_scroll);
 int duplicate_scroll(Board *src_board, Scroll *cur_scroll);
 void duplicate_sensor_direct(Sensor *cur_sensor, Sensor *copy_sensor);
 int duplicate_sensor(Board *src_board, Sensor *cur_sensor);
-int get_sensor_board_offset(Board *src_board, Sensor *cur_sensor);
-int get_scroll_board_offset(Board *src_board, Scroll *cur_scroll);
-int get_robot_board_offset(Board *src_board, Robot *cur_robot);
 void optimize_null_objects(Board *src_board);
 void create_blank_robot_direct(Robot *cur_robot, int x, int y);
-Robot *create_blank_robot(int x, int y);
-Scroll *create_blank_scroll();
 void create_blank_scroll_direct(Scroll *cur_croll);
-Sensor *create_blank_sensor();
 void create_blank_sensor_direct(Sensor *cur_sensor);
 void clear_robot_contents(Robot *cur_robot);
 void clear_scroll_contents(Scroll *cur_scroll);
@@ -164,7 +138,6 @@ void clear_board_block(Board *src_board, int x, int y,
  int width, int height);
 void setup_overlay(Board *src_board, int mode);
 void replace_player(World *mzx_world);
-int num_ccode_chars(char *str);
 
 __M_END_DECLS
 
