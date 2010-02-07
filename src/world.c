@@ -545,7 +545,7 @@ int load_world(World *mzx_world, char *file, int savegame, int *faded)
   }
 
   memcpy(config_file_name, file, file_name_len);
-  strcpy(config_file_name + file_name_len, ".cnf");
+  strncpy(config_file_name + file_name_len, ".cnf", 4);
 
   if(stat(config_file_name, &file_info) >= 0)
   {
