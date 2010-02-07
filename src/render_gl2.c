@@ -102,9 +102,9 @@ static int gl2_load_syms (gl2_syms *gl)
   GL_LOAD_SYM(gl, glColor4ub)
   // Since 1.1
   GL_LOAD_SYM(gl, glCopyTexImage2D)
-  // Since 1.0 (parameters may requre more recent version)
+  // Since 1.0 (parameters may require more recent version)
   GL_LOAD_SYM(gl, glDisable)
-  // Since 1.0 (parameters may requre more recent version)
+  // Since 1.0 (parameters may require more recent version)
   GL_LOAD_SYM(gl, glEnable)
   // Since 1.0
   GL_LOAD_SYM(gl, glEnd)
@@ -114,7 +114,7 @@ static int gl2_load_syms (gl2_syms *gl)
   GL_LOAD_SYM(gl, glGetString)
   // Since 1.0
   GL_LOAD_SYM(gl, glTexCoord2f)
-  // Since 1.0 (parameters may requre more recent version)
+  // Since 1.0 (parameters may require more recent version)
   GL_LOAD_SYM(gl, glTexImage2D)
   // Since 1.0
   GL_LOAD_SYM(gl, glTexParameterf)
