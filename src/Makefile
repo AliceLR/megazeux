@@ -25,7 +25,7 @@ OBJS      = main.${o} graphics.${o} window.${o} hexchar.${o} event.${o} \
 MZX       = ../${TARGET}
 
 ifdef ICON
-ICONRC = ../contrib/icons/quantump.${o}
+ICONRC = ../contrib/icons/ghostblue.${o}
 endif
 
 ifdef DEBUG

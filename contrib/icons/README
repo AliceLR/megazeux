@@ -35,8 +35,12 @@ for more information about the FDO icon naming specification.
 
 GENERATING ICO FILES
 
-TODO:	Write this section. Mention writing an RC file and executing the
-	appropriate script.
+Currently, there is no program available to do this. This is partially due to
+the only open source program available (png2ico) not supporting the alpha
+channel.
+
+For the moment, the excellent http://converticon.com/ site is being used
+manually to generate icon packs.
 
 
 MAKING MEGAZEUX USE THE ICONS ON THE WINDOWS PLATFORM

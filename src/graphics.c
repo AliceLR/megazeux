@@ -47,7 +47,6 @@
 #define MZX_ASCII_CHR   SHAREDIR "mzx_ascii.chr"
 #define MZX_EDIT_CHR    SHAREDIR "mzx_edit.chr"
 #define SMZX_PAL        SHAREDIR "smzx.pal"
-#define ICON_BMP        SHAREDIR "icon.bmp"
 
 static graphics_data graphics;
 
@@ -2320,7 +2319,6 @@ void init_video(config_info *conf)
   sprintf(temp, "MegaZeux %s", version_number_string);
   SDL_WM_SetCaption(temp, "MZX");
   SDL_ShowCursor(SDL_DISABLE);
-  SDL_WM_SetIcon(SDL_LoadBMP(ICON_BMP), NULL);
 
   if (!(graphics.init_video(conf)))
   {
