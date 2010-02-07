@@ -874,9 +874,9 @@ void edit_world(World *mzx_world)
   synchronize_board_values();
   update_screen();
 
-  insta_fadein();
   default_palette();
   save_editor_palette();
+  insta_fadein();
 
   do
   {
