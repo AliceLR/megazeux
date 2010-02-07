@@ -58,6 +58,9 @@ USERS
 + Debug menu is now eradicated on leaving the editor (Lancer-X).
 + Debug menu is now properly painted over when the board size is < the editor
   viewport. Fixes various graphical glitches (Lancer-X).
++ Fix a crash bug when playing older MZX games from read-only media (such as a
+  CD) or where file-system permissions prohibited creating SAM conversions
+  (Lancer-X).
 
 DEVELOPERS
 

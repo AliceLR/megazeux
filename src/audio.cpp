@@ -1600,6 +1600,9 @@ void convert_sam_to_wav(char *source_name, char *dest_name)
 
   dest = fopen(dest_name, "wb");
 
+  if(dest == NULL)
+    return;
+
   source_length = file_length(source);
 
   frequency = freq_conversion / default_period;
