@@ -154,7 +154,8 @@ echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 #
 # X11 support (linked against and needs headers installed)
 #
-if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "macos" ]; then
+if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "linux-static" \
+  -o "$PLATFORM" = "macos" ]; then
 	# attempt auto-detection
 	if [ "$X11" = "true" ]; then
 		# try to run X
