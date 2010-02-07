@@ -1691,6 +1691,8 @@ void draw_number_box(World *mzx_world, dialog *di,
   }
 }
 
+#define MAX_NAME_BUFFER 512
+
 void draw_list_box(World *mzx_world, dialog *di,
  element *e, int color, int active)
 {
@@ -1706,7 +1708,7 @@ void draw_list_box(World *mzx_world, dialog *di,
   int i, num_draw;
   int draw_width = choice_length;
   int current_in_window = current_choice - scroll_offset;
-  char name_buffer[512];
+  char name_buffer[MAX_NAME_BUFFER];
 
   num_draw = num_choices_visible;
 
@@ -1719,7 +1721,8 @@ void draw_list_box(World *mzx_world, dialog *di,
   for(i = 0; i < num_draw; i++)
   {
     fill_line(choice_length, x, y + i, 32, DI_LIST);
-    strcpy(name_buffer, choices[scroll_offset + i]);
+    strncpy(name_buffer, choices[scroll_offset + i], MAX_NAME_BUFFER - 1);
+    name_buffer[MAX_NAME_BUFFER - 1] = '\0';
     name_buffer[draw_width - 1] = 0;
     color_string(name_buffer, x, y + i, DI_LIST);
   }
