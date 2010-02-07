@@ -1231,8 +1231,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
               src_board->level_under_id[offset] = 0;
               src_board->level_under_color[offset] = 7;
             }
+
+            return;
           }
-          return;
         }
 
         // Became a robot.

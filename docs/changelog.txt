@@ -86,6 +86,8 @@ USERS
   in a crash (Mr_Alert).
 + Fixed several bugs where an error loading a world file would result in
   crashes in several different situations (Mr_Alert).
++ Fixed a bug where a robot using the BECOME command to change into a
+  PushableRobot or vice versa would freeze (Mr_Alert).
 
 DEVELOPERS
 
