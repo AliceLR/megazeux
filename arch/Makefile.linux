@@ -5,11 +5,8 @@
 # location of strip (must be defined)
 STRIP ?= strip --strip-unneeded
 
-# standard libraries
-LIBS += -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
-
 # switch locking method
-mzx_includes += -DPTHREAD_MUTEXES
+mzx_cflags += -DPTHREAD_MUTEXES
 
 # enable stack protector for debug builds
 ifdef DEBUG
@@ -18,28 +15,28 @@ CXXFLAGS += -fstack-protector-all
 endif
 
 # linux os specific install target
-install:
-	@install -m 0755 -d ${DESTDIR}/${PREFIX}/bin && \
-	 install -m 0755 -d ${DESTDIR}/${PREFIX}/share && \
-	 install -m 0755 -d ${DESTDIR}/${PREFIX}/share/megazeux && \
-	 install -m 0755 -d ${DESTDIR}/${SYSCONFDIR} && \
-	 install -m 0644 mzx_default.chr ${DESTDIR}/${PREFIX}/share/megazeux &&\
-	 install -m 0644 mzx_blank.chr ${DESTDIR}/${PREFIX}/share/megazeux && \
-	 install -m 0644 mzx_smzx.chr ${DESTDIR}/${PREFIX}/share/megazeux && \
-	 install -m 0644 mzx_ascii.chr ${DESTDIR}/${PREFIX}/share/megazeux && \
-	 install -m 0644 mzx_edit.chr ${DESTDIR}/${PREFIX}/share/megazeux && \
-	 install -m 0644 smzx.pal ${DESTDIR}/${PREFIX}/share/megazeux && \
-	 install -m 0644 mzx_help.fil ${DESTDIR}/${PREFIX}/share/megazeux && \
-	 install -m 0644 config.txt ${DESTDIR}/${SYSCONFDIR}/megazeux-config &&\
-	 install -m 0755 ${TARGET} ${DESTDIR}/${PREFIX}/bin && \
-	 ln -sf ${TARGET} ${DESTDIR}/${PREFIX}/bin/megazeux
-
-	@echo "Installed MegaZeux successfully."
-	@echo
-	@echo "Changing ownership (will fail if you are not root)."
-	@echo "If it fails, it's okay."
-	@echo
-
-	@chown -f  root:root ${DESTDIR}/${SYSCONFDIR}/megazeux-config
-	@chown -f  root:root ${DESTDIR}/${PREFIX}/bin/${TARGET}
-	@chown -fR root:root ${DESTDIR}/${PREFIX}/share/megazeux
+#install:
+#	@install -m 0755 -d ${DESTDIR}/${PREFIX}/bin && \
+#	 install -m 0755 -d ${DESTDIR}/${PREFIX}/share && \
+#	 install -m 0755 -d ${DESTDIR}/${PREFIX}/share/megazeux && \
+#	 install -m 0755 -d ${DESTDIR}/${SYSCONFDIR} && \
+#	 install -m 0644 mzx_default.chr ${DESTDIR}/${PREFIX}/share/megazeux &&\
+#	 install -m 0644 mzx_blank.chr ${DESTDIR}/${PREFIX}/share/megazeux && \
+#	 install -m 0644 mzx_smzx.chr ${DESTDIR}/${PREFIX}/share/megazeux && \
+#	 install -m 0644 mzx_ascii.chr ${DESTDIR}/${PREFIX}/share/megazeux && \
+#	 install -m 0644 mzx_edit.chr ${DESTDIR}/${PREFIX}/share/megazeux && \
+#	 install -m 0644 smzx.pal ${DESTDIR}/${PREFIX}/share/megazeux && \
+#	 install -m 0644 mzx_help.fil ${DESTDIR}/${PREFIX}/share/megazeux && \
+#	 install -m 0644 config.txt ${DESTDIR}/${SYSCONFDIR}/megazeux-config &&\
+#	 install -m 0755 ${TARGET} ${DESTDIR}/${PREFIX}/bin && \
+#	 ln -sf ${TARGET} ${DESTDIR}/${PREFIX}/bin/megazeux
+#
+#	@echo "Installed MegaZeux successfully."
+#	@echo
+#	@echo "Changing ownership (will fail if you are not root)."
+#	@echo "If it fails, it's okay."
+#	@echo
+#
+#	@chown -f  root:root ${DESTDIR}/${SYSCONFDIR}/megazeux-config
+#	@chown -f  root:root ${DESTDIR}/${PREFIX}/bin/${TARGET}
+#	@chown -fR root:root ${DESTDIR}/${PREFIX}/share/megazeux

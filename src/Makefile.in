@@ -19,10 +19,11 @@ mzx = ${TARGET}.dbg${BINEXT}
 endif
 
 mzx_base     = src
-mzx_cflags   = -W -Wno-unused-parameter
-mzx_cflags  += -ffast-math -funsigned-char -DMZX_VERSION=\"${VERSTRING}\"
-mzx_includes = -I${mzx_base} -I${PREFIX}/include
-mzx_ldflags  = ${LIBS}
+mzx_cflags   += -W -Wno-unused-parameter
+mzx_cflags   += -ffast-math -funsigned-char -DMZX_VERSION=\"${VERSTRING}\"
+mzx_cflags   += ${SDL_CFLAGS} ${VORBIS_CFLAGS}
+mzx_cflags   += -I${mzx_base} -I${PREFIX}/include
+mzx_ldflags  += ${SDL_LDFLAGS} ${VORBIS_LDFLAGS}
 mzx_cxxflags = ${mzx_cflags}
 
 # FIXME: Sort alphabetically
@@ -81,7 +82,7 @@ else
 endif
 endif
 
-${mzx}: ${gdm2s3m} ${libmodplug} ${mzx_objs} ${txt2hlp}
+${mzx}: ${gdm2s3m} ${libmodplug} ${mzx_objs} #${txt2hlp}
 ifeq (${V},1)
 	${CC} ${mzx_objs} ${mzx_ldflags} -o ${mzx}
 else

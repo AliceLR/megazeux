@@ -1,9 +1,0 @@
-#
-# macos makefile generics
-#
-
-# location of strip (must be defined)
-STRIP ?= strip
-
-# standard libraries
-LIBS += -L${PREFIX}/lib -lvorbis -logg -framework Cocoa

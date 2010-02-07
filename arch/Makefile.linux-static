@@ -6,8 +6,9 @@
 STRIP = strip --strip-unneeded
 
 # standard libraries
-LIBS += `sdl-config --static-libs` ${PREFIX}/lib/libvorbisfile.a \
-        ${PREFIX}/lib/libvorbis.a ${PREFIX}/lib/libogg.a
+SDL_LDFLAGS    = `sdl-config --static-libs`
+VORBIS_LDFLAGS = ${PREFIX}/lib/libvorbisfile.a \
+                 ${PREFIX}/lib/libvorbis.a ${PREFIX}/lib/libogg.a
 
 # switch locking method
 mzx_includes += -DPTHREAD_MUTEXES

@@ -25,9 +25,14 @@ CC  ?= gcc
 CXX ?= g++
 AR  ?= ar
 
-# base includes for SDL, override as necessary
-INCLUDES ?= `sdl-config --cflags`
-LIBS     ?= `sdl-config --libs`
+##
+# Default includes/libs if not Platform provided
+##
+SDL_CFLAGS  ?= `sdl-config --cflags`
+SDL_LDFLAGS ?= `sdl-config --libs`
+
+VORBIS_CFLAGS  ?= -I${PREFIX}/include
+VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
 
 ifneq (${DATE},0)
 VERSTRING = ${VERSION}\ \(`date +%Y%m%d`\)
@@ -36,11 +41,11 @@ VERSTRING = ${VERSION}
 endif
 
 ifeq (${DEBUG},1)
-CFLAGS    = -g -Wall -std=c99 -DDEBUG
+CFLAGS    = -g -Wall -std=gnu99 -DDEBUG
 CXXFLAGS  = -g -Wall -DDEBUG
 o         = dbg.o
 else
-CFLAGS   += -O2 -Wall -std=c99
+CFLAGS   += -O2 -Wall -std=gnu99
 CXXFLAGS += -O2 -Wall
 o         = o
 endif

@@ -16,14 +16,12 @@ WINDRES = ${MINGWBASE}windres
 BINEXT = .exe
 
 # OpenGL must be linked to MZX
-INCLUDES += -DLINK_OPENGL
-
-# standard libraries
-LIBS += -lvorbisfile -lvorbis -logg -lopengl32
+mzx_cflags  += -DLINK_OPENGL
+mzx_ldflags += -lopengl32
 
 # debug does something different
 ifdef DEBUG
-LIBS += -mconsole
+mzx_ldflags += -mconsole
 else
-LIBS += -mwindows
+mzx_ldflags += -mwindows
 endif

@@ -183,7 +183,7 @@ if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "linux-static" \
 		X11LIB="$X11DIR/../lib"
 
 		# add a flag for linking against X11
-		echo "LIBS+=-L$X11LIB -lX11" >> Makefile.platform
+		echo "mzx_ldflags += -L$X11LIB -lX11" >> Makefile.platform
 	fi
 else
 	echo "X11 support disabled (unsupported platform)."
