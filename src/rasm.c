@@ -1505,9 +1505,9 @@ int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
   char *next;
   int translated_command = 0;
   int arg_count = 0;
-  int current_arg_short;
+  int current_arg_short = 0;
   int current_arg_type, last_arg_type;
-  int current_arg_translation, last_arg_translation = -1;
+  int current_arg_translation = 0, last_arg_translation = -1;
   int error;
   char command_name[256];
   int command_params[32];
