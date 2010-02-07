@@ -30,10 +30,9 @@
 #endif
 
 #ifdef PSP_BUILD
-
+#include <pspsdk.h>
 #include <psppower.h>
-#define PSP_MAIN_THREAD_STACK_SIZE_KB(512)
-
+PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #endif
 
 #include "configure.h"
