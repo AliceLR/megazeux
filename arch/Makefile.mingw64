@@ -1,0 +1,33 @@
+#
+# mingw32 makefile generics
+#
+
+# you might want to override this..
+MINGWBASE ?= x86_64-pc-mingw32-
+
+# .. because we will use them here
+CC      = ${MINGWBASE}gcc
+CXX     = ${MINGWBASE}g++
+AR      = ${MINGWBASE}ar
+STRIP   = ${MINGWBASE}strip --strip-unneeded
+WINDRES = ${MINGWBASE}windres
+
+# windows requires a binary extension
+BINEXT = .exe
+
+# OpenGL must be linked to MZX
+mzx_cflags  += -DLINK_OPENGL
+mzx_ldflags += -lopengl32
+
+# 64bit dynlibs don't work yet, statically link SDL
+SDL_LDFLAGS = `sdl-config --static-libs` -lwinmm
+
+# Windows needs PNG to be statically linked (inc. zlib)
+LIBPNG_LDFLAGS = `libpng12-config --static --libs`
+
+# debug does something different
+ifdef DEBUG
+mzx_ldflags += -mconsole
+else
+mzx_ldflags += -mwindows
+endif

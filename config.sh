@@ -18,6 +18,7 @@ usage() {
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  mingw32        Use MinGW32 on Linux, to build for win32"
+	echo "  mingw64        Use MinGW64 on Linux, to build for win64"
 	echo
 	echo "Supported <option> values:"
 	echo "  --disable-x11     Disables X11, removing binary dependency."
