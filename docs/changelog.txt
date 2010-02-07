@@ -27,6 +27,9 @@ USERS
   cheerfully ignored.
 + Fixed a bug where a corrupt robot list could crash MegaZeux (e.g. the
   list from Star Quest from DoZ'02).
++ FEATURE: Screenshots are now saved in a palettized PNG file format. For
+  platforms without libpng, PNG support can be compiled out, and BMP will
+  be used instead.
 
 DEVELOPERS
 

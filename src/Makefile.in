@@ -85,6 +85,11 @@ mzx_ldflags += -L${PREFIX} -lmikmod
 mzx_objs += ${mzx_base}/audio_mikmod.${o}
 endif
 
+ifeq (${LIBPNG},1)
+mzx_cflags += ${LIBPNG_CFLAGS}
+mzx_ldflags += ${LIBPNG_LDFLAGS}
+endif
+
 ${txt2hlp}: ${txt2hlp_objs}
 ifeq (${V},1)
 	${CC} ${txt2hlp_objs} -o ${txt2hlp}

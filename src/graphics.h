@@ -27,6 +27,10 @@ __M_BEGIN_DECLS
 #include "SDL.h"
 #include "configure.h"
 
+#ifdef CONFIG_PNG
+#include <png.h>
+#endif
+
 typedef enum
 {
   cursor_mode_underline,
@@ -205,7 +209,7 @@ void default_palette(void);
 
 void m_hide(void);
 void m_show(void);
-void dump_screen();
+void dump_screen(void);
 
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y);

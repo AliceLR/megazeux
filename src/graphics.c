@@ -1409,9 +1409,95 @@ void m_show(void)
   graphics.mouse_status = 1;
 }
 
+#ifdef CONFIG_PNG
+
+#define DUMP_FMT_EXT "png"
+
+/* Trivial PNG dumper; this routine is a modification (simplification) of
+ * code pinched from http://www2.autistici.org/encelo/prog_sdldemos.php.
+ *
+ * Palette support was added, the original support was broken.
+ *
+ * Copyright (C) 2006 Angelo "Encelo" Theodorou
+ * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+ */
+void dump_screen_real(SDL_Surface *surface, const char *name)
+{
+  const SDL_Palette *palette = surface->format->palette;
+  png_bytep *row_ptrs;
+  png_structp png_ptr;
+  png_infop info_ptr;
+  png_colorp pal_ptr;
+  int i, type;
+  FILE *file;
+
+  file = fopen(name, "wb");
+  if(!file)
+    return;
+
+  png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
+  if(!png_ptr)
+    return;
+
+  info_ptr = png_create_info_struct(png_ptr);
+  if(!info_ptr)
+    return;
+
+  if(setjmp(png_jmpbuf(png_ptr)))
+  {
+    png_destroy_write_struct(&png_ptr, &info_ptr);
+    fclose(file);
+    return;
+  }
+
+  png_init_io(png_ptr, file);
+
+  // we know we have an 8-bit surface; save a palettized PNG
+  type = PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE;
+  png_set_IHDR(png_ptr, info_ptr, surface->w, surface->h, 8, type,
+   PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
+   PNG_FILTER_TYPE_DEFAULT);
+
+  pal_ptr = malloc(palette->ncolors * sizeof(png_color));
+  for (i = 0; i < palette->ncolors; i++)
+  {
+    pal_ptr[i].red = palette->colors[i].r;
+    pal_ptr[i].green = palette->colors[i].g;
+    pal_ptr[i].blue = palette->colors[i].b;
+  }
+  png_set_PLTE(png_ptr, info_ptr, pal_ptr, palette->ncolors);
+
+  // do the write of the header
+  png_write_info(png_ptr, info_ptr);
+  png_set_packing(png_ptr);
+
+  // and then the surface
+  row_ptrs = malloc(sizeof(png_bytep) * surface->h);
+  for (i = 0; i < surface->h; i++)
+    row_ptrs[i] = (png_bytep)(Uint8 *)surface->pixels + i * surface->pitch;
+  png_write_image(png_ptr, row_ptrs);
+  png_write_end(png_ptr, info_ptr);
+
+  free(pal_ptr);
+  free(row_ptrs);
+  png_destroy_write_struct(&png_ptr, &info_ptr);
+  fclose(file);
+}
+
+#else
+
+#define DUMP_FMT_EXT "bmp"
+
+void dump_screen_real(SDL_Surface *surface, const char *name)
+{
+  SDL_SaveBMP(surface, name);
+}
+
+#endif // CONFIG_PNG
+
 #define MAX_NAME_SIZE 16
 
-void dump_screen()
+void dump_screen(void)
 {
   int i;
   char name[MAX_NAME_SIZE];
@@ -1421,11 +1507,12 @@ void dump_screen()
 
   for(i = 0; i < 99999; i++)
   {
-    snprintf(name, MAX_NAME_SIZE - 1, "screen%d.bmp", i);
+    snprintf(name, MAX_NAME_SIZE - 1, "screen%d.%s", i, DUMP_FMT_EXT);
     name[MAX_NAME_SIZE - 1] = '\0';
     if(stat(name, &file_info))
       break;
   }
+
   ss = SDL_CreateRGBSurface(SDL_SWSURFACE, 640, 350, 8, 0, 0, 0, 0);
   if (ss)
   {
@@ -1434,7 +1521,7 @@ void dump_screen()
     render_graph8((Uint8*)ss->pixels, ss->pitch, &graphics,
      set_colors8[graphics.screen_mode]);
     SDL_UnlockSurface(ss);
-    SDL_SaveBMP(ss, name);
+    dump_screen_real(ss, name);
     SDL_FreeSurface(ss);
   }
 }

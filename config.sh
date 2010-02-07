@@ -32,6 +32,9 @@ usage() {
 	echo "  --enable-mikmod   Enables MikMod music engine."
 	echo "  --disable-mikmod  Disables MikMod music engine (default)."
 	echo
+	echo "  --disable-libpng  Disables PNG screendump support."
+	echo "  --enable-libpng   Enables PNG screendump support (default)."
+	echo
 	echo "e.g.: ./config.sh --platform linux --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
 	echo "e.g.: ./config.sh --platform win32"
@@ -50,6 +53,7 @@ X11="true"
 OPENGL="true"
 MODPLUG="true"
 MIKMOD="false"
+LIBPNG="true"
 
 #
 # User may override above settings
@@ -84,6 +88,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-mikmod" ] && MIKMOD="false"
 	[ "$1" = "--enable-mikmod" ]  && MIKMOD="true"
+
+	[ "$1" = "--disable-libpng" ] && LIBPNG="false"
+	[ "$1" = "--enable-libpng" ] && LIBPNG="true"
 
 	shift
 done
@@ -225,6 +232,18 @@ else
 	else
 		echo "Music engine disabled."
 	fi
+fi
+
+#
+# Handle PNG screendump support, if enabled
+#
+if [ "$LIBPNG" = "true" ]; then
+	echo "PNG screendump support enabled."
+	echo "#define CONFIG_PNG" >> src/config.h
+	echo "LIBPNG=1" >> Makefile.platform
+else
+	echo "PNG screendump support disabled."
+	echo "LIBPNG=0" >> Makefile.platform
 fi
 
 echo

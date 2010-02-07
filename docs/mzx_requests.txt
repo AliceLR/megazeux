@@ -21,7 +21,6 @@ MZX REQUESTS:
 -Ability to directly access the vlayer (i.e. through the Editor and not through Robotic commands).
 -[+Exo]Ability to re-order boards.
 -Re-addition of mouse editing functionality that the DOS versions had (palette editing, clicking on hotkey text makes hotkey action happen (e.g. clicking on "L:Load" acts as the L key has been pressed), etc.).
--[+Exo]Automatic PNG support, or a compile option for PNG support.
 -SMZX mode with full resolution but where two characters act as a single character.
 -Ability to enter the number lists from CHAR EDIT commands into the character editor to create a character.
 -Ability to remove "edges" from characters.

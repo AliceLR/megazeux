@@ -25,6 +25,11 @@ SDL_LDFLAGS ?= `sdl-config --libs`
 VORBIS_CFLAGS  ?= -I${PREFIX}/include
 VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
 
+ifeq (${LIBPNG},1)
+LIBPNG_CFLAGS ?= `libpng12-config --cflags`
+LIBPNG_LDFLAGS ?= `libpng12-config --libs`
+endif
+
 ifeq (${DEBUG},1)
 CFLAGS    = -g -Wall -std=gnu99 -DDEBUG ${ARCH_CFLAGS}
 CXXFLAGS  = -g -Wall -DDEBUG ${ARCH_CXXFLAGS}
