@@ -82,6 +82,10 @@ USERS
   if their extensions were mixed or upper case (e.g. OGG/SAM/GDM).
 + Restored functionality of "if lasttouched DIR" which has been broken since
   MZX 2.02.
++ Fixed a bug where attempting to decrypt a read-only world file would result
+  in a crash (Mr_Alert).
++ Fixed a bug where an error loading a world file after the selection dialog
+  box would occasionally result in a crash (Mr_Alert).
 
 DEVELOPERS
 
