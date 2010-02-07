@@ -246,8 +246,8 @@ TRY [dir] "label"                                       |    YES(5)   |
 WAIT #                                                  |     YES     |
 WAIT MOD FADE                                           |     NO      |
 WAIT PLAY                                               |     NO      |
-WAIT PLAY "string"                                      |     YES     |
-WALK [dir]                                              |    NO(8)    |
+WAIT PLAY "string"                                      |    YES(2)   |
+WALK [dir]                                              |     YES     |
 WIND #                                                  |     NO      |
 WRITE OVERLAY [color] "string" # #                      |     NO      |
 UNLOCKPLAYER                                            |     NO      |
@@ -265,4 +265,3 @@ ZAP "label" #                                           |     NO      |
 (5) = Attempting to jump to labels that do not exist does not consume a cycle.
 (6) = Does not end a cycle if # is 0.
 (7) = Has a sub-cycle end, and thus acts differently from the DOS version (most notably, being shot point-blank happens far faster).
-(8) = Most likely a bug.
