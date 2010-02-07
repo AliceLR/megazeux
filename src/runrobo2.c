@@ -5086,7 +5086,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             {
               char wrap_row = char_buffer[13];
 
-              for(i = 14; i > 0; i--)
+              for(i = 13; i > 0; i--)
               {
                 char_buffer[i] = char_buffer[i - 1];
               }

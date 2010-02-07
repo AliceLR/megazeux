@@ -72,6 +72,8 @@ USERS
 + Fix a bug causing board switching to not correctly alter the x,y viewport
   scroll leading to the display of raw memory and potentially crashes, with
   differently sized boards.
++ Fixed stack corruption caused by SCROLL CHAR SOUTH, detected by Ubuntu's
+  SSP (Stack Smashing Protection) enabled binary.
 
 DEVELOPERS
 
