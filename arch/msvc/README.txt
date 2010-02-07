@@ -98,9 +98,6 @@ correctly, unless you remove the DLL resources, or install the MFC SDK
 
 CURRENT LIMITATIONS
 
-ModPlug does not build with MSVC yet and is not enabled. These files must not
-be added to the MSVC project. As a result there will be no music support.
-
 The PNG library was not tested for compatibility, and PNG screendumps are not
 enabled. This code should work, however. Edit config.h if you are interested.
 
