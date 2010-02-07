@@ -1,3 +1,18 @@
+July 1, 2007 - MZX 2.81g
+
+Again, no significant new features have been introduced in this release.
+However, there have been many essential bugfixes, including improved
+compatibility with games made in older versions of MegaZeux.
+
+Additionally, improvements have been made to the opengl2 and overlay2
+renderers, improving performance for most users. A port of MegaZeux to the
+GP2X console has been added. MegaZeux has been backported to C (rather than
+C++) and can operate correctly on a CPU without a floating-point unit.
+
+Particular thanks go out to Quantum P. (for his icons), Mr_Alert (for his
+valuable bug fixes), Lancer-X (for fixing what I was too lazy to) and
+Terryn (for finding many annoying bugs that nobody else could).
+
 USERS
 
 + Fixed a bug in the audio code. The linear resampler was not taking volume
@@ -21,13 +36,15 @@ USERS
   with the key? name used with inc/dec/mul/div/mod. Fixes "Doom Keep".
 + Imported libmodplug 0.8.4, which adds MIDI/PAT and ABC format support,
   fixes some bugs in the mixer, and should build on more platforms.
+  NOTE: MID files currently cannot be selected in the editor, because they
+        do not play correctly.
 + Added Quantum P's MacOS X icons and make them available on all platforms.
   On Windows, the icons are now embedded in the EXE file and will be visible
   on the taskbar.
 + Improved the performance of the "opengl2" renderer, by removing the
   convoluted 3D drawing commands and replacing them with 2D ones. Reduced the
   quad count by using an intermediary 80x25 texture. MegaZeux now depends on
-  fewer GL features. [LogiCow]
+  fewer GL features (LogiCow).
 + Introduced an "fsafegets" to work around problems where robots exported by
   a Windows version of MegaZeux would not load on other platforms. This was
   due to differing EOL style and broke at least one game (Termination).
@@ -67,12 +84,8 @@ DEVELOPERS
 + Rewrote config.sh to use POSIX sh compatible functions, so that there is
   no dependency on the BASH interpreter. Surprisingly, some distributions
   still don't enable BASH by default (using csh, ash or zsh instead).
-+ Ported most of MegaZeux back to C. Many more changes were required than I
-  anticipated; MZX was using more C++ features than I expected. The only
-  exception is audio.cpp, which cannot be ported back to C because it uses
-  ModPlug's C++ classes directly (but I plan to split this file up shortly).
-  NOTE: The changes required were enormous, so I might have introduced some
-        weird bugs! Please test!
++ Ported most of MegaZeux back to C. This should further reduce the platform
+  requirements for running MZX, and enable marginally faster compilation.
 + Enabled GCC's -W flag for even more warnings, switching off unused
   parameter warnings (useful for delegates). Mostly typing fixes, but it
   found a bug in string handling.
@@ -89,6 +102,10 @@ DEVELOPERS
   detection and provide more usable debug traces).
 + Custom Random() implementation to provide a more uniform number
   distribution. Factored out for future (better) implementations.
++ The audio backend (audio.cpp) has been modularised to support the use of
+  mikmod instead of modplug. This should enable ports of MZX to platforms
+  without an FPU, and improve performance on platforms with weak FPUs.
++ Added GP2X port to config.sh, based on work done by Simon Parzer.
 
 January 30, 2007 - MZX 2.81f
 
