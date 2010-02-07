@@ -23,6 +23,7 @@
 #define __SFX_H
 
 #include "compat.h"
+#include "config.h"
 
 __M_BEGIN_DECLS
 
@@ -34,8 +35,10 @@ __M_BEGIN_DECLS
 // Size of sound queue
 #define NOISEMAX        4096
 
-// Special freqs
-#define F_REST          1
+extern char sfx_strs[NUM_SFX][69];
+extern int topindex, backindex;
+
+#ifdef CONFIG_AUDIO
 
 void play_sfx(World *mzx_world, int sfx);
 void clear_sfx_queue(void);
@@ -43,15 +46,17 @@ void sound_system(void);
 char is_playing(void);
 void play_str(char *str, int sfx_play);
 
-typedef struct
-{
-  int duration;//This is the struc of the sound queue
-  int freq;
-} noise;
-
-extern char sfx_strs[NUM_SFX][69];
 extern char *custom_sfx; //Ref. in chunks of 69
 extern int custom_sfx_on; //1 to turn on custom sfx
+
+#else // !CONFIG_AUDIO
+
+static inline void clear_sfx_queue(void) {}
+static inline void play_sfx(World *mzx_world, int sfxn) {}
+static inline void play_str(char *str, int sfx_play) {}
+static inline char is_playing(void) { return 0; }
+
+#endif // CONFIG_AUDIO
 
 __M_END_DECLS
 

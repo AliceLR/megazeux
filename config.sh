@@ -45,6 +45,9 @@ usage() {
 	echo "  --disable-libpng   Disables PNG screendump support."
 	echo "  --enable-libpng    Enables PNG screendump support (default)."
 	echo
+	echo "  --disable-audio    Disables all audio (sound + music)."
+	echo "  --enable-audio     Audio (sound + music) is enabled (default)."
+	echo
 	echo "e.g.: ./config.sh --platform linux --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
 	echo "e.g.: ./config.sh --platform win32"
@@ -67,6 +70,7 @@ GP2X="false"
 MODPLUG="true"
 MIKMOD="false"
 LIBPNG="true"
+AUDIO="true"
 
 #
 # User may override above settings
@@ -113,6 +117,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-libpng" ] && LIBPNG="false"
 	[ "$1" = "--enable-libpng" ] && LIBPNG="true"
+
+	[ "$1" = "--disable-audio" ] && AUDIO="false"
+	[ "$1" = "--enable-audio" ] && AUDIO="true"
 
 	shift
 done
@@ -247,6 +254,14 @@ if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
 fi
 
 #
+# Force-disable modplug/mikmod if audio is disabled
+#
+if [ "$AUDIO" = "false" ]; then
+	MODPLUG="false"
+	MIKMOD="false"
+fi
+
+#
 # Software renderer
 #
 if [ "$SOFTWARE" = "true" ]; then
@@ -308,6 +323,18 @@ else
 	else
 		echo "Music engine disabled."
 	fi
+fi
+
+#
+# Handle audio subsystem, if enabled
+#
+if [ "$AUDIO" = "true" ]; then
+	echo "Audio subsystem enabled."
+	echo "#define CONFIG_AUDIO" >> src/config.h
+	echo "BUILD_AUDIO=1" >> Makefile.platform
+else
+	echo "Audio subsystem disabled."
+	echo "BUILD_AUDIO=0" >> Makefile.platform
 fi
 
 #

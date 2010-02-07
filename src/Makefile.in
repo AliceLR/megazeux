@@ -54,16 +54,15 @@ mzx_objs = \
     ${mzx_base}/hexchar.${o} ${mzx_base}/event.${o} ${mzx_base}/error.${o} \
     ${mzx_base}/helpsys.${o} ${mzx_base}/world.${o} ${mzx_base}/board.${o} \
     ${mzx_base}/robot.${o} ${mzx_base}/idput.${o} ${mzx_base}/intake.${o} \
-    ${mzx_base}/sfx.${o} ${mzx_base}/scrdisp.${o} ${mzx_base}/data.${o} \
-    ${mzx_base}/game.${o} ${mzx_base}/counter.${o} ${mzx_base}/idarray.${o} \
-    ${mzx_base}/delay.${o} ${mzx_base}/game2.${o} ${mzx_base}/expr.${o} \
-    ${mzx_base}/sprite.${o} ${mzx_base}/runrobo2.${o} ${mzx_base}/mzm.${o} \
-    ${mzx_base}/decrypt.${o} ${mzx_base}/audio.${o} ${mzx_base}/edit.${o} \
-    ${mzx_base}/edit_di.${o} ${mzx_base}/block.${o} ${mzx_base}/char_ed.${o} \
-    ${mzx_base}/pal_ed.${o} ${mzx_base}/param.${o} ${mzx_base}/sfx_edit.${o} \
-    ${mzx_base}/fill.${o} ${mzx_base}/rasm.${o} ${mzx_base}/robo_ed.${o} \
-    ${mzx_base}/configure.${o} ${mzx_base}/fsafeopen.${o} \
-    ${mzx_base}/macro.${o} ${mzx_base}/render.${o}
+    ${mzx_base}/scrdisp.${o} ${mzx_base}/data.${o} ${mzx_base}/game.${o} \
+    ${mzx_base}/counter.${o} ${mzx_base}/idarray.${o} ${mzx_base}/delay.${o} \
+    ${mzx_base}/game2.${o} ${mzx_base}/expr.${o} ${mzx_base}/sprite.${o} \
+    ${mzx_base}/runrobo2.${o} ${mzx_base}/mzm.${o} ${mzx_base}/decrypt.${o} \
+    ${mzx_base}/edit.${o} ${mzx_base}/edit_di.${o} ${mzx_base}/block.${o} \
+    ${mzx_base}/char_ed.${o} ${mzx_base}/pal_ed.${o} ${mzx_base}/param.${o} \
+    ${mzx_base}/sfx_edit.${o} ${mzx_base}/fill.${o} ${mzx_base}/rasm.${o} \
+    ${mzx_base}/robo_ed.${o} ${mzx_base}/configure.${o} ${mzx_base}/sfx.${o} \
+    ${mzx_base}/fsafeopen.${o} ${mzx_base}/macro.${o} ${mzx_base}/render.${o}
 
 ifeq (${BUILD_SOFTWARE},1)
 mzx_objs += ${mzx_base}/render_soft.${o}
@@ -98,6 +97,10 @@ endif
 ifeq (${LIBPNG},1)
 mzx_cflags += ${LIBPNG_CFLAGS}
 mzx_ldflags += ${LIBPNG_LDFLAGS}
+endif
+
+ifeq (${BUILD_AUDIO},1)
+mzx_objs += ${mzx_base}/audio.${o}
 endif
 
 ${txt2hlp}: ${txt2hlp_objs}

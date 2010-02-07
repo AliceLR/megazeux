@@ -23,21 +23,18 @@
 #define __AUDIO_H
 
 #include "compat.h"
+#include "config.h"
 
 __M_BEGIN_DECLS
 
-#include "config.h"
+#ifdef CONFIG_AUDIO
+
 #include "SDL.h"
 #include "configure.h"
 
 #ifdef CONFIG_MODPLUG
 #include "modplug.h"
 #endif
-
-#define FP_SHIFT 13
-#define FP_AND ((1 << FP_SHIFT) - 1)
-
-#define FP_MULT(a, b) ((a * b) << FP_SHIFT)
 
 typedef struct _audio_stream audio_stream;
 
@@ -127,14 +124,14 @@ typedef struct
 
 void init_audio(config_info *conf);
 void load_module(char *filename);
-void end_module(void);
+void end_module();
 void play_sample(int freq, char *filename);
-void end_sample(void);
+void end_sample();
 void jump_module(int order);
 int get_order();
 void volume_module(int vol);
-void module_exit(void);
-void module_init(void);
+void module_exit();
+void module_init();
 void spot_sample(int freq, int sample);
 void shift_frequency(int freq);
 int get_frequency();
@@ -196,7 +193,33 @@ void construct_audio_stream(audio_stream *a_src,
 
 /*** end audio plugins exports */
 
-extern int error_mode;
+#else // !CONFIG_AUDIO
+
+static inline void init_audio(config_info *conf) {}
+static inline void set_music_volume(int volume) {}
+static inline void set_sound_volume(int volume) {}
+static inline void set_music_on(int val) {}
+static inline void set_sfx_on(int val) {}
+static inline void set_sfx_volume(int volume) {}
+static inline void end_sample() {}
+static inline void end_module() {}
+static inline void load_module(char *filename) {}
+static inline void volume_module(int vol) {}
+static inline void set_position(int pos) {}
+static inline void jump_module(int order) {}
+static inline void shift_frequency(int freq) {}
+static inline void play_sample(int freq, char *filename) {}
+static inline void spot_sample(int freq, int sample) {}
+static inline int get_music_on_state() { return 0; }
+static inline int get_sfx_on_state() { return 0; }
+static inline int get_music_volume() { return 0; }
+static inline int get_sound_volume() { return 0; }
+static inline int get_sfx_volume() { return 0; }
+static inline int get_position() { return 0; }
+static inline int get_order() { return 0; }
+static inline int get_frequency() { return 0; }
+
+#endif // CONFIG_AUDIO
 
 __M_END_DECLS
 

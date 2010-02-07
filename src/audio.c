@@ -58,6 +58,10 @@
 #include "audio_mikmod.h"
 #endif
 
+#define FP_SHIFT      13
+#define FP_AND        ((1 << FP_SHIFT) - 1)
+#define FP_MULT(a, b) ((a * b) << FP_SHIFT)
+
 typedef struct
 {
   sampled_stream s;
@@ -1435,7 +1439,7 @@ void load_module(char *filename)
   }
 }
 
-void end_module(void)
+void end_module()
 {
   if(audio.primary_stream)
   {

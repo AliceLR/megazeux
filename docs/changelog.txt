@@ -66,8 +66,11 @@ DEVELOPERS
 + MegaZeux now has size optimisations which can reduce binary size when
   features are disabled. For example, all renderers can now be disabled,
   and when module engines are disabled, audio will not export any symbols.
-  This reduces the size of a stripped AMD64 binary from 860992b (with all
-  features enabled) to 656160b (with all features disabled) (~24% smaller).
++ The entire audio subsystem can now be disabled. This further reduces
+  binary size on embedded platforms. However, SFX editing still remains
+  enabled (though useless) until editor modularity is implemented.
+  This reduces the size of a stripped AMD64 binary from 856896b (with all
+  features enabled) to 448488b (with all features disabled) (~47% smaller).
 
 July 4, 2007 - MZX 2.81g
 
