@@ -98,7 +98,7 @@ breakout() {
 #
 # The basename for the source and binary packages.
 #
-TARGET=`grep -m1 TARGET Makefile | sed "s/ //g" | cut -d "=" -f 2`
+TARGET=`grep TARGET Makefile | head -n1 | sed "s/ //g" | cut -d "=" -f 2`
 
 if [ "$TARGET" == "" ]; then
 	breakout 1
