@@ -1742,12 +1742,16 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           case LASTTOUCH:
           {
+	    fprintf(stderr, "got here");
             if(id)
             {
+	      fprintf(stderr, "%d\n", direction);
               direction = parsedir(direction, x, y,
                cur_robot->walk_dir);
+	      fprintf(stderr, "%d\n", direction);
               if(is_cardinal_dir(direction))
               {
+	        fprintf(stderr, "got here %d %d\n", direction, cur_robot->last_touch_dir);
                 if(direction == cur_robot->last_touch_dir)
                   success = 1;
               }
