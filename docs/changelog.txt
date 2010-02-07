@@ -38,6 +38,7 @@ USERS
 + Fix a bug where the variable-length string allocator would prematurely
   bail out when reading a string (of indeterminate length) from a file with
   the set "$var" to "FREAD" syntax.
++ Fix a bug where more than 256 errors would crash the robotic checker.
 
 DEVELOPERS
 

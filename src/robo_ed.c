@@ -1676,10 +1676,9 @@ int validate_lines(robot_state *rstate, int show_none)
       if(current_rline->validity_status == invalid_uncertain)
         num_ignore++;
 
+      num_errors++;
       if(num_errors == MAX_ERRORS)
         break;
-
-      num_errors++;
     }
     current_rline = current_rline->next;
     line_number++;
