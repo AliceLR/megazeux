@@ -61,6 +61,8 @@ DEVELOPERS
   changes (which involve converting from C99 variable length arrays to
   malloc/free) which are slower and should not be used with competent
   C99 compilers like GCC.
+  Microsoft Visual C++ Express Edition 2005 was used to build libogg,
+  libvorbis, libsdl and MegaZeux itself. Only 32bit builds were tested.
 + MegaZeux now has size optimisations which can reduce binary size when
   features are disabled. For example, all renderers can now be disabled,
   and when module engines are disabled, audio will not export any symbols.

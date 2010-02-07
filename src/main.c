@@ -24,7 +24,10 @@
 #include <stdlib.h>
 #include <stdio.h>
 #include <time.h>
+
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 
 #ifdef PSP_BUILD
 

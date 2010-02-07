@@ -17,44 +17,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-// Provide some compatibility macros for combined C/C++ binary
+// all MSVC specific hacks should go here, if possible
 
-#ifndef __COMPAT_H
-#define __COMPAT_H
+#ifndef MSVC_H
+#define MSVC_H
 
-#ifdef __cplusplus
-#define __M_BEGIN_DECLS extern "C" {
-#define __M_END_DECLS   }
-#else
-#define __M_BEGIN_DECLS
-#define __M_END_DECLS
-#define true 1
-#define false 0
-#endif /* __cplusplus */
+#include <ctype.h>
 
-#ifdef _MSC_VER
-#define inline
-#include "../arch/msvc/msvc.h"
-#endif
+#define S_ISDIR(mode) (mode & _S_IFDIR)
 
-#include <time.h>
+#define snprintf _snprintf
+#define strcasecmp stricmp
+#define strncasecmp strnicmp
 
-// Random function, returns an integer between 0 and Range
-static inline int Random(int Range)
-{
-  static unsigned long long seed = 0;
-  unsigned long long value;
-
-  // If the seed is 0, initialise it with time and clock
-  if (seed == 0)
-  {
-    seed = time(NULL) + clock();
-  }
-
-  seed = seed * 1664525 + 1013904223;
-
-  value = (seed & 0xFFFFFFFF) * Range / 0xFFFFFFFF;
-  return (int)value;
-}
-
-#endif // __COMPAT_H
+#endif // MSVC_H
