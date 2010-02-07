@@ -2,6 +2,8 @@
 # psp makefile generics
 #
 
+.PHONY: package-pbp
+
 # psp toolchain overrides
 CC  = psp-gcc
 CXX = psp-g++

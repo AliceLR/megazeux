@@ -6,12 +6,20 @@
 #                  http://aegis.sourceforge.net/auug97.pdf
 ##
 
-include Makefile.platform
-
 .PHONY: clean
 
 VERSION=2.81g
 TARGET=mzx281g
+
+ifneq (${DEBUG},1)
+mzx = ${TARGET}${BINEXT}
+else
+mzx = ${TARGET}.dbg${BINEXT}
+endif
+
+all: ${mzx}
+
+include Makefile.platform
 
 CC  ?= gcc
 CXX ?= g++
@@ -40,17 +48,9 @@ endif
 #
 ifneq (${SUPPRESS_BUILD},1)
 
-ifneq (${DEBUG},1)
-mzx = ${TARGET}${BINEXT}
-else
-mzx = ${TARGET}.dbg${BINEXT}
-endif
-
 ifeq (${BUILD_MODPLUG},1)
 BUILD_GDM2S3M=1
 endif
-
-all: ${mzx}
 
 include src/Makefile.in
 
