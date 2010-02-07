@@ -1491,6 +1491,8 @@ int vlayer_width_read(World *mzx_world, function_counter *counter,
 void vlayer_height_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
+  if(value <= 0)
+    value = 1;
   mzx_world->vlayer_height = value;
   mzx_world->vlayer_width = mzx_world->vlayer_size / value;
 }
@@ -1498,6 +1500,9 @@ void vlayer_height_write(World *mzx_world, function_counter *counter,
 void vlayer_size_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
+  if(value <= 0)
+    value = 1;
+
   if(value <= MAX_BOARD_SIZE)
   {
     int vlayer_width = mzx_world->vlayer_width;
@@ -1526,6 +1531,8 @@ void vlayer_size_write(World *mzx_world, function_counter *counter,
 void vlayer_width_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
+  if(value <= 0)
+    value = 1;
   mzx_world->vlayer_width = value;
   mzx_world->vlayer_height = mzx_world->vlayer_size / value;
 }

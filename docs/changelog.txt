@@ -7,6 +7,8 @@ USERS
   (Mr_Alert).
 + Made the mouse cursor in the "opengl2" renderer look more like the mouse
   cursor in the other renderers (Mr_Alert).
++ Setting vlayer_size, vlayer_width or vlayer_height to values less than or
+  equal to zero would crash MegaZeux. Limit the smallest vlayer size to 1x1.
 
 DEVELOPERS
 
