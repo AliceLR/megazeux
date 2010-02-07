@@ -24,6 +24,10 @@ OBJS      = main.${o} graphics.${o} window.${o} hexchar.${o} event.${o} \
 
 MZX       = ../${TARGET}
 
+ifdef ICON
+ICONRC = ../contrib/icons/quantump.${o}
+endif
+
 ifdef DEBUG
 
 subdir:
@@ -32,8 +36,8 @@ subdir:
 subdir-clean:
 	cd utils && ${MAKE} clean DEBUG=1 && cd ../../..
 
-mzx:	subdir ${OBJS}
-	${CC} ${OBJS} ${LIBS} -o ${MZX}.dbg${BINEXT} -lstdc++
+mzx:	subdir ${OBJS} ${ICONRC}
+	${CC} ${OBJS} ${ICONRC} ${LIBS} -o ${MZX}.dbg${BINEXT} -lstdc++
 	@echo "DEBUG BUILD AVAILABLE AT ${MZX}.dbg${BINEXT}"
 
 else
@@ -44,11 +48,11 @@ subdir:
 subdir-clean:
 	cd utils && ${MAKE} clean && cd ../../..
 
-mzx:	subdir ${OBJS}
-	${CC} ${OBJS} ${LIBS} -o ${MZX}${BINEXT} -lstdc++
-	${STRIP} ${MZX}${BINEXT} 
+mzx:	subdir ${OBJS} ${ICONRC}
+	${CC} ${OBJS} ${ICONRC} ${LIBS} -o ${MZX}${BINEXT} -lstdc++
+	${STRIP} ${MZX}${BINEXT}
 
 endif
 
 clean: subdir-clean
-	rm -f ${OBJS} *~ ${MZX}${BINEXT} ${MZX}.dbg${BINEXT} 
+	rm -f ${OBJS} ${ICONRC} *~ ${MZX}${BINEXT} ${MZX}.dbg${BINEXT} 

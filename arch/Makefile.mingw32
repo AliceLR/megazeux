@@ -9,10 +9,11 @@ debug: subdir-debug
 MINGWBASE ?= i586-mingw32msvc-
 
 # .. because we will use them here
-CC    = ${MINGWBASE}gcc
-CXX   = ${MINGWBASE}g++
-AR    = ${MINGWBASE}ar
-STRIP = ${MINGWBASE}strip --strip-unneeded
+CC      = ${MINGWBASE}gcc
+CXX     = ${MINGWBASE}g++
+AR      = ${MINGWBASE}ar
+STRIP   = ${MINGWBASE}strip --strip-unneeded
+WINDRES = ${MINGWBASE}windres
 
 # windows requires a binary extension
 BINEXT = .exe

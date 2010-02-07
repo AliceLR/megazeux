@@ -184,6 +184,7 @@ rm -f dist/$TARGET/contrib/gdm2s3m/src/{*.a,*.o} &&
 rm -f dist/$TARGET/contrib/libmodplug/src/{*.a,*.o} &&
 rm -f dist/$TARGET/src/utils/*.o dist/$TARGET/src/utils/txt2hlp{,.exe} &&
 rm -f dist/$TARGET/src/utils/txt2hlp.dbg{,.exe} &&
+rm -f dist/$TARGET/contrib/icons/quantump.o &&
 
 # hack for "dist" makefile
 cp dist/$TARGET/arch/Makefile.dist dist/$TARGET/Makefile.platform

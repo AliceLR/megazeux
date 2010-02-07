@@ -21,6 +21,9 @@ USERS
   with the key? name used with inc/dec/mul/div/mod. Fixes "Doom Keep".
 + Imported libmodplug 0.8.4, which adds MIDI/PAT and ABC format support,
   fixes some bugs in the mixer, and should build on more platforms.
++ Added Quantum P's MacOS X icons and make them available on all platforms.
+  On Windows, the icons are now embedded in the EXE file and will be visible
+  on the taskbar.
 
 DEVELOPERS
 
@@ -41,6 +44,8 @@ DEVELOPERS
 + Add manpages for 'megazeux' and other binaries for the Debian packages.
   Comply with the Debian packaging guidelines by providing a copyright
   note, listing significant contributors to MegaZeux.
++ Added support to the build system for supporting icons modularly.
+  See contrib/icons/README for more information.
 
 January 30, 2007 - MZX 2.81f
 

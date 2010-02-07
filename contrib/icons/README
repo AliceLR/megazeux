@@ -4,6 +4,7 @@ This directory is where icon themes are placed ready for distribution on
 various platforms. The layout is modelled after FreeDesktop.org's "icon naming
 specification", allowing the icons to be used immediately on UNIX platforms.
 
+
 ADDING ICON(S) / PACKS
 
 Under contrib/icons, create a new $PACK sub-directory. Inside this directory,
@@ -18,19 +19,34 @@ The icons can be any dimension as long as they are in 32bit color and named
 appropriately. These files will be converted to FDO icon packs or ICO files
 as appropriate.
 
+
 GENERATING FDO ICONSETS
 
 Running the script "makeset.sh" under MSYS or Linux will generate a
 $PACK.tar.gz file which contains versions of the set at multiple resolutions.
+
+./makeset.sh quantump
 
 It will also rename the files and nest them in subdirectories.
 
 See http://standards.freedesktop.org/icon-naming-spec/icon-naming-spec-0.8.html
 for more information about the FDO icon naming specification.
 
+
 GENERATING ICO FILES
 
 TODO:	Write this section. Mention writing an RC file and executing the
 	appropriate script.
+
+
+MAKING MEGAZEUX USE THE ICONS ON THE WINDOWS PLATFORM
+
+Edit src/Makefile and search for "ICON". The filename here needs to changed
+from "contrib/icons/quantump.${o}" to an appropriate name for your pack. Then
+issue:
+
+make ICON=1
+
+Which will combine the icon with the binary (under mingw32/win32 platforms).
 
 --ajs

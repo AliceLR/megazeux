@@ -33,7 +33,12 @@ CXXFLAGS += -O2 -Wall
 o         = o
 endif
 
-.SUFFIXES: .cpp .c
+.SUFFIXES: .cpp .c .rc
+
+ifdef ICON
+%.o %.dbg.o: %.rc
+	${WINDRES} -i $< -o $@
+endif
 
 %.o %.dbg.o: %.cpp
 	${CXX} ${CXXFLAGS} ${INCLUDES} -c $< -o $@
