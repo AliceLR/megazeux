@@ -23,6 +23,30 @@
 #include "graphics.h"
 #include "render.h"
 
+void (*set_colors8[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+{
+  set_colors8_mzx,
+  set_colors8_smzx,
+  set_colors8_smzx,
+  set_colors8_smzx3
+};
+
+void (*set_colors16[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+{
+  set_colors16_mzx,
+  set_colors16_smzx,
+  set_colors16_smzx,
+  set_colors16_smzx3
+};
+
+void (*set_colors32[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+{
+  set_colors32_mzx,
+  set_colors32_smzx,
+  set_colors32_smzx,
+  set_colors32_smzx3
+};
+
 void set_colors8_mzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
  Uint8 fg)
 {

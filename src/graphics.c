@@ -88,14 +88,6 @@ static const SDL_Color default_pal[16] =
   { 255, 255, 255, 0 }
 };
 
-static void (*set_colors8[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
-{
-  set_colors8_mzx,
-  set_colors8_smzx,
-  set_colors8_smzx,
-  set_colors8_smzx3
-};
-
 void ec_change_byte(Uint8 chr, Uint8 byte, Uint8 new_value)
 {
   graphics.charset[(chr * CHAR_SIZE) + byte] = new_value;

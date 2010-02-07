@@ -26,6 +26,10 @@ __M_BEGIN_DECLS
 
 #include "graphics.h"
 
+extern void (*set_colors8[4])(graphics_data *, Uint32 *, Uint8, Uint8);
+extern void (*set_colors16[4])(graphics_data *, Uint32 *, Uint8, Uint8);
+extern void (*set_colors32[4])(graphics_data *, Uint32 *, Uint8, Uint8);
+
 void set_colors8_mzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
  Uint8 fg);
 void set_colors8_smzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
