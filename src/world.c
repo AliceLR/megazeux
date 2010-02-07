@@ -84,6 +84,7 @@
 #include "graphics.h"
 #include "world.h"
 #include "data.h"
+#include "idput.h"
 #include "decrypt.h"
 #include "fsafeopen.h"
 #include "game.h"
@@ -91,8 +92,9 @@
 
 static char save_version_string[6] = "MZS\x02\x51";
 
-char world_version_string[4] = "M\x02\x51";
 char version_number_string[20] = MZX_VERSION;
+
+__editor_maybe_static char world_version_string[4] = "M\x02\x51";
 
 // Helper functions for file loading.
 // Get 2 bytes
@@ -544,6 +546,151 @@ static void set_update_done(World *mzx_world)
 
     mzx_world->update_done_size = max_size;
   }
+}
+
+__editor_maybe_static void optimize_null_boards(World *mzx_world)
+{
+  // Optimize out null objects while keeping a translation list mapping
+  // board numbers from the old list to the new list.
+  int num_boards = mzx_world->num_boards;
+  Board **board_list = mzx_world->board_list;
+  Board **optimized_board_list =
+   (Board **)malloc(sizeof(Board *) * num_boards);
+  int *board_id_translation_list =
+   (int *)malloc(sizeof(int) * num_boards);
+
+  Board *cur_board;
+  int i, i2;
+
+  for(i = 0, i2 = 0; i < num_boards; i++)
+  {
+    cur_board = board_list[i];
+    if(cur_board != NULL)
+    {
+      optimized_board_list[i2] = cur_board;
+      board_id_translation_list[i] = i2;
+      i2++;
+    }
+    else
+    {
+      board_id_translation_list[i] = NO_BOARD;
+    }
+  }
+
+  // Might need to fix these first, to correct old MZX games.
+  if(mzx_world->first_board >= num_boards)
+    mzx_world->first_board = 0;
+
+  if((mzx_world->death_board >= num_boards) &&
+   (mzx_world->death_board < DEATH_SAME_POS))
+    mzx_world->death_board = NO_BOARD;
+
+  if(mzx_world->endgame_board >= num_boards)
+    mzx_world->endgame_board = NO_BOARD;
+
+  if(i2 < num_boards)
+  {
+    int offset;
+    char *level_id;
+    char *level_param;
+    int d_param, d_flag;
+    int board_width;
+    int board_height;
+    int relocate_current = 1;
+    int i3;
+
+    if(board_list[mzx_world->current_board_id] == NULL)
+      relocate_current = 0;
+
+    free(board_list);
+    board_list =
+     (Board **)realloc(optimized_board_list, sizeof(Board *) * i2);
+
+    mzx_world->num_boards = i2;
+    mzx_world->num_boards_allocated = i2;
+
+    // Fix all entrances and exits in each board
+    for(i = 0; i < i2; i++)
+    {
+      cur_board = board_list[i];
+      board_width = cur_board->board_width;
+      board_height = cur_board->board_height;
+      level_id = cur_board->level_id;
+      level_param = cur_board->level_param;
+
+      // Fix entrances
+      for(offset = 0; offset < board_width * board_height; offset++)
+      {
+        d_flag = flags[(int)level_id[offset]];
+
+        if(d_flag & A_ENTRANCE)
+        {
+          d_param = level_param[offset];
+          if(d_param < num_boards)
+            level_param[offset] = board_id_translation_list[d_param];
+          else
+            level_param[offset] = NO_BOARD;
+        }
+      }
+
+      // Fix exits
+      for(i3 = 0; i3 < 4; i3++)
+      {
+        d_param = cur_board->board_dir[i3];
+
+        if(d_param < i2)
+          cur_board->board_dir[i3] = board_id_translation_list[d_param];
+        else
+          cur_board->board_dir[i3] = NO_BOARD;
+      }
+    }
+
+    // Fix current board
+    if(relocate_current)
+    {
+      d_param = mzx_world->current_board_id;
+      d_param = board_id_translation_list[d_param];
+      mzx_world->current_board_id = d_param;
+      mzx_world->current_board = board_list[d_param];
+    }
+
+    d_param = mzx_world->first_board;
+    if(d_param >= num_boards)
+      d_param = num_boards - 1;
+
+    d_param = board_id_translation_list[d_param];
+    mzx_world->first_board = d_param;
+
+    d_param = mzx_world->endgame_board;
+
+    if(d_param != NO_BOARD)
+    {
+      if(d_param >= num_boards)
+        d_param = num_boards - 1;
+
+      d_param = board_id_translation_list[d_param];
+      mzx_world->endgame_board = d_param;
+    }
+
+    d_param = mzx_world->death_board;
+
+    if((d_param != NO_BOARD) && (d_param != DEATH_SAME_POS))
+    {
+      if(d_param >= num_boards)
+        d_param = num_boards - 1;
+
+      d_param = board_id_translation_list[d_param];
+      mzx_world->death_board = d_param;
+    }
+
+    mzx_world->board_list = board_list;
+  }
+  else
+  {
+    free(optimized_board_list);
+  }
+
+  free(board_id_translation_list);
 }
 
 // Loads a world into a World struct
@@ -1007,6 +1154,7 @@ static int load_world(World *mzx_world, char *file, int savegame, int *faded)
   return 0;
 }
 
+#ifdef CONFIG_EDITOR
 int append_world(World *mzx_world, char *file)
 {
   int version;
@@ -1178,6 +1326,7 @@ int append_world(World *mzx_world, char *file)
 
   return 0;
 }
+#endif // CONFIG_EDITOR
 
 // After clearing the above, use this to get default values. Use
 // for loading of worlds (as opposed to save games).
@@ -1426,8 +1575,8 @@ void default_scroll_values(World *mzx_world)
   mzx_world->scroll_arrow_color = 142;
 }
 
+#ifdef CONFIG_EDITOR
 // Create a new, blank, world, suitable for editing.
-
 void create_blank_world(World *mzx_world)
 {
   // Make default global data
@@ -1477,151 +1626,7 @@ void create_blank_world(World *mzx_world)
   default_palette();
   default_global_data(mzx_world);
 }
-
-void optimize_null_boards(World *mzx_world)
-{
-  // Optimize out null objects while keeping a translation list mapping
-  // board numbers from the old list to the new list.
-  int num_boards = mzx_world->num_boards;
-  Board **board_list = mzx_world->board_list;
-  Board **optimized_board_list =
-   (Board **)malloc(sizeof(Board *) * num_boards);
-  int *board_id_translation_list =
-   (int *)malloc(sizeof(int) * num_boards);
-
-  Board *cur_board;
-  int i, i2;
-
-  for(i = 0, i2 = 0; i < num_boards; i++)
-  {
-    cur_board = board_list[i];
-    if(cur_board != NULL)
-    {
-      optimized_board_list[i2] = cur_board;
-      board_id_translation_list[i] = i2;
-      i2++;
-    }
-    else
-    {
-      board_id_translation_list[i] = NO_BOARD;
-    }
-  }
-
-  // Might need to fix these first, to correct old MZX games.
-  if(mzx_world->first_board >= num_boards)
-    mzx_world->first_board = 0;
-
-  if((mzx_world->death_board >= num_boards) &&
-   (mzx_world->death_board < DEATH_SAME_POS))
-    mzx_world->death_board = NO_BOARD;
-
-  if(mzx_world->endgame_board >= num_boards)
-    mzx_world->endgame_board = NO_BOARD;
-
-  if(i2 < num_boards)
-  {
-    int offset;
-    char *level_id;
-    char *level_param;
-    int d_param, d_flag;
-    int board_width;
-    int board_height;
-    int relocate_current = 1;
-    int i3;
-
-    if(board_list[mzx_world->current_board_id] == NULL)
-      relocate_current = 0;
-
-    free(board_list);
-    board_list =
-     (Board **)realloc(optimized_board_list, sizeof(Board *) * i2);
-
-    mzx_world->num_boards = i2;
-    mzx_world->num_boards_allocated = i2;
-
-    // Fix all entrances and exits in each board
-    for(i = 0; i < i2; i++)
-    {
-      cur_board = board_list[i];
-      board_width = cur_board->board_width;
-      board_height = cur_board->board_height;
-      level_id = cur_board->level_id;
-      level_param = cur_board->level_param;
-
-      // Fix entrances
-      for(offset = 0; offset < board_width * board_height; offset++)
-      {
-        d_flag = flags[(int)level_id[offset]];
-
-        if(d_flag & A_ENTRANCE)
-        {
-          d_param = level_param[offset];
-          if(d_param < num_boards)
-            level_param[offset] = board_id_translation_list[d_param];
-          else
-            level_param[offset] = NO_BOARD;
-        }
-      }
-
-      // Fix exits
-      for(i3 = 0; i3 < 4; i3++)
-      {
-        d_param = cur_board->board_dir[i3];
-
-        if(d_param < i2)
-          cur_board->board_dir[i3] = board_id_translation_list[d_param];
-        else
-          cur_board->board_dir[i3] = NO_BOARD;
-      }
-    }
-
-    // Fix current board
-    if(relocate_current)
-    {
-      d_param = mzx_world->current_board_id;
-      d_param = board_id_translation_list[d_param];
-      mzx_world->current_board_id = d_param;
-      mzx_world->current_board = board_list[d_param];
-    }
-
-    d_param = mzx_world->first_board;
-    if(d_param >= num_boards)
-      d_param = num_boards - 1;
-
-    d_param = board_id_translation_list[d_param];
-    mzx_world->first_board = d_param;
-
-    d_param = mzx_world->endgame_board;
-
-    if(d_param != NO_BOARD)
-    {
-      if(d_param >= num_boards)
-        d_param = num_boards - 1;
-
-      d_param = board_id_translation_list[d_param];
-      mzx_world->endgame_board = d_param;
-    }
-
-    d_param = mzx_world->death_board;
-
-    if((d_param != NO_BOARD) && (d_param != DEATH_SAME_POS))
-    {
-      if(d_param >= num_boards)
-        d_param = num_boards - 1;
-
-      d_param = board_id_translation_list[d_param];
-      mzx_world->death_board = d_param;
-    }
-
-    mzx_world->board_list = board_list;
-  }
-  else
-  {
-    free(optimized_board_list);
-  }
-
-  free(board_id_translation_list);
-}
+#endif // CONFIG_EDITOR
 
 // FIXME: This function should probably die. It's unsafe.
 void add_ext(char *src, char *ext)
@@ -1635,6 +1640,7 @@ void add_ext(char *src, char *ext)
   }
 }
 
+#ifdef CONFIG_EDITOR
 void set_update_done_current(World *mzx_world)
 {
   Board *current_board = mzx_world->current_board;
@@ -1655,6 +1661,7 @@ void set_update_done_current(World *mzx_world)
     mzx_world->update_done_size = size;   
   }
 }
+#endif // CONFIG_EDITOR
 
 void get_path(char *file_name, char *dest)
 {

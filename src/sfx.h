@@ -23,7 +23,6 @@
 #define __SFX_H
 
 #include "compat.h"
-#include "config.h"
 
 __M_BEGIN_DECLS
 
@@ -35,7 +34,10 @@ __M_BEGIN_DECLS
 // Size of sound queue
 #define NOISEMAX        4096
 
+#ifdef CONFIG_EDITOR
 extern char sfx_strs[NUM_SFX][69];
+#endif // CONFIG_EDITOR
+
 extern int topindex, backindex;
 
 #ifdef CONFIG_AUDIO

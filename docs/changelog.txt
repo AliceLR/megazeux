@@ -66,13 +66,15 @@ DEVELOPERS
 + The entire audio subsystem can now be disabled. This further reduces
   binary size on embedded platforms. However, SFX editing still remains
   enabled (though useless) until editor modularity is implemented.
-  This reduces the size of a stripped AMD64 binary from 856896b (with all
-  features enabled) to 448488b (with all features disabled) (~47% smaller).
 + The PSP port is now officially supported, and compiles out of the box.
   See docs/psp.txt.
 + Renamed macos platform "darwin", to reflect its true nature (use Xcode to
   build as a real Application, instead of just a UNIX binary). Also fixed
   some bogosities with robo_ed's X11 includes on OS 10.5.
++ The editor can now be disabled, a la MZXRUN from the old DOS versions.
+  Configure with --disable-editor to shrink MZX by about 150k. This
+  reduces the size of a stripped AMD64 binary from 860296b (with all
+  features enabled) to 307616b (with all features disabled) (~64% smaller).
 
 July 4, 2007 - MZX 2.81g
 

@@ -36,8 +36,6 @@
 #include "audio.h"
 #include "rasm.h"
 #include "fsafeopen.h"
-#include "edit_di.h"
-#include "edit.h"
 #include "intake.h"
 
 #include "robot.h"
@@ -46,6 +44,11 @@
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
+#endif
+
+#ifdef CONFIG_EDITOR
+#include "window.h"
+#include "edit.h"
 #endif
 
 typedef int (* builtin_read_function)(World *mzx_world,
@@ -3426,6 +3429,7 @@ void save_string(FILE *fp, mzx_string *src_string)
   fwrite(src_string->value, str_length, 1, fp);
 }
 
+#ifdef CONFIG_EDITOR
 void debug_counters(World *mzx_world)
 {
   int num_vars =
@@ -3636,4 +3640,4 @@ void debug_counters(World *mzx_world)
 
   free(var_list);
 }
-
+#endif // CONFIG_EDITOR

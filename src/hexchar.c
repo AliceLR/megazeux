@@ -24,23 +24,8 @@
 #include <stdlib.h>
 #include <string.h>
 
-#define num2hex(x) ((x)>9 ? 87+(x) : 48+(x))
-
-//DOES NOT PRESERVE MOUSE CURSOR
-void write_hex_byte(char byte, char color, int x, int y)
-{
-  int t1,t2;
-  t1=(byte&240)>>4;
-  t1=num2hex(t1);
-  t2=byte&15;
-  t2=num2hex(t2);
-  draw_char(t1,color,x,y);
-  draw_char(t2,color,x+1,y);
-}
-
 //Set rightalign to print the rightmost char at xy and proceed to the left
 //minlen is the minimum length to print. Pad with 0.
-//DOES NOT PRESERVE MOUSE CURSOR
 void write_number(int number, char color, int x, int y,
  int minlen, int rightalign, int base)
 {

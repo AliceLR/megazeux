@@ -415,6 +415,19 @@ static char drawmode_help[5][32] =
   "Press ENTER to place MZM"
 };
 
+#define num2hex(x) ((x) > 9 ? 87 + (x) : 48 + (x))
+
+static void write_hex_byte(char byte, char color, int x, int y)
+{
+  int t1, t2;
+  t1 = (byte & 240) >> 4;
+  t1 = num2hex(t1);
+  t2 = byte & 15;
+  t2 = num2hex(t2);
+  draw_char(t1, color, x, y);
+  draw_char(t2, color, x + 1, y);
+}
+
 static int truncate_filename(const char *old_name, char *new_name,
  unsigned int length)
 {

@@ -23,6 +23,9 @@ usage() {
 	echo
 	echo "Supported <option> values:"
 	echo
+	echo "  --disable-editor     Disable the built-in editor."
+	echo "  --enable-editor      Enables the built-in editor (default)."
+	echo
 	echo "  --enable-host-tools  Use 'cc' to build utils (txt2hlp)."
 	echo "  --disable-host-tools Use the default compiler (default)."
 	echo
@@ -74,6 +77,7 @@ PLATFORM=""
 PREFIX="/usr"
 SYSCONFDIR="/etc"
 SYSCONFDIR_SET="false"
+EDITOR="true"
 HOST_TOOLS="false"
 UTILS="true"
 X11="true"
@@ -109,6 +113,9 @@ while [ "$1" != "" ]; do
 		SYSCONFDIR="$1"
 		SYSCONFDIR_SET="true"
 	fi
+
+	[ "$1" = "--disable-editor" ] && EDITOR="false"
+	[ "$1" = "--enable-editor" ] && EDITOR="true"
 
 	[ "$1" = "--disable-host-tools" ] && HOST_TOOLS="false"
 	[ "$1" = "--enable-host-tools" ] && HOST_TOOLS="true"
@@ -216,6 +223,18 @@ echo "TARGET=`grep TARGET Makefile | head -n1 | \
               sed "s/ //g" | cut -d "=" -f 2`" \
 	>> Makefile.platform
 echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
+
+#
+# User may disable the built-in editor
+#
+if [ "$EDITOR" = "true" ]; then
+	echo "Built-in editor enabled."
+	echo "BUILD_EDITOR=1" >> Makefile.platform
+	echo "#define CONFIG_EDITOR" >> src/config.h
+else
+	echo "Built-in editor disabled."
+	echo "BUILD_EDITOR=0" >> Makefile.platform
+fi
 
 #
 # User may not want to use her cross compiler for tools

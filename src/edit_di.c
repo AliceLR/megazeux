@@ -28,6 +28,7 @@
 #include "window.h"
 #include "edit_di.h"
 #include "data.h"
+#include "idput.h"
 #include "const.h"
 #include "world_struct.h"
 #include "robo_ed.h"
@@ -556,9 +557,6 @@ void status_counter_info(World *mzx_world)
 
   pop_context();
 }
-
-
-// Board exits
 
 void board_exits(World *mzx_world)
 {

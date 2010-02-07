@@ -19,7 +19,6 @@
 
 #include <stdlib.h>
 
-#include "config.h"
 #include "graphics.h"
 #include "render.h"
 #include "render_yuv.h"

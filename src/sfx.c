@@ -27,7 +27,12 @@
 #include "data.h"
 #include "audio.h"
 
-char sfx_strs[NUM_SFX][69] =
+int topindex = 0;  // Marks the top of the queue
+int backindex = 0; // Marks bottom of queue
+
+#if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
+
+__editor_maybe_static char sfx_strs[NUM_SFX][69] =
 {
   "5c-gec-gec", // Gem
   "5c-gec-gec", // Magic Gem
@@ -85,8 +90,7 @@ char sfx_strs[NUM_SFX][69] =
   "" // 49-Unused
 };
 
-int topindex = 0;  // Marks the top of the queue
-int backindex = 0; // Marks bottom of queue
+#endif // CONFIG_AUDIO || CONFIG_EDITOR
 
 #ifdef CONFIG_AUDIO
 

@@ -31,9 +31,7 @@ __M_BEGIN_DECLS
 #include "world_struct.h"
 
 void title_screen(World *mzx_world);
-void draw_viewport(World *src_board);
 void calculate_xytop(World *mzx_world, int *x, int *y);
-void play_game(World *mzx_world, int fadein);
 int move_player(World *mzx_world, int dir);
 int grab_item(World *mzx_world, int offset, int dir);
 void set_mesg(World *mzx_world, char *str);
@@ -43,10 +41,16 @@ void check_find_player(World *mzx_world);
 void find_player(World *mzx_world);
 int take_key(World *mzx_world, int color);
 int give_key(World *mzx_world, int color);
-void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y);
 
 extern int pal_update;
+
+#ifdef CONFIG_EDITOR
+void play_game(World *mzx_world, int fadein);
+void draw_viewport(World *src_board);
+void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y);
+
 extern char *world_ext[2];
+#endif // CONFIG_EDITOR
 
 __M_END_DECLS
 

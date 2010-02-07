@@ -29,9 +29,6 @@ __M_BEGIN_DECLS
 int block_cmd(World *mzx_world);
 int rtoo_obj_type(World *mzx_world);
 int choose_char_set(World *mzx_world);
-int save_file_dialog(World *mzx_world, char *title, char *prompt, char *dest);
-int save_char_dialog(World *mzx_world, char *dest, int *char_offset,
- int *char_size);
 int export_type(World *mzx_world);
 int import_type(World *mzx_world);
 

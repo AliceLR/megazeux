@@ -22,7 +22,6 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "config.h"
 #include "graphics.h"
 #include "render.h"
 #include "render_gl.h"

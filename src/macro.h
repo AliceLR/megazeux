@@ -87,12 +87,15 @@ struct _ext_macro
   char *text;
 };
 
-char *skip_to_next(char *src, char t, char a, char b);
-char *skip_whitespace(char *src);
-variable_storage *find_macro_variable(char *name, macro_type *m);
 void add_ext_macro(config_info *conf, char *name, char *line_data,
  char *label);
+
+#ifdef CONFIG_EDITOR
 ext_macro *find_macro(config_info *conf, char *name, int *next);
+variable_storage *find_macro_variable(char *name, macro_type *m);
+char *skip_whitespace(char *src);
+char *skip_to_next(char *src, char t, char a, char b);
+#endif // CONFIG_EDITOR
 
 __M_END_DECLS
 

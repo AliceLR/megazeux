@@ -30,6 +30,7 @@
 #include "sfx.h"
 #include "counter.h"
 #include "data.h"
+#include "idput.h"
 #include "const.h"
 #include "idarray.h"
 #include "robot.h"

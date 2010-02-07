@@ -24,9 +24,10 @@
 #define __CHAR_ED_H
 
 #include "compat.h"
-#include "world_struct.h"
 
 __M_BEGIN_DECLS
+
+#include "world_struct.h"
 
 int char_editor(World *mzx_world);
 int char_editor_ext(World *mzx_world);

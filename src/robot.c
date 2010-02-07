@@ -299,17 +299,12 @@ void clear_robot(Robot *cur_robot)
   free(cur_robot);
 }
 
-void clear_robot_contents(Robot *cur_robot)
+__editor_maybe_static void clear_robot_contents(Robot *cur_robot)
 {
   if(cur_robot->used)
     clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
   free(cur_robot->stack);
   free(cur_robot->program);
-}
-
-void clear_scroll_contents(Scroll *cur_scroll)
-{
-  free(cur_scroll->mesg);
 }
 
 void clear_scroll(Scroll *cur_scroll)
@@ -2497,9 +2492,8 @@ static int find_free_sensor(Board *src_board)
 // placed. Returns the ID of location. Does NOT place the robot on the
 // board (so be sure to do that). The given id is the slot to add it in;
 // be sure that this is a valid (NULL) entry!
-
-void duplicate_robot_direct(Robot *cur_robot, Robot *copy_robot,
- int x, int y)
+__editor_maybe_static void duplicate_robot_direct(Robot *cur_robot,
+ Robot *copy_robot, int x, int y)
 {
   Label *src_label, *dest_label;
   char *dest_program_location, *src_program_location;
@@ -2589,6 +2583,34 @@ void replace_robot(Board *src_board, Robot *src_robot, int dest_id)
     change_robot_name(src_board, cur_robot, src_robot->robot_name);
 }
 
+// Like duplicate_robot_direct, but for scrolls.
+__editor_maybe_static void duplicate_scroll_direct(Scroll *cur_scroll,
+ Scroll *copy_scroll)
+{
+  int mesg_size = cur_scroll->mesg_size;
+
+  // Copy all the contents
+  memcpy(copy_scroll, cur_scroll, sizeof(Scroll));
+  // We need unique copies of the program and the label cache.
+  copy_scroll->mesg = (char *)malloc(mesg_size);
+  memcpy(copy_scroll->mesg, cur_scroll->mesg, mesg_size);
+}
+
+// Like duplicate_robot_direct, but for sensors.
+__editor_maybe_static void duplicate_sensor_direct(Sensor *cur_sensor,
+ Sensor *copy_sensor)
+{
+  // Copy all the contents
+  memcpy(copy_sensor, cur_sensor, sizeof(Sensor));
+}
+
+#ifdef CONFIG_EDITOR
+
+void clear_scroll_contents(Scroll *cur_scroll)
+{
+  free(cur_scroll->mesg);
+}
+
 void replace_scroll(Board *src_board, Scroll *src_scroll, int dest_id)
 {
   Scroll *cur_scroll = src_board->scroll_list[dest_id];
@@ -2602,18 +2624,7 @@ void replace_sensor(Board *src_board, Sensor *src_sensor, int dest_id)
   duplicate_sensor_direct(src_sensor, cur_sensor);
 }
 
-// Like duplicate_robot_direct, but for scrolls.
-
-void duplicate_scroll_direct(Scroll *cur_scroll, Scroll *copy_scroll)
-{
-  int mesg_size = cur_scroll->mesg_size;
-
-  // Copy all the contents
-  memcpy(copy_scroll, cur_scroll, sizeof(Scroll));
-  // We need unique copies of the program and the label cache.
-  copy_scroll->mesg = (char *)malloc(mesg_size);
-  memcpy(copy_scroll->mesg, cur_scroll->mesg, mesg_size);
-}
+#endif // CONFIG_EDITOR
 
 int duplicate_scroll(Board *src_board, Scroll *cur_scroll)
 {
@@ -2626,14 +2637,6 @@ int duplicate_scroll(Board *src_board, Scroll *cur_scroll)
   }
 
   return dest_id;
-}
-
-// Like duplicate_robot_direct, but for sensors.
-
-void duplicate_sensor_direct(Sensor *cur_sensor, Sensor *copy_sensor)
-{
-  // Copy all the contents
-  memcpy(copy_sensor, cur_sensor, sizeof(Sensor));
 }
 
 int duplicate_sensor(Board *src_board, Sensor *cur_sensor)
@@ -2822,6 +2825,8 @@ void optimize_null_objects(Board *src_board)
   free(sensor_id_translation_list);
 }
 
+#ifdef CONFIG_EDITOR
+
 void create_blank_robot_direct(Robot *cur_robot, int x, int y)
 {
   char *program = (char *)malloc(2);
@@ -2861,6 +2866,8 @@ void create_blank_sensor_direct(Sensor *cur_sensor)
   memset(cur_sensor, 0, sizeof(Sensor));
   cur_sensor->used = 1;
 }
+
+#endif // CONFIG_EDITOR
 
 int get_robot_id(Board *src_board, char *name)
 {

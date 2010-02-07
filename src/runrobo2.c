@@ -64,6 +64,19 @@ static char *item_to_counter[9] =
   "COINS"
 };
 
+// Default parameters (-2 = 0 and no edit, -3 = character, -4 = board)
+int def_params[128] =
+{
+  -2, -2, -2, -2, -2, -3, -2, -3, -2, -2, -3, -2, -3, -2, -2, -2, // 0x00 - 0x0F
+  -2, -3, -2, -2, -2, -2, -2, -2, -2, -2, -2,  0, -2, -2, 10,  0, // 0x10 - 0x1F
+   0, -2, -2,  5,  0,128, 32, -2, -2,  0, -2, -4, -4, -2, -2,  0, // 0x20 - 0x2F
+  -2,  0, -2, -3, -3, -3, -3, 17,  0, -2, -2, -2,  0,  4,  0, -2, // 0x30 - 0x3F
+  -2, -2, -2, -4, -4, -4, -4, -2,  0, -2, 48,  0, -3, -3,  0,127, // 0x40 - 0x4F
+  32, 26,  2,  1,  0,  2, 65,  2, 66,  2,129, 34, 66, 66, 12, 10, // 0x50 - 0x5F
+  -2,194, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, -2, // 0x60 - 0x6F
+  -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,  0,  0,  0,  0,  0, -2  // 0x70 - 0x7F
+};
+
 static void magic_load_mod(World *mzx_world, char *filename)
 {
   Board *src_board = mzx_world->current_board;
@@ -133,8 +146,8 @@ static void calculate_blocked(World *mzx_world, int x, int y, int id, int bl[4])
   }
 }
 
-int place_at_xy(World *mzx_world, mzx_thing id, int color,
- int param, int x, int y)
+__editor_maybe_static int place_at_xy(World *mzx_world, mzx_thing id,
+ int color, int param, int x, int y)
 {
   Board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
@@ -502,8 +515,8 @@ static void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
   }
 }
 
-void copy_board_to_board_buffer(Board *src_board, int x,
- int y, int width, int height, char *dest_id, char *dest_param,
+__editor_maybe_static void copy_board_to_board_buffer(Board *src_board,
+ int x, int y, int width, int height, char *dest_id, char *dest_param,
  char *dest_color, char *dest_under_id, char *dest_under_param,
  char *dest_under_color, Board *dest_board)
 {
@@ -569,8 +582,8 @@ void copy_board_to_board_buffer(Board *src_board, int x,
   }
 }
 
-void copy_board_buffer_to_board(Board *src_board, int x, int y,
- int width, int height, char *src_id, char *src_param,
+__editor_maybe_static void copy_board_buffer_to_board(Board *src_board,
+ int x, int y, int width, int height, char *src_id, char *src_param,
  char *src_color, char *src_under_id, char *src_under_param,
  char *src_under_color)
 {
@@ -643,9 +656,9 @@ void copy_board_buffer_to_board(Board *src_board, int x, int y,
   }
 }
 
-void copy_layer_to_buffer(int x, int y, int width, int height,
- char *src_char, char *src_color,  char *dest_char,
- char *dest_color, int layer_width)
+__editor_maybe_static void copy_layer_to_buffer(int x, int y,
+ int width, int height, char *src_char, char *src_color,
+ char *dest_char, char *dest_color, int layer_width)
 {
   int src_offset = x + (y * layer_width);
   int src_skip = layer_width - width;
@@ -664,8 +677,8 @@ void copy_layer_to_buffer(int x, int y, int width, int height,
   }
 }
 
-void copy_buffer_to_layer(int x, int y, int width,
- int height, char *src_char, char *src_color,
+__editor_maybe_static void copy_buffer_to_layer(int x, int y,
+ int width, int height, char *src_char, char *src_color,
  char *dest_char, char *dest_color, int layer_width)
 {
   int dest_offset = x + (y * layer_width);
@@ -713,9 +726,9 @@ static void copy_layer_to_layer(int src_x, int src_y, int dest_x, int dest_y,
   }
 }
 
-void copy_board_to_layer(Board *src_board, int x, int y,
- int width, int height, char *dest_char, char *dest_color,
- int dest_width)
+__editor_maybe_static void copy_board_to_layer(Board *src_board,
+ int x, int y, int width, int height,
+ char *dest_char, char *dest_color, int dest_width)
 {
   int board_width = src_board->board_width;
   int src_offset = x + (y * board_width);
@@ -742,9 +755,8 @@ void copy_board_to_layer(Board *src_board, int x, int y,
 }
 
 // Make sure convert ID is a custom_*, otherwise this could get ugly
-
-void copy_layer_to_board(Board *src_board, int x, int y,
- int width, int height, char *src_char, char *src_color,
+__editor_maybe_static void copy_layer_to_board(Board *src_board,
+ int x, int y, int width, int height, char *src_char, char *src_color,
  int src_width, mzx_thing convert_id)
 {
   int board_width = src_board->board_width;
@@ -775,6 +787,7 @@ void copy_layer_to_board(Board *src_board, int x, int y,
   }
 }
 
+#ifdef CONFIG_EDITOR
 void clear_layer_block(int src_x, int src_y, int width,
  int height, char *dest_char, char *dest_color, int dest_width)
 {
@@ -848,6 +861,7 @@ void clear_board_block(Board *src_board, int x, int y,
     }
   }
 }
+#endif // CONFIG_EDITOR
 
 void setup_overlay(Board *src_board, int mode)
 {
@@ -3403,14 +3417,18 @@ void run_robot(World *mzx_world, int id, int x, int y)
           insta_fadein();
         }
 
+#ifdef CONFIG_EDITOR
         draw_window_box(3, 11, 77, 14, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
          EC_DEBUG_BOX_CORNER, 1, 1);
+#endif // CONFIG_EDITOR
 
         // Copy and clip
         strncpy(input_buffer_msg, cmd_ptr + 2, 71);
-        
+
         tr_msg(mzx_world, input_buffer_msg, id, input_buffer);
+#ifdef CONFIG_EDITOR
         write_string(input_buffer, 5, 12, EC_DEBUG_LABEL, 1);
+#endif
         m_show();
         src_board->input_string[0] = 0;
 

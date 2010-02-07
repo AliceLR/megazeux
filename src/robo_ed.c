@@ -40,7 +40,6 @@
 #include "configure.h"
 #include "math.h"
 #include "delay.h"
-#include "config.h"
 
 #ifdef __WIN32__
 #include <windows.h>
@@ -107,6 +106,7 @@ static const char current_line_color = combine_colors(11, 8);
 static const char mark_color = combine_colors(0, 7);
 
 static const int max_size = 65535;
+
 static char **copy_buffer = NULL;
 static int case_option = 0;
 

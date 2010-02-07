@@ -283,6 +283,8 @@ static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
   cur_board->num_sensors_allocated = num_sensors;
 }
 
+#ifdef CONFIG_EDITOR
+
 static Board *load_board_allocate_direct(FILE *fp, int savegame)
 {
   Board *cur_board = (Board *)malloc(sizeof(Board));
@@ -290,6 +292,8 @@ static Board *load_board_allocate_direct(FILE *fp, int savegame)
   fread(cur_board->board_name, 25, 1, fp);
   return cur_board;
 }
+
+#endif // CONFIG_EDITOR
 
 // The file given should point to a name/location combo. This will
 // restore the file position to after the name/location.
@@ -317,37 +321,6 @@ static void load_board(Board *cur_board, FILE *fp, int savegame)
   }
 }
 
-void replace_current_board(World *mzx_world, char *name)
-{
-  Board *src_board = mzx_world->current_board;
-  FILE *input_mzb = fopen(name, "rb");
-  int first_byte = fgetc(input_mzb);
-  char version_string[4];
-  int current_board_id = mzx_world->current_board_id;
-
-  fread(version_string, 3, 1, input_mzb);
-  version_string[3] = 0;
-
-  if((first_byte == 0xFF) &&
-   ((strcmp(version_string, world_version_string) <= 0) ||
-   !strcmp(version_string, "MB2")))
-  {
-    clear_board(src_board);
-    src_board = load_board_allocate_direct(input_mzb, 0);
-    optimize_null_objects(src_board);
-
-    set_update_done_current(mzx_world);
-
-    if(src_board->robot_list)
-      src_board->robot_list[0] = &(mzx_world->global_robot);
-
-    mzx_world->current_board = src_board;
-    mzx_world->board_list[current_board_id] = src_board;
-  }
-
-  fclose(input_mzb);
-}
-
 Board *load_board_allocate(FILE *fp, int savegame)
 {
   Board *cur_board = (Board *)malloc(sizeof(Board));
@@ -360,111 +333,6 @@ Board *load_board_allocate(FILE *fp, int savegame)
   }
 
   return cur_board;
-}
-
-Board *create_blank_board(void)
-{
-  Board *cur_board = (Board *)malloc(sizeof(Board));
-  int i;
-
-  cur_board->size = 0;
-  cur_board->board_name[0] = 0;
-  cur_board->board_width = 100;
-  cur_board->board_height = 100;
-  cur_board->overlay_mode = 1;
-  cur_board->level_id = (char *)malloc(100 * 100);
-  cur_board->level_param = (char *)malloc(100 * 100);
-  cur_board->level_color = (char *)malloc(100 * 100);
-  cur_board->level_under_id = (char *)malloc(100 * 100);
-  cur_board->level_under_param = (char *)malloc(100 * 100);
-  cur_board->level_under_color = (char *)malloc(100 * 100);
-  cur_board->overlay = (char *)malloc(100 * 100);
-  cur_board->overlay_color = (char *)malloc(100 * 100);
-  cur_board->mod_playing[0] = 0;
-  cur_board->viewport_x = 0;
-  cur_board->viewport_y = 0;
-  cur_board->viewport_width = 80;
-  cur_board->viewport_height = 25;
-  cur_board->can_shoot = 1;
-  cur_board->can_bomb = 1;
-  cur_board->fire_burn_brown = 0;
-  cur_board->fire_burn_space = 1;
-  cur_board->fire_burn_fakes = 1;
-  cur_board->fire_burn_trees = 1;
-  cur_board->explosions_leave = EXPL_LEAVE_ASH;
-  cur_board->save_mode = CAN_SAVE;
-  cur_board->forest_becomes = FOREST_TO_FLOOR;
-  cur_board->collect_bombs = 1;
-  cur_board->fire_burns = FIRE_BURNS_FOREVER;
-
-  for(i = 0; i < 4; i++)
-  {
-    cur_board->board_dir[i] = NO_BOARD;
-  }
-
-  cur_board->restart_if_zapped = 0;
-  cur_board->time_limit = 0;
-  cur_board->last_key = '?';
-  cur_board->num_input = 0;
-  cur_board->input_size = 0;
-  cur_board->input_string[0] = 0;
-  cur_board->player_last_dir = 0x10;
-  cur_board->bottom_mesg[0] = 0;
-  cur_board->b_mesg_timer = 0;
-  cur_board->lazwall_start = 7;
-  cur_board->b_mesg_row = 24;
-  cur_board->b_mesg_col = -1;
-  cur_board->scroll_x = 0;
-  cur_board->scroll_y = 0;
-  cur_board->locked_x = -1;
-  cur_board->locked_y = -1;
-  cur_board->player_ns_locked = 0;
-  cur_board->player_ew_locked = 0;
-  cur_board->player_attack_locked = 0;
-  cur_board->volume = 255;
-  cur_board->volume_inc = 0;
-  cur_board->volume_target = 255;
-
-  cur_board->num_robots = 0;
-  cur_board->num_robots_active = 0;
-  cur_board->num_robots_allocated = 0;
-  cur_board->robot_list = (Robot **)malloc(sizeof(Robot *));
-  cur_board->robot_list_name_sorted = NULL;
-  cur_board->num_scrolls = 0;
-  cur_board->num_scrolls_allocated = 0;
-  cur_board->scroll_list = (Scroll **)malloc(sizeof(Scroll *));
-  cur_board->num_sensors = 0;
-  cur_board->num_sensors_allocated = 0;
-  cur_board->sensor_list = (Sensor **)malloc(sizeof(Sensor *));
-
-  memset(cur_board->level_id, 0, 100 * 100);
-  memset(cur_board->level_color, 7, 100 * 100);
-  memset(cur_board->level_param, 0, 100 * 100);
-  memset(cur_board->level_under_id, 0, 100 * 100);
-  memset(cur_board->level_under_color, 7, 100 * 100);
-  memset(cur_board->level_under_param, 0, 100 * 100);
-  memset(cur_board->overlay, 32, 100 * 100);
-  memset(cur_board->overlay_color, 7, 100 * 100);
-
-  cur_board->level_id[0] = 127;
-
-  return cur_board;
-}
-
-void save_board_file(Board *cur_board, char *name)
-{
-  FILE *board_file = fopen(name, "wb");
-
-  if(board_file)
-  {
-    fputc(0xFF, board_file);
-    fputs(world_version_string, board_file);
-    optimize_null_objects(cur_board);
-    save_board(cur_board, board_file, 0);
-    // Write name
-    fwrite(cur_board->board_name, 25, 1, board_file);
-    fclose(board_file);
-  }
 }
 
 static void save_RLE2_plane(char *plane, FILE *fp, int size)
@@ -714,6 +582,144 @@ int find_board(World *mzx_world, char *name)
   else
   {
     return NO_BOARD;
+  }
+}
+
+#ifdef CONFIG_EDITOR
+
+void replace_current_board(World *mzx_world, char *name)
+{
+  Board *src_board = mzx_world->current_board;
+  FILE *input_mzb = fopen(name, "rb");
+  int first_byte = fgetc(input_mzb);
+  char version_string[4];
+  int current_board_id = mzx_world->current_board_id;
+
+  fread(version_string, 3, 1, input_mzb);
+  version_string[3] = 0;
+
+  if((first_byte == 0xFF) &&
+   ((strcmp(version_string, world_version_string) <= 0) ||
+   !strcmp(version_string, "MB2")))
+  {
+    clear_board(src_board);
+    src_board = load_board_allocate_direct(input_mzb, 0);
+    optimize_null_objects(src_board);
+
+    set_update_done_current(mzx_world);
+
+    if(src_board->robot_list)
+      src_board->robot_list[0] = &(mzx_world->global_robot);
+
+    mzx_world->current_board = src_board;
+    mzx_world->board_list[current_board_id] = src_board;
+  }
+
+  fclose(input_mzb);
+}
+
+Board *create_blank_board(void)
+{
+  Board *cur_board = (Board *)malloc(sizeof(Board));
+  int i;
+
+  cur_board->size = 0;
+  cur_board->board_name[0] = 0;
+  cur_board->board_width = 100;
+  cur_board->board_height = 100;
+  cur_board->overlay_mode = 1;
+  cur_board->level_id = (char *)malloc(100 * 100);
+  cur_board->level_param = (char *)malloc(100 * 100);
+  cur_board->level_color = (char *)malloc(100 * 100);
+  cur_board->level_under_id = (char *)malloc(100 * 100);
+  cur_board->level_under_param = (char *)malloc(100 * 100);
+  cur_board->level_under_color = (char *)malloc(100 * 100);
+  cur_board->overlay = (char *)malloc(100 * 100);
+  cur_board->overlay_color = (char *)malloc(100 * 100);
+  cur_board->mod_playing[0] = 0;
+  cur_board->viewport_x = 0;
+  cur_board->viewport_y = 0;
+  cur_board->viewport_width = 80;
+  cur_board->viewport_height = 25;
+  cur_board->can_shoot = 1;
+  cur_board->can_bomb = 1;
+  cur_board->fire_burn_brown = 0;
+  cur_board->fire_burn_space = 1;
+  cur_board->fire_burn_fakes = 1;
+  cur_board->fire_burn_trees = 1;
+  cur_board->explosions_leave = EXPL_LEAVE_ASH;
+  cur_board->save_mode = CAN_SAVE;
+  cur_board->forest_becomes = FOREST_TO_FLOOR;
+  cur_board->collect_bombs = 1;
+  cur_board->fire_burns = FIRE_BURNS_FOREVER;
+
+  for(i = 0; i < 4; i++)
+  {
+    cur_board->board_dir[i] = NO_BOARD;
+  }
+
+  cur_board->restart_if_zapped = 0;
+  cur_board->time_limit = 0;
+  cur_board->last_key = '?';
+  cur_board->num_input = 0;
+  cur_board->input_size = 0;
+  cur_board->input_string[0] = 0;
+  cur_board->player_last_dir = 0x10;
+  cur_board->bottom_mesg[0] = 0;
+  cur_board->b_mesg_timer = 0;
+  cur_board->lazwall_start = 7;
+  cur_board->b_mesg_row = 24;
+  cur_board->b_mesg_col = -1;
+  cur_board->scroll_x = 0;
+  cur_board->scroll_y = 0;
+  cur_board->locked_x = -1;
+  cur_board->locked_y = -1;
+  cur_board->player_ns_locked = 0;
+  cur_board->player_ew_locked = 0;
+  cur_board->player_attack_locked = 0;
+  cur_board->volume = 255;
+  cur_board->volume_inc = 0;
+  cur_board->volume_target = 255;
+
+  cur_board->num_robots = 0;
+  cur_board->num_robots_active = 0;
+  cur_board->num_robots_allocated = 0;
+  cur_board->robot_list = (Robot **)malloc(sizeof(Robot *));
+  cur_board->robot_list_name_sorted = NULL;
+  cur_board->num_scrolls = 0;
+  cur_board->num_scrolls_allocated = 0;
+  cur_board->scroll_list = (Scroll **)malloc(sizeof(Scroll *));
+  cur_board->num_sensors = 0;
+  cur_board->num_sensors_allocated = 0;
+  cur_board->sensor_list = (Sensor **)malloc(sizeof(Sensor *));
+
+  memset(cur_board->level_id, 0, 100 * 100);
+  memset(cur_board->level_color, 7, 100 * 100);
+  memset(cur_board->level_param, 0, 100 * 100);
+  memset(cur_board->level_under_id, 0, 100 * 100);
+  memset(cur_board->level_under_color, 7, 100 * 100);
+  memset(cur_board->level_under_param, 0, 100 * 100);
+  memset(cur_board->overlay, 32, 100 * 100);
+  memset(cur_board->overlay_color, 7, 100 * 100);
+
+  cur_board->level_id[0] = 127;
+
+  return cur_board;
+}
+
+void save_board_file(Board *cur_board, char *name)
+{
+  FILE *board_file = fopen(name, "wb");
+
+  if(board_file)
+  {
+    fputc(0xFF, board_file);
+    fputs(world_version_string, board_file);
+    optimize_null_objects(cur_board);
+    save_board(cur_board, board_file, 0);
+    // Write name
+    fwrite(cur_board->board_name, 25, 1, board_file);
+    fclose(board_file);
   }
 }
 
@@ -969,3 +975,5 @@ void change_board_size(Board *src_board, int new_width, int new_height)
     src_board->board_height = new_height;
   }
 }
+
+#endif // CONFIG_EDITOR

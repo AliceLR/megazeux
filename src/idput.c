@@ -28,6 +28,7 @@
 
 unsigned char id_chars[455];
 
+#ifdef CONFIG_EDITOR
 unsigned char def_id_chars[455] =
 {
   /* id_chars */
@@ -138,6 +139,7 @@ unsigned char def_id_chars[455] =
   0, 0, 0, 0, 0, 0, 0, 0,
   0, 0, 0, 0, 0, 0  /* 122-127 */
 };
+#endif // CONFIG_EDITOR
 
 unsigned char bullet_color[3] = { 15, 15, 15 };
 unsigned char missile_color = 8;
@@ -574,6 +576,7 @@ void id_put(Board *src_board, unsigned char x_pos, unsigned char y_pos,
   draw_char_ext(c, color, x_pos, y_pos, 0, 0);
 }
 
+#ifdef CONFIG_EDITOR
 void draw_edit_window(Board *src_board, int array_x, int array_y,
  int window_height)
 {
@@ -596,6 +599,7 @@ void draw_edit_window(Board *src_board, int array_x, int array_y,
     }
   }
 }
+#endif // CONFIG_EDITOR
 
 void draw_game_window(Board *src_board, int array_x, int array_y)
 {

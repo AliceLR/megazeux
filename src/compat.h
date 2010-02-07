@@ -42,6 +42,14 @@
 
 #endif /* __cplusplus */
 
+#include "config.h"
+
+#ifdef CONFIG_EDITOR
+#define __editor_maybe_static
+#else
+#define __editor_maybe_static static
+#endif
+
 #ifdef _MSC_VER
 #include "msvc.h"
 #endif

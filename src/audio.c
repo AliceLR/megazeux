@@ -31,7 +31,6 @@
 #include "pthread.h"
 #endif
 
-#include "config.h"
 #include "audio.h"
 #include "SDL.h"
 #include "sfx.h"

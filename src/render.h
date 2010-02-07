@@ -25,7 +25,6 @@
 __M_BEGIN_DECLS
 
 #include "graphics.h"
-#include "config.h"
 
 extern void (*set_colors8[4])(graphics_data *, Uint32 *, Uint8, Uint8);
 extern void (*set_colors16[4])(graphics_data *, Uint32 *, Uint8, Uint8);

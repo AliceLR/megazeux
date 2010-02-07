@@ -30,7 +30,6 @@
 #include <ctype.h>
 #include <sys/stat.h>
 
-#include "config.h"
 #include "graphics.h"
 #include "delay.h"
 #include "world.h"
@@ -178,22 +177,6 @@ Sint32 ec_load_set_var(char *name, Uint8 pos)
   return size;
 }
 
-void ec_save_set_var(char *name, Uint8 offset, Uint32 size)
-{
-  FILE *fp = fopen(name, "wb");
-
-  if(fp)
-  {
-    if(size + offset > CHARSET_SIZE)
-    {
-      size = CHARSET_SIZE - offset;
-    }
-
-    fwrite(graphics.charset + (offset * CHAR_SIZE), CHAR_SIZE, size, fp);
-    fclose(fp);
-  }
-}
-
 void ec_mem_load_set(Uint8 *chars)
 {
   memcpy(graphics.charset, chars, CHAR_SIZE * CHARSET_SIZE);
@@ -208,44 +191,9 @@ void ec_mem_save_set(Uint8 *chars)
   memcpy(chars, graphics.charset, CHAR_SIZE * CHARSET_SIZE);
 }
 
-void ec_load_mzx(void)
+__editor_maybe_static void ec_load_mzx(void)
 {
   ec_mem_load_set(graphics.default_charset);
-}
-
-void ec_load_smzx(void)
-{
-  ec_mem_load_set(graphics.smzx_charset);
-}
-
-void ec_load_blank(void)
-{
-  ec_mem_load_set(graphics.blank_charset);
-}
-
-void ec_load_ascii(void)
-{
-  ec_mem_load_set(graphics.ascii_charset);
-}
-
-void ec_load_char_mzx(Uint32 char_number)
-{
-  memcpy(graphics.charset + (char_number * CHAR_SIZE),
-   graphics.default_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
-
-  // some renderers may want to map charsets to textures
-  if(graphics.remap_charsets)
-    graphics.remap_charsets(&graphics);
-}
-
-void ec_load_char_ascii(Uint32 char_number)
-{
-  memcpy(graphics.charset + (char_number * CHAR_SIZE),
-   graphics.ascii_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
-
-  // some renderers may want to map charsets to textures
-  if(graphics.remap_charsets)
-    graphics.remap_charsets(&graphics);
 }
 
 static void update_colors(SDL_Color *palette, Uint32 count)
@@ -476,29 +424,6 @@ void load_palette(char *fname)
       g = fgetc(pal_file);
       b = fgetc(pal_file);
       set_rgb(i, r, g, b);
-    }
-
-    fclose(pal_file);
-  }
-}
-
-void save_palette(char *fname)
-{
-  FILE *pal_file = fopen(fname, "wb");
-
-  if(pal_file)
-  {
-    int num_colors = SMZX_PAL_SIZE;
-    int i;
-
-    if(!graphics.screen_mode)
-      num_colors = PAL_SIZE;
-
-    for(i = 0; i < num_colors; i++)
-    {
-      fputc(get_red_component(i), pal_file);
-      fputc(get_green_component(i), pal_file);
-      fputc(get_blue_component(i), pal_file);
     }
 
     fclose(pal_file);
@@ -1321,11 +1246,6 @@ void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y)
   draw_char_ext(chr, color, x, y, 256, 16);
 }
 
-void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset)
-{
-  draw_char_linear_ext(color, chr, offset, 256, 16);
-}
-
 Uint8 get_color_linear(Uint32 offset)
 {
   char_element *dest = graphics.text_video + offset;
@@ -1347,22 +1267,6 @@ void clear_screen(Uint8 chr, Uint8 color)
     dest++;
   }
   update_screen();
-}
-
-void clear_screen_no_update(Uint8 chr, Uint8 color)
-{
-  Uint32 i;
-  Uint8 fg_color = color & 0x0F;
-  Uint8 bg_color = color >> 4;
-  char_element *dest = graphics.text_video;
-
-  for(i = 0; i < (SCREEN_W * SCREEN_H); i++)
-  {
-    dest->char_value = chr;
-    dest->fg_color = fg_color;
-    dest->bg_color = bg_color;
-    dest++;
-  }
 }
 
 void set_screen(char_element *src)
@@ -1552,3 +1456,102 @@ void set_mouse_mul(int width_mul, int height_mul)
   graphics.mouse_width_mul = width_mul;
   graphics.mouse_height_mul = height_mul;
 }
+
+#ifdef CONFIG_EDITOR
+
+void save_palette(char *fname)
+{
+  FILE *pal_file = fopen(fname, "wb");
+
+  if(pal_file)
+  {
+    int num_colors = SMZX_PAL_SIZE;
+    int i;
+
+    if(!graphics.screen_mode)
+      num_colors = PAL_SIZE;
+
+    for(i = 0; i < num_colors; i++)
+    {
+      fputc(get_red_component(i), pal_file);
+      fputc(get_green_component(i), pal_file);
+      fputc(get_blue_component(i), pal_file);
+    }
+
+    fclose(pal_file);
+  }
+}
+
+void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset)
+{
+  draw_char_linear_ext(color, chr, offset, 256, 16);
+}
+
+void clear_screen_no_update(Uint8 chr, Uint8 color)
+{
+  Uint32 i;
+  Uint8 fg_color = color & 0x0F;
+  Uint8 bg_color = color >> 4;
+  char_element *dest = graphics.text_video;
+
+  for(i = 0; i < (SCREEN_W * SCREEN_H); i++)
+  {
+    dest->char_value = chr;
+    dest->fg_color = fg_color;
+    dest->bg_color = bg_color;
+    dest++;
+  }
+}
+
+void ec_save_set_var(char *name, Uint8 offset, Uint32 size)
+{
+  FILE *fp = fopen(name, "wb");
+
+  if(fp)
+  {
+    if(size + offset > CHARSET_SIZE)
+    {
+      size = CHARSET_SIZE - offset;
+    }
+
+    fwrite(graphics.charset + (offset * CHAR_SIZE), CHAR_SIZE, size, fp);
+    fclose(fp);
+  }
+}
+
+void ec_load_smzx(void)
+{
+  ec_mem_load_set(graphics.smzx_charset);
+}
+
+void ec_load_blank(void)
+{
+  ec_mem_load_set(graphics.blank_charset);
+}
+
+void ec_load_ascii(void)
+{
+  ec_mem_load_set(graphics.ascii_charset);
+}
+
+void ec_load_char_ascii(Uint32 char_number)
+{
+  memcpy(graphics.charset + (char_number * CHAR_SIZE),
+   graphics.ascii_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
+
+  // some renderers may want to map charsets to textures
+  if(graphics.remap_charsets)
+    graphics.remap_charsets(&graphics);
+}
+
+void ec_load_char_mzx(Uint32 char_number)
+{
+  memcpy(graphics.charset + (char_number * CHAR_SIZE),
+   graphics.default_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
+
+  // some renderers may want to map charsets to textures
+  if(graphics.remap_charsets)
+    graphics.remap_charsets(&graphics);
+}
+
+#endif // CONFIG_EDITOR

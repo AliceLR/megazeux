@@ -127,7 +127,6 @@ void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color);
 void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
  Uint8 color);
 void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y);
-void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset);
 
 void color_string_ext(char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 offset, Uint32 c_offset);
@@ -150,7 +149,6 @@ void write_string_mask(char *str, Uint32 x, Uint32 y,
 
 Uint8 get_color_linear(Uint32 offset);
 void clear_screen(Uint8 chr, Uint8 color);
-void clear_screen_no_update(Uint8 chr, Uint8 color);
 
 void cursor_underline(void);
 void cursor_solid(void);
@@ -175,17 +173,9 @@ Sint32 ec_load_set(char *name);
 Sint32 ec_load_set_var(char *name, Uint8 pos);
 void ec_mem_load_set(Uint8 *chars);
 void ec_mem_save_set(Uint8 *chars);
-void ec_save_set_var(char *name, Uint8 offset, Uint32 size);
-void ec_load_mzx(void);
-void ec_load_smzx(void);
-void ec_load_blank(void);
-void ec_load_ascii(void);
-void ec_load_char_mzx(Uint32 char_number);
-void ec_load_char_ascii(Uint32 char_number);
 
 void update_palette();
 void load_palette(char *fname);
-void save_palette(char *fname);
 void smzx_palette_loaded(int val);
 void set_screen_mode(Uint32 mode);
 Uint32 get_screen_mode();
@@ -215,6 +205,19 @@ void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y);
 void set_screen_coords(int x, int y, int *screen_x, int *screen_y);
 void set_mouse_mul(int width_mul, int height_mul);
+
+#ifdef CONFIG_EDITOR
+void clear_screen_no_update(Uint8 chr, Uint8 color);
+void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset);
+void ec_save_set_var(char *name, Uint8 offset, Uint32 size);
+void ec_load_ascii(void);
+void ec_load_blank(void);
+void ec_load_char_ascii(Uint32 char_number);
+void ec_load_char_mzx(Uint32 char_number);
+void ec_load_mzx(void);
+void ec_load_smzx(void);
+void save_palette(char *fname);
+#endif // CONFIG_EDITOR
 
 __M_END_DECLS
 

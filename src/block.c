@@ -45,7 +45,6 @@
 //    _OK_      _Cancel_
 //
 //--------------------------
-
 int block_cmd(World *mzx_world)
 {
   int dialog_result;

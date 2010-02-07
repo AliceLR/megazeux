@@ -43,10 +43,7 @@ int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
 int list_menu(char **choices, int choice_size, char *title,
   int current, int num_choices, int xpos);
 int char_selection(int current);
-int char_selection_ext(int current, int allow_multichar,
- int *width_ptr, int *height_ptr);
 int color_selection(int current, int allow_wild);
-void draw_color_box(int color, int q_bit, int x, int y);
 
 // Shell for list_menu() (returns -1 for ESC)
 int add_board(World *mzx_world, int current);
@@ -204,43 +201,25 @@ typedef struct
 void construct_dialog(dialog *src, char *title, int x, int y,
  int width, int height, element **elements, int num_elements,
  int start_element);
-void construct_dialog_ext(dialog *src, char *title, int x, int y,
- int width, int height, element **elements, int num_elements,
- int sfx_test_for_input, int pad_space, int start_element,
- int (* idle_function)(World *mzx_world, dialog *di, int key));
 void destruct_dialog(dialog *src);
 
 element *construct_label(int x, int y, char *text);
-element *construct_input_box(int x, int y, char *question,
- int max_length, int input_flags, char *result);
 element *construct_check_box(int x, int y, char **choices,
  int num_choices, int max_length, int *results);
 element *construct_radio_button(int x, int y,
  char **choices, int num_choices, int max_length, int *result);
-element *construct_char_box(int x, int y, char *question,
- int allow_char_255, int *result);
-element *construct_color_box(int x, int y, char *question,
- int allow_wildcard, int *result);
 element *construct_button(int x, int y, char *label,
  int return_value);
 element *construct_number_box(int x, int y,
  char *question, int lower_limit, int upper_limit,
  int mult_five, int *result);
-element *construct_list_box(int x, int y, char **choices,
- int num_choices, int num_choices_visible, int choice_length,
- int return_value, int *result);
 element *construct_board_list(int x, int y,
  char *title, int board_zero_as_none, int *result);
 
-int choose_file(World *mzx_world, char **wildcards, char *ret,
- char *title, int dirs_okay);
 int choose_file_ch(World *mzx_world, char **wildcards, char *ret,
  char *title, int dirs_okay);
 int new_file(World *mzx_world, char **wildcards, char *ret,
  char *title, int dirs_okay);
-int file_manager(World *mzx_world, char **wildcards, char *ret,
- char *title, int dirs_okay, int allow_new, element **dialog_ext,
- int num_ext, int ext_height, int allow_dir_change);
 
 // Dialog box color #define's-
 #define DI_MAIN             31
@@ -277,6 +256,30 @@ extern unsigned char color_wild;
 extern unsigned char color_dot;
 extern char list_button[4];
 extern char num_buttons[7];
+
+#ifdef CONFIG_EDITOR
+int char_selection_ext(int current, int allow_multichar,
+ int *width_ptr, int *height_ptr);
+int choose_file(World *mzx_world, char **wildcards, char *ret,
+ char *title, int dirs_okay);
+element *construct_char_box(int x, int y, char *question,
+ int allow_char_255, int *result);
+void construct_dialog_ext(dialog *src, char *title, int x, int y,
+ int width, int height, element **elements, int num_elements,
+ int sfx_test_for_input, int pad_space, int start_element,
+ int (* idle_function)(World *mzx_world, dialog *di, int key));
+element *construct_input_box(int x, int y, char *question,
+ int max_length, int input_flags, char *result);
+element *construct_list_box(int x, int y, char **choices,
+ int num_choices, int num_choices_visible, int choice_length,
+ int return_value, int *result);
+void draw_color_box(int color, int q_bit, int x, int y);
+element *construct_color_box(int x, int y, char *question,
+ int allow_wildcard, int *result);
+int file_manager(World *mzx_world, char **wildcards, char *ret,
+ char *title, int dirs_okay, int allow_new, element **dialog_ext,
+ int num_ext, int ext_height, int allow_dir_change);
+#endif // CONFIG_EDITOR
 
 __M_END_DECLS
 

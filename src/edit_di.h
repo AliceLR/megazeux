@@ -26,16 +26,14 @@
 
 __M_BEGIN_DECLS
 
-#define MAX_BOARD_SIZE 16 * 1024 * 1024
-
 #include "window.h"
 
+void board_info(World *mzx_world);
+void board_exits(World *mzx_world);
+void global_info(World *mzx_world);
+void size_pos(World *mzx_world);
 void set_confirm_buttons(element **elements);
 void status_counter_info(World *mzx_world);
-void board_exits(World *mzx_world);
-void size_pos(World *mzx_world);
-void board_info(World *mzx_world);
-void global_info(World *mzx_world);
 
 __M_END_DECLS
 

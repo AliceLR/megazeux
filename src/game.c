@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-
 // Main title screen/gaming code
 
 #include <stdlib.h>
@@ -37,7 +36,6 @@
 #include "error.h"
 #include "idarray.h"
 #include "audio.h"
-#include "edit.h"
 #include "sfx.h"
 #include "hexchar.h"
 #include "idput.h"
@@ -53,6 +51,10 @@
 #include "delay.h"
 #include "robot.h"
 #include "fsafeopen.h"
+
+#ifdef CONFIG_EDITOR
+#include "edit.h"
+#endif
 
 // Number of cycles to make player idle before repeating a
 // directional move
@@ -112,8 +114,12 @@ static char cw_offs[8] = { 10, 2, 6, 4, 5, 1, 9, 8 };
 static char ccw_offs[8] = { 10, 8, 9, 1, 5, 4, 6, 2 };
 
 int pal_update; // Whether to update a palette from robot activity
-char *world_ext[] = { ".MZX", NULL };
+
+__editor_maybe_static char *world_ext[] = { ".MZX", NULL };
+
+#ifdef CONFIG_EDITOR
 char debug_mode = 0;
+#endif
 
 static void load_world_file(World *mzx_world, char *name)
 {
@@ -751,6 +757,113 @@ static void show_status(World *mzx_world)
     write_string("-B-", 59, 21, 25, 0);
 }
 
+__editor_maybe_static void draw_viewport(World *mzx_world)
+{
+  int i, i2;
+  Board *src_board = mzx_world->current_board;
+  int viewport_x = src_board->viewport_x;
+  int viewport_y = src_board->viewport_y;
+  int viewport_width = src_board->viewport_width;
+  int viewport_height = src_board->viewport_height;
+  char edge_color = mzx_world->edge_color;
+
+  // Draw the current viewport
+  if(viewport_y > 1)
+  {
+    // Top
+    for(i = 0; i < viewport_y; i++)
+      fill_line_ext(80, 0, i, 177, edge_color, 0, 0);
+  }
+
+  if((viewport_y + viewport_height) < 24)
+  {
+    // Bottom
+    for(i = viewport_y + viewport_height + 1; i < 25; i++)
+      fill_line_ext(80, 0, i, 177, edge_color, 0, 0);
+  }
+
+  if(viewport_x > 1)
+  {
+    // Left
+    for(i = 0; i < 25; i++)
+      fill_line_ext(viewport_x, 0, i, 177, edge_color, 0, 0);
+  }
+
+  if((viewport_x + viewport_width) < 79)
+  {
+    // Right
+    i2 = viewport_x + viewport_width + 1;
+    for(i = 0; i < 25; i++)
+    {
+      fill_line_ext(80 - i2, i2, i, 177, edge_color, 0, 0);
+    }
+  }
+
+  // Draw the box
+  if(viewport_x > 0)
+  {
+    // left
+    for(i = 0; i < viewport_height; i++)
+    {
+      draw_char_ext('\xba', edge_color, viewport_x - 1,
+       i + viewport_y, 0, 0);
+    }
+
+    if(viewport_y > 0)
+    {
+      draw_char_ext('\xc9', edge_color, viewport_x - 1,
+       viewport_y - 1, 0, 0);
+    }
+  }
+  if((viewport_x + viewport_width) < 80)
+  {
+    // right
+    for(i = 0; i < viewport_height; i++)
+    {
+      draw_char_ext('\xba', edge_color,
+       viewport_x + viewport_width, i + viewport_y, 0, 0);
+    }
+
+    if(viewport_y > 0)
+    {
+      draw_char_ext('\xbb', edge_color,
+       viewport_x + viewport_width, viewport_y - 1, 0, 0);
+    }
+  }
+
+  if(viewport_y > 0)
+  {
+    // top
+    for(i = 0; i < viewport_width; i++)
+    {
+      draw_char_ext('\xcd', edge_color, viewport_x + i,
+       viewport_y - 1, 0, 0);
+    }
+  }
+
+  if((viewport_y + viewport_height) < 25)
+  {
+    // bottom
+    for(i = 0; i < viewport_width; i++)
+    {
+      draw_char_ext('\xcd', edge_color, viewport_x + i,
+       viewport_y + viewport_height, 0, 0);
+    }
+
+    if(viewport_x > 0)
+    {
+      draw_char_ext('\xc8', edge_color, viewport_x - 1,
+       viewport_y + viewport_height, 0, 0);
+    }
+
+    if((viewport_x + viewport_width) < 80)
+    {
+      draw_char_ext('\xbc', edge_color, viewport_x + viewport_width,
+       viewport_y + viewport_height, 0, 0);
+    }
+  }
+}
+
 // Returns non-0 to skip all keys this cycle
 static int update(World *mzx_world, int game, int *fadein)
 {
@@ -1272,13 +1385,14 @@ static int update(World *mzx_world, int game, int *fadein)
         draw_char(' ', scroll_color, mesg_x, mesg_y);
     }
 
+#ifdef CONFIG_EDITOR
     // Add debug box
-
     if(debug_mode)
     {
       draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
        mzx_world->player_y);
     }
+#endif // CONFIG_EDITOR
 
     if(pal_update)
       update_palette();
@@ -1536,6 +1650,387 @@ static int update(World *mzx_world, int game, int *fadein)
   return 0;
 }
 
+__editor_maybe_static void play_game(World *mzx_world, int fadein)
+{
+  // We have the world loaded, on the proper scene.
+  // We are faded out. Commence playing!
+  int key = -1;
+  char keylbl[5] = "KEY?";
+  Board *src_board;
+
+  // Main game loop
+  // Mouse remains hidden unless menu/etc. is invoked
+
+  set_context(91);
+
+  do
+  {
+    // Update
+    if(update(mzx_world, 1, &fadein))
+    {
+      update_event_status();
+      continue;
+    }
+    update_event_status();
+
+    src_board = mzx_world->current_board;
+
+    // Keycheck
+
+    key = get_key(keycode_SDL);
+
+    if(key)
+    {
+      int key_char = get_key(keycode_unicode);
+
+      if(key_char)
+      {
+        keylbl[3] = key_char;
+        send_robot_all(mzx_world, keylbl);
+      }
+
+      switch(key)
+      {
+        case SDLK_F1:
+        {
+          if(get_counter(mzx_world, "HELP_MENU", 0))
+          {
+            m_show();
+            help_system(mzx_world);
+          }
+          break;
+        }
+
+        case SDLK_F2:
+        {
+          // Settings
+          if(get_counter(mzx_world, "F2_MENU", 0) ||
+           (!mzx_world->active))
+          {
+            m_show();
+
+            game_settings(mzx_world);
+
+            update_event_status();
+          }
+          break;
+        }
+
+        case SDLK_KP_ENTER:
+        case SDLK_RETURN:
+        {
+          int enter_menu_status =
+           get_counter(mzx_world, "ENTER_MENU", 0);
+          send_robot_all(mzx_world, "KeyEnter");
+          // Menu
+          // 19x9
+          if(enter_menu_status)
+          {
+            int key;
+            save_screen();
+
+            draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
+            if(mzx_world->editing)
+              write_string(editing_menu, 10, 5, 31, 1);
+            else
+              write_string(game_menu, 10, 5, 31, 1);
+            write_string(" Game Menu ", 14, 4, 30, 0);
+            show_status(mzx_world); // Status screen too
+            update_screen();
+            m_show();
+            do
+            {
+              update_event_status_delay();
+              update_screen();
+              key = get_key(keycode_SDL);
+            } while((key != SDLK_RETURN) &&
+             (key != SDLK_KP_ENTER));
+
+            restore_screen();
+
+            update_event_status();
+          }
+          break;
+        }
+
+        case SDLK_ESCAPE:
+        {
+          // Quit
+          m_show();
+
+          if(confirm(mzx_world, "Quit playing- Are you sure?"))
+            key = 0;
+
+          update_event_status();
+          break;
+        }
+
+        case SDLK_F3:
+        {
+          // Save game
+          if(!mzx_world->dead)
+          {
+            // Can we?
+            if((src_board->save_mode != CANT_SAVE) &&
+             ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
+             (src_board->level_under_id[mzx_world->player_x +
+             (src_board->board_width * mzx_world->player_y)] ==
+             SENSOR)))
+            {
+              char save_game[512];
+
+              strcpy(save_game, curr_sav);
+
+              m_show();
+              if(!new_file(mzx_world, save_ext, save_game,
+               "Save game", 1))
+              {
+                strcpy(curr_sav, save_game);
+                // Name in curr_sav....
+                add_ext(curr_sav, ".sav");
+                // Save entire game
+                save_world(mzx_world, curr_sav, 1, get_fade_status());
+              }
+            }
+          }
+          update_event_status();
+          break;
+        }
+
+        case SDLK_F4:
+        {
+          // Restore
+          char save_file_name[64];
+          m_show();
+
+          if(!choose_file_ch(mzx_world, save_ext, save_file_name,
+           "Choose game to restore", 1))
+          {
+            // Load game
+            fadein = 0;
+            if(reload_savegame(mzx_world, save_file_name, &fadein))
+            {
+              vquick_fadeout();
+              return;
+            }
+
+            // Reset this
+            src_board = mzx_world->current_board;
+            // Swap in starting board
+            load_module(src_board->mod_playing);
+            strcpy(mzx_world->real_mod_playing,
+             src_board->mod_playing);
+
+            find_player(mzx_world);
+
+            strcpy(curr_sav, save_file_name);
+            send_robot_def(mzx_world, 0, 10);
+            fadein ^= 1;
+          }
+
+          update_event_status();
+          break;
+        }
+
+        case SDLK_F5:
+        case SDLK_INSERT:
+        {
+          // Change bomb type
+          if(!mzx_world->dead)
+          {
+            mzx_world->bomb_type ^= 1;
+            if((!src_board->player_attack_locked) &&
+             (src_board->can_bomb))
+            {
+              play_sfx(mzx_world, 35);
+              if(mzx_world->bomb_type)
+              {
+                set_mesg(mzx_world,
+                 "You switch to high strength bombs.");
+              }
+              else
+              {
+                set_mesg(mzx_world,
+                 "You switch to low strength bombs.");
+              }
+            }
+          }
+          break;
+        }
+
+#ifdef CONFIG_EDITOR
+        case SDLK_F6:
+        {
+          if(mzx_world->editing)
+          {
+            // Debug information
+            debug_mode ^= 1;
+            break;
+          }
+        }
+
+        case SDLK_F7:
+        {
+          if(mzx_world->editing)
+          {
+            int i;
+
+            // Cheat #1- Give all
+            set_counter(mzx_world, "GEMS", 32767, 1);
+            set_counter(mzx_world, "AMMO", 32767, 1);
+            set_counter(mzx_world, "HEALTH", 32767, 1);
+            set_counter(mzx_world, "COINS", 32767, 1);
+            set_counter(mzx_world, "LIVES", 32767, 1);
+            set_counter(mzx_world, "TIME", src_board->time_limit, 1);
+            set_counter(mzx_world, "LOBOMBS", 32767, 1);
+            set_counter(mzx_world, "HIBOMBS", 32767, 1);
+
+            mzx_world->score = 0;
+            mzx_world->dead = 0;
+
+            for(i = 0; i < 16; i++)
+            {
+              mzx_world->keys[i] = i;
+            }
+
+            src_board->player_ns_locked = 0;
+            src_board->player_ew_locked = 0;
+            src_board->player_attack_locked = 0;
+          }
+
+          break;
+        }
+
+        case SDLK_F8:
+        {
+          if(mzx_world->editing)
+          {
+            int player_x = mzx_world->player_x;
+            int player_y = mzx_world->player_y;
+            int board_width = src_board->board_width;
+            int board_height = src_board->board_height;
+
+            if(player_x > 0)
+            {
+              place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
+               player_y);
+
+              if(player_y > 0)
+              {
+                place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
+                 player_y - 1);
+              }
+
+              if(player_y < (board_height - 1))
+              {
+                place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
+                 player_y + 1);
+              }
+            }
+
+            if(player_x < (board_width - 1))
+            {
+              place_at_xy(mzx_world, SPACE, 7, 0, player_x + 1,
+               player_y);
+
+              if(player_y > 0)
+              {
+                place_at_xy(mzx_world, SPACE, 7, 0,
+                 player_x + 1, player_y - 1);
+              }
+
+              if(player_y < (board_height - 1))
+              {
+                place_at_xy(mzx_world, SPACE, 7, 0,
+                 player_x + 1, player_y + 1);
+              }
+            }
+
+            if(player_y > 0)
+            {
+              place_at_xy(mzx_world, SPACE, 7, 0,
+               player_x, player_y - 1);
+            }
+
+            if(player_y < (board_height - 1))
+            {
+              place_at_xy(mzx_world, SPACE, 7, 0,
+               player_x, player_y + 1);
+            }
+          }
+
+          break;
+        }
+#endif // CONFIG_EDITOR
+
+        // Quick save
+        case SDLK_F9:
+        {
+          if(!mzx_world->dead)
+          {
+            // Can we?
+            if((src_board->save_mode != CANT_SAVE) &&
+             ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
+             (src_board->level_under_id[mzx_world->player_x +
+             (src_board->board_width * mzx_world->player_y)] ==
+             SENSOR)))
+            {
+              // Save entire game
+              save_world(mzx_world, curr_sav, 1, get_fade_status());
+            }
+          }
+          break;
+        }
+
+        // Quick load
+        case SDLK_F10:
+        {
+          struct stat file_info;
+
+          if(!stat(curr_sav, &file_info))
+          {
+            // Load game
+            fadein = 0;
+            if(reload_savegame(mzx_world, curr_sav, &fadein))
+            {
+              vquick_fadeout();
+              return;
+            }
+
+            // Reset this
+            src_board = mzx_world->current_board;
+
+            find_player(mzx_world);
+
+            // Swap in starting board
+            load_module(src_board->mod_playing);
+            strcpy(mzx_world->real_mod_playing,
+             src_board->mod_playing);
+
+            send_robot_def(mzx_world, 0, 10);
+            fadein ^= 1;
+          }
+          break;
+        }
+
+#ifdef CONFIG_EDITOR
+        case SDLK_F11:
+        {
+          if(mzx_world->editing)
+            debug_counters(mzx_world);
+
+          break;
+        }
+#endif // CONFIG_EDITOR
+      }
+    }
+  } while(key != SDLK_ESCAPE);
+
+  pop_context();
+  vquick_fadeout();
+  clear_sfx_queue();
+}
+
 void title_screen(World *mzx_world)
 {
   int fadein = 1;
@@ -1545,7 +2040,9 @@ void title_screen(World *mzx_world)
   Board *src_board;
   char current_dir[MAX_PATH];
 
+#ifdef CONFIG_EDITOR
   debug_mode = 0;
+#endif // CONFIG_EDITOR
 
   // Clear screen
   clear_screen(32, 7);
@@ -1602,6 +2099,7 @@ void title_screen(World *mzx_world)
     {
       switch(key)
       {
+#ifdef CONFIG_EDITOR
         case SDLK_e: // E
         case SDLK_F8: // F8
         {
@@ -1616,6 +2114,7 @@ void title_screen(World *mzx_world)
           fadein = 1;
           break;
         }
+#endif // CONFIG_EDITOR
 
         case SDLK_s: // S
         case SDLK_F2: // F2
@@ -1955,113 +2454,6 @@ void title_screen(World *mzx_world)
   clear_sfx_queue();
 }
 
-void draw_viewport(World *mzx_world)
-{
-  int i, i2;
-  Board *src_board = mzx_world->current_board;
-  int viewport_x = src_board->viewport_x;
-  int viewport_y = src_board->viewport_y;
-  int viewport_width = src_board->viewport_width;
-  int viewport_height = src_board->viewport_height;
-  char edge_color = mzx_world->edge_color;
-
-  // Draw the current viewport
-  if(viewport_y > 1)
-  {
-    // Top
-    for(i = 0; i < viewport_y; i++)
-      fill_line_ext(80, 0, i, 177, edge_color, 0, 0);
-  }
-
-  if((viewport_y + viewport_height) < 24)
-  {
-    // Bottom
-    for(i = viewport_y + viewport_height + 1; i < 25; i++)
-      fill_line_ext(80, 0, i, 177, edge_color, 0, 0);
-  }
-
-  if(viewport_x > 1)
-  {
-    // Left
-    for(i = 0; i < 25; i++)
-      fill_line_ext(viewport_x, 0, i, 177, edge_color, 0, 0);
-  }
-
-  if((viewport_x + viewport_width) < 79)
-  {
-    // Right
-    i2 = viewport_x + viewport_width + 1;
-    for(i = 0; i < 25; i++)
-    {
-      fill_line_ext(80 - i2, i2, i, 177, edge_color, 0, 0);
-    }
-  }
-
-  // Draw the box
-  if(viewport_x > 0)
-  {
-    // left
-    for(i = 0; i < viewport_height; i++)
-    {
-      draw_char_ext('\xba', edge_color, viewport_x - 1,
-       i + viewport_y, 0, 0);
-    }
-
-    if(viewport_y > 0)
-    {
-      draw_char_ext('\xc9', edge_color, viewport_x - 1,
-       viewport_y - 1, 0, 0);
-    }
-  }
-  if((viewport_x + viewport_width) < 80)
-  {
-    // right
-    for(i = 0; i < viewport_height; i++)
-    {
-      draw_char_ext('\xba', edge_color,
-       viewport_x + viewport_width, i + viewport_y, 0, 0);
-    }
-
-    if(viewport_y > 0)
-    {
-      draw_char_ext('\xbb', edge_color,
-       viewport_x + viewport_width, viewport_y - 1, 0, 0);
-    }
-  }
-
-  if(viewport_y > 0)
-  {
-    // top
-    for(i = 0; i < viewport_width; i++)
-    {
-      draw_char_ext('\xcd', edge_color, viewport_x + i,
-       viewport_y - 1, 0, 0);
-    }
-  }
-
-  if((viewport_y + viewport_height) < 25)
-  {
-    // bottom
-    for(i = 0; i < viewport_width; i++)
-    {
-      draw_char_ext('\xcd', edge_color, viewport_x + i,
-       viewport_y + viewport_height, 0, 0);
-    }
-
-    if(viewport_x > 0)
-    {
-      draw_char_ext('\xc8', edge_color, viewport_x - 1,
-       viewport_y + viewport_height, 0, 0);
-    }
-
-    if((viewport_x + viewport_width) < 80)
-    {
-      draw_char_ext('\xbc', edge_color, viewport_x + viewport_width,
-       viewport_y + viewport_height, 0, 0);
-    }
-  }
-}
-
 void set_mesg(World *mzx_world, char *str)
 {
   if(mzx_world->bi_mesg_status)
@@ -2274,383 +2666,6 @@ void calculate_xytop(World *mzx_world, int *x, int *y)
 
   *x = nx;
   *y = ny;
-}
-
-void play_game(World *mzx_world, int fadein)
-{
-  // We have the world loaded, on the proper scene.
-  // We are faded out. Commence playing!
-  int key = -1;
-  char keylbl[5] = "KEY?";
-  Board *src_board;
-
-  // Main game loop
-  // Mouse remains hidden unless menu/etc. is invoked
-
-  set_context(91);
-
-  do
-  {
-    // Update
-    if(update(mzx_world, 1, &fadein))
-    {
-      update_event_status();
-      continue;
-    }
-    update_event_status();
-
-    src_board = mzx_world->current_board;
-
-    // Keycheck
-
-    key = get_key(keycode_SDL);
-
-    if(key)
-    {
-      int key_char = get_key(keycode_unicode);
-
-      if(key_char)
-      {
-        keylbl[3] = key_char;
-        send_robot_all(mzx_world, keylbl);
-      }
-
-      switch(key)
-      {
-        case SDLK_F1:
-        {
-          if(get_counter(mzx_world, "HELP_MENU", 0))
-          {
-            m_show();
-            help_system(mzx_world);
-          }
-          break;
-        }
-
-        case SDLK_F2:
-        {
-          // Settings
-          if(get_counter(mzx_world, "F2_MENU", 0) ||
-           (!mzx_world->active))
-          {
-            m_show();
-
-            game_settings(mzx_world);
-
-            update_event_status();
-          }
-          break;
-        }
-
-        case SDLK_KP_ENTER:
-        case SDLK_RETURN:
-        {
-          int enter_menu_status =
-           get_counter(mzx_world, "ENTER_MENU", 0);
-          send_robot_all(mzx_world, "KeyEnter");
-          // Menu
-          // 19x9
-          if(enter_menu_status)
-          {
-            int key;
-            save_screen();
-
-            draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
-            if(mzx_world->editing)
-              write_string(editing_menu, 10, 5, 31, 1);
-            else
-              write_string(game_menu, 10, 5, 31, 1);
-            write_string(" Game Menu ", 14, 4, 30, 0);
-            show_status(mzx_world); // Status screen too
-            update_screen();
-            m_show();
-            do
-            {
-              update_event_status_delay();
-              update_screen();
-              key = get_key(keycode_SDL);
-            } while((key != SDLK_RETURN) &&
-             (key != SDLK_KP_ENTER));
-
-            restore_screen();
-
-            update_event_status();
-          }
-          break;
-        }
-
-        case SDLK_ESCAPE:
-        {
-          // Quit
-          m_show();
-
-          if(confirm(mzx_world, "Quit playing- Are you sure?"))
-            key = 0;
-
-          update_event_status();
-          break;
-        }
-
-        case SDLK_F3:
-        {
-          // Save game
-          if(!mzx_world->dead)
-          {
-            // Can we?
-            if((src_board->save_mode != CANT_SAVE) &&
-             ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
-             (src_board->level_under_id[mzx_world->player_x +
-             (src_board->board_width * mzx_world->player_y)] ==
-             SENSOR)))
-            {
-              char save_game[512];
-
-              strcpy(save_game, curr_sav);
-
-              m_show();
-              if(!new_file(mzx_world, save_ext, save_game,
-               "Save game", 1))
-              {
-                strcpy(curr_sav, save_game);
-                // Name in curr_sav....
-                add_ext(curr_sav, ".sav");
-                // Save entire game
-                save_world(mzx_world, curr_sav, 1, get_fade_status());
-              }
-            }
-          }
-          update_event_status();
-          break;
-        }
-
-        case SDLK_F4:
-        {
-          // Restore
-          char save_file_name[64];
-          m_show();
-
-          if(!choose_file_ch(mzx_world, save_ext, save_file_name,
-           "Choose game to restore", 1))
-          {
-            // Load game
-            fadein = 0;
-            if(reload_savegame(mzx_world, save_file_name, &fadein))
-            {
-              vquick_fadeout();
-              return;
-            }
-
-            // Reset this
-            src_board = mzx_world->current_board;
-            // Swap in starting board
-            load_module(src_board->mod_playing);
-            strcpy(mzx_world->real_mod_playing,
-             src_board->mod_playing);
-
-            find_player(mzx_world);
-
-            strcpy(curr_sav, save_file_name);
-            send_robot_def(mzx_world, 0, 10);
-            fadein ^= 1;
-          }
-
-          update_event_status();
-          break;
-        }
-
-        case SDLK_F5:
-        case SDLK_INSERT:
-        {
-          // Change bomb type
-          if(!mzx_world->dead)
-          {
-            mzx_world->bomb_type ^= 1;
-            if((!src_board->player_attack_locked) &&
-             (src_board->can_bomb))
-            {
-              play_sfx(mzx_world, 35);
-              if(mzx_world->bomb_type)
-              {
-                set_mesg(mzx_world,
-                 "You switch to high strength bombs.");
-              }
-              else
-              {
-                set_mesg(mzx_world,
-                 "You switch to low strength bombs.");
-              }
-            }
-          }
-          break;
-        }
-
-        case SDLK_F6:
-        {
-          if(mzx_world->editing)
-          {
-            // Debug information
-            debug_mode ^= 1;
-            break;
-          }
-        }
-
-        case SDLK_F7:
-        {
-          if(mzx_world->editing)
-          {
-            int i;
-
-            // Cheat #1- Give all
-            set_counter(mzx_world, "GEMS", 32767, 1);
-            set_counter(mzx_world, "AMMO", 32767, 1);
-            set_counter(mzx_world, "HEALTH", 32767, 1);
-            set_counter(mzx_world, "COINS", 32767, 1);
-            set_counter(mzx_world, "LIVES", 32767, 1);
-            set_counter(mzx_world, "TIME", src_board->time_limit, 1);
-            set_counter(mzx_world, "LOBOMBS", 32767, 1);
-            set_counter(mzx_world, "HIBOMBS", 32767, 1);
-
-            mzx_world->score = 0;
-            mzx_world->dead = 0;
-
-            for(i = 0; i < 16; i++)
-            {
-              mzx_world->keys[i] = i;
-            }
-
-            src_board->player_ns_locked = 0;
-            src_board->player_ew_locked = 0;
-            src_board->player_attack_locked = 0;
-          }
-
-          break;
-        }
-
-        case SDLK_F8:
-        {
-          if(mzx_world->editing)
-          {
-            int player_x = mzx_world->player_x;
-            int player_y = mzx_world->player_y;
-            int board_width = src_board->board_width;
-            int board_height = src_board->board_height;
-
-            if(player_x > 0)
-            {
-              place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
-               player_y);
-
-              if(player_y > 0)
-              {
-                place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
-                 player_y - 1);
-              }
-
-              if(player_y < (board_height - 1))
-              {
-                place_at_xy(mzx_world, SPACE, 7, 0, player_x - 1,
-                 player_y + 1);
-              }
-            }
-
-            if(player_x < (board_width - 1))
-            {
-              place_at_xy(mzx_world, SPACE, 7, 0, player_x + 1,
-               player_y);
-
-              if(player_y > 0)
-              {
-                place_at_xy(mzx_world, SPACE, 7, 0,
-                 player_x + 1, player_y - 1);
-              }
-
-              if(player_y < (board_height - 1))
-              {
-                place_at_xy(mzx_world, SPACE, 7, 0,
-                 player_x + 1, player_y + 1);
-              }
-            }
-
-            if(player_y > 0)
-            {
-              place_at_xy(mzx_world, SPACE, 7, 0,
-               player_x, player_y - 1);
-            }
-
-            if(player_y < (board_height - 1))
-            {
-              place_at_xy(mzx_world, SPACE, 7, 0,
-               player_x, player_y + 1);
-            }
-          }
-
-          break;
-        }
-
-        // Quick save
-        case SDLK_F9:
-        {
-          if(!mzx_world->dead)
-          {
-            // Can we?
-            if((src_board->save_mode != CANT_SAVE) &&
-             ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
-             (src_board->level_under_id[mzx_world->player_x +
-             (src_board->board_width * mzx_world->player_y)] ==
-             SENSOR)))
-            {
-              // Save entire game
-              save_world(mzx_world, curr_sav, 1, get_fade_status());
-            }
-          }
-          break;
-        }
-
-        // Quick load
-        case SDLK_F10:
-        {
-          struct stat file_info;
-
-          if(!stat(curr_sav, &file_info))
-          {
-            // Load game
-            fadein = 0;
-            if(reload_savegame(mzx_world, curr_sav, &fadein))
-            {
-              vquick_fadeout();
-              return;
-            }
-
-            // Reset this
-            src_board = mzx_world->current_board;
-
-            find_player(mzx_world);
-
-            // Swap in starting board
-            load_module(src_board->mod_playing);
-            strcpy(mzx_world->real_mod_playing,
-             src_board->mod_playing);
-
-            send_robot_def(mzx_world, 0, 10);
-            fadein ^= 1;
-          }
-          break;
-        }
-
-        case SDLK_F11:
-        {
-          if(mzx_world->editing)
-            debug_counters(mzx_world);
-
-          break;
-        }
-      }
-    }
-  } while(key != SDLK_ESCAPE);
-
-  pop_context();
-  vquick_fadeout();
-  clear_sfx_queue();
 }
 
 // Returns 1 if didn't move
@@ -3454,6 +3469,7 @@ int give_key(World *mzx_world, int color)
   return 1;
 }
 
+#ifdef CONFIG_EDITOR
 void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y)
 {
   Board *src_board = mzx_world->current_board;
@@ -3505,3 +3521,4 @@ void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y)
     write_string("(no module)", x + 2, y + 4, EC_DEBUG_NUMBER, 0);
   }
 }
+#endif // CONFIG_EDITOR

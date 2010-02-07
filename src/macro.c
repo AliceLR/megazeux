@@ -71,6 +71,64 @@ static void free_macro(ext_macro *macro_src)
   free(macro_src->text);
 }
 
+__editor_maybe_static char *skip_to_next(char *src, char t, char a, char b)
+{
+  char *current = src;
+  char current_char = *current;
+
+  while(current_char && (current_char != t) && (current_char != '\n') &&
+   (current_char != a) && (current_char != b))
+  {
+    if(current_char == '\r')
+      *current = 0;
+    current++;
+    current_char = *current;
+  }
+
+  return current;
+}
+
+__editor_maybe_static char *skip_whitespace(char *src)
+{
+  char *current = src;
+  char current_char = *current;
+
+  while(isspace(current_char))
+  {
+    current++;
+    current_char = *current;
+  }
+
+  return current;
+}
+
+__editor_maybe_static variable_storage *find_macro_variable(char *name,
+ macro_type *m)
+{
+  int bottom = 0, top = m->num_variables - 1, middle = 0;
+  int cmpval = 0;
+  macro_variable **base = m->variables_sorted;
+  macro_variable *current;
+
+  while(bottom <= top)
+  {
+    middle = (top + bottom) / 2;
+    current = base[middle];
+    cmpval = strcasecmp(name, current->name);
+
+    if(cmpval > 0)
+      bottom = middle + 1;
+    else
+
+    if(cmpval < 0)
+      top = middle - 1;
+    else
+      return &(current->storage);
+  }
+
+  return NULL;
+}
+
 static ext_macro *process_macro(char *line_data, char *name, char *label)
 {
   char *line_position, *line_position_old;
@@ -461,43 +519,13 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
   return macro_dest;
 }
 
-char *skip_to_next(char *src, char t, char a, char b)
+__editor_maybe_static ext_macro *find_macro(config_info *conf,
+ char *name, int *next)
 {
-  char *current = src;
-  char current_char = *current;
-
-  while(current_char && (current_char != t) && (current_char != '\n') &&
-   (current_char != a) && (current_char != b))
-  {
-    if(current_char == '\r')
-      *current = 0;
-    current++;
-    current_char = *current;
-  }
-
-  return current;
-}
-
-char *skip_whitespace(char *src)
-{
-  char *current = src;
-  char current_char = *current;
-
-  while(isspace(current_char))
-  {
-    current++;
-    current_char = *current;
-  }
-
-  return current;
-}
-
-variable_storage *find_macro_variable(char *name, macro_type *m)
-{
-  int bottom = 0, top = m->num_variables - 1, middle = 0;
+  int bottom = 0, top = (conf->num_extended_macros) - 1, middle = 0;
   int cmpval = 0;
-  macro_variable **base = m->variables_sorted;
-  macro_variable *current;
+  ext_macro **base = conf->extended_macros;
+  ext_macro *current;
 
   while(bottom <= top)
   {
@@ -512,8 +540,13 @@ variable_storage *find_macro_variable(char *name, macro_type *m)
     if(cmpval < 0)
       top = middle - 1;
     else
-      return &(current->storage);
+      return current;
   }
+
+  if(cmpval > 0)
+    *next = middle + 1;
+  else
+    *next = middle;
 
   return NULL;
 }
@@ -521,9 +554,9 @@ variable_storage *find_macro_variable(char *name, macro_type *m)
 void add_ext_macro(config_info *conf, char *name, char *line_data,
  char *label)
 {
-  int next;
   ext_macro *macro_dest;
   ext_macro **macro_list;
+  int next = 0;
 
   if(!(conf->num_macros_allocated))
   {
@@ -571,35 +604,3 @@ void add_ext_macro(config_info *conf, char *name, char *line_data,
     }
   }
 }
-
-ext_macro *find_macro(config_info *conf, char *name, int *next)
-{
-  int bottom = 0, top = (conf->num_extended_macros) - 1, middle = 0;
-  int cmpval = 0;
-  ext_macro **base = conf->extended_macros;
-  ext_macro *current;
-
-  while(bottom <= top)
-  {
-    middle = (top + bottom) / 2;
-    current = base[middle];
-    cmpval = strcasecmp(name, current->name);
-
-    if(cmpval > 0)
-      bottom = middle + 1;
-    else
-
-    if(cmpval < 0)
-      top = middle - 1;
-    else
-      return current;
-  }
-
-  if(cmpval > 0)
-    *next = middle + 1;
-  else
-    *next = middle;
-
-  return NULL;
-}
-

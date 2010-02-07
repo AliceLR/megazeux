@@ -24,7 +24,6 @@
 #define __AUDIO_H
 
 #include "compat.h"
-#include "config.h"
 
 __M_BEGIN_DECLS
 

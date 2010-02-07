@@ -39,7 +39,6 @@ PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #include "event.h"
 #include "helpsys.h"
 #include "sfx.h"
-#include "edit.h"
 #include "graphics.h"
 #include "window.h"
 #include "data.h"
@@ -47,11 +46,14 @@ PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #include "error.h"
 #include "idput.h"
 #include "audio.h"
-#include "robo_ed.h"
-#include "config.h"
 
 #include "world.h"
 #include "counter.h"
+
+#ifdef CONFIG_EDITOR
+#include "robo_ed.h"
+#include "edit.h"
+#endif
 
 // Base name for MZX's help file.
 // Prepends SHAREDIR from config.h for you, so it's ready to use.
@@ -139,7 +141,9 @@ int main(int argc, char **argv)
   mzx_world.mzx_speed = mzx_world.conf.mzx_speed;
   mzx_world.default_speed = mzx_world.mzx_speed;
 
+#ifdef CONFIG_EDITOR
   memcpy(macros, mzx_world.conf.default_macros, 5 * 64);
+#endif
 
 #if defined(__MACOSX__)
   // In Mac OS X, applications are packages, or folders that
