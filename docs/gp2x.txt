@@ -1,8 +1,8 @@
 MEGAZEUX ON GP2X
 
 As of MegaZeux 2.81g, Simon Parzer donated a port of MegaZeux to the GP2X. It
-has a few limitations, namely video (which is awkwardly clipped due to the
-poor resolution on the GP2X) and some minor performance issues.
+has a few limitations, namely video (which is awkwardly scaled to a lower
+resolution using hardware nearest-neighbour) and some minor performance issues.
 
 It does however support playing MegaZeux games with support for sound effects
 and music. Several popular titles have been tested.
