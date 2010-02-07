@@ -51,6 +51,7 @@ move_status move(World *mzx_world, int x, int y, int dir,
  int flags);
 mzx_dir parsedir(World *mzx_world, mzx_dir old_dir, int x, int y,
  mzx_dir flow_dir, int bln, int bls, int ble, int blw);
+int flip_dir(int dir);
 
 __M_END_DECLS
 

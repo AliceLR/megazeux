@@ -80,6 +80,8 @@ USERS
   (Lancer-X).
 + Fixed bug where certain file formats would not be automatically converted
   if their extensions were mixed or upper case (e.g. OGG/SAM/GDM).
++ Restored functionality of "if lasttouched DIR" which has been broken since
+  MZX 2.02.
 
 DEVELOPERS
 

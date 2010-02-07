@@ -2486,6 +2486,12 @@ int grab_item(World *mzx_world, int offset, int dir)
 
     case ROBOT:
     {
+      int idx = param;
+
+      // update last touched direction
+      src_board->robot_list[idx]->last_touch_dir =
+       int_to_dir(flip_dir(dir));
+
       send_robot_def(mzx_world, param, 0);
       break;
     }
