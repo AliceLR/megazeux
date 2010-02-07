@@ -136,16 +136,18 @@ void load_world_file(World *mzx_world, char *name)
   clear_screen(32, 7);
   // Palette
   default_palette();
-  reload_world(mzx_world, name, &fade);
-  send_robot_def(mzx_world, 0, 10);
+  if(!reload_world(mzx_world, name, &fade))
+  {
+    send_robot_def(mzx_world, 0, 10);
 
-  src_board = mzx_world->current_board;
-  load_module(src_board->mod_playing);
-  strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-  set_counter(mzx_world, "TIME", src_board->time_limit, 0);
+    src_board = mzx_world->current_board;
+    load_module(src_board->mod_playing);
+    strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+    set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
-  set_mesg(mzx_world,
-   "** BETA **    F1: Help   Enter: Menu   Ctrl-Alt-Enter: Fullscreen");
+    set_mesg(mzx_world,
+     "** BETA **    F1: Help   Enter: Menu   Ctrl-Alt-Enter: Fullscreen");
+  }
 }
 
 void title_screen(World *mzx_world)
