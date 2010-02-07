@@ -95,7 +95,7 @@
 # This resolution may not actually work; if it doesn't, you will
 # get the nearest that does.
 
-force_resolution = 1024,768
+fullscreen_resolution = 640,400
 
 # The resolution MZX uses in a window. If you renderer supports
 # it, MZX will be scaled to fit this specification. Otherwise

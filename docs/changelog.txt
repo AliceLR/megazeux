@@ -31,6 +31,10 @@ USERS
 + Introduced an "fsafegets" to work around problems where robots exported by
   a Windows version of MegaZeux would not load on other platforms. This was
   due to differing EOL style and broke at least one game (Termination).
++ Renamed "force_resolution" to "fullscreen_resolution" to better match its
+  semantics with the scaling renderers. The new name is less accurate for
+  software render modes, but most people using software will not want to
+  change it from the default anyway.
 
 DEVELOPERS
 
