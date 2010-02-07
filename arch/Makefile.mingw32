@@ -16,7 +16,7 @@ WINDRES = ${MINGWBASE}windres
 BINEXT = .exe
 
 # OpenGL must be linked to MZX
-INCLUDES += -DOPENGL_LINKED
+INCLUDES += -DLINK_OPENGL
 
 # standard libraries
 LIBS += -lvorbisfile -lvorbis -logg -lopengl32

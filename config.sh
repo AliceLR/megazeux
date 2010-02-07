@@ -197,6 +197,7 @@ if [ "$PLATFORM" != "psp" -a "$PLATFORM" != "gp2x" ]; then
 	if [ "$OPENGL" = "true" ]; then
 		echo "OpenGL support enabled."
 		echo "#define CONFIG_OPENGL" >> src/config.h
+		echo "BUILD_OPENGL=1" >> Makefile.platform
 	else
 		echo "OpenGL support disabled."
 	fi

@@ -43,19 +43,33 @@ typedef struct
   Uint8 fg_color;
 } char_element;
 
-typedef struct
+#define SCREEN_W 80
+#define SCREEN_H 25
+
+#define CHAR_W 8
+#define CHAR_H 14
+
+#define CHAR_SIZE 14
+#define CHARSET_SIZE 256
+#define NUM_CHARSETS 16
+
+#define PAL_SIZE 16
+#define NUM_PALS 2
+#define SMZX_PAL_SIZE 256
+
+typedef struct _graphics_data graphics_data;
+
+struct _graphics_data
 {
-  SDL_Surface *screen;
-  SDL_Overlay *overlay;
   Uint32 screen_mode;
-  char_element text_video[80 * 25 * 2];
-  Uint8 charset[14 * 256 * 16];
-  SDL_Color palette[256];
-  SDL_Color intensity_palette[256];
-  SDL_Color backup_palette[256];
-  Uint32 current_intensity[256];
-  Uint32 saved_intensity[256];
-  Uint32 backup_intensity[256];
+  char_element text_video[SCREEN_W * SCREEN_H];
+  Uint8 charset[CHAR_SIZE * CHARSET_SIZE * NUM_CHARSETS];
+  SDL_Color palette[SMZX_PAL_SIZE];
+  SDL_Color intensity_palette[SMZX_PAL_SIZE];
+  SDL_Color backup_palette[SMZX_PAL_SIZE];
+  Uint32 current_intensity[SMZX_PAL_SIZE];
+  Uint32 saved_intensity[SMZX_PAL_SIZE];
+  Uint32 backup_intensity[SMZX_PAL_SIZE];
 
   cursor_mode_types cursor_mode;
   Uint32 fade_status;
@@ -76,34 +90,40 @@ typedef struct
   Uint32 default_smzx_loaded;
   char *gl_filter_method;
 
-  Uint8 default_charset[14 * 256];
-  Uint8 blank_charset[14 * 256];
-  Uint8 smzx_charset[14 * 256];
-  Uint8 ascii_charset[14 * 256];
+  Uint8 default_charset[CHAR_SIZE * CHARSET_SIZE];
+  Uint8 blank_charset[CHAR_SIZE * CHARSET_SIZE];
+  Uint8 smzx_charset[CHAR_SIZE * CHARSET_SIZE];
+  Uint8 ascii_charset[CHAR_SIZE * CHARSET_SIZE];
 
-  Uint32 flat_intensity_palette[256];
+  Uint32 flat_intensity_palette[SMZX_PAL_SIZE];
+  void *render_data;
 
-  int  (*init_video)       (config_info*);
-  int  (*check_video_mode) (int, int, int, int);
-  int  (*set_video_mode)   (int, int, int, int, int);
-  void (*update_screen)    (void);
-  void (*update_colors)    (SDL_Color *, Uint32);
-  void (*resize_screen)    (int, int);
-  void (*remap_charsets)   (void);
-  void (*set_screen_coords)(int, int, int *, int *);
-} graphics_data;
+  int  (*init_video)       (graphics_data *, config_info*);
+  int  (*check_video_mode) (graphics_data *, int, int, int, int);
+  int  (*set_video_mode)   (graphics_data *, int, int, int, int, int);
+  void (*update_colors)    (graphics_data *, SDL_Color *, Uint32);
+  void (*resize_screen)    (graphics_data *, int, int);
+  void (*remap_charsets)   (graphics_data *);
+  void (*remap_char)       (graphics_data *, Uint16 chr);
+  void (*remap_charbyte)   (graphics_data *, Uint16 chr, Uint8 byte);
+  void (*get_screen_coords)(graphics_data *, int, int, int *, int *, int *,
+                             int *, int *, int *);
+  void (*set_screen_coords)(graphics_data *, int, int, int *, int *);
+  void (*render_graph)     (graphics_data *);
+  void (*render_cursor)    (graphics_data *, Uint32, Uint32, Uint8, Uint8,
+                             Uint8);
+  void (*render_mouse)     (graphics_data *, Uint32, Uint32, Uint8, Uint8);
+  void (*sync_screen)      (graphics_data *);
+};
 
 void color_string(char *string, Uint32 x, Uint32 y, Uint8 color);
 void write_string(char *string, Uint32 x, Uint32 y, Uint8 color,
- Uint32 tab_allowed);
-void write_line(char *string, Uint32 x, Uint32 y, Uint8 color,
  Uint32 tab_allowed);
 void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color);
 void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
  Uint8 color);
 void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y);
 void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset);
-void draw_char_nocolor(Uint8 chr, Uint32 x, Uint32 y);
 
 void color_string_ext(char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 offset, Uint32 c_offset);
@@ -128,8 +148,6 @@ void write_line_mask(char *str, Uint32 x, Uint32 y,
 void write_string_mask(char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed);
 
-Uint8 get_char(Uint32 x, Uint32 y);
-Uint8 get_char_linear(Uint32 offset);
 Uint8 get_color_linear(Uint32 offset);
 void clear_screen(Uint8 chr, Uint8 color);
 void clear_screen_no_update(Uint8 chr, Uint8 color);
@@ -153,13 +171,10 @@ void ec_change_byte(Uint8 chr, Uint8 byte, Uint8 new_value);
 Uint8 ec_read_byte(Uint8 chr, Uint8 byte);
 void ec_read_char(Uint8 chr, char *matrix);
 void ec_change_char(Uint8 chr, char *matrix);
-void ec_init(void);
 Sint32 ec_load_set(char *name);
 Sint32 ec_load_set_var(char *name, Uint8 pos);
-Sint32 ec_load_set_ext(char *name, Uint8 pos);
 void ec_mem_load_set(Uint8 *chars);
 void ec_mem_save_set(Uint8 *chars);
-void ec_save_set(char *name);
 void ec_save_set_var(char *name, Uint8 offset, Uint32 size);
 void ec_load_mzx(void);
 void ec_load_smzx(void);
@@ -168,18 +183,13 @@ void ec_load_ascii(void);
 void ec_load_char_mzx(Uint32 char_number);
 void ec_load_char_smzx(Uint32 char_number);
 void ec_load_char_ascii(Uint32 char_number);
-Sint32 ec_load_set_secondary(char *name, Uint8 *dest);
 
 void update_palette();
 void load_palette(char *fname);
-void load_palette_mem(char mem_pal[][3], int count);
 void save_palette(char *fname);
-void save_palette_mem(char mem_pal[][3], int count);
-void init_smzx_mode();
 void smzx_palette_loaded(int val);
 void set_screen_mode(Uint32 mode);
 Uint32 get_screen_mode();
-void init_palette();
 void set_palette_intensity(Uint32 percent);
 void set_color_intensity(Uint32 color, Uint32 percent);
 void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b);
@@ -192,7 +202,6 @@ Uint32 get_red_component(Uint32 color);
 Uint32 get_green_component(Uint32 color);
 Uint32 get_blue_component(Uint32 color);
 Uint32 get_fade_status();
-void set_fade_status(Uint32 fade);
 void vquick_fadein(void);
 void vquick_fadeout(void);
 void insta_fadein(void);
