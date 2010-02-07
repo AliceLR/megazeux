@@ -2462,9 +2462,7 @@ static void set_gateway(World *mzx_world, char *name,
   int next;
   counter *cdest = find_counter(mzx_world, name, &next);
   if(cdest)
-  {
-    cdest->gateway_write = (void*)function;
-  }
+    cdest->gateway_write = function;
 }
 
 static void set_dec_gateway(World *mzx_world, char *name,
@@ -2473,9 +2471,7 @@ static void set_dec_gateway(World *mzx_world, char *name,
   int next;
   counter *cdest = find_counter(mzx_world, name, &next);
   if(cdest)
-  {
-    cdest->gateway_dec = (void*)function;
-  }
+    cdest->gateway_dec = function;
 }
 
 void initialize_gateway_functions(World *mzx_world)

@@ -71,37 +71,37 @@ static inline void gdm2s3m_swap32(uint32_t *var)
  * An MSYS console flushing bug requires fflush after
  * fprintf (contrary to spec).
  */
-#define PRINT_OUT(x...) \
+#define PRINT_OUT(...) \
   { \
-    fprintf (stdout, x); \
-    fflush (stdout); \
+    fprintf(stdout, __VA_ARGS__); \
+    fflush(stdout); \
   }
-#define PRINT_ERR(x...) \
+#define PRINT_ERR(...) \
   { \
-    fprintf (stderr, x); \
-    fflush (stderr); \
+    fprintf(stderr, __VA_ARGS__); \
+    fflush(stderr); \
   }
 #else /* __WIN32__ */
 /**
  * LINUX, etc. does not require fflush().
  */
-#define PRINT_OUT(x...) \
+#define PRINT_OUT(...) \
   { \
-    fprintf (stdout, x); \
+    fprintf(stdout, __VA_ARGS__); \
   }
-#define PRINT_ERR(x...) \
+#define PRINT_ERR(...) \
   { \
-    fprintf (stderr, x); \
+    fprintf(stderr, __VA_ARGS__); \
   }
 #endif /* __linux__ */
 
 #ifdef DEBUG
-#define PRINT_DEBUG(x...) \
+#define PRINT_DEBUG(...) \
   { \
-    PRINT_OUT ("D: " x); \
+    PRINT_OUT("D: " __VA_ARGS__); \
   }
 #else
-#define PRINT_DEBUG(x...)
+#define PRINT_DEBUG(...)
 #endif /* DEBUG */
 #endif /* !_MSC_VER */
 
