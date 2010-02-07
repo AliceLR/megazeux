@@ -10,6 +10,9 @@ SDL_LDFLAGS    = `sdl-config --static-libs`
 VORBIS_LDFLAGS = ${PREFIX}/lib/libvorbisfile.a \
                  ${PREFIX}/lib/libvorbis.a ${PREFIX}/lib/libogg.a
 
+# need PNG to be statically linked (inc. zlib)
+LIBPNG_LDFLAGS = `libpng12-config --static --libs`
+
 # switch locking method
 mzx_cflags += -DPTHREAD_MUTEXES
 
