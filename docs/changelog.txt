@@ -69,6 +69,9 @@ USERS
   a game in the editor that switched between Regular/SMZX1 and SMZX2/3 modes.
   MegaZeux should now try much harder to preserve the user palette,
   regardless of game edits.
++ Fix a bug causing board switching to not correctly alter the x,y viewport
+  scroll leading to the display of raw memory and potentially crashes, with
+  differently sized boards.
 
 DEVELOPERS
 

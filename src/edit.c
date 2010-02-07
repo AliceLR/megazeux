@@ -95,35 +95,25 @@ static void fix_scroll(int *cursor_board_x, int *cursor_board_y,
  int *scroll_x, int *scroll_y, int cursor_x, int cursor_y,
  int board_width, int board_height, int edit_screen_height)
 {
-  if(*cursor_board_x >= board_width)
+  if(*scroll_x + 80 > board_width)
   {
-    *cursor_board_x = (board_width - 1);
     *scroll_x = (board_width - 80);
-
     if(*scroll_x < 0)
       *scroll_x = 0;
   }
 
-  if(*cursor_board_y >= board_height)
+  if(*scroll_y + edit_screen_height > board_height)
   {
-    *cursor_board_y = (board_height - 1);
     *scroll_y = (board_height - edit_screen_height);
-
     if(*scroll_y < 0)
       *scroll_y = 0;
   }
 
-  if((cursor_x + *scroll_x) >= board_width)
-    *scroll_x = (board_width - 80);
+  if(*cursor_board_x >= board_width)
+    *cursor_board_x = (board_width - 1);
 
-  if((cursor_y + *scroll_y) >= board_height)
-    *scroll_y = (board_height - edit_screen_height);
-
-  if(*scroll_x < 0)
-    *scroll_x = 0;
-
-  if(*scroll_y < 0)
-    *scroll_y = 0;
+  if(*cursor_board_y >= board_height)
+    *cursor_board_y = (board_height - 1);
 }
 
 static void fix_board(World *mzx_world, int new_board)
