@@ -23,8 +23,11 @@ usage() {
 	echo
 	echo "Supported <option> values:"
 	echo
-	echo "  --enable-host-tools  Use 'cc' to build tools (txt2hlp)."
+	echo "  --enable-host-tools  Use 'cc' to build utils (txt2hlp)."
 	echo "  --disable-host-tools Use the default compiler (default)."
+	echo
+	echo "  --disable-utils      Disables compilation of utils (txt2hlp)."
+	echo "  --enable-utils       Enables compilation of utils (default)."
 	echo
 	echo "  --disable-x11        Disables X11, removing binary dependency."
 	echo "  --enable-x11         Enables X11 support (default)."
@@ -69,6 +72,7 @@ PREFIX="/usr"
 SYSCONFDIR="/etc"
 SYSCONFDIR_SET="false"
 HOST_TOOLS="false"
+UTILS="true"
 X11="true"
 SOFTWARE="true"
 OPENGL="true"
@@ -104,6 +108,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-host-tools" ] && HOST_TOOLS="false"
 	[ "$1" = "--enable-host-tools" ] && HOST_TOOLS="true"
+
+	[ "$1" = "--disable-utils" ] && UTILS="false"
+	[ "$1" = "--enable-utils" ] && UTILS="true"
 
 	[ "$1" = "--disable-x11" ] && X11="false"
 	[ "$1" = "--enable-x11" ]  && X11="true"
@@ -214,6 +221,17 @@ else
 	echo "Using default compiler for tools."
 	echo "NATIVE_TOOLS=0" >> Makefile.platform
 	echo "HOST_CC := \${CC}" >> Makefile.platform
+fi
+
+#
+# User may want to compile utils (txt2hlp)
+#
+if [ "$UTILS" = "true" ]; then
+	echo "Building utils (txt2hlp)."
+	echo "BUILD_UTILS=1" >> Makefile.platform
+else
+	echo "Disabled utils (txt2hlp)."
+	echo "BUILD_UTILS=0" >> Makefile.platform
 fi
 
 #
