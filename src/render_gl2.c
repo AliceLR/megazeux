@@ -188,25 +188,25 @@ static int gl2_init_video(graphics_data *graphics, config_info *conf)
   return true;
 }
 
-void gl2_remap_charsets(graphics_data *graphics)
+static void gl2_remap_charsets(graphics_data *graphics)
 {
   gl2_render_data *render_data = graphics->render_data;
   render_data->remap_texture = true;
 }
 
-void gl2_remap_char(graphics_data *graphics, Uint16 chr)
+static void gl2_remap_char(graphics_data *graphics, Uint16 chr)
 {
   gl2_render_data *render_data = graphics->render_data;
   render_data->remap_char[chr] = true;
 }
 
-void gl2_remap_charbyte(graphics_data *graphics, Uint16 chr, Uint8 byte)
+static void gl2_remap_charbyte(graphics_data *graphics, Uint16 chr, Uint8 byte)
 {
   gl2_remap_char(graphics, chr);
 }
 
 // FIXME: Many magic numbers
-void gl2_resize_screen(graphics_data *graphics, int viewport_width,
+static void gl2_resize_screen(graphics_data *graphics, int viewport_width,
  int viewport_height)
 {
   gl2_render_data *render_data = graphics->render_data;
