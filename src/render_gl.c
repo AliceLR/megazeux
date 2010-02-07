@@ -34,7 +34,7 @@ void gl_set_filter_method(char *method,
 {
   GLint gl_filter_method = GL_LINEAR;
 
-  if (!strcasecmp(method, CONFIG_GL_FILTER_NEAREST))
+  if(!strcasecmp(method, CONFIG_GL_FILTER_NEAREST))
     gl_filter_method = GL_NEAREST;
 
   glTexParameteri_p(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_method);

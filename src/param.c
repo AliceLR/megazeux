@@ -182,9 +182,10 @@ static int pe_health(World *mzx_world, int param)
 static int pe_ring(World *mzx_world, int param)
 {
   int p;
-  if (param >= 16) param = 0;
+  if(param >= 16)
+    param = 0;
   p = list_menu(potion_fx, 13, "Choose effect", param, 16, 31);
-  if (p < 0)
+  if(p < 0)
     return -1;
   else
     return p;

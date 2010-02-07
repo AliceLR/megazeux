@@ -190,7 +190,7 @@ static int gp2x_init_video(graphics_data *graphics, config_info *conf)
 {
   gp2x_render_data *render_data = malloc(sizeof(gp2x_render_data));
 
-  if (!render_data)
+  if(!render_data)
     return false;
 
   graphics->render_data = render_data;
@@ -221,14 +221,13 @@ static int gp2x_set_video_mode(graphics_data *graphics, int width, int height,
   Uint32 halfmask;
 
   render_data->screen = SDL_SetVideoMode(width, height, 16, flags);
-  if (render_data->screen)
+  if(render_data->screen)
   {
     format = render_data->screen->format;
     halfmask = (format->Rmask >> 1) & format->Rmask;
     halfmask |= (format->Gmask >> 1) & format->Gmask;
     halfmask |= (format->Bmask >> 1) & format->Bmask;
     render_data->halfmask = halfmask;
-
     return true;
   }
 
@@ -241,10 +240,12 @@ static void gp2x_update_colors(graphics_data *graphics, SDL_Color *palette,
   gp2x_render_data *render_data = graphics->render_data;
   Uint32 i;
 
-  for (i = 0; i < count; i++)
+  for(i = 0; i < count; i++)
+  {
     graphics->flat_intensity_palette[i] =
      SDL_MapRGBA(render_data->screen->format, palette[i].r, palette[i].g,
      palette[i].b, 255);
+  }
 }
 
 static void gp2x_get_screen_coords(graphics_data *graphics, int screen_x,

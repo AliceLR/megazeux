@@ -31,17 +31,17 @@ static int soft_init_video(graphics_data *graphics, config_info *conf)
   graphics->bits_per_pixel = 32;
 
   // Screens smaller than 640x350 do weird things with the software renderer
-  if (graphics->resolution_width < 640)
+  if(graphics->resolution_width < 640)
     graphics->resolution_width = 640;
-  if (graphics->resolution_height < 350)
+  if(graphics->resolution_height < 350)
     graphics->resolution_height = 350;
-  if (graphics->window_width < 640)
+  if(graphics->window_width < 640)
     graphics->window_width = 640;
-  if (graphics->window_height < 350)
+  if(graphics->window_height < 350)
     graphics->window_height = 350;
 
   // We have 8-bit, 16-bit, and 32-bit software renderers
-  if (conf->force_bpp == 8 || conf->force_bpp == 16 || conf->force_bpp == 32)
+  if(conf->force_bpp == 8 || conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
 
   return set_video_mode();
@@ -66,12 +66,14 @@ static void soft_update_colors(graphics_data *graphics, SDL_Color *palette,
   SDL_Surface *screen = graphics->render_data;
   Uint32 i;
 
-  if (graphics->bits_per_pixel != 8)
+  if(graphics->bits_per_pixel != 8)
   {
-    for (i = 0; i < count; i++)
+    for(i = 0; i < count; i++)
+    {
       graphics->flat_intensity_palette[i] =
        SDL_MapRGBA(screen->format, palette[i].r, palette[i].g, palette[i].b,
        255);
+    }
   }
   else
   {
@@ -91,20 +93,16 @@ static void soft_render_graph(graphics_data *graphics)
   pixels += (screen->w - 640) / bpp;
 
   SDL_LockSurface(screen);
-  if (bpp == 8)
+  if(bpp == 8)
     render_graph8((Uint8 *)pixels, pitch, graphics, set_colors8[mode]);
-  else
-
-  if (bpp == 16)
+  else if(bpp == 16)
     render_graph16((Uint16 *)pixels, pitch, graphics, set_colors16[mode]);
-  else
-
-  if (bpp == 32)
+  else if(bpp == 32)
   {
     if(!mode)
-        render_graph32(pixels, pitch, graphics, set_colors32[mode]);
-      else
-        render_graph32s(pixels, pitch, graphics, set_colors32[mode]);
+      render_graph32(pixels, pitch, graphics, set_colors32[mode]);
+    else
+      render_graph32s(pixels, pitch, graphics, set_colors32[mode]);
   }
   SDL_UnlockSurface(screen);
 }
@@ -121,12 +119,12 @@ static void soft_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
   pixels += pitch * ((screen->h - 350) / 8);
   pixels += (screen->w - 640) / bpp;
 
-  if (bpp == 8)
+  if(bpp == 8)
     flatcolor = (color << 24) | (color << 16) | (color << 8) | color;
   else
     flatcolor = graphics->flat_intensity_palette[color];
 
-  if (bpp == 16)
+  if(bpp == 16)
     flatcolor |= flatcolor << 16;
 
   SDL_LockSurface(screen);
@@ -146,7 +144,7 @@ static void soft_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
   pixels += pitch * ((screen->h - 350) / 8);
   pixels += (screen->w - 640) / bpp;
 
-  if ((bpp == 8) && !graphics->screen_mode)
+  if((bpp == 8) && !graphics->screen_mode)
     mask = 0x0F0F0F0F;
   else
     mask = 0xFFFFFFFF;

@@ -424,7 +424,7 @@ static int truncate_filename(const char *old_name, char *new_name,
   int i_dupl_fix;
   FILE *f_test;
 
-  if (strlen(old_name) <= length)
+  if(strlen(old_name) <= length)
   {
     strcpy(new_name, old_name);
     return 0;
@@ -434,7 +434,7 @@ static int truncate_filename(const char *old_name, char *new_name,
   i_file_ext = length - strlen(old_name) + (file_ext - old_name);
 
   // Where the . should go.  Trust me, the math is right.
-  if (i_file_ext < 2)
+  if(i_file_ext < 2)
   {
     error("Can't truncate file: the extension is too long.",
       0, 8, 0xabcd);
@@ -446,7 +446,7 @@ static int truncate_filename(const char *old_name, char *new_name,
   strncpy(trnc_name + i_file_ext, file_ext, length - i_file_ext);
 
   f_test = fopen(trnc_name, "r");
-  while (i_dupl_fix < 100 && f_test)
+  while(i_dupl_fix < 100 && f_test)
   {
     char dupl_fix[8] = { 0 };
     fclose(f_test);
@@ -457,7 +457,7 @@ static int truncate_filename(const char *old_name, char *new_name,
     f_test = fopen(trnc_name, "r");
   }
 
-  if (i_dupl_fix >= 100 && f_test)
+  if(i_dupl_fix >= 100 && f_test)
   {
     fclose(f_test);
     error("Max rename attempts exceeded (100), giving up.",
@@ -1384,8 +1384,8 @@ void edit_world(World *mzx_world)
              * and toggling in this mode. Otherwise, just write through
              * as usual.
              */
-            if (!((is_robot(level_id[offset]) && (!overlay_edit)) &&
-                  !mzx_world->conf.editor_space_toggles))
+            if(!((is_robot(level_id[offset]) && (!overlay_edit)) &&
+                 !mzx_world->conf.editor_space_toggles))
             {
               current_param = place_current_at_xy(mzx_world, current_id,
                current_color, current_param, cursor_board_x, cursor_board_y,
@@ -1852,7 +1852,7 @@ void edit_world(World *mzx_world)
               int fade;
               // Load world curr_file
               end_module();
-              if (reload_world(mzx_world, current_world, &fade))
+              if(reload_world(mzx_world, current_world, &fade))
                 create_blank_world(mzx_world);
 
               mzx_world->current_board_id = mzx_world->first_board;
@@ -2199,7 +2199,7 @@ void edit_world(World *mzx_world)
               if(!choose_file(mzx_world, mod_ext, new_mod,
                "Choose a module file", 0))
               {
-                if (strlen(new_mod) > 12)
+                if(strlen(new_mod) > 12)
                 {
                   if(!ask_yes_no(mzx_world,
                    "Load Module: The filename is too long. "
@@ -3114,7 +3114,7 @@ void edit_world(World *mzx_world)
 
             mzx_world->editing = 0;
 
-            if (reload_world(mzx_world, "__test.mzx", &fade))
+            if(reload_world(mzx_world, "__test.mzx", &fade))
             {
               create_blank_world(mzx_world);
               current_board_id = mzx_world->current_board_id;

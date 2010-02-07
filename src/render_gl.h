@@ -23,7 +23,7 @@
  *
  * static int gl_load_syms (gl_syms *gl)
  * {
- *   if (gl->syms_loaded)
+ *   if(gl->syms_loaded)
  *     return true;
  *
  *   GL_LOAD_SYM(gl, glBegin)

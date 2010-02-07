@@ -37,12 +37,16 @@ static void yuv1_render_graph(graphics_data *graphics)
 
   SDL_LockYUVOverlay(render_data->overlay);
 
-  if (!mode)
+  if(!mode)
+  {
     render_graph32((Uint32 *)render_data->overlay->pixels[0],
      render_data->overlay->pitches[0], graphics, set_colors32[mode]);
+  }
   else
+  {
     render_graph32s((Uint32 *)render_data->overlay->pixels[0],
      render_data->overlay->pitches[0], graphics, set_colors32[mode]);
+  }
 
   SDL_UnlockYUVOverlay(render_data->overlay);
 }

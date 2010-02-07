@@ -3128,7 +3128,7 @@ void dec_string_int(World *mzx_world, char *name, int value, int id)
   if(dest)
   {
     // Simply decrease the length
-    if ((int)dest->length - value < 0)
+    if((int)dest->length - value < 0)
       dest->length = 0;
     else
       dest->length -= value;
@@ -3574,7 +3574,7 @@ void debug_counters(World *mzx_world)
         else
         {
           int counter_value = strtol(new_value, NULL, 10);
-          if (edit_type < 0)
+          if(edit_type < 0)
             mzx_world->score = counter_value;
           else
             set_counter(mzx_world,

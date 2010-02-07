@@ -150,7 +150,7 @@ static int match(char *path)
   int i;
 
   // path CANNOT be null
-  if (path == NULL)
+  if(path == NULL)
     return -FSAFE_MATCH_FAILED;
 
   /* FOUR likely permutations on files, and two likely permutations on
@@ -288,9 +288,9 @@ int fsafetest(const char *path, char *newpath)
   strcpy (newpath, path);
 
   // convert the slashes
-  for (i = 0; i < pathlen; i++)
+  for(i = 0; i < pathlen; i++)
   {
-    if (newpath[i] == '\\')
+    if(newpath[i] == '\\')
       newpath[i] = '/';
   }
 
@@ -338,7 +338,7 @@ int fsafetranslate(const char *path, char *newpath)
   int ret;
 
   // fsafetest failed
-  if ((ret = fsafetest(path, newpath)) < 0)
+  if((ret = fsafetest(path, newpath)) < 0)
     return ret;
 
   // see if file is already there
@@ -363,7 +363,7 @@ FILE *fsafeopen(const char *path, const char *mode)
   ret = fsafetranslate(path, newpath);
 
 #if defined (DEBUG) && !defined (__WIN32__)
-  if (ret == FSAFE_SUCCESS)
+  if(ret == FSAFE_SUCCESS)
   {
     fprintf (stderr, "%s:%d: translated %s to %s.\n",
              __FILE__, __LINE__, path, newpath);
@@ -385,7 +385,7 @@ FILE *fsafeopen(const char *path, const char *mode)
         return NULL;
     }
   }
-  else if (ret < 0)
+  else if(ret < 0)
   {
     // bad name, or security checks failed
     return NULL;
@@ -407,11 +407,14 @@ FILE *fsafeopen(const char *path, const char *mode)
 char *fsafegets(char *s, int size, FILE *stream)
 {
   char *ret = fgets(s, size, stream);
-  if (ret) {
+
+  if(ret)
+  {
     int len = strlen(ret);
-    if (len > 1 && (s[len - 2] == '\r' || s[len - 2] == '\n'))
+    if(len > 1 && (s[len - 2] == '\r' || s[len - 2] == '\n'))
       s[len - 1] = '\0';
   }
+
   return ret;
 }
 

@@ -413,8 +413,7 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
   }
   
   // Check for <= 0 width or height (prevent crashing)
-  
-  if ((check_sprite->col_width <= 0) || (check_sprite->col_height <= 0))
+  if((check_sprite->col_width <= 0) || (check_sprite->col_height <= 0))
   {
     mzx_world->collision_count = 0;
     return 0;

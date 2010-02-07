@@ -95,7 +95,7 @@ void ec_change_byte(Uint8 chr, Uint8 byte, Uint8 new_value)
 {
   graphics.charset[(chr * CHAR_SIZE) + byte] = new_value;
 
-  if (graphics.remap_charbyte)
+  if(graphics.remap_charbyte)
     graphics.remap_charbyte(&graphics, chr, byte);
 }
 
@@ -103,7 +103,7 @@ void ec_change_char(Uint8 chr, char *matrix)
 {
   memcpy(graphics.charset + (chr * CHAR_SIZE), matrix, CHAR_SIZE);
 
-  if (graphics.remap_char)
+  if(graphics.remap_char)
     graphics.remap_char(&graphics, chr);
 }
 
@@ -129,7 +129,7 @@ Sint32 ec_load_set(char *name)
   fclose(fp);
 
   // some renderers may want to map charsets to textures
-  if (graphics.remap_charsets)
+  if(graphics.remap_charsets)
     graphics.remap_charsets(&graphics);
 
   return 0;
@@ -147,7 +147,7 @@ static Sint32 ec_load_set_secondary(char *name, Uint8 *dest)
   fclose(fp);
 
   // some renderers may want to map charsets to textures
-  if (graphics.remap_charsets)
+  if(graphics.remap_charsets)
     graphics.remap_charsets(&graphics);
 
   return 0;
@@ -172,7 +172,7 @@ Sint32 ec_load_set_var(char *name, Uint8 pos)
   fclose(fp);
 
   // some renderers may want to map charsets to textures
-  if (graphics.remap_charsets)
+  if(graphics.remap_charsets)
     graphics.remap_charsets(&graphics);
 
   return size;
@@ -199,7 +199,7 @@ void ec_mem_load_set(Uint8 *chars)
   memcpy(graphics.charset, chars, CHAR_SIZE * CHARSET_SIZE);
 
   // some renderers may want to map charsets to textures
-  if (graphics.remap_charsets)
+  if(graphics.remap_charsets)
     graphics.remap_charsets(&graphics);
 }
 
@@ -234,7 +234,7 @@ void ec_load_char_mzx(Uint32 char_number)
    graphics.default_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
 
   // some renderers may want to map charsets to textures
-  if (graphics.remap_charsets)
+  if(graphics.remap_charsets)
     graphics.remap_charsets(&graphics);
 }
 
@@ -244,7 +244,7 @@ void ec_load_char_ascii(Uint32 char_number)
    graphics.ascii_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
 
   // some renderers may want to map charsets to textures
-  if (graphics.remap_charsets)
+  if(graphics.remap_charsets)
     graphics.remap_charsets(&graphics);
 }
 
@@ -655,7 +655,7 @@ void update_screen()
       char_offset++;
     }
     cursor_solid &= (*((Uint16 *)char_offset)) | 0xFFFF0000;
-    if (cursor_solid == 0xFFFFFFFF)
+    if(cursor_solid == 0xFFFFFFFF)
     {
       // But wait! What if the background is the same as the foreground?
       // If so, use +8 instead.
@@ -682,9 +682,9 @@ void update_screen()
         break;
     }
 
-    if (graphics.screen_mode)
+    if(graphics.screen_mode)
     {
-      if (graphics.screen_mode != 3)
+      if(graphics.screen_mode != 3)
         cursor_color = (cursor_color << 4) | (cursor_color & 0x0F);
       else
         cursor_color = ((bg_color << 4) | (cursor_color & 0x0F)) + 3;
@@ -825,17 +825,23 @@ void default_palette(void)
   update_palette();
 }
 
-static void set_graphics_output(char *video_output) {
+static void set_graphics_output(char *video_output)
+{
   const renderer_data *renderer = renderers;
-  while (renderer->name)
+
+  while(renderer->name)
   {
-    if (!strcasecmp(video_output, renderer->name))
+    if(!strcasecmp(video_output, renderer->name))
       break;
     renderer++;
   }
+
   // If no match found, use first renderer in the renderer list
-  if (!(renderer->name)) renderer = renderers;
+  if(!(renderer->name))
+    renderer = renderers;
+
   renderer->reg(&graphics);
+
 #ifdef DEBUG
   fprintf(stdout, "Selected video output: %s\n", renderer->name);
 #endif
@@ -865,7 +871,7 @@ void init_video(config_info *conf)
   SDL_WM_SetCaption(temp, "MZX");
   SDL_ShowCursor(SDL_DISABLE);
 
-  if (!(graphics.init_video(&graphics, conf)))
+  if(!(graphics.init_video(&graphics, conf)))
   {
     set_graphics_output("");
     graphics.init_video(&graphics, conf);
@@ -914,8 +920,8 @@ int set_video_mode(void)
 #endif
 
   // If video mode fails, replace it with 'safe' defaults
-  if (!(graphics.check_video_mode(&graphics, target_width, target_height,
-                                  target_depth, target_flags)))
+  if(!(graphics.check_video_mode(&graphics, target_width, target_height,
+                                 target_depth, target_flags)))
   {
     target_width = 640;
     target_height = 350;
@@ -1462,7 +1468,7 @@ static void dump_screen_real(SDL_Surface *surface, const char *name)
    PNG_FILTER_TYPE_DEFAULT);
 
   pal_ptr = malloc(palette->ncolors * sizeof(png_color));
-  for (i = 0; i < palette->ncolors; i++)
+  for(i = 0; i < palette->ncolors; i++)
   {
     pal_ptr[i].red = palette->colors[i].r;
     pal_ptr[i].green = palette->colors[i].g;
@@ -1476,7 +1482,7 @@ static void dump_screen_real(SDL_Surface *surface, const char *name)
 
   // and then the surface
   row_ptrs = malloc(sizeof(png_bytep) * surface->h);
-  for (i = 0; i < surface->h; i++)
+  for(i = 0; i < surface->h; i++)
     row_ptrs[i] = (png_bytep)(Uint8 *)surface->pixels + i * surface->pitch;
   png_write_image(png_ptr, row_ptrs);
   png_write_end(png_ptr, info_ptr);
@@ -1517,7 +1523,7 @@ void dump_screen(void)
   }
 
   ss = SDL_CreateRGBSurface(SDL_SWSURFACE, 640, 350, 8, 0, 0, 0, 0);
-  if (ss)
+  if(ss)
   {
     SDL_SetColors(ss, palette, 0, make_palette(palette));
     SDL_LockSurface(ss);

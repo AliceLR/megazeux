@@ -2356,7 +2356,7 @@ void play_game(World *mzx_world, int fadein)
             save_screen();
 
             draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
-            if (mzx_world->editing)
+            if(mzx_world->editing)
               write_string(editing_menu, 10, 5, 31, 1);
             else
               write_string(game_menu, 10, 5, 31, 1);

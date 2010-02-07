@@ -45,7 +45,7 @@ typedef struct
 static BOOL LMM_Seek(struct MREADER *mr, long to, int dir)
 {
   LMM_MREADER *lmmmr = (LMM_MREADER *)mr;
-  if (dir == SEEK_SET)
+  if(dir == SEEK_SET)
     to += lmmmr->offset;
   return SDL_RWseek(lmmmr->rw, to, dir) < lmmmr->offset;
 }
@@ -239,8 +239,6 @@ void init_mikmod(config_info *conf)
   MikMod_RegisterAllLoaders();
 
   // FIXME: Should break a lot more here
-  if (MikMod_Init(NULL))
-  {
+  if(MikMod_Init(NULL))
     fprintf(stderr, "MikMod Init failed: %s", MikMod_strerror(MikMod_errno));
-  }
 }

@@ -338,7 +338,7 @@ void render_graph8(Uint8 *pixels, Uint32 pitch, graphics_data *graphics,
     for(i2 = 0; i2 < 80; i2++)
     {
       ldest = dest;
-      if ((src->bg_color != old_bg) || (src->fg_color != old_fg))
+      if((src->bg_color != old_bg) || (src->fg_color != old_fg))
       {
         set_colors(graphics, char_colors, src->bg_color, src->fg_color);
         old_bg = src->bg_color;
@@ -389,7 +389,7 @@ void render_graph16(Uint16 *pixels, Uint32 pitch, graphics_data *graphics,
     for(i2 = 0; i2 < 80; i2++)
     {
       ldest = dest;
-      if ((src->bg_color != old_bg) || (src->fg_color != old_fg))
+      if((src->bg_color != old_bg) || (src->fg_color != old_fg))
       {
         set_colors(graphics, char_colors, src->bg_color, src->fg_color);
         old_bg = src->bg_color;
@@ -444,7 +444,7 @@ void render_graph32(Uint32 *pixels, Uint32 pitch, graphics_data *graphics,
     for(i2 = 0; i2 < 80; i2++)
     {
       ldest = dest;
-      if ((src->bg_color != old_bg) || (src->fg_color != old_fg))
+      if((src->bg_color != old_bg) || (src->fg_color != old_fg))
       {
         set_colors(graphics, char_colors, src->bg_color, src->fg_color);
         old_bg = src->bg_color;
@@ -499,7 +499,7 @@ void render_graph32s(Uint32 *pixels, Uint32 pitch, graphics_data *graphics,
     for(i2 = 0; i2 < 80; i2++)
     {
       ldest = dest;
-      if ((src->bg_color != old_bg) || (src->fg_color != old_fg))
+      if((src->bg_color != old_bg) || (src->fg_color != old_fg))
       {
         set_colors(graphics, char_colors, src->bg_color, src->fg_color);
         old_bg = src->bg_color;

@@ -32,7 +32,7 @@ int yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
   // the YUV renderer _requires_ 32bit colour
   render_data->screen = SDL_SetVideoMode(width, height, 32, flags | SDL_ANYFORMAT);
 
-  if (!render_data->screen)
+  if(!render_data->screen)
   {
     free(render_data);
     return false;
@@ -43,12 +43,12 @@ int yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
     SDL_YUY2_OVERLAY, render_data->screen);
 
   // didn't work, try with a UYVY pixel format next
-  if (!render_data->overlay)
+  if(!render_data->overlay)
     render_data->overlay = SDL_CreateYUVOverlay(yuv_width, yuv_height,
       SDL_UYVY_OVERLAY, render_data->screen);
 
   // failed to create an overlay
-  if (!render_data->overlay)
+  if(!render_data->overlay)
   {
     free(render_data);
     return false;
@@ -60,7 +60,7 @@ int yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
 int yuv_init_video(graphics_data *graphics, config_info *conf)
 {
   yuv_render_data *render_data = malloc(sizeof(yuv_render_data));
-  if (!render_data)
+  if(!render_data)
     return false;
 
   graphics->render_data = render_data;
@@ -92,9 +92,9 @@ void yuv_update_colors(graphics_data *graphics, SDL_Color *palette,
   Uint32 i;
 
   // it's a YUY2 overlay
-  if (render_data->overlay->format == SDL_YUY2_OVERLAY)
+  if(render_data->overlay->format == SDL_YUY2_OVERLAY)
   {
-    for (i = 0; i < count; i++)
+    for(i = 0; i < count; i++)
     {
       rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b, &y, &u, &v);
 
@@ -111,7 +111,7 @@ void yuv_update_colors(graphics_data *graphics, SDL_Color *palette,
   // it's a UYVY overlay
   else
   {
-    for (i = 0; i < count; i++)
+    for(i = 0; i < count; i++)
     {
       rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b, &y, &u, &v);
 

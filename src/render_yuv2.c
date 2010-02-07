@@ -31,7 +31,7 @@ static int yuv2_set_video_mode(graphics_data *graphics, int width, int height,
   if(yuv_set_video_mode_size(graphics, width, height, depth, flags,
    fullscreen, YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT))
   {
-    if (render_data->overlay->format == SDL_YUY2_OVERLAY)
+    if(render_data->overlay->format == SDL_YUY2_OVERLAY)
     {
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
       render_data->y0mask = 0xFF000000;

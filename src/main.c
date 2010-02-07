@@ -78,7 +78,7 @@ int main(int argc, char **argv)
   // Unfortunately, this has caused performance regressions for
   // us, so it's easier to change the default back to 'directx'.
   char *sdl_vd = getenv("SDL_VIDEODRIVER");
-  if (!sdl_vd)
+  if(!sdl_vd)
     putenv("SDL_VIDEODRIVER=directx");
 #endif
 

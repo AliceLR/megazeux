@@ -1460,9 +1460,8 @@ static int find_entry(char **choices, char *name, int total_num)
   int cmpval = 0;
   int name_length = strlen(name);
 
-  for (current_entry = 0; current_entry < total_num; current_entry++)
+  for(current_entry = 0; current_entry < total_num; current_entry++)
   {
-
     // Hack to avoid seeking to drive letters under Windows. This
     // is a terrible place for it, and I'd like to tear it out, but
     // it would likely upset a lot of the existing code.
@@ -1707,7 +1706,8 @@ static void draw_list_box(World *mzx_world, dialog *di,
      32, color);
 
     strncpy(name_buffer, choices[current_choice], MAX_NAME_BUFFER - 1);
-    if (draw_width < MAX_NAME_BUFFER)
+
+    if(draw_width < MAX_NAME_BUFFER)
       name_buffer[draw_width - 1] = '\0';
     else
       name_buffer[MAX_NAME_BUFFER - 1] = '\0';
@@ -2909,16 +2909,16 @@ int ask_yes_no(World *mzx_world, char *str)
   int no_button_pos;
 
   // Is this string too long for the normal ask dialog?
-  if (str_length > 56)
+  if(str_length > 56)
   {
     // Is the string small enough for a resized ask dialog?
-    if (str_length <= 76)
+    if(str_length <= 76)
     {
       // Use a bigger ask dialog to fit the string
       dialog_width = str_length + 4;
       // If the dialog width is odd, bump it up to the next
       // even number, otherwise it will look uneven
-      if ((dialog_width % 2) == 1)
+      if((dialog_width % 2) == 1)
       {
         dialog_width++;
       }

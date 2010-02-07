@@ -56,7 +56,7 @@ typedef struct
 
 static int gl1_load_syms (gl1_syms *gl)
 {
-  if (gl->syms_loaded)
+  if(gl->syms_loaded)
     return true;
 
   // Since 1.0
@@ -93,10 +93,10 @@ static int gl1_init_video(graphics_data *graphics, config_info *conf)
   int internal_width, internal_height;
   const char *version, *extensions;
 
-  if (!render_data)
+  if(!render_data)
     return false;
 
-  if (!GL_CAN_USE)
+  if(!GL_CAN_USE)
   {
     free(render_data);
     return false;
@@ -110,10 +110,10 @@ static int gl1_init_video(graphics_data *graphics, config_info *conf)
   graphics->bits_per_pixel = 32;
 
   // OpenGL only supports 16/32bit colour
-  if (conf->force_bpp == 16 || conf->force_bpp == 32)
+  if(conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
 
-  if (!set_video_mode())
+  if(!set_video_mode())
   {
     free(render_data);
     return false;
@@ -124,7 +124,7 @@ static int gl1_init_video(graphics_data *graphics, config_info *conf)
   extensions = (const char *)gl->glGetString(GL_EXTENSIONS);
 
   // we need a specific "version" of OpenGL compatibility
-  if (version && atof(version) < 1.1)
+  if(version && atof(version) < 1.1)
   {
     fprintf(stderr, "Your OpenGL implementation is too old (need v1.1).\n");
     free(render_data);
@@ -132,7 +132,7 @@ static int gl1_init_video(graphics_data *graphics, config_info *conf)
   }
 
   // we also might be able to utilise an extension
-  if (extensions && strstr(extensions, "GL_ARB_texture_non_power_of_two"))
+  if(extensions && strstr(extensions, "GL_ARB_texture_non_power_of_two"))
   {
     internal_width = GL_NON_POWER_2_WIDTH;
     internal_height = GL_NON_POWER_2_HEIGHT;
@@ -161,10 +161,10 @@ static int gl1_set_video_mode(graphics_data *graphics, int width, int height,
 
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-  if (!SDL_SetVideoMode(width, height, depth, GL_STRIP_FLAGS(flags)))
+  if(!SDL_SetVideoMode(width, height, depth, GL_STRIP_FLAGS(flags)))
     return false;
 
-  if (!gl1_load_syms(gl))
+  if(!gl1_load_syms(gl))
     return false;
 
   gl->glViewport(0, 0, width, height);
@@ -183,7 +183,8 @@ static void gl1_update_colors(graphics_data *graphics, SDL_Color *palette,
  Uint32 count)
 {
   Uint32 i;
-  for (i = 0; i < count; i++)
+  for(i = 0; i < count; i++)
+  {
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
     graphics->flat_intensity_palette[i] = (palette[i].r << 24) |
      (palette[i].g << 16) | (palette[i].b << 8);
@@ -191,6 +192,7 @@ static void gl1_update_colors(graphics_data *graphics, SDL_Color *palette,
     graphics->flat_intensity_palette[i] = (palette[i].b << 16) |
      (palette[i].g << 8) | palette[i].r;
 #endif
+  }
 }
 
 static void gl1_render_graph(graphics_data *graphics)
@@ -198,12 +200,16 @@ static void gl1_render_graph(graphics_data *graphics)
   gl1_render_data *render_data = graphics->render_data;
   Uint32 mode = graphics->screen_mode;
 
-  if (!mode)
+  if(!mode)
+  {
     render_graph32(render_data->pixels, render_data->w * 4, graphics,
      set_colors32[mode]);
+  }
   else
+  {
     render_graph32s(render_data->pixels, render_data->w * 4, graphics,
      set_colors32[mode]);
+  }
 }
 
 static void gl1_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,

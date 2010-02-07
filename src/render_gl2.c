@@ -81,7 +81,7 @@ typedef struct
 
 static int gl2_load_syms (gl2_syms *gl)
 {
-  if (gl->syms_loaded)
+  if(gl->syms_loaded)
     return true;
 
   // Since 1.1
@@ -139,10 +139,10 @@ static int gl2_init_video(graphics_data *graphics, config_info *conf)
   gl2_syms *gl = &render_data->gl;
   const char *version;
 
-  if (!render_data)
+  if(!render_data)
     return false;
 
-  if (!GL_CAN_USE)
+  if(!GL_CAN_USE)
   {
     free(render_data);
     return false;
@@ -156,20 +156,20 @@ static int gl2_init_video(graphics_data *graphics, config_info *conf)
   graphics->bits_per_pixel = 32;
 
   // OpenGL only supports 16/32bit colour
-  if (conf->force_bpp == 16 || conf->force_bpp == 32)
+  if(conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
 
   // We want to deal internally with 32bit surfaces
   render_data->pixels = malloc(sizeof(Uint32) * GL_POWER_2_WIDTH *
    GL_POWER_2_HEIGHT);
 
-  if (!render_data->pixels)
+  if(!render_data->pixels)
   {
     free(render_data);
     return false;
   }
 
-  if (!set_video_mode())
+  if(!set_video_mode())
   {
     free(render_data);
     return false;
@@ -179,7 +179,7 @@ static int gl2_init_video(graphics_data *graphics, config_info *conf)
   version = (const char *)gl->glGetString(GL_VERSION);
 
   // we need a specific "version" of OpenGL compatibility
-  if (version && atof(version) < 1.1)
+  if(version && atof(version) < 1.1)
   {
     fprintf(stderr, "Your OpenGL implementation is too old (need v1.1).\n");
     free(render_data);
@@ -219,9 +219,9 @@ static void gl2_resize_screen(graphics_data *graphics, int viewport_width,
    * Otherwise, linear filtering breaks if the window is smaller than
    * 640x350, so also turn it off here.
    */
-  if (viewport_width == 640 && viewport_height == 350)
+  if(viewport_width == 640 && viewport_height == 350)
     render_data->ignore_linear = true;
-  else if (viewport_width < 640 || viewport_height < 350)
+  else if(viewport_width < 640 || viewport_height < 350)
     render_data->ignore_linear = true;
   else
     render_data->ignore_linear = false;
@@ -280,10 +280,10 @@ static int gl2_set_video_mode(graphics_data *graphics, int width, int height,
 
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
-  if (!SDL_SetVideoMode(width, height, depth, GL_STRIP_FLAGS(flags)))
+  if(!SDL_SetVideoMode(width, height, depth, GL_STRIP_FLAGS(flags)))
     return false;
 
-  if (!gl2_load_syms(gl))
+  if(!gl2_load_syms(gl))
     return false;
 
   gl2_resize_screen(graphics, width, height);
@@ -296,7 +296,7 @@ static void gl2_update_colors(graphics_data *graphics, SDL_Color *palette,
 {
   gl2_render_data *render_data = graphics->render_data;
   Uint32 i;
-  for (i = 0; i < count; i++)
+  for(i = 0; i < count; i++)
   {
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
     graphics->flat_intensity_palette[i] = (palette[i].r << 24) |
@@ -335,9 +335,9 @@ static inline void gl2_do_remap_charsets(graphics_data *graphics)
   char *p = (char *)render_data->charset_texture;
   unsigned int i, j, k;
 
-  for (i = 0; i < 16; i++, c += -14 + 32 * 14)
-    for (j = 0; j < 14; j++, c += -32 * 14 + 1)
-      for (k = 0; k < 32; k++, c += 14)
+  for(i = 0; i < 16; i++, c += -14 + 32 * 14)
+    for(j = 0; j < 14; j++, c += -32 * 14 + 1)
+      for(k = 0; k < 32; k++, c += 14)
         p = gl2_char_bitmask_to_texture(c, p);
 
   gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 32 * 8, 16 * 14, GL_ALPHA,
@@ -354,7 +354,7 @@ static inline void gl2_do_remap_char(graphics_data *graphics, Uint16 chr)
 
   c += chr * 14;
 
-  for (i = 0; i < 14; i++, c++)
+  for(i = 0; i < 14; i++, c++)
     p = gl2_char_bitmask_to_texture(c, p);
   gl->glTexSubImage2D(GL_TEXTURE_2D, 0, chr % 32 * 8, chr / 32 * 14, 8, 14,
    GL_ALPHA, GL_UNSIGNED_BYTE, render_data->charset_texture);
@@ -364,7 +364,7 @@ static int gl2_linear_filter_method(graphics_data *graphics)
 {
   gl2_render_data *render_data = graphics->render_data;
 
-  if (render_data->ignore_linear)
+  if(render_data->ignore_linear)
     return false;
   return (strcasecmp(graphics->gl_filter_method, CONFIG_GL_FILTER_LINEAR) == 0);
 }
@@ -378,10 +378,10 @@ static void gl2_render_graph(graphics_data *graphics)
   Uint32 *dest;
   char_element *src = graphics->text_video;
 
-  if (!graphics->screen_mode)
+  if(!graphics->screen_mode)
   {
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
-    if (render_data->remap_texture)
+    if(render_data->remap_texture)
     {
       gl2_do_remap_charsets(graphics);
       render_data->remap_texture = false;
@@ -389,15 +389,17 @@ static void gl2_render_graph(graphics_data *graphics)
     }
     else
     {
-      for (i = 0; i < CHARSET_SIZE * 2; i++)
-        if (render_data->remap_char[i])
+      for(i = 0; i < CHARSET_SIZE * 2; i++)
+      {
+        if(render_data->remap_char[i])
         {
           gl2_do_remap_char(graphics, i);
           render_data->remap_char[i] = false;
         }
+      }
     }
 
-    if (gl2_linear_filter_method(graphics))
+    if(gl2_linear_filter_method(graphics))
       gl->glViewport(0, 0, 640, 350);
 
     dest = render_data->background_texture;
@@ -541,7 +543,7 @@ static void gl2_sync_screen(graphics_data *graphics)
   gl2_render_data *render_data = graphics->render_data;
   gl2_syms *gl = &render_data->gl;
 
-  if (gl2_linear_filter_method(graphics) && !graphics->screen_mode)
+  if(gl2_linear_filter_method(graphics) && !graphics->screen_mode)
   {
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
     gl->glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 1024, 512, 0);

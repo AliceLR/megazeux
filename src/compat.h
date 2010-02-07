@@ -55,10 +55,8 @@ static inline int Random(int Range)
   unsigned long long value;
 
   // If the seed is 0, initialise it with time and clock
-  if (seed == 0)
-  {
+  if(seed == 0)
     seed = time(NULL) + clock();
-  }
 
   seed = seed * 1664525 + 1013904223;
 

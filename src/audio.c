@@ -106,7 +106,7 @@ static volatile char last_lock[16];
 static void lock(const char *file, int line)
 {
   // lock should _not_ be held here
-  if (locked)
+  if(locked)
     fprintf(stderr, "%s:%d: locked at %s already!\n", file, line, last_lock);
 
   // acquire the mutex
@@ -120,7 +120,7 @@ static void lock(const char *file, int line)
 static void unlock(const char *file, int line)
 {
   // lock should be held here
-  if (!locked)
+  if(!locked)
     fprintf(stderr, "%s:%d: tried to unlock when not locked!\n", file, line);
 
   // all ok, unlock this mutex
@@ -527,7 +527,7 @@ static Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len)
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
       // swap bytes on big endian machines
-      for (i = 0; i < read_len; i += 2)
+      for(i = 0; i < read_len; i += 2)
       {
         dest[i] = src[i + 1];
         dest[i + 1] = src[i];
@@ -1366,7 +1366,7 @@ static void audio_callback(void *userdata, Uint8 *stream, int len)
 
         // if the destroyed stream was our music, we shouldn't
         // let end_mod try to destroy it again.
-        if (current_astream == audio.primary_stream)
+        if(current_astream == audio.primary_stream)
           audio.primary_stream = NULL;
       }
 
