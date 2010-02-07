@@ -1,4 +1,8 @@
-? libmodplug-0.8.4-fix-X86_Convert32To24.diff
+Don't truncate bits when converting from 32bit to 24bit. Found by
+improved constant bounds checking in GCC 4.2.
+
+--ajs
+
 Index: libmodplug/src/fastmix.cpp
 ===================================================================
 RCS file: /cvsroot/megazeux/megazeux2/contrib/libmodplug/src/fastmix.cpp,v
