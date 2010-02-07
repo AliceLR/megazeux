@@ -2,9 +2,11 @@ MZX TODO:
 
 ~Provide cleaner exit implementation in file format loaders/filters
 ~Re-vamp the entirety of MZX's clipboard implementation
-~Pray SDL weeds out some of its bothersome minutiae (as of SDL 1.2.12 it hasn't).
+~Re-write find/replace code
+~Pray SDL weeds out some of its bothersome minutiae (as of SDL 1.2.12 it hasn't)
 ~Fix MIDI implementation, possibly
 ~Add icon implementation
-~Strip bad Robotic lines when exporting to text files.
-~AARGH MIXMOD)@#$(%^#$)^(#
-~Increase portability to anything within reason.
+~Strip bad Robotic lines when exporting to text files (including notification noting which lines were not exported)
+~AARGH MIKMOD)@#$(%^#$)^(#
+~Increase portability to anything within reason
+~Make the UI unaltered when in SMZX mode

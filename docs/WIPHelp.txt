@@ -2,7 +2,7 @@
                     @1  ~fM ~bE G ~3A Z ~bE U ~fX  
                     @1                   
 
-:072:                     ~eTable of Contents
+:072:                     ~9Table of Contents
 
 >#FAQ.HLP:1st:FREQUENTLY ASKED QUESTIONS.
 >#CONFGINI.HLP:1st:The Config File
@@ -59,7 +59,8 @@ $Akwende, MenTaLguY, CapnKev.
 
 >072:Table of Contents
 #HELPONHE.HLP
-:000:Help on Help
+:000: 
+$~9Help on Help
 
 Using MegaZeux's help system is very simple. Press F1 at
 almost any time to bring up help relating to the current
@@ -83,13 +84,14 @@ the current help section.
 
 >#MAIN.HLP:072:Table of Contents
 #1ST_TIME.HLP
-:071:Overview of MegaZeux
+:071: 
+$~9Overview of MegaZeux
 
-$~EWelcome to MegaZeux! Use the arrow keys to scroll
-$~Ethis text, and ESC when you are done reading.
+$Welcome to MegaZeux! Use the arrow keys to scroll
+$this text, and ESC when you are done reading.
 
-$~BPress END to learn about the NEW FEATURES in
-$~BMegaZeux!
+$Press END to learn about the NEW FEATURES in
+$MegaZeux!
 
 As you may already know, MegaZeux is a game system which
 allows you to play almost limitless worlds in dated yet
@@ -113,8 +115,9 @@ well-designed games in MegaZeux. You may wish to read the help
 section entitled "Controls" to learn how to play MegaZeux.
 
 If you're more adventurous, start with a more complex game like
-Demon Earth or a prettier game like Kaboink! to see what kind
-of graphics, functions, bells and whistles MZX can offer.
+Demon Earth of Legend of Rhovanion, or a prettier game like
+Kaboink! or Fritz Blitz to see what kind of graphics,
+functions, bells and whistles MZX can offer.
 
 Once you have the feel for the game, feel free to dive into the
 World Editor and get messy! You should probably read the help
@@ -130,7 +133,8 @@ the game.
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
 #ZZT.HLP
-:zzt:A ZZTer's Guide to MegaZeux
+:zzt: 
+$~9A ZZTer's Guide to MegaZeux
 
 ZZT and MegaZeux are worlds apart, although one can convert
 from making ZZT games to making basic MegaZeux games with
@@ -145,16 +149,14 @@ can easily be used as flags if set only to 1 and 0.
 -No equivalent of centipedes exists as a default enemy.
 -Multiple keys of the same color can be picked up at once.
 -Cloning the player has no use in MZX; uses of player clones
-need emulated in Robotic.
--Shift-? (often used for inventory engines) does not exist in
-MegaZeux but can be emulated with Robotic.
+need simulated in Robotic.
+-The Shift-? hotkey (often used for inventory engines) does not
+exist in MegaZeux but can be emulated with Robotic.
 -Bomb explosions are not instantaneous but instead radiate out
 from the center. They are also diamond-shaped as opposed to
 a flattened oval shape.
 -MegaZeux uses cycle 1 as default (opposed to ZZT's cycle 3).
 -No equivalent of duplicators exists.
--Player clones in MegaZeux are useless. All ZZT player clone
-uses have to be emulated in Robotic.
 -Seekers do not destroy Breakaway territories in MegaZeux.
 -Scrolls can not execute Robotic code. Use a Robot ending with
 the "die" command instead. 
@@ -279,11 +281,11 @@ for this in MZX.
 
 As for conditions, a few are changed:
 
-ALLIGNED is now ALIGNED
+~AALLIGNED~F is now ~AALIGNED~F
 
-CONTACT is now TOUCHING ANYDIR
+~ACONTACT~F is now ~ATOUCHING ANYDIR~F
 
-ENERGIZED is no longer a condition but the "invinco" label.
+~AENERGIZED~F is no longer a condition but the "invinco" label.
 
 ---------------------------------------------------------------
 
@@ -295,7 +297,8 @@ help for details.
 
 >#MAIN.HLP:072:Table of Contents
 #DIABOX.HLP
-:098:Dialog Boxes
+:098: 
+$~9Dialog Boxes
 
 Much of MegaZeux's interface is made of dialog boxes. They
 are simple and intuitive to use, but instructions for the
@@ -371,7 +374,8 @@ choice.
 
 >#MAIN.HLP:072:Table of Contents
 #CONTROLS.HLP
-:ctr:Controls
+:ctr: 
+$~9Controls
 
 Universal controls are as follows:
 
@@ -428,24 +432,25 @@ F2 - Settings
 current game settings: Game Speed (if allowed), Music toggle,
 Sound toggle, and Audio Volumes (Overall Volume, SoundFX
 volume, and PC Speaker SFX). Speed 1 is the fastest; speed 9 is
-the slowest. A speed of 1 will cause flicker in fullscreen
-mode, so it is not recommended unless it is your only option.
-Please note that some games may have the speed change by
-itself; the next load will change to the default speed unless
-otherwise prompted. Some games may block access to the F2 menu
-entirely.
+the slowest. A speed of 1 will run MZX as fast as possible and
+as such acts differently between computers; it will also cause
+flicker in fullscreen mode, so it is not recommended unless it
+is your only option. Please note that some games may have the
+speed change by itself; the next load will change to the
+default speed unless otherwise prompted. Some games may block
+access to the F2 menu entirely.
 
 F3 - Save Game
-This will prompt you for a filename, then save the exact
-state of your current game. Some games may not allow saving
-on some or all of its screens, or will only allow saving in
-certain spots. Saving lets you quit your game in the middle or
-take precautions against unknown dangers.
+This will prompt you for a filename, allowing the saving of the
+exact state of the current game. Some games may not allow
+saving on some or all of its screens, or will only allow saving
+in certain spots. Saving lets you quit your game in the middle
+or take precautions against unknown dangers.
 
 F4 - Restore Game
 This will let you select a saved game from a list of filenames.
 The game will then be reloaded from the same point you left
-off.
+off. Unlike saving, the option to load is always present.
 
 NOTE: A few games may save or load automatically, and
 high-caliber games may have completely different methods of
@@ -563,7 +568,8 @@ F10 - Quickload (see above)
 
 >#MAIN.HLP:072:Table of Contents
 #NONDESCR.HLP
-:091:Nondescript Play Tips
+:091: 
+$~9Nondescript Play Tips
 
 Some basic play tips:
 
@@ -628,19 +634,21 @@ farther between. Don't let a few dull games ruin the fun.
 
 >#MAIN.HLP:072:Table of Contents
 #MOUSESUP.HLP
-:1st:Mouse Support in MegaZeux
+:1st: 
+$~9Mouse Support in MegaZeux
 
 Use of the mouse is very simple. Move the mouse to move the
 mouse cursor. Press the Left mouse button to select something,
 activate something, etc. Press the Right mouse button to grab
 whatever's under the cursor in the World Editor. Certain games
-may make use of the mouse buttons; the scroll wheel, while
-unused in games, emulates up/down presses in dialog boxes and
-the list menu.
+may make use of the mouse during gameplay; the scroll wheel,
+while unused in games, emulates up/down presses in dialog boxes
+and the list menu.
 
 >#MAIN.HLP:072:Table of Contents
 #BUILTINS.HLP
-:1st:The Mirth of Built-ins
+:1st: 
+$~9The Mirth of Built-ins
 
 The following help section contains a list of the different
 objects, enemies, items, and terrains you will find within
@@ -1191,7 +1199,8 @@ appropriate help sections for more information.
 >#ROBOTSWH.HLP:1st:Robots - What They Are and How to Use Them
 >#MAIN.HLP:072:Table of Contents
 #CONFGINI.HLP
-:1st:MegaZeux Options
+:1st: 
+$~9MegaZeux Options
 
 Now you should be familiar with MegaZeux enough to where you
 might want to change some of its options. Go open config.txt in
@@ -1206,7 +1215,8 @@ and much more.
 
 >#MAIN.HLP:072:Table of Contents
 #IFYOUFIN.HLP
-:1st:If You Find a Bug...
+:1st: 
+$~9If You Find a Bug...
 
 ...we want to know! We're very interested in any problems or
 bugs you find in MegaZeux. We also welcome any comments,
@@ -1237,7 +1247,8 @@ To make things sane for all parties, do this before submitting:
 
 >#MAIN.HLP:072:Table of Contents
 #FAQ.HLP
-:1st:Frequently Asked Questions
+:1st: 
+$~9Frequently Asked Questions
 
 The following is a list of questions that have been received
 through mail, E-mail, or message board posts about MegaZeux
@@ -1462,7 +1473,8 @@ A: Short answer: No. This has been discussed at-length;
 
 >#MAIN.HLP:072:Table of Contents
 #MEGAZEUX.HLP
-:1st:MegaZeux Limitations
+:1st: 
+$~9MegaZeux Limitations
 
 MegaZeux has to impose a number of limitations to insure
 worldfile compatibility with MZX 2.x worldfiles.
@@ -1521,10 +1533,11 @@ status of the board's overlay.
 >#EXPRESS.HLP:exp:Expressions
 >#MAIN.HLP:072:Table of Contents
 #THEWORLD.HLP
-:1st:The World Editor
+:1st: 
+$~9The World Editor
 
-Ready to start creating your own worlds? Then let's get
-started! This section is a short editor tutorial, it will
+Ready to start creating your own worlds? Then, let's get
+started! This section is a short editor tutorial. It will
 teach you the basics of creating your own worlds.
 
 To get into the editor, press E from the title screen. You
@@ -1595,7 +1608,8 @@ however.
 >#GENERALE.HLP:1st:General Editing Tips
 >#MAIN.HLP:072:Table of Contents
 #GENERALE.HLP
-:1st:General Editing Tips
+:1st: 
+$~9General Editing Tips
 
 The following is a list of important editing tips. They assume
 you are familiar with MegaZeux's dialog box system, and that
@@ -1663,7 +1677,8 @@ like insert; it grabs the current thing over the mouse cursor.
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#MAIN.HLP:072:Table of Contents
 #EDITINGK.HLP
-:080:Editing Keys and Options Reference
+:080: 
+$~9Editing Keys and Options Reference
 
 The following is an alphabetical listing of keys within the
 Robot editor. This is followed by a detailed description of
@@ -1877,10 +1892,11 @@ Alt+I allows you to import a number of different file types
 into the current board or world. You can import a board file
 (MZB) unique to MegaZeux. You can import a character set file
 (CHR). You can import another world (MZX) which is appended
-to the list of boards. Unlike old versions of MegaZeux, all
-exits will work. You can import a palette (PAL) file or a
-sound effects (SFX) file, both unique to MegaZeux. Finally,
-you can import an MZM file at a given position.
+to the list of boards (the global of the imported world will be
+ignored). Unlike old versions of MegaZeux, all exits will work.
+You can import a palette (PAL) file or a sound effects (SFX)
+file, both unique to MegaZeux. Finally, you can import an MZM
+file at a given position.
 
 :_L:~EL - Load
 
@@ -2173,7 +2189,8 @@ dialog boxes.
 >#GENERALE.HLP:1st:General Editing Tips
 >#MAIN.HLP:072:Table of Contents
 #CHAREDIT.HLP
-:079:The Character Editor
+:079: 
+$~9The Character Editor
 
 The character editor is an important part of MegaZeux. With
 it, you can change the appearance of the character set. For
@@ -2259,7 +2276,8 @@ to the Super MZX Modes section for more information on this.
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#MAIN.HLP:072:Table of Contents
 #PALEEDIT.HLP
-:093:The Palette Editor
+:093: 
+$~9The Palette Editor
 
 The built-in palette editor can certainly spruce up a game. It
 allows you to change the appearance of the 16 different
@@ -2307,7 +2325,8 @@ SMZX modes.
 >#SMZXMODE.HLP:095:Super MZX Modes
 >#MAIN.HLP:072:Table of Contents
 #GLOBALIN.HLP
-:086:Global Info Options
+:086: 
+$~9Global Info Options
 
 To edit Global options, press G within the editor. This will
 bring up various dialogs where you can edit options that affect
@@ -2431,7 +2450,8 @@ Manual.
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#MAIN.HLP:072:Table of Contents
 #BOARDINF.HLP
-:085:Board Info Options
+:085:
+$~9Board Info Options
 
 To edit Board options, press I within the editor. This will
 bring up a dialog where you can edit options pertaining to the
@@ -2536,7 +2556,8 @@ another section.
 >#EDITINGK.HLP:080:Editing Keys and Options Reference
 >#MAIN.HLP:072:Table of Contents
 #SOUNDEFX.HLP
-:1st:MegaZeux's Sound System
+:1st: 
+$~9MegaZeux's Sound System
 
 MegaZeux has two types of sound: Digitized sound, played through
 a sound card, and sound effects, which are emulated PCS effects.
@@ -2560,6 +2581,7 @@ following formats:
 * OGG
 * Other formats {STM, MTM, MT2, 669, ULT, FAR, MED (MMD0), DSM,
   AMS, MDL, OKT, DMF, PTM, DBM, AMF, PSM, J2B, UMX}
+* MID, ABC and PAT are in ModPlug, but not supported in MZX.
 
 MZX does not support GDMs natively. Instead, when a GDM is
 loaded it is converted to an S3M file. The S3M file is loaded
@@ -2577,8 +2599,14 @@ NOTE: The above text only applies to ModPlug (the default
 module engine). It is now possible to build using MikMod, to
 support platforms which cannot handle ModPlug. It can play
 formats: {669, AMF, APUN, DSM, FAR, GDM, IT, IMF, MOD, MED,
-MTM, OKT, S3M, STM, STX, ULT, UNI, XM, WAV, OGG}. GDMs load
-natively in MikMod, in contrast to ModPlug.
+MTM, OKT, S3M, STM, STX, ULT, UNI, XM}, while MZX will natively
+play the WAV and OGG formats. GDMs load natively in MikMod, in
+contrast to ModPlug.
+
+Formats common to both engines are MOD, S3M, XM, IT, STM, MTM,
+669, ULT, FAR, MED, DSM, OKT and AMF. It is recommended that
+these formats plus WAV/OGG be used to insure 100% compatibility
+between platforms.
 
 $Using Sound and Music in Your Own Games
 
@@ -2866,7 +2894,8 @@ section of help.
 >#CONFGINI.HLP:1st:External MegaZeux Options
 >#MAIN.HLP:072:Table of Contents
 #TOVERLAY.HLP
-:081:Editing and Using the Overlay
+:081: 
+$~9Editing and Using the Overlay
 
 The overlay is a simple but useful part of a board. If one
 looks at Floors and Fakes as a floor layer, and Walls as a
@@ -3058,7 +3087,8 @@ overlays.
 
 >#MAIN.HLP:072:Table of Contents
 #SCROLLSS.HLP
-:1st:Signs and Scrolls in the Editor
+:1st: 
+$~9Signs and Scrolls in the Editor
 
 Signs and Scrolls are a simple way to get messages across in the
 game. To place them in the editor, press F10 and select Sign or
@@ -3081,7 +3111,8 @@ This limit shouldn't ever be a problem.
 
 >#MAIN.HLP:072:Table of Contents
 #ERRORMES.HLP
-:1st:Error Messages
+:1st: 
+$~9Error Messages
 
 The following is a list of error messages in alphabetical order,
 which link to descriptions of the error and possible remedies.
@@ -3246,7 +3277,8 @@ showing the introduction.
 
 >#MAIN.HLP:072:Table of Contents
 #SENSORSW.HLP
-:094:Sensors - What They Are and How to Use Them
+:094: 
+$~9Sensors - What They Are and How to Use Them
 
 Sensors have two real purposes. The first is to act as save
 points. The second is to interact with Robots as a type of
@@ -3331,7 +3363,8 @@ the Sensor.
 
 >#MAIN.HLP:072:Table of Contents
 #ROBOTICR.HLP
-:087:Robotic Reference Manual
+:087: 
+$~9Robotic Reference Manual
 
 Use the following help links to see your desired topic(s).
 
@@ -3365,7 +3398,8 @@ Use the following help links to see your desired topic(s).
 >#BADPRACT.HLP:101:Robotic Usages That Should be Avoided
 >#MAIN.HLP:072:Table of Contents
 #COMMANDS.HLP
-:1st:Command Syntax
+:1st: 
+$~9Command Syntax
 
 Commands in Robotic must conform to a certain syntax -
 
@@ -3777,6 +3811,7 @@ Sets the given string to the given line of text.
 Sets the given string to another string.
 
 ~BSET "$string" to #
+
 Sets the string to an integer value. Notice that DEC commands
 and other similar commands will not work arithmetically with
 strings but instead clip and append.
@@ -3786,8 +3821,8 @@ $Robotic Usage - Outputting Strings
 Anywhere you can output a counter, you can output a string.
 Simply encase the string name in ampersands. E.G:
 
-SET "$woohoo" to "my favorite song!"
-* "&$woohoo&"
+~ESET "$woohoo" to "my favorite song!"
+~E* "&$woohoo&"
 
 Would output "my favorite song!" in the message row.
 
@@ -3800,12 +3835,12 @@ $Robotic Usage - Comparing Strings
 
 Strings can be compared through these commands:
 
-IF "$string" = "value" then "label"
-IF "$string" != "value" then "label"
-IF "$string" > "value" "label"
-IF "$string" < "value" "label"
-IF "$string" >= "value" "label"
-IF "$string" <= "value" "label"
+~BIF "$string" = "value" then "label"
+~BIF "$string" != "value" then "label"
+~BIF "$string" > "value" "label"
+~BIF "$string" < "value" "label"
+~BIF "$string" >= "value" "label"
+~BIF "$string" <= "value" "label"
 
 Allowed comparisons are to a line of text, to another string
 and to a number. However, the string is required to be the
@@ -3816,12 +3851,12 @@ $Robotic Usage - Manipulating Strings
 
 Firstly, strings can be offset and limited ("spliced").
 
-$strname#X will cap the string to X characters.
+~Bstrname#X~F will cap the string to X characters.
 
-$strname+X will offset the start of the string by X
+~Bstrname+X~F will offset the start of the string by X
 characters.
 
-$strname+X#Y will offset the string by X characters and limit
+~Bstrname+X#Y~F will offset the string by X characters and limit
 the string to Y characters.
 
 Normally strings that are spliced this way are used to be read;
@@ -3830,12 +3865,12 @@ When you use the offset when setting a string the length of the
 string will not decrease, so you'll only set a portion of the
 inside of the string. For instance:
 
-set "$str" "hello"
-set "$str+1" "LOL"
+~Bset "$str" "hello"
+~Bset "$str+1" "LOL"
 
 Will cause $str to have the value "hLOLo"
 
-$strname.X will manipulate the Xth character in a string. When
+~B$strname.X~F will manipulate the Xth character in a string. When
 used for output it will give the character value of the given
 character in a string. Any invalid numbers (past the
 terminator) are given a value of 32. This command works well
@@ -3843,25 +3878,25 @@ with char immediates: E.G. SET "$string.0" 'S' . When setting
 the character in a string it will make the string length one
 larger than X, so be careful with using very large values.
 
-$str.length will give the length of the given string.
+~B$str.length~F will give the length of the given string.
 
 Secondly, strings can be clipped, appended or written to from
 the board or overlay.
 
-INC "$string" "$string2"
-INC "$string" "text"
+~BINC "$string" "$string2"
+~BINC "$string" "text"
 
 These two commands append another string's contents or text to
 the end of a given string, respectively.
 
-DEC "$string" #
+~BDEC "$string" #
 
 This command clips the given number of characters from the end
 of a string. # is treated as unsigned so using negative numbers
 will probably cause the length to go down to zero.
 
-COPY BLOCK x y w h "$string" t
-COPY OVERLAY BLOCK x y w h "$string" t
+~BCOPY BLOCK x y w h "$string" t
+~BCOPY OVERLAY BLOCK x y w h "$string" t
 
 These commands copy information from the board or overlay,
 respectively, to a given string. X and Y are the coordinates
@@ -3879,7 +3914,8 @@ scanning strings instead of BOARD_SCAN.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #COMMANDR.HLP
-:1st:Command Reference
+:1st: 
+$~9Command Reference
 
 The following table is a list of all Robotic commands in
 MegaZeux. They are listed as help links, in alphabetical order.
@@ -4504,6 +4540,11 @@ loop back to LOOP START the given number of times. ABORT LOOP
 will jump out of the loop, to the command after LOOP #. The
 loop count is kept in the local counter "loopcount".
 
+NOTE: Using ABORT LOOP outside of the loop (that is, outside of
+any block of code starting with LOOP START and ending in
+LOOP #) is very highly unadvised and will most likely cause
+unintended effects.
+
 >#COUNTERS.HLP:1st:Counters, Built-in Counters and Local Counters
 
 :_m0:~AMOVE PLAYER [dir]
@@ -4600,7 +4641,8 @@ then begins its program at the first command.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #COMMAND2.HLP
-:1st:Command Reference Part II
+:1st: 
+$~9Command Reference Part II
 
 >#COMMANDR.HLP:1st:Command Reference (Part I)
 
@@ -5449,7 +5491,8 @@ and Y size must be from 1 to 25.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #BULLETTY.HLP
-:1st:Bullet Types
+:1st: 
+$~9Bullet Types
 
 There are three different types of bullets in MegaZeux: Player,
 Enemy, and Neutral. The player shoots Player bullets, enemies
@@ -5468,7 +5511,8 @@ or NEUTRALSHOT labels.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #CHANGECH.HLP
-:1st:CHANGE CHAR ID - The CHAR ID Table
+:1st: 
+$~9CHANGE CHAR ID - The CHAR ID Table
 
 The Robotic command CHANGE CHAR ID has many uses. It basically
 changes a character, color, or number from the Global Chars
@@ -5666,7 +5710,8 @@ lines-
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #BUILTINL.HLP
-:1st:Built-in Labels
+:1st: 
+$~9Built-in Labels
 
 Robotic has many built-in labels (messages) that are activated
 on certain external events. The cause of each label is listed
@@ -5804,7 +5849,8 @@ This is sent when the player touches Goop.
 >#SENSORSW.HLP:094:Sensors
 >#MAIN.HLP:072:Table of Contents
 #COUNTERS.HLP
-:1st:Counters, Built-in Counters and Local Counters
+:1st: 
+$~9Counters, Built-in Counters and Local Counters
 
 Counters are built-in variables, or stored values with names.
 Each counter has a name, such as "Yellow" or "Apple Pies". A
@@ -6631,7 +6677,8 @@ LAST command.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #USINGTHE.HLP
-:1st:Using the Editor
+:1st: 
+$~9Using the Editor
 
 The Robotic editor is quite simple to use. After selecting your
 Robot's character and name, you will enter the editor screen.
@@ -6821,12 +6868,9 @@ Robot program.
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
-#CONFIG.HLP
-:1st:The Config File
-
->#MAIN.HLP:072:Table of Contents
 #ROBOTSWH.HLP
-:1st:Robots - What They Are and How to Use Them
+:1st: 
+$~9Robots - What They Are and How to Use Them
 
 Robots are the heart and soul of MegaZeux. Anything you could
 want to do in MegaZeux, anything you see done in a MegaZeux
@@ -6852,7 +6896,8 @@ Robot in Robotic.
 >#MAIN.HLP:072:Table of Contents
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 #ROBOTICT.HLP
-:1st:Robotic Tutorial
+:1st: 
+$~9Robotic Tutorial
 
 Robotic has a few concepts that you must understand before you
 begin to program in it. You can skip this if you want, but it
@@ -6951,12 +6996,12 @@ is highlighted.
 
 Now, type the following into the editor:
 
-.~C* "HELLO WORLD!"
-.~Cend
+.~E* "HELLO WORLD!"
+.~Eend
 
 Here's what each line does.
 
-~B* "HELLO WORLD!"
+~E* "HELLO WORLD!"
 
 The * command puts whatever text is in the parentheses on the
 bottom of the screen. (Actually, it's the given message row
@@ -6964,7 +7009,7 @@ line, which is the bottom by default.) All Robotic code starts
 immediately, so this particular statement happens right as the
 board with this Robot is loaded.
 
-~Bend
+~Eend
 
 This ends the code. It is good practice to include the END
 command even when you don't think you need it; leaving the END
@@ -6980,29 +7025,29 @@ $Your Second Robotic Program
 Create a Robot in the editor, and give it the following
 program:
 
-. ~C: "start"
-. ~CGO NORTH 2
-. ~CGO SOUTH 2
-. ~CWAIT 1
-. ~CGOTO "start"
+. ~E: "start"
+. ~EGO NORTH 2
+. ~EGO SOUTH 2
+. ~EWAIT 1
+. ~EGOTO "start"
 
 Now test the world. As you can see, this program makes the
 Robot move up and down. Let's analyze it line by line.
 
-~B: "start"
+~E: "start"
 
 As we know, this is a label. It marks the beginning of the
 program.
 
-~BGO NORTH 2
+~EGO NORTH 2
 
 This quite plainly tells the Robot to move north two spaces.
 
-~BGO SOUTH 2
+~EGO SOUTH 2
 
 This tells the Robot to move south two spaces.
 
-~BGOTO "start"
+~EGOTO "start"
 
 GOTO tells the Robot to jump to a label. In this case, the
 Robot returns to the label "start", effectively restarting its
@@ -7017,24 +7062,23 @@ $Your Third Robotic Program
 
 Try the following Robot program-
 
-. ~C: "loop"
-. ~C/ "NNEESSWW"
-. ~CGOTO "loop"
-
-. ~C: "touch"
-. ~C* "Hello!"
-. ~CCHAR 'X'
-. ~CEND
+. ~E: "loop"
+. ~E/ "NNEESSWW"
+. ~EGOTO "loop"
+. ~E: "touch"
+. ~E* "Hello!"
+. ~ECHAR 'X'
+. ~EEND
 
 Testing will show you that this Robot runs around in a small
 square. Now try touching it. If you can catch it, the Robot
 will change to an X and greet you! Let's look at this program.
 
-~B: "loop"
+~E: "loop"
 
 A label.
 
-~B/ "NNEESSWW"
+~E/ "NNEESSWW"
 
 The / command tells the Robot to move along a given path. The
 path is represented with a string of the letters N, S, E, W,
@@ -7043,20 +7087,20 @@ tells the Robot to wait for a sec before continuing. Our path
 tells the Robot to go north twice, east twice, south twice, and
 west twice, forming a square path.
 
-~BGOTO "loop"
+~EGOTO "loop"
 
 The Robot will now return to the "loop" label, continuing in a
 square path forever. Without an outside stimuli, the Robot will
 never do anything else.
 
-~B: "touch"
+~E: "touch"
 
 Another label, but this one is special. When the player touches
 a Robot, by standing next to it and pressing against it, the
 Robot is sent the message "touch". The following commands will
 be run when the player touches the Robot.
 
-~BCHAR 'X'
+~ECHAR 'X'
 
 This tells the Robot to assume the appearance of character X.
 Make sure that the X is in apostrophes ' and NOT quotes ".
@@ -7067,18 +7111,18 @@ Let's get some Robots to interact with each other. Put two
 Robots on a board, right next to each other. Name the left one
 Lefty, and give it this program-
 
-. ~C: "dance"
-. ~C/ "WWWEEE"
-. ~CSEND "Righty" to "dance"
-. ~CEND
+. ~E: "dance"
+. ~E/ "WWWEEE"
+. ~ESEND "Righty" to "dance"
+. ~EEND
 
 Name the right one Righty, and give it this program -
 
-. ~CEND
-. ~C: "dance"
-. ~C/ "EEEWWW"
-. ~CSEND "Lefty" to "dance"
-. ~CEND
+. ~EEND
+. ~E: "dance"
+. ~E/ "EEEWWW"
+. ~ESEND "Lefty" to "dance"
+. ~EEND
 
 Now test this board out. You will see a silly pair of dancing
 Robots, as they bump each other left and right. Let's examine
@@ -7088,7 +7132,7 @@ Since Righty has an END command as the first line, he isn't
 going to be doing anything until told; so, we look at Lefty.
 It's nothing we haven't seen, except for the SEND command.
 
-~BSEND "Robot" to "message"
+~ESEND "Robot" to "message"
 
 The SEND command allows one Robot to send messages to another,
 telling it what to do. In this case, Lefty will tell Righty to
@@ -7108,51 +7152,51 @@ The following Robot will demonstrate some new commands and
 features. Make sure you put some ammo and bombs on the screen
 with this Robot -
 
-. ~CEND
-. ~C: "shot"
-. ~CCOLOR c2C
-. ~C[ "OKAY, I GET THE POINT. I NEED MORE IRON"
-. ~C[ "...and now a liver transplant :<"
-. ~Czap "shot" 1
-. ~CEND
-. ~C: "shot"
-. ~C[ "...cut it out. =("
-. ~CEND
-. ~C: "bombed"
-. ~C. "Check this out..."
-. ~C. "(editor) I'm not impressed."
-. ~C* "ARRGHFRRAGGH I'M ALLERGIC TO BEING BOMBED"
-. ~CDIE
-. ~CEND
-. ~C: "touch"
-. ~C* "Watch out!"
-. ~CWAIT 10
-. ~CSHOOT NORTH
-. ~CEND
+. ~EEND
+. ~E: "shot"
+. ~ECOLOR c2C
+. ~E[ "OKAY, I GET THE POINT. I NEED MORE IRON"
+. ~E[ "...and now a liver transplant :<"
+. ~Ezap "shot" 1
+. ~EEND
+. ~E: "shot"
+. ~E[ "...cut it out. =("
+. ~EEND
+. ~E: "bombed"
+. ~E. "Check this out..."
+. ~E. "(editor) I'm not impressed."
+. ~E* "ARRGHFRRAGGH I'M ALLERGIC TO BEING BOMBED"
+. ~EDIE
+. ~EEND
+. ~E: "touch"
+. ~E* "Watch out!"
+. ~EWAIT 10
+. ~ESHOOT NORTH
+. ~EEND
 
 Test this Robot out, bombing, shooting, and touching it. The
 new commands and labels are explained below.
 
-~B: "shot"
+~E: "shot"
 
 When the Robot is shot by a bullet, it is sent this message.
 
-~BCOLOR c2C
+~ECOLOR c2C
 
 This changes the Robot's color. The c2C represents Lt. Red on
 Red. To enter colors, press F2 in the Robot editor and select
 the color you want. The appropriate cXX code will be typed in
 for you.
 
-~B[ "OKAY, I GET THE POINT. I NEED MORE IRON"
-~B[ "...and now a liver transplant :<"
+~E[ "OKAY, I GET THE POINT. I NEED MORE IRON"
+~E[ "...and now a liver transplant :<"
 
 The [ command is slick for a default. When encountered, all
 the [ commands in the same area are put together to form one
 long message, which is then displayed in a Scroll-like window.
 It can be Scrolled and viewed by the player.
 
-~BZAP "shot" 1
+~EZAP "shot" 1
 
 The ZAP command tells the Robot to ignore a certain number of
 labels with the given name - in this case, the first "shot"
@@ -7166,8 +7210,8 @@ second "shot" label after we went to the first.
 When the Robot is bombed, or otherwise hit by an explosion,
 it is sent this message.
 
-~B. "Check this out..."
-~B. "(editor) I'm not impressed."
+~E. "Check this out..."
+~E. "(editor) I'm not impressed."
 
 Notice how this message was not shown in any way. The . command
 is used for comments, i.e. messages that are not to be shown.
@@ -7176,11 +7220,11 @@ trying to do with this Robot, or so you can keep notes of
 important things. Due to the loosening of Robot memory limits
 it makes much more sense to comment your code.
 
-~BDIE
+~EDIE
 
 This command destroys the Robot forever.
 
-~BWAIT 10
+~EWAIT 10
 
 WAIT causes the Robot to stop and sit for an amount of time,
 the amount of time specified as a number. The time is in
@@ -7189,7 +7233,7 @@ board once, moving all the enemies and bullets, etc. Cycles
 can vary in speed; the default is speed 1 (fastest) unless a
 cycle command is placed inside the Robot.
 
-~BSHOOT SEEK
+~ESHOOT SEEK
 
 The Robot will shoot a bullet in the indicated direction (in
 this case, the direction the player is in).
@@ -7214,7 +7258,8 @@ newer help file additions.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #THEGLOBL.HLP
-:gbl:The Global
+:gbl: 
+$~9The Global
 
 The global Robot is a special-case Robot; it is always present
 on every board of the game. It is immobile (technically off the
@@ -7222,7 +7267,8 @@ board, but listed as at {-1,-1}), has a ROBOT_ID of 0, and
 cannot be destroyed or changed into another object, even
 through deliberate attempts to do so such as the EXPLODE
 command. All other traits of Robots, such as 64k of Robot
-memory and reserved local counters, apply to the global.
+memory, reserved local counters and ability to be copied, apply
+to the global.
 
 The global is important because it not only exists on all
 boards, but also continues its state across boards. This allows
@@ -7248,7 +7294,8 @@ things.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #BADPRACT.HLP
-:101:Robotic Usages That Should be Avoided
+:101: 
+$~9Robotic Usages That Should be Avoided
 
 There are several coding pitfalls in Robotic; while some are
 complex in nature, others can be easily avoided. In general,
@@ -7304,7 +7351,8 @@ are several practises to avoid, as well as proper replacements.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #SUBROUTE.HLP
-:sub:Subroutines
+:sub: 
+$~9Subroutines
 
 Subroutines are returnable labels, in essence. After the
 subroutine actions finish, the Robotic goes to the line right
@@ -7326,23 +7374,23 @@ position using ~egoto "#top"~f.
 
 A quick example of subroutines:
 
-~B* "YE SHALL NOT PASS UNLESS YOU GIVE ME SPACE."
-~Bgoto "#spacewait"
-~B* "THAT'S BETTER BUT YOU'RE STILL HERE. _CORRECT THIS_"
-~Bgoto "#spacewait"
-~B* "THANKS FOR YOUR COMPLIANCE!"
-~Bwait 25
-~B* "YOUR PASS WILL ARRIVE IN 6 TO 8 WEEKS! or now! byebyebye"
-~Bset "PASS" to 1
-~Bdie
-~Bend
-~B: "#spacewait"
-~Bwait 5
-~B. "We don't want the space action to happen immediately again."
-~B: "notspaceloop"
-~Bwait 1
-~Bif not spacepressed "notspaceloop"
-~Bgoto "#return"
+~E* "YE SHALL NOT PASS UNLESS YOU GIVE ME SPACE."
+~Egoto "#spacewait"
+~E* "THAT'S BETTER BUT YOU'RE STILL HERE. _CORRECT THIS_"
+~Egoto "#spacewait"
+~E* "THANKS FOR YOUR COMPLIANCE!"
+~Ewait 25
+~E* "YOUR PASS WILL ARRIVE IN 6 TO 8 WEEKS! or now! byebyebye"
+~Eset "PASS" to 1
+~Edie
+~Eend
+~E: "#spacewait"
+~Ewait 5
+~E. "We don't want the space action to happen immediately again."
+~E: "notspaceloop"
+~Ewait 1
+~Eif not spacepressed "notspaceloop"
+~Egoto "#return"
 
 When sending other robots to subroutines the behavior is
 slightly different. Because the robot is preempted (interrupted)
@@ -7358,7 +7406,8 @@ mentally do the same.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #EXPRESS.HLP
-:exp:Expressions
+:exp: 
+$~9Expressions
 
 Expressions in MegaZeux allow users to set counters or a
 displayed number to a mathematical expression. This possible
@@ -7429,7 +7478,8 @@ hex numbers begin with 0x (ex: 0xDEAF).
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #FILEACSS.HLP
-:fil:File Access
+:fil: 
+$~9File Access
 
 MegaZeux allows somewhat unwieldy but powerful file access
 abilities. File access can do things that no other tools of
@@ -7542,9 +7592,9 @@ Another use of file commands (which takes more work, but not
 much) is verifying whether a file exists. To do this, a 
 programmer would type:
 
-~BSET "file.xxx" to "FREAD_OPEN"
-~BSET "FREAD_POS" to -1
-~BIF "FREAD_POS" >= 0 "existslabel"
+~ESET "file.xxx" to "FREAD_OPEN"
+~ESET "FREAD_POS" to -1
+~EIF "FREAD_POS" >= 0 "existslabel"
 
 If the file does not exist, "FREAD_POS" will read -1; if it
 does exist, "FREAD_POS" will be the number of characters in the
@@ -7552,51 +7602,51 @@ file (0 or higher).
 
 Here's a quick example of file access.
 
-~BSET "example.txt" to "FWRITE_OPEN"
-~BSET "$zoosound" to "ROAAAAR"
-~BSET "$zoosound" to "FWRITE"
-~BDEC "FWRITE_POS" by 1
-~B. "This line backs us up one space so that the terminator
-~B. "character will be overwritten, allowing us to display the"
-~B. "whole contents of the file."
-~BSET "$ender" to " (click)"
-~BSET "$ender" to "FWRITE"
-~BSET "" to "FWRITE_OPEN"
-~B. "We're closing the file because we're going to read from it."
-~BSET "example.txt" to "FREAD_OPEN"
-~BASK "Want to play your animal sounds tape?"
-~BEND
-~B: "yes"
-~BSET "$tape" to "FREAD"
-~B* "&$tape&"
-~BWAIT for 30
-~BZAP "yes" 1
-~BASK "Want to play it again?"
-~BEND
-~B: "yes"
-~BSET "" to "FREAD_OPEN"
-~B. "Switching tasks for the same file again."
-~BSET "example.txt" to "FWRITE_OPEN"
-~B. "We're wiping the file clean."
-~BSET "$winder" to "bzz-bz-zipfwip--(clik) "
-~BSET "$winder" to "FWRITE"
-~BDEC "FWRITE_POS" by 1
-~BSET "$tape" to "FWRITE"
-~BSET "" to "FWRITE_OPEN"
-~BSET "example.txt" to "FREAD_OPEN"
-~BZAP "yes" 1
-~B: "yes"
-~BSET "FREAD_POS" to 0
-~B. "We're starting from the beginning because we want to read"
-~B. "all of the file."
-~BSET "$tape" to "FREAD"
-~B* "&$tape&"
-~BWAIT for 30
-~BASK "Want to play it again?"
-~BEND
-~B: "no"
-~BSET "" to "FREAD_OPEN"
-~BEND
+~ESET "example.txt" to "FWRITE_OPEN"
+~ESET "$zoosound" to "ROAAAAR"
+~ESET "$zoosound" to "FWRITE"
+~EDEC "FWRITE_POS" by 1
+~E. "This line backs us up one space so that the terminator
+~E. "character will be overwritten, allowing us to display the"
+~E. "whole contents of the file."
+~ESET "$ender" to " (click)"
+~ESET "$ender" to "FWRITE"
+~ESET "" to "FWRITE_OPEN"
+~E. "We're closing the file because we're going to read from it."
+~ESET "example.txt" to "FREAD_OPEN"
+~EASK "Want to play your animal sounds tape?"
+~EEND
+~E: "yes"
+~ESET "$tape" to "FREAD"
+~E* "&$tape&"
+~EWAIT for 30
+~EZAP "yes" 1
+~EASK "Want to play it again?"
+~EEND
+~E: "yes"
+~ESET "" to "FREAD_OPEN"
+~E. "Switching tasks for the same file again."
+~ESET "example.txt" to "FWRITE_OPEN"
+~E. "We're wiping the file clean."
+~ESET "$winder" to "bzz-bz-zipfwip--(clik) "
+~ESET "$winder" to "FWRITE"
+~EDEC "FWRITE_POS" by 1
+~ESET "$tape" to "FWRITE"
+~ESET "" to "FWRITE_OPEN"
+~ESET "example.txt" to "FREAD_OPEN"
+~EZAP "yes" 1
+~E: "yes"
+~ESET "FREAD_POS" to 0
+~E. "We're starting from the beginning because we want to read"
+~E. "all of the file."
+~ESET "$tape" to "FREAD"
+~E* "&$tape&"
+~EWAIT for 30
+~EASK "Want to play it again?"
+~EEND
+~E: "no"
+~ESET "" to "FREAD_OPEN"
+~EEND
 
 This Robot will display first a roar and the sound of a tape
 player clicking off before it asks if you want to play the tape
@@ -7610,7 +7660,8 @@ chosen.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #SPRITES.HLP
-:spr:Sprites
+:spr: 
+$~9Sprites
 
 Sprites allow the designer to have interactive entities on the
 board composed of several characters. A sprite is a block of
@@ -7643,17 +7694,17 @@ board at the position [10, 10], assign it to sprite number 15,
 then have it drawn at position [40, 5]. The Robotic for this is
 as follows:
 
-~BSET "spr15_refx" 10
-~BSET "spr15_refy" 10
-~BSET "spr15_width" 2
-~BSET "spr15_height" 2
-~BPUT c?? sprite p0f 40 5
+~ASET "spr15_refx" 10
+~ASET "spr15_refy" 10
+~ASET "spr15_width" 2
+~ASET "spr15_height" 2
+~APUT c?? sprite p0f 40 5
 
 You can then move the sprite around by changing spr15_x and
 spr15_y. For example, using:
 
-~BINC "spr15_x" 1
-~BDEC "spr15_y" 1
+~AINC "spr15_x" 1
+~ADEC "spr15_y" 1
 
 will move the sprite to the northeast by 1.
 
@@ -7689,7 +7740,8 @@ of sprites.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #SMZXMODE.HLP
-:095:Super MegaZeux Modes
+:095: 
+$~9Super MegaZeux Modes
 
 Super MZX modes allow richer color options at the expense of
 halved horizontal resolution. The number of colors per
@@ -7768,7 +7820,8 @@ an SMZX palette (SET "filename" "smzx_palette").
 >#CHAREDIT.HLP:079:The Character Editor
 >#MAIN.HLP:072:Table of Contents
 #VLAYER.HLP
-:vla:The Vlayer and Its Uses
+:vla: 
+$~9The Vlayer and Its Uses
 
 The vlayer is an extra, global graphical layer, but it is never
 directly seen. It can only hold character and color info. The
@@ -7806,7 +7859,7 @@ commands, "#n" is used instead. For example, if copying a 2x2
 block from 6,6 of the board to 0,0 of the vlayer is wanted, the
 command would be:
 
-~ACOPY BLOCK 6 6 2 2 "#0" "#0"
+~ECOPY BLOCK 6 6 2 2 "#0" "#0"
 
 Here are the vlayer copy functions:
 
@@ -7833,7 +7886,7 @@ Expressions: ~E"#('counter' + x)"~F
 
 MZMs can be placed on the vlayer by using p02. Example:
 
-~APUT "@@visuals.mzm" image_file p02 x y
+~EPUT "@@visuals.mzm" image_file p02 x y
 
 Reading and writing single characters or colors from the vlayer
 requires the vch and vco counters.
@@ -7843,11 +7896,11 @@ For reading and writing colors use ~E"vcoX,Y"~F.
 
 For example:
 
-~ASET "vch10,10" '+'~f sets the vlayer char at 10, 10 to a plus
+~ESET "vch10,10" '+'~f sets the vlayer char at 10, 10 to a plus
 sign.
-~ASET "vco10,10" 15~f sets the vlayer color at 10, 10 to white on
+~ESET "vco10,10" 15~f sets the vlayer color at 10, 10 to white on
 black.
-~ASET "temp" "vch10,10"~f sets temp to whatever the character at
+~ESET "temp" "vch10,10"~f sets temp to whatever the character at
 10, 10 of the vlayer is.
 
 Remember that the vlayer is global. If many vlayers are wanted,
@@ -7860,7 +7913,8 @@ this problem.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #MZM.HLP
-:mzm:Using MZMs
+:mzm: 
+$~9Using MZMs
 
 MZM files are equivalents of the ANSI files used in older MZX
 versions. MZMs, however, are much more powerful and can store
@@ -7874,7 +7928,7 @@ MZMs come in two modes: "board" and "layer".
     Board mode can save Robots and most built-ins; MZMs saved
     in the editor will save fresh robots, while MZMs saved
     in-game keep the Robots' current states.
-  * Layer type saves only color and char information.
+  * Layer mode saves only color and char information.
 
 Any information not saveable will be replaced by a customblock
 facsimile.
@@ -7919,7 +7973,8 @@ of a board.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #TRIG.HLP
-:tri:Trigonometric Functions
+:tri: 
+$~9Trigonometric Functions
 
 Trigonometry can simplify some complex engines, and MegaZeux
 can access several trigonometric functions with fair precision.
@@ -7948,18 +8003,18 @@ inverse functions pretty smooth. Its default value is 10000.
 
 These are the trig functions MegaZeux can directly utilise.
 
-~BSIN - sine
-~BCOS - cosine
-~BTAN - tangent
-~BASIN - arcsine (inverse sine)
-~BACOS - arccosine (inverse cosine)
-~BATAN - arctangent (inverse tangent)
+~ASIN - sine
+~ACOS - cosine
+~ATAN - tangent
+~AASIN - arcsine (inverse sine)
+~AACOS - arccosine (inverse cosine)
+~AATAN - arctangent (inverse tangent)
 
 To use the counters you put the unit number after the counter
 name. Here's an example.  To display the cosine of 30 degrees
 with degree-based precision, the needed line would be:
 
-~e* "&cos30&"
+~E* "&cos30&"
 
 Trig functions can also take expressions and counters. However,
 counters can only be inserted through expressions; a construct
@@ -7969,7 +8024,8 @@ like "&sinlocal&" will not work, but "&sin('local')&" will.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #PARTIAL.HLP
-:par:Partial Character Sets
+:par: 
+$~9Partial Character Sets
 
 Partial character sets are less than full sets, indeed, but
 they only overwrite the characters they are told to. This
@@ -7997,16 +8053,38 @@ replace in the target character set.
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
 #NEWINVER.HLP
-:1st:NEW in MegaZeux!
+:1st: 
+$~9NEW in MegaZeux!
 
-Whenever, 2007 - MZX SVN
+December 8, 2007 - MZX 2.81h
+
+Another bugfix release with a couple of new features, in time
+for the Winter 2007 Dualstream Day of Zeux. The major new
+features of this release are automatic module renaming in the
+editor, PNG screenshots and many improvements to MZX on
+embedded platforms (like PSP and DS).
+
+MegaZeux can now be compiled in MZXRun mode (like the old DOS
+implementation) and by disabling features such as unnecessary
+renderers and audio support, can be made approximately 70%
+smaller.
+
+Thanks again to Terryn for relentlessly tracking down many
+serious bugs; we've tried to fix all the issues that have crept
+up in the last 5 months.
+
+Thanks too to Exophase, Mr_Alert and Wervyn for contributing to
+this release; your time and help is invaluable.
+
+Happy Holidays!
 
 USERS
 
 + Added a more lenient WAV file loader so that ModPlug isn't
   relied on as much to play malformed WAV files (mostly old SAM
   conversions) (Mr_Alert).
-+ Added SCORE to the counter debugger (Mr_Alert).
++ Added SCORE and mzx_speed to the counter debugger
+  (Mr_Alert, ajs).
 + Added a 16-bit software renderer and a half-width renderer
   for the GP2X port (Mr_Alert).
 + Made the mouse cursor in the "opengl2" renderer look more
@@ -8037,6 +8115,30 @@ USERS
 + Fixed a bug where changing boards in the editor could
   sometimes corrupt memory, later causing a crash (either
   testing or coming out of testing a board).
++ Fixed a sensor bug that happens when a sensor can't go
+  anywhere it is told to, and the player is on it (Exophase).
++ Fixed using ABORT LOOP in some situations. Using it outside
+  of a loop still has undefined semantics and this has been
+  documented in the help file (Exophase).
++ Fixed a bug where returning from a subroutine entered through
+  ? "#label" "string" skips the next impending line (Exophase).
++ Setting a board option below its numeric limit is no longer
+  possible (Exophase).
++ Fixed problems with going over Robot name character limits
+  using the .@ command (Exophase).
++ Fixed problems with LOAD_ROBOT freezing on a robot with no
+  newline at the end of the file.
++ Fixed a problem with "Replace All" in the robotic editor that
+  could sometimes cause a line to exceed 240 characters and
+  crash the editor.
++ Fixed a problem with "Replace" in the robotic editor which
+  could cause a line to temporarily become 241 characters and
+  then truncate silently to 240 characters.
++ Fixed a bug that caused the original game palette to be lost
+  when testing a game in the editor that switched between
+  Regular/SMZX1 and SMZX2/3 modes. MegaZeux should now try much
+  harder to preserve the user palette, regardless of game
+  edits.
 
 DEVELOPERS
 
@@ -8044,16 +8146,15 @@ DEVELOPERS
   This should help make warnings (due to coding errors) easier
   to identify. If you don't like the new syntax, or need the
   command debug, you can build with "make V=1".
-+ Updated Win32 builds to use SDL 1.2.12.
-+ Rewrote the build system to not use recursive Makefiles,
-  because variable propagation was starting to be a problem,
-  and a recursive design is generally discouraged.
++ Updated Win32 builds with SDL 1.2.12.
++ Rewrote the build system to not use recursive Makefiles.
+  Variable propagation was starting to be a problem, and
+  recursive designs are generally discouraged.
 + Refactored the graphics rendering code to modularize the
   renderers and reduce code duplication (Mr_Alert).
-+ Switched GDM2S3M over to use inttypes.h instead of
-  home-brewing types. Improves portability to BSD.
-+ MegaZeux now compiles on OpenBSD (and probably other BSDs),
-  use --disable-gl.
++ GDM2S3M switched over to use inttypes.h instead of home-brew
+  types.
++ MegaZeux now compiles on OpenBSD (and probably other BSDs).
 + Made all unnecessary global symbols static. This should
   improve compiler optimisations and correctness (Mr_Alert,
   ajs).
@@ -8078,21 +8179,21 @@ DEVELOPERS
 + The entire audio subsystem can now be disabled. This further
   reduces binary size on embedded platforms. However, SFX
   editing still remains enabled (though useless) until editor
-  modularity is implemented. This reduces the size of a
-  stripped AMD64 binary from 856896b (with all features
-  enabled) to 448488b (with all features disabled) (~47%
-  smaller).
+  modularity is implemented.
 + The PSP port is now officially supported, and compiles out of
   the box. See docs/psp.txt.
-
->#280CLOG.HLP:280:New in versions 2.80-2.80h
->#OLDERVER.HLP:099:New in versions 2.60 to 2.70
->#OLDESVER.HLP:100:New in versions 2.01 to 2.60
->#NEWIN200.HLP:1st:New in version 2.00
->#ANCENVER.HLP:103:New in versions thru 1.03
->#MAIN.HLP:072:Table of Contents
-#281CLOG.HLP
-:281:New in Versions 2.81-2.81g
++ Renamed macos platform "darwin", to reflect its true nature
+  (use Xcode to build as a real Application, instead of just a
+  UNIX binary). Also fixed some bogosities with robo_ed's X11
+  includes on OS 10.5.
++ The editor can now be disabled, a la MZXRUN from the old DOS
+  versions. Configure with --disable-editor to shrink MZX by
+  about 150k.
++ MegaZeux can now be compiled with size optimisations
+  (--optimize-size to config.sh) for a 20% space saving.
++ MegaZeux's core now builds with -W (basically all GCC
+  warnings) plus some additional warnings that aren't switched
+  on by this flag. All warnings have been fixed.
 
 July 4, 2007 - MZX 2.81g
 
@@ -8695,7 +8796,9 @@ November 20, 2005 - MZX 2.81
 >#ANCENVER.HLP:103:New in versions thru 1.03
 >#MAIN.HLP:072:Table of Contents
 #280CLOG.HLP
-:280:New in Versions 2.80-2.80h
+:280: 
+$~9New in Versions 2.80-2.80h
+
 June 6, 2005 - MZX 2.80h
 
 + Fixed a bug which could cause crashes when quitting the game.
@@ -9370,14 +9473,15 @@ August 9, 2004 - First release, MZX 2.80 BETA
   before new values were set. They will not work here.
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
->#281CLOG.HLP:281:New in Versions 2.81-2.81g
 >#OLDERVER.HLP:099:New in versions 2.60 to 2.70
 >#OLDESVER.HLP:100:New in versions 2.01 to 2.60
 >#NEWIN200.HLP:1st:New in version 2.00
 >#ANCENVER.HLP:103:New in versions thru 1.03
 >#MAIN.HLP:072:Table of Contents
 #OLDERVER.HLP
-:099:New in Versions 2.60-2.70
+:099: 
+$~9New in Versions 2.60-2.70
+
 **NEW in 2.70***
 
 + Robotic code now loadable and savable to files, either to
@@ -9507,14 +9611,14 @@ August 9, 2004 - First release, MZX 2.80 BETA
 $***
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
->#281CLOG.HLP:281:New in Versions 2.81-2.81g
 >#280CLOG.HLP:280:New in Versions 2.80-2.80h
 >#OLDESVER.HLP:100:New in versions 2.01 to 2.60
 >#NEWIN200.HLP:1st:New in version 2.00
 >#ANCENVER.HLP:103:New in versions thru 1.03
 >#MAIN.HLP:072:Table of Contents
 #OLDESVER.HLP
-:100:New in versions 2.01 to 2.60
+:100: 
+$~9New in versions 2.01 to 2.60
 
 ~E2.60 release:
 
@@ -9931,14 +10035,14 @@ before, you probably won't understand much of this list.
 . * Fill in editor now works with board sizes over 127x127
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
->#281CLOG.HLP:281:New in Versions 2.81-2.81g
 >#280CLOG.HLP:280:New in Versions 2.80-2.80h
 >#OLDERVER.HLP:099:New in versions 2.60 to 2.70
 >#NEWIN200.HLP:1st:New in version 2.00
 >#ANCENVER.HLP:103:New in versions thru 1.03
 >#MAIN.HLP:072:Table of Contents
 #NEWIN200.HLP
-:1st:~ENew in version 2.00:
+:1st: 
+$~9New in version 2.00:
 
 . * All code has been rewritten or at least stepped through line
 .  by line, except for the music code.
@@ -10167,14 +10271,14 @@ before, you probably won't understand much of this list.
 . * Different player pics per direction.
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
->#281CLOG.HLP:281:New in Versions 2.81-2.81g
 >#280CLOG.HLP:280:New in Versions 2.80-2.80h
 >#OLDERVER.HLP:099:New in versions 2.60 to 2.70
 >#OLDESVER.HLP:100:New in versions 2.01 to 2.60
 >#ANCENVER.HLP:103:New in versions thru 1.03
 >#MAIN.HLP:072:Table of Contents
 #ANCENVER.HLP
-:103:New in versions thru 1.03
+:103: 
+$~9New in versions thru 1.03
 
 1.03 release: QUICK FIXES, LIMITED DISTRIBUTION
 
@@ -10451,7 +10555,6 @@ before, you probably won't understand much of this list.
 . * Optimized code
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
->#281CLOG.HLP:281:New in Versions 2.81-2.81g
 >#280CLOG.HLP:280:New in Versions 2.80-2.80h
 >#OLDERVER.HLP:099:New in versions 2.60 to 2.70
 >#OLDESVER.HLP:100:New in versions 2.01 to 2.60
