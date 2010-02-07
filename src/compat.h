@@ -34,7 +34,7 @@
 
 #ifdef _MSC_VER
 #define inline
-#include "../arch/msvc/msvc.h"
+#include "msvc.h"
 #endif
 
 #include <time.h>
