@@ -28,7 +28,6 @@
 #else
 #define __M_BEGIN_DECLS
 #define __M_END_DECLS
-typedef unsigned int bool;
 #define true 1
 #define false 0
 #endif /* __cplusplus */
