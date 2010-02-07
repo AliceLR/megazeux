@@ -38,6 +38,9 @@ DEVELOPERS
   found a bug in string handling.
 + No longer suppress char-subscript warnings, and fix up any remaining
   abuses in the tree.
++ Add manpages for 'megazeux' and other binaries for the Debian packages.
+  Comply with the Debian packaging guidelines by providing a copyright
+  note, listing significant contributors to MegaZeux.
 
 January 30, 2007 - MZX 2.81f
 

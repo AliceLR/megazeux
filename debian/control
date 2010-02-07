@@ -8,12 +8,13 @@ Standards-Version: 3.7.2
 Package: megazeux
 Architecture: any
 Depends: ${shlibs:Depends}, ${misc:Depends}
-Description: A simple game creation system (GCS).
- MegaZeux is a Game Creation System (GCS), inspired by Epic MegaGames' ZZT.
- It was recently ported from 16bit MSDOS C/ASM to portable SDL C++, which has
- vastly improved its platform support and hardware compatibility.
- Many features have been added compared to the original DOS version.
- With the help of an intuitive editor and a simple but powerful object-oriented
+Description: A simple game creation system (GCS)
+ MegaZeux is a Game Creation System (GCS), inspired by Epic MegaGames' ZZT,
+ first released by Gregory Janson in 1994. It was recently ported from 16bit
+ MSDOS C/ASM to portable SDL C/C++, improving its platform support and
+ hardware compatibility.
+ Many features have been added since the original DOS version, and with the
+ help of an intuitive editor and a simple but powerful object-oriented
  programming language, MegaZeux allows you to create your own ANSI-esque games
  regardless of genre. It is actively maintained by a thriving community.
  See http://digitalmzx.net/ for more information.

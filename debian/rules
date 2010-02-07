@@ -3,6 +3,8 @@
 # uncomment this to turn on verbose mode.
 #export DH_VERBOSE=1
 
+TARGET=$(shell grep TARGET Makefile.in | sed "s/ //g" | cut -d "=" -f 2)
+
 CFLAGS = -Wall -g
 
 ifneq (,$(findstring noopt,$(DEB_BUILD_OPTIONS)))
@@ -48,7 +50,8 @@ binary-arch: build install
 	dh_testroot
 	dh_installchangelogs 
 	dh_installdocs
-	dh_link
+	dh_installman
+	dh_link megazeux.1 usr/share/man/man1/$(TARGET).1
 	dh_strip
 	dh_compress
 	dh_fixperms
