@@ -944,14 +944,14 @@ audio_stream *construct_stream_audio_file(char *filename,
   {
     if(ext_pos > 0)
     {
-      if(!strcmp(filename + ext_pos, ".ogg"))
+      if(!strcasecmp(filename + ext_pos, ".ogg"))
       {
         a_return = construct_vorbis_stream(filename, frequency,
          volume, repeat);
       }
 
-      if(!strcmp(filename + ext_pos, ".wav") ||
-       !strcmp(filename + ext_pos, ".sam"))
+      if(!strcasecmp(filename + ext_pos, ".wav") ||
+       !strcasecmp(filename + ext_pos, ".sam"))
       {
         a_return = construct_wav_stream(filename, frequency,
          volume, repeat);

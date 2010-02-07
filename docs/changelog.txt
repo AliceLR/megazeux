@@ -78,6 +78,8 @@ USERS
 + Fix a crash bug when playing older MZX games from read-only media (such as a
   CD) or where file-system permissions prohibited creating SAM conversions
   (Lancer-X).
++ Fixed bug where certain file formats would not be automatically converted
+  if their extensions were mixed or upper case (e.g. OGG/SAM/GDM).
 
 DEVELOPERS
 

@@ -278,19 +278,19 @@ void config_enable_oversampling(config_info *conf, char *name, char *value,
 void config_resample_mode(config_info *conf, char *name, char *value,
  char *extended_data)
 {
-  if(!strcmp(value, "none"))
+  if(!strcasecmp(value, "none"))
   {
     conf->resample_mode = 0;
   }
   else
 
-  if(!strcmp(value, "linear"))
+  if(!strcasecmp(value, "linear"))
   {
     conf->resample_mode = 1;
   }
   else
 
-  if(!strcmp(value, "cubic"))
+  if(!strcasecmp(value, "cubic"))
   {
     conf->resample_mode = 2;
   }
@@ -299,25 +299,25 @@ void config_resample_mode(config_info *conf, char *name, char *value,
 void config_mp_resample_mode(config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  if(!strcmp(value, "none"))
+  if(!strcasecmp(value, "none"))
   {
     conf->modplug_resample_mode = 0;
   }
   else
 
-  if(!strcmp(value, "linear"))
+  if(!strcasecmp(value, "linear"))
   {
     conf->modplug_resample_mode = 1;
   }
   else
 
-  if(!strcmp(value, "cubic"))
+  if(!strcasecmp(value, "cubic"))
   {
     conf->modplug_resample_mode = 2;
   }
   else
 
-  if(!strcmp(value, "fir"))
+  if(!strcasecmp(value, "fir"))
   {
     conf->modplug_resample_mode = 3;
   }

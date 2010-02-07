@@ -1119,7 +1119,7 @@ static void gl_set_filter_method(char *method)
 {
   GLint gl_filter_method = GL_LINEAR;
 
-  if (!strcmp(method, CONFIG_GL_FILTER_NEAREST))
+  if (!strcasecmp(method, CONFIG_GL_FILTER_NEAREST))
     gl_filter_method = GL_NEAREST;
 
   gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_method);
@@ -1300,7 +1300,7 @@ static int gl2_linear_filter_method(void)
 {
   if (gl_state.ignore_linear)
     return false;
-  return (strcmp(graphics.gl_filter_method, CONFIG_GL_FILTER_LINEAR) == 0);
+  return (strcasecmp(graphics.gl_filter_method, CONFIG_GL_FILTER_LINEAR) == 0);
 }
 
 // FIXME: Many magic numbers
@@ -2242,7 +2242,7 @@ static void set_graphics_output(char *video_output)
   // Try to load system GL. if we succeed..
   if (can_use_opengl())
   {
-    if (!strcmp(video_output, "opengl1"))
+    if (!strcasecmp(video_output, "opengl1"))
     {
       graphics.init_video = gl1_init_video;
       graphics.check_video_mode = gl1_check_video_mode;
@@ -2253,7 +2253,7 @@ static void set_graphics_output(char *video_output)
       selected_output = video_output;
     }
 
-    if (!strcmp(video_output, "opengl2"))
+    if (!strcasecmp(video_output, "opengl2"))
     {
       graphics.init_video = gl2_init_video;
       graphics.check_video_mode = gl1_check_video_mode;
@@ -2278,7 +2278,7 @@ static void set_graphics_output(char *video_output)
 
 #if !defined(PSP_BUILD)
   // YUV overlay renderer
-  if (!strcmp(video_output, "overlay1"))
+  if (!strcasecmp(video_output, "overlay1"))
   {
     graphics.init_video = yuv1_init_video;
     graphics.check_video_mode = yuv1_check_video_mode;
@@ -2292,7 +2292,7 @@ static void set_graphics_output(char *video_output)
 
 #if !defined(PSP_BUILD)
   // Low res YUV overlay renderer
-  if (!strcmp(video_output, "overlay2"))
+  if (!strcasecmp(video_output, "overlay2"))
   {
     graphics.init_video = yuv1_init_video;
     graphics.check_video_mode = yuv1_check_video_mode;

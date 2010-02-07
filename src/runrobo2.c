@@ -73,7 +73,7 @@ void magic_load_mod(World *mzx_world, char *filename)
   if((mod_name_size > 1) && (filename[mod_name_size - 1] == '*'))
   {
     filename[mod_name_size - 1] = 0;
-    if(strcmp(src_board->mod_playing, filename))
+    if(strcasecmp(src_board->mod_playing, filename))
       load_module(filename);
 
     src_board->mod_playing[0] = '*';
