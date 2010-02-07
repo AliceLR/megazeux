@@ -1,4 +1,4 @@
-MSVC support was broken as some unspecified time in the past. It probably
+MSVC support was broken at some unspecified time in the past. It probably
 only ever worked on older MSVCs, prior to Unicode becoming defacto for the
 Microsoft string functions. Switch the string functions over to explicit
 ASCII versions, to prevent type safety errors.
