@@ -24,6 +24,10 @@ USERS
 + Added Quantum P's MacOS X icons and make them available on all platforms.
   On Windows, the icons are now embedded in the EXE file and will be visible
   on the taskbar.
++ Improved the performance of the "opengl2" renderer, by removing the
+  convoluted 3D drawing commands and replacing them with 2D ones. Reduced the
+  quad count by using an intermediary 80x25 texture. MegaZeux now depends on
+  fewer GL features. [LogiCow]
 
 DEVELOPERS
 

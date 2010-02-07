@@ -47,7 +47,7 @@
 #define MZX_ASCII_CHR   SHAREDIR "mzx_ascii.chr"
 #define MZX_EDIT_CHR    SHAREDIR "mzx_edit.chr"
 #define SMZX_PAL        SHAREDIR "smzx.pal"
-#define ICON_BMP	SHAREDIR "icon.bmp"
+#define ICON_BMP        SHAREDIR "icon.bmp"
 
 static graphics_data graphics;
 
@@ -796,13 +796,17 @@ static void hard_set_screen_coords(int x, int y, int *screen_x, int *screen_y)
 
 #include "SDL_opengl.h"
 
-#define GL_NON_POWER_2_WIDTH	640
-#define GL_NON_POWER_2_HEIGHT	350
-#define GL_POWER_2_WIDTH	1024
-#define GL_POWER_2_HEIGHT	512
+#define GL_NON_POWER_2_WIDTH      640
+#define GL_NON_POWER_2_HEIGHT     350
+#define GL_POWER_2_WIDTH          1024
+#define GL_POWER_2_HEIGHT         512
+
+#define CONFIG_GL_FILTER_LINEAR   "linear"
+#define CONFIG_GL_FILTER_NEAREST  "nearest"
 
 typedef struct
 {
+  void (APIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
   void (APIENTRY *glBegin)(GLenum mode);
   void (APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
   void (APIENTRY *glBindTexture)(GLenum target, GLuint texture);
@@ -819,13 +823,8 @@ typedef struct
   void (APIENTRY *glDisable)(GLenum cap);
   void (APIENTRY *glEnable)(GLenum cap);
   void (APIENTRY *glEnd)(void);
-  void (APIENTRY *glFrustum)(GLdouble left, GLdouble right, GLdouble bottom,
-                             GLdouble top, GLdouble near, GLdouble far);
   void (APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
   const GLubyte* (APIENTRY *glGetString)(GLenum name);
-  void (APIENTRY *glLoadIdentity)(void);
-  void (APIENTRY *glMatrixMode)(GLenum mode);
-  void (APIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
   void (APIENTRY *glPushMatrix)(void);
   void (APIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
   void (APIENTRY *glTexEnvf)(GLenum target, GLenum pname, GLfloat param);
@@ -837,8 +836,10 @@ typedef struct
                                    GLint yoffset, GLsizei width, GLsizei height,
                                    GLenum format, GLenum type,
                                    const GLvoid *pixels);
-  void (APIENTRY *glTranslatef)(GLfloat x, GLfloat y, GLfloat z);
+  void (APIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
   void (APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
+  void (APIENTRY *glVertex2f)(GLfloat x, GLfloat y);
+  void (APIENTRY *glVertex2i)(GLint x, GLint y);
   void (APIENTRY *glVertex3f)(GLfloat x, GLfloat y, GLfloat z);
   void (APIENTRY *glVertex3i)(GLint x, GLint y, GLint z);
   void (APIENTRY *glViewport)(GLint x, GLint y, GLsizei width,
@@ -859,6 +860,7 @@ static gl_syms gl;
 static int load_gl_syms(void)
 {
   // map to the actual OpenGL symbols
+  gl.glAlphaFunc = glAlphaFunc;
   gl.glBegin = glBegin;
   gl.glBlendFunc = glBlendFunc;
   gl.glBindTexture = glBindTexture;
@@ -870,19 +872,17 @@ static int load_gl_syms(void)
   gl.glDisable = glDisable;
   gl.glEnable = glEnable;
   gl.glEnd = glEnd;
-  gl.glFrustum = glFrustum;
   gl.glGenTextures = glGenTextures;
   gl.glGetString = glGetString;
-  gl.glLoadIdentity = glLoadIdentity;
-  gl.glMatrixMode = glMatrixMode;
   gl.glTexParameterf = glTexParameterf;
   gl.glPushMatrix = glPushMatrix;
   gl.glTexCoord2f = glTexCoord2f;
   gl.glTexEnvf = glTexEnvf;
   gl.glTexImage2D = glTexImage2D;
   gl.glTexSubImage2D = glTexSubImage2D;
-  gl.glTranslatef = glTranslatef;
   gl.glTexParameteri = glTexParameteri;
+  gl.glVertex2f = glVertex2f;
+  gl.glVertex2i = glVertex2i;
   gl.glVertex3f = glVertex3f;
   gl.glVertex3i = glVertex3i;
   gl.glViewport = glViewport;
@@ -909,6 +909,12 @@ static int load_gl_syms(void)
 {
   if (gl_syms_loaded)
     return true;
+
+  // Since 1.1
+  gl.glAlphaFunc = (void (APIENTRY *)(GLenum func, GLclampf ref))
+   SDL_GL_GetProcAddress("glAlphaFunc");
+  if (!gl.glAlphaFunc)
+    return false;
 
   // Since 1.0
   gl.glBegin = (void (APIENTRY *)(GLenum mode))
@@ -981,14 +987,6 @@ static int load_gl_syms(void)
   if (!gl.glEnd)
     return false;
 
-  // Since 1.0
-  gl.glFrustum = (void (APIENTRY *)(GLdouble left, GLdouble right,
-                                     GLdouble bottom, GLdouble top,
-                                     GLdouble near, GLdouble far))
-   SDL_GL_GetProcAddress("glFrustum");
-  if (!gl.glFrustum)
-    return false;
-
   // Since 1.1
   gl.glGenTextures = (void (APIENTRY *)(GLsizei n, GLuint *textures))
    SDL_GL_GetProcAddress("glGenTextures");
@@ -999,18 +997,6 @@ static int load_gl_syms(void)
   gl.glGetString = (const GLubyte *(APIENTRY *)(GLenum name))
    SDL_GL_GetProcAddress("glGetString");
   if (!gl.glGetString)
-    return false;
-
-  // Since 1.0
-  gl.glLoadIdentity = (void (APIENTRY *)(void))
-   SDL_GL_GetProcAddress("glLoadIdentity");
-  if (!gl.glLoadIdentity)
-    return false;
-
-  // Since 1.0
-  gl.glMatrixMode = (void (APIENTRY *)(GLenum mode))
-   SDL_GL_GetProcAddress("glMatrixMode");
-  if (!gl.glMatrixMode)
     return false;
 
   // Since 1.0
@@ -1067,9 +1053,15 @@ static int load_gl_syms(void)
     return false;
 
   // Since 1.0
-  gl.glTranslatef = (void (APIENTRY *)(GLfloat x, GLfloat y, GLfloat z))
-   SDL_GL_GetProcAddress("glTranslatef");
-  if (!gl.glTranslatef)
+  gl.glVertex2f = (void (APIENTRY *)(GLfloat x, GLfloat y))
+   SDL_GL_GetProcAddress("glVertex2f");
+  if (!gl.glVertex2f)
+    return false;
+
+  // Since 1.0
+  gl.glVertex2i = (void (APIENTRY *)(GLint x, GLint y))
+   SDL_GL_GetProcAddress("glVertex2i");
+  if (!gl.glVertex2i)
     return false;
 
   // Since 1.0
@@ -1128,7 +1120,7 @@ static void gl_set_filter_method(char *method)
 {
   GLint gl_filter_method = GL_LINEAR;
 
-  if (!strcmp(method, "nearest"))
+  if (!strcmp(method, CONFIG_GL_FILTER_NEAREST))
     gl_filter_method = GL_NEAREST;
 
   gl.glTexParameteri(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_method);
@@ -1256,13 +1248,14 @@ static void gl1_update_colors(SDL_Color *palette, Uint32 count)
 
 /* OPENGL RENDERER #2 CODE ***************************************************/
 
-#define SAFE_TEXTURE_MARGIN_X	0.0004
-#define SAFE_TEXTURE_MARGIN_Y	0.0002
+#define SAFE_TEXTURE_MARGIN_X 0.0004
+#define SAFE_TEXTURE_MARGIN_Y 0.0002
 
 static struct
 {
   Uint8 charset_texture[14 * 256 * 16];
-  GLuint texture_number[2];
+  Uint32 background_texture[80*25];
+  GLuint texture_number[3];
   GLubyte palette[3*256];
   Uint8 remap_texture;
   Uint8 ignore_linear;
@@ -1308,31 +1301,28 @@ static int gl2_linear_filter_method(void)
 {
   if (gl_state.ignore_linear)
     return false;
-  return (strcmp(graphics.gl_filter_method, "linear") == 0);
+  return (strcmp(graphics.gl_filter_method, CONFIG_GL_FILTER_LINEAR) == 0);
 }
 
 // FIXME: Many magic numbers
 void gl2_resize_screen(int viewport_width, int viewport_height)
 {
-  // this overrides the user's setting if they choose linear
-  if (viewport_width < 640 || viewport_height < 350)
+  /* If the window is exactly 640x350, then any filtering is useless.
+   * Turning filtering off here might speed things up.
+   *
+   * Otherwise, linear filtering breaks if the window is smaller than
+   * 640x350, so also turn it off here.
+   */
+  if (viewport_width == 640 && viewport_height == 350)
+    gl_state.ignore_linear = true;
+  else if (viewport_width < 640 || viewport_height < 350)
     gl_state.ignore_linear = true;
   else
     gl_state.ignore_linear = false;
 
   gl.glViewport(0, 0, viewport_width, viewport_height);
 
-  gl.glMatrixMode(GL_PROJECTION);
-  gl.glLoadIdentity();
-
-  gl.glFrustum(-320, 320, 175, -175, 1, 100);
-
-  gl.glMatrixMode(GL_MODELVIEW);
-  gl.glLoadIdentity();
-
-  gl.glTranslatef(-320, -175, 0);
-
-  gl.glGenTextures(2, gl_state.texture_number);
+  gl.glGenTextures(3, gl_state.texture_number);
 
   gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[0]);
 
@@ -1342,8 +1332,7 @@ void gl2_resize_screen(int viewport_width, int viewport_height)
   gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   gl.glEnable(GL_TEXTURE_2D);
-
-  gl.glEnable(GL_BLEND);
+  gl.glAlphaFunc(GL_GREATER,0.565f);
 
   gl.glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
 
@@ -1352,14 +1341,14 @@ void gl2_resize_screen(int viewport_width, int viewport_height)
     SDL_FillRect(graphics.screen, NULL, ~0);
 
     gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, GL_POWER_2_WIDTH,
-      GL_POWER_2_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE,
-      graphics.screen->pixels);
+     GL_POWER_2_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+     graphics.screen->pixels);
 
   SDL_UnlockSurface(graphics.screen);
 
   gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[1]);
 
-  gl_set_filter_method(graphics.gl_filter_method);
+  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST);
 
   gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
   gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
@@ -1367,11 +1356,26 @@ void gl2_resize_screen(int viewport_width, int viewport_height)
   SDL_LockSurface(graphics.screen);
 
     gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 256, 256, 0, GL_ALPHA,
-      GL_UNSIGNED_BYTE, graphics.screen->pixels);
+     GL_UNSIGNED_BYTE, graphics.screen->pixels);
 
   SDL_UnlockSurface(graphics.screen);
 
   gl2_remap_charsets();
+
+  gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[2]);
+
+  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST);
+
+  gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  gl.glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+
+  SDL_LockSurface(graphics.screen);
+
+    gl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 32, 0, GL_RGBA,
+     GL_UNSIGNED_BYTE, graphics.screen->pixels);
+
+  SDL_UnlockSurface(graphics.screen);
+
 }
 
 static int gl2_init_video(config_info *conf)
@@ -1414,20 +1418,16 @@ static void gl2_update_screen(void)
   Uint32 current_char_byte;
   Uint8 current_color;
   Uint32 i, i2, i3;
+  float fi, fi2;
   Sint32 i4;
   Uint32 line_advance = 640;
   Uint32 line_advance_sub;
   Uint32 row_advance = 8960;
   Uint32 ticks = SDL_GetTicks();
-  Uint32 *old_dest = NULL;
 
   SDL_LockSurface(graphics.screen);
 
-  dest = (Uint32 *)graphics.screen->pixels;
-
   line_advance_sub = line_advance - 8;
-
-  old_dest = dest;
 
   if((ticks - graphics.cursor_timestamp) > CURSOR_BLINK_RATE)
   {
@@ -1439,6 +1439,7 @@ static void gl2_update_screen(void)
   {
     if (gl_state.remap_texture)
     {
+      gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[1]);
       gl2_do_remap_charsets();
       gl_state.remap_texture = false;
     }
@@ -1446,32 +1447,38 @@ static void gl2_update_screen(void)
     if (gl2_linear_filter_method())
       gl.glViewport(0, 0, 640, 350);
 
-    gl.glDisable(GL_TEXTURE_2D);
-    gl.glDisable(GL_BLEND);
+    dest = (Uint32 *)gl_state.background_texture;
+
+    for(i = 0; i < 80*25; i++, dest++, src++)
+      *dest = graphics.flat_intensity_palette[src->bg_color];
+
+    gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[2]);
+
+    gl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 80, 25, GL_BGRA,
+      GL_UNSIGNED_BYTE, gl_state.background_texture);
+
+    gl.glColor4f(1.0, 1.0, 1.0, 1.0);
 
     gl.glBegin(GL_QUADS);
-      for(i = 0; i < 350; i = i + 14)
-      {
-        for(i2 = 0; i2 < 640; i2 = i2 + 8)
-        {
-          gl.glColor3ubv(&gl_state.palette[src->bg_color *3]);
-          gl.glVertex3i(i2,     i + 14, -1);
-          gl.glVertex3i(i2,     i,      -1);
-          gl.glVertex3i(i2 + 8, i,      -1);
-          gl.glVertex3i(i2 + 8, i + 14, -1);
-          src++;
-        }
-      }
+      gl.glTexCoord2f(0, 25.0/32.0);
+      gl.glVertex2i(-1, -1);
+      gl.glTexCoord2f(0, 0);
+      gl.glVertex2i(-1, 1);
+      gl.glTexCoord2f(80.0/128.0, 0);
+      gl.glVertex2i(1, 1);
+      gl.glTexCoord2f(80.0/128.0, 25.0/32.0);
+      gl.glVertex2i(1, -1);
     gl.glEnd();
 
-    gl.glEnable(GL_BLEND);
-    gl.glEnable(GL_TEXTURE_2D);
+    gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[1]);
+
+    gl.glEnable(GL_ALPHA_TEST);
 
     gl.glBegin(GL_QUADS);
       src = graphics.text_video;
-      for(i = 0; i < 350; i = i + 14)
+      for(fi = 1; fi > -1; fi = fi - 2.0/25.0)
       {
-        for(i2 = 0; i2 < 640; i2 = i2 + 8)
+        for(fi2 = -1; fi2 < 0.98; fi2 = fi2 + 2.0/80.0)
         {
           gl.glColor3ubv(&gl_state.palette[src->fg_color * 3]);
 
@@ -1479,32 +1486,35 @@ static void gl2_update_screen(void)
             ((src->char_value % 32) + 1) * 0.03125   - SAFE_TEXTURE_MARGIN_X,
             ((src->char_value / 32) + 1) * 0.0546875 - SAFE_TEXTURE_MARGIN_Y
           );
-          gl.glVertex3i(i2 + 8, i + 14, -1);
+          gl.glVertex2f(fi2 + 2.0/80.0, fi - 2.0/25.0);
 
           gl.glTexCoord2f(
             ((src->char_value % 32) + 1) * 0.03125   - SAFE_TEXTURE_MARGIN_X,
              (src->char_value / 32)      * 0.0546875 + SAFE_TEXTURE_MARGIN_Y
           );
-          gl.glVertex3i(i2 + 8, i, -1);
+          gl.glVertex2f(fi2 + 2.0/80.0, fi);
 
           gl.glTexCoord2f(
              (src->char_value % 32)      * 0.03125   + SAFE_TEXTURE_MARGIN_X,
              (src->char_value / 32)      * 0.0546875 + SAFE_TEXTURE_MARGIN_Y
           );
-          gl.glVertex3i(i2, i, -1);
+          gl.glVertex2f(fi2, fi);
 
           gl.glTexCoord2f(
              (src->char_value % 32)      * 0.03125   + SAFE_TEXTURE_MARGIN_X,
             ((src->char_value / 32) + 1) * 0.0546875 - SAFE_TEXTURE_MARGIN_Y
           );
-          gl.glVertex3i(i2, i + 14, -1);
+          gl.glVertex2f(fi2, fi - 2.0/25.0);
           src++;
         }
       }
     gl.glEnd();
+
+    gl.glDisable(GL_ALPHA_TEST);
   }
   else
   {
+    dest = (Uint32 *)graphics.screen->pixels;
     if (graphics.screen_mode != 3)
     {
       Uint32 cb_bg, cb_fg;
@@ -1604,18 +1614,15 @@ static void gl2_update_screen(void)
 
     gl.glColor4f(1.0, 1.0, 1.0, 1.0);
 
-    gl.glEnable(GL_TEXTURE_2D);
-    gl.glDisable(GL_BLEND);
-
     gl.glBegin(GL_QUADS);
       gl.glTexCoord2f(0, 0.68359375);
-      gl.glVertex3i(0, 350, -1);
+      gl.glVertex2i(-1, -1);
       gl.glTexCoord2f(0, 0);
-      gl.glVertex3i(0, 0, -1);
+      gl.glVertex2i(-1, 1);
       gl.glTexCoord2f(0.625, 0);
-      gl.glVertex3i(640, 0, -1);
+      gl.glVertex2i(1, 1);
       gl.glTexCoord2f(0.625, 0.68359375);
-      gl.glVertex3i(640, 350, -1);
+      gl.glVertex2i(1, -1);
     gl.glEnd();
 
     gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[1]);
@@ -1638,17 +1645,20 @@ static void gl2_update_screen(void)
 
     gl.glBegin(GL_QUADS);
       gl.glColor4ub(0, 0, 0, 128);
-      gl.glVertex3i(mxb,      myb + mh, -1);
-      gl.glVertex3i(mxb,      myb,      -1);
-      gl.glVertex3i(mxb + mw, myb,      -1);
-      gl.glVertex3i(mxb + mw, myb + mh, -1);
+      gl.glVertex2f( mxb*2.0/640.0-1.0,          (myb + mh)*-2.0/350.0+1.0);
+      gl.glVertex2f( mxb*2.0/640.0-1.0,           myb*-2.0/350.0+1.0);
+      gl.glVertex2f((mxb + mw)*2.0/640.0-1.0,     myb*-2.0/350.0+1.0);
+      gl.glVertex2f((mxb + mw)*2.0/640.0-1.0,    (myb + mh)*-2.0/350.0+1.0);
 
-      gl.glColor4ub(255, 255, 0, 192);
-      gl.glVertex3i(mxb + 1,      myb + mh - 1, -1);
-      gl.glVertex3i(mxb + 1,      myb + 1,      -1);
-      gl.glVertex3i(mxb + mw - 1, myb + 1,      -1);
-      gl.glVertex3i(mxb + mw - 1, myb + mh - 1, -1);
+      gl.glColor4ub(255, 255, 0, 96);
+      gl.glVertex2f((mxb + 1)*2.0/640.0-1.0,     (myb + mh - 1)*-2.0/350.0+1.0);
+      gl.glVertex2f((mxb + 1)*2.0/640.0-1.0,     (myb + 1)*-2.0/350.0+1.0);
+      gl.glVertex2f((mxb + mw - 1)*2.0/640.0-1.0,(myb + 1)*-2.0/350.0+1.0);
+      gl.glVertex2f((mxb + mw - 1)*2.0/640.0-1.0,(myb + mh - 1)*-2.0/350.0+1.0);
     gl.glEnd();
+
+    gl.glEnable(GL_TEXTURE_2D);
+    gl.glDisable(GL_BLEND);
   }
 
   // Draw cursor perhaps
@@ -1661,12 +1671,10 @@ static void gl2_update_screen(void)
     Uint32 cursor_char = cursor_element->char_value;
     Uint32 lines = 0;
     Uint32 addy = 0;
-    Uint32 *cursor_offset = old_dest;
     Uint32 i;
     Uint32 cursor_solid = 0xFFFFFFFF;
     Uint32 *char_offset = (Uint32 *)(graphics.charset + (cursor_char * 14));
     Uint32 bg_color = cursor_element->bg_color;
-    cursor_offset += (graphics.cursor_x * 8) + (graphics.cursor_y *row_advance);
 
     // Choose FG
     cursor_color = cursor_element->fg_color;
@@ -1704,7 +1712,6 @@ static void gl2_update_screen(void)
     {
       case cursor_mode_underline:
         lines = 2;
-        cursor_offset += (12 * line_advance);
         addy = 12;
         break;
 
@@ -1717,15 +1724,20 @@ static void gl2_update_screen(void)
     }
 
     gl.glDisable(GL_TEXTURE_2D);
-    gl.glDisable(GL_BLEND);
 
     gl.glBegin(GL_QUADS);
       gl.glColor3ubv(&gl_state.palette[cursor_color * 3]);
-      gl.glVertex3i(graphics.cursor_x * 8,     graphics.cursor_y * 14 + lines + addy, -1);
-      gl.glVertex3i(graphics.cursor_x * 8,     graphics.cursor_y * 14 + addy,         -1);
-      gl.glVertex3i(graphics.cursor_x * 8 + 8, graphics.cursor_y * 14 + addy,         -1);
-      gl.glVertex3i(graphics.cursor_x * 8 + 8, graphics.cursor_y * 14 + lines + addy, -1);
+      gl.glVertex2f((graphics.cursor_x * 8)*2.0/640.0-1.0,
+                    (graphics.cursor_y * 14 + lines + addy)*-2.0/350.0+1.0);
+      gl.glVertex2f((graphics.cursor_x * 8)*2.0/640.0-1.0,
+                    (graphics.cursor_y * 14 + addy)*-2.0/350.0+1.0);
+      gl.glVertex2f((graphics.cursor_x * 8 + 8)*2.0/640.0-1.0,
+                    (graphics.cursor_y * 14 + addy)*-2.0/350.0+1.0);
+      gl.glVertex2f((graphics.cursor_x * 8 + 8)*2.0/640.0-1.0,
+                    (graphics.cursor_y * 14 + lines + addy)*-2.0/350.0+1.0);
     gl.glEnd();
+
+    gl.glEnable(GL_TEXTURE_2D);
   }
 
   if (gl2_linear_filter_method() && !graphics.screen_mode)
@@ -1740,18 +1752,15 @@ static void gl2_update_screen(void)
 
     gl.glColor4f(1.0, 1.0, 1.0, 1.0);
 
-    gl.glEnable(GL_TEXTURE_2D);
-    gl.glDisable(GL_BLEND);
-
     gl.glBegin(GL_QUADS);
       gl.glTexCoord2f(0, 0.68359375);
-      gl.glVertex3i(0, 0, -1);
+      gl.glVertex2i(-1, 1);
       gl.glTexCoord2f(0, 0);
-      gl.glVertex3i(0, 350, -1);
+      gl.glVertex2i(-1, -1);
       gl.glTexCoord2f(0.625, 0);
-      gl.glVertex3i(640, 350, -1);
+      gl.glVertex2i(1, -1);
       gl.glTexCoord2f(0.625, 0.68359375);
-      gl.glVertex3i(640, 0, -1);
+      gl.glVertex2i(1, 1);
     gl.glEnd();
 
     gl.glBindTexture(GL_TEXTURE_2D, gl_state.texture_number[1]);
@@ -1800,14 +1809,14 @@ static void gl2_update_colors(SDL_Color *palette, Uint32 count)
 
 /* COMMON YUV RENDERER CODE **************************************************/
 
-#define SOFT_SOURCE_WIDTH	640
-#define SOFT_SOURCE_HEIGHT	350
+#define SOFT_SOURCE_WIDTH    640
+#define SOFT_SOURCE_HEIGHT   350
 
-#define YUV1_OVERLAY_WIDTH	(SOFT_SOURCE_WIDTH * 2)
-#define YUV1_OVERLAY_HEIGHT	SOFT_SOURCE_HEIGHT
+#define YUV1_OVERLAY_WIDTH   (SOFT_SOURCE_WIDTH * 2)
+#define YUV1_OVERLAY_HEIGHT  SOFT_SOURCE_HEIGHT
 
-#define YUV2_OVERLAY_WIDTH	SOFT_SOURCE_WIDTH
-#define YUV2_OVERLAY_HEIGHT	SOFT_SOURCE_HEIGHT
+#define YUV2_OVERLAY_WIDTH   SOFT_SOURCE_WIDTH
+#define YUV2_OVERLAY_HEIGHT  SOFT_SOURCE_HEIGHT
 
 // Optimized for packed-pixel 4:2:2 YUV [No height multiplier]
 
