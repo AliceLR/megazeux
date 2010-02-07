@@ -29,7 +29,6 @@
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
-#include <unistd.h> // for sleep
 
 #ifdef NEWMIKMOD
 #include "mikmod.h"

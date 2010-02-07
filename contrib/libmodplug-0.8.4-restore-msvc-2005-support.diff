@@ -1,0 +1,290 @@
+MSVC support was broken as some unspecified time in the past. It probably
+only ever worked on older MSVCs, prior to Unicode becoming defacto for the
+Microsoft string functions. Switch the string functions over to explicit
+ASCII versions, to prevent type safety errors.
+
+Also, convert a wrong cast in load_amf (LPCTSTR->const char *).
+
+ModPlug calls "sleep", which is "Sleep" on win32. Fix this in new backends
+that use it, just as the mingw compatibility code did.
+
+Fix use of a variable used out of scope, which amazingly GCC did not
+notice (even though the original code is entirely invalid).
+
+Finally, fix a bogus memcpy (source and destination are on the stack,
+and should be passed by reference to memcpy).
+
+This patch relies on other patches and should be applied last.
+
+--ajs.
+
+Index: libmodplug/src/load_ptm.cpp
+===================================================================
+--- libmodplug/src/load_ptm.cpp	(revision 341)
++++ libmodplug/src/load_ptm.cpp	(working copy)
+@@ -103,7 +103,7 @@
+ 		MODINSTRUMENT *pins = &Ins[ismp+1];
+ 		PTMSAMPLE *psmp = (PTMSAMPLE *)(lpStream+dwMemPos);
+ 
+-		lstrcpyn(m_szNames[ismp+1], psmp->samplename, 28);
++		lstrcpynA(m_szNames[ismp+1], psmp->samplename, 28);
+ 		memcpy(pins->name, psmp->filename, 12);
+ 		pins->name[12] = 0;
+ 		pins->nGlobalVol = 64;
+Index: libmodplug/src/load_amf.cpp
+===================================================================
+--- libmodplug/src/load_amf.cpp	(revision 341)
++++ libmodplug/src/load_amf.cpp	(working copy)
+@@ -170,7 +170,7 @@
+ 	DWORD dwMemPos;
+ 	
+ 	if ((!lpStream) || (dwMemLength < 2048)) return FALSE;
+-	if ((!strncmp((LPCTSTR)lpStream, "ASYLUM Music Format V1.0", 25)) && (dwMemLength > 4096))
++	if ((!strncmp((const char *)lpStream, "ASYLUM Music Format V1.0", 25)) && (dwMemLength > 4096))
+ 	{
+ 		UINT numorders, numpats, numsamples;
+ 
+Index: libmodplug/src/load_med.cpp
+===================================================================
+--- libmodplug/src/load_med.cpp	(revision 341)
++++ libmodplug/src/load_med.cpp	(working copy)
+@@ -723,7 +723,7 @@
+ 				if (maxnamelen > 32) maxnamelen = 32;
+ 				for (UINT i=0; i<ientries; i++) if (i < m_nSamples)
+ 				{
+-					lstrcpyn(m_szNames[i+1], psznames + i*ientrysz, maxnamelen);
++					lstrcpynA(m_szNames[i+1], psznames + i*ientrysz, maxnamelen);
+ 				}
+ 			}
+ 		}
+@@ -753,7 +753,7 @@
+ 					if (trknamelen > MAX_CHANNELNAME) trknamelen = MAX_CHANNELNAME;
+ 					if ((trknameofs) && (trknameofs + trknamelen < dwMemLength))
+ 					{
+-						lstrcpyn(ChnSettings[i].szName, (LPCSTR)(lpStream+trknameofs), MAX_CHANNELNAME);
++						lstrcpynA(ChnSettings[i].szName, (LPCSTR)(lpStream+trknameofs), MAX_CHANNELNAME);
+ 					}
+ 				}
+ 			}
+Index: libmodplug/src/load_mid.cpp
+===================================================================
+--- libmodplug/src/load_mid.cpp	(revision 341)
++++ libmodplug/src/load_mid.cpp	(working copy)
+@@ -29,7 +29,6 @@
+ #include <string.h>
+ #include <math.h>
+ #include <ctype.h>
+-#include <unistd.h> // for sleep
+ 
+ #ifdef NEWMIKMOD
+ #include "mikmod.h"
+Index: libmodplug/src/load_it.cpp
+===================================================================
+--- libmodplug/src/load_it.cpp	(revision 341)
++++ libmodplug/src/load_it.cpp	(working copy)
+@@ -622,7 +622,7 @@
+ 	dwPatNamLen = 0;
+ 	dwChnNamLen = 0;
+ 	header.id = 0x4D504D49; // IMPM
+-	lstrcpyn((char *)header.songname, m_szNames[0], 27);
++	lstrcpynA((char *)header.songname, m_szNames[0], 27);
+ 	header.reserved1 = 0x1004;
+ 	header.ordnum = 0;
+ 	while ((header.ordnum < MAX_ORDERS) && (Order[header.ordnum] < 0xFF)) header.ordnum++;
+@@ -691,7 +691,7 @@
+ 		header.msgoffset = dwHdrPos + dwExtra + header.insnum*4 + header.patnum*4 + header.smpnum*4;
+ 	}
+ 	// Write file header
+-	memcpy(writeheader, header, sizeof(header));
++	memcpy(&writeheader, &header, sizeof(header));
+ 
+ 	// Byteswap header information
+ 	writeheader.id = bswapLE32(writeheader.id);
+@@ -743,7 +743,7 @@
+ 		DWORD d = bswapLE32(0x4d414e50);
+ 		UINT len= bswapLE32(dwPatNamLen);
+ 		fwrite(&d, 1, 4, f);
+-		write(&len, 1, 4, f);
++		fwrite(&len, 1, 4, f);
+ 		fwrite(m_lpszPatternNames, 1, dwPatNamLen, f);
+ 	}
+ 	// Writing channel Names
+@@ -887,7 +887,7 @@
+ 	for (UINT npat=0; npat<header.patnum; npat++)
+ 	{
+ 		DWORD dwPatPos = dwPos;
+-		UINT len;
++		UINT len, iz;
+ 		if (!Patterns[npat]) continue;
+ 		patpos[npat] = dwPos;
+ 		patinfo[0] = 0;
+@@ -899,7 +899,7 @@
+ 		{
+ 			MODCOMMAND *pzc = Patterns[npat];
+ 			UINT nz = PatternSize[npat] * m_nChannels;
+-			for (UINT iz=0; iz<nz; iz++)
++			for (iz=0; iz<nz; iz++)
+ 			{
+ 				if ((pzc[iz].note) || (pzc[iz].instr)
+ 				 || (pzc[iz].volcmd) || (pzc[iz].command)) break;
+Index: libmodplug/src/load_mod.cpp
+===================================================================
+--- libmodplug/src/load_mod.cpp	(revision 341)
++++ libmodplug/src/load_mod.cpp	(working copy)
+@@ -433,9 +433,9 @@
+ 	fwrite(ord, 128, 1, f);
+ 	// Writing signature
+ 	if (m_nChannels == 4)
+-		lstrcpy((LPSTR)&bTab, "M.K.");
++		lstrcpyA((LPSTR)&bTab, "M.K.");
+ 	else
+-		wsprintf((LPSTR)&bTab, "%luCHN", m_nChannels);
++		wsprintfA((LPSTR)&bTab, "%luCHN", m_nChannels);
+ 	fwrite(bTab, 4, 1, f);
+ 	// Writing patterns
+ 	for (UINT ipat=0; ipat<nbp; ipat++) if (Patterns[ipat])
+Index: libmodplug/src/load_pat.cpp
+===================================================================
+--- libmodplug/src/load_pat.cpp	(revision 341)
++++ libmodplug/src/load_pat.cpp	(working copy)
+@@ -33,7 +33,6 @@
+ #include <string.h>
+ #include <math.h>
+ #include <ctype.h>
+-#include <unistd.h> // for sleep
+ 
+ #ifdef NEWMIKMOD
+ #include "mikmod.h"
+Index: libmodplug/src/sndfile.cpp
+===================================================================
+--- libmodplug/src/sndfile.cpp	(revision 341)
++++ libmodplug/src/sndfile.cpp	(working copy)
+@@ -376,13 +376,13 @@
+ //-----------------------------
+ {
+ 	memset(&m_MidiCfg, 0, sizeof(m_MidiCfg));
+-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_START*32], "FF");
+-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_STOP*32], "FC");
+-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEON*32], "9c n v");
+-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEOFF*32], "9c n 0");
+-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_PROGRAM*32], "Cc p");
+-	lstrcpy(&m_MidiCfg.szMidiSFXExt[0], "F0F000z");
+-	for (int iz=0; iz<16; iz++) wsprintf(&m_MidiCfg.szMidiZXXExt[iz*32], "F0F001%02X", iz*8);
++	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_START*32], "FF");
++	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_STOP*32], "FC");
++	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEON*32], "9c n v");
++	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEOFF*32], "9c n 0");
++	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_PROGRAM*32], "Cc p");
++	lstrcpyA(&m_MidiCfg.szMidiSFXExt[0], "F0F000z");
++	for (int iz=0; iz<16; iz++) wsprintfA(&m_MidiCfg.szMidiZXXExt[iz*32], "F0F001%02X", iz*8);
+ }
+ 
+ 
+@@ -1635,7 +1635,7 @@
+ //-----------------------------------------------------------
+ {
+ 	//---GCCFIX:  Removed assembly.
+-	return (DWORD)(8363*pow(2, (transp*128+ftune)/(1536)));
++	return (DWORD)(8363*pow(2.0, (transp*128+ftune)/(1536)));
+ 
+ #ifdef MSC_VER
+ 	const float _fbase = 8363;
+@@ -1675,7 +1675,7 @@
+ //----------------------------------------------
+ {
+ 	//---GCCFIX:  Removed assembly.
+-	return int(1536*(log(freq/8363)/log(2)));
++	return int(1536*(log((double)freq/8363.0)/log(2.0)));
+ 
+ #ifdef MSC_VER
+ 	const float _f1_8363 = 1.0f / 8363.0f;
+@@ -1749,7 +1749,7 @@
+ {
+         char szName[MAX_PATTERNNAME] = "";   // changed from CHAR
+ 	if (nPat >= MAX_PATTERNS) return FALSE;
+-	if (lpszName) lstrcpyn(szName, lpszName, MAX_PATTERNNAME);
++	if (lpszName) lstrcpynA(szName, lpszName, MAX_PATTERNNAME);
+ 	szName[MAX_PATTERNNAME-1] = 0;
+ 	if (!m_lpszPatternNames) m_nPatternNames = 0;
+ 	if (nPat >= m_nPatternNames)
+Index: libmodplug/src/load_s3m.cpp
+===================================================================
+--- libmodplug/src/load_s3m.cpp	(revision 341)
++++ libmodplug/src/load_s3m.cpp	(working copy)
+@@ -284,7 +284,7 @@
+ 		insflags[iSmp-1] = s[0x1F];
+ 		inspack[iSmp-1] = s[0x1E];
+ 		s[0x4C] = 0;
+-		lstrcpy(m_szNames[iSmp], (LPCSTR)&s[0x30]);
++		lstrcpyA(m_szNames[iSmp], (LPCSTR)&s[0x30]);
+ 		if ((s[0]==1) && (s[0x4E]=='R') && (s[0x4F]=='S'))
+ 		{
+ 			UINT j = bswapLE32(*((LPDWORD)(s+0x10)));
+Index: libmodplug/src/libmodplug/stdafx.h
+===================================================================
+--- libmodplug/src/libmodplug/stdafx.h	(revision 341)
++++ libmodplug/src/libmodplug/stdafx.h	(working copy)
+@@ -18,8 +18,12 @@
+ #include <mmsystem.h>
+ #include <stdio.h>
+ 
+-inline void ProcessPlugins(int n) {}
++#include "msvc.h"
+ 
++static inline void ProcessPlugins(int n) {}
++
++#define sleep(x) Sleep(x * 1000)
++
+ #else
+ 
+ #if defined(HAVE_CONFIG_H) && !defined(CONFIG_H_INCLUDED)
+@@ -41,7 +45,7 @@
+ #define WIN32_LEAN_AND_MEAN
+ #include <windows.h>
+ 
+-#define sleep Sleep
++#define sleep(x) Sleep(x * 1000)
+ 
+ #else // !__WIN32__
+ 
+@@ -69,10 +73,10 @@
+ typedef void* PVOID;
+ typedef void VOID;
+ 
+-#define lstrcpyn	strncpy
+-#define lstrcpy		strcpy
+-#define lstrcmp		strcmp
+-#define wsprintf	sprintf
++#define lstrcpynA	strncpy
++#define lstrcpyA	strcpy
++#define lstrcmpA	strcmp
++#define wsprintfA	sprintf
+ #define strnicmp(a,b,c)	strncasecmp(a,b,c)
+ 
+ #define GHND		0
+Index: libmodplug/src/libmodplug/sndfile.h
+===================================================================
+--- libmodplug/src/libmodplug/sndfile.h	(revision 341)
++++ libmodplug/src/libmodplug/sndfile.h	(working copy)
+@@ -601,7 +601,7 @@
+ 	UINT GetMaxPosition() const;
+ 	void SetCurrentPos(UINT nPos);
+ 	void SetCurrentOrder(UINT nOrder);
+-	void GetTitle(LPSTR s) const { lstrcpyn(s,m_szNames[0],32); }
++	void GetTitle(LPSTR s) const { lstrcpynA(s,m_szNames[0],32); }
+ 	LPCSTR GetTitle() const { return m_szNames[0]; }
+ 	UINT GetSampleName(UINT nSample,LPSTR s=NULL) const;
+ 	UINT GetInstrumentName(UINT nInstr,LPSTR s=NULL) const;
+Index: libmodplug/src/load_xm.cpp
+===================================================================
+--- libmodplug/src/load_xm.cpp	(revision 341)
++++ libmodplug/src/load_xm.cpp	(working copy)
+@@ -600,7 +600,7 @@
+ 	fwrite("Extended Module: ", 17, 1, f);
+ 	fwrite(m_szNames[0], 20, 1, f);
+ 	s[0] = 0x1A;
+-	lstrcpy((LPSTR)&s[1], (nPacking) ? "MOD Plugin packed   " : "FastTracker v2.00   ");
++	lstrcpyA((LPSTR)&s[1], (nPacking) ? "MOD Plugin packed   " : "FastTracker v2.00   ");
+ 	s[21] = 0x04;
+ 	s[22] = 0x01;
+ 	fwrite(s, 23, 1, f);

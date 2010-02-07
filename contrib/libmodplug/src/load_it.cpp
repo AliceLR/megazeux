@@ -622,7 +622,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 	dwPatNamLen = 0;
 	dwChnNamLen = 0;
 	header.id = 0x4D504D49; // IMPM
-	lstrcpyn((char *)header.songname, m_szNames[0], 27);
+	lstrcpynA((char *)header.songname, m_szNames[0], 27);
 	header.reserved1 = 0x1004;
 	header.ordnum = 0;
 	while ((header.ordnum < MAX_ORDERS) && (Order[header.ordnum] < 0xFF)) header.ordnum++;
@@ -691,7 +691,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 		header.msgoffset = dwHdrPos + dwExtra + header.insnum*4 + header.patnum*4 + header.smpnum*4;
 	}
 	// Write file header
-	memcpy(writeheader, header, sizeof(header));
+	memcpy(&writeheader, &header, sizeof(header));
 
 	// Byteswap header information
 	writeheader.id = bswapLE32(writeheader.id);
@@ -743,7 +743,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 		DWORD d = bswapLE32(0x4d414e50);
 		UINT len= bswapLE32(dwPatNamLen);
 		fwrite(&d, 1, 4, f);
-		write(&len, 1, 4, f);
+		fwrite(&len, 1, 4, f);
 		fwrite(m_lpszPatternNames, 1, dwPatNamLen, f);
 	}
 	// Writing channel Names
@@ -887,7 +887,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 	for (UINT npat=0; npat<header.patnum; npat++)
 	{
 		DWORD dwPatPos = dwPos;
-		UINT len;
+		UINT len, iz;
 		if (!Patterns[npat]) continue;
 		patpos[npat] = dwPos;
 		patinfo[0] = 0;
@@ -899,7 +899,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 		{
 			MODCOMMAND *pzc = Patterns[npat];
 			UINT nz = PatternSize[npat] * m_nChannels;
-			for (UINT iz=0; iz<nz; iz++)
+			for (iz=0; iz<nz; iz++)
 			{
 				if ((pzc[iz].note) || (pzc[iz].instr)
 				 || (pzc[iz].volcmd) || (pzc[iz].command)) break;

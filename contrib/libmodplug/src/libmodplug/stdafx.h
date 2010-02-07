@@ -18,7 +18,11 @@
 #include <mmsystem.h>
 #include <stdio.h>
 
-inline void ProcessPlugins(int n) {}
+#include "msvc.h"
+
+static inline void ProcessPlugins(int n) {}
+
+#define sleep(x) Sleep(x * 1000)
 
 #else
 
@@ -41,7 +45,7 @@ inline void ProcessPlugins(int n) {}
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 
-#define sleep Sleep
+#define sleep(x) Sleep(x * 1000)
 
 #else // !__WIN32__
 
@@ -69,10 +73,10 @@ typedef const char* LPCSTR;
 typedef void* PVOID;
 typedef void VOID;
 
-#define lstrcpyn	strncpy
-#define lstrcpy		strcpy
-#define lstrcmp		strcmp
-#define wsprintf	sprintf
+#define lstrcpynA	strncpy
+#define lstrcpyA	strcpy
+#define lstrcmpA	strcmp
+#define wsprintfA	sprintf
 #define strnicmp(a,b,c)	strncasecmp(a,b,c)
 
 #define GHND		0

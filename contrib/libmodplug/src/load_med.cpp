@@ -723,7 +723,7 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 				if (maxnamelen > 32) maxnamelen = 32;
 				for (UINT i=0; i<ientries; i++) if (i < m_nSamples)
 				{
-					lstrcpyn(m_szNames[i+1], psznames + i*ientrysz, maxnamelen);
+					lstrcpynA(m_szNames[i+1], psznames + i*ientrysz, maxnamelen);
 				}
 			}
 		}
@@ -753,7 +753,7 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 					if (trknamelen > MAX_CHANNELNAME) trknamelen = MAX_CHANNELNAME;
 					if ((trknameofs) && (trknameofs + trknamelen < dwMemLength))
 					{
-						lstrcpyn(ChnSettings[i].szName, (LPCSTR)(lpStream+trknameofs), MAX_CHANNELNAME);
+						lstrcpynA(ChnSettings[i].szName, (LPCSTR)(lpStream+trknameofs), MAX_CHANNELNAME);
 					}
 				}
 			}

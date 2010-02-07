@@ -376,13 +376,13 @@ void CSoundFile::ResetMidiCfg()
 //-----------------------------
 {
 	memset(&m_MidiCfg, 0, sizeof(m_MidiCfg));
-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_START*32], "FF");
-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_STOP*32], "FC");
-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEON*32], "9c n v");
-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEOFF*32], "9c n 0");
-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_PROGRAM*32], "Cc p");
-	lstrcpy(&m_MidiCfg.szMidiSFXExt[0], "F0F000z");
-	for (int iz=0; iz<16; iz++) wsprintf(&m_MidiCfg.szMidiZXXExt[iz*32], "F0F001%02X", iz*8);
+	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_START*32], "FF");
+	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_STOP*32], "FC");
+	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEON*32], "9c n v");
+	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEOFF*32], "9c n 0");
+	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_PROGRAM*32], "Cc p");
+	lstrcpyA(&m_MidiCfg.szMidiSFXExt[0], "F0F000z");
+	for (int iz=0; iz<16; iz++) wsprintfA(&m_MidiCfg.szMidiZXXExt[iz*32], "F0F001%02X", iz*8);
 }
 
 
@@ -1635,7 +1635,7 @@ DWORD CSoundFile::TransposeToFrequency(int transp, int ftune)
 //-----------------------------------------------------------
 {
 	//---GCCFIX:  Removed assembly.
-	return (DWORD)(8363*pow(2, (transp*128+ftune)/(1536)));
+	return (DWORD)(8363*pow(2.0, (transp*128+ftune)/(1536)));
 
 #ifdef MSC_VER
 	const float _fbase = 8363;
@@ -1675,7 +1675,7 @@ int CSoundFile::FrequencyToTranspose(DWORD freq)
 //----------------------------------------------
 {
 	//---GCCFIX:  Removed assembly.
-	return int(1536*(log(freq/8363)/log(2)));
+	return int(1536*(log((double)freq/8363.0)/log(2.0)));
 
 #ifdef MSC_VER
 	const float _f1_8363 = 1.0f / 8363.0f;
@@ -1749,7 +1749,7 @@ BOOL CSoundFile::SetPatternName(UINT nPat, LPCSTR lpszName)
 {
         char szName[MAX_PATTERNNAME] = "";   // changed from CHAR
 	if (nPat >= MAX_PATTERNS) return FALSE;
-	if (lpszName) lstrcpyn(szName, lpszName, MAX_PATTERNNAME);
+	if (lpszName) lstrcpynA(szName, lpszName, MAX_PATTERNNAME);
 	szName[MAX_PATTERNNAME-1] = 0;
 	if (!m_lpszPatternNames) m_nPatternNames = 0;
 	if (nPat >= m_nPatternNames)
