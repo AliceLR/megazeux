@@ -1586,7 +1586,7 @@ void optimize_null_boards(World *mzx_world)
   free(board_id_translation_list);
 }
 
-// FIXME: strcat() here is unsafe, this function should probably just die
+// FIXME: This function should probably die. It's unsafe.
 void add_ext(char *src, char *ext)
 {
   int len = strlen(src);
@@ -1594,7 +1594,7 @@ void add_ext(char *src, char *ext)
   if((len < 4) || ((src[len - 4] != '.') && (src[len - 3] != '.')
    && (src[len - 2] != '.')))
   {
-    strcat(src, ext);
+    strncat(src, ext, 4);
   }
 }
 
