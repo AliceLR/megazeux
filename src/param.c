@@ -428,7 +428,13 @@ int pe_health(World *mzx_world, int param)
 
 int pe_ring(World *mzx_world, int param)
 {
-  return list_menu(potion_fx, 13, "Choose effect", param, 16, 31);
+  int p;
+  if (param >= 16) param = 0;
+  p = list_menu(potion_fx, 13, "Choose effect", param, 16, 31);
+  if (p < 0)
+    return -1;
+  else
+    return p;
 }
 
 int pe_bomb(World *mzx_world, int param)

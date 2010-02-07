@@ -91,6 +91,9 @@ USERS
 + Fixed memory leaks in the file selection dialog, the counter debugger, the
   collision list and the global robot (Mr_Alert).
 + Updated counter list (see docs/counter_list.txt in the source) (Terryn).
++ Fixed a bug where pressing escape when editing the effect of a ring or potion
+  would result in an invalid parameter which would later cause a crash if
+  edited again (Mr_Alert).
 
 DEVELOPERS
 
