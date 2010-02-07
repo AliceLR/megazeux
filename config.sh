@@ -1,8 +1,8 @@
-#!/bin/bash
+#!/bin/sh
 
 ### CONFIG.SH HELP TEXT #######################################################
 
-function usage {
+usage() {
 	echo "usage: ./config.sh --platform [platform] <--prefix prefix>"
 	echo "                   <--sysconfdir sysconfdir> <option..>"
 	echo
@@ -12,7 +12,7 @@ function usage {
 	echo "Supported [platform] values:"
 	echo
 	echo "  win32          Microsoft Windows"
-	echo "  linux          Linux"
+	echo "  linux          Linux / BSD / Embedded"
 	echo "  macos          Macintosh OS X (not Classic)"
 	echo "  linux-static   Linux (statically linked)"
 	echo "  psp            Experimental PSP port"
