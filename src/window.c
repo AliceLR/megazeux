@@ -2829,7 +2829,7 @@ int choose_board(World *mzx_world, int current, char *title, int board0_none)
     board_names[i][BOARD_NAME_SIZE - 1] = '\0';
   }
 
-  board_names[i] = (char *)malloc(12);
+  board_names[i] = (char *)malloc(BOARD_NAME_SIZE);
 
   if((current < 0) || (current >= mzx_world->num_boards))
     current = 0;
