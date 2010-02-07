@@ -1,60 +1,46 @@
-MZX can currently be built on Windows (9x/2k/XP), Linux, MacOS X,
-and PSP.
+BUILDING MEGAZEUX
 
-How to build MegaZeux 2.81d+:
+MegaZeux can currently be built on Windows (9x/2k/XP), Linux, MacOS X,
+GP2X and PSP.
 
-First, you need the source for MZX, obviously, which can be found on
-http://www.digitalmzx.net/ and http://sourceforge.net/projects/megazeux/
+For building on GP2X, see gp2x.txt.
+For building on PSP, see psp.txt.
 
-Next, you need the correct libraries installed, which are the
- following:
+The following instructions are generic for all platforms.
 
-SDL: http://www.libsdl.org/
+DEPENDENCIES
 
-libogg/libvorbis: http://xiph.org/downloads/
+MegaZeux depends on only three libraries with the most basic configuration.
+These are the SDL, ogg and vorbis libraries.
 
-Now, you need to run the config script config.sh to begin the
-installation process; this is only absolutely necessary on
-non-Windows platforms, but is recommended universally. For Windows you
-can run it in msys's rxvt shell. Run as following:
+SDL:			http://www.libsdl.org/
+libogg/libvorbis:	http://xiph.org/downloads/
 
-config.sh <platform> <prefix>
+Installation of these libraries is not covered in this document, but on
+many platforms there are pre-built binaries available. Under Linux, these
+libraries will already be installed, but you may want to install the -dev
+packages:
 
-Where platform is win32, linux, macos, or psp and prefix is
-typically /usr (supply the prefix where system directories lib,
-include, bin, etc are located).
+libogg-dev, libvorbis-dev, libsdl1.2-dev (Debian/Ubuntu)
 
-Now, you need GCC installed and GNU make to actually build. Currently,
-GCC on Windows and Linux are supported. Type make and if you wish to
-install to /${PREFIX}/bin follow it with make install. As of this
-writing, the only compiler that has been tested on Windows is mingw.
-I suggest anyone who's interested in building on Windows uses it:
+CONFIGURING MEGAZEUX
 
-http://www.mingw.org/
+All platforms must first invoke the config.sh script to configure the
+build system. Type "./config.sh" inside a POSIX sh compatible shell
+environment (on Windows, install MSYS/MINGW) to get more usage info.
 
+Installing mikmod or libpng allows more features to be enabled, but
+these libraries are optional and can be switched off from config.sh.
 
-How to build for PSP:
+A normal compile line for Windows might be:
 
-To build for PSP you will want the PSP toolchain installed,
-instructions on how to do so can be found at wiki.pspdev.org. For
-Windows this should be installed under the Cygwin environment; an
-alternative is DevkitPro which can be installed under mingw but this
-is less supported and has only more recently matured and thus I haven't
-been able to work with it yet.
+./config.sh --platform win32 --disable-libpng
 
-For PSP builds you will need the PSP distribution of SDL and
-libTremor instead of ogg/vorbis. Both can be found via SVN at
+BUILDING MEGAZEUX
 
-svn://svn.ps2dev.org
+Now, you need GNU GCC and GNU make to actually build. Type make and
+if you wish to install to ${PREFIX}/bin follow it with make install.
 
-Once the proper libraries are installed run MZX's config script as
-follows:
-
-config.sh psp `psp-config --psp-prefix`
-
-Then a simple make will generate a PSP 1.0 EBOOT.PBP file.
-
-If you have any other questions, e-mail me at exophase@gmail.com.
-
-If you have any questions regarding building on Linux, Mac OS X or other
-UNIX based operating systems, please e-mail alistair@devzero.co.uk.
+The install target is only supported on Linux. package.sh can be
+used to build ZIPs containing binary builds of MegaZeux, and is the
+preferred means of distribution.
