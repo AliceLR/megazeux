@@ -511,9 +511,9 @@ config_entry config_options[] =
   { "enable_oversampling", config_enable_oversampling },
   { "enable_resizing", config_enable_resizing },
   { "force_bpp", config_force_bpp },
-  { "fullscreen_resolution", config_set_resolution },
   { "force_resolution", config_set_resolution }, /* backwards compatibility */
   { "fullscreen", config_set_fullscreen },
+  { "fullscreen_resolution", config_set_resolution },
   { "gl_filter_method", config_set_gl_filter_method },
   { "include", include2_config },
   { "include*", include_config },
