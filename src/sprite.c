@@ -264,7 +264,7 @@ void draw_sprites(World *mzx_world)
               if(!(color & 0xF0))
                 color = (color & 0x0F) | (get_color_linear(i5) & 0xF0);
 
-              if((!overlay_mode || (overlay[i6] == 32)) && ch != 32)
+              if((!overlay_mode || overlay_mode == 3 || (overlay[i6] == 32)) && ch != 32)
               {
                 if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
                   draw_char_linear_ext(color, ch, i5, 0, 0);
@@ -330,7 +330,7 @@ void draw_sprites(World *mzx_world)
               if(!(color & 0xF0))
                 dcolor = (color & 0x0F) | (get_color_linear(i5) & 0xF0);
 
-              if((!overlay_mode || (overlay[i6] == 32)) && ch != 32)
+              if((!overlay_mode || overlay_mode == 3 || (overlay[i6] == 32)) && ch != 32)
               {
                 if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
                   draw_char_linear_ext(dcolor, ch, i5, 0, 0);
