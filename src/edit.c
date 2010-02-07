@@ -2232,7 +2232,7 @@ Would you like to truncate it?"))
           {
             if(!listening_flag)
             {
-              char current_dir[512];
+              char current_dir[MAX_PATH];
               char new_mod[128] = { 0 } ;
 
               getcwd(current_dir, MAX_PATH);
