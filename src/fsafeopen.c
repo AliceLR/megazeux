@@ -412,12 +412,12 @@ char *fsafegets(char *s, int size, FILE *stream)
   {
     int len = strlen(ret);
 
-    if (len > 0)
-      if (s[len - 1] == '\r' || s[len - 1] == '\n')
+    if(len > 0)
+      if(s[len - 1] == '\r' || s[len - 1] == '\n')
         s[len - 1] = '\0';
 
-    if (len > 1)
-      if (s[len - 2] == '\r' || s[len - 2] == '\n')
+    if(len > 1)
+      if(s[len - 2] == '\r' || s[len - 2] == '\n')
         s[len - 2] = '\0';
   }
 
