@@ -36,7 +36,7 @@
 # hardware. It also requires no overlay or 3D hardware support. If you're
 # on a slow computer or a handheld portable, you definitely want to use
 # this. To use it, either do nothing, or uncomment the line below.
- 
+
 # video_output = software
 
 # The YUV overlay renderer is a good substitute if you want scaling
@@ -52,7 +52,7 @@
 # The "overlay2" mode is cheaper, but will be less accurate due to the use
 # of chroma subsampling instead of a full YUV encode.
 
-video_output = overlay1
+# video_output = overlay1
 # video_output = overlay2
 
 # An OpenGL renderer is a good choice if you want a highly configurable,
