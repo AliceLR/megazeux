@@ -12,6 +12,7 @@ CONFIGURATION
 The configuration (config.txt) must be modified in the following ways:
 
   - "video_output = software"   Other renderers will fail
+ OR "video_output = gp2x"       (Only on MZX versions >2.81)
   - "audio_buffer = 128"        Improves performance
   - "force_bpp = 8"             Improves performance
 
@@ -41,7 +42,7 @@ example, if you have the SDK installed to /home/alistair/bin/gp2x-sdk, you
 should specify:
 
   ./config.sh --platform gp2x --prefix /home/alistair/bin/gp2x-sdk \
-              --enable-mikmod
+              --enable-mikmod --disable-utils
 
 The configuration script will automatically enable/disable other flags on this
 platform; do not vary the command above, other than to change the prefix. The
