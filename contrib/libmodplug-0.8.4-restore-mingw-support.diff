@@ -1,4 +1,11 @@
-? libmodplug-0.8.4-restore-mingw-support.diff
+The new file format filters use types and POSIX functions that are not defined
+by some of libmodplug's supported platforms, namely MINGW's version of GCC.
+
+Convert these incorrect types, and at the same time provide a better win32
+compatibility library which these files can be converted to use.
+
+--ajs.
+
 Index: libmodplug/src/load_abc.cpp
 ===================================================================
 RCS file: /cvsroot/megazeux/megazeux2/contrib/libmodplug/src/load_abc.cpp,v
