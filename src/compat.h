@@ -23,13 +23,23 @@
 #define __COMPAT_H
 
 #ifdef __cplusplus
+
 #define __M_BEGIN_DECLS extern "C" {
 #define __M_END_DECLS   }
+
 #else
+
 #define __M_BEGIN_DECLS
 #define __M_END_DECLS
+
+#ifndef true
 #define true 1
+#endif
+
+#ifndef false
 #define false 0
+#endif
+
 #endif /* __cplusplus */
 
 #ifdef _MSC_VER
