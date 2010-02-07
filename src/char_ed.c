@@ -956,8 +956,9 @@ int char_editor(World *mzx_world)
         {
           char *buffer_ptr = buffer +
            block_start_x + (block_start_y * buffer_width);
-          memcpy(previous, buffer, buffer_size);
           int wrap;
+
+          memcpy(previous, buffer, buffer_size);
 
           for(i = 0; i < block_height; i++,
            buffer_ptr += buffer_width)
@@ -990,8 +991,9 @@ int char_editor(World *mzx_world)
         {
           char *buffer_ptr = buffer +
            block_start_x + (block_start_y * buffer_width);
-          memcpy(previous, buffer, buffer_size);
           int wrap;
+
+          memcpy(previous, buffer, buffer_size);
 
           for(i = 0; i < block_height; i++,
            buffer_ptr += buffer_width)

@@ -55,6 +55,10 @@ DEVELOPERS
   against it.
 + MegaZeux now builds with the experimental MINGW-x64 branch, enabling x64
   binaries for Windows.
++ MegaZeux now builds with MSVC if you apply the patchkit from arch/msvc/
+  This patchkit is required because MSVC-specific changes (which involve
+  converting from C99 variable length arrays to malloc/free) are slower
+  and should not be used with competent C99 compilers like GCC.
 
 July 4, 2007 - MZX 2.81g
 

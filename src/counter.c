@@ -3439,11 +3439,10 @@ void debug_counters(World *mzx_world)
   int cp_len;
   int selected = 0;
   int i, i2;
-
-  m_show();
-
   dialog di;
   element *elements[3];
+
+  m_show();
 
   for(i = 0; i < mzx_world->num_counters; i++)
   {
@@ -3599,9 +3598,10 @@ void debug_counters(World *mzx_world)
       if(!new_file(mzx_world, txt_ext, export_name,
        "Export counters/strings", 1))
       {
-        add_ext(export_name, ".txt");
+        FILE *fp;
 
-        FILE *fp = fopen(export_name, "wb");
+        add_ext(export_name, ".txt");
+        fp = fopen(export_name, "wb");
 
         for(i = 0; i < mzx_world->num_counters; i++)
         {

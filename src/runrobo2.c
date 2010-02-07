@@ -1401,8 +1401,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
         char *dest_string = cmd_ptr + 2;
         char *src_string = next_param_pos(cmd_ptr + 1);
         char dest_buffer[ROBOT_MAX_TR];
+        int value;
+
         tr_msg(mzx_world, dest_string, id, dest_buffer);
-        int value = parse_param(mzx_world, src_string, id);
+        value = parse_param(mzx_world, src_string, id);
 
         // Decrementing a string
         if(is_string(dest_buffer))
@@ -3455,11 +3457,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
         // compare
         char cmp_buffer[ROBOT_MAX_TR];
         char *input_string = src_board->input_string;
-        tr_msg(mzx_world, cmd_ptr + 2, id, cmp_buffer);
         char current_char;
         char cmp_char;
-        int cmp_len = strlen(cmp_buffer);
+        int cmp_len;
         int i = 0;
+
+        tr_msg(mzx_world, cmd_ptr + 2, id, cmp_buffer);
+        cmp_len = strlen(cmp_buffer);
 
         for(i = 0; i < cmp_len; i++)
         {
@@ -5364,7 +5368,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 224: // Mod fade #t #s
       {
-        int volume_target = parse_param(mzx_world, cmd_ptr + 1, id);;
+        int volume_target = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
         int volume = src_board->volume;
         int volume_inc = parse_param(mzx_world, p2, id);

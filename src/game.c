@@ -26,7 +26,6 @@
 #include <stdio.h>
 #include <string.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 #include "event.h"
 #include "helpsys.h"
@@ -1246,15 +1245,14 @@ static int update(World *mzx_world, int game, int *fadein)
     // Add message
     if(src_board->b_mesg_timer > 0)
     {
+      char *bottom_mesg = src_board->bottom_mesg;
+      int mesg_length = strlencolor(bottom_mesg);
+      int mesg_edges = mzx_world->mesg_edges;
       int mesg_x = src_board->b_mesg_col;
       int mesg_y = src_board->b_mesg_row;
 
       if(mesg_y > 24)
         mesg_y = 24;
-
-      char *bottom_mesg = src_board->bottom_mesg;
-      int mesg_length = strlencolor(bottom_mesg);
-      int mesg_edges = mzx_world->mesg_edges;
 
       if(mesg_x == -1)
         mesg_x = 40 - (mesg_length / 2);

@@ -137,6 +137,7 @@ static int gl2_init_video(graphics_data *graphics, config_info *conf)
 {
   gl2_render_data *render_data = malloc(sizeof(gl2_render_data));
   gl2_syms *gl = &render_data->gl;
+  const char *version;
 
   if (!render_data)
     return false;
@@ -175,7 +176,7 @@ static int gl2_init_video(graphics_data *graphics, config_info *conf)
   }
 
   // NOTE: This must come AFTER set_video_mode()!
-  const char *version = (const char *)gl->glGetString(GL_VERSION);
+  version = (const char *)gl->glGetString(GL_VERSION);
 
   // we need a specific "version" of OpenGL compatibility
   if (version && atof(version) < 1.1)

@@ -22,7 +22,10 @@
 #include <stdlib.h>
 #include <string.h>
 #include <sys/stat.h>
+
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 
 #include "helpsys.h"
 #include "scrdisp.h"
@@ -415,7 +418,7 @@ static char drawmode_help[5][32] =
 static int truncate_filename(const char *old_name, char *new_name,
  unsigned int length)
 {
-  char trnc_name[256] = {};
+  char trnc_name[MAX_PATH] = { 0 };
   char *file_ext;
   int i_file_ext;
   int i_dupl_fix;
@@ -445,7 +448,7 @@ static int truncate_filename(const char *old_name, char *new_name,
   f_test = fopen(trnc_name, "r");
   while (i_dupl_fix < 100 && f_test)
   {
-    char dupl_fix[8] = {};
+    char dupl_fix[8] = { 0 };
     fclose(f_test);
     sprintf(dupl_fix, "%d", i_dupl_fix);
     strncpy(trnc_name + i_file_ext - strlen(dupl_fix),
@@ -2202,7 +2205,7 @@ void edit_world(World *mzx_world)
                    "Load Module: The filename is too long. "
                    "Would you like to truncate it?"))
                   {
-                    char trnc_mod[13] = {};
+                    char trnc_mod[13] = { 0 };
                     if(!truncate_filename(new_mod, trnc_mod, 12))
                     {
                       load_module(trnc_mod);

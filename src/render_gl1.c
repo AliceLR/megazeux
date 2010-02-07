@@ -91,6 +91,7 @@ static int gl1_init_video(graphics_data *graphics, config_info *conf)
   gl1_render_data *render_data = malloc(sizeof(gl1_render_data));
   gl1_syms *gl = &render_data->gl;
   int internal_width, internal_height;
+  const char *version, *extensions;
 
   if (!render_data)
     return false;
@@ -119,8 +120,8 @@ static int gl1_init_video(graphics_data *graphics, config_info *conf)
   }
 
   // NOTE: These must come AFTER set_video_mode()!
-  const char *version = (const char *)gl->glGetString(GL_VERSION);
-  const char *extensions = (const char *)gl->glGetString(GL_EXTENSIONS);
+  version = (const char *)gl->glGetString(GL_VERSION);
+  extensions = (const char *)gl->glGetString(GL_EXTENSIONS);
 
   // we need a specific "version" of OpenGL compatibility
   if (version && atof(version) < 1.1)

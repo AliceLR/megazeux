@@ -243,10 +243,12 @@ static int parse_argument(World *mzx_world, char **argument, int *type, int id)
     {
       // Find where the next ' or & is
       char t_char = first_char;
-      (*argument)++;
-      int count = 0;
       char temp[256];
       char temp2[256];
+      int count = 0;
+
+      (*argument)++;
+
       // Remember, null terminator is evil; if it's hit exit completely.
       while(((**argument) != t_char) && (count < 256))
       {

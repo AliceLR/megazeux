@@ -24,11 +24,13 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <strings.h>
-#include <unistd.h>
-#include <ctype.h>
 #include <dirent.h>
+#include <ctype.h>
 #include <sys/stat.h>
+
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
 
 #ifdef __WIN32__
 #include <windows.h>
@@ -2694,12 +2696,14 @@ element *construct_number_box(int x, int y,
  int mult_five, int *result)
 {
   number_box *src = (number_box *)malloc(sizeof(number_box));
+  int width;
+
   src->question = question;
   src->lower_limit = lower_limit;
   src->upper_limit = upper_limit;
   src->mult_five = mult_five;
   src->result = result;
-  int width = strlen(question) + 1;
+  width = strlen(question) + 1;
 
   if((lower_limit == 1) && (upper_limit < 10))
     width += upper_limit - 1;
@@ -3209,12 +3213,12 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
   int last_element = FILESEL_FILE_LIST;
   int i;
 
-  if(allow_new)
-    last_element = FILESEL_FILENAME;
-
 #ifdef __WIN32__
   int drive_letter_bitmap;
 #endif
+
+  if(allow_new)
+    last_element = FILESEL_FILENAME;
 
   getcwd(previous_dir_name, MAX_PATH);
 

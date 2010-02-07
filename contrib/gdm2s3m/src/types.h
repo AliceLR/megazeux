@@ -29,7 +29,24 @@
 
 __G_BEGIN_DECLS
 
+#ifndef _MSC_VER
+
 #include <inttypes.h>
+
+#else // _MSC_VER
+
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+
+/* MSVC can use windows types from windows.h */
+typedef BYTE uint8_t;
+typedef USHORT uint16_t;
+typedef ULONG uint32_t;
+
+/* MSVC doesn't understand inline */
+#define inline
+
+#endif // !_MSC_VER
 
 __G_END_DECLS
 

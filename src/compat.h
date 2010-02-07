@@ -32,6 +32,10 @@
 #define false 0
 #endif /* __cplusplus */
 
+#ifdef _MSC_VER
+#define inline
+#endif
+
 #include <time.h>
 
 // Random function, returns an integer between 0 and Range

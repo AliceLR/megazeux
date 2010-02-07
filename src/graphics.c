@@ -29,7 +29,6 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/stat.h>
-#include <unistd.h>
 
 #include "config.h"
 #include "graphics.h"

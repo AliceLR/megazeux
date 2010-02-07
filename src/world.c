@@ -66,7 +66,10 @@
 #include <string.h>
 #include <stdlib.h>
 #include <sys/stat.h>
+
+#ifndef _MSC_VER
 #include <unistd.h>
+#endif
 
 #include "configure.h"
 #include "helpsys.h"

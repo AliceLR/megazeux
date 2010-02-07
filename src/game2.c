@@ -782,13 +782,12 @@ void update_board(World *mzx_world)
             // Otherwise, if it didn't move, get a new direction
             if(status != NO_HIT)
             {
+              int intelligence = (current_param & 0x70) >> 4;
+              int rval = Random(8);
               int m_dir;
 
-              int intelligence = (current_param & 0x70) >> 4;
               // Mask out direction
               current_param &= 0xFC;
-              // Get number between 0 and 7
-              int rval = Random(8);
 
               // If it's less than intelligence, make a "smart" move
               if(rval < intelligence)
@@ -857,13 +856,12 @@ void update_board(World *mzx_world)
           // Should the thief move?
           if(move_cycle == move_speed)
           {
-            // Zero out move cycle
-            level_param[level_offset] = current_param & 0x9F;
-            // Get intelligence
             int intelligence = current_param & 0x07;
-            // Get a random number 0 through 7
             int rval = Random(8);
             int m_dir;
+
+            // Zero out move cycle
+            level_param[level_offset] = current_param & 0x9F;
 
             // See if a "smart move" should be made
             if(rval < intelligence)
@@ -1700,9 +1698,9 @@ void update_board(World *mzx_world)
           // Must be the correct start time
           if(start_time == src_board->lazwall_start)
           {
-            current_color = level_color[level_offset];
             char length = ((current_param & 0xE0) >> 5) + 1;
             char direction = (current_param & 0x03);
+            current_color = level_color[level_offset];
             shoot_lazer(mzx_world, x, y, direction, length, current_color);
           }
           break;

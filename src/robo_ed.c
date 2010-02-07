@@ -146,6 +146,8 @@ static void add_blank_line(robot_state *rstate, int relation)
   {
     robot_line *new_rline = (robot_line *)malloc(sizeof(robot_line));
     robot_line *current_rline = rstate->current_rline;
+    int current_line = rstate->current_line;
+
     new_rline->line_text_length = 0;
     new_rline->line_text = (char *)malloc(1);
     new_rline->line_bytecode = (char *)malloc(3);
@@ -155,7 +157,6 @@ static void add_blank_line(robot_state *rstate, int relation)
     new_rline->line_bytecode[2] = 1;
     new_rline->line_bytecode_length = 3;
     new_rline->validity_status = valid;
-    int current_line = rstate->current_line;
 
     rstate->total_lines++;
     rstate->size += 3;
@@ -574,17 +575,17 @@ static void output_macro(robot_state *rstate, ext_macro *macro_src)
 
 static void execute_named_macro(robot_state *rstate, char *macro_name)
 {
-  int next;
-  char *line_pos, *line_pos_old;
-  char last_char;
   macro_type *param_type = NULL;
+  char *line_pos, *line_pos_old;
+  ext_macro *macro_src;
+  char last_char;
+  int next;
 
   line_pos = skip_to_next(macro_name, ',', '(', 0);
   last_char = *line_pos;
   *line_pos = 0;
 
-  ext_macro *macro_src = find_macro(&(rstate->mzx_world->conf),
-   macro_name, &next);
+  macro_src = find_macro(&(rstate->mzx_world->conf), macro_name, &next);
 
   *line_pos = last_char;
 
@@ -592,13 +593,14 @@ static void execute_named_macro(robot_state *rstate, char *macro_name)
   {
     if(macro_src->num_types && (last_char))
     {
-      // Fill in parameters
-      macro_default_values(rstate, macro_src);
       variable_storage *param_storage;
       int param_current_type = 0;
       int param_current_var = 0;
-      int i;
       char *value = NULL;
+      int i;
+
+      // Fill in parameters
+      macro_default_values(rstate, macro_src);
 
       // Get name, may stop at equals sign first
       while(1)
@@ -1506,6 +1508,7 @@ static void find_replace_action(robot_state *rstate)
 static void execute_macro(robot_state *rstate, ext_macro *macro_src)
 {
   World *mzx_world = rstate->mzx_world;
+  macro_type *current_type;
   int i, i2, i3;
 
   // First, the dialogue box must be generated. This will have a text
@@ -1525,7 +1528,6 @@ static void execute_macro(robot_state *rstate, ext_macro *macro_src)
   int total_dialog_elements = macro_src->total_variables + 3;
   int num_types = macro_src->num_types;
   element *elements[total_dialog_elements];
-  macro_type *current_type;
   int nominal_column_widths[num_types];
   int nominal_column_subwidths[num_types];
   int vars_per_line[num_types];
@@ -1810,11 +1812,11 @@ static void execute_macro(robot_state *rstate, ext_macro *macro_src)
 static void execute_numbered_macro(robot_state *rstate, int num)
 {
   World *mzx_world = rstate->mzx_world;
-  char macro_name[32];
-  sprintf(macro_name, "%d", num);
   ext_macro *macro_src;
+  char macro_name[32];
   int next;
 
+  sprintf(macro_name, "%d", num);
   macro_src = find_macro(&(mzx_world->conf), macro_name, &next);
 
   if(macro_src)
@@ -3243,11 +3245,11 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
           if(intake(mzx_world, macro_line, 29, 34, 12, 15, 1, 0, NULL,
            0, NULL) != SDLK_ESCAPE)
           {
+            ext_macro *macro_src;
             int next;
-            restore_screen();
 
-            ext_macro *macro_src = find_macro(&(mzx_world->conf), macro_line,
-             &next);
+            restore_screen();
+            macro_src = find_macro(&(mzx_world->conf), macro_line, &next);
 
             if(macro_src)
               execute_macro(&rstate, macro_src);
