@@ -149,7 +149,8 @@ need emulated in Robotic.
 -Shift-? (often used for inventory engines) does not exist in
 MegaZeux but can be emulated with Robotic.
 -Bomb explosions are not instantaneous but instead radiate out
-from the center.
+from the center. They are also diamond-shaped as opposed to
+a flattened oval shape.
 -MegaZeux uses cycle 1 as default (opposed to ZZT's cycle 3).
 -No equivalent of duplicators exists.
 -Player clones in MegaZeux are useless. All ZZT player clone
@@ -159,6 +160,9 @@ uses have to be emulated in Robotic.
 the "die" command instead. 
 -Terrains that give out a distinctive message on first touch
 (fakes, forests) give out no such message in MZX.
+-Putting in fake commands for comedic effect (e.g. putting in
+#GOSUCKANEGG to make ZZT beep and go "ERR: Bad command
+GOSUCKANEGG") does not work in MegaZeux and has to be emulated.
 -Special exploits (e.g. black holes, monitors) have no direct
 MZX equivalent.
 
@@ -1216,10 +1220,9 @@ To make things sane for all parties, do this before submitting:
      MZX function; at the very least, try to narrow it down. 
      Pinpointing which version introduced the bug is very
      helpful, if possible.
-  5) Do NOT use poached intermediate versions; you'll only get
-     hassled for it. If you've stumbled upon a beta build it
-     was most likely posted for someone else and you are NOT
-     welcome to use it.
+  5) If you're unsure if the bug's been addressed, try to build
+     a version from SourceForge's SVN repository and see if it
+     hasn't been fixed in the test build.
   6) Optimally, upload a world made in 2.70 that works in 2.70
      but does not in the current version to best isolate the
      problem.
@@ -2540,7 +2543,7 @@ following formats:
 * WAV
 * OGG
 * Other formats {STM, MTM, MT2, 669, ULT, FAR, MED (MMD0), DSM,
-  AMS, MDL, OKT, DMF, PTM, DBM, AMF, PSM, J2B, UMX, PAT, ABC}
+  AMS, MDL, OKT, DMF, PTM, DBM, AMF, PSM, J2B, UMX}
 
 MZX does not support GDMs natively. Instead, when a GDM is
 loaded it is converted to an S3M file. The S3M file is loaded
@@ -2553,6 +2556,13 @@ game, you should instead use one of the following:
    convertor or by using a Robot in MZX to load the GDM, which
    will automatically make the S3M appear. You can then select
    it normally.
+
+NOTE: The above text only applies to ModPlug (the default
+module engine). It is now possible to build using MikMod, to
+support platforms which cannot handle ModPlug. It can play
+formats: {669, AMF, APUN, DSM, FAR, GDM, IT, IMF, MOD, MED,
+MTM, OKT, S3M, STM, STX, ULT, UNI, XM, SAM, WAV, OGG}. SAMs and
+GDMs load natively in MikMod, in contrast to ModPlug.
 
 $Using Sound and Music in Your Own Games
 
@@ -3019,8 +3029,8 @@ overlays.
 >#COMMAND2.HLP:_cL:COPY OVERLAY BLOCK # # # # # #
 >#COMMAND2.HLP:_cR:COPY OVERLAY BLOCK # # # # "@@filename" #
 >#COMMAND2.HLP:_cS:COPY OVERLAY BLOCK "#x" "#y" # # "@@filename" #
->#COMMAND2.HLP:_cU:COPY OVERLAY BLOCK # # # # "$stringX" #
->#COMMAND2.HLP:_cV:COPY OVERLAY BLOCK "#x" "#y" # # "$stringX" #
+>#COMMAND2.HLP:_cU:COPY OVERLAY BLOCK # # # # "$string" #
+>#COMMAND2.HLP:_cV:COPY OVERLAY BLOCK "#x" "#y" # # "$string" #
 >#COMMAND2.HLP:_cX:COPY OVERLAY BLOCK # # # # "#x" "#y"
 >#COMMAND2.HLP:_cZ:COPY OVERLAY BLOCK "#x" "#y" # # # #
 >#COMMAND2.HLP:_cAA:COPY OVERLAY BLOCK "#x1" "#y1" # # "#x2" "#y2"
@@ -3370,12 +3380,15 @@ Numbers are allowed to be integers within the range of
 representing the name of a counter at any time. Examples of
 legal numbers- 3200, -79k, .$FA9, "Ammo". They can also be
 represented in hexadecimal, using $xxxx format. In this case,
-xxxx can be any number from 0 to FFFF. Numbers in hex cannot be
-used in expressions.
+xxxx can be any number from 0 to FFFF.
 
 Numbers can not directly be allowed to go past the 16-bit
 limits (-32768 to 32767) in Robotic commands, but this can be
-easily circumvented by using constant expressions.
+easily circumvented by using constant expressions. Constant
+expressions also allow octal numbers and larger hexadecimal
+numbers; please view the expressions section for more detail.
+
+>#EXPRESS.HLP:1st:Expressions
 
 :col:~E[color]
 
@@ -3789,7 +3802,7 @@ Firstly, strings can be offset and limited ("spliced").
 
 $strname#X will cap the string to X characters.
 
-$strnameN+X will offset the start of the string by X
+$strname+X will offset the start of the string by X
 characters.
 
 $strname+X#Y will offset the string by X characters and limit
@@ -3910,9 +3923,9 @@ command reference is split into two parts.
 >#COMMAND2.HLP:_cQ:COPY BLOCK # # # # "@@filename" #
 >#COMMAND2.HLP:_cR:COPY OVERLAY BLOCK # # # # "@@filename" #
 >#COMMAND2.HLP:_cS:COPY (OVERLAY) BLOCK "#x" "#y" # # "@@filename" #
->#COMMAND2.HLP:_cT:COPY BLOCK # # # # "$stringX" #
->#COMMAND2.HLP:_cU:COPY OVERLAY BLOCK # # # # "$stringX" #
->#COMMAND2.HLP:_cV:COPY (OVERLAY) BLOCK "#x" "#y" # # "$stringX" #
+>#COMMAND2.HLP:_cT:COPY BLOCK # # # # "$string" #
+>#COMMAND2.HLP:_cU:COPY OVERLAY BLOCK # # # # "$string" #
+>#COMMAND2.HLP:_cV:COPY (OVERLAY) BLOCK "#x" "#y" # # "$string" #
 >#COMMAND2.HLP:_cW:COPY BLOCK # # # # "#x" "#y"
 >#COMMAND2.HLP:_cX:COPY OVERLAY BLOCK # # # # "#x" "#y"
 >#COMMAND2.HLP:_cY:COPY BLOCK "#x" "#y" # # # #
@@ -4955,9 +4968,9 @@ copy from the vlayer to an MZM instead.
 >#MZM.HLP:mzm:Using MZMs
 >#VLAYER.HLP:vla:The Vlayer and Its Uses
 
-:_cT:~ACOPY BLOCK # # # # "$stringX" #
-:_cU:~ACOPY OVERLAY BLOCK # # # # "$stringX" #
-:_cV:~ACOPY (OVERLAY) BLOCK "#x" "#y" # # "$stringX" #
+:_cT:~ACOPY BLOCK # # # # "$string" #
+:_cU:~ACOPY OVERLAY BLOCK # # # # "$string" #
+:_cV:~ACOPY (OVERLAY) BLOCK "#x" "#y" # # "$string" #
 
 These commands copy information from the board, overlay, or
 vlayer (respectively) to a given string. The first two numbers
@@ -7251,7 +7264,7 @@ are several practises to avoid, as well as proper replacements.
 .  Looping without WAIT 1 in idle loops is more severe than many
 .  think. Coupled with the "commands" counter set to a high
 .  number, loops without WAIT 1 can absolutely choke a game's
-.  speed, especially idle loops.
+.  speed, especially idle loops, and potentially FREEZE MZX.
 ~9GOOD: Including WAIT 1 in every loop except loops that are
 .  ~9designed to get a finite length task done as quickly as
 .  ~9possible.
@@ -7383,9 +7396,12 @@ Unary operators (operator followed by value):
 operand (one's complement). (~~10) would return 5. (1010 to
 0101).
 
-Lastly, using a constant expression "(n)" is the only way to
-directly use numbers over 32767 or under -32768. This can not
-be changed due to the way the world file format is coded.
+Using a constant expression "(n)" is the only way to directly
+use numbers over 32767 or under -32768. This can not be changed
+due to the way the world file format is coded. This is also the
+only way to use octal (base 8) and full-sized hexadecimal
+numbers; octal numbers always begin with a 0 (ex: 01745) and
+hex numbers begin with 0x (ex: 0xDEAF).
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
@@ -7726,6 +7742,7 @@ an SMZX palette (SET "filename" "smzx_palette").
 
 >#COUNTERS.HLP:szc:Super MZX Counters
 >#ROBOTICR.HLP:087:Robotic Reference Manual
+>#CHAREDIT.HLP:079:The Character Editor
 >#MAIN.HLP:072:Table of Contents
 #VLAYER.HLP
 :vla:The Vlayer and Its Uses
@@ -7747,7 +7764,8 @@ as large as roughly 16.7 million characters (2^24). Its size
 can be determined by setting the counter "vlayer_size" to the
 desired length of the vlayer. Doing this only sets the maximum
 size; the actual vlayer will not be this large unless the
-vlayer's dimensions are changed.
+vlayer's dimensions are changed. All attempts to set the
+vlayer's size above the maximum will be ignored.
 
 To change the vlayer's dimensions, use the counters
 "vlayer_width" and "vlayer_height". When one dimension is given
@@ -7755,7 +7773,10 @@ the other becomes as large as possible to fill the given
 vlayer. For example, if one has a vlayer 50000 characters large
 and sets vlayer_height to 499, the vlayer's width will become
 100 characters wide (for a total vlayer size of 49900
-characters).
+characters). 
+
+All bad values of vlayer_size, vlayer_height and vlayer_width
+(0 and below) will be changed to 1.
 
 To manipulate the vlayer, instead of pure numbers in copy
 commands, "#n" is used instead. For example, if copying a 2x2
@@ -7954,6 +7975,55 @@ replace in the target character set.
 >#MAIN.HLP:072:Table of Contents
 #NEWINVER.HLP
 :1st:NEW in MegaZeux!
+
+Whenever, 2007 - MZX 2.82
+
+USERS
+
++ Added a more lenient WAV file loader so that ModPlug isn't
+  relied on as much to play malformed WAV files (mostly old SAM
+  conversions) (Mr_Alert).
++ Added SCORE to the counter debugger (Mr_Alert).
++ Added a 16-bit software renderer and a half-width renderer
+  for the GP2X port (Mr_Alert).
++ Made the mouse cursor in the "opengl2" renderer look more
+  like the mouse cursor in the other renderers (Mr_Alert).
++ Setting vlayer_size, vlayer_width or vlayer_height to values
+  less than or equal to zero would crash MegaZeux. Limited the
+  smallest vlayer size to 1x1.
++ If selecting a module with a non 8.3 filename, MZX will now
+  ask you if you want to rename it to 8.3, and do so in an
+  intelligent way. This means that music can be selected in the
+  editor and correctly saved (Wervyn).
++ The OpenBSD compiler detected some serious string bugs in
+  MegaZeux. These have now been fixed and should eliminate some
+  more potential crashes.
+
+DEVELOPERS
+
++ Made the build system less verbose by default (like Linux).
+  This should help make warnings (due to coding errors) easier
+  to identify. If you don't like the new syntax, or need the
+  command debug, you can build with "make V=1".
++ Updated Win32 builds to use SDL 1.2.12.
++ Rewrote the build system to not use recursive Makefiles,
+  because variable propagation was starting to be a problem,
+  and a recursive design is generally discouraged.
++ Refactored the graphics rendering code to modularize the
+  renderers and reduce code duplication (Mr_Alert).
++ Switched GDM2S3M over to use inttypes.h instead of
+  home-brewing types. Improves portability to BSD.
++ MegaZeux now compiles on OpenBSD (and probably other BSDs),
+  use --disable-gl.
+
+>#280CLOG.HLP:280:New in versions 2.80-2.80h
+>#OLDERVER.HLP:099:New in versions 2.60 to 2.70
+>#OLDESVER.HLP:100:New in versions 2.01 to 2.60
+>#NEWIN200.HLP:1st:New in version 2.00
+>#ANCENVER.HLP:103:New in versions thru 1.03
+>#MAIN.HLP:072:Table of Contents
+#281CLOG.HLP
+:281:New in Versions 2.81-2.81g
 
 July 4, 2007 - MZX 2.81g
 
@@ -8548,6 +8618,7 @@ November 20, 2005 - MZX 2.81
 - Save files from 2.80 are not compatible due to several
   changes in the save format.
 
+>#NEWINVER.HLP:1st:NEW in MegaZeux!
 >#280CLOG.HLP:280:New in Versions 2.80-2.80h
 >#OLDERVER.HLP:099:New in versions 2.60 to 2.70
 >#OLDESVER.HLP:100:New in versions 2.01 to 2.60
@@ -9229,7 +9300,8 @@ August 9, 2004 - First release, MZX 2.80 BETA
   sprite widths or heights and thus sprites could be displayed
   before new values were set. They will not work here.
 
->#NEWINVER.HLP:1st:NEW in Version 2.81!
+>#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#281CLOG.HLP:281:New in Versions 2.81-2.81g
 >#OLDERVER.HLP:099:New in versions 2.60 to 2.70
 >#OLDESVER.HLP:100:New in versions 2.01 to 2.60
 >#NEWIN200.HLP:1st:New in version 2.00
@@ -9365,7 +9437,8 @@ August 9, 2004 - First release, MZX 2.80 BETA
 
 $***
 
->#NEWINVER.HLP:1st:NEW in Version 2.81!
+>#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#281CLOG.HLP:281:New in Versions 2.81-2.81g
 >#280CLOG.HLP:280:New in Versions 2.80-2.80h
 >#OLDESVER.HLP:100:New in versions 2.01 to 2.60
 >#NEWIN200.HLP:1st:New in version 2.00
@@ -9788,7 +9861,8 @@ before, you probably won't understand much of this list.
 . * Minor size reduction
 . * Fill in editor now works with board sizes over 127x127
 
->#NEWINVER.HLP:1st:NEW in Version 2.81!
+>#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#281CLOG.HLP:281:New in Versions 2.81-2.81g
 >#280CLOG.HLP:280:New in Versions 2.80-2.80h
 >#OLDERVER.HLP:099:New in versions 2.60 to 2.70
 >#NEWIN200.HLP:1st:New in version 2.00
@@ -10023,7 +10097,8 @@ before, you probably won't understand much of this list.
 . * Robot commands- DIVIDE, MULTIPLY, MODULO.
 . * Different player pics per direction.
 
->#NEWINVER.HLP:1st:NEW in Version 2.81!
+>#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#281CLOG.HLP:281:New in Versions 2.81-2.81g
 >#280CLOG.HLP:280:New in Versions 2.80-2.80h
 >#OLDERVER.HLP:099:New in versions 2.60 to 2.70
 >#OLDESVER.HLP:100:New in versions 2.01 to 2.60
@@ -10306,7 +10381,8 @@ before, you probably won't understand much of this list.
 . * Fixed/better/changed keyboard routines
 . * Optimized code
 
->#NEWINVER.HLP:1st:NEW in Version 2.81!
+>#NEWINVER.HLP:1st:NEW in MegaZeux!
+>#281CLOG.HLP:281:New in Versions 2.81-2.81g
 >#280CLOG.HLP:280:New in Versions 2.80-2.80h
 >#OLDERVER.HLP:099:New in versions 2.60 to 2.70
 >#OLDESVER.HLP:100:New in versions 2.01 to 2.60

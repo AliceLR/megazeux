@@ -1,0 +1,7 @@
+Direction idiosyncracities:
+
+IDLE counts as walking RANDB if the Robot is not blocked in any cardinal direction.
+IDLE counts as walking RANDNB if the Robot is blocked in all cardinal directions.
+IDLE Robots are moving CW IDLE, OPP IDLE, RANDP IDLE, and RANDNOT IDLE.
+Walking FLOW works for IDLE Robots.
+IDLE Robots are not moving CW BENEATH, OPP BENEATH, RANDP BENEATH, or RANDNOT BENEATH.

@@ -1,0 +1,31 @@
+Chests       : Never
+Locks        : Never
+Other Items  : Pushed
+Slime Blobs  : Never
+Sharks       : Never
+Dragons      : Never
+Runners      : Pushed/Willing
+All Guns     : Never
+Other Foes   : Pushed
+Robots       : Willing (Pushed if pushable)
+Mines        : Never
+Sensors      : Pushed/Willing
+Missiles     : Never
+Seekers      : Pushed
+Bullets      : Never
+Spitfires    : Never
+Scrolls      : Pushed
+MovingWalls  : Willing
+Boulders     : Pushed
+Boxes        : Pushed
+Crates       : Pushed
+CustomBoxes  : Pushed
+CustomPushes : Pushed
+Pushers      : Never
+
+NOTES:
+
+-Whatever can be pushed can be pushed through a transporter as well.
+~"Willing" means they went through the transporter through natural behavior (most things) or were directed through Robotic to go through (only applies to Robots and sensors).
+~Nonhostile fish and invincible ghosts can only be pushed indirectly, not directly by the player. Current cannot force fish through transporters.
+~Sliders cannot traverse lava or goop.
