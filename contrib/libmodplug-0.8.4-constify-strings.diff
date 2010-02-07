@@ -1,0 +1,59 @@
+The new ABC loader uses some strings in a non-const manner, which is
+deprecated in _at_least_ C++ mode for GCC 4.2. Fix many warnings by
+adding the const qualifier anywhere that these strings are declared
+or used.
+
+--ajs
+
+Index: libmodplug/src/load_abc.cpp
+===================================================================
+RCS file: /cvsroot/megazeux/megazeux2/contrib/libmodplug/src/load_abc.cpp,v
+retrieving revision 1.1
+diff -u -d -r1.1 load_abc.cpp
+--- libmodplug/src/load_abc.cpp	19 Apr 2007 02:26:02 -0000	1.1
++++ libmodplug/src/load_abc.cpp	19 Apr 2007 02:58:57 -0000
+@@ -216,7 +216,7 @@
+ static int chordlen[MAXCHORDNAMES];
+ static int chordsnamed = 0;
+ 
+-static char *sig[] = {
++static const char *sig[] = {
+ 	" C D EF G A Bc d ef g a b",	// 7 sharps C#
+ 	" C D EF G AB c d ef g ab ",	// 6 sharps F#
+ 	" C DE F G AB c de f g ab ",	// 5 sharps B
+@@ -235,7 +235,7 @@
+ // 0123456789012345678901234	
+ };
+ 
+-static char *keySigs[] = {
++static const char *keySigs[] = {
+ /* 0....:....1....:....2....:....3....:....4....:....5. */
+ 	"7 sharps: C#    A#m   G#Mix D#Dor E#Phr F#Lyd B#Loc ",
+ 	"6 sharps: F#    D#m   C#Mix G#Dor A#Phr BLyd  E#Loc ",
+@@ -1447,7 +1447,7 @@
+ 	char d[6];
+ 	char s[8];
+ 	int i;
+-	char *n = " C D EF G A Bc d ef g a b";
++	const char *n = " C D EF G A Bc d ef g a b";
+ 	d[0] = d[1] =	d[2] = d[3] = d[4] = d[5] = 0;
+ 	d[cmdflag] = 1;
+ 	d[command] = cmdchord;
+@@ -2864,7 +2864,7 @@
+ 	return tracktime;
+ }
+ 
+-static void abc_addchordname(char *s, int len, int *notes)
++static void abc_addchordname(const char *s, int len, int *notes)
+ // adds chord name and note set to list of known chords
+ {
+ 	int i, j;
+@@ -3464,7 +3464,7 @@
+ // and sixth notes in the bar, we could use the following 
+ //
+ // %%MIDI beatstring fppmpmp
+-static void abc_MIDI_beatstring(ABCHANDLE *h, char *p)
++static void abc_MIDI_beatstring(ABCHANDLE *h, const char *p)
+ {
+ 	while( isspace(*p) ) p++;
+ 	if( h->beatstring ) _mm_free(h->allochandle, h->beatstring);
