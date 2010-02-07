@@ -41,7 +41,18 @@ ifdef ICON
 endif
 
 %.o %.dbg.o: %.cpp
+ifdef V
 	${CXX} ${CXXFLAGS} ${INCLUDES} -c $< -o $@
+else
+	@echo "  CXX     " $<
+	@${CXX} ${CXXFLAGS} ${INCLUDES} -c $< -o $@
+endif
 
 %.o %.dbg.o: %.c
+ifdef V
 	${CC} ${CFLAGS} ${INCLUDES} -c $< -o $@
+else
+	@echo "  CC      " $<
+	@${CC} ${CFLAGS} ${INCLUDES} -c $< -o $@
+endif
+

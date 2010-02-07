@@ -50,7 +50,12 @@ subdir-clean:
 	cd utils && ${MAKE} clean DEBUG=1 && cd ../../..
 
 mzx:	subdir ${OBJS}
+ifdef V
 	${CC} ${OBJS} ${LIBS} -o ${MZX}.dbg${BINEXT}
+else
+	@echo "  LINK    " ${MZX}.dbg${BINEXT}
+	@${CC} ${OBJS} ${LIBS} -o ${MZX}.dbg${BINEXT}
+endif
 	@echo "DEBUG BUILD AVAILABLE AT ${MZX}.dbg${BINEXT}"
 
 else
@@ -62,9 +67,18 @@ subdir-clean:
 	cd utils && ${MAKE} clean && cd ../../..
 
 mzx:	subdir ${OBJS}
+ifdef V
 	${CC} ${OBJS} ${LIBS} -o ${MZX}${BINEXT}
+else
+	@echo "  LINK    " ${MZX}${BINEXT}
+	@${CC} ${OBJS} ${LIBS} -o ${MZX}${BINEXT}
+endif
+ifdef V
 	${STRIP} ${MZX}${BINEXT}
-
+else
+	@echo "  STRIP   " ${MZX}${BINEXT}
+	@${STRIP} ${MZX}${BINEXT}
+endif
 endif
 
 clean: subdir-clean

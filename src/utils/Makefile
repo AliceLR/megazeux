@@ -13,11 +13,26 @@ TXT2HLP     = txt2hlp
 
 ifdef DEBUG
 utils:	${TXT2HLPOBJS}
+ifdef V
 	${CC} ${TXT2HLPOBJS} -o ${TXT2HLP}.dbg${BINEXT}
 else
+	@echo "  LINK    " ${TXT2HLP}.dbg${BINEXT}
+	@${CC} ${TXT2HLPOBJS} -o ${TXT2HLP}.dbg${BINEXT}
+endif
+else
 utils:	${TXT2HLPOBJS}
+ifdef V
 	${CC} ${TXT2HLPOBJS} -o ${TXT2HLP}${BINEXT}
+else
+	@echo "  LINK    " ${TXT2HLP}${BINEXT}
+	@${CC} ${TXT2HLPOBJS} -o ${TXT2HLP}${BINEXT}
+endif
+ifdef V
 	${STRIP} ${TXT2HLP}${BINEXT}
+else
+	@echo "  STRIP   " ${TXT2HLP}${BINEXT}
+	@${STRIP} ${TXT2HLP}${BINEXT}
+endif
 endif
 
 clean:

@@ -17,13 +17,20 @@ INCLUDES =
 
 objs  = error.${o} gdm.${o} s3m.${o} utility.${o} gdm2s3m.${o}
 
+TARGET = libgdm2s3m.a
+
 ifeq (${BUILD},1)
-libs:	${objs}
-	${AR} crus libgdm2s3m.a ${objs}
+libs: ${objs}
+ifdef V
+	${AR} crus ${TARGET} ${objs}
+else
+	@echo "  AR      " ${TARGET}
+	@${AR} crus ${TARGET} ${objs}
+endif
 else
 libs:
 	@echo "--> Building of GDM2S3M disabled."
 endif
 
 clean:
-	rm -f ${objs} *~ libgdm2s3m.a
+	rm -f ${objs} ${TARGET} *~

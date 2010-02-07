@@ -1,10 +1,16 @@
 USERS
 
-+ Added a more lenient WAV file loader so that ModPlug isn't relied on  as much
++ Added a more lenient WAV file loader so that ModPlug isn't relied on as much
   to play malformed WAV files (mostly old SAM conversions) (Mr_Alert).
 + Added SCORE to the counter debugger (Mr_Alert).
 + Added a 16-bit software renderer and a half-width renderer for the GP2X port
   (Mr_Alert).
+
+DEVELOPERS
+
++ Made the build system less verbose by default (like Linux). This should help
+  make warnings (due to coding errors) easier to identify. If you don't like
+  the new syntax, or need the command debug, you can build with "make V=1".
 
 July 4, 2007 - MZX 2.81g
 
