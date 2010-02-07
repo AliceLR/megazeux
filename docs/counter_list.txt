@@ -64,7 +64,9 @@ name                      r/w      g/n/f/b    i
 "LOOPCOUNT"               r w         b       *
 "MBOARDX"                 r           b       *
 "MBOARDY"                 r           b       *
+"MOD_FREQUENCY"           r w         b       *
 "MOD_ORDER"               r           b       *
+"MOD_POSITION"            r w         b       *
 "MOUSEX"                  r w         b       *
 "MOUSEY"                  r w         b       *
 "MULTIPLIER"              r w         b       *
