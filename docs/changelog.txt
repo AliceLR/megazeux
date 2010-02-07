@@ -23,6 +23,8 @@ USERS
   cause the original player color to be corrupted at the end of the colour
   blitz.
 + Fixed a bug where WALK [dir] would not end a cycle.
++ Fixed a long-standing bug where set "$string" to "FWRITEn" would be
+  cheerfully ignored.
 
 DEVELOPERS
 

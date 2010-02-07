@@ -2896,7 +2896,7 @@ void set_string(World *mzx_world, char *name, mzx_string *src, int id)
       unsigned int dest_length = dest->length;
 
       if(src_length > 6)
-        size = strtol(src->name + 6, NULL, 10);
+        size = strtol(src_value + 6, NULL, 10);
 
       if(size == 0)
         size = dest_length;
