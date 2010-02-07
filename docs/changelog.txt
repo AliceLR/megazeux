@@ -30,6 +30,9 @@ USERS
 + FEATURE: Screenshots are now saved in a palettized PNG file format. For
   platforms without libpng, PNG support can be compiled out, and BMP will
   be used instead.
++ Fixed a bug where changing boards in the editor could sometimes corrupt
+  memory, later causing a crash (either testing or coming out of testing a
+  board).
 
 DEVELOPERS
 

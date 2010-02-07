@@ -59,7 +59,7 @@
 
 int main(int argc, char **argv)
 {
-  World mzx_world = {};
+  World mzx_world;
   char bin_path[MAX_PATH];
 
 #if defined(__WIN32__) && defined(DEBUG)
