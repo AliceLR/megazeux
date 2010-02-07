@@ -754,7 +754,12 @@ static int block_menu(World *mzx_world)
 }
 
 #ifdef CONFIG_X11
+
+#if SDL_MAJOR_VERSION == 1 && SDL_MINOR_VERSION <= 2
 static int copy_buffer_to_X11_selection(const SDL_Event *event)
+#else
+static int copy_buffer_to_X11_selection(void *userdata, SDL_Event *event)
+#endif
 {
   if(event->type != SDL_SYSWMEVENT)
     return 1;
@@ -904,9 +909,14 @@ static void copy_block_to_buffer(robot_state *rstate)
      info.info.x11.window, CurrentTime);
 
     SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
+
+#if SDL_MAJOR_VERSION == 1 && SDL_MINOR_VERSION <= 2
     SDL_SetEventFilter(copy_buffer_to_X11_selection);
-  }
+#else
+    SDL_SetEventFilter(copy_buffer_to_X11_selection, NULL);
 #endif
+  }
+#endif // CONFIG_X11
 }
 
 static void clear_block(robot_state *rstate)

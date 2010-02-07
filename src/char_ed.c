@@ -1096,7 +1096,9 @@ int char_editor(World *mzx_world)
       }
 
       case SDLK_KP_PLUS:
+#if SDL_MAJOR_VERSION == 1 && SDL_MINOR_VERSION <= 2
       case SDLK_EQUALS:
+#endif
       case SDLK_PLUS:
       {
         current_char += highlight_width;
