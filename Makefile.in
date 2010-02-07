@@ -10,8 +10,8 @@ GDM2S3M   = contrib/gdm2s3m/src
 MODPLUG   = contrib/libmodplug/src
 
 # default target name
-TARGET   ?= mzx281f
-VERSION  ?= 2.81f
+TARGET   ?= mzx281g
+VERSION  ?= 2.81g
 
 # base includes for SDL, override as necessary
 INCLUDES ?= `sdl-config --cflags`

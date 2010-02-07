@@ -26,7 +26,7 @@ LIBS += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
 
 # debug does something different
 ifdef DEBUG
-LIBS     += -mconsole
+LIBS += -mconsole
 else
-LIBS     += -mwindows
+LIBS += -mwindows
 endif

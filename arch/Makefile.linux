@@ -6,14 +6,14 @@ all: subdir
 debug: subdir-debug
 
 # location of strip (must be defined)
-STRIP    = strip --strip-unneeded
+STRIP    ?= strip --strip-unneeded
 
 # standard libraries
-LIBS    += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
+LIBS     += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
             -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
 
 # switch locking method
-INCLUDES+= -DPTHREAD_MUTEXES
+INCLUDES += -DPTHREAD_MUTEXES
 
 # linux os specific install target
 install:

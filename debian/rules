@@ -21,7 +21,7 @@ build: build-stamp
 
 build-stamp: configure-stamp 
 	dh_testdir
-	$(MAKE)
+	$(MAKE) STRIP=/bin/true
 	touch $@
 
 clean:

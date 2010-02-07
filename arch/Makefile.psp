@@ -18,11 +18,11 @@ BINNAME       = ${TARGET}${BINEXT}
 BINNAME_STRIP = ${TARGET}${BINEXT}.strip
 
 # we want to do other things before the strip, so override it.
-STRIP     = /bin/true 
+STRIP = /bin/true 
 
 # standard libraries
-LIBS     += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-            -lc -lpsppower -lvorbisidec
+LIBS += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
+        -lc -lpsppower -lvorbisidec
 
 # additional flags
 INCLUDES += -DPSP_BUILD -DUSE_TREMOR -I${PREFIX}/sdk/include
