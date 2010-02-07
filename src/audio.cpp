@@ -657,7 +657,7 @@ Uint32 wav_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
     if(a_src->repeat)
     {
       w_stream->data_offset = 0;
-      wav_read_data(w_stream, read_buffer, read_wanted);
+      read_len = wav_read_data(w_stream, read_buffer, read_wanted);
     }
     else
     {
