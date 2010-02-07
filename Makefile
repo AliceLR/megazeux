@@ -36,11 +36,11 @@ VERSTRING = ${VERSION}
 endif
 
 ifeq (${DEBUG},1)
-CFLAGS    = -g -Wall -DDEBUG
+CFLAGS    = -g -Wall -std=c99 -DDEBUG
 CXXFLAGS  = -g -Wall -DDEBUG
 o         = dbg.o
 else
-CFLAGS   += -O2 -Wall
+CFLAGS   += -O2 -Wall -std=c99
 CXXFLAGS += -O2 -Wall
 o         = o
 endif

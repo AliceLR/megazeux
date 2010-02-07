@@ -4,13 +4,11 @@
 
 .PHONY: ${gdm2s3m}_clean
 
-CFLAGS += ${gdm2s3m_cflags} ${gdm2s3m_includes}
-CXXFLAGS += ${gdm2s3m_cflags} ${gdm2s3m_includes}
+CFLAGS += ${gdm2s3m_includes}
+CXXFLAGS += ${gdm2s3m_includes}
 
 gdm2s3m_base = contrib/gdm2s3m/src
 gdm2s3m = ${gdm2s3m_base}/libgdm2s3m.a
-
-gdm2s3m_cflags = -std=c99
 gdm2s3m_includes = -I${gdm2s3m_base}
 
 gdm2s3m_objs = \
