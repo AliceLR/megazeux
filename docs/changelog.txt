@@ -3,7 +3,7 @@ December 8, 2007 - MZX 2.81h
 Another bugfix release with a couple of new features, in time for the
 Winter 2007 Dualstream Day of Zeux. The major new features of this release
 are automatic module renaming in the editor, PNG screenshots and many
-improvements for MZX on embedded platforms (like PSP and DS).
+improvements to MZX on embedded platforms (like PSP and DS).
 
 MegaZeux can now be compiled in MZXRun mode (like the old DOS
 implementation) and by disabling features such as unnecessary renderers
