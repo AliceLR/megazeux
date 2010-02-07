@@ -2697,6 +2697,11 @@ void optimize_null_objects(Board *src_board)
       robot_id_translation_list[i] = i2;
       i2++;
     }
+    else
+    {
+     // FIXME: Hack, probably bogus!
+     robot_id_translation_list[i] = 0;
+    }
   }
 
   if(i2 != i)

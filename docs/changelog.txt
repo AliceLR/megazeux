@@ -25,6 +25,8 @@ USERS
 + Fixed a bug where WALK [dir] would not end a cycle.
 + Fixed a long-standing bug where set "$string" to "FWRITEn" would be
   cheerfully ignored.
++ Fixed a bug where a corrupt robot list could crash MegaZeux (e.g. the
+  list from Star Quest from DoZ'02).
 
 DEVELOPERS
 
