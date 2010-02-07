@@ -38,15 +38,13 @@ DEVELOPERS
 + Made the build system less verbose by default (like Linux). This should help
   make warnings (due to coding errors) easier to identify. If you don't like
   the new syntax, or need the command debug, you can build with "make V=1".
-+ Updated Win32 builds to use SDL 1.2.12.
-+ Rewrote the build system to not use recursive Makefiles, because variable
-  propagation was starting to be a problem, and a recursive design is generally
-  discouraged.
++ Updated Win32 builds with SDL 1.2.12.
++ Rewrote the build system to not use recursive Makefiles. Variable propagation
+  was starting to be a problem, and recursive designs are generally discouraged.
 + Refactored the graphics rendering code to modularize the renderers and reduce
   code duplication (Mr_Alert).
-+ Switched GDM2S3M over to use inttypes.h instead of home-brewing types.
-  Improves portability to BSD.
-+ MegaZeux now compiles on OpenBSD (and probably other BSDs), use --disable-gl.
++ GDM2S3M switched over to use inttypes.h instead of home-brew types.
++ MegaZeux now compiles on OpenBSD (and probably other BSDs).
 + Made all unnecessary global symbols static. This should improve compiler
   optimisations and correctness (Mr_Alert, ajs).
 + Fix compilation of MegaZeux against SDL 1.3 SVN. However, this SDL version
