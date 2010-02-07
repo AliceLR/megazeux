@@ -329,7 +329,7 @@ int main(int argc, char *argv[])
         {
           biggest_file=file_len;
           strncpy(max_file,curr_file,12);
-	  max_file[12] = '\0';
+          max_file[12] = '\0';
         }
         //Put it's info at the start
         tlong=ftell(dest);
@@ -364,7 +364,8 @@ int main(int argc, char *argv[])
         tstr[t2]=0;
         if(t2>12) tstr[12]=0;
         //Copy over new filename
-        strcpy(curr_file,tstr);
+        strncpy(curr_file,tstr,12);
+        curr_file[12] = '\0';
         //Next file ready to roar!
         printf("Processing file %s...\n",curr_file);
         break;
@@ -382,7 +383,8 @@ int main(int argc, char *argv[])
   if(file_len>biggest_file)
   {
     biggest_file=file_len;
-    strcpy(max_file,curr_file);
+    strncpy(max_file,curr_file,12);
+    max_file[12] = '\0';
   }
   //Put it's info at the start
   fseek(dest,curr_file_storage,SEEK_SET);

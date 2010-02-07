@@ -94,7 +94,7 @@ int main(int argc, char **argv)
     strncpy(config_dir, CONFDIR, MAX_PATH - 1);
   else
     strncpy(config_dir, bin_path, MAX_PATH - 1);
-  config_dir[MAX_PATH] = '\0';
+  config_dir[MAX_PATH - 1] = '\0';
 
   memset(&mzx_world, 0, sizeof(World));
   default_config(&(mzx_world.conf));
@@ -124,8 +124,11 @@ int main(int argc, char **argv)
   // Get current directory and drive (form- C:\DIR\SUBDIR)
   getcwd(current_dir, MAX_PATH);
 
-  strcpy(curr_file, mzx_world.conf.startup_file);
-  strcpy(curr_sav, mzx_world.conf.default_save_name);
+  strncpy(curr_file, mzx_world.conf.startup_file, MAX_PATH - 1);
+  curr_file[MAX_PATH - 1] = '\0';
+  strcpy(curr_sav, mzx_world.conf.default_save_name, MAX_PATH - 1);
+  curr_sav[MAX_PATH - 1] = '\0';
+
   set_music_volume(mzx_world.conf.music_volume);
   set_sound_volume(mzx_world.conf.sam_volume);
   set_music_on(mzx_world.conf.music_on);

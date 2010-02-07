@@ -27,8 +27,8 @@
 // Some globals that still lurk.. should be moved to other places.
 
 // Current MZX file information
-char curr_file[512] = "CAVERNS.MZX";
-char curr_sav[512] = "SAVED.SAV";
+char curr_file[MAX_PATH] = "CAVERNS.MZX";
+char curr_sav[MAX_PATH] = "SAVED.SAV";
 char help_file[MAX_PATH];                       // Drive + Path + Filename
 char megazeux_dir[MAX_PATH];                    // Directory started in
 char current_dir[MAX_PATH];                     // Current directory
