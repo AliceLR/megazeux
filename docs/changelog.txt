@@ -72,6 +72,9 @@ DEVELOPERS
   features enabled) to 448488b (with all features disabled) (~47% smaller).
 + The PSP port is now officially supported, and compiles out of the box.
   See docs/psp.txt.
++ Renamed macos platform "darwin", to reflect its true nature (use Xcode to
+  build as a real Application, instead of just a UNIX binary). Also fixed
+  some bogosities with robo_ed's X11 includes on OS 10.5.
 
 July 4, 2007 - MZX 2.81g
 

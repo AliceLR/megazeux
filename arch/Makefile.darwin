@@ -1,0 +1,6 @@
+#
+# darwin makefile generics
+#
+
+STRIP ?= strip
+mzx_ldflags += -framework Cocoa

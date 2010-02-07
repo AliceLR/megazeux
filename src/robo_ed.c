@@ -47,8 +47,6 @@
 #endif
 
 #ifdef CONFIG_X11
-#include <X11/X.h>
-#include <limits.h>
 #include "SDL_syswm.h"
 #endif
 
