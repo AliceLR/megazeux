@@ -1074,9 +1074,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 1: // Die
       {
-        clear_robot_id(src_board, id);
         if(id)
         {
+          clear_robot_id(src_board, id);
           id_remove_top(mzx_world, x, y);
         }
         return;
@@ -1084,9 +1084,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 80: // Die item
       {
-        clear_robot_id(src_board, id);
         if(id)
         {
+          clear_robot_id(src_board, id);
           id_remove_top(mzx_world, x, y);
           place_player_xy(mzx_world, x, y);
         }
@@ -2107,9 +2107,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
           level_param[offset] =
            (parse_param(mzx_world, cmd_ptr + 1, id) - 1) * 16;
           level_id[offset] = (char)EXPLOSION;
+          clear_robot_id(src_board, id);
         }
-        clear_robot_id(src_board, id);
-
         return;
       }
 
@@ -3770,13 +3769,19 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 133: // become lavawalker
       {
-        cur_robot->can_lavawalk = 1;
+        if(id)
+        {
+          cur_robot->can_lavawalk = 1;
+        }
         break;
       }
 
       case 134: // become non lavawalker
       {
-        cur_robot->can_lavawalk = 0;
+        if(id)
+        {
+          cur_robot->can_lavawalk = 0;
+        }
         break;
       }
 

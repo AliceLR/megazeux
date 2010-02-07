@@ -102,6 +102,10 @@ USERS
   spill over. Now, the 'ask' dialog resizes if possible, and clips when no
   further resizing can be performed (Lancer-X).
 + Clipped the 'input string' message properly, to prevent similar overflow.
++ Fixed a bug with the EXPLODE, DIE, DIE ITEM and BECOME commands when used
+  with the global robot (would clear the global robot, eventually corrupting
+  memory when in the editor). Presumably, these commands are bogus for the
+  global robot, and have been disabled.
 
 DEVELOPERS
 
