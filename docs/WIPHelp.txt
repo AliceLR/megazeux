@@ -7991,6 +7991,9 @@ USERS
 + Setting vlayer_size, vlayer_width or vlayer_height to values
   less than or equal to zero would crash MegaZeux. Limited the
   smallest vlayer size to 1x1.
++ Setting vlayer_width or vlayer_height to a value larger than
+  vlayer_size would crash MegaZeux. Limited the largest size of
+  either dimension to a maximum of vlayer_size.
 + If selecting a module with a non 8.3 filename, MZX will now
   ask you if you want to rename it to 8.3, and do so in an
   intelligent way. This means that music can be selected in the
@@ -7998,6 +8001,14 @@ USERS
 + The OpenBSD compiler detected some serious string bugs in
   MegaZeux. These have now been fixed and should eliminate some
   more potential crashes.
++ Fixed a bug where an ENERGIZER item or use of the INVINCO
+  counter would cause the original player color to be corrupted
+  at the end of the colour blitz.
++ Fixed a bug where WALK [dir] would not end a cycle.
++ Fixed a long-standing bug where set "$string" to "FWRITEn"
+  would be cheerfully ignored.
++ Fixed a bug where a corrupt robot list could crash MegaZeux
+  (e.g. the list from Star Quest from DoZ'02).
 
 DEVELOPERS
 
@@ -8015,6 +8026,9 @@ DEVELOPERS
   home-brewing types. Improves portability to BSD.
 + MegaZeux now compiles on OpenBSD (and probably other BSDs),
   use --disable-gl.
++ Made all unnecessary global symbols static. This should
+  improve compiler optimisations and correctness (Mr_Alert,
+  ajs).
 
 >#280CLOG.HLP:280:New in versions 2.80-2.80h
 >#OLDERVER.HLP:099:New in versions 2.60 to 2.70

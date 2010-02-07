@@ -246,7 +246,7 @@ TRY [dir] "label"                                       |    YES(5)   |
 WAIT #                                                  |     YES     |
 WAIT MOD FADE                                           |     NO      |
 WAIT PLAY                                               |     NO      |
-WAIT PLAY "string"                                      |    YES(2)   |
+WAIT PLAY "string"                                      |     YES     |
 WALK [dir]                                              |    NO(8)    |
 WIND #                                                  |     NO      |
 WRITE OVERLAY [color] "string" # #                      |     NO      |

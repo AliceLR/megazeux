@@ -1,46 +1,46 @@
 MZX REQUESTS:
 
--Revised help system.
--"Edit" button on world loader window (i.e. the one which MZX displays on open unless a default world is loaded as per config.txt)
--Methods to jump to a given location on the board (given MZX's boards can now be quite large).
--Mouse highlighting of code. Right-click on highlighted code to open block action menu.
+-Revised help system.[Exo skipped]
+-Edit" button on world loader window (i.e. the one which MZX displays on open unless a default world is loaded as per config.txt) [Exo skipped]
+-[+Exo, sort of]Methods to jump to a given location on the board (given MZX's boards can now be quite large).
+-Mouse highlighting of code. Right-click on highlighted code to open block action menu. [Exo skipped]
 -Demo format consisting of logged keypresses.
 -Visible vlayer, able to be placed over or under the overlay.
 -Extensive manipulation of MZX default text boxes (mutable size, mutable position, more powerful editing of border, images in textbox background, ability to similarly alter remove title bar or remove it entirely, lockable textbox scrolling, ability to change keys to view text/select options/exit textbox).
--Indication of current Robot's x/y in Robotic Editor.
+-{+Exo]Indication of current Robot's x/y in Robotic Editor.
 -Insertion of copy block params in Robotic Editor by visually selecting a block using a hotkey (Robotic editor jumps to a display of the current board, you select an area, and when done the copy block numbers resulting in this are placed in the line of Robotic code).
--Ability to add color codes relevant to message commands when pressing F2 (*, &, %, ?, and so on).
+-Ability to add color codes relevant to message commands when pressing F2 (*, &, %, ?, and so on). [Exo skipped]
 -Multiple temp slots for characters (currently there is one stored and placed with the char editor's "Copy to buffer" and "Copy from buffer" functions).
 -Extended Undo functionality (add ability to undo actions on the board/overlay, increase depth of actions from one).
 -Analog stick support with MZX (not full analog, just recognition).
 -Ability to retain cursor/board positions after leaving the world.
--More sound-related control counters (sound/pcfx toggle, volume overall/sound/pcfx).
--Application of a config option like robot_editor_hide_help that has a similar effect on the board help menu.
--Auto-hide mouse cursor in editor after a certain period of mouse disuse.
+-More sound-related control counters (sound/pcfx toggle, volume overall/sound/pcfx). [Exo skipped]
+-[+Terryn]Application of a config option like robot_editor_hide_help that has a similar effect on the board help menu.
+-Auto-hide mouse cursor in editor after a certain period of mouse disuse. [Exo skipped]
 -Ability to reference sprites from the overlay.
 -Ability to directly access the vlayer (i.e. through the Editor and not through Robotic commands).
--Ability to re-order boards.
+-[+Exo]Ability to re-order boards.
 -Re-addition of mouse editing functionality that the DOS versions had (palette editing, clicking on hotkey text makes hotkey action happen (e.g. clicking on "L:Load" acts as the L key has been pressed), etc.).
--Automatic PNG support, or a compile option for PNG support.
+-[+Exo]Automatic PNG support, or a compile option for PNG support.
 -SMZX mode with full resolution but where two characters act as a single character.
 -Ability to enter the number lists from CHAR EDIT commands into the character editor to create a character.
 -Ability to remove "edges" from characters.
 -An installer.
--Ability to access default save/load menus via Robotic, as well as a way to disable the F4 loading menu.
+-Ability to access default save/load menus via Robotic, as well as a way to disable the F4 loading menu. [Exo skipped]
 -Listing of number of commands executed last cycle in F11 debug.
--Looping sound effects independent of the MOD command.
--Read-only viewport height and viewport width characters.
--Hotkeys to instantly jump to the next and previous boards.
--Ability to use the numpad for editor actions.
--Board setting to toggle freezing the player when spacebar is held down (on by default).
--Ability to set "MOD *" without nuking the current playing mod.
+-Looping sound effects independent of the MOD command. [Exo skipped]
+-Read-only viewport height and viewport width characters. [Exo skipped]
+-Hotkeys to instantly jump to the next and previous boards. [Exo skipped]
+-[+Exo: "add it to the event handling code"]Ability to use the numpad for editor actions.
+-[+Terryn]Board setting to toggle freezing the player when spacebar is held down (on by default).
+-[+Exo]Ability to set "MOD *" without nuking the current playing mod.
 -MOD_LENGTH counter (based on current mod row or PCM sample).
 -Charsets/palettes bound to the current board via displaying in the editor.
 -Editing of all bomb anim chars outside of #1 in global's "Edit Chars" menu. (CHAR ID values 169-175).
--FREAD_LONG and FWRITE_LONG counters - both take 4 bytes at once.
+-[+Exo (alt method: make changes in fread/fwrite_counter and version bind)]FREAD_LONG and FWRITE_LONG counters - both take 4 bytes at once.
 -Display of "Key_pressed", "key_code", "keyn" and "key_release" in the F11 menu, or the debug window.
 -Mutable length of time message row is active (or even 0 for no expiration).
--Command-line option to load an MZX world at start, with an -e flag for starting in Edit mode.
+-[++Exo]Command-line option to load an MZX world at start, with an -e flag for starting in Edit mode.
 -Zoom.
 -Per-pixel camera offset.
 -Overhaul of recursion.
