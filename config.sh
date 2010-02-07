@@ -33,8 +33,8 @@ usage() {
 	echo "  --disable-overlay  Disables all overlay renderers."
 	echo "  --enable-overlay   Enables all overlay renderers. (default)"
 	echo
-	echo "  --disable-gp2x     Disables half-width software renderer (default)."
 	echo "  --enable-gp2x      Enables half-width software renderer."
+	echo "  --disable-gp2x     Disables half-width software renderer (default)."
 	echo
 	echo "  --disable-modplug  Disables ModPlug music engine."
 	echo "  --enable-modplug   Enables ModPlug music engine (default)."
