@@ -33,7 +33,7 @@ subdir-clean:
 	cd utils && ${MAKE} clean DEBUG=1 && cd ../../..
 
 mzx:	subdir ${OBJS}
-	${CXX} ${OBJS} ${LIBS} -o ${MZX}.dbg${BINEXT}
+	${CC} ${OBJS} ${LIBS} -o ${MZX}.dbg${BINEXT} -lstdc++
 	@echo "DEBUG BUILD AVAILABLE AT ${MZX}.dbg${BINEXT}"
 
 else
@@ -45,7 +45,7 @@ subdir-clean:
 	cd utils && ${MAKE} clean && cd ../../..
 
 mzx:	subdir ${OBJS}
-	${CXX} ${OBJS} ${LIBS} -o ${MZX}${BINEXT}
+	${CC} ${OBJS} ${LIBS} -o ${MZX}${BINEXT} -lstdc++
 	${STRIP} ${MZX}${BINEXT} 
 
 endif
