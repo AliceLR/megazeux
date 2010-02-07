@@ -54,8 +54,6 @@ USERS
 + Fixed using ABORT LOOP in some situations. Using it outside of a loop
   still has undefined semantics and this has been documented in the help
   file (Exophase).
-+ Fixed a bug where returning from a subroutine entered through
-  ? "#label" "string" skips the next impending line (Exophase).
 + Setting a board option below its numeric limit is no longer
   possible (Exophase).
 + Fixed problems with going over Robot name character limits using the .@
