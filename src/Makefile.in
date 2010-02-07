@@ -17,7 +17,7 @@ mzx_base     = src
 mzx_flags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
 mzx_flags   += -Wmissing-format-attribute # -Wwrite-strings
 mzx_cflags  += -Wstrict-prototypes -Wmissing-prototypes -Wold-style-definition
-mzx_cxxflags =
+mzx_cxxflags = -DHAVE_INTTYPES_H
 
 mzx_flags   += ${SDL_CFLAGS} -I${mzx_base} -I${PREFIX}/include
 mzx_ldflags := ${SDL_LDFLAGS} ${mzx_ldflags}

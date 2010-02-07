@@ -1,0 +1,20 @@
+Some UNIX like platforms (e.g. PSP) define strnicmp unconditionally. Prefer
+their definition, and if defined, do not define it ourselves.
+
+--ajs
+
+Index: libmodplug/src/libmodplug/stdafx.h
+===================================================================
+--- libmodplug/src/libmodplug/stdafx.h	(revision 396)
++++ libmodplug/src/libmodplug/stdafx.h	(working copy)
+@@ -77,7 +77,10 @@
+ #define lstrcpyA	strcpy
+ #define lstrcmpA	strcmp
+ #define wsprintfA	sprintf
++
++#ifndef strnicmp
+ #define strnicmp(a,b,c)	strncasecmp(a,b,c)
++#endif
+ 
+ #define GHND		0
+ 
