@@ -11,14 +11,16 @@ BINEXT = .elf
 BINNAME = ${TARGET}${BINEXT}
 BINNAME_STRIP = ${TARGET}${BINEXT}.strip
 
-# we want to do other things before the strip, so override it.
+# we want to do other things before the strip, so override it
 STRIP = /bin/true
 
-# standard libraries
-LIBS += -lc -lpsppower -lvorbisidec
+# psp overrides for vorbis
+VORBIS_CFLAGS  = -DUSE_TREMOR
+VORBIS_LDFLAGS = -lvorbisidec
 
-# additional flags
-INCLUDES += -DPSP_BUILD -DUSE_TREMOR -I${PREFIX}/sdk/include
+# flag PSP build and link in c/psppower
+mzx_cflags  += -I${PREFIX}/sdk/include -DPSP_BUILD
+mzx_ldflags += -lc -lpsppower
 
 package-pbp:
 	psp-fixup-imports ${BINNAME}

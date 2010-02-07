@@ -9,11 +9,15 @@ STRIP = arm-linux-strip --strip-unneeded
 
 # name of resulting binary
 BINEXT  = .gpe
-BINNAME = ${TARGET}${BINEXT}
 
-# standard libraries
-LIBS += -L${PREFIX}/lib -lSDL -lm -static -lpthread -lmikmod -lvorbisidec
+# gp2x override for SDL
+SDL_CFLAGS  = -I${PREFIX}/include/SDL
+SDL_LDFLAGS = -L${PREFIX}/lib -lSDL -static -lpthread
 
-# additional flags
-INCLUDES += -I${PREFIX}/include -I${PREFIX}/include/SDL
-INCLUDES += -DUSE_TREMOR -I${PREFIX}/include/tremor
+# gp2x override for vorbis
+VORBIS_CFLAGS  = -DUSE_TREMOR -I${PREFIX}/include/tremor
+VORBIS_LDFLAGS = -L${PREFIX}/lib -lvorbisidec
+
+# also needs -lm
+mzx_cflags  += -I${PREFIX}/include
+mzx_ldflags += -lm
