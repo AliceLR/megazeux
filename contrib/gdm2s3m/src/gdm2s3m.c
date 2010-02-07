@@ -27,6 +27,7 @@
 #include "s3m.h"
 #include "error.h"
 #include "utility.h"
+#include "gdm2s3m.h"
 
 int convert_gdm_s3m (const char *gdmfile, const char *s3mfile)
 {
