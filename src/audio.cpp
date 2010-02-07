@@ -1579,7 +1579,7 @@ void write_little_endian16(Uint8 *dest, Uint32 value)
   dest[1] = value >> 8;
 }
 
-void write_chars(Uint8 *dest, char *str)
+static void write_chars(Uint8 *dest, const char *str)
 {
   memcpy(dest, str, strlen(str));
 }
