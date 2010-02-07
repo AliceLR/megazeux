@@ -728,6 +728,12 @@ void change_board_size(Board *src_board, int new_width, int new_height)
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
 
+  if(new_width == 0)
+    new_width = 1;
+
+  if(new_height == 0)
+    new_height = 1;
+
   if((board_width != new_width) || (board_height != new_height))
   {
     char *level_id = src_board->level_id;

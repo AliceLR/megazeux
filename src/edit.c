@@ -1367,7 +1367,7 @@ void edit_world(World *mzx_world)
           /* There are two editor placement modes. This behavior can be
            * toggled with the "editor_space_toggles" config.txt option.
            *
-           * The legacy mode (editor_space_toggles = 1) allows users to 
+           * The legacy mode (editor_space_toggles = 1) allows users to
            * toggle between their param buffer and space, under any
            * situation.
            *

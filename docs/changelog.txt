@@ -32,6 +32,14 @@ USERS
 + Fixed a bug where changing boards in the editor could sometimes corrupt
   memory, later causing a crash (either testing or coming out of testing a
   board).
++ Fixed a sensor bug that happens when a sensor can't go anywhere it is told
+  to, and the player is on it (Exophase).
++ Fixed using ABORT LOOP outside of the loop body (or when no such loop
+  exists) by ignoring the command (Exophase).
++ Fixed a bug where returning from a subroutine entered through
+  ? "#label" "string" skips the next impending line (Exophase).
++ Setting a board option below its numeric limit is no longer
+  possible (Exophase).
 
 DEVELOPERS
 

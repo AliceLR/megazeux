@@ -1435,9 +1435,9 @@ int reload_world(World *mzx_world, char *file, int *faded)
 
   set_palette_intensity(100);
 
-  rval = load_world(mzx_world, file, 0, faded);
-
   default_global_data(mzx_world);
+
+  rval = load_world(mzx_world, file, 0, faded);
 
   *faded = 0;
   return rval;
@@ -1658,7 +1658,7 @@ void set_update_done_current(World *mzx_world)
        (char *)realloc(mzx_world->update_done, size);
     }
 
-    mzx_world->update_done_size = size;   
+    mzx_world->update_done_size = size;
   }
 }
 #endif // CONFIG_EDITOR

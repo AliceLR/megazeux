@@ -1279,6 +1279,8 @@ static void replace_current_line(robot_state *rstate, int r_pos, char *str,
    new_buffer + r_pos + str_size, strlen(new_buffer) - r_pos);
   memcpy(new_buffer + r_pos, replace, replace_size);
 
+  new_buffer[241] = 0;
+
   rstate->command_buffer = new_buffer;
   update_current_line(rstate);
   strcpy(rstate->command_buffer_space, new_buffer);

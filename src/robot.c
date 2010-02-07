@@ -862,10 +862,10 @@ static void send_sensor_command(World *mzx_world, int id, int command)
         // Attempt to move player, then if ok,
         // put sensor underneath and delete from
         // original space.
-        move_status = move(mzx_world, x, y, command,
-         1 | 2 | 4 | 8 | 16);
+        move_status = move(mzx_world, x, y, command, CAN_PUSH |
+         CAN_TRANSPORT | CAN_LAVAWALK | CAN_FIREWALK | CAN_WATERWALK);
 
-        if(!move_status)
+        if(move_status == NO_HIT)
         {
           // Find player...
           find_player(mzx_world);
@@ -873,26 +873,27 @@ static void send_sensor_command(World *mzx_world, int id, int command)
           player_y = mzx_world->player_y;
           player_offset = player_x + (player_y * board_width);
 
-          move_status = 2;
+          move_status = HIT_PLAYER;
         }
         else
         {
           send_robot(mzx_world, cur_sensor->robot_to_mesg, "SENSORTHUD", 0);
         }
-        move_status = 2;
       }
       else
       {
         // Attempt to move sensor.
         move_status = move(mzx_world, x, y, command,
-         1 | 2 | 4 | 8 | 16 | 128);
-        if(move_status == 2)
+         CAN_PUSH | CAN_TRANSPORT | CAN_LAVAWALK | CAN_FIREWALK |
+         CAN_WATERWALK | REACT_PLAYER);
+
+        if(move_status == HIT_PLAYER)
         {
           step_sensor(mzx_world, id);
         }
       }
 
-      if(move_status == 2)
+      if(move_status == HIT_PLAYER)
       {
         // Met player- so put under player!
         mzx_world->under_player_id = level_under_id[player_offset];
@@ -905,7 +906,7 @@ static void send_sensor_command(World *mzx_world, int id, int command)
       }
       else
 
-      if(move_status != 0)
+      if(move_status != NO_HIT)
       {
         // Sensorthud!
         send_robot(mzx_world, cur_sensor->robot_to_mesg, "SENSORTHUD", 0);
@@ -1163,7 +1164,7 @@ void send_robot(World *mzx_world, char *name, char *mesg,
       while(first <= last)
       {
         send_robot_direct(src_board->robot_list_name_sorted[first],
-	 mesg, ignore_lock, 0);
+         mesg, ignore_lock, 0);
         first++;
       }
     }

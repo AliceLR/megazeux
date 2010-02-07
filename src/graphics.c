@@ -246,25 +246,32 @@ void update_palette(void)
   update_colors(new_palette, make_palette(new_palette));
 }
 
+void set_gui_palette(void)
+{
+  int i;
+
+  memcpy(graphics.palette + PAL_SIZE, default_pal, sizeof(SDL_Color) * PAL_SIZE);
+  memcpy(graphics.intensity_palette + PAL_SIZE, default_pal,
+   sizeof(SDL_Color) * PAL_SIZE);
+
+  for(i = 16; i < PAL_SIZE * NUM_PALS; i++)
+    graphics.current_intensity[i] = 100;
+}
+
 static void init_palette(void)
 {
   Uint32 i;
 
   memcpy(graphics.palette, default_pal, sizeof(SDL_Color) * PAL_SIZE);
-  memcpy(graphics.palette + PAL_SIZE, default_pal, sizeof(SDL_Color) * PAL_SIZE);
   memcpy(graphics.intensity_palette, default_pal, sizeof(SDL_Color) * PAL_SIZE);
-  memcpy(graphics.intensity_palette + PAL_SIZE, default_pal,
-   sizeof(SDL_Color) * PAL_SIZE);
   memset(graphics.current_intensity, 0, sizeof(Uint32) * PAL_SIZE);
 
   for(i = 0; i < SMZX_PAL_SIZE; i++)
     graphics.saved_intensity[i] = 100;
 
-  for(i = 16; i < PAL_SIZE * NUM_PALS; i++)
-    graphics.current_intensity[i] = 100;
-
   graphics.fade_status = 1;
 
+  set_gui_palette();
   update_palette();
 }
 
@@ -513,19 +520,16 @@ void set_screen_mode(Uint32 mode)
   if((graphics.screen_mode >= 2) && (mode < 2))
   {
     int fade_status = get_fade_status();
-    int i;
     swap_palettes();
 
     if(fade_status)
     {
       set_fade_status(0);
-      for(i = PAL_SIZE; i < PAL_SIZE * NUM_PALS; i++)
-      {
-        set_color_intensity(i, 100);
-      }
       set_fade_status(fade_status);
     }
     graphics.screen_mode = mode;
+
+    set_gui_palette();
     update_palette();
   }
   else
@@ -547,13 +551,13 @@ Uint32 get_screen_mode()
 void update_screen()
 {
   Uint32 ticks = SDL_GetTicks();
-  
+
   if((ticks - graphics.cursor_timestamp) > CURSOR_BLINK_RATE)
   {
     graphics.cursor_flipflop ^= 1;
     graphics.cursor_timestamp = ticks;
   }
-  
+
   graphics.render_graph(&graphics);
   if(graphics.cursor_flipflop &&
    (graphics.cursor_mode != cursor_mode_invisible))

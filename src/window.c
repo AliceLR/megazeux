@@ -2303,7 +2303,11 @@ static int key_number_box(World *mzx_world, dialog *di, element *e, int key)
 
     case SDLK_BACKSPACE:
     {
-      *(src->result) = current_value / 10;
+      Sint32 result = current_value / 10;
+      if(result < src->lower_limit)
+        result = src->lower_limit;
+
+      *(src->result) = result;
     }
 
     default:
@@ -3010,7 +3014,7 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
               int width = 29;
 
               strncpy(new_name, file_name + 56, MAX_PATH - 1);
-	      new_name[MAX_PATH - 1] = '\0';
+              new_name[MAX_PATH - 1] = '\0';
 
               if(current_element_num == FILESEL_DIR_LIST)
                 width = 14;
@@ -3045,7 +3049,7 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
         if(current_element_num == FILESEL_FILE_LIST)
         {
           strncpy(dest->result, file_name + 56, dest->max_length - 1);
-	  dest->result[dest->max_length - 1] = '\0';
+           dest->result[dest->max_length - 1] = '\0';
           e->draw_function(mzx_world, di, e, DI_NONACTIVE, 0);
         }
       }
@@ -3245,8 +3249,7 @@ __editor_maybe_static int file_manager(World *mzx_world, char **wildcards,
             {
               dir_list[num_dirs] = (char *)malloc(file_name_length + 1);
               strncpy(dir_list[num_dirs], file_name, file_name_length);
-	      dir_list[num_dirs][file_name_length] = '\0';
-
+               dir_list[num_dirs][file_name_length] = '\0';
               num_dirs++;
             }
           }
@@ -3273,8 +3276,7 @@ __editor_maybe_static int file_manager(World *mzx_world, char **wildcards,
                   file_list[num_files] =
                    (char *)malloc(56 + file_name_length + 1);
 
-                  if(!strcasecmp(file_name + file_name_length - 4,
-                   ".mzx"))
+                  if(!strcasecmp(file_name + file_name_length - 4, ".mzx"))
                   {
                     FILE *mzx_file = fopen(file_name, "rb");
 
@@ -3288,11 +3290,11 @@ __editor_maybe_static int file_manager(World *mzx_world, char **wildcards,
                   else
                   {
                     strncpy(file_list[num_files], file_name, file_name_length);
-		    file_list[num_files][file_name_length] = '\0';
+                    file_list[num_files][file_name_length] = '\0';
                   }
                   strncpy(file_list[num_files] + 56, file_name,
-		   file_name_length);
-		  (file_list[num_files] + 56)[file_name_length] = '\0';
+                   file_name_length);
+                  (file_list[num_files] + 56)[file_name_length] = '\0';
 
                   num_files++;
                   break;

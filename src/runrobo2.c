@@ -3293,12 +3293,14 @@ void run_robot(World *mzx_world, int id, int x, int y)
         char label_buffer[ROBOT_MAX_TR];
         int cur_prog_line = cur_robot->cur_prog_line;
         int next_cmd = 0;
+        int last_prog_line;
 
         robot_box_display(mzx_world, cmd_ptr - 1, label_buffer, id);
 
         // Move to end of all box mesg cmds.
         do
         {
+          last_prog_line = cur_prog_line;
           cur_prog_line += program[cur_prog_line] + 2;
           // At next line- check type
           if(!program[cur_prog_line])
@@ -3308,13 +3310,15 @@ void run_robot(World *mzx_world, int id, int x, int y)
         } while((next_cmd == 47) || ((next_cmd >= 103) &&
          (next_cmd <= 106)) || (next_cmd == 116) || (next_cmd == 117));
 
-        cur_robot->cur_prog_line = cur_prog_line;
+        cur_robot->cur_prog_line = last_prog_line;
 
         // Send label
         if(label_buffer[0])
         {
           gotoed = send_self_label_tr(mzx_world, label_buffer, id);
         }
+
+        cur_robot->cur_prog_line = cur_prog_line;
 
         goto breaker;
       }
@@ -3326,7 +3330,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           char name_buffer[ROBOT_MAX_TR];
           tr_msg(mzx_world, cmd_ptr + 3, id, name_buffer);
-          name_buffer[15] = 0;
+          name_buffer[14] = 0;
 
           if(id)
           {
@@ -4240,13 +4244,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if((viewport_width < 0) || (viewport_width > 80))
           viewport_width = 80;
-          
+
         if((viewport_height < 0) || (viewport_height > 25))
           viewport_height = 25;
-          
+
         if(viewport_width == 0)
           viewport_width = 1;
-          
+
         if(viewport_height == 0)
           viewport_height = 1;
 
@@ -4400,7 +4404,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         // Id' make these all separate, but this is really too convenient
         id_chars[bullet_char + (cmd - 173)] =
-	 parse_param(mzx_world, cmd_ptr + 1, id);
+         parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
@@ -5773,7 +5777,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
           forward_cmd += program[forward_cmd] + 2;
         } while(program[forward_cmd + 1] != 252);
 
-        cur_robot->cur_prog_line = forward_cmd;
+        if(program[forward_cmd])
+          cur_robot->cur_prog_line = forward_cmd;
+
         break;
       }
 
