@@ -33,6 +33,11 @@ completed a port to Microsoft's new "x64" 64bit platforms, it is currently not
 possible to use GCC to build MegaZeux for 64bit Windows. An obvious interim
 solution would be to use MSVC to build for this platform.
 
+Another potential advantage of compiler portability is the idea that program
+correctness may be enriched, by leveraging the different advantages of
+different compilers. This has certainly been true of the ports to 64bit
+platforms, and will hopefully be true of compiler diversity.
+
 
 VISUAL STUDIO LIMITATIONS AND WORKAROUNDS
 
