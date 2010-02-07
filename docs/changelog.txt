@@ -1,4 +1,4 @@
-SVN - MZX 2.82
+MZX SVN
 
 USERS
 
@@ -53,6 +53,8 @@ DEVELOPERS
 + Fix compilation of MegaZeux against SDL 1.3 SVN. However, this SDL version
   is still in development, and MegaZeux does not work correctly when compiled
   against it.
++ MegaZeux now builds with the experimental MINGW-x64 branch, enabling x64
+  binaries for Windows.
 
 July 4, 2007 - MZX 2.81g
 

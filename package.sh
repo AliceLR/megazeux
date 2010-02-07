@@ -5,7 +5,7 @@
 ################################################################################
 
 usage() {
-	echo "usage: $0 [-b win32 | macos | psp | linux-i686 | linux-amd64]"
+	echo "usage: $0 [-b win32 | win64 | psp]"
 	echo
 	echo "	-b	Builds a binary distribution for the specified arch."
 	echo "	-h	Displays this help text."
@@ -48,7 +48,7 @@ createzip() {
 	#
 	# Create the binary package.
 	#
-	$SEVENZIP a -tzip dist/$TARGET.zip \
+	$SEVENZIP a -tzip dist/$TARGET-$2.zip \
 		$BINARY_DEPS $DOCS $TARGET.exe SDL.dll $WINDIB_BAT &&
 
 	#
@@ -238,32 +238,16 @@ fi
 #
 if [ "$2" = "win32" ]; then
 	LIBSDL="`sdl-config --prefix`/bin/SDL.dll"
-	createzip $LIBSDL
+	createzip $LIBSDL x86
 	exit
 fi
 
 #
-# MacOS X, using tar.bz2 compression.
+# Windows x64, using ZIP compression via 7ZIP compressor
 #
-if [ "$2" = "macos" ]; then
-	LIBSDL="~/dev/lib/libSDL-1.2.0.dylib"	# burst or beige's mac
-	createtbz osx-ppc $LIBSDL
-	exit
-fi
-
-#
-# Linux/i686, using tar.bz2 compression (NO SDL)
-#
-if [ "$2" = "linux-i686" ]; then
-	createtbz linux-i686
-	exit
-fi
-
-#
-# Linux/amd64, using tar.bz2 compression (NO SDL)
-#
-if [ "$2" = "linux-amd64" ]; then
-	createtbz linux-amd64
+if [ "$2" = "win64" ]; then
+	LIBSDL="`sdl-config --prefix`/bin/SDL.dll"
+	createzip $LIBSDL x64
 	exit
 fi
 
