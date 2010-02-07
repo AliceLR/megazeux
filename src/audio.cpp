@@ -1202,7 +1202,7 @@ void clip_buffer(Sint16 *dest, Sint32 *src, int len)
 
 void audio_callback(void *userdata, Uint8 *stream, int len)
 {
-  Uint32 destroy_flag, loops = 0;
+  Uint32 destroy_flag;
   audio_stream *current_astream;
 
   LOCK();
@@ -1215,22 +1215,22 @@ void audio_callback(void *userdata, Uint8 *stream, int len)
 
     while(current_astream != NULL)
     {
-      if (loops++ > 100)
-        fprintf(stderr, "looping forever..\n");
+      audio_stream *next_astream = current_astream->next;
 
       destroy_flag = current_astream->mix_data(current_astream,
        audio.mix_buffer, len);
 
       if(destroy_flag)
       {
-        audio_stream *next_astream = current_astream->next;
         current_astream->destruct(current_astream);
-        current_astream = next_astream;
+
+        // if the destroyed stream was our music, we shouldn't
+        // let end_mod try to destroy it again.
+        if (current_astream == audio.primary_stream)
+          audio.primary_stream = NULL;
       }
-      else
-      {
-        current_astream = current_astream->next;
-      }
+
+      current_astream = next_astream;
     }
 
     clip_buffer((Sint16 *)stream, audio.mix_buffer, len / 2);

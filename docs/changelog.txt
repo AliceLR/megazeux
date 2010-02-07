@@ -42,6 +42,9 @@ USERS
 + Improved performance of the overlay2 (faster) renderer (Mr_Alert).
 + Make the transparent overlay "really" transparent when used in conjunction
   with sprites (Mr_Alert).
++ Fixed a bug reported by Mr_Alert where MZX would not handle short,
+  non-looping mods in the editor. The editor would try to destroy the mod
+  again, even after the callback had destroyed it (premature termination).
 
 DEVELOPERS
 
