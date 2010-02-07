@@ -44,6 +44,8 @@ void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
  Sensor *copy_sensor, int x, int y);
 void flash_thing(World *mzx_world, int start, int end, int flash_one,
  int flash_two, int scroll_x, int scroll_y, int edit_screen_height);
+int truncate_filename(const char *old_name, char *new_name,
+ unsigned int length);
 
 extern mzx_thing tmenu_thing_ids[8][18];
 extern char tmenu_num_choices[8];

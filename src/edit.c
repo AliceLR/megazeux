@@ -411,6 +411,63 @@ char drawmode_help[5][32] =
   "Press ENTER to place MZM"
 };
 
+int truncate_filename(const char *old_name, char *new_name,
+ unsigned int length)
+{
+  char trnc_name[256] = {};
+  char *file_ext;
+  int i_file_ext;
+  int i_dupl_fix;
+  FILE *f_test;
+
+  if (strlen(old_name) <= length)
+  {
+    strcpy(new_name, old_name);
+    return 0;
+  }
+
+  file_ext = strrchr(old_name, '.');
+  i_file_ext = length - strlen(old_name) + (file_ext - old_name);
+
+  // Where the . should go.  Trust me, the math is right.
+  if (i_file_ext < 2)
+  {
+    error("Can't truncate file: the extension is too long.",
+      0, 8, 0xabcd);
+    return 1;
+  }
+
+  i_dupl_fix = 0;
+  strncpy(trnc_name, old_name, i_file_ext);
+  strncpy(trnc_name + i_file_ext, file_ext, length - i_file_ext);
+
+  f_test = fopen(trnc_name, "r");
+  while (i_dupl_fix < 100 && f_test)
+  {
+    char dupl_fix[8] = {};
+    fclose(f_test);
+    sprintf(dupl_fix, "%d", i_dupl_fix);
+    strncpy(trnc_name + i_file_ext - strlen(dupl_fix),
+      dupl_fix, strlen(dupl_fix));
+    i_dupl_fix++;
+    f_test = fopen(trnc_name, "r");
+  }
+
+  if (i_dupl_fix >= 100 && f_test)
+  {
+    fclose(f_test);
+    error("Max rename attempts exceeded (100), giving up.",
+      0, 8, 0xabcd);
+    return 1;
+  }
+  else
+  {
+    rename(old_name, trnc_name);
+    strcpy(new_name, trnc_name);
+    return 0;
+  }
+}
+
 // It's important that after changing the param the thing is placed (using
 // place_current_at_xy) so that scrolls/sensors/robots get copied.
 
@@ -2138,9 +2195,27 @@ void edit_world(World *mzx_world)
               if(!choose_file(mzx_world, mod_ext, new_mod,
                "Choose a module file", 0))
               {
-                load_module(new_mod);
-                strcpy(src_board->mod_playing, new_mod);
-                strcpy(mzx_world->real_mod_playing, new_mod);
+                if (strlen(new_mod) > 12)
+                {
+                  if(!ask_yes_no(mzx_world,
+                   "Load Module: The filename is too long. \
+Would you like to truncate it?"))
+                  {
+                    char trnc_mod[13] = {};
+                    if(!truncate_filename(new_mod, trnc_mod, 12))
+                    {
+                      load_module(trnc_mod);
+                      strcpy(src_board->mod_playing, trnc_mod);
+                      strcpy(mzx_world->real_mod_playing, trnc_mod);
+                    }
+                  }
+                }
+                else
+                {
+                  load_module(new_mod);
+                  strcpy(src_board->mod_playing, new_mod);
+                  strcpy(mzx_world->real_mod_playing, new_mod);
+                }
               }
             }
             else
