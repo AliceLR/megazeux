@@ -1,8 +1,8 @@
 Index: src/runrobo2.c
 ===================================================================
---- src/runrobo2.c	(revision 334)
+--- src/runrobo2.c	(revision 371)
 +++ src/runrobo2.c	(working copy)
-@@ -4638,12 +4638,12 @@
+@@ -4653,12 +4653,12 @@
            // Board to board
            case 0:
            {
@@ -21,7 +21,7 @@ Index: src/runrobo2.c
  
              copy_board_to_board_buffer(src_board, src_x, src_y, width,
               height, id_buffer, param_buffer, color_buffer,
-@@ -4654,6 +4654,12 @@
+@@ -4669,6 +4669,12 @@
               under_id_buffer, under_param_buffer, under_color_buffer);
              update_blocked = 1;
  
@@ -34,7 +34,7 @@ Index: src/runrobo2.c
              break;
            }
  
-@@ -4698,14 +4704,18 @@
+@@ -4713,14 +4719,18 @@
            // Vlayer to vlayer
            case 10:
            {
@@ -55,7 +55,7 @@ Index: src/runrobo2.c
              break;
            }
          }
-@@ -4914,14 +4924,16 @@
+@@ -4929,14 +4939,16 @@
            {
              if(src_board->overlay_mode)
              {
@@ -74,7 +74,7 @@ Index: src/runrobo2.c
              }
              break;
            }
-@@ -4959,14 +4971,18 @@
+@@ -4974,14 +4986,18 @@
            // Vlayer to vlayer
            case 10:
            {
@@ -97,9 +97,9 @@ Index: src/runrobo2.c
          }
 Index: src/robo_ed.c
 ===================================================================
---- src/robo_ed.c	(revision 334)
+--- src/robo_ed.c	(revision 370)
 +++ src/robo_ed.c	(working copy)
-@@ -1527,14 +1527,14 @@
+@@ -1525,14 +1525,14 @@
  
    int total_dialog_elements = macro_src->total_variables + 3;
    int num_types = macro_src->num_types;
@@ -119,7 +119,7 @@ Index: src/robo_ed.c
    int nominal_width = 77, old_width = 77;
    int nominal_height, old_height = 25;
    int total_lines_needed;
-@@ -1554,7 +1554,7 @@
+@@ -1552,7 +1552,7 @@
    if(!num_types)
    {
      output_macro(rstate, macro_src);
@@ -128,7 +128,7 @@ Index: src/robo_ed.c
    }
  
    current_type = macro_src->types;
-@@ -1807,6 +1807,13 @@
+@@ -1805,6 +1805,13 @@
    } while(dialog_value == -2);
  
    destruct_dialog(&di);
@@ -144,9 +144,9 @@ Index: src/robo_ed.c
  static void execute_numbered_macro(robot_state *rstate, int num)
 Index: src/counter.c
 ===================================================================
---- src/counter.c	(revision 334)
+--- src/counter.c	(revision 370)
 +++ src/counter.c	(working copy)
-@@ -1709,12 +1709,15 @@
+@@ -1712,12 +1712,15 @@
  
    if(get_string(mzx_world, name, &src, id))
    {
@@ -167,7 +167,7 @@ Index: src/counter.c
    return 0;
 Index: src/char_ed.c
 ===================================================================
---- src/char_ed.c	(revision 334)
+--- src/char_ed.c	(revision 369)
 +++ src/char_ed.c	(working copy)
 @@ -1026,7 +1026,8 @@
          {
@@ -284,9 +284,9 @@ Index: src/char_ed.c
        }
 Index: src/edit.c
 ===================================================================
---- src/edit.c	(revision 334)
+--- src/edit.c	(revision 370)
 +++ src/edit.c	(working copy)
-@@ -2346,7 +2346,7 @@
+@@ -2359,7 +2359,7 @@
              case 4:
              {
                // Flip block
@@ -295,7 +295,7 @@ Index: src/edit.c
                int start_offset = start_x + (start_y * board_width);
                int end_offset = start_x + ((start_y + block_height - 1) *
                 board_width);
-@@ -2420,6 +2420,8 @@
+@@ -2433,6 +2433,8 @@
  
                draw_mode = 0;
                modified = 1;
@@ -304,7 +304,7 @@ Index: src/edit.c
                break;
              }
  
-@@ -2670,8 +2672,8 @@
+@@ -2683,8 +2685,8 @@
                case 1:
                {
                  // Copy block
@@ -315,7 +315,7 @@ Index: src/edit.c
                  copy_layer_to_buffer(start_x, start_y, block_width,
                   block_height, block_board->overlay, block_board->overlay_color,
                   char_buffer, color_buffer, block_board->board_width);
-@@ -2687,14 +2689,17 @@
+@@ -2700,14 +2702,17 @@
                    copy_repeat_height = block_height;
                  }
                  modified = 1;
@@ -335,7 +335,7 @@ Index: src/edit.c
                  copy_layer_to_buffer(start_x, start_y, block_width,
                   block_height, block_board->overlay,
                   block_board->overlay_color, char_buffer,
-@@ -2707,6 +2712,8 @@
+@@ -2720,6 +2725,8 @@
                   overlay_color, board_width);
  
                  modified = 1;
@@ -344,7 +344,7 @@ Index: src/edit.c
                  break;
                }
  
-@@ -2791,12 +2798,12 @@
+@@ -2804,12 +2811,12 @@
                {
                  // Copy block
                  int block_size = block_width * block_height;
@@ -363,7 +363,7 @@ Index: src/edit.c
                  copy_board_to_board_buffer(block_board, start_x, start_y,
                   block_width, block_height, id_buffer, param_buffer,
                   color_buffer, under_id_buffer, under_param_buffer,
-@@ -2815,6 +2822,12 @@
+@@ -2828,6 +2835,12 @@
                  }
  
                  modified = 1;
@@ -376,7 +376,7 @@ Index: src/edit.c
                  break;
                }
  
-@@ -2822,12 +2835,12 @@
+@@ -2835,12 +2848,12 @@
                {
                  // Move block
                  int block_size = block_width * block_height;
@@ -395,7 +395,7 @@ Index: src/edit.c
                  copy_board_to_board_buffer(block_board, start_x, start_y,
                   block_width, block_height, id_buffer, param_buffer,
                   color_buffer, under_id_buffer, under_param_buffer,
-@@ -2853,6 +2866,11 @@
+@@ -2866,6 +2879,11 @@
                   under_color_buffer);
  
                  modified = 1;
@@ -406,4 +406,3 @@ Index: src/edit.c
 +                free(param_buffer);
                  break;
                }
- 
