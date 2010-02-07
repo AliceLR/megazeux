@@ -3593,10 +3593,11 @@ void debug_counters(World *mzx_world)
           }
           else if (edit_type == -2)
           {
-            if (counter_value < 1)
-              counter_value = 1;
-            if (counter_value > 8)
-              counter_value = 8;
+            if (counter_value < 0)
+              counter_value = 0;
+            if (counter_value > 9)
+              counter_value = 9;
+	    mzx_world->lock_speed = (counter_value == 0) ? 0 : 1;
             mzx_world->mzx_speed = counter_value;
           }
           else
