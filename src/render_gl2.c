@@ -239,7 +239,7 @@ static void gl2_resize_screen(graphics_data *graphics, int viewport_width,
   gl->glEnable(GL_TEXTURE_2D);
   gl->glAlphaFunc(GL_GREATER,0.565f);
 
-  gl->glBlendFunc(GL_SRC_ALPHA, GL_ONE_MINUS_SRC_ALPHA);
+  gl->glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
 
   memset(render_data->pixels, 255,
    sizeof(Uint32) * GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
@@ -524,17 +524,11 @@ static void gl2_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
   gl->glEnable(GL_BLEND);
 
   gl->glBegin(GL_QUADS);
-    gl->glColor4ub(0, 0, 0, 128);
+    gl->glColor4ub(255, 255, 255, 255);
     gl->glVertex2f( x*2.0/640.0-1.0,         (y + h)*-2.0/350.0+1.0);
     gl->glVertex2f( x*2.0/640.0-1.0,          y*-2.0/350.0+1.0);
     gl->glVertex2f((x + w)*2.0/640.0-1.0,     y*-2.0/350.0+1.0);
     gl->glVertex2f((x + w)*2.0/640.0-1.0,    (y + h)*-2.0/350.0+1.0);
-
-    gl->glColor4ub(255, 255, 0, 96);
-    gl->glVertex2f((x + 1)*2.0/640.0-1.0,    (y + h - 1)*-2.0/350.0+1.0);
-    gl->glVertex2f((x + 1)*2.0/640.0-1.0,    (y + 1)*-2.0/350.0+1.0);
-    gl->glVertex2f((x + w - 1)*2.0/640.0-1.0,(y + 1)*-2.0/350.0+1.0);
-    gl->glVertex2f((x + w - 1)*2.0/640.0-1.0,(y + h - 1)*-2.0/350.0+1.0);
   gl->glEnd();
 
   gl->glEnable(GL_TEXTURE_2D);

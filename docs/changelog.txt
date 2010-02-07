@@ -5,6 +5,8 @@ USERS
 + Added SCORE to the counter debugger (Mr_Alert).
 + Added a 16-bit software renderer and a half-width renderer for the GP2X port
   (Mr_Alert).
++ Made the mouse cursor in the "opengl2" renderer look more like the mouse
+  cursor in the other renderers (Mr_Alert).
 
 DEVELOPERS
 
