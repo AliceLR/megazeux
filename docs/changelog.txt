@@ -1,4 +1,4 @@
-July 1, 2007 - MZX 2.81g
+July 4, 2007 - MZX 2.81g
 
 Again, no significant new features have been introduced in this release.
 However, there have been many essential bugfixes, including improved
