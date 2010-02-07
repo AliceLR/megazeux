@@ -14,10 +14,9 @@ mzx_cflags += -DMZX_VERSION=\"${VERSION}\"
 endif
 
 mzx_base     = src
-mzx_cflags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
-mzx_cflags   += ${SDL_CFLAGS} ${VORBIS_CFLAGS}
-mzx_cflags   += -I${mzx_base} -I${PREFIX}/include
-mzx_ldflags := ${SDL_LDFLAGS} ${VORBIS_LDFLAGS} ${mzx_ldflags}
+mzx_cflags  += -W -Wno-unused-parameter -ffast-math -funsigned-char
+mzx_cflags  += ${SDL_CFLAGS} -I${mzx_base} -I${PREFIX}/include
+mzx_ldflags := ${SDL_LDFLAGS} ${mzx_ldflags}
 mzx_cxxflags = ${mzx_cflags}
 
 txt2hlp_base = src/utils
@@ -110,6 +109,8 @@ endif
 
 ifeq (${BUILD_AUDIO},1)
 mzx_objs += ${mzx_base}/audio.${o}
+mzx_cflags += ${VORBIS_CFLAGS}
+mzx_ldflags := ${VORBIS_LDFLAGS} ${mzx_ldflags}
 endif
 
 ifeq (${BUILD_UTILS},1)
