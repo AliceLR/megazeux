@@ -11,6 +11,7 @@ DEVELOPERS
 + Made the build system less verbose by default (like Linux). This should help
   make warnings (due to coding errors) easier to identify. If you don't like
   the new syntax, or need the command debug, you can build with "make V=1".
++ Updated Win32 builds to use SDL 1.2.12.
 
 July 4, 2007 - MZX 2.81g
 
