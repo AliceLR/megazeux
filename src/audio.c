@@ -27,15 +27,11 @@
 #include <sys/stat.h>
 
 #ifdef USE_TREMOR
-
 #include <ivorbiscodec.h>
 #include <ivorbisfile.h>
-
 #else
-
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
-
 #endif
 
 #ifdef PTHREAD_MUTEXES
@@ -61,6 +57,25 @@
 #ifdef CONFIG_MIKMOD
 #include "audio_mikmod.h"
 #endif
+
+typedef struct
+{
+  sampled_stream s;
+  Uint8 *wav_data;
+  Uint32 data_offset;
+  Uint32 data_length;
+  Uint32 channels;
+  Uint32 bytes_per_sample;
+  Uint32 natural_frequency;
+  Uint16 format;
+} wav_stream;
+
+typedef struct
+{
+  sampled_stream s;
+  OggVorbis_File vorbis_file_handle;
+  vorbis_info *vorbis_file_info;
+} vorbis_stream;
 
 // May be used by audio plugins
 audio_struct audio;

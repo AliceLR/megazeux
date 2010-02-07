@@ -26,18 +26,6 @@
 
 __M_BEGIN_DECLS
 
-#ifdef USE_TREMOR
-
-#include <ivorbiscodec.h>
-#include <ivorbisfile.h>
-
-#else
-
-#include <vorbis/codec.h>
-#include <vorbis/vorbisfile.h>
-
-#endif
-
 #include "config.h"
 #include "SDL.h"
 #include "configure.h"
@@ -90,25 +78,6 @@ struct _sampled_stream
   void (* set_frequency)(sampled_stream *s_src, Uint32 frequency);
   Uint32 (* get_frequency)(sampled_stream *s_src);
 };
-
-typedef struct
-{
-  sampled_stream s;
-  Uint8 *wav_data;
-  Uint32 data_offset;
-  Uint32 data_length;
-  Uint32 channels;
-  Uint32 bytes_per_sample;
-  Uint32 natural_frequency;
-  Uint16 format;
-} wav_stream;
-
-typedef struct
-{
-  sampled_stream s;
-  OggVorbis_File vorbis_file_handle;
-  vorbis_info *vorbis_file_info;
-} vorbis_stream;
 
 typedef struct
 {
