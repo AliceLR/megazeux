@@ -1,3 +1,9 @@
+SVN
+
+USERS
+
+DEVELOPERS
+
 December 8, 2007 - MZX 2.81h
 
 Another bugfix release with a couple of new features, in time for the
