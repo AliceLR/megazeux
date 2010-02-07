@@ -15,3 +15,9 @@ LIBS      = `sdl-config --static-libs` \
 
 # switch locking method
 INCLUDES += -DPTHREAD_MUTEXES
+
+# enable stack protector for debug builds
+ifdef DEBUG
+CFLAGS   += -fstack-protector-all
+CXXFLAGS += -fstack-protector-all
+endif

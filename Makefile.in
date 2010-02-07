@@ -24,8 +24,8 @@ VERSTRING = ${VERSION}
 endif
 
 ifdef DEBUG
-CFLAGS    = -g -Wall -DDEBUG -fstack-protector-all
-CXXFLAGS  = -g -Wall -DDEBUG -fstack-protector-all
+CFLAGS    = -g -Wall -DDEBUG
+CXXFLAGS  = -g -Wall -DDEBUG
 o         = dbg.o
 else
 CFLAGS   += -O2 -Wall

@@ -20,7 +20,7 @@ createpspzip() {
 	# Create the binary package.
 	#
 	$SEVENZIP a -tzip dist/$TARGET-psp.zip \
-		$BINARY_DEPS $DOCS EBOOT.PBP $PADCONFIG
+		$BINARY_DEPS $DOCS EBOOT.PBP $PSPPAD
 }
 
 #
@@ -123,15 +123,17 @@ BINARY_DEPS="smzx.pal mzx_ascii.chr mzx_blank.chr mzx_default.chr \
 DOCS="docs/COPYING.DOC docs/changelog.txt docs/port.txt docs/macro.txt"
 
 #
-# Name of the PSP's Pad Configuration mapping file.
+# Various joypad configuration files.
 #
-PADCONFIG="pad.config"
+PSPPAD="pad.config"
+GP2XPAD="pad.config.gp2x"
 
 #
 # MegaZeux's build system dependencies; these are packaged in
 # addition to binary deps above to complete the source package.
 #
-BUILD_DEPS="config.sh Makefile Makefile.in package.sh $PADCONFIG macosx.zip"
+BUILD_DEPS="config.sh Makefile Makefile.in package.sh $PSPPAD $GP2XPAD \
+            macosx.zip"
 
 #
 # These directories are purely for source distributions.

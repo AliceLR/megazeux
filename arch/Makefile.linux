@@ -14,6 +14,12 @@ LIBS     += -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
 # switch locking method
 INCLUDES += -DPTHREAD_MUTEXES
 
+# enable stack protector for debug builds
+ifdef DEBUG
+CFLAGS   += -fstack-protector-all
+CXXFLAGS += -fstack-protector-all
+endif
+
 # linux os specific install target
 install:
 	@install -m 0755 -d ${DESTDIR}/${PREFIX}/bin && \

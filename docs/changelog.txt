@@ -9,9 +9,9 @@ renderers, improving performance for most users. A port of MegaZeux to the
 GP2X console has been added. MegaZeux has been backported to C (rather than
 C++) and can operate correctly on a CPU without a floating-point unit.
 
-Particular thanks go out to Quantum P. (for his icons), Mr_Alert (for his
-valuable bug fixes), Lancer-X (for fixing what I was too lazy to) and
-Terryn (for finding many annoying bugs that nobody else could).
+Particular thanks go out to Mr_Alert (for his valuable bug fixes),
+Lancer-X (for fixing what I was too lazy to) and Terryn (for finding many
+annoying bugs that nobody else could).
 
 USERS
 
@@ -38,9 +38,6 @@ USERS
   fixes some bugs in the mixer, and should build on more platforms.
   NOTE: MID files currently cannot be selected in the editor, because they
         do not play correctly.
-+ Added Quantum P's MacOS X icons and make them available on all platforms.
-  On Windows, the icons are now embedded in the EXE file and will be visible
-  on the taskbar.
 + Improved the performance of the "opengl2" renderer, by removing the
   convoluted 3D drawing commands and replacing them with 2D ones. Reduced the
   quad count by using an intermediary 80x25 texture. MegaZeux now depends on
