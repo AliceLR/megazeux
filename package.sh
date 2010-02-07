@@ -115,7 +115,7 @@ fi
 # build deps below.
 #
 BINARY_DEPS="smzx.pal mzx_ascii.chr mzx_blank.chr mzx_default.chr \
-             mzx_help.fil mzx_smzx.chr mzx_edit.chr config.txt icon.bmp"
+             mzx_help.fil mzx_smzx.chr mzx_edit.chr config.txt"
 
 #
 # Documents that the binary zip should contain (pathname will be stored too).
