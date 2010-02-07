@@ -11,13 +11,7 @@
 VERSION=2.81g
 TARGET=mzx281g
 
-ifneq (${DEBUG},1)
-mzx = ${TARGET}${BINEXT}
-else
-mzx = ${TARGET}.dbg${BINEXT}
-endif
-
-all: ${mzx}
+all: mzx
 
 include Makefile.platform
 
@@ -47,6 +41,14 @@ endif
 # a message. We don't want to pull in other targets, confusing Make.
 #
 ifneq (${SUPPRESS_BUILD},1)
+
+ifneq (${DEBUG},1)
+mzx = ${TARGET}${BINEXT}
+else
+mzx = ${TARGET}.dbg${BINEXT}
+endif
+
+mzx: ${mzx}
 
 ifeq (${BUILD_MODPLUG},1)
 BUILD_GDM2S3M=1

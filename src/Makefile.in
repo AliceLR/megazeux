@@ -20,12 +20,16 @@ mzx_cflags   += -I${mzx_base} -I${PREFIX}/include
 mzx_ldflags  += ${SDL_LDFLAGS} ${VORBIS_LDFLAGS}
 mzx_cxxflags = ${mzx_cflags}
 
-${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.cpp
+txt2hlp_base = src/utils
+txt2hlp = ${txt2hlp_base}/txt2hlp${BINEXT}
+txt2hlp_objs = ${txt2hlp_base}/txt2hlp.o
+
+${txt2hlp_base}/%.o ${txt2hlp_base}/%.dbg.o: ${txt2hlp_base}/%.c
 ifeq (${V},1)
-	${CXX} ${CXXFLAGS} ${mzx_cflags} -c $< -o $@
+	${CC} ${CFLAGS} -c $< -o $@
 else
-	@echo "  CXX     " $<
-	@${CXX} ${CXXFLAGS} ${mzx_cflags} -c $< -o $@
+	@echo "  CC      " $<
+	@${CC} ${CFLAGS} -c $< -o $@
 endif
 
 ${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.c
@@ -34,6 +38,14 @@ ifeq (${V},1)
 else
 	@echo "  CC      " $<
 	@${CC} ${CFLAGS} ${mzx_cflags} -c $< -o $@
+endif
+
+${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.cpp
+ifeq (${V},1)
+	${CXX} ${CXXFLAGS} ${mzx_cflags} -c $< -o $@
+else
+	@echo "  CXX     " $<
+	@${CXX} ${CXXFLAGS} ${mzx_cflags} -c $< -o $@
 endif
 
 # FIXME: Sort alphabetically
@@ -55,11 +67,6 @@ mzx_objs = \
     ${mzx_base}/render_soft.${o} ${mzx_base}/render_yuv.${o} \
     ${mzx_base}/render_yuv1.${o} ${mzx_base}/render_yuv2.${o} \
     ${mzx_base}/render_gp2x.${o}
-
-# Build the TXT->HLP converter
-txt2hlp_base = src/utils
-txt2hlp = ${txt2hlp_base}/txt2hlp
-txt2hlp_objs = ${txt2hlp_base}/txt2hlp.o
 
 ifeq (${BUILD_OPENGL},1)
 mzx_objs += ${mzx_base}/render_gl.${o}
@@ -94,7 +101,7 @@ else
 endif
 endif
 
-${mzx}: ${gdm2s3m} ${libmodplug} ${mzx_objs} #${txt2hlp}
+${mzx}: ${gdm2s3m} ${libmodplug} ${mzx_objs} ${txt2hlp}
 ifeq (${V},1)
 	${CC} ${mzx_objs} ${mzx_ldflags} -o ${mzx}
 else
