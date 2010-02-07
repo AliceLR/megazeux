@@ -68,7 +68,11 @@ static char main_menu[] =
  "F3/L - Load world\n"
  "F4/R - Restore game\n"
  "F5/P - Play world\n"
+#ifdef CONFIG_EDITOR
  "F8/E - World editor\n"
+#else
+ "\n"
+#endif
  "F10  - Quickload\n"
  ""  // unused
  ""; // unused
