@@ -19,6 +19,8 @@ CC  ?= gcc
 CXX ?= g++
 AR  ?= ar
 
+OPTIMIZE_CFLAGS ?= -O2
+
 SDL_CFLAGS  ?= `sdl-config --cflags`
 SDL_LDFLAGS ?= `sdl-config --libs`
 
@@ -39,8 +41,8 @@ CFLAGS    = -g -Wall -std=gnu99 -DDEBUG ${ARCH_CFLAGS}
 CXXFLAGS  = -g -Wall -DDEBUG ${ARCH_CXXFLAGS}
 o         = dbg.o
 else
-CFLAGS   += -O2 -Wall -std=gnu99 ${ARCH_CFLAGS}
-CXXFLAGS += -O2 -Wall ${ARCH_CXXFLAGS}
+CFLAGS   += ${OPTIMIZE_CFLAGS} -Wall -std=gnu99 ${ARCH_CFLAGS}
+CXXFLAGS += ${OPTIMIZE_CFLAGS} -Wall ${ARCH_CXXFLAGS}
 o         = o
 endif
 

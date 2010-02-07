@@ -23,6 +23,8 @@ usage() {
 	echo
 	echo "Supported <option> values:"
 	echo
+	echo "  --optimize-size      Perform size optimizations (-Os)."
+	echo
 	echo "  --disable-editor     Disable the built-in editor."
 	echo "  --enable-editor      Enables the built-in editor (default)."
 	echo
@@ -77,6 +79,7 @@ PLATFORM=""
 PREFIX="/usr"
 SYSCONFDIR="/etc"
 SYSCONFDIR_SET="false"
+OPT_SIZE="false"
 EDITOR="true"
 HOST_TOOLS="false"
 UTILS="true"
@@ -113,6 +116,8 @@ while [ "$1" != "" ]; do
 		SYSCONFDIR="$1"
 		SYSCONFDIR_SET="true"
 	fi
+
+	[ "$1" = "--optimize-size" ] && OPT_SIZE="true"
 
 	[ "$1" = "--disable-editor" ] && EDITOR="false"
 	[ "$1" = "--enable-editor" ] && EDITOR="true"
@@ -223,6 +228,16 @@ echo "TARGET=`grep TARGET Makefile | head -n1 | \
               sed "s/ //g" | cut -d "=" -f 2`" \
 	>> Makefile.platform
 echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
+
+#
+# Users may want size optimizations
+#
+if [ "$OPT_SIZE" = "true" ]; then
+	echo "Optimizing for size."
+	echo "OPTIMIZE_CFLAGS=-Os" >> Makefile.platform
+else
+	echo "Optimizing for speed."
+fi
 
 #
 # User may disable the built-in editor

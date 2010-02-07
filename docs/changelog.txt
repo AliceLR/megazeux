@@ -72,9 +72,11 @@ DEVELOPERS
   build as a real Application, instead of just a UNIX binary). Also fixed
   some bogosities with robo_ed's X11 includes on OS 10.5.
 + The editor can now be disabled, a la MZXRUN from the old DOS versions.
-  Configure with --disable-editor to shrink MZX by about 150k. This
-  reduces the size of a stripped AMD64 binary from 860296b (with all
-  features enabled) to 307616b (with all features disabled) (~64% smaller).
+  Configure with --disable-editor to shrink MZX by about 150k.
++ MegaZeux can now be compiled with size optimisations (--optimize-size to
+  config.sh) for a 20% space saving.
+  This reduces the size of a stripped AMD64 binary from 860296b (with all
+  features enabled) to 269864b (with all featured disabled) (~69% smaller).
 
 July 4, 2007 - MZX 2.81g
 
