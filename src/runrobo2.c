@@ -5419,7 +5419,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             }
           } while(redo_load == 2);
 
-          strcpy(curr_file, name_buffer);
+          strcpy(curr_file, translated_name);
           mzx_world->swapped = 1;
 
           return;

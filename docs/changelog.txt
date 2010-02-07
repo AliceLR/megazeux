@@ -45,6 +45,9 @@ USERS
 + Fixed a bug reported by Mr_Alert where MZX would not handle short,
   non-looping mods in the editor. The editor would try to destroy the mod
   again, even after the callback had destroyed it (premature termination).
++ Fixed a bug with SWAP WORLD where file translation would occur but the
+  result would mistakenly not be used. This broke some uses of SWAP WORLD
+  on non-Windows platforms (Mr_Alert).
 
 DEVELOPERS
 
