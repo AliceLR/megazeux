@@ -62,6 +62,10 @@ DEVELOPERS
   note, listing significant contributors to MegaZeux.
 + Added support to the build system for supporting icons modularly.
   See contrib/icons/README for more information.
++ The debug build (make DEBUG=1) now enables GCC 4.x's stack protector. This
+  breaks compatibility with GCC 3.x, but you can just remove the flag if you
+  don't want to use it (the stack protector will improve stack corruption
+  detection and provide more usable debug traces).
 
 January 30, 2007 - MZX 2.81f
 
