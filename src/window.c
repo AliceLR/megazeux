@@ -3332,8 +3332,6 @@ int file_manager(World *mzx_world, char **wildcards, char *ret,
                   {
                     FILE *mzx_file = fopen(file_name, "rb");
 
-                    file_list[num_files] =
-                     (char *)malloc(56 + file_name_length + 1);
                     memset(file_list[num_files], ' ', 55);
                     strcpy(file_list[num_files], file_name);
                     file_list[num_files][file_name_length] = ' ';

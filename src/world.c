@@ -1207,6 +1207,10 @@ void clear_world(World *mzx_world)
   if(mzx_world->global_robot.stack)
     free(mzx_world->global_robot.stack);
 
+  if(mzx_world->global_robot.label_list && mzx_world->global_robot.used)
+    clear_label_cache(mzx_world->global_robot.label_list,
+     mzx_world->global_robot.num_labels);
+
   if(mzx_world->input_file)
     fclose(mzx_world->input_file);
 
@@ -1263,6 +1267,10 @@ void clear_global_data(World *mzx_world)
   free(sprite_list);
   mzx_world->sprite_list = NULL;
   mzx_world->num_sprites = 0;
+
+  free(mzx_world->collision_list);
+  mzx_world->collision_list = NULL;
+  mzx_world->collision_count = 0;
 
   mzx_world->vlayer_size = 0;
   mzx_world->vlayer_width = 0;

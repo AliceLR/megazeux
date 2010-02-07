@@ -88,6 +88,8 @@ USERS
   crashes in several different situations (Mr_Alert).
 + Fixed a bug where a robot using the BECOME command to change into a
   PushableRobot or vice versa would freeze (Mr_Alert).
++ Fixed memory leaks in the file selection dialog, the counter debugger, the
+  collision list and the global robot (Mr_Alert).
 
 DEVELOPERS
 

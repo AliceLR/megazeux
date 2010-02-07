@@ -3605,5 +3605,10 @@ void debug_counters(World *mzx_world)
   } while(dialog_result != -1);
 
   m_hide();
+
+  for(i=0;i<num_vars;i++)
+    free(var_list[i]);
+
+  free(var_list);
 }
 
