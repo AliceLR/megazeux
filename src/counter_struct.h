@@ -29,6 +29,7 @@ typedef struct _counter
 {
   int value;
   void *gateway_write;
+  void *gateway_dec;
   char name[1];
 } counter;
 

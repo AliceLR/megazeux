@@ -2852,6 +2852,14 @@ int update(World *mzx_world, int game, int *fadein)
     board_width = src_board->board_width;
   }
 
+  if(update_music)
+  {
+    load_mod(src_board->mod_playing);
+    strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+  }
+
+  update_music = 0;
+
   if(!slowed)
   {
     int entrance = 1;
@@ -3102,14 +3110,6 @@ int update(World *mzx_world, int game, int *fadein)
       draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
        mzx_world->player_y);
     }
-
-    if(update_music)
-    {
-      load_mod(src_board->mod_playing);
-      strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-    }
-
-    update_music = 0;
 
     if(pal_update)
       update_palette();

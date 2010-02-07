@@ -2179,6 +2179,40 @@ int set_counter_special(World *mzx_world, int spec_type,
 const int num_builtin_counters =
  sizeof(builtin_counters) / sizeof(function_counter);
 
+int hurt_player(World *mzx_world, int value)
+{
+  // Must not be invincible
+  if(get_counter(mzx_world, "INVINCO", 0) <= 0)
+  {
+    Board *src_board = mzx_world->current_board;
+    send_robot_def(mzx_world, 0, 13);
+    if(src_board->restart_if_zapped)
+    {
+      int player_restart_x = mzx_world->player_restart_x;
+      int player_restart_y = mzx_world->player_restart_y;
+      int player_x = mzx_world->player_x;
+      int player_y = mzx_world->player_y;
+     //Restart since we were hurt
+      if((player_restart_x != player_x) ||
+       (player_restart_y != player_y))
+      {
+        id_remove_top(mzx_world, player_x, player_y);
+        player_x = player_restart_x;
+        player_y = player_restart_y;
+        id_place(mzx_world, player_x, player_y, PLAYER, 0, 0);
+        mzx_world->was_zapped = 1;
+        mzx_world->player_x = player_x;
+        mzx_world->player_y = player_y;
+      }
+    }
+  }
+  else
+  {
+    value = 0;
+  }
+  return value;
+}
+
 int health_gateway(World *mzx_world, counter *counter, char *name,
  int value, int id)
 {
@@ -2193,40 +2227,26 @@ int health_gateway(World *mzx_world, counter *counter, char *name,
   }
 
   // Trying to decrease health?
-  if(value < counter->value)
+  // Only handle here if MZX world version > 2.70
+  // Otherwise, it will be handled in health_dec_gateway()
+  if((value < counter->value) && (mzx_world->version > 0x0249))
   {
-    // Must not be invincible
-    if(get_counter(mzx_world, "INVINCO", 0) <= 0)
-    {
-      Board *src_board = mzx_world->current_board;
-      send_robot_def(mzx_world, 0, 13);
-      if(src_board->restart_if_zapped)
-      {
-        int player_restart_x = mzx_world->player_restart_x;
-        int player_restart_y = mzx_world->player_restart_y;
-        int player_x = mzx_world->player_x;
-        int player_y = mzx_world->player_y;
-
-        //Restart since we were hurt
-        if((player_restart_x != player_x) ||
-         (player_restart_y != player_y))
-        {
-          id_remove_top(mzx_world, player_x, player_y);
-          player_x = player_restart_x;
-          player_y = player_restart_y;
-          id_place(mzx_world, player_x, player_y, PLAYER, 0, 0);
-          mzx_world->was_zapped = 1;
-          mzx_world->player_x = player_x;
-          mzx_world->player_y = player_y;
-        }
-      }
-    }
-    else
-    {
-      value = counter->value;
-    }
+    value = counter->value - hurt_player(mzx_world, counter->value - value);
   }
 
+  return value;
+}
+
+int health_dec_gateway(World *mzx_world, counter *counter, char *name,
+ int value, int id)
+{
+  // Trying to decrease health? (legacy support)
+  // Only handle here if MZX world version <= 2.70
+  // Otherwise, it will be handled in health_gateway()
+  if((value > 0) && (mzx_world->version <= 0x0249))
+  {
+    value = hurt_player(mzx_world, value);
+  }
   return value;
 }
 
@@ -2289,9 +2309,21 @@ void set_gateway(World *mzx_world, char *name,
   }
 }
 
+void set_dec_gateway(World *mzx_world, char *name,
+ gateway_dec_function function)
+{
+  int next;
+  counter *cdest = find_counter(mzx_world, name, &next);
+  if(cdest)
+  {
+    cdest->gateway_dec = (void*)function;
+  }
+}
+
 void initialize_gateway_functions(World *mzx_world)
 {
   set_gateway(mzx_world, "HEALTH", health_gateway);
+  set_dec_gateway(mzx_world, "HEALTH", health_dec_gateway);
   set_gateway(mzx_world, "LIVES", lives_gateway);
   set_gateway(mzx_world, "INVINCO", invinco_gateway);
   set_gateway(mzx_world, "LOBOMBS", builtin_gateway);
@@ -2503,6 +2535,7 @@ void add_counter(World *mzx_world, char *name, int value, int position)
   strcpy(cdest->name, name);
   cdest->value = value;
   cdest->gateway_write = NULL;
+  cdest->gateway_dec = NULL;
 
   mzx_world->counter_list[position] = cdest;
   mzx_world->num_counters = count + 1;
@@ -3001,6 +3034,13 @@ void dec_counter(World *mzx_world, char *name, int value, int id)
 
     if(cdest)
     {
+      if(cdest->gateway_dec)
+      {
+        gateway_dec_function gateway_dec =
+         (gateway_dec_function)cdest->gateway_dec;
+        value = gateway_dec(mzx_world, cdest, name, value, id);
+      }
+
       value = cdest->value - value;
 
       if(cdest->gateway_write)
@@ -3336,6 +3376,7 @@ counter *load_counter(FILE *fp)
   src_counter->value = value;
 
   src_counter->gateway_write = NULL;
+  src_counter->gateway_dec = NULL;
 
   return src_counter;
 }

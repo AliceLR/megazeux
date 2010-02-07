@@ -44,6 +44,8 @@ typedef struct _function_counter
 
 typedef int (*gateway_write_function)(World *mzx_world,
  counter *counter, char *name, int value, int id);
+typedef int (*gateway_dec_function)(World *mzx_world,
+ counter *counter, char *name, int value, int id);
 
 // functions
 

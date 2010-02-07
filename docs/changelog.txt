@@ -48,6 +48,11 @@ USERS
 + Fixed a bug with SWAP WORLD where file translation would occur but the
   result would mistakenly not be used. This broke some uses of SWAP WORLD
   on non-Windows platforms (Mr_Alert).
++ Fixed a bug where using JUMP to MOD ORDER right after switching boards
+  would fail due to the board music not having been loaded yet (Mr_Alert).
++ Fixed a bug where games made before 2.80 would inadvertently trigger
+  "PLAYERHURT" due to using the SET command to reduce the amount of
+  health (Mr_Alert).
 
 DEVELOPERS
 
