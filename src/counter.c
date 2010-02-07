@@ -2278,7 +2278,7 @@ int invinco_gateway(World *mzx_world, counter *counter, char *name,
 {
   if(!counter->value)
   {
-    mzx_world->saved_pl_color = player_color;
+    mzx_world->saved_pl_color = id_chars[player_color];
   }
   else
   {

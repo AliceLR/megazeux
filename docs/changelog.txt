@@ -16,6 +16,9 @@ USERS
   music can be selected in the editor and correctly saved (Wervyn).
 + The OpenBSD compiler detected some serious string bugs in MegaZeux. These
   have now been fixed and should eliminate some more potential crashes.
++ Fixed a bug where an ENERGIZER item or use of the INVINCO counter would
+  cause the original player color to be corrupted at the end of the colour
+  blitz.
 
 DEVELOPERS
 
