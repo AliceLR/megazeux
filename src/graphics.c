@@ -246,7 +246,7 @@ void update_palette(void)
   update_colors(new_palette, make_palette(new_palette));
 }
 
-void set_gui_palette(void)
+static void set_gui_palette(void)
 {
   int i;
 
