@@ -1,3 +1,5 @@
+SVN - MZX 2.82
+
 USERS
 
 + Added a more lenient WAV file loader so that ModPlug isn't relied on as much
@@ -9,6 +11,9 @@ USERS
   cursor in the other renderers (Mr_Alert).
 + Setting vlayer_size, vlayer_width or vlayer_height to values less than or
   equal to zero would crash MegaZeux. Limit the smallest vlayer size to 1x1.
++ If selecting a module with a non 8.3 filename, MZX will now ask you if you
+  want to rename it to 8.3, and do so in an intelligent way. This means that
+  music can be selected in the editor and correctly saved (Wervyn).
 
 DEVELOPERS
 
