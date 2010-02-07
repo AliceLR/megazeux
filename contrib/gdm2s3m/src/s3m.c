@@ -57,41 +57,41 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
   (*stream_len) = 0;
 
   /* dump song title */
-  check_a_to_s (&backup, stream_len, (void *) &hdr->title, &stream, 28);
+  check_a_to_s (&backup, stream_len, &hdr->title, &stream, 28);
 
   /* pad with junk */
-  check_a_to_s (&backup, stream_len, (void *) &junk1, &stream, 4);
+  check_a_to_s (&backup, stream_len, &junk1, &stream, 4);
 
   /* dump quantities */
   CHECK_ENDIAN_16 (&hdr->numorders);
   CHECK_ENDIAN_16 (&hdr->numinst);
   CHECK_ENDIAN_16 (&hdr->numpatterns);
-  check_a_to_s (&backup, stream_len, (void *) &hdr->numorders, &stream, 2);
-  check_a_to_s (&backup, stream_len, (void *) &hdr->numinst, &stream, 2);
-  check_a_to_s (&backup, stream_len, (void *) &hdr->numpatterns, &stream, 2);
+  check_a_to_s (&backup, stream_len, &hdr->numorders, &stream, 2);
+  check_a_to_s (&backup, stream_len, &hdr->numinst, &stream, 2);
+  check_a_to_s (&backup, stream_len, &hdr->numpatterns, &stream, 2);
   CHECK_ENDIAN_16 (&hdr->numorders);
   CHECK_ENDIAN_16 (&hdr->numinst);
   CHECK_ENDIAN_16 (&hdr->numpatterns);
 
   /* pad with more junk */
-  check_a_to_s (&backup, stream_len, (void *) &junk2, &stream, 6);
+  check_a_to_s (&backup, stream_len, &junk2, &stream, 6);
 
   /* dump magic bytes */
-  check_a_to_s (&backup, stream_len, (void *) s3m_magic, &stream, 4);
+  check_a_to_s (&backup, stream_len, s3m_magic, &stream, 4);
 
   /* dump global volume, speed, tempo */
-  check_a_to_s (&backup, stream_len, (void *) &hdr->global_vol, &stream, 1);
-  check_a_to_s (&backup, stream_len, (void *) &hdr->speed, &stream, 1);
-  check_a_to_s (&backup, stream_len, (void *) &hdr->tempo, &stream, 1);
+  check_a_to_s (&backup, stream_len, &hdr->global_vol, &stream, 1);
+  check_a_to_s (&backup, stream_len, &hdr->speed, &stream, 1);
+  check_a_to_s (&backup, stream_len, &hdr->tempo, &stream, 1);
 
   /* pad with remaining junk */
-  check_a_to_s (&backup, stream_len, (void *) &junk3, &stream, 13);
+  check_a_to_s (&backup, stream_len, &junk3, &stream, 13);
 
   /* channel settings */
-  check_a_to_s (&backup, stream_len, (void *) &hdr->chansett, &stream, 32);
+  check_a_to_s (&backup, stream_len, &hdr->chansett, &stream, 32);
 
   /* ORDER HEADER ---------------------------------------------------------- */
-  check_a_to_s (&backup, stream_len, (void *) orders->patterns, &stream,
+  check_a_to_s (&backup, stream_len, orders->patterns, &stream,
                   hdr->numorders);
 
   /* update offset */
@@ -112,13 +112,13 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
   memset (gap2, 0, segpad);
 
   /* pad up to segment boundary */
-  check_a_to_s (&backup, stream_len, (void *) gap2, &stream, segment);
+  check_a_to_s (&backup, stream_len, gap2, &stream, segment);
 
   /* write channel pan values */
-  check_a_to_s (&backup, stream_len, (void *) &s3m->panmap, &stream, 32);
+  check_a_to_s (&backup, stream_len, &s3m->panmap, &stream, 32);
 
   /* pad up to segment boundary */
-  check_a_to_s (&backup, stream_len, (void *) &gap2[segment], &stream,
+  check_a_to_s (&backup, stream_len, &gap2[segment], &stream,
                  segpad - segment);
 
   /* free padding */
@@ -134,48 +134,48 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
     struct S3M_samhdr *sample = &s3m->samples[i].header;
 
     /* write out junk byte */
-    check_a_to_s (&backup, stream_len, (void *) &junk4, &stream, 1);
+    check_a_to_s (&backup, stream_len, &junk4, &stream, 1);
 
     /* dos filename */
-    check_a_to_s (&backup, stream_len, (void *) &sample->filename, &stream, 12);
+    check_a_to_s (&backup, stream_len, &sample->filename, &stream, 12);
 
     /* memseg (dummy) */
-    check_a_to_s (&backup, stream_len, (void *) memseg, &stream, 3);
+    check_a_to_s (&backup, stream_len, memseg, &stream, 3);
 
     /* sample length */
     CHECK_ENDIAN_32 (&sample->length);
-    check_a_to_s (&backup, stream_len, (void *) &sample->length, &stream, 4);
+    check_a_to_s (&backup, stream_len, &sample->length, &stream, 4);
     CHECK_ENDIAN_32 (&sample->length);
 
     /* loop beginning */
     CHECK_ENDIAN_32 (&sample->begin);
-    check_a_to_s (&backup, stream_len, (void *) &sample->begin, &stream, 4);
+    check_a_to_s (&backup, stream_len, &sample->begin, &stream, 4);
 
     /* loop ending */
     CHECK_ENDIAN_32 (&sample->end);
-    check_a_to_s (&backup, stream_len, (void *) &sample->end, &stream, 4);
+    check_a_to_s (&backup, stream_len, &sample->end, &stream, 4);
 
     /* volume */
-    check_a_to_s (&backup, stream_len, (void *) &sample->volume, &stream, 1);
+    check_a_to_s (&backup, stream_len, &sample->volume, &stream, 1);
 
     /* more junk */
-    check_a_to_s (&backup, stream_len, (void *) &junk5, &stream, 2);
+    check_a_to_s (&backup, stream_len, &junk5, &stream, 2);
 
     /* flags */
-    check_a_to_s (&backup, stream_len, (void *) &sample->flags, &stream, 1);
+    check_a_to_s (&backup, stream_len, &sample->flags, &stream, 1);
 
     /* rate */
     CHECK_ENDIAN_16 (&sample->rate);
-    check_a_to_s (&backup, stream_len, (void *) &sample->rate, &stream, 2);
+    check_a_to_s (&backup, stream_len, &sample->rate, &stream, 2);
 
     /* last bit of junk */
-    check_a_to_s (&backup, stream_len, (void *) &junk6, &stream, 14);
+    check_a_to_s (&backup, stream_len, &junk6, &stream, 14);
 
     /* sample name */
-    check_a_to_s (&backup, stream_len, (void *) &sample->name, &stream, 28);
+    check_a_to_s (&backup, stream_len, &sample->name, &stream, 28);
 
     /* sample magic */
-    check_a_to_s (&backup, stream_len, (void *) sam_magic, &stream, 4);
+    check_a_to_s (&backup, stream_len, sam_magic, &stream, 4);
 
     /* work out segment */
     segment = offset / 16;
@@ -202,11 +202,11 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
 
     /* write out length of pattern */
     CHECK_ENDIAN_16 (&pattern->length);
-    check_a_to_s (&backup, stream_len, (void *) &pattern->length, &stream, 2);
+    check_a_to_s (&backup, stream_len, &pattern->length, &stream, 2);
     CHECK_ENDIAN_16 (&pattern->length);
 
     /* write out pattern data */
-    check_a_to_s (&backup, stream_len, (void *) pattern->data, &stream,
+    check_a_to_s (&backup, stream_len, pattern->data, &stream,
                     pattern->length - 2);
 
     /* work out segment */
@@ -226,7 +226,7 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
     segpad = (offset % 16) ? 16 - offset % 16 : 0;
 
     /* write out padding */
-    check_a_to_s (&backup, stream_len, (void *) gap, &stream, segpad);
+    check_a_to_s (&backup, stream_len, gap, &stream, segpad);
 
     /* update offset */
     offset += segpad;
@@ -246,7 +246,7 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
     struct S3M_sample *sample = &s3m->samples[i];
 
     /* write out sample data */
-    check_a_to_s (&backup, stream_len, (void *) sample->data, &stream,
+    check_a_to_s (&backup, stream_len, sample->data, &stream,
                    sample->header.length);
 
     /* extract offset from parapointer table */
@@ -273,7 +273,7 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
     segpad = (offset % 16) ? 16 - offset % 16 : 0;
 
     /* write out padding */
-    check_a_to_s (&backup, stream_len, (void *) gap, &stream, segpad);
+    check_a_to_s (&backup, stream_len, gap, &stream, segpad);
 
     /* update offset */
     offset += segpad;
@@ -635,23 +635,23 @@ struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm)
       }
 
       /* copy over */
-      check_a_to_s (&backup, &plen, (void *) &b, &pdata, 1);
+      check_a_to_s (&backup, &plen, &b, &pdata, 1);
 
       /* write out note and sample */
       if (note) {
-        check_a_to_s (&backup, &plen, (void *) &n, &pdata, 1);
-        check_a_to_s (&backup, &plen, (void *) &s, &pdata, 1);
+        check_a_to_s (&backup, &plen, &n, &pdata, 1);
+        check_a_to_s (&backup, &plen, &s, &pdata, 1);
       }
 
       /* volume event */
       if (effect && vol) {
-        check_a_to_s (&backup, &plen, (void *) &sv, &pdata, 1);
+        check_a_to_s (&backup, &plen, &sv, &pdata, 1);
       }
 
       /* normal effect */
       if (effect && norm) {
-        check_a_to_s (&backup, &plen, (void *) &se, &pdata, 1);
-        check_a_to_s (&backup, &plen, (void *) &sep, &pdata, 1);
+        check_a_to_s (&backup, &plen, &se, &pdata, 1);
+        check_a_to_s (&backup, &plen, &sep, &pdata, 1);
       }
     }
 
