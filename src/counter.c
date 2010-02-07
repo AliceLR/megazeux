@@ -524,7 +524,7 @@ static void mzx_speed_write(World *mzx_world, function_counter *counter,
   {
     mzx_world->lock_speed = 0;
   }
-  else
+  else if(value >= 1 && value <= 9)
   {
     mzx_world->mzx_speed = value;
     mzx_world->lock_speed = 1;
