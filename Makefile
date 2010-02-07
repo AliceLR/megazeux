@@ -8,8 +8,8 @@
 
 .PHONY: clean
 
-VERSION=2.81g
-TARGET=mzx281g
+VERSION=2.82
+TARGET=mzx282
 
 all: mzx
 
