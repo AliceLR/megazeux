@@ -400,9 +400,9 @@ FILE *fsafeopen(const char *path, const char *mode)
  * by another platform. For example, if a file is written out by Windows,
  * and a Linux user reads it, the buffers will not remove the \r character.
  * 
- * This function provides a "safe" wrapper that removes all type of line
- * endings from the second last character in the buffer, and should work at
- * least until somebody invents a new three byte string terminator ;-(
+ * This function provides a "safe" wrapper that removes all kinds of line
+ * endings from the buffer, and should work at least until somebody invents
+ * a new three byte string terminator ;-(
  */
 char *fsafegets(char *s, int size, FILE *stream)
 {
@@ -411,8 +411,14 @@ char *fsafegets(char *s, int size, FILE *stream)
   if(ret)
   {
     int len = strlen(ret);
-    if(len > 1 && (s[len - 2] == '\r' || s[len - 2] == '\n'))
-      s[len - 1] = '\0';
+
+    if (len > 0)
+      if (s[len - 1] == '\r' || s[len - 1] == '\n')
+        s[len - 1] = '\0';
+
+    if (len > 1)
+      if (s[len - 2] == '\r' || s[len - 2] == '\n')
+        s[len - 2] = '\0';
   }
 
   return ret;

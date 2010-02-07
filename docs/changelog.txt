@@ -43,6 +43,8 @@ USERS
   possible (Exophase).
 + Fixed problems with going over Robot name character limits using the .@
   command (Exophase).
++ Fixed problems with LOAD_ROBOT freezing on a robot with no newline at the
+  end of the file.
 
 DEVELOPERS
 

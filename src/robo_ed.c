@@ -1042,7 +1042,7 @@ static void export_block(robot_state *rstate, int region_default)
     if(!export_type)
     {
       add_ext(export_name, ".txt");
-      export_file = fopen(export_name, "wt"); // 'wt' is a borland text mode
+      export_file = fopen(export_name, "w");
 
       while(current_rline != end_rline)
       {
@@ -1077,20 +1077,15 @@ static void import_block(World *mzx_world, robot_state *rstate)
   char import_name[128];
   char *txt_ext[] = { ".TXT", NULL };
 
-  if(!choose_file(mzx_world, txt_ext, import_name,
-   "Import Robot", 1))
+  if(!choose_file(mzx_world, txt_ext, import_name, "Import Robot", 1))
   {
-    FILE *import_file = fopen(import_name, "rt"); // 'rt' is a borland text mode
+    FILE *import_file = fopen(import_name, "r");
     char line_buffer[256];
     rstate->command_buffer = line_buffer;
 
+    // fsafegets ensures that no line terminators are present
     while(fsafegets(line_buffer, 255, import_file) != NULL)
-    {
-      if(line_buffer[strlen(line_buffer) - 1] == '\n')
-        line_buffer[strlen(line_buffer) - 1] = 0;
-
       add_line(rstate);
-    }
 
     rstate->command_buffer = rstate->command_buffer_space;
   }

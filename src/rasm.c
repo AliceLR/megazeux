@@ -1864,7 +1864,7 @@ __editor_maybe_static int assemble_line(char *cpos,
 
 char *assemble_file(char *name, int *size)
 {
-  FILE *input_file = fsafeopen(name, "rt"); // 'rt' is a borland text mode
+  FILE *input_file = fsafeopen(name, "r");
   char line_buffer[256];
   char bytecode_buffer[256];
   char error_buffer[256];
@@ -1879,10 +1879,9 @@ char *assemble_file(char *name, int *size)
     buffer = (char *)malloc(1024);
     buffer[0] = 0xFF;
 
+    // fsafegets ensures no line terminators are present
     while(fsafegets(line_buffer, 255, input_file))
     {
-      line_buffer[strlen(line_buffer) - 1] = 0;
-
       line_bytecode_length =
        assemble_line(line_buffer, bytecode_buffer, error_buffer, NULL, NULL);
 
@@ -1914,10 +1913,8 @@ char *assemble_file(char *name, int *size)
     fclose(input_file);
     return buffer;
   }
-  else
-  {
-    return NULL;
-  }
+
+  return NULL;
 }
 
 __editor_maybe_static void print_color(int color, char *color_buffer)
