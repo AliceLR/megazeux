@@ -2589,6 +2589,7 @@ void set_counter(World *mzx_world, char *name, int value, int id)
   int next;
 
   fdest = find_function_counter(name);
+
   if(fdest && fdest->function_write &&
    (mzx_world->version >= fdest->minimum_version))
   {
@@ -2835,6 +2836,7 @@ int get_counter(World *mzx_world, char *name, int id)
   int next;
 
   fdest = find_function_counter(name);
+
   if(fdest && fdest->function_read &&
    (mzx_world->version >= fdest->minimum_version))
   {
@@ -2902,7 +2904,8 @@ void inc_counter(World *mzx_world, char *name, int value, int id)
 
   fdest = find_function_counter(name);
 
-  if(fdest && fdest->function_read && fdest->function_write)
+  if(fdest && fdest->function_read && fdest->function_write &&
+   (mzx_world->version >= fdest->minimum_version))
   {
     current_value =
      fdest->function_read(mzx_world, fdest, name, id);
@@ -2984,7 +2987,9 @@ void dec_counter(World *mzx_world, char *name, int value, int id)
   int next;
 
   fdest = find_function_counter(name);
-  if(fdest && fdest->function_read && fdest->function_write)
+
+  if(fdest && fdest->function_read && fdest->function_write &&
+   (mzx_world->version >= fdest->minimum_version))
   {
     current_value =
      fdest->function_read(mzx_world, fdest, name, id);
@@ -3040,7 +3045,9 @@ void mul_counter(World *mzx_world, char *name, int value, int id)
   int next;
 
   fdest = find_function_counter(name);
-  if(fdest && fdest->function_read && fdest->function_write)
+
+  if(fdest && fdest->function_read && fdest->function_write &&
+   (mzx_world->version >= fdest->minimum_version))
   {
     current_value =
      fdest->function_read(mzx_world, fdest, name, id);
@@ -3077,7 +3084,9 @@ void div_counter(World *mzx_world, char *name, int value, int id)
     return;
 
   fdest = find_function_counter(name);
-  if(fdest && fdest->function_read && fdest->function_write)
+
+  if(fdest && fdest->function_read && fdest->function_write &&
+   (mzx_world->version >= fdest->minimum_version))
   {
     current_value =
      fdest->function_read(mzx_world, fdest, name, id);
@@ -3115,7 +3124,9 @@ void mod_counter(World *mzx_world, char *name, int value, int id)
     return;
 
   fdest = find_function_counter(name);
-  if(fdest && fdest->function_read && fdest->function_write)
+
+  if(fdest && fdest->function_read && fdest->function_write &&
+   (mzx_world->version >= fdest->minimum_version))
   {
     current_value =
      fdest->function_read(mzx_world, fdest, name, id);

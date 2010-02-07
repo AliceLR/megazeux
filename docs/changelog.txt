@@ -16,6 +16,9 @@ USERS
 + Fixed a bug that permitted the mouse y coordinate to be warped to row 25,
   which does not exist. This bug caused some of the renderers to crash, and
   the software renderer to draw in memory it did not possess.
++ Fixed a bug where games made before 2.68 could have available the "key?"
+  counters, unsupported in that version. This caused collisions with counters
+  with the key? name used with inc/dec/mul/div/mod. Fixes "Doom Keep".
 
 DEVELOPERS
 
