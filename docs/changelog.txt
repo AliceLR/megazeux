@@ -94,6 +94,14 @@ USERS
 + Fixed a bug where pressing escape when editing the effect of a ring or potion
   would result in an invalid parameter which would later cause a crash if
   edited again (Mr_Alert).
++ Fixed a bug in which robot-driven text boxes using option commands (the ?
+  command) could overflow by two characters and spill over the side (Lancer-X).
++ Fixed the list box searching mechanism (used in the file manager and F11
+  counter list) and made the existing function more understandable. (Lancer-X).
++ Fixed a bug in which the message string given to the 'ask' command could
+  spill over. Now, the 'ask' dialog resizes if possible, and clips when no
+  further resizing can be performed (Lancer-X).
++ Clipped the 'input string' message properly, to prevent similar overflow.
 
 DEVELOPERS
 

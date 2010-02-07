@@ -1455,39 +1455,28 @@ int run_dialog(World *mzx_world, dialog *di)
 
 int find_entry(char **choices, char *name, int total_num)
 {
-  int bottom = 0, top = total_num - 1, middle = 0;
+  int current_entry;
   int cmpval = 0;
   int name_length = strlen(name);
 
-  while(bottom <= top)
+  for (current_entry = 0; current_entry < total_num; current_entry++)
   {
-    middle = (top + bottom) / 2;
 
+    // Hack to avoid seeking to drive letters under Windows. This
+    // is a terrible place for it, and I'd like to tear it out, but
+    // it would likely upset a lot of the existing code.
+    // (note: Exo added this hack, not me!)
 #ifdef __WIN32__
-    if(choices[middle][1] == ':')
-      cmpval = -1;
+    if(choices[current_entry][1] == ':')
+      continue;
     else
 #endif
-      cmpval = strncasecmp(name, choices[middle], name_length);
 
-    if(cmpval > 0)
-    {
-      bottom = middle + 1;
-    }
-    else
+    cmpval = strncasecmp(name, choices[current_entry], name_length);
 
-    if(cmpval < 0)
+    if(cmpval == 0)
     {
-      top = middle - 1;
-    }
-    else
-    {
-      while((middle > 0)
-       && !strncasecmp(name, choices[middle - 1], name_length))
-      {
-        middle--;
-      }
-      return middle;
+      return current_entry;
     }
   }
 
@@ -2979,11 +2968,47 @@ int ask_yes_no(World *mzx_world, char *str)
   dialog di;
   element *elements[2];
   int dialog_result;
+  int dialog_width = 60;
+  int str_length = strlen(str);
 
-  elements[0] = construct_button(15, 2, "Yes", 0);
-  elements[1] = construct_button(37, 2, "No", 1);
-  construct_dialog(&di, str, 10, 9, 60, 5, elements,
-   2, 0);
+  int yes_button_pos;
+  int no_button_pos;
+
+  // Is this string too long for the normal ask dialog?
+  if (str_length > 56)
+  {
+    // Is the string small enough for a resized ask dialog?
+    if (str_length <= 76)
+    {
+      // Use a bigger ask dialog to fit the string
+      dialog_width = str_length + 4;
+      // If the dialog width is odd, bump it up to the next
+      // even number, otherwise it will look uneven
+      if ((dialog_width % 2) == 1)
+      {
+        dialog_width++;
+      }
+    }
+    else
+    {
+      // Clip the string at the maximum (76 characters)
+      str[76] = 0;
+      dialog_width = 80;
+    }
+  }
+
+  // The 'Yes' button should be about 1/3 along, compensating for
+  // button width
+  yes_button_pos = (dialog_width - 4) / 3 - 2;
+
+  // The 'No' button should be about 2/3 along
+  no_button_pos = (dialog_width - 4) * 2 / 3 - 1;
+
+  elements[0] = construct_button(yes_button_pos, 2, "Yes", 0);
+  elements[1] = construct_button(no_button_pos, 2, "No", 1);
+
+  construct_dialog(&di, str, 40 - dialog_width / 2, 9, dialog_width,
+    5, elements, 2, 0);
 
   dialog_result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);

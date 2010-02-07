@@ -3398,6 +3398,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 111: // input string
       {
         char input_buffer[ROBOT_MAX_TR];
+        char input_buffer_msg[71 + 1];
 
         m_hide();
         save_screen();
@@ -3406,9 +3407,14 @@ void run_robot(World *mzx_world, int id, int x, int y)
           clear_screen(32, 7);
           insta_fadein();
         }
+
         draw_window_box(3, 11, 77, 14, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
          EC_DEBUG_BOX_CORNER, 1, 1);
-        tr_msg(mzx_world, cmd_ptr + 2, id, input_buffer);
+
+        // Copy and clip
+        strncpy(input_buffer_msg, cmd_ptr + 2, 71);
+        
+        tr_msg(mzx_world, input_buffer_msg, id, input_buffer);
         write_string(input_buffer, 5, 12, EC_DEBUG_LABEL, 1);
         m_show();
         src_board->input_string[0] = 0;
