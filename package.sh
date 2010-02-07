@@ -198,7 +198,7 @@ rm -f dist/$TARGET/src/config.h
 echo "Creating source (${TARGET}src.tar.bz2).."
 
 cd dist
-tar --exclude CVS --exclude .cvsignore -jcvf ${TARGET}src.tar.bz2 $TARGET
+tar --exclude .svn -jcvf ${TARGET}src.tar.bz2 $TARGET
 cd ..
 
 if [ "$?" != "0" ]; then
