@@ -875,6 +875,8 @@ void edit_world(World *mzx_world)
   update_screen();
 
   insta_fadein();
+  default_palette();
+  save_editor_palette();
 
   do
   {
@@ -1606,6 +1608,7 @@ void edit_world(World *mzx_world)
       {
         if(get_shift_status(keycode_SDL))
         {
+          save_editor_palette();
           set_screen_mode(get_screen_mode() + 1);
         }
         else
@@ -2958,6 +2961,7 @@ void edit_world(World *mzx_world)
       case SDLK_F11:
       {
         // SMZX Mode
+        save_editor_palette();
         set_screen_mode(get_screen_mode() + 1);
         break;
       }
@@ -3106,6 +3110,7 @@ void edit_world(World *mzx_world)
 
           if(!save_world(mzx_world, "__test.mzx", 0, 0))
           {
+            save_editor_palette();
             vquick_fadeout();
             cursor_off();
             src_board = mzx_world->board_list[current_board_id];
@@ -3133,6 +3138,8 @@ void edit_world(World *mzx_world)
               current_board_id = mzx_world->current_board_id;
               modified = 0;
             }
+
+            load_editor_palette();
 
             scroll_color = 15;
             mzx_world->current_board_id = current_board_id;
