@@ -494,11 +494,19 @@ game has been saved since MegaZeux was started, the default
 save filename will be used.
 
 F11 - Counter Debug Mode
-This will load a screen listing which counters are set (except
-for SCORE). Highlight any counter and press Enter to change its
-value. The Export button allows exporting Robotic code, which
-sets all of the shown counters at their shown values to a text
-file. This will only work during playtesting in the editor.
+This will load a screen listing which counters and strings
+are set. All non-standard counters/strings will be listed
+only if declared in the game; if set to 0, they will still be
+listed. Highlight any counter/string and press Enter to change
+its value. The Export button allows exporting Robotic code,
+which sets all of the shown counters and strings at their shown
+values to a text file. This will only work during playtesting
+in the editor.
+
+F12 - Take Screendump
+Pressing F12 will make a 640x350 screendump (in PNG format by
+default) in the working directory, using the software renderer.
+The file naming starts from "screen0".
 
 Arrows - Move
 The arrow keys will move your character and allow him/her/it to
@@ -1314,8 +1322,9 @@ A: The first board has to be set. Press 'G' in the editor, then
 Q: Why doesn't [ work for taking screenshots?
 
 A: It has been changed to F12 and now works in any area in MZX,
-.  including any part of the editor. It currently outputs MS
-.  BMP format files.
+.  including any part of the editor. It currently outputs PNG
+.  files by default, but will output MS BMP format files on
+.  platforms unable to support PNG.
 
 Q: My Robot can't change its/the player's characters! I
 .  use CHAR "A" but it turns invisible! What am I doing wrong?
@@ -1708,6 +1717,7 @@ what each one does.
 >F9:F9  - Misc. (thing)
 >F10:F10 - Objects
 >F11:F11 - Toggle Super MZX Mode
+>F12:F12 - Take Screendump
 
 >ShF1:Sh+F1 - Show InvisWalls
 >ShF2:Sh+F2 - Show Robots
@@ -2062,6 +2072,12 @@ Pressing F11 will change the currently set SMZX mode, in this
 order: From OFF to Mode 1; From Mode 1 to Mode 2; From Mode 2
 to Mode 3; From Mode 3 to OFF. This setting only holds for the
 editor; it will not carry onto games by itself.
+
+:F12:~EF12 - Take Screendump
+
+Pressing F12 will make a 640x350 screendump (in PNG format by
+default) in the working directory, using the software renderer.
+The file naming starts from "screen0".
 
 :ShF1:~ESh+F1 - Show InvisWalls
 :ShF2:~ESh+F2 - Show Robots
@@ -6650,21 +6666,22 @@ The following keys are active within the editor.
 >_d:F4    - Parameter
 >_e:F5    - Char edit
 >_f:F6-F10  - Macros
->_g:Alt+B OR Alt+Enter - Block action
->_h:Alt+E OR Alt+End - Mark block end
->_i:Alt+H - Hide Help / Borders
->_j:Alt+I  - Import
->_k:Alt+O  - Macro Options
->_l:Alt+S OR Alt+Home - Mark block top
->_m:Alt+U - Unmark block
->_n:Alt+V  - Verify
->_o:Alt+X  - Export
->_p:Alt+Ins - Paste
->_q:Ctrl+F  - Find/Replace
->_r:Ctrl+G - Go to Line
->_s:Ctrl+R  - Repeat Find/Replace
->_t:Ctrl+I/D/C - Mark Invalidated
->_u: Ctrl+BackSpace - Delete Previous Word
+>_g:F12 - Take Screendump
+>_h:Alt+B OR Alt+Enter - Block action
+>_i:Alt+E OR Alt+End - Mark block end
+>_j:Alt+H - Hide Help / Borders
+>_k:Alt+I  - Import
+>_l:Alt+O  - Macro Options
+>_m:Alt+S OR Alt+Home - Mark block top
+>_n:Alt+U - Unmark block
+>_o:Alt+V  - Verify
+>_p:Alt+X  - Export
+>_q:Alt+Ins - Paste
+>_r:Ctrl+F  - Find/Replace
+>_s:Ctrl+G - Go to Line
+>_t:Ctrl+R  - Repeat Find/Replace
+>_u:Ctrl+I/D/C - Mark Invalidated
+>_v: Ctrl+BackSpace - Delete Previous Word
 
 :_a:~EF1    - Help
 
@@ -6699,7 +6716,13 @@ F6 through F10 will insert short macros, customizable using
 Alt+O. If you have an extended macro set for these an input
 window for it will come up.
 
-:_g:~EAlt+B OR Alt+Enter - Block action
+:_g:~EF12 - Take Screendump
+
+Pressing F12 will make a 640x350 screendump (in PNG format by
+default) in the working directory, using the software renderer.
+The file naming starts from "screen0".
+
+:_h:~EAlt+B OR Alt+Enter - Block action
 
 Allows you to perform an action on the current block of lines-
 Copy it to an internal clipboard, Cut it to an internal
@@ -6708,8 +6731,8 @@ or Export the block to a text file on disk. Alt+Enter is the
 old and depreciated version, left in to ease use for
 long-time users.
 
-:_l:~EAlt+S OR Alt+Home - Mark block top
-:_h:~EAlt+E OR Alt+End - Mark block end
+:_m:~EAlt+S OR Alt+Home - Mark block top
+:_i:~EAlt+E OR Alt+End - Mark block end
 
 Alt+S/E will mark the top or bottom of a block of lines. You
 can then perform various block actions on these lines. The
@@ -6717,45 +6740,45 @@ marked lines are highlighted. Alt+Home and Alt+End are the old
 and depreciated versions, left in to ease use for long-time
 users.
 
-:_i:~EAlt+H  - Hide Help / Borders
+:_j:~EAlt+H  - Hide Help / Borders
 
 Alt+H toggles the horizontal borders and help key reference.
 
-:_j:~EAlt+I  - Import
+:_k:~EAlt+I  - Import
 
 Use Alt+I to import a text file into the current Robot. The
 new lines will be inserted into the current program. This
 allows you to edit Robot programs outside of MegaZeux.
 
-:_k:~EAlt+O  - Macro Options
+:_l:~EAlt+O  - Macro Options
 
 You can change the values of the five macros here. Use ^ for
 Enter in the macros. (43 characters max in MegaZeux itself, 64
 max using the config file.)
 
-:_m:~EAlt+U - Unmark block
+:_n:~EAlt+U - Unmark block
 
 The current block is unmarked.
 
-:_n:~EAlt+V  - Verify
+:_o:~EAlt+V  - Verify
 
 Use Alt+V to determine if there are any invalid lines in the
 robot, and if there are what their errors are.
 
-:_o:~EAlt+X  - Export
+:_p:~EAlt+X  - Export
 
 Use Alt+X to export either the current block or the entire
 Robot program to a text file or bytecode file on disk. If saved
 as text, one can then edit the program outside of MegaZeux or
 use the text file in other ways.
 
-:_p:~EAlt+Ins - Paste
+:_q:~EAlt+Ins - Paste
 
 Alt+Ins will paste in the block last copied to the internal
 clipboard. The clipboard is preserved between Robots and even
 between worlds.
 
-:_q:~ECtrl+F  - Find/Replace
+:_r:~ECtrl+F  - Find/Replace
 
 Use Ctrl+F to activate the Find/Replace menu. In this menu, one
 can find an inputted string, replace it, or replace all
@@ -6765,17 +6788,17 @@ ignored) and Match Case will require the search string and the
 results match case exactly before giving results or replacing
 text.
 
-:_r:~ECtrl+G  - Go to Line
+:_s:~ECtrl+G  - Go to Line
 
 Use Ctrl+G to jump to the given Robotic line (if too high of a
 number is given, the editor will jump to the last possible
 line).
 
-:_s:~ECtrl+R  - Repeat Find/Replace
+:_t:~ECtrl+R  - Repeat Find/Replace
 
 Use Ctrl+R after a Find or Replace to repeat the action.
 
->_t:~ECtrl+I/D/C - Mark line
+>_u:~ECtrl+I/D/C - Mark line
 
 These commands mark the current invalid line as to be
 ignored, deleted, or commented out upon editor exit,
@@ -6783,7 +6806,7 @@ respectively. If the line is valid Ctrl + C will turn it into
 a comment. Note that comment-marking a comment will immediately
 strip the line.
 
->_u:~ECtrl+BackSpace - Delete Previous Word
+>_v:~ECtrl+BackSpace - Delete Previous Word
 
 Use Ctrl+BackSpace to delete the last word typed in the editor.
 
@@ -7976,7 +7999,7 @@ replace in the target character set.
 #NEWINVER.HLP
 :1st:NEW in MegaZeux!
 
-Whenever, 2007 - MZX 2.82
+Whenever, 2007 - MZX SVN
 
 USERS
 
@@ -8004,11 +8027,16 @@ USERS
 + Fixed a bug where an ENERGIZER item or use of the INVINCO
   counter would cause the original player color to be corrupted
   at the end of the colour blitz.
-+ Fixed a bug where WALK [dir] would not end a cycle.
 + Fixed a long-standing bug where set "$string" to "FWRITEn"
   would be cheerfully ignored.
 + Fixed a bug where a corrupt robot list could crash MegaZeux
   (e.g. the list from Star Quest from DoZ'02).
++ FEATURE: Screenshots are now saved in a palettized PNG file
+  format. For platforms without libpng, PNG support can be
+  compiled out, and BMP will be used instead.
++ Fixed a bug where changing boards in the editor could
+  sometimes corrupt memory, later causing a crash (either
+  testing or coming out of testing a board).
 
 DEVELOPERS
 
@@ -8029,6 +8057,33 @@ DEVELOPERS
 + Made all unnecessary global symbols static. This should
   improve compiler optimisations and correctness (Mr_Alert,
   ajs).
++ Fixed compilation of MegaZeux against SDL 1.3 SVN. However,
+  this SDL version is still in development, and MegaZeux does
+  not work correctly when compiled against it.
++ MegaZeux now builds with the experimental MINGW-x64 branch,
+  enabling x64 binaries for Windows.
++ MegaZeux now builds with MSVC if you apply the patch from
+  contrib/,megazeux-r326-replace-c99-variable-arrays-with-
+  malloc-free.diff . This patch is required for MSVC because it
+  makes non-compiler-specific changes (which involve converting
+  from C99 variable length arrays to malloc/free) which are
+  slower and should not be used with competent C99 compilers
+  like GCC. Microsoft Visual C++ Express Edition 2005 was used
+  to build libogg, libvorbis, libsdl and MegaZeux itself. Only
+  32bit builds were tested.
++ MegaZeux now has size optimisations which can reduce binary
+  size when features are disabled. For example, all renderers
+  can now be disabled, and when module engines are disabled,
+  audio will not export any symbols.
++ The entire audio subsystem can now be disabled. This further
+  reduces binary size on embedded platforms. However, SFX
+  editing still remains enabled (though useless) until editor
+  modularity is implemented. This reduces the size of a
+  stripped AMD64 binary from 856896b (with all features
+  enabled) to 448488b (with all features disabled) (~47%
+  smaller).
++ The PSP port is now officially supported, and compiles out of
+  the box. See docs/psp.txt.
 
 >#280CLOG.HLP:280:New in versions 2.80-2.80h
 >#OLDERVER.HLP:099:New in versions 2.60 to 2.70

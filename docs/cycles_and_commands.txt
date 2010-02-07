@@ -247,7 +247,7 @@ WAIT #                                                  |     YES     |
 WAIT MOD FADE                                           |     NO      |
 WAIT PLAY                                               |     NO      |
 WAIT PLAY "string"                                      |    YES(2)   |
-WALK [dir]                                              |     YES     |
+WALK [dir]                                              |     NO      |
 WIND #                                                  |     NO      |
 WRITE OVERLAY [color] "string" # #                      |     NO      |
 UNLOCKPLAYER                                            |     NO      |
