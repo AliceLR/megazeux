@@ -23,10 +23,6 @@
 
 __G_BEGIN_DECLS
 
-/**
- * endian stuff
- */
-
 #if  defined(WIN32) || defined(__WIN32__) || defined(_MSC_VER) || \
      defined(__i386__) || defined(__ia64__) || \
     (defined(__alpha__) || defined(__alpha)) || \
@@ -35,14 +31,31 @@ __G_BEGIN_DECLS
      defined(__SYMBIAN32__) || \
      defined(__x86_64__) || \
      defined(__LITTLE_ENDIAN__)
+
 /* little endian systems; no magic necessary */
+
 #define CHECK_ENDIAN_16(x)
 #define CHECK_ENDIAN_32(x)
-#else
+
+#else // !LITTLE_ENDIAN
+
 /* big endian systems; we need to swap data before storage */
-#define CHECK_ENDIAN_16(x) swap16(x)
-#define CHECK_ENDIAN_32(x) swap32(x)
-#endif
+
+static inline void gdm2s3m_swap16(uint16_t *var)
+{
+  *var = ((*var << 8) | (*var >> 8));
+}
+
+static inline void gdm2s3m_swap32(uint32_t *var)
+{
+  *var = ((*var << 24) | ((*var << 8) & 0x00FF0000) |
+         ((*var >> 8) & 0x0000FF00) | (*var >> 24));
+}
+
+#define CHECK_ENDIAN_16(x) gdm2s3m_swap16(x)
+#define CHECK_ENDIAN_32(x) gdm2s3m_swap32(x)
+
+#endif // LITTLE_ENDIAN
 
 /**
  * We support MSVC and gcc; MSVC's macro support is awful
@@ -93,8 +106,6 @@ __G_BEGIN_DECLS
 #endif /* !_MSC_VER */
 
 /* function prototypes */
-void swap16 (uint16_t *);
-void swap32 (uint32_t *);
 void stream_to_alloc (void *dest, uint8_t **src, uint32_t n);
 void alloc_to_stream (void *src, uint8_t **dest, uint32_t n);
 void check_s_to_a (uint8_t *start, uint32_t size, void *dest,

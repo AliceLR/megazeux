@@ -23,18 +23,6 @@
 #include "utility.h"
 #include "error.h"
 
-void swap16 (uint16_t *var)
-{
-  *var = ((*var << 8) | (*var >> 8));
-}
-
-void swap32 (uint32_t *var)
-{
-  *var = ((*var << 24) | ((*var << 8) & 0x00FF0000) |
-         ((*var >> 8) & 0x0000FF00) | (*var >> 24));
-}
-
-
 void stream_to_alloc (void *dest, uint8_t **src, uint32_t n)
 {
   /* copy count blocks */
