@@ -3432,8 +3432,8 @@ void save_string(FILE *fp, mzx_string *src_string)
 #ifdef CONFIG_EDITOR
 void debug_counters(World *mzx_world)
 {
-  int num_vars =
-   mzx_world->num_counters + mzx_world->num_strings + 1;
+  // +1 for SCORE, +1 for mzx_speed
+  int num_vars = mzx_world->num_counters + mzx_world->num_strings + 1 + 1;
   char **var_list = (char **)malloc(num_vars * sizeof(char *));
   int dialog_result;
   int cp_len;
@@ -3453,20 +3453,24 @@ void debug_counters(World *mzx_world)
     if(cp_len > 64)
       cp_len = 64;
 
-    memcpy(var_list[i],
-     mzx_world->counter_list[i]->name, cp_len);
+    memcpy(var_list[i], mzx_world->counter_list[i]->name, cp_len);
 
     var_list[i][cp_len] = ' ';
-    sprintf(var_list[i] + 64, "%d",
-     mzx_world->counter_list[i]->value);
+    sprintf(var_list[i] + 64, "%d", mzx_world->counter_list[i]->value);
   }
 
   // SCORE isn't a real counter, so we have a special case here
   var_list[i] = (char *)malloc(76);
   memset(var_list[i], ' ', 75);
   memcpy(var_list[i], "SCORE", 5);
-  var_list[i][5] = ' ';
   sprintf(var_list[i] + 64, "%d", mzx_world->score);
+  i++;
+
+  // mzx_speed isn't a real counter either, so another special case is needed
+  var_list[i] = (char *)malloc(76);
+  memset(var_list[i], ' ', 75);
+  memcpy(var_list[i], "mzx_speed", 9);
+  sprintf(var_list[i] + 64, "%d", mzx_world->mzx_speed);
   i++;
 
   for(i2 = 0; i2 < mzx_world->num_strings; i2++, i++)
@@ -3512,9 +3516,9 @@ void debug_counters(World *mzx_world)
       int edit_type = 0;
       int offset = selected;
 
-      if(selected > mzx_world->num_counters)
+      if(selected > mzx_world->num_counters + 1)
       {
-        offset -= mzx_world->num_counters + 1;
+        offset -= mzx_world->num_counters + 1 + 1;
         edit_type = 1;
 
         snprintf(name + 5, 70 - 5, "string %s",
@@ -3530,13 +3534,22 @@ void debug_counters(World *mzx_world)
 
         new_value[cp_len] = 0;
       }
-      else {
+      else
+      {
+        fprintf(stderr, "selected %d\n", selected);
+
         if(selected == mzx_world->num_counters)
         {
           edit_type = -1;
           strncpy(name + 5, "counter SCORE", 70 - 5);
           sprintf(new_value, "%d", mzx_world->score);
         }
+	else if(selected == mzx_world->num_counters + 1)
+	{
+          edit_type = -2;
+          strncpy(name + 5, "counter mzx_speed", 70 - 5);
+          sprintf(new_value, "%d", mzx_world->mzx_speed);
+	}
         else
         {
           snprintf(name + 5, 70 - 5, "counter %s",
@@ -3574,11 +3587,23 @@ void debug_counters(World *mzx_world)
         else
         {
           int counter_value = strtol(new_value, NULL, 10);
-          if(edit_type < 0)
+          if(edit_type == -1)
+          {
             mzx_world->score = counter_value;
+          }
+          else if (edit_type == -2)
+          {
+            if (counter_value < 1)
+              counter_value = 1;
+            if (counter_value > 8)
+              counter_value = 8;
+            mzx_world->mzx_speed = counter_value;
+          }
           else
+          {
             set_counter(mzx_world,
              mzx_world->counter_list[offset]->name, counter_value, 0);
+          }
 
           sprintf(var_list[offset] + 64, "%d", counter_value);
         }
@@ -3610,8 +3635,8 @@ void debug_counters(World *mzx_world)
            mzx_world->counter_list[i]->value);
         }
 
-        fprintf(fp, "set \"SCORE\" to %d\n",
-         mzx_world->score);
+        fprintf(fp, "set \"SCORE\" to %d\n", mzx_world->score);
+        fprintf(fp, "set \"mzx_speed\" to %d\n", mzx_world->mzx_speed);
 
         for(i = 0; i < mzx_world->num_strings; i++)
         {
@@ -3626,7 +3651,6 @@ void debug_counters(World *mzx_world)
 
         fclose(fp);
       }
-
     }
 
     destruct_dialog(&di);
