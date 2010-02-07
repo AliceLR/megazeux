@@ -6,3 +6,5 @@ mzx:
 	@echo "Please run config.sh before make!"
 	@echo
 	@echo "Type ./config.sh for more information."
+
+distclean:
