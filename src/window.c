@@ -2265,7 +2265,7 @@ int key_list_box(World *mzx_world, dialog *di, element *e,
       if(!get_alt_status(keycode_SDL) && (key_char >= 32))
       {
         char *key_buffer = src->key_buffer;
-        char key_position = src->key_position;
+        int key_position = src->key_position;
         int last_keypress_time = src->last_keypress_time;
         int ticks = SDL_GetTicks();
         int new_choice;

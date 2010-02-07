@@ -24,9 +24,9 @@ USERS
 
 DEVELOPERS
 
-+ Fixed an invalid assumption in config.sh where /bin/sh was chosen as the
-  shell script interpreter. This should have been /bin/bash, as 'sh' is not
-  required to support functions, which config.sh uses.
++ Rewrote config.sh to use POSIX sh compatible functions, so that there is
+  no dependency on the BASH interpreter. Surprisingly, some distributions
+  still don't enable BASH by default (using csh, ash or zsh instead).
 + Ported most of MegaZeux back to C. Many more changes were required than I
   anticipated; MZX was using more C++ features than I expected. The only
   exception is audio.cpp, which cannot be ported back to C because it uses
@@ -36,6 +36,8 @@ DEVELOPERS
 + Enabled GCC's -W flag for even more warnings, switching off unused
   parameter warnings (useful for delegates). Mostly typing fixes, but it
   found a bug in string handling.
++ No longer suppress char-subscript warnings, and fix up any remaining
+  abuses in the tree.
 
 January 30, 2007 - MZX 2.81f
 

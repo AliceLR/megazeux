@@ -385,13 +385,15 @@ unsigned char get_special_id_char(Board *src_board, mzx_thing cell_id,
 
     case SENSOR:
     {
-      return (src_board->sensor_list[level_param[offset]])->sensor_char;
+      int idx = level_param[offset];
+      return (src_board->sensor_list[idx])->sensor_char;
     }
 
     case ROBOT:
     case ROBOT_PUSHABLE:
     {
-      return (src_board->robot_list[level_param[offset]])->robot_char;
+      int idx = level_param[offset];
+      return (src_board->robot_list[idx])->robot_char;
     }
 
     case PLAYER:

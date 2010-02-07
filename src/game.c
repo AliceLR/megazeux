@@ -1662,7 +1662,7 @@ int move_player(World *mzx_world, int dir)
     {
       // Sensor
       // Activate label and then move player
-      char d_param = src_board->level_param[d_offset];
+      int d_param = src_board->level_param[d_offset];
       send_robot(mzx_world,
        (src_board->sensor_list[d_param])->robot_to_mesg,
        "SENSORON", 0);
@@ -2493,14 +2493,14 @@ int grab_item(World *mzx_world, int offset, int dir)
     case SIGN:
     case SCROLL:
     {
+      int idx = param;
       play_sfx(mzx_world, 47);
 
       m_show();
-      scroll_edit(mzx_world, src_board->scroll_list[param], id & 1);
+      scroll_edit(mzx_world, src_board->scroll_list[idx], id & 1);
 
       if(id == SCROLL)
         remove = 1;
-
       break;
     }
 

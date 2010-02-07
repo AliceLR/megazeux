@@ -69,7 +69,7 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
         int offset = start_x + (start_y * board_width);
         int line_skip = board_width - width;
         int num_robots = 0;
-        char robot_numbers[256];
+        int robot_numbers[256];
         int robot_table_position;
         mzx_thing current_id;
         int i;

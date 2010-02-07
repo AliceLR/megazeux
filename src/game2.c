@@ -2339,10 +2339,11 @@ void shoot(World *mzx_world, int x, int y, int dir, int type)
       case ROBOT:
       case ROBOT_PUSHABLE:
       {
+        int idx = d_param;
         // Send the current shot label to the robot
         send_robot_def(mzx_world, d_param, type + 4);
         // Set its last shot dir..
-        (src_board->robot_list[d_param])->last_shot_dir =
+        (src_board->robot_list[idx])->last_shot_dir =
          int_to_dir(flip_dir(dir));
         break;
       }

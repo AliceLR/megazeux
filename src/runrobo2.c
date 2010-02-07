@@ -598,8 +598,7 @@ void copy_board_buffer_to_board(Board *src_board, int x, int y,
 
   for(i = 0; i < height; i++, dest_offset += dest_skip)
   {
-    for(i2 = 0; i2 < width; i2++, src_offset++,
-     dest_offset++)
+    for(i2 = 0; i2 < width; i2++, src_offset++, dest_offset++)
     {
       dest_id = (mzx_thing)level_id[dest_offset];
       src_id_cur = (mzx_thing)src_id[src_offset];
@@ -627,11 +626,9 @@ void copy_board_buffer_to_board(Board *src_board, int x, int y,
 
         if(is_robot(src_id_cur))
         {
-          // Fix robot x/y
-          (src_board->robot_list[src_param[src_offset]])->xpos =
-           x + i2;
-          (src_board->robot_list[src_param[src_offset]])->ypos =
-           y + i;
+          int idx = src_param[src_offset];
+          (src_board->robot_list[idx])->xpos = x + i2;
+          (src_board->robot_list[idx])->ypos = y + i;
         }
 
         if(src_id_cur != PLAYER)
@@ -2906,9 +2903,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if(is_robot(d_id))
         {
-          replace_robot(src_board,
-           src_board->robot_list[level_param[offset]], id);
+          int idx = level_param[offset];
+          replace_robot(src_board, src_board->robot_list[idx], id);
         }
+
         cur_robot = src_board->robot_list[id];
         goto breaker;
       }
@@ -2932,8 +2930,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
             if(is_robot(d_id))
             {
-              replace_robot(src_board,
-               src_board->robot_list[level_param[offset]], id);
+              int idx = level_param[offset];
+              replace_robot(src_board, src_board->robot_list[idx], id);
             }
           }
         }

@@ -2678,7 +2678,8 @@ int get_robot_board_offset(Board *src_board, Robot *cur_robot)
 
   if(is_robot(d_id))
   {
-    if(robot_list[level_param[offset]] == cur_robot)
+    int idx = level_param[offset];
+    if(robot_list[idx] == cur_robot)
       return offset;
   }
   else
@@ -2690,7 +2691,8 @@ int get_robot_board_offset(Board *src_board, Robot *cur_robot)
       d_id = (mzx_thing)level_id[offset];
       if(is_robot(d_id))
       {
-        if(robot_list[level_param[offset]] == cur_robot)
+        int idx = level_param[offset];
+        if(robot_list[idx] == cur_robot)
           return offset;
       }
     }
@@ -2713,7 +2715,8 @@ int get_scroll_board_offset(Board *src_board, Scroll *cur_scroll)
     d_id = (mzx_thing)level_id[offset];
     if(is_signscroll(d_id))
     {
-      if(scroll_list[level_param[offset]] == cur_scroll)
+      int idx = level_param[offset];
+      if(scroll_list[idx] == cur_scroll)
         return offset;
     }
   }
@@ -2735,7 +2738,8 @@ int get_sensor_board_offset(Board *src_board, Sensor *cur_sensor)
     d_id = (mzx_thing)level_id[offset];
     if(d_id == SENSOR)
     {
-      if(sensor_list[level_param[offset]] == cur_sensor)
+      int idx = level_param[offset];
+      if(sensor_list[idx] == cur_sensor)
         return offset;
     }
   }
