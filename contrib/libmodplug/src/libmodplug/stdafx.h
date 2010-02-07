@@ -79,6 +79,12 @@ typedef void VOID;
 
 #endif // !__WIN32__
 
+// Hack for MINGW x64 compiler
+#ifdef NULL
+#undef NULL
+#define NULL 0
+#endif
+
 inline LONG MulDiv (long a, long b, long c)
 {
   // if (!c) return 0;
