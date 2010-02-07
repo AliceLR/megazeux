@@ -536,7 +536,7 @@ int char_editor(World *mzx_world)
   if(screen_mode)
   {
     if(screen_mode != 1)
-      set_screen_mode(1, true);
+      set_screen_mode(1);
 
     for(i = 0; i < 4; i++)
     {
@@ -1710,7 +1710,7 @@ int char_editor(World *mzx_world)
 
   if(screen_mode)
   {
-    set_screen_mode(screen_mode, true);
+    set_screen_mode(screen_mode);
 
     for(i = 0; i < 4; i++)
     {

@@ -490,14 +490,13 @@ static void set_fade_status(Uint32 fade)
   graphics.fade_status = fade;
 }
 
-void set_screen_mode(Uint32 mode, int should_swap)
+void set_screen_mode(Uint32 mode)
 {
   mode %= 4;
 
   if((mode >= 2) && (graphics.screen_mode < 2))
   {
-    if (should_swap)
-      swap_palettes();
+    swap_palettes();
     graphics.screen_mode = mode;
     if(!graphics.default_smzx_loaded)
     {
@@ -516,11 +515,12 @@ void set_screen_mode(Uint32 mode, int should_swap)
     }
     update_palette();
   }
-  else if((graphics.screen_mode >= 2) && (mode < 2))
+  else
+
+  if((graphics.screen_mode >= 2) && (mode < 2))
   {
     int fade_status = get_fade_status();
-    if (should_swap)
-      swap_palettes();
+    swap_palettes();
 
     if(fade_status)
     {
@@ -749,8 +749,6 @@ void insta_fadein(void)
 
 void default_palette(void)
 {
-  memcpy(graphics.backup_palette, default_pal, sizeof(SDL_Color) * PAL_SIZE);
-  memcpy(graphics.backup_intensity, graphics.saved_intensity, sizeof(Uint32) * PAL_SIZE);
   memcpy(graphics.palette, default_pal, sizeof(SDL_Color) * PAL_SIZE);
   memcpy(graphics.intensity_palette, default_pal, sizeof(SDL_Color) * PAL_SIZE);
   update_palette();

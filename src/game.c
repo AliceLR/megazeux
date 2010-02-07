@@ -2111,7 +2111,6 @@ void title_screen(World *mzx_world)
           clear_sfx_queue();
           vquick_fadeout();
           edit_world(mzx_world);
-          //default_palette();
 
           if(curr_file[0])
             load_world_file(mzx_world, curr_file);

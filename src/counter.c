@@ -567,7 +567,7 @@ static int smzx_mode_read(World *mzx_world, function_counter *counter,
 static void smzx_mode_write(World *mzx_world, function_counter *counter,
  const char *name, int value, int id)
 {
-  set_screen_mode(value, false);
+  set_screen_mode(value);
 }
 
 static int smzx_r_read(World *mzx_world, function_counter *counter,

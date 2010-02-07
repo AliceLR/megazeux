@@ -1036,7 +1036,7 @@ static int load_world(World *mzx_world, char *file, int savegame, int *faded)
     if(screen_mode == 2)
       smzx_palette_loaded(1);
 
-    set_screen_mode(screen_mode, true);
+    set_screen_mode(screen_mode);
     // Also get the palette
     if(screen_mode > 1)
     {
@@ -1408,7 +1408,7 @@ static void default_global_data(World *mzx_world)
 
   mzx_world->commands = 40;
 
-  set_screen_mode(0, true);
+  set_screen_mode(0);
   smzx_palette_loaded(0);
   default_scroll_values(mzx_world);
 

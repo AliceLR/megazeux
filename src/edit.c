@@ -1606,7 +1606,7 @@ void edit_world(World *mzx_world)
       {
         if(get_shift_status(keycode_SDL))
         {
-          set_screen_mode(get_screen_mode() + 1, true);
+          set_screen_mode(get_screen_mode() + 1);
         }
         else
 
@@ -2958,7 +2958,7 @@ void edit_world(World *mzx_world)
       case SDLK_F11:
       {
         // SMZX Mode
-        set_screen_mode(get_screen_mode() + 1, true);
+        set_screen_mode(get_screen_mode() + 1);
         break;
       }
 
