@@ -23,39 +23,40 @@
 #include "utility.h"
 #include "error.h"
 
-void swap16 (u16 *var)
+void swap16 (uint16_t *var)
 {
   *var = ((*var << 8) | (*var >> 8));
 }
 
-void swap32 (u32 *var)
+void swap32 (uint32_t *var)
 {
   *var = ((*var << 24) | ((*var << 8) & 0x00FF0000) |
          ((*var >> 8) & 0x0000FF00) | (*var >> 24));
 }
 
 
-void stream_to_alloc (void *dest, u8 **src, u32 n)
+void stream_to_alloc (void *dest, uint8_t **src, uint32_t n)
 {
   /* copy count blocks */
-  memcpy (dest, (*src), n);
+  memcpy (dest, *src, n);
 
   /* increment stream offset */
-  (*src) += n;
+  *src += n;
 }
 
-void alloc_to_stream (void *src, u8 **dest, u32 n)
+void alloc_to_stream (void *src, uint8_t **dest, uint32_t n)
 {
   /* copy count blocks */
-  memcpy ((*dest), src, n);
+  memcpy (*dest, src, n);
 
   /* increment stream offset */
-  (*dest) += n;
+  *dest += n;
 }
 
-void check_s_to_a (u8 *start, u32 size, void *dest, u8 **src, u32 n)
+void check_s_to_a (uint8_t *start, uint32_t size, void *dest, uint8_t **src,
+                   uint32_t n)
 {
-  const u32 diff = (u32) (*src - start);
+  const size_t diff = *src - start;
 
   /* check we've got enough of the stream */
   if (diff + n > size)
@@ -65,20 +66,20 @@ void check_s_to_a (u8 *start, u32 size, void *dest, u8 **src, u32 n)
   stream_to_alloc (dest, src, n);
 }
 
-void check_a_to_s (u8 **start, u32 *size, void *src, u8 **dest, u32 n)
+void check_a_to_s (uint8_t **start, uint32_t *size, void *src, uint8_t **dest, uint32_t n)
 {
-  const u32 diff = (u32) (*dest - *start);
+  const size_t diff = *dest - *start;
 
   /* check we've got enough allocated */
-  if (diff + n > (*size)) {
+  if (diff + n > *size) {
     /* new size */
-    (*size) = diff + n;
+    *size = diff + n;
 
     /* increase allocation size */
-    (*start) = (u8 *) realloc ((*start), (*size));
+    *start = realloc (*start, *size);
 
     /* reassign pointer */
-    (*dest) = (u8 *) (*start + diff);
+    *dest = (uint8_t *) (*start + diff);
   }
 
   /* otherwise, call on */

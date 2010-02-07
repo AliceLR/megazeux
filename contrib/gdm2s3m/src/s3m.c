@@ -25,21 +25,22 @@
 #include "error.h"
 #include "utility.h"
 
-u8 *save_s3m (struct S3M_file *s3m, u32 *stream_len)
+uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
 {
-  const u8 junk1[4] = { 0x1A, 16, 0, 0 };
-  const u8 junk2[6] = { 0, 0, 0x17, 0x32, 2, 0 };
-  const u8 junk3[13] = { 0xb0, 0, 0xfc, 0, 0, 0xe, 0x79, 0x10, 0xe4, 0, 0, 0, 0 };
-  const u8 junk4[1] = { 1 };
-  const u8 junk5[2] = { 0, 0 };
-  const u8 junk6[14] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
-  char s3m_magic[4], sam_magic[4];
+  const uint8_t junk1[4] = { 0x1A, 16, 0, 0 };
+  const uint8_t junk2[6] = { 0, 0, 0x17, 0x32, 2, 0 };
+  const uint8_t junk3[13] = { 0xb0, 0, 0xfc, 0, 0, 0xe, 0x79,
+                              0x10, 0xe4, 0, 0, 0, 0 };
+  const uint8_t junk4[1] = { 1 };
+  const uint8_t junk5[2] = { 0, 0 };
+  const uint8_t junk6[14] = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
 
-  u8 gap[16], *gap2, memseg[3], *backup = NULL, *stream = NULL;
-  struct S3M_header *hdr = &s3m->header;
+  uint8_t gap[16], *gap2, memseg[3], *backup = NULL, *stream = NULL;
+  uint32_t offset = 0, spare, segpad, sample_table, pattern_table;
   struct S3M_order *orders = &s3m->orders;
-  u32 offset = 0, spare, segpad, sample_table, pattern_table;
-  u16 segment;
+  struct S3M_header *hdr = &s3m->header;
+  char s3m_magic[4], sam_magic[4];
+  uint16_t segment;
   int i;
 
   /* copy magics */
@@ -107,7 +108,7 @@ u8 *save_s3m (struct S3M_file *s3m, u32 *stream_len)
   segment = 2 * hdr->numinst + 2 * hdr->numpatterns;
 
   /* allocate space for sample table, pattern table and padding */
-  gap2 = (u8 *) malloc (segpad);
+  gap2 = malloc (segpad);
   memset (gap2, 0, segpad);
 
   /* pad up to segment boundary */
@@ -288,13 +289,13 @@ struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm)
   int i, j;
 
   /* optimal channel settings for ST3 */
-  u8 chansett[] = { 0,   8,   1,   9,   2,   10,  3,   11,
-                    4,   12,  5,   13,  6,   14,  7,   15,
-                    255, 255, 255, 255, 255, 255, 255, 255,
-                    255, 255, 255, 255, 255, 255, 255, 255 };
+  uint8_t chansett[] = { 0,   8,   1,   9,   2,   10,  3,   11,
+                         4,   12,  5,   13,  6,   14,  7,   15,
+                         255, 255, 255, 255, 255, 255, 255, 255,
+                         255, 255, 255, 255, 255, 255, 255, 255 };
 
   /* allocate s3m struct */
-  s3m = (struct S3M_file *) malloc (sizeof (struct S3M_file));
+  s3m = malloc (sizeof (struct S3M_file));
 
   /* clear it */
   memset (s3m, 0, sizeof (struct S3M_file));
@@ -303,7 +304,10 @@ struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm)
   memcpy (s3m->header.title, gdm->header.title, 27);
 
   /* pass over order, sample, pattern counts */
-  s3m->header.numorders = (gdm->order_len & 1) ? gdm->order_len: gdm->order_len + 1;
+  if (gdm->order_len & 1)
+    s3m->header.numorders = gdm->order_len;
+  else
+    s3m->header.numorders = gdm->order_len + 1;
   s3m->header.numinst = gdm->numsamples;
   s3m->header.numpatterns = gdm->numpatterns;
 
@@ -317,8 +321,8 @@ struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm)
 
   /* handle pan map */
   for (i = 0; i < 32; i++) {
-    u8 g = gdm->header.panning[i];
-    u8 *s = &s3m->panmap[i];
+    uint8_t g = gdm->header.panning[i];
+    uint8_t *s = &s3m->panmap[i];
 
     if (g == 16) {     /* surround sound */
       *s = 8 + 0x20;
@@ -332,7 +336,7 @@ struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm)
   }
 
   /* allocate order space */
-  s3m->orders.patterns = (u8 *) malloc (s3m->header.numorders);
+  s3m->orders.patterns = malloc (s3m->header.numorders);
   memset (s3m->orders.patterns, 254, s3m->header.numorders);
   s3m->orders.patterns[s3m->header.numorders - 1] = 255;  // FIXME
 
@@ -340,19 +344,20 @@ struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm)
   memcpy (s3m->orders.patterns, gdm->orders.patterns, gdm->order_len);
 
   /* allocate pattern space */
-  s3m->patterns = (struct S3M_pattern *)
-              malloc (sizeof (struct S3M_pattern) * s3m->header.numpatterns);
+  s3m->patterns =
+    malloc (sizeof (struct S3M_pattern) * s3m->header.numpatterns);
 
   /* copy over patterns */
   for (i = 0; i < s3m->header.numpatterns; i++) {
     struct S3M_pattern *pattern = &s3m->patterns[i];
     struct GDM_pattern *gpattern = &gdm->patterns[i];
-    u32 plen = 0;
-    u8 *pdata = NULL, *backup = NULL;
+    uint8_t *pdata = NULL, *backup = NULL;
+    uint32_t plen = 0;
 
     /* big pattern expander and collapser */
     for (j = 0; j < gpattern->length; j++) {
-      u8 b = 0, n, s, e, ep, se, sep, sv, vol = 0, norm = 0, note = 0, effect = 0;
+      uint8_t vol = 0, norm = 0, note = 0, effect = 0;
+      uint8_t b = 0, n, s, e, ep, se, sep, sv;
 
       /* it's a zero byte */
       if (gpattern->data[j] != 0) {
@@ -451,8 +456,7 @@ struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm)
   }
 
   /* allocate sample space */
-  s3m->samples = (struct S3M_sample *)
-                   malloc (sizeof (struct S3M_sample) * s3m->header.numinst);
+  s3m->samples = malloc (sizeof (struct S3M_sample) * s3m->header.numinst);
 
   /* zero it all */
   memset (s3m->samples, 0, sizeof (struct S3M_sample) * s3m->header.numinst);
@@ -489,7 +493,7 @@ struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm)
     /* --------- SAMPLE DATA ---------- */
 
     /* allocate sample space */
-    sample->data = (u8 *) malloc (sample->header.length);
+    sample->data = malloc (sample->header.length);
 
     /* copy sample data */
     memcpy (sample->data, gsample->data, sample->header.length);
@@ -503,10 +507,11 @@ struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm)
  * written by madbrain; contact him if something here isn't right
  */
 
-void remap_effects (u8 gdm_effect, u8 gdm_param, u8 *dest_effect, u8 *dest_param)
+void remap_effects (uint8_t gdm_effect, uint8_t gdm_param,
+                    uint8_t *dest_effect, uint8_t *dest_param)
 {
-  u8 s3m_effect = 0;
-  u8 s3m_param = 0;
+  uint8_t s3m_effect = 0;
+  uint8_t s3m_param = 0;
 
   switch(gdm_effect)
   {

@@ -24,104 +24,103 @@
 #include "error.h"
 #include "utility.h"
 
-struct GDM_file *load_gdm (u8 *stream, u32 stream_len)
+struct GDM_file *load_gdm (uint8_t *stream, uint32_t stream_len)
 {
-  u8 *backup = stream, *trace, *trace2, magic[4];
+  uint8_t *backup = stream, *trace, *trace2, magic[4];
   struct GDM_header *header;
   struct GDM_pattern *pattern;
   struct GDM_samhdr *sample;
   struct GDM_file *gdm;
-  u32 address;
+  uint32_t address;
   int i;
 
   /* allocate gdm file structure */
-  gdm = (struct GDM_file *) malloc (sizeof (struct GDM_file));
+  gdm = malloc (sizeof (struct GDM_file));
   memset (gdm, 0, sizeof (struct GDM_file));
 
   /* level of indirection */
   header = &gdm->header;
 
   /* extract header */
-  check_s_to_a (backup, stream_len, (void *) magic, &stream, 4);
+  check_s_to_a (backup, stream_len, magic, &stream, 4);
 
   /* check it's a valid file */
   if (strncmp ((const char *) magic, GDM_MAGIC, 4) != 0)
     error (FILE_INVALID);
 
   /* get artist and title */
-  check_s_to_a (backup, stream_len, (void *) header->title, &stream, 32);
-  check_s_to_a (backup, stream_len, (void *) header->artist, &stream, 32);
+  check_s_to_a (backup, stream_len, header->title, &stream, 32);
+  check_s_to_a (backup, stream_len, header->artist, &stream, 32);
 
   /* skip junk */
   stream += 3 + 4;
 
   /* get file version */
-  check_s_to_a (backup, stream_len, (void *) &header->version, &stream, 2);
+  check_s_to_a (backup, stream_len, &header->version, &stream, 2);
   CHECK_ENDIAN_16 (&header->version);
 
   /* get tracker and version */
-  check_s_to_a (backup, stream_len, (void *) &header->tracker, &stream, 2);
-  check_s_to_a (backup, stream_len, (void *) &header->tracker_ver, &stream, 2);
+  check_s_to_a (backup, stream_len, &header->tracker, &stream, 2);
+  check_s_to_a (backup, stream_len, &header->tracker_ver, &stream, 2);
   CHECK_ENDIAN_16 (&header->tracker);
   CHECK_ENDIAN_16 (&header->tracker_ver);
 
   /* get panning map */
-  check_s_to_a (backup, stream_len, (void *) &header->panning, &stream, 32);
+  check_s_to_a (backup, stream_len, &header->panning, &stream, 32);
 
   /* get global volume, tempo and bpm */
-  check_s_to_a (backup, stream_len, (void *) &header->global_vol, &stream, 1);
-  check_s_to_a (backup, stream_len, (void *) &header->bpm, &stream, 1);
-  check_s_to_a (backup, stream_len, (void *) &header->tempo, &stream, 1);
+  check_s_to_a (backup, stream_len, &header->global_vol, &stream, 1);
+  check_s_to_a (backup, stream_len, &header->bpm, &stream, 1);
+  check_s_to_a (backup, stream_len, &header->tempo, &stream, 1);
 
   /* get original format */
-  check_s_to_a (backup, stream_len, (void *) &header->origfmt, &stream, 2);
+  check_s_to_a (backup, stream_len, &header->origfmt, &stream, 2);
   CHECK_ENDIAN_16 (&header->origfmt);
 
   /* ORDER HEADER ---------------------------------------------------------- */
-  check_s_to_a (backup, stream_len, (void *) &address, &stream, 4);
-  check_s_to_a (backup, stream_len, (void *) &gdm->order_len, &stream, 1);
+  check_s_to_a (backup, stream_len, &address, &stream, 4);
+  check_s_to_a (backup, stream_len, &gdm->order_len, &stream, 1);
   CHECK_ENDIAN_32 (&address);
 
   /* stupid gdm bug */
   gdm->order_len++;
 
   /* put stream at order offset */
-  trace = (u8 *) (backup + address);
+  trace = (uint8_t *) (backup + address);
 
   /* allocate space for orders */
-  gdm->orders.patterns = (u8 *) malloc (gdm->order_len);
+  gdm->orders.patterns = malloc (gdm->order_len);
 
   /* copy orders */
   memcpy (gdm->orders.patterns, trace, gdm->order_len);
 
   /* PATTERN SEGMENT ------------------------------------------------------- */
-  check_s_to_a (backup, stream_len, (void *) &address, &stream, 4);
-  check_s_to_a (backup, stream_len, (void *) &gdm->numpatterns, &stream, 1);
+  check_s_to_a (backup, stream_len, &address, &stream, 4);
+  check_s_to_a (backup, stream_len, &gdm->numpatterns, &stream, 1);
   CHECK_ENDIAN_32 (&address);
 
   /* stupid gdm bug */
   gdm->numpatterns++;
 
   /* put stream at pattern offset */
-  trace = (u8 *) (backup + address);
+  trace = (uint8_t *) (backup + address);
 
   /* allocate pattern space */
-  gdm->patterns = (struct GDM_pattern *)
-                    malloc (sizeof (struct GDM_pattern) * gdm->numpatterns);
+  gdm->patterns = malloc (sizeof (struct GDM_pattern) * gdm->numpatterns);
 
   /* read in encoded pattern data */
   for (i = 0; i < gdm->numpatterns; i++) {
     pattern = &gdm->patterns[i];
 
     /* get length of data */
-    check_s_to_a (backup, stream_len, (void *) &pattern->length, &trace, 2);
+    check_s_to_a (backup, stream_len, &pattern->length, &trace, 2);
     CHECK_ENDIAN_16 (&pattern->length);
 
     /* remove top two bytes */
     pattern->length -= 2;
 
     /* allocate data space */
-    pattern->data = (u8 *) malloc (pattern->length);
+    pattern->data = malloc (pattern->length);
 
     /* get pattern data */
     memcpy (pattern->data, trace, pattern->length);
@@ -131,26 +130,25 @@ struct GDM_file *load_gdm (u8 *stream, u32 stream_len)
   }
 
   /* SAMPLE HEADERS -------------------------------------------------------- */
-  check_s_to_a (backup, stream_len, (void *) &address, &stream, 4);
+  check_s_to_a (backup, stream_len, &address, &stream, 4);
   CHECK_ENDIAN_32 (&address);
 
   /* move stream along to sample header */
-  trace = (u8 *) (backup + address);
+  trace = (uint8_t *) (backup + address);
 
   /* get sample data segment */
-  check_s_to_a (backup, stream_len, (void *) &address, &stream, 4);
-  check_s_to_a (backup, stream_len, (void *) &gdm->numsamples, &stream, 1);
+  check_s_to_a (backup, stream_len, &address, &stream, 4);
+  check_s_to_a (backup, stream_len, &gdm->numsamples, &stream, 1);
   CHECK_ENDIAN_32 (&address);
 
   /* stupid gdm bug */
   gdm->numsamples++;
 
   /* set up initial offset */
-  trace2 = (u8 *) (backup + address);
+  trace2 = (uint8_t *) (backup + address);
 
   /* allocate sample space */
-  gdm->samples = (struct GDM_sample *)
-                   malloc (sizeof (struct GDM_sample) * gdm->numsamples);
+  gdm->samples = malloc (sizeof (struct GDM_sample) * gdm->numsamples);
   memset (gdm->samples, 0, sizeof (struct GDM_sample) * gdm->numsamples);
 
   /* read in sample headers and copy sample data */
@@ -158,39 +156,39 @@ struct GDM_file *load_gdm (u8 *stream, u32 stream_len)
     sample = &gdm->samples[i].header;
 
     /* get sample name */
-    check_s_to_a (backup, stream_len, (void *) sample->name, &trace, 32);
+    check_s_to_a (backup, stream_len, sample->name, &trace, 32);
 
     /* get sample filename */
-    check_s_to_a (backup, stream_len, (void *) sample->filename, &trace, 12);
+    check_s_to_a (backup, stream_len, sample->filename, &trace, 12);
 
     /* skip EMS handle (should be zero) */
     trace++;
 
     /* get sample data length */
-    check_s_to_a (backup, stream_len, (void *) &sample->length, &trace, 4);
+    check_s_to_a (backup, stream_len, &sample->length, &trace, 4);
     CHECK_ENDIAN_32 (&sample->length);
 
     /* get loop beginning/end */
-    check_s_to_a (backup, stream_len, (void *) &sample->begin, &trace, 4);
-    check_s_to_a (backup, stream_len, (void *) &sample->end, &trace, 4);
+    check_s_to_a (backup, stream_len, &sample->begin, &trace, 4);
+    check_s_to_a (backup, stream_len, &sample->end, &trace, 4);
     CHECK_ENDIAN_32 (&sample->begin);
     CHECK_ENDIAN_32 (&sample->end);
 
     /* get sample flags */
-    check_s_to_a (backup, stream_len, (void *) &sample->flags, &trace, 1);
+    check_s_to_a (backup, stream_len, &sample->flags, &trace, 1);
 
     /* get rate data */
-    check_s_to_a (backup, stream_len, (void *) &sample->rate, &trace, 2);
+    check_s_to_a (backup, stream_len, &sample->rate, &trace, 2);
     CHECK_ENDIAN_16 (&sample->rate);
 
     /* get volume */
-    check_s_to_a (backup, stream_len, (void *) &sample->volume, &trace, 1);
+    check_s_to_a (backup, stream_len, &sample->volume, &trace, 1);
 
     /* get pan */
-    check_s_to_a (backup, stream_len, (void *) &sample->pan, &trace, 1);
+    check_s_to_a (backup, stream_len, &sample->pan, &trace, 1);
 
     /* allocate space for sample data */
-    gdm->samples[i].data = (u8 *) malloc (sample->length);
+    gdm->samples[i].data = malloc (sample->length);
 
     /* copy sample data */
     memcpy (gdm->samples[i].data, trace2, sample->length);
@@ -205,10 +203,17 @@ struct GDM_file *load_gdm (u8 *stream, u32 stream_len)
 
 void info_gdm (struct GDM_file *gdm)
 {
-  union version { u16 v; struct { u8 maj, min; } ver; } version;
   struct GDM_header *header = &gdm->header;
   struct GDM_samhdr *samhdr;
   int i;
+
+  union version {
+    uint16_t v;
+    struct {
+      uint8_t maj;
+      uint8_t min;
+    } ver;
+  } version;
 
   /* prepare version dump */
   memcpy (&version, &header->tracker_ver, 2);

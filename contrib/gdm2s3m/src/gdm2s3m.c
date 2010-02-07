@@ -32,9 +32,9 @@ int convert_gdm_s3m (const char *gdmfile, const char *s3mfile)
 {
   struct GDM_file *gdm;
   struct S3M_file *s3m;
+  uint32_t filesize;
+  uint8_t *stream;
   FILE *handle;
-  u32 filesize;
-  u8 *stream;
 
   /* open module */
   if ((handle = fopen (gdmfile, "rb")) == NULL)
@@ -42,11 +42,11 @@ int convert_gdm_s3m (const char *gdmfile, const char *s3mfile)
 
   /* get file size */
   fseek (handle, 0, SEEK_END);
-  filesize = (u32) ftell (handle);
+  filesize = (uint32_t) ftell (handle);
   fseek (handle, 0, SEEK_SET);
 
   /* allocate space */
-  stream = (u8 *) malloc (filesize);
+  stream = malloc (filesize);
 
   /* stream into memory */
   if (fread (stream, 1, filesize, handle) != filesize)

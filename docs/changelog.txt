@@ -28,6 +28,9 @@ DEVELOPERS
   discouraged.
 + Refactored the graphics rendering code to modularize the renderers and reduce
   code duplication (Mr_Alert).
++ Switched GDM2S3M over to use inttypes.h instead of home-brewing types.
+  Improves portability to BSD.
++ MegaZeux now compiles on OpenBSD (and probably other BSDs), use --disable-gl.
 
 July 4, 2007 - MZX 2.81g
 

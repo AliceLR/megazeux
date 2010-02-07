@@ -93,12 +93,14 @@ __G_BEGIN_DECLS
 #endif /* !_MSC_VER */
 
 /* function prototypes */
-void swap16 (u16 *);
-void swap32 (u32 *);
-void stream_to_alloc (void *dest, u8 **src, u32 n);
-void alloc_to_stream (void *src, u8 **dest, u32 n);
-void check_s_to_a (u8 *start, u32 size, void *dest, u8 **src, u32 n);
-void check_a_to_s (u8 **start, u32 *size, void *src, u8 **dest, u32 n);
+void swap16 (uint16_t *);
+void swap32 (uint32_t *);
+void stream_to_alloc (void *dest, uint8_t **src, uint32_t n);
+void alloc_to_stream (void *src, uint8_t **dest, uint32_t n);
+void check_s_to_a (uint8_t *start, uint32_t size, void *dest,
+                   uint8_t **src, uint32_t n);
+void check_a_to_s (uint8_t **start, uint32_t *size, void *src,
+                   uint8_t **dest, uint32_t n);
 
 __G_END_DECLS
 

@@ -32,34 +32,34 @@ __G_BEGIN_DECLS
 #define S3M_SAMPLE_MAGIC  "SCRS"
 
 struct S3M_header {
-  u8 title[28];      /* song title, last byte must be \0 */
-  u16 numorders;     /* number of orders */
-  u16 numinst;       /* number of adlib instruments */
-  u16 numpatterns;   /* number of wav samples */
-  u8 global_vol;     /* global volume */
-  u8 speed;
-  u8 tempo;
-  u8 chansett[32];   /* channel settings */
+  uint8_t title[28];      /* song title, last byte must be \0 */
+  uint16_t numorders;     /* number of orders */
+  uint16_t numinst;       /* number of adlib instruments */
+  uint16_t numpatterns;   /* number of wav samples */
+  uint8_t global_vol;     /* global volume */
+  uint8_t speed;
+  uint8_t tempo;
+  uint8_t chansett[32];   /* channel settings */
 };
 
 struct S3M_order {
-  u8 *patterns;
+  uint8_t *patterns;
 };
 
 struct S3M_samhdr {
-  u8 filename[13];    /* original filename */
-  u32 length;         /* length of sample, in bytes */
-  u32 begin;          /* loop beginning, in samples */
-  u32 end;            /* loop ending, in samples */
-  u8 volume;          /* default volume */
-  u8 flags;           /* sample type flags */
-  u16 rate;           /* playback speed in Hz, should be 8363 */
-  u8 name[28];
+  uint8_t filename[13];    /* original filename */
+  uint32_t length;         /* length of sample, in bytes */
+  uint32_t begin;          /* loop beginning, in samples */
+  uint32_t end;            /* loop ending, in samples */
+  uint8_t volume;          /* default volume */
+  uint8_t flags;           /* sample type flags */
+  uint16_t rate;           /* playback speed in Hz, should be 8363 */
+  uint8_t name[28];
 };
 
 struct S3M_pattern {
-  u16 length;
-  u8 *data;
+  uint16_t length;
+  uint8_t *data;
 };
 
 /**
@@ -71,19 +71,19 @@ struct S3M_file {
   struct S3M_order orders;
   struct S3M_sample *samples;
   struct S3M_pattern *patterns;
-  u8 panmap[32];
+  uint8_t panmap[32];
 };
 
 struct S3M_sample {
   struct S3M_samhdr header;  /* file structure */
-  u8 *data;                  /* sample data */
+  uint8_t *data;             /* sample data */
 };
 
 /* function prototypes */
-u8 *save_s3m (struct S3M_file *s3m, u32 *stream_len);
+uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len);
 struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm);
-void remap_effects (u8 gdm_effect, u8 gdm_param,
-                    u8 *dest_effect, u8 *dest_param);
+void remap_effects (uint8_t gdm_effect, uint8_t gdm_param,
+                    uint8_t *dest_effect, uint8_t *dest_param);
 void free_s3m (struct S3M_file *s3m);
 
 __G_END_DECLS

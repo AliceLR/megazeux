@@ -29,13 +29,7 @@
 
 __G_BEGIN_DECLS
 
-/* popular userspace type aliases */
-typedef unsigned char  u8;
-typedef signed char    s8;
-typedef unsigned short u16;
-typedef signed short   s16;
-typedef unsigned int   u32;
-typedef signed int     s32;
+#include <inttypes.h>
 
 __G_END_DECLS
 

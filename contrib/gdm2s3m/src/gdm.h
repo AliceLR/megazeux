@@ -30,37 +30,37 @@ __G_BEGIN_DECLS
 #define GDM_MAGIC "GDM\xFE"
 
 struct GDM_header {
-  u8 title[33];
-  u8 artist[33];
-  u16 version;        /* GDM format version (always 1.0) */
-  u16 tracker;        /* tracker used to generate file */
-  u16 tracker_ver;    /* version of tracker used */
-  u8 panning[32];     /* panning map, 1 byte per channel */
-  u8 global_vol;      /* global volume */
-  u8 tempo;
-  u8 bpm;
-  u16 origfmt;        /* original format */
+  uint8_t title[33];
+  uint8_t artist[33];
+  uint16_t version;        /* GDM format version (always 1.0) */
+  uint16_t tracker;        /* tracker used to generate file */
+  uint16_t tracker_ver;    /* version of tracker used */
+  uint8_t panning[32];     /* panning map, 1 byte per channel */
+  uint8_t global_vol;      /* global volume */
+  uint8_t tempo;
+  uint8_t bpm;
+  uint16_t origfmt;        /* original format */
 };
 
 struct GDM_order {
-  u8 *patterns;
+  uint8_t *patterns;
 };
 
 struct GDM_pattern {
-  u16 length;
-  u8 *data;
+  uint16_t length;
+  uint8_t *data;
 };
 
 struct GDM_samhdr {
-  u8 name[33];
-  u8 filename[13];    /* original filename */
-  u32 length;         /* length of sample, in bytes */
-  u32 begin;          /* loop beginning, in samples */
-  u32 end;            /* loop ending, in samples */
-  u8 flags;           /* sample type flags */
-  u16 rate;           /* playback speed in Hz, should be 8363 */
-  u8 volume;          /* default volume */
-  u8 pan;             /* default panning */
+  uint8_t name[33];
+  uint8_t filename[13];    /* original filename */
+  uint32_t length;         /* length of sample, in bytes */
+  uint32_t begin;          /* loop beginning, in samples */
+  uint32_t end;            /* loop ending, in samples */
+  uint8_t flags;           /* sample type flags */
+  uint16_t rate;           /* playback speed in Hz, should be 8363 */
+  uint8_t volume;          /* default volume */
+  uint8_t pan;             /* default panning */
 };
 
 /**
@@ -72,18 +72,18 @@ struct GDM_file {
   struct GDM_order orders;
   struct GDM_pattern *patterns;
   struct GDM_sample *samples;
-  u8 order_len;
-  u8 numpatterns;
-  u8 numsamples;
+  uint8_t order_len;
+  uint8_t numpatterns;
+  uint8_t numsamples;
 };
 
 struct GDM_sample {
   struct GDM_samhdr header;  /* file structure */
-  u8 *data;                  /* sample data */
+  uint8_t *data;             /* sample data */
 };
 
 /* function prototypes */
-struct GDM_file *load_gdm (u8 *stream, u32 stream_len);
+struct GDM_file *load_gdm (uint8_t *stream, uint32_t stream_len);
 void info_gdm (struct GDM_file *gdm);
 void free_gdm (struct GDM_file *gdm);
 
