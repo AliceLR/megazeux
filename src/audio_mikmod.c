@@ -1,6 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2007 Simon Parzer <simon.parzer@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -232,7 +233,7 @@ void init_mikmod(config_info *conf)
   md_sndfxvolume = 128;
   md_pansep = 128;
   md_reverb = 0;
-  md_mode |= DMODE_HQMIXER|DMODE_SOFT_MUSIC|DMODE_SURROUND;
+  md_mode |= DMODE_SOFT_MUSIC | DMODE_SURROUND;
 
   MikMod_RegisterDriver(&drv_nos);
   MikMod_RegisterAllLoaders();
