@@ -23,32 +23,8 @@
 #include "graphics.h"
 #include "render.h"
 
-void (*set_colors8[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
-{
-  set_colors8_mzx,
-  set_colors8_smzx,
-  set_colors8_smzx,
-  set_colors8_smzx3
-};
-
-void (*set_colors16[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
-{
-  set_colors16_mzx,
-  set_colors16_smzx,
-  set_colors16_smzx,
-  set_colors16_smzx3
-};
-
-void (*set_colors32[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
-{
-  set_colors32_mzx,
-  set_colors32_smzx,
-  set_colors32_smzx,
-  set_colors32_smzx3
-};
-
-void set_colors8_mzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg)
+static void set_colors8_mzx (graphics_data *graphics, Uint32 *char_colors,
+ Uint8 bg, Uint8 fg)
 {
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
   char_colors[0] = (bg << 24) | (bg << 16) | (bg << 8) | bg;
@@ -87,8 +63,8 @@ void set_colors8_mzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
 #endif
 }
 
-void set_colors8_smzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg)
+static void set_colors8_smzx (graphics_data *graphics, Uint32 *char_colors,
+ Uint8 bg, Uint8 fg)
 {
   Uint32 bb, bf, fb, ff;
   bg &= 0x0F;
@@ -103,44 +79,44 @@ void set_colors8_smzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
   ff |= ff << 8;
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
-        char_colors[0] = (bb << 16) | bb;
-        char_colors[1] = (bb << 16) | bf;
-        char_colors[2] = (bb << 16) | fb;
-        char_colors[3] = (bb << 16) | ff;
-        char_colors[4] = (bf << 16) | bb;
-        char_colors[5] = (bf << 16) | bf;
-        char_colors[6] = (bf << 16) | fb;
-        char_colors[7] = (bf << 16) | ff;
-        char_colors[8] = (fb << 16) | bb;
-        char_colors[9] = (fb << 16) | bf;
-        char_colors[10] = (fb << 16) | fb;
-        char_colors[11] = (fb << 16) | ff;
-        char_colors[12] = (ff << 16) | bb;
-        char_colors[13] = (ff << 16) | bf;
-        char_colors[14] = (ff << 16) | fb;
-        char_colors[15] = (ff << 16) | ff;
+  char_colors[0] = (bb << 16) | bb;
+  char_colors[1] = (bb << 16) | bf;
+  char_colors[2] = (bb << 16) | fb;
+  char_colors[3] = (bb << 16) | ff;
+  char_colors[4] = (bf << 16) | bb;
+  char_colors[5] = (bf << 16) | bf;
+  char_colors[6] = (bf << 16) | fb;
+  char_colors[7] = (bf << 16) | ff;
+  char_colors[8] = (fb << 16) | bb;
+  char_colors[9] = (fb << 16) | bf;
+  char_colors[10] = (fb << 16) | fb;
+  char_colors[11] = (fb << 16) | ff;
+  char_colors[12] = (ff << 16) | bb;
+  char_colors[13] = (ff << 16) | bf;
+  char_colors[14] = (ff << 16) | fb;
+  char_colors[15] = (ff << 16) | ff;
 #else
-        char_colors[0] = (bb << 16) | bb;
-        char_colors[1] = (bf << 16) | bb;
-        char_colors[2] = (fb << 16) | bb;
-        char_colors[3] = (ff << 16) | bb;
-        char_colors[4] = (bb << 16) | bf;
-        char_colors[5] = (bf << 16) | bf;
-        char_colors[6] = (fb << 16) | bf;
-        char_colors[7] = (ff << 16) | bf;
-        char_colors[8] = (bb << 16) | fb;
-        char_colors[9] = (bf << 16) | fb;
-        char_colors[10] = (fb << 16) | fb;
-        char_colors[11] = (ff << 16) | fb;
-        char_colors[12] = (bb << 16) | ff;
-        char_colors[13] = (bf << 16) | ff;
-        char_colors[14] = (fb << 16) | ff;
-        char_colors[15] = (ff << 16) | ff;
+  char_colors[0] = (bb << 16) | bb;
+  char_colors[1] = (bf << 16) | bb;
+  char_colors[2] = (fb << 16) | bb;
+  char_colors[3] = (ff << 16) | bb;
+  char_colors[4] = (bb << 16) | bf;
+  char_colors[5] = (bf << 16) | bf;
+  char_colors[6] = (fb << 16) | bf;
+  char_colors[7] = (ff << 16) | bf;
+  char_colors[8] = (bb << 16) | fb;
+  char_colors[9] = (bf << 16) | fb;
+  char_colors[10] = (fb << 16) | fb;
+  char_colors[11] = (ff << 16) | fb;
+  char_colors[12] = (bb << 16) | ff;
+  char_colors[13] = (bf << 16) | ff;
+  char_colors[14] = (fb << 16) | ff;
+  char_colors[15] = (ff << 16) | ff;
 #endif
 }
 
-void set_colors8_smzx3 (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg)
+static void set_colors8_smzx3 (graphics_data *graphics, Uint32 *char_colors,
+ Uint8 bg, Uint8 fg)
 {
   Uint32 c0, c1, c2, c3;
   c0 = ((bg << 4) | (fg & 0x0F)) & 0xFF;
@@ -190,8 +166,8 @@ void set_colors8_smzx3 (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
 #endif
 }
 
-void set_colors16_mzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg)
+static void set_colors16_mzx (graphics_data *graphics, Uint32 *char_colors,
+ Uint8 bg, Uint8 fg)
 {
   Uint32 cb_bg, cb_fg;
 
@@ -211,8 +187,8 @@ void set_colors16_mzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
 #endif
 }
 
-void set_colors16_smzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg)
+static void set_colors16_smzx (graphics_data *graphics, Uint32 *char_colors,
+ Uint8 bg, Uint8 fg)
 {
   bg &= 0x0F;
   fg &= 0x0F;
@@ -228,8 +204,8 @@ void set_colors16_smzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
   char_colors[3] = (char_colors[3] << 16) | char_colors[3];
 }
 
-void set_colors16_smzx3 (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg)
+static void set_colors16_smzx3 (graphics_data *graphics, Uint32 *char_colors,
+ Uint8 bg, Uint8 fg)
 {
   Uint8 base;
 
@@ -246,15 +222,15 @@ void set_colors16_smzx3 (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
   char_colors[3] = (char_colors[3] << 16) | char_colors[3];
 }
 
-void set_colors32_mzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg)
+static void set_colors32_mzx (graphics_data *graphics, Uint32 *char_colors,
+ Uint8 bg, Uint8 fg)
 {
   char_colors[0] = graphics->flat_intensity_palette[bg];
   char_colors[1] = graphics->flat_intensity_palette[fg];
 }
 
-void set_colors32_smzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg)
+static void set_colors32_smzx (graphics_data *graphics, Uint32 *char_colors,
+ Uint8 bg, Uint8 fg)
 {
   bg &= 0x0F;
   fg &= 0x0F;
@@ -265,8 +241,8 @@ void set_colors32_smzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
   char_colors[3] = graphics->flat_intensity_palette[(fg << 4) | fg];
 }
 
-void set_colors32_smzx3 (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg)
+static void set_colors32_smzx3 (graphics_data *graphics, Uint32 *char_colors,
+ Uint8 bg, Uint8 fg)
 {
   Uint8 base;
 
@@ -277,6 +253,63 @@ void set_colors32_smzx3 (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
   char_colors[2] = graphics->flat_intensity_palette[(base + 1) & 0xFF];
   char_colors[3] = graphics->flat_intensity_palette[(base + 3) & 0xFF];
 }
+
+void (*set_colors8[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+{
+  set_colors8_mzx,
+  set_colors8_smzx,
+  set_colors8_smzx,
+  set_colors8_smzx3
+};
+
+void (*set_colors16[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+{
+  set_colors16_mzx,
+  set_colors16_smzx,
+  set_colors16_smzx,
+  set_colors16_smzx3
+};
+
+void (*set_colors32[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+{
+  set_colors32_mzx,
+  set_colors32_smzx,
+  set_colors32_smzx,
+  set_colors32_smzx3
+};
+
+#ifdef CONFIG_OVERLAY
+
+#include "render_yuv.h"
+
+static void yuv2_set_colors_mzx(graphics_data *graphics, Uint32 *char_colors,
+ Uint8 bg, Uint8 fg)
+{
+  yuv_render_data *render_data = graphics->render_data;
+  Uint32 y0mask = render_data->y0mask;
+  Uint32 y1mask = render_data->y1mask;
+  Uint32 uvmask = render_data->uvmask;
+  Uint32 cb_bg, cb_fg, cb_mix;
+
+  cb_bg = graphics->flat_intensity_palette[bg];
+  cb_fg = graphics->flat_intensity_palette[fg];
+  cb_mix = (((cb_bg & uvmask) >> 1) + ((cb_fg & uvmask) >> 1)) & uvmask;
+
+  char_colors[0] = cb_bg;
+  char_colors[1] = cb_mix | (cb_bg & y0mask) | (cb_fg & y1mask);
+  char_colors[2] = cb_mix | (cb_fg & y0mask) | (cb_bg & y1mask);
+  char_colors[3] = cb_fg;
+}
+
+void (*yuv2_set_colors[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+{
+  yuv2_set_colors_mzx,
+  set_colors32_smzx,
+  set_colors32_smzx,
+  set_colors32_smzx3
+};
+
+#endif
 
 // Nominally 8-bit (Character graphics 8 bytes wide)
 void render_graph8(Uint8 *pixels, Uint32 pitch, graphics_data *graphics,
@@ -553,6 +586,24 @@ void get_screen_coords_centered(graphics_data *graphics, int screen_x,
   *max_y = 349 + h_offset;
 }
 
+void set_screen_coords_centered(graphics_data *graphics, int x, int y,
+ int *screen_x, int *screen_y)
+{
+  int target_width = graphics->window_width;
+  int target_height = graphics->window_height;
+
+  if(graphics->fullscreen)
+  {
+    target_width = graphics->resolution_width;
+    target_height = graphics->resolution_height;
+  }
+
+  *screen_x = x + (target_width - 640) / 2;
+  *screen_y = y + (target_height - 350) / 2;
+}
+
+#if defined(CONFIG_OPENGL) || defined(CONFIG_OVERLAY)
+
 void get_screen_coords_scaled(graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y)
 {
@@ -573,22 +624,6 @@ void get_screen_coords_scaled(graphics_data *graphics, int screen_x,
   *max_y = target_height - 1;
 }
 
-void set_screen_coords_centered(graphics_data *graphics, int x, int y,
- int *screen_x, int *screen_y)
-{
-  int target_width = graphics->window_width;
-  int target_height = graphics->window_height;
-
-  if(graphics->fullscreen)
-  {
-    target_width = graphics->resolution_width;
-    target_height = graphics->resolution_height;
-  }
-
-  *screen_x = x + (target_width - 640) / 2;
-  *screen_y = y + (target_height - 350) / 2;
-}
-
 void set_screen_coords_scaled(graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y)
 {
@@ -604,6 +639,8 @@ void set_screen_coords_scaled(graphics_data *graphics, int x, int y,
   *screen_x = x * target_width / 640;
   *screen_y = y * target_height / 350;
 }
+
+#endif // CONFIG_OPENGL || CONFIG_OVERLAY
 
 void resize_screen_standard(graphics_data *graphics, int w, int h)
 {

@@ -27,6 +27,10 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
+
 #include "event.h"
 #include "helpsys.h"
 #include "scrdisp.h"

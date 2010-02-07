@@ -53,16 +53,20 @@ static graphics_data graphics;
 
 static const renderer_data renderers[] =
 {
+#if defined(CONFIG_SOFTWARE)
   { "software", render_soft_register },
-#if defined(CONFIG_OPENGL) && !defined(PSP_BUILD)
+#endif
+#if defined(CONFIG_OPENGL)
   { "opengl1", render_gl1_register },
   { "opengl2", render_gl2_register },
 #endif
-#if !defined(PSP_BUILD)
+#if defined(CONFIG_OVERLAY)
   { "overlay1", render_yuv1_register },
   { "overlay2", render_yuv2_register },
 #endif
+#if defined(CONFIG_GP2X)
   { "gp2x", render_gp2x_register },
+#endif
   { NULL, NULL }
 };
 
@@ -1420,7 +1424,7 @@ void m_show(void)
  * Copyright (C) 2006 Angelo "Encelo" Theodorou
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
  */
-void dump_screen_real(SDL_Surface *surface, const char *name)
+static void dump_screen_real(SDL_Surface *surface, const char *name)
 {
   const SDL_Palette *palette = surface->format->palette;
   png_bytep *row_ptrs;
@@ -1487,7 +1491,7 @@ void dump_screen_real(SDL_Surface *surface, const char *name)
 
 #define DUMP_FMT_EXT "bmp"
 
-void dump_screen_real(SDL_Surface *surface, const char *name)
+static void dump_screen_real(SDL_Surface *surface, const char *name)
 {
   SDL_SaveBMP(surface, name);
 }

@@ -61,6 +61,11 @@ DEVELOPERS
   changes (which involve converting from C99 variable length arrays to
   malloc/free) which are slower and should not be used with competent
   C99 compilers like GCC.
++ MegaZeux now has size optimisations which can reduce binary size when
+  features are disabled. For example, all renderers can now be disabled,
+  and when module engines are disabled, audio will not export any symbols.
+  This reduces the size of a stripped AMD64 binary from 860992b (with all
+  features enabled) to 656160b (with all features disabled) (~24% smaller).
 
 July 4, 2007 - MZX 2.81g
 

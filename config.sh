@@ -21,20 +21,29 @@ usage() {
 	echo "  mingw64        Use MinGW64 on Linux, to build for win64"
 	echo
 	echo "Supported <option> values:"
-	echo "  --disable-x11     Disables X11, removing binary dependency."
-	echo "  --enable-x11      Enables X11 support (default)."
+	echo "  --disable-x11      Disables X11, removing binary dependency."
+	echo "  --enable-x11       Enables X11 support (default)."
 	echo
-	echo "  --disable-gl      Disables all OpenGL renderers."
-	echo "  --enable-gl       Enables OpenGL, runtime loaded (default)."
+	echo "  --disable-software Disable software renderer."
+	echo "  --enable-software  Enable software renderer (default)."
 	echo
-	echo "  --disable-modplug Disables ModPlug music engine."
-	echo "  --enable-modplug  Enables ModPlug music engine (default)."
+	echo "  --disable-gl       Disables all OpenGL renderers."
+	echo "  --enable-gl        Enables OpenGL, runtime loaded (default)."
 	echo
-	echo "  --enable-mikmod   Enables MikMod music engine."
-	echo "  --disable-mikmod  Disables MikMod music engine (default)."
+	echo "  --disable-overlay  Disables all overlay renderers."
+	echo "  --enable-overlay   Enables all overlay renderers. (default)"
 	echo
-	echo "  --disable-libpng  Disables PNG screendump support."
-	echo "  --enable-libpng   Enables PNG screendump support (default)."
+	echo "  --disable-gp2x     Disables half-width software renderer (default)."
+	echo "  --enable-gp2x      Enables half-width software renderer."
+	echo
+	echo "  --disable-modplug  Disables ModPlug music engine."
+	echo "  --enable-modplug   Enables ModPlug music engine (default)."
+	echo
+	echo "  --enable-mikmod    Enables MikMod music engine."
+	echo "  --disable-mikmod   Disables MikMod music engine (default)."
+	echo
+	echo "  --disable-libpng   Disables PNG screendump support."
+	echo "  --enable-libpng    Enables PNG screendump support (default)."
 	echo
 	echo "e.g.: ./config.sh --platform linux --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -51,7 +60,10 @@ PLATFORM=""
 PREFIX="/usr"
 SYSCONFDIR="/etc"
 X11="true"
+SOFTWARE="true"
 OPENGL="true"
+OVERLAY="true"
+GP2X="false"
 MODPLUG="true"
 MIKMOD="false"
 LIBPNG="true"
@@ -81,8 +93,17 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-x11" ] && X11="false"
 	[ "$1" = "--enable-x11" ]  && X11="true"
 
+	[ "$1" = "--disable-software" ] && SOFTWARE="false"
+	[ "$1" = "--enable-software" ]  && SOFTWARE="true"
+
 	[ "$1" = "--disable-gl" ] && OPENGL="false"
 	[ "$1" = "--enable-gl" ]  && OPENGL="true"
+
+	[ "$1" = "--disable-overlay" ] && OVERLAY="false"
+	[ "$1" = "--enable-overlay" ]  && OVERLAY="true"
+
+	[ "$1" = "--disable-gp2x" ] && GP2X="false"
+	[ "$1" = "--enable-gp2x" ]  && GP2X="true"
 
 	[ "$1" = "--disable-modplug" ] && MODPLUG="false"
 	[ "$1" = "--enable-modplug" ]  && MODPLUG="true"
@@ -200,19 +221,73 @@ else
 fi
 
 #
-# OpenGL support (not linked against GL, but needs headers installed)
+# Force-enable software on non-NDS/GP2X platforms
 #
-if [ "$PLATFORM" != "psp" -a "$PLATFORM" != "gp2x" ]; then
-	# asked for opengl?
-	if [ "$OPENGL" = "true" ]; then
-		echo "OpenGL support enabled."
-		echo "#define CONFIG_OPENGL" >> src/config.h
-		echo "BUILD_OPENGL=1" >> Makefile.platform
-	else
-		echo "OpenGL support disabled."
-	fi
+if [ "$PLATFORM" != "nds" -a "$PLATFORM" != "gp2x" ]; then
+	echo "Force-enabling software renderer."
+	SOFTWARE="true"
+fi
+
+#
+# Force-enable GP2X renderer on GP2X
+#
+if [ "$PLATFORM" = "gp2x" ]; then
+	echo "Force-enabling GP2X half-width renderer."
+	GP2X="true"
+fi
+
+#
+# Force-disable OpenGL and overlay renderers on PSP, GP2X and NDS
+#
+if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
+  -o "$PLATFORM" = "nds" ]; then
+  	echo "Force-disabling OpenGL and overlay renderers."
+	OPENGL="false"
+	OVERLAY="false"
+fi
+
+#
+# Software renderer
+#
+if [ "$SOFTWARE" = "true" ]; then
+	echo "Software renderer enabled."
+	echo "#define CONFIG_SOFTWARE" >> src/config.h
+	echo "BUILD_SOFTWARE=1" >> Makefile.platform
 else
-	echo "OpenGL support disabled (unsupported platform)."
+	echo "Software renderer disabled."
+fi
+
+#
+# OpenGL renderers (not linked against GL, but needs headers installed)
+#
+if [ "$OPENGL" = "true" ]; then
+	echo "OpenGL renderers enabled."
+	echo "#define CONFIG_OPENGL" >> src/config.h
+	echo "BUILD_OPENGL=1" >> Makefile.platform
+else
+	echo "OpenGL renderers disabled."
+fi
+
+#
+# Overlay renderers
+#
+if [ "$OVERLAY" = "true" ]; then
+	echo "Overlay renderers enabled."
+	echo "#define CONFIG_OVERLAY" >> src/config.h
+	echo "BUILD_OVERLAY=1" >> Makefile.platform
+else
+	echo "Overlay renderers disabled."
+fi
+
+#
+# GP2X renderer
+#
+if [ "$GP2X" = "true" ]; then
+	echo "GP2X half-width renderer enabled."
+	echo "#define CONFIG_GP2X" >> src/config.h
+	echo "BUILD_GP2X=1" >> Makefile.platform
+else
+	echo "GP2X half-width renderer disabled."
 fi
 
 #

@@ -23,33 +23,6 @@
 #include "render_yuv.h"
 #include "renderers.h"
 
-static void yuv2_set_colors_mzx(graphics_data *graphics, Uint32 *char_colors,
- Uint8 bg, Uint8 fg)
-{
-  yuv_render_data *render_data = graphics->render_data;
-  Uint32 y0mask = render_data->y0mask;
-  Uint32 y1mask = render_data->y1mask;
-  Uint32 uvmask = render_data->uvmask;
-  Uint32 cb_bg, cb_fg, cb_mix;
-
-  cb_bg = graphics->flat_intensity_palette[bg];
-  cb_fg = graphics->flat_intensity_palette[fg];
-  cb_mix = (((cb_bg & uvmask) >> 1) + ((cb_fg & uvmask) >> 1)) & uvmask;
-
-  char_colors[0] = cb_bg;
-  char_colors[1] = cb_mix | (cb_bg & y0mask) | (cb_fg & y1mask);
-  char_colors[2] = cb_mix | (cb_fg & y0mask) | (cb_bg & y1mask);
-  char_colors[3] = cb_fg;
-}
-
-static void (*yuv2_set_colors[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
-{
-  yuv2_set_colors_mzx,
-  set_colors32_smzx,
-  set_colors32_smzx,
-  set_colors32_smzx3
-};
-
 static int yuv2_set_video_mode(graphics_data *graphics, int width, int height,
  int depth, int flags, int fullscreen)
 {

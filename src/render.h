@@ -25,29 +25,14 @@
 __M_BEGIN_DECLS
 
 #include "graphics.h"
+#include "config.h"
 
 extern void (*set_colors8[4])(graphics_data *, Uint32 *, Uint8, Uint8);
 extern void (*set_colors16[4])(graphics_data *, Uint32 *, Uint8, Uint8);
 extern void (*set_colors32[4])(graphics_data *, Uint32 *, Uint8, Uint8);
-
-void set_colors8_mzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg);
-void set_colors8_smzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg);
-void set_colors8_smzx3 (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg);
-void set_colors16_mzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg);
-void set_colors16_smzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg);
-void set_colors16_smzx3 (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg);
-void set_colors32_mzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg);
-void set_colors32_smzx (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg);
-void set_colors32_smzx3 (graphics_data *graphics, Uint32 *char_colors, Uint8 bg,
- Uint8 fg);
+#ifdef CONFIG_OVERLAY
+extern void (*yuv2_set_colors[4])(graphics_data *, Uint32 *, Uint8, Uint8);
+#endif
 
 void render_graph8(Uint8 *pixels, Uint32 pitch, graphics_data *graphics,
  void (*set_colors)(graphics_data *, Uint32 *, Uint8, Uint8));
@@ -65,13 +50,17 @@ void render_mouse(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
 
 void get_screen_coords_centered(graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);
-void get_screen_coords_scaled(graphics_data *graphics, int screen_x,
- int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);
-
 void set_screen_coords_centered(graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y);
+
+#if defined(CONFIG_OPENGL) || defined(CONFIG_OVERLAY)
+
+void get_screen_coords_scaled(graphics_data *graphics, int screen_x,
+ int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);
 void set_screen_coords_scaled(graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y);
+
+#endif // CONFIG_OPENGL || CONFIG_OVERLAY
 
 void resize_screen_standard(graphics_data *graphics, int w, int h);
 

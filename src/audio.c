@@ -77,8 +77,10 @@ typedef struct
   vorbis_info *vorbis_file_info;
 } vorbis_stream;
 
+static const int default_period = 428;
+
 // May be used by audio plugins
-audio_struct audio;
+__audio_c_maybe_static audio_struct audio;
 
 #ifdef PTHREAD_MUTEXES
 #define __lock()      pthread_mutex_lock(&audio.audio_mutex)
@@ -299,7 +301,7 @@ static void sampled_negative_threshold(sampled_stream *s_src)
   }
 }
 
-void sampled_set_buffer(sampled_stream *s_src)
+__audio_c_maybe_static void sampled_set_buffer(sampled_stream *s_src)
 {
   Uint32 prologue_length = 4;
   Uint32 epilogue_length = 12;
@@ -342,8 +344,8 @@ void sampled_set_buffer(sampled_stream *s_src)
   sampled_negative_threshold(s_src);
 }
 
-void sampled_mix_data(sampled_stream *s_src, Sint32 *dest_buffer,
- Uint32 len)
+__audio_c_maybe_static void sampled_mix_data(sampled_stream *s_src,
+ Sint32 *dest_buffer, Uint32 len)
 {
   Uint8 *output_data = (Uint8 *)s_src->output_data;
   Sint16 *src_buffer =
@@ -732,7 +734,7 @@ static void destruct_audio_stream(audio_stream *a_src)
   free(a_src);
 }
 
-void sampled_destruct(audio_stream *a_src)
+__audio_c_maybe_static void sampled_destruct(audio_stream *a_src)
 {
   sampled_stream *s_stream = (sampled_stream *)a_src;
   free(s_stream->output_data);
@@ -758,9 +760,9 @@ static void pcs_destruct(audio_stream *a_src)
   destruct_audio_stream(a_src);
 }
 
-void construct_audio_stream(audio_stream *a_src,
- Uint32 (* mix_data)(audio_stream *a_src, Sint32 *buffer,
-  Uint32 len),
+__audio_c_maybe_static void construct_audio_stream(
+ audio_stream *a_src, Uint32 (* mix_data)(
+  audio_stream *a_src, Sint32 *buffer, Uint32 len),
  void (* set_volume)(audio_stream *a_src, Uint32 volume),
  void (* set_repeat)(audio_stream *a_src, Uint32 repeat),
  void (* set_order)(audio_stream *a_src, Uint32 order),
@@ -800,7 +802,8 @@ void construct_audio_stream(audio_stream *a_src,
   audio.stream_list_end = a_src;
 }
 
-void initialize_sampled_stream(sampled_stream *s_src,
+__audio_c_maybe_static void initialize_sampled_stream(
+ sampled_stream *s_src,
  void (* set_frequency)(sampled_stream *s_src, Uint32 frequency),
  Uint32 (* get_frequency)(sampled_stream *s_src),
  Uint32 frequency, Uint32 channels, Uint32 use_volume)
@@ -1078,6 +1081,100 @@ static SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
 
   // It's over! YEY!
   return spec;
+}
+
+__audio_c_maybe_static int file_length(FILE *fp)
+{
+  int length;
+
+  fseek(fp, 0, SEEK_END);
+  length = ftell(fp);
+  fseek(fp, 0, SEEK_SET);
+
+  return length;
+}
+
+// Props to madbrain for his WAV writing code which the following
+// is loosely based off of.
+
+static void write_little_endian32(Uint8 *dest, Uint32 value)
+{
+  dest[0] = value;
+  dest[1] = value >> 8;
+  dest[2] = value >> 16;
+  dest[3] = value >> 24;
+}
+
+static void write_little_endian16(Uint8 *dest, Uint32 value)
+{
+  dest[0] = value;
+  dest[1] = value >> 8;
+}
+
+static void write_chars(Uint8 *dest, const char *str)
+{
+  memcpy(dest, str, strlen(str));
+}
+
+__audio_c_maybe_static void convert_sam_to_wav(
+ char *source_name, char *dest_name)
+{
+  FILE *source, *dest;
+  Uint32 frequency;
+  Uint32 source_length, dest_length;
+
+  Uint8 *data;
+  Uint32 i;
+
+  source = fopen(source_name, "rb");
+
+  if(source == NULL)
+    return;
+
+  dest = fopen(dest_name, "wb");
+
+  if(dest == NULL)
+    return;
+
+  source_length = file_length(source);
+
+  frequency = freq_conversion / default_period;
+  dest_length = source_length + 44;
+  data = (Uint8 *)malloc(dest_length);
+
+  write_chars(data, "RIFF");
+  write_little_endian32(data + 4, dest_length);
+  write_chars(data + 8, "WAVEfmt ");
+  write_little_endian32(data + 16, 16);
+  // PCM
+  write_little_endian16(data + 20, 1);
+  // Mono
+  write_little_endian16(data + 22, 2);
+  // Frequency (bytes per second, x2)
+  write_little_endian32(data + 24, frequency);
+  write_little_endian32(data + 28, frequency);
+  // Bytes per sample
+  write_little_endian16(data + 32, 1);
+  // Bit depth
+  write_little_endian16(data + 34, 8);
+  write_chars(data + 36, "data");
+  // Source length
+  write_little_endian32(data + 40, source_length);
+
+  // Read in the actual sample data from the SAM
+  fread(data + 44, source_length, 1, source);
+
+  // Convert from signed to unsigned
+  for(i = 44; i < dest_length; i++)
+  {
+    data[i] += 128;
+  }
+
+  fwrite(data, dest_length, 1, dest);
+
+  free(data);
+  fclose(source);
+  fclose(dest);
 }
 
 static audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
@@ -1551,101 +1648,6 @@ void nosound(int duration)
 {
   audio.pcs_stream->playing = 0;
   audio.pcs_stream->note_duration = duration;
-}
-
-int file_length(FILE *fp)
-{
-  int length;
-
-  fseek(fp, 0, SEEK_END);
-  length = ftell(fp);
-  fseek(fp, 0, SEEK_SET);
-
-  return length;
-}
-
-const int default_period = 428;
-
-// Props to madbrain for his WAV writing code which the following
-// is loosely based off of.
-
-static void write_little_endian32(Uint8 *dest, Uint32 value)
-{
-  dest[0] = value;
-  dest[1] = value >> 8;
-  dest[2] = value >> 16;
-  dest[3] = value >> 24;
-}
-
-static void write_little_endian16(Uint8 *dest, Uint32 value)
-{
-  dest[0] = value;
-  dest[1] = value >> 8;
-}
-
-static void write_chars(Uint8 *dest, const char *str)
-{
-  memcpy(dest, str, strlen(str));
-}
-
-void convert_sam_to_wav(char *source_name, char *dest_name)
-{
-  FILE *source, *dest;
-  Uint32 frequency;
-  Uint32 source_length, dest_length;
-
-  Uint8 *data;
-  Uint32 i;
-
-  source = fopen(source_name, "rb");
-
-  if(source == NULL)
-    return;
-
-  dest = fopen(dest_name, "wb");
-
-  if(dest == NULL)
-    return;
-
-  source_length = file_length(source);
-
-  frequency = freq_conversion / default_period;
-  dest_length = source_length + 44;
-  data = (Uint8 *)malloc(dest_length);
-
-  write_chars(data, "RIFF");
-  write_little_endian32(data + 4, dest_length);
-  write_chars(data + 8, "WAVEfmt ");
-  write_little_endian32(data + 16, 16);
-  // PCM
-  write_little_endian16(data + 20, 1);
-  // Mono
-  write_little_endian16(data + 22, 2);
-  // Frequency (bytes per second, x2)
-  write_little_endian32(data + 24, frequency);
-  write_little_endian32(data + 28, frequency);
-  // Bytes per sample
-  write_little_endian16(data + 32, 1);
-  // Bit depth
-  write_little_endian16(data + 34, 8);
-  write_chars(data + 36, "data");
-  // Source length
-  write_little_endian32(data + 40, source_length);
-
-  // Read in the actual sample data from the SAM
-  fread(data + 44, source_length, 1, source);
-
-  // Convert from signed to unsigned
-  for(i = 44; i < dest_length; i++)
-  {
-    data[i] += 128;
-  }
-
-  fwrite(data, dest_length, 1, dest);
-
-  free(data);
-  fclose(source);
-  fclose(dest);
 }
 
 void set_music_on(int val)

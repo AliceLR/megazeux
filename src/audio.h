@@ -144,8 +144,6 @@ int free_sam_cache(char clear_all);
 void fix_global_volumes(void);
 void sound(int frequency, int duration);
 void nosound(int duration);
-int file_length(FILE *fp);
-void convert_sam_to_wav(char *source_name, char *dest_name);
 void set_music_on(int val);
 void set_sfx_on(int val);
 int get_music_on_state();
@@ -157,10 +155,17 @@ void set_music_volume(int volume);
 void set_sound_volume(int volume);
 void set_sfx_volume(int volume);
 
-/*** these should only be used by audio plugins */
+#ifdef CONFIG_MODPLUG
+void convert_sam_to_wav(char *source_name, char *dest_name);
+#endif
+
+/*** these should only be exported for audio plugins */
+
+#if defined(CONFIG_MODPLUG) || defined(CONFIG_MIKMOD)
 
 extern audio_struct audio;
 
+int file_length(FILE *fp);
 void sampled_set_buffer(sampled_stream *s_src);
 void sampled_mix_data(sampled_stream *s_src, Sint32 *dest_buffer,
  Uint32 len);
@@ -180,6 +185,14 @@ void construct_audio_stream(audio_stream *a_src,
  Uint32 (* get_position)(audio_stream *a_src),
  void (* destruct)(audio_stream *a_src),
  Uint32 volume, Uint32 repeat);
+
+#define __audio_c_maybe_static
+
+#else // !CONFIG_MODPLUG && !CONFIG_MIKMOD
+
+#define __audio_c_maybe_static static
+
+#endif // CONFIG_MODPLUG || CONFIG_MIKMOD
 
 /*** end audio plugins exports */
 
