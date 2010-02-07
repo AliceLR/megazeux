@@ -17,36 +17,41 @@ usage() {
 	echo "  linux-static   Linux (statically linked)"
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
+	echo "  nds            Experimental NDS port"
 	echo "  mingw32        Use MinGW32 on Linux, to build for win32"
 	echo "  mingw64        Use MinGW64 on Linux, to build for win64"
 	echo
 	echo "Supported <option> values:"
-	echo "  --disable-x11      Disables X11, removing binary dependency."
-	echo "  --enable-x11       Enables X11 support (default)."
 	echo
-	echo "  --disable-software Disable software renderer."
-	echo "  --enable-software  Enable software renderer (default)."
+	echo "  --enable-host-tools  Use 'cc' to build tools (txt2hlp)."
+	echo "  --disable-host-tools Use the default compiler (default)."
 	echo
-	echo "  --disable-gl       Disables all OpenGL renderers."
-	echo "  --enable-gl        Enables OpenGL, runtime loaded (default)."
+	echo "  --disable-x11        Disables X11, removing binary dependency."
+	echo "  --enable-x11         Enables X11 support (default)."
 	echo
-	echo "  --disable-overlay  Disables all overlay renderers."
-	echo "  --enable-overlay   Enables all overlay renderers. (default)"
+	echo "  --disable-software   Disable software renderer."
+	echo "  --enable-software    Enable software renderer (default)."
 	echo
-	echo "  --enable-gp2x      Enables half-width software renderer."
-	echo "  --disable-gp2x     Disables half-width software renderer (default)."
+	echo "  --disable-gl         Disables all OpenGL renderers."
+	echo "  --enable-gl          Enables OpenGL, runtime loaded (default)."
 	echo
-	echo "  --disable-modplug  Disables ModPlug music engine."
-	echo "  --enable-modplug   Enables ModPlug music engine (default)."
+	echo "  --disable-overlay    Disables all overlay renderers."
+	echo "  --enable-overlay     Enables all overlay renderers. (default)"
 	echo
-	echo "  --enable-mikmod    Enables MikMod music engine."
-	echo "  --disable-mikmod   Disables MikMod music engine (default)."
+	echo "  --enable-gp2x        Enables half-width software renderer."
+	echo "  --disable-gp2x       Disables half-width software renderer (default)."
 	echo
-	echo "  --disable-libpng   Disables PNG screendump support."
-	echo "  --enable-libpng    Enables PNG screendump support (default)."
+	echo "  --disable-modplug    Disables ModPlug music engine."
+	echo "  --enable-modplug     Enables ModPlug music engine (default)."
 	echo
-	echo "  --disable-audio    Disables all audio (sound + music)."
-	echo "  --enable-audio     Audio (sound + music) is enabled (default)."
+	echo "  --enable-mikmod      Enables MikMod music engine."
+	echo "  --disable-mikmod     Disables MikMod music engine (default)."
+	echo
+	echo "  --disable-libpng     Disables PNG screendump support."
+	echo "  --enable-libpng      Enables PNG screendump support (default)."
+	echo
+	echo "  --disable-audio      Disables all audio (sound + music)."
+	echo "  --enable-audio       Audio (sound + music) is enabled (default)."
 	echo
 	echo "e.g.: ./config.sh --platform linux --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -62,6 +67,8 @@ usage() {
 PLATFORM=""
 PREFIX="/usr"
 SYSCONFDIR="/etc"
+SYSCONFDIR_SET="false"
+HOST_TOOLS="false"
 X11="true"
 SOFTWARE="true"
 OPENGL="true"
@@ -92,7 +99,11 @@ while [ "$1" != "" ]; do
 	if [ "$1" = "--sysconfdir" ]; then
 		shift
 		SYSCONFDIR="$1"
+		SYSCONFDIR_SET="true"
 	fi
+
+	[ "$1" = "--disable-host-tools" ] && HOST_TOOLS="false"
+	[ "$1" = "--enable-host-tools" ] && HOST_TOOLS="true"
 
 	[ "$1" = "--disable-x11" ] && X11="false"
 	[ "$1" = "--enable-x11" ]  && X11="true"
@@ -151,7 +162,7 @@ fi
 
 ### SYSTEM CONFIG DIRECTORY ###################################################
 
-if [ "$PLATFORM" != "linux" ]; then
+if [ "$PLATFORM" != "linux" -a "$SYSCONFDIR_SET" != "true" ]; then
 	SYSCONFDIR="."
 fi
 
@@ -176,6 +187,9 @@ echo "#define CONFDIR  \"$SYSCONFDIR/\"" > src/config.h
 if [ "$PLATFORM" = "linux" ]; then
 	echo "#define SHAREDIR \"$PREFIX/share/megazeux/\"" >> src/config.h
 	echo "#define CONFFILE \"megazeux-config\""         >> src/config.h
+elif [ "$PLATFORM" = "nds" ]; then
+	echo "#define SHAREDIR \"/games/megazeux/\"" >>src/config.h
+	echo "#define CONFFILE \"config.txt\""       >>src/config.h
 else
 	echo "#define SHAREDIR \"./\""         >> src/config.h
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
@@ -188,6 +202,19 @@ echo "TARGET=`grep TARGET Makefile | head -n1 | \
               sed "s/ //g" | cut -d "=" -f 2`" \
 	>> Makefile.platform
 echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
+
+#
+# User may not want to use her cross compiler for tools
+#
+if [ "$HOST_TOOLS" = "true" ]; then
+	echo "Using host's compiler for tools."
+	echo "NATIVE_TOOLS=1" >> Makefile.platform
+	echo "HOST_CC = cc" >> Makefile.platform
+else
+	echo "Using default compiler for tools."
+	echo "NATIVE_TOOLS=0" >> Makefile.platform
+	echo "HOST_CC := \${CC}" >> Makefile.platform
+fi
 
 #
 # X11 support (linked against and needs headers installed)

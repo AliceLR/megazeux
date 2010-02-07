@@ -26,10 +26,10 @@ txt2hlp_objs = ${txt2hlp_base}/txt2hlp.o
 
 ${txt2hlp_base}/%.o ${txt2hlp_base}/%.dbg.o: ${txt2hlp_base}/%.c
 ifeq (${V},1)
-	${CC} ${CFLAGS} -c $< -o $@
+	${HOST_CC} ${CFLAGS} -c $< -o $@
 else
 	@echo "  CC      " $<
-	@${CC} ${CFLAGS} -c $< -o $@
+	@${HOST_CC} ${CFLAGS} -c $< -o $@
 endif
 
 ${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.c
@@ -105,10 +105,10 @@ endif
 
 ${txt2hlp}: ${txt2hlp_objs}
 ifeq (${V},1)
-	${CC} ${txt2hlp_objs} -o ${txt2hlp}
+	${HOST_CC} ${txt2hlp_objs} -o ${txt2hlp}
 else
 	@echo "  LINK    " ${txt2hlp}
-	@${CC} ${txt2hlp_objs} -o ${txt2hlp}
+	@${HOST_CC} ${txt2hlp_objs} -o ${txt2hlp}
 endif
 ifneq (${DEBUG},1)
 ifeq (${V},1)
