@@ -19,6 +19,8 @@ USERS
 + Fixed a bug where games made before 2.68 could have available the "key?"
   counters, unsupported in that version. This caused collisions with counters
   with the key? name used with inc/dec/mul/div/mod. Fixes "Doom Keep".
++ Imported libmodplug 0.8.4, which adds MIDI/PAT and ABC format support,
+  fixes some bugs in the mixer, and should build on more platforms.
 
 DEVELOPERS
 

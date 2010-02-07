@@ -1,4 +1,4 @@
-Apply the patches in this directory to bring a stock libmodplug-0.8
+Apply the patches in this directory to bring a stock libmodplug-0.8.4
 distribution in line with the local copy used by MegaZeux.
 
 --ajs (20060321T08:46)
