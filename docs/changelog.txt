@@ -1,3 +1,11 @@
+USERS
+
++ Added a more lenient WAV file loader so that ModPlug isn't relied on  as much
+  to play malformed WAV files (mostly old SAM conversions) (Mr_Alert).
++ Added SCORE to the counter debugger (Mr_Alert).
++ Added a 16-bit software renderer and a half-width renderer for the GP2X port
+  (Mr_Alert).
+
 July 4, 2007 - MZX 2.81g
 
 Again, no significant new features have been introduced in this release.

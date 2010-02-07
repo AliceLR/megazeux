@@ -734,7 +734,7 @@ void vorbis_destruct(audio_stream *a_src)
 void wav_destruct(audio_stream *a_src)
 {
   wav_stream *w_stream = (wav_stream *)a_src;
-  SDL_FreeWAV(w_stream->wav_data);
+  free(w_stream->wav_data);
   sampled_destruct(a_src);
 }
 
@@ -849,6 +849,222 @@ audio_stream *construct_vorbis_stream(char *filename, Uint32 frequency,
   return ret_val;
 }
 
+int read_little_endian32(char *buf)
+{
+  unsigned char *b = (unsigned char *)buf;
+  int i, s = 0;
+  for(i=3;i>=0;i--)
+    s = (s << 8) | b[i];
+
+  return s;
+}
+
+int read_little_endian16(char *buf)
+{
+  unsigned char *b = (unsigned char *)buf;
+  return (b[1] << 8) | b[0];
+}
+
+void* get_riff_chunk(FILE *fp, int filesize, char *id, int *size)
+{
+  int maxsize = filesize - ftell(fp) - 8;
+  char size_buf[4];
+  void *buf;
+
+  if(maxsize < 0)
+    return NULL;
+
+  if(id)
+    fread(id, sizeof(char), 4, fp);
+  else
+    fseek(fp, 4, SEEK_CUR);
+  fread(size_buf, sizeof(char), 4, fp);
+
+  *size = read_little_endian32(size_buf);
+  if(*size > maxsize) *size = maxsize;
+
+  buf = malloc(sizeof(char) * *size);
+
+  if(buf)
+    fread(buf, sizeof(char), *size, fp);
+
+  return buf;
+}
+
+int get_next_riff_chunk_id(FILE *fp, int filesize, char *id)
+{
+  if(filesize - ftell(fp) < 8)
+    return 0;
+
+  fread(id, sizeof(char), 4, fp);
+  fseek(fp, -4, SEEK_CUR);
+  return 1;
+}
+
+void skip_riff_chunk(FILE *fp, int filesize)
+{
+  int s;
+  int maxsize = filesize - ftell(fp) - 8;
+  char size_buf[4];
+
+  if(maxsize >= 0)
+  {
+    fseek(fp, 4, SEEK_CUR);
+    fread(size_buf, sizeof(char), 4, fp);
+    s = read_little_endian32(size_buf);
+    if(s > maxsize)
+      s = maxsize;
+    fseek(fp, s, SEEK_CUR);
+  }
+}
+
+void* get_riff_chunk_by_id(FILE *fp, int filesize, const char *id, int *size)
+{
+  int i;
+  char id_buf[4];
+
+  fseek(fp, 12, SEEK_SET);
+
+  while((i = get_next_riff_chunk_id(fp, filesize, id_buf)))
+  {
+    if(memcmp(id_buf, id, 4)) skip_riff_chunk(fp, filesize);
+    else break;
+  }
+
+  if(!i)
+    return NULL;
+
+  return get_riff_chunk(fp, filesize, 0, size);
+}
+
+// More lenient than SDL's WAV loader, but only supports uncompressed PCM
+// files (for now.)
+SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
+ Uint8 **audio_buf, Uint32 *audio_len)
+{
+  int data_size;
+  int filesize;
+  int riffsize;
+  int channels;
+  int srate;
+  int sbytes;
+  char *fmt_chunk;
+  int fmt_size;
+  char tmp_buf[4];
+  FILE *fp = fopen(file, "rb");
+
+  if(!fp)
+    return NULL;
+
+  // If it doesn't start with "RIFF", it's not a WAV file.
+  fread(tmp_buf, sizeof(char), 4, fp);
+  if(memcmp(tmp_buf, "RIFF", 4))
+  {
+    fclose(fp);
+    return NULL;
+  }
+
+  // Read reported file size (if the file turns out to be larger, this will be
+  // used instead of the real file size.)
+  fread(tmp_buf, sizeof(char), 4, fp);
+  riffsize = read_little_endian32(tmp_buf) + 8;
+
+  // If the RIFF type isn't "WAVE", it's not a WAV file.
+  fread(tmp_buf, sizeof(char), 4, fp);
+  if(memcmp(tmp_buf, "WAVE", 4))
+  {
+    fclose(fp);
+    return NULL;
+  }
+
+  // With the RIFF header read, we'll now check the file size.
+  fseek(fp, 0, SEEK_END);
+  filesize = ftell(fp);
+  fseek(fp, 12, SEEK_SET);
+  if(filesize > riffsize) filesize = riffsize;
+
+  fmt_chunk = get_riff_chunk_by_id(fp, filesize, "fmt ", &fmt_size);
+
+  // If there's no "fmt " chunk, or it's less than 16 bytes, it's not a valid
+  // WAV file.
+  if(!fmt_chunk || (fmt_size < 16))
+  {
+    fclose(fp);
+    return NULL;
+  }
+
+  // If the WAV file isn't uncompressed PCM (format 1), let SDL handle it.
+  if(read_little_endian16(fmt_chunk) != 1)
+  {
+    free(fmt_chunk);
+    fclose(fp);
+    if(SDL_LoadWAV(file, spec, audio_buf, audio_len))
+    {
+      char *copy_buf = malloc(sizeof(char) * *audio_len);
+      if(copy_buf)
+      {
+        memcpy(copy_buf, *audio_buf, sizeof(char) * *audio_len);
+        SDL_FreeWAV(*audio_buf);
+        *audio_buf = (Uint8 *)copy_buf;
+        return spec;
+      }
+      else
+      {
+        SDL_FreeWAV(*audio_buf);
+        return NULL;
+      }
+    }
+    else
+      return NULL;
+  }
+
+  // Get the data we need from the "fmt " chunk.
+  channels = read_little_endian16(fmt_chunk + 2);
+  srate = read_little_endian32(fmt_chunk + 4);
+  // Average bytes per second go here (4 bytes)
+  // Block align goes here (2 bytes)
+  // Round up when dividing by 8
+  sbytes = (read_little_endian16(fmt_chunk + 14) + 7) / 8;
+  free(fmt_chunk);
+
+  // If I remember correctly, we can't do anything past stereo, and 0 channels
+  // isn't valid.  We can't do anything past 16-bit either, and 0-bit isn't
+  // valid. 0Hz sample rate is invalid too.
+  if(!channels || (channels > 2) || !sbytes || (sbytes > 2) || !srate)
+  {
+    fclose(fp);
+    return NULL;
+  }
+
+  // Everything seems to check out, so let's load the "data" chunk.
+  *audio_buf = get_riff_chunk_by_id(fp, filesize, "data", &data_size);
+  *audio_len = data_size;
+  fclose(fp);
+
+  // No "data" chunk?! FAIL!
+  if(!*audio_buf)
+    return NULL;
+
+  // Empty "data" chunk?! ALSO FAIL!
+  if(!data_size)
+  {
+    free(*audio_buf);
+    return NULL;
+  }
+
+  // Write to the SDL_AudioSpec struct thingymabob.
+  spec->freq = srate;
+  if(sbytes == 1)
+    spec->format = AUDIO_U8;
+  else
+    spec->format = AUDIO_S16LSB;
+  spec->channels = channels;
+  spec->samples = 4096;
+
+  // It's over! YEY!
+  return spec;
+}
+
 audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
  Uint32 volume, Uint32 repeat)
 {
@@ -882,7 +1098,7 @@ audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
 
   fsafetranslate(filename, safe_filename);
 
-  if(SDL_LoadWAV(safe_filename, &wav_info, &wav_data, &data_length))
+  if(load_wav_file(safe_filename, &wav_info, &wav_data, &data_length))
   {
     // Surround WAVs not supported yet..
     if(wav_info.channels <= 2)

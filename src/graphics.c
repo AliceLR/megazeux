@@ -435,6 +435,260 @@ static void update_screen8(Uint8 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
   }
 }
 
+static void update_screen16(Uint16 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
+{
+  Uint32 *dest;
+  Uint32 *ldest, *ldest2;
+  Uint32 cb_bg;
+  Uint32 cb_fg;
+  char_element *src = graphics.text_video;
+  Uint8 *char_ptr;
+  Uint32 char_colors[4];
+  Uint32 current_char_byte;
+  Uint8 current_color;
+  Uint32 i, i2, i3;
+  Uint32 line_advance = pitch / 4;
+  Uint32 row_advance = (pitch * 14) / 4;
+  Uint32 ticks = SDL_GetTicks();
+  Uint32 *old_dest = NULL;
+
+  dest = (Uint32 *)(pixels) + (pitch * ((h - 350) / 8)) + ((w - 640) / 4);
+
+  old_dest = dest;
+
+  if((ticks - graphics.cursor_timestamp) > CURSOR_BLINK_RATE)
+  {
+    graphics.cursor_flipflop ^= 1;
+    graphics.cursor_timestamp = ticks;
+  }
+
+  if(!graphics.screen_mode)
+  {
+    for(i = 0; i < 25; i++)
+    {
+      ldest2 = dest;
+      for(i2 = 0; i2 < 80; i2++)
+      {
+        ldest = dest;
+        // "Fill in background color" still doesn't make sense here
+        cb_bg = graphics.flat_intensity_palette[src->bg_color];
+        cb_fg = graphics.flat_intensity_palette[src->fg_color];
+
+#if SDL_BYTE_ORDER == SDL_BIG_ENDIAN
+        char_colors[0] = (cb_bg << 16) | cb_bg;
+        char_colors[1] = (cb_bg << 16) | cb_fg;
+        char_colors[2] = (cb_fg << 16) | cb_bg;
+        char_colors[3] = (cb_fg << 16) | cb_fg;
+#else
+        char_colors[0] = (cb_bg << 16) | cb_bg;
+        char_colors[1] = (cb_fg << 16) | cb_bg;
+        char_colors[2] = (cb_bg << 16) | cb_fg;
+        char_colors[3] = (cb_fg << 16) | cb_fg;
+#endif
+
+        // "Fill in foreground color" also still doesn't make sense here
+        char_ptr = graphics.charset + (src->char_value * 14);
+        src++;
+        for(i3 = 0; i3 < 14; i3++)
+        {
+          current_char_byte = *char_ptr;
+          char_ptr++;
+          *dest = char_colors[current_char_byte >> 6];
+          *(dest + 1) = char_colors[(current_char_byte >> 4) & 0x03];
+          *(dest + 2) = char_colors[(current_char_byte >> 2) & 0x03];
+          *(dest + 3) = char_colors[current_char_byte & 0x03];
+          dest += line_advance;
+        }
+        dest = ldest + 4;
+      }
+      dest = ldest2 + row_advance;
+    }
+  }
+  else
+
+  if(graphics.screen_mode != 3)
+  {
+    for(i = 0; i < 24; i++)
+    {
+      ldest2 = dest;
+      for(i2 = 0; i2 < 80; i2++)
+      {
+        ldest = dest;
+
+        cb_bg = src->bg_color & 0x0F;
+        cb_fg = src->fg_color & 0x0F;
+
+        char_colors[0] = graphics.flat_intensity_palette[(cb_bg << 4) | cb_bg];
+        char_colors[1] = graphics.flat_intensity_palette[(cb_bg << 4) | cb_fg];
+        char_colors[2] = graphics.flat_intensity_palette[(cb_fg << 4) | cb_bg];
+        char_colors[3] = graphics.flat_intensity_palette[(cb_fg << 4) | cb_fg];
+
+        char_colors[0] = (char_colors[0] << 16) | char_colors[0];
+        char_colors[1] = (char_colors[1] << 16) | char_colors[1];
+        char_colors[2] = (char_colors[2] << 16) | char_colors[2];
+        char_colors[3] = (char_colors[3] << 16) | char_colors[3];
+
+        // Fill in what foreground color?
+        char_ptr = graphics.charset + (src->char_value * 14);
+        src++;
+        for(i3 = 0; i3 < 14; i3++)
+        {
+          current_char_byte = *char_ptr;
+          char_ptr++;
+          *dest = char_colors[current_char_byte >> 6];
+          *(dest + 1) = char_colors[(current_char_byte >> 4) & 0x03];
+          *(dest + 2) = char_colors[(current_char_byte >> 2) & 0x03];
+          *(dest + 3) = char_colors[current_char_byte & 0x03];
+          dest += line_advance;
+        }
+        dest = ldest + 4;
+      }
+      dest = ldest2 + row_advance;
+    }
+  }
+  else
+  {
+    for(i = 0; i < 25; i++)
+    {
+      ldest2 = dest;
+      for (i2 = 0; i2 < 80; i2++)
+      {
+        ldest = dest;
+        current_color = (src->bg_color << 4) | (src->fg_color & 0x0F);
+        // "Fill in" "background color."
+        char_colors[0] = graphics.flat_intensity_palette[current_color];
+        char_colors[1] = graphics.flat_intensity_palette[(current_color + 2) &
+         0xFF];
+        char_colors[2] = graphics.flat_intensity_palette[(current_color + 1) &
+         0xFF];
+        char_colors[3] = graphics.flat_intensity_palette[(current_color + 3) &
+         0xFF];
+
+        char_colors[0] = (char_colors[0] << 16) | char_colors[0];
+        char_colors[1] = (char_colors[1] << 16) | char_colors[1];
+        char_colors[2] = (char_colors[2] << 16) | char_colors[2];
+        char_colors[3] = (char_colors[3] << 16) | char_colors[3];
+
+        // Blah blah fill blah blah foreground
+        char_ptr = graphics.charset + (src->char_value * 14);
+        src++;
+        for(i3 = 0; i3 < 14; i3++)
+        {
+          current_char_byte = *char_ptr;
+          char_ptr++;
+          *dest = char_colors[current_char_byte >> 6];
+          *(dest + 1) = char_colors[(current_char_byte >> 4) & 0x03];
+          *(dest + 2) = char_colors[(current_char_byte >> 2) & 0x03];
+          *(dest + 3) = char_colors[current_char_byte & 0x03];
+          dest += line_advance;
+        }
+        dest = ldest + 4;
+      }
+      dest = ldest2 + row_advance;
+    }
+  }
+  if(graphics.mouse_status)
+  {
+    int mouse_x, mouse_y;
+    int current_colors;
+    get_real_mouse_position(&mouse_x, &mouse_y);
+
+    mouse_x = (mouse_x / graphics.mouse_width_mul) * graphics.mouse_width_mul;
+    mouse_y = (mouse_y / graphics.mouse_height_mul) * graphics.mouse_height_mul;
+
+    dest = old_dest + ((mouse_x / 2) + mouse_y * line_advance);
+
+    for(i = 0; i < graphics.mouse_height_mul; i++)
+    {
+      ldest = dest;
+      for(i2 = 0; i2 < (graphics.mouse_width_mul / 2); i2++, dest++)
+      {
+        current_colors = *dest;
+        *dest = current_colors ^ 0xFFFFFFFF;
+      }
+      dest = ldest + line_advance;
+    }
+  }
+
+  // Draw cursor perhaps
+  if(graphics.cursor_flipflop && (graphics.cursor_mode!=cursor_mode_invisible))
+  {
+    char_element *cursor_element = graphics.text_video + graphics.cursor_x +
+     (graphics.cursor_y * 80);
+    Uint32 cursor_color;
+    Uint32 cursor_char = cursor_element->char_value;
+    Uint32 lines = 0;
+    Uint32 *cursor_offset = old_dest;
+    Uint32 i;
+    Uint32 cursor_solid = 0xFFFFFFFF;
+    Uint32 *char_offset = (Uint32 *)(graphics.charset + (cursor_char * 14));
+    Uint32 bg_color = cursor_element->bg_color;
+    cursor_offset += (graphics.cursor_x * 4) + (graphics.cursor_y *
+     row_advance);
+
+    // Choose FG
+    cursor_color = cursor_element->fg_color;
+
+    // See if the cursor char is completely solid or completely
+    // empty
+    for(i = 0; i < 3; i ++)
+    {
+      cursor_solid &= *char_offset;
+      char_offset++;
+    }
+    cursor_solid &= (*((Uint16 *)char_offset)) | 0xFFFF0000;
+    if (cursor_solid == 0xFFFFFFFF)
+    {
+      // But wait! What if the background is the same as the foreground?
+      // If so, use +8 instead.
+      if(bg_color == cursor_color)
+      {
+        cursor_color = (bg_color + 8) & 0x0F;
+      }
+      else
+      {
+        cursor_color = bg_color;
+      }
+    }
+    else
+    {
+      // What if the foreground is the same as the background?
+      // It needs to flash +8 then
+      if (bg_color == cursor_color)
+      {
+        cursor_color = (cursor_color + 8) & 0x0F;
+      }
+    }
+
+    cursor_color = graphics.flat_intensity_palette[cursor_color];
+    cursor_color = (cursor_color << 16) | cursor_color;
+
+    switch(graphics.cursor_mode)
+    {
+      case cursor_mode_underline:
+        lines = 2;
+        cursor_offset += (12 * line_advance);
+        break;
+
+      case cursor_mode_solid:
+        lines = 14;
+        break;
+
+      default:
+        break;
+    }
+
+    for(i = 0; i < lines; i++)
+    {
+      *cursor_offset = cursor_color;
+      *(cursor_offset + 1) = cursor_color;
+      *(cursor_offset + 2) = cursor_color;
+      *(cursor_offset + 3) = cursor_color;
+      cursor_offset += line_advance;
+    }
+  }
+}
+
 static void update_screen32(Uint32 *pixels, Uint32 pitch, Uint32 w, Uint32 h)
 {
   Uint32 *dest;
@@ -699,7 +953,7 @@ static int soft_init_video(config_info *conf)
   graphics.bits_per_pixel = 32;
 
   // we only have 8bit and 32bit software renderers
-  if (conf->force_bpp == 8 || conf->force_bpp == 32)
+  if (conf->force_bpp == 8 || conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics.bits_per_pixel = conf->force_bpp;
 
   return set_video_mode();
@@ -722,14 +976,18 @@ static void soft_update_screen(void)
   SDL_LockSurface(graphics.screen);
 
   if (graphics.bits_per_pixel == 32)
-  {
     update_screen32((Uint32*)graphics.screen->pixels, graphics.screen->pitch,
      graphics.screen->w, graphics.screen->h);
-  }
   else
   {
-    update_screen8((Uint8*)graphics.screen->pixels, graphics.screen->pitch,
-     graphics.screen->w, graphics.screen->h);
+    if (graphics.bits_per_pixel == 16)
+    {
+      update_screen16((Uint16*)graphics.screen->pixels, graphics.screen->pitch,
+       graphics.screen->w, graphics.screen->h);
+    }
+    else
+      update_screen8((Uint8*)graphics.screen->pixels, graphics.screen->pitch,
+       graphics.screen->w, graphics.screen->h);
   }
 
   SDL_UnlockSurface(graphics.screen);
@@ -741,7 +999,7 @@ static void soft_update_colors(SDL_Color *palette, Uint32 count)
 {
   Uint32 i;
 
-  if (graphics.bits_per_pixel == 32)
+  if (graphics.bits_per_pixel != 8)
   {
     for (i = 0; i < count; i++)
       graphics.flat_intensity_palette[i] = SDL_MapRGBA(graphics.screen->format,
@@ -2221,6 +2479,375 @@ static void yuv2_update_screen(void)
 
 #endif // PSP_BUILD
 
+/* GP2X RENDERER CODE ********************************************************/
+
+static void update_screen16_gp2x(Uint16 *pixels, Uint32 pitch,
+ Uint32 w, Uint32 h, SDL_PixelFormat *format)
+{
+  Uint32 *dest;
+  Uint32 *ldest, *ldest2;
+  Uint32 cb_bg;
+  Uint32 cb_fg;
+  Uint32 cb_mx;
+  Uint32 halfmask;
+  char_element *src = graphics.text_video;
+  Uint8 *char_ptr;
+  Uint32 char_colors[16];
+  Uint32 current_char_byte;
+  Uint8 current_color;
+  Uint32 i, i2, i3;
+  Uint32 line_advance = pitch / 4;
+  Uint32 row_advance = (pitch * 14) / 4;
+  Uint32 ticks = SDL_GetTicks();
+  Uint32 *old_dest = NULL;
+
+  dest = (Uint32 *)(pixels) + (pitch * ((h - 350) / 8)) + ((w - 320) / 4);
+
+  halfmask = (format->Rmask >> 1) & format->Rmask;
+  halfmask |= (format->Gmask >> 1) & format->Gmask;
+  halfmask |= (format->Bmask >> 1) & format->Bmask;
+
+  old_dest = dest;
+
+  if((ticks - graphics.cursor_timestamp) > CURSOR_BLINK_RATE)
+  {
+    graphics.cursor_flipflop ^= 1;
+    graphics.cursor_timestamp = ticks;
+  }
+
+  if(!graphics.screen_mode)
+  {
+    for(i = 0; i < 25; i++)
+    {
+      ldest2 = dest;
+      for(i2 = 0; i2 < 80; i2++)
+      {
+        ldest = dest;
+        // "Fill in background color" still doesn't make sense here
+        cb_bg = graphics.flat_intensity_palette[src->bg_color];
+        cb_fg = graphics.flat_intensity_palette[src->fg_color];
+        cb_mx = ((cb_bg >> 1) & halfmask) + ((cb_fg >> 1) & halfmask);
+
+#if SDL_BYTE_ORDER == SDL_BIG_ENDIAN
+        char_colors[0] = (cb_bg << 16) | cb_bg;
+        char_colors[1] = (cb_bg << 16) | cb_mx;
+        char_colors[2] = (cb_bg << 16) | cb_mx;
+        char_colors[3] = (cb_bg << 16) | cb_fg;
+        char_colors[4] = (cb_mx << 16) | cb_bg;
+        char_colors[5] = (cb_mx << 16) | cb_mx;
+        char_colors[6] = (cb_mx << 16) | cb_mx;
+        char_colors[7] = (cb_mx << 16) | cb_fg;
+        char_colors[8] = (cb_mx << 16) | cb_bg;
+        char_colors[9] = (cb_mx << 16) | cb_mx;
+        char_colors[10] = (cb_mx << 16) | cb_mx;
+        char_colors[11] = (cb_mx << 16) | cb_fg;
+        char_colors[12] = (cb_fg << 16) | cb_bg;
+        char_colors[13] = (cb_fg << 16) | cb_mx;
+        char_colors[14] = (cb_fg << 16) | cb_mx;
+        char_colors[15] = (cb_fg << 16) | cb_fg;
+#else
+        char_colors[0] = (cb_bg << 16) | cb_bg;
+        char_colors[1] = (cb_mx << 16) | cb_bg;
+        char_colors[2] = (cb_mx << 16) | cb_bg;
+        char_colors[3] = (cb_fg << 16) | cb_bg;
+        char_colors[4] = (cb_bg << 16) | cb_mx;
+        char_colors[5] = (cb_mx << 16) | cb_mx;
+        char_colors[6] = (cb_mx << 16) | cb_mx;
+        char_colors[7] = (cb_fg << 16) | cb_mx;
+        char_colors[8] = (cb_bg << 16) | cb_mx;
+        char_colors[9] = (cb_mx << 16) | cb_mx;
+        char_colors[10] = (cb_mx << 16) | cb_mx;
+        char_colors[11] = (cb_fg << 16) | cb_mx;
+        char_colors[12] = (cb_bg << 16) | cb_fg;
+        char_colors[13] = (cb_mx << 16) | cb_fg;
+        char_colors[14] = (cb_mx << 16) | cb_fg;
+        char_colors[15] = (cb_fg << 16) | cb_fg;
+#endif
+
+        // "Fill in foreground color" also still doesn't make sense here
+        char_ptr = graphics.charset + (src->char_value * 14);
+        src++;
+        for(i3 = 0; i3 < 14; i3++)
+        {
+          current_char_byte = *char_ptr;
+          char_ptr++;
+          *dest = char_colors[current_char_byte >> 4];
+          *(dest + 1) = char_colors[current_char_byte & 0x0F];
+          dest += line_advance;
+        }
+        dest = ldest + 2;
+      }
+      dest = ldest2 + row_advance;
+    }
+  }
+  else
+
+  if(graphics.screen_mode != 3)
+  {
+    Uint32 cb_bb;
+    Uint32 cb_bf;
+    Uint32 cb_fb;
+    Uint32 cb_ff;
+    for(i = 0; i < 24; i++)
+    {
+      ldest2 = dest;
+      for(i2 = 0; i2 < 80; i2++)
+      {
+        ldest = dest;
+
+        cb_bg = src->bg_color & 0x0F;
+        cb_fg = src->fg_color & 0x0F;
+
+        cb_bb = graphics.flat_intensity_palette[(cb_bg << 4) | cb_bg];
+        cb_bf = graphics.flat_intensity_palette[(cb_bg << 4) | cb_fg];
+        cb_fb = graphics.flat_intensity_palette[(cb_fg << 4) | cb_bg];
+        cb_ff = graphics.flat_intensity_palette[(cb_fg << 4) | cb_fg];
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+        char_colors[0] = (cb_bb << 16) | cb_bb;
+        char_colors[1] = (cb_bb << 16) | cb_bf;
+        char_colors[2] = (cb_bb << 16) | cb_fb;
+        char_colors[3] = (cb_bb << 16) | cb_ff;
+        char_colors[4] = (cb_bf << 16) | cb_bb;
+        char_colors[5] = (cb_bf << 16) | cb_bf;
+        char_colors[6] = (cb_bf << 16) | cb_fb;
+        char_colors[7] = (cb_bf << 16) | cb_ff;
+        char_colors[8] = (cb_fb << 16) | cb_bb;
+        char_colors[9] = (cb_fb << 16) | cb_bf;
+        char_colors[10] = (cb_fb << 16) | cb_fb;
+        char_colors[11] = (cb_fb << 16) | cb_ff;
+        char_colors[12] = (cb_ff << 16) | cb_bb;
+        char_colors[13] = (cb_ff << 16) | cb_bf;
+        char_colors[14] = (cb_ff << 16) | cb_fb;
+        char_colors[15] = (cb_ff << 16) | cb_ff;
+#else
+        char_colors[0] = (cb_bb << 16) | cb_bb;
+        char_colors[1] = (cb_bf << 16) | cb_bb;
+        char_colors[2] = (cb_fb << 16) | cb_bb;
+        char_colors[3] = (cb_ff << 16) | cb_bb;
+        char_colors[4] = (cb_bb << 16) | cb_bf;
+        char_colors[5] = (cb_bf << 16) | cb_bf;
+        char_colors[6] = (cb_fb << 16) | cb_bf;
+        char_colors[7] = (cb_ff << 16) | cb_bf;
+        char_colors[8] = (cb_bb << 16) | cb_fb;
+        char_colors[9] = (cb_bf << 16) | cb_fb;
+        char_colors[10] = (cb_fb << 16) | cb_fb;
+        char_colors[11] = (cb_ff << 16) | cb_fb;
+        char_colors[12] = (cb_bb << 16) | cb_ff;
+        char_colors[13] = (cb_bf << 16) | cb_ff;
+        char_colors[14] = (cb_fb << 16) | cb_ff;
+        char_colors[15] = (cb_ff << 16) | cb_ff;
+#endif
+
+        // Fill in what foreground color?
+        char_ptr = graphics.charset + (src->char_value * 14);
+        src++;
+        for(i3 = 0; i3 < 14; i3++)
+        {
+          current_char_byte = *char_ptr;
+          char_ptr++;
+          *dest = char_colors[current_char_byte >> 4];
+          *(dest + 1) = char_colors[current_char_byte & 0x0F];
+          dest += line_advance;
+        }
+        dest = ldest + 2;
+      }
+      dest = ldest2 + row_advance;
+    }
+  }
+  else
+  {
+    Uint32 cb_0;
+    Uint32 cb_1;
+    Uint32 cb_2;
+    Uint32 cb_3;
+    for(i = 0; i < 25; i++)
+    {
+      ldest2 = dest;
+      for (i2 = 0; i2 < 80; i2++)
+      {
+        ldest = dest;
+        current_color = (src->bg_color << 4) | (src->fg_color & 0x0F);
+        // "Fill in" "background color."
+        cb_0 = graphics.flat_intensity_palette[current_color];
+        cb_1 = graphics.flat_intensity_palette[(current_color + 1) & 0xFF];
+        cb_2 = graphics.flat_intensity_palette[(current_color + 2) & 0xFF];
+        cb_3 = graphics.flat_intensity_palette[(current_color + 3) & 0xFF];
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+        char_colors[0] = (cb_0 << 16) | cb_0;
+        char_colors[1] = (cb_0 << 16) | cb_2;
+        char_colors[2] = (cb_0 << 16) | cb_1;
+        char_colors[3] = (cb_0 << 16) | cb_3;
+        char_colors[4] = (cb_2 << 16) | cb_0;
+        char_colors[5] = (cb_2 << 16) | cb_2;
+        char_colors[6] = (cb_2 << 16) | cb_1;
+        char_colors[7] = (cb_2 << 16) | cb_3;
+        char_colors[8] = (cb_1 << 16) | cb_0;
+        char_colors[9] = (cb_1 << 16) | cb_2;
+        char_colors[10] = (cb_1 << 16) | cb_1;
+        char_colors[11] = (cb_1 << 16) | cb_3;
+        char_colors[12] = (cb_3 << 16) | cb_0;
+        char_colors[13] = (cb_3 << 16) | cb_2;
+        char_colors[14] = (cb_3 << 16) | cb_1;
+        char_colors[15] = (cb_3 << 16) | cb_3;
+#else
+        char_colors[0] = (cb_0 << 16) | cb_0;
+        char_colors[1] = (cb_2 << 16) | cb_0;
+        char_colors[2] = (cb_1 << 16) | cb_0;
+        char_colors[3] = (cb_3 << 16) | cb_0;
+        char_colors[4] = (cb_0 << 16) | cb_2;
+        char_colors[5] = (cb_2 << 16) | cb_2;
+        char_colors[6] = (cb_1 << 16) | cb_2;
+        char_colors[7] = (cb_3 << 16) | cb_2;
+        char_colors[8] = (cb_0 << 16) | cb_1;
+        char_colors[9] = (cb_2 << 16) | cb_1;
+        char_colors[10] = (cb_1 << 16) | cb_1;
+        char_colors[11] = (cb_3 << 16) | cb_1;
+        char_colors[12] = (cb_0 << 16) | cb_3;
+        char_colors[13] = (cb_2 << 16) | cb_3;
+        char_colors[14] = (cb_1 << 16) | cb_3;
+        char_colors[15] = (cb_3 << 16) | cb_3;
+#endif
+
+        // Blah blah fill blah blah foreground
+        char_ptr = graphics.charset + (src->char_value * 14);
+        src++;
+        for(i3 = 0; i3 < 14; i3++)
+        {
+          current_char_byte = *char_ptr;
+          char_ptr++;
+          *dest = char_colors[current_char_byte >> 4];
+          *(dest + 1) = char_colors[current_char_byte & 0x0F];
+          dest += line_advance;
+        }
+        dest = ldest + 2;
+      }
+      dest = ldest2 + row_advance;
+    }
+  }
+  if(graphics.mouse_status)
+  {
+    int mouse_x, mouse_y;
+    int current_colors;
+    get_real_mouse_position(&mouse_x, &mouse_y);
+
+    mouse_x = (mouse_x / graphics.mouse_width_mul) * graphics.mouse_width_mul;
+    mouse_y = (mouse_y / graphics.mouse_height_mul) * graphics.mouse_height_mul;
+
+    dest = old_dest + ((mouse_x / 4) + mouse_y * line_advance);
+
+    for(i = 0; i < graphics.mouse_height_mul; i++)
+    {
+      ldest = dest;
+      for(i2 = 0; i2 < (graphics.mouse_width_mul / 4); i2++, dest++)
+      {
+        current_colors = *dest;
+        *dest = current_colors ^ 0xFFFFFFFF;
+      }
+      dest = ldest + line_advance;
+    }
+  }
+
+  // Draw cursor perhaps
+  if(graphics.cursor_flipflop && (graphics.cursor_mode!=cursor_mode_invisible))
+  {
+    char_element *cursor_element = graphics.text_video + graphics.cursor_x +
+     (graphics.cursor_y * 80);
+    Uint32 cursor_color;
+    Uint32 cursor_char = cursor_element->char_value;
+    Uint32 lines = 0;
+    Uint32 *cursor_offset = old_dest;
+    Uint32 i;
+    Uint32 cursor_solid = 0xFFFFFFFF;
+    Uint32 *char_offset = (Uint32 *)(graphics.charset + (cursor_char * 14));
+    Uint32 bg_color = cursor_element->bg_color;
+    cursor_offset += (graphics.cursor_x * 2) + (graphics.cursor_y *
+     row_advance);
+
+    // Choose FG
+    cursor_color = cursor_element->fg_color;
+
+    // See if the cursor char is completely solid or completely
+    // empty
+    for(i = 0; i < 3; i ++)
+    {
+      cursor_solid &= *char_offset;
+      char_offset++;
+    }
+    cursor_solid &= (*((Uint16 *)char_offset)) | 0xFFFF0000;
+    if (cursor_solid == 0xFFFFFFFF)
+    {
+      // But wait! What if the background is the same as the foreground?
+      // If so, use +8 instead.
+      if(bg_color == cursor_color)
+      {
+        cursor_color = (bg_color + 8) & 0x0F;
+      }
+      else
+      {
+        cursor_color = bg_color;
+      }
+    }
+    else
+    {
+      // What if the foreground is the same as the background?
+      // It needs to flash +8 then
+      if (bg_color == cursor_color)
+      {
+        cursor_color = (cursor_color + 8) & 0x0F;
+      }
+    }
+
+    cursor_color = graphics.flat_intensity_palette[cursor_color];
+    cursor_color = (cursor_color << 16) | cursor_color;
+
+    switch(graphics.cursor_mode)
+    {
+      case cursor_mode_underline:
+        lines = 2;
+        cursor_offset += (12 * line_advance);
+        break;
+
+      case cursor_mode_solid:
+        lines = 14;
+        break;
+
+      default:
+        break;
+    }
+
+    for(i = 0; i < lines; i++)
+    {
+      *cursor_offset = cursor_color;
+      *(cursor_offset + 1) = cursor_color;
+      cursor_offset += line_advance;
+    }
+  }
+
+  // Line multiplier would go here
+}
+
+static int gp2x_init_video(config_info *conf)
+{
+  // we only have a 16-bit renderer
+  graphics.bits_per_pixel = 16;
+
+  return set_video_mode();
+}
+
+static void gp2x_update_screen(void)
+{
+  SDL_LockSurface(graphics.screen);
+
+  update_screen16_gp2x((Uint16*)graphics.screen->pixels, graphics.screen->pitch,
+   graphics.screen->w, graphics.screen->h, graphics.screen->format);
+
+  SDL_UnlockSurface(graphics.screen);
+
+  SDL_Flip(graphics.screen);
+}
+
 /* RENDERER NEUTRAL CODE *****************************************************/
 
 static void set_graphics_output(char *video_output)
@@ -2304,6 +2931,18 @@ static void set_graphics_output(char *video_output)
   }
 #endif
 
+  // Half-width 16-bit software renderer for the GP2X
+  if (!strcasecmp(video_output, "gp2x"))
+  {
+    graphics.init_video = gp2x_init_video;
+    graphics.check_video_mode = soft_check_video_mode;
+    graphics.set_video_mode = soft_set_video_mode;
+    graphics.update_screen = gp2x_update_screen;
+    graphics.update_colors = soft_update_colors;
+    graphics.resize_screen = soft_resize_screen;
+    graphics.set_screen_coords = soft_set_screen_coords;
+    graphics.remap_charsets = NULL;
+  }
 #ifdef DEBUG
   fprintf(stdout, "Selected video output: %s\n", selected_output);
 #endif

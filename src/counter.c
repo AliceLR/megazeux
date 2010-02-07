@@ -3426,7 +3426,7 @@ void save_string(FILE *fp, mzx_string *src_string)
 void debug_counters(World *mzx_world)
 {
   int num_vars =
-   mzx_world->num_counters + mzx_world->num_strings;
+   mzx_world->num_counters + mzx_world->num_strings + 1;
   char **var_list = (char **)malloc(num_vars * sizeof(char *));
   int dialog_result;
   int cp_len;
@@ -3454,6 +3454,14 @@ void debug_counters(World *mzx_world)
     sprintf(var_list[i] + 64, "%d",
      mzx_world->counter_list[i]->value);
   }
+
+  // SCORE isn't a real counter, so we have a special case here
+  var_list[i] = (char *)malloc(76);
+  memset(var_list[i], ' ', 75);
+  memcpy(var_list[i], "SCORE", 5);
+  var_list[i][5] = ' ';
+  sprintf(var_list[i] + 64, "%d", mzx_world->score);
+  i++;
 
   for(i2 = 0; i2 < mzx_world->num_strings; i2++, i++)
   {
@@ -3498,9 +3506,9 @@ void debug_counters(World *mzx_world)
       int edit_type = 0;
       int offset = selected;
 
-      if(selected >= mzx_world->num_counters)
+      if(selected > mzx_world->num_counters)
       {
-        offset -= mzx_world->num_counters;
+        offset -= mzx_world->num_counters + 1;
         edit_type = 1;
 
         snprintf(name + 5, 70 - 5, "string %s",
@@ -3516,12 +3524,20 @@ void debug_counters(World *mzx_world)
 
         new_value[cp_len] = 0;
       }
-      else
-      {
-        snprintf(name + 5, 70 - 5, "counter %s",
-         mzx_world->counter_list[offset]->name);
-        sprintf(new_value, "%d",
-         mzx_world->counter_list[offset]->value);
+      else {
+        if(selected == mzx_world->num_counters)
+        {
+          edit_type = -1;
+          strncpy(name + 5, "counter SCORE", 70 - 5);
+          sprintf(new_value, "%d", mzx_world->score);
+        }
+        else
+        {
+          snprintf(name + 5, 70 - 5, "counter %s",
+           mzx_world->counter_list[offset]->name);
+          sprintf(new_value, "%d",
+           mzx_world->counter_list[offset]->value);
+        }
       }
 
       name[69] = 0;
@@ -3533,7 +3549,7 @@ void debug_counters(World *mzx_world)
       if(intake(mzx_world, new_value, 68, 6, 13, 15, 1, 0,
        NULL, 0, NULL) != SDLK_ESCAPE)
       {
-        if(edit_type)
+        if(edit_type > 0)
         {
           mzx_string src = { strlen(new_value), 0, new_value, { 0 }, { 0 } };
           set_string(mzx_world,
@@ -3552,8 +3568,11 @@ void debug_counters(World *mzx_world)
         else
         {
           int counter_value = strtol(new_value, NULL, 10);
-          set_counter(mzx_world,
-           mzx_world->counter_list[offset]->name, counter_value, 0);
+          if (edit_type < 0)
+            mzx_world->score = counter_value;
+          else
+            set_counter(mzx_world,
+             mzx_world->counter_list[offset]->name, counter_value, 0);
 
           sprintf(var_list[offset] + 64, "%d", counter_value);
         }
@@ -3583,6 +3602,9 @@ void debug_counters(World *mzx_world)
            mzx_world->counter_list[i]->name,
            mzx_world->counter_list[i]->value);
         }
+
+        fprintf(fp, "set \"SCORE\" to %d\n",
+         mzx_world->score);
 
         for(i = 0; i < mzx_world->num_strings; i++)
         {
