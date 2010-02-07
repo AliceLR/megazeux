@@ -67,6 +67,10 @@ USERS
 + Fixed a problem with "Replace" in the robotic editor, which could cause a
   line to temporarily become 241 characters and then truncate silently to
   240 characters.
++ Fix a bug that caused the original game palette to be lost when testing
+  a game in the editor that switched between Regular/SMZX1 and SMZX2/3 modes.
+  MegaZeux should now try much harder to preserve the user palette,
+  regardless of game edits.
 
 DEVELOPERS
 
