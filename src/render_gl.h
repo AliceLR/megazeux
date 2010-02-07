@@ -78,7 +78,7 @@ __M_BEGIN_DECLS
 int gl_check_video_mode(graphics_data *graphics, int width, int height,
  int depth, int flags);
 void gl_set_filter_method(const char *method,
- void (*glTexParameteri_p)(GLenum target, GLenum pname, GLint param));
+ void (APIENTRY *glTexParameteri_p)(GLenum target, GLenum pname, GLint param));
 
 __M_END_DECLS
 
