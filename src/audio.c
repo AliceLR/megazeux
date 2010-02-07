@@ -28,8 +28,8 @@
 #include <sys/stat.h>
 
 #ifdef USE_TREMOR
-#include <ivorbiscodec.h>
-#include <ivorbisfile.h>
+#include <tremor/ivorbiscodec.h>
+#include <tremor/ivorbisfile.h>
 #else
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
