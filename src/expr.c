@@ -221,7 +221,7 @@ static int parse_argument(World *mzx_world, char **argument, int *type, int id)
     case '(':
     {
       int error;
-      long int val;
+      int val;
       char *a_ptr = (*argument) + 1;
       val = parse_expression(mzx_world, &a_ptr, &error, id);
       if(error)
@@ -312,7 +312,7 @@ static int parse_argument(World *mzx_world, char **argument, int *type, int id)
       {
         // It's good.
         char *end_p;
-        long int val = strtol(*argument, &end_p, 0);
+        int val = (int)strtol(*argument, &end_p, 0);
         *argument = end_p;
         *type = 0;
         return val;
@@ -375,7 +375,7 @@ static int evaluate_operation(int operand_a, op c_operator, int operand_b)
     case op_exponentation:
     {
       int i;
-      long int val = 1;
+      int val = 1;
       if(operand_a == 0)
       {
         return 0;
@@ -456,10 +456,10 @@ static int evaluate_operation(int operand_a, op c_operator, int operand_b)
 int parse_expression(World *mzx_world, char **expression,
  int *error, int id)
 {
-  long int operand_val;
+  int operand_val;
   int current_arg;
-  long int c_operator;
-  long int value;
+  int c_operator;
+  int value;
 
   *error = 0;
 
@@ -511,6 +511,5 @@ int parse_expression(World *mzx_world, char **expression,
   }
 
   last_val = value;
-
   return value;
 }
