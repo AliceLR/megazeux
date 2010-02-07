@@ -1586,6 +1586,7 @@ void optimize_null_boards(World *mzx_world)
   free(board_id_translation_list);
 }
 
+// FIXME: strcat() here is unsafe, this function should probably just die
 void add_ext(char *src, char *ext)
 {
   int len = strlen(src);
