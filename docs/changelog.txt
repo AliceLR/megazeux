@@ -15,6 +15,8 @@ DEVELOPERS
 + Rewrote the build system to not use recursive Makefiles, because variable
   propagation was starting to be a problem, and a recursive design is generally
   discouraged.
++ Refactored the graphics rendering code to modularize the renderers and reduce
+  code duplication (Mr_Alert).
 
 July 4, 2007 - MZX 2.81g
 
