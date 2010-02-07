@@ -2471,7 +2471,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
           int old_x = mzx_world->player_x;
           int old_y = mzx_world->player_y;
           int old_board = mzx_world->current_board_id;
-          int old_target = mzx_world->target_where;
+          mzx_board_target old_target = mzx_world->target_where;
+
           // Have to fix vars and move to next command NOW, in case player
           // is sent to another screen!
           mzx_world->first_prefix = 0;

@@ -31,6 +31,9 @@ DEVELOPERS
   ModPlug's C++ classes directly (but I plan to split this file up shortly).
   NOTE: The changes required were enormous, so I might have introduced some
         weird bugs! Please test!
++ Enabled GCC's -W flag for even more warnings, switching off unused
+  parameter warnings (useful for delegates). Mostly typing fixes, but it
+  found a bug in string handling.
 
 January 30, 2007 - MZX 2.81f
 

@@ -2350,7 +2350,7 @@ void import_block(World *mzx_world, robot_state *rstate)
     char line_buffer[256];
     rstate->command_buffer = line_buffer;
 
-    while(fgets(line_buffer, 255, import_file) > 0)
+    while(fgets(line_buffer, 255, import_file) != NULL)
     {
       if(line_buffer[strlen(line_buffer) - 1] == '\n')
         line_buffer[strlen(line_buffer) - 1] = 0;

@@ -3030,10 +3030,10 @@ void dec_string_int(World *mzx_world, char *name, int value, int id)
   if(dest)
   {
     // Simply decrease the length
-    dest->length -= (unsigned)value;
-
-    if(dest->length < 0)
+    if ((int)dest->length - value < 0)
       dest->length = 0;
+    else
+      dest->length -= value;
   }
 }
 
@@ -3495,7 +3495,7 @@ void debug_counters(World *mzx_world)
       {
         if(edit_type)
         {
-          mzx_string src = { strlen(new_value), 0, new_value };
+          mzx_string src = { strlen(new_value), 0, new_value, { 0 }, { 0 } };
           set_string(mzx_world,
            mzx_world->string_list[offset]->name, &src, 0);
 
