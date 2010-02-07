@@ -140,19 +140,20 @@
 
 #define NUM_MENUS 6
 
-static char menu_names[NUM_MENUS][9] =
+static const char menu_names[NUM_MENUS][9] =
 {
   " WORLD ", " BOARD ", " THING ", " CURSOR ", " SHOW ", " MISC "
 };
 
-static char menu_positions[] = "11111112222222333333344444444555555666666";
+static const char menu_positions[] =
+  "11111112222222333333344444444555555666666";
 
-static char draw_names[7][10] =
+static const char draw_names[7][10] =
 {
   " Current:", " Drawing:", "    Text:", "   Block:", "   Block:", " Import:"
 };
 
-static char *menu_lines[NUM_MENUS][2]=
+static const char *menu_lines[NUM_MENUS][2]=
 {
   {
     " L:Load\tS:Save  G:Global Info    Alt+R:Restart  Alt+T:Test",
@@ -180,7 +181,7 @@ static char *menu_lines[NUM_MENUS][2]=
   }
 };
 
-static char *overlay_menu_lines[4] =
+static const char *overlay_menu_lines[4] =
 {
   " OVERLAY EDITING- (Alt+O to end)",
   " \x12\x1d:Move  Space:Place  Ins:Grab  Enter:Character  Del:Delete\t   F:Fill",
@@ -188,17 +189,16 @@ static char *overlay_menu_lines[4] =
   "Character"
 };
 
-// Arrays for 'thing' menus
-static char tmenu_num_choices[8] = { 17, 14, 18, 8, 6, 11, 12, 10 };
+static const char tmenu_num_choices[8] = { 17, 14, 18, 8, 6, 11, 12, 10 };
 
-static char *tmenu_titles[8] =
+static const char *tmenu_titles[8] =
 {
   "Terrains", "Items", "Creatures", "Puzzle Pieces",
   "Transport", "Elements", "Miscellaneous", "Objects"
 };
 
 // Each 'item' is 20 char long, including '\0'.
-static char *thing_menus[8][20] =
+static const char *thing_menus[8][20] =
 {
   // Terrain (F3)
   {
@@ -329,7 +329,7 @@ static char *thing_menus[8][20] =
   }
 };
 
-static mzx_thing tmenu_thing_ids[8][18] =
+static const mzx_thing tmenu_thing_ids[8][18] =
 {
   // Terrain (F3)
   {
@@ -381,7 +381,7 @@ static mzx_thing tmenu_thing_ids[8][18] =
 };
 
 // Default colors
-static char def_colors[128] =
+static const char def_colors[128] =
 {
   7 , 0 , 0 , 10, 0 , 0 , 0 , 0 , 7 , 6 , 0 , 0 , 0 , 0 , 0 , 0 ,   // 0x00-0x0F
   0 , 0 , 7 , 7 , 25, 25, 25, 25, 25, 59, 76, 6 , 0 , 0 , 12, 14,   // 0x10-0x1F
@@ -393,21 +393,21 @@ static char def_colors[128] =
   0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 6 , 15, 27    // 0x70-0x7F
 };
 
-static char *mod_ext[] =
+static const char *mod_ext[] =
 {
   ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it",
   ".669", ".ult", ".wav", ".dsm", ".far", ".ams", ".mdl", ".okt" ".dmf",
   ".ptm", ".dbm", ".amf", ".mt2", ".psm", ".j2b", ".umx", ".ogg", NULL
 };
 
-static char *mod_gdm_ext[] =
+static const char *mod_gdm_ext[] =
 {
   ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it", ".669", ".ult",
   ".wav", ".dsm", ".far", ".ams", ".mdl", ".okt" ".dmf", ".ptm", ".dbm",
   ".amf", ".mt2", ".psm", ".j2b", ".umx", ".ogg", ".gdm", NULL
 };
 
-static char drawmode_help[5][32] =
+static const char drawmode_help[5][32] =
 {
   "Type to place text",
   "Press ENTER on other corner",
@@ -837,11 +837,11 @@ void edit_world(World *mzx_world)
   int saved_debug_x[16] =
    { 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60, 60 };
 
-  char *mzb_ext[] = { ".MZB", NULL };
-  char *sfx_ext[] = { ".SFX", NULL };
-  char *chr_ext[] = { ".CHR", NULL };
-  char *pal_ext[] = { ".PAL", NULL };
-  char *mzm_ext[] = { ".MZM", NULL };
+  const char *mzb_ext[] = { ".MZB", NULL };
+  const char *sfx_ext[] = { ".SFX", NULL };
+  const char *chr_ext[] = { ".CHR", NULL };
+  const char *pal_ext[] = { ".PAL", NULL };
+  const char *mzm_ext[] = { ".MZM", NULL };
 
   getcwd(current_listening_dir, MAX_PATH);
 
@@ -1843,8 +1843,8 @@ void edit_world(World *mzx_world)
       {
         if(get_alt_status(keycode_SDL))
         {
-          char test_wav[128] = { 0 };
-          char *sam_ext[] = { ".WAV", ".SAM", ".OGG", NULL };
+          char test_wav[128] = { 0, };
+          const char *sam_ext[] = { ".WAV", ".SAM", ".OGG", NULL };
 
           if(!choose_file(mzx_world, sam_ext, test_wav,
            "Choose a wav file", 1))
@@ -1974,7 +1974,7 @@ void edit_world(World *mzx_world)
               {
                 // Palette
                 // Character set
-                char *pal_ext[] = { ".PAL", NULL };
+                const char *pal_ext[] = { ".PAL", NULL };
                 if(!choose_file(mzx_world, pal_ext, import_name,
                  "Choose palette to import", 1))
                 {
@@ -1988,7 +1988,7 @@ void edit_world(World *mzx_world)
               case 4:
               {
                 // Sound effects
-                char *sfx_ext[] = { ".SFX", NULL };
+                const char *sfx_ext[] = { ".SFX", NULL };
                 if(!choose_file(mzx_world, sfx_ext, import_name,
                  "Choose SFX file to import", 1))
                 {
@@ -2006,7 +2006,7 @@ void edit_world(World *mzx_world)
               case 5:
               {
                 // MZM file
-                char *mzm_ext[] = { ".MZM", NULL };
+                const char *mzm_ext[] = { ".MZM", NULL };
                 if(!choose_file(mzx_world, mzm_ext,
                  mzm_name_buffer, "Choose image file to import", 1))
                 {

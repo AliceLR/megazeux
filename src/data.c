@@ -171,7 +171,7 @@ unsigned int flags[] =
 };
 
 //Names for all things
-char *thing_names[128] =
+const char *thing_names[128] =
 {
   "Space",
   "Normal",

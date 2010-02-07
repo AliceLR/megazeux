@@ -680,7 +680,7 @@ void set_config_from_file(config_info *conf, char *conf_file_name)
         }
         else
         {
-          value = "1";
+          value = (char *)"1";
         }
 
         if(line_buffer[0])
@@ -775,7 +775,7 @@ void set_config_from_command_line(config_info *conf, int argc,
     }
     else
     {
-      value = "1";
+      value = (char *)"1";
     }
 
     if(line_buffer[0])

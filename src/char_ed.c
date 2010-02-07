@@ -1187,7 +1187,8 @@ int char_editor(World *mzx_world)
           }
 
           elements[0] =
-           construct_radio_button(8, 2, radio_button_strings,
+           construct_radio_button(8, 2,
+	   (const char **)radio_button_strings,
            num_factors, 5, &subdivision);
           elements[1] = construct_button(10, num_factors + 3,
            "OK", 0);
@@ -1531,8 +1532,8 @@ int char_editor(World *mzx_world)
         if(get_alt_status(keycode_SDL))
         {
           // Character set
-          char *chr_ext[] = { ".CHR", NULL };
-          char export_string[256] = { 0 };
+          const char *chr_ext[] = { ".CHR", NULL };
+          char export_string[256] = { 0, };
           char export_name[256];
           int char_offset = current_char;
           int char_size = current_width * current_height;
@@ -1571,8 +1572,8 @@ int char_editor(World *mzx_world)
         if(get_alt_status(keycode_SDL))
         {
           // Character set
-          char *chr_ext[] = { ".CHR", NULL };
-          char import_string[256] = { 0 };
+          const char *chr_ext[] = { ".CHR", NULL };
+          char import_string[256] = { 0, };
           char import_name[256];
           int char_offset = current_char;
           int current_file = 0;

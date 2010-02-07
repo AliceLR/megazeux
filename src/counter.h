@@ -37,45 +37,44 @@ typedef struct _function_counter
   char name[20];
   int minimum_version;
   int (*function_read)(World *mzx_world, struct _function_counter *counter,
-   char *name, int id);
+   const char *name, int id);
   void (*function_write)(World *mzx_world, struct _function_counter *counter,
-   char *name, int value, int id);
+   const char *name, int value, int id);
 } function_counter;
 
 typedef int (*gateway_write_function)(World *mzx_world,
- counter *counter, char *name, int value, int id);
+ counter *counter, const char *name, int value, int id);
 typedef int (*gateway_dec_function)(World *mzx_world,
- counter *counter, char *name, int value, int id);
+ counter *counter, const char *name, int value, int id);
 
 // functions
 
-int match_function_counter(char *dest, char *src);
+int match_function_counter(const char *dest, const char *src);
 void initialize_gateway_functions(World *mzx_world);
 // Get the contents of a counter. Include robot id (0 if unimportant)
-int get_counter(World *mzx_world, char *name, int id);
+int get_counter(World *mzx_world, const char *name, int id);
 // Sets the value of a counter. Include robot id if a robot is running.
-void set_counter(World *mzx_world, char *name, int value, int id);
+void set_counter(World *mzx_world, const char *name, int value, int id);
 // Decrease or increase a counter.
-void inc_counter(World *mzx_world, char *name, int value, int id);
-void dec_counter(World *mzx_world, char *name, int value, int id);
-void mul_counter(World *mzx_world, char *name, int value, int id);
-void div_counter(World *mzx_world, char *name, int value, int id);
-void mod_counter(World *mzx_world, char *name, int value, int id);
-char *set_function_string(World *mzx_world, char *name, int id, char *buffer);
-int get_string(World *mzx_world, char *name, mzx_string *dest, int id);
-void set_string(World *mzx_world, char *name, mzx_string *src, int id);
+void inc_counter(World *mzx_world, const char *name, int value, int id);
+void dec_counter(World *mzx_world, const char *name, int value, int id);
+void mul_counter(World *mzx_world, const char *name, int value, int id);
+void div_counter(World *mzx_world, const char *name, int value, int id);
+void mod_counter(World *mzx_world, const char *name, int value, int id);
+int get_string(World *mzx_world, const char *name, mzx_string *dest, int id);
+void set_string(World *mzx_world, const char *name, mzx_string *src, int id);
 // Concatenates a string with another
-void inc_string(World *mzx_world, char *name, mzx_string *src, int id);
+void inc_string(World *mzx_world, const char *name, mzx_string *src, int id);
 // Decreases the end of a string by N characters
-void dec_string_int(World *mzx_world, char *name, int value, int id);
+void dec_string_int(World *mzx_world, const char *name, int value, int id);
 int compare_strings(mzx_string *dest, mzx_string *src);
-void load_string_board(World *mzx_world, char *expression,
+void load_string_board(World *mzx_world, const char *expression,
  int w, int h, char l, char *src, int width);
 int set_counter_special(World *mzx_world, int spec_type,
  char *char_value, int value, int id);
 int is_string(char *buffer);
 
-void counter_fsg();
+void counter_fsg(void);
 
 #ifdef CONFIG_EDITOR
 void debug_counters(World *mzx_world);

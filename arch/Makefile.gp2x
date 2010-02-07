@@ -15,5 +15,5 @@ SDL_CFLAGS  = -I${PREFIX}/include/SDL
 SDL_LDFLAGS = -L${PREFIX}/lib -lSDL -static -lpthread
 
 # also needs -lm
-mzx_cflags  += -I${PREFIX}/include
+mzx_flags  += -I${PREFIX}/include
 mzx_ldflags += -lm

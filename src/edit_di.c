@@ -40,7 +40,7 @@
 #define MAX_ELEMS 15
 
 // The 8th bit set indicates that it's a color, not a char
-static int char_values[8][24] =
+static const int char_values[8][24] =
 {
   {
     0,
@@ -253,7 +253,7 @@ static int char_values[8][24] =
 };
 
 // Info for char funcs, 192 selections (24 per func, 8 funcs)
-static char *char_strs[8][24] =
+static const char *char_strs[8][24] =
 {
   {
     "Space (000)-",
@@ -466,7 +466,7 @@ static char *char_strs[8][24] =
 };
 
 // Info for damage editing
-static char dmg_ids[22] =
+static const char dmg_ids[22] =
 {
   26,
   38,
@@ -492,7 +492,7 @@ static char dmg_ids[22] =
   95
 };
 
-static char *dmg_strs[22] =
+static const char *dmg_strs[22] =
 {
   "Lava-",
   "Explosion-",
@@ -528,7 +528,7 @@ void status_counter_info(World *mzx_world)
 {
   dialog di;
   element *elements[2 + NUM_STATUS_CNTRS];
-  char *status_counters_strings[NUM_STATUS_CNTRS] =
+  const char *status_counters_strings[NUM_STATUS_CNTRS] =
   {
     "Status counter 1: ", "2: ", "3: ",
     "4: ", "5: ", "6: "
@@ -736,7 +736,7 @@ void board_info(World *mzx_world)
     src_board->player_ns_locked, src_board->player_ew_locked,
     src_board->player_attack_locked
   };
-  char *check_box_strings[] =
+  const char *check_box_strings[] =
   {
     "Can shoot", "Can bomb", "Fire burns space",
     "Fire burns fakes", "Fire burns trees", "Fire burns brown",
@@ -744,16 +744,16 @@ void board_info(World *mzx_world)
     "Restart if hurt", "Player locked N/S", "Player locked E/W",
     "Player attack locked"
   };
-  char *radio_strings_1[] =
+  const char *radio_strings_1[] =
   {
     "Explosions to space", "Explosions to ash",
     "Explosions to fire"
   };
-  char *radio_strings_2[] =
+  const char *radio_strings_2[] =
   {
     "Can save", "Can't save", "Can save on sensors"
   };
-  char *radio_strings_3[] =
+  const char *radio_strings_3[] =
   {
     "No overlay", "Normal overlay", "Static overlay",
     "Transparent overlay"
@@ -1047,17 +1047,17 @@ void global_info(World *mzx_world)
     mzx_world->enemy_hurt_enemy, mzx_world->clear_on_exit,
     mzx_world->only_from_swap
   };
-  char *radio_strings_1[] =
+  const char *radio_strings_1[] =
   {
     "Death- Same position", "Death- Restart board",
     "Death- Teleport"
   };
-  char *radio_strings_2[] =
+  const char *radio_strings_2[] =
   {
     "Endgame- Game over", "Endgame- Teleport"
   };
-  char *check_box_strings_1[] = { "Play game over sfx" };
-  char *check_box_strings_2[] =
+  const char *check_box_strings_1[] = { "Play game over sfx" };
+  const char *check_box_strings_2[] =
   {
     "Enemies' bullets hurt other enemies",
     "Clear messages and projectiles on exit",

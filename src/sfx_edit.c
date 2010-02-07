@@ -29,7 +29,7 @@
 
 // 8 char names per sfx
 
-static char *sfx_names[NUM_SFX] =
+static const char *sfx_names[NUM_SFX] =
 {
   "Gem      ",
   "MagicGem ",
@@ -121,7 +121,7 @@ void sfx_edit(World *mzx_world)
   int page = 0;
   int dialog_result;
   int num_elements;
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "Default internal SFX", "Custom SFX"
   };
@@ -132,6 +132,7 @@ void sfx_edit(World *mzx_world)
     construct_button(5, 5, "OK", 0),
     construct_button(15, 5, "Cancel", -1)
   };
+
   element *b_elements[21];
 
   set_context(97);

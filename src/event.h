@@ -78,29 +78,29 @@ typedef enum
   keycode_unicode
 } keycode_type;
 
-void wait_event();
-Uint32 update_event_status();
-Uint32 update_event_status_delay();
+void wait_event(void);
+Uint32 update_event_status(void);
+Uint32 update_event_status_delay(void);
 Uint32 get_key(keycode_type type);
 Uint32 get_last_key(keycode_type type);
 void force_last_key(keycode_type type, int val);
 Uint32 get_key_status(keycode_type type, Uint32 index);
 void get_mouse_position(int *x, int *y);
 void get_real_mouse_position(int *x, int *y);
-Uint32 get_mouse_press();
-Uint32 get_mouse_press_ext();
-Uint32 get_mouse_status();
+Uint32 get_mouse_press(void);
+Uint32 get_mouse_press_ext(void);
+Uint32 get_mouse_status(void);
 void warp_mouse(Uint32 x, Uint32 y);
 void warp_mouse_x(Uint32 x);
 void warp_mouse_y(Uint32 y);
-Uint32 get_mouse_x();
-Uint32 get_mouse_y();
-Uint32 get_mouse_drag();
+Uint32 get_mouse_x(void);
+Uint32 get_mouse_y(void);
+Uint32 get_mouse_drag(void);
 Uint32 get_last_key_released(keycode_type type);
 int get_alt_status(keycode_type type);
 int get_shift_status(keycode_type type);
 int get_ctrl_status(keycode_type type);
-void initialize_joysticks();
+void initialize_joysticks(void);
 void map_joystick_axis(int joystick, int axis, SDLKey min_key,
  SDLKey max_key);
 void map_joystick_button(int joystick, int button, SDLKey key);

@@ -451,7 +451,7 @@ static void update_intensity_palette(void)
   }
 }
 
-static void swap_palettes()
+static void swap_palettes(void)
 {
   SDL_Color temp_colors[SMZX_PAL_SIZE];
   Uint32 temp_intensities[SMZX_PAL_SIZE];
@@ -480,7 +480,7 @@ static void swap_palettes()
   }
 }
 
-Uint32 get_fade_status()
+Uint32 get_fade_status(void)
 {
   return graphics.fade_status;
 }
@@ -543,12 +543,12 @@ void set_screen_mode(Uint32 mode)
   }
 }
 
-Uint32 get_screen_mode()
+Uint32 get_screen_mode(void)
 {
   return graphics.screen_mode;
 }
 
-void update_screen()
+void update_screen(void)
 {
   Uint32 ticks = SDL_GetTicks();
 
@@ -869,7 +869,7 @@ int set_video_mode(void)
                                  target_depth, target_flags, fullscreen);
 }
 
-void toggle_fullscreen()
+void toggle_fullscreen(void)
 {
   graphics.fullscreen ^= 1;
   set_video_mode();
@@ -888,11 +888,11 @@ void resize_screen(Uint32 w, Uint32 h)
   }
 }
 
-void color_string_ext(char *str, Uint32 x, Uint32 y, Uint8 color,
+void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
  Uint32 offset, Uint32 c_offset)
 {
   char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
-  char *src = str;
+  const char *src = str;
   Uint8 cur_char = *src;
   Uint8 next;
   Uint8 bg_color = (color >> 4) + c_offset;
@@ -995,12 +995,12 @@ void color_string_ext(char *str, Uint32 x, Uint32 y, Uint8 color,
 
 // Write a normal string
 
-void write_string_ext(char *str, Uint32 x, Uint32 y,
+void write_string_ext(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset,
  Uint32 c_offset)
 {
   char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
-  char *src = str;
+  const char *src = str;
   Uint8 cur_char = *src;
   Uint8 next_str[2];
   Uint8 bg_color = (color >> 4) + c_offset;
@@ -1042,11 +1042,11 @@ void write_string_ext(char *str, Uint32 x, Uint32 y,
   }
 }
 
-void write_string_mask(char *str, Uint32 x, Uint32 y,
+void write_string_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed)
 {
   char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
-  char *src = str;
+  const char *src = str;
   Uint8 cur_char = *src;
   Uint8 next_str[2];
   Uint8 bg_color = (color >> 4) + 16;
@@ -1094,12 +1094,12 @@ void write_string_mask(char *str, Uint32 x, Uint32 y,
 
 // Write a normal string, without carriage returns
 
-void write_line_ext(char *str, Uint32 x, Uint32 y,
+void write_line_ext(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset,
  Uint32 c_offset)
 {
   char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
-  char *src = str;
+  const char *src = str;
   Uint8 cur_char = *src;
   Uint8 next_str[2];
   Uint8 bg_color = (color >> 4) + c_offset;
@@ -1132,11 +1132,11 @@ void write_line_ext(char *str, Uint32 x, Uint32 y,
   }
 }
 
-void write_line_mask(char *str, Uint32 x, Uint32 y,
+void write_line_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed)
 {
   char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
-  char *src = str;
+  const char *src = str;
   Uint8 cur_char = *src;
   Uint8 next_str[2];
   Uint8 bg_color = (color >> 4) + 16;
@@ -1224,12 +1224,12 @@ void draw_char_linear_ext(Uint8 color, Uint8 chr,
   dest->fg_color = (color & 0x0F) + c_offset;
 }
 
-void color_string(char *string, Uint32 x, Uint32 y, Uint8 color)
+void color_string(const char *string, Uint32 x, Uint32 y, Uint8 color)
 {
   color_string_ext(string, x, y, color, 256, 16);
 }
 
-void write_string(char *string, Uint32 x, Uint32 y, Uint8 color,
+void write_string(const char *string, Uint32 x, Uint32 y, Uint8 color,
  Uint32 tab_allowed)
 {
   write_string_ext(string, x, y, color, tab_allowed, 256, 16);
@@ -1311,7 +1311,7 @@ void set_cursor_mode(cursor_mode_types mode)
   graphics.cursor_mode = mode;
 }
 
-cursor_mode_types get_cursor_mode()
+cursor_mode_types get_cursor_mode(void)
 {
   return graphics.cursor_mode;
 }

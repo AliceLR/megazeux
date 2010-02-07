@@ -8,16 +8,19 @@ include contrib/libmodplug/src/Makefile.in
 .PHONY: ${mzx}_clean ${txt2hlp}_clean
 
 ifneq (${DATE},0)
-mzx_cflags += -DMZX_VERSION=\"${VERSION}\ \(`date +%Y%m%d`\)\"
+mzx_flags += -DMZX_VERSION=\"${VERSION}\ \(`date +%Y%m%d`\)\"
 else
-mzx_cflags += -DMZX_VERSION=\"${VERSION}\"
+mzx_flags += -DMZX_VERSION=\"${VERSION}\"
 endif
 
 mzx_base     = src
-mzx_cflags  += -W -Wno-unused-parameter -ffast-math -funsigned-char
-mzx_cflags  += ${SDL_CFLAGS} -I${mzx_base} -I${PREFIX}/include
+mzx_flags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
+mzx_flags   += -Wmissing-format-attribute # -Wwrite-strings
+mzx_cflags  += -Wstrict-prototypes -Wmissing-prototypes -Wold-style-definition
+mzx_cxxflags =
+
+mzx_flags   += ${SDL_CFLAGS} -I${mzx_base} -I${PREFIX}/include
 mzx_ldflags := ${SDL_LDFLAGS} ${mzx_ldflags}
-mzx_cxxflags = ${mzx_cflags}
 
 txt2hlp_base = src/utils
 txt2hlp = ${txt2hlp_base}/txt2hlp${BINEXT}
@@ -33,18 +36,18 @@ endif
 
 ${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.c
 ifeq (${V},1)
-	${CC} ${CFLAGS} ${mzx_cflags} -c $< -o $@
+	${CC} ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 else
 	@echo "  CC      " $<
-	@${CC} ${CFLAGS} ${mzx_cflags} -c $< -o $@
+	@${CC} ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 endif
 
 ${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.cpp
 ifeq (${V},1)
-	${CXX} ${CXXFLAGS} ${mzx_cflags} -c $< -o $@
+	${CXX} ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
 else
 	@echo "  CXX     " $<
-	@${CXX} ${CXXFLAGS} ${mzx_cflags} -c $< -o $@
+	@${CXX} ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
 endif
 
 # please keep this sorted alphabetically (yes, I know it's painful)
@@ -91,8 +94,8 @@ mzx_objs += ${mzx_base}/render_gp2x.${o}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
-mzx_cflags += -I${gdm2s3m_base}
-mzx_cflags += -I${libmodplug_base} -I${libmodplug_base}/libmodplug
+mzx_flags += -I${gdm2s3m_base}
+mzx_flags += -I${libmodplug_base} -I${libmodplug_base}/libmodplug
 mzx_ldflags := ${gdm2s3m} ${libmodplug} -lstdc++ ${mzx_ldflags}
 mzx_objs += ${mzx_base}/audio_modplug.${o}
 endif
@@ -103,13 +106,13 @@ mzx_objs += ${mzx_base}/audio_mikmod.${o}
 endif
 
 ifeq (${LIBPNG},1)
-mzx_cflags += ${LIBPNG_CFLAGS}
+mzx_flags += ${LIBPNG_CFLAGS}
 mzx_ldflags := ${LIBPNG_LDFLAGS} ${mzx_ldflags}
 endif
 
 ifeq (${BUILD_AUDIO},1)
 mzx_objs += ${mzx_base}/audio.${o}
-mzx_cflags += ${VORBIS_CFLAGS}
+mzx_flags += ${VORBIS_CFLAGS}
 mzx_ldflags := ${VORBIS_LDFLAGS} ${mzx_ldflags}
 endif
 

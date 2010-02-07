@@ -51,7 +51,7 @@
 #define parsedir(a, b, c, d) \
  parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3])
 
-static char *item_to_counter[9] =
+static const char *item_to_counter[9] =
 {
   "GEMS",
   "AMMO",
@@ -65,7 +65,7 @@ static char *item_to_counter[9] =
 };
 
 // Default parameters (-2 = 0 and no edit, -3 = character, -4 = board)
-__editor_maybe_static int def_params[128] =
+__editor_maybe_static const int def_params[128] =
 {
   -2, -2, -2, -2, -2, -3, -2, -3, -2, -2, -3, -2, -3, -2, -2, -2, // 0x00 - 0x0F
   -2, -3, -2, -2, -2, -2, -2, -2, -2, -2, -2,  0, -2, -2, 10,  0, // 0x10 - 0x1F

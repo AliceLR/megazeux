@@ -51,7 +51,7 @@ int block_cmd(World *mzx_world)
   element *elements[3];
   dialog di;
   int block_operation = 0;
-  char *radio_button_strings[] =
+  const char *radio_button_strings[] =
   {
     "Copy block",
     "Copy block (repeated)",
@@ -90,7 +90,7 @@ int rtoo_obj_type(World *mzx_world)
   element *elements[3];
   dialog di;
   int object_type = 0;
-  char *radio_button_strings[] =
+  const char *radio_button_strings[] =
   {
     "Custom Block",
     "Custom Floor",
@@ -123,7 +123,7 @@ int choose_char_set(World *mzx_world)
   element *elements[3];
   dialog di;
   int charset_type = 0;
-  char *radio_button_strings[] =
+  const char *radio_button_strings[] =
   {
     "MegaZeux default",
     "ASCII set",
@@ -157,7 +157,7 @@ int export_type(World *mzx_world)
   int dialog_result;
   element *elements[3];
   dialog di;
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "Board file (MZB)", "Character set (CHR)",
     "Palette (PAL)", "Sound effects (SFX)"
@@ -189,7 +189,7 @@ int import_type(World *mzx_world)
   int dialog_result;
   element *elements[3];
   dialog di;
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "Board file (MZB)", "Character set (CHR)",
     "World file (MZX)", "Palette (PAL)",

@@ -17,7 +17,7 @@ BINNAME_STRIP = ${TARGET}${BINEXT}.strip
 STRIP = /bin/true
 
 # flag PSP build and link in c/psppower
-mzx_cflags  += -G0 -I${PREFIX}/sdk/include -DPSP_BUILD
+mzx_flags  += -G0 -I${PREFIX}/sdk/include -DPSP_BUILD
 mzx_ldflags += -lc -lpsppower
 
 package-pbp:

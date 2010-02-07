@@ -39,9 +39,9 @@
 #include "event.h"
 #include "edit_di.h"
 
-extern int def_params[128];
+extern const int def_params[128];
 
-static char *potion_fx[16] =
+static const char *potion_fx[16] =
 {
   "No Effect   ",
   "Invinco     ",
@@ -66,7 +66,7 @@ static int pe_chest(World *mzx_world, int param)
   int type = param & 0x0F;
   int var = param >> 4;
 
-  char *list[10] =
+  const char *list[10] =
   {
     "Empty               ",
     "Key                 ",
@@ -115,7 +115,7 @@ static int pe_chest(World *mzx_world, int param)
       element *elements[3];
       int mult_five = 1;
       int dialog_result;
-      char *question = "Amount (multiple of five): ";
+      const char *question = "Amount (multiple of five): ";
 
       set_confirm_buttons(elements);
       if(type == 3)
@@ -185,7 +185,7 @@ static int pe_bomb(World *mzx_world, int param)
   dialog di;
   element *elements[3];
   int dialog_result;
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "Low strength bomb", "High strength bomb"
   };
@@ -213,7 +213,7 @@ static int pe_lit_bomb(World *mzx_world, int param)
   int dialog_result;
   int type = param >> 7;
   int stage = 7 - (param & 0x3F);
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "Low strength bomb", "High strength bomb"
   };
@@ -270,15 +270,15 @@ static int pe_door(World *mzx_world, int param)
   dialog di;
   element *elements[5];
   int dialog_result;
-  char *radio_strings_1[] =
+  const char *radio_strings_1[] =
   {
     "Horizontal", "Vertical"
   };
-  char *radio_strings_2[] =
+  const char *radio_strings_2[] =
   {
     "Opens N/W", "Opens N/E", "Opens S/W", "Opens S/E"
   };
-  char *check_strings[] = { "Locked door" };
+  const char *check_strings[] = { "Locked door" };
 
   set_confirm_buttons(elements);
   elements[2] = construct_radio_button(15, 3, radio_strings_1,
@@ -306,7 +306,7 @@ static int pe_gate(World *mzx_world, int param)
   dialog di;
   element *elements[3];
   int dialog_result;
-  char *check_strings[] = { "Locked gate" };
+  const char *check_strings[] = { "Locked gate" };
 
   set_confirm_buttons(elements);
   elements[2] = construct_check_box(15, 7, check_strings,
@@ -329,7 +329,7 @@ static int pe_transport(World *mzx_world, int param)
   dialog di;
   element *elements[3];
   int dialog_result;
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "North", "South", "East", "West", "All"
   };
@@ -381,7 +381,7 @@ static int pe_pusher(World *mzx_world, int param)
   dialog di;
   element *elements[3];
   int dialog_result;
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "North", "South", "East", "West"
   };
@@ -410,7 +410,7 @@ static int pe_lazer_gun(World *mzx_world, int param)
   dialog di;
   element *elements[5];
   int dialog_result;
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "North", "South", "East", "West"
   };
@@ -442,11 +442,11 @@ static int pe_bullet(World *mzx_world, int param)
   dialog di;
   element *elements[4];
   int dialog_result;
-  char *radio_strings_1[] =
+  const char *radio_strings_1[] =
   {
     "North", "South", "East", "West"
   };
-  char *radio_strings_2[] =
+  const char *radio_strings_2[] =
   {
     "Player", "Neutral", "Enemy"
   };
@@ -474,7 +474,7 @@ static int pe_ricochet_panel(World *mzx_world, int param)
   dialog di;
   element *elements[3];
   int dialog_result;
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "Orientation \\", "Orientation /"
   };
@@ -527,11 +527,11 @@ static int pe_snake(World *mzx_world, int param)
   dialog di;
   element *elements[5];
   int dialog_result;
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "North", "South", "East", "West"
   };
-  char *check_strings[] = { "Fast movement " };
+  const char *check_strings[] = { "Fast movement " };
 
   set_confirm_buttons(elements);
   elements[2] = construct_radio_button(15, 4, radio_strings,
@@ -561,7 +561,7 @@ static int pe_eye(World *mzx_world, int param)
   dialog di;
   element *elements[5];
   int dialog_result;
-  char *check_strings[] = { "Fast movement " };
+  const char *check_strings[] = { "Fast movement " };
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 6, "Intelligence: ",
@@ -619,7 +619,7 @@ static int pe_slime_blob(World *mzx_world, int param)
   dialog di;
   element *elements[4];
   int dialog_result;
-  char *check_strings[] =
+  const char *check_strings[] =
   {
     "Hurts player", "Invincible"
   };
@@ -651,7 +651,7 @@ static int pe_runner(World *mzx_world, int param)
   dialog di;
   element *elements[5];
   int dialog_result;
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "North", "South", "East", "West"
   };
@@ -684,7 +684,7 @@ static int pe_ghost(World *mzx_world, int param)
   dialog di;
   element *elements[5];
   int dialog_result;
-  char *check_strings[] = { "Invincible" };
+  const char *check_strings[] = { "Invincible" };
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 6, "Intelligence:  ",
@@ -714,7 +714,7 @@ static int pe_dragon(World *mzx_world, int param)
   dialog di;
   element *elements[5];
   int dialog_result;
-  char *check_strings[] = { "Moves" };
+  const char *check_strings[] = { "Moves" };
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 6, "Firing rate: ",
@@ -748,7 +748,7 @@ static int pe_fish(World *mzx_world, int param)
   dialog di;
   element *elements[4];
   int dialog_result;
-  char *check_strings[] =
+  const char *check_strings[] =
   {
     "Hurts player", "Affected by current",
     "2 hit points", "Fast movement"
@@ -782,7 +782,7 @@ static int pe_shark(World *mzx_world, int param)
   dialog di;
   element *elements[5];
   int dialog_result;
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "Fires bullets", "Fires seekers",
     "Fires fire", "Fires nothing"
@@ -820,11 +820,11 @@ static int pe_spider(World *mzx_world, int param)
   dialog di;
   element *elements[5];
   int dialog_result;
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "Thin web only", "Thick web only", "Any web", "Anywhere"
   };
-  char *check_strings[] =
+  const char *check_strings[] =
   {
     "Fast movement", "2 hit points"
   };
@@ -885,11 +885,11 @@ static int pe_bullet_gun(World *mzx_world, int param)
   dialog di;
   element *elements[6];
   int dialog_result;
-  char *radio_strings_1[] =
+  const char *radio_strings_1[] =
   {
     "North", "South", "East", "West"
   };
-  char *radio_strings_2[] =
+  const char *radio_strings_2[] =
   {
     "Fires bullets", "Fires fire"
   };
@@ -924,7 +924,7 @@ static int pe_bear(World *mzx_world, int param)
   dialog di;
   element *elements[5];
   int dialog_result;
-  char *check_strings[] = { "2 hit points" };
+  const char *check_strings[] = { "2 hit points" };
 
   set_confirm_buttons(elements);
   elements[2] = construct_number_box(15, 6, "Sensitivity:   ",
@@ -981,11 +981,11 @@ static int pe_missile_gun(World *mzx_world, int param)
   dialog di;
   element *elements[6];
   int dialog_result;
-  char *radio_strings_1[] =
+  const char *radio_strings_1[] =
   {
     "North", "South", "East", "West"
   };
-  char *radio_strings_2[] =
+  const char *radio_strings_2[] =
   {
     "Fires once", "Fires multiple"
   };

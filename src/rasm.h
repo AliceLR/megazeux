@@ -165,14 +165,14 @@ typedef struct
 
 typedef struct
 {
-  char *name;
+  const char *name;
   int count;
   int offsets[19];
 } search_entry;
 
 typedef struct
 {
-  char *name;
+  const char *name;
   int offset;
   int type;
 } search_entry_short;
@@ -198,7 +198,7 @@ int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
 int disassemble_line(char *cpos, char **next, char *output_buffer,
  char *error_buffer, int *total_bytes, int print_ignores, char *arg_types,
  int *arg_count, int base);
-search_entry_short *find_argument(char *name);
+const search_entry_short *find_argument(char *name);
 void print_color(int color, char *color_buffer);
 int unescape_char(char *dest, char c);
 #endif // CONFIG_EDITOR

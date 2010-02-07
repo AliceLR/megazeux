@@ -728,7 +728,7 @@ static int block_menu(World *mzx_world)
 {
   int dialog_result, block_op = 0;
   dialog di;
-  char *radio_strings[] =
+  const char *radio_strings[] =
   {
     "Copy block", "Cut block",
     "Clear block", "Export block"
@@ -989,12 +989,12 @@ static void export_block(robot_state *rstate, int region_default)
   int export_type = 0;
   char export_name[64];
   int num_elements;
-  char *export_ext[] = { ".TXT", ".BC", NULL };
-  char *radio_strings_1[] =
+  const char *export_ext[] = { ".TXT", ".BC", NULL };
+  const char *radio_strings_1[] =
   {
     "Text", "Bytecode"
   };
-  char *radio_strings_2[] =
+  const char *radio_strings_2[] =
   {
     "Entire robot", "Current block"
   };
@@ -1075,7 +1075,7 @@ static void export_block(robot_state *rstate, int region_default)
 static void import_block(World *mzx_world, robot_state *rstate)
 {
   char import_name[128];
-  char *txt_ext[] = { ".TXT", NULL };
+  const char *txt_ext[] = { ".TXT", NULL };
 
   if(!choose_file(mzx_world, txt_ext, import_name, "Import Robot", 1))
   {
@@ -1368,8 +1368,8 @@ static int robo_ed_find_string(robot_state *rstate, char *str, int wrap,
 static void find_replace_action(robot_state *rstate)
 {
   dialog di;
-  char *check_strings_1[] = { "Wrap around end" };
-  char *check_strings_2[] = { "Match case" };
+  const char *check_strings_1[] = { "Wrap around end" };
+  const char *check_strings_2[] = { "Match case" };
   int check_result_1[] = { wrap_option };
   int check_result_2[] = { case_option };
   element *elements[8] =
@@ -2789,7 +2789,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       case SDLK_F4:
       {
         int start_x = rstate.current_x;
-        search_entry_short *matched_arg;
+        const search_entry_short *matched_arg;
         int end_x;
         char temp_char;
 

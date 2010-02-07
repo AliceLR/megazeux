@@ -53,7 +53,7 @@ void reallocate_scroll(Scroll *scroll, int size);
 void reallocate_robot(Robot *robot, int size);
 Label **cache_robot_labels(Robot *robot, int *num_labels);
 void clear_label_cache(Label **label_list, int num_labels);
-int find_robot(Board *src_board, char *name, int *first, int *last);
+int find_robot(Board *src_board, const char *name, int *first, int *last);
 void send_robot(World *mzx_world, char *name, char *mesg,
  int ignore_lock);
 int send_robot_id(World *mzx_world, int id, char *mesg, int ignore_lock);
@@ -94,7 +94,7 @@ void replace_robot(Board *src_board, Robot *src_robot, int dest_id);
 int duplicate_scroll(Board *src_board, Scroll *cur_scroll);
 int duplicate_sensor(Board *src_board, Sensor *cur_sensor);
 void optimize_null_objects(Board *src_board);
-int get_robot_id(Board *src_board, char *name);
+int get_robot_id(Board *src_board, const char *name);
 
 // These are part of runrobo2.cpp
 int place_player_xy(World *mzx_world, int x, int y);

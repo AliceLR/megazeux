@@ -28,7 +28,7 @@ __M_BEGIN_DECLS
 
 typedef struct
 {
-  char *name;
+  const char *name;
   void (*reg)(graphics_data *);
 } renderer_data;
 

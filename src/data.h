@@ -40,7 +40,7 @@ extern int was_zapped;
 
 extern char saved_pl_color;
 
-extern char          *thing_names[128];
+extern const char *thing_names[128];
 extern unsigned int  flags[128];
 
 typedef enum

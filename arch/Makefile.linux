@@ -8,7 +8,7 @@
 STRIP ?= strip --strip-unneeded
 
 # switch locking method
-mzx_cflags += -DPTHREAD_MUTEXES
+mzx_flags += -DPTHREAD_MUTEXES
 
 # enable stack protector for debug builds
 ifdef DEBUG

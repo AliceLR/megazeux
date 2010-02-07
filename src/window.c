@@ -69,7 +69,7 @@ int cur_screen = 0; // Current space for save_screen and restore_screen
 // Saves current screen to buffer and increases buffer count. Returns
 // non-0 if the buffer for screens is already full. (IE 6 count)
 
-int save_screen()
+int save_screen(void)
 {
   if(cur_screen >= NUM_SAVSCR)
   {
@@ -85,7 +85,7 @@ int save_screen()
 // Restores top screen from buffer to screen and decreases buffer count.
 // Returns non-0 if there are no screens in the buffer.
 
-int restore_screen()
+int restore_screen(void)
 {
   if(cur_screen == 0)
     error("Windowing code bug", 2, 20, 0x1F02);
@@ -556,7 +556,7 @@ static char fg_per_bk[16] =
 // column arrows to move one line, click on progress meter itself to move
 // there percentage-wise. If you click on the current choice, it exits.
 // If you click on a choice to move there, the mouse cursor moves with it.
-int list_menu(char **choices, int choice_size, char *title,
+int list_menu(const char **choices, int choice_size, const char *title,
  int current, int num_choices, int xpos)
 {
   char key_buffer[64];
@@ -1402,7 +1402,7 @@ static int click_color_box(World *mzx_world, dialog *di,
   return SDLK_RETURN;
 }
 
-element *construct_check_box(int x, int y, char **choices,
+element *construct_check_box(int x, int y, const char **choices,
  int num_choices, int max_length, int *results)
 {
   check_box *src = (check_box *)malloc(sizeof(check_box));
@@ -1417,7 +1417,7 @@ element *construct_check_box(int x, int y, char **choices,
   return (element *)src;
 }
 
-element *construct_char_box(int x, int y, char *question,
+element *construct_char_box(int x, int y, const char *question,
  int allow_char_255, int *result)
 {
   char_box *src = (char_box *)malloc(sizeof(char_box));
@@ -1431,7 +1431,7 @@ element *construct_char_box(int x, int y, char *question,
 }
 
 element *construct_color_box(int x, int y,
- char *question, int allow_wildcard, int *result)
+ const char *question, int allow_wildcard, int *result)
 {
   color_box *src = (color_box *)malloc(sizeof(color_box));
   src->question = question;
@@ -1452,7 +1452,7 @@ static int click_board_list(World *mzx_world, dialog *di,
 }
 
 element *construct_board_list(int x, int y,
- char *title, int board_zero_as_none, int *result)
+ const char *title, int board_zero_as_none, int *result)
 {
   board_list *src = (board_list *)malloc(sizeof(board_list));
   src->title = title;
@@ -1501,7 +1501,8 @@ int add_board(World *mzx_world, int current)
 }
 
 // Shell for list_menu()
-int choose_board(World *mzx_world, int current, char *title, int board0_none)
+int choose_board(World *mzx_world, int current, const char *title,
+ int board0_none)
 {
   int i;
   char **board_names =
@@ -1544,7 +1545,8 @@ int choose_board(World *mzx_world, int current, char *title, int board0_none)
   }
 
   // Run the list_menu()
-  current = list_menu(board_names, BOARD_NAME_SIZE, title, current, i, 27);
+  current = list_menu((const char **)board_names,
+   BOARD_NAME_SIZE, title, current, i, 27);
 
   // New board? (if select no board or add board)
   if((current == num_boards) ||
@@ -1568,8 +1570,8 @@ int choose_board(World *mzx_world, int current, char *title, int board0_none)
   return current;
 }
 
-int choose_file(World *mzx_world, char **wildcards, char *ret,
- char *title, int dirs_okay)
+int choose_file(World *mzx_world, const char **wildcards, char *ret,
+ const char *title, int dirs_okay)
 {
   return file_manager(mzx_world, wildcards, ret, title, dirs_okay,
    0, NULL, 0, 0, 0);
@@ -1916,7 +1918,7 @@ int run_dialog(World *mzx_world, dialog *di)
   return di->return_value;
 }
 
-static int find_entry(char **choices, char *name, int total_num)
+static int find_entry(const char **choices, char *name, int total_num)
 {
   int current_entry;
   int cmpval = 0;
@@ -2075,7 +2077,7 @@ static void draw_list_box(World *mzx_world, dialog *di,
   int num_choices_visible = src->num_choices_visible;
   int current_choice = *(src->result);
   int scroll_offset = src->scroll_offset;
-  char **choices = src->choices;
+  const char **choices = src->choices;
   int i, num_draw;
   int draw_width = choice_length;
   int current_in_window = current_choice - scroll_offset;
@@ -2737,9 +2739,10 @@ void construct_dialog(dialog *src, char *title, int x, int y,
   src->idle_function = NULL;
 }
 
-__editor_maybe_static void construct_dialog_ext(dialog *src, char *title,
- int x, int y, int width, int height, element **elements, int num_elements,
- int sfx_test_for_input, int pad_space, int start_element,
+__editor_maybe_static void construct_dialog_ext(dialog *src,
+ const char *title, int x, int y, int width, int height,
+ element **elements, int num_elements, int sfx_test_for_input,
+ int pad_space, int start_element,
  int (* idle_function)(World *mzx_world, dialog *di, int key))
 {
   src->title = title;
@@ -2769,7 +2772,7 @@ void destruct_dialog(dialog *src)
   restore_screen();
 }
 
-element *construct_label(int x, int y, char *text)
+element *construct_label(int x, int y, const char *text)
 {
   label *src = (label *)malloc(sizeof(label));
   src->text = text;
@@ -2780,7 +2783,7 @@ element *construct_label(int x, int y, char *text)
 }
 
 __editor_maybe_static element *construct_input_box(int x, int y,
- char *question, int max_length, int input_flags, char *result)
+ const char *question, int max_length, int input_flags, char *result)
 {
   input_box *src = (input_box *)malloc(sizeof(input_box));
   src->question = question;
@@ -2796,7 +2799,7 @@ __editor_maybe_static element *construct_input_box(int x, int y,
 }
 
 element *construct_radio_button(int x, int y,
- char **choices, int num_choices, int max_length, int *result)
+ const char **choices, int num_choices, int max_length, int *result)
 {
   radio_button *src = (radio_button *)malloc(sizeof(radio_button));
   src->choices = choices;
@@ -2810,7 +2813,7 @@ element *construct_radio_button(int x, int y,
   return (element *)src;
 }
 
-element *construct_button(int x, int y, char *label,
+element *construct_button(int x, int y, const char *label,
  int return_value)
 {
   button *src = (button *)malloc(sizeof(button));
@@ -2824,7 +2827,7 @@ element *construct_button(int x, int y, char *label,
 }
 
 element *construct_number_box(int x, int y,
- char *question, int lower_limit, int upper_limit,
+ const char *question, int lower_limit, int upper_limit,
  int mult_five, int *result)
 {
   number_box *src = (number_box *)malloc(sizeof(number_box));
@@ -2849,7 +2852,7 @@ element *construct_number_box(int x, int y,
 }
 
 __editor_maybe_static element *construct_list_box(int x, int y,
- char **choices, int num_choices, int num_choices_visible,
+ const char **choices, int num_choices, int num_choices_visible,
  int choice_length, int return_value, int *result)
 {
   int scroll_offset = *result - (num_choices_visible / 2);
@@ -3002,7 +3005,7 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
 
       if(src->num_choices)
       {
-        char *file_name = src->choices[*(src->result)];
+        const char *file_name = src->choices[*(src->result)];
 
         if(get_alt_status(keycode_SDL))
         {
@@ -3172,9 +3175,10 @@ static void remove_files(char *directory_name, int remove_recursively)
 }
 
 
-__editor_maybe_static int file_manager(World *mzx_world, char **wildcards,
- char *ret, char *title, int dirs_okay, int allow_new, element **dialog_ext,
- int num_ext, int ext_height, int allow_dir_change)
+__editor_maybe_static int file_manager(World *mzx_world,
+ const char **wildcards, char *ret, const char *title, int dirs_okay,
+ int allow_new, element **dialog_ext, int num_ext, int ext_height,
+ int allow_dir_change)
 {
   DIR *current_dir;
   struct dirent *current_file;
@@ -3372,10 +3376,10 @@ __editor_maybe_static int file_manager(World *mzx_world, char **wildcards,
     }
 
     elements[FILESEL_FILE_LIST] =
-     construct_list_box(2, 2, file_list, num_files,
+     construct_list_box(2, 2, (const char **)file_list, num_files,
      list_length, 55, 1, &chosen_file);
     elements[FILESEL_DIR_LIST] =
-     construct_list_box(59, 2, dir_list, num_dirs,
+     construct_list_box(59, 2, (const char **)dir_list, num_dirs,
      list_length, 15, 2, &chosen_dir);
     elements[FILESEL_FILENAME] =
      construct_input_box(2, list_length + 3, "", 55,
@@ -3616,15 +3620,15 @@ __editor_maybe_static int file_manager(World *mzx_world, char **wildcards,
   return return_value;
 }
 
-int choose_file_ch(World *mzx_world, char **wildcards, char *ret,
- char *title, int dirs_okay)
+int choose_file_ch(World *mzx_world, const char **wildcards, char *ret,
+ const char *title, int dirs_okay)
 {
   return file_manager(mzx_world, wildcards, ret, title, dirs_okay,
    0, NULL, 0, 0, 1);
 }
 
-int new_file(World *mzx_world, char **wildcards, char *ret,
- char *title, int dirs_okay)
+int new_file(World *mzx_world, const char **wildcards, char *ret,
+ const char *title, int dirs_okay)
 {
   return file_manager(mzx_world, wildcards, ret, title, dirs_okay,
    1, NULL, 0, 0, 0);

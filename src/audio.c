@@ -1254,7 +1254,7 @@ static audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
   return ret_val;
 }
 
-static audio_stream *construct_pc_speaker_stream()
+static audio_stream *construct_pc_speaker_stream(void)
 {
   pc_speaker_stream *pcs_stream =
    (pc_speaker_stream *)malloc(sizeof(pc_speaker_stream));
@@ -1441,7 +1441,7 @@ void load_module(char *filename)
   }
 }
 
-void end_module()
+void end_module(void)
 {
   if(audio.primary_stream)
   {
@@ -1473,7 +1473,7 @@ void play_sample(int freq, char *filename)
   UNLOCK();
 }
 
-void end_sample()
+void end_sample(void)
 {
   // Destroy all samples - something is a sample if it's not a
   // primary or PC speaker stream. This is a bit of a dirty way
@@ -1514,7 +1514,7 @@ void jump_module(int order)
   }
 }
 
-int get_order()
+int get_order(void)
 {
   if(audio.primary_stream && audio.primary_stream->get_order)
   {
@@ -1589,7 +1589,7 @@ void shift_frequency(int freq)
   }
 }
 
-int get_frequency()
+int get_frequency(void)
 {
   if(audio.primary_stream)
   {
@@ -1621,7 +1621,7 @@ void set_position(int pos)
   }
 }
 
-int get_position()
+int get_position(void)
 {
   if(audio.primary_stream && audio.primary_stream->get_position)
   {
@@ -1673,27 +1673,27 @@ void set_sfx_on(int val)
 // These don't have to be locked because only the same thread can
 // modify them.
 
-int get_music_on_state()
+int get_music_on_state(void)
 {
   return audio.music_on;
 }
 
-int get_sfx_on_state()
+int get_sfx_on_state(void)
 {
   return audio.sfx_on;
 }
 
-int get_music_volume()
+int get_music_volume(void)
 {
   return audio.music_volume;
 }
 
-int get_sound_volume()
+int get_sound_volume(void)
 {
   return audio.sound_volume;
 }
 
-int get_sfx_volume()
+int get_sfx_volume(void)
 {
   return audio.sfx_volume;
 }

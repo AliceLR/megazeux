@@ -120,20 +120,20 @@ struct _graphics_data
   void (*sync_screen)      (graphics_data *);
 };
 
-void color_string(char *string, Uint32 x, Uint32 y, Uint8 color);
-void write_string(char *string, Uint32 x, Uint32 y, Uint8 color,
+void color_string(const char *string, Uint32 x, Uint32 y, Uint8 color);
+void write_string(const char *string, Uint32 x, Uint32 y, Uint8 color,
  Uint32 tab_allowed);
 void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color);
 void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
  Uint8 color);
 void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y);
 
-void color_string_ext(char *string, Uint32 x, Uint32 y,
+void color_string_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 offset, Uint32 c_offset);
-void write_string_ext(char *string, Uint32 x, Uint32 y,
+void write_string_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset,
  Uint32 c_offset);
-void write_line_ext(char *string, Uint32 x, Uint32 y,
+void write_line_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset,
  Uint32 c_offset);
 void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
@@ -142,9 +142,9 @@ void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
  Uint32 y, Uint32 offset, Uint32 c_offset);
 void draw_char_linear_ext(Uint8 color, Uint8 chr,
  Uint32 offset, Uint32 offset_b, Uint32 c_offset);
-void write_line_mask(char *str, Uint32 x, Uint32 y,
+void write_line_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed);
-void write_string_mask(char *str, Uint32 x, Uint32 y,
+void write_string_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed);
 
 Uint8 get_color_linear(Uint32 offset);
@@ -155,7 +155,7 @@ void cursor_solid(void);
 void cursor_off(void);
 void move_cursor(Uint32 x, Uint32 y);
 void set_cursor_mode(cursor_mode_types mode);
-cursor_mode_types get_cursor_mode();
+cursor_mode_types get_cursor_mode(void);
 
 void init_video(config_info *conf);
 int set_video_mode(void);
@@ -174,12 +174,12 @@ Sint32 ec_load_set_var(char *name, Uint8 pos);
 void ec_mem_load_set(Uint8 *chars);
 void ec_mem_save_set(Uint8 *chars);
 
-void update_palette();
-void set_gui_palette();
+void update_palette(void);
+void set_gui_palette(void);
 void load_palette(char *fname);
 void smzx_palette_loaded(int val);
 void set_screen_mode(Uint32 mode);
-Uint32 get_screen_mode();
+Uint32 get_screen_mode(void);
 void set_palette_intensity(Uint32 percent);
 void set_color_intensity(Uint32 color, Uint32 percent);
 void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b);
@@ -191,7 +191,7 @@ void get_rgb(Uint32 color, Uint8 *r, Uint8 *g, Uint8 *b);
 Uint32 get_red_component(Uint32 color);
 Uint32 get_green_component(Uint32 color);
 Uint32 get_blue_component(Uint32 color);
-Uint32 get_fade_status();
+Uint32 get_fade_status(void);
 void vquick_fadein(void);
 void vquick_fadeout(void);
 void insta_fadein(void);

@@ -33,36 +33,36 @@
 typedef struct
 {
   int syms_loaded;
-  void (APIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
-  void (APIENTRY *glBegin)(GLenum mode);
-  void (APIENTRY *glBindTexture)(GLenum target, GLuint texture);
-  void (APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
-  void (APIENTRY *glClear)(GLbitfield mask);
-  void (APIENTRY *glColor3ubv)(const GLubyte *v);
-  void (APIENTRY *glColor4f)(GLfloat red, GLfloat green, GLfloat blue,
+  void (*glAlphaFunc)(GLenum func, GLclampf ref);
+  void (*glBegin)(GLenum mode);
+  void (*glBindTexture)(GLenum target, GLuint texture);
+  void (*glBlendFunc)(GLenum sfactor, GLenum dfactor);
+  void (*glClear)(GLbitfield mask);
+  void (*glColor3ubv)(const GLubyte *v);
+  void (*glColor4f)(GLfloat red, GLfloat green, GLfloat blue,
    GLfloat alpha);
-  void (APIENTRY *glColor4ub)(GLubyte red, GLubyte green, GLubyte blue,
+  void (*glColor4ub)(GLubyte red, GLubyte green, GLubyte blue,
    GLubyte alpha);
-  void (APIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
+  void (*glCopyTexImage2D)(GLenum target, GLint level,
    GLenum internalFormat, GLint x, GLint y, GLsizei width, GLsizei height,
    GLint border);
-  void (APIENTRY *glDisable)(GLenum cap);
-  void (APIENTRY *glEnable)(GLenum cap);
-  void (APIENTRY *glEnd)(void);
-  void (APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
-  const GLubyte* (APIENTRY *glGetString)(GLenum name);
-  void (APIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
-  void (APIENTRY *glTexImage2D)(GLenum target, GLint level,
+  void (*glDisable)(GLenum cap);
+  void (*glEnable)(GLenum cap);
+  void (*glEnd)(void);
+  void (*glGenTextures)(GLsizei n, GLuint *textures);
+  const GLubyte* (*glGetString)(GLenum name);
+  void (*glTexCoord2f)(GLfloat s, GLfloat t);
+  void (*glTexImage2D)(GLenum target, GLint level,
    GLint internalformat, GLsizei width, GLsizei height, GLint border,
    GLenum format, GLenum type, const GLvoid *pixels);
-  void (APIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
-  void (APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
-  void (APIENTRY *glTexSubImage2D)(GLenum target, GLint level, GLint xoffset,
+  void (*glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
+  void (*glTexParameteri)(GLenum target, GLenum pname, GLint param);
+  void (*glTexSubImage2D)(GLenum target, GLint level, GLint xoffset,
    GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type,
    const GLvoid *pixels);
-  void (APIENTRY *glVertex2f)(GLfloat x, GLfloat y);
-  void (APIENTRY *glVertex2i)(GLint x, GLint y);
-  void (APIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
+  void (*glVertex2f)(GLfloat x, GLfloat y);
+  void (*glVertex2i)(GLint x, GLint y);
+  void (*glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 } gl2_syms;
 
 typedef struct

@@ -107,7 +107,7 @@ static char editing_menu[] =
  "Space - Shoot (w/dir)\n"
  "Delete- Bomb";
 
-static char *save_ext[] = { ".SAV", NULL };
+static const char *save_ext[] = { ".SAV", NULL };
 static int update_music;
 
 //Bit 1- +1
@@ -119,7 +119,7 @@ static char ccw_offs[8] = { 10, 8, 9, 1, 5, 4, 6, 2 };
 
 int pal_update; // Whether to update a palette from robot activity
 
-__editor_maybe_static char *world_ext[] = { ".MZX", NULL };
+__editor_maybe_static const char *world_ext[] = { ".MZX", NULL };
 
 #ifdef CONFIG_EDITOR
 char debug_mode = 0;
@@ -363,11 +363,11 @@ static void game_settings(World *mzx_world)
   int num_elements = 8;
   int start_option = 0;
 
-  char *radio_strings_1[2] =
+  const char *radio_strings_1[2] =
   {
     "Digitized music on", "Digitized music off"
   };
-  char *radio_strings_2[2] =
+  const char *radio_strings_2[2] =
   {
     "PC speaker SFX on", "PC speaker SFX off"
   };

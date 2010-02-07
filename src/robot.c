@@ -656,7 +656,7 @@ static Label *find_zapped_label(Robot *cur_robot, char *name)
 // last is the last. If not found, first and last are the position to place
 // into.
 
-int find_robot(Board *src_board, char *name, int *first, int *last)
+int find_robot(Board *src_board, const char *name, int *first, int *last)
 {
   int total = src_board->num_robots_active - 1;
   int bottom = 0, top = total, middle = 0;
@@ -2870,7 +2870,7 @@ void create_blank_sensor_direct(Sensor *cur_sensor)
 
 #endif // CONFIG_EDITOR
 
-int get_robot_id(Board *src_board, char *name)
+int get_robot_id(Board *src_board, const char *name)
 {
   int first, last;
 

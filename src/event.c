@@ -630,7 +630,7 @@ static Uint32 update_autorepeat(void)
   return rval;
 }
 
-Uint32 update_event_status()
+Uint32 update_event_status(void)
 {
   SDL_Event event;
   Uint32 rval = 0;
@@ -650,7 +650,7 @@ Uint32 update_event_status()
   return rval;
 }
 
-Uint32 update_event_status_delay()
+Uint32 update_event_status_delay(void)
 {
   int rval = update_event_status();
   int delay_ticks;
@@ -670,7 +670,7 @@ Uint32 update_event_status_delay()
   return rval;
 }
 
-void wait_event()
+void wait_event(void)
 {
   SDL_Event event;
 
@@ -798,22 +798,22 @@ void get_real_mouse_position(int *x, int *y)
   *y = input.real_mouse_y;
 }
 
-Uint32 get_mouse_x()
+Uint32 get_mouse_x(void)
 {
   return input.mouse_x;
 }
 
-Uint32 get_mouse_y()
+Uint32 get_mouse_y(void)
 {
   return input.mouse_y;
 }
 
-Uint32 get_mouse_drag()
+Uint32 get_mouse_drag(void)
 {
   return input.mouse_drag_state;
 }
 
-Uint32 get_mouse_press()
+Uint32 get_mouse_press(void)
 {
   if(input.last_mouse_button <= SDL_BUTTON_RIGHT)
     return input.last_mouse_button;
@@ -821,12 +821,12 @@ Uint32 get_mouse_press()
     return 0;
 }
 
-Uint32 get_mouse_press_ext()
+Uint32 get_mouse_press_ext(void)
 {
   return input.last_mouse_button;
 }
 
-Uint32 get_mouse_status()
+Uint32 get_mouse_status(void)
 {
   return (input.mouse_button_state &
    (SDL_BUTTON(1) | SDL_BUTTON(2) | SDL_BUTTON(3)));
@@ -922,7 +922,7 @@ int get_ctrl_status(keycode_type type)
   }
 }
 
-void initialize_joysticks()
+void initialize_joysticks(void)
 {
   int i, count;
 

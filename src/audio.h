@@ -124,30 +124,30 @@ typedef struct
 
 void init_audio(config_info *conf);
 void load_module(char *filename);
-void end_module();
+void end_module(void);
 void play_sample(int freq, char *filename);
-void end_sample();
+void end_sample(void);
 void jump_module(int order);
-int get_order();
+int get_order(void);
 void volume_module(int vol);
-void module_exit();
-void module_init();
+void module_exit(void);
+void module_init(void);
 void spot_sample(int freq, int sample);
 void shift_frequency(int freq);
-int get_frequency();
+int get_frequency(void);
 void set_position(int pos);
-int get_position();
+int get_position(void);
 int free_sam_cache(char clear_all);
 void fix_global_volumes(void);
 void sound(int frequency, int duration);
 void nosound(int duration);
 void set_music_on(int val);
 void set_sfx_on(int val);
-int get_music_on_state();
-int get_sfx_on_state();
-int get_music_volume();
-int get_sound_volume();
-int get_sfx_volume();
+int get_music_on_state(void);
+int get_sfx_on_state(void);
+int get_music_volume(void);
+int get_sound_volume(void);
+int get_sfx_volume(void);
 void set_music_volume(int volume);
 void set_sound_volume(int volume);
 void set_sfx_volume(int volume);
@@ -201,8 +201,8 @@ static inline void set_sound_volume(int volume) {}
 static inline void set_music_on(int val) {}
 static inline void set_sfx_on(int val) {}
 static inline void set_sfx_volume(int volume) {}
-static inline void end_sample() {}
-static inline void end_module() {}
+static inline void end_sample(void) {}
+static inline void end_module(void) {}
 static inline void load_module(char *filename) {}
 static inline void volume_module(int vol) {}
 static inline void set_position(int pos) {}
@@ -210,14 +210,14 @@ static inline void jump_module(int order) {}
 static inline void shift_frequency(int freq) {}
 static inline void play_sample(int freq, char *filename) {}
 static inline void spot_sample(int freq, int sample) {}
-static inline int get_music_on_state() { return 0; }
-static inline int get_sfx_on_state() { return 0; }
-static inline int get_music_volume() { return 0; }
-static inline int get_sound_volume() { return 0; }
-static inline int get_sfx_volume() { return 0; }
-static inline int get_position() { return 0; }
-static inline int get_order() { return 0; }
-static inline int get_frequency() { return 0; }
+static inline int get_music_on_state(void) { return 0; }
+static inline int get_sfx_on_state(void) { return 0; }
+static inline int get_music_volume(void) { return 0; }
+static inline int get_sound_volume(void) { return 0; }
+static inline int get_sfx_volume(void) { return 0; }
+static inline int get_position(void) { return 0; }
+static inline int get_order(void) { return 0; }
+static inline int get_frequency(void) { return 0; }
 
 #endif // CONFIG_AUDIO
 
