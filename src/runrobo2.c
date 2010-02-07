@@ -65,7 +65,7 @@ static char *item_to_counter[9] =
 };
 
 // Default parameters (-2 = 0 and no edit, -3 = character, -4 = board)
-int def_params[128] =
+__editor_maybe_static int def_params[128] =
 {
   -2, -2, -2, -2, -2, -3, -2, -3, -2, -2, -3, -2, -3, -2, -2, -2, // 0x00 - 0x0F
   -2, -3, -2, -2, -2, -2, -2, -2, -2, -2, -2,  0, -2, -2, 10,  0, // 0x10 - 0x1F
