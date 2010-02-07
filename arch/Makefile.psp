@@ -21,7 +21,7 @@ VORBIS_CFLAGS  = -DUSE_TREMOR
 VORBIS_LDFLAGS = -lvorbisidec
 
 # flag PSP build and link in c/psppower
-mzx_cflags  += -I${PREFIX}/sdk/include -DPSP_BUILD
+mzx_cflags  += -G0 -I${PREFIX}/sdk/include -DPSP_BUILD
 mzx_ldflags += -lc -lpsppower
 
 package-pbp:
