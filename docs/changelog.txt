@@ -1,4 +1,21 @@
-MZX SVN
+December 8, 2007 - MZX 2.81h
+
+Another bugfix release with a couple of new features, in time for the
+Winter 2007 Dualstream Day of Zeux. The major new features of this release
+are automatic module renaming in the editor, PNG screenshots and many
+improvements for MZX on embedded platforms (like PSP and DS).
+
+MegaZeux can now be compiled in MZXRun mode (like the old DOS
+implementation) and by disabling features such as unnecessary renderers
+and audio support, can be made approximately 70% smaller.
+
+Thanks again to Terryn for relentlessly tracking down many serious bugs;
+we've tried to fix all the issues that have crept up in the last 5 months.
+
+Thanks too to Exophase, Mr_Alert and Wervyn for contributing to this
+release; your time and help is invaluable.
+
+Happy Holidays!
 
 USERS
 
@@ -88,8 +105,6 @@ DEVELOPERS
   Configure with --disable-editor to shrink MZX by about 150k.
 + MegaZeux can now be compiled with size optimisations (--optimize-size to
   config.sh) for a 20% space saving.
-  This reduces the size of a stripped AMD64 binary from 860296b (with all
-  features enabled) to 269864b (with all featured disabled) (~69% smaller).
 
 July 4, 2007 - MZX 2.81g
 
