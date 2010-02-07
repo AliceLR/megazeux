@@ -126,7 +126,7 @@ int main(int argc, char **argv)
 
   strncpy(curr_file, mzx_world.conf.startup_file, MAX_PATH - 1);
   curr_file[MAX_PATH - 1] = '\0';
-  strcpy(curr_sav, mzx_world.conf.default_save_name, MAX_PATH - 1);
+  strncpy(curr_sav, mzx_world.conf.default_save_name, MAX_PATH - 1);
   curr_sav[MAX_PATH - 1] = '\0';
 
   set_music_volume(mzx_world.conf.music_volume);
