@@ -63,6 +63,7 @@ PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 
 int main(int argc, char **argv)
 {
+  Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
   World mzx_world;
   char bin_path[MAX_PATH];
 
@@ -85,11 +86,14 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef DEBUG
-  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK |
-   SDL_INIT_NOPARACHUTE);
-#else
-  SDL_Init(SDL_INIT_VIDEO | SDL_INIT_AUDIO | SDL_INIT_JOYSTICK);
+  flags |= SDL_INIT_NOPARACHUTE
 #endif
+
+#ifdef CONFIG_AUDIO
+  flags |= SDL_INIT_AUDIO;
+#endif
+
+  SDL_Init(flags);
 
   get_path(argv[0], bin_path);
   chdir(bin_path);

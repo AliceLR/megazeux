@@ -4,6 +4,9 @@ USERS
 
 DEVELOPERS
 
++ Don't initialize the SDL audio subsystem if audio is permanently disabled
+  with --disable-audio.
+
 December 8, 2007 - MZX 2.81h
 
 Another bugfix release with a couple of new features, in time for the
