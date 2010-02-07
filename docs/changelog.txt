@@ -40,6 +40,8 @@ USERS
   ? "#label" "string" skips the next impending line (Exophase).
 + Setting a board option below its numeric limit is no longer
   possible (Exophase).
++ Fixed problems with going over Robot name character limits using the .@
+  command (Exophase).
 
 DEVELOPERS
 
