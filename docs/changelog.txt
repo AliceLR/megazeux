@@ -53,6 +53,11 @@ USERS
 + Fixed a bug where games made before 2.80 would inadvertently trigger
   "PLAYERHURT" due to using the SET command to reduce the amount of
   health (Mr_Alert).
++ Fixed a bug where player clones where generated when entering transports
+  during FREEZETIME (Lancer-X).
++ Debug menu is now eradicated on leaving the editor (Lancer-X).
++ Debug menu is now properly painted over when the board size is < the editor
+  viewport. Fixes various graphical glitches (Lancer-X).
 
 DEVELOPERS
 

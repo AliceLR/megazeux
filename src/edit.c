@@ -833,6 +833,8 @@ void edit_world(World *mzx_world)
 
     saved_overlay_mode = src_board->overlay_mode;
 
+    clear_screen_no_update(177, 1);
+
     if(!overlay_edit)
     {
       src_board->overlay_mode = 0;
@@ -3425,6 +3427,10 @@ void edit_world(World *mzx_world)
   } while(key != SDLK_ESCAPE);
 
   update_event_status();
+
+  // Turn off debug mode
+  debug_mode = 0;
+
   clear_world(mzx_world);
   clear_global_data(mzx_world);
   cursor_off();

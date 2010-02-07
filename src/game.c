@@ -2901,6 +2901,10 @@ int update(World *mzx_world, int game, int *fadein)
     }
 
     mzx_world->was_zapped = 0;
+  } else {
+    // Place the player and clean up clones
+    // just in case the player was moved while the game was slowed
+    find_player(mzx_world);
   }
 
   // Death and game over
