@@ -52,7 +52,7 @@
 # The "overlay2" mode is cheaper, but will be less accurate due to the use
 # of chroma subsampling instead of a full YUV encode.
 
-# video_output = overlay1
+video_output = overlay1
 # video_output = overlay2
 
 # An OpenGL renderer is a good choice if you want a highly configurable,
@@ -74,7 +74,7 @@
 # Uncomment ONE of the lines below:
 
 # video_output = opengl1
-video_output = opengl2
+# video_output = opengl2
 
 # OpenGL will, by default, linearly interpolate pixels as it upscales
 # to your requested resolution. This creates an output with more "blur",

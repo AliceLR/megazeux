@@ -41,6 +41,11 @@ function createzip {
 	echo "start $TARGET.exe"         >> $WINDIB_BAT &&
 
 	#
+	# pack the EXE
+	#
+	( $UPX --best $TARGET.exe || echo "UPX isn't available, skipped." ) &&
+
+	#
 	# Create the binary package.
 	#
 	$SEVENZIP a -tzip dist/$TARGET.zip \
@@ -146,6 +151,13 @@ SRC="src/*.c src/*.cpp src/*.h src/Makefile src/old src/utils"
 # otherwise GNU tar is used instead.
 #
 SEVENZIP="7za"
+
+#
+# Name of the Ultimate Packer for eXecutables program. On Windows, this is
+# 'upx.exe'. On Linux, this is 'upx'. If yours is called something different,
+# change it here. This program has to be in $PATH or it is not used.
+#
+UPX="upx"
 
 #
 # Do source package.
