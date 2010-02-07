@@ -1426,17 +1426,20 @@ void m_show(void)
   graphics.mouse_status = 1;
 }
 
+#define MAX_NAME_SIZE 16
+
 void dump_screen()
 {
   int i;
-  char name[16];
+  char name[MAX_NAME_SIZE];
   struct stat file_info;
   SDL_Surface *ss;
   SDL_Color palette[SMZX_PAL_SIZE];
 
   for(i = 0; i < 99999; i++)
   {
-    sprintf(name, "screen%d.bmp", i);
+    snprintf(name, MAX_NAME_SIZE - 1, "screen%d.bmp", i);
+    name[MAX_NAME_SIZE - 1] = '\0';
     if(stat(name, &file_info))
       break;
   }
