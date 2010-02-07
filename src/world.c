@@ -1435,10 +1435,10 @@ int reload_world(World *mzx_world, char *file, int *faded)
 
   set_palette_intensity(100);
 
-  default_global_data(mzx_world);
-
   rval = load_world(mzx_world, file, 0, faded);
 
+  default_global_data(mzx_world);
+  
   *faded = 0;
   return rval;
 }
