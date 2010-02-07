@@ -1509,6 +1509,8 @@ static void vlayer_height_write(World *mzx_world, function_counter *counter,
 {
   if(value <= 0)
     value = 1;
+  if(value > mzx_world->vlayer_size)
+    value = mzx_world->vlayer_size;
   mzx_world->vlayer_height = value;
   mzx_world->vlayer_width = mzx_world->vlayer_size / value;
 }
@@ -1524,10 +1526,8 @@ static void vlayer_size_write(World *mzx_world, function_counter *counter,
     int vlayer_width = mzx_world->vlayer_width;
     int vlayer_height = mzx_world->vlayer_height;
 
-    mzx_world->vlayer_chars =
-     (char *)realloc(mzx_world->vlayer_chars, value);
-    mzx_world->vlayer_colors =
-     (char *)realloc(mzx_world->vlayer_colors, value);
+    mzx_world->vlayer_chars = realloc(mzx_world->vlayer_chars, value);
+    mzx_world->vlayer_colors = realloc(mzx_world->vlayer_colors, value);
     mzx_world->vlayer_size = value;
 
     if(vlayer_width * vlayer_height > value)
@@ -1549,6 +1549,8 @@ static void vlayer_width_write(World *mzx_world, function_counter *counter,
 {
   if(value <= 0)
     value = 1;
+  if(value > mzx_world->vlayer_size)
+    value = mzx_world->vlayer_size;
   mzx_world->vlayer_width = value;
   mzx_world->vlayer_height = mzx_world->vlayer_size / value;
 }
