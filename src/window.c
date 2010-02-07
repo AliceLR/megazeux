@@ -1741,8 +1741,13 @@ void draw_list_box(World *mzx_world, dialog *di,
 
     fill_line(choice_length, x, y + current_in_window,
      32, color);
-    strcpy(name_buffer, choices[current_choice]);
-    name_buffer[draw_width - 1] = 0;
+
+    strncpy(name_buffer, choices[current_choice], MAX_NAME_BUFFER - 1);
+    if (draw_width < MAX_NAME_BUFFER)
+      name_buffer[draw_width - 1] = '\0';
+    else
+      name_buffer[MAX_NAME_BUFFER - 1] = '\0';
+
     color_string(name_buffer, x,
      y + current_in_window, color);
   }
@@ -1791,12 +1796,13 @@ void draw_board_list(World *mzx_world, dialog *di,
     if(current_board <= mzx_world->num_boards)
     {
       src_board = mzx_world->board_list[current_board];
-      strcpy(board_name, src_board->board_name);
+      strncpy(board_name, src_board->board_name, BOARD_NAME_SIZE - 1);
     }
     else
     {
-      strcpy(board_name, "(no board)");
+      strncpy(board_name, "(no board)", BOARD_NAME_SIZE - 1);
     }
+    board_name[BOARD_NAME_SIZE - 1] = '\0';
   }
 
   write_string(src->title, x, y, color, 0);
@@ -2876,7 +2882,9 @@ int add_board(World *mzx_world, int current)
   mzx_world->num_boards++;
   new_board = create_blank_board();
   mzx_world->board_list[current] = new_board;
-  strcpy(new_board->board_name, temp_board_str);
+  strncpy(new_board->board_name, temp_board_str, BOARD_NAME_SIZE - 1);
+  new_board->board_name[BOARD_NAME_SIZE - 1] = '\0';
+
   // Link global robot!
   new_board->robot_list[0] = &mzx_world->global_robot;
   restore_screen();
@@ -2899,9 +2907,12 @@ int choose_board(World *mzx_world, int current, char *title, int board0_none)
     board_names[i] = (char *)malloc(BOARD_NAME_SIZE);
 
     if(mzx_world->board_list[i] == NULL)
-      strcpy(board_names[i], "(no board)");
+      strncpy(board_names[i], "(no board)", BOARD_NAME_SIZE - 1);
     else
-      strcpy(board_names[i], (mzx_world->board_list[i])->board_name);
+      strncpy(board_names[i], (mzx_world->board_list[i])->board_name,
+       BOARD_NAME_SIZE - 1);
+
+    board_names[i][BOARD_NAME_SIZE - 1] = '\0';
   }
 
   board_names[i] = (char *)malloc(12);
@@ -2912,14 +2923,16 @@ int choose_board(World *mzx_world, int current, char *title, int board0_none)
   // Add (new board) to bottom
   if(i < MAX_BOARDS)
   {
-    strcpy(board_names[i], "(add board)");
+    strncpy(board_names[i], "(add board)", BOARD_NAME_SIZE - 1);
+    board_names[i][BOARD_NAME_SIZE - 1] = '\0';
     i++;
   }
 
   // Change top to (none) if needed
   if(board0_none)
   {
-    strcpy(board_names[0], "(no board)");
+    strncpy(board_names[0], "(no board)", BOARD_NAME_SIZE - 1);
+    board_names[0][BOARD_NAME_SIZE - 1] = '\0';
   }
 
   // Run the list_menu()
@@ -3071,9 +3084,11 @@ int file_dialog_function(World *mzx_world, dialog *di, int key)
           {
             case SDLK_r:
             {
-              char new_name[512];
+              char new_name[MAX_PATH];
               int width = 29;
-              strcpy(new_name, file_name + 56);
+
+              strncpy(new_name, file_name + 56, MAX_PATH - 1);
+	      new_name[MAX_PATH - 1] = '\0';
 
               if(current_element_num == FILESEL_DIR_LIST)
                 width = 14;
