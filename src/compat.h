@@ -43,7 +43,6 @@
 #endif /* __cplusplus */
 
 #ifdef _MSC_VER
-#define inline
 #include "msvc.h"
 #endif
 

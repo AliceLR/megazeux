@@ -30,4 +30,6 @@
 #define strcasecmp stricmp
 #define strncasecmp strnicmp
 
+#define inline __inline
+
 #endif // MSVC_H
