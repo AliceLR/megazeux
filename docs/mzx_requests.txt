@@ -5,7 +5,7 @@ MZX REQUESTS:
 -Methods to jump to a given location on the board (given MZX's boards can now be quite large).
 -Mouse highlighting of code. Right-click on highlighted code to open block action menu.
 -Demo format consisting of logged keypresses.
--Visible vlayer, able to be place over or under the overlay.
+-Visible vlayer, able to be placed over or under the overlay.
 -Extensive manipulation of MZX default text boxes (mutable size, mutable position, more powerful editing of border, images in textbox background, ability to similarly alter remove title bar or remove it entirely, lockable textbox scrolling, ability to change keys to view text/select options/exit textbox).
 -Indication of current Robot's x/y in Robotic Editor.
 -Insertion of copy block params in Robotic Editor by visually selecting a block using a hotkey (Robotic editor jumps to a display of the current board, you select an area, and when done the copy block numbers resulting in this are placed in the line of Robotic code).
@@ -13,14 +13,14 @@ MZX REQUESTS:
 -Multiple temp slots for characters (currently there is one stored and placed with the char editor's "Copy to buffer" and "Copy from buffer" functions).
 -Extended Undo functionality (add ability to undo actions on the board/overlay, increase depth of actions from one).
 -Analog stick support with MZX (not full analog, just recognition).
--Ability to retain cursor/board position after leaving the world.
+-Ability to retain cursor/board positions after leaving the world.
 -More sound-related control counters (sound/pcfx toggle, volume overall/sound/pcfx).
 -Application of a config option like robot_editor_hide_help that has a similar effect on the board help menu.
 -Auto-hide mouse cursor in editor after a certain period of mouse disuse.
 -Ability to reference sprites from the overlay.
 -Ability to directly access the vlayer (i.e. through the Editor and not through Robotic commands).
 -Ability to re-order boards.
--Re-add mouse editing functionality that the DOS versions had (palette editing, clicking on hotkey text makes hotkey action happen (e.g. clicking on "L:Load" acts as the L key has been pressed), etc.).
+-Re-addition of mouse editing functionality that the DOS versions had (palette editing, clicking on hotkey text makes hotkey action happen (e.g. clicking on "L:Load" acts as the L key has been pressed), etc.).
 -Automatic PNG support, or a compile option for PNG support.
 -SMZX mode with full resolution but where two characters act as a single character.
 -Ability to enter the number lists from CHAR EDIT commands into the character editor to create a character.
@@ -35,16 +35,17 @@ MZX REQUESTS:
 -Board setting to toggle freezing the player when spacebar is held down (on by default).
 -Ability to set "MOD *" without nuking the current playing mod.
 -MOD_LENGTH counter (based on current mod row or PCM sample).
--Charsets/palettes bound to the current board which for displaying in the editor.
+-Charsets/palettes bound to the current board via displaying in the editor.
 -Editing of all bomb anim chars outside of #1 in global's "Edit Chars" menu. (CHAR ID values 169-175).
 -FREAD_LONG and FWRITE_LONG counters - both take 4 bytes at once.
 -Display of "Key_pressed", "key_code", "keyn" and "key_release" in the F11 menu, or the debug window.
--Mutable length of time message row is cleared (or even 0 for no expiration).
+-Mutable length of time message row is active (or even 0 for no expiration).
+-Command-line option to load an MZX world at start, with an -e flag for starting in Edit mode.
 -Zoom.
 -Per-pixel camera offset.
 -Overhaul of recursion.
--Per-pixel sprite locations
+-Per-pixel sprite locations.
 -A grid of variable size in the board editor.
--Splicing strings via offsetting by negative values. EX: SET "$word" "-ism" || SET "$word+-6" "atropin" || . "* &$word& yields /"atropinism/""
+-Splicing strings via offsetting by negative values. EX: SET "$word" "-ism" || SET "$word+-6" "atropin" || . "* &$word& yields \"atropinism\""
 -Online support, lozl
 -A SMALLHACKER COUNTER

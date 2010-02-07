@@ -2561,8 +2561,8 @@ NOTE: The above text only applies to ModPlug (the default
 module engine). It is now possible to build using MikMod, to
 support platforms which cannot handle ModPlug. It can play
 formats: {669, AMF, APUN, DSM, FAR, GDM, IT, IMF, MOD, MED,
-MTM, OKT, S3M, STM, STX, ULT, UNI, XM, SAM, WAV, OGG}. SAMs and
-GDMs load natively in MikMod, in contrast to ModPlug.
+MTM, OKT, S3M, STM, STX, ULT, UNI, XM, WAV, OGG}. GDMs load
+natively in MikMod, in contrast to ModPlug.
 
 $Using Sound and Music in Your Own Games
 
