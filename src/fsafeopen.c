@@ -409,7 +409,7 @@ char *fsafegets(char *s, int size, FILE *stream)
   char *ret = fgets(s, size, stream);
   if (ret) {
     int len = strlen(ret);
-    if (len > 0 && (s[len - 1] == '\r' || s[len - 1] == '\n'))
+    if (len > 1 && (s[len - 2] == '\r' || s[len - 2] == '\n'))
       s[len - 1] = '\0';
   }
   return ret;
