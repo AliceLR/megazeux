@@ -53,7 +53,7 @@ typedef struct
   int freq;
 } noise;
 
-extern char *sfx_strs[NUM_SFX];
+extern char sfx_strs[NUM_SFX][69];
 extern char *custom_sfx; //Ref. in chunks of 69
 extern int custom_sfx_on; //1 to turn on custom sfx
 

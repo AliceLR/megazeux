@@ -317,7 +317,7 @@ void sound_system(void)
   }
 }
 
-char *sfx_strs[NUM_SFX] =
+char sfx_strs[NUM_SFX][69] =
 {
   "5c-gec-gec", // Gem
   "5c-gec-gec", // Magic Gem
