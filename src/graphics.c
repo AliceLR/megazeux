@@ -866,7 +866,7 @@ void init_video(config_info *conf)
 
   set_graphics_output(conf->video_output);
 
-  snprintf(temp, "MegaZeux %s", version_number_string, MAX_VERSION_LENGTH - 1);
+  snprintf(temp, MAX_VERSION_LENGTH - 1, "MegaZeux %s", version_number_string);
   temp[MAX_VERSION_LENGTH - 1] = '\0';
 
   SDL_WM_SetCaption(temp, "MZX");
