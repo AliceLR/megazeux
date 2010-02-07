@@ -130,7 +130,7 @@ void load_world_file(World *mzx_world, char *name)
   int fade = 0;
 
   // Load world curr_file
-  end_mod();
+  end_module();
   clear_sfx_queue();
   //Clear screen
   clear_screen(32, 7);
@@ -140,7 +140,7 @@ void load_world_file(World *mzx_world, char *name)
   send_robot_def(mzx_world, 0, 10);
 
   src_board = mzx_world->current_board;
-  load_mod(src_board->mod_playing);
+  load_module(src_board->mod_playing);
   strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
   set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
@@ -326,7 +326,7 @@ void title_screen(World *mzx_world)
             {
               src_board = mzx_world->current_board;
               // Swap in starting board
-              load_mod(src_board->mod_playing);
+              load_module(src_board->mod_playing);
               strcpy(mzx_world->real_mod_playing,
                src_board->mod_playing);
 
@@ -348,7 +348,7 @@ void title_screen(World *mzx_world)
 
               // Done playing- load world again
               // Already faded out from play_game()
-              end_mod();
+              end_module();
               // Clear screen
               clear_screen(32, 7);
               // Palette
@@ -360,7 +360,7 @@ void title_screen(World *mzx_world)
                 reload_world(mzx_world, curr_file, &fade);
 
                 src_board = mzx_world->current_board;
-                load_mod(src_board->mod_playing);
+                load_module(src_board->mod_playing);
                 strcpy(mzx_world->real_mod_playing,
                  src_board->mod_playing);
                 set_counter(mzx_world, "TIME",
@@ -426,7 +426,7 @@ void title_screen(World *mzx_world)
 
             if(strcmp(src_board->mod_playing, "*") &&
              strcmp(src_board->mod_playing, old_mod_playing))
-              load_mod(src_board->mod_playing);
+              load_module(src_board->mod_playing);
 
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
@@ -442,7 +442,7 @@ void title_screen(World *mzx_world)
             play_game(mzx_world, 1);
             // Done playing- load world again
             // Already faded out from play_game()
-            end_mod();
+            end_module();
             // Clear screen
             clear_screen(32, 7);
             // Palette
@@ -451,7 +451,7 @@ void title_screen(World *mzx_world)
             // Reload original file
             reload_world(mzx_world, curr_file, &fade);
             src_board = mzx_world->current_board;
-            load_mod(src_board->mod_playing);
+            load_module(src_board->mod_playing);
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
             set_counter(mzx_world, "TIME", src_board->time_limit, 0);
@@ -498,7 +498,7 @@ void title_screen(World *mzx_world)
           {
             src_board = mzx_world->current_board;
             // Swap in starting board
-            load_mod(src_board->mod_playing);
+            load_module(src_board->mod_playing);
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
 
@@ -518,7 +518,7 @@ void title_screen(World *mzx_world)
 
             // Done playing- load world again
             // Already faded out from play_game()
-            end_mod();
+            end_module();
             // Clear screen
             clear_screen(32, 7);
             // Palette
@@ -529,7 +529,7 @@ void title_screen(World *mzx_world)
             {
               reload_world(mzx_world, curr_file, &fade);
               src_board = mzx_world->current_board;
-              load_mod(src_board->mod_playing);
+              load_module(src_board->mod_playing);
               strcpy(mzx_world->real_mod_playing,
                src_board->mod_playing);
               set_counter(mzx_world, "TIME",
@@ -1144,7 +1144,7 @@ void game_settings(World *mzx_world)
       set_music_volume(music_volume);
 
       if(mzx_world->active)
-        volume_mod(src_board->volume);
+        volume_module(src_board->volume);
     }
 
     if(sound_volume != get_sound_volume())
@@ -1159,7 +1159,7 @@ void game_settings(World *mzx_world)
     {
       // Turn off music.
       if(get_music_on_state() && (mzx_world->active))
-        end_mod();
+        end_module();
     }
     else
 
@@ -1167,7 +1167,7 @@ void game_settings(World *mzx_world)
     {
       // Turn on music.
       strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-      load_mod(mzx_world->real_mod_playing);
+      load_module(mzx_world->real_mod_playing);
     }
 
     set_music_on(music);
@@ -1347,7 +1347,7 @@ void play_game(World *mzx_world, int fadein)
             // Reset this
             src_board = mzx_world->current_board;
             // Swap in starting board
-            load_mod(src_board->mod_playing);
+            load_module(src_board->mod_playing);
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
 
@@ -1531,7 +1531,7 @@ void play_game(World *mzx_world, int fadein)
             find_player(mzx_world);
 
             // Swap in starting board
-            load_mod(src_board->mod_playing);
+            load_module(src_board->mod_playing);
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
 
@@ -2642,7 +2642,7 @@ int update(World *mzx_world, int game, int *fadein)
       }
     }
     src_board->volume = result_volume;
-    volume_mod(volume);
+    volume_module(volume);
   }
 
   // Slow_time- flip slowed
@@ -2854,7 +2854,7 @@ int update(World *mzx_world, int game, int *fadein)
 
   if(update_music)
   {
-    load_mod(src_board->mod_playing);
+    load_module(src_board->mod_playing);
     strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
   }
 
@@ -3141,7 +3141,7 @@ int update(World *mzx_world, int game, int *fadein)
   if(mzx_world->swapped)
   {
     src_board = mzx_world->current_board;
-    load_mod(src_board->mod_playing);
+    load_module(src_board->mod_playing);
     strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
 
     send_robot_def(mzx_world, 0, 10);

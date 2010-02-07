@@ -10,7 +10,6 @@ STRIP     = strip --strip-unneeded
 
 # standard libraries
 LIBS      = `sdl-config --static-libs` \
-            ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
             ${PREFIX}/lib/libvorbisfile.a ${PREFIX}/lib/libvorbis.a \
             ${PREFIX}/lib/libogg.a
 

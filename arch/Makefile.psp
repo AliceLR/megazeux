@@ -21,8 +21,7 @@ BINNAME_STRIP = ${TARGET}${BINEXT}.strip
 STRIP = /bin/true 
 
 # standard libraries
-LIBS += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-        -lc -lpsppower -lvorbisidec
+LIBS += -lc -lpsppower -lvorbisidec
 
 # additional flags
 INCLUDES += -DPSP_BUILD -DUSE_TREMOR -I${PREFIX}/sdk/include

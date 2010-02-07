@@ -20,8 +20,13 @@ objs  = fastmix.${o} load_669.${o} load_abc.${o} load_amf.${o} load_ams.${o} \
         load_xm.${o} mmcmp.${o} modplug.${o} snd_dsp.${o} sndfile.${o} \
         snd_flt.${o} snd_fx.${o} sndmix.${o} tables.${o}
 
+ifeq (${BUILD},1)
 libs:	${objs}
 	${AR} crus libmodplug.a ${objs}
+else
+libs:
+	@echo "--> Building of libmodplug disabled."
+endif
 
 clean:
 	rm -f ${objs} *~ libmodplug.a

@@ -22,8 +22,7 @@ BINEXT = .exe
 INCLUDES += -DOPENGL_LINKED
 
 # standard libraries
-LIBS += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-        -lvorbisfile -lvorbis -logg -lopengl32
+LIBS += -lvorbisfile -lvorbis -logg -lopengl32
 
 # debug does something different
 ifdef DEBUG

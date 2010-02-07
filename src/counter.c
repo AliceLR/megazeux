@@ -1725,7 +1725,7 @@ int mod_order_read(World *mzx_world, function_counter *counter,
 void mod_order_write(World *mzx_world, function_counter *counter,
  char *name, int value, int id)
 {
-  jump_mod(value);
+  jump_module(value);
 }
 
 int mod_position_read(World *mzx_world, function_counter *counter,

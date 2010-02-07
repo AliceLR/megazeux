@@ -9,8 +9,7 @@ debug: subdir-debug
 STRIP    ?= strip --strip-unneeded
 
 # standard libraries
-LIBS     += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a \
-            -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
+LIBS     += -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
 
 # switch locking method
 INCLUDES += -DPTHREAD_MUTEXES

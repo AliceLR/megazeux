@@ -19,11 +19,17 @@ usage() {
 	echo "  mingw32        Use MinGW32 on Linux, to build for win32"
 	echo
 	echo "Supported <option> values:"
-	echo "  --disable-x11  Disables X11, removing binary dependency."
-	echo "  --enable-x11   Enables X11 support (default)."
+	echo "  --disable-x11     Disables X11, removing binary dependency."
+	echo "  --enable-x11      Enables X11 support (default)."
 	echo
-	echo "  --disable-gl   Disables all OpenGL renderers."
-	echo "  --enable-gl    Enables OpenGL, runtime loaded (default)."
+	echo "  --disable-gl      Disables all OpenGL renderers."
+	echo "  --enable-gl       Enables OpenGL, runtime loaded (default)."
+	echo
+	echo "  --disable-modplug Disables ModPlug music engine."
+	echo "  --enable-modplug  Enables ModPlug music engine (default)."
+	echo
+	echo "  --enable-mikmod   Enables MikMod music engine."
+	echo "  --disable-mikmod  Disables MikMod music engine (default)."
 	echo
 	echo "e.g.: ./config.sh --platform linux --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -41,6 +47,8 @@ PREFIX="/usr"
 SYSCONFDIR="/etc"
 X11="true"
 OPENGL="true"
+MODPLUG="true"
+MIKMOD="false"
 
 #
 # User may override above settings
@@ -69,6 +77,12 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-gl" ] && OPENGL="false"
 	[ "$1" = "--enable-gl" ]  && OPENGL="true"
+
+	[ "$1" = "--disable-modplug" ] && MODPLUG="false"
+	[ "$1" = "--enable-modplug" ]  && MODPLUG="true"
+
+	[ "$1" = "--disable-mikmod" ] && MIKMOD="false"
+	[ "$1" = "--enable-mikmod" ]  && MIKMOD="true"
 
 	shift
 done
@@ -179,11 +193,29 @@ if [ "$PLATFORM" != "psp" ]; then
 	# asked for opengl?
 	if [ "$OPENGL" = "true" ]; then
 		echo "OpenGL support enabled."
-
-		# enable the C++ bits
 		echo "#define CONFIG_OPENGL" >> src/config.h
 	else
 		echo "OpenGL support disabled."
+	fi
+fi
+
+#
+# GP2X needs Mikmod, other platforms can pick
+#
+if [ "$MODPLUG" = "true" -a "$PLATFORM" != "gp2x" ]; then
+	echo "Selected Modplug music engine."
+	echo "#define CONFIG_MODPLUG" >> src/config.h
+	echo "BUILD_MODPLUG=1" >> Makefile.platform
+else
+	# disable building local copy of ModPlug in either case
+	echo "BUILD_MODPLUG=0" >> Makefile.platform
+
+	if [ "$MIKMOD" = "true" ]; then
+		echo "Selected Mikmod music engine."
+		echo "#define CONFIG_MIKMOD" >> src/config.h
+		echo "BUILD_MIKMOD=1" >> Makefile.platform
+	else
+		echo "Music engine disabled."
 	fi
 fi
 

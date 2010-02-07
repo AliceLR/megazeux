@@ -130,7 +130,7 @@
    mzx_world->board_list[new_board];            \
 
 #define fix_mod()                               \
-  load_mod(src_board->mod_playing);             \
+  load_module(src_board->mod_playing);          \
   strcpy(mzx_world->real_mod_playing,           \
    src_board->mod_playing);                     \
 
@@ -795,7 +795,7 @@ void edit_world(World *mzx_world)
   create_blank_world(mzx_world);
   m_show();
 
-  end_mod();
+  end_module();
 
   synchronize_board_values();
   update_screen();
@@ -1790,7 +1790,7 @@ void edit_world(World *mzx_world)
             {
               int fade;
               // Load world curr_file
-              end_mod();
+              end_module();
               reload_world(mzx_world, current_world, &fade);
 
               mzx_world->current_board_id = mzx_world->first_board;
@@ -2137,14 +2137,14 @@ void edit_world(World *mzx_world)
               if(!choose_file(mzx_world, mod_ext, new_mod,
                "Choose a module file", 0))
               {
-                load_mod(new_mod);
+                load_module(new_mod);
                 strcpy(src_board->mod_playing, new_mod);
                 strcpy(mzx_world->real_mod_playing, new_mod);
               }
             }
             else
             {
-              end_mod();
+              end_module();
               src_board->mod_playing[0] = 0;
               mzx_world->real_mod_playing[0] = 0;
             }
@@ -2166,7 +2166,7 @@ void edit_world(World *mzx_world)
                "Choose a module file (listening only)", 1, 0,
                NULL, 0, 0, 1))
               {
-                load_mod(new_mod);
+                load_module(new_mod);
                 strcpy(current_listening_mod, new_mod);
                 getcwd(current_listening_dir, MAX_PATH);
                 listening_flag = 1;
@@ -2176,10 +2176,10 @@ void edit_world(World *mzx_world)
             }
             else
             {
-              end_mod();
+              end_module();
               listening_flag = 0;
               if(mzx_world->real_mod_playing[0])
-                load_mod(mzx_world->real_mod_playing);
+                load_module(mzx_world->real_mod_playing);
             }
           }
         }
@@ -3026,7 +3026,7 @@ void edit_world(World *mzx_world)
             mzx_world->player_restart_y = mzx_world->player_y;
 
             strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-            load_mod(mzx_world->real_mod_playing);
+            load_module(mzx_world->real_mod_playing);
 
             mzx_world->editing = 1;
 
@@ -3051,7 +3051,7 @@ void edit_world(World *mzx_world)
             {
               getcwd(current_dir, MAX_PATH);
               chdir(current_listening_dir);
-              load_mod(current_listening_mod);
+              load_module(current_listening_mod);
               chdir(current_dir);
             }
 
@@ -3206,7 +3206,7 @@ void edit_world(World *mzx_world)
             mzx_world->current_board = src_board;
             synchronize_board_values();
             fix_scroll();
-            end_mod();
+            end_module();
             src_board->mod_playing[0] = 0;
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
@@ -3244,7 +3244,7 @@ void edit_world(World *mzx_world)
 
             synchronize_board_values();
             fix_scroll();
-            end_mod();
+            end_module();
           }
 
           modified = 1;
@@ -3291,7 +3291,7 @@ void edit_world(World *mzx_world)
          (key == SDLK_KP_MULTIPLY))
         {
           if(src_board->mod_playing[0])
-            end_mod();
+            end_module();
           src_board->mod_playing[0] = '*';
           src_board->mod_playing[1] = 0;
 
@@ -3434,7 +3434,7 @@ void edit_world(World *mzx_world)
   clear_world(mzx_world);
   clear_global_data(mzx_world);
   cursor_off();
-  end_mod();
+  end_module();
   m_hide();
   clear_screen(32, 7);
   insta_fadeout();

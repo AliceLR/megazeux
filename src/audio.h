@@ -38,9 +38,13 @@ __M_BEGIN_DECLS
 
 #endif
 
+#include "config.h"
 #include "SDL.h"
-#include "modplug.h"
 #include "configure.h"
+
+#ifdef CONFIG_MODPLUG
+#include "modplug.h"
+#endif
 
 #define FP_SHIFT 13
 #define FP_AND ((1 << FP_SHIFT) - 1)
@@ -90,13 +94,6 @@ struct _sampled_stream
 typedef struct
 {
   sampled_stream s;
-  ModPlugFile *module_data;
-  Uint32 effective_frequency;
-} modplug_stream;
-
-typedef struct
-{
-  sampled_stream s;
   Uint8 *wav_data;
   Uint32 data_offset;
   Uint32 data_length;
@@ -130,7 +127,12 @@ typedef struct
 typedef struct
 {
   SDL_AudioSpec audio_settings;
+
+#ifdef CONFIG_MODPLUG
+  // for config.txt settings only
   ModPlug_Settings mod_settings;
+#endif
+
   Sint32 *mix_buffer;
 
   Uint32 output_frequency;
@@ -155,15 +157,15 @@ typedef struct
 } audio_struct;
 
 void init_audio(config_info *conf);
-void load_mod(char *filename);
-void end_mod(void);
+void load_module(char *filename);
+void end_module(void);
 void play_sample(int freq, char *filename);
 void end_sample(void);
-void jump_mod(int order);
+void jump_module(int order);
 int get_order();
-void volume_mod(int vol);
-void mod_exit(void);
-void mod_init(void);
+void volume_module(int vol);
+void module_exit(void);
+void module_init(void);
 void spot_sample(int freq, int sample);
 void shift_frequency(int freq);
 int get_frequency();
@@ -185,6 +187,33 @@ int get_sfx_volume();
 void set_music_volume(int volume);
 void set_sound_volume(int volume);
 void set_sfx_volume(int volume);
+
+/*** these should only be used by audio plugins */
+
+extern audio_struct audio;
+
+void sampled_negative_threshold(sampled_stream *s_src);
+void sampled_set_buffer(sampled_stream *s_src);
+void sampled_mix_data(sampled_stream *s_src, Sint32 *dest_buffer,
+ Uint32 len);
+void sampled_destruct(audio_stream *a_src);
+void initialize_sampled_stream(sampled_stream *s_src,
+ void (* set_frequency)(sampled_stream *s_src, Uint32 frequency),
+ Uint32 (* get_frequency)(sampled_stream *s_src),
+ Uint32 frequency, Uint32 channels, Uint32 use_volume);
+void construct_audio_stream(audio_stream *a_src,
+ Uint32 (* mix_data)(audio_stream *a_src, Sint32 *buffer,
+  Uint32 len),
+ void (* set_volume)(audio_stream *a_src, Uint32 volume),
+ void (* set_repeat)(audio_stream *a_src, Uint32 repeat),
+ void (* set_order)(audio_stream *a_src, Uint32 order),
+ void (* set_position)(audio_stream *a_src, Uint32 pos),
+ Uint32 (* get_order)(audio_stream *a_src),
+ Uint32 (* get_position)(audio_stream *a_src),
+ void (* destruct)(audio_stream *a_src),
+ Uint32 volume, Uint32 repeat);
+
+/*** end audio plugins exports */
 
 extern int error_mode;
 

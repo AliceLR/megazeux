@@ -5,14 +5,15 @@ include ../Makefile.in
 include ../Makefile.platform
 
 # MZX requires some additional flags
-CXXFLAGS += -W -Wno-unused-parameter
-CXXFLAGS += -ffast-math -funsigned-char -DMZX_VERSION=\"${VERSTRING}\"
-CFLAGS = ${CXXFLAGS}
+CFLAGS += -W -Wno-unused-parameter
+CFLAGS += -ffast-math -funsigned-char -DMZX_VERSION=\"${VERSTRING}\"
+CXXFLAGS = ${CFLAGS}
 
 # standard MZX includes
-INCLUDES += -I${PREFIX}/include -I../${MODPLUG} -I../${GDM2S3M} \
-            -I../${MODPLUG}/libmodplug
+INCLUDES += -I${PREFIX}/include
+MZX       = ../${TARGET}
 
+# always built in
 OBJS      = main.${o} graphics.${o} window.${o} hexchar.${o} event.${o} \
             error.${o} helpsys.${o} world.${o} board.${o} robot.${o} \
             idput.${o} intake.${o} sfx.${o} scrdisp.${o} data.${o} game.${o} \
@@ -22,10 +23,22 @@ OBJS      = main.${o} graphics.${o} window.${o} hexchar.${o} event.${o} \
             param.${o} sfx_edit.${o} fill.${o} rasm.${o} robo_ed.${o} \
             configure.${o} fsafeopen.${o} macro.${o}
 
-MZX       = ../${TARGET}
+# only built in if we picked modplug
+ifeq (${BUILD_MODPLUG},1)
+INCLUDES += -I../${GDM2S3M} -I../${MODPLUG} -I../${MODPLUG}/libmodplug
+LIBS += ../${GDM2S3M}/libgdm2s3m.a ../${MODPLUG}/libmodplug.a -lstdc++
+OBJS += audio_modplug.${o}
+endif
 
+# only built in if we picked mikmod
+ifeq (${BUILD_MIKMOD},1)
+LIBS += -L${PREFIX} -lmikmod
+OBJS += audio_mikmod.${o}
+endif
+
+# only built in on Win32/MinGW32
 ifdef ICON
-ICONRC = ../contrib/icons/ghostblue.${o}
+OBJS += ../contrib/icons/quantump.${o}
 endif
 
 ifdef DEBUG
@@ -36,8 +49,8 @@ subdir:
 subdir-clean:
 	cd utils && ${MAKE} clean DEBUG=1 && cd ../../..
 
-mzx:	subdir ${OBJS} ${ICONRC}
-	${CC} ${OBJS} ${ICONRC} ${LIBS} -o ${MZX}.dbg${BINEXT} -lstdc++
+mzx:	subdir ${OBJS}
+	${CC} ${OBJS} ${LIBS} -o ${MZX}.dbg${BINEXT}
 	@echo "DEBUG BUILD AVAILABLE AT ${MZX}.dbg${BINEXT}"
 
 else
@@ -48,11 +61,11 @@ subdir:
 subdir-clean:
 	cd utils && ${MAKE} clean && cd ../../..
 
-mzx:	subdir ${OBJS} ${ICONRC}
-	${CC} ${OBJS} ${ICONRC} ${LIBS} -o ${MZX}${BINEXT} -lstdc++
+mzx:	subdir ${OBJS}
+	${CC} ${OBJS} ${LIBS} -o ${MZX}${BINEXT}
 	${STRIP} ${MZX}${BINEXT}
 
 endif
 
 clean: subdir-clean
-	rm -f ${OBJS} ${ICONRC} *~ ${MZX}${BINEXT} ${MZX}.dbg${BINEXT} 
+	rm -f ${OBJS} *~ ${MZX}${BINEXT} ${MZX}.dbg${BINEXT}

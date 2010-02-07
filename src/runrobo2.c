@@ -74,14 +74,14 @@ void magic_load_mod(World *mzx_world, char *filename)
   {
     filename[mod_name_size - 1] = 0;
     if(strcmp(src_board->mod_playing, filename))
-      load_mod(filename);
+      load_module(filename);
 
     src_board->mod_playing[0] = '*';
   }
   else
   {
     if(filename[0] != '*')
-      load_mod(filename);
+      load_module(filename);
 
     strcpy(src_board->mod_playing, filename);
   }
@@ -2199,7 +2199,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         char mod_name_buffer[ROBOT_MAX_TR];
         tr_msg(mzx_world, cmd_ptr + 2, id, mod_name_buffer);
         magic_load_mod(mzx_world, mod_name_buffer);
-        volume_mod(src_board->volume);
+        volume_module(src_board->volume);
         break;
       }
 
@@ -2226,13 +2226,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
         src_board->volume = volume;
         src_board->volume_target = volume;
 
-        volume_mod(volume);
+        volume_module(volume);
         break;
       }
 
       case 41: // End mod
       {
-        end_mod();
+        end_module();
         src_board->mod_playing[0] = 0;
         mzx_world->real_mod_playing[0] = 0;
         break;
@@ -4010,7 +4010,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 144: // jump mod order #
       {
-        jump_mod(parse_param(mzx_world, cmd_ptr + 1, id));
+        jump_module(parse_param(mzx_world, cmd_ptr + 1, id));
         break;
       }
 
@@ -4450,7 +4450,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         magic_load_mod(mzx_world, name_buffer);
         src_board->volume = 0;
-        volume_mod(0);
+        volume_module(0);
         break;
       }
 
