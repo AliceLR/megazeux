@@ -4,14 +4,21 @@
 
 .PHONY: ${libmodplug}_clean
 
-CFLAGS += ${libmodplug_includes}
-CXXFLAGS += ${libmodplug_includes}
+.SUFFIXES: .cpp
 
 libmodplug_base = contrib/libmodplug/src
 libmodplug = ${libmodplug_base}/libmodplug.a
 
-libmodplug_includes = -DHAVE_INTTYPES_H -I${libmodplug_base} \
-                      -I${libmodplug_base}/libmodplug
+libmodplug_cflags = -DHAVE_INTTYPES_H -I${libmodplug_base} \
+                    -I${libmodplug_base}/libmodplug
+
+${libmodplug_base}/%.o ${libmodplug_base}/%.dbg.o: ${libmodplug_base}/%.cpp
+ifeq (${V},1)
+	${CXX} ${CXXFLAGS} ${libmodplug_cflags} -c $< -o $@
+else
+	@echo "  CXX     " $<
+	@${CXX} ${CXXFLAGS} ${libmodplug_cflags} -c $< -o $@
+endif
 
 libmodplug_objs = \
     ${libmodplug_base}/fastmix.${o} ${libmodplug_base}/load_669.${o} \

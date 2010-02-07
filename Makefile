@@ -10,35 +10,18 @@ include Makefile.platform
 
 .PHONY: clean
 
-##
-# Version info
-##
-
 VERSION=2.81g
 TARGET=mzx281g
-
-##
-# Global definitions
-##
 
 CC  ?= gcc
 CXX ?= g++
 AR  ?= ar
 
-##
-# Default includes/libs if not Platform provided
-##
 SDL_CFLAGS  ?= `sdl-config --cflags`
 SDL_LDFLAGS ?= `sdl-config --libs`
 
 VORBIS_CFLAGS  ?= -I${PREFIX}/include
 VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
-
-ifneq (${DATE},0)
-VERSTRING = ${VERSION}\ \(`date +%Y%m%d`\)
-else
-VERSTRING = ${VERSION}
-endif
 
 ifeq (${DEBUG},1)
 CFLAGS    = -g -Wall -std=gnu99 -DDEBUG
@@ -50,37 +33,24 @@ CXXFLAGS += -O2 -Wall
 o         = o
 endif
 
-##
-# Magical targets
-##
-
-.SUFFIXES: .cpp .c
-
-%.o %.dbg.o: %.cpp
-ifeq (${V},1)
-	${CXX} ${CXXFLAGS} ${INCLUDES} -c $< -o $@
-else
-	@echo "  CXX     " $<
-	@${CXX} ${CXXFLAGS} ${INCLUDES} -c $< -o $@
-endif
-
-%.o %.dbg.o: %.c
-ifeq (${V},1)
-	${CC} ${CFLAGS} ${INCLUDES} -c $< -o $@
-else
-	@echo "  CC      " $<
-	@${CC} ${CFLAGS} ${INCLUDES} -c $< -o $@
-endif
-
-##
-# Fragment includes, and most of the work
-##
-
+#
+# The SUPPRESS_BUILD hack is required to allow the placebo "dist"
+# Makefile to provide an 'all:' target, which allows it to print
+# a message. We don't want to pull in other targets, confusing Make.
+#
 ifneq (${SUPPRESS_BUILD},1)
+
+ifneq (${DEBUG},1)
+mzx = ${TARGET}${BINEXT}
+else
+mzx = ${TARGET}.dbg${BINEXT}
+endif
 
 ifeq (${BUILD_MODPLUG},1)
 BUILD_GDM2S3M=1
 endif
+
+all: ${mzx}
 
 include src/Makefile.in
 

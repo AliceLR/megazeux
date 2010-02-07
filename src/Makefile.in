@@ -2,29 +2,39 @@
 # MegaZeux Makefile fragment
 ##
 
-all: mzx281g
-
 include contrib/gdm2s3m/src/Makefile.in
 include contrib/libmodplug/src/Makefile.in
 
 .PHONY: ${mzx}_clean ${txt2hlp}_clean
 
-CFLAGS += ${mzx_cflags} ${mzx_includes}
-CXXFLAGS += ${mzx_cxxflags} ${mzx_includes}
-
-ifneq (${DEBUG},1)
-mzx = ${TARGET}${BINEXT}
+ifneq (${DATE},0)
+mzx_cflags += -DMZX_VERSION=\"${VERSION}\ \(`date +%Y%m%d`\)\"
 else
-mzx = ${TARGET}.dbg${BINEXT}
+mzx_cflags += -DMZX_VERSION=\"${VERSION}\"
 endif
 
 mzx_base     = src
-mzx_cflags   += -W -Wno-unused-parameter
-mzx_cflags   += -ffast-math -funsigned-char -DMZX_VERSION=\"${VERSTRING}\"
+mzx_cflags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
 mzx_cflags   += ${SDL_CFLAGS} ${VORBIS_CFLAGS}
 mzx_cflags   += -I${mzx_base} -I${PREFIX}/include
 mzx_ldflags  += ${SDL_LDFLAGS} ${VORBIS_LDFLAGS}
 mzx_cxxflags = ${mzx_cflags}
+
+${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.cpp
+ifeq (${V},1)
+	${CXX} ${CXXFLAGS} ${mzx_cflags} -c $< -o $@
+else
+	@echo "  CXX     " $<
+	@${CXX} ${CXXFLAGS} ${mzx_cflags} -c $< -o $@
+endif
+
+${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.c
+ifeq (${V},1)
+	${CC} ${CFLAGS} ${mzx_cflags} -c $< -o $@
+else
+	@echo "  CC      " $<
+	@${CC} ${CFLAGS} ${mzx_cflags} -c $< -o $@
+endif
 
 # FIXME: Sort alphabetically
 mzx_objs = \
@@ -57,6 +67,8 @@ mzx_objs += ${mzx_base}/render_gl1.${o} ${mzx_base}/render_gl2.${o}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
+mzx_cflags += -I${gdm2s3m_base}
+mzx_cflags += -I${libmodplug_base} -I${libmodplug_base}/libmodplug
 mzx_ldflags += ${gdm2s3m} ${libmodplug} -lstdc++
 mzx_objs += ${mzx_base}/audio_modplug.${o}
 endif
