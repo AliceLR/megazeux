@@ -1692,7 +1692,7 @@ void edit_world(World *mzx_world)
               if(!src_board->overlay_mode)
               {
                 error("Overlay mode is not on (see Board Info)",
-                 0, 24, 0x1103);
+                 0, 8, 0x1103);
               }
               else
               {
@@ -2556,7 +2556,7 @@ void edit_world(World *mzx_world)
               {
                 if(!src_board->overlay_mode)
                 {
-                  error("Overlay mode is not on (see Board Info)", 0, 24,
+                  error("Overlay mode is not on (see Board Info)", 0, 8,
                    0x1103);
                   draw_mode = 0;
                 }

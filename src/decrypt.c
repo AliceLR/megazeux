@@ -104,7 +104,7 @@ void decrypt(const char *file_name)
   dest = fopen(file_name, "wb");
   if(!dest)
   {
-    error("Cannot decrypt write-protected world.", 1, 24, 0x0DD5);
+    error("Cannot decrypt write-protected world.", 1, 8, 0x0DD5);
     return;
   }
   pro_method = *src_ptr;

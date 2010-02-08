@@ -5440,7 +5440,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           {
             if(reload_swap(mzx_world, translated_name, &fade))
             {
-              redo_load = error("Error swapping to next world", 1, 23, 0x2C01);
+              redo_load = error("Error swapping to next world", 1, 7, 0x2C01);
             }
           } while(redo_load == 2);
 

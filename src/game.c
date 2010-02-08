@@ -146,8 +146,7 @@ static void load_world_file(World *mzx_world, char *name)
     strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
     set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
-    set_mesg(mzx_world,
-     "** BETA **    F1: Help   Enter: Menu   Ctrl-Alt-Enter: Fullscreen");
+    set_mesg(mzx_world, "F1: Help   Enter: Menu   Ctrl-Alt-Enter: Fullscreen");
   }
 }
 

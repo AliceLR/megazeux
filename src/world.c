@@ -185,7 +185,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
 
   if(fp == NULL)
   {
-    error("Error saving world", 1, 24, 0x0D01);
+    error("Error saving world", 1, 8, 0x0D01);
     return -1;
   }
 
@@ -723,7 +723,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
 
   if(fp == NULL)
   {
-    error("Error loading world", 1, 24, 0x0D01);
+    error("Error loading world", 1, 8, 0x0D01);
     return 1;
   }
 
@@ -745,11 +745,11 @@ static int load_world(World *mzx_world, const char *file, int savegame,
       if(version)
       {
         error(".SAV files from other versions of MZX are not supported",
-         1, 24, 0x2101);
+         1, 8, 0x2101);
       }
       else
       {
-        error("Unrecognized magic: file may not be .SAV file", 1, 24, 0x2101);
+        error("Unrecognized magic: file may not be .SAV file", 1, 8, 0x2101);
       }
       fclose(fp);
       return 1;
@@ -771,7 +771,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     if(protection_method)
     {
       int do_decrypt;
-      error("This world is password protected.", 1, 24, 0x0D02);
+      error("This world is password protected.", 1, 8, 0x0D02);
       do_decrypt = confirm(mzx_world, "Would you like to decrypt it?");
       if(!do_decrypt)
       {
@@ -785,7 +785,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
       }
       else
       {
-        error("Cannot load password protected worlds.", 1, 24, 0x0D02);
+        error("Cannot load password protected worlds.", 1, 8, 0x0D02);
         fclose(fp);
         return 1;
       }
@@ -816,7 +816,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
 
     if(!version)
     {
-      error(error_string, 1, 24, 0x0D02);
+      error(error_string, 1, 8, 0x0D02);
       fclose(fp);
       return 1;
     }
@@ -1172,7 +1172,7 @@ int append_world(World *mzx_world, const char *file)
   FILE *fp = fopen(file, "rb");
   if(fp == NULL)
   {
-    error("Error loading world", 1, 24, 0x0D01);
+    error("Error loading world", 1, 8, 0x0D01);
     return 1;
   }
 
@@ -1184,7 +1184,7 @@ int append_world(World *mzx_world, const char *file)
   if(protection_method)
   {
     int do_decrypt;
-    error("This world is password protected.", 1, 24, 0x0D02);
+    error("This world is password protected.", 1, 8, 0x0D02);
     do_decrypt = confirm(mzx_world, "Would you like to decrypt it?");
     if(!do_decrypt)
     {
@@ -1198,7 +1198,7 @@ int append_world(World *mzx_world, const char *file)
     }
     else
     {
-      error("Cannot load password protected worlds.", 1, 24, 0x0D02);
+      error("Cannot load password protected worlds.", 1, 8, 0x0D02);
       fclose(fp);
       return 1;
     }
@@ -1229,7 +1229,7 @@ int append_world(World *mzx_world, const char *file)
 
   if(!version)
   {
-    error(error_string, 1, 24, 0x0D02);
+    error(error_string, 1, 8, 0x0D02);
     fclose(fp);
     return 1;
   }

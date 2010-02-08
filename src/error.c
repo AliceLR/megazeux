@@ -30,8 +30,8 @@
 
 // Call for an error OR a warning. Type=0 for a warning, 1 for a recoverable
 // error, 2 for a fatal error. Options are (bits set in options and returned
-// as action) FAIL=1, RETRY=2, EXIT TO DOS=4, OK=8, HELP=16 (OK is for usually
-// only for warnings) Type = 3 for a critical error
+// as action) FAIL=1, RETRY=2, EXIT TO DOS=4, OK=8 (OK is for usually only
+// for warnings) Type = 3 for a critical error
 
 int error(const char *string, char type, char options, unsigned int code)
 {
@@ -93,11 +93,6 @@ int error(const char *string, char type, char options, unsigned int code)
   {
     write_string(", O for OK", t1, 13, 78, 0);
     t1 += 10;
-  }
-  if(options & 16)
-  {
-    write_string(", F1 for Help", t1, 13, 78, 0);
-    t1 += 13;
   }
 
   draw_char('.', 78, t1, 13);

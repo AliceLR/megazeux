@@ -74,7 +74,7 @@ int save_screen(void)
   if(cur_screen >= NUM_SAVSCR)
   {
     cur_screen = 0;
-    error("Windowing code bug", 2, 20, 0x1F01);
+    error("Windowing code bug", 2, 4, 0x1F01);
   }
 
   get_screen(screen_storage[cur_screen]);
@@ -88,7 +88,7 @@ int save_screen(void)
 int restore_screen(void)
 {
   if(cur_screen == 0)
-    error("Windowing code bug", 2, 20, 0x1F02);
+    error("Windowing code bug", 2, 4, 0x1F02);
   cur_screen--;
   set_screen(screen_storage[cur_screen]);
   return 0;
@@ -3503,7 +3503,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
           {
             char error_str[512];
             sprintf(error_str, "%s already exists.", ret);
-            error(error_str, 2, 20, 0x0000);
+            error(error_str, 2, 4, 0x0000);
           }
         }
         break;
