@@ -589,8 +589,8 @@ void replace_current_board(World *mzx_world, char *name)
     // MB2 are versions <= 2.51s1, otherwise it's M\x02\x?? where
     // ?? is some version less than or equal to this MZX's version
     if(!strcmp(version_string + 1, "B2") ||
-     ((version_string[1] == (WORLD_VERSION >> 8) & 0xff) &&
-      (version_string[2] <= WORLD_VERSION & 0xff)))
+     ((version_string[1] == ((WORLD_VERSION >> 8) & 0xff)) &&
+      (version_string[2] <= (WORLD_VERSION & 0xff))))
     {
       clear_board(src_board);
       src_board = load_board_allocate_direct(input_mzb, 0);
