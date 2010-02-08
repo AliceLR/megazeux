@@ -1703,7 +1703,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
       {
         case SDLK_F1:
         {
-          if(mzx_world->version >= 0x0209 &&
+          if(mzx_world->version < 0x0209 ||
            get_counter(mzx_world, "HELP_MENU", 0))
           {
             m_show();
@@ -1715,8 +1715,8 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
         case SDLK_F2:
         {
           // Settings
-          if(((mzx_world->version >= 0x0209) && 
-           get_counter(mzx_world, "F2_MENU", 0)) ||
+          if(mzx_world->version < 0x0209 ||
+           get_counter(mzx_world, "F2_MENU", 0) ||
            !mzx_world->active)
           {
             m_show();
@@ -1735,7 +1735,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           send_robot_all(mzx_world, "KeyEnter");
           // Menu
           // 19x9
-          if(mzx_world->version >= 0x0209 && enter_menu_status)
+          if(mzx_world->version < 0x0209 || enter_menu_status)
           {
             int key;
             save_screen();
