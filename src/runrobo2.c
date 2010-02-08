@@ -3317,7 +3317,14 @@ void run_robot(World *mzx_world, int id, int x, int y)
         // Send label
         if(label_buffer[0])
           gotoed = send_self_label_tr(mzx_world, label_buffer, id);
-        else
+
+        /* If this isn't a label jump, or the jump failed, don't
+         * execute the workaround for subroutines. Subroutine jumps
+         * play tricks with the cur_prog_line variable, so we must not
+         * increment it ourselves. Non-subroutine jumps don't care, so
+         * we don't need to detect these.
+         */
+        if(!gotoed)
           cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
 
         goto breaker;
