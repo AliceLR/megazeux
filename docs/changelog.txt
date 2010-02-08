@@ -97,6 +97,9 @@ USERS
 + Reloading a world that requires switching between SMZX and non-SMZX modes
   will now respect the world's intrinsic palette on the title screen. Fixes
   problems loading non-SMZX games after having an SMZX game loaded.
++ Clamp array offsets on boards. Some older MZX worlds are corrupted and
+  have the endgame_{x,y} coordinates outside of the limits of the endgame
+  board. Fixes "Fourth Power".
 
 DEVELOPERS
 
