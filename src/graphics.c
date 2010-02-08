@@ -60,6 +60,9 @@ static const renderer_data renderers[] =
 #if defined(CONFIG_GP2X)
   { "gp2x", render_gp2x_register },
 #endif
+#if defined(CONFIG_NDS)
+  { "nds", render_nds_register },
+#endif
   { NULL, NULL }
 };
 

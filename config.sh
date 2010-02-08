@@ -240,6 +240,16 @@ else
 fi
 
 #
+# If the NDS arch is enabled, some code has to be compile time
+# enabled too. This might be able to go away eventually.
+#
+if [ "$PLATFORM" = "nds" ]; then
+	echo "Enabling NDS-specific hacks."
+	echo "BUILD_NDS=1" >> Makefile.platform
+	echo "#define CONFIG_NDS" >> src/config.h
+fi
+
+#
 # User may disable the built-in editor
 #
 if [ "$EDITOR" = "true" ]; then
