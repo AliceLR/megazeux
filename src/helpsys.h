@@ -31,7 +31,7 @@ __M_BEGIN_DECLS
 extern int context;//Current context link. 72="No" context link
 void set_context(int con);
 void pop_context(void);
-void help_load(World *mzx_world, char *file_name);
+void help_load(World *mzx_world, const char *file_name);
 void help_system(World *mzx_world);
 
 __M_END_DECLS

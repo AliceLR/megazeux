@@ -26,7 +26,7 @@
 
 __M_BEGIN_DECLS
 
-void decrypt(char *file_name);
+void decrypt(const char *file_name);
 
 __M_END_DECLS
 

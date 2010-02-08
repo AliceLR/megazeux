@@ -624,7 +624,7 @@ void default_config(config_info *conf)
   memcpy(conf, &default_options, sizeof(config_info));
 }
 
-void set_config_from_file(config_info *conf, char *conf_file_name)
+void set_config_from_file(config_info *conf, const char *conf_file_name)
 {
   FILE *conf_file = fopen(conf_file_name, "rb");
 

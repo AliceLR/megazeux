@@ -176,7 +176,7 @@ void ec_mem_load_set(Uint8 *chars);
 void ec_mem_save_set(Uint8 *chars);
 
 void update_palette(void);
-void load_palette(char *fname);
+void load_palette(const char *fname);
 void smzx_palette_loaded(int val);
 void set_screen_mode(Uint32 mode);
 Uint32 get_screen_mode(void);

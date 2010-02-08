@@ -21,7 +21,7 @@
 
 #include "error.h"
 
-void error_handle (char *file, int line, error_code error)
+void error_handle (const char *file, int line, error_code error)
 {
   char msg[256];
 

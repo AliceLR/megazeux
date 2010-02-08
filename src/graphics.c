@@ -138,7 +138,7 @@ Sint32 ec_load_set(char *name)
   return 0;
 }
 
-static Sint32 ec_load_set_secondary(char *name, Uint8 *dest)
+static Sint32 ec_load_set_secondary(const char *name, Uint8 *dest)
 {
   FILE *fp = fopen(name, "rb");
 
@@ -425,7 +425,7 @@ Uint32 get_blue_component(Uint32 color)
   return ((graphics.palette[color].b * 126) + 255) / 510;
 }
 
-void load_palette(char *fname)
+void load_palette(const char *fname)
 {
   FILE *pal_file = fopen(fname, "rb");
 
@@ -771,7 +771,7 @@ void default_palette(void)
   update_palette();
 }
 
-static void set_graphics_output(char *video_output)
+static void set_graphics_output(const char *video_output)
 {
   const renderer_data *renderer = renderers;
 

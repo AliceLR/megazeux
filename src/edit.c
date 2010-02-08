@@ -2229,7 +2229,7 @@ void edit_world(World *mzx_world)
               {
                 if(strlen(new_mod) > 12)
                 {
-                  if(!ask_yes_no(mzx_world,
+                  if(!ask_yes_no(mzx_world, (char *)
                    "Load Module: The filename is too long. "
                    "Would you like to truncate it?"))
                   {

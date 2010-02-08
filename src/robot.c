@@ -492,7 +492,7 @@ void clear_label_cache(Label **label_list, int num_labels)
   }
 }
 
-static Label *find_label(Robot *cur_robot, char *name)
+static Label *find_label(Robot *cur_robot, const char *name)
 {
   int total = cur_robot->num_labels - 1;
   int bottom = 0, top = total, middle = 0;
@@ -564,7 +564,7 @@ static Label *find_label(Robot *cur_robot, char *name)
   return NULL;
 }
 
-static int find_label_position(Robot *cur_robot, char *name)
+static int find_label_position(Robot *cur_robot, const char *name)
 {
   Label *cur_label = find_label(cur_robot, name);
 
@@ -952,7 +952,7 @@ static void send_sensor_command(World *mzx_world, int id, int command)
   }
 }
 
-static void send_sensors(World *mzx_world, char *name, char *mesg)
+static void send_sensors(World *mzx_world, char *name, const char *mesg)
 {
   Board *src_board = mzx_world->current_board;
 
@@ -1053,8 +1053,8 @@ static void set_robot_position(Robot *cur_robot, int position)
     cur_robot->status = 2;
 }
 
-static int send_robot_direct(Robot *cur_robot, char *mesg, int ignore_lock,
- int send_self)
+static int send_robot_direct(Robot *cur_robot, const char *mesg,
+ int ignore_lock, int send_self)
 {
   char *robot_program = cur_robot->program;
   int new_position;
@@ -1139,7 +1139,7 @@ static int send_robot_direct(Robot *cur_robot, char *mesg, int ignore_lock,
   return 0;
 }
 
-void send_robot(World *mzx_world, char *name, char *mesg,
+void send_robot(World *mzx_world, char *name, const char *mesg,
  int ignore_lock)
 {
   Board *src_board = mzx_world->current_board;
@@ -1173,18 +1173,18 @@ void send_robot(World *mzx_world, char *name, char *mesg,
   send_sensors(mzx_world, name, mesg);
 }
 
-int send_robot_id(World *mzx_world, int id, char *mesg, int ignore_lock)
+int send_robot_id(World *mzx_world, int id, const char *mesg, int ignore_lock)
 {
   Robot *cur_robot = mzx_world->current_board->robot_list[id];
   return send_robot_direct(cur_robot, mesg, ignore_lock, 0);
 }
 
-int send_robot_self(World *mzx_world, Robot *src_robot, char *mesg)
+int send_robot_self(World *mzx_world, Robot *src_robot, const char *mesg)
 {
   return send_robot_direct(src_robot, mesg, 1, 1);
 }
 
-void send_robot_all(World *mzx_world, char *mesg)
+void send_robot_all(World *mzx_world, const char *mesg)
 {
   Board *src_board = mzx_world->current_board;
   int i;

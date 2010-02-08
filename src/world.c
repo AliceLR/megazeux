@@ -171,7 +171,7 @@ static int world_magic(const char magic_string[3])
   }
 }
 
-int save_world(World *mzx_world, char *file, int savegame, int faded)
+int save_world(World *mzx_world, const char *file, int savegame, int faded)
 {
   int i, num_boards;
   int gl_rob_position, gl_rob_save_position;
@@ -693,7 +693,8 @@ __editor_maybe_static void optimize_null_boards(World *mzx_world)
 
 // Loads a world into a World struct
 
-static int load_world(World *mzx_world, char *file, int savegame, int *faded)
+static int load_world(World *mzx_world, const char *file, int savegame,
+ int *faded)
 {
   int version;
   int i;
@@ -1153,7 +1154,7 @@ static int load_world(World *mzx_world, char *file, int savegame, int *faded)
 }
 
 #ifdef CONFIG_EDITOR
-int append_world(World *mzx_world, char *file)
+int append_world(World *mzx_world, const char *file)
 {
   int version;
   int i, i2;
@@ -1421,7 +1422,7 @@ static void default_global_data(World *mzx_world)
   mzx_world->target_where = TARGET_NONE;
 }
 
-int reload_world(World *mzx_world, char *file, int *faded)
+int reload_world(World *mzx_world, const char *file, int *faded)
 {
   int rval;
 
@@ -1441,7 +1442,7 @@ int reload_world(World *mzx_world, char *file, int *faded)
   return rval;
 }
 
-int reload_savegame(World *mzx_world, char *file, int *faded)
+int reload_savegame(World *mzx_world, const char *file, int *faded)
 {
   if(mzx_world->active)
   {
@@ -1451,7 +1452,7 @@ int reload_savegame(World *mzx_world, char *file, int *faded)
   return load_world(mzx_world, file, 1, faded);
 }
 
-int reload_swap(World *mzx_world, char *file, int *faded)
+int reload_swap(World *mzx_world, const char *file, int *faded)
 {
   int load_return;
   clear_world(mzx_world);
@@ -1627,7 +1628,7 @@ void create_blank_world(World *mzx_world)
 #endif // CONFIG_EDITOR
 
 // FIXME: This function should probably die. It's unsafe.
-void add_ext(char *src, char *ext)
+void add_ext(char *src, const char *ext)
 {
   int len = strlen(src);
 
@@ -1661,7 +1662,7 @@ void set_update_done_current(World *mzx_world)
 }
 #endif // CONFIG_EDITOR
 
-void get_path(char *file_name, char *dest)
+void get_path(const char *file_name, char *dest)
 {
   int c = strlen(file_name) - 1;
 

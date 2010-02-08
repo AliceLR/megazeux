@@ -74,7 +74,7 @@ static int get_pw_xor_code(char *password, int pro_method)
   return work;
 }
 
-void decrypt(char *file_name)
+void decrypt(const char *file_name)
 {
   FILE *source;
   FILE *dest;

@@ -51,7 +51,7 @@ int choose_board(World *mzx_world, int current, const char *title,
  int board0_none);
 
 // Shell for run_dialog() (returns 0 for ok, 1 for cancel, -1 for ESC)
-int confirm(World *mzx_world, char *str);
+int confirm(World *mzx_world, const char *str);
 int ask_yes_no(World *mzx_world, char *str);
 
 // Dialog box structure definition
@@ -199,7 +199,7 @@ typedef struct
   int *result;
 } board_list;
 
-void construct_dialog(dialog *src, char *title, int x, int y,
+void construct_dialog(dialog *src, const char *title, int x, int y,
  int width, int height, element **elements, int num_elements,
  int start_element);
 void destruct_dialog(dialog *src);

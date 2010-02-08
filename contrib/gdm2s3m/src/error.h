@@ -37,7 +37,7 @@ typedef enum {
 } error_code;
 
 /* function prototypes */
-void error_handle (char *file, int line, error_code error);
+void error_handle (const char *file, int line, error_code error);
 
 __G_END_DECLS
 

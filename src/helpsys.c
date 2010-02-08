@@ -46,7 +46,7 @@ void pop_context(void)
   context = contexts[--curr_context];
 }
 
-void help_load(World *mzx_world, char *file_name)
+void help_load(World *mzx_world, const char *file_name)
 {
   help = (char *)malloc(1024 * 64);
   // Search context links

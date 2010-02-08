@@ -2710,7 +2710,7 @@ static int idle_input_box(World *mzx_world, dialog *di, element *e)
    src->input_flags, NULL, 0, NULL);
 }
 
-void construct_dialog(dialog *src, char *title, int x, int y,
+void construct_dialog(dialog *src, const char *title, int x, int y,
  int width, int height, element **elements, int num_elements,
  int start_element)
 {
@@ -2880,7 +2880,7 @@ __editor_maybe_static element *construct_list_box(int x, int y,
 }
 
 // Shell for run_dialog()
-int confirm(World *mzx_world, char *str)
+int confirm(World *mzx_world, const char *str)
 {
   dialog di;
   element *elements[2];
@@ -3539,8 +3539,8 @@ __editor_maybe_static int file_manager(World *mzx_world,
            file_name);
           if(!confirm(mzx_world, confirm_string))
           {
-            if(!ask_yes_no(mzx_world,
-             "Delete subdirectories recursively?"))
+            if(!ask_yes_no(mzx_world, (char *)
+	     "Delete subdirectories recursively?"))
             {
               remove_files(file_name, 1);
               rmdir(file_name);

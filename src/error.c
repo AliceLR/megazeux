@@ -33,7 +33,7 @@
 // as action) FAIL=1, RETRY=2, EXIT TO DOS=4, OK=8, HELP=16 (OK is for usually
 // only for warnings) Type = 3 for a critical error
 
-int error(char *string, char type, char options, unsigned int code)
+int error(const char *string, char type, char options, unsigned int code)
 {
   int t1 = 9, ret = 0;
   int fade_status = get_fade_status();

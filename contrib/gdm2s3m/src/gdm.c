@@ -45,7 +45,7 @@ struct GDM_file *load_gdm (uint8_t *stream, uint32_t stream_len)
   check_s_to_a (backup, stream_len, magic, &stream, 4);
 
   /* check it's a valid file */
-  if (strncmp ((const char *) magic, GDM_MAGIC, 4) != 0)
+  if (strncmp ((char *)magic, GDM_MAGIC, 4) != 0)
     error (FILE_INVALID);
 
   /* get artist and title */

@@ -10,7 +10,7 @@ include contrib/libmodplug/src/Makefile.in
 mzx_base     = src
 mzx_flags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
 mzx_flags   += -Wmissing-format-attribute -Wpointer-arith -Wcast-align
-#mzx_flags   += -Wwrite-strings
+mzx_flags   += -Wwrite-strings
 mzx_cflags  += -Wstrict-prototypes -Wmissing-prototypes -Wold-style-definition
 mzx_cxxflags = -DHAVE_INTTYPES_H
 

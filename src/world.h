@@ -38,11 +38,11 @@ __M_BEGIN_DECLS
 
 #define WORLD_VERSION 0x251
 
-int save_world(World *mzx_world, char *file, int savegame, int faded);
-int append_world(World *mzx_world, char *file);
-int reload_world(World *mzx_world, char *file, int *faded);
-int reload_savegame(World *mzx_world, char *file, int *faded);
-int reload_swap(World *mzx_world, char *file, int *faded);
+int save_world(World *mzx_world, const char *file, int savegame, int faded);
+int append_world(World *mzx_world, const char *file);
+int reload_world(World *mzx_world, const char *file, int *faded);
+int reload_savegame(World *mzx_world, const char *file, int *faded);
+int reload_swap(World *mzx_world, const char *file, int *faded);
 void clear_world(World *mzx_world);
 void clear_global_data(World *mzx_world);
 void default_scroll_values(World *mzx_world);
@@ -54,8 +54,8 @@ int fgetw(FILE *fp);
 int fgetd(FILE *fp);
 void fputw(int src, FILE *fp);
 void fputd(int src, FILE *fp);
-void add_ext(char *src, char *ext);
-void get_path(char *file_name, char *dest);
+void add_ext(char *src, const char *ext);
+void get_path(const char *file_name, char *dest);
 
 #ifdef CONFIG_EDITOR
 void optimize_null_boards(World *mzx_world);

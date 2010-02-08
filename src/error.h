@@ -32,7 +32,7 @@ __M_BEGIN_DECLS
 //only for warnings) Code is a specialized error code for debugging purposes.
 //Type of 3 for a critical error.
 
-int error(char *string, char type, char options, unsigned int code);
+int error(const char *string, char type, char options, unsigned int code);
 
 __M_END_DECLS
 

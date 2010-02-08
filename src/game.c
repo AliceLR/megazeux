@@ -322,7 +322,8 @@ static void update_variables(World *mzx_world, int slowed)
   // Done
 }
 
-static void set_3_mesg(World *mzx_world, char *str1, int num, char *str2)
+static void set_3_mesg(World *mzx_world, const char *str1, int num,
+ const char *str2)
 {
   if(mzx_world->bi_mesg_status)
   {
@@ -690,7 +691,7 @@ static void give_potion(World *mzx_world, mzx_potion type)
   }
 }
 
-static void show_counter(World *mzx_world, char *str, int x, int y,
+static void show_counter(World *mzx_world, const char *str, int x, int y,
  int skip_if_zero)
 {
   int counter_value = get_counter(mzx_world, str, 0);
@@ -2454,7 +2455,7 @@ void title_screen(World *mzx_world)
   clear_sfx_queue();
 }
 
-void set_mesg(World *mzx_world, char *str)
+void set_mesg(World *mzx_world, const char *str)
 {
   if(mzx_world->bi_mesg_status)
   {
@@ -2462,7 +2463,7 @@ void set_mesg(World *mzx_world, char *str)
   }
 }
 
-void set_mesg_direct(Board *src_board, char *str)
+void set_mesg_direct(Board *src_board, const char *str)
 {
   char *bottom_mesg = src_board->bottom_mesg;
 

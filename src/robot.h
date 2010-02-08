@@ -54,12 +54,12 @@ void reallocate_robot(Robot *robot, int size);
 Label **cache_robot_labels(Robot *robot, int *num_labels);
 void clear_label_cache(Label **label_list, int num_labels);
 int find_robot(Board *src_board, const char *name, int *first, int *last);
-void send_robot(World *mzx_world, char *name, char *mesg,
+void send_robot(World *mzx_world, char *name, const char *mesg,
  int ignore_lock);
-int send_robot_id(World *mzx_world, int id, char *mesg, int ignore_lock);
+int send_robot_id(World *mzx_world, int id, const char *mesg, int ignore_lock);
 void send_robot_def(World *mzx_world, int robot_id, int mesg_id);
-void send_robot_all(World *mzx_world, char *mesg);
-int send_robot_self(World *mzx_world, Robot *src_robot, char *mesg);
+void send_robot_all(World *mzx_world, const char *mesg);
+int send_robot_self(World *mzx_world, Robot *src_robot, const char *mesg);
 int move_dir(Board *src_board, int *x, int *y, int dir);
 void prefix_first_last_xy(World *mzx_world, int *fx, int *fy,
  int *lx, int *ly, int robotx, int roboty);
