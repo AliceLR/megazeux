@@ -12,9 +12,10 @@ usage() {
 	echo "Supported [platform] values:"
 	echo
 	echo "  win32          Microsoft Windows"
-	echo "  linux          Linux / BSD / Embedded"
-	echo "  darwin         Macintosh OS X (not Classic)"
+	echo "  linux          Linux / Embedded"
 	echo "  linux-static   Linux (statically linked)"
+	echo "  darwin         Macintosh OS X (not Classic)"
+	echo "  obsd           OpenBSD (4.2 tested) (statically linked)"
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
