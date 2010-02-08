@@ -37,8 +37,8 @@ LIBPNG_LDFLAGS ?= `libpng12-config --libs`
 endif
 
 ifeq (${DEBUG},1)
-CFLAGS    = -O0 -ggdb -Wall -std=gnu99 -DDEBUG ${ARCH_CFLAGS}
-CXXFLAGS  = -O0 -ggdb -Wall -DDEBUG ${ARCH_CXXFLAGS}
+CFLAGS    = -O0 -g -Wall -std=gnu99 -DDEBUG ${ARCH_CFLAGS}
+CXXFLAGS  = -O0 -g -Wall -DDEBUG ${ARCH_CXXFLAGS}
 o         = dbg.o
 else
 CFLAGS   += ${OPTIMIZE_CFLAGS} -Wall -std=gnu99 ${ARCH_CFLAGS}
