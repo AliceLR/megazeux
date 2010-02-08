@@ -34,7 +34,7 @@ endif
 
 mzx: arch/darwin/SDLMain.o
 all:
-	@mv mzxsvn mzxsvn.${ARCH}
+	@mv ${TARGET} ${TARGET}.${ARCH}
 clean:
 	@echo "  CLEAN   " arch/darwin
 	@rm -f arch/darwin/SDLMain.o arch/darwin/SDLMain.d
