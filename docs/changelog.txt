@@ -108,6 +108,8 @@ USERS
 + SAV files will now be stamped with the world magic of the world they
   were loaded from. This allows compatibility hacks to apply to SAV files
   as they would to worlds. (ajs, Terryn, Mr_Alert)
++ Add LOAD_MENU counter like ENTER_MENU, F2_MENU et al. to allow control
+  (from robotic) over whether the LOAD_MENU can be brought up.
 
 DEVELOPERS
 
