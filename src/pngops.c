@@ -205,4 +205,4 @@ err_free_close:
   goto exit_free_close;
 }
 
-#endif // CONFIG_ICON && !__WIN32__
+#endif // CONFIG_SDL && CONFIG_ICON && !__WIN32__
