@@ -1664,10 +1664,8 @@ int get_position(void)
 
     return pos;
   }
-  else
-  {
-    return 0;
-  }
+
+  return 0;
 }
 
 // BIG FAT NOTE:
