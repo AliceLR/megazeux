@@ -46,5 +46,13 @@ MZX REQUESTS:
 -Per-pixel sprite locations.
 -A grid of variable size in the board editor.
 -Splicing strings via offsetting by negative values. EX: SET "$word" "-ism" || SET "$word+-6" "atropin" || . "* &$word& yields \"atropinism\""
+-Universal button layouts easily accessible in Robotic (e.g. "Joy1", "Joy2" or "JoyA", "JoyB" counters)
+-IF command that takes no label (and skips the next line if false)
+-Separate font characters from normal chars.
+-Ability to set individual volumes to 0.
+-"modname" and "samvolume" counters.
+-Hardier F11 menu (stronger name seeks, ability to set new counters/strings, ability to see/manip local counters (in Rn.<counter> format)).
+-Ability for Alt+F to display index # of SFX currently being edited.
+-Ability for SFX # to take the long names of SFX lists (e.g. "SFX FullKeys", "SFX Ouch").
 -Online support, lozl
 -A SMALLHACKER COUNTER
