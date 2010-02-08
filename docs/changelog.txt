@@ -35,8 +35,11 @@ USERS
   grows a string arbitrarily, so robotic can crash MZX when a string is resized
   beyond a reasonable limit).
 + Strings, when grown, will fill gaps with ' ' instead of garbage. This can be
-  useful when the string grows (after using the set "$string.X" notation); the
+  useful when the string grows after using the set "$string.X" notation; the
   rest of the string is no longer garbage, allowing the debugger to be used.
++ A robot that does a "put c?? Thing p?? [dir] player" and overwrites itself
+  will no longer leak commands. Instead, if the robot overwrites itself, its
+  program will end.
 
 DEVELOPERS
 

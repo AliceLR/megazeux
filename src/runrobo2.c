@@ -253,7 +253,7 @@ static int place_dir_xy(World *mzx_world, mzx_thing id, int color, int param,
 
     if(is_cardinal_dir(direction))
     {
-      if(!move_dir(src_board, &new_x, &new_y, direction - 1))
+      if(!move_dir(src_board, &new_x, &new_y, dir_to_int(direction)))
       {
         return place_at_xy(mzx_world, id, color, param,
          new_x, new_y);
@@ -2320,7 +2320,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           {
             int new_x = x;
             int new_y = y;
-            if(!move_dir(src_board, &new_x, &new_y, direction - 1))
+            if(!move_dir(src_board, &new_x, &new_y, dir_to_int(direction)))
             {
               int new_offset = new_x + (new_y * board_width);
               mzx_thing new_id = (mzx_thing)level_id[new_offset];
@@ -2388,7 +2388,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           if(is_cardinal_dir(direction))
           {
-            if(!move_dir(src_board, &send_x, &send_y, direction - 1))
+            if(!move_dir(src_board, &send_x, &send_y, dir_to_int(direction)))
             {
               send_at_xy(mzx_world, id, send_x, send_y, p2 + 1);
               // Did the position get changed? (send to self)
@@ -2495,7 +2495,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           cur_robot->ypos = y;
 
           // Move player
-          move_player(mzx_world, direction - 1);
+          move_player(mzx_world, dir_to_int(direction));
           if((mzx_world->player_x == old_x) &&
            (mzx_world->player_y == old_y) &&
            (mzx_world->current_board_id == old_board) && (cmd == 62) &&
@@ -2646,7 +2646,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           mzx_dir direction =
            parsedir((mzx_dir)cmd_ptr[2], x, y, cur_robot->walk_dir);
-          if(is_cardinal_dir(direction) && !(_bl[direction - 1] & 2))
+          if(is_cardinal_dir(direction) && !(_bl[dir_to_int(direction)] & 2))
           {
             // Block
             shoot(mzx_world, x, y, dir_to_int(direction),
@@ -3173,7 +3173,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         direction = parsedir(direction, send_x, send_y,
          cur_robot->walk_dir);
 
-        if(!move_dir(src_board, &send_x, &send_y, direction - 1))
+        if(!move_dir(src_board, &send_x, &send_y, dir_to_int(direction)))
         {
           char *p2 = next_param_pos(cmd_ptr + 1);
           send_at_xy(mzx_world, id, send_x, send_y, p2 + 1);
@@ -3196,7 +3196,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if(put_id < SENSOR)
         {
-          int player_bl[4];
+          int player_bl[4], place_x, place_y;
 
           calculate_blocked(mzx_world, mzx_world->player_x,
            mzx_world->player_y, 1, player_bl);
@@ -3204,6 +3204,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
           place_dir_xy(mzx_world, put_id, put_color, put_param,
            mzx_world->player_x, mzx_world->player_y, direction,
            cur_robot, player_bl);
+
+          place_x = mzx_world->player_x;
+          place_y = mzx_world->player_y;
+          if(!move_dir(src_board, &place_x, &place_y, dir_to_int(direction)))
+            if(place_x == x && place_y == y)
+              goto end_prog;
 
           if(!is_robot(level_id[x + (y * board_width)]))
             goto next_cmd;
@@ -3655,7 +3661,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           board_number = find_board(mzx_world, board_name_buffer);
 
           if(board_number != NO_BOARD)
-            src_board->board_dir[direction - 1] = board_number;
+            src_board->board_dir[dir_to_int(direction)] = board_number;
         }
         break;
       }
@@ -3666,7 +3672,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
         if(is_cardinal_dir(direction))
         {
-          src_board->board_dir[direction - 1] = NO_BOARD;
+          src_board->board_dir[dir_to_int(direction)] = NO_BOARD;
         }
         break;
       }
