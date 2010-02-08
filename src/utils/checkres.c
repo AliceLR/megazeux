@@ -580,6 +580,11 @@ static status_t parse_board_direct(stream_t *s)
             return FREAD_FAILED;
 
           str = strtok(tmp, "&");
+
+          // no & enclosed tokens were found
+          if(strlen(str) == strlen(tmp))
+            break;
+
           while(str)
           {
             debug("PLAY (class): %s\n", str);
