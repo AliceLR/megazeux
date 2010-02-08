@@ -2068,9 +2068,6 @@ void title_screen(World *mzx_world)
   src_board = mzx_world->current_board;
 
   // Main game loop
-  // Mouse remains hidden unless menu/etc. is invoked
-
-  update_screen();
 
   do
   {
@@ -2087,6 +2084,7 @@ void title_screen(World *mzx_world)
     {
       // Give some delay time if nothing's loaded
       update_event_status_delay();
+      update_screen();
     }
 
     src_board = mzx_world->current_board;

@@ -54,6 +54,10 @@ USERS
 + Setting the music volume to 0 (when using the ModPlug engine) now ensures
   that no music is audible. Previously, setting the volume to 0 would be
   equivalent to setting the volume to 1, which was still audible.
++ Upon exiting the initial load screen, and not entering the editor, the
+  screen is now updated. This fixes rendering glitches in the MZX game
+  window when overlapping the window with another, at the slight expense
+  of CPU time.
 
 DEVELOPERS
 
