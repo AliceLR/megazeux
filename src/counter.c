@@ -1586,6 +1586,42 @@ static void mousey_write(World *mzx_world, function_counter *counter,
   warp_mouse_y(value);
 }
 
+static int mousepx_read(World *mzx_world, function_counter *counter,
+ const char *name, int id)
+{
+  return get_real_mouse_x();
+}
+
+static int mousepy_read(World *mzx_world, function_counter *counter,
+ const char *name, int id)
+{
+  return get_real_mouse_y();
+}
+
+static void mousepx_write(World *mzx_world, function_counter *counter,
+ const char *name, int value, int id)
+{
+  if(value > 639)
+    value = 639;
+
+  if(value < 0)
+    value = 0;
+
+  warp_real_mouse_x(value);
+}
+
+static void mousepy_write(World *mzx_world, function_counter *counter,
+ const char *name, int value, int id)
+{
+  if(value > 349)
+    value = 349;
+
+  if(value < 0)
+    value = 0;
+
+  warp_real_mouse_y(value);
+}
+
 static int mboardx_read(World *mzx_world, function_counter *counter,
  const char *name, int id)
 {
@@ -1999,6 +2035,8 @@ static function_counter builtin_counters[] =
   { "mod_frequency", 0x0251, mod_freq_read, mod_freq_write },        // 2.81
   { "mod_order", 0x023E, mod_order_read, mod_order_write },          // 2.62
   { "mod_position", 0x0251, mod_position_read, mod_position_write }, // 2.81
+  { "mousepx", 0x0252, mousepx_read, mousepx_write },                // 2.82
+  { "mousepy", 0x0252, mousepy_read, mousepy_write },                // 2.82
   { "mousex", 0x0208, mousex_read, mousex_write },                   // 2.51s1
   { "mousey", 0x0208, mousey_read, mousey_write },                   // 2.51s1
   { "multiplier", 0x0244, multiplier_read, multiplier_write },       // 2.68

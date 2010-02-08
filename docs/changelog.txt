@@ -4,7 +4,8 @@ Despite the increase in minor version, this release mostly targets bug and
 regression fixes.
 
 However, there ARE some additional new features, such as the introduction
-of the LOAD_MENU counter and {FREAD,FWRITE}_COUNTER have been enhanced.
+of the LOAD_MENU and mouse pixel counters and {FREAD,FWRITE}_COUNTER have
+been enhanced.
 
 SAVs from older worlds (requiring compatibility hacks) no longer fail to
 play (Darkness, etc. are affected). We've also done a good bit to fix
@@ -148,6 +149,7 @@ USERS
   way corrupted.
 + Fix a crash when auto-completing lines that were greater than 241 characters
   in length after completion.
++ Added mouse pixel counters MOUSEPX and MOUSEPY (Mr_Alert).
 
 DEVELOPERS
 

@@ -912,6 +912,16 @@ Uint32 get_mouse_y(void)
   return input.mouse_y;
 }
 
+Uint32 get_real_mouse_x(void)
+{
+  return input.real_mouse_x;
+}
+
+Uint32 get_real_mouse_y(void)
+{
+  return input.real_mouse_y;
+}
+
 Uint32 get_mouse_drag(void)
 {
   return input.mouse_drag_state;
@@ -962,6 +972,26 @@ void warp_mouse_x(Uint32 x)
 void warp_mouse_y(Uint32 y)
 {
   int my = (y * 14) + 7;
+  int mx_real, my_real;
+  input.mouse_y = y;
+  input.real_mouse_y = my;
+  set_screen_coords(input.real_mouse_x, my, &mx_real, &my_real);
+  SDL_WarpMouse(mx_real, my_real);
+}
+
+void warp_real_mouse_x(Uint32 mx)
+{
+  int x = mx / 8;
+  int mx_real, my_real;
+  input.mouse_x = x;
+  input.real_mouse_x = mx;
+  set_screen_coords(mx, input.real_mouse_y, &mx_real, &my_real);
+  SDL_WarpMouse(mx_real, my_real);
+}
+
+void warp_real_mouse_y(Uint32 my)
+{
+  int y = my / 14;
   int mx_real, my_real;
   input.mouse_y = y;
   input.real_mouse_y = my;
