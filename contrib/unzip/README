@@ -1,0 +1,9 @@
+This directory contains a subset of the minizip wrapper around zlib from
+the mainline zlib package (version 1.2.3). Only the unzip code (without
+decrypt support) has been taken. Minor compile warnings were fixed, but
+there have otherwise been no modifications.
+
+The minizip wrapper is provided under the same license as the zlib-1.2.3
+sources, the zlib license. This license is compatible with the GNU GPL.
+
+--ajs.

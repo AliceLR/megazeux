@@ -4,6 +4,7 @@
 
 include contrib/gdm2s3m/src/Makefile.in
 include contrib/libmodplug/src/Makefile.in
+include contrib/unzip/src/Makefile.in
 
 .PHONY: ${mzx}_clean ${txt2hlp}_clean ${checkres}_clean
 
@@ -24,13 +25,14 @@ txt2hlp_objs = ${txt2hlp_base}/txt2hlp.${o}
 checkres_base = src/utils
 checkres = ${checkres_base}/checkres${BINEXT}
 checkres_objs = ${checkres_base}/checkres.${o} ${mzx_base}/fsafeopen.${o}
+checkres_ldflags = ${unzip} -lz
 
 ${txt2hlp_base}/%.o ${txt2hlp_base}/%.dbg.o: ${txt2hlp_base}/%.c
 ifeq (${V},1)
-	${CC} ${CFLAGS} -Isrc -c $< -o $@
+	${CC} ${CFLAGS} -I${mzx_base} -I${unzip_base} -c $< -o $@
 else
 	@echo "  CC      " $<
-	@${CC} ${CFLAGS} -Isrc -c $< -o $@
+	@${CC} ${CFLAGS} -I${mzx_base} -I${unzip_base} -c $< -o $@
 endif
 
 ${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.c
@@ -139,10 +141,10 @@ endif
 
 ${checkres}: ${checkres_objs}
 ifeq (${V},1)
-	${HOST_CC} ${checkres_objs} -o ${checkres}
+	${HOST_CC} ${checkres_objs} -o ${checkres} ${checkres_ldflags}
 else
 	@echo "  LINK    " ${checkres}
-	@${HOST_CC} ${checkres_objs} -o ${checkres}
+	@${HOST_CC} ${checkres_objs} -o ${checkres} ${checkres_ldflags}
 endif
 ifneq (${DEBUG},1)
 ifeq (${V},1)
@@ -162,7 +164,7 @@ ${txt2hlp}:
 
 endif
 
-${mzx}: ${gdm2s3m} ${libmodplug} ${mzx_objs} ${txt2hlp} ${checkres}
+${mzx}: ${gdm2s3m} ${libmodplug} ${unzip} ${mzx_objs} ${txt2hlp} ${checkres}
 ifeq (${V},1)
 	${CC} ${mzx_objs} -o ${mzx} ${mzx_ldflags}
 else

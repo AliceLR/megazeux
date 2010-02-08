@@ -28,7 +28,7 @@
 #include <const.h>
 #include <fsafeopen.h>
 
-#include "unzip.h"
+#include <unzip.h>
 
 #undef DEBUG
 
@@ -181,7 +181,7 @@ static status_t s_open(const char *filename, const char *mode, stream_t **s)
 				if(unzOpenCurrentFile(f) == UNZ_OK)
 				{
 					(*s)->stream.buffer.len = info.uncompressed_size;
-					(*s)->stream.buffer.buf = (char *)malloc(sizeof(char) * (*s)->stream.buffer.len);
+					(*s)->stream.buffer.buf = malloc((*s)->stream.buffer.len);
 					if(!(*s)->stream.buffer.buf)
 					{
 						free(*s);
