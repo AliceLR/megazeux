@@ -45,7 +45,6 @@ static struct mzx_resource mzx_res[] =
   [MZX_HELP_FIL]    = { .base_name = "mzx_help.fil", },
   [MZX_SMZX_CHR]    = { .base_name = "mzx_smzx.chr", },
   [MZX_EDIT_CHR]    = { .base_name = "mzx_edit.chr", },
-  [PAD_CONFIG]      = { .base_name = "pad.config", },
   [SMZX_PAL]        = { .base_name = "smzx.pal", },
 };
 

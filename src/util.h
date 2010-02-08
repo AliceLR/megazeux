@@ -43,7 +43,6 @@ typedef enum
   MZX_HELP_FIL,
   MZX_SMZX_CHR,
   MZX_EDIT_CHR,
-  PAD_CONFIG,
   SMZX_PAL,
   END_RESOURCE_ID_T, // must be last
 }
