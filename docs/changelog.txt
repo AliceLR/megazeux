@@ -40,6 +40,9 @@ USERS
 + A robot that does a "put c?? Thing p?? [dir] player" and overwrites itself
   will no longer leak commands. Instead, if the robot overwrites itself, its
   program will end.
++ Fix message edges always showing up black, instead of whatever color 0
+  is. (Revvy)
++ Change starting/max health and lives minimum to 1 instead of 0. (Revvy)
 
 DEVELOPERS
 
