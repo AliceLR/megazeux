@@ -9,3 +9,4 @@
 #define CONFIG_RENDER_YUV
 #define CONFIG_MODPLUG
 #define CONFIG_AUDIO
+#define CONFIG_SDL
