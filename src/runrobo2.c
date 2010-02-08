@@ -1001,7 +1001,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       }
       else if(status == NO_HIT)
       {
-        mzx_thing level_id;
+        mzx_thing l_id;
 
         move_dir(src_board, &x, &y, walk_dir);
 
@@ -1014,8 +1014,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
          * updated x,y location of the robot for this cycle, we simply end the
          * cycle if the robot enters a transport.
          */
-        level_id = (mzx_thing)level_id[x + (y * board_width)];
-        if(level_id == TRANSPORT)
+        l_id = (mzx_thing)level_id[x + (y * board_width)];
+        if(l_id == TRANSPORT)
           goto breaker;
       }
       else
