@@ -3333,7 +3333,8 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         object_code_position[1] = 107;
         object_code_position[2] = current_rline->line_text_length + 1;
 
-        strcpy(object_code_position + 3, current_rline->line_text);
+        strncpy(object_code_position + 3, current_rline->line_text,
+         current_rline->line_text_length);
         object_code_position[current_rline->line_text_length + 4] =
          current_rline->line_text_length + 3;
         object_code_position += current_rline->line_text_length + 5;
