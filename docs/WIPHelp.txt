@@ -3867,6 +3867,16 @@ inside of the string. For instance:
 
 Will cause $str to have the value "hLOLo"
 
+Writing to parts of strings also changes how the string limit
+works; the cap will limit how much of the spliced-in material
+is inserted instead of the string length in total. For
+instance:
+
+~B set "$str" "Baby steps."
+~B set "$str#4" "Long journey."
+
+Will cause $str to have the value "Long steps."
+
 ~B$strname.X~F will manipulate the Xth character in a string
 (starting from 0). When used for output it will give the
 character value of the given character in a string. Any invalid
@@ -7447,9 +7457,9 @@ A quick example of subroutines:
 ~Egoto "#return"
 
 When sending other robots to subroutines the behavior is
-slightly different. Because the robot is preempted (interrupted)
-it will return to the same command it was at before going to
-the subroutine, not the instruction after.
+slightly different. Because the robot is pre-empted
+(interrupted) it will return to the same command it was at
+before going to the subroutine, not the instruction after.
 
 NOTE: Unlike older versions of MegaZeux, it is no longer needed
 to initialise the stack, so don't get confused looking at older
@@ -8307,6 +8317,10 @@ USERS
   when using a boxed fullscreen resolution. Also fixes a bug
   where the PSP platform would ignore an override of the
   force_bpp option. (Mr_Alert)
++ Fixed a bug causing macros loaded from config.txt to be
+  expanded incorrectly. Relatedly, fixed a bug where #<string>
+  in the robot exitor would "disappear" on entry, if there was
+  no correspondingly named macro.
   
 
 DEVELOPERS
@@ -8359,6 +8373,7 @@ DEVELOPERS
 >#NEWIN200.HLP:1st:New in version 2.00
 >#ANCENVER.HLP:103:New in versions thru 1.03
 >#MAIN.HLP:072:Table of Contents
+#281CLOG.HLP
 :281:
 $~9New in Versions 2.81-2.81h
 
