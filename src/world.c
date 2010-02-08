@@ -29,8 +29,8 @@
    .MZX files:
    MZX - Ver 1.x MegaZeux
    MZ2 - Ver 2.x MegaZeux
-   MZA - Ver 2.51S1 Megazeux
-   M\002\011 - 2.5.1spider2+
+   MZA - Ver 2.51S1 Megazeux          (fabricated as 0x0208)
+   M\x02\x09 - 2.5.1spider2+
    M\x02\x3E - MZX 2.62.x
    M\x02\x41 - MZX 2.65
    M\x02\x44 - MZX 2.68
@@ -43,8 +43,8 @@
 
    .SAV files:
    MZSV2 - Ver 2.x MegaZeux
-   MZXSA - Ver 2.51S1 MegaZeux
-   MZS\002\011 - 2.5.1spider2+, 2.9.x
+   MZXSA - Ver 2.51S1 MegaZeux        (fabricated as 0x0208)
+   MZS\x02\x09 - 2.5.1spider2+, 2.9.x
    MZS\x02\x3E - MZX 2.62.x
    MZS\x02\x41 - MZX 2.65
    MZS\x02\x44 - MZX 2.68
@@ -148,7 +148,7 @@ static int world_magic(const char magic_string[3])
         case '2':
           return 0x0205;
         case 'A':
-          return 0x0209;
+          return 0x0208;
         default:
           return 0;
       }
@@ -496,7 +496,7 @@ static int save_magic(const char magic_string[5])
       case 'X':
         if((magic_string[3] == 'S') && (magic_string[4] == 'A'))
         {
-          return 0x0209;
+          return 0x0208;
         }
         else
         {

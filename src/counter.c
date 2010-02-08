@@ -430,7 +430,7 @@ static void board_param_write(World *mzx_world, function_counter *counter,
 static int red_value_read(World *mzx_world, function_counter *counter,
  const char *name, int id)
 {
-  int cur_color = get_counter(mzx_world, "current_color", id);
+  int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
   return get_red_component(cur_color);
 }
 
@@ -1914,131 +1914,144 @@ static void mod_freq_write(World *mzx_world, function_counter *counter,
 // ? comes before letters
 // numbers come before letters (and before ?)
 
+/* FIXME: "MOD *" will still work, even in worlds < 2.51s1 */
+
+/* NOTE: ABS_VALUE, R_PLAYERDIST, SQRT_VALUE, WRAP, VALUE were removed in
+ *       2.68 and no compatibility layer was implemented.
+ *       FREAD_PAGE, FWRITE_PAGE were removed in 2.80 and no compatibility
+ *       layer was implemented.
+ */
+
+/* NOTE: Compatibility with worlds made between 2.51s2 and 2.61 (inclusive)
+ *       is only partial, due to the MZX/SAV magic not being incremented
+ *       in these versions. This is unfortunately not fixable.
+ */
+
 static function_counter builtin_counters[] =
 {
-  { "$*", 0, str_num_read, str_num_write },
-  { "abs!", 0, abs_read, NULL },
-  { "acos!", 0, acos_read, NULL },
-  { "asin!", 0, asin_read, NULL },
-  { "atan!", 0, atan_read, NULL },
-  { "bimesg", 0, NULL, bimesg_write },
-  { "blue_value", 0, blue_value_read, blue_value_write },
-  { "board_char", 0, board_char_read, NULL },
-  { "board_color", 0, board_color_read, NULL },
-  { "board_h", 0, board_h_read, NULL },
-  { "board_id", 0, board_id_read, board_id_write },
-  { "board_param", 0, board_param_read, board_param_write },
-  { "board_w", 0, board_w_read, NULL },
-  { "bullettype", 0, bullettype_read, bullettype_write },
-  { "buttons", 0, buttons_read, NULL },
-  { "char_byte", 0, char_byte_read, char_byte_write },
-  { "commands", 0, commands_read, commands_write },
-  { "cos!", 0, cos_read, NULL },
-  { "c_divisions", 0, c_divisions_read, c_divisions_write },
-  { "date_day", 0, date_day_read, NULL },
-  { "date_month", 0, date_month_read, NULL },
-  { "date_year", 0, date_year_read, NULL },
-  { "divider", 0, divider_read, divider_write },
-  { "fread", 0, fread_read, NULL },
-  { "fread_counter", 0, fread_counter_read, NULL },
-  { "fread_open", 0, fread_open_read, NULL },
-  { "fread_pos", 0, fread_pos_read, fread_pos_write },
-  { "fwrite", 0, NULL, fwrite_write },
-  { "fwrite_append", 0, fwrite_append_read, NULL },
-  { "fwrite_counter", 0, NULL, fwrite_counter_write },
-  { "fwrite_modify", 0, fwrite_modify_read, NULL },
-  { "fwrite_open", 0, fwrite_open_read, NULL },
-  { "fwrite_pos", 0, fwrite_pos_read, fwrite_pos_write },
-  { "green_value", 0, green_value_read, green_value_write },
-  { "horizpld", 0, horizpld_read, NULL },
-  { "input", 0, input_read, input_write },
-  { "inputsize", 0, inputsize_read, inputsize_write },
-  { "int2bin", 0, int2bin_read, int2bin_write },
-  { "key?", 0x244, key_read, key_write },
-  { "key_code", 0, key_code_read, NULL },
-  { "key_pressed", 0, key_pressed_read, NULL },
-  { "key_release", 0, key_release_read, NULL },
-  { "lava_walk", 0, lava_walk_read, lava_walk_write },
-  { "load_bc?", 0, load_bc_read, NULL },
-  { "load_game", 0, load_game_read, NULL },
-  { "load_robot?", 0, load_robot_read, NULL },
-  { "local?", 0, local_read, local_write },
-  { "loopcount", 0, loopcount_read, loopcount_write },
-  { "mboardx", 0, mboardx_read, NULL },
-  { "mboardy", 0, mboardy_read, NULL },
-  { "mod_frequency", 0, mod_freq_read, mod_freq_write },
-  { "mod_order", 0, mod_order_read, mod_order_write },
-  { "mod_position", 0, mod_position_read, mod_position_write },
-  { "mousex", 0, mousex_read, mousex_write },
-  { "mousey", 0, mousey_read, mousey_write },
-  { "multiplier", 0, multiplier_read, multiplier_write },
-  { "mzx_speed", 0, mzx_speed_read, mzx_speed_write },
-  { "overlay_char", 0, overlay_char_read, NULL },
-  { "overlay_color", 0, overlay_color_read, NULL },
-  { "overlay_mode", 0, overlay_mode_read, NULL },
-  { "pixel", 0, pixel_read, pixel_write },
-  { "playerdist", 0, playerdist_read, NULL },
-  { "playerfacedir", 0, playerfacedir_read, playerfacedir_write },
-  { "playerlastdir", 0, playerlastdir_read, playerlastdir_write },
-  { "playerx", 0, playerx_read, NULL },
-  { "playery", 0, playery_read, NULL },
-  { "r!.*", 0, r_read, r_write },
-  { "red_value", 0, red_value_read, red_value_write },
-  { "rid*", 0x245, rid_read, NULL },
-  { "robot_id", 0, robot_id_read, NULL },
-  { "robot_id_*", 0, robot_id_n_read, NULL },
-  { "save_bc?", 0, save_bc_read, NULL },
-  { "save_game", 0, save_game_read, NULL },
-  { "save_robot?", 0, save_robot_read, NULL },
-  { "save_world", 0, save_world_read, NULL },
-  { "score", 0, score_read, score_write },
-  { "scrolledx", 0, scrolledx_read, NULL },
-  { "scrolledy", 0, scrolledy_read, NULL },
-  { "sin!", 0, sin_read, NULL },
-  { "smzx_b!", 0, smzx_b_read, smzx_b_write },
-  { "smzx_g!", 0, smzx_g_read, smzx_g_write },
-  { "smzx_mode", 0, smzx_mode_read, smzx_mode_write },
-  { "smzx_palette", 0, smzx_palette_read, NULL },
-  { "smzx_r!", 0, smzx_r_read, smzx_r_write },
-  { "spr!_ccheck", 0, NULL, spr_ccheck_write },
-  { "spr!_cheight", 0, spr_cheight_read, spr_cheight_write },
-  { "spr!_clist", 0, NULL, spr_clist_write },
-  { "spr!_cwidth", 0, spr_cwidth_read, spr_cwidth_write },
-  { "spr!_cx", 0, spr_cx_read, spr_cx_write },
-  { "spr!_cy", 0, spr_cy_read, spr_cy_write },
-  { "spr!_height", 0, spr_height_read, spr_height_write },
-  { "spr!_off", 0, NULL, spr_off_write },
-  { "spr!_overlaid", 0, NULL, spr_overlaid_write },
-  { "spr!_overlay", 0, NULL, spr_overlaid_write },
-  { "spr!_refx", 0, spr_refx_read, spr_refx_write },
-  { "spr!_refy", 0, spr_refy_read, spr_refy_write },
-  { "spr!_setview", 0, NULL, spr_setview_write },
-  { "spr!_static", 0, NULL, spr_static_write },
-  { "spr!_swap", 0, NULL, spr_swap_write },
-  { "spr!_vlayer", 0, NULL, spr_vlayer_write },
-  { "spr!_width", 0, spr_width_read, spr_width_write },
-  { "spr!_x", 0, spr_x_read, spr_x_write },
-  { "spr!_y", 0, spr_y_read, spr_y_write },
-  { "spr_clist!", 0, spr_clist_read, NULL },
-  { "spr_collisions", 0, spr_collisions_read, NULL },
-  { "spr_num", 0, spr_num_read, spr_num_write },
-  { "spr_yorder", 0, NULL, spr_yorder_write },
-  { "sqrt!", 0, sqrt_read, NULL },
-  { "tan!", 0, tan_read, NULL },
-  { "thisx", 0, thisx_read, NULL },
-  { "thisy", 0, thisy_read, NULL },
-  { "this_char", 0, this_char_read, NULL },
-  { "this_color", 0, this_color_read, NULL },
-  { "timerset", 0, timerset_read, timerset_write },
-  { "time_hours", 0, time_hours_read, NULL },
-  { "time_minutes", 0, time_minutes_read, NULL },
-  { "time_seconds", 0, time_seconds_read, NULL },
-  { "vch!,!", 0, vch_read, vch_write },
-  { "vco!,!", 0, vco_read, vco_write },
-  { "vertpld", 0, vertpld_read, NULL },
-  { "vlayer_height", 0, vlayer_height_read, vlayer_height_write },
-  { "vlayer_size", 0, vlayer_size_read, vlayer_size_write },
-  { "vlayer_width", 0, vlayer_width_read, vlayer_width_write },
+  { "$*", 0x023E, str_num_read, str_num_write },                     // 2.62
+  { "abs!", 0x0244, abs_read, NULL },                                // 2.68
+  { "acos!", 0x0244, acos_read, NULL },                              // 2.68
+  { "asin!", 0x0244, asin_read, NULL },                              // 2.68
+  { "atan!", 0x0244, atan_read, NULL },                              // 2.68
+  { "bimesg", 0x0209, NULL, bimesg_write },                          // 2.51s3.2
+  { "blue_value", 0x0209, blue_value_read, blue_value_write },       // 2.60
+  { "board_char", 0x0209, board_char_read, NULL },                   // 2.60
+  { "board_color", 0x0209, board_color_read, NULL },                 // 2.60
+  { "board_h", 0x0241, board_h_read, NULL },                         // 2.65
+  { "board_id", 0x0241, board_id_read, board_id_write },             // 2.65
+  { "board_param", 0x0241, board_param_read, board_param_write },    // 2.65
+  { "board_w", 0x0241, board_w_read, NULL },                         // 2.65
+  { "bullettype", 0x0209, bullettype_read, bullettype_write },       // 2.60
+  { "buttons", 0x0208, buttons_read, NULL },                         // 2.51s1
+  { "char_byte", 0x0209, char_byte_read, char_byte_write },          // 2.60
+  { "commands", 0x0209, commands_read, commands_write },             // 2.60
+  { "cos!", 0x0244, cos_read, NULL },                                // 2.68
+  { "c_divisions", 0x0244, c_divisions_read, c_divisions_write },    // 2.68
+  { "date_day", 0x0209, date_day_read, NULL },                       // 2.60
+  { "date_month", 0x0209, date_month_read, NULL },                   // 2.60
+  { "date_year", 0x0209, date_year_read, NULL },                     // 2.60
+  { "divider", 0x0244, divider_read, divider_write },                // 2.68
+  { "fread", 0x0209, fread_read, NULL },                             // 2.60
+  { "fread_counter", 0x0241, fread_counter_read, NULL },             // 2.65
+  { "fread_open", 0x0209, fread_open_read, NULL },                   // 2.60
+  { "fread_pos", 0x0209, fread_pos_read, fread_pos_write },          // 2.60
+  { "fwrite", 0x0209, NULL, fwrite_write },                          // 2.60
+  { "fwrite_append", 0x0209, fwrite_append_read, NULL },             // 2.60
+  { "fwrite_counter", 0x0241, NULL, fwrite_counter_write },          // 2.65
+  { "fwrite_modify", 0x0248, fwrite_modify_read, NULL },             // 2.69c
+  { "fwrite_open", 0x0209, fwrite_open_read, NULL },                 // 2.60
+  { "fwrite_pos", 0x0209, fwrite_pos_read, fwrite_pos_write },       // 2.60
+  { "green_value", 0x0209, green_value_read, green_value_write },    // 2.60
+  { "horizpld", 0, horizpld_read, NULL },                            // <=2.51
+  { "input", 0x023E, input_read, input_write },                      // 2.62
+  { "inputsize", 0, inputsize_read, inputsize_write },               // <=2.51
+  { "int2bin", 0x0209, int2bin_read, int2bin_write },                // 2.60
+  { "key?", 0x0245, key_read, key_write },                           // 2.69
+  { "key_code", 0x0245, key_code_read, NULL },                       // 2.69
+  { "key_pressed", 0x0209, key_pressed_read, NULL },                 // 2.60
+  { "key_release", 0x0245, key_release_read, NULL },                 // 2.69
+  { "lava_walk", 0x0209, lava_walk_read, lava_walk_write },          // 2.60
+  { "load_bc?", 0x0249, load_bc_read, NULL },                        // 2.70
+  { "load_game", 0x0244, load_game_read, NULL },                     // 2.68
+  { "load_robot?", 0x0249, load_robot_read, NULL },                  // 2.70
+  { "local?", 0x0208, local_read, local_write },                     // 2.51s1
+  { "loopcount", 0, loopcount_read, loopcount_write },               // <=2.51
+  { "mboardx", 0x0208, mboardx_read, NULL },                         // 2.51s1
+  { "mboardy", 0x0208, mboardy_read, NULL },                         // 2.51s1
+  { "mod_frequency", 0x0251, mod_freq_read, mod_freq_write },        // 2.81
+  { "mod_order", 0x023E, mod_order_read, mod_order_write },          // 2.62
+  { "mod_position", 0x0251, mod_position_read, mod_position_write }, // 2.81
+  { "mousex", 0x0208, mousex_read, mousex_write },                   // 2.51s1
+  { "mousey", 0x0208, mousey_read, mousey_write },                   // 2.51s1
+  { "multiplier", 0x0244, multiplier_read, multiplier_write },       // 2.68
+  { "mzx_speed", 0x0209, mzx_speed_read, mzx_speed_write },          // 2.60
+  { "overlay_char", 0x0209, overlay_char_read, NULL },               // 2.60
+  { "overlay_color", 0x0209, overlay_color_read, NULL },             // 2.60
+  { "overlay_mode", 0x0209, overlay_mode_read, NULL },               // 2.60
+  { "pixel", 0x0209, pixel_read, pixel_write },                      // 2.60
+  { "playerdist", 0, playerdist_read, NULL },                        // <=2.51
+  { "playerfacedir", 0, playerfacedir_read, playerfacedir_write },   // <=2.51
+  { "playerlastdir", 0, playerlastdir_read, playerlastdir_write },   // <=2.51
+  { "playerx", 0x0208, playerx_read, NULL },                         // 2.51s1
+  { "playery", 0x0208, playery_read, NULL },                         // 2.51s1
+  { "r!.*", 0x0241, r_read, r_write },                               // 2.65
+  { "red_value", 0x0209, red_value_read, red_value_write },          // 2.60
+  { "rid*", 0x0246, rid_read, NULL },                                // 2.69b
+  { "robot_id", 0x0209, robot_id_read, NULL },                       // 2.60
+  { "robot_id_*", 0x0241, robot_id_n_read, NULL },                   // 2.65
+  { "save_bc?", 0x0249, save_bc_read, NULL },                        // 2.70
+  { "save_game", 0x0244, save_game_read, NULL },                     // 2.68
+  { "save_robot?", 0x0249, save_robot_read, NULL },                  // 2.70
+  { "save_world", 0x0248, save_world_read, NULL },                   // 2.69c
+  { "score", 0, score_read, score_write },                           // <=2.51
+  { "scrolledx", 0x0208, scrolledx_read, NULL },                     // 2.51s1
+  { "scrolledy", 0x0208, scrolledy_read, NULL },                     // 2.51s1
+  { "sin!", 0x0244, sin_read, NULL },                                // 2.68
+  { "smzx_b!", 0x0245, smzx_b_read, smzx_b_write },                  // 2.69
+  { "smzx_g!", 0x0245, smzx_g_read, smzx_g_write },                  // 2.69
+  { "smzx_mode", 0x0245, smzx_mode_read, smzx_mode_write },          // 2.69
+  { "smzx_palette", 0x0245, smzx_palette_read, NULL },               // 2.69
+  { "smzx_r!", 0x0245, smzx_r_read, smzx_r_write },                  // 2.69
+  { "spr!_ccheck", 0x0241, NULL, spr_ccheck_write },                 // 2.65
+  { "spr!_cheight", 0x0241, spr_cheight_read, spr_cheight_write },   // 2.65
+  { "spr!_clist", 0x0241, NULL, spr_clist_write },                   // 2.65
+  { "spr!_cwidth", 0x0241, spr_cwidth_read, spr_cwidth_write },      // 2.65
+  { "spr!_cx", 0x0241, spr_cx_read, spr_cx_write },                  // 2.65
+  { "spr!_cy", 0x0241, spr_cy_read, spr_cy_write },                  // 2.65
+  { "spr!_height", 0x0241, spr_height_read, spr_height_write },      // 2.65
+  { "spr!_off", 0x0241, NULL, spr_off_write },                       // 2.65
+  { "spr!_overlaid", 0x0241, NULL, spr_overlaid_write },             // 2.65
+  { "spr!_overlay", 0x0248, NULL, spr_overlaid_write },              // 2.69c
+  { "spr!_refx", 0x0241, spr_refx_read, spr_refx_write },            // 2.65
+  { "spr!_refy", 0x0241, spr_refy_read, spr_refy_write },            // 2.65
+  { "spr!_setview", 0x0241, NULL, spr_setview_write },               // 2.65
+  { "spr!_static", 0x0241, NULL, spr_static_write },                 // 2.65
+  { "spr!_swap", 0x0241, NULL, spr_swap_write },                     // 2.65
+  { "spr!_vlayer", 0x0248, NULL, spr_vlayer_write },                 // 2.69c
+  { "spr!_width", 0x0241, spr_width_read, spr_width_write },         // 2.65
+  { "spr!_x", 0x0241, spr_x_read, spr_x_write },                     // 2.65
+  { "spr!_y", 0x0241, spr_y_read, spr_y_write },                     // 2.65
+  { "spr_clist!", 0x0241, spr_clist_read, NULL },                    // 2.65
+  { "spr_collisions", 0x0241, spr_collisions_read, NULL },           // 2.65
+  { "spr_num", 0x0241, spr_num_read, spr_num_write },                // 2.65
+  { "spr_yorder", 0x0241, NULL, spr_yorder_write },                  // 2.65
+  { "sqrt!", 0x0244, sqrt_read, NULL },                              // 2.68
+  { "tan!", 0x0244, tan_read, NULL },                                // 2.68
+  { "thisx", 0, thisx_read, NULL },                                  // <=2.51
+  { "thisy", 0, thisy_read, NULL },                                  // <=2.51
+  { "this_char", 0x0209, this_char_read, NULL },                     // 2.60
+  { "this_color", 0x0209, this_color_read, NULL },                   // 2.60
+  { "timereset", 0, timereset_read, timereset_write },               // <=2.51
+  { "time_hours", 0x0209, time_hours_read, NULL },                   // 2.60
+  { "time_minutes", 0x0209, time_minutes_read, NULL },               // 2.60
+  { "time_seconds", 0x0209, time_seconds_read, NULL },               // 2.60
+  { "vch!,!", 0x0248, vch_read, vch_write },                         // 2.69c
+  { "vco!,!", 0x0248, vco_read, vco_write },                         // 2.69c
+  { "vertpld", 0, vertpld_read, NULL },                              // <=2.51
+  { "vlayer_height", 0x0248, vlayer_height_read, vlayer_height_write },// 2.69c
+  { "vlayer_size", 0x0251, vlayer_size_read, vlayer_size_write },    // 2.81
+  { "vlayer_width", 0x0248, vlayer_width_read, vlayer_width_write }, // 2.69c
 };
 
 static int counter_first_letter[512];

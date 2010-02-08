@@ -100,6 +100,11 @@ USERS
 + Clamp array offsets on boards. Some older MZX worlds are corrupted and
   have the endgame_{x,y} coordinates outside of the limits of the endgame
   board. Fixes "Fourth Power".
++ Where possible, version all counters that the port understands. This
+  ensures that in the unlikely case that a game made with an older version
+  of MZX (actually, with an older world magic) uses a counter that did not
+  exist in that game's era, the port will no longer try to interpret it.
+  Previously, only rid? and key? were versioned.
 
 DEVELOPERS
 
