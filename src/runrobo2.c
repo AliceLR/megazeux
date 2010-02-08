@@ -3291,30 +3291,34 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         // Box messages!
         char label_buffer[ROBOT_MAX_TR];
-        int cur_prog_line = cur_robot->cur_prog_line;
-        int next_cmd = 0;
+        int next_prog_line, next_cmd;
 
         robot_box_display(mzx_world, cmd_ptr - 1, label_buffer, id);
 
         // Move to end of all box mesg cmds.
-        do
+        while(1)
         {
-          cur_prog_line += program[cur_prog_line] + 2;
+          // jump command length, command length bytes, command length
+          next_prog_line = cur_robot->cur_prog_line +
+                           program[cur_robot->cur_prog_line] + 2;
+
           // At next line- check type
-          if(!program[cur_prog_line])
+          if(!program[next_prog_line])
             goto end_prog;
 
-          next_cmd = program[cur_prog_line + 1];
-        } while((next_cmd == 47) || ((next_cmd >= 103) &&
-         (next_cmd <= 106)) || (next_cmd == 116) || (next_cmd == 117));
+          next_cmd = program[next_prog_line + 1];
+          if(!((next_cmd == 47) || ((next_cmd >= 103) && (next_cmd <= 106))
+                                || ((next_cmd >= 116) && (next_cmd <= 117))))
+            break;
 
-        cur_robot->cur_prog_line = cur_prog_line;
+          cur_robot->cur_prog_line = next_prog_line;
+        }
 
         // Send label
         if(label_buffer[0])
-        {
           gotoed = send_self_label_tr(mzx_world, label_buffer, id);
-        }
+        else
+          cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
 
         goto breaker;
       }
