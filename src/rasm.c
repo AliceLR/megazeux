@@ -1700,9 +1700,10 @@ __editor_maybe_static int assemble_line(char *cpos,
   current_command.name = command_name;
   current_command.param_types = command_params;
 
-  rasm_skip_whitespace(cpos + 1, &first_non_space);
+  if(cpos[0])
+    rasm_skip_whitespace(cpos + 1, &first_non_space);
 
-  if(cpos[0] == 0)
+  if(!cpos[0])
   {
     translated_command = 47;
     strcpy(current_command.name, command_list[47].name);
