@@ -2092,17 +2092,16 @@ void title_screen(World *mzx_world)
   set_config_from_file(&(mzx_world->conf), "title.cnf");
   chdir(current_dir);
 
-  if(!mzx_world->conf.startup_editor)
+#ifdef CONFIG_EDITOR
+  if(mzx_world->conf.startup_editor)
+    edit_world(mzx_world);
+  else
+#endif
   {
     if(!stat(curr_file, &file_info))
       load_world_file(mzx_world, curr_file);
     else
       load_world_selection(mzx_world);
-  }
-  else
-  {
-    if(mzx_world->conf.startup_editor)
-      edit_world(mzx_world);
   }
 
   src_board = mzx_world->current_board;
