@@ -1799,7 +1799,7 @@ static void str_num_write(World *mzx_world, function_counter *counter,
   {
     mzx_string *src;
     unsigned int old_length, new_length;
-    unsigned int str_num;
+    int str_num;
     int next;
 
     *dot_ptr = 0;
@@ -1807,6 +1807,8 @@ static void str_num_write(World *mzx_world, function_counter *counter,
 
     // A number
     str_num = strtol(dot_ptr, NULL, 10);
+    if(str_num < 0)
+      return;
 
     src = find_string(mzx_world, name, &next);
 
@@ -1831,7 +1833,7 @@ static void str_num_write(World *mzx_world, function_counter *counter,
     }
 
     force_string_length(src, new_length);
-    if(src->length <= str_num)
+    if(src->length <= (unsigned int)str_num)
       src->length = str_num + 1;
 
     src->value[str_num] = value;
