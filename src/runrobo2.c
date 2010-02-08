@@ -987,7 +987,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
     }
 
     // Walk?
-    if(is_cardinal_dir(walk_dir))
+    if(id && is_cardinal_dir(walk_dir))
     {
       move_status status = move(mzx_world, x, y, dir_to_int(walk_dir),
        CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK |
@@ -1001,7 +1001,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       }
       else if(status == NO_HIT)
       {
-        mzx_thing id;
+        mzx_thing level_id;
 
         move_dir(src_board, &x, &y, walk_dir);
 
@@ -1014,8 +1014,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
          * updated x,y location of the robot for this cycle, we simply end the
          * cycle if the robot enters a transport.
          */
-        id = (mzx_thing)level_id[x + (y * board_width)];
-        if(id == TRANSPORT)
+        level_id = (mzx_thing)level_id[x + (y * board_width)];
+        if(level_id == TRANSPORT)
           goto breaker;
       }
       else
@@ -3195,11 +3195,16 @@ void run_robot(World *mzx_world, int id, int x, int y)
            mzx_world->player_x, mzx_world->player_y, direction,
            cur_robot, player_bl);
 
-          if(!is_robot(level_id[x + (y * board_width)]))
+          /* Ensure that if the put involves overwriting this robot,
+           * we immediately abort execution of it. However, the global
+           * robot should not have this check done, since it doesn't
+           * exist on the board.
+           */
+          if(id && !is_robot(level_id[x + (y * board_width)]))
             goto end_prog;
         }
-        update_blocked = 1;
 
+        update_blocked = 1;
         break;
       }
 
