@@ -16,11 +16,13 @@ unzip_objs = ${unzip_base}/unzip.${o} ${unzip_base}/ioapi.${o}
 
 ${unzip_base}/%.o ${unzip_base}/%.dbg.o: ${unzip_base}/%.c
 ifeq (${V},1)
-	${CC} ${CFLAGS} ${unzip_cflags} -I${PREFIX}/include -c $< -o $@
+	${CC} -MD ${CFLAGS} ${unzip_cflags} -I${PREFIX}/include -c $< -o $@
 else
 	@echo "  CC      " $<
-	@${CC} ${CFLAGS} ${unzip_cflags} -I${PREFIX}/include -c $< -o $@
+	@${CC} -MD ${CFLAGS} ${unzip_cflags} -I${PREFIX}/include -c $< -o $@
 endif
+
+-include $(unzip_objs:.o=.d)
 
 ifeq (${BUILD_UTILS},1)
 ${unzip}: ${unzip_objs}
@@ -37,4 +39,4 @@ endif
 
 ${unzip}_clean:
 	@echo "  CLEAN   " ${unzip_base}
-	@rm -f ${unzip} ${unzip_objs}
+	@rm -f ${unzip} ${unzip_objs} $(unzip_objs:.o=.d)

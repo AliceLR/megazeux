@@ -12,14 +12,6 @@ libmodplug = ${libmodplug_base}/libmodplug.a
 libmodplug_cflags = -DHAVE_INTTYPES_H -I${libmodplug_base} \
                     -I${libmodplug_base}/libmodplug
 
-${libmodplug_base}/%.o ${libmodplug_base}/%.dbg.o: ${libmodplug_base}/%.cpp
-ifeq (${V},1)
-	${CXX} ${CXXFLAGS} ${libmodplug_cflags} -c $< -o $@
-else
-	@echo "  CXX     " $<
-	@${CXX} ${CXXFLAGS} ${libmodplug_cflags} -c $< -o $@
-endif
-
 libmodplug_objs = \
     ${libmodplug_base}/fastmix.${o} ${libmodplug_base}/load_669.${o} \
     ${libmodplug_base}/load_amf.${o} ${libmodplug_base}/load_ams.${o} \
@@ -38,6 +30,16 @@ libmodplug_objs = \
     ${libmodplug_base}/snd_fx.${o} ${libmodplug_base}/sndmix.${o} \
     ${libmodplug_base}/tables.${o}
 
+${libmodplug_base}/%.o ${libmodplug_base}/%.dbg.o: ${libmodplug_base}/%.cpp
+ifeq (${V},1)
+	${CXX} -MD ${CXXFLAGS} ${libmodplug_cflags} -c $< -o $@
+else
+	@echo "  CXX     " $<
+	@${CXX} -MD ${CXXFLAGS} ${libmodplug_cflags} -c $< -o $@
+endif
+
+-include $(libmodplug_objs:.o=.d)
+
 ifeq (${BUILD_MODPLUG},1)
 ${libmodplug}: ${libmodplug_objs}
 ifeq (${V},1)
@@ -53,4 +55,4 @@ endif
 
 ${libmodplug}_clean:
 	@echo "  CLEAN   " ${libmodplug_base}
-	@rm -f ${libmodplug} ${libmodplug_objs}
+	@rm -f ${libmodplug} ${libmodplug_objs} $(libmodplug_objs:.o=.d)

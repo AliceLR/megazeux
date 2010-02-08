@@ -18,11 +18,13 @@ gdm2s3m_objs = \
 
 ${gdm2s3m_base}/%.o ${gdm2s3m_base}/%.dbg.o: ${gdm2s3m_base}/%.c
 ifeq (${V},1)
-	${CC} ${CFLAGS} ${gdm2s3m_cflags} -c $< -o $@
+	${CC} -MD ${CFLAGS} ${gdm2s3m_cflags} -c $< -o $@
 else
 	@echo "  CC      " $<
-	@${CC} ${CFLAGS} ${gdm2s3m_cflags} -c $< -o $@
+	@${CC} -MD ${CFLAGS} ${gdm2s3m_cflags} -c $< -o $@
 endif
+
+-include $(gdm2s3m_objs:.o=.d)
 
 ifeq (${BUILD_GDM2S3M},1)
 ${gdm2s3m}: ${gdm2s3m_objs}
@@ -39,4 +41,4 @@ endif
 
 ${gdm2s3m}_clean:
 	@echo "  CLEAN   " ${gdm2s3m_base}
-	@rm -f ${gdm2s3m} ${gdm2s3m_objs}
+	@rm -f ${gdm2s3m} ${gdm2s3m_objs} $(gdm2s3m_objs:.o=.d)

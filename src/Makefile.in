@@ -18,39 +18,39 @@ mzx_cxxflags = -DHAVE_INTTYPES_H
 mzx_flags   += ${SDL_CFLAGS} -I${mzx_base} -I${PREFIX}/include
 mzx_ldflags := ${SDL_LDFLAGS} ${mzx_ldflags}
 
-txt2hlp_base = src/utils
-txt2hlp = ${txt2hlp_base}/txt2hlp${BINEXT}
-txt2hlp_objs = ${txt2hlp_base}/txt2hlp.${o}
+utils_base = src/utils
 
-checkres_base = src/utils
-checkres = ${checkres_base}/checkres${BINEXT}
-checkres_objs = ${checkres_base}/checkres.${o} ${mzx_base}/fsafeopen.${o}
+txt2hlp = ${utils_base}/txt2hlp${BINEXT}
+txt2hlp_objs = ${utils_base}/txt2hlp.${o}
+
+checkres = ${utils_base}/checkres${BINEXT}
+checkres_objs = ${utils_base}/checkres.${o} ${mzx_base}/fsafeopen.${o}
 checkres_ldflags = ${unzip} -L${PREFIX}/lib -lz
 
-${txt2hlp_base}/%.o ${txt2hlp_base}/%.dbg.o: ${txt2hlp_base}/%.c
+${utils_base}/%.o ${utils_base}/%.dbg.o: ${utils_base}/%.c
 ifeq (${V},1)
-	${CC} ${CFLAGS} -I${mzx_base} -I${unzip_base} \
-	                -I${PREFIX}/include -c $< -o $@
+	${CC} -MD ${CFLAGS} -I${mzx_base} -I${unzip_base} \
+	                    -I${PREFIX}/include -c $< -o $@
 else
 	@echo "  CC      " $<
-	@${CC} ${CFLAGS} -I${mzx_base} -I${unzip_base} \
-	                 -I${PREFIX}/include -c $< -o $@
+	@${CC} -MD ${CFLAGS} -I${mzx_base} -I${unzip_base} \
+	                     -I${PREFIX}/include -c $< -o $@
 endif
 
 ${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.c
 ifeq (${V},1)
-	${CC} ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
+	${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 else
 	@echo "  CC      " $<
-	@${CC} ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
+	@${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 endif
 
 ${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.cpp
 ifeq (${V},1)
-	${CXX} ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
+	${CXX} -MD ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
 else
 	@echo "  CXX     " $<
-	@${CXX} ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
+	@${CXX} -MD ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
 endif
 
 # please keep this sorted alphabetically (yes, I know it's painful)
@@ -123,6 +123,10 @@ ifeq (${PTHREAD},1)
 mzx_ldflags := -lpthread ${mzx_ldflags}
 endif
 
+-include $(mzx_objs:.o=.d)
+-include $(txt2hlp_objs:.o=.d)
+-include $(checkres_objs:.o=.d)
+
 ifeq (${BUILD_UTILS},1)
 
 ${txt2hlp}: ${txt2hlp_objs}
@@ -184,12 +188,12 @@ endif
 
 ${txt2hlp}_clean:
 	@echo "  CLEAN   " ${txt2hlp}
-	@rm -f ${txt2hlp_objs} ${txt2hlp}
+	@rm -f ${txt2hlp_objs} ${txt2hlp} $(txt2hlp_objs:.o=.d)
 
 ${checkres}_clean:
 	@echo "  CLEAN   " ${checkres}
-	@rm -f ${checkres_objs} ${checkres}
+	@rm -f ${checkres_objs} ${checkres} $(checkres_objs:.o=.d)
 
 ${mzx}_clean: ${txt2hlp}_clean ${checkres}_clean
 	@echo "  CLEAN   " ${mzx_base}
-	@rm -f ${mzx_objs} ${mzx}
+	@rm -f ${mzx_objs} ${mzx} $(mzx_objs:.o=.d)

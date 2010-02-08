@@ -95,6 +95,9 @@ DEVELOPERS
 + Updated Win32 builds with SDL 1.2.13.
 + Build and package two utilities, txt2hlp (for helpfile generation)
   and checkres, on Win32.
++ Dependencies are now correctly tracked in the build system. Modifying a
+  header will automatically regenerate the minimal set of object files that
+  depend on this header.
 
 December 8, 2007 - MZX 2.81h
 
