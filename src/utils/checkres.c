@@ -52,22 +52,23 @@
 
 typedef struct stream_info
 {
-	enum stream_type
-	{
-		FILE_STREAM, 
-		BUFFER_STREAM
-	} type;
-	union
-	{
-		FILE *fp;
-		struct
-		{
-			unsigned long int index;
-			unsigned char *buf;
-			unsigned long int len;
+  enum stream_type
+  {
+    FILE_STREAM,
+    BUFFER_STREAM
+  } type;
+
+  union
+  {
+    FILE *fp;
+    struct
+    {
+      unsigned long int index;
+      unsigned char *buf;
+      unsigned long int len;
       unzFile f;
-		} buffer;
-	} stream;
+    } buffer;
+  } stream;
 } stream_t;
 
 typedef enum status
@@ -153,178 +154,194 @@ static status_t add_to_hash_table(char *stack_str)
 
 static status_t s_open(const char *filename, const char *mode, stream_t **s)
 {
-	*s = (stream_t *)malloc(sizeof(stream_t));
-	if(!strcasecmp(filename + strlen(filename) - 3, "zip"))
-	{
-		(*s)->type = BUFFER_STREAM;
-		unzFile f = unzOpen(filename);
-		if(!f)
-		{
-			free(*s);
-			*s = NULL;
-			return MALLOC_FAILED;
-		}
-		if(unzGoToFirstFile(f) != UNZ_OK)
-		{
-			free(*s);
-			*s = NULL;
-			unzClose(f);
-			return UNZ_FAILED;
-		}
-		do
-		{
-			char fname[FILENAME_MAX];
-			unz_file_info info;
-			unzGetCurrentFileInfo(f, &info, fname, FILENAME_MAX, NULL, 0, NULL, 0);
-			if(!strcasecmp(fname + strlen(fname) - 3, "mzx"))
-			{
-				if(unzOpenCurrentFile(f) == UNZ_OK)
-				{
-					(*s)->stream.buffer.len = info.uncompressed_size;
-					(*s)->stream.buffer.buf = malloc((*s)->stream.buffer.len);
-					if(!(*s)->stream.buffer.buf)
-					{
-						free(*s);
-						*s = NULL;
-						unzClose(f);
-						return MALLOC_FAILED;
-					}
-					int ret = unzReadCurrentFile(f, (*s)->stream.buffer.buf, (*s)->stream.buffer.len);
-					if(ret <= 0)
-					{
-						free((*s)->stream.buffer.buf);
-						free(*s);
-						*s = NULL;
-						unzClose(f);
-						return UNZ_FAILED;
-					}
-					unzCloseCurrentFile(f);
-					break;
-				}
-				else
-				{
-					free(*s);
-					*s = NULL;
-					unzClose(f);
-					return UNZ_FAILED;
-				}
-			}
-		} while(unzGoToNextFile(f) == UNZ_OK);
-		if(unzGoToNextFile(f) == UNZ_END_OF_LIST_OF_FILE)
-		{
-			free(*s);
-			*s = NULL;
-			unzClose(f);
-			return NO_WORLD;
-		}
-		else (*s)->stream.buffer.f = f;
-	}
-	else
-	{
-		(*s)->type = FILE_STREAM;
-		(*s)->stream.fp = fopen(filename, mode);
-		if(!(*s)->stream.fp) return FOPEN_FAILED;
-	}
-	return SUCCESS;
+  *s = (stream_t *)malloc(sizeof(stream_t));
+
+  if(!strcasecmp(filename + strlen(filename) - 3, "zip"))
+  {
+    (*s)->type = BUFFER_STREAM;
+    unzFile f = unzOpen(filename);
+    if(!f)
+    {
+      free(*s);
+      *s = NULL;
+      return MALLOC_FAILED;
+    }
+    if(unzGoToFirstFile(f) != UNZ_OK)
+    {
+      free(*s);
+      *s = NULL;
+      unzClose(f);
+      return UNZ_FAILED;
+    }
+    do
+    {
+      char fname[FILENAME_MAX];
+      unz_file_info info;
+      unzGetCurrentFileInfo(f, &info, fname, FILENAME_MAX, NULL, 0, NULL, 0);
+      if(!strcasecmp(fname + strlen(fname) - 3, "mzx"))
+      {
+        if(unzOpenCurrentFile(f) == UNZ_OK)
+        {
+          int ret;
+
+          (*s)->stream.buffer.len = info.uncompressed_size;
+          (*s)->stream.buffer.buf = malloc((*s)->stream.buffer.len);
+          if(!(*s)->stream.buffer.buf)
+          {
+            free(*s);
+            *s = NULL;
+            unzClose(f);
+            return MALLOC_FAILED;
+          }
+          ret = unzReadCurrentFile(f, (*s)->stream.buffer.buf,
+                                   (*s)->stream.buffer.len);
+          if(ret <= 0)
+          {
+            free((*s)->stream.buffer.buf);
+            free(*s);
+            *s = NULL;
+            unzClose(f);
+            return UNZ_FAILED;
+          }
+          unzCloseCurrentFile(f);
+          break;
+        }
+        else
+        {
+          free(*s);
+          *s = NULL;
+          unzClose(f);
+          return UNZ_FAILED;
+        }
+      }
+    } while(unzGoToNextFile(f) == UNZ_OK);
+
+    if(unzGoToNextFile(f) == UNZ_END_OF_LIST_OF_FILE)
+    {
+      free(*s);
+      *s = NULL;
+      unzClose(f);
+      return NO_WORLD;
+    }
+    else
+      (*s)->stream.buffer.f = f;
+  }
+  else
+  {
+    (*s)->type = FILE_STREAM;
+    (*s)->stream.fp = fopen(filename, mode);
+    if(!(*s)->stream.fp) return FOPEN_FAILED;
+  }
+
+  return SUCCESS;
 }
 
 static int sclose(stream_t *s)
 {
-	FILE *f;
-	switch(s->type)
-	{
-		case FILE_STREAM:
-			f = s->stream.fp;
-			free(s);
-			return fclose(f);
-		case BUFFER_STREAM:
+  FILE *f;
+
+  switch(s->type)
+  {
+    case FILE_STREAM:
+      f = s->stream.fp;
+      free(s);
+      return fclose(f);
+    case BUFFER_STREAM:
       unzClose(s->stream.buffer.f);
-			free(s->stream.buffer.buf);
-			free(s);
-			return 0;
-		default:
-			return EOS;
-	}
+      free(s->stream.buffer.buf);
+      free(s);
+      return 0;
+    default:
+      return EOS;
+  }
 }
 
 static int sgetc(stream_t *s)
 {
-	switch(s->type)
-	{
-		case FILE_STREAM:
-			return fgetc(s->stream.fp);
-		case BUFFER_STREAM:
-			if(s->stream.buffer.index == s->stream.buffer.len)
-				return EOS;
-			else return s->stream.buffer.buf[s->stream.buffer.index++];
-		default:
-			return EOS;
-	}
+  switch(s->type)
+  {
+    case FILE_STREAM:
+      return fgetc(s->stream.fp);
+
+    case BUFFER_STREAM:
+      if(s->stream.buffer.index == s->stream.buffer.len)
+        return EOS;
+      else
+        return s->stream.buffer.buf[s->stream.buffer.index++];
+
+    default:
+      return EOS;
+  }
 }
 
 static size_t sread(void *ptr, size_t size, size_t count, stream_t *s)
 {
-	switch(s->type)
-	{
-		case FILE_STREAM:
-			return fread(ptr, size, count, s->stream.fp);
-		case BUFFER_STREAM:
-			if(s->stream.buffer.index + size * count >= s->stream.buffer.len)
-			{
-				size_t n = (s->stream.buffer.len - s->stream.buffer.index) / size;
-				memcpy(ptr, s->stream.buffer.buf + s->stream.buffer.index, n * size);
-				s->stream.buffer.index = s->stream.buffer.len;
-				return n;
-			}
-			else
-			{
-				memcpy(ptr, s->stream.buffer.buf + s->stream.buffer.index, count * size);
-				s->stream.buffer.index += count * size;
-				return count;
-			}
-		default:
-			return EOS;
-	}
+  switch(s->type)
+  {
+    case FILE_STREAM:
+      return fread(ptr, size, count, s->stream.fp);
+
+    case BUFFER_STREAM:
+      if(s->stream.buffer.index + size * count >= s->stream.buffer.len)
+      {
+        size_t n = (s->stream.buffer.len - s->stream.buffer.index) / size;
+        memcpy(ptr, s->stream.buffer.buf + s->stream.buffer.index, n * size);
+        s->stream.buffer.index = s->stream.buffer.len;
+        return n;
+      }
+      else
+      {
+        memcpy(ptr, s->stream.buffer.buf + s->stream.buffer.index, count * size);
+        s->stream.buffer.index += count * size;
+        return count;
+      }
+
+    default:
+      return EOS;
+  }
 }
 
 static int sseek(stream_t *s, long int offset, int origin)
 {
-	switch(s->type)
-	{
-		case FILE_STREAM:
-			return fseek(s->stream.fp, offset, origin);
-		case BUFFER_STREAM:
-			switch(origin)
-			{
-				case SEEK_SET:
-					s->stream.buffer.index = offset;
-					break;
-				case SEEK_CUR:
-					s->stream.buffer.index += offset;
-					break;
-				case SEEK_END:
-					s->stream.buffer.index = s->stream.buffer.len + offset;
-					break;
-			}
-			if(s->stream.buffer.index >= s->stream.buffer.len)
-				return EOS;
-			else return 0;
-		default:
-			return EOS;
-	}
+  switch(s->type)
+  {
+    case FILE_STREAM:
+      return fseek(s->stream.fp, offset, origin);
+
+    case BUFFER_STREAM:
+      switch(origin)
+      {
+        case SEEK_SET:
+          s->stream.buffer.index = offset;
+          break;
+        case SEEK_CUR:
+          s->stream.buffer.index += offset;
+          break;
+        case SEEK_END:
+          s->stream.buffer.index = s->stream.buffer.len + offset;
+          break;
+      }
+
+      if(s->stream.buffer.index >= s->stream.buffer.len)
+        return EOS;
+      return 0;
+
+    default:
+      return EOS;
+  }
 }
 
 static long int stell(stream_t *s)
 {
-	switch(s->type)
-	{
-		case FILE_STREAM:
-			return ftell(s->stream.fp);
-		case BUFFER_STREAM:
-			return s->stream.buffer.index;
-		default:
-			return EOS;
-	}
+  switch(s->type)
+  {
+    case FILE_STREAM:
+      return ftell(s->stream.fp);
+    case BUFFER_STREAM:
+      return s->stream.buffer.index;
+    default:
+      return EOS;
+  }
 }
 
 static unsigned int sgetud(stream_t *s)
@@ -356,10 +373,10 @@ static const char *decode_status(status_t status)
       return "Protected worlds currently unsupported.";
     case MAGIC_CHECK_FAILED:
       return "File magic not consistent with 2.00 world or board.";
-		case UNZ_FAILED:
-			return "Something is wrong with the zip file.";
-		case NO_WORLD:
-			return "No world file present.";
+    case UNZ_FAILED:
+      return "Something is wrong with the zip file.";
+    case NO_WORLD:
+      return "No world file present.";
     default:
       return "Unknown error.";
   }
@@ -770,8 +787,8 @@ int main(int argc, char *argv[])
     got_world = 1;
   else if(!strcasecmp(&argv[argc - 1][len - 4], ".MZB"))
     got_world = 0;
-	else if(!strcasecmp(&argv[argc -1][len -4], ".ZIP"))
-		got_world = 1;
+  else if(!strcasecmp(&argv[argc -1][len -4], ".ZIP"))
+    got_world = 1;
   else
   {
     fprintf(stderr, "\"%s\" is not a .MZX (world), .MZB (board)"
@@ -786,7 +803,7 @@ int main(int argc, char *argv[])
       ret = parse_world(s);
     else
       ret = parse_board(s);
-    
+
     for(i = 0; i < HASH_TABLE_SIZE; i++)
     {
       char **p = hash_table[i];
@@ -813,7 +830,7 @@ int main(int argc, char *argv[])
 
       free(hash_table[i]);
     }
-    
+
     sclose(s);
   }
 
