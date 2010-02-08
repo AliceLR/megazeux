@@ -57,10 +57,8 @@ int Random(int range);
 
 void get_path(const char *file_name, char *dest, unsigned int buf_len);
 
-#ifndef WIN32
 #include <sys/types.h>
 #include <dirent.h>
-#endif
 
 /* Some platforms like NDS don't have a rename(2), so we need
  * to implement it.
