@@ -2345,8 +2345,8 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
   return 0;
 }
 
-void disassemble_file(char *name, char *program, int allow_ignores,
- int base)
+void disassemble_file(char *name, char *program, int program_length,
+ int allow_ignores, int base)
 {
   FILE *output_file = fopen(name, "wb");
   char command_buffer[256];
@@ -2373,7 +2373,7 @@ void disassemble_file(char *name, char *program, int allow_ignores,
 
     current_robot_pos = next;
   }
-  while(new_line);
+  while(new_line && (current_robot_pos < program + program_length));
 
   fclose(output_file);
 }

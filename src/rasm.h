@@ -189,8 +189,8 @@ int get_color(char *cmd_line);
 int assemble_text(char *input_name, char *output_name);
 void print_command(mzx_command *cmd);
 char *assemble_file(char *name, int *size);
-void disassemble_file(char *name, char *program, int allow_ignores,
- int base);
+void disassemble_file(char *name, char *program, int program_length,
+ int allow_ignores, int base);
 
 #ifdef CONFIG_EDITOR
 int assemble_line(char *cpos, char *output_buffer, char *error_buffer,

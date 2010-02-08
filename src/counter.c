@@ -2327,7 +2327,7 @@ int set_counter_special(World *mzx_world, int spec_type,
         {
           fprintf(stderr, "program length is %d\n", cur_robot->program_length);
           disassemble_file(char_value, cur_robot->program,
-           allow_extras, base);
+	   cur_robot->program_length, allow_extras, base);
         }
       }
       break;
