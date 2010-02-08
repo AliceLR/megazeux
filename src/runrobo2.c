@@ -2770,7 +2770,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           int dest_width, dest_height;
           char mzm_name_buffer[ROBOT_MAX_TR];
-          char translated_name[ROBOT_MAX_TR];
+          char *translated_name = malloc(MAX_PATH);
+
           // "Type" must be 0, 1, or 2; board, overlay, or vlayer
           put_param %= 3;
 
@@ -2796,6 +2797,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
             load_mzm(mzx_world, translated_name, put_x, put_y,
              put_param, 1);
           }
+
+          free(translated_name);
 
           if(id)
           {
@@ -4559,7 +4562,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           {
             int copy_type = parse_param(mzx_world, p6, id);
             char name_buffer[ROBOT_MAX_TR];
-            char translated_name[ROBOT_MAX_TR];
+            char *translated_name = malloc(MAX_PATH);
 
             tr_msg(mzx_world, p5 + 2, id, name_buffer);
             prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
@@ -4573,6 +4576,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
               save_mzm(mzx_world, translated_name, src_x, src_y,
                width, height, src_type, 1);
             }
+
+            free(translated_name);
             break;
           }
           else
@@ -4827,7 +4832,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
           if(*(p5 + 1) == '@')
           {
             char name_buffer[ROBOT_MAX_TR];
-            char translated_name[ROBOT_MAX_TR];
+            char *translated_name = malloc(MAX_PATH);
+
             tr_msg(mzx_world, p5 + 2, id, name_buffer);
             prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
              src_width, src_height);
@@ -4837,6 +4843,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
               save_mzm(mzx_world, translated_name, src_x, src_y,
                width, height, src_type, 1);
             }
+
+            free(translated_name);
             break;
           }
           else
@@ -5295,7 +5303,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 216: // Load char set ""
       {
         char charset_name[ROBOT_MAX_TR];
-        char translated_name[ROBOT_MAX_TR];
+        char *translated_name = malloc(MAX_PATH);
 
         tr_msg(mzx_world, cmd_ptr + 2, id, charset_name);
 
@@ -5333,6 +5341,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
           if(!fsafetranslate(charset_name, translated_name))
             ec_load_set(translated_name);
         }
+
+        free(translated_name);
         break;
       }
 
@@ -5391,16 +5401,15 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 222: // Load palette
       {
         char name_buffer[ROBOT_MAX_TR];
-        char translated_name[ROBOT_MAX_TR];
+        char *translated_name = malloc(MAX_PATH);
 
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
 
         if(!fsafetranslate(name_buffer, translated_name))
           load_palette(translated_name);
 
+        free(translated_name);
         pal_update = 1;
-
-        // Done.
         break;
       }
 
