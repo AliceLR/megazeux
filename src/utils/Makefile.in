@@ -2,6 +2,8 @@
 # MegaZeux Utils Makefile fragment
 ##
 
+include contrib/unzip/src/Makefile.in
+
 #
 # FIXME: This whole file is a giant wart on the new build system
 #        and needs some love (and refactoring) to fix it
@@ -98,6 +100,8 @@ ${txt2hlp}:
 endif
 
 utils: ${unzip} ${checkres} ${downver} ${txt2hlp}
+
+utils_clean: ${unzip_clean}
 utils_clean: ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
 
 ${checkres}_clean:

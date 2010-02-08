@@ -5,7 +5,6 @@
 include contrib/gdm2s3m/src/Makefile.in
 include contrib/icons/Makefile.in
 include contrib/libmodplug/src/Makefile.in
-include contrib/unzip/src/Makefile.in
 
 .PHONY: ${mzx}_clean
 
@@ -136,7 +135,7 @@ endif
 
 -include $(mzx_objs:.o=.d)
 
-${mzx}: ${gdm2s3m} ${icons} ${libmodplug} ${unzip} ${mzx_objs}
+${mzx}: ${gdm2s3m} ${icons} ${libmodplug} ${mzx_objs}
 ifeq (${V},1)
 	${CC} ${mzx_objs} -o ${mzx} ${mzx_ldflags}
 else
@@ -152,6 +151,6 @@ else
 endif
 endif
 
-${mzx}_clean: ${gdm2s3m}_clean ${icons}_clean ${libmodplug}_clean ${unzip}_clean
+${mzx}_clean: ${gdm2s3m}_clean ${icons}_clean ${libmodplug}_clean
 	@echo "  CLEAN   " ${mzx_base}
 	@rm -f ${mzx_objs} ${mzx} $(mzx_objs:.o=.d)
