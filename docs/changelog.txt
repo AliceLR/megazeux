@@ -116,6 +116,9 @@ USERS
 + Add a new config option "board_editor_hide_help" which changes the default
   hide setting of the help text on the primary board editor.
 + Numerous fixes for bugs found by valgrind. (Nightwatch)
++ Icon support is now fixed and works on all platforms. On Windows, the
+  icon cannot currently be changed (it is loaded from the EXE's resource
+  section). Use ResHacker if you really want to change it.
 
 DEVELOPERS
 
