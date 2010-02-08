@@ -34,6 +34,7 @@ DEVELOPERS
   with --disable-audio.
 + Add fixes for OpenBSD to allow PNG screenshots and X11 clipboard support to
   work. Tested with OpenBSD 4.2 and GCC 3.3.5.
++ Updated Win32 builds with SDL 1.2.13.
 
 December 8, 2007 - MZX 2.81h
 
