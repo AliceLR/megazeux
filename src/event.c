@@ -381,7 +381,7 @@ static Uint32 process_event(SDL_Event *event)
         input.caps_status = 1;
       }
 
-#ifdef WIN32
+#ifdef __WIN32__
       if(event->key.keysym.sym == SDLK_NUMLOCK)
       {
         input.numlock_status = 1;
@@ -435,7 +435,7 @@ static Uint32 process_event(SDL_Event *event)
     {
       if (event->key.keysym.sym == SDLK_NUMLOCK)
       {
-#ifdef WIN32
+#ifdef __WIN32__
         input.numlock_status = 0;
 #else
         input.numlock_status ^= 1;

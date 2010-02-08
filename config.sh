@@ -41,6 +41,8 @@ usage() {
 	echo "  --disable-audio      Disables all audio (sound + music)."
 	echo "  --enable-tremor      Switches out libvorbis for libtremor."
 	echo "  --enable-pthread     Use pthread instead of SDL for locking."
+	echo "  --enable-icon        Try to brand executable with icon."
+	echo "                       (X11 platforms require SDL_image)"
 	echo
 	echo "e.g.: ./config.sh --platform linux --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -64,6 +66,7 @@ HELPSYS="true"
 HOST_TOOLS="false"
 UTILS="true"
 X11="true"
+X11_PLATFORM="true"
 SOFTWARE="true"
 OPENGL="true"
 OVERLAY="true"
@@ -74,6 +77,7 @@ LIBPNG="true"
 AUDIO="true"
 TREMOR="false"
 PTHREAD="false"
+ICON="true"
 
 #
 # User may override above settings
@@ -147,6 +151,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-pthread" ] && PTHREAD="false"
 	[ "$1" = "--disable-pthread" ] && PTHREAD="true"
+
+	[ "$1" = "--enable-icon" ] && ICON="true"
+	[ "$1" = "--disable-icon" ] && ICON="false"
 
 	shift
 done
@@ -362,6 +369,7 @@ if [ "$PLATFORM" = "linux"  -o "$PLATFORM" = "linux-static" \
 	fi
 else
 	echo "X11 support disabled (unsupported platform)."
+	X11_PLATFORM="false"
 fi
 
 #
@@ -411,8 +419,23 @@ fi
 #
 if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "linux-static" \
   -o "$PLATFORM" = "obsd" ]; then
-	echo "Force-enabling pthread on Linux platforms."
+	echo "Force-enabling pthread on POSIX platforms."
 	PTHREAD="true"
+fi
+
+#
+# Force disable icon branding if we lack prereqs
+#
+if [ "$ICON" = "true" ]; then
+	if [ "$X11_PLATFORM" = "true" -a "$X11" = "false" ]; then
+		echo "Force-disabling icon branding (X11 disabled)."
+		ICON="false"
+	fi
+
+	if [ "$X11_PLATFORM" = "true" -a "$LIBPNG" = "false" ]; then
+		echo "Force-disabling icon branding (libpng disabled)."
+		ICON="false"
+	fi
 fi
 
 #
@@ -520,6 +543,22 @@ if [ "$PTHREAD" = "true" ]; then
 	echo "PTHREAD=1" >> Makefile.platform
 else
 	echo "Not using pthread for locking primitives."
+fi
+
+#
+# Handle icon branding, if enabled
+#
+if [ "$ICON" = "true" ]; then
+	echo "Icon branding enabled."
+	echo "#define CONFIG_ICON" >> src/config.h
+	echo "ICON=1" >> Makefile.platform
+
+	# FIXME: Move this elsewhere..
+	if [ "$X11_PLATFORM" = "true" ]; then
+		 echo "mzx_ldflags += -lSDL_image" >> Makefile.platform
+	fi
+else
+	echo "Icon branding disabled."
 fi
 
 echo

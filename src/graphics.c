@@ -38,6 +38,11 @@
 #include "renderers.h"
 #include "util.h"
 
+#if !defined(__WIN32__) && defined(CONFIG_ICON)
+#include "SDL_syswm.h"
+#include "SDL_image.h"
+#endif
+
 #ifndef VERSION
 #error Must define VERSION for MegaZeux version string
 #endif
@@ -796,7 +801,7 @@ int init_video(config_info *conf)
   if(!set_graphics_output(conf->video_output))
     return false;
 
-  SDL_WM_SetCaption("MegaZeux " VERSION, "MZX");
+  SDL_WM_SetCaption("MegaZeux " VERSION, "");
   SDL_ShowCursor(SDL_DISABLE);
 
   if(!graphics.init_video(&graphics, conf))
@@ -806,6 +811,23 @@ int init_video(config_info *conf)
     if(!graphics.init_video(&graphics, conf))
       return false;
   }
+
+#if !defined(__WIN32__) && defined(CONFIG_ICON)
+  {
+    SDL_Surface *icon;
+    char *icon_path;
+
+    icon_path = malloc(MAX_PATH);
+    snprintf(icon_path, MAX_PATH,
+     "%s/contrib/icons/quantump/megazeux-apps.png", current_dir);
+
+    icon = IMG_Load(icon_path);
+    if(icon)
+      SDL_WM_SetIcon(icon, NULL);
+
+    free(icon_path);
+  }
+#endif // !__WIN32__ && CONFIG_ICON
 
   ec_load_set_secondary(mzx_res_get_by_id(MZX_DEFAULT_CHR),
    graphics.default_charset);
