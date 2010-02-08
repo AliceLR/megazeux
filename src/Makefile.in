@@ -175,7 +175,7 @@ ${txt2hlp}:
 
 endif
 
-${mzx}: ${gdm2s3m} ${libmodplug} ${unzip} ${mzx_objs} ${txt2hlp} ${checkres}
+${mzx}: ${gdm2s3m} ${libmodplug} ${unzip} ${mzx_objs}
 ifeq (${V},1)
 	${CC} ${mzx_objs} -o ${mzx} ${mzx_ldflags}
 else
@@ -191,6 +191,9 @@ else
 endif
 endif
 
+utils: ${txt2hlp} ${checkres}
+utils_clean: ${txt2hlp}_clean ${checkres}_clean
+
 ${txt2hlp}_clean:
 	@echo "  CLEAN   " ${txt2hlp}
 	@rm -f ${txt2hlp_objs} ${txt2hlp} $(txt2hlp_objs:.o=.d)
@@ -199,6 +202,6 @@ ${checkres}_clean:
 	@echo "  CLEAN   " ${checkres}
 	@rm -f ${checkres_objs} ${checkres} $(checkres_objs:.o=.d)
 
-${mzx}_clean: ${txt2hlp}_clean ${checkres}_clean
+${mzx}_clean:
 	@echo "  CLEAN   " ${mzx_base}
 	@rm -f ${mzx_objs} ${mzx} $(mzx_objs:.o=.d)

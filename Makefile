@@ -59,7 +59,7 @@ else
 mzx = ${TARGET}.dbg${BINEXT}
 endif
 
-mzx: ${mzx}
+mzx: ${mzx} utils
 
 ifeq (${BUILD_MODPLUG},1)
 BUILD_GDM2S3M=1
@@ -67,7 +67,8 @@ endif
 
 include src/Makefile.in
 
-clean: ${gdm2s3m}_clean ${libmodplug}_clean ${unzip}_clean ${mzx}_clean
+clean: ${gdm2s3m}_clean ${libmodplug}_clean ${unzip}_clean
+clean: ${mzx}_clean utils_clean
 
 distclean: clean
 	@echo "  DISTCLEAN"
