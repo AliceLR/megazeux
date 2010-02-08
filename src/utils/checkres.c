@@ -80,6 +80,7 @@ static unsigned int stb_hash(char *str)
 static status_t add_to_hash_table(char *stack_str)
 {
   unsigned int slot;
+  int count = 0;
   size_t len;
   char *str;
 
@@ -100,14 +101,9 @@ static status_t add_to_hash_table(char *stack_str)
     hash_table[slot] = malloc(sizeof(char *) * 2);
     if(!hash_table[slot])
       return MALLOC_FAILED;
-
-    hash_table[slot][0] = str;
-    hash_table[slot][1] = NULL;
   }
   else
   {
-    int count = 0;
-
     while(hash_table[slot][count])
     {
       if(!strcasecmp(stack_str, hash_table[slot][count]))
@@ -119,9 +115,10 @@ static status_t add_to_hash_table(char *stack_str)
     }
 
     hash_table[slot] = realloc(hash_table[slot], sizeof(char *) * (count + 2));
-    hash_table[slot][count] = str;
-    hash_table[slot][count + 1] = NULL;
   }
+
+  hash_table[slot][count] = str;
+  hash_table[slot][count + 1] = NULL;
 
   return SUCCESS;
 }
@@ -495,25 +492,30 @@ int main(int argc, char *argv[])
     ret = parse_world(f);
     fclose(f);
 
-    if(ret == SUCCESS)
+    for(i = 0; i < HASH_TABLE_SIZE; i++)
     {
-      for(i = 0; i < HASH_TABLE_SIZE; i++)
-      {
-        if(!hash_table[i])
-          continue;
+      char **p = hash_table[i];
 
-        while(*hash_table[i])
+      if(!p)
+        continue;
+
+      while(*p)
+      {
+        if(ret == SUCCESS)
         {
           char newpath[MAX_PATH];
 
-          if(fsafetranslate(*hash_table[i], newpath) == FSAFE_SUCCESS)
+          if(fsafetranslate(*p, newpath) == FSAFE_SUCCESS)
             fprintf(stdout, "%s - FOUND\n", newpath);
           else
-            fprintf(stdout, "%s - NOT FOUND\n", *hash_table[i]);
-
-          hash_table[i]++;
+            fprintf(stdout, "%s - NOT FOUND\n", *p);
         }
+
+        free(*p);
+        p++;
       }
+
+      free(hash_table[i]);
     }
   }
   else
