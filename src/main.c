@@ -29,7 +29,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef PSP_BUILD
+#ifdef CONFIG_PSP
 #include <pspsdk.h>
 #include <psppower.h>
 PSP_MAIN_THREAD_STACK_SIZE_KB(512);
@@ -64,7 +64,7 @@ int main(int argc, char **argv)
   freopen("CON", "wb", stdout);
 #endif
 
-#ifdef PSP_BUILD
+#ifdef CONFIG_PSP
   scePowerSetClockFrequency(333, 333, 166);
 #endif
 

@@ -836,7 +836,7 @@ int set_video_mode(void)
     target_height = graphics.window_height;
   }
 
-#ifdef PSP_BUILD
+#ifdef CONFIG_PSP
   target_width = 640;
   target_height = 363;
   target_depth = 8;
