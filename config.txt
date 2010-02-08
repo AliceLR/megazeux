@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# January 30th, 2007 --ajs.
+# March 28th, 2008 --ajs.
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
