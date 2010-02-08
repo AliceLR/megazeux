@@ -294,21 +294,26 @@ static void gp2x_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
 static void gp2x_sync_screen(graphics_data *graphics)
 {
   gp2x_render_data *render_data = graphics->render_data;
-  Uint32 line_advance = render_data->screen->pitch / 4;
-  Uint32 *dest = (Uint32*)render_data->screen->pixels;
-  Uint32 *src = (Uint32*)render_data->buffer;
-  Uint32 i, skip = 0;
+  Uint32 line_advance = render_data->screen->pitch / 2;
+  Uint16 *dest = (Uint16*)render_data->screen->pixels;
+  Uint16 *src = render_data->buffer;
+  Uint32 i, j, skip = 0;
   SDL_LockSurface(render_data->screen);
   for(i = 0; i < 240; i++)
   {
-    memcpy(dest, src, sizeof(Uint32) * 160);
-    dest += line_advance;
-    skip += 35;
-    while (skip >= 24)
+    skip += 35 - 24;
+    if(skip < 24)
+      memcpy(dest, src, sizeof(Uint16) * 320);
+    else
     {
-      src += 160;
+      for (j = 0; j < 320; j++)
+        dest[j] = ((src[j] >> 1) & render_data->halfmask) +
+         ((src[j+320] >> 1) & render_data->halfmask);
       skip -= 24;
+      src += 320;
     }
+    src += 320;
+    dest += line_advance;
   }
   SDL_UnlockSurface(render_data->screen);
   SDL_Flip(render_data->screen);

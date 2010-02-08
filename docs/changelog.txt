@@ -2,6 +2,9 @@ SVN
 
 USERS
 
++ Fixed and improved quality of the half-width renderer for the GP2X port
+  (Mr_Alert).
+
 DEVELOPERS
 
 + Don't initialize the SDL audio subsystem if audio is permanently disabled
