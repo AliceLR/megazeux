@@ -744,9 +744,12 @@ void set_config_from_file(config_info *conf, const char *conf_file_name)
           {
             // Extended data line
             use_extended_buffer = extended_buffer;
-            if(fsafegets(line_buffer_alternate, 255, conf_file))
+            if(fsafegets(line_buffer_alternate, 254, conf_file))
             {
               line_size = strlen(line_buffer_alternate);
+              line_buffer_alternate[line_size] = '\n';
+              line_size++;
+
               extended_size += line_size;
               if(extended_size >= extended_allocate_size)
               {

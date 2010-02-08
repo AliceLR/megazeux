@@ -55,7 +55,7 @@
   (a) | (b << 4)              \
 
 // fix cyclic dependency (could be done in several ways)
-static void execute_named_macro(robot_state *rstate, char *macro_name);
+static int execute_named_macro(robot_state *rstate, char *macro_name);
 
 static int copy_buffer_lines;
 static int copy_buffer_total_length;
@@ -320,11 +320,10 @@ static int update_current_line(robot_state *rstate)
   int current_size = rstate->size;
   validity_types use_type = rstate->default_invalid;
 
+  // Trigger macro expansion; if the macro doesn't exist, do nothing
   if(command_buffer[0] == '#')
-  {
-    execute_named_macro(rstate, command_buffer + 1);
-    return -1;
-  }
+    if(!execute_named_macro(rstate, command_buffer + 1))
+      return -1;
 
   if((bytecode_length != -1) &&
    (current_size + bytecode_length - last_bytecode_length) <=
@@ -573,157 +572,158 @@ static void output_macro(robot_state *rstate, ext_macro *macro_src)
   rstate->macro_recurse_level--;
 }
 
-static void execute_named_macro(robot_state *rstate, char *macro_name)
+static int execute_named_macro(robot_state *rstate, char *macro_name)
 {
+  char *line_pos, *line_pos_old, *lone_name;
   macro_type *param_type = NULL;
-  char *line_pos, *line_pos_old;
   ext_macro *macro_src;
   char last_char;
   int next;
 
   line_pos = skip_to_next(macro_name, ',', '(', 0);
-  last_char = *line_pos;
-  *line_pos = 0;
 
+  // extract just the name of the macro, if valid
+  lone_name = malloc(line_pos - macro_name + 1);
+  memcpy(lone_name, macro_name, line_pos - macro_name);
+  lone_name[line_pos - macro_name] = 0;
+
+  // see if such a macro exists
   macro_src = find_macro(&(rstate->mzx_world->conf), macro_name, &next);
+  free(lone_name);
 
-  *line_pos = last_char;
+  // it doesn't, carefully abort
+  if(!macro_src)
+    return 1;
 
-  if(macro_src)
+  if(macro_src->num_types && (last_char))
   {
-    if(macro_src->num_types && (last_char))
+    variable_storage *param_storage;
+    int param_current_type = 0;
+    int param_current_var = 0;
+    char *value = NULL;
+    int i;
+
+    // Fill in parameters
+    macro_default_values(rstate, macro_src);
+
+    // Get name, may stop at equals sign first
+    while(1)
     {
-      variable_storage *param_storage;
-      int param_current_type = 0;
-      int param_current_var = 0;
-      char *value = NULL;
-      int i;
+      line_pos = skip_whitespace(line_pos + 1);
+      line_pos_old = line_pos;
+      line_pos = skip_to_next(line_pos, '=', ',', ')');
 
-      // Fill in parameters
-      macro_default_values(rstate, macro_src);
+      last_char = *line_pos;
+      *line_pos = 0;
 
-      // Get name, may stop at equals sign first
-      while(1)
+      param_storage = NULL;
+
+      if(last_char == '=')
       {
-        line_pos = skip_whitespace(line_pos + 1);
-        line_pos_old = line_pos;
-        line_pos = skip_to_next(line_pos, '=', ',', ')');
+        // It's named, find which index this corresponds to.
+        *line_pos = 0;
+        param_type = macro_src->types;
 
+        for(i = 0; i < macro_src->num_types; i++, param_type++)
+        {
+          param_storage = find_macro_variable(line_pos_old,
+           param_type);
+          if(param_storage)
+            break;
+        }
+
+        line_pos++;
+        value = line_pos;
+        line_pos = skip_to_next(line_pos, '=', ',', ')');
         last_char = *line_pos;
         *line_pos = 0;
+      }
+      else
 
-        param_storage = NULL;
+      if(*(line_pos - 1) != '(')
+      {
+        param_type = macro_src->types + param_current_type;
 
-        if(last_char == '=')
+        if(param_current_var == param_type->num_variables)
         {
-          // It's named, find which index this corresponds to.
-          *line_pos = 0;
-          param_type = macro_src->types;
-
-          for(i = 0; i < macro_src->num_types; i++, param_type++)
-          {
-            param_storage = find_macro_variable(line_pos_old,
-             param_type);
-            if(param_storage)
-              break;
-          }
-
-          line_pos++;
-          value = line_pos;
-          line_pos = skip_to_next(line_pos, '=', ',', ')');
-          last_char = *line_pos;
-          *line_pos = 0;
-        }
-        else
-
-        if(*(line_pos - 1) != '(')
-        {
-          param_type = macro_src->types + param_current_type;
-
-          if(param_current_var == param_type->num_variables)
-          {
-            param_current_type++;
-            param_type++;
-            param_current_var = 0;
-          }
-
-          if(param_current_type < macro_src->num_types)
-          {
-            param_storage =
-             &((param_type->variables[param_current_var]).storage);
-          }
-
-          value = line_pos_old;
-          param_current_var++;
+          param_current_type++;
+          param_type++;
+          param_current_var = 0;
         }
 
-        if(param_storage)
+        if(param_current_type < macro_src->num_types)
         {
-          switch(param_type->type)
+          param_storage =
+           &((param_type->variables[param_current_var]).storage);
+        }
+
+        value = line_pos_old;
+        param_current_var++;
+      }
+
+      if(param_storage)
+      {
+        switch(param_type->type)
+        {
+          case number:
           {
-            case number:
-            {
-              param_storage->int_storage = strtol(value, NULL, 10);
+            param_storage->int_storage = strtol(value, NULL, 10);
 
-              if(param_storage->int_storage <
-               param_type->type_attributes[0])
-              {
-                param_storage->int_storage =
-                 param_type->type_attributes[0];
-              }
-
-              if(param_storage->int_storage >
-               param_type->type_attributes[1])
-              {
-                param_storage->int_storage =
-                 param_type->type_attributes[1];
-              }
-
-              break;
-            }
-
-            case string:
-            {
-              value[param_type->type_attributes[0]] = 0;
-              strcpy(param_storage->str_storage, value);
-              break;
-            }
-
-            case character:
-            {
-              if(*value == '\'')
-              {
-                param_storage->int_storage =
-                 *(value + 1);
-              }
-              else
-              {
-                param_storage->int_storage =
-                 strtol(value, NULL, 10);
-              }
-              break;
-            }
-
-            case color:
+            if(param_storage->int_storage <
+             param_type->type_attributes[0])
             {
               param_storage->int_storage =
-               get_color(value);
-              break;
+               param_type->type_attributes[0];
             }
+
+            if(param_storage->int_storage >
+             param_type->type_attributes[1])
+            {
+              param_storage->int_storage =
+               param_type->type_attributes[1];
+            }
+
+            break;
+          }
+
+          case string:
+          {
+            value[param_type->type_attributes[0]] = 0;
+            strcpy(param_storage->str_storage, value);
+            break;
+          }
+
+          case character:
+          {
+            if(*value == '\'')
+            {
+              param_storage->int_storage =
+               *(value + 1);
+            }
+            else
+            {
+              param_storage->int_storage =
+               strtol(value, NULL, 10);
+            }
+            break;
+          }
+
+          case color:
+          {
+            param_storage->int_storage =
+             get_color(value);
+            break;
           }
         }
-
-        if((last_char == ')') || (!last_char))
-          break;
       }
+
+      if((last_char == ')') || (!last_char))
+        break;
     }
-    output_macro(rstate, macro_src);
   }
-  else
-  {
-    rstate->command_buffer[0] = 0;
-    update_current_line(rstate);
-  }
+
+  output_macro(rstate, macro_src);
+  return 0;
 }
 
 static int block_menu(World *mzx_world)

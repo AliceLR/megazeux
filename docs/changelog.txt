@@ -169,6 +169,9 @@ USERS
 + Fixed a bug causing the software renderer to fail to center when using a
   boxed fullscreen resolution. Also fixes a bug where the PSP platform would
   ignore an override of the force_bpp option. (Mr_Alert)
++ Fixed a bug causing macros loaded from config.txt to be expanded
+  incorrectly. Relatedly, fixed a bug where #<string> in the robot exitor
+  would "disappear" on entry, if there was no correspondingly named macro.
 
 DEVELOPERS
 
