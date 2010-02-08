@@ -31,12 +31,12 @@ __M_BEGIN_DECLS
 #include <limits.h>
 #endif
 
-#ifndef PATH_MAX
-#define PATH_MAX 512
+#ifdef _MSC_VER
+#include <windows.h> // for MAX_PATH
 #endif
 
 #ifndef MAX_PATH
-#define MAX_PATH PATH_MAX
+#define MAX_PATH 512
 #endif
 
 #define OVERLAY_OFF           0
