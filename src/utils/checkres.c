@@ -3,6 +3,7 @@
  * so false positives are theoretically impossible.
  *
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2007 Josh Matthews <mrlachatte@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -27,6 +28,8 @@
 #include <const.h>
 #include <fsafeopen.h>
 
+#include "unzip.h"
+
 #undef DEBUG
 
 #ifdef DEBUG
@@ -45,6 +48,27 @@
 
 #define HASH_TABLE_SIZE         100
 
+#define EOS EOF
+
+typedef struct stream_info
+{
+	enum stream_type
+	{
+		FILE_STREAM, 
+		BUFFER_STREAM
+	} type;
+	union
+	{
+		FILE *fp;
+		struct
+		{
+			unsigned long int index;
+			unsigned char *buf;
+			unsigned long int len;
+		} buffer;
+	} stream;
+} stream_t;
+
 typedef enum status
 {
   SUCCESS = 0,
@@ -56,6 +80,8 @@ typedef enum status
   MALLOC_FAILED,
   PROTECTED_WORLD,
   MAGIC_CHECK_FAILED,
+  UNZ_FAILED,
+  NO_WORLD
 }
 status_t;
 
@@ -123,15 +149,190 @@ static status_t add_to_hash_table(char *stack_str)
   return SUCCESS;
 }
 
-static unsigned int fgetud(FILE *f)
+static status_t s_open(const char *filename, const char *mode, stream_t **s)
 {
-  return (fgetc(f) << 0)  | (fgetc(f) << 8) |
-         (fgetc(f) << 16) | (fgetc(f) << 24);
+	*s = (stream_t *)malloc(sizeof(stream_t));
+	if(!strncmp(filename + strlen(filename) - 3, "zip", 3))
+	{
+		(*s)->type = BUFFER_STREAM;
+		unzFile f = unzOpen(filename);
+		if(!f)
+		{
+			free(*s);
+			*s = NULL;
+			return MALLOC_FAILED;
+		}
+		if(unzGoToFirstFile(f) != UNZ_OK)
+		{
+			free(*s);
+			*s = NULL;
+			unzClose(f);
+			return UNZ_FAILED;
+		}
+		do
+		{
+			char fname[FILENAME_MAX];
+			unz_file_info info;
+			unzGetCurrentFileInfo(f, &info, fname, FILENAME_MAX, NULL, 0, NULL, 0);
+			if(!strncmp(fname + strlen(fname) - 3, "mzx", 3))
+			{
+				if(unzOpenCurrentFile(f) == UNZ_OK)
+				{
+					(*s)->stream.buffer.len = info.uncompressed_size;
+					(*s)->stream.buffer.buf = (char *)malloc(sizeof(char) * (*s)->stream.buffer.len);
+					if(!(*s)->stream.buffer.buf)
+					{
+						free(*s);
+						*s = NULL;
+						unzClose(f);
+						return MALLOC_FAILED;
+					}
+					int ret = unzReadCurrentFile(f, (*s)->stream.buffer.buf, (*s)->stream.buffer.len);
+					if(ret <= 0)
+					{
+						free((*s)->stream.buffer.buf);
+						free(*s);
+						*s = NULL;
+						unzClose(f);
+						return UNZ_FAILED;
+					}
+					unzCloseCurrentFile(f);
+					break;
+				}
+				else
+				{
+					free(*s);
+					*s = NULL;
+					unzClose(f);
+					return UNZ_FAILED;
+				}
+			}
+		} while(unzGoToNextFile(f) == UNZ_OK);
+		if(unzGoToNextFile(f) == UNZ_END_OF_LIST_OF_FILE)
+		{
+			free(*s);
+			*s = NULL;
+			unzClose(f);
+			return NO_WORLD;
+		}
+		else unzClose(f);
+	}
+	else
+	{
+		(*s)->type = FILE_STREAM;
+		(*s)->stream.fp = fopen(filename, mode);
+		if(!(*s)->stream.fp) return FOPEN_FAILED;
+	}
+	return SUCCESS;
 }
 
-static unsigned short fgetus(FILE *f)
+static int sclose(stream_t *s)
 {
-  return (fgetc(f) << 0) | (fgetc(f) << 8);
+	FILE *f;
+	switch(s->type)
+	{
+		case FILE_STREAM:
+			f = s->stream.fp;
+			free(s);
+			return fclose(f);
+		case BUFFER_STREAM:
+			free(s->stream.buffer.buf);
+			free(s);
+			return 0;
+		default:
+			return EOS;
+	}
+}
+
+static int sgetc(stream_t *s)
+{
+	switch(s->type)
+	{
+		case FILE_STREAM:
+			return fgetc(s->stream.fp);
+		case BUFFER_STREAM:
+			if(s->stream.buffer.index == s->stream.buffer.len)
+				return EOS;
+			else return s->stream.buffer.buf[s->stream.buffer.index++];
+		default:
+			return EOS;
+	}
+}
+
+static size_t sread(void *ptr, size_t size, size_t count, stream_t *s)
+{
+	switch(s->type)
+	{
+		case FILE_STREAM:
+			return fread(ptr, size, count, s->stream.fp);
+		case BUFFER_STREAM:
+			if(s->stream.buffer.index + size * count >= s->stream.buffer.len)
+			{
+				size_t n = (s->stream.buffer.len - s->stream.buffer.index) / size;
+				memcpy(ptr, s->stream.buffer.buf + s->stream.buffer.index, n * size);
+				s->stream.buffer.index = s->stream.buffer.len;
+				return n;
+			}
+			else
+			{
+				memcpy(ptr, s->stream.buffer.buf + s->stream.buffer.index, count * size);
+				s->stream.buffer.index += count * size;
+				return count;
+			}
+		default:
+			return EOS;
+	}
+}
+
+static int sseek(stream_t *s, long int offset, int origin)
+{
+	switch(s->type)
+	{
+		case FILE_STREAM:
+			return fseek(s->stream.fp, offset, origin);
+		case BUFFER_STREAM:
+			switch(origin)
+			{
+				case SEEK_SET:
+					s->stream.buffer.index = offset;
+					break;
+				case SEEK_CUR:
+					s->stream.buffer.index += offset;
+					break;
+				case SEEK_END:
+					s->stream.buffer.index = s->stream.buffer.len + offset;
+					break;
+			}
+			if(s->stream.buffer.index >= s->stream.buffer.len)
+				return EOS;
+			else return 0;
+		default:
+			return EOS;
+	}
+}
+
+static long int stell(stream_t *s)
+{
+	switch(s->type)
+	{
+		case FILE_STREAM:
+			return ftell(s->stream.fp);
+		case BUFFER_STREAM:
+			return s->stream.buffer.index;
+		default:
+			return EOS;
+	}
+}
+
+static unsigned int sgetud(stream_t *s)
+{
+  return (sgetc(s) << 0)  | (sgetc(s) << 8) |
+         (sgetc(s) << 16) | (sgetc(s) << 24);
+}
+
+static unsigned short sgetus(stream_t *s)
+{
+  return (sgetc(s) << 0) | (sgetc(s) << 8);
 }
 
 static const char *decode_status(status_t status)
@@ -152,31 +353,35 @@ static const char *decode_status(status_t status)
       return "Protected worlds currently unsupported.";
     case MAGIC_CHECK_FAILED:
       return "File magic not consistent with 2.00 world or board.";
+		case UNZ_FAILED:
+			return "Something is wrong with the zip file.";
+		case NO_WORLD:
+			return "No world file present.";
     default:
       return "Unknown error.";
   }
 }
 
-static status_t parse_board_direct(FILE *f)
+static status_t parse_board_direct(stream_t *s)
 {
   int i, j, num_robots, skip_rle_blocks = 6;
   char tmp[256], tmp2[256], *str;
   status_t ret;
 
   // junk the undocument (and unused) board_mode
-  fgetc(f);
+  sgetc(s);
 
   // get whether the overlay is enabled or not
-  if(fgetc(f))
+  if(sgetc(s))
   {
     // not enabled, so rewind this last read
-    if(fseek(f, -1, SEEK_CUR) != 0)
+    if(sseek(s, -1, SEEK_CUR) != 0)
       return FSEEK_FAILED;
   }
   else
   {
     // junk overlay_mode
-    fgetc(f);
+    sgetc(s);
     skip_rle_blocks += 2;
   }
 
@@ -184,14 +389,14 @@ static status_t parse_board_direct(FILE *f)
   // ..or 8 blocks (with overlay enabled on board)
   for(i = 0; i < skip_rle_blocks; i++)
   {
-    unsigned short w = fgetus(f);
-    unsigned short h = fgetus(f);
+    unsigned short w = sgetus(s);
+    unsigned short h = sgetus(s);
     int pos = 0;
 
     /* RLE "decoder"; just to skip stuff */
     while(pos < w * h)
     {
-      unsigned char c = (unsigned char)fgetc(f);
+      unsigned char c = (unsigned char)sgetc(s);
 
       if(!(c & 0x80))
         pos++;
@@ -199,13 +404,13 @@ static status_t parse_board_direct(FILE *f)
       {
         c &= ~0x80;
         pos += c;
-        fgetc(f);
+        sgetc(s);
       }
     }
   }
 
   // grab board's default MOD
-  if(fread(tmp, 1, 12, f) != 12)
+  if(sread(tmp, 1, 12, s) != 12)
     return FREAD_FAILED;
   tmp[12] = '\0';
 
@@ -219,55 +424,55 @@ static status_t parse_board_direct(FILE *f)
   }
 
   // skip to the robot count
-  if(fseek(f, 220 - 12, SEEK_CUR) != 0)
+  if(sseek(s, 220 - 12, SEEK_CUR) != 0)
     return FSEEK_FAILED;
 
   // walk the robot list, scan the robotic
-  num_robots = fgetc(f);
+  num_robots = sgetc(s);
   for(i = 0; i < num_robots; i++)
   {
-    unsigned short robot_size = fgetus(f);
+    unsigned short robot_size = sgetus(s);
     long start;
 
     // skip to robot code
-    if(fseek(f, 40 - 2 + 1, SEEK_CUR) != 0)
+    if(sseek(s, 40 - 2 + 1, SEEK_CUR) != 0)
       return FSEEK_FAILED;
 
-    start = ftell(f);
+    start = stell(s);
 
     // skip 0xff marker
-    if(fgetc(f) != 0xff)
+    if(sgetc(s) != 0xff)
       return CORRUPT_WORLD;
 
     while(1)
     {
       int command, command_length, str_len;
 
-      if(ftell(f) - start >= robot_size)
+      if(stell(s) - start >= robot_size)
         return CORRUPT_WORLD;
 
-      command_length = fgetc(f);
+      command_length = sgetc(s);
       if(command_length == 0)
         break;
 
-      command = fgetc(f);
+      command = sgetc(s);
       switch(command)
       {
         case 0xa:
-          str_len = fgetc(f);
+          str_len = sgetc(s);
 
-          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
+          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
             return FREAD_FAILED;
 
-          str_len = fgetc(f);
+          str_len = sgetc(s);
 
           if(str_len == 0)
           {
-            fgetus(f);
+            sgetus(s);
             break;
           }
 
-          if(fread(tmp2, 1, str_len, f) != (size_t)str_len)
+          if(sread(tmp2, 1, str_len, s) != (size_t)str_len)
             return FREAD_FAILED;
 
           if(!strcasecmp(tmp2, "FREAD_OPEN")
@@ -286,9 +491,9 @@ static status_t parse_board_direct(FILE *f)
           break;
 
         case 0x26:
-          str_len = fgetc(f);
+          str_len = sgetc(s);
 
-          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
+          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
             return FREAD_FAILED;
 
           // FIXME: Should only match pairs?
@@ -302,19 +507,19 @@ static status_t parse_board_direct(FILE *f)
           break;
 
         case 0x27:
-          str_len = fgetc(f);
+          str_len = sgetc(s);
 
           if(str_len == 0)
-            fgetus(f);
+            sgetus(s);
           else
           {
             for(j = 0; j < str_len; j++)
-              fgetc(f);
+              sgetc(s);
           }
 
-          str_len = fgetc(f);
+          str_len = sgetc(s);
 
-          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
+          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
             return FREAD_FAILED;
 
           // FIXME: Should only match pairs?
@@ -330,9 +535,9 @@ static status_t parse_board_direct(FILE *f)
         case 0x2b:
         case 0x2d:
         case 0x31:
-          str_len = fgetc(f);
+          str_len = sgetc(s);
 
-          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
+          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
             return FREAD_FAILED;
 
           str = strtok(tmp, "&");
@@ -351,9 +556,9 @@ static status_t parse_board_direct(FILE *f)
           break;
 
         case 0xc8:
-          str_len = fgetc(f);
+          str_len = sgetc(s);
 
-          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
+          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
             return FREAD_FAILED;
 
           debug("MOD FADE IN: %s\n", tmp);
@@ -363,9 +568,9 @@ static status_t parse_board_direct(FILE *f)
           break;
 
         case 0xd8:
-          str_len = fgetc(f);
+          str_len = sgetc(s);
 
-          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
+          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
             return FREAD_FAILED;
 
           debug("LOAD CHAR SET: %s\n", tmp);
@@ -375,9 +580,9 @@ static status_t parse_board_direct(FILE *f)
           break;
 
         case 0xde:
-          str_len = fgetc(f);
+          str_len = sgetc(s);
 
-          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
+          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
             return FREAD_FAILED;
 
           debug("LOAD PALETTE: %s\n", tmp);
@@ -387,9 +592,9 @@ static status_t parse_board_direct(FILE *f)
           break;
 
         case 0xe2:
-          str_len = fgetc(f);
+          str_len = sgetc(s);
 
-          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
+          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
             return FREAD_FAILED;
 
           debug("SWAP WORLD: %s\n", tmp);
@@ -399,12 +604,12 @@ static status_t parse_board_direct(FILE *f)
           break;
 
         default:
-          if(fseek(f, command_length - 1, SEEK_CUR) != 0)
+          if(sseek(s, command_length - 1, SEEK_CUR) != 0)
             return FSEEK_FAILED;
           break;
       }
 
-      if(fgetc(f) != command_length)
+      if(sgetc(s) != command_length)
         return CORRUPT_WORLD;
     }
   }
@@ -414,74 +619,74 @@ static status_t parse_board_direct(FILE *f)
 
 // same as internal boards except for a 4 byte magic header
 
-static status_t parse_board(FILE *f)
+static status_t parse_board(stream_t *s)
 {
   int c;
 
-  if(fgetc(f) != 0xff)
+  if(sgetc(s) != 0xff)
     return MAGIC_CHECK_FAILED;
 
-  if(fgetc(f) != 'M')
+  if(sgetc(s) != 'M')
     return MAGIC_CHECK_FAILED;
 
-  c = fgetc(f);
+  c = sgetc(s);
   if (c != 'B' && c != '\x2')
     return MAGIC_CHECK_FAILED;
 
-  fgetc(f);
+  sgetc(s);
 
-  return parse_board_direct(f);
+  return parse_board_direct(s);
 }
 
-static status_t parse_world(FILE *f)
+static status_t parse_world(stream_t *s)
 {
   status_t ret = SUCCESS;
   int i, c, num_boards;
 
   // skip to protected byte; don't care about world name
-  if(fseek(f, WORLD_PROTECTED_OFFSET, SEEK_SET) != 0)
+  if(sseek(s, WORLD_PROTECTED_OFFSET, SEEK_SET) != 0)
     return FSEEK_FAILED;
 
   // can't yet support protected worlds
-  if(fgetc(f) != 0)
+  if(sgetc(s) != 0)
     return PROTECTED_WORLD;
 
   // can only support 2.00+ versioned worlds
-  if(fgetc(f) != 'M')
+  if(sgetc(s) != 'M')
     return MAGIC_CHECK_FAILED;
 
-  c = fgetc(f);
+  c = sgetc(s);
   if(c != '\x2' && c != 'Z')
     return MAGIC_CHECK_FAILED;
 
   // num_boards doubles as the check for custom sfx, if zero
-  if(fseek(f, WORLD_NUM_BOARDS_OFFSET, SEEK_SET) != 0)
+  if(sseek(s, WORLD_NUM_BOARDS_OFFSET, SEEK_SET) != 0)
     return FSEEK_FAILED;
 
   // so read it, and..
-  num_boards = fgetc(f);
+  num_boards = sgetc(s);
 
   // if we have sfx, they must be skipped
   if(num_boards == 0)
   {
-    unsigned short sfx_len = fgetus(f);
+    unsigned short sfx_len = sgetus(s);
 
-    if(fseek(f, sfx_len, SEEK_CUR) != 0)
+    if(sseek(s, sfx_len, SEEK_CUR) != 0)
       return FSEEK_FAILED;
 
     // read the "real" num_boards
-    num_boards = fgetc(f);
+    num_boards = sgetc(s);
   }
 
   // skip board names; we simply don't care
-  if(fseek(f, num_boards * BOARD_NAME_SIZE, SEEK_CUR) != 0)
+  if(sseek(s, num_boards * BOARD_NAME_SIZE, SEEK_CUR) != 0)
     return FSEEK_FAILED;
 
   // grab the board sizes/offsets
   for(i = 0; i < num_boards; i++)
   {
-    board_list[i].size = fgetud(f);
-    board_list[i].offset = fgetud(f);
+    board_list[i].size = sgetud(s);
+    board_list[i].offset = sgetud(s);
   }
 
   // walk all boards
@@ -494,11 +699,11 @@ static status_t parse_world(FILE *f)
       continue;
 
     // seek to board offset within world
-    if(fseek(f, board->offset, SEEK_SET) != 0)
+    if(sseek(s, board->offset, SEEK_SET) != 0)
       return FSEEK_FAILED;
 
     // parse this board atomically
-    ret = parse_board_direct(f);
+    ret = parse_board_direct(s);
   }
 
   return ret;
@@ -509,7 +714,7 @@ int main(int argc, char *argv[])
   const char *found_append = " - FOUND", *not_found_append = " - NOT FOUND";
   int i, len, print_all_files = 0, got_world = 0;
   status_t ret;
-  FILE *f;
+  stream_t *s;
 
   if(argc < 2)
   {
@@ -542,22 +747,24 @@ int main(int argc, char *argv[])
     got_world = 1;
   else if(!strcasecmp(&argv[argc - 1][len - 4], ".MZB"))
     got_world = 0;
+	else if(!strcasecmp(&argv[argc -1][len -4], ".ZIP"))
+		got_world = 1;
   else
   {
-    fprintf(stderr, "\"%s\" is not a .MZX (world) or .MZB (board) file.\n",
-      argv[argc - 1]);
+    fprintf(stderr, "\"%s\" is not a .MZX (world), .MZB (board)"
+                    "or .ZIP (archive) file.\n", argv[argc - 1]);
     return INVALID_ARGUMENTS;
   }
 
-  f = fopen(argv[argc - 1], "r");
-  if(f)
+  ret = s_open(argv[argc - 1], "rb", &s);
+  if(s)
   {
     if (got_world)
-      ret = parse_world(f);
+      ret = parse_world(s);
     else
-      ret = parse_board(f);
+      ret = parse_board(s);
 
-    fclose(f);
+    sclose(s);
 
     for(i = 0; i < HASH_TABLE_SIZE; i++)
     {
@@ -571,7 +778,6 @@ int main(int argc, char *argv[])
         if(ret == SUCCESS)
         {
           char newpath[MAX_PATH];
-
           if(fsafetranslate(*p, newpath) == FSAFE_SUCCESS)
           {
             if(print_all_files)
@@ -588,8 +794,6 @@ int main(int argc, char *argv[])
       free(hash_table[i]);
     }
   }
-  else
-    ret = FOPEN_FAILED;
 
   if(ret != SUCCESS)
     fprintf(stderr, "ERROR: %s\n", decode_status(ret));
