@@ -959,32 +959,25 @@ static void* get_riff_chunk_by_id(FILE *fp, int filesize,
   return get_riff_chunk(fp, filesize, 0, size);
 }
 
-// More lenient than SDL's WAV loader, but only supports uncompressed PCM
-// files (for now.)
-static SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
+// More lenient than SDL's WAV loader, but only supports
+// uncompressed PCM files (for now.)
+
+static int load_wav_file(const char *file, SDL_AudioSpec *spec,
  Uint8 **audio_buf, Uint32 *audio_len)
 {
-  int data_size;
-  int filesize;
-  int riffsize;
-  int channels;
-  int srate;
-  int sbytes;
-  char *fmt_chunk;
-  int fmt_size;
-  char tmp_buf[4];
-  FILE *fp = fopen(file, "rb");
+  int data_size, filesize, riffsize, channels, srate, sbytes, fmt_size;
+  char *fmt_chunk, tmp_buf[4];
+  int ret = 0;
+  FILE *fp;
 
+  fp = fopen(file, "rb");
   if(!fp)
-    return NULL;
+    goto exit_out;
 
   // If it doesn't start with "RIFF", it's not a WAV file.
   fread(tmp_buf, 1, 4, fp);
   if(memcmp(tmp_buf, "RIFF", 4))
-  {
-    fclose(fp);
-    return NULL;
-  }
+    goto exit_close;
 
   // Read reported file size (if the file turns out to be larger, this will be
   // used instead of the real file size.)
@@ -994,10 +987,7 @@ static SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
   // If the RIFF type isn't "WAVE", it's not a WAV file.
   fread(tmp_buf, 1, 4, fp);
   if(memcmp(tmp_buf, "WAVE", 4))
-  {
-    fclose(fp);
-    return NULL;
-  }
+    goto exit_close;
 
   // With the RIFF header read, we'll now check the file size.
   filesize = ftell_and_rewind(fp);
@@ -1009,39 +999,29 @@ static SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
   // If there's no "fmt " chunk, or it's less than 16 bytes, it's not a valid
   // WAV file.
   if(!fmt_chunk || (fmt_size < 16))
-  {
-    fclose(fp);
-    return NULL;
-  }
+    goto exit_close;
 
   // If the WAV file isn't uncompressed PCM (format 1), let SDL handle it.
   if(read_little_endian16(fmt_chunk) != 1)
   {
     free(fmt_chunk);
-    fclose(fp);
+ 
     if(SDL_LoadWAV(file, spec, audio_buf, audio_len))
     {
-      char *copy_buf = malloc(*audio_len);
-      if(copy_buf)
-      {
-        memcpy(copy_buf, *audio_buf, *audio_len);
-        SDL_FreeWAV(*audio_buf);
-        *audio_buf = (Uint8 *)copy_buf;
-        return spec;
-      }
-      else
-      {
-        SDL_FreeWAV(*audio_buf);
-        return NULL;
-      }
+      void *copy_buf = malloc(*audio_len);
+      memcpy(copy_buf, *audio_buf, *audio_len);
+      SDL_FreeWAV(*audio_buf);
+      *audio_buf = copy_buf;
+      goto exit_close_success;
     }
-    else
-      return NULL;
+
+    goto exit_close;
   }
 
   // Get the data we need from the "fmt " chunk.
   channels = read_little_endian16(fmt_chunk + 2);
   srate = read_little_endian32(fmt_chunk + 4);
+
   // Average bytes per second go here (4 bytes)
   // Block align goes here (2 bytes)
   // Round up when dividing by 8
@@ -1052,25 +1032,21 @@ static SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
   // isn't valid.  We can't do anything past 16-bit either, and 0-bit isn't
   // valid. 0Hz sample rate is invalid too.
   if(!channels || (channels > 2) || !sbytes || (sbytes > 2) || !srate)
-  {
-    fclose(fp);
-    return NULL;
-  }
+    goto exit_close;
 
   // Everything seems to check out, so let's load the "data" chunk.
   *audio_buf = get_riff_chunk_by_id(fp, filesize, "data", &data_size);
   *audio_len = data_size;
-  fclose(fp);
 
   // No "data" chunk?! FAIL!
   if(!*audio_buf)
-    return NULL;
+    goto exit_close;
 
   // Empty "data" chunk?! ALSO FAIL!
   if(!data_size)
   {
     free(*audio_buf);
-    return NULL;
+    goto exit_close;
   }
 
   // Write to the SDL_AudioSpec struct thingymabob.
@@ -1082,8 +1058,12 @@ static SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
   spec->channels = channels;
   spec->samples = 4096;
 
-  // It's over! YEY!
-  return spec;
+exit_close_success:
+  ret = 1;
+exit_close:
+  fclose(fp);
+exit_out:
+  return ret;
 }
 
 // Props to madbrain for his WAV writing code which the following
