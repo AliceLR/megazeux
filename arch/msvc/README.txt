@@ -98,7 +98,7 @@ You may need to alter the include paths and possibly re-add the project
 libraries to get it to compile on your machine. Any suggestions for improving
 this are of course welcome.
 
-At the moment, the resulting binary does not run and I haven't had time to
+At the moment, the resulting binary is unstable and I haven't had time to
 track down the root cause. Any experienced MSVC programmer should be able to
 fix this (please send me any fixes).
 
