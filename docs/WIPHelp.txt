@@ -3859,8 +3859,8 @@ the string to Y characters.
 Normally strings that are spliced this way are used to be read;
 however, they can also be used for writing to parts of strings.
 When you use the offset when setting a string the length of the
-string will not decrease, so you'll only set a portion of the
-inside of the string. For instance:
+string will not decrease, so you'll only manipulate a portion of
+the string. For instance:
 
 ~Bset "$str" "hello"
 ~Bset "$str+1" "LOL"
