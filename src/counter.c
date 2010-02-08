@@ -54,38 +54,6 @@
 typedef int (* builtin_read_function)(World *mzx_world,
  function_counter *counter, const char *name, int id);
 
-#define force_string_length(str, length)                        \
-  if(str == NULL)                                               \
-  {                                                             \
-    str = add_string_preallocate(mzx_world, name,               \
-     length, next);                                             \
-  }                                                             \
-  else                                                          \
-                                                                \
-  if(length > str->allocated_length)                            \
-  {                                                             \
-    str = reallocate_string(mzx_world, str, next, length);      \
-  }                                                             \
-
-
-#define force_string_splice(str, s_length)                      \
-  force_string_length(str, s_length);                           \
-                                                                \
-  if((size == 0) || (size > s_length))                          \
-    size = s_length;                                            \
-                                                                \
-  if((offset == 0) || (offset + size > str->length))            \
-    str->length = offset + size;                                \
-
-#define force_string_copy(str, src, length)                     \
-  force_string_splice(str, length);                             \
-  memcpy(str->value + offset, src, size);                       \
-
-#define force_string_move(str, src, length)                     \
-  force_string_splice(str, length);                             \
-  memmove(str->value + offset, src, size);                      \
-
-
 // Please only use string literals with this, thanks.
 
 #define special_name(n)                                         \
@@ -1789,6 +1757,51 @@ static mzx_string *reallocate_string(World *mzx_world,
   return src;
 }
 
+static mzx_string *force_string_length(World *mzx_world, const char *name,
+ int next, mzx_string *str, unsigned int length)
+{
+  if(!str)
+    str = add_string_preallocate(mzx_world, name, length, next);
+  else if (length > str->allocated_length)
+    str = reallocate_string(mzx_world, str, next, length);
+  return str;
+}
+
+static mzx_string *force_string_splice(World *mzx_world, const char *name,
+ int next, mzx_string *str, unsigned int s_length, unsigned int offset,
+ unsigned int *size)
+{
+  str = force_string_length(mzx_world, name, next, str, s_length);
+
+  if((*size == 0) || (*size > s_length))
+    *size = s_length;
+
+  if((offset == 0) || (offset + *size > str->length))
+    str->length = offset + *size;
+
+  return str;
+}
+
+static mzx_string *force_string_copy(World *mzx_world, const char *name,
+ int next, mzx_string *str, unsigned int s_length, unsigned int offset,
+ unsigned int *size, char *src)
+{
+  str = force_string_splice(mzx_world, name, next,
+   str, s_length, offset, size);
+  memcpy(str->value + offset, src, *size);
+  return str;
+}
+
+static mzx_string *force_string_move(World *mzx_world, const char *name,
+ int next, mzx_string *str, unsigned int s_length, unsigned int offset,
+ unsigned int *size, char *src)
+{
+  str = force_string_splice(mzx_world, name, next,
+   str, s_length, offset, size);
+  memmove(str->value + offset, src, *size);
+  return str;
+}
+
 static void str_num_write(World *mzx_world, function_counter *counter,
  const char *name, int value, int id)
 {
@@ -1834,7 +1847,7 @@ static void str_num_write(World *mzx_world, function_counter *counter,
       }
     }
 
-    force_string_length(src, new_length);
+    src = force_string_length(mzx_world, name, next, src, new_length);
     if(src->length <= (unsigned int)str_num)
       src->length = str_num + 1;
 
@@ -2780,7 +2793,8 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
       unsigned int read_count = strtol(src_value + 5, NULL, 10);
       int actual_read;
 
-      force_string_splice(dest, read_count);
+      src = force_string_splice(mzx_world, name, next, dest,
+       read_count, offset, &size);
 
       actual_read =
        fread(dest->value + offset, 1, size, input_file);
@@ -2798,7 +2812,8 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
       unsigned int allocated = 32;
       unsigned int new_allocated = allocated;
 
-      force_string_splice(dest, allocated);
+      src = force_string_splice(mzx_world, name, next, dest,
+       allocated, offset, &size);
       dest_value = dest->value;
 
       while(1)
@@ -2834,16 +2849,17 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
   {
     char *board_name = mzx_world->current_board->board_name;
     unsigned int str_length = strlen(board_name);
-    force_string_copy(dest, board_name, str_length);
+    src = force_string_copy(mzx_world, name, next, dest, str_length,
+     offset, &size, board_name);
   }
   else
 
   if(special_name("robot_name"))
   {
-    char *robot_name =
-     (mzx_world->current_board->robot_list[id])->robot_name;
+    char *robot_name = (mzx_world->current_board->robot_list[id])->robot_name;
     unsigned int str_length = strlen(robot_name);
-    force_string_copy(dest, robot_name, str_length);
+    src = force_string_copy(mzx_world, name, next, dest, str_length,
+     offset, &size, robot_name);
   }
   else
 
@@ -2851,7 +2867,8 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
   {
     char *mod_name = mzx_world->real_mod_playing;
     unsigned int str_length = strlen(mod_name);
-    force_string_copy(dest, mod_name, str_length);
+    src = force_string_copy(mzx_world, name, next, dest, str_length,
+     offset, &size, mod_name);
   }
   else
 
@@ -2859,7 +2876,8 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
   {
     char *input_string = mzx_world->current_board->input_string;
     unsigned int str_length = strlen(input_string);
-    force_string_copy(dest, input_string, str_length);
+    src = force_string_copy(mzx_world, name, next, dest, str_length,
+     offset, &size, input_string);
   }
   else
 
@@ -2873,7 +2891,7 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
      (get_counter(mzx_world, "board_y", id) * board_width);
     unsigned int read_length = 63;
 
-    force_string_length(dest, read_length);
+    src = force_string_length(mzx_world, name, next, dest, read_length);
 
     if(board_pos < board_size)
     {
@@ -2920,7 +2938,8 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
   else
   {
     // Just a normal string here.
-    force_string_move(dest, src_value, src_length);
+    src = force_string_move(mzx_world, name, next, dest, src_length,
+     offset, &size, src_value);
   }
 }
 
@@ -3326,14 +3345,15 @@ int compare_strings(mzx_string *dest, mzx_string *src)
 void load_string_board(World *mzx_world, const char *name, int w, int h,
  char l, char *src, int width)
 {
+  mzx_string *src_str;
   int next;
-  mzx_string *src_str = find_string(mzx_world, name, &next);
+  
+  src_str = find_string(mzx_world, name, &next);
+  src_str = force_string_length(mzx_world, name, next,
+   src_str, (unsigned int)(w * h));
 
-  force_string_length(src_str, (unsigned)w * h);
-
-  src_str->length =
-   load_string_board_direct(mzx_world, src_str, next, w, h, l,
-   src, width);
+  src_str->length = load_string_board_direct(mzx_world, src_str, next,
+   w, h, l, src, width);
 }
 
 int is_string(char *buffer)
