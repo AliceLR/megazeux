@@ -454,7 +454,7 @@ static status_t parse_board_direct(stream_t *s)
   {
     debug("BOARD MOD: %s\n", tmp);
     ret = add_to_hash_table(tmp);
-    if (ret != SUCCESS)
+    if(ret != SUCCESS)
       return ret;
   }
 
@@ -518,7 +518,7 @@ static status_t parse_board_direct(stream_t *s)
           {
             debug("SET: %s (%s)\n", tmp, tmp2);
             ret = add_to_hash_table(tmp);
-            if (ret != SUCCESS)
+            if(ret != SUCCESS)
               return ret;
           }
           break;
@@ -539,7 +539,7 @@ static status_t parse_board_direct(stream_t *s)
 
           debug("MOD: %s\n", tmp);
           ret = add_to_hash_table(tmp);
-          if (ret != SUCCESS)
+          if(ret != SUCCESS)
             return ret;
           break;
 
@@ -565,7 +565,7 @@ static status_t parse_board_direct(stream_t *s)
 
           debug("SAM: %s\n", tmp);
           ret = add_to_hash_table(tmp);
-          if (ret != SUCCESS)
+          if(ret != SUCCESS)
             return ret;
           break;
 
@@ -587,7 +587,7 @@ static status_t parse_board_direct(stream_t *s)
           {
             debug("PLAY (class): %s\n", str);
             ret = add_to_hash_table(str);
-            if (ret != SUCCESS)
+            if(ret != SUCCESS)
               return ret;
 
             // tokenise twice, because we only care about
@@ -605,7 +605,7 @@ static status_t parse_board_direct(stream_t *s)
 
           debug("MOD FADE IN: %s\n", tmp);
           ret = add_to_hash_table(tmp);
-          if (ret != SUCCESS)
+          if(ret != SUCCESS)
             return ret;
           break;
 
@@ -617,7 +617,7 @@ static status_t parse_board_direct(stream_t *s)
 
           debug("LOAD CHAR SET: %s\n", tmp);
           ret = add_to_hash_table(tmp);
-          if (ret != SUCCESS)
+          if(ret != SUCCESS)
             return ret;
           break;
 
@@ -629,7 +629,7 @@ static status_t parse_board_direct(stream_t *s)
 
           debug("LOAD PALETTE: %s\n", tmp);
           ret = add_to_hash_table(tmp);
-          if (ret != SUCCESS)
+          if(ret != SUCCESS)
             return ret;
           break;
 
@@ -641,7 +641,7 @@ static status_t parse_board_direct(stream_t *s)
 
           debug("SWAP WORLD: %s\n", tmp);
           ret = add_to_hash_table(tmp);
-          if (ret != SUCCESS)
+          if(ret != SUCCESS)
             return ret;
           break;
 
@@ -672,7 +672,7 @@ static status_t parse_board(stream_t *s)
     return MAGIC_CHECK_FAILED;
 
   c = sgetc(s);
-  if (c != 'B' && c != '\x2')
+  if(c != 'B' && c != '\x2')
     return MAGIC_CHECK_FAILED;
 
   sgetc(s);
@@ -823,7 +823,7 @@ int main(int argc, char *argv[])
   ret = s_open(argv[argc - 1], "rb", &s);
   if(s)
   {
-    if (got_world)
+    if(got_world)
       ret = parse_world(s);
     else
       ret = parse_board(s);
@@ -862,7 +862,7 @@ int main(int argc, char *argv[])
     fprintf(stderr, "ERROR: %s\n", decode_status(ret));
   else
   {
-    if (!quiet_mode)
+    if(!quiet_mode)
       fprintf(stdout, "Finished processing '%s'.", argv[argc - 1]);
   }
 
