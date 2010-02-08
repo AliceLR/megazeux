@@ -1272,15 +1272,20 @@ static audio_stream *construct_pc_speaker_stream(void)
 static audio_stream *construct_stream_audio_file(char *filename,
  Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
-  Sint32 ext_pos = strlen(filename) - 4;
   const char **exts = mod_gdm_ext;
   audio_stream *a_return = NULL;
+  size_t len = strlen(filename);
+  int ext_pos;
 
   if(!audio.music_on)
     return NULL;
 
-  // files with no extension cannot be checked and are illegal
-  if(!ext_pos)
+  // check string contains a valid extension (no ext isn't valid)
+  if(len >= 4 && filename[len - 4] == '.')
+    ext_pos = len - 4;
+  else if(len >= 3 && filename[len - 3] == '.')
+    ext_pos = len - 3;
+  else
     return NULL;
 
   // ogg music is special cased
