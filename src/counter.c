@@ -1072,7 +1072,7 @@ static int translate_coordinates(const char *src, unsigned int *x,
 static int vch_read(World *mzx_world, function_counter *counter,
  const char *name, int id)
 {
-  unsigned int x, y;
+  unsigned int x = 0, y = 0;
   unsigned int vlayer_width = mzx_world->vlayer_width;
   unsigned int vlayer_height = mzx_world->vlayer_height;
   translate_coordinates(name + 3, &x, &y);
@@ -1089,7 +1089,7 @@ static int vch_read(World *mzx_world, function_counter *counter,
 static void vch_write(World *mzx_world, function_counter *counter,
  const char *name, int value, int id)
 {
-  unsigned int x, y;
+  unsigned int x = 0, y = 0;
   unsigned int vlayer_width = mzx_world->vlayer_width;
   unsigned int vlayer_height = mzx_world->vlayer_height;
   translate_coordinates(name + 3, &x, &y);
@@ -1104,7 +1104,7 @@ static void vch_write(World *mzx_world, function_counter *counter,
 static int vco_read(World *mzx_world, function_counter *counter,
  const char *name, int id)
 {
-  unsigned int x, y;
+  unsigned int x = 0, y = 0;
   unsigned int vlayer_width = mzx_world->vlayer_width;
   unsigned int vlayer_height = mzx_world->vlayer_height;
   translate_coordinates(name + 3, &x, &y);
@@ -1121,7 +1121,7 @@ static int vco_read(World *mzx_world, function_counter *counter,
 static void vco_write(World *mzx_world, function_counter *counter,
  const char *name, int value, int id)
 {
-  unsigned int x, y;
+  unsigned int x = 0, y = 0;
   unsigned int vlayer_width = mzx_world->vlayer_width;
   unsigned int vlayer_height = mzx_world->vlayer_height;
   translate_coordinates(name + 3, &x, &y);
@@ -2643,7 +2643,7 @@ void set_counter(World *mzx_world, const char *name, int value, int id)
 {
   function_counter *fdest;
   counter *cdest;
-  int next;
+  int next = 0;
 
   fdest = find_function_counter(name);
 
@@ -2760,9 +2760,10 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
   mzx_string *dest;
   char *src_value = src->value;
   unsigned int src_length = src->length;
-  int next;
   unsigned int size = 0, offset = 0;
+  int next = 0;
 
+  // this generates an unfixable warning at -O3
   get_string_size_offset((char *)name, &size, &offset);
 
   dest = find_string(mzx_world, name, &next);
@@ -2954,6 +2955,7 @@ int get_string(World *mzx_world, const char *name, mzx_string *dest, int id)
   unsigned int size = 0, offset = 0;
   unsigned int src_length;
 
+  // this generates an unfixable warning at -O3
   get_string_size_offset((char *)name, &size, &offset);
 
   src = find_string(mzx_world, name, &next);
@@ -2991,7 +2993,7 @@ void inc_counter(World *mzx_world, const char *name, int value, int id)
   function_counter *fdest;
   counter *cdest;
   int current_value;
-  int next;
+  int next = 0;
 
   fdest = find_function_counter(name);
 
@@ -3075,7 +3077,7 @@ void dec_counter(World *mzx_world, const char *name, int value, int id)
   function_counter *fdest;
   counter *cdest;
   int current_value;
-  int next;
+  int next = 0;
 
   fdest = find_function_counter(name);
 
