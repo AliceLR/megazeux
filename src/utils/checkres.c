@@ -403,10 +403,10 @@ static status_t parse_board_direct(stream_t *s)
   char tmp[256], tmp2[256], *str;
   status_t ret;
 
-  // junk the undocument (and unused) board_mode
+  // junk the undocumented (and unused) board_mode
   sgetc(s);
 
-  // get whether the overlay is enabled or not
+  // whether the overlay is enabled or not
   if(sgetc(s))
   {
     // not enabled, so rewind this last read
@@ -513,8 +513,6 @@ static status_t parse_board_direct(stream_t *s)
           if(!strcasecmp(tmp2, "FREAD_OPEN")
             || !strcasecmp(tmp2, "SMZX_PALETTE")
             || !strcasecmp(tmp2, "LOAD_GAME")
-            || !strcasecmp(tmp2, "LOAD_BC")
-            || !strcasecmp(tmp2, "LOAD_ROBOT")
             || !strncasecmp(tmp2, "LOAD_BC", 7)
             || !strncasecmp(tmp2, "LOAD_ROBOT", 10))
           {
@@ -755,19 +753,20 @@ static status_t parse_world(stream_t *s)
 
 static status_t file_exists(const char *file, stream_t *s)
 {
+  char newpath[MAX_PATH];
+
   switch(s->type)
   {
     case FILE_STREAM:
-    {
-      char newpath[MAX_PATH];
       if(fsafetranslate(file, newpath) == FSAFE_SUCCESS)
         return SUCCESS;
-      else return MISSING_FILE;
-    }
+      return MISSING_FILE;
+
     case BUFFER_STREAM:
       if(unzLocateFile(s->stream.buffer.f, file, 2) == UNZ_OK)
         return SUCCESS;
-      else return MISSING_FILE;
+      return MISSING_FILE;
+
     default:
       return MISSING_FILE;
   }
@@ -776,13 +775,13 @@ static status_t file_exists(const char *file, stream_t *s)
 int main(int argc, char *argv[])
 {
   const char *found_append = " - FOUND", *not_found_append = " - NOT FOUND";
-  int i, len, print_all_files = 0, got_world = 0;
+  int i, len, print_all_files = 0, got_world = 0, quiet_mode = 0;
   status_t ret;
   stream_t *s;
 
   if(argc < 2)
   {
-    fprintf(stderr, "usage: %s [-q] [-a] [mzx file]\n\n", argv[0]);
+    fprintf(stderr, "usage: %s [-q] [-a] [mzx/mzb/zip file]\n\n", argv[0]);
     fprintf(stderr, "  -q  Do not print summary \"FOUND\"/\"NOT FOUND\".\n");
     fprintf(stderr, "  -a  Print found files as well as missing files.\n");
     fprintf(stderr, "\n");
@@ -792,6 +791,7 @@ int main(int argc, char *argv[])
   if((argc > 2 && !strcmp(argv[1], "-q"))
    ||(argc > 3 && !strcmp(argv[2], "-q")))
   {
+    quiet_mode = 1;
     found_append = "";
     not_found_append = "";
   }
@@ -803,7 +803,7 @@ int main(int argc, char *argv[])
   len = strlen(argv[argc - 1]);
   if(len < 4)
   {
-    fprintf(stderr, "\"%s\" is not a valid input filename.\n", argv[argc - 1]);
+    fprintf(stderr, "'%s' is not a valid input filename.\n", argv[argc - 1]);
     return INVALID_ARGUMENTS;
   }
 
@@ -815,7 +815,7 @@ int main(int argc, char *argv[])
     got_world = 1;
   else
   {
-    fprintf(stderr, "\"%s\" is not a .MZX (world), .MZB (board)"
+    fprintf(stderr, "'%s' is not a .MZX (world), .MZB (board) "
                     "or .ZIP (archive) file.\n", argv[argc - 1]);
     return INVALID_ARGUMENTS;
   }
@@ -860,6 +860,12 @@ int main(int argc, char *argv[])
 
   if(ret != SUCCESS)
     fprintf(stderr, "ERROR: %s\n", decode_status(ret));
+  else
+  {
+    if (!quiet_mode)
+      fprintf(stdout, "Finished processing '%s'.", argv[argc - 1]);
+  }
 
   return ret;
 }
+
