@@ -90,9 +90,7 @@ int rename(const char *oldpath, const char *newpath);
 #ifdef CONFIG_NDS
 // FIXME: rmdir() needs implementing on NDS
 #define rmdir(x)
-#else // !CONFIG_NDS
-#define rmdir(x) rmdir(x)
-#endif // CONFIG_NDS
+#endif
 
 #if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
 extern const char *mod_gdm_ext[];
