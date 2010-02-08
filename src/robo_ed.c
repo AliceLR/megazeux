@@ -25,6 +25,8 @@
 #include <stdlib.h>
 #include <ctype.h>
 
+#include <math.h>
+
 #include "robo_ed.h"
 #include "rasm.h"
 #include "world.h"
@@ -38,7 +40,7 @@
 #include "edit.h"
 #include "fsafeopen.h"
 #include "configure.h"
-#include "math.h"
+#include "util.h"
 
 #ifdef __WIN32__
 #include <windows.h>
@@ -1063,21 +1065,72 @@ static void export_block(robot_state *rstate, int region_default)
 
 static void import_block(World *mzx_world, robot_state *rstate)
 {
+  const char *txt_ext[] = { ".TXT", ".BC", NULL };
   char import_name[128];
-  const char *txt_ext[] = { ".TXT", NULL };
+  char line_buffer[256];
+  FILE *import_file;
+  ssize_t ext_pos;
 
-  if(!choose_file(mzx_world, txt_ext, import_name, "Import Robot", 1))
+  if(choose_file(mzx_world, txt_ext, import_name, "Import Robot", 1))
+    return;
+
+  import_file = fopen(import_name, "r");
+  ext_pos = strlen(import_name) - 3;
+
+  rstate->command_buffer = line_buffer;
+
+  if(ext_pos < 1 || strcasecmp(import_name + ext_pos, ".BC"))
   {
-    FILE *import_file = fopen(import_name, "r");
-    char line_buffer[256];
-    rstate->command_buffer = line_buffer;
-
     // fsafegets ensures that no line terminators are present
     while(fsafegets(line_buffer, 255, import_file) != NULL)
       add_line(rstate);
-
-    rstate->command_buffer = rstate->command_buffer_space;
   }
+  else
+  {
+    long file_size = ftell_and_rewind(import_file);
+
+    // 0xff + length + cmd + length + 0x00
+    if(file_size >= 5)
+    {
+       char *buffer = malloc(file_size - 1);
+       size_t ret;
+
+       // skip 0xff
+       fgetc(import_file);
+
+       // put the rest in a buffer for disassemble_line()
+       ret = fread(buffer, file_size - 1, 1, import_file);
+
+       // copied to buffer, must now disassemble
+       if(ret == 1)
+       {
+         char *current_robot_pos = buffer, *next;
+         char error_buffer[256];
+         int line_text_length;
+
+         while(1)
+         {
+           int new_line = disassemble_line(current_robot_pos, &next,
+            line_buffer, error_buffer, &line_text_length,
+            mzx_world->conf.disassemble_extras, NULL, NULL,
+            mzx_world->conf.disassemble_base);
+
+           if(new_line)
+             add_line(rstate);
+           else
+             break;
+
+           current_robot_pos = next;
+         }
+       }
+
+       free(buffer);
+    }
+  }
+
+  rstate->command_buffer = rstate->command_buffer_space;
+
+  fclose(import_file);
 }
 
 static void edit_settings(World *mzx_world)

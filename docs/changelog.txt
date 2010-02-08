@@ -1,22 +1,29 @@
-MZX SVN
+June 9, 2008 - MZX 2.82
 
-USERS
+Despite the increase in minor version, this release mostly targets bug and
+regression fixes.
 
-DEVELOPERS
+However, there ARE some additional new features, such as the introduction
+of the LOAD_MENU counter and {FREAD,FWRITE}_COUNTER have been enhanced.
 
-April 13, 2008 - MZX 2.81i
-
-Once again, this release targets bug fixes and general spit-and-polish.
-This release will probably be the last of the 2.81 series.
-
-One major snag (of two) from the last DoZ has been addressed: the
-phantom F1 help system crashes. The second issue, crashing with block
-actions, has not yet been tracked down or fixed.
+SAVs from older worlds (requiring compatibility hacks) no longer fail to
+play (Darkness, etc. are affected). We've also done a good bit to fix
+compatibility with 2.70 and older.
 
 A new tool, "checkres", is now routinely packaged, allowing you to check
 your games for missing resource files (PALs, CHRs, etc.) before passing
 them on to other people. This should be especially handy for DoZ game
 submissions.
+
+The Nintendo DS port (Kevin Vance's "DsMZX") has been merged into this
+release. I'll provide binaries for GP2X, PSP and NDS this time, but I
+can't guarantee they'll work.
+
+Both of the snags from the last DoZ have been addressed -- the help system
+should no longer crash and the Block Action crashes should be reduced in
+frequency. However, there are still issues with pasting in the robot editor
+that remain unfixed (they're just really hard to reproduce). With your bug
+reports, I look forward to fixing this.
 
 As usual, thanks go out to Revvy and Mr_Alert for their contributions to
 the bug-fixing effort, and to Terryn for his unwavering dedication to
@@ -134,6 +141,9 @@ USERS
 + Fix a bug where a robot's WALK processing, on entering a transporter, could
   allow subsequent commands (such as GO) to corrupt the board. WALK now ends
   the cycle in the special case that a robot goes through a transporter.
++ You can now directly import bytecode into the robot editor via the Alt+I
+  menu. The extension for the bytecode file must .bc for it to be loaded.
+
 
 DEVELOPERS
 
