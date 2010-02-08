@@ -275,11 +275,16 @@ static Uint32 process_event(SDL_Event *event)
 {
   Uint32 rval = 1;
 
-  /* SDL's numlock keyboard modifier handling seems to be broken,
-   * and it will only get numlock's status right on application init.
+  /* SDL's numlock keyboard modifier handling seems to be broken on X11,
+   * and it will only get numlock's status right on application init. We
+   * can trust this value once, and then toggle based on user presses of
+   * the numlock key.
    *
-   * We can trust this value once, and then toggle based on user
-   * presses of the numlock key.
+   * On Windows, KEYDOWN/KEYUP seem to be sent separately, to indicate
+   * enabling or disabling of numlock. But on X11, both KEYDOWN/KEYUP are
+   * sent for each toggle, so this must be handled differently.
+   *
+   * What a mess!
    */
   if (input.numlock_status < 0)
     input.numlock_status = !!(SDL_GetModState() & KMOD_NUM);
@@ -363,6 +368,13 @@ static Uint32 process_event(SDL_Event *event)
         input.caps_status = 1;
       }
 
+#ifdef WIN32
+      if(event->key.keysym.sym == SDLK_NUMLOCK)
+      {
+        input.numlock_status = 1;
+      }
+#endif
+
       if(event->key.keysym.sym == SDLK_F12)
       {
         dump_screen();
@@ -410,7 +422,11 @@ static Uint32 process_event(SDL_Event *event)
     {
       if (event->key.keysym.sym == SDLK_NUMLOCK)
       {
+#ifdef WIN32
+        input.numlock_status = 0;
+#else
         input.numlock_status ^= 1;
+#endif
       }
 
       if(event->key.keysym.sym == SDLK_CAPSLOCK)
