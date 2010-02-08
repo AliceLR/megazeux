@@ -1865,7 +1865,7 @@ static void str_num_write(World *mzx_world, function_counter *counter,
     unsigned int old_length, new_length;
     int next, write_value = false;
     mzx_string *src;
-    int str_num;
+    int str_num = 0;
 
     *dot_ptr = 0;
     dot_ptr++;
