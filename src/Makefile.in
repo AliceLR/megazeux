@@ -5,7 +5,7 @@
 include contrib/gdm2s3m/src/Makefile.in
 include contrib/libmodplug/src/Makefile.in
 
-.PHONY: ${mzx}_clean ${txt2hlp}_clean
+.PHONY: ${mzx}_clean ${txt2hlp}_clean ${checkres}_clean
 
 mzx_base     = src
 mzx_flags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
@@ -21,7 +21,19 @@ txt2hlp_base = src/utils
 txt2hlp = ${txt2hlp_base}/txt2hlp${BINEXT}
 txt2hlp_objs = ${txt2hlp_base}/txt2hlp.o
 
+checkres_base = src/utils
+checkres = ${checkres_base}/checkres${BINEXT}
+checkres_objs = ${checkres_base}/checkres.o
+
 ${txt2hlp_base}/%.o ${txt2hlp_base}/%.dbg.o: ${txt2hlp_base}/%.c
+ifeq (${V},1)
+	${HOST_CC} ${CFLAGS} -c $< -o $@
+else
+	@echo "  CC      " $<
+	@${HOST_CC} ${CFLAGS} -c $< -o $@
+endif
+
+${checkres_base}/%.o ${checkres_base}/%.dbg.o: ${checkres_base}/%.c
 ifeq (${V},1)
 	${HOST_CC} ${CFLAGS} -c $< -o $@
 else
@@ -116,6 +128,7 @@ mzx_ldflags := -lpthread ${mzx_ldflags}
 endif
 
 ifeq (${BUILD_UTILS},1)
+
 ${txt2hlp}: ${txt2hlp_objs}
 ifeq (${V},1)
 	${HOST_CC} ${txt2hlp_objs} -o ${txt2hlp}
@@ -131,12 +144,33 @@ else
 	@${STRIP} ${txt2hlp}
 endif
 endif
+
+${checkres}: ${checkres_objs}
+ifeq (${V},1)
+	${HOST_CC} ${checkres_objs} -o ${checkres}
 else
-${txt2hlp}:
-	@echo "--> Building of txt2hlp disabled."
+	@echo "  LINK    " ${checkres}
+	@${HOST_CC} ${checkres_objs} -o ${checkres}
+endif
+ifneq (${DEBUG},1)
+ifeq (${V},1)
+	${STRIP} ${checkres}
+else
+	@echo "  STRIP   " ${checkres}
+	@${STRIP} ${checkres}
+endif
 endif
 
-${mzx}: ${gdm2s3m} ${libmodplug} ${mzx_objs} ${txt2hlp}
+else
+
+${checkres}:
+	@echo "--> Building of checkres disabled."
+${txt2hlp}:
+	@echo "--> Building of txt2hlp disabled."
+
+endif
+
+${mzx}: ${gdm2s3m} ${libmodplug} ${mzx_objs} ${txt2hlp} ${checkres}
 ifeq (${V},1)
 	${CC} ${mzx_objs} -o ${mzx} ${mzx_ldflags}
 else
@@ -153,9 +187,13 @@ endif
 endif
 
 ${txt2hlp}_clean:
-	@echo "  CLEAN   " ${txt2hlp_base}
+	@echo "  CLEAN   " ${txt2hlp}
 	@rm -f ${txt2hlp_objs} ${txt2hlp}
 
-${mzx}_clean: ${txt2hlp}_clean
+${checkres}_clean:
+	@echo "  CLEAN   " ${checkres}
+	@rm -f ${checkres_objs} ${checkres}
+
+${mzx}_clean: ${txt2hlp}_clean ${checkres}_clean
 	@echo "  CLEAN   " ${mzx_base}
 	@rm -f ${mzx_objs} ${mzx}
