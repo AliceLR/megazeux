@@ -595,7 +595,9 @@ static int execute_named_macro(robot_state *rstate, char *macro_name)
   if(!macro_src)
     return 1;
 
-  if(macro_src->num_types && (last_char))
+  last_char = *line_pos;
+
+  if(macro_src->num_types && last_char)
   {
     variable_storage *param_storage;
     int param_current_type = 0;
