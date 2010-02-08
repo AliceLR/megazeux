@@ -24,6 +24,7 @@
 #include "audio_mikmod.h"
 #include "fsafeopen.h"
 #include "const.h"
+#include "util.h"
 
 #include <mikmod.h>
 
@@ -195,7 +196,7 @@ audio_stream *construct_mikmod_stream(char *filename, Uint32 frequency,
   {
     MODULE *open_file;
 
-    file_size = file_length(input_file);
+    file_size = ftell_and_rewind(input_file);
 
     input_buffer = malloc(file_size);
     fread(input_buffer, file_size, 1, input_file);
