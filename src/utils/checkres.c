@@ -121,7 +121,8 @@ static status_t add_to_hash_table(char *stack_str)
   if(!str)
     return MALLOC_FAILED;
 
-  strcpy(str, stack_str);
+  strncpy(str, stack_str, len);
+  str[len] = '\0';
 
   slot = stb_hash(stack_str) % HASH_TABLE_SIZE;
 
