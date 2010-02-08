@@ -3156,11 +3156,7 @@ static void remove_files(char *directory_name, int remove_recursively)
      strcmp(file_name, ".."))
     {
       remove_files(file_name, 1);
-#ifndef CONFIG_NDS
       rmdir(file_name);
-#else
-#warning rmdir needs fixing on NDS
-#endif
     }
   }
 

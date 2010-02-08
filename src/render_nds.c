@@ -22,14 +22,12 @@
  * But in terms of functionality, it only contains auxiliary screen modes.
  */
 
-#include <nds.h>
 #include <string.h>
 
-#include "config.h"
-#include "graphics.h"
-#include "render.h"
 #include "render_nds.h"
 #include "renderers.h"
+#include "graphics.h"
+#include "render.h"
 
 #include "keyboard.h"
 

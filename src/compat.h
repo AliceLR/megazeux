@@ -22,6 +22,12 @@
 #ifndef __COMPAT_H
 #define __COMPAT_H
 
+#include "config.h"
+
+#ifdef CONFIG_NDS
+#include <nds.h>
+#endif
+
 #ifdef __cplusplus
 
 #define __M_BEGIN_DECLS extern "C" {
@@ -41,8 +47,6 @@
 #endif
 
 #endif /* __cplusplus */
-
-#include "config.h"
 
 #ifdef CONFIG_EDITOR
 #define __editor_maybe_static

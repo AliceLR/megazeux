@@ -4,23 +4,26 @@
 
 .PHONY: package-pbp
 
-# psp toolchain overrides
+#
+# PSP toolchain overrides
+#
 CC  = psp-gcc
 CXX = psp-g++
 AR  = psp-ar
 
+#
+# PSP target rules
+#
 BINEXT = .elf
 BINNAME = ${TARGET}${BINEXT}
 BINNAME_STRIP = ${TARGET}${BINEXT}.strip
-
-# we want to do other things before the strip, so override it
 STRIP = /bin/true
 
 # flag PSP build and link in c/psppower
-mzx_flags  += -G0 -I${PREFIX}/sdk/include
-mzx_ldflags += -lc -lpsppower
+ARCH_CFLAGS  := -G0 -I${PREFIX}/sdk/include
+ARCH_LDFLAGS := -lc -lpsppower
 
-package-pbp:
+package:
 	psp-fixup-imports ${BINNAME}
 	mksfo 'MegaZeux PSP' PARAM.SFO
 	psp-strip ${BINNAME} -o ${BINNAME_STRIP}

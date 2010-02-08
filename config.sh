@@ -27,8 +27,8 @@ usage() {
 	echo "  --optimize-size      Perform size optimizations (-Os)."
 	echo "  --disable-datestamp  Disable adding date to version."
 	echo "  --disable-editor     Disable the built-in editor."
-	echo "  --enable-host-tools  Use 'cc' to build utils (txt2hlp)."
-	echo "  --disable-utils      Disables compilation of utils (txt2hlp)."
+	echo "  --enable-host-utils  Use 'cc' to build utils."
+	echo "  --disable-utils      Disables compilation of utils."
 	echo "  --disable-x11        Disables X11, removing binary dependency."
 	echo "  --disable-software   Disable software renderer."
 	echo "  --disable-gl         Disables all OpenGL renderers."
@@ -104,8 +104,8 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-editor" ] && EDITOR="false"
 	[ "$1" = "--enable-editor" ] && EDITOR="true"
 
-	[ "$1" = "--disable-host-tools" ] && HOST_TOOLS="false"
-	[ "$1" = "--enable-host-tools" ] && HOST_TOOLS="true"
+	[ "$1" = "--disable-host-utils" ] && HOST_UTILS="false"
+	[ "$1" = "--enable-host-utils" ] && HOST_UTILS="true"
 
 	[ "$1" = "--disable-utils" ] && UTILS="false"
 	[ "$1" = "--enable-utils" ] && UTILS="true"
@@ -230,16 +230,6 @@ echo "TARGET=`grep TARGET Makefile | head -n1 | \
 echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 
 #
-# Users may want size optimizations
-#
-if [ "$OPT_SIZE" = "true" ]; then
-	echo "Optimizing for size."
-	echo "OPTIMIZE_CFLAGS=-Os" >> Makefile.platform
-else
-	echo "Optimizing for speed."
-fi
-
-#
 # If the NDS arch is enabled, some code has to be compile time
 # enabled too. This might be able to go away eventually.
 #
@@ -253,6 +243,9 @@ if [ "$PLATFORM" = "nds" ]; then
 
 	echo "Force disabling audio on NDS (fixme)."
 	AUDIO="false"
+	echo "Force disabling software renderer on NDS."
+	echo "Building custom NDS renderer."
+	SOFTWARE="false"
 fi
 
 #
@@ -274,6 +267,16 @@ if [ "$PLATFORM" = "gp2x" ]; then
 fi
 
 #
+# Users may want size optimizations
+#
+if [ "$OPT_SIZE" = "true" ]; then
+	echo "Optimizing for size."
+	echo "OPTIMIZE_CFLAGS=-Os" >> Makefile.platform
+else
+	echo "Optimizing for speed."
+fi
+
+#
 # User may disable the built-in editor
 #
 if [ "$EDITOR" = "true" ]; then
@@ -286,26 +289,24 @@ else
 fi
 
 #
-# User may not want to use her cross compiler for tools
-#
-if [ "$HOST_TOOLS" = "true" ]; then
-	echo "Using host's compiler for tools."
-	echo "NATIVE_TOOLS=1" >> Makefile.platform
-	echo "HOST_CC = cc" >> Makefile.platform
-else
-	echo "Using default compiler for tools."
-	echo "NATIVE_TOOLS=0" >> Makefile.platform
-	echo "HOST_CC := \${CC}" >> Makefile.platform
-fi
-
-#
-# User may want to compile utils (txt2hlp)
+# User may want to compile utils (txt2hlp, checkres)
 #
 if [ "$UTILS" = "true" ]; then
-	echo "Building utils (txt2hlp)."
+	#
+	# User may not want to use her cross compiler for utils
+	#
+	if [ "$HOST_UTILS" = "true" ]; then
+		echo "Using host's compiler for utils."
+		echo "HOST_CC = cc" >> Makefile.platform
+	else
+		echo "Using default compiler for utils."
+		echo "HOST_CC := \${CC}" >> Makefile.platform
+	fi
+
+	echo "Building utils (txt2hlp, checkres)."
 	echo "BUILD_UTILS=1" >> Makefile.platform
 else
-	echo "Disabled utils (txt2hlp)."
+	echo "Disabled utils (txt2hlp, checkres)."
 	echo "BUILD_UTILS=0" >> Makefile.platform
 fi
 

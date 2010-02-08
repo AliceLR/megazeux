@@ -205,7 +205,7 @@ void get_path(const char *file_name, char *dest, unsigned int buf_len)
   dest[c] = 0;
 }
 
-#ifndef rename
+#ifdef NEED_RENAME
 
 int rename(const char *oldpath, const char *newpath)
 {
@@ -215,7 +215,7 @@ int rename(const char *oldpath, const char *newpath)
   return ret;
 }
 
-#endif // !rename
+#endif // NEED_RENAME
 
 #ifdef CONFIG_NDS
 

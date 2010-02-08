@@ -82,9 +82,17 @@ int dir_get_next_entry(dir_t *dir, char *entry);
  * to implement it.
  */
 #ifndef rename
+#define NEED_RENAME
 #define rename rename
 int rename(const char *oldpath, const char *newpath);
 #endif
+
+#ifdef CONFIG_NDS
+// FIXME: rmdir() needs implementing on NDS
+#define rmdir(x)
+#else // !CONFIG_NDS
+#define rmdir(x) rmdir(x)
+#endif // CONFIG_NDS
 
 __M_END_DECLS
 

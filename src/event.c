@@ -1060,7 +1060,7 @@ void set_refocus_pause(int val)
   input.unfocus_pause = val;
 }
 
-#ifdef NDS_BUILD
+#ifdef CONFIG_NDS
 
 static void convert_nds_SDL(int c, SDL_keysym *sym)
 {

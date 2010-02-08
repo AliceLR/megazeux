@@ -25,6 +25,8 @@
 #include <stdio.h>
 #include <time.h>
 
+#include "compat.h"
+
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
@@ -38,9 +40,9 @@ PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #ifdef CONFIG_NDS
 #include <fat.h>
 #include "render_nds.h"
-#include "nds_exception.h"
-#include "nds_ram.h"
-#include "nds_malloc.h"
+#include "ram.h"
+#include "malloc.h"
+#include "exception.h"
 #include "memory_warning_pcx.h"
 #endif // CONFIG_NDS
 
@@ -133,6 +135,7 @@ int main(int argc, char **argv)
 
 #ifdef CONFIG_NDS
   powerON(POWER_ALL);
+  //setMzxExceptionHandler();
   fatInitDefault();
   // If the "extra RAM" is missing, warn the user
   if(!nds_ram_init(DETECT_RAM))

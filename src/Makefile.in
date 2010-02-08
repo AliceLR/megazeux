@@ -10,13 +10,13 @@ include contrib/unzip/src/Makefile.in
 
 mzx_base     = src
 mzx_flags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
-mzx_flags   += -Wmissing-format-attribute -Wpointer-arith -Wcast-align
+mzx_flags   += -Wmissing-format-attribute -Wpointer-arith
 mzx_flags   += -Wwrite-strings
-mzx_cflags  += -Wstrict-prototypes -Wmissing-prototypes
+mzx_cflags  += -Wmissing-prototypes
 mzx_cxxflags = -DHAVE_INTTYPES_H
 
 mzx_flags   += ${SDL_CFLAGS} -I${mzx_base} -I${PREFIX}/include
-mzx_ldflags := ${SDL_LDFLAGS} ${mzx_ldflags}
+mzx_ldflags := ${SDL_LDFLAGS} ${mzx_ldflags} ${ARCH_LDFLAGS}
 
 utils_base = src/utils
 
@@ -70,6 +70,22 @@ mzx_objs += ${mzx_base}/runrobo2.${o} ${mzx_base}/scrdisp.${o}
 mzx_objs += ${mzx_base}/sfx.${o} ${mzx_base}/sprite.${o}
 mzx_objs += ${mzx_base}/util.${o} ${mzx_base}/window.${o}
 mzx_objs += ${mzx_base}/world.${o}
+
+ifneq (${BUILD_NDS},1)
+#
+# Hack to avoid silly warnings from libnds headers
+#
+mzx_cflags += -Wstrict-prototypes
+mzx_flags += -Wcast-align
+endif
+
+ifeq (${BUILD_NDS},1)
+#
+# This is really just a hack and should be moved elsewhere
+#
+mzx_objs += arch/nds/ram.${o} arch/nds/exception.${o}
+mzx_objs += arch/nds/malloc.${o} arch/nds/extmem.${o}
+endif
 
 ifeq (${BUILD_EDITOR},1)
 mzx_objs += ${mzx_base}/block.${o} ${mzx_base}/char_ed.${o}
