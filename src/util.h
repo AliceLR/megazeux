@@ -34,11 +34,32 @@ __M_BEGIN_DECLS
 #define CLAMP(x, low, high) \
   (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
+typedef enum
+{
+  CONFIG_TXT = 0,
+  MZX_ASCII_CHR,
+  MZX_BLANK_CHR,
+  MZX_DEFAULT_CHR,
+  MZX_HELP_FIL,
+  MZX_SMZX_CHR,
+  MZX_EDIT_CHR,
+  PAD_CONFIG,
+  SMZX_PAL,
+  END_RESOURCE_ID_T, // must be last
+}
+mzx_resource_id_t;
+
+int mzx_res_init(const char *argv0);
+void mzx_res_free(void);
+char *mzx_res_get_by_id(mzx_resource_id_t id);
+
 long ftell_and_rewind(FILE *f);
 int Random(int range);
 
 void delay(int ms);
 int get_ticks(void);
+
+void get_path(const char *file_name, char *dest, unsigned int buf_len);
 
 __M_END_DECLS
 

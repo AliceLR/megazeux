@@ -20,8 +20,128 @@
 
 #include "util.h"
 
+#include <sys/stat.h>
 #include <time.h>
 #include "SDL.h"
+
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
+
+#include "const.h" // for MAX_PATH
+
+struct mzx_resource
+{
+  const char *base_name;
+  char *path;
+};
+
+static struct mzx_resource mzx_res[] =
+{
+  [CONFIG_TXT]      = { .base_name = CONFFILE, },
+  [MZX_ASCII_CHR]   = { .base_name = "mzx_ascii.chr", },
+  [MZX_BLANK_CHR]   = { .base_name = "mzx_blank.chr", },
+  [MZX_DEFAULT_CHR] = { .base_name = "mzx_default.chr", },
+  [MZX_HELP_FIL]    = { .base_name = "mzx_help.fil", },
+  [MZX_SMZX_CHR]    = { .base_name = "mzx_smzx.chr", },
+  [MZX_EDIT_CHR]    = { .base_name = "mzx_edit.chr", },
+  [PAD_CONFIG]      = { .base_name = "pad.config", },
+  [SMZX_PAL]        = { .base_name = "smzx.pal", },
+};
+
+int mzx_res_init(const char *argv0)
+{
+  char bin_path[MAX_PATH];
+  struct stat file_info;
+  int i, bin_path_len;
+  int ret = 0;
+
+  get_path(argv0, bin_path, MAX_PATH);
+
+  // move and convert to absolute path style
+  chdir(bin_path);
+  getcwd(bin_path, MAX_PATH);
+  bin_path_len = strlen(bin_path);
+
+  // append the trailing '/'
+  bin_path[bin_path_len] = '/';
+  bin_path_len++;
+
+  /* Always try to use SHAREDIR/CONFDIR first, if possible. On some
+   * platforms, such as Linux, this will be something other than
+   * the current working directory (i.e. '.'). If this fails, try
+   * to look up the resources relative to the binary's install
+   * location, which should allow the MegaZeux binary to be more
+   * "portable".
+   */
+  for(i = 0; i < END_RESOURCE_ID_T; i++)
+  {
+    const int base_name_len = strlen(mzx_res[i].base_name);
+    char p_dir[MAX_PATH];
+    char *full_path;
+    int p_dir_len;
+
+    if(i == CONFIG_TXT)
+      chdir(CONFDIR);
+    else
+      chdir(SHAREDIR);
+
+    getcwd(p_dir, MAX_PATH);
+    p_dir_len = strlen(p_dir);
+
+    full_path = malloc(p_dir_len + base_name_len + 1);
+    memcpy(full_path, p_dir, p_dir_len);
+    memcpy(full_path + p_dir_len, mzx_res[i].base_name, base_name_len);
+    full_path[p_dir_len + base_name_len] = 0;
+
+    // Attempt to load it from this new path
+    if(!stat(full_path, &file_info))
+    {
+      mzx_res[i].path = full_path;
+      continue;
+    }
+
+    free(full_path);
+    chdir(bin_path);
+
+    // We located the file related to bin_path
+    if(!stat(mzx_res[i].base_name, &file_info))
+    {
+      mzx_res[i].path = malloc(bin_path_len + base_name_len + 1);
+      memcpy(mzx_res[i].path, bin_path, bin_path_len);
+      memcpy(mzx_res[i].path + bin_path_len,
+       mzx_res[i].base_name, base_name_len);
+      mzx_res[i].path[bin_path_len + base_name_len] = 0;
+    }
+  }
+
+  chdir(bin_path);
+
+  for(i = 0; i < END_RESOURCE_ID_T; i++)
+  {
+    if(!mzx_res[i].path)
+    {
+      fprintf(stderr, "Failed to locate critical resource '%s'.\n",
+       mzx_res[i].base_name);
+      ret = 1;
+    }
+  }
+
+  return ret;
+}
+
+void mzx_res_free(void)
+{
+  int i;
+  for(i = 0; i < END_RESOURCE_ID_T - 1; i++)
+    if(mzx_res[i].path)
+      free(mzx_res[i].path);
+}
+
+char *mzx_res_get_by_id(mzx_resource_id_t id)
+{
+  return mzx_res[id].path;
+}
 
 // Determine file size of an open FILE and rewind it
 
@@ -63,4 +183,24 @@ void delay(int ms)
 int get_ticks(void)
 {
   return SDL_GetTicks();
+}
+
+void get_path(const char *file_name, char *dest, unsigned int buf_len)
+{
+  int c = strlen(file_name) - 1;
+
+  // no path, or it's too long to store
+  if (c == -1 || c > (int)buf_len)
+  {
+    if(buf_len > 0)
+      dest[0] = 0;
+    return;
+  }
+
+  while((file_name[c] != '/') && (file_name[c] != '\\') && c)
+    c--;
+
+  if(c > 0)
+    memcpy(dest, file_name, c);
+  dest[c] = 0;
 }

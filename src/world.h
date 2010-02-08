@@ -55,7 +55,6 @@ int fgetd(FILE *fp);
 void fputw(int src, FILE *fp);
 void fputd(int src, FILE *fp);
 void add_ext(char *src, const char *ext);
-void get_path(const char *file_name, char *dest);
 
 #ifdef CONFIG_EDITOR
 void optimize_null_boards(World *mzx_world);

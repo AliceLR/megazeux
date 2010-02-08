@@ -46,7 +46,7 @@ PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #include "error.h"
 #include "idput.h"
 #include "audio.h"
-
+#include "util.h"
 #include "world.h"
 #include "counter.h"
 
@@ -55,17 +55,10 @@ PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #include "edit.h"
 #endif
 
-// Base name for MZX's help file.
-// Prepends SHAREDIR from config.h for you, so it's ready to use.
-
-#define MZX_HELP_FIL SHAREDIR "mzx_help.fil"
-#define CONFIG_TXT   CONFDIR CONFFILE
-
 int main(int argc, char **argv)
 {
   Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
   World mzx_world;
-  char bin_path[MAX_PATH];
 
 #if defined(__WIN32__) && defined(DEBUG)
   freopen("CON", "wb", stdout);
@@ -85,19 +78,35 @@ int main(int argc, char **argv)
 
   SDL_Init(flags);
 
-  get_path(argv[0], bin_path);
-  chdir(bin_path);
-
-  if((CONFDIR[0] == '/') || (CONFDIR[0] == '~'))
-    strncpy(config_dir, CONFDIR, MAX_PATH - 1);
-  else
-    strncpy(config_dir, bin_path, MAX_PATH - 1);
-  config_dir[MAX_PATH - 1] = '\0';
+  if(mzx_res_init(argv[0]))
+    goto exit_free_res;
 
   memset(&mzx_world, 0, sizeof(World));
+
+#if defined(__MACOSX__)
+  // In Mac OS X, applications are packages, or folders that
+  // look like single files. This code gets the user out of
+  // the bundle and into a directory he/she will recognize.
+  chdir("../../..");
+#endif
+
+  // We need to store the current working directory so it's
+  // always possible to get back to it..
+  getcwd(current_dir, MAX_PATH);
+
+  // Figure out where all configuration files should be loaded
+  // form. For game.cnf, et al this should eventually be wrt
+  // the game directory, not the config.txt's path.
+  get_path(mzx_res_get_by_id(CONFIG_TXT), config_dir, MAX_PATH);
+
+  // Move into the configuration file's directory so that any
+  // "include" statements are done wrt this path. Move back
+  // into the "current" directory after loading.
+  chdir(config_dir);
   default_config(&(mzx_world.conf));
-  set_config_from_file(&(mzx_world.conf), CONFIG_TXT);
+  set_config_from_file(&(mzx_world.conf), mzx_res_get_by_id(CONFIG_TXT));
   set_config_from_command_line(&(mzx_world.conf), argc, argv);
+  chdir(current_dir);
 
   counter_fsg();
 
@@ -117,10 +126,7 @@ int main(int argc, char **argv)
   cursor_off();
   default_scroll_values(&mzx_world);
 
-  help_load(&mzx_world, MZX_HELP_FIL);
-
-  // Get current directory and drive (form- C:\DIR\SUBDIR)
-  getcwd(current_dir, MAX_PATH);
+  help_load(&mzx_world, mzx_res_get_by_id(MZX_HELP_FIL));
 
   strncpy(curr_file, mzx_world.conf.startup_file, MAX_PATH - 1);
   curr_file[MAX_PATH - 1] = '\0';
@@ -139,16 +145,10 @@ int main(int argc, char **argv)
   memcpy(macros, mzx_world.conf.default_macros, 5 * 64);
 #endif
 
-#if defined(__MACOSX__)
-  // In Mac OS X, applications are packages, or folders that
-  // look like single files. This code gets the user out of
-  // the bundle and into a directory he/she will recognize.
-  chdir("../../..");
-  getcwd(current_dir, MAX_PATH);
-#endif
-
+#ifdef CONFIG_AUDIO
   // now set the audio going
   SDL_PauseAudio(0);
+#endif
 
   // Run main game (mouse is hidden and palette is faded)
   title_screen(&mzx_world);
@@ -161,7 +161,8 @@ int main(int argc, char **argv)
     clear_global_data(&mzx_world);
   }
 
+exit_free_res:
+  mzx_res_free();
   SDL_Quit();
-
   return 0;
 }

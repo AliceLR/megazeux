@@ -46,10 +46,10 @@
 #include "const.h"
 #include "data.h"
 #include "helpsys.h"
-
 #include "robot.h"
 #include "board.h"
 #include "world.h"
+#include "util.h"
 
 #define NUM_SAVSCR 6
 
@@ -3413,10 +3413,10 @@ __editor_maybe_static int file_manager(World *mzx_world,
       case 0:
       case 1:
       {
+        char path[MAX_PATH] = { 0 };
         int stat_result;
-        char path[512] = { 0 };
-        get_path(ret, path);
 
+        get_path(ret, path, MAX_PATH);
         stat_result = stat(ret, &file_info);
 
         if((stat_result >= 0) && S_ISDIR(file_info.st_mode))

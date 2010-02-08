@@ -89,6 +89,7 @@
 #include "fsafeopen.h"
 #include "game.h"
 #include "audio.h"
+#include "util.h"
 
 static char save_version_string[6] = "MZS\x02\x51";
 
@@ -709,7 +710,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
   char current_dir[MAX_PATH];
   FILE *fp = fopen(file, "rb");
 
-  get_path(file, file_path);
+  get_path(file, file_path, MAX_PATH);
 
   if(file_path[0])
   {
@@ -1662,20 +1663,4 @@ void set_update_done_current(World *mzx_world)
 }
 #endif // CONFIG_EDITOR
 
-void get_path(const char *file_name, char *dest)
-{
-  int c = strlen(file_name) - 1;
 
-  if(c != -1)
-  {
-    while((file_name[c] != '/') && (file_name[c] != '\\') && c)
-    {
-      c--;
-    }
-
-    if(c)
-      memcpy(dest, file_name, c);
-
-    dest[c] = 0;
-  }
-}

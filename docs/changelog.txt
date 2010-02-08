@@ -92,6 +92,8 @@ USERS
 + Fix replacing with a blank string in conjunction with the replace all
   Ctrl+F action in the robot editor. The cursor can now no longer become
   negative, fixing numerous possible crashes on search/replace.
++ Fix loading the intrinsic SMZX palette when switching to SMZX modes
+  from a game not in the same directory as the "smzx.pal" file.
 
 DEVELOPERS
 

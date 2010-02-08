@@ -42,16 +42,6 @@
 #error Must define VERSION for MegaZeux version string
 #endif
 
-// Base names for MZX's resource files.
-// Prepends SHAREDIR from config.h for you, so these are ready to use.
-
-#define MZX_DEFAULT_CHR SHAREDIR "mzx_default.chr"
-#define MZX_BLANK_CHR   SHAREDIR "mzx_blank.chr"
-#define MZX_SMZX_CHR    SHAREDIR "mzx_smzx.chr"
-#define MZX_ASCII_CHR   SHAREDIR "mzx_ascii.chr"
-#define MZX_EDIT_CHR    SHAREDIR "mzx_edit.chr"
-#define SMZX_PAL        SHAREDIR "smzx.pal"
-
 static graphics_data graphics;
 
 static const renderer_data renderers[] =
@@ -138,22 +128,19 @@ Sint32 ec_load_set(char *name)
   return 0;
 }
 
-static Sint32 ec_load_set_secondary(const char *name, Uint8 *dest)
+static void ec_load_set_secondary(const char *name, Uint8 *dest)
 {
   FILE *fp = fopen(name, "rb");
 
-  if(fp == NULL)
-    return -1;
+  if(!fp)
+    return;
 
   fread(dest, CHAR_SIZE, CHARSET_SIZE, fp);
-
   fclose(fp);
 
   // some renderers may want to map charsets to textures
   if(graphics.remap_charsets)
     graphics.remap_charsets(&graphics);
-
-  return 0;
 }
 
 Sint32 ec_load_set_var(char *name, Uint8 pos)
@@ -161,7 +148,7 @@ Sint32 ec_load_set_var(char *name, Uint8 pos)
   Uint32 size = CHARSET_SIZE;
   FILE *fp = fopen(name, "rb");
 
-  if(fp == NULL)
+  if(!fp)
     return -1;
 
   size = ftell_and_rewind(fp) / CHAR_SIZE;
@@ -420,8 +407,18 @@ void load_palette(const char *fname)
 
   file_size = ftell_and_rewind(pal_file);
 
-  if(!graphics.screen_mode && (file_size > 48))
-    file_size = 48;
+  switch(graphics.screen_mode)
+  {
+    // Regular text mode, 16 colors
+    case 0:
+      file_size = MIN(file_size, 16 * 3);
+      break;
+
+    // SMZX modes, up to 256 colors
+    default:
+      file_size = MIN(file_size, 256 * 3);
+      break;
+  }
 
   for(i = 0; i < file_size / 3; i++)
   {
@@ -507,7 +504,7 @@ void set_screen_mode(Uint32 mode)
         }
       }
       set_palette_intensity(100);
-      load_palette(SMZX_PAL);
+      load_palette(mzx_res_get_by_id(SMZX_PAL));
       graphics.default_smzx_loaded = 1;
     }
     update_palette();
@@ -796,11 +793,16 @@ void init_video(config_info *conf)
     graphics.init_video(&graphics, conf);
   }
 
-  ec_load_set_secondary(MZX_DEFAULT_CHR, graphics.default_charset);
-  ec_load_set_secondary(MZX_BLANK_CHR, graphics.blank_charset);
-  ec_load_set_secondary(MZX_SMZX_CHR, graphics.smzx_charset);
-  ec_load_set_secondary(MZX_ASCII_CHR, graphics.ascii_charset);
-  ec_load_set_secondary(MZX_EDIT_CHR, graphics.charset + (CHARSET_SIZE * CHAR_SIZE));
+  ec_load_set_secondary(mzx_res_get_by_id(MZX_DEFAULT_CHR),
+   graphics.default_charset);
+  ec_load_set_secondary(mzx_res_get_by_id(MZX_BLANK_CHR),
+   graphics.blank_charset);
+  ec_load_set_secondary(mzx_res_get_by_id(MZX_SMZX_CHR),
+   graphics.smzx_charset);
+  ec_load_set_secondary(mzx_res_get_by_id(MZX_ASCII_CHR),
+   graphics.ascii_charset);
+  ec_load_set_secondary(mzx_res_get_by_id(MZX_EDIT_CHR),
+   graphics.charset + (CHARSET_SIZE * CHAR_SIZE));
   ec_load_mzx();
 
   init_palette();
