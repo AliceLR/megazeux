@@ -5454,7 +5454,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int redo_load = 0;
         char name_buffer[ROBOT_MAX_TR];
-        char translated_name[MAX_PATH];
+        char *translated_name = malloc(MAX_PATH);
+
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
 
         if(!fsafetranslate(name_buffer, translated_name))
@@ -5470,8 +5471,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
           strcpy(curr_file, translated_name);
           mzx_world->swapped = 1;
 
+          free(translated_name);
           return;
         }
+
+	free(translated_name);
         break;
       }
 
