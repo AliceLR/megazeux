@@ -45,6 +45,9 @@ USERS
 + Change starting/max health and lives minimum to 1 instead of 0. (Revvy)
 + Some help system (F1) bugs have been fixed, hopefully mitigating some of
   the crashes people have been seeing.
++ Fix a bug on Linux where fclose() on a robot-opened file could, on world
+  reload, occassionally crash (due to a stale handle). Fixes loading Toayarin
+  saves multiple times in a row.
 
 DEVELOPERS
 

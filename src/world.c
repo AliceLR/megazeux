@@ -1486,10 +1486,16 @@ void clear_world(World *mzx_world)
      mzx_world->global_robot.num_labels);
 
   if(mzx_world->input_file)
+  {
     fclose(mzx_world->input_file);
+    mzx_world->input_file = NULL;
+  }
 
   if(mzx_world->output_file)
+  {
     fclose(mzx_world->output_file);
+    mzx_world->output_file = NULL;
+  }
 
   mzx_world->active = 0;
 
