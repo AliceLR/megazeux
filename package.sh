@@ -1,7 +1,14 @@
 #!/bin/sh
 
+#
+# This trivial script helps automate the correct packaging of binaries
+# and their dependencies for a multitude of platforms. It makes (good)
+# assumptions about the compile options in use and the dependencies
+# required.
+#
+
 usage() {
-	echo "usage: $0 [-b win32 | win64 | psp]"
+	echo "usage: $0 [-b win32 | win64 | psp | nds | gp2x]"
 	echo
 	echo "	-b	Builds a binary distribution for the specified arch."
 	echo "	-h	Displays this help text."
@@ -9,14 +16,33 @@ usage() {
 }
 
 #
-# createpspzip
+# createzip_psp
 #
-createpspzip() {
-	#
-	# Create the binary package.
-	#
+createzip_psp() {
+	cp -f $PSPPAD pad.config &&
 	$SEVENZIP a -tzip dist/$TARGET-psp.zip \
-		$BINARY_DEPS EBOOT.PBP $DOCS $PSPPAD
+		$BINARY_DEPS EBOOT.PBP $DOCS pad.config &&
+	rm -f pad.config
+}
+
+#
+# createzip_nds
+#
+createzip_nds() {
+	cp -f $NDSPAD pad.config &&
+	$SEVENZIP a -tzip dist/$TARGET-nds.zip \
+		$BINARY_DEPS $TARGET.nds $DOCS pad.config &&
+	rm -f pad.config
+}
+
+#
+# createzip_gp2x
+#
+createzip_gp2x() {
+	cp -f $GP2XPAD pad.config &&
+	$SEVENZIP a -tzip dist/$TARGET-gp2x.zip \
+		$BINARY_DEPS $TARGET.gpe $DOCS pad.config &&
+	rm -f pad.config
 }
 
 #
@@ -54,43 +80,14 @@ createzip_dynamic_sdl() {
 	# Create the binary package.
 	#
 	$SEVENZIP a -tzip dist/$TARGET-$2.zip \
-		$BINARY_DEPS $DOCS $TARGET.exe SDL.dll $DIRECTX_BAT utils &&
+		$BINARY_DEPS $HELP_FILE $DOCS \
+		$TARGET.exe SDL.dll $DIRECTX_BAT utils &&
 
 	#
 	# Remove SDL, and the bat file.
 	#
 	rm -rf utils &&
 	rm -f SDL.dll $DIRECTX_BAT
-}
-
-#
-# createtbz tar-name-ext [extra-binary]
-#
-createtbz() {
-	#
-	# create temporary directory
-	#
-	mkdir -p dist/$TARGET/docs &&
-
-	#
-	# copy binaries into it
-	#
-	cp -f --dereference $BINARY_DEPS $TARGET $2 dist/$TARGET &&
-
-	#
-	# copy docs over
-	#
-	cp -f --dereference $DOCS dist/$TARGET/docs &&
-
-	#
-	# tar it up
-	#
-	tar -C dist -jcvf dist/$TARGET-$1.tar.bz2 $TARGET &&
-
-	#
-	# now delete temporary dir
-	#
-	rm -rf dist/$TARGET
 }
 
 #
@@ -116,7 +113,13 @@ TARGET=`grep TARGET Makefile | head -n1 | sed "s/ //g" | cut -d "=" -f 2`
 # build deps below.
 #
 BINARY_DEPS="smzx.pal mzx_ascii.chr mzx_blank.chr mzx_default.chr \
-             mzx_help.fil mzx_smzx.chr mzx_edit.chr config.txt"
+             mzx_smzx.chr mzx_edit.chr config.txt"
+
+#
+# The help file is also technically a "binary dep", but some
+# embedded platforms can omit it if they disable the help system.
+#
+HELP_FILE="mzx_help.fil"
 
 #
 # Documents that the binary zip should contain (pathname will be stored too).
@@ -142,8 +145,7 @@ BUILD_DEPS="config.sh Makefile package.sh macosx.zip msvc.zip"
 SUBDIRS="arch contrib debian docs"
 
 #
-# What we actually care about; the complete sources to MegaZeux. Try to
-# extract crap Exo's left in the wrong place. Feel free to update this.
+# What we actually care about; the complete sources to MegaZeux.
 #
 SRC="src/*.c src/*.cpp src/*.h src/Makefile.in src/old src/utils"
 
@@ -178,7 +180,7 @@ if [ -d dist ]; then
 fi
 
 mkdir -p dist/$TARGET/src &&
-cp -pv $BINARY_DEPS $BUILD_DEPS dist/$TARGET &&
+cp -pv $BINARY_DEPS $HELP_FILE $BUILD_DEPS dist/$TARGET &&
 cp -pvr $SUBDIRS dist/$TARGET &&
 cp -pvr $SRC dist/$TARGET/src &&
 
@@ -226,10 +228,26 @@ fi
 echo "Generating binary package for $2.."
 
 #
-# PSP, using ZIP compression via 7ZIP compressor (add pad config)
+# PSP, using ZIP compression via 7ZIP compressor (pad config, no help file)
 #
 if [ "$2" = "psp" ]; then
-	createpspzip
+	createzip_psp
+	exit
+fi
+
+#
+# NDS, using ZIP compression via 7ZIP compressor (pad config, no help file)
+#
+if [ "$2" = "nds" ]; then
+	createzip_nds
+	exit
+fi
+
+#
+# GP2X, using ZIP compression via 7ZIP compressor (pad config, no help file)
+#
+if [ "$2" = "gp2x" ]; then
+	createzip_gp2x
 	exit
 fi
 
