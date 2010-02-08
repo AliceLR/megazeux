@@ -3451,6 +3451,8 @@ void save_string(FILE *fp, mzx_string *src_string)
   fwrite(src_string->value, str_length, 1, fp);
 }
 
+#define CVALUE_COL_OFFSET 63
+
 #ifdef CONFIG_EDITOR
 void debug_counters(World *mzx_world)
 {
@@ -3472,27 +3474,28 @@ void debug_counters(World *mzx_world)
     cp_len = strlen(mzx_world->counter_list[i]->name);
     memset(var_list[i], ' ', 75);
 
-    if(cp_len > 64)
-      cp_len = 64;
+    if(cp_len > CVALUE_COL_OFFSET)
+      cp_len = CVALUE_COL_OFFSET;
 
     memcpy(var_list[i], mzx_world->counter_list[i]->name, cp_len);
 
     var_list[i][cp_len] = ' ';
-    sprintf(var_list[i] + 64, "%d", mzx_world->counter_list[i]->value);
+    sprintf(var_list[i] + CVALUE_COL_OFFSET, "%d",
+     mzx_world->counter_list[i]->value);
   }
 
   // SCORE isn't a real counter, so we have a special case here
   var_list[i] = (char *)malloc(76);
   memset(var_list[i], ' ', 75);
   memcpy(var_list[i], "SCORE", 5);
-  sprintf(var_list[i] + 64, "%d", mzx_world->score);
+  sprintf(var_list[i] + CVALUE_COL_OFFSET, "%d", mzx_world->score);
   i++;
 
   // mzx_speed isn't a real counter either, so another special case is needed
   var_list[i] = (char *)malloc(76);
   memset(var_list[i], ' ', 75);
   memcpy(var_list[i], "mzx_speed", 9);
-  sprintf(var_list[i] + 64, "%d", mzx_world->mzx_speed);
+  sprintf(var_list[i] + CVALUE_COL_OFFSET, "%d", mzx_world->mzx_speed);
   i++;
 
   for(i2 = 0; i2 < mzx_world->num_strings; i2++, i++)
@@ -3625,7 +3628,7 @@ void debug_counters(World *mzx_world)
              mzx_world->counter_list[offset]->name, counter_value, 0);
           }
 
-          sprintf(var_list[offset] + 64, "%d", counter_value);
+          sprintf(var_list[offset] + CVALUE_COL_OFFSET, "%d", counter_value);
         }
       }
 
