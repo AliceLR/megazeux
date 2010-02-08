@@ -104,6 +104,7 @@ static int gl1_init_video(graphics_data *graphics, config_info *conf)
   graphics->render_data = render_data;
   gl->syms_loaded = false;
 
+  graphics->gl_vsync = conf->gl_vsync;
   graphics->allow_resize = conf->allow_resize;
   graphics->gl_filter_method = conf->gl_filter_method;
   graphics->bits_per_pixel = 32;
@@ -158,7 +159,7 @@ static int gl1_set_video_mode(graphics_data *graphics, int width, int height,
 
   GLuint texture_number;
 
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  gl_set_attributes(graphics);
 
   if(!SDL_SetVideoMode(width, height, depth, GL_STRIP_FLAGS(flags)))
     return false;

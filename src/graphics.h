@@ -94,6 +94,7 @@ struct _graphics_data
   Uint32 cursor_flipflop;
   Uint32 default_smzx_loaded;
   char *gl_filter_method;
+  int gl_vsync;
 
   Uint8 default_charset[CHAR_SIZE * CHARSET_SIZE];
   Uint8 blank_charset[CHAR_SIZE * CHARSET_SIZE];

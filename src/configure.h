@@ -39,6 +39,7 @@ struct _config_info
   char video_output[16];
   int force_bpp;
   char gl_filter_method[16];
+  int gl_vsync;
 
   // Audio options
   int output_frequency;

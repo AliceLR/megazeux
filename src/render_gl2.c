@@ -150,6 +150,7 @@ static int gl2_init_video(graphics_data *graphics, config_info *conf)
   graphics->render_data = render_data;
   gl->syms_loaded = false;
 
+  graphics->gl_vsync = conf->gl_vsync;
   graphics->allow_resize = conf->allow_resize;
   graphics->gl_filter_method = conf->gl_filter_method;
   graphics->bits_per_pixel = 32;
@@ -277,7 +278,7 @@ static int gl2_set_video_mode(graphics_data *graphics, int width, int height,
   gl2_render_data *render_data = graphics->render_data;
   gl2_syms *gl = &render_data->gl;
 
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+  gl_set_attributes(graphics);
 
   if(!SDL_SetVideoMode(width, height, depth, GL_STRIP_FLAGS(flags)))
     return false;

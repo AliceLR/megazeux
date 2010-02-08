@@ -85,6 +85,17 @@
 
 # gl_filter_method = nearest
 
+# Some OpenGL driver settings may default vertical sync on, which looks
+# visually better (especially on CRTs) but can cause "speed 1" to run
+# noticably slower than with other renderers. For consistency with other
+# renderers, and for correctness, MegaZeux will attempt to disable vsync
+# when gl_vsync is the default value of 0. Conversely, a value >= 1 forces
+# MegaZeux to override the driver settings and enable vsync, which
+# decreases tearing. A value < 0 can be used to tell MegaZeux to obey the
+# driver default, which is unlikely to be useful.
+
+# gl_vsync = 1
+
 # Resolution MZX uses for fullscreen. With the software renderer, this
 # will center MZX on the screen, and will not scale it.
 # However, with the hardware renderers above, MZX will attempt to scale

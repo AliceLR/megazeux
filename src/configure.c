@@ -481,6 +481,15 @@ static void config_editor_space_toggles(config_info *conf, char *name,
   conf->editor_space_toggles = strtol(value, NULL, 10);
 }
 
+static void config_gl_vsync(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  conf->gl_vsync = strtol(value, NULL, 10);
+}
+
+/* FAT NOTE: This is searched as a binary tree, the nodes must be
+ *           sorted alphabetically, or they risk being ignored.
+ */
 static config_entry config_options[] =
 {
   { "audio_buffer", config_set_audio_buffer },
@@ -513,6 +522,7 @@ static config_entry config_options[] =
   { "fullscreen", config_set_fullscreen },
   { "fullscreen_resolution", config_set_resolution },
   { "gl_filter_method", config_set_gl_filter_method },
+  { "gl_vsync", config_gl_vsync },
   { "include", include2_config },
   { "include*", include_config },
   { "joy!axis!", joy_axis_set },
@@ -575,6 +585,7 @@ static config_info default_options =
   "software",                   // video_output
   32,                           // force_bpp
   "linear",                     // opengl filter method
+  0,                            // opengl vsync mode
 
   // Audio options
   44100,                        // output_frequency

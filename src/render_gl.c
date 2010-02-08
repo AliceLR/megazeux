@@ -40,3 +40,13 @@ void gl_set_filter_method(const char *method,
   glTexParameteri_p(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_method);
   glTexParameteri_p(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_method);
 }
+
+void gl_set_attributes(graphics_data *graphics)
+{
+  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
+
+  if(graphics->gl_vsync == 0)
+    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 0);
+  else if(graphics->gl_vsync >= 1)
+    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
+}
