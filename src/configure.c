@@ -32,6 +32,22 @@
 #include "macro.h"
 #include "fsafeopen.h"
 
+#ifdef CONFIG_NDS
+#define VIDEO_OUTPUT_DEFAULT "nds"
+#elif CONFIG_GP2X
+#define VIDEO_OUTPUT_DEFAULT "gp2x"
+#elif CONFIG_PSP
+#define FORCE_BPP_DEFAULT 8
+#endif
+
+#ifndef FORCE_BPP_DEFAULT
+#define FORCE_BPP_DEFAULT 32
+#endif
+
+#ifndef VIDEO_OUTPUT_DEFAULT
+#define VIDEO_OUTPUT_DEFAULT "software"
+#endif
+
 static void config_set_audio_buffer(config_info *conf, char *name, char *value,
  char *extended_data)
 {
@@ -582,8 +598,8 @@ static config_info default_options =
   640,                          // window_width
   350,                          // window_height
   0,                            // allow_resize
-  "software",                   // video_output
-  32,                           // force_bpp
+  VIDEO_OUTPUT_DEFAULT,         // video_output
+  FORCE_BPP_DEFAULT,            // force_bpp
   "linear",                     // opengl filter method
   0,                            // opengl vsync mode
 

@@ -84,28 +84,12 @@
 
 #else // !CONFIG_NDS
 
-static inline void *ext_malloc(size_t s)
-{
-  return malloc(s);
-}
-
-static inline void *ext_realloc(void *p, size_t s)
-{
-  return realloc(p, s);
-}
-
-static inline void ext_free(void *p)
-{
-  free(p);
-}
-
-static inline void *ext_memcpy(void *dest, const void *src, size_t n)
-{
-  return memcpy(dest, src, n);
-}
-
-static inline void ext_lock(void) {}
-static inline void ext_unlock(void) {}
+#define ext_malloc malloc
+#define ext_realloc realloc
+#define ext_free free
+#define ext_memcpy memcpy
+#define ext_lock(x)
+#define ext_unlock(x)
 
 #endif // CONFIG_NDS
 
