@@ -775,11 +775,11 @@ int char_editor(World *mzx_world)
     update_screen();
     update_event_status_delay();
 
-    key = get_key(keycode_SDL);
+    key = get_key(keycode_internal);
 
     draw_new = 0;
 
-    if(get_shift_status(keycode_SDL) || (block_mode == 2))
+    if(get_shift_status(keycode_internal) || (block_mode == 2))
     {
       if(!shifted)
       {
@@ -866,7 +866,7 @@ int char_editor(World *mzx_world)
 
         if(!block_mode)
         {
-          if(get_mouse_status() == SDL_BUTTON(1))
+          if(get_mouse_status() == MOUSE_BUTTON(1))
           {
             int dx = x - last_x;
             int dy = y - last_y;
@@ -949,9 +949,9 @@ int char_editor(World *mzx_world)
 
     switch(key)
     {
-      case SDLK_LEFT:
+      case IKEY_LEFT:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           char *buffer_ptr = buffer +
            block_start_x + (block_start_y * buffer_width);
@@ -984,9 +984,9 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_RIGHT:
+      case IKEY_RIGHT:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           char *buffer_ptr = buffer +
            block_start_x + (block_start_y * buffer_width);
@@ -1019,9 +1019,9 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_UP:
+      case IKEY_UP:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           char *buffer_ptr = buffer +
            block_start_x + (block_start_y * buffer_width);
@@ -1056,9 +1056,9 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_DOWN:
+      case IKEY_DOWN:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           char *buffer_ptr = buffer +
            block_start_x + ((block_start_y + (block_height - 1)) *
@@ -1094,8 +1094,8 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_KP_MINUS:
-      case SDLK_MINUS:
+      case IKEY_KP_MINUS:
+      case IKEY_MINUS:
       {
         current_char -= highlight_width;
         expand_buffer(buffer, current_width, current_height,
@@ -1104,11 +1104,8 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_KP_PLUS:
-#if SDL_MAJOR_VERSION == 1 && SDL_MINOR_VERSION <= 2
-      case SDLK_EQUALS:
-#endif
-      case SDLK_PLUS:
+      case IKEY_KP_PLUS:
+      case IKEY_EQUALS:
       {
         current_char += highlight_width;
         expand_buffer(buffer, current_width, current_height,
@@ -1117,7 +1114,7 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_SPACE:
+      case IKEY_SPACE:
       {
         memcpy(previous, buffer, buffer_size);
         if(screen_mode)
@@ -1131,7 +1128,7 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_RETURN:
+      case IKEY_RETURN:
       {
         int new_char =
          char_selection_ext(current_char, 1, &highlight_width,
@@ -1226,13 +1223,13 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_q:
+      case IKEY_q:
       {
-        key = SDLK_ESCAPE;
+        key = IKEY_ESCAPE;
         break;
       }
 
-      case SDLK_DELETE:
+      case IKEY_DELETE:
       {
         char *buffer_ptr = buffer +
          block_start_x + (block_start_y * buffer_width);
@@ -1249,7 +1246,7 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_F2:
+      case IKEY_F2:
       {
         char *buffer_ptr = buffer +
          block_start_x + (block_start_y * buffer_width);
@@ -1263,7 +1260,7 @@ int char_editor(World *mzx_world)
         char_copy_width = block_width;
         char_copy_height = block_height;
 
-        if(get_ctrl_status(keycode_SDL))
+        if(get_ctrl_status(keycode_internal))
         {
           for(i = 0; i < block_height; i++,
            buffer_ptr += buffer_width, dest_ptr += block_width)
@@ -1283,7 +1280,7 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_F3:
+      case IKEY_F3:
       {
         int copy_width = char_copy_width;
         int copy_height = char_copy_height;
@@ -1321,7 +1318,7 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_m:
+      case IKEY_m:
       {
         int temp, i2;
         int start_offset = block_start_x +
@@ -1352,9 +1349,9 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_f:
+      case IKEY_f:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           // Flood fill
           int check = buffer[x + (y * buffer_width)];
@@ -1405,7 +1402,7 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_TAB:
+      case IKEY_TAB:
       {
         if(draw)
         {
@@ -1413,7 +1410,7 @@ int char_editor(World *mzx_world)
         }
         else
         {
-          if(get_shift_status(keycode_SDL))
+          if(get_shift_status(keycode_internal))
             draw = 2;
           else
             draw = 1;
@@ -1424,7 +1421,7 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_n:
+      case IKEY_n:
       {
         char *buffer_ptr = buffer +
          block_start_x + (block_start_y * buffer_width);
@@ -1459,10 +1456,10 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_u:
+      case IKEY_u:
       {
         // Undo
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           char *swap = malloc(sizeof(char) * buffer_size);
           memcpy(swap, buffer, buffer_size);
@@ -1476,7 +1473,7 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_F4:
+      case IKEY_F4:
       {
         int char_offset = current_char;
         int skip = 32 - highlight_width;
@@ -1499,7 +1496,7 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_F5:
+      case IKEY_F5:
       {
         int char_offset = current_char;
         int skip = 32 - highlight_width;
@@ -1523,7 +1520,7 @@ int char_editor(World *mzx_world)
       }
 
 #ifdef CONFIG_HELPSYS
-      case SDLK_F1:
+      case IKEY_F1:
       {
         m_show();
         help_system(mzx_world);
@@ -1531,23 +1528,23 @@ int char_editor(World *mzx_world)
       }
 #endif
 
-      case SDLK_HOME:
+      case IKEY_HOME:
       {
         x = 0;
         y = 0;
         break;
       }
 
-      case SDLK_END:
+      case IKEY_END:
       {
         x = buffer_width - 1;
         y = buffer_height - 1;
         break;
       }
 
-      case SDLK_x:
+      case IKEY_x:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           // Character set
           const char *chr_ext[] = { ".CHR", NULL };
@@ -1585,9 +1582,9 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_i:
+      case IKEY_i:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           // Character set
           const char *chr_ext[] = { ".CHR", NULL };
@@ -1630,9 +1627,9 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_b:
+      case IKEY_b:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           block_mode = 2;
           block_x = x;
@@ -1647,7 +1644,7 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_ESCAPE:
+      case IKEY_ESCAPE:
       {
         if(block_mode == 2)
         {
@@ -1657,35 +1654,35 @@ int char_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_KP1:
-      case SDLK_1:
+      case IKEY_KP1:
+      case IKEY_1:
       {
         current_pixel = 0;
         break;
       }
 
-      case SDLK_KP2:
-      case SDLK_2:
+      case IKEY_KP2:
+      case IKEY_2:
       {
         current_pixel = 2;
         break;
       }
 
-      case SDLK_KP3:
-      case SDLK_3:
+      case IKEY_KP3:
+      case IKEY_3:
       {
         current_pixel = 1;
         break;
       }
 
-      case SDLK_KP4:
-      case SDLK_4:
+      case IKEY_KP4:
+      case IKEY_4:
       {
         current_pixel = 3;
         break;
       }
 
-      case SDLK_INSERT:
+      case IKEY_INSERT:
       {
         current_pixel = buffer[x + (y * buffer_width)];
         break;
@@ -1718,7 +1715,7 @@ int char_editor(World *mzx_world)
        current_height, highlight_width, highlight_height,
        current_char, screen_mode);
     }
-  } while(key != SDLK_ESCAPE);
+  } while(key != IKEY_ESCAPE);
 
   set_mouse_mul(8, 14);
 

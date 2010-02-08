@@ -47,6 +47,7 @@
 #endif
 
 #ifdef CONFIG_X11
+#include "SDL.h"
 #include "SDL_syswm.h"
 #endif
 
@@ -2689,7 +2690,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
     mouse_press = get_mouse_press_ext();
 
-    if(mouse_press && (mouse_press <= SDL_BUTTON_RIGHT))
+    if(mouse_press && (mouse_press <= MOUSE_BUTTON_RIGHT))
     {
       int mouse_x, mouse_y;
       get_mouse_position(&mouse_x, &mouse_y);
@@ -2705,13 +2706,13 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
     }
     else
 
-    if(mouse_press == SDL_BUTTON_WHEELUP)
+    if(mouse_press == MOUSE_BUTTON_WHEELUP)
     {
       move_and_update(&rstate, -3);
     }
     else
 
-    if(mouse_press == SDL_BUTTON_WHEELDOWN)
+    if(mouse_press == MOUSE_BUTTON_WHEELDOWN)
     {
       move_and_update(&rstate, 3);
     }
@@ -2721,31 +2722,31 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
     switch(key)
     {
-      case SDLK_UP:
+      case IKEY_UP:
       {
         move_and_update(&rstate, -1);
         break;
       }
 
-      case SDLK_DOWN:
+      case IKEY_DOWN:
       {
         move_and_update(&rstate, 1);
         break;
       }
 
-      case SDLK_PAGEUP:
+      case IKEY_PAGEUP:
       {
         move_and_update(&rstate, -9);
         break;
       }
 
-      case SDLK_PAGEDOWN:
+      case IKEY_PAGEDOWN:
       {
         move_and_update(&rstate, 9);
         break;
       }
 
-      case SDLK_BACKSPACE:
+      case IKEY_BACKSPACE:
       {
         if(rstate.current_x == 0)
         {
@@ -2763,7 +2764,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
-      case SDLK_DELETE:
+      case IKEY_DELETE:
       {
 
         if(rstate.command_buffer[0] == 0)
@@ -2774,9 +2775,9 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
-      case SDLK_RETURN:
+      case IKEY_RETURN:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           block_action(&rstate);
         }
@@ -2795,7 +2796,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       }
 
 #ifdef CONFIG_HELPSYS
-      case SDLK_F1:
+      case IKEY_F1:
       {
         m_show();
         help_system(mzx_world);
@@ -2803,7 +2804,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       }
 #endif
 
-      case SDLK_F2:
+      case IKEY_F2:
       {
         int new_color;
 
@@ -2819,7 +2820,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
-      case SDLK_F3:
+      case IKEY_F3:
       {
         int new_char = char_selection(last_char);
 
@@ -2836,7 +2837,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
-      case SDLK_F4:
+      case IKEY_F4:
       {
         int start_x = rstate.current_x;
         const search_entry_short *matched_arg;
@@ -2878,7 +2879,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
-      case SDLK_F5:
+      case IKEY_F5:
       {
         int char_edited;
         char char_buffer[14];
@@ -2900,39 +2901,39 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
-      case SDLK_F6:
+      case IKEY_F6:
       {
         execute_numbered_macro(&rstate, 1);
         break;
       }
 
-      case SDLK_F7:
+      case IKEY_F7:
       {
         execute_numbered_macro(&rstate, 2);
         break;
       }
 
-      case SDLK_F8:
+      case IKEY_F8:
       {
         execute_numbered_macro(&rstate, 3);
         break;
       }
 
-      case SDLK_F9:
+      case IKEY_F9:
       {
         execute_numbered_macro(&rstate, 4);
         break;
       }
 
-      case SDLK_F10:
+      case IKEY_F10:
       {
         execute_numbered_macro(&rstate, 5);
         break;
       }
 
-      case SDLK_v:
+      case IKEY_v:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           update_current_line(&rstate);
           validate_lines(&rstate, 1);
@@ -2941,7 +2942,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
-      case SDLK_ESCAPE:
+      case IKEY_ESCAPE:
       {
         update_current_line(&rstate);
         if(validate_lines(&rstate, 0))
@@ -2952,12 +2953,12 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       }
 
       // Mark start/end
-      case SDLK_s:
-      case SDLK_e:
-      case SDLK_HOME:
-      case SDLK_END:
+      case IKEY_s:
+      case IKEY_e:
+      case IKEY_HOME:
+      case IKEY_END:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           int mark_switch;
 
@@ -2965,7 +2966,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
           if(rstate.mark_mode == 2)
           {
-            if((key == SDLK_HOME) || (key == SDLK_s))
+            if((key == IKEY_HOME) || (key == IKEY_s))
               mark_switch = 0;
             else
               mark_switch = 1;
@@ -3019,32 +3020,32 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       }
 
       // Block action menu
-      case SDLK_b:
+      case IKEY_b:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           block_action(&rstate);
         }
         break;
       }
 
-      case SDLK_g:
+      case IKEY_g:
       {
-        if(get_ctrl_status(keycode_SDL))
+        if(get_ctrl_status(keycode_internal))
           goto_position(mzx_world, &rstate);
 
         break;
       }
 
-      case SDLK_l:
+      case IKEY_l:
       {
-        if(get_ctrl_status(keycode_SDL))
+        if(get_ctrl_status(keycode_internal))
           rstate.show_line_numbers ^= 1;
 
         break;
       }
 
-      case SDLK_d:
+      case IKEY_d:
       {
         if(rstate.current_rline->validity_status != valid)
         {
@@ -3055,7 +3056,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
-      case SDLK_c:
+      case IKEY_c:
       {
         if(rstate.current_rline->validity_status != valid)
         {
@@ -3097,7 +3098,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         }
         else
 
-        if(get_ctrl_status(keycode_SDL) &&
+        if(get_ctrl_status(keycode_internal) &&
          (rstate.command_buffer[0] == '.') &&
          (rstate.command_buffer[1] == ' ') &&
          (rstate.command_buffer[2] == '"') &&
@@ -3137,10 +3138,10 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
-      case SDLK_p:
-      case SDLK_INSERT:
+      case IKEY_p:
+      case IKEY_INSERT:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           paste_buffer(&rstate);
         }
@@ -3148,15 +3149,15 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       }
 
       // Import file
-      case SDLK_i:
+      case IKEY_i:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           import_block(mzx_world, &rstate);
         }
         else
 
-        if(get_ctrl_status(keycode_SDL))
+        if(get_ctrl_status(keycode_internal))
         {
           if(rstate.current_rline->validity_status != valid)
           {
@@ -3167,9 +3168,9 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       }
 
       // Export file
-      case SDLK_x:
+      case IKEY_x:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           if(rstate.mark_mode)
           {
@@ -3184,27 +3185,27 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       }
 
       // Options
-      case SDLK_o:
+      case IKEY_o:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
           edit_settings(mzx_world);
 
         break;
       }
 
       // Unmark
-      case SDLK_u:
+      case IKEY_u:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
           rstate.mark_mode = 0;
 
         break;
       }
 
       // Hide
-      case SDLK_h:
+      case IKEY_h:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           if(rstate.scr_hide_mode)
           {
@@ -3226,17 +3227,17 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
-      case SDLK_f:
+      case IKEY_f:
       {
-        if(get_ctrl_status(keycode_SDL))
+        if(get_ctrl_status(keycode_internal))
           find_replace_action(&rstate);
 
         break;
       }
 
-      case SDLK_r:
+      case IKEY_r:
       {
-        if(get_ctrl_status(keycode_SDL))
+        if(get_ctrl_status(keycode_internal))
         {
           switch(last_find_option)
           {
@@ -3277,9 +3278,9 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
-      case SDLK_m:
+      case IKEY_m:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           char macro_line[256];
 
@@ -3291,7 +3292,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
           write_string("Configure macro:", 17, 12, EC_DEBUG_LABEL, 0);
 
           if(intake(mzx_world, macro_line, 29, 34, 12, 15, 1, 0, NULL,
-           0, NULL) != SDLK_ESCAPE)
+           0, NULL) != IKEY_ESCAPE)
           {
             ext_macro *macro_src;
             int next;
@@ -3310,7 +3311,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
     }
-  } while(key != SDLK_ESCAPE);
+  } while(key != IKEY_ESCAPE);
 
   // Package time
   reallocate_robot(cur_robot, rstate.size);

@@ -27,6 +27,7 @@
 #include <string.h>
 #include <sys/stat.h>
 
+#include "platform.h"
 #include "audio.h"
 #include "SDL.h"
 #include "sfx.h"
@@ -284,7 +285,7 @@ case num:                                                               \
 //   "Specifies big or little endian byte packing.
 //   0 for little endian, 1 for big endian. Typical value is 0."
 
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
 static const int ENDIAN_PACKING = 1;
 #else
 static const int ENDIAN_PACKING = 0;
@@ -523,7 +524,7 @@ static Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len)
       if(w_stream->data_offset + read_len > w_stream->data_length)
         read_len = w_stream->data_length - w_stream->data_offset;
 
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
       // swap bytes on big endian machines
       for(i = 0; i < read_len; i += 2)
       {

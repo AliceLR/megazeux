@@ -1758,37 +1758,37 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           case RIGHTPRESSED:
           {
-            success = get_key_status(keycode_SDL, SDLK_RIGHT) > 0;
+            success = get_key_status(keycode_internal, IKEY_RIGHT) > 0;
             break;
           }
 
           case LEFTPRESSED:
           {
-            success = get_key_status(keycode_SDL, SDLK_LEFT) > 0;
+            success = get_key_status(keycode_internal, IKEY_LEFT) > 0;
             break;
           }
 
           case UPPRESSED:
           {
-            success = get_key_status(keycode_SDL, SDLK_UP) > 0;
+            success = get_key_status(keycode_internal, IKEY_UP) > 0;
             break;
           }
 
           case DOWNPRESSED:
           {
-            success = get_key_status(keycode_SDL, SDLK_DOWN) > 0;
+            success = get_key_status(keycode_internal, IKEY_DOWN) > 0;
             break;
           }
 
           case SPACEPRESSED:
           {
-            success = get_key_status(keycode_SDL, SDLK_SPACE) > 0;
+            success = get_key_status(keycode_internal, IKEY_SPACE) > 0;
             break;
           }
 
           case DELPRESSED:
           {
-            success = get_key_status(keycode_SDL, SDLK_DELETE) > 0;
+            success = get_key_status(keycode_internal, IKEY_DELETE) > 0;
             break;
           }
 

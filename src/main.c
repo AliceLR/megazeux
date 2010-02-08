@@ -31,11 +31,7 @@
 #include <unistd.h>
 #endif
 
-#ifdef CONFIG_PSP
-#include <pspsdk.h>
-#include <psppower.h>
-PSP_MAIN_THREAD_STACK_SIZE_KB(512);
-#endif
+#include "platform.h"
 
 #ifdef CONFIG_NDS
 #include <fat.h>
@@ -126,36 +122,9 @@ static void free_world(World *mzx_world)
 
 int main(int argc, char *argv[])
 {
-  Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
   World mzx_world;
 
-#if defined(__WIN32__) && defined(DEBUG)
-  freopen("CON", "wb", stdout);
-#endif
-
-#ifdef CONFIG_PSP
-  scePowerSetClockFrequency(333, 333, 166);
-#endif
-
-#ifdef CONFIG_NDS
-  powerON(POWER_ALL);
-  //setMzxExceptionHandler();
-  fatInitDefault();
-  // If the "extra RAM" is missing, warn the user
-  if(!nds_ram_init(DETECT_RAM))
-    warning_screen((u8*)memory_warning_pcx);
-  nds_ext_lock();
-#endif
-
-#ifdef DEBUG
-  flags |= SDL_INIT_NOPARACHUTE;
-#endif
-
-#ifdef CONFIG_AUDIO
-  flags |= SDL_INIT_AUDIO;
-#endif
-
-  SDL_Init(flags);
+  platform_init();
 
   // We need to store the current working directory so it's
   // always possible to get back to it..
@@ -181,8 +150,6 @@ int main(int argc, char *argv[])
   chdir(current_dir);
 
   counter_fsg();
-
-  SDL_EnableUNICODE(1);
 
   initialize_joysticks();
 
@@ -248,11 +215,7 @@ exit_free_world:
 
 exit_free_res:
   mzx_res_free();
-  SDL_Quit();
-
-#ifdef CONFIG_NDS
-  nds_ext_unlock();
-#endif
+  platform_quit();
 
   return 0;
 }

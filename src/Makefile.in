@@ -15,8 +15,8 @@ mzx_flags   += -Wwrite-strings
 mzx_cflags  += -Wmissing-prototypes
 mzx_cxxflags = -DHAVE_INTTYPES_H
 
-mzx_flags   += ${SDL_CFLAGS} -I${mzx_base} -I${PREFIX}/include
-mzx_ldflags := ${SDL_LDFLAGS} ${mzx_ldflags} ${ARCH_LDFLAGS}
+mzx_flags   += -I${mzx_base} -I${PREFIX}/include
+mzx_ldflags := ${mzx_ldflags} ${ARCH_LDFLAGS}
 
 ${mzx_base}/%.${o}: ${mzx_base}/%.c
 ifeq (${V},1)
@@ -132,6 +132,13 @@ endif
 
 ifeq (${PTHREAD},1)
 mzx_ldflags := -lpthread ${mzx_ldflags}
+endif
+
+ifeq (${BUILD_SDL},1)
+mzx_objs += ${mzx_base}/platform_sdl.${o} ${mzx_base}/event_sdl.${o}
+mzx_objs += ${mzx_base}/render_sdl.${o}
+mzx_flags += ${SDL_CFLAGS}
+mzx_ldflags += ${SDL_LDFLAGS}
 endif
 
 -include $(mzx_objs:.o=.d)

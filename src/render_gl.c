@@ -21,12 +21,14 @@
 
 #include "graphics.h"
 #include "render.h"
+#include "render_sdl.h"
 #include "render_gl.h"
 
 int gl_check_video_mode(graphics_data *graphics, int width, int height,
- int depth, int flags)
+ int depth, int fullscreen, int resize)
 {
-  return SDL_VideoModeOK(width, height, depth, GL_STRIP_FLAGS(flags));
+  return SDL_VideoModeOK(width, height, depth,
+   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, resize)));
 }
 
 void gl_set_filter_method(const char *method,

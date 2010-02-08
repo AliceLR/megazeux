@@ -27,8 +27,10 @@
 
 __M_BEGIN_DECLS
 
-#include "SDL.h"
 #include "configure.h"
+
+// TODO: deSDL audio subsystem
+#include "SDL.h"
 
 #ifdef CONFIG_AUDIO
 

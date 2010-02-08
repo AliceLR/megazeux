@@ -17,12 +17,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "platform.h"
 #include "graphics.h"
 #include "render.h"
+#include "render_sdl.h"
 #include "renderers.h"
 
 #include <stdlib.h>
 #include <string.h>
+
+#include "SDL.h"
 
 typedef struct
 {
@@ -45,7 +49,7 @@ static void gp2x_set_colors_mzx (graphics_data *graphics, Uint32 *char_colors,
     cb_mx = ((cb_bg >> 1) & render_data->halfmask) +
      ((cb_fg >> 1) & render_data->halfmask);
 
-#if SDL_BYTE_ORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
   char_colors[0] = (cb_bg << 16) | cb_bg;
   char_colors[1] = (cb_bg << 16) | cb_mx;
   char_colors[2] = (cb_bg << 16) | cb_mx;
@@ -95,7 +99,7 @@ static void gp2x_set_colors_smzx (graphics_data *graphics, Uint32 *char_colors,
   fb = graphics->flat_intensity_palette[(fg << 4) | bg];
   ff = graphics->flat_intensity_palette[(fg << 4) | fg];
 
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
   char_colors[0] = (bb << 16) | bb;
   char_colors[1] = (bb << 16) | bf;
   char_colors[2] = (bb << 16) | fb;
@@ -145,7 +149,7 @@ static void gp2x_set_colors_smzx3 (graphics_data *graphics, Uint32 *char_colors,
   c2 = graphics->flat_intensity_palette[(base + 2) & 0xFF];
   c3 = graphics->flat_intensity_palette[(base + 3) & 0xFF];
 
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
   char_colors[0] = (c0 << 16) | c0;
   char_colors[1] = (c0 << 16) | c2;
   char_colors[2] = (c0 << 16) | c1;
@@ -212,19 +216,21 @@ static int gp2x_init_video(graphics_data *graphics, config_info *conf)
 }
 
 static int gp2x_check_video_mode(graphics_data *graphics, int width, int height,
- int depth, int flags)
+ int depth, int fullscreen, int resize)
 {
-  return SDL_VideoModeOK(width, height, 16, flags);
+  return SDL_VideoModeOK(width, height, 16,
+   sdl_flags(depth, fullscreen, resize));
 }
 
 static int gp2x_set_video_mode(graphics_data *graphics, int width, int height,
- int depth, int flags, int fullscreen)
+ int depth, int fullscreen, int resize)
 {
   gp2x_render_data *render_data = graphics->render_data;
   SDL_PixelFormat *format;
   Uint32 halfmask;
 
-  render_data->screen = SDL_SetVideoMode(width, height, 16, flags);
+  render_data->screen = SDL_SetVideoMode(width, height, 16,
+   sdl_flags(depth, fullscreen, resize));
   if(render_data->screen)
   {
     format = render_data->screen->format;
@@ -238,7 +244,7 @@ static int gp2x_set_video_mode(graphics_data *graphics, int width, int height,
   return false;
 }
 
-static void gp2x_update_colors(graphics_data *graphics, SDL_Color *palette,
+static void gp2x_update_colors(graphics_data *graphics, rgb_color *palette,
  Uint32 count)
 {
   gp2x_render_data *render_data = graphics->render_data;

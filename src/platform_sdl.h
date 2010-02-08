@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
+ * Copyright (C) 2008 Alan Williams <mralert@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,27 +17,24 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* INTAKE.H- Declarations for INTAKE.CPP */
-
-#ifndef __INTAKE_H
-#define __INTAKE_H
+#ifndef __PLATFORM_SDL_H
+#define __PLATFORM_SDL_H
 
 #include "compat.h"
 
 __M_BEGIN_DECLS
 
-#include <stdlib.h>
+#include "platform.h"
 
-#include "world_struct.h"
-#include "keysym.h"
+#include "SDL_stdinc.h"
+#include "SDL_endian.h"
 
-// See code for full docs, preserves mouse cursor, be prepared for a
-// MOUSE_EVENT! (must acknowledge_event() it)
-int intake(World *mzx_world, char *string, int max_len,
- int x, int y, char color, int exit_type, int filter_type,
- int *return_x_pos, char robo_intk, char *macro);
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#define PLATFORM_BYTE_ORDER PLATFORM_BIG_ENDIAN
+#else
+#define PLATFORM_BYTE_ORDER PLATFORM_LIL_ENDIAN
+#endif
 
 __M_END_DECLS
 
-#endif // __INTAKE_H
-
+#endif // __PLATFORM_SDL_H

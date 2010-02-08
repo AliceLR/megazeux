@@ -24,7 +24,7 @@
 
 __M_BEGIN_DECLS
 
-#include "SDL.h"
+#include "platform.h"
 #include "configure.h"
 
 #ifdef CONFIG_PNG
@@ -39,6 +39,14 @@ typedef enum
 } cursor_mode_types;
 
 #define CURSOR_BLINK_RATE 115
+
+typedef struct
+{
+  Uint8 r;
+  Uint8 g;
+  Uint8 b;
+  Uint8 unused;
+} rgb_color;
 
 typedef struct
 {
@@ -68,10 +76,10 @@ struct _graphics_data
   Uint32 screen_mode;
   char_element text_video[SCREEN_W * SCREEN_H];
   Uint8 charset[CHAR_SIZE * CHARSET_SIZE * NUM_CHARSETS];
-  SDL_Color palette[SMZX_PAL_SIZE];
-  SDL_Color intensity_palette[SMZX_PAL_SIZE];
-  SDL_Color backup_palette[SMZX_PAL_SIZE];
-  SDL_Color editor_backup_palette[SMZX_PAL_SIZE];
+  rgb_color palette[SMZX_PAL_SIZE];
+  rgb_color intensity_palette[SMZX_PAL_SIZE];
+  rgb_color backup_palette[SMZX_PAL_SIZE];
+  rgb_color editor_backup_palette[SMZX_PAL_SIZE];
   Uint32 current_intensity[SMZX_PAL_SIZE];
   Uint32 saved_intensity[SMZX_PAL_SIZE];
   Uint32 backup_intensity[SMZX_PAL_SIZE];
@@ -105,9 +113,9 @@ struct _graphics_data
   void *render_data;
 
   int  (*init_video)       (graphics_data *, config_info*);
-  int  (*check_video_mode) (graphics_data *, int, int, int, int);
+  int  (*check_video_mode) (graphics_data *, int, int, int, int, int);
   int  (*set_video_mode)   (graphics_data *, int, int, int, int, int);
-  void (*update_colors)    (graphics_data *, SDL_Color *, Uint32);
+  void (*update_colors)    (graphics_data *, rgb_color *, Uint32);
   void (*resize_screen)    (graphics_data *, int, int);
   void (*remap_charsets)   (graphics_data *);
   void (*remap_char)       (graphics_data *, Uint16 chr);

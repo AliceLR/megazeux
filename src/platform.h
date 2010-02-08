@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
+ * Copyright (C) 2008 Alan Williams <mralert@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,27 +17,41 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* INTAKE.H- Declarations for INTAKE.CPP */
-
-#ifndef __INTAKE_H
-#define __INTAKE_H
+#ifndef __PLATFORM_H
+#define __PLATFORM_H
 
 #include "compat.h"
 
 __M_BEGIN_DECLS
 
-#include <stdlib.h>
+#define PLATFORM_LIL_ENDIAN 0x1248
+#define PLATFORM_BIG_ENDIAN 0x8421
+#define PLATFORM_PDP_ENDIAN 0x4812
+// Running MegaZeux on a PDP-11? :/
 
-#include "world_struct.h"
-#include "keysym.h"
+#ifndef CONFIG_SDL
+#include <inttypes.h>
+typedef uint8_t Uint8;
+typedef int8_t Sint8;
+typedef uint16_t Uint16;
+typedef int16_t Sint16;
+typedef uint32_t Uint32;
+typedef int32_t Sint32;
+typedef uint64_t Uint64;
+typedef int64_t Sint64;
+#endif // !CONFIG_SDL
 
-// See code for full docs, preserves mouse cursor, be prepared for a
-// MOUSE_EVENT! (must acknowledge_event() it)
-int intake(World *mzx_world, char *string, int max_len,
- int x, int y, char color, int exit_type, int filter_type,
- int *return_x_pos, char robo_intk, char *macro);
+#ifdef CONFIG_SDL
+#include "platform_sdl.h"
+#else
+#error No platform chosen!
+#endif
+
+void delay(Uint32 ms);
+Uint32 get_ticks(void);
+int platform_init(void);
+void platform_quit(void);
 
 __M_END_DECLS
 
-#endif // __INTAKE_H
-
+#endif // __PLATFORM_H

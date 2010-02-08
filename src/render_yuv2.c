@@ -17,22 +17,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "platform.h"
 #include "graphics.h"
 #include "render.h"
 #include "render_yuv.h"
 #include "renderers.h"
 
 static int yuv2_set_video_mode(graphics_data *graphics, int width, int height,
- int depth, int flags, int fullscreen)
+ int depth, int fullscreen, int resize)
 {
   yuv_render_data *render_data = graphics->render_data;
 
-  if(yuv_set_video_mode_size(graphics, width, height, depth, flags,
-   fullscreen, YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT))
+  if(yuv_set_video_mode_size(graphics, width, height, depth, fullscreen,
+   resize, YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT))
   {
     if(render_data->overlay->format == SDL_YUY2_OVERLAY)
     {
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
       render_data->y0mask = 0xFF000000;
       render_data->y1mask = 0x0000FF00;
 #else
@@ -42,7 +43,7 @@ static int yuv2_set_video_mode(graphics_data *graphics, int width, int height,
     }
     else
     {
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
       render_data->y0mask = 0x00FF0000;
       render_data->y1mask = 0x000000FF;
 #else

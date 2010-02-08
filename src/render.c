@@ -19,13 +19,16 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdlib.h>
+
+#include "platform.h"
 #include "graphics.h"
 #include "render.h"
 
 static void set_colors8_mzx (graphics_data *graphics, Uint32 *char_colors,
  Uint8 bg, Uint8 fg)
 {
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
   char_colors[0] = (bg << 24) | (bg << 16) | (bg << 8) | bg;
   char_colors[1] = (bg << 24) | (bg << 16) | (bg << 8) | fg;
   char_colors[2] = (bg << 24) | (bg << 16) | (fg << 8) | bg;
@@ -77,7 +80,7 @@ static void set_colors8_smzx (graphics_data *graphics, Uint32 *char_colors,
   fb |= fb << 8;
   ff |= ff << 8;
 
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
   char_colors[0] = (bb << 16) | bb;
   char_colors[1] = (bb << 16) | bf;
   char_colors[2] = (bb << 16) | fb;
@@ -128,7 +131,7 @@ static void set_colors8_smzx3 (graphics_data *graphics, Uint32 *char_colors,
   c2 |= c2 << 8;
   c3 |= c3 << 8;
 
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
   char_colors[0] = (c0 << 16) | c0;
   char_colors[1] = (c0 << 16) | c2;
   char_colors[2] = (c0 << 16) | c1;
@@ -173,7 +176,7 @@ static void set_colors16_mzx (graphics_data *graphics, Uint32 *char_colors,
   cb_bg = graphics->flat_intensity_palette[bg];
   cb_fg = graphics->flat_intensity_palette[fg];
 
-#if SDL_BYTE_ORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
         char_colors[0] = (cb_bg << 16) | cb_bg;
         char_colors[1] = (cb_bg << 16) | cb_fg;
         char_colors[2] = (cb_fg << 16) | cb_bg;

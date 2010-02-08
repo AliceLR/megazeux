@@ -33,6 +33,8 @@
 
 #include "graphics.h"
 
+#include "SDL.h"
+
 __M_BEGIN_DECLS
 
 typedef struct
@@ -45,11 +47,11 @@ typedef struct
 } yuv_render_data;
 
 int yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
- int depth, int flags, int fullscreen, int yuv_width, int yuv_height);
+ int depth, int fullscreen, int resize, int yuv_width, int yuv_height);
 int yuv_init_video(graphics_data *graphics, config_info *conf);
 int yuv_check_video_mode(graphics_data *graphics,  int width, int height,
- int depth, int flags);
-void yuv_update_colors(graphics_data *graphics, SDL_Color *palette,
+ int depth, int fullscreen, int resize);
+void yuv_update_colors(graphics_data *graphics, rgb_color *palette,
  Uint32 count);
 void yuv_sync_screen (graphics_data *graphics);
 

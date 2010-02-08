@@ -401,8 +401,8 @@ static void joy_axis_set(config_info *conf, char *name, char *value,
   if(joy_axis > 16)
     joy_axis = 16;
 
-  map_joystick_axis(joy_num - 1, joy_axis - 1, (SDLKey)joy_key_min,
-   (SDLKey)joy_key_max);
+  map_joystick_axis(joy_num - 1, joy_axis - 1, (keycode)joy_key_min,
+   (keycode)joy_key_max);
 }
 
 static void joy_button_set(config_info *conf, char *name, char *value,
@@ -412,7 +412,7 @@ static void joy_button_set(config_info *conf, char *name, char *value,
   int joy_key;
 
   sscanf(name, "joy%dbutton%d", &joy_num, &joy_button);
-  joy_key = (SDLKey)strtol(value, NULL, 10);
+  joy_key = (keycode)strtol(value, NULL, 10);
 
   if(joy_num < 1)
     joy_num = 1;
@@ -420,7 +420,7 @@ static void joy_button_set(config_info *conf, char *name, char *value,
   if(joy_num > 16)
     joy_num = 16;
 
-  map_joystick_button(joy_num - 1, joy_button - 1, (SDLKey)joy_key);
+  map_joystick_button(joy_num - 1, joy_button - 1, (keycode)joy_key);
 }
 
 static void pause_on_unfocus(config_info *conf, char *name, char *value,

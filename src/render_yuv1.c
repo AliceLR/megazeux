@@ -23,10 +23,10 @@
 #include "renderers.h"
 
 static int yuv1_set_video_mode(graphics_data *graphics, int width, int height,
- int depth, int flags, int fullscreen)
+ int depth, int fullscreen, int resize)
 {
-  return yuv_set_video_mode_size(graphics, width, height, depth, flags,
-   fullscreen, YUV1_OVERLAY_WIDTH, YUV1_OVERLAY_HEIGHT);
+  return yuv_set_video_mode_size(graphics, width, height, depth, fullscreen,
+   resize, YUV1_OVERLAY_WIDTH, YUV1_OVERLAY_HEIGHT);
 }
 
 static void yuv1_render_graph(graphics_data *graphics)

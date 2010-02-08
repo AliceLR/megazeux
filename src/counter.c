@@ -915,7 +915,7 @@ static int key_read(World *mzx_world, function_counter *counter,
   }
   else
   {
-    return toupper(get_last_key(keycode_SDL));
+    return toupper(get_last_key(keycode_internal));
   }
 }
 
@@ -923,7 +923,7 @@ static void key_write(World *mzx_world, function_counter *counter,
  const char *name, int value, int id)
 {
   if(!name[3])
-    force_last_key(keycode_SDL, toupper(value));
+    force_last_key(keycode_internal, toupper(value));
 }
 
 static int key_code_read(World *mzx_world, function_counter *counter,
@@ -935,7 +935,7 @@ static int key_code_read(World *mzx_world, function_counter *counter,
 static int key_pressed_read(World *mzx_world, function_counter *counter,
  const char *name, int id)
 {
-  return get_key(keycode_SDL);
+  return get_key(keycode_internal);
 }
 
 static int key_release_read(World *mzx_world, function_counter *counter,
@@ -1538,13 +1538,13 @@ static int buttons_read(World *mzx_world, function_counter *counter,
 {
   int buttons_current, buttons_formatted = 0;
   buttons_current = get_mouse_status();
-  if(buttons_current & (1 << (SDL_BUTTON_LEFT - 1)))
+  if(buttons_current & (1 << (MOUSE_BUTTON_LEFT - 1)))
     buttons_formatted |= 1;
 
-  if(buttons_current & (1 << (SDL_BUTTON_RIGHT - 1)))
+  if(buttons_current & (1 << (MOUSE_BUTTON_RIGHT - 1)))
     buttons_formatted |= 2;
 
-  if(buttons_current & (1 << (SDL_BUTTON_MIDDLE - 1)))
+  if(buttons_current & (1 << (MOUSE_BUTTON_MIDDLE - 1)))
     buttons_formatted |= 4;
 
   return buttons_formatted;
@@ -3666,7 +3666,7 @@ void debug_counters(World *mzx_world)
       write_string(name, 6, 12, EC_DEBUG_LABEL, 0);
 
       if(intake(mzx_world, new_value, 68, 6, 13, 15, 1, 0,
-       NULL, 0, NULL) != SDLK_ESCAPE)
+       NULL, 0, NULL) != IKEY_ESCAPE)
       {
         if(edit_type > 0)
         {

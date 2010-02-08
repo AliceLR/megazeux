@@ -21,7 +21,12 @@
 
 #include "graphics.h"
 #include "render.h"
+#include "render_sdl.h"
 #include "renderers.h"
+
+#include "SDL.h"
+
+static SDL_Color sdlpal[SMZX_PAL_SIZE];
 
 static int soft_init_video(graphics_data *graphics, config_info *conf)
 {
@@ -47,19 +52,21 @@ static int soft_init_video(graphics_data *graphics, config_info *conf)
 }
 
 static int soft_check_video_mode(graphics_data *graphics, int width, int height,
- int depth, int flags)
+ int depth, int fullscreen, int resize)
 {
-  return SDL_VideoModeOK(width, height, depth, flags);
+  return SDL_VideoModeOK(width, height, depth,
+   sdl_flags(depth, fullscreen, resize));
 }
 
 static int soft_set_video_mode(graphics_data *graphics, int width, int height,
- int depth, int flags, int fullscreen)
+ int depth, int fullscreen, int resize)
 {
-  graphics->render_data = SDL_SetVideoMode(width, height, depth, flags);
+  graphics->render_data = SDL_SetVideoMode(width, height, depth,
+   sdl_flags(depth, fullscreen, resize));
   return graphics->render_data != NULL;
 }
 
-static void soft_update_colors(graphics_data *graphics, SDL_Color *palette,
+static void soft_update_colors(graphics_data *graphics, rgb_color *palette,
  Uint32 count)
 {
   SDL_Surface *screen = graphics->render_data;
@@ -76,7 +83,13 @@ static void soft_update_colors(graphics_data *graphics, SDL_Color *palette,
   }
   else
   {
-    SDL_SetColors(screen, palette, 0, count);
+    for(i = 0; i < count; i++)
+    {
+      sdlpal[i].r = palette[i].r;
+      sdlpal[i].g = palette[i].g;
+      sdlpal[i].b = palette[i].b;
+    }
+    SDL_SetColors(screen, sdlpal, 0, count);
   }
 }
 

@@ -19,17 +19,20 @@
 
 #include <stdlib.h>
 
+#include "platform.h"
 #include "graphics.h"
 #include "render.h"
+#include "render_sdl.h"
 #include "render_yuv.h"
 
 int yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
- int depth, int flags, int fullscreen, int yuv_width, int yuv_height)
+ int depth, int fullscreen, int resize, int yuv_width, int yuv_height)
 {
   yuv_render_data *render_data = graphics->render_data;
 
   // the YUV renderer _requires_ 32bit colour
-  render_data->screen = SDL_SetVideoMode(width, height, 32, flags | SDL_ANYFORMAT);
+  render_data->screen = SDL_SetVideoMode(width, height, 32,
+   sdl_flags(depth, fullscreen, resize) | SDL_ANYFORMAT);
 
   if(!render_data->screen)
   {
@@ -69,10 +72,11 @@ int yuv_init_video(graphics_data *graphics, config_info *conf)
 }
 
 int yuv_check_video_mode(graphics_data *graphics, int width, int height,
- int depth, int flags)
+ int depth, int fullscreen, int resize)
 {
   // requires 32bit colour
-  return SDL_VideoModeOK(width, height, 32, flags | SDL_ANYFORMAT);
+  return SDL_VideoModeOK(width, height, 32,
+   sdl_flags(depth, fullscreen, resize) | SDL_ANYFORMAT);
 }
 
 static inline void rgb_to_yuv(Uint8 r, Uint8 g, Uint8 b,
@@ -83,7 +87,7 @@ static inline void rgb_to_yuv(Uint8 r, Uint8 g, Uint8 b,
   *v = ((23372 * (r - *y)) >> 15) + 128;
 }
 
-void yuv_update_colors(graphics_data *graphics, SDL_Color *palette,
+void yuv_update_colors(graphics_data *graphics, rgb_color *palette,
  Uint32 count)
 {
   yuv_render_data *render_data = graphics->render_data;
@@ -97,7 +101,7 @@ void yuv_update_colors(graphics_data *graphics, SDL_Color *palette,
     {
       rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b, &y, &u, &v);
 
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
       graphics->flat_intensity_palette[i] =
         (v << 0) | (y << 8) | (u << 16) | (y << 24);
 #else
@@ -114,7 +118,7 @@ void yuv_update_colors(graphics_data *graphics, SDL_Color *palette,
     {
       rgb_to_yuv(palette[i].r, palette[i].g, palette[i].b, &y, &u, &v);
 
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
       graphics->flat_intensity_palette[i] =
         (y << 0) | (v << 8) | (y << 16) | (u << 24);
 #else

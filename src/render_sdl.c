@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
+ * Copyright (C) 2007-2008 Alistair John Strachan <alistair@devzero.co.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,27 +17,23 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* INTAKE.H- Declarations for INTAKE.CPP */
+#include "render_sdl.h"
 
-#ifndef __INTAKE_H
-#define __INTAKE_H
+#include "SDL.h"
 
-#include "compat.h"
+int sdl_flags(int depth, int fullscreen, int resize)
+{
+  int flags = 0;
 
-__M_BEGIN_DECLS
+  if(fullscreen)
+  {
+    flags |= SDL_FULLSCREEN;
+    if(depth == 8)
+      flags |= SDL_HWPALETTE;
+  }
+  else
+    if(resize)
+      flags |= SDL_RESIZABLE;
 
-#include <stdlib.h>
-
-#include "world_struct.h"
-#include "keysym.h"
-
-// See code for full docs, preserves mouse cursor, be prepared for a
-// MOUSE_EVENT! (must acknowledge_event() it)
-int intake(World *mzx_world, char *string, int max_len,
- int x, int y, char color, int exit_type, int filter_type,
- int *return_x_pos, char robo_intk, char *macro);
-
-__M_END_DECLS
-
-#endif // __INTAKE_H
-
+  return flags;
+}

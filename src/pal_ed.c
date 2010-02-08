@@ -114,7 +114,7 @@ void palette_editor(World *mzx_world)
     update_screen();
     update_event_status_delay();
 
-    key = get_key(keycode_SDL);
+    key = get_key(keycode_internal);
     write_string("\x20\x20", (current_color * 2) + 19, 9, 143, 0);
     // Process
 
@@ -133,33 +133,33 @@ void palette_editor(World *mzx_world)
 
     switch(key)
     {
-      case SDLK_LEFT:
-      case SDLK_MINUS:
-      case SDLK_KP_MINUS:
+      case IKEY_LEFT:
+      case IKEY_MINUS:
+      case IKEY_KP_MINUS:
       {
         if(current_color > 0)
           current_color--;
         break;
       }
 
-      case SDLK_RIGHT:
-      case SDLK_EQUALS:
-      case SDLK_KP_PLUS:
+      case IKEY_RIGHT:
+      case IKEY_EQUALS:
+      case IKEY_KP_PLUS:
       {
         if(current_color < 15)
           current_color++;
         break;
       }
 
-      case SDLK_q:
+      case IKEY_q:
       {
-        key = SDLK_ESCAPE;
+        key = IKEY_ESCAPE;
         break;
       }
 
-      case SDLK_r:
+      case IKEY_r:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           if(current_r)
           {
@@ -179,9 +179,9 @@ void palette_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_g:
+      case IKEY_g:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           if(current_g)
           {
@@ -201,9 +201,9 @@ void palette_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_b:
+      case IKEY_b:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           if(current_b)
           {
@@ -223,9 +223,9 @@ void palette_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_a:
+      case IKEY_a:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           if(current_r)
             current_r--;
@@ -249,7 +249,7 @@ void palette_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_0:
+      case IKEY_0:
       {
         current_r = 0;
         current_g = 0;
@@ -259,16 +259,16 @@ void palette_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_d:
+      case IKEY_d:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           default_palette();
         }
         break;
       }
 
-      case SDLK_F2:
+      case IKEY_F2:
       {
         saved_r = current_r;
         saved_g = current_g;
@@ -277,7 +277,7 @@ void palette_editor(World *mzx_world)
         break;
       }
 
-      case SDLK_F3:
+      case IKEY_F3:
       {
         if(saved_r != -1)
         {
@@ -291,7 +291,7 @@ void palette_editor(World *mzx_world)
       }
 
 #ifdef CONFIG_HELPSYS
-      case SDLK_F1: // F1
+      case IKEY_F1: // F1
       {
         m_show();
         help_system(mzx_world);
@@ -299,7 +299,7 @@ void palette_editor(World *mzx_world)
       }
 #endif
     }
-  } while(key != SDLK_ESCAPE);
+  } while(key != IKEY_ESCAPE);
   restore_screen();
   pop_context();
 }

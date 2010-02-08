@@ -41,6 +41,7 @@
 #include "compat.h"
 #include "graphics.h"
 
+#include "SDL.h"
 #include "SDL_opengl.h"
 
 #define GL_NON_POWER_2_WIDTH      640
@@ -76,7 +77,7 @@
 __M_BEGIN_DECLS
 
 int gl_check_video_mode(graphics_data *graphics, int width, int height,
- int depth, int flags);
+ int depth, int fullscreen, int resize);
 void gl_set_filter_method(const char *method,
  void (APIENTRY *glTexParameteri_p)(GLenum target, GLenum pname, GLint param));
 void gl_set_attributes(graphics_data *graphics);

@@ -161,7 +161,7 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
     else
     {
       update_event_status_delay();
-      key = get_key(keycode_SDL);
+      key = get_key(keycode_internal);
     }
 
     old_pos = pos;
@@ -183,12 +183,12 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
             goto pgup;
         }
       }
-      key = SDLK_ESCAPE;
+      key = IKEY_ESCAPE;
     }
 
     switch(key)
     {
-      case SDLK_UP:
+      case IKEY_UP:
       {
         // Go back a line (if possible)
         if(where[pos - 1] == 1) break; // Can't.
@@ -203,7 +203,7 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
         break;
       }
 
-      case SDLK_DOWN:
+      case IKEY_DOWN:
       {
         // Go forward a line (if possible)
         while(where[pos] != '\n')
@@ -220,11 +220,11 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
         break;
       }
 
-      case SDLK_RETURN:
+      case IKEY_RETURN:
       {
         if(type < 2)
         {
-          key = SDLK_ESCAPE;
+          key = IKEY_ESCAPE;
         }
         else
         {
@@ -245,7 +245,7 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
         break;
       }
 
-      case SDLK_BACKSPACE:
+      case IKEY_BACKSPACE:
       {
         if(type < 2)
           break;
@@ -297,7 +297,7 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
         break;
       }
 
-      case SDLK_PAGEDOWN:
+      case IKEY_PAGEDOWN:
       {
         for(t1 = 6; t1 > 0; t1--)
         {
@@ -318,7 +318,7 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
         break;
       }
 
-      case SDLK_PAGEUP:
+      case IKEY_PAGEUP:
       {
         for(t1 = -6; t1 < 0; t1++)
         {
@@ -337,14 +337,14 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
         break;
       }
 
-      case SDLK_HOME:
+      case IKEY_HOME:
       {
         // FIXME - This is so dirty. Please replace it.
         t1 = -30000;
         goto pgup;
       }
 
-      case SDLK_END:
+      case IKEY_END:
       {
         // FIXME - See above.
         t1 = 30000;
@@ -352,12 +352,12 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
       }
 
       default:
-      case SDLK_ESCAPE:
+      case IKEY_ESCAPE:
       case 0:
         break;
     }
     // Continue?
-  } while(key != SDLK_ESCAPE);
+  } while(key != IKEY_ESCAPE);
   // Restore screen and exit
   restore_screen();
 
@@ -577,16 +577,16 @@ void help_display(World *mzx_world, char *help, int offs, char *file,
 
         goto pgdn;
       }
-      key = SDLK_ESCAPE;
+      key = IKEY_ESCAPE;
     }
 
-    key = get_key(keycode_SDL);
+    key = get_key(keycode_internal);
     old_pos = pos;
     switch(key)
     {
-      case SDLK_F1:
+      case IKEY_F1:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           // Jump to label 072 in MAIN.HLP
           strcpy(file,"MAIN.HLP");
@@ -601,7 +601,7 @@ void help_display(World *mzx_world, char *help, int offs, char *file,
         goto ex;
       }
 
-      case SDLK_UP:
+      case IKEY_UP:
       {
         // Go back a line (if possible)
         if(help[pos - 1] == 1) break; // Can't.
@@ -616,7 +616,7 @@ void help_display(World *mzx_world, char *help, int offs, char *file,
         break;
       }
 
-      case SDLK_DOWN:
+      case IKEY_DOWN:
       {
         // Go forward a line (if possible)
         while(help[pos] != '\n') pos++;
@@ -632,7 +632,7 @@ void help_display(World *mzx_world, char *help, int offs, char *file,
         break;
       }
 
-      case SDLK_RETURN:
+      case IKEY_RETURN:
       {
         option:
         // Option?
@@ -682,7 +682,7 @@ void help_display(World *mzx_world, char *help, int offs, char *file,
         break;
       }
 
-      case SDLK_PAGEDOWN:
+      case IKEY_PAGEDOWN:
       {
         for(t1 = 6; t1 > 0; t1--)
         {
@@ -706,7 +706,7 @@ void help_display(World *mzx_world, char *help, int offs, char *file,
         break;
       }
 
-      case SDLK_PAGEUP:
+      case IKEY_PAGEUP:
       {
         for(t1 = -6; t1 < 0; t1++)
         {
@@ -727,14 +727,14 @@ void help_display(World *mzx_world, char *help, int offs, char *file,
         break;
       }
 
-      case SDLK_HOME:
+      case IKEY_HOME:
       {
         // FIXME - :(
         t1 = -30000;
         goto pgup;
       }
 
-      case SDLK_END:
+      case IKEY_END:
       {
         t1 = 30000;
         goto pgdn;
@@ -745,7 +745,7 @@ void help_display(World *mzx_world, char *help, int offs, char *file,
         break;
       }
     }
-  } while(key != SDLK_ESCAPE);
+  } while(key != IKEY_ESCAPE);
 
   // Restore screen and exit
   ex:

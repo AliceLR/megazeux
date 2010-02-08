@@ -37,6 +37,11 @@
 #include "render.h"
 #include "renderers.h"
 #include "util.h"
+#include "platform.h"
+
+#ifdef CONFIG_SDL
+#include "SDL.h"
+#endif
 
 #ifdef CONFIG_ICON
 
@@ -78,7 +83,7 @@ static const renderer_data renderers[] =
   { NULL, NULL }
 };
 
-static const SDL_Color default_pal[16] =
+static const rgb_color default_pal[16] =
 {
   /* r, g, b, unused */
   { 0, 0, 0, 0 },
@@ -199,12 +204,12 @@ __editor_maybe_static void ec_load_mzx(void)
   ec_mem_load_set(graphics.default_charset);
 }
 
-static void update_colors(SDL_Color *palette, Uint32 count)
+static void update_colors(rgb_color *palette, Uint32 count)
 {
   graphics.update_colors(&graphics, palette, count);
 }
 
-static Uint32 make_palette(SDL_Color *palette)
+static Uint32 make_palette(rgb_color *palette)
 {
   Uint32 i;
 
@@ -229,14 +234,14 @@ static Uint32 make_palette(SDL_Color *palette)
     }
     else
     {
-      memcpy(palette, graphics.intensity_palette, sizeof(SDL_Color) *
+      memcpy(palette, graphics.intensity_palette, sizeof(rgb_color) *
        SMZX_PAL_SIZE);
     }
     return SMZX_PAL_SIZE;
   }
   else
   {
-    memcpy(palette, graphics.intensity_palette, sizeof(SDL_Color) * PAL_SIZE *
+    memcpy(palette, graphics.intensity_palette, sizeof(rgb_color) * PAL_SIZE *
      NUM_PALS);
     return PAL_SIZE * NUM_PALS;
   }
@@ -244,7 +249,7 @@ static Uint32 make_palette(SDL_Color *palette)
 
 void update_palette(void)
 {
-  SDL_Color new_palette[SMZX_PAL_SIZE];
+  rgb_color new_palette[SMZX_PAL_SIZE];
   update_colors(new_palette, make_palette(new_palette));
 }
 
@@ -253,9 +258,9 @@ static void set_gui_palette(void)
   int i;
 
   memcpy(graphics.palette + PAL_SIZE, default_pal,
-   sizeof(SDL_Color) * PAL_SIZE);
+   sizeof(rgb_color) * PAL_SIZE);
   memcpy(graphics.intensity_palette + PAL_SIZE, default_pal,
-   sizeof(SDL_Color) * PAL_SIZE);
+   sizeof(rgb_color) * PAL_SIZE);
 
   for(i = 16; i < PAL_SIZE * NUM_PALS; i++)
     graphics.current_intensity[i] = 100;
@@ -265,8 +270,8 @@ static void init_palette(void)
 {
   Uint32 i;
 
-  memcpy(graphics.palette, default_pal, sizeof(SDL_Color) * PAL_SIZE);
-  memcpy(graphics.intensity_palette, default_pal, sizeof(SDL_Color) * PAL_SIZE);
+  memcpy(graphics.palette, default_pal, sizeof(rgb_color) * PAL_SIZE);
+  memcpy(graphics.intensity_palette, default_pal, sizeof(rgb_color) * PAL_SIZE);
   memset(graphics.current_intensity, 0, sizeof(Uint32) * PAL_SIZE);
 
   for(i = 0; i < SMZX_PAL_SIZE; i++)
@@ -462,14 +467,14 @@ static void update_intensity_palette(void)
 
 static void swap_palettes(void)
 {
-  SDL_Color temp_colors[SMZX_PAL_SIZE];
+  rgb_color temp_colors[SMZX_PAL_SIZE];
   Uint32 temp_intensities[SMZX_PAL_SIZE];
   memcpy(temp_colors, graphics.backup_palette,
-   sizeof(SDL_Color) * SMZX_PAL_SIZE);
+   sizeof(rgb_color) * SMZX_PAL_SIZE);
   memcpy(graphics.backup_palette, graphics.palette,
-   sizeof(SDL_Color) * SMZX_PAL_SIZE);
+   sizeof(rgb_color) * SMZX_PAL_SIZE);
   memcpy(graphics.palette, temp_colors,
-   sizeof(SDL_Color) * SMZX_PAL_SIZE);
+   sizeof(rgb_color) * SMZX_PAL_SIZE);
   memcpy(temp_intensities, graphics.backup_intensity,
    sizeof(Uint32) * SMZX_PAL_SIZE);
   if(graphics.fade_status)
@@ -559,7 +564,7 @@ Uint32 get_screen_mode(void)
 
 void update_screen(void)
 {
-  Uint32 ticks = SDL_GetTicks();
+  Uint32 ticks = get_ticks();
 
   if((ticks - graphics.cursor_timestamp) > CURSOR_BLINK_RATE)
   {
@@ -664,13 +669,13 @@ void vquick_fadeout(void)
 
     for(i = 100; i >= 0; i -= 10)
     {
-      ticks = SDL_GetTicks();
+      ticks = get_ticks();
       set_palette_intensity(i);
       update_palette();
       update_screen();
-      ticks = SDL_GetTicks() - ticks;
+      ticks = get_ticks() - ticks;
       if(ticks <= 16)
-        SDL_Delay(16 - ticks);
+        delay(16 - ticks);
     }
     graphics.fade_status = 1;
   }
@@ -694,7 +699,7 @@ void vquick_fadein(void)
 
     for(i = 0; i < 10; i++)
     {
-      ticks = SDL_GetTicks();
+      ticks = get_ticks();
       for(i2 = 0; i2 < num_colors; i2++)
       {
         graphics.current_intensity[i2] += 10;
@@ -704,9 +709,9 @@ void vquick_fadein(void)
       }
       update_palette();
       update_screen();
-      ticks = SDL_GetTicks() - ticks;
+      ticks = get_ticks() - ticks;
       if(ticks <= 16)
-        SDL_Delay(16 - ticks);
+        delay(16 - ticks);
     }
   }
 }
@@ -727,7 +732,7 @@ void insta_fadeout(void)
   for(i = 0; i < num_colors; i++)
     set_color_intensity(i, 0);
 
-  SDL_Delay(1);
+  delay(1);
   update_palette();
   update_screen(); // NOTE: this was called conditionally in 2.81e
 
@@ -758,8 +763,8 @@ void insta_fadein(void)
 
 void default_palette(void)
 {
-  memcpy(graphics.palette, default_pal, sizeof(SDL_Color) * PAL_SIZE);
-  memcpy(graphics.intensity_palette, default_pal, sizeof(SDL_Color) * PAL_SIZE);
+  memcpy(graphics.palette, default_pal, sizeof(rgb_color) * PAL_SIZE);
+  memcpy(graphics.intensity_palette, default_pal, sizeof(rgb_color) * PAL_SIZE);
   update_palette();
 }
 
@@ -802,14 +807,16 @@ int init_video(config_info *conf)
   graphics.window_width = conf->window_width;
   graphics.window_height = conf->window_height;
   graphics.mouse_status = 0;
-  graphics.cursor_timestamp = SDL_GetTicks();
+  graphics.cursor_timestamp = get_ticks();
   graphics.cursor_flipflop = 1;
 
   if(!set_graphics_output(conf->video_output))
     return false;
 
+#ifdef CONFIG_SDL
   SDL_WM_SetCaption("MegaZeux " VERSION, "");
   SDL_ShowCursor(SDL_DISABLE);
+#endif
 
   if(!graphics.init_video(&graphics, conf))
   {
@@ -874,23 +881,16 @@ int set_video_mode(void)
 {
   int target_width, target_height;
   int target_depth = graphics.bits_per_pixel;
-  int target_flags = 0;
   int fullscreen = graphics.fullscreen;
+  int resize = graphics.allow_resize;
 
   if(fullscreen)
   {
     target_width = graphics.resolution_width;
     target_height = graphics.resolution_height;
-    target_flags |= SDL_FULLSCREEN;
-
-    if(target_depth == 8)
-      target_flags |= SDL_HWPALETTE;
   }
   else
   {
-    if(graphics.allow_resize)
-      target_flags |= SDL_RESIZABLE;
-
     target_width = graphics.window_width;
     target_height = graphics.window_height;
   }
@@ -904,23 +904,22 @@ int set_video_mode(void)
 
   // If video mode fails, replace it with 'safe' defaults
   if(!(graphics.check_video_mode(&graphics, target_width, target_height,
-                                 target_depth, target_flags)))
+                                 target_depth, fullscreen, resize)))
   {
     target_width = 640;
     target_height = 350;
     target_depth = 8;
     fullscreen = 0;
+    resize = 0;
 
     graphics.resolution_width = target_width;
     graphics.resolution_height = target_height;
     graphics.bits_per_pixel = target_depth;
     graphics.fullscreen = fullscreen;
-
-    target_flags = SDL_SWSURFACE;
   }
 
   return graphics.set_video_mode(&graphics, target_width, target_height,
-                                 target_depth, target_flags, fullscreen);
+                                 target_depth, fullscreen, resize);
 }
 
 void toggle_fullscreen(void)
@@ -1428,9 +1427,9 @@ void m_show(void)
  * Copyright (C) 2006 Angelo "Encelo" Theodorou
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
  */
-static void dump_screen_real(SDL_Surface *surface, const char *name)
+static void dump_screen_real(const Uint8 *pix, const rgb_color *pal, int count,
+ const char *name)
 {
-  const SDL_Palette *palette = surface->format->palette;
   png_bytep *row_ptrs;
   png_structp png_ptr;
   png_infop info_ptr;
@@ -1461,27 +1460,27 @@ static void dump_screen_real(SDL_Surface *surface, const char *name)
 
   // we know we have an 8-bit surface; save a palettized PNG
   type = PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE;
-  png_set_IHDR(png_ptr, info_ptr, surface->w, surface->h, 8, type,
+  png_set_IHDR(png_ptr, info_ptr, 640, 350, 8, type,
    PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
    PNG_FILTER_TYPE_DEFAULT);
 
-  pal_ptr = malloc(palette->ncolors * sizeof(png_color));
-  for(i = 0; i < palette->ncolors; i++)
+  pal_ptr = malloc(count * sizeof(png_color));
+  for(i = 0; i < count; i++)
   {
-    pal_ptr[i].red = palette->colors[i].r;
-    pal_ptr[i].green = palette->colors[i].g;
-    pal_ptr[i].blue = palette->colors[i].b;
+    pal_ptr[i].red = pal[i].r;
+    pal_ptr[i].green = pal[i].g;
+    pal_ptr[i].blue = pal[i].b;
   }
-  png_set_PLTE(png_ptr, info_ptr, pal_ptr, palette->ncolors);
+  png_set_PLTE(png_ptr, info_ptr, pal_ptr, count);
 
   // do the write of the header
   png_write_info(png_ptr, info_ptr);
   png_set_packing(png_ptr);
 
   // and then the surface
-  row_ptrs = malloc(sizeof(png_bytep) * surface->h);
-  for(i = 0; i < surface->h; i++)
-    row_ptrs[i] = (png_bytep)(Uint8 *)surface->pixels + i * surface->pitch;
+  row_ptrs = malloc(sizeof(png_bytep) * 350);
+  for(i = 0; i < 350; i++)
+    row_ptrs[i] = (png_bytep)(Uint8 *)pix + i * 640;
   png_write_image(png_ptr, row_ptrs);
   png_write_end(png_ptr, info_ptr);
 
@@ -1495,9 +1494,50 @@ static void dump_screen_real(SDL_Surface *surface, const char *name)
 
 #define DUMP_FMT_EXT "bmp"
 
-static void dump_screen_real(SDL_Surface *surface, const char *name)
+static void dump_screen_real(const Uint8 *pix, const rgb_color *pal, int count,
+ const char *name)
 {
-  SDL_SaveBMP(surface, name);
+  int i;
+  FILE *file;
+  file = fopen(name, "wb");
+  if(!file)
+    return;
+
+  // BMP header
+  fputw(0x4D42, file); // BM
+  fputd(14 + 40 + count * 3 + 640 * 350, file); // BMP + DIB + palette + image
+  fputd(0, file); // Reserved
+  fputd(14, file); // DIB header offset
+
+  // DIB header
+  fputd(40, file); // DIB header size (Windows 3/BITMAPINFOHEADER)
+  fputd(640, file); // Width in pixels
+  fputd(350, file); // Height in pixels
+  fputw(1, file); // Number of color planes
+  fputw(8, file); // Bits per pixel
+  fputd(0, file); // Compression method (none)
+  fputd(640 * 350, file); // Image data size
+  fputd(3780, file); // Horizontal dots per meter
+  fputd(3780, file); // Vertical dots per meter
+  fputd(count, file); // Number of colors in palette
+  fputd(0, file); // Number of important colors
+
+  // Color palette
+  for(i = 0; i < count; i++)
+  {
+    fputc(pal[i].b, file);
+    fputc(pal[i].g, file);
+    fputc(pal[i].r, file);
+    fputc(0, file);
+  }
+
+  // Image data
+  for(i = 349; i >= 0; i--)
+  {
+    fwrite(pix + i * 640, sizeof(Uint8), 640, file);
+  }
+
+  fclose(file);
 }
 
 #endif // CONFIG_PNG
@@ -1509,8 +1549,8 @@ void dump_screen(void)
   int i;
   char name[MAX_NAME_SIZE];
   struct stat file_info;
-  SDL_Surface *ss;
-  SDL_Color palette[SMZX_PAL_SIZE];
+  Uint8 *ss;
+  rgb_color palette[SMZX_PAL_SIZE];
 
   for(i = 0; i < 99999; i++)
   {
@@ -1520,16 +1560,12 @@ void dump_screen(void)
       break;
   }
 
-  ss = SDL_CreateRGBSurface(SDL_SWSURFACE, 640, 350, 8, 0, 0, 0, 0);
+  ss = malloc(sizeof(Uint8) * 640 * 350);
   if(ss)
   {
-    SDL_SetColors(ss, palette, 0, make_palette(palette));
-    SDL_LockSurface(ss);
-    render_graph8((Uint8*)ss->pixels, ss->pitch, &graphics,
-     set_colors8[graphics.screen_mode]);
-    SDL_UnlockSurface(ss);
-    dump_screen_real(ss, name);
-    SDL_FreeSurface(ss);
+    render_graph8(ss, 640, &graphics, set_colors8[graphics.screen_mode]);
+    dump_screen_real(ss, palette, make_palette(palette), name);
+    free(ss);
   }
 }
 
@@ -1572,13 +1608,13 @@ void save_editor_palette(void)
 {
   if(graphics.screen_mode < 2)
     memcpy(graphics.editor_backup_palette, graphics.palette,
-     sizeof(SDL_Color) * SMZX_PAL_SIZE);
+     sizeof(rgb_color) * SMZX_PAL_SIZE);
 }
 
 void load_editor_palette(void)
 {
   memcpy(graphics.palette, graphics.editor_backup_palette,
-   sizeof(SDL_Color) * SMZX_PAL_SIZE);
+   sizeof(rgb_color) * SMZX_PAL_SIZE);
 }
 
 void save_palette(char *fname)

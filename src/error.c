@@ -22,6 +22,7 @@
 #include <stdlib.h>
 #include <stdio.h>
 
+#include "platform.h"
 #include "helpsys.h"
 #include "error.h"
 #include "window.h"
@@ -113,43 +114,43 @@ int error(const char *string, char type, char options, unsigned int code)
   do
   {
     wait_event();
-    t1 = get_key(keycode_SDL);
+    t1 = get_key(keycode_internal);
 
     //Process
     switch(t1)
     {
-      case SDLK_f:
+      case IKEY_f:
         fail:
         if(!(options & 1)) break;
         ret = 1;
         break;
-      case SDLK_r:
+      case IKEY_r:
         retry:
         if(!(options & 2)) break;
         ret = 2;
         break;
-      case SDLK_e:
+      case IKEY_e:
         exit:
         if(!(options & 4)) break;
         ret = 4;
         break;
-      case SDLK_o:
+      case IKEY_o:
         ok:
         if(!(options & 8)) break;
         ret = 8;
         break;
-      case SDLK_h:
+      case IKEY_h:
         if(!(options & 16)) break;
         // Call help
         break;
-      case SDLK_ESCAPE:
+      case IKEY_ESCAPE:
         // Escape. Order of options this applies to-
         // Fail, Ok, Retry, Exit.
         if(options & 1) goto fail;
         if(options & 8) goto ok;
         if(options & 2) goto retry;
         goto exit;
-      case SDLK_RETURN:
+      case IKEY_RETURN:
         // Enter. Order of options this applies to-
         // OK, Retry, Fail, Exit.
         if(options & 8) goto ok;
@@ -169,7 +170,7 @@ int error(const char *string, char type, char options, unsigned int code)
   m_show();
   if(ret == 4) // Exit the program
   {
-    SDL_Quit();
+    platform_quit();
     exit(-1);
   }
 

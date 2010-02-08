@@ -27,6 +27,7 @@
 #include <unistd.h>
 #endif
 
+#include "platform.h"
 #include "helpsys.h"
 #include "scrdisp.h"
 #include "sfx.h"
@@ -748,7 +749,7 @@ static void flash_thing(World *mzx_world, int start, int end,
     update_screen();
 
     update_event_status_delay();
-  } while(!get_key(keycode_SDL));
+  } while(!get_key(keycode_internal));
 
   update_event_status_delay();
 
@@ -797,7 +798,7 @@ void edit_world(World *mzx_world)
   unsigned int backup_interval = mzx_world->conf.backup_interval;
   char *backup_name = mzx_world->conf.backup_name;
   char *backup_ext = mzx_world->conf.backup_ext;
-  int backup_timestamp = SDL_GetTicks();
+  int backup_timestamp = get_ticks();
   int backup_num = 0;
   char *level_id;
   char *level_param;
@@ -870,7 +871,7 @@ void edit_world(World *mzx_world)
     find_player(mzx_world);
 
     if((backup_count) &&
-     ((SDL_GetTicks() - backup_timestamp) > (backup_interval * 1000)))
+     ((get_ticks() - backup_timestamp) > (backup_interval * 1000)))
     {
       char backup_name_formatted[512];
       sprintf(backup_name_formatted,
@@ -878,7 +879,7 @@ void edit_world(World *mzx_world)
 
       save_world(mzx_world, backup_name_formatted, 0, 1);
       backup_num = (backup_num + 1) % backup_count;
-      backup_timestamp = SDL_GetTicks();
+      backup_timestamp = get_ticks();
     }
 
     cursor_x = cursor_board_x - scroll_x;
@@ -1095,7 +1096,7 @@ void edit_world(World *mzx_world)
     update_screen();
 
     update_event_status_delay();
-    key = get_key(keycode_SDL);
+    key = get_key(keycode_internal);
 
     if(get_mouse_press())
     {
@@ -1145,7 +1146,7 @@ void edit_world(World *mzx_world)
         }
         else
 
-        if(get_mouse_status() == SDL_BUTTON(3))
+        if(get_mouse_status() == MOUSE_BUTTON(3))
         {
           grab_at_xy(mzx_world, &current_id, &current_color,
            &current_param, &copy_robot, &copy_scroll, &copy_sensor,
@@ -1160,11 +1161,11 @@ void edit_world(World *mzx_world)
       }
     }
 
-    if((key >= SDLK_0) && (key <= SDLK_9))
+    if((key >= IKEY_0) && (key <= IKEY_9))
     {
-      int s_num = key - SDLK_0;
+      int s_num = key - IKEY_0;
 
-      if(get_ctrl_status(keycode_SDL))
+      if(get_ctrl_status(keycode_internal))
       {
         saved_cursor_x[s_num] = cursor_board_x;
         saved_cursor_y[s_num] = cursor_board_y;
@@ -1175,7 +1176,7 @@ void edit_world(World *mzx_world)
       }
       else
 
-      if(get_alt_status(keycode_SDL))
+      if(get_alt_status(keycode_internal))
       {
         cursor_board_x = saved_cursor_x[s_num];
         cursor_board_y = saved_cursor_y[s_num];
@@ -1198,14 +1199,14 @@ void edit_world(World *mzx_world)
 
     switch(key)
     {
-      case SDLK_UP:
+      case IKEY_UP:
       {
         int i, move_amount = 1;
 
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
           move_amount = 10;
 
-        if(get_ctrl_status(keycode_SDL) && (copy_repeat_height >= 0))
+        if(get_ctrl_status(keycode_internal) && (copy_repeat_height >= 0))
           move_amount = copy_repeat_height;
 
         for(i = 0; i < move_amount; i++)
@@ -1229,14 +1230,14 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_DOWN:
+      case IKEY_DOWN:
       {
         int i, move_amount = 1;
 
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
           move_amount = 10;
 
-        if(get_ctrl_status(keycode_SDL) && (copy_repeat_height >= 0))
+        if(get_ctrl_status(keycode_internal) && (copy_repeat_height >= 0))
           move_amount = copy_repeat_height;
 
         for(i = 0; i < move_amount; i++)
@@ -1262,14 +1263,14 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_LEFT:
+      case IKEY_LEFT:
       {
         int i, move_amount = 1;
 
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
           move_amount = 10;
 
-        if(get_ctrl_status(keycode_SDL) && (copy_repeat_width >= 0))
+        if(get_ctrl_status(keycode_internal) && (copy_repeat_width >= 0))
           move_amount = copy_repeat_width;
 
         for(i = 0; i < move_amount; i++)
@@ -1300,14 +1301,14 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_RIGHT:
+      case IKEY_RIGHT:
       {
         int i, move_amount = 1;
 
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
           move_amount = 10;
 
-        if(get_ctrl_status(keycode_SDL) && (copy_repeat_width >= 0))
+        if(get_ctrl_status(keycode_internal) && (copy_repeat_width >= 0))
           move_amount = copy_repeat_width;
 
         for(i = 0; i < move_amount; i++)
@@ -1339,7 +1340,7 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_SPACE:
+      case IKEY_SPACE:
       {
         if(draw_mode == 2)
         {
@@ -1402,7 +1403,7 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_BACKSPACE:
+      case IKEY_BACKSPACE:
       {
         if(draw_mode == 2)
         {
@@ -1420,7 +1421,7 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_INSERT:
+      case IKEY_INSERT:
       {
         grab_at_xy(mzx_world, &current_id, &current_color, &current_param,
          &copy_robot, &copy_scroll, &copy_sensor, cursor_board_x,
@@ -1428,9 +1429,9 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_TAB:
+      case IKEY_TAB:
       {
-        if(!get_alt_status(keycode_SDL))
+        if(!get_alt_status(keycode_internal))
         {
           if(draw_mode)
           {
@@ -1449,7 +1450,7 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_DELETE:
+      case IKEY_DELETE:
       {
         if(draw_mode == 2)
         {
@@ -1477,9 +1478,9 @@ void edit_world(World *mzx_world)
       }
 
       // Show invisible walls
-      case SDLK_F1:
+      case IKEY_F1:
       {
-        if(get_shift_status(keycode_SDL))
+        if(get_shift_status(keycode_internal))
         {
           if(!overlay_edit)
           {
@@ -1499,9 +1500,9 @@ void edit_world(World *mzx_world)
       }
 
       // Show robots
-      case SDLK_F2:
+      case IKEY_F2:
       {
-        if(get_shift_status(keycode_SDL))
+        if(get_shift_status(keycode_internal))
         {
           if(!overlay_edit)
           {
@@ -1525,11 +1526,11 @@ void edit_world(World *mzx_world)
       }
 
       // Terrain
-      case SDLK_F3:
+      case IKEY_F3:
       {
         if(!overlay_edit)
         {
-          if(get_shift_status(keycode_SDL))
+          if(get_shift_status(keycode_internal))
           {
             // Show fakes
             flash_thing(mzx_world, (int)FAKE, (int)THICK_WEB, '#', 177,
@@ -1547,11 +1548,11 @@ void edit_world(World *mzx_world)
       }
 
       // Item
-      case SDLK_F4:
+      case IKEY_F4:
       {
         if(!overlay_edit)
         {
-          if(get_shift_status(keycode_SDL))
+          if(get_shift_status(keycode_internal))
           {
             // Show spaces
             flash_thing(mzx_world, (int)SPACE, (int)SPACE, 'O', '*',
@@ -1569,7 +1570,7 @@ void edit_world(World *mzx_world)
       }
 
       // Creature
-      case SDLK_F5:
+      case IKEY_F5:
       {
         if(!overlay_edit)
         {
@@ -1582,7 +1583,7 @@ void edit_world(World *mzx_world)
       }
 
       // Puzzle
-      case SDLK_F6:
+      case IKEY_F6:
       {
         if(!overlay_edit)
         {
@@ -1595,9 +1596,9 @@ void edit_world(World *mzx_world)
       }
 
       // Transport
-      case SDLK_F7:
+      case IKEY_F7:
       {
-        if(get_shift_status(keycode_SDL))
+        if(get_shift_status(keycode_internal))
         {
           save_editor_palette();
           set_screen_mode(get_screen_mode() + 1);
@@ -1615,7 +1616,7 @@ void edit_world(World *mzx_world)
       }
 
       // Element
-      case SDLK_F8:
+      case IKEY_F8:
       {
         if(!overlay_edit)
         {
@@ -1628,7 +1629,7 @@ void edit_world(World *mzx_world)
       }
 
       // Misc
-      case SDLK_F9:
+      case IKEY_F9:
       {
         if(!overlay_edit)
         {
@@ -1641,7 +1642,7 @@ void edit_world(World *mzx_world)
       }
 
       // Object
-      case SDLK_F10:
+      case IKEY_F10:
       {
         if(!overlay_edit)
         {
@@ -1653,12 +1654,12 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_c:
+      case IKEY_c:
       {
         if(draw_mode != 2)
         {
           cursor_off();
-          if(get_alt_status(keycode_SDL))
+          if(get_alt_status(keycode_internal))
           {
             char_editor(mzx_world);
             modified = 1;
@@ -1677,11 +1678,11 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_o:
+      case IKEY_o:
       {
         if(draw_mode != 2)
         {
-          if(get_alt_status(keycode_SDL))
+          if(get_alt_status(keycode_internal))
           {
             if(!overlay_edit)
             {
@@ -1713,11 +1714,11 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_s:
+      case IKEY_s:
       {
         if(draw_mode != 2)
         {
-          if(get_alt_status(keycode_SDL))
+          if(get_alt_status(keycode_internal))
           {
             if(overlay_edit)
             {
@@ -1753,7 +1754,7 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_HOME:
+      case IKEY_HOME:
       {
         cursor_board_x = 0;
         cursor_board_y = 0;
@@ -1769,7 +1770,7 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_END:
+      case IKEY_END:
       {
         cursor_board_x = board_width - 1;
         cursor_board_y = board_height - 1;
@@ -1791,11 +1792,11 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_b:
+      case IKEY_b:
       {
         if(draw_mode != 2)
         {
-          if(get_alt_status(keycode_SDL))
+          if(get_alt_status(keycode_internal))
           {
             block_x = cursor_board_x;
             block_y = cursor_board_y;
@@ -1838,9 +1839,9 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_l:
+      case IKEY_l:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           char test_wav[128] = { 0, };
           const char *sam_ext[] = { ".WAV", ".SAM", ".OGG", NULL };
@@ -1901,9 +1902,9 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_i:
+      case IKEY_i:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           int import_number = import_type(mzx_world);
           if(import_number >= 0)
@@ -2048,7 +2049,7 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_g:
+      case IKEY_g:
       {
         if(draw_mode != 2)
         {
@@ -2062,11 +2063,11 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_p:
+      case IKEY_p:
       {
         if(draw_mode != 2)
         {
-          if(get_alt_status(keycode_SDL))
+          if(get_alt_status(keycode_internal))
           {
             size_pos(mzx_world);
             set_update_done_current(mzx_world);
@@ -2109,9 +2110,9 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_x:
+      case IKEY_x:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           int export_number = export_type(mzx_world);
           if(export_number >= 0)
@@ -2210,11 +2211,11 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_n:
+      case IKEY_n:
       {
         if(draw_mode != 2)
         {
-          if(get_alt_status(keycode_SDL))
+          if(get_alt_status(keycode_internal))
           {
             if(!src_board->mod_playing[0])
             {
@@ -2256,7 +2257,7 @@ void edit_world(World *mzx_world)
           }
           else
 
-          if(get_ctrl_status(keycode_SDL))
+          if(get_ctrl_status(keycode_internal))
           {
             if(!listening_flag)
             {
@@ -2294,7 +2295,7 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_RETURN:
+      case IKEY_RETURN:
       {
         if(draw_mode == 3)
         {
@@ -2983,7 +2984,7 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_F11:
+      case IKEY_F11:
       {
         // SMZX Mode
         save_editor_palette();
@@ -2991,11 +2992,11 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_e:
+      case IKEY_e:
       {
         if(draw_mode != 2)
         {
-          if(get_alt_status(keycode_SDL))
+          if(get_alt_status(keycode_internal))
           {
             palette_editor(mzx_world);
             modified = 1;
@@ -3009,11 +3010,11 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_f:
+      case IKEY_f:
       {
         if(draw_mode != 2)
         {
-          if(get_alt_status(keycode_SDL))
+          if(get_alt_status(keycode_internal))
           {
             sfx_edit(mzx_world);
             modified = 1;
@@ -3034,7 +3035,7 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_ESCAPE:
+      case IKEY_ESCAPE:
       {
         if(draw_mode)
         {
@@ -3063,7 +3064,7 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_v:
+      case IKEY_v:
       {
         if(draw_mode != 2)
         {
@@ -3083,39 +3084,39 @@ void edit_world(World *mzx_world)
             update_screen();
 
             update_event_status_delay();
-            v_key = get_key(keycode_SDL);
+            v_key = get_key(keycode_internal);
 
             switch(v_key)
             {
-              case SDLK_LEFT:
+              case IKEY_LEFT:
               {
                 if(v_scroll_x)
                   v_scroll_x--;
                 break;
               }
 
-              case SDLK_RIGHT:
+              case IKEY_RIGHT:
               {
                 if(v_scroll_x < (board_width - viewport_width))
                   v_scroll_x++;
                 break;
               }
 
-              case SDLK_UP:
+              case IKEY_UP:
               {
                 if(v_scroll_y)
                   v_scroll_y--;
                 break;
               }
 
-              case SDLK_DOWN:
+              case IKEY_DOWN:
               {
                 if(v_scroll_y < (board_height - viewport_height))
                   v_scroll_y++;
                 break;
               }
             }
-          } while(v_key != SDLK_ESCAPE);
+          } while(v_key != IKEY_ESCAPE);
 
           m_show();
           clear_screen_no_update(177, 1);
@@ -3126,9 +3127,9 @@ void edit_world(World *mzx_world)
         }
       }
 
-      case SDLK_t:
+      case IKEY_t:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           int fade;
           int current_board_id = mzx_world->current_board_id;
@@ -3203,9 +3204,9 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_a:
+      case IKEY_a:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           int charset_load = choose_char_set(mzx_world);
 
@@ -3276,11 +3277,11 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_d:
+      case IKEY_d:
       {
         if(draw_mode != 2)
         {
-          if(get_alt_status(keycode_SDL))
+          if(get_alt_status(keycode_internal))
           {
             default_palette();
             update_palette();
@@ -3339,9 +3340,9 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_z:
+      case IKEY_z:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           // Clear board
           if(!confirm(mzx_world, "Clear board - Are you sure?"))
@@ -3379,9 +3380,9 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_r:
+      case IKEY_r:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           // Clear world
           if(!confirm(mzx_world, "Clear ALL - Are you sure?"))
@@ -3411,7 +3412,7 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_PAGEDOWN:
+      case IKEY_PAGEDOWN:
       {
         current_menu++;
 
@@ -3421,7 +3422,7 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_PAGEUP:
+      case IKEY_PAGEUP:
       {
         current_menu--;
 
@@ -3431,8 +3432,8 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_8:
-      case SDLK_KP_MULTIPLY:
+      case IKEY_8:
+      case IKEY_KP_MULTIPLY:
       {
         if(draw_mode == 2)
         {
@@ -3440,8 +3441,8 @@ void edit_world(World *mzx_world)
         }
         else
 
-        if(get_shift_status(keycode_SDL) ||
-         (key == SDLK_KP_MULTIPLY))
+        if(get_shift_status(keycode_internal) ||
+         (key == IKEY_KP_MULTIPLY))
         {
           if(src_board->mod_playing[0])
             end_module();
@@ -3454,9 +3455,9 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_m:
+      case IKEY_m:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           int offset = cursor_board_x + (cursor_board_y * board_width);
           mzx_thing d_id = (mzx_thing)level_id[offset];
@@ -3491,9 +3492,9 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_y:
+      case IKEY_y:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           debug_mode ^= 1;
         }
@@ -3507,9 +3508,9 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_h:
+      case IKEY_h:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           if(edit_screen_height == 19)
           {
@@ -3577,7 +3578,7 @@ void edit_world(World *mzx_world)
         modified = 1;
       }
     }
-  } while(key != SDLK_ESCAPE);
+  } while(key != IKEY_ESCAPE);
 
   update_event_status();
 

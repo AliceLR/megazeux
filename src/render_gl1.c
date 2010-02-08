@@ -22,8 +22,10 @@
 #include <stdlib.h>
 #include <string.h>
 
+#include "platform.h"
 #include "graphics.h"
 #include "render.h"
+#include "render_sdl.h"
 #include "render_gl.h"
 #include "renderers.h"
 
@@ -152,7 +154,7 @@ static int gl1_init_video(graphics_data *graphics, config_info *conf)
 }
 
 static int gl1_set_video_mode(graphics_data *graphics, int width, int height,
- int depth, int flags, int fullscreen)
+ int depth, int fullscreen, int resize)
 {
   gl1_render_data *render_data = graphics->render_data;
   gl1_syms *gl = &render_data->gl;
@@ -161,7 +163,8 @@ static int gl1_set_video_mode(graphics_data *graphics, int width, int height,
 
   gl_set_attributes(graphics);
 
-  if(!SDL_SetVideoMode(width, height, depth, GL_STRIP_FLAGS(flags)))
+  if(!SDL_SetVideoMode(width, height, depth,
+   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, resize))))
     return false;
 
   if(!gl1_load_syms(gl))
@@ -179,13 +182,13 @@ static int gl1_set_video_mode(graphics_data *graphics, int width, int height,
   return true;
 }
 
-static void gl1_update_colors(graphics_data *graphics, SDL_Color *palette,
+static void gl1_update_colors(graphics_data *graphics, rgb_color *palette,
  Uint32 count)
 {
   Uint32 i;
   for(i = 0; i < count; i++)
   {
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+#if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
     graphics->flat_intensity_palette[i] = (palette[i].r << 24) |
      (palette[i].g << 16) | (palette[i].b << 8);
 #else

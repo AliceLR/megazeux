@@ -204,13 +204,13 @@ int intake(World *mzx_world, char *string, int max_len,
         macro_position = -1;
 
       if(key == '^')
-        key = SDLK_RETURN;
+        key = IKEY_RETURN;
     }
     else
     {
       update_screen();
       update_event_status_delay();
-      key = get_key(keycode_SDL);
+      key = get_key(keycode_internal);
       place = 0;
 
       cur_char = get_key(keycode_unicode);
@@ -223,7 +223,7 @@ int intake(World *mzx_world, char *string, int max_len,
       int mouse_x, mouse_y;
       get_mouse_position(&mouse_x, &mouse_y);
       if((mouse_y == y) && (mouse_x >= x) &&
-       (mouse_x <= (x + max_len)) && (mouse_press <= SDL_BUTTON_RIGHT))
+       (mouse_x <= (x + max_len)) && (mouse_press <= MOUSE_BUTTON_RIGHT))
       {
         // Yep, reposition cursor.
         currx = mouse_x - x;
@@ -240,7 +240,7 @@ int intake(World *mzx_world, char *string, int max_len,
     // Handle key cases
     switch(key)
     {
-      case SDLK_ESCAPE:
+      case IKEY_ESCAPE:
       {
         // ESC
         if(exit_type > 0)
@@ -250,16 +250,16 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_RETURN:
+      case IKEY_RETURN:
       {
         // Enter
         done = 1;
         break;
       }
 
-      case SDLK_HOME:
+      case IKEY_HOME:
       {
-        if(get_alt_status(keycode_SDL) && robo_intk)
+        if(get_alt_status(keycode_internal) && robo_intk)
         {
           done = 1;
         }
@@ -271,9 +271,9 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_END:
+      case IKEY_END:
       {
-        if(get_alt_status(keycode_SDL) && robo_intk)
+        if(get_alt_status(keycode_internal) && robo_intk)
         {
           done = 1;
         }
@@ -285,9 +285,9 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_LEFT:
+      case IKEY_LEFT:
       {
-        if(get_ctrl_status(keycode_SDL))
+        if(get_ctrl_status(keycode_internal))
         {
           // Find nearest space to the left
           if(currx)
@@ -326,9 +326,9 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_RIGHT:
+      case IKEY_RIGHT:
       {
-        if(get_ctrl_status(keycode_SDL))
+        if(get_ctrl_status(keycode_internal))
         {
           // Find nearest space to the right
           if(currx < curr_len)
@@ -363,31 +363,31 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_F1:
-      case SDLK_F2:
-      case SDLK_F3:
-      case SDLK_F4:
-      case SDLK_F5:
-      case SDLK_F6:
-      case SDLK_F7:
-      case SDLK_F8:
-      case SDLK_F9:
-      case SDLK_F10:
-      case SDLK_F11:
-      case SDLK_F12:
-      case SDLK_UP:
-      case SDLK_DOWN:
-      case SDLK_TAB:
-      case SDLK_PAGEUP:
-      case SDLK_PAGEDOWN:
+      case IKEY_F1:
+      case IKEY_F2:
+      case IKEY_F3:
+      case IKEY_F4:
+      case IKEY_F5:
+      case IKEY_F6:
+      case IKEY_F7:
+      case IKEY_F8:
+      case IKEY_F9:
+      case IKEY_F10:
+      case IKEY_F11:
+      case IKEY_F12:
+      case IKEY_UP:
+      case IKEY_DOWN:
+      case IKEY_TAB:
+      case IKEY_PAGEUP:
+      case IKEY_PAGEDOWN:
       {
         done = 1;
         break;
       }
 
-      case SDLK_INSERT:
+      case IKEY_INSERT:
       {
-        if(get_alt_status(keycode_SDL) && robo_intk)
+        if(get_alt_status(keycode_internal) && robo_intk)
         {
           done = 1;
         }
@@ -404,10 +404,10 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_BACKSPACE:
+      case IKEY_BACKSPACE:
       {
         // Backspace, at 0 it might exit
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           // Alt-backspace, erase input
           curr_len = currx = 0;
@@ -415,7 +415,7 @@ int intake(World *mzx_world, char *string, int max_len,
         }
         else
 
-        if(get_ctrl_status(keycode_SDL))
+        if(get_ctrl_status(keycode_internal))
         {
           // Find nearest space to the left
           if(currx)
@@ -461,7 +461,7 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_DELETE:
+      case IKEY_DELETE:
       {
         // Delete, at the end might exit
         if(currx == curr_len)
@@ -481,15 +481,15 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_c:
+      case IKEY_c:
       {
-        if(get_ctrl_status(keycode_SDL) && robo_intk)
+        if(get_ctrl_status(keycode_internal) && robo_intk)
         {
           done = 1;
         }
         else
 
-        if(get_alt_status(keycode_SDL) && !filter_type)
+        if(get_alt_status(keycode_internal) && !filter_type)
         {
           // If alt - C is pressed, choose character
           int new_char = char_selection(last_char);
@@ -512,9 +512,9 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_t:
+      case IKEY_t:
       {
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           done = 1;
         }
@@ -525,13 +525,13 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_l:
-      case SDLK_g:
-      case SDLK_d:
-      case SDLK_f:
-      case SDLK_r:
+      case IKEY_l:
+      case IKEY_g:
+      case IKEY_d:
+      case IKEY_f:
+      case IKEY_r:
       {
-        if(get_ctrl_status(keycode_SDL) && robo_intk)
+        if(get_ctrl_status(keycode_internal) && robo_intk)
         {
           done = 1;
         }
@@ -542,10 +542,10 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_i:
+      case IKEY_i:
       {
-        if((get_ctrl_status(keycode_SDL) ||
-         get_alt_status(keycode_SDL)) && robo_intk)
+        if((get_ctrl_status(keycode_internal) ||
+         get_alt_status(keycode_internal)) && robo_intk)
         {
           done = 1;
         }
@@ -556,18 +556,18 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_u:
-      case SDLK_o:
-      case SDLK_x:
-      case SDLK_b:
-      case SDLK_s:
-      case SDLK_e:
-      case SDLK_v:
-      case SDLK_p:
-      case SDLK_h:
-      case SDLK_m:
+      case IKEY_u:
+      case IKEY_o:
+      case IKEY_x:
+      case IKEY_b:
+      case IKEY_s:
+      case IKEY_e:
+      case IKEY_v:
+      case IKEY_p:
+      case IKEY_h:
+      case IKEY_m:
       {
-        if(get_alt_status(keycode_SDL) && robo_intk)
+        if(get_alt_status(keycode_internal) && robo_intk)
         {
           done = 1;
         }
@@ -578,8 +578,8 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_LSHIFT:
-      case SDLK_RSHIFT:
+      case IKEY_LSHIFT:
+      case IKEY_RSHIFT:
       case 0:
       {
         place = 0;

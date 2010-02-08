@@ -24,7 +24,8 @@
 
 __M_BEGIN_DECLS
 
-#include "SDL.h"
+#include "platform.h"
+#include "keysym.h"
 
 #define KEY_REPEAT_START 250
 #define KEY_REPEAT_RATE 33
@@ -36,16 +37,23 @@ __M_BEGIN_DECLS
 
 #define KEY_REPEAT_STACK_SIZE 32
 
+#define MOUSE_BUTTON(X) (1 << ((X)-1))
+#define MOUSE_BUTTON_LEFT 1
+#define MOUSE_BUTTON_MIDDLE 2
+#define MOUSE_BUTTON_RIGHT 3
+#define MOUSE_BUTTON_WHEELUP 4
+#define MOUSE_BUTTON_WHEELDOWN 5
+
 typedef struct
 {
-  Uint8 SDL_keymap[512];
-  SDLKey last_SDL_pressed;
-  SDLKey last_SDL;
-  SDLKey last_SDL_repeat;
-  SDLKey last_SDL_release;
+  Uint8 keymap[512];
+  keycode last_key_pressed;
+  keycode last_key;
+  keycode last_key_repeat;
+  keycode last_key_release;
   Uint16 last_unicode;
   Uint16 last_unicode_repeat;
-  SDLKey last_SDL_repeat_stack[KEY_REPEAT_STACK_SIZE];
+  keycode last_key_repeat_stack[KEY_REPEAT_STACK_SIZE];
   Uint16 last_unicode_repeat_stack[KEY_REPEAT_STACK_SIZE];
   Uint32 repeat_stack_pointer;
   Uint32 last_keypress_time;
@@ -65,8 +73,8 @@ typedef struct
   Uint32 unfocus_pause;
 
   // Joystick map information
-  SDLKey joystick_button_map[16][256];
-  SDLKey joystick_axis_map[16][16][2];
+  keycode joystick_button_map[16][256];
+  keycode joystick_axis_map[16][16][2];
   Uint32 last_axis[16][16];
 
   Uint32 last_update_time;
@@ -75,9 +83,11 @@ typedef struct
 typedef enum
 {
   keycode_pc_xt,
-  keycode_SDL,
+  keycode_internal,
   keycode_unicode
 } keycode_type;
+
+extern input_status input;
 
 void wait_event(void);
 Uint32 update_event_status(void);
@@ -106,10 +116,14 @@ int get_alt_status(keycode_type type);
 int get_shift_status(keycode_type type);
 int get_ctrl_status(keycode_type type);
 void initialize_joysticks(void);
-void map_joystick_axis(int joystick, int axis, SDLKey min_key,
- SDLKey max_key);
-void map_joystick_button(int joystick, int button, SDLKey key);
+void map_joystick_axis(int joystick, int axis, keycode min_key,
+ keycode max_key);
+void map_joystick_button(int joystick, int button, keycode key);
 void set_refocus_pause(int val);
+
+Uint32 update_autorepeat(void);
+
+void real_warp_mouse(Uint32 x, Uint32 y);
 
 #ifdef CONFIG_NDS
 void nds_inject_input(void);

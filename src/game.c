@@ -30,6 +30,7 @@
 #include <unistd.h>
 #endif
 
+#include "platform.h"
 #include "event.h"
 #include "helpsys.h"
 #include "scrdisp.h"
@@ -871,7 +872,7 @@ __editor_maybe_static void draw_viewport(World *mzx_world)
 // Returns non-0 to skip all keys this cycle
 static int update(World *mzx_world, int game, int *fadein)
 {
-  int start_ticks = SDL_GetTicks();
+  int start_ticks = get_ticks();
   int time_remaining;
   static int reload = 0;
   static int slowed = 0; // Flips between 0 and 1 during slow_time
@@ -960,25 +961,25 @@ static int update(World *mzx_world, int game, int *fadein)
   if(game && (!mzx_world->dead))
   {
     // Shoot
-    if(get_key_status(keycode_SDL, SDLK_SPACE))
+    if(get_key_status(keycode_internal, IKEY_SPACE))
     {
       if((!reload) && (!src_board->player_attack_locked))
       {
         int move_dir = -1;
 
-        if(get_key_status(keycode_SDL, SDLK_UP))
+        if(get_key_status(keycode_internal, IKEY_UP))
           move_dir = 0;
         else
 
-        if(get_key_status(keycode_SDL, SDLK_DOWN))
+        if(get_key_status(keycode_internal, IKEY_DOWN))
           move_dir = 1;
         else
 
-        if(get_key_status(keycode_SDL, SDLK_RIGHT))
+        if(get_key_status(keycode_internal, IKEY_RIGHT))
           move_dir = 2;
         else
 
-        if(get_key_status(keycode_SDL, SDLK_LEFT))
+        if(get_key_status(keycode_internal, IKEY_LEFT))
           move_dir = 3;
 
         if(move_dir != -1)
@@ -1007,7 +1008,7 @@ static int update(World *mzx_world, int game, int *fadein)
     }
     else
 
-    if((get_key_status(keycode_SDL, SDLK_UP)) &&
+    if((get_key_status(keycode_internal, IKEY_UP)) &&
      (!src_board->player_ns_locked))
     {
       int key_up_delay = mzx_world->key_up_delay;
@@ -1021,7 +1022,7 @@ static int update(World *mzx_world, int game, int *fadein)
     }
     else
 
-    if((get_key_status(keycode_SDL, SDLK_DOWN)) &&
+    if((get_key_status(keycode_internal, IKEY_DOWN)) &&
      (!src_board->player_ns_locked))
     {
       int key_down_delay = mzx_world->key_down_delay;
@@ -1036,7 +1037,7 @@ static int update(World *mzx_world, int game, int *fadein)
     }
     else
 
-    if((get_key_status(keycode_SDL, SDLK_RIGHT)) &&
+    if((get_key_status(keycode_internal, IKEY_RIGHT)) &&
      (!src_board->player_ew_locked))
     {
       int key_right_delay = mzx_world->key_right_delay;
@@ -1051,7 +1052,7 @@ static int update(World *mzx_world, int game, int *fadein)
     }
     else
 
-    if((get_key_status(keycode_SDL, SDLK_LEFT)) &&
+    if((get_key_status(keycode_internal, IKEY_LEFT)) &&
      (!src_board->player_ew_locked))
     {
       int key_left_delay = mzx_world->key_left_delay;
@@ -1073,7 +1074,7 @@ static int update(World *mzx_world, int game, int *fadein)
     }
 
     // Bomb
-    if(get_key_status(keycode_SDL, SDLK_DELETE) &&
+    if(get_key_status(keycode_internal, IKEY_DELETE) &&
      (!src_board->player_attack_locked))
     {
       int d_offset =
@@ -1411,11 +1412,11 @@ static int update(World *mzx_world, int game, int *fadein)
   {
     // Number of ms the update cycle took
     total_ticks = (16 * (mzx_world->mzx_speed - 1))
-     - (SDL_GetTicks() - start_ticks);
+     - (get_ticks() - start_ticks);
     if(total_ticks < 0)
       total_ticks = 0;
     // Delay for 16 * (speed - 1) since the beginning of the update
-    SDL_Delay(total_ticks);
+    delay(total_ticks);
   }
 
   if(*fadein)
@@ -1708,7 +1709,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
 
     // Keycheck
 
-    key = get_key(keycode_SDL);
+    key = get_key(keycode_internal);
 
     if(key)
     {
@@ -1723,7 +1724,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
       switch(key)
       {
 #ifdef CONFIG_HELPSYS
-        case SDLK_F1:
+        case IKEY_F1:
         {
           if(mzx_world->version < 0x0209 ||
            get_counter(mzx_world, "HELP_MENU", 0))
@@ -1735,7 +1736,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
         }
 #endif
 
-        case SDLK_F2:
+        case IKEY_F2:
         {
           // Settings
           if(mzx_world->version < 0x0209 ||
@@ -1751,7 +1752,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 
-        case SDLK_RETURN:
+        case IKEY_RETURN:
         {
           int enter_menu_status =
            get_counter(mzx_world, "ENTER_MENU", 0);
@@ -1776,8 +1777,8 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
             {
               update_event_status_delay();
               update_screen();
-              key = get_key(keycode_SDL);
-            } while(key != SDLK_RETURN);
+              key = get_key(keycode_internal);
+            } while(key != IKEY_RETURN);
 
             restore_screen();
 
@@ -1786,7 +1787,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 
-        case SDLK_ESCAPE:
+        case IKEY_ESCAPE:
         {
           // Quit
           m_show();
@@ -1798,7 +1799,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 
-        case SDLK_F3:
+        case IKEY_F3:
         {
           // Save game
           if(!mzx_world->dead)
@@ -1830,7 +1831,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 
-        case SDLK_F4:
+        case IKEY_F4:
         {
           if(mzx_world->version < 0x0252 ||
            get_counter(mzx_world, "LOAD_MENU", 0))
@@ -1869,8 +1870,8 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 
-        case SDLK_F5:
-        case SDLK_INSERT:
+        case IKEY_F5:
+        case IKEY_INSERT:
         {
           // Change bomb type
           if(!mzx_world->dead)
@@ -1896,7 +1897,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
         }
 
 #ifdef CONFIG_EDITOR
-        case SDLK_F6:
+        case IKEY_F6:
         {
           if(mzx_world->editing)
           {
@@ -1906,7 +1907,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           }
         }
 
-        case SDLK_F7:
+        case IKEY_F7:
         {
           if(mzx_world->editing)
           {
@@ -1938,7 +1939,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 
-        case SDLK_F8:
+        case IKEY_F8:
         {
           if(mzx_world->editing)
           {
@@ -2001,7 +2002,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
 #endif // CONFIG_EDITOR
 
         // Quick save
-        case SDLK_F9:
+        case IKEY_F9:
         {
           if(!mzx_world->dead)
           {
@@ -2020,7 +2021,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
         }
 
         // Quick load
-        case SDLK_F10:
+        case IKEY_F10:
         {
           struct stat file_info;
 
@@ -2051,7 +2052,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
         }
 
 #ifdef CONFIG_EDITOR
-        case SDLK_F11:
+        case IKEY_F11:
         {
           if(mzx_world->editing)
             debug_counters(mzx_world);
@@ -2061,7 +2062,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
 #endif // CONFIG_EDITOR
       }
     }
-  } while(key != SDLK_ESCAPE);
+  } while(key != IKEY_ESCAPE);
 
   pop_context();
   vquick_fadeout();
@@ -2139,15 +2140,15 @@ void title_screen(World *mzx_world)
     update_event_status();
 
     // Keycheck
-    key = get_key(keycode_SDL);
+    key = get_key(keycode_internal);
 
     if(key)
     {
       switch(key)
       {
 #ifdef CONFIG_EDITOR
-        case SDLK_e: // E
-        case SDLK_F8: // F8
+        case IKEY_e: // E
+        case IKEY_F8: // F8
         {
           // Editor
           clear_sfx_queue();
@@ -2162,8 +2163,8 @@ void title_screen(World *mzx_world)
         }
 #endif // CONFIG_EDITOR
 
-        case SDLK_s: // S
-        case SDLK_F2: // F2
+        case IKEY_s: // S
+        case IKEY_F2: // F2
         {
           // Settings
           m_show();
@@ -2175,7 +2176,7 @@ void title_screen(World *mzx_world)
           break;
         }
 
-        case SDLK_RETURN: // Enter
+        case IKEY_RETURN: // Enter
         {
           if(mzx_world->version < 0x0209 ||
            get_counter(mzx_world, "ENTER_MENU", 0))
@@ -2194,8 +2195,8 @@ void title_screen(World *mzx_world)
             {
               update_event_status_delay();
               update_screen();
-              key = get_key(keycode_SDL);
-            } while(key != SDLK_RETURN);
+              key = get_key(keycode_internal);
+            } while(key != IKEY_RETURN);
 
             restore_screen();
             update_screen();
@@ -2204,7 +2205,7 @@ void title_screen(World *mzx_world)
           break;
         }
 
-        case SDLK_ESCAPE: // ESC
+        case IKEY_ESCAPE: // ESC
         {
           // Quit
           m_show();
@@ -2217,8 +2218,8 @@ void title_screen(World *mzx_world)
           break;
         }
 
-        case SDLK_l: // L
-        case SDLK_F3: // F3
+        case IKEY_l: // L
+        case IKEY_F3: // F3
         {
           load_world_selection(mzx_world);
           fadein = 1;
@@ -2228,8 +2229,8 @@ void title_screen(World *mzx_world)
           break;
         }
 
-        case SDLK_r: // R
-        case SDLK_F4: // F4
+        case IKEY_r: // R
+        case IKEY_F4: // F4
         {
           char save_file_name[64];
 
@@ -2316,8 +2317,8 @@ void title_screen(World *mzx_world)
           break;
         }
 
-        case SDLK_p: // P
-        case SDLK_F5: // F5
+        case IKEY_p: // P
+        case IKEY_F5: // F5
         {
           if(mzx_world->active)
           {
@@ -2411,7 +2412,7 @@ void title_screen(World *mzx_world)
         }
 
 #ifdef CONFIG_HELPSYS
-        case SDLK_F1:
+        case IKEY_F1:
         {
           if(get_counter(mzx_world, "HELP_MENU", 0) ||
             (!mzx_world->active))
@@ -2425,7 +2426,7 @@ void title_screen(World *mzx_world)
 #endif
 
         // Quick load
-        case SDLK_F10:
+        case IKEY_F10:
         {
           // Restore
           m_show();
@@ -2505,7 +2506,7 @@ void title_screen(World *mzx_world)
         }
       }
     }
-  } while(key != SDLK_ESCAPE);
+  } while(key != IKEY_ESCAPE);
 
   vquick_fadeout();
   clear_sfx_queue();

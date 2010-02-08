@@ -35,6 +35,7 @@
 #include <windows.h>
 #endif
 
+#include "platform.h"
 #include "event.h"
 #include "helpsys.h"
 #include "sfx.h"
@@ -319,7 +320,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
     // Calculate x/y
     x = (current & 31) + 23;
     y = (current >> 5) + 7;
-    if(get_shift_status(keycode_SDL) && allow_multichar)
+    if(get_shift_status(keycode_internal) && allow_multichar)
     {
       if(!shifted)
       {
@@ -408,7 +409,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
 
     // Get key
     update_event_status_delay();
-    key = get_key(keycode_SDL);
+    key = get_key(keycode_internal);
 
     if(get_mouse_press())
     {
@@ -433,7 +434,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
 
     switch(key)
     {
-      case SDLK_ESCAPE:
+      case IKEY_ESCAPE:
       {
         // ESC
         pop_context();
@@ -445,10 +446,10 @@ __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
           return -current;
       }
 
-      case SDLK_SPACE:
-      case SDLK_RETURN:
+      case IKEY_SPACE:
+      case IKEY_RETURN:
       {
-        if(get_shift_status(keycode_SDL))
+        if(get_shift_status(keycode_internal))
         {
           int size = width * height;
 
@@ -478,37 +479,37 @@ __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
         return current;
       }
 
-      case SDLK_UP:
+      case IKEY_UP:
       {
         current = (current - 32) & 255;
         break;
       }
 
-      case SDLK_DOWN:
+      case IKEY_DOWN:
       {
         current = (current + 32) & 255;
         break;
       }
 
-      case SDLK_LEFT:
+      case IKEY_LEFT:
       {
         current = (current - 1) & 255;
         break;
       }
 
-      case SDLK_RIGHT:
+      case IKEY_RIGHT:
       {
         current = (current + 1) & 255;
         break;
       }
 
-      case SDLK_HOME:
+      case IKEY_HOME:
       {
         current = 0;
         break;
       }
 
-      case SDLK_END:
+      case IKEY_END:
       {
         current = 288 - width - (height * 32);
         break;
@@ -662,11 +663,11 @@ int list_menu(const char **choices, int choice_size, const char *title,
     update_event_status_delay();
 
     // Act upon it
-    key = get_key(keycode_SDL);
+    key = get_key(keycode_internal);
 
     mouse_press = get_mouse_press_ext();
 
-    if(mouse_press && (mouse_press <= SDL_BUTTON_RIGHT))
+    if(mouse_press && (mouse_press <= MOUSE_BUTTON_RIGHT))
     {
       int mouse_x, mouse_y;
       get_mouse_position(&mouse_x, &mouse_y);
@@ -685,7 +686,7 @@ int list_menu(const char **choices, int choice_size, const char *title,
       {
         // List
         if(mouse_y == 12)
-          key = SDLK_RETURN;
+          key = IKEY_RETURN;
 
         current += (mouse_y) - 12;
         if(current < 0)
@@ -716,20 +717,20 @@ int list_menu(const char **choices, int choice_size, const char *title,
     }
     else
 
-    if(mouse_press == SDL_BUTTON_WHEELUP)
+    if(mouse_press == MOUSE_BUTTON_WHEELUP)
     {
-      key = SDLK_UP;
+      key = IKEY_UP;
     }
     else
 
-    if(mouse_press == SDL_BUTTON_WHEELDOWN)
+    if(mouse_press == MOUSE_BUTTON_WHEELDOWN)
     {
-      key = SDLK_DOWN;
+      key = IKEY_DOWN;
     }
 
     switch(key)
     {
-      case SDLK_ESCAPE:
+      case IKEY_ESCAPE:
       {
         // ESC
         restore_screen();
@@ -739,7 +740,7 @@ int list_menu(const char **choices, int choice_size, const char *title,
           return -current;
       }
 
-      case SDLK_BACKSPACE:
+      case IKEY_BACKSPACE:
       {
         // Goto .. if it's there
         for(i = 0; i < num_choices; i++)
@@ -756,28 +757,28 @@ int list_menu(const char **choices, int choice_size, const char *title,
         return current;
       }
 
-      case SDLK_RETURN:
+      case IKEY_RETURN:
       {
         // Selected
         restore_screen();
         return current;
       }
 
-      case SDLK_UP:
+      case IKEY_UP:
       {
         if(current > 0)
           current--;
         break;
       }
 
-      case SDLK_DOWN:
+      case IKEY_DOWN:
       {
         if(current < (num_choices - 1))
           current++;
         break;
       }
 
-      case SDLK_PAGEUP:
+      case IKEY_PAGEUP:
       {
         current -= 8;
         if(current < 0)
@@ -785,7 +786,7 @@ int list_menu(const char **choices, int choice_size, const char *title,
         break;
       }
 
-      case SDLK_PAGEDOWN:
+      case IKEY_PAGEDOWN:
       {
         current += 8;
         if(current >= num_choices)
@@ -793,13 +794,13 @@ int list_menu(const char **choices, int choice_size, const char *title,
         break;
       }
 
-      case SDLK_HOME:
+      case IKEY_HOME:
       {
         current = 0;
         break;
       }
 
-      case SDLK_END:
+      case IKEY_END:
       {
         current = num_choices - 1;
         break;
@@ -810,10 +811,10 @@ int list_menu(const char **choices, int choice_size, const char *title,
         // Not necessarily invalid. Might be an alphanumeric; seek the
         // sucker.
 
-        if(((key >= SDLK_a) && (key <= SDLK_z)) ||
-         ((key >= SDLK_0) && (key <= SDLK_9)))
+        if(((key >= IKEY_a) && (key <= IKEY_z)) ||
+         ((key >= IKEY_0) && (key <= IKEY_9)))
         {
-          ticks = SDL_GetTicks();
+          ticks = get_ticks();
           if(((ticks - last_keypress_time) >= TIME_SUSPEND) ||
            (key_position == 63))
           {
@@ -826,7 +827,7 @@ int list_menu(const char **choices, int choice_size, const char *title,
           key_position++;
           key_buffer[key_position] = 0;
 
-          if(get_shift_status(keycode_SDL))
+          if(get_shift_status(keycode_internal))
           {
             for(i = 0; i < num_choices; i++)
             {
@@ -998,7 +999,7 @@ int color_selection(int current, int allow_wild)
     // Get key
 
     update_event_status_delay();
-    key = get_key(keycode_SDL);
+    key = get_key(keycode_internal);
 
     if(get_mouse_press())
     {
@@ -1011,7 +1012,7 @@ int color_selection(int current, int allow_wild)
         int new_x = mouse_x - 15;
         int new_y = mouse_y - 4;
         if((currx == new_x) && (curry == new_y))
-          key = SDLK_RETURN;
+          key = IKEY_RETURN;
 
         currx = new_x;
         curry = new_y;
@@ -1022,9 +1023,9 @@ int color_selection(int current, int allow_wild)
     switch(key)
     {
       // ESC
-      case SDLK_ESCAPE:
-      case SDLK_SPACE:
-      case SDLK_RETURN:
+      case IKEY_ESCAPE:
+      case IKEY_SPACE:
+      case IKEY_RETURN:
       {
         pop_context();
         // Selected
@@ -1049,7 +1050,7 @@ int color_selection(int current, int allow_wild)
           current = currx + curry * 16;
         }
 
-        if(key == SDLK_ESCAPE)
+        if(key == IKEY_ESCAPE)
         {
           if(current == 0)
             current = -512;
@@ -1059,7 +1060,7 @@ int color_selection(int current, int allow_wild)
         return current;
       }
 
-      case SDLK_UP:
+      case IKEY_UP:
       {
         // Up
         if(curry > 0)
@@ -1068,7 +1069,7 @@ int color_selection(int current, int allow_wild)
         break;
       }
 
-      case SDLK_DOWN:
+      case IKEY_DOWN:
       {
         // Down
         if(curry < (15 + allow_wild))
@@ -1077,7 +1078,7 @@ int color_selection(int current, int allow_wild)
         break;
       }
 
-      case SDLK_LEFT:
+      case IKEY_LEFT:
       {
         // Left
         if(currx > 0)
@@ -1086,7 +1087,7 @@ int color_selection(int current, int allow_wild)
         break;
       }
 
-      case SDLK_RIGHT:
+      case IKEY_RIGHT:
       {
         // Right
         if(currx < (15 + allow_wild))
@@ -1095,7 +1096,7 @@ int color_selection(int current, int allow_wild)
         break;
       }
 
-      case SDLK_HOME:
+      case IKEY_HOME:
       {
         // Home
         currx = 0;
@@ -1103,7 +1104,7 @@ int color_selection(int current, int allow_wild)
         break;
       }
 
-      case SDLK_END:
+      case IKEY_END:
       {
         // End
         currx = 15 + allow_wild;
@@ -1259,21 +1260,21 @@ static int key_check_box(World *mzx_world, dialog *di, element *e, int key)
 
   switch(key)
   {
-    case SDLK_SPACE:
-    case SDLK_RETURN:
+    case IKEY_SPACE:
+    case IKEY_RETURN:
     {
       src->results[src->current_choice] ^= 1;
       break;
     }
 
-    case SDLK_PAGEUP:
+    case IKEY_PAGEUP:
     {
       src->current_choice = 0;
       break;
     }
 
-    case SDLK_LEFT:
-    case SDLK_UP:
+    case IKEY_LEFT:
+    case IKEY_UP:
     {
       if(src->current_choice)
         src->current_choice--;
@@ -1281,14 +1282,14 @@ static int key_check_box(World *mzx_world, dialog *di, element *e, int key)
       break;
     }
 
-    case SDLK_PAGEDOWN:
+    case IKEY_PAGEDOWN:
     {
       src->current_choice = src->num_choices - 1;
       break;
     }
 
-    case SDLK_RIGHT:
-    case SDLK_DOWN:
+    case IKEY_RIGHT:
+    case IKEY_DOWN:
     {
       if(src->current_choice < (src->num_choices - 1))
         src->current_choice++;
@@ -1311,8 +1312,8 @@ static int key_char_box(World *mzx_world, dialog *di, element *e, int key)
 
   switch(key)
   {
-    case SDLK_SPACE:
-    case SDLK_RETURN:
+    case IKEY_SPACE:
+    case IKEY_RETURN:
     {
       int current_char =
        char_selection(*(src->result));
@@ -1351,8 +1352,8 @@ static int key_color_box(World *mzx_world, dialog *di, element *e, int key)
 
   switch(key)
   {
-    case SDLK_SPACE:
-    case SDLK_RETURN:
+    case IKEY_SPACE:
+    case IKEY_RETURN:
     {
       int current_color =
        color_selection(*(src->result), src->allow_wildcard);
@@ -1377,8 +1378,8 @@ static int key_board_list(World *mzx_world, dialog *di, element *e, int key)
 
   switch(key)
   {
-    case SDLK_SPACE:
-    case SDLK_RETURN:
+    case IKEY_SPACE:
+    case IKEY_RETURN:
     {
       int current_board =
        choose_board(mzx_world, *(src->result),
@@ -1415,14 +1416,14 @@ static int click_char_box(World *mzx_world, dialog *di,
  element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
-  return SDLK_RETURN;
+  return IKEY_RETURN;
 }
 
 static int click_color_box(World *mzx_world, dialog *di,
  element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
-  return SDLK_RETURN;
+  return IKEY_RETURN;
 }
 
 element *construct_check_box(int x, int y, const char **choices,
@@ -1471,7 +1472,7 @@ static int click_board_list(World *mzx_world, dialog *di,
  element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
-  return SDLK_RETURN;
+  return IKEY_RETURN;
 }
 
 element *construct_board_list(int x, int y,
@@ -1498,7 +1499,7 @@ int add_board(World *mzx_world, int current)
   write_string("Name for new board:", 18, 13, 78, 0);
   temp_board_str[0] = 0;
   if(intake(mzx_world, temp_board_str, BOARD_NAME_SIZE - 1,
-   38, 13, 15, 1, 0, NULL, 0, NULL) == SDLK_ESCAPE)
+   38, 13, 15, 1, 0, NULL, 0, NULL) == IKEY_ESCAPE)
   {
     restore_screen();
     return -1;
@@ -1750,7 +1751,7 @@ int run_dialog(World *mzx_world, dialog *di)
 
     current_element = di->elements[current_element_num];
     update_event_status_delay();
-    current_key = get_key(keycode_SDL);
+    current_key = get_key(keycode_internal);
 
     new_key = 0;
 
@@ -1767,7 +1768,7 @@ int run_dialog(World *mzx_world, dialog *di)
     mouse_press = get_mouse_press_ext();
 
     if(get_mouse_drag() &&
-     (mouse_press <= SDL_BUTTON_RIGHT) &&
+     (mouse_press <= MOUSE_BUTTON_RIGHT) &&
      (current_element->drag_function))
     {
       int mouse_x, mouse_y;
@@ -1783,7 +1784,7 @@ int run_dialog(World *mzx_world, dialog *di)
     }
     else
 
-    if((mouse_press && (mouse_press <= SDL_BUTTON_RIGHT))
+    if((mouse_press && (mouse_press <= MOUSE_BUTTON_RIGHT))
      || (new_key == -1))
     {
       do
@@ -1835,15 +1836,15 @@ int run_dialog(World *mzx_world, dialog *di)
     }
     else
 
-    if(mouse_press == SDL_BUTTON_WHEELUP)
+    if(mouse_press == MOUSE_BUTTON_WHEELUP)
     {
-      current_key = SDLK_UP;
+      current_key = IKEY_UP;
     }
     else
 
-    if(mouse_press == SDL_BUTTON_WHEELDOWN)
+    if(mouse_press == MOUSE_BUTTON_WHEELDOWN)
     {
-      current_key = SDLK_DOWN;
+      current_key = IKEY_DOWN;
     }
 
     if(current_element->key_function && current_key)
@@ -1865,9 +1866,9 @@ int run_dialog(World *mzx_world, dialog *di)
 
     switch(current_key)
     {
-      case SDLK_TAB: // Tab
+      case IKEY_TAB: // Tab
       {
-        if(get_shift_status(keycode_SDL))
+        if(get_shift_status(keycode_internal))
         {
           current_element_num = change_current_element(mzx_world,
            di, current_element_num, -1);
@@ -1880,41 +1881,41 @@ int run_dialog(World *mzx_world, dialog *di)
         break;
       }
 
-      case SDLK_SPACE:
-      case SDLK_RETURN:
-      case SDLK_PAGEDOWN:
-      case SDLK_RIGHT:
-      case SDLK_DOWN:
+      case IKEY_SPACE:
+      case IKEY_RETURN:
+      case IKEY_PAGEDOWN:
+      case IKEY_RIGHT:
+      case IKEY_DOWN:
       {
         current_element_num = change_current_element(mzx_world,
          di, current_element_num, 1);
         break;
       }
 
-      case SDLK_PAGEUP:
-      case SDLK_LEFT:
-      case SDLK_UP:
+      case IKEY_PAGEUP:
+      case IKEY_LEFT:
+      case IKEY_UP:
       {
         current_element_num = change_current_element(mzx_world,
          di, current_element_num, -1);
         break;
       }
 
-      case SDLK_HOME:
+      case IKEY_HOME:
       {
         current_element_num = find_first_element(mzx_world, di,
          current_element_num);
         break;
       }
 
-      case SDLK_END:
+      case IKEY_END:
       {
         current_element_num = find_last_element(mzx_world, di,
          current_element_num);
         break;
       }
 
-      case SDLK_ESCAPE: // ESC
+      case IKEY_ESCAPE: // ESC
       {
         // Restore screen, set current, and return -1
         pop_context();
@@ -1922,7 +1923,7 @@ int run_dialog(World *mzx_world, dialog *di)
       }
 
 #ifdef CONFIG_HELPSYS
-      case SDLK_F1: // F1
+      case IKEY_F1: // F1
       {
         help_system(mzx_world);
         break;
@@ -2181,7 +2182,7 @@ static int key_input_box(World *mzx_world, dialog *di, element *e, int key)
 {
   input_box *src = (input_box *)e;
 
-  if(get_alt_status(keycode_SDL) && (key == SDLK_t) &&
+  if(get_alt_status(keycode_internal) && (key == IKEY_t) &&
    di->sfx_test_for_input)
   {
     // Play a sfx
@@ -2198,14 +2199,14 @@ static int key_radio_button(World *mzx_world, dialog *di, element *e, int key)
 
   switch(key)
   {
-    case SDLK_PAGEUP:
+    case IKEY_PAGEUP:
     {
       *(src->result) = 0;
       break;
     }
 
-    case SDLK_LEFT:
-    case SDLK_UP:
+    case IKEY_LEFT:
+    case IKEY_UP:
     {
       if(*(src->result))
         (*(src->result))--;
@@ -2213,14 +2214,14 @@ static int key_radio_button(World *mzx_world, dialog *di, element *e, int key)
       break;
     }
 
-    case SDLK_PAGEDOWN:
+    case IKEY_PAGEDOWN:
     {
       *(src->result) = src->num_choices - 1;
       break;
     }
 
-    case SDLK_RIGHT:
-    case SDLK_DOWN:
+    case IKEY_RIGHT:
+    case IKEY_DOWN:
     {
       if(*(src->result) < (src->num_choices - 1))
         (*(src->result))++;
@@ -2243,8 +2244,8 @@ static int key_button(World *mzx_world, dialog *di, element *e, int key)
 
   switch(key)
   {
-    case SDLK_SPACE:
-    case SDLK_RETURN:
+    case IKEY_SPACE:
+    case IKEY_RETURN:
     {
       // Flag that the dialog is done processing
       di->done = 1;
@@ -2269,23 +2270,23 @@ static int key_number_box(World *mzx_world, dialog *di, element *e, int key)
 
   switch(key)
   {
-    case SDLK_HOME:
+    case IKEY_HOME:
     {
       *(src->result) = src->lower_limit;
       break;
     }
 
-    case SDLK_END:
+    case IKEY_END:
     {
       *(src->result) = src->upper_limit;
       break;
     }
 
-    case SDLK_RIGHT:
-    case SDLK_UP:
+    case IKEY_RIGHT:
+    case IKEY_UP:
     {
-      if(get_alt_status(keycode_SDL) ||
-        get_ctrl_status(keycode_SDL))
+      if(get_alt_status(keycode_internal) ||
+        get_ctrl_status(keycode_internal))
       {
         increment_value = 10;
       }
@@ -2297,17 +2298,17 @@ static int key_number_box(World *mzx_world, dialog *di, element *e, int key)
       break;
     }
 
-    case SDLK_PAGEUP:
+    case IKEY_PAGEUP:
     {
       increment_value = 100;
       break;
     }
 
-    case SDLK_LEFT:
-    case SDLK_DOWN:
+    case IKEY_LEFT:
+    case IKEY_DOWN:
     {
-      if(get_alt_status(keycode_SDL) ||
-       get_ctrl_status(keycode_SDL))
+      if(get_alt_status(keycode_internal) ||
+       get_ctrl_status(keycode_internal))
       {
         increment_value = -10;
       }
@@ -2319,13 +2320,13 @@ static int key_number_box(World *mzx_world, dialog *di, element *e, int key)
       break;
     }
 
-    case SDLK_PAGEDOWN:
+    case IKEY_PAGEDOWN:
     {
       increment_value = -100;
       break;
     }
 
-    case SDLK_BACKSPACE:
+    case IKEY_BACKSPACE:
     {
       Sint32 result = current_value / 10;
       if(result < src->lower_limit)
@@ -2392,7 +2393,7 @@ static int key_list_box(World *mzx_world, dialog *di, element *e, int key)
 
   switch(key)
   {
-    case SDLK_UP:
+    case IKEY_UP:
     {
       if(current_choice)
       {
@@ -2403,7 +2404,7 @@ static int key_list_box(World *mzx_world, dialog *di, element *e, int key)
       break;
     }
 
-    case SDLK_DOWN:
+    case IKEY_DOWN:
     {
       if(current_choice < (num_choices - 1))
       {
@@ -2417,24 +2418,24 @@ static int key_list_box(World *mzx_world, dialog *di, element *e, int key)
       break;
     }
 
-    case SDLK_LEFT:
+    case IKEY_LEFT:
     {
-      return SDLK_LEFT;
+      return IKEY_LEFT;
     }
 
-    case SDLK_RIGHT:
+    case IKEY_RIGHT:
     {
-      return SDLK_RIGHT;
+      return IKEY_RIGHT;
     }
 
-    case SDLK_HOME:
+    case IKEY_HOME:
     {
       current_choice = 0;
       src->scroll_offset = 0;
       break;
     }
 
-    case SDLK_END:
+    case IKEY_END:
     {
       current_choice = num_choices - 1;
       src->scroll_offset =
@@ -2444,7 +2445,7 @@ static int key_list_box(World *mzx_world, dialog *di, element *e, int key)
       break;
     }
 
-    case SDLK_PAGEUP:
+    case IKEY_PAGEUP:
     {
       current_choice -= num_choices_visible;
       src->scroll_offset -= num_choices_visible;
@@ -2461,7 +2462,7 @@ static int key_list_box(World *mzx_world, dialog *di, element *e, int key)
       break;
     }
 
-    case SDLK_PAGEDOWN:
+    case IKEY_PAGEDOWN:
     {
       current_choice += num_choices_visible;
       src->scroll_offset += num_choices_visible;
@@ -2483,8 +2484,8 @@ static int key_list_box(World *mzx_world, dialog *di, element *e, int key)
       break;
     }
 
-    case SDLK_SPACE:
-    case SDLK_RETURN:
+    case IKEY_SPACE:
+    case IKEY_RETURN:
     {
       di->return_value = src->return_value;
       di->done = 1;
@@ -2494,12 +2495,12 @@ static int key_list_box(World *mzx_world, dialog *di, element *e, int key)
     default:
     {
       int key_char = get_key(keycode_unicode);
-      if(!get_alt_status(keycode_SDL) && (key_char >= 32))
+      if(!get_alt_status(keycode_internal) && (key_char >= 32))
       {
         char *key_buffer = src->key_buffer;
         int key_position = src->key_position;
         int last_keypress_time = src->last_keypress_time;
-        int ticks = SDL_GetTicks();
+        int ticks = get_ticks();
         int new_choice;
 
         if(((ticks - last_keypress_time) >= TIME_SUSPEND) ||
@@ -2593,7 +2594,7 @@ static int click_button(World *mzx_world, dialog *di,
   if(!new_active)
   {
     di->done = 1;
-    return SDLK_RETURN;
+    return IKEY_RETURN;
   }
 
   return 0;
@@ -2618,13 +2619,13 @@ static int click_number_box(World *mzx_world, dialog *di,
 
   if((mouse_x >= 0) && (mouse_x <= 2))
   {
-    return SDLK_UP;
+    return IKEY_UP;
   }
   else
 
   if((mouse_x >= 3) && (mouse_y <= 5))
   {
-    return SDLK_DOWN;
+    return IKEY_DOWN;
   }
 
   return 0;
@@ -2647,10 +2648,10 @@ static int click_list_box(World *mzx_world, dialog *di,
    (mouse_x == choice_length))
   {
     if(mouse_y == 0)
-      return SDLK_UP;
+      return IKEY_UP;
 
     if(mouse_y == (num_choices_visible - 1))
-      return SDLK_DOWN;
+      return IKEY_DOWN;
 
     src->clicked_scrollbar = 1;
 
@@ -3028,11 +3029,11 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
       {
         const char *file_name = src->choices[*(src->result)];
 
-        if(get_alt_status(keycode_SDL))
+        if(get_alt_status(keycode_internal))
         {
           switch(key)
           {
-            case SDLK_r:
+            case IKEY_r:
             {
               char *new_name = malloc(MAX_PATH);
               int width = 29;
@@ -3056,14 +3057,14 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
               return 0;
             }
 
-            case SDLK_d:
+            case IKEY_d:
             {
               di->done = 1;
               di->return_value = 4;
               break;
             }
 
-            case SDLK_n:
+            case IKEY_n:
             {
               di->done = 1;
               di->return_value = 3;
@@ -3085,7 +3086,7 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
         e->draw_function(mzx_world, di, e, DI_NONACTIVE, 0);
       }
 
-      if(key == SDLK_DELETE)
+      if(key == IKEY_DELETE)
       {
         if(current_element_num == FILESEL_DIR_LIST)
           di->return_value = 6;
@@ -3095,7 +3096,7 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
         di->done = 1;
       }
 
-      if(key == SDLK_BACKSPACE)
+      if(key == IKEY_BACKSPACE)
       {
         di->done = 1;
         di->return_value = -2;
@@ -3141,7 +3142,7 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
       *(dest->result) = current_choice;
       e->draw_function(mzx_world, di, e, DI_NONACTIVE, 0);
 
-      if(key == SDLK_RETURN)
+      if(key == IKEY_RETURN)
       {
         di->done = 1;
         di->return_value = 0;

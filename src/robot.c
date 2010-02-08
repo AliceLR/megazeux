@@ -2010,13 +2010,13 @@ void robot_box_display(World *mzx_world, char *program,
     update_screen();
 
     update_event_status_delay();
-    key = get_key(keycode_SDL);
+    key = get_key(keycode_internal);
 
     old_pos = pos;
 
     mouse_press = get_mouse_press_ext();
 
-    if(mouse_press && (mouse_press <= SDL_BUTTON_RIGHT))
+    if(mouse_press && (mouse_press <= MOUSE_BUTTON_RIGHT))
     {
       int mouse_x, mouse_y;
       get_mouse_position(&mouse_x, &mouse_y);
@@ -2027,7 +2027,7 @@ void robot_box_display(World *mzx_world, char *program,
         int count = mouse_y - 12;
         if(!count)
         {
-          key = SDLK_RETURN;
+          key = IKEY_RETURN;
         }
         else
         {
@@ -2042,30 +2042,30 @@ void robot_box_display(World *mzx_world, char *program,
     }
     else
 
-    if(mouse_press == SDL_BUTTON_WHEELUP)
+    if(mouse_press == MOUSE_BUTTON_WHEELUP)
     {
       pos = robot_box_up(program, pos, 3);
     }
     else
 
-    if(mouse_press == SDL_BUTTON_WHEELDOWN)
+    if(mouse_press == MOUSE_BUTTON_WHEELDOWN)
     {
       pos = robot_box_down(program, pos, 3);
     }
 
     switch(key)
     {
-      case SDLK_UP:
+      case IKEY_UP:
         pos = robot_box_up(program, pos, 1);
         break;
 
-      case SDLK_DOWN:
+      case IKEY_DOWN:
         pos = robot_box_down(program, pos, 1);
         break;
 
-      case SDLK_RETURN:
+      case IKEY_RETURN:
       {
-        key = SDLK_ESCAPE;
+        key = IKEY_ESCAPE;
 
         if((program[pos + 1] == 104) || (program[pos + 1] == 105))
         {
@@ -2081,28 +2081,28 @@ void robot_box_display(World *mzx_world, char *program,
         break;
       }
 
-      case SDLK_PAGEDOWN:
+      case IKEY_PAGEDOWN:
         pos = robot_box_down(program, pos, 6);
         break;
 
-      case SDLK_PAGEUP:
+      case IKEY_PAGEUP:
         pos = robot_box_up(program, pos, 6);
         break;
 
-      case SDLK_HOME:
+      case IKEY_HOME:
         pos = robot_box_up(program, pos, 100000);
         break;
 
-      case SDLK_END:
+      case IKEY_END:
         pos = robot_box_down(program, pos, 100000);
         break;
 
       default:
-      case SDLK_ESCAPE:
+      case IKEY_ESCAPE:
       case 0:
         break;
     }
-  } while(key != SDLK_ESCAPE);
+  } while(key != IKEY_ESCAPE);
 
   // Scan section and mark all invalid counter-controlled options as codes
   // 105.

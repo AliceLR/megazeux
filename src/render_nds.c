@@ -220,13 +220,13 @@ static int nds_init_video(graphics_data *graphics, config_info *config)
 }
 
 static int nds_check_video_mode(graphics_data *graphics, int width, int height,
-    int depth, int flags)
+    int depth, int fullscreen, int resize)
 {
   return true;  // stub
 }
 
 static int nds_set_video_mode(graphics_data *graphics, int width, int height,
-    int depth, int flags, int fullscreen)
+    int depth, int fullscreen, int resize)
 {
   return true;	// stub
 }

@@ -247,6 +247,12 @@ echo "TARGET=`grep TARGET Makefile | head -n1 | \
 echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 
 #
+# Use SDL (will change when non-SDL platforms are supported)
+#
+echo "#define CONFIG_SDL" >> src/config.h
+echo "BUILD_SDL=1" >> Makefile.platform
+
+#
 # If the NDS arch is enabled, some code has to be compile time
 # enabled too. This might be able to go away eventually.
 #
@@ -375,14 +381,6 @@ if [ "$PLATFORM" = "linux"  -o "$PLATFORM" = "linux-static" \
 else
 	echo "X11 support disabled (unsupported platform)."
 	X11_PLATFORM="false"
-fi
-
-#
-# Force-enable software on non-NDS/GP2X platforms
-#
-if [ "$PLATFORM" != "nds" -a "$PLATFORM" != "gp2x" ]; then
-	echo "Force-enabling software renderer."
-	SOFTWARE="true"
 fi
 
 #
