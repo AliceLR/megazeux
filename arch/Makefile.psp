@@ -20,8 +20,9 @@ BINNAME_STRIP = ${TARGET}${BINEXT}.strip
 STRIP = /bin/true
 
 # flag PSP build and link in c/psppower
-ARCH_CFLAGS  := -G0 -I${PREFIX}/sdk/include
-ARCH_LDFLAGS := -lc -lpsppower
+ARCH_CFLAGS   = -G0 -I${PREFIX}/sdk/include
+ARCH_CXXFLAGS = ${ARCH_CFLAGS}
+ARCH_LDFLAGS  = -lc -lpsppower
 
 package:
 	psp-fixup-imports ${BINNAME}

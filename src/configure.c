@@ -32,11 +32,11 @@
 #include "macro.h"
 #include "fsafeopen.h"
 
-#ifdef CONFIG_NDS
+#if defined(CONFIG_NDS)
 #define VIDEO_OUTPUT_DEFAULT "nds"
-#elif CONFIG_GP2X
+#elif defined(CONFIG_GP2X)
 #define VIDEO_OUTPUT_DEFAULT "gp2x"
-#elif CONFIG_PSP
+#elif defined(CONFIG_PSP)
 #define FORCE_BPP_DEFAULT 8
 #endif
 

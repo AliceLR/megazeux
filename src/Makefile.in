@@ -72,11 +72,13 @@ mzx_objs += ${mzx_base}/util.${o} ${mzx_base}/window.${o}
 mzx_objs += ${mzx_base}/world.${o}
 
 ifneq (${BUILD_NDS},1)
+ifneq (${BUILD_PSP},1)
 #
-# Hack to avoid silly warnings from libnds headers
+# Hack to avoid silly warnings from devkitPro headers
 #
 mzx_cflags += -Wstrict-prototypes
 mzx_flags += -Wcast-align
+endif
 endif
 
 ifeq (${BUILD_NDS},1)

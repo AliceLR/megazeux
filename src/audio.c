@@ -28,7 +28,6 @@
 #include <sys/stat.h>
 
 #include "audio.h"
-#include "edit.h" // for mod_gdm_ext
 #include "SDL.h"
 #include "sfx.h"
 #include "data.h"

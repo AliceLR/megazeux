@@ -255,6 +255,7 @@ fi
 if [ "$PLATFORM" = "psp" ]; then
 	echo "Enabling PSP-specific hacks."
 	echo "#define CONFIG_PSP" >> src/config.h
+	echo "BUILD_PSP=1" >> Makefile.platform
 fi
 
 #
@@ -264,6 +265,7 @@ fi
 if [ "$PLATFORM" = "gp2x" ]; then
 	echo "Enabling GP2X-specific hacks."
 	echo "#define CONFIG_GP2X" >> src/config.h
+	echo "BUILD_GP2X=1" >> Makefile.platform
 fi
 
 #
@@ -285,7 +287,6 @@ if [ "$EDITOR" = "true" ]; then
 	echo "#define CONFIG_EDITOR" >> src/config.h
 else
 	echo "Built-in editor disabled."
-	echo "BUILD_EDITOR=0" >> Makefile.platform
 fi
 
 #
@@ -307,7 +308,6 @@ if [ "$UTILS" = "true" ]; then
 	echo "BUILD_UTILS=1" >> Makefile.platform
 else
 	echo "Disabled utils (txt2hlp, checkres)."
-	echo "BUILD_UTILS=0" >> Makefile.platform
 fi
 
 #
@@ -452,7 +452,6 @@ if [ "$MODPLUG" = "true" -a "$PLATFORM" != "gp2x" ]; then
 	echo "BUILD_MODPLUG=1" >> Makefile.platform
 else
 	# disable building local copy of ModPlug in either case
-	echo "BUILD_MODPLUG=0" >> Makefile.platform
 
 	if [ "$MIKMOD" = "true" ]; then
 		echo "Selected Mikmod music engine."
@@ -472,7 +471,6 @@ if [ "$AUDIO" = "true" ]; then
 	echo "BUILD_AUDIO=1" >> Makefile.platform
 else
 	echo "Audio subsystem disabled."
-	echo "BUILD_AUDIO=0" >> Makefile.platform
 fi
 
 #
@@ -484,7 +482,6 @@ if [ "$LIBPNG" = "true" ]; then
 	echo "LIBPNG=1" >> Makefile.platform
 else
 	echo "PNG screendump support disabled."
-	echo "LIBPNG=0" >> Makefile.platform
 fi
 
 #
@@ -496,7 +493,6 @@ if [ "$TREMOR" = "true" ]; then
 	echo "TREMOR=1" >> Makefile.platform
 else
 	echo "Not using tremor in place of ogg/vorbis."
-	echo "TREMOR=0" >> Makefile.platform
 fi
 
 #
@@ -508,7 +504,6 @@ if [ "$PTHREAD" = "true" ]; then
 	echo "PTHREAD=1" >> Makefile.platform
 else
 	echo "Not using pthread for locking primitives."
-	echo "PTHREAD=0" >> Makefile.platform
 fi
 
 echo

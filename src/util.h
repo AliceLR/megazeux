@@ -94,6 +94,10 @@ int rename(const char *oldpath, const char *newpath);
 #define rmdir(x) rmdir(x)
 #endif // CONFIG_NDS
 
+#if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
+extern const char *mod_gdm_ext[];
+#endif
+
 __M_END_DECLS
 
 #endif // __UTIL_H

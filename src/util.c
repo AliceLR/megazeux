@@ -273,3 +273,18 @@ int dir_get_next_entry(dir_t *dir, char *entry)
 
 #endif // CONFIG_NDS
 
+#if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
+
+/* It would be nice if this could be static, but we can't put it in either
+ * edit.c or audio.c, because one (but NOT the other) might be disabled.
+ *
+ * In this case, the code wouldn't be compiled (noticed by the PSP port).
+ */
+const char *mod_gdm_ext[] =
+{
+  ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it", ".669", ".ult",
+  ".wav", ".dsm", ".far", ".okt", ".amf", ".ogg", ".gdm", NULL
+};
+
+#endif // CONFIG_AUDIO || CONFIG_EDITOR
+

@@ -120,7 +120,7 @@ static void free_world(World *mzx_world)
   free(mzx_world->custom_sfx);
 }
 
-int main(int argc, char **argv)
+int main(int argc, char *argv[])
 {
   Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
   World mzx_world;

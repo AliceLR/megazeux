@@ -387,12 +387,6 @@ static const char *mod_ext[] =
   ".wav", ".dsm", ".far", ".okt", ".amf", ".ogg", NULL
 };
 
-__audio_c_maybe_static const char *mod_gdm_ext[] =
-{
-  ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it", ".669", ".ult",
-  ".wav", ".dsm", ".far", ".okt", ".amf", ".ogg", ".gdm", NULL
-};
-
 static const char drawmode_help[5][32] =
 {
   "Type to place text",
