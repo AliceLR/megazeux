@@ -3000,7 +3000,7 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
           {
             case SDLK_r:
             {
-              char new_name[MAX_PATH];
+              char *new_name = malloc(MAX_PATH);
               int width = 29;
 
               strncpy(new_name, file_name + 56, MAX_PATH - 1);
@@ -3017,6 +3017,8 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
 
               di->done = 1;
               di->return_value = 5;
+
+	      free(new_name);
               return 0;
             }
 
@@ -3121,10 +3123,17 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
 
 static void remove_files(char *directory_name, int remove_recursively)
 {
-  dir_t *current_dir = dir_open(directory_name);
-  char current_dir_name[MAX_PATH];
-  char file_name[PATH_BUF_LEN];
+  char *current_dir_name;
   struct stat file_info;
+  dir_t *current_dir;
+  char *file_name;
+
+  current_dir = dir_open(directory_name);
+  if(!current_dir)
+    return;
+
+  current_dir_name = malloc(MAX_PATH);
+  file_name = malloc(PATH_BUF_LEN);
 
   getcwd(current_dir_name, MAX_PATH);
   chdir(directory_name);
@@ -3155,10 +3164,13 @@ static void remove_files(char *directory_name, int remove_recursively)
     }
   }
 
-  dir_close(current_dir);
   chdir(current_dir_name);
-}
 
+  free(file_name);
+  free(current_dir_name);
+
+  dir_close(current_dir);
+}
 
 __editor_maybe_static int file_manager(World *mzx_world,
  const char **wildcards, char *ret, const char *title, int dirs_okay,
@@ -3400,15 +3412,17 @@ __editor_maybe_static int file_manager(World *mzx_world,
       case 0:
       case 1:
       {
-        char path[MAX_PATH] = { 0 };
         int stat_result;
+        char *path;
 
+	path = malloc(MAX_PATH);
         get_path(ret, path, MAX_PATH);
         stat_result = stat(ret, &file_info);
 
         if((stat_result >= 0) && S_ISDIR(file_info.st_mode))
         {
           chdir(ret);
+	  free(path);
           break;
         }
 
@@ -3448,6 +3462,8 @@ __editor_maybe_static int file_manager(World *mzx_world,
         {
           ret[0] = 0;
         }
+
+	free(path);
         break;
       }
 
@@ -3459,10 +3475,12 @@ __editor_maybe_static int file_manager(World *mzx_world,
 
       case 3:
       {
-        int b_dialog_result;
         element *b_elements[3];
-        char new_name[512] = { 0 };
+        int b_dialog_result;
+        char *new_name;
         dialog b_di;
+
+	new_name = malloc(MAX_PATH);
 
         b_elements[0] = construct_input_box(2, 2,
          "New directory name: ", 32, 0, new_name);
@@ -3492,6 +3510,8 @@ __editor_maybe_static int file_manager(World *mzx_world,
             error(error_str, 2, 4, 0x0000);
           }
         }
+
+	free(new_name);
         break;
       }
 
@@ -3500,12 +3520,16 @@ __editor_maybe_static int file_manager(World *mzx_world,
         if((stat(ret, &file_info) >= 0) && strcmp(ret, "..") &&
          strcmp(ret, "."))
         {
-          char confirm_string[512];
-          sprintf(confirm_string, "Delete %s - are you sure?", ret);
+          char *confirm_string;
+
+          confirm_string = malloc(MAX_PATH);
+          snprintf(confirm_string, MAX_PATH,
+	   "Delete %s - are you sure?", ret);
+
           if(!confirm(mzx_world, confirm_string))
-          {
             unlink(ret);
-          }
+
+          free(confirm_string);
         }
         break;
       }
@@ -3579,7 +3603,9 @@ __editor_maybe_static int file_manager(World *mzx_world,
     getcwd(current_dir_name, MAX_PATH);
     if(strcmp(previous_dir_name, current_dir_name))
     {
-      char ret_buffer[MAX_PATH];
+      char *ret_buffer;
+
+      ret_buffer = malloc(MAX_PATH);
       strncpy(ret_buffer, ret, MAX_PATH - 1);
       ret_buffer[MAX_PATH - 1] = '\0';
 
@@ -3590,6 +3616,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
 #endif
 
       chdir(previous_dir_name);
+      free(ret_buffer);
     }
   }
 

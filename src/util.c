@@ -57,10 +57,14 @@ static struct mzx_resource mzx_res[] = {
 
 int mzx_res_init(const char *argv0)
 {
-  char bin_path[MAX_PATH];
   struct stat file_info;
   int i, bin_path_len;
+  char *bin_path;
+  char *p_dir;
   int ret = 0;
+
+  bin_path = malloc(MAX_PATH);
+  p_dir = malloc(MAX_PATH);
 
   get_path(argv0, bin_path, MAX_PATH);
 
@@ -83,7 +87,6 @@ int mzx_res_init(const char *argv0)
   for(i = 0; i < END_RESOURCE_ID_T; i++)
   {
     const int base_name_len = strlen(mzx_res[i].base_name);
-    char p_dir[MAX_PATH];
     char *full_path;
     int p_dir_len;
 
@@ -132,6 +135,9 @@ int mzx_res_init(const char *argv0)
       ret = 1;
     }
   }
+
+  free(p_dir);
+  free(bin_path);
 
   return ret;
 }

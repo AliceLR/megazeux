@@ -55,6 +55,43 @@ PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #include "edit.h"
 #endif
 
+/* The World structure used to be pretty big (around 7.2k) which
+ * caused some platforms grief. Early hacks moved it entirely onto
+ * the heap, but this will reduce performance of a constantly
+ * accessed data structure in multiple hot paths.
+ *
+ * As a compromise, move out stuff that's accessed less frequently,
+ * or which is simply too large to be worth it. This means we need
+ * a couple of functions for allocating/freeing MZX worlds.
+ */
+static void allocate_world(World *mzx_world)
+{
+  memset(mzx_world, 0, sizeof(World));
+
+  mzx_world->real_mod_playing = malloc(256);
+  memset(mzx_world->real_mod_playing, 0, 256);
+
+  mzx_world->input_file_name = malloc(512);
+  memset(mzx_world->input_file_name, 0, 512);
+
+  mzx_world->output_file_name = malloc(512);
+  memset(mzx_world->output_file_name, 0, 512);
+
+  mzx_world->global_robot = malloc(sizeof(Robot));
+  memset(mzx_world->global_robot, 0, sizeof(Robot));
+
+  mzx_world->custom_sfx = calloc(69, NUM_SFX);
+}
+
+static void free_world(World *mzx_world)
+{
+  free(mzx_world->real_mod_playing);
+  free(mzx_world->input_file_name);
+  free(mzx_world->output_file_name);
+  free(mzx_world->global_robot);
+  free(mzx_world->custom_sfx);
+}
+
 int main(int argc, char **argv)
 {
   Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
@@ -81,7 +118,7 @@ int main(int argc, char **argv)
   if(mzx_res_init(argv[0]))
     goto exit_free_res;
 
-  memset(&mzx_world, 0, sizeof(World));
+  allocate_world(&mzx_world);
 
 #if defined(__MACOSX__)
   // In Mac OS X, applications are packages, or folders that
@@ -160,6 +197,8 @@ int main(int argc, char **argv)
     clear_world(&mzx_world);
     clear_global_data(&mzx_world);
   }
+
+  free_world(&mzx_world);
 
 exit_free_res:
   mzx_res_free();

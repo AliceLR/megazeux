@@ -99,8 +99,10 @@ static int case5(char *path, char *string)
 {
   int ret = -FSAFE_BRUTE_FORCE_FAILED;
   int dirlen = string - path;
-  char newpath[PATH_BUF_LEN];
+  char *newpath;
   dir_t *wd;
+
+  newpath = malloc(PATH_BUF_LEN);
 
   // prepend the working directory
   strcpy(newpath, "./");
@@ -134,6 +136,7 @@ static int case5(char *path, char *string)
     dir_close(wd);
   }
 
+  free(newpath);
   return ret;
 }
 
@@ -356,8 +359,11 @@ int fsafetranslate(const char *path, char *newpath)
 
 FILE *fsafeopen(const char *path, const char *mode)
 {
-  char newpath[MAX_PATH];
+  char *newpath;
   int i, ret;
+  FILE *f;
+
+  newpath = malloc(MAX_PATH);
 
   // validate pathname, and optionally retrieve a better name
   ret = fsafetranslate(path, newpath);
@@ -369,17 +375,23 @@ FILE *fsafeopen(const char *path, const char *mode)
     for(i = 0; i < (int)strlen(mode); i++)
     {
       if(mode[i] == 'r' || mode[i] == '+')
+      {
+        free(newpath);
         return NULL;
+      }
     }
   }
   else if(ret < 0)
   {
     // bad name, or security checks failed
+    free(newpath);
     return NULL;
   }
 
   // _TRY_ opening the file
-  return fopen(newpath, mode);
+  f = fopen(newpath, mode);
+  free(newpath);
+  return f;
 }
 
 /* It's conceivable that on some platforms (like Linux, or Macintosh classic),

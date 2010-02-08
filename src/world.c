@@ -474,7 +474,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
 
   // Save for global robot position
   gl_rob_position = ftell(fp);
-  save_robot(&(mzx_world->global_robot), fp, savegame);
+  save_robot(mzx_world->global_robot, fp, savegame);
   // Go back to where the global robot position should be saved
   fseek(fp, gl_rob_save_position, SEEK_SET);
   fputd(gl_rob_position, fp);
@@ -1130,7 +1130,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
 
   // Read global robot
   fseek(fp, gl_rob, SEEK_SET);
-  load_robot(&mzx_world->global_robot, fp, savegame);
+  load_robot(mzx_world->global_robot, fp, savegame);
 
   mzx_world->current_board =
    mzx_world->board_list[mzx_world->current_board_id];
@@ -1148,7 +1148,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
       // Also patch a pointer to the global robot
       if(cur_board->robot_list)
       {
-        (mzx_world->board_list[i])->robot_list[0] = &mzx_world->global_robot;
+        (mzx_world->board_list[i])->robot_list[0] = mzx_world->global_robot;
       }
       // Also optimize out null objects
       optimize_null_objects(mzx_world->board_list[i]);
@@ -1322,7 +1322,7 @@ int append_world(World *mzx_world, const char *file)
       // Also patch a pointer to the global robot
       if(cur_board->robot_list)
       {
-        cur_board->robot_list[0] = &mzx_world->global_robot;
+        cur_board->robot_list[0] = mzx_world->global_robot;
       }
       // Also optimize out null objects
       optimize_null_objects(cur_board);
@@ -1521,15 +1521,15 @@ void clear_world(World *mzx_world)
   }
   free(board_list);
 
-  if(mzx_world->global_robot.program)
-    free(mzx_world->global_robot.program);
+  if(mzx_world->global_robot->program)
+    free(mzx_world->global_robot->program);
 
-  if(mzx_world->global_robot.stack)
-    free(mzx_world->global_robot.stack);
+  if(mzx_world->global_robot->stack)
+    free(mzx_world->global_robot->stack);
 
-  if(mzx_world->global_robot.label_list && mzx_world->global_robot.used)
-    clear_label_cache(mzx_world->global_robot.label_list,
-     mzx_world->global_robot.num_labels);
+  if(mzx_world->global_robot->label_list && mzx_world->global_robot->used)
+    clear_label_cache(mzx_world->global_robot->label_list,
+     mzx_world->global_robot->num_labels);
 
   if(mzx_world->input_file)
   {
@@ -1655,8 +1655,8 @@ void create_blank_world(World *mzx_world)
   memcpy(bullet_color, def_id_chars + 324, 3);
   memcpy(id_dmg, def_id_chars + 327, 128);
 
-  create_blank_robot_direct(&mzx_world->global_robot, -1, -1);
-  mzx_world->current_board->robot_list[0] = &mzx_world->global_robot;
+  create_blank_robot_direct(mzx_world->global_robot, -1, -1);
+  mzx_world->current_board->robot_list[0] = mzx_world->global_robot;
 
   for(i = 0; i < 6; i++)
   {

@@ -134,6 +134,9 @@ DEVELOPERS
   most exotic port thus far, and adds features such as player focus (on the
   second display). Sound isn't working yet, and large games still won't play
   (due to lack of memory). See docs/nds.txt for more information. (kvance)
++ Many stack-heavy functions have been de-bloated and allocate large storage
+  on the heap (if performance is not critical). This helps out platforms
+  with a small, fixed stack size (such as NDS).
 
 December 8, 2007 - MZX 2.81h
 

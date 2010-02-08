@@ -2175,47 +2175,52 @@ int set_counter_special(World *mzx_world, int spec_type,
 
     case FOPEN_SAVE_GAME:
     {
-      char translated_path[512];
+      char *translated_path = malloc(MAX_PATH);
       int faded = get_fade_status();
 
       if(!fsafetest(char_value, translated_path))
         save_world(mzx_world, translated_path, 1, faded);
 
+      free(translated_path);
       return 0;
     }
 
     case FOPEN_SAVE_WORLD:
     {
-      char translated_path[512];
+      char *translated_path = malloc(MAX_PATH);
 
       if(!fsafetest(char_value, translated_path))
         save_world(mzx_world, translated_path, 0, 0);
 
+      free(translated_path);
       return 0;
     }
 
     case FOPEN_LOAD_GAME:
     {
+      char *translated_path = malloc(MAX_PATH);
       int faded;
-      char translated_name[MAX_PATH];
 
-      if(!fsafetranslate(char_value, translated_name))
+      if(!fsafetranslate(char_value, translated_path))
       {
-        reload_savegame(mzx_world, translated_name, &faded);
+        reload_savegame(mzx_world, translated_path, &faded);
 
         if(faded)
           insta_fadeout();
 
         mzx_world->swapped = 1;
       }
+
+      free(translated_path);
       return 0;
     }
 
     case FOPEN_LOAD_ROBOT:
     {
+      char *new_program;
       int new_size;
-      char *new_program = assemble_file(char_value, &new_size);
 
+      new_program = assemble_file(char_value, &new_size);
       if(new_program)
       {
         Board *src_board = mzx_world->current_board;

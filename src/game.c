@@ -2068,7 +2068,7 @@ void title_screen(World *mzx_world)
   int fade;
   struct stat file_info;
   Board *src_board;
-  char current_dir[MAX_PATH];
+  char *current_dir;
 
 #ifdef CONFIG_EDITOR
   debug_mode = 0;
@@ -2078,6 +2078,7 @@ void title_screen(World *mzx_world)
   clear_screen(32, 7);
   default_palette();
 
+  current_dir = malloc(MAX_PATH);
   getcwd(current_dir, MAX_PATH);
 
   chdir(config_dir);
@@ -2493,6 +2494,8 @@ void title_screen(World *mzx_world)
 
   vquick_fadeout();
   clear_sfx_queue();
+
+  free(current_dir);
 }
 
 void set_mesg(World *mzx_world, const char *str)
