@@ -277,7 +277,7 @@ void (*set_colors32[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
   set_colors32_smzx3
 };
 
-#ifdef CONFIG_OVERLAY
+#ifdef CONFIG_RENDER_YUV
 
 #include "render_yuv.h"
 
@@ -601,7 +601,7 @@ void set_screen_coords_centered(graphics_data *graphics, int x, int y,
   *screen_y = y + (target_height - 350) / 2;
 }
 
-#if defined(CONFIG_OPENGL) || defined(CONFIG_OVERLAY)
+#if defined(CONFIG_RENDER_GL) || defined(CONFIG_RENDER_YUV)
 
 void get_screen_coords_scaled(graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y)
@@ -639,7 +639,7 @@ void set_screen_coords_scaled(graphics_data *graphics, int x, int y,
   *screen_y = y * target_height / 350;
 }
 
-#endif // CONFIG_OPENGL || CONFIG_OVERLAY
+#endif // CONFIG_RENDER_GL || CONFIG_RENDER_YUV
 
 void resize_screen_standard(graphics_data *graphics, int w, int h)
 {

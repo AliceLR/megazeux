@@ -32,19 +32,22 @@ typedef struct
   void (*reg)(graphics_data *);
 } renderer_data;
 
-#if defined(CONFIG_SOFTWARE)
+#if defined(CONFIG_RENDER_SOFT)
 void render_soft_register(graphics_data *graphics);
 #endif
-#if defined(CONFIG_OPENGL)
+#if defined(CONFIG_RENDER_GL)
 void render_gl1_register(graphics_data *graphics);
 void render_gl2_register(graphics_data *graphics);
 #endif
-#if defined(CONFIG_OVERLAY)
+#if defined(CONFIG_RENDER_YUV)
 void render_yuv1_register(graphics_data *graphics);
 void render_yuv2_register(graphics_data *graphics);
 #endif
-#if defined(CONFIG_GP2X)
+#if defined(CONFIG_RENDER_GP2X)
 void render_gp2x_register(graphics_data *graphics);
+#endif
+#if defined(CONFIG_NDS)
+void render_nds_register(graphics_data *graphics);
 #endif
 
 __M_END_DECLS

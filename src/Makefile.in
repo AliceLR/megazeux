@@ -78,22 +78,26 @@ mzx_objs += ${mzx_base}/param.${o} ${mzx_base}/robo_ed.${o}
 mzx_objs += ${mzx_base}/sfx_edit.${o}
 endif
 
-ifeq (${BUILD_SOFTWARE},1)
+ifeq (${BUILD_RENDER_SOFT},1)
 mzx_objs += ${mzx_base}/render_soft.${o}
 endif
 
-ifeq (${BUILD_OPENGL},1)
+ifeq (${BUILD_RENDER_GL},1)
 mzx_objs += ${mzx_base}/render_gl.${o}
 mzx_objs += ${mzx_base}/render_gl1.${o} ${mzx_base}/render_gl2.${o}
 endif
 
-ifeq (${BUILD_OVERLAY},1)
+ifeq (${BUILD_RENDER_YUV},1)
 mzx_objs += ${mzx_base}/render_yuv.${o}
 mzx_objs += ${mzx_base}/render_yuv1.${o} ${mzx_base}/render_yuv2.${o}
 endif
 
-ifeq (${BUILD_GP2X},1)
+ifeq (${BUILD_RENDER_GP2X},1)
 mzx_objs += ${mzx_base}/render_gp2x.${o}
+endif
+
+ifeq (${BUILD_NDS},1)
+mzx_objs += ${mzx_base}/render_nds.${o}
 endif
 
 ifeq (${BUILD_MODPLUG},1)

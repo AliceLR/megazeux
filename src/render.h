@@ -29,7 +29,7 @@ __M_BEGIN_DECLS
 extern void (*set_colors8[4])(graphics_data *, Uint32 *, Uint8, Uint8);
 extern void (*set_colors16[4])(graphics_data *, Uint32 *, Uint8, Uint8);
 extern void (*set_colors32[4])(graphics_data *, Uint32 *, Uint8, Uint8);
-#ifdef CONFIG_OVERLAY
+#ifdef CONFIG_RENDER_YUV
 extern void (*yuv2_set_colors[4])(graphics_data *, Uint32 *, Uint8, Uint8);
 #endif
 
@@ -52,14 +52,14 @@ void get_screen_coords_centered(graphics_data *graphics, int screen_x,
 void set_screen_coords_centered(graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y);
 
-#if defined(CONFIG_OPENGL) || defined(CONFIG_OVERLAY)
+#if defined(CONFIG_RENDER_GL) || defined(CONFIG_RENDER_YUV)
 
 void get_screen_coords_scaled(graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);
 void set_screen_coords_scaled(graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y);
 
-#endif // CONFIG_OPENGL || CONFIG_OVERLAY
+#endif // CONFIG_RENDER_GL || CONFIG_RENDER_YUV
 
 void resize_screen_standard(graphics_data *graphics, int w, int h);
 

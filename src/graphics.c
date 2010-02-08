@@ -46,18 +46,18 @@ static graphics_data graphics;
 
 static const renderer_data renderers[] =
 {
-#if defined(CONFIG_SOFTWARE)
+#if defined(CONFIG_RENDER_SOFT)
   { "software", render_soft_register },
 #endif
-#if defined(CONFIG_OPENGL)
+#if defined(CONFIG_RENDER_GL)
   { "opengl1", render_gl1_register },
   { "opengl2", render_gl2_register },
 #endif
-#if defined(CONFIG_OVERLAY)
+#if defined(CONFIG_RENDER_YUV)
   { "overlay1", render_yuv1_register },
   { "overlay2", render_yuv2_register },
 #endif
-#if defined(CONFIG_GP2X)
+#if defined(CONFIG_RENDER_GP2X)
   { "gp2x", render_gp2x_register },
 #endif
 #if defined(CONFIG_NDS)

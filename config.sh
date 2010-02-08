@@ -248,11 +248,29 @@ fi
 #
 if [ "$PLATFORM" = "nds" ]; then
 	echo "Enabling NDS-specific hacks."
-	echo "BUILD_NDS=1" >> Makefile.platform
 	echo "#define CONFIG_NDS" >> src/config.h
+	echo "BUILD_NDS=1" >> Makefile.platform
 
 	echo "Force disabling audio on NDS (fixme)."
 	AUDIO="false"
+fi
+
+#
+# If the PSP arch is enabled, some code has to be compile time
+# enabled too. This might be able to go away eventually.
+#
+if [ "$PLATFORM" = "psp" ]; then
+	echo "Enabling PSP-specific hacks."
+	echo "#define CONFIG_PSP" >> src/config.h
+fi
+
+#
+# If the GP2X arch is enabled, some code has to be compile time
+# enabled too. This might be able to go away eventually.
+#
+if [ "$PLATFORM" = "gp2x" ]; then
+	echo "Enabling GP2X-specific hacks."
+	echo "#define CONFIG_GP2X" >> src/config.h
 fi
 
 #
@@ -385,8 +403,8 @@ fi
 #
 if [ "$SOFTWARE" = "true" ]; then
 	echo "Software renderer enabled."
-	echo "#define CONFIG_SOFTWARE" >> src/config.h
-	echo "BUILD_SOFTWARE=1" >> Makefile.platform
+	echo "#define CONFIG_RENDER_SOFT" >> src/config.h
+	echo "BUILD_RENDER_SOFT=1" >> Makefile.platform
 else
 	echo "Software renderer disabled."
 fi
@@ -396,8 +414,8 @@ fi
 #
 if [ "$OPENGL" = "true" ]; then
 	echo "OpenGL renderers enabled."
-	echo "#define CONFIG_OPENGL" >> src/config.h
-	echo "BUILD_OPENGL=1" >> Makefile.platform
+	echo "#define CONFIG_RENDER_GL" >> src/config.h
+	echo "BUILD_RENDER_GL=1" >> Makefile.platform
 else
 	echo "OpenGL renderers disabled."
 fi
@@ -407,8 +425,8 @@ fi
 #
 if [ "$OVERLAY" = "true" ]; then
 	echo "Overlay renderers enabled."
-	echo "#define CONFIG_OVERLAY" >> src/config.h
-	echo "BUILD_OVERLAY=1" >> Makefile.platform
+	echo "#define CONFIG_RENDER_YUV" >> src/config.h
+	echo "BUILD_RENDER_YUV=1" >> Makefile.platform
 else
 	echo "Overlay renderers disabled."
 fi
@@ -418,8 +436,8 @@ fi
 #
 if [ "$GP2X" = "true" ]; then
 	echo "GP2X half-width renderer enabled."
-	echo "#define CONFIG_GP2X" >> src/config.h
-	echo "BUILD_GP2X=1" >> Makefile.platform
+	echo "#define CONFIG_RENDER_GP2X" >> src/config.h
+	echo "BUILD_RENDER_GP2X=1" >> Makefile.platform
 else
 	echo "GP2X half-width renderer disabled."
 fi
