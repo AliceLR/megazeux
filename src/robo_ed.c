@@ -806,7 +806,7 @@ static int copy_buffer_to_X11_selection(const SDL_Event *event)
 
     free(dest_data);
 
-    XSendEvent(display, request->requestor, False, 0, &response);
+    XSendEvent(display, request->requestor, True, 0, &response);
     XFlush(display);
   }
 
