@@ -67,8 +67,8 @@ CYCLE #                                                 |     YES     |
 DEC "counter" #                                         |     NO      |
 DEC "counter" RANDOM # #                                |     NO      |
 DEC "$string" #                                         |     NO      |
-DIE                                                     |     (4)     |
-DIE ITEM                                                |     (4)     |
+DIE                                                     |     NO      |
+DIE ITEM                                                |     NO      |
 DISABLE MESG EDGE                                       |     NO      |
 DISABLE SAVING                                          |     NO      |
 DIVIDE "counter" #                                      |     NO      |
@@ -92,41 +92,41 @@ ENEMY BULLETW [char]                                    |     NO      |
 EXCHANGE PLAYER POSITION                                |     YES     |
 EXCHANGE PLAYER POSITION #                              |     YES     |
 EXCHANGE PLAYER POSITION # DUPLICATE SELF               |     YES     |
-EXPLODE #                                               |     (4)     |
+EXPLODE #                                               |     NO      |
 FIREWALKER #                                            |     NO      |
 FILLHEALTH                                              |     NO      |
 FLIP CHAR [char] [dir]                                  |     NO      |
 FREEZETIME #                                            |     NO      |
 GIVE # [item]                                           |     NO      |
 GIVEKEY [color]                                         |     NO      |
-GIVEKEY [color] "label"                                 |    NO(5)    |
-GO [dir] #                                              |    YES(6)   |
-GOTO "label"                                            |    NO(5)    |
+GIVEKEY [color] "label"                                 |    NO(4)    |
+GO [dir] #                                              |    YES(5)   |
+GOTO "label"                                            |    NO(4)    |
 GOTO "#return"                                          |     NO      |
 GOTO "#top"                                             |     NO      |
 GOTOXY # #                                              |     YES     |
 HALF "counter"                                          |     NO      |
-IF "counter" !<>_= # "label"                            |    NO(5)    |
-IF [condition] "label"                                  |    NO(5)    |
-IF # # "label"                                          |    NO(5)    |
-IF [dir] PLAYER [color] [thing] [param] "label"         |    NO(5)    |
-IF [color] [thing] [param] # # "label"                  |    NO(5)    |
-IF [color] [thing] [param] [dir] "label"                |    NO(5)    |
-IF ALIGNEDROBOT "Robot" "label"                         |    NO(5)    |
-IF ANY [color] [thing] [param] "label"                  |    NO(5)    |
-IF FIRST STRING "string" "label"                        |    NO(5)    |
-IF NO [color] [thing] [param] "label"                   |    NO(5)    |
-IF NOT [color] [thing] [param] [dir] "label"            |    NO(5)    |
-IF NOT [condition] "label"                              |    NO(5)    |
-IF PLAYER # # "label"                                   |    NO(5)    |
-IF STRING "string" "label"                              |    NO(5)    |
-IF STRING MATCHES "string" "label"                      |    NO(5)    |
-IF STRING NOT "string" "label"                          |    NO(5)    |
-IF "$string" (equality) # "label"                       |    NO(5)    |
-IF "$string" (equality) "text" "label"                  |    NO(5)    |
-IF "$string" (equality) "$string2" "label"              |    NO(5)    |
-IF c?? Sprite_Colliding pNN # # "label"                 |    NO(5)    |
-IF c?? Sprite p?? # # "label"                           |    NO(5)    |
+IF "counter" !<>_= # "label"                            |    NO(4)    |
+IF [condition] "label"                                  |    NO(4)    |
+IF # # "label"                                          |    NO(4)    |
+IF [dir] PLAYER [color] [thing] [param] "label"         |    NO(4)    |
+IF [color] [thing] [param] # # "label"                  |    NO(4)    |
+IF [color] [thing] [param] [dir] "label"                |    NO(4)    |
+IF ALIGNEDROBOT "Robot" "label"                         |    NO(4)    |
+IF ANY [color] [thing] [param] "label"                  |    NO(4)    |
+IF FIRST STRING "string" "label"                        |    NO(4)    |
+IF NO [color] [thing] [param] "label"                   |    NO(4)    |
+IF NOT [color] [thing] [param] [dir] "label"            |    NO(4)    |
+IF NOT [condition] "label"                              |    NO(4)    |
+IF PLAYER # # "label"                                   |    NO(4)    |
+IF STRING "string" "label"                              |    NO(4)    |
+IF STRING MATCHES "string" "label"                      |    NO(4)    |
+IF STRING NOT "string" "label"                          |    NO(4)    |
+IF "$string" (equality) # "label"                       |    NO(4)    |
+IF "$string" (equality) "text" "label"                  |    NO(4)    |
+IF "$string" (equality) "$string2" "label"              |    NO(4)    |
+IF c?? Sprite_Colliding pNN # # "label"                 |    NO(4)    |
+IF c?? Sprite p?? # # "label"                           |    NO(4)    |
 INC "$string" "text"                                    |     NO      |
 INC "$string" "$string2"                                |     NO      |
 INC "counter" #                                         |     NO      |
@@ -228,25 +228,25 @@ SET EDGE COLOR [color]                                  |     NO      |
 SET MAXHEALTH #                                         |     NO      |
 SET MESG COLUMN #                                       |     NO      |
 SFX #                                                   |     NO      |
-SHOOT [dir]                                             |    NO(7)    |
-SHOOTMISSILE [dir]                                      |    NO(7)    |
-SHOOTSEEKER [dir]                                       |    NO(7)    |
+SHOOT [dir]                                             |    NO(6)    |
+SHOOTMISSILE [dir]                                      |    NO(6)    |
+SHOOTSEEKER [dir]                                       |    NO(6)    |
 SLOWTIME #                                              |     NO      |
-SPITFIRE [dir]                                          |    NO(7)    |
+SPITFIRE [dir]                                          |    NO(6)    |
 STATUS COUNTER # "counter"                              |     NO      |
 SWAP WORLD "file"                                       |     NO      |
 SWITCH [dir] [dir]                                      |     NO      |
 TAKE # [item]                                           |     NO      |
-TAKE # [item] "label"                                   |    NO(5)    |
+TAKE # [item] "label"                                   |    NO(4)    |
 TAKEKEY [color]                                         |     NO      |
-TAKEKEY [color] "label"                                 |    NO(5)    |
+TAKEKEY [color] "label"                                 |    NO(4)    |
 TELEPORT PLAYER "string" # #                            |    YES(2)   |
-TRADE # [item] # [item] "label"                         |    NO(5)    |
-TRY [dir] "label"                                       |    YES(5)   |
-WAIT #                                                  |    YES(6)   |
+TRADE # [item] # [item] "label"                         |    NO(4)    |
+TRY [dir] "label"                                       |    YES(4)   |
+WAIT #                                                  |    YES(5)   |
 WAIT MOD FADE                                           |     NO      |
 WAIT PLAY                                               |     NO      |
-WAIT PLAY "string"                                      |    YES(2)   |
+WAIT PLAY "string"                                      |  YES(2)(7)  |
 WALK [dir]                                              |     NO      |
 WIND #                                                  |     NO      |
 WRITE OVERLAY [color] "string" # #                      |     NO      |
@@ -261,7 +261,7 @@ ZAP "label" #                                           |     NO      |
 (1) = The act of opening default dialog boxes kills (almost) all other game action, including Robot processing. The only exceptions are the play of music/sound and the read/write actions of the various fread/fwrite counters during the loading of default "["/"%"/"&" boxes.
 (2) = Does not end a cycle if string is blank or a completely invalid/inapplicable string.
 (3) = Considering "copyrobot" commands are executed always, even if no match is found, this may not be correct.
-(4) = Unable to determine without diving into code, and thus not done. (as such, cycle-ending stance is totally insignificant.)
-(5) = Attempting to jump to labels that do not exist does not consume a cycle.
-(6) = Does not end a cycle if # is 0.
-(7) = Has a sub-cycle end, and thus acts differently from the DOS version (most notably, being shot point-blank happens far faster).
+(4) = Attempting to jump to labels that do not exist does not consume a cycle.
+(5) = Does not end a cycle if # is 0.
+(6) = Has a sub-cycle end, and thus acts differently from the DOS version (most notably, being shot point-blank happens far faster).
+(7) = A special case exists where it currently executes a cycle end going through a transporter.

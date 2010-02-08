@@ -4616,7 +4616,7 @@ Puts a sprite on the board. The param number is the number of
 the sprite in hex (auto-converted from decimal). If the color
 is c?? then the sprite is drawn with its normal colors as seen
 on the board, otherwise it's painted with the given colors.
-# # marks the {x,y} coordinates of the sprite's upper-left
+ # # marks the {x,y} coordinates of the sprite's upper-left
 corner. See the Spites section for further details.
 
 >#SPRITES.HLP:spr:Sprites
