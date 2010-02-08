@@ -758,8 +758,7 @@ static int copy_buffer_to_X11_selection(const SDL_Event *event)
   if(event->type != SDL_SYSWMEVENT)
     return 1;
 
-  if((event->syswm.msg->event.xevent.type == SelectionRequest) &&
-   copy_buffer)
+  if((event->syswm.msg->event.xevent.type == SelectionRequest) && copy_buffer)
   {
     SDL_SysWMinfo info;
     Display *display;
@@ -846,7 +845,7 @@ static void copy_block_to_buffer(robot_state *rstate)
   for(i = 0; i < num_lines; i++)
   {
     line_length = current_rline->line_text_length + 1;
-    copy_buffer[i] = malloc(line_length);
+    copy_buffer[i] = malloc(COMMAND_BUFFER_LEN);
     memcpy(copy_buffer[i], current_rline->line_text, line_length);
     current_rline = current_rline->next;
 
