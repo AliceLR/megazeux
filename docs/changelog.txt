@@ -61,6 +61,8 @@ USERS
 + If loading a save game from the title screen (or when no world has been
   loaded) do not send JUSTENTERED to all robots. This restores compatibility
   with MZX 2.70 and is consistent with loading a save from another board.
++ Counters with 10 digits and a negative sign are no longer truncated in
+  the debug menu.
 
 DEVELOPERS
 
