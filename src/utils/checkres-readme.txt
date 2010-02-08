@@ -1,12 +1,18 @@
 checkres overview:
 ------------------
 
-checkres is a utility that scans an mzx world and finds all of the resources it relies on.  This means files such as palettes, character sets, modules and sound effects, as referenced in robotic commands such as LOAD PAL, LOAD CHAR SET, MOD, SAM, etc.  It also finds references to FILE_OPEN, LOAD_ROBOT, and more.  What's more, checkres determines if any of those resources are missing, and informs you of that fact.
+checkres is a utility that scans an mzx world and finds all of the resources it
+relies on.  This means files such as palettes, character sets, modules and
+sound effects, as referenced in robotic commands such as LOAD PAL,
+LOAD CHAR SET, MOD, SAM, etc.  It also finds references to FILE_OPEN,
+LOAD_ROBOT, and more.  What's more, checkres determines if any of those
+resources are missing, and informs you of that fact.
 
 checkres usage:
 ---------------
 
-checkres can be used either via the batch script included or through the command prompt, as demonstrated by these examples.
+checkres can be used either via the batch script included or through the
+command prompt, as demonstrated by these examples.
 
 	c:\mzx>checkres.bat world.mzx
 	Scanning world.mzx...
@@ -14,16 +20,19 @@ checkres can be used either via the batch script included or through the command
 	title.pal - NOT FOUND
 	Press any key to continue...
 
-This also means that you can drag a world file to the batch file icon, and it'll work perfectly.  In fact, the batch file can accept as many worlds as you like on the command line, like so:
+This also means that you can drag a world file to the batch file icon, and
+it'll work perfectly.  In fact, the batch file can accept as many worlds as
+you like on the command line, like so:
 
 	c:\mzx>checkres.bat world.mzx world2.mzx world3.mzx
 
-checkres also supports reading zip files to ensure that all resources are present in the archive.  This is extremely simple to do:
+checkres also supports reading zip files to ensure that all resources are
+present in the archive.  This is extremely simple to do:
 
 	c:\mzx>checkres.bat world.zip
 
-
-Finally, checkres supports two options to enhance your resource checking abilities, -q (quiet) and -a (all).  These can be used like so:
+Finally, checkres supports two options to enhance your resource checking
+abilities, -q (quiet) and -a (all).  These can be used like so:
 
 	c:\mzx>checkres.bat -q world.mzx
 	Scanning world.mzx...
@@ -52,7 +61,8 @@ This covers all the possibilities of checkres.
 checkres conclusion:
 --------------------
 
-checkres is a product of ajs and Revvy, and the source for those not win32 inclined is available at:
+checkres is a product of ajs and Revvy, and the source for those not win32
+inclined is available at:
 
 http://megazeux.svn.sourceforge.net/viewvc/*checkout*/megazeux/trunk/src/utils/checkres.c
 
