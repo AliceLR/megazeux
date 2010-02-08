@@ -27,6 +27,10 @@
 
 #include <mikmod.h>
 
+#ifdef CONFIG_NDS
+#include <mikmod9.h>
+#endif
+
 typedef struct
 {
   sampled_stream s;
