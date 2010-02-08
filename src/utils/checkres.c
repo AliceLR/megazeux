@@ -23,11 +23,17 @@
 #include <string.h>
 #include <stdio.h>
 
+#ifdef DEBUG
+#define debug(...) fprintf(stdout, __VA_ARGS__)
+#else
+#define debug(...)
+#endif
+
 #define BOARD_NAME_SIZE         25
 
 // "You may now have up to 250 boards." -- port.txt
 #define MAX_BOARDS              250
-// 
+
 #define WORLD_PROTECTED_OFFSET  BOARD_NAME_SIZE
 #define WORLD_NUM_BOARDS_OFFSET 4234
 
@@ -35,6 +41,7 @@ typedef enum status
 {
   SUCCESS = 0,
   INVALID_ARGUMENTS,
+  CORRUPT_WORLD,
   FOPEN_FAILED,
   FREAD_FAILED,
   FSEEK_FAILED,
@@ -66,6 +73,8 @@ static const char *decode_status(status_t status)
 {
   switch(status)
   {
+    case CORRUPT_WORLD:
+      return "Random world corruption.";
     case FOPEN_FAILED:
       return "Could not open file.";
     case FREAD_FAILED:
@@ -85,56 +94,252 @@ static const char *decode_status(status_t status)
 
 static void check_file_exists(const char *file)
 {
-  fprintf(stderr, "would check for \"%s\"\n", file);
+  //fprintf(stderr, "would check for \"%s\"\n", file);
 }
 
-int main(int argc, char *argv[])
+static status_t parse_board(FILE *f)
+{
+  int i, j, num_robots, skip_rle_blocks = 6;
+  char tmp[256], tmp2[256];
+
+  // junk the undocument (and unused) board_mode
+  fgetc(f);
+
+  // get whether the overlay is enabled or not
+  if(fgetc(f))
+  {
+    // not enabled, so rewind this last read
+    if(fseek(f, -1, SEEK_CUR) != 0)
+      return FSEEK_FAILED;
+  }
+  else
+  {
+    // junk overlay_mode
+    fgetc(f);
+    skip_rle_blocks += 2;
+  }
+
+  // this skips either 6 blocks (with no overlay)
+  // ..or 8 blocks (with overlay enabled on board)
+  for(i = 0; i < skip_rle_blocks; i++)
+  {
+    unsigned short w = fgetus(f);
+    unsigned short h = fgetus(f);
+    int pos = 0;
+
+    /* RLE "decoder"; just to skip stuff */
+    while(pos < w * h)
+    {
+      unsigned char c = (unsigned char)fgetc(f);
+
+      if(!(c & 0x80))
+        pos++;
+      else
+      {
+        c &= ~0x80;
+        pos += c;
+        fgetc(f);
+      }
+    }
+  }
+
+  // grab board's default MOD
+  if(fread(tmp, 1, 12, f) != 12)
+    return FREAD_FAILED;
+  tmp[12] = '\0';
+
+  // check the board MOD exists
+  if (strlen(tmp) > 0)
+  {
+    debug("BOARD MOD: %s\n", tmp);
+    check_file_exists(tmp);
+  }
+
+  // skip to the robot count
+  if(fseek(f, 220 - 12, SEEK_CUR) != 0)
+    return FSEEK_FAILED;
+
+  // walk the robot list, scan the robotic
+  num_robots = fgetc(f);
+  for(i = 0; i < num_robots; i++)
+  {
+    unsigned short robot_size = fgetus(f);
+    long start;
+
+    // skip to robot code
+    if(fseek(f, 40 - 2 + 1, SEEK_CUR) != 0)
+      return FSEEK_FAILED;
+
+    start = ftell(f);
+
+    // skip 0xff marker
+    if(fgetc(f) != 0xff)
+      return CORRUPT_WORLD;
+
+    while(1)
+    {
+      int command, command_length, str_len;
+
+      if(ftell(f) - start >= robot_size)
+        return CORRUPT_WORLD;
+
+      command_length = fgetc(f);
+      if(command_length == 0)
+        break;
+
+      command = fgetc(f);
+      switch(command)
+      {
+        case 0xa:
+          str_len = fgetc(f);
+
+          if (fread(tmp, 1, str_len, f) != str_len)
+            return FREAD_FAILED;
+
+          str_len = fgetc(f);
+
+          if (str_len == 0)
+          {
+            fgetus(f);
+            break;
+          }
+
+          if (fread(tmp2, 1, str_len, f) != str_len)
+            return FREAD_FAILED;
+
+          if (!strcasecmp(tmp2, "FREAD_OPEN")
+            || !strcasecmp(tmp2, "SMZX_PALETTE")
+            || !strcasecmp(tmp2, "LOAD_GAME")
+            || !strcasecmp(tmp2, "LOAD_BC")
+            || !strcasecmp(tmp2, "LOAD_ROBOT")
+            || !strncasecmp(tmp2, "LOAD_BC", 7)
+            || !strncasecmp(tmp2, "LOAD_ROBOT", 10))
+          {
+            fprintf(stderr, "SET: %s (%s)\n", tmp, tmp2);
+          }
+          break;
+
+        case 0x26:
+          str_len = fgetc(f);
+
+          if (fread(tmp, 1, str_len, f) != str_len)
+            return FREAD_FAILED;
+
+          // FIXME: Should only match pairs?
+          if (strstr(tmp, "&"))
+              break;
+
+          debug("MOD: %s\n", tmp);
+          break;
+
+        case 0x27:
+          str_len = fgetc(f);
+
+          if (str_len == 0)
+            fgetus(f);
+          else
+          {
+            for (j = 0; j < str_len; j++)
+              fgetc(f);
+          }
+
+          str_len = fgetc(f);
+
+          if (fread(tmp, 1, str_len, f) != str_len)
+            return FREAD_FAILED;
+
+          // FIXME: Should only match pairs?
+          if (strstr(tmp, "&"))
+              break;
+
+          debug("SAM: %s\n", tmp);
+          break;
+
+        case 0x2b:
+        case 0x2d:
+        case 0x31:
+          str_len = fgetc(f);
+
+          if (fread(tmp, 1, str_len, f) != str_len)
+            return FREAD_FAILED;
+
+          // FIXME: Should only match pairs?
+          if (!strstr(tmp, "&"))
+              break;
+
+          debug("PLAY (class): %s\n", tmp);
+          break;
+
+        case 0xc8:
+          str_len = fgetc(f);
+
+          if (fread(tmp, 1, str_len, f) != str_len)
+            return FREAD_FAILED;
+
+          debug("MOD FADE IN: %s\n", tmp);
+          break;
+
+        case 0xd8:
+          str_len = fgetc(f);
+
+          if (fread(tmp, 1, str_len, f) != str_len)
+            return FREAD_FAILED;
+
+          debug("LOAD CHAR SET: %s\n", tmp);
+          break;
+
+        case 0xde:
+          str_len = fgetc(f);
+
+          if (fread(tmp, 1, str_len, f) != str_len)
+            return FREAD_FAILED;
+
+          debug("LOAD PALETTE: %s\n", tmp);
+          break;
+
+        case 0xe2:
+          str_len = fgetc(f);
+
+          if (fread(tmp, 1, str_len, f) != str_len)
+            return FREAD_FAILED;
+
+          debug("SWAP WORLD: %s\n", tmp);
+          break;
+
+        default:
+          if(fseek(f, command_length - 1, SEEK_CUR) != 0)
+            return FSEEK_FAILED;
+          break;
+      }
+
+      if(fgetc(f) != command_length)
+        return CORRUPT_WORLD;
+    }
+  }
+
+  return SUCCESS;
+}
+
+static status_t parse_world(FILE *f)
 {
   status_t ret = SUCCESS;
-  int i, j, num_boards;
-  FILE *f;
-
-  if(argc != 2)
-  {
-    fprintf(stderr, "usage: %s [mzx file]\n", argv[0]);
-    ret = INVALID_ARGUMENTS;
-    goto exit_out;
-  }
-
-  f = fopen(argv[1], "r");
-  if(!f)
-  {
-    ret = FOPEN_FAILED;
-    goto exit_out;
-  }
+  int i, num_boards;
 
   // skip to protected byte; don't care about world name
   if(fseek(f, WORLD_PROTECTED_OFFSET, SEEK_SET) != 0)
-  {
-    ret = FSEEK_FAILED;
-    goto exit_close;
-  }
+    return FSEEK_FAILED;
 
   // can't yet support protected worlds
   if(fgetc(f) != 0)
-  {
-    ret = PROTECTED_WORLD;
-    goto exit_close;
-  }
+    return PROTECTED_WORLD;
 
   // can only support 2.00 versioned worlds
   if(fgetc(f) != 'M' || fgetc(f) != '\x2')
-  {
-    ret = MAGIC_CHECK_FAILED;
-    goto exit_close;
-  }
+    return MAGIC_CHECK_FAILED;
 
   // num_boards doubles as the check for custom sfx, if zero
   if(fseek(f, WORLD_NUM_BOARDS_OFFSET, SEEK_SET) != 0)
-  {
-    ret = FSEEK_FAILED;
-    goto exit_close;
-  }
+    return FSEEK_FAILED;
 
   // so read it, and..
   num_boards = fgetc(f);
@@ -145,10 +350,7 @@ int main(int argc, char *argv[])
     unsigned short sfx_len = fgetus(f);
 
     if(fseek(f, sfx_len, SEEK_CUR) != 0)
-    {
-      ret = FSEEK_FAILED;
-      goto exit_close;
-    }
+      return FSEEK_FAILED;
 
     // read the "real" num_boards
     num_boards = fgetc(f);
@@ -156,10 +358,7 @@ int main(int argc, char *argv[])
 
   // skip board names; we simply don't care
   if(fseek(f, num_boards * BOARD_NAME_SIZE, SEEK_CUR) != 0)
-  {
-    ret = FSEEK_FAILED;
-    goto exit_close;
-  }
+    return FSEEK_FAILED;
 
   // grab the board sizes/offsets
   for(i = 0; i < num_boards; i++)
@@ -172,9 +371,6 @@ int main(int argc, char *argv[])
   for(i = 0; i < num_boards; i++)
   {
     struct board *board = &board_list[i];
-    int skip_rle_blocks = 6;
-    char mod_name[13];
-    int num_robots;
 
     // don't care about deleted boards
     if(board->size == 0)
@@ -182,98 +378,37 @@ int main(int argc, char *argv[])
 
     // seek to board offset within world
     if(fseek(f, board->offset, SEEK_SET) != 0)
-    {
-      ret = FSEEK_FAILED;
-      goto exit_close;
-    }
+      return FSEEK_FAILED;
 
-    // junk the undocument (and unused) board_mode
-    fgetc(f);
-
-    // get whether the overlay is enabled or not
-    if(fgetc(f))
-    {
-      // not enabled, so rewind this last read
-      if(fseek(f, -1, SEEK_CUR) != 0)
-      {
-        ret = FSEEK_FAILED;
-        goto exit_close;
-      }
-    }
-    else
-    {
-      // junk overlay_mode
-      fgetc(f);
-      skip_rle_blocks += 2;
-    }
-
-    // this skips either 6 blocks (with no overlay)
-    // ..or 8 blocks (with overlay enabled on board)
-    for(j = 0; j < skip_rle_blocks; j++)
-    {
-      unsigned short w = fgetus(f);
-      unsigned short h = fgetus(f);
-      int pos = 0;
-
-      /* RLE "decoder"; just to skip stuff */
-      while(pos < w * h)
-      {
-        unsigned char c = (unsigned char)fgetc(f);
-
-        if(!(c & 0x80))
-          pos++;
-        else
-        {
-          c &= ~0x80;
-          pos += c;
-          fgetc(f);
-        }
-      }
-    }
-
-    // grab board's default MOD
-    if(fread(mod_name, 1, 12, f) != 12)
-    {
-      ret = FREAD_FAILED;
-      goto exit_close;
-    }
-    mod_name[12] = '\0';
-
-    // check the board MOD exists
-    check_file_exists(mod_name);
-
-    // skip to the robot count
-    if(fseek(f, 220 - 12, SEEK_CUR) != 0)
-    {
-      ret = FSEEK_FAILED;
-      goto exit_close;
-    }
-
-    // walk the robot list, scan the robotic
-    num_robots = fgetc(f);
-    for(j = 0; j < num_robots; j++)
-    {
-      unsigned short robot_size = fgetus(f);
-
-      // skip to robot code
-      if(fseek(f, 40 - 2 + 1, SEEK_CUR) != 0)
-      {
-        ret = FSEEK_FAILED;
-        goto exit_close;
-      }
-
-      // now read for robot_size bytes
-      // and scan for strings..
-
-      //check_file_exists(blah);
-    }
+    // parse this board atomically
+    ret = parse_board(f);
   }
 
-exit_close:
-  fclose(f);
+  return ret;
+}
 
-exit_out:
-  if(ret > INVALID_ARGUMENTS)
+int main(int argc, char *argv[])
+{
+  status_t ret;
+  FILE *f;
+
+  if(argc != 2)
+  {
+    fprintf(stderr, "usage: %s [mzx file]\n", argv[0]);
+    return INVALID_ARGUMENTS;
+  }
+
+  f = fopen(argv[1], "r");
+  if(f)
+  {
+    ret = parse_world(f);
+    fclose(f);
+  }
+  else
+    ret = FOPEN_FAILED;
+
+  if(ret != SUCCESS)
     fprintf(stderr, "ERROR: %s\n", decode_status(ret));
+
   return ret;
 }
