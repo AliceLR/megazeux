@@ -1,0 +1,1451 @@
+Index: src/runrobo2.c
+===================================================================
+--- src/runrobo2.c	(revision 485)
++++ src/runrobo2.c	(working copy)
+@@ -876,8 +876,8 @@
+   {
+     int board_size = src_board->board_width * src_board->board_height;
+     // Allocate an overlay
+-    src_board->overlay = (char *)malloc(board_size);
+-    src_board->overlay_color = (char *)malloc(board_size);
++    src_board->overlay = malloc(board_size);
++    src_board->overlay_color = malloc(board_size);
+     memset(src_board->overlay, 32, board_size);
+     memset(src_board->overlay_color, 7, board_size);
+   }
+Index: src/robo_ed.c
+===================================================================
+--- src/robo_ed.c	(revision 485)
++++ src/robo_ed.c	(working copy)
+@@ -142,13 +142,13 @@
+ {
+   if(rstate->size + 3 < rstate->max_size)
+   {
+-    robot_line *new_rline = (robot_line *)malloc(sizeof(robot_line));
++    robot_line *new_rline = malloc(sizeof(robot_line));
+     robot_line *current_rline = rstate->current_rline;
+     int current_line = rstate->current_line;
+ 
+     new_rline->line_text_length = 0;
+-    new_rline->line_text = (char *)malloc(1);
+-    new_rline->line_bytecode = (char *)malloc(3);
++    new_rline->line_text = malloc(1);
++    new_rline->line_bytecode = malloc(3);
+     new_rline->line_text[0] = 0;
+     new_rline->line_bytecode[0] = 1;
+     new_rline->line_bytecode[1] = 47;
+@@ -339,11 +339,11 @@
+     {
+       current_rline->line_text_length = line_text_length;
+       current_rline->line_text =
+-       (char *)realloc(current_rline->line_text, line_text_length + 1);
++       realloc(current_rline->line_text, line_text_length + 1);
+ 
+       current_rline->line_bytecode_length = bytecode_length;
+       current_rline->line_bytecode =
+-       (char *)realloc(current_rline->line_bytecode, bytecode_length);
++       realloc(current_rline->line_bytecode, bytecode_length);
+       current_rline->num_args = arg_count;
+       current_rline->validity_status = valid;
+ 
+@@ -357,7 +357,7 @@
+     {
+       current_rline->line_text_length = 240;
+       current_rline->line_text =
+-       (char *)realloc(current_rline->line_text, 240);
++       realloc(current_rline->line_text, 240);
+       memcpy(current_rline->line_text, new_command_buffer, 240);
+       current_rline->line_text[240] = 0;
+ 
+@@ -383,7 +383,7 @@
+       use_type = current_rline->validity_status;
+ 
+     current_rline->line_text =
+-     (char *)realloc(current_rline->line_text, line_text_length + 1);
++     realloc(current_rline->line_text, line_text_length + 1);
+ 
+     if(use_type == invalid_comment &&
+      (current_size + (line_text_length + 5) - last_bytecode_length) >
+@@ -421,7 +421,7 @@
+ 
+ static void add_line(robot_state *rstate)
+ {
+-  robot_line *new_rline = (robot_line *)malloc(sizeof(robot_line));
++  robot_line *new_rline = malloc(sizeof(robot_line));
+   robot_line *current_rline = rstate->current_rline;
+   new_rline->line_text = NULL;
+   new_rline->line_bytecode = NULL;
+@@ -780,7 +780,7 @@
+ 
+     display = info.info.x11.display;
+     window = info.info.x11.window;
+-    dest_data = (char *)malloc(copy_buffer_total_length + 1);
++    dest_data = malloc(copy_buffer_total_length + 1);
+     dest_ptr = dest_data;
+ 
+     for(i = 0; i < copy_buffer_lines - 1; i++)
+@@ -846,13 +846,13 @@
+     free(copy_buffer);
+   }
+ 
+-  copy_buffer = (char **)malloc(sizeof(char *) * num_lines);
++  copy_buffer = malloc(sizeof(char *) * num_lines);
+   copy_buffer_lines = num_lines;
+ 
+   for(i = 0; i < num_lines; i++)
+   {
+     line_length = current_rline->line_text_length + 1;
+-    copy_buffer[i] = (char *)malloc(line_length);
++    copy_buffer[i] = malloc(line_length);
+     memcpy(copy_buffer[i], current_rline->line_text, line_length);
+     current_rline = current_rline->next;
+ 
+@@ -2419,13 +2419,13 @@
+ 
+     if(new_line)
+     {
+-      current_rline = (robot_line *)malloc(sizeof(robot_line));
++      current_rline = malloc(sizeof(robot_line));
+ 
+       line_bytecode_length = next - current_robot_pos;
+       current_rline->line_text_length = line_text_length;
+       current_rline->line_bytecode_length = line_bytecode_length;
+-      current_rline->line_text = (char *)malloc(line_text_length + 1);
+-      current_rline->line_bytecode = (char *)malloc(line_bytecode_length);
++      current_rline->line_text = malloc(line_text_length + 1);
++      current_rline->line_bytecode = malloc(line_bytecode_length);
+       current_rline->num_args = arg_count;
+       current_rline->validity_status = valid;
+ 
+Index: src/configure.c
+===================================================================
+--- src/configure.c	(revision 487)
++++ src/configure.c	(working copy)
+@@ -633,7 +633,7 @@
+   {
+     char line_buffer[256];
+     char line_buffer_alternate[256];
+-    char *extended_buffer = (char *)malloc(512);
++    char *extended_buffer = malloc(512);
+     char current_char, *input_position, *output_position;
+     char *equals_position;
+     char *value;
+@@ -703,7 +703,7 @@
+               if(extended_size >= extended_allocate_size)
+               {
+                 extended_allocate_size *= 2;
+-                extended_buffer = (char *)realloc(extended_buffer,
++                extended_buffer = realloc(extended_buffer,
+                  extended_allocate_size);
+               }
+ 
+Index: src/world.c
+===================================================================
+--- src/world.c	(revision 485)
++++ src/world.c	(working copy)
+@@ -534,12 +534,12 @@
+   {
+     if(mzx_world->update_done == NULL)
+     {
+-      mzx_world->update_done = (char *)malloc(max_size);
++      mzx_world->update_done = malloc(max_size);
+     }
+     else
+     {
+       mzx_world->update_done =
+-       (char *)realloc(mzx_world->update_done, max_size);
++       realloc(mzx_world->update_done, max_size);
+     }
+ 
+     mzx_world->update_done_size = max_size;
+@@ -553,9 +553,9 @@
+   int num_boards = mzx_world->num_boards;
+   Board **board_list = mzx_world->board_list;
+   Board **optimized_board_list =
+-   (Board **)malloc(sizeof(Board *) * num_boards);
++   malloc(sizeof(Board *) * num_boards);
+   int *board_id_translation_list =
+-   (int *)malloc(sizeof(int) * num_boards);
++   malloc(sizeof(int) * num_boards);
+ 
+   Board *cur_board;
+   int i, i2;
+@@ -602,7 +602,7 @@
+ 
+     free(board_list);
+     board_list =
+-     (Board **)realloc(optimized_board_list, sizeof(Board *) * i2);
++     realloc(optimized_board_list, sizeof(Board *) * i2);
+ 
+     mzx_world->num_boards = i2;
+     mzx_world->num_boards_allocated = i2;
+@@ -921,7 +921,7 @@
+     num_counters = fgetd(fp);
+     mzx_world->num_counters = num_counters;
+     mzx_world->num_counters_allocated = num_counters;
+-    mzx_world->counter_list = (counter **)malloc(sizeof(counter *) * num_counters);
++    mzx_world->counter_list = malloc(sizeof(counter *) * num_counters);
+ 
+     for(i = 0; i < num_counters; i++)
+     {
+@@ -936,7 +936,7 @@
+     mzx_world->num_strings = num_strings;
+     mzx_world->num_strings_allocated = num_strings;
+     mzx_world->string_list =
+-     (mzx_string **)malloc(sizeof(mzx_string *) * num_strings);
++     malloc(sizeof(mzx_string *) * num_strings);
+ 
+     for(i = 0; i < num_strings; i++)
+     {
+@@ -945,14 +945,14 @@
+ 
+     // Allocate space for sprites and clist
+     mzx_world->num_sprites = 256;
+-    mzx_world->sprite_list = (Sprite **)malloc(sizeof(Sprite *) * 256);
++    mzx_world->sprite_list = malloc(sizeof(Sprite *) * 256);
+ 
+     for(i = 0; i < 256; i++)
+     {
+-      mzx_world->sprite_list[i] = (Sprite *)malloc(sizeof(Sprite));
++      mzx_world->sprite_list[i] = malloc(sizeof(Sprite));
+       memset(mzx_world->sprite_list[i], 0, sizeof(Sprite));
+     }
+-    mzx_world->collision_list = (int *)malloc(sizeof(int) * 256);
++    mzx_world->collision_list = malloc(sizeof(int) * 256);
+     mzx_world->sprite_num = 0;
+ 
+     // Sprite data
+@@ -1056,8 +1056,8 @@
+     mzx_world->vlayer_height = fgetw(fp);
+     mzx_world->vlayer_size = vlayer_size;
+ 
+-    mzx_world->vlayer_chars = (char *)malloc(vlayer_size);
+-    mzx_world->vlayer_colors = (char *)malloc(vlayer_size);
++    mzx_world->vlayer_chars = malloc(vlayer_size);
++    mzx_world->vlayer_colors = malloc(vlayer_size);
+ 
+     fread(mzx_world->vlayer_chars, 1, vlayer_size, fp);
+     fread(mzx_world->vlayer_colors, 1, vlayer_size, fp);
+@@ -1093,7 +1093,7 @@
+ 
+   mzx_world->num_boards = num_boards;
+   mzx_world->num_boards_allocated = num_boards;
+-  mzx_world->board_list = (Board **)malloc(sizeof(Board *) * num_boards);
++  mzx_world->board_list = malloc(sizeof(Board *) * num_boards);
+ 
+   // Skip the names for now
+   // Gonna wanna come back to here
+@@ -1265,7 +1265,7 @@
+   mzx_world->num_boards += num_boards;
+   mzx_world->num_boards_allocated += num_boards;
+   mzx_world->board_list =
+-   (Board **)realloc(mzx_world->board_list,
++   realloc(mzx_world->board_list,
+    sizeof(Board *) * (old_num_boards + num_boards));
+ 
+ 
+@@ -1336,14 +1336,14 @@
+ 
+   // Allocate space for sprites and give them default values (all 0's)
+   mzx_world->num_sprites = 256;
+-  mzx_world->sprite_list = (Sprite **)malloc(sizeof(Sprite *) * 256);
++  mzx_world->sprite_list = malloc(sizeof(Sprite *) * 256);
+ 
+   for(i = 0; i < 256; i++)
+   {
+-    mzx_world->sprite_list[i] = (Sprite *)malloc(sizeof(Sprite));
++    mzx_world->sprite_list[i] = malloc(sizeof(Sprite));
+     memset(mzx_world->sprite_list[i], 0, sizeof(Sprite));
+   }
+-  mzx_world->collision_list = (int *)malloc(sizeof(int) * 256);
++  mzx_world->collision_list = malloc(sizeof(int) * 256);
+   mzx_world->sprite_num = 0;
+ 
+   // Set some default counter values
+@@ -1372,8 +1372,8 @@
+   mzx_world->vlayer_size = 0x8000;
+   mzx_world->vlayer_width = 256;
+   mzx_world->vlayer_height = 128;
+-  mzx_world->vlayer_chars = (char *)malloc(0x8000);
+-  mzx_world->vlayer_colors = (char *)malloc(0x8000);
++  mzx_world->vlayer_chars = malloc(0x8000);
++  mzx_world->vlayer_colors = malloc(0x8000);
+   memset(mzx_world->vlayer_chars, 32, 0x8000);
+   memset(mzx_world->vlayer_colors, 7, 0x8000);
+ 
+@@ -1584,7 +1584,7 @@
+ 
+   mzx_world->num_boards = 1;
+   mzx_world->num_boards_allocated = 1;
+-  mzx_world->board_list = (Board **)malloc(sizeof(Board *));
++  mzx_world->board_list = malloc(sizeof(Board *));
+   mzx_world->board_list[0] = create_blank_board();
+   mzx_world->current_board_id = 0;
+   mzx_world->current_board = mzx_world->board_list[0];
+@@ -1649,12 +1649,12 @@
+   {
+     if(mzx_world->update_done == NULL)
+     {
+-     mzx_world->update_done = (char *)malloc(size);
++     mzx_world->update_done = malloc(size);
+     }
+     else
+     {
+       mzx_world->update_done =
+-       (char *)realloc(mzx_world->update_done, size);
++       realloc(mzx_world->update_done, size);
+     }
+ 
+     mzx_world->update_done_size = size;
+Index: src/audio_mikmod.c
+===================================================================
+--- src/audio_mikmod.c	(revision 485)
++++ src/audio_mikmod.c	(working copy)
+@@ -193,14 +193,14 @@
+ 
+     file_size = file_length(input_file);
+ 
+-    input_buffer = (char *)malloc(file_size);
++    input_buffer = malloc(file_size);
+     fread(input_buffer, file_size, 1, input_file);
+     open_file = MikMod_LoadSongRW(SDL_RWFromMem(input_buffer, file_size), 64);
+ 
+     if(open_file)
+     {
+       mikmod_stream *mm_stream =
+-       (mikmod_stream *)malloc(sizeof(mikmod_stream));
++       malloc(sizeof(mikmod_stream));
+ 
+       mm_stream->module_data = open_file;
+       Player_Start(mm_stream->module_data);
+Index: src/rasm.c
+===================================================================
+--- src/rasm.c	(revision 485)
++++ src/rasm.c	(working copy)
+@@ -1721,7 +1721,7 @@
+     current_command.parameters = 1;
+ 
+     str_size = strlen(first_non_space) + 1;
+-    param_list[0] = (void *)malloc(str_size);
++    param_list[0] = malloc(str_size);
+     memcpy((char *)param_list[0], first_non_space, str_size);
+     current_command.param_types[0] = STRING;
+ 
+@@ -1774,7 +1774,7 @@
+           int str_size =
+            get_word(temp, current_line_position, ' ');
+ 
+-          param_list[arg_count] = (void *)malloc(str_size + 1);
++          param_list[arg_count] = malloc(str_size + 1);
+           memcpy((char *)param_list[arg_count], temp, str_size + 1);
+           advance = 1;
+           dir_modifier_buffer = 0;
+@@ -1787,7 +1787,7 @@
+           int str_size =
+            get_word(temp, current_line_position + 1, '"');
+ 
+-          param_list[arg_count] = (void *)malloc(str_size + 1);
++          param_list[arg_count] = malloc(str_size + 1);
+           memcpy((char *)param_list[arg_count], temp, str_size + 1);
+           advance = 1;
+           dir_modifier_buffer = 0;
+@@ -1815,7 +1815,7 @@
+           else
+           {
+             // Store the translation into the command list.
+-            param_list[arg_count] = (void *)malloc(2);
++            param_list[arg_count] = malloc(2);
+             ((char *)param_list[arg_count])[0] =
+              current_arg_translation | dir_modifier_buffer;
+             ((char *)param_list[arg_count])[1] = 0;
+@@ -1827,7 +1827,7 @@
+         else
+         {
+           // Store the translation into the command list.
+-          param_list[arg_count] = (void *)malloc(2);
++          param_list[arg_count] = malloc(2);
+           ((char *)param_list[arg_count])[0] = current_arg_translation;
+           ((char *)param_list[arg_count])[1] = current_arg_translation >> 8;
+           advance = 1;
+@@ -1890,7 +1890,7 @@
+ 
+   if(input_file)
+   {
+-    buffer = (char *)malloc(1024);
++    buffer = malloc(1024);
+     buffer[0] = 0xFF;
+ 
+     // fsafegets ensures no line terminators are present
+@@ -1905,7 +1905,7 @@
+         if((current_size + line_bytecode_length) > allocated_size)
+         {
+           allocated_size *= 2;
+-          buffer = (char *)realloc(buffer, allocated_size);
++          buffer = realloc(buffer, allocated_size);
+         }
+         memcpy(buffer + output_position, bytecode_buffer, line_bytecode_length);
+         output_position += line_bytecode_length;
+@@ -1919,7 +1919,7 @@
+       }
+     }
+ 
+-    buffer = (char *)realloc(buffer, current_size + 1);
++    buffer = realloc(buffer, current_size + 1);
+     buffer[current_size] = 0;
+ 
+     *size = current_size + 1;
+Index: src/decrypt.c
+===================================================================
+--- src/decrypt.c	(revision 485)
++++ src/decrypt.c	(working copy)
+@@ -94,7 +94,7 @@
+   file_length = ftell(source);
+   fseek(source, 0, SEEK_SET);
+ 
+-  file_buffer = (char *)malloc(file_length);
++  file_buffer = malloc(file_length);
+   src_ptr = file_buffer;
+   fread(file_buffer, file_length, 1, source);
+   fclose(source);
+Index: src/macro.c
+===================================================================
+--- src/macro.c	(revision 485)
++++ src/macro.c	(working copy)
+@@ -151,27 +151,27 @@
+   macro_type *current_type;
+   char current_char;
+   ext_macro *macro_dest =
+-   (ext_macro *)malloc(sizeof(ext_macro));
++   malloc(sizeof(ext_macro));
+   int i;
+   int def_val;
+ 
+-  text_lines = (char ***)malloc(sizeof(char **) *
++  text_lines = malloc(sizeof(char **) *
+    num_lines_allocated);
+   variable_references =
+-   (macro_variable_reference **)malloc
++   malloc
+    (sizeof(macro_variable_reference *) * num_lines_allocated);
+-  line_variables_count = (int *)malloc(sizeof(int) *
++  line_variables_count = malloc(sizeof(int) *
+    num_lines_allocated);
+ 
+-  macro_dest->name = (char *)malloc(strlen(name) + 1);
++  macro_dest->name = malloc(strlen(name) + 1);
+   strcpy(macro_dest->name, name);
+ 
+-  macro_dest->label = (char *)malloc(strlen(label) + 1);
++  macro_dest->label = malloc(strlen(label) + 1);
+   strcpy(macro_dest->label, label);
+ 
+   current_type = macro_dest->types;
+ 
+-  macro_dest->text = (char *)malloc(strlen(line_data) + 1);
++  macro_dest->text = malloc(strlen(line_data) + 1);
+   strcpy(macro_dest->text, line_data);
+   line_position = macro_dest->text;
+ 
+@@ -327,12 +327,12 @@
+         if(current_type->type == string)
+         {
+           variables[num_variables].storage.str_storage =
+-           (char *)malloc(current_type->type_attributes[0] + 1);
++           malloc(current_type->type_attributes[0] + 1);
+ 
+           if(def_val)
+           {
+             variables[num_variables].def.str_storage =
+-             (char *)malloc(current_type->type_attributes[0] + 1);
++             malloc(current_type->type_attributes[0] + 1);
+             memcpy(variables[num_variables].def.str_storage,
+              line_position_old, current_type->type_attributes[0]);
+             variables[num_variables].def.
+@@ -374,9 +374,9 @@
+ 
+       current_type->num_variables = num_variables;
+       current_type->variables =
+-       (macro_variable *)malloc(sizeof(macro_variable) * num_variables);
++       malloc(sizeof(macro_variable) * num_variables);
+       current_type->variables_sorted =
+-       (macro_variable **)malloc(sizeof(macro_variable *) * num_variables);
++       malloc(sizeof(macro_variable *) * num_variables);
+       memcpy(current_type->variables, variables,
+        sizeof(macro_variable) * num_variables);
+ 
+@@ -473,13 +473,13 @@
+ 
+       line_variables_count[num_lines] = num_line_variables;
+       variable_references[num_lines] =
+-       (macro_variable_reference *)malloc(sizeof(macro_variable_reference) *
++       malloc(sizeof(macro_variable_reference) *
+        num_line_variables);
+       memcpy(variable_references[num_lines], line_variable_references,
+        sizeof(macro_variable_reference) * num_line_variables);
+ 
+       text_lines[num_lines] =
+-       (char **)malloc(sizeof(char *) * (num_line_variables + 1));
++       malloc(sizeof(char *) * (num_line_variables + 1));
+       memcpy(text_lines[num_lines], line_text_segments,
+        sizeof(char *) * (num_line_variables + 1));
+ 
+@@ -489,13 +489,13 @@
+       {
+         num_lines_allocated *= 2;
+ 
+-        text_lines = (char ***)realloc(text_lines,
++        text_lines = realloc(text_lines,
+          sizeof(char **) * num_lines_allocated);
+         variable_references =
+-         (macro_variable_reference **)realloc
++         realloc
+          (variable_references, sizeof(macro_variable_reference *) *
+          num_lines_allocated);
+-        line_variables_count = (int *)realloc
++        line_variables_count = realloc
+          (line_variables_count, sizeof(int) * num_lines_allocated);
+       }
+     }
+@@ -503,14 +503,14 @@
+ 
+   macro_dest->num_lines = num_lines;
+   macro_dest->total_variables = total_variables;
+-  macro_dest->lines = (char ***)malloc(sizeof(char **) * num_lines);
++  macro_dest->lines = malloc(sizeof(char **) * num_lines);
+   memcpy(macro_dest->lines, text_lines, sizeof(char **) * num_lines);
+   macro_dest->variable_references =
+    (macro_variable_reference **)
+    malloc(sizeof(macro_variable_reference *) * num_lines);
+   memcpy(macro_dest->variable_references, variable_references,
+    sizeof(macro_variable_reference *) * num_lines);
+-  macro_dest->line_element_count = (int *)malloc(sizeof(int) * num_lines);
++  macro_dest->line_element_count = malloc(sizeof(int) * num_lines);
+   memcpy(macro_dest->line_element_count, line_variables_count, sizeof(int) *
+    num_lines);
+ 
+@@ -561,7 +561,7 @@
+   if(!(conf->num_macros_allocated))
+   {
+     conf->extended_macros =
+-     (ext_macro **)malloc(sizeof(ext_macro *));
++     malloc(sizeof(ext_macro *));
+     conf->extended_macros[0] =
+      process_macro(line_data, name, label);
+     conf->num_extended_macros = 1;
+@@ -583,7 +583,7 @@
+       {
+         conf->num_macros_allocated *= 2;
+         conf->extended_macros =
+-         (ext_macro **)realloc(conf->extended_macros,
++         realloc(conf->extended_macros,
+          sizeof(ext_macro *) * conf->num_macros_allocated);
+       }
+ 
+Index: src/counter.c
+===================================================================
+--- src/counter.c	(revision 487)
++++ src/counter.c	(working copy)
+@@ -1741,7 +1741,7 @@
+       allocated = MIN_STRING_ALLOCATE;
+ 
+     mzx_world->string_list =
+-     (mzx_string **)realloc(base, sizeof(mzx_string *) * allocated);
++     realloc(base, sizeof(mzx_string *) * allocated);
+     mzx_world->num_strings_allocated = allocated;
+     base = mzx_world->string_list;
+   }
+@@ -1756,7 +1756,7 @@
+   }
+ 
+   // Allocate a mzx_string with room for the name and initial value
+-  dest = (mzx_string *)malloc(sizeof(mzx_string) + name_length +
++  dest = malloc(sizeof(mzx_string) + name_length +
+    length - 1);
+ 
+   // Copy in the name, including NULL terminator.
+@@ -1780,7 +1780,7 @@
+   // Find the base length (take out the current length)
+   int base_length = (int)(src->value - (char *)src);
+ 
+-  src = (mzx_string *)realloc(src, base_length + length);
++  src = realloc(src, base_length + length);
+   src->value = (char *)src + base_length;
+   src->allocated_length = length;
+ 
+@@ -2608,7 +2608,7 @@
+       allocated = MIN_COUNTER_ALLOCATE;
+ 
+     mzx_world->counter_list =
+-     (counter **)realloc(base, sizeof(counter *) * allocated);
++     realloc(base, sizeof(counter *) * allocated);
+     base = mzx_world->counter_list;
+     mzx_world->num_counters_allocated = allocated;
+   }
+@@ -2622,7 +2622,7 @@
+      (count - position) * sizeof(counter *));
+   }
+ 
+-  cdest = (counter *)malloc(sizeof(counter) + strlen(name));
++  cdest = malloc(sizeof(counter) + strlen(name));
+   strcpy(cdest->name, name);
+   cdest->value = value;
+   cdest->gateway_write = NULL;
+@@ -3381,7 +3381,7 @@
+   int name_length = fgetd(fp);
+ 
+   counter *src_counter =
+-   (counter *)malloc(sizeof(counter) + name_length);
++   malloc(sizeof(counter) + name_length);
+   fread(src_counter->name, name_length, 1, fp);
+   src_counter->name[name_length] = 0;
+   src_counter->value = value;
+@@ -3398,7 +3398,7 @@
+   int str_length = fgetd(fp);
+ 
+   mzx_string *src_string =
+-   (mzx_string *)malloc(sizeof(mzx_string) + name_length +
++   malloc(sizeof(mzx_string) + name_length +
+    str_length - 1);
+ 
+   fread(src_string->name, name_length, 1, fp);
+@@ -3439,7 +3439,7 @@
+ {
+   // +1 for SCORE, +1 for mzx_speed
+   int num_vars = mzx_world->num_counters + mzx_world->num_strings + 1 + 1;
+-  char **var_list = (char **)malloc(num_vars * sizeof(char *));
++  char **var_list = malloc(num_vars * sizeof(char *));
+   int dialog_result;
+   int cp_len;
+   int selected = 0;
+@@ -3451,7 +3451,7 @@
+ 
+   for(i = 0; i < mzx_world->num_counters; i++)
+   {
+-    var_list[i] = (char *)malloc(76);
++    var_list[i] = malloc(76);
+     cp_len = strlen(mzx_world->counter_list[i]->name);
+     memset(var_list[i], ' ', 75);
+ 
+@@ -3465,14 +3465,14 @@
+   }
+ 
+   // SCORE isn't a real counter, so we have a special case here
+-  var_list[i] = (char *)malloc(76);
++  var_list[i] = malloc(76);
+   memset(var_list[i], ' ', 75);
+   memcpy(var_list[i], "SCORE", 5);
+   sprintf(var_list[i] + 64, "%d", mzx_world->score);
+   i++;
+ 
+   // mzx_speed isn't a real counter either, so another special case is needed
+-  var_list[i] = (char *)malloc(76);
++  var_list[i] = malloc(76);
+   memset(var_list[i], ' ', 75);
+   memcpy(var_list[i], "mzx_speed", 9);
+   sprintf(var_list[i] + 64, "%d", mzx_world->mzx_speed);
+@@ -3480,7 +3480,7 @@
+ 
+   for(i2 = 0; i2 < mzx_world->num_strings; i2++, i++)
+   {
+-    var_list[i] = (char *)malloc(76);
++    var_list[i] = malloc(76);
+     cp_len = strlen(mzx_world->string_list[i2]->name);
+     memset(var_list[i], ' ', 75);
+ 
+Index: src/helpsys.c
+===================================================================
+--- src/helpsys.c	(revision 485)
++++ src/helpsys.c	(working copy)
+@@ -48,7 +48,7 @@
+ 
+ void help_load(World *mzx_world, const char *file_name)
+ {
+-  help = (char *)malloc(1024 * 64);
++  help = malloc(1024 * 64);
+   // Search context links
+   mzx_world->help_file = fopen(file_name, "rb");
+ 
+Index: src/audio.c
+===================================================================
+--- src/audio.c	(revision 487)
++++ src/audio.c	(working copy)
+@@ -346,7 +346,7 @@
+   s_src->stream_offset = prologue_length;
+ 
+   s_src->output_data =
+-   (Sint16 *)realloc(s_src->output_data, allocated_data_length);
++   realloc(s_src->output_data, allocated_data_length);
+ 
+   sampled_negative_threshold(s_src);
+ }
+@@ -844,7 +844,7 @@
+       if(vorbis_file_info->channels <= 2)
+       {
+         vorbis_stream *v_stream =
+-         (vorbis_stream *)malloc(sizeof(vorbis_stream));
++         malloc(sizeof(vorbis_stream));
+ 
+         v_stream->vorbis_file_handle = open_file;
+         v_stream->vorbis_file_info = vorbis_file_info;
+@@ -1147,7 +1147,7 @@
+ 
+   frequency = freq_conversion / default_period;
+   dest_length = source_length + 44;
+-  data = (Uint8 *)malloc(dest_length);
++  data = malloc(dest_length);
+ 
+   write_chars(data, "RIFF");
+   write_little_endian32(data + 4, dest_length);
+@@ -1223,7 +1223,7 @@
+     if(wav_info.channels <= 2)
+     {
+       wav_stream *w_stream =
+-       (wav_stream *)malloc(sizeof(wav_stream));
++       malloc(sizeof(wav_stream));
+ 
+       w_stream->wav_data = wav_data;
+       w_stream->data_length = data_length;
+@@ -1258,7 +1258,7 @@
+ static audio_stream *construct_pc_speaker_stream(void)
+ {
+   pc_speaker_stream *pcs_stream =
+-   (pc_speaker_stream *)malloc(sizeof(pc_speaker_stream));
++   malloc(sizeof(pc_speaker_stream));
+ 
+   memset(pcs_stream, 0, sizeof(pc_speaker_stream));
+ 
+@@ -1439,7 +1439,7 @@
+   init_pc_speaker(conf);
+ 
+   SDL_OpenAudio(&desired_spec, &audio.audio_settings);
+-  audio.mix_buffer = (Sint32 *)malloc(audio.audio_settings.size * 2);
++  audio.mix_buffer = malloc(audio.audio_settings.size * 2);
+ 
+ #ifdef DEBUG
+   fprintf(stdout, "Started audio subsystem\n");
+Index: src/window.c
+===================================================================
+--- src/window.c	(revision 487)
++++ src/window.c	(working copy)
+@@ -1398,7 +1398,7 @@
+ element *construct_check_box(int x, int y, const char **choices,
+  int num_choices, int max_length, int *results)
+ {
+-  check_box *src = (check_box *)malloc(sizeof(check_box));
++  check_box *src = malloc(sizeof(check_box));
+   src->current_choice = 0;
+   src->choices = choices;
+   src->num_choices = num_choices;
+@@ -1413,7 +1413,7 @@
+ element *construct_char_box(int x, int y, const char *question,
+  int allow_char_255, int *result)
+ {
+-  char_box *src = (char_box *)malloc(sizeof(char_box));
++  char_box *src = malloc(sizeof(char_box));
+   src->question = question;
+   src->allow_char_255 = allow_char_255;
+   src->result = result;
+@@ -1426,7 +1426,7 @@
+ element *construct_color_box(int x, int y,
+  const char *question, int allow_wildcard, int *result)
+ {
+-  color_box *src = (color_box *)malloc(sizeof(color_box));
++  color_box *src = malloc(sizeof(color_box));
+   src->question = question;
+   src->allow_wildcard = allow_wildcard;
+   src->result = result;
+@@ -1447,7 +1447,7 @@
+ element *construct_board_list(int x, int y,
+  const char *title, int board_zero_as_none, int *result)
+ {
+-  board_list *src = (board_list *)malloc(sizeof(board_list));
++  board_list *src = malloc(sizeof(board_list));
+   src->title = title;
+   src->board_zero_as_none = board_zero_as_none;
+   src->result = result;
+@@ -1476,7 +1476,7 @@
+   if(mzx_world->num_boards == mzx_world->num_boards_allocated)
+   {
+     mzx_world->num_boards_allocated *= 2;
+-    mzx_world->board_list = (Board **)realloc(mzx_world->board_list,
++    mzx_world->board_list = realloc(mzx_world->board_list,
+      mzx_world->num_boards_allocated * sizeof(Board *));
+   }
+ 
+@@ -1499,14 +1499,14 @@
+ {
+   int i;
+   char **board_names =
+-   (char **)malloc((mzx_world->num_boards + 1) * sizeof(char *));
++   malloc((mzx_world->num_boards + 1) * sizeof(char *));
+   int num_boards = mzx_world->num_boards;
+ 
+   // Go through - blank boards get a (no board) marker. t2 keeps track
+   // of the number of boards.
+   for(i = 0; i < num_boards; i++)
+   {
+-    board_names[i] = (char *)malloc(BOARD_NAME_SIZE);
++    board_names[i] = malloc(BOARD_NAME_SIZE);
+ 
+     if(mzx_world->board_list[i] == NULL)
+       strncpy(board_names[i], "(no board)", BOARD_NAME_SIZE - 1);
+@@ -1517,7 +1517,7 @@
+     board_names[i][BOARD_NAME_SIZE - 1] = '\0';
+   }
+ 
+-  board_names[i] = (char *)malloc(BOARD_NAME_SIZE);
++  board_names[i] = malloc(BOARD_NAME_SIZE);
+ 
+   if((current < 0) || (current >= mzx_world->num_boards))
+     current = 0;
+@@ -2764,7 +2764,7 @@
+ 
+ element *construct_label(int x, int y, const char *text)
+ {
+-  label *src = (label *)malloc(sizeof(label));
++  label *src = malloc(sizeof(label));
+   src->text = text;
+   construct_element(&(src->e), x, y, strlen(text), 1,
+    draw_label, NULL, NULL, NULL, NULL);
+@@ -2775,7 +2775,7 @@
+ __editor_maybe_static element *construct_input_box(int x, int y,
+  const char *question, int max_length, int input_flags, char *result)
+ {
+-  input_box *src = (input_box *)malloc(sizeof(input_box));
++  input_box *src = malloc(sizeof(input_box));
+   src->question = question;
+   src->input_flags = input_flags;
+   src->max_length = max_length;
+@@ -2791,7 +2791,7 @@
+ element *construct_radio_button(int x, int y,
+  const char **choices, int num_choices, int max_length, int *result)
+ {
+-  radio_button *src = (radio_button *)malloc(sizeof(radio_button));
++  radio_button *src = malloc(sizeof(radio_button));
+   src->choices = choices;
+   src->num_choices = num_choices;
+   src->result = result;
+@@ -2806,7 +2806,7 @@
+ element *construct_button(int x, int y, const char *label,
+  int return_value)
+ {
+-  button *src = (button *)malloc(sizeof(button));
++  button *src = malloc(sizeof(button));
+   src->label = label;
+   src->return_value = return_value;
+ 
+@@ -2820,7 +2820,7 @@
+  const char *question, int lower_limit, int upper_limit,
+  int mult_five, int *result)
+ {
+-  number_box *src = (number_box *)malloc(sizeof(number_box));
++  number_box *src = malloc(sizeof(number_box));
+   int width;
+ 
+   src->question = question;
+@@ -2847,7 +2847,7 @@
+ {
+   int scroll_offset = *result - (num_choices_visible / 2);
+ 
+-  list_box *src = (list_box *)malloc(sizeof(list_box));
++  list_box *src = malloc(sizeof(list_box));
+   src->choices = choices;
+   src->num_choices = num_choices;
+   src->num_choices_visible = num_choices_visible;
+@@ -3208,8 +3208,8 @@
+   {
+     total_filenames_allocated = 32;
+     total_dirnames_allocated = 32;
+-    file_list = (char **)malloc(sizeof(char *) * 32);
+-    dir_list = (char **)malloc(sizeof(char *) * 32);
++    file_list = malloc(sizeof(char *) * 32);
++    dir_list = malloc(sizeof(char *) * 32);
+     memset(file_list, 0, sizeof(char *) * 32);
+     memset(dir_list, 0, sizeof(char *) * 32);
+ 
+@@ -3241,7 +3241,7 @@
+           {
+             if(dirs_okay)
+             {
+-              dir_list[num_dirs] = (char *)malloc(file_name_length + 1);
++              dir_list[num_dirs] = malloc(file_name_length + 1);
+               strncpy(dir_list[num_dirs], file_name, file_name_length);
+                dir_list[num_dirs][file_name_length] = '\0';
+               num_dirs++;
+@@ -3268,7 +3268,7 @@
+                  wildcards[i]))
+                 {
+                   file_list[num_files] =
+-                   (char *)malloc(56 + file_name_length + 1);
++                   malloc(56 + file_name_length + 1);
+ 
+                   if(!strcasecmp(file_name + file_name_length - 4, ".mzx"))
+                   {
+@@ -3300,7 +3300,7 @@
+ 
+         if(num_files == total_filenames_allocated)
+         {
+-          file_list = (char **)realloc(file_list, sizeof(char *) *
++          file_list = realloc(file_list, sizeof(char *) *
+            total_filenames_allocated * 2);
+           memset(file_list + total_filenames_allocated, 0,
+            sizeof(char *) * total_filenames_allocated);
+@@ -3309,7 +3309,7 @@
+ 
+         if(num_dirs == total_dirnames_allocated)
+         {
+-          dir_list = (char **)realloc(dir_list, sizeof(char *) *
++          dir_list = realloc(dir_list, sizeof(char *) *
+            total_dirnames_allocated * 2);
+           memset(dir_list + total_dirnames_allocated, 0,
+            sizeof(char *) * total_dirnames_allocated);
+@@ -3330,14 +3330,14 @@
+       {
+         if(drive_letter_bitmap & (1 << i))
+         {
+-          dir_list[num_dirs] = (char *)malloc(3);
++          dir_list[num_dirs] = malloc(3);
+           sprintf(dir_list[num_dirs], "%c:", 'A' + i);
+ 
+           num_dirs++;
+ 
+           if(num_dirs == total_dirnames_allocated)
+           {
+-            dir_list = (char **)realloc(dir_list, sizeof(char *) *
++            dir_list = realloc(dir_list, sizeof(char *) *
+              total_dirnames_allocated * 2);
+             memset(dir_list + total_dirnames_allocated, 0,
+              sizeof(char *) * total_dirnames_allocated);
+Index: src/robot.c
+===================================================================
+--- src/robot.c	(revision 485)
++++ src/robot.c	(working copy)
+@@ -39,7 +39,7 @@
+ 
+ Robot *load_robot_allocate(FILE *fp, int savegame)
+ {
+-  Robot *cur_robot = (Robot *)malloc(sizeof(Robot));
++  Robot *cur_robot = malloc(sizeof(Robot));
+   load_robot(cur_robot, fp, savegame);
+ 
+   return cur_robot;
+@@ -91,7 +91,7 @@
+     // Get the stack pointer
+     cur_robot->stack_pointer = fgetd(fp);
+     // Allocate the stack
+-    cur_robot->stack = (int *)malloc(stack_size * sizeof(int));
++    cur_robot->stack = malloc(stack_size * sizeof(int));
+     for(i = 0; i < stack_size; i++)
+     {
+       cur_robot->stack[i] = fgetd(fp);
+@@ -104,12 +104,12 @@
+     memset(cur_robot->local, 0, sizeof(int) * 32);
+     // Start with a minimum stack size
+     cur_robot->stack_size = ROBOT_START_STACK;
+-    cur_robot->stack = (int *)malloc(ROBOT_START_STACK * sizeof(int));
++    cur_robot->stack = malloc(ROBOT_START_STACK * sizeof(int));
+     // Initialize the stack pointer to the bottom
+     cur_robot->stack_pointer = 0;
+   }
+ 
+-  cur_robot->program = (char *)malloc(program_size);
++  cur_robot->program = malloc(program_size);
+   fread(cur_robot->program, program_size, 1, fp);
+ 
+   // Now create a label cache IF the robot is in use
+@@ -129,7 +129,7 @@
+     stack_size *= 2;
+     if(stack_size > ROBOT_MAX_STACK)
+       return;
+-    cur_robot->stack = (int *)realloc(stack, stack_size * sizeof(int));
++    cur_robot->stack = realloc(stack, stack_size * sizeof(int));
+     stack = cur_robot->stack;
+     cur_robot->stack_size = stack_size;
+   }
+@@ -165,13 +165,13 @@
+   cur_scroll->mesg_size = scroll_size;
+   cur_scroll->used = fgetc(fp);
+ 
+-  cur_scroll->mesg = (char *)malloc(scroll_size);
++  cur_scroll->mesg = malloc(scroll_size);
+   fread(cur_scroll->mesg, scroll_size, 1, fp);
+ }
+ 
+ Scroll *load_scroll_allocate(FILE *fp, int savegame)
+ {
+-  Scroll *cur_scroll = (Scroll *)malloc(sizeof(Scroll));
++  Scroll *cur_scroll = malloc(sizeof(Scroll));
+   load_scroll(cur_scroll, fp, savegame);
+ 
+   return cur_scroll;
+@@ -188,7 +188,7 @@
+ 
+ Sensor *load_sensor_allocate(FILE *fp, int savegame)
+ {
+-  Sensor *cur_sensor = (Sensor *)malloc(sizeof(Sensor));
++  Sensor *cur_sensor = malloc(sizeof(Sensor));
+   load_sensor(cur_sensor, fp, savegame);
+ 
+   return cur_sensor;
+@@ -375,13 +375,13 @@
+ 
+ void reallocate_robot(Robot *robot, int size)
+ {
+-  robot->program = (char *)realloc(robot->program, size);
++  robot->program = realloc(robot->program, size);
+   robot->program_length = size;
+ }
+ 
+ void reallocate_scroll(Scroll *scroll, int size)
+ {
+-  scroll->mesg = (char *)realloc(scroll->mesg, size);
++  scroll->mesg = realloc(scroll->mesg, size);
+   scroll->mesg_size = size;
+ }
+ 
+@@ -414,7 +414,7 @@
+   int i;
+ 
+   char *robot_program = robot->program;
+-  Label **label_list = (Label **)malloc(sizeof(Label *) * 16);
++  Label **label_list = malloc(sizeof(Label *) * 16);
+   Label *current_label;
+ 
+   for(i = 1; i < (robot->program_length - 1); i++)
+@@ -425,7 +425,7 @@
+ 
+     if((cmd == 106) || (cmd == 108))
+     {
+-      current_label = (Label *)malloc(sizeof(Label));
++      current_label = malloc(sizeof(Label));
+       current_label->name = robot_program + i + 3;
+ 
+       if(next >= (robot->program_length - 2))
+@@ -446,7 +446,7 @@
+       if(labels_found == labels_allocated)
+       {
+         labels_allocated *= 2;
+-        label_list = (Label **)realloc(label_list,
++        label_list = realloc(label_list,
+          sizeof(Label *) * labels_allocated);
+       }
+       label_list[labels_found] = current_label;
+@@ -467,7 +467,7 @@
+   if(labels_found != labels_allocated)
+   {
+     label_list =
+-     (Label **)realloc(label_list, sizeof(Label *) * labels_found);
++     realloc(label_list, sizeof(Label *) * labels_found);
+   }
+ 
+   // Now sort the list
+@@ -2395,11 +2395,11 @@
+         else
+           num_robots_allocated = 1;
+ 
+-        src_board->robot_list = (Robot **)realloc(robot_list,
++        src_board->robot_list = realloc(robot_list,
+          (num_robots_allocated + 1) * sizeof(Robot *));
+ 
+         src_board->robot_list_name_sorted =
+-         (Robot **)realloc(src_board->robot_list_name_sorted,
++         realloc(src_board->robot_list_name_sorted,
+          (num_robots_allocated) * sizeof(Robot *));
+         src_board->num_robots_allocated = num_robots_allocated;
+       }
+@@ -2437,7 +2437,7 @@
+         else
+           num_scrolls_allocated = 1;
+ 
+-        src_board->scroll_list = (Scroll **)realloc(scroll_list,
++        src_board->scroll_list = realloc(scroll_list,
+          (num_scrolls_allocated + 1) * sizeof(Scroll *));
+         src_board->num_scrolls_allocated = num_scrolls_allocated;
+       }
+@@ -2476,7 +2476,7 @@
+         else
+           num_sensors_allocated = 1;
+ 
+-        src_board->sensor_list = (Sensor **)realloc(sensor_list,
++        src_board->sensor_list = realloc(sensor_list,
+          (num_sensors_allocated + 1) * sizeof(Sensor *));
+         src_board->num_sensors_allocated = num_sensors_allocated;
+       }
+@@ -2506,7 +2506,7 @@
+   // Copy all the contents
+   memcpy(copy_robot, cur_robot, sizeof(Robot));
+   // We need unique copies of the program and the label cache.
+-  copy_robot->program = (char *)malloc(program_length);
++  copy_robot->program = malloc(program_length);
+ 
+   src_program_location = cur_robot->program;
+   dest_program_location = copy_robot->program;
+@@ -2514,7 +2514,7 @@
+   memcpy(dest_program_location, src_program_location, program_length);
+ 
+   if(num_labels)
+-    copy_robot->label_list = (Label **)malloc(num_labels * sizeof(Label *));
++    copy_robot->label_list = malloc(num_labels * sizeof(Label *));
+   else
+     copy_robot->label_list = NULL;
+ 
+@@ -2523,7 +2523,7 @@
+   // Copy each individual label pointer over
+   for(i = 0; i < num_labels; i++)
+   {
+-    copy_robot->label_list[i] = (Label *)malloc(sizeof(Label));
++    copy_robot->label_list[i] = malloc(sizeof(Label));
+ 
+     src_label = cur_robot->label_list[i];
+     dest_label = copy_robot->label_list[i];
+@@ -2534,7 +2534,7 @@
+   }
+ 
+   // Give the robot a new, fresh stack
+-  copy_robot->stack = (int *)malloc(ROBOT_START_STACK * sizeof(int));
++  copy_robot->stack = malloc(ROBOT_START_STACK * sizeof(int));
+   copy_robot->stack_size = ROBOT_START_STACK;
+   copy_robot->stack_pointer = 0;
+   copy_robot->xpos = x;
+@@ -2554,7 +2554,7 @@
+   int dest_id = find_free_robot(src_board);
+   if(dest_id != -1)
+   {
+-    Robot *copy_robot = (Robot *)malloc(sizeof(Robot));
++    Robot *copy_robot = malloc(sizeof(Robot));
+     duplicate_robot_direct(cur_robot, copy_robot, x, y);
+     add_robot_name_entry(src_board, copy_robot, copy_robot->robot_name);
+     src_board->robot_list[dest_id] = copy_robot;
+@@ -2593,7 +2593,7 @@
+   // Copy all the contents
+   memcpy(copy_scroll, cur_scroll, sizeof(Scroll));
+   // We need unique copies of the program and the label cache.
+-  copy_scroll->mesg = (char *)malloc(mesg_size);
++  copy_scroll->mesg = malloc(mesg_size);
+   memcpy(copy_scroll->mesg, cur_scroll->mesg, mesg_size);
+ }
+ 
+@@ -2632,7 +2632,7 @@
+   int dest_id = find_free_scroll(src_board);
+   if(dest_id != -1)
+   {
+-    Scroll *copy_scroll = (Scroll *)malloc(sizeof(Scroll));
++    Scroll *copy_scroll = malloc(sizeof(Scroll));
+     duplicate_scroll_direct(cur_scroll, copy_scroll);
+     src_board->scroll_list[dest_id] = copy_scroll;
+   }
+@@ -2645,7 +2645,7 @@
+   int dest_id = find_free_sensor(src_board);
+   if(dest_id != -1)
+   {
+-    Sensor *copy_sensor = (Sensor *)malloc(sizeof(Sensor));
++    Sensor *copy_sensor = malloc(sizeof(Sensor));
+     duplicate_sensor_direct(cur_sensor, copy_sensor);
+     src_board->sensor_list[dest_id] = copy_sensor;
+   }
+@@ -2667,17 +2667,17 @@
+   Scroll **scroll_list = src_board->scroll_list;
+   Sensor **sensor_list = src_board->sensor_list;
+   Robot **optimized_robot_list =
+-   (Robot **)malloc(sizeof(Robot *) * (num_robots + 1));
++   malloc(sizeof(Robot *) * (num_robots + 1));
+   Scroll **optimized_scroll_list =
+-   (Scroll **)malloc(sizeof(Scroll *) * (num_scrolls + 1));
++   malloc(sizeof(Scroll *) * (num_scrolls + 1));
+   Sensor **optimized_sensor_list =
+-   (Sensor **)malloc(sizeof(Sensor *) * (num_sensors + 1));
++   malloc(sizeof(Sensor *) * (num_sensors + 1));
+   int *robot_id_translation_list =
+-   (int *)malloc(sizeof(int) * (num_robots + 1));
++   malloc(sizeof(int) * (num_robots + 1));
+   int *scroll_id_translation_list =
+-   (int *)malloc(sizeof(int) * (num_scrolls + 1));
++   malloc(sizeof(int) * (num_scrolls + 1));
+   int *sensor_id_translation_list =
+-   (int *)malloc(sizeof(int) * (num_sensors + 1));
++   malloc(sizeof(int) * (num_sensors + 1));
+   Robot *cur_robot;
+   Scroll *cur_scroll;
+   Sensor *cur_sensor;
+@@ -2713,7 +2713,7 @@
+     optimized_robot_list[0] = robot_list[0];
+     free(robot_list);
+     src_board->robot_list =
+-     (Robot **)realloc(optimized_robot_list, sizeof(Robot *) * i2);
++     realloc(optimized_robot_list, sizeof(Robot *) * i2);
+     src_board->num_robots = i2 - 1;
+     src_board->num_robots_allocated = i2 - 1;
+   }
+@@ -2739,7 +2739,7 @@
+     optimized_scroll_list[0] = scroll_list[0];
+     free(scroll_list);
+     src_board->scroll_list =
+-     (Scroll **)realloc(optimized_scroll_list, sizeof(Scroll *) * i2);
++     realloc(optimized_scroll_list, sizeof(Scroll *) * i2);
+     src_board->num_scrolls = i2 - 1;
+     src_board->num_scrolls_allocated = i2 - 1;
+   }
+@@ -2766,7 +2766,7 @@
+     optimized_sensor_list[0] = sensor_list[0];
+     free(sensor_list);
+     src_board->sensor_list =
+-     (Sensor **)realloc(optimized_sensor_list, sizeof(Sensor *) * i2);
++     realloc(optimized_sensor_list, sizeof(Sensor *) * i2);
+     src_board->num_sensors = i2 - 1;
+     src_board->num_sensors_allocated = i2 - 1;
+   }
+@@ -2830,7 +2830,7 @@
+ 
+ void create_blank_robot_direct(Robot *cur_robot, int x, int y)
+ {
+-  char *program = (char *)malloc(2);
++  char *program = malloc(2);
+ 
+   memset(cur_robot, 0, sizeof(Robot));
+ 
+@@ -2849,7 +2849,7 @@
+ 
+ void create_blank_scroll_direct(Scroll *cur_scroll)
+ {
+-  char *message = (char *)malloc(3);
++  char *message = malloc(3);
+ 
+   memset(cur_scroll, 0, sizeof(Scroll));
+ 
+Index: src/board.c
+===================================================================
+--- src/board.c	(revision 485)
++++ src/board.c	(working copy)
+@@ -83,17 +83,17 @@
+ 
+     size = overlay_width * overlay_height;
+ 
+-    cur_board->overlay = (char *)malloc(size);
+-    cur_board->overlay_color = (char *)malloc(size);
++    cur_board->overlay = malloc(size);
++    cur_board->overlay_color = malloc(size);
+ 
+     load_RLE2_plane(cur_board->overlay, fp, size);
+-    test_buffer = (char *)malloc(1024);
++    test_buffer = malloc(1024);
+     free(test_buffer);
+ 
+     // Skip sizes
+     fseek(fp, 4, SEEK_CUR);
+     load_RLE2_plane(cur_board->overlay_color, fp, size);
+-    test_buffer = (char *)malloc(1024);
++    test_buffer = malloc(1024);
+     free(test_buffer);
+   }
+   else
+@@ -112,12 +112,12 @@
+ 
+   size = board_width * board_height;
+ 
+-  cur_board->level_id = (char *)malloc(size);
+-  cur_board->level_color = (char *)malloc(size);
+-  cur_board->level_param = (char *)malloc(size);
+-  cur_board->level_under_id = (char *)malloc(size);
+-  cur_board->level_under_color = (char *)malloc(size);
+-  cur_board->level_under_param = (char *)malloc(size);
++  cur_board->level_id = malloc(size);
++  cur_board->level_color = malloc(size);
++  cur_board->level_param = malloc(size);
++  cur_board->level_under_id = malloc(size);
++  cur_board->level_under_color = malloc(size);
++  cur_board->level_under_param = malloc(size);
+ 
+   load_RLE2_plane(cur_board->level_id, fp, size);
+   fseek(fp, 4, SEEK_CUR);
+@@ -182,10 +182,10 @@
+   num_robots_active = 0;
+ 
+   cur_board->robot_list =
+-   (Robot **)malloc(sizeof(Robot *) * (num_robots + 1));
++   malloc(sizeof(Robot *) * (num_robots + 1));
+   // Also allocate for name sorted list
+   cur_board->robot_list_name_sorted =
+-   (Robot **)malloc(sizeof(Robot *) * num_robots);
++   malloc(sizeof(Robot *) * num_robots);
+ 
+   // Any null objects being placed will later be optimized out
+ 
+@@ -214,7 +214,7 @@
+     if(num_robots_active != num_robots)
+     {
+       cur_board->robot_list_name_sorted =
+-       (Robot **)realloc(cur_board->robot_list_name_sorted,
++       realloc(cur_board->robot_list_name_sorted,
+        sizeof(Robot *) * num_robots_active);
+     }
+     qsort(cur_board->robot_list_name_sorted, num_robots_active,
+@@ -233,7 +233,7 @@
+   // Load scrolls
+   num_scrolls = fgetc(fp);
+   cur_board->scroll_list =
+-   (Scroll **)malloc(sizeof(Scroll *) * (num_scrolls + 1));
++   malloc(sizeof(Scroll *) * (num_scrolls + 1));
+ 
+   if(num_scrolls)
+   {
+@@ -259,7 +259,7 @@
+   // Load sensors
+   num_sensors = fgetc(fp);
+   cur_board->sensor_list =
+-   (Sensor **)malloc(sizeof(Sensor *) * (num_sensors + 1));
++   malloc(sizeof(Sensor *) * (num_sensors + 1));
+ 
+   if(num_sensors)
+   {
+@@ -287,7 +287,7 @@
+ 
+ static Board *load_board_allocate_direct(FILE *fp, int savegame)
+ {
+-  Board *cur_board = (Board *)malloc(sizeof(Board));
++  Board *cur_board = malloc(sizeof(Board));
+   load_board_direct(cur_board, fp, savegame);
+   fread(cur_board->board_name, 25, 1, fp);
+   return cur_board;
+@@ -323,7 +323,7 @@
+ 
+ Board *load_board_allocate(FILE *fp, int savegame)
+ {
+-  Board *cur_board = (Board *)malloc(sizeof(Board));
++  Board *cur_board = malloc(sizeof(Board));
+   load_board(cur_board, fp, savegame);
+ 
+   if(!cur_board->board_width)
+@@ -620,7 +620,7 @@
+ 
+ Board *create_blank_board(void)
+ {
+-  Board *cur_board = (Board *)malloc(sizeof(Board));
++  Board *cur_board = malloc(sizeof(Board));
+   int i;
+ 
+   cur_board->size = 0;
+@@ -628,14 +628,14 @@
+   cur_board->board_width = 100;
+   cur_board->board_height = 100;
+   cur_board->overlay_mode = 1;
+-  cur_board->level_id = (char *)malloc(100 * 100);
+-  cur_board->level_param = (char *)malloc(100 * 100);
+-  cur_board->level_color = (char *)malloc(100 * 100);
+-  cur_board->level_under_id = (char *)malloc(100 * 100);
+-  cur_board->level_under_param = (char *)malloc(100 * 100);
+-  cur_board->level_under_color = (char *)malloc(100 * 100);
+-  cur_board->overlay = (char *)malloc(100 * 100);
+-  cur_board->overlay_color = (char *)malloc(100 * 100);
++  cur_board->level_id = malloc(100 * 100);
++  cur_board->level_param = malloc(100 * 100);
++  cur_board->level_color = malloc(100 * 100);
++  cur_board->level_under_id = malloc(100 * 100);
++  cur_board->level_under_param = malloc(100 * 100);
++  cur_board->level_under_color = malloc(100 * 100);
++  cur_board->overlay = malloc(100 * 100);
++  cur_board->overlay_color = malloc(100 * 100);
+   cur_board->mod_playing[0] = 0;
+   cur_board->viewport_x = 0;
+   cur_board->viewport_y = 0;
+@@ -684,14 +684,14 @@
+   cur_board->num_robots = 0;
+   cur_board->num_robots_active = 0;
+   cur_board->num_robots_allocated = 0;
+-  cur_board->robot_list = (Robot **)malloc(sizeof(Robot *));
++  cur_board->robot_list = malloc(sizeof(Robot *));
+   cur_board->robot_list_name_sorted = NULL;
+   cur_board->num_scrolls = 0;
+   cur_board->num_scrolls_allocated = 0;
+-  cur_board->scroll_list = (Scroll **)malloc(sizeof(Scroll *));
++  cur_board->scroll_list = malloc(sizeof(Scroll *));
+   cur_board->num_sensors = 0;
+   cur_board->num_sensors_allocated = 0;
+-  cur_board->sensor_list = (Sensor **)malloc(sizeof(Sensor *));
++  cur_board->sensor_list = malloc(sizeof(Sensor *));
+ 
+   memset(cur_board->level_id, 0, 100 * 100);
+   memset(cur_board->level_color, 7, 100 * 100);
+@@ -819,12 +819,12 @@
+       }
+ 
+       // Resize layers
+-      src_board->level_id = (char *)realloc(level_id, new_size);
+-      src_board->level_color = (char *)realloc(level_color, new_size);
+-      src_board->level_param = (char *)realloc(level_param, new_size);
+-      src_board->level_under_id = (char *)realloc(level_under_id, new_size);
+-      src_board->level_under_color = (char *)realloc(level_under_color, new_size);
+-      src_board->level_under_param = (char *)realloc(level_under_param, new_size);
++      src_board->level_id = realloc(level_id, new_size);
++      src_board->level_color = realloc(level_color, new_size);
++      src_board->level_param = realloc(level_param, new_size);
++      src_board->level_under_id = realloc(level_under_id, new_size);
++      src_board->level_under_color = realloc(level_under_color, new_size);
++      src_board->level_under_param = realloc(level_under_param, new_size);
+ 
+       level_id = src_board->level_id;
+       level_color = src_board->level_color;
+@@ -843,8 +843,8 @@
+           memmove(overlay_color + dest_offset, overlay_color + src_offset, new_width);
+         }
+ 
+-        src_board->overlay = (char *)realloc(overlay, new_size);
+-        src_board->overlay_color = (char *)realloc(overlay_color, new_size);
++        src_board->overlay = realloc(overlay, new_size);
++        src_board->overlay_color = realloc(overlay_color, new_size);
+ 
+         overlay = src_board->overlay;
+         overlay_color = src_board->overlay_color;
+@@ -865,18 +865,18 @@
+         max_height = board_height;
+ 
+       // Resize first this time.
+-      src_board->level_id = (char *)realloc(level_id, new_size);
+-      src_board->level_color = (char *)realloc(level_color, new_size);
+-      src_board->level_param = (char *)realloc(level_param, new_size);
+-      src_board->level_under_id = (char *)realloc(level_under_id, new_size);
+-      src_board->level_under_color = (char *)realloc(level_under_color, new_size);
+-      src_board->level_under_param = (char *)realloc(level_under_param, new_size);
++      src_board->level_id = realloc(level_id, new_size);
++      src_board->level_color = realloc(level_color, new_size);
++      src_board->level_param = realloc(level_param, new_size);
++      src_board->level_under_id = realloc(level_under_id, new_size);
++      src_board->level_under_color = realloc(level_under_color, new_size);
++      src_board->level_under_param = realloc(level_under_param, new_size);
+ 
+       // Resize the overlay too, if it exists
+       if(overlay_mode)
+       {
+-        src_board->overlay = (char *)realloc(overlay, new_size);
+-        src_board->overlay_color = (char *)realloc(overlay_color, new_size);
++        src_board->overlay = realloc(overlay, new_size);
++        src_board->overlay_color = realloc(overlay_color, new_size);
+         overlay = src_board->overlay;
+         overlay_color = src_board->overlay_color;
+       }
+@@ -932,18 +932,18 @@
+     {
+       // Width remains the same, just a straight resize
+ 
+-      src_board->level_id = (char *)realloc(level_id, new_size);
+-      src_board->level_color = (char *)realloc(level_color, new_size);
+-      src_board->level_param = (char *)realloc(level_param, new_size);
+-      src_board->level_under_id = (char *)realloc(level_under_id, new_size);
+-      src_board->level_under_color = (char *)realloc(level_under_color, new_size);
+-      src_board->level_under_param = (char *)realloc(level_under_param, new_size);
++      src_board->level_id = realloc(level_id, new_size);
++      src_board->level_color = realloc(level_color, new_size);
++      src_board->level_param = realloc(level_param, new_size);
++      src_board->level_under_id = realloc(level_under_id, new_size);
++      src_board->level_under_color = realloc(level_under_color, new_size);
++      src_board->level_under_param = realloc(level_under_param, new_size);
+ 
+       // Resize the overlay too, if it exists
+       if(overlay_mode)
+       {
+-        src_board->overlay = (char *)realloc(overlay, new_size);
+-        src_board->overlay_color = (char *)realloc(overlay_color, new_size);
++        src_board->overlay = realloc(overlay, new_size);
++        src_board->overlay_color = realloc(overlay_color, new_size);
+       }
+ 
+       level_id = src_board->level_id;
