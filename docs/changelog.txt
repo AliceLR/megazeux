@@ -24,6 +24,9 @@ USERS
 + Assemble single non-alphanum/punctuation characters as bytecode CHARACTER
   instead of bytecode STRING. Fixes bogus auto-quoting for commands like
   SCROLL CHAR (Revvy).
++ Switch the Win32 package back to using the "windib" SDL video driver,
+  instead of the "directx" SDL video driver. The windib.bat file has been
+  replaced with directx.bat, which has opposing semantics.
 
 DEVELOPERS
 
