@@ -74,8 +74,8 @@ ifeq (${BUILD_MODPLUG},1)
 BUILD_GDM2S3M=1
 endif
 
-include src/Makefile.in
 include src/utils/Makefile.in
+include src/Makefile.in
 
 clean: ${mzx}_clean utils_clean
 

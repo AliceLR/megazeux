@@ -23,6 +23,9 @@
  * This work is in the public domain.
  */
 
+#include <strings.h>
+#include <string.h>
+
 #include "world.h"
 
 #define error(x...) \
