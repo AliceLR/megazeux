@@ -25,7 +25,7 @@ txt2hlp_objs = ${txt2hlp_base}/txt2hlp.${o}
 checkres_base = src/utils
 checkres = ${checkres_base}/checkres${BINEXT}
 checkres_objs = ${checkres_base}/checkres.${o} ${mzx_base}/fsafeopen.${o}
-checkres_ldflags = ${unzip} -lz
+checkres_ldflags = ${unzip} -L${PREFIX}/lib -lz
 
 ${txt2hlp_base}/%.o ${txt2hlp_base}/%.dbg.o: ${txt2hlp_base}/%.c
 ifeq (${V},1)
