@@ -22,7 +22,6 @@
 #include "audio.h"
 #include "audio_modplug.h"
 #include "fsafeopen.h"
-#include "gdm2s3m.h"
 #include "const.h"
 #include "util.h"
 
@@ -158,58 +157,27 @@ static void mp_destruct(audio_stream *a_src)
 audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
  Uint32 volume, Uint32 repeat)
 {
-  FILE *input_file;
-  char *input_buffer;
-  Uint32 file_size;
-  Sint32 ext_pos = strlen(filename) - 4;
-  char new_file[MAX_PATH];
+  ssize_t ext_pos = strlen(filename) - 4;
   audio_stream *ret_val = NULL;
+  char new_file[MAX_PATH];
+  char *input_buffer;
+  FILE *input_file;
 
-  if((ext_pos > 0) && !strcasecmp(filename + ext_pos, ".gdm"))
+  if(!check_ext_for_gdm_and_convert(filename, new_file))
   {
-    char translated_filename_src[MAX_PATH];
-    char translated_filename_dest[MAX_PATH];
-
-    // GDM -> S3M
-    strcpy(new_file, filename);
-    memcpy(new_file + ext_pos, ".s3m", 4);
-
-    if(fsafetranslate(new_file, translated_filename_dest) < 0)
+    if(!check_ext_for_sam_and_convert(filename, new_file))
     {
-      // If it doesn't exist, create it by converting.
-      fsafetranslate(filename, translated_filename_src);
-      convert_gdm_s3m(translated_filename_src, new_file);
+      strncpy(new_file, filename, MAX_PATH - 1);
+      new_file[MAX_PATH - 1] = '\0';
     }
-
-    filename = new_file;
   }
 
-  if((ext_pos > 0) && !strcasecmp(filename + ext_pos, ".sam"))
-  {
-    char translated_filename_src[MAX_PATH];
-    char translated_filename_dest[MAX_PATH];
-
-    // SAM -> WAV
-    strcpy(new_file, filename);
-    memcpy(new_file + ext_pos, ".wav", 4);
-
-    if(fsafetranslate(new_file, translated_filename_dest) < 0)
-    {
-      // If it doesn't exist, create it by converting.
-      fsafetranslate(filename, translated_filename_src);
-      convert_sam_to_wav(translated_filename_src, new_file);
-    }
-
-    filename = new_file;
-  }
-
-  input_file = fsafeopen(filename, "rb");
+  input_file = fsafeopen(new_file, "rb");
 
   if(input_file)
   {
+    Uint32 file_size = ftell_and_rewind(input_file);
     ModPlugFile *open_file;
-
-    file_size = ftell_and_rewind(input_file);
 
     input_buffer = (char *)malloc(file_size);
     fread(input_buffer, file_size, 1, input_file);

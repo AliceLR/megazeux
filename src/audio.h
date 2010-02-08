@@ -157,7 +157,8 @@ void set_sound_volume(int volume);
 void set_sfx_volume(int volume);
 
 #ifdef CONFIG_MODPLUG
-void convert_sam_to_wav(char *source_name, char *dest_name);
+int check_ext_for_sam_and_convert(const char *filename, char *new_file);
+int check_ext_for_gdm_and_convert(const char *filename, char *new_file);
 #define __sam_to_wav_maybe_static __audio_c_maybe_static
 #else
 #define __sam_to_wav_maybe_static static

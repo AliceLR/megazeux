@@ -51,6 +51,7 @@
 
 #ifdef CONFIG_MODPLUG
 #include "audio_modplug.h"
+#include "gdm2s3m.h"
 #endif
 
 #ifdef CONFIG_MIKMOD
@@ -1107,24 +1108,20 @@ static void write_chars(Uint8 *dest, const char *str)
   memcpy(dest, str, strlen(str));
 }
 
-__sam_to_wav_maybe_static void convert_sam_to_wav(
- char *source_name, char *dest_name)
+static void convert_sam_to_wav(const char *source_name, const char *dest_name)
 {
+  Uint32 source_length, dest_length;
   FILE *source, *dest;
   Uint32 frequency;
-  Uint32 source_length, dest_length;
-
   Uint8 *data;
   Uint32 i;
 
   source = fopen(source_name, "rb");
-
-  if(source == NULL)
+  if(!source)
     return;
 
   dest = fopen(dest_name, "wb");
-
-  if(dest == NULL)
+  if(!dest)
     return;
 
   source_length = ftell_and_rewind(source);
@@ -1157,9 +1154,7 @@ __sam_to_wav_maybe_static void convert_sam_to_wav(
 
   // Convert from signed to unsigned
   for(i = 44; i < dest_length; i++)
-  {
     data[i] += 128;
-  }
 
   fwrite(data, dest_length, 1, dest);
 
@@ -1168,46 +1163,103 @@ __sam_to_wav_maybe_static void convert_sam_to_wav(
   fclose(dest);
 }
 
-static audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
- Uint32 volume, Uint32 repeat)
+static void convert_sam_to_wav_translate(const char *src, const char *dest)
 {
-  Uint32 data_length;
-  Uint8 *wav_data;
-  SDL_AudioSpec wav_info;
-  char safe_filename[512];
-  char new_file[MAX_PATH];
-  Sint32 ext_pos = strlen(filename) - 4;
+  char translated_filename_src[MAX_PATH];
+  fsafetranslate(src, translated_filename_src);
+  convert_sam_to_wav(translated_filename_src, dest);
+}
 
-  audio_stream *ret_val = NULL;
+__sam_to_wav_maybe_static int check_ext_for_sam_and_convert(
+ const char *filename, char *new_file)
+{
+  char translated_filename_dest[MAX_PATH];
+  ssize_t ext_pos = strlen(filename) - 4;
+
+  // this could end up being the same, or it might be modified
+  // (if a SAM conversion is possible).
+  strcpy(new_file, filename);
 
   if((ext_pos > 0) && !strcasecmp(filename + ext_pos, ".sam"))
   {
-    char translated_filename_src[MAX_PATH];
-    char translated_filename_dest[MAX_PATH];
-
     // SAM -> WAV
-    strcpy(new_file, filename);
     memcpy(new_file + ext_pos, ".wav", 4);
 
-    if(fsafetranslate(new_file, translated_filename_dest) < 0)
+    /* If the destination WAV already exists, check its size.
+     * If it doesn't exist, or the size is zero, recreate the WAV.
+     */
+    if(!fsafetranslate(new_file, translated_filename_dest))
     {
-      // If it doesn't exist, create it by converting.
-      fsafetranslate(filename, translated_filename_src);
-      convert_sam_to_wav(translated_filename_src, new_file);
+      FILE *f = fopen(translated_filename_dest, "r");
+      if (ftell_and_rewind(f) == 0)
+        convert_sam_to_wav_translate(filename, new_file);
+      fclose(f);
     }
+    else
+      convert_sam_to_wav_translate(filename, new_file);
 
-    filename = new_file;
+    return 1;
   }
 
-  fsafetranslate(filename, safe_filename);
+  return 0;
+}
+
+#ifdef CONFIG_MODPLUG
+
+int check_ext_for_gdm_and_convert(const char *filename, char *new_file)
+{
+  char translated_filename_dest[MAX_PATH];
+  ssize_t ext_pos = strlen(filename) - 4;
+
+  // this could end up being the same, or it might be modified
+  // (if a SAM conversion is possible).
+  strcpy(new_file, filename);
+
+  if((ext_pos > 0) && !strcasecmp(filename + ext_pos, ".gdm"))
+  {
+    // GDM -> S3M
+    memcpy(new_file + ext_pos, ".s3m", 4);
+
+    /* If the destination WAV already exists, check its size.
+     * If it doesn't exist, or the size is zero, recreate the WAV.
+     */
+    if(!fsafetranslate(new_file, translated_filename_dest))
+    {
+      FILE *f = fopen(translated_filename_dest, "r");
+      if (ftell_and_rewind(f) == 0)
+        convert_gdm_s3m(filename, new_file);
+      fclose(f);
+    }
+    else
+      convert_gdm_s3m(filename, new_file);
+
+    return 1;
+  }
+
+  return 0;
+}
+
+#endif // CONFIG_MODPLUG
+
+static audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
+ Uint32 volume, Uint32 repeat)
+{
+  audio_stream *ret_val = NULL;
+  char safe_filename[MAX_PATH];
+  char new_file[MAX_PATH];
+  SDL_AudioSpec wav_info;
+  Uint32 data_length;
+  Uint8 *wav_data;
+
+  check_ext_for_sam_and_convert(filename, new_file);
+  fsafetranslate(new_file, safe_filename);
 
   if(load_wav_file(safe_filename, &wav_info, &wav_data, &data_length))
   {
     // Surround WAVs not supported yet..
     if(wav_info.channels <= 2)
     {
-      wav_stream *w_stream =
-       (wav_stream *)malloc(sizeof(wav_stream));
+      wav_stream *w_stream = (wav_stream *)malloc(sizeof(wav_stream));
 
       w_stream->wav_data = wav_data;
       w_stream->data_length = data_length;
@@ -1217,11 +1269,8 @@ static audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
       w_stream->natural_frequency = wav_info.freq;
       w_stream->bytes_per_sample = wav_info.channels;
 
-      if((wav_info.format != AUDIO_U8) &&
-       (wav_info.format != AUDIO_S8))
-      {
+      if((wav_info.format != AUDIO_U8) && (wav_info.format != AUDIO_S8))
         w_stream->bytes_per_sample *= 2;
-      }
 
       initialize_sampled_stream((sampled_stream *)w_stream,
        wav_set_frequency, wav_get_frequency, frequency,
