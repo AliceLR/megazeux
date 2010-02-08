@@ -37,6 +37,7 @@
 #include "event.h"
 #include "render.h"
 #include "renderers.h"
+#include "util.h"
 
 #ifndef VERSION
 #error Must define VERSION for MegaZeux version string
@@ -164,10 +165,7 @@ Sint32 ec_load_set_var(char *name, Uint8 pos)
   if(fp == NULL)
     return -1;
 
-  fseek(fp, 0, SEEK_END);
-  size = ftell(fp) / CHAR_SIZE;
-  fseek(fp, 0, 0);
-
+  size = ftell_and_rewind(fp) / CHAR_SIZE;
   if(size + pos > CHARSET_SIZE)
     size = CHARSET_SIZE - pos;
 
@@ -414,31 +412,27 @@ Uint32 get_blue_component(Uint32 color)
 
 void load_palette(const char *fname)
 {
-  FILE *pal_file = fopen(fname, "rb");
+  int file_size, i, r, g, b;
+  FILE *pal_file;
+  
+  pal_file = fopen(fname, "rb");
+  if(!pal_file)
+    return;
 
-  if(pal_file)
+  file_size = ftell_and_rewind(pal_file);
+
+  if(!graphics.screen_mode && (file_size > 48))
+    file_size = 48;
+
+  for(i = 0; i < file_size / 3; i++)
   {
-    int file_size;
-    int i;
-    int r, g, b;
-
-    fseek(pal_file, 0, SEEK_END);
-    file_size = ftell(pal_file);
-    fseek(pal_file, 0, SEEK_SET);
-
-    if(!graphics.screen_mode && (file_size > 48))
-      file_size = 48;
-
-    for(i = 0; i < file_size / 3; i++)
-    {
-      r = fgetc(pal_file);
-      g = fgetc(pal_file);
-      b = fgetc(pal_file);
-      set_rgb(i, r, g, b);
-    }
-
-    fclose(pal_file);
+    r = fgetc(pal_file);
+    g = fgetc(pal_file);
+    b = fgetc(pal_file);
+    set_rgb(i, r, g, b);
   }
+
+  fclose(pal_file);
 }
 
 void smzx_palette_loaded(int val)

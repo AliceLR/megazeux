@@ -37,10 +37,10 @@
 #include "rasm.h"
 #include "fsafeopen.h"
 #include "intake.h"
-
 #include "robot.h"
 #include "sprite.h"
 #include "world.h"
+#include "util.h"
 
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
@@ -2222,9 +2222,7 @@ int set_counter_special(World *mzx_world, int spec_type,
 
           if(cur_robot != NULL)
           {
-            fseek(bc_file, 0, SEEK_END);
-            new_size = ftell(bc_file);
-            fseek(bc_file, 0, SEEK_SET);
+            new_size = ftell_and_rewind(bc_file);
 
             reallocate_robot(cur_robot, new_size);
             clear_label_cache(cur_robot->label_list, cur_robot->num_labels);

@@ -24,6 +24,7 @@
 #include "fsafeopen.h"
 #include "gdm2s3m.h"
 #include "const.h"
+#include "util.h"
 
 #include "modplug.h"
 #include "stdafx.h"
@@ -208,7 +209,7 @@ audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
   {
     ModPlugFile *open_file;
 
-    file_size = file_length(input_file);
+    file_size = ftell_and_rewind(input_file);
 
     input_buffer = (char *)malloc(file_size);
     fread(input_buffer, file_size, 1, input_file);

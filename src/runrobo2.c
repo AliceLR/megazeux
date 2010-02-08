@@ -47,6 +47,7 @@
 #include "fsafeopen.h"
 #include "param.h"
 #include "macro.h"
+#include "util.h"
 
 #define parsedir(a, b, c, d) \
  parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3])

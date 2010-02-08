@@ -35,6 +35,7 @@
 #include "configure.h"
 #include "fsafeopen.h"
 #include "delay.h"
+#include "util.h"
 
 #ifdef CONFIG_TREMOR
 #include <tremor/ivorbiscodec.h>
@@ -999,10 +1000,9 @@ static SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
   }
 
   // With the RIFF header read, we'll now check the file size.
-  fseek(fp, 0, SEEK_END);
-  filesize = ftell(fp);
-  fseek(fp, 12, SEEK_SET);
-  if(filesize > riffsize) filesize = riffsize;
+  filesize = ftell_and_rewind(fp);
+  if(filesize > riffsize)
+    filesize = riffsize;
 
   fmt_chunk = get_riff_chunk_by_id(fp, filesize, "fmt ", &fmt_size);
 
@@ -1086,17 +1086,6 @@ static SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
   return spec;
 }
 
-__audio_c_maybe_static int file_length(FILE *fp)
-{
-  int length;
-
-  fseek(fp, 0, SEEK_END);
-  length = ftell(fp);
-  fseek(fp, 0, SEEK_SET);
-
-  return length;
-}
-
 // Props to madbrain for his WAV writing code which the following
 // is loosely based off of.
 
@@ -1139,7 +1128,7 @@ __sam_to_wav_maybe_static void convert_sam_to_wav(
   if(dest == NULL)
     return;
 
-  source_length = file_length(source);
+  source_length = ftell_and_rewind(source);
 
   frequency = freq_conversion / default_period;
   dest_length = source_length + 44;

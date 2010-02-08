@@ -20,6 +20,7 @@
 
 #include "decrypt.h"
 #include "error.h"
+#include "util.h"
 
 #include <stdio.h>
 #include <string.h>
@@ -90,9 +91,7 @@ void decrypt(const char *file_name)
   char *src_ptr;
 
   source = fopen(file_name, "rb");
-  fseek(source, 0, SEEK_END);
-  file_length = ftell(source);
-  fseek(source, 0, SEEK_SET);
+  file_length = ftell_and_rewind(source);
 
   file_buffer = (char *)malloc(file_length);
   src_ptr = file_buffer;

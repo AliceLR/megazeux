@@ -169,7 +169,6 @@ void convert_sam_to_wav(char *source_name, char *dest_name);
 
 extern audio_struct audio;
 
-int file_length(FILE *fp);
 void sampled_set_buffer(sampled_stream *s_src);
 void sampled_mix_data(sampled_stream *s_src, Sint32 *dest_buffer,
  Uint32 len);

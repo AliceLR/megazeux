@@ -51,6 +51,7 @@
 #include "delay.h"
 #include "robot.h"
 #include "fsafeopen.h"
+#include "util.h"
 
 #ifdef CONFIG_EDITOR
 #include "edit.h"

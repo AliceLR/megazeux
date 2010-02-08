@@ -68,7 +68,8 @@ mzx_objs += ${mzx_base}/mzm.${o} ${mzx_base}/rasm.${o}
 mzx_objs += ${mzx_base}/render.${o} ${mzx_base}/robot.${o}
 mzx_objs += ${mzx_base}/runrobo2.${o} ${mzx_base}/scrdisp.${o}
 mzx_objs += ${mzx_base}/sfx.${o} ${mzx_base}/sprite.${o}
-mzx_objs += ${mzx_base}/window.${o} ${mzx_base}/world.${o}
+mzx_objs += ${mzx_base}/util.${o} ${mzx_base}/window.${o}
+mzx_objs += ${mzx_base}/world.${o}
 
 ifeq (${BUILD_EDITOR},1)
 mzx_objs += ${mzx_base}/block.${o} ${mzx_base}/char_ed.${o}
