@@ -164,13 +164,6 @@ int main(int argc, char *argv[])
   if(mzx_res_init(argv[0]))
     goto exit_free_res;
 
-#if defined(__MACOSX__)
-  // In Mac OS X, applications are packages, or folders that
-  // look like single files. This code gets the user out of
-  // the bundle and into a directory he/she will recognize.
-  chdir("../../..");
-#endif
-
   allocate_world(&mzx_world);
 
   // Figure out where all configuration files should be loaded
@@ -186,6 +179,13 @@ int main(int argc, char *argv[])
   set_config_from_file(&(mzx_world.conf), mzx_res_get_by_id(CONFIG_TXT));
   set_config_from_command_line(&(mzx_world.conf), argc, argv);
   chdir(current_dir);
+
+#if defined(__MACOSX__)
+  // In Mac OS X, applications are packages, or folders that
+  // look like single files. This code gets the user out of
+  // the bundle and into a directory he/she will recognize.
+  chdir("../../..");
+#endif
 
   counter_fsg();
 

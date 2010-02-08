@@ -436,6 +436,11 @@ if [ "$ICON" = "true" ]; then
 		echo "Force-disabling icon branding (libpng disabled)."
 		ICON="false"
 	fi
+
+	if [ "$PLATFORM" = "darwin" ]; then
+		echo "Force-disabling icon branding (redundant)."
+		ICON="false"
+	fi
 fi
 
 #
