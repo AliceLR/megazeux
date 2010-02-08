@@ -149,7 +149,7 @@ static status_t parse_board(FILE *f)
   tmp[12] = '\0';
 
   // check the board MOD exists
-  if (strlen(tmp) > 0)
+  if(strlen(tmp) > 0)
   {
     debug("BOARD MOD: %s\n", tmp);
     check_file_exists(tmp);
@@ -193,21 +193,21 @@ static status_t parse_board(FILE *f)
         case 0xa:
           str_len = fgetc(f);
 
-          if (fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != str_len)
             return FREAD_FAILED;
 
           str_len = fgetc(f);
 
-          if (str_len == 0)
+          if(str_len == 0)
           {
             fgetus(f);
             break;
           }
 
-          if (fread(tmp2, 1, str_len, f) != str_len)
+          if(fread(tmp2, 1, str_len, f) != str_len)
             return FREAD_FAILED;
 
-          if (!strcasecmp(tmp2, "FREAD_OPEN")
+          if(!strcasecmp(tmp2, "FREAD_OPEN")
             || !strcasecmp(tmp2, "SMZX_PALETTE")
             || !strcasecmp(tmp2, "LOAD_GAME")
             || !strcasecmp(tmp2, "LOAD_BC")
@@ -222,11 +222,11 @@ static status_t parse_board(FILE *f)
         case 0x26:
           str_len = fgetc(f);
 
-          if (fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != str_len)
             return FREAD_FAILED;
 
           // FIXME: Should only match pairs?
-          if (strstr(tmp, "&"))
+          if(strstr(tmp, "&"))
               break;
 
           debug("MOD: %s\n", tmp);
@@ -235,21 +235,21 @@ static status_t parse_board(FILE *f)
         case 0x27:
           str_len = fgetc(f);
 
-          if (str_len == 0)
+          if(str_len == 0)
             fgetus(f);
           else
           {
-            for (j = 0; j < str_len; j++)
+            for(j = 0; j < str_len; j++)
               fgetc(f);
           }
 
           str_len = fgetc(f);
 
-          if (fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != str_len)
             return FREAD_FAILED;
 
           // FIXME: Should only match pairs?
-          if (strstr(tmp, "&"))
+          if(strstr(tmp, "&"))
               break;
 
           debug("SAM: %s\n", tmp);
@@ -260,11 +260,11 @@ static status_t parse_board(FILE *f)
         case 0x31:
           str_len = fgetc(f);
 
-          if (fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != str_len)
             return FREAD_FAILED;
 
           // FIXME: Should only match pairs?
-          if (!strstr(tmp, "&"))
+          if(!strstr(tmp, "&"))
               break;
 
           debug("PLAY (class): %s\n", tmp);
@@ -273,7 +273,7 @@ static status_t parse_board(FILE *f)
         case 0xc8:
           str_len = fgetc(f);
 
-          if (fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != str_len)
             return FREAD_FAILED;
 
           debug("MOD FADE IN: %s\n", tmp);
@@ -282,7 +282,7 @@ static status_t parse_board(FILE *f)
         case 0xd8:
           str_len = fgetc(f);
 
-          if (fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != str_len)
             return FREAD_FAILED;
 
           debug("LOAD CHAR SET: %s\n", tmp);
@@ -291,7 +291,7 @@ static status_t parse_board(FILE *f)
         case 0xde:
           str_len = fgetc(f);
 
-          if (fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != str_len)
             return FREAD_FAILED;
 
           debug("LOAD PALETTE: %s\n", tmp);
@@ -300,7 +300,7 @@ static status_t parse_board(FILE *f)
         case 0xe2:
           str_len = fgetc(f);
 
-          if (fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != str_len)
             return FREAD_FAILED;
 
           debug("SWAP WORLD: %s\n", tmp);
