@@ -1724,8 +1724,7 @@ static mzx_string *add_string_preallocate(World *mzx_world, const char *name,
   }
 
   // Allocate a mzx_string with room for the name and initial value
-  dest = (mzx_string *)malloc(sizeof(mzx_string) + name_length +
-   length - 1);
+  dest = (mzx_string *)malloc(sizeof(mzx_string) + name_length + length);
 
   // Copy in the name, including NULL terminator.
   strcpy(dest->name, name);
@@ -1735,7 +1734,8 @@ static mzx_string *add_string_preallocate(World *mzx_world, const char *name,
   dest->length = length;
 
   dest->value = dest->storage_space + name_length;
-  memset(dest->value, ' ', length - 1);
+  if (length > 0)
+    memset(dest->value, ' ', length);
 
   mzx_world->string_list[position] = dest;
   mzx_world->num_strings = count + 1;
