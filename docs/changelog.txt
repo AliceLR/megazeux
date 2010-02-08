@@ -1,4 +1,10 @@
-June 9, 2008 - MZX 2.82
+SVN
+
+USERS
+
+DEVELOPERS
+
+June 10, 2008 - MZX 2.82
 
 Despite the increase in minor version, this release mostly targets bug and
 regression fixes. However, there ARE some additional new features, such as
