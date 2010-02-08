@@ -180,7 +180,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
   int gl_rob_position, gl_rob_save_position;
   int board_offsets_position, board_begin_position, board_end_position;
   int board_size;
-  unsigned char charset_mem[3584];
+  unsigned char *charset_mem;
   unsigned char r, g, b;
   Board *cur_board;
 
@@ -210,8 +210,10 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
   }
 
   // Save charset
+  charset_mem = malloc(3584);
   ec_mem_save_set(charset_mem);
   fwrite(charset_mem, 3584, 1, fp);
+  free(charset_mem);
 
   // Save idchars array.
   fwrite(id_chars, 323, 1, fp);
@@ -707,15 +709,27 @@ static int load_world(World *mzx_world, const char *file, int savegame,
   int num_boards;
   int gl_rob, last_pos;
   char tempstr[16];
-  unsigned char charset_mem[3584];
+  unsigned char *charset_mem;
   unsigned char r, g, b;
   Board *cur_board;
-  char config_file_name[256];
+  char *config_file_name;
   int file_name_len = strlen(file) - 4;
   struct stat file_info;
-  char file_path[MAX_PATH];
-  char current_dir[MAX_PATH];
-  FILE *fp = fopen(file, "rb");
+  char *file_path;
+  char *current_dir;
+  int ret = 1;
+  FILE *fp;
+
+  fp = fopen(file, "rb");
+  if(fp == NULL)
+  {
+    error("Error loading world", 1, 8, 0x0D01);
+    goto exit_out;
+  }
+
+  file_path = malloc(MAX_PATH);
+  current_dir = malloc(MAX_PATH);
+  config_file_name = malloc(MAX_PATH);
 
   get_path(file, file_path, MAX_PATH);
 
@@ -725,12 +739,6 @@ static int load_world(World *mzx_world, const char *file, int savegame,
 
     if(strcmp(current_dir, file_path))
       chdir(file_path);
-  }
-
-  if(fp == NULL)
-  {
-    error("Error loading world", 1, 8, 0x0D01);
-    return 1;
   }
 
   memcpy(config_file_name, file, file_name_len);
@@ -759,8 +767,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
         msg = "Unrecognized magic: file may not be .SAV file";
 
       error(msg, 1, 8, 0x2101);
-      fclose(fp);
-      return 1;
+      goto exit_close_free;
     }
 
     mzx_world->version = fgetw(fp);
@@ -784,19 +791,14 @@ static int load_world(World *mzx_world, const char *file, int savegame,
       do_decrypt = confirm(mzx_world, "Would you like to decrypt it?");
       if(!do_decrypt)
       {
-        int rval;
-
         fclose(fp);
         decrypt(file);
-        // Ah recursion.....
-        rval = load_world(mzx_world, file, savegame, faded);
-        return rval;
+	goto exit_recurse;
       }
       else
       {
         error("Cannot load password protected worlds.", 1, 8, 0x0D02);
-        fclose(fp);
-        return 1;
+	goto exit_close_free;
       }
     }
 
@@ -826,16 +828,17 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     if(!version)
     {
       error(error_string, 1, 8, 0x0D02);
-      fclose(fp);
-      return 1;
+      goto exit_close_free;
     }
 
     mzx_world->current_board_id = 0;
     mzx_world->version = version;
   }
 
+  charset_mem = malloc(3584);
   fread(charset_mem, 3584, 1, fp);
   ec_mem_load_set(charset_mem);
+  free(charset_mem);
 
   // Idchars array...
   fread(id_chars, 323, 1, fp);
@@ -1167,10 +1170,21 @@ static int load_world(World *mzx_world, const char *file, int savegame,
   // Find the player
   find_player(mzx_world);
 
-  // ...All done!
-  fclose(fp);
+  // ..All done!
+  ret = 0;
 
-  return 0;
+exit_close_free:
+  fclose(fp);
+exit_free:
+  free(config_file_name);
+  free(current_dir);
+  free(file_path);
+exit_out:
+  return ret;
+
+exit_recurse:
+  ret = load_world(mzx_world, file, savegame, faded);
+  goto exit_free;
 }
 
 #ifdef CONFIG_EDITOR

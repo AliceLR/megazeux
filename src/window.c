@@ -3166,12 +3166,12 @@ __editor_maybe_static int file_manager(World *mzx_world,
  int allow_dir_change)
 {
   dir_t *current_dir;
-  char file_name[PATH_BUF_LEN];
+  char *file_name;
   struct stat file_info;
-  char current_dir_name[MAX_PATH];
+  char *current_dir_name;
   char current_dir_short[56];
   int current_dir_length;
-  char previous_dir_name[MAX_PATH];
+  char *previous_dir_name;
   int total_filenames_allocated;
   int total_dirnames_allocated;
   char **file_list;
@@ -3192,6 +3192,12 @@ __editor_maybe_static int file_manager(World *mzx_world,
 #ifdef __WIN32__
   int drive_letter_bitmap;
 #endif
+
+  // These are stack heavy so put them on the heap
+  // This function is not performance sensitive anyway.
+  file_name = malloc(PATH_BUF_LEN);
+  current_dir_name = malloc(MAX_PATH);
+  previous_dir_name = malloc(MAX_PATH);
 
   if(allow_new)
     last_element = FILESEL_FILENAME;
@@ -3586,6 +3592,10 @@ __editor_maybe_static int file_manager(World *mzx_world,
       chdir(previous_dir_name);
     }
   }
+
+  free(previous_dir_name);
+  free(current_dir_name);
+  free(file_name);
 
   return return_value;
 }

@@ -132,15 +132,12 @@ __editor_maybe_static variable_storage *find_macro_variable(char *name,
 static ext_macro *process_macro(char *line_data, char *name, char *label)
 {
   char *line_position, *line_position_old;
-  macro_variable variables[256];
-  //char **text_lines[256];
+  macro_variable *variables;
   char ***text_lines;
-  char *line_text_segments[256];
-  macro_variable_reference line_variable_references[256];
+  char **line_text_segments;
+  macro_variable_reference *line_variable_references;
   variable_storage *current_storage;
-  //macro_variable_reference *variable_references[256];
   macro_variable_reference **variable_references;
-  //int line_variables_count[256];
   int *line_variables_count;
   int num_variables;
   int num_types = 0;
@@ -150,15 +147,20 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
   int total_variables = 0;
   macro_type *current_type;
   char current_char;
-  ext_macro *macro_dest = malloc(sizeof(ext_macro));
+  ext_macro *macro_dest;
   int i;
   int def_val;
+
+  line_text_segments = calloc(256, sizeof(char *));
+  variables = calloc(256, sizeof(macro_variable));
+  line_variable_references = calloc(256, sizeof(macro_variable_reference));
 
   text_lines = calloc(num_lines_allocated, sizeof(char **));
   variable_references =
    calloc(num_lines_allocated, sizeof(macro_variable_reference *));
   line_variables_count = calloc(num_lines_allocated, sizeof(int));
 
+  macro_dest = malloc(sizeof(ext_macro));
   macro_dest->name = malloc(strlen(name) + 1);
   strcpy(macro_dest->name, name);
 
@@ -511,6 +513,11 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
    sizeof(int) * num_lines);
 
   macro_dest->num_types = num_types;
+
+  free(line_variable_references);
+  free(line_text_segments);
+  free(variables);
+
   return macro_dest;
 }
 
