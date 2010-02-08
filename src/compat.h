@@ -93,18 +93,4 @@
 
 #endif // CONFIG_NDS
 
-#if defined(CONFIG_NDS) && !defined(rename)
-
-#define rename rename
-
-static inline int rename(const char *oldpath, const char *newpath)
-{
-  int ret = link(oldpath, newpath);
-  if(!ret)
-    return unlink(oldpath);
-  return ret;
-}
-
-#endif // CONFIG_NDS && !rename
-
 #endif // __COMPAT_H

@@ -208,3 +208,15 @@ void get_path(const char *file_name, char *dest, unsigned int buf_len)
     memcpy(dest, file_name, c);
   dest[c] = 0;
 }
+
+#ifndef rename
+
+int rename(const char *oldpath, const char *newpath)
+{
+  int ret = link(oldpath, newpath);
+  if(!ret)
+    return unlink(oldpath);
+  return ret;
+}
+
+#endif // !rename

@@ -60,6 +60,14 @@ int get_ticks(void);
 
 void get_path(const char *file_name, char *dest, unsigned int buf_len);
 
+/* Some platforms like NDS don't have a rename(2), so we need
+ * to implement it.
+ */
+#ifndef rename
+#define rename rename
+int rename(const char *oldpath, const char *newpath);
+#endif
+
 __M_END_DECLS
 
 #endif // __UTIL_H
