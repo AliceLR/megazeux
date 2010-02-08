@@ -61,6 +61,7 @@ createzip_dynamic_sdl() {
 	#
 	mkdir utils &&
 	cp -f src/utils/checkres{.{exe,bat},-readme.txt} utils &&
+	cp -f src/utils/downver.exe utils &&
 	cp -f src/utils/txt2hlp.exe utils &&
 
 	#
@@ -72,7 +73,8 @@ createzip_dynamic_sdl() {
 	#
 	# pack the EXEs
 	#
-	for BINARY in $TARGET.exe utils/checkres.exe utils/txt2hlp.exe; do
+	for BINARY in $TARGET.exe \
+	              utils/{checkres.exe,downver.exe,txt2hlp.exe}; do
 		( $UPX --best $BINARY || echo "UPX unavailable." );
 	done &&
 
@@ -189,8 +191,9 @@ rm -f dist/$TARGET/contrib/gdm2s3m/src/{*.a,*.o} &&
 rm -f dist/$TARGET/contrib/libmodplug/src/{*.a,*.o} &&
 rm -f dist/$TARGET/contrib/unzip/src/{*.a,*.o} &&
 rm -f dist/$TARGET/src/utils/*.o &&
-rm -f dist/$TARGET/src/utils/txt2hlp{,.dbg}{,.exe} &&
 rm -f dist/$TARGET/src/utils/checkres{,.dbg}{,.exe} &&
+rm -f dist/$TARGET/src/utils/downver{,.dbg}{,.exe} &&
+rm -f dist/$TARGET/src/utils/txt2hlp{,.dbg}{,.exe} &&
 rm -f dist/$TARGET/contrib/icons/*.o &&
 
 # hack for "dist" makefile
