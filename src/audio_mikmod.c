@@ -260,7 +260,6 @@ void init_mikmod(config_info *conf)
   MikMod_RegisterLoader(&load_far);
   MikMod_RegisterLoader(&load_okt);
   //MikMod_RegisterLoader(&load_amf);
-  MikMod_RegisterLoader(&load_okt);
 
   // FIXME: Should break a lot more here
   if(MikMod_Init(NULL))
