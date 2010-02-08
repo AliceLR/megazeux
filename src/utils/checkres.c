@@ -863,7 +863,7 @@ int main(int argc, char *argv[])
   else
   {
     if(!quiet_mode)
-      fprintf(stdout, "Finished processing '%s'.", argv[argc - 1]);
+      fprintf(stdout, "Finished processing '%s'.\n", argv[argc - 1]);
   }
 
   return ret;
