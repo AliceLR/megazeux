@@ -419,6 +419,10 @@ Label **cache_robot_labels(Robot *robot, int *num_labels)
 
   for(i = 1; i < (robot->program_length - 1); i++)
   {
+    // NOTE: The assignment of 'next' below seems to produce a false positive
+    //       from valgrind, but it's also been a crash vector in the past
+    //       so I'm not entirely sure. Stack corruption maybe?
+
     // Is it a label?
     cmd = robot_program[i + 1];
     next = i + robot_program[i] + 1;
@@ -434,20 +438,15 @@ Label **cache_robot_labels(Robot *robot, int *num_labels)
         current_label->position = next + 1;
 
       if(cmd == 108)
-      {
         current_label->zapped = 1;
-      }
       else
-      {
         current_label->zapped = 0;
-      }
 
       // Do we need more room?
       if(labels_found == labels_allocated)
       {
         labels_allocated *= 2;
-        label_list = realloc(label_list,
-         sizeof(Label *) * labels_allocated);
+        label_list = realloc(label_list, sizeof(Label *) * labels_allocated);
       }
       label_list[labels_found] = current_label;
       labels_found++;

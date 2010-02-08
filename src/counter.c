@@ -2240,8 +2240,7 @@ int set_counter_special(World *mzx_world, int spec_type,
             clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
 
             memcpy(cur_robot->program, new_program, new_size);
-            free(new_program);
-            cur_robot->cur_prog_line = 1;
+            cur_robot->cur_prog_line = 0; // NOTE: was 1
             cur_robot->label_list =
              cache_robot_labels(cur_robot, &(cur_robot->num_labels));
 
@@ -2249,9 +2248,14 @@ int set_counter_special(World *mzx_world, int spec_type,
              * OR LOAD_ROBOTn was used where n is &robot_id&.
              */
             if(value == -1 || value == id)
+            {
+              free(new_program);
               return 1;
+            }
           }
         }
+
+        free(new_program);
       }
 
       return 0;
@@ -2283,17 +2287,18 @@ int set_counter_special(World *mzx_world, int spec_type,
             clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
 
             fread(cur_robot->program, new_size, 1, bc_file);
-            cur_robot->cur_prog_line = 1;
+            cur_robot->cur_prog_line = 0; // NOTE: was 1
             cur_robot->label_list =
              cache_robot_labels(cur_robot, &(cur_robot->num_labels));
-
-            fclose(bc_file);
 
             /* Restart this robot if either it was just a LOAD_BC
              * OR LOAD_BCn was used where n is &robot_id&.
              */
             if(value == -1 || value == id)
+            {
+              fclose(bc_file);
               return 1;
+            }
           }
         }
 
