@@ -22,13 +22,20 @@
 #ifndef MSVC_H
 #define MSVC_H
 
+#include <io.h>
 #include <ctype.h>
+#include <direct.h>
 
 #define S_ISDIR(mode) (mode & _S_IFDIR)
 
-#define snprintf _snprintf
-#define strcasecmp stricmp
-#define strncasecmp strnicmp
+#define chdir       _chdir
+#define getcwd      _getcwd
+#define mkdir       _mkdir
+#define rmdir       _rmdir
+#define snprintf    _snprintf
+#define strcasecmp  _stricmp
+#define strncasecmp _strnicmp
+#define unlink      _unlink
 
 #define inline __inline
 
