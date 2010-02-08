@@ -119,6 +119,10 @@ USERS
 + Icon support is now fixed and works on all platforms. On Windows, the
   icon cannot currently be changed (it is loaded from the EXE's resource
   section). Use ResHacker if you really want to change it.
++ Fixed a bug where either LOAD_ROBOTn or LOAD_BCn (where n was equal to
+  ROBOT_ID) would alter the robot's line number rather than completely restart
+  it. Due to complexities in robot context, this lead to the first line being
+  skipped.
 
 DEVELOPERS
 

@@ -2245,7 +2245,10 @@ int set_counter_special(World *mzx_world, int spec_type,
             cur_robot->label_list =
              cache_robot_labels(cur_robot, &(cur_robot->num_labels));
 
-            if(value == -1)
+            /* Restart this robot if either it was just a LOAD_ROBOT
+             * OR LOAD_ROBOTn was used where n is &robot_id&.
+             */
+            if(value == -1 || value == id)
               return 1;
           }
         }
@@ -2286,7 +2289,10 @@ int set_counter_special(World *mzx_world, int spec_type,
 
             fclose(bc_file);
 
-            if(value == -1)
+            /* Restart this robot if either it was just a LOAD_BC
+             * OR LOAD_BCn was used where n is &robot_id&.
+             */
+            if(value == -1 || value == id)
               return 1;
           }
         }
