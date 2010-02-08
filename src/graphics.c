@@ -38,6 +38,7 @@
 #include "renderers.h"
 #include "util.h"
 #include "platform.h"
+#include "pngops.h"
 
 #ifdef CONFIG_SDL
 #include "SDL.h"
@@ -45,8 +46,6 @@
 #include "SDL_syswm.h"
 #ifdef __WIN32__
 #include <windows.h>
-#else
-#include "pngops.h"
 #endif // __WIN32__
 #endif // CONFIG_ICON
 #endif // CONFIG_SDL
