@@ -19,51 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-// When making new versions, change the number below, and
-// change the number in the version mzx_strings to follow. From now on,
-// be sure that the last two characters are the hex equivilent of the
-// MINOR version number.
-// Saving/loading worlds- dialogs and functions
-// *** READ THIS!!!! ****
-/* New magic mzx_strings
-   .MZX files:
-   MZX - Ver 1.x MegaZeux
-   MZ2 - Ver 2.x MegaZeux
-   MZA - Ver 2.51S1 Megazeux          (fabricated as 0x0208)
-   M\x02\x09 - 2.5.1spider2+
-   M\x02\x3E - MZX 2.62.x
-   M\x02\x41 - MZX 2.65
-   M\x02\x44 - MZX 2.68
-   M\x02\x45 - MZX 2.69
-   M\x02\x46 - MZX 2.69b
-   M\x02\x48 - MZX 2.69c
-   M\x02\x49 - MZX 2.70
-   M\x02\x50 - MZX 2.80 (non-DOS)
-   M\x02\x51 - MZX 2.81
-   M\x02\x52 - MZX 2.82
-
-   .SAV files:
-   MZSV2 - Ver 2.x MegaZeux
-   MZXSA - Ver 2.51S1 MegaZeux        (fabricated as 0x0208)
-   MZS\x02\x09 - 2.5.1spider2+
-   MZS\x02\x3E - MZX 2.62.x
-   MZS\x02\x41 - MZX 2.65
-   MZS\x02\x44 - MZX 2.68
-   MZS\x02\x45 - MZX 2.69
-   MZS\x02\x46 - MZX 2.69b
-   MZS\x02\x48 - MZX 2.69c
-   MZS\x02\x49 - MZX 2.70
-   MZS\x02\x50 - MZX 2.80 (non-DOS)
-   MZS\x02\x51 - MZX 2.81
-   MZS\x02\x52 - MZX 2.82
-
- All others are unchanged.
- As of 2.80+, all letters after the name denote bug fixes/minor additions
- and do not have different save formats. If a save format change is
- necessitated, a numerical change must be enacted.
-
-*/
-
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
@@ -94,11 +49,6 @@
 #include "extmem.h"
 #include "util.h"
 
-static char save_version_string[6] = "MZS\x02\x52";
-
-__editor_maybe_static char world_version_string[4] = "M\x02\x52";
-
-// Helper functions for file loading.
 // Get 2 bytes
 
 int fgetw(FILE *fp)
@@ -196,19 +146,27 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
 
   if(savegame)
   {
-    // Write magic mzx_string
-    fwrite(save_version_string, 1, 5, fp);
+    // Write this MZX's version string
+    fputs("MZS", fp);
+    fputc((WORLD_VERSION & 0xff00) >> 8, fp);
+    fputc(WORLD_VERSION & 0xff, fp);
+
+    // Write the version of the loaded world for this SAV
     fputw(mzx_world->version, fp);
+
     fputc(mzx_world->current_board_id, fp);
   }
   else
   {
-    // Name of game - write it.
     fwrite(mzx_world->name, BOARD_NAME_SIZE, 1, fp);
+
     // No protection
     fputc(0, fp);
-    // Write magic mzx_string
-    fwrite(world_version_string, 3, 1, fp);
+
+    // Write this MZX's version string
+    fputc('M', fp);
+    fputc((WORLD_VERSION & 0xff00) >> 8, fp);
+    fputc((WORLD_VERSION & 0xff), fp);
   }
 
   // Save charset
@@ -803,12 +761,12 @@ static int load_world(World *mzx_world, const char *file, int savegame,
       {
         fclose(fp);
         decrypt(file);
-	goto exit_recurse;
+        goto exit_recurse;
       }
       else
       {
         error("Cannot load password protected worlds.", 1, 8, 0x0D02);
-	goto exit_close_free;
+        goto exit_close_free;
       }
     }
 

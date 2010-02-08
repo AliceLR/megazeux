@@ -123,6 +123,9 @@ USERS
   ROBOT_ID) would alter the robot's line number rather than completely restart
   it. Due to complexities in robot context, this lead to the first line being
   skipped.
++ Added a new tool "downver" which supports drag-and-drop downgrading of
+  a world or board from the version of MZX it is packaged with to the
+  previous version of MZX. This tool may be unsafe to use -- be careful.
 
 DEVELOPERS
 

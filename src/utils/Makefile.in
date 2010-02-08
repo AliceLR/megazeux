@@ -1,0 +1,113 @@
+##
+# MegaZeux Utils Makefile fragment
+##
+
+#
+# FIXME: This whole file is a giant wart on the new build system
+#        and needs some love (and refactoring) to fix it
+#
+
+.PHONY: ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
+
+utils_base = src/utils
+
+checkres = ${utils_base}/checkres${BINEXT}
+checkres_objs := ${utils_base}/checkres.${o}
+checkres_objs += ${mzx_base}/fsafeopen.${o} ${mzx_base}/util.${o}
+checkres_ldflags = ${unzip} -L${PREFIX}/lib -lz
+
+downver = ${utils_base}/downver${BINEXT}
+downver_objs = ${utils_base}/downver.${o}
+
+txt2hlp = ${utils_base}/txt2hlp${BINEXT}
+txt2hlp_objs = ${utils_base}/txt2hlp.${o}
+
+${utils_base}/%.o ${utils_base}/%.dbg.o: ${utils_base}/%.c
+ifeq (${V},1)
+	${CC} -MD ${CFLAGS} -I${mzx_base} -I${unzip_base} \
+	                    -I${PREFIX}/include -c $< -o $@
+else
+	@echo "  CC      " $<
+	@${CC} -MD ${CFLAGS} -I${mzx_base} -I${unzip_base} \
+	                     -I${PREFIX}/include -c $< -o $@
+endif
+
+-include $(checkres_objs:.o=.d)
+-include $(downver_objs:.o=.d)
+-include $(txt2hlp_objs:.o=.d)
+
+ifeq (${BUILD_UTILS},1)
+
+${checkres}: ${checkres_objs}
+ifeq (${V},1)
+	${HOST_CC} ${checkres_objs} -o ${checkres} ${checkres_ldflags}
+else
+	@echo "  LINK    " ${checkres}
+	@${HOST_CC} ${checkres_objs} -o ${checkres} ${checkres_ldflags}
+endif
+ifneq (${DEBUG},1)
+ifeq (${V},1)
+	${STRIP} ${checkres}
+else
+	@echo "  STRIP   " ${checkres}
+	@${STRIP} ${checkres}
+endif
+endif
+
+${downver}: ${downver_objs}
+ifeq (${V},1)
+	${HOST_CC} ${downver_objs} -o ${downver}
+else
+	@echo "  LINK    " ${downver}
+	@${HOST_CC} ${downver_objs} -o ${downver}
+endif
+ifneq (${DEBUG},1)
+ifeq (${V},1)
+	${STRIP} ${downver}
+else
+	@echo "  STRIP   " ${downver}
+	@${STRIP} ${downver}
+endif
+endif
+
+${txt2hlp}: ${txt2hlp_objs}
+ifeq (${V},1)
+	${HOST_CC} ${txt2hlp_objs} -o ${txt2hlp}
+else
+	@echo "  LINK    " ${txt2hlp}
+	@${HOST_CC} ${txt2hlp_objs} -o ${txt2hlp}
+endif
+ifneq (${DEBUG},1)
+ifeq (${V},1)
+	${STRIP} ${txt2hlp}
+else
+	@echo "  STRIP   " ${txt2hlp}
+	@${STRIP} ${txt2hlp}
+endif
+endif
+
+else
+
+${checkres}:
+	@echo "--> Building of checkres disabled."
+${downver}:
+	@echo "--> Building of downver disabled."
+${txt2hlp}:
+	@echo "--> Building of txt2hlp disabled."
+
+endif
+
+utils: ${unzip} ${checkres} ${downver} ${txt2hlp}
+utils_clean: ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
+
+${checkres}_clean:
+	@echo "  CLEAN   " ${checkres}
+	@rm -f ${checkres_objs} ${checkres} $(checkres_objs:.o=.d)
+
+${downver}_clean:
+	@echo "  CLEAN   " ${downver}
+	@rm -f ${downver_objs} ${downver} $(downver_objs:.o=.d)
+
+${txt2hlp}_clean:
+	@echo "  CLEAN   " ${txt2hlp}
+	@rm -f ${txt2hlp_objs} ${txt2hlp} $(txt2hlp_objs:.o=.d)

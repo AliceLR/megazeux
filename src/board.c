@@ -583,21 +583,27 @@ void replace_current_board(World *mzx_world, char *name)
   fread(version_string, 3, 1, input_mzb);
   version_string[3] = 0;
 
-  if((first_byte == 0xFF) &&
-   ((strcmp(version_string, world_version_string) <= 0) ||
-   !strcmp(version_string, "MB2")))
+  // First two bytes are the same for any valid board
+  if(first_byte != 0xff && version_string[0] == 'M')
   {
-    clear_board(src_board);
-    src_board = load_board_allocate_direct(input_mzb, 0);
-    optimize_null_objects(src_board);
+    // MB2 are versions <= 2.51s1, otherwise it's M\x02\x?? where
+    // ?? is some version less than or equal to this MZX's version
+    if(!strcmp(version_string + 1, "B2") ||
+     ((version_string[1] == (WORLD_VERSION & 0xff00) >> 8) &&
+      (version_string[2] <= (WORLD_VERSION & 0xff))))
+    {
+      clear_board(src_board);
+      src_board = load_board_allocate_direct(input_mzb, 0);
+      optimize_null_objects(src_board);
 
-    set_update_done_current(mzx_world);
+      set_update_done_current(mzx_world);
 
-    if(src_board->robot_list)
-      src_board->robot_list[0] = mzx_world->global_robot;
+      if(src_board->robot_list)
+        src_board->robot_list[0] = mzx_world->global_robot;
 
-    set_current_board(mzx_world, src_board);
-    mzx_world->board_list[current_board_id] = src_board;
+      set_current_board(mzx_world, src_board);
+      mzx_world->board_list[current_board_id] = src_board;
+    }
   }
 
   fclose(input_mzb);
@@ -699,7 +705,11 @@ void save_board_file(Board *cur_board, char *name)
   if(board_file)
   {
     fputc(0xFF, board_file);
-    fputs(world_version_string, board_file);
+
+    fputc('M', board_file);
+    fputc((WORLD_VERSION & 0xff00) >> 8, board_file);
+    fputc((WORLD_VERSION & 0xff), board_file);
+
     optimize_null_objects(cur_board);
     save_board(cur_board, board_file, 0);
     // Write name
