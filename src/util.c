@@ -22,11 +22,13 @@
 
 #include <sys/stat.h>
 #include <time.h>
-#include "SDL.h"
 
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
+
+#include <stdlib.h>
+#include <string.h>
 
 #include "const.h" // for MAX_PATH
 
@@ -177,18 +179,6 @@ int Random(int range)
   return (int)value;
 }
 
-// Currently, just does a cheap delay..
-
-void delay(int ms)
-{
-  SDL_Delay(ms);
-}
-
-int get_ticks(void)
-{
-  return SDL_GetTicks();
-}
-
 void get_path(const char *file_name, char *dest, unsigned int buf_len)
 {
   int c = strlen(file_name) - 1;
@@ -220,3 +210,60 @@ int rename(const char *oldpath, const char *newpath)
 }
 
 #endif // !rename
+
+#ifdef CONFIG_NDS
+
+// NDS versions of these functions backend directly to libfat
+
+dir_t *dir_open(const char *path)
+{
+  return diropen(path);
+}
+
+void dir_close(dir_t *dir)
+{
+  if(dir)
+    dirclose(dir);
+}
+
+int dir_get_next_entry(dir_t *dir, char *entry)
+{
+  if(!dir)
+    return -1;
+  return dirnext(dir, entry, NULL);
+}
+
+#else // !CONFIG_NDS
+
+dir_t *dir_open(const char *path)
+{
+  return opendir(path);
+}
+
+void dir_close(dir_t *dir)
+{
+  if(dir)
+    closedir(dir);
+}
+
+int dir_get_next_entry(dir_t *dir, char *entry)
+{
+  struct dirent *inode;
+
+  if(!dir)
+    return -1;
+
+  inode = readdir(dir);
+  if(!inode)
+  {
+    entry[0] = 0;
+    return -1;
+  }
+
+  strncpy(entry, inode->d_name, MAX_PATH - 1);
+  entry[MAX_PATH - 1] = 0;
+  return 0;
+}
+
+#endif // CONFIG_NDS
+

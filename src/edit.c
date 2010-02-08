@@ -800,10 +800,10 @@ void edit_world(World *mzx_world)
   int copy_repeat_width = -1;
   int copy_repeat_height = -1;
   int backup_count = mzx_world->conf.backup_count;
-  int backup_interval = mzx_world->conf.backup_interval;
+  unsigned int backup_interval = mzx_world->conf.backup_interval;
   char *backup_name = mzx_world->conf.backup_name;
   char *backup_ext = mzx_world->conf.backup_ext;
-  int backup_timestamp = get_ticks();
+  int backup_timestamp = SDL_GetTicks();
   int backup_num = 0;
   char *level_id;
   char *level_param;
@@ -871,7 +871,7 @@ void edit_world(World *mzx_world)
     find_player(mzx_world);
 
     if((backup_count) &&
-     ((get_ticks() - backup_timestamp) > (backup_interval * 1000)))
+     ((SDL_GetTicks() - backup_timestamp) > (backup_interval * 1000)))
     {
       char backup_name_formatted[512];
       sprintf(backup_name_formatted,
@@ -879,7 +879,7 @@ void edit_world(World *mzx_world)
 
       save_world(mzx_world, backup_name_formatted, 0, 1);
       backup_num = (backup_num + 1) % backup_count;
-      backup_timestamp = get_ticks();
+      backup_timestamp = SDL_GetTicks();
     }
 
     cursor_x = cursor_board_x - scroll_x;

@@ -870,7 +870,7 @@ __editor_maybe_static void draw_viewport(World *mzx_world)
 // Returns non-0 to skip all keys this cycle
 static int update(World *mzx_world, int game, int *fadein)
 {
-  int start_ticks = get_ticks();
+  int start_ticks = SDL_GetTicks();
   int time_remaining;
   static int reload = 0;
   static int slowed = 0; // Flips between 0 and 1 during slow_time
@@ -1410,11 +1410,11 @@ static int update(World *mzx_world, int game, int *fadein)
   {
     // Number of ms the update cycle took
     total_ticks = (16 * (mzx_world->mzx_speed - 1))
-     - (get_ticks() - start_ticks);
+     - (SDL_GetTicks() - start_ticks);
     if(total_ticks < 0)
       total_ticks = 0;
     // Delay for 16 * (speed - 1) since the beginning of the update
-    delay(total_ticks);
+    SDL_Delay(total_ticks);
   }
 
   if(*fadein)

@@ -29,8 +29,8 @@
 
 static int cm2[]   = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
 static int cm3[]   = { IMM_U16 | STRING };
-static int cm4[]   = { DIR, IGNORE_TYPE_FOR, IMM_U16 | STRING };
-static int cm5[]   = { DIR };
+static int cm4[]   = { DIRECTION, IGNORE_TYPE_FOR, IMM_U16 | STRING };
+static int cm5[]   = { DIRECTION };
 static int cm6[]   = { COLOR | STRING, THING, PARAM | STRING };
 static int cm7[]   = { CHARACTER | STRING | IMM_U16 };
 static int cm8[]   = { COLOR | STRING };
@@ -51,14 +51,14 @@ static int cm20[]  = { CMD_ANY, COLOR | STRING, THING, PARAM | STRING,
 static int cm21[]  = { CMD_NO, COLOR | STRING, THING, PARAM | STRING,
  IGNORE_TYPE_THEN, STRING };
 static int cm22[]  = { COLOR | STRING, THING, PARAM | STRING, IGNORE_TYPE_AT,
- DIR, IGNORE_TYPE_THEN, STRING };
+ DIRECTION, IGNORE_TYPE_THEN, STRING };
 static int cm23[]  = { CMD_NOT, COLOR | STRING, THING, PARAM | STRING,
- IGNORE_TYPE_AT, DIR, IGNORE_TYPE_THEN, STRING };
+ IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_THEN, STRING };
 static int cm24[]  = { COLOR | STRING, THING, PARAM | STRING, IGNORE_TYPE_AT,
  IMM_S16 | STRING, IMM_S16 | STRING, IGNORE_TYPE_THEN, STRING };
 static int cm25[]  = { IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING,
  IGNORE_TYPE_THEN, STRING };
-static int cm26[]  = { IGNORE_TYPE_AT, DIR, IGNORE_TYPE_OF, CMD_PLAYER,
+static int cm26[]  = { IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_OF, CMD_PLAYER,
  IGNORE_TYPE_IS, COLOR | STRING, THING, PARAM | STRING, IGNORE_TYPE_THEN,
  STRING };
 static int cm27[]  = { STRING };
@@ -67,7 +67,7 @@ static int cm29[]  = { STRING };
 static int cm30[]  = { STRING, IGNORE_TYPE_TO, STRING };
 static int cm31[]  = { IMM_U16 | STRING };
 static int cm32[]  = { COLOR | STRING, THING, PARAM | STRING, IGNORE_TYPE_TO,
- DIR };
+ DIRECTION };
 static int cm33[]  = { IMM_U16 | STRING, ITEM };
 static int cm34[]  = { IMM_U16 | STRING, ITEM };
 static int cm35[]  = { IMM_U16 | STRING, ITEM, IGNORE_TYPE_ELSE, STRING };
@@ -82,30 +82,31 @@ static int cm45[]  = { CMD_PLAY, STRING };
 static int cm46[]  = { CMD_PLAY };
 static int cm48[]  = { IMM_U16 | STRING };
 static int cm49[]  = { CMD_SFX, STRING };
-static int cm50[]  = { IGNORE_TYPE_AT, DIR };
-static int cm53[]  = { IGNORE_TYPE_AT, DIR, IGNORE_TYPE_TO, STRING };
+static int cm50[]  = { IGNORE_TYPE_AT, DIRECTION };
+static int cm53[]  = { IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_TO, STRING };
 static int cm54[]  = { STRING, IMM_U16 | STRING };
 static int cm55[]  = { STRING, IMM_U16 | STRING };
 static int cm58[]  = { CMD_NS };
 static int cm59[]  = { CMD_EW };
 static int cm60[]  = { CMD_ATTACK };
-static int cm61[]  = { CMD_PLAYER, IGNORE_TYPE_TO, DIR };
-static int cm62[]  = { CMD_PLAYER, IGNORE_TYPE_TO, DIR, IGNORE_TYPE_ELSE,
+static int cm61[]  = { CMD_PLAYER, IGNORE_TYPE_TO, DIRECTION };
+static int cm62[]  = { CMD_PLAYER, IGNORE_TYPE_TO, DIRECTION, IGNORE_TYPE_ELSE,
  STRING };
 static int cm63[]  = { CMD_PLAYER, IGNORE_TYPE_AT, IMM_S16 | STRING,
  IMM_S16 | STRING };
 static int cm66[]  = { CMD_PLAYER, IGNORE_TYPE_AT, IMM_S16 | STRING,
  IMM_S16 | STRING, STRING };
-static int cm67[]  = { CMD_PLAYER, DIR };
-static int cm68[]  = { DIR, IGNORE_TYPE_ELSE, STRING };
-static int cm71[]  = { DIR, IGNORE_TYPE_WITH, DIR };
-static int cm72[]  = { IGNORE_TYPE_TO, DIR };
-static int cm73[]  = { IGNORE_TYPE_TO, DIR };
-static int cm74[]  = { CMD_HIGH, IGNORE_TYPE_TO, DIR };
-static int cm75[]  = { IGNORE_TYPE_TO, DIR };
-static int cm76[]  = { IGNORE_TYPE_TO, DIR };
-static int cm77[]  = { IGNORE_TYPE_TO, DIR };
-static int cm78[]  = { IGNORE_TYPE_TO, DIR, IGNORE_TYPE_FOR, IMM_U16 | STRING };
+static int cm67[]  = { CMD_PLAYER, DIRECTION };
+static int cm68[]  = { DIRECTION, IGNORE_TYPE_ELSE, STRING };
+static int cm71[]  = { DIRECTION, IGNORE_TYPE_WITH, DIRECTION };
+static int cm72[]  = { IGNORE_TYPE_TO, DIRECTION };
+static int cm73[]  = { IGNORE_TYPE_TO, DIRECTION };
+static int cm74[]  = { CMD_HIGH, IGNORE_TYPE_TO, DIRECTION };
+static int cm75[]  = { IGNORE_TYPE_TO, DIRECTION };
+static int cm76[]  = { IGNORE_TYPE_TO, DIRECTION };
+static int cm77[]  = { IGNORE_TYPE_TO, DIRECTION };
+static int cm78[]  = { IGNORE_TYPE_TO, DIRECTION, IGNORE_TYPE_FOR,
+ IMM_U16 | STRING };
 static int cm79[]  = { COLOR | STRING, THING, PARAM | STRING, IGNORE_TYPE_AT,
  IMM_S16 | STRING, IMM_S16 | STRING };
 static int cm80[]  = { IGNORE_TYPE_AS, IGNORE_TYPE_AN, CMD_ITEM };
@@ -113,8 +114,8 @@ static int cm81[]  = { IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING,
  IGNORE_TYPE_TO, STRING };
 static int cm82[]  = { STRING };
 static int cm83[]  = { IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING };
-static int cm84[]  = { IGNORE_TYPE_FROM, DIR };
-static int cm85[]  = { CMD_SELF, IGNORE_TYPE_TO, DIR };
+static int cm84[]  = { IGNORE_TYPE_FROM, DIRECTION };
+static int cm85[]  = { CMD_SELF, IGNORE_TYPE_TO, DIRECTION };
 static int cm86[]  = { CMD_SELF, IGNORE_TYPE_AT, IMM_S16 | STRING,
  IMM_S16 | STRING };
 static int cm87[]  = { IGNORE_TYPE_IS, CHARACTER | STRING | IMM_U16 };
@@ -133,10 +134,10 @@ static int cm97[]  = { STRING, IGNORE_TYPE_TO, CMD_RANDOM,
  IMM_U16 | STRING, IGNORE_TYPE_TO, IMM_U16 | STRING };
 static int cm98[]  = { IMM_U16 | STRING, ITEM, IGNORE_TYPE_FOR,
  IMM_U16 | STRING, ITEM, IGNORE_TYPE_ELSE, STRING };
-static int cm99[]  = { IGNORE_TYPE_AT, DIR, IGNORE_TYPE_OF, CMD_PLAYER,
+static int cm99[]  = { IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_OF, CMD_PLAYER,
  IGNORE_TYPE_TO, STRING };
 static int cm100[] = { COLOR | STRING, THING, PARAM | STRING, IGNORE_TYPE_TO,
- DIR, IGNORE_TYPE_OF, CMD_PLAYER };
+ DIRECTION, IGNORE_TYPE_OF, CMD_PLAYER };
 static int cm101[] = { STRING };
 static int cm102[] = { STRING };
 static int cm103[] = { STRING };
@@ -147,7 +148,8 @@ static int cm107[] = { STRING };
 static int cm108[] = { STRING };
 static int cm109[] = { CMD_PLAYER, IGNORE_TYPE_TO, STRING, IGNORE_TYPE_AT,
  IMM_S16 | STRING, IMM_S16 | STRING };
-static int cm110[] = { IGNORE_TYPE_TO, DIR, IGNORE_TYPE_FOR, IMM_U16 | STRING };
+static int cm110[] = { IGNORE_TYPE_TO, DIRECTION, IGNORE_TYPE_FOR,
+ IMM_U16 | STRING };
 static int cm111[] = { CMD_STRING, STRING };
 static int cm112[] = { CMD_STRING, IGNORE_TYPE_IS, STRING, IGNORE_TYPE_THEN,
  STRING };
@@ -159,13 +161,14 @@ static int cm115[] = { CMD_CHAR, IGNORE_TYPE_IS, CHARACTER | STRING | IMM_U16 };
 static int cm116[] = { STRING };
 static int cm117[] = { STRING };
 static int cm118[] = { CMD_ALL, COLOR | STRING, THING, PARAM | STRING,
- IGNORE_TYPE_TO, DIR };
+ IGNORE_TYPE_TO, DIRECTION };
 static int cm119[] = { IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING,
  IGNORE_TYPE_TO, IMM_S16 | STRING, IMM_S16 | STRING };
 static int cm120[] = { CMD_EDGE, CMD_COLOR, IGNORE_TYPE_TO, COLOR };
-static int cm121[] = { IGNORE_TYPE_TO, IGNORE_TYPE_THE, DIR, IGNORE_TYPE_IS,
- STRING };
-static int cm122[] = { IGNORE_TYPE_TO, IGNORE_TYPE_THE, DIR, CMD_NONE };
+static int cm121[] = { IGNORE_TYPE_TO, IGNORE_TYPE_THE, DIRECTION,
+ IGNORE_TYPE_IS, STRING };
+static int cm122[] = { IGNORE_TYPE_TO, IGNORE_TYPE_THE, DIRECTION,
+ CMD_NONE };
 static int cm123[] = { CMD_EDIT, CHARACTER | STRING | IMM_U16, IGNORE_TYPE_TO,
  IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING,
  IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING,
@@ -178,7 +181,8 @@ static int cm127[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
 static int cm128[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
 static int cm129[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
 static int cm130[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
-static int cm132[] = { IGNORE_TYPE_FROM, DIR, IGNORE_TYPE_TO, DIR };
+static int cm132[] = { IGNORE_TYPE_FROM, DIRECTION, IGNORE_TYPE_TO,
+ DIRECTION };
 static int cm133[] = { IGNORE_TYPE_A, CMD_LAVAWALKER };
 static int cm134[] = { IGNORE_TYPE_A, CMD_NONLAVAWALKER };
 static int cm135[] = { IGNORE_TYPE_FROM, COLOR | STRING, THING, PARAM | STRING,
@@ -194,10 +198,10 @@ static int cm143[] = { CMD_CHAR, CMD_ID, IMM_U16 | STRING, IGNORE_TYPE_TO,
  CHARACTER | STRING | IMM_U16 };
 static int cm144[] = { IGNORE_TYPE_TO, CMD_MOD, CMD_ORDER, IMM_U16 | STRING };
 static int cm145[] = { STRING };
-static int cm147[] = { CMD_THICK, CMD_ARROW, CMD_CHAR, DIR, IGNORE_TYPE_TO,
- CHARACTER | STRING | IMM_U16 };
-static int cm148[] = { CMD_THIN, CMD_ARROW, CMD_CHAR, DIR, IGNORE_TYPE_TO,
- CHARACTER | STRING | IMM_U16 };
+static int cm147[] = { CMD_THICK, CMD_ARROW, CMD_CHAR, DIRECTION,
+ IGNORE_TYPE_TO, CHARACTER | STRING | IMM_U16 };
+static int cm148[] = { CMD_THIN, CMD_ARROW, CMD_CHAR, DIRECTION,
+ IGNORE_TYPE_TO, CHARACTER | STRING | IMM_U16 };
 static int cm149[] = { CMD_MAXHEALTH, IMM_U16 | STRING };
 static int cm150[] = { CMD_PLAYER, CMD_POSITION };
 static int cm151[] = { CMD_PLAYER, CMD_POSITION };
@@ -267,9 +271,9 @@ static int cm201[] = { CMD_BLOCK, IGNORE_TYPE_AT, IMM_S16 | STRING,
  IMM_S16 | STRING, IGNORE_TYPE_FOR, IMM_U16 | STRING, IGNORE_TYPE_BY,
  IMM_U16 | STRING, IGNORE_TYPE_TO, IMM_S16 | STRING, IMM_S16 | STRING };
 static int cm202[] = { CMD_INPUT };
-static int cm203[] = { IGNORE_TYPE_TO, DIR };
-static int cm204[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16, DIR };
-static int cm205[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16, DIR };
+static int cm203[] = { IGNORE_TYPE_TO, DIRECTION };
+static int cm204[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16, DIRECTION };
+static int cm205[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16, DIRECTION };
 static int cm206[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16, IGNORE_TYPE_TO,
  CHARACTER | STRING | IMM_U16 };
 static int cm210[] = { CMD_SFX, IMM_U16 | STRING, IGNORE_TYPE_TO, STRING };
@@ -285,7 +289,7 @@ static int cm216[] = { CMD_CHAR, CMD_SET, STRING };
 static int cm217[] = { STRING, IGNORE_TYPE_BY, IMM_U16 | STRING };
 static int cm218[] = { STRING, IGNORE_TYPE_BY, IMM_U16 | STRING };
 static int cm219[] = { STRING, IGNORE_TYPE_BY, IMM_U16 | STRING };
-static int cm220[] = { CMD_CHAR, DIR, IGNORE_TYPE_IS,
+static int cm220[] = { CMD_CHAR, DIRECTION, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
 static int cm222[] = { CMD_PALETTE, STRING };
 static int cm224[] = { CMD_FADE, IGNORE_TYPE_TO, IMM_U16 | STRING,
@@ -1794,7 +1798,7 @@ __editor_maybe_static int assemble_line(char *cpos,
         }
         else
 
-        if(current_arg_type == DIR)
+        if(current_arg_type == DIRECTION)
         {
           if(current_arg_translation >= 16)
           {
@@ -2199,7 +2203,7 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
             break;
           }
 
-          case DIR:
+          case DIRECTION:
           {
             int dir = *(input_position + 1);
             char dir_buffer[64];

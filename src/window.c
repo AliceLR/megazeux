@@ -24,7 +24,6 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <dirent.h>
 #include <ctype.h>
 #include <sys/stat.h>
 
@@ -3122,43 +3121,41 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
 
 static void remove_files(char *directory_name, int remove_recursively)
 {
-  DIR *current_dir = opendir(directory_name);
-  struct dirent *current_file;
-
-  struct stat file_info;
+  dir_t *current_dir = dir_open(directory_name);
   char current_dir_name[MAX_PATH];
-  char *file_name;
+  char file_name[PATH_BUF_LEN];
+  struct stat file_info;
 
   getcwd(current_dir_name, MAX_PATH);
   chdir(directory_name);
 
-  do
+  while(1)
   {
-    current_file = readdir(current_dir);
-    file_name = current_file->d_name;
+    if(dir_get_next_entry(current_dir, file_name) < 0)
+      break;
 
-    if(current_file)
+    if(stat(file_name, &file_info) < 0)
+      continue;
+
+    if(!S_ISDIR(file_info.st_mode))
     {
-      if(stat(file_name, &file_info) >= 0)
-      {
-        if(S_ISDIR(file_info.st_mode))
-        {
-          if(remove_recursively && strcmp(file_name, ".") &&
-           strcmp(file_name, ".."))
-          {
-            remove_files(file_name, 1);
-            rmdir(file_name);
-          }
-        }
-        else
-        {
-          unlink(file_name);
-        }
-      }
+      unlink(file_name);
+      continue;
     }
-  } while(current_file);
 
-  closedir(current_dir);
+    if(remove_recursively && strcmp(file_name, ".") &&
+     strcmp(file_name, ".."))
+    {
+      remove_files(file_name, 1);
+#ifndef CONFIG_NDS
+      rmdir(file_name);
+#else
+#warning rmdir needs fixing on NDS
+#endif
+    }
+  }
+
+  dir_close(current_dir);
   chdir(current_dir_name);
 }
 
@@ -3168,8 +3165,8 @@ __editor_maybe_static int file_manager(World *mzx_world,
  int allow_new, element **dialog_ext, int num_ext, int ext_height,
  int allow_dir_change)
 {
-  DIR *current_dir;
-  struct dirent *current_file;
+  dir_t *current_dir;
+  char file_name[PATH_BUF_LEN];
   struct stat file_info;
   char current_dir_name[MAX_PATH];
   char current_dir_short[56];
@@ -3181,7 +3178,6 @@ __editor_maybe_static int file_manager(World *mzx_world,
   char **dir_list;
   int num_files;
   int num_dirs;
-  char *file_name;
   int file_name_length;
   int ext_pos = -1;
   int chosen_file, chosen_dir;
@@ -3215,107 +3211,97 @@ __editor_maybe_static int file_manager(World *mzx_world,
     chosen_dir = 0;
 
     getcwd(current_dir_name, MAX_PATH);
+    current_dir = dir_open(current_dir_name);
 
-    current_dir = opendir(current_dir_name);
-
-    do
+    while(current_dir)
     {
-      if(current_dir)
-        current_file = readdir(current_dir);
-      else
-        current_file = NULL;
+      if(dir_get_next_entry(current_dir, file_name) < 0)
+        break;
 
-      if(current_file)
+      file_name_length = strlen(file_name);
+
+      if((stat(file_name, &file_info) >= 0) &&
+       ((file_name[0] != '.') || (file_name[1] == '.')))
       {
-        file_name = current_file->d_name;
-        file_name_length = strlen(file_name);
-
-        if((stat(file_name, &file_info) >= 0) &&
-         ((file_name[0] != '.') || (file_name[1] == '.')))
+        if(S_ISDIR(file_info.st_mode))
         {
-          if(S_ISDIR(file_info.st_mode))
+          if(dirs_okay)
           {
-            if(dirs_okay)
-            {
-              dir_list[num_dirs] = malloc(file_name_length + 1);
-              strncpy(dir_list[num_dirs], file_name, file_name_length);
-               dir_list[num_dirs][file_name_length] = '\0';
-              num_dirs++;
-            }
+            dir_list[num_dirs] = malloc(file_name_length + 1);
+            strncpy(dir_list[num_dirs], file_name, file_name_length);
+             dir_list[num_dirs][file_name_length] = '\0';
+            num_dirs++;
           }
-          else
+        }
+        else
+        {
+          // Must match one of the wildcards, also ignore the .
+          if(file_name_length >= 4)
           {
-            // Must match one of the wildcards, also ignore the .
-            if(file_name_length >= 4)
+            if(file_name[file_name_length - 4] == '.')
+              ext_pos = file_name_length - 4;
+            else if(file_name[file_name_length - 3] == '.')
+              ext_pos = file_name_length - 3;
+            else
+              ext_pos = 0;
+
+            for(i = 0; wildcards[i] != NULL; i++)
             {
-              if(file_name[file_name_length - 4] == '.')
-                ext_pos = file_name_length - 4;
-              else
-
-              if(file_name[file_name_length - 3] == '.')
-                ext_pos = file_name_length - 3;
-
-              else
-                ext_pos = 0;
-
-              for(i = 0; wildcards[i] != NULL; i++)
+              if(!strcasecmp((file_name + ext_pos), wildcards[i]))
               {
-                if(!strcasecmp((file_name + ext_pos),
-                 wildcards[i]))
+                file_list[num_files] = malloc(56 + file_name_length + 1);
+
+                if(!strcasecmp(file_name + file_name_length - 4, ".mzx"))
                 {
-                  file_list[num_files] =
-                   malloc(56 + file_name_length + 1);
+                  FILE *mzx_file = fopen(file_name, "rb");
 
-                  if(!strcasecmp(file_name + file_name_length - 4, ".mzx"))
-                  {
-                    FILE *mzx_file = fopen(file_name, "rb");
-
-                    memset(file_list[num_files], ' ', 55);
-                    strncpy(file_list[num_files], file_name, file_name_length);
-                    file_list[num_files][file_name_length] = ' ';
-                    fread(file_list[num_files] + 30, 1, 24, mzx_file);
-                    file_list[num_files][55] = 0;
-                    fclose(mzx_file);
-                  }
-                  else
-                  {
-                    strncpy(file_list[num_files], file_name, file_name_length);
-                    file_list[num_files][file_name_length] = '\0';
-                  }
-                  strncpy(file_list[num_files] + 56, file_name,
-                   file_name_length);
-                  (file_list[num_files] + 56)[file_name_length] = '\0';
-
-                  num_files++;
-                  break;
+                  memset(file_list[num_files], ' ', 55);
+                  strncpy(file_list[num_files], file_name, file_name_length);
+                  file_list[num_files][file_name_length] = ' ';
+                  fread(file_list[num_files] + 30, 1, 24, mzx_file);
+                  file_list[num_files][55] = 0;
+                  fclose(mzx_file);
                 }
+                else
+                {
+                  strncpy(file_list[num_files], file_name, file_name_length);
+                  file_list[num_files][file_name_length] = '\0';
+                }
+                strncpy(file_list[num_files] + 56, file_name,
+                 file_name_length);
+                (file_list[num_files] + 56)[file_name_length] = '\0';
+
+                num_files++;
+                break;
               }
             }
           }
         }
-
-        if(num_files == total_filenames_allocated)
-        {
-          file_list = realloc(file_list, sizeof(char *) *
-           total_filenames_allocated * 2);
-          memset(file_list + total_filenames_allocated, 0,
-           sizeof(char *) * total_filenames_allocated);
-          total_filenames_allocated *= 2;
-        }
-
-        if(num_dirs == total_dirnames_allocated)
-        {
-          dir_list = realloc(dir_list, sizeof(char *) *
-           total_dirnames_allocated * 2);
-          memset(dir_list + total_dirnames_allocated, 0,
-           sizeof(char *) * total_dirnames_allocated);
-          total_dirnames_allocated *= 2;
-        }
       }
-    } while(current_file);
 
-    qsort((void *)file_list, num_files, sizeof(char *), sort_function);
-    qsort((void *)dir_list, num_dirs, sizeof(char *), sort_function);
+      if(num_files == total_filenames_allocated)
+      {
+        file_list = realloc(file_list, sizeof(char *) *
+         total_filenames_allocated * 2);
+        memset(file_list + total_filenames_allocated, 0,
+         sizeof(char *) * total_filenames_allocated);
+        total_filenames_allocated *= 2;
+      }
+
+      if(num_dirs == total_dirnames_allocated)
+      {
+        dir_list = realloc(dir_list, sizeof(char *) *
+         total_dirnames_allocated * 2);
+        memset(dir_list + total_dirnames_allocated, 0,
+         sizeof(char *) * total_dirnames_allocated);
+        total_dirnames_allocated *= 2;
+      }
+    }
+
+    dir_close(current_dir);
+
+    qsort(file_list, num_files, sizeof(char *), sort_function);
+    qsort(dir_list, num_dirs, sizeof(char *), sort_function);
 
 #ifdef __WIN32__
     if(dirs_okay)
@@ -3343,8 +3329,6 @@ __editor_maybe_static int file_manager(World *mzx_world,
       }
     }
 #endif
-
-    closedir(current_dir);
 
     current_dir_length = strlen(current_dir_name);
 

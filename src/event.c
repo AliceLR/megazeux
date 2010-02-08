@@ -690,17 +690,17 @@ Uint32 update_event_status_delay(void)
   int delay_ticks;
 
   if(!input.last_update_time)
-    input.last_update_time = get_ticks();
+    input.last_update_time = SDL_GetTicks();
 
   delay_ticks = UPDATE_DELAY -
-   (get_ticks() - input.last_update_time);
+   (SDL_GetTicks() - input.last_update_time);
 
-  input.last_update_time = get_ticks();
+  input.last_update_time = SDL_GetTicks();
 
   if(delay_ticks < 0)
    delay_ticks = 0;
 
-  delay(delay_ticks);
+  SDL_Delay(delay_ticks);
   return rval;
 }
 

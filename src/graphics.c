@@ -658,7 +658,7 @@ void vquick_fadeout(void)
       update_screen();
       ticks = SDL_GetTicks() - ticks;
       if(ticks <= 16)
-        delay(16 - ticks);
+        SDL_Delay(16 - ticks);
     }
     graphics.fade_status = 1;
   }
@@ -694,7 +694,7 @@ void vquick_fadein(void)
       update_screen();
       ticks = SDL_GetTicks() - ticks;
       if(ticks <= 16)
-        delay(16 - ticks);
+        SDL_Delay(16 - ticks);
     }
   }
 }
@@ -715,7 +715,7 @@ void insta_fadeout(void)
   for(i = 0; i < num_colors; i++)
     set_color_intensity(i, 0);
 
-  delay(1);
+  SDL_Delay(1);
   update_palette();
   update_screen(); // NOTE: this was called conditionally in 2.81e
 

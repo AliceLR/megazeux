@@ -55,10 +55,12 @@ char *mzx_res_get_by_id(mzx_resource_id_t id);
 long ftell_and_rewind(FILE *f);
 int Random(int range);
 
-void delay(int ms);
-int get_ticks(void);
-
 void get_path(const char *file_name, char *dest, unsigned int buf_len);
+
+#ifndef WIN32
+#include <sys/types.h>
+#include <dirent.h>
+#endif
 
 /* Some platforms like NDS don't have a rename(2), so we need
  * to implement it.
@@ -67,6 +69,18 @@ void get_path(const char *file_name, char *dest, unsigned int buf_len);
 #define rename rename
 int rename(const char *oldpath, const char *newpath);
 #endif
+
+#ifdef CONFIG_NDS
+#define PATH_BUF_LEN FILENAME_MAX
+typedef DIR_ITER dir_t;
+#else
+#define PATH_BUF_LEN MAX_PATH
+typedef DIR dir_t;
+#endif
+
+dir_t *dir_open(const char *path);
+void dir_close(dir_t *dir);
+int dir_get_next_entry(dir_t *dir, char *entry);
 
 __M_END_DECLS
 

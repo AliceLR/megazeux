@@ -25,10 +25,9 @@
 
 #include "fsafeopen.h"
 #include "const.h"
+#include "util.h"
 
 #ifndef __WIN32__
-
-#include <dirent.h>
 
 // convert to lowercase
 
@@ -100,46 +99,43 @@ static int case5(char *path, char *string)
 {
   int ret = -FSAFE_BRUTE_FORCE_FAILED;
   int dirlen = string - path;
-  char newpath[MAX_PATH];
-  struct dirent *inode;
-  DIR *wd;
+  char newpath[PATH_BUF_LEN];
+  dir_t *wd;
 
-  // reconstruct wd
+  // prepend the working directory
   strcpy(newpath, "./");
 
   // copy everything sans last token
   if(dirlen > 0)
-    memcpy(newpath + 2, path, dirlen - 1);
+  {
+    if(dirlen + 2 >= PATH_BUF_LEN)
+      dirlen = PATH_BUF_LEN - 2;
+    strncpy(newpath + 2, path, dirlen - 1);
+    newpath[PATH_BUF_LEN - 1] = 0;
+  }
 
-  // open directory
-  wd = opendir(newpath);
+  fprintf(stderr, "newpath: %s\n", newpath);
 
+  wd = dir_open(newpath);
   if(wd != NULL)
   {
     while(ret != FSAFE_SUCCESS)
     {
-      // check against inodes in this directory
-      inode = readdir(wd);
-
-      // check for null
-      if(inode == NULL)
+      // somebody bad happened, or there's no new entry
+      if(dir_get_next_entry(wd, newpath) != 0)
         break;
 
-      if(strcasecmp(inode->d_name, string) == 0)
+      // okay, we got something, but does it match?
+      if(strcasecmp(string, newpath) == 0)
       {
-        // update inode lookup
-        strcpy(string, inode->d_name);
-
-        // success
+        strcpy(string, newpath);
         ret = FSAFE_SUCCESS;
       }
     }
 
-    // close working dir
-    closedir(wd);
+    dir_close(wd);
   }
 
-  // return code
   return ret;
 }
 
@@ -149,7 +145,6 @@ static int match(char *path)
   struct stat inode;
   int i;
 
-  // path CANNOT be null
   if(path == NULL)
     return -FSAFE_MATCH_FAILED;
 
@@ -257,12 +252,6 @@ static int match(char *path)
     oldtoken = token;
   }
 
-#if 0
-  fprintf(stderr, "%s:%d: successfully translated to %s.\n",
-          __FILE__, __LINE__, path);
-#endif
-
-  // all ok
   return FSAFE_SUCCESS;
 }
 #endif // !__WIN32__
@@ -281,11 +270,8 @@ int fsafetest(const char *path, char *newpath)
   if((path == NULL) || (path[0] == 0))
     return -FSAFE_INVALID_ARGUMENT;
 
-  // store length of path
   pathlen = strlen (path);
-
-  // copy path
-  strcpy (newpath, path);
+  strcpy(newpath, path);
 
   // convert the slashes
   for(i = 0; i < pathlen; i++)
@@ -337,7 +323,6 @@ int fsafetranslate(const char *path, char *newpath)
   struct stat inode;
   int ret;
 
-  // fsafetest failed
   if((ret = fsafetest(path, newpath)) < 0)
     return ret;
 
@@ -350,7 +335,6 @@ int fsafetranslate(const char *path, char *newpath)
       return -FSAFE_MATCH_FAILED;
   }
 
-  // all ok
   return FSAFE_SUCCESS;
 }
 
@@ -391,7 +375,7 @@ FILE *fsafeopen(const char *path, const char *mode)
     return NULL;
   }
 
-  // try opening the file
+  // _TRY_ opening the file
   return fopen(newpath, mode);
 }
 
