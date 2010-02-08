@@ -4074,7 +4074,7 @@ command reference is split into two parts.
 >#COMMAND2.HLP:_m5:MOD FADE IN "file"
 >#COMMAND2.HLP:_m6:MOD FADE OUT
 >#COMMAND2.HLP:_m7:MOD SAM # #
->:_m8:MOD "*"
+>_m8:MOD "*"
 >_m9:MODULO "counter" #
 >#COMMAND2.HLP:_m0:MOVE ALL [color] [thing] [param] [dir]
 >_mA:MOVE PLAYER [dir]
@@ -8126,7 +8126,7 @@ Despite the increase in minor version, this release mostly
 targets bug and regression fixes. However, there ARE some
 additional new features, such as the introduction of the
 LOAD_MENU and mouse pixel counters, and refinement of the
-{FREAD,FWRITE}_COUNTER counter. (There are several other
+{FREAD,FWRITE}_COUNTER counters. (There are several other
 smaller features that are documented in the changelog.)
 
 SAVs from older worlds (requiring compatibility hacks) no
@@ -8225,9 +8225,9 @@ USERS
   glitches in the MZX game window when overlapping the window
   with another, at the slight expense of CPU time.
 + If loading a save game from the title screen (or when no
-  world has been loaded) do not send JUSTENTERED to all robots.
-  This restores compatibility with MZX 2.70 and is consistent
-  with loading a save from another board.
+  world has been loaded) MZX no longer sends JUSTENTERED to all
+  robots. This restores compatibility with MZX 2.70 and is
+  consistent with loading a save from another board.
 + Counters with 10 digits and a negative sign are no longer
   truncated in the debug menu.
 + Correctly clamped (rather than truncating) the value passed
@@ -8303,6 +8303,10 @@ USERS
 + Added mouse pixel counters MOUSEPX and MOUSEPY. (Mr_Alert)
 + Commenting a line of maximum length (241 characters) can no
   longer grow the length of the line beyond this limit.
++ Fixed a bug causing the software renderer to fail to center
+  when using a boxed fullscreen resolution. Also fixes a bug
+  where the PSP platform would ignore an override of the
+  force_bpp option. (Mr_Alert)
   
 
 DEVELOPERS
@@ -8348,7 +8352,7 @@ DEVELOPERS
   but this can be disabled, so port authors can start using the
   feature right away (see config.sh). (Mr_Alert)
 
->#281CLOB.HLP:281:New in Versions 2.81-2.81h
+>#281CLOG.HLP:281:New in Versions 2.81-2.81h
 >#280CLOG.HLP:280:New in Versions 2.80-2.80h
 >#OLDERVER.HLP:099:New in versions 2.60 to 2.70
 >#OLDESVER.HLP:100:New in versions 2.01 to 2.60
