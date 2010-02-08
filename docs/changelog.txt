@@ -130,6 +130,10 @@ DEVELOPERS
   package now provides a Visual Studio 2005 project and pre-compiled
   dependencies, but the resulting binary still does not load. See also the
   documentation in arch/msvc/README.txt.
++ The Nintendo DS port (a.k.a. 'dsmzx') has been merged. This is by far the
+  most exotic port thus far, and adds features such as player focus (on the
+  second display). Sound isn't working yet, and large games still won't play
+  (due to lack of memory). See docs/nds.txt for more information. (kvance)
 
 December 8, 2007 - MZX 2.81h
 
