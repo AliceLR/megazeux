@@ -257,7 +257,7 @@ static int match(char *path)
     oldtoken = token;
   }
 
-#ifdef DEBUG
+#if 0
   fprintf(stderr, "%s:%d: successfully translated to %s.\n",
           __FILE__, __LINE__, path);
 #endif

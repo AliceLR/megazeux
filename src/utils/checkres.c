@@ -476,17 +476,32 @@ static status_t parse_world(FILE *f)
 
 int main(int argc, char *argv[])
 {
+  const char *found_append = " - FOUND", *not_found_append = " - NOT FOUND";
+  int i, print_all_files = 0;
   status_t ret;
   FILE *f;
-  int i;
 
-  if(argc != 2)
+  if(argc < 2)
   {
-    fprintf(stderr, "usage: %s [mzx file]\n", argv[0]);
+    fprintf(stderr, "usage: %s [-q] [-a] [mzx file]\n\n", argv[0]);
+    fprintf(stderr, "  -q  Do not print summary \"FOUND\"/\"NOT FOUND\".\n");
+    fprintf(stderr, "  -a  Print found files as well as missing files.\n");
+    fprintf(stderr, "\n");
     return INVALID_ARGUMENTS;
   }
 
-  f = fopen(argv[1], "r");
+  if((argc > 2 && !strcmp(argv[1], "-q"))
+   ||(argc > 3 && !strcmp(argv[2], "-q")))
+  {
+    found_append = "";
+    not_found_append = "";
+  }
+
+  if((argc > 2 && !strcmp(argv[1], "-a"))
+   ||(argc > 3 && !strcmp(argv[2], "-a")))
+    print_all_files = 1;
+
+  f = fopen(argv[argc - 1], "r");
   if(f)
   {
     ret = parse_world(f);
@@ -506,9 +521,12 @@ int main(int argc, char *argv[])
           char newpath[MAX_PATH];
 
           if(fsafetranslate(*p, newpath) == FSAFE_SUCCESS)
-            fprintf(stdout, "%s - FOUND\n", newpath);
+          {
+            if(print_all_files)
+              fprintf(stdout, "%s%s\n", newpath, found_append);
+          }
           else
-            fprintf(stdout, "%s - NOT FOUND\n", *p);
+            fprintf(stdout, "%s%s\n", *p, not_found_append);
         }
 
         free(*p);
