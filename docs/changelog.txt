@@ -6,11 +6,10 @@ USERS
   (Mr_Alert).
 + Have the numpad work correctly when numlock is disabled. Keys are no longer
   ignored by the MZX editor, and games should recognize them as before.
-+ Added a tool, "checkres", intended to be distributed separately, which
-  extracts all resources from a MegaZeux world or board file and lists them
-  (or lists only those which are not found in the game directory.
-  ZIP files are also supported (to a more limited extent).
-  (ajs & Revvy, ideas from Exophase & Terryn).
++ Added a tool, "checkres", which extracts all resources from a MegaZeux
+  world or board file and lists them (or lists only those which are not
+  found in the game directory. ZIP files are also supported (to a more
+  limited extent) (ajs & Revvy, ideas from Exophase & Terryn).
 + Removed the bogus "F1 for Help" option from error dialogs, and finally
   get rid of the "** BETA **" banner on title boards in play mode.
 + Obsolete support for the AMS, DBM, DMF, MDL, MT2, PSM, PTM and UMX module
@@ -35,6 +34,8 @@ DEVELOPERS
 + Add fixes for OpenBSD to allow PNG screenshots and X11 clipboard support to
   work. Tested with OpenBSD 4.2 and GCC 3.3.5.
 + Updated Win32 builds with SDL 1.2.13.
++ Build and package two utilities, txt2hlp (for helpfile generation)
+  and checkres, on Win32.
 
 December 8, 2007 - MZX 2.81h
 

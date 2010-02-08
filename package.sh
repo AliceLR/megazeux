@@ -31,55 +31,36 @@ createzip_dynamic_sdl() {
 	cp -f $1 SDL.dll &&
 
 	#
+	# Copy utils here temporarily.
+	#
+	mkdir utils &&
+	cp -f src/utils/checkres{.{exe,bat},-readme.txt} utils &&
+	cp -f src/utils/txt2hlp.exe utils &&
+
+	#
 	# Generate a suitable directx.bat
 	#
 	echo "set SDL_VIDEODRIVER=directx" > $DIRECTX_BAT &&
 	echo "start $TARGET.exe"          >> $DIRECTX_BAT &&
 
 	#
-	# pack the EXE
+	# pack the EXEs
 	#
-	( $UPX --best $TARGET.exe || echo "UPX isn't available, skipped." ) &&
+	for BINARY in $TARGET.exe utils/checkres.exe utils/txt2hlp.exe; do
+		( $UPX --best $BINARY || echo "UPX unavailable." );
+	done &&
 
 	#
 	# Create the binary package.
 	#
 	$SEVENZIP a -tzip dist/$TARGET-$2.zip \
-		$BINARY_DEPS $DOCS $TARGET.exe SDL.dll $DIRECTX_BAT &&
+		$BINARY_DEPS $DOCS $TARGET.exe SDL.dll $DIRECTX_BAT utils &&
 
 	#
 	# Remove SDL, and the bat file.
 	#
+	rm -rf utils &&
 	rm -f SDL.dll $DIRECTX_BAT
-}
-
-#
-# createzip_dynamic_sdl <POSTFIX>
-#
-createzip_static_sdl() {
-	DIRECTX_BAT="directx.bat"
-
-	#
-	# Generate a suitable directx.bat
-	#
-	echo "set SDL_VIDEODRIVER=directx" > $DIRECTX_BAT &&
-	echo "start $TARGET.exe"          >> $DIRECTX_BAT &&
-
-	#
-	# pack the EXE
-	#
-	( $UPX --best $TARGET.exe || echo "UPX isn't available, skipped." ) &&
-
-	#
-	# Create the binary package.
-	#
-	$SEVENZIP a -tzip dist/$TARGET-$1.zip \
-		$BINARY_DEPS $DOCS $TARGET.exe $DIRECTX_BAT &&
-
-	#
-	# Remove SDL, and the bat file.
-	#
-	rm -f $DIRECTX_BAT
 }
 
 #
@@ -252,7 +233,7 @@ if [ "$2" = "psp" ]; then
 fi
 
 #
-# Windows, using ZIP compression via 7ZIP compressor
+# Windows x86, using ZIP compression via 7ZIP compressor
 #
 if [ "$2" = "win32" ]; then
 	LIBSDL="`sdl-config --prefix`/bin/SDL.dll"
@@ -264,7 +245,8 @@ fi
 # Windows x64, using ZIP compression via 7ZIP compressor
 #
 if [ "$2" = "win64" ]; then
-	createzip_static_sdl x64
+	LIBSDL="`sdl-config --prefix`/bin/SDL.dll"
+	createzip_dynamic_sdl $LIBSDL x64
 	exit
 fi
 
