@@ -617,6 +617,26 @@ static status_t parse_board_direct(stream_t *s)
             return FREAD_FAILED;
 
           debug("LOAD CHAR SET: %s\n", tmp);
+          
+          if(tmp[0] == '+')
+          {
+            char tempc = tmp[3];
+            tmp[3] = 0;
+            char *rest;
+            (void)strtol(tmp + 1, &rest, 16);
+            tmp[3] = tempc;
+            memmove(tmp, rest, str_len - (rest - tmp));
+          }
+          else if(tmp[0] == '@')
+          {
+            char tempc = tmp[4];
+            tmp[4] = 0;
+            char *rest;
+            (void)strtol(tmp + 1, &rest, 10);
+            tmp[4] = tempc;
+            memmove(tmp, rest, str_len - (rest - tmp));
+          }
+          
           ret = add_to_hash_table(tmp);
           if(ret != SUCCESS)
             return ret;
