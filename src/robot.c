@@ -1522,7 +1522,7 @@ void prefix_mid_xy(World *mzx_world, int *mx, int *my, int x, int y)
 }
 
 // Move an x/y pair in a given direction. Returns non-0 if edge reached.
-int move_dir(Board *src_board, int *x, int *y, int dir)
+int move_dir(Board *src_board, int *x, int *y, mzx_dir dir)
 {
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
@@ -1531,7 +1531,7 @@ int move_dir(Board *src_board, int *x, int *y, int dir)
 
   switch(dir)
   {
-    case 0:
+    case NORTH:
     {
       if(ty == 0)
       {
@@ -1541,7 +1541,7 @@ int move_dir(Board *src_board, int *x, int *y, int dir)
       break;
     }
 
-    case 1:
+    case SOUTH:
     {
       if(ty == (board_height - 1))
       {
@@ -1551,7 +1551,7 @@ int move_dir(Board *src_board, int *x, int *y, int dir)
       break;
     }
 
-    case 2:
+    case EAST:
     {
       if(tx == (board_width - 1))
       {
@@ -1561,7 +1561,7 @@ int move_dir(Board *src_board, int *x, int *y, int dir)
       break;
     }
 
-    case 3:
+    case WEST:
     {
       if(tx == 0)
       {
@@ -1570,6 +1570,9 @@ int move_dir(Board *src_board, int *x, int *y, int dir)
       tx--;
       break;
     }
+
+    default:
+      break;
   }
 
   *x = tx;

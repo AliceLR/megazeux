@@ -60,7 +60,7 @@ int send_robot_id(World *mzx_world, int id, const char *mesg, int ignore_lock);
 void send_robot_def(World *mzx_world, int robot_id, int mesg_id);
 void send_robot_all(World *mzx_world, const char *mesg);
 int send_robot_self(World *mzx_world, Robot *src_robot, const char *mesg);
-int move_dir(Board *src_board, int *x, int *y, int dir);
+int move_dir(Board *src_board, int *x, int *y, mzx_dir dir);
 void prefix_first_last_xy(World *mzx_world, int *fx, int *fy,
  int *lx, int *ly, int robotx, int roboty);
 void prefix_mid_xy(World *mzx_world, int *mx, int *my, int x, int y);

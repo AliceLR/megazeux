@@ -131,7 +131,7 @@ static void calculate_blocked(World *mzx_world, int x, int y, int id, int bl[4])
       new_x = x;
       new_y = y;
 
-      if(!move_dir(src_board, &new_x, &new_y, i))
+      if(!move_dir(src_board, &new_x, &new_y, int_to_dir(i)))
       {
         offset = new_x + (new_y * board_width);
         // Not edge... blocked?
@@ -254,7 +254,7 @@ static int place_dir_xy(World *mzx_world, mzx_thing id, int color, int param,
 
     if(is_cardinal_dir(direction))
     {
-      if(!move_dir(src_board, &new_x, &new_y, dir_to_int(direction)))
+      if(!move_dir(src_board, &new_x, &new_y, direction))
       {
         return place_at_xy(mzx_world, id, color, param,
          new_x, new_y);
@@ -461,7 +461,7 @@ static int check_dir_xy(World *mzx_world, mzx_thing id, int color, int param,
     int new_y = y;
     direction = parsedir(direction, x, y, cur_robot->walk_dir);
 
-    if(!move_dir(src_board, &new_x, &new_y, dir_to_int(direction)))
+    if(!move_dir(src_board, &new_x, &new_y, direction))
     {
       offset = new_x + (new_y * board_width);
 
@@ -989,7 +989,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
     // Walk?
     if(is_cardinal_dir(walk_dir))
     {
-      move_status status = move(mzx_world, x, y, walk_dir - 1,
+      move_status status = move(mzx_world, x, y, dir_to_int(walk_dir),
        CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK |
        CAN_WATERWALK | (CAN_LAVAWALK * cur_robot->can_lavawalk));
 
@@ -999,37 +999,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
         if(send_robot_id(mzx_world, id, "edge", 1))
           send_robot_id(mzx_world, id, "thud", 1);
       }
+      else if(status == NO_HIT)
+        move_dir(src_board, &x, &y, walk_dir);
       else
-
-      if(status != NO_HIT)
-      {
         send_robot_id(mzx_world, id, "thud", 1);
-      }
-      else
-      {
-        // Update x/y
-        switch(walk_dir)
-        {
-          case NORTH:
-            y--;
-            break;
-
-          case SOUTH:
-            y++;
-            break;
-
-          case EAST:
-            x++;
-            break;
-
-          case WEST:
-            x--;
-            break;
-
-          default:
-            break;
-        }
-      }
     }
 
     if(cur_robot->cur_prog_line == 0)
@@ -1146,7 +1119,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
               if(status == NO_HIT)
               {
-                move_dir(src_board, &x, &y, dir_to_int(direction));
+                move_dir(src_board, &x, &y, direction);
               }
             }
 
@@ -1180,7 +1153,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             }
             else
             {
-              move_dir(src_board, &x, &y, dir_to_int(direction));
+              move_dir(src_board, &x, &y, direction);
               // not blocked- make sure only moves once!
               done = 1;
             }
@@ -1608,8 +1581,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
               {
                 new_x = x;
                 new_y = y;
-                if(!move_dir(src_board, &new_x, &new_y,
-                 dir_to_int(direction)))
+                if(!move_dir(src_board, &new_x, &new_y, direction))
                 {
                   if((mzx_world->player_x == new_x) &&
                    (mzx_world->player_y == new_y))
@@ -1631,7 +1603,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
                     // try all dirs
                     new_x = x;
                     new_y = y;
-                    if(!move_dir(src_board, &new_x, &new_y, i))
+                    if(!move_dir(src_board, &new_x, &new_y, int_to_dir(i)))
                     {
                       if((mzx_world->player_x == new_x) &&
                        (mzx_world->player_y == new_y))
@@ -2320,7 +2292,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           {
             int new_x = x;
             int new_y = y;
-            if(!move_dir(src_board, &new_x, &new_y, dir_to_int(direction)))
+            if(!move_dir(src_board, &new_x, &new_y, direction))
             {
               int new_offset = new_x + (new_y * board_width);
               mzx_thing new_id = (mzx_thing)level_id[new_offset];
@@ -2340,7 +2312,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
                   {
                     new_x = x;
                     new_y = y;
-                    if(!move_dir(src_board, &new_x, &new_y, i))
+                    if(!move_dir(src_board, &new_x, &new_y, int_to_dir(i)))
                     {
                       // Not edge... robot?
                       new_offset = new_x + (new_y * board_width);
@@ -2388,7 +2360,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           if(is_cardinal_dir(direction))
           {
-            if(!move_dir(src_board, &send_x, &send_y, dir_to_int(direction)))
+            if(!move_dir(src_board, &send_x, &send_y, direction))
             {
               send_at_xy(mzx_world, id, send_x, send_y, p2 + 1);
               // Did the position get changed? (send to self)
@@ -2554,7 +2526,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           int put_x = x;
           int put_y = y;
-          if(!move_dir(src_board, &put_x, &put_y, put_dir - 1))
+          if(!move_dir(src_board, &put_x, &put_y, put_dir))
           {
             if(place_player_xy(mzx_world, put_x, put_y))
             {
@@ -2609,10 +2581,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           if(is_cardinal_dir(src_dir) && is_cardinal_dir(dest_dir))
           {
-            int status =
-             move_dir(src_board, &src_x, &src_y, src_dir - 1);
+            int status = move_dir(src_board, &src_x, &src_y, src_dir);
 
-            status |= move_dir(src_board, &dest_x, &dest_y, dest_dir - 1);
+            status |= move_dir(src_board, &dest_x, &dest_y, dest_dir);
             if(!status)
             {
               // Switch src_x, src_y with dest_x, dest_y
@@ -2934,7 +2905,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if(is_cardinal_dir(copy_dir))
         {
-          if(!move_dir(src_board, &copy_x, &copy_y, copy_dir - 1))
+          if(!move_dir(src_board, &copy_x, &copy_y, copy_dir))
           {
             offset = copy_x + (copy_y * board_width);
             d_id = (mzx_thing)level_id[offset];
@@ -2970,8 +2941,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             duplicate_color = level_color[offset];
             duplicate_id = (mzx_thing)level_id[offset];
 
-            if(!move_dir(src_board, &duplicate_x, &duplicate_y,
-             duplicate_dir - 1))
+            if(!move_dir(src_board, &duplicate_x, &duplicate_y, duplicate_dir))
             {
               dest_id = duplicate_robot(src_board, cur_robot,
                duplicate_x, duplicate_y);
@@ -3176,7 +3146,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         direction = parsedir(direction, send_x, send_y,
          cur_robot->walk_dir);
 
-        if(!move_dir(src_board, &send_x, &send_y, dir_to_int(direction)))
+        if(!move_dir(src_board, &send_x, &send_y, direction))
         {
           char *p2 = next_param_pos(cmd_ptr + 1);
           send_at_xy(mzx_world, id, send_x, send_y, p2 + 1);
@@ -3235,31 +3205,31 @@ void run_robot(World *mzx_world, int id, int x, int y)
           {
             case 'n':
             case 'N':
-              direction = 0;
+              direction = NORTH;
               break;
             case 's':
             case 'S':
-              direction = 1;
+              direction = SOUTH;
               break;
             case 'e':
             case 'E':
-              direction = 2;
+              direction = EAST;
               break;
             case 'w':
             case 'W':
-              direction = 3;
+              direction = WEST;
               break;
             case 'i':
             case 'I':
-              direction = -1;
+              direction = IDLE;
               break;
             default:
-              direction = -2;
+              direction = -1;
           }
 
-          if(direction >= 0)
+          if(is_cardinal_dir(direction))
           {
-            if((move(mzx_world, x, y, direction,
+            if((move(mzx_world, x, y, dir_to_int(direction),
              CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK | CAN_WATERWALK |
              CAN_LAVAWALK * cur_robot->can_lavawalk)) &&
              (cmd == 232))
@@ -3270,7 +3240,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             move_dir(src_board, &x, &y, direction);
           }
 
-          if(direction != -2)
+          if(direction != -1)
             goto breaker;
         }
         break;
@@ -3782,8 +3752,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
             int dest_x = x;
             int dest_y = y;
 
-            if(!move_dir(src_board, &src_x, &src_y, src_dir - 1) &&
-             !move_dir(src_board, &dest_x, &dest_y, dest_dir - 1))
+            if(!move_dir(src_board, &src_x, &src_y, src_dir) &&
+             !move_dir(src_board, &dest_x, &dest_y, dest_dir))
             {
               copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
 
@@ -5068,7 +5038,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             int push_y = y;
             int int_dir = dir_to_int(push_dir);
 
-            if(!move_dir(src_board, &push_x, &push_y, int_dir))
+            if(!move_dir(src_board, &push_x, &push_y, push_dir))
             {
               int offset = push_x + (push_y * board_width);
               int d_id = (mzx_thing)level_id[offset];
