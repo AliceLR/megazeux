@@ -338,6 +338,12 @@ static void config_mp_resample_mode(config_info *conf, char *name,
   }
 }
 
+static void bedit_hhelp(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  conf->bedit_hhelp = strtol(value, NULL, 10);
+}
+
 static void redit_hhelp(config_info *conf, char *name, char *value,
  char *extended_data)
 {
@@ -514,6 +520,7 @@ static config_entry config_options[] =
   { "backup_ext", backup_ext },
   { "backup_interval", backup_interval },
   { "backup_name", backup_name },
+  { "board_editor_hide_help", bedit_hhelp },
   { "ccode_colors", config_ccode_colors },
   { "ccode_commands", config_ccode_commands },
   { "ccode_conditions", config_ccode_conditions },
@@ -620,8 +627,9 @@ static config_info default_options =
   "saved.sav",                  // default_save_name
   4,                            // mzx_speed
 
-  // World editor options
+  // Board editor options
   0,                            // editor_space_toggles
+  0,				// board_editor_hide_help
 
   // Robot editor options
   { 11, 10, 10, 14, 255, 3, 11, 2, 14, 0, 15, 11, 7, 15, 1, 2, 3 },
@@ -630,7 +638,7 @@ static config_info default_options =
   10,                           // disassemble_base
   1,                            // default_invalid_status
   { "char ", "color ", "goto ", "send ", ": playershot^" },
-  0,                            // redit_hhelp
+  0,                            // robot_editor_hide_help
 
   // Backup options
   3,                            // backup_count

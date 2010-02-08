@@ -60,8 +60,9 @@ struct _config_info
   char default_save_name[256];
   int mzx_speed;
 
-  // World editor options
+  // Board editor options
   int editor_space_toggles;
+  int bedit_hhelp;
 
   // Robot editor options
   char color_codes[32];

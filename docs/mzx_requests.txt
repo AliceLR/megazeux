@@ -15,7 +15,6 @@ MZX REQUESTS:
 -Analog stick support with MZX (not full analog, just recognition).
 -Ability to retain cursor/board positions after leaving the world.
 -More sound-related control counters (sound/pcfx toggle, volume overall/sound/pcfx). [Exo skipped]
--[+Terryn]Application of a config option like robot_editor_hide_help that has a similar effect on the board help menu.
 -Auto-hide mouse cursor in editor after a certain period of mouse disuse. [Exo skipped]
 -Ability to reference sprites from the overlay.
 -Ability to directly access the vlayer (i.e. through the Editor and not through Robotic commands).

@@ -210,6 +210,25 @@ modplug_resample_mode = cubic
 #mzx_speed = 4
 
 
+### Board editor options ###
+
+# Whether or not the spacebar can be used to toggle between
+# your active buffer and the meta character "SPACE". If you
+# set this, it will behave like older MegaZeux's, but it will
+# allow you to overwrite robots, for instance.
+#
+# If the setting is disabled (the default), replacing params
+# will your new buffer will not require a toggle, and robots
+# can only be deleted with the Delete key.
+
+#editor_space_toggles = 1
+
+# Set to 1 if you want the board editor to not show the hotkey
+# help by default.
+
+#board_editor_hide_help = 1
+
+
 ### Robot editor options ###
 
 # Enable or disable color coding in the editor.
@@ -286,17 +305,6 @@ modplug_resample_mode = cubic
 # set spr!spr_num!_cx !cx!
 # set spr!spr_num!_cy !cy!
 # put !x1! sprite p!#spr_num! !x! !y!
-
-# Whether or not the spacebar can be used to toggle between
-# your active buffer and the meta character "SPACE". If you
-# set this, it will behave like older MegaZeux's, but it will
-# allow you to overwrite robots, for instance.
-#
-# If the setting is disabled (the default), replacing params
-# will your new buffer will not require a toggle, and robots
-# can only be deleted with the Delete key.
-
-#editor_space_toggles = 1
 
 # Whether or not the palette should be reverted to default
 # when the robot editor is load. If set, SMZX mode 0 will

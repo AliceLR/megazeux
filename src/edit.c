@@ -790,7 +790,7 @@ void edit_world(World *mzx_world)
   int modified = 0;
   int debug_x = 60;
   int saved_overlay_mode;
-  int edit_screen_height = 19;
+  int edit_screen_height;
   int copy_repeat_width = -1;
   int copy_repeat_height = -1;
   int backup_count = mzx_world->conf.backup_count;
@@ -859,6 +859,11 @@ void edit_world(World *mzx_world)
   default_palette();
   save_editor_palette();
   insta_fadein();
+
+  if(mzx_world->conf.bedit_hhelp)
+    edit_screen_height = 25;
+  else
+    edit_screen_height = 19;
 
   do
   {

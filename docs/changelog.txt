@@ -113,6 +113,8 @@ USERS
 + Have FREAD_COUNTER and FWRITE_COUNTER read in a DOS dword (32bit) instead
   of a DOS word (16bit). This allows modern post-port MZX counters to be
   fully represented in files. Compatibility with older worlds is preserved.
++ Add a new config option "board_editor_hide_help" which changes the default
+  hide setting of the help text on the primary board editor.
 
 DEVELOPERS
 
