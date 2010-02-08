@@ -39,8 +39,11 @@ static void gp2x_set_colors_mzx (graphics_data *graphics, Uint32 *char_colors,
 
   cb_bg = graphics->flat_intensity_palette[bg];
   cb_fg = graphics->flat_intensity_palette[fg];
-  cb_mx = ((cb_bg >> 1) & render_data->halfmask) +
-   ((cb_fg >> 1) & render_data->halfmask);
+  if(cb_bg == cb_fg)
+    cb_mx = cb_bg;
+  else
+    cb_mx = ((cb_bg >> 1) & render_data->halfmask) +
+     ((cb_fg >> 1) & render_data->halfmask);
 
 #if SDL_BYTE_ORDER == SDL_BIG_ENDIAN
   char_colors[0] = (cb_bg << 16) | cb_bg;
@@ -307,8 +310,13 @@ static void gp2x_sync_screen(graphics_data *graphics)
     else
     {
       for (j = 0; j < 320; j++)
-        dest[j] = ((src[j] >> 1) & render_data->halfmask) +
-         ((src[j+320] >> 1) & render_data->halfmask);
+      {
+        if(src[j] == src[j+320])
+          dest[j] = src[j];
+        else
+          dest[j] = ((src[j] >> 1) & render_data->halfmask) +
+           ((src[j+320] >> 1) & render_data->halfmask);
+      }
       skip -= 24;
       src += 320;
     }
