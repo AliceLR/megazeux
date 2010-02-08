@@ -16,9 +16,9 @@ The configuration (config.txt) must be modified in the following ways:
   - "audio_buffer = 128"        Improves performance
   - "force_bpp = 8"             Improves performance
 
-Additionally, pad.config must be over-written with pad.config.gp2x. This file
-contains necessary pad mappings for the GP2X controls (the original is for the
-PSP platform).
+The file pad.config must be included in the distribution and copied from
+arch/gp2x. This file contains necessary pad mappings for the GP2X controls
+(the original is for the PSP platform).
 
 COMPILATION
 

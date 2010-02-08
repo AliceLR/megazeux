@@ -126,14 +126,15 @@ DOCS="docs/COPYING.DOC docs/changelog.txt docs/port.txt docs/macro.txt"
 #
 # Various joypad configuration files.
 #
-PSPPAD="pad.config"
-GP2XPAD="pad.config.gp2x"
+PSPPAD="arch/psp/pad.config"
+GP2XPAD="arch/gp2x/pad.config"
+NDSPAD="arch/nds/pad.config"
 
 #
 # MegaZeux's build system dependencies; these are packaged in
 # addition to binary deps above to complete the source package.
 #
-BUILD_DEPS="config.sh Makefile package.sh $PSPPAD $GP2XPAD macosx.zip"
+BUILD_DEPS="config.sh Makefile package.sh macosx.zip msvc.zip"
 
 #
 # These directories are purely for source distributions.
