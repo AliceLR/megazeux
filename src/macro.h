@@ -24,12 +24,6 @@
 
 __M_BEGIN_DECLS
 
-typedef struct _config_info config_info;
-typedef struct _ext_macro ext_macro;
-typedef struct _macro_type macro_type;
-typedef struct _macro_variable_reference macro_variable_reference;
-typedef struct _macro_variable macro_variable;
-
 typedef enum
 {
   number,
@@ -50,30 +44,30 @@ typedef union
   char *str_storage;
 } variable_storage;
 
-struct _macro_variable
+typedef struct
 {
   variable_storage storage;
   variable_storage def;
   char *name;
-};
+} macro_variable;
 
-struct _macro_type
+typedef struct
 {
   int type_attributes[16];
   variable_type type;
   int num_variables;
   macro_variable *variables;
   macro_variable **variables_sorted;
-};
+} macro_type;
 
-struct _macro_variable_reference
+typedef struct
 {
   macro_type *type;
   variable_storage *storage;
   reference_mode ref_mode;
-};
+} macro_variable_reference;
 
-struct _ext_macro
+typedef struct
 {
   char *name;
   char *label;
@@ -85,7 +79,7 @@ struct _ext_macro
   int total_variables;
   macro_type types[32];
   char *text;
-};
+} ext_macro;
 
 void add_ext_macro(config_info *conf, char *name, char *line_data,
  char *label);

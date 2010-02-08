@@ -24,6 +24,8 @@
 
 __M_BEGIN_DECLS
 
+typedef struct _config_info config_info;
+
 #include "SDL.h"
 #include "macro.h"
 

@@ -27,10 +27,10 @@
 
 __M_BEGIN_DECLS
 
-#ifdef CONFIG_AUDIO
-
 #include "SDL.h"
 #include "configure.h"
+
+#ifdef CONFIG_AUDIO
 
 #ifdef CONFIG_MODPLUG
 #include "modplug.h"
