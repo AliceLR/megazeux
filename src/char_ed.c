@@ -29,7 +29,6 @@
 #include "char_ed.h"
 #include "window.h"
 #include "graphics.h"
-#include "hexchar.h"
 #include "data.h"
 #include "event.h"
 #include "world.h"

@@ -38,7 +38,6 @@
 
 #include "event.h"
 #include "helpsys.h"
-#include "hexchar.h"
 #include "sfx.h"
 #include "error.h"
 #include "intake.h"

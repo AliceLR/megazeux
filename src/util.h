@@ -30,7 +30,9 @@ __M_BEGIN_DECLS
 long ftell_and_rewind(FILE *f);
 int Random(int range);
 
+void delay(int ms);
+int get_ticks(void);
+
 __M_END_DECLS
 
 #endif // __UTIL_H
-

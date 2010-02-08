@@ -39,7 +39,6 @@
 #include "fsafeopen.h"
 #include "configure.h"
 #include "math.h"
-#include "delay.h"
 
 #ifdef __WIN32__
 #include <windows.h>

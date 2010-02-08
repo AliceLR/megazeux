@@ -19,11 +19,11 @@
 
 // Event handler for SDL events, primarily keypresses and mouse events.
 
-#include "event.h"
 #include "SDL.h"
-#include "delay.h"
 
+#include "event.h"
 #include "graphics.h"
+#include "util.h"
 
 static input_status input = {
   .numlock_status = -1,

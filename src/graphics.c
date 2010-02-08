@@ -31,7 +31,6 @@
 #include <sys/stat.h>
 
 #include "graphics.h"
-#include "delay.h"
 #include "world.h"
 #include "configure.h"
 #include "event.h"
@@ -1162,6 +1161,38 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
     str++;
     cur_char = *str;
   }
+}
+
+// Set rightalign to print the rightmost char at xy and proceed to the left
+// minlen is the minimum length to print. Pad with 0.
+
+void write_number(int number, char color, int x, int y,
+ int minlen, int rightalign, int base)
+{
+  char temp[7];
+  int t1, t2;
+
+  if(base == 10)
+    sprintf(temp, "%d", number);
+  else
+    sprintf(temp, "%x", number);
+
+  if(rightalign)
+  {
+    t1 = strlen(temp);
+    if(minlen > t1)
+      t1 = minlen;
+    x -= t1 - 1;
+  }
+
+  if((t2 = strlen(temp)) < minlen)
+  {
+    t2 = minlen - t2;
+    for(t1 = 0; t1 < t2; t1++)
+      draw_char('0', color, x++, y);
+  }
+
+  write_string(temp, x, y, color, 0);
 }
 
 static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,

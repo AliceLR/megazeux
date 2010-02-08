@@ -48,13 +48,11 @@
 #include "graphics.h"
 #include "window.h"
 #include "idput.h"
-#include "hexchar.h"
 #include "mzm.h"
 #include "event.h"
 #include "audio.h"
-#include "delay.h"
-
 #include "world.h"
+#include "util.h"
 
 /* Edit menu- (w/box ends on sides) Current menu name is highlighted. The
   bottom section zooms to show a list of options for the current menu,

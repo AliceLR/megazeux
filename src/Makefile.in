@@ -56,12 +56,11 @@ endif
 # please keep this sorted alphabetically (yes, I know it's painful)
 mzx_objs := ${mzx_base}/board.${o} ${mzx_base}/configure.${o}
 mzx_objs += ${mzx_base}/counter.${o} ${mzx_base}/data.${o}
-mzx_objs += ${mzx_base}/decrypt.${o} ${mzx_base}/delay.${o}
-mzx_objs += ${mzx_base}/error.${o} ${mzx_base}/event.${o}
-mzx_objs += ${mzx_base}/expr.${o} ${mzx_base}/fsafeopen.${o}
-mzx_objs += ${mzx_base}/game2.${o} ${mzx_base}/game.${o}
-mzx_objs += ${mzx_base}/graphics.${o} ${mzx_base}/helpsys.${o}
-mzx_objs += ${mzx_base}/hexchar.${o} ${mzx_base}/idarray.${o}
+mzx_objs += ${mzx_base}/decrypt.${o} ${mzx_base}/error.${o}
+mzx_objs += ${mzx_base}/event.${o} ${mzx_base}/expr.${o}
+mzx_objs += ${mzx_base}/fsafeopen.${o} ${mzx_base}/game2.${o}
+mzx_objs += ${mzx_base}/game.${o} ${mzx_base}/graphics.${o}
+mzx_objs += ${mzx_base}/helpsys.${o} ${mzx_base}/idarray.${o}
 mzx_objs += ${mzx_base}/idput.${o} ${mzx_base}/intake.${o}
 mzx_objs += ${mzx_base}/macro.${o} ${mzx_base}/main.${o}
 mzx_objs += ${mzx_base}/mzm.${o} ${mzx_base}/rasm.${o}

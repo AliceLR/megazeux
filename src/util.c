@@ -20,6 +20,7 @@
 #include "util.h"
 
 #include <time.h>
+#include "SDL.h"
 
 // Determine file size of an open FILE and rewind it
 
@@ -51,3 +52,14 @@ int Random(int range)
   return (int)value;
 }
 
+// Currently, just does a cheap delay..
+
+void delay(int ms)
+{
+  SDL_Delay(ms);
+}
+
+int get_ticks(void)
+{
+  return SDL_GetTicks();
+}

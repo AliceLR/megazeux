@@ -27,7 +27,6 @@
 #include "window.h"
 #include "data.h"
 #include "graphics.h"
-#include "hexchar.h"
 #include "event.h"
 
 //---------------------------------------------

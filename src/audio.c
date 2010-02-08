@@ -34,7 +34,6 @@
 #include "data.h"
 #include "configure.h"
 #include "fsafeopen.h"
-#include "delay.h"
 #include "util.h"
 
 #ifdef CONFIG_TREMOR

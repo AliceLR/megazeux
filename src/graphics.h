@@ -124,6 +124,8 @@ struct _graphics_data
 void color_string(const char *string, Uint32 x, Uint32 y, Uint8 color);
 void write_string(const char *string, Uint32 x, Uint32 y, Uint8 color,
  Uint32 tab_allowed);
+void write_number(int number, char color, int x, int y,
+ int minlen, int rightalign, int base);
 void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color);
 void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
  Uint8 color);

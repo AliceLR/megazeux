@@ -26,7 +26,6 @@
 #include "intake.h"
 #include "graphics.h"
 #include "window.h"
-#include "hexchar.h"
 
 // Global status of insert
 static char insert_on = 1;
