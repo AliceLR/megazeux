@@ -50,6 +50,16 @@
 #define __editor_maybe_static static
 #endif
 
+#ifdef CONFIG_AUDIO
+#if defined(CONFIG_MODPLUG) || defined(CONFIG_MIKMOD)
+#define __audio_c_maybe_static
+#else // !CONFIG_MODPLUG && !CONFIG_MIKMOD
+#define __audio_c_maybe_static static
+#endif // CONFIG_MODPLUG || CONFIG_MIKMOD
+#else // !CONFIG_AUDIO
+#define __audio_c_maybe_static static
+#endif // CONFIG_AUDIO
+
 #ifdef _MSC_VER
 #include "msvc.h"
 #endif

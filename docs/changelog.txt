@@ -13,6 +13,10 @@ USERS
   (ajs & Revvy, ideas from Exophase & Terryn).
 + Removed the bogus "F1 for Help" option from error dialogs, and finally
   get rid of the "** BETA **" banner on title boards in play mode.
++ Obsolete support for the AMS, DBM, DMF, MDL, MT2, PSM, PTM and UMX module
+  formats. As noted for several versions in the help file, these are not
+  loadable by MikMod. It is extremely unlikely any game uses these obscure
+  formats, but denying their use is now enforced (at a robotic level).
 
 DEVELOPERS
 

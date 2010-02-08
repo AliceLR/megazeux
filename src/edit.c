@@ -385,16 +385,14 @@ static const char def_colors[128] =
 
 static const char *mod_ext[] =
 {
-  ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it",
-  ".669", ".ult", ".wav", ".dsm", ".far", ".ams", ".mdl", ".okt" ".dmf",
-  ".ptm", ".dbm", ".amf", ".mt2", ".psm", ".j2b", ".umx", ".ogg", NULL
+  ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it", ".669", ".ult",
+  ".wav", ".dsm", ".far", ".okt", ".amf", ".ogg", NULL
 };
 
-static const char *mod_gdm_ext[] =
+__audio_c_maybe_static const char *mod_gdm_ext[] =
 {
   ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it", ".669", ".ult",
-  ".wav", ".dsm", ".far", ".ams", ".mdl", ".okt" ".dmf", ".ptm", ".dbm",
-  ".amf", ".mt2", ".psm", ".j2b", ".umx", ".ogg", ".gdm", NULL
+  ".wav", ".dsm", ".far", ".okt", ".amf", ".ogg", ".gdm", NULL
 };
 
 static const char drawmode_help[5][32] =

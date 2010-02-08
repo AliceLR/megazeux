@@ -236,7 +236,24 @@ void init_mikmod(config_info *conf)
   md_mode |= DMODE_SOFT_MUSIC | DMODE_SURROUND;
 
   MikMod_RegisterDriver(&drv_nos);
-  MikMod_RegisterAllLoaders();
+
+  /* XM and AMF seem to be broken with Mikmod? */
+
+  MikMod_RegisterLoader(&load_gdm);
+  //MikMod_RegisterLoader(&load_xm);
+  MikMod_RegisterLoader(&load_s3m);
+  MikMod_RegisterLoader(&load_mod);
+  MikMod_RegisterLoader(&load_med);
+  MikMod_RegisterLoader(&load_mtm);
+  MikMod_RegisterLoader(&load_stm);
+  MikMod_RegisterLoader(&load_it);
+  MikMod_RegisterLoader(&load_669);
+  MikMod_RegisterLoader(&load_ult);
+  MikMod_RegisterLoader(&load_dsm);
+  MikMod_RegisterLoader(&load_far);
+  MikMod_RegisterLoader(&load_okt);
+  //MikMod_RegisterLoader(&load_amf);
+  MikMod_RegisterLoader(&load_okt);
 
   // FIXME: Should break a lot more here
   if(MikMod_Init(NULL))

@@ -28,6 +28,7 @@
 #include <sys/stat.h>
 
 #include "audio.h"
+#include "edit.h" // for mod_gdm_ext
 #include "SDL.h"
 #include "sfx.h"
 #include "data.h"
@@ -1122,7 +1123,7 @@ static void write_chars(Uint8 *dest, const char *str)
   memcpy(dest, str, strlen(str));
 }
 
-__audio_c_maybe_static void convert_sam_to_wav(
+__sam_to_wav_maybe_static void convert_sam_to_wav(
  char *source_name, char *dest_name)
 {
   FILE *source, *dest;
@@ -1272,53 +1273,65 @@ static audio_stream *construct_stream_audio_file(char *filename,
  Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
   Sint32 ext_pos = strlen(filename) - 4;
+  const char **exts = mod_gdm_ext;
   audio_stream *a_return = NULL;
 
-  if(audio.music_on)
-  {
-    if(ext_pos > 0)
-    {
-      if(!strcasecmp(filename + ext_pos, ".ogg"))
-      {
-        a_return = construct_vorbis_stream(filename, frequency,
-         volume, repeat);
-      }
+  if(!audio.music_on)
+    return NULL;
 
-      if(!strcasecmp(filename + ext_pos, ".wav") ||
-       !strcasecmp(filename + ext_pos, ".sam"))
-      {
-        a_return = construct_wav_stream(filename, frequency,
-         volume, repeat);
-      }
-    }
+  // files with no extension cannot be checked and are illegal
+  if(!ext_pos)
+    return NULL;
+
+  // ogg music is special cased
+  if(!strcasecmp(filename + ext_pos, ".ogg"))
+  {
+    a_return = construct_vorbis_stream(filename, frequency,
+      volume, repeat);
+  }
+
+  // samples can be played as MODs
+  if(!strcasecmp(filename + ext_pos, ".wav") ||
+    !strcasecmp(filename + ext_pos, ".sam"))
+  {
+    a_return = construct_wav_stream(filename, frequency,
+      volume, repeat);
+  }
+
+  // no need to check module formats; found a loader for SAM/WAV/OGG
+  if(a_return)
+    return a_return;
+
+  // enforce support only for editor selectable module extensions
+  while(*exts)
+  {
+    if(!strcasecmp(filename + ext_pos, *exts))
+      break;
+    exts++;
+  }
+
+  // wasn't a recognized extension
+  if(!*exts)
+    return NULL;
 
 #ifdef CONFIG_MODPLUG
-    // The native WAV support does work now, however SDL's wav loading
-    // code doesn't work very well with a majority of the SAMs converted
-    // by the previous versions (probably because they're not really
-    // correctly done :x). If you erase those WAVs and let them be made
-    // anew they should work OK; otherwise the same old modplug code will
-    // be used instead, with modplug's resampling settings. modplug applies
-    // some volume filtering as well (some kind of ADSR?) so they won't
-    // sound the same. The native code produces a more "pure" and sharp
-    // sound.
-    if(a_return == NULL)
-    {
-      a_return = construct_modplug_stream(filename, frequency,
-       volume, repeat);
-    }
+  // The native WAV support does work now, however SDL's wav loading
+  // code doesn't work very well with a majority of the SAMs converted
+  // by the previous versions (probably because they're not really
+  // correctly done :x). If you erase those WAVs and let them be made
+  // anew they should work OK; otherwise the same old modplug code will
+  // be used instead, with modplug's resampling settings. modplug applies
+  // some volume filtering as well (some kind of ADSR?) so they won't
+  // sound the same. The native code produces a more "pure" and sharp
+  // sound.
+  a_return = construct_modplug_stream(filename, frequency, volume, repeat);
 #endif
 
 #ifdef CONFIG_MIKMOD
-    // Mikmod will handle most formats, but I'm not going to let it
-    // handle WAV for the moment.
-    if(a_return == NULL)
-    {
-      a_return = construct_mikmod_stream(filename, frequency,
-       volume, repeat);
-    }
+  // Mikmod will handle all editor formats except WAV. Therefore loading
+  // bad WAV files as MODs may be more likely to fail with MikMod.
+  a_return = construct_mikmod_stream(filename, frequency, volume, repeat);
 #endif
-  }
 
   return a_return;
 }

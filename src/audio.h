@@ -154,6 +154,9 @@ void set_sfx_volume(int volume);
 
 #ifdef CONFIG_MODPLUG
 void convert_sam_to_wav(char *source_name, char *dest_name);
+#define __sam_to_wav_maybe_static __audio_c_maybe_static
+#else
+#define __sam_to_wav_maybe_static static
 #endif
 
 /*** these should only be exported for audio plugins */
@@ -182,12 +185,6 @@ void construct_audio_stream(audio_stream *a_src,
  Uint32 (* get_position)(audio_stream *a_src),
  void (* destruct)(audio_stream *a_src),
  Uint32 volume, Uint32 repeat);
-
-#define __audio_c_maybe_static
-
-#else // !CONFIG_MODPLUG && !CONFIG_MIKMOD
-
-#define __audio_c_maybe_static static
 
 #endif // CONFIG_MODPLUG || CONFIG_MIKMOD
 

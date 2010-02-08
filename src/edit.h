@@ -36,6 +36,10 @@ int place_current_at_xy(World *mzx_world, mzx_thing id, int color,
 extern char debug_mode; // Debug mode
 extern char debug_x; // Debug box x pos
 
+#ifdef CONFIG_AUDIO
+extern const char *mod_gdm_ext[];
+#endif
+
 #define EC_MAIN_BOX           25
 #define EC_MAIN_BOX_DARK      16
 #define EC_MAIN_BOX_CORNER    24
