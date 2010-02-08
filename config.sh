@@ -381,9 +381,6 @@ if [ "$PLATFORM" = "linux"  -o "$PLATFORM" = "linux-static" \
 			X11="false"
 		fi
 	fi
-elif [ "$PLATFORM" = "solaris" ]; then
-	echo "Force-enabling X11 (Solaris -version is buggy, fixme)."
-	X11="true"
 else
 	echo "Force-disabling X11 (unsupported platform)."
 	X11_PLATFORM="false"
@@ -465,11 +462,6 @@ if [ "$ICON" = "true" ]; then
 	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "gp2x" \
 	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" ]; then
 		echo "Force-disabling icon branding (redundant)."
-		ICON="false"
-	fi
-
-	if [ "$PLATFORM" = "solaris" ]; then
-		echo "Force-disabling icon branding (not supported)."
 		ICON="false"
 	fi
 fi
