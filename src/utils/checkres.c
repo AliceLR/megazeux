@@ -450,7 +450,7 @@ static status_t parse_board_direct(stream_t *s)
   tmp[12] = '\0';
 
   // check the board MOD exists
-  if(strlen(tmp) > 0)
+  if(strlen(tmp) > 0 && strcmp(tmp, "*"))
   {
     debug("BOARD MOD: %s\n", tmp);
     ret = add_to_hash_table(tmp);
