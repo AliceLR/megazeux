@@ -36,7 +36,7 @@ __M_BEGIN_DECLS
 #include "sfx.h"
 #include "configure.h"
 
-#define WORLD_VERSION 0x251
+#define WORLD_VERSION 0x0252
 
 int save_world(World *mzx_world, const char *file, int savegame, int faded);
 int append_world(World *mzx_world, const char *file);

@@ -40,6 +40,7 @@
    M\x02\x49 - MZX 2.70
    M\x02\x50 - MZX 2.80 (non-DOS)
    M\x02\x51 - MZX 2.81
+   M\x02\x52 - MZX 2.82
 
    .SAV files:
    MZSV2 - Ver 2.x MegaZeux
@@ -54,6 +55,7 @@
    MZS\x02\x49 - MZX 2.70
    MZS\x02\x50 - MZX 2.80 (non-DOS)
    MZS\x02\x51 - MZX 2.81
+   MZS\x02\x52 - MZX 2.82
 
  All others are unchanged.
  As of 2.80+, all letters after the name denote bug fixes/minor additions
@@ -91,9 +93,9 @@
 #include "audio.h"
 #include "util.h"
 
-static char save_version_string[6] = "MZS\x02\x51";
+static char save_version_string[6] = "MZS\x02\x52";
 
-__editor_maybe_static char world_version_string[4] = "M\x02\x51";
+__editor_maybe_static char world_version_string[4] = "M\x02\x52";
 
 // Helper functions for file loading.
 // Get 2 bytes
@@ -194,6 +196,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
   {
     // Write magic mzx_string
     fwrite(save_version_string, 1, 5, fp);
+    fputw(mzx_world->version, fp);
     fputc(mzx_world->current_board_id, fp);
   }
   else
@@ -762,6 +765,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
       return 1;
     }
 
+    mzx_world->version = fgetw(fp);
     mzx_world->current_board_id = fgetc(fp);
   }
   else
@@ -829,9 +833,8 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     }
 
     mzx_world->current_board_id = 0;
+    mzx_world->version = version;
   }
-
-  mzx_world->version = version;
 
   fread(charset_mem, 3584, 1, fp);
   ec_mem_load_set(charset_mem);
