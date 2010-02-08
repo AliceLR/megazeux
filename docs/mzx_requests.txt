@@ -36,7 +36,6 @@ MZX REQUESTS:
 -MOD_LENGTH counter (based on current mod row or PCM sample).
 -Charsets/palettes bound to the current board via displaying in the editor.
 -Editing of all bomb anim chars outside of #1 in global's "Edit Chars" menu. (CHAR ID values 169-175).
--[+Exo (alt method: make changes in fread/fwrite_counter and version bind)]FREAD_LONG and FWRITE_LONG counters - both take 4 bytes at once.
 -Display of "Key_pressed", "key_code", "keyn" and "key_release" in the F11 menu, or the debug window.
 -Mutable length of time message row is active (or even 0 for no expiration).
 -[++Exo]Command-line option to load an MZX world at start, with an -e flag for starting in Edit mode.

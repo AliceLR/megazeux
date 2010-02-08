@@ -110,6 +110,9 @@ USERS
   as they would to worlds. (ajs, Terryn, Mr_Alert)
 + Add LOAD_MENU counter like ENTER_MENU, F2_MENU et al. to allow control
   (from robotic) over whether the LOAD_MENU can be brought up.
++ Have FREAD_COUNTER and FWRITE_COUNTER read in a DOS dword (32bit) instead
+  of a DOS word (16bit). This allows modern post-port MZX counters to be
+  fully represented in files. Compatibility with older worlds is preserved.
 
 DEVELOPERS
 

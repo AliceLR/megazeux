@@ -6191,11 +6191,11 @@ This opens a file for writing at the END of the file.
 
 ~BFREAD_COUNTER (function)
 
-Reads two bytes from the open file.
+Reads four bytes from the open file.
 
 ~BFWRITE_COUNTER (function)
 
-Writes two bytes to the open file.
+Writes four bytes to the open file.
 
 ~BFREAD_POS
 ~BFWRITE_POS
@@ -7588,16 +7588,15 @@ hexadecimal. To seek the end of a file, set to -1.
 
 ~ASET "counter" to "FREAD_COUNTER"
 
-Reads from the open file to a counter. This will grab two bytes
-instead of the normal one (treated as unsigned; the resulting
-range is from 0-65535, NOT -32768-32767).
+Reads from the open file to a counter. This will grab four bytes
+instead of the normal one (treated as signed; the resulting
+range is from -2147483648 to 2147483647).
 
 ~ASET "FWRITE_COUNTER" to "counter"
 
 Writes from a counter to the open file. This will write the
 full counter instead of simply the first byte (treated as
-unsigned; the resulting range is from 0-65535, NOT
--32768-32767).
+signed; the resulting range is from -2147483648 to 2147483647).
 
 ~ASET "FWRITE" to "counter"
 ~ASET "$string" to "FWRITE"

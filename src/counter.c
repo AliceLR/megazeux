@@ -1306,7 +1306,6 @@ static int load_bc_read(World *mzx_world, function_counter *counter,
  const char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_LOAD_BC;
-
   if(name[7])
     return strtol(name + 7, NULL, 10);
 
@@ -1328,17 +1327,20 @@ static int fread_read(World *mzx_world, function_counter *counter,
 {
   if(mzx_world->input_file)
     return fgetc(mzx_world->input_file);
-  else
-    return -1;
+  return -1;
 }
 
 static int fread_counter_read(World *mzx_world, function_counter *counter,
  const char *name, int id)
 {
   if(mzx_world->input_file)
-    return fgetw(mzx_world->input_file);
-  else
-    return -1;
+  {
+    if(mzx_world->version < 0x0252)
+      return fgetw(mzx_world->input_file);
+    else
+      return fgetd(mzx_world->input_file);
+  }
+  return -1;
 }
 
 static int fread_pos_read(World *mzx_world, function_counter *counter,
@@ -1394,7 +1396,12 @@ static void fwrite_counter_write(World *mzx_world, function_counter *counter,
  const char *name, int value, int id)
 {
   if(mzx_world->output_file)
-    fputw(value, mzx_world->output_file);
+  {
+    if(mzx_world->version < 0x0252)
+      fputw(value, mzx_world->output_file);
+    else
+      fputd(value, mzx_world->output_file);
+  }
 }
 
 static int lava_walk_read(World *mzx_world, function_counter *counter,
@@ -1923,6 +1930,13 @@ static void mod_freq_write(World *mzx_world, function_counter *counter,
  *       2.68 and no compatibility layer was implemented.
  *       FREAD_PAGE, FWRITE_PAGE were removed in 2.80 and no compatibility
  *       layer was implemented.
+ */
+
+/* NOTE: fread_counter/fwrite_counter read only a single DOS word (16bit)
+ *       in MZX versions prior to 2.82. Newer versions read in a single
+ *       DOS dword (32bit). Since the counter was introduced in versions
+ *       prior to 2.82, it is not versioned as such below (see the read/write
+ *       functions for the exact semantics).
  */
 
 /* NOTE: Compatibility with worlds made between 2.51s2 and 2.61 (inclusive)
