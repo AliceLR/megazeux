@@ -1900,6 +1900,9 @@ static void str_num_write(World *mzx_world, function_counter *counter,
       write_value = true;
     }
 
+    if(new_length > MAX_STRING_LEN)
+      return;
+
     /* As a kind of unnecessary optimisation, if the string already exists
      * and we're asking to extend its length, increase the length by a power
      * of two rather than just by the amount necessary.
@@ -1919,9 +1922,6 @@ static void str_num_write(World *mzx_world, function_counter *counter,
         new_length = i << 1;
       }
     }
-
-    if(new_length > MAX_STRING_LEN)
-      return;
 
     force_string_length(mzx_world, name, next, &src, new_length);
 
