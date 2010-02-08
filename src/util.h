@@ -57,8 +57,26 @@ int Random(int range);
 
 void get_path(const char *file_name, char *dest, unsigned int buf_len);
 
+#ifdef CONFIG_NDS
+
+#include <sys/dir.h>
+
+#define PATH_BUF_LEN FILENAME_MAX
+typedef DIR_ITER dir_t;
+
+#else // !CONFIG_NDS
+
 #include <sys/types.h>
 #include <dirent.h>
+
+#define PATH_BUF_LEN MAX_PATH
+typedef DIR dir_t;
+
+#endif // CONFIG_NDS
+
+dir_t *dir_open(const char *path);
+void dir_close(dir_t *dir);
+int dir_get_next_entry(dir_t *dir, char *entry);
 
 /* Some platforms like NDS don't have a rename(2), so we need
  * to implement it.
@@ -67,18 +85,6 @@ void get_path(const char *file_name, char *dest, unsigned int buf_len);
 #define rename rename
 int rename(const char *oldpath, const char *newpath);
 #endif
-
-#ifdef CONFIG_NDS
-#define PATH_BUF_LEN FILENAME_MAX
-typedef DIR_ITER dir_t;
-#else
-#define PATH_BUF_LEN MAX_PATH
-typedef DIR dir_t;
-#endif
-
-dir_t *dir_open(const char *path);
-void dir_close(dir_t *dir);
-int dir_get_next_entry(dir_t *dir, char *entry);
 
 __M_END_DECLS
 
