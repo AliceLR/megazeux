@@ -3539,8 +3539,6 @@ void debug_counters(World *mzx_world)
       }
       else
       {
-        fprintf(stderr, "selected %d\n", selected);
-
         if(selected == mzx_world->num_counters)
         {
           edit_type = -1;
