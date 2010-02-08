@@ -1402,8 +1402,6 @@ static void default_global_data(World *mzx_world)
 
   mzx_world->commands = 40;
 
-  set_screen_mode(0);
-  smzx_palette_loaded(0);
   default_scroll_values(mzx_world);
 
   scroll_color = 15;
@@ -1427,12 +1425,16 @@ int reload_world(World *mzx_world, const char *file, int *faded)
     clear_global_data(mzx_world);
   }
 
+  // Always switch back to regular mode before loading the world,
+  // because we want the world's intrinsic palette to be applied.
+  set_screen_mode(0);
+  smzx_palette_loaded(0);
   set_palette_intensity(100);
 
   rval = load_world(mzx_world, file, 0, faded);
 
   default_global_data(mzx_world);
-  
+
   *faded = 0;
   return rval;
 }
@@ -1621,6 +1623,10 @@ void create_blank_world(World *mzx_world)
   mzx_world->name[0] = 0;
 
   set_update_done(mzx_world);
+
+  set_screen_mode(0);
+  smzx_palette_loaded(0);
+  set_palette_intensity(100);
 
   ec_load_mzx();
   default_palette();

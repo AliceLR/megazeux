@@ -94,6 +94,9 @@ USERS
   negative, fixing numerous possible crashes on search/replace.
 + Fix loading the intrinsic SMZX palette when switching to SMZX modes
   from a game not in the same directory as the "smzx.pal" file.
++ Reloading a world that requires switching between SMZX and non-SMZX modes
+  will now respect the world's intrinsic palette on the title screen. Fixes
+  problems loading non-SMZX games after having an SMZX game loaded.
 
 DEVELOPERS
 

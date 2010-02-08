@@ -400,7 +400,7 @@ void load_palette(const char *fname)
 {
   int file_size, i, r, g, b;
   FILE *pal_file;
-  
+
   pal_file = fopen(fname, "rb");
   if(!pal_file)
     return;
@@ -513,7 +513,7 @@ void set_screen_mode(Uint32 mode)
 
   if((graphics.screen_mode >= 2) && (mode < 2))
   {
-    int fade_status = get_fade_status();
+    int fade_status = graphics.fade_status;
     swap_palettes();
 
     if(fade_status)
