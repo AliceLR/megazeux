@@ -1886,11 +1886,11 @@ char *assemble_file(char *name, int *size)
   char line_buffer[256];
   char bytecode_buffer[256];
   char error_buffer[256];
-  int current_size = 2;
   int line_bytecode_length;
   int allocated_size = 1024;
   char *buffer;
   int output_position = 1;
+  int current_size = 1;
 
   if(!input_file)
     return NULL;
@@ -1926,7 +1926,7 @@ char *assemble_file(char *name, int *size)
   // trim the buffer to match the output size
   buffer = realloc(buffer, current_size + 1);
   buffer[current_size] = 0;
-  *size = current_size;
+  *size = current_size + 1;
 
 exit_out:
   fclose(input_file);
@@ -2373,7 +2373,7 @@ void disassemble_file(char *name, char *program, int program_length,
 
     current_robot_pos = next;
   }
-  while(new_line && (current_robot_pos < program + program_length));
+  while(new_line);
 
   fclose(output_file);
 }
