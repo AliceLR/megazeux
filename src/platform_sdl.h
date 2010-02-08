@@ -26,6 +26,8 @@ __M_BEGIN_DECLS
 
 #include "platform.h"
 
+#include "SDL.h"
+
 #ifdef CONFIG_PTHREAD_MUTEXES
 
 #include "pthread.h"
@@ -43,9 +45,6 @@ typedef SDL_mutex *platform_mutex;
 #define platform_mutex_unlock(mutex) SDL_UnlockMutex(mutex)
 
 #endif // CONFIG_PTHREAD_MUTEXES
-
-#include "SDL_types.h"
-#include "SDL_endian.h"
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
 #define PLATFORM_BYTE_ORDER PLATFORM_BIG_ENDIAN
