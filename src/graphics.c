@@ -814,18 +814,12 @@ int init_video(config_info *conf)
 
 #if !defined(__WIN32__) && defined(CONFIG_ICON)
   {
-    SDL_Surface *icon;
-    char *icon_path;
-
-    icon_path = malloc(MAX_PATH);
-    snprintf(icon_path, MAX_PATH,
-     "%s/contrib/icons/quantump/megazeux-apps.png", current_dir);
-
-    icon = IMG_Load(icon_path);
+    SDL_Surface *icon = IMG_Load("/usr/share/icons/megazeux.png");
     if(icon)
+    {
       SDL_WM_SetIcon(icon, NULL);
-
-    free(icon_path);
+      SDL_FreeSurface(icon);
+    }
   }
 #endif // !__WIN32__ && CONFIG_ICON
 

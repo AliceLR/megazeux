@@ -28,6 +28,8 @@ install:
 	 install -m 0644 mzx_help.fil ${DESTDIR}/${PREFIX}/share/megazeux && \
 	 install -m 0644 config.txt ${DESTDIR}/${SYSCONFDIR}/megazeux-config &&\
 	 install -m 0755 ${TARGET} ${DESTDIR}/${PREFIX}/bin && \
+	 install -m 0644 contrib/icons/quantump/megazeux-apps.png \
+	                 /usr/share/icons/megazeux.png && \
 	 ln -sf ${TARGET} ${DESTDIR}/${PREFIX}/bin/megazeux
 
 	@echo "Installed MegaZeux successfully."
