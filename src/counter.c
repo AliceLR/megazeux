@@ -2203,12 +2203,12 @@ int set_counter_special(World *mzx_world, int spec_type,
 
       if(!fsafetranslate(char_value, translated_path))
       {
-        reload_savegame(mzx_world, translated_path, &faded);
-
-        if(faded)
-          insta_fadeout();
-
-        mzx_world->swapped = 1;
+        if(!reload_savegame(mzx_world, translated_path, &faded))
+        {
+          if(faded)
+            insta_fadeout();
+          mzx_world->swapped = 1;
+        }
       }
 
       free(translated_path);
