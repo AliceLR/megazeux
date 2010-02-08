@@ -251,7 +251,6 @@ int intake(World *mzx_world, char *string, int max_len,
         break;
       }
 
-      case SDLK_KP_ENTER:
       case SDLK_RETURN:
       {
         // Enter

@@ -61,6 +61,7 @@ typedef struct
   Sint32 mouse_drag_state;
   Uint32 mouse_button_state;
   Uint32 caps_status;
+  Sint32 numlock_status;
   Uint32 unfocus_pause;
 
   // Joystick map information

@@ -417,7 +417,6 @@ __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
       }
 
       case SDLK_SPACE:
-      case SDLK_KP_ENTER:
       case SDLK_RETURN:
       {
         if(get_shift_status(keycode_SDL))
@@ -728,7 +727,6 @@ int list_menu(const char **choices, int choice_size, const char *title,
         return current;
       }
 
-      case SDLK_KP_ENTER:
       case SDLK_RETURN:
       {
         // Selected
@@ -996,7 +994,6 @@ int color_selection(int current, int allow_wild)
       // ESC
       case SDLK_ESCAPE:
       case SDLK_SPACE:
-      case SDLK_KP_ENTER:
       case SDLK_RETURN:
       {
         pop_context();
@@ -1233,7 +1230,6 @@ static int key_check_box(World *mzx_world, dialog *di, element *e, int key)
   switch(key)
   {
     case SDLK_SPACE:
-    case SDLK_KP_ENTER:
     case SDLK_RETURN:
     {
       src->results[src->current_choice] ^= 1;
@@ -1286,7 +1282,6 @@ static int key_char_box(World *mzx_world, dialog *di, element *e, int key)
   switch(key)
   {
     case SDLK_SPACE:
-    case SDLK_KP_ENTER:
     case SDLK_RETURN:
     {
       int current_char =
@@ -1327,7 +1322,6 @@ static int key_color_box(World *mzx_world, dialog *di, element *e, int key)
   switch(key)
   {
     case SDLK_SPACE:
-    case SDLK_KP_ENTER:
     case SDLK_RETURN:
     {
       int current_color =
@@ -1354,7 +1348,6 @@ static int key_board_list(World *mzx_world, dialog *di, element *e, int key)
   switch(key)
   {
     case SDLK_SPACE:
-    case SDLK_KP_ENTER:
     case SDLK_RETURN:
     {
       int current_board =
@@ -1859,7 +1852,6 @@ int run_dialog(World *mzx_world, dialog *di)
       }
 
       case SDLK_SPACE:
-      case SDLK_KP_ENTER:
       case SDLK_RETURN:
       case SDLK_PAGEDOWN:
       case SDLK_RIGHT:
@@ -2221,7 +2213,6 @@ static int key_button(World *mzx_world, dialog *di, element *e, int key)
   switch(key)
   {
     case SDLK_SPACE:
-    case SDLK_KP_ENTER:
     case SDLK_RETURN:
     {
       // Flag that the dialog is done processing
@@ -2462,7 +2453,6 @@ static int key_list_box(World *mzx_world, dialog *di, element *e, int key)
     }
 
     case SDLK_SPACE:
-    case SDLK_KP_ENTER:
     case SDLK_RETURN:
     {
       di->return_value = src->return_value;

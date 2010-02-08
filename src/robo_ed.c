@@ -2725,7 +2725,6 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
-      case SDLK_KP_ENTER:
       case SDLK_RETURN:
       {
         if(get_alt_status(keycode_SDL))

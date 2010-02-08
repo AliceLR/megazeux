@@ -25,7 +25,9 @@
 
 #include "graphics.h"
 
-static input_status input;
+static input_status input = {
+  .numlock_status = -1,
+};
 
 static Uint32 convert_SDL_xt(SDLKey key)
 {
@@ -273,6 +275,15 @@ static Uint32 process_event(SDL_Event *event)
 {
   Uint32 rval = 1;
 
+  /* SDL's numlock keyboard modifier handling seems to be broken,
+   * and it will only get numlock's status right on application init.
+   *
+   * We can trust this value once, and then toggle based on user
+   * presses of the numlock key.
+   */
+  if (input.numlock_status < 0)
+    input.numlock_status = !!(SDL_GetModState() & KMOD_NUM);
+
   switch(event->type)
   {
     case SDL_QUIT:
@@ -397,6 +408,11 @@ static Uint32 process_event(SDL_Event *event)
 
     case SDL_KEYUP:
     {
+      if (event->key.keysym.sym == SDLK_NUMLOCK)
+      {
+        input.numlock_status ^= 1;
+      }
+
       if(event->key.keysym.sym == SDLK_CAPSLOCK)
       {
         input.caps_status = 0;
@@ -684,6 +700,51 @@ void wait_event(void)
   update_autorepeat();
 }
 
+/* I can't believe there isn't an SDL function to do this? */
+
+static SDLKey emit_keysym_wrt_numlock(SDLKey key)
+{
+  if(input.numlock_status)
+  {
+    switch(key)
+    {
+      case SDLK_KP0:         return SDLK_0;
+      case SDLK_KP1:         return SDLK_1;
+      case SDLK_KP2:         return SDLK_2;
+      case SDLK_KP3:         return SDLK_3;
+      case SDLK_KP4:         return SDLK_4;
+      case SDLK_KP5:         return SDLK_5;
+      case SDLK_KP6:         return SDLK_6;
+      case SDLK_KP7:         return SDLK_7;
+      case SDLK_KP8:         return SDLK_8;
+      case SDLK_KP9:         return SDLK_9;
+      case SDLK_KP_PERIOD:   return SDLK_PERIOD;
+      case SDLK_KP_ENTER:    return SDLK_RETURN;
+      default: break;
+    }
+  }
+  else
+  {
+    switch(key)
+    {
+      case SDLK_KP0:         return SDLK_INSERT;
+      case SDLK_KP1:         return SDLK_END;
+      case SDLK_KP2:         return SDLK_DOWN;
+      case SDLK_KP3:         return SDLK_PAGEDOWN;
+      case SDLK_KP4:         return SDLK_LEFT;
+      case SDLK_KP5:         return SDLK_SPACE; // kinda arbitrary
+      case SDLK_KP6:         return SDLK_RIGHT;
+      case SDLK_KP7:         return SDLK_HOME;
+      case SDLK_KP8:         return SDLK_UP;
+      case SDLK_KP9:         return SDLK_PAGEUP;
+      case SDLK_KP_PERIOD:   return SDLK_DELETE;
+      case SDLK_KP_ENTER:    return SDLK_RETURN;
+      default: break;
+    }
+  }
+  return key;
+}
+
 Uint32 get_key(keycode_type type)
 {
   switch(type)
@@ -695,7 +756,7 @@ Uint32 get_key(keycode_type type)
 
     case keycode_SDL:
     {
-      return input.last_SDL;
+      return emit_keysym_wrt_numlock(input.last_SDL);
     }
 
     case keycode_unicode:
@@ -955,4 +1016,3 @@ void set_refocus_pause(int val)
 {
   input.unfocus_pause = val;
 }
-

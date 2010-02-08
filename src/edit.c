@@ -2298,7 +2298,6 @@ void edit_world(World *mzx_world)
         break;
       }
 
-      case SDLK_KP_ENTER:
       case SDLK_RETURN:
       {
         if(draw_mode == 3)

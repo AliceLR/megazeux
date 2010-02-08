@@ -1720,7 +1720,6 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 
-        case SDLK_KP_ENTER:
         case SDLK_RETURN:
         {
           int enter_menu_status =
@@ -1747,8 +1746,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
               update_event_status_delay();
               update_screen();
               key = get_key(keycode_SDL);
-            } while((key != SDLK_RETURN) &&
-             (key != SDLK_KP_ENTER));
+            } while(key != SDLK_RETURN);
 
             restore_screen();
 
@@ -2133,7 +2131,6 @@ void title_screen(World *mzx_world)
           break;
         }
 
-        case SDLK_KP_ENTER:
         case SDLK_RETURN: // Enter
         {
           if(get_counter(mzx_world, "ENTER_MENU", 0))
@@ -2153,8 +2150,7 @@ void title_screen(World *mzx_world)
               update_event_status_delay();
               update_screen();
               key = get_key(keycode_SDL);
-            } while((key != SDLK_RETURN) &&
-             (key != SDLK_KP_ENTER));
+            } while(key != SDLK_RETURN);
 
             restore_screen();
             update_screen();

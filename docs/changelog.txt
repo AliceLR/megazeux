@@ -4,6 +4,8 @@ USERS
 
 + Fixed and improved quality of the half-width renderer for the GP2X port
   (Mr_Alert).
++ Have the numpad work correctly when numlock is disabled. Keys are no longer
+  ignored by the MZX editor, and games should recognize them as before.
 
 DEVELOPERS
 
