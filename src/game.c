@@ -705,7 +705,6 @@ static void show_status(World *mzx_world)
 {
   int i;
   char temp[11];
-  char (*status_counters_shown)[15] = mzx_world->status_counters_shown;
   char *keys = mzx_world->keys;
 
   draw_window_box(37, 4, 67, 21, 25, 16, 24, 1, 1);
@@ -719,8 +718,9 @@ static void show_status(World *mzx_world)
 
   for(i = 0; i < NUM_STATUS_CNTRS; i++) // Show custom status counters
   {
-    if(status_counters_shown[i][0])
-      show_counter(mzx_world, status_counters_shown[i], 39, i + 15, 1);
+    char *name = mzx_world->status_counters_shown[i];
+    if(name[0])
+      show_counter(mzx_world, name, 39, i + 15, 1);
   }
 
   write_string("Score", 39, 12, 27, 0);

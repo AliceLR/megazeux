@@ -203,8 +203,8 @@ local int unzlocal_getShort (pzlib_filefunc_def,filestream,pX)
     voidpf filestream;
     uLong *pX;
 {
+    int i = i; // suppress bogus warning at -O3
     uLong x ;
-    int i;
     int err;
 
     err = unzlocal_getByte(pzlib_filefunc_def,filestream,&i);
@@ -231,8 +231,8 @@ local int unzlocal_getLong (pzlib_filefunc_def,filestream,pX)
     voidpf filestream;
     uLong *pX;
 {
+    int i = i; // suppress bogus warning at -O3
     uLong x ;
-    int i;
     int err;
 
     err = unzlocal_getByte(pzlib_filefunc_def,filestream,&i);
