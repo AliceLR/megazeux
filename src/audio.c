@@ -385,7 +385,7 @@ __audio_c_maybe_static void sampled_mix_data(sampled_stream *s_src,
 
   sampled_negative_threshold(s_src);
 
-  memcpy(output_data, output_data +
+  memmove(output_data, output_data +
    s_src->allocated_data_length - s_src->stream_offset,
    s_src->stream_offset);
 }
