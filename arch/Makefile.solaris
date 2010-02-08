@@ -1,0 +1,40 @@
+#
+# solaris makefile generics
+#
+
+.PHONY: install
+
+# location of strip (must be defined)
+STRIP ?= strip --strip-unneeded
+
+# Solaris doesn't have this pulled in by other deps
+mzx_ldflags := -lm
+
+# solaris os specific install target
+install:
+	@install -m 0755 -d ${DESTDIR}/${PREFIX}/games && \
+	 install -m 0755 -d ${DESTDIR}/${PREFIX}/share && \
+	 install -m 0755 -d ${DESTDIR}/${PREFIX}/share/icons && \
+	 install -m 0755 -d ${DESTDIR}/${PREFIX}/share/megazeux && \
+	 install -m 0755 -d ${DESTDIR}/${SYSCONFDIR} && \
+	 install -m 0644 mzx_default.chr ${DESTDIR}/${PREFIX}/share/megazeux &&\
+	 install -m 0644 mzx_blank.chr ${DESTDIR}/${PREFIX}/share/megazeux && \
+	 install -m 0644 mzx_smzx.chr ${DESTDIR}/${PREFIX}/share/megazeux && \
+	 install -m 0644 mzx_ascii.chr ${DESTDIR}/${PREFIX}/share/megazeux && \
+	 install -m 0644 mzx_edit.chr ${DESTDIR}/${PREFIX}/share/megazeux && \
+	 install -m 0644 smzx.pal ${DESTDIR}/${PREFIX}/share/megazeux && \
+	 install -m 0644 mzx_help.fil ${DESTDIR}/${PREFIX}/share/megazeux && \
+	 install -m 0644 config.txt ${DESTDIR}/${SYSCONFDIR}/megazeux-config &&\
+	 install -m 0755 ${TARGET} ${DESTDIR}/${PREFIX}/games/megazeux && \
+	 install -m 0644 contrib/icons/quantump.png \
+	                 ${DESTDIR}/${PREFIX}/share/icons/megazeux.png
+
+	@echo "Installed MegaZeux successfully."
+	@echo
+	@echo "Changing ownership (will fail if you are not root)."
+	@echo "If it fails, it's okay."
+	@echo
+
+	@chown -f  root:root ${DESTDIR}/${SYSCONFDIR}/megazeux-config
+	@chown -f  root:root ${DESTDIR}/${PREFIX}/games/megazeux
+	@chown -fR root:root ${DESTDIR}/${PREFIX}/share/megazeux

@@ -16,6 +16,7 @@ usage() {
 	echo "  linux          Linux / Embedded"
 	echo "  linux-static   Linux (statically linked)"
 	echo "  darwin         Macintosh OS X (not Classic)"
+	echo "  solaris        OpenSolaris (2008.05 tested)"
 	echo "  obsd           OpenBSD (4.2 tested) (statically linked)"
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
@@ -79,6 +80,7 @@ AUDIO="true"
 TREMOR="false"
 PTHREAD="false"
 ICON="true"
+XBIN="X"
 
 #
 # User may override above settings
@@ -192,8 +194,10 @@ fi
 
 if [ "$PLATFORM" = "darwin" ]; then
 	SYSCONFDIR="../Resources"
-elif [ "$PLATFORM" != "linux" -a "$SYSCONFDIR_SET" != "true" ]; then
-	SYSCONFDIR="."
+elif [ "$PLATFORM" != "linux" -a "$PLATFORM" != "solaris" ]; then
+	if [ "$SYSCONFDIR_SET" != "true" ]; then
+		SYSCONFDIR="."
+	fi
 fi
 
 ### SUMMARY OF OPTIONS ########################################################
@@ -227,9 +231,9 @@ fi
 echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 
 #
-# Only Linux wants to use a system prefix hierarchy currently
+# Some platforms may have filesystem hierarchies they need to fit into
 #
-if [ "$PLATFORM" = "linux" ]; then
+if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "solaris" ]; then
 	echo "#define SHAREDIR \"$PREFIX/share/megazeux/\"" >> src/config.h
 	echo "#define CONFFILE \"megazeux-config\""         >> src/config.h
 elif [ "$PLATFORM" = "nds" ]; then
@@ -269,9 +273,10 @@ if [ "$PLATFORM" = "nds" ]; then
 	echo "#define CONFIG_NDS" >> src/config.h
 	echo "BUILD_NDS=1" >> Makefile.platform
 
-	echo "Force disabling audio on NDS (fixme)."
+	echo "Force-disabling audio on NDS (fixme)."
 	AUDIO="false"
-	echo "Force disabling software renderer on NDS."
+
+	echo "Force-disabling software renderer on NDS."
 	echo "Building custom NDS renderer."
 	SOFTWARE="false"
 fi
@@ -329,7 +334,7 @@ else
 fi
 
 #
-# User may want to compile utils (txt2hlp, checkres)
+# User may want to compile utils (checkres, downver, txt2hlp)
 #
 if [ "$UTILS" = "true" ]; then
 	#
@@ -343,7 +348,7 @@ if [ "$UTILS" = "true" ]; then
 		echo "HOST_CC := \${CC}" >> Makefile.platform
 	fi
 
-	echo "Building utils (txt2hlp, checkres)."
+	echo "Building utils (checkres, downver, txt2hlp)."
 	echo "BUILD_UTILS=1" >> Makefile.platform
 else
 	echo "Disabled utils (txt2hlp, checkres)."
@@ -353,39 +358,51 @@ fi
 # X11 support (linked against and needs headers installed)
 #
 if [ "$PLATFORM" = "linux"  -o "$PLATFORM" = "linux-static" \
-  -o "$PLATFORM" = "darwin" -o "$PLATFORM" = "obsd" ]; then
-	# attempt auto-detection
+  -o "$PLATFORM" = "darwin" -o "$PLATFORM" = "obsd" \
+  -o "$PLATFORM" = "solaris" ]; then
+	if [ "$PLATFORM" = "solaris" ]; then
+		#
+		# Solaris's `X' binary isn't a symlink to Xorg, so you
+		# can't query the version of the server from it. Use
+		# the `Xorg' binary directly.
+		#
+		XBIN="Xorg"
+	fi
+
+	#
+	# Confirm the user's selection of X11, if they enabled it
+	#
 	if [ "$X11" = "true" ]; then
 		# try to run X
-		X -version >/dev/null 2>&1
+		$XBIN -version >/dev/null 2>&1
 
 		# X queried successfully
 		if [ "$?" != "0" ]; then
-			echo "X11 could not be queried, disabling."
+			echo "Force-disabling X11 (could not be queried)."
 			X11="false"
 		fi
-	else
-		echo "X11 support disabled."
 	fi
-
-	# asked for X11?
-	if [ "$X11" = "true" ]; then
-		echo "X11 support enabled."
-
-		# enable the C++ bits
-		echo "#define CONFIG_X11" >> src/config.h
-
-		# figure out where X11 is prefixed
-		X11=`which X`
-		X11DIR=`dirname $X11`
-		X11LIB="$X11DIR/../lib"
-
-		# add a flag for linking against X11
-		echo "mzx_ldflags += -L$X11LIB -lX11" >> Makefile.platform
-	fi
+elif [ "$PLATFORM" = "solaris" ]; then
+	echo "Force-enabling X11 (Solaris -version is buggy, fixme)."
+	X11="true"
 else
-	echo "X11 support disabled (unsupported platform)."
+	echo "Force-disabling X11 (unsupported platform)."
 	X11_PLATFORM="false"
+	X11="false"
+fi
+
+if [ "$X11" = "true" ]; then
+	echo "X11 support enabled."
+
+	# enable the C++ bits
+	echo "#define CONFIG_X11" >> src/config.h
+
+	# figure out where X11 is prefixed
+	X11PATH=`which $XBIN`
+	X11DIR=`dirname $X11PATH`
+
+	echo "mzx_flags += -I$X11DIR/../include" >> Makefile.platform
+	echo "mzx_ldflags += -L$X11DIR/../lib -lX11" >> Makefile.platform
 fi
 
 #
@@ -423,16 +440,17 @@ if [ "$AUDIO" = "false" ]; then
 fi
 
 #
-# Force-enable PTHREAD on linux
+# Force-enable pthreads on POSIX platforms
 #
 if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "linux-static" \
-  -o "$PLATFORM" = "obsd"  -o "$PLATFORM" = "gp2x" ]; then
-	echo "Force-enabling pthread on POSIX platforms."
+  -o "$PLATFORM" = "obsd"  -o "$PLATFORM" = "gp2x" \
+  -o "$PLATFORM" = "solaris" ]; then
+	echo "Force-enabling pthreads on POSIX platforms."
 	PTHREAD="true"
 fi
 
 #
-# Force disable icon branding if we lack prereqs
+# Force-disable icon branding if we lack prereqs
 #
 if [ "$ICON" = "true" ]; then
 	if [ "$X11_PLATFORM" = "true" -a "$X11" = "false" ]; then
@@ -448,6 +466,11 @@ if [ "$ICON" = "true" ]; then
 	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "gp2x" \
 	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" ]; then
 		echo "Force-disabling icon branding (redundant)."
+		ICON="false"
+	fi
+
+	if [ "$PLATFORM" = "solaris" ]; then
+		echo "Force-disabling icon branding (not supported)."
 		ICON="false"
 	fi
 fi
