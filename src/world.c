@@ -542,12 +542,12 @@ static void set_update_done(World *mzx_world)
   {
     if(mzx_world->update_done == NULL)
     {
-      mzx_world->update_done = (char *)malloc(max_size);
+      mzx_world->update_done = malloc(max_size);
     }
     else
     {
       mzx_world->update_done =
-       (char *)realloc(mzx_world->update_done, max_size);
+       realloc(mzx_world->update_done, max_size);
     }
 
     mzx_world->update_done_size = max_size;
@@ -561,9 +561,9 @@ __editor_maybe_static void optimize_null_boards(World *mzx_world)
   int num_boards = mzx_world->num_boards;
   Board **board_list = mzx_world->board_list;
   Board **optimized_board_list =
-   (Board **)malloc(sizeof(Board *) * num_boards);
+   malloc(sizeof(Board *) * num_boards);
   int *board_id_translation_list =
-   (int *)malloc(sizeof(int) * num_boards);
+   malloc(sizeof(int) * num_boards);
 
   Board *cur_board;
   int i, i2;
@@ -610,7 +610,7 @@ __editor_maybe_static void optimize_null_boards(World *mzx_world)
 
     free(board_list);
     board_list =
-     (Board **)realloc(optimized_board_list, sizeof(Board *) * i2);
+     realloc(optimized_board_list, sizeof(Board *) * i2);
 
     mzx_world->num_boards = i2;
     mzx_world->num_boards_allocated = i2;
@@ -1078,8 +1078,8 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     mzx_world->vlayer_height = fgetw(fp);
     mzx_world->vlayer_size = vlayer_size;
 
-    mzx_world->vlayer_chars = (char *)malloc(vlayer_size);
-    mzx_world->vlayer_colors = (char *)malloc(vlayer_size);
+    mzx_world->vlayer_chars = malloc(vlayer_size);
+    mzx_world->vlayer_colors = malloc(vlayer_size);
 
     fread(mzx_world->vlayer_chars, 1, vlayer_size, fp);
     fread(mzx_world->vlayer_colors, 1, vlayer_size, fp);
@@ -1115,7 +1115,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
 
   mzx_world->num_boards = num_boards;
   mzx_world->num_boards_allocated = num_boards;
-  mzx_world->board_list = (Board **)malloc(sizeof(Board *) * num_boards);
+  mzx_world->board_list = malloc(sizeof(Board *) * num_boards);
 
   // Skip the names for now
   // Gonna wanna come back to here
@@ -1287,7 +1287,7 @@ int append_world(World *mzx_world, const char *file)
   mzx_world->num_boards += num_boards;
   mzx_world->num_boards_allocated += num_boards;
   mzx_world->board_list =
-   (Board **)realloc(mzx_world->board_list,
+   realloc(mzx_world->board_list,
    sizeof(Board *) * (old_num_boards + num_boards));
 
 
@@ -1362,7 +1362,7 @@ static void default_global_data(World *mzx_world)
 
   for(i = 0; i < 256; i++)
   {
-    mzx_world->sprite_list[i] = (Sprite *)malloc(sizeof(Sprite));
+    mzx_world->sprite_list[i] = malloc(sizeof(Sprite));
     memset(mzx_world->sprite_list[i], 0, sizeof(Sprite));
   }
 
@@ -1397,8 +1397,8 @@ static void default_global_data(World *mzx_world)
   mzx_world->vlayer_size = 0x8000;
   mzx_world->vlayer_width = 256;
   mzx_world->vlayer_height = 128;
-  mzx_world->vlayer_chars = (char *)malloc(0x8000);
-  mzx_world->vlayer_colors = (char *)malloc(0x8000);
+  mzx_world->vlayer_chars = malloc(0x8000);
+  mzx_world->vlayer_colors = malloc(0x8000);
   memset(mzx_world->vlayer_chars, 32, 0x8000);
   memset(mzx_world->vlayer_colors, 7, 0x8000);
 
@@ -1618,7 +1618,7 @@ void create_blank_world(World *mzx_world)
 
   mzx_world->num_boards = 1;
   mzx_world->num_boards_allocated = 1;
-  mzx_world->board_list = (Board **)malloc(sizeof(Board *));
+  mzx_world->board_list = malloc(sizeof(Board *));
   mzx_world->board_list[0] = create_blank_board();
   mzx_world->current_board_id = 0;
   mzx_world->current_board = mzx_world->board_list[0];
@@ -1687,12 +1687,12 @@ void set_update_done_current(World *mzx_world)
   {
     if(mzx_world->update_done == NULL)
     {
-     mzx_world->update_done = (char *)malloc(size);
+     mzx_world->update_done = malloc(size);
     }
     else
     {
       mzx_world->update_done =
-       (char *)realloc(mzx_world->update_done, size);
+       realloc(mzx_world->update_done, size);
     }
 
     mzx_world->update_done_size = size;

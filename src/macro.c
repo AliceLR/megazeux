@@ -151,27 +151,27 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
   macro_type *current_type;
   char current_char;
   ext_macro *macro_dest =
-   (ext_macro *)malloc(sizeof(ext_macro));
+   malloc(sizeof(ext_macro));
   int i;
   int def_val;
 
-  text_lines = (char ***)malloc(sizeof(char **) *
+  text_lines = malloc(sizeof(char **) *
    num_lines_allocated);
   variable_references =
-   (macro_variable_reference **)malloc
+   malloc
    (sizeof(macro_variable_reference *) * num_lines_allocated);
-  line_variables_count = (int *)malloc(sizeof(int) *
+  line_variables_count = malloc(sizeof(int) *
    num_lines_allocated);
 
-  macro_dest->name = (char *)malloc(strlen(name) + 1);
+  macro_dest->name = malloc(strlen(name) + 1);
   strcpy(macro_dest->name, name);
 
-  macro_dest->label = (char *)malloc(strlen(label) + 1);
+  macro_dest->label = malloc(strlen(label) + 1);
   strcpy(macro_dest->label, label);
 
   current_type = macro_dest->types;
 
-  macro_dest->text = (char *)malloc(strlen(line_data) + 1);
+  macro_dest->text = malloc(strlen(line_data) + 1);
   strcpy(macro_dest->text, line_data);
   line_position = macro_dest->text;
 
@@ -327,12 +327,12 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
         if(current_type->type == string)
         {
           variables[num_variables].storage.str_storage =
-           (char *)malloc(current_type->type_attributes[0] + 1);
+           malloc(current_type->type_attributes[0] + 1);
 
           if(def_val)
           {
             variables[num_variables].def.str_storage =
-             (char *)malloc(current_type->type_attributes[0] + 1);
+             malloc(current_type->type_attributes[0] + 1);
             memcpy(variables[num_variables].def.str_storage,
              line_position_old, current_type->type_attributes[0]);
             variables[num_variables].def.
@@ -374,9 +374,9 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
 
       current_type->num_variables = num_variables;
       current_type->variables =
-       (macro_variable *)malloc(sizeof(macro_variable) * num_variables);
+       malloc(sizeof(macro_variable) * num_variables);
       current_type->variables_sorted =
-       (macro_variable **)malloc(sizeof(macro_variable *) * num_variables);
+       malloc(sizeof(macro_variable *) * num_variables);
       memcpy(current_type->variables, variables,
        sizeof(macro_variable) * num_variables);
 
@@ -473,13 +473,13 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
 
       line_variables_count[num_lines] = num_line_variables;
       variable_references[num_lines] =
-       (macro_variable_reference *)malloc(sizeof(macro_variable_reference) *
+       malloc(sizeof(macro_variable_reference) *
        num_line_variables);
       memcpy(variable_references[num_lines], line_variable_references,
        sizeof(macro_variable_reference) * num_line_variables);
 
       text_lines[num_lines] =
-       (char **)malloc(sizeof(char *) * (num_line_variables + 1));
+       malloc(sizeof(char *) * (num_line_variables + 1));
       memcpy(text_lines[num_lines], line_text_segments,
        sizeof(char *) * (num_line_variables + 1));
 
@@ -489,13 +489,13 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
       {
         num_lines_allocated *= 2;
 
-        text_lines = (char ***)realloc(text_lines,
+        text_lines = realloc(text_lines,
          sizeof(char **) * num_lines_allocated);
         variable_references =
-         (macro_variable_reference **)realloc
+         realloc
          (variable_references, sizeof(macro_variable_reference *) *
          num_lines_allocated);
-        line_variables_count = (int *)realloc
+        line_variables_count = realloc
          (line_variables_count, sizeof(int) * num_lines_allocated);
       }
     }
@@ -503,14 +503,14 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
 
   macro_dest->num_lines = num_lines;
   macro_dest->total_variables = total_variables;
-  macro_dest->lines = (char ***)malloc(sizeof(char **) * num_lines);
+  macro_dest->lines = malloc(sizeof(char **) * num_lines);
   memcpy(macro_dest->lines, text_lines, sizeof(char **) * num_lines);
   macro_dest->variable_references =
    (macro_variable_reference **)
    malloc(sizeof(macro_variable_reference *) * num_lines);
   memcpy(macro_dest->variable_references, variable_references,
    sizeof(macro_variable_reference *) * num_lines);
-  macro_dest->line_element_count = (int *)malloc(sizeof(int) * num_lines);
+  macro_dest->line_element_count = malloc(sizeof(int) * num_lines);
   memcpy(macro_dest->line_element_count, line_variables_count, sizeof(int) *
    num_lines);
 
@@ -561,7 +561,7 @@ void add_ext_macro(config_info *conf, char *name, char *line_data,
   if(!(conf->num_macros_allocated))
   {
     conf->extended_macros =
-     (ext_macro **)malloc(sizeof(ext_macro *));
+     malloc(sizeof(ext_macro *));
     conf->extended_macros[0] =
      process_macro(line_data, name, label);
     conf->num_extended_macros = 1;
@@ -583,7 +583,7 @@ void add_ext_macro(config_info *conf, char *name, char *line_data,
       {
         conf->num_macros_allocated *= 2;
         conf->extended_macros =
-         (ext_macro **)realloc(conf->extended_macros,
+         realloc(conf->extended_macros,
          sizeof(ext_macro *) * conf->num_macros_allocated);
       }
 

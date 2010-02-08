@@ -644,7 +644,7 @@ void set_config_from_file(config_info *conf, const char *conf_file_name)
   {
     char line_buffer[256];
     char line_buffer_alternate[256];
-    char *extended_buffer = (char *)malloc(512);
+    char *extended_buffer = malloc(512);
     char current_char, *input_position, *output_position;
     char *equals_position;
     char *value;
@@ -714,7 +714,7 @@ void set_config_from_file(config_info *conf, const char *conf_file_name)
               if(extended_size >= extended_allocate_size)
               {
                 extended_allocate_size *= 2;
-                extended_buffer = (char *)realloc(extended_buffer,
+                extended_buffer = realloc(extended_buffer,
                  extended_allocate_size);
               }
 

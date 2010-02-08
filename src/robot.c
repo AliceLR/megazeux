@@ -39,7 +39,7 @@
 
 Robot *load_robot_allocate(FILE *fp, int savegame)
 {
-  Robot *cur_robot = (Robot *)malloc(sizeof(Robot));
+  Robot *cur_robot = malloc(sizeof(Robot));
   load_robot(cur_robot, fp, savegame);
 
   return cur_robot;
@@ -91,7 +91,7 @@ void load_robot(Robot *cur_robot, FILE *fp, int savegame)
     // Get the stack pointer
     cur_robot->stack_pointer = fgetd(fp);
     // Allocate the stack
-    cur_robot->stack = (int *)malloc(stack_size * sizeof(int));
+    cur_robot->stack = malloc(stack_size * sizeof(int));
     for(i = 0; i < stack_size; i++)
     {
       cur_robot->stack[i] = fgetd(fp);
@@ -104,12 +104,12 @@ void load_robot(Robot *cur_robot, FILE *fp, int savegame)
     memset(cur_robot->local, 0, sizeof(int) * 32);
     // Start with a minimum stack size
     cur_robot->stack_size = ROBOT_START_STACK;
-    cur_robot->stack = (int *)malloc(ROBOT_START_STACK * sizeof(int));
+    cur_robot->stack = malloc(ROBOT_START_STACK * sizeof(int));
     // Initialize the stack pointer to the bottom
     cur_robot->stack_pointer = 0;
   }
 
-  cur_robot->program = (char *)malloc(program_size);
+  cur_robot->program = malloc(program_size);
   fread(cur_robot->program, program_size, 1, fp);
 
   // Now create a label cache IF the robot is in use
@@ -129,7 +129,7 @@ static void robot_stack_push(Robot *cur_robot, int value)
     stack_size *= 2;
     if(stack_size > ROBOT_MAX_STACK)
       return;
-    cur_robot->stack = (int *)realloc(stack, stack_size * sizeof(int));
+    cur_robot->stack = realloc(stack, stack_size * sizeof(int));
     stack = cur_robot->stack;
     cur_robot->stack_size = stack_size;
   }
@@ -165,13 +165,13 @@ static void load_scroll(Scroll *cur_scroll, FILE *fp, int savegame)
   cur_scroll->mesg_size = scroll_size;
   cur_scroll->used = fgetc(fp);
 
-  cur_scroll->mesg = (char *)malloc(scroll_size);
+  cur_scroll->mesg = malloc(scroll_size);
   fread(cur_scroll->mesg, scroll_size, 1, fp);
 }
 
 Scroll *load_scroll_allocate(FILE *fp, int savegame)
 {
-  Scroll *cur_scroll = (Scroll *)malloc(sizeof(Scroll));
+  Scroll *cur_scroll = malloc(sizeof(Scroll));
   load_scroll(cur_scroll, fp, savegame);
 
   return cur_scroll;
@@ -188,7 +188,7 @@ static void load_sensor(Sensor *cur_sensor, FILE *fp, int savegame)
 
 Sensor *load_sensor_allocate(FILE *fp, int savegame)
 {
-  Sensor *cur_sensor = (Sensor *)malloc(sizeof(Sensor));
+  Sensor *cur_sensor = malloc(sizeof(Sensor));
   load_sensor(cur_sensor, fp, savegame);
 
   return cur_sensor;
@@ -375,13 +375,13 @@ void clear_sensor(Sensor *cur_sensor)
 
 void reallocate_robot(Robot *robot, int size)
 {
-  robot->program = (char *)realloc(robot->program, size);
+  robot->program = realloc(robot->program, size);
   robot->program_length = size;
 }
 
 void reallocate_scroll(Scroll *scroll, int size)
 {
-  scroll->mesg = (char *)realloc(scroll->mesg, size);
+  scroll->mesg = realloc(scroll->mesg, size);
   scroll->mesg_size = size;
 }
 
@@ -414,7 +414,7 @@ Label **cache_robot_labels(Robot *robot, int *num_labels)
   int i;
 
   char *robot_program = robot->program;
-  Label **label_list = (Label **)malloc(sizeof(Label *) * 16);
+  Label **label_list = malloc(sizeof(Label *) * 16);
   Label *current_label;
 
   for(i = 1; i < (robot->program_length - 1); i++)
@@ -425,7 +425,7 @@ Label **cache_robot_labels(Robot *robot, int *num_labels)
 
     if((cmd == 106) || (cmd == 108))
     {
-      current_label = (Label *)malloc(sizeof(Label));
+      current_label = malloc(sizeof(Label));
       current_label->name = robot_program + i + 3;
 
       if(next >= (robot->program_length - 2))
@@ -446,7 +446,7 @@ Label **cache_robot_labels(Robot *robot, int *num_labels)
       if(labels_found == labels_allocated)
       {
         labels_allocated *= 2;
-        label_list = (Label **)realloc(label_list,
+        label_list = realloc(label_list,
          sizeof(Label *) * labels_allocated);
       }
       label_list[labels_found] = current_label;
@@ -467,7 +467,7 @@ Label **cache_robot_labels(Robot *robot, int *num_labels)
   if(labels_found != labels_allocated)
   {
     label_list =
-     (Label **)realloc(label_list, sizeof(Label *) * labels_found);
+     realloc(label_list, sizeof(Label *) * labels_found);
   }
 
   // Now sort the list
@@ -2395,11 +2395,11 @@ int find_free_robot(Board *src_board)
         else
           num_robots_allocated = 1;
 
-        src_board->robot_list = (Robot **)realloc(robot_list,
+        src_board->robot_list = realloc(robot_list,
          (num_robots_allocated + 1) * sizeof(Robot *));
 
         src_board->robot_list_name_sorted =
-         (Robot **)realloc(src_board->robot_list_name_sorted,
+         realloc(src_board->robot_list_name_sorted,
          (num_robots_allocated) * sizeof(Robot *));
         src_board->num_robots_allocated = num_robots_allocated;
       }
@@ -2437,7 +2437,7 @@ static int find_free_scroll(Board *src_board)
         else
           num_scrolls_allocated = 1;
 
-        src_board->scroll_list = (Scroll **)realloc(scroll_list,
+        src_board->scroll_list = realloc(scroll_list,
          (num_scrolls_allocated + 1) * sizeof(Scroll *));
         src_board->num_scrolls_allocated = num_scrolls_allocated;
       }
@@ -2476,7 +2476,7 @@ static int find_free_sensor(Board *src_board)
         else
           num_sensors_allocated = 1;
 
-        src_board->sensor_list = (Sensor **)realloc(sensor_list,
+        src_board->sensor_list = realloc(sensor_list,
          (num_sensors_allocated + 1) * sizeof(Sensor *));
         src_board->num_sensors_allocated = num_sensors_allocated;
       }
@@ -2506,7 +2506,7 @@ __editor_maybe_static void duplicate_robot_direct(Robot *cur_robot,
   // Copy all the contents
   memcpy(copy_robot, cur_robot, sizeof(Robot));
   // We need unique copies of the program and the label cache.
-  copy_robot->program = (char *)malloc(program_length);
+  copy_robot->program = malloc(program_length);
 
   src_program_location = cur_robot->program;
   dest_program_location = copy_robot->program;
@@ -2514,7 +2514,7 @@ __editor_maybe_static void duplicate_robot_direct(Robot *cur_robot,
   memcpy(dest_program_location, src_program_location, program_length);
 
   if(num_labels)
-    copy_robot->label_list = (Label **)malloc(num_labels * sizeof(Label *));
+    copy_robot->label_list = malloc(num_labels * sizeof(Label *));
   else
     copy_robot->label_list = NULL;
 
@@ -2523,7 +2523,7 @@ __editor_maybe_static void duplicate_robot_direct(Robot *cur_robot,
   // Copy each individual label pointer over
   for(i = 0; i < num_labels; i++)
   {
-    copy_robot->label_list[i] = (Label *)malloc(sizeof(Label));
+    copy_robot->label_list[i] = malloc(sizeof(Label));
 
     src_label = cur_robot->label_list[i];
     dest_label = copy_robot->label_list[i];
@@ -2534,7 +2534,7 @@ __editor_maybe_static void duplicate_robot_direct(Robot *cur_robot,
   }
 
   // Give the robot a new, fresh stack
-  copy_robot->stack = (int *)malloc(ROBOT_START_STACK * sizeof(int));
+  copy_robot->stack = malloc(ROBOT_START_STACK * sizeof(int));
   copy_robot->stack_size = ROBOT_START_STACK;
   copy_robot->stack_pointer = 0;
   copy_robot->xpos = x;
@@ -2554,7 +2554,7 @@ int duplicate_robot(Board *src_board, Robot *cur_robot, int x, int y)
   int dest_id = find_free_robot(src_board);
   if(dest_id != -1)
   {
-    Robot *copy_robot = (Robot *)malloc(sizeof(Robot));
+    Robot *copy_robot = malloc(sizeof(Robot));
     duplicate_robot_direct(cur_robot, copy_robot, x, y);
     add_robot_name_entry(src_board, copy_robot, copy_robot->robot_name);
     src_board->robot_list[dest_id] = copy_robot;
@@ -2593,7 +2593,7 @@ __editor_maybe_static void duplicate_scroll_direct(Scroll *cur_scroll,
   // Copy all the contents
   memcpy(copy_scroll, cur_scroll, sizeof(Scroll));
   // We need unique copies of the program and the label cache.
-  copy_scroll->mesg = (char *)malloc(mesg_size);
+  copy_scroll->mesg = malloc(mesg_size);
   memcpy(copy_scroll->mesg, cur_scroll->mesg, mesg_size);
 }
 
@@ -2632,7 +2632,7 @@ int duplicate_scroll(Board *src_board, Scroll *cur_scroll)
   int dest_id = find_free_scroll(src_board);
   if(dest_id != -1)
   {
-    Scroll *copy_scroll = (Scroll *)malloc(sizeof(Scroll));
+    Scroll *copy_scroll = malloc(sizeof(Scroll));
     duplicate_scroll_direct(cur_scroll, copy_scroll);
     src_board->scroll_list[dest_id] = copy_scroll;
   }
@@ -2645,7 +2645,7 @@ int duplicate_sensor(Board *src_board, Sensor *cur_sensor)
   int dest_id = find_free_sensor(src_board);
   if(dest_id != -1)
   {
-    Sensor *copy_sensor = (Sensor *)malloc(sizeof(Sensor));
+    Sensor *copy_sensor = malloc(sizeof(Sensor));
     duplicate_sensor_direct(cur_sensor, copy_sensor);
     src_board->sensor_list[dest_id] = copy_sensor;
   }
@@ -2667,17 +2667,17 @@ void optimize_null_objects(Board *src_board)
   Scroll **scroll_list = src_board->scroll_list;
   Sensor **sensor_list = src_board->sensor_list;
   Robot **optimized_robot_list =
-   (Robot **)malloc(sizeof(Robot *) * (num_robots + 1));
+   malloc(sizeof(Robot *) * (num_robots + 1));
   Scroll **optimized_scroll_list =
-   (Scroll **)malloc(sizeof(Scroll *) * (num_scrolls + 1));
+   malloc(sizeof(Scroll *) * (num_scrolls + 1));
   Sensor **optimized_sensor_list =
-   (Sensor **)malloc(sizeof(Sensor *) * (num_sensors + 1));
+   malloc(sizeof(Sensor *) * (num_sensors + 1));
   int *robot_id_translation_list =
-   (int *)malloc(sizeof(int) * (num_robots + 1));
+   malloc(sizeof(int) * (num_robots + 1));
   int *scroll_id_translation_list =
-   (int *)malloc(sizeof(int) * (num_scrolls + 1));
+   malloc(sizeof(int) * (num_scrolls + 1));
   int *sensor_id_translation_list =
-   (int *)malloc(sizeof(int) * (num_sensors + 1));
+   malloc(sizeof(int) * (num_sensors + 1));
   Robot *cur_robot;
   Scroll *cur_scroll;
   Sensor *cur_sensor;
@@ -2713,7 +2713,7 @@ void optimize_null_objects(Board *src_board)
     optimized_robot_list[0] = robot_list[0];
     free(robot_list);
     src_board->robot_list =
-     (Robot **)realloc(optimized_robot_list, sizeof(Robot *) * i2);
+     realloc(optimized_robot_list, sizeof(Robot *) * i2);
     src_board->num_robots = i2 - 1;
     src_board->num_robots_allocated = i2 - 1;
   }
@@ -2739,7 +2739,7 @@ void optimize_null_objects(Board *src_board)
     optimized_scroll_list[0] = scroll_list[0];
     free(scroll_list);
     src_board->scroll_list =
-     (Scroll **)realloc(optimized_scroll_list, sizeof(Scroll *) * i2);
+     realloc(optimized_scroll_list, sizeof(Scroll *) * i2);
     src_board->num_scrolls = i2 - 1;
     src_board->num_scrolls_allocated = i2 - 1;
   }
@@ -2766,7 +2766,7 @@ void optimize_null_objects(Board *src_board)
     optimized_sensor_list[0] = sensor_list[0];
     free(sensor_list);
     src_board->sensor_list =
-     (Sensor **)realloc(optimized_sensor_list, sizeof(Sensor *) * i2);
+     realloc(optimized_sensor_list, sizeof(Sensor *) * i2);
     src_board->num_sensors = i2 - 1;
     src_board->num_sensors_allocated = i2 - 1;
   }
@@ -2830,7 +2830,7 @@ void optimize_null_objects(Board *src_board)
 
 void create_blank_robot_direct(Robot *cur_robot, int x, int y)
 {
-  char *program = (char *)malloc(2);
+  char *program = malloc(2);
 
   memset(cur_robot, 0, sizeof(Robot));
 
@@ -2849,7 +2849,7 @@ void create_blank_robot_direct(Robot *cur_robot, int x, int y)
 
 void create_blank_scroll_direct(Scroll *cur_scroll)
 {
-  char *message = (char *)malloc(3);
+  char *message = malloc(3);
 
   memset(cur_scroll, 0, sizeof(Scroll));
 

@@ -141,13 +141,13 @@ static void add_blank_line(robot_state *rstate, int relation)
 {
   if(rstate->size + 3 < rstate->max_size)
   {
-    robot_line *new_rline = (robot_line *)malloc(sizeof(robot_line));
+    robot_line *new_rline = malloc(sizeof(robot_line));
     robot_line *current_rline = rstate->current_rline;
     int current_line = rstate->current_line;
 
     new_rline->line_text_length = 0;
-    new_rline->line_text = (char *)malloc(1);
-    new_rline->line_bytecode = (char *)malloc(3);
+    new_rline->line_text = malloc(1);
+    new_rline->line_bytecode = malloc(3);
     new_rline->line_text[0] = 0;
     new_rline->line_bytecode[0] = 1;
     new_rline->line_bytecode[1] = 47;
@@ -338,11 +338,11 @@ static int update_current_line(robot_state *rstate)
     {
       current_rline->line_text_length = line_text_length;
       current_rline->line_text =
-       (char *)realloc(current_rline->line_text, line_text_length + 1);
+       realloc(current_rline->line_text, line_text_length + 1);
 
       current_rline->line_bytecode_length = bytecode_length;
       current_rline->line_bytecode =
-       (char *)realloc(current_rline->line_bytecode, bytecode_length);
+       realloc(current_rline->line_bytecode, bytecode_length);
       current_rline->num_args = arg_count;
       current_rline->validity_status = valid;
 
@@ -356,7 +356,7 @@ static int update_current_line(robot_state *rstate)
     {
       current_rline->line_text_length = 240;
       current_rline->line_text =
-       (char *)realloc(current_rline->line_text, 240);
+       realloc(current_rline->line_text, 240);
       memcpy(current_rline->line_text, new_command_buffer, 240);
       current_rline->line_text[240] = 0;
 
@@ -382,7 +382,7 @@ static int update_current_line(robot_state *rstate)
       use_type = current_rline->validity_status;
 
     current_rline->line_text =
-     (char *)realloc(current_rline->line_text, line_text_length + 1);
+     realloc(current_rline->line_text, line_text_length + 1);
 
     if(use_type == invalid_comment &&
      (current_size + (line_text_length + 5) - last_bytecode_length) >
@@ -420,7 +420,7 @@ static int update_current_line(robot_state *rstate)
 
 static void add_line(robot_state *rstate)
 {
-  robot_line *new_rline = (robot_line *)malloc(sizeof(robot_line));
+  robot_line *new_rline = malloc(sizeof(robot_line));
   robot_line *current_rline = rstate->current_rline;
   new_rline->line_text = NULL;
   new_rline->line_bytecode = NULL;
@@ -774,7 +774,7 @@ static int copy_buffer_to_X11_selection(const SDL_Event *event)
 
     display = info.info.x11.display;
     window = info.info.x11.window;
-    dest_data = (char *)malloc(copy_buffer_total_length + 1);
+    dest_data = malloc(copy_buffer_total_length + 1);
     dest_ptr = dest_data;
 
     for(i = 0; i < copy_buffer_lines - 1; i++)
@@ -840,13 +840,13 @@ static void copy_block_to_buffer(robot_state *rstate)
     free(copy_buffer);
   }
 
-  copy_buffer = (char **)malloc(sizeof(char *) * num_lines);
+  copy_buffer = malloc(sizeof(char *) * num_lines);
   copy_buffer_lines = num_lines;
 
   for(i = 0; i < num_lines; i++)
   {
     line_length = current_rline->line_text_length + 1;
-    copy_buffer[i] = (char *)malloc(line_length);
+    copy_buffer[i] = malloc(line_length);
     memcpy(copy_buffer[i], current_rline->line_text, line_length);
     current_rline = current_rline->next;
 
@@ -2416,13 +2416,13 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
     if(new_line)
     {
-      current_rline = (robot_line *)malloc(sizeof(robot_line));
+      current_rline = malloc(sizeof(robot_line));
 
       line_bytecode_length = next - current_robot_pos;
       current_rline->line_text_length = line_text_length;
       current_rline->line_bytecode_length = line_bytecode_length;
-      current_rline->line_text = (char *)malloc(line_text_length + 1);
-      current_rline->line_bytecode = (char *)malloc(line_bytecode_length);
+      current_rline->line_text = malloc(line_text_length + 1);
+      current_rline->line_bytecode = malloc(line_bytecode_length);
       current_rline->num_args = arg_count;
       current_rline->validity_status = valid;
 

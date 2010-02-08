@@ -877,8 +877,8 @@ void setup_overlay(Board *src_board, int mode)
   {
     int board_size = src_board->board_width * src_board->board_height;
     // Allocate an overlay
-    src_board->overlay = (char *)malloc(board_size);
-    src_board->overlay_color = (char *)malloc(board_size);
+    src_board->overlay = malloc(board_size);
+    src_board->overlay_color = malloc(board_size);
     memset(src_board->overlay, 32, board_size);
     memset(src_board->overlay_color, 7, board_size);
   }

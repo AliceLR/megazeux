@@ -83,17 +83,17 @@ static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
 
     size = overlay_width * overlay_height;
 
-    cur_board->overlay = (char *)malloc(size);
-    cur_board->overlay_color = (char *)malloc(size);
+    cur_board->overlay = malloc(size);
+    cur_board->overlay_color = malloc(size);
 
     load_RLE2_plane(cur_board->overlay, fp, size);
-    test_buffer = (char *)malloc(1024);
+    test_buffer = malloc(1024);
     free(test_buffer);
 
     // Skip sizes
     fseek(fp, 4, SEEK_CUR);
     load_RLE2_plane(cur_board->overlay_color, fp, size);
-    test_buffer = (char *)malloc(1024);
+    test_buffer = malloc(1024);
     free(test_buffer);
   }
   else
@@ -112,12 +112,12 @@ static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
 
   size = board_width * board_height;
 
-  cur_board->level_id = (char *)malloc(size);
-  cur_board->level_color = (char *)malloc(size);
-  cur_board->level_param = (char *)malloc(size);
-  cur_board->level_under_id = (char *)malloc(size);
-  cur_board->level_under_color = (char *)malloc(size);
-  cur_board->level_under_param = (char *)malloc(size);
+  cur_board->level_id = malloc(size);
+  cur_board->level_color = malloc(size);
+  cur_board->level_param = malloc(size);
+  cur_board->level_under_id = malloc(size);
+  cur_board->level_under_color = malloc(size);
+  cur_board->level_under_param = malloc(size);
 
   load_RLE2_plane(cur_board->level_id, fp, size);
   fseek(fp, 4, SEEK_CUR);
@@ -182,10 +182,10 @@ static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
   num_robots_active = 0;
 
   cur_board->robot_list =
-   (Robot **)malloc(sizeof(Robot *) * (num_robots + 1));
+   malloc(sizeof(Robot *) * (num_robots + 1));
   // Also allocate for name sorted list
   cur_board->robot_list_name_sorted =
-   (Robot **)malloc(sizeof(Robot *) * num_robots);
+   malloc(sizeof(Robot *) * num_robots);
 
   // Any null objects being placed will later be optimized out
 
@@ -214,7 +214,7 @@ static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
     if(num_robots_active != num_robots)
     {
       cur_board->robot_list_name_sorted =
-       (Robot **)realloc(cur_board->robot_list_name_sorted,
+       realloc(cur_board->robot_list_name_sorted,
        sizeof(Robot *) * num_robots_active);
     }
     qsort(cur_board->robot_list_name_sorted, num_robots_active,
@@ -233,7 +233,7 @@ static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
   // Load scrolls
   num_scrolls = fgetc(fp);
   cur_board->scroll_list =
-   (Scroll **)malloc(sizeof(Scroll *) * (num_scrolls + 1));
+   malloc(sizeof(Scroll *) * (num_scrolls + 1));
 
   if(num_scrolls)
   {
@@ -259,7 +259,7 @@ static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
   // Load sensors
   num_sensors = fgetc(fp);
   cur_board->sensor_list =
-   (Sensor **)malloc(sizeof(Sensor *) * (num_sensors + 1));
+   malloc(sizeof(Sensor *) * (num_sensors + 1));
 
   if(num_sensors)
   {
@@ -287,7 +287,7 @@ static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
 
 static Board *load_board_allocate_direct(FILE *fp, int savegame)
 {
-  Board *cur_board = (Board *)malloc(sizeof(Board));
+  Board *cur_board = malloc(sizeof(Board));
   load_board_direct(cur_board, fp, savegame);
   fread(cur_board->board_name, 25, 1, fp);
   return cur_board;
@@ -323,7 +323,7 @@ static void load_board(Board *cur_board, FILE *fp, int savegame)
 
 Board *load_board_allocate(FILE *fp, int savegame)
 {
-  Board *cur_board = (Board *)malloc(sizeof(Board));
+  Board *cur_board = malloc(sizeof(Board));
   load_board(cur_board, fp, savegame);
 
   if(!cur_board->board_width)
@@ -620,7 +620,7 @@ void replace_current_board(World *mzx_world, char *name)
 
 Board *create_blank_board(void)
 {
-  Board *cur_board = (Board *)malloc(sizeof(Board));
+  Board *cur_board = malloc(sizeof(Board));
   int i;
 
   cur_board->size = 0;
@@ -628,14 +628,14 @@ Board *create_blank_board(void)
   cur_board->board_width = 100;
   cur_board->board_height = 100;
   cur_board->overlay_mode = 1;
-  cur_board->level_id = (char *)malloc(100 * 100);
-  cur_board->level_param = (char *)malloc(100 * 100);
-  cur_board->level_color = (char *)malloc(100 * 100);
-  cur_board->level_under_id = (char *)malloc(100 * 100);
-  cur_board->level_under_param = (char *)malloc(100 * 100);
-  cur_board->level_under_color = (char *)malloc(100 * 100);
-  cur_board->overlay = (char *)malloc(100 * 100);
-  cur_board->overlay_color = (char *)malloc(100 * 100);
+  cur_board->level_id = malloc(100 * 100);
+  cur_board->level_param = malloc(100 * 100);
+  cur_board->level_color = malloc(100 * 100);
+  cur_board->level_under_id = malloc(100 * 100);
+  cur_board->level_under_param = malloc(100 * 100);
+  cur_board->level_under_color = malloc(100 * 100);
+  cur_board->overlay = malloc(100 * 100);
+  cur_board->overlay_color = malloc(100 * 100);
   cur_board->mod_playing[0] = 0;
   cur_board->viewport_x = 0;
   cur_board->viewport_y = 0;
@@ -684,14 +684,14 @@ Board *create_blank_board(void)
   cur_board->num_robots = 0;
   cur_board->num_robots_active = 0;
   cur_board->num_robots_allocated = 0;
-  cur_board->robot_list = (Robot **)malloc(sizeof(Robot *));
+  cur_board->robot_list = malloc(sizeof(Robot *));
   cur_board->robot_list_name_sorted = NULL;
   cur_board->num_scrolls = 0;
   cur_board->num_scrolls_allocated = 0;
-  cur_board->scroll_list = (Scroll **)malloc(sizeof(Scroll *));
+  cur_board->scroll_list = malloc(sizeof(Scroll *));
   cur_board->num_sensors = 0;
   cur_board->num_sensors_allocated = 0;
-  cur_board->sensor_list = (Sensor **)malloc(sizeof(Sensor *));
+  cur_board->sensor_list = malloc(sizeof(Sensor *));
 
   memset(cur_board->level_id, 0, 100 * 100);
   memset(cur_board->level_color, 7, 100 * 100);
@@ -819,12 +819,12 @@ void change_board_size(Board *src_board, int new_width, int new_height)
       }
 
       // Resize layers
-      src_board->level_id = (char *)realloc(level_id, new_size);
-      src_board->level_color = (char *)realloc(level_color, new_size);
-      src_board->level_param = (char *)realloc(level_param, new_size);
-      src_board->level_under_id = (char *)realloc(level_under_id, new_size);
-      src_board->level_under_color = (char *)realloc(level_under_color, new_size);
-      src_board->level_under_param = (char *)realloc(level_under_param, new_size);
+      src_board->level_id = realloc(level_id, new_size);
+      src_board->level_color = realloc(level_color, new_size);
+      src_board->level_param = realloc(level_param, new_size);
+      src_board->level_under_id = realloc(level_under_id, new_size);
+      src_board->level_under_color = realloc(level_under_color, new_size);
+      src_board->level_under_param = realloc(level_under_param, new_size);
 
       level_id = src_board->level_id;
       level_color = src_board->level_color;
@@ -843,8 +843,8 @@ void change_board_size(Board *src_board, int new_width, int new_height)
           memmove(overlay_color + dest_offset, overlay_color + src_offset, new_width);
         }
 
-        src_board->overlay = (char *)realloc(overlay, new_size);
-        src_board->overlay_color = (char *)realloc(overlay_color, new_size);
+        src_board->overlay = realloc(overlay, new_size);
+        src_board->overlay_color = realloc(overlay_color, new_size);
 
         overlay = src_board->overlay;
         overlay_color = src_board->overlay_color;
@@ -865,18 +865,18 @@ void change_board_size(Board *src_board, int new_width, int new_height)
         max_height = board_height;
 
       // Resize first this time.
-      src_board->level_id = (char *)realloc(level_id, new_size);
-      src_board->level_color = (char *)realloc(level_color, new_size);
-      src_board->level_param = (char *)realloc(level_param, new_size);
-      src_board->level_under_id = (char *)realloc(level_under_id, new_size);
-      src_board->level_under_color = (char *)realloc(level_under_color, new_size);
-      src_board->level_under_param = (char *)realloc(level_under_param, new_size);
+      src_board->level_id = realloc(level_id, new_size);
+      src_board->level_color = realloc(level_color, new_size);
+      src_board->level_param = realloc(level_param, new_size);
+      src_board->level_under_id = realloc(level_under_id, new_size);
+      src_board->level_under_color = realloc(level_under_color, new_size);
+      src_board->level_under_param = realloc(level_under_param, new_size);
 
       // Resize the overlay too, if it exists
       if(overlay_mode)
       {
-        src_board->overlay = (char *)realloc(overlay, new_size);
-        src_board->overlay_color = (char *)realloc(overlay_color, new_size);
+        src_board->overlay = realloc(overlay, new_size);
+        src_board->overlay_color = realloc(overlay_color, new_size);
         overlay = src_board->overlay;
         overlay_color = src_board->overlay_color;
       }
@@ -932,18 +932,18 @@ void change_board_size(Board *src_board, int new_width, int new_height)
     {
       // Width remains the same, just a straight resize
 
-      src_board->level_id = (char *)realloc(level_id, new_size);
-      src_board->level_color = (char *)realloc(level_color, new_size);
-      src_board->level_param = (char *)realloc(level_param, new_size);
-      src_board->level_under_id = (char *)realloc(level_under_id, new_size);
-      src_board->level_under_color = (char *)realloc(level_under_color, new_size);
-      src_board->level_under_param = (char *)realloc(level_under_param, new_size);
+      src_board->level_id = realloc(level_id, new_size);
+      src_board->level_color = realloc(level_color, new_size);
+      src_board->level_param = realloc(level_param, new_size);
+      src_board->level_under_id = realloc(level_under_id, new_size);
+      src_board->level_under_color = realloc(level_under_color, new_size);
+      src_board->level_under_param = realloc(level_under_param, new_size);
 
       // Resize the overlay too, if it exists
       if(overlay_mode)
       {
-        src_board->overlay = (char *)realloc(overlay, new_size);
-        src_board->overlay_color = (char *)realloc(overlay_color, new_size);
+        src_board->overlay = realloc(overlay, new_size);
+        src_board->overlay_color = realloc(overlay_color, new_size);
       }
 
       level_id = src_board->level_id;

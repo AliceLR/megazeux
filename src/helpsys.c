@@ -55,7 +55,7 @@ void pop_context(void)
 
 void help_load(World *mzx_world, const char *file_name)
 {
-  help = (char *)malloc(1024 * 64);
+  help = malloc(1024 * 64);
   // Search context links
   mzx_world->help_file = fopen(file_name, "rb");
 

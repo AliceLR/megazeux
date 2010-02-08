@@ -1712,7 +1712,7 @@ static mzx_string *add_string_preallocate(World *mzx_world, const char *name,
       allocated = MIN_STRING_ALLOCATE;
 
     mzx_world->string_list =
-     (mzx_string **)realloc(base, sizeof(mzx_string *) * allocated);
+     realloc(base, sizeof(mzx_string *) * allocated);
     mzx_world->num_strings_allocated = allocated;
     base = mzx_world->string_list;
   }
@@ -1727,7 +1727,7 @@ static mzx_string *add_string_preallocate(World *mzx_world, const char *name,
   }
 
   // Allocate a mzx_string with room for the name and initial value
-  dest = (mzx_string *)malloc(sizeof(mzx_string) + name_length + length);
+  dest = malloc(sizeof(mzx_string) + name_length + length);
 
   // Copy in the name, including NULL terminator.
   strcpy(dest->name, name);
@@ -1752,7 +1752,7 @@ static mzx_string *reallocate_string(World *mzx_world,
   // Find the base length (take out the current length)
   int base_length = (int)(src->value - (char *)src);
 
-  src = (mzx_string *)realloc(src, base_length + length);
+  src = realloc(src, base_length + length);
   src->value = (char *)src + base_length;
 
   // any new bits of the string should be space filled
@@ -2639,7 +2639,7 @@ static void add_counter(World *mzx_world, const char *name,
       allocated = MIN_COUNTER_ALLOCATE;
 
     mzx_world->counter_list =
-     (counter **)realloc(base, sizeof(counter *) * allocated);
+     realloc(base, sizeof(counter *) * allocated);
     base = mzx_world->counter_list;
     mzx_world->num_counters_allocated = allocated;
   }
@@ -2653,7 +2653,7 @@ static void add_counter(World *mzx_world, const char *name,
      (count - position) * sizeof(counter *));
   }
 
-  cdest = (counter *)malloc(sizeof(counter) + strlen(name));
+  cdest = malloc(sizeof(counter) + strlen(name));
   strcpy(cdest->name, name);
   cdest->value = value;
   cdest->gateway_write = NULL;
@@ -3414,7 +3414,7 @@ counter *load_counter(FILE *fp)
   int name_length = fgetd(fp);
 
   counter *src_counter =
-   (counter *)malloc(sizeof(counter) + name_length);
+   malloc(sizeof(counter) + name_length);
   fread(src_counter->name, name_length, 1, fp);
   src_counter->name[name_length] = 0;
   src_counter->value = value;
@@ -3431,7 +3431,7 @@ mzx_string *load_string(FILE *fp)
   int str_length = fgetd(fp);
 
   mzx_string *src_string =
-   (mzx_string *)malloc(sizeof(mzx_string) + name_length +
+   malloc(sizeof(mzx_string) + name_length +
    str_length - 1);
 
   fread(src_string->name, name_length, 1, fp);
@@ -3474,7 +3474,7 @@ void debug_counters(World *mzx_world)
 {
   // +1 for SCORE, +1 for mzx_speed
   int num_vars = mzx_world->num_counters + mzx_world->num_strings + 1 + 1;
-  char **var_list = (char **)malloc(num_vars * sizeof(char *));
+  char **var_list = malloc(num_vars * sizeof(char *));
   int dialog_result;
   int cp_len;
   int selected = 0;
@@ -3486,7 +3486,7 @@ void debug_counters(World *mzx_world)
 
   for(i = 0; i < mzx_world->num_counters; i++)
   {
-    var_list[i] = (char *)malloc(76);
+    var_list[i] = malloc(76);
     cp_len = strlen(mzx_world->counter_list[i]->name);
     memset(var_list[i], ' ', 75);
 
@@ -3501,14 +3501,14 @@ void debug_counters(World *mzx_world)
   }
 
   // SCORE isn't a real counter, so we have a special case here
-  var_list[i] = (char *)malloc(76);
+  var_list[i] = malloc(76);
   memset(var_list[i], ' ', 75);
   memcpy(var_list[i], "SCORE", 5);
   sprintf(var_list[i] + CVALUE_COL_OFFSET, "%d", mzx_world->score);
   i++;
 
   // mzx_speed isn't a real counter either, so another special case is needed
-  var_list[i] = (char *)malloc(76);
+  var_list[i] = malloc(76);
   memset(var_list[i], ' ', 75);
   memcpy(var_list[i], "mzx_speed", 9);
   sprintf(var_list[i] + CVALUE_COL_OFFSET, "%d", mzx_world->mzx_speed);
@@ -3516,7 +3516,7 @@ void debug_counters(World *mzx_world)
 
   for(i2 = 0; i2 < mzx_world->num_strings; i2++, i++)
   {
-    var_list[i] = (char *)malloc(76);
+    var_list[i] = malloc(76);
     cp_len = strlen(mzx_world->string_list[i2]->name);
     memset(var_list[i], ' ', 75);
 

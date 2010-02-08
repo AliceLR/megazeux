@@ -343,7 +343,7 @@ __audio_c_maybe_static void sampled_set_buffer(sampled_stream *s_src)
   s_src->stream_offset = prologue_length;
 
   s_src->output_data =
-   (Sint16 *)realloc(s_src->output_data, allocated_data_length);
+   realloc(s_src->output_data, allocated_data_length);
 
   sampled_negative_threshold(s_src);
 }
@@ -841,7 +841,7 @@ static audio_stream *construct_vorbis_stream(char *filename, Uint32 frequency,
       if(vorbis_file_info->channels <= 2)
       {
         vorbis_stream *v_stream =
-         (vorbis_stream *)malloc(sizeof(vorbis_stream));
+         malloc(sizeof(vorbis_stream));
 
         v_stream->vorbis_file_handle = open_file;
         v_stream->vorbis_file_info = vorbis_file_info;
@@ -1108,7 +1108,7 @@ static void convert_sam_to_wav(const char *source_name, const char *dest_name)
 
   frequency = freq_conversion / default_period;
   dest_length = source_length + 44;
-  data = (Uint8 *)malloc(dest_length);
+  data = malloc(dest_length);
 
   write_chars(data, "RIFF");
   write_little_endian32(data + 4, dest_length);
@@ -1239,7 +1239,7 @@ static audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
     // Surround WAVs not supported yet..
     if(wav_info.channels <= 2)
     {
-      wav_stream *w_stream = (wav_stream *)malloc(sizeof(wav_stream));
+      wav_stream *w_stream = malloc(sizeof(wav_stream));
 
       w_stream->wav_data = wav_data;
       w_stream->data_length = data_length;
@@ -1271,7 +1271,7 @@ static audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
 static audio_stream *construct_pc_speaker_stream(void)
 {
   pc_speaker_stream *pcs_stream =
-   (pc_speaker_stream *)malloc(sizeof(pc_speaker_stream));
+   malloc(sizeof(pc_speaker_stream));
 
   memset(pcs_stream, 0, sizeof(pc_speaker_stream));
 
@@ -1452,7 +1452,7 @@ void init_audio(config_info *conf)
   init_pc_speaker(conf);
 
   SDL_OpenAudio(&desired_spec, &audio.audio_settings);
-  audio.mix_buffer = (Sint32 *)malloc(audio.audio_settings.size * 2);
+  audio.mix_buffer = malloc(audio.audio_settings.size * 2);
 
 #ifdef DEBUG
   fprintf(stdout, "Started audio subsystem\n");

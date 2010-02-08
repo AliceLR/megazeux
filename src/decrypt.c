@@ -93,7 +93,7 @@ void decrypt(const char *file_name)
   source = fopen(file_name, "rb");
   file_length = ftell_and_rewind(source);
 
-  file_buffer = (char *)malloc(file_length);
+  file_buffer = malloc(file_length);
   src_ptr = file_buffer;
   fread(file_buffer, file_length, 1, source);
   fclose(source);

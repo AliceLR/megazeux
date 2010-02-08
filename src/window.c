@@ -1397,7 +1397,7 @@ static int click_color_box(World *mzx_world, dialog *di,
 element *construct_check_box(int x, int y, const char **choices,
  int num_choices, int max_length, int *results)
 {
-  check_box *src = (check_box *)malloc(sizeof(check_box));
+  check_box *src = malloc(sizeof(check_box));
   src->current_choice = 0;
   src->choices = choices;
   src->num_choices = num_choices;
@@ -1412,7 +1412,7 @@ element *construct_check_box(int x, int y, const char **choices,
 element *construct_char_box(int x, int y, const char *question,
  int allow_char_255, int *result)
 {
-  char_box *src = (char_box *)malloc(sizeof(char_box));
+  char_box *src = malloc(sizeof(char_box));
   src->question = question;
   src->allow_char_255 = allow_char_255;
   src->result = result;
@@ -1425,7 +1425,7 @@ element *construct_char_box(int x, int y, const char *question,
 element *construct_color_box(int x, int y,
  const char *question, int allow_wildcard, int *result)
 {
-  color_box *src = (color_box *)malloc(sizeof(color_box));
+  color_box *src = malloc(sizeof(color_box));
   src->question = question;
   src->allow_wildcard = allow_wildcard;
   src->result = result;
@@ -1446,7 +1446,7 @@ static int click_board_list(World *mzx_world, dialog *di,
 element *construct_board_list(int x, int y,
  const char *title, int board_zero_as_none, int *result)
 {
-  board_list *src = (board_list *)malloc(sizeof(board_list));
+  board_list *src = malloc(sizeof(board_list));
   src->title = title;
   src->board_zero_as_none = board_zero_as_none;
   src->result = result;
@@ -1475,7 +1475,7 @@ int add_board(World *mzx_world, int current)
   if(mzx_world->num_boards == mzx_world->num_boards_allocated)
   {
     mzx_world->num_boards_allocated *= 2;
-    mzx_world->board_list = (Board **)realloc(mzx_world->board_list,
+    mzx_world->board_list = realloc(mzx_world->board_list,
      mzx_world->num_boards_allocated * sizeof(Board *));
   }
 
@@ -1498,14 +1498,14 @@ int choose_board(World *mzx_world, int current, const char *title,
 {
   int i;
   char **board_names =
-   (char **)malloc((mzx_world->num_boards + 1) * sizeof(char *));
+   malloc((mzx_world->num_boards + 1) * sizeof(char *));
   int num_boards = mzx_world->num_boards;
 
   // Go through - blank boards get a (no board) marker. t2 keeps track
   // of the number of boards.
   for(i = 0; i < num_boards; i++)
   {
-    board_names[i] = (char *)malloc(BOARD_NAME_SIZE);
+    board_names[i] = malloc(BOARD_NAME_SIZE);
 
     if(mzx_world->board_list[i] == NULL)
       strncpy(board_names[i], "(no board)", BOARD_NAME_SIZE - 1);
@@ -1516,7 +1516,7 @@ int choose_board(World *mzx_world, int current, const char *title,
     board_names[i][BOARD_NAME_SIZE - 1] = '\0';
   }
 
-  board_names[i] = (char *)malloc(BOARD_NAME_SIZE);
+  board_names[i] = malloc(BOARD_NAME_SIZE);
 
   if((current < 0) || (current >= mzx_world->num_boards))
     current = 0;
@@ -2763,7 +2763,7 @@ void destruct_dialog(dialog *src)
 
 element *construct_label(int x, int y, const char *text)
 {
-  label *src = (label *)malloc(sizeof(label));
+  label *src = malloc(sizeof(label));
   src->text = text;
   construct_element(&(src->e), x, y, strlen(text), 1,
    draw_label, NULL, NULL, NULL, NULL);
@@ -2774,7 +2774,7 @@ element *construct_label(int x, int y, const char *text)
 __editor_maybe_static element *construct_input_box(int x, int y,
  const char *question, int max_length, int input_flags, char *result)
 {
-  input_box *src = (input_box *)malloc(sizeof(input_box));
+  input_box *src = malloc(sizeof(input_box));
   src->question = question;
   src->input_flags = input_flags;
   src->max_length = max_length;
@@ -2790,7 +2790,7 @@ __editor_maybe_static element *construct_input_box(int x, int y,
 element *construct_radio_button(int x, int y,
  const char **choices, int num_choices, int max_length, int *result)
 {
-  radio_button *src = (radio_button *)malloc(sizeof(radio_button));
+  radio_button *src = malloc(sizeof(radio_button));
   src->choices = choices;
   src->num_choices = num_choices;
   src->result = result;
@@ -2805,7 +2805,7 @@ element *construct_radio_button(int x, int y,
 element *construct_button(int x, int y, const char *label,
  int return_value)
 {
-  button *src = (button *)malloc(sizeof(button));
+  button *src = malloc(sizeof(button));
   src->label = label;
   src->return_value = return_value;
 
@@ -2819,7 +2819,7 @@ element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
  int mult_five, int *result)
 {
-  number_box *src = (number_box *)malloc(sizeof(number_box));
+  number_box *src = malloc(sizeof(number_box));
   int width;
 
   src->question = question;
@@ -2846,7 +2846,7 @@ __editor_maybe_static element *construct_list_box(int x, int y,
 {
   int scroll_offset = *result - (num_choices_visible / 2);
 
-  list_box *src = (list_box *)malloc(sizeof(list_box));
+  list_box *src = malloc(sizeof(list_box));
   src->choices = choices;
   src->num_choices = num_choices;
   src->num_choices_visible = num_choices_visible;
@@ -3207,8 +3207,8 @@ __editor_maybe_static int file_manager(World *mzx_world,
   {
     total_filenames_allocated = 32;
     total_dirnames_allocated = 32;
-    file_list = (char **)malloc(sizeof(char *) * 32);
-    dir_list = (char **)malloc(sizeof(char *) * 32);
+    file_list = malloc(sizeof(char *) * 32);
+    dir_list = malloc(sizeof(char *) * 32);
     memset(file_list, 0, sizeof(char *) * 32);
     memset(dir_list, 0, sizeof(char *) * 32);
 
@@ -3240,7 +3240,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
           {
             if(dirs_okay)
             {
-              dir_list[num_dirs] = (char *)malloc(file_name_length + 1);
+              dir_list[num_dirs] = malloc(file_name_length + 1);
               strncpy(dir_list[num_dirs], file_name, file_name_length);
                dir_list[num_dirs][file_name_length] = '\0';
               num_dirs++;
@@ -3267,7 +3267,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
                  wildcards[i]))
                 {
                   file_list[num_files] =
-                   (char *)malloc(56 + file_name_length + 1);
+                   malloc(56 + file_name_length + 1);
 
                   if(!strcasecmp(file_name + file_name_length - 4, ".mzx"))
                   {
@@ -3299,7 +3299,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
 
         if(num_files == total_filenames_allocated)
         {
-          file_list = (char **)realloc(file_list, sizeof(char *) *
+          file_list = realloc(file_list, sizeof(char *) *
            total_filenames_allocated * 2);
           memset(file_list + total_filenames_allocated, 0,
            sizeof(char *) * total_filenames_allocated);
@@ -3308,7 +3308,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
 
         if(num_dirs == total_dirnames_allocated)
         {
-          dir_list = (char **)realloc(dir_list, sizeof(char *) *
+          dir_list = realloc(dir_list, sizeof(char *) *
            total_dirnames_allocated * 2);
           memset(dir_list + total_dirnames_allocated, 0,
            sizeof(char *) * total_dirnames_allocated);
@@ -3329,14 +3329,14 @@ __editor_maybe_static int file_manager(World *mzx_world,
       {
         if(drive_letter_bitmap & (1 << i))
         {
-          dir_list[num_dirs] = (char *)malloc(3);
+          dir_list[num_dirs] = malloc(3);
           sprintf(dir_list[num_dirs], "%c:", 'A' + i);
 
           num_dirs++;
 
           if(num_dirs == total_dirnames_allocated)
           {
-            dir_list = (char **)realloc(dir_list, sizeof(char *) *
+            dir_list = realloc(dir_list, sizeof(char *) *
              total_dirnames_allocated * 2);
             memset(dir_list + total_dirnames_allocated, 0,
              sizeof(char *) * total_dirnames_allocated);
