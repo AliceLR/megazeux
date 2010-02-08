@@ -50,5 +50,14 @@ MZX REQUESTS:
 -Hardier F11 menu (stronger name seeks, ability to set new counters/strings, ability to see/manip local counters (in Rn.<counter> format)).
 -Ability for Alt+F to display index # of SFX currently being edited.
 -Ability for SFX # to take the long names of SFX lists (e.g. "SFX FullKeys", "SFX Ouch").
+-Different built-in color for comments in the Robotic Editor.
+-Send All command replaced with special parameter ALL to allow constructs like "send ALL" to send to all targets.
+-Ability for resolutions to switch to a different number when SMZX modes are triggered.
+-Making charcters 16x14 to allow ability to have 8x14 chars with 4 colors/char in SMZX modes. Uses 512-chars per charset, and all of the 256 colors set to a pre-defined palette rather than mathematically.
+-Word wrap for the highlighted line.
+-Program title bar listing current MZX world open and current board name.
+-Copyrobot-esque command which appends to the end the code of the given Robot to the Robot executing the command instead of replacing the code of the executing Robot altogether.
+-MOD END WAIT command.
+-Expanded quicksave/load abilities. Quicksave in "slots" determined by going to a menu and picking the active slot. Interval-based quicksaving where one can step backwards through quicksaves.
 -Online support, lozl
 -A SMALLHACKER COUNTER

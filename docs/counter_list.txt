@@ -95,6 +95,7 @@ name                      r/w      g/n/f/b    i
 "PLAYERY"                 r           b       *
 "RED_VALUE"               r w         b       *
 "RID<robot name>"         r           b       *
+"ROBOT_ID"                r           b       *
 "ROBOT_ID_<robot name>"   r           b       *
 "Rn.<counter>             r           b       *
 "SAVE_BC"                 r           f       *
@@ -140,7 +141,7 @@ name                      r/w      g/n/f/b    i
 "THIS_CHAR"               r           b       *
 "THIS_COLOR"              r           b       *
 "TIME"                    r w         n       *
-"TIMERSET"                r w         b       *
+"TIMERESET"               r w         b       *
 "TIME_HOURS"              r           f       *
 "TIME_MINUTES"            r           f       *
 "TIME_SECONDS"            r           f       *
