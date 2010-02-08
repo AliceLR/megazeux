@@ -11,6 +11,8 @@ USERS
   (or lists only those which are not found in the game directory.
   ZIP files are also supported (to a more limited extent).
   (ajs & Revvy, ideas from Exophase & Terryn).
++ Removed the bogus "F1 for Help" option from error dialogs, and finally
+  get rid of the "** BETA **" banner on title boards in play mode.
 
 DEVELOPERS
 
