@@ -107,6 +107,10 @@ void map_joystick_axis(int joystick, int axis, SDLKey min_key,
 void map_joystick_button(int joystick, int button, SDLKey key);
 void set_refocus_pause(int val);
 
+#ifdef CONFIG_NDS
+void nds_inject_input(void);
+#endif
+
 __M_END_DECLS
 
 #endif // __EVENT_H

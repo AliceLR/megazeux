@@ -111,10 +111,8 @@ static int case5(char *path, char *string)
     if(dirlen + 2 >= PATH_BUF_LEN)
       dirlen = PATH_BUF_LEN - 2;
     strncpy(newpath + 2, path, dirlen - 1);
-    newpath[PATH_BUF_LEN - 1] = 0;
+    newpath[dirlen + 2 - 1] = 0;
   }
-
-  fprintf(stderr, "newpath: %s\n", newpath);
 
   wd = dir_open(newpath);
   if(wd != NULL)
@@ -323,19 +321,37 @@ int fsafetranslate(const char *path, char *newpath)
   struct stat inode;
   int ret;
 
-  if((ret = fsafetest(path, newpath)) < 0)
-    return ret;
-
-  // see if file is already there
-  if(stat(newpath, &inode) != 0)
+  // try to pass the basic security tests
+  ret = fsafetest(path, newpath);
+  if(ret == FSAFE_SUCCESS)
   {
+    // see if file is already there
+    if(stat(newpath, &inode) != 0)
+    {
 #ifndef __WIN32__
-    if(match(newpath) != FSAFE_SUCCESS)
+      // it isn't, so try harder
+      ret = match(newpath);
+#else
+      // on WIN32 we can't, so fail hard
+      ret = -FSAFE_MATCH_FAILED;
 #endif
-      return -FSAFE_MATCH_FAILED;
+    }
   }
 
-  return FSAFE_SUCCESS;
+#if defined(DEBUG) && !defined(__WIN32__)
+  if(ret == FSAFE_SUCCESS)
+  {
+    fprintf (stderr, "%s:%d: translated %s to %s.\n",
+             __FILE__, __LINE__, path, newpath);
+  }
+  else
+  {
+    fprintf (stderr, "%s:%d: failed to translate %s (err %d).\n",
+             __FILE__, __LINE__, path, ret);
+  }
+#endif
+
+  return ret;
 }
 
 FILE *fsafeopen(const char *path, const char *mode)
@@ -345,19 +361,6 @@ FILE *fsafeopen(const char *path, const char *mode)
 
   // validate pathname, and optionally retrieve a better name
   ret = fsafetranslate(path, newpath);
-
-#if defined (DEBUG) && !defined (__WIN32__)
-  if(ret == FSAFE_SUCCESS)
-  {
-    fprintf (stderr, "%s:%d: translated %s to %s.\n",
-             __FILE__, __LINE__, path, newpath);
-  }
-  else
-  {
-    fprintf (stderr, "%s:%d: failed to translate %s.\n",
-             __FILE__, __LINE__, path);
-  }
-#endif
 
   // filename couldn't be "found", but there were no security issues
   if(ret == -FSAFE_MATCH_FAILED)

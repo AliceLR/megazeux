@@ -2100,6 +2100,14 @@ void title_screen(World *mzx_world)
 
   do
   {
+    // Focus on center
+    if(fadein)
+    {
+      int x, y;
+      set_screen_coords(640/2, 350/2, &x, &y);
+      focus_pixel(x, y);
+    }
+
     // Update
     if(mzx_world->active)
     {
