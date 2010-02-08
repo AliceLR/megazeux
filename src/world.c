@@ -310,7 +310,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
     }
 
     // Sprite data
-    for(i = 0; i < 256; i++)
+    for(i = 0; i < MAX_SPRITES; i++)
     {
       fputw((mzx_world->sprite_list[i])->x, fp);
       fputw((mzx_world->sprite_list[i])->y, fp);
@@ -332,10 +332,8 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
     // collision info
     fputw(mzx_world->collision_count, fp);
 
-    for(i = 0; i < 256; i++)
-    {
+    for(i = 0; i < MAX_SPRITES; i++)
       fputw(mzx_world->collision_list[i], fp);
-    }
 
     // Multiplier
     fputw(mzx_world->multiplier, fp);
@@ -935,8 +933,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     num_strings = fgetd(fp);
     mzx_world->num_strings = num_strings;
     mzx_world->num_strings_allocated = num_strings;
-    mzx_world->string_list =
-     (mzx_string **)malloc(sizeof(mzx_string *) * num_strings);
+    mzx_world->string_list = calloc(num_strings, sizeof(mzx_string *));
 
     for(i = 0; i < num_strings; i++)
     {
@@ -944,19 +941,17 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     }
 
     // Allocate space for sprites and clist
-    mzx_world->num_sprites = 256;
-    mzx_world->sprite_list = (Sprite **)malloc(sizeof(Sprite *) * 256);
+    mzx_world->num_sprites = MAX_SPRITES;
+    mzx_world->sprite_list = calloc(MAX_SPRITES, sizeof(Sprite *));
 
     for(i = 0; i < 256; i++)
-    {
-      mzx_world->sprite_list[i] = (Sprite *)malloc(sizeof(Sprite));
-      memset(mzx_world->sprite_list[i], 0, sizeof(Sprite));
-    }
-    mzx_world->collision_list = (int *)malloc(sizeof(int) * 256);
+      mzx_world->sprite_list[i] = calloc(1, sizeof(Sprite));
+
+    mzx_world->collision_list = calloc(MAX_SPRITES, sizeof(int));
     mzx_world->sprite_num = 0;
 
     // Sprite data
-    for(i = 0; i < 256; i++)
+    for(i = 0; i < MAX_SPRITES; i++)
     {
       (mzx_world->sprite_list[i])->x = fgetw(fp);
       (mzx_world->sprite_list[i])->y = fgetw(fp);
@@ -979,10 +974,8 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     // collision info
     mzx_world->collision_count = fgetw(fp);
 
-    for(i = 0; i < 256; i++)
-    {
+    for(i = 0; i < MAX_SPRITES; i++)
       mzx_world->collision_list[i] = fgetw(fp);
-    }
 
     // Multiplier
     mzx_world->multiplier = fgetw(fp);
@@ -1335,15 +1328,16 @@ static void default_global_data(World *mzx_world)
   int i;
 
   // Allocate space for sprites and give them default values (all 0's)
-  mzx_world->num_sprites = 256;
-  mzx_world->sprite_list = (Sprite **)malloc(sizeof(Sprite *) * 256);
+  mzx_world->num_sprites = MAX_SPRITES;
+  mzx_world->sprite_list = calloc(MAX_SPRITES, sizeof(Sprite *));
 
   for(i = 0; i < 256; i++)
   {
     mzx_world->sprite_list[i] = (Sprite *)malloc(sizeof(Sprite));
     memset(mzx_world->sprite_list[i], 0, sizeof(Sprite));
   }
-  mzx_world->collision_list = (int *)malloc(sizeof(int) * 256);
+
+  mzx_world->collision_list = calloc(MAX_SPRITES, sizeof(int));
   mzx_world->sprite_num = 0;
 
   // Set some default counter values
