@@ -36,6 +36,10 @@ __M_BEGIN_DECLS
 #include "modplug.h"
 #endif
 
+#ifdef CONFIG_PTHREAD_MUTEXES
+#include "pthread.h"
+#endif
+
 typedef struct _audio_stream audio_stream;
 
 struct _audio_stream

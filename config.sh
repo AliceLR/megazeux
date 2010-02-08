@@ -277,8 +277,8 @@ fi
 #
 # X11 support (linked against and needs headers installed)
 #
-if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "linux-static" \
-  -o "$PLATFORM" = "darwin" ]; then
+if [ "$PLATFORM" = "linux"  -o "$PLATFORM" = "linux-static" \
+  -o "$PLATFORM" = "darwin" -o "$PLATFORM" = "obsd" ]; then
 	# attempt auto-detection
 	if [ "$X11" = "true" ]; then
 		# try to run X
@@ -357,7 +357,8 @@ fi
 #
 # Force-enable PTHREAD on linux
 #
-if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "linux-static" ]; then
+if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "linux-static" \
+  -o "$PLATFORM" = "obsd" ]; then
 	echo "Force-enabling pthread on Linux platforms."
 	PTHREAD="true"
 fi

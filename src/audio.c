@@ -36,10 +36,6 @@
 #include "fsafeopen.h"
 #include "delay.h"
 
-#ifdef CONFIG_PTHREAD_MUTEXES
-#include "pthread.h"
-#endif
-
 #ifdef CONFIG_TREMOR
 #include <tremor/ivorbiscodec.h>
 #include <tremor/ivorbisfile.h>
