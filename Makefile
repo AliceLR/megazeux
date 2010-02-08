@@ -25,7 +25,7 @@ SDL_CFLAGS  ?= `sdl-config --cflags`
 SDL_LDFLAGS ?= `sdl-config --libs`
 
 VORBIS_CFLAGS  ?= -I${PREFIX}/include
-ifeq (${TREMOR},0)
+ifneq (${TREMOR},1)
 VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisfile -lvorbis -logg
 else
 VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisidec
