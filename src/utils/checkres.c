@@ -160,7 +160,7 @@ static const char *decode_status(status_t status)
 static status_t parse_board_direct(FILE *f)
 {
   int i, j, num_robots, skip_rle_blocks = 6;
-  char tmp[256], tmp2[256];
+  char tmp[256], tmp2[256], *str;
   status_t ret;
 
   // junk the undocument (and unused) board_mode
@@ -335,14 +335,19 @@ static status_t parse_board_direct(FILE *f)
           if(fread(tmp, 1, str_len, f) != (size_t)str_len)
             return FREAD_FAILED;
 
-          // FIXME: Should only match pairs?
-          if(!strstr(tmp, "&"))
-              break;
+          str = strtok(tmp, "&");
+          while(str)
+          {
+            debug("PLAY (class): %s\n", str);
+            ret = add_to_hash_table(str);
+            if (ret != SUCCESS)
+              return ret;
 
-          debug("PLAY (class): %s\n", tmp);
-          ret = add_to_hash_table(tmp);
-          if (ret != SUCCESS)
-            return ret;
+            // tokenise twice, because we only care about
+            // every _other '&'; e.g. &sam.sam&ff&sam2.sam&ee
+            str = strtok(NULL, "&");
+            str = strtok(NULL, "&");
+          }
           break;
 
         case 0xc8:
