@@ -65,6 +65,7 @@ typedef struct stream_info
 			unsigned long int index;
 			unsigned char *buf;
 			unsigned long int len;
+      unzFile f;
 		} buffer;
 	} stream;
 } stream_t;
@@ -81,7 +82,8 @@ typedef enum status
   PROTECTED_WORLD,
   MAGIC_CHECK_FAILED,
   UNZ_FAILED,
-  NO_WORLD
+  NO_WORLD,
+  MISSING_FILE
 }
 status_t;
 
@@ -152,7 +154,7 @@ static status_t add_to_hash_table(char *stack_str)
 static status_t s_open(const char *filename, const char *mode, stream_t **s)
 {
 	*s = (stream_t *)malloc(sizeof(stream_t));
-	if(!strncmp(filename + strlen(filename) - 3, "zip", 3))
+	if(!strcasecmp(filename + strlen(filename) - 3, "zip"))
 	{
 		(*s)->type = BUFFER_STREAM;
 		unzFile f = unzOpen(filename);
@@ -174,7 +176,7 @@ static status_t s_open(const char *filename, const char *mode, stream_t **s)
 			char fname[FILENAME_MAX];
 			unz_file_info info;
 			unzGetCurrentFileInfo(f, &info, fname, FILENAME_MAX, NULL, 0, NULL, 0);
-			if(!strncmp(fname + strlen(fname) - 3, "mzx", 3))
+			if(!strcasecmp(fname + strlen(fname) - 3, "mzx"))
 			{
 				if(unzOpenCurrentFile(f) == UNZ_OK)
 				{
@@ -215,7 +217,7 @@ static status_t s_open(const char *filename, const char *mode, stream_t **s)
 			unzClose(f);
 			return NO_WORLD;
 		}
-		else unzClose(f);
+		else (*s)->stream.buffer.f = f;
 	}
 	else
 	{
@@ -236,6 +238,7 @@ static int sclose(stream_t *s)
 			free(s);
 			return fclose(f);
 		case BUFFER_STREAM:
+      unzClose(s->stream.buffer.f);
 			free(s->stream.buffer.buf);
 			free(s);
 			return 0;
@@ -709,6 +712,26 @@ static status_t parse_world(stream_t *s)
   return ret;
 }
 
+static status_t file_exists(const char *file, stream_t *s)
+{
+  switch(s->type)
+  {
+    case FILE_STREAM:
+    {
+      char newpath[MAX_PATH];
+      if(fsafetranslate(file, newpath) == FSAFE_SUCCESS)
+        return SUCCESS;
+      else return MISSING_FILE;
+    }
+    case BUFFER_STREAM:
+      if(unzLocateFile(s->stream.buffer.f, file, 2) == UNZ_OK)
+        return SUCCESS;
+      else return MISSING_FILE;
+    default:
+      return MISSING_FILE;
+  }
+}
+
 int main(int argc, char *argv[])
 {
   const char *found_append = " - FOUND", *not_found_append = " - NOT FOUND";
@@ -763,9 +786,7 @@ int main(int argc, char *argv[])
       ret = parse_world(s);
     else
       ret = parse_board(s);
-
-    sclose(s);
-
+    
     for(i = 0; i < HASH_TABLE_SIZE; i++)
     {
       char **p = hash_table[i];
@@ -777,11 +798,10 @@ int main(int argc, char *argv[])
       {
         if(ret == SUCCESS)
         {
-          char newpath[MAX_PATH];
-          if(fsafetranslate(*p, newpath) == FSAFE_SUCCESS)
+          if(file_exists(*p, s) == SUCCESS)
           {
             if(print_all_files)
-              fprintf(stdout, "%s%s\n", newpath, found_append);
+              fprintf(stdout, "%s%s\n", *p, found_append);
           }
           else
             fprintf(stdout, "%s%s\n", *p, not_found_append);
@@ -793,6 +813,8 @@ int main(int argc, char *argv[])
 
       free(hash_table[i]);
     }
+    
+    sclose(s);
   }
 
   if(ret != SUCCESS)
