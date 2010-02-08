@@ -48,9 +48,12 @@ USERS
 + Fix a bug on Linux where fclose() on a robot-opened file could, on world
   reload, occassionally crash (due to a stale handle). Fixes loading Toayarin
   saves multiple times in a row.
-+ A new option "gl_vsync" has been added to allow the SDL "flip on vsync"
++ The new option "gl_vsync" has been added to allow the SDL "flip on vsync"
   in the OpenGL renderers to be forcibly enabled or disabled. This fixes a
   problem where speed 1 would only be as fast as the video refresh rate.
++ Setting the music volume to 0 (when using the ModPlug engine) now ensures
+  that no music is audible. Previously, setting the volume to 0 would be
+  equivalent to setting the volume to 1, which was still audible.
 
 DEVELOPERS
 

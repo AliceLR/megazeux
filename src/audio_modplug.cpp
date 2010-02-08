@@ -54,6 +54,15 @@ static Uint32 mp_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
   read_len =
    ModPlug_Read(mp_stream->module_data, read_buffer, read_wanted);
 
+  if(!a_src->volume)
+  {
+    // Modplug doesn't support a volume of zero; the lowest volume usable
+    // via SetMasterVolume is 1. If the volume is 0, zero the buffer we
+    // just read. We read the buffer to ensure the mod still progresses
+    // in the background, maintaining the old semantics.
+    memset(read_buffer, 0, read_len);
+  }
+
   if(read_len < read_wanted)
   {
     // Modplug still fails to repeat on some mods, even after already
@@ -67,6 +76,7 @@ static Uint32 mp_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
     }
     else
     {
+      // FIXME: I think this memset should always be done?
       memset(read_buffer + read_len, 0, read_wanted - read_len);
       r_val = 1;
     }
