@@ -148,7 +148,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
   {
     // Write this MZX's version string
     fputs("MZS", fp);
-    fputc((WORLD_VERSION & 0xff00) >> 8, fp);
+    fputc((WORLD_VERSION >> 8) & 0xff, fp);
     fputc(WORLD_VERSION & 0xff, fp);
 
     // Write the version of the loaded world for this SAV
@@ -165,8 +165,8 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
 
     // Write this MZX's version string
     fputc('M', fp);
-    fputc((WORLD_VERSION & 0xff00) >> 8, fp);
-    fputc((WORLD_VERSION & 0xff), fp);
+    fputc((WORLD_VERSION >> 8) & 0xff, fp);
+    fputc(WORLD_VERSION & 0xff, fp);
   }
 
   // Save charset

@@ -34,10 +34,10 @@
     fflush(stderr); \
   }
 
-#define WORLD_VERSION_HI (WORLD_VERSION & 0xff00) >> 8
+#define WORLD_VERSION_HI ((WORLD_VERSION >> 8) & 0xff)
 #define WORLD_VERSION_LO (WORLD_VERSION & 0xff)
 
-#define WORLD_VERSION_PREV_HI (WORLD_VERSION_PREV & 0xff00) >> 8
+#define WORLD_VERSION_PREV_HI ((WORLD_VERSION_PREV >> 8) & 0xff)
 #define WORLD_VERSION_PREV_LO (WORLD_VERSION_PREV & 0xff)
 
 int main(int argc, char *argv[])
