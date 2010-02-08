@@ -123,7 +123,7 @@ createUnifiedDMG() {
 
 	mkdir -p ${CONTENTS}/MacOS &&
 	mkdir -p ${CONTENTS}/Resources &&
-	cp -RP ../Frameworks ${CONTENTS} &&
+	cp -RP $HOME/workspace/Frameworks ${CONTENTS} &&
 	cp $TARGET ${CONTENTS}/MacOS/MegaZeux &&
 	cp $BINARY_DEPS $HELP_FILE ${CONTENTS}/Resources &&
 	cp contrib/icons/quantump.icns ${CONTENTS}/Resources/MegaZeux.icns &&
