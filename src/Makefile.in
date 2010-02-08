@@ -19,27 +19,11 @@ mzx_ldflags := ${SDL_LDFLAGS} ${mzx_ldflags}
 
 txt2hlp_base = src/utils
 txt2hlp = ${txt2hlp_base}/txt2hlp${BINEXT}
-txt2hlp_objs = ${txt2hlp_base}/txt2hlp.o
+txt2hlp_objs = ${txt2hlp_base}/txt2hlp.${o}
 
 checkres_base = src/utils
 checkres = ${checkres_base}/checkres${BINEXT}
-checkres_objs = ${checkres_base}/checkres.o
-
-${txt2hlp_base}/%.o ${txt2hlp_base}/%.dbg.o: ${txt2hlp_base}/%.c
-ifeq (${V},1)
-	${HOST_CC} ${CFLAGS} -c $< -o $@
-else
-	@echo "  CC      " $<
-	@${HOST_CC} ${CFLAGS} -c $< -o $@
-endif
-
-${checkres_base}/%.o ${checkres_base}/%.dbg.o: ${checkres_base}/%.c
-ifeq (${V},1)
-	${HOST_CC} ${CFLAGS} -c $< -o $@
-else
-	@echo "  CC      " $<
-	@${HOST_CC} ${CFLAGS} -c $< -o $@
-endif
+checkres_objs = ${checkres_base}/checkres.${o} ${mzx_base}/fsafeopen.${o}
 
 ${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.c
 ifeq (${V},1)

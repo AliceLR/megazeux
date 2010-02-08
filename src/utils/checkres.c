@@ -23,6 +23,12 @@
 #include <string.h>
 #include <stdio.h>
 
+// From MZX itself
+#include <const.h>
+#include <fsafeopen.h>
+
+#undef DEBUG
+
 #ifdef DEBUG
 #define debug(...) fprintf(stdout, __VA_ARGS__)
 #else
@@ -36,6 +42,8 @@
 
 #define WORLD_PROTECTED_OFFSET  BOARD_NAME_SIZE
 #define WORLD_NUM_BOARDS_OFFSET 4234
+
+#define HASH_TABLE_SIZE         100
 
 typedef enum status
 {
@@ -57,6 +65,66 @@ static struct board
   unsigned int offset;
 }
 board_list[MAX_BOARDS];
+
+static char **hash_table[HASH_TABLE_SIZE];
+
+//From http://nothings.org/stb.h, by Sean
+static unsigned int stb_hash(char *str)
+{
+   unsigned int hash = 0;
+   while(*str)
+      hash = (hash << 7) + (hash >> 25) + *str++;
+   return hash + (hash >> 16);
+}
+
+static status_t add_to_hash_table(char *stack_str)
+{
+  unsigned int slot;
+  size_t len;
+  char *str;
+
+  len = strlen(stack_str);
+  if(!len)
+    return MALLOC_FAILED;
+
+  str = malloc(len + 1);
+  if(!str)
+    return MALLOC_FAILED;
+
+  strcpy(str, stack_str);
+
+  slot = stb_hash(stack_str) % HASH_TABLE_SIZE;
+
+  if(!hash_table[slot])
+  {
+    hash_table[slot] = malloc(sizeof(char *) * 2);
+    if(!hash_table[slot])
+      return MALLOC_FAILED;
+
+    hash_table[slot][0] = str;
+    hash_table[slot][1] = NULL;
+  }
+  else
+  {
+    int count = 0;
+
+    while(hash_table[slot][count])
+    {
+      if(!strcasecmp(stack_str, hash_table[slot][count]))
+      {
+        free(str);
+        return SUCCESS;
+      }
+      count++;
+    }
+
+    hash_table[slot] = realloc(hash_table[slot], sizeof(char *) * (count + 2));
+    hash_table[slot][count] = str;
+    hash_table[slot][count + 1] = NULL;
+  }
+
+  return SUCCESS;
+}
 
 static unsigned int fgetud(FILE *f)
 {
@@ -92,15 +160,11 @@ static const char *decode_status(status_t status)
   }
 }
 
-static void check_file_exists(const char *file)
-{
-  //fprintf(stderr, "would check for \"%s\"\n", file);
-}
-
 static status_t parse_board(FILE *f)
 {
   int i, j, num_robots, skip_rle_blocks = 6;
   char tmp[256], tmp2[256];
+  status_t ret;
 
   // junk the undocument (and unused) board_mode
   fgetc(f);
@@ -152,7 +216,9 @@ static status_t parse_board(FILE *f)
   if(strlen(tmp) > 0)
   {
     debug("BOARD MOD: %s\n", tmp);
-    check_file_exists(tmp);
+    ret = add_to_hash_table(tmp);
+    if (ret != SUCCESS)
+      return ret;
   }
 
   // skip to the robot count
@@ -193,7 +259,7 @@ static status_t parse_board(FILE *f)
         case 0xa:
           str_len = fgetc(f);
 
-          if(fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
             return FREAD_FAILED;
 
           str_len = fgetc(f);
@@ -204,7 +270,7 @@ static status_t parse_board(FILE *f)
             break;
           }
 
-          if(fread(tmp2, 1, str_len, f) != str_len)
+          if(fread(tmp2, 1, str_len, f) != (size_t)str_len)
             return FREAD_FAILED;
 
           if(!strcasecmp(tmp2, "FREAD_OPEN")
@@ -215,14 +281,17 @@ static status_t parse_board(FILE *f)
             || !strncasecmp(tmp2, "LOAD_BC", 7)
             || !strncasecmp(tmp2, "LOAD_ROBOT", 10))
           {
-            fprintf(stderr, "SET: %s (%s)\n", tmp, tmp2);
+            debug("SET: %s (%s)\n", tmp, tmp2);
+            ret = add_to_hash_table(tmp);
+            if (ret != SUCCESS)
+              return ret;
           }
           break;
 
         case 0x26:
           str_len = fgetc(f);
 
-          if(fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
             return FREAD_FAILED;
 
           // FIXME: Should only match pairs?
@@ -230,6 +299,9 @@ static status_t parse_board(FILE *f)
               break;
 
           debug("MOD: %s\n", tmp);
+          ret = add_to_hash_table(tmp);
+          if (ret != SUCCESS)
+            return ret;
           break;
 
         case 0x27:
@@ -245,7 +317,7 @@ static status_t parse_board(FILE *f)
 
           str_len = fgetc(f);
 
-          if(fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
             return FREAD_FAILED;
 
           // FIXME: Should only match pairs?
@@ -253,6 +325,9 @@ static status_t parse_board(FILE *f)
               break;
 
           debug("SAM: %s\n", tmp);
+          ret = add_to_hash_table(tmp);
+          if (ret != SUCCESS)
+            return ret;
           break;
 
         case 0x2b:
@@ -260,7 +335,7 @@ static status_t parse_board(FILE *f)
         case 0x31:
           str_len = fgetc(f);
 
-          if(fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
             return FREAD_FAILED;
 
           // FIXME: Should only match pairs?
@@ -268,42 +343,57 @@ static status_t parse_board(FILE *f)
               break;
 
           debug("PLAY (class): %s\n", tmp);
+          ret = add_to_hash_table(tmp);
+          if (ret != SUCCESS)
+            return ret;
           break;
 
         case 0xc8:
           str_len = fgetc(f);
 
-          if(fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
             return FREAD_FAILED;
 
           debug("MOD FADE IN: %s\n", tmp);
+          ret = add_to_hash_table(tmp);
+          if (ret != SUCCESS)
+            return ret;
           break;
 
         case 0xd8:
           str_len = fgetc(f);
 
-          if(fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
             return FREAD_FAILED;
 
           debug("LOAD CHAR SET: %s\n", tmp);
+          ret = add_to_hash_table(tmp);
+          if (ret != SUCCESS)
+            return ret;
           break;
 
         case 0xde:
           str_len = fgetc(f);
 
-          if(fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
             return FREAD_FAILED;
 
           debug("LOAD PALETTE: %s\n", tmp);
+          ret = add_to_hash_table(tmp);
+          if (ret != SUCCESS)
+            return ret;
           break;
 
         case 0xe2:
           str_len = fgetc(f);
 
-          if(fread(tmp, 1, str_len, f) != str_len)
+          if(fread(tmp, 1, str_len, f) != (size_t)str_len)
             return FREAD_FAILED;
 
           debug("SWAP WORLD: %s\n", tmp);
+          ret = add_to_hash_table(tmp);
+          if (ret != SUCCESS)
+            return ret;
           break;
 
         default:
@@ -391,6 +481,7 @@ int main(int argc, char *argv[])
 {
   status_t ret;
   FILE *f;
+  int i;
 
   if(argc != 2)
   {
@@ -403,6 +494,27 @@ int main(int argc, char *argv[])
   {
     ret = parse_world(f);
     fclose(f);
+
+    if(ret == SUCCESS)
+    {
+      for(i = 0; i < HASH_TABLE_SIZE; i++)
+      {
+        if(!hash_table[i])
+          continue;
+
+        while(*hash_table[i])
+        {
+          char newpath[MAX_PATH];
+
+          if(fsafetranslate(*hash_table[i], newpath) == FSAFE_SUCCESS)
+            fprintf(stdout, "%s - FOUND\n", newpath);
+          else
+            fprintf(stdout, "%s - NOT FOUND\n", *hash_table[i]);
+
+          hash_table[i]++;
+        }
+      }
+    }
   }
   else
     ret = FOPEN_FAILED;
