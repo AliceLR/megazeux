@@ -1000,7 +1000,24 @@ void run_robot(World *mzx_world, int id, int x, int y)
           send_robot_id(mzx_world, id, "thud", 1);
       }
       else if(status == NO_HIT)
+      {
+        mzx_thing id;
+
         move_dir(src_board, &x, &y, walk_dir);
+
+        /* Normally, WALK doesn't end the cycle. But due to long-standing
+         * bugs in the transport() and push() functions, the board is actually
+         * updated without updating the x,y co-ordinates. Presumably, move_dir
+         * was designed to get things "back in sync". Unfortunately, because
+         * robots can enter transports, they may not be in the x,y location
+         * that move_dir recomputes. Because there is no easy way to get the
+         * updated x,y location of the robot for this cycle, we simply end the
+         * cycle if the robot enters a transport.
+         */
+        id = (mzx_thing)level_id[x + (y * board_width)];
+        if(id == TRANSPORT)
+          goto breaker;
+      }
       else
         send_robot_id(mzx_world, id, "thud", 1);
     }

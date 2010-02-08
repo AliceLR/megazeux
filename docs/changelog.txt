@@ -131,6 +131,9 @@ USERS
   cause a crash.
 + Added a config.txt (or command line) option "startup_editor" which, if set
   to a non-zero value, will start MegaZeux in the editor with a blank world.
++ Fix a bug where a robot's WALK processing, on entering a transporter, could
+  allow subsequent commands (such as GO) to corrupt the board. WALK now ends
+  the cycle in the special case that a robot goes through a transporter.
 
 DEVELOPERS
 
