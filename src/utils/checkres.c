@@ -531,9 +531,13 @@ static status_t parse_board_direct(stream_t *s)
           if(sread(tmp, 1, str_len, s) != (size_t)str_len)
             return FREAD_FAILED;
 
+          // ignore MOD *
+          if(!strcmp(tmp, "*"))
+            break;
+
           // FIXME: Should only match pairs?
           if(strstr(tmp, "&"))
-              break;
+            break;
 
           debug("MOD: %s\n", tmp);
           ret = add_to_hash_table(tmp);
