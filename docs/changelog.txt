@@ -26,6 +26,10 @@ USERS
 + Switch the Win32 package back to using the "windib" SDL video driver,
   instead of the "directx" SDL video driver. The windib.bat file has been
   replaced with directx.bat, which has opposing semantics.
++ SAM/GDMs with converted WAV/S3M counterparts of zero length will be
+  automatically re-converted. This hack can be used to procedurally
+  regenerate WAV files from SAMs, or transparently work around on-disk
+  corruption.
 
 DEVELOPERS
 
