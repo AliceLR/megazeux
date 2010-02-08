@@ -98,11 +98,11 @@ static void soft_render_graph(graphics_data *graphics)
   SDL_Surface *screen = graphics->render_data;
   Uint32 *pixels = (Uint32 *)screen->pixels;
   Uint32 pitch = screen->pitch;
-  Uint32 bpp = graphics->bits_per_pixel;
+  Uint32 bpp = screen->format->BitsPerPixel;
   Uint32 mode = graphics->screen_mode;
 
   pixels += pitch * ((screen->h - 350) / 8);
-  pixels += (screen->w - 640) / bpp;
+  pixels += (screen->w - 640) * bpp / 64;
 
   SDL_LockSurface(screen);
   if(bpp == 8)
@@ -125,11 +125,11 @@ static void soft_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
   SDL_Surface *screen = graphics->render_data;
   Uint32 *pixels = (Uint32 *)screen->pixels;
   Uint32 pitch = screen->pitch;
-  Uint32 bpp = graphics->bits_per_pixel;
+  Uint32 bpp = screen->format->BitsPerPixel;
   Uint32 flatcolor;
 
   pixels += pitch * ((screen->h - 350) / 8);
-  pixels += (screen->w - 640) / bpp;
+  pixels += (screen->w - 640) * bpp / 64;
 
   if(bpp == 8)
     flatcolor = (color << 24) | (color << 16) | (color << 8) | color;
@@ -150,11 +150,11 @@ static void soft_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
   SDL_Surface *screen = graphics->render_data;
   Uint32 *pixels = (Uint32 *)screen->pixels;
   Uint32 pitch = screen->pitch;
-  Uint32 bpp = graphics->bits_per_pixel;
+  Uint32 bpp = screen->format->BitsPerPixel;
   Uint32 mask;
 
   pixels += pitch * ((screen->h - 350) / 8);
-  pixels += (screen->w - 640) / bpp;
+  pixels += (screen->w - 640) * bpp / 64;
 
   if((bpp == 8) && !graphics->screen_mode)
     mask = 0x0F0F0F0F;
