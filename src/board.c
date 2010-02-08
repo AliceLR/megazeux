@@ -584,7 +584,7 @@ void replace_current_board(World *mzx_world, char *name)
   version_string[3] = 0;
 
   // First two bytes are the same for any valid board
-  if(first_byte != 0xff && version_string[0] == 'M')
+  if(first_byte == 0xff && version_string[0] == 'M')
   {
     // MB2 are versions <= 2.51s1, otherwise it's M\x02\x?? where
     // ?? is some version less than or equal to this MZX's version
