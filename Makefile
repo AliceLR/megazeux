@@ -76,8 +76,7 @@ endif
 
 include src/Makefile.in
 
-clean: ${gdm2s3m}_clean ${libmodplug}_clean ${unzip}_clean
-clean: ${mzx}_clean utils_clean
+clean: ${mzx}_clean
 
 distclean: clean
 	@echo "  DISTCLEAN"

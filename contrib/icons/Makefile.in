@@ -1,0 +1,37 @@
+##
+# icons Makefile fragment
+##
+
+.PHONY: ${icons}_clean
+
+.SUFFIXES: .rc
+
+icons_base = contrib/icons
+icons = ${icons_base}/icons.o
+
+icons_objs = ${icons_base}/quantump.${o}
+
+${icons_base}/%.o ${icons_base}/%.dbg.o: ${icons_base}/%.rc
+ifeq (${V},1)
+	${WINDRES} -i $< -o $@
+else
+	@echo "  WINDRES " $<
+	@${WINDRES} -i $< -o $@
+endif
+
+ifeq (${EMBED_ICONS},1)
+${icons}: ${icons_objs}
+ifeq (${V},1)
+	mv ${icons_objs} ${icons}
+else
+	@echo "  MV      " ${icons_objs} ${icons}
+	@mv ${icons_objs} ${icons}
+endif
+else
+${icons}:
+	@echo "--> Embedding of icon branding disabled."
+endif
+
+${icons}_clean:
+	@echo "  CLEAN   " ${icons_base}
+	@rm -f ${icons}

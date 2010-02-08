@@ -3,6 +3,7 @@
 ##
 
 include contrib/gdm2s3m/src/Makefile.in
+include contrib/icons/Makefile.in
 include contrib/libmodplug/src/Makefile.in
 include contrib/unzip/src/Makefile.in
 
@@ -122,6 +123,10 @@ ifeq (${BUILD_NDS},1)
 mzx_objs += ${mzx_base}/render_nds.${o}
 endif
 
+ifeq (${EMBED_ICONS},1)
+mzx_ldflags := ${icons} ${mzx_ldflags}
+endif
+
 ifeq (${BUILD_MODPLUG},1)
 mzx_flags += -I${gdm2s3m_base}
 mzx_flags += -I${libmodplug_base} -I${libmodplug_base}/libmodplug
@@ -196,7 +201,7 @@ ${txt2hlp}:
 
 endif
 
-${mzx}: ${gdm2s3m} ${libmodplug} ${unzip} ${mzx_objs}
+${mzx}: ${gdm2s3m} ${icons} ${libmodplug} ${unzip} ${mzx_objs}
 ifeq (${V},1)
 	${CC} ${mzx_objs} -o ${mzx} ${mzx_ldflags}
 else
@@ -223,6 +228,7 @@ ${checkres}_clean:
 	@echo "  CLEAN   " ${checkres}
 	@rm -f ${checkres_objs} ${checkres} $(checkres_objs:.o=.d)
 
-${mzx}_clean:
+${mzx}_clean: ${gdm2s3m}_clean ${icons}_clean ${libmodplug}_clean ${unzip}_clean
+${mzx}_clean: utils_clean
 	@echo "  CLEAN   " ${mzx_base}
 	@rm -f ${mzx_objs} ${mzx} $(mzx_objs:.o=.d)

@@ -551,7 +551,14 @@ fi
 if [ "$ICON" = "true" ]; then
 	echo "Icon branding enabled."
 	echo "#define CONFIG_ICON" >> src/config.h
-	echo "ICON=1" >> Makefile.platform
+	#echo "BUILD_ICONS=1" >> Makefile.platform
+
+	#
+	# On Windows we want the icons to be compiled in
+	#
+	if [ "$PLATFORM" = "mingw32" -o "$PLATFORM" = "mingw64" ]; then
+		echo "EMBED_ICONS=1" >> Makefile.platform
+	fi
 
 	# FIXME: Move this elsewhere..
 	if [ "$X11_PLATFORM" = "true" ]; then

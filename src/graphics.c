@@ -38,10 +38,17 @@
 #include "renderers.h"
 #include "util.h"
 
-#if !defined(__WIN32__) && defined(CONFIG_ICON)
+#ifdef CONFIG_ICON
+
 #include "SDL_syswm.h"
+
+#ifdef __WIN32__
+#include <windows.h>
+#else
 #include "SDL_image.h"
 #endif
+
+#endif // CONFIG_ICON
 
 #ifndef VERSION
 #error Must define VERSION for MegaZeux version string
@@ -812,8 +819,31 @@ int init_video(config_info *conf)
       return false;
   }
 
-#if !defined(__WIN32__) && defined(CONFIG_ICON)
+#ifdef CONFIG_ICON
+#ifdef __WIN32__
   {
+    /* Roll our own icon code; the SDL stuff is a mess and for some
+     * reason limits us to 256 colour icons (with keying but no alpha).
+     *
+     * We also pull off some nifty WIN32 hackery to load the executable's
+     * icon resource; saves having an external dependency.
+     */
+    HICON icon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(1));
+    if(icon)
+    {
+      SDL_SysWMinfo info;
+
+      SDL_VERSION(&info.version);
+      SDL_GetWMInfo(&info);
+
+      SetClassLongPtr(info.window, GCLP_HICON, (LONG_PTR)icon);
+    }
+  }
+#else // !__WIN32__
+  {
+    /* Pull in SDL_image here; we should probably move IMG_png.c to
+     * contrib as soon as possible.
+     */
     SDL_Surface *icon = IMG_Load("/usr/share/icons/megazeux.png");
     if(icon)
     {
@@ -821,7 +851,8 @@ int init_video(config_info *conf)
       SDL_FreeSurface(icon);
     }
   }
-#endif // !__WIN32__ && CONFIG_ICON
+#endif // __WIN32__
+#endif // CONFIG_ICON
 
   ec_load_set_secondary(mzx_res_get_by_id(MZX_DEFAULT_CHR),
    graphics.default_charset);
