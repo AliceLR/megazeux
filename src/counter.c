@@ -2236,6 +2236,8 @@ int set_counter_special(World *mzx_world, int spec_type,
 
           if(cur_robot != NULL)
           {
+            fprintf(stderr, "loaded program length is %d\n", new_size);
+
             reallocate_robot(cur_robot, new_size);
             clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
 
@@ -2317,14 +2319,13 @@ int set_counter_special(World *mzx_world, int spec_type,
       if(value != -1)
         robot_id = value;
 
-      cur_robot = mzx_world->current_board->robot_list[robot_id];
-
       if(robot_id <= src_board->num_robots)
       {
         cur_robot = mzx_world->current_board->robot_list[robot_id];
 
         if(cur_robot != NULL)
         {
+          fprintf(stderr, "program length is %d\n", cur_robot->program_length);
           disassemble_file(char_value, cur_robot->program,
            allow_extras, base);
         }

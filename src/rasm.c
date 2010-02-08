@@ -1926,7 +1926,7 @@ char *assemble_file(char *name, int *size)
   // trim the buffer to match the output size
   buffer = realloc(buffer, current_size + 1);
   buffer[current_size] = 0;
-  *size = current_size + 1;
+  *size = current_size;
 
 exit_out:
   fclose(input_file);
