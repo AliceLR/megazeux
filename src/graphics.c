@@ -243,19 +243,6 @@ static Uint32 make_palette(SDL_Color *palette)
   }
 }
 
-void save_editor_palette(void)
-{
-  if(graphics.screen_mode < 2)
-    memcpy(graphics.editor_backup_palette, graphics.palette,
-     sizeof(SDL_Color) * SMZX_PAL_SIZE);
-}
-
-void load_editor_palette(void)
-{
-  memcpy(graphics.palette, graphics.editor_backup_palette,
-   sizeof(SDL_Color) * SMZX_PAL_SIZE);
-}
-
 void update_palette(void)
 {
   SDL_Color new_palette[SMZX_PAL_SIZE];
@@ -1472,6 +1459,19 @@ void set_mouse_mul(int width_mul, int height_mul)
 }
 
 #ifdef CONFIG_EDITOR
+
+void save_editor_palette(void)
+{
+  if(graphics.screen_mode < 2)
+    memcpy(graphics.editor_backup_palette, graphics.palette,
+     sizeof(SDL_Color) * SMZX_PAL_SIZE);
+}
+
+void load_editor_palette(void)
+{
+  memcpy(graphics.palette, graphics.editor_backup_palette,
+   sizeof(SDL_Color) * SMZX_PAL_SIZE);
+}
 
 void save_palette(char *fname)
 {

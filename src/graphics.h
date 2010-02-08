@@ -197,8 +197,6 @@ void vquick_fadeout(void);
 void insta_fadein(void);
 void insta_fadeout(void);
 void default_palette(void);
-void save_editor_palette(void);
-void load_editor_palette(void);
 
 void m_hide(void);
 void m_show(void);
@@ -220,6 +218,8 @@ void ec_load_char_mzx(Uint32 char_number);
 void ec_load_mzx(void);
 void ec_load_smzx(void);
 void save_palette(char *fname);
+void save_editor_palette(void);
+void load_editor_palette(void);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS
