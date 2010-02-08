@@ -78,6 +78,8 @@ name                      r/w      g/n/f/b    i
 "MOD_FREQUENCY"           r w         b       *
 "MOD_ORDER"               r           b       *
 "MOD_POSITION"            r w         b       *
+"MOUSEPX"                 r w         b       *
+"MOUSEPY"                 r w         b       *
 "MOUSEX"                  r w         b       *
 "MOUSEY"                  r w         b       *
 "MULTIPLIER"              r w         b       *

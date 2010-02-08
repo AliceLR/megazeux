@@ -30,7 +30,6 @@ MZX REQUESTS:
 -Read-only viewport height and viewport width characters. [Exo skipped]
 -Hotkeys to instantly jump to the next and previous boards. [Exo skipped]
 -[+Terryn]Board setting to toggle freezing the player when spacebar is held down (on by default).
--[+Exo]Ability to set "MOD *" without nuking the current playing mod.
 -MOD_LENGTH counter (based on current mod row or PCM sample).
 -Charsets/palettes bound to the current board via displaying in the editor.
 -Editing of all bomb anim chars outside of #1 in global's "Edit Chars" menu. (CHAR ID values 169-175).

@@ -79,8 +79,7 @@ You should now be reading help on Controls.
 
 Press F1 within help to jump to this section. Press Alt+F1
 within help to jump to the Table of Contents. (Table of Major
-Help Topics) Press ESC to exit help. Press Alt+P to print out
-the current help section.
+Help Topics) Press ESC to exit help.
 
 >#MAIN.HLP:072:Table of Contents
 #1ST_TIME.HLP
@@ -459,12 +458,6 @@ off. Unlike saving, the option to load is always present.
 NOTE: A few games may save or load automatically, and
 high-caliber games may have completely different methods of
 saving and loading games.
-
-NOTE: Saving or loading save files made in different numbered
-versions of MegaZeux is not encouraged (e.g. loading a save in
-2.81c made in 2.81h is fully expected to work, but not loading
-a save made in 2.70). It is possible to do so, but is very
-poorly tested and at your own risk.
 
 F5 or Ins - Toggle Bomb Type
 This will switch your current bomb type between High Strength
@@ -1427,7 +1420,8 @@ A: It's a matter of personal preference. Most people prefer
 .  Mad Tracker. Be advised that the DOS-based trackers like IT
 .  and FT2 might not work well with an NT-based Windows system.
 .
-.  You Linuxites may want to try Schism Tracker or Sk@@le.
+.  You Linuxites may want to try Schism Tracker, Milky Tracker
+.  or Sk@@le.
 .
 .  If you don't mind pumping up your game's filesize, you could
 .  use any normal composition software (like FL Studio) and
@@ -1506,14 +1500,15 @@ $Quantity Limitations
 
 Item:           Largest number allowed:
 
-Robots          255 per board plus Global Robot
-Scrolls/signs   255 per board
-Sensors         255 per board
-Boards          250 per world
-Local Counters   32 per Robot plus specialised local counters
+Robots             255 per board plus Global Robot
+Scrolls/Signs      255 per board
+Sensors            255 per board
+Boards             250 per world
+Local Counters     32 per Robot plus specialised local counters
                 (loopcount, lava_walk, bullettype)
-
-The amount one can put on a single editor line is 241 chars.
+Robot Name Length  14 characters
+String Length      1,000,000 characters
+Editor Line Length 241 characters (INCLUDING "extra" words)
 
 $Theoretical Limitations
 
@@ -1525,8 +1520,8 @@ the platform (e.g. between 32 or 64-bit) but is sufficiently
 large. You should be fine putting this into the hundreds of
 thousands if not millions.
 
-The first two can take up 128MB of RAM; the last can take up
-gigabytes of RAM. These limitations are theoretical because
+The first two can take up 128MB of RAM; the last item can take
+up gigabytes of RAM. These limitations are theoretical because
 of the utter improbability of meeting these limits and the
 amount of RAM they consume.
 
@@ -2046,8 +2041,8 @@ facilities and charset counters.
 :AltY:~EAlt+Y - Debug Mode
 
 Alt+Y will toggle a red box in the lower corner of the screen.
-This box shows, on labeled lines, the current position of the
-cursor the current Robot memory situation, and the presently
+This box shows (on labeled lines) the current position of the
+cursor, the current Robot memory situation, and the presently
 playing module. This is the same as F6 in-game.
 
 :AltZ:~EAlt+Z - Clear (board)
@@ -2499,10 +2494,10 @@ setting.)
 $Fire Burns Space/Fakes/Trees/Brown
 
 These options determine what fire will and will not burn
-through. Space is empty space, NOT floors; Fakes includes
-fakes, floors, carpets, and tiles. Trees are self-explanatory.
-Brown is anything other than the player or a Robot/sign/Scroll
-that is colored brown (that is, anything with a color of cX6).
+through. Space is empty space, NOT floors; Fakes include fakes,
+floors, carpets, and tiles. Trees are self-explanatory. Brown
+is anything other than the player or a Robot/sign/Scroll that
+is colored brown (that is, anything with a color of cX6).
 
 $Forest to Floor
 
@@ -2559,7 +2554,7 @@ player exits and re-enters the board.
 $Explosions to Space/Ash/Fire
 
 This determines what explosions will leave in their wake: Empty
-space, ash (dark gray floors, in other words floors colored
+space, ash (dark gray floors - in other words, floors colored
 cX8), or burning fire.
 
 $Can Save/Can't Save/Can Save on Sensors
@@ -2577,7 +2572,7 @@ This sets the type of overlay for the current board. No overlay
 means just that- overlay mode is completely off. Normal overlay
 is a normal overlay that scrolls with the board. Static overlay
 is a normal overlay that remains in a fixed position even when
-the board Scrolls. A Transparent overlay is similar to no
+the board scrolls. A Transparent overlay is similar to no
 overlay in that none is shown, but it allows you to edit it so
 that one may appear later. Overlays are discussed in full in
 another section.
@@ -2785,9 +2780,9 @@ $"&FILENAME.WAV&3C"
 .  string, and ignores the rest of the string IF digitized
 .  music/sound is on. For example:
 
-$"&SHOT.WAV&C_+C-C"
+$"&SHOT.WAV&6F#_+C-C"
 
-.  The above will play SHOT.WAV at frequency 428 (middle C)
+.  The above will play SHOT.WAV at 48KHz (F-sharp, 6th octave)
 .  if digitized sound is on, OTHERWISE it will play the normal
 .  shooting sound of "+C-C".
 
@@ -2983,7 +2978,7 @@ Floor, Text, etc. Save as MZM will save the block as a
 layer-type MZM file. Destinations for Move and Copy can
 overlap the original block safely. Ctrl+Dir is especially
 helpful when doing a repeated copy block; it moves the cursor
-the width of the block ensuring no overlap when pasting.
+the width of the block, ensuring no overlap when pasting.
 
 Like normal Block functions, one can now copy between boards by
 selecting the board when the editor prompts the user for the
@@ -3211,9 +3206,10 @@ due to version conflicts, file errors, etc.
 
 :erh:~AMax rename attempts exceeded (100), giving up.
 
-MegaZeux attempted to re-name a module over 12 characters long,
+MegaZeux attempted to rename a module over 12 characters long,
 but could not. This is possibly due to an attempt to overwrite
-a read-only file.
+a read-only file, or trying to rename a module on read-only
+media.
 
 :eri:~AOverlay mode is not on (see Board Info)
 
@@ -3563,8 +3559,9 @@ Randomly any direction that the Robot is blocked in.
 ~BSEEK
 
 The direction closest towards the player. If the player is on a
-diagonal, it will randomly be one of the two directions
-comprising the diagonal.
+diagonal and is equally far away from the Robot vertically and
+horizontally, the direction will randomly be one of the two
+directions comprising the diagonal.
 
 ~BFLOW
 
@@ -4077,11 +4074,12 @@ command reference is split into two parts.
 >#COMMAND2.HLP:_m5:MOD FADE IN "file"
 >#COMMAND2.HLP:_m6:MOD FADE OUT
 >#COMMAND2.HLP:_m7:MOD SAM # #
->_m8:MODULO "counter" #
->#COMMAND2.HLP:_m9:MOVE ALL [color] [thing] [param] [dir]
->_m0:MOVE PLAYER [dir]
->_mA:MOVE PLAYER [dir] "label"
->_mB:MULTIPLY "counter" #
+>:_m8:MOD "*"
+>_m9:MODULO "counter" #
+>#COMMAND2.HLP:_m0:MOVE ALL [color] [thing] [param] [dir]
+>_mA:MOVE PLAYER [dir]
+>_mB:MOVE PLAYER [dir] "label"
+>_mC:MULTIPLY "counter" #
 >#COMMAND2.HLP:_n1:NEUTRAL BULLETCOLOR [color]
 >#COMMAND2.HLP:_n2:NEUTRAL BULLETE [char]
 >#COMMAND2.HLP:_n3:NEUTRAL BULLETN [char]
@@ -4431,7 +4429,7 @@ and ~ABECOME NONPUSHABLE~F.
 
 :_c2:~ACHANGE [color] [thing] [param] [color] [thing] [param]
 
-All onscreen objects of the given type will become objects of
+All on-board objects of the given type will become objects of
 a new type. This command, if used too much, can slow down the
 game.
 
@@ -4462,6 +4460,16 @@ The biggest difference between MOD and SAM commands is that for
 a file loaded with MOD one can use related commands like VOLUME
 and MOD ORDER; the music loops as well.
 
+:_m8:~AMOD "*"
+
+Sets the board's currently running music to "wildcard". This
+means that it will continue to play whatever was last playing.
+This setting does not "lock" the board's music to any one song;
+for instance, if 1.mod was playing on the last board, mod "*"
+will continue playing 1.mod, but if the player then goes to a
+board playing 2.mod and jumps back to the mod "*" board from
+there, 2.mod will continue playing, and 1.mod will not start.
+
 >#SOUNDEFX.HLP:1st:Sound and Music
 >#STRINGS.HLP:1st:Strings, Special Formatting, and Their Place in Robotic
 
@@ -4489,9 +4497,9 @@ counter, respectively.
 
 >#COUNTERS.HLP:1st:Counters, Built-in Counters and Local Counters
 
-:_mB:~AMULTIPLY "counter" #
+:_mC:~AMULTIPLY "counter" #
 :_d7:~ADIVIDE "counter" #
-:_m8:~AMODULO "counter" #
+:_m9:~AMODULO "counter" #
 
 Multiplies, divides, or performs a modulo on the value of the
 given counter by the given value or counter (rounding down). To
@@ -4558,8 +4566,8 @@ unintended effects.
 
 >#COUNTERS.HLP:1st:Counters, Built-in Counters and Local Counters
 
-:_m0:~AMOVE PLAYER [dir]
-:_mA:~AMOVE PLAYER [dir] "label"
+:_mA:~AMOVE PLAYER [dir]
+:_mB:~AMOVE PLAYER [dir] "label"
 
 The player attempts to move in the given direction. If the
 player is blocked, and the command contains a label, the Robot
@@ -4809,7 +4817,7 @@ current board.
 
 Also, locking the player will not cause the relevant input to
 be ignored completely. MegaZeux will still detect that you are
-pressing keys, even if the player is forbidden from responding
+pressing keys, even if the Player is forbidden from responding
 to them, and will act accordingly. In short, even if a player
 is locked, Robots that take directional and space/delete inputs
 will still act the same.
@@ -5135,7 +5143,7 @@ care about the character, only the color.
 >#COMMANDS.HLP:col:Colors
 >#TOVERLAY.HLP:081:Editing and Using the Overlay
 
-:_m9:~AMOVE ALL [color] [thing] [param] [dir]
+:_m0:~AMOVE ALL [color] [thing] [param] [dir]
 
 All of the stated thing are moved in the given direction.
 Overuse of this command can slow down your game.
@@ -6079,7 +6087,7 @@ The current board's width and height, respectively.
 The current timer value, between 0 and the time limit for the
 current board.
 
-~BTIMERSET (board)
+~BTIMERESET (board)
 
 The time limit for the current board. 0 for no time limit.
 
@@ -6196,6 +6204,11 @@ Reads four bytes from the open file.
 ~BFWRITE_COUNTER (function)
 
 Writes four bytes to the open file.
+
+NOTE: The above two counters will have different functionality
+in worlds made before MZX 2.82 (in the old implementation, they
+use two bytes and are unsigned). This is purely for
+compatibility reasons.
 
 ~BFREAD_POS
 ~BFWRITE_POS
@@ -6503,7 +6516,14 @@ $Mouse Counters
 ~BMOUSEY
 
 Reads/sets the mouse cursor's x or y-coordinates (respectively)
-relative to the screen.
+relative to the screen in characters.
+
+~BMOUSEPX
+~BMOUSEPY
+
+Reads/sets the mouse cursor's x or y-coordinates (respectively)
+in pixels. Always scales to terms of 640x350, regardless of the
+actual resolution.
 
 ~BMBOARDX (read-only, board)
 ~BMBOARDY (read-only, board)
@@ -6525,22 +6545,29 @@ $Defaults Counters
 :def:
 ~BENTER_MENU
 
-Toggles the default status window loaded when the enter key is
-pressed. 1 is on, 0 is off.
+Determines whether the built-in status window is loaded when
+the enter key is pressed. 1 is yes, 0 is no, defaults to yes.
 
 ~BHELP_MENU
 
-Toggles the default help window loaded when the F1 key is
-pressed. 1 is on, 0 is off.
+Determines whether the built-in help window is loaded when the
+F1 key is pressed. 1 is yes, 0 is no, defaults to yes.
 
 ~BF2_MENU
 
-Toggles the default MegaZeux options window loaded when the F2
-key is pressed. 1 is on, 0 is off.
+Determines whether the built-in MegaZeux options window is
+loaded when the F2 key is pressed. 1 is yes, 0 is no, defaults
+to yes.
+
+~BLOAD_MENU
+
+Determines whether the built-in MegaZeux loadgame window is
+loaded when the F4 key is pressed. 1 is yes, 0 is no, defaults
+to yes.
 
 ~BBIMESG (write-only)
 
-Toggles built-in game messages (e.g. the message given for
+Controls built-in game messages (e.g. the message given for
 touching goop); 1 is on while 0 is off.
 
 $Vlayer Counters
@@ -6661,8 +6688,8 @@ KEY_PRESSED, so if you hold down a key you will get the value,
 then get zeros for a period, then get the values again. This is
 useful for many applications.
 KEY_CODE acts the same as KEY_PRESSED but lacks autorepeat and
-has different keycodes. This is depreciated in favor of
-KEY_PRESSED.
+has different keycodes. Its keycode set is more limited, making
+KEY_CODE only preferable if autorepeat has to be off.
 
 ~BKEYn (read-only)
 ~BKEY_RELEASE (read-only)
@@ -6737,12 +6764,12 @@ The following keys are active within the editor.
 >_e:F5    - Char edit
 >_f:F6-F10  - Macros
 >_g:F12 - Take Screendump
->_h:Alt+B OR Alt+Enter - Block action
->_i:Alt+E OR Alt+End - Mark block end
+>_h:Alt+B OR Alt+Enter - Block Action
+>_i:Alt+E OR Alt+End - Mark Block End
 >_j:Alt+H - Hide Help / Borders
 >_k:Alt+I  - Import
 >_l:Alt+O  - Macro Options
->_m:Alt+S OR Alt+Home - Mark block top
+>_m:Alt+S OR Alt+Home - Mark Block Top
 >_n:Alt+U - Unmark block
 >_o:Alt+V  - Verify
 >_p:Alt+X  - Export
@@ -6750,7 +6777,7 @@ The following keys are active within the editor.
 >_r:Ctrl+F  - Find/Replace
 >_s:Ctrl+G - Go to Line
 >_t:Ctrl+R  - Repeat Find/Replace
->_u:Ctrl+I/D/C - Mark Invalidated
+>_u:Ctrl+I/D/C - Mark Line
 >_v: Ctrl+BackSpace - Delete Previous Word
 
 :_a:~EF1    - Help
@@ -6792,22 +6819,23 @@ Pressing F12 will make a 640x350 screendump (in PNG format by
 default) in the working directory, using the software renderer.
 The file naming starts from "screen0".
 
-:_h:~EAlt+B OR Alt+Enter - Block action
+:_h:~EAlt+B OR Alt+Enter - Block Action
 
 Allows you to perform an action on the current block of lines-
-Copy it to an internal clipboard, Cut it to an internal
-clipboard (copy it and then delete it), Clear it from memory,
-or Export the block to a text file on disk. Alt+Enter is the
-old and depreciated version, left in to ease use for
-long-time users.
+Copy it to the OS's clipboard, Cut it to the OS's clipboard
+(copy it and then delete it), Clear it from memory, or Export
+the block to a text file on disk. If no block is currently
+highlighted, the actions will take effect on the current line.
+Alt+Enter is the old and depreciated hotkey, left in to ease
+use for long-time users.
 
-:_m:~EAlt+S OR Alt+Home - Mark block top
-:_i:~EAlt+E OR Alt+End - Mark block end
+:_m:~EAlt+S OR Alt+Home - Mark Block Top
+:_i:~EAlt+E OR Alt+End - Mark Block End
 
 Alt+S/E will mark the top or bottom of a block of lines. You
 can then perform various block actions on these lines. The
 marked lines are highlighted. Alt+Home and Alt+End are the old
-and depreciated versions, left in to ease use for long-time
+and depreciated hotkeys, left in to ease use for long-time
 users.
 
 :_j:~EAlt+H  - Hide Help / Borders
@@ -6870,13 +6898,14 @@ line).
 
 Use Ctrl+R after a Find or Replace to repeat the action.
 
-:_u:~ECtrl+I/D/C - Mark line
+:_u:~ECtrl+I/D/C - Mark Line
 
 These commands mark the current invalid line as to be
 ignored, deleted, or commented out upon editor exit,
 respectively. If the line is valid Ctrl + C will turn it into
-a comment. Note that comment-marking a comment will immediately
-strip the line.
+a comment (truncating the end of the line if commenting would
+make the line exceed 241 characters). Note that comment-marking
+a comment will immediately strip the line.
 
 :_v:~ECtrl+BackSpace - Delete Previous Word
 
@@ -7196,7 +7225,7 @@ with this Robot -
 . ~E: "touch"
 . ~E* "Watch out!"
 . ~EWAIT 10
-. ~ESHOOT NORTH
+. ~ESHOOT SEEK
 . ~EEND
 
 Test this Robot out, bombing, shooting, and touching it. The
@@ -7588,9 +7617,9 @@ hexadecimal. To seek the end of a file, set to -1.
 
 ~ASET "counter" to "FREAD_COUNTER"
 
-Reads from the open file to a counter. This will grab four bytes
-instead of the normal one (treated as signed; the resulting
-range is from -2147483648 to 2147483647).
+Reads from the open file to a counter. This will grab four
+bytes instead of the normal one (treated as signed; the
+resulting range is from -2147483648 to 2147483647).
 
 ~ASET "FWRITE_COUNTER" to "counter"
 
@@ -7617,7 +7646,7 @@ Using ~ASET "$string.N" to "FWRITE(n)"~F will insure that the
 string will be at least N characters long when written.
 FWRITE and FREAD, when used with counters, can be substituted
 by FWRITE_COUNTER and FREAD_COUNTER to read in longer values
-at a time (two bytes as opposed to one).
+at a time (four bytes as opposed to one).
 
 Another use of file commands (which takes more work, but not
 much) is verifying whether a file exists. To do this, a 
@@ -8091,20 +8120,34 @@ replace in the target character set.
 :1st: 
 $~9NEW in MegaZeux!
 
-April 17, 2008 - MZX 2.81i
+June 10, 2008 - MZX 2.82
 
-Once again, this release targets bug fixes and general
-spit-and-polish. This release will be the last of the 2.81
-series.
+Despite the increase in minor version, this release mostly
+targets bug and regression fixes. However, there ARE some
+additional new features, such as the introduction of the
+LOAD_MENU and mouse pixel counters, and refinement of the
+{FREAD,FWRITE}_COUNTER counter. (There are several other
+smaller features that are documented in the changelog.)
 
-One major snag (of two) from the last DoZ has been addressed:
-the phantom F1 help system crashes. The second issue, crashing
-with block actions, has not yet been tracked down or fixed.
+SAVs from older worlds (requiring compatibility hacks) no
+longer fail to play (Darkness, etc. are affected). We've also
+done a good bit to fix compatibility with 2.70 and older.
 
 A new tool, "checkres", is now routinely packaged, allowing you
 to check your games for missing resource files (PALs, CHRs,
 etc.) before passing them on to other people. This should be
 especially handy for DoZ game submissions.
+
+The Nintendo DS port (Kevin Vance's "DsMZX") has been merged
+into this release. I'll provide binaries for GP2X, PSP and NDS
+this time, but I can't guarantee they'll work.
+
+Both of the snags from the last DoZ have been addressed -- the
+help system should no longer crash and the Block Action crashes
+should be reduced in frequency. However, there are still issues
+with pasting in the robot editor that remain unfixed (they're
+just really hard to reproduce). With your bug reports, I look
+forward to fixing this.
 
 As usual, thanks go out to Revvy and Mr_Alert for their
 contributions to the bug-fixing effort, and to Terryn for his
@@ -8214,9 +8257,53 @@ USERS
   Previously, only rid? and key? were versioned.
 + SAV files will now be stamped with the world magic of the
   world they were loaded from. This allows compatibility hacks
-  to apply to SAV files as they would to worlds. MZX should be
-  able to load SAVs made in older MZXs, and save SAVs that
-  older MZXs can load, but this is poorly tested.
+  to apply to SAV files as they would to worlds (ajs, Terryn,
+  Mr_Alert).
++ Added LOAD_MENU counter like ENTER_MENU, F2_MENU et al. to
+  allow control (from Robotic) over whether the LOAD_MENU can
+  be brought up.
++ Made FREAD_COUNTER and FWRITE_COUNTER read in a DOS dword
+  (32bit) instead of a DOS word (16bit). This allows modern
+  post-port MZX counters to be fully represented in files.
+  Compatibility with older worlds is preserved.
++ Added a new config option "board_editor_hide_help" which
+  changes the default hide setting of the help text on the
+  primary board editor.
++ Numerous fixes for bugs found by valgrind. (Nightwatch)
++ Icon support is now fixed and works on all platforms. On
+  Windows, the icon cannot currently be changed (it is loaded
+  from the EXE's resource section). Use ResHacker if you really
+  want to change it.
++ Fixed a bug where either LOAD_ROBOTn or LOAD_BCn (where n was
+  equal to ROBOT_ID) would alter the robot's line number rather
+  than completely restart it. Due to complexities in robot
+  context, this lead to the first line being skipped.
++ Added a new tool "downver" which supports drag-and-drop
+  downgrading of a world or board from the version of MZX it is
+  packaged with to the previous version of MZX. This tool may
+  be unsafe to use -- be careful.
++ Fixed a bug in the robotic assembler which would
+  occassionally emit corrupt programs with SAVE_ROBOT. These
+  programs, if loaded by LOAD_ROBOT, could cause a crash.
++ Added a config.txt (or command line) option "startup_editor"
+  which, if set to a non-zero value, will start MegaZeux in the
+  editor with a blank world.
++ Fixed a bug where a robot's WALK processing, on entering a
+  transporter, could allow subsequent commands (such as GO) to
+  corrupt the board. WALK now ends the cycle in the special
+  case that a robot goes through a transporter.
++ You can now directly import bytecode into the robot editor
+  via the Alt+I menu. The extension for the bytecode file must
+  be .bc for it to be loaded.
++ A game loading SAVs via the LOAD_GAME counter will no longer
+  crash MZX if the SAV attempted is from an incompatible
+  version of MZX, or in any way corrupted.
++ Fixed a crash when auto-completing lines that were greater
+  than 241 characters in length after completion.
++ Added mouse pixel counters MOUSEPX and MOUSEPY. (Mr_Alert)
++ Commenting a line of maximum length (241 characters) can no
+  longer grow the length of the line beyond this limit.
+  
 
 DEVELOPERS
 
@@ -8231,6 +8318,35 @@ DEVELOPERS
 + Dependencies are now correctly tracked in the build system.
   Modifying a header will automatically regenerate the minimal
   set of object files that depend on this header.
++ Out of the box MSVC support. The file "msvc.zip" in the root
+  of the source package now provides a Visual Studio 2005
+  project and pre-compiled dependencies. There may be stability
+  issues with the resulting binary. See also the documentation
+  in arch/msvc/README.txt.
++ The Nintendo DS port (a.k.a. 'dsmzx') has been merged. This
+  is the most exotic port thus far, and adds features such as
+  player focus (on the second display). Sound isn't working
+  yet, and large games still won't play (due to lack of
+  memory). See docs/nds.txt for more information. (kvance)
++ Many stack-heavy functions have been de-bloated and allocate
+  large storage on the heap (if performance is not critical).
+  This helps out platforms with a small, fixed stack size (such
+  as NDS).
++ The built-in help system can now be disabled for embedded
+  platforms. The startup check for the help file will not be
+  performed if the help system is disabled, and so this file
+  can be omitted from distributions.
++ The package.sh script now supports OS X, PSP, GP2X and NDS
+  packaging.
++ The OS X port no longer requires Xcode. The new build system
+  and package.sh can create a universal Application and
+  corresponding DMG file. The new infrastructure deprecates the
+  old macosx.zip method.
++ Most of the internal dependency on SDL has been removed.
+  Therefore, MZX can be built (but not yet work) without SDL
+  present. The only remaining component to convert is MikMod,
+  but this can be disabled, so port authors can start using the
+  feature right away (see config.sh). (Mr_Alert)
 
 >#281CLOB.HLP:281:New in Versions 2.81-2.81h
 >#280CLOG.HLP:280:New in Versions 2.80-2.80h
@@ -8325,7 +8441,7 @@ USERS
   edits.
 + Fixed a bug causing board switching to not correctly alter
   the x,y viewport scroll leading to the display of raw memory
-  and potentially crashes, with differently sized boards.
+  and potential crashes, with differently sized boards.
 + Fixed stack corruption caused by SCROLL CHAR SOUTH, detected
   by Ubuntu's SSP (Stack Smashing Protection) enabled binary.
 

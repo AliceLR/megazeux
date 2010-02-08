@@ -243,7 +243,7 @@ TAKEKEY [color] "label"                                 |    NO(5)    |
 TELEPORT PLAYER "string" # #                            |    YES(2)   |
 TRADE # [item] # [item] "label"                         |    NO(5)    |
 TRY [dir] "label"                                       |    YES(5)   |
-WAIT #                                                  |     YES     |
+WAIT #                                                  |    YES(6)   |
 WAIT MOD FADE                                           |     NO      |
 WAIT PLAY                                               |     NO      |
 WAIT PLAY "string"                                      |    YES(2)   |
@@ -258,7 +258,7 @@ VIEWPORT SIZE # #                                       |     NO      |
 VOLUME #                                                |     NO      |
 ZAP "label" #                                           |     NO      |
 
-(1) = The act of opening default dialog boxes kills all other game action, including Robot processing.
+(1) = The act of opening default dialog boxes kills (almost) all other game action, including Robot processing. The only exceptions are the play of music/sound and the read/write actions of the various fread/fwrite counters during the loading of default "["/"%"/"&" boxes.
 (2) = Does not end a cycle if string is blank or a completely invalid/inapplicable string.
 (3) = Considering "copyrobot" commands are executed always, even if no match is found, this may not be correct.
 (4) = Unable to determine without diving into code, and thus not done. (as such, cycle-ending stance is totally insignificant.)

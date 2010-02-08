@@ -2,11 +2,10 @@ MZX TODO:
 
 ~Provide cleaner exit implementation in file format loaders/filters
 ~Re-vamp the entirety of MZX's clipboard implementation
-~Re-write find/replace code
-~Pray SDL weeds out some of its bothersome minutiae (as of SDL 1.2.12 it hasn't)
+~Pray SDL weeds out some of its bothersome minutiae (as of SDL 1.2.13 it hasn't)
 ~Fix MIDI implementation, possibly
-~Add icon implementation
 ~Strip bad Robotic lines when exporting to text files (including notification noting which lines were not exported)
 ~AARGH MIKMOD)@#$(%^#$)^(#
-~Increase portability to anything within reason
+~Increase portability to anything within reason (e.g. Wii, SPARC (64), DEC Alpha, PA-RISC, Dreamcast (SuperH))
 ~Make the UI unaltered when in SMZX mode
+-Fix crashes with loading invalid Robotic/bytecode
