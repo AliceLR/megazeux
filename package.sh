@@ -125,13 +125,8 @@ breakout() {
 #
 TARGET=`grep TARGET Makefile | head -n1 | sed "s/ //g" | cut -d "=" -f 2`
 
-if [ "$TARGET" == "" ]; then
-	breakout 1
-fi
-
-if [ "$1" == "-h" ]; then
-	usage
-fi
+[ "$TARGET" == "" ] && breakout 1
+[ "$1" == "-h" ] && usage
 
 #
 # MegaZeux source AND binary distributions depend on these
@@ -215,9 +210,7 @@ rm -f dist/$TARGET/contrib/icons/*.o &&
 # hack for "dist" makefile
 cp dist/$TARGET/arch/Makefile.dist dist/$TARGET/Makefile.platform
 
-if [ "$?" != "0" ]; then
-	breakout 2
-fi
+[ "$?" != "0" ] && breakout 2
 
 rm -f dist/$TARGET/src/config.h
 
@@ -227,9 +220,7 @@ cd dist
 tar --exclude .svn -jcvf ${TARGET}src.tar.bz2 $TARGET
 cd ..
 
-if [ "$?" != "0" ]; then
-	breakout 3
-fi
+[ "$?" != "0" ] && breakout 3
 
 rm -rf dist/$TARGET
 
