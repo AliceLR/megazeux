@@ -91,8 +91,8 @@ void save_string(FILE *fp, mzx_string *src_string);
 // These take up more room...
 #define MIN_STRING_ALLOCATE 4
 
-// Strings cannot be longer than 64k
-#define MAX_STRING_LEN 65536
+// Strings cannot be longer than 1M
+#define MAX_STRING_LEN (1 << 20)
 
 // Maximum space board can consume
 #define MAX_BOARD_SIZE 16 * 1024 * 1024

@@ -30,10 +30,13 @@ USERS
   automatically re-converted. This hack can be used to procedurally
   regenerate WAV files from SAMs, or transparently work around on-disk
   corruption.
-+ Strings are now limited to a maximum length of 64k. I'm open to suggestions
++ Strings are now limited to a maximum length of 1M. I'm open to suggestions
   over a better limit, but there must be a limit (set "$string.X" notation
   grows a string arbitrarily, so robotic can crash MZX when a string is resized
   beyond a reasonable limit).
++ Strings, when grown, will fill gaps with ' ' instead of garbage. This can be
+  useful when the string grows (after using the set "$string.X" notation); the
+  rest of the string is no longer garbage, allowing the debugger to be used.
 
 DEVELOPERS
 
