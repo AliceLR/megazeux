@@ -107,8 +107,7 @@ USERS
   Previously, only rid? and key? were versioned.
 + SAV files will now be stamped with the world magic of the world they
   were loaded from. This allows compatibility hacks to apply to SAV files
-  as they would to worlds. MZX should be able to load SAVs made in older
-  MZXs, and save SAVs that older MZXs can load, but this is poorly tested.
+  as they would to worlds. (ajs, Terryn, Mr_Alert)
 
 DEVELOPERS
 

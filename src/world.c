@@ -91,17 +91,9 @@
 #include "audio.h"
 #include "util.h"
 
-__editor_maybe_static char world_version_string[4] = "M\x02\x51";
+static char save_version_string[6] = "MZS\x02\x51";
 
-static void write_save_version_string(char *buf, int len, int version)
-{
-  if(version == 0x0205)
-    strncpy(buf, "MZSV2", len - 1);
-  else if(version == 0x0208)
-    strncpy(buf, "MZXSA", len - 1);
-  else
-    snprintf(buf, len, "MZS%c%c", (version >> 8) & 0xff, version & 0xff);
-}
+__editor_maybe_static char world_version_string[4] = "M\x02\x51";
 
 // Helper functions for file loading.
 // Get 2 bytes
@@ -182,7 +174,6 @@ static int world_magic(const char magic_string[3])
 
 int save_world(World *mzx_world, const char *file, int savegame, int faded)
 {
-  char save_version_string[6];
   int i, num_boards;
   int gl_rob_position, gl_rob_save_position;
   int board_offsets_position, board_begin_position, board_end_position;
@@ -202,7 +193,6 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
   if(savegame)
   {
     // Write magic mzx_string
-    write_save_version_string(save_version_string, 6, mzx_world->version);
     fwrite(save_version_string, 1, 5, fp);
     fputc(mzx_world->current_board_id, fp);
   }
@@ -225,6 +215,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
   fputc(missile_color, fp);
   fwrite(bullet_color, 3, 1, fp);
   fwrite(id_dmg, 128, 1, fp);
+
   // Save status counters.
   fwrite((char *)mzx_world->status_counters_shown, COUNTER_NAME_SIZE,
    NUM_STATUS_CNTRS, fp);
@@ -265,11 +256,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
     fputc(mzx_world->scroll_pointer_color, fp);
     fputc(mzx_world->scroll_title_color, fp);
     fputc(mzx_world->scroll_arrow_color, fp);
-
-    if(mzx_world->version >= 0x0209)
-    {
-      fwrite(mzx_world->real_mod_playing, 13, 1, fp);
-    }
+    fwrite(mzx_world->real_mod_playing, 13, 1, fp);
   }
 
   fputc(mzx_world->edge_color, fp);
@@ -321,135 +308,96 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
       save_counter(fp, mzx_world->counter_list[i]);
     }
 
-    /* Strings were originally saved out after Sprites and before the other
-     * cruft added in 2.68. Unfortunately, this order changed (probably during
-     * the port). Restoring this order is necessary if we want to be SAV
-     * compatible with versions between 2.68 and 2.80.
-     *
-     * The 2.68 string format also differed in incompatible ways, so this code
-     * is not strictly correct.
-     */
-    if(mzx_world->version >= 0x0244)
-    {
-      // Write strings
-      fputd(mzx_world->num_strings, fp);
+    // Write strings
+    fputd(mzx_world->num_strings, fp);
 
-      for(i = 0; i < mzx_world->num_strings; i++)
+    for(i = 0; i < mzx_world->num_strings; i++)
+    {
+      save_string(fp, mzx_world->string_list[i]);
+    }
+
+    // Sprite data
+    for(i = 0; i < MAX_SPRITES; i++)
+    {
+      fputw((mzx_world->sprite_list[i])->x, fp);
+      fputw((mzx_world->sprite_list[i])->y, fp);
+      fputw((mzx_world->sprite_list[i])->ref_x, fp);
+      fputw((mzx_world->sprite_list[i])->ref_y, fp);
+      fputc((mzx_world->sprite_list[i])->color, fp);
+      fputc((mzx_world->sprite_list[i])->flags, fp);
+      fputc((mzx_world->sprite_list[i])->width, fp);
+      fputc((mzx_world->sprite_list[i])->height, fp);
+      fputc((mzx_world->sprite_list[i])->col_x, fp);
+      fputc((mzx_world->sprite_list[i])->col_y, fp);
+      fputc((mzx_world->sprite_list[i])->col_width, fp);
+      fputc((mzx_world->sprite_list[i])->col_height, fp);
+    }
+    // total sprites
+    fputc(mzx_world->active_sprites, fp);
+    // y order flag
+    fputc(mzx_world->sprite_y_order, fp);
+    // collision info
+    fputw(mzx_world->collision_count, fp);
+
+    for(i = 0; i < MAX_SPRITES; i++)
+    {
+      fputw(mzx_world->collision_list[i], fp);
+    }
+
+    // Multiplier
+    fputw(mzx_world->multiplier, fp);
+    // Divider
+    fputw(mzx_world->divider, fp);
+    // Circle divisions
+    fputw(mzx_world->c_divisions, fp);
+    // Builtin message status
+    fputc(mzx_world->bi_mesg_status, fp);
+
+    // Write input file name and if open, size
+    fwrite(mzx_world->input_file_name, 1, 12, fp);
+    if(mzx_world->input_file)
+    {
+      fputd(ftell(mzx_world->input_file), fp);
+    }
+    else
+    {
+      fputd(0, fp);
+    }
+
+    // Write output file name and if open, size
+    fwrite(mzx_world->output_file_name, 1, 12, fp);
+    if(mzx_world->output_file)
+    {
+      fputd(ftell(mzx_world->output_file), fp);
+    }
+    else
+    {
+      fputd(0, fp);
+    }
+
+    fputw(get_screen_mode(), fp);
+
+    if(get_screen_mode() > 1)
+    {
+      // Put SMZX mode 2 palette
+      for(i = 0; i < 256; i++)
       {
-        save_string(fp, mzx_world->string_list[i]);
+        get_rgb(i, &r, &g, &b);
+        fputc(r, fp);
+        fputc(g, fp);
+        fputc(b, fp);
       }
     }
 
-    /* Sprite data layout in the SAV files has changed quite a bit since its
-     * introduction in 2.65. As a result, we'll lie when we save out 2.65
-     * SAV files because they wouldn't load in the real 2.65. For the moment,
-     * we only write out the sprite data if we're >=2.65, which might buy us
-     * compatibility with versions older than this..
-     */
-    if(mzx_world->version >= 0x0241)
-    {
-      // Sprite data
-      for(i = 0; i < MAX_SPRITES; i++)
-      {
-        fputw((mzx_world->sprite_list[i])->x, fp);
-        fputw((mzx_world->sprite_list[i])->y, fp);
-        fputw((mzx_world->sprite_list[i])->ref_x, fp);
-        fputw((mzx_world->sprite_list[i])->ref_y, fp);
-        fputc((mzx_world->sprite_list[i])->color, fp);
-        fputc((mzx_world->sprite_list[i])->flags, fp);
-        fputc((mzx_world->sprite_list[i])->width, fp);
-        fputc((mzx_world->sprite_list[i])->height, fp);
-        fputc((mzx_world->sprite_list[i])->col_x, fp);
-        fputc((mzx_world->sprite_list[i])->col_y, fp);
-        fputc((mzx_world->sprite_list[i])->col_width, fp);
-        fputc((mzx_world->sprite_list[i])->col_height, fp);
-      }
-      // total sprites
-      fputc(mzx_world->active_sprites, fp);
-      // y order flag
-      fputc(mzx_world->sprite_y_order, fp);
-      // collision info
-      fputw(mzx_world->collision_count, fp);
+    fputw(mzx_world->commands, fp);
 
-      for(i = 0; i < MAX_SPRITES; i++)
-        fputw(mzx_world->collision_list[i], fp);
-    }
+    vlayer_size = mzx_world->vlayer_size;
+    fputd(vlayer_size, fp);
+    fputw(mzx_world->vlayer_width, fp);
+    fputw(mzx_world->vlayer_height, fp);
 
-    /* 2.68 added more math functions and took care of files that were opened
-     * for read/write during a SAV. Unfortunately, it looks like this format
-     * was broken during the port because bi_mesg_status should not be where
-     * it is. Ideally, this would be moved back to where it was in 2.68, or
-     * logic written to compensate for this oversight.
-     */
-    if(mzx_world->version >= 0x0244)
-    {
-      // Multiplier
-      fputw(mzx_world->multiplier, fp);
-      // Divider
-      fputw(mzx_world->divider, fp);
-      // Circle divisions
-      fputw(mzx_world->c_divisions, fp);
-      // Builtin message status
-      fputc(mzx_world->bi_mesg_status, fp);
-
-      // Write input file name and if open, size
-      fwrite(mzx_world->input_file_name, 1, 12, fp);
-      if(mzx_world->input_file)
-      {
-        fputd(ftell(mzx_world->input_file), fp);
-      }
-      else
-      {
-        fputd(0, fp);
-      }
-
-      // Write output file name and if open, size
-      fwrite(mzx_world->output_file_name, 1, 12, fp);
-      if(mzx_world->output_file)
-      {
-        fputd(ftell(mzx_world->output_file), fp);
-      }
-      else
-      {
-        fputd(0, fp);
-      }
-    }
-
-    /* 2.69 SMZX features broke the SAV format again. Fortunately this remains
-     * unchanged even to the current version.
-     */
-    if(mzx_world->version >= 0x0245)
-    {
-      fputw(get_screen_mode(), fp);
-
-      if(get_screen_mode() > 1)
-      {
-        // Put SMZX mode 2 palette
-        for(i = 0; i < 256; i++)
-        {
-          get_rgb(i, &r, &g, &b);
-          fputc(r, fp);
-          fputc(g, fp);
-          fputc(b, fp);
-        }
-      }
-    }
-
-    /* 2.69c added the vlayer and saved COMMANDS.
-     * This remains unchanged.
-     */
-    if(mzx_world->version >= 0x0248)
-    {
-      fputw(mzx_world->commands, fp);
-
-      vlayer_size = mzx_world->vlayer_size;
-      fputd(vlayer_size, fp);
-      fputw(mzx_world->vlayer_width, fp);
-      fputw(mzx_world->vlayer_height, fp);
-
-      fwrite(mzx_world->vlayer_chars, 1, vlayer_size, fp);
-      fwrite(mzx_world->vlayer_colors, 1, vlayer_size, fp);
-    }
+    fwrite(mzx_world->vlayer_chars, 1, vlayer_size, fp);
+    fwrite(mzx_world->vlayer_colors, 1, vlayer_size, fp);
   }
 
   // Put position of global robot later
@@ -798,29 +746,20 @@ static int load_world(World *mzx_world, const char *file, int savegame,
 
     version = save_magic(tempstr);
 
-    if(!version || version < 0x0205 || version > WORLD_VERSION)
+    if(version != WORLD_VERSION)
     {
       const char *msg;
 
       if(version > WORLD_VERSION)
         msg = ".SAV files from newer versions of MZX are not supported";
-      else if(version < 0x0205)
-        msg = ".SAV files from ancient versions of MZX are not supported";
+      else if(version < WORLD_VERSION)
+        msg = ".SAV files from older versions of MZX are not supported";
       else
         msg = "Unrecognized magic: file may not be .SAV file";
 
       error(msg, 1, 8, 0x2101);
       fclose(fp);
       return 1;
-    }
-
-    if(version < WORLD_VERSION)
-    {
-      fprintf(stderr, "WARNING: Loading .SAV files from older versions of "
-                      "MZX is VERY experimental. This may not work at all!");
-      fprintf(stderr, "Proceeding to load %d.%d SAV file..",
-                      (version >> 8) & 0xFF, version & 0xFF);
-      fflush(stderr);
     }
 
     mzx_world->current_board_id = fgetc(fp);
@@ -902,6 +841,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
   missile_color = fgetc(fp);
   fread(bullet_color, 3, 1, fp);
   fread(id_dmg, 128, 1, fp);
+
   // Status counters...
   fread((char *)mzx_world->status_counters_shown, COUNTER_NAME_SIZE,
    NUM_STATUS_CNTRS, fp);
@@ -937,11 +877,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     mzx_world->scroll_pointer_color = fgetc(fp);
     mzx_world->scroll_title_color = fgetc(fp);
     mzx_world->scroll_arrow_color = fgetc(fp);
-
-    if(mzx_world->version >= 0x0209)
-    {
-      fread(mzx_world->real_mod_playing, 13, 1, fp);
-    }
+    fread(mzx_world->real_mod_playing, 13, 1, fp);
   }
 
   mzx_world->edge_color = fgetc(fp);
@@ -1004,151 +940,146 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     // Setup gateway functions
     initialize_gateway_functions(mzx_world);
 
-    if(mzx_world->version >= 0x0244)
-    {
-      // Read mzx_strings
-      num_strings = fgetd(fp);
-      mzx_world->num_strings = num_strings;
-      mzx_world->num_strings_allocated = num_strings;
-      mzx_world->string_list = calloc(num_strings, sizeof(mzx_string *));
+    // Read mzx_strings
+    num_strings = fgetd(fp);
+    mzx_world->num_strings = num_strings;
+    mzx_world->num_strings_allocated = num_strings;
+    mzx_world->string_list = calloc(num_strings, sizeof(mzx_string *));
 
-      for(i = 0; i < num_strings; i++)
-      {
-        mzx_world->string_list[i] = load_string(fp);
-      }
+    for(i = 0; i < num_strings; i++)
+    {
+      mzx_world->string_list[i] = load_string(fp);
     }
 
     // Allocate space for sprites and clist
     mzx_world->num_sprites = MAX_SPRITES;
     mzx_world->sprite_list = calloc(MAX_SPRITES, sizeof(Sprite *));
 
-    for(i = 0; i < 256; i++)
+    for(i = 0; i < MAX_SPRITES; i++)
+    {
       mzx_world->sprite_list[i] = calloc(1, sizeof(Sprite));
+    }
 
     mzx_world->collision_list = calloc(MAX_SPRITES, sizeof(int));
     mzx_world->sprite_num = 0;
 
-    /* See the corresponding note about Sprites after 2.65 in save_world().
-     */
-    if(mzx_world->version >= 0x0241)
+    // Sprite data
+    for(i = 0; i < MAX_SPRITES; i++)
     {
-      // Sprite data
-      for(i = 0; i < MAX_SPRITES; i++)
-      {
-        (mzx_world->sprite_list[i])->x = fgetw(fp);
-        (mzx_world->sprite_list[i])->y = fgetw(fp);
-        (mzx_world->sprite_list[i])->ref_x = fgetw(fp);
-        (mzx_world->sprite_list[i])->ref_y = fgetw(fp);
-        (mzx_world->sprite_list[i])->color = fgetc(fp);
-        (mzx_world->sprite_list[i])->flags = fgetc(fp);
-        (mzx_world->sprite_list[i])->width = fgetc(fp);
-        (mzx_world->sprite_list[i])->height = fgetc(fp);
-        (mzx_world->sprite_list[i])->col_x = fgetc(fp);
-        (mzx_world->sprite_list[i])->col_y = fgetc(fp);
-        (mzx_world->sprite_list[i])->col_width = fgetc(fp);
-        (mzx_world->sprite_list[i])->col_height = fgetc(fp);
-      }
-
-      // total sprites
-      mzx_world->active_sprites = fgetc(fp);
-      // y order flag
-      mzx_world->sprite_y_order = fgetc(fp);
-      // collision info
-      mzx_world->collision_count = fgetw(fp);
-
-      for(i = 0; i < MAX_SPRITES; i++)
-        mzx_world->collision_list[i] = fgetw(fp);
+      (mzx_world->sprite_list[i])->x = fgetw(fp);
+      (mzx_world->sprite_list[i])->y = fgetw(fp);
+      (mzx_world->sprite_list[i])->ref_x = fgetw(fp);
+      (mzx_world->sprite_list[i])->ref_y = fgetw(fp);
+      (mzx_world->sprite_list[i])->color = fgetc(fp);
+      (mzx_world->sprite_list[i])->flags = fgetc(fp);
+      (mzx_world->sprite_list[i])->width = fgetc(fp);
+      (mzx_world->sprite_list[i])->height = fgetc(fp);
+      (mzx_world->sprite_list[i])->col_x = fgetc(fp);
+      (mzx_world->sprite_list[i])->col_y = fgetc(fp);
+      (mzx_world->sprite_list[i])->col_width = fgetc(fp);
+      (mzx_world->sprite_list[i])->col_height = fgetc(fp);
     }
 
-    if(mzx_world->version >= 0x0244)
+    // total sprites
+    mzx_world->active_sprites = fgetc(fp);
+    // y order flag
+    mzx_world->sprite_y_order = fgetc(fp);
+    // collision info
+    mzx_world->collision_count = fgetw(fp);
+
+    for(i = 0; i < MAX_SPRITES; i++)
     {
-      // Multiplier
-      mzx_world->multiplier = fgetw(fp);
-      // Divider
-      mzx_world->divider = fgetw(fp);
-      // Circle divisions
-      mzx_world->c_divisions = fgetw(fp);
-      // Builtin message status
-      mzx_world->bi_mesg_status = fgetc(fp);
+      mzx_world->collision_list[i] = fgetw(fp);
+    }
 
-      // Load input file name, open
-      fread(mzx_world->input_file_name, 1, 12, fp);
-      mzx_world->input_file_name[12] = 0;
-      if(mzx_world->input_file_name[0] != '\0')
+    // Multiplier
+    mzx_world->multiplier = fgetw(fp);
+    // Divider
+    mzx_world->divider = fgetw(fp);
+    // Circle divisions
+    mzx_world->c_divisions = fgetw(fp);
+    // Builtin message status
+    mzx_world->bi_mesg_status = fgetc(fp);
+
+    // Load input file name, open
+    fread(mzx_world->input_file_name, 1, 12, fp);
+    mzx_world->input_file_name[12] = 0;
+    if(mzx_world->input_file_name[0] != '\0')
+    {
+      mzx_world->input_file =
+       fsafeopen(mzx_world->input_file_name, "rb");
+
+      if(mzx_world->input_file)
       {
-        mzx_world->input_file =
-         fsafeopen(mzx_world->input_file_name, "rb");
-
-        if(mzx_world->input_file)
-          fseek(mzx_world->input_file, fgetd(fp), SEEK_SET);
-        else
-          fseek(fp, 4, SEEK_CUR);
-      }
-      else
-      {
-        fseek(fp, 4, SEEK_CUR);
-      }
-
-      // Load ouput file name, open
-      fread(mzx_world->output_file_name, 1, 12, fp);
-      mzx_world->output_file_name[12] = 0;
-      if(mzx_world->output_file_name[0] != '\0')
-      {
-        mzx_world->output_file =
-         fsafeopen(mzx_world->output_file_name, "ab");
-
-        if(mzx_world->output_file)
-          fseek(mzx_world->output_file, fgetd(fp), SEEK_SET);
-        else
-          fseek(fp, 4, SEEK_CUR);
+        fseek(mzx_world->input_file, fgetd(fp), SEEK_SET);
       }
       else
       {
         fseek(fp, 4, SEEK_CUR);
       }
     }
-
-    if(mzx_world->version >= 0x0245)
+    else
     {
-      screen_mode = fgetw(fp);
+      fseek(fp, 4, SEEK_CUR);
+    }
 
-      // If it's at SMZX mode 2, set default palette as loaded
-      // so the .sav one doesn't get overwritten
-      if(screen_mode == 2)
+    // Load ouput file name, open
+    fread(mzx_world->output_file_name, 1, 12, fp);
+    mzx_world->output_file_name[12] = 0;
+    if(mzx_world->output_file_name[0] != '\0')
+    {
+      mzx_world->output_file =
+       fsafeopen(mzx_world->output_file_name, "ab");
+
+      if(mzx_world->output_file)
       {
-        smzx_palette_loaded(1);
+        fseek(mzx_world->output_file, fgetd(fp), SEEK_SET);
       }
-      set_screen_mode(screen_mode);
-
-      // Also get the palette
-      if(screen_mode > 1)
+      else
       {
-        for(i = 0; i < 256; i++)
-        {
-          r = fgetc(fp);
-          g = fgetc(fp);
-          b = fgetc(fp);
+        fseek(fp, 4, SEEK_CUR);
+      }
+    }
+    else
+    {
+      fseek(fp, 4, SEEK_CUR);
+    }
 
-          set_rgb(i, r, g, b);
-        }
+    screen_mode = fgetw(fp);
+
+    // If it's at SMZX mode 2, set default palette as loaded
+    // so the .sav one doesn't get overwritten
+    if(screen_mode == 2)
+    {
+      smzx_palette_loaded(1);
+    }
+    set_screen_mode(screen_mode);
+
+    // Also get the palette
+    if(screen_mode > 1)
+    {
+      for(i = 0; i < 256; i++)
+      {
+        r = fgetc(fp);
+        g = fgetc(fp);
+        b = fgetc(fp);
+
+        set_rgb(i, r, g, b);
       }
     }
 
-    if(mzx_world->version >= 0x0248)
-    {
-      mzx_world->commands = fgetw(fp);
+    mzx_world->commands = fgetw(fp);
 
-      vlayer_size = fgetd(fp);
-      mzx_world->vlayer_width = fgetw(fp);
-      mzx_world->vlayer_height = fgetw(fp);
-      mzx_world->vlayer_size = vlayer_size;
+    vlayer_size = fgetd(fp);
+    mzx_world->vlayer_width = fgetw(fp);
+    mzx_world->vlayer_height = fgetw(fp);
+    mzx_world->vlayer_size = vlayer_size;
 
-      mzx_world->vlayer_chars = (char *)malloc(vlayer_size);
-      mzx_world->vlayer_colors = (char *)malloc(vlayer_size);
+    mzx_world->vlayer_chars = (char *)malloc(vlayer_size);
+    mzx_world->vlayer_colors = (char *)malloc(vlayer_size);
 
-      fread(mzx_world->vlayer_chars, 1, vlayer_size, fp);
-      fread(mzx_world->vlayer_colors, 1, vlayer_size, fp);
-    }
+    fread(mzx_world->vlayer_chars, 1, vlayer_size, fp);
+    fread(mzx_world->vlayer_colors, 1, vlayer_size, fp);
   }
 
   update_palette();
