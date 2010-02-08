@@ -3087,7 +3087,8 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
             *out_position = current_char;
             out_position++;
             in_position++;
-          } while(current_char);
+          }
+          while(out_position - comment_buffer < 240 && current_char);
 
           *(out_position - 1) = '"';
           *out_position = 0;
