@@ -960,13 +960,13 @@ static int scrolledy_read(World *mzx_world, function_counter *counter,
   return scroll_y;
 }
 
-static int timerset_read(World *mzx_world, function_counter *counter,
+static int timereset_read(World *mzx_world, function_counter *counter,
  const char *name, int id)
 {
   return mzx_world->current_board->time_limit;
 }
 
-static void timerset_write(World *mzx_world, function_counter *counter,
+static void timereset_write(World *mzx_world, function_counter *counter,
  const char *name, int value, int id)
 {
   mzx_world->current_board->time_limit = value;
