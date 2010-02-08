@@ -6,6 +6,11 @@ USERS
   (Mr_Alert).
 + Have the numpad work correctly when numlock is disabled. Keys are no longer
   ignored by the MZX editor, and games should recognize them as before.
++ Added a tool, "checkres", intended to be distributed separately, which
+  extracts all resources from a MegaZeux world or board file and lists them
+  (or lists only those which are not found in the game directory.
+  ZIP files are also supported (to a more limited extent).
+  (ajs & Revvy, ideas from Exophase & Terryn).
 
 DEVELOPERS
 
