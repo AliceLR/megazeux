@@ -29,7 +29,6 @@ MZX REQUESTS:
 -Looping sound effects independent of the MOD command. [Exo skipped]
 -Read-only viewport height and viewport width characters. [Exo skipped]
 -Hotkeys to instantly jump to the next and previous boards. [Exo skipped]
--[+Exo: "add it to the event handling code"]Ability to use the numpad for editor actions.
 -[+Terryn]Board setting to toggle freezing the player when spacebar is held down (on by default).
 -[+Exo]Ability to set "MOD *" without nuking the current playing mod.
 -MOD_LENGTH counter (based on current mod row or PCM sample).
