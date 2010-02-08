@@ -1735,6 +1735,7 @@ static mzx_string *add_string_preallocate(World *mzx_world, const char *name,
   dest->length = length;
 
   dest->value = dest->storage_space + name_length;
+  memset(dest->value, ' ', length - 1);
 
   mzx_world->string_list[position] = dest;
   mzx_world->num_strings = count + 1;
@@ -1743,17 +1744,25 @@ static mzx_string *add_string_preallocate(World *mzx_world, const char *name,
 }
 
 static mzx_string *reallocate_string(World *mzx_world,
- mzx_string *src, int pos, int length)
+ mzx_string *src, int pos, unsigned int length)
 {
   // Find the base length (take out the current length)
   int base_length = (int)(src->value - (char *)src);
 
   src = (mzx_string *)realloc(src, base_length + length);
   src->value = (char *)src + base_length;
+
+  // any new bits of the string should be space filled
+  // versions up to and including 2.81h used to fill this with garbage
+  if(src->allocated_length < length)
+  {
+    memset(&src->value[src->allocated_length], ' ',
+     length - src->allocated_length);
+  }
+
   src->allocated_length = length;
 
   mzx_world->string_list[pos] = src;
-
   return src;
 }
 
@@ -2838,7 +2847,6 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
         allocated *= 2;
 
         dest = reallocate_string(mzx_world, dest, next, allocated);
-
         dest_value = dest->value;
       }
     }
@@ -3073,14 +3081,12 @@ void inc_string(World *mzx_world, const char *name, mzx_string *src, int id)
        (src_end >= dest->value))
       {
         char *old_dest_value = dest->value;
-        dest = reallocate_string(mzx_world, dest, next,
-         new_length);
+        dest = reallocate_string(mzx_world, dest, next, new_length);
         src->value += (int)(dest->value - old_dest_value);
       }
       else
       {
-        dest = reallocate_string(mzx_world, dest, next,
-         new_length);
+        dest = reallocate_string(mzx_world, dest, next, new_length);
       }
     }
 
