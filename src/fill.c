@@ -176,7 +176,7 @@ void fill_area(World *mzx_world, mzx_thing id, int color, int param,
   int offset = x + (y * board_width);
 
   int stack_pos; // Current element. -1 = empty.
-  StackElem stack[STACK_SIZE + 1];
+  StackElem *stack = malloc(sizeof(StackElem) * (STACK_SIZE + 1));
 
   if(overlay_edit)
   {
@@ -188,7 +188,7 @@ void fill_area(World *mzx_world, mzx_thing id, int color, int param,
     fill_over_param = param_check[offset];
 
     if((fill_over_param == param) && (fill_over_color == color))
-      return;
+      goto out_free_stack;
 
     stack_pos = 0;
     // 2) Push current position going left.
@@ -235,7 +235,7 @@ void fill_area(World *mzx_world, mzx_thing id, int color, int param,
       {
         if(place_current_at_xy(mzx_world, id, color, param, x, y, copy_robot,
          copy_scroll, copy_sensor, overlay_edit) == -1)
-          return;
+          goto out_free_stack;
 
         // 6) Note what is above- If it DOESN'T match, set ABOVE_MATCH to 0.
         if(y > 0)
@@ -285,7 +285,7 @@ void fill_area(World *mzx_world, mzx_thing id, int color, int param,
   else
   {
     if(id == PLAYER)
-      return;
+      goto out_free_stack;
 
     id_check = src_board->level_id;
     param_check = src_board->level_param;
@@ -298,7 +298,7 @@ void fill_area(World *mzx_world, mzx_thing id, int color, int param,
 
     if((fill_over_id == id) && (fill_over_param == param) &&
      (fill_over_color == color))
-      return;
+      goto out_free_stack;
 
     stack_pos = 0;
     // 2) Push current position going left.
@@ -345,9 +345,7 @@ void fill_area(World *mzx_world, mzx_thing id, int color, int param,
       {
         if(place_current_at_xy(mzx_world, id, color, param, x, y, copy_robot,
          copy_scroll, copy_sensor, overlay_edit) == -1)
-        {
-          return;
-        }
+          goto out_free_stack;
 
         // 6) Note what is above- If it DOESN'T match, set ABOVE_MATCH to 0.
         if(y > 0)
@@ -395,4 +393,8 @@ void fill_area(World *mzx_world, mzx_thing id, int color, int param,
       //  12) If any elements remain on stack, loop.
     } while(stack_pos >= 0);
   }
+
+out_free_stack:
+  free(stack);
 }
+
