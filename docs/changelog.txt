@@ -85,6 +85,8 @@ USERS
   with MZX 2.70 and is consistent with loading a save from another board.
 + Counters with 10 digits and a negative sign are no longer truncated in
   the debug menu.
++ Correctly clamp (rather than truncate) the value passed through to a
+  SET COLOR. Restores compatibility with 2.70, and fixes Xenogenesis.
 
 DEVELOPERS
 

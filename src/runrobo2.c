@@ -5267,12 +5267,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         // It's pretty sad that this is necessary, but some people don't
         // know how to use set color apparently (see SM4MZX for details)
-        if(r > 63)
-          r = 63;
-        if(g > 63)
-          g = 63;
-        if(b > 63)
-          b = 63;
+        r = CLAMP(r, 0, 63);
+        g = CLAMP(g, 0, 63);
+        b = CLAMP(b, 0, 63);
 
         set_rgb(pal_number, r, g, b);
         pal_update = 1;

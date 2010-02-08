@@ -28,6 +28,12 @@
 
 __M_BEGIN_DECLS
 
+#define MIN(a, b) (((a) < (b)) ? (a) : (b))
+#define MAX(a, b) (((a) > (b)) ? (a) : (b))
+
+#define CLAMP(x, low, high) \
+  (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
+
 long ftell_and_rewind(FILE *f);
 int Random(int range);
 
