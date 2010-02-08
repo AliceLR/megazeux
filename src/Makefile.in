@@ -25,6 +25,14 @@ checkres_base = src/utils
 checkres = ${checkres_base}/checkres${BINEXT}
 checkres_objs = ${checkres_base}/checkres.${o} ${mzx_base}/fsafeopen.${o}
 
+${txt2hlp_base}/%.o ${txt2hlp_base}/%.dbg.o: ${txt2hlp_base}/%.c
+ifeq (${V},1)
+	${CC} ${CFLAGS} -Isrc -c $< -o $@
+else
+	@echo "  CC      " $<
+	@${CC} ${CFLAGS} -Isrc -c $< -o $@
+endif
+
 ${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.c
 ifeq (${V},1)
 	${CC} ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
