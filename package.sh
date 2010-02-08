@@ -29,7 +29,7 @@ createzip_psp() {
 # createzip_nds
 #
 createzip_nds() {
-	mv $TARGET.dbg.elf.nds $TARGET.nds &&
+	mv $TARGET.elf.nds $TARGET.nds &&
 	cp -f $NDSPAD pad.config &&
 	$SEVENZIP a -tzip dist/$TARGET-nds.zip \
 		$BINARY_DEPS $TARGET.nds $DOCS pad.config &&
