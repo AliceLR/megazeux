@@ -203,7 +203,7 @@ static status_t s_open(const char *filename, const char *mode, stream_t **s)
     unzRet = unzGoToNextFile(f);
     if(unzRet != UNZ_OK)
     {
-      if (unzRet == UNZ_END_OF_LIST_OF_FILE)
+      if(unzRet == UNZ_END_OF_LIST_OF_FILE)
         ret = NO_WORLD;
       else
         ret = UNZ_FAILED;
