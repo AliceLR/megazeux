@@ -1381,11 +1381,11 @@ static int update(World *mzx_world, int game, int *fadein)
        mesg_y, scroll_color, 0, 0);
 
       if((mesg_x > 0) && (mesg_edges))
-        draw_char(' ', scroll_color, mesg_x - 1, mesg_y);
+        draw_char_ext(' ', scroll_color, mesg_x - 1, mesg_y, 0, 0);
 
       mesg_x += mesg_length;
       if((mesg_x < 80) && (mesg_edges))
-        draw_char(' ', scroll_color, mesg_x, mesg_y);
+        draw_char_ext(' ', scroll_color, mesg_x, mesg_y, 0, 0);
     }
 
 #ifdef CONFIG_EDITOR
