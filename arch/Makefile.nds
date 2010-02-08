@@ -77,5 +77,5 @@ package: arm7bin arm9bin
 	ndstool -c ${mzx}.nds -7 arch/nds/$(TARGET).arm7 -9 ${mzx}.arm9
 
 clean:
-	$(MAKE) -C arch/nds TARGET=$(TARGET) clean
-	rm -f ${mzx}.nds arch/nds/$(TARGET).arm7 ${mzx}.arm9
+	@$(MAKE) -C arch/nds TARGET=$(TARGET) clean
+	@rm -f ${mzx}.nds arch/nds/$(TARGET).arm7 ${mzx}.arm9

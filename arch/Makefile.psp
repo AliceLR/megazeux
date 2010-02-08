@@ -32,3 +32,6 @@ package:
 		 NULL NULL NULL \
 		 NULL ${BINNAME_STRIP} NULL
 	rm -f ${BINNAME_STRIP}
+
+clean:
+	@rm -f EBOOT.PBP PARAM.SFO
