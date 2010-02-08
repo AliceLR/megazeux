@@ -972,7 +972,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
     // Update cycle count
 
     cur_robot->cycle_count++;
-    if((cur_robot->cycle_count) < (cur_robot->robot_cycle))
+    if(cur_robot->cycle_count < cur_robot->robot_cycle)
     {
       cur_robot->status = 1;
       return;
@@ -1069,10 +1069,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
     // Get command number
     cmd = cmd_ptr[0];
+
     // Act according to command
-
-    //printf("running cmd %d (id %d)\n", cmd, id);
-
     switch(cmd)
     {
       case 0: // End
@@ -1350,12 +1348,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
             gotoed = set_counter_special(mzx_world,
              mzx_world->special_counter_return, dest_buffer, value, id);
 
+            // some specials might have changed these
+            program = cur_robot->program;
+            cmd_ptr = program + cur_robot->cur_prog_line;
+
             // Swapped? Get out of here
             if(mzx_world->swapped)
               return;
-
-            program = cur_robot->program;
-            cmd_ptr = program + cur_robot->cur_prog_line;
           }
           else
           {

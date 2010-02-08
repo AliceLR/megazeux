@@ -2096,7 +2096,7 @@ int set_counter_special(World *mzx_world, int spec_type,
       }
 
       strcpy(mzx_world->input_file_name, char_value);
-      return 0;
+      break;
     }
 
     case FOPEN_FWRITE:
@@ -2117,7 +2117,7 @@ int set_counter_special(World *mzx_world, int spec_type,
       }
 
       strcpy(mzx_world->output_file_name, char_value);
-      return 0;
+      break;
     }
 
     case FOPEN_FAPPEND:
@@ -2140,7 +2140,7 @@ int set_counter_special(World *mzx_world, int spec_type,
       }
 
       strcpy(mzx_world->output_file_name, char_value);
-      return 0;
+      break;
     }
 
     case FOPEN_FMODIFY:
@@ -2163,14 +2163,14 @@ int set_counter_special(World *mzx_world, int spec_type,
       }
 
       strcpy(mzx_world->output_file_name, char_value);
-      return 0;
+      break;
     }
 
     case FOPEN_SMZX_PALETTE:
     {
       load_palette(char_value);
       pal_update = 1;
-      return 0;
+      break;
     }
 
     case FOPEN_SAVE_GAME:
@@ -2182,7 +2182,7 @@ int set_counter_special(World *mzx_world, int spec_type,
         save_world(mzx_world, translated_path, 1, faded);
 
       free(translated_path);
-      return 0;
+      break;
     }
 
     case FOPEN_SAVE_WORLD:
@@ -2193,7 +2193,7 @@ int set_counter_special(World *mzx_world, int spec_type,
         save_world(mzx_world, translated_path, 0, 0);
 
       free(translated_path);
-      return 0;
+      break;
     }
 
     case FOPEN_LOAD_GAME:
@@ -2212,7 +2212,7 @@ int set_counter_special(World *mzx_world, int spec_type,
       }
 
       free(translated_path);
-      return 0;
+      break;
     }
 
     case FOPEN_LOAD_ROBOT:
@@ -2240,7 +2240,7 @@ int set_counter_special(World *mzx_world, int spec_type,
             clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
 
             memcpy(cur_robot->program, new_program, new_size);
-            cur_robot->cur_prog_line = 0; // NOTE: was 1
+            cur_robot->cur_prog_line = 1;
             cur_robot->label_list =
              cache_robot_labels(cur_robot, &(cur_robot->num_labels));
 
@@ -2257,8 +2257,7 @@ int set_counter_special(World *mzx_world, int spec_type,
 
         free(new_program);
       }
-
-      return 0;
+      break;
     }
 
     case FOPEN_LOAD_BC:
@@ -2287,7 +2286,7 @@ int set_counter_special(World *mzx_world, int spec_type,
             clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
 
             fread(cur_robot->program, new_size, 1, bc_file);
-            cur_robot->cur_prog_line = 0; // NOTE: was 1
+            cur_robot->cur_prog_line = 1;
             cur_robot->label_list =
              cache_robot_labels(cur_robot, &(cur_robot->num_labels));
 
@@ -2304,8 +2303,7 @@ int set_counter_special(World *mzx_world, int spec_type,
 
         fclose(bc_file);
       }
-
-      return 0;
+      break;
     }
 
     case FOPEN_SAVE_ROBOT:
@@ -2331,8 +2329,7 @@ int set_counter_special(World *mzx_world, int spec_type,
            allow_extras, base);
         }
       }
-
-      return 0;
+      break;
     }
 
     case FOPEN_SAVE_BC:
@@ -2360,8 +2357,7 @@ int set_counter_special(World *mzx_world, int spec_type,
 
         fclose(bc_file);
       }
-
-      return 0;
+      break;
     }
   }
 
