@@ -180,13 +180,6 @@ int main(int argc, char *argv[])
   set_config_from_command_line(&(mzx_world.conf), argc, argv);
   chdir(current_dir);
 
-#if defined(__MACOSX__)
-  // In Mac OS X, applications are packages, or folders that
-  // look like single files. This code gets the user out of
-  // the bundle and into a directory he/she will recognize.
-  chdir("../../..");
-#endif
-
   counter_fsg();
 
   SDL_EnableUNICODE(1);

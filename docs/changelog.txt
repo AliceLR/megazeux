@@ -1,11 +1,10 @@
 June 9, 2008 - MZX 2.82
 
 Despite the increase in minor version, this release mostly targets bug and
-regression fixes.
-
-However, there ARE some additional new features, such as the introduction
-of the LOAD_MENU and mouse pixel counters and {FREAD,FWRITE}_COUNTER have
-been enhanced.
+regression fixes. However, there ARE some additional new features, such as
+the introduction of the LOAD_MENU and mouse pixel counters, and refinement
+of the {FREAD,FWRITE}_COUNTER counter. (There are several other smaller
+features that are documented in the changelog.)
 
 SAVs from older worlds (requiring compatibility hacks) no longer fail to
 play (Darkness, etc. are affected). We've also done a good bit to fix
@@ -160,8 +159,6 @@ DEVELOPERS
 + Add fixes for OpenBSD to allow PNG screenshots and X11 clipboard support to
   work. Tested with OpenBSD 4.2 and GCC 3.3.5.
 + Updated Win32 builds with SDL 1.2.13.
-+ Build and package two utilities, txt2hlp (for helpfile generation)
-  and checkres, on Win32.
 + Dependencies are now correctly tracked in the build system. Modifying a
   header will automatically regenerate the minimal set of object files that
   depend on this header.
@@ -179,7 +176,10 @@ DEVELOPERS
 + The built-in help system can now be disabled for embedded platforms.
   The startup check for the help file will not be performed if the help
   system is disabled, and so this file can be omitted from distributions.
-+ The package.sh script now supports PSP, GP2X and NDS packaging.
++ The package.sh script now supports OS X, PSP, GP2X and NDS packaging.
++ The OS X port no longer requires Xcode. The new build system and package.sh
+  can create a universal Application and corresponding DMG file. The new
+  infrastructure deprecates the old macosx.zip method.
 
 December 8, 2007 - MZX 2.81h
 

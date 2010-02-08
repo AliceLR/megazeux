@@ -1,6 +1,43 @@
 #
-# darwin makefile generics
+# OS X makefile generics
 #
 
 STRIP ?= strip
-mzx_ldflags += -framework Cocoa
+
+ifneq (${ARCH},ppc)
+CC   := i686-apple-darwin9-gcc-4.0.1
+CXX  := i686-apple-darwin9-g++-4.0.1
+ARCH := i686
+else
+CC   := powerpc-apple-darwin9-gcc-4.0.1
+CXX  := powerpc-apple-darwin9-g++-4.0.1
+ARCH := ppc
+endif
+
+SDL_CFLAGS  = -I${PREFIX}/SDL.Framework/Headers
+SDL_LDFLAGS = -framework SDL
+
+LIBPNG_CFLAGS  = -I${PREFIX}/libpng.Framework/Headers
+LIBPNG_LDFLAGS = -framework libpng
+
+VORBIS_CFLAGS  = -I${PREFIX}/Ogg.Framework/Headers \
+                 -I${PREFIX}/Vorbis.Framework/Headers
+VORBIS_LDFLAGS = -framework Ogg -framework Vorbis
+
+arch/darwin/%.o: arch/darwin/%.m
+ifeq (${V},1)
+	${CC} -MD ${CFLAGS} ${SDL_CFLAGS} -c $< -o $@
+else
+	@echo "  CC      " $<
+	@${CC} -MD ${CFLAGS} ${SDL_CFLAGS} -c $< -o $@
+endif
+
+mzx: arch/darwin/SDLMain.o
+all:
+	@mv mzxsvn mzxsvn.${ARCH}
+clean:
+	@echo "  CLEAN   " arch/darwin
+	@rm -f arch/darwin/SDLMain.o arch/darwin/SDLMain.d
+
+mzx_ldflags += arch/darwin/SDLMain.o
+mzx_ldflags += -F${PREFIX} -framework Cocoa -framework OpenGL

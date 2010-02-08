@@ -8,7 +8,7 @@
 #
 
 usage() {
-	echo "usage: $0 [-b win32 | win64 | psp | nds | gp2x]"
+	echo "usage: $0 [-b win32 | win64 | psp | nds | gp2x | darwin]"
 	echo
 	echo "	-b	Builds a binary distribution for the specified arch."
 	echo "	-h	Displays this help text."
@@ -93,6 +93,62 @@ createzip_dynamic_sdl() {
 }
 
 #
+# createUnifiedDMG
+#
+createUnifiedDMG() {
+	if [ ! -f $TARGET -a ! -f $TARGET.i686 -a ! -f $TARGET.ppc ]; then
+		echo "Neither $TARGET.i686 nor $TARGET.ppc are present!"
+		breakout 4
+	fi
+
+	if [ -f $TARGET.i686 -a ! -f $TARGET.ppc ]; then
+		mv $TARGET.i686 $TARGET
+	elif [ -f $TARGET.ppc -a ! -f $TARGET.i686 ]; then
+		mv $TARGET.ppc $TARGET
+	elif [ ! -f $TARGET ]; then
+		lipo -create $TARGET.i686 $TARGET.ppc -output $TARGET &&
+		rm -f $TARGET.i686 $TARGET.ppc
+	fi
+
+	if [ ! -f $TARGET ]; then
+		echo "Failed to compile $TARGET.."
+		breakout 5
+	fi
+
+	#
+	# Prep the DMG's directory structure in a temp directory
+	#
+	CONTENTS=dist/dmgroot/MegaZeux.app/Contents
+
+	mkdir -p ${CONTENTS}/MacOS &&
+	mkdir -p ${CONTENTS}/Resources &&
+	cp -RP ../Frameworks ${CONTENTS} &&
+	cp $TARGET ${CONTENTS}/MacOS/MegaZeux &&
+	cp $BINARY_DEPS $HELP_FILE ${CONTENTS}/Resources &&
+	cp contrib/icons/quantump.icns ${CONTENTS}/Resources/MegaZeux.icns &&
+	cp arch/darwin/Info.plist ${CONTENTS} &&
+	ln -s MegaZeux.app/Contents/Resources/config.txt dist/dmgroot &&
+	cp $DOCS dist/dmgroot &&
+
+	#
+	# Package it
+	#
+	DMGNAME=dist/$TARGET.dmg
+	VOLNAME=MegaZeux
+
+	hdiutil create $DMGNAME -size 10m -fs HFS+ -volname "$VOLNAME" &&
+	DEV_HANDLE=`hdid $DMGNAME | grep Apple_HFS | \
+	            perl -e '\$_=<>; /^\\/dev\\/(disk.)/; print \$1'`
+	ditto -rsrcFork dist/dmgroot /Volumes/$VOLNAME &&
+	hdiutil detach $DEV_HANDLE &&
+
+	hdiutil convert $DMGNAME -format UDZO -o $DMGNAME.compressed &&
+	mv -f $DMGNAME.compressed.dmg $DMGNAME &&
+
+	rm -rf dist/dmgroot
+}
+
+#
 # in case of error; breakout CODE
 #
 breakout() {
@@ -139,7 +195,7 @@ NDSPAD="arch/nds/pad.config"
 # MegaZeux's build system dependencies; these are packaged in
 # addition to binary deps above to complete the source package.
 #
-BUILD_DEPS="config.sh Makefile package.sh macosx.zip msvc.zip"
+BUILD_DEPS="config.sh Makefile package.sh msvc.zip"
 
 #
 # These directories are purely for source distributions.
@@ -269,6 +325,11 @@ fi
 if [ "$2" = "win64" ]; then
 	LIBSDL="`sdl-config --prefix`/bin/SDL.dll"
 	createzip_dynamic_sdl $LIBSDL x64
+	exit
+fi
+
+if [ "$2" = "darwin" ]; then
+	createUnifiedDMG
 	exit
 fi
 

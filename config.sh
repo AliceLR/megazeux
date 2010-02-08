@@ -185,7 +185,9 @@ fi
 
 ### SYSTEM CONFIG DIRECTORY ###################################################
 
-if [ "$PLATFORM" != "linux" -a "$SYSCONFDIR_SET" != "true" ]; then
+if [ "$PLATFORM" = "darwin" ]; then
+	SYSCONFDIR="../Resources"
+elif [ "$PLATFORM" != "linux" -a "$SYSCONFDIR_SET" != "true" ]; then
 	SYSCONFDIR="."
 fi
 
@@ -228,6 +230,9 @@ if [ "$PLATFORM" = "linux" ]; then
 elif [ "$PLATFORM" = "nds" ]; then
 	echo "#define SHAREDIR \"/games/megazeux/\"" >>src/config.h
 	echo "#define CONFFILE \"config.txt\""       >>src/config.h
+elif [ "$PLATFORM" = "darwin" ]; then
+	echo "#define SHAREDIR \"../Resources/\"" >>src/config.h
+	echo "#define CONFFILE \"config.txt\""    >>src/config.h
 else
 	echo "#define SHAREDIR \"./\""         >> src/config.h
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h

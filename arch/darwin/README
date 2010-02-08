@@ -1,0 +1,55 @@
+BUILDING MEGAZEUX ON OS X
+
+If you are building on the Darwin 9 platform (OS 10.4 or higher) you can build
+MegaZeux without using Xcode by following the instructions in this file. The
+resulting package will be a universal binary containing ppc and i686 code.
+
+PREREQUISITES
+
+You must have installed the SDL, libpng, Ogg, Vorbis frameworks somewhere on
+your system. You do NOT have to install them to System or Library, if you
+don't want. In this case, simply adjust the --prefix given to config.sh to
+point to a local directory.
+
+CONFIGURATION
+
+The only tested config.sh line used to build for OS X is:
+
+./config.sh --platform darwin --prefix $HOME/workspace/Frameworks \
+            --disable-utils --disable-x11
+
+(X11 support is disabled because it is incompatible with the Framework SDL
+ package. If this bug is corrected, it can be re-enabled.)
+
+BUILDING (i686)
+
+You need Xcode's development tools package to have been installed. This does
+NOT mean you need all of the Xcode IDE, but you do need the DMG file it is
+installed from. This is normally included on your OS X install DVD #1. It is
+enough to install the UNIX tools.
+
+make ARCH=i686 all clean
+
+Will build the i686 binary, and put it in the root as "mzxsvn.i686". It will
+also clean the source tree, which is VERY IMPORTANT.
+
+BUILDING (ppc)
+
+This step is optional, but if you want to support G4 Macs running 10.4, you
+need to do this.
+
+make ARCH=ppc all clean
+
+Will build the ppc binary, and put it in the root as "mzxsvn.ppc". It will
+also clean the source tree, which is VERY IMPORTANT.
+
+PACKAGING (+ UNIVERSAL BINARIES)
+
+Simply run:
+
+./package.sh -b darwin
+
+This will output two files to the "dist" directory at the top level. One of
+these is an installable universal Disk iMaGe, the other is a source package.
+
+--ajs (20080609)
