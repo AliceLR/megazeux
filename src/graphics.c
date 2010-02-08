@@ -810,7 +810,6 @@ int init_video(config_info *conf)
 
 #ifdef CONFIG_SDL
   SDL_WM_SetCaption("MegaZeux " VERSION, "");
-  SDL_ShowCursor(SDL_DISABLE);
 #endif
 
   if(!graphics.init_video(&graphics, conf))
@@ -820,6 +819,10 @@ int init_video(config_info *conf)
     if(!graphics.init_video(&graphics, conf))
       return false;
   }
+
+#ifdef CONFIG_SDL
+  SDL_ShowCursor(SDL_DISABLE);
+#endif
 
 #if defined(CONFIG_SDL) && defined(CONFIG_ICON)
 #ifdef __WIN32__

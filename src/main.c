@@ -34,13 +34,9 @@
 #include "platform.h"
 
 #ifdef CONFIG_NDS
-#include <fat.h>
+#include "nds.h"
 #include "render_nds.h"
-#include "ram.h"
-#include "malloc.h"
-#include "exception.h"
-#include "memory_warning_pcx.h"
-#endif // CONFIG_NDS
+#endif
 
 #include "configure.h"
 #include "event.h"

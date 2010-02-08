@@ -36,6 +36,7 @@
 #define VIDEO_OUTPUT_DEFAULT "nds"
 #elif defined(CONFIG_GP2X)
 #define VIDEO_OUTPUT_DEFAULT "gp2x"
+#define AUDIO_BUFFER_SIZE 128
 #elif defined(CONFIG_PSP)
 #define FORCE_BPP_DEFAULT 8
 #endif
@@ -46,6 +47,10 @@
 
 #ifndef VIDEO_OUTPUT_DEFAULT
 #define VIDEO_OUTPUT_DEFAULT "software"
+#endif
+
+#ifndef AUDIO_BUFFER_SIZE
+#define AUDIO_BUFFER_SIZE 4096
 #endif
 
 static void config_set_audio_buffer(config_info *conf, char *name, char *value,
@@ -619,7 +624,7 @@ static config_info default_options =
 
   // Audio options
   44100,                        // output_frequency
-  4096,                         // buffer_size
+  AUDIO_BUFFER_SIZE,            // buffer_size
   0,                            // oversampling_on
   1,                            // resample_mode
   1,                            // modplug_resample_mode

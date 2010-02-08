@@ -1,20 +1,18 @@
 MEGAZEUX ON GP2X
 
 As of MegaZeux 2.81g, Simon Parzer donated a port of MegaZeux to the GP2X. It
-has a few limitations, namely video (which is awkwardly scaled to a lower
-resolution using hardware nearest-neighbour) and some minor performance issues.
+has a few limitations, namely video (which has to be scaled down to 320x240),
+some minor performance issues and missing keyboard controls.
 
 It does however support playing MegaZeux games with support for sound effects
 and music. Several popular titles have been tested.
 
 CONFIGURATION
 
-The configuration (config.txt) must be modified in the following ways:
-
-  - "video_output = software"   Other renderers will fail
- OR "video_output = gp2x"       (Only on MZX versions >2.81)
-  - "audio_buffer = 128"        Improves performance
-  - "force_bpp = 8"             Improves performance
+The GP2X port will override the default audio_buffer to 128 samples; there is
+no need to set it explicitly in the config.txt. Also, the gp2x renderer will
+be automatically selected; there is no need to set it explicitly in the
+config.txt.
 
 The file pad.config must be included in the distribution and copied from
 arch/gp2x. This file contains necessary pad mappings for the GP2X controls
@@ -22,14 +20,16 @@ arch/gp2x. This file contains necessary pad mappings for the GP2X controls
 
 COMPILATION
 
-A suitable cross-compiler for ARM (which may be `devkitPro' for GP2X) must be
-installed and added to your environment's PATH variable. For example, if you
-have `arm-linux-gcc' in /usr/arm-linux/bin, you should do the following:
+A suitable cross-compiler for ARM (which may be `gp2x-sdk' or `Open2x' for
+GP2X) must be installed and added to your environment's PATH variable. For
+example, if you have `arm-linux-gcc' in /usr/arm-linux/bin, you should do
+the following:
 
   export PATH=/usr/arm-linux/bin:$PATH
 
 It is now necessary to compile `SDL', `libmikmod', `tremor' and `glibc'.
-Compilation of these libraries is not covered in this document.
+Compilation of these libraries is not covered in this document. It may also
+be possible to use the pre-compiled libraries come with your toolchain.
 
   http://libsdl.org/ (1.2.10 or later)
   http://mikmod.raphnet.net/ (3.1.11 or later)
@@ -38,19 +38,22 @@ Compilation of these libraries is not covered in this document.
 
 Now you must run `config.sh'. The configuration script (config.sh) for the GP2X
 platform assumes that --prefix will specify the path to the GP2X SDK. For
-example, if you have the SDK installed to /home/alistair/bin/gp2x-sdk, you
-should specify:
+example, if you have the SDK installed to $TOOLCHAIN, you should specify:
 
-  ./config.sh --platform gp2x --prefix /home/alistair/bin/gp2x \
-              --optimize-size --disable-editor --disable-helpsys \
-              --disable-utils --disable-modplug --enable-mikmod
+  ./config.sh --platform gp2x --prefix $TOOLCHAIN --optimize-size \
+              --disable-editor --disable-helpsys --disable-utils \
+              --enable-mikmod
 
 The configuration script will automatically enable/disable other flags on this
 platform; do not vary the command above, other than to change the prefix. The
-flags `--disable-modplug --enable-mikmod' may be replaced with
-`--disable-audio' if you wish to disable audio support.
+flag `--enable-mikmod' may be replaced with `--disable-audio' if you wish to
+disable audio support.
 
 You may now type `make' as normal to contruct a suitable binary for the GP2X.
-It can be copied, together with the other resources (and config.txt, and
-pad.config) to an MMC card for use on the GP2X.
 
+PACKAGING THE BUILD
+
+You can then use "./package.sh -b gp2x" to build a dist/mzxsvn-gp2x.zip file
+for distribution.
+
+--ajs.

@@ -262,7 +262,7 @@ echo "BUILD_SDL=1" >> Makefile.platform
 
 #
 # If the NDS arch is enabled, some code has to be compile time
-# enabled too. This might be able to go away eventually.
+# enabled too.
 #
 # Additionally, AUDIO must be disabled on NDS as it is currently
 # broken (please fix this!).
@@ -282,7 +282,7 @@ fi
 
 #
 # If the PSP arch is enabled, some code has to be compile time
-# enabled too. This might be able to go away eventually.
+# enabled too.
 #
 if [ "$PLATFORM" = "psp" ]; then
 	echo "Enabling PSP-specific hacks."
@@ -292,12 +292,80 @@ fi
 
 #
 # If the GP2X arch is enabled, some code has to be compile time
-# enabled too. This might be able to go away eventually.
+# enabled too.
+#
+# Additionally, the software renderer is replaced with the gp2x
+# renderer on this platform.
 #
 if [ "$PLATFORM" = "gp2x" ]; then
 	echo "Enabling GP2X-specific hacks."
 	echo "#define CONFIG_GP2X" >> src/config.h
 	echo "BUILD_GP2X=1" >> Makefile.platform
+
+	echo "Force disabling software renderer on GP2X."
+	SOFTWARE="false"
+
+	echo "Force-enabling GP2X 320x240 renderer."
+	GP2X="true"
+
+	echo "Force-disabling Modplug audio."
+	MODPLUG="false"
+fi
+
+#
+# Force-disable OpenGL and overlay renderers on PSP, GP2X and NDS
+#
+if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
+  -o "$PLATFORM" = "nds" ]; then
+  	echo "Force-disabling OpenGL and overlay renderers."
+	OPENGL="false"
+	OVERLAY="false"
+fi
+
+#
+# Force-enable tremor on PSP/GP2X
+#
+if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" ]; then
+	echo "Force-switching ogg/vorbis to tremor."
+	TREMOR="true"
+fi
+
+#
+# Force-disable modplug/mikmod if audio is disabled
+#
+if [ "$AUDIO" = "false" ]; then
+	MODPLUG="false"
+	MIKMOD="false"
+fi
+
+#
+# Force-enable PTHREAD on linux
+#
+if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "linux-static" \
+  -o "$PLATFORM" = "obsd"  -o "$PLATFORM" = "gp2x" ]; then
+	echo "Force-enabling pthread on POSIX platforms."
+	PTHREAD="true"
+fi
+
+#
+# Force disable icon branding if we lack prereqs
+#
+if [ "$ICON" = "true" ]; then
+	if [ "$X11_PLATFORM" = "true" -a "$X11" = "false" ]; then
+		echo "Force-disabling icon branding (X11 disabled)."
+		ICON="false"
+	fi
+
+	if [ "$X11_PLATFORM" = "true" -a "$LIBPNG" = "false" ]; then
+		echo "Force-disabling icon branding (libpng disabled)."
+		ICON="false"
+	fi
+
+	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "gp2x" \
+	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" ]; then
+		echo "Force-disabling icon branding (redundant)."
+		ICON="false"
+	fi
 fi
 
 #
@@ -402,71 +470,6 @@ if [ "$X11" = "true" ]; then
 fi
 
 #
-# Force-enable GP2X renderer on GP2X
-#
-if [ "$PLATFORM" = "gp2x" ]; then
-	echo "Force-enabling GP2X half-width renderer."
-	GP2X="true"
-fi
-
-#
-# Force-disable OpenGL and overlay renderers on PSP, GP2X and NDS
-#
-if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "nds" ]; then
-  	echo "Force-disabling OpenGL and overlay renderers."
-	OPENGL="false"
-	OVERLAY="false"
-fi
-
-#
-# Force-enable tremor on PSP/GP2X
-#
-if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" ]; then
-	echo "Force-switching ogg/vorbis to tremor."
-	TREMOR="true"
-fi
-
-#
-# Force-disable modplug/mikmod if audio is disabled
-#
-if [ "$AUDIO" = "false" ]; then
-	MODPLUG="false"
-	MIKMOD="false"
-fi
-
-#
-# Force-enable pthreads on POSIX platforms
-#
-if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "linux-static" \
-  -o "$PLATFORM" = "obsd"  -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "solaris" ]; then
-	echo "Force-enabling pthreads on POSIX platforms."
-	PTHREAD="true"
-fi
-
-#
-# Force-disable icon branding if we lack prereqs
-#
-if [ "$ICON" = "true" ]; then
-	if [ "$X11_PLATFORM" = "true" -a "$X11" = "false" ]; then
-		echo "Force-disabling icon branding (X11 disabled)."
-		ICON="false"
-	fi
-
-	if [ "$X11_PLATFORM" = "true" -a "$LIBPNG" = "false" ]; then
-		echo "Force-disabling icon branding (libpng disabled)."
-		ICON="false"
-	fi
-
-	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "gp2x" \
-	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" ]; then
-		echo "Force-disabling icon branding (redundant)."
-		ICON="false"
-	fi
-fi
-
-#
 # Software renderer
 #
 if [ "$SOFTWARE" = "true" ]; then
@@ -513,20 +516,16 @@ fi
 #
 # GP2X needs Mikmod, other platforms can pick
 #
-if [ "$MODPLUG" = "true" -a "$PLATFORM" != "gp2x" ]; then
+if [ "$MODPLUG" = "true" ]; then
 	echo "Selected Modplug music engine."
 	echo "#define CONFIG_MODPLUG" >> src/config.h
 	echo "BUILD_MODPLUG=1" >> Makefile.platform
+elif [ "$MIKMOD" = "true" ]; then
+	echo "Selected Mikmod music engine."
+	echo "#define CONFIG_MIKMOD" >> src/config.h
+	echo "BUILD_MIKMOD=1" >> Makefile.platform
 else
-	# disable building local copy of ModPlug in either case
-
-	if [ "$MIKMOD" = "true" ]; then
-		echo "Selected Mikmod music engine."
-		echo "#define CONFIG_MIKMOD" >> src/config.h
-		echo "BUILD_MIKMOD=1" >> Makefile.platform
-	else
-		echo "Music engine disabled."
-	fi
+	echo "Music engine disabled."
 fi
 
 #

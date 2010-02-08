@@ -41,9 +41,10 @@ createzip_nds() {
 #
 createzip_gp2x() {
 	cp -f $GP2XPAD pad.config &&
+	convert -scale 32x32 contrib/icons/quantump.png $TARGET.png &&
 	$SEVENZIP a -tzip dist/$TARGET-gp2x.zip \
-		$BINARY_DEPS $TARGET.gpe $DOCS pad.config &&
-	rm -f pad.config
+		$BINARY_DEPS $TARGET.gpe $DOCS pad.config $TARGET.png &&
+	rm -f pad.config $TARGET.png
 }
 
 #

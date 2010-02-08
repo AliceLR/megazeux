@@ -11,12 +11,10 @@ Follow the instructions to build the toolchain.
 BUILDING DEPENDENCIES
 
 MegaZeux depends on libTremor and SDL, on the PSP platform. Check these modules
-out from the ps2dev SVN repositories. Mikmod is optional, but should be
-checked out if you want music with reasonable performance.
+out from the ps2dev SVN repositories.
 
 svn co svn://svn.pspdev.org/psp/trunk/libTremor
 svn co svn://svn.pspdev.org/psp/trunk/SDL
-svn co svn://svn.pspdev.org/psp/trunk/libmikmod
 
 First, build libTremor:
 
@@ -34,13 +32,6 @@ cd SDL
 LDFLAGS="-L`psp-config --pspsdk-path`/lib -lc -lpspuser" \
 ./configure --host psp --prefix=`psp-config --psp-prefix`
 make
-make install
-cd ..
-
-Then optionally build libmikmod:
-
-cd libmikmod
-make -f Makefile.psp
 make install
 cd ..
 

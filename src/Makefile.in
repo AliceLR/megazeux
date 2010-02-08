@@ -114,7 +114,7 @@ mzx_objs += ${mzx_base}/audio_modplug.${o}
 endif
 
 ifeq (${BUILD_MIKMOD},1)
-mzx_ldflags := -L${PREFIX} -lmikmod ${mzx_ldflags}
+mzx_ldflags := ${MIKMOD_LDFLAGS} ${mzx_ldflags}
 mzx_objs += ${mzx_base}/audio_mikmod.${o}
 endif
 

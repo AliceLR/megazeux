@@ -2,6 +2,7 @@
  *
  * Copyright (C) 2002 Gilead Kutnick <exophase@adelphia.net>
  * Copyright (C) 2008 Alan Williams <mralert@gmail.com>
+ * Copyright (C) 2008 Simon Parzer <simon.parzer@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -35,6 +36,10 @@ PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #include "malloc.h"
 #include "exception.h"
 #include "memory_warning_pcx.h"
+#endif
+
+#ifdef CONFIG_GP2X
+#include <unistd.h> //for chdir, execl
 #endif
 
 void delay(Uint32 ms)
@@ -91,5 +96,10 @@ void platform_quit(void)
 
 #ifdef CONFIG_NDS
   nds_ext_unlock();
+#endif
+
+#ifdef CONFIG_GP2X
+  chdir("/usr/gp2x");
+  execl("/usr/gp2x/gp2xmenu", "/usr/gp2x/gp2xmenu", NULL);
 #endif
 }
