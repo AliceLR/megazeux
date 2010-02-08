@@ -1136,13 +1136,13 @@ void global_info(World *mzx_world)
         b_elements[3] = construct_color_box(38, 3, "Edging color- ",
          0, &edge_color);
         b_elements[4] = construct_number_box(6, 5, "Starting lives-  ",
-         0, 32767, 0, &starting_lives);
+         1, 32767, 0, &starting_lives);
         b_elements[5] = construct_number_box(6, 6, "Maximum lives-   ",
-         0, 32767, 0, &lives_limit);
+         1, 32767, 0, &lives_limit);
         b_elements[6] = construct_number_box(6, 8, "Starting health- ",
-         0, 32767, 0, &starting_health);
+         1, 32767, 0, &starting_health);
         b_elements[7] = construct_number_box(6, 9, "Maximum health-  ",
-         0, 32767, 0, &health_limit);
+         1, 32767, 0, &health_limit);
         b_elements[8] = construct_button(38, 9, "Previous", 2);
         b_elements[9] = construct_check_box(6, 11, check_box_strings_2,
          3, 39, check_box_results_2);
