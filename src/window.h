@@ -29,6 +29,9 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
+void set_context(int c);
+void pop_context(void);
+
 // For name seeking in list_menu
 #define TIME_SUSPEND 300
 
@@ -281,6 +284,10 @@ int file_manager(World *mzx_world, const char **wildcards, char *ret,
  const char *title, int dirs_okay, int allow_new, element **dialog_ext,
  int num_ext, int ext_height, int allow_dir_change);
 #endif // CONFIG_EDITOR
+
+#ifdef CONFIG_HELPSYS
+int get_context(void);
+#endif
 
 __M_END_DECLS
 

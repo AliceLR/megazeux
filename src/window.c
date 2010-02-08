@@ -50,6 +50,37 @@
 #include "world.h"
 #include "util.h"
 
+// This context stuff was originally in helpsys, but it's actually
+// more of a property of the windowing system.
+
+static int contexts[128];
+static int curr_context;
+
+// 72 = "No" context link
+static int context = 72;
+
+void set_context(int c)
+{
+  contexts[curr_context++] = context;
+  context = c;
+}
+
+void pop_context(void)
+{
+  if(curr_context > 0)
+    curr_context--;
+  context = contexts[curr_context];
+}
+
+#ifdef CONFIG_HELPSYS
+
+int get_context(void)
+{
+  return context;
+}
+
+#endif // CONFIG_HELPSYS
+
 #define NUM_SAVSCR 6
 
 // Big fat hack. This will be initialized to a bunch of 0's, or NULLs.
@@ -850,6 +881,7 @@ int color_selection(int current, int allow_wild)
   int key;
   int selected;
   int currx, curry;
+
   // Save screen
   save_screen();
 
