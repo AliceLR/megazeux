@@ -91,6 +91,7 @@
 #include "fsafeopen.h"
 #include "game.h"
 #include "audio.h"
+#include "extmem.h"
 #include "util.h"
 
 static char save_version_string[6] = "MZS\x02\x52";
@@ -1135,14 +1136,12 @@ static int load_world(World *mzx_world, const char *file, int savegame,
   for(i = 0; i < num_boards; i++)
   {
     mzx_world->board_list[i] = load_board_allocate(fp, savegame);
+    store_board_to_extram(mzx_world->board_list[i]);
   }
 
   // Read global robot
   fseek(fp, gl_rob, SEEK_SET);
   load_robot(mzx_world->global_robot, fp, savegame);
-
-  mzx_world->current_board =
-   mzx_world->board_list[mzx_world->current_board_id];
 
   // Go back to where the names are
   fseek(fp, last_pos, SEEK_SET);
@@ -1150,23 +1149,30 @@ static int load_world(World *mzx_world, const char *file, int savegame,
   {
     cur_board = mzx_world->board_list[i];
     // Look at the name, width, and height of the just loaded board
-
     if(cur_board)
     {
       fread(cur_board->board_name, BOARD_NAME_SIZE, 1, fp);
+
       // Also patch a pointer to the global robot
       if(cur_board->robot_list)
-      {
         (mzx_world->board_list[i])->robot_list[0] = mzx_world->global_robot;
-      }
+
       // Also optimize out null objects
+      retrieve_board_from_extram(mzx_world->board_list[i]);
       optimize_null_objects(mzx_world->board_list[i]);
+      store_board_to_extram(mzx_world->board_list[i]);
     }
     else
     {
       fseek(fp, BOARD_NAME_SIZE, SEEK_CUR);
     }
   }
+
+  // This pointer is now invalid. Clear it before we try to
+  // send it back to extra RAM.
+  mzx_world->current_board = NULL;
+  set_current_board_ext(mzx_world,
+   mzx_world->board_list[mzx_world->current_board_id]);
 
   mzx_world->active = 1;
 
@@ -1301,7 +1307,6 @@ int append_world(World *mzx_world, const char *file)
   last_pos = ftell(fp);
   fseek(fp, num_boards * BOARD_NAME_SIZE, SEEK_CUR);
 
-
   if(num_boards + old_num_boards >= MAX_BOARDS)
     num_boards = MAX_BOARDS - old_num_boards;
 
@@ -1310,7 +1315,6 @@ int append_world(World *mzx_world, const char *file)
   mzx_world->board_list =
    realloc(mzx_world->board_list,
    sizeof(Board *) * (old_num_boards + num_boards));
-
 
   // Append boards
   for(i = old_num_boards; i < old_num_boards + num_boards; i++)
@@ -1507,8 +1511,8 @@ int reload_swap(World *mzx_world, const char *file, int *faded)
   clear_world(mzx_world);
   load_return = load_world(mzx_world, file, 0, faded);
   mzx_world->current_board_id = mzx_world->first_board;
-  mzx_world->current_board =
-   mzx_world->board_list[mzx_world->current_board_id];
+  set_current_board_ext(mzx_world,
+   mzx_world->board_list[mzx_world->current_board_id]);
 
   return load_return;
 }
@@ -1526,6 +1530,8 @@ void clear_world(World *mzx_world)
 
   for(i = 0; i < num_boards; i++)
   {
+    if(mzx_world->current_board_id != i)
+      retrieve_board_from_extram(board_list[i]);
     clear_board(board_list[i]);
   }
   free(board_list);

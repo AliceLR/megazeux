@@ -47,6 +47,7 @@
 #include "fsafeopen.h"
 #include "param.h"
 #include "macro.h"
+#include "extmem.h"
 #include "util.h"
 
 #define parsedir(a, b, c, d) \
@@ -3369,12 +3370,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if(board_id != NO_BOARD)
         {
-          mzx_world->current_board = mzx_world->board_list[board_id];
-          prefix_mid_xy(mzx_world, &teleport_x, &teleport_y,
-           x, y);
+          set_current_board_ext(mzx_world, mzx_world->board_list[board_id]);
+          prefix_mid_xy(mzx_world, &teleport_x, &teleport_y, x, y);
+
           // And switch back
-          mzx_world->current_board =
-           mzx_world->board_list[current_board_id];
+          set_current_board_ext(mzx_world,
+           mzx_world->board_list[current_board_id]);
           mzx_world->target_board = board_id;
           mzx_world->target_x = teleport_x;
           mzx_world->target_y = teleport_y;

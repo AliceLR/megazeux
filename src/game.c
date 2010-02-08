@@ -49,6 +49,7 @@
 #include "world.h"
 #include "robot.h"
 #include "fsafeopen.h"
+#include "extmem.h"
 #include "util.h"
 
 #ifdef CONFIG_EDITOR
@@ -1466,8 +1467,12 @@ static int update(World *mzx_world, int game, int *fadein)
     mzx_world->under_player_param = 0;
     mzx_world->under_player_color = 7;
 
-    mzx_world->current_board_id = target_board;
-    mzx_world->current_board = mzx_world->board_list[target_board];
+    if(mzx_world->current_board_id != target_board)
+    {
+       mzx_world->current_board_id = target_board;
+       set_current_board_ext(mzx_world, mzx_world->board_list[target_board]);
+    }
+ 
     src_board = mzx_world->current_board;
 
     if(strcasecmp(mzx_world->real_mod_playing, src_board->mod_playing) &&
@@ -2342,9 +2347,13 @@ void title_screen(World *mzx_world)
 
             if(!reload_world(mzx_world, curr_file, &fade))
             {
-              mzx_world->current_board_id = mzx_world->first_board;
-              mzx_world->current_board =
-               mzx_world->board_list[mzx_world->current_board_id];
+              if(mzx_world->current_board_id != mzx_world->first_board)
+              {
+                mzx_world->current_board_id = mzx_world->first_board;
+                set_current_board_ext(mzx_world,
+                 mzx_world->board_list[mzx_world->current_board_id]);
+              }
+
               src_board = mzx_world->current_board;
 
               // send both JUSTENTERED and JUSTLOADED respectively; the

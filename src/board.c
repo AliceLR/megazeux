@@ -24,6 +24,7 @@
 #include "board.h"
 #include "world.h"
 #include "const.h"
+#include "extmem.h"
 
 static int cmp_robots(const void *dest, const void *src)
 {
@@ -595,7 +596,7 @@ void replace_current_board(World *mzx_world, char *name)
     if(src_board->robot_list)
       src_board->robot_list[0] = mzx_world->global_robot;
 
-    mzx_world->current_board = src_board;
+    set_current_board(mzx_world, src_board);
     mzx_world->board_list[current_board_id] = src_board;
   }
 
