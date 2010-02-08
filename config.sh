@@ -243,10 +243,16 @@ fi
 # If the NDS arch is enabled, some code has to be compile time
 # enabled too. This might be able to go away eventually.
 #
+# Additionally, AUDIO must be disabled on NDS as it is currently
+# broken (please fix this!).
+#
 if [ "$PLATFORM" = "nds" ]; then
 	echo "Enabling NDS-specific hacks."
 	echo "BUILD_NDS=1" >> Makefile.platform
 	echo "#define CONFIG_NDS" >> src/config.h
+
+	echo "Force disabling audio on NDS (fixme)."
+	AUDIO="false"
 fi
 
 #
