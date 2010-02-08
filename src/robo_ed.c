@@ -358,7 +358,7 @@ static int update_current_line(robot_state *rstate)
     {
       current_rline->line_text_length = 240;
       current_rline->line_text =
-       realloc(current_rline->line_text, 240);
+       realloc(current_rline->line_text, 240 + 1);
       memcpy(current_rline->line_text, new_command_buffer, 240);
       current_rline->line_text[240] = 0;
 

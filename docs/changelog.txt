@@ -146,6 +146,8 @@ USERS
 + A game loading SAVs via the LOAD_GAME counter will no longer crash MZX
   if the SAV attempted is from an incompatible version of MZX, or in any
   way corrupted.
++ Fix a crash when auto-completing lines that were greater than 241 characters
+  in length after completion.
 
 DEVELOPERS
 
