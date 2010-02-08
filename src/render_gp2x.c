@@ -22,11 +22,13 @@
 #include "renderers.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 typedef struct
 {
   SDL_Surface *screen;
   Uint32 halfmask;
+  Uint16 buffer[320*350];
 } gp2x_render_data;
 
 static void gp2x_set_colors_mzx (graphics_data *graphics, Uint32 *char_colors,
@@ -199,9 +201,9 @@ static int gp2x_init_video(graphics_data *graphics, config_info *conf)
   graphics->bits_per_pixel = 16;
 
   graphics->resolution_width = 320;
-  graphics->resolution_height = 350;
+  graphics->resolution_height = 240;
   graphics->window_width = 320;
-  graphics->window_height = 350;
+  graphics->window_height = 240;
 
   return set_video_mode();
 }
@@ -251,28 +253,25 @@ static void gp2x_get_screen_coords(graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y)
 {
   *x = screen_x * 2;
-  *y = screen_y;
+  *y = screen_y * 35 / 24;
   *min_x = 0;
   *min_y = 0;
   *max_x = 319;
-  *max_y = 349;
+  *max_y = 239;
 }
 
 static void gp2x_set_screen_coords(graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y)
 {
   *screen_x = x / 2;
-  *screen_y = y;
+  *screen_y = y * 24 / 35;
 }
 
 static void gp2x_render_graph(graphics_data *graphics)
 {
   gp2x_render_data *render_data = graphics->render_data;
-  SDL_LockSurface(render_data->screen);
-  render_graph8((Uint8 *)render_data->screen->pixels,
-   render_data->screen->pitch, graphics,
+  render_graph8((Uint8 *)render_data->buffer, 640, graphics,
    gp2x_set_colors[graphics->screen_mode]);
-  SDL_UnlockSurface(render_data->screen);
 }
 
 static void gp2x_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
@@ -281,25 +280,37 @@ static void gp2x_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
   gp2x_render_data *render_data = graphics->render_data;
   Uint32 flatcolor = graphics->flat_intensity_palette[color];
   flatcolor |= flatcolor << 16;
-  SDL_LockSurface(render_data->screen);
-  render_cursor((Uint32 *)render_data->screen->pixels,
-   render_data->screen->pitch, 8, x, y, flatcolor, lines, offset);
-  SDL_UnlockSurface(render_data->screen);
+  render_cursor((Uint32 *)render_data->buffer, 640, 8, x, y, flatcolor, lines,
+   offset);
 }
 
 static void gp2x_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
  Uint8 w, Uint8 h)
 {
   gp2x_render_data *render_data = graphics->render_data;
-  SDL_LockSurface(render_data->screen);
-  render_mouse((Uint32 *)render_data->screen->pixels,
-   render_data->screen->pitch, 8, x, y, 0xFFFFFFFF, w, h);
-  SDL_UnlockSurface(render_data->screen);
+  render_mouse((Uint32 *)render_data->buffer, 640, 8, x, y, 0xFFFFFFFF, w, h);
 }
 
 static void gp2x_sync_screen(graphics_data *graphics)
 {
   gp2x_render_data *render_data = graphics->render_data;
+  Uint32 line_advance = render_data->screen->pitch / 4;
+  Uint32 *dest = (Uint32*)render_data->screen->pixels;
+  Uint32 *src = (Uint32*)render_data->buffer;
+  Uint32 i, skip = 0;
+  SDL_LockSurface(render_data->screen);
+  for(i = 0; i < 240; i++)
+  {
+    memcpy(dest, src, sizeof(Uint32) * 160);
+    dest += line_advance;
+    skip += 35;
+    while (skip >= 24)
+    {
+      src += 160;
+      skip -= 24;
+    }
+  }
+  SDL_UnlockSurface(render_data->screen);
   SDL_Flip(render_data->screen);
 }
 
