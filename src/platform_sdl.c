@@ -22,7 +22,7 @@
 
 #include "SDL.h"
 
-#ifdef PSP_BUILD
+#ifdef CONFIG_PSP
 #include <pspsdk.h>
 #include <psppower.h>
 PSP_MAIN_THREAD_STACK_SIZE_KB(512);

@@ -387,10 +387,10 @@ static void nds_render_graph(graphics_data *graphics)
   nds_render_graph_1to1(graphics);
 }
 
-static void nds_update_palette_entry(SDL_Color *palette, Uint32 idx)
+static void nds_update_palette_entry(rgb_color *palette, Uint32 idx)
 {
   u16* hw_pal  = PALETTE + idx;
-  SDL_Color color1 = palette[idx];
+  rgb_color color1 = palette[idx];
   int entry2;
 
   if(idx < 16)
@@ -406,7 +406,7 @@ static void nds_update_palette_entry(SDL_Color *palette, Uint32 idx)
       for(entry2 = 0; entry2 < 16; entry2++)
       {
         /* Average the colors while reducing their accuracy to 5 bits. */
-        SDL_Color color2 = palette[entry2];
+        rgb_color color2 = palette[entry2];
         u16 r = (color1.r + color2.r) / 16;
         u16 g = (color1.g + color2.g) / 16;
         u16 b = (color1.b + color2.b) / 16;
@@ -420,7 +420,7 @@ static void nds_update_palette_entry(SDL_Color *palette, Uint32 idx)
   }
 }
 
-static void nds_update_colors(graphics_data *graphics, SDL_Color *palette,
+static void nds_update_colors(graphics_data *graphics, rgb_color *palette,
     Uint32 count)
 {
   Uint32 i;

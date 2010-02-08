@@ -26,7 +26,7 @@ __M_BEGIN_DECLS
 
 #include "platform.h"
 
-#include "SDL_stdinc.h"
+#include "SDL_types.h"
 #include "SDL_endian.h"
 
 #if SDL_BYTEORDER == SDL_BIG_ENDIAN
