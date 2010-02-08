@@ -157,19 +157,19 @@ int main(int argc, char *argv[])
 
   SDL_Init(flags);
 
-#if defined(__MACOSX__)
-  // In Mac OS X, applications are packages, or folders that
-  // look like single files. This code gets the user out of
-  // the bundle and into a directory he/she will recognize.
-  chdir("../../..");
-#endif
-
   // We need to store the current working directory so it's
   // always possible to get back to it..
   getcwd(current_dir, MAX_PATH);
 
   if(mzx_res_init(argv[0]))
     goto exit_free_res;
+
+#if defined(__MACOSX__)
+  // In Mac OS X, applications are packages, or folders that
+  // look like single files. This code gets the user out of
+  // the bundle and into a directory he/she will recognize.
+  chdir("../../..");
+#endif
 
   allocate_world(&mzx_world);
 
