@@ -18,8 +18,6 @@ USERS
   loadable by MikMod. It is extremely unlikely any game uses these obscure
   formats, but denying their use is now enforced (at a robotic level).
 + Fix crash when writing to a MZX string at an illegal offset (< 0).
-+ Fixed a bug where returning from a subroutine entered through
-  ? "#label" "string" skipped the next impending line.
 
 DEVELOPERS
 
