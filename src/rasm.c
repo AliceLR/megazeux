@@ -21,6 +21,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <ctype.h>
 
 #include "rasm.h"
 #include "data.h"
@@ -1191,6 +1192,18 @@ static int rasm_parse_argument(char *cmd_line, char **next, int *arg_translated,
       *arg_translated = strtol(cmd_line + 1, next, 16);
       *arg_short = IMM_U16;
       return IMM_U16;
+    }
+  }
+  
+  if(!isprint(current)) // It's most likely an unquoted character
+  {
+    //Seriously, who would name a counter a smiley face, anyways?
+    if(isspace(cmd_line[1]) || !cmd_line[1])
+    {
+      *arg_translated = current;
+      *next = cmd_line + 1;
+      *arg_short = S_CHARACTER;
+      return CHARACTER;
     }
   }
 
