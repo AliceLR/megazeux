@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# March 28th, 2008 --ajs.
+# June 7th, 2008 --ajs.
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -208,6 +208,10 @@ modplug_resample_mode = cubic
 # Speed MZX should start at (1 through 9)
 
 #mzx_speed = 4
+
+# Start in the editor by default
+
+#startup_editor = 1
 
 
 ### Board editor options ###

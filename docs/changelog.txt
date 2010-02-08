@@ -126,6 +126,11 @@ USERS
 + Added a new tool "downver" which supports drag-and-drop downgrading of
   a world or board from the version of MZX it is packaged with to the
   previous version of MZX. This tool may be unsafe to use -- be careful.
++ Fixed a bug in the robotic assembler which would occassionally emit corrupt
+  programs with SAVE_ROBOT. These programs, if loaded by LOAD_ROBOT could
+  cause a crash.
++ Added a config.txt (or command line) option "startup_editor" which, if set
+  to a non-zero value, will start MegaZeux in the editor with a blank world.
 
 DEVELOPERS
 

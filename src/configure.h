@@ -58,6 +58,7 @@ struct _config_info
   char startup_file[256];
   char default_save_name[256];
   int mzx_speed;
+  int startup_editor;
 
   // Board editor options
   int editor_space_toggles;

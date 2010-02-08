@@ -278,6 +278,12 @@ static void config_save_file(config_info *conf, char *name, char *value,
   strncpy(conf->default_save_name, value, 256);
 }
 
+static void config_startup_editor(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  conf->startup_editor = strtol(value, NULL, 10);
+}
+
 static void config_startup_file(config_info *conf, char *name, char *value,
  char *extended_data)
 {
@@ -563,6 +569,7 @@ static config_entry config_options[] =
   { "robot_editor_hide_help", redit_hhelp },
   { "sample_volume", config_set_sam_volume },
   { "save_file", config_save_file },
+  { "startup_editor", config_startup_editor },
   { "startup_file", config_startup_file },
   { "video_output", config_set_video_output },
   { "window_resolution", config_window_resolution }
@@ -626,6 +633,7 @@ static config_info default_options =
   "caverns.mzx",                // startup_file
   "saved.sav",                  // default_save_name
   4,                            // mzx_speed
+  0,                            // startup_editor
 
   // Board editor options
   0,                            // editor_space_toggles
