@@ -1426,6 +1426,10 @@ static int update(World *mzx_world, int game, int *fadein)
     load_module(src_board->mod_playing);
     strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
 
+    // send both JUSTLOADED and JUSTENTERED respectively; the
+    // JUSTENTERED label will take priority if a robot defines it.
+    // This differs from pressing P on the title screen, where the
+    // order of precedence is swapped.
     send_robot_def(mzx_world, 0, 10);
     send_robot_def(mzx_world, 0, 11);
 
