@@ -36,16 +36,21 @@ struct mzx_resource
   char *path;
 };
 
-static struct mzx_resource mzx_res[] =
-{
-  [CONFIG_TXT]      = { .base_name = CONFFILE, },
-  [MZX_ASCII_CHR]   = { .base_name = "mzx_ascii.chr", },
-  [MZX_BLANK_CHR]   = { .base_name = "mzx_blank.chr", },
-  [MZX_DEFAULT_CHR] = { .base_name = "mzx_default.chr", },
-  [MZX_HELP_FIL]    = { .base_name = "mzx_help.fil", },
-  [MZX_SMZX_CHR]    = { .base_name = "mzx_smzx.chr", },
-  [MZX_EDIT_CHR]    = { .base_name = "mzx_edit.chr", },
-  [SMZX_PAL]        = { .base_name = "smzx.pal", },
+/* Using C99 initializers would be nicer here, but MSVC doesn't support
+ * them and we try to allow compilation with that compiler.
+ *
+ * As a result, these must be in exactly the same order as the
+ * mzx_resource_id_t enumeration defines them.
+ */
+static struct mzx_resource mzx_res[] = {
+  { CONFFILE,          NULL },
+  { "mzx_ascii.chr",   NULL },
+  { "mzx_blank.chr",   NULL },
+  { "mzx_default.chr", NULL },
+  { "mzx_help.fil",    NULL },
+  { "mzx_smzx.chr",    NULL },
+  { "mzx_edit.chr",    NULL },
+  { "smzx.pal",        NULL },
 };
 
 int mzx_res_init(const char *argv0)

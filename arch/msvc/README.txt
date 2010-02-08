@@ -39,7 +39,7 @@ different compilers. This has certainly been true of the ports to 64bit
 platforms, and will hopefully be true of compiler diversity.
 
 (EDIT: This premise was soon realized after finding several _bugs_ in
- libmodplug that GCC had erroneously not detected. QED.)
+ libmodplug that GCC had erroneously not detected.)
 
 
 VISUAL STUDIO LIMITATIONS AND WORKAROUNDS
@@ -76,47 +76,30 @@ However, MSVC has the following constraints:
   - No C99 support
      MegaZeux also uses C99 to declare variable length arrays on the
      stack. Such support could be expressed with alloca(), but I simply
-     rewrote it to rely on heap functions. As this code lacks the
-     performance of the original code, the changes are not merged. Apply
-     contrib/megazeux-r326-replace-c99-variable-arrays-with-malloc-free.diff
-
-Applying the patch mentioned in the final point can be done with any software
-handling unified diffs, including MinGW's "patch" port.
-
-
-WHY IS THERE NO MSVC PROJECT FILE?
-
-Providing a VisualC.zip similar to other open source projects was considered,
-but eventually decided against. Firstly, this effort was achieved with the
-Express Edition compiler, which is free. This compiler has additional EULA
-nasties which may limit project redistribution.
-
-Additionally, some libraries (e.g. SDL) do not compile in Express Edition
-correctly, unless you remove the DLL resources, or install the MFC SDK
-(which is not free).
-
-(Finally, I simply lack the experience to put together a portable project file
- in a correct way. I would appreciate any contributed project files, however.)
+     rewrote it to rely on heap functions.
 
 
 CURRENT LIMITATIONS
 
 The PNG library was not tested for compatibility, and PNG screendumps are not
 enabled. This code should work, however. Edit config.h if you are interested.
+The appropriate headers and libraries should be added to msvc/Deps.
 
 
-CREATING A PROJECT
+OPENING THE PROJECT
 
-Simply add all of the .h and .c files from src, and contrib/gdm2s3m, to the
-project. Set up the include paths to include arch/msvc (this directory) in
-addition. The libraries user32, advapi32, gdi32, sdl, ogg, vorbis, vorbisfile
-must be added to the link stage.
+The pre-built project files can be found in "msvc.zip" in the top level of
+the sources. This package may not always work, as it is not tested often. At
+the time of writing, Visual Studio 2005 was the minimum working version
+required to open it. The ZIP should create a directory, "msvc", in the top
+level, before this will work.
 
-If you want music support, it is also necessary to add the files from
-contrib/libmodplug, removing a few unused files (load_abc, load_mid, load_pat).
+You may need to alter the include paths and possibly re-add the project
+libraries to get it to compile on your machine. Any suggestions for improving
+this are of course welcome.
 
-It will be necessary to install the Windows Platform SDK if you are using the
-Express Edition compiler. The standard edition should install these files
-automatically.
+At the moment, the resulting binary does not run and I haven't had time to
+track down the root cause. Any experienced MSVC programmer should be able to
+fix this (please send me any fixes).
 
-That's it!
+--ajs

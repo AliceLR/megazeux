@@ -25,9 +25,8 @@
 #include "graphics.h"
 #include "util.h"
 
-static input_status input = {
-  .numlock_status = -1,
-};
+static int numlock_status_initialized;
+static input_status input;
 
 static Uint32 convert_SDL_xt(SDLKey key)
 {
@@ -286,8 +285,11 @@ static Uint32 process_event(SDL_Event *event)
    *
    * What a mess!
    */
-  if (input.numlock_status < 0)
+  if(!numlock_status_initialized)
+  {
     input.numlock_status = !!(SDL_GetModState() & KMOD_NUM);
+    numlock_status_initialized = 1;
+  }
 
   switch(event->type)
   {

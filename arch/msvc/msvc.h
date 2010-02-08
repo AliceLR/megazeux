@@ -32,4 +32,10 @@
 
 #define inline __inline
 
+#ifdef MS_WIN64
+typedef __int64 ssize_t;
+#else
+typedef _W64 int ssize_t;
+#endif
+
 #endif // MSVC_H
