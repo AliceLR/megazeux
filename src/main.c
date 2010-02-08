@@ -35,6 +35,15 @@
 PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #endif
 
+#ifdef CONFIG_NDS
+#include <fat.h>
+#include "render_nds.h"
+#include "nds_exception.h"
+#include "nds_ram.h"
+#include "nds_malloc.h"
+#include "memory_warning_pcx.h"
+#endif // CONFIG_NDS
+
 #include "configure.h"
 #include "event.h"
 #include "helpsys.h"
@@ -54,6 +63,23 @@ PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #include "robo_ed.h"
 #include "edit.h"
 #endif
+
+#ifdef CONFIG_NDS
+
+static void nds_on_vblank(void)
+{
+  /* Handle sleep mode. */
+  nds_sleep_check();
+
+  /* Do all special video handling. */
+  nds_video_rasterhack();
+  nds_video_jitter();
+
+  /* Handle the virtual keyboard and mouse. */
+  nds_inject_input();
+}
+
+#endif // CONFIG_NDS
 
 /* The World structure used to be pretty big (around 7.2k) which
  * caused some platforms grief. Early hacks moved it entirely onto
@@ -105,6 +131,18 @@ int main(int argc, char **argv)
   scePowerSetClockFrequency(333, 333, 166);
 #endif
 
+#ifdef CONFIG_NDS
+  powerON(POWER_ALL);
+  fatInitDefault();
+
+  // If the "extra RAM" is missing, warn the user
+  if(!nds_ram_init(DETECT_RAM))
+    warning_screen((u8*)memory_warning_pcx);
+#endif
+
+  // Lock extra RAM immediately so that the filesystem is available.
+  ext_lock();
+
 #ifdef DEBUG
   flags |= SDL_INIT_NOPARACHUTE;
 #endif
@@ -153,12 +191,15 @@ int main(int argc, char **argv)
 
   set_mouse_mul(8, 14);
 
-  // Setup directory strings
-  // Get megazeux directory
-
   if(!init_video(&(mzx_world.conf)))
     goto exit_free_world;
   init_audio(&(mzx_world.conf));
+
+#ifdef CONFIG_NDS
+  // Steal the interrupt handler back from SDL.
+  irqSet(IRQ_VBLANK, nds_on_vblank);
+  irqEnable(IRQ_VBLANK);
+#endif
 
   warp_mouse(39, 12);
   cursor_off();
@@ -204,5 +245,6 @@ exit_free_world:
 exit_free_res:
   mzx_res_free();
   SDL_Quit();
+  ext_unlock();
   return 0;
 }

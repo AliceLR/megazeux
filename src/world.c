@@ -180,6 +180,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
   int gl_rob_position, gl_rob_save_position;
   int board_offsets_position, board_begin_position, board_end_position;
   int board_size;
+  unsigned int *size_offset_list;
   unsigned char *charset_mem;
   unsigned char r, g, b;
   Board *cur_board;
@@ -442,16 +443,21 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
     fwrite((mzx_world->board_list[i])->board_name, 25, 1, fp);
   }
 
-  // Skip the size/offset list, for now
+  /* Due to some bugs in the NDS's libfat library, seeking backwards
+   * from the end results in data corruption. To prevent this, waste
+   * a little bit of memory caching the offsets of the board data so
+   * we can rewrite the size/offset list with less seeking later.
+   */
+  size_offset_list = malloc(8 * num_boards);
   board_offsets_position = ftell(fp);
   fseek(fp, 8 * num_boards, SEEK_CUR);
 
   for(i = 0; i < num_boards; i++)
   {
     cur_board = mzx_world->board_list[i];
+
     // Before messing with the board, make sure the board is
     // rid of any gaps in the object lists...
-
     optimize_null_objects(cur_board);
 
     // First save the offset of where the board will be placed
@@ -460,24 +466,27 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
     board_size = save_board(cur_board, fp, savegame);
     // Save where the next board should go
     board_end_position = ftell(fp);
-    // Go back to offsets/size list
-    fseek(fp, board_offsets_position, SEEK_SET);
-    // Write size
-    fputd(board_size, fp);
-    // Write offset
-    fputd(board_begin_position, fp);
-    // So next time it goes back here it'll be on the next 8
-    board_offsets_position += 8;
-    // Resume to next position for the board
-    fseek(fp, board_end_position, SEEK_SET);
+    // Record size/offset information.
+    size_offset_list[2 * i] = board_size;
+    size_offset_list[2 * i + 1] = board_begin_position;
   }
 
   // Save for global robot position
   gl_rob_position = ftell(fp);
   save_robot(mzx_world->global_robot, fp, savegame);
+
   // Go back to where the global robot position should be saved
   fseek(fp, gl_rob_save_position, SEEK_SET);
   fputd(gl_rob_position, fp);
+
+  // Go back to offsets/size list
+  fseek(fp, board_offsets_position, SEEK_SET);
+  for(i = 0; i < num_boards; i++)
+  {
+    fputd(size_offset_list[2 * i  ], fp);
+    fputd(size_offset_list[2 * i + 1], fp);
+  }
+  free(size_offset_list);
 
   // ...All done!
   fclose(fp);
