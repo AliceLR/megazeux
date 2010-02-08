@@ -23,7 +23,7 @@ createpspzip() {
 # createzip_dynamic_sdl </path/to/SDL.dll> <POSTFIX>
 #
 createzip_dynamic_sdl() {
-	WINDIB_BAT="windib.bat"
+	DIRECTX_BAT="directx.bat"
 
 	#
 	# Copy SDL here temporarily.
@@ -31,10 +31,10 @@ createzip_dynamic_sdl() {
 	cp -f $1 SDL.dll &&
 
 	#
-	# Generate a suitable windib.bat
+	# Generate a suitable directx.bat
 	#
-	echo "set SDL_VIDEODRIVER=windib" > $WINDIB_BAT &&
-	echo "start $TARGET.exe"         >> $WINDIB_BAT &&
+	echo "set SDL_VIDEODRIVER=directx" > $DIRECTX_BAT &&
+	echo "start $TARGET.exe"          >> $DIRECTX_BAT &&
 
 	#
 	# pack the EXE
@@ -45,25 +45,25 @@ createzip_dynamic_sdl() {
 	# Create the binary package.
 	#
 	$SEVENZIP a -tzip dist/$TARGET-$2.zip \
-		$BINARY_DEPS $DOCS $TARGET.exe SDL.dll $WINDIB_BAT &&
+		$BINARY_DEPS $DOCS $TARGET.exe SDL.dll $DIRECTX_BAT &&
 
 	#
 	# Remove SDL, and the bat file.
 	#
-	rm -f SDL.dll $WINDIB_BAT
+	rm -f SDL.dll $DIRECTX_BAT
 }
 
 #
 # createzip_dynamic_sdl <POSTFIX>
 #
 createzip_static_sdl() {
-	WINDIB_BAT="windib.bat"
+	DIRECTX_BAT="directx.bat"
 
 	#
-	# Generate a suitable windib.bat
+	# Generate a suitable directx.bat
 	#
-	echo "set SDL_VIDEODRIVER=windib" > $WINDIB_BAT &&
-	echo "start $TARGET.exe"         >> $WINDIB_BAT &&
+	echo "set SDL_VIDEODRIVER=directx" > $DIRECTX_BAT &&
+	echo "start $TARGET.exe"          >> $DIRECTX_BAT &&
 
 	#
 	# pack the EXE
@@ -74,12 +74,12 @@ createzip_static_sdl() {
 	# Create the binary package.
 	#
 	$SEVENZIP a -tzip dist/$TARGET-$1.zip \
-		$BINARY_DEPS $DOCS $TARGET.exe $WINDIB_BAT &&
+		$BINARY_DEPS $DOCS $TARGET.exe $DIRECTX_BAT &&
 
 	#
 	# Remove SDL, and the bat file.
 	#
-	rm -f $WINDIB_BAT
+	rm -f $DIRECTX_BAT
 }
 
 #

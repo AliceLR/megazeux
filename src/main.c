@@ -75,16 +75,6 @@ int main(int argc, char **argv)
   scePowerSetClockFrequency(333, 333, 166);
 #endif
 
-#if defined(__WIN32__)
-  // On Windows platforms only, and SDL versions greater than
-  // 1.2.10, they changed the default from 'directx' to 'windib'.
-  // Unfortunately, this has caused performance regressions for
-  // us, so it's easier to change the default back to 'directx'.
-  char *sdl_vd = getenv("SDL_VIDEODRIVER");
-  if(!sdl_vd)
-    putenv("SDL_VIDEODRIVER=directx");
-#endif
-
 #ifdef DEBUG
   flags |= SDL_INIT_NOPARACHUTE;
 #endif
