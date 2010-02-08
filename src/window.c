@@ -3278,7 +3278,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
           {
             dir_list[num_dirs] = malloc(file_name_length + 1);
             strncpy(dir_list[num_dirs], file_name, file_name_length);
-             dir_list[num_dirs][file_name_length] = '\0';
+            dir_list[num_dirs][file_name_length] = '\0';
             num_dirs++;
           }
         }
@@ -3296,7 +3296,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
 
             for(i = 0; wildcards[i] != NULL; i++)
             {
-              if(!strcasecmp((file_name + ext_pos), wildcards[i]))
+              if(!strcasecmp(file_name + ext_pos, wildcards[i]))
               {
                 file_list[num_files] = malloc(56 + file_name_length + 1);
 
@@ -3572,23 +3572,25 @@ __editor_maybe_static int file_manager(World *mzx_world,
 
       case 6:
       {
-        char *file_name = dir_list[chosen_dir];
-        if(strcmp(file_name, ".."))
+        char *file_name_ch = dir_list[chosen_dir];
+        if(strcmp(file_name_ch, ".."))
         {
-          char confirm_string[512];
-          sprintf(confirm_string, "Delete %s - are you sure?",
-           file_name);
+          char confirm_string[70];
+          snprintf(confirm_string, 70, "Delete %s: are you sure?",
+           file_name_ch);
+          confirm_string[69] = 0;
+
           if(!confirm(mzx_world, confirm_string))
           {
-            if(!ask_yes_no(mzx_world, (char *)
-             "Delete subdirectories recursively?"))
+            if(!ask_yes_no(mzx_world,
+             (char *)"Delete subdirectories recursively?"))
             {
-              remove_files(file_name, 1);
-              rmdir(file_name);
+              remove_files(file_name_ch, 1);
+              rmdir(file_name_ch);
             }
             else
             {
-              remove_files(file_name, 0);
+              remove_files(file_name_ch, 0);
             }
           }
         }
@@ -3641,9 +3643,9 @@ __editor_maybe_static int file_manager(World *mzx_world,
       ret_buffer[MAX_PATH - 1] = '\0';
 
 #ifdef __WIN32__
-      sprintf(ret, "%s\\%s", current_dir_name, ret_buffer);
+      snprintf(ret, MAX_PATH, "%s\\%s", current_dir_name, ret_buffer);
 #else
-      sprintf(ret, "%s/%s", current_dir_name, ret_buffer);
+      snprintf(ret, MAX_PATH, "%s/%s", current_dir_name, ret_buffer);
 #endif
 
       chdir(previous_dir_name);
