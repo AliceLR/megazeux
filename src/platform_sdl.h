@@ -46,12 +46,6 @@ typedef SDL_mutex *platform_mutex;
 
 #endif // CONFIG_PTHREAD_MUTEXES
 
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-#define PLATFORM_BYTE_ORDER PLATFORM_BIG_ENDIAN
-#else
-#define PLATFORM_BYTE_ORDER PLATFORM_LIL_ENDIAN
-#endif
-
 __M_END_DECLS
 
 #endif // __PLATFORM_SDL_H

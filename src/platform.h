@@ -24,10 +24,7 @@
 
 __M_BEGIN_DECLS
 
-#define PLATFORM_LIL_ENDIAN 0x1248
-#define PLATFORM_BIG_ENDIAN 0x8421
-#define PLATFORM_PDP_ENDIAN 0x4812
-// Running MegaZeux on a PDP-11? :/
+#include "platform_endian.h"
 
 #ifndef CONFIG_SDL
 #include <inttypes.h>
