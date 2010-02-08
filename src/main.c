@@ -113,6 +113,10 @@ static void allocate_world(World *mzx_world)
 
 static void free_world(World *mzx_world)
 {
+  // allocated once by world.c:set_update_done()
+  if(mzx_world->update_done)
+    free(mzx_world->update_done);
+
   free(mzx_world->real_mod_playing);
   free(mzx_world->input_file_name);
   free(mzx_world->output_file_name);
