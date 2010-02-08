@@ -26,12 +26,13 @@ ARCH_LDFLAGS  = -lc -lpsppower
 
 package:
 	psp-fixup-imports ${BINNAME}
-	mksfo 'MegaZeux PSP' PARAM.SFO
+	mksfo 'MegaZeux ${VERSION}' PARAM.SFO
 	psp-strip ${BINNAME} -o ${BINNAME_STRIP}
-	pack-pbp EBOOT.PBP PARAM.SFO NULL \
-		 NULL NULL NULL \
-		 NULL ${BINNAME_STRIP} NULL
+	convert -scale 80x80 -border 32x0 -bordercolor transparent \
+	        contrib/icons/quantump.png ICON0.PNG
+	pack-pbp EBOOT.PBP PARAM.SFO ICON0.PNG NULL \
+		 NULL NULL NULL ${BINNAME_STRIP} NULL
 	rm -f ${BINNAME_STRIP}
 
 clean:
-	@rm -f EBOOT.PBP PARAM.SFO
+	@rm -f EBOOT.PBP PARAM.SFO ICON0.PNG
