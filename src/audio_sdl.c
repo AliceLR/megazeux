@@ -20,6 +20,8 @@
 #include "audio.h"
 #include "SDL.h"
 
+#include <stdlib.h>
+
 static SDL_AudioSpec audio_settings;
 
 static void sdl_audio_callback(void *userdata, Uint8 *stream, int len)
