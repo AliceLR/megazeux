@@ -154,86 +154,99 @@ static status_t add_to_hash_table(char *stack_str)
 
 static status_t s_open(const char *filename, const char *mode, stream_t **s)
 {
-  *s = (stream_t *)malloc(sizeof(stream_t));
+  unz_file_info info;
+  status_t ret;
 
-  if(!strcasecmp(filename + strlen(filename) - 3, "zip"))
-  {
-    (*s)->type = BUFFER_STREAM;
-    unzFile f = unzOpen(filename);
-    if(!f)
-    {
-      free(*s);
-      *s = NULL;
-      return MALLOC_FAILED;
-    }
-    if(unzGoToFirstFile(f) != UNZ_OK)
-    {
-      free(*s);
-      *s = NULL;
-      unzClose(f);
-      return UNZ_FAILED;
-    }
-    do
-    {
-      char fname[FILENAME_MAX];
-      unz_file_info info;
-      unzGetCurrentFileInfo(f, &info, fname, FILENAME_MAX, NULL, 0, NULL, 0);
-      if(!strcasecmp(fname + strlen(fname) - 3, "mzx"))
-      {
-        if(unzOpenCurrentFile(f) == UNZ_OK)
-        {
-          int ret;
+  *s = malloc(sizeof(stream_t));
 
-          (*s)->stream.buffer.len = info.uncompressed_size;
-          (*s)->stream.buffer.buf = malloc((*s)->stream.buffer.len);
-          if(!(*s)->stream.buffer.buf)
-          {
-            free(*s);
-            *s = NULL;
-            unzClose(f);
-            return MALLOC_FAILED;
-          }
-          ret = unzReadCurrentFile(f, (*s)->stream.buffer.buf,
-                                   (*s)->stream.buffer.len);
-          if(ret <= 0)
-          {
-            free((*s)->stream.buffer.buf);
-            free(*s);
-            *s = NULL;
-            unzClose(f);
-            return UNZ_FAILED;
-          }
-          unzCloseCurrentFile(f);
-          break;
-        }
-        else
-        {
-          free(*s);
-          *s = NULL;
-          unzClose(f);
-          return UNZ_FAILED;
-        }
-      }
-    } while(unzGoToNextFile(f) == UNZ_OK);
-
-    if(unzGoToNextFile(f) == UNZ_END_OF_LIST_OF_FILE)
-    {
-      free(*s);
-      *s = NULL;
-      unzClose(f);
-      return NO_WORLD;
-    }
-    else
-      (*s)->stream.buffer.f = f;
-  }
-  else
+  // not a ZIP, handle in a conventional manner
+  if(strcasecmp(filename + strlen(filename) - 3, "zip"))
   {
     (*s)->type = FILE_STREAM;
     (*s)->stream.fp = fopen(filename, mode);
-    if(!(*s)->stream.fp) return FOPEN_FAILED;
+    if(!(*s)->stream.fp)
+    {
+      ret = FOPEN_FAILED;
+      goto exit_free_stream;
+    }
+    return SUCCESS;
   }
 
+  // otherwise, it's a ZIP file, proceed with buffer logic
+  (*s)->type = BUFFER_STREAM;
+  unzFile f = unzOpen(filename);
+  if(!f)
+  {
+    ret = MALLOC_FAILED;
+    goto exit_free_stream;
+  }
+
+  if(unzGoToFirstFile(f) != UNZ_OK)
+  {
+    ret = UNZ_FAILED;
+    goto exit_free_stream_close;
+  }
+
+  while(1)
+  {
+    char fname[FILENAME_MAX];
+    int unzRet;
+
+    // get the filename for the current ZIP file entry
+    unzGetCurrentFileInfo(f, &info, fname, FILENAME_MAX, NULL, 0, NULL, 0);
+
+    // not a MZX file; don't care
+    if(!strcasecmp(fname + strlen(fname) - 3, "mzx"))
+      break;
+
+    // error occurred, or no files left
+    unzRet = unzGoToNextFile(f);
+    if(unzRet != UNZ_OK)
+    {
+      if (unzRet == UNZ_END_OF_LIST_OF_FILE)
+        ret = NO_WORLD;
+      else
+        ret = UNZ_FAILED;
+
+      goto exit_free_stream_close;
+    }
+  }
+
+  if(unzOpenCurrentFile(f) != UNZ_OK)
+  {
+    ret = UNZ_FAILED;
+    goto exit_free_stream_close;
+  }
+
+  (*s)->stream.buffer.len = info.uncompressed_size;
+  (*s)->stream.buffer.buf = malloc((*s)->stream.buffer.len);
+  if(!(*s)->stream.buffer.buf)
+  {
+    ret = MALLOC_FAILED;
+    goto exit_free_stream_close_both;
+  }
+
+  if(unzReadCurrentFile(f, (*s)->stream.buffer.buf,
+                           (*s)->stream.buffer.len) <= 0)
+  {
+    ret = UNZ_FAILED;
+    goto exit_free_stream_close_both_free_buffer;
+  }
+
+  (*s)->stream.buffer.f = f;
+  unzCloseCurrentFile(f);
   return SUCCESS;
+
+exit_free_stream_close_both_free_buffer:
+  free((*s)->stream.buffer.buf);
+exit_free_stream_close_both:
+  unzCloseCurrentFile(f);
+exit_free_stream_close:
+  unzClose(f);
+exit_free_stream:
+  free(*s);
+  *s = NULL;
+  return ret;
 }
 
 static int sclose(stream_t *s)
@@ -246,11 +259,13 @@ static int sclose(stream_t *s)
       f = s->stream.fp;
       free(s);
       return fclose(f);
+
     case BUFFER_STREAM:
       unzClose(s->stream.buffer.f);
       free(s->stream.buffer.buf);
       free(s);
       return 0;
+
     default:
       return EOS;
   }
