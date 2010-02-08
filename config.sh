@@ -44,7 +44,6 @@ usage() {
 	echo "  --enable-tremor      Switches out libvorbis for libtremor."
 	echo "  --enable-pthread     Use pthread instead of SDL for locking."
 	echo "  --enable-icon        Try to brand executable with icon."
-	echo "                       (X11 platforms require SDL_image)"
 	echo
 	echo "e.g.: ./config.sh --platform linux --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -588,18 +587,12 @@ fi
 if [ "$ICON" = "true" ]; then
 	echo "Icon branding enabled."
 	echo "#define CONFIG_ICON" >> src/config.h
-	#echo "BUILD_ICONS=1" >> Makefile.platform
 
 	#
 	# On Windows we want the icons to be compiled in
 	#
 	if [ "$PLATFORM" = "mingw32" -o "$PLATFORM" = "mingw64" ]; then
 		echo "EMBED_ICONS=1" >> Makefile.platform
-	fi
-
-	# FIXME: Move this elsewhere..
-	if [ "$X11_PLATFORM" = "true" ]; then
-		 echo "mzx_ldflags += -lSDL_image" >> Makefile.platform
 	fi
 else
 	echo "Icon branding disabled."

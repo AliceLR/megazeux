@@ -41,19 +41,15 @@
 
 #ifdef CONFIG_SDL
 #include "SDL.h"
-#endif
-
 #ifdef CONFIG_ICON
-
 #include "SDL_syswm.h"
-
 #ifdef __WIN32__
 #include <windows.h>
 #else
-#include "SDL_image.h"
-#endif
-
+#include "pngops.h"
+#endif // __WIN32__
 #endif // CONFIG_ICON
+#endif // CONFIG_SDL
 
 #ifndef VERSION
 #error Must define VERSION for MegaZeux version string
@@ -826,7 +822,7 @@ int init_video(config_info *conf)
       return false;
   }
 
-#ifdef CONFIG_ICON
+#if defined(CONFIG_SDL) && defined(CONFIG_ICON)
 #ifdef __WIN32__
   {
     /* Roll our own icon code; the SDL stuff is a mess and for some
@@ -848,10 +844,7 @@ int init_video(config_info *conf)
   }
 #else // !__WIN32__
   {
-    /* Pull in SDL_image here; we should probably move IMG_png.c to
-     * contrib as soon as possible.
-     */
-    SDL_Surface *icon = IMG_Load("/usr/share/icons/megazeux.png");
+    SDL_Surface *icon = png_read_icon("/usr/share/icons/megazeux.png");
     if(icon)
     {
       SDL_WM_SetIcon(icon, NULL);
@@ -859,7 +852,7 @@ int init_video(config_info *conf)
     }
   }
 #endif // __WIN32__
-#endif // CONFIG_ICON
+#endif // CONFIG_SDL && CONFIG_ICON
 
   ec_load_set_secondary(mzx_res_get_by_id(MZX_DEFAULT_CHR),
    graphics.default_charset);
@@ -1427,78 +1420,22 @@ void m_show(void)
  * Copyright (C) 2006 Angelo "Encelo" Theodorou
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
  */
-static void dump_screen_real(const Uint8 *pix, const rgb_color *pal, int count,
+static void dump_screen_real(Uint8 *pix, rgb_color *pal, int count,
  const char *name)
 {
-  png_bytep *row_ptrs;
-  png_structp png_ptr;
-  png_infop info_ptr;
-  png_colorp pal_ptr;
-  int i, type;
-  FILE *file;
-
-  file = fopen(name, "wb");
-  if(!file)
-    return;
-
-  png_ptr = png_create_write_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
-  if(!png_ptr)
-    return;
-
-  info_ptr = png_create_info_struct(png_ptr);
-  if(!info_ptr)
-    return;
-
-  if(setjmp(png_jmpbuf(png_ptr)))
-  {
-    png_destroy_write_struct(&png_ptr, &info_ptr);
-    fclose(file);
-    return;
-  }
-
-  png_init_io(png_ptr, file);
-
-  // we know we have an 8-bit surface; save a palettized PNG
-  type = PNG_COLOR_MASK_COLOR | PNG_COLOR_MASK_PALETTE;
-  png_set_IHDR(png_ptr, info_ptr, 640, 350, 8, type,
-   PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
-   PNG_FILTER_TYPE_DEFAULT);
-
-  pal_ptr = malloc(count * sizeof(png_color));
-  for(i = 0; i < count; i++)
-  {
-    pal_ptr[i].red = pal[i].r;
-    pal_ptr[i].green = pal[i].g;
-    pal_ptr[i].blue = pal[i].b;
-  }
-  png_set_PLTE(png_ptr, info_ptr, pal_ptr, count);
-
-  // do the write of the header
-  png_write_info(png_ptr, info_ptr);
-  png_set_packing(png_ptr);
-
-  // and then the surface
-  row_ptrs = malloc(sizeof(png_bytep) * 350);
-  for(i = 0; i < 350; i++)
-    row_ptrs[i] = (png_bytep)(Uint8 *)pix + i * 640;
-  png_write_image(png_ptr, row_ptrs);
-  png_write_end(png_ptr, info_ptr);
-
-  free(pal_ptr);
-  free(row_ptrs);
-  png_destroy_write_struct(&png_ptr, &info_ptr);
-  fclose(file);
+  png_write_screen(pix, pal, count, name);
 }
 
 #else
 
 #define DUMP_FMT_EXT "bmp"
 
-static void dump_screen_real(const Uint8 *pix, const rgb_color *pal, int count,
+static void dump_screen_real(Uint8 *pix, rgb_color *pal, int count,
  const char *name)
 {
-  int i;
   FILE *file;
+  int i;
+
   file = fopen(name, "wb");
   if(!file)
     return;
@@ -1546,11 +1483,11 @@ static void dump_screen_real(const Uint8 *pix, const rgb_color *pal, int count,
 
 void dump_screen(void)
 {
-  int i;
+  rgb_color palette[SMZX_PAL_SIZE];
   char name[MAX_NAME_SIZE];
   struct stat file_info;
   Uint8 *ss;
-  rgb_color palette[SMZX_PAL_SIZE];
+  int i;
 
   for(i = 0; i < 99999; i++)
   {

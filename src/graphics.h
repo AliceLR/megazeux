@@ -27,10 +27,6 @@ __M_BEGIN_DECLS
 #include "platform.h"
 #include "configure.h"
 
-#ifdef CONFIG_PNG
-#include <png.h>
-#endif
-
 typedef enum
 {
   cursor_mode_underline,

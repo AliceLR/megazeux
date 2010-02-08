@@ -121,6 +121,7 @@ endif
 ifeq (${LIBPNG},1)
 mzx_flags += ${LIBPNG_CFLAGS}
 mzx_ldflags := ${LIBPNG_LDFLAGS} ${mzx_ldflags}
+mzx_objs += ${mzx_base}/pngops.${o}
 endif
 
 ifeq (${BUILD_AUDIO},1)
