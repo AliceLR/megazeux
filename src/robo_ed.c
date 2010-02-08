@@ -1996,7 +1996,7 @@ static int validate_lines(robot_state *rstate, int show_none)
   World *mzx_world = rstate->mzx_world;
   element *elements[VALIDATE_ELEMENTS];
   dialog di;
-  char information[64];
+  char information[64] = { 0 };
   int start_line = 0;
   int num_errors = 0;
   char error_messages[MAX_ERRORS][64];
