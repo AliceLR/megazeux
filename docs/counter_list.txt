@@ -68,6 +68,7 @@ name                      r/w      g/n/f/b    i
 "LIVES"                   r w         g       *
 "LOAD_BC"                 r           f       *
 "LOAD_GAME"               r           f       *
+"LOAD_MENU"               r w         b       *
 "LOAD_ROBOT"              r           f       *
 "LOBOMBS"                 r w         n       *
 "LOCALn"                  r w         b       *

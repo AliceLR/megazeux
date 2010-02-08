@@ -1382,6 +1382,8 @@ static void default_global_data(World *mzx_world)
   set_counter(mzx_world, "ENTER_MENU", 1, 0);
   set_counter(mzx_world, "HELP_MENU", 1, 0);
   set_counter(mzx_world, "F2_MENU", 1, 0);
+  set_counter(mzx_world, "LOAD_MENU", 1, 0);
+
   // Setup their gateways
   initialize_gateway_functions(mzx_world);
 

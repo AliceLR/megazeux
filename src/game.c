@@ -1809,36 +1809,40 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
 
         case SDLK_F4:
         {
-          // Restore
-          char save_file_name[64];
-          m_show();
-
-          if(!choose_file_ch(mzx_world, save_ext, save_file_name,
-           "Choose game to restore", 1))
+          if(mzx_world->version < 0x0252 ||
+           get_counter(mzx_world, "LOAD_MENU", 0))
           {
-            // Load game
-            fadein = 0;
-            if(reload_savegame(mzx_world, save_file_name, &fadein))
+            // Restore
+            char save_file_name[64];
+            m_show();
+
+            if(!choose_file_ch(mzx_world, save_ext, save_file_name,
+             "Choose game to restore", 1))
             {
-              vquick_fadeout();
-              return;
+              // Load game
+              fadein = 0;
+              if(reload_savegame(mzx_world, save_file_name, &fadein))
+              {
+                vquick_fadeout();
+                return;
+              }
+
+              // Reset this
+              src_board = mzx_world->current_board;
+              // Swap in starting board
+              load_module(src_board->mod_playing);
+              strcpy(mzx_world->real_mod_playing,
+               src_board->mod_playing);
+
+              find_player(mzx_world);
+
+              strcpy(curr_sav, save_file_name);
+              send_robot_def(mzx_world, 0, 10);
+              fadein ^= 1;
             }
 
-            // Reset this
-            src_board = mzx_world->current_board;
-            // Swap in starting board
-            load_module(src_board->mod_playing);
-            strcpy(mzx_world->real_mod_playing,
-             src_board->mod_playing);
-
-            find_player(mzx_world);
-
-            strcpy(curr_sav, save_file_name);
-            send_robot_def(mzx_world, 0, 10);
-            fadein ^= 1;
+            update_event_status();
           }
-
-          update_event_status();
           break;
         }
 
@@ -2139,7 +2143,8 @@ void title_screen(World *mzx_world)
 
         case SDLK_RETURN: // Enter
         {
-          if(get_counter(mzx_world, "ENTER_MENU", 0))
+          if(mzx_world->version < 0x0209 ||
+           get_counter(mzx_world, "ENTER_MENU", 0))
           {
             int key;
 
