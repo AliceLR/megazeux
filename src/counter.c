@@ -1680,12 +1680,15 @@ static int str_num_read(World *mzx_world, function_counter *counter,
 
   if(get_string(mzx_world, name, &src, id))
   {
-    // Dirty C99, but it works for padding a null terminator.
-    char n_buffer[src.length + 1];
+    char *n_buffer = malloc(src.length + 1);
+    long ret;
+
     memcpy(n_buffer, src.value, src.length);
     n_buffer[src.length] = 0;
+    ret = strtol(n_buffer, NULL, 10);
 
-    return strtol(n_buffer, NULL, 10);
+    free(n_buffer);
+    return ret;
   }
 
   return 0;

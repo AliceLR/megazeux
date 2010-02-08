@@ -2369,7 +2369,7 @@ void edit_world(World *mzx_world)
             case 4:
             {
               // Flip block
-              char temp_buffer[block_width];
+              char *temp_buffer = malloc (sizeof(char) * block_width);
               int start_offset = start_x + (start_y * board_width);
               int end_offset = start_x + ((start_y + block_height - 1) *
                board_width);
@@ -2443,6 +2443,8 @@ void edit_world(World *mzx_world)
 
               draw_mode = 0;
               modified = 1;
+
+              free(temp_buffer);
               break;
             }
 
@@ -2693,8 +2695,8 @@ void edit_world(World *mzx_world)
               case 1:
               {
                 // Copy block
-                char char_buffer[block_width * block_height];
-                char color_buffer[block_width * block_height];
+                char *char_buffer = malloc(block_width * block_height);
+                char *color_buffer = malloc(block_width * block_height);
                 copy_layer_to_buffer(start_x, start_y, block_width,
                  block_height, block_board->overlay, block_board->overlay_color,
                  char_buffer, color_buffer, block_board->board_width);
@@ -2710,14 +2712,17 @@ void edit_world(World *mzx_world)
                   copy_repeat_height = block_height;
                 }
                 modified = 1;
+
+                free(color_buffer);
+                free(char_buffer);
                 break;
               }
 
               case 2:
               {
                 // Move block
-                char char_buffer[block_width * block_height];
-                char color_buffer[block_width * block_height];
+                char *char_buffer = malloc(block_width * block_height);
+                char *color_buffer = malloc(block_width * block_height);
                 copy_layer_to_buffer(start_x, start_y, block_width,
                  block_height, block_board->overlay,
                  block_board->overlay_color, char_buffer,
@@ -2730,6 +2735,8 @@ void edit_world(World *mzx_world)
                  overlay_color, board_width);
 
                 modified = 1;
+                free(color_buffer);
+                free(char_buffer);
                 break;
               }
 
@@ -2814,12 +2821,12 @@ void edit_world(World *mzx_world)
               {
                 // Copy block
                 int block_size = block_width * block_height;
-                char id_buffer[block_size];
-                char param_buffer[block_size];
-                char color_buffer[block_size];
-                char under_id_buffer[block_size];
-                char under_param_buffer[block_size];
-                char under_color_buffer[block_size];
+                char *id_buffer = malloc(block_size);
+                char *param_buffer = malloc(block_size);
+                char *color_buffer = malloc(block_size);
+                char *under_id_buffer = malloc(block_size);
+                char *under_param_buffer = malloc(block_size);
+                char *under_color_buffer = malloc(block_size);
                 copy_board_to_board_buffer(block_board, start_x, start_y,
                  block_width, block_height, id_buffer, param_buffer,
                  color_buffer, under_id_buffer, under_param_buffer,
@@ -2838,6 +2845,12 @@ void edit_world(World *mzx_world)
                 }
 
                 modified = 1;
+                free(under_color_buffer);
+                free(under_param_buffer);
+                free(under_id_buffer);
+                free(color_buffer);
+                free(param_buffer);
+                free(id_buffer);
                 break;
               }
 
@@ -2845,12 +2858,12 @@ void edit_world(World *mzx_world)
               {
                 // Move block
                 int block_size = block_width * block_height;
-                char id_buffer[block_size];
-                char param_buffer[block_size];
-                char color_buffer[block_size];
-                char under_id_buffer[block_size];
-                char under_param_buffer[block_size];
-                char under_color_buffer[block_size];
+                char *id_buffer = malloc(block_size);
+                char *param_buffer = malloc(block_size);
+                char *color_buffer = malloc(block_size);
+                char *under_id_buffer = malloc(block_size);
+                char *under_param_buffer = malloc(block_size);
+                char *under_color_buffer = malloc(block_size);
                 copy_board_to_board_buffer(block_board, start_x, start_y,
                  block_width, block_height, id_buffer, param_buffer,
                  color_buffer, under_id_buffer, under_param_buffer,
@@ -2876,6 +2889,11 @@ void edit_world(World *mzx_world)
                  under_color_buffer);
 
                 modified = 1;
+                free(under_color_buffer);
+                free(under_param_buffer);
+                free(under_id_buffer);
+                free(color_buffer);
+                free(param_buffer);
                 break;
               }
 

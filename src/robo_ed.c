@@ -1514,14 +1514,14 @@ static void execute_macro(robot_state *rstate, ext_macro *macro_src)
 
   int total_dialog_elements = macro_src->total_variables + 3;
   int num_types = macro_src->num_types;
-  element *elements[total_dialog_elements];
-  int nominal_column_widths[num_types];
-  int nominal_column_subwidths[num_types];
-  int vars_per_line[num_types];
+  element **elements = malloc(sizeof(element *) * total_dialog_elements);
+  int *nominal_column_widths = malloc(sizeof(int) * num_types);
+  int *nominal_column_subwidths = malloc(sizeof(int) * num_types);
+  int *vars_per_line = malloc(sizeof(int) * num_types);
   int largest_column_width = 0;
   int total_width;
   int largest_total_width;
-  int lines_needed[num_types];
+  int *lines_needed = malloc(sizeof(int) * num_types);
   int nominal_width = 77, old_width = 77;
   int nominal_height, old_height = 25;
   int total_lines_needed;
@@ -1541,7 +1541,7 @@ static void execute_macro(robot_state *rstate, ext_macro *macro_src)
   if(!num_types)
   {
     output_macro(rstate, macro_src);
-    return;
+    goto exit_free;
   }
 
   current_type = macro_src->types;
@@ -1794,6 +1794,13 @@ static void execute_macro(robot_state *rstate, ext_macro *macro_src)
   } while(dialog_value == -2);
 
   destruct_dialog(&di);
+
+exit_free:
+  free(lines_needed);
+  free(vars_per_line);
+  free(nominal_column_subwidths);
+  free(nominal_column_widths);
+  free(elements);
 }
 
 static void execute_numbered_macro(robot_state *rstate, int num)

@@ -1025,7 +1025,8 @@ int char_editor(World *mzx_world)
         {
           char *buffer_ptr = buffer +
            block_start_x + (block_start_y * buffer_width);
-          char wrap_row[block_width];
+          char *wrap_row = malloc(block_width);
+
           memcpy(previous, buffer, buffer_size);
           memcpy(wrap_row, buffer_ptr, block_width);
 
@@ -1035,10 +1036,13 @@ int char_editor(World *mzx_world)
             memcpy(buffer_ptr, buffer_ptr + buffer_width,
              block_width);
           }
+
           memcpy(buffer_ptr, wrap_row, block_width);
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
            current_char, screen_mode);
+
+          free(wrap_row);
         }
         else
         {
@@ -1059,7 +1063,8 @@ int char_editor(World *mzx_world)
           char *buffer_ptr = buffer +
            block_start_x + ((block_start_y + (block_height - 1)) *
            buffer_width);
-          char wrap_row[block_width];
+          char *wrap_row = malloc(block_width);
+
           memcpy(previous, buffer, buffer_size);
           memcpy(wrap_row, buffer_ptr, block_width);
 
@@ -1069,10 +1074,13 @@ int char_editor(World *mzx_world)
             memcpy(buffer_ptr, buffer_ptr - buffer_width,
              block_width);
           }
+
           memcpy(buffer_ptr, wrap_row, block_width);
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
            current_char, screen_mode);
+
+          free(wrap_row);
         }
         else
         {
@@ -1172,13 +1180,14 @@ int char_editor(World *mzx_world)
 
         if(num_factors > 1)
         {
-          element *elements[num_factors];
+          element **elements = malloc(sizeof(element *) * num_factors);
+          char **radio_button_strings = malloc(sizeof (char *) * num_factors);
+          char **radio_button_substrings = malloc(sizeof (char *) * num_factors);
           dialog di;
-          char *radio_button_strings[num_factors];
-          char radio_button_substrings[num_factors][32];
 
           for(i = 0; i < num_factors; i++)
           {
+            radio_button_substrings[i] = malloc(32);
             radio_button_strings[i] = radio_button_substrings[i];
             sprintf(radio_button_strings[i], "%d x %d",
              factors[i], highlight_size / factors[i]);
@@ -1196,6 +1205,12 @@ int char_editor(World *mzx_world)
 
           run_dialog(mzx_world, &di);
           destruct_dialog(&di);
+
+          for (i = 0; i < num_factors; i++)
+            free(radio_button_substrings[i]);
+          free(radio_button_substrings);
+          free(radio_button_strings);
+          free(elements);
         }
 
         current_width = factors[subdivision];
@@ -1361,7 +1376,7 @@ int char_editor(World *mzx_world)
         }
         else
         {
-          char temp_buffer[block_width];
+          char *temp_buffer = malloc(sizeof(char) * block_width);
           int start_offset = block_start_x +
            (block_start_y * buffer_width);
           int end_offset = start_offset +
@@ -1383,6 +1398,8 @@ int char_editor(World *mzx_world)
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
            current_char, screen_mode);
+
+          free(temp_buffer);
         }
 
         break;
@@ -1447,13 +1464,14 @@ int char_editor(World *mzx_world)
         // Undo
         if(get_alt_status(keycode_SDL))
         {
-          char swap[buffer_size];
+          char *swap = malloc(sizeof(char) * buffer_size);
           memcpy(swap, buffer, buffer_size);
           memcpy(buffer, previous, buffer_size);
           memcpy(previous, swap, buffer_size);
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
            current_char, screen_mode);
+          free(swap);
         }
         break;
       }

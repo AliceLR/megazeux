@@ -4663,12 +4663,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
           // Board to board
           case 0:
           {
-            char id_buffer[width * height];
-            char param_buffer[width * height];
-            char color_buffer[width * height];
-            char under_id_buffer[width * height];
-            char under_param_buffer[width * height];
-            char under_color_buffer[width * height];
+            char *id_buffer = malloc(width * height);
+            char *param_buffer = malloc(width * height);
+            char *color_buffer = malloc(width * height);
+            char *under_id_buffer = malloc(width * height);
+            char *under_param_buffer = malloc(width * height);
+            char *under_color_buffer = malloc(width * height);
 
             copy_board_to_board_buffer(src_board, src_x, src_y, width,
              height, id_buffer, param_buffer, color_buffer,
@@ -4679,6 +4679,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
              under_id_buffer, under_param_buffer, under_color_buffer);
             update_blocked = 1;
 
+            free(under_color_buffer);
+            free(under_param_buffer);
+            free(under_id_buffer);
+            free(color_buffer);
+            free(param_buffer);
+            free(id_buffer);
             break;
           }
 
@@ -4723,14 +4729,18 @@ void run_robot(World *mzx_world, int id, int x, int y)
           // Vlayer to vlayer
           case 10:
           {
-            char char_buffer[width * height];
-            char color_buffer[width * height];
+            char *char_buffer = malloc(width * height);
+            char *color_buffer = malloc(width * height);
+
             copy_layer_to_buffer(src_x, src_y, width, height,
              mzx_world->vlayer_chars, mzx_world->vlayer_colors,
              char_buffer, color_buffer, mzx_world->vlayer_width);
             copy_buffer_to_layer(dest_x, dest_y, width, height,
              char_buffer, color_buffer, mzx_world->vlayer_chars,
              mzx_world->vlayer_colors, mzx_world->vlayer_width);
+
+            free(color_buffer);
+            free(char_buffer);
             break;
           }
         }
@@ -4939,14 +4949,16 @@ void run_robot(World *mzx_world, int id, int x, int y)
           {
             if(src_board->overlay_mode)
             {
-              char char_buffer[width * height];
-              char color_buffer[width * height];
+              char *char_buffer = malloc(width * height);
+              char *color_buffer = malloc(width * height);
               copy_layer_to_buffer(src_x, src_y, width, height,
                src_board->overlay, src_board->overlay_color,
                char_buffer, color_buffer, board_width);
               copy_buffer_to_layer(dest_x, dest_y, width, height,
                char_buffer, color_buffer, src_board->overlay,
                src_board->overlay_color, board_width);
+              free(color_buffer);
+              free(char_buffer);
             }
             break;
           }
@@ -4984,14 +4996,18 @@ void run_robot(World *mzx_world, int id, int x, int y)
           // Vlayer to vlayer
           case 10:
           {
-            char char_buffer[width * height];
-            char color_buffer[width * height];
+            char *char_buffer = malloc(width * height);
+            char *color_buffer = malloc(width * height);
+
             copy_layer_to_buffer(src_x, src_y, width, height,
              mzx_world->vlayer_chars, mzx_world->vlayer_colors,
              char_buffer, color_buffer, mzx_world->vlayer_width);
             copy_buffer_to_layer(dest_x, dest_y, width, height,
              char_buffer, color_buffer, mzx_world->vlayer_chars,
              mzx_world->vlayer_colors, mzx_world->vlayer_width);
+
+            free(color_buffer);
+            free(char_buffer);
             break;
           }
         }

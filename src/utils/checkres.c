@@ -157,6 +157,7 @@ static status_t s_open(const char *filename, const char *mode, stream_t **s)
 {
   unz_file_info info;
   status_t ret;
+  unzFile f;
 
   *s = malloc(sizeof(stream_t));
 
@@ -175,7 +176,7 @@ static status_t s_open(const char *filename, const char *mode, stream_t **s)
 
   // otherwise, it's a ZIP file, proceed with buffer logic
   (*s)->type = BUFFER_STREAM;
-  unzFile f = unzOpen(filename);
+  f = unzOpen(filename);
   if(!f)
   {
     ret = MALLOC_FAILED;
@@ -620,19 +621,17 @@ static status_t parse_board_direct(stream_t *s)
           
           if(tmp[0] == '+')
           {
-            char tempc = tmp[3];
+            char *rest, tempc = tmp[3];
             tmp[3] = 0;
-            char *rest;
-            (void)strtol(tmp + 1, &rest, 16);
+            strtol(tmp + 1, &rest, 16);
             tmp[3] = tempc;
             memmove(tmp, rest, str_len - (rest - tmp));
           }
           else if(tmp[0] == '@')
           {
-            char tempc = tmp[4];
+            char *rest, tempc = tmp[4];
             tmp[4] = 0;
-            char *rest;
-            (void)strtol(tmp + 1, &rest, 10);
+            strtol(tmp + 1, &rest, 10);
             tmp[4] = tempc;
             memmove(tmp, rest, str_len - (rest - tmp));
           }
