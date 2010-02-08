@@ -3540,7 +3540,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
           if(!confirm(mzx_world, confirm_string))
           {
             if(!ask_yes_no(mzx_world, (char *)
-	     "Delete subdirectories recursively?"))
+             "Delete subdirectories recursively?"))
             {
               remove_files(file_name, 1);
               rmdir(file_name);

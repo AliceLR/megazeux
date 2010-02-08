@@ -3547,12 +3547,12 @@ void debug_counters(World *mzx_world)
           strncpy(name + 5, "counter SCORE", 70 - 5);
           sprintf(new_value, "%d", mzx_world->score);
         }
-	else if(selected == mzx_world->num_counters + 1)
-	{
+        else if(selected == mzx_world->num_counters + 1)
+        {
           edit_type = -2;
           strncpy(name + 5, "counter mzx_speed", 70 - 5);
           sprintf(new_value, "%d", mzx_world->mzx_speed);
-	}
+        }
         else
         {
           snprintf(name + 5, 70 - 5, "counter %s",

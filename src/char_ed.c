@@ -1187,7 +1187,7 @@ int char_editor(World *mzx_world)
 
           elements[0] =
            construct_radio_button(8, 2,
-	   (const char **)radio_button_strings,
+           (const char **)radio_button_strings,
            num_factors, 5, &subdivision);
           elements[1] = construct_button(10, num_factors + 3,
            "OK", 0);

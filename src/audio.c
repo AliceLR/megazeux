@@ -889,7 +889,7 @@ static int read_little_endian16(char *buf)
   return (b[1] << 8) | b[0];
 }
 
-static void* get_riff_chunk(FILE *fp, int filesize, char *id, int *size)
+static void *get_riff_chunk(FILE *fp, int filesize, char *id, int *size)
 {
   int maxsize = filesize - ftell(fp) - 8;
   char size_buf[4];
@@ -899,18 +899,18 @@ static void* get_riff_chunk(FILE *fp, int filesize, char *id, int *size)
     return NULL;
 
   if(id)
-    fread(id, sizeof(char), 4, fp);
+    fread(id, 1, 4, fp);
   else
     fseek(fp, 4, SEEK_CUR);
-  fread(size_buf, sizeof(char), 4, fp);
+  fread(size_buf, 1, 4, fp);
 
   *size = read_little_endian32(size_buf);
   if(*size > maxsize) *size = maxsize;
 
-  buf = malloc(sizeof(char) * *size);
+  buf = malloc(*size);
 
   if(buf)
-    fread(buf, sizeof(char), *size, fp);
+    fread(buf, 1, *size, fp);
 
   return buf;
 }
@@ -920,7 +920,7 @@ static int get_next_riff_chunk_id(FILE *fp, int filesize, char *id)
   if(filesize - ftell(fp) < 8)
     return 0;
 
-  fread(id, sizeof(char), 4, fp);
+  fread(id, 1, 4, fp);
   fseek(fp, -4, SEEK_CUR);
   return 1;
 }
@@ -934,7 +934,7 @@ static void skip_riff_chunk(FILE *fp, int filesize)
   if(maxsize >= 0)
   {
     fseek(fp, 4, SEEK_CUR);
-    fread(size_buf, sizeof(char), 4, fp);
+    fread(size_buf, 1, 4, fp);
     s = read_little_endian32(size_buf);
     if(s > maxsize)
       s = maxsize;
@@ -982,7 +982,7 @@ static SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
     return NULL;
 
   // If it doesn't start with "RIFF", it's not a WAV file.
-  fread(tmp_buf, sizeof(char), 4, fp);
+  fread(tmp_buf, 1, 4, fp);
   if(memcmp(tmp_buf, "RIFF", 4))
   {
     fclose(fp);
@@ -991,11 +991,11 @@ static SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
 
   // Read reported file size (if the file turns out to be larger, this will be
   // used instead of the real file size.)
-  fread(tmp_buf, sizeof(char), 4, fp);
+  fread(tmp_buf, 1, 4, fp);
   riffsize = read_little_endian32(tmp_buf) + 8;
 
   // If the RIFF type isn't "WAVE", it's not a WAV file.
-  fread(tmp_buf, sizeof(char), 4, fp);
+  fread(tmp_buf, 1, 4, fp);
   if(memcmp(tmp_buf, "WAVE", 4))
   {
     fclose(fp);
@@ -1025,10 +1025,10 @@ static SDL_AudioSpec *load_wav_file(const char *file, SDL_AudioSpec *spec,
     fclose(fp);
     if(SDL_LoadWAV(file, spec, audio_buf, audio_len))
     {
-      char *copy_buf = malloc(sizeof(char) * *audio_len);
+      char *copy_buf = malloc(*audio_len);
       if(copy_buf)
       {
-        memcpy(copy_buf, *audio_buf, sizeof(char) * *audio_len);
+        memcpy(copy_buf, *audio_buf, *audio_len);
         SDL_FreeWAV(*audio_buf);
         *audio_buf = (Uint8 *)copy_buf;
         return spec;
