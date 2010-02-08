@@ -1889,11 +1889,13 @@ int run_dialog(World *mzx_world, dialog *di)
         return -1;
       }
 
+#ifdef CONFIG_HELPSYS
       case SDLK_F1: // F1
       {
         help_system(mzx_world);
         break;
       }
+#endif
 
       default:
       {

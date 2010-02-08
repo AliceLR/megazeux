@@ -290,12 +290,14 @@ void palette_editor(World *mzx_world)
         break;
       }
 
+#ifdef CONFIG_HELPSYS
       case SDLK_F1: // F1
       {
         m_show();
         help_system(mzx_world);
         break;
       }
+#endif
     }
   } while(key != SDLK_ESCAPE);
   restore_screen();

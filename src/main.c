@@ -205,7 +205,9 @@ int main(int argc, char *argv[])
   cursor_off();
   default_scroll_values(&mzx_world);
 
-  help_load(&mzx_world, mzx_res_get_by_id(MZX_HELP_FIL));
+#ifdef CONFIG_HELPSYS
+  help_open(&mzx_world, mzx_res_get_by_id(MZX_HELP_FIL));
+#endif
 
   strncpy(curr_file, mzx_world.conf.startup_file, MAX_PATH - 1);
   curr_file[MAX_PATH - 1] = '\0';
@@ -239,6 +241,10 @@ int main(int argc, char *argv[])
     clear_world(&mzx_world);
     clear_global_data(&mzx_world);
   }
+
+#ifdef CONFIG_HELPSYS
+  help_close(&mzx_world);
+#endif
 
 exit_free_world:
   free_world(&mzx_world);

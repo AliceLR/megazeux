@@ -159,8 +159,6 @@ void cursor_underline(void);
 void cursor_solid(void);
 void cursor_off(void);
 void move_cursor(Uint32 x, Uint32 y);
-void set_cursor_mode(cursor_mode_types mode);
-cursor_mode_types get_cursor_mode(void);
 
 int init_video(config_info *conf);
 int set_video_mode(void);
@@ -232,6 +230,11 @@ void save_palette(char *fname);
 void save_editor_palette(void);
 void load_editor_palette(void);
 #endif // CONFIG_EDITOR
+
+#ifdef CONFIG_HELPSYS
+void set_cursor_mode(cursor_mode_types mode);
+cursor_mode_types get_cursor_mode(void);
+#endif // CONFIG_HELPSYS
 
 __M_END_DECLS
 

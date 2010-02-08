@@ -1722,6 +1722,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
 
       switch(key)
       {
+#ifdef CONFIG_HELPSYS
         case SDLK_F1:
         {
           if(mzx_world->version < 0x0209 ||
@@ -1732,6 +1733,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           }
           break;
         }
+#endif
 
         case SDLK_F2:
         {
@@ -2406,6 +2408,7 @@ void title_screen(World *mzx_world)
           break;
         }
 
+#ifdef CONFIG_HELPSYS
         case SDLK_F1:
         {
           if(get_counter(mzx_world, "HELP_MENU", 0) ||
@@ -2417,6 +2420,7 @@ void title_screen(World *mzx_world)
           }
           break;
         }
+#endif
 
         // Quick load
         case SDLK_F10:

@@ -435,6 +435,8 @@ void scroll_edging_ext(World *mzx_world, int type, int offset, int c_offset)
   update_screen();
 }
 
+#ifdef CONFIG_HELPSYS
+
 static void help_frame(World *mzx_world, char *help, int pos)
 {
   // Displays one frame of the help. Simply prints each line. POS is the
@@ -752,6 +754,8 @@ void help_display(World *mzx_world, char *help, int offs, char *file,
 
   restore_screen();
 }
+
+#endif // CONFIG_HELPSYS
 
 int strlencolor(char *str)
 {

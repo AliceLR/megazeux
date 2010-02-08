@@ -2742,12 +2742,14 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         break;
       }
 
+#ifdef CONFIG_HELPSYS
       case SDLK_F1:
       {
         m_show();
         help_system(mzx_world);
         break;
       }
+#endif
 
       case SDLK_F2:
       {

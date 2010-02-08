@@ -37,7 +37,6 @@
 static int contexts[128];
 
 int context = 72; // 72 = "No" context link
-char *help = NULL;
 int curr_context = 0;
 
 void set_context(int con)
@@ -53,14 +52,26 @@ void pop_context(void)
   context = contexts[curr_context];
 }
 
-void help_load(World *mzx_world, const char *file_name)
-{
-  help = malloc(1024 * 64);
-  // Search context links
-  mzx_world->help_file = fopen(file_name, "rb");
+#ifdef CONFIG_HELPSYS
 
-  if(mzx_world->help_file == NULL)
-    free(help);
+static char *help;
+
+void help_open(World *mzx_world, const char *file_name)
+{
+  mzx_world->help_file = fopen(file_name, "rb");
+  if(!mzx_world->help_file)
+    return;
+
+  help = malloc(1024 * 64);
+}
+
+void help_close(World *mzx_world)
+{
+  if(!mzx_world->help_file)
+    return;
+
+  fclose(mzx_world->help_file);
+  free(help);
 }
 
 void help_system(World *mzx_world)
@@ -135,3 +146,5 @@ void help_system(World *mzx_world)
     set_cursor_mode(old_cmode);
   }
 }
+
+#endif // CONFIG_HELPSYS

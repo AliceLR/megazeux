@@ -28,11 +28,16 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-extern int context;//Current context link. 72="No" context link
+// Current context link. 72="No" context link
+extern int context;
 void set_context(int con);
 void pop_context(void);
-void help_load(World *mzx_world, const char *file_name);
+
+#ifdef CONFIG_HELPSYS
+void help_open(World *mzx_world, const char *file_name);
+void help_close(World *mzx_world);
 void help_system(World *mzx_world);
+#endif // CONFIG_HELPSYS
 
 __M_END_DECLS
 

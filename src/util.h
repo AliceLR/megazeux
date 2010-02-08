@@ -40,7 +40,9 @@ typedef enum
   MZX_ASCII_CHR,
   MZX_BLANK_CHR,
   MZX_DEFAULT_CHR,
+#ifdef CONFIG_HELPSYS
   MZX_HELP_FIL,
+#endif
   MZX_SMZX_CHR,
   MZX_EDIT_CHR,
   SMZX_PAL,

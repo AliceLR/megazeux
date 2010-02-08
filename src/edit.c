@@ -1482,12 +1482,13 @@ void edit_world(World *mzx_world)
              178, 176, scroll_x, scroll_y, edit_screen_height);
           }
         }
+#ifdef CONFIG_HELPSYS
         else
         {
           m_show();
           help_system(mzx_world);
-          break;
         }
+#endif
 
         break;
       }

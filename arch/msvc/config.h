@@ -3,6 +3,7 @@
 #define SHAREDIR "./"
 #define CONFFILE "config.txt"
 #define CONFIG_EDITOR
+#define CONFIG_HELPSYS
 #define CONFIG_RENDER_SOFT
 #define CONFIG_RENDER_GL
 #define CONFIG_RENDER_YUV

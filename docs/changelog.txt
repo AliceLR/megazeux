@@ -137,6 +137,10 @@ DEVELOPERS
 + Many stack-heavy functions have been de-bloated and allocate large storage
   on the heap (if performance is not critical). This helps out platforms
   with a small, fixed stack size (such as NDS).
++ The built-in help system can now be disabled for embedded platforms.
+  The startup check for the help file will not be performed if the help
+  system is disabled, and so this file can be omitted from distributions.
++ The package.sh script now supports PSP, GP2X and NDS packaging.
 
 December 8, 2007 - MZX 2.81h
 

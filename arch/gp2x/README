@@ -42,11 +42,14 @@ example, if you have the SDK installed to /home/alistair/bin/gp2x-sdk, you
 should specify:
 
   ./config.sh --platform gp2x --prefix /home/alistair/bin/gp2x-sdk \
-              --enable-mikmod --disable-utils
+              --optimize-size --disable-editor --disable-helpsys \
+              --disable-utils --disable-libpng --disable-modplug \
+	      --enable-mikmod
 
 The configuration script will automatically enable/disable other flags on this
 platform; do not vary the command above, other than to change the prefix. The
-flag `--enable-mikmod' may be omitted if you wish to disable music support.
+flags `--disable-modplug --enable-mikmod' may be replaced with
+`--disable-audio' if you wish to disable audio support.
 
 You may now type `make' as normal to contruct a suitable binary for the GP2X.
 It can be copied, together with the other resources (and config.txt, and

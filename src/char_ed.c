@@ -1522,12 +1522,14 @@ int char_editor(World *mzx_world)
         break;
       }
 
+#ifdef CONFIG_HELPSYS
       case SDLK_F1:
       {
         m_show();
         help_system(mzx_world);
         break;
       }
+#endif
 
       case SDLK_HOME:
       {

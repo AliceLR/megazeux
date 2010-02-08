@@ -27,6 +27,7 @@ usage() {
 	echo "  --optimize-size      Perform size optimizations (-Os)."
 	echo "  --disable-datestamp  Disable adding date to version."
 	echo "  --disable-editor     Disable the built-in editor."
+	echo "  --disable-helpsys    Disable the built-in help system."
 	echo "  --enable-host-utils  Use 'cc' to build utils."
 	echo "  --disable-utils      Disables compilation of utils."
 	echo "  --disable-x11        Disables X11, removing binary dependency."
@@ -59,6 +60,7 @@ SYSCONFDIR_SET="false"
 DATE_STAMP="true"
 OPT_SIZE="false"
 EDITOR="true"
+HELPSYS="true"
 HOST_TOOLS="false"
 UTILS="true"
 X11="true"
@@ -103,6 +105,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-editor" ] && EDITOR="false"
 	[ "$1" = "--enable-editor" ] && EDITOR="true"
+
+	[ "$1" = "--disable-helpsys" ] && HELPSYS="false"
+	[ "$1" = "--enable-helpsys" ] && HELPSYS="true"
 
 	[ "$1" = "--disable-host-utils" ] && HOST_UTILS="false"
 	[ "$1" = "--enable-host-utils" ] && HOST_UTILS="true"
@@ -287,6 +292,17 @@ if [ "$EDITOR" = "true" ]; then
 	echo "#define CONFIG_EDITOR" >> src/config.h
 else
 	echo "Built-in editor disabled."
+fi
+
+#
+# User may disable the built-in help system.
+#
+if [ "$HELPSYS" = "true" ]; then
+	echo "Built-in help system enabled."
+	echo "BUILD_HELPSYS=1" >> Makefile.platform
+	echo "#define CONFIG_HELPSYS" >> src/config.h
+else
+	echo "Built-in help system disabled."
 fi
 
 #

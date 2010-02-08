@@ -1345,6 +1345,8 @@ void move_cursor(Uint32 x, Uint32 y)
   graphics.cursor_y = y;
 }
 
+#ifdef CONFIG_HELPSYS
+
 void set_cursor_mode(cursor_mode_types mode)
 {
   graphics.cursor_mode = mode;
@@ -1354,6 +1356,8 @@ cursor_mode_types get_cursor_mode(void)
 {
   return graphics.cursor_mode;
 }
+
+#endif // CONFIG_HELPSYS
 
 void m_hide(void)
 {

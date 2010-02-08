@@ -49,7 +49,9 @@ static struct mzx_resource mzx_res[] = {
   { "mzx_ascii.chr",   NULL },
   { "mzx_blank.chr",   NULL },
   { "mzx_default.chr", NULL },
+#ifdef CONFIG_HELPSYS
   { "mzx_help.fil",    NULL },
+#endif
   { "mzx_smzx.chr",    NULL },
   { "mzx_edit.chr",    NULL },
   { "smzx.pal",        NULL },
