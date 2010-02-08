@@ -836,7 +836,7 @@ int init_video(config_info *conf)
       SDL_VERSION(&info.version);
       SDL_GetWMInfo(&info);
 
-      SetClassLongPtr(info.window, GCLP_HICON, (LONG_PTR)icon);
+      SendMessage(info.window, WM_SETICON, ICON_BIG, (LPARAM)icon);
     }
   }
 #else // !__WIN32__
