@@ -1212,7 +1212,7 @@ int check_ext_for_gdm_and_convert(const char *filename, char *new_file)
   ssize_t ext_pos = strlen(filename) - 4;
 
   // this could end up being the same, or it might be modified
-  // (if a SAM conversion is possible).
+  // (if a GDM conversion is possible).
   strcpy(new_file, filename);
 
   if((ext_pos > 0) && !strcasecmp(filename + ext_pos, ".gdm"))
@@ -1220,8 +1220,8 @@ int check_ext_for_gdm_and_convert(const char *filename, char *new_file)
     // GDM -> S3M
     memcpy(new_file + ext_pos, ".s3m", 4);
 
-    /* If the destination WAV already exists, check its size.
-     * If it doesn't exist, or the size is zero, recreate the WAV.
+    /* If the destination S3M already exists, check its size.
+     * If it doesn't exist, or the size is zero, recreate the S3M.
      */
     if(!fsafetranslate(new_file, translated_filename_dest))
     {
