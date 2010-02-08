@@ -25,7 +25,7 @@ downver_objs = ${utils_base}/downver.${o}
 txt2hlp = ${utils_base}/txt2hlp${BINEXT}
 txt2hlp_objs = ${utils_base}/txt2hlp.${o}
 
-${utils_base}/%.o ${utils_base}/%.dbg.o: ${utils_base}/%.c
+${utils_base}/%.${o}: ${utils_base}/%.c
 ifeq (${V},1)
 	${HOST_CC} -MD ${CFLAGS} -I${mzx_base} -I${unzip_base} \
 	                         -I${PREFIX}/include -c $< -o $@

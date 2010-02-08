@@ -18,7 +18,7 @@ mzx_cxxflags = -DHAVE_INTTYPES_H
 mzx_flags   += ${SDL_CFLAGS} -I${mzx_base} -I${PREFIX}/include
 mzx_ldflags := ${SDL_LDFLAGS} ${mzx_ldflags} ${ARCH_LDFLAGS}
 
-${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.c
+${mzx_base}/%.${o}: ${mzx_base}/%.c
 ifeq (${V},1)
 	${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 else
@@ -26,7 +26,7 @@ else
 	@${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 endif
 
-${mzx_base}/%.o ${mzx_base}/%.dbg.o: ${mzx_base}/%.cpp
+${mzx_base}/%.${o}: ${mzx_base}/%.cpp
 ifeq (${V},1)
 	${CXX} -MD ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
 else
@@ -104,6 +104,7 @@ endif
 
 ifeq (${EMBED_ICONS},1)
 mzx_ldflags := ${icons} ${mzx_ldflags}
+${mzx}: ${icons}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
@@ -135,7 +136,7 @@ endif
 
 -include $(mzx_objs:.o=.d)
 
-${mzx}: ${gdm2s3m} ${icons} ${libmodplug} ${mzx_objs}
+${mzx}: ${gdm2s3m} ${libmodplug} ${mzx_objs}
 ifeq (${V},1)
 	${CC} ${mzx_objs} -o ${mzx} ${mzx_ldflags}
 else

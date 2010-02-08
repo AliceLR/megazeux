@@ -7,14 +7,14 @@
 .SUFFIXES: .c
 
 unzip_base = contrib/unzip/src
-unzip = ${unzip_base}/libunzip.a
+unzip = ${unzip_base}/libunzip.${a}
 unzip_cflags := -W -Wmissing-format-attribute -Wpointer-arith -Wcast-align
 unzip_cflags += -Wwrite-strings -Wno-unused-parameter
 unzip_cflags += -I${unzip_base} -DNOUNCRYPT
 
 unzip_objs = ${unzip_base}/unzip.${o} ${unzip_base}/ioapi.${o}
 
-${unzip_base}/%.o ${unzip_base}/%.dbg.o: ${unzip_base}/%.c
+${unzip_base}/%.${o}: ${unzip_base}/%.c
 ifeq (${V},1)
 	${HOST_CC} -MD ${CFLAGS} ${unzip_cflags} \
 	                         -I${PREFIX}/include -c $< -o $@
