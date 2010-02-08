@@ -21,48 +21,24 @@ usage() {
 	echo "  mingw32        Use MinGW32 on Linux, to build for win32"
 	echo "  mingw64        Use MinGW64 on Linux, to build for win64"
 	echo
-	echo "Supported <option> values:"
+	echo "Supported <option> values (negatives can be used):"
 	echo
 	echo "  --optimize-size      Perform size optimizations (-Os)."
-	echo
+	echo "  --disable-datestamp  Disable adding date to version."
 	echo "  --disable-editor     Disable the built-in editor."
-	echo "  --enable-editor      Enables the built-in editor (default)."
-	echo
 	echo "  --enable-host-tools  Use 'cc' to build utils (txt2hlp)."
-	echo "  --disable-host-tools Use the default compiler (default)."
-	echo
 	echo "  --disable-utils      Disables compilation of utils (txt2hlp)."
-	echo "  --enable-utils       Enables compilation of utils (default)."
-	echo
 	echo "  --disable-x11        Disables X11, removing binary dependency."
-	echo "  --enable-x11         Enables X11 support (default)."
-	echo
 	echo "  --disable-software   Disable software renderer."
-	echo "  --enable-software    Enable software renderer (default)."
-	echo
 	echo "  --disable-gl         Disables all OpenGL renderers."
-	echo "  --enable-gl          Enables OpenGL, runtime loaded (default)."
-	echo
 	echo "  --disable-overlay    Disables all overlay renderers."
-	echo "  --enable-overlay     Enables all overlay renderers. (default)"
-	echo
 	echo "  --enable-gp2x        Enables half-width software renderer."
-	echo "  --disable-gp2x       Disables half-width software renderer (default)."
-	echo
 	echo "  --disable-modplug    Disables ModPlug music engine."
-	echo "  --enable-modplug     Enables ModPlug music engine (default)."
-	echo
 	echo "  --enable-mikmod      Enables MikMod music engine."
-	echo "  --disable-mikmod     Disables MikMod music engine (default)."
-	echo
 	echo "  --disable-libpng     Disables PNG screendump support."
-	echo "  --enable-libpng      Enables PNG screendump support (default)."
-	echo
 	echo "  --disable-audio      Disables all audio (sound + music)."
-	echo "  --enable-audio       Audio (sound + music) is enabled (default)."
-	echo
-	echo "  --enable-tremor      Switches libvorbis for libtremor."
-	echo "  --disable-tremor     Switches libvorbis for libtremor (default)."
+	echo "  --enable-tremor      Switches out libvorbis for libtremor."
+	echo "  --enable-pthread     Use pthread instead of SDL for locking."
 	echo
 	echo "e.g.: ./config.sh --platform linux --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -79,6 +55,7 @@ PLATFORM=""
 PREFIX="/usr"
 SYSCONFDIR="/etc"
 SYSCONFDIR_SET="false"
+DATE_STAMP="true"
 OPT_SIZE="false"
 EDITOR="true"
 HOST_TOOLS="false"
@@ -93,6 +70,7 @@ MIKMOD="false"
 LIBPNG="true"
 AUDIO="true"
 TREMOR="false"
+PTHREAD="false"
 
 #
 # User may override above settings
@@ -118,6 +96,9 @@ while [ "$1" != "" ]; do
 	fi
 
 	[ "$1" = "--optimize-size" ] && OPT_SIZE="true"
+
+	[ "$1" = "--disable-datestamp" ] && DATE_STAMP="false"
+	[ "$1" = "--enable-datestamp" ] && DATE_STAMP="true"
 
 	[ "$1" = "--disable-editor" ] && EDITOR="false"
 	[ "$1" = "--enable-editor" ] && EDITOR="true"
@@ -157,6 +138,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-tremor" ] && TREMOR="false"
 	[ "$1" = "--enable-tremor" ] && TREMOR="true"
+
+	[ "$1" = "--enable-pthread" ] && PTHREAD="false"
+	[ "$1" = "--disable-pthread" ] && PTHREAD="true"
 
 	shift
 done
@@ -205,7 +189,22 @@ echo                       >> Makefile.platform
 echo "# config time stuff" >> Makefile.platform
 echo "PREFIX=$PREFIX"      >> Makefile.platform
 
-echo "#define CONFDIR  \"$SYSCONFDIR/\"" > src/config.h
+#
+# Set the version to build with 
+#
+if [ "$DATE_STAMP" = "true" ]; then
+	echo "Stamping version with today's date."
+	echo "#define VERSION \"`grep VERSION Makefile | head -n1 | \
+                                 sed "s/ //g" | cut -d "=" -f 2` \
+                                (`date +%Y%m%d`)\"" | tr -s ' ' > src/config.h
+else
+	echo "Not stamping version with today's date."
+	echo "#define VERSION \"`grep VERSION Makefile | head -n1 | \
+                                 sed "s/ //g" | cut -d "=" -f 2`\"" |
+				tr -s ' ' > src/config.h
+fi
+
+echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 
 #
 # Only Linux wants to use a system prefix hierarchy currently
@@ -356,6 +355,14 @@ if [ "$AUDIO" = "false" ]; then
 fi
 
 #
+# Force-enable PTHREAD on linux
+#
+if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "linux-static" ]; then
+	echo "Force-enabling pthread on Linux platforms."
+	PTHREAD="true"
+fi
+
+#
 # Software renderer
 #
 if [ "$SOFTWARE" = "true" ]; then
@@ -453,6 +460,18 @@ if [ "$TREMOR" = "true" ]; then
 else
 	echo "Not using tremor in place of ogg/vorbis."
 	echo "TREMOR=0" >> Makefile.platform
+fi
+
+#
+# Handle pthread mutexes, if enabled
+#
+if [ "$PTHREAD" = "true" ]; then
+	echo "Using pthread for locking primitives."
+	echo "#define CONFIG_PTHREAD_MUTEXES" >> src/config.h
+	echo "PTHREAD=1" >> Makefile.platform
+else
+	echo "Not using pthread for locking primitives."
+	echo "PTHREAD=0" >> Makefile.platform
 fi
 
 echo

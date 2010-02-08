@@ -38,6 +38,10 @@
 #include "render.h"
 #include "renderers.h"
 
+#ifndef VERSION
+#error Must define VERSION for MegaZeux version string
+#endif
+
 // Base names for MZX's resource files.
 // Prepends SHAREDIR from config.h for you, so these are ready to use.
 
@@ -789,12 +793,8 @@ static void set_graphics_output(char *video_output)
 #endif
 }
 
-#define MAX_VERSION_LENGTH 64
-
 void init_video(config_info *conf)
 {
-  char temp[MAX_VERSION_LENGTH];
-
   graphics.screen_mode = 0;
   graphics.fullscreen = conf->fullscreen;
   graphics.resolution_width = conf->resolution_width;
@@ -807,10 +807,7 @@ void init_video(config_info *conf)
 
   set_graphics_output(conf->video_output);
 
-  snprintf(temp, MAX_VERSION_LENGTH - 1, "MegaZeux %s", version_number_string);
-  temp[MAX_VERSION_LENGTH - 1] = '\0';
-
-  SDL_WM_SetCaption(temp, "MZX");
+  SDL_WM_SetCaption("MegaZeux " VERSION, "MZX");
   SDL_ShowCursor(SDL_DISABLE);
 
   if(!(graphics.init_video(&graphics, conf)))

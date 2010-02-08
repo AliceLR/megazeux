@@ -27,10 +27,6 @@
 #include <string.h>
 #include <sys/stat.h>
 
-#ifdef PTHREAD_MUTEXES
-#include "pthread.h"
-#endif
-
 #include "audio.h"
 #include "SDL.h"
 #include "sfx.h"
@@ -38,6 +34,10 @@
 #include "configure.h"
 #include "fsafeopen.h"
 #include "delay.h"
+
+#ifdef CONFIG_PTHREAD_MUTEXES
+#include "pthread.h"
+#endif
 
 #ifdef CONFIG_TREMOR
 #include <tremor/ivorbiscodec.h>
@@ -88,7 +88,7 @@ static const int default_period = 428;
 // May be used by audio plugins
 __audio_c_maybe_static audio_struct audio;
 
-#ifdef PTHREAD_MUTEXES
+#ifdef CONFIG_PTHREAD_MUTEXES
 #define __lock()      pthread_mutex_lock(&audio.audio_mutex)
 #define __unlock()    pthread_mutex_unlock(&audio.audio_mutex)
 #else
@@ -1400,7 +1400,7 @@ void init_audio(config_info *conf)
     NULL
   };
 
-#ifndef PTHREAD_MUTEXES
+#ifndef CONFIG_PTHREAD_MUTEXES
   audio.audio_mutex = SDL_CreateMutex();
 #else
   pthread_mutex_init(&audio.audio_mutex, NULL);

@@ -92,8 +92,6 @@
 
 static char save_version_string[6] = "MZS\x02\x51";
 
-char version_number_string[20] = MZX_VERSION;
-
 __editor_maybe_static char world_version_string[4] = "M\x02\x51";
 
 // Helper functions for file loading.
@@ -741,7 +739,7 @@ static int load_world(World *mzx_world, char *file, int savegame, int *faded)
     fread(tempstr, 1, 5, fp);
 
     version = save_magic(tempstr);
-    if(version != VERSION)
+    if(version != WORLD_VERSION)
     {
       if(version)
       {
@@ -808,7 +806,7 @@ static int load_world(World *mzx_world, char *file, int savegame, int *faded)
     }
     else
 
-    if(version > VERSION)
+    if(version > WORLD_VERSION)
     {
       sprintf(error_string, "World is from more recent version (%d.%d)",
        (version & 0xFF00) >> 8, version & 0xFF);
@@ -1221,7 +1219,7 @@ int append_world(World *mzx_world, char *file)
   }
   else
 
-  if(version > VERSION)
+  if(version > WORLD_VERSION)
   {
     sprintf(error_string, "World is from more recent version (%d.%d)",
       (version & 0xFF00) >> 8, version & 0xFF);

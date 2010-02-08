@@ -7,12 +7,6 @@ include contrib/libmodplug/src/Makefile.in
 
 .PHONY: ${mzx}_clean ${txt2hlp}_clean
 
-ifneq (${DATE},0)
-mzx_flags += -DMZX_VERSION=\"${VERSION}\ \(`date +%Y%m%d`\)\"
-else
-mzx_flags += -DMZX_VERSION=\"${VERSION}\"
-endif
-
 mzx_base     = src
 mzx_flags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
 mzx_flags   += -Wmissing-format-attribute -Wpointer-arith -Wcast-align
@@ -115,6 +109,10 @@ ifeq (${BUILD_AUDIO},1)
 mzx_objs += ${mzx_base}/audio.${o}
 mzx_flags += ${VORBIS_CFLAGS}
 mzx_ldflags := ${VORBIS_LDFLAGS} ${mzx_ldflags}
+endif
+
+ifeq (${PTHREAD},1)
+mzx_ldflags := -lpthread ${mzx_ldflags}
 endif
 
 ifeq (${BUILD_UTILS},1)

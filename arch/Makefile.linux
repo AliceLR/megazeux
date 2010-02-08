@@ -7,9 +7,6 @@
 # location of strip (must be defined)
 STRIP ?= strip --strip-unneeded
 
-# switch locking method
-mzx_flags += -DPTHREAD_MUTEXES
-
 # enable stack protector for debug builds
 ifdef DEBUG
 ARCH_CFLAGS   += -fstack-protector-all

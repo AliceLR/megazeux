@@ -36,7 +36,7 @@ __M_BEGIN_DECLS
 #include "sfx.h"
 #include "configure.h"
 
-#define VERSION 0x251
+#define WORLD_VERSION 0x251
 
 int save_world(World *mzx_world, char *file, int savegame, int faded);
 int append_world(World *mzx_world, char *file);
@@ -56,8 +56,6 @@ void fputw(int src, FILE *fp);
 void fputd(int src, FILE *fp);
 void add_ext(char *src, char *ext);
 void get_path(char *file_name, char *dest);
-
-extern char version_number_string[20];
 
 #ifdef CONFIG_EDITOR
 void optimize_null_boards(World *mzx_world);

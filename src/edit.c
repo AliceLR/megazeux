@@ -845,7 +845,7 @@ void edit_world(World *mzx_world)
   copy_sensor.used = 0;
   copy_scroll.used = 0;
 
-  mzx_world->version = VERSION;
+  mzx_world->version = WORLD_VERSION;
 
   set_palette_intensity(100);
 
