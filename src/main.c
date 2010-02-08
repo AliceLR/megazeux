@@ -156,7 +156,7 @@ int main(int argc, char **argv)
   // Setup directory strings
   // Get megazeux directory
 
-  if(init_video(&(mzx_world.conf)))
+  if(!init_video(&(mzx_world.conf)))
     goto exit_free_world;
   init_audio(&(mzx_world.conf));
 
