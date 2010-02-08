@@ -2,8 +2,8 @@ Source: megazeux
 Section: games
 Priority: extra
 Maintainer: Alistair John Strachan <alistair@devzero.co.uk>
-Build-Depends: debhelper (>= 5), libsdl1.2-dev, libvorbis-dev, libpng12-dev
-Standards-Version: 3.7.2
+Build-Depends: debhelper (>= 5), libsdl1.2-dev, libvorbis-dev, libpng12-dev, libsdl-image1.2-dev
+Standards-Version: 3.8.0
 
 Package: megazeux
 Architecture: any
