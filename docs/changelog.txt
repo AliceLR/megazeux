@@ -58,6 +58,9 @@ USERS
   screen is now updated. This fixes rendering glitches in the MZX game
   window when overlapping the window with another, at the slight expense
   of CPU time.
++ If loading a save game from the title screen (or when no world has been
+  loaded) do not send JUSTENTERED to all robots. This restores compatibility
+  with MZX 2.70 and is consistent with loading a save from another board.
 
 DEVELOPERS
 

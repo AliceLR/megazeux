@@ -2214,13 +2214,15 @@ void title_screen(World *mzx_world)
               strcpy(mzx_world->real_mod_playing,
                src_board->mod_playing);
 
-              send_robot_def(mzx_world, 0, 10);
               // Copy filename
               strcpy(curr_sav, save_file_name);
               fadein ^= 1;
 
-              send_robot_def(mzx_world, 0, 11);
+              // do not send JUSTENTERED when loading a SAV game from the
+              // title screen or when no game is loaded; here we ONLY send
+              // JUSTLOADED.
               send_robot_def(mzx_world, 0, 10);
+
               set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
               find_player(mzx_world);
@@ -2306,6 +2308,8 @@ void title_screen(World *mzx_world)
                mzx_world->board_list[mzx_world->current_board_id];
               src_board = mzx_world->current_board;
 
+              // send both JUSTENTERED and JUSTLOADED respectively; the
+              // JUSTLOADED label will take priority if a robot defines it
               send_robot_def(mzx_world, 0, 11);
               send_robot_def(mzx_world, 0, 10);
 
@@ -2395,11 +2399,13 @@ void title_screen(World *mzx_world)
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
 
-            send_robot_def(mzx_world, 0, 10);
             fadein ^= 1;
 
-            send_robot_def(mzx_world, 0, 11);
+            // do not send JUSTENTERED when loading a SAV game from the
+            // title screen or when no game is loaded; here we ONLY send
+            // JUSTLOADED.
             send_robot_def(mzx_world, 0, 10);
+
             set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
             find_player(mzx_world);
