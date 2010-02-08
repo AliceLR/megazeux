@@ -431,7 +431,7 @@ static status_t parse_board(FILE *f)
 static status_t parse_world(FILE *f)
 {
   status_t ret = SUCCESS;
-  int i, num_boards;
+  int i, c, num_boards;
 
   // skip to protected byte; don't care about world name
   if(fseek(f, WORLD_PROTECTED_OFFSET, SEEK_SET) != 0)
@@ -441,8 +441,12 @@ static status_t parse_world(FILE *f)
   if(fgetc(f) != 0)
     return PROTECTED_WORLD;
 
-  // can only support 2.00 versioned worlds
-  if(fgetc(f) != 'M' || fgetc(f) != '\x2')
+  // can only support 2.00+ versioned worlds
+  if(fgetc(f) != 'M')
+    return MAGIC_CHECK_FAILED;
+
+  c = fgetc(f);
+  if(c != '\x2' && c != 'Z')
     return MAGIC_CHECK_FAILED;
 
   // num_boards doubles as the check for custom sfx, if zero
