@@ -11,7 +11,8 @@ usage() {
 	echo
 	echo "Supported [platform] values:"
 	echo
-	echo "  win32          Microsoft Windows"
+	echo "  win32          Microsoft Windows (x86)"
+	echo "  win64          Microsoft Windows (x64)"
 	echo "  linux          Linux / Embedded"
 	echo "  linux-static   Linux (statically linked)"
 	echo "  darwin         Macintosh OS X (not Classic)"
@@ -168,12 +169,16 @@ fi
 
 ### PLATFORM DEFINITION #######################################################
 
-# hack for win32
 if [ "$PLATFORM" = "win32" ]; then
 	echo "MINGWBASE="          > Makefile.platform
 	echo                      >> Makefile.platform
 	cat arch/Makefile.mingw32 >> Makefile.platform
 	PLATFORM="mingw32"
+elif [ "$PLATFORM" = "win64" ]; then
+	echo "MINGWBASE="          > Makefile.platform
+	echo                      >> Makefile.platform
+	cat arch/Makefile.mingw64 >> Makefile.platform
+	PLATFORM="mingw64"
 else
 	cp -f arch/Makefile.$PLATFORM Makefile.platform
 
