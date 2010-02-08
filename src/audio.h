@@ -27,10 +27,8 @@
 
 __M_BEGIN_DECLS
 
+#include "platform.h"
 #include "configure.h"
-
-// TODO: deSDL audio subsystem
-#include "SDL.h"
 
 #ifdef CONFIG_AUDIO
 
@@ -38,9 +36,9 @@ __M_BEGIN_DECLS
 #include "modplug.h"
 #endif
 
-#ifdef CONFIG_PTHREAD_MUTEXES
-#include "pthread.h"
-#endif
+#define SAMPLE_U8 0
+#define SAMPLE_S8 1
+#define SAMPLE_S16LSB 2
 
 typedef struct _audio_stream audio_stream;
 
@@ -98,14 +96,14 @@ typedef struct
 
 typedef struct
 {
-  SDL_AudioSpec audio_settings;
-
 #ifdef CONFIG_MODPLUG
   // for config.txt settings only
   ModPlug_Settings mod_settings;
 #endif
 
   Sint32 *mix_buffer;
+
+  Uint32 buffer_samples;
 
   Uint32 output_frequency;
   Uint32 master_resample_mode;
@@ -115,11 +113,7 @@ typedef struct
   audio_stream *stream_list_base;
   audio_stream *stream_list_end;
 
-#ifndef CONFIG_PTHREAD_MUTEXES
-  SDL_mutex *audio_mutex;
-#else
-  pthread_mutex_t audio_mutex;
-#endif
+  platform_mutex audio_mutex;
 
   Uint32 music_on;
   Uint32 sfx_on;
@@ -127,6 +121,8 @@ typedef struct
   Uint32 sound_volume;
   Uint32 sfx_volume;
 } audio_struct;
+
+extern audio_struct audio;
 
 void init_audio(config_info *conf);
 void load_module(char *filename);
@@ -158,6 +154,9 @@ void set_music_volume(int volume);
 void set_sound_volume(int volume);
 void set_sfx_volume(int volume);
 
+void audio_callback(Sint16 *stream, int len);
+void init_audio_platform(config_info *conf);
+
 #ifdef CONFIG_MODPLUG
 int check_ext_for_sam_and_convert(const char *filename, char *new_file);
 int check_ext_for_gdm_and_convert(const char *filename, char *new_file);
@@ -169,8 +168,6 @@ int check_ext_for_gdm_and_convert(const char *filename, char *new_file);
 /*** these should only be exported for audio plugins */
 
 #if defined(CONFIG_MODPLUG) || defined(CONFIG_MIKMOD)
-
-extern audio_struct audio;
 
 void sampled_set_buffer(sampled_stream *s_src);
 void sampled_mix_data(sampled_stream *s_src, Sint32 *dest_buffer,

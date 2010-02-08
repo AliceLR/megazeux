@@ -135,8 +135,8 @@ mzx_ldflags := -lpthread ${mzx_ldflags}
 endif
 
 ifeq (${BUILD_SDL},1)
-mzx_objs += ${mzx_base}/platform_sdl.${o} ${mzx_base}/event_sdl.${o}
-mzx_objs += ${mzx_base}/render_sdl.${o}
+mzx_objs += ${mzx_base}/platform_sdl.${o} ${mzx_base}/audio_sdl.${o}
+mzx_objs += ${mzx_base}/event_sdl.${o} ${mzx_base}/render_sdl.${o}
 mzx_flags += ${SDL_CFLAGS}
 mzx_ldflags += ${SDL_LDFLAGS}
 endif

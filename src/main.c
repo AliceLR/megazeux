@@ -178,21 +178,11 @@ int main(int argc, char *argv[])
   strncpy(curr_sav, mzx_world.conf.default_save_name, MAX_PATH - 1);
   curr_sav[MAX_PATH - 1] = '\0';
 
-  set_music_volume(mzx_world.conf.music_volume);
-  set_sound_volume(mzx_world.conf.sam_volume);
-  set_music_on(mzx_world.conf.music_on);
-  set_sfx_on(mzx_world.conf.pc_speaker_on);
-  set_sfx_volume(mzx_world.conf.pc_speaker_volume);
   mzx_world.mzx_speed = mzx_world.conf.mzx_speed;
   mzx_world.default_speed = mzx_world.mzx_speed;
 
 #ifdef CONFIG_EDITOR
   memcpy(macros, mzx_world.conf.default_macros, 5 * 64);
-#endif
-
-#ifdef CONFIG_AUDIO
-  // now set the audio going
-  SDL_PauseAudio(0);
 #endif
 
   // Run main game (mouse is hidden and palette is faded)

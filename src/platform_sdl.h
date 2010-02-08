@@ -26,6 +26,24 @@ __M_BEGIN_DECLS
 
 #include "platform.h"
 
+#ifdef CONFIG_PTHREAD_MUTEXES
+
+#include "pthread.h"
+
+typedef pthread_mutex_t platform_mutex;
+#define platform_mutex_init(mutex) pthread_mutex_init(&mutex, 0)
+#define platform_mutex_lock(mutex) pthread_mutex_lock(&mutex)
+#define platform_mutex_unlock(mutex) pthread_mutex_unlock(&mutex)
+
+#else // !CONFIG_PTHREAD_MUTEXES
+
+typedef SDL_mutex *platform_mutex;
+#define platform_mutex_init(mutex) (mutex = SDL_CreateMutex())
+#define platform_mutex_lock(mutex) SDL_LockMutex(mutex)
+#define platform_mutex_unlock(mutex) SDL_UnlockMutex(mutex)
+
+#endif // CONFIG_PTHREAD_MUTEXES
+
 #include "SDL_types.h"
 #include "SDL_endian.h"
 

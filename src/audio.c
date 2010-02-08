@@ -29,12 +29,16 @@
 
 #include "platform.h"
 #include "audio.h"
-#include "SDL.h"
 #include "sfx.h"
 #include "data.h"
 #include "configure.h"
 #include "fsafeopen.h"
 #include "util.h"
+
+// For WAV loader fallback
+#ifdef CONFIG_SDL
+#include "SDL.h"
+#endif
 
 #ifdef CONFIG_TREMOR
 #include <tremor/ivorbiscodec.h>
@@ -43,7 +47,6 @@
 #include <vorbis/codec.h>
 #include <vorbis/vorbisfile.h>
 #endif
-
 
 #if defined(CONFIG_MODPLUG) && defined(CONFIG_MIKMOD)
 #error Can only have one module system enabled concurrently!
@@ -61,6 +64,13 @@
 #define FP_SHIFT      13
 #define FP_AND        ((1 << FP_SHIFT) - 1)
 #define FP_MULT(a, b) ((a * b) << FP_SHIFT)
+
+typedef struct
+{
+  Uint32 channels;
+  Uint32 freq;
+  Uint16 format;
+} wav_info;
 
 typedef struct
 {
@@ -84,15 +94,10 @@ typedef struct
 static const int default_period = 428;
 
 // May be used by audio plugins
-__audio_c_maybe_static audio_struct audio;
+audio_struct audio;
 
-#ifdef CONFIG_PTHREAD_MUTEXES
-#define __lock()      pthread_mutex_lock(&audio.audio_mutex)
-#define __unlock()    pthread_mutex_unlock(&audio.audio_mutex)
-#else
-#define __lock()      SDL_LockMutex(audio.audio_mutex);
-#define __unlock()    SDL_UnlockMutex(audio.audio_mutex);
-#endif
+#define __lock()      platform_mutex_lock(audio.audio_mutex)
+#define __unlock()    platform_mutex_unlock(audio.audio_mutex)
 
 #ifdef DEBUG
 
@@ -325,7 +330,7 @@ __audio_c_maybe_static void sampled_set_buffer(sampled_stream *s_src)
   s_src->negative_comp = 0;
 
   data_window_length =
-   (Uint32)(ceil((float)audio.audio_settings.samples *
+   (Uint32)(ceil((float)audio.buffer_samples *
    frequency / audio.output_frequency) * bytes_per_sample);
 
   prologue_length += (Uint32)(ceil(frequency_delta) * bytes_per_sample);
@@ -498,7 +503,7 @@ static Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len)
 
   switch(w_stream->format)
   {
-    case AUDIO_U8:
+    case SAMPLE_U8:
     {
       Sint16 *dest = (Sint16 *)buffer;
 
@@ -962,13 +967,16 @@ static void* get_riff_chunk_by_id(FILE *fp, int filesize,
 // More lenient than SDL's WAV loader, but only supports
 // uncompressed PCM files (for now.)
 
-static int load_wav_file(const char *file, SDL_AudioSpec *spec,
+static int load_wav_file(const char *file, wav_info *spec,
  Uint8 **audio_buf, Uint32 *audio_len)
 {
   int data_size, filesize, riffsize, channels, srate, sbytes, fmt_size;
   char *fmt_chunk, tmp_buf[4];
   int ret = 0;
   FILE *fp;
+#ifdef CONFIG_SDL
+  SDL_AudioSpec sdlspec;
+#endif
 
   fp = fopen(file, "rb");
   if(!fp)
@@ -1005,16 +1013,33 @@ static int load_wav_file(const char *file, SDL_AudioSpec *spec,
   if(read_little_endian16(fmt_chunk) != 1)
   {
     free(fmt_chunk);
- 
-    if(SDL_LoadWAV(file, spec, audio_buf, audio_len))
+#ifdef CONFIG_SDL
+    if(SDL_LoadWAV(file, &sdlspec, audio_buf, audio_len))
     {
       void *copy_buf = malloc(*audio_len);
       memcpy(copy_buf, *audio_buf, *audio_len);
       SDL_FreeWAV(*audio_buf);
       *audio_buf = copy_buf;
+      spec->channels = sdlspec.channels;
+      spec->freq = sdlspec.freq;
+      switch(sdlspec.format)
+      {
+        case AUDIO_U8:
+          spec->format = SAMPLE_U8;
+          break;
+        case AUDIO_S8:
+          spec->format = SAMPLE_S8;
+          break;
+        case AUDIO_S16LSB:
+          spec->format = SAMPLE_S16LSB;
+          break;
+        default:
+         free(copy_buf);
+         goto exit_close;
+      }
       goto exit_close_success;
     }
-
+#endif // CONFIG_SDL
     goto exit_close;
   }
 
@@ -1049,14 +1074,13 @@ static int load_wav_file(const char *file, SDL_AudioSpec *spec,
     goto exit_close;
   }
 
-  // Write to the SDL_AudioSpec struct thingymabob.
+  // Write to the wav_info struct thingymabob.
   spec->freq = srate;
   if(sbytes == 1)
-    spec->format = AUDIO_U8;
+    spec->format = SAMPLE_U8;
   else
-    spec->format = AUDIO_S16LSB;
+    spec->format = SAMPLE_S16LSB;
   spec->channels = channels;
-  spec->samples = 4096;
 
 exit_close_success:
   ret = 1;
@@ -1227,34 +1251,34 @@ static audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
   audio_stream *ret_val = NULL;
   char safe_filename[MAX_PATH];
   char new_file[MAX_PATH];
-  SDL_AudioSpec wav_info;
+  wav_info w_info = {0,0,0};
   Uint32 data_length;
   Uint8 *wav_data;
 
   check_ext_for_sam_and_convert(filename, new_file);
   fsafetranslate(new_file, safe_filename);
 
-  if(load_wav_file(safe_filename, &wav_info, &wav_data, &data_length))
+  if(load_wav_file(safe_filename, &w_info, &wav_data, &data_length))
   {
     // Surround WAVs not supported yet..
-    if(wav_info.channels <= 2)
+    if(w_info.channels <= 2)
     {
       wav_stream *w_stream = malloc(sizeof(wav_stream));
 
       w_stream->wav_data = wav_data;
       w_stream->data_length = data_length;
-      w_stream->channels = wav_info.channels;
+      w_stream->channels = w_info.channels;
       w_stream->data_offset = 0;
-      w_stream->format = wav_info.format;
-      w_stream->natural_frequency = wav_info.freq;
-      w_stream->bytes_per_sample = wav_info.channels;
+      w_stream->format = w_info.format;
+      w_stream->natural_frequency = w_info.freq;
+      w_stream->bytes_per_sample = w_info.channels;
 
-      if((wav_info.format != AUDIO_U8) && (wav_info.format != AUDIO_S8))
+      if((w_info.format != SAMPLE_U8) && (w_info.format != SAMPLE_S8))
         w_stream->bytes_per_sample *= 2;
 
       initialize_sampled_stream((sampled_stream *)w_stream,
        wav_set_frequency, wav_get_frequency, frequency,
-       wav_info.channels, 1);
+       w_info.channels, 1);
 
       ret_val = (audio_stream *)w_stream;
 
@@ -1372,7 +1396,7 @@ static void clip_buffer(Sint16 *dest, Sint32 *src, int len)
   }
 }
 
-static void audio_callback(void *userdata, Uint8 *stream, int len)
+void audio_callback(Sint16 *stream, int len)
 {
   Uint32 destroy_flag;
   audio_stream *current_astream;
@@ -1405,7 +1429,7 @@ static void audio_callback(void *userdata, Uint8 *stream, int len)
       current_astream = next_astream;
     }
 
-    clip_buffer((Sint16 *)stream, audio.mix_buffer, len / 2);
+    clip_buffer(stream, audio.mix_buffer, len / 2);
   }
 
   UNLOCK();
@@ -1418,28 +1442,10 @@ static void init_pc_speaker(config_info *conf)
 
 void init_audio(config_info *conf)
 {
-  SDL_AudioSpec desired_spec =
-  {
-    0,
-    AUDIO_S16SYS,
-    2,
-    0,
-    conf->buffer_size,
-    0,
-    0,
-    audio_callback,
-    NULL
-  };
-
-#ifndef CONFIG_PTHREAD_MUTEXES
-  audio.audio_mutex = SDL_CreateMutex();
-#else
-  pthread_mutex_init(&audio.audio_mutex, NULL);
-#endif
+  platform_mutex_init(audio.audio_mutex);
 
   audio.output_frequency = conf->output_frequency;
   audio.master_resample_mode = conf->resample_mode;
-  desired_spec.freq = audio.output_frequency;
 
 #ifdef CONFIG_MODPLUG
   init_modplug(conf);
@@ -1451,8 +1457,13 @@ void init_audio(config_info *conf)
 
   init_pc_speaker(conf);
 
-  SDL_OpenAudio(&desired_spec, &audio.audio_settings);
-  audio.mix_buffer = malloc(audio.audio_settings.size * 2);
+  set_music_volume(conf->music_volume);
+  set_sound_volume(conf->sam_volume);
+  set_music_on(conf->music_on);
+  set_sfx_on(conf->pc_speaker_on);
+  set_sfx_volume(conf->pc_speaker_volume);
+
+  init_audio_platform(conf);
 
 #ifdef DEBUG
   fprintf(stdout, "Started audio subsystem\n");

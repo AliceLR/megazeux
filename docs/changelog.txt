@@ -188,7 +188,7 @@ DEVELOPERS
   infrastructure deprecates the old macosx.zip method.
 + Most of the internal dependency on SDL has been removed. Therefore, MZX
   can be built (but not yet work) without SDL present. The only remaining
-  component to convert is audio, but this can be disabled, so port authors
+  component to convert is MikMod, but this can be disabled, so port authors
   can start using the feature right away (see config.sh). (Mr_Alert)
 
 December 8, 2007 - MZX 2.81h
