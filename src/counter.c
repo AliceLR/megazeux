@@ -1813,6 +1813,8 @@ static void str_num_write(World *mzx_world, function_counter *counter,
     src = find_string(mzx_world, name, &next);
 
     new_length = str_num + 1;
+    if(new_length > MAX_STRING_LEN)
+      return;
 
     if(src != NULL)
     {

@@ -30,6 +30,10 @@ USERS
   automatically re-converted. This hack can be used to procedurally
   regenerate WAV files from SAMs, or transparently work around on-disk
   corruption.
++ Strings are now limited to a maximum length of 64k. I'm open to suggestions
+  over a better limit, but there must be a limit (set "$string.X" notation
+  grows a string arbitrarily, so robotic can crash MZX when a string is resized
+  beyond a reasonable limit).
 
 DEVELOPERS
 
