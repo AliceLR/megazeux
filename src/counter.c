@@ -1875,6 +1875,10 @@ static void str_num_write(World *mzx_world, function_counter *counter,
      */
     if(!strncasecmp(dot_ptr, "length", 6))
     {
+      // Ignore impossible lengths
+      if(value < 0)
+        return;
+
       // Writing to length from a non-existent string has no effect
       src = find_string(mzx_world, name, &next);
       if(!src)
