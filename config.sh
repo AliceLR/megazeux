@@ -339,10 +339,11 @@ if [ "$AUDIO" = "false" ]; then
 fi
 
 #
-# Force-enable PTHREAD on linux
+# Force-enable pthread on POSIX platforms (works around SDL bugs)
 #
 if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "linux-static" \
-  -o "$PLATFORM" = "obsd"  -o "$PLATFORM" = "gp2x" ]; then
+  -o "$PLATFORM" = "obsd"  -o "$PLATFORM" = "gp2x" \
+  -o "$PLATFORM" = "solaris" ]; then
 	echo "Force-enabling pthread on POSIX platforms."
 	PTHREAD="true"
 fi
