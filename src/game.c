@@ -1660,6 +1660,20 @@ static int update(World *mzx_world, int game, int *fadein)
   return 0;
 }
 
+static void focus_on_player(World *mzx_world)
+{
+  int player_x   = mzx_world->player_x;
+  int player_y   = mzx_world->player_y;
+  int viewport_x = mzx_world->current_board->viewport_x;
+  int viewport_y = mzx_world->current_board->viewport_y;
+  int top_x, top_y;
+
+  calculate_xytop(mzx_world, &top_x, &top_y);
+
+  // Focus on the player
+  focus_screen(player_x - top_x + viewport_x, player_y - top_y + viewport_y);
+}
+
 __editor_maybe_static void play_game(World *mzx_world, int fadein)
 {
   // We have the world loaded, on the proper scene.
@@ -1675,6 +1689,8 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
 
   do
   {
+    focus_on_player(mzx_world);
+
     // Update
     if(update(mzx_world, 1, &fadein))
     {
