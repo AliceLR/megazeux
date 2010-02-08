@@ -421,7 +421,7 @@ fi
 # Force-enable PTHREAD on linux
 #
 if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "linux-static" \
-  -o "$PLATFORM" = "obsd" ]; then
+  -o "$PLATFORM" = "obsd"  -o "$PLATFORM" = "gp2x" ]; then
 	echo "Force-enabling pthread on POSIX platforms."
 	PTHREAD="true"
 fi
@@ -440,7 +440,8 @@ if [ "$ICON" = "true" ]; then
 		ICON="false"
 	fi
 
-	if [ "$PLATFORM" = "darwin" ]; then
+	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "gp2x" \
+	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" ]; then
 		echo "Force-disabling icon branding (redundant)."
 		ICON="false"
 	fi

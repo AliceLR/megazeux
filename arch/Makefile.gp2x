@@ -2,18 +2,7 @@
 # gp2x makefile generics
 #
 
-# gp2x toolchain overrides
-CC    = arm-linux-gcc
-CXX   = arm-linux-g++
-STRIP = arm-linux-strip --strip-unneeded
-
-# name of resulting binary
-BINEXT  = .gpe
-
-# gp2x override for SDL
-SDL_CFLAGS  = -I${PREFIX}/include/SDL
-SDL_LDFLAGS = -L${PREFIX}/lib -lSDL -static -lpthread
-
-# also needs -lm
-mzx_flags += -I${PREFIX}/include
-mzx_ldflags += -lm
+CC     = arm-gp2x-linux-gcc
+CXX    = arm-gp2x-linux-g++
+STRIP  = arm-gp2x-linux-strip --strip-unneeded
+BINEXT = .gpe

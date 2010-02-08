@@ -41,10 +41,9 @@ platform assumes that --prefix will specify the path to the GP2X SDK. For
 example, if you have the SDK installed to /home/alistair/bin/gp2x-sdk, you
 should specify:
 
-  ./config.sh --platform gp2x --prefix /home/alistair/bin/gp2x-sdk \
+  ./config.sh --platform gp2x --prefix /home/alistair/bin/gp2x \
               --optimize-size --disable-editor --disable-helpsys \
-              --disable-utils --disable-libpng --disable-modplug \
-	      --enable-mikmod
+              --disable-utils --disable-modplug --enable-mikmod
 
 The configuration script will automatically enable/disable other flags on this
 platform; do not vary the command above, other than to change the prefix. The
