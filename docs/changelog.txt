@@ -43,6 +43,8 @@ USERS
 + Fix message edges always showing up black, instead of whatever color 0
   is. (Revvy)
 + Change starting/max health and lives minimum to 1 instead of 0. (Revvy)
++ Some help system (F1) bugs have been fixed, hopefully mitigating some of
+  the crashes people have been seeing.
 
 DEVELOPERS
 

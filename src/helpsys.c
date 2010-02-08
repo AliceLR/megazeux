@@ -29,6 +29,11 @@
 #include "graphics.h"
 #include "world.h"
 
+/* The whole help system needs to be reworked. These globals coupled
+ * with numerous context hacks are causing all sorts of weird bugs.
+ *   --ajs
+ */
+
 static int contexts[128];
 
 int context = 72; // 72 = "No" context link
@@ -43,7 +48,9 @@ void set_context(int con)
 
 void pop_context(void)
 {
-  context = contexts[--curr_context];
+  if(curr_context > 0)
+    curr_context--;
+  context = contexts[curr_context];
 }
 
 void help_load(World *mzx_world, const char *file_name)
