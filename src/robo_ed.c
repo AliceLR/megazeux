@@ -1475,7 +1475,7 @@ static void find_replace_action(robot_state *rstate)
           rstate->current_x = l_pos;
           replace_current_line(rstate, l_pos, search_string, replace_string);
 
-          l_pos += r_len - 1;
+          l_pos += r_len;
           rstate->current_x = l_pos;
 
           last_line = l_num;

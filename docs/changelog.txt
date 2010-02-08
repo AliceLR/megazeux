@@ -4,10 +4,10 @@ USERS
 
 DEVELOPERS
 
-April ??, 2008 - MZX 2.81i
+April 13, 2008 - MZX 2.81i
 
 Once again, this release targets bug fixes and general spit-and-polish.
-This release will be the last of the 2.81 series.
+This release will probably be the last of the 2.81 series.
 
 One major snag (of two) from the last DoZ has been addressed: the
 phantom F1 help system crashes. The second issue, crashing with block
@@ -87,7 +87,11 @@ USERS
   the debug menu.
 + Correctly clamp (rather than truncate) the value passed through to a
   SET COLOR. Restores compatibility with 2.70, and fixes Xenogenesis.
-+ Fix clipboard copy behaviour on Linux.
++ Improve clipboard copy behaviour on Linux. Some actions are still
+  mysteriously broken.
++ Fix replacing with a blank string in conjunction with the replace all
+  Ctrl+F action in the robot editor. The cursor can now no longer become
+  negative, fixing numerous possible crashes on search/replace.
 
 DEVELOPERS
 
