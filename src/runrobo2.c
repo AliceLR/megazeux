@@ -3267,9 +3267,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             move_dir(src_board, &x, &y, direction);
           }
 
-          if(direction == -2)
-            goto next_cmd;
-          else
+          if(direction != -2)
             goto breaker;
         }
         break;
@@ -5806,8 +5804,6 @@ void run_robot(World *mzx_world, int id, int x, int y)
     }
 
     // Go to next command! First erase prefixes...
-    next_cmd:
-
     mzx_world->first_prefix = 0;
     mzx_world->mid_prefix = 0;
     mzx_world->last_prefix = 0;
