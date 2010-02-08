@@ -1892,47 +1892,45 @@ char *assemble_file(char *name, int *size)
   char *buffer;
   int output_position = 1;
 
-  if(input_file)
+  if(!input_file)
+    return NULL;
+
+  buffer = malloc(1024);
+  buffer[0] = 0xFF;
+
+  // fsafegets ensures no line terminators are present
+  while(fsafegets(line_buffer, 255, input_file))
   {
-    buffer = malloc(1024);
-    buffer[0] = 0xFF;
+    line_bytecode_length =
+     assemble_line(line_buffer, bytecode_buffer, error_buffer, NULL, NULL);
 
-    // fsafegets ensures no line terminators are present
-    while(fsafegets(line_buffer, 255, input_file))
+    if((line_bytecode_length != -1) &&
+     ((current_size + line_bytecode_length) < MAX_OBJ_SIZE))
     {
-      line_bytecode_length =
-       assemble_line(line_buffer, bytecode_buffer, error_buffer, NULL, NULL);
-
-      if((line_bytecode_length != -1) &&
-       ((current_size + line_bytecode_length) < MAX_OBJ_SIZE))
+      if((current_size + line_bytecode_length) > allocated_size)
       {
-        if((current_size + line_bytecode_length) > allocated_size)
-        {
-          allocated_size *= 2;
-          buffer = realloc(buffer, allocated_size);
-        }
-        memcpy(buffer + output_position, bytecode_buffer, line_bytecode_length);
-        output_position += line_bytecode_length;
-        current_size += line_bytecode_length;
+        allocated_size *= 2;
+        buffer = realloc(buffer, allocated_size);
       }
-      else
-      {
-        fclose(input_file);
-        free(buffer);
-        return NULL;
-      }
+      memcpy(buffer + output_position, bytecode_buffer, line_bytecode_length);
+      output_position += line_bytecode_length;
+      current_size += line_bytecode_length;
     }
-
-    buffer = realloc(buffer, current_size + 1);
-    buffer[current_size] = 0;
-
-    *size = current_size + 1;
-
-    fclose(input_file);
-    return buffer;
+    else
+    {
+      buffer = NULL;
+      goto exit_out;
+    }
   }
 
-  return NULL;
+  // trim the buffer to match the output size
+  buffer = realloc(buffer, current_size + 1);
+  buffer[current_size] = 0;
+  *size = current_size + 1;
+
+exit_out:
+  fclose(input_file);
+  return buffer;
 }
 
 __editor_maybe_static void print_color(int color, char *color_buffer)
@@ -2351,32 +2349,31 @@ void disassemble_file(char *name, char *program, int allow_ignores,
  int base)
 {
   FILE *output_file = fopen(name, "wb");
+  char command_buffer[256];
+  char error_buffer[256];
+  char *current_robot_pos = program + 1;
+  char *next;
+  int new_line;
+  int line_text_length;
 
-  if(output_file)
+  if(!output_file)
+    return;
+
+  do
   {
-    char command_buffer[256];
-    char error_buffer[256];
-    char *current_robot_pos = program + 1;
-    char *next;
-    int new_line;
-    int line_text_length;
+    new_line = disassemble_line(current_robot_pos,
+     &next, command_buffer, error_buffer,
+     &line_text_length, allow_ignores, NULL, NULL, base);
 
-    do
+    if(new_line)
     {
-      new_line = disassemble_line(current_robot_pos,
-       &next, command_buffer, error_buffer,
-       &line_text_length, allow_ignores, NULL, NULL, base);
+      fwrite(command_buffer, line_text_length, 1, output_file);
+      fputc('\n', output_file);
+    }
 
-      if(new_line)
-      {
-        fwrite(command_buffer, line_text_length, 1, output_file);
-        fputc('\n', output_file);
-      }
-
-      current_robot_pos = next;
-
-    } while(new_line);
-
-    fclose(output_file);
+    current_robot_pos = next;
   }
+  while(new_line);
+
+  fclose(output_file);
 }
