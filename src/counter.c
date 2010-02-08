@@ -3431,8 +3431,7 @@ mzx_string *load_string(FILE *fp)
   int str_length = fgetd(fp);
 
   mzx_string *src_string =
-   malloc(sizeof(mzx_string) + name_length +
-   str_length - 1);
+   malloc(sizeof(mzx_string) + name_length + str_length - 1);
 
   fread(src_string->name, name_length, 1, fp);
 
@@ -3474,7 +3473,7 @@ void debug_counters(World *mzx_world)
 {
   // +1 for SCORE, +1 for mzx_speed
   int num_vars = mzx_world->num_counters + mzx_world->num_strings + 1 + 1;
-  char **var_list = malloc(num_vars * sizeof(char *));
+  char **var_list = calloc(num_vars, sizeof(char *));
   int dialog_result;
   int cp_len;
   int selected = 0;

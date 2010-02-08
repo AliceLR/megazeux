@@ -840,7 +840,7 @@ static void copy_block_to_buffer(robot_state *rstate)
     free(copy_buffer);
   }
 
-  copy_buffer = malloc(sizeof(char *) * num_lines);
+  copy_buffer = calloc(num_lines, sizeof(char *));
   copy_buffer_lines = num_lines;
 
   for(i = 0; i < num_lines; i++)

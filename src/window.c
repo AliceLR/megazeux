@@ -1496,10 +1496,9 @@ int add_board(World *mzx_world, int current)
 int choose_board(World *mzx_world, int current, const char *title,
  int board0_none)
 {
-  int i;
-  char **board_names =
-   malloc((mzx_world->num_boards + 1) * sizeof(char *));
+  char **board_names = calloc(mzx_world->num_boards + 1, sizeof(char *));
   int num_boards = mzx_world->num_boards;
+  int i;
 
   // Go through - blank boards get a (no board) marker. t2 keeps track
   // of the number of boards.
@@ -3207,10 +3206,8 @@ __editor_maybe_static int file_manager(World *mzx_world,
   {
     total_filenames_allocated = 32;
     total_dirnames_allocated = 32;
-    file_list = malloc(sizeof(char *) * 32);
-    dir_list = malloc(sizeof(char *) * 32);
-    memset(file_list, 0, sizeof(char *) * 32);
-    memset(dir_list, 0, sizeof(char *) * 32);
+    file_list = calloc(32, sizeof(char *));
+    dir_list = calloc(32, sizeof(char *));
 
     num_files = 0;
     num_dirs = 0;

@@ -181,11 +181,9 @@ static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
   num_robots = fgetc(fp);
   num_robots_active = 0;
 
-  cur_board->robot_list =
-   malloc(sizeof(Robot *) * (num_robots + 1));
+  cur_board->robot_list = calloc(num_robots + 1, sizeof(Robot *));
   // Also allocate for name sorted list
-  cur_board->robot_list_name_sorted =
-   malloc(sizeof(Robot *) * num_robots);
+  cur_board->robot_list_name_sorted = calloc(num_robots, sizeof(Robot *));
 
   // Any null objects being placed will later be optimized out
 
@@ -232,8 +230,7 @@ static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
 
   // Load scrolls
   num_scrolls = fgetc(fp);
-  cur_board->scroll_list =
-   malloc(sizeof(Scroll *) * (num_scrolls + 1));
+  cur_board->scroll_list = calloc(num_scrolls + 1, sizeof(Scroll *));
 
   if(num_scrolls)
   {
@@ -241,15 +238,9 @@ static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
     {
       cur_scroll = load_scroll_allocate(fp, savegame);
       if(cur_scroll->used)
-      {
         cur_board->scroll_list[i] = cur_scroll;
-      }
       else
-      {
-        // We don't need no null scroll
         clear_scroll(cur_scroll);
-        cur_board->scroll_list[i] = NULL;
-      }
     }
   }
 
@@ -258,8 +249,7 @@ static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
 
   // Load sensors
   num_sensors = fgetc(fp);
-  cur_board->sensor_list =
-   malloc(sizeof(Sensor *) * (num_sensors + 1));
+  cur_board->sensor_list = calloc(num_sensors + 1, sizeof(Sensor *));
 
   if(num_sensors)
   {
@@ -267,15 +257,9 @@ static void load_board_direct(Board *cur_board, FILE *fp, int savegame)
     {
       cur_sensor = load_sensor_allocate(fp, savegame);
       if(cur_sensor->used)
-      {
         cur_board->sensor_list[i] = cur_sensor;
-      }
       else
-      {
-        // We don't need no null sensor
         clear_sensor(cur_sensor);
-        cur_board->sensor_list[i] = NULL;
-      }
     }
   }
 

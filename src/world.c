@@ -560,10 +560,8 @@ __editor_maybe_static void optimize_null_boards(World *mzx_world)
   // board numbers from the old list to the new list.
   int num_boards = mzx_world->num_boards;
   Board **board_list = mzx_world->board_list;
-  Board **optimized_board_list =
-   malloc(sizeof(Board *) * num_boards);
-  int *board_id_translation_list =
-   malloc(sizeof(int) * num_boards);
+  Board **optimized_board_list = calloc(num_boards, sizeof(Board *));
+  int *board_id_translation_list = calloc(num_boards, sizeof(int));
 
   Board *cur_board;
   int i, i2;
