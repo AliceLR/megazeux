@@ -43,6 +43,11 @@ make ARCH=ppc all clean
 Will build the ppc binary, and put it in the root as "mzxsvn.ppc". It will
 also clean the source tree, which is VERY IMPORTANT.
 
+BUILDING AMD64/PPC64
+
+The instructions above can also be repeated with ARCH=amd64 and ARCH=ppc64 for
+64bit binaries (this may improve performance, but it is not necessary).
+
 PACKAGING (+ UNIVERSAL BINARIES)
 
 Simply run:

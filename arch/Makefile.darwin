@@ -4,14 +4,24 @@
 
 STRIP ?= strip
 
-ifneq (${ARCH},ppc)
-CC   := i686-apple-darwin9-gcc-4.0.1
-CXX  := i686-apple-darwin9-g++-4.0.1
-ARCH := i686
+ifeq (${ARCH},i686)
+CC        := i686-apple-darwin9-gcc-4.0.1
+CXX       := i686-apple-darwin9-g++-4.0.1
+REAL_ARCH := i686
+else ifeq (${ARCH},amd64)
+CC        := i686-apple-darwin9-gcc-4.0.1 -m64
+CXX       := i686-apple-darwin9-g++-4.0.1 -m64
+REAL_ARCH := amd64
+else ifeq (${ARCH},ppc)
+CC        := powerpc-apple-darwin9-gcc-4.0.1
+CXX       := powerpc-apple-darwin9-g++-4.0.1
+REAL_ARCH := ppc
+else ifeq (${ARCH},ppc64)
+CC        := powerpc-apple-darwin9-gcc-4.0.1 -m64
+CXX       := powerpc-apple-darwin9-g++-4.0.1 -m64
+REAL_ARCH := ppc64
 else
-CC   := powerpc-apple-darwin9-gcc-4.0.1
-CXX  := powerpc-apple-darwin9-g++-4.0.1
-ARCH := ppc
+REAL_ARCH := $(error Invalid architecture selection)
 endif
 
 SDL_CFLAGS  = -I${PREFIX}/SDL.Framework/Headers
@@ -34,7 +44,7 @@ endif
 
 mzx: arch/darwin/SDLMain.o
 all:
-	@mv ${TARGET} ${TARGET}.${ARCH}
+	@mv ${TARGET} ${TARGET}.${REAL_ARCH}
 clean:
 	@echo "  CLEAN   " arch/darwin
 	@rm -f arch/darwin/SDLMain.o arch/darwin/SDLMain.d
