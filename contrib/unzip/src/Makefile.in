@@ -16,10 +16,10 @@ unzip_objs = ${unzip_base}/unzip.${o} ${unzip_base}/ioapi.${o}
 
 ${unzip_base}/%.o ${unzip_base}/%.dbg.o: ${unzip_base}/%.c
 ifeq (${V},1)
-	${CC} ${CFLAGS} ${unzip_cflags} -c $< -o $@
+	${CC} ${CFLAGS} ${unzip_cflags} -I${PREFIX}/include -c $< -o $@
 else
 	@echo "  CC      " $<
-	@${CC} ${CFLAGS} ${unzip_cflags} -c $< -o $@
+	@${CC} ${CFLAGS} ${unzip_cflags} -I${PREFIX}/include -c $< -o $@
 endif
 
 ifeq (${BUILD_UTILS},1)
