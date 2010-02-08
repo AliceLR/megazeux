@@ -2,6 +2,28 @@ SVN
 
 USERS
 
+DEVELOPERS
+
+April ??, 2008 - MZX 2.81i
+
+Once again, this release targets bug fixes and general spit-and-polish.
+This release will be the last of the 2.81 series.
+
+One major snag (of two) from the last DoZ has been addressed: the
+phantom F1 help system crashes. The second issue, crashing with block
+actions, has not yet been tracked down or fixed.
+
+A new tool, "checkres", is now routinely packaged, allowing you to check
+your games for missing resource files (PALs, CHRs, etc.) before passing
+them on to other people. This should be especially handy for DoZ game
+submissions.
+
+As usual, thanks go out to Revvy and Mr_Alert for their contributions to
+the bug-fixing effort, and to Terryn for his unwavering dedication to
+creating and organising bug reports, and for testing our bug fixes.
+
+USERS
+
 + Fixed and improved quality of the half-width renderer for the GP2X port
   (Mr_Alert).
 + Have the numpad work correctly when numlock is disabled. Keys are no longer
