@@ -86,7 +86,7 @@ int main(int argc, char **argv)
 #endif
 
 #ifdef DEBUG
-  flags |= SDL_INIT_NOPARACHUTE
+  flags |= SDL_INIT_NOPARACHUTE;
 #endif
 
 #ifdef CONFIG_AUDIO
