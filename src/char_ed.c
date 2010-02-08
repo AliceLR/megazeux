@@ -511,8 +511,8 @@ int char_editor(World *mzx_world)
   int dialog_width, dialog_height;
   int dialog_x, dialog_y;
   int chars_show_width;
-  char buffer[8 * 14 * 32];
-  char previous[8 * 14 * 32];
+  char *buffer = malloc(8 * 14 * 32);
+  char *previous = malloc(8 * 14 * 32);
   char mini_buffer[32];
   int last_x = -1, last_y = 0;
   int block_x = 0;
@@ -1736,6 +1736,9 @@ int char_editor(World *mzx_world)
 
     update_palette();
   }
+
+  free(previous);
+  free(buffer);
 
   return current_char;
 }
