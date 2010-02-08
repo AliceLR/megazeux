@@ -156,9 +156,10 @@ int main(int argc, char **argv)
   // Setup directory strings
   // Get megazeux directory
 
-  // Init video (will init palette too)
-  init_video(&(mzx_world.conf));
+  if(init_video(&(mzx_world.conf)))
+    goto exit_free_world;
   init_audio(&(mzx_world.conf));
+
   warp_mouse(39, 12);
   cursor_off();
   default_scroll_values(&mzx_world);
@@ -198,8 +199,8 @@ int main(int argc, char **argv)
     clear_global_data(&mzx_world);
   }
 
+exit_free_world:
   free_world(&mzx_world);
-
 exit_free_res:
   mzx_res_free();
   SDL_Quit();

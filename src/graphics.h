@@ -162,7 +162,7 @@ void move_cursor(Uint32 x, Uint32 y);
 void set_cursor_mode(cursor_mode_types mode);
 cursor_mode_types get_cursor_mode(void);
 
-void init_video(config_info *conf);
+int init_video(config_info *conf);
 int set_video_mode(void);
 void toggle_fullscreen(void);
 void resize_screen(Uint32 w, Uint32 h);

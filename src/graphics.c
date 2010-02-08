@@ -751,9 +751,16 @@ void default_palette(void)
   update_palette();
 }
 
-static void set_graphics_output(const char *video_output)
+static int set_graphics_output(const char *video_output)
 {
   const renderer_data *renderer = renderers;
+
+  // The first renderer was NULL, this shouldn't happen
+  if(!renderer->name)
+  {
+    fprintf(stderr, "No renderers built, please provide a valid config.h\n");
+    return -1;
+  }
 
   while(renderer->name)
   {
@@ -771,9 +778,10 @@ static void set_graphics_output(const char *video_output)
 #ifdef DEBUG
   fprintf(stdout, "Selected video output: %s\n", renderer->name);
 #endif
+  return 0;
 }
 
-void init_video(config_info *conf)
+int init_video(config_info *conf)
 {
   graphics.screen_mode = 0;
   graphics.fullscreen = conf->fullscreen;
@@ -785,15 +793,18 @@ void init_video(config_info *conf)
   graphics.cursor_timestamp = SDL_GetTicks();
   graphics.cursor_flipflop = 1;
 
-  set_graphics_output(conf->video_output);
+  if(!set_graphics_output(conf->video_output))
+    return -1;
 
   SDL_WM_SetCaption("MegaZeux " VERSION, "MZX");
   SDL_ShowCursor(SDL_DISABLE);
 
-  if(!(graphics.init_video(&graphics, conf)))
+  if(!graphics.init_video(&graphics, conf))
   {
-    set_graphics_output("");
-    graphics.init_video(&graphics, conf);
+    if(!set_graphics_output(""))
+      return -1;
+    if(!graphics.init_video(&graphics, conf))
+      return -2;
   }
 
   ec_load_set_secondary(mzx_res_get_by_id(MZX_DEFAULT_CHR),
@@ -809,6 +820,7 @@ void init_video(config_info *conf)
   ec_load_mzx();
 
   init_palette();
+  return 0;
 }
 
 int set_video_mode(void)
