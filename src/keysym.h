@@ -28,6 +28,7 @@ typedef enum
 {
   IKEY_UNKNOWN      = 0,
   IKEY_FIRST        = 0,
+  IKEY_UNICODE      = 1,
   IKEY_BACKSPACE    = 8,
   IKEY_TAB          = 9,
   IKEY_RETURN       = 13,

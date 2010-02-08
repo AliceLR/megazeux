@@ -243,7 +243,12 @@ static Uint32 process_event(SDL_Event *event)
     {
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
-        break;
+      {
+        if(event->key.keysym.unicode)
+          ckey = IKEY_UNICODE;
+        else
+          break;
+      }
       if((ckey == IKEY_RETURN) &&
        get_alt_status(keycode_internal) && get_ctrl_status(keycode_internal))
       {
@@ -310,7 +315,12 @@ static Uint32 process_event(SDL_Event *event)
     {
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
-        break;
+      {
+        if(input.keymap[IKEY_UNICODE])
+          ckey = IKEY_UNICODE;
+        else
+          break;
+      }
       if(ckey == IKEY_NUMLOCK)
       {
 #ifdef __WIN32__
