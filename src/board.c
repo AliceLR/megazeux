@@ -25,6 +25,7 @@
 #include "world.h"
 #include "const.h"
 #include "extmem.h"
+#include "util.h"
 
 static int cmp_robots(const void *dest, const void *src)
 {

@@ -379,4 +379,6 @@ int main(int argc, char *argv[])
   fclose(dest);
   fclose(source);
   printf("Done! Biggest file- %ld bytes. (%s)\n\n",biggest_file,max_file);
+  return 0;
 }
+

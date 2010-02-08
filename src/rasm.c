@@ -26,6 +26,7 @@
 #include "rasm.h"
 #include "data.h"
 #include "fsafeopen.h"
+#include "util.h"
 
 static int cm2[]   = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
 static int cm3[]   = { IMM_U16 | STRING };

@@ -80,10 +80,15 @@ dir_t *dir_open(const char *path);
 void dir_close(dir_t *dir);
 int dir_get_next_entry(dir_t *dir, char *entry);
 
+#ifdef __WIN32__
+int strcasecmp(const char *s1, const char *s2);
+int strncasecmp(const char *s1, const char *s2, size_t n);
+#endif
+
 /* Some platforms like NDS don't have a rename(2), so we need
  * to implement it.
  */
-#if !defined(rename) && !defined(WIN32)
+#if !defined(rename) && !defined(__WIN32__)
 #define NEED_RENAME
 #define rename rename
 int rename(const char *oldpath, const char *newpath);

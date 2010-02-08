@@ -28,6 +28,7 @@
 #include "render_sdl.h"
 #include "render_gl.h"
 #include "renderers.h"
+#include "util.h"
 
 #define SAFE_TEXTURE_MARGIN_X 0.0004
 #define SAFE_TEXTURE_MARGIN_Y 0.0002

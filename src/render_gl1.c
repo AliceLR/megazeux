@@ -28,6 +28,7 @@
 #include "render_sdl.h"
 #include "render_gl.h"
 #include "renderers.h"
+#include "util.h"
 
 typedef struct
 {

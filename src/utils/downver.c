@@ -27,10 +27,11 @@
 #include <string.h>
 
 #include "world.h"
+#include "util.h"
 
-#define error(x...) \
+#define error(...) \
   { \
-    fprintf(stderr, x); \
+    fprintf(stderr, __VA_ARGS__); \
     fflush(stderr); \
   }
 
@@ -43,7 +44,7 @@
 int main(int argc, char *argv[])
 {
   int world, byte;
-  ssize_t ext_pos;
+  long ext_pos;
   FILE *fp;
 
   if(argc <= 1)

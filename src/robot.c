@@ -32,10 +32,10 @@
 #include "expr.h"
 #include "window.h"
 #include "scrdisp.h"
-
 #include "robot.h"
 #include "board.h"
 #include "world.h"
+#include "util.h"
 
 Robot *load_robot_allocate(FILE *fp, int savegame)
 {

@@ -26,6 +26,7 @@
 #include "configure.h"
 #include "macro.h"
 #include "rasm.h"
+#include "util.h"
 
 static int cmp_variables(const void *dest, const void *src)
 {

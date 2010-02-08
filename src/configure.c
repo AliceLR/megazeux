@@ -31,6 +31,7 @@
 #include "rasm.h"
 #include "macro.h"
 #include "fsafeopen.h"
+#include "util.h"
 
 #if defined(CONFIG_NDS)
 #define VIDEO_OUTPUT_DEFAULT "nds"

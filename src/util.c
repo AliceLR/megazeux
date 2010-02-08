@@ -21,6 +21,7 @@
 #include "util.h"
 
 #include <sys/stat.h>
+#include <ctype.h>
 #include <time.h>
 
 #ifndef _MSC_VER
@@ -214,6 +215,44 @@ void get_path(const char *file_name, char *dest, unsigned int buf_len)
     memcpy(dest, file_name, c);
   dest[c] = 0;
 }
+
+#ifdef __WIN32__
+
+/* On WIN32 with C99 defining __STRICT_ANSI__ these POSIX.1-2001 functions
+ * are not available. The stricmp/strnicmp functions are available, but not
+ * to C99 programs.
+ *
+ * Redefine them here; these are copied from glibc, and should be optimal.
+ */
+
+int strcasecmp(const char *s1, const char *s2)
+{
+  while(*s1 != '\0' && tolower(*s1) == tolower(*s2))
+  {
+    s1++;
+    s2++;
+  }
+
+  return tolower(*(unsigned char *)s1) - tolower(*(unsigned char *)s2);
+}
+
+int strncasecmp(const char *s1, const char *s2, size_t n)
+{
+  if(n == 0)
+    return 0;
+
+  while(n-- != 0 && tolower(*s1) == tolower(*s2))
+  {
+    if(n == 0 || *s1 == '\0' || *s2 == '\0')
+      break;
+    s1++;
+    s2++;
+  }
+
+  return tolower(*(unsigned char *)s1) - tolower(*(unsigned char *)s2);
+}
+
+#endif // __WIN32__
 
 #ifdef NEED_RENAME
 
