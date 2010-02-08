@@ -1,1 +1,1 @@
-./config.sh --platform nds --prefix $DEVKITARM --optimize-size --disable-editor --disable-helpsys --disable-utils --disable-libpng
+./config.sh --platform nds --prefix $DEVKITARM --optimize-size --disable-editor --disable-helpsys --disable-utils --disable-libpng --disable-icon
