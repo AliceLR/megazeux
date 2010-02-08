@@ -1206,7 +1206,7 @@ int char_editor(World *mzx_world)
           run_dialog(mzx_world, &di);
           destruct_dialog(&di);
 
-          for (i = 0; i < num_factors; i++)
+          for(i = 0; i < num_factors; i++)
             free(radio_button_substrings[i]);
           free(radio_button_substrings);
           free(radio_button_strings);

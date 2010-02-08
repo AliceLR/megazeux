@@ -433,7 +433,7 @@ static Uint32 process_event(SDL_Event *event)
 
     case SDL_KEYUP:
     {
-      if (event->key.keysym.sym == SDLK_NUMLOCK)
+      if(event->key.keysym.sym == SDLK_NUMLOCK)
       {
 #ifdef __WIN32__
         input.numlock_status = 0;

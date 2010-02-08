@@ -344,13 +344,13 @@ int fsafetranslate(const char *path, char *newpath)
 #if defined(DEBUG) && !defined(__WIN32__)
   if(ret == FSAFE_SUCCESS)
   {
-    fprintf (stderr, "%s:%d: translated %s to %s.\n",
-             __FILE__, __LINE__, path, newpath);
+    fprintf(stderr, "%s:%d: translated %s to %s.\n",
+            __FILE__, __LINE__, path, newpath);
   }
   else
   {
-    fprintf (stderr, "%s:%d: failed to translate %s (err %d).\n",
-             __FILE__, __LINE__, path, ret);
+    fprintf(stderr, "%s:%d: failed to translate %s (err %d).\n",
+            __FILE__, __LINE__, path, ret);
   }
 #endif
 

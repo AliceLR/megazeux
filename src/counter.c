@@ -1744,7 +1744,7 @@ static mzx_string *add_string_preallocate(World *mzx_world, const char *name,
   dest->length = length;
 
   dest->value = dest->storage_space + name_length;
-  if (length > 0)
+  if(length > 0)
     memset(dest->value, ' ', length);
 
   mzx_world->string_list[position] = dest;
@@ -1781,7 +1781,7 @@ static void force_string_length(World *mzx_world, const char *name,
 {
   if(!*str)
     *str = add_string_preallocate(mzx_world, name, length, next);
-  else if (length > (*str)->allocated_length)
+  else if(length > (*str)->allocated_length)
     *str = reallocate_string(mzx_world, *str, next, length);
 }
 

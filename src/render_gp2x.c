@@ -309,7 +309,7 @@ static void gp2x_sync_screen(graphics_data *graphics)
       memcpy(dest, src, sizeof(Uint16) * 320);
     else
     {
-      for (j = 0; j < 320; j++)
+      for(j = 0; j < 320; j++)
       {
         if(src[j] == src[j+320])
           dest[j] = src[j];

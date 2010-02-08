@@ -200,7 +200,7 @@ void get_path(const char *file_name, char *dest, unsigned int buf_len)
   int c = strlen(file_name) - 1;
 
   // no path, or it's too long to store
-  if (c == -1 || c > (int)buf_len)
+  if(c == -1 || c > (int)buf_len)
   {
     if(buf_len > 0)
       dest[0] = 0;

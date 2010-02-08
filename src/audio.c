@@ -1170,7 +1170,7 @@ __sam_to_wav_maybe_static int check_ext_for_sam_and_convert(
     if(!fsafetranslate(new_file, translated_filename_dest))
     {
       FILE *f = fopen(translated_filename_dest, "r");
-      if (ftell_and_rewind(f) == 0)
+      if(ftell_and_rewind(f) == 0)
         convert_sam_to_wav_translate(filename, new_file);
       fclose(f);
     }
@@ -1205,7 +1205,7 @@ int check_ext_for_gdm_and_convert(const char *filename, char *new_file)
     if(!fsafetranslate(new_file, translated_filename_dest))
     {
       FILE *f = fopen(translated_filename_dest, "r");
-      if (ftell_and_rewind(f) == 0)
+      if(ftell_and_rewind(f) == 0)
         convert_gdm_s3m(filename, new_file);
       fclose(f);
     }
