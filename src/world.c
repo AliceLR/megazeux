@@ -695,28 +695,6 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     goto exit_out;
   }
 
-  file_path = malloc(MAX_PATH);
-  current_dir = malloc(MAX_PATH);
-  config_file_name = malloc(MAX_PATH);
-
-  get_path(file, file_path, MAX_PATH);
-
-  if(file_path[0])
-  {
-    getcwd(current_dir, MAX_PATH);
-
-    if(strcmp(current_dir, file_path))
-      chdir(file_path);
-  }
-
-  memcpy(config_file_name, file, file_name_len);
-  strncpy(config_file_name + file_name_len, ".cnf", 5);
-
-  if(stat(config_file_name, &file_info) >= 0)
-  {
-    set_config_from_file(&(mzx_world->conf), config_file_name);
-  }
-
   if(savegame)
   {
     fread(tempstr, 1, 5, fp);
@@ -735,8 +713,11 @@ static int load_world(World *mzx_world, const char *file, int savegame,
         msg = "Unrecognized magic: file may not be .SAV file";
 
       error(msg, 1, 8, 0x2101);
-      goto exit_close_free;
+      goto exit_close;
     }
+
+    if(!mzx_world)
+      goto exit_ok_close;
 
     mzx_world->version = fgetw(fp);
     mzx_world->current_board_id = fgetc(fp);
@@ -747,27 +728,45 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     char magic[3];
     char error_string[80];
 
-    // Name of game- skip it.
-    fread(mzx_world->name, BOARD_NAME_SIZE, 1, fp);
+    if(mzx_world)
+    {
+      // Name of game- skip it.
+      fread(mzx_world->name, BOARD_NAME_SIZE, 1, fp);
+    }
+    else
+    {
+      /* In the case where mzx_world is NULL, it means we only want to
+       * CHECK the world, we don't want to actually load anything. In
+       * this case, we can simply skip the game name.
+       */
+      fseek(fp, BOARD_NAME_SIZE, SEEK_CUR);
+    }
+
     // Skip protection method
     protection_method = fgetc(fp);
 
     if(protection_method)
     {
-      int do_decrypt;
-      error("This world is password protected.", 1, 8, 0x0D02);
-      do_decrypt = confirm(mzx_world, "Would you like to decrypt it?");
-      if(!do_decrypt)
+      /* Again, if we're just checking the world, we don't have a
+       * mzx_world with which to ask the user about decrypting. So in
+       * this case, we just fail if the world is encrypted.
+       */
+      if(mzx_world)
       {
-        fclose(fp);
-        decrypt(file);
-        goto exit_recurse;
+        int do_decrypt;
+
+        error("This world is password protected.", 1, 8, 0x0D02);
+        do_decrypt = confirm(mzx_world, "Would you like to decrypt it?");
+        if(!do_decrypt)
+        {
+          fclose(fp);
+          decrypt(file);
+          goto exit_recurse;
+        }
       }
-      else
-      {
-        error("Cannot load password protected worlds.", 1, 8, 0x0D02);
-        goto exit_close_free;
-      }
+
+      error("Cannot load password protected worlds.", 1, 8, 0x0D02);
+      goto exit_close;
     }
 
     fread(magic, 1, 3, fp);
@@ -796,12 +795,41 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     if(!version)
     {
       error(error_string, 1, 8, 0x0D02);
-      goto exit_close_free;
+      goto exit_close;
     }
+
+    if(!mzx_world)
+      goto exit_ok_close;
 
     mzx_world->current_board_id = 0;
     mzx_world->version = version;
   }
+
+  file_path = malloc(MAX_PATH);
+  current_dir = malloc(MAX_PATH);
+  config_file_name = malloc(MAX_PATH);
+
+  get_path(file, file_path, MAX_PATH);
+
+  if(file_path[0])
+  {
+    getcwd(current_dir, MAX_PATH);
+
+    if(strcmp(current_dir, file_path))
+      chdir(file_path);
+  }
+
+  memcpy(config_file_name, file, file_name_len);
+  strncpy(config_file_name + file_name_len, ".cnf", 5);
+
+  if(stat(config_file_name, &file_info) >= 0)
+  {
+    set_config_from_file(&(mzx_world->conf), config_file_name);
+  }
+
+  free(config_file_name);
+  free(current_dir);
+  free(file_path);
 
   charset_mem = malloc(3584);
   fread(charset_mem, 3584, 1, fp);
@@ -1143,21 +1171,16 @@ static int load_world(World *mzx_world, const char *file, int savegame,
   // Find the player
   find_player(mzx_world);
 
-  // ..All done!
+exit_ok_close:
   ret = 0;
-
-exit_close_free:
+exit_close:
   fclose(fp);
-exit_free:
-  free(config_file_name);
-  free(current_dir);
-  free(file_path);
 exit_out:
   return ret;
 
 exit_recurse:
   ret = load_world(mzx_world, file, savegame, faded);
-  goto exit_free;
+  goto exit_close;
 }
 
 #ifdef CONFIG_EDITOR
@@ -1455,11 +1478,19 @@ int reload_world(World *mzx_world, const char *file, int *faded)
 
 int reload_savegame(World *mzx_world, const char *file, int *faded)
 {
+  // Check this SAV is actually loadable
+  int ret = load_world(NULL, file, 1, faded);
+  if(ret)
+    return ret;
+
+  // It is, so wipe the old world
   if(mzx_world->active)
   {
     clear_world(mzx_world);
     clear_global_data(mzx_world);
   }
+
+  // And load the new one
   return load_world(mzx_world, file, 1, faded);
 }
 

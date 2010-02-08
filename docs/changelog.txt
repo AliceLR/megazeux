@@ -143,7 +143,9 @@ USERS
   the cycle in the special case that a robot goes through a transporter.
 + You can now directly import bytecode into the robot editor via the Alt+I
   menu. The extension for the bytecode file must .bc for it to be loaded.
-
++ A game loading SAVs via the LOAD_GAME counter will no longer crash MZX
+  if the SAV attempted is from an incompatible version of MZX, or in any
+  way corrupted.
 
 DEVELOPERS
 
