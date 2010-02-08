@@ -152,7 +152,7 @@ static void load_world_file(World *mzx_world, char *name)
 
 static void load_world_selection(World *mzx_world)
 {
-  char world_name[512];
+  char world_name[512] = { 0 };
 
   m_show();
   if(!choose_file_ch(mzx_world, world_ext,
