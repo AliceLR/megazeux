@@ -157,11 +157,6 @@ int main(int argc, char *argv[])
 
   SDL_Init(flags);
 
-  if(mzx_res_init(argv[0]))
-    goto exit_free_res;
-
-  allocate_world(&mzx_world);
-
 #if defined(__MACOSX__)
   // In Mac OS X, applications are packages, or folders that
   // look like single files. This code gets the user out of
@@ -172,6 +167,11 @@ int main(int argc, char *argv[])
   // We need to store the current working directory so it's
   // always possible to get back to it..
   getcwd(current_dir, MAX_PATH);
+
+  if(mzx_res_init(argv[0]))
+    goto exit_free_res;
+
+  allocate_world(&mzx_world);
 
   // Figure out where all configuration files should be loaded
   // form. For game.cnf, et al this should eventually be wrt

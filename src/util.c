@@ -76,8 +76,8 @@ int mzx_res_init(const char *argv0)
   bin_path_len = strlen(bin_path);
 
   // append the trailing '/'
-  bin_path[bin_path_len] = '/';
-  bin_path_len++;
+  bin_path[bin_path_len++] = '/';
+  bin_path[bin_path_len] = 0;
 
   /* Always try to use SHAREDIR/CONFDIR first, if possible. On some
    * platforms, such as Linux, this will be something other than
@@ -99,6 +99,14 @@ int mzx_res_init(const char *argv0)
 
     getcwd(p_dir, MAX_PATH);
     p_dir_len = strlen(p_dir);
+
+    // since we can't add the path delimeter we should really fail hard
+    if(p_dir_len >= MAX_PATH)
+      continue;
+
+    // append the trailing '/'
+    p_dir[p_dir_len++] = '/';
+    p_dir[p_dir_len] = 0;
 
     full_path = malloc(p_dir_len + base_name_len + 1);
     memcpy(full_path, p_dir, p_dir_len);

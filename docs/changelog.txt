@@ -115,6 +115,7 @@ USERS
   fully represented in files. Compatibility with older worlds is preserved.
 + Add a new config option "board_editor_hide_help" which changes the default
   hide setting of the help text on the primary board editor.
++ Numerous fixes for bugs found by valgrind. (Nightwatch)
 
 DEVELOPERS
 
