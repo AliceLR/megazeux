@@ -64,33 +64,4 @@
 #include "msvc.h"
 #endif
 
-/* On the NDS, extra (slower) pluggable memory may be available.
- * In those cases, large allocations (such as board data) can be
- * moved there to free up space in internal memory.
- *
- * On non-DS platforms these are all mapped to stdlib functions,
- * except for lock/unlock, which become no-ops.
- */
-#ifdef CONFIG_NDS
-
-#include "nds_malloc.h"
-
-#define ext_malloc  nds_ext_malloc
-#define ext_realloc nds_ext_realloc
-#define ext_free    nds_ext_free
-#define ext_memcpy  nds_ext_memcpy
-#define ext_lock    nds_ext_lock
-#define ext_unlock  nds_ext_unlock
-
-#else // !CONFIG_NDS
-
-#define ext_malloc malloc
-#define ext_realloc realloc
-#define ext_free free
-#define ext_memcpy memcpy
-#define ext_lock(x)
-#define ext_unlock(x)
-
-#endif // CONFIG_NDS
-
 #endif // __COMPAT_H

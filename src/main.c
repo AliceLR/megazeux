@@ -134,14 +134,11 @@ int main(int argc, char **argv)
 #ifdef CONFIG_NDS
   powerON(POWER_ALL);
   fatInitDefault();
-
   // If the "extra RAM" is missing, warn the user
   if(!nds_ram_init(DETECT_RAM))
     warning_screen((u8*)memory_warning_pcx);
+  nds_ext_lock();
 #endif
-
-  // Lock extra RAM immediately so that the filesystem is available.
-  ext_lock();
 
 #ifdef DEBUG
   flags |= SDL_INIT_NOPARACHUTE;
@@ -242,9 +239,14 @@ int main(int argc, char **argv)
 
 exit_free_world:
   free_world(&mzx_world);
+
 exit_free_res:
   mzx_res_free();
   SDL_Quit();
-  ext_unlock();
+
+#ifdef CONFIG_NDS
+  nds_ext_unlock();
+#endif
+
   return 0;
 }
