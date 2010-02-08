@@ -343,4 +343,5 @@ void render_gp2x_register(graphics_data *graphics)
   graphics->render_cursor = gp2x_render_cursor;
   graphics->render_mouse = gp2x_render_mouse;
   graphics->sync_screen = gp2x_sync_screen;
+  graphics->focus_pixel = NULL;
 }

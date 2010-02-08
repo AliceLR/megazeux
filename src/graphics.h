@@ -120,6 +120,7 @@ struct _graphics_data
                              Uint8);
   void (*render_mouse)     (graphics_data *, Uint32, Uint32, Uint8, Uint8);
   void (*sync_screen)      (graphics_data *);
+  void (*focus_pixel)      (graphics_data *, Uint32, Uint32);
 };
 
 void color_string(const char *string, Uint32 x, Uint32 y, Uint8 color);
@@ -209,6 +210,13 @@ void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y);
 void set_screen_coords(int x, int y, int *screen_x, int *screen_y);
 void set_mouse_mul(int width_mul, int height_mul);
+
+/* Renderers might have the facility to center a screen on a given
+ * region of the window. Currently only the NDS renderer implements
+ * this feature.
+ */
+void focus_screen(int x, int y); // Board coordinates
+void focus_pixel(int x, int y);  // Pixel coordinates
 
 #ifdef CONFIG_EDITOR
 void clear_screen_no_update(Uint8 chr, Uint8 color);

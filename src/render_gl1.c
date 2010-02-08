@@ -275,4 +275,5 @@ void render_gl1_register(graphics_data *graphics)
   graphics->render_cursor = gl1_render_cursor;
   graphics->render_mouse = gl1_render_mouse;
   graphics->sync_screen = gl1_sync_screen;
+  graphics->focus_pixel = NULL;
 }

@@ -591,4 +591,5 @@ void render_gl2_register(graphics_data *graphics)
   graphics->render_cursor = gl2_render_cursor;
   graphics->render_mouse = gl2_render_mouse;
   graphics->sync_screen = gl2_sync_screen;
+  graphics->focus_pixel = NULL;
 }

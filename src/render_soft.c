@@ -174,4 +174,5 @@ void render_soft_register(graphics_data *graphics)
   graphics->render_cursor = soft_render_cursor;
   graphics->render_mouse = soft_render_mouse;
   graphics->sync_screen = soft_sync_screen;
+  graphics->focus_pixel = NULL;
 }

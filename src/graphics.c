@@ -1488,6 +1488,21 @@ void set_mouse_mul(int width_mul, int height_mul)
   graphics.mouse_height_mul = height_mul;
 }
 
+void focus_screen(int x, int y)
+{
+  int pixel_x = x * graphics.resolution_width  / SCREEN_W +
+                    graphics.resolution_width  / SCREEN_W / 2;
+  int pixel_y = y * graphics.resolution_height / SCREEN_H +
+                    graphics.resolution_height / SCREEN_H / 2;
+  focus_pixel(pixel_x, pixel_y);
+}
+
+void focus_pixel(int x, int y)
+{
+  if(graphics.focus_pixel)
+    graphics.focus_pixel(&graphics, x, y);
+}
+
 #ifdef CONFIG_EDITOR
 
 void save_editor_palette(void)

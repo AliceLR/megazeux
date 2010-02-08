@@ -109,4 +109,5 @@ void render_yuv2_register(graphics_data *graphics)
   graphics->render_cursor = yuv2_render_cursor;
   graphics->render_mouse = yuv2_render_mouse;
   graphics->sync_screen = yuv_sync_screen;
+  graphics->focus_pixel = NULL;
 }
