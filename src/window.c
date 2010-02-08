@@ -1485,7 +1485,7 @@ int add_board(World *mzx_world, int current)
   new_board->board_name[BOARD_NAME_SIZE - 1] = '\0';
 
   // Link global robot!
-  new_board->robot_list[0] = &mzx_world->global_robot;
+  new_board->robot_list[0] = mzx_world->global_robot;
   restore_screen();
 
   return current;

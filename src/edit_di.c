@@ -1229,7 +1229,7 @@ void global_info(World *mzx_world)
 
       case 5:
       {
-        Robot *cur_robot = &(mzx_world->global_robot);
+        Robot *cur_robot = mzx_world->global_robot;
         // First get name...
         m_hide();
         save_screen();
