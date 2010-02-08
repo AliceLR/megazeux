@@ -1687,10 +1687,10 @@ static mzx_string *find_string(World *mzx_world, const char *name, int *next)
 static int str_num_read(World *mzx_world, function_counter *counter,
  const char *name, int id)
 {
-  // Is it a single char?
   char *dot_ptr = strrchr(name + 1, '.');
   mzx_string src;
 
+  // User may have provided $str.N or $str.length explicitly
   if(dot_ptr)
   {
     *dot_ptr = 0;
@@ -1698,29 +1698,32 @@ static int str_num_read(World *mzx_world, function_counter *counter,
 
     if(!strncasecmp(dot_ptr, "length", 6))
     {
+      // str.length handler
       int next;
-      mzx_string *src = find_string(mzx_world, name, &next);
 
+      // If the user's string is found, return the length of it
+      mzx_string *src = find_string(mzx_world, name, &next);
       if(src)
         return src->length;
     }
     else
     {
-      // A number
+      // char offset handler
       unsigned int str_num = strtol(dot_ptr, NULL, 10);
 
       if(get_string(mzx_world, name, &src, id))
       {
         *(dot_ptr - 1) = '.';
 
-        if(str_num >= src.length)
-          return 0;
-
-        return src.value[str_num];
+        // If we're in bounds return the char at this offset
+        if(str_num < src.length)
+          return src.value[str_num];
       }
     }
   }
+  else
 
+  // Otherwise fall back to looking up a regular string
   if(get_string(mzx_world, name, &src, id))
   {
     char *n_buffer = malloc(src.length + 1);
@@ -1734,6 +1737,7 @@ static int str_num_read(World *mzx_world, function_counter *counter,
     return ret;
   }
 
+  // The string wasn't found or the request was out of bounds
   return 0;
 }
 
@@ -1853,30 +1857,49 @@ static void force_string_move(World *mzx_world, const char *name,
 static void str_num_write(World *mzx_world, function_counter *counter,
  const char *name, int value, int id)
 {
-  // Is it a single char?
   char *dot_ptr = strrchr(name + 1, '.');
 
+  // User may have provided $str.N notation "write char at offset"
   if(dot_ptr)
   {
-    mzx_string *src;
     unsigned int old_length, new_length;
+    int next, write_value = false;
+    mzx_string *src;
     int str_num;
-    int next;
 
     *dot_ptr = 0;
     dot_ptr++;
 
-    // A number
-    str_num = strtol(dot_ptr, NULL, 10);
-    if(str_num < 0)
-      return;
+    /* As a special case, alter the string's length if '$str.length'
+     * is written to.
+     */
+    if(!strncasecmp(dot_ptr, "length", 6))
+    {
+      // Writing to length from a non-existent string has no effect
+      src = find_string(mzx_world, name, &next);
+      if(!src)
+        return;
 
-    src = find_string(mzx_world, name, &next);
+      new_length = value + 1;
+    }
+    else
+    {
+      // Extract the offset within the string to write to
+      str_num = strtol(dot_ptr, NULL, 10);
+      if(str_num < 0)
+        return;
 
-    new_length = str_num + 1;
-    if(new_length > MAX_STRING_LEN)
-      return;
+      // Tentatively increase the string's length to cater for this write
+      new_length = str_num + 1;
 
+      src = find_string(mzx_world, name, &next);
+      write_value = true;
+    }
+
+    /* As a kind of unnecessary optimisation, if the string already exists
+     * and we're asking to extend its length, increase the length by a power
+     * of two rather than just by the amount necessary.
+     */
     if(src != NULL)
     {
       old_length = src->allocated_length;
@@ -1886,26 +1909,34 @@ static void str_num_write(World *mzx_world, function_counter *counter,
         unsigned int i;
 
         for(i = 1 << 31; i != 0; i >>= 1)
-        {
           if(new_length & i)
             break;
-        }
 
         new_length = i << 1;
       }
     }
 
-    force_string_length(mzx_world, name, next, &src, new_length);
-    if(src->length <= (unsigned int)str_num)
-      src->length = str_num + 1;
+    if(new_length > MAX_STRING_LEN)
+      return;
 
-    src->value[str_num] = value;
+    force_string_length(mzx_world, name, next, &src, new_length);
+
+    if(write_value)
+    {
+      src->value[str_num] = value;
+      src->length = str_num + 1;
+    }
+    else
+    {
+      src->value[value] = 0;
+      src->length = new_length;
+    }
   }
   else
   {
     mzx_string src_str;
     char n_buffer[16];
-    sprintf(n_buffer, "%d", value);
+    snprintf(n_buffer, 16, "%d", value);
 
     src_str.value = n_buffer;
     src_str.length = strlen(n_buffer);
@@ -3423,7 +3454,7 @@ void load_string_board(World *mzx_world, const char *name, int w, int h,
 {
   mzx_string *src_str;
   int next;
-  
+
   src_str = find_string(mzx_world, name, &next);
   force_string_length(mzx_world, name, next, &src_str, (unsigned int)(w * h));
 
