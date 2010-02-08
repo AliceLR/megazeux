@@ -151,13 +151,13 @@ static const char *decode_status(status_t status)
     case PROTECTED_WORLD:
       return "Protected worlds currently unsupported.";
     case MAGIC_CHECK_FAILED:
-      return "File magic not consistent with 2.51 world.";
+      return "File magic not consistent with 2.00 world or board.";
     default:
       return "Unknown error.";
   }
 }
 
-static status_t parse_board(FILE *f)
+static status_t parse_board_direct(FILE *f)
 {
   int i, j, num_robots, skip_rle_blocks = 6;
   char tmp[256], tmp2[256];
@@ -407,6 +407,27 @@ static status_t parse_board(FILE *f)
   return SUCCESS;
 }
 
+// same as internal boards except for a 4 byte magic header
+
+static status_t parse_board(FILE *f)
+{
+  int c;
+
+  if(fgetc(f) != 0xff)
+    return MAGIC_CHECK_FAILED;
+
+  if(fgetc(f) != 'M')
+    return MAGIC_CHECK_FAILED;
+
+  c = fgetc(f);
+  if (c != 'B' && c != '\x2')
+    return MAGIC_CHECK_FAILED;
+
+  fgetc(f);
+
+  return parse_board_direct(f);
+}
+
 static status_t parse_world(FILE *f)
 {
   status_t ret = SUCCESS;
@@ -468,7 +489,7 @@ static status_t parse_world(FILE *f)
       return FSEEK_FAILED;
 
     // parse this board atomically
-    ret = parse_board(f);
+    ret = parse_board_direct(f);
   }
 
   return ret;
@@ -477,7 +498,7 @@ static status_t parse_world(FILE *f)
 int main(int argc, char *argv[])
 {
   const char *found_append = " - FOUND", *not_found_append = " - NOT FOUND";
-  int i, print_all_files = 0;
+  int i, len, print_all_files = 0, got_world = 0;
   status_t ret;
   FILE *f;
 
@@ -501,10 +522,32 @@ int main(int argc, char *argv[])
    ||(argc > 3 && !strcmp(argv[2], "-a")))
     print_all_files = 1;
 
+  len = strlen(argv[argc - 1]);
+  if(len < 4)
+  {
+    fprintf(stderr, "\"%s\" is not a valid input filename.\n", argv[argc - 1]);
+    return INVALID_ARGUMENTS;
+  }
+
+  if(!strcasecmp(&argv[argc - 1][len - 4], ".MZX"))
+    got_world = 1;
+  else if(!strcasecmp(&argv[argc - 1][len - 4], ".MZB"))
+    got_world = 0;
+  else
+  {
+    fprintf(stderr, "\"%s\" is not a .MZX (world) or .MZB (board) file.\n",
+      argv[argc - 1]);
+    return INVALID_ARGUMENTS;
+  }
+
   f = fopen(argv[argc - 1], "r");
   if(f)
   {
-    ret = parse_world(f);
+    if (got_world)
+      ret = parse_world(f);
+    else
+      ret = parse_board(f);
+
     fclose(f);
 
     for(i = 0; i < HASH_TABLE_SIZE; i++)
