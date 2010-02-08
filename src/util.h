@@ -81,7 +81,7 @@ int dir_get_next_entry(dir_t *dir, char *entry);
 /* Some platforms like NDS don't have a rename(2), so we need
  * to implement it.
  */
-#ifndef rename
+#if !defined(rename) && !defined(WIN32)
 #define NEED_RENAME
 #define rename rename
 int rename(const char *oldpath, const char *newpath);
