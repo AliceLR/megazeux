@@ -78,7 +78,7 @@ enum
 // Attribute flags
 #define A_PUSHNS              (1 << 0)
 #define A_PUSHEW              (1 << 1)
-#define A_PUSHABLE            (A_PUSHNS | A_PUSHNS)
+#define A_PUSHABLE            (A_PUSHNS | A_PUSHEW)
 #define A_ITEM                (1 << 2)
 #define A_UPDATE              (1 << 3)
 #define A_HURTS               (1 << 4)
