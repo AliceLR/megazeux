@@ -43,6 +43,7 @@ typedef enum
   ZIPIO_UNSUPPORTED_MULTIPLE_DISKS,
   ZIPIO_UNSUPPORTED_ZIP64,
   ZIPIO_UNSUPPORTED_COMPRESSION_METHOD,
+  ZIPIO_PATH_NOT_FOUND,
 } zipio_error_t;
 
 typedef struct zip_handle zip_handle_t;
@@ -50,6 +51,8 @@ typedef struct zip_handle zip_handle_t;
 const char *zipio_strerror(zipio_error_t err);
 zipio_error_t zipio_open(const char *filename, zip_handle_t **_z);
 zipio_error_t zipio_close(zip_handle_t *z);
+
+zipio_error_t zipio_unlink(zip_handle_t *z, const char *pathname);
 
 __M_END_DECLS
 

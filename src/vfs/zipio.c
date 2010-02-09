@@ -205,6 +205,12 @@ const char *zipio_strerror(zipio_error_t err)
   }
 }
 
+static void free_entry(struct zip_entry *entry)
+{
+  free(entry->file_name);
+  free(entry);
+}
+
 static void free_entries(zip_handle_t *z)
 {
   struct zip_entry *entry, *next_entry;
@@ -212,22 +218,26 @@ static void free_entries(zip_handle_t *z)
   for(entry = z->file.entries; entry; entry = next_entry)
   {
     next_entry = entry->next;
-    free(entry->file_name);
-    free(entry);
+    free_entry(entry);
   }
-
-  free(z->file.entries);
   z->file.entries = NULL;
+}
+
+static int compare_offset(const void *_a, const void *_b)
+{
+  const struct zip_entry **a = (const struct zip_entry **)_a;
+  const struct zip_entry **b = (const struct zip_entry **)_b;
+  return (int)(*a)->local_header.offset - (int)(*b)->local_header.offset;
 }
 
 zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
 {
   static const unsigned char ecdr_sig[] = { 'P', 'K', 0x5, 0x6 };
   long pos, size, start, cur_ecdr_offset = 0;
+  struct zip_entry *entry, *last_entry;
   zipio_error_t err = ZIPIO_SUCCESS;
-  Uint32 segment_total = 0;
+  Uint32 entry_terminal_offset = 0;
   struct segment cd, ecdr;
-  struct zip_entry *entry;
   Uint16 num_entries;
   int ecdr_sig_off;
   zip_handle_t *z;
@@ -626,6 +636,53 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     }
   }
 
+  // Convert entry list to array and qsort() it
+  // Don't bother sorting if there are no entries yet, or if there's only one
+  if(z->file.entries && z->file.entries->next)
+  {
+    struct zip_entry **earray =
+     malloc(num_entries * sizeof(struct zip_entry *));
+
+    for(i = 0, entry = z->file.entries; i < num_entries; i++)
+    {
+      earray[i] = entry;
+      entry = entry->next;
+    }
+
+    qsort(earray, num_entries, sizeof(struct zip_entry *), compare_offset);
+
+    z->file.entries = earray[0];
+    for(i = 0; i < num_entries - 1; i++)
+      earray[i]->next = earray[i + 1];
+    earray[i]->next = NULL;
+
+    free(earray);
+  }
+
+  // Now the entries are sorted, we can perform some checks on their offsets
+
+  last_entry = NULL;
+  for(entry = z->file.entries; entry; entry = entry->next)
+  {
+    if(last_entry)
+    {
+      if(entry->local_header.offset <= last_entry->local_header.offset)
+      {
+        err = ZIPIO_CORRUPT_CENTRAL_DIRECTORY;
+        goto err_free_entries;
+      }
+    }
+
+    if(entry->local_header.offset >= cd.offset ||
+       entry->file_data.offset    >= cd.offset)
+    {
+      err = ZIPIO_CORRUPT_CENTRAL_DIRECTORY;
+      goto err_free_entries;
+    }
+
+    last_entry = entry;
+  }
+
   // Sanity check Local File Header (LFH) for each of the CD entries
 
   for(entry = z->file.entries; entry; entry = entry->next)
@@ -910,37 +967,59 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     debug("Uncompressed Size:   %u\n", entry->uncompressed_size);
   }
 
-  // Total all entry segments..
+  // Try to detect overlapping and padded file segments where possible
+
+  if(z->file.entries && z->file.entries->local_header.offset != 0)
+  {
+    warn("Detected %u bytes junk between start of file and first entry!\n",
+     z->file.entries->local_header.offset);
+  }
+
   for(entry = z->file.entries; entry; entry = entry->next)
   {
-    debug("LFH  [0x%.8x-0x%.8x]\n", entry->local_header.offset,
-     entry->local_header.offset + entry->local_header.length);
-
-    debug("DATA [0x%.8x-0x%.8x]\n", entry->file_data.offset,
-     entry->file_data.offset + entry->file_data.length);
-
-    if(entry->data_descriptor.offset)
+    if(entry_terminal_offset > 0)
     {
-      debug("DESC [0x%.8x-0x%.8x]\n", entry->data_descriptor.offset,
-       entry->data_descriptor.offset + entry->data_descriptor.length);
+      if(entry_terminal_offset > entry->local_header.offset)
+      {
+        err = ZIPIO_CORRUPT_CENTRAL_DIRECTORY;
+        goto err_free_entries;
+      }
+
+      if(entry_terminal_offset < entry->local_header.offset)
+      {
+        warn("Detected %u bytes junk between ZIP entries!\n",
+         entry->local_header.offset - entry_terminal_offset);
+      }
     }
 
-    segment_total += entry->local_header.length +
-                     entry->file_data.length +
-                     entry->data_descriptor.length;
+    if(entry->data_descriptor.offset > 0)
+    {
+      entry_terminal_offset = entry->data_descriptor.offset +
+       entry->data_descriptor.length;
+    }
+    else if(entry->file_data.offset > 0)
+    {
+      entry_terminal_offset = entry->file_data.offset +
+       entry->file_data.length;
+    }
+    else
+    {
+      entry_terminal_offset = entry->local_header.offset +
+       entry->local_header.length;
+    }
   }
 
-  // ..all CD entry segments..
-  for(entry = z->file.entries; entry; entry = entry->next)
+  if(entry_terminal_offset < cd.offset)
   {
-    debug("CDE  [0x%.8x-0x%.8x]\n", entry->cd_entry.offset,
-     entry->cd_entry.offset + entry->cd_entry.length);
-    segment_total += entry->cd_entry.length;
+    warn("Detected %u bytes junk between final ZIP entry and CD!\n",
+     cd.offset - entry_terminal_offset);
   }
 
-  // ..and the ECDR trailer segment
-  debug("ECDR [0x%.8x-0x%.8x]\n", ecdr.offset, ecdr.offset + ecdr.length);
-  segment_total += ecdr.length;
+  if(cd.offset + cd.length < ecdr.offset)
+  {
+    warn("Detected %u bytes junk between CD and ECDR!\n",
+     ecdr.offset - (cd.offset + cd.length));
+  }
 
   // Compare with file size for contiguity
   pos = ftell_and_rewind(z->f);
@@ -950,12 +1029,10 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     goto err_free_entries;
   }
 
-  debug("EOF  [0x%.8lx]\n", pos);
-
-  if(segment_total != (Uint32)pos)
+  if(ecdr.offset + ecdr.length < pos)
   {
-    warn("Contiguity check failed (parsed %u vs actual %u)\n",
-     segment_total, (Uint32)pos);
+    warn("Detected %u bytes junk between ECDR and EOF!\n",
+     pos - (ecdr.offset + ecdr.length));
   }
 
   return ZIPIO_SUCCESS;
@@ -970,6 +1047,35 @@ err_free:
 err_free_entries:
   free_entries(z);
   goto err_close;
+}
+
+zipio_error_t zipio_repack(zip_handle_t *z)
+{
+
+}
+
+zipio_error_t zipio_unlink(zip_handle_t *z, const char *pathname)
+{
+  struct zip_entry *entry, *last_entry = NULL;
+
+  assert(z != NULL);
+  assert(z->f != NULL);
+  assert(pathname != NULL);
+
+  for(entry = z->file.entries; entry; last_entry = entry, entry = entry->next)
+    if(strcmp(entry->file_name, pathname) == 0)
+      break;
+
+  if(!entry)
+    return ZIPIO_PATH_NOT_FOUND;
+
+  if(!last_entry)
+    z->file.entries = entry->next;
+  else
+    last_entry->next = entry->next;
+
+  free_entry(entry);
+  return ZIPIO_SUCCESS;
 }
 
 zipio_error_t zipio_close(zip_handle_t *z)
