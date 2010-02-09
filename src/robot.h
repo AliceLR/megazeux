@@ -30,6 +30,7 @@ __M_BEGIN_DECLS
 
 #define ROBOT_MAX_TR      512
 
+CORE_LIBSPEC void clear_robot_contents(Robot *cur_robot);
 CORE_LIBSPEC void clear_robot_id(Board *src_board, int id);
 CORE_LIBSPEC void clear_scroll_id(Board *src_board, int id);
 CORE_LIBSPEC void clear_sensor_id(Board *src_board, int id);
@@ -101,7 +102,6 @@ int get_robot_id(Board *src_board, const char *name);
 void run_robot(World *mzx_world, int id, int x, int y);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC void clear_robot_contents(Robot *cur_robot);
 CORE_LIBSPEC void duplicate_robot_direct(Robot *cur_robot, Robot *copy_robot,
  int x, int y);
 CORE_LIBSPEC void duplicate_scroll_direct(Scroll *cur_scroll, Scroll *copy_scroll);

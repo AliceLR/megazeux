@@ -1414,15 +1414,7 @@ void clear_world(World *mzx_world)
   }
   free(board_list);
 
-  if(mzx_world->global_robot->program)
-    free(mzx_world->global_robot->program);
-
-  if(mzx_world->global_robot->stack)
-    free(mzx_world->global_robot->stack);
-
-  if(mzx_world->global_robot->label_list && mzx_world->global_robot->used)
-    clear_label_cache(mzx_world->global_robot->label_list,
-     mzx_world->global_robot->num_labels);
+  clear_robot_contents(mzx_world->global_robot);
 
   if(mzx_world->input_file)
   {

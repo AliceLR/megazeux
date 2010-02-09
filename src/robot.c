@@ -306,7 +306,7 @@ void clear_robot(Robot *cur_robot)
   free(cur_robot);
 }
 
-__editor_maybe_static void clear_robot_contents(Robot *cur_robot)
+void clear_robot_contents(Robot *cur_robot)
 {
   if(cur_robot->used)
     clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
