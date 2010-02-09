@@ -201,7 +201,6 @@ endif
 build: ${build}
 
 ${build}:
-	${MKDIR} -p ${build}
 	${MKDIR} -p ${build}/docs
 	${CP} config.txt mzx_ascii.chr mzx_blank.chr mzx_default.chr ${build}
 	${CP} mzx_edit.chr mzx_smzx.chr smzx.pal ${build}
@@ -244,9 +243,11 @@ ifeq (${BUILD_UTILS},1)
 		cp ${hlp2txt}.debug  ${txt2hlp}.debug ${build}/utils; \
 	fi
 endif
-ifeq (${BUILD_RENDER_GLSL},1)
-	${MKDIR} ${build}/shaders
+ifeq (${BUILD_RENDER_GL_PROGRAM},1)
+	${MKDIR} -p ${build}/shaders/extra
 	${CP} shaders/*.vert shaders/*.frag ${build}/shaders
+	${CP} shaders/extra/*.frag shaders/extra/README.txt \
+	 	${build}/shaders/extra
 endif
 
 distclean: clean
