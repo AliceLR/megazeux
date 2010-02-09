@@ -18,15 +18,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <stdio.h>
-#include <stdlib.h>
-#include <string.h>
-#include <sys/stat.h>
-
-#ifndef _MSC_VER
-#include <unistd.h>
-#endif
-
 #include "../platform.h"
 #include "../helpsys.h"
 #include "../scrdisp.h"
@@ -54,12 +45,22 @@
 #include "edit.h"
 #include "edit_di.h"
 #include "fill.h"
+#include "graphics.h"
 #include "pal_ed.h"
 #include "param.h"
 #include "robot.h"
 #include "sfx_edit.h"
 #include "window.h"
 #include "world.h"
+
+#include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <sys/stat.h>
+
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
 
 /* Edit menu- (w/box ends on sides) Current menu name is highlighted. The
   bottom section zooms to show a list of options for the current menu,

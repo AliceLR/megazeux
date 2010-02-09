@@ -221,18 +221,8 @@ void focus_screen(int x, int y); // Board coordinates
 void focus_pixel(int x, int y);  // Pixel coordinates
 
 #ifdef CONFIG_EDITOR
-void clear_screen_no_update(Uint8 chr, Uint8 color);
-void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset);
-void ec_save_set_var(char *name, Uint8 offset, Uint32 size);
-void ec_load_ascii(void);
-void ec_load_blank(void);
-void ec_load_char_ascii(Uint32 char_number);
-void ec_load_char_mzx(Uint32 char_number);
+extern graphics_data graphics;
 void ec_load_mzx(void);
-void ec_load_smzx(void);
-void save_palette(char *fname);
-void save_editor_palette(void);
-void load_editor_palette(void);
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_HELPSYS

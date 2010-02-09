@@ -18,12 +18,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-// I went ahead and commented out the entire smzx char edit stuff -Koji
-// Character editor
-
-#include <stdlib.h>
-#include <string.h>
-#include <math.h>
+#include "char_ed.h"
 
 #include "../helpsys.h"
 #include "../window.h"
@@ -32,7 +27,11 @@
 #include "../event.h"
 #include "../world.h"
 
-#include "char_ed.h"
+#include "graphics.h"
+
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>
 
 //----------------------------------------------
 //  +----------------+ Current char-     (#000)
