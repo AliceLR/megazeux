@@ -19,8 +19,6 @@
 #include "manifest.h"
 #include "../util.h"
 
-#include "sha256.h"
-
 #include <stdlib.h>
 #include <string.h>
 #include <assert.h>
@@ -282,20 +280,11 @@ static void manifest_lists_remove_duplicates(struct manifest_entry **local,
   }
 }
 
-static bool manifest_entry_check_validity(struct manifest_entry *e, FILE *f)
+bool manifest_compute_sha256(SHA256_ctx *ctx, FILE *f, unsigned long len)
 {
-  unsigned long len = e->size, pos = 0;
-  SHA256_ctx ctx;
+  unsigned long pos = 0;
 
-  // It must be the same length
-  if((unsigned long)ftell_and_rewind(f) != len)
-    return false;
-
-  /* Compute the SHA256 digest for this file. Do it block-wise so as to
-   * conserve RAM and scale to enormously large files.
-   */
-
-  SHA256_init(&ctx);
+  SHA256_init(ctx);
 
   while(pos < len)
   {
@@ -305,11 +294,28 @@ static bool manifest_entry_check_validity(struct manifest_entry *e, FILE *f)
     if(fread(block, block_size, 1, f) != 1)
       return false;
 
-    SHA256_update(&ctx, block, block_size);
+    SHA256_update(ctx, block, block_size);
     pos += block_size;
   }
 
-  SHA256_final(&ctx);
+  SHA256_final(ctx);
+  return true;
+}
+
+static bool manifest_entry_check_validity(struct manifest_entry *e, FILE *f)
+{
+  unsigned long len = e->size;
+  SHA256_ctx ctx;
+
+  // It must be the same length
+  if((unsigned long)ftell_and_rewind(f) != len)
+    return false;
+
+  /* Compute the SHA256 digest for this file. Do it block-wise so as to
+   * conserve RAM and scale to enormously large files.
+   */
+  if(!manifest_compute_sha256(&ctx, f, len))
+    return false;
 
   // Verify the digest against the manifest
   if(memcmp(ctx.H, e->sha256, sizeof(Uint32) * 8) != 0)
@@ -404,11 +410,11 @@ bool manifest_get_updates(struct host *h, const char *basedir,
 }
 
 bool manifest_entry_download_replace(struct host *h, const char *basedir,
- struct manifest_entry *e)
+ struct manifest_entry *e, void (*delete_hook)(const char *file))
 {
   char buf[LINE_BUF_LEN];
-  host_status_t ret;
   bool valid = false;
+  host_status_t ret;
   FILE *f;
 
   /* Try to open our target file. If we can't open it, it might be
@@ -424,6 +430,9 @@ bool manifest_entry_download_replace(struct host *h, const char *basedir,
       warn("Failed to rename in-use file '%s' to '%s'\n", e->name, buf);
       goto err_out;
     }
+
+    if(delete_hook)
+      delete_hook(buf);
 
     f = fopen(e->name, "w+b");
     if(!f)
@@ -457,3 +466,4 @@ err_close:
 err_out:
   return valid;
 }
+

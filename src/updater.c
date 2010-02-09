@@ -45,6 +45,7 @@
 #define OUTBOUND_PORT 80
 #define LINE_BUF_LEN  256
 #define UPDATES_TXT   "updates.txt"
+#define DELETE_TXT    "delete.txt"
 
 #define UPDATE_HOST   "updates.digitalmzx.net"
 
@@ -54,17 +55,21 @@
 #define UPDATE_BRANCH "Current-Stable"
 #endif
 
+#define WIDGET_BUF_LEN 80
+
 static char **process_argv;
+
+#if 0
 
 static bool check_prune_basedir(const char *file)
 {
-  char path[MAX_PATH];
+  static char path[MAX_PATH];
   int ret;
 
   ret = get_path(file, path, MAX_PATH);
   if(ret < 0)
   {
-    warn("Path too long\n");
+    error("Failed to prune directories (path too long)", 1, 8, 0);
     return false;
   }
 
@@ -79,16 +84,21 @@ static bool check_prune_basedir(const char *file)
   return check_prune_basedir(path);
 }
 
+#endif
+
+/* FIXME: The allocation of MAX_PATH on the stack in a recursive
+ *        function WILL cause problems, eventually!
+ */
 static bool check_create_basedir(const char *file)
 {
+  static struct stat s;
   char path[MAX_PATH];
-  struct stat s;
   int ret;
 
   ret = get_path(file, path, MAX_PATH);
   if(ret < 0)
   {
-    warn("Path too long\n");
+    error("Failed to create directories (path too long)", 1, 8, 0);
     return false;
   }
 
@@ -101,7 +111,7 @@ static bool check_create_basedir(const char *file)
     // Every other kind of error is fatal
     if(errno != ENOENT)
     {
-      perror("stat");
+      error("Unknown stat() error occurred", 1, 8, 0);
       return false;
     }
 
@@ -116,7 +126,11 @@ static bool check_create_basedir(const char *file)
 
   if(!S_ISDIR(s.st_mode))
   {
-    warn("Path '%s' is getting in the way (must be a directory)\n", path);
+    static char widget_buf[WIDGET_BUF_LEN];
+    snprintf(widget_buf, WIDGET_BUF_LEN,
+     "File \"%s\" prevents creation of directory by same name", path);
+    widget_buf[WIDGET_BUF_LEN - 1] = 0;
+    error(widget_buf, 1, 8, 0);
     return false;
   }
 
@@ -160,22 +174,76 @@ static bool cancel_cb(void)
   return false;
 }
 
-#define WIDGET_BUF_LEN 80
+#if 0
+    if(unlink(e->name))
+    {
+      error();
+    }
+
+    /* Obtain the path for this file. If the file isn't at the top
+     * level, and the directory is empty (rmdir ensures this)
+     * the directory will be pruned.
+     */
+    check_prune_basedir(e->name);
+#endif
+
+static struct manifest_entry *delete_list, *delete_p;
+
+static void delete_hook(const char *file)
+{
+  struct manifest_entry *new_entry;
+  SHA256_ctx ctx;
+  FILE *f;
+
+  new_entry = calloc(1, sizeof(struct manifest_entry));
+  if(!new_entry)
+    goto err_out;
+
+  if(delete_p)
+  {
+    delete_p->next = new_entry;
+    delete_p = delete_p->next;
+  }
+  else
+    delete_list = delete_p = new_entry;
+
+  delete_p->name = malloc(strlen(file) + 1);
+  if(!delete_p->name)
+    goto err_delete_p;
+  strcpy(delete_p->name, file);
+
+  f = fopen(file, "rb");
+  if(!f)
+    goto err_delete_p_name;
+  delete_p->size = (unsigned long)ftell_and_rewind(f);
+
+  if(!manifest_compute_sha256(&ctx, f, delete_p->size))
+    goto err_delete_p_name;
+  memcpy(delete_p->sha256, ctx.H, sizeof(Uint32) * 8);
+  fclose(f);
+  return;
+
+err_delete_p_name:
+  free(delete_p->name);
+err_delete_p:
+  free(delete_p);
+  delete_p = NULL;
+err_out:
+  return;
+}
 
 static void __check_for_updates(void)
 {
   char *base_path, buffer[LINE_BUF_LEN], *url_base, *value;
   struct manifest_entry *removed, *replaced, *added, *e;
   char **list_entries, widget_buf[WIDGET_BUF_LEN];
-  int i = 0, entries = 0, buf_len;
+  int i = 0, entries = 0, buf_len, result;
   const char *version = "2.82";
   size_t list_entry_width = 0;
   host_status_t status;
   bool ret = false;
   struct host *h;
   FILE *f;
-
-  m_hide();
 
   // Store the user's current directory, so we can get back to it
   getcwd(current_dir, MAX_PATH);
@@ -193,8 +261,7 @@ static void __check_for_updates(void)
   f = fopen(UPDATES_TXT, "w+b");
   if(!f)
   {
-    error("Failed to create \"" UPDATES_TXT "\". Check permissions.",
-     1, 8, 0);
+    error("Failed to create \"" UPDATES_TXT "\". Check permissions.", 1, 8, 0);
     goto err_chdir;
   }
 
@@ -211,6 +278,8 @@ static void __check_for_updates(void)
     goto err_layer_exit;
   }
 
+  m_hide();
+
   buf_len = snprintf(widget_buf, WIDGET_BUF_LEN, "Connecting to \""
    UPDATE_HOST "\" to receive version list..");
   widget_buf[WIDGET_BUF_LEN - 1] = 0;
@@ -226,6 +295,7 @@ static void __check_for_updates(void)
   }
 
   clear_screen(32, 7);
+  m_show();
   update_screen();
 
   // Grab the file containing the names of the current Stable and Unstable
@@ -287,8 +357,7 @@ static void __check_for_updates(void)
    */
   if(strcmp(value, version) != 0)
   {
-    element *elements[5];
-    int result;
+    element *elements[6];
     dialog di;
 
     buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
@@ -306,15 +375,16 @@ static void __check_for_updates(void)
      "If you do not upgrade, this question will be asked\n"
      "again the next time you run the updater.\n");
 
-    elements[3] = construct_button(14, 11, "Upgrade", 0);
-    elements[4] = construct_button(29, 11, "Update Old", 1);
+    elements[3] = construct_button(9, 11, "Upgrade", 0);
+    elements[4] = construct_button(21, 11, "Update Old", 1);
+    elements[5] = construct_button(36, 11, "Cancel", 2);
 
-    construct_dialog(&di, "New Major Version", 11, 6, 55, 14, elements, 5, 3);
+    construct_dialog(&di, "New Major Version", 11, 6, 55, 14, elements, 6, 3);
     result = run_dialog(NULL, &di);
     destruct_dialog(&di);
 
     // User pressed Escape, abort all updates
-    if(result < 0)
+    if(result < 0 || result == 2)
       goto err_host_destroy;
 
     // User pressed Upgrade, use new major
@@ -330,6 +400,8 @@ static void __check_for_updates(void)
   snprintf(url_base, LINE_BUF_LEN, "/%s/" PLATFORM, version);
   debug("Update base URL: %s\n", url_base);
 
+  m_hide();
+
   draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
   write_string("Computing manifest deltas (added, replaced, deleted)..",
    13, 12, DI_TEXT, 0);
@@ -342,12 +414,12 @@ static void __check_for_updates(void)
   }
 
   clear_screen(32, 7);
+  m_show();
   update_screen();
 
   if(!removed && !replaced && !added)
   {
     element *elements[2];
-    int result;
     dialog di;
 
     elements[0] = construct_label(2, 2, "This client is already current.");
@@ -393,36 +465,52 @@ static void __check_for_updates(void)
     list_entries[i][list_entry_width - 1] = 0;
   }
 
-  list_menu((const char **)list_entries, list_entry_width,
-   "Deltas", 0, entries, (80 - (list_entry_width + 9)) >> 1);
+  draw_window_box(19, 1, 59, 4, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+  write_string(" Task Summary ", 33, 1, DI_TITLE, 0);
+  write_string("ESC   - Cancel   [+] Add   [-] Delete", 21, 2, DI_TEXT, 0);
+  write_string("ENTER - Proceed  [*] Replace  ", 21, 3, DI_TEXT, 0);
+
+  result = list_menu((const char **)list_entries, list_entry_width,
+   NULL, 0, entries, ((80 - (list_entry_width + 9)) >> 1) + 1, 4);
 
   for(i = 0; i < entries; i++)
     free(list_entries[i]);
   free(list_entries);
 
+  if(result < 0)
+    goto err_free_update_manifests;
+
+  clear_screen(32, 7);
+  update_screen();
+
   host_set_callbacks(h, NULL, recv_cb, cancel_cb);
 
   for(e = removed; e; e = e->next)
-  {
-    if(unlink(e->name))
-    {
-      perror("unlink");
-      goto err_free_update_manifests;
-    }
+    delete_hook(e->name);
 
-    /* Obtain the path for this file. If the file isn't at the top
-     * level, and the directory is empty (rmdir ensures this)
-     * the directory will be pruned.
-     */
-    check_prune_basedir(e->name);
+  /* Since the operations for adding and replacing a file are identical,
+   * we modify the replaced list and tack on the added list to the end.
+   *
+   * Either list may be NULL; in the case that `replaced' is NULL, simply
+   * re-assign the `added' pointer. `added' being NULL has no effect.
+   *
+   * Later, we need only free the replaced list (see below).
+   */
+  if(replaced)
+  {
+    for(e = replaced; e->next; e = e->next)
+      ;
+    e->next = added;
   }
+  else
+    replaced = added;
 
   for(e = replaced; e; e = e->next)
   {
     char name[72];
 
     if(!check_create_basedir(e->name))
-      goto err_free_update_manifests;
+      goto err_free_delete_list;
 
     final_size = (long)e->size;
 
@@ -430,32 +518,37 @@ static void __check_for_updates(void)
     meter(name, 0, final_size);
     update_screen();
 
-    if(!manifest_entry_download_replace(h, url_base, e))
-      goto err_free_update_manifests;
+    if(!manifest_entry_download_replace(h, url_base, e, delete_hook))
+      goto err_free_delete_list;
   }
 
-  for(e = added; e; e = e->next)
+  if(delete_list)
   {
-    char name[72];
+    f = fopen(DELETE_TXT, "wb");
+    if(!f)
+    {
+      error("Failed to create \"" DELETE_TXT "\". Check permissions.", 1, 8, 0);
+      goto err_free_delete_list;
+    }
 
-    if(!check_create_basedir(e->name))
-      goto err_free_update_manifests;
+    for(e = delete_list; e; e = e->next)
+    {
+      fprintf(f, "%08x%08x%08x%08x%08x%08x%08x%08x %lu %s\n",
+       e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
+       e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7],
+       e->size, e->name);
+    }
 
-    final_size = (long)e->size;
-
-    snprintf(name, 72, "%s (%ldb)", e->name, final_size);
-    meter(name, 0, final_size);
-    update_screen();
-
-    if(!manifest_entry_download_replace(h, url_base, e))
-      goto err_free_update_manifests;
+    fclose(f);
   }
 
   ret = true;
+err_free_delete_list:
+  manifest_list_free(&delete_list);
+  delete_list = delete_p = NULL;
 err_free_update_manifests:
   manifest_list_free(&removed);
   manifest_list_free(&replaced);
-  manifest_list_free(&added);
 err_free_url_base:
   free(url_base);
 err_host_destroy:

@@ -64,7 +64,7 @@ static char fg_per_bk[16] =
 // there percentage-wise. If you click on the current choice, it exits.
 // If you click on a choice to move there, the mouse cursor moves with it.
 int list_menu(const char **choices, int choice_size, const char *title,
- int current, int num_choices, int xpos)
+ int current, int num_choices, int xpos, int ypos)
 {
   char key_buffer[64];
   int mouse_press;
@@ -77,62 +77,68 @@ int list_menu(const char **choices, int choice_size, const char *title,
 
   cursor_off();
 
-  if(strlen(title) > (unsigned int)choice_size)
+  if(title && strlen(title) > (unsigned int)choice_size)
     width = strlen(title) + 6;
 
-  // Save screen
   save_screen();
 
   // Display box
-
-  draw_window_box(xpos, 2, xpos + width - 1, 22, DI_MAIN, DI_DARK,
+  draw_window_box(xpos, ypos + 2, xpos + width - 1, 22, DI_MAIN, DI_DARK,
    DI_CORNER, 1, 1);
-  // Add title
-  write_string(title, xpos + 3, 2, DI_TITLE, 0);
-  draw_char(' ', DI_TITLE, xpos + 2, 2);
-  draw_char(' ', DI_TITLE, xpos + 3 + strlen(title), 2);
+
+  if(title)
+  {
+    // Add title
+    write_string(title, xpos + 3, ypos + 2, DI_TITLE, 0);
+    draw_char(' ', DI_TITLE, xpos + 2, ypos + 2);
+    draw_char(' ', DI_TITLE, xpos + 3 + strlen(title), ypos + 2);
+  }
 
   // Add pointer
-  draw_char(arrow_char, DI_TEXT, xpos + 2, 12);
+  draw_char(arrow_char, DI_TEXT, xpos + 2, (ypos >> 1) + 12);
 
   // Add meter arrows
   if(num_choices > 1)
   {
-    draw_char(pc_top_arrow, DI_PCARROW, xpos + 4 + choice_size, 3);
-    draw_char(pc_bottom_arrow,  DI_PCARROW, xpos + 4 + choice_size, 21);
+    draw_char(pc_top_arrow, DI_PCARROW, xpos + 4 + choice_size, ypos + 3);
+    draw_char(pc_bottom_arrow, DI_PCARROW, xpos + 4 + choice_size, 21);
   }
+
   do
   {
     // Fill over old menu
-    draw_window_box(xpos + 3, 3, xpos + 3 + choice_size, 21,
-     DI_DARK,DI_MAIN, DI_CORNER, 0, 1);
+    draw_window_box(xpos + 3, ypos + 3, xpos + 3 + choice_size, 21,
+     DI_DARK, DI_MAIN, DI_CORNER, 0, 1);
+
     // Draw current
-    color_string(choices[current], xpos + 4, 12, DI_ACTIVE);
+    color_string(choices[current], xpos + 4, (ypos >> 1) + 12, DI_ACTIVE);
+
     // Draw above current
-    for(i = 1; i < 9; i++)
+    for(i = 1; i < 9 - (ypos >> 1); i++)
     {
       if((current - i) < 0)
         break;
       color_string(choices[current - i], xpos + 4,
-       12 - i, DI_NONACTIVE);
+       (ypos >> 1) + 12 - i, DI_NONACTIVE);
     }
+
     // Draw below current
-    for(i = 1; i < 9; i++)
+    for(i = 1; i < 9 - (ypos >> 1); i++)
     {
       if((current + i) >= num_choices)
         break;
       color_string(choices[current + i], xpos + 4,
-       12 + i, DI_NONACTIVE);
+       (ypos >> 1) + 12 + i, DI_NONACTIVE);
     }
 
     // Draw meter (xpos 9 + choice_size, ypos 4 thru 20)
     if(num_choices > 1)
     {
-      for(i = 4; i < 21; i++)
-        draw_char(pc_filler, DI_PCFILLER, xpos + 4 + choice_size, i);
+      for(i = 4; i < 21 - ypos; i++)
+        draw_char(pc_filler, DI_PCFILLER, xpos + 4 + choice_size, ypos + i);
       // Add progress dot
-      i = (current * 16) / (num_choices - 1);
-      draw_char(pc_dot, DI_PCDOT, xpos + 4 + choice_size, i + 4);
+      i = (current * (16 - ypos)) / (num_choices - 1);
+      draw_char(pc_dot, DI_PCDOT, xpos + 4 + choice_size, ypos + i + 4);
     }
 
     update_screen();
@@ -149,35 +155,35 @@ int list_menu(const char **choices, int choice_size, const char *title,
     {
       int mouse_x, mouse_y;
       get_mouse_position(&mouse_x, &mouse_y);
+
       // Clicking on- List, column, arrow, or nothing?
-      if((mouse_x == xpos + 4 + choice_size )&& (mouse_y > 3) &&
+      if((mouse_x == xpos + 4 + choice_size) && (mouse_y > ypos + 3) &&
        (mouse_y < 21))
       {
         // Column
-        int ny = mouse_y - 4;
-        current=(ny * (num_choices - 1)) / 16;
+        int ny = mouse_y - (ypos + 4);
+        current = (ny * (num_choices - 1)) / (16 - ypos);
       }
       else
 
-       if((mouse_y > 3) && (mouse_y < 21) &&
+      if((mouse_y > ypos + 3) && (mouse_y < 21) &&
        (mouse_x > xpos + 3) && (mouse_x < xpos + 3 + choice_size))
       {
         // List
-        if(mouse_y == 12)
+        if(mouse_y == ypos + 12)
           key = IKEY_RETURN;
 
-        current += (mouse_y) - 12;
+        current += mouse_y - (ypos + 12);
         if(current < 0)
           current = 0;
         if(current >= num_choices)
           current = num_choices - 1;
         // Move mouse with choices
-        warp_mouse(mouse_x, 12);
+        warp_mouse(mouse_x, ypos + 12);
       }
       else
 
-      if((mouse_x == xpos + 4 + choice_size) &&
-       (mouse_y == 3))
+      if((mouse_x == xpos + 4 + choice_size) && (mouse_y == ypos + 3))
       {
         // Top arrow
         if(current > 0)
@@ -185,8 +191,7 @@ int list_menu(const char **choices, int choice_size, const char *title,
       }
       else
 
-      if((mouse_x == xpos + 4 + choice_size) &&
-       (mouse_y == 21))
+      if((mouse_x == xpos + 4 + choice_size) && (mouse_y == 21))
       {
         // Bottom arrow
         if(current < (num_choices - 1))
@@ -310,8 +315,7 @@ int list_menu(const char **choices, int choice_size, const char *title,
             for(i = 0; i < num_choices; i++)
             {
               if((choices[i][0] == ' ') &&
-               !strncasecmp(choices[i] + 1, key_buffer,
-               key_position))
+               !strncasecmp(choices[i] + 1, key_buffer, key_position))
               {
                 // It's good!
                 current = i;
@@ -323,8 +327,7 @@ int list_menu(const char **choices, int choice_size, const char *title,
           {
             for(i = 0; i < num_choices; i++)
             {
-              if(!strncasecmp(choices[i], key_buffer,
-               key_position))
+              if(!strncasecmp(choices[i], key_buffer, key_position))
               {
                 // It's good!
                 current = i;
@@ -1047,7 +1050,7 @@ int choose_board(World *mzx_world, int current, const char *title,
 
   // Run the list_menu()
   current = list_menu((const char **)board_names,
-   BOARD_NAME_SIZE, title, current, i, 27);
+   BOARD_NAME_SIZE, title, current, i, 27, 0);
 
   // New board? (if select no board or add board)
   if((current == num_boards) ||

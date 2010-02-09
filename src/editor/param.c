@@ -81,7 +81,7 @@ static int pe_chest(World *mzx_world, int param)
   };
 
   // First, pick chest contents
-  type = list_menu(list, 21, "Choose chest contents", type, 10, 27);
+  type = list_menu(list, 21, "Choose chest contents", type, 10, 27, 0);
 
   if(type < 0)
     return -1;
@@ -105,7 +105,7 @@ static int pe_chest(World *mzx_world, int param)
     case 7:
     case 8: // Ring/potion
     {
-      var = list_menu(potion_fx, 13, "Choose effect", var, 16, 31);
+      var = list_menu(potion_fx, 13, "Choose effect", var, 16, 31, 0);
       break;
     }
 
@@ -173,7 +173,7 @@ static int pe_ring(World *mzx_world, int param)
   int p;
   if(param >= 16)
     param = 0;
-  p = list_menu(potion_fx, 13, "Choose effect", param, 16, 31);
+  p = list_menu(potion_fx, 13, "Choose effect", param, 16, 31, 0);
   if(p < 0)
     return -1;
   else

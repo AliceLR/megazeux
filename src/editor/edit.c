@@ -677,7 +677,7 @@ static void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
   cursor_off();
   chosen =
    list_menu(thing_menus[menu_number], 20, tmenu_titles[menu_number], 0,
-   tmenu_num_choices[menu_number], 27);
+   tmenu_num_choices[menu_number], 27, 0);
 
   if(chosen >= 0)
   {

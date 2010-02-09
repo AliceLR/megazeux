@@ -25,6 +25,7 @@
 __M_BEGIN_DECLS
 
 #include "../platform.h"
+#include "sha256.h"
 #include "host.h"
 
 struct manifest_entry
@@ -35,12 +36,16 @@ struct manifest_entry
   char *name;
 };
 
+NETWORK_LIBSPEC bool manifest_compute_sha256(SHA256_ctx *ctx, FILE *f,
+ unsigned long len);
+
 NETWORK_LIBSPEC void manifest_list_free(struct manifest_entry **head);
 NETWORK_LIBSPEC bool manifest_get_updates(struct host *h, const char *basedir,
  struct manifest_entry **removed, struct manifest_entry **replaced,
  struct manifest_entry **added);
 NETWORK_LIBSPEC bool manifest_entry_download_replace(struct host *h,
- const char *basedir, struct manifest_entry *e);
+ const char *basedir, struct manifest_entry *e,
+ void (*delete_hook)(const char *file));
 
 __M_END_DECLS
 
