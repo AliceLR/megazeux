@@ -2217,7 +2217,8 @@ static void robo_ed_display_robot_line(robot_state *rstate,
 
         if(current_arg == S_CHARACTER)
         {
-          arg_length = strcspn(line_pos + 1, "\'") + 3;
+          int offset_hack = (line_pos[1] == '\'') ? 1 : 0;
+          arg_length = strcspn(line_pos + 1, "\'") + 3 + offset_hack;
           chars_offset = 0;
         }
         else
