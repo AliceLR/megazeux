@@ -36,9 +36,6 @@
 #include "render_egl.h"
 #endif
 
-#define SAFE_TEXTURE_MARGIN_X 0.0004f
-#define SAFE_TEXTURE_MARGIN_Y 0.0002f
-
 struct gl2_syms
 {
   int syms_loaded;
@@ -77,6 +74,9 @@ struct gl2_syms
 
 struct gl2_render_data
 {
+#ifdef CONFIG_EGL
+  struct egl_render_data egl;
+#endif
   Uint32 *pixels;
   Uint8 charset_texture[CHAR_H * CHARSET_SIZE * CHAR_W * 2];
   Uint32 background_texture[SCREEN_W * SCREEN_H];
@@ -458,25 +458,17 @@ static void gl2_render_graph(struct graphics_data *graphics)
       {
         GLubyte *pal_base = &render_data->palette[src->fg_color * 3];
 
-        tex_coord_array[0] =
-         ((src->char_value % 32) + 0) / 32.0f          + SAFE_TEXTURE_MARGIN_X;
-        tex_coord_array[1] =
-         ((src->char_value / 32) + 1) * 14.0f / 256.0f - SAFE_TEXTURE_MARGIN_Y;
+        tex_coord_array[0] = ((src->char_value % 32) + 0) / 32.0f;
+        tex_coord_array[1] = ((src->char_value / 32) + 1) * 14.0f / 256.0f;
 
-        tex_coord_array[2] =
-         ((src->char_value % 32) + 0) / 32.0f          + SAFE_TEXTURE_MARGIN_X;
-        tex_coord_array[3] =
-         ((src->char_value / 32) + 0) * 14.0f / 256.0f - SAFE_TEXTURE_MARGIN_Y;
+        tex_coord_array[2] = ((src->char_value % 32) + 0) / 32.0f;
+        tex_coord_array[3] = ((src->char_value / 32) + 0) * 14.0f / 256.0f;
 
-        tex_coord_array[4] =
-         ((src->char_value % 32) + 1) / 32.0f          + SAFE_TEXTURE_MARGIN_X;
-        tex_coord_array[5] =
-         ((src->char_value / 32) + 1) * 14.0f / 256.0f - SAFE_TEXTURE_MARGIN_Y;
+        tex_coord_array[4] = ((src->char_value % 32) + 1) / 32.0f;
+        tex_coord_array[5] = ((src->char_value / 32) + 1) * 14.0f / 256.0f;
 
-        tex_coord_array[6] =
-         ((src->char_value % 32) + 1) / 32.0f          + SAFE_TEXTURE_MARGIN_X;
-        tex_coord_array[7] =
-         ((src->char_value / 32) + 0) * 14.0f / 256.0f - SAFE_TEXTURE_MARGIN_Y;
+        tex_coord_array[6] = ((src->char_value % 32) + 1) / 32.0f;
+        tex_coord_array[7] = ((src->char_value / 32) + 0) * 14.0f / 256.0f;
 
         vertex_array[0] = (((i2     + 0) * 2.0f) / 80.0f) - 1.0f;
         vertex_array[1] = (((25 - i - 1) * 2.0f) / 25.0f) - 1.0f;

@@ -67,6 +67,9 @@ struct gl1_syms
 
 struct gl1_render_data
 {
+#ifdef CONFIG_EGL
+  struct egl_render_data egl;
+#endif
   Uint32 *pixels;
   Uint32 w;
   Uint32 h;
@@ -200,6 +203,7 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
 
 static void gl1_free_video(struct graphics_data *graphics)
 {
+  gl_cleanup(graphics);
   free(graphics->render_data);
   graphics->render_data = NULL;
 }

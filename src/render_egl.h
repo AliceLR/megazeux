@@ -41,6 +41,15 @@ bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize);
 void gl_set_attributes(struct graphics_data *graphics);
 bool gl_swap_buffers(struct graphics_data *graphics);
+void gl_cleanup(struct graphics_data *graphics);
+
+struct egl_render_data
+{
+  EGLDisplay display;
+  EGLConfig  config;
+  EGLContext context;
+  EGLSurface surface;
+};
 
 __M_END_DECLS
 

@@ -8,8 +8,7 @@ time.
 
 At the moment this Android port does nothing. It needs the following work:
 
-  - Port to EGL for windowing
-  - Fix GL renderers to build and work against OpenGL-ES 1.0
+  - Port to SurfaceFlingerClient to get EGLNativeWindow
   - Possibly fix up software renderer to use Skia (needed for old phones)
   - Implement audio support (audioflinger)
 

@@ -83,6 +83,8 @@ bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
 void gl_set_attributes(struct graphics_data *graphics);
 bool gl_swap_buffers(struct graphics_data *graphics);
 
+static inline void gl_cleanup(struct graphics_data *graphics) { }
+
 #endif // CONFIG_RENDER_GL
 
 __M_END_DECLS
