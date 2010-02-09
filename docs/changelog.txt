@@ -51,6 +51,9 @@ USERS
   original line contents immediately after the expansion.
 + MacOS 10.x clipboard support (via Cocoa Pasteboard). Alt+Ins can be entered
   with Fn+Alt+Numpad0 on a Macbook or Powerbook keyboard.
++ Robot editor S_CHARACTER fields no longer bogusly escape characters such
+  as ". In addition, rendering glitches are no longer encountered when using
+  the ' S_CHARACTER (which is completely reasonable).
 
 DEVELOPERS
 
