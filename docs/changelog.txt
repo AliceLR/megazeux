@@ -2,6 +2,34 @@ SVN
 
 USERS
 
+DEVELOPERS
+
+December 27, 2008 - MZX 2.82b
+
+This release contains plenty of important bug fixes, ranging from regressions
+such as the broken command-line editor macro expansion to third party bugs
+like the Windows "directx" SDL video driver breakage.
+
+There are also some new ports and features. MegaZeux now runs on the Wii (port
+by Mr_Alert) and AmigaOS 4.x (port by myself and Spot from os4depot). The
+Windows x64 port has matured immensely and can now be considered stable.
+MacOS X builds now have clipboard support. The hardware stretching renderers
+now have a couple of fixed aspect ratio modes.
+
+The biggest feature of this release is the introduction of a portable network
+layer, which is currently being tested by the new built-in updater (F7/U).
+
+Internally, MegaZeux is now modularized and builds as several DLL and EXE
+files, which should make redesigning parts like the help system and editor
+a little easier, as well as allowing us to ship a "mzxrun" executable for
+the first time since 2.69c. This "mzxrun" executable is now used by a
+majority of the console ports.
+
+Contributions from Revvy, Mr_Alert, Terryn and Exophase have helped make
+this another solid release.
+
+USERS
+
 + Writing to $str.length (which previously did undefined things) will now
   truncate or enlarge the string to the size specified.
 + Removed filename size limit for FWRITE_MODIFY and FWRITE_APPEND. (Revvy)
