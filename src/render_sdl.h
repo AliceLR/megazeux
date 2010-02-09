@@ -45,6 +45,11 @@ bool gl_swap_buffers(struct graphics_data *graphics);
 
 static inline void gl_cleanup(struct graphics_data *graphics) { }
 
+static inline bool GL_LoadLibrary(void)
+{
+  return SDL_GL_LoadLibrary(NULL) == 0;
+}
+
 static inline void *GL_GetProcAddress(const char *proc)
 {
   return SDL_GL_GetProcAddress(proc);

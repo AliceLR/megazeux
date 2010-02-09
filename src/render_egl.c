@@ -28,6 +28,25 @@
 #include "sfwrapper.h"
 #endif
 
+#ifdef ANDROID
+
+#include <dlfcn.h>
+
+static void *glso;
+
+bool GL_LoadLibrary(void)
+{
+  glso = dlopen("libGLESv1_CM.so", RTLD_NOW);
+  return glso != NULL;
+}
+
+void *GL_GetProcAddress(const char *proc)
+{
+  return dlsym(glso, proc);
+}
+
+#endif /* ANDROID */
+
 // EGL is not directly comparable to SDL as it does not handle "windows"
 // in the traditional sense. It is expected that the platform provides a
 // native "window" type that handles things like resolution and resizing.

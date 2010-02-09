@@ -128,10 +128,8 @@ static bool gl2_init_video(struct graphics_data *graphics,
   if(!render_data)
     goto err_out;
 
-#ifdef CONFIG_SDL
-  if(SDL_GL_LoadLibrary(NULL))
+  if(!GL_LoadLibrary())
     goto err_free_render_data;
-#endif
 
   graphics->render_data = render_data;
 

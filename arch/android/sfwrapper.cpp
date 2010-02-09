@@ -26,6 +26,8 @@
 #include <ui/SurfaceComposerClient.h>
 #include <ui/EGLNativeWindowSurface.h>
 
+#include <utils/ProcessState.h>
+
 // Android has a util.h too
 #include "../../src/util.h"
 
@@ -40,6 +42,7 @@ extern "C" bool SurfaceFlingerInitialize(int target_width, int target_height,
 {
   if(mSession == NULL)
   {
+    ProcessState::self()->startThreadPool();
     mSession = new SurfaceComposerClient();
     if(mSession == NULL)
     {

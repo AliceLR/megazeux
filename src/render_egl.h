@@ -36,10 +36,24 @@ void gl_set_attributes(struct graphics_data *graphics);
 bool gl_swap_buffers(struct graphics_data *graphics);
 void gl_cleanup(struct graphics_data *graphics);
 
+#ifndef ANDROID
+
+static inline bool GL_LoadLibrary(void) { }
+
 static inline void *GL_GetProcAddress(const char *proc)
 {
   return eglGetProcAddress(proc);
 }
+
+#else /* ANDROID */
+
+/* Android's eglGetProcAddress is currently broken, so we
+ * have to roll our own..
+ */
+bool GL_LoadLibrary(void);
+void *GL_GetProcAddress(const char *proc);
+
+#endif /* !ANDROID */
 
 struct egl_render_data
 {

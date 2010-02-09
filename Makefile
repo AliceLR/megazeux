@@ -104,7 +104,7 @@ endif
 # don't use it at all in MegaZeux (even if we did it's quite portable).
 #
 CFLAGS   += -pedantic -Wno-variadic-macros -Wno-long-long
-CXXFLAGS += -pedantic -Wno-variadic-macros -Wno-long-long
+CXXFLAGS += -pedantic -fpermissive -Wno-variadic-macros -Wno-long-long
 
 ifneq (${PLATFORM},mingw)
 

@@ -131,9 +131,13 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 core_cobjs += ${core_obj}/render_glsl.o
 endif
 
-# Used in combination with GLES
+#
+# Currently only usable with GL, but could theoretically be used
+# with OpenVG in the future.
+#
 ifeq (${BUILD_EGL},1)
 core_cobjs += ${core_obj}/render_egl.o
+core_ldflags := -lEGL -lGLESv1_CM ${core_ldflags}
 endif
 
 ifeq (${BUILD_RENDER_YUV},1)
@@ -200,15 +204,6 @@ else
 ifneq (${BUILD_WII},1)
 
 core_cobjs += ${core_obj}/platform_dummy.o
-
-#
-# Currently only usable with GL, but could theoretically be used
-# with OpenVG in the future.
-#
-ifeq (${BUILD_EGL},1)
-core_cobjs += ${core_obj}/render_egl.o
-core_ldflags := -lEGL -lGLESv1_CM ${core_ldflags}
-endif
 
 #
 # Normally SDL would provide us with pthread, but in the case
