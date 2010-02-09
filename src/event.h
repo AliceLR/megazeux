@@ -97,8 +97,8 @@ CORE_LIBSPEC bool get_ctrl_status(enum keycode_type type);
 CORE_LIBSPEC void initialize_joysticks(void);
 
 // Implemented by "drivers" (SDL or Wii currently)
-CORE_LIBSPEC void __wait_event(void);
-CORE_LIBSPEC Uint32 __update_event_status(void);
+void __wait_event(void);
+Uint32 __update_event_status(void);
 
 void wait_event(void);
 Uint32 get_last_key(enum keycode_type type);
