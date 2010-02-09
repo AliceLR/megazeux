@@ -102,8 +102,8 @@ static const int default_period = 428;
 // May be used by audio plugins
 struct audio audio;
 
-#define __lock()      platform_mutex_lock(audio.audio_mutex)
-#define __unlock()    platform_mutex_unlock(audio.audio_mutex)
+#define __lock()      platform_mutex_lock(&audio.audio_mutex)
+#define __unlock()    platform_mutex_unlock(&audio.audio_mutex)
 
 #ifdef DEBUG
 
@@ -1587,7 +1587,7 @@ static void init_pc_speaker(struct config_info *conf)
 
 void init_audio(struct config_info *conf)
 {
-  platform_mutex_init(audio.audio_mutex);
+  platform_mutex_init(&audio.audio_mutex);
 
   audio.output_frequency = conf->output_frequency;
   audio.master_resample_mode = conf->resample_mode;

@@ -26,8 +26,14 @@ __M_BEGIN_DECLS
 
 #include "platform_endian.h"
 
-#ifndef CONFIG_SDL
+#ifdef CONFIG_SDL
+
+#include "SDL.h"
+
+#else // !CONFIG_SDL
+
 #include <inttypes.h>
+
 typedef uint8_t Uint8;
 typedef int8_t Sint8;
 typedef uint16_t Uint16;
@@ -36,14 +42,22 @@ typedef uint32_t Uint32;
 typedef int32_t Sint32;
 typedef uint64_t Uint64;
 typedef int64_t Sint64;
-#endif // !CONFIG_SDL
 
-#if defined(CONFIG_SDL)
-#include "platform_sdl.h"
+#ifdef CONFIG_WII
+int real_main(int argc, char *argv[]);
+#define main real_main
+#endif // CONFIG_WII
+
+#endif // CONFIG_SDL
+
+#ifdef CONFIG_PTHREAD_MUTEXES
+#include "mutex_pthread.h"
+#elif defined(CONFIG_SDL)
+#include "mutex_sdl.h"
 #elif defined(CONFIG_WII)
-#include "platform_wii.h"
+#include "mutex_wii.h"
 #else
-#error No platform chosen!
+#error Provide a valid mutex implementation for this platform!
 #endif
 
 CORE_LIBSPEC void delay(Uint32 ms);
