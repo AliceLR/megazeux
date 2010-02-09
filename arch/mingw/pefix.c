@@ -187,6 +187,7 @@ err_free_dirs:
   return err;
 }
 
+#if 0
 static error_t walk_rvas(FILE *f, uint32_t virtaddr, uint32_t offset)
 {
   uint32_t rva, phys;
@@ -223,6 +224,7 @@ static error_t walk_rvas(FILE *f, uint32_t virtaddr, uint32_t offset)
 
   return SUCCESS;
 }
+#endif
 
 static error_t modify_pe(FILE *f)
 {
@@ -378,6 +380,7 @@ static error_t modify_pe(FILE *f)
       return WRITE_ERROR;
   }
 
+#if 0
   if(idata_offset != 0)
   {
     // Reposition file pointer at (.idata)
@@ -420,10 +423,10 @@ static error_t modify_pe(FILE *f)
         return READ_ERROR;
     }
   }
+#endif
 
   // Compute and write back valid checksum
   err = pe_csum(f, &ul);
-  ul = 0;
   if(err != SUCCESS)
     return err;
   if(fseek(f, csum_offset, SEEK_SET))
