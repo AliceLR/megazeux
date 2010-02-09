@@ -28,6 +28,14 @@ typedef struct _config_info config_info;
 
 #define OPTION_NAME_LEN 32
 
+typedef enum
+{
+  RATIO_CLASSIC_4_3,
+  RATIO_MODERN_64_35,
+  RATIO_STRETCH,
+}
+ratio_type_t;
+
 struct _config_info
 {
   // Video options
@@ -39,6 +47,7 @@ struct _config_info
   int allow_resize;
   char video_output[16];
   int force_bpp;
+  ratio_type_t video_ratio;
   char gl_filter_method[16];
   char gl_tilemap_vertex_shader[42];
   char gl_tilemap_fragment_shader[42];

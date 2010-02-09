@@ -44,6 +44,7 @@ typedef struct
   Uint32 y0mask;
   Uint32 y1mask;
   Uint32 uvmask;
+  ratio_type_t ratio;
 } yuv_render_data;
 
 bool yuv_set_video_mode_size(graphics_data *graphics, int width, int height,

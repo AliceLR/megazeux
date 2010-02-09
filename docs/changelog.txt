@@ -79,6 +79,11 @@ USERS
   decrypt the world. Previously, this would either crash, or loop forever.
 - Removed the legacy "force_resolution" option which was replaced long ago
   by the more accurate "fullscreen_resolution" option.
++ When using the OpenGL or overlay renderers, in either windowed or
+  fullscreen mode, the aspect ratio can now be preserved as either 4:3
+  (most similar to DOS) or 64:35 (most similar to the port). The display
+  will be letterboxed or margins applied as appropriate. See the
+  "video_ratio" configuration option for more information.
 
 DEVELOPERS
 

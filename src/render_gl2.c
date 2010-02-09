@@ -79,6 +79,7 @@ typedef struct
   Uint8 remap_char[CHARSET_SIZE * 2];
   Uint8 ignore_linear;
   gl2_syms gl;
+  ratio_type_t ratio;
 } gl2_render_data;
 
 static int gl2_load_syms (gl2_syms *gl)
@@ -142,13 +143,10 @@ static bool gl2_init_video(graphics_data *graphics, config_info *conf)
   const char *version;
 
   if(!render_data)
-    return false;
+    goto err_out;
 
   if(!GL_CAN_USE)
-  {
-    free(render_data);
-    return false;
-  }
+    goto err_free_render_data;
 
   graphics->render_data = render_data;
   gl->syms_loaded = false;
@@ -167,16 +165,14 @@ static bool gl2_init_video(graphics_data *graphics, config_info *conf)
    GL_POWER_2_HEIGHT);
 
   if(!render_data->pixels)
-  {
-    free(render_data);
-    return false;
-  }
+    goto err_free_render_data;
+
+  // FIXME: Currently broken
+  //render_data->ratio = conf->video_ratio;
+  render_data->ratio = RATIO_STRETCH;
 
   if(!set_video_mode())
-  {
-    free(render_data);
-    return false;
-  }
+    goto err_free_render_data;
 
   // NOTE: This must come AFTER set_video_mode()!
   version = (const char *)gl->glGetString(GL_VERSION);
@@ -185,11 +181,15 @@ static bool gl2_init_video(graphics_data *graphics, config_info *conf)
   if(version && atof(version) < 1.1)
   {
     warn("Your OpenGL implementation is too old (need v1.1).\n");
-    free(render_data);
-    return false;
+    goto err_free_render_data;
   }
 
   return true;
+
+err_free_render_data:
+  free(render_data);
+err_out:
+  return false;
 }
 
 static void gl2_free_video(graphics_data *graphics)
@@ -216,11 +216,11 @@ static void gl2_remap_charbyte(graphics_data *graphics, Uint16 chr, Uint8 byte)
 }
 
 // FIXME: Many magic numbers
-static void gl2_resize_screen(graphics_data *graphics, int viewport_width,
- int viewport_height)
+static void gl2_resize_screen(graphics_data *graphics, int width, int height)
 {
   gl2_render_data *render_data = graphics->render_data;
   gl2_syms *gl = &render_data->gl;
+  int v_width, v_height;
 
   /* If the window is exactly 640x350, then any filtering is useless.
    * Turning filtering off here might speed things up.
@@ -228,14 +228,16 @@ static void gl2_resize_screen(graphics_data *graphics, int viewport_width,
    * Otherwise, linear filtering breaks if the window is smaller than
    * 640x350, so also turn it off here.
    */
-  if(viewport_width == 640 && viewport_height == 350)
+  if(width == 640 && height == 350)
     render_data->ignore_linear = true;
-  else if(viewport_width < 640 || viewport_height < 350)
+  else if(width < 640 || height < 350)
     render_data->ignore_linear = true;
   else
     render_data->ignore_linear = false;
 
-  gl->glViewport(0, 0, viewport_width, viewport_height);
+  fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+  gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
+   v_width, v_height);
 
   gl->glGenTextures(3, render_data->texture_number);
 
@@ -555,14 +557,25 @@ static void gl2_sync_screen(graphics_data *graphics)
 
   if(gl2_linear_filter_method(graphics) && !graphics->screen_mode)
   {
+    int width, height, v_width, v_height;
+
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
     gl->glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 1024, 512, 0);
 
     if(!graphics->fullscreen)
-      gl->glViewport(0, 0, graphics->window_width, graphics->window_height);
+    {
+      width = graphics->window_width;
+      height = graphics->window_height;
+    }
     else
-      gl->glViewport(0, 0, graphics->resolution_width,
-       graphics->resolution_height);
+    {
+      width = graphics->resolution_width;
+      height = graphics->resolution_height;
+    }
+
+    fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+    gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
+     v_width, v_height);
 
     gl->glColor4f(1.0, 1.0, 1.0, 1.0);
 

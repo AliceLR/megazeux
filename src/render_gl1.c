@@ -54,6 +54,7 @@ typedef struct
   Uint32 w;
   Uint32 h;
   gl1_syms gl;
+  ratio_type_t ratio;
 } gl1_render_data;
 
 static int gl1_load_syms (gl1_syms *gl)
@@ -96,15 +97,13 @@ static bool gl1_init_video(graphics_data *graphics, config_info *conf)
   const char *version, *extensions;
 
   if(!render_data)
-    return false;
+    goto err_out;
 
   if(!GL_CAN_USE)
-  {
-    free(render_data);
-    return false;
-  }
+    goto err_free_render_data;
 
   graphics->render_data = render_data;
+  render_data->ratio = conf->video_ratio;
   gl->syms_loaded = false;
 
   graphics->gl_vsync = conf->gl_vsync;
@@ -117,10 +116,7 @@ static bool gl1_init_video(graphics_data *graphics, config_info *conf)
     graphics->bits_per_pixel = conf->force_bpp;
 
   if(!set_video_mode())
-  {
-    free(render_data);
-    return false;
-  }
+    goto err_free_render_data;
 
   // NOTE: These must come AFTER set_video_mode()!
   version = (const char *)gl->glGetString(GL_VERSION);
@@ -130,8 +126,7 @@ static bool gl1_init_video(graphics_data *graphics, config_info *conf)
   if(version && atof(version) < 1.1)
   {
     warn("Your OpenGL implementation is too old (need v1.1).\n");
-    free(render_data);
-    return false;
+    goto err_free_render_data;
   }
 
   // we also might be able to utilise an extension
@@ -151,7 +146,15 @@ static bool gl1_init_video(graphics_data *graphics, config_info *conf)
   render_data->w = internal_width;
   render_data->h = internal_height;
 
-  return render_data->pixels != NULL;
+  if(!render_data->pixels)
+    goto err_free_render_data;
+
+  return true;
+
+err_free_render_data:
+  free(render_data);
+err_out:
+  return false;
 }
 
 static bool gl1_set_video_mode(graphics_data *graphics, int width, int height,
@@ -159,6 +162,7 @@ static bool gl1_set_video_mode(graphics_data *graphics, int width, int height,
 {
   gl1_render_data *render_data = graphics->render_data;
   gl1_syms *gl = &render_data->gl;
+  int v_width, v_height;
 
   GLuint texture_number;
 
@@ -171,7 +175,10 @@ static bool gl1_set_video_mode(graphics_data *graphics, int width, int height,
   if(!gl1_load_syms(gl))
     return false;
 
-  gl->glViewport(0, 0, width, height);
+  fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+
+  gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
+   v_width, v_height);
 
   gl->glEnable(GL_TEXTURE_2D);
 

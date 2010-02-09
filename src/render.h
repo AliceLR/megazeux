@@ -62,6 +62,8 @@ void get_screen_coords_scaled(graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);
 void set_screen_coords_scaled(graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y);
+void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
+ ratio_type_t ratio);
 
 #endif // CONFIG_RENDER_GL || CONFIG_RENDER_YUV
 

@@ -84,6 +84,13 @@
 # video_output = opengl2
 # video_output = glsl
 
+# The OpenGL and YUV overlay renderers can be configured to preserve aspect
+# ratio where possible, in window and fullscreen modes. The supported
+# ratios are "classic" (4:3) and "modern" (64:35). The ratio type "stretch"
+# disables any aspect ratio preservation, and is the default.
+
+# video_ratio = stretch
+
 # OpenGL will, by default, linearly interpolate pixels as it upscales
 # to your requested resolution. This creates an output with more "blur",
 # which some people dislike. If you are using a sufficiently high target

@@ -403,6 +403,17 @@ static void config_startup_editor(config_info *conf, char *name,
   conf->startup_editor = strtol(value, NULL, 10);
 }
 
+static void config_set_video_ratio(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  if(!strcasecmp(value, "classic"))
+    conf->video_ratio = RATIO_CLASSIC_4_3;
+  else if(!strcasecmp(value, "modern"))
+    conf->video_ratio = RATIO_MODERN_64_35;
+  else
+    conf->video_ratio = RATIO_STRETCH;
+}
+
 /* FAT NOTE: This is searched as a binary tree, the nodes must be
  *           sorted alphabetically, or they risk being ignored.
  */
@@ -448,6 +459,7 @@ static const config_entry config_options[] =
   { "update_host", config_update_host },
 #endif
   { "video_output", config_set_video_output },
+  { "video_ratio", config_set_video_ratio },
   { "window_resolution", config_window_resolution }
 };
 
@@ -489,6 +501,7 @@ static config_info default_options =
   1,                            // allow_resize
   VIDEO_OUTPUT_DEFAULT,         // video_output
   FORCE_BPP_DEFAULT,            // force_bpp
+  RATIO_STRETCH,                // video_ratio
   "linear",                     // opengl filter method
   "shaders/tilemap.vert",       // opengl tilemap vertex shader
   "shaders/tilemap.frag",       // opengl tilemap fragment shader

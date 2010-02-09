@@ -66,9 +66,16 @@ bool yuv_init_video(graphics_data *graphics, config_info *conf)
     return false;
 
   graphics->render_data = render_data;
-
   graphics->allow_resize = conf->allow_resize;
-  return set_video_mode();
+  render_data->ratio = conf->video_ratio;
+
+  if(!set_video_mode())
+  {
+    free(render_data);
+    return false;
+  }
+
+  return true;
 }
 
 void yuv_free_video(graphics_data *graphics)
@@ -138,7 +145,16 @@ void yuv_update_colors(graphics_data *graphics, rgb_color *palette,
 void yuv_sync_screen(graphics_data *graphics)
 {
   yuv_render_data *render_data = graphics->render_data;
-  SDL_Rect rect = { 0, 0, render_data->screen->w, render_data->screen->h };
+  int width = render_data->screen->w, v_width;
+  int height = render_data->screen->h, v_height;
+  SDL_Rect rect;
 
+  // FIXME: Putting this here is suboptimal
+  fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+
+  rect.x = (width - v_width) >> 1;
+  rect.y = (height - v_height) >> 1;
+  rect.w = v_width;
+  rect.h = v_height;
   SDL_DisplayYUVOverlay(render_data->overlay, &rect);
 }

@@ -642,6 +642,36 @@ void set_screen_coords_scaled(graphics_data *graphics, int x, int y,
   *screen_y = y * target_height / 350;
 }
 
+// FIXME: Integerize
+
+void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
+ ratio_type_t ratio)
+{
+  int numerator, denominator;
+
+  *v_width = width;
+  *v_height = height;
+
+  if((ratio == RATIO_STRETCH) || (width == 640 && height == 350))
+    return;
+
+  if(ratio == RATIO_CLASSIC_4_3)
+  {
+    numerator = 4;
+    denominator = 3;
+  }
+  else if(ratio == RATIO_MODERN_64_35)
+  {
+    numerator = 64;
+    denominator = 35;
+  }
+
+  if(((float)width / (float)height) < ((float)numerator / (float)denominator))
+    *v_height = (width * denominator) / numerator;
+  else
+    *v_width = (height * numerator) / denominator;
+}
+
 #endif // CONFIG_RENDER_GL || CONFIG_RENDER_YUV
 
 void resize_screen_standard(graphics_data *graphics, int w, int h)
