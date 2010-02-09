@@ -97,6 +97,7 @@ USERS
   short, didn't include dummy channel in BMP palette). (Mr_Alert)
 + Optimize audio locking; do file I/O outside of critical sections to
   decrease stalling, particularly on platforms with slow I/O. (Mr_Alert)
++ Added support for MacOS 10.6 (Snow Leopard) and removed support for 10.3.
 
 DEVELOPERS
 

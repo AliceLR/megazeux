@@ -99,14 +99,12 @@ static struct board
 }
 board_list[MAX_BOARDS];
 
-#ifdef __WIN32__
 // FIXME: Fix this better
 int error(const char *string, unsigned int type, unsigned int options,
  unsigned int code)
 {
   return 0;
 }
-#endif // __WIN32__
 
 static char **hash_table[HASH_TABLE_SIZE];
 

@@ -4,7 +4,7 @@
 # Lipo all the binaries together, if not already done
 #
 for FILE in megazeux mzxrun libcore.dylib \
-            libeditor.dylib libnetwork.dylib; do
+            libeditor.dylib; do
 	[ -f ${FILE} ] && continue
 
 	if [ ! -f ${FILE}.i686 -a ! -f ${FILE}.ppc ]; then
