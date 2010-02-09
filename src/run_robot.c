@@ -2630,10 +2630,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           if(is_cardinal_dir(direction))
           {
             shoot_missile(mzx_world, x, y, dir_to_int(direction));
-            // Figure blocked vars
-            update_blocked = 1;
+            calculate_blocked(mzx_world, x, y, id, _bl);
+
+            // Move on to the next command; the robot isn't
+            // sent anywhere, so otherwise it'll just keep
+            // re-doing the shoot if we end the cycle..
+            cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+            goto breaker;
           }
-          goto breaker;
         }
         break;
       }
@@ -2647,10 +2651,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           if(is_cardinal_dir(direction))
           {
             shoot_seeker(mzx_world, x, y, dir_to_int(direction));
-            // Figure blocked vars
-            update_blocked = 1;
+            calculate_blocked(mzx_world, x, y, id, _bl);
+
+            // Move on to the next command; the robot isn't
+            // sent anywhere, so otherwise it'll just keep
+            // re-doing the shoot if we end the cycle..
+            cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+            goto breaker;
           }
-          goto breaker;
         }
         break;
       }
@@ -2664,10 +2672,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           if(is_cardinal_dir(direction))
           {
             shoot_fire(mzx_world, x, y, dir_to_int(direction));
-            // Figure blocked vars
-            update_blocked = 1;
+            calculate_blocked(mzx_world, x, y, id, _bl);
+
+            // Move on to the next command; the robot isn't
+            // sent anywhere, so otherwise it'll just keep
+            // re-doing the shoot if we end the cycle..
+            cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+            goto breaker;
           }
-          goto breaker;
         }
         break;
       }
