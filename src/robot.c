@@ -1827,13 +1827,20 @@ int parse_param(struct world *mzx_world, char *program, int id)
   // Expressions - Exo
   if((program[1] == '(') && mzx_world->version >= 0x244)
   {
-    char *e_ptr = (char *)program + 2;
-    int error, val;
-    val = parse_expression(mzx_world, &e_ptr, &error, id);
-#ifndef CONFIG_DEBYTECODE
-    if(!error && !(*e_ptr))
-#endif
-      return val;
+    char *e_ptr = program + 2;
+    int error;
+
+#ifdef CONFIG_DEBYTECODE
+    /* FIXME: Should probably push handling into parse_expression */
+    if(program[1 + strlen(program + 1) - 1] == ')')
+      return parse_expression(mzx_world, &e_ptr, &error, id);
+#else /* !CONFIG_DEBYTECODE */
+    {
+      int val = parse_expression(mzx_world, &e_ptr, &error, id);
+      if(!error && !(*e_ptr))
+        return val;
+    }
+#endif /* !CONFIG_DEBYTECODE */
   }
 
   tr_msg(mzx_world, program + 1, id, ibuff);
