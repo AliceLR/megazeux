@@ -200,7 +200,8 @@ static void glsl_verify_shader_compile(glsl_render_data *render_data,
   gl->glGetInfoLogARB(shader, SHADER_INFO_MAX - 1, &len, buffer);
   buffer[len] = 0;
 
-  warning("%s", buffer);
+  if(len > 0)
+    warning("%s", buffer);
 }
 
 static void glsl_load_shaders(graphics_data *graphics)
