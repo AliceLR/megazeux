@@ -962,9 +962,9 @@ static struct addrinfo *recvfrom_raw_op(int fd,struct addrinfo *ais,
       warn("Failed to recvfrom() any data.\n");
       buf_priv->ret = false;
     }
-    else if(ret != len)
+    else if((unsigned int)ret != len)
     {
-      //warn("Failed to recvfrom() all data (sent %z wanted %z).\n", ret, len);
+      warn("Failed to recvfrom() all data (sent %zd wanted %u).\n", ret, len);
       buf_priv->ret = false;
     }
 
@@ -999,9 +999,9 @@ static struct addrinfo *sendto_raw_op(int fd, struct addrinfo *ais, void *priv)
       warn("Failed to sendto() any data.\n");
       buf_priv->ret = false;
     }
-    else if(ret != len)
+    else if((unsigned int)ret != len)
     {
-      //warn("Failed to sendto() all data (sent %z wanted %z).\n", ret, len);
+      warn("Failed to sendto() all data (sent %zd wanted %u).\n", ret, len);
       buf_priv->ret = false;
     }
 
