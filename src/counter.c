@@ -2906,7 +2906,7 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
 
     if(src_length > 5)
     {
-      unsigned int read_count = strtol(src_value + 5, NULL, 10);
+      unsigned int read_count = strtoul(src_value + 5, NULL, 10);
       long current_pos, file_size;
       int actual_read;
 
@@ -2929,9 +2929,8 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
       force_string_splice(mzx_world, name, next, &dest,
        read_count, offset, offset_specified_zero, &size);
 
-      actual_read = fread(dest->value + offset, 1, size, input_file);
-
-      if(offset == 0)
+      actual_read = fread(dest->value + offset, 1, read_count, input_file);
+      if(offset == 0 && !offset_specified_zero)
         dest->length = actual_read;
     }
     else
