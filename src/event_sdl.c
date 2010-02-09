@@ -636,7 +636,8 @@ static void nds_inject_mouse(void)
     // Inject mouse motion events.
     if(keysHeld() & KEY_TOUCH)
     {
-      touchPosition touch = touchReadXY();
+      touchPosition touch;
+      touchRead(&touch);
 
       if(touch.px != last_x || touch.py != last_y)
       {

@@ -62,7 +62,7 @@ bool platform_init(void)
 #endif
 
 #ifdef CONFIG_NDS
-  powerON(POWER_ALL);
+  powerOn(POWER_ALL);
   //setMzxExceptionHandler();
   fatInitDefault();
   // If the "extra RAM" is missing, warn the user

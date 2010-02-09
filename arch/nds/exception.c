@@ -54,6 +54,7 @@
 #ifdef CONFIG_NDS
 
 #include <nds.h>
+#include <nds/registers_alt.h>
 #include <stdio.h>
 
 //---------------------------------------------------------------------------------
@@ -247,7 +248,7 @@ static void mzxExceptionHandler() {
 	BG_PALETTE_SUB[0] = RGB15(31,0,0);
 	BG_PALETTE_SUB[255] = RGB15(31,31,31);
 
-	consoleInitDefault((u16*)SCREEN_BASE_BLOCK_SUB(31), (u16*)CHAR_BASE_BLOCK_SUB(0), 16);
+	consoleDemoInit();
 
 	iprintf("\x1b[5CGuru Meditation Error!\n");
 	u32	currentMode = getCPSR() & 0x1f;

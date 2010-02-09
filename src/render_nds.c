@@ -31,6 +31,8 @@
 
 #include "keyboard.h"
 
+#include <nds/registers_alt.h>
+
 // These variables control the panning along the 1:1 "main" screen.
 static int cell_pan_x = 0;
 static int cell_pan_y = 0;
@@ -187,7 +189,7 @@ void nds_sleep_check(void)
     while(REG_VCOUNT != 0);
     while(REG_VCOUNT == 0);
     while(REG_VCOUNT != 0);
-    powerON(POWER_ALL);
+    powerOn(POWER_ALL);
   }
 
   // Check if it's time to go to sleep.
@@ -198,7 +200,7 @@ void nds_sleep_check(void)
     DMA2_CR = 0;
 
     // Power everything off.
-    powerOFF(POWER_ALL);
+    powerOff(POWER_ALL);
     asleep = true;
   }
 }
@@ -390,14 +392,14 @@ static void nds_render_graph(struct graphics_data *graphics)
 
 static void nds_update_palette_entry(struct rgb_color *palette, Uint32 idx)
 {
-  u16* hw_pal  = PALETTE + idx;
+  u16* hw_pal = BG_PALETTE + idx;
   struct rgb_color color1 = palette[idx];
   int entry2;
 
   if(idx < 16)
   {
     // Update the mainscreen palette.
-    PALETTE_SUB[16*idx + 1] = RGB15(color1.r/8, color1.g/8, color1.b/8);
+    BG_PALETTE_SUB[16*idx + 1] = RGB15(color1.r/8, color1.g/8, color1.b/8);
 
     // Update the subscreen palette if requested.
     if(is_scaled_mode(subscreen_mode))
@@ -605,7 +607,7 @@ void warning_screen(u8 *pcx_data)
     BG2_CX  = 0;
     BG2_CY  = 0;
 
-    memcpy(PALETTE, image.palette, 2*256);
+    memcpy(BG_PALETTE, image.palette, 2*256);
 
     int ox = 128 - image.width/2;
     int oy = 96 - image.height/2;
