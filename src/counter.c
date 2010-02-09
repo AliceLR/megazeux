@@ -3540,8 +3540,8 @@ void counter_fsg(void)
       do
       {
         i2++;
-        cur_char = (builtin_counters[i2]).name[0];
-      } while(cur_char == old_char);
+        cur_char = builtin_counters[i2].name[0];
+      } while(i2 < num_builtin_counters - 1 && cur_char == old_char);
 
       counter_first_letter[(i * 2) + 1] = i2 - 1;
     }
