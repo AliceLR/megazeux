@@ -1379,28 +1379,63 @@ static int update(struct world *mzx_world, int game, int *fadein)
     // Add message
     if(src_board->b_mesg_timer > 0)
     {
-      char *bottom_mesg = src_board->bottom_mesg;
-      int mesg_length = strlencolor(bottom_mesg);
-      int mesg_edges = mzx_world->mesg_edges;
-      int mesg_x = src_board->b_mesg_col;
       int mesg_y = src_board->b_mesg_row;
+      char *lines[25];
+      int i = 1, j;
 
-      if(mesg_y > 24)
-        mesg_y = 24;
+      /* Always at least one line.. */
+      lines[0] = src_board->bottom_mesg;
 
-      if(mesg_x == -1)
-        mesg_x = 40 - (mesg_length / 2);
+      /* Find pointers to each "line" terminated by \n */
+      while(1)
+      {
+        char *pos = strchr(lines[i - 1], '\n');
+        if(!pos)
+          break;
+        *pos = 0;
+        if(i >= 25 - mesg_y)
+          break;
+        lines[i] = pos + 1;
+        i++;
+      }
 
-      color_string_ext(bottom_mesg, mesg_x,
-       mesg_y, scroll_color, 0, 0, true);
+      for(j = 0; j < i; j++)
+      {
+        int mesg_length = strlencolor(lines[j]);
+        int mesg_edges = mzx_world->mesg_edges;
+        int mesg_x = src_board->b_mesg_col;
+        char backup = 0;
 
-      if((mesg_x > 0) && (mesg_edges))
-        draw_char_ext(' ', scroll_color, mesg_x - 1, mesg_y, 0, 0);
+        if(mesg_length > 80)
+        {
+          backup = lines[j][80];
+          lines[j][80] = 0;
+          mesg_length = 80;
+        }
 
-      mesg_x += mesg_length;
-      if((mesg_x < 80) && (mesg_edges))
-        draw_char_ext(' ', scroll_color, mesg_x, mesg_y, 0, 0);
+        if(mesg_x == -1)
+          mesg_x = 40 - (mesg_length / 2);
+
+        color_string_ext(lines[j], mesg_x, mesg_y, scroll_color, 0, 0, true);
+
+        if((mesg_x > 0) && (mesg_edges))
+          draw_char_ext(' ', scroll_color, mesg_x - 1, mesg_y, 0, 0);
+
+        mesg_x += mesg_length;
+        if((mesg_x < 80) && (mesg_edges))
+          draw_char_ext(' ', scroll_color, mesg_x, mesg_y, 0, 0);
+
+        if(backup)
+          lines[j][80] = backup;
+
+        mesg_y++;
+      }
+
+      /* Restore original bottom mesg for next iteration */
+      for(j = 1; j < i; j++)
+        *(lines[j] - 1) = '\n';
     }
+
     else if(intro_mesg_timer > 0)
       draw_intro_mesg();
 
