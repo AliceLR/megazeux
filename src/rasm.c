@@ -3630,25 +3630,36 @@ static struct token *token_collection_get_token(struct token_collection
   return &(tokens[token_position]);
 }
 
-#define match_special_word_condition(match_condition)                          \
-  ((token_type == TOKEN_TYPE_BASIC_IDENTIFIER) &&                              \
-   ({                                                                          \
-     if(current_token->value_is_cached == false)                               \
-     {                                                                         \
-       current_token->arg_value.special_word =                                 \
-        find_special_word(current_token->value, current_token->length);        \
-       current_token->value_is_cached = true;                                  \
-     }                                                                         \
-     current_token->arg_value.special_word && (match_condition);               \
-   }))                                                                         \
+static bool match_special_word_condition(struct token *current_token,
+ enum token_type token_type)
+{
+  if(token_type != TOKEN_TYPE_BASIC_IDENTIFIER)
+    return false;
 
-#define match_special_word_type(arg_type_instance)                             \
-  match_special_word_condition(                                                \
-   current_token->arg_value.special_word->arg_type == arg_type_instance)       \
+  if(!current_token->value_is_cached)
+  {
+    current_token->arg_value.special_word =
+     find_special_word(current_token->value, current_token->length);
+    current_token->value_is_cached = true;
+  }
 
-#define match_arg_and_special_word_type(arg_type_instance)                     \
-  ((arg_type & arg_type_instance) &&                                           \
-   match_special_word_type(arg_type_instance))                                 \
+  return current_token->arg_value.special_word != NULL;
+}
+
+static bool match_special_word_type(struct token *current_token,
+ enum token_type token_type, enum arg_type arg_type_instance)
+{
+  return match_special_word_condition(current_token, token_type) &&
+   current_token->arg_value.special_word->arg_type == arg_type_instance;
+}
+
+static bool match_arg_and_special_word_type(struct token *current_token,
+ enum token_type token_type, enum arg_type arg_type,
+ enum arg_type arg_type_instance)
+{
+  return (arg_type & arg_type_instance) &&
+   match_special_word_type(current_token, token_type, arg_type_instance);
+}
 
 #define get_token_skip_comments(do_on_null)                                    \
   current_token = token_collection_get_token(token_collection, &match_type);   \
@@ -3684,7 +3695,8 @@ static struct token *match_direction(struct token *current_token,
       // And it must be a root direction.
       token_type = current_token->type;
 
-      if(match_special_word_type(ARG_TYPE_DIRECTION))
+      if(match_special_word_type(current_token, token_type,
+                                 ARG_TYPE_DIRECTION))
       {
         *match_type = ARG_TYPE_INDEXED_DIRECTION;
         current_direction =
@@ -3777,9 +3789,9 @@ static int match_command(const struct mzx_command *command,
     {
       parameters++;
 
-      if(match_special_word_condition(
+      if(match_special_word_condition(current_token, token_type) &&
        (current_token->arg_value.special_word->arg_type == ARG_TYPE_IGNORE) &&
-       (current_token->arg_value.special_word->instance_type == arg_type)))
+       (current_token->arg_value.special_word->instance_type == arg_type))
       {
         // We entered the optional ignore word - suck it up
         // and move on to the next argument.
@@ -3794,9 +3806,9 @@ static int match_command(const struct mzx_command *command,
 
     if(arg_type & ARG_TYPE_FRAGMENT)
     {
-      if(match_special_word_condition(
+      if(match_special_word_condition(current_token, token_type) &&
        (current_token->arg_value.special_word->arg_type == ARG_TYPE_FRAGMENT)
-       && (current_token->arg_value.special_word->instance_type == arg_type)))
+       && (current_token->arg_value.special_word->instance_type == arg_type))
       {
         *match_type = ARG_TYPE_INDEXED_FRAGMENT;
         continue;
@@ -3860,7 +3872,8 @@ static int match_command(const struct mzx_command *command,
       continue;
     }
 
-    if(match_arg_and_special_word_type(ARG_TYPE_DIRECTION))
+    if(match_arg_and_special_word_type(current_token, token_type, arg_type,
+                                       ARG_TYPE_DIRECTION))
     {
       // Directions are peculiar things. They can actually contain multiple
       // direction words, so parse forward the extra ones.
@@ -3873,7 +3886,8 @@ static int match_command(const struct mzx_command *command,
       goto no_match;
     }
 
-    if(match_arg_and_special_word_type(ARG_TYPE_THING))
+    if(match_arg_and_special_word_type(current_token, token_type, arg_type,
+                                       ARG_TYPE_THING))
     {
       *match_type = ARG_TYPE_INDEXED_THING;
       continue;
@@ -3885,7 +3899,8 @@ static int match_command(const struct mzx_command *command,
       continue;
     }
 
-    if(match_arg_and_special_word_type(ARG_TYPE_CONDITION))
+    if(match_arg_and_special_word_type(current_token, token_type, arg_type,
+                                       ARG_TYPE_CONDITION))
     {
       enum condition condition_type =
        current_token->arg_value.special_word->instance_type;
@@ -3901,7 +3916,8 @@ static int match_command(const struct mzx_command *command,
           // These condition types require a direction as well.
           get_token_skip_comments(goto no_match);
 
-          if(match_special_word_type(ARG_TYPE_DIRECTION))
+          if(match_special_word_type(current_token, token_type,
+                                     ARG_TYPE_DIRECTION))
           {
             // Again directions can be two part.
             *match_type = ARG_TYPE_INDEXED_DIRECTION;
@@ -3917,7 +3933,8 @@ static int match_command(const struct mzx_command *command,
       }
     }
 
-    if(match_arg_and_special_word_type(ARG_TYPE_ITEM))
+    if(match_arg_and_special_word_type(current_token, token_type, arg_type,
+                                       ARG_TYPE_ITEM))
     {
       *match_type = ARG_TYPE_INDEXED_ITEM;
       continue;
