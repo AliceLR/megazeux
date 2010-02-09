@@ -2716,7 +2716,11 @@ void optimize_null_objects(Board *src_board, int optimize_robots)
     {
       free(optimized_robot_list);
     }
-
+  }
+  else
+  {
+    for(i = 1; i <= num_robots; i++)
+      robot_id_translation_list[i] = i;
   }
 
   for(i = 1, i2 = 1; i <= num_scrolls; i++)
@@ -2769,8 +2773,6 @@ void optimize_null_objects(Board *src_board, int optimize_robots)
   }
   else
   {
-    for(i = 1; i <= num_robots; i++)
-      robot_id_translation_list[i] = i;
     free(optimized_sensor_list);
   }
 
