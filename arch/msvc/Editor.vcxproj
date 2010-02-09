@@ -1,4 +1,5 @@
-﻿<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
@@ -109,6 +110,7 @@
     <ClInclude Include="..\..\src\editor\board.h" />
     <ClInclude Include="..\..\src\editor\char_ed.h" />
     <ClInclude Include="..\..\src\editor\configure.h" />
+    <ClInclude Include="..\..\src\editor\debug.h" />
     <ClInclude Include="..\..\src\editor\edit.h" />
     <ClInclude Include="..\..\src\editor\edit_di.h" />
     <ClInclude Include="..\..\src\editor\fill.h" />
@@ -127,6 +129,7 @@
     <ClCompile Include="..\..\src\editor\board.c" />
     <ClCompile Include="..\..\src\editor\char_ed.c" />
     <ClCompile Include="..\..\src\editor\configure.c" />
+    <ClCompile Include="..\..\src\editor\debug.c" />
     <ClCompile Include="..\..\src\editor\edit.c" />
     <ClCompile Include="..\..\src\editor\edit_di.c" />
     <ClCompile Include="..\..\src\editor\fill.c" />

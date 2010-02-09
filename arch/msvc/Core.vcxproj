@@ -1,4 +1,5 @@
-﻿<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Release|Win32">
       <Configuration>Release</Configuration>
@@ -273,7 +274,6 @@
     <ClCompile Include="..\..\src\configure.c" />
     <ClCompile Include="..\..\src\counter.c" />
     <ClCompile Include="..\..\src\data.c" />
-    <ClCompile Include="..\..\src\debug.c" />
     <ClCompile Include="..\..\src\error.c" />
     <ClCompile Include="..\..\src\event.c" />
     <ClCompile Include="..\..\src\event_sdl.c" />
@@ -334,7 +334,6 @@
     <ClInclude Include="..\..\src\counter.h" />
     <ClInclude Include="..\..\src\counter_struct.h" />
     <ClInclude Include="..\..\src\data.h" />
-    <ClInclude Include="..\..\src\debug.h" />
     <ClInclude Include="..\..\src\error.h" />
     <ClInclude Include="..\..\src\event.h" />
     <ClInclude Include="..\..\src\expr.h" />

@@ -1,7 +1,7 @@
 BUILDING MEGAZEUX WITH MICROSOFT VISUAL STUDIO
 
 This document covers the rationale and caveats regarding MegaZeux
-compilation with Microsoft's Visual C++ 2010 Beta 1 compiler
+compilation with Microsoft's Visual C++ 2010 Beta 2 compiler
 (henceforth MSVC).
 
 RATIONALE
