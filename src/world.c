@@ -126,6 +126,39 @@ __editor_maybe_static int world_magic(const char magic_string[3])
   }
 }
 
+#ifdef CONFIG_LOADSAVE_METER
+
+static void meter_update_screen(World *mzx_world, int *curr, int target)
+{
+  (*curr)++;
+  meter_interior(*curr, target);
+  update_screen();
+}
+
+static void meter_restore_screen(World *mzx_world)
+{
+  restore_screen();
+  update_screen();
+}
+
+static void meter_initial_draw(World *mzx_world, int curr, int target,
+ const char *title)
+{
+  save_screen();
+  meter(title, curr, target);
+  update_screen();
+}
+
+#else // !CONFIG_LOADSAVE_METER
+
+static inline void meter_update_screen(World *mzx_world, int *curr,
+ int target) {}
+static inline void meter_restore_screen(World *mzx_world) {}
+static void meter_initial_draw(World *mzx_world, int curr, int target,
+ const char *title) {}
+
+#endif // CONFIG_LOADSAVE_METER
+
 int save_world(World *mzx_world, const char *file, int savegame, int faded)
 {
   int i, num_boards;
@@ -137,7 +170,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
   unsigned char r, g, b;
   Board *cur_board;
 
-  int meter_target = 2, meter_curr = 0;
+  int meter_target = 2 + mzx_world->num_boards, meter_curr = 0;
 
   FILE *fp = fopen(file, "wb");
 
@@ -147,11 +180,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
     return -1;
   }
 
-  save_screen();
-  meter_target += mzx_world->num_boards;
-  meter("Saving...", meter_curr, meter_target);
-  update_event_status();
-  update_screen();
+  meter_initial_draw(mzx_world, meter_curr, meter_target, "Saving...");
 
   if(savegame)
   {
@@ -402,9 +431,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
     fseek(fp, next_pos, SEEK_SET);
   }
 
-  meter_interior(++meter_curr, meter_target);
-  update_event_status();
-  update_screen();
+  meter_update_screen(mzx_world, &meter_curr, meter_target);
 
   num_boards = mzx_world->num_boards;
   fputc(num_boards, fp);
@@ -442,18 +469,14 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
     size_offset_list[2 * i] = board_size;
     size_offset_list[2 * i + 1] = board_begin_position;
 
-    meter_interior(++meter_curr, meter_target);
-    update_event_status();
-    update_screen();
+    meter_update_screen(mzx_world, &meter_curr, meter_target);
   }
 
   // Save for global robot position
   gl_rob_position = ftell(fp);
   save_robot(mzx_world->global_robot, fp, savegame);
 
-  meter_interior(++meter_curr, meter_target);
-  update_event_status();
-  update_screen();
+  meter_update_screen(mzx_world, &meter_curr, meter_target);
 
   // Go back to where the global robot position should be saved
   fseek(fp, gl_rob_save_position, SEEK_SET);
@@ -471,10 +494,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
   // ...All done!
   fclose(fp);
 
-  restore_screen();
-  update_event_status();
-  update_screen();
-
+  meter_restore_screen(mzx_world);
   return 0;
 }
 
@@ -832,10 +852,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     mzx_world->version = version;
   }
 
-  save_screen();
-  meter("Loading...", meter_curr, meter_target);
-  update_event_status();
-  update_screen();
+  meter_initial_draw(mzx_world, meter_curr, meter_target, "Loading...");
 
   file_path = malloc(MAX_PATH);
   current_dir = malloc(MAX_PATH);
@@ -1143,9 +1160,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
   }
 
   meter_target += num_boards;
-  meter_interior(++meter_curr, meter_target);
-  update_event_status();
-  update_screen();
+  meter_update_screen(mzx_world, &meter_curr, meter_target);
 
   mzx_world->num_boards = num_boards;
   mzx_world->num_boards_allocated = num_boards;
@@ -1160,10 +1175,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
   {
     mzx_world->board_list[i] = load_board_allocate(fp, savegame);
     store_board_to_extram(mzx_world->board_list[i]);
-
-    meter_interior(++meter_curr, meter_target);
-    update_event_status();
-    update_screen();
+    meter_update_screen(mzx_world, &meter_curr, meter_target);
   }
 
   // Read global robot
@@ -1195,9 +1207,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
     }
   }
 
-  meter_interior(++meter_curr, meter_target);
-  update_event_status();
-  update_screen();
+  meter_update_screen(mzx_world, &meter_curr, meter_target);
 
   // This pointer is now invalid. Clear it before we try to
   // send it back to extra RAM.
@@ -1216,9 +1226,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
   // Find the player
   find_player(mzx_world);
 
-  restore_screen();
-  update_event_status();
-  update_screen();
+  meter_restore_screen(mzx_world);
 
 exit_ok_close:
   ret = 0;

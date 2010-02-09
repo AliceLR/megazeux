@@ -48,7 +48,7 @@ export PATH=$PSPDEV/psp/bin:$PATH
 cd megazeux
 ./config.sh --platform psp --prefix $PSPDEV/psp --optimize-size \
             --disable-editor --disable-helpsys --disable-utils \
-            --disable-libpng --enable-release
+            --disable-libpng --enable-release --enable-meter
 make package
 
 This will create an EBOOT.PBP.

@@ -11,7 +11,7 @@ Make sure DEVKITPRO and DEVKITPPC are both defined and valid, and use a
 config.sh configure line such as:
 
 ./config.sh --platform wii --prefix $DEVKITPPC --disable-libpng \
-            --disable-utils --enable-release
+            --disable-utils --enable-release --enable-meter
 
 Then build with the command:
 

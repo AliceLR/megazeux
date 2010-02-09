@@ -49,6 +49,7 @@ usage() {
 	echo "  --disable-icon       Do not try to brand executable."
 	echo "  --disable-modular    Disable dynamically shared objects."
 	echo "  --disable-updater    Disable built-in updater."
+	echo "  --enable-meter       Enable load/save meter display."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -89,6 +90,7 @@ ICON="true"
 MODULAR="true"
 UPDATER="true"
 VERBOSE="false"
+METER="false"
 
 #
 # User may override above settings
@@ -180,6 +182,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-verbose" ] && VERBOSE="false"
 	[ "$1" = "--enable-verbose" ]  && VERBOSE="true"
+
+	[ "$1" = "--enable-meter" ]  && METER="true"
+	[ "$1" = "--disable-meter" ] && METER="false"
 
 	shift
 done
@@ -749,6 +754,16 @@ fi
 if [ "$VERBOSE" = "true" ]; then
 	echo "Verbose build system (always)."
 	echo "export V=1" >> platform.inc
+fi
+
+#
+# Users may enable the load/save meter display.
+#
+if [ "$METER" = "true" ]; then
+	echo "Load/save meter display enabled."
+	echo "#define CONFIG_LOADSAVE_METER" >> src/config.h
+else
+	echo "Load/save meter display disabled."
 fi
 
 echo
