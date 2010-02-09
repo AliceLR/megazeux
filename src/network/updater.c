@@ -16,10 +16,13 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
+#include "updater.h"
+
 #include "manifest.h"
 
-#include "const.h"
-#include "util.h"
+#include "../const.h"
+#include "../util.h"
+#include "../game.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -27,11 +30,7 @@
 #include <unistd.h>
 #include <errno.h>
 
-#ifdef __WIN32__
-#include "SDL.h"
-#else
-#define SDL_main main
-#endif
+#if 0
 
 #define OUTBOUND_PORT 80
 
@@ -101,6 +100,24 @@ static bool check_create_basedir(const char *file)
 
   return true;
 }
+
+#endif
+
+static char **process_argv;
+
+static void __check_for_updates(void)
+{
+  info("Reloading..\n");
+  execv(process_argv[0], (const char *const *)process_argv);
+}
+
+void updater_init(char *argv[])
+{
+  check_for_updates = __check_for_updates;
+  process_argv = argv;
+}
+
+#if 0
 
 int main(int argc, char *argv[])
 {
@@ -178,3 +195,5 @@ exit_socket_layer:
 exit_out:
   return 0;
 }
+
+#endif

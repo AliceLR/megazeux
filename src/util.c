@@ -387,7 +387,7 @@ const char *mod_gdm_ext[] =
 
 #endif // CONFIG_AUDIO || CONFIG_EDITOR
 
-#if defined(__amigaos__) || defined(__WIN32__)
+#if defined(__amigaos__) || (defined(__WIN32__) && !defined(_MSC_VER))
 
 long __stack_chk_guard[8];
 
@@ -397,5 +397,5 @@ void __stack_chk_fail(void)
   exit(0);
 }
 
-#endif // __amigaos__ || __WIN32__
+#endif // __amigaos__ || (__WIN32__ && !_MSC_VER)
 

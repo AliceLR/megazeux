@@ -3713,7 +3713,7 @@ static void __edit_world(World *mzx_world)
   strcpy(curr_file, current_world);
 }
 
-void edit_stubs_hack(World *mzx_world)
+void editor_init(void)
 {
   edit_world = __edit_world;
 }

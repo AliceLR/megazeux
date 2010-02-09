@@ -195,7 +195,7 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\src\edit_stubs.c"
+				RelativePath="..\..\src\run_stubs.c"
 				>
 			</File>
 			<File
@@ -209,7 +209,7 @@
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
 			<File
-				RelativePath="..\..\src\edit_stubs.h"
+				RelativePath="..\..\src\run_stubs.h"
 				>
 			</File>
 		</Filter>

@@ -120,7 +120,7 @@ CORE_LIBSPEC int rename(const char *oldpath, const char *newpath);
 CORE_LIBSPEC extern const char *mod_gdm_ext[];
 #endif
 
-#if defined(__amigaos__) || defined(__WIN32__)
+#if defined(__amigaos__) || (defined(__WIN32__) && !defined(_MSC_VER))
 CORE_LIBSPEC long __stack_chk_guard[8];
 CORE_LIBSPEC void __stack_chk_fail(void);
 #endif

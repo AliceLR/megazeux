@@ -29,7 +29,7 @@ __M_BEGIN_DECLS
 #include "../world_struct.h"
 
 EDITOR_LIBSPEC void load_editor_config(World *mzx_world, int argc, char *argv[]);
-EDITOR_LIBSPEC void edit_stubs_hack(World *mzx_world);
+EDITOR_LIBSPEC void editor_init(void);
 
 int place_current_at_xy(World *mzx_world, mzx_thing id, int color,
  int param, int x, int y, Robot *copy_robot, Scroll *copy_scroll,

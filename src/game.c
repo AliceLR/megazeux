@@ -54,8 +54,6 @@
 #include "util.h"
 #include "debug.h"
 
-__editor_maybe_static void (*edit_world)(World *mzx_world);
-
 // Number of cycles to make player idle before repeating a
 // directional move
 #define REPEAT_WAIT 2
@@ -69,13 +67,21 @@ static const char main_menu_1[] =
  "F4/R - Restore game\n"
  "F5/P - Play world";
 
+#ifdef CONFIG_UPDATER
 static const char main_menu_2[] =
- "F8/E - Editor";
+ "F7/U - Updater";
+void (*check_for_updates)(void);
+#endif
 
+#ifdef CONFIG_EDITOR
 static const char main_menu_3[] =
+ "F8/E - Editor";
+void (*edit_world)(World *mzx_world);
+#endif
+
+static const char main_menu_4[] =
  "F10  - Quickload\n"
- "\n"  // unused
- "";   // unused
+ "";  // unused
 
 static const char game_menu_1[] =
  "F1    - Help\n"
@@ -1937,7 +1943,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           }
           break;
         }
- 
+
 #ifdef CONFIG_EDITOR
 	// Toggle debug mode
         case IKEY_F6:
@@ -2086,9 +2092,11 @@ void title_screen(World *mzx_world)
   set_config_from_file(&(mzx_world->conf), "title.cnf");
   chdir(current_dir);
 
+#ifdef CONFIG_EDITOR
   if(edit_world && mzx_world->conf.startup_editor)
     edit_world(mzx_world);
   else
+#endif
   {
     if(!stat(curr_file, &file_info))
       load_world_file(mzx_world, curr_file);
@@ -2137,6 +2145,7 @@ void title_screen(World *mzx_world)
     {
       switch(key)
       {
+#ifdef CONFIG_EDITOR
         case IKEY_e: // E
         case IKEY_F8: // F8
         {
@@ -2154,7 +2163,16 @@ void title_screen(World *mzx_world)
           }
           break;
         }
-
+#endif
+#ifdef CONFIG_UPDATER
+        case IKEY_u:
+        case IKEY_F7:
+        {
+          if(check_for_updates)
+            check_for_updates();
+          break;
+        }
+#endif
         case IKEY_s: // S
         case IKEY_F2: // F2
         {
@@ -2179,9 +2197,15 @@ void title_screen(World *mzx_world)
             draw_window_box(30, 4, 52, 16, 25, 16, 24, 1, 1);
             write_string(" Main Menu ", 36, 4, 30, 0);
             write_string(main_menu_1, 32, 5, 31, 1);
-            if(edit_world)
+#ifdef CONFIG_UPDATER
+            if(check_for_updates)
               write_string(main_menu_2, 32, 12, 31, 1);
-            write_string(main_menu_3, 32, 13, 31, 1);
+#endif
+#ifdef CONFIG_EDITOR
+            if(edit_world)
+              write_string(main_menu_3, 32, 13, 31, 1);
+#endif
+            write_string(main_menu_4, 32, 14, 31, 1);
             update_screen();
             m_show();
 

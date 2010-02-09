@@ -156,19 +156,27 @@ ifeq (${BUILD_EDITOR},1)
 	-@mv ${mzx}.debug    ${mzx}.debug.backup
 endif
 ifeq (${BUILD_MODULAR},1)
-	-@mv ${core_target}         ${core_target}.backup
-	-@mv ${core_target}.debug   ${core_target}.debug.backup
-	-@mv ${editor_target}       ${editor_target}.backup
-	-@mv ${editor_target}.debug ${editor_target}.debug.backup
+	-@mv ${core_target}          ${core_target}.backup
+	-@mv ${core_target}.debug    ${core_target}.debug.backup
+	-@mv ${editor_target}        ${editor_target}.backup
+	-@mv ${editor_target}.debug  ${editor_target}.debug.backup
+ifeq (${BUILD_NETWORK},1)
+	-@mv ${network_target}       ${network_target}.backup
+	-@mv ${network_target}.debug ${network_target}.debug.backup
+endif
 endif
 	-@${MAKE} mzx_clean
 	@rm -f src/config.h
 	@echo "PLATFORM=none" > platform.inc
 ifeq (${BUILD_MODULAR},1)
-	-@mv ${core_target}.backup         ${core_target}
-	-@mv ${core_target}.debug.backup   ${core_target}.debug
-	-@mv ${editor_target}.backup       ${editor_target}
-	-@mv ${editor_target}.debug.backup ${editor_target}.debug
+	-@mv ${core_target}.backup          ${core_target}
+	-@mv ${core_target}.debug.backup    ${core_target}.debug
+	-@mv ${editor_target}.backup        ${editor_target}
+	-@mv ${editor_target}.debug.backup  ${editor_target}.debug
+ifeq (${BUILD_NETWORK},1)
+	-@mv ${network_target}.backup       ${network_target}
+	-@mv ${network_target}.debug.backup ${network_target}.debug
+endif
 endif
 	-@mv ${mzxrun}.backup       ${mzxrun}
 	-@mv ${mzxrun}.debug.backup ${mzxrun}.debug
@@ -183,14 +191,6 @@ package_clean: utils_package_clean
 debuglink: utils utils.debug
 clean: utils_clean
 all: utils
-endif
-
-ifeq (${BUILD_NETWORK},1)
-include src/network/Makefile.in
-package_clean: network_package_clean
-debuglink: network network.debug
-clean: network_clean
-all: network
 endif
 
 distclean: clean

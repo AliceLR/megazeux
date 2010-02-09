@@ -21,7 +21,7 @@ ${network_obj}/%.o: ${network_src}/%.c
 
 network_objs := \
   ${network_obj}/host.o ${network_obj}/manifest.o \
-  ${network_obj}/sha256.o
+  ${network_obj}/sha256.o ${network_obj}/updater.o
 
 -include ${network_objs:.o=.d}
 
@@ -48,26 +48,6 @@ network_target_clean:
 
 endif
 
-updater      := updater${BINEXT}
-updater_objs := ${network_obj}/updater.o
-
-ifeq (${PLATFORM},mingw)
-updater_ldflags := ${SDL_LDFLAGS}
-endif
-
--include ${updater_objs:.o=.d}
-
-${updater}: ${core_target} ${network_target} ${updater_objs}
-	$(if ${V},,@echo "  LINK    " ${updater})
-ifeq (${BUILD_MODULAR},1)
-	${CC} ${updater_objs} -o ${updater} ${LDFLAGS} \
-	  ${DSORPATH} -L. -lcore -lnetwork ${updater_ldflags}
-else
-	${LINK_CC} ${updater_objs} ${core_target} ${network_target} \
-	  -o ${updater} ${LDFLAGS} ${core_ldflags} ${network_ldflags} \
-	  ${updater_ldflags}
-endif
-
 server         := server${BINEXT}
 server_objs    := ${network_obj}/server.o
 server_ldflags := ${SDL_LDFLAGS}
@@ -85,39 +65,11 @@ else
 	  ${server_ldflags}
 endif
 
-network: ${updater}
 #network: ${server}
-
-ifeq (${BUILD_MODULAR},1)
-network.debug: ${network_target}.debug
-endif
-
-network.debug: ${updater}.debug
 #network.debug: ${server}.debug
 
 network_clean: network_target_clean
 	$(if ${V},,@echo "  RM      " ${network_obj})
 	${RM} -r ${network_obj}
-	$(if ${V},,@echo "  RM      " ${updater} ${updater}.debug)
-	${RM} ${updater} ${updater}.debug
-	$(if ${V},,@echo "  RM      " ${server} ${server}.debug)
-	${RM} ${server} ${server}.debug
-
-network_package_clean:
-	-@mv ${updater}        ${updater}.backup
-	-@mv ${updater}.debug  ${updater}.debug.backup
-#	-@mv ${server}         ${server}.backup
-#	-@mv ${server}.debug   ${server}.debug.backup
-ifeq (${BUILD_MODULAR},1)
-	-@mv ${network_target}       ${network_target}.backup
-	-@mv ${network_target}.debug ${network_target}.debug.backup
-endif
-	@${MAKE} network_clean
-ifeq (${BUILD_MODULAR},1)
-	-@mv ${network_target}.backup       ${network_target}
-	-@mv ${network_target}.debug.backup ${network_target}.debug
-endif
-	-@mv ${updater}.backup       ${updater}
-	-@mv ${updater}.debug.backup ${updater}.debug
-#	-@mv ${server}.backup        ${server}
-#	-@mv ${server}.debug.backup  ${server}.debug
+#	$(if ${V},,@echo "  RM      " ${server} ${server}.debug)
+#	${RM} ${server} ${server}.debug

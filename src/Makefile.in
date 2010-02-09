@@ -30,7 +30,7 @@ ${core_obj}/main.o: ${core_src}/main.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
 
-${core_obj}/edit_stubs.o: ${core_src}/edit_stubs.c
+${core_obj}/run_stubs.o: ${core_src}/run_stubs.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
 
@@ -217,18 +217,30 @@ mzx_objs += ${icons}
 endif
 
 ifeq (${BUILD_MODULAR},1)
-${mzx}: ${core_target} ${editor_target}
 ${mzx}.debug: ${core_target}.debug ${editor_target}.debug
 endif
 
-${mzx}: ${core_target} ${editor_target} ${mzx_objs}
+ifeq (${BUILD_NETWORK},1)
+
+include src/network/Makefile.in
+
+mzx_clean: network_clean
+${mzx}.debug: ${network_target}.debug
+
+network_link := -lnetwork
+
+endif
+
+${mzx}: ${core_target} ${editor_target} ${network_target} ${mzx_objs}
 	$(if ${V},,@echo "  LINK    " ${mzx})
 ifeq (${BUILD_MODULAR},1)
 	${CC} ${mzx_objs} -o ${mzx} ${LDFLAGS} \
-	  ${DSORPATH} -L. -lcore -leditor ${SDL_LDFLAGS} ${mzx_ldflags}
+	  ${DSORPATH} -L. -lcore -leditor ${network_link} \
+	  ${SDL_LDFLAGS} ${mzx_ldflags}
 else
 	${LINK_CC} ${mzx_objs} ${core_target} ${editor_target} \
-	  -o ${mzx} ${LDFLAGS} ${core_ldflags} ${editor_ldflags}
+	  ${network_target} -o ${mzx} ${LDFLAGS} \
+	  ${core_ldflags} ${editor_ldflags} ${network_ldflags}
 endif
 
 mzx_clean: editor_clean
@@ -246,8 +258,8 @@ endif
 
 mzxrun_objs := ${core_obj}/main.o
 
-ifeq (${BUILD_EDITOR},1)
-mzxrun_objs += ${core_obj}/edit_stubs.o
+ifneq ($(or ${BUILD_EDITOR},${BUILD_NETWORK}),)
+mzxrun_objs += ${core_obj}/run_stubs.o
 endif
 
 ifeq (${PLATFORM},darwin)

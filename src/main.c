@@ -51,7 +51,7 @@
 #include "util.h"
 #include "world.h"
 #include "counter.h"
-#include "edit_stubs.h"
+#include "run_stubs.h"
 
 #ifdef CONFIG_NDS
 
@@ -121,7 +121,8 @@ LIBSPEC int main(int argc, char *argv[])
   if(!platform_init())
     return 1;
 
-  edit_stubs_hack(&mzx_world);
+  updater_init(argv);
+  editor_init();
 
   // We need to store the current working directory so it's
   // always possible to get back to it..
