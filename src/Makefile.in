@@ -226,12 +226,10 @@ include src/network/Makefile.in
 
 mzx_clean: network_clean
 
-core_objs += ${core_obj}/network.o
+core_objs := ${core_objs} ${core_obj}/network.o
 
 ifeq (${BUILD_UPDATER},1)
-
 mzx_objs += ${core_obj}/updater.o
-
 endif
 
 network_link := -lnetwork
