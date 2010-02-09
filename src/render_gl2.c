@@ -167,10 +167,7 @@ static bool gl2_init_video(graphics_data *graphics, config_info *conf)
   if(!render_data->pixels)
     goto err_free_render_data;
 
-  // FIXME: Currently broken
-  //render_data->ratio = conf->video_ratio;
-  render_data->ratio = RATIO_STRETCH;
-
+  render_data->ratio = conf->video_ratio;
   if(!set_video_mode())
     goto err_free_render_data;
 
@@ -190,6 +187,21 @@ err_free_render_data:
   free(render_data);
 err_out:
   return false;
+}
+
+static void get_context_width_height(graphics_data *graphics,
+ int *width, int *height)
+{
+  if(!graphics->fullscreen)
+  {
+    *width = graphics->window_width;
+    *height = graphics->window_height;
+  }
+  else
+  {
+    *width = graphics->resolution_width;
+    *height = graphics->resolution_height;
+  }
 }
 
 static void gl2_free_video(graphics_data *graphics)
@@ -249,7 +261,7 @@ static void gl2_resize_screen(graphics_data *graphics, int width, int height)
   gl->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 
   gl->glEnable(GL_TEXTURE_2D);
-  gl->glAlphaFunc(GL_GREATER,0.565f);
+  gl->glAlphaFunc(GL_GREATER, 0.565f);
 
   gl->glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
 
@@ -412,7 +424,16 @@ static void gl2_render_graph(graphics_data *graphics)
     }
 
     if(gl2_linear_filter_method(graphics))
-      gl->glViewport(0, 0, 640, 350);
+    {
+      int width, height;
+
+      /* Put the initial rendering's viewport in the center of the screen
+       * so that when it is linearly stretched in sync_screen() it is
+       * masked by the stretched image.
+       */
+      get_context_width_height(graphics, &width, &height);
+      gl->glViewport((width - 640) >> 1, (height - 350) >> 1, 640, 350);
+    }
 
     dest = render_data->background_texture;
 
@@ -560,20 +581,17 @@ static void gl2_sync_screen(graphics_data *graphics)
     int width, height, v_width, v_height;
 
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
-    gl->glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 1024, 512, 0);
 
-    if(!graphics->fullscreen)
-    {
-      width = graphics->window_width;
-      height = graphics->window_height;
-    }
-    else
-    {
-      width = graphics->resolution_width;
-      height = graphics->resolution_height;
-    }
+    get_context_width_height(graphics, &width, &height);
+    gl->glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+     (width - 640) >> 1, (height - 350) >> 1, 1024, 512, 0);
 
     fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+
+    // FIXME: This is an ugly hack
+    v_width = MAX(640, v_width);
+    v_height = MAX(350, v_height);
+
     gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
      v_width, v_height);
 
