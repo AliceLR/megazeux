@@ -331,7 +331,7 @@ static int parse_argument(struct world *mzx_world, char **_argument,
       char temp2[256];
       int count = 0;
 
-      *_argument = argument + 1;
+      argument++;
 
       // Remember, null terminator is evil; if it's hit exit completely.
       while(((*argument) != t_char) && (count < 256))
@@ -346,7 +346,7 @@ static int parse_argument(struct world *mzx_world, char **_argument,
           while((close_paren_count) && (count < 256))
           {
             temp[count] = *argument;
-            *_argument = argument + 1;
+            argument++;
             count++;
 
             switch(*argument)
@@ -354,6 +354,7 @@ static int parse_argument(struct world *mzx_world, char **_argument,
               case '\0':
               {
                 *type = -1;
+                *_argument = argument;
                 return -1;
               }
               case ')':
@@ -374,16 +375,19 @@ static int parse_argument(struct world *mzx_world, char **_argument,
           if(*argument == '\0')
           {
             *type = -1;
+            *_argument = argument;
             return -1;
           }
 
           temp[count] = *argument;
-          *_argument = argument + 1;
+          argument++;
           count++;
         }
       }
+
       *type = 0;
       *_argument = argument + 1;
+
       temp[count] = '\0';
       tr_msg(mzx_world, temp, id, temp2);
       return get_counter(mzx_world, temp2, id);
