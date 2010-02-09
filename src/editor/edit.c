@@ -721,6 +721,29 @@ static void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
   }
 }
 
+static void draw_edit_window(Board *src_board, int array_x, int array_y,
+ int window_height)
+{
+  int viewport_width = 80, viewport_height = window_height;
+  int x, y;
+  int a_x, a_y;
+  int board_width = src_board->board_width;
+  int board_height = src_board->board_height;
+
+  if(board_width < viewport_width)
+    viewport_width = board_width;
+  if(board_height < viewport_height)
+    viewport_height = board_height;
+
+  for(y = 0, a_y = array_y; y < viewport_height; y++, a_y++)
+  {
+    for(x = 0, a_x = array_x; x < viewport_width; x++, a_x++)
+    {
+      id_put(src_board, x, y, a_x, a_y, a_x, a_y);
+    }
+  }
+}
+
 static void flash_thing(World *mzx_world, int start, int end,
  int flash_one, int flash_two, int scroll_x, int scroll_y,
  int edit_screen_height)

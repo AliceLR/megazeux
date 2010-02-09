@@ -81,12 +81,6 @@ extern unsigned char id_dmg[128];
 extern unsigned char bullet_color[3];
 extern unsigned char missile_color;
 
-#ifdef CONFIG_EDITOR
-void draw_edit_window(Board *src_board, int array_x, int array_y,
- int window_height);
-extern unsigned char def_id_chars[455];
-#endif
-
 __M_END_DECLS
 
 #endif // __IDPUT_H

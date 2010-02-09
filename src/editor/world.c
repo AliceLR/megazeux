@@ -32,6 +32,117 @@
 
 #include <string.h>
 
+static const unsigned char def_id_chars[455] =
+{
+  /* id_chars */
+  32,178,219,6,0,255,177,255,233,254,255,254,255,178,177,176, /* 0-15 */
+  254,255,0,0,176,24,25,26,27,0,0,160,4,4,3,9,                /* 16-31 */
+  150,7,176,0,11,0,177,12,10,0,0,162,161,0,0,22,              /* 32-47 */
+  196,0,7,255,255,255,255,159,0,18,29,0,206,0,0,0,            /* 48-63 */
+  '?',178,0,151,152,153,154,32,0,42,0,0,255,255,0,0,          /* 64-79 */
+  235,236,5,42,2,234,21,224,127,149,5,227,0,0,172,173,        /* 80-95 */
+  '?',0, /* 96-97 */
+  '?','?','?','?','?','?','?','?', /* 98-121 */
+  '?','?','?','?','?','?','?','?',
+  '?','?','?','?','?','?','?','?',
+  0,0,0,226,232,0, /* 122-127 */
+  /* thin_line */
+  249,179,179,179, /* None, N, S, NS */
+  196,192,218,195, /* E, NE, SE, NSE */
+  196,217,191,180, /* W, NW, SW, NSW */
+  196,193,194,197, /* EW, NEW, SEW, NSEW */
+  /* thick_line */
+  249,186,186,186, /* None, N, S, NS */
+  205,200,201,204, /* E, NE, SE, NSE */
+  205,188,187,185, /* W, NW, SW, NSW */
+  205,202,203,206, /* EW, NEW, SEW, NSEW */
+  /* ice_anim */
+  32,252,253,255, /* Ice animation table */
+  /* lava_anim */
+  176,177,178, /* Lava animation table */
+  /* low_ammo, hi_ammo */
+  163, /* < 10 ammunition pic */
+  164, /* > 9 ammunition pic */
+  /* lit_bomb */
+  171,170,169,168,167,166,165, /* Lit bomb animation */
+  /* energizer_glow */
+  1,9,3,11,15,11,3,9, /* Energizer Glow */
+  /* explosion_colors */
+  239,206,76,4, /* Explosion color table */
+  /* horiz_door, vert_door */
+  196, /* Horizontal door pic */
+  179, /* Vertical door pic */
+  /* cw_anim, ccw_anim */
+  47,196,92,179, /* CW animation table */
+  47,179,92,196, /* CCW animation table */
+  /* open_door */
+  47,47, /* Open 1/2 of type 0 */
+  92,92, /* Open 1/2 of type 1 */
+  92,92, /* Open 1/2 of type 2 */
+  47,47, /* Open 1/2 of type 3 */
+  179,196,179,196,179,196,179,196, /* Open full of all types */
+  179,196,179,196,179,196,179,196, /* Open full of all types */
+  47,47, /* Close 1/2 of type 0 */
+  92,92, /* Close 1/2 of type 1 */
+  92,92, /* Close 1/2 of type 2 */
+  47,47, /* Close 1/2 of type 3 */
+  /* transport_anims */
+  45,94,126,94, /* North */
+  86,118,95,118, /* South */
+  93,41,62,41, /* East */
+  91,40,60,40, /* West */
+  94,62,118,60, /* All directions */
+  /* thick_arrow, thin_arrow */
+  30,31,16,17, /* Thick arrows (pusher-style) NSEW */
+  24,25,26,27, /* Thin arrows (gun-style) NSEW */
+  /* horiz_lazer, vert_lazer */
+  130,196,131,196, /* Horizontal Lazer Anim Table */
+  128,179,129,179, /* Vertical Lazer Anim Table */
+  /* fire_anim, fire_colors */
+  177,178,178,178,177,176, /* Fire animation */
+  4,6,12,14,12,6, /* Fire colors */
+  /* life_anim, life_colors */
+  155,156,157,158, /* Free life animation */
+  15,11,3,11, /* Free life colors */
+  /* ricochet_panels */
+  28,23, /* Ricochet pics */
+  /* mine_anim */
+  143,144, /* Mine animation */
+  /* shooting_fire_anim, shooting_fire_colors */
+  15,42, /* Shooting Fire Anim */
+  12,14, /* Shooting Fire Colors */
+  /* seeker_anim, seeker_colors */
+  '/','-','\\','|', /* Seeker animation */
+  11,14,10,12, /* Seeker colors */
+  /* whirlpool_glow */
+  11,3,9,15, /* Whirlpool colors (this ends at 306 bytes, where ver */
+  /* 1.02 used to end) */
+  /* bullet_char */
+  145,146,147,148, /* Player */
+  145,146,147,148, /* Neutral */
+  145,146,147,148, /* Enemy */
+  /* player_char */
+  2, 2, 2, 2, /*N S E W */
+  /* player_color, missile_color, bullet_color */
+  27,
+  8,
+  15, /* Player */
+  15, /* Neutral */
+  15, /* Enemy */
+  /* id_dmg */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 0-15 */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 100,  0, 0, 0, 0, 0, /* 16-31 */
+  0, 0, 0, 0, 0, 0, 5, 0, 0, 0, 0, 0, 0, 0, 0, 0, /* 32-47 */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 0, 10, 5, 5, /* 48-63 */
+  0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 10, 10, 0, 10, 10, /* 64-79 */
+  10, 0, 0, 10, 10, 10, 10, 10, 10, 10, 10, 10, 0, 0, 10, 10, /* 80-95 */
+  0, 0, /* 96-97 */
+  0, 0, 0, 0, 0, 0, 0, 0, /* 98-121 */
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0, 0, 0,
+  0, 0, 0, 0, 0, 0  /* 122-127 */
+};
+
 int append_world(World *mzx_world, const char *file)
 {
   int version;
