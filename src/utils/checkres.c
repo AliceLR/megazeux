@@ -848,11 +848,11 @@ int main(int argc, char *argv[])
     * resources relative to the world.
     */
   const char *file = argv[argc - 1];
-  get_path(file, basepath, MAX_PATH);
+  file += get_path(file, basepath, MAX_PATH) + 1;
   if(chdir(basepath))
     fprintf(stderr, "Error changing directory to %s\n", basepath);
 
-  ret = s_open(file + strlen(basepath) + 1, "rb", &s);
+  ret = s_open(file, "rb", &s);
   if(s)
   {
     if(got_world)

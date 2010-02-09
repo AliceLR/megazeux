@@ -5,6 +5,7 @@ USERS
 + Writing to $str.length (which previously did undefined things) will now
   truncate or enlarge the string to the size specified.
 + Removed filename size limit for FWRITE_MODIFY and FWRITE_APPEND. (Revvy)
++ Added support to the checkres tool to check worlds in non-local directories. (Revvy)
 
 DEVELOPERS
 
@@ -17,6 +18,8 @@ DEVELOPERS
   are not supported.
 + Added experimental port to the Wii. See arch/wii/README for more
   information. (Mr_Alert)
++ get_path() in util.c now returns <0 for failure, or the length of the path
+  for the given file. (Revvy)
 
 June 10, 2008 - MZX 2.82
 

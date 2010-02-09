@@ -196,7 +196,7 @@ int Random(int range)
   return (int)value;
 }
 
-void get_path(const char *file_name, char *dest, unsigned int buf_len)
+int get_path(const char *file_name, char *dest, unsigned int buf_len)
 {
   int c = strlen(file_name) - 1;
 
@@ -205,7 +205,7 @@ void get_path(const char *file_name, char *dest, unsigned int buf_len)
   {
     if(buf_len > 0)
       dest[0] = 0;
-    return;
+    return -1;
   }
 
   while((file_name[c] != '/') && (file_name[c] != '\\') && c)
@@ -214,6 +214,8 @@ void get_path(const char *file_name, char *dest, unsigned int buf_len)
   if(c > 0)
     memcpy(dest, file_name, c);
   dest[c] = 0;
+  
+  return c;
 }
 
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)

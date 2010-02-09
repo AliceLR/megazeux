@@ -57,7 +57,7 @@ char *mzx_res_get_by_id(mzx_resource_id_t id);
 long ftell_and_rewind(FILE *f);
 int Random(int range);
 
-void get_path(const char *file_name, char *dest, unsigned int buf_len);
+int get_path(const char *file_name, char *dest, unsigned int buf_len);
 
 #if defined(CONFIG_NDS) || defined(CONFIG_WII)
 
