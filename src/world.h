@@ -101,42 +101,6 @@ __M_BEGIN_DECLS
  */
 #define WORLD_VERSION_PREV 0x0251
 
-typedef enum
-{
-  SUCCESS,
-  FAILURE,
-  ERROR_LOADING_WORLD,
-  ERROR_NEWER_SAV_VERSION,
-  ERROR_OLDER_SAV_VERSION,
-  ERROR_UNRECOGNIZED_SAV_VERSION,
-  ERROR_PROTECTED,
-  ERROR_VERSION_SEPERATOR_ABOVE,
-  ERROR_NON_MZX,
-  ERROR_OLDER_VERSION,
-  ERROR_NEWER_VERSION,
-  ERROR_VERSION_SEPERATOR_BELOW
-} status_t;
-
-typedef struct
-{
-  int screen_mode;
-  struct {
-    char r[16];
-    char g[16];
-    char b[16];
-    int intensity[16];
-  } palette;
-  struct {
-    char r[256];
-    char g[256];
-    char b[256];
-  } smzx_palette;
-  int infile_offset;
-  int outfile_offset;
-  int charset_offset;
-} ExtraWorldData;
-
-status_t load_world_direct(World *mzx_world, const char *file, int savegame, int *faded, ExtraWorldData *extra);
 int save_world(World *mzx_world, const char *file, int savegame, int faded);
 int reload_world(World *mzx_world, const char *file, int *faded);
 int reload_savegame(World *mzx_world, const char *file, int *faded);

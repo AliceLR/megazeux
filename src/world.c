@@ -667,47 +667,34 @@ __editor_maybe_static void optimize_null_boards(World *mzx_world)
   free(board_id_translation_list);
 }
 
-#define MAX_ERROR_SIZE 81
-char error_string[MAX_ERROR_SIZE];
+// Loads a world into a World struct
 
-status_t load_world_direct(World *mzx_world, const char *file, int savegame, int *faded, ExtraWorldData *extra)
+static int load_world(World *mzx_world, const char *file, int savegame,
+ int *faded)
 {
-  int i;
   int version;
+  int i;
   int num_boards;
   int gl_rob, last_pos;
   char tempstr[16];
+  unsigned char *charset_mem;
+  unsigned char r, g, b;
   Board *cur_board;
   char *config_file_name;
   int file_name_len = strlen(file) - 4;
   struct stat file_info;
   char *file_path;
   char *current_dir;
+  int ret = 1;
   FILE *fp;
-  status_t ret = FAILURE;
-  const char *error_messages[] =
-  {
-    "",
-    "Unknown error",
-    "Error loading world",
-    ".SAV files from newer versions of MZX are not supported",
-    ".SAV files from older versions of MZX are not supported",
-    "Unrecognized magic: file may not be .SAV file",
-    "Cannot load password protected worlds.",
-    "",
-    "Attempt to load non-MZX world.",
-    "World is from old version (%d.%d); use converter",
-    "World is from more recent version (%d.%d)",
-    "",
-  };
 
   fp = fopen(file, "rb");
   if(fp == NULL)
   {
-    ret = ERROR_LOADING_WORLD;
+    error("Error loading world", 1, 8, 0x0D01);
     goto exit_out;
   }
-  
+
   if(savegame)
   {
     fread(tempstr, 1, 5, fp);
@@ -716,13 +703,16 @@ status_t load_world_direct(World *mzx_world, const char *file, int savegame, int
 
     if(version != WORLD_VERSION)
     {
-      if(version > WORLD_VERSION)
-        ret = ERROR_NEWER_SAV_VERSION;
-      else if(version < WORLD_VERSION)
-        ret = ERROR_OLDER_SAV_VERSION;
-      else
-        ret = ERROR_UNRECOGNIZED_SAV_VERSION;
+      const char *msg;
 
+      if(version > WORLD_VERSION)
+        msg = ".SAV files from newer versions of MZX are not supported";
+      else if(version < WORLD_VERSION)
+        msg = ".SAV files from older versions of MZX are not supported";
+      else
+        msg = "Unrecognized magic: file may not be .SAV file";
+
+      error(msg, 1, 8, 0x2101);
       goto exit_close;
     }
 
@@ -757,33 +747,54 @@ status_t load_world_direct(World *mzx_world, const char *file, int savegame, int
 
     if(protection_method)
     {
-      ret = ERROR_PROTECTED;
-      goto exit_ok_close;
+      /* Again, if we're just checking the world, we don't have a
+       * mzx_world with which to ask the user about decrypting. So in
+       * this case, we just fail if the world is encrypted.
+       */
+      if(mzx_world)
+      {
+        int do_decrypt;
+
+        error("This world is password protected.", 1, 8, 0x0D02);
+        do_decrypt = confirm(mzx_world, "Would you like to decrypt it?");
+        if(!do_decrypt)
+        {
+          fclose(fp);
+          decrypt(file);
+          goto exit_recurse;
+        }
+      }
+
+      error("Cannot load password protected worlds.", 1, 8, 0x0D02);
+      goto exit_close;
     }
 
     fread(magic, 1, 3, fp);
     version = world_magic(magic);
     if(version == 0)
     {
-      ret = ERROR_NON_MZX;
-      goto exit_close;
+      sprintf(error_string, "Attempt to load non-MZX world.");
     }
     else
 
     if(version < 0x0205)
     {
-      ret = ERROR_OLDER_VERSION;
-      sprintf(error_string, error_messages[ret],
+      sprintf(error_string, "World is from old version (%d.%d); use converter",
        (version & 0xFF00) >> 8, version & 0xFF);
-      goto exit_close;
+      version = 0;
     }
     else
 
     if(version > WORLD_VERSION)
     {
-      ret = ERROR_NEWER_VERSION;
-      sprintf(error_string, error_messages[ret],
+      sprintf(error_string, "World is from more recent version (%d.%d)",
        (version & 0xFF00) >> 8, version & 0xFF);
+      version = 0;
+    }
+
+    if(!version)
+    {
+      error(error_string, 1, 8, 0x0D02);
       goto exit_close;
     }
 
@@ -820,8 +831,10 @@ status_t load_world_direct(World *mzx_world, const char *file, int savegame, int
   free(current_dir);
   free(file_path);
 
-  extra->charset_offset = ftell(fp);
-  fseek(fp, 3584, SEEK_CUR);
+  charset_mem = malloc(3584);
+  fread(charset_mem, 3584, 1, fp);
+  ec_mem_load_set(charset_mem);
+  free(charset_mem);
 
   // Idchars array...
   fread(id_chars, 323, 1, fp);
@@ -887,19 +900,22 @@ status_t load_world_direct(World *mzx_world, const char *file, int savegame, int
   // Palette...
   for(i = 0; i < 16; i++)
   {
-    extra->palette.r[i] = fgetc(fp);
-    extra->palette.g[i] = fgetc(fp);
-    extra->palette.b[i] = fgetc(fp);
+    r = fgetc(fp);
+    g = fgetc(fp);
+    b = fgetc(fp);
+
+    set_rgb(i, r, g, b);
   }
 
   if(savegame)
   {
     int vlayer_size;
     int num_counters, num_strings;
+    int screen_mode;
 
     for(i = 0; i < 16; i++)
     {
-      extra->palette.intensity[i] = fgetc(fp);
+      set_color_intensity(i, fgetc(fp));
     }
 
     *faded = fgetc(fp);
@@ -990,7 +1006,17 @@ status_t load_world_direct(World *mzx_world, const char *file, int savegame, int
     mzx_world->input_file_name[12] = 0;
     if(mzx_world->input_file_name[0] != '\0')
     {
-      extra->infile_offset = fgetd(fp);
+      mzx_world->input_file =
+       fsafeopen(mzx_world->input_file_name, "rb");
+
+      if(mzx_world->input_file)
+      {
+        fseek(mzx_world->input_file, fgetd(fp), SEEK_SET);
+      }
+      else
+      {
+        fseek(fp, 4, SEEK_CUR);
+      }
     }
     else
     {
@@ -1002,23 +1028,43 @@ status_t load_world_direct(World *mzx_world, const char *file, int savegame, int
     mzx_world->output_file_name[12] = 0;
     if(mzx_world->output_file_name[0] != '\0')
     {
-     extra->outfile_offset = fgetd(fp); 
+      mzx_world->output_file =
+       fsafeopen(mzx_world->output_file_name, "ab");
+
+      if(mzx_world->output_file)
+      {
+        fseek(mzx_world->output_file, fgetd(fp), SEEK_SET);
+      }
+      else
+      {
+        fseek(fp, 4, SEEK_CUR);
+      }
     }
     else
     {
       fseek(fp, 4, SEEK_CUR);
     }
 
-    extra->screen_mode = fgetw(fp);
+    screen_mode = fgetw(fp);
+
+    // If it's at SMZX mode 2, set default palette as loaded
+    // so the .sav one doesn't get overwritten
+    if(screen_mode == 2)
+    {
+      smzx_palette_loaded(1);
+    }
+    set_screen_mode(screen_mode);
 
     // Also get the palette
-    if(extra->screen_mode > 1)
+    if(screen_mode > 1)
     {
       for(i = 0; i < 256; i++)
       {
-        extra->smzx_palette.r[i] = fgetc(fp);
-        extra->smzx_palette.g[i] = fgetc(fp);
-        extra->smzx_palette.b[i] = fgetc(fp);
+        r = fgetc(fp);
+        g = fgetc(fp);
+        b = fgetc(fp);
+
+        set_rgb(i, r, g, b);
       }
     }
 
@@ -1036,11 +1082,13 @@ status_t load_world_direct(World *mzx_world, const char *file, int savegame, int
     fread(mzx_world->vlayer_colors, 1, vlayer_size, fp);
   }
 
+  update_palette();
+
   // Get position of global robot...
   gl_rob = fgetd(fp);
   // Get number of boards
   num_boards = fgetc(fp);
-  
+
   if(num_boards == 0)
   {
     int sfx_size;
@@ -1119,126 +1167,20 @@ status_t load_world_direct(World *mzx_world, const char *file, int savegame, int
 
   // Resize this array if necessary
   set_update_done(mzx_world);
-  
-  exit_ok_close:
-    ret = 0;
-  exit_close:
-    fclose(fp);
-  exit_out:
-    if(ret == SUCCESS || error_messages[ret][0])
-      strncpy(error_string, error_messages[ret], MAX_ERROR_SIZE - 1);
-    return ret;
-}
 
-// Loads a world into a World struct
+  // Find the player
+  find_player(mzx_world);
 
-static int load_world(World *mzx_world, const char *file, int savegame,
- int *faded)
-{
-  int i;
-  unsigned char *charset_mem;
-  status_t ret;
-  ExtraWorldData extra;
+exit_ok_close:
+  ret = 0;
+exit_close:
+  fclose(fp);
+exit_out:
+  return ret;
 
-  ret = load_world_direct(mzx_world, file, savegame, faded, &extra);
-  if(ret != SUCCESS)
-  {
-    if(ret == ERROR_PROTECTED)
-    {
-      /* If we're just checking the world, we don't have a
-       * mzx_world with which to ask the user about decrypting. So in
-       * this case, we just fail if the world is encrypted.
-       */
-      if(mzx_world)
-      {
-        int do_decrypt;
-
-        error("This world is password protected.", 1, 8, 0x0D02);
-        do_decrypt = confirm(mzx_world, "Would you like to decrypt it?");
-        if(!do_decrypt)
-        {
-          decrypt(file);
-          return load_world(mzx_world, file, savegame, faded);
-        }
-      }
-
-      error(error_string, 1, 8, 0x0D02);
-      ret = FAILURE;
-    }
-    else if(ret > ERROR_VERSION_SEPERATOR_ABOVE
-         && ret < ERROR_VERSION_SEPERATOR_BELOW)
-    {
-      error(error_string, 1, 8, 0x0D02);
-    }
-    else
-    {
-      char *msg = error_string;
-      error(msg, 1, 8, 0x2101);
-    }
-  }
-  else if(mzx_world)
-  {
-    FILE *fp = fopen(file, "rb");
-    fseek(fp, extra.charset_offset, SEEK_SET);
-    charset_mem = malloc(3584);
-    fread(charset_mem, 3584, 1, fp);
-    ec_mem_load_set(charset_mem);
-    free(charset_mem);
-    fclose(fp);
-    
-    for(i = 0; i < 16; i++)
-    {
-      set_rgb(i, extra.palette.r[i], extra.palette.g[i], extra.palette.b[i]);
-      if(savegame)
-        set_color_intensity(i, extra.palette.intensity[i]);
-    }
-    
-    if(savegame)
-    {
-      if(mzx_world->input_file_name[0])
-      {
-        mzx_world->input_file =
-         fsafeopen(mzx_world->input_file_name, "rb");
-
-        if(mzx_world->input_file)
-        {
-          fseek(mzx_world->input_file, extra.infile_offset, SEEK_SET);
-        }
-      }
-    
-      if(mzx_world->output_file_name[0])
-      {
-        mzx_world->output_file =
-           fsafeopen(mzx_world->output_file_name, "ab");
-
-        if(mzx_world->output_file)
-        {
-          fseek(mzx_world->output_file, extra.outfile_offset, SEEK_SET);
-        }
-      }
-      
-      // If it's at SMZX mode 2, set default palette as loaded
-      // so the .sav one doesn't get overwritten
-      if(extra.screen_mode == 2)
-      {
-        smzx_palette_loaded(1);
-      }
-      set_screen_mode(extra.screen_mode);
-
-      // Also get the palette
-      if(extra.screen_mode > 1)
-      {
-        for(i = 0; i < 256; i++)
-          set_rgb(i, extra.smzx_palette.r[i], extra.smzx_palette.g[i], extra.smzx_palette.b[i]);
-      }
-    }
-    
-    update_palette();
-  
-    // Find the player
-    find_player(mzx_world);
-  }
-  return ret != SUCCESS;
+exit_recurse:
+  ret = load_world(mzx_world, file, savegame, faded);
+  goto exit_close;
 }
 
 // After clearing the above, use this to get default values. Use
