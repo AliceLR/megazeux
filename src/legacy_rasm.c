@@ -1169,9 +1169,9 @@ static int get_param(char *cmd_line)
 static int is_color(char *cmd_line)
 {
   if( (cmd_line[0] == 'c') &&
-  ( (isxdigit(cmd_line[1]) && (cmd_line[2] == '?'))  ||
-    (isxdigit(cmd_line[2]) && (cmd_line[1] == '?'))  ||
-    (isxdigit(cmd_line[1]) && isxdigit(cmd_line[2])) ||
+  ( (isxdigit((int)cmd_line[1]) && (cmd_line[2] == '?'))  ||
+    (isxdigit((int)cmd_line[2]) && (cmd_line[1] == '?'))  ||
+    (isxdigit((int)cmd_line[1]) && isxdigit((int)cmd_line[2])) ||
     ((cmd_line[1] == '?') && (cmd_line[2] == '?')) ) )
   {
     return 1;
@@ -1185,7 +1185,7 @@ static int is_color(char *cmd_line)
 static int is_param(char *cmd_line)
 {
   if((cmd_line[0] == 'p') &&
-   ((isxdigit(cmd_line[1]) && isxdigit(cmd_line[2])) ||
+   ((isxdigit((int)cmd_line[1]) && isxdigit((int)cmd_line[2])) ||
    ((cmd_line[1] == '?') && (cmd_line[2] == '?'))))
   {
     return 1;
@@ -1359,10 +1359,11 @@ static int rasm_parse_argument(char *cmd_line, char **next,
     }
   }
 
-  if(!isprint(current)) // It's most likely an unquoted character
+  // It's most likely an unquoted character
+  if(!isprint((int)current))
   {
     //Seriously, who would name a counter a smiley face, anyways?
-    if(isspace(cmd_line[1]) || !cmd_line[1])
+    if(isspace((int)cmd_line[1]) || !cmd_line[1])
     {
       *arg_translated = current;
       *next = cmd_line + 1;

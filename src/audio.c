@@ -1391,12 +1391,12 @@ int check_ext_for_gdm_and_convert(const char *filename, char *new_file)
 static struct audio_stream *construct_wav_stream(char *filename,
  Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
+  struct wav_info w_info = {0,0,0,0,0};
   struct audio_stream *ret_val = NULL;
   char safe_filename[MAX_PATH];
   char new_file[MAX_PATH];
-  struct wav_info w_info = {0,0,0,0,0};
-  Uint32 data_length;
-  Uint8 *wav_data;
+  Uint32 data_length = 0;
+  Uint8 *wav_data = NULL;
 
   check_ext_for_sam_and_convert(filename, new_file);
   fsafetranslate(new_file, safe_filename);

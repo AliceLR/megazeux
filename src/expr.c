@@ -52,7 +52,7 @@ static int last_val;
 
 static void expr_skip_whitespace(char **expression)
 {
-  while(isspace(**expression))
+  while(isspace((int)**expression))
   {
     (*expression)++;
   }
@@ -78,7 +78,7 @@ static int parse_argument(struct world *mzx_world, char **argument,
     case '-':
     {
       (*argument)++;
-      if(!isspace(**argument))
+      if(!isspace((int)**argument))
       {
         int t2, val = parse_argument(mzx_world, argument, &t2, id);
         if((t2 == 0) || (t2 == 2))
@@ -206,7 +206,7 @@ static int parse_argument(struct world *mzx_world, char **argument,
     case '~':
     {
       (*argument)++;
-      if(!isspace(**argument))
+      if(!isspace((int)**argument))
       {
         int t2, val = parse_argument(mzx_world, argument, &t2, id);
         if((t2 == 0) || (t2 == 2))

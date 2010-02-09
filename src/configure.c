@@ -534,7 +534,7 @@ __editor_maybe_static void __set_config_from_file(
       {
         current_char = *input_position;
 
-        if(!isspace(current_char))
+        if(!isspace((int)current_char))
         {
           if((current_char == '\\') &&
             (input_position[1] == 's'))

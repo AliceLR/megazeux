@@ -1838,7 +1838,7 @@ static int num_ccode_chars(char *str)
     {
       count++;
 
-      if(isxdigit(str_pos[1]))
+      if(isxdigit((int)str_pos[1]))
       {
         count++;
         str_pos++;

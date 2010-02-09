@@ -2727,7 +2727,7 @@ int match_function_counter(const char *dest, const char *src)
 static const struct function_counter *find_function_counter(const char *name)
 {
   const struct function_counter *base = builtin_counters;
-  int first_letter = tolower(name[0]) * 2;
+  int first_letter = tolower((int)name[0]) * 2;
   int bottom, top, middle;
   int cmpval;
 
@@ -3495,7 +3495,7 @@ int compare_strings(struct string *dest, struct string *src)
 
     if(val_src != val_dest)
     {
-      difference = toupper(val_dest) - toupper(val_src);
+      difference = toupper((int)val_dest) - toupper((int)val_src);
 
       if(difference)
         return difference;

@@ -29,6 +29,8 @@
 #include <ogc/pad.h>
 #include <ogc/ipc.h>
 #include <ogc/video.h>
+// Use of anonymous union in wiiuse header
+#pragma GCC diagnostic ignored "-pedantic"
 #include <wiiuse/wpad.h>
 #undef BOOL
 

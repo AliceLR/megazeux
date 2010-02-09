@@ -37,7 +37,7 @@ static void case1(char *string)
 
   // lowercase it
   for(i = 0; i < len; i++)
-    string[i] = tolower(string[i]);
+    string[i] = tolower((int)string[i]);
 }
 
 // convert to uppercase
@@ -48,7 +48,7 @@ static void case2(char *string)
 
   // uppercase it
   for(i = 0; i < len; i++)
-    string[i] = toupper(string[i]);
+    string[i] = toupper((int)string[i]);
 }
 
 // convert from anything to filename.EXT
@@ -60,7 +60,7 @@ static void case3(char *string)
   // upper case extension
   for(i = len; i > 0; i--)
   {
-    string[i] = toupper(string[i]);
+    string[i] = toupper((int)string[i]);
 
     // last separator
     if(string[i] == '.')
@@ -69,7 +69,7 @@ static void case3(char *string)
 
   // lowercase rest
   for(i--; i >= 0; i--)
-    string[i] = tolower (string[i]);
+    string[i] = tolower((int)string[i]);
 }
 
 // convert from anything to FILENAME.ext
@@ -81,7 +81,7 @@ static void case4(char *string)
   // lowercase extension
   for(i = len; i > 0; i--)
   {
-    string[i] = tolower(string[i]);
+    string[i] = tolower((int)string[i]);
 
     // last separator
     if(string[i] == '.')
@@ -90,7 +90,7 @@ static void case4(char *string)
 
   // uppercase rest
   for(i--; i >= 0; i--)
-    string[i] = toupper(string[i]);
+    string[i] = toupper((int)string[i]);
 }
 
 // brute force method; returns -1 if no permutation can be found to work

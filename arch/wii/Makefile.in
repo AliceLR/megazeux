@@ -12,11 +12,11 @@ ifeq ($(strip $(DEVKITPPC)),)
 $(error "DEVKITPPC must be set in your environment.")
 endif
 
-AS      := powerpc-gekko-as
-CC      := powerpc-gekko-gcc
-CXX     := powerpc-gekko-g++
-AR      := powerpc-gekko-ar
-OBJCOPY := powerpc-gekko-objcopy
+AS      := powerpc-eabi-as
+CC      := powerpc-eabi-gcc
+CXX     := powerpc-eabi-g++
+AR      := powerpc-eabi-ar
+OBJCOPY := powerpc-eabi-objcopy
 
 #
 # Wii target rules

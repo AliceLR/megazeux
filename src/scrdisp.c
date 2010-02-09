@@ -804,7 +804,7 @@ int strlencolor(char *str)
           return len;
 
         // If the next isn't hex, count as one
-        if(!isxdigit(cur_char))
+        if(!isxdigit((int)cur_char))
         {
           len++;
         }

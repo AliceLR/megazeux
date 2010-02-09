@@ -291,9 +291,9 @@ int intake(struct world *mzx_world, char *string, int max_len,
             if(currx)
               current_position--;
 
-            if(!isalnum(*current_position))
+            if(!isalnum((int)*current_position))
             {
-              while(currx && !isalnum(*current_position))
+              while(currx && !isalnum((int)*current_position))
               {
                 current_position--;
                 currx--;
@@ -304,7 +304,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
             {
               current_position--;
               currx--;
-            } while(currx && isalnum(*current_position));
+            } while(currx && isalnum((int)*current_position));
 
             if(currx < 0)
               currx = 0;
@@ -329,17 +329,17 @@ int intake(struct world *mzx_world, char *string, int max_len,
           {
             char *current_position = string + currx;
             char current_char = *current_position;
-            if(!isalnum(current_char))
+            if(!isalnum((int)current_char))
             {
               do
               {
                 current_position++;
                 currx++;
                 current_char = *current_position;
-              } while(current_char && !isalnum(current_char));
+              } while(current_char && !isalnum((int)current_char));
             }
 
-            while(current_char && isalnum(current_char))
+            while(current_char && isalnum((int)current_char))
             {
               current_position++;
               currx++;
@@ -416,15 +416,15 @@ int intake(struct world *mzx_world, char *string, int max_len,
           {
             int old_position = currx;
 
-            if(!isalnum(string[currx]))
+            if(!isalnum((int)string[currx]))
             {
-              while(currx && !isalnum(string[currx]))
+              while(currx && !isalnum((int)string[currx]))
               {
                 currx--;
               }
             }
 
-            while(currx && isalnum(string[currx]))
+            while(currx && isalnum((int)string[currx]))
             {
               currx--;
             }
