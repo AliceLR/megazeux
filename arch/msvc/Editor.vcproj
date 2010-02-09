@@ -55,7 +55,6 @@
 				DefaultCharIsUnsigned="true"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
-				DebugInformationFormat="0"
 				CompileAs="1"
 			/>
 			<Tool

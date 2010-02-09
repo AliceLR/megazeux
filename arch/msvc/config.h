@@ -1,4 +1,5 @@
 #define VERSION "MSVC"
+#define PLATFORM "msvc"
 #define CONFDIR "./"
 #define SHAREDIR "./"
 #define CONFFILE "config.txt"
@@ -14,3 +15,4 @@
 #define CONFIG_PNG
 #define CONFIG_ICON
 #define CONFIG_MODULAR
+#define CONFIG_UPDATER

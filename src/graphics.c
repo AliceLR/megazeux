@@ -52,6 +52,10 @@
 #error Must define VERSION for MegaZeux version string
 #endif
 
+#ifndef VERSION_DATE
+#define VERSION_DATE
+#endif
+
 #define CURSOR_BLINK_RATE 115
 
 __editor_maybe_static graphics_data graphics;

@@ -55,7 +55,6 @@
 				DefaultCharIsUnsigned="true"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
-				DebugInformationFormat="0"
 				CompileAs="1"
 			/>
 			<Tool
@@ -198,12 +197,20 @@
 				RelativePath="..\..\src\main.c"
 				>
 			</File>
+			<File
+				RelativePath="..\..\src\updater.c"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
 			Filter="h;hpp;hxx;hm;inl;inc;xsd"
 			UniqueIdentifier="{93995380-89BD-4b04-88EB-625FBE52EBFB}"
 			>
+			<File
+				RelativePath="..\..\src\updater.h"
+				>
+			</File>
 		</Filter>
 		<Filter
 			Name="Resource Files"

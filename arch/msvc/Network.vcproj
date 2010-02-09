@@ -55,7 +55,6 @@
 				DefaultCharIsUnsigned="true"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
-				DebugInformationFormat="0"
 				CompileAs="1"
 			/>
 			<Tool
@@ -200,10 +199,6 @@
 				RelativePath="..\..\src\network\sha256.c"
 				>
 			</File>
-			<File
-				RelativePath="..\..\src\network\updater.c"
-				>
-			</File>
 		</Filter>
 		<Filter
 			Name="Header Files"
@@ -220,10 +215,6 @@
 			</File>
 			<File
 				RelativePath="..\..\src\network\sha256.h"
-				>
-			</File>
-			<File
-				RelativePath="..\..\src\network\updater.h"
 				>
 			</File>
 		</Filter>

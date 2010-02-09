@@ -55,7 +55,6 @@
 				DefaultCharIsUnsigned="true"
 				WarningLevel="3"
 				Detect64BitPortabilityProblems="false"
-				DebugInformationFormat="0"
 				CompileAs="1"
 			/>
 			<Tool
@@ -195,11 +194,11 @@
 			UniqueIdentifier="{4FC737F1-C7A5-4376-A066-2A32D752A2FF}"
 			>
 			<File
-				RelativePath="..\..\src\run_stubs.c"
+				RelativePath="..\..\src\main.c"
 				>
 			</File>
 			<File
-				RelativePath="..\..\src\main.c"
+				RelativePath="..\..\src\run_stubs.c"
 				>
 			</File>
 		</Filter>

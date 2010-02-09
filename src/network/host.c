@@ -207,57 +207,40 @@ static inline ssize_t platform_recvfrom(int s, void *buf, size_t len,
 // For LoadObject/LoadFunction
 #include "SDL.h"
 
-// FIXME: MSVC hacks to get it to build
-#ifdef _MSC_VER
-#undef  WINSOCK_API_LINKAGE
-#define WINSOCK_API_LINKAGE
-#undef  PASCAL
-#define PASCAL
-#undef  WSAAPI
-#define WSAAPI
-#undef  DECLARE_STDCALL_P
-#define DECLARE_STDCALL_P(x) x
-#endif
-
 static struct
 {
   /* These are Winsock 2.0 functions that should be present all the
    * way back to 98 (and 95 with the additional Winsock 2.0 update).
    */
-  WINSOCK_API_LINKAGE int PASCAL
-   (*accept)(SOCKET, const struct sockaddr *, int *);
-  WINSOCK_API_LINKAGE int PASCAL
-   (*bind)(SOCKET, const struct sockaddr *, int);
-  WINSOCK_API_LINKAGE int PASCAL (*closesocket)(SOCKET);
-  WINSOCK_API_LINKAGE int PASCAL
-   (*connect)(SOCKET, const struct sockaddr *, int);
-  WINSOCK_API_LINKAGE DECLARE_STDCALL_P(struct hostent *)
-   (*gethostbyname)(const char*);
-  WINSOCK_API_LINKAGE u_short PASCAL (*htons)(u_short);
-  WINSOCK_API_LINKAGE int PASCAL (*ioctlsocket)(SOCKET, long, u_long *);
-  WINSOCK_API_LINKAGE int PASCAL (*listen)(SOCKET, int);
-  WINSOCK_API_LINKAGE int PASCAL
-   (*select)(int, fd_set *, fd_set *, fd_set *, const struct timeval *);
-  WINSOCK_API_LINKAGE int PASCAL (*send)(SOCKET, const char *, int, int);
-  WINSOCK_API_LINKAGE int PASCAL (*sendto)(SOCKET, const char*, int, int,
+  int (PASCAL *accept)(SOCKET, const struct sockaddr *, int *);
+  int (PASCAL *bind)(SOCKET, const struct sockaddr *, int);
+  int (PASCAL *closesocket)(SOCKET);
+  int (PASCAL *connect)(SOCKET, const struct sockaddr *, int);
+  struct hostent *(PASCAL *gethostbyname)(const char*);
+  u_short (PASCAL *htons)(u_short);
+  int (PASCAL *ioctlsocket)(SOCKET, long, u_long *);
+  int (PASCAL *listen)(SOCKET, int);
+  int (PASCAL *select)(int, fd_set *, fd_set *, fd_set *,
+   const struct timeval *);
+  int (PASCAL *send)(SOCKET, const char *, int, int);
+  int (PASCAL *sendto)(SOCKET, const char*, int, int,
    const struct sockaddr *, int);
-  WINSOCK_API_LINKAGE int PASCAL
-   (*setsockopt)(SOCKET, int, int, const char *, int);
-  WINSOCK_API_LINKAGE SOCKET PASCAL (*socket)(int, int, int);
-  WINSOCK_API_LINKAGE int PASCAL (*recv)(SOCKET, char *, int, int);
-  WINSOCK_API_LINKAGE int PASCAL (*recvfrom)(SOCKET, char*, int, int,
+  int (PASCAL *setsockopt)(SOCKET, int, int, const char *, int);
+  SOCKET (PASCAL *socket)(int, int, int);
+  int (PASCAL *recv)(SOCKET, char *, int, int);
+  int (PASCAL *recvfrom)(SOCKET, char*, int, int,
    struct sockaddr *, int *);
 
   // Similar to above but these are extensions of Berkeley sockets
-  WINSOCK_API_LINKAGE int PASCAL (*WSACancelBlockingCall)(void);
-  WINSOCK_API_LINKAGE int PASCAL (*WSACleanup)(void);
-  WINSOCK_API_LINKAGE int PASCAL (*WSAGetLastError)(void);
-  WINSOCK_API_LINKAGE int PASCAL (*WSAStartup)(WORD, LPWSADATA);
-  int PASCAL (*__WSAFDIsSet)(SOCKET, fd_set *);
+  int (PASCAL *WSACancelBlockingCall)(void);
+  int (PASCAL *WSACleanup)(void);
+  int (PASCAL *WSAGetLastError)(void);
+  int (PASCAL *WSAStartup)(WORD, LPWSADATA);
+  int (PASCAL *__WSAFDIsSet)(SOCKET, fd_set *);
 
   // These functions were only implemented as of Windows XP (5.1)
-  void WSAAPI (*freeaddrinfo)(struct addrinfo *);
-  int WSAAPI (*getaddrinfo)(const char *, const char *,
+  void (WSAAPI *freeaddrinfo)(struct addrinfo *);
+  int (WSAAPI *getaddrinfo)(const char *, const char *,
    const struct addrinfo *, struct addrinfo **);
 
   void *handle;
