@@ -11,7 +11,7 @@
 include platform.inc
 include version.inc
 
-all: mzx
+all: mzx utils
 
 include arch/${PLATFORM}/Makefile.in
 

@@ -224,11 +224,6 @@ BUILD_DEPS="config.sh Makefile package.sh msvc.zip version.inc"
 SUBDIRS="arch contrib debian docs"
 
 #
-# What we actually care about; the complete sources to MegaZeux.
-#
-SRC="src/*.c src/*.cpp src/*.h src/Makefile.in src/old src/utils"
-
-#
 # Name of the 7zip extractor. On Windows, this is '7za.exe'. On Linux, this is
 # _usually_ '7za', but if you're using a compatible replacement, change this
 # here. Only affects Windows binary distributions and PSP binary distributions,
@@ -264,7 +259,7 @@ make package_clean
 mkdir -p dist/$TARGET/src &&
 cp -p $BINARY_DEPS $HELP_FILE $BUILD_DEPS dist/$TARGET &&
 cp -pr $SUBDIRS dist/$TARGET &&
-cp -pr $SRC dist/$TARGET/src &&
+cp -pr src/* dist/$TARGET/src &&
 
 # nasty hack for binary packaging (not removed by package_clean)
 rm -f dist/$TARGET/src/utils/{checkres,downver,txt2hlp}{,.dbg}{,.exe} &&
