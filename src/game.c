@@ -1535,7 +1535,9 @@ static int update(struct world *mzx_world, int game, int *fadein)
 
       for(i = 0; i < 5; i++)
       {
-        tmp_x[i] = -1; // None found
+        // None found
+        tmp_x[i] = -1;
+        tmp_y[i] = -1;
       }
 
       for(y = 0, offset = 0; y < board_height; y++)
