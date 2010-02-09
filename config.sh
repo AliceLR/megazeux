@@ -217,16 +217,15 @@ echo "PREFIX=$PREFIX"      >> Makefile.platform
 #
 # Set the version to build with 
 #
+BASEVERSION=`grep VERSION Makefile | head -n1 | sed 's/ //g' | cut -d '=' -f 2`
+BASEVERSION=`echo $BASEVERSION | tr -s ' '`
+
 if [ "$DATE_STAMP" = "true" ]; then
 	echo "Stamping version with today's date."
-	echo "#define VERSION \"`grep VERSION Makefile | head -n1 | \
-                                 sed "s/ //g" | cut -d "=" -f 2` \
-                                (`date +%Y%m%d`)\"" | tr -s ' ' > src/config.h
+	echo "#define VERSION \"$BASEVERSION (`date +%Y%m%d`)\"" > src/config.h
 else
 	echo "Not stamping version with today's date."
-	echo "#define VERSION \"`grep VERSION Makefile | head -n1 | \
-                                 sed "s/ //g" | cut -d "=" -f 2`\"" |
-				tr -s ' ' > src/config.h
+	echo "#define VERSION \"$BASEVERSION\"" > src/config.h
 fi
 
 echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
