@@ -178,7 +178,7 @@ endif
 
 build: ${build}
 
-${build}: all
+${build}:
 	${MKDIR} -p ${build}
 	${MKDIR} -p ${build}/docs
 	${CP} config.txt mzx_ascii.chr mzx_blank.chr mzx_default.chr ${build}
