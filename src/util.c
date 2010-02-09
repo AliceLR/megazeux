@@ -196,7 +196,8 @@ int Random(int range)
   return (int)value;
 }
 
-int __get_path(const char *file_name, char *dest, unsigned int buf_len)
+__utils_maybe_static int __get_path(const char *file_name, char *dest,
+ unsigned int buf_len)
 {
   int c = strlen(file_name) - 1;
 

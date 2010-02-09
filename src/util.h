@@ -58,7 +58,9 @@ CORE_LIBSPEC long ftell_and_rewind(FILE *f);
 int Random(int range);
 
 CORE_LIBSPEC int get_path(const char *file_name, char *dest, unsigned int buf_len);
+#ifdef CONFIG_UTILS
 int __get_path(const char *file_name, char *dest, unsigned int buf_len);
+#endif
 
 #if defined(CONFIG_NDS) || defined(CONFIG_WII)
 

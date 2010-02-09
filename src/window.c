@@ -2611,6 +2611,8 @@ int new_file(World *mzx_world, const char **wildcards, char *ret,
    1, NULL, 0, 0, 0);
 }
 
+#ifdef CONFIG_UPDATER
+
 // Calculates the percent from progress and out_of as in (progress/out_of).
 void meter(const char *title, unsigned int progress, unsigned int out_of)
 {
@@ -2655,3 +2657,5 @@ void meter_interior(unsigned int progress, unsigned int out_of)
 
   // Done! :)
 }
+
+#endif // CONFIG_UPDATER

@@ -71,6 +71,12 @@ typedef enum {
 #define __updater_maybe_static static
 #endif
 
+#ifdef CONFIG_UTILS
+#define __utils_maybe_static
+#else
+#define __utils_maybe_static static
+#endif
+
 #ifdef CONFIG_AUDIO
 #if defined(CONFIG_MODPLUG) || defined(CONFIG_MIKMOD)
 #define __audio_c_maybe_static

@@ -462,7 +462,8 @@ fi
 #
 # Force disable built-in updater.
 #
-if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
+if [ "$EDITOR" = "false" \
+  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling built-in updater (nonsensical or unsupported)."
 	UPDATER="false"
 fi
@@ -526,6 +527,7 @@ fi
 if [ "$UTILS" = "true" ]; then
 	echo "Building utils (checkres, downver, hlp2txt, txt2hlp)."
 	echo "BUILD_UTILS=1" >> platform.inc
+	echo "#define CONFIG_UTILS" >> src/config.h
 else
 	echo "Disabled utils (checkres, downver, hlp2txt, txt2hlp)."
 fi
