@@ -180,9 +180,9 @@ const char *zipio_strerror(zipio_error_t err)
 zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
 {
   static const unsigned char ecdr_sig[] = { 'P', 'K', 0x5, 0x6 };
-  long size, start, cur_ecdr_offset = 0;
+  Uint32 zip_comment_length, segment_total = 0;
+  long pos, size, start, cur_ecdr_offset = 0;
   zipio_error_t err = ZIPIO_SUCCESS;
-  Uint32 zip_comment_length;
   int ecdr_sig_off;
   zip_handle_t *z;
   Sint64 d;
@@ -311,18 +311,18 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
   // "total number of entries in the central directory"
   if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
     goto err_close;
-  z->num_entries = (Uint16)d;
+  z->num_entries = d;
 
   // "size of the central directory"
   if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
     goto err_close;
-  z->cd.length = (Uint32)d;
+  z->cd.length = d;
 
   // "offset of start of central directory with respect to
   //  the starting disk number"
   if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
     goto err_close;
-  z->cd.offset = (Uint32)d;
+  z->cd.offset = d;
 
   // ".ZIP file comment length"
   if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
@@ -340,10 +340,10 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
   z->ecdr.offset = d - ECDR_STATIC_LENGTH;
   z->ecdr.length = ECDR_STATIC_LENGTH + zip_comment_length;
 
-  debug("Valid ZIP ECDR found at offset 0x%x; length is 0x%x.\n",
+  debug("Valid ZIP ECDR found at offset 0x%x; length is %u.\n",
    z->ecdr.offset, z->ecdr.length);
 
-  debug("ZIP CD found at offset 0x%x; length is 0x%x. %u entries.\n",
+  debug("ZIP CD found at offset 0x%x; length is %u. %u entries.\n",
    z->cd.offset, z->cd.length, z->num_entries);
 
   // Move to supposed Central Directory
@@ -547,11 +547,10 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
   for(i = 0; i < z->num_entries; i++)
   {
     Uint16 file_name_length, extra_field_length, time, date;
-    bool deferred_fields = false, descriptor_magic = true;
     struct zip_dirent *entry = z->entries[i];
+    bool data_descriptor = false;
     time_t datetime;
     char *file_name;
-    long pos;
 
     // Move to this entry's LFH
     if(fseek(z->f, entry->segment.offset, SEEK_SET))
@@ -591,9 +590,10 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     if(d & 8000)
       warn("LFH GPBF bit 15 set (PKWARE reserved)!\n");
 
-    // "crc-32", "compressed size" and "uncompressed size" fields are deferred
+    // "crc-32", "compressed size" and "uncompressed size" fields are
+    // deferred to a data descriptor extension
     if(d & 0x8)
-      deferred_fields = true;
+      data_descriptor = true;
 
     // "compression method"
     if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
@@ -631,7 +631,7 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     // If CRC is zero but we expected it to be deferred, we tolerate any
     // mismatch. Otherwise, inherit the LFH's CRC and warn the user about
     // the inconsistency.
-    if(!(d == 0 && deferred_fields) && d != entry->crc32)
+    if(!(d == 0 && data_descriptor) && d != entry->crc32)
     {
       warn("LFH crc-32 overrides differing CD crc-32!\n");
       entry->crc32 = d;
@@ -642,7 +642,7 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
       goto err_free_entries;
 
     // Same check as "crc-32" but for "compressed size"
-    if(!(d == 0 && deferred_fields) && d != entry->compressed_size)
+    if(!(d == 0 && data_descriptor) && d != entry->compressed_size)
     {
       warn("LFH compressed size overrides differing CD compressed size!\n");
       entry->compressed_size = d;
@@ -653,7 +653,7 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
       goto err_free_entries;
 
     // Same check as "crc-32" but for "uncompressed size"
-    if(!(d == 0 && deferred_fields) && d != entry->uncompressed_size)
+    if(!(d == 0 && data_descriptor) && d != entry->uncompressed_size)
     {
       warn("LFH uncompressed size overrides differing CD uncompressed size!\n");
       entry->uncompressed_size = d;
@@ -709,68 +709,80 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
       goto err_free_entries;
     }
 
-#if 0
-    // Store current file position so we can roll back if data descriptor
-    // signature is not present (some older ZIPs may do this)
+    // If bit 3 of the "general purpose bit flag" was set, we should read
+    // and validate the a data descriptor.
+    if(data_descriptor)
+    {
+      // Store current file position so we can roll back if data descriptor
+      // signature is not present (some older ZIPs may do this)
+      pos = ftell(z->f);
+      if(pos < 0)
+      {
+        err = ZIPIO_READ_FAILED;
+        goto err_free_entries;
+      }
+
+      // Read "Data descriptor" signature (if present)
+      if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
+        goto err_free_entries;
+
+      if(d != DATA_DESCRIPTOR_MAGIC)
+      {
+        // Found no signature, so roll back and assume this was actually
+        // the crc-32 (NOTE: this aspect of ZIP is horrible indeed).
+        if(fseek(z->f, pos, SEEK_SET))
+        {
+          err = ZIPIO_SEEK_FAILED;
+          goto err_free_entries;
+        }
+      }
+
+      // "crc-32" (again)
+      if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
+        goto err_free_entries;
+
+      // Data descriptor crc-32 is considered superior to all others
+      if(d != entry->crc32)
+      {
+        warn("Data descriptor crc-32 overrides differing CD crc-32!\n");
+        entry->crc32 = d;
+      }
+
+      // "compressed size" (again)
+      if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
+        goto err_free_entries;
+
+      // Same check as for "crc-32"
+      if(d != entry->compressed_size)
+      {
+        warn("Data descriptor compressed size overrides "
+          "differing CD compressed size!\n");
+        entry->compressed_size = d;
+      }
+
+      // "uncompressed size" (again)
+      if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
+        goto err_free_entries;
+
+      // Same check as for "crc-32"
+      if(d != entry->uncompressed_size)
+      {
+        warn("Data descriptor uncompressed size overrides "
+        "differing CD uncompressed size!\n");
+        entry->uncompressed_size = d;
+      }
+    }
+
+    // The current position should be at the end of either the file data
+    // or the data descriptor (if present). We can use this to compute
+    // the segment length.
     pos = ftell(z->f);
     if(pos < 0)
     {
       err = ZIPIO_READ_FAILED;
       goto err_free_entries;
     }
-
-    // Read "Data descriptor" signature (if present)
-    if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
-      goto err_free_entries;
-
-    if(d != DATA_DESCRIPTOR_MAGIC)
-    {
-      // Found no signature, so roll back and assume this was actually
-      // the crc-32 (NOTE: this aspect of ZIP is horrible indeed).
-      if(fseek(z->f, pos, SEEK_SET))
-      {
-        err = ZIPIO_SEEK_FAILED;
-        goto err_free_entries;
-      }
-    }
-    else
-      descriptor_magic = true;
-
-    // "crc-32" (again)
-    if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
-      goto err_free_entries;
-
-    // Data descriptor crc-32 is considered superior to all others
-    if(d != entry->crc32)
-    {
-      warn("Data descriptor crc-32 overrides differing CD crc-32!\n");
-      entry->crc32 = d;
-    }
-
-    // "compressed size" (again)
-    if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
-      goto err_free_entries;
-
-    // Same check as for "crc-32"
-    if(d != entry->compressed_size)
-    {
-      warn("Data descriptor compressed size overrides "
-       "differing CD compressed size!\n");
-      entry->compressed_size = d;
-    }
-
-    // "uncompressed size" (again)
-    if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
-      goto err_free_entries;
-
-    // Same check as for "crc-32"
-    if(d != entry->uncompressed_size)
-    {
-      warn("Data descriptor uncompressed size overrides "
-       "differing CD uncompressed size!\n");
-      entry->uncompressed_size = d;
-    }
-#endif
+    entry->segment.length = pos - entry->segment.offset;
 
     // Convert to standard C89/C99 time_t
     datetime = dos_to_time_t(time, date);
@@ -789,11 +801,33 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     }
 
     debug("LFH -- Parsed file '%s' OK.\n", entry->file_name);
+    debug("LFH offset/length:   0x%x (%u)\n",
+     entry->segment.offset, entry->segment.length);
     debug("Compression Method:  %s\n", (entry->method) ? "Deflate" : "Store");
     debug("Time/Date:           %s", ctime(&entry->datetime));
     debug("CRC-32:              0x%x\n", entry->crc32);
     debug("Compressed Size:     %u\n", entry->compressed_size);
     debug("Uncompressed Size:   %u\n", entry->uncompressed_size);
+  }
+
+  // Total all recorded segment sizes
+  for(i = 0; i < z->num_entries; i++)
+    segment_total += z->entries[i]->segment.length;
+  segment_total += z->cd.length;
+  segment_total += z->ecdr.length;
+
+  // Compare with file size for contiguity
+  pos = ftell_and_rewind(z->f);
+  if(pos < 0)
+  {
+    err = ZIPIO_READ_FAILED;
+    goto err_free_entries;
+  }
+
+  if(segment_total != (Uint32)pos)
+  {
+    warn("Contiguity check failed (parsed %u vs actual %u)\n",
+     segment_total, (Uint32)pos);
   }
 
   return ZIPIO_SUCCESS;
