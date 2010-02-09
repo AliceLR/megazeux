@@ -32,6 +32,8 @@ USERS
   restore them from backup correctly).
 + Fix a bug where a robot program would never progress if the subroutine
   stack was popped more times than it was pushed (via return or top).
++ On UNIX platforms a desktop/menu entry is now installed by default, using
+  the existing icon. (Sci-freak)
 
 DEVELOPERS
 
@@ -41,7 +43,7 @@ DEVELOPERS
   configuration will automatically disable any SDL-dependent components.
   This is useless to anybody except developers doing new ports.
 + Game directory, utility directory and resource directories can now
-  be specified and will be respected on "make install". (Sci-Freak, ajs)
+  be specified and will be respected on "make install". (Sci-freak, ajs)
 + Added experimental port to Android. See arch/android/README for more
   information.
 + Ported opengl1 and opengl2 renderers to OpenGL ES 1.x and glsl

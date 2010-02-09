@@ -31,7 +31,10 @@ install:
 	 ${install} -m 0644 config.txt ${DESTDIR}${SYSCONFDIR}/megazeux-config && \
 	 ${install} -m 0755 -d ${DESTDIR}${SHAREDIR}/icons && \
 	 ${install} -m 0644 contrib/icons/quantump.png \
-	                 ${DESTDIR}${SHAREDIR}/icons/megazeux.png
+	                 ${DESTDIR}${SHAREDIR}/icons/megazeux.png && \
+	 ${install} -m 0755 -d ${DESTDIR}${SHAREDIR}/applications && \
+	 ${install} -m 0644 arch/unix/megazeux.desktop \
+	                 ${DESTDIR}${SHAREDIR}/applications/megazeux.desktop
 ifeq (${BUILD_MODULAR},1)
 	@${install} -m 0755 -d ${DESTDIR}${LIBDIR} && \
 	 ${install} -m 0755 ${core_target} ${DESTDIR}${LIBDIR} && \
@@ -39,7 +42,9 @@ ifeq (${BUILD_MODULAR},1)
 endif
 ifeq (${BUILD_MZXRUN},1)
 	@${install} -m 0755 -d ${DESTDIR}${GAMESDIR} && \
-	 ${install} -m 0755 ${mzxrun} ${DESTDIR}${GAMESDIR}/
+	 ${install} -m 0755 ${mzxrun} ${DESTDIR}${GAMESDIR}/ && \
+	 ${install} -m 0644 arch/unix/mzxrun.desktop \
+	                 ${DESTDIR}${SHAREDIR}/applications/mzxrun.desktop
 endif
 ifeq (${BUILD_EDITOR},1)
 	@${install} -m 0755 -d ${DESTDIR}${GAMESDIR} && \
@@ -52,7 +57,7 @@ ifeq (${BUILD_UTILS},1)
 	 ${install} -m 0755 ${hlp2txt} ${DESTDIR}${BINDIR}/ && \
 	 ${install} -m 0755 ${txt2hlp} ${DESTDIR}${BINDIR}/
 endif
-ifeq (${BUILD_RENDER_GLSL},1)
+ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	@${install} -m 0755 -d ${DESTDIR}${SHAREDIR}/megazeux/shaders && \
 	 ${install} -m 0644 shaders/cursor.frag  shaders/cursor.vert \
 	                    shaders/mouse.frag   shaders/mouse.vert \
