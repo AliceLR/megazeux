@@ -106,6 +106,9 @@ USERS
   (most similar to DOS) or 64:35 (most similar to the port). The display
   will be letterboxed or margins applied as appropriate. See the
   "video_ratio" configuration option for more information.
++ Fixed a bug on some systems where numlock could not be used as a key,
+  only as a flag. The numlock "key" is now masked out of "key_code" and
+  similar; hopefully this won't break any games.
 
 DEVELOPERS
 

@@ -29,7 +29,7 @@
 #include "render_nds.h"
 #endif
 
-static int numlock_status_initialized;
+static bool numlock_status_initialized;
 
 static keycode convert_SDL_internal(SDLKey key)
 {
@@ -165,7 +165,7 @@ static Uint32 process_event(SDL_Event *event)
   if(!numlock_status_initialized)
   {
     input.numlock_status = !!(SDL_GetModState() & KMOD_NUM);
-    numlock_status_initialized = 1;
+    numlock_status_initialized = true;
   }
 
   switch(event->type)
@@ -261,12 +261,13 @@ static Uint32 process_event(SDL_Event *event)
         input.caps_status = 1;
       }
 
-#ifdef __WIN32__
       if(ckey == IKEY_NUMLOCK)
       {
+#ifdef __WIN32__
         input.numlock_status = 1;
-      }
 #endif
+        break;
+      }
 
       if(ckey == IKEY_F12)
       {
@@ -321,6 +322,7 @@ static Uint32 process_event(SDL_Event *event)
         else
           break;
       }
+
       if(ckey == IKEY_NUMLOCK)
       {
 #ifdef __WIN32__
@@ -328,6 +330,7 @@ static Uint32 process_event(SDL_Event *event)
 #else
         input.numlock_status ^= 1;
 #endif
+        break;
       }
 
       if(ckey == IKEY_CAPSLOCK)
