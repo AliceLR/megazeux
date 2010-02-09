@@ -141,7 +141,6 @@ struct glsl_render_data
   GLubyte palette[3 * SMZX_PAL_SIZE];
   Uint8 remap_texture;
   Uint8 remap_char[CHARSET_SIZE * 2];
-  Uint8 ignore_linear;
   enum ratio_type ratio;
   GLuint scaler_program;
   GLuint tilemap_program;
@@ -431,8 +430,6 @@ static void glsl_resize_screen(struct graphics_data *graphics,
  int width, int height)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-
-  render_data->ignore_linear = false;
 
   glsl.glViewport(0, 0, width, height);
   gl_check_error();
