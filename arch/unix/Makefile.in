@@ -54,6 +54,9 @@ ifeq (${BUILD_UTILS},1)
 endif
 ifeq (${BUILD_RENDER_GLSL},1)
 	@${install} -m 0755 -d ${DESTDIR}${SHAREDIR}/megazeux/shaders && \
-	 ${install} -m 0644 shaders/*.{frag,vert} \
+	 ${install} -m 0644 shaders/cursor.frag  shaders/cursor.vert \
+	                    shaders/mouse.frag   shaders/mouse.vert \
+	                    shaders/scaler.frag  shaders/scaler.vert \
+	                    shaders/tilemap.frag shaders/tilemap.vert \
 	                 ${DESTDIR}${SHAREDIR}/megazeux/shaders
 endif
