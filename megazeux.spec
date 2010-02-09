@@ -33,7 +33,8 @@ See http://digitalmzx.net/ for more information.
 %setup -q
 
 %build
-./config.sh --platform unix --enable-release
+./config.sh --platform unix --as-needed-hack \
+            --enable-release --disable-updater
 %{__make}
 
 %install
