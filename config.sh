@@ -632,6 +632,14 @@ if [ "$UPDATER" = "true" -a "$NETWORK" = "false" ]; then
 fi
 
 #
+# Force disable utils.
+#
+if [ "$DEBYTECODE" = "true" ]; then
+	echo "Force-disabling utils (debytecode)."
+	UTILS="false"
+fi
+
+#
 # As GNU ld supports recursive dylib dependency tracking, we don't need to
 # explicitly link to as many libraries as the authors would have us provide.
 #
