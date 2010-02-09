@@ -57,6 +57,7 @@ usage() {
 	echo "  --disable-updater    Disable built-in updater."
 	echo "  --enable-meter       Enable load/save meter display."
 	echo "  --disable-sdl        Disables SDL dependencies and features."
+	echo "  --enable-egl         Enables EGL backend (if SDL disabled)."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -222,6 +223,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-sdl" ] && SDL="false"
 	[ "$1" = "--enable-sdl" ]  && SDL="true"
+
+	[ "$1" = "--enable-egl" ]  && EGL="true"
+	[ "$1" = "--disable-egl" ] && EGL="false"
 
 	shift
 done
@@ -423,6 +427,7 @@ if [ "$SDL" = "false" ]; then
 else
 	echo "#define CONFIG_SDL" >> src/config.h
 	echo "BUILD_SDL=1" >> platform.inc
+	EGL="false"
 fi
 
 #
