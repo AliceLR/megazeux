@@ -46,7 +46,7 @@ usage() {
 	echo "  --disable-gl-fixed   Disable GL renderers for fixed-function h/w."
 	echo "  --disable-gl-prog    Disable GL renderers for programmable h/w."
 	echo "  --disable-overlay    Disable all overlay renderers."
-	echo "  --enable-gp2x        Enables half-res software renderer."
+	<echo "  --enable-gp2x        Enables half-res software renderer."
 	echo "  --disable-modplug    Disable ModPlug music engine."
 	echo "  --enable-mikmod      Enables MikMod music engine."
 	echo "  --disable-libpng     Disable PNG screendump support."
@@ -219,9 +219,9 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--enable-modular" ]  && MODULAR="true"
 
 	[ "$1" = "--disable-updater" ] && UPDATER="false"
-	[ "$1" = "--enable-updater" ]  && UPDATER="true" && NETWORK="true"
+	[ "$1" = "--enable-updater" ]  && UPDATER="true"
 
-	[ "$1" = "--disable-network" ] && NETWORK="false"&& UPDATER="false"
+	[ "$1" = "--disable-network" ] && NETWORK="false"
 	[ "$1" = "--enable-network" ]  && NETWORK="true"
 
 	[ "$1" = "--disable-verbose" ] && VERBOSE="false"
@@ -600,11 +600,19 @@ if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
 fi
 
 #
-# Force disable built-in updater.
+# Force disable networking.
 #
 if [ "$EDITOR" = "false" -o "$PLATFORM" = "unix" -o "$PLATFORM" = "psp" \
   -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
-	echo "Force-disabling built-in updater (nonsensical or unsupported)."
+	echo "Force-disabling networking (nonsensical or unsupported)."
+	NETWORK="false"
+fi
+
+#
+# Force disable updater.
+#
+if [ "$UPDATER" = "true" -a "$NETWORK" = "false" ]; then
+	echo "Force-disabling updater (networking disabled)."
 	UPDATER="false"
 fi
 
@@ -876,17 +884,6 @@ else
 fi
 
 #
-# Handle built-in updater, if enabled
-#
-if [ "$UPDATER" = "true" ]; then
-	echo "Built-in updater enabled."
-	echo "#define CONFIG_UPDATER" >> src/config.h
-	echo "BUILD_UPDATER=1" >> platform.inc
-else
-	echo "Built-in updater disabled."
-fi
-
-#
 # Handle networking, if enabled
 #
 if [ "$NETWORK" = "true" ]; then
@@ -895,6 +892,17 @@ if [ "$NETWORK" = "true" ]; then
 	echo "BUILD_NETWORK=1" >> platform.inc
 else
 	echo "Networking disabled."
+fi
+
+#
+# Handle built-in updater, if enabled
+#
+if [ "$UPDATER" = "true" ]; then
+	echo "Built-in updater enabled."
+	echo "#define CONFIG_UPDATER" >> src/config.h
+	echo "BUILD_UPDATER=1" >> platform.inc
+else
+	echo "Built-in updater disabled."
 fi
 
 #
