@@ -25,6 +25,11 @@ USERS
 + Fixed a bug where checking sprite_collisions on a disabled target sprite
   would unconditionally trigger (regardless of whether a collision was
   present or not).
++ Added support for loop markers in WAV and OGG files. The WAV loop support uses
+  the "smpl" chunk used by ModPlug Tracker and Wavosaur among others. Only the
+  first loop is used, and only forward looping is supported. The OGG loop
+  support uses the "LOOPSTART" and "LOOPLENGTH" tags as used by RPG Maker VX.
+  (Mr_Alert)
 
 DEVELOPERS
 
