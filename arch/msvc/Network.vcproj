@@ -43,13 +43,13 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="2"
 				InlineFunctionExpansion="2"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="../../arch/msvc;Deps/include;Deps/include/SDL"
 				PreprocessorDefinitions="__WIN32__;_CRT_SECURE_NO_WARNINGS;NETWORK_LIBSPEC=&quot;__declspec(dllexport)&quot;"
+				StringPooling="true"
 				ExceptionHandling="0"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				FloatingPointModel="2"
 				DefaultCharIsUnsigned="true"
@@ -68,11 +68,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
+				AdditionalOptions="/NODEFAULTLIB:libcmt"
 				AdditionalDependencies="SDL.lib zlib.lib"
 				OutputFile="$(SolutionDir)\..\..\$(ProjectName).dll"
-				AdditionalLibraryDirectories="Deps/lib/x86"
-				GenerateManifest="false"
-				GenerateDebugInformation="false"
+				AdditionalLibraryDirectories="Deps\lib\x86"
+				ProgramDatabaseFile="$(SolutionDir)\..\..\$(ProjectName).pdb"
 				TargetMachine="1"
 			/>
 			<Tool

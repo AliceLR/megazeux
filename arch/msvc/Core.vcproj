@@ -43,13 +43,13 @@
 			/>
 			<Tool
 				Name="VCCLCompilerTool"
-				Optimization="2"
 				InlineFunctionExpansion="2"
 				WholeProgramOptimization="true"
 				AdditionalIncludeDirectories="../../arch/msvc;Deps/include;Deps/include/SDL;Deps/include/libpng12;../../contrib/libmodplug/src;../../contrib/libmodplug/src/libmodplug;../../contrib/gdm2s3m/src"
 				PreprocessorDefinitions="__WIN32__;_CRT_SECURE_NO_WARNINGS;CORE_LIBSPEC=&quot;__declspec(dllexport)&quot;"
+				StringPooling="true"
 				ExceptionHandling="0"
-				RuntimeLibrary="0"
+				RuntimeLibrary="2"
 				EnableFunctionLevelLinking="true"
 				FloatingPointModel="2"
 				DefaultCharIsUnsigned="true"
@@ -68,11 +68,11 @@
 			/>
 			<Tool
 				Name="VCLinkerTool"
-				AdditionalDependencies="SDL.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib libpng12.lib"
+				AdditionalOptions="/NODEFAULTLIB:libcmt"
+				AdditionalDependencies="SDL.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib libpng12.lib zlib.lib"
 				OutputFile="$(SolutionDir)\..\..\$(ProjectName).dll"
 				AdditionalLibraryDirectories="Deps\lib\x86"
-				GenerateManifest="false"
-				GenerateDebugInformation="false"
+				ProgramDatabaseFile="$(SolutionDir)\..\..\$(ProjectName).pdb"
 				TargetMachine="1"
 			/>
 			<Tool
