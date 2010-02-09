@@ -1475,6 +1475,12 @@ void init_audio(config_info *conf)
 #endif
 }
 
+void free_audio(void)
+{
+  free(audio.pcs_stream);
+  free(audio.mix_buffer);
+}
+
 void load_module(char *filename)
 {
   end_module();
