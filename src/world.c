@@ -1409,7 +1409,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
 
   // Read global robot
   fseek(fp, gl_rob, SEEK_SET);
-  load_robot(&mzx_world->global_robot, fp, savegame);
+  load_robot(&mzx_world->global_robot, fp, savegame, version);
 
   // Go back to where the names are
   fseek(fp, last_pos, SEEK_SET);

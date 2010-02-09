@@ -390,7 +390,8 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
 
               for(i = 0; i < num_robots; i++)
               {
-                cur_robot = load_robot_allocate(input_file, savegame_mode);
+                cur_robot = load_robot_allocate(input_file,
+                 savegame_mode, WORLD_VERSION); /* FIXME: Hack */
                 current_x = robot_x_locations[i];
                 current_y = robot_y_locations[i];
 

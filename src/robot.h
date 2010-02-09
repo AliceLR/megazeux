@@ -53,8 +53,8 @@ CORE_LIBSPEC int place_player_xy(struct world *mzx_world, int x, int y);
 CORE_LIBSPEC void setup_overlay(struct board *src_board, int mode);
 CORE_LIBSPEC void replace_player(struct world *mzx_world);
 
-struct robot *load_robot_allocate(FILE *fp, int savegame);
-void load_robot(struct robot *cur_robot, FILE *fp, int savegame);
+struct robot *load_robot_allocate(FILE *fp, int savegame, int version);
+void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version);
 struct scroll *load_scroll_allocate(FILE *fp);
 struct sensor *load_sensor_allocate(FILE *fp);
 void save_robot(struct robot *cur_robot, FILE *fp, int savegame);

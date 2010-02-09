@@ -45,17 +45,16 @@
 #define ROBOT_START_STACK 4
 #define ROBOT_MAX_STACK   65536
 
-struct robot *load_robot_allocate(FILE *fp, int savegame)
+struct robot *load_robot_allocate(FILE *fp, int savegame, int version)
 {
   struct robot *cur_robot = cmalloc(sizeof(struct robot));
-  load_robot(cur_robot, fp, savegame);
-
+  load_robot(cur_robot, fp, savegame, version);
   return cur_robot;
 }
 
 // Most of this stuff does not have to be loaded unless savegame
 // is set.
-void load_robot(struct robot *cur_robot, FILE *fp, int savegame)
+void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
 {
   int program_size = fgetw(fp);
   int i;

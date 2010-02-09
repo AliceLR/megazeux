@@ -287,7 +287,7 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
   {
     for(i = 1; i <= num_robots; i++)
     {
-      cur_robot = load_robot_allocate(fp, savegame);
+      cur_robot = load_robot_allocate(fp, savegame, version);
       if(cur_robot->used)
       {
         cur_board->robot_list[i] = cur_robot;
