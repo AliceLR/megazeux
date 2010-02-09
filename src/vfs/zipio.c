@@ -18,8 +18,11 @@
  */
 #include "zipio.h"
 
+#include <unistd.h>
 #include <assert.h>
 #include <errno.h>
+
+#include <sys/types.h>
 
 #include "../platform.h"
 #include "../util.h"
@@ -103,6 +106,16 @@ struct zip_handle
   FILE *f;
 };
 
+// DIR abstraction for walking "directories" in ZIP files.
+
+struct zip_dir
+{
+  struct zip_file *file;
+
+  struct zip_entry *last_match;
+  char *path;
+};
+
 static const unsigned char ecdr_sig[] = { 'P', 'K', 0x5, 0x6 };
 
 static Sint64 fgetuw(FILE *f)
@@ -110,7 +123,7 @@ static Sint64 fgetuw(FILE *f)
   Uint16 d = 0;
   int i, j;
 
-  for(i = 0, j = 0; i < sizeof(Uint16); i++, j += 8)
+  for(i = 0, j = 0; i < (int)sizeof(Uint16); i++, j += 8)
   {
     int r = fgetc(f);
     if(r < 0)
@@ -126,7 +139,7 @@ static Sint64 fgetud(FILE *f)
   Uint32 d = 0;
   int i, j;
 
-  for(i = 0, j = 0; i < sizeof(Uint32); i++, j += 8)
+  for(i = 0, j = 0; i < (int)sizeof(Uint32); i++, j += 8)
   {
     int r = fgetc(f);
     if(r < 0)
@@ -141,7 +154,7 @@ static Sint64 fputuw(Uint16 d, FILE *f)
 {
   int i;
 
-  for(i = 0; i < sizeof(Uint16); i++)
+  for(i = 0; i < (int)sizeof(Uint16); i++)
   {
     int r = fputc(d & 0xff, f);
     if(r < 0)
@@ -156,7 +169,7 @@ static Sint64 fputud(Uint32 d, FILE *f)
 {
   int i;
 
-  for(i = 0; i < sizeof(Uint32); i++)
+  for(i = 0; i < (int)sizeof(Uint32); i++)
   {
     int r = fputc(d & 0xff, f);
     if(r < 0)
@@ -1099,7 +1112,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
 
   if(z->file.ecdr.offset + z->file.ecdr.length < pos)
   {
-    warn("Detected %u bytes junk between ECDR and EOF!\n",
+    warn("Detected %lu bytes junk between ECDR and EOF!\n",
      pos - (z->file.ecdr.offset + z->file.ecdr.length));
   }
 
@@ -1126,7 +1139,7 @@ static void cde_rewrite_lh_offset(char *cde, Uint32 lh_offset)
 {
   int i;
 
-  for(i = 0; i < sizeof(Uint32); i++)
+  for(i = 0; i < (int)sizeof(Uint32); i++)
   {
     *(cde + CDE_OFFSET_TO_LH + i) = lh_offset & 0xff;
     lh_offset >>= 8;
@@ -1416,6 +1429,90 @@ enum zip_error zipio_close(struct zip_handle *z)
   return err;
 }
 
+// Since we know the ZIP's original filename (stored in the handle) we
+// expect all opendir()s to be relative to this. The following examples
+// are both valid.
+
+// test.zip/fileA		(ZIP opened as "test.zip")
+// /path/to/test.zip/fileA	(ZIP opened as "/path/to/test.zip")
+
+// If we get something else we'll fail.
+
+enum zip_error zipio_opendir(struct zip_handle *z, const char *name, struct zip_dir **_d)
+{
+  struct zip_dir *d;
+  size_t name_len;
+
+  assert(z != NULL);
+  assert(name != NULL);
+  assert(_d != NULL);
+
+  // Paths must be relative to original ZIP open name
+  if(strncmp(z->path, name, strlen(z->path)))
+    return ZIPIO_PATH_NOT_FOUND;
+
+  *_d = calloc(1, sizeof(struct zip_dir));
+  d = *_d;
+
+  // Skip past the base path
+  name += strlen(z->path);
+
+  // If there's anything left, we have a specific search path..
+  name_len = strlen(name);
+  if(name_len)
+  {
+    d->path = malloc(name_len + 1);
+    strncpy(d->path, name, name_len);
+    d->path[name_len] = 0;
+  }
+
+  d->file = &z->file;
+  return ZIPIO_SUCCESS;
+}
+
+enum zip_error zipio_closedir(struct zip_dir *d)
+{
+  assert(d != NULL);
+  free(d);
+  return ZIPIO_SUCCESS;
+}
+
+// FIXME: Linear search.. could be improved
+
+enum zip_error zipio_readdir(struct zip_dir *d, char *path)
+{
+  struct zip_entry *entry;
+
+  assert(d != NULL);
+  assert(path != NULL);
+
+  if(d->path)
+  {
+    if(!d->last_match)
+      d->last_match = d->file->entries;
+
+    for(entry = d->last_match; entry; entry = entry->next)
+      if(!strncasecmp(entry->file_name, d->path, strlen(d->path)))
+        break;
+  }
+  else
+  {
+    if(!d->last_match)
+      entry = d->file->entries;
+    else
+      entry = d->last_match->next;
+  }
+
+  if(!entry)
+    return ZIPIO_PATH_NOT_FOUND;
+
+  strncpy(path, entry->file_name, MAX_PATH - 1);
+  path[MAX_PATH - 1] = 0;
+
+  d->last_match = entry;
+  return ZIPIO_SUCCESS;
+}
+
 #ifdef TEST
 
 int main(int argc, char *argv[])
@@ -1423,6 +1520,7 @@ int main(int argc, char *argv[])
   static const char unlink_path[] = "test";
   enum zip_error err = ZIPIO_SUCCESS;
   struct zip_handle *z;
+  struct zip_dir *d;
 
   if(argc != 2)
   {
@@ -1431,6 +1529,23 @@ int main(int argc, char *argv[])
   }
 
   err = zipio_open(argv[1], &z);
+  if(err)
+    goto err_out;
+
+  err = zipio_opendir(z, argv[1], &d);
+  if(err)
+    goto err_out;
+
+  while(true)
+  {
+    char entry[MAX_PATH];
+    err = zipio_readdir(d, entry);
+    if(err)
+      break;
+    info(" %s\n", entry);
+  }
+
+  err = zipio_closedir(d);
   if(err)
     goto err_out;
 
