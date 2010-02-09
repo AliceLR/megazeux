@@ -55,6 +55,7 @@ USERS
 + Fix IF c?? Sprite p?? # # "label" so that a non-wildcard parameter is
   respected (previously it would always just check sprite 0).
 + NDS port updated from dsmzx2 release. (kvance, ajs)
++ Updated SDL to 1.2.14 in Windows x86, Windows x64 and Mac OS X builds.
 
 DEVELOPERS
 
