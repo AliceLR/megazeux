@@ -7,18 +7,29 @@
 <head>
 <title>MegaZeux Platform Support Matrix</title>
 <style type="text/css">
-table {
+body {
 	font-family : "Verdana", "Bitstream Vera Sans";
+	margin-left : 1em;
+	margin-right : 1em;
+	font-size : 9pt;
+}
+
+p#legend {
+	margin-left : 1em;
+	margin-right : 1em;
+}
+
+table {
 	border-collapse : collapse;
 	border : 2px solid black;
 	border-spacing : 0;
-	font-size : 9pt;
 }
 
 td, th {
 	text-align : center;
-	border-width: 1px 1px 1px 1px;
-	border-style: inset inset inset inset;
+	border-width : 1px 1px 1px 1px;
+	border-style : inset inset inset inset;
+	border-color : gray;
 	padding : 5px;
 	color : black;
 }
@@ -31,37 +42,64 @@ th {
 	background-color : rgb(200,200,200);
 }
 
-td.yes {
-	background-color : rgb(0,255,0);
+td.yes, td.no, td.no2, td.na, td.std {
 	vertical-align : middle;
 }
 
-td.no {
+span.yes, span.no, span.no2, span.na, span.std {
+	border : 1px solid black;
+	padding-right : 1em;
+	padding-left : 1em;
+}
+
+.yes {
+	background-color : rgb(0,255,0);
+}
+
+.no {
 	background-color : rgb(255,0,0);
 	font-weight : bold;
 	color : white;
 }
 
-td.no2 {
+.no2 {
 	background-color : rgb(255,150,150);
-	vertical-align : middle;
-	font-weight : bold;
-	color : white;
+	color : black;
 }
 
-td.na {
+.na {
 	background-color : rgb(220,220,200);
-	vertical-align : middle;
 }
 
-td.std {
+.std {
 	background-color : rgb(150,255,150);
-	vertical-align : middle;
+}
+
+a {
+	font-weight : normal;
+	font-size : 8pt;
+}
+
+li {
+	padding : 2px;
+	width : 40%;
 }
 </style>
 </head>
 
 <body>
+
+<h1>MegaZeux Platform Support Matrix</h1>
+<p>Best viewed with &gt;=1280 pixel monitor.</p>
+
+<p id="legend">
+<b>Legend:</b>
+<span class="yes">Ideal</span>
+<span class="std">Normal</span>
+<span class="na">Not applicable</span>
+<span class="no2">Suboptimal, Trivially fixable</span>
+<span class="no">Faulty, Not trivially fixable</span>
+</p>
 
 <table>
 
@@ -83,8 +121,8 @@ td.std {
 <td>AmigaOS 4.x</td>
 <td>MacOS 10.x</td>
 <td>GP2X</td>
-<td>Windows<br/>GNU toolchain</td>
-<td>Windows<br/>Visual Studio</td>
+<td>Windows<br/>(GNU toolchain)</td>
+<td>Windows<br/>(Visual Studio)</td>
 <td>Nintendo DS</td>
 <td>Playstation Portable</td>
 <td>Linux, BSD, Solaris<br/>HaikuOS, etc.</td>
@@ -136,7 +174,7 @@ td.std {
 <td class="yes">DMG</td>
 <td class="yes">ZIP</td>
 <td class="yes">ZIP</td>
-<td class="no2">NO</td>
+<td class="no2">NO<a href="#note1">[1]</a></td>
 <td class="yes">ZIP</td>
 <td class="yes">ZIP</td>
 <td class="yes">DEB, RPM, ebuild</td>
@@ -144,20 +182,7 @@ td.std {
 </tr>
 
 <tr>
-<th>Modular</th>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-<td class="no">NO</td>
-<td class="yes">YES</td>
-<td class="no">NO</td>
-</tr>
-
-<tr>
-<th>Optimized<br/>Visibility</th>
+<th>Optimized<br/>Visibility<a href="#note2">[2]</a></th>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="na">N/A</td>
@@ -239,26 +264,26 @@ td.std {
 <th>CONFIG_EDITOR</th>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">NO</td>
+<td class="no2">NO<a href="#note3">[3]</a></td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">NO</td>
-<td class="no2">NO</td>
+<td class="no2">NO<a href="#note3">[3]</a></td>
+<td class="no2">NO<a href="#note3">[3]</a></td>
 <td class="yes">YES</td>
-<td class="no2">NO</td>
+<td class="no2">NO<a href="#note3">[3]</a></td>
 </tr>
 
 <tr>
 <th>CONFIG_HELPSYS</th>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">NO</td>
+<td class="no2">NO<a href="#note3">[3]</a></td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">NO</td>
-<td class="no2">NO</td>
+<td class="no2">NO<a href="#note3">[3]</a></td>
+<td class="no2">NO<a href="#note3">[3]</a></td>
 <td class="yes">YES</td>
-<td class="no2">NO</td>
+<td class="no2">NO<a href="#note3">[3]</a></td>
 </tr>
 
 <tr>
@@ -278,13 +303,13 @@ td.std {
 <th>CONFIG_SOFTWARE</th>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">render_gp2x</td>
+<td class="std">render_gp2x</td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">render_nds</td>
+<td class="std">render_nds</td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">render_gx</td>
+<td class="std">render_gx</td>
 </tr>
 
 <tr>
@@ -327,19 +352,6 @@ td.std {
 </tr>
 
 <tr>
-<th>CONFIG_PNG</th>
-<td class="no2">NO</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="yes">YES</td>
-<td class="no2">NO</td>
-<td class="no2">NO</td>
-<td class="yes">YES</td>
-<td class="no2">NO</td>
-</tr>
-
-<tr>
 <th>CONFIG_NETWORK</th>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
@@ -352,10 +364,37 @@ td.std {
 <td class="no">NO</td>
 </tr>
 
+
+<tr>
+<th>CONFIG_MODULAR</th>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+<td class="no">NO</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+</tr>
+
+<tr>
+<th>CONFIG_PNG</th>
+<td class="no2">NO<a href="#note4">[4]</a></td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no2">NO<a href="#note4">[4]</a></td>
+<td class="no2">NO<a href="#note4">[4]</a></td>
+<td class="yes">YES</td>
+<td class="no2">NO<a href="#note4">[4]</a></td>
+</tr>
+
 <tr>
 <th>CONFIG_X11</th>
 <td class="na">N/A</td>
-<td class="no2">NO</td>
+<td class="no2">NO<a href="#note5">[5]</a></td>
 <td class="na">N/A</td>
 <td class="na">N/A</td>
 <td class="na">N/A</td>
@@ -366,6 +405,46 @@ td.std {
 </tr>
 
 </table>
+
+<h3>Platform Notes</h3>
+
+<ol>
+
+<li><a title="note1"/>
+Could use existing `package.sh' however this does not handle PDB files.<br/>
+MSVC binaries are poorly tested and are currently unstable.
+</li>
+
+<li><a title="note2"/>
+&quot;Optimized Visibility&quot; refers to the hiding of library symbols
+which are not required or referenced outside of that library. An
+&quot;optimized&quot; library is smaller and loads faster.<br/>
+Required on Win32. Only applicable with CONFIG_MODULAR=y builds.
+</li>
+
+<li><a title="note3"/>
+The editor and help system features are disabled to conserve program
+space on embedded platforms. The features build and work on these
+platforms, but they are basically unusable due to the lack of any
+on-screen keyboard.
+</li>
+
+<li><a title="note4"/>
+Simply not had the opportunity to cross compile this feature.<br/>
+Future developments may require it.
+</li>
+
+<li><a title="note5"/>
+Symbol collision when linking Cocoa and X11 libraries with Darwin
+linker. Potentially fixable with research.
+</li>
+
+</ol>
+
+<h3>Copyright</h3>
+
+<p>This document may be copied and redistributed without limitation
+or reservation.</p>
 
 </body>
 
