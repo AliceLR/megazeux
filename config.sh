@@ -735,4 +735,4 @@ else
 fi
 
 echo
-echo "Now type \"make\"."
+echo "Now type \"make\" (or \"gmake\" on BSD)."
