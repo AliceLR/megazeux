@@ -423,6 +423,11 @@
 
 # mask_midchars = 1
 
+# Set to 1 if you would rather MZX's mouse pointer used the
+# system mouse cursor.
+
+# system_mouse = 0
+
 ###################
 # NETWORK OPTIONS #
 ###################

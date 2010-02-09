@@ -108,7 +108,8 @@ struct graphics_data
   Uint32 cursor_y;
   Uint32 mouse_width_mul;
   Uint32 mouse_height_mul;
-  Uint32 mouse_status;
+  bool mouse_status;
+  bool system_mouse;
   bool fullscreen;
   Uint32 resolution_width;
   Uint32 resolution_height;

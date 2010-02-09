@@ -191,6 +191,12 @@ static void config_startup_file(struct config_info *conf, char *name,
   strncpy(conf->startup_file, value, 256);
 }
 
+static void config_system_mouse(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  conf->system_mouse = strtol(value, NULL, 10);
+}
+
 static void config_enable_oversampling(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -413,6 +419,7 @@ static const struct config_entry config_options[] =
   { "save_file", config_save_file },
   { "startup_editor", config_startup_editor },
   { "startup_file", config_startup_file },
+  { "system_mouse", config_system_mouse },
 #ifdef CONFIG_UPDATER
   { "update_branch_pin", config_update_branch_pin },
   { "update_host", config_update_host },
@@ -485,6 +492,7 @@ static const struct config_info default_options =
   0,                            // startup_editor
 
   1,                            // mask_midchars
+  false,                        // system_mouse
 
 #ifdef CONFIG_NETWORK
   true,                         // network_enabled

@@ -809,9 +809,10 @@ bool init_video(struct config_info *conf, const char *caption)
   graphics.resolution_height = conf->resolution_height;
   graphics.window_width = conf->window_width;
   graphics.window_height = conf->window_height;
-  graphics.mouse_status = 0;
+  graphics.mouse_status = false;
   graphics.cursor_timestamp = get_ticks();
   graphics.cursor_flipflop = 1;
+  graphics.system_mouse = conf->system_mouse;
 
   if(!set_graphics_output(conf))
     return false;
@@ -853,7 +854,8 @@ bool init_video(struct config_info *conf, const char *caption)
   }
 
 #ifdef CONFIG_SDL
-  SDL_ShowCursor(SDL_DISABLE);
+  if(!graphics.system_mouse)
+    SDL_ShowCursor(SDL_DISABLE);
 #endif
 
 #if defined(CONFIG_SDL) && defined(CONFIG_ICON)
@@ -1471,12 +1473,14 @@ enum cursor_mode_types get_cursor_mode(void)
 
 void m_hide(void)
 {
-  graphics.mouse_status = 0;
+  if(!graphics.system_mouse)
+    graphics.mouse_status = false;
 }
 
 void m_show(void)
 {
-  graphics.mouse_status = 1;
+  if(!graphics.system_mouse)
+    graphics.mouse_status = true;
 }
 
 #ifdef CONFIG_PNG

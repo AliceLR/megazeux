@@ -70,6 +70,7 @@ struct config_info
 
   // Misc options
   int mask_midchars;
+  bool system_mouse;
     
   // Network layer options
 #ifdef CONFIG_NETWORK    

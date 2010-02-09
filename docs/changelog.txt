@@ -81,6 +81,9 @@ USERS
 + The single quote characters encasing S_CHARACTER parameters in
   the robot editor will now use the protected (GUI) charset
   rather than the game one.
++ Add a "system_mouse" config.txt option that allows the mouse
+  cursor to be replaced with the system mouse cursor, rather than
+  being drawn by MegaZeux.
 
 DEVELOPERS
 
