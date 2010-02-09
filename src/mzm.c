@@ -42,7 +42,12 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     if(savegame)
       savegame = 1;
 
+#ifdef CONFIG_DEBYTCODE
+    fwrite("MZM3", 4, 1, output_file);
+#else
     fwrite("MZM2", 4, 1, output_file);
+#endif
+
     fputw(width, output_file);
     fputw(height, output_file);
     // Come back here later if there's robot information
@@ -50,7 +55,13 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     fputc(0, output_file);
     fputc(storage_mode, output_file);
     fputc(0, output_file);
+
+#ifdef CONFIG_DEBYTECODE
+    fputw(mzx_world->version, output_file);
+    fseek(output_file, 3, SEEK_CUR);
+#else
     fseek(output_file, 1, SEEK_CUR);
+#endif
 
     switch(mode)
     {
@@ -238,6 +249,12 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     int num_robots;
     int robots_location;
 
+#ifdef CONFIG_DEBYTECODE
+    int mzm_world_version = VERSION_PROGRAM_BYTECODE;
+#else
+    int mzm_world_version = WORLD_VERSION; // FIXME: hack
+#endif
+
     fread(magic_string, 4, 1, input_file);
     magic_string[4] = 0;
 
@@ -265,6 +282,24 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
       fseek(input_file, 1, SEEK_CUR);
     }
     else
+
+#ifdef CONFIG_DEBYTECODE
+    if(!strncmp(magic_string, "MZM3", 4))
+    {
+      // MZM3 is like MZM2, except the robots are stored as source code if
+      // savegame_mode is 0.
+      width = fgetw(input_file);
+      height = fgetw(input_file);
+      robots_location = fgetd(input_file);
+      num_robots = fgetc(input_file);
+      storage_mode = fgetc(input_file);
+      savegame_mode = fgetc(input_file);
+      mzm_world_version = fgetw(input_file);
+      fseek(input_file, 3, SEEK_CUR);
+    }
+
+    else
+#endif /* CONFIG_DEBYTECODE */
     {
       // Failure, abort
       fclose(input_file);
@@ -386,48 +421,86 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
               int offset;
               int new_param;
 
-              fseek(input_file, robots_location, SEEK_SET);
+#ifdef CONFIG_DEBYTECODE
+              // If we're loading a "runtime MZM" then it means that we're loading
+              // bytecode. And to do this we must both be in-game and must be
+              // running the same version this was made in. But since loading
+              // dynamically created MZMs in the editor is still useful, we'll just
+              // dummy out the robots.
 
-              for(i = 0; i < num_robots; i++)
+              if(savegame_mode && ((savegame == 0) ||
+               ((mzx_world->version != mzm_world_version) &&
+               (mzm_world_version >= VERSION_PROGRAM_SOURCE))))
               {
-                cur_robot = load_robot_allocate(input_file,
-                 savegame_mode, WORLD_VERSION); /* FIXME: Hack */
-                current_x = robot_x_locations[i];
-                current_y = robot_y_locations[i];
+                fseek(input_file, robots_location, SEEK_SET);
 
-                if(current_x != -1)
+                for(i = 0; i < num_robots; i++)
                 {
-                  new_param = find_free_robot(src_board);
-                  offset = current_x + (current_y * board_width);
+                  current_x = robot_x_locations[i];
+                  current_y = robot_y_locations[i];
 
-                  if(new_param != -1)
+                  // Unfortunately, getting the actual character for the robot is
+                  // kind of a lot of work right now. We have to load it then
+                  // throw it away.
+                  if(current_x != -1)
                   {
-                    if((enum thing)level_id[offset] != PLAYER)
+                    cur_robot = load_robot_allocate(input_file, savegame_mode,
+                     mzm_world_version);
+
+                    offset = current_x + (current_y * board_width);
+                    level_id[offset] = CUSTOM_BLOCK;
+                    level_param[offset] = cur_robot->robot_char;
+                    clear_robot(cur_robot);
+                  }
+                }
+              }
+              else
+#endif /* CONFIG_DEBYTECODE */
+              {
+                fseek(input_file, robots_location, SEEK_SET);
+
+                for(i = 0; i < num_robots; i++)
+                {
+                  cur_robot = load_robot_allocate(input_file, savegame_mode,
+                   mzm_world_version);
+                  current_x = robot_x_locations[i];
+                  current_y = robot_y_locations[i];
+                  cur_robot->xpos = current_x;
+                  cur_robot->ypos = current_y;
+
+                  if(current_x != -1)
+                  {
+                    new_param = find_free_robot(src_board);
+                    offset = current_x + (current_y * board_width);
+
+                    if(new_param != -1)
                     {
-                      add_robot_name_entry(src_board, cur_robot,
-                       cur_robot->robot_name);
-                      src_board->robot_list[new_param] = cur_robot;
-                      cur_robot->xpos = current_x;
-                      cur_robot->ypos = current_y;
-                      level_param[offset] =
-                       new_param;
+                      if((enum thing)level_id[offset] != PLAYER)
+                      {
+                        add_robot_name_entry(src_board, cur_robot,
+                         cur_robot->robot_name);
+                        src_board->robot_list[new_param] = cur_robot;
+                        cur_robot->xpos = current_x;
+                        cur_robot->ypos = current_y;
+                        level_param[offset] = new_param;
+                      }
+                      else
+                      {
+                        clear_robot(cur_robot);
+                      }
                     }
                     else
                     {
                       clear_robot(cur_robot);
+                      level_id[offset] = 0;
+                      level_param[offset] = 0;
+                      level_color[offset] = 7;
                     }
                   }
                   else
                   {
                     clear_robot(cur_robot);
-                    level_id[offset] = 0;
-                    level_param[offset] = 0;
-                    level_color[offset] = 7;
                   }
-                }
-                else
-                {
-                  clear_robot(cur_robot);
                 }
               }
             }
