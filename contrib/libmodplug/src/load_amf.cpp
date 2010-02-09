@@ -52,8 +52,8 @@ typedef struct _AMFSAMPLE
 extern void Log(LPCSTR, ...);
 #endif
 
-VOID AMF_Unpack(MODCOMMAND *pPat, const BYTE *pTrack, UINT nRows, UINT nChannels)
-//-------------------------------------------------------------------------------
+static VOID AMF_Unpack(MODCOMMAND *pPat, const BYTE *pTrack, UINT nRows, UINT nChannels)
+//--------------------------------------------------------------------------------------
 {
 	UINT lastinstr = 0;
 	UINT nTrkSize = bswapLE16(*(USHORT *)pTrack);

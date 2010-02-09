@@ -574,7 +574,7 @@ CzWINDOWEDFIR sfir;
 typedef VOID (MPPASMCALL * LPMIXINTERFACE)(MODCHANNEL *, int *, int *);
 
 #define BEGIN_MIX_INTERFACE(func)\
-	VOID MPPASMCALL func(MODCHANNEL *pChannel, int *pbuffer, int *pbufmax)\
+	static VOID MPPASMCALL func(MODCHANNEL *pChannel, int *pbuffer, int *pbufmax)\
 	{\
 		LONG nPos;
 
@@ -665,8 +665,8 @@ typedef VOID (MPPASMCALL * LPMIXINTERFACE)(MODCHANNEL *, int *, int *);
 /////////////////////////////////////////////////////
 //
 
-void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples);
-void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamples);
+static void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples);
+static void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamples);
 void MPPASMCALL X86_StereoFill(int *pBuffer, UINT nSamples, LPLONG lpROfs, LPLONG lpLOfs);
 void X86_StereoMixToFloat(const int *, float *, float *, UINT nCount);
 void X86_FloatToStereoMix(const float *pIn1, const float *pIn2, int *pOut, UINT nCount);
@@ -800,31 +800,6 @@ BEGIN_MIX_INTERFACE(FastMono16BitLinearMix)
 	SNDMIX_STOREFASTMONOVOL
 END_MIX_INTERFACE()
 
-BEGIN_MIX_INTERFACE(FastMono8BitSplineMix)
-	SNDMIX_BEGINSAMPLELOOP8
-	SNDMIX_GETMONOVOL8SPLINE
-	SNDMIX_STOREFASTMONOVOL
-END_MIX_INTERFACE()
-
-BEGIN_MIX_INTERFACE(FastMono16BitSplineMix)
-	SNDMIX_BEGINSAMPLELOOP16
-	SNDMIX_GETMONOVOL16SPLINE
-	SNDMIX_STOREFASTMONOVOL
-END_MIX_INTERFACE()
-
-BEGIN_MIX_INTERFACE(FastMono8BitFirFilterMix)
-	SNDMIX_BEGINSAMPLELOOP8
-	SNDMIX_GETMONOVOL8FIRFILTER
-	SNDMIX_STOREFASTMONOVOL
-END_MIX_INTERFACE()
-
-BEGIN_MIX_INTERFACE(FastMono16BitFirFilterMix)
-	SNDMIX_BEGINSAMPLELOOP16
-	SNDMIX_GETMONOVOL16FIRFILTER
-	SNDMIX_STOREFASTMONOVOL
-END_MIX_INTERFACE()
-
-
 // Fast Ramps
 BEGIN_FASTRAMPMIX_INTERFACE(FastMono8BitRampMix)
 	SNDMIX_BEGINSAMPLELOOP8
@@ -849,31 +824,6 @@ BEGIN_FASTRAMPMIX_INTERFACE(FastMono16BitLinearRampMix)
 	SNDMIX_GETMONOVOL16LINEAR
 	SNDMIX_RAMPFASTMONOVOL
 END_FASTRAMPMIX_INTERFACE()
-
-BEGIN_FASTRAMPMIX_INTERFACE(FastMono8BitSplineRampMix)
-	SNDMIX_BEGINSAMPLELOOP8
-	SNDMIX_GETMONOVOL8SPLINE
-	SNDMIX_RAMPFASTMONOVOL
-END_FASTRAMPMIX_INTERFACE()
-
-BEGIN_FASTRAMPMIX_INTERFACE(FastMono16BitSplineRampMix)
-	SNDMIX_BEGINSAMPLELOOP16
-	SNDMIX_GETMONOVOL16SPLINE
-	SNDMIX_RAMPFASTMONOVOL
-END_FASTRAMPMIX_INTERFACE()
-
-BEGIN_FASTRAMPMIX_INTERFACE(FastMono8BitFirFilterRampMix)
-	SNDMIX_BEGINSAMPLELOOP8
-	SNDMIX_GETMONOVOL8FIRFILTER
-	SNDMIX_RAMPFASTMONOVOL
-END_FASTRAMPMIX_INTERFACE()
-
-BEGIN_FASTRAMPMIX_INTERFACE(FastMono16BitFirFilterRampMix)
-	SNDMIX_BEGINSAMPLELOOP16
-	SNDMIX_GETMONOVOL16FIRFILTER
-	SNDMIX_RAMPFASTMONOVOL
-END_FASTRAMPMIX_INTERFACE()
-
 
 //////////////////////////////////////////////////////
 // Stereo samples
@@ -1993,7 +1943,7 @@ DWORD MPPASMCALL X86_Convert32To32(LPVOID lp16, int *pBuffer, DWORD lSampleCount
 
 
 #ifdef MSC_VER
-void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples)
+static void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples)
 //------------------------------------------------------------
 {
 	_asm {
@@ -2027,7 +1977,7 @@ done:;
 #else
 //---GCCFIX: Asm replaced with C function
 // Will fill in later.
-void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples)
+static void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples)
 {
 	memset(pBuffer, 0, nSamples * sizeof(int));
 }
@@ -2218,7 +2168,7 @@ void MPPASMCALL X86_StereoFill(int *pBuffer, UINT nSamples, LPLONG lpROfs, LPLON
 #endif
 
 #ifdef MSC_VER
-void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamples)
+static void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamples)
 //------------------------------------------------------------------------------
 {
 	_asm {
@@ -2261,7 +2211,7 @@ brkloop:
 #else
 //---GCCFIX: Asm replaced with C function
 // Will fill in later.
-void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamples)
+static void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamples)
 {
 	int rofs = pChannel->nROfs;
 	int lofs = pChannel->nLOfs;

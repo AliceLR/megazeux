@@ -15,11 +15,8 @@
 #pragma warning(disable:4244)
 #endif
 
-BYTE autovibit2xm[8] =
+static BYTE autovibit2xm[8] =
 { 0, 3, 1, 4, 2, 0, 0, 0 };
-
-BYTE autovibxm2it[8] =
-{ 0, 2, 4, 1, 3, 0, 0, 0 };
 
 //////////////////////////////////////////////////////////
 // Impulse Tracker IT file support
@@ -1176,8 +1173,8 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 //////////////////////////////////////////////////////////////////////////////
 // IT 2.14 compression
 
-DWORD ITReadBits(DWORD &bitbuf, UINT &bitnum, LPBYTE &ibuf, CHAR n)
-//-----------------------------------------------------------------
+static DWORD ITReadBits(DWORD &bitbuf, UINT &bitnum, LPBYTE &ibuf, CHAR n)
+//------------------------------------------------------------------------
 {
 	DWORD retval = 0;
 	UINT i = n;

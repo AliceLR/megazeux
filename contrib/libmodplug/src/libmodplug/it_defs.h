@@ -128,7 +128,4 @@ typedef struct ITSAMPLESTRUCT
 
 #pragma pack()
 
-extern BYTE autovibit2xm[8];
-extern BYTE autovibxm2it[8];
-
 #endif

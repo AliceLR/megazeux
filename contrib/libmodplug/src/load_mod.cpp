@@ -167,7 +167,7 @@ typedef struct _MODMAGIC
 
 #pragma pack()
 
-BOOL IsMagic(LPCSTR s1, LPCSTR s2)
+static BOOL IsMagic(LPCSTR s1, LPCSTR s2)
 {
 	return ((*(DWORD *)s1) == (*(DWORD *)s2)) ? TRUE : FALSE;
 }

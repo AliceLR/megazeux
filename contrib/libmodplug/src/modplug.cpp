@@ -15,7 +15,7 @@ struct _ModPlugFile
 
 namespace ModPlug
 {
-	ModPlug_Settings gSettings =
+	static ModPlug_Settings gSettings =
 	{
 		MODPLUG_ENABLE_OVERSAMPLING | MODPLUG_ENABLE_NOISE_REDUCTION,
 
@@ -33,9 +33,9 @@ namespace ModPlug
 		0
 	};
 
-	int gSampleSize;
+	static int gSampleSize;
 
-	void UpdateSettings(bool updateBasicConfig)
+	static void UpdateSettings(bool updateBasicConfig)
 	{
 		if(gSettings.mFlags & MODPLUG_ENABLE_REVERB)
 		{
@@ -103,6 +103,8 @@ int ModPlug_Read(ModPlugFile* file, void* buffer, int size)
 {
 	return file->mSoundFile.Read(buffer, size) * ModPlug::gSampleSize;
 }
+
+#ifdef MODPLUG_DEADCODE
 
 const char* ModPlug_GetName(ModPlugFile* file)
 {
@@ -263,6 +265,7 @@ void ModPlug_GetSettings(ModPlug_Settings* settings)
 {
 	memcpy(settings, &ModPlug::gSettings, sizeof(ModPlug_Settings));
 }
+#endif // MODPLUG_DEADCODE
 
 void ModPlug_SetSettings(const ModPlug_Settings* settings)
 {

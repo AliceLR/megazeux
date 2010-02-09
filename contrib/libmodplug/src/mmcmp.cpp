@@ -7,7 +7,7 @@
 #include "stdafx.h"
 #include "sndfile.h"
 
-BOOL PP20_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength);
+static BOOL PP20_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength);
 
 typedef struct MMCMPFILEHEADER
 {
@@ -327,7 +327,7 @@ ULONG PPBITBUFFER::GetBits(UINT n)
 }
 
 
-VOID PP20_DoUnpack(const BYTE *pSrc, UINT nSrcLen, BYTE *pDst, UINT nDstLen)
+static VOID PP20_DoUnpack(const BYTE *pSrc, UINT nSrcLen, BYTE *pDst, UINT nDstLen)
 {
 	PPBITBUFFER BitBuffer;
 	ULONG nBytesLeft;
@@ -382,7 +382,7 @@ VOID PP20_DoUnpack(const BYTE *pSrc, UINT nSrcLen, BYTE *pDst, UINT nDstLen)
 }
 
 
-BOOL PP20_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength)
+static BOOL PP20_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength)
 {
 	DWORD dwMemLength = *pdwMemLength;
 	LPCBYTE lpMemFile = *ppMemFile;

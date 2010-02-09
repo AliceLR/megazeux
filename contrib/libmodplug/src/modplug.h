@@ -26,33 +26,6 @@ typedef struct _ModPlugNote ModPlugNote;
 
 typedef void (*ModPlugMixerProc)(int*, unsigned long, unsigned long);
 
-/* Load a mod file.  [data] should point to a block of memory containing the complete
- * file, and [size] should be the size of that block.
- * Return the loaded mod file on success, or NULL on failure. */
-ModPlugFile* ModPlug_Load(const void* data, int size);
-/* Unload a mod file. */
-void ModPlug_Unload(ModPlugFile* file);
-
-/* Read sample data into the buffer.  Returns the number of bytes read.  If the end
- * of the mod has been reached, zero is returned. */
-int  ModPlug_Read(ModPlugFile* file, void* buffer, int size);
-
-/* Get the name of the mod.  The returned buffer is stored within the ModPlugFile
- * structure and will remain valid until you unload the file. */
-const char* ModPlug_GetName(ModPlugFile* file);
-
-/* Get the length of the mod, in milliseconds.  Note that this result is not always
- * accurate, especially in the case of mods with loops. */
-int ModPlug_GetLength(ModPlugFile* file);
-
-/* Seek to a particular position in the song.  Note that seeking and MODs don't mix very
- * well.  Some mods will be missing instruments for a short time after a seek, as ModPlug
- * does not scan the sequence backwards to find out which instruments were supposed to be
- * playing at that time.  (Doing so would be difficult and not very reliable.)  Also,
- * note that seeking is not very exact in some mods -- especially those for which
- * ModPlug_GetLength() does not report the full length. */
-void ModPlug_Seek(ModPlugFile* file, int millisecond);
-
 enum _ModPlug_Flags
 {
 	MODPLUG_ENABLE_OVERSAMPLING     = 1 << 0,  /* Enable oversampling (*highly* recommended) */
@@ -73,14 +46,14 @@ enum _ModPlug_ResamplingMode
 typedef struct _ModPlug_Settings
 {
 	int mFlags;  /* One or more of the MODPLUG_ENABLE_* flags above, bitwise-OR'ed */
-	
+
 	/* Note that ModPlug always decodes sound at 44100kHz, 32 bit, stereo and then
 	 * down-mixes to the settings you choose. */
 	int mChannels;       /* Number of channels - 1 for mono or 2 for stereo */
 	int mBits;           /* Bits per sample - 8, 16, or 32 */
 	int mFrequency;      /* Sampling rate - 11025, 22050, or 44100 */
 	int mResamplingMode; /* One of MODPLUG_RESAMPLE_*, above */
-	
+
 	int mReverbDepth;    /* Reverb level 0(quiet)-100(loud)      */
 	int mReverbDelay;    /* Reverb delay in ms, usually 40-200ms */
 	int mBassAmount;     /* XBass level 0(quiet)-100(loud)       */
@@ -91,11 +64,41 @@ typedef struct _ModPlug_Settings
 	                        -1 loops forever. */
 } ModPlug_Settings;
 
+/* Load a mod file.  [data] should point to a block of memory containing the complete
+ * file, and [size] should be the size of that block.
+ * Return the loaded mod file on success, or NULL on failure. */
+ModPlugFile* ModPlug_Load(const void* data, int size);
+/* Unload a mod file. */
+void ModPlug_Unload(ModPlugFile* file);
+
+/* Read sample data into the buffer.  Returns the number of bytes read.  If the end
+ * of the mod has been reached, zero is returned. */
+int  ModPlug_Read(ModPlugFile* file, void* buffer, int size);
+
+void ModPlug_SetSettings(const ModPlug_Settings* settings);
+
+#ifdef MODPLUG_DEADCODE
+
+/* Get the name of the mod.  The returned buffer is stored within the ModPlugFile
+ * structure and will remain valid until you unload the file. */
+const char* ModPlug_GetName(ModPlugFile* file);
+
+/* Get the length of the mod, in milliseconds.  Note that this result is not always
+ * accurate, especially in the case of mods with loops. */
+int ModPlug_GetLength(ModPlugFile* file);
+
+/* Seek to a particular position in the song.  Note that seeking and MODs don't mix very
+ * well.  Some mods will be missing instruments for a short time after a seek, as ModPlug
+ * does not scan the sequence backwards to find out which instruments were supposed to be
+ * playing at that time.  (Doing so would be difficult and not very reliable.)  Also,
+ * note that seeking is not very exact in some mods -- especially those for which
+ * ModPlug_GetLength() does not report the full length. */
+void ModPlug_Seek(ModPlugFile* file, int millisecond);
+
 /* Get and set the mod decoder settings.  All options, except for channels, bits-per-sample,
  * sampling rate, and loop count, will take effect immediately.  Those options which don't
  * take effect immediately will take effect the next time you load a mod. */
 void ModPlug_GetSettings(ModPlug_Settings* settings);
-void ModPlug_SetSettings(const ModPlug_Settings* settings);
 
 /* New ModPlug API Functions */
 /* NOTE: Master Volume (1-512) */
@@ -149,7 +152,7 @@ ModPlugNote* ModPlug_GetPattern(ModPlugFile* file, int pattern, unsigned int* nu
  * =================
  *
  * Use this callback if you want to 'modify' the mixed data of LibModPlug.
- * 
+ *
  * void proc(int* buffer,unsigned long channels,unsigned long nsamples) ;
  *
  * 'buffer': A buffer of mixed samples
@@ -160,6 +163,8 @@ ModPlugNote* ModPlug_GetPattern(ModPlugFile* file, int pattern, unsigned int* nu
  */
 void ModPlug_InitMixerCallback(ModPlugFile* file,ModPlugMixerProc proc) ;
 void ModPlug_UnloadMixerCallback(ModPlugFile* file) ;
+
+#endif // MODPLUG_DEADCODE
 
 #ifdef __cplusplus
 } /* extern "C" */
