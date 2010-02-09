@@ -236,8 +236,7 @@ static int gx_init_video(graphics_data *graphics, config_info *conf)
   graphics->window_width = 640;
   graphics->window_height = 350;
 
-  if (!(render_data = (gx_render_data *)malloc(sizeof(gx_render_data))))
-    return false;
+  render_data = malloc(sizeof(gx_render_data));
   graphics->render_data = render_data;
 
   rmode = render_data->rmode = VIDEO_GetPreferredMode(NULL);
@@ -262,7 +261,7 @@ static int gx_init_video(graphics_data *graphics, config_info *conf)
   VIDEO_SetBlack(FALSE);
   VIDEO_Flush();
   VIDEO_WaitVSync();
-  if(rmode->viTVMode&VI_NON_INTERLACE)
+  if(rmode->viTVMode & VI_NON_INTERLACE)
     VIDEO_WaitVSync();
 
   render_data->fifo = memalign(32, DEFAULT_FIFO_SIZE);
