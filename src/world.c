@@ -154,7 +154,7 @@ static void meter_initial_draw(World *mzx_world, int curr, int target,
 static inline void meter_update_screen(World *mzx_world, int *curr,
  int target) {}
 static inline void meter_restore_screen(World *mzx_world) {}
-static void meter_initial_draw(World *mzx_world, int curr, int target,
+static inline void meter_initial_draw(World *mzx_world, int curr, int target,
  const char *title) {}
 
 #endif // CONFIG_LOADSAVE_METER
