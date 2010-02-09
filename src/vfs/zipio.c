@@ -1461,9 +1461,14 @@ enum zip_error zipio_opendir(struct zip_handle *z, const char *name, struct zip_
   name_len = strlen(name);
   if(name_len)
   {
-    d->path = malloc(name_len + 1);
-    strncpy(d->path, name, name_len);
-    d->path[name_len] = 0;
+    // Should always be the case..
+    if(*name == '/')
+      name++;
+
+    // Store a stripped version of the path on the zip_dir
+    d->path = malloc(name_len);
+    strncpy(d->path, name, name_len - 1);
+    d->path[name_len - 1] = 0;
   }
 
   d->file = &z->file;
@@ -1486,21 +1491,19 @@ enum zip_error zipio_readdir(struct zip_dir *d, char *path)
   assert(d != NULL);
   assert(path != NULL);
 
+  if(!d->last_match)
+    entry = d->file->entries;
+  else
+    entry = d->last_match->next;
+
   if(d->path)
   {
-    if(!d->last_match)
-      d->last_match = d->file->entries;
-
-    for(entry = d->last_match; entry; entry = entry->next)
+    while(entry)
+    {
       if(!strncasecmp(entry->file_name, d->path, strlen(d->path)))
         break;
-  }
-  else
-  {
-    if(!d->last_match)
-      entry = d->file->entries;
-    else
-      entry = d->last_match->next;
+      entry = entry->next;
+    }
   }
 
   if(!entry)
