@@ -23,10 +23,6 @@ The SDL library for AmigaOS 4 (clib2) must be installed. I got my copy from:
 
 	http://www.rcdrummond.net/sdl/index.html
 
-(Note that the sdl-config shipped is slightly broken -- it specifies that the
- libauto library must be linked, but in fact this is only true of the newlib
- build. You must edit sdl-config to correct this mistake prior to starting.)
-
 BUILDING MEGAZEUX
 
 First, configure MZX. A suitable config.sh command line is provided in
