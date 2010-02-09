@@ -833,6 +833,7 @@ bool init_video(struct config_info *conf)
     graphics.resolution_width = 640;
     graphics.resolution_height = 480;
 
+#if !(SDL_MAJOR_VERSION == 1 && SDL_MINOR_VERSION == 2 && SDL_PATCHLEVEL < 10)
     // We'll only do this for hardware scaling renderers
     if(strcmp(conf->video_output, "software") != 0)
     {
@@ -840,6 +841,7 @@ bool init_video(struct config_info *conf)
       graphics.resolution_width = video_info->current_w;
       graphics.resolution_height = video_info->current_h;
     }
+#endif
   }
 
   if(!graphics.renderer.init_video(&graphics, conf))
