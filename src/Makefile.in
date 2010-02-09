@@ -183,11 +183,6 @@ mzx_cobjs += ${mzx_base}/audio_wii.${o}
 endif
 endif
 
-ifeq (${BUILD_COLLAB},1)
-mzx_cobjs += ${mzx_base}/edit_network.${o} ${mzx_base}/network.${o}
-mzx_cobjs += ${mzx_base}/editor_events.${o} ${mzx_base}/network_util.${o}
-endif
-
 -include ${mzx_cobjs:.o=.d}
 -include ${mzx_cxxobjs:.o=.d}
 

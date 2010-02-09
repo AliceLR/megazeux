@@ -27,7 +27,6 @@ __M_BEGIN_DECLS
 #include "platform.h"
 
 #include "SDL.h"
-#include "SDL/SDL_thread.h"
 
 #ifdef CONFIG_PTHREAD_MUTEXES
 
@@ -46,9 +45,6 @@ typedef SDL_mutex *platform_mutex;
 #define platform_mutex_unlock(mutex) SDL_UnlockMutex(mutex)
 
 #endif // CONFIG_PTHREAD_MUTEXES
-
-typedef SDL_Thread *platform_thread;
-#define platform_thread_create(thread, func, arg) thread = SDL_CreateThread(&func, arg)
 
 __M_END_DECLS
 
