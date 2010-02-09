@@ -114,7 +114,7 @@ static const int max_size = 65535;
 static char **copy_buffer = NULL;
 static int case_option = 0;
 
-char macros[5][64];
+static char macros[5][64];
 
 static void str_lower_case(char *str, char *dest)
 {
@@ -3376,3 +3376,22 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
   restore_screen();
 }
+
+void init_macros(World *mzx_world)
+{
+  memcpy(macros, mzx_world->conf.default_macros, 5 * 64);
+}
+
+void free_extended_macros(World *mzx_world)
+{
+  int i;
+
+  if(!mzx_world->conf.extended_macros)
+    return;
+
+  for(i = 0; i < mzx_world->conf.num_extended_macros; i++)
+    free_macro(mzx_world->conf.extended_macros[i]);
+
+  free(mzx_world->conf.extended_macros);
+}
+

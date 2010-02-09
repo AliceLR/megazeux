@@ -89,9 +89,10 @@ struct _robot_state
   World *mzx_world;
 };
 
-extern char macros[5][64];
-
 void robot_editor(World *mzx_world, Robot *cur_robot);
+
+void init_macros(World *mzx_world);
+void free_extended_macros(World *mzx_world);
 
 __M_END_DECLS
 

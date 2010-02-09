@@ -32,6 +32,8 @@
 #include "fsafeopen.h"
 #include "util.h"
 
+#include "editor_syms.h"
+
 #if defined(CONFIG_NDS)
 #define VIDEO_OUTPUT_DEFAULT "nds"
 #elif defined(CONFIG_GP2X)
@@ -182,8 +184,7 @@ static void config_macro(config_info *conf, char *name, char *value,
 {
   char *macro_name = name + 6;
 
-  if(isdigit(macro_name[0]) && !macro_name[1] &&
-   !extended_data)
+  if(isdigit(macro_name[0]) && !macro_name[1] && !extended_data)
   {
     int macro_num = macro_name[0] - 0x31;
     value[63] = 0;
@@ -191,8 +192,9 @@ static void config_macro(config_info *conf, char *name, char *value,
   }
   else
   {
-    if(extended_data)
-      add_ext_macro(conf, macro_name, extended_data, value);
+    // FIXME: Hack, remove
+    if(extended_data && editor_syms.handle)
+      editor_syms.add_ext_macro(conf, macro_name, extended_data, value);
   }
 }
 

@@ -41,10 +41,19 @@ static const struct
 editor_sym_map[] =
 {
   { "edit_world", (void **)&editor_syms.edit_world },
+  { "add_ext_macro", (void **)&editor_syms.add_ext_macro },
+  { "init_macros", (void **)&editor_syms.init_macros },
+  { "free_extended_macros", (void **)&editor_syms.free_extended_macros },
   { NULL, NULL }
 };
 
-#define EDITOR_DYLIB "editor"
+#if defined(__WIN32__)
+#define EDITOR_DYLIB "mzxedit.dll"
+#elif defined(__APPLE__)
+#define EDITOR_DYLIB "libmzxedit.dylib"
+#else
+#define EDITOR_DYLIB "libmzxedit.so"
+#endif
 
 static int editor_init_syms(void)
 {
@@ -77,6 +86,7 @@ static int editor_init_syms(void)
 #else // !CONFIG_SDL
 
 #include "editor/edit.h"
+#include "editor/macro.h"
 
 /* For non-SDL builds we don't support dyloading the editor; assume for now
  * that if CONFIG_EDITOR on a !CONFIG_SDL build, that the editor was compiled
@@ -90,6 +100,9 @@ static int editor_init_syms(void)
 {
   editor_syms.handle = (void *)1;
   editor_syms.edit_world = edit_world;
+  editor_syms.add_ext_macro = add_ext_macro;
+  editor_syms.init_macros = init_macros;
+  editor_syms.free_extended_macros = free_extended_macros;
   return true;
 }
 
@@ -99,21 +112,14 @@ int editor_init_hook(World *mzx_world)
 {
   if(!editor_init_syms())
     return false;
-  memcpy(macros, mzx_world->conf.default_macros, 5 * 64);
+  editor_syms.init_macros(mzx_world);
   return true;
 }
 
 void editor_free_hook(World *mzx_world)
 {
-  // allocated by macro.c:add_ext_macro()
-  if(mzx_world->conf.extended_macros)
-  {
-    int i;
-    for(i = 0; i < mzx_world->conf.num_extended_macros; i++)
-      free_macro(mzx_world->conf.extended_macros[i]);
-    free(mzx_world->conf.extended_macros);
-  }
+  if(editor_syms.handle)
+    editor_syms.free_extended_macros(mzx_world);
 }
 
 #endif // CONFIG_EDITOR
-
