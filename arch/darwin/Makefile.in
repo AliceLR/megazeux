@@ -70,6 +70,13 @@ package_clean: clean
 lipo:
 	@arch/darwin/lipo.sh
 
+dist:
+	@${MAKE} -j3 ARCH=i686 package
+	@${MAKE} -j3 ARCH=i686 clean
+	@${MAKE} -j3 ARCH=ppc package
+	@${MAKE} -j3 ARCH=ppc clean
+	@${MAKE} lipo
+
 build := build/${SUBPLATFORM}/MegaZeux.app/Contents/Resources
 build:
 	${MKDIR} ${build}/../MacOS
@@ -93,5 +100,5 @@ build:
 	${LN} -s ../../MegaZeux.app/Contents/MacOS \
 		${build}/../../../MZXRun.app/Contents/MacOS
 
-archive:
+archive: build
 	@arch/darwin/dmg.sh ${TARGET}
