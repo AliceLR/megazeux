@@ -6,7 +6,7 @@ include contrib/gdm2s3m/src/Makefile.in
 include contrib/icons/Makefile.in
 include contrib/libmodplug/src/Makefile.in
 
-.PHONY: ${mzx}_clean ${mzx}_link
+.PHONY: ${mzx}_clean
 
 LINK_CC := ${CC}
 
