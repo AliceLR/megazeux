@@ -462,8 +462,8 @@ fi
 #
 # Force disable built-in updater.
 #
-if [ "$EDITOR" = "false" \
-  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
+if [ "$EDITOR" = "false" -o "$PLATFORM" = "unix" -o "$PLATFORM" = "psp" \
+  -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling built-in updater (nonsensical or unsupported)."
 	UPDATER="false"
 fi

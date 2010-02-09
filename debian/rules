@@ -17,7 +17,7 @@ configure: configure-stamp
 configure-stamp:
 	dh_testdir
 	./config.sh --platform unix --as-needed-hack \
-	            --enable-release --disable-updater
+	            --enable-release
 	touch configure-stamp
 
 build: build-stamp
