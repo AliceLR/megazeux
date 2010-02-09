@@ -2900,7 +2900,24 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
     if(src_length > 5)
     {
       unsigned int read_count = strtol(src_value + 5, NULL, 10);
+      long current_pos, file_size;
       int actual_read;
+
+      /* This is hacky, but we don't want to prematurely allocate more space
+       * to the string than can possibly be read from the file. So we save the
+       * old file pointer, figure out the length of the current input file,
+       * and put it back where we found it.
+       */
+      current_pos = ftell(input_file);
+      file_size = ftell_and_rewind(input_file);
+      fseek(input_file, current_pos, SEEK_SET);
+
+      /* We then truncate the user read to the maximum difference between the
+       * current position and the file end; this won't affect normal reads,
+       * it just prevents people from crashing MZX by reading 2G from a 3K file.
+       */
+      if(current_pos + read_count > file_size)
+        read_count = file_size - current_pos;
 
       force_string_splice(mzx_world, name, next, &dest,
        read_count, offset, &size);

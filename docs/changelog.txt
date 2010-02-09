@@ -18,6 +18,9 @@ USERS
   required extensions with a compile failure of the shader program will
   silently fall back to the fixed pipeline (similar to opengl2). A variety
   of shaders have been provided and these can be customized.
++ Mistaken or malicious file I/O such as set "$test" to "fread(-1>>1)" will
+  no longer crash MegaZeux. The read size will be truncated to a contextual
+  maximum for the current file.
 
 DEVELOPERS
 
