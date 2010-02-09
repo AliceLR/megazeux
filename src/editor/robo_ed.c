@@ -1640,11 +1640,12 @@ static void export_block(struct robot_state *rstate, int region_default)
   int export_region = region_default;
   int export_type = 0;
   char export_name[64];
+  int num_formats = 1;
   int num_elements;
-  const char *export_ext[] = { ".TXT", ".BC", NULL };
+  const char *export_ext[] = { ".TXT", NULL, NULL };
   const char *radio_strings_1[] =
   {
-    "Text", "Bytecode"
+    "Text", NULL
   };
   const char *radio_strings_2[] =
   {
@@ -1652,12 +1653,18 @@ static void export_block(struct robot_state *rstate, int region_default)
   };
   struct element *elements[4];
 
+#ifndef CONFIG_DEBYTECODE
+  export_ext[1] = ".BC";
+  radio_strings_1[1] = "Bytecode";
+  num_formats++;
+#endif
+
   if(region_default)
   {
     elements[0] = construct_label(45, 19,
      "Export\nregion as: ");
     elements[1] = construct_radio_button(56,
-     19, radio_strings_1, 2, 8, &export_type);
+     19, radio_strings_1, num_formats, 8, &export_type);
     elements[2] = construct_label(4, 19,
      "Export the\nfollowing region: ");
     elements[3] = construct_radio_button(22, 19,
@@ -1669,7 +1676,7 @@ static void export_block(struct robot_state *rstate, int region_default)
     elements[0] = construct_label(25, 19,
      "Export\nregion as: ");
     elements[1] = construct_radio_button(36,
-     19, radio_strings_1, 2, 8, &export_type);
+     19, radio_strings_1, num_formats, 8, &export_type);
     num_elements = 2;
   }
 
@@ -1691,19 +1698,8 @@ static void export_block(struct robot_state *rstate, int region_default)
       end_rline = rstate->mark_end_rline->next;
     }
 
-    if(!export_type)
-    {
-      add_ext(export_name, ".txt");
-      export_file = fopen(export_name, "w");
-
-      while(current_rline != end_rline)
-      {
-        fputs(current_rline->line_text, export_file);
-        fputc('\n', export_file);
-        current_rline = current_rline->next;
-      }
-    }
-    else
+#ifndef CONFIG_DEBYTECODE
+    if(export_type)
     {
       add_ext(export_name, ".bc");
       export_file = fopen(export_name, "wb");
@@ -1719,6 +1715,19 @@ static void export_block(struct robot_state *rstate, int region_default)
 
       fputc(0, export_file);
     }
+    else
+#endif
+    {
+      add_ext(export_name, ".txt");
+      export_file = fopen(export_name, "w");
+
+      while(current_rline != end_rline)
+      {
+        fputs(current_rline->line_text, export_file);
+        fputc('\n', export_file);
+        current_rline = current_rline->next;
+      }
+    }
 
     fclose(export_file);
   }
@@ -1726,27 +1735,27 @@ static void export_block(struct robot_state *rstate, int region_default)
 
 static void import_block(struct world *mzx_world, struct robot_state *rstate)
 {
-  const char *txt_ext[] = { ".TXT", ".BC", NULL };
+  const char *txt_ext[] = { ".TXT", NULL, NULL };
   char import_name[128];
   char line_buffer[256];
   FILE *import_file;
+#ifndef CONFIG_DEBYTECODE
   ssize_t ext_pos;
+
+  txt_ext[1] = ".BC";
+#endif
 
   if(choose_file(mzx_world, txt_ext, import_name, "Import Robot", 1))
     return;
 
   import_file = fopen(import_name, "r");
-  ext_pos = strlen(import_name) - 3;
 
   rstate->command_buffer = line_buffer;
 
-  if(ext_pos < 1 || strcasecmp(import_name + ext_pos, ".BC"))
-  {
-    // fsafegets ensures that no line terminators are present
-    while(fsafegets(line_buffer, 255, import_file) != NULL)
-      add_line(rstate, -1);
-  }
-  else
+#ifndef CONFIG_DEBYTECODE
+  ext_pos = strlen(import_name) - 3;
+
+  if(ext_pos >= 1 && !strcasecmp(import_name + ext_pos, ".BC"))
   {
     long file_size = ftell_and_rewind(import_file);
 
@@ -1787,6 +1796,13 @@ static void import_block(struct world *mzx_world, struct robot_state *rstate)
 
        free(buffer);
     }
+  }
+  else
+#endif
+  {
+    // fsafegets ensures that no line terminators are present
+    while(fsafegets(line_buffer, 255, import_file) != NULL)
+      add_line(rstate, -1);
   }
 
   rstate->command_buffer = rstate->command_buffer_space;
