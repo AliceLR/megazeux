@@ -26,42 +26,47 @@
 #include "world_struct.h"
 #include "counter.h"
 #include "robot.h"
+#include "rasm.h"
+
+// Only pass these evaluators valid expressions. The compiler should take care
+// of that part, so don't call it outside of evaluating robot code.
 
 enum op
 {
-  op_addition,
-  op_subtraction,
-  op_multiplication,
-  op_division,
-  op_modulus,
-  op_exponentation,
-  op_and,
-  op_or,
-  op_xor,
-  op_bitshift_left,
-  op_bitshift_right,
-  op_equal,
-  op_less_than,
-  op_greater_than,
-  op_greater_than_or_equal,
-  op_less_than_or_equal,
-  op_not_equal
+  OP_ADDITION,
+  OP_SUBTRACTION,
+  OP_MULTIPLICATION,
+  OP_DIVISION,
+  OP_MODULUS,
+  OP_EXPONENTIATION,
+  OP_AND,
+  OP_OR,
+  OP_XOR,
+  OP_BITSHIFT_LEFT,
+  OP_BITSHIFT_RIGHT,
+  OP_ARITHMETIC_BITSHIFT_RIGHT,
+  OP_EQUAL,
+  OP_LESS_THAN,
+  OP_GREATER_THAN,
+  OP_GREATER_THAN_OR_EQUAL,
+  OP_LESS_THAN_OR_EQUAL,
+  OP_NOT_EQUAL
 };
 
 static int last_val;
 
-static void expr_skip_whitespace(char **expression)
+static char *expr_skip_whitespace(char *expression)
 {
-  while(isspace((int)**expression))
-  {
-    (*expression)++;
-  }
+  while(isspace((int)*expression))
+    expression++;
+  return expression;
 }
 
-static int parse_argument(struct world *mzx_world, char **argument,
+static int parse_argument(struct world *mzx_world, char **_argument,
  int *type, int id)
 {
-  int first_char = **argument;
+  char *argument = *_argument;
+  int first_char = *argument;
 
   // Test the first one.
 
@@ -71,163 +76,188 @@ static int parse_argument(struct world *mzx_world, char **argument,
     case '+':
     {
       *type = 1;
-      (*argument)++;
-      return (int)op_addition;
+      *_argument = argument + 1;
+      return OP_ADDITION;
     }
+
     // Subtraction operator
     case '-':
     {
-      (*argument)++;
-      if(!isspace((int)**argument))
+      argument++;
+      if(!isspace((int)*argument))
       {
-        int t2, val = parse_argument(mzx_world, argument, &t2, id);
-        if((t2 == 0) || (t2 == 2))
-        {
-          val = -val;
-          *type = 2;
-          return val;
-        }
-        else
-        {
-          *type = -1;
-          return -1;
-        }
+        int t2, val = parse_argument(mzx_world, &argument, &t2, id);
+        val = -val;
+        *type = 2;
+        *_argument = argument;
+        return val;
       }
+
       *type = 1;
-      return (int)op_subtraction;
+      *_argument = argument;
+      return OP_SUBTRACTION;
     }
+
     // Multiplication operator
     case '*':
     {
       *type = 1;
-      (*argument)++;
-      return (int)op_multiplication;
+      argument++;
+#ifdef CONFIG_DEBYTECODE
+      if(*argument == '*')
+      {
+        *_argument = argument + 1;
+        return OP_EXPONENTIATION;
+      }
+      else
+#endif
+      {
+        *_argument = argument;
+        return OP_MULTIPLICATION;
+      }
     }
+
     // Division operator
     case '/':
     {
       *type = 1;
-      (*argument)++;
-      return (int)op_division;
+      *_argument = argument + 1;
+      return OP_DIVISION;
     }
+
     // Modulus operator
     case '%':
     {
       *type = 1;
-      (*argument)++;
-      return (int)op_modulus;
+      *_argument = argument + 1;
+      return OP_MODULUS;
     }
 
+#ifndef CONFIG_DEBYTECODE
     // Exponent operator
     case '^':
     {
       *type = 1;
-      (*argument)++;
-      return (int)op_exponentation;
+      *_argument = argument + 1;
+      return OP_EXPONENTIATION;
     }
+#endif
 
     // Bitwise AND operator
+#ifdef CONFIG_DEBYTECODE
+    case '&':
+#else
     case 'a':
+#endif
     {
       *type = 1;
-      (*argument)++;
-      return (int)op_and;
+      *_argument = argument + 1;
+      return OP_AND;
     }
 
     // Bitwise OR operator
+#ifdef CONFIG_DEBYTECODE
+    case '|':
+#else
     case 'o':
+#endif
     {
       *type = 1;
-      (*argument)++;
-      return (int)op_or;
+      *_argument = argument + 1;
+      return OP_OR;
     }
 
     // Bitwise XOR operator
+#ifdef CONFIG_DEBYTECODE
+    case '^':
+#else
     case 'x':
+#endif
     {
       *type = 1;
-      (*argument)++;
-      return (int)op_xor;
+      *_argument = argument + 1;
+      return OP_XOR;
     }
 
     // Less than/bitshift left
     case '<':
     {
       *type = 1;
-      (*argument)++;
-      if(**argument == '<')
+      argument++;
+      if(*argument == '<')
       {
-        (*argument)++;
-        return (int)op_bitshift_left;
+        *_argument = argument + 1;
+        return OP_BITSHIFT_LEFT;
       }
-      if(**argument == '=')
+      if(*argument == '=')
       {
-        (*argument)++;
-        return (int)op_less_than_or_equal;
+        *_argument = argument + 1;
+        return OP_LESS_THAN_OR_EQUAL;
       }
-      return (int)op_less_than;
+      *_argument = argument;
+      return OP_LESS_THAN;
     }
+
     // Greater than/bitshift right
     case '>':
     {
       *type = 1;
-      (*argument)++;
-      if(**argument == '>')
+      argument++;
+      if(*argument == '>')
       {
-        (*argument)++;
-        return (int)op_bitshift_right;
+        if(argument[1] == '>')
+        {
+          *_argument = argument + 2;
+          return OP_ARITHMETIC_BITSHIFT_RIGHT;
+        }
+        *_argument = argument + 1;
+        return OP_BITSHIFT_RIGHT;
       }
-      if(**argument == '=')
+      if(*argument == '=')
       {
-        (*argument)++;
-        return (int)op_greater_than_or_equal;
+        *_argument = argument + 1;
+        return OP_GREATER_THAN_OR_EQUAL;
       }
-      return (int)op_greater_than;
+      *_argument = argument;
+      return OP_GREATER_THAN;
     }
+
     // Equality
     case '=':
     {
       *type = 1;
-      (*argument)++;
-      return (int)op_equal;
+      *_argument = argument + 1;
+      return OP_EQUAL;
     }
-    // Logical negation
+
+    // Inequality (there will be a = afterwards)
     case '!':
     {
       *type = 1;
-      if(*(*argument + 1) == '=')
-      {
-        (*argument) += 2;
-        return (int)op_not_equal;
-      }
+      *_argument = argument + 2;
+      return OP_NOT_EQUAL;
     }
 
     // One's complement
     case '~':
     {
-      (*argument)++;
-      if(!isspace((int)**argument))
-      {
-        int t2, val = parse_argument(mzx_world, argument, &t2, id);
-        if((t2 == 0) || (t2 == 2))
-        {
-          val = ~val;
-          *type = 2;
-          return val;
-        }
-        else
-        {
-          *type = -1;
-          return -1;
-        }
-      }
+      int t2, val;
+
+      argument++;
+
+      val = parse_argument(mzx_world, &argument, &t2, id);
+      val = ~val;
+      *type = 2;
+      *_argument = argument;
+      return val;
     }
 
+#ifndef CONFIG_DEBYTECODE
     // # is the last expression value, 32bit.
     case '#':
     {
       *type = 0;
-      (*argument)++;
+      *_argument = argument + 1;
       return last_val;
     }
 
@@ -237,27 +267,34 @@ static int parse_argument(struct world *mzx_world, char **argument,
       *type = -1;
       return -1;
     }
+#endif
 
     // Parentheses! Recursive goodness...
     // Treat a valid return as an argument.
     case '(':
     {
-      int error;
       int val;
-      char *a_ptr = (*argument) + 1;
-      val = parse_expression(mzx_world, &a_ptr, &error, id);
-      if(error)
-      {
-        *type = -1;
-        return -1;
-      }
-      else
-      {
-        *argument = a_ptr;
-        *type = 0;
-        return val;
-      }
+      argument++;
+      val = parse_expression(mzx_world, &argument, id);
+      *type = 0;
+      *_argument = argument;
+      return val;
     }
+
+#ifdef CONFIG_DEBYTECODE
+
+    // Begins with a ` makes it a counter name
+    case '`':
+    {
+      char name_translated[ROBOT_MAX_TR];
+      argument++;
+
+      *type = 0;
+      *_argument = tr_msg_ext(mzx_world, argument, id, name_translated, '`');
+      return get_counter(mzx_world, name_translated, id);
+    }
+
+#else // !CONFIG_DEBYTECODE
 
     // Begins with a ' or a & makes it a message ('counter')
     case '&':
@@ -269,13 +306,13 @@ static int parse_argument(struct world *mzx_world, char **argument,
       char temp2[256];
       int count = 0;
 
-      (*argument)++;
+      *_argument = argument + 1;
 
       // Remember, null terminator is evil; if it's hit exit completely.
-      while(((**argument) != t_char) && (count < 256))
+      while(((*argument) != t_char) && (count < 256))
       {
         // If a nested expression is hit closing 's should be ignored
-        if((**argument) == '(')
+        if((*argument) == '(')
         {
           int close_paren_count = 1;
           // The number of )'s to expect.. finding one decreases it..
@@ -283,11 +320,11 @@ static int parse_argument(struct world *mzx_world, char **argument,
 
           while((close_paren_count) && (count < 256))
           {
-            temp[count] = **argument;
-            (*argument)++;
+            temp[count] = *argument;
+            *_argument = argument + 1;
             count++;
 
-            switch(**argument)
+            switch(*argument)
             {
               case '\0':
               {
@@ -309,41 +346,54 @@ static int parse_argument(struct world *mzx_world, char **argument,
         }
         else
         {
-          if(**argument == '\0')
+          if(*argument == '\0')
           {
             *type = -1;
             return -1;
           }
 
-          temp[count] = **argument;
-          (*argument)++;
+          temp[count] = *argument;
+          *_argument = argument + 1;
           count++;
         }
       }
       *type = 0;
-      (*argument)++;
+      *_argument = argument + 1;
       temp[count] = '\0';
       tr_msg(mzx_world, temp, id, temp2);
       return get_counter(mzx_world, temp2, id);
     }
+
+#endif // !CONFIG_DEBYTECODE
 
     // Otherwise, it must be an integer, or just something invalid.
     default:
     {
       if((first_char >= '0') && (first_char <= '9'))
       {
-        // It's good.
         char *end_p;
-        int val = (int)strtol(*argument, &end_p, 0);
-        *argument = end_p;
+        int val = (int)strtol(argument, &end_p, 0);
         *type = 0;
+        *_argument = end_p;
         return val;
       }
       else
       {
-        // It's not so good..
-        *type = -1;
-        return -1;
+        int value = 0;
+
+#ifdef CONFIG_DEBYTECODE
+        char *end_p = find_non_identifier_char(argument);
+        char temp = *end_p;
+
+        *end_p = 0;
+        value = get_counter(mzx_world, argument, id);
+        *end_p = temp;
+
+        *_argument = end_p;
+#endif
+
+        *type = 0;
+        return value;
       }
     }
   }
@@ -353,27 +403,24 @@ static int evaluate_operation(int operand_a, enum op c_operator, int operand_b)
 {
   switch(c_operator)
   {
-    case op_addition:
-    {
+    case OP_ADDITION:
       return operand_a + operand_b;
-    }
-    case op_subtraction:
-    {
+
+    case OP_SUBTRACTION:
       return operand_a - operand_b;
-    }
-    case op_multiplication:
-    {
+
+    case OP_MULTIPLICATION:
       return operand_a * operand_b;
-    }
-    case op_division:
+
+    case OP_DIVISION:
     {
       if(operand_b == 0)
-      {
         return 0;
-      }
+
       return operand_a / operand_b;
     }
-    case op_modulus:
+
+    case OP_MODULUS:
     {
       int val;
 
@@ -394,144 +441,187 @@ static int evaluate_operation(int operand_a, enum op c_operator, int operand_b)
 
       return val;
     }
-    case op_exponentation:
+
+    case OP_EXPONENTIATION:
     {
       int i;
       int val = 1;
+
       if(operand_a == 0)
-      {
         return 0;
-      }
+
       if(operand_a == 1)
-      {
         return 1;
-      }
+
       if(operand_b < 0)
       {
         if(operand_a == -1)
-        {
           operand_b *= -1;
-        }
         else
-        {
           return 0;
-        }
       }
 
       for(i = 0; i < operand_b; i++)
-      {
         val *= operand_a;
-      }
+
       return val;
     }
-    case op_and:
-    {
+
+    case OP_AND:
       return operand_a & operand_b;
-    }
-    case op_or:
-    {
+
+    case OP_OR:
       return operand_a | operand_b;
-    }
-    case op_xor:
-    {
+
+    case OP_XOR:
       return (operand_a ^ operand_b);
-    }
-    case op_bitshift_left:
-    {
+
+    case OP_BITSHIFT_LEFT:
       return operand_a << operand_b;
-    }
-    case op_bitshift_right:
-    {
+
+    case OP_BITSHIFT_RIGHT:
       return (unsigned int)(operand_a) >> operand_b;
-    }
-    case op_equal:
-    {
+
+    case OP_ARITHMETIC_BITSHIFT_RIGHT:
+      return (signed int)(operand_a) >> operand_b;
+
+    case OP_EQUAL:
       return operand_a == operand_b;
-    }
-    case op_less_than:
-    {
+
+    case OP_LESS_THAN:
       return operand_a < operand_b;
-    }
-    case op_less_than_or_equal:
-    {
+
+    case OP_LESS_THAN_OR_EQUAL:
       return operand_a <= operand_b;
-    }
-    case op_greater_than:
-    {
+
+    case OP_GREATER_THAN:
       return operand_a > operand_b;
-    }
-    case op_greater_than_or_equal:
-    {
+
+    case OP_GREATER_THAN_OR_EQUAL:
       return operand_a >= operand_b;
-    }
-    case op_not_equal:
-    {
+
+    case OP_NOT_EQUAL:
       return operand_a != operand_b;
-    }
+
     default:
-    {
       return operand_a;
-    }
   }
 }
 
-int parse_expression(struct world *mzx_world, char **expression,
- int *error, int id)
+int parse_expression(struct world *mzx_world, char **_expression, int id)
 {
+  char *expression = *_expression;
   int operand_val;
   int current_arg;
   int c_operator;
   int value;
 
-  *error = 0;
-
   // Skip initial whitespace..
-  expr_skip_whitespace(expression);
-  value = parse_argument(mzx_world, expression, &current_arg, id);
-  if((current_arg != 0) && (current_arg != 2))
-  {
-    // First argument must be a value type.
-    *error = 1;
-    return -99;
-  }
-  expr_skip_whitespace(expression);
+  expression = expr_skip_whitespace(expression);
+  value = parse_argument(mzx_world, &expression, &current_arg, id);
+  expression = expr_skip_whitespace(expression);
 
   while(1)
   {
-    if(**expression == ')')
+    if(*expression == ')')
     {
-      (*expression)++;
+      expression++;
       break;
     }
 
-    c_operator = parse_argument(mzx_world, expression, &current_arg, id);
+    c_operator = parse_argument(mzx_world, &expression, &current_arg, id);
     // Next arg must be an operator, unless it's a negative number,
     // in which case it's considered + num
     if(current_arg == 2)
     {
-      value = evaluate_operation(value, op_addition, c_operator);
+      value = evaluate_operation(value, OP_ADDITION, c_operator);
     }
     else
     {
-      if(current_arg != 1)
-      {
-        *error = 2;
-        return -100;
-      }
-      expr_skip_whitespace(expression);
-      operand_val = parse_argument(mzx_world, expression, &current_arg, id);
-      // And now it must be an integer.
-      if((current_arg != 0) && (current_arg != 2))
-      {
-        *error = 3;
-        return -102;
-      }
-      // Evaluate it.
+      expression = expr_skip_whitespace(expression);
+      operand_val = parse_argument(mzx_world, &expression, &current_arg, id);
       value = evaluate_operation(value, (enum op)c_operator, operand_val);
     }
-    expr_skip_whitespace(expression);
+    expression = expr_skip_whitespace(expression);
   }
 
   last_val = value;
+  *_expression = expression;
   return value;
 }
+
+#ifdef CONFIG_DEBYTECODE
+
+int parse_string_expression(struct world *mzx_world, char **_expression,
+ int id, char *output)
+{
+  char *expression = *_expression;
+  int expression_length = 0;
+
+  while(1)
+  {
+    expression = expr_skip_whitespace(expression);
+
+    switch(*expression)
+    {
+      case '`':
+      {
+        struct string string;
+        char name_translated[ROBOT_MAX_TR];
+        expression++;
+
+        expression =
+         tr_msg_ext(mzx_world, expression, id, name_translated, '`');
+
+        get_string(mzx_world, name_translated, &string, id);
+
+        memcpy(output, string.value, string.length);
+        output += string.length;
+
+        expression_length += string.length;
+        break;
+      }
+
+      case '"':
+      {
+        int literal_length;
+        expression++;
+
+        expression = tr_msg_ext(mzx_world, expression, id, output, '"');
+        literal_length = strlen(output);
+
+        output += literal_length;
+        expression_length += literal_length;
+        break;
+      }
+
+      case '>':
+        expression++;
+        *_expression = expression;
+        return expression_length;
+
+      default:
+      {
+        char temp;
+        char *next;
+        struct string string;
+
+        next = find_non_identifier_char(expression);
+
+        temp = *next;
+        *next = 0;
+        get_string(mzx_world, expression, &string, id);
+        *next = temp;
+
+        expression = next;
+
+        memcpy(output, string.value, string.length);
+        output += string.length;
+        expression_length += string.length;
+        break;
+      }
+    }
+  }
+}
+
+#endif // CONFIG_DEBYTECODE

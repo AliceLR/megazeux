@@ -26,8 +26,12 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-int parse_expression(struct world *mzx_world, char **expression, int *error,
- int id);
+int parse_expression(struct world *mzx_world, char **expression, int id);
+
+#ifdef CONFIG_DEBYTECODE
+int parse_string_expression(struct world *mzx_world, char **_expression,
+ int id, char *output);
+#endif
 
 __M_END_DECLS
 
