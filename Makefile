@@ -26,6 +26,7 @@ MKDIR   ?= mkdir
 # We don't want these commands to be echo'ed in non-verbose mode
 #
 ifneq (${V},1)
+override V:=
 CC      := @${CC}
 CXX     := @${CXX}
 AR      := @${AR}
@@ -91,9 +92,7 @@ BUILD_GDM2S3M=1
 endif
 
 %/.build:
-ifneq (${V},1)
-	@echo "  MKDIR   " $@
-endif
+	$(if ${V},,@echo "  MKDIR   " $@)
 	${MKDIR} $@
 
 include src/utils/Makefile.in

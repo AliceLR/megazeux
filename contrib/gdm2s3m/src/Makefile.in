@@ -18,9 +18,7 @@ gdm2s3m_objs = \
     ${gdm2s3m_obj}/gdm2s3m.o
 
 ${gdm2s3m_obj}/%.o: ${gdm2s3m_src}/%.c
-ifneq (${V},1)
-	@echo "  CC      " $<
-endif
+	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${gdm2s3m_cflags} -c $< -o $@
 
 -include $(gdm2s3m_objs:.o=.d)

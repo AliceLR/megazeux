@@ -26,35 +26,23 @@ mzx_flags   += -I${mzx_src} -I${PREFIX}/include
 mzx_ldflags := ${mzx_ldflags} ${ARCH_LDFLAGS}
 
 ${editor_obj}/%.o: ${editor_src}/%.c
-ifneq (${V},1)
-	@echo "  CC      " $<
-endif
+	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 
 ${mzx_obj}/%.o: ${mzx_src}/%.c
-ifneq (${V},1)
-	@echo "  CC      " $<
-endif
+	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 
 ${mzx_obj}/%.o: ${mzx_src}/%.cpp
-ifneq (${V},1)
-	@echo "  CXX     " $<
-endif
+	$(if ${V},,@echo "  CXX     " $<)
 	${CXX} -MD ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
 
 %.debug: %${BINEXT}
-ifneq (${V},1)
-	@echo "  OBJCOPY " --only-keep-debug $< $@
-endif
+	$(if ${V},,@echo "  OBJCOPY " --only-keep-debug $< $@)
 	${OBJCOPY} --only-keep-debug $< $@
-ifneq (${V},1)
-	@echo "  STRIP   " $<
-endif
+	$(if ${V},,@echo "  STRIP   " $<)
 	${STRIP} $<
-ifneq (${V},1)
-	@echo "  OBJCOPY " --add-gnu-debuglink $@ $<
-endif
+	$(if ${V},,@echo "  OBJCOPY " --add-gnu-debuglink $@ $<)
 	${OBJCOPY} --add-gnu-debuglink=$@ $<
 	@touch $@
 
@@ -223,14 +211,11 @@ mzx_cobjs_link = src/.build/c.o
 .PHONY: ${mzx_cobjs_link}
 
 ${mzx_cobjs_link}:
-ifeq (${V},1)
+ifneq (${V},1)
+	@echo "  --> Compiling all C files with --combine -fwhole-program..."
+endif
 	${CC} ${CFLAGS} ${mzx_flags} ${mzx_cflags} \
 	      -fwhole-program --combine -c ${mzx_cobjs:.o=.c} -o ${mzx_cobjs_link}
-else
-	@echo "  --> Compiling all C files with --combine -fwhole-program..."
-	@${CC} ${CFLAGS} ${mzx_flags} ${mzx_cflags} \
-	      -fwhole-program --combine -c ${mzx_cobjs:.o=.c} -o ${mzx_cobjs_link}
-endif
 
 else
 
@@ -250,9 +235,7 @@ ${mzx_cxxobjs}: $(filter-out $(wildcard ${mzx_obj}), ${mzx_obj})
 ${mzx_cxxobjs}: $(filter-out $(wildcard ${editor_obj}), ${editor_obj})
 
 ${mzx}: ${mzx_cobjs_link} ${mzx_cxxobjs}
-ifneq (${V},1)
-	@echo "  LINK    " ${mzx}
-endif
+	$(if ${V},,@echo "  LINK    " ${mzx})
 	${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} \
 	        -o ${mzx} ${LDFLAGS} ${mzx_ldflags}
 

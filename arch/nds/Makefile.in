@@ -61,9 +61,7 @@ ARCH_LDFLAGS := ${EXTRA_LIBS} -specs=ds_arm9.specs
 # Vile hack, remove me ASAP
 #
 arch/nds/%.o: arch/nds/%.c
-ifneq (${V},1)
-	@echo "  CC      " $<
-endif
+	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 
 arm9bin: mzx

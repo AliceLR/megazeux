@@ -14,16 +14,12 @@ icons = ${icons_obj}/icons.o
 icons_objs = ${icons_obj}/quantump.o
 
 ${icons_obj}/%.o: ${icons_src}/%.rc
-ifneq (${V},1)
-	@echo "  WINDRES " $<
-endif
+	$(if ${V},,@echo "  WINDRES " $<)
 	${WINDRES} -i $< -o $@
 
 ifeq (${EMBED_ICONS},1)
 ${icons}: ${icons_obj} ${icons_objs}
-ifneq (${V},1)
-	@echo "  CP      " ${icons_objs} ${icons}
-endif
+	$(if ${V},,@echo "  CP      " ${icons_objs} ${icons})
 	cp ${icons_objs} ${icons}
 else
 ${icons}:
