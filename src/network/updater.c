@@ -115,7 +115,7 @@ int main(int argc, char *argv[])
     goto exit_socket_layer;
   }
 
-  if(!host_connect(h, "updates.mzx.devzero.co.uk", OUTBOUND_PORT))
+  if(!host_connect(h, "updates.digitalmzx.net", OUTBOUND_PORT))
     goto exit_host_destroy;
 
   chdir("282");
