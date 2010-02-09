@@ -128,7 +128,7 @@ build/${TARGET}src:
 	${MKDIR} -p build/dist/source
 	@svn export . build/${TARGET}
 	@cd build/${TARGET} && make distclean
-	@tar -C build -jcvf build/dist/source/${TARGET}src.tar.bz2 ${TARGET}
+	@tar -C build -jcf build/dist/source/${TARGET}src.tar.bz2 ${TARGET}
 
 #
 # The SUPPRESS_BUILD hack is required to allow the placebo "dist"
