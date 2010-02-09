@@ -2578,6 +2578,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
              cur_robot->bullet_type);
             if(_bl[direction])
               _bl[direction] = 3;
+            goto breaker;
           }
         }
         break;

@@ -68,6 +68,8 @@ USERS
 + A world to start up with can now be passed to megazeux without the
   startup_file= prefix. This makes megazeux consistent with other
   applications.
++ SHOOT now ends the cycle, to restore compatibility with pre-port MZX
+  and fix games such as Kya's Sword and Stones & Roks II.
 
 DEVELOPERS
 
