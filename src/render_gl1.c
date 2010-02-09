@@ -109,10 +109,6 @@ static bool gl1_init_video(struct graphics_data *graphics,
   if(!render_data)
     goto err_out;
 
-  syms_loaded = gl_load_syms(gl1_syms_map);
-  if(!syms_loaded)
-    goto err_free_render_data;
-
   graphics->render_data = render_data;
   render_data->ratio = conf->video_ratio;
 
@@ -181,6 +177,13 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
 
   if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
+
+  if(!syms_loaded)
+  {
+    syms_loaded = gl_load_syms(gl1_syms_map);
+    if(!syms_loaded)
+      return false;
+  }
 
 #ifndef ANDROID
   {

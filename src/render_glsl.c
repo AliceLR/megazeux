@@ -338,10 +338,6 @@ static bool glsl_init_video(struct graphics_data *graphics,
   if(!render_data)
     return false;
 
-  syms_loaded = gl_load_syms(glsl_syms_map);
-  if(!syms_loaded)
-    goto err_free;
-
   graphics->render_data = render_data;
 
   graphics->gl_vsync = conf->gl_vsync;
@@ -462,6 +458,13 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
 
   if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
+
+  if(!syms_loaded)
+  {
+    syms_loaded = gl_load_syms(glsl_syms_map);
+    if(!syms_loaded)
+      return false;
+  }
 
   glsl_resize_screen(graphics, width, height);
   return true;

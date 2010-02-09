@@ -130,10 +130,6 @@ static bool gl2_init_video(struct graphics_data *graphics,
   if(!render_data)
     goto err_out;
 
-  syms_loaded = gl_load_syms(gl2_syms_map);
-  if(!syms_loaded)
-    goto err_free_render_data;
-
   graphics->render_data = render_data;
 
   graphics->gl_vsync = conf->gl_vsync;
@@ -274,6 +270,13 @@ static bool gl2_set_video_mode(struct graphics_data *graphics,
 
   if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
+
+  if(!syms_loaded)
+  {
+    syms_loaded = gl_load_syms(gl2_syms_map);
+    if(!syms_loaded)
+      return false;
+  }
 
   gl2_resize_screen(graphics, width, height);
 
