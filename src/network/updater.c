@@ -33,9 +33,23 @@
 #include <unistd.h>
 #endif
 
-#if 0
+#ifndef PLATFORM
+#error Must define a valid "friendly" platform name!
+#endif
 
 #define OUTBOUND_PORT 80
+#define LINE_BUF_LEN  256
+#define UPDATES_TXT   "updates.txt"
+
+#define UPDATE_HOST   "updates.digitalmzx.net"
+
+#ifdef DEBUG
+#define UPDATE_BRANCH "Current-Unstable"
+#else
+#define UPDATE_BRANCH "Current-Stable"
+#endif
+
+static char **process_argv;
 
 static bool check_prune_basedir(const char *file)
 {
@@ -104,54 +118,133 @@ static bool check_create_basedir(const char *file)
   return true;
 }
 
-#endif
-
-static char **process_argv;
-
 static void __check_for_updates(void)
 {
-  void *argv = process_argv;
-
-  info("Reloading..\n");
-  execv(process_argv[0], argv);
-}
-
-void updater_init(char *argv[])
-{
-  check_for_updates = __check_for_updates;
-  process_argv = argv;
-}
-
-#if 0
-
-int main(int argc, char *argv[])
-{
+  char *base_path, buffer[LINE_BUF_LEN], *url_base, *value;
   struct manifest_entry *removed, *replaced, *added, *e;
-  const char *basedir = "/2.82/windows-x86";
+  const char *version = "2.82";
+  host_status_t status;
+  bool ret = false;
   struct host *h;
+  FILE *f;
+
+  // Store the user's current directory, so we can get back to it
+  getcwd(current_dir, MAX_PATH);
+
+  // Find and change into the base path for this MZX binary
+  base_path = malloc(MAX_PATH);
+  get_path(process_argv[0], base_path, MAX_PATH);
+  if(chdir(base_path))
+  {
+    warn("Failed to change into %s base dir.\n", process_argv[0]);
+    goto err_free_base_path;
+  }
+
+  // Acid test: Can we write to this directory?
+  f = fopen(UPDATES_TXT, "w+b");
+  if(!f)
+  {
+    warn("Failed to open " UPDATES_TXT " for writing.\n");
+    warn("This program does not have write permission.\n");
+    goto err_chdir;
+  }
 
   if(!host_layer_init())
   {
     warn("Error initializing socket layer!\n");
-    goto exit_out;
+    goto err_chdir;
   }
 
   h = host_create(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
   if(!h)
   {
     warn("Error creating host for outgoing data.\n");
-    goto exit_socket_layer;
+    goto err_layer_exit;
   }
 
-  if(!host_connect(h, "updates.digitalmzx.net", OUTBOUND_PORT))
-    goto exit_host_destroy;
+  debug("Attemption connection to '" UPDATE_HOST "'..\n");
+  if(!host_connect(h, UPDATE_HOST, OUTBOUND_PORT))
+    goto err_host_destroy;
 
-  chdir("282");
+  // Grab the file containing the names of the current Stable and Unstable
+  status = host_recv_file(h, "/" UPDATES_TXT, f, "text/plain");
+  if(status != HOST_SUCCESS)
+  {
+    warn("Failed to receive " UPDATES_TXT " (err=%d)\n", status);
+    goto err_host_destroy;
+  }
 
-  if(!manifest_get_updates(h, basedir, &removed, &replaced, &added))
+  // Walk this list (of two, hopefully)
+  rewind(f);
+  while(true)
+  {
+    char *m = buffer, *key;
+    value = NULL;
+
+    // Grab a single line from the manifest
+    if(!fgets(buffer, LINE_BUF_LEN, f))
+      break;
+
+    key = strsep(&m, ":\n");
+    if(!key)
+      break;
+
+    value = strsep(&m, ":\n");
+    if(!value)
+      break;
+
+    if(strcmp(key, UPDATE_BRANCH) == 0)
+      break;
+  }
+
+  fclose(f);
+  unlink(UPDATES_TXT);
+
+  /* There was no "Current-XXX: Version" found; we cannot proceed with the
+   * update because we cannot compute an update URL below.
+   */
+  if(!value)
+  {
+    warn("Failed to identify applicable update version.\n");
+    goto err_host_destroy;
+  }
+
+  /* There's likely to be a space prepended to the version number.
+   * Skip it here.
+   */
+  if(value[0] == ' ')
+    value++;
+
+  /* We found the latest update version, but we should check to see if that
+   * matches the version we're already using. The user may choose to receive
+   * "stability" updates for their current major version, or upgrade to the
+   * newest one.
+   */
+  if(strcmp(value, version) != 0)
+  {
+    warn("Should ask user question here.\n");
+    info("Assuming user always want the latest..\n");
+    version = value;
+  }
+
+  /* We can now compute a unique URL base for the updater. This will
+   * be composed of a user-selected version and a static platform-archicture
+   * name.
+   */
+  url_base = malloc(LINE_BUF_LEN);
+  snprintf(url_base, LINE_BUF_LEN, "/%s/" PLATFORM, version);
+  debug("Update base URL: %s\n", url_base);
+
+  if(!manifest_get_updates(h, url_base, &removed, &replaced, &added))
   {
     warn("Failed to compute update manifests; aborting\n");
-    goto exit_host_destroy;
+    goto err_free_url_base;
+  }
+
+  if(!removed && !replaced && !added)
+  {
+    debug("Nothing to update; aborting.\n");
+    goto err_free_update_manifests;
   }
 
   for(e = removed; e; e = e->next)
@@ -174,7 +267,7 @@ int main(int argc, char *argv[])
     if(!check_create_basedir(e->name))
       goto err_free_update_manifests;
 
-    if(!manifest_entry_download_replace(h, basedir, e))
+    if(!manifest_entry_download_replace(h, url_base, e))
       goto err_free_update_manifests;
   }
 
@@ -183,22 +276,39 @@ int main(int argc, char *argv[])
     if(!check_create_basedir(e->name))
       goto err_free_update_manifests;
 
-    if(!manifest_entry_download_replace(h, basedir, e))
+    if(!manifest_entry_download_replace(h, url_base, e))
       goto err_free_update_manifests;
   }
 
-  chdir("..");
+  ret = true;
 
 err_free_update_manifests:
   manifest_list_free(&removed);
   manifest_list_free(&replaced);
   manifest_list_free(&added);
-exit_host_destroy:
+err_free_url_base:
+  free(url_base);
+err_host_destroy:
   host_destroy(h);
-exit_socket_layer:
+err_layer_exit:
   host_layer_exit();
-exit_out:
-  return 0;
+err_chdir:
+  chdir(current_dir);
+err_free_base_path:
+  free(base_path);
+
+  /* At this point we found updates and we successfully updated
+   * to them. Reload the program with the original argv.
+   */
+  if(ret)
+  {
+    const void *argv = process_argv;
+    execv(process_argv[0], argv);
+  }
 }
 
-#endif
+void updater_init(char *argv[])
+{
+  check_for_updates = __check_for_updates;
+  process_argv = argv;
+}
