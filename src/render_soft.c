@@ -64,6 +64,7 @@ static bool soft_set_video_mode(struct graphics_data *graphics,
 {
   graphics->render_data = SDL_SetVideoMode(width, height, depth,
    sdl_flags(depth, fullscreen, resize));
+  warn("Failed to set video mode: %s\n", SDL_GetError());
   return graphics->render_data != NULL;
 }
 
