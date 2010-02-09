@@ -33,14 +33,14 @@ int main(int argc, char *argv[])
 
   if(!host_layer_init())
   {
-    warning("Error initializing socket layer\n");
+    warn("Error initializing socket layer\n");
     goto exit_out;
   }
 
   s = host_create(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
   if(!s)
   {
-    warning("Error creating host for outgoing data\n");
+    warn("Error creating host for outgoing data\n");
     goto exit_socket_layer;
   }
 
@@ -48,13 +48,13 @@ int main(int argc, char *argv[])
 
   if(!host_bind(s, "localhost", INBOUND_PORT))
   {
-    warning("Failed to bind host\n");
+    warn("Failed to bind host\n");
     goto exit_host_destroy;
   }
 
   if(!host_listen(s))
   {
-    warning("Failed to listen with host\n");
+    warn("Failed to listen with host\n");
     goto exit_host_destroy;
   }
 
@@ -67,7 +67,7 @@ int main(int argc, char *argv[])
       {
         if(!host_handle_http_request(c))
         {
-          warning("Failure handling HTTP request\n");
+          warn("Failure handling HTTP request\n");
           host_destroy(c);
           break;
         }

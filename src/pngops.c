@@ -142,7 +142,7 @@ SDL_Surface *png_read_icon(const char *name)
 
   if(w != h || (w % 16) != 0 || (h % 16) != 0)
   {
-    warning("Requested icon '%s' not a valid dimension.\n", name);
+    warn("Requested icon '%s' not a valid dimension.\n", name);
     goto exit_free_close;
   }
 
@@ -154,7 +154,7 @@ SDL_Surface *png_read_icon(const char *name)
       png_set_gray_to_rgb(png_ptr);
       break;
     default:
-      warning("Requested icon '%s' not an RGBA image.\n", name);
+      warn("Requested icon '%s' not an RGBA image.\n", name);
       goto exit_free_close;
   }
 

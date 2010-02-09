@@ -129,7 +129,7 @@ static int gl1_init_video(graphics_data *graphics, config_info *conf)
   // we need a specific "version" of OpenGL compatibility
   if(version && atof(version) < 1.1)
   {
-    warning("Your OpenGL implementation is too old (need v1.1).\n");
+    warn("Your OpenGL implementation is too old (need v1.1).\n");
     free(render_data);
     return false;
   }

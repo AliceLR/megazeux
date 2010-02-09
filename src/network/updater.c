@@ -41,7 +41,7 @@ static bool check_prune_basedir(const char *file)
   ret = get_path(file, path, MAX_PATH);
   if(ret < 0)
   {
-    warning("Path too long\n");
+    warn("Path too long\n");
     return false;
   }
 
@@ -65,7 +65,7 @@ static bool check_create_basedir(const char *file)
   ret = get_path(file, path, MAX_PATH);
   if(ret < 0)
   {
-    warning("Path too long\n");
+    warn("Path too long\n");
     return false;
   }
 
@@ -93,7 +93,7 @@ static bool check_create_basedir(const char *file)
 
   if(!S_ISDIR(s.st_mode))
   {
-    warning("Path '%s' is getting in the way (must be a directory)\n", path);
+    warn("Path '%s' is getting in the way (must be a directory)\n", path);
     return false;
   }
 
@@ -108,14 +108,14 @@ int main(int argc, char *argv[])
 
   if(!host_layer_init())
   {
-    warning("Error initializing socket layer!\n");
+    warn("Error initializing socket layer!\n");
     goto exit_out;
   }
 
   h = host_create(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
   if(!h)
   {
-    warning("Error creating host for outgoing data.\n");
+    warn("Error creating host for outgoing data.\n");
     goto exit_socket_layer;
   }
 
@@ -126,7 +126,7 @@ int main(int argc, char *argv[])
 
   if(!manifest_get_updates(h, basedir, &removed, &replaced, &added))
   {
-    warning("Failed to compute update manifests; aborting\n");
+    warn("Failed to compute update manifests; aborting\n");
     goto exit_host_destroy;
   }
 

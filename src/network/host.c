@@ -286,11 +286,11 @@ static bool socket_load_syms(void)
   socksyms.handle = SDL_LoadObject(WINSOCK2);
   if(!socksyms.handle)
   {
-    warning("Failed to load Winsock 2.0, falling back to Winsock\n");
+    warn("Failed to load Winsock 2.0, falling back to Winsock\n");
     socksyms.handle = SDL_LoadObject(WINSOCK);
     if(!socksyms.handle)
     {
-      warning("Failed to load Winsock fallback\n");
+      warn("Failed to load Winsock fallback\n");
       return false;
     }
   }
@@ -308,7 +308,7 @@ static bool socket_load_syms(void)
         continue;
 
       // However all other Winsock symbols must be loaded, or we fail hard
-      warning("Failed to load Winsock symbol '%s'\n", socksyms_map[i].name);
+      warn("Failed to load Winsock symbol '%s'\n", socksyms_map[i].name);
       socket_free_syms();
       return false;
     }
@@ -835,7 +835,7 @@ static bool host_address_op(struct host *h, const char *hostname,
   ret = platform_getaddrinfo(hostname, port_str, &hints, &ais);
   if(ret != 0)
   {
-    warning("Failed to look up '%s' (%s)\n", hostname, gai_strerror(ret));
+    warn("Failed to look up '%s' (%s)\n", hostname, gai_strerror(ret));
     return false;
   }
 
@@ -845,7 +845,7 @@ static bool host_address_op(struct host *h, const char *hostname,
   // None of the listed hosts (if any) were connectable
   if(!ai)
   {
-    warning("No routeable host '%s' found\n", hostname);
+    warn("No routeable host '%s' found\n", hostname);
     return false;
   }
 
@@ -1539,7 +1539,7 @@ bool host_handle_http_request(struct host *h)
 
   if(http_recv_line(h, buffer, LINE_BUF_LEN) < 0)
   {
-    warning("Failed to receive HTTP request\n");
+    warn("Failed to receive HTTP request\n");
     return false;
   }
 
@@ -1560,13 +1560,13 @@ bool host_handle_http_request(struct host *h)
 
   if(strncmp("HTTP/1.1", proto, 8) != 0)
   {
-    warning("Client must support HTTP 1.1, rejecting\n");
+    warn("Client must support HTTP 1.1, rejecting\n");
     return false;
   }
 
   if(!http_skip_headers(h))
   {
-    warning("Failed to skip HTTP headers\n");
+    warn("Failed to skip HTTP headers\n");
     return false;
   }
 
@@ -1576,7 +1576,7 @@ bool host_handle_http_request(struct host *h)
   f = fopen(path, "rb");
   if(!f)
   {
-    warning("Failed to open file '%s', sending 404\n", path);
+    warn("Failed to open file '%s', sending 404\n", path);
 
     snprintf(buffer, LINE_BUF_LEN,
      "HTTP/1.1 404 Not Found\r\n"
@@ -1586,13 +1586,13 @@ bool host_handle_http_request(struct host *h)
 
     if(!__send(h->fd, buffer, strlen(buffer)))
     {
-      warning("Failed to send 404 status code\n");
+      warn("Failed to send 404 status code\n");
       return false;
     }
 
     if(!__send(h->fd, resp_404, strlen(resp_404)))
     {
-      warning("Failed to send 404 payload\n");
+      warn("Failed to send 404 payload\n");
       return false;
     }
 
@@ -1606,7 +1606,7 @@ bool host_handle_http_request(struct host *h)
   ret = host_send_file(h, f, mime_type);
   if(ret != HOST_SUCCESS)
   {
-    warning("Failed to send file '%s' over HTTP (error %d)\n", path, ret);
+    warn("Failed to send file '%s' over HTTP (error %d)\n", path, ret);
     return false;
   }
 

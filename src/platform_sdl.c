@@ -81,7 +81,7 @@ bool platform_init(void)
 
   if(SDL_Init(flags) < 0)
   {
-    warning("Failed to initialize SDL: %s\n", SDL_GetError());
+    warn("Failed to initialize SDL: %s\n", SDL_GetError());
     return false;
   }
 

@@ -777,7 +777,7 @@ static int set_graphics_output(const char *video_output)
   // The first renderer was NULL, this shouldn't happen
   if(!renderer->name)
   {
-    warning("No renderers built, please provide a valid config.h!\n");
+    warn("No renderers built, please provide a valid config.h!\n");
     return false;
   }
 

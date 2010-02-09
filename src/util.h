@@ -126,7 +126,7 @@ CORE_LIBSPEC extern const char *mod_gdm_ext[];
    fflush(stdout); \
  } while(0)
 
-#define warning(...) \
+#define warn(...) \
  do { \
    fprintf(stderr, "WARNING: " __VA_ARGS__); \
    fflush(stderr); \

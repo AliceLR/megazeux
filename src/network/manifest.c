@@ -179,7 +179,7 @@ static struct manifest_entry *manifest_list_create(FILE *f)
   return head;
 
 err_invalid_manifest:
-  warning("Malformed manifest file.\n");
+  warn("Malformed manifest file.\n");
   manifest_list_free(&head);
   return head;
 }
@@ -192,7 +192,7 @@ static struct manifest_entry *manifest_get_local(void)
   f = fopen("manifest.txt", "rb");
   if(!f)
   {
-    warning("Local manifest.txt is missing\n");
+    warn("Local manifest.txt is missing\n");
     return NULL;
   }
 
@@ -215,14 +215,14 @@ static struct manifest_entry *manifest_get_remote(struct host *h,
   f = fopen("manifest.txt", "w+b");
   if(!f)
   {
-    warning("Failed to open local manifest.txt for writing\n");
+    warn("Failed to open local manifest.txt for writing\n");
     return NULL;
   }
 
   ret = host_recv_file(h, url, f, "text/plain");
   if(ret != HOST_SUCCESS)
   {
-    warning("Processing manifest.txt failed (error %d)\n", ret);
+    warn("Processing manifest.txt failed (error %d)\n", ret);
     return NULL;
   }
 
@@ -344,7 +344,7 @@ static void manifest_add_list_validate_augment(struct manifest_entry *local,
       fclose(f);
     }
 
-    warning("Local file '%s' failed manifest validation\n", e->name);
+    warn("Local file '%s' failed manifest validation\n", e->name);
 
     new_added = manifest_entry_copy(e);
     if(*added)
@@ -421,14 +421,14 @@ bool manifest_entry_download_replace(struct host *h, const char *basedir,
     snprintf(buf, LINE_BUF_LEN, "%s~", e->name);
     if(rename(e->name, buf))
     {
-      warning("Failed to rename in-use file '%s' to '%s'\n", e->name, buf);
+      warn("Failed to rename in-use file '%s' to '%s'\n", e->name, buf);
       goto err_out;
     }
 
     f = fopen(e->name, "w+b");
     if(!f)
     {
-      warning("Unable to open file '%s' for writing\n", e->name);
+      warn("Unable to open file '%s' for writing\n", e->name);
       goto err_out;
     }
   }
@@ -440,14 +440,14 @@ bool manifest_entry_download_replace(struct host *h, const char *basedir,
   ret = host_recv_file(h, buf, f, "application/octet-stream");
   if(ret != HOST_SUCCESS)
   {
-    warning("File '%s' could not be downloaded (error %d)\n", e->name, ret);
+    warn("File '%s' could not be downloaded (error %d)\n", e->name, ret);
     goto err_close;
   }
 
   rewind(f);
   if(!manifest_entry_check_validity(e, f))
   {
-    warning("File '%s' failed validation\n", e->name);
+    warn("File '%s' failed validation\n", e->name);
     goto err_close;
   }
 
