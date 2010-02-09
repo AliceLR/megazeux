@@ -768,6 +768,80 @@ static void flash_thing(World *mzx_world, int start, int end,
   }
 }
 
+static void clear_layer_block(int src_x, int src_y, int width,
+ int height, char *dest_char, char *dest_color, int dest_width)
+{
+  int dest_offset = src_x + (src_y * dest_width);
+  int dest_skip = dest_width - width;
+  int i, i2;
+
+  for(i = 0; i < height; i++, dest_offset += dest_skip)
+  {
+    for(i2 = 0; i2 < width; i2++, dest_offset++)
+    {
+      // Now perform the copy to the buffer sections
+      dest_char[dest_offset] = 32;
+      dest_color[dest_offset] = 7;
+    }
+  }
+}
+
+static void clear_board_block(Board *src_board, int x, int y,
+ int width, int height)
+{
+  int board_width = src_board->board_width;
+  int dest_offset = x + (y * board_width);
+  int dest_skip = board_width - width;
+  int src_offset = 0;
+  char *level_id = src_board->level_id;
+  char *level_param = src_board->level_param;
+  char *level_color = src_board->level_color;
+  char *level_under_id = src_board->level_under_id;
+  char *level_under_param = src_board->level_under_param;
+  char *level_under_color = src_board->level_under_color;
+  mzx_thing dest_id;
+  int dest_param;
+  int i, i2;
+
+  for(i = 0; i < height; i++, dest_offset += dest_skip)
+  {
+    for(i2 = 0; i2 < width; i2++, src_offset++,
+     dest_offset++)
+    {
+      dest_id = (mzx_thing)level_id[dest_offset];
+      if(dest_id != PLAYER)
+      {
+        dest_param = level_param[dest_offset];
+
+        if(dest_id == SENSOR)
+        {
+          clear_sensor_id(src_board, dest_param);
+        }
+        else
+
+        if(is_signscroll(dest_id))
+        {
+          clear_scroll_id(src_board, dest_param);
+        }
+        else
+
+        if(is_robot(dest_id))
+        {
+          clear_robot_id(src_board, dest_param);
+        }
+
+        level_id[dest_offset] = (char)SPACE;
+        level_param[dest_offset] = 0;
+        level_color[dest_offset] = 7;
+      }
+
+      level_under_id[dest_offset] = (char)SPACE;
+      level_under_param[dest_offset] = 0;
+      level_under_color[dest_offset] = 7;
+    }
+  }
+}
+
 void edit_world(World *mzx_world)
 {
   Board *src_board;

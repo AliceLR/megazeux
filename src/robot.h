@@ -96,13 +96,8 @@ int duplicate_sensor(Board *src_board, Sensor *cur_sensor);
 void optimize_null_objects(Board *src_board);
 int get_robot_id(Board *src_board, const char *name);
 
-// These are part of runrobo2.cpp
 int place_player_xy(World *mzx_world, int x, int y);
 void run_robot(World *mzx_world, int id, int x, int y);
-void clear_layer_block(int src_x, int src_y, int width,
- int height, char *dest_char, char *dest_color, int dest_width);
-void clear_board_block(Board *src_board, int x, int y,
- int width, int height);
 void setup_overlay(Board *src_board, int mode);
 void replace_player(World *mzx_world);
 
