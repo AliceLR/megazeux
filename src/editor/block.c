@@ -19,16 +19,17 @@
 
 /* Block functions and dialogs */
 
-#include <stdio.h>
-
-#include "helpsys.h"
-#include "idput.h"
-#include "error.h"
 #include "block.h"
-#include "window.h"
-#include "data.h"
-#include "idarray.h"
-#include "world_struct.h"
+
+#include "../helpsys.h"
+#include "../idput.h"
+#include "../error.h"
+#include "../window.h"
+#include "../data.h"
+#include "../idarray.h"
+#include "../world_struct.h"
+
+#include <stdio.h>
 
 //--------------------------
 //

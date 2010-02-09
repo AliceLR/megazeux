@@ -27,7 +27,7 @@
 
 __M_BEGIN_DECLS
 
-#include "world_struct.h"
+#include "../world_struct.h"
 
 int char_editor(World *mzx_world);
 int char_editor_ext(World *mzx_world);

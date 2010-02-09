@@ -20,7 +20,7 @@
 /* Fill function. */
 
 #include "fill.h"
-#include "world_struct.h"
+
 #include "edit.h"
 
 /* Pseudo-code algorithm-

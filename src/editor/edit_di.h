@@ -26,7 +26,8 @@
 
 __M_BEGIN_DECLS
 
-#include "window.h"
+#include "../world_struct.h"
+#include "../window.h"
 
 void board_info(World *mzx_world);
 void board_exits(World *mzx_world);

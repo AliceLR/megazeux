@@ -27,20 +27,22 @@
 
 #include <math.h>
 
-#include "robo_ed.h"
-#include "rasm.h"
-#include "world.h"
-#include "event.h"
-#include "window.h"
-#include "graphics.h"
-#include "intake.h"
-#include "param.h"
+#include "../rasm.h"
+#include "../world.h"
+#include "../event.h"
+#include "../window.h"
+#include "../graphics.h"
+#include "../intake.h"
+#include "../helpsys.h"
+#include "../fsafeopen.h"
+#include "../configure.h"
+#include "../util.h"
+
 #include "char_ed.h"
-#include "helpsys.h"
 #include "edit.h"
-#include "fsafeopen.h"
-#include "configure.h"
-#include "util.h"
+#include "param.h"
+#include "robo_ed.h"
+#include "window.h"
 
 #ifdef __WIN32__
 #include <windows.h>

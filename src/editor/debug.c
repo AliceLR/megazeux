@@ -20,11 +20,12 @@
 
 #include "debug.h"
 
-#include "graphics.h"
-#include "counter.h"
-#include "window.h"
-#include "intake.h"
-#include "world.h"
+#include "../graphics.h"
+#include "../counter.h"
+#include "../window.h"
+#include "../intake.h"
+#include "../world.h"
+
 #include "edit.h"
 
 #define CVALUE_COL_OFFSET 63

@@ -24,20 +24,22 @@
 
 #include <string.h>
 
-#include "helpsys.h"
-#include "graphics.h"
-#include "intake.h"
-#include "scrdisp.h"
-#include "error.h"
-#include "param.h"
-#include "window.h"
-#include "data.h"
+#include "../helpsys.h"
+#include "../graphics.h"
+#include "../intake.h"
+#include "../scrdisp.h"
+#include "../error.h"
+#include "../window.h"
+#include "../data.h"
+#include "../robot.h"
+#include "../rasm.h"
+#include "../event.h"
+
 #include "edit.h"
-#include "robot.h"
-#include "robo_ed.h"
-#include "rasm.h"
-#include "event.h"
 #include "edit_di.h"
+#include "param.h"
+#include "robo_ed.h"
+#include "window.h"
 
 extern const int def_params[128];
 

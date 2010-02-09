@@ -25,7 +25,7 @@
 
 __M_BEGIN_DECLS
 
-#include "world_struct.h"
+#include "../world_struct.h"
 
 void debug_counters(World *mzx_world);
 void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y);

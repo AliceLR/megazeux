@@ -24,9 +24,9 @@
 
 #include "compat.h"
 
-#include "world_struct.h"
-
 __M_BEGIN_DECLS
+
+#include "../world_struct.h"
 
 void fill_area(World *mzx_world, mzx_thing id, int color, int param,
  int x, int y, Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor,

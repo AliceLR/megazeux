@@ -26,6 +26,8 @@
 
 __M_BEGIN_DECLS
 
+#include "../world_struct.h"
+
 void palette_editor(World *mzx_world);
 
 __M_END_DECLS

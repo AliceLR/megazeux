@@ -21,11 +21,12 @@
 
 #include <string.h>
 
-#include "helpsys.h"
+#include "../helpsys.h"
+#include "../sfx.h"
+#include "../window.h"
+#include "../data.h"
+
 #include "sfx_edit.h"
-#include "sfx.h"
-#include "window.h"
-#include "data.h"
 
 // 8 char names per sfx
 

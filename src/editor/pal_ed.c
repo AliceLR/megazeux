@@ -22,12 +22,13 @@
 #include <stdlib.h>
 #include <string.h>
 
-#include "helpsys.h"
+#include "../helpsys.h"
+#include "../window.h"
+#include "../data.h"
+#include "../graphics.h"
+#include "../event.h"
+
 #include "pal_ed.h"
-#include "window.h"
-#include "data.h"
-#include "graphics.h"
-#include "event.h"
 
 //---------------------------------------------
 //

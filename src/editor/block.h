@@ -26,6 +26,8 @@
 
 __M_BEGIN_DECLS
 
+#include "../world_struct.h"
+
 int block_cmd(World *mzx_world);
 int rtoo_obj_type(World *mzx_world);
 int choose_char_set(World *mzx_world);

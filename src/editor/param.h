@@ -26,6 +26,8 @@
 
 __M_BEGIN_DECLS
 
+#include "../world_struct.h"
+
 int edit_param(World *mzx_world, int id, int param);
 int edit_robot(World *mzx_world, Robot *cur_robot);
 int edit_scroll(World *mzx_world, Scroll *cur_scroll);

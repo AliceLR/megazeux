@@ -43,15 +43,7 @@ int draw_window_box(int x1, int y1, int x2, int y2, int color,
 int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
  int dark_color, int corner_color, int shadow, int fill_center,
  int offset, int c_offset);
-int list_menu(const char **choices, int choice_size, const char *title,
-  int current, int num_choices, int xpos);
 int char_selection(int current);
-int color_selection(int current, int allow_wild);
-
-// Shell for list_menu() (returns -1 for ESC)
-int add_board(World *mzx_world, int current);
-int choose_board(World *mzx_world, int current, const char *title,
- int board0_none);
 
 // Shell for run_dialog() (returns 0 for ok, 1 for cancel, -1 for ESC)
 int confirm(World *mzx_world, const char *str);
@@ -202,14 +194,26 @@ typedef struct
   int *result;
 } board_list;
 
+void construct_element(element *e, int x, int y,
+ int width, int height,
+ void (* draw_function)(World *mzx_world, dialog *di,
+  element *e, int color, int active),
+ int (* key_function)(World *mzx_world, dialog *di,
+  element *e, int key),
+ int (* click_function)(World *mzx_world, dialog *di,
+  element *e, int mouse_button, int mouse_x, int mouse_y,
+  int new_active),
+ int (* drag_function)(World *mzx_world, dialog *di,
+  element *e, int mouse_button, int mouse_x, int mouse_y),
+ int (* idle_function)(World *mzx_world, dialog *di,
+  element *e));
+
 void construct_dialog(dialog *src, const char *title, int x, int y,
  int width, int height, element **elements, int num_elements,
  int start_element);
 void destruct_dialog(dialog *src);
 
 element *construct_label(int x, int y, const char *text);
-element *construct_check_box(int x, int y, const char **choices,
- int num_choices, int max_length, int *results);
 element *construct_radio_button(int x, int y,
  const char **choices, int num_choices, int max_length, int *result);
 element *construct_button(int x, int y, const char *label,
@@ -217,8 +221,6 @@ element *construct_button(int x, int y, const char *label,
 element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
  int mult_five, int *result);
-element *construct_board_list(int x, int y,
- const char *title, int board_zero_as_none, int *result);
 
 int choose_file_ch(World *mzx_world, const char **wildcards, char *ret,
  const char *title, int dirs_okay);
@@ -253,26 +255,25 @@ int new_file(World *mzx_world, const char **wildcards, char *ret,
 #define DI_INPUT_BOX_CORNER 70
 #define DI_INPUT_BOX_LABEL  78
 
+#define arrow_char '\x10'
+#define pc_top_arrow '\x1E'
+#define pc_bottom_arrow '\x1F'
+#define pc_filler '\xB1'
+#define pc_dot '\xFE'
+#define pc_meter 219
+
 int run_dialog(World *mzx_world, dialog *di);
 
 // Characters for dialog box elements
-extern char check_on[4];
-extern char check_off[4];
 extern char radio_on[4];
 extern char radio_off[4];
-extern unsigned char color_blank;
-extern unsigned char color_wild;
-extern unsigned char color_dot;
-extern char list_button[4];
 extern char num_buttons[7];
 
 #ifdef CONFIG_EDITOR
+extern int context;
+
 int char_selection_ext(int current, int allow_multichar,
  int *width_ptr, int *height_ptr);
-int choose_file(World *mzx_world, const char **wildcards, char *ret,
- const char *title, int dirs_okay);
-element *construct_char_box(int x, int y, const char *question,
- int allow_char_255, int *result);
 void construct_dialog_ext(dialog *src, const char *title, int x, int y,
  int width, int height, element **elements, int num_elements,
  int sfx_test_for_input, int pad_space, int start_element,
@@ -282,9 +283,6 @@ element *construct_input_box(int x, int y, const char *question,
 element *construct_list_box(int x, int y, const char **choices,
  int num_choices, int num_choices_visible, int choice_length,
  int return_value, int *result);
-void draw_color_box(int color, int q_bit, int x, int y);
-element *construct_color_box(int x, int y, const char *question,
- int allow_wildcard, int *result);
 int file_manager(World *mzx_world, const char **wildcards, char *ret,
  const char *title, int dirs_okay, int allow_new, element **dialog_ext,
  int num_ext, int ext_height, int allow_dir_change);

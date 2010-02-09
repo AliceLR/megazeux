@@ -21,22 +21,23 @@
 
 #include <string.h>
 
-#include "helpsys.h"
-#include "intake.h"
-#include "graphics.h"
-#include "edit.h"
-#include "window.h"
-#include "edit_di.h"
-#include "data.h"
-#include "idput.h"
-#include "const.h"
-#include "world_struct.h"
-#include "robo_ed.h"
-#include "error.h"
-#include "counter.h"
+#include "../helpsys.h"
+#include "../intake.h"
+#include "../graphics.h"
+#include "../window.h"
+#include "../data.h"
+#include "../idput.h"
+#include "../const.h"
+#include "../world_struct.h"
+#include "../error.h"
+#include "../counter.h"
+#include "../board.h"
+#include "../world.h"
 
-#include "board.h"
-#include "world.h"
+#include "edit.h"
+#include "edit_di.h"
+#include "robo_ed.h"
+#include "window.h"
 
 #define MAX_ELEMS 15
 

@@ -25,13 +25,14 @@
 #include <string.h>
 #include <math.h>
 
-#include "helpsys.h"
+#include "../helpsys.h"
+#include "../window.h"
+#include "../graphics.h"
+#include "../data.h"
+#include "../event.h"
+#include "../world.h"
+
 #include "char_ed.h"
-#include "window.h"
-#include "graphics.h"
-#include "data.h"
-#include "event.h"
-#include "world.h"
 
 //----------------------------------------------
 //  +----------------+ Current char-     (#000)
