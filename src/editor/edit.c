@@ -983,7 +983,6 @@ static void handle_editor_mouse(World *mzx_world, EditorState *state)
 
 static int handle_editor_keypress(World *mzx_world, EditorState *state, int keycode_internal)
 {
-  int text_place;
   int i;
   int key = get_key(keycode_internal);
   const char *mzb_ext[] = { ".MZB", NULL };
@@ -1505,7 +1504,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -1541,7 +1540,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -1580,7 +1579,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
 
       break;
@@ -1666,7 +1665,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -1729,7 +1728,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -1876,7 +1875,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -1890,7 +1889,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -1937,7 +1936,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -2038,7 +2037,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -2122,7 +2121,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -2836,7 +2835,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
 
       break;
@@ -2861,7 +2860,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
 
       break;
@@ -2961,7 +2960,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
     }
 
@@ -3036,7 +3035,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
 
       if(state->draw_mode == 2)
       {
-        text_place = 1;
+        state->text_place = 1;
       }
 
       break;
@@ -3110,7 +3109,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -3173,7 +3172,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
       }
       else
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -3213,7 +3212,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
 
       if(state->draw_mode == 2)
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -3245,7 +3244,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
 
       if(state->draw_mode == 2)
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -3275,7 +3274,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
     {
       if(state->draw_mode == 2)
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       else
 
@@ -3325,7 +3324,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
 
       if(state->draw_mode == 2)
       {
-        text_place = 1;
+        state->text_place = 1;
       }
       break;
     }
@@ -3340,7 +3339,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
 
       if(state->draw_mode == 2)
       {
-        text_place = 1;
+        state->text_place = 1;
       }
 
       break;
@@ -3372,7 +3371,7 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
 
       if(state->draw_mode == 2)
       {
-        text_place = 1;
+        state->text_place = 1;
       }
 
       break;
@@ -3387,11 +3386,11 @@ static int handle_editor_keypress(World *mzx_world, EditorState *state, int keyc
     default:
     {
       if(state->draw_mode == 2)
-        text_place = 1;
+        state->text_place = 1;
     }
   }
 
-  if(text_place)
+  if(state->text_place)
   {
     key = get_key(keycode_unicode);
     if(key != 0)
@@ -3629,7 +3628,6 @@ void edit_world(World *mzx_world)
   int backup_timestamp = get_ticks();
   int backup_num = 0;
   int ret = 0;
-  int text_place;
   
   state.copy_robot.used = 0;
   state.copy_scroll.used = 0;
@@ -3735,7 +3733,7 @@ void edit_world(World *mzx_world)
 
     draw_editor(mzx_world, &state);
 
-    text_place = 0;
+    state.text_place = 0;
 
     update_screen();
 
