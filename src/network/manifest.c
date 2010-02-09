@@ -233,16 +233,8 @@ err_out:
   return manifest;
 }
 
-static bool manifest_entry_equal(struct manifest_entry *l,
- struct manifest_entry *r)
-{
-  return strcmp(l->name, r->name) == 0 &&
-         l->size == r->size &&
-         memcmp(l->sha256, r->sha256, sizeof(Uint32) * 8) == 0;
-}
-
-static void manifest_lists_remove_duplicates(struct manifest_entry **local,
- struct manifest_entry **remote)
+static void manifest_lists_remove_duplicate_names(
+ struct manifest_entry **local, struct manifest_entry **remote)
 {
   struct manifest_entry *l, *prev_l, *next_l;
 
@@ -254,7 +246,7 @@ static void manifest_lists_remove_duplicates(struct manifest_entry **local,
     {
       next_r = r->next;
 
-      if(manifest_entry_equal(l, r))
+      if(strcmp(l->name, r->name) == 0)
       {
         if(prev_r)
           prev_r->next = next_r;
@@ -392,13 +384,13 @@ bool manifest_get_updates(struct host *h, const char *basedir,
     /* The "removed" list is simply the local list; both lists are modified
      * in place to filter any duplicate entries.
      */
-    manifest_lists_remove_duplicates(removed, added);
+    manifest_lists_remove_duplicate_names(removed, added);
 
     /* This hack removes the "added" list entries from the remote list, to
      * give us a list containing only the files that remained the same.
      */
     added_copy = manifest_list_copy(*added);
-    manifest_lists_remove_duplicates(&remote, &added_copy);
+    manifest_lists_remove_duplicate_names(&remote, &added_copy);
     assert(added_copy == NULL);
   }
 

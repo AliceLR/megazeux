@@ -39,6 +39,8 @@ USERS
   if using any hardware renderer (i.e. not the default software renderer). To
   get the old behaviour back you must set fullscreen_resolution explicitly.
 + Fix a bug where web and thick web would be treated the same.
++ Fixed a bug in the updater where modified/replaced files would be considered
+  for deletion.
 
 DEVELOPERS
 
