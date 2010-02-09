@@ -20,8 +20,6 @@
 
 #include "robot.h"
 
-#include "../robot.h"
-
 #include <string.h>
 
 // TODO: This might have to be something different.
@@ -32,18 +30,20 @@ void create_blank_robot_direct(struct robot *cur_robot, int x, int y)
 
 #ifdef CONFIG_DEBYTECODE
   {
+    const char empty_robot_program[] = "";
     int program_source_length = strlen(empty_robot_program) + 1;
 
     cur_robot->program_source = cmalloc(program_source_length);
     cur_robot->program_source_length = program_source_length;
 
-    memcpy(program_source, empty_robot_program, program_source_length);
+    memcpy(cur_robot->program_source,
+     empty_robot_program, program_source_length);
   }
 #else
   cur_robot->program_bytecode = cmalloc(2);
   cur_robot->program_bytecode_length = 2;
-  program[0] = 0xFF;
-  program[1] = 0x00;
+  cur_robot->program_bytecode[0] = 0xFF;
+  cur_robot->program_bytecode[1] = 0x00;
 #endif
 
   cur_robot->xpos = x;
@@ -95,7 +95,7 @@ void replace_sensor(struct board *src_board, struct sensor *src_sensor,
   duplicate_sensor_direct(src_sensor, cur_sensor);
 }
 
-#ifdef CONFIG_BYTECODE
+#ifdef CONFIG_DEBYTECODE
 
 // For the editor: only copies the source and static parameters, doesn't
 // worry about program or labels, but it needs the runtime stuff,
