@@ -83,22 +83,23 @@ dir_t *dir_open(const char *path);
 void dir_close(dir_t *dir);
 int dir_get_next_entry(dir_t *dir, char *entry);
 
-#if defined(__WIN32__)
-#if defined(__STRICT_ANSI__)
+#if defined(__WIN32__) && defined(__STRICT_ANSI__)
 CORE_LIBSPEC int strcasecmp(const char *s1, const char *s2);
 CORE_LIBSPEC int strncasecmp(const char *s1, const char *s2, size_t n);
-#endif // __STRICT_ANSI__
+#endif // __WIN32__ && __STRICT_ANSI__
+
+#if defined(__WIN32__) || defined(__amigaos__)
 CORE_LIBSPEC char *strsep(char **stringp, const char *delim);
-#else // !__WIN32__
+#endif // __WIN32__ || __amigaos__
+
+#ifndef __WIN32__
 #if defined(CONFIG_PSP) || defined(CONFIG_GP2X) \
  || defined(CONFIG_NDS) || defined(CONFIG_WII)
 #include <string.h>
 #else
-#ifndef _MSC_VER
 #include <strings.h>
 #endif
-#endif
-#endif // __WIN32__
+#endif // !__WIN32__
 
 /* Some platforms like NDS don't have a rename(2), so we need
  * to implement it.

@@ -15,6 +15,10 @@ network_flags   += -DNETWORK_LIBSPEC="__declspec(dllexport)" ${SDL_CFLAGS}
 network_ldflags += ${SDL_LDFLAGS}
 endif
 
+ifeq (${PLATFORM},amiga)
+network_ldflags += -lnet
+endif
+
 ${network_obj}/%.o: ${network_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${network_flags} -c $< -o $@

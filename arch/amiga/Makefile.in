@@ -19,5 +19,8 @@ DSOSONAME  = -Wl,-soname,
 ifeq (${BUILD_MODULAR},1)
 ARCH_CFLAGS   += -fPIC
 ARCH_CXXFLAGS += -fPIC
-ARCH_LDFLAGS  += -use-dynld
+ARCH_LDFLAGS  += -use-dynld -lunix
 endif
+
+# Amiga needs PNG to be statically linked (inc. zlib)
+LIBPNG_LDFLAGS = `libpng12-config --static --ldflags`

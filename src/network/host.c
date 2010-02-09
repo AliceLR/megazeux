@@ -85,6 +85,114 @@ static inline bool __host_last_error_fatal(void)
   }
 }
 
+#ifndef __amigaos__
+#define CONFIG_IPV6
+#endif
+
+#if defined(__amigaos__)
+
+struct addrinfo
+{
+  int ai_flags;
+  int ai_family;
+  int ai_socktype;
+  int ai_protocol;
+  size_t ai_addrlen;
+  struct sockaddr *ai_addr;
+  char *ai_canonname;
+  struct addrinfo *ai_next;
+};
+
+#define EAI_NONAME -2
+#define EAI_FAMILY -6
+
+#define getaddrinfo             __getaddrinfo
+#define freeaddrinfo            __freeaddrinfo
+
+static const char *gai_strerror(int errcode)
+{
+  switch(errcode)
+  {
+    case EAI_NONAME:
+      return "Node or service is not known.";
+    case EAI_FAMILY:
+      return "Address family is not supported.";
+    default:
+      return "Unknown error.";
+  }
+}
+
+#endif // __amigaos__
+
+#if defined(__WIN32__) || defined(__amigaos__)
+
+// Forward declarations
+static inline struct hostent *platform_gethostbyname(const char *name);
+static inline uint16_t platform_htons(uint16_t hostshort);
+
+static int __getaddrinfo(const char *node, const char *service,
+ const struct addrinfo *hints, struct addrinfo **res)
+{
+  struct addrinfo *r = NULL, *r_head = NULL;
+  struct hostent *hostent;
+  int i;
+
+  if(hints->ai_family != AF_INET)
+    return EAI_FAMILY;
+
+  hostent = platform_gethostbyname(node);
+  if(hostent->h_addrtype != AF_INET)
+    return EAI_NONAME;
+
+  /* Walk the h_addr_list and create faked addrinfo structures
+   * corresponding to the addresses. We don't support non-IPV4
+   * addresses or any other magic, but that's an acceptable
+   * fallback, and it won't affect users on XP or newer.
+   */
+  for(i = 0; hostent->h_addr_list[i]; i++)
+  {
+    struct sockaddr_in *addr;
+
+    if(r_head)
+    {
+      r->ai_next = malloc(sizeof(struct addrinfo));
+      r = r->ai_next;
+    }
+    else
+      r_head = r = malloc(sizeof(struct addrinfo));
+
+    // Zero the fake addrinfo and fill out the essential fields
+    memset(r, 0, sizeof(struct addrinfo));
+    r->ai_family = hints->ai_family;
+    r->ai_socktype = hints->ai_socktype;
+    r->ai_protocol = hints->ai_protocol;
+    r->ai_addrlen = sizeof(struct sockaddr_in);
+    r->ai_addr = malloc(r->ai_addrlen);
+
+    // Zero the fake ipv4 addr and fill our all of the fields
+    addr = (struct sockaddr_in *)r->ai_addr;
+    memcpy(&addr->sin_addr.s_addr, hostent->h_addr_list[i], sizeof(uint32_t));
+    addr->sin_family = r->ai_family;
+    addr->sin_port = platform_htons(atoi(service));
+  }
+
+  *res = r_head;
+  return 0;
+}
+
+static void __freeaddrinfo(struct addrinfo *res)
+{
+  struct addrinfo *r, *r_next;
+  for(r = res; r; r = r_next)
+  {
+    r_next = r->ai_next;
+    free(r->ai_addr);
+    free(r);
+  }
+}
+
+#endif // __WIN32__ || __amigaos__
+
 #ifndef __WIN32__
 
 bool host_last_error_fatal(void)
@@ -130,6 +238,13 @@ static inline struct hostent *platform_gethostbyname(const char *name)
 {
   return gethostbyname(name);
 }
+
+#ifdef __amigaos__
+static inline uint16_t platform_htons(uint16_t hostshort)
+{
+  return htons(hostshort);
+}
+#endif
 
 static inline int platform_listen(int sockfd, int backlog)
 {
@@ -417,73 +532,12 @@ static inline uint16_t platform_htons(uint16_t hostshort)
   return socksyms.htons(hostshort);
 }
 
-static int getaddrinfo_legacy_wrapper(const char *node, const char *service,
- const struct addrinfo *hints, struct addrinfo **res)
-{
-  struct addrinfo *r, *r_head = NULL;
-  struct hostent *hostent;
-  int i;
-
-  if(hints->ai_family != AF_INET)
-    return EAI_FAMILY;
-
-  hostent = platform_gethostbyname(node);
-  if(hostent->h_addrtype != AF_INET)
-    return EAI_NONAME;
-
-  /* Walk the h_addr_list and create faked addrinfo structures
-   * corresponding to the addresses. We don't support non-IPV4
-   * addresses or any other magic, but that's an acceptable
-   * fallback, and it won't affect users on XP or newer.
-   */
-  for(i = 0; hostent->h_addr_list[i]; i++)
-  {
-    struct sockaddr_in *addr;
-
-    if(r_head)
-    {
-      r->ai_next = malloc(sizeof(struct addrinfo));
-      r = r->ai_next;
-    }
-    else
-      r_head = r = malloc(sizeof(struct addrinfo));
-
-    // Zero the fake addrinfo and fill out the essential fields
-    memset(r, 0, sizeof(struct addrinfo));
-    r->ai_family = hints->ai_family;
-    r->ai_socktype = hints->ai_socktype;
-    r->ai_protocol = hints->ai_protocol;
-    r->ai_addrlen = sizeof(struct sockaddr_in);
-    r->ai_addr = malloc(r->ai_addrlen);
-
-    // Zero the fake ipv4 addr and fill our all of the fields
-    addr = (struct sockaddr_in *)r->ai_addr;
-    memcpy(&addr->sin_addr.s_addr, hostent->h_addr_list[i], sizeof(uint32_t));
-    addr->sin_family = r->ai_family;
-    addr->sin_port = platform_htons(atoi(service));
-  }
-
-  *res = r_head;
-  return 0;
-}
-
-static void freeaddrinfo_legacy_wrapper(struct addrinfo *res)
-{
-  struct addrinfo *r, *r_next;
-  for(r = res; r; r = r_next)
-  {
-    r_next = r->ai_next;
-    free(r->ai_addr);
-    free(r);
-  }
-}
-
 static inline void platform_freeaddrinfo(struct addrinfo *res)
 {
   if(socksyms.freeaddrinfo)
     socksyms.freeaddrinfo(res);
   else
-    freeaddrinfo_legacy_wrapper(res);
+    __freeaddrinfo(res);
 }
 
 static inline int platform_getaddrinfo(const char *node, const char *service,
@@ -491,7 +545,7 @@ static inline int platform_getaddrinfo(const char *node, const char *service,
 {
   if(socksyms.getaddrinfo)
     return socksyms.getaddrinfo(node, service, hints, res);
-  return getaddrinfo_legacy_wrapper(node, service, hints, res);
+  return __getaddrinfo(node, service, hints, res);
 }
 
 static inline int platform_listen(int sockfd, int backlog)
@@ -561,10 +615,11 @@ struct host *host_create(host_type_t type, host_family_t fam)
 
   switch(fam)
   {
+#ifdef CONFIG_IPV6
     case HOST_FAMILY_IPV6:
       af = AF_INET6;
       break;
-
+#endif
     default:
       af = AF_INET;
       break;
@@ -589,7 +644,7 @@ struct host *host_create(host_type_t type, host_family_t fam)
     return NULL;
   }
 
-#ifdef IPV6_V6ONLY
+#if defined(CONFIG_IPV6) && defined(IPV6_V6ONLY)
   if(af == AF_INET6)
   {
     const uint32_t off = 0;
@@ -737,10 +792,11 @@ struct host *host_accept(struct host *s)
 
   switch(s->af)
   {
+#ifdef CONFIG_IPV6
     case AF_INET6:
       addrlen = sizeof(struct sockaddr_in6);
       break;
-
+#endif
     default:
       addrlen = sizeof(struct sockaddr_in);
       break;
@@ -774,6 +830,7 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
 {
   struct addrinfo *ai;
 
+#ifdef CONFIG_IPV6
   /* First try to connect to an IPv6 address (if any)
    */
   for(ai = ais; ai; ai = ai->ai_next)
@@ -789,6 +846,7 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
 
   if(ai)
     return ai;
+#endif
 
   /* No IPv6 addresses could be connected; try IPv4 (if any)
    */
@@ -810,6 +868,7 @@ static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv)
 {
   struct addrinfo *ai;
 
+#ifdef CONFIG_IPV6
   /* First try to bind to an IPv6 address (if any)
    */
   for(ai = ais; ai; ai = ai->ai_next)
@@ -825,6 +884,7 @@ static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv)
 
   if(ai)
     return ai;
+#endif
 
   /* No IPv6 addresses could be bound; try IPv4 (if any)
    */
