@@ -159,7 +159,7 @@
 # supports scaling, but don't want to accidentally scale it (which
 # may distort the image), you can switch this off here.
 
-enable_resizing = 1
+# enable_resizing = 1
 
 # MZX is limited internally to 8bit colour, but it can upmix its
 # rendering to 32bit if your video card has difficulty with 8bit

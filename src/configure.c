@@ -456,7 +456,7 @@ static config_info default_options =
   480,                          // resolution_height
   640,                          // window_width
   350,                          // window_height
-  0,                            // allow_resize
+  1,                            // allow_resize
   VIDEO_OUTPUT_DEFAULT,         // video_output
   FORCE_BPP_DEFAULT,            // force_bpp
   "linear",                     // opengl filter method
