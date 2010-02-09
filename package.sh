@@ -29,10 +29,10 @@ createzip_psp() {
 # createzip_nds
 #
 createzip_nds() {
-	mv $TARGET.elf.nds $TARGET.nds &&
+	mv ${TARGET}run.elf.nds ${TARGET}run.nds &&
 	cp -f $NDSPAD pad.config &&
 	$SEVENZIP a -tzip dist/$TARGET-nds.zip \
-		$BINARY_DEPS $TARGET.nds $DOCS pad.config &&
+		$BINARY_DEPS ${TARGET}run.nds $DOCS pad.config &&
 	rm -f pad.config
 }
 
@@ -43,7 +43,7 @@ createzip_gp2x() {
 	cp -f $GP2XPAD pad.config &&
 	convert -scale 32x32 contrib/icons/quantump.png $TARGET.png &&
 	$SEVENZIP a -tzip dist/$TARGET-gp2x.zip \
-		$BINARY_DEPS $TARGET.gpe $DOCS pad.config $TARGET.png &&
+		$BINARY_DEPS ${TARGET}run.gpe $DOCS pad.config $TARGET.png &&
 	rm -f pad.config $TARGET.png
 }
 

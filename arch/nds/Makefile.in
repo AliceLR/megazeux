@@ -24,10 +24,8 @@ LIBNDS  := $(DEVKITPRO)/libnds
 #
 # NDS target rules
 #
-BINEXT        = .elf
-BINNAME       = ${TARGET}${BINEXT}
-BINNAME_STRIP = ${TARGET}${BINEXT}.strip
-STRIP         = /bin/true
+BINEXT = .elf
+STRIP  = /bin/true
 
 #
 # Override library paths.
@@ -65,14 +63,14 @@ arch/nds/%.o: arch/nds/%.c
 	${CC} -MD ${CFLAGS} ${core_flags} ${core_cflags} -c $< -o $@
 
 arm9bin: mzx
-	${OBJCOPY} -O binary ${mzx} ${mzx}.arm9
+	${OBJCOPY} -O binary ${mzxrun} ${mzxrun}.arm9
 
 arm7bin:
-	${MAKE} -C arch/nds TARGET=${TARGET}
+	${MAKE} -C arch/nds TARGET=${mzxrun}
 
 package: arm7bin arm9bin
-	ndstool -c ${mzx}.nds -7 arch/nds/${TARGET}.arm7 -9 ${mzx}.arm9
+	ndstool -c ${mzxrun}.nds -7 arch/nds/${mzxrun}.arm7 -9 ${mzxrun}.arm9
 
 clean:
-	@${MAKE} -C arch/nds TARGET=${TARGET} clean
-	@rm -f ${mzx}.nds arch/nds/${TARGET}.arm7 ${mzx}.arm9
+	@${MAKE} -C arch/nds TARGET=${mzxrun} clean
+	@rm -f ${mzxrun}.nds arch/nds/${mzxrun}.arm7 ${mzxrun}.arm9 arch/nds/*.{d,o}

@@ -17,8 +17,6 @@ STRIP   = /bin/true
 # PSP target rules
 #
 BINEXT = .elf
-BINNAME = ${TARGET}${BINEXT}
-BINNAME_STRIP = ${TARGET}${BINEXT}.strip
 
 # flag PSP build and link in c/psppower
 ARCH_CFLAGS   = -G0 -I${PREFIX}/sdk/include
@@ -26,14 +24,14 @@ ARCH_CXXFLAGS = ${ARCH_CFLAGS}
 ARCH_LDFLAGS  = -lc -lpsppower
 
 package: mzx
-	psp-fixup-imports ${BINNAME}
+	psp-fixup-imports ${mzxrun}
 	mksfo 'MegaZeux ${VERSION}' PARAM.SFO
-	psp-strip ${BINNAME} -o ${BINNAME_STRIP}
+	psp-strip ${mzxrun} -o ${mzxrun}.strip
 	convert -scale 80x80 -border 32x0 -bordercolor transparent \
 	        contrib/icons/quantump.png ICON0.PNG
 	pack-pbp EBOOT.PBP PARAM.SFO ICON0.PNG NULL \
-		 NULL NULL NULL ${BINNAME_STRIP} NULL
-	rm -f ${BINNAME_STRIP}
+		 NULL NULL NULL ${mzxrun}.strip NULL
+	rm -f ${mzxrun}.strip
 
 clean:
 	@rm -f EBOOT.PBP PARAM.SFO ICON0.PNG
