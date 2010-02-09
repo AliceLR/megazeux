@@ -255,14 +255,14 @@ static enum status convert_283_to_282_board(FILE *fp, int *delta)
 
   /* The world is now some bytes longer/shorter */
   if(delta)
-    *delta += (13 - board_mod_len - 2) + 182;
+    *delta = (13 - board_mod_len - 2) + 182;
   return SUCCESS;
 }
 
 static enum status convert_283_to_282(FILE *fp)
 {
+  int num_boards, i, total_delta = 0;
   unsigned int global_robot_offset;
-  int num_boards, i, delta = 0;
   long board_pointer_pos;
 
   if(fseek(fp, WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET) != 0)
@@ -302,23 +302,27 @@ static enum status convert_283_to_282(FILE *fp)
   {
     struct board_entry *board = &board_list[i];
     enum status ret;
+    int delta;
 
     if(board->size == 0)
       continue;
 
-    board->offset += delta;
+    board->offset += total_delta;
     if(fseek(fp, board->offset, SEEK_SET) != 0)
       return SEEK_ERROR;
 
     ret = convert_283_to_282_board(fp, &delta);
     if(ret != SUCCESS)
       return ret;
+
+    board->size += delta;
+    total_delta += delta;
   }
 
   if(fseek(fp, WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET) != 0)
     return SEEK_ERROR;
 
-  global_robot_offset += delta;
+  global_robot_offset += total_delta;
   fputud(global_robot_offset, fp);
 
   if(fseek(fp, board_pointer_pos, SEEK_SET) != 0)
