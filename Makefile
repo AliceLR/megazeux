@@ -119,15 +119,19 @@ package_clean: utils_package_clean
 	-@mv ${mzx}          ${mzx}.backup
 	-@mv ${mzx}.debug    ${mzx}.debug.backup
 ifeq (${BUILD_MODULAR},1)
-	-@mv ${core_target}   ${core_target}.backup
-	-@mv ${editor_target} ${editor_target}.backup
+	-@mv ${core_target}         ${core_target}.backup
+	-@mv ${core_target}.debug   ${core_target}.debug.backup
+	-@mv ${editor_target}       ${editor_target}.backup
+	-@mv ${editor_target}.debug ${editor_target}.debug.backup
 endif
 	@${MAKE} mzx_clean
 	@rm -f src/config.h
 	@echo "PLATFORM=none" > platform.inc
 ifeq (${BUILD_MODULAR},1)
-	-@mv ${core_target}.backup   ${core_target}
-	-@mv ${editor_target}.backup ${editor_target}
+	-@mv ${core_target}.backup         ${core_target}
+	-@mv ${core_target}.debug.backup   ${core_target}.debug
+	-@mv ${editor_target}.backup       ${editor_target}
+	-@mv ${editor_target}.debug.backup ${editor_target}.debug
 endif
 	-@mv ${mzxrun}.backup       ${mzxrun}
 	-@mv ${mzxrun}.debug.backup ${mzxrun}.debug
