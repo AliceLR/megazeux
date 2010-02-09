@@ -65,11 +65,11 @@ static const struct renderer_data renderers[] =
 #if defined(CONFIG_RENDER_SOFT)
   { "software", render_soft_register },
 #endif
-#if defined(CONFIG_RENDER_GL)
+#if defined(CONFIG_RENDER_GL_FIXED)
   { "opengl1", render_gl1_register },
   { "opengl2", render_gl2_register },
 #endif
-#if defined(CONFIG_RENDER_GLSL)
+#if defined(CONFIG_RENDER_GL_PROGRAM)
   { "glsl", render_glsl_register },
 #endif
 #if defined(CONFIG_RENDER_YUV)

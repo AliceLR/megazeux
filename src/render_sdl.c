@@ -38,7 +38,7 @@ int sdl_flags(int depth, bool fullscreen, bool resize)
   return flags;
 }
 
-#ifdef CONFIG_RENDER_GL
+#if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 
 bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize)
@@ -70,4 +70,5 @@ bool gl_swap_buffers(struct graphics_data *graphics)
   return true;
 }
 
-#endif // CONFIG_RENDER_GL
+#endif // CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM
+

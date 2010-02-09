@@ -56,7 +56,7 @@ static struct mzx_resource mzx_res[] = {
   { "mzx_smzx.chr",         NULL },
   { "mzx_edit.chr",         NULL },
   { "smzx.pal",             NULL },
-#ifdef CONFIG_RENDER_GLSL
+#ifdef CONFIG_RENDER_GL_PROGRAM
   { "shaders/scaler.vert",  NULL },
   { "shaders/scaler.frag",  NULL },
   { "shaders/tilemap.vert", NULL },
@@ -65,7 +65,7 @@ static struct mzx_resource mzx_res[] = {
   { "shaders/mouse.frag",   NULL },
   { "shaders/cursor.vert",  NULL },
   { "shaders/cursor.frag",  NULL },
-#endif  
+#endif
 };
 
 int mzx_res_init(const char *argv0)

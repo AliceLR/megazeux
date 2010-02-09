@@ -30,7 +30,7 @@ __M_BEGIN_DECLS
 
 int sdl_flags(int depth, bool fullscreen, bool resize);
 
-#ifdef CONFIG_RENDER_GL
+#if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 
 #include "render_gl.h"
 
@@ -85,7 +85,7 @@ bool gl_swap_buffers(struct graphics_data *graphics);
 
 static inline void gl_cleanup(struct graphics_data *graphics) { }
 
-#endif // CONFIG_RENDER_GL
+#endif // CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM
 
 __M_END_DECLS
 

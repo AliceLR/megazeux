@@ -35,11 +35,11 @@ struct renderer_data
 #if defined(CONFIG_RENDER_SOFT)
 void render_soft_register(struct renderer *renderer);
 #endif
-#if defined(CONFIG_RENDER_GL)
+#if defined(CONFIG_RENDER_GL_FIXED)
 void render_gl1_register(struct renderer *renderer);
 void render_gl2_register(struct renderer *renderer);
 #endif
-#if defined(CONFIG_RENDER_GLSL)
+#if defined(CONFIG_RENDER_GL_PROGRAM)
 void render_glsl_register(struct renderer *renderer);
 #endif
 #if defined(CONFIG_RENDER_YUV)

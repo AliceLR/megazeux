@@ -109,16 +109,24 @@ ifeq (${BUILD_RENDER_SOFT},1)
 core_cobjs += ${core_obj}/render_soft.o
 endif
 
-ifeq (${BUILD_RENDER_GL},1)
+# GL shared
+ifneq ($(or ${BUILD_RENDER_GL_FIXED},${BUILD_RENDER_GL_PROGRAM}),)
 core_cobjs += ${core_obj}/render_gl.o
-core_cobjs += ${core_obj}/render_gl1.o ${core_obj}/render_gl2.o
-ifeq (${BUILD_EGL},1)
-core_cobjs += ${core_obj}/render_egl.o
-endif
 endif
 
-ifeq (${BUILD_RENDER_GLSL},1)
+# Fixed function renderers (OGL=1, OGLES=1)
+ifeq (${BUILD_RENDER_GL_FIXED},1)
+core_cobjs += ${core_obj}/render_gl1.o ${core_obj}/render_gl2.o
+endif
+
+# Shader renderers (OGL>=2, OGLES=2)
+ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 core_cobjs += ${core_obj}/render_glsl.o
+endif
+
+# Used in combination with GLES
+ifeq (${BUILD_EGL},1)
+core_cobjs += ${core_obj}/render_egl.o
 endif
 
 ifeq (${BUILD_RENDER_YUV},1)
@@ -204,7 +212,7 @@ core_ldflags := ${PTHREAD_LDFLAGS} ${core_ldflags}
 endif
 
 ifeq (${BUILD_EGL},1)
-core_ldflags := -lEGL -lGLESv1_CM ${core_ldflags}
+core_ldflags := -lEGL -lGLES_CM ${core_ldflags}
 endif
 
 endif
@@ -248,6 +256,8 @@ ifeq (${PLATFORM},darwin)
 mzx_objs += arch/darwin/SDLMain.o
 mzx_ldflags += -framework Cocoa
 endif
+
+core_ldflags := ${core_ldflags} -Xlinker -rpath-link=/home/alistair/work/eurasia/eurasiacon/binary_omap3430_linux_debug -L/home/alistair/work/eurasia/eurasiacon/binary_omap3430_linux_debug
 
 ifeq (${BUILD_UPDATER},1)
 

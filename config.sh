@@ -42,8 +42,9 @@ usage() {
 	echo "  --disable-utils      Disable compilation of utils."
 	echo "  --disable-x11        Disable X11, removing binary dependency."
 	echo "  --disable-software   Disable software renderer."
-	echo "  --disable-gl         Disable all OpenGL renderers."
-	echo "  --disable-glsl       Disable all GLSL renderers."
+	echo "  --disable-gl         Disable all GL renderers."
+	echo "  --disable-gl-fixed   Disable GL renderers for fixed-function h/w."
+	echo "  --disable-gl-prog    Disable GL renderers for programmable h/w."
 	echo "  --disable-overlay    Disable all overlay renderers."
 	echo "  --enable-gp2x        Enables half-res software renderer."
 	echo "  --disable-modplug    Disable ModPlug music engine."
@@ -88,8 +89,8 @@ UTILS="true"
 X11="true"
 X11_PLATFORM="true"
 SOFTWARE="true"
-OPENGL="true"
-GLSL="true"
+GL_FIXED="true"
+GL_PROGRAM="true"
 OVERLAY="true"
 GP2X="false"
 MODPLUG="true"
@@ -176,11 +177,14 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-software" ] && SOFTWARE="false"
 	[ "$1" = "--enable-software" ]  && SOFTWARE="true"
 
-	[ "$1" = "--disable-gl" ] && OPENGL="false"
-	[ "$1" = "--enable-gl" ]  && OPENGL="true"
+	[ "$1" = "--disable-gl" ] && GL="false"
+	[ "$1" = "--enable-gl" ]  && GL="true"
 
-	[ "$1" = "--disable-glsl" ] && GLSL="false"
-	[ "$1" = "--enable-glsl" ]  && GLSL="true"
+	[ "$1" = "--disable-gl-fixed" ] && GL_FIXED="false"
+	[ "$1" = "--enable-gl-fixed" ]  && GL_FIXED="true"
+
+	[ "$1" = "--disable-gl-prog" ] && GL_PROGRAM="false"
+	[ "$1" = "--enable-gl-prog" ]  && GL_PROGRAM="true"
 
 	[ "$1" = "--disable-overlay" ] && OVERLAY="false"
 	[ "$1" = "--enable-overlay" ]  && OVERLAY="true"
@@ -226,6 +230,11 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-egl" ]  && EGL="true"
 	[ "$1" = "--disable-egl" ] && EGL="false"
+
+	if [ "$1" = "--help" ]; then
+		usage
+		exit 0
+	fi
 
 	shift
 done
@@ -446,7 +455,7 @@ fi
 #
 if [ "$SDL" = "false" -a "$EGL" = "false" ]; then
 	echo "Force-disabling OpenGL (no SDL or EGL support)."
-	OPENGL="false"
+	GL="false"
 fi
 
 #
@@ -507,16 +516,22 @@ fi
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
   -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
-	OPENGL="false"
+	GL="false"
 	OVERLAY="false"
 fi
 
 #
-# Force-disable GLSL if OpenGL is disabled
+# Must have at least one OpenGL renderer enabled
 #
-if [ "$OPENGL" = "false" -a "$GLSL" = "true" ]; then
-	echo "Force-disabling GLSL renderer (OpenGL not enabled)."
-	GLSL="false"
+[ "$GL_FIXED" = "false" -a "$GL_PROGRAM" = "false" ] && GL="false"
+
+#
+# If OpenGL is globally disabled, disable all renderers
+#
+if [ "$GL" = "false" ]; then
+	echo "Force-disabling OpenGL."
+	GL_FIXED="false"
+	GL_PROGRAM="false"
 fi
 
 #
@@ -712,25 +727,25 @@ else
 fi
 
 #
-# OpenGL renderers (not linked against GL, but needs headers installed)
+# Fixed-function H/W OpenGL renderers
 #
-if [ "$OPENGL" = "true" ]; then
-	echo "OpenGL renderers enabled."
-	echo "#define CONFIG_RENDER_GL" >> src/config.h
-	echo "BUILD_RENDER_GL=1" >> platform.inc
+if [ "$GL_FIXED" = "true" ]; then
+	echo "Fixed-function H/W OpenGL renderers enabled."
+	echo "#define CONFIG_RENDER_GL_FIXED" >> src/config.h
+	echo "BUILD_RENDER_GL_FIXED=1" >> platform.inc
 else
-	echo "OpenGL renderers disabled."
+	echo "Fixed-function OpenGL renderers disabled."
 fi
 
 #
-# GLSL renderers
+# Programmable H/W OpenGL renderers
 #
-if [ "$GLSL" = "true" ]; then
-	echo "GLSL renderers enabled."
-	echo "#define CONFIG_RENDER_GLSL" >> src/config.h
-	echo "BUILD_RENDER_GLSL=1" >> platform.inc
+if [ "$GL_PROGRAM" = "true" ]; then
+	echo "Programmable H/W OpenGL renderer enabled."
+	echo "#define CONFIG_RENDER_GL_PROGRAM" >> src/config.h
+	echo "BUILD_RENDER_GL_PROGRAM=1" >> platform.inc
 else
-	echo "GLSL renderers disabled."
+	echo "Programmable H/W OpenGL renderer disabled."
 fi
 
 #

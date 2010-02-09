@@ -60,7 +60,8 @@ void get_screen_coords_centered(struct graphics_data *graphics, int screen_x,
 void set_screen_coords_centered(struct graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y);
 
-#if defined(CONFIG_RENDER_GL) || defined(CONFIG_RENDER_YUV)
+#if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM) \
+ || defined(CONFIG_RENDER_YUV)
 
 void get_screen_coords_scaled(struct graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);
@@ -69,7 +70,7 @@ void set_screen_coords_scaled(struct graphics_data *graphics, int x, int y,
 void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
  enum ratio_type ratio);
 
-#endif // CONFIG_RENDER_GL || CONFIG_RENDER_YUV
+#endif // CONFIG_RENDER_GL_FIXED || CONFIG_RENDER_GL_PROGRAM || CONFIG_RENDER_YUV
 
 void resize_screen_standard(struct graphics_data *graphics, int w, int h);
 
