@@ -27,7 +27,7 @@
 
 #include <math.h>
 
-#include "../rasm.h"
+#include "../legacy_rasm.h"
 #include "../world.h"
 #include "../event.h"
 #include "../window.h"

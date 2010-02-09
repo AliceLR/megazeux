@@ -99,8 +99,6 @@ void change_robot_name(Board *src_board, Robot *cur_robot, char *new_name);
 int find_free_robot(Board *src_board);
 int get_robot_id(Board *src_board, const char *name);
 
-void run_robot(World *mzx_world, int id, int x, int y);
-
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void duplicate_robot_direct(Robot *cur_robot, Robot *copy_robot,
  int x, int y);

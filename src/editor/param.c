@@ -32,7 +32,7 @@
 #include "../window.h"
 #include "../data.h"
 #include "../robot.h"
-#include "../rasm.h"
+#include "../legacy_rasm.h"
 #include "../event.h"
 
 #include "edit.h"

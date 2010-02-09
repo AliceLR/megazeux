@@ -21,7 +21,7 @@
 
 #include "configure.h"
 #include "macro.h"
-#include "../rasm.h"
+#include "../legacy_rasm.h"
 #include "../util.h"
 
 #include <string.h>

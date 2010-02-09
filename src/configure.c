@@ -28,7 +28,7 @@
 #include "configure.h"
 #include "counter.h"
 #include "event.h"
-#include "rasm.h"
+#include "legacy_rasm.h"
 #include "fsafeopen.h"
 #include "util.h"
 
