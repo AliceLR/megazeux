@@ -31,7 +31,8 @@ Then, some changes must be made to config.sh to automatically generate both
 the src/config.h header (which is fully generic) and the platform.inc. This
 script is what users of your port will invoke to build the package.
 
-You might also find modifying package.sh is useful to allow me (the maintainer)
-to automatically package and ship binary packages for your platform.
+You may also want to make sure the "build" and "archive" targets do something
+for your platform. These targets make auto-builds and shipping binary
+packages much easier.
 
 --ajs.
