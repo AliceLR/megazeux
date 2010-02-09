@@ -83,7 +83,7 @@ endif
 # stripped (on embedded platforms) or objcopy'ed out.
 #
 CFLAGS   += -g -Wall -std=gnu99 ${ARCH_CFLAGS}
-CXXFLAGS += -g -Wall -std=gnu++98 -fno-exceptions ${ARCH_CXXFLAGS}
+CXXFLAGS += -g -Wall -std=gnu++98 -fno-exceptions -fno-rtti ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
 
 ifeq (${shell ${CC} -dumpversion | cut -d. -f1},4)
@@ -123,9 +123,11 @@ CXXFLAGS += -fvisibility=hidden
 # __stack_chk_fail function.
 #
 ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_PSP},${BUILD_WII}),)
+ifneq (${PLATFORM},android)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
 utils_cflags := -fno-stack-protector
+endif
 endif
 
 endif
