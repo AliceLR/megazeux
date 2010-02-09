@@ -2165,12 +2165,9 @@ void title_screen(World *mzx_world)
         case IKEY_F1:
 	case IKEY_h:
         {
-          if(!mzx_world->active)
-          {
-            m_show();
-            help_system(mzx_world);
-            update_screen();
-          }
+          m_show();
+          help_system(mzx_world);
+          update_screen();
           break;
         }
 #endif
