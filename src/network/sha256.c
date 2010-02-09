@@ -197,7 +197,7 @@ void SHA256_final(struct SHA256_ctx *ctx)
   SHA256_transform(ctx);
 }
 
-#if SHA256TEST
+#ifdef SHA256TEST
 
 int main(void)
 {

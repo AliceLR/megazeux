@@ -157,7 +157,7 @@ NETWORK_LIBSPEC void host_set_callbacks(struct host *h,
  void (*send_cb)(long offset), void (*recv_cb)(long offset),
  bool (*cancel_cb)(void));
 
-#if NETWORK_DEADCODE
+#ifdef NETWORK_DEADCODE
 
 /**
  * Some socket operations "fail" for non-fatal reasons. If using non-blocking

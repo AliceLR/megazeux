@@ -1296,7 +1296,7 @@ void host_set_callbacks(struct host *h, void (*send_cb)(long offset),
   h->cancel_cb = cancel_cb;
 }
 
-#if NETWORK_DEADCODE
+#ifdef NETWORK_DEADCODE
 
 void host_blocking(struct host *h, bool blocking)
 {
