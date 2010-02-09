@@ -2,16 +2,16 @@ PREPARATION
 
 You need to extract the following additional libraries here:
 
-  - ndsDebug
-  - ndsKeyboardExt5
-  - ndsLibfat
-  - ndsScreens
+  - ndsDebug (??)
+  - ndsLibfat (1.0.4)
+  - ndsScreens (source packaged with MZX)
 
-This document should be updated with info on where to find them.
+If you can't find the require versions online, or can't build them, you
+can use the prebuilts available from:
 
-(But right now you're on your own.)
+http://megazeux.svn.sourceforge.net/viewvc/megazeux/scripts/deps/nds.zip
 
-You need to build or install the devkitARM toolchain.
+You need to build or install the devkitARM toolchain (r26).
 
 
 CONFIGURING
