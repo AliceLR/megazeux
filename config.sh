@@ -42,7 +42,7 @@ usage() {
 	echo "  --disable-libpng     Disables PNG screendump support."
 	echo "  --disable-audio      Disables all audio (sound + music)."
 	echo "  --enable-tremor      Switches out libvorbis for libtremor."
-	echo "  --enable-pthread     Use pthread instead of SDL for locking."
+	echo "  --disable-pthread    Use SDL's locking instead of pthread."
 	echo "  --enable-icon        Try to brand executable with icon."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
@@ -77,7 +77,7 @@ MIKMOD="false"
 LIBPNG="true"
 AUDIO="true"
 TREMOR="false"
-PTHREAD="false"
+PTHREAD="true"
 ICON="true"
 
 #
@@ -150,11 +150,11 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-tremor" ] && TREMOR="false"
 	[ "$1" = "--enable-tremor" ] && TREMOR="true"
 
-	[ "$1" = "--enable-pthread" ] && PTHREAD="false"
-	[ "$1" = "--disable-pthread" ] && PTHREAD="true"
+	[ "$1" = "--disable-pthread" ] && PTHREAD="false"
+	[ "$1" = "--enable-pthread" ] && PTHREAD="true"
 
-	[ "$1" = "--enable-icon" ] && ICON="true"
 	[ "$1" = "--disable-icon" ] && ICON="false"
+	[ "$1" = "--enable-icon" ] && ICON="true"
 
 	shift
 done
@@ -349,10 +349,10 @@ fi
 #
 # Force-enable pthread on POSIX platforms (works around SDL bugs)
 #
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" \
-  -o "$PLATFORM" = "gp2x" ]; then
-	echo "Force-enabling pthread on POSIX platforms."
-	PTHREAD="true"
+if [ "$PLATFORM" != "unix" -a "$PLATFORM" != "unix-devel" \
+  -a "$PLATFORM" != "gp2x" ]; then
+	echo "Force-disabling pthread on non-POSIX platforms."
+	PTHREAD="false"
 fi
 
 #

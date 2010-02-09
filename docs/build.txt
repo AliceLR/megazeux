@@ -1,8 +1,8 @@
 BUILDING MEGAZEUX
 
 MegaZeux can currently be built for Microsoft Windows, Linux, MacOS X,
-OpenBSD, Solaris, GP2X, PSP or NDS. On MacOS X, universal binaries can
-be created.
+OpenBSD, Solaris, HaikuOS, GP2X, PSP, NDS or Wii. On MacOS X, universal
+binaries can be created.
 
 GCC and Microsoft compilers are supported.
 
