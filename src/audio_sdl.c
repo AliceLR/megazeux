@@ -53,3 +53,9 @@ void init_audio_platform(config_info *conf)
   // now set the audio going
   SDL_PauseAudio(0);
 }
+
+void quit_audio_platform(void)
+{
+  SDL_PauseAudio(1);
+  free(audio.mix_buffer);
+}

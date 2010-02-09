@@ -1475,10 +1475,10 @@ void init_audio(config_info *conf)
 #endif
 }
 
-void free_audio(void)
+void quit_audio(void)
 {
+  quit_audio_platform();
   free(audio.pcs_stream);
-  free(audio.mix_buffer);
 }
 
 void load_module(char *filename)

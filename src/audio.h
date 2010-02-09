@@ -125,7 +125,7 @@ typedef struct
 extern audio_struct audio __global;
 
 void init_audio(config_info *conf);
-void free_audio(void);
+void quit_audio(void);
 void load_module(char *filename);
 void end_module(void);
 void play_sample(int freq, char *filename);
@@ -157,6 +157,7 @@ void set_sfx_volume(int volume);
 
 void audio_callback(Sint16 *stream, int len);
 void init_audio_platform(config_info *conf);
+void quit_audio_platform(void);
 
 #ifdef CONFIG_MODPLUG
 int check_ext_for_sam_and_convert(const char *filename, char *new_file) __global;
@@ -197,7 +198,7 @@ void construct_audio_stream(audio_stream *a_src,
 #else // !CONFIG_AUDIO
 
 static inline void init_audio(config_info *conf) {}
-static inline void free_audio(void) {}
+static inline void quit_audio(void) {}
 static inline void set_music_volume(int volume) {}
 static inline void set_sound_volume(int volume) {}
 static inline void set_music_on(int val) {}

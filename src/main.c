@@ -204,7 +204,7 @@ int main(int argc, char *argv[])
   help_close(&mzx_world);
 #endif
 
-  free_audio();
+  quit_audio();
 
 exit_free_world:
   free_world(&mzx_world);
