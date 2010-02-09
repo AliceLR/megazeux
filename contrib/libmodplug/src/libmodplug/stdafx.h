@@ -51,6 +51,29 @@ static inline void ProcessPlugins(int n) {}
 
 #include <unistd.h> // for sleep()
 
+#ifdef __amigaos__
+
+/* On AmigaOS platforms we work around the fact that the toolchain headers
+ * pollute the namespace with many MSVC-like type declarations. Using their
+ * versions directly is not possible, as some are just plain wrong. WORD, for
+ * example, is implicitly signed (not unsigned) as with the BYTE type. All
+ * other toolchains do this differently, which ModPlug depends on internally.
+ */
+#define ULONG _ULONG
+#define LONG _LONG
+#define WORD _WORD
+#define BYTE _BYTE
+#define BOOL _BOOL
+
+#else // !__amigaos__
+
+/* On non-AmigaOS platforms we also define VOID; on AmigaOS we can
+ * trust the VOID declaration and the same _VOID trick doesn't work.
+ */
+typedef void VOID;
+
+#endif // __amigaos__
+
 typedef int8_t CHAR;
 typedef uint8_t UCHAR;
 typedef uint8_t* PUCHAR;
@@ -71,7 +94,6 @@ typedef void* LPVOID;
 typedef uint16_t* LPWORD;
 typedef const char* LPCSTR;
 typedef void* PVOID;
-typedef void VOID;
 
 #define lstrcpynA	strncpy
 #define lstrcpyA	strcpy

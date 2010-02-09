@@ -1,0 +1,48 @@
+MEGAZEUX ON AMIGA OS 4
+
+Since 2.82b, MegaZeux supports cross compilation to Amiga OS 4. You will
+require a valid copy of the operating system software in order to run the
+final result; this is not a bare-metal Amiga binary.
+
+The only supported toolchain is for OS 4 and PPC Amigas.
+m68k Amigas are not supported.
+
+PREPARATION
+
+The port requires that the Amiga OS 4 SDK and toolchain is installed. There
+are several pre-built toolchains available from:
+
+	http://cross.zerohero.se/os4.html
+
+There is an excellent guide for linking your toolchain and the platform SDK
+together here:
+
+	http://utilitybase.com/article/show/2007/06/23/231/Installing+an+AmigaOS+4+cross+compiler
+
+The SDL library for AmigaOS 4 (clib2) must be installed. I got my copy from:
+
+	http://www.rcdrummond.net/sdl/index.html
+
+(Note that the sdl-config shipped is slightly broken -- it specifies that the
+ libauto library must be linked, but in fact this is only true of the newlib
+ build. You must edit sdl-config to correct this mistake prior to starting.)
+
+BUILDING MEGAZEUX
+
+First, configure MZX. A suitable config.sh command line is provided in
+CONFIG.AMIGA present in this subdirectory. Please note that --prefix MUST
+correctly point to the AmigaOS 4 SDK (otherwise it tries to use /usr's
+stub headers and fails).
+
+(The provided config omits PNG support; this is simply untested and can
+ probably be easily re-enabled. I'm not sure about icon support on this
+ platform, actually.)
+
+Then start the build with "make". You can do a build with "make DEBUG=1" if
+you want a debuggable version.
+
+INSTALLING MEGAZEUX
+
+Need more info ??
+
+--ajs

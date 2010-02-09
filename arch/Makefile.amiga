@@ -1,0 +1,8 @@
+#
+# amiga makefile generics
+#
+
+CC      = ppc-amigaos-gcc -mcrt=clib2 -I${PREFIX}/clib2/include
+CXX     = ppc-amigaos-g++ -mcrt=clib2 -I${PREFIX}/clib2/include
+STRIP   = ppc-amigaos-strip --strip-unneeded
+BINEXT  = .exe

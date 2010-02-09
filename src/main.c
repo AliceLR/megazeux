@@ -25,12 +25,11 @@
 #include <stdio.h>
 #include <time.h>
 
-#include "compat.h"
-
 #ifndef _MSC_VER
 #include <unistd.h>
 #endif
 
+#include "compat.h"
 #include "platform.h"
 
 #ifdef CONFIG_NDS

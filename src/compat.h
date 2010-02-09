@@ -68,4 +68,13 @@
 #include "msvc.h"
 #endif
 
+/* The AmigaOS toolchain litters the namespace with strange MSVC-like
+ * type declarations such as TEXT (const char *). What this does is
+ * rename any of MegaZeux's uses of TEXT from data.h to _TEXT at
+ * compile time after including the AmigaOS header.
+ */
+#ifdef __amigaos__
+#define TEXT _TEXT
+#endif
+
 #endif // __COMPAT_H

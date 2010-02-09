@@ -11,6 +11,9 @@ DEVELOPERS
   X11 clipboard support.
 + Remove dependency on SDL_image on non-win32 platforms when enabling
   the icon branding feature (see pngops.c).
++ Ported to AmigaOS. You need to install the clib2 version of libSDL, and the
+  build system assumes you are using a cross compiler. The OpenGL renderers
+  are not supported.
 
 June 10, 2008 - MZX 2.82
 

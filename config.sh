@@ -21,6 +21,7 @@ usage() {
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
+	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  mingw32        Use MinGW32 on Linux, to build for win32"
 	echo "  mingw64        Use MinGW64 on Linux, to build for win64"
 	echo
@@ -212,7 +213,7 @@ echo
 
 echo                       >> Makefile.platform
 echo "# config time stuff" >> Makefile.platform
-echo "PREFIX=$PREFIX"      >> Makefile.platform
+echo "PREFIX?=$PREFIX"     >> Makefile.platform
 
 #
 # Set the version to build with 
@@ -317,7 +318,7 @@ fi
 # Force-disable OpenGL and overlay renderers on PSP, GP2X and NDS
 #
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "nds" ]; then
+  -o "$PLATFORM" = "nds" -o "$PLATFORM" = "amiga" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
 	OPENGL="false"
 	OVERLAY="false"
