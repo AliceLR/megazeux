@@ -53,6 +53,7 @@ static struct
   void (GL_APIENTRY *glEnable)(GLenum cap);
   void (GL_APIENTRY *glEnableClientState)(GLenum cap);
   void (GL_APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
+  GLenum (GL_APIENTRY *glGetError)(void);
   const GLubyte* (GL_APIENTRY *glGetString)(GLenum name);
   void (GL_APIENTRY *glTexCoordPointer)(GLint size, GLenum type,
    GLsizei stride, const GLvoid *ptr);
@@ -77,6 +78,7 @@ static const struct dso_syms_map gl1_syms_map[] =
   { "glEnable",             (void **)&gl1.glEnable },
   { "glEnableClientState",  (void **)&gl1.glEnableClientState },
   { "glGenTextures",        (void **)&gl1.glGenTextures },
+  { "glGetError",           (void **)&gl1.glGetError },
   { "glGetString",          (void **)&gl1.glGetString },
   { "glTexCoordPointer",    (void **)&gl1.glTexCoordPointer },
   { "glTexImage2D",         (void **)&gl1.glTexImage2D },
@@ -85,6 +87,8 @@ static const struct dso_syms_map gl1_syms_map[] =
   { "glViewport",           (void **)&gl1.glViewport },
   { NULL, NULL }
 };
+
+#define gl_check_error() gl_error(__FILE__, __LINE__, gl1.glGetError)
 
 struct gl1_render_data
 {
@@ -185,13 +189,18 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
 
   get_context_width_height(graphics, &width, &height);
   fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+
   gl1.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
    v_width, v_height);
+  gl_check_error();
 
   gl1.glEnable(GL_TEXTURE_2D);
 
   gl1.glGenTextures(1, &texture_number);
+  gl_check_error();
+
   gl1.glBindTexture(GL_TEXTURE_2D, texture_number);
+  gl_check_error();
 
   gl_set_filter_method(graphics->gl_filter_method, gl1.glTexParameterf);
   return true;
@@ -271,16 +280,22 @@ static void gl1_sync_screen(struct graphics_data *graphics)
 
   gl1.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, render_data->w, render_data->h,
    0, GL_RGBA, GL_UNSIGNED_BYTE, render_data->pixels);
+  gl_check_error();
 
   gl1.glClear(GL_COLOR_BUFFER_BIT);
+  gl_check_error();
 
   gl1.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
   gl1.glEnableClientState(GL_VERTEX_ARRAY);
 
   gl1.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array);
+  gl_check_error();
+
   gl1.glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
+  gl_check_error();
 
   gl1.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  gl_check_error();
 
   gl1.glDisableClientState(GL_TEXTURE_COORD_ARRAY);
   gl1.glDisableClientState(GL_VERTEX_ARRAY);

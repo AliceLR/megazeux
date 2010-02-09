@@ -40,6 +40,44 @@ const float vertex_array_single[2 * 4] = {
    1.0f, -1.0f,
 };
 
+#ifdef DEBUG
+
+void gl_error(const char *file, int line, GLenum (*glGetError)(void))
+{
+  const char *error;
+
+  switch(glGetError())
+  {
+    case GL_NO_ERROR:
+      return;
+    case GL_INVALID_ENUM:
+      error = "Invalid enum";
+      break;
+    case GL_INVALID_VALUE:
+      error = "Invalid value";
+      break;
+    case GL_INVALID_OPERATION:
+      error = "Invalid operation";
+      break;
+    case GL_STACK_OVERFLOW:
+      error = "Stack overflow";
+      break;
+    case GL_STACK_UNDERFLOW:
+      error = "Stack underflow";
+      break;
+    case GL_OUT_OF_MEMORY:
+      error = "Out of memory";
+      break;
+    default:
+      error = "Unknown error";
+      break;
+  }
+
+  warn("%s:%d: GL Error: %s\n", file, line, error);
+}
+
+#endif // DEBUG
+
 bool gl_load_syms(const struct dso_syms_map *map)
 {
   int i = 0;
