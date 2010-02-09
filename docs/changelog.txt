@@ -68,7 +68,7 @@ USERS
 + A world to start up with can now be passed to megazeux without the
   startup_file= prefix. This makes megazeux consistent with other
   applications.
-+ SHOOT, SHOOT MISSLE, SHOOT SEEKER and SPIT FIRE now end the cycle,
++ SHOOT, SHOOTMISSILE, SHOOTSEEKER and SPITFIRE now end the cycle,
   to restore compatibility with pre-port MZX and fix games such as
   Kya's Sword and Stones & Roks II.
 + Have IF [dir] PLAYER [color] [thing] [param] "label" interpret
