@@ -537,23 +537,23 @@ void nds_mainscreen_focus(graphics_data *graphics, Uint32 x, Uint32 y)
   nds_render_graph_1to1(graphics);
 }
 
-void render_nds_register(graphics_data *graphics)
+void render_nds_register(renderer_t *renderer)
 {
-  memset(graphics, 0, sizeof(graphics_data));
-  graphics->init_video = nds_init_video;
-  graphics->check_video_mode = nds_check_video_mode;
-  graphics->set_video_mode = nds_set_video_mode;
-  graphics->update_colors = nds_update_colors;
-  graphics->resize_screen = nds_resize_screen;
-  graphics->remap_charsets = nds_remap_charsets;
-  graphics->remap_char = nds_remap_char;
-  graphics->get_screen_coords = get_screen_coords_centered;
-  graphics->set_screen_coords = set_screen_coords_centered;
-  graphics->render_graph = nds_render_graph;
-  graphics->render_cursor = nds_render_cursor;
-  graphics->render_mouse = nds_render_mouse;
-  graphics->sync_screen = nds_sync_screen;
-  graphics->focus_pixel = nds_mainscreen_focus;
+  memset(renderer, 0, sizeof(renderer_t));
+  renderer->init_video = nds_init_video;
+  renderer->check_video_mode = nds_check_video_mode;
+  renderer->set_video_mode = nds_set_video_mode;
+  renderer->update_colors = nds_update_colors;
+  renderer->resize_screen = nds_resize_screen;
+  renderer->remap_charsets = nds_remap_charsets;
+  renderer->remap_char = nds_remap_char;
+  renderer->get_screen_coords = get_screen_coords_centered;
+  renderer->set_screen_coords = set_screen_coords_centered;
+  renderer->render_graph = nds_render_graph;
+  renderer->render_cursor = nds_render_cursor;
+  renderer->render_mouse = nds_render_mouse;
+  renderer->sync_screen = nds_sync_screen;
+  renderer->focus_pixel = nds_mainscreen_focus;
 }
 
 void nds_subscreen_switch(void)

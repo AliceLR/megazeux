@@ -215,6 +215,12 @@ static bool gp2x_init_video(graphics_data *graphics, config_info *conf)
   return set_video_mode();
 }
 
+static void gp2x_free_video(graphics_data *graphics)
+{
+  free(graphics->render_data);
+  graphics->render_data = NULL;
+}
+
 static bool gp2x_check_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
@@ -333,18 +339,19 @@ static void gp2x_sync_screen(graphics_data *graphics)
   SDL_Flip(render_data->screen);
 }
 
-void render_gp2x_register(graphics_data *graphics)
+void render_gp2x_register(renderer_t *renderer)
 {
-  memset(graphics, 0, sizeof(graphics_data));
-  graphics->init_video = gp2x_init_video;
-  graphics->check_video_mode = gp2x_check_video_mode;
-  graphics->set_video_mode = gp2x_set_video_mode;
-  graphics->update_colors = gp2x_update_colors;
-  graphics->resize_screen = resize_screen_standard;
-  graphics->get_screen_coords = gp2x_get_screen_coords;
-  graphics->set_screen_coords = gp2x_set_screen_coords;
-  graphics->render_graph = gp2x_render_graph;
-  graphics->render_cursor = gp2x_render_cursor;
-  graphics->render_mouse = gp2x_render_mouse;
-  graphics->sync_screen = gp2x_sync_screen;
+  memset(renderer, 0, sizeof(renderer_t));
+  renderer->init_video = gp2x_init_video;
+  renderer->free_video = gp2x_free_video;
+  renderer->check_video_mode = gp2x_check_video_mode;
+  renderer->set_video_mode = gp2x_set_video_mode;
+  renderer->update_colors = gp2x_update_colors;
+  renderer->resize_screen = resize_screen_standard;
+  renderer->get_screen_coords = gp2x_get_screen_coords;
+  renderer->set_screen_coords = gp2x_set_screen_coords;
+  renderer->render_graph = gp2x_render_graph;
+  renderer->render_cursor = gp2x_render_cursor;
+  renderer->render_mouse = gp2x_render_mouse;
+  renderer->sync_screen = gp2x_sync_screen;
 }

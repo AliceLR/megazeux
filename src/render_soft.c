@@ -170,18 +170,18 @@ static void soft_sync_screen(graphics_data *graphics)
   SDL_Flip(graphics->render_data);
 }
 
-void render_soft_register(graphics_data *graphics)
+void render_soft_register(renderer_t *renderer)
 {
-  memset(graphics, 0, sizeof(graphics_data));
-  graphics->init_video = soft_init_video;
-  graphics->check_video_mode = soft_check_video_mode;
-  graphics->set_video_mode = soft_set_video_mode;
-  graphics->update_colors = soft_update_colors;
-  graphics->resize_screen = resize_screen_standard;
-  graphics->get_screen_coords = get_screen_coords_centered;
-  graphics->set_screen_coords = set_screen_coords_centered;
-  graphics->render_graph = soft_render_graph;
-  graphics->render_cursor = soft_render_cursor;
-  graphics->render_mouse = soft_render_mouse;
-  graphics->sync_screen = soft_sync_screen;
+  memset(renderer, 0, sizeof(renderer_t));
+  renderer->init_video = soft_init_video;
+  renderer->check_video_mode = soft_check_video_mode;
+  renderer->set_video_mode = soft_set_video_mode;
+  renderer->update_colors = soft_update_colors;
+  renderer->resize_screen = resize_screen_standard;
+  renderer->get_screen_coords = get_screen_coords_centered;
+  renderer->set_screen_coords = set_screen_coords_centered;
+  renderer->render_graph = soft_render_graph;
+  renderer->render_cursor = soft_render_cursor;
+  renderer->render_mouse = soft_render_mouse;
+  renderer->sync_screen = soft_sync_screen;
 }

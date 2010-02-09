@@ -29,31 +29,31 @@ __M_BEGIN_DECLS
 typedef struct
 {
   const char *name;
-  void (*reg)(graphics_data *);
+  void (*reg)(renderer_t *renderer);
 } renderer_data;
 
 #if defined(CONFIG_RENDER_SOFT)
-void render_soft_register(graphics_data *graphics);
+void render_soft_register(renderer_t *renderer);
 #endif
 #if defined(CONFIG_RENDER_GL)
-void render_gl1_register(graphics_data *graphics);
-void render_gl2_register(graphics_data *graphics);
+void render_gl1_register(renderer_t *renderer);
+void render_gl2_register(renderer_t *renderer);
 #endif
 #if defined(CONFIG_RENDER_GLSL)
-void render_glsl_register(graphics_data *graphics);
+void render_glsl_register(renderer_t *renderer);
 #endif
 #if defined(CONFIG_RENDER_YUV)
-void render_yuv1_register(graphics_data *graphics);
-void render_yuv2_register(graphics_data *graphics);
+void render_yuv1_register(renderer_t *renderer);
+void render_yuv2_register(renderer_t *renderer);
 #endif
 #if defined(CONFIG_RENDER_GP2X)
-void render_gp2x_register(graphics_data *graphics);
+void render_gp2x_register(renderer_t *renderer);
 #endif
 #if defined(CONFIG_NDS)
-void render_nds_register(graphics_data *graphics);
+void render_nds_register(renderer_t *renderer);
 #endif
 #if defined(CONFIG_RENDER_GX)
-void render_gx_register(graphics_data *graphics);
+void render_gx_register(renderer_t *renderer);
 #endif
 
 __M_END_DECLS

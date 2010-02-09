@@ -368,6 +368,12 @@ err_free:
   return false;
 }
 
+static void glsl_free_video(graphics_data *graphics)
+{
+  free(graphics->render_data);
+  graphics->render_data = NULL;
+}
+
 static void glsl_remap_charsets(graphics_data *graphics)
 {
   glsl_render_data *render_data = graphics->render_data;
@@ -707,21 +713,22 @@ static void glsl_sync_screen(graphics_data *graphics)
   gl->glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void render_glsl_register(graphics_data *graphics)
+void render_glsl_register(renderer_t *renderer)
 {
-  memset(graphics, 0, sizeof(graphics_data));
-  graphics->init_video = glsl_init_video;
-  graphics->check_video_mode = gl_check_video_mode;
-  graphics->set_video_mode = glsl_set_video_mode;
-  graphics->update_colors = glsl_update_colors;
-  graphics->resize_screen = resize_screen_standard;
-  graphics->remap_charsets = glsl_remap_charsets;
-  graphics->remap_char = glsl_remap_char;
-  graphics->remap_charbyte = glsl_remap_charbyte;
-  graphics->get_screen_coords = get_screen_coords_scaled;
-  graphics->set_screen_coords = set_screen_coords_scaled;
-  graphics->render_graph = glsl_render_graph;
-  graphics->render_cursor = glsl_render_cursor;
-  graphics->render_mouse = glsl_render_mouse;
-  graphics->sync_screen = glsl_sync_screen;
+  memset(renderer, 0, sizeof(renderer_t));
+  renderer->init_video = glsl_init_video;
+  renderer->free_video = glsl_free_video;
+  renderer->check_video_mode = gl_check_video_mode;
+  renderer->set_video_mode = glsl_set_video_mode;
+  renderer->update_colors = glsl_update_colors;
+  renderer->resize_screen = resize_screen_standard;
+  renderer->remap_charsets = glsl_remap_charsets;
+  renderer->remap_char = glsl_remap_char;
+  renderer->remap_charbyte = glsl_remap_charbyte;
+  renderer->get_screen_coords = get_screen_coords_scaled;
+  renderer->set_screen_coords = set_screen_coords_scaled;
+  renderer->render_graph = glsl_render_graph;
+  renderer->render_cursor = glsl_render_cursor;
+  renderer->render_mouse = glsl_render_mouse;
+  renderer->sync_screen = glsl_sync_screen;
 }

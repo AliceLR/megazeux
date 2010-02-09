@@ -192,6 +192,12 @@ static bool gl2_init_video(graphics_data *graphics, config_info *conf)
   return true;
 }
 
+static void gl2_free_video(graphics_data *graphics)
+{
+  free(graphics->render_data);
+  graphics->render_data = NULL;
+}
+
 static void gl2_remap_charsets(graphics_data *graphics)
 {
   gl2_render_data *render_data = graphics->render_data;
@@ -579,21 +585,22 @@ static void gl2_sync_screen(graphics_data *graphics)
   gl->glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void render_gl2_register(graphics_data *graphics)
+void render_gl2_register(renderer_t *renderer)
 {
-  memset(graphics, 0, sizeof(graphics_data));
-  graphics->init_video = gl2_init_video;
-  graphics->check_video_mode = gl_check_video_mode;
-  graphics->set_video_mode = gl2_set_video_mode;
-  graphics->update_colors = gl2_update_colors;
-  graphics->resize_screen = resize_screen_standard;
-  graphics->remap_charsets = gl2_remap_charsets;
-  graphics->remap_char = gl2_remap_char;
-  graphics->remap_charbyte = gl2_remap_charbyte;
-  graphics->get_screen_coords = get_screen_coords_scaled;
-  graphics->set_screen_coords = set_screen_coords_scaled;
-  graphics->render_graph = gl2_render_graph;
-  graphics->render_cursor = gl2_render_cursor;
-  graphics->render_mouse = gl2_render_mouse;
-  graphics->sync_screen = gl2_sync_screen;
+  memset(renderer, 0, sizeof(renderer_t));
+  renderer->init_video = gl2_init_video;
+  renderer->free_video = gl2_free_video;
+  renderer->check_video_mode = gl_check_video_mode;
+  renderer->set_video_mode = gl2_set_video_mode;
+  renderer->update_colors = gl2_update_colors;
+  renderer->resize_screen = resize_screen_standard;
+  renderer->remap_charsets = gl2_remap_charsets;
+  renderer->remap_char = gl2_remap_char;
+  renderer->remap_charbyte = gl2_remap_charbyte;
+  renderer->get_screen_coords = get_screen_coords_scaled;
+  renderer->set_screen_coords = set_screen_coords_scaled;
+  renderer->render_graph = gl2_render_graph;
+  renderer->render_cursor = gl2_render_cursor;
+  renderer->render_mouse = gl2_render_mouse;
+  renderer->sync_screen = gl2_sync_screen;
 }

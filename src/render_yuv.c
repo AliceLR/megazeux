@@ -71,6 +71,12 @@ bool yuv_init_video(graphics_data *graphics, config_info *conf)
   return set_video_mode();
 }
 
+void yuv_free_video(graphics_data *graphics)
+{
+  free(graphics->render_data);
+  graphics->render_data = NULL;
+}
+
 bool yuv_check_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {

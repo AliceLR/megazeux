@@ -65,6 +65,28 @@ typedef struct
 
 typedef struct _graphics_data graphics_data;
 
+typedef struct
+{
+  bool (*init_video)       (graphics_data *, config_info*);
+  void (*free_video)       (graphics_data *);
+  bool (*check_video_mode) (graphics_data *, int, int, int, int, int);
+  bool (*set_video_mode)   (graphics_data *, int, int, int, int, int);
+  void (*update_colors)    (graphics_data *, rgb_color *, Uint32);
+  void (*resize_screen)    (graphics_data *, int, int);
+  void (*remap_charsets)   (graphics_data *);
+  void (*remap_char)       (graphics_data *, Uint16 chr);
+  void (*remap_charbyte)   (graphics_data *, Uint16 chr, Uint8 byte);
+  void (*get_screen_coords)(graphics_data *, int, int, int *, int *, int *,
+                             int *, int *, int *);
+  void (*set_screen_coords)(graphics_data *, int, int, int *, int *);
+  void (*render_graph)     (graphics_data *);
+  void (*render_cursor)    (graphics_data *, Uint32, Uint32, Uint8, Uint8,
+                             Uint8);
+  void (*render_mouse)     (graphics_data *, Uint32, Uint32, Uint8, Uint8);
+  void (*sync_screen)      (graphics_data *);
+  void (*focus_pixel)      (graphics_data *, Uint32, Uint32);
+} renderer_t;
+
 struct _graphics_data
 {
   Uint32 screen_mode;
@@ -104,25 +126,8 @@ struct _graphics_data
   Uint8 ascii_charset[CHAR_SIZE * CHARSET_SIZE];
 
   Uint32 flat_intensity_palette[SMZX_PAL_SIZE];
+  renderer_t renderer;
   void *render_data;
-
-  bool (*init_video)       (graphics_data *, config_info*);
-  bool (*check_video_mode) (graphics_data *, int, int, int, int, int);
-  bool (*set_video_mode)   (graphics_data *, int, int, int, int, int);
-  void (*update_colors)    (graphics_data *, rgb_color *, Uint32);
-  void (*resize_screen)    (graphics_data *, int, int);
-  void (*remap_charsets)   (graphics_data *);
-  void (*remap_char)       (graphics_data *, Uint16 chr);
-  void (*remap_charbyte)   (graphics_data *, Uint16 chr, Uint8 byte);
-  void (*get_screen_coords)(graphics_data *, int, int, int *, int *, int *,
-                             int *, int *, int *);
-  void (*set_screen_coords)(graphics_data *, int, int, int *, int *);
-  void (*render_graph)     (graphics_data *);
-  void (*render_cursor)    (graphics_data *, Uint32, Uint32, Uint8, Uint8,
-                             Uint8);
-  void (*render_mouse)     (graphics_data *, Uint32, Uint32, Uint8, Uint8);
-  void (*sync_screen)      (graphics_data *);
-  void (*focus_pixel)      (graphics_data *, Uint32, Uint32);
 };
 
 CORE_LIBSPEC void color_string(const char *string, Uint32 x, Uint32 y,

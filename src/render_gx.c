@@ -316,6 +316,12 @@ static bool gx_init_video(graphics_data *graphics, config_info *conf)
   return set_video_mode();
 }
 
+static void gx_free_video(graphics_data *graphics)
+{
+  free(graphics->render_data);
+  graphics->render_data = NULL;
+}
+
 static bool gx_check_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
@@ -705,21 +711,22 @@ static void gx_sync_screen(graphics_data *graphics)
   VIDEO_WaitVSync();
 }
 
-void render_gx_register(graphics_data *graphics)
+void render_gx_register(renderer_t *renderer)
 {
-  memset(graphics, 0, sizeof(graphics_data));
-  graphics->init_video = gx_init_video;
-  graphics->check_video_mode = gx_check_video_mode;
-  graphics->set_video_mode = gx_set_video_mode;
-  graphics->update_colors = gx_update_colors;
-  graphics->resize_screen = resize_screen_standard;
-  graphics->remap_charsets = gx_remap_charsets;
-  graphics->remap_char = gx_remap_char;
-  graphics->remap_charbyte = gx_remap_charbyte;
-  graphics->get_screen_coords = get_screen_coords_centered;
-  graphics->set_screen_coords = set_screen_coords_centered;
-  graphics->render_graph = gx_render_graph;
-  graphics->render_cursor = gx_render_cursor;
-  graphics->render_mouse = gx_render_mouse;
-  graphics->sync_screen = gx_sync_screen;
+  memset(renderer, 0, sizeof(renderer_t));
+  renderer->init_video = gx_init_video;
+  renderer->free_video = gx_free_video;
+  renderer->check_video_mode = gx_check_video_mode;
+  renderer->set_video_mode = gx_set_video_mode;
+  renderer->update_colors = gx_update_colors;
+  renderer->resize_screen = resize_screen_standard;
+  renderer->remap_charsets = gx_remap_charsets;
+  renderer->remap_char = gx_remap_char;
+  renderer->remap_charbyte = gx_remap_charbyte;
+  renderer->get_screen_coords = get_screen_coords_centered;
+  renderer->set_screen_coords = set_screen_coords_centered;
+  renderer->render_graph = gx_render_graph;
+  renderer->render_cursor = gx_render_cursor;
+  renderer->render_mouse = gx_render_mouse;
+  renderer->sync_screen = gx_sync_screen;
 }

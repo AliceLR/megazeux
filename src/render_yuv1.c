@@ -73,18 +73,19 @@ static void yuv1_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
   SDL_UnlockYUVOverlay(render_data->overlay);
 }
 
-void render_yuv1_register(graphics_data *graphics)
+void render_yuv1_register(renderer_t *renderer)
 {
-  memset(graphics, 0, sizeof(graphics_data));
-  graphics->init_video = yuv_init_video;
-  graphics->check_video_mode = yuv_check_video_mode;
-  graphics->set_video_mode = yuv1_set_video_mode;
-  graphics->update_colors = yuv_update_colors;
-  graphics->resize_screen = resize_screen_standard;
-  graphics->get_screen_coords = get_screen_coords_scaled;
-  graphics->set_screen_coords = set_screen_coords_scaled;
-  graphics->render_graph = yuv1_render_graph;
-  graphics->render_cursor = yuv1_render_cursor;
-  graphics->render_mouse = yuv1_render_mouse;
-  graphics->sync_screen = yuv_sync_screen;
+  memset(renderer, 0, sizeof(renderer_t));
+  renderer->init_video = yuv_init_video;
+  renderer->free_video = yuv_free_video;
+  renderer->check_video_mode = yuv_check_video_mode;
+  renderer->set_video_mode = yuv1_set_video_mode;
+  renderer->update_colors = yuv_update_colors;
+  renderer->resize_screen = resize_screen_standard;
+  renderer->get_screen_coords = get_screen_coords_scaled;
+  renderer->set_screen_coords = set_screen_coords_scaled;
+  renderer->render_graph = yuv1_render_graph;
+  renderer->render_cursor = yuv1_render_cursor;
+  renderer->render_mouse = yuv1_render_mouse;
+  renderer->sync_screen = yuv_sync_screen;
 }

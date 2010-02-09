@@ -124,8 +124,8 @@ void ec_load_char_ascii(Uint32 char_number)
    graphics.ascii_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
 
   // some renderers may want to map charsets to textures
-  if(graphics.remap_charsets)
-    graphics.remap_charsets(&graphics);
+  if(graphics.renderer.remap_charsets)
+    graphics.renderer.remap_charsets(&graphics);
 }
 
 void ec_load_char_mzx(Uint32 char_number)
@@ -134,6 +134,6 @@ void ec_load_char_mzx(Uint32 char_number)
    graphics.default_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
 
   // some renderers may want to map charsets to textures
-  if(graphics.remap_charsets)
-    graphics.remap_charsets(&graphics);
+  if(graphics.renderer.remap_charsets)
+    graphics.renderer.remap_charsets(&graphics);
 }

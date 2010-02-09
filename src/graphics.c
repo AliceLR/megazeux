@@ -113,16 +113,16 @@ void ec_change_byte(Uint8 chr, Uint8 byte, Uint8 new_value)
 {
   graphics.charset[(chr * CHAR_SIZE) + byte] = new_value;
 
-  if(graphics.remap_charbyte)
-    graphics.remap_charbyte(&graphics, chr, byte);
+  if(graphics.renderer.remap_charbyte)
+    graphics.renderer.remap_charbyte(&graphics, chr, byte);
 }
 
 void ec_change_char(Uint8 chr, char *matrix)
 {
   memcpy(graphics.charset + (chr * CHAR_SIZE), matrix, CHAR_SIZE);
 
-  if(graphics.remap_char)
-    graphics.remap_char(&graphics, chr);
+  if(graphics.renderer.remap_char)
+    graphics.renderer.remap_char(&graphics, chr);
 }
 
 Uint8 ec_read_byte(Uint8 chr, Uint8 byte)
@@ -147,8 +147,8 @@ Sint32 ec_load_set(char *name)
   fclose(fp);
 
   // some renderers may want to map charsets to textures
-  if(graphics.remap_charsets)
-    graphics.remap_charsets(&graphics);
+  if(graphics.renderer.remap_charsets)
+    graphics.renderer.remap_charsets(&graphics);
 
   return 0;
 }
@@ -164,8 +164,8 @@ static void ec_load_set_secondary(const char *name, Uint8 *dest)
   fclose(fp);
 
   // some renderers may want to map charsets to textures
-  if(graphics.remap_charsets)
-    graphics.remap_charsets(&graphics);
+  if(graphics.renderer.remap_charsets)
+    graphics.renderer.remap_charsets(&graphics);
 }
 
 Sint32 ec_load_set_var(char *name, Uint8 pos)
@@ -184,8 +184,8 @@ Sint32 ec_load_set_var(char *name, Uint8 pos)
   fclose(fp);
 
   // some renderers may want to map charsets to textures
-  if(graphics.remap_charsets)
-    graphics.remap_charsets(&graphics);
+  if(graphics.renderer.remap_charsets)
+    graphics.renderer.remap_charsets(&graphics);
 
   return size;
 }
@@ -195,8 +195,8 @@ void ec_mem_load_set(Uint8 *chars)
   memcpy(graphics.charset, chars, CHAR_SIZE * CHARSET_SIZE);
 
   // some renderers may want to map charsets to textures
-  if(graphics.remap_charsets)
-    graphics.remap_charsets(&graphics);
+  if(graphics.renderer.remap_charsets)
+    graphics.renderer.remap_charsets(&graphics);
 }
 
 void ec_mem_save_set(Uint8 *chars)
@@ -211,7 +211,7 @@ __editor_maybe_static void ec_load_mzx(void)
 
 static void update_colors(rgb_color *palette, Uint32 count)
 {
-  graphics.update_colors(&graphics, palette, count);
+  graphics.renderer.update_colors(&graphics, palette, count);
 }
 
 static Uint32 make_palette(rgb_color *palette)
@@ -577,7 +577,7 @@ void update_screen(void)
     graphics.cursor_timestamp = ticks;
   }
 
-  graphics.render_graph(&graphics);
+  graphics.renderer.render_graph(&graphics);
   if(graphics.cursor_flipflop &&
    (graphics.cursor_mode != cursor_mode_invisible))
   {
@@ -638,7 +638,7 @@ void update_screen(void)
         cursor_color = ((bg_color << 4) | (cursor_color & 0x0F)) + 3;
     }
 
-    graphics.render_cursor(&graphics, graphics.cursor_x, graphics.cursor_y,
+    graphics.renderer.render_cursor(&graphics, graphics.cursor_x, graphics.cursor_y,
      cursor_color, lines, offset);
   }
   if(graphics.mouse_status)
@@ -649,10 +649,10 @@ void update_screen(void)
     mouse_x = (mouse_x / graphics.mouse_width_mul) * graphics.mouse_width_mul;
     mouse_y = (mouse_y / graphics.mouse_height_mul) * graphics.mouse_height_mul;
 
-    graphics.render_mouse(&graphics, mouse_x, mouse_y, graphics.mouse_width_mul,
+    graphics.renderer.render_mouse(&graphics, mouse_x, mouse_y, graphics.mouse_width_mul,
      graphics.mouse_height_mul);
   }
-  graphics.sync_screen(&graphics);
+  graphics.renderer.sync_screen(&graphics);
 }
 
 // Very quick fade out. Saves intensity table for fade in. Be sure
@@ -773,8 +773,9 @@ void default_palette(void)
   update_palette();
 }
 
-static int set_graphics_output(const char *video_output)
+static bool set_graphics_output(config_info *conf)
 {
+  const char *video_output = conf->video_output;
   const renderer_data *renderer = renderers;
 
   // The first renderer was NULL, this shouldn't happen
@@ -792,10 +793,10 @@ static int set_graphics_output(const char *video_output)
   }
 
   // If no match found, use first renderer in the renderer list
-  if(!(renderer->name))
+  if(!renderer->name)
     renderer = renderers;
 
-  renderer->reg(&graphics);
+  renderer->reg(&graphics.renderer);
 
   debug("Video: using '%s' renderer.\n", renderer->name);
   return true;
@@ -813,18 +814,22 @@ bool init_video(config_info *conf)
   graphics.cursor_timestamp = get_ticks();
   graphics.cursor_flipflop = 1;
 
-  if(!set_graphics_output(conf->video_output))
+  if(!set_graphics_output(conf))
     return false;
 
 #ifdef CONFIG_SDL
   SDL_WM_SetCaption("MegaZeux " VERSION VERSION_DATE, "");
 #endif
 
-  if(!graphics.init_video(&graphics, conf))
+  if(!graphics.renderer.init_video(&graphics, conf))
   {
-    if(!set_graphics_output(""))
+    // Try falling back to the first registered renderer
+    strcpy(conf->video_output, "");
+    if(!set_graphics_output(conf))
       return false;
-    if(!graphics.init_video(&graphics, conf))
+
+    // Fallback failed; bail out
+    if(!graphics.renderer.init_video(&graphics, conf))
       return false;
   }
 
@@ -906,8 +911,8 @@ bool set_video_mode(void)
 #endif
 
   // If video mode fails, replace it with 'safe' defaults
-  if(!(graphics.check_video_mode(&graphics, target_width, target_height,
-                                 target_depth, fullscreen, resize)))
+  if(!(graphics.renderer.check_video_mode(&graphics,
+    target_width, target_height, target_depth, fullscreen, resize)))
   {
     target_width = 640;
     target_height = 350;
@@ -921,9 +926,47 @@ bool set_video_mode(void)
     graphics.fullscreen = fullscreen;
   }
 
-  return graphics.set_video_mode(&graphics, target_width, target_height,
-                                 target_depth, fullscreen, resize);
+  return graphics.renderer.set_video_mode(&graphics,
+   target_width, target_height, target_depth, fullscreen, resize);
 }
+
+#if 0
+
+static bool change_video_output(config_info *conf, const char *output)
+{
+  char old_video_output[16];
+
+  strncpy(old_video_output, conf->video_output, 16);
+  old_video_output[15] = 0;
+
+  strncpy(conf->video_output, output, 16);
+  conf->video_output[15] = 0;
+
+  if(graphics.renderer.free_video)
+    graphics.renderer.free_video(&graphics);
+
+  set_graphics_output(conf);
+
+  if(!graphics.renderer.init_video(&graphics, conf))
+  {
+    strcpy(conf->video_output, old_video_output);
+    if(!set_graphics_output(conf))
+    {
+      warn("Failed to roll back renderer, aborting!\n");
+      exit(0);
+    }
+
+    if(!graphics.renderer.init_video(&graphics, conf))
+    {
+      warn("Failed to roll back video mode, aborting!\n");
+      exit(0);
+    }
+  }
+
+  return true;
+}
+
+#endif
 
 void toggle_fullscreen(void)
 {
@@ -940,7 +983,7 @@ void resize_screen(Uint32 w, Uint32 h)
     graphics.window_width = w;
     graphics.window_height = h;
     set_video_mode();
-    graphics.resize_screen(&graphics, w, h);
+    graphics.renderer.resize_screen(&graphics, w, h);
   }
 }
 
@@ -1519,13 +1562,13 @@ void dump_screen(void)
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y)
 {
-  graphics.get_screen_coords(&graphics, screen_x, screen_y, x, y, min_x, min_y,
-   max_x, max_y);
+  graphics.renderer.get_screen_coords(&graphics, screen_x, screen_y, x, y,
+   min_x, min_y, max_x, max_y);
 }
 
 void set_screen_coords(int x, int y, int *screen_x, int *screen_y)
 {
-  graphics.set_screen_coords(&graphics, x, y, screen_x, screen_y);
+  graphics.renderer.set_screen_coords(&graphics, x, y, screen_x, screen_y);
 }
 
 void set_mouse_mul(int width_mul, int height_mul)
@@ -1545,6 +1588,6 @@ void focus_screen(int x, int y)
 
 void focus_pixel(int x, int y)
 {
-  if(graphics.focus_pixel)
-    graphics.focus_pixel(&graphics, x, y);
+  if(graphics.renderer.focus_pixel)
+    graphics.renderer.focus_pixel(&graphics, x, y);
 }

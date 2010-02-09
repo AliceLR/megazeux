@@ -49,6 +49,7 @@ typedef struct
 bool yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize, int yuv_width, int yuv_height);
 bool yuv_init_video(graphics_data *graphics, config_info *conf);
+void yuv_free_video(graphics_data *graphics);
 bool yuv_check_video_mode(graphics_data *graphics,  int width, int height,
  int depth, int fullscreen, int resize);
 void yuv_update_colors(graphics_data *graphics, rgb_color *palette,

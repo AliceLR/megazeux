@@ -183,6 +183,12 @@ static bool gl1_set_video_mode(graphics_data *graphics, int width, int height,
   return true;
 }
 
+static void gl1_free_video(graphics_data *graphics)
+{
+  free(graphics->render_data);
+  graphics->render_data = NULL;
+}
+
 static void gl1_update_colors(graphics_data *graphics, rgb_color *palette,
  Uint32 count)
 {
@@ -263,18 +269,19 @@ static void gl1_sync_screen(graphics_data *graphics)
   SDL_GL_SwapBuffers();
 }
 
-void render_gl1_register(graphics_data *graphics)
+void render_gl1_register(renderer_t *renderer)
 {
-  memset(graphics, 0, sizeof(graphics_data));
-  graphics->init_video = gl1_init_video;
-  graphics->check_video_mode = gl_check_video_mode;
-  graphics->set_video_mode = gl1_set_video_mode;
-  graphics->update_colors = gl1_update_colors;
-  graphics->resize_screen = resize_screen_standard;
-  graphics->get_screen_coords = get_screen_coords_scaled;
-  graphics->set_screen_coords = set_screen_coords_scaled;
-  graphics->render_graph = gl1_render_graph;
-  graphics->render_cursor = gl1_render_cursor;
-  graphics->render_mouse = gl1_render_mouse;
-  graphics->sync_screen = gl1_sync_screen;
+  memset(renderer, 0, sizeof(renderer_t));
+  renderer->init_video = gl1_init_video;
+  renderer->free_video = gl1_free_video;
+  renderer->check_video_mode = gl_check_video_mode;
+  renderer->set_video_mode = gl1_set_video_mode;
+  renderer->update_colors = gl1_update_colors;
+  renderer->resize_screen = resize_screen_standard;
+  renderer->get_screen_coords = get_screen_coords_scaled;
+  renderer->set_screen_coords = set_screen_coords_scaled;
+  renderer->render_graph = gl1_render_graph;
+  renderer->render_cursor = gl1_render_cursor;
+  renderer->render_mouse = gl1_render_mouse;
+  renderer->sync_screen = gl1_sync_screen;
 }
