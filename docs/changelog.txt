@@ -29,6 +29,8 @@ DEVELOPERS
 + Add the make time WHOLE_PROGRAM=1 flag which enables compilation of the
   core binary in GCC's "-fwhole-program --combine" mode. This makes all
   symbols static and improves optimization, somewhat like MSVC's LTO does.
++ Add a valgrind.supp file to suppress bugs in third party libraries when
+  valgrinding MegaZeux.
 
 June 10, 2008 - MZX 2.82
 
