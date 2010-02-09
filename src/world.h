@@ -102,6 +102,13 @@ __M_BEGIN_DECLS
  */
 #define WORLD_VERSION_PREV 0x0252
 
+// FIXME: hack
+#ifdef CONFIG_DEBYTECODE
+#undef  WORLD_VERSION
+#define WORLD_VERSION      0x025A
+#undef  WORLD_VERSION_PREV
+#endif
+
 CORE_LIBSPEC int save_world(struct world *mzx_world, const char *file,
  int savegame);
 CORE_LIBSPEC bool reload_world(struct world *mzx_world, const char *file,
