@@ -187,10 +187,48 @@ err_free_dirs:
   return err;
 }
 
+static error_t walk_rvas(FILE *f, uint32_t virtaddr, uint32_t offset)
+{
+  uint32_t rva, phys;
+  long pos;
+
+  while(1)
+  {
+    // Get RVA
+    if(fread(&rva, sizeof(uint32_t), 1, f) != 1)
+      return READ_ERROR;
+
+    // Zero RVA means "stop reading"
+    if(!rva)
+      break;
+
+    // Convert to file offset (physaddr)
+    phys = rva - virtaddr + offset;
+
+    // Store current offset
+    pos = ftell(f);
+
+    // Seek to (import name - 2)
+    if(fseek(f, phys - 2, SEEK_SET))
+      return READ_ERROR;
+
+    // Rewrite the byte before the ordinal as zero (patches binutils bug)
+    if(fputc(0, f) < 0)
+      return WRITE_ERROR;
+
+    // Seek back to where we were
+    if(fseek(f, pos, SEEK_SET))
+      return READ_ERROR;
+  }
+
+  return SUCCESS;
+}
+
 static error_t modify_pe(FILE *f)
 {
-  uint32_t ul, rsrc_offset = 0, edata_offset = 0, debug_offset = 0;
+  uint32_t rsrc_offset = 0, edata_offset = 0, idata_offset = 0;
   char section_name[SECTION_NAME_LEN + 1];
+  uint32_t ul, idata_virtaddr;
   uint16_t num_sections;
   error_t err = SUCCESS;
   long csum_offset;
@@ -273,8 +311,16 @@ static error_t modify_pe(FILE *f)
     if(fread(&section_name, SECTION_NAME_LEN, 1, f) != 1)
       return READ_ERROR;
 
-    // Skip Misc, VirtualAddress, SizeOfRawData
-    if(fseek(f, 4 + 4 + 4, SEEK_CUR))
+    // Skip Misc
+    if(fseek(f, 4, SEEK_CUR))
+      return READ_ERROR;
+
+    // Read VirtualAddress (only needed for .idata)
+    if(fread(&ul, sizeof(uint32_t), 1, f) != 1)
+      return READ_ERROR;
+
+    // Skip SizeOfRawData
+    if(fseek(f, 4, SEEK_CUR))
       return READ_ERROR;
 
     // This isn't .rsrc so we skip PointerToRawData
@@ -282,8 +328,11 @@ static error_t modify_pe(FILE *f)
       offset = &rsrc_offset;
     else if(strcmp(section_name, ".edata") == 0)
       offset = &edata_offset;
-    else if(strcmp(section_name, ".debug") == 0)
-      offset = &debug_offset;
+    else if(strcmp(section_name, ".idata") == 0)
+    {
+      offset = &idata_offset;
+      idata_virtaddr = ul;
+    }
 
     if(offset)
     {
@@ -329,20 +378,48 @@ static error_t modify_pe(FILE *f)
       return WRITE_ERROR;
   }
 
-#if 0 // BROKEN
-  // PE .debug section handling
-  if(debug_offset != 0)
+  if(idata_offset != 0)
   {
-    // Reposition file pointer at (.debug+4), Skip Characteristics
-    if(fseek(f, debug_offset + 4, SEEK_SET))
+    // Reposition file pointer at (.idata)
+    if(fseek(f, idata_offset, SEEK_SET))
       return READ_ERROR;
 
-    // Re-write TimeDateStamp as zero (new Checksum computed later)
-    ul = 0;
-    if(fwrite(&ul, sizeof(uint32_t), 1, f) != 1)
-      return WRITE_ERROR;
+    while(1)
+    {
+      uint32_t fnlist;
+      long offset;
+
+      // dwRVAFunctionNameList
+      if(fread(&fnlist, sizeof(uint32_t), 1, f) != 1)
+        return READ_ERROR;
+
+      // Skip dwUseless1, dwUseless2, dwRVAModuleName, dwRVAFunctionAddressList
+      if(fseek(f, 4 + 4 + 4 + 4, SEEK_CUR))
+        return READ_ERROR;
+
+      // Zero dwRVAFunctionNameList means there are no more modules
+      if(!fnlist)
+        break;
+
+      fnlist = fnlist - idata_virtaddr + idata_offset;
+
+      // Store current file offset
+      offset = ftell(f);
+
+      // Seek to fnlist RVAs
+      if(fseek(f, fnlist, SEEK_SET))
+        return READ_ERROR;
+
+      // Walk fnlist RVAs
+      err = walk_rvas(f, idata_virtaddr, idata_offset);
+      if(err != SUCCESS)
+        return err;
+
+      // Move back to original position
+      if(fseek(f, offset, SEEK_SET))
+        return READ_ERROR;
+    }
   }
-#endif
 
   // Compute and write back valid checksum
   err = pe_csum(f, &ul);
