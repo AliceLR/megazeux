@@ -28,7 +28,40 @@
 #define MOUSE_REPEAT_START  200
 #define MOUSE_REPEAT_RATE   10
 
+static Uint32 last_update_time;
+
 struct input_status input;
+
+static Uint8 num_buffered_events = 1;
+
+struct buffered_status *store_status(void)
+{
+  return &input.buffer[input.store_offset];
+}
+
+const struct buffered_status *load_status(void)
+{
+  return (const struct buffered_status *)&input.buffer[input.load_offset];
+}
+
+static void bump_status(void)
+{
+  Uint8 last_store_offset = input.store_offset;
+
+  input.store_offset = (input.store_offset + 1) % num_buffered_events;
+  input.load_offset = (input.store_offset + 1) % num_buffered_events;
+
+  // Some events can "echo" from the previous buffer
+  memcpy(store_status(), &input.buffer[last_store_offset],
+         sizeof(struct buffered_status));
+}
+
+void init_event(void)
+{
+  input.buffer = calloc(num_buffered_events, sizeof(struct buffered_status));
+  input.load_offset = num_buffered_events - 1;
+  input.store_offset = 0;
+}
 
 static Uint32 convert_internal_xt(enum keycode key)
 {
@@ -272,39 +305,39 @@ static enum keycode convert_xt_internal(Uint32 key, enum keycode *second)
   }
 }
 
-static Uint32 update_autorepeat(void)
+static bool update_autorepeat(void)
 {
-  Uint32 rval = 0;
+  struct buffered_status *status = store_status();
+  bool rval = false;
 
   // Repeat code
-  Uint8 last_key_state = input.keymap[input.last_key_repeat];
-  Uint8 last_mouse_state = input.last_mouse_repeat_state;
+  Uint8 last_key_state = status->keymap[status->key_repeat];
+  Uint8 last_mouse_state = status->mouse_repeat_state;
 
   if(last_key_state)
   {
     Uint32 new_time = get_ticks();
-    Uint32 ms_difference = new_time -
-     input.last_keypress_time;
+    Uint32 ms_difference = new_time - status->keypress_time;
 
     if(last_key_state == 1)
     {
       if(ms_difference > KEY_REPEAT_START)
       {
-        input.last_keypress_time = new_time;
-        input.keymap[input.last_key_repeat] = 2;
-        input.last_key = input.last_key_repeat;
-        input.last_unicode = input.last_unicode_repeat;
-        rval = 1;
+        status->keypress_time = new_time;
+        status->keymap[status->key_repeat] = 2;
+        status->key = status->key_repeat;
+        status->unicode = status->unicode_repeat;
+        rval = true;
       }
     }
     else
     {
       if(ms_difference > KEY_REPEAT_RATE)
       {
-        input.last_keypress_time = new_time;
-        input.last_key = input.last_key_repeat;
-        input.last_unicode = input.last_unicode_repeat;
-        rval = 1;
+        status->keypress_time = new_time;
+        status->key = status->key_repeat;
+        status->unicode = status->unicode_repeat;
+        rval = true;
       }
     }
   }
@@ -314,57 +347,58 @@ static Uint32 update_autorepeat(void)
   {
     // Take repeat off the stack.
     input.repeat_stack_pointer--;
-    input.last_key_repeat =
-     input.last_key_repeat_stack[input.repeat_stack_pointer];
-    input.last_unicode_repeat =
-     input.last_unicode_repeat_stack[input.repeat_stack_pointer];
+    status->key_repeat =
+     input.key_repeat_stack[input.repeat_stack_pointer];
+    status->unicode_repeat =
+     input.unicode_repeat_stack[input.repeat_stack_pointer];
 
-    input.last_keypress_time = get_ticks();
+    status->keypress_time = get_ticks();
   }
 
   if(last_mouse_state)
   {
     Uint32 new_time = get_ticks();
-    Uint32 ms_difference = new_time -
-     input.last_mouse_time;
+    Uint32 ms_difference = new_time - status->mouse_time;
 
-    if(input.mouse_drag_state == -1)
-      input.mouse_drag_state = 0;
+    if(status->mouse_drag_state == -1)
+      status->mouse_drag_state = 0;
     else
-      input.mouse_drag_state = 1;
+      status->mouse_drag_state = 1;
 
     if(last_mouse_state == 1)
     {
       if(ms_difference > MOUSE_REPEAT_START)
       {
-        input.last_mouse_time = new_time;
-        input.last_mouse_repeat_state = 2;
-        input.last_mouse_button = input.last_mouse_repeat;
-        rval = 1;
+        status->mouse_time = new_time;
+        status->mouse_repeat_state = 2;
+        status->mouse_button = status->mouse_repeat;
+        rval = true;
       }
     }
     else
     {
       if(ms_difference > MOUSE_REPEAT_RATE)
       {
-        input.last_mouse_time = new_time;
-        input.last_mouse_button = input.last_mouse_repeat;
-        rval = 1;
+        status->mouse_time = new_time;
+        status->mouse_button = status->mouse_repeat;
+        rval = true;
       }
     }
   }
 
+  bump_status();
   return rval;
 }
 
 Uint32 update_event_status(void)
 {
+  struct buffered_status *status = store_status();
   Uint32 rval;
 
-  input.last_key = IKEY_UNKNOWN;
-  input.last_unicode = 0;
-  input.mouse_moved = 0;
-  input.last_mouse_button = 0;
+  status->key = IKEY_UNKNOWN;
+  status->unicode = 0;
+  status->mouse_moved = 0;
+  status->mouse_button = 0;
 
   rval  = __update_event_status();
   rval |= update_autorepeat();
@@ -374,13 +408,14 @@ Uint32 update_event_status(void)
 
 void wait_event(void)
 {
-  input.last_key = IKEY_UNKNOWN;
-  input.last_unicode = 0;
-  input.mouse_moved = 0;
-  input.last_mouse_button = 0;
+  struct buffered_status *status = store_status();
+
+  status->key = IKEY_UNKNOWN;
+  status->unicode = 0;
+  status->mouse_moved = 0;
+  status->mouse_button = 0;
 
   __wait_event();
-
   update_autorepeat();
 }
 
@@ -389,16 +424,15 @@ Uint32 update_event_status_delay(void)
   int rval = update_event_status();
   int delay_ticks;
 
-  if(!input.last_update_time)
-    input.last_update_time = get_ticks();
+  if(!last_update_time)
+    last_update_time = get_ticks();
 
-  delay_ticks = UPDATE_DELAY -
-   (get_ticks() - input.last_update_time);
+  delay_ticks = UPDATE_DELAY - (get_ticks() - last_update_time);
 
-  input.last_update_time = get_ticks();
+  last_update_time = get_ticks();
 
   if(delay_ticks < 0)
-   delay_ticks = 0;
+    delay_ticks = 0;
 
   delay(delay_ticks);
   return rval;
@@ -406,7 +440,9 @@ Uint32 update_event_status_delay(void)
 
 static enum keycode emit_keysym_wrt_numlock(enum keycode key)
 {
-  if(input.numlock_status)
+  const struct buffered_status *status = load_status();
+
+  if(status->numlock_status)
   {
     switch(key)
     {
@@ -449,64 +485,53 @@ static enum keycode emit_keysym_wrt_numlock(enum keycode key)
 
 Uint32 get_key(enum keycode_type type)
 {
+  const struct buffered_status *status = load_status();
+
   switch(type)
   {
     case keycode_pc_xt:
-    {
-      return convert_internal_xt(input.last_key);
-    }
+      return convert_internal_xt(status->key);
 
     case keycode_internal:
-    {
-      return emit_keysym_wrt_numlock(input.last_key);
-    }
+      return emit_keysym_wrt_numlock(status->key);
 
-    case keycode_unicode:
-    {
-      return input.last_unicode;
-    }
+    default:
+      return status->unicode;
   }
-
-  // Unnecessary return to shut -Wall up
-  return 0;
 }
 
 Uint32 get_key_status(enum keycode_type type, Uint32 index)
 {
+  const struct buffered_status *status = load_status();
+
   switch(type)
   {
     case keycode_pc_xt:
     {
       enum keycode first, second;
       first = convert_xt_internal(index, &second);
-      return (input.keymap[first] || input.keymap[second]);
+      return (status->keymap[first] || status->keymap[second]);
     }
 
     case keycode_internal:
-    {
-      return input.keymap[index];
-    }
+      return status->keymap[index];
 
-    // Not currently handled (probably will never be)
-    case keycode_unicode:
-    {
+    default:
       return 0;
-    }
   }
-
-  // Unnecessary return to shut -Wall up
-  return 0;
 }
 
 Uint32 get_last_key(enum keycode_type type)
 {
+  const struct buffered_status *status = load_status();
+
   switch(type)
   {
     case keycode_pc_xt:
-      return convert_internal_xt(input.last_key_pressed);
+      return convert_internal_xt(status->key_pressed);
 
     case keycode_internal:
-      return input.last_key_pressed;
+      return status->key_pressed;
 
     default:
       return 0;
@@ -515,13 +540,15 @@ Uint32 get_last_key(enum keycode_type type)
 
 Uint32 get_last_key_released(enum keycode_type type)
 {
+  const struct buffered_status *status = load_status();
+
   switch(type)
   {
     case keycode_pc_xt:
-      return convert_internal_xt(input.last_key_release);
+      return convert_internal_xt(status->key_release);
 
     case keycode_internal:
-      return input.last_key_release;
+      return status->key_release;
 
     default:
       return 0;
@@ -530,126 +557,148 @@ Uint32 get_last_key_released(enum keycode_type type)
 
 void get_mouse_position(int *x, int *y)
 {
-  *x = input.mouse_x;
-  *y = input.mouse_y;
+  const struct buffered_status *status = load_status();
+  *x = status->mouse_x;
+  *y = status->mouse_y;
 }
 
 void get_real_mouse_position(int *x, int *y)
 {
-  *x = input.real_mouse_x;
-  *y = input.real_mouse_y;
+  const struct buffered_status *status = load_status();
+  *x = status->real_mouse_x;
+  *y = status->real_mouse_y;
 }
 
 Uint32 get_mouse_x(void)
 {
-  return input.mouse_x;
+  const struct buffered_status *status = load_status();
+  return status->mouse_x;
 }
 
 Uint32 get_mouse_y(void)
 {
-  return input.mouse_y;
+  const struct buffered_status *status = load_status();
+  return status->mouse_y;
 }
 
 Uint32 get_real_mouse_x(void)
 {
-  return input.real_mouse_x;
+  const struct buffered_status *status = load_status();
+  return status->real_mouse_x;
 }
 
 Uint32 get_real_mouse_y(void)
 {
-  return input.real_mouse_y;
+  const struct buffered_status *status = load_status();
+  return status->real_mouse_y;
 }
 
 Uint32 get_mouse_drag(void)
 {
-  return input.mouse_drag_state;
+  const struct buffered_status *status = load_status();
+  return status->mouse_drag_state;
 }
 
 Uint32 get_mouse_press(void)
 {
-  if(input.last_mouse_button <= MOUSE_BUTTON_RIGHT)
-    return input.last_mouse_button;
-  else
-    return 0;
+  const struct buffered_status *status = load_status();
+
+  if(status->mouse_button <= MOUSE_BUTTON_RIGHT)
+    return status->mouse_button;
+
+  return 0;
 }
 
 Uint32 get_mouse_press_ext(void)
 {
-  return input.last_mouse_button;
+  const struct buffered_status *status = load_status();
+  return status->mouse_button;
 }
 
 Uint32 get_mouse_status(void)
 {
-  return input.mouse_button_state;
+  const struct buffered_status *status = load_status();
+  return status->mouse_button_state;
 }
 
 void warp_mouse(Uint32 x, Uint32 y)
 {
-  int mx = (x * 8) + 4;
-  int my = (y * 14) + 7;
-  int mx_real, my_real;
-  input.mouse_x = x;
-  input.mouse_y = y;
-  input.real_mouse_x = mx;
-  input.real_mouse_y = my;
+  int mx_real, my_real, mx = (x * 8) + 4, my = (y * 14) + 7;
+  struct buffered_status *status = store_status();
+
+  status->mouse_x = x;
+  status->mouse_y = y;
+  status->real_mouse_x = mx;
+  status->real_mouse_y = my;
+
   set_screen_coords(mx, my, &mx_real, &my_real);
   real_warp_mouse(mx_real, my_real);
 }
 
 void warp_mouse_x(Uint32 x)
 {
-  int mx = (x * 8) + 4;
-  int mx_real, my_real;
-  input.mouse_x = x;
-  input.real_mouse_x = mx;
-  set_screen_coords(mx, input.real_mouse_y, &mx_real, &my_real);
+  struct buffered_status *status = store_status();
+  int mx_real, my_real, mx = (x * 8) + 4;
+
+  status->mouse_x = x;
+  status->real_mouse_x = mx;
+
+  set_screen_coords(mx, status->real_mouse_y, &mx_real, &my_real);
   real_warp_mouse(mx_real, my_real);
 }
 
 void warp_mouse_y(Uint32 y)
 {
-  int my = (y * 14) + 7;
-  int mx_real, my_real;
-  input.mouse_y = y;
-  input.real_mouse_y = my;
-  set_screen_coords(input.real_mouse_x, my, &mx_real, &my_real);
+  struct buffered_status *status = store_status();
+  int mx_real, my_real, my = (y * 14) + 7;
+
+  status->mouse_y = y;
+  status->real_mouse_y = my;
+
+  set_screen_coords(status->real_mouse_y, my, &mx_real, &my_real);
   real_warp_mouse(mx_real, my_real);
 }
 
 void warp_real_mouse_x(Uint32 mx)
 {
-  int x = mx / 8;
-  int mx_real, my_real;
-  input.mouse_x = x;
-  input.real_mouse_x = mx;
-  set_screen_coords(mx, input.real_mouse_y, &mx_real, &my_real);
+  struct buffered_status *status = store_status();
+  int mx_real, my_real, x = mx / 8;
+
+  status->mouse_x = x;
+  status->real_mouse_x = mx;
+
+  set_screen_coords(mx, status->real_mouse_y, &mx_real, &my_real);
   real_warp_mouse(mx_real, my_real);
 }
 
 void warp_real_mouse_y(Uint32 my)
 {
-  int y = my / 14;
-  int mx_real, my_real;
-  input.mouse_y = y;
-  input.real_mouse_y = my;
-  set_screen_coords(input.real_mouse_x, my, &mx_real, &my_real);
+  struct buffered_status *status = store_status();
+  int mx_real, my_real, y = my / 14;
+
+  status->mouse_y = y;
+  status->real_mouse_y = my;
+
+  set_screen_coords(status->real_mouse_x, my, &mx_real, &my_real);
   real_warp_mouse(mx_real, my_real);
 }
 
 void force_last_key(enum keycode_type type, int val)
 {
+  struct buffered_status *status = store_status();
+
   switch(type)
   {
     case keycode_pc_xt:
     {
       enum keycode second;
-      input.last_key_pressed = convert_xt_internal(val, &second);
+      status->key_pressed = convert_xt_internal(val, &second);
       break;
     }
 
     case keycode_internal:
     {
-      input.last_key_pressed = (enum keycode)val;
+      status->key_pressed = (enum keycode)val;
       break;
     }
 
@@ -688,7 +737,12 @@ void map_joystick_button(int joystick, int button, enum keycode key)
   input.joystick_button_map[joystick][button] = key;
 }
 
-void set_unfocus_pause(bool val)
+void set_unfocus_pause(bool value)
 {
-  input.unfocus_pause = val;
+  input.unfocus_pause = value;
+}
+
+void set_num_buffered_events(Uint8 value)
+{
+  num_buffered_events = MAX(1, value);
 }

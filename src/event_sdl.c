@@ -150,8 +150,9 @@ static enum keycode convert_SDL_internal(SDLKey key)
 
 static Uint32 process_event(SDL_Event *event)
 {
-  Uint32 rval = 1;
+  struct buffered_status *status = store_status();
   enum keycode ckey;
+  Uint32 rval = 1;
 
   /* SDL's numlock keyboard modifier handling seems to be broken on X11,
    * and it will only get numlock's status right on application init. We
@@ -166,7 +167,7 @@ static Uint32 process_event(SDL_Event *event)
    */
   if(!numlock_status_initialized)
   {
-    input.numlock_status = !!(SDL_GetModState() & KMOD_NUM);
+    status->numlock_status = !!(SDL_GetModState() & KMOD_NUM);
     numlock_status_initialized = true;
   }
 
@@ -175,9 +176,9 @@ static Uint32 process_event(SDL_Event *event)
     case SDL_QUIT:
     {
       // Stuff an escape
-      input.last_key = IKEY_ESCAPE;
-      input.keymap[IKEY_ESCAPE] = 1;
-      input.last_keypress_time = get_ticks();
+      status->key = IKEY_ESCAPE;
+      status->keymap[IKEY_ESCAPE] = 1;
+      status->keypress_time = get_ticks();
       break;
     }
 
@@ -213,31 +214,31 @@ static Uint32 process_event(SDL_Event *event)
       nds_mouselook(true);
 #endif
 
-      input.real_mouse_x = mx;
-      input.real_mouse_y = my;
-      input.mouse_x = mx / 8;
-      input.mouse_y = my / 14;
-      input.mouse_moved = 1;
+      status->real_mouse_x = mx;
+      status->real_mouse_y = my;
+      status->mouse_x = mx / 8;
+      status->mouse_y = my / 14;
+      status->mouse_moved = true;
       break;
     }
 
     case SDL_MOUSEBUTTONDOWN:
     {
-      input.last_mouse_button = event->button.button;
-      input.last_mouse_repeat = event->button.button;
-      input.mouse_button_state |= SDL_BUTTON(event->button.button);
-      input.last_mouse_repeat_state = 1;
-      input.mouse_drag_state = -1;
-      input.last_mouse_time = SDL_GetTicks();
+      status->mouse_button = event->button.button;
+      status->mouse_repeat = event->button.button;
+      status->mouse_button_state |= SDL_BUTTON(event->button.button);
+      status->mouse_repeat_state = 1;
+      status->mouse_drag_state = -1;
+      status->mouse_time = SDL_GetTicks();
       break;
     }
 
     case SDL_MOUSEBUTTONUP:
     {
-      input.mouse_button_state &= ~SDL_BUTTON(event->button.button);
-      input.last_mouse_repeat = 0;
-      input.mouse_drag_state = 0;
-      input.last_mouse_repeat_state = 0;
+      status->mouse_button_state &= ~SDL_BUTTON(event->button.button);
+      status->mouse_repeat = 0;
+      status->mouse_drag_state = 0;
+      status->mouse_repeat_state = 0;
       break;
     }
 
@@ -251,8 +252,10 @@ static Uint32 process_event(SDL_Event *event)
         else
           break;
       }
+
       if((ckey == IKEY_RETURN) &&
-       get_alt_status(keycode_internal) && get_ctrl_status(keycode_internal))
+       get_alt_status(keycode_internal) &&
+       get_ctrl_status(keycode_internal))
       {
         toggle_fullscreen();
         break;
@@ -260,13 +263,13 @@ static Uint32 process_event(SDL_Event *event)
 
       if(ckey == IKEY_CAPSLOCK)
       {
-        input.caps_status = 1;
+        status->caps_status = true;
       }
 
       if(ckey == IKEY_NUMLOCK)
       {
 #ifdef __WIN32__
-        input.numlock_status = 1;
+        status->numlock_status = true;
 #endif
         break;
       }
@@ -278,39 +281,38 @@ static Uint32 process_event(SDL_Event *event)
       }
 
       // Ignore alt + tab
-      if((ckey == IKEY_TAB) &&
-       get_alt_status(keycode_internal))
+      if((ckey == IKEY_TAB) && get_alt_status(keycode_internal))
       {
         break;
       }
 
-      if(input.last_key_repeat &&
-       (input.last_key_repeat != IKEY_LSHIFT) &&
-       (input.last_key_repeat != IKEY_RSHIFT) &&
-       (input.last_key_repeat != IKEY_LALT) &&
-       (input.last_key_repeat != IKEY_RALT) &&
-       (input.last_key_repeat != IKEY_LCTRL) &&
-       (input.last_key_repeat != IKEY_RCTRL))
+      if(status->key_repeat &&
+       (status->key_repeat != IKEY_LSHIFT) &&
+       (status->key_repeat != IKEY_RSHIFT) &&
+       (status->key_repeat != IKEY_LALT) &&
+       (status->key_repeat != IKEY_RALT) &&
+       (status->key_repeat != IKEY_LCTRL) &&
+       (status->key_repeat != IKEY_RCTRL))
       {
         // Stack current repeat key if it isn't shift, alt, or ctrl
         if(input.repeat_stack_pointer != KEY_REPEAT_STACK_SIZE)
         {
-          input.last_key_repeat_stack[input.repeat_stack_pointer] =
-           input.last_key_repeat;
-          input.last_unicode_repeat_stack[input.repeat_stack_pointer] =
-           input.last_unicode_repeat;
+          input.key_repeat_stack[input.repeat_stack_pointer] =
+           status->key_repeat;
+          input.unicode_repeat_stack[input.repeat_stack_pointer] =
+           status->unicode_repeat;
           input.repeat_stack_pointer++;
         }
       }
 
-      input.keymap[ckey] = 1;
-      input.last_key_pressed = ckey;
-      input.last_key = ckey;
-      input.last_unicode = event->key.keysym.unicode;
-      input.last_key_repeat = ckey;
-      input.last_unicode_repeat = event->key.keysym.unicode;
-      input.last_keypress_time = get_ticks();
-      input.last_key_release = IKEY_UNKNOWN;
+      status->keymap[ckey] = 1;
+      status->key_pressed = ckey;
+      status->key = ckey;
+      status->unicode = event->key.keysym.unicode;
+      status->key_repeat = ckey;
+      status->unicode_repeat = event->key.keysym.unicode;
+      status->keypress_time = get_ticks();
+      status->key_release = IKEY_UNKNOWN;
       break;
     }
 
@@ -319,7 +321,7 @@ static Uint32 process_event(SDL_Event *event)
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
       {
-        if(input.keymap[IKEY_UNICODE])
+        if(status->keymap[IKEY_UNICODE])
           ckey = IKEY_UNICODE;
         else
           break;
@@ -328,25 +330,25 @@ static Uint32 process_event(SDL_Event *event)
       if(ckey == IKEY_NUMLOCK)
       {
 #ifdef __WIN32__
-        input.numlock_status = 0;
+        status->numlock_status = false;
 #else
-        input.numlock_status ^= 1;
+        status->numlock_status = !status->numlock_status;
 #endif
         break;
       }
 
       if(ckey == IKEY_CAPSLOCK)
       {
-        input.caps_status = 0;
+        status->caps_status = false;
       }
 
-      input.keymap[ckey] = 0;
-      if(input.last_key_repeat == ckey)
+      status->keymap[ckey] = 0;
+      if(status->key_repeat == ckey)
       {
-        input.last_key_repeat = IKEY_UNKNOWN;
-        input.last_unicode_repeat = 0;
+        status->key_repeat = IKEY_UNKNOWN;
+        status->unicode_repeat = 0;
       }
-      input.last_key_release = ckey;
+      status->key_release = ckey;
       break;
     }
 
@@ -374,7 +376,7 @@ static Uint32 process_event(SDL_Event *event)
       int digital_value = -1;
       int which = event->jaxis.which;
       int axis = event->jaxis.axis;
-      int last_axis = input.last_axis[which][axis];
+      Sint8 last_axis = status->axis[which][axis];
       enum keycode stuffed_key;
 
       if(axis_value > 10000)
@@ -391,27 +393,26 @@ static Uint32 process_event(SDL_Event *event)
 
         if(stuffed_key)
         {
-          if(input.keymap[stuffed_key] == 0)
+          if(status->keymap[stuffed_key] == 0)
           {
-            input.last_key_pressed = stuffed_key;
-            input.last_key = stuffed_key;
-            input.last_unicode = stuffed_key;
-            input.last_key_repeat = stuffed_key;
-            input.last_unicode_repeat = stuffed_key;
-            input.keymap[stuffed_key] = 1;
-            input.last_keypress_time = get_ticks();
-            input.last_key_release = IKEY_UNKNOWN;
+            status->key_pressed = stuffed_key;
+            status->key = stuffed_key;
+            status->unicode = stuffed_key;
+            status->key_repeat = stuffed_key;
+            status->unicode_repeat = stuffed_key;
+            status->keymap[stuffed_key] = 1;
+            status->keypress_time = get_ticks();
+            status->key_release = IKEY_UNKNOWN;
           }
 
           if(last_axis == (digital_value ^ 1))
           {
-            stuffed_key =
-              input.joystick_axis_map[which][axis][last_axis];
+            stuffed_key = input.joystick_axis_map[which][axis][last_axis];
 
-            input.keymap[stuffed_key] = 0;
-            input.last_key_repeat = IKEY_UNKNOWN;
-            input.last_unicode_repeat = 0;
-            input.last_key_release = stuffed_key;
+            status->keymap[stuffed_key] = 0;
+            status->key_repeat = IKEY_UNKNOWN;
+            status->unicode_repeat = 0;
+            status->key_release = stuffed_key;
           }
         }
       }
@@ -422,14 +423,14 @@ static Uint32 process_event(SDL_Event *event)
 
         if(stuffed_key)
         {
-          input.keymap[stuffed_key] = 0;
-          input.last_key_repeat = IKEY_UNKNOWN;
-          input.last_unicode_repeat = 0;
-          input.last_key_release = stuffed_key;
+          status->keymap[stuffed_key] = 0;
+          status->key_repeat = IKEY_UNKNOWN;
+          status->unicode_repeat = 0;
+          status->key_release = stuffed_key;
         }
       }
 
-      input.last_axis[which][axis] = digital_value;
+      status->axis[which][axis] = digital_value;
       break;
     }
 
@@ -449,16 +450,16 @@ static Uint32 process_event(SDL_Event *event)
       }
 #endif
 
-      if(stuffed_key && (input.keymap[stuffed_key] == 0))
+      if(stuffed_key && (status->keymap[stuffed_key] == 0))
       {
-        input.last_key_pressed = stuffed_key;
-        input.last_key = stuffed_key;
-        input.last_unicode = stuffed_key;
-        input.last_key_repeat = stuffed_key;
-        input.last_unicode_repeat = stuffed_key;
-        input.keymap[stuffed_key] = 1;
-        input.last_keypress_time = SDL_GetTicks();
-        input.last_key_release = (enum keycode)0;
+        status->key_pressed = stuffed_key;
+        status->key = stuffed_key;
+        status->unicode = stuffed_key;
+        status->key_repeat = stuffed_key;
+        status->unicode_repeat = stuffed_key;
+        status->keymap[stuffed_key] = 1;
+        status->keypress_time = SDL_GetTicks();
+        status->key_release = (enum keycode)0;
       }
 
       break;
@@ -479,10 +480,10 @@ static Uint32 process_event(SDL_Event *event)
 
       if(stuffed_key)
       {
-        input.keymap[stuffed_key] = 0;
-        input.last_key_repeat = (enum keycode)0;
-        input.last_unicode_repeat = 0;
-        input.last_key_release = stuffed_key;
+        status->keymap[stuffed_key] = 0;
+        status->key_repeat = (enum keycode)0;
+        status->unicode_repeat = 0;
+        status->key_release = stuffed_key;
       }
 
       break;

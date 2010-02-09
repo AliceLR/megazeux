@@ -166,6 +166,8 @@ __libspec int main(int argc, char *argv[])
   if(!network_layer_init(&mzx_world.conf, argv))
     info("Network layer disabled.\n");
 
+  init_event();
+
   if(!init_video(&(mzx_world.conf)))
     goto err_network_layer_exit;
   init_audio(&(mzx_world.conf));

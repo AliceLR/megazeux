@@ -968,7 +968,7 @@ static Uint32 process_event(union event *ev)
     case EVENT_POINTER_MOVE:
     {
       pointing = 1;
-      input.mouse_moved = 1;
+      input.mouse_moved = true;
       input.real_mouse_x = ev->pointer.x;
       input.real_mouse_y = ev->pointer.y;
       input.mouse_x = ev->pointer.x / 8;
@@ -989,9 +989,9 @@ static Uint32 process_event(union event *ev)
         break;
       }
       if(ckey == IKEY_NUMLOCK)
-        input.numlock_status ^= 1;
+        input.numlock_status = !input.numlock_status;
       if(ckey == IKEY_CAPSLOCK)
-        input.caps_status ^= 1;
+        input.caps_status = !input.caps_status;
 
       if(input.last_key_repeat &&
        (input.last_key_repeat != IKEY_LSHIFT) &&
