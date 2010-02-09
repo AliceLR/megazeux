@@ -1619,6 +1619,13 @@ void load_module(char *filename, bool safely)
 {
   char translated_filename[MAX_PATH];
 
+  // FIXME: Weird hack, why not use end_module()?
+  if(!filename[0])
+  {
+    end_module();
+    return;
+  }
+
   if(safely)
   {
     if(fsafetranslate(filename, translated_filename) != FSAFE_SUCCESS)
