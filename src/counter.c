@@ -1860,7 +1860,7 @@ static void force_string_move(World *mzx_world, const char *name,
  bool offset_specified, unsigned int *size, bool size_specified, char *src)
 {
   bool src_dest_match = false;
-  ssize_t off;
+  ssize_t off = 0;
 
   if(*str)
   {
