@@ -239,27 +239,18 @@ if [ -d dist ]; then
 	rm -rf dist
 fi
 
+# clean the source tree for DEBUG and non-DEBUG
+make DEBUG=1 clean
+make distclean
+
 mkdir -p dist/$TARGET/src &&
 cp -pv $BINARY_DEPS $HELP_FILE $BUILD_DEPS dist/$TARGET &&
 cp -pvr $SUBDIRS dist/$TARGET &&
 cp -pvr $SRC dist/$TARGET/src &&
 
-# hack for gdm2s3m & libmodplug & misc
-rm -f dist/$TARGET/contrib/gdm2s3m/src/{*.a,*.o} &&
-rm -f dist/$TARGET/contrib/libmodplug/src/{*.a,*.o} &&
-rm -f dist/$TARGET/contrib/unzip/src/{*.a,*.o} &&
-rm -f dist/$TARGET/src/utils/*.o &&
-rm -f dist/$TARGET/src/utils/checkres{,.dbg}{,.exe} &&
-rm -f dist/$TARGET/src/utils/downver{,.dbg}{,.exe} &&
-rm -f dist/$TARGET/src/utils/txt2hlp{,.dbg}{,.exe} &&
-rm -f dist/$TARGET/contrib/icons/*.o &&
-
-# hack for "dist" makefile
 cp dist/$TARGET/arch/Makefile.dist dist/$TARGET/Makefile.platform
 
 [ "$?" != "0" ] && breakout 2
-
-rm -f dist/$TARGET/src/config.h
 
 echo "Creating source (${TARGET}src.tar.bz2).."
 
