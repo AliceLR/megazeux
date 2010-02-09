@@ -66,7 +66,7 @@ static int pe_chest(struct world *mzx_world, int param)
   int type = param & 0x0F;
   int var = param >> 4;
 
-  const char *list[10] =
+  const char *list[11] =
   {
     "Empty               ",
     "Key                 ",
@@ -77,11 +77,12 @@ static int pe_chest(struct world *mzx_world, int param)
     "Health              ",
     "Potion              ",
     "Ring                ",
-    "Lo Bombs            "
+    "Lo Bombs            ",
+    "Hi Bombs            "
   };
 
   // First, pick chest contents
-  type = list_menu(list, 21, "Choose chest contents", type, 10, 27, 0);
+  type = list_menu(list, 21, "Choose chest contents", type, 11, 27, 0);
 
   if(type < 0)
     return -1;

@@ -51,6 +51,7 @@ USERS
   status info, rather than completely hiding the help.
 + The checkres utility now checks the global robot for missing resources
   too.
++ Chests can be added with Hi Bombs (omission noted by zzo38).
 
 DEVELOPERS
 
