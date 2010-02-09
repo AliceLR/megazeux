@@ -920,13 +920,6 @@ bool set_video_mode(void)
     target_height = graphics.window_height;
   }
 
-#ifdef CONFIG_PSP
-  target_width = 640;
-  target_height = 363;
-  target_depth = 8;
-  fullscreen = 1;
-#endif
-
   // If video mode fails, replace it with 'safe' defaults
   if(!(graphics.renderer.check_video_mode(&graphics,
     target_width, target_height, target_depth, fullscreen, resize)))

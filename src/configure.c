@@ -38,7 +38,10 @@
 #define VIDEO_OUTPUT_DEFAULT "gp2x"
 #define AUDIO_BUFFER_SIZE 128
 #elif defined(CONFIG_PSP)
+#define FULLSCREEN_WIDTH_DEFAULT 640
+#define FULLSCREEN_HEIGHT_DEFAULT 363
 #define FORCE_BPP_DEFAULT 8
+#define FULLSCREEN_DEFAULT 1
 #elif defined(CONFIG_WII)
 #define AUDIO_SAMPLE_RATE 48000
 #elif defined(ANDROID)
@@ -60,6 +63,14 @@
 
 #ifndef AUDIO_SAMPLE_RATE
 #define AUDIO_SAMPLE_RATE 44100
+#endif
+
+#ifndef FULLSCREEN_WIDTH_DEFAULT
+#define FULLSCREEN_WIDTH_DEFAULT -1
+#endif
+
+#ifndef FULLSCREEN_HEIGHT_DEFAULT
+#define FULLSCREEN_HEIGHT_DEFAULT -1
 #endif
 
 #ifndef FULLSCREEN_DEFAULT
@@ -442,8 +453,8 @@ static struct config_info default_options =
 {
   // Video options
   FULLSCREEN_DEFAULT,           // fullscreen
-  -1,                           // resolution_width
-  -1,                           // resolution_height
+  FULLSCREEN_WIDTH_DEFAULT,     // resolution_width
+  FULLSCREEN_HEIGHT_DEFAULT,    // resolution_height
   640,                          // window_width
   350,                          // window_height
   1,                            // allow_resize
