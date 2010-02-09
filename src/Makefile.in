@@ -210,6 +210,18 @@ mzx_objs += arch/darwin/SDLMain.o
 mzx_ldflags := -framework Cocoa
 endif
 
+ifeq (${BUILD_UPDATER},1)
+
+include src/network/Makefile.in
+
+mzx_clean: network_clean
+${mzx}.debug: ${network_target}.debug
+
+mzx_objs += ${core_obj}/updater.o
+network_link := -lnetwork
+
+endif
+
 -include ${mzx_objs:.o=.d}
 
 ifeq (${EMBED_ICONS},1)
@@ -218,17 +230,6 @@ endif
 
 ifeq (${BUILD_MODULAR},1)
 ${mzx}.debug: ${core_target}.debug ${editor_target}.debug
-endif
-
-ifeq (${BUILD_UPDATER},1)
-
-include src/network/Makefile.in
-
-mzx_clean: network_clean
-${mzx}.debug: ${network_target}.debug
-
-network_link := -lnetwork
-
 endif
 
 ${mzx}: ${core_target} ${editor_target} ${network_target} ${mzx_objs}

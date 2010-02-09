@@ -21,7 +21,7 @@ ${network_obj}/%.o: ${network_src}/%.c
 
 network_objs := \
   ${network_obj}/host.o ${network_obj}/manifest.o \
-  ${network_obj}/sha256.o ${network_obj}/updater.o
+  ${network_obj}/sha256.o
 
 -include ${network_objs:.o=.d}
 
