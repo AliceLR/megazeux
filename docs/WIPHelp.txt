@@ -8400,6 +8400,9 @@ USERS
   the world loader and saver routines. This reassures users,
   especially on consoles, where loading a world can take a long
   time. (Mr_Alert)
++ On Windows, directx.bat now passes %cd% through to `start' so
+  that features such as the updater continue to work.
+  (MZXGiant)
 + Pasting into a string with set "$str+N" with an N > 
   str.length will no longer crash MZX.
 + "Exit to DOS" is now "Exit MegaZeux" to reflect the
