@@ -36,11 +36,6 @@
 #include "render_egl.h"
 #endif
 
-#ifndef GL_BGRA
-#warning remove this hack
-#define GL_BGRA 1
-#endif
-
 #define SAFE_TEXTURE_MARGIN_X 0.0004f
 #define SAFE_TEXTURE_MARGIN_Y 0.0002f
 
@@ -245,7 +240,7 @@ static void gl2_resize_screen(struct graphics_data *graphics,
    sizeof(Uint32) * GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
 
   gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, GL_POWER_2_WIDTH,
-   GL_POWER_2_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+   GL_POWER_2_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE,
    render_data->pixels);
 
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
