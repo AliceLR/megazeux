@@ -59,8 +59,8 @@
 
 #if WORLD_VERSION == 0x0253
 
-#define WORLD_NUM_BOARDS_OFFSET  4234
-#define MAX_BOARDS               250
+#define WORLD_GLOBAL_OFFSET_OFFSET 4230
+#define MAX_BOARDS                 250
 
 enum status
 {
@@ -261,11 +261,14 @@ static enum status convert_283_to_282_board(FILE *fp, int *delta)
 
 static enum status convert_283_to_282(FILE *fp)
 {
+  unsigned int global_robot_offset;
   int num_boards, i, delta = 0;
   long board_pointer_pos;
 
-  if(fseek(fp, WORLD_NUM_BOARDS_OFFSET, SEEK_SET) != 0)
+  if(fseek(fp, WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET) != 0)
     return SEEK_ERROR;
+
+  global_robot_offset = fgetud(fp);
 
   num_boards = fgetc(fp);
   if(num_boards < 0)
@@ -311,6 +314,12 @@ static enum status convert_283_to_282(FILE *fp)
     if(ret != SUCCESS)
       return ret;
   }
+
+  if(fseek(fp, WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET) != 0)
+    return SEEK_ERROR;
+
+  global_robot_offset += delta;
+  fputud(global_robot_offset, fp);
 
   if(fseek(fp, board_pointer_pos, SEEK_SET) != 0)
     return SEEK_ERROR;
