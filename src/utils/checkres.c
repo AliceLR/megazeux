@@ -167,6 +167,31 @@ static status_t s_open(const char *filename, const char *mode, stream_t **s)
   // not a ZIP, handle in a conventional manner
   if(strcasecmp(filename + strlen(filename) - 3, "zip"))
   {
+    char basepath[MAX_PATH];
+    int path_len;
+
+    /* Move into the world's directory first; this lets us look up
+     * resources relative to the world.
+     */
+    path_len = get_path(file, basepath, MAX_PATH);
+
+    if(path_len < 0)
+    {
+      ret = GET_PATH_FAILED;
+      goto exit_free_stream;
+    }
+
+    if(path_len > 0)
+    {
+      if(chdir(basepath))
+      {
+        ret = CHDIR_FAILED;
+        goto exit_free_stream;
+      }
+
+      file += path_len + 1;
+    }
+
     (*s)->type = FILE_STREAM;
     (*s)->stream.fp = fopen(filename, mode);
     if(!(*s)->stream.fp)
@@ -383,6 +408,10 @@ static const char *decode_status(status_t status)
       return "Random world corruption.";
     case FOPEN_FAILED:
       return "Could not open file.";
+    case GET_PATH_FAILED:
+      return "Failed to obtain path from filename.";
+    case CHDIR_FAILED:
+      return "Failed to chdir() into parent path.";
     case FREAD_FAILED:
       return "File read failed or was short (corrupt file?).";
     case FSEEK_FAILED:
@@ -798,7 +827,6 @@ static status_t file_exists(const char *file, stream_t *s)
 int main(int argc, char *argv[])
 {
   const char *found_append = " - FOUND", *not_found_append = " - NOT FOUND";
-  char basepath[MAX_PATH];
   int i, len, print_all_files = 0, got_world = 0, quiet_mode = 0;
   status_t ret;
   stream_t *s;
@@ -844,15 +872,7 @@ int main(int argc, char *argv[])
     return INVALID_ARGUMENTS;
   }
 
-   /* Move into the world's directory first; this lets us look up
-    * resources relative to the world.
-    */
-  const char *file = argv[argc - 1];
-  file += get_path(file, basepath, MAX_PATH) + 1;
-  if(chdir(basepath))
-    fprintf(stderr, "Error changing directory to %s\n", basepath);
-
-  ret = s_open(file, "rb", &s);
+  ret = s_open(argv[argc - 1], "rb", &s);
   if(s)
   {
     if(got_world)

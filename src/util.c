@@ -214,7 +214,7 @@ int get_path(const char *file_name, char *dest, unsigned int buf_len)
   if(c > 0)
     memcpy(dest, file_name, c);
   dest[c] = 0;
-  
+
   return c;
 }
 
