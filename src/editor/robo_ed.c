@@ -590,7 +590,7 @@ static int execute_named_macro(robot_state *rstate, char *macro_name)
   lone_name[line_pos - macro_name] = 0;
 
   // see if such a macro exists
-  macro_src = find_macro(&rstate->mzx_world->editor_conf, macro_name, &next);
+  macro_src = find_macro(&rstate->mzx_world->editor_conf, lone_name, &next);
   free(lone_name);
 
   // it doesn't, carefully abort
