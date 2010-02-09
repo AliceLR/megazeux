@@ -220,7 +220,7 @@ static bool nds_init_video(struct graphics_data *graphics,
 }
 
 static bool nds_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, int fullscreen, int resize)
+ int width, int height, int depth, bool fullscreen, bool resize)
 {
   return true;  // stub
 }
