@@ -156,7 +156,7 @@ int mzx_res_init(const char *argv0)
 void mzx_res_free(void)
 {
   int i;
-  for(i = 0; i < END_RESOURCE_ID_T - 1; i++)
+  for(i = 0; i < END_RESOURCE_ID_T; i++)
     if(mzx_res[i].path)
       free(mzx_res[i].path);
 }
