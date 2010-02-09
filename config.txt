@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# January 1st, 2009
+# May 24th, 2009
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -67,15 +67,15 @@
 # This renderer is called "opengl1" and is high quality but quite slow.
 #
 # The second fixed-function scaler was written by Logicow, and it uses the
-# features of GL more extensively, remapping the character sets to a texture
-# does the tiling entirely in OpenGL. This yields a performance increase, at
-# the cost of some compatibility. This renderer is called "opengl2".
+# features of GL more extensively, remapping the character sets to a texture,
+# tiling entirely in OpenGL. This yields a performance increase, at the cost
+# of some compatibility. This renderer is called "opengl2".
 #
 # MegaZeux also provides a scaler for programmable hardware. If you have
-# OpenGL 2.0 or OpenGL ES 2.0 capable hardware, you can use this renderer.
+# OpenGL 2.0 or OpenGL ES 2.0 capable hardware, you should use this renderer.
 # Written by Logicow, it uses shaders to do the tiling and scaling. There
 # are four shader programs that can be customized. This renderer is called
-# "glsl".
+# "glsl". It is the highest quality and best performing renderer.
 #
 # Uncomment ONE of the lines below:
 

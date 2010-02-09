@@ -7,11 +7,11 @@ USERS
   first loop is used, and only forward looping is supported. The OGG loop
   support uses the "LOOPSTART" and "LOOPLENGTH" tags as used by RPG Maker VX.
   (Mr_Alert)
-+ Added OpenGL Shader Language (glsl) renderer which uses shaders to render and
-  scale the video. This renderer is compatible with Open GL >=2.0 and
++ Added OpenGL Shader Language (glsl) renderer which uses shaders to render
+  and scale the video. This renderer is compatible with Open GL >=2.0 and
   Open GL-ES 2.0 video cards only. A variety of shader programs have been
-  provided and these can be customized. Performance of regular mode MZX is
-  good, but SMZX modes could do with improvement. (Logicow, ajs)
+  provided and these can be customized. Performance of all MZX modes
+  (including SMZX) is excellent. (Logicow, ajs)
 + Files will no longer be silently overwritten by save dialogs if the user
   enters an existing filename without the default extension. (revvy)
 + The string editor in the counter debug menu (F11) now escapes newlines
