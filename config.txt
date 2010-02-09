@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# August 26th, 2008 --logicow.
+# October 19th, 2008
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -14,9 +14,11 @@
 # in MZX, this text file will NOT be modified, and hence the
 # values will revert to what they are here when you restart MZX.
 
-# Default options are given (and commented out) with
-# an explanation. If an option is not chosen at all
-# this default will automatically be used.
+# NOTE: All of the options below have sane defaults. Changes to
+# these options will only take effect if you uncomment them.
+
+# In many cases, the current default value has been written in,
+# but this is not guaranteed (for example with video_output).
 
 ### Video options ###
 
@@ -86,7 +88,7 @@
 # to your requested resolution. This creates an output with more "blur",
 # which some people dislike. If you are using a sufficiently high target
 # resolution, preferably an integer multiple of 640x350, you may find
-# "nearest" more pleasing, which will have no "blur". The default 
+# "nearest" more pleasing, which will have no "blur". The default
 # setting is "linear".
 
 # gl_filter_method = nearest
@@ -97,24 +99,29 @@
 ## Tilemap shaders ##
 
 # The standard tilemap shader.
+
 # gl_tilemap_vertex_shader   = shaders/tilemap.vert
 # gl_tilemap_fragment_shader = shaders/tilemap.frag
 
 ## Scaling shaders ##
 
 # High quality scaling shader. Requires modern video card.
+
 # gl_scaling_vertex_shader   = shaders/simple.vert
 # gl_scaling_fragment_shader = shaders/hqscale.frag
 
 # Simple linear shader.
+
 # gl_scaling_vertex_shader   = shaders/simple.vert
 # gl_scaling_fragment_shader = shaders/simple.frag
 
 # Simple nearest neighbor shader.
+
 # gl_scaling_vertex_shader   = shaders/simple.vert
 # gl_scaling_fragment_shader = shaders/nearest.frag
 
 # Simple emboss shader.
+
 # gl_scaling_vertex_shader = shaders/simple.vert
 # gl_scaling_fragment_shader = shaders/emboss.frag
 
@@ -139,13 +146,13 @@
 # This resolution may not actually work; if it doesn't, you will
 # get the nearest that does.
 
-fullscreen_resolution = 640,480
+# fullscreen_resolution = 640,480
 
 # The resolution MZX uses in a window. If you renderer supports
 # it, MZX will be scaled to fit this specification. Otherwise
 # the setting is ignored.
 
-window_resolution = 640,350
+# window_resolution = 640,350
 
 # Use this to toggle whether MZX can be scaled while in window
 # mode, if your renderer supports it. If you use a renderer which
@@ -161,7 +168,7 @@ enable_resizing = 1
 # renderers, but it is guaranteed to apply to "software". Valid
 # settings are usually '8' or '32'.
 
-force_bpp = 32
+# force_bpp = 32
 
 # Whether MZX should start up in fullscreen or not.
 # Press ctrl-alt-enter to toggle fullscreen as MZX runs.
@@ -176,7 +183,7 @@ force_bpp = 32
 # and 48000. If your card supports it you might get away with
 # 96000, or even 192000.
 
-#audio_sample_rate = 44100
+# audio_sample_rate = 44100
 
 # Audio buffer size. Setting this to lower can improve latency,
 # so audio will be heard sooner after it is set to be changed.
@@ -185,12 +192,12 @@ force_bpp = 32
 # process. 2048 is adequete for PC speaker playback every
 # command at speed 4.
 
-#audio_buffer = 4096
+# audio_buffer = 4096
 
 # Allow music to be sampled at higher precision. Increases CPU
 # usage but increases audio quality as well.
 
-#enable_oversampling = 0
+# enable_oversampling = 0
 
 # Set master resample mode. This affects how OGGs and
 # frequency shifted modules sound. Choices are:
@@ -198,7 +205,7 @@ force_bpp = 32
 # linear (fast, good quality)
 # cubic (slow, great quality)
 
-resample_mode = linear
+# resample_mode = linear
 
 # Set resample mode for modplug. This affects how modules
 # and WAVs sound. Choices are:
@@ -207,44 +214,47 @@ resample_mode = linear
 # cubic (slow, great quality)
 # fir (very slow, excellent quality)
 
-modplug_resample_mode = cubic
+# modplug_resample_mode = cubic
 
 # Whether music/samples should be played or not.
 # Does not include PC speaker effects.
 
-#music_on = 1
+# music_on = 1
 
 # Whether PC speaker effects should be played or not.
 
-#pc_speaker_on = 1
+# pc_speaker_on = 1
 
 # Volume music plays at
-#music_volume = 8
+
+# music_volume = 8
 
 # Volume samples play at
-#sample_volume = 8
+
+# sample_volume = 8
 
 # Volume PC speaker SFX play at
-#pc_speaker_volume = 8
+
+# pc_speaker_volume = 8
 
 
 ### Game options ###
 
 # Name of world file that should be loaded when MZX starts.
 
-#startup_file = caverns.mzx
+# startup_file = caverns.mzx
 
 # Default save file name given when you first try to save.
 
-#save_file = saved.sav
+# save_file = saved.sav
 
 # Speed MZX should start at (1 through 9)
 
-#mzx_speed = 4
+# mzx_speed = 4
 
 # Start in the editor by default
 
-#startup_editor = 1
+# startup_editor = 1
 
 
 ### Board editor options ###
@@ -258,12 +268,12 @@ modplug_resample_mode = cubic
 # will your new buffer will not require a toggle, and robots
 # can only be deleted with the Delete key.
 
-#editor_space_toggles = 1
+# editor_space_toggles = 1
 
 # Set to 1 if you want the board editor to not show the hotkey
 # help by default.
 
-#board_editor_hide_help = 1
+# board_editor_hide_help = 1
 
 
 ### Robot editor options ###
@@ -271,40 +281,42 @@ modplug_resample_mode = cubic
 # Enable or disable color coding in the editor.
 # If color coding is off, ccode_string is used for the entire
 # line.
-#color_coding_on = 0
+
+# color_coding_on = 0
 
 # Color codes for various types.
 # For colors, use 255 to show a color box.
-#ccode_colors = 255
-#ccode_commands = 15
-#ccode_conditions = 15
-#ccode_current_line = 11
-#ccode_directions = 3
-#ccode_equalities = 0
-#ccode_extras = 7
-#ccode_immediates = 10
-#ccode_items = 11
-#ccode_params = 2
-#ccode_strings = 14
-#ccode_things = 11
+
+# ccode_colors = 255
+# ccode_commands = 15
+# ccode_conditions = 15
+# ccode_current_line = 11
+# ccode_directions = 3
+# ccode_equalities = 0
+# ccode_extras = 7
+# ccode_immediates = 10
+# ccode_items = 11
+# ccode_params = 2
+# ccode_strings = 14
+# ccode_things = 11
 
 # Whether or not "extra words" should be displayed.
 # For instance, if turned on, a line like "wait 1" will
 # become "wait for 1."
 
-#disassemble_extras = 0
+# disassemble_extras = 0
 
 # The base numbers should be displayed as. Valid options
 # are 10 and 16 (decimal and hexidecimal). Hex numbers are
 # prefixed with a dollar sign ($).
 
-#disassemble_base = 16
+# disassemble_base = 16
 
 # Changing this will allow invalid comments to automatically
 # be marked to "delete" or "comment" instead of "ignore".
 # Don't change this unless you know what you're doing.
 
-#default_invalid_status = ignore
+# default_invalid_status = ignore
 
 # Single line macros
 # These are the traditional MZX macros; they may only
@@ -316,11 +328,11 @@ modplug_resample_mode = cubic
 # press F6 in the robot editor.
 # The following are the default singe-line macros.
 
-#macro_1 = char\s
-#macro_2 = color\s
-#macro_3 = goto\s
-#macro_4 = send\s
-#macro_5 = :\splayershot^
+# macro_1 = char\s
+# macro_2 = color\s
+# macro_3 = goto\s
+# macro_4 = send\s
+# macro_5 = :\splayershot^
 
 # Extended macros:
 # See macro.txt.
@@ -347,12 +359,12 @@ modplug_resample_mode = cubic
 # when the robot editor is load. If set, SMZX mode 0 will
 # also be enforced.
 
-#robot_editor_default_palette = 0
+# robot_editor_default_palette = 0
 
 # Set to 1 if you want the robot editor to not show the hotkey
 # help and horizontal border by default.
 
-#robot_editor_hide_help = 0
+# robot_editor_hide_help = 0
 
 # Backup options
 
@@ -366,21 +378,21 @@ modplug_resample_mode = cubic
 
 # How many backups to be made. Set to zero to disable backups.
 
-#backup_count = 3
+# backup_count = 3
 
 # How often (in seconds) backups should be made
 
-#backup_interval = 60
+# backup_interval = 60
 
 # The name of the backup file. If you choose "backup" with 3 backups
 # the backups will be named backup1.mzx, backup2.mzx, and backup3.mzx.
 
-#backup_name = backup
+# backup_name = backup
 
 # The extension of backup files (keep this .mzx if you want to be able
 # to easily load them)
 
-#backup_ext = .mzx
+# backup_ext = .mzx
 
 
 # Joystick options
@@ -399,7 +411,7 @@ modplug_resample_mode = cubic
 # a key's number by printing key_pressed in a loop (NOT key_code).
 # Axis mapping looks as follows:
 
-#joyXaxisY = A, B
+# joyXaxisY = A, B
 
 # Where X is the number of the joystick, Y is the number of the axis
 # (1 is typically left/right, 2 is typically up/down), A is the key
@@ -408,7 +420,7 @@ modplug_resample_mode = cubic
 
 # Button mapping looks as follows:
 
-#joyXbuttonY = A
+# joyXbuttonY = A
 
 # Where X is the number of the joystick, Y is the number of the button
 # (you may have to experiment to find out which button is which number),
@@ -422,13 +434,12 @@ modplug_resample_mode = cubic
 # might cause MZX to lock up sometimes on some machines - if you have
 # problems with it don't enable it.
 
-#pause_on_unfocus = 0
+# pause_on_unfocus = 0
 
 # Set to 0 if you want input boxes and strings in the robot editor
 # to use the game set for characters 32-127, as opposed to the protected
 # GUI set.
 
-#mask_midchars = 1
+# mask_midchars = 1
 
 include pad.config
-include ~/.megazeux

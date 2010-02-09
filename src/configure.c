@@ -471,7 +471,7 @@ static config_info default_options =
   AUDIO_BUFFER_SIZE,            // buffer_size
   0,                            // oversampling_on
   1,                            // resample_mode
-  1,                            // modplug_resample_mode
+  2,                            // modplug_resample_mode
   8,                            // music_volume
   8,                            // sam_volume
   8,                            // pc_speaker_volume
