@@ -11,3 +11,4 @@
 #define CONFIG_AUDIO
 #define CONFIG_SDL
 #define CONFIG_ICON
+#define CONFIG_MODULAR
