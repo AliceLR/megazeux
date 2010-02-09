@@ -262,9 +262,9 @@ fi
 make package_clean
 
 mkdir -p dist/$TARGET/src &&
-cp -pv $BINARY_DEPS $HELP_FILE $BUILD_DEPS dist/$TARGET &&
-cp -pvr $SUBDIRS dist/$TARGET &&
-cp -pvr $SRC dist/$TARGET/src &&
+cp -p $BINARY_DEPS $HELP_FILE $BUILD_DEPS dist/$TARGET &&
+cp -pr $SUBDIRS dist/$TARGET &&
+cp -pr $SRC dist/$TARGET/src &&
 
 # nasty hack for binary packaging (not removed by package_clean)
 rm -f dist/$TARGET/src/utils/{checkres,downver,txt2hlp}{,.dbg}{,.exe} &&
@@ -276,7 +276,7 @@ echo "PLATFORM=none" > dist/$TARGET/platform.inc
 echo "Creating source (${TARGET}src.tar.bz2).."
 
 cd dist
-tar --exclude .svn -jcvf ${TARGET}src.tar.bz2 $TARGET
+tar --exclude .svn -jcf ${TARGET}src.tar.bz2 $TARGET
 cd ..
 
 [ "$?" != "0" ] && breakout 3

@@ -1,8 +1,9 @@
 #
 # MegaZeux version information for building and packaging
 #
-# NOTE: Keep values in quotes, especially when using spaces.
+# NOTE: VERSION must be kept in quotes, in case spaces are used.
+# NOTE: TARGET must NOT be kept in quotes, and spaces CANNOT be used.
 #
 
 VERSION="SVN"
-TARGET="mzxsvn"
+TARGET=mzxsvn

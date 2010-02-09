@@ -81,7 +81,7 @@ include src/Makefile.in
 
 package_clean: utils_package_clean
 	@mv ${mzx} ${mzx}.backup
-	@${MAKE} DEBUG=1 ${TARGET}.dbg${BINEXT}_clean # hack
+	-@${MAKE} DEBUG=1 ${TARGET}.dbg${BINEXT}_clean # hack
 	@${MAKE}         ${mzx}_clean
 	@rm -f src/config.h
 	@echo "PLATFORM=none" > platform.inc
