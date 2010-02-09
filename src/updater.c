@@ -25,6 +25,8 @@
 #include "window.h"
 #include "error.h"
 
+#include "editor/window.h"
+
 #include "network/manifest.h"
 
 #include <sys/types.h>
@@ -164,12 +166,13 @@ static void __check_for_updates(void)
 {
   char *base_path, buffer[LINE_BUF_LEN], *url_base, *value;
   struct manifest_entry *removed, *replaced, *added, *e;
-  char widget_buf[WIDGET_BUF_LEN];
+  char **list_entries, widget_buf[WIDGET_BUF_LEN];
+  int i = 0, entries = 0, buf_len;
   const char *version = "2.82";
+  size_t list_entry_width = 0;
   host_status_t status;
   bool ret = false;
   struct host *h;
-  int buf_len;
   FILE *f;
 
   m_hide();
@@ -208,7 +211,7 @@ static void __check_for_updates(void)
     goto err_layer_exit;
   }
 
-  buf_len = snprintf(widget_buf, WIDGET_BUF_LEN - 1, "Connecting to \""
+  buf_len = snprintf(widget_buf, WIDGET_BUF_LEN, "Connecting to \""
    UPDATE_HOST "\" to receive version list..");
   widget_buf[WIDGET_BUF_LEN - 1] = 0;
 
@@ -229,7 +232,7 @@ static void __check_for_updates(void)
   status = host_recv_file(h, "/" UPDATES_TXT, f, "text/plain");
   if(status != HOST_SUCCESS)
   {
-    snprintf(widget_buf, WIDGET_BUF_LEN - 1, "Failed to download \""
+    snprintf(widget_buf, WIDGET_BUF_LEN, "Failed to download \""
      UPDATES_TXT "\" (err=%d).\n", status);
     widget_buf[WIDGET_BUF_LEN - 1] = 0;
     error(widget_buf, 1, 8, 0);
@@ -288,7 +291,7 @@ static void __check_for_updates(void)
     int result;
     dialog di;
 
-    buf_len = snprintf(widget_buf, WIDGET_BUF_LEN - 1,
+    buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
      "A new major version is available (%s)", value);
     widget_buf[WIDGET_BUF_LEN - 1] = 0;
 
@@ -357,6 +360,46 @@ static void __check_for_updates(void)
     goto err_free_update_manifests;
   }
 
+  for(e = removed; e; e = e->next, entries++)
+    list_entry_width = MAX(list_entry_width, 2 + strlen(e->name) + 1 + 1);
+  for(e = replaced; e; e = e->next, entries++)
+    list_entry_width = MAX(list_entry_width, 2 + strlen(e->name) + 1 + 1);
+  for(e = added; e; e = e->next, entries++)
+    list_entry_width = MAX(list_entry_width, 2 + strlen(e->name) + 1 + 1);
+
+  // We don't want the listbox to be too wide
+  list_entry_width = MIN(list_entry_width, 60);
+
+  list_entries = malloc(entries * sizeof(char *));
+
+  for(e = removed; e; e = e->next, i++)
+  {
+    list_entries[i] = malloc(list_entry_width);
+    snprintf(list_entries[i], list_entry_width, "- %s", e->name);
+    list_entries[i][list_entry_width - 1] = 0;
+  }
+
+  for(e = replaced; e; e = e->next, i++)
+  {
+    list_entries[i] = malloc(list_entry_width);
+    snprintf(list_entries[i], list_entry_width, "* %s", e->name);
+    list_entries[i][list_entry_width - 1] = 0;
+  }
+
+  for(e = added; e; e = e->next, i++)
+  {
+    list_entries[i] = malloc(list_entry_width);
+    snprintf(list_entries[i], list_entry_width, "+ %s", e->name);
+    list_entries[i][list_entry_width - 1] = 0;
+  }
+
+  list_menu((const char **)list_entries, list_entry_width,
+   "Deltas", 0, entries, (80 - (list_entry_width + 9)) >> 1);
+
+  for(i = 0; i < entries; i++)
+    free(list_entries[i]);
+  free(list_entries);
+
   host_set_callbacks(h, NULL, recv_cb, cancel_cb);
 
   for(e = removed; e; e = e->next)
@@ -374,7 +417,7 @@ static void __check_for_updates(void)
     check_prune_basedir(e->name);
   }
 
-  for(e = added; e; e = e->next)
+  for(e = replaced; e; e = e->next)
   {
     char name[72];
 
@@ -391,7 +434,7 @@ static void __check_for_updates(void)
       goto err_free_update_manifests;
   }
 
-  for(e = replaced; e; e = e->next)
+  for(e = added; e; e = e->next)
   {
     char name[72];
 

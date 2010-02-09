@@ -28,8 +28,8 @@ __M_BEGIN_DECLS
 #include "../window.h"
 #include "../world_struct.h"
 
-int list_menu(const char **choices, int choice_size, const char *title,
- int current, int num_choices, int xpos);
+EDITOR_LIBSPEC int list_menu(const char **choices, int choice_size,
+ const char *title, int current, int num_choices, int xpos);
 int color_selection(int current, int allow_wild);
 void draw_color_box(int color, int q_bit, int x, int y);
 element *construct_check_box(int x, int y, const char **choices,
