@@ -647,7 +647,7 @@ void set_screen_coords_scaled(graphics_data *graphics, int x, int y,
 void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
  ratio_type_t ratio)
 {
-  int numerator, denominator;
+  int numerator = 0, denominator = 0;
 
   *v_width = width;
   *v_height = height;
