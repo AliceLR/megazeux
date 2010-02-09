@@ -42,19 +42,23 @@ ${utils_obj}/%.o: ${utils_src}/%.c
 
 ${checkres}: ${checkres_objs}
 	$(if ${V},,@echo "  LINK    " ${checkres})
-	${CC} ${checkres_objs} -o ${checkres} ${LDFLAGS} ${checkres_ldflags}
+	${CC} ${checkres_objs} -o ${checkres} \
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${checkres_ldflags}
 
 ${downver}: ${downver_objs}
 	$(if ${V},,@echo "  LINK    " ${downver})
-	${CC} ${downver_objs} -o ${downver} ${LDFLAGS}
+	${CC} ${downver_objs} -o ${downver} \
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
 
 ${hlp2txt}: ${hlp2txt_objs}
 	$(if ${V},,@echo "  LINK    " ${hlp2txt})
-	${CC} ${hlp2txt_objs} -o ${hlp2txt} ${LDFLAGS}
+	${CC} ${hlp2txt_objs} -o ${hlp2txt} \
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
 
 ${txt2hlp}: ${txt2hlp_objs}
 	$(if ${V},,@echo "  LINK    " ${txt2hlp})
-	${CC} ${txt2hlp_objs} -o ${txt2hlp} ${LDFLAGS}
+	${CC} ${txt2hlp_objs} -o ${txt2hlp} \
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
 
 utils: $(filter-out $(wildcard ${utils_obj}), ${utils_obj})
 

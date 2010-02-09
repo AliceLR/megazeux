@@ -36,8 +36,11 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <strings.h>
 #include <string.h>
+
+#ifdef __WIN32__
+#include <strings.h>
+#endif
 
 #include "world.h"
 #include "util.h"

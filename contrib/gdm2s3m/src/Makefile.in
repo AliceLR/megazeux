@@ -10,7 +10,11 @@ gdm2s3m_src = contrib/gdm2s3m/src
 gdm2s3m_obj = contrib/gdm2s3m/src/.build
 
 gdm2s3m_cflags := -W -Wmissing-format-attribute -Wpointer-arith -Wcast-align
-gdm2s3m_cflags += -Wwrite-strings -Wundef -pedantic -I${gdm2s3m_src}
+gdm2s3m_cflags += -Wwrite-strings -I${gdm2s3m_src}
+
+ifneq (${PLATFORM},android)
+gdm2s3m_cflags += -pedantic
+endif
 
 gdm2s3m_objs = \
     ${gdm2s3m_obj}/error.o ${gdm2s3m_obj}/gdm.o \

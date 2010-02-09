@@ -27,6 +27,7 @@ usage() {
 	echo "  nds            Experimental NDS port"
 	echo "  wii            Experimental Wii port"
 	echo "  amiga          Experimental AmigaOS 4 port"
+	echo "  android        Experimental Android port"
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
@@ -309,6 +310,8 @@ fi
 
 if [ "$PLATFORM" = "darwin" ]; then
 	SYSCONFDIR="../Resources"
+elif [ "$PLATFORM" = "android" ]; then
+	SYSCONFDIR="/system/etc"
 elif [ "$PLATFORM" != "unix" ]; then
 	if [ "$SYSCONFDIR_SET" != "true" ]; then
 		SYSCONFDIR="."
@@ -347,7 +350,7 @@ echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 #
 if [ "$PLATFORM" = "unix" ]; then
 	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\"" >> src/config.h
-	echo "#define CONFFILE \"megazeux-config\""         >> src/config.h
+	echo "#define CONFFILE \"megazeux-config\""     >> src/config.h
 elif [ "$PLATFORM" = "nds" ]; then
 	echo "#define SHAREDIR \"/games/megazeux/\"" >> src/config.h
 	echo "#define CONFFILE \"config.txt\""       >> src/config.h
@@ -357,6 +360,9 @@ elif [ "$PLATFORM" = "wii" ]; then
 elif [ "$PLATFORM" = "darwin" ]; then
 	echo "#define SHAREDIR \"../Resources/\"" >> src/config.h
 	echo "#define CONFFILE \"config.txt\""    >> src/config.h
+elif [ "$PLATFORM" = "android" ]; then
+	echo "#define SHAREDIR \"/system/lib/megazeux\"" >> src/config.h
+	echo "#define CONFFILE \"megazeux-config\""      >> src/config.h
 else
 	echo "#define SHAREDIR \"./\""         >> src/config.h
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
@@ -371,12 +377,15 @@ echo "BINDIR=$BINDIR"         >> platform.inc
 echo "SHAREDIR=$SHAREDIR"     >> platform.inc
 
 #
-# Use platform-specific code or use SDL
+# Platform-specific libraries, or SDL?
 #
 if [ "$PLATFORM" = "wii" ]; then
-	echo "Wii platform; disabling SDL."
 	echo "#define CONFIG_WII" >> src/config.h
 	echo "BUILD_WII=1" >> platform.inc
+fi
+
+if [ "$PLATFORM" = "wii"  -o "$PLATFORM" = "android" ]; then
+	echo "Disabling SDL."
 	SDL="false"
 fi
 
@@ -469,7 +478,8 @@ fi
 #
 # Force-enable tremor on PSP/GP2X
 #
-if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" ]; then
+if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
+  -o "$PLATFORM" = "android" ]; then
 	echo "Force-switching ogg/vorbis to tremor."
 	TREMOR="true"
 fi
@@ -483,10 +493,10 @@ if [ "$AUDIO" = "false" ]; then
 fi
 
 #
-# Force-enable pthread on POSIX platforms (works around SDL bugs)
+# Force-disable pthread on non-POSIX platforms
 #
 if [ "$PLATFORM" != "unix" -a "$PLATFORM" != "unix-devel" \
-  -a "$PLATFORM" != "gp2x" ]; then
+  -a "$PLATFORM" != "gp2x" -a "$PLATFORM" != "android" ]; then
 	echo "Force-disabling pthread on non-POSIX platforms."
 	PTHREAD="false"
 fi

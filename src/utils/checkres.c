@@ -20,16 +20,19 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include <strings.h>
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
 #include <unistd.h>
 
+#ifdef __WIN32__
+#include <strings.h>
+#endif
+
 // From MZX itself
-#include "fsafeopen.h"
-#include "const.h"
-#include "util.h"
+#include "../fsafeopen.h"
+#include "../const.h"
+#include "../util.h"
 
 #include "unzip.h"
 

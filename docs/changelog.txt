@@ -42,6 +42,8 @@ DEVELOPERS
   This is useless to anybody except developers doing new ports.
 + Game directory, utility directory and resource directories can now
   be specified and will be respected on "make install". (Sci-Freak, ajs)
++ Added experimental port to Android. See arch/android/README for more
+  information.
 
 December 29, 2008 - MZX 2.82b
 

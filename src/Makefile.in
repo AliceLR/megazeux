@@ -15,7 +15,7 @@ core_obj = src/.build
 
 core_flags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
 core_flags   += -Wmissing-format-attribute -Wpointer-arith
-core_flags   += -Wwrite-strings -Wundef
+core_flags   += -Wwrite-strings
 core_cflags  += ${CFLAGS} -Wmissing-prototypes
 core_cxxflags = ${CXXFLAGS} -DHAVE_INTTYPES_H
 
@@ -76,6 +76,13 @@ core_cxxobjs :=
 #
 ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_PSP}),)
 core_cflags += -Wstrict-prototypes
+endif
+
+#
+# Hack to avoid silly warnings from Android headers
+#
+ifeq (${PLATFORM},android)
+core_cflags += -Wno-strict-prototypes
 endif
 
 ifeq (${BUILD_NDS},1)
@@ -158,8 +165,8 @@ core_flags   += ${SDL_CFLAGS}
 core_ldflags += ${SDL_LDFLAGS}
 
 ifeq (${BUILD_MODULAR},1)
-mzx_ldflags    := ${SDL_LDFLAGS}
-mzxrun_ldflags := ${SDL_LDFLAGS}
+mzx_ldflags    += ${SDL_LDFLAGS}
+mzxrun_ldflags += ${SDL_LDFLAGS}
 endif
 
 else
@@ -182,7 +189,7 @@ core_cobjs += ${core_obj}/platform_dummy.o
 # we must link pthread ourselves.
 #
 ifeq (${PTHREAD},1)
-core_ldflags := -lpthread ${core_ldflags}
+core_ldflags := ${PTHREAD_LDFLAGS} ${core_ldflags}
 endif
 
 endif
@@ -252,12 +259,12 @@ endif
 ${mzx}: ${core_target} ${editor_target} ${network_target} ${mzx_objs}
 	$(if ${V},,@echo "  LINK    " ${mzx})
 ifeq (${BUILD_MODULAR},1)
-	${CC} ${mzx_objs} -o ${mzx} ${LDFLAGS} \
+	${CC} ${mzx_objs} -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
 	  ${DSORPATH} -L. -lcore -leditor ${network_link} \
 	  ${mzx_ldflags}
 else
 	${LINK_CC} ${mzx_objs} ${core_target} ${editor_target} \
-	  ${network_target} -o ${mzx} ${LDFLAGS} \
+	  ${network_target} -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
 	  ${core_ldflags} ${editor_ldflags} ${network_ldflags}
 endif
 
@@ -293,11 +300,11 @@ endif
 ${mzxrun}: ${core_target} ${mzxrun_objs}
 	$(if ${V},,@echo "  LINK    " ${mzxrun})
 ifeq (${BUILD_MODULAR},1)
-	${CC} ${mzxrun_objs} -o ${mzxrun} ${LDFLAGS} \
+	${CC} ${mzxrun_objs} -o ${mzxrun} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
 	  ${DSORPATH} -L. -lcore ${mzxrun_ldflags}
 else
 	${LINK_CC} ${mzxrun_objs} ${core_target} \
-	  -o ${mzxrun} ${LDFLAGS} ${core_ldflags}
+	  -o ${mzxrun} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${core_ldflags}
 endif
 
 else

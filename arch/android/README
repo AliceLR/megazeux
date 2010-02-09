@@ -1,0 +1,47 @@
+MEGAZEUX ON ANDROID
+
+Android uses the Linux kernel and the build is similar to the UNIX one.
+
+MegaZeux requires a new arch/ as the Android cross-compiler is weird and
+uses hand-rolled linker flags to generate programs. This may go away over
+time.
+
+At the moment this Android port does nothing. It needs the following work:
+
+  - Port to EGL for windowing
+  - Fix GL renderers to build and work against OpenGL-ES 1.0
+  - Possibly fix up software renderer to use Skia (needed for old phones)
+  - Implement audio support (audioflinger)
+
+Most of the config.sh options work as-is, see docs/platform-matrix.html for
+detailed information.
+
+CHANGES TO ANDROID SOURCE TREE
+
+At the moment the only change required to the source tree is to add a symlink
+to work around a case issue when building on Linux:
+
+cd $ANDROID_ROOT/external/tremor
+ln -s Tremor tremor
+
+You don't have to do this if you disable audio support (which makes a lot of
+sense right now, actually).
+
+BUILD DEPENDENCIES
+
+Android makes this easy, because they bootstrap everything themselves. They
+even provide the cross compiler. All you need to do is specify your android
+build tree with "--prefix" and the build system does the rest.
+
+CONFIGURATION
+
+The config.sh line I've been using is:
+
+./config.sh --platform android --prefix $HOME/android --disable-utils
+
+However, I've made sure the utils build too, so the --disable-utils is
+optional.
+
+INSTALLATION
+
+Fixme, right?

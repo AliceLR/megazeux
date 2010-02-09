@@ -52,6 +52,8 @@ LIBPNG_CFLAGS  ?= `libpng12-config --cflags`
 LIBPNG_LDFLAGS ?= `libpng12-config --libs`
 endif
 
+PTHREAD_LDFLAGS ?= -lpthread
+
 OPTIMIZE_CFLAGS ?= -O2
 
 ifeq (${DEBUG},1)
@@ -69,11 +71,19 @@ CXXFLAGS += ${OPTIMIZE_CFLAGS} -DNDEBUG
 endif
 
 #
+# Android headers are busted and we get too many warnings..
+#
+ifneq (${PLATFORM},android)
+CFLAGS   += -Wundef
+CXXFLAGS += -Wundef
+endif
+
+#
 # Always generate debug information; this may end up being stripped
 # stripped (on embedded platforms) or objcopy'ed out.
 #
 CFLAGS   += -g -Wall -std=gnu99 ${ARCH_CFLAGS}
-CXXFLAGS += -g -Wall ${ARCH_CXXFLAGS}
+CXXFLAGS += -g -Wall -fno-exceptions ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
 
 ifeq (${shell ${CC} -dumpversion | cut -d. -f1},4)

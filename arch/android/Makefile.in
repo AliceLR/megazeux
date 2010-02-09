@@ -1,0 +1,60 @@
+#
+# android makefile generics
+#
+
+TOOLCHAIN       ?= ${PREFIX}/prebuilt/linux-x86/toolchain/arm-eabi-4.2.1
+CROSS_COMPILE   ?= ${TOOLCHAIN}/bin/arm-eabi-
+ANDROID_LIBPATH ?= ${PREFIX}/out/target/product/${ANDROID_PRODUCT}/obj/lib
+ANDROID_PRODUCT ?= generic
+
+CC      = ${CROSS_COMPILE}gcc
+CXX     = ${CROSS_COMPILE}g++
+AR      = ${CROSS_COMPILE}ar
+OBJCOPY = ${CROSS_COMPILE}objcopy
+STRIP   = ${CROSS_COMPILE}strip --strip-unneeded
+
+ARCH_CFLAGS = \
+  -march=armv5te \
+  -I${PREFIX}/bionic/libc/include \
+  -I${PREFIX}/bionic/libc/arch-arm/include \
+  -I${PREFIX}/bionic/libc/kernel/common \
+  -I${PREFIX}/bionic/libc/kernel/arch-arm \
+  -I${PREFIX}/bionic/libm/include
+
+ARCH_CXXFLAGS = \
+  ${ARCH_CFLAGS} -I${PREFIX}/bionic/libstdc++/include
+
+ARCH_LDFLAGS = \
+  -nostdlib \
+  -Wl,-dynamic-linker,/system/bin/linker \
+  -Wl,-rpath-link=${ANDROID_LIBPATH} \
+  ${TOOLCHAIN}/lib/gcc/arm-eabi/4.2.1/interwork/libgcc.a \
+  -L${ANDROID_LIBPATH} -lc
+
+ARCH_EXE_LDFLAGS = \
+  -Bdynamic -Wl,-T,${PREFIX}/build/core/armelf.x \
+  ${ANDROID_LIBPATH}/crtbegin_dynamic.o \
+  ${ANDROID_LIBPATH}/crtend_android.o
+
+DSOLDFLAGS = -shared -Wl,-T,${PREFIX}/build/core/armelf.xsc
+DSOPRE     = lib
+DSOPOST    = .so
+DSORPATH   = -Wl,-rpath,${LIBDIR}
+DSOSONAME  = -Wl,-soname,
+
+#
+# Bionic implements pthread, no separate library
+#
+PTHREAD_LDFLAGS =
+
+#
+# Headers are in a strange place
+#
+VORBIS_CFLAGS = -I${PREFIX}/external/tremor
+ZLIB_CFLAGS   = -I${PREFIX}/external/zlib
+LIBPNG_CFLAGS = -I${PREFIX}/external/libpng ${ZLIB_CFLAGS}
+
+#
+# Skia provides libpng symbols on Android
+#
+LIBPNG_LDFLAGS = -lsgl
