@@ -32,3 +32,7 @@ void free_extended_macros(World *mzx_world)
 void edit_world(World *mzx_world)
 {
 }
+
+void load_editor_config(World *mzx_world, int argc, char *argv[])
+{
+}

@@ -65,6 +65,13 @@
 
 const bool editor_present = true;
 
+void load_editor_config(World *mzx_world, int argc, char *argv[])
+{
+  default_editor_config(&mzx_world->editor_conf);
+  set_editor_config_from_file(&mzx_world->editor_conf, mzx_res_get_by_id(CONFIG_TXT));
+  set_editor_config_from_command_line(&mzx_world->editor_conf, argc, argv);
+}
+
 /* Edit menu- (w/box ends on sides) Current menu name is highlighted. The
   bottom section zooms to show a list of options for the current menu,
   although all keys are available at all times. PGUP/PGDN changes menu.

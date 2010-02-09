@@ -6,7 +6,7 @@ include contrib/gdm2s3m/src/Makefile.in
 include contrib/icons/Makefile.in
 include contrib/libmodplug/src/Makefile.in
 
-.PHONY: ${mzx}_clean
+.PHONY: mzx_clean
 
 LINK_CC := ${CC}
 
@@ -16,26 +16,26 @@ mzx_src = src
 editor_obj = src/editor/.build
 editor_src = src/editor
 
-mzx_flags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
-mzx_flags   += -Wmissing-format-attribute -Wpointer-arith
-mzx_flags   += -Wwrite-strings
-mzx_cflags  += -Wmissing-prototypes
-mzx_cxxflags = -DHAVE_INTTYPES_H
+core_flags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
+core_flags   += -Wmissing-format-attribute -Wpointer-arith
+core_flags   += -Wwrite-strings
+core_cflags  += -Wmissing-prototypes
+core_cxxflags = -DHAVE_INTTYPES_H
 
-mzx_flags   += -I${mzx_src} -I${PREFIX}/include
-mzx_ldflags := ${mzx_ldflags} ${ARCH_LDFLAGS}
+core_flags   += -I${mzx_src} -I${PREFIX}/include
+core_ldflags := ${core_ldflags} ${ARCH_LDFLAGS}
 
 ${editor_obj}/%.o: ${editor_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
+	${CC} -MD ${CFLAGS} ${core_flags} ${core_cflags} -c $< -o $@
 
 ${mzx_obj}/%.o: ${mzx_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
+	${CC} -MD ${CFLAGS} ${core_flags} ${core_cflags} -c $< -o $@
 
 ${mzx_obj}/%.o: ${mzx_src}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
+	${CXX} -MD ${CXXFLAGS} ${core_flags} ${core_cxxflags} -c $< -o $@
 
 %.debug: %${BINEXT}
 	$(if ${V},,@echo "  OBJCOPY " --only-keep-debug $< $@)
@@ -50,201 +50,169 @@ ${mzx_obj}/%.o: ${mzx_src}/%.cpp
 # Lists mandatory C language sources (mangled to object names) required
 # to build the main binary. Please keep this sorted alphabetically.
 #
-mzx_cobjs := ${mzx_obj}/board.o ${mzx_obj}/configure.o
-mzx_cobjs += ${mzx_obj}/counter.o ${mzx_obj}/debug.o
-mzx_cobjs += ${mzx_obj}/data.o ${mzx_obj}/decrypt.o
-mzx_cobjs += ${mzx_obj}/error.o ${mzx_obj}/event.o
-mzx_cobjs += ${mzx_obj}/expr.o ${mzx_obj}/fsafeopen.o
-mzx_cobjs += ${mzx_obj}/game2.o ${mzx_obj}/game.o
-mzx_cobjs += ${mzx_obj}/graphics.o ${mzx_obj}/idarray.o
-mzx_cobjs += ${mzx_obj}/idput.o ${mzx_obj}/intake.o
-mzx_cobjs += ${mzx_obj}/main.o ${mzx_obj}/mzm.o
-mzx_cobjs += ${mzx_obj}/rasm.o ${mzx_obj}/render.o
-mzx_cobjs += ${mzx_obj}/robot.o ${mzx_obj}/runrobo2.o
-mzx_cobjs += ${mzx_obj}/scrdisp.o ${mzx_obj}/sfx.o
-mzx_cobjs += ${mzx_obj}/sprite.o ${mzx_obj}/util.o
-mzx_cobjs += ${mzx_obj}/window.o ${mzx_obj}/world.o
+core_cobjs := ${mzx_obj}/board.o ${mzx_obj}/configure.o
+core_cobjs += ${mzx_obj}/counter.o ${mzx_obj}/debug.o
+core_cobjs += ${mzx_obj}/data.o ${mzx_obj}/decrypt.o
+core_cobjs += ${mzx_obj}/error.o ${mzx_obj}/event.o
+core_cobjs += ${mzx_obj}/expr.o ${mzx_obj}/fsafeopen.o
+core_cobjs += ${mzx_obj}/game2.o ${mzx_obj}/game.o
+core_cobjs += ${mzx_obj}/graphics.o ${mzx_obj}/idarray.o
+core_cobjs += ${mzx_obj}/idput.o ${mzx_obj}/intake.o
+core_cobjs += ${mzx_obj}/mzm.o ${mzx_obj}/rasm.o
+core_cobjs += ${mzx_obj}/render.o ${mzx_obj}/robot.o
+core_cobjs += ${mzx_obj}/runrobo2.o ${mzx_obj}/scrdisp.o
+core_cobjs += ${mzx_obj}/sfx.o ${mzx_obj}/sprite.o
+core_cobjs += ${mzx_obj}/util.o ${mzx_obj}/window.o
+core_cobjs += ${mzx_obj}/world.o
 
 #
 # Lists mandatory C++ language sources (mangled to object names) required
 # to build the main binary. Currently there are only optional sources.
 #
-mzx_cxxobjs :=
+core_cxxobjs :=
 
 #
 # Hack to avoid silly warnings from devkitPro headers
 #
 ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_PSP}),)
-mzx_cflags += -Wstrict-prototypes
+core_cflags += -Wstrict-prototypes
 endif
 
 ifeq (${BUILD_NDS},1)
 #
 # This is really just a hack and should be moved elsewhere
 #
-mzx_cobjs += arch/nds/ram.o arch/nds/exception.o
-mzx_cobjs += arch/nds/malloc.o arch/nds/extmem.o
-endif
-
-ifeq (${BUILD_EDITOR},1)
-mzx_cobjs += ${editor_obj}/board.o ${editor_obj}/block.o
-mzx_cobjs += ${editor_obj}/configure.o ${editor_obj}/char_ed.o
-mzx_cobjs += ${editor_obj}/edit.o ${editor_obj}/edit_di.o
-mzx_cobjs += ${editor_obj}/fill.o ${editor_obj}/graphics.o
-mzx_cobjs += ${editor_obj}/macro.o ${editor_obj}/pal_ed.o
-mzx_cobjs += ${editor_obj}/param.o ${editor_obj}/robo_ed.o
-mzx_cobjs += ${editor_obj}/robot.o ${editor_obj}/sfx_edit.o
-mzx_cobjs += ${editor_obj}/window.o ${editor_obj}/world.o
-else
-mzx_cobjs += ${mzx_obj}/edit_stubs.o
+core_cobjs += arch/nds/ram.o arch/nds/exception.o
+core_cobjs += arch/nds/malloc.o arch/nds/extmem.o
 endif
 
 ifeq (${BUILD_HELPSYS},1)
-mzx_cobjs += ${mzx_obj}/helpsys.o
+core_cobjs += ${mzx_obj}/helpsys.o
 endif
 
 ifeq (${BUILD_RENDER_SOFT},1)
-mzx_cobjs += ${mzx_obj}/render_soft.o
+core_cobjs += ${mzx_obj}/render_soft.o
 endif
 
 ifeq (${BUILD_RENDER_GL},1)
-mzx_cobjs += ${mzx_obj}/render_gl.o
-mzx_cobjs += ${mzx_obj}/render_gl1.o ${mzx_obj}/render_gl2.o
+core_cobjs += ${mzx_obj}/render_gl.o
+core_cobjs += ${mzx_obj}/render_gl1.o ${mzx_obj}/render_gl2.o
 endif
 
 ifeq (${BUILD_RENDER_GLSL},1)
-mzx_cobjs += ${mzx_obj}/render_glsl.o
+core_cobjs += ${mzx_obj}/render_glsl.o
 endif
 
 ifeq (${BUILD_RENDER_YUV},1)
-mzx_cobjs += ${mzx_obj}/render_yuv.o
-mzx_cobjs += ${mzx_obj}/render_yuv1.o ${mzx_obj}/render_yuv2.o
+core_cobjs += ${mzx_obj}/render_yuv.o
+core_cobjs += ${mzx_obj}/render_yuv1.o ${mzx_obj}/render_yuv2.o
 endif
 
 ifeq (${BUILD_RENDER_GP2X},1)
-mzx_cobjs += ${mzx_obj}/render_gp2x.o
+core_cobjs += ${mzx_obj}/render_gp2x.o
 endif
 
 ifeq (${BUILD_RENDER_GX},1)
-mzx_cobjs += ${mzx_obj}/render_gx.o
+core_cobjs += ${mzx_obj}/render_gx.o
 endif
 
 ifeq (${BUILD_NDS},1)
-mzx_cobjs += ${mzx_obj}/render_nds.o
+core_cobjs += ${mzx_obj}/render_nds.o
 endif
 
 ifeq (${EMBED_ICONS},1)
-mzx_ldflags := ${icons} ${mzx_ldflags}
+core_ldflags := ${icons} ${core_ldflags}
 ${mzx}: ${icons}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
-mzx_cflags += -I${gdm2s3m_src}
-mzx_cobjs += ${gdm2s3m_objs}
-mzx_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug
-mzx_cxxobjs += ${mzx_obj}/audio_modplug.o ${libmodplug_objs}
+core_cflags += -I${gdm2s3m_src}
+core_cobjs += ${gdm2s3m_objs}
+core_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug
+core_cxxobjs += ${mzx_obj}/audio_modplug.o ${libmodplug_objs}
 LINK_CC := ${CXX}
 endif
 
 ifeq (${BUILD_MIKMOD},1)
-mzx_ldflags := ${MIKMOD_LDFLAGS} ${mzx_ldflags}
-mzx_cobjs += ${mzx_obj}/audio_mikmod.o
+core_ldflags := ${MIKMOD_LDFLAGS} ${core_ldflags}
+core_cobjs += ${mzx_obj}/audio_mikmod.o
 endif
 
 ifeq (${LIBPNG},1)
-mzx_flags += ${LIBPNG_CFLAGS}
-mzx_ldflags := ${LIBPNG_LDFLAGS} ${mzx_ldflags}
-mzx_cobjs += ${mzx_obj}/pngops.o
+core_flags += ${LIBPNG_CFLAGS}
+core_ldflags := ${LIBPNG_LDFLAGS} ${core_ldflags}
+core_cobjs += ${mzx_obj}/pngops.o
 endif
 
 ifeq (${BUILD_AUDIO},1)
-mzx_cobjs += ${mzx_obj}/audio.o
-mzx_flags += ${VORBIS_CFLAGS}
-mzx_ldflags := ${VORBIS_LDFLAGS} ${mzx_ldflags}
+core_cobjs += ${mzx_obj}/audio.o
+core_flags += ${VORBIS_CFLAGS}
+core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
 endif
 
 ifeq (${PTHREAD},1)
-mzx_ldflags := -lpthread ${mzx_ldflags}
+core_ldflags := -lpthread ${core_ldflags}
 endif
 
 ifeq (${BUILD_SDL},1)
 
-mzx_cobjs += ${mzx_obj}/event_sdl.o ${mzx_obj}/platform_sdl.o
-mzx_cobjs += ${mzx_obj}/render_sdl.o
+core_cobjs += ${mzx_obj}/event_sdl.o ${mzx_obj}/platform_sdl.o
+core_cobjs += ${mzx_obj}/render_sdl.o
 
 ifeq (${BUILD_AUDIO},1)
-mzx_cobjs += ${mzx_obj}/audio_sdl.o
+core_cobjs += ${mzx_obj}/audio_sdl.o
 endif
 
-mzx_flags += ${SDL_CFLAGS}
-mzx_ldflags += ${SDL_LDFLAGS}
+core_flags += ${SDL_CFLAGS}
+core_ldflags += ${SDL_LDFLAGS}
 
 endif
 
 ifeq (${BUILD_WII},1)
-mzx_cobjs += ${mzx_obj}/event_wii.o ${mzx_obj}/platform_wii.o
+core_cobjs += ${mzx_obj}/event_wii.o ${mzx_obj}/platform_wii.o
 ifeq (${BUILD_AUDIO},1)
-mzx_cobjs += ${mzx_obj}/audio_wii.o
+core_cobjs += ${mzx_obj}/audio_wii.o
 endif
 endif
 
--include ${mzx_cobjs:.o=.d}
--include ${mzx_cxxobjs:.o=.d}
+common_objs := ${mzx_obj}/main.o ${core_cobjs} ${core_cxxobjs}
 
-ifeq (${WHOLE_PROGRAM},1)
+${common_objs}: $(filter-out $(wildcard ${mzx_obj}), ${mzx_obj})
 
-#
-# If we're doing -fwhole-program optimizations, don't go through the source
-# files individually. Instead, compile all of the C source at once, but
-# continue to compile C++ source separately. Force the cobjs link line, and
-# link the combined C object with the C++ code. Hacky, but fairly maintainable.
-#
+ifeq (${BUILD_EDITOR},1)
 
-mzx_cobjs_link = src/.build/c.o
+include src/editor/Makefile.in
 
-#
-# Shouldn't really be phony but it's hard to get the dependencies right, and
-# this build option should only be used for "release" builds where deps aren't
-# very useful. Therefore, always rebuild c.o whenever the ${mzx} target is
-# invoked.
-#
-.PHONY: ${mzx_cobjs_link}
+mzx_objs := ${common_objs} ${editor_objs}
 
-${mzx_cobjs_link}:
-ifneq (${V},1)
-	@echo "  --> Compiling all C files with --combine -fwhole-program..."
-endif
-	${CC} ${CFLAGS} ${mzx_flags} ${mzx_cflags} \
-	      -fwhole-program --combine -c ${mzx_cobjs:.o=.c} -o ${mzx_cobjs_link}
+-include ${mzx_objs:.o=.d}
+
+${mzx}: ${mzx_objs}
+	$(if ${V},,@echo "  LINK    " ${mzx})
+	${LINK_CC} ${mzx_objs} -o ${mzx} ${LDFLAGS} ${core_ldflags}
 
 else
 
-#
-# Regular compile mode -- the link objects are the sources, individually, and
-# we link as normal.
-#
-
-mzx_cobjs_link := ${mzx_cobjs}
+${mzx}:
+	@echo "--> Building of editor disabled."
 
 endif
 
-${mzx_cobjs}: $(filter-out $(wildcard ${mzx_obj}), ${mzx_obj})
-${mzx_cobjs}: $(filter-out $(wildcard ${editor_obj}), ${editor_obj})
+mzxrun_objs := ${common_objs} ${mzx_obj}/edit_stubs.o
 
-${mzx_cxxobjs}: $(filter-out $(wildcard ${mzx_obj}), ${mzx_obj})
-${mzx_cxxobjs}: $(filter-out $(wildcard ${editor_obj}), ${editor_obj})
+-include ${mzxrun_objs:.o=.d}
 
-${mzx}: ${mzx_cobjs_link} ${mzx_cxxobjs}
-	$(if ${V},,@echo "  LINK    " ${mzx})
-	${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} \
-	        -o ${mzx} ${LDFLAGS} ${mzx_ldflags}
+${mzxrun}: ${mzxrun_objs}
+	$(if ${V},,@echo "  LINK    " ${mzxrun})
+	${LINK_CC} ${mzxrun_objs} -o ${mzxrun} ${LDFLAGS} ${core_ldflags}
 
 ${mzxdbg}: ${mzx}
+${mzxrundbg} : ${mzxrun}
 
-${mzx}_clean: gdm2s3m_clean ${icons}_clean libmodplug_clean
+mzx_clean: editor_clean gdm2s3m_clean icons_clean libmodplug_clean
 	$(if ${V},,@echo "  RM      " ${mzx_obj})
 	${RM} -r ${mzx_obj}
-	$(if ${V},,@echo "  RM      " ${editor_obj})
-	${RM} -r ${editor_obj}
+	$(if ${V},,@echo "  RM      " ${mzxrun} ${mzxrundbg})
+	${RM} ${mzx} ${mzxdbg}
 	$(if ${V},,@echo "  RM      " ${mzx} ${mzxdbg})
 	${RM} ${mzx} ${mzxdbg}

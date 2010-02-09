@@ -146,11 +146,7 @@ int main(int argc, char *argv[])
   set_config_from_file(&mzx_world.conf, mzx_res_get_by_id(CONFIG_TXT));
   set_config_from_command_line(&mzx_world.conf, argc, argv);
 
-#ifdef CONFIG_EDITOR
-  default_editor_config(&mzx_world.editor_conf);
-  set_editor_config_from_file(&mzx_world.editor_conf, mzx_res_get_by_id(CONFIG_TXT));
-  set_editor_config_from_command_line(&mzx_world.editor_conf, argc, argv);
-#endif
+  load_editor_config(&mzx_world, argc, argv);
 
   chdir(current_dir);
 

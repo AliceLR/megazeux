@@ -84,10 +84,13 @@ CXXFLAGS += -g -Wall ${ARCH_CXXFLAGS}
 #
 ifneq (${SUPPRESS_BUILD},1)
 
+mzxrun = ${TARGET}run${BINEXT}
+mzxrundbg = ${TARGET}run.debug
+
 mzx = ${TARGET}${BINEXT}
 mzxdbg = ${TARGET}.debug
 
-mzx: ${mzxdbg}
+mzx: ${mzxrundbg} ${mzxdbg}
 
 ifeq (${BUILD_MODPLUG},1)
 BUILD_GDM2S3M=1
@@ -102,15 +105,19 @@ include src/Makefile.in
 include src/network/Makefile.in
 
 package_clean: utils_package_clean
+	@mv ${mzxrun} ${mzxrun}.backup
+	@mv ${mzxrundbg} ${mzxrundbg}.backup
 	@mv ${mzx} ${mzx}.backup
 	@mv ${mzxdbg} ${mzxdbg}.backup
-	@${MAKE} ${mzx}_clean
+	@${MAKE} mzx_clean
 	@rm -f src/config.h
 	@echo "PLATFORM=none" > platform.inc
+	@mv ${mzxrun}.backup ${mzxrun}
+	@mv ${mzxrundbg}.backup ${mzxrundbg}
 	@mv ${mzx}.backup ${mzx}
 	@mv ${mzxdbg}.backup ${mzxdbg}
 
-clean: ${mzx}_clean utils_clean
+clean: mzx_clean utils_clean
 
 distclean: clean
 	@echo "  DISTCLEAN"

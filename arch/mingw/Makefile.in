@@ -12,15 +12,15 @@ WINDRES = ${MINGWBASE}windres
 BINEXT = .exe
 
 # OpenGL must be linked to MZX
-mzx_flags   += -DLINK_OPENGL
-mzx_ldflags += -lopengl32
+core_flags   += -DLINK_OPENGL
+core_ldflags += -lopengl32
 
 # Windows needs PNG to be statically linked (inc. zlib)
 LIBPNG_LDFLAGS = `libpng12-config --static --libs`
 
 # debug does something different
 ifdef DEBUG
-mzx_ldflags += -mconsole
+core_ldflags += -mconsole
 else
-mzx_ldflags += -mwindows
+core_ldflags += -mwindows
 endif

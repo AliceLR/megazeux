@@ -498,8 +498,8 @@ if [ "$X11" = "true" ]; then
 	X11PATH=`which $XBIN`
 	X11DIR=`dirname $X11PATH`
 
-	echo "mzx_flags+=-I$X11DIR/../include" >> platform.inc
-	echo "mzx_ldflags+=-L$X11DIR/../lib -lX11" >> platform.inc
+	echo "core_flags+=-I$X11DIR/../include" >> platform.inc
+	echo "core_ldflags+=-L$X11DIR/../lib -lX11" >> platform.inc
 fi
 
 #

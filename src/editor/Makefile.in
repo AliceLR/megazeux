@@ -1,0 +1,29 @@
+##
+# MegaZeux Editor Makefile fragment
+##
+
+.PHONY: editor_clean
+
+editor_obj = src/editor/.build
+editor_src = src/editor
+
+${editor_obj}/%.o: ${editor_src}/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${CFLAGS} ${core_flags} ${core_cflags} -c $< -o $@
+
+editor_objs := ${editor_obj}/board.o ${editor_obj}/block.o
+editor_objs += ${editor_obj}/configure.o ${editor_obj}/char_ed.o
+editor_objs += ${editor_obj}/edit.o ${editor_obj}/edit_di.o
+editor_objs += ${editor_obj}/fill.o ${editor_obj}/graphics.o
+editor_objs += ${editor_obj}/macro.o ${editor_obj}/pal_ed.o
+editor_objs += ${editor_obj}/param.o ${editor_obj}/robo_ed.o
+editor_objs += ${editor_obj}/robot.o ${editor_obj}/sfx_edit.o
+editor_objs += ${editor_obj}/window.o ${editor_obj}/world.o
+
+-include ${editor_objs:.o=.d}
+
+${editor_objs}: $(filter-out $(wildcard ${editor_obj}), ${editor_obj})
+
+editor_clean:
+	$(if ${V},,@echo "  RM      " ${editor_obj})
+	${RM} -r ${editor_obj}

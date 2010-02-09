@@ -47,5 +47,5 @@ clean:
 	@echo "  CLEAN   " arch/darwin
 	@rm -f arch/darwin/SDLMain.o arch/darwin/SDLMain.d
 
-mzx_ldflags += arch/darwin/SDLMain.o
-mzx_ldflags += -F${PREFIX} -framework Cocoa -framework OpenGL
+core_ldflags += arch/darwin/SDLMain.o
+core_ldflags += -F${PREFIX} -framework Cocoa -framework OpenGL

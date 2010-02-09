@@ -2,7 +2,7 @@
 # icons Makefile fragment
 ##
 
-.PHONY: ${icons}_clean
+.PHONY: icons_clean
 
 .SUFFIXES: .rc
 
@@ -26,6 +26,6 @@ ${icons}:
 	@echo "--> Embedding of icon branding disabled."
 endif
 
-${icons}_clean:
+icons_clean:
 	$(if ${V},,@echo "  RM      " ${icons_obj})
 	${RM} -r ${icons_obj}

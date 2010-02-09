@@ -62,7 +62,7 @@ ARCH_LDFLAGS := ${EXTRA_LIBS} -specs=ds_arm9.specs
 #
 arch/nds/%.o: arch/nds/%.c
 	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
+	${CC} -MD ${CFLAGS} ${core_flags} ${core_cflags} -c $< -o $@
 
 arm9bin: mzx
 	${OBJCOPY} -O binary ${mzx} ${mzx}.arm9

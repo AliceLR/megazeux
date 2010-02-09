@@ -28,6 +28,8 @@ __M_BEGIN_DECLS
 
 #include "../world_struct.h"
 
+void load_editor_config(World *mzx_world, int argc, char *argv[]);
+
 void edit_world(World *mzx_world);
 int place_current_at_xy(World *mzx_world, mzx_thing id, int color,
  int param, int x, int y, Robot *copy_robot, Scroll *copy_scroll,
