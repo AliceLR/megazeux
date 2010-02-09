@@ -81,8 +81,8 @@ static int gl1_load_syms (struct gl1_syms *gl)
 
   GL_LOAD_SYM(gl, glBindTexture)
   GL_LOAD_SYM(gl, glClear)
-  GL_LOAD_SYM(gl, glDrawArrays)
   GL_LOAD_SYM(gl, glDisableClientState)
+  GL_LOAD_SYM(gl, glDrawArrays)
   GL_LOAD_SYM(gl, glEnable)
   GL_LOAD_SYM(gl, glEnableClientState)
   GL_LOAD_SYM(gl, glGenTextures)
@@ -260,21 +260,14 @@ static void gl1_sync_screen(struct graphics_data *graphics)
   struct gl1_render_data *render_data = graphics->render_data;
   struct gl1_syms *gl = &render_data->gl;
 
-  float texture_width = (float)640 / render_data->w;
-  float texture_height = (float)350 / render_data->h;
+  const float texture_width = 640.0f / render_data->w;
+  const float texture_height = 350.0f / render_data->h;
 
-  float texCoordArray[2 * 4] = {
-    0.0,           0.0,
-    0.0,           texture_height,
-    texture_width, 0.0,
+  const float tex_coord_array[2 * 4] = {
+    0.0f,          0.0f,
+    0.0f,          texture_height,
+    texture_width, 0.0f,
     texture_width, texture_height
-  };
-
-  float vertexArray[2 * 4] = {
-    -1.0,  1.0,
-    -1.0, -1.0,
-     1.0,  1.0,
-     1.0, -1.0,
   };
 
   gl->glTexImage2D(GL_TEXTURE_2D, 0, 3, render_data->w, render_data->h, 0,
@@ -285,8 +278,8 @@ static void gl1_sync_screen(struct graphics_data *graphics)
   gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
   gl->glEnableClientState(GL_VERTEX_ARRAY);
 
-  gl->glTexCoordPointer(2, GL_FLOAT, 0, texCoordArray);
-  gl->glVertexPointer(2, GL_FLOAT, 0, vertexArray);
+  gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array);
+  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
 
   gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 

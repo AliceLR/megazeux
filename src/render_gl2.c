@@ -48,24 +48,25 @@ struct gl2_syms
 {
   int syms_loaded;
   void (GL_APIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
-  void (GL_APIENTRY *glBegin)(GLenum mode);
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
   void (GL_APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
   void (GL_APIENTRY *glClear)(GLbitfield mask);
-  void (GL_APIENTRY *glColor3ubv)(const GLubyte *v);
-  void (GL_APIENTRY *glColor4f)(GLfloat red, GLfloat green, GLfloat blue,
-   GLfloat alpha);
   void (GL_APIENTRY *glColor4ub)(GLubyte red, GLubyte green, GLubyte blue,
    GLubyte alpha);
+  void (GL_APIENTRY *glColorPointer)(GLint size, GLenum type, GLsizei stride,
+   const GLvoid *pointer);
   void (GL_APIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
    GLenum internalFormat, GLint x, GLint y, GLsizei width, GLsizei height,
    GLint border);
+  void (GL_APIENTRY *glDisableClientState)(GLenum cap);
   void (GL_APIENTRY *glDisable)(GLenum cap);
+  void (GL_APIENTRY *glDrawArrays)(GLenum mode, GLint first, GLsizei count);
   void (GL_APIENTRY *glEnable)(GLenum cap);
-  void (GL_APIENTRY *glEnd)(void);
+  void (GL_APIENTRY *glEnableClientState)(GLenum cap);
   void (GL_APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
   const GLubyte* (GL_APIENTRY *glGetString)(GLenum name);
-  void (GL_APIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
+  void (GL_APIENTRY *glTexCoordPointer)(GLint size, GLenum type,
+   GLsizei stride, const GLvoid *ptr);
   void (GL_APIENTRY *glTexImage2D)(GLenum target, GLint level,
    GLint internalformat, GLsizei width, GLsizei height, GLint border,
    GLenum format, GLenum type, const GLvoid *pixels);
@@ -74,8 +75,8 @@ struct gl2_syms
   void (GL_APIENTRY *glTexSubImage2D)(GLenum target, GLint level, GLint xoffset,
    GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type,
    const GLvoid *pixels);
-  void (GL_APIENTRY *glVertex2f)(GLfloat x, GLfloat y);
-  void (GL_APIENTRY *glVertex2i)(GLint x, GLint y);
+  void (GL_APIENTRY *glVertexPointer)(GLint size, GLenum type,
+   GLsizei stride, const GLvoid *ptr);
   void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 };
 
@@ -98,49 +99,26 @@ static int gl2_load_syms (struct gl2_syms *gl)
   if(gl->syms_loaded)
     return true;
 
-  // Since 1.1
   GL_LOAD_SYM(gl, glAlphaFunc)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glBegin)
-  // Since 1.1
   GL_LOAD_SYM(gl, glBindTexture)
-  // Since 1.0
   GL_LOAD_SYM(gl, glBlendFunc)
-  // Since 1.0
   GL_LOAD_SYM(gl, glClear)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glColor3ubv)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glColor4f)
-  // Since 1.0
   GL_LOAD_SYM(gl, glColor4ub)
-  // Since 1.1
-  GL_LOAD_SYM(gl, glCopyTexImage2D)
-  // Since 1.0 (parameters may require more recent version)
+  GL_LOAD_SYM(gl, glColorPointer)
   GL_LOAD_SYM(gl, glDisable)
-  // Since 1.0 (parameters may require more recent version)
+  GL_LOAD_SYM(gl, glDisableClientState)
+  GL_LOAD_SYM(gl, glDrawArrays)
+  GL_LOAD_SYM(gl, glCopyTexImage2D)
   GL_LOAD_SYM(gl, glEnable)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glEnd)
-  // Since 1.1
+  GL_LOAD_SYM(gl, glEnableClientState)
   GL_LOAD_SYM(gl, glGenTextures)
-  // Since 1.0
   GL_LOAD_SYM(gl, glGetString)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glTexCoord2f)
-  // Since 1.0 (parameters may require more recent version)
+  GL_LOAD_SYM(gl, glTexCoordPointer)
   GL_LOAD_SYM(gl, glTexImage2D)
-  // Since 1.0
   GL_LOAD_SYM(gl, glTexParameterf)
-  // Since 1.0
   GL_LOAD_SYM(gl, glTexParameteri)
-  // Since 1.1
   GL_LOAD_SYM(gl, glTexSubImage2D)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glVertex2f)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glVertex2i)
-  // Since 1.0
+  GL_LOAD_SYM(gl, glVertexPointer)
   GL_LOAD_SYM(gl, glViewport)
 
   gl->syms_loaded = true;
@@ -225,7 +203,6 @@ static void gl2_remap_charbyte(struct graphics_data *graphics,
   gl2_remap_char(graphics, chr);
 }
 
-// FIXME: Many magic numbers
 static void gl2_resize_screen(struct graphics_data *graphics,
  int width, int height)
 {
@@ -395,14 +372,23 @@ static int gl2_linear_filter_method(struct graphics_data *graphics)
 static void gl2_render_graph(struct graphics_data *graphics)
 {
   struct gl2_render_data *render_data = graphics->render_data;
-  struct gl2_syms *gl = &render_data->gl;
-  Uint32 i;
-  float fi, fi2;
-  Uint32 *dest;
   struct char_element *src = graphics->text_video;
-
+  struct gl2_syms *gl = &render_data->gl;
+  Sint32 i, i2, i3;
+  Uint32 *dest;
+  
   if(!graphics->screen_mode)
   {
+    float tex_coord_array[8], vertex_array[8];
+    GLubyte color_array[12];
+
+    static const float tex_coord_array_single[2 * 4] = {
+      0.0f,           0.0f,
+      0.0f,           25.0f / 32.0f,
+      80.0f / 128.0f, 0.0f,
+      80.0f / 128.0f, 25.0f / 32.0f
+    };
+
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
     if(render_data->remap_texture)
     {
@@ -444,64 +430,95 @@ static void gl2_render_graph(struct graphics_data *graphics)
     gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SCREEN_W, SCREEN_H, GL_RGBA,
      GL_UNSIGNED_BYTE, render_data->background_texture);
 
-    gl->glColor4f(1.0, 1.0, 1.0, 1.0);
+    gl->glColor4ub(255, 255, 255, 255);
+    
+    gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl->glEnableClientState(GL_VERTEX_ARRAY);
 
-    gl->glBegin(GL_TRIANGLE_STRIP);
-      gl->glTexCoord2f(0, 0);
-      gl->glVertex2i(-1, 1);
-      gl->glTexCoord2f(0, 25.0/32.0);
-      gl->glVertex2i(-1, -1);
-      gl->glTexCoord2f(80.0/128.0, 0);
-      gl->glVertex2i(1, 1);
-      gl->glTexCoord2f(80.0/128.0, 25.0/32.0);
-      gl->glVertex2i(1, -1);
-    gl->glEnd();
+    gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
+    gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
+
+    gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl->glDisableClientState(GL_VERTEX_ARRAY);
 
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 
     gl->glEnable(GL_ALPHA_TEST);
 
-    gl->glBegin(GL_TRIANGLE_STRIP);
-      src = graphics->text_video;
-      for(fi = 1; fi > -1; fi = fi - 2.0f/25.0f)
+    src = graphics->text_video;
+
+    gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl->glEnableClientState(GL_VERTEX_ARRAY);
+    gl->glEnableClientState(GL_COLOR_ARRAY);
+
+    gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array);
+    gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array);
+    gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array);
+
+    for(i = 0; i < 25; i++)
+    {
+      for(i2 = 0; i2 < 80; i2++)
       {
-        for(fi2 = -1; fi2 < 0.98; fi2 = fi2 + 2.0f/80.0f)
-        {
-          gl->glColor3ubv(&render_data->palette[src->fg_color * 3]);
+        GLubyte *pal_base = &render_data->palette[src->fg_color * 3];
 
-          gl->glTexCoord2f(
-             (src->char_value % 32)      * 0.03125f   + SAFE_TEXTURE_MARGIN_X,
-            ((src->char_value / 32) + 1) * 0.0546875f - SAFE_TEXTURE_MARGIN_Y
-          );
-          gl->glVertex2f(fi2, fi - 2.0f/25.0f);
+        tex_coord_array[0] =
+         ((src->char_value % 32) + 0) / 32.0f          + SAFE_TEXTURE_MARGIN_X;
+        tex_coord_array[1] =
+         ((src->char_value / 32) + 1) * 14.0f / 256.0f - SAFE_TEXTURE_MARGIN_Y;
 
-          gl->glTexCoord2f(
-             (src->char_value % 32)      * 0.03125f   + SAFE_TEXTURE_MARGIN_X,
-             (src->char_value / 32)      * 0.0546875f + SAFE_TEXTURE_MARGIN_Y
-          );
-          gl->glVertex2f(fi2, fi);
+        tex_coord_array[2] =
+         ((src->char_value % 32) + 0) / 32.0f          + SAFE_TEXTURE_MARGIN_X;
+        tex_coord_array[3] =
+         ((src->char_value / 32) + 0) * 14.0f / 256.0f - SAFE_TEXTURE_MARGIN_Y;
 
-          gl->glTexCoord2f(
-            ((src->char_value % 32) + 1) * 0.03125f   - SAFE_TEXTURE_MARGIN_X,
-            ((src->char_value / 32) + 1) * 0.0546875f - SAFE_TEXTURE_MARGIN_Y
-          );
-          gl->glVertex2f(fi2 + 2.0f/80.0f, fi - 2.0f/25.0f);
+        tex_coord_array[4] =
+         ((src->char_value % 32) + 1) / 32.0f          + SAFE_TEXTURE_MARGIN_X;
+        tex_coord_array[5] =
+         ((src->char_value / 32) + 1) * 14.0f / 256.0f - SAFE_TEXTURE_MARGIN_Y;
 
-          gl->glTexCoord2f(
-            ((src->char_value % 32) + 1) * 0.03125f   - SAFE_TEXTURE_MARGIN_X,
-             (src->char_value / 32)      * 0.0546875f + SAFE_TEXTURE_MARGIN_Y
-          );
-          gl->glVertex2f(fi2 + 2.0f/80.0f, fi);
+        tex_coord_array[6] =
+         ((src->char_value % 32) + 1) / 32.0f          + SAFE_TEXTURE_MARGIN_X;
+        tex_coord_array[7] =
+         ((src->char_value / 32) + 0) * 14.0f / 256.0f - SAFE_TEXTURE_MARGIN_Y;
 
-          src++;
-        }
+        vertex_array[0] = (((i2     + 0) * 2.0f) / 80.0f) - 1.0f;
+        vertex_array[1] = (((25 - i - 1) * 2.0f) / 25.0f) - 1.0f;
+
+        vertex_array[2] = (((i2     + 0) * 2.0f) / 80.0f) - 1.0f;
+        vertex_array[3] = (((25 - i + 0) * 2.0f) / 25.0f) - 1.0f;
+
+        vertex_array[4] = (((i2     + 1) * 2.0f) / 80.0f) - 1.0f;
+        vertex_array[5] = (((25 - i - 1) * 2.0f) / 25.0f) - 1.0f;
+
+        vertex_array[6] = (((i2     + 1) * 2.0f) / 80.0f) - 1.0f;
+        vertex_array[7] = (((25 - i + 0) * 2.0f) / 25.0f) - 1.0f;
+
+        for(i3 = 0; i3 < 4; i3++)
+          memcpy(&color_array[i3 * 3], pal_base, 3);
+
+        gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+        src++;
       }
-    gl->glEnd();
+    }
+
+    gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl->glDisableClientState(GL_VERTEX_ARRAY);
+    gl->glDisableClientState(GL_COLOR_ARRAY);
 
     gl->glDisable(GL_ALPHA_TEST);
   }
   else
   {
+    static const float tex_coord_array_single[2 * 4] = {
+      0.0f,             0.0f,
+      0.0f,             350.0f / 512.0f,
+      640.0f / 1024.0f, 0.0f,
+      640.0f / 1024.0f, 350.0f / 512.0f,
+    };
+
     render_graph32s(render_data->pixels, 640 * 4, graphics,
      set_colors32[graphics->screen_mode]);
 
@@ -510,18 +527,18 @@ static void gl2_render_graph(struct graphics_data *graphics)
     gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 640, 350, GL_RGBA,
       GL_UNSIGNED_BYTE, render_data->pixels);
 
-    gl->glColor4f(1.0, 1.0, 1.0, 1.0);
+    gl->glColor4ub(255, 255, 255, 255);
 
-    gl->glBegin(GL_TRIANGLE_STRIP);
-      gl->glTexCoord2f(0, 0);
-      gl->glVertex2i(-1, 1);
-      gl->glTexCoord2f(0, 0.68359375);
-      gl->glVertex2i(-1, -1);
-      gl->glTexCoord2f(0.625, 0);
-      gl->glVertex2i(1, 1);
-      gl->glTexCoord2f(0.625, 0.68359375);
-      gl->glVertex2i(1, -1);
-    gl->glEnd();
+    gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl->glEnableClientState(GL_VERTEX_ARRAY);
+
+    gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
+    gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
+
+    gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl->glDisableClientState(GL_VERTEX_ARRAY);
 
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
   }
@@ -531,21 +548,27 @@ static void gl2_render_cursor(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
 {
   struct gl2_render_data *render_data = graphics->render_data;
+  GLubyte *pal_base = &render_data->palette[color * 3];
   struct gl2_syms *gl = &render_data->gl;
+
+  const float vertex_array[2 * 4] = {
+    (x * 8)*2.0f/640.0f-1.0f,     (y * 14 + offset)*-2.0f/350.0f+1.0f,
+    (x * 8)*2.0f/640.0f-1.0f,     (y * 14 + lines + offset)*-2.0f/350.0f+1.0f,
+    (x * 8 + 8)*2.0f/640.0f-1.0f, (y * 14 + offset)*-2.0f/350.0f+1.0f,
+    (x * 8 + 8)*2.0f/640.0f-1.0f, (y * 14 + lines + offset)*-2.0f/350.0f+1.0f
+  };
 
   gl->glDisable(GL_TEXTURE_2D);
 
-  gl->glBegin(GL_TRIANGLE_STRIP);
-    gl->glColor3ubv(&render_data->palette[color * 3]);
-    gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
-                  (y * 14 + offset)*-2.0f/350.0f+1.0f);
-    gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
-                  (y * 14 + lines + offset)*-2.0f/350.0f+1.0f);
-    gl->glVertex2f((x * 8 + 8)*2.0f/640.0f-1.0f,
-                  (y * 14 + offset)*-2.0f/350.0f+1.0f);
-    gl->glVertex2f((x * 8 + 8)*2.0f/640.0f-1.0f,
-                  (y * 14 + lines + offset)*-2.0f/350.0f+1.0f);
-  gl->glEnd();
+  gl->glColor4ub(pal_base[0], pal_base[1], pal_base[2], 255);
+
+  gl->glEnableClientState(GL_VERTEX_ARRAY);
+
+  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array);
+
+  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+  gl->glDisableClientState(GL_VERTEX_ARRAY);
 
   gl->glEnable(GL_TEXTURE_2D);
 }
@@ -556,16 +579,25 @@ static void gl2_render_mouse(struct graphics_data *graphics,
   struct gl2_render_data *render_data = graphics->render_data;
   struct gl2_syms *gl = &render_data->gl;
 
+  const float vertex_array[2 * 4] = {
+     x*2.0f/640.0f-1.0f,       y*-2.0f/350.0f+1.0f,
+     x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f,
+    (x + w)*2.0f/640.0f-1.0f,  y*-2.0f/350.0f+1.0f,
+    (x + w)*2.0f/640.0f-1.0f, (y + h)*-2.0f/350.0f+1.0f
+  };
+
   gl->glDisable(GL_TEXTURE_2D);
   gl->glEnable(GL_BLEND);
 
-  gl->glBegin(GL_TRIANGLE_STRIP);
-    gl->glColor4ub(255, 255, 255, 255);
-    gl->glVertex2f( x*2.0f/640.0f-1.0f,       y*-2.0f/350.0f+1.0f);
-    gl->glVertex2f( x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f);
-    gl->glVertex2f((x + w)*2.0f/640.0f-1.0f,  y*-2.0f/350.0f+1.0f);
-    gl->glVertex2f((x + w)*2.0f/640.0f-1.0f, (y + h)*-2.0f/350.0f+1.0f);
-  gl->glEnd();
+  gl->glColor4ub(255, 255, 255, 255);
+
+  gl->glEnableClientState(GL_VERTEX_ARRAY);
+
+  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array);
+
+  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+  gl->glDisableClientState(GL_VERTEX_ARRAY);
 
   gl->glEnable(GL_TEXTURE_2D);
   gl->glDisable(GL_BLEND);
@@ -580,6 +612,13 @@ static void gl2_sync_screen(struct graphics_data *graphics)
   {
     int width, height, v_width, v_height;
 
+    static const float tex_coord_array_single[2 * 4] = {
+       0.0f,             350.0f / 512.0f,
+       0.0f,             0.0f,
+       640.0f / 1024.0f, 350.0f / 512.0f,
+       640.0f / 1024.0f, 0.0f,
+    };
+
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
 
     get_context_width_height(graphics, &width, &height);
@@ -590,19 +629,19 @@ static void gl2_sync_screen(struct graphics_data *graphics)
     gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
      v_width, v_height);
 
-    gl->glColor4f(1.0, 1.0, 1.0, 1.0);
+    gl->glColor4ub(255, 255, 255, 255);
     gl->glClear(GL_COLOR_BUFFER_BIT);
 
-    gl->glBegin(GL_TRIANGLE_STRIP);
-      gl->glTexCoord2f(0, 0);
-      gl->glVertex2i(-1, -1);
-      gl->glTexCoord2f(0, 0.68359375);
-      gl->glVertex2i(-1, 1);
-      gl->glTexCoord2f(0.625, 0);
-      gl->glVertex2i(1, -1);
-      gl->glTexCoord2f(0.625, 0.68359375);
-      gl->glVertex2i(1, 1);
-    gl->glEnd();
+    gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl->glEnableClientState(GL_VERTEX_ARRAY);
+
+    gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
+    gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
+
+    gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl->glDisableClientState(GL_VERTEX_ARRAY);
 
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
   }

@@ -31,6 +31,13 @@
 #include "render_egl.h"
 #endif
 
+const float vertex_array_single[2 * 4] = {
+  -1.0f,  1.0f,
+  -1.0f, -1.0f,
+   1.0f,  1.0f,
+   1.0f, -1.0f,
+};
+
 void gl_set_filter_method(const char *method,
  void (GL_APIENTRY *glTexParameteri_p)(GLenum target, GLenum pname, GLint param))
 {
