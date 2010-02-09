@@ -68,12 +68,8 @@ See more about bugs/reporting procedure further down.
 
 -- Platforms --
 
-Currently, the port will only definitely work on Windows (9x or NT based).
-It should build on Linux, however, there is no support for case insensitive
-file reading yet, so you would likely have to run games off of a FAT
-paritition to have any luck with them. Chances are it won't work very well
-on MacOS X because the code is not 100% endian safe yet. These problems
-will definitely be alleviated in due time.
+See platforms_matrix.html for a list of supported platforms and the options
+available to each respective platform.
 
 
 -- Minimum Requirements --

@@ -888,16 +888,19 @@ bool init_video(struct config_info *conf, const char *caption)
 
   ec_load_set_secondary(mzx_res_get_by_id(MZX_DEFAULT_CHR),
    graphics.default_charset);
-  ec_load_set_secondary(mzx_res_get_by_id(MZX_BLANK_CHR),
-   graphics.blank_charset);
   ec_load_set_secondary(mzx_res_get_by_id(MZX_SMZX_CHR),
    graphics.smzx_charset);
-  ec_load_set_secondary(mzx_res_get_by_id(MZX_ASCII_CHR),
-   graphics.ascii_charset);
   ec_load_set_secondary(mzx_res_get_by_id(MZX_EDIT_CHR),
    graphics.charset + (CHARSET_SIZE * CHAR_SIZE));
-  ec_load_mzx();
 
+#ifdef CONFIG_EDITOR
+  ec_load_set_secondary(mzx_res_get_by_id(MZX_ASCII_CHR),
+   graphics.ascii_charset);
+  ec_load_set_secondary(mzx_res_get_by_id(MZX_BLANK_CHR),
+   graphics.blank_charset);
+#endif
+
+  ec_load_mzx();
   init_palette();
   return true;
 }

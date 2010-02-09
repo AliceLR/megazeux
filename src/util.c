@@ -47,15 +47,17 @@ struct mzx_resource
  */
 static struct mzx_resource mzx_res[] = {
   { CONFFILE,               NULL },
+  { "mzx_default.chr",      NULL },
+  { "mzx_edit.chr",         NULL },
+  { "mzx_smzx.chr",         NULL },
+  { "smzx.pal",             NULL },
+#ifdef CONFIG_EDITOR
   { "mzx_ascii.chr",        NULL },
   { "mzx_blank.chr",        NULL },
-  { "mzx_default.chr",      NULL },
+#endif
 #ifdef CONFIG_HELPSYS
   { "mzx_help.fil",         NULL },
 #endif
-  { "mzx_smzx.chr",         NULL },
-  { "mzx_edit.chr",         NULL },
-  { "smzx.pal",             NULL },
 #ifdef CONFIG_RENDER_GL_PROGRAM
   { "shaders/scaler.vert",         NULL },
   { "shaders/scaler.frag",         NULL },

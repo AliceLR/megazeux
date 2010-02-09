@@ -123,9 +123,12 @@ struct graphics_data
   int gl_vsync;
 
   Uint8 default_charset[CHAR_SIZE * CHARSET_SIZE];
-  Uint8 blank_charset[CHAR_SIZE * CHARSET_SIZE];
   Uint8 smzx_charset[CHAR_SIZE * CHARSET_SIZE];
+
+#ifdef CONFIG_EDITOR
   Uint8 ascii_charset[CHAR_SIZE * CHARSET_SIZE];
+  Uint8 blank_charset[CHAR_SIZE * CHARSET_SIZE];
+#endif
 
   Uint32 flat_intensity_palette[SMZX_PAL_SIZE];
   struct renderer renderer;
