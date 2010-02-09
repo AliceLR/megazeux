@@ -212,26 +212,30 @@ elif [ "$PLATFORM" = "mingw64" ]; then
 	echo "PLATFORM=$PLATFORM"              >> platform.inc
 	echo "MINGWBASE=x86_64-pc-mingw32-"    >> platform.inc
 elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
-	OS="`uname -o`"
+	OS="`uname -s`"
 	MACH="`uname -m`"
 
-	if [ "$OS" = "GNU/Linux" ]; then
-		if [ "$MACH" = "x86_64" ]; then
-			echo "#define PLATFORM \"linux-amd64\"" > src/config.h
-			LIBDIR=lib64
-			if [ "$MODULAR" = "true" ]; then
-				echo "ARCH_CFLAGS+=-fPIC" >> platform.inc
-				echo "ARCH_CXXFLAGS+=-fPIC" >> platform.inc
-			fi
-		elif [ "`echo $MACH | sed 's,i.86,x86,'`" = "x86" ]; then
-			echo "#define PLATFORM \"linux-i386\"" > src/config.h
-			LIBDIR=lib
-		else
-			echo "Add a friendly Linux ARCH name to config.sh."
-			exit 1
-		fi
+	if [ "$OS" = "Linux" ]; then
+		UNIX="linux"
+	elif [ "$OS" = "FreeBSD" ]; then
+		UNIX="freebsd"
 	else
-		echo "Unknown UNIX, config.sh needs updating."
+		echo "WARNING: Should define proper UNIX name here!"
+		UNIX="unix"
+	fi
+
+	if [ "$MACH" = "x86_64" ]; then
+		echo "#define PLATFORM \"$UNIX-amd64\"" > src/config.h
+		LIBDIR=lib64
+		if [ "$MODULAR" = "true" ]; then
+			echo "ARCH_CFLAGS+=-fPIC" >> platform.inc
+			echo "ARCH_CXXFLAGS+=-fPIC" >> platform.inc
+		fi
+	elif [ "`echo $MACH | sed 's,i.86,x86,'`" = "x86" ]; then
+		echo "#define PLATFORM \"$UNIX-i386\"" > src/config.h
+		LIBDIR=lib
+	else
+		echo "Add a friendly ARCH name to config.sh."
 		exit 1
 	fi
 
