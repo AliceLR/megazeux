@@ -17,6 +17,7 @@ CC      := powerpc-eabi-gcc
 CXX     := powerpc-eabi-g++
 AR      := powerpc-eabi-ar
 OBJCOPY := powerpc-eabi-objcopy
+ELF2DOL := elf2dol
 
 #
 # Wii target rules
@@ -42,7 +43,7 @@ ARCH_CXXFLAGS += ${ARCH_CFLAGS}
 ARCH_LDFLAGS  += ${EXTRA_LIBS} $(MACHDEP)
 
 package: mzx
-	${OBJCOPY} -O binary ${mzxrun} boot.dol
+	${ELF2DOL} ${mzxrun} boot.dol
 
 clean:
 	@rm -f boot.dol arch/wii/*.d arch/wii/*.o
