@@ -30,7 +30,6 @@ __M_BEGIN_DECLS
 
 #ifndef CONFIG_EGL
 #include "SDL_opengl.h"
-#include <GL/gl.h>
 #endif
 
 #ifndef GLAPIENTRY
