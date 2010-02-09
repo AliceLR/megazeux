@@ -7,12 +7,11 @@ USERS
   first loop is used, and only forward looping is supported. The OGG loop
   support uses the "LOOPSTART" and "LOOPLENGTH" tags as used by RPG Maker VX.
   (Mr_Alert)
-+ Added Logicow's new OpenGL Shader Language (GLSL) renderer which allows       
-  shaders to be applied to the character set ("tileset") and post-processing    
-  of the hardware scaler. Requires a modern video card. Detection of the        
-  required extensions with a compile failure of the shader program will         
-  silently fall back to the fixed pipeline (similar to opengl2). A variety      
-  of shaders have been provided and these can be customized. 
++ Added OpenGL Shader Language (glsl) renderer which uses shaders to render and
+  scale the video. This renderer is compatible with Open GL >=2.0 and
+  Open GL-ES 2.0 video cards only. A variety of shader programs have been
+  provided and these can be customized. Performance of regular mode MZX is
+  good, but SMZX modes could do with improvement. (Logicow, ajs)
 + Files will no longer be silently overwritten by save dialogs if the user
   enters an existing filename without the default extension. (revvy)
 + The string editor in the counter debug menu (F11) now escapes newlines
@@ -34,6 +33,8 @@ USERS
   stack was popped more times than it was pushed (via return or top).
 + On UNIX platforms a desktop/menu entry is now installed by default, using
   the existing icon. (Sci-freak)
++ Clamp score to >= 0 if world <= 2.70. Fixes "Gates: The Puzzles" and
+  possibly other old titles depending on this behavior. (Exophase)
 
 DEVELOPERS
 
