@@ -20,7 +20,7 @@
 #ifndef __HOST_H
 #define __HOST_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
@@ -66,7 +66,7 @@ typedef enum
   HOST_ZLIB_INFLATE_FAILED,
 } host_status_t;
 
-#ifdef WIN32
+#ifdef __WIN32__
 
 /**
  * Initializes the host layer. Must be called before all other host functions.

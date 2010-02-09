@@ -10,5 +10,6 @@
 #define CONFIG_MODPLUG
 #define CONFIG_AUDIO
 #define CONFIG_SDL
+#define CONFIG_PNG
 #define CONFIG_ICON
 #define CONFIG_MODULAR

@@ -20,18 +20,17 @@
 #ifndef __MANIFEST_H
 #define __MANIFEST_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 
-#include <inttypes.h>
-
+#include "../platform.h"
 #include "host.h"
 
 struct manifest_entry
 {
   struct manifest_entry *next;
-  uint32_t sha256[8];
+  Uint32 sha256[8];
   unsigned long size;
   char *name;
 };

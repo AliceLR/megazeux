@@ -20,18 +20,24 @@
 #ifndef __SHA256_H
 #define __SHA256_H
 
-#include <inttypes.h>
+#include "../compat.h"
+
+__M_BEGIN_DECLS
+
+#include "../platform.h"
 
 typedef struct {
-  uint32_t H[8];
-  uint32_t hbits;
-  uint32_t lbits;
-  uint8_t M[64];
-  uint8_t mlen;
+  Uint32 H[8];
+  Uint32 hbits;
+  Uint32 lbits;
+  Uint8 M[64];
+  Uint8 mlen;
 } SHA256_ctx;
 
 void SHA256_init(SHA256_ctx *ctx);
-void SHA256_update(SHA256_ctx *ctx, const void *vdata, uint32_t data_len);
+void SHA256_update(SHA256_ctx *ctx, const void *vdata, Uint32 data_len);
 void SHA256_final(SHA256_ctx *ctx);
+
+__M_END_DECLS
 
 #endif // __SHA256_H

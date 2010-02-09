@@ -50,11 +50,12 @@
 #ifndef DIRENT_H
 #define DIRENT_H
 
-#include <windows.h>
-#include <tchar.h>
+#include <stdlib.h>
 #include <string.h>
 #include <assert.h>
 
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
 
 typedef struct dirent {
   /* name of current directory entry (a multi-byte character string) */

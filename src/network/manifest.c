@@ -17,7 +17,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 #include "manifest.h"
-#include "util.h"
+#include "../util.h"
 
 #include "sha256.h"
 
@@ -28,7 +28,7 @@
 #define BLOCK_SIZE    4096UL
 #define LINE_BUF_LEN  256
 
-static bool manifest_parse_sha256(const char *p, uint32_t sha256[8])
+static bool manifest_parse_sha256(const char *p, Uint32 sha256[8])
 {
   int i, j;
 
@@ -46,7 +46,7 @@ static bool manifest_parse_sha256(const char *p, uint32_t sha256[8])
     reg_hex[8] = 0;
 
     // Convert the hex string into an integer and check for errors
-    sha256[i] = (uint32_t)strtoul(reg_hex, &end_ptr, 16);
+    sha256[i] = (Uint32)strtoul(reg_hex, &end_ptr, 16);
     if(end_ptr[0])
       return false;
   }
@@ -92,7 +92,7 @@ static struct manifest_entry *manifest_entry_copy(struct manifest_entry *src)
   strncpy(dest->name, src->name, name_len);
   dest->name[name_len] = 0;
 
-  memcpy(dest->sha256, src->sha256, sizeof(uint32_t) * 8);
+  memcpy(dest->sha256, src->sha256, sizeof(Uint32) * 8);
   dest->size = src->size;
   dest->next = NULL;
 
@@ -238,7 +238,7 @@ static bool manifest_entry_equal(struct manifest_entry *l,
 {
   return strcmp(l->name, r->name) == 0 &&
          l->size == r->size &&
-         memcmp(l->sha256, r->sha256, sizeof(uint32_t) * 8) == 0;
+         memcmp(l->sha256, r->sha256, sizeof(Uint32) * 8) == 0;
 }
 
 static void manifest_lists_remove_duplicates(struct manifest_entry **local,
@@ -312,7 +312,7 @@ static bool manifest_entry_check_validity(struct manifest_entry *e, FILE *f)
   SHA256_final(&ctx);
 
   // Verify the digest against the manifest
-  if(memcmp(ctx.H, e->sha256, sizeof(uint32_t) * 8) != 0)
+  if(memcmp(ctx.H, e->sha256, sizeof(Uint32) * 8) != 0)
     return false;
 
   return true;

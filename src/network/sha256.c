@@ -19,11 +19,10 @@
 
 #include "sha256.h"
 
-#include "platform_endian.h"
+#include "../platform_endian.h"
+#include "../util.h"
 
 #include <string.h>
-
-#define min(x,y)   ((x) < (y) ? (x) : (y))
 
 #define S(x,n)     (((x) >> (n)) | ((x) << (32 - (n))))
 #define R(x,n)     ((x) >> (n))
@@ -36,7 +35,7 @@
 #define sig0(x)    (S(x, 7) ^ S(x,18) ^ R(x, 3))
 #define sig1(x)    (S(x,17) ^ S(x,19) ^ R(x,10))
 
-static const uint32_t K[] =
+static const Uint32 K[] =
 {
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
   0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -56,7 +55,7 @@ static const uint32_t K[] =
   0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-static const uint32_t H_initial[] = {
+static const Uint32 H_initial[] = {
   0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
   0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
 };
@@ -65,16 +64,16 @@ static const uint32_t H_initial[] = {
 
 static void convert_to_bigendian(void *data, int len)
 {
-  uint32_t *data_as_words = data;
-  uint8_t *data_as_bytes;
-  uint32_t temp;
-  uint8_t *temp_as_bytes = (uint8_t *)&temp;
+  Uint32 *data_as_words = data;
+  Uint8 *data_as_bytes;
+  Uint32 temp;
+  Uint8 *temp_as_bytes = (Uint8 *)&temp;
   int i;
 
   for(i = 0; i < len / 4; i++)
   {
     temp = data_as_words[i];
-    data_as_bytes = (uint8_t*)&data_as_words[i];
+    data_as_bytes = (Uint8 *)&data_as_words[i];
 
     data_as_bytes[0] = temp_as_bytes[3];
     data_as_bytes[1] = temp_as_bytes[2];
@@ -91,16 +90,16 @@ static inline void convert_to_bigendian(void *data, int len) { }
 
 static void SHA256_transform(SHA256_ctx *ctx)
  {
-  uint32_t A = ctx->H[0];
-  uint32_t B = ctx->H[1];
-  uint32_t C = ctx->H[2];
-  uint32_t D = ctx->H[3];
-  uint32_t E = ctx->H[4];
-  uint32_t F = ctx->H[5];
-  uint32_t G = ctx->H[6];
-  uint32_t H = ctx->H[7];
-  uint32_t T1, T2;
-  uint32_t W[64];
+  Uint32 A = ctx->H[0];
+  Uint32 B = ctx->H[1];
+  Uint32 C = ctx->H[2];
+  Uint32 D = ctx->H[3];
+  Uint32 E = ctx->H[4];
+  Uint32 F = ctx->H[5];
+  Uint32 G = ctx->H[6];
+  Uint32 H = ctx->H[7];
+  Uint32 T1, T2;
+  Uint32 W[64];
   int t;
 
   memcpy(W, ctx->M, 64);
@@ -134,17 +133,17 @@ static void SHA256_transform(SHA256_ctx *ctx)
 
 void SHA256_init(SHA256_ctx *ctx)
 {
-  memcpy(ctx->H, H_initial, 8 * sizeof(uint32_t));
+  memcpy(ctx->H, H_initial, 8 * sizeof(Uint32));
   ctx->lbits = 0;
   ctx->hbits = 0;
   ctx->mlen = 0;
 }
 
-void SHA256_update(SHA256_ctx *ctx, const void *vdata, uint32_t data_len)
+void SHA256_update(SHA256_ctx *ctx, const void *vdata, Uint32 data_len)
 {
-  const uint8_t *data = vdata;
-  uint32_t low_bits;
-  uint32_t use;
+  const Uint8 *data = vdata;
+  Uint32 low_bits;
+  Uint32 use;
 
   /* convert data_len to bits and add to the 64 bit word
    * formed by lbits and hbits
@@ -159,7 +158,7 @@ void SHA256_update(SHA256_ctx *ctx, const void *vdata, uint32_t data_len)
 
   /* deal with first block */
 
-  use = min((uint32_t)(64 - ctx->mlen), data_len);
+  use = MIN((Uint32)(64 - ctx->mlen), data_len);
   memcpy(ctx->M + ctx->mlen, data, use );
   ctx->mlen += use;
   data_len -= use;
@@ -169,7 +168,7 @@ void SHA256_update(SHA256_ctx *ctx, const void *vdata, uint32_t data_len)
   {
     convert_to_bigendian(ctx->M, 64);
     SHA256_transform(ctx);
-    use = min(64, data_len);
+    use = MIN(64, data_len);
     memcpy(ctx->M, data, use);
     ctx->mlen = use;
     data_len -= use;
@@ -206,14 +205,14 @@ int main(void)
   int i;
 
   const char *test1 = "abc";
-  const uint32_t result1[8] = {
+  const Uint32 result1[8] = {
     0xba7816bf, 0x8f01cfea, 0x414140de, 0x5dae2223,
     0xb00361a3, 0x96177a9c, 0xb410ff61, 0xf20015ad
   };
 
   const char *test2 =
     "abcdbcdecdefdefgefghfghighijhijkijkljklmklmnlmnomnopnopq";
-  const uint32_t result2[8] = {
+  const Uint32 result2[8] = {
     0x248d6a61, 0xd20638b8, 0xe5c02693, 0x0c3e6039,
     0xa33ce459, 0x64ff2167, 0xf6ecedd4, 0x19db06c1
   };

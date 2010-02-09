@@ -48,13 +48,6 @@ However, MSVC has the following constraints:
      rewrote it to rely on heap functions.
 
 
-CURRENT LIMITATIONS
-
-The PNG library was not tested for compatibility, and PNG screendumps are not
-enabled. This code should work, however. Edit config.h if you are interested.
-The appropriate headers and libraries should be added to msvc/Deps.
-
-
 OPENING THE PROJECT
 
 The pre-built project files can be found in "msvc.zip" in the top level of
@@ -67,7 +60,7 @@ You may need to alter the include paths and possibly re-add the project
 libraries to get it to compile on your machine. Any suggestions for improving
 this are of course welcome.
 
-There may be instability with the MSVC binary that are not present in the GCC
+There may be instability with the MSVC binary that is not present in the GCC
 builds. If you find such instability, please report it (fixes are also
 welcome).
 

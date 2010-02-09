@@ -18,13 +18,16 @@
  */
 #include "host.h"
 
-#include "util.h"
+#include "../platform.h"
+#include "../util.h"
 
+#ifndef _MSC_VER
 #include <sys/time.h>
+#include <unistd.h>
+#endif
 
 #include <stdlib.h>
 #include <string.h>
-#include <unistd.h>
 #include <assert.h>
 #include <stdio.h>
 #include <errno.h>
@@ -32,6 +35,7 @@
 
 #ifdef __WIN32__
 // Windows XP WinSock2 needed for getaddrinfo() API
+#undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
 #include <winsock2.h>
 #include <ws2tcpip.h>
@@ -184,7 +188,20 @@ static inline ssize_t platform_recv(int s, void *buf, size_t len, int flags)
  * but 95 was also supported with an additional download.
  */
 
-#include "SDL.h" // for LoadObject/LoadFunction
+// For LoadObject/LoadFunction
+#include "SDL.h"
+
+// FIXME: MSVC hacks to get it to build
+#ifdef _MSC_VER
+#undef  WINSOCK_API_LINKAGE
+#define WINSOCK_API_LINKAGE
+#undef  PASCAL
+#define PASCAL
+#undef  WSAAPI
+#define WSAAPI
+#undef  DECLARE_STDCALL_P
+#define DECLARE_STDCALL_P(x) x
+#endif
 
 static struct
 {
@@ -520,7 +537,7 @@ void host_blocking(struct host *h, bool blocking)
 
 struct host *host_create(host_type_t type, host_family_t fam)
 {
-  struct linger linger = { .l_onoff = 1, .l_linger = 30 };
+  struct linger linger = { 1, 30 };
   const uint32_t on = 1;
   int err, fd, af, proto;
   struct host *h;
@@ -559,7 +576,7 @@ struct host *host_create(host_type_t type, host_family_t fam)
   if(af == AF_INET6)
   {
     const uint32_t off = 0;
-    err = setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &off, 4);
+    err = platform_setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, (void *)&off, 4);
     if(err < 0)
     {
       perror("setsockopt(IPV6_V6ONLY)");
@@ -616,22 +633,21 @@ void host_destroy(struct host *h)
 
 static bool __send(int fd, const void *buffer, unsigned int len)
 {
-  struct timeval start, now;
   const char *buf = buffer;
+  Uint32 start, now;
   unsigned int pos;
   bool ret = true;
   int count;
 
-  gettimeofday(&start, NULL);
+  start = get_ticks();
 
   // send stuff in blocks, incrementally
   for(pos = 0; pos < len; pos += count)
   {
-    gettimeofday(&now, NULL);
+    now = get_ticks();
 
     // time out in 10 seconds if no data is sent
-    if(((now.tv_sec - start.tv_sec) * 1000 +
-        (now.tv_usec - start.tv_usec) / 1000) > 10 * 1000)
+    if(now - start > 10 * 1000)
     {
       ret = false;
       goto exit_out;
@@ -659,22 +675,21 @@ exit_out:
 
 static bool __recv(int fd, void *buffer, unsigned int len)
 {
-  struct timeval start, now;
   char *buf = buffer;
+  Uint32 start, now;
   unsigned int pos;
   bool ret = true;
   int count;
 
-  gettimeofday(&start, NULL);
+  start = get_ticks();
 
   // receive stuff in blocks, incrementally
   for(pos = 0; pos < len; pos += count)
   {
-    gettimeofday(&now, NULL);
+    now = get_ticks();
 
     // time out in 10 seconds if no data is received
-    if(((now.tv_sec - start.tv_sec) * 1000 +
-        (now.tv_usec - start.tv_usec) / 1000) > 10 * 1000)
+    if(now - start > 10 * 1000)
     {
       ret = false;
       goto exit_out;
