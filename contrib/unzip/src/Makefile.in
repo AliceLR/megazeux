@@ -7,7 +7,6 @@
 .SUFFIXES: .c
 
 unzip_base = contrib/unzip/src
-unzip = ${unzip_base}/libunzip.${a}
 unzip_cflags := -W -Wmissing-format-attribute -Wpointer-arith -Wcast-align
 unzip_cflags += -Wwrite-strings -Wno-unused-parameter
 unzip_cflags += -I${unzip_base} -DNOUNCRYPT
@@ -26,19 +25,6 @@ endif
 
 -include $(unzip_objs:.o=.d)
 
-ifeq (${BUILD_UTILS},1)
-${unzip}: ${unzip_objs}
-ifeq (${V},1)
-	${AR} crus ${unzip} ${unzip_objs}
-else
-	@echo "  AR      " ${unzip}
-	@${AR} crus ${unzip} ${unzip_objs}
-endif
-else
-${unzip}:
-	@echo "--> Building of unzip disabled."
-endif
-
-${unzip}_clean:
+unzip_clean:
 	@echo "  CLEAN   " ${unzip_base}
-	@rm -f ${unzip} ${unzip_objs} $(unzip_objs:.o=.d)
+	@rm -f ${unzip_objs} $(unzip_objs:.o=.d)

@@ -7,7 +7,6 @@
 .SUFFIXES: .c
 
 gdm2s3m_base = contrib/gdm2s3m/src
-gdm2s3m = ${gdm2s3m_base}/libgdm2s3m.${a}
 gdm2s3m_cflags := -W -Wmissing-format-attribute -Wpointer-arith -Wcast-align
 gdm2s3m_cflags += -Wwrite-strings -pedantic -I${gdm2s3m_base}
 
@@ -26,19 +25,6 @@ endif
 
 -include $(gdm2s3m_objs:.o=.d)
 
-ifeq (${BUILD_GDM2S3M},1)
-${gdm2s3m}: ${gdm2s3m_objs}
-ifeq (${V},1)
-	${AR} crus ${gdm2s3m} ${gdm2s3m_objs}
-else
-	@echo "  AR      " ${gdm2s3m}
-	@${AR} crus ${gdm2s3m} ${gdm2s3m_objs}
-endif
-else
-${gdm2s3m}:
-	@echo "--> Building of GDM2S3M disabled."
-endif
-
-${gdm2s3m}_clean:
+gdm2s3m_clean:
 	@echo "  CLEAN   " ${gdm2s3m_base}
-	@rm -f ${gdm2s3m} ${gdm2s3m_objs} $(gdm2s3m_objs:.o=.d)
+	@rm -f ${gdm2s3m_objs} $(gdm2s3m_objs:.o=.d)

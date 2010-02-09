@@ -117,8 +117,7 @@ endif
 ifeq (${BUILD_MODPLUG},1)
 mzx_flags += -I${gdm2s3m_base}
 mzx_flags += -I${libmodplug_base} -I${libmodplug_base}/libmodplug
-mzx_ldflags := ${gdm2s3m} ${libmodplug} ${mzx_ldflags}
-mzx_objs += ${mzx_base}/audio_modplug.${o}
+mzx_objs  += ${mzx_base}/audio_modplug.${o} ${gdm2s3m_objs} ${libmodplug_objs}
 LINK_CC := ${CXX}
 endif
 
@@ -182,6 +181,6 @@ else
 endif
 endif
 
-${mzx}_clean: ${gdm2s3m}_clean ${icons}_clean ${libmodplug}_clean
+${mzx}_clean: gdm2s3m_clean ${icons}_clean libmodplug_clean
 	@echo "  CLEAN   " ${mzx_base}
 	@rm -f ${mzx_objs} ${mzx} $(mzx_objs:.o=.d)

@@ -15,9 +15,9 @@ include contrib/unzip/src/Makefile.in
 utils_base = src/utils
 
 checkres = ${utils_base}/checkres${BINEXT}
-checkres_objs := ${utils_base}/checkres.${o}
+checkres_objs := ${utils_base}/checkres.${o} ${unzip_objs}
 checkres_ldflags := src/fsafeopen.${o} src/util.${o}
-checkres_ldflags += ${unzip} -L${PREFIX}/lib -lz
+checkres_ldflags += -L${PREFIX}/lib -lz
 
 downver = ${utils_base}/downver${BINEXT}
 downver_objs = ${utils_base}/downver.${o}
@@ -41,7 +41,7 @@ endif
 
 ifeq (${BUILD_UTILS},1)
 
-${checkres}: ${unzip} ${mzx} ${checkres_objs}
+${checkres}: ${mzx} ${checkres_objs}
 ifeq (${V},1)
 	${HOST_CC} ${checkres_objs} -o ${checkres} ${checkres_ldflags}
 else
@@ -114,7 +114,7 @@ endif
 utils: ${checkres} ${downver} ${txt2hlp}
 utils_clean: ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
 
-${checkres}_clean: ${unzip}_clean
+${checkres}_clean: unzip_clean
 	@echo "  CLEAN   " ${checkres}
 	@rm -f ${checkres_objs} ${checkres} $(checkres_objs:.o=.d)
 
