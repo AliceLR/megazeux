@@ -38,8 +38,6 @@
 
 #include "render_gl.h"
 
-static bool syms_loaded;
-
 // NOTE: This renderer should work with almost any GL capable video card.
 //       However, if you plan to change it, please bear in mind that this
 //       has been carefully written to work with both OpenGL 1.x and
@@ -276,12 +274,8 @@ static bool gl2_set_video_mode(struct graphics_data *graphics,
   if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
 
-  if(!syms_loaded)
-  {
-    syms_loaded = gl_load_syms(gl2_syms_map);
-    if(!syms_loaded)
-      return false;
-  }
+  if(!gl_load_syms(gl2_syms_map))
+    return false;
 
   gl2_resize_screen(graphics, width, height);
 
