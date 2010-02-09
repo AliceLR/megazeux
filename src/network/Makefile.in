@@ -12,6 +12,10 @@ updater_objs += ${network_base}/host.${o} ${network_base}/manifest.${o}
 updater_objs += ${network_base}/sha256.${o} ${network_base}/updater.${o}
 updater_ldflags := -L${PREFIX}/lib -lz
 
+ifeq (${PLATFORM},mingw)
+updater_ldflags += ${SDL_LDFLAGS}
+endif
+
 -include $(updater_objs:.o=.d)
 
 updater: ${updater}
