@@ -526,8 +526,7 @@ fi
 #
 # X11 support (linked against and needs headers installed)
 #
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" \
-  -o "$PLATFORM" = "darwin" ]; then
+if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 	#
 	# Confirm the user's selection of X11, if they enabled it
 	#
