@@ -22,6 +22,7 @@ Description: A simple game creation system (GCS)
  See http://digitalmzx.net/ for more information.
 
 Package: megazeux-dbg
+Section: debug
 Architecture: any
 Depends: megazeux, ${shlibs:Depends}, ${misc:Depends}
 Description: MegaZeux debug symbols
