@@ -223,7 +223,7 @@ echo "PREFIX?=$PREFIX"     >> Makefile.platform
 
 if [ "$DATE_STAMP" = "true" ]; then
 	echo "Stamping version with today's date."
-	echo "#define VERSION \"$VERSION (`date +%Y%m%d`)\"" > src/config.h
+	echo "#define VERSION \"$VERSION (`date -u +%Y%m%d`)\"" > src/config.h
 else
 	echo "Not stamping version with today's date."
 	echo "#define VERSION \"$VERSION\"" > src/config.h
