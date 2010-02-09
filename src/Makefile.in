@@ -26,48 +26,36 @@ mzx_flags   += -I${mzx_src} -I${PREFIX}/include
 mzx_ldflags := ${mzx_ldflags} ${ARCH_LDFLAGS}
 
 ${editor_obj}/%.o: ${editor_src}/%.c
-ifeq (${V},1)
-	${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
-else
+ifneq (${V},1)
 	@echo "  CC      " $<
-	@${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 endif
+	${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 
 ${mzx_obj}/%.o: ${mzx_src}/%.c
-ifeq (${V},1)
-	${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
-else
+ifneq (${V},1)
 	@echo "  CC      " $<
-	@${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 endif
+	${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 
 ${mzx_obj}/%.o: ${mzx_src}/%.cpp
-ifeq (${V},1)
-	${CXX} -MD ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
-else
+ifneq (${V},1)
 	@echo "  CXX     " $<
-	@${CXX} -MD ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
 endif
+	${CXX} -MD ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
 
 %.debug: %${BINEXT}
-ifeq (${V},1)
-	${OBJCOPY} --only-keep-debug $< $@
-else
+ifneq (${V},1)
 	@echo "  OBJCOPY " --only-keep-debug $< $@
-	@${OBJCOPY} --only-keep-debug $< $@
 endif
-ifeq (${V},1)
-	${STRIP} $<
-else
+	${OBJCOPY} --only-keep-debug $< $@
+ifneq (${V},1)
 	@echo "  STRIP   " $<
-	@${STRIP} $<
 endif
-ifeq (${V},1)
-	${OBJCOPY} --add-gnu-debuglink=$@ $<
-else
+	${STRIP} $<
+ifneq (${V},1)
 	@echo "  OBJCOPY " --add-gnu-debuglink $@ $<
-	@${OBJCOPY} --add-gnu-debuglink=$@ $<
 endif
+	${OBJCOPY} --add-gnu-debuglink=$@ $<
 	@touch $@
 
 #
@@ -266,14 +254,11 @@ ${mzx_cxxobjs}: $(filter-out $(wildcard ${mzx_obj}), ${mzx_obj})
 ${mzx_cxxobjs}: $(filter-out $(wildcard ${editor_obj}), ${editor_obj})
 
 ${mzx}: ${mzx_cobjs_link} ${mzx_cxxobjs}
-ifeq (${V},1)
+ifneq (${V},1)
+	@echo "  LINK    " ${mzx}
+endif
 	${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} \
 	        -o ${mzx} ${LDFLAGS} ${mzx_ldflags}
-else
-	@echo "  LINK    " ${mzx}
-	@${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} \
-	         -o ${mzx} ${LDFLAGS} ${mzx_ldflags}
-endif
 
 ${mzxdbg}: ${mzx}
 

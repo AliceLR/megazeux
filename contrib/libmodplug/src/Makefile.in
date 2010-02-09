@@ -32,12 +32,10 @@ libmodplug_objs = \
     ${libmodplug_obj}/tables.o
 
 ${libmodplug_obj}/%.o: ${libmodplug_src}/%.cpp
-ifeq (${V},1)
-	${CXX} -MD ${CXXFLAGS} ${libmodplug_cflags} -c $< -o $@
-else
+ifneq (${V},1)
 	@echo "  CXX     " $<
-	@${CXX} -MD ${CXXFLAGS} ${libmodplug_cflags} -c $< -o $@
 endif
+	${CXX} -MD ${CXXFLAGS} ${libmodplug_cflags} -c $< -o $@
 
 -include $(libmodplug_objs:.o=.d)
 

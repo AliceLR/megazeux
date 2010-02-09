@@ -16,14 +16,11 @@ unzip_cflags += -I${unzip_src} -DNOUNCRYPT
 unzip_objs = ${unzip_obj}/unzip.o ${unzip_obj}/ioapi.o
 
 ${unzip_obj}/%.o: ${unzip_src}/%.c
-ifeq (${V},1)
+ifneq (${V},1)
+	@echo "  HOST_CC " $<
+endif
 	${HOST_CC} -MD ${CFLAGS} ${unzip_cflags} \
 	                         -I${PREFIX}/include -c $< -o $@
-else
-	@echo "  HOST_CC " $<
-	@${HOST_CC} -MD ${CFLAGS} ${unzip_cflags} \
-	                         -I${PREFIX}/include -c $< -o $@
-endif
 
 -include $(unzip_objs:.o=.d)
 

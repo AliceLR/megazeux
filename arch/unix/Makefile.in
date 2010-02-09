@@ -4,9 +4,6 @@
 
 .PHONY: install
 
-# location of strip (must be defined)
-STRIP ?= strip --strip-unneeded
-
 # enable stack protector for debug builds
 ifdef DEBUG
 ARCH_CFLAGS   += -fstack-protector-all

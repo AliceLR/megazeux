@@ -18,7 +18,21 @@ include arch/${PLATFORM}/Makefile.in
 CC      ?= gcc
 CXX     ?= g++
 AR      ?= ar
+STRIP   ?= strip --strip-unneeded
 OBJCOPY ?= objcopy
+MKDIR   ?= mkdir
+
+#
+# We don't want these commands to be echo'ed in non-verbose mode
+#
+ifneq (${V},1)
+CC      := @${CC}
+CXX     := @${CXX}
+AR      := @${AR}
+STRIP   := @${STRIP}
+OBJCOPY := @${OBJCOPY}
+MKDIR   := @${MKDIR}
+endif
 
 SDL_CFLAGS  ?= `sdl-config --cflags`
 SDL_LDFLAGS ?= `sdl-config --libs`
@@ -77,12 +91,10 @@ BUILD_GDM2S3M=1
 endif
 
 %/.build:
-ifeq (${V},1)
-	mkdir $@
-else
+ifneq (${V},1)
 	@echo "  MKDIR   " $@
-	@mkdir $@
 endif
+	${MKDIR} $@
 
 include src/utils/Makefile.in
 include src/Makefile.in

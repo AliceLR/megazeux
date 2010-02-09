@@ -28,39 +28,29 @@ server_ldflags := ${SDL_LDFLAGS} -L${PREFIX}/lib -lz
 network: ${updater} ${server}
 
 ${updater}: ${updater_objs}
-ifeq (${V},1)
+ifneq (${V},1)
+	@echo "  LINK    " ${updater}
+endif
 	${HOST_CC} ${updater_objs} \
 	        -o ${updater} ${LDFLAGS} ${updater_ldflags}
-else
-	@echo "  LINK    " ${updater}
-	@${HOST_CC} ${updater_objs} \
-	         -o ${updater} ${LDFLAGS} ${updater_ldflags}
-endif
 ifneq (${DEBUG},1)
-ifeq (${V},1)
-	${STRIP} ${updater}
-else
+ifneq (${V},1)
 	@echo "  STRIP   " ${updater}
-	@${STRIP} ${updater}
 endif
+	${STRIP} ${updater}
 endif
 
 ${server}: ${server_objs}
-ifeq (${V},1)
+ifneq (${V},1)
+	@echo "  LINK    " ${server}
+endif
 	${HOST_CC} ${server_objs} \
 	        -o ${server} ${LDFLAGS} ${server_ldflags}
-else
-	@echo "  LINK    " ${server}
-	@${HOST_CC} ${server_objs} \
-	         -o ${server} ${LDFLAGS} ${server_ldflags}
-endif
 ifneq (${DEBUG},1)
 ifeq (${V},1)
-	${STRIP} ${server}
-else
 	@echo "  STRIP   " ${server}
-	@${STRIP} ${server}
 endif
+	${STRIP} ${server}
 endif
 
 network_clean: ${updater}_clean ${server}_clean
