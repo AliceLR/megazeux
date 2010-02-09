@@ -547,7 +547,7 @@ Enter - Menu
 This is similar to default Enter within the game. However,
 there is no status screen.
 
-ESC - Exit to DOS
+ESC - Exit MegaZeux
 Pressing ESC will exit MegaZeux.
 
 F2 or S - Settings (see above)
@@ -1539,7 +1539,7 @@ Boards             250 per world
 Local Counters     32 per Robot plus specialised local counters
                 (loopcount, lava_walk, bullettype)
 Robot Name Length  14 characters
-String Length      1,000,000 characters
+String Length      1,048,756 characters
 Editor Line Length 241 characters (INCLUDING "extra" words)
 
 $Theoretical Limitations
@@ -8263,7 +8263,7 @@ replace in the target character set.
 :1st: 
 $~9NEW in MegaZeux!
 
-December 27, 2008 - MZX 2.82b
+December 29, 2008 - MZX 2.82b
 
 This release contains plenty of important bug fixes, ranging
 from regressions such as the broken command-line editor macro
@@ -8400,6 +8400,21 @@ USERS
   the world loader and saver routines. This reassures users,
   especially on consoles, where loading a world can take a long
   time. (Mr_Alert)
++ Pasting into a string with set "$str+N" with an N > 
+  str.length will no longer crash MZX.
++ "Exit to DOS" is now "Exit MegaZeux" to reflect the
+  multi-platform nature of the program.
++ Setting a substring size to zero with $string#0 will no
+  longer return the whole string; it will instead return the
+  empty string.
++ Accessing a substring with an offset >= $string.length will
+  no longer return the last character from the string; it will
+  instead return the empty string.
++ Writing beyond MAX_STRING_LEN (1MB) or using negative offsets
+  (which has the same effect) no longer crashes. Instead, the
+  write is ignored.
++ Fixed crash when pasting to and from the same string,
+  specifically in conjunction with $str+offset.
 - Removed the legacy "force_resolution" option which was
   replaced long ago by the more accurate
   "fullscreen_resolution" option.
