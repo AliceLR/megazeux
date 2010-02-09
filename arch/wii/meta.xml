@@ -1,9 +1,9 @@
-<?xml version="1.0" encoding="UTF-8 standalone="yes"?>
+<?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <app version="1">
 	<name>MegaZeux</name>
 	<coder>Alistair John Strachan &lt;alistair@devzero.co.uk&gt;</coder>
-	<version>SVN</version>
-	<release_date>200806140000</release_date>
+	<version>%VERSION%</version>
+	<release_date>%DATE%</release_date>
 	<short_description>A simple game creation system (GCS)</short_description>
 	<long_description>MegaZeux is a Game Creation System (GCS), inspired by
 	Epic MegaGames' ZZT, first released by Gregory Janson in 1994. It was

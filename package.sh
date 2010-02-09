@@ -56,6 +56,8 @@ createzip_wii() {
 	mkdir apps/megazeux/docs &&
 	cp -f $WIIPAD apps/megazeux/pad.config &&
 	cp -f arch/wii/icon.png arch/wii/meta.xml apps/megazeux/ &&
+	sed "s/%VERSION%/$VERSION/g;s/%DATE%/`date -u +%Y%m%d%H%M`/g" \
+		arch/wii/meta.xml > apps/megazeux/meta.xml &&
 	cp -f $BINARY_DEPS $HELP_FILE boot.dol apps/megazeux/ &&
 	cp -f $DOCS apps/megazeux/docs/ &&
 	$SEVENZIP a -tzip dist/$TARGET-wii.zip apps &&
@@ -177,7 +179,7 @@ breakout() {
 #
 # The basename for the source and binary packages.
 #
-TARGET=`grep TARGET Makefile | head -n1 | sed "s/ //g" | cut -d "=" -f 2`
+source version.inc
 
 [ "$TARGET" == "" ] && breakout 1
 [ "$1" == "-h" ] && usage

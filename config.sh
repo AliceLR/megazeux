@@ -211,6 +211,8 @@ echo
 
 ### GENERATE CONFIG.H HEADER ##################################################
 
+source version.inc
+
 echo                       >> Makefile.platform
 echo "# config time stuff" >> Makefile.platform
 echo "PREFIX?=$PREFIX"     >> Makefile.platform
@@ -218,15 +220,13 @@ echo "PREFIX?=$PREFIX"     >> Makefile.platform
 #
 # Set the version to build with 
 #
-BASEVERSION=`grep VERSION Makefile | head -n1 | sed 's/ //g' | cut -d '=' -f 2`
-BASEVERSION=`echo $BASEVERSION | tr -s ' '`
 
 if [ "$DATE_STAMP" = "true" ]; then
 	echo "Stamping version with today's date."
-	echo "#define VERSION \"$BASEVERSION (`date +%Y%m%d`)\"" > src/config.h
+	echo "#define VERSION \"$VERSION (`date +%Y%m%d`)\"" > src/config.h
 else
 	echo "Not stamping version with today's date."
-	echo "#define VERSION \"$BASEVERSION\"" > src/config.h
+	echo "#define VERSION \"$VERSION\"" > src/config.h
 fi
 
 echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
@@ -254,9 +254,6 @@ fi
 #
 # Some architectures define an "install" target, and need these.
 #
-echo "TARGET=`grep TARGET Makefile | head -n1 | \
-              sed 's/ //g' | cut -d '=' -f 2`" \
-	>> Makefile.platform
 echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 
 #

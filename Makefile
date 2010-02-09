@@ -8,8 +8,7 @@
 
 .PHONY: clean package_clean
 
-VERSION=SVN
-TARGET=mzxsvn
+include version.inc
 
 all: mzx
 
