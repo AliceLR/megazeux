@@ -43,13 +43,6 @@ __M_BEGIN_DECLS
 #define S_CMD              12
 #define S_UNDEFINED        13
 
-struct mzx_command
-{
-  char *name;
-  int parameters;
-  int *param_types;
-};
-
 struct search_entry
 {
   const char *name;
@@ -72,7 +65,6 @@ int is_command_fragment(char *cmd_line, char **next);
 int is_extra(char *cmd_line, char **next);
 
 int assemble_text(char *input_name, char *output_name);
-void print_command(struct mzx_command *cmd);
 char *assemble_file(char *name, int *size);
 void disassemble_file(char *name, char *program, int program_length,
  int allow_ignores, int base);

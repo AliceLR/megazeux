@@ -142,565 +142,594 @@
 #define IGNORE_TYPE_TO          IGNORE_TYPE | 19
 #define IGNORE_TYPE_WITH        IGNORE_TYPE | 20
 
-static int cm2[]   = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
-static int cm3[]   = { IMM_U16 | STRING };
-static int cm4[]   = { DIRECTION, IGNORE_TYPE_FOR, IMM_U16 | STRING };
-static int cm5[]   = { DIRECTION };
-static int cm6[]   = { COLOR | STRING, THING, PARAM | STRING };
-static int cm7[]   = { CHARACTER | STRING | IMM_U16 };
-static int cm8[]   = { COLOR | STRING };
-static int cm9[]   = { IMM_S16 | STRING, IMM_S16 | STRING };
-static int cm10[]  = { STRING, IGNORE_TYPE_TO, IMM_U16 | STRING };
-static int cm11[]  = { STRING, IGNORE_TYPE_BY, IMM_U16 | STRING };
-static int cm12[]  = { STRING, IGNORE_TYPE_BY, IMM_U16 | STRING };
-static int cm13[]  = { STRING, IGNORE_TYPE_TO, STRING };
-static int cm14[]  = { STRING, IGNORE_TYPE_BY, STRING };
-static int cm15[]  = { STRING, IGNORE_TYPE_BY, STRING };
-static int cm16[]  = { STRING, EQUALITY, IMM_U16 | STRING, IGNORE_TYPE_THEN,
+struct mzx_command
+{
+  const char *name;
+  const int parameters;
+  const int *param_types;
+};
+
+struct mzx_command_rw
+{
+  char *name;
+  int parameters;
+  int *param_types;
+};
+
+static const int cm2[]   = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
+static const int cm3[]   = { IMM_U16 | STRING };
+static const int cm4[]   = { DIRECTION, IGNORE_TYPE_FOR, IMM_U16 | STRING };
+static const int cm5[]   = { DIRECTION };
+static const int cm6[]   = { COLOR | STRING, THING, PARAM | STRING };
+static const int cm7[]   = { CHARACTER | STRING | IMM_U16 };
+static const int cm8[]   = { COLOR | STRING };
+static const int cm9[]   = { IMM_S16 | STRING, IMM_S16 | STRING };
+static const int cm10[]  = { STRING, IGNORE_TYPE_TO, IMM_U16 | STRING };
+static const int cm11[]  = { STRING, IGNORE_TYPE_BY, IMM_U16 | STRING };
+static const int cm12[]  = { STRING, IGNORE_TYPE_BY, IMM_U16 | STRING };
+static const int cm13[]  = { STRING, IGNORE_TYPE_TO, STRING };
+static const int cm14[]  = { STRING, IGNORE_TYPE_BY, STRING };
+static const int cm15[]  = { STRING, IGNORE_TYPE_BY, STRING };
+static const int cm16[]  = { STRING, EQUALITY, IMM_U16 | STRING,
+ IGNORE_TYPE_THEN, STRING };
+static const int cm17[]  = { STRING, EQUALITY, STRING, IGNORE_TYPE_THEN,
  STRING };
-static int cm17[]  = { STRING, EQUALITY, STRING, IGNORE_TYPE_THEN, STRING };
-static int cm18[]  = { CONDITION, IGNORE_TYPE_THEN, STRING };
-static int cm19[]  = { CMD_NOT, CONDITION, IGNORE_TYPE_THEN, STRING };
-static int cm20[]  = { CMD_ANY, COLOR | STRING, THING, PARAM | STRING,
+static const int cm18[]  = { CONDITION, IGNORE_TYPE_THEN, STRING };
+static const int cm19[]  = { CMD_NOT, CONDITION, IGNORE_TYPE_THEN, STRING };
+static const int cm20[]  = { CMD_ANY, COLOR | STRING, THING, PARAM | STRING,
  IGNORE_TYPE_THEN, STRING };
-static int cm21[]  = { CMD_NO, COLOR | STRING, THING, PARAM | STRING,
+static const int cm21[]  = { CMD_NO, COLOR | STRING, THING, PARAM | STRING,
  IGNORE_TYPE_THEN, STRING };
-static int cm22[]  = { COLOR | STRING, THING, PARAM | STRING, IGNORE_TYPE_AT,
- DIRECTION, IGNORE_TYPE_THEN, STRING };
-static int cm23[]  = { CMD_NOT, COLOR | STRING, THING, PARAM | STRING,
+static const int cm22[]  = { COLOR | STRING, THING, PARAM | STRING,
  IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_THEN, STRING };
-static int cm24[]  = { COLOR | STRING, THING, PARAM | STRING, IGNORE_TYPE_AT,
- IMM_S16 | STRING, IMM_S16 | STRING, IGNORE_TYPE_THEN, STRING };
-static int cm25[]  = { IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING,
+static const int cm23[]  = { CMD_NOT, COLOR | STRING, THING, PARAM | STRING,
+ IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_THEN, STRING };
+static const int cm24[]  = { COLOR | STRING, THING, PARAM | STRING,
+ IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING, IGNORE_TYPE_THEN, STRING };
+static const int cm25[]  = { IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING,
  IGNORE_TYPE_THEN, STRING };
-static int cm26[]  = { IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_OF, CMD_PLAYER,
- IGNORE_TYPE_IS, COLOR | STRING, THING, PARAM | STRING, IGNORE_TYPE_THEN,
- STRING };
-static int cm27[]  = { STRING };
-static int cm28[]  = { STRING };
-static int cm29[]  = { STRING };
-static int cm30[]  = { STRING, IGNORE_TYPE_TO, STRING };
-static int cm31[]  = { IMM_U16 | STRING };
-static int cm32[]  = { COLOR | STRING, THING, PARAM | STRING, IGNORE_TYPE_TO,
- DIRECTION };
-static int cm33[]  = { IMM_U16 | STRING, ITEM };
-static int cm34[]  = { IMM_U16 | STRING, ITEM };
-static int cm35[]  = { IMM_U16 | STRING, ITEM, IGNORE_TYPE_ELSE, STRING };
-static int cm38[]  = { STRING };
-static int cm39[]  = { IMM_U16 | STRING, STRING };
-static int cm40[]  = { IMM_U16 | STRING };
-static int cm41[]  = { CMD_MOD };
-static int cm42[]  = { CMD_SAM };
-static int cm43[]  = { STRING };
-static int cm44[]  = { CMD_PLAY };
-static int cm45[]  = { CMD_PLAY, STRING };
-static int cm46[]  = { CMD_PLAY };
-static int cm48[]  = { IMM_U16 | STRING };
-static int cm49[]  = { CMD_SFX, STRING };
-static int cm50[]  = { IGNORE_TYPE_AT, DIRECTION };
-static int cm53[]  = { IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_TO, STRING };
-static int cm54[]  = { STRING, IMM_U16 | STRING };
-static int cm55[]  = { STRING, IMM_U16 | STRING };
-static int cm58[]  = { CMD_NS };
-static int cm59[]  = { CMD_EW };
-static int cm60[]  = { CMD_ATTACK };
-static int cm61[]  = { CMD_PLAYER, IGNORE_TYPE_TO, DIRECTION };
-static int cm62[]  = { CMD_PLAYER, IGNORE_TYPE_TO, DIRECTION, IGNORE_TYPE_ELSE,
- STRING };
-static int cm63[]  = { CMD_PLAYER, IGNORE_TYPE_AT, IMM_S16 | STRING,
- IMM_S16 | STRING };
-static int cm66[]  = { CMD_PLAYER, IGNORE_TYPE_AT, IMM_S16 | STRING,
- IMM_S16 | STRING, STRING };
-static int cm67[]  = { CMD_PLAYER, DIRECTION };
-static int cm68[]  = { DIRECTION, IGNORE_TYPE_ELSE, STRING };
-static int cm71[]  = { DIRECTION, IGNORE_TYPE_WITH, DIRECTION };
-static int cm72[]  = { IGNORE_TYPE_TO, DIRECTION };
-static int cm73[]  = { IGNORE_TYPE_TO, DIRECTION };
-static int cm74[]  = { CMD_HIGH, IGNORE_TYPE_TO, DIRECTION };
-static int cm75[]  = { IGNORE_TYPE_TO, DIRECTION };
-static int cm76[]  = { IGNORE_TYPE_TO, DIRECTION };
-static int cm77[]  = { IGNORE_TYPE_TO, DIRECTION };
-static int cm78[]  = { IGNORE_TYPE_TO, DIRECTION, IGNORE_TYPE_FOR,
- IMM_U16 | STRING };
-static int cm79[]  = { COLOR | STRING, THING, PARAM | STRING, IGNORE_TYPE_AT,
- IMM_S16 | STRING, IMM_S16 | STRING };
-static int cm80[]  = { IGNORE_TYPE_AS, IGNORE_TYPE_AN, CMD_ITEM };
-static int cm81[]  = { IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING,
- IGNORE_TYPE_TO, STRING };
-static int cm82[]  = { STRING };
-static int cm83[]  = { IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING };
-static int cm84[]  = { IGNORE_TYPE_FROM, DIRECTION };
-static int cm85[]  = { CMD_SELF, IGNORE_TYPE_TO, DIRECTION };
-static int cm86[]  = { CMD_SELF, IGNORE_TYPE_AT, IMM_S16 | STRING,
- IMM_S16 | STRING };
-static int cm87[]  = { IGNORE_TYPE_IS, CHARACTER | STRING | IMM_U16 };
-static int cm88[]  = { IGNORE_TYPE_IS, CHARACTER | STRING | IMM_U16 };
-static int cm89[]  = { IGNORE_TYPE_IS, CHARACTER | STRING | IMM_U16 };
-static int cm90[]  = { IGNORE_TYPE_IS, CHARACTER | STRING | IMM_U16 };
-static int cm91[]  = { COLOR | STRING };
-static int cm92[]  = { COLOR | STRING, IGNORE_TYPE_ELSE, STRING };
-static int cm93[]  = { COLOR | STRING };
-static int cm94[]  = { COLOR | STRING, IGNORE_TYPE_ELSE, STRING };
-static int cm95[]  = { STRING, IGNORE_TYPE_BY, CMD_RANDOM,
- IMM_U16 | STRING, IGNORE_TYPE_TO, IMM_U16 | STRING };
-static int cm96[]  = { STRING, IGNORE_TYPE_BY, CMD_RANDOM,
- IMM_U16 | STRING, IGNORE_TYPE_TO, IMM_U16 | STRING };
-static int cm97[]  = { STRING, IGNORE_TYPE_TO, CMD_RANDOM,
- IMM_U16 | STRING, IGNORE_TYPE_TO, IMM_U16 | STRING };
-static int cm98[]  = { IMM_U16 | STRING, ITEM, IGNORE_TYPE_FOR,
- IMM_U16 | STRING, ITEM, IGNORE_TYPE_ELSE, STRING };
-static int cm99[]  = { IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_OF, CMD_PLAYER,
- IGNORE_TYPE_TO, STRING };
-static int cm100[] = { COLOR | STRING, THING, PARAM | STRING, IGNORE_TYPE_TO,
- DIRECTION, IGNORE_TYPE_OF, CMD_PLAYER };
-static int cm101[] = { STRING };
-static int cm102[] = { STRING };
-static int cm103[] = { STRING };
-static int cm104[] = { STRING, STRING };
-static int cm105[] = { STRING, STRING, STRING };
-static int cm106[] = { STRING };
-static int cm107[] = { STRING };
-static int cm108[] = { STRING };
-static int cm109[] = { CMD_PLAYER, IGNORE_TYPE_TO, STRING, IGNORE_TYPE_AT,
- IMM_S16 | STRING, IMM_S16 | STRING };
-static int cm110[] = { IGNORE_TYPE_TO, DIRECTION, IGNORE_TYPE_FOR,
- IMM_U16 | STRING };
-static int cm111[] = { CMD_STRING, STRING };
-static int cm112[] = { CMD_STRING, IGNORE_TYPE_IS, STRING, IGNORE_TYPE_THEN,
- STRING };
-static int cm113[] = { CMD_STRING, IGNORE_TYPE_IS, CMD_NOT, STRING,
+static const int cm26[]  = { IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_OF,
+ CMD_PLAYER, IGNORE_TYPE_IS, COLOR | STRING, THING, PARAM | STRING,
  IGNORE_TYPE_THEN, STRING };
-static int cm114[] = { CMD_STRING, CMD_MATCHES, STRING, IGNORE_TYPE_THEN,
- STRING };
-static int cm115[] = { CMD_CHAR, IGNORE_TYPE_IS, CHARACTER | STRING | IMM_U16 };
-static int cm116[] = { STRING };
-static int cm117[] = { STRING };
-static int cm118[] = { CMD_ALL, COLOR | STRING, THING, PARAM | STRING,
+static const int cm27[]  = { STRING };
+static const int cm28[]  = { STRING };
+static const int cm29[]  = { STRING };
+static const int cm30[]  = { STRING, IGNORE_TYPE_TO, STRING };
+static const int cm31[]  = { IMM_U16 | STRING };
+static const int cm32[]  = { COLOR | STRING, THING, PARAM | STRING,
  IGNORE_TYPE_TO, DIRECTION };
-static int cm119[] = { IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING,
+static const int cm33[]  = { IMM_U16 | STRING, ITEM };
+static const int cm34[]  = { IMM_U16 | STRING, ITEM };
+static const int cm35[]  = { IMM_U16 | STRING, ITEM, IGNORE_TYPE_ELSE, STRING };
+static const int cm38[]  = { STRING };
+static const int cm39[]  = { IMM_U16 | STRING, STRING };
+static const int cm40[]  = { IMM_U16 | STRING };
+static const int cm41[]  = { CMD_MOD };
+static const int cm42[]  = { CMD_SAM };
+static const int cm43[]  = { STRING };
+static const int cm44[]  = { CMD_PLAY };
+static const int cm45[]  = { CMD_PLAY, STRING };
+static const int cm46[]  = { CMD_PLAY };
+static const int cm48[]  = { IMM_U16 | STRING };
+static const int cm49[]  = { CMD_SFX, STRING };
+static const int cm50[]  = { IGNORE_TYPE_AT, DIRECTION };
+static const int cm53[]  = { IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_TO, 
+ STRING };
+static const int cm54[]  = { STRING, IMM_U16 | STRING };
+static const int cm55[]  = { STRING, IMM_U16 | STRING };
+static const int cm58[]  = { CMD_NS };
+static const int cm59[]  = { CMD_EW };
+static const int cm60[]  = { CMD_ATTACK };
+static const int cm61[]  = { CMD_PLAYER, IGNORE_TYPE_TO, DIRECTION };
+static const int cm62[]  = { CMD_PLAYER, IGNORE_TYPE_TO, DIRECTION,
+ IGNORE_TYPE_ELSE, STRING };
+static const int cm63[]  = { CMD_PLAYER, IGNORE_TYPE_AT, IMM_S16 | STRING,
+ IMM_S16 | STRING };
+static const int cm66[]  = { CMD_PLAYER, IGNORE_TYPE_AT, IMM_S16 | STRING,
+ IMM_S16 | STRING, STRING };
+static const int cm67[]  = { CMD_PLAYER, DIRECTION };
+static const int cm68[]  = { DIRECTION, IGNORE_TYPE_ELSE, STRING };
+static const int cm71[]  = { DIRECTION, IGNORE_TYPE_WITH, DIRECTION };
+static const int cm72[]  = { IGNORE_TYPE_TO, DIRECTION };
+static const int cm73[]  = { IGNORE_TYPE_TO, DIRECTION };
+static const int cm74[]  = { CMD_HIGH, IGNORE_TYPE_TO, DIRECTION };
+static const int cm75[]  = { IGNORE_TYPE_TO, DIRECTION };
+static const int cm76[]  = { IGNORE_TYPE_TO, DIRECTION };
+static const int cm77[]  = { IGNORE_TYPE_TO, DIRECTION };
+static const int cm78[]  = { IGNORE_TYPE_TO, DIRECTION, IGNORE_TYPE_FOR,
+ IMM_U16 | STRING };
+static const int cm79[]  = { COLOR | STRING, THING, PARAM | STRING,
+ IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING };
+static const int cm80[]  = { IGNORE_TYPE_AS, IGNORE_TYPE_AN, CMD_ITEM };
+static const int cm81[]  = { IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING,
+ IGNORE_TYPE_TO, STRING };
+static const int cm82[]  = { STRING };
+static const int cm83[]  = { IGNORE_TYPE_AT, IMM_S16 | STRING,
+ IMM_S16 | STRING };
+static const int cm84[]  = { IGNORE_TYPE_FROM, DIRECTION };
+static const int cm85[]  = { CMD_SELF, IGNORE_TYPE_TO, DIRECTION };
+static const int cm86[]  = { CMD_SELF, IGNORE_TYPE_AT, IMM_S16 | STRING,
+ IMM_S16 | STRING };
+static const int cm87[]  = { IGNORE_TYPE_IS, CHARACTER | STRING | IMM_U16 };
+static const int cm88[]  = { IGNORE_TYPE_IS, CHARACTER | STRING | IMM_U16 };
+static const int cm89[]  = { IGNORE_TYPE_IS, CHARACTER | STRING | IMM_U16 };
+static const int cm90[]  = { IGNORE_TYPE_IS, CHARACTER | STRING | IMM_U16 };
+static const int cm91[]  = { COLOR | STRING };
+static const int cm92[]  = { COLOR | STRING, IGNORE_TYPE_ELSE, STRING };
+static const int cm93[]  = { COLOR | STRING };
+static const int cm94[]  = { COLOR | STRING, IGNORE_TYPE_ELSE, STRING };
+static const int cm95[]  = { STRING, IGNORE_TYPE_BY, CMD_RANDOM,
+ IMM_U16 | STRING, IGNORE_TYPE_TO, IMM_U16 | STRING };
+static const int cm96[]  = { STRING, IGNORE_TYPE_BY, CMD_RANDOM,
+ IMM_U16 | STRING, IGNORE_TYPE_TO, IMM_U16 | STRING };
+static const int cm97[]  = { STRING, IGNORE_TYPE_TO, CMD_RANDOM,
+ IMM_U16 | STRING, IGNORE_TYPE_TO, IMM_U16 | STRING };
+static const int cm98[]  = { IMM_U16 | STRING, ITEM, IGNORE_TYPE_FOR,
+ IMM_U16 | STRING, ITEM, IGNORE_TYPE_ELSE, STRING };
+static const int cm99[]  = { IGNORE_TYPE_AT, DIRECTION, IGNORE_TYPE_OF,
+ CMD_PLAYER, IGNORE_TYPE_TO, STRING };
+static const int cm100[] = { COLOR | STRING, THING, PARAM | STRING,
+ IGNORE_TYPE_TO, DIRECTION, IGNORE_TYPE_OF, CMD_PLAYER };
+static const int cm101[] = { STRING };
+static const int cm102[] = { STRING };
+static const int cm103[] = { STRING };
+static const int cm104[] = { STRING, STRING };
+static const int cm105[] = { STRING, STRING, STRING };
+static const int cm106[] = { STRING };
+static const int cm107[] = { STRING };
+static const int cm108[] = { STRING };
+static const int cm109[] = { CMD_PLAYER, IGNORE_TYPE_TO, STRING,
+ IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING };
+static const int cm110[] = { IGNORE_TYPE_TO, DIRECTION, IGNORE_TYPE_FOR,
+ IMM_U16 | STRING };
+static const int cm111[] = { CMD_STRING, STRING };
+static const int cm112[] = { CMD_STRING, IGNORE_TYPE_IS, STRING,
+ IGNORE_TYPE_THEN, STRING };
+static const int cm113[] = { CMD_STRING, IGNORE_TYPE_IS, CMD_NOT, STRING,
+ IGNORE_TYPE_THEN, STRING };
+static const int cm114[] = { CMD_STRING, CMD_MATCHES, STRING, IGNORE_TYPE_THEN,
+ STRING };
+static const int cm115[] = { CMD_CHAR, IGNORE_TYPE_IS,
+ CHARACTER | STRING | IMM_U16 };
+static const int cm116[] = { STRING };
+static const int cm117[] = { STRING };
+static const int cm118[] = { CMD_ALL, COLOR | STRING, THING, PARAM | STRING,
+ IGNORE_TYPE_TO, DIRECTION };
+static const int cm119[] = { IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING,
  IGNORE_TYPE_TO, IMM_S16 | STRING, IMM_S16 | STRING };
-static int cm120[] = { CMD_EDGE, CMD_COLOR, IGNORE_TYPE_TO, COLOR };
-static int cm121[] = { IGNORE_TYPE_TO, IGNORE_TYPE_THE, DIRECTION,
+static const int cm120[] = { CMD_EDGE, CMD_COLOR, IGNORE_TYPE_TO, COLOR };
+static const int cm121[] = { IGNORE_TYPE_TO, IGNORE_TYPE_THE, DIRECTION,
  IGNORE_TYPE_IS, STRING };
-static int cm122[] = { IGNORE_TYPE_TO, IGNORE_TYPE_THE, DIRECTION,
+static const int cm122[] = { IGNORE_TYPE_TO, IGNORE_TYPE_THE, DIRECTION,
  CMD_NONE };
-static int cm123[] = { CMD_EDIT, CHARACTER | STRING | IMM_U16, IGNORE_TYPE_TO,
+static const int cm123[] = { CMD_EDIT, CHARACTER | STRING | IMM_U16,
+ IGNORE_TYPE_TO,
  IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING,
  IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING,
  IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING,
  IMM_U16 | STRING, IMM_U16 | STRING };
-static int cm124[] = { CMD_PUSHABLE };
-static int cm125[] = { CMD_NONPUSHABLE };
-static int cm126[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
-static int cm127[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
-static int cm128[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
-static int cm129[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
-static int cm130[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
-static int cm132[] = { IGNORE_TYPE_FROM, DIRECTION, IGNORE_TYPE_TO,
+static const int cm124[] = { CMD_PUSHABLE };
+static const int cm125[] = { CMD_NONPUSHABLE };
+static const int cm126[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
+static const int cm127[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
+static const int cm128[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
+static const int cm129[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
+static const int cm130[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
+static const int cm132[] = { IGNORE_TYPE_FROM, DIRECTION, IGNORE_TYPE_TO,
  DIRECTION };
-static int cm133[] = { IGNORE_TYPE_A, CMD_LAVAWALKER };
-static int cm134[] = { IGNORE_TYPE_A, CMD_NONLAVAWALKER };
-static int cm135[] = { IGNORE_TYPE_FROM, COLOR | STRING, THING, PARAM | STRING,
- IGNORE_TYPE_TO, COLOR | STRING, THING, PARAM | STRING};
-static int cm136[] = { IGNORE_TYPE_IS, COLOR | STRING};
-static int cm137[] = { IGNORE_TYPE_IS, COLOR | STRING };
-static int cm138[] = { IGNORE_TYPE_IS, COLOR | STRING };
-static int cm139[] = { CMD_ROW, IGNORE_TYPE_IS, IMM_U16 | STRING };
-static int cm140[] = { IGNORE_TYPE_TO, CMD_SELF };
-static int cm141[] = { IGNORE_TYPE_TO, CMD_PLAYER };
-static int cm142[] = { IGNORE_TYPE_TO, CMD_COUNTERS };
-static int cm143[] = { CMD_CHAR, CMD_ID, IMM_U16 | STRING, IGNORE_TYPE_TO,
- CHARACTER | STRING | IMM_U16 };
-static int cm144[] = { IGNORE_TYPE_TO, CMD_MOD, CMD_ORDER, IMM_U16 | STRING };
-static int cm145[] = { STRING };
-static int cm147[] = { CMD_THICK, CMD_ARROW, CMD_CHAR, DIRECTION,
+static const int cm133[] = { IGNORE_TYPE_A, CMD_LAVAWALKER };
+static const int cm134[] = { IGNORE_TYPE_A, CMD_NONLAVAWALKER };
+static const int cm135[] = { IGNORE_TYPE_FROM, COLOR | STRING, THING,
+ PARAM | STRING, IGNORE_TYPE_TO, COLOR | STRING, THING, PARAM | STRING};
+static const int cm136[] = { IGNORE_TYPE_IS, COLOR | STRING};
+static const int cm137[] = { IGNORE_TYPE_IS, COLOR | STRING };
+static const int cm138[] = { IGNORE_TYPE_IS, COLOR | STRING };
+static const int cm139[] = { CMD_ROW, IGNORE_TYPE_IS, IMM_U16 | STRING };
+static const int cm140[] = { IGNORE_TYPE_TO, CMD_SELF };
+static const int cm141[] = { IGNORE_TYPE_TO, CMD_PLAYER };
+static const int cm142[] = { IGNORE_TYPE_TO, CMD_COUNTERS };
+static const int cm143[] = { CMD_CHAR, CMD_ID, IMM_U16 | STRING,
  IGNORE_TYPE_TO, CHARACTER | STRING | IMM_U16 };
-static int cm148[] = { CMD_THIN, CMD_ARROW, CMD_CHAR, DIRECTION,
- IGNORE_TYPE_TO, CHARACTER | STRING | IMM_U16 };
-static int cm149[] = { CMD_MAXHEALTH, IMM_U16 | STRING };
-static int cm150[] = { CMD_PLAYER, CMD_POSITION };
-static int cm151[] = { CMD_PLAYER, CMD_POSITION };
-static int cm152[] = { CMD_PLAYER, CMD_POSITION };
-static int cm153[] = { CMD_MESG, CMD_COLUMN, IGNORE_TYPE_TO, IMM_U16 | STRING };
-static int cm154[] = { CMD_MESG };
-static int cm155[] = { CMD_MESG };
-static int cm157[] = { CMD_SAM, IMM_U16 | STRING, IMM_U16 | STRING };
-static int cm158[] = { STRING };
-static int cm159[] = { CMD_COLOR, IGNORE_TYPE_IS, COLOR | STRING };
-static int cm160[] = { CMD_COLOR, IGNORE_TYPE_IS, COLOR | STRING };
-static int cm161[] = { CMD_COLOR, IGNORE_TYPE_IS, COLOR | STRING };
-static int cm162[] = { CMD_COLOR, IGNORE_TYPE_IS, COLOR | STRING };
-static int cm163[] = { CMD_COLOR, IGNORE_TYPE_IS, COLOR | STRING };
-static int cm164[] = { IGNORE_TYPE_IS, IGNORE_TYPE_AT, IMM_U16 | STRING,
+static const int cm144[] = { IGNORE_TYPE_TO, CMD_MOD, CMD_ORDER,
  IMM_U16 | STRING };
-static int cm165[] = { CMD_SIZE, IGNORE_TYPE_IS, IMM_U16 | STRING,
+static const int cm145[] = { STRING };
+static const int cm147[] = { CMD_THICK, CMD_ARROW, CMD_CHAR, DIRECTION,
+ IGNORE_TYPE_TO, CHARACTER | STRING | IMM_U16 };
+static const int cm148[] = { CMD_THIN, CMD_ARROW, CMD_CHAR, DIRECTION,
+ IGNORE_TYPE_TO, CHARACTER | STRING | IMM_U16 };
+static const int cm149[] = { CMD_MAXHEALTH, IMM_U16 | STRING };
+static const int cm150[] = { CMD_PLAYER, CMD_POSITION };
+static const int cm151[] = { CMD_PLAYER, CMD_POSITION };
+static const int cm152[] = { CMD_PLAYER, CMD_POSITION };
+static const int cm153[] = { CMD_MESG, CMD_COLUMN, IGNORE_TYPE_TO,
+ IMM_U16 | STRING };
+static const int cm154[] = { CMD_MESG };
+static const int cm155[] = { CMD_MESG };
+static const int cm157[] = { CMD_SAM, IMM_U16 | STRING, IMM_U16 | STRING };
+static const int cm158[] = { STRING };
+static const int cm159[] = { CMD_COLOR, IGNORE_TYPE_IS, COLOR | STRING };
+static const int cm160[] = { CMD_COLOR, IGNORE_TYPE_IS, COLOR | STRING };
+static const int cm161[] = { CMD_COLOR, IGNORE_TYPE_IS, COLOR | STRING };
+static const int cm162[] = { CMD_COLOR, IGNORE_TYPE_IS, COLOR | STRING };
+static const int cm163[] = { CMD_COLOR, IGNORE_TYPE_IS, COLOR | STRING };
+static const int cm164[] = { IGNORE_TYPE_IS, IGNORE_TYPE_AT, IMM_U16 | STRING,
+ IMM_U16 | STRING };
+static const int cm165[] = { CMD_SIZE, IGNORE_TYPE_IS, IMM_U16 | STRING,
  IGNORE_TYPE_BY, IMM_U16 | STRING };
-static int cm166[] = { CMD_MESG, CMD_COLUMN, IGNORE_TYPE_TO, STRING };
-static int cm167[] = { CMD_ROW, IGNORE_TYPE_IS, STRING };
-static int cm168[] = { CMD_PLAYER, CMD_POSITION, IGNORE_TYPE_TO,
+static const int cm166[] = { CMD_MESG, CMD_COLUMN, IGNORE_TYPE_TO, STRING };
+static const int cm167[] = { CMD_ROW, IGNORE_TYPE_IS, STRING };
+static const int cm168[] = { CMD_PLAYER, CMD_POSITION, IGNORE_TYPE_TO,
  IMM_U16 | STRING };
-static int cm169[] = { CMD_PLAYER, CMD_POSITION, IGNORE_TYPE_FROM,
+static const int cm169[] = { CMD_PLAYER, CMD_POSITION, IGNORE_TYPE_FROM,
  IMM_U16 | STRING };
-static int cm170[] = { CMD_PLAYER, CMD_POSITION, IGNORE_TYPE_WITH,
+static const int cm170[] = { CMD_PLAYER, CMD_POSITION, IGNORE_TYPE_WITH,
  IMM_U16 | STRING };
-static int cm171[] = { CMD_PLAYER, CMD_POSITION, IGNORE_TYPE_FROM,
+static const int cm171[] = { CMD_PLAYER, CMD_POSITION, IGNORE_TYPE_FROM,
  IMM_U16 | STRING, IGNORE_TYPE_AND, CMD_DUPLICATE, CMD_SELF };
-static int cm172[] = { CMD_PLAYER, CMD_POSITION, IGNORE_TYPE_WITH,
+static const int cm172[] = { CMD_PLAYER, CMD_POSITION, IGNORE_TYPE_WITH,
  IMM_U16 | STRING, IGNORE_TYPE_AND, CMD_DUPLICATE, CMD_SELF };
-static int cm173[] = { CMD_BULLETN, IGNORE_TYPE_IS,
+static const int cm173[] = { CMD_BULLETN, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
-static int cm174[] = { CMD_BULLETS, IGNORE_TYPE_IS,
+static const int cm174[] = { CMD_BULLETS, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
-static int cm175[] = { CMD_BULLETE, IGNORE_TYPE_IS,
+static const int cm175[] = { CMD_BULLETE, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
-static int cm176[] = { CMD_BULLETW, IGNORE_TYPE_IS,
+static const int cm176[] = { CMD_BULLETW, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
-static int cm177[] = { CMD_BULLETN, IGNORE_TYPE_IS,
+static const int cm177[] = { CMD_BULLETN, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
-static int cm178[] = { CMD_BULLETS, IGNORE_TYPE_IS,
+static const int cm178[] = { CMD_BULLETS, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
-static int cm179[] = { CMD_BULLETE, IGNORE_TYPE_IS,
+static const int cm179[] = { CMD_BULLETE, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
-static int cm180[] = { CMD_BULLETW, IGNORE_TYPE_IS,
+static const int cm180[] = { CMD_BULLETW, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
-static int cm181[] = { CMD_BULLETN, IGNORE_TYPE_IS,
+static const int cm181[] = { CMD_BULLETN, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
-static int cm182[] = { CMD_BULLETS, IGNORE_TYPE_IS,
+static const int cm182[] = { CMD_BULLETS, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
-static int cm183[] = { CMD_BULLETE, IGNORE_TYPE_IS,
+static const int cm183[] = { CMD_BULLETE, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
-static int cm184[] = { CMD_BULLETW, IGNORE_TYPE_IS,
+static const int cm184[] = { CMD_BULLETW, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
-static int cm185[] = { CMD_BULLETCOLOR, IGNORE_TYPE_IS, COLOR | STRING };
-static int cm186[] = { CMD_BULLETCOLOR, IGNORE_TYPE_IS, COLOR | STRING };
-static int cm187[] = { CMD_BULLETCOLOR, IGNORE_TYPE_IS, COLOR | STRING };
-static int cm193[] = { CMD_SELF, CMD_FIRST };
-static int cm194[] = { CMD_SELF, CMD_LAST };
-static int cm195[] = { CMD_PLAYER, CMD_FIRST };
-static int cm196[] = { CMD_PLAYER, CMD_LAST };
-static int cm197[] = { CMD_COUNTERS, CMD_FIRST };
-static int cm198[] = { CMD_COUNTERS, CMD_LAST };
-static int cm199[] = { CMD_FADE, CMD_OUT };
-static int cm200[] = { CMD_FADE, CMD_IN, STRING };
-static int cm201[] = { CMD_BLOCK, IGNORE_TYPE_AT, IMM_S16 | STRING,
+static const int cm185[] = { CMD_BULLETCOLOR, IGNORE_TYPE_IS,
+ COLOR | STRING };
+static const int cm186[] = { CMD_BULLETCOLOR, IGNORE_TYPE_IS,
+ COLOR | STRING };
+static const int cm187[] = { CMD_BULLETCOLOR, IGNORE_TYPE_IS, 
+ COLOR | STRING };
+static const int cm193[] = { CMD_SELF, CMD_FIRST };
+static const int cm194[] = { CMD_SELF, CMD_LAST };
+static const int cm195[] = { CMD_PLAYER, CMD_FIRST };
+static const int cm196[] = { CMD_PLAYER, CMD_LAST };
+static const int cm197[] = { CMD_COUNTERS, CMD_FIRST };
+static const int cm198[] = { CMD_COUNTERS, CMD_LAST };
+static const int cm199[] = { CMD_FADE, CMD_OUT };
+static const int cm200[] = { CMD_FADE, CMD_IN, STRING };
+static const int cm201[] = { CMD_BLOCK, IGNORE_TYPE_AT, IMM_S16 | STRING,
  IMM_S16 | STRING, IGNORE_TYPE_FOR, IMM_U16 | STRING, IGNORE_TYPE_BY,
  IMM_U16 | STRING, IGNORE_TYPE_TO, IMM_S16 | STRING, IMM_S16 | STRING };
-static int cm202[] = { CMD_INPUT };
-static int cm203[] = { IGNORE_TYPE_TO, DIRECTION };
-static int cm204[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16, DIRECTION };
-static int cm205[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16, DIRECTION };
-static int cm206[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16, IGNORE_TYPE_TO,
- CHARACTER | STRING | IMM_U16 };
-static int cm210[] = { CMD_SFX, IMM_U16 | STRING, IGNORE_TYPE_TO, STRING };
-static int cm211[] = { CMD_INTENSITY, IGNORE_TYPE_IS, IGNORE_TYPE_AT,
+static const int cm202[] = { CMD_INPUT };
+static const int cm203[] = { IGNORE_TYPE_TO, DIRECTION };
+static const int cm204[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16,
+ DIRECTION };
+static const int cm205[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16,
+ DIRECTION };
+static const int cm206[] = { CMD_CHAR, CHARACTER | STRING | IMM_U16,
+ IGNORE_TYPE_TO, CHARACTER | STRING | IMM_U16 };
+static const int cm210[] = { CMD_SFX, IMM_U16 | STRING, IGNORE_TYPE_TO,
+ STRING };
+static const int cm211[] = { CMD_INTENSITY, IGNORE_TYPE_IS, IGNORE_TYPE_AT,
  IMM_U16 | STRING, CMD_PERCENT };
-static int cm212[] = { CMD_INTENSITY, IMM_U16 | STRING, IGNORE_TYPE_IS,
+static const int cm212[] = { CMD_INTENSITY, IMM_U16 | STRING, IGNORE_TYPE_IS,
  IGNORE_TYPE_AT, IMM_U16 | STRING, CMD_PERCENT };
-static int cm213[] = { CMD_FADE, CMD_OUT };
-static int cm214[] = { CMD_FADE, CMD_IN };
-static int cm215[] = { CMD_COLOR, IMM_U16 | STRING, IGNORE_TYPE_TO,
+static const int cm213[] = { CMD_FADE, CMD_OUT };
+static const int cm214[] = { CMD_FADE, CMD_IN };
+static const int cm215[] = { CMD_COLOR, IMM_U16 | STRING, IGNORE_TYPE_TO,
  IMM_U16 | STRING, IMM_U16 | STRING, IMM_U16 | STRING };
-static int cm216[] = { CMD_CHAR, CMD_SET, STRING };
-static int cm217[] = { STRING, IGNORE_TYPE_BY, IMM_U16 | STRING };
-static int cm218[] = { STRING, IGNORE_TYPE_BY, IMM_U16 | STRING };
-static int cm219[] = { STRING, IGNORE_TYPE_BY, IMM_U16 | STRING };
-static int cm220[] = { CMD_CHAR, DIRECTION, IGNORE_TYPE_IS,
+static const int cm216[] = { CMD_CHAR, CMD_SET, STRING };
+static const int cm217[] = { STRING, IGNORE_TYPE_BY, IMM_U16 | STRING };
+static const int cm218[] = { STRING, IGNORE_TYPE_BY, IMM_U16 | STRING };
+static const int cm219[] = { STRING, IGNORE_TYPE_BY, IMM_U16 | STRING };
+static const int cm220[] = { CMD_CHAR, DIRECTION, IGNORE_TYPE_IS,
  CHARACTER | STRING | IMM_U16 };
-static int cm222[] = { CMD_PALETTE, STRING };
-static int cm224[] = { CMD_FADE, IGNORE_TYPE_TO, IMM_U16 | STRING,
+static const int cm222[] = { CMD_PALETTE, STRING };
+static const int cm224[] = { CMD_FADE, IGNORE_TYPE_TO, IMM_U16 | STRING,
  IGNORE_TYPE_BY, IMM_U16 | STRING };
-static int cm225[] = { CMD_POSITION, IMM_S16 | STRING, IMM_S16 | STRING };
-static int cm226[] = { CMD_WORLD, STRING };
-static int cm227[] = { CMD_ALIGNEDROBOT, IGNORE_TYPE_WITH, STRING,
+static const int cm225[] = { CMD_POSITION, IMM_S16 | STRING,
+ IMM_S16 | STRING };
+static const int cm226[] = { CMD_WORLD, STRING };
+static const int cm227[] = { CMD_ALIGNEDROBOT, IGNORE_TYPE_WITH, STRING,
  IGNORE_TYPE_THEN, STRING };
-static int cm231[] = { CMD_FIRST, CMD_STRING, IGNORE_TYPE_IS, STRING,
+static const int cm231[] = { CMD_FIRST, CMD_STRING, IGNORE_TYPE_IS, STRING,
  IGNORE_TYPE_THEN, STRING };
-static int cm232[] = { CMD_GO, STRING };
-static int cm233[] = { IGNORE_TYPE_FOR, CMD_MOD, CMD_FADE };
-static int cm235[] = { CMD_SAVING };
-static int cm236[] = { CMD_SAVING };
-static int cm237[] = { CMD_SENSORONLY, CMD_SAVING };
-static int cm238[] = { CMD_COUNTER, IMM_U16 | STRING, IGNORE_TYPE_IS, STRING };
-static int cm239[] = { IGNORE_TYPE_IS, CMD_ON };
-static int cm240[] = { IGNORE_TYPE_IS, CMD_STATIC };
-static int cm241[] = { IGNORE_TYPE_IS, CMD_TRANSPARENT };
-static int cm242[] = { COLOR | STRING, CHARACTER | STRING | IMM_U16,
+static const int cm232[] = { CMD_GO, STRING };
+static const int cm233[] = { IGNORE_TYPE_FOR, CMD_MOD, CMD_FADE };
+static const int cm235[] = { CMD_SAVING };
+static const int cm236[] = { CMD_SAVING };
+static const int cm237[] = { CMD_SENSORONLY, CMD_SAVING };
+static const int cm238[] = { CMD_COUNTER, IMM_U16 | STRING, IGNORE_TYPE_IS,
+ STRING };
+static const int cm239[] = { IGNORE_TYPE_IS, CMD_ON };
+static const int cm240[] = { IGNORE_TYPE_IS, CMD_STATIC };
+static const int cm241[] = { IGNORE_TYPE_IS, CMD_TRANSPARENT };
+static const int cm242[] = { COLOR | STRING, CHARACTER | STRING | IMM_U16,
  CMD_OVERLAY, IGNORE_TYPE_TO, IMM_S16 | STRING, IMM_S16 | STRING };
-static int cm243[] = { CMD_OVERLAY, CMD_BLOCK, IGNORE_TYPE_AT,
+static const int cm243[] = { CMD_OVERLAY, CMD_BLOCK, IGNORE_TYPE_AT,
  IMM_S16 | STRING, IMM_S16 | STRING, IGNORE_TYPE_FOR, IMM_U16 | STRING,
  IGNORE_TYPE_BY, IMM_U16 | STRING, IGNORE_TYPE_TO, IMM_S16 | STRING,
  IMM_S16 | STRING };
-static int cm245[] = { CMD_OVERLAY, COLOR | STRING,
+static const int cm245[] = { CMD_OVERLAY, COLOR | STRING,
  CHARACTER | STRING | IMM_U16, IGNORE_TYPE_TO,
  COLOR | STRING, CHARACTER | STRING };
-static int cm246[] = { CMD_OVERLAY, COLOR | STRING, IGNORE_TYPE_TO,
+static const int cm246[] = { CMD_OVERLAY, COLOR | STRING, IGNORE_TYPE_TO,
  COLOR | STRING };
-static int cm247[] = { CMD_OVERLAY, COLOR | STRING, STRING, IGNORE_TYPE_AT,
- IMM_S16 | STRING, IMM_S16 | STRING };
-static int cm251[] = { CMD_START };
-static int cm252[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
-static int cm253[] = { CMD_LOOP };
-static int cm254[] = { CMD_MESG, CMD_EDGE };
-static int cm255[] = { CMD_MESG, CMD_EDGE };
+static const int cm247[] = { CMD_OVERLAY, COLOR | STRING, STRING,
+ IGNORE_TYPE_AT, IMM_S16 | STRING, IMM_S16 | STRING };
+static const int cm251[] = { CMD_START };
+static const int cm252[] = { IGNORE_TYPE_FOR, IMM_U16 | STRING };
+static const int cm253[] = { CMD_LOOP };
+static const int cm254[] = { CMD_MESG, CMD_EDGE };
+static const int cm255[] = { CMD_MESG, CMD_EDGE };
 
 static const struct mzx_command command_list[] =
 {
-  { (char*)"end",            0, NULL },
-  { (char*)"die",            0, NULL },
-  { (char*)"wait",           1, cm2 },
-  { (char*)"cycle",          1, cm3 },
-  { (char*)"go",             2, cm4 },
-  { (char*)"walk",           1, cm5 },
-  { (char*)"become",         3, cm6 },
-  { (char*)"char",           1, cm7 },
-  { (char*)"color",          1, cm8 },
-  { (char*)"gotoxy",         2, cm9 },
-  { (char*)"set",            2, cm10 },
-  { (char*)"inc",            2, cm11 },
-  { (char*)"dec",            2, cm12 },
-  { (char*)"set",            2, cm13 },
-  { (char*)"inc",            2, cm14 },
-  { (char*)"dec",            2, cm15 },
-  { (char*)"if",             4, cm16 },
-  { (char*)"if",             4, cm17 },
-  { (char*)"if",             2, cm18 },
-  { (char*)"if",             3, cm19 },
-  { (char*)"if",             5, cm20 },
-  { (char*)"if",             5, cm21 },
-  { (char*)"if",             5, cm22 },
-  { (char*)"if",             6, cm23 },
-  { (char*)"if",             6, cm24 },
-  { (char*)"if",             3, cm25 },
-  { (char*)"if",             6, cm26 },
-  { (char*)"double",         1, cm27 },
-  { (char*)"half",           1, cm28 },
-  { (char*)"goto",           1, cm29 },
-  { (char*)"send",           2, cm30 },
-  { (char*)"explode",        1, cm31 },
-  { (char*)"put",            4, cm32 },
-  { (char*)"give",           2, cm33 },
-  { (char*)"take",           2, cm34 },
-  { (char*)"take",           3, cm35 },
-  { (char*)"endgame",        0, NULL },
-  { (char*)"endlife",        0, NULL },
-  { (char*)"mod",            1, cm38 },
-  { (char*)"sam",            2, cm39 },
-  { (char*)"volume",         1, cm40 },
-  { (char*)"end",            1, cm41 },
-  { (char*)"end",            1, cm42 },
-  { (char*)"play",           1, cm43 },
-  { (char*)"end",            1, cm44 },
-  { (char*)"wait",           2, cm45 },
-  { (char*)"wait",           1, cm46 },
-  { (char*)"_blank_line",    0, NULL },
-  { (char*)"sfx",            1, cm48 },
-  { (char*)"play",           2, cm49 },
-  { (char*)"open",           1, cm50 },
-  { (char*)"lockself",       0, NULL },
-  { (char*)"unlockself",     0, NULL },
-  { (char*)"send",           2, cm53 },
-  { (char*)"zap",            2, cm54 },
-  { (char*)"restore",        2, cm55 },
-  { (char*)"lockplayer",     0, NULL },
-  { (char*)"unlockplayer",   0, NULL },
-  { (char*)"lockplayer",     1, cm58 },
-  { (char*)"lockplayer",     1, cm59 },
-  { (char*)"lockplayer",     1, cm60 },
-  { (char*)"move",           2, cm61 },
-  { (char*)"move",           3, cm62 },
-  { (char*)"put",            3, cm63 },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"if",             4, cm66 },
-  { (char*)"put",            2, cm67 },
-  { (char*)"try",            2, cm68 },
-  { (char*)"rotatecw",       0, NULL },
-  { (char*)"rotateccw",      0, NULL },
-  { (char*)"switch",         2, cm71 },
-  { (char*)"shoot",          1, cm72 },
-  { (char*)"laybomb",        1, cm73 },
-  { (char*)"laybomb",        2, cm74 },
-  { (char*)"shootmissile",   1, cm75 },
-  { (char*)"shootseeker",    1, cm76 },
-  { (char*)"spitfire",       1, cm77 },
-  { (char*)"lazerwall",      2, cm78 },
-  { (char*)"put",            5, cm79 },
-  { (char*)"die",            1, cm80 },
-  { (char*)"send",           3, cm81 },
-  { (char*)"copyrobot",      1, cm82 },
-  { (char*)"copyrobot",      2, cm83 },
-  { (char*)"copyrobot",      1, cm84 },
-  { (char*)"duplicate",      2, cm85 },
-  { (char*)"duplicate",      3, cm86 },
-  { (char*)"bulletn",        1, cm87 },
-  { (char*)"bullets",        1, cm88 },
-  { (char*)"bullete",        1, cm89 },
-  { (char*)"bulletw",        1, cm90 },
-  { (char*)"givekey",        1, cm91 },
-  { (char*)"givekey",        2, cm92 },
-  { (char*)"takekey",        1, cm93 },
-  { (char*)"takekey",        2, cm94 },
-  { (char*)"inc",            4, cm95 },
-  { (char*)"dec",            4, cm96 },
-  { (char*)"set",            4, cm97 },
-  { (char*)"trade",          5, cm98 },
-  { (char*)"send",           3, cm99 },
-  { (char*)"put",            5, cm100 },
-  { (char*)"/",              1, cm101 },
-  { (char*)"*",              1, cm102 },
-  { (char*)"[",              1, cm103 },
-  { (char*)"?",              2, cm104 },
-  { (char*)"?",              3, cm105 },
-  { (char*)":",              1, cm106 },
-  { (char*)".",              1, cm107 },
-  { (char*)"|",              1, cm108 },
-  { (char*)"teleport",       4, cm109 },
-  { (char*)"scrollview",     2, cm110 },
-  { (char*)"input",          2, cm111 },
-  { (char*)"if",             3, cm112 },
-  { (char*)"if",             4, cm113 },
-  { (char*)"if",             4, cm114 },
-  { (char*)"player",         2, cm115 },
-  { (char*)"%",              1, cm116 },
-  { (char*)"&",              1, cm117 },
-  { (char*)"move",           5, cm118 },
-  { (char*)"copy",           4, cm119 },
-  { (char*)"set",            3, cm120 },
-  { (char*)"board",          2, cm121 },
-  { (char*)"board",          2, cm122 },
-  { (char*)"char",           16, cm123 },
-  { (char*)"become",         1, cm124 },
-  { (char*)"become",         1, cm125 },
-  { (char*)"blind",          1, cm126 },
-  { (char*)"firewalker",     1, cm127 },
-  { (char*)"freezetime",     1, cm128 },
-  { (char*)"slowtime",       1, cm129 },
-  { (char*)"wind",           1, cm130 },
-  { (char*)"avalanche",      0, NULL },
-  { (char*)"copy",           2, cm132 },
-  { (char*)"become",         1, cm133 },
-  { (char*)"become",         1, cm134 },
-  { (char*)"change",         6, cm135 },
-  { (char*)"playercolor",    1, cm136 },
-  { (char*)"bulletcolor",    1, cm137 },
-  { (char*)"missilecolor",   1, cm138 },
-  { (char*)"message",        2, cm139 },
-  { (char*)"rel",            1, cm140 },
-  { (char*)"rel",            1, cm141 },
-  { (char*)"rel",            1, cm142 },
-  { (char*)"change",         4, cm143 },
-  { (char*)"jump",           3, cm144 },
-  { (char*)"ask",            1, cm145 },
-  { (char*)"fillhealth",     0, NULL },
-  { (char*)"change",         5, cm147 },
-  { (char*)"change",         5, cm148 },
-  { (char*)"set",            2, cm149 },
-  { (char*)"save",           2, cm150 },
-  { (char*)"restore",        2, cm151 },
-  { (char*)"exchange",       2, cm152 },
-  { (char*)"set",            3, cm153 },
-  { (char*)"center",         1, cm154 },
-  { (char*)"clear",          1, cm155 },
-  { (char*)"resetview",      0, NULL },
-  { (char*)"mod",            3, cm157 },
-  { (char*)"volume",         1, cm158 },
-  { (char*)"scrollbase",     2, cm159 },
-  { (char*)"scrollcorner",   2, cm160 },
-  { (char*)"scrolltitle",    2, cm161 },
-  { (char*)"scrollpointer",  2, cm162 },
-  { (char*)"scrollarrow",    2, cm163 },
-  { (char*)"viewport",       2, cm164 },
-  { (char*)"viewport",       3, cm165 },
-  { (char*)"set",            3, cm166 },
-  { (char*)"message",        2, cm167 },
-  { (char*)"save",           3, cm168 },
-  { (char*)"restore",        3, cm169 },
-  { (char*)"exchange",       3, cm170 },
-  { (char*)"restore",        5, cm171 },
-  { (char*)"exchange",       5, cm172 },
-  { (char*)"player",         2, cm173 },
-  { (char*)"player",         2, cm174 },
-  { (char*)"player",         2, cm175 },
-  { (char*)"player",         2, cm176 },
-  { (char*)"neutral",        2, cm177 },
-  { (char*)"neutral",        2, cm178 },
-  { (char*)"neutral",        2, cm179 },
-  { (char*)"neutral",        2, cm180 },
-  { (char*)"enemy",          2, cm181 },
-  { (char*)"enemy",          2, cm182 },
-  { (char*)"enemy",          2, cm183 },
-  { (char*)"enemy",          2, cm184 },
-  { (char*)"player",         2, cm185 },
-  { (char*)"neutral",        2, cm186 },
-  { (char*)"enemy",          2, cm187 },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"rel",            2, cm193 },
-  { (char*)"rel",            2, cm194 },
-  { (char*)"rel",            2, cm195 },
-  { (char*)"rel",            2, cm196 },
-  { (char*)"rel",            2, cm197 },
-  { (char*)"rel",            2, cm198 },
-  { (char*)"mod",            2, cm199 },
-  { (char*)"mod",            3, cm200 },
-  { (char*)"copy",           7, cm201 },
-  { (char*)"clip",           1, cm202 },
-  { (char*)"push",           1, cm203 },
-  { (char*)"scroll",         3, cm204 },
-  { (char*)"flip",           3, cm205 },
-  { (char*)"copy",           3, cm206 },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"change",         3, cm210 },
-  { (char*)"color",          3, cm211 },
-  { (char*)"color",          4, cm212 },
-  { (char*)"color",          2, cm213 },
-  { (char*)"color",          2, cm214 },
-  { (char*)"set",            5, cm215 },
-  { (char*)"load",           3, cm216 },
-  { (char*)"multiply",       2, cm217 },
-  { (char*)"divide",         2, cm218 },
-  { (char*)"modulo",         2, cm219 },
-  { (char*)"player",         3, cm220 },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"load",           2, cm222 },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"mod",            3, cm224 },
-  { (char*)"scrollview",     3, cm225 },
-  { (char*)"swap",           2, cm226 },
-  { (char*)"if",             3, cm227 },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"lockscroll",     0, NULL },
-  { (char*)"unlockscroll",   0, NULL },
-  { (char*)"if",             4, cm231 },
-  { (char*)"persistent",     2, cm232 },
-  { (char*)"wait",           2, cm233 },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"enable",         1, cm235 },
-  { (char*)"disable",        1, cm236 },
-  { (char*)"enable",         2, cm237 },
-  { (char*)"status",         3, cm238 },
-  { (char*)"overlay",        1, cm239 },
-  { (char*)"overlay",        1, cm240 },
-  { (char*)"overlay",        1, cm241 },
-  { (char*)"put",            5, cm242 },
-  { (char*)"copy",           8, cm243 },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"change",         5, cm245 },
-  { (char*)"change",         3, cm246 },
-  { (char*)"write",          5, cm247 },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"__unused",       0, NULL },
-  { (char*)"loop",           1, cm251 },
-  { (char*)"loop",           1, cm252 },
-  { (char*)"abort",          1, cm253 },
-  { (char*)"disable",        2, cm254 },
-  { (char*)"enable",         2, cm255 }
+  { "end",            0, NULL },
+  { "die",            0, NULL },
+  { "wait",           1, cm2 },
+  { "cycle",          1, cm3 },
+  { "go",             2, cm4 },
+  { "walk",           1, cm5 },
+  { "become",         3, cm6 },
+  { "char",           1, cm7 },
+  { "color",          1, cm8 },
+  { "gotoxy",         2, cm9 },
+  { "set",            2, cm10 },
+  { "inc",            2, cm11 },
+  { "dec",            2, cm12 },
+  { "set",            2, cm13 },
+  { "inc",            2, cm14 },
+  { "dec",            2, cm15 },
+  { "if",             4, cm16 },
+  { "if",             4, cm17 },
+  { "if",             2, cm18 },
+  { "if",             3, cm19 },
+  { "if",             5, cm20 },
+  { "if",             5, cm21 },
+  { "if",             5, cm22 },
+  { "if",             6, cm23 },
+  { "if",             6, cm24 },
+  { "if",             3, cm25 },
+  { "if",             6, cm26 },
+  { "double",         1, cm27 },
+  { "half",           1, cm28 },
+  { "goto",           1, cm29 },
+  { "send",           2, cm30 },
+  { "explode",        1, cm31 },
+  { "put",            4, cm32 },
+  { "give",           2, cm33 },
+  { "take",           2, cm34 },
+  { "take",           3, cm35 },
+  { "endgame",        0, NULL },
+  { "endlife",        0, NULL },
+  { "mod",            1, cm38 },
+  { "sam",            2, cm39 },
+  { "volume",         1, cm40 },
+  { "end",            1, cm41 },
+  { "end",            1, cm42 },
+  { "play",           1, cm43 },
+  { "end",            1, cm44 },
+  { "wait",           2, cm45 },
+  { "wait",           1, cm46 },
+  { "_blank_line",    0, NULL },
+  { "sfx",            1, cm48 },
+  { "play",           2, cm49 },
+  { "open",           1, cm50 },
+  { "lockself",       0, NULL },
+  { "unlockself",     0, NULL },
+  { "send",           2, cm53 },
+  { "zap",            2, cm54 },
+  { "restore",        2, cm55 },
+  { "lockplayer",     0, NULL },
+  { "unlockplayer",   0, NULL },
+  { "lockplayer",     1, cm58 },
+  { "lockplayer",     1, cm59 },
+  { "lockplayer",     1, cm60 },
+  { "move",           2, cm61 },
+  { "move",           3, cm62 },
+  { "put",            3, cm63 },
+  { "__unused",       0, NULL },
+  { "__unused",       0, NULL },
+  { "if",             4, cm66 },
+  { "put",            2, cm67 },
+  { "try",            2, cm68 },
+  { "rotatecw",       0, NULL },
+  { "rotateccw",      0, NULL },
+  { "switch",         2, cm71 },
+  { "shoot",          1, cm72 },
+  { "laybomb",        1, cm73 },
+  { "laybomb",        2, cm74 },
+  { "shootmissile",   1, cm75 },
+  { "shootseeker",    1, cm76 },
+  { "spitfire",       1, cm77 },
+  { "lazerwall",      2, cm78 },
+  { "put",            5, cm79 },
+  { "die",            1, cm80 },
+  { "send",           3, cm81 },
+  { "copyrobot",      1, cm82 },
+  { "copyrobot",      2, cm83 },
+  { "copyrobot",      1, cm84 },
+  { "duplicate",      2, cm85 },
+  { "duplicate",      3, cm86 },
+  { "bulletn",        1, cm87 },
+  { "bullets",        1, cm88 },
+  { "bullete",        1, cm89 },
+  { "bulletw",        1, cm90 },
+  { "givekey",        1, cm91 },
+  { "givekey",        2, cm92 },
+  { "takekey",        1, cm93 },
+  { "takekey",        2, cm94 },
+  { "inc",            4, cm95 },
+  { "dec",            4, cm96 },
+  { "set",            4, cm97 },
+  { "trade",          5, cm98 },
+  { "send",           3, cm99 },
+  { "put",            5, cm100 },
+  { "/",              1, cm101 },
+  { "*",              1, cm102 },
+  { "[",              1, cm103 },
+  { "?",              2, cm104 },
+  { "?",              3, cm105 },
+  { ":",              1, cm106 },
+  { ".",              1, cm107 },
+  { "|",              1, cm108 },
+  { "teleport",       4, cm109 },
+  { "scrollview",     2, cm110 },
+  { "input",          2, cm111 },
+  { "if",             3, cm112 },
+  { "if",             4, cm113 },
+  { "if",             4, cm114 },
+  { "player",         2, cm115 },
+  { "%",              1, cm116 },
+  { "&",              1, cm117 },
+  { "move",           5, cm118 },
+  { "copy",           4, cm119 },
+  { "set",            3, cm120 },
+  { "board",          2, cm121 },
+  { "board",          2, cm122 },
+  { "char",           16, cm123 },
+  { "become",         1, cm124 },
+  { "become",         1, cm125 },
+  { "blind",          1, cm126 },
+  { "firewalker",     1, cm127 },
+  { "freezetime",     1, cm128 },
+  { "slowtime",       1, cm129 },
+  { "wind",           1, cm130 },
+  { "avalanche",      0, NULL },
+  { "copy",           2, cm132 },
+  { "become",         1, cm133 },
+  { "become",         1, cm134 },
+  { "change",         6, cm135 },
+  { "playercolor",    1, cm136 },
+  { "bulletcolor",    1, cm137 },
+  { "missilecolor",   1, cm138 },
+  { "message",        2, cm139 },
+  { "rel",            1, cm140 },
+  { "rel",            1, cm141 },
+  { "rel",            1, cm142 },
+  { "change",         4, cm143 },
+  { "jump",           3, cm144 },
+  { "ask",            1, cm145 },
+  { "fillhealth",     0, NULL },
+  { "change",         5, cm147 },
+  { "change",         5, cm148 },
+  { "set",            2, cm149 },
+  { "save",           2, cm150 },
+  { "restore",        2, cm151 },
+  { "exchange",       2, cm152 },
+  { "set",            3, cm153 },
+  { "center",         1, cm154 },
+  { "clear",          1, cm155 },
+  { "resetview",      0, NULL },
+  { "mod",            3, cm157 },
+  { "volume",         1, cm158 },
+  { "scrollbase",     2, cm159 },
+  { "scrollcorner",   2, cm160 },
+  { "scrolltitle",    2, cm161 },
+  { "scrollpointer",  2, cm162 },
+  { "scrollarrow",    2, cm163 },
+  { "viewport",       2, cm164 },
+  { "viewport",       3, cm165 },
+  { "set",            3, cm166 },
+  { "message",        2, cm167 },
+  { "save",           3, cm168 },
+  { "restore",        3, cm169 },
+  { "exchange",       3, cm170 },
+  { "restore",        5, cm171 },
+  { "exchange",       5, cm172 },
+  { "player",         2, cm173 },
+  { "player",         2, cm174 },
+  { "player",         2, cm175 },
+  { "player",         2, cm176 },
+  { "neutral",        2, cm177 },
+  { "neutral",        2, cm178 },
+  { "neutral",        2, cm179 },
+  { "neutral",        2, cm180 },
+  { "enemy",          2, cm181 },
+  { "enemy",          2, cm182 },
+  { "enemy",          2, cm183 },
+  { "enemy",          2, cm184 },
+  { "player",         2, cm185 },
+  { "neutral",        2, cm186 },
+  { "enemy",          2, cm187 },
+  { "__unused",       0, NULL },
+  { "__unused",       0, NULL },
+  { "__unused",       0, NULL },
+  { "__unused",       0, NULL },
+  { "__unused",       0, NULL },
+  { "rel",            2, cm193 },
+  { "rel",            2, cm194 },
+  { "rel",            2, cm195 },
+  { "rel",            2, cm196 },
+  { "rel",            2, cm197 },
+  { "rel",            2, cm198 },
+  { "mod",            2, cm199 },
+  { "mod",            3, cm200 },
+  { "copy",           7, cm201 },
+  { "clip",           1, cm202 },
+  { "push",           1, cm203 },
+  { "scroll",         3, cm204 },
+  { "flip",           3, cm205 },
+  { "copy",           3, cm206 },
+  { "__unused",       0, NULL },
+  { "__unused",       0, NULL },
+  { "__unused",       0, NULL },
+  { "change",         3, cm210 },
+  { "color",          3, cm211 },
+  { "color",          4, cm212 },
+  { "color",          2, cm213 },
+  { "color",          2, cm214 },
+  { "set",            5, cm215 },
+  { "load",           3, cm216 },
+  { "multiply",       2, cm217 },
+  { "divide",         2, cm218 },
+  { "modulo",         2, cm219 },
+  { "player",         3, cm220 },
+  { "__unused",       0, NULL },
+  { "load",           2, cm222 },
+  { "__unused",       0, NULL },
+  { "mod",            3, cm224 },
+  { "scrollview",     3, cm225 },
+  { "swap",           2, cm226 },
+  { "if",             3, cm227 },
+  { "__unused",       0, NULL },
+  { "lockscroll",     0, NULL },
+  { "unlockscroll",   0, NULL },
+  { "if",             4, cm231 },
+  { "persistent",     2, cm232 },
+  { "wait",           2, cm233 },
+  { "__unused",       0, NULL },
+  { "enable",         1, cm235 },
+  { "disable",        1, cm236 },
+  { "enable",         2, cm237 },
+  { "status",         3, cm238 },
+  { "overlay",        1, cm239 },
+  { "overlay",        1, cm240 },
+  { "overlay",        1, cm241 },
+  { "put",            5, cm242 },
+  { "copy",           8, cm243 },
+  { "__unused",       0, NULL },
+  { "change",         5, cm245 },
+  { "change",         3, cm246 },
+  { "write",          5, cm247 },
+  { "__unused",       0, NULL },
+  { "__unused",       0, NULL },
+  { "__unused",       0, NULL },
+  { "loop",           1, cm251 },
+  { "loop",           1, cm252 },
+  { "abort",          1, cm253 },
+  { "disable",        2, cm254 },
+  { "enable",         2, cm255 }
 };
 
 static const char *dir_types[20] =
@@ -1535,7 +1564,7 @@ static const struct search_entry sorted_command_list[] =
 static const int num_command_names =
  sizeof(sorted_command_list) / sizeof(struct search_entry);
 
-static const struct search_entry *find_command(char *name)
+static const struct search_entry *find_command(const char *name)
 {
   int bottom = 0, top = num_command_names - 1, middle;
   const struct search_entry *base = sorted_command_list;
@@ -1622,7 +1651,7 @@ static void print_error(int arg_number, char *error_buffer, int bad_arg,
    correct_arg_err, bad_arg_err);
 }
 
-static int match_command(struct mzx_command *cmd, char *error_buffer)
+static int match_command(struct mzx_command_rw *cmd, char *error_buffer)
 {
   int i, i2, i3;
   int num_params;
@@ -1752,7 +1781,7 @@ static void rasm_skip_whitespace(char *cpos, char **next)
   *next = cpos;
 }
 
-static int assemble_command(int command_number, struct mzx_command *cmd,
+static int assemble_command(int command_number, struct mzx_command_rw *cmd,
  void *params[32], char *obj_pos, char **next_obj_pos)
 {
   int i;
@@ -1814,7 +1843,7 @@ __editor_maybe_static int assemble_line(char *cpos,
   int bytes_assembled;
   int i;
 
-  struct mzx_command current_command;
+  struct mzx_command_rw current_command;
 
   current_command.name = command_name;
   current_command.param_types = command_params;
