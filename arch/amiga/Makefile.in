@@ -5,6 +5,7 @@
 CC      = ppc-amigaos-gcc -mcrt=clib2 -I${PREFIX}/clib2/include
 CXX     = ppc-amigaos-g++ -mcrt=clib2 -I${PREFIX}/clib2/include
 STRIP   = ppc-amigaos-strip --strip-unneeded
-OBJCOPY = ppc-amigaos-objcopy
+OBJCOPY = true
+CHMOD   = true
 
 BINEXT  = .exe

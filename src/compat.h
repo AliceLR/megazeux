@@ -91,6 +91,7 @@ typedef enum {
  * compile time after including the AmigaOS header.
  */
 #ifdef __amigaos__
+#include <unistd.h>
 #define TEXT _TEXT
 #endif
 
