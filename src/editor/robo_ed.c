@@ -452,7 +452,7 @@ static int update_current_line(struct robot_state *rstate)
 
 static void add_line(struct robot_state *rstate)
 {
-  if(rstate->size + 3 < rstate->max_size)
+  if(rstate->size + 3 + (int)strlen(rstate->command_buffer) < rstate->max_size)
   {
     struct robot_line *new_rline = cmalloc(sizeof(struct robot_line));
     struct robot_line *current_rline = rstate->current_rline;
