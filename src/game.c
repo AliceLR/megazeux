@@ -54,6 +54,8 @@
 #include "util.h"
 #include "debug.h"
 
+#define MESG_TIMEOUT 160
+
 // Number of cycles to make player idle before repeating a
 // directional move
 #define REPEAT_WAIT 2
@@ -122,9 +124,9 @@ char debug_mode;
 
 static unsigned int intro_mesg_timer;
 
-static void flag_intro_mesg(void)
+static void set_intro_mesg_timer(int time)
 {
-  intro_mesg_timer = 160;
+  intro_mesg_timer = time;
 }
 
 static void draw_intro_mesg(void)
@@ -154,7 +156,7 @@ static void load_world_file(World *mzx_world, char *name)
     load_module(src_board->mod_playing);
     strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
     set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-    flag_intro_mesg();
+    set_intro_mesg_timer(MESG_TIMEOUT);
   }
 }
 
@@ -340,7 +342,7 @@ static void set_3_mesg(World *mzx_world, const char *str1, int num,
   {
     Board *src_board = mzx_world->current_board;
     sprintf(src_board->bottom_mesg, "%s%d%s", str1, num, str2);
-    src_board->b_mesg_timer = 160;
+    src_board->b_mesg_timer = MESG_TIMEOUT;
   }
 }
 
@@ -2338,8 +2340,8 @@ void title_screen(World *mzx_world)
                strcmp(src_board->mod_playing, old_mod_playing))
                 load_module(src_board->mod_playing);
 
-              strcpy(mzx_world->real_mod_playing,
-               src_board->mod_playing);
+              strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+              set_intro_mesg_timer(0);
 
               set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
@@ -2564,7 +2566,7 @@ void set_mesg_direct(Board *src_board, const char *str)
   {
     strcpy(bottom_mesg, str);
   }
-  src_board->b_mesg_timer = 160;
+  src_board->b_mesg_timer = MESG_TIMEOUT;
 }
 
 // Rotate an area
