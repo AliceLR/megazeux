@@ -6,14 +6,16 @@
 
 .SUFFIXES: .c
 
-unzip_base = contrib/unzip/src
+unzip_src = contrib/unzip/src
+unzip_obj = contrib/unzip/src/.build
+
 unzip_cflags := -W -Wmissing-format-attribute -Wpointer-arith -Wcast-align
 unzip_cflags += -Wwrite-strings -Wno-unused-parameter
-unzip_cflags += -I${unzip_base} -DNOUNCRYPT
+unzip_cflags += -I${unzip_src} -DNOUNCRYPT
 
-unzip_objs = ${unzip_base}/unzip.o ${unzip_base}/ioapi.o
+unzip_objs = ${unzip_obj}/unzip.o ${unzip_obj}/ioapi.o
 
-${unzip_base}/%.o: ${unzip_base}/%.c
+${unzip_obj}/%.o: ${unzip_src}/%.c
 ifeq (${V},1)
 	${HOST_CC} -MD ${CFLAGS} ${unzip_cflags} \
 	                         -I${PREFIX}/include -c $< -o $@
@@ -25,6 +27,8 @@ endif
 
 -include $(unzip_objs:.o=.d)
 
+${unzip_objs}: ${unzip_obj}
+
 unzip_clean:
-	@echo "  CLEAN   " ${unzip_base}
-	@rm -f ${unzip_objs} $(unzip_objs:.o=.d)
+	@echo "  RM      " ${unzip_obj}
+	@rm -rf ${unzip_obj}

@@ -166,9 +166,9 @@ ${mzx}: ${icons}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
-mzx_cflags += -I${gdm2s3m_base}
+mzx_cflags += -I${gdm2s3m_src}
 mzx_cobjs += ${gdm2s3m_objs}
-mzx_flags += -I${libmodplug_base} -I${libmodplug_base}/libmodplug
+mzx_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug
 mzx_cxxobjs += ${mzx_obj}/audio_modplug.o ${libmodplug_objs}
 LINK_CC := ${CXX}
 endif
@@ -218,22 +218,6 @@ endif
 -include ${mzx_cobjs:.o=.d}
 -include ${mzx_cxxobjs:.o=.d}
 
-${mzx_obj}:
-ifeq (${V},1)
-	mkdir ${mzx_obj}
-else
-	@echo "  MKDIR   " ${mzx_obj}
-	@mkdir ${mzx_obj}
-endif
-
-${editor_obj}:
-ifeq (${V},1)
-	mkdir ${editor_obj}
-else
-	@echo "  MKDIR   " ${editor_obj}
-	@mkdir ${editor_obj}
-endif
-
 ifeq (${WHOLE_PROGRAM},1)
 
 #
@@ -274,7 +258,10 @@ mzx_cobjs_link := ${mzx_cobjs}
 
 endif
 
-${mzx}: ${mzx_obj} ${editor_obj} ${mzx_cobjs_link} ${mzx_cxxobjs}
+${mzx_cobjs}: ${mzx_obj} ${editor_obj}
+${mzx_cxxobjs}: ${mzx_obj} ${editor_obj}
+
+${mzx}: ${mzx_cobjs_link} ${mzx_cxxobjs}
 ifeq (${V},1)
 	${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} \
 	        -o ${mzx} ${LDFLAGS} ${mzx_ldflags}

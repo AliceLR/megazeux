@@ -6,16 +6,18 @@
 
 .SUFFIXES: .c
 
-gdm2s3m_base = contrib/gdm2s3m/src
+gdm2s3m_src = contrib/gdm2s3m/src
+gdm2s3m_obj = contrib/gdm2s3m/src/.build
+
 gdm2s3m_cflags := -W -Wmissing-format-attribute -Wpointer-arith -Wcast-align
-gdm2s3m_cflags += -Wwrite-strings -pedantic -I${gdm2s3m_base}
+gdm2s3m_cflags += -Wwrite-strings -pedantic -I${gdm2s3m_src}
 
 gdm2s3m_objs = \
-    ${gdm2s3m_base}/error.o ${gdm2s3m_base}/gdm.o \
-    ${gdm2s3m_base}/s3m.o ${gdm2s3m_base}/utility.o \
-    ${gdm2s3m_base}/gdm2s3m.o
+    ${gdm2s3m_obj}/error.o ${gdm2s3m_obj}/gdm.o \
+    ${gdm2s3m_obj}/s3m.o ${gdm2s3m_obj}/utility.o \
+    ${gdm2s3m_obj}/gdm2s3m.o
 
-${gdm2s3m_base}/%.o: ${gdm2s3m_base}/%.c
+${gdm2s3m_obj}/%.o: ${gdm2s3m_src}/%.c
 ifeq (${V},1)
 	${CC} -MD ${CFLAGS} ${gdm2s3m_cflags} -c $< -o $@
 else
@@ -25,6 +27,8 @@ endif
 
 -include $(gdm2s3m_objs:.o=.d)
 
+${gdm2s3m_objs}: ${gdm2s3m_obj}
+
 gdm2s3m_clean:
-	@echo "  CLEAN   " ${gdm2s3m_base}
-	@rm -f ${gdm2s3m_objs} $(gdm2s3m_objs:.o=.d)
+	@echo "  RM      " ${gdm2s3m_obj}
+	@rm -rf ${gdm2s3m_obj}

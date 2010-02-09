@@ -76,6 +76,14 @@ ifeq (${BUILD_MODPLUG},1)
 BUILD_GDM2S3M=1
 endif
 
+%/.build:
+ifeq (${V},1)
+	mkdir $@
+else
+	@echo "  MKDIR   " $@
+	@mkdir $@
+endif
+
 include src/utils/Makefile.in
 include src/Makefile.in
 include src/network/Makefile.in

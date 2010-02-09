@@ -30,11 +30,11 @@ txt2hlp_objs := ${utils_base}/txt2hlp.o
 
 ${utils_base}/%.o: ${utils_base}/%.c
 ifeq (${V},1)
-	${HOST_CC} -MD ${CFLAGS} -I${mzx_src} -I${unzip_base} \
+	${HOST_CC} -MD ${CFLAGS} -I${mzx_src} -I${unzip_src} \
 	                         -I${PREFIX}/include -c $< -o $@
 else
 	@echo "  HOST_CC " $<
-	@${HOST_CC} -MD ${CFLAGS} -I${mzx_src} -I${unzip_base} \
+	@${HOST_CC} -MD ${CFLAGS} -I${mzx_src} -I${unzip_src} \
 	                          -I${PREFIX}/include -c $< -o $@
 endif
 
