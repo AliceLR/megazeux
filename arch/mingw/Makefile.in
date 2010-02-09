@@ -25,6 +25,10 @@ core_ldflags += -lopengl32
 # Windows needs PNG to be statically linked (inc. zlib)
 LIBPNG_LDFLAGS = `libpng12-config --static --ldflags`
 
+ifdef DEBUG
+ARCH_LDFLAGS += -mconsole
+endif
+
 pefix := arch/mingw/pefix${BINEXT}
 
 -include arch/mingw/pefix.d
