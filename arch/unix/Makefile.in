@@ -30,8 +30,8 @@ install:
 	 ${install} -m 0644 smzx.pal ${DESTDIR}${PREFIX}/share/megazeux && \
 	 ${install} -m 0644 mzx_help.fil ${DESTDIR}${PREFIX}/share/megazeux && \
 	 ${install} -m 0644 config.txt ${DESTDIR}${SYSCONFDIR}/megazeux-config && \
-	 ${install} -m 0755 ${core_target} ${DESTDIR}${PREFIX}/lib/megazeux/ && \
-	 ${install} -m 0755 ${editor_target} ${DESTDIR}${PREFIX}/lib/megazeux/ && \
+	 ${install} -m 0755 ${core_target} ${DESTDIR}${LIBDIR} && \
+	 ${install} -m 0755 ${editor_target} ${DESTDIR}${LIBDIR} && \
 	 ${install} -m 0755 ${mzxrun} ${DESTDIR}${PREFIX}/games/ && \
 	 ${install} -m 0755 ${mzx} ${DESTDIR}${PREFIX}/games/ && \
 	 ${install} -m 0755 ${checkres} ${DESTDIR}${PREFIX}/bin/ && \
