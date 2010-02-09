@@ -5,6 +5,8 @@ USERS
 + Writing to $str.length (which previously did undefined things) will now
   truncate or enlarge the string to the size specified.
 + Removed filename size limit for FWRITE_MODIFY and FWRITE_APPEND. (Revvy)
++ Fixed built-in counter "input" to work in pre-2.62 worlds, so games like
+  Weirdness Chapter 1 are now completable. (Revvy)
 
 DEVELOPERS
 
