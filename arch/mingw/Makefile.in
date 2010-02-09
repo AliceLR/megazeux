@@ -31,6 +31,7 @@ build: ${build}
 	${CP} ${shell sdl-config --prefix}/bin/SDL.dll ${build}
 	${CP} arch/mingw/directx.bat ${build}
 	${CP} arch/mingw/checkres* ${build}/utils
+	@arch/manifest.sh ${build}
 
 SUBARCH := ${shell echo ${SUBPLATFORM} | sed 's,windows-,,'}
 include arch/zip.inc 
