@@ -921,11 +921,12 @@ static void global_chars(World *mzx_world)
     // Setup lit bomb sequence or doors
     if(current_menu == 2)
     {
-      // Lit bomb
-      for(i = 170; i < 176; i++)
-      {
-        id_chars[i] = id_chars[i - 1] - 1;
-      }
+      id_chars[170] = id_chars[169] - 1;
+      id_chars[171] = id_chars[170] - 1;
+      id_chars[172] = id_chars[171] - 1;
+      id_chars[173] = id_chars[172] - 1;
+      id_chars[174] = id_chars[173] - 1;
+      id_chars[175] = id_chars[174] - 1;
     }
     else
 
