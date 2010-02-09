@@ -15,8 +15,8 @@ utils_src = src/utils
 utils_obj = src/utils/.build
 
 checkres := ${utils_src}/checkres${BINEXT}
-checkres_objs := ${utils_obj}/checkres.o ${core_obj}/edit_stubs.o
-checkres_objs += ${unzip_objs}
+checkres_objs := ${utils_obj}/checkres.o ${core_obj}/fsafeopen.o
+checkres_objs += ${core_obj}/util.o ${unzip_objs}
 checkres_ldflags := -L${PREFIX}/lib -lz
 
 downver := ${utils_src}/downver${BINEXT}
@@ -42,13 +42,7 @@ ifeq (${BUILD_UTILS},1)
 
 ${checkres}: ${checkres_objs} ${core_target} 
 	$(if ${V},,@echo "  LINK    " ${checkres})
-ifeq (${BUILD_MODULAR},1)
-	${CC} ${checkres_objs} -o ${checkres} \
-	  ${LDFLAGS} ${checkres_ldflags} -Wl,-rpath=${LIBDIR} -L. -lcore
-else
-	${CC} ${checkres_objs} ${core_obj}/util.o ${core_obj}/fsafeopen.o \
-	  -o ${checkres} ${LDFLAGS} ${checkres_ldflags}
-endif
+	${CC} ${checkres_objs} -o ${checkres} ${LDFLAGS} ${checkres_ldflags}
 
 ${downver}: ${downver_objs}
 	$(if ${V},,@echo "  LINK    " ${downver})
