@@ -93,6 +93,7 @@ typedef struct
   char gl_scaling_vertex_shader_path[MAX_PATH];
   Uint32 gl_tilemap;
   Uint32 gl_scaling;
+  ratio_type_t ratio;
 } glsl_render_data;
 
 static int glsl_load_syms(glsl_syms *gl)
@@ -340,6 +341,7 @@ static bool glsl_init_video(graphics_data *graphics, config_info *conf)
   if(!render_data->pixels)
     goto err_free;
 
+  render_data->ratio = conf->video_ratio;
   if(!set_video_mode())
     goto err_free;
 
@@ -381,15 +383,14 @@ static void glsl_remap_charsets(graphics_data *graphics)
 }
 
 // FIXME: Many magic numbers
-static void glsl_resize_screen(graphics_data *graphics, int viewport_width,
- int viewport_height)
+static void glsl_resize_screen(graphics_data *graphics, int width, int height)
 {
   glsl_render_data *render_data = graphics->render_data;
   glsl_syms *gl = &render_data->gl;
 
   render_data->ignore_linear = false;
 
-  gl->glViewport(0, 0, viewport_width, viewport_height);
+  gl->glViewport(0, 0, width, height);
 
   gl->glGenTextures(3, render_data->texture_number);
 
@@ -539,11 +540,10 @@ static void glsl_update_colors(graphics_data *graphics, rgb_color *palette,
 static void glsl_render_graph(graphics_data *graphics)
 {
   glsl_render_data *render_data = graphics->render_data;
-  glsl_syms *gl = &render_data->gl;
-  Uint32 i;
-  Uint32 *dest;
-  Uint32 *colorptr;
   char_element *src = graphics->text_video;
+  glsl_syms *gl = &render_data->gl;
+  Uint32 *colorptr, *dest, i;
+  int width, height;
 
   gl->glUseProgramObjectARB(render_data->gl_tilemap);
 
@@ -566,16 +566,21 @@ static void glsl_render_graph(graphics_data *graphics)
     }
   }
 
-  if(graphics->window_width < 640 || graphics->window_height < 350)
+  get_context_width_height(graphics, &width, &height);
+  if(width < 640 || height < 350)
   {
-    gl->glViewport(0, 0,
-      (graphics->window_width<1024)?graphics->window_width:1024,
-      (graphics->window_height<512)?graphics->window_height:512);
+    if(width >= 1024)
+      width = 1024;
+    if(height >= 512)
+      height = 512;
   }
   else
   {
-    gl->glViewport(0, 0, 640, 350);
+    width = 640;
+    height = 350;
   }
+
+  gl->glViewport(0, 0, width, height);
 
   dest = render_data->background_texture;
 
@@ -660,6 +665,7 @@ static void glsl_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
 static void glsl_sync_screen(graphics_data *graphics)
 {
   glsl_render_data *render_data = graphics->render_data;
+  int v_width, v_height, width, height;
   glsl_syms *gl = &render_data->gl;
 
   gl->glUseProgramObjectARB(render_data->gl_scaling);
@@ -667,13 +673,13 @@ static void glsl_sync_screen(graphics_data *graphics)
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
   gl->glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 1024, 512, 0);
 
-  if(!graphics->fullscreen)
-    gl->glViewport(0, 0, graphics->window_width, graphics->window_height);
-  else
-    gl->glViewport(0, 0, graphics->resolution_width,
-      graphics->resolution_height);
+  get_context_width_height(graphics, &width, &height);
+  fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+  gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,            
+   v_width, v_height);
 
   gl->glColor4f(1.0, 1.0, 1.0, 1.0);
+  gl->glClear(GL_COLOR_BUFFER_BIT);
 
   if(graphics->window_width < 640 || graphics->window_height < 350)
   {

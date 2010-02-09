@@ -35,6 +35,7 @@ typedef struct
   int syms_loaded;
   void (APIENTRY *glBegin)(GLenum mode);
   void (APIENTRY *glBindTexture)(GLenum target, GLuint texture);
+  void (APIENTRY *glClear)(GLbitfield mask);
   void (APIENTRY *glEnable)(GLenum cap);
   void (APIENTRY *glEnd)(void);
   void (APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
@@ -66,6 +67,8 @@ static int gl1_load_syms (gl1_syms *gl)
   GL_LOAD_SYM(gl, glBegin)
   // Since 1.1
   GL_LOAD_SYM(gl, glBindTexture)
+  // Since 1.0
+  GL_LOAD_SYM(gl, glClear)
   // Since 1.0 (parameters may require more recent version)
   GL_LOAD_SYM(gl, glEnable)
   // Since 1.0
@@ -258,6 +261,8 @@ static void gl1_sync_screen(graphics_data *graphics)
 
   gl->glTexImage2D(GL_TEXTURE_2D, 0, 3, render_data->w, render_data->h, 0,
    GL_RGBA, GL_UNSIGNED_BYTE, render_data->pixels);
+
+  gl->glClear(GL_COLOR_BUFFER_BIT);
 
   gl->glBegin(GL_QUADS);
     gl->glTexCoord2f(0.0, texture_height);

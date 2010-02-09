@@ -53,3 +53,18 @@ void gl_set_attributes(graphics_data *graphics)
   else if(graphics->gl_vsync >= 1)
     SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
 }
+
+void get_context_width_height(graphics_data *graphics,
+ int *width, int *height)
+{
+  if(!graphics->fullscreen)
+  {
+    *width = graphics->window_width;
+    *height = graphics->window_height;
+  }
+  else
+  {
+    *width = graphics->resolution_width;
+    *height = graphics->resolution_height;
+  }
+}

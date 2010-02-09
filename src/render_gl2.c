@@ -189,21 +189,6 @@ err_out:
   return false;
 }
 
-static void get_context_width_height(graphics_data *graphics,
- int *width, int *height)
-{
-  if(!graphics->fullscreen)
-  {
-    *width = graphics->window_width;
-    *height = graphics->window_height;
-  }
-  else
-  {
-    *width = graphics->resolution_width;
-    *height = graphics->resolution_height;
-  }
-}
-
 static void gl2_free_video(graphics_data *graphics)
 {
   free(graphics->render_data);
@@ -587,15 +572,11 @@ static void gl2_sync_screen(graphics_data *graphics)
      (width - 640) >> 1, (height - 350) >> 1, 1024, 512, 0);
 
     fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
-
-    // FIXME: This is an ugly hack
-    v_width = MAX(640, v_width);
-    v_height = MAX(350, v_height);
-
     gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
      v_width, v_height);
 
     gl->glColor4f(1.0, 1.0, 1.0, 1.0);
+    gl->glClear(GL_COLOR_BUFFER_BIT);
 
     gl->glBegin(GL_QUADS);
       gl->glTexCoord2f(0, 0.68359375);
