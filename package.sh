@@ -79,9 +79,8 @@ createzip_dynamic_sdl() {
 	# Copy utils here temporarily.
 	#
 	mkdir utils &&
-	cp -f src/utils/checkres{.{exe,bat},-readme.txt} utils &&
-	cp -f src/utils/downver.exe utils &&
-	cp -f src/utils/txt2hlp.exe utils &&
+	cp -f src/utils/checkres{.bat,-readme.txt} utils &&
+	cp -f src/utils/*.exe utils &&
 
 	#
 	# Generate a suitable directx.bat
@@ -92,8 +91,7 @@ createzip_dynamic_sdl() {
 	#
 	# pack the EXEs
 	#
-	for BINARY in $TARGET.exe \
-	              utils/{checkres.exe,downver.exe,txt2hlp.exe}; do
+	for BINARY in $TARGET.exe utils/*.exe; do
 		( $UPX --best $BINARY || echo "UPX unavailable." );
 	done &&
 
@@ -262,7 +260,7 @@ cp -pr $SUBDIRS dist/$TARGET &&
 cp -pr src/* dist/$TARGET/src &&
 
 # nasty hack for binary packaging (not removed by package_clean)
-rm -f dist/$TARGET/src/utils/{checkres,downver,txt2hlp}{,.dbg}{,.exe} &&
+rm -f dist/$TARGET/src/utils/*{,.dbg}{,.exe} &&
 
 echo "PLATFORM=none" > dist/$TARGET/platform.inc
 
