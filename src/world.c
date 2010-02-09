@@ -386,8 +386,8 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
           }
         }
       }
+      fclose(fp);
     }
-    fclose(fp);
   }
 #endif
 
@@ -1056,6 +1056,32 @@ err_out:
   return NULL;
 }
 
+#ifdef CONFIG_DEBYTECODE
+
+static void convert_sfx_strs(char *sfx_buf)
+{
+  char *start, *end = sfx_buf - 1, str_buf_len = strlen(sfx_buf);
+
+  while(true)
+  {
+    // no starting & was found
+    start = strchr(end + 1, '&');
+    if(!start || start - sfx_buf + 1 > str_buf_len)
+      break;
+
+    // no ending & was found
+    end = strchr(start + 1, '&');
+    if(!end || end - sfx_buf + 1 > str_buf_len)
+      break;
+
+    // Wipe out the &s to get a token
+    *start = '(';
+    *end = ')';
+  }
+}
+
+#endif /* CONFIG_DEBYTECODE */
+
 // Loads a world into a struct world
 
 static void load_world(struct world *mzx_world, FILE *fp, const char *file,
@@ -1406,6 +1432,10 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     {
       sfx_size = fgetc(fp);
       fread(sfx_offset, sfx_size, 1, fp);
+#ifdef CONFIG_DEBYTECODE
+      if(version < 0x025A)
+        convert_sfx_strs(sfx_offset);
+#endif
     }
     num_boards = fgetc(fp);
   }
