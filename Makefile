@@ -195,8 +195,8 @@ ${build}:
 	${MKDIR} -p ${build}/docs
 	${CP} config.txt mzx_ascii.chr mzx_blank.chr mzx_default.chr ${build}
 	${CP} mzx_edit.chr mzx_smzx.chr smzx.pal ${build}
-	${CP} docs/COPYING.DOC docs/changelog.txt ${build}/docs
-	${CP} docs/port.txt docs/macro.txt ${build}/docs
+	${CP} docs/COPYING.DOC docs/changelog.txt docs/port.txt ${build}/docs
+	${CP} docs/macro.txt docs/keycodes2.png ${build}/docs
 	${CP} ${mzxrun} ${build}
 	@if test -f ${mzxrun}.debug; then \
 		cp ${mzxrun}.debug ${build}; \
