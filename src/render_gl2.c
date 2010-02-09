@@ -1,7 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2007 Joel Bouchard Lamontagne <logicow@gmail.com>
- * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2007,2009 Alistair John Strachan <alistair@devzero.co.uk>
  * Copyright (C) 2007 Alan Williams <mralert@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
