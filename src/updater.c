@@ -44,6 +44,7 @@
 
 #define OUTBOUND_PORT 80
 #define LINE_BUF_LEN  256
+#define BLOCK_SIZE    4096
 
 #define UPDATES_TXT   "updates.txt"
 #define DELETE_TXT    "delete.txt"
@@ -253,16 +254,48 @@ static bool swivel_current_dir_back(void)
 
 static bool backup_original_manifest(void)
 {
+  unsigned int len, pos = 0;
+  char block[BLOCK_SIZE];
+  FILE *input, *output;
+  bool ret = false;
   struct stat s;
 
-  /* If there's a manifest, move it to a backup location.
-   * Fatal error if rename fails.
-   */
-  if(!stat(MANIFEST_TXT, &s))
-    if(rename(MANIFEST_TXT, MANIFEST_TXT "~"))
-      return false;
+  // No existing manifest; this is non-fatal
+  if(stat(MANIFEST_TXT, &s))
+  {
+    ret = true;
+    goto err_out;
+  }
 
-  return true;
+  input = fopen(MANIFEST_TXT, "rb");
+  if(!input)
+    goto err_out;
+
+  output = fopen(MANIFEST_TXT "~", "wb");
+  if(!output)
+    goto err_close_input;
+
+  len = (unsigned int)ftell_and_rewind(input);
+
+  while(pos < len)
+  {
+    unsigned int block_size = MIN(BLOCK_SIZE, len - pos);
+
+    if(fread(block, block_size, 1, input) != 1)
+      goto err_close_output;
+    if(fwrite(block, block_size, 1, output) != 1)
+      goto err_close_output;
+
+    pos += block_size;
+  }
+
+  ret = true;
+err_close_output:
+  fclose(output);
+err_close_input:
+  fclose(input);
+err_out:
+  return ret;
 }
 
 static bool restore_original_manifest(void)
