@@ -1027,7 +1027,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       case 2: // Wait
       {
         int wait_time = parse_param(mzx_world, cmd_ptr + 1, id) & 0xFF;
-        if(wait_time == cur_robot->pos_within_line)
+        if(wait_time <= cur_robot->pos_within_line)
           break;
 
         cur_robot->pos_within_line++;
@@ -1054,7 +1054,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           int num = parse_param(mzx_world, p2, id);
 
           // Inc. pos. or break
-          if(num != cur_robot->pos_within_line)
+          if(num > cur_robot->pos_within_line)
           {
             cur_robot->pos_within_line++;
 

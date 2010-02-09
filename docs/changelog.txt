@@ -211,6 +211,10 @@ USERS
   same effect) no longer crashes. Instead, the write is ignored.
 + Fix crash when pasting to and from the same string, specifically in
   conjunction with $str+offset.
++ Fix bug where altering "num" in a GO DIR [num] or WAIT [num] while in
+  process could cause the robot to stall forever. The robot will now only
+  wait for either the cycles it has waited already, or the current "num"
+  at that cycle.
 
 DEVELOPERS
 
