@@ -2219,8 +2219,8 @@ void title_screen(struct world *mzx_world)
               src_board = mzx_world->current_board;
               // Swap in starting board
               load_board_module(src_board);
-              strcpy(mzx_world->real_mod_playing,
-               src_board->mod_playing);
+              strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+              set_intro_mesg_timer(0);
 
               // Copy filename
               strcpy(curr_sav, save_file_name);
@@ -2425,8 +2425,8 @@ void title_screen(struct world *mzx_world)
             src_board = mzx_world->current_board;
             // Swap in starting board
             load_board_module(src_board);
-            strcpy(mzx_world->real_mod_playing,
-             src_board->mod_playing);
+            strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+            set_intro_mesg_timer(0);
 
             fadein ^= 1;
 
