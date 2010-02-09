@@ -11,7 +11,7 @@ include contrib/unzip/src/Makefile.in
 
 .PHONY: utils utils.debug utils_clean
 
-utils_cflags := -pedantic -fno-stack-protector
+utils_cflags := -fno-stack-protector
 
 utils_src = src/utils
 utils_obj = src/utils/.build
