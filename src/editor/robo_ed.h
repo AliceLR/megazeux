@@ -37,6 +37,26 @@ enum find_option
   FIND_OPTION_REPLACE_ALL = 2
 };
 
+#ifdef CONFIG_DEBYTECODE
+
+enum command_type
+ {
+  COMMAND_TYPE_COMMAND_START,
+  COMMAND_TYPE_COMMAND_CONTINUE,
+  COMMAND_TYPE_BLANK_LINE,
+  COMMAND_TYPE_INVALID,
+  COMMAND_TYPE_UNKNOWN,
+};
+
+struct color_code_pair
+{
+  enum arg_type_indexed arg_type_indexed;
+  int offset;
+  int length;
+};
+
+#else /* !CONFIG_DEBYTECODE */
+
 enum validity_types
 {
   valid,
@@ -45,15 +65,24 @@ enum validity_types
   invalid_comment
 };
 
+#endif /* !CONFIG_DEBYTECODE */
+
 struct robot_line
 {
   int line_text_length;
-  int line_bytecode_length;
   char *line_text;
+
+#ifdef CONFIG_DEBYTECODE
+  struct color_code_pair *color_codes;
+  enum command_type command_type;
+  int num_color_codes;
+#else
+  enum validity_types validity_status;
+  int line_bytecode_length;
   char *line_bytecode;
   char arg_types[20];
   int num_args;
-  enum validity_types validity_status;
+#endif
 
   struct robot_line *next;
   struct robot_line *previous;
@@ -82,12 +111,18 @@ struct robot_state
   struct robot_line *mark_start_rline;
   struct robot_line *mark_end_rline;
   char *ccodes;
-  enum validity_types default_invalid;
   char *active_macro;
   char *command_buffer;
   char command_buffer_space[COMMAND_BUFFER_LEN];
   int macro_recurse_level;
   int macro_repeat_level;
+
+#ifdef CONFIG_DEBYTECODE
+  bool program_modified;
+  struct robot *cur_robot;
+#else
+  enum validity_types default_invalid;
+#endif
 
   struct world *mzx_world;
 };

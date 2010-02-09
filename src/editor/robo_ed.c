@@ -347,7 +347,275 @@ static void macro_default_values(struct robot_state *rstate,
   }
 }
 
-#ifndef CONFIG_DEBYTECODE
+#ifdef CONFIG_DEBYTECODE
+
+static char *package_program(struct robot_line *start_rline,
+ struct robot_line *end_rline, int *_source_size, char *existing_source)
+{
+  // TODO: Have some option for giving a size maybe.
+  struct robot_line *current_rline = start_rline;
+  char *packaged_program;
+  char *source_pos;
+  int source_size = 0;
+
+  while(current_rline != end_rline)
+  {
+    source_size += current_rline->line_text_length + 1;
+    current_rline = current_rline->next;
+  }
+
+  packaged_program = realloc(existing_source, source_size);
+
+  if(packaged_program != NULL)
+  {
+    current_rline = start_rline;
+    source_pos = packaged_program;
+
+    while(current_rline != end_rline)
+    {
+      memcpy(source_pos, current_rline->line_text,
+       current_rline->line_text_length);
+
+      source_pos += current_rline->line_text_length;
+      current_rline = current_rline->next;
+
+      *source_pos = '\n';
+      source_pos++;
+    }
+    source_pos[-1] = 0;
+
+    if(_source_size != NULL)
+      *_source_size = source_size;
+  }
+
+  return packaged_program;
+}
+
+static void update_program_status(struct robot_state *rstate,
+ struct robot_line *start_rline, struct robot_line *end_rline)
+{
+  struct robot_line *current_rline = start_rline;
+  char *source_block;
+  char *next;
+  char *parse_next;
+  char *line_start;
+  char *command_start;
+  struct token *parse_tokens;
+  struct token *current_token;
+  struct color_code_pair *color_codes = NULL;
+  int source_block_length;
+  int sub_block_length;
+  int num_parse_tokens;
+  int num_color_codes = 0;
+  int line_token_residual;
+  int token_offset_from_line_start;
+  int token_length;
+  int token_position;
+  int line_length;
+  int first_line;
+
+  source_block = package_program(start_rline, end_rline, &source_block_length,
+   NULL);
+
+  next = source_block;
+
+  current_rline = start_rline;
+
+  do
+  {
+    if(*next == 0)
+    {
+      if(current_rline != NULL)
+      {
+        current_rline->command_type = COMMAND_TYPE_BLANK_LINE;
+        current_rline->num_color_codes = 0;
+      }
+      break;
+    }
+
+    if(*next == '\n')
+    {
+      if(current_rline == NULL)
+        break;
+
+      current_rline->command_type = COMMAND_TYPE_BLANK_LINE;
+      current_rline->num_color_codes = 0;
+      next = strchr(next, '\n');
+
+      if(next == NULL)
+        break;
+
+      current_rline = current_rline->next;
+
+      next++;
+    }
+
+    parse_tokens = parse_command(next, &parse_next, &num_parse_tokens);
+
+    if(parse_tokens)
+    {
+      command_start = next;
+      next = parse_next;
+
+      sub_block_length = parse_next - command_start;
+      num_color_codes = 0;
+
+      // The number of color codes for any given line is at most the number
+      // of tokens.
+      color_codes =
+       malloc(sizeof(struct color_code_pair) * num_parse_tokens);
+
+      // Where the current program line begins.
+      line_start = command_start;
+      // Start at first line.
+      first_line = 1;
+
+      // How much of that token got split over the previous line (and wraps
+      // around to the current one). We start out with none.
+      line_token_residual = 0;
+
+      // Which token we're currently looking at from the list. Some will
+      // get added to multiple color code lists, if they get split over
+      // multiple lines.
+      token_position = 0;
+
+      // This loop goes for every line in the command.
+      while(sub_block_length > 0)
+      {
+        if(first_line)
+        {
+          current_rline->command_type = COMMAND_TYPE_COMMAND_START;
+          first_line = 0;
+        }
+        else
+        {
+          current_rline->command_type = COMMAND_TYPE_COMMAND_CONTINUE;
+        }
+
+        line_length = current_rline->line_text_length;
+
+        // Pull out as many tokens as will fit on the line.
+        while(1)
+        {
+          current_token = &(parse_tokens[token_position]);
+          token_offset_from_line_start = current_token->value - line_start;
+          token_length = current_token->length;
+
+          // If there's a residual then we already took this amount off.
+          if(line_token_residual)
+          {
+            token_offset_from_line_start = 0;
+            token_length -= line_token_residual;
+          }
+
+          if(token_offset_from_line_start < line_length)
+          {
+            // Okay, the token starts on the line. It might not end on this
+            // line, in which case it'll get split over onto the next line.
+            color_codes[num_color_codes].arg_type_indexed =
+             current_token->arg_type_indexed;
+            color_codes[num_color_codes].offset = token_offset_from_line_start;
+
+            if((token_offset_from_line_start + token_length) > line_length)
+            {
+              // Token got split over a line. The length here is only the length
+              // until the end of the line and the rest is saved as residual.
+              // We do not advance to the next token because it has to go again
+              // for the next line.
+
+              // This also means there's no more hope for getting any more tokens
+              // out of this line so we bail.
+
+              int new_residual = line_length - token_offset_from_line_start;
+              color_codes[num_color_codes].length = new_residual;
+              line_token_residual += new_residual;
+              num_color_codes++;
+
+              break;
+            }
+            else
+            {
+              // Token can fit on the next line, swallow it whole and go to
+              // the next token.
+              line_token_residual = 0;
+              color_codes[num_color_codes].length = token_length;
+
+              num_color_codes++;
+              token_position++;
+
+              // If we ran out of tokens then that's it.
+              if(token_position >= num_parse_tokens)
+                break;
+            }
+          }
+          else
+          {
+            break;
+          }
+        }
+
+        current_rline->color_codes = realloc(current_rline->color_codes,
+         num_color_codes * sizeof(struct color_code_pair));
+        current_rline->num_color_codes = num_color_codes;
+
+        memcpy(current_rline->color_codes, color_codes,
+         num_color_codes * sizeof(struct color_code_pair));
+
+        num_color_codes = 0;
+
+        line_start += line_length + 1;
+        sub_block_length -= line_length + 1;
+        current_rline = current_rline->next;
+
+        // Propagate out.
+        if(token_position == num_parse_tokens)
+          break;
+      }
+
+      free(color_codes);
+      free(parse_tokens);
+    }
+    else
+    {
+      current_rline->command_type = COMMAND_TYPE_INVALID;
+      next = strchr(next, '\n');
+
+      current_rline = current_rline->next;
+
+      if(next == NULL)
+        break;
+
+      next++;
+    }
+  } while(1);
+
+  free(source_block);
+}
+
+static int update_current_line(struct robot_state *rstate)
+{
+  char *command_buffer = rstate->command_buffer;
+  int line_text_length = strlen(command_buffer);
+  struct robot_line *current_rline = rstate->current_rline;
+
+  // Check to see if we're actually changing anything.
+  if((current_rline->line_text_length != line_text_length) ||
+   (current_rline->line_text == NULL) ||
+   strcmp(current_rline->line_text, command_buffer))
+  {
+    current_rline->line_text =
+     realloc(current_rline->line_text, line_text_length + 1);
+
+    current_rline->line_text_length = line_text_length;
+    memcpy(current_rline->line_text, command_buffer, line_text_length + 1);
+
+    rstate->program_modified = true;
+  }
+
+  return 0;
+}
+
+#else /* !CONFIG_DEBYTECODE */
 
 static void trim_whitespace(char *buffer, int length)
 {
@@ -370,8 +638,6 @@ static void trim_whitespace(char *buffer, int length)
   // bounds should be OK as caller has already nul-terminated
   buffer[i + 1] = '\0';
 }
-
-#endif /* !CONFIG_DEBYTECODE */
 
 static int update_current_line(struct robot_state *rstate)
 {
@@ -490,45 +756,90 @@ static int update_current_line(struct robot_state *rstate)
   return 0;
 }
 
-static void add_line(struct robot_state *rstate)
+#endif /* !CONFIG_DEBYTECODE */
+
+// TODO: I'd like to unify this with what add_blank_line does, but
+// unfortunately that just isn't working that well right now. Needs to
+// be very carefully modularized down.
+
+static void add_line(struct robot_state *rstate, int relation)
 {
+#ifndef CONFIG_DEBYTECODE
   if(rstate->size + 3 + (int)strlen(rstate->command_buffer) < rstate->max_size)
+#endif
   {
     struct robot_line *new_rline = cmalloc(sizeof(struct robot_line));
     struct robot_line *current_rline = rstate->current_rline;
+    struct robot_line *old_previous = current_rline->previous;
+    struct robot_line *old_next = current_rline->next;
 
+    new_rline->line_text_length = 0;
     new_rline->line_text = NULL;
+
+#ifdef CONFIG_DEBYTECODE
+    new_rline->color_codes = NULL;
+    new_rline->num_color_codes = 0;
+#else
     new_rline->line_bytecode = NULL;
     new_rline->line_bytecode_length = 0;
     new_rline->validity_status = valid;
+#endif
 
     rstate->current_rline = new_rline;
     new_rline->next = current_rline;
     new_rline->previous = current_rline->previous;
 
-    current_rline->previous->next = new_rline;
-    current_rline->previous = new_rline;
+    if(relation > 0)
+    {
+      new_rline->next = current_rline->next;
+      new_rline->previous = current_rline;
+
+      if(current_rline->next)
+        current_rline->next->previous = new_rline;
+
+      current_rline->next = new_rline;
+    }
+    else
+    {
+      current_rline->previous->next = new_rline;
+      current_rline->previous = new_rline;
+    }
 
     if(update_current_line(rstate) != -1)
     {
+      int current_line = rstate->current_line;
+
+      if(relation < 0)
+        rstate->current_line++;
+
       rstate->current_rline = current_rline;
 
       if(rstate->mark_mode)
       {
-        if(rstate->mark_start >= rstate->current_line)
-          rstate->mark_start++;
+        if(relation > 0)
+        {
+          if(rstate->mark_start > current_line)
+            rstate->mark_start++;
 
-        if(rstate->mark_end >= rstate->current_line)
-          rstate->mark_end++;
+          if(rstate->mark_end > current_line)
+            rstate->mark_end++;
+        }
+        else
+        {
+          if(rstate->mark_start >= current_line)
+            rstate->mark_start++;
+
+          if(rstate->mark_end >= current_line)
+            rstate->mark_end++;
+        }
       }
 
       rstate->total_lines++;
-      rstate->current_line++;
     }
     else
     {
-      current_rline->previous = new_rline->previous;
-      current_rline->previous->next = new_rline->next;
+      current_rline->previous = old_previous;
+      current_rline->next = old_next;
       rstate->current_rline = current_rline;
       free(new_rline);
     }
@@ -661,7 +972,7 @@ static void output_macro(struct robot_state *rstate,
 
 err_cancel_expansion:
     *line_pos = 0;
-    add_line(rstate);
+    add_line(rstate, -1);
   }
 
   rstate->command_buffer = old_buffer_space;
@@ -929,7 +1240,7 @@ static bool copy_selection_to_buffer(struct robot_state *rstate)
       line_length = strcspn(src_ptr, "\r");
       memcpy(line_buffer, src_ptr, line_length);
       line_buffer[line_length] = 0;
-      add_line(rstate);
+      add_line(rstate, -1);
       src_ptr += line_length;
       if(*src_ptr)
         src_ptr += 2;
@@ -1066,7 +1377,7 @@ static bool copy_selection_to_buffer(struct robot_state *rstate)
     line_length = strcspn((const char *)src_ptr, "\n");
     memcpy(line_buffer, src_ptr, line_length);
     line_buffer[line_length] = 0;
-    add_line(rstate);
+    add_line(rstate, -1);
     src_ptr += line_length;
     if(*src_ptr)
       src_ptr++;
@@ -1193,7 +1504,7 @@ static bool copy_selection_to_buffer(struct robot_state *rstate)
         line_length = strcspn((const char *)src_ptr, "\n");
         memcpy(line_buffer, src_ptr, line_length);
         line_buffer[line_length] = 0;
-        add_line(rstate);
+        add_line(rstate, -1);
         src_ptr += line_length;
         if(*src_ptr)
           src_ptr++;
@@ -1272,7 +1583,9 @@ static void clear_block(struct robot_state *rstate)
   {
     next_rline = current_rline->next;
 
+#ifndef CONFIG_DEBYTECODE
     rstate->size -= current_rline->line_bytecode_length;
+#endif
 
     delete_line_contents(current_rline);
 
@@ -1431,7 +1744,7 @@ static void import_block(struct world *mzx_world, struct robot_state *rstate)
   {
     // fsafegets ensures that no line terminators are present
     while(fsafegets(line_buffer, 255, import_file) != NULL)
-      add_line(rstate);
+      add_line(rstate, -1);
   }
   else
   {
@@ -1464,7 +1777,7 @@ static void import_block(struct world *mzx_world, struct robot_state *rstate)
             mzx_world->conf.disassemble_base);
 
            if(new_line)
-             add_line(rstate);
+             add_line(rstate, -1);
            else
              break;
 
@@ -1565,7 +1878,7 @@ static void move_line_up(struct robot_state *rstate, int count)
 
   for(i = 0; (i < count); i++)
   {
-    if(rstate->current_rline->previous->line_bytecode_length == -1)
+    if(rstate->current_rline->previous == rstate->base)
       break;
 
     rstate->current_rline = rstate->current_rline->previous;
@@ -2222,7 +2535,147 @@ static void execute_numbered_macro(struct robot_state *rstate, int num)
     rstate->active_macro = macros[num - 1];
 }
 
-static void robo_ed_display_robot_line(struct robot_state *rstate,
+#ifdef CONFIG_DEBYTECODE
+
+// Just a place holder until the config file is adapted to the new system.
+
+// From configure.c:
+
+// Default colors for color coding:
+// 0 current line - 11
+// 1 immediates - 10
+// 2 characters - 14
+// 3 colors - color box or 2
+// 4 directions - 3
+// 5 things - 11
+// 6 params - 2
+// 7 strings - 14
+// 8 equalities - 0
+// 9 conditions - 15
+// 10 items - 11
+// 11 extras - 7
+// 12 commands and command fragments - 15
+
+static const char _new_color_code_table[] =
+{
+  11,   // current line
+  10,   // ARG_TYPE_INDEXED_IMMEDIATE,
+  14,   // ARG_TYPE_INDEXED_STRING,
+  14,   // ARG_TYPE_INDEXED_CHARACTER,
+  2,    // ARG_TYPE_INDEXED_COLOR,
+  14,   // ARG_TYPE_INDEXED_PARAM,
+  12,   // ARG_TYPE_INDEXED_NAME,
+  3,    // ARG_TYPE_INDEXED_DIRECTION,
+  11,   // ARG_TYPE_INDEXED_THING,
+  0,    // ARG_TYPE_INDEXED_EQUALITY,
+  15,   // ARG_TYPE_INDEXED_CONDITION,
+  11,   // ARG_TYPE_INDEXED_ITEM,
+  7,    // ARG_TYPE_INDEXED_IGNORE,
+  15,   // ARG_TYPE_INDEXED_FRAGMENT,
+  15,   // ARG_TYPE_INDEXED_COMMAND,
+  13,   // ARG_TYPE_INDEXED_EXPRESSION
+  2,    // ARG_TYPE_INDEXED_LABEL
+  0,    // ARG_TYPE_INDEXED_COMMENT
+};
+
+// TODO: write_string_mask seriously needs to have a length field,
+// so we don't have to keep stuffing null terminators in the thing.
+
+static void display_robot_line(struct robot_state *rstate,
+ struct robot_line *current_rline, int y)
+{
+  int x = 2;
+  int color_code = 1;
+  const char *color_code_table = _new_color_code_table;
+  int line_color = color_code_table[ARG_TYPE_INDEXED_FRAGMENT + 1];
+  char *line_text = current_rline->line_text;
+  char temp_char;
+
+  switch(current_rline->command_type)
+  {
+    case COMMAND_TYPE_BLANK_LINE:
+      // No need to print a blank line.
+      return;
+
+    case COMMAND_TYPE_INVALID:
+    case COMMAND_TYPE_UNKNOWN:
+      color_code = 0;
+      line_color = combine_colors(1, bg_color);
+      break;
+
+    case COMMAND_TYPE_COMMAND_START:
+    case COMMAND_TYPE_COMMAND_CONTINUE:
+      color_code = combine_colors(1, bg_color);
+      break;
+  }
+
+  if(color_code == 0)
+  {
+    if(current_rline->line_text[0] != 0)
+    {
+      if(strlen(current_rline->line_text) > 76)
+      {
+        temp_char = line_text[76];
+        line_text[76] = 0;
+        write_string_mask(line_text, x, y, line_color, 0);
+        line_text[76] = temp_char;
+      }
+      else
+      {
+        write_string_mask(line_text, x, y, line_color, 0);
+      }
+    }
+  }
+  else
+  {
+    struct color_code_pair *color_codes = current_rline->color_codes;
+    enum arg_type_indexed arg_type_indexed;
+    int offset;
+    int length;
+    int color;
+    int i;
+
+    for(i = 0; i < current_rline->num_color_codes; i++)
+    {
+      offset = color_codes[i].offset;
+      length = color_codes[i].length;
+      arg_type_indexed = color_codes[i].arg_type_indexed;
+
+      if(arg_type_indexed == ARG_TYPE_INDEXED_COLOR)
+      {
+        color = get_color(line_text + offset);
+        draw_color_box(color & 0xFF, color >> 8, x + offset, y, 78);
+      }
+      else
+      {
+        color = color_code_table[arg_type_indexed + 1];
+        color = combine_colors(color, bg_color);
+
+        if((offset + length) > 76)
+        {
+          if(offset < 76)
+          {
+            temp_char = line_text[76];
+            line_text[76] = 0;
+
+            write_string_mask(line_text + offset, x + offset, y, color, 0);
+            line_text[76] = temp_char;
+          }
+          break;
+        }
+
+        temp_char = line_text[offset + length];
+        line_text[offset + length] = 0;
+        write_string_mask(line_text + offset, x + offset, y, color, 0);
+        line_text[offset + length] = temp_char;
+      }
+    }
+  }
+}
+
+#else /* !CONFIG_DEBYTECODE */
+
+static void display_robot_line(struct robot_state *rstate,
  struct robot_line *current_rline, int y)
 {
   int i;
@@ -2646,6 +3099,8 @@ static int validate_lines(struct robot_state *rstate, int show_none)
   return num_ignore;
 }
 
+#endif /* !CONFIG_DEBYTECODE */
+
 static void paste_buffer(struct robot_state *rstate)
 {
   int i;
@@ -2659,7 +3114,7 @@ static void paste_buffer(struct robot_state *rstate)
     for(i = 0; i < copy_buffer_lines; i++)
     {
       rstate->command_buffer = copy_buffer[i];
-      add_line(rstate);
+      add_line(rstate, -1);
     }
   }
 
@@ -2874,7 +3329,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
      (i <= rstate.scr_line_end) && draw_rline; i++)
     {
       if(i != rstate.scr_line_middle)
-        robo_ed_display_robot_line(&rstate, draw_rline, i);
+        display_robot_line(&rstate, draw_rline, i);
 
       draw_rline = draw_rline->next;
     }
