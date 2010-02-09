@@ -216,7 +216,7 @@ WIIPAD="arch/wii/pad.config"
 # MegaZeux's build system dependencies; these are packaged in
 # addition to binary deps above to complete the source package.
 #
-BUILD_DEPS="config.sh Makefile package.sh msvc.zip version.inc"
+BUILD_DEPS="config.sh Makefile package.sh version.inc"
 
 #
 # These directories are purely for source distributions.
