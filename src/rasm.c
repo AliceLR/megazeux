@@ -2033,6 +2033,7 @@ char *assemble_file(char *name, int *size)
     }
     else
     {
+      free(buffer);
       buffer = NULL;
       goto exit_out;
     }
