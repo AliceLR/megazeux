@@ -30,13 +30,14 @@ __M_BEGIN_DECLS
 
 #define MAX_BOARDS 250
 
-Board *load_board_allocate(FILE *fp, int savegame);
-int save_board(Board *cur_board, FILE *fp, int savegame);
-void clear_board(Board *cur_board);
+CORE_LIBSPEC void clear_board(Board *cur_board);
+CORE_LIBSPEC Board *load_board_allocate(FILE *fp, int savegame);
+CORE_LIBSPEC int save_board(Board *cur_board, FILE *fp, int savegame);
+
 int find_board(World *mzx_world, char *name);
 
 #ifdef CONFIG_EDITOR
-void load_board_direct(Board *cur_board, FILE *fp, int savegame);
+CORE_LIBSPEC void load_board_direct(Board *cur_board, FILE *fp, int savegame);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

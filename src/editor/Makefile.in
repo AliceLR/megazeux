@@ -9,9 +9,13 @@ editor_obj = src/editor/.build
 
 editor_flags := ${editor_flags} ${core_flags}
 
+ifeq (${PLATFORM},mingw)
+editor_spec := -DEDITOR_LIBSPEC="__declspec(dllexport)"
+endif
+
 ${editor_obj}/%.o: ${editor_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${CFLAGS} ${editor_flags} ${core_cflags} -c $< -o $@
+	${CC} -MD ${core_cflags} ${editor_flags} ${editor_spec} -c $< -o $@
 
 editor_objs := \
   ${editor_obj}/board.o ${editor_obj}/block.o ${editor_obj}/configure.o \

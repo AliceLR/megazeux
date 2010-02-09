@@ -50,14 +50,15 @@ typedef enum
 }
 mzx_resource_id_t;
 
-int mzx_res_init(const char *argv0);
-void mzx_res_free(void);
-char *mzx_res_get_by_id(mzx_resource_id_t id);
+CORE_LIBSPEC int mzx_res_init(const char *argv0);
+CORE_LIBSPEC void mzx_res_free(void);
+CORE_LIBSPEC char *mzx_res_get_by_id(mzx_resource_id_t id);
 
-long ftell_and_rewind(FILE *f);
+CORE_LIBSPEC long ftell_and_rewind(FILE *f);
 int Random(int range);
 
-int get_path(const char *file_name, char *dest, unsigned int buf_len);
+CORE_LIBSPEC int get_path(const char *file_name, char *dest, unsigned int buf_len);
+int __get_path(const char *file_name, char *dest, unsigned int buf_len);
 
 #if defined(CONFIG_NDS) || defined(CONFIG_WII)
 
@@ -103,7 +104,7 @@ char *strsep(char **stringp, const char *delim);
 #if !defined(rename) && !defined(__WIN32__)
 #define NEED_RENAME
 #define rename rename
-int rename(const char *oldpath, const char *newpath);
+CORE_LIBSPEC int rename(const char *oldpath, const char *newpath);
 #endif
 
 #if defined(CONFIG_NDS) || defined(CONFIG_WII)
@@ -116,7 +117,7 @@ int rename(const char *oldpath, const char *newpath);
 #endif
 
 #if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
-extern const char *mod_gdm_ext[];
+CORE_LIBSPEC extern const char *mod_gdm_ext[];
 #endif
 
 #define info(...) \

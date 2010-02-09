@@ -26,9 +26,9 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-void help_open(World *mzx_world, const char *file_name);
-void help_close(World *mzx_world);
-void help_system(World *mzx_world);
+CORE_LIBSPEC void help_open(World *mzx_world, const char *file_name);
+CORE_LIBSPEC void help_close(World *mzx_world);
+CORE_LIBSPEC void help_system(World *mzx_world);
 
 __M_END_DECLS
 

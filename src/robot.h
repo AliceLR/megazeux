@@ -36,6 +36,23 @@ __M_BEGIN_DECLS
 #define ROBOT_MAX_STACK   65536
 #define ROBOT_MAX_TR      512
 
+CORE_LIBSPEC void clear_robot_id(Board *src_board, int id);
+CORE_LIBSPEC void clear_scroll_id(Board *src_board, int id);
+CORE_LIBSPEC void clear_sensor_id(Board *src_board, int id);
+CORE_LIBSPEC void reallocate_robot(Robot *robot, int size);
+CORE_LIBSPEC Label **cache_robot_labels(Robot *robot, int *num_labels);
+CORE_LIBSPEC void replace_robot(Board *src_board, Robot *src_robot, int dest_id);
+CORE_LIBSPEC int duplicate_robot(Board *src_board, Robot *cur_robot,
+ int x, int y);
+CORE_LIBSPEC int duplicate_scroll(Board *src_board, Scroll *cur_scroll);
+CORE_LIBSPEC int duplicate_sensor(Board *src_board, Sensor *cur_sensor);
+CORE_LIBSPEC void send_robot_def(World *mzx_world, int robot_id, int mesg_id);
+CORE_LIBSPEC void optimize_null_objects(Board *src_board);
+
+CORE_LIBSPEC int place_player_xy(World *mzx_world, int x, int y);
+CORE_LIBSPEC void setup_overlay(Board *src_board, int mode);
+CORE_LIBSPEC void replace_player(World *mzx_world);
+
 Robot *load_robot_allocate(FILE *fp, int savegame);
 void load_robot(Robot *cur_robot, FILE *fp, int savegame);
 Scroll *load_scroll_allocate(FILE *fp, int savegame);
@@ -46,18 +63,12 @@ void save_sensor(Sensor *cur_sensor, FILE *fp, int savegame);
 void clear_robot(Robot *cur_robot);
 void clear_scroll(Scroll *cur_scroll);
 void clear_sensor(Sensor *cur_sensor);
-void clear_robot_id(Board *src_board, int id);
-void clear_scroll_id(Board *src_board, int id);
-void clear_sensor_id(Board *src_board, int id);
 void reallocate_scroll(Scroll *scroll, int size);
-void reallocate_robot(Robot *robot, int size);
-Label **cache_robot_labels(Robot *robot, int *num_labels);
 void clear_label_cache(Label **label_list, int num_labels);
 int find_robot(Board *src_board, const char *name, int *first, int *last);
 void send_robot(World *mzx_world, char *name, const char *mesg,
  int ignore_lock);
 int send_robot_id(World *mzx_world, int id, const char *mesg, int ignore_lock);
-void send_robot_def(World *mzx_world, int robot_id, int mesg_id);
 void send_robot_all(World *mzx_world, const char *mesg);
 int send_robot_self(World *mzx_world, Robot *src_robot, const char *mesg);
 int move_dir(Board *src_board, int *x, int *y, mzx_dir dir);
@@ -89,48 +100,42 @@ char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer);
 void add_robot_name_entry(Board *src_board, Robot *cur_robot, char *name);
 void change_robot_name(Board *src_board, Robot *cur_robot, char *new_name);
 int find_free_robot(Board *src_board);
-int duplicate_robot(Board *src_board, Robot *cur_robot, int x, int y);
-void replace_robot(Board *src_board, Robot *src_robot, int dest_id);
-int duplicate_scroll(Board *src_board, Scroll *cur_scroll);
-int duplicate_sensor(Board *src_board, Sensor *cur_sensor);
-void optimize_null_objects(Board *src_board);
 int get_robot_id(Board *src_board, const char *name);
 
-int place_player_xy(World *mzx_world, int x, int y);
 void run_robot(World *mzx_world, int id, int x, int y);
-void setup_overlay(Board *src_board, int mode);
-void replace_player(World *mzx_world);
 
 #ifdef CONFIG_EDITOR
-void clear_robot_contents(Robot *cur_robot);
-void duplicate_robot_direct(Robot *cur_robot, Robot *copy_robot,
+CORE_LIBSPEC void clear_robot_contents(Robot *cur_robot);
+CORE_LIBSPEC void duplicate_robot_direct(Robot *cur_robot, Robot *copy_robot,
  int x, int y);
-void duplicate_scroll_direct(Scroll *cur_scroll, Scroll *copy_scroll);
-void duplicate_sensor_direct(Sensor *cur_sensor, Sensor *copy_sensor);
+CORE_LIBSPEC void duplicate_scroll_direct(Scroll *cur_scroll, Scroll *copy_scroll);
+CORE_LIBSPEC void duplicate_sensor_direct(Sensor *cur_sensor, Sensor *copy_sensor);
 
-int place_at_xy(World *mzx_world, mzx_thing id, int color,
+CORE_LIBSPEC int place_at_xy(World *mzx_world, mzx_thing id, int color,
  int param, int x, int y);
 
-void copy_buffer_to_layer(int x, int y, int width, int height,
+CORE_LIBSPEC void copy_buffer_to_layer(int x, int y, int width, int height,
  char *src_char, char *src_color, char *dest_char,
  char *dest_color, int layer_width);
-void copy_layer_to_board(Board *src_board, int x, int y,
+CORE_LIBSPEC void copy_layer_to_board(Board *src_board, int x, int y,
  int width, int height, char *src_char, char *src_color,
  int src_width, mzx_thing convert_id);
-void copy_layer_to_buffer(int x,  int y, int width, int height,
+CORE_LIBSPEC void copy_layer_to_buffer(int x,  int y, int width, int height,
  char *src_char, char *src_color, char *dest_char,
  char *dest_color, int layer_width);
-void copy_board_to_board_buffer(Board *src_board, int x, int y,
+CORE_LIBSPEC void copy_board_to_board_buffer(Board *src_board, int x, int y,
  int width, int height, char *dest_id, char *dest_param,
  char *dest_color, char *dest_under_id, char *dest_under_param,
  char *dest_under_color, Board *dest_board);
-void copy_board_buffer_to_board(Board *src_board, int x, int y,
+CORE_LIBSPEC void copy_board_buffer_to_board(Board *src_board, int x, int y,
  int width, int height, char *src_id, char *src_param,
  char *src_color, char *src_under_id, char *src_under_param,
  char *src_under_color);
-void copy_board_to_layer(Board *src_board, int x, int y,
+CORE_LIBSPEC void copy_board_to_layer(Board *src_board, int x, int y,
  int width, int height, char *dest_char, char *dest_color,
  int dest_width);
+
+CORE_LIBSPEC extern const int def_params[128];
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

@@ -127,91 +127,99 @@ struct _graphics_data
   void (*focus_pixel)      (graphics_data *, Uint32, Uint32);
 };
 
-void color_string(const char *string, Uint32 x, Uint32 y, Uint8 color);
-void write_string(const char *string, Uint32 x, Uint32 y, Uint8 color,
- Uint32 tab_allowed);
-void write_number(int number, char color, int x, int y,
- int minlen, int rightalign, int base);
-void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color);
-void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
+CORE_LIBSPEC void color_string(const char *string, Uint32 x, Uint32 y,
  Uint8 color);
-void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y);
+CORE_LIBSPEC void write_string(const char *string, Uint32 x, Uint32 y,
+ Uint8 color, Uint32 tab_allowed);
+CORE_LIBSPEC void write_number(int number, char color, int x, int y,
+ int minlen, int rightalign, int base);
+CORE_LIBSPEC void color_line(Uint32 length, Uint32 x, Uint32 y, Uint8 color);
+CORE_LIBSPEC void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
+ Uint8 color);
+CORE_LIBSPEC void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y);
+
+CORE_LIBSPEC void write_string_ext(const char *string, Uint32 x, Uint32 y,
+ Uint8 color, Uint32 tab_allowed, Uint32 offset,
+ Uint32 c_offset);
+CORE_LIBSPEC void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
+ Uint32 y, Uint32 offset, Uint32 c_offset);
+CORE_LIBSPEC void draw_char_linear_ext(Uint8 color, Uint8 chr,
+ Uint32 offset, Uint32 offset_b, Uint32 c_offset);
+CORE_LIBSPEC void write_string_mask(const char *str, Uint32 x, Uint32 y,
+ Uint8 color, Uint32 tab_allowed);
+
+CORE_LIBSPEC void clear_screen(Uint8 chr, Uint8 color);
+
+CORE_LIBSPEC void cursor_solid(void);
+CORE_LIBSPEC void cursor_off(void);
+CORE_LIBSPEC void move_cursor(Uint32 x, Uint32 y);
+
+CORE_LIBSPEC int init_video(config_info *conf);
+CORE_LIBSPEC void update_screen(void);
+
+CORE_LIBSPEC void ec_read_char(Uint8 chr, char *matrix);
+CORE_LIBSPEC void ec_change_char(Uint8 chr, char *matrix);
+CORE_LIBSPEC Sint32 ec_load_set_var(char *name, Uint8 pos);
+CORE_LIBSPEC void ec_mem_load_set(Uint8 *chars);
+
+CORE_LIBSPEC void update_palette(void);
+CORE_LIBSPEC void load_palette(const char *fname);
+CORE_LIBSPEC void smzx_palette_loaded(int val);
+CORE_LIBSPEC void set_screen_mode(Uint32 mode);
+CORE_LIBSPEC Uint32 get_screen_mode(void);
+CORE_LIBSPEC void set_palette_intensity(Uint32 percent);
+CORE_LIBSPEC void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b);
+CORE_LIBSPEC void set_red_component(Uint32 color, Uint32 r);
+CORE_LIBSPEC void set_green_component(Uint32 color, Uint32 g);
+CORE_LIBSPEC void set_blue_component(Uint32 color, Uint32 b);
+CORE_LIBSPEC void get_rgb(Uint32 color, Uint8 *r, Uint8 *g, Uint8 *b);
+CORE_LIBSPEC Uint32 get_red_component(Uint32 color);
+CORE_LIBSPEC Uint32 get_green_component(Uint32 color);
+CORE_LIBSPEC Uint32 get_blue_component(Uint32 color);
+CORE_LIBSPEC void vquick_fadeout(void);
+CORE_LIBSPEC void insta_fadein(void);
+CORE_LIBSPEC void insta_fadeout(void);
+CORE_LIBSPEC void default_palette(void);
+
+CORE_LIBSPEC void m_hide(void);
+CORE_LIBSPEC void m_show(void);
+
+CORE_LIBSPEC void set_mouse_mul(int width_mul, int height_mul);
 
 void color_string_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 offset, Uint32 c_offset);
-void write_string_ext(const char *string, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed, Uint32 offset,
- Uint32 c_offset);
 void write_line_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset,
  Uint32 c_offset);
 void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
  Uint8 chr, Uint8 color, Uint32 offset, Uint32 c_offset);
-void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
- Uint32 y, Uint32 offset, Uint32 c_offset);
-void draw_char_linear_ext(Uint8 color, Uint8 chr,
- Uint32 offset, Uint32 offset_b, Uint32 c_offset);
 void write_line_mask(const char *str, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed);
-void write_string_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed);
 
 Uint8 get_color_linear(Uint32 offset);
-void clear_screen(Uint8 chr, Uint8 color);
 
 void cursor_underline(void);
-void cursor_solid(void);
-void cursor_off(void);
-void move_cursor(Uint32 x, Uint32 y);
 
-int init_video(config_info *conf);
 int set_video_mode(void);
 void toggle_fullscreen(void);
 void resize_screen(Uint32 w, Uint32 h);
-void update_screen(void);
 void set_screen(char_element *src);
 void get_screen(char_element *dest);
 
 void ec_change_byte(Uint8 chr, Uint8 byte, Uint8 new_value);
 Uint8 ec_read_byte(Uint8 chr, Uint8 byte);
-void ec_read_char(Uint8 chr, char *matrix);
-void ec_change_char(Uint8 chr, char *matrix);
 Sint32 ec_load_set(char *name);
-Sint32 ec_load_set_var(char *name, Uint8 pos);
-void ec_mem_load_set(Uint8 *chars);
 void ec_mem_save_set(Uint8 *chars);
 
-void update_palette(void);
-void load_palette(const char *fname);
-void smzx_palette_loaded(int val);
-void set_screen_mode(Uint32 mode);
-Uint32 get_screen_mode(void);
-void set_palette_intensity(Uint32 percent);
 void set_color_intensity(Uint32 color, Uint32 percent);
-void set_rgb(Uint32 color, Uint32 r, Uint32 g, Uint32 b);
-void set_red_component(Uint32 color, Uint32 r);
-void set_green_component(Uint32 color, Uint32 g);
-void set_blue_component(Uint32 color, Uint32 b);
 Uint32 get_color_intensity(Uint32 color);
-void get_rgb(Uint32 color, Uint8 *r, Uint8 *g, Uint8 *b);
-Uint32 get_red_component(Uint32 color);
-Uint32 get_green_component(Uint32 color);
-Uint32 get_blue_component(Uint32 color);
 Uint32 get_fade_status(void);
 void vquick_fadein(void);
-void vquick_fadeout(void);
-void insta_fadein(void);
-void insta_fadeout(void);
-void default_palette(void);
-
-void m_hide(void);
-void m_show(void);
 void dump_screen(void);
 
 void get_screen_coords(int screen_x, int screen_y, int *x, int *y,
  int *min_x, int *min_y, int *max_x, int *max_y);
 void set_screen_coords(int x, int y, int *screen_x, int *screen_y);
-void set_mouse_mul(int width_mul, int height_mul);
 
 /* Renderers might have the facility to center a screen on a given
  * region of the window. Currently only the NDS renderer implements
@@ -221,8 +229,8 @@ void focus_screen(int x, int y); // Board coordinates
 void focus_pixel(int x, int y);  // Pixel coordinates
 
 #ifdef CONFIG_EDITOR
-extern graphics_data graphics;
-void ec_load_mzx(void);
+CORE_LIBSPEC extern graphics_data graphics;
+CORE_LIBSPEC void ec_load_mzx(void);
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_HELPSYS

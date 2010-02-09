@@ -8,7 +8,7 @@ include contrib/libmodplug/src/Makefile.in
 
 .PHONY: mzx_clean core_target_clean
 
-LINK_CC := ${CC} ${LINK_CC_FLAGS}
+LINK_CC := ${CC}
 
 core_src = src
 core_obj = src/.build
@@ -16,19 +16,31 @@ core_obj = src/.build
 core_flags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
 core_flags   += -Wmissing-format-attribute -Wpointer-arith
 core_flags   += -Wwrite-strings
-core_cflags  += -Wmissing-prototypes
-core_cxxflags = -DHAVE_INTTYPES_H
+core_cflags  += ${CFLAGS} -Wmissing-prototypes
+core_cxxflags = ${CXXFLAGS} -DHAVE_INTTYPES_H
 
 core_flags   += -I${core_src} -I${PREFIX}/include
 core_ldflags := ${core_ldflags} ${ARCH_LDFLAGS}
 
+ifeq (${PLATFORM},mingw)
+core_spec := -DCORE_LIBSPEC="__declspec(dllexport)"
+endif
+
+${core_obj}/main.o: ${core_src}/main.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
+
+${core_obj}/edit_stubs.o: ${core_src}/edit_stubs.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
+
 ${core_obj}/%.o: ${core_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${CFLAGS} ${core_flags} ${core_cflags} -c $< -o $@
+	${CC} -MD ${core_cflags} ${core_flags} ${core_spec} -c $< -o $@
 
 ${core_obj}/%.o: ${core_src}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
-	${CXX} -MD ${CXXFLAGS} ${core_flags} ${core_cxxflags} -c $< -o $@
+	${CXX} -MD ${core_cxxflags} ${core_flags} ${core_spec} -c $< -o $@
 
 #
 # Lists mandatory C language sources (mangled to object names) required
@@ -109,7 +121,7 @@ core_cflags += -I${gdm2s3m_src}
 core_cobjs += ${gdm2s3m_objs}
 core_flags += -I${libmodplug_src} -I${libmodplug_src}/libmodplug
 core_cxxobjs += ${core_obj}/audio_modplug.o ${libmodplug_objs}
-LINK_CC := ${CXX} ${LINK_CC_FLAGS}
+LINK_CC := ${CXX}
 endif
 
 ifeq (${BUILD_MIKMOD},1)

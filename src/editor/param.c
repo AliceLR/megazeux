@@ -41,8 +41,6 @@
 #include "robo_ed.h"
 #include "window.h"
 
-extern const int def_params[128];
-
 static const char *potion_fx[16] =
 {
   "No Effect   ",

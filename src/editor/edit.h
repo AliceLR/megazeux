@@ -28,20 +28,15 @@ __M_BEGIN_DECLS
 
 #include "../world_struct.h"
 
-void load_editor_config(World *mzx_world, int argc, char *argv[]);
+EDITOR_LIBSPEC void load_editor_config(World *mzx_world, int argc, char *argv[]);
+EDITOR_LIBSPEC void edit_stubs_hack(World *mzx_world);
 
 int place_current_at_xy(World *mzx_world, mzx_thing id, int color,
  int param, int x, int y, Robot *copy_robot, Scroll *copy_scroll,
  Sensor *copy_sensor, int overlay_edit);
 
-void edit_stubs_hack(World *mzx_world);
-
-extern char debug_mode; // Debug mode
-extern char debug_x; // Debug box x pos
-
-#ifdef CONFIG_AUDIO
-extern const char *mod_gdm_ext[];
-#endif
+// Debug box x pos
+extern char debug_x;
 
 #define EC_MAIN_BOX           25
 #define EC_MAIN_BOX_DARK      16

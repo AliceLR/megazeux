@@ -191,15 +191,15 @@ void disassemble_file(char *name, char *program, int program_length,
  int allow_ignores, int base);
 
 #ifdef CONFIG_EDITOR
-int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
+CORE_LIBSPEC int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
  char *param_listing, int *arg_count_ext);
-int disassemble_line(char *cpos, char **next, char *output_buffer,
+CORE_LIBSPEC int disassemble_line(char *cpos, char **next, char *output_buffer,
  char *error_buffer, int *total_bytes, int print_ignores, char *arg_types,
  int *arg_count, int base);
-const search_entry_short *find_argument(char *name);
-void print_color(int color, char *color_buffer);
-int unescape_char(char *dest, char c);
-int get_color(char *cmd_line);
+CORE_LIBSPEC const search_entry_short *find_argument(char *name);
+CORE_LIBSPEC void print_color(int color, char *color_buffer);
+CORE_LIBSPEC int unescape_char(char *dest, char c);
+CORE_LIBSPEC int get_color(char *cmd_line);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

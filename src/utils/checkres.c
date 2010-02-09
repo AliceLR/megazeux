@@ -169,7 +169,7 @@ static status_t s_open(const char *filename, const char *mode, stream_t **s)
     /* Move into the world's directory first; this lets us look up
      * resources relative to the world.
      */
-    path_len = get_path(filename, path, MAX_PATH);
+    path_len = __get_path(filename, path, MAX_PATH);
 
     if(path_len < 0)
     {

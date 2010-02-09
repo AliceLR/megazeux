@@ -87,21 +87,27 @@ typedef enum
   keycode_unicode
 } keycode_type;
 
+CORE_LIBSPEC Uint32 update_event_status(void);
+CORE_LIBSPEC Uint32 update_event_status_delay(void);
+CORE_LIBSPEC Uint32 get_key(keycode_type type);
+CORE_LIBSPEC void get_mouse_position(int *x, int *y);
+CORE_LIBSPEC void get_real_mouse_position(int *x, int *y);
+CORE_LIBSPEC Uint32 get_mouse_press(void);
+CORE_LIBSPEC Uint32 get_mouse_press_ext(void);
+CORE_LIBSPEC Uint32 get_mouse_status(void);
+CORE_LIBSPEC void warp_mouse(Uint32 x, Uint32 y);
+CORE_LIBSPEC Uint32 get_mouse_drag(void);
+CORE_LIBSPEC int get_alt_status(keycode_type type);
+CORE_LIBSPEC int get_shift_status(keycode_type type);
+CORE_LIBSPEC int get_ctrl_status(keycode_type type);
+CORE_LIBSPEC void initialize_joysticks(void);
+
 extern input_status input;
 
 void wait_event(void);
-Uint32 update_event_status(void);
-Uint32 update_event_status_delay(void);
-Uint32 get_key(keycode_type type);
 Uint32 get_last_key(keycode_type type);
 void force_last_key(keycode_type type, int val);
 Uint32 get_key_status(keycode_type type, Uint32 index);
-void get_mouse_position(int *x, int *y);
-void get_real_mouse_position(int *x, int *y);
-Uint32 get_mouse_press(void);
-Uint32 get_mouse_press_ext(void);
-Uint32 get_mouse_status(void);
-void warp_mouse(Uint32 x, Uint32 y);
 void warp_mouse_x(Uint32 x);
 void warp_mouse_y(Uint32 y);
 void warp_real_mouse_x(Uint32 x);
@@ -110,12 +116,7 @@ Uint32 get_mouse_x(void);
 Uint32 get_mouse_y(void);
 Uint32 get_real_mouse_x(void);
 Uint32 get_real_mouse_y(void);
-Uint32 get_mouse_drag(void);
 Uint32 get_last_key_released(keycode_type type);
-int get_alt_status(keycode_type type);
-int get_shift_status(keycode_type type);
-int get_ctrl_status(keycode_type type);
-void initialize_joysticks(void);
 void map_joystick_axis(int joystick, int axis, keycode min_key,
  keycode max_key);
 void map_joystick_button(int joystick, int button, keycode key);

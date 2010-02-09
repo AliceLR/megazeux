@@ -667,6 +667,7 @@ fi
 if [ "$MODULAR" = "true" ]; then
 	echo "Modular build enabled."
 	echo "BUILD_MODULAR=1" >> platform.inc
+	echo "#define CONFIG_MODULAR" >> src/config.h
 
 	if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 		if [ "`uname -o`" = "GNU/Linux" \

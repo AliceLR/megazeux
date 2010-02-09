@@ -30,7 +30,9 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-void title_screen(World *mzx_world);
+CORE_LIBSPEC void title_screen(World *mzx_world);
+CORE_LIBSPEC void find_player(World *mzx_world);
+
 void calculate_xytop(World *mzx_world, int *x, int *y);
 int move_player(World *mzx_world, int dir);
 int grab_item(World *mzx_world, int offset, int dir);
@@ -38,18 +40,18 @@ void set_mesg(World *mzx_world, const char *str);
 void set_mesg_direct(Board *src_board, const char *str);
 void rotate(World *mzx_world, int x, int y, int dir);
 void check_find_player(World *mzx_world);
-void find_player(World *mzx_world);
 int take_key(World *mzx_world, int color);
 int give_key(World *mzx_world, int color);
 
 extern int pal_update;
 
 #ifdef CONFIG_EDITOR
-void play_game(World *mzx_world, int fadein);
-void draw_viewport(World *src_board);
+CORE_LIBSPEC void play_game(World *mzx_world, int fadein);
+CORE_LIBSPEC void draw_viewport(World *src_board);
 
-extern const char *world_ext[2];
-extern void (*edit_world)(World *mzx_world);
+CORE_LIBSPEC extern char debug_mode;
+CORE_LIBSPEC extern const char *world_ext[2];
+CORE_LIBSPEC extern void (*edit_world)(World *mzx_world);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

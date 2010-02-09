@@ -46,10 +46,10 @@ typedef int64_t Sint64;
 #error No platform chosen!
 #endif
 
-void delay(Uint32 ms);
-Uint32 get_ticks(void);
-bool platform_init(void);
-void platform_quit(void);
+CORE_LIBSPEC void delay(Uint32 ms);
+CORE_LIBSPEC Uint32 get_ticks(void);
+CORE_LIBSPEC bool platform_init(void);
+CORE_LIBSPEC void platform_quit(void);
 
 __M_END_DECLS
 

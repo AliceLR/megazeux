@@ -101,13 +101,17 @@ __M_BEGIN_DECLS
  */
 #define WORLD_VERSION_PREV 0x0251
 
-int save_world(World *mzx_world, const char *file, int savegame, int faded);
-int reload_world(World *mzx_world, const char *file, int *faded);
+CORE_LIBSPEC int save_world(World *mzx_world, const char *file, int savegame,
+ int faded);
+CORE_LIBSPEC int reload_world(World *mzx_world, const char *file, int *faded);
+CORE_LIBSPEC void clear_world(World *mzx_world);
+CORE_LIBSPEC void clear_global_data(World *mzx_world);
+CORE_LIBSPEC void default_scroll_values(World *mzx_world);
+
+CORE_LIBSPEC void add_ext(char *src, const char *ext);
+
 int reload_savegame(World *mzx_world, const char *file, int *faded);
 int reload_swap(World *mzx_world, const char *file, int *faded);
-void clear_world(World *mzx_world);
-void clear_global_data(World *mzx_world);
-void default_scroll_values(World *mzx_world);
 
 // Code to load multi-byte ints from little endian file
 
@@ -115,14 +119,13 @@ int fgetw(FILE *fp);
 int fgetd(FILE *fp);
 void fputw(int src, FILE *fp);
 void fputd(int src, FILE *fp);
-void add_ext(char *src, const char *ext);
 
 #ifdef CONFIG_EDITOR
-void default_global_data(World *mzx_world);
-void optimize_null_boards(World *mzx_world);
-void set_update_done(World *mzx_world);
-int world_magic(const char magic_string[3]);
-extern char world_version_string[4];
+CORE_LIBSPEC void default_global_data(World *mzx_world);
+CORE_LIBSPEC void optimize_null_boards(World *mzx_world);
+CORE_LIBSPEC void set_update_done(World *mzx_world);
+CORE_LIBSPEC int world_magic(const char magic_string[3]);
+CORE_LIBSPEC extern char world_version_string[4];
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

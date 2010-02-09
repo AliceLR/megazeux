@@ -33,7 +33,7 @@ __M_BEGIN_DECLS
 
 // See code for full docs, preserves mouse cursor, be prepared for a
 // MOUSE_EVENT! (must acknowledge_event() it)
-int intake(World *mzx_world, char *string, int max_len,
+CORE_LIBSPEC int intake(World *mzx_world, char *string, int max_len,
  int x, int y, char color, int exit_type, int filter_type,
  int *return_x_pos, char robo_intk, char *macro);
 

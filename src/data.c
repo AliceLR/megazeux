@@ -29,13 +29,13 @@
 // Current MZX file information
 char curr_file[MAX_PATH] = "CAVERNS.MZX";
 char curr_sav[MAX_PATH] = "SAVED.SAV";
-char current_dir[MAX_PATH];                     // Current directory
-char config_dir[MAX_PATH];                      // Config file path
+char current_dir[MAX_PATH];
+char config_dir[MAX_PATH];
 
 // Some global world values that haven't been removed yet.
 
-unsigned char scroll_color = 15;                // Current scroll color
-unsigned char current_help_sec = 0;             // Use for context-sens.help
+unsigned char scroll_color = 15;
+unsigned char current_help_sec = 0;
 
 // Array of flags for things
 unsigned int flags[] =

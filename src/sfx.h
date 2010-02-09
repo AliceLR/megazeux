@@ -35,7 +35,7 @@ __M_BEGIN_DECLS
 #define NOISEMAX        4096
 
 #ifdef CONFIG_EDITOR
-extern char sfx_strs[NUM_SFX][69];
+CORE_LIBSPEC extern char sfx_strs[NUM_SFX][69];
 #endif // CONFIG_EDITOR
 
 extern int topindex, backindex;

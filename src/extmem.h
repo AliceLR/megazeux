@@ -48,15 +48,8 @@ void set_current_board_ext(World *mzx_world, Board *cur_board);
  * away. The implementations are obvious enough.
  */
 
-static inline void store_board_to_extram(Board *board)
-{
-  // do nothing
-}
-
-static inline void retrieve_board_from_extram(Board *board)
-{
-  // do nothing
-}
+static inline void store_board_to_extram(Board *board) {}
+static inline void retrieve_board_from_extram(Board *board) {}
 
 static inline void set_current_board(World *mzx_world, Board *cur_board)
 {

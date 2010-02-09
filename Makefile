@@ -27,24 +27,6 @@ CP      ?= cp
 MKDIR   ?= mkdir
 RM      ?= rm
 
-#
-# We don't want these commands to be echo'ed in non-verbose mode
-#
-ifneq (${V},1)
-override V:=
-
-CC      := @${CC}
-CXX     := @${CXX}
-AR      := @${AR}
-STRIP   := @${STRIP}
-OBJCOPY := @${OBJCOPY}
-
-CHMOD   := @${CHMOD}
-CP      := @${CP}
-MKDIR   := @${MKDIR}
-RM      := @${RM}
-endif
-
 SDL_CFLAGS  ?= `sdl-config --cflags`
 SDL_LDFLAGS ?= `sdl-config --libs`
 
@@ -84,6 +66,39 @@ endif
 #
 CFLAGS   += -g -Wall -std=gnu99 ${ARCH_CFLAGS}
 CXXFLAGS += -g -Wall ${ARCH_CXXFLAGS}
+
+#
+# If we've got a new enough version of GCC, try to use the Stack Protector
+# and visibility features.
+#
+ifeq (${shell ${CC} -dumpversion | cut -d. -f1},4)
+ifneq (${PLATFORM},mingw)
+CFLAGS   += -fvisibility=hidden
+CXXFLAGS += -fvisibility=hidden
+ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_PSP},${BUILD_WII}),)
+CFLAGS   += -fstack-protector-all
+CXXFLAGS += -fstack-protector-all
+endif
+endif
+endif
+
+#
+# We don't want these commands to be echo'ed in non-verbose mode
+#
+ifneq (${V},1)
+override V:=
+
+CC      := @${CC}
+CXX     := @${CXX}
+AR      := @${AR}
+STRIP   := @${STRIP}
+OBJCOPY := @${OBJCOPY}
+
+CHMOD   := @${CHMOD}
+CP      := @${CP}
+MKDIR   := @${MKDIR}
+RM      := @${RM}
+endif
 
 #
 # The SUPPRESS_BUILD hack is required to allow the placebo "dist"

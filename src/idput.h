@@ -30,12 +30,12 @@ __M_BEGIN_DECLS
 #include "board_struct.h"
 #include "data.h"
 
-void id_put(Board *src_board, unsigned char x_pos, unsigned char y_pos,
-  int array_x, int array_y, int ovr_x, int ovr_y);
-void draw_game_window(Board *src_board, int array_x, int array_y);
+CORE_LIBSPEC void id_put(Board *src_board, unsigned char x_pos,
+ unsigned char y_pos, int array_x, int array_y, int ovr_x, int ovr_y);
+CORE_LIBSPEC void draw_game_window(Board *src_board, int array_x, int array_y);
 
-unsigned char get_id_char(Board *src_board, int id_offset);
-unsigned char get_id_color(Board *src_board, int id_offset);
+CORE_LIBSPEC unsigned char get_id_char(Board *src_board, int id_offset);
+CORE_LIBSPEC unsigned char get_id_color(Board *src_board, int id_offset);
 
 #define thin_line            128
 #define thick_line           144
@@ -76,10 +76,10 @@ unsigned char get_id_color(Board *src_board, int id_offset);
 #define player_char          318
 #define player_color         322
 
-extern unsigned char id_chars[455];
-extern unsigned char id_dmg[128];
-extern unsigned char bullet_color[3];
-extern unsigned char missile_color;
+CORE_LIBSPEC extern unsigned char id_chars[455];
+CORE_LIBSPEC extern unsigned char id_dmg[128];
+CORE_LIBSPEC extern unsigned char bullet_color[3];
+CORE_LIBSPEC extern unsigned char missile_color;
 
 __M_END_DECLS
 

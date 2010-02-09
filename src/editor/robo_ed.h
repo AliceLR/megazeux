@@ -91,8 +91,8 @@ struct _robot_state
 
 void robot_editor(World *mzx_world, Robot *cur_robot);
 
-void init_macros(World *mzx_world);
-void free_extended_macros(World *mzx_world);
+EDITOR_LIBSPEC void init_macros(World *mzx_world);
+EDITOR_LIBSPEC void free_extended_macros(World *mzx_world);
 
 __M_END_DECLS
 

@@ -124,11 +124,12 @@ typedef struct
 
 extern audio_struct audio;
 
-void init_audio(config_info *conf);
-void quit_audio(void);
-void load_module(char *filename);
-void end_module(void);
-void play_sample(int freq, char *filename);
+CORE_LIBSPEC void init_audio(config_info *conf);
+CORE_LIBSPEC void quit_audio(void);
+CORE_LIBSPEC void load_module(char *filename);
+CORE_LIBSPEC void end_module(void);
+CORE_LIBSPEC void play_sample(int freq, char *filename);
+
 void end_sample(void);
 void jump_module(int order);
 int get_order(void);
@@ -176,12 +177,11 @@ void sampled_mix_data(sampled_stream *s_src, Sint32 *dest_buffer,
  Uint32 len);
 void sampled_destruct(audio_stream *a_src);
 void initialize_sampled_stream(sampled_stream *s_src,
- void (* set_frequency)(sampled_stream *s_src, Uint32 frequency),
+void (* set_frequency)(sampled_stream *s_src, Uint32 frequency),
  Uint32 (* get_frequency)(sampled_stream *s_src),
  Uint32 frequency, Uint32 channels, Uint32 use_volume);
 void construct_audio_stream(audio_stream *a_src,
- Uint32 (* mix_data)(audio_stream *a_src, Sint32 *buffer,
-  Uint32 len),
+ Uint32 (* mix_data)(audio_stream *a_src, Sint32 *buffer, Uint32 len),
  void (* set_volume)(audio_stream *a_src, Uint32 volume),
  void (* set_repeat)(audio_stream *a_src, Uint32 repeat),
  void (* set_order)(audio_stream *a_src, Uint32 order),

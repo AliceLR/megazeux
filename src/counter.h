@@ -27,8 +27,6 @@ __M_BEGIN_DECLS
 
 #include <stdio.h>
 
-static const int STRING_INITIAL_ALLOCATE = 16;
-
 #include "counter_struct.h"
 #include "world_struct.h"
 
@@ -47,34 +45,29 @@ typedef int (*gateway_write_function)(World *mzx_world,
 typedef int (*gateway_dec_function)(World *mzx_world,
  counter *counter, const char *name, int value, int id);
 
-// functions
+CORE_LIBSPEC int match_function_counter(const char *dest, const char *src);
+CORE_LIBSPEC void set_counter(World *mzx_world, const char *name, int value, int id);
+CORE_LIBSPEC void counter_fsg(void);
 
-int match_function_counter(const char *dest, const char *src);
 void initialize_gateway_functions(World *mzx_world);
-// Get the contents of a counter. Include robot id (0 if unimportant)
 int get_counter(World *mzx_world, const char *name, int id);
-// Sets the value of a counter. Include robot id if a robot is running.
-void set_counter(World *mzx_world, const char *name, int value, int id);
-// Decrease or increase a counter.
 void inc_counter(World *mzx_world, const char *name, int value, int id);
 void dec_counter(World *mzx_world, const char *name, int value, int id);
 void mul_counter(World *mzx_world, const char *name, int value, int id);
 void div_counter(World *mzx_world, const char *name, int value, int id);
 void mod_counter(World *mzx_world, const char *name, int value, int id);
+
 int get_string(World *mzx_world, const char *name, mzx_string *dest, int id);
 void set_string(World *mzx_world, const char *name, mzx_string *src, int id);
-// Concatenates a string with another
 void inc_string(World *mzx_world, const char *name, mzx_string *src, int id);
-// Decreases the end of a string by N characters
 void dec_string_int(World *mzx_world, const char *name, int value, int id);
 int compare_strings(mzx_string *dest, mzx_string *src);
+
 void load_string_board(World *mzx_world, const char *expression,
  int w, int h, char l, char *src, int width);
 int set_counter_special(World *mzx_world, int spec_type,
  char *char_value, int value, int id);
 int is_string(char *buffer);
-
-void counter_fsg(void);
 
 counter *load_counter(FILE *fp);
 mzx_string *load_string(FILE *fp);

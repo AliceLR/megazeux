@@ -26,7 +26,7 @@
 
 __M_BEGIN_DECLS
 
-void decrypt(const char *file_name);
+CORE_LIBSPEC void decrypt(const char *file_name);
 
 __M_END_DECLS
 

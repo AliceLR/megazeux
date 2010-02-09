@@ -28,20 +28,19 @@ __M_BEGIN_DECLS
 #include <stdio.h>
 #include <stdlib.h>
 
-extern char curr_file[MAX_PATH];
-extern char curr_sav[MAX_PATH];
-extern char current_dir[MAX_PATH];
-extern char config_dir[MAX_PATH];
+CORE_LIBSPEC extern char curr_file[MAX_PATH];
+CORE_LIBSPEC extern char curr_sav[MAX_PATH];
+CORE_LIBSPEC extern char current_dir[MAX_PATH];
+CORE_LIBSPEC extern char config_dir[MAX_PATH];
 
-extern unsigned char scroll_color;        // Current scroll color
-extern unsigned char cheats_active;       // (additive flag)
-extern unsigned char current_help_sec0;   // Use for context-sens.help
-extern int was_zapped;
+CORE_LIBSPEC extern unsigned char scroll_color;
+CORE_LIBSPEC extern const char *thing_names[128];
+CORE_LIBSPEC extern unsigned int flags[128];
 
+extern unsigned char cheats_active;
+extern unsigned char current_help_sec0;
 extern char saved_pl_color;
-
-extern const char *thing_names[128];
-extern unsigned int  flags[128];
+extern int was_zapped;
 
 typedef enum
 {

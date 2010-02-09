@@ -19,7 +19,7 @@
 
 #include "edit_stubs.h"
 
-void edit_stubs_hack(void)
+void edit_stubs_hack(World *mzx_world)
 {
 }
 

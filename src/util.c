@@ -196,7 +196,7 @@ int Random(int range)
   return (int)value;
 }
 
-int get_path(const char *file_name, char *dest, unsigned int buf_len)
+int __get_path(const char *file_name, char *dest, unsigned int buf_len)
 {
   int c = strlen(file_name) - 1;
 
@@ -216,6 +216,11 @@ int get_path(const char *file_name, char *dest, unsigned int buf_len)
   dest[c] = 0;
 
   return c;
+}
+
+int get_path(const char *file_name, char *dest, unsigned int buf_len)
+{
+  return __get_path(file_name, dest, buf_len);
 }
 
 #if defined(__WIN32__)

@@ -89,4 +89,20 @@ typedef enum {
 #define TEXT _TEXT
 #endif
 
+#if defined(CONFIG_MODULAR) && defined(__WIN32__)
+#define LIBSPEC __declspec(dllimport)
+#elif defined(CONFIG_MODULAR)
+#define LIBSPEC __attribute__((visibility("default")))
+#else
+#define LIBSPEC
+#endif
+
+#ifndef CORE_LIBSPEC
+#define CORE_LIBSPEC LIBSPEC
+#endif
+
+#ifndef EDITOR_LIBSPEC
+#define EDITOR_LIBSPEC LIBSPEC
+#endif
+
 #endif // __COMPAT_H

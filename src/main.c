@@ -121,7 +121,7 @@ int main(int argc, char *argv[])
   if(!platform_init())
     return 1;
 
-  edit_stubs_hack();
+  edit_stubs_hack(&mzx_world);
 
   // We need to store the current working directory so it's
   // always possible to get back to it..

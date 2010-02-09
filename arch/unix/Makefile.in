@@ -7,12 +7,6 @@
 DSOPRE  = lib
 DSOPOST = .so
 
-# enable stack protector for debug builds
-ifdef DEBUG
-ARCH_CFLAGS   += -fstack-protector-all
-ARCH_CXXFLAGS += ${ARCH_CFLAGS}
-endif
-
 # linux os specific install target
 install:
 	@install -m 0755 -d ${DESTDIR}/${PREFIX}/bin && \

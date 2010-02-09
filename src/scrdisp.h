@@ -17,8 +17,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-//Externs for SCRDISP.CPP
-
 #ifndef __SCRDISP_H
 #define __SCRDISP_H
 
@@ -30,8 +28,8 @@ __M_BEGIN_DECLS
 #include "robot_struct.h"
 
 // Type 0/1 to DISPLAY a scroll/sign
+CORE_LIBSPEC void scroll_edit(World *mzx_world, Scroll *scroll, int type);
 
-void scroll_edit(World *mzx_world, Scroll *scroll, int type);
 // type == 0 scroll, 1 sign, 2 scroll edit
 void scroll_edging_ext(World *mzx_world, int type, int offset,
  int c_offset);

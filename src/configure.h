@@ -73,9 +73,10 @@ struct _config_info
 typedef void (* config_function)(config_info *conf,
  char *name, char *value, char *extended_data);
 
-void set_config_from_file(config_info *conf, const char *conf_file_name);
-void default_config(config_info *conf);
-void set_config_from_command_line(config_info *conf,
+CORE_LIBSPEC void set_config_from_file(config_info *conf,
+ const char *conf_file_name);
+CORE_LIBSPEC void default_config(config_info *conf);
+CORE_LIBSPEC void set_config_from_command_line(config_info *conf,
  int argc, char *argv[]);
 
 typedef void (* find_change_option)(void *conf, char *name, char *value,
@@ -83,10 +84,10 @@ typedef void (* find_change_option)(void *conf, char *name, char *value,
 
 #ifdef CONFIG_EDITOR
 
-void __set_config_from_file(find_change_option find_change_handler,
+CORE_LIBSPEC void __set_config_from_file(find_change_option find_change_handler,
  void *conf, const char *conf_file_name);
-void __set_config_from_command_line(find_change_option find_change_handler,
- void *conf, int argc, char *argv[]);
+CORE_LIBSPEC void __set_config_from_command_line(
+ find_change_option find_change_handler, void *conf, int argc, char *argv[]);
 
 #endif // CONFIG_EDITOR
 

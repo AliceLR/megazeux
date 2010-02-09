@@ -29,25 +29,26 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-void set_context(int c);
-void pop_context(void);
+CORE_LIBSPEC void set_context(int c);
+CORE_LIBSPEC void pop_context(void);
 
 // For name seeking in list_menu
 #define TIME_SUSPEND 300
 
 // All screen-affecting code preserves the mouse cursor
-int save_screen(void);
-int restore_screen(void);
-int draw_window_box(int x1, int y1, int x2, int y2, int color,
+CORE_LIBSPEC int save_screen(void);
+CORE_LIBSPEC int restore_screen(void);
+CORE_LIBSPEC int draw_window_box(int x1, int y1, int x2, int y2, int color,
  int dark_color, int corner_color, int shadow, int fill_center);
+CORE_LIBSPEC int char_selection(int current);
+
+// Shell for run_dialog() (returns 0 for ok, 1 for cancel, -1 for ESC)
+CORE_LIBSPEC int confirm(World *mzx_world, const char *str);
+CORE_LIBSPEC int ask_yes_no(World *mzx_world, char *str);
+
 int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
  int dark_color, int corner_color, int shadow, int fill_center,
  int offset, int c_offset);
-int char_selection(int current);
-
-// Shell for run_dialog() (returns 0 for ok, 1 for cancel, -1 for ESC)
-int confirm(World *mzx_world, const char *str);
-int ask_yes_no(World *mzx_world, char *str);
 
 // Dialog box structure definition
 
@@ -194,23 +195,23 @@ typedef struct
   int *result;
 } board_list;
 
-void construct_dialog(dialog *src, const char *title, int x, int y,
+CORE_LIBSPEC void construct_dialog(dialog *src, const char *title, int x, int y,
  int width, int height, element **elements, int num_elements,
  int start_element);
-void destruct_dialog(dialog *src);
+CORE_LIBSPEC void destruct_dialog(dialog *src);
 
-element *construct_label(int x, int y, const char *text);
-element *construct_radio_button(int x, int y,
+CORE_LIBSPEC element *construct_label(int x, int y, const char *text);
+CORE_LIBSPEC element *construct_radio_button(int x, int y,
  const char **choices, int num_choices, int max_length, int *result);
-element *construct_button(int x, int y, const char *label,
+CORE_LIBSPEC element *construct_button(int x, int y, const char *label,
  int return_value);
-element *construct_number_box(int x, int y,
+CORE_LIBSPEC element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
  int mult_five, int *result);
 
-int choose_file_ch(World *mzx_world, const char **wildcards, char *ret,
+CORE_LIBSPEC int choose_file_ch(World *mzx_world, const char **wildcards, char *ret,
  const char *title, int dirs_okay);
-int new_file(World *mzx_world, const char **wildcards, char *ret,
+CORE_LIBSPEC int new_file(World *mzx_world, const char **wildcards, char *ret,
  const char *title, int dirs_okay);
 
 // Dialog box color #define's-
@@ -254,7 +255,7 @@ int new_file(World *mzx_world, const char **wildcards, char *ret,
 #define pc_dot '\xFE'
 #define pc_meter 219
 
-int run_dialog(World *mzx_world, dialog *di);
+CORE_LIBSPEC int run_dialog(World *mzx_world, dialog *di);
 
 // Characters for dialog box elements
 extern char radio_on[4];
@@ -262,9 +263,9 @@ extern char radio_off[4];
 extern char num_buttons[7];
 
 #ifdef CONFIG_EDITOR
-extern int context;
+CORE_LIBSPEC extern int context;
 
-void construct_element(element *e, int x, int y,
+CORE_LIBSPEC void construct_element(element *e, int x, int y,
  int width, int height,
  void (* draw_function)(World *mzx_world, dialog *di,
   element *e, int color, int active),
@@ -277,19 +278,19 @@ void construct_element(element *e, int x, int y,
   element *e, int mouse_button, int mouse_x, int mouse_y),
  int (* idle_function)(World *mzx_world, dialog *di,
   element *e));
-element *construct_list_box(int x, int y, const char **choices,
+CORE_LIBSPEC element *construct_list_box(int x, int y, const char **choices,
  int num_choices, int num_choices_visible, int choice_length,
  int return_value, int *result);
-void construct_dialog_ext(dialog *src, const char *title, int x, int y,
- int width, int height, element **elements, int num_elements,
+CORE_LIBSPEC void construct_dialog_ext(dialog *src, const char *title,
+ int x, int y, int width, int height, element **elements, int num_elements,
  int sfx_test_for_input, int pad_space, int start_element,
  int (* idle_function)(World *mzx_world, dialog *di, int key));
 
-int char_selection_ext(int current, int allow_multichar,
+CORE_LIBSPEC int char_selection_ext(int current, int allow_multichar,
  int *width_ptr, int *height_ptr);
-element *construct_input_box(int x, int y, const char *question,
+CORE_LIBSPEC element *construct_input_box(int x, int y, const char *question,
  int max_length, int input_flags, char *result);
-int file_manager(World *mzx_world, const char **wildcards, char *ret,
+CORE_LIBSPEC int file_manager(World *mzx_world, const char **wildcards, char *ret,
  const char *title, int dirs_okay, int allow_new, element **dialog_ext,
  int num_ext, int ext_height, int allow_dir_change);
 #endif // CONFIG_EDITOR
