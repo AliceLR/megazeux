@@ -60,11 +60,12 @@ endif
 ${updater}: ${core_target} ${network_target} ${updater_objs}
 	$(if ${V},,@echo "  LINK    " ${updater})
 ifeq (${BUILD_MODULAR},1)
-	${CC} ${updater_objs} -o ${updater} ${LDFLAGS} \
+	${LINK_CC} ${updater_objs} -o ${updater} ${LDFLAGS} \
 	  -Wl,-rpath=${LIBDIR} -L. -lcore -lnetwork ${updater_ldflags}
 else
-	${CC} ${updater_objs} ${core_target} ${network_target} \
-	  -o ${updater} ${LDFLAGS} ${updater_ldflags}
+	${LINK_CC} ${updater_objs} ${core_target} ${network_target} \
+	  -o ${updater} ${LDFLAGS} ${core_ldflags} ${network_ldflags} \
+	  ${updater_ldflags}
 endif
 
 server         := server${BINEXT}
@@ -76,11 +77,12 @@ server_ldflags := ${SDL_LDFLAGS}
 ${server}: ${core_target} ${network_target} ${server_objs}
 	$(if ${V},,@echo "  LINK    " ${server})
 ifeq (${BUILD_MODULAR},1)
-	${CC} ${server_objs} -o ${server} ${LDFLAGS} \
+	${LINK_CC} ${server_objs} -o ${server} ${LDFLAGS} \
 	  -Wl,-rpath=${LIBDIR} -L. -lcore -lnetwork ${server_ldflags}
 else
-	${CC} ${server_objs} ${core_target} ${network_target} \
-	  -o ${server} ${LDFLAGS} ${server_ldflags}
+	${LINK_CC} ${server_objs} ${core_target} ${network_target} \
+	  -o ${server} ${LDFLAGS} ${core_ldflags} ${network_ldflags} \
+	  ${server_ldflags}
 endif
 
 network: ${updater}
