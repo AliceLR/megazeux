@@ -242,10 +242,12 @@ static bool  _ram_test (void)
 static void  _ram_precalc_size (void)
 //==========================================================
 {
+    vu16 *ram;
+
     if(_unlock == 0 || _lock == 0)
         return;
         
-    vu16 *ram = _unlock();
+    ram = _unlock();
     _size = 0;
 
     ram[0] = 0x2468;

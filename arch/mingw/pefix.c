@@ -185,9 +185,9 @@ static error_t walk_rvas(FILE *f, uint16_t cpu_type,
  uint32_t virtaddr, uint32_t offset)
 {
   uint32_t rva32, pad, phys, last_phys = 0;
+  unsigned int i;
   uint64_t rva;
   long pos;
-  int i;
 
   while(1)
   {

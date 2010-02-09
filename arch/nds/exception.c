@@ -60,9 +60,11 @@
 //---------------------------------------------------------------------------------
 static unsigned long ARMShift(unsigned long value,unsigned char shift) {
 //---------------------------------------------------------------------------------
+	int index, i;
+	bool isN;
+
 	// no shift at all
 	if (shift == 0x0B) return value ;
-	int index ;
 	if (shift & 0x01) {
 		// shift index is a register
 		index = exceptionRegisters[(shift >> 4) & 0x0F];
@@ -70,8 +72,6 @@ static unsigned long ARMShift(unsigned long value,unsigned char shift) {
 		// constant shift index
 		index = ((shift >> 3) & 0x1F) ;
 	} ;
-	int i ;
-	bool isN ;
 	switch (shift & 0x06) {
 		case 0x00:
 			// logical left
@@ -200,19 +200,22 @@ static u32 getExceptionAddress( u32 opcodeAddress, u32 thumbState) {
 				}
 			}
 		} else if ((opcode & 0x0E400F90) == 0x00000090) {
+			unsigned short shift;
+			long Offset;
 			// LDRH/STRH with register Rm
 			Rn = (opcode >> 16) & 0x0F;
 			Rd = (opcode >> 12) & 0x0F;
 			Rm = opcode & 0x0F;
-			unsigned short shift = (unsigned short)((opcode >> 4) & 0xFF);
-			long Offset = ARMShift(exceptionRegisters[Rm],shift);
+			shift = (unsigned short)((opcode >> 4) & 0xFF);
+			Offset = ARMShift(exceptionRegisters[Rm],shift);
 			// add or sub the offset depending on the U-Bit
 			return exceptionRegisters[Rn] + ((opcode & 0x00800000)?Offset:-Offset);
 		} else if ((opcode & 0x0E400F90) == 0x00400090) {
+			unsigned long Offset;
 			// LDRH/STRH with immediate offset
 			Rn = (opcode >> 16) & 0x0F;
 			Rd = (opcode >> 12) & 0x0F;
-			unsigned long Offset = (opcode & 0xF) | ((opcode & 0xF00)>>8) ;
+			Offset = (opcode & 0xF) | ((opcode & 0xF00)>>8) ;
 			// add or sub the offset depending on the U-Bit
 			return exceptionRegisters[Rn] + ((opcode & 0x00800000)?Offset:-Offset) ;
 		} else if ((opcode & 0x0E000000) == 0x08000000) {
@@ -232,6 +235,9 @@ extern const char __itcm_start[];
 //---------------------------------------------------------------------------------
 static void mzxExceptionHandler() {
 //---------------------------------------------------------------------------------
+	u32 *stack, currentMode, thumbState, codeAddress, exceptionAddress = 0;
+	int i, offset = 8;
+
 	DMA0_CR = 0;
 	DMA1_CR = 0;
 	DMA2_CR = 0;
@@ -251,12 +257,8 @@ static void mzxExceptionHandler() {
 	consoleDemoInit();
 
 	iprintf("\x1b[5CGuru Meditation Error!\n");
-	u32	currentMode = getCPSR() & 0x1f;
-	u32 thumbState = ((*(u32*)0x027FFD90) & 0x20);
-
-	u32 codeAddress, exceptionAddress = 0;
-
-	int offset = 8;
+	currentMode = getCPSR() & 0x1f;
+	thumbState = ((*(u32*)0x027FFD90) & 0x20);
 
 	if ( currentMode == 0x17 ) {
 		iprintf ("\x1b[10Cdata abort!\n\n");
@@ -279,14 +281,13 @@ static void mzxExceptionHandler() {
 
 	iprintf("  pc: %08X addr: %08X\n\n",codeAddress,exceptionAddress);
 
-	int i;
 	for ( i=0; i < 8; i++ ) {
 		iprintf(	"  %s: %08X   %s: %08X\n",
 					registerNames[i], (unsigned int)exceptionRegisters[i],
 					registerNames[i+8], (unsigned int)exceptionRegisters[i+8]);
 	}
 	iprintf("\n");
-	u32 *stack = (u32 *)exceptionRegisters[13];
+	stack = (u32 *)exceptionRegisters[13];
 	for ( i=0; i<10; i++ ) {
 		iprintf( "\x1b[%d;2H%08X: %08X %08X", i + 14, (u32)&stack[i*2],stack[i*2], stack[(i*2)+1] );
 	}

@@ -5163,8 +5163,9 @@ bool nds_ext_in(void *normal_buffer_ptr, size_t size)
   }
   else
   {
+    char *extra_buffer;
     nds_ext_unlock();
-    char *extra_buffer = nds_ext_malloc(size);
+    extra_buffer = nds_ext_malloc(size);
     if(extra_buffer != NULL)
     {
       nds_ext_copy(extra_buffer, *normal_buffer, size);
@@ -5190,8 +5191,9 @@ bool nds_ext_out(void *extra_buffer_ptr, size_t size)
   }
   else
   {
+    char *normal_buffer;
     nds_ext_unlock();
-    char *normal_buffer = malloc(size);
+    normal_buffer = malloc(size);
     if(normal_buffer != NULL)
     {
       memcpy(normal_buffer, *extra_buffer, size);

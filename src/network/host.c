@@ -34,9 +34,11 @@
 #include <ctype.h>
 
 #ifdef __WIN32__
+#ifndef __WIN64__
 // Windows XP WinSock2 needed for getaddrinfo() API
 #undef _WIN32_WINNT
 #define _WIN32_WINNT 0x0501
+#endif // !__WIN64__
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else // !__WIN32__
@@ -401,9 +403,6 @@ static const struct dso_syms_map socksyms_map[] =
 typedef int sockaddr_t;
 
 static int init_ref_count;
-
-#undef  FD_ISSET
-#define FD_ISSET(fd,set) socksyms.__WSAFDIsSet((SOCKET)(fd),(fd_set *)(set))
 
 #define WINSOCK2 "ws2_32.dll"
 #define WINSOCK  "wsock32.dll"
@@ -1292,6 +1291,9 @@ void host_set_callbacks(struct host *h, void (*send_cb)(long offset),
 }
 
 #ifdef NETWORK_DEADCODE
+
+#undef  FD_ISSET
+#define FD_ISSET(fd,set) socksyms.__WSAFDIsSet((SOCKET)(fd),(fd_set *)(set))
 
 void host_blocking(struct host *h, bool blocking)
 {

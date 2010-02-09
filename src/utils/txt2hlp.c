@@ -313,7 +313,7 @@ int main(int argc, char *argv[])
         fwrite(curr_file,1,13,dest);
         fwrite(&file_offs,1,4,dest);
         fwrite(&file_len,1,4,dest);
-        if(file_len>65535U) printf("Warning- File %s over 64k bytes in length.\n",curr_file);
+        if(file_len>65535) printf("Warning- File %s over 64k bytes in length.\n",curr_file);
         //Write in links info
         for(t1=0;t1<curr_link_ref;t1++)
         {
@@ -367,7 +367,7 @@ int main(int argc, char *argv[])
   fwrite(curr_file,1,13,dest);
   fwrite(&file_offs,1,4,dest);
   fwrite(&file_len,1,4,dest);
-  if(file_len>65535U) printf("Warning- File %s over 64k bytes in length.\n",curr_file);
+  if(file_len>65535) printf("Warning- File %s over 64k bytes in length.\n",curr_file);
   //Write in links info
   for(t1=0;t1<curr_link_ref;t1++)
   {

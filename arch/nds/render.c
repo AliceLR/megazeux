@@ -492,8 +492,8 @@ static void nds_remap_charsets(struct graphics_data *graphics)
 // Focus on a given screen position (in pixels up to 640x350).
 void nds_mainscreen_focus(struct graphics_data *graphics, Uint32 x, Uint32 y)
 {
-  int scroll_x, scroll_y;
-  int i;
+  int scroll_x, scroll_y, i, ypos, ycounter;
+  u16 *sptr;
 
   if(mouselook)
   {
@@ -522,9 +522,9 @@ void nds_mainscreen_focus(struct graphics_data *graphics, Uint32 x, Uint32 y)
   SUB_BG1_X0 = scroll_x;
 
   // Recalculate the scroll table.
-  u16 *sptr    = scroll_table;
-  int ypos     = scroll_y;
-  int ycounter = scroll_y;
+  sptr    = scroll_table;
+  ypos     = scroll_y;
+  ycounter = scroll_y;
   for(i = 0; i < 192; i++)
   {
     (*sptr++) = ypos;
