@@ -27,22 +27,16 @@ __M_BEGIN_DECLS
 #include "platform.h"
 #include "keysym.h"
 
-#define KEY_REPEAT_START 250
-#define KEY_REPEAT_RATE 33
-
-#define MOUSE_REPEAT_START 200
-#define MOUSE_REPEAT_RATE 10
-
 #define UPDATE_DELAY 30
 
 #define KEY_REPEAT_STACK_SIZE 32
 
-#define MOUSE_BUTTON(X) (1 << ((X)-1))
-#define MOUSE_BUTTON_LEFT 1
-#define MOUSE_BUTTON_MIDDLE 2
-#define MOUSE_BUTTON_RIGHT 3
-#define MOUSE_BUTTON_WHEELUP 4
-#define MOUSE_BUTTON_WHEELDOWN 5
+#define MOUSE_BUTTON(x)         (1 << ((x) - 1))
+#define MOUSE_BUTTON_LEFT       1
+#define MOUSE_BUTTON_MIDDLE     2
+#define MOUSE_BUTTON_RIGHT      3
+#define MOUSE_BUTTON_WHEELUP    4
+#define MOUSE_BUTTON_WHEELDOWN  5
 
 typedef struct
 {

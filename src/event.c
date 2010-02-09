@@ -22,6 +22,12 @@
 #include "util.h"
 #include "platform.h"
 
+#define KEY_REPEAT_START    250
+#define KEY_REPEAT_RATE     33
+
+#define MOUSE_REPEAT_START  200
+#define MOUSE_REPEAT_RATE   10
+
 input_status input;
 
 static Uint32 convert_internal_xt(keycode key)

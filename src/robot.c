@@ -37,6 +37,13 @@
 #include "world.h"
 #include "util.h"
 
+// Let's not let a robot's stack get larger than 64k right now.
+// The value is a bit arbitrary, but it's mainly there to prevent MZX from
+// crashing when under infinite recursion.
+
+#define ROBOT_START_STACK 4
+#define ROBOT_MAX_STACK   65536
+
 Robot *load_robot_allocate(FILE *fp, int savegame)
 {
   Robot *cur_robot = malloc(sizeof(Robot));

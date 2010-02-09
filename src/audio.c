@@ -286,6 +286,13 @@ case num:                                                               \
   SETUP_MIXER(type, (num * 4) + 2, VOL)                                 \
   SETUP_MIXER_MONO(type, (num * 4) + 3, VOL)                            \
 
+
+// WAV sample types
+
+#define SAMPLE_U8     0
+#define SAMPLE_S8     1
+#define SAMPLE_S16LSB 2
+
 // ov_read() documentation states the 'bigendianp' argument..
 //   "Specifies big or little endian byte packing.
 //   0 for little endian, 1 for big endian. Typical value is 0."

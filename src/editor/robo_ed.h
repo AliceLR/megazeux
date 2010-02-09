@@ -27,8 +27,6 @@ __M_BEGIN_DECLS
 #include "../rasm.h"
 #include "../world_struct.h"
 
-#define MAX_MACRO_RECURSION 16
-#define MAX_MACRO_REPEAT 128
 #define COMMAND_BUFFER_LEN 512
 
 typedef struct _robot_line robot_line;

@@ -34,8 +34,6 @@ typedef enum
   cursor_mode_invisible
 } cursor_mode_types;
 
-#define CURSOR_BLINK_RATE 115
-
 typedef struct
 {
   Uint8 r;

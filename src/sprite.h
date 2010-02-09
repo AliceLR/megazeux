@@ -41,13 +41,16 @@ __M_BEGIN_DECLS
   // g - char based collision
   // h - initialized
 
-#define SPRITE_INITIALIZED  0x01
-#define SPRITE_CHAR_CHECK   0x02
-#define SPRITE_OVER_OVERLAY 0x04
-#define SPRITE_SRC_COLORS   0x08
-#define SPRITE_STATIC       0x10
-#define SPRITE_CHAR_CHECK2  0x20
-#define SPRITE_VLAYER       0x40
+enum
+{
+  SPRITE_INITIALIZED  = (1 << 0),
+  SPRITE_CHAR_CHECK   = (1 << 1),
+  SPRITE_OVER_OVERLAY = (1 << 2),
+  SPRITE_SRC_COLORS   = (1 << 3),
+  SPRITE_STATIC       = (1 << 4),
+  SPRITE_CHAR_CHECK2  = (1 << 5),
+  SPRITE_VLAYER       = (1 << 6),
+};
 
 void plot_sprite(World *mzx_world, Sprite *cur_sprite, int color,
  int x, int y);

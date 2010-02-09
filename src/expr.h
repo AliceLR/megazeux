@@ -26,27 +26,6 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-typedef enum
-{
-  op_addition,
-  op_subtraction,
-  op_multiplication,
-  op_division,
-  op_modulus,
-  op_exponentation,
-  op_and,
-  op_or,
-  op_xor,
-  op_bitshift_left,
-  op_bitshift_right,
-  op_equal,
-  op_less_than,
-  op_greater_than,
-  op_greater_than_or_equal,
-  op_less_than_or_equal,
-  op_not_equal
-} op;
-
 int parse_expression(World *mzx_world, char **expression, int *error, int id);
 
 __M_END_DECLS

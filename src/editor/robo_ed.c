@@ -56,6 +56,9 @@
 #define combine_colors(a, b)  \
   (a) | (b << 4)              \
 
+#define MAX_MACRO_RECURSION 16
+#define MAX_MACRO_REPEAT 128
+
 // fix cyclic dependency (could be done in several ways)
 static int execute_named_macro(robot_state *rstate, char *macro_name);
 

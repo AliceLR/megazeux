@@ -55,6 +55,8 @@
 #error Must define VERSION for MegaZeux version string
 #endif
 
+#define CURSOR_BLINK_RATE 115
+
 __editor_maybe_static graphics_data graphics;
 
 static const renderer_data renderers[] =

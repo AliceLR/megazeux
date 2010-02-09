@@ -27,6 +27,27 @@
 #include "counter.h"
 #include "robot.h"
 
+typedef enum
+{
+  op_addition,
+  op_subtraction,
+  op_multiplication,
+  op_division,
+  op_modulus,
+  op_exponentation,
+  op_and,
+  op_or,
+  op_xor,
+  op_bitshift_left,
+  op_bitshift_right,
+  op_equal,
+  op_less_than,
+  op_greater_than,
+  op_greater_than_or_equal,
+  op_less_than_or_equal,
+  op_not_equal
+} op;
+
 static int last_val;
 
 static void expr_skip_whitespace(char **expression)

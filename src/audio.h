@@ -36,10 +36,6 @@ __M_BEGIN_DECLS
 #include "modplug.h"
 #endif
 
-#define SAMPLE_U8 0
-#define SAMPLE_S8 1
-#define SAMPLE_S16LSB 2
-
 typedef struct _audio_stream audio_stream;
 
 struct _audio_stream

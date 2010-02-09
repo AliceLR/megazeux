@@ -39,102 +39,73 @@ __M_BEGIN_DECLS
 #define MAX_PATH 512
 #endif
 
-#define OVERLAY_OFF           0
-#define OVERLAY_ON            1
-#define OVERLAY_STATIC        2
-#define OVERLAY_TRANS         3
+enum
+{
+  EXPL_LEAVE_SPACE,
+  EXPL_LEAVE_ASH
+};
 
-#define EXPL_LEAVE_SPACE      0
-#define EXPL_LEAVE_ASH        1
-#define EXPL_LEAVE_FIRE       2
+enum
+{
+  CAN_SAVE,
+  CANT_SAVE,
+  CAN_SAVE_ON_SENSOR
+};
 
-#define CAN_SAVE              0
-#define CANT_SAVE             1
-#define CAN_SAVE_ON_SENSOR    2
+enum
+{
+  FOREST_TO_EMPTY,
+  FOREST_TO_FLOOR
+};
 
-#define FOREST_TO_EMPTY       0
-#define FOREST_TO_FLOOR       1
+enum
+{
+  FIRE_BURNS_LIMITED,
+  FIRE_BURNS_FOREVER
+};
 
-#define FIRE_BURNS_LIMITED    0
-#define FIRE_BURNS_FOREVER    1
+enum
+{
+  PLAYER_BULLET,
+  NEUTRAL_BULLET,
+  ENEMY_BULLET
+};
 
 #define NO_BOARD              255
 #define NO_ENDGAME_BOARD      255
 #define NO_DEATH_BOARD        255
 #define DEATH_SAME_POS        254
 
-#define PLAYER_BULLET         0
-#define NEUTRAL_BULLET        1
-#define ENEMY_BULLET          2
-
-#define DIR_IDLE              0
-#define DIR_NONE              0
-#define DIR_N                 1
-#define DIR_S                 2
-#define DIR_E                 3
-#define DIR_W                 4
-#define DIR_RANDNS            5
-#define DIR_RANDEW            6
-#define DIR_RANDNE            7
-#define DIR_RANDNB            8
-#define DIR_SEEK              9
-#define DIR_RANDANY           10
-#define DIR_UNDER             11
-#define DIR_ANYDIR            12
-#define DIR_FLOW              13
-#define DIR_NODIR             14
-#define DIR_RANDB             15
-// These are added to the above or checked using AND.
-#define DIR_RANDP             16
-#define DIR_CW                32
-#define DIR_OPP               64
-#define DIR_CCW               96
-#define DIR_RANDNOT           128
-
-#define HORIZONTAL            0
-#define VERTICAL              1
-
 #define NO_KEY                127
-
-#define NO_PROTECTION         0
-#define NO_SAVING             1
-#define NO_EDITING            2
-#define NO_PLAYING            3
 
 // "SIZE" includes terminating \0
 // This is legacy, for world format only
 #define NUM_BOARDS            250
 #define BOARD_NAME_SIZE       25
+
 // This is legacy, for status counters only
 #define COUNTER_NAME_SIZE     15
 #define NUM_KEYS              16
 
-#define ARRAY_DIR_N           -100
-#define ARRAY_DIR_S           100
-#define ARRAY_DIR_E           1
-#define ARRAY_DIR_W           -1
-
 // Attribute flags
-#define A_PUSHNS              1
-#define A_PUSHEW              2
-#define A_PUSHABLE            3
-#define A_ITEM                4
-#define A_UPDATE              8
-#define A_HURTS               16
-#define A_UNDER               32
-#define A_ENTRANCE            64
-#define A_EXPLODE             128
-#define A_BLOW_UP             256
-#define A_SHOOTABLE           512
-#define A_ENEMY               1024
-#define A_AFFECT_IF_STOOD     2048
-#define A_SPEC_SHOT           4096
-#define A_SPEC_PUSH           8192
-#define A_SPEC_BOMB           16384
-#define A_SPEC_STOOD          32768
+#define A_PUSHNS              (1 << 0)
+#define A_PUSHEW              (1 << 1)
+#define A_PUSHABLE            (A_PUSHNS | A_PUSHNS)
+#define A_ITEM                (1 << 2)
+#define A_UPDATE              (1 << 3)
+#define A_HURTS               (1 << 4)
+#define A_UNDER               (1 << 5)
+#define A_ENTRANCE            (1 << 6)
+#define A_EXPLODE             (1 << 7)
+#define A_BLOW_UP             (1 << 8)
+#define A_SHOOTABLE           (1 << 9)
+#define A_ENEMY               (1 << 10)
+#define A_AFFECT_IF_STOOD     (1 << 11)
+#define A_SPEC_SHOT           (1 << 12)
+#define A_SPEC_PUSH           (1 << 13)
+#define A_SPEC_BOMB           (1 << 14)
+#define A_SPEC_STOOD          (1 << 15)
 
-// ID number for storage of the global robot
-#define GLOBAL_ROBOT          0
 #define NUM_STATUS_CNTRS      6
 
 __M_END_DECLS
