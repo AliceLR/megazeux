@@ -23,6 +23,7 @@ table {
 	border-collapse : collapse;
 	border : 2px solid black;
 	border-spacing : 0;
+	width : 103em;
 }
 
 td, th {
@@ -82,7 +83,7 @@ a {
 
 li {
 	padding : 2px;
-	width : 40%;
+	width : 50%;
 }
 </style>
 </head>
@@ -199,7 +200,7 @@ li {
 <td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="no">NO</td>
-<td class="yes">YES</td>
+<td class="no2">NO<a href="#note3">[3]</a></td>
 <td class="no">NO</td>
 <td class="no">NO</td>
 <td class="no">NO</td>
@@ -264,26 +265,26 @@ li {
 <th>CONFIG_EDITOR</th>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">NO<a href="#note3">[3]</a></td>
+<td class="no2">NO<a href="#note4">[4]</a></td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">NO<a href="#note3">[3]</a></td>
-<td class="no2">NO<a href="#note3">[3]</a></td>
+<td class="no2">NO<a href="#note4">[4]</a></td>
+<td class="no2">NO<a href="#note4">[4]</a></td>
 <td class="yes">YES</td>
-<td class="no2">NO<a href="#note3">[3]</a></td>
+<td class="no2">NO<a href="#note4">[4]</a></td>
 </tr>
 
 <tr>
 <th>CONFIG_HELPSYS</th>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">NO<a href="#note3">[3]</a></td>
+<td class="no2">NO<a href="#note4">[4]</a></td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">NO<a href="#note3">[3]</a></td>
-<td class="no2">NO<a href="#note3">[3]</a></td>
+<td class="no2">NO<a href="#note4">[4]</a></td>
+<td class="no2">NO<a href="#note4">[4]</a></td>
 <td class="yes">YES</td>
-<td class="no2">NO<a href="#note3">[3]</a></td>
+<td class="no2">NO<a href="#note4">[4]</a></td>
 </tr>
 
 <tr>
@@ -360,7 +361,7 @@ li {
 <td class="yes">YES</td>
 <td class="no">NO</td>
 <td class="no">NO</td>
-<td class="no2">NO<a href="#note4">[4]</a></td>
+<td class="no2">NO<a href="#note5">[5]</a></td>
 <td class="no">NO</td>
 </tr>
 
@@ -385,10 +386,10 @@ li {
 <td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">NO<a href="#note5">[5]</a></td>
-<td class="no2">NO<a href="#note5">[5]</a></td>
+<td class="no2">NO<a href="#note6">[6]</a></td>
+<td class="no2">NO<a href="#note6">[6]</a></td>
 <td class="yes">YES</td>
-<td class="no2">NO<a href="#note5">[5]</a></td>
+<td class="no2">NO<a href="#note6">[6]</a></td>
 </tr>
 
 <tr>
@@ -412,7 +413,8 @@ li {
 
 <li><a name="note1"/>Could use existing `package.sh' however this does
 not handle PDB files.<br/>
-MSVC binaries are poorly tested and are currently unstable.
+MSVC binaries are replicate of MinGW binaries and require a non-free, non
+cross-capable compiler.
 </li>
 
 <li><a name="note2"/>&quot;Optimized Visibility&quot; refers to the
@@ -422,13 +424,17 @@ and loads faster.<br/>
 Required on Win32. Only applicable with CONFIG_MODULAR=y builds.
 </li>
 
-<li><a name="note3"/>The editor and help system features are disabled
+<li><a name="note3"/>Disabled due to miscompilation of stack protector
+in conjunction with C++ exceptions with some MinGW compilers.
+</li>
+
+<li><a name="note4"/>The editor and help system features are disabled
 to conserve cache on embedded platforms. The features build and work
 on these platforms, but they are basically unusable due to the lack of any
 on-screen keyboard.
 </li>
 
-<li><a name="note4"/>The updater is typically disabled in the Linux
+<li><a name="note5"/>The updater is typically disabled in the Linux
 binaries that are shipped (for distributions like Debian or Fedora), even
 though the feature can easily be enabled.<br/>The issue is that MegaZeux is
 installed system-wide on these platforms and overwrites cannot be
@@ -436,9 +442,11 @@ guaranteed.<br/>Additionally, it is felt that the advanced package management
 on these platforms supercedes any usefulness of the built-in updater.
 </li>
 
-<li><a name="note5"/>Simply not had the opportunity to cross compile
-this feature.<br/>
-Future developments may require it.
+<li><a name="note6"/>Not had the opportunity to cross compile the
+required libraries (zlib and libpng).<br/>Future developments may depend on
+these libraries, such as networking and the archive browser. Currently, the
+bloat cannot be justified, and these platforms do not yet have functioning
+network APIs.
 </li>
 
 </ol>
