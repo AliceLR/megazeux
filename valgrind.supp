@@ -16,6 +16,23 @@
 }
 
 {
+   theme and variation on leak in SDL_VideoInit
+   Memcheck:Leak
+   fun:realloc
+   obj:/usr/lib/libX11.so*
+   obj:/usr/lib/libX11.so*
+   fun:_XlcCreateLC
+   fun:_XlcDefaultLoader
+   fun:_XOpenLC
+   fun:_XlcCurrentLC
+   fun:XSetLocaleModifiers
+   fun:XSetLocaleModifiers
+   obj:/usr/lib/libSDL*.so*
+   obj:/usr/lib/libSDL*.so*
+   fun:SDL_VideoInit
+}
+
+{
    another leak in SDL_VideoInit
    Memcheck:Leak
    fun:malloc
@@ -26,6 +43,52 @@
    obj:/usr/lib/libSDL*.so*
    obj:/usr/lib/libSDL*.so*
    fun:SDL_VideoInit
+   fun:SDL_InitSubSystem
+   fun:SDL_Init
+   fun:platform_init
+   fun:main
+}
+
+{
+   variation on another a leak in SDL_VideoInit
+   Memcheck:Leak
+   fun:malloc
+   obj:/usr/lib/libX11.so*
+   obj:/usr/lib/libX11.so*
+   fun:_XimSetICValueData
+   fun:_XimLocalCreateIC
+   fun:XCreateIC
+   obj:/usr/lib/libSDL*.so*
+   obj:/usr/lib/libSDL*.so*
+   fun:SDL_VideoInit
+   fun:SDL_InitSubSystem
+   fun:SDL_Init
+   fun:platform_init
+}
+
+{
+   Leak in SDL_AudioInit
+   Memcheck:Leak
+   fun:malloc
+   obj:*
+   obj:*
+   fun:Audio_Available
+   fun:SDL_AudioInit
+   fun:SDL_InitSubSystem
+   fun:SDL_Init
+   fun:platform_init
+   fun:main
+}
+
+{
+   Another leak in SDL_AudioInit
+   Memcheck:Leak
+   fun:malloc
+   obj:*
+   obj:*
+   obj:*
+   fun:Audio_Available
+   fun:SDL_AudioInit
    fun:SDL_InitSubSystem
    fun:SDL_Init
    fun:platform_init
