@@ -75,6 +75,8 @@ USERS
   two consecutive lines merged together with backspace. (Exophase)
 + Fix use of status counter 6 and display of status counters in general,
   which has been broken since 2.80.
++ Fix swapping to encrypted worlds if initially the user decides to not
+  decrypt the world. Previously, this would either crash, or loop forever.
 
 DEVELOPERS
 

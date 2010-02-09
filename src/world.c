@@ -765,7 +765,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
         }
       }
 
-      error("Cannot load password protected worlds.", 1, 8, 0x0D02);
+      error("Cannot load password protected world.", 1, 8, 0x0D02);
       goto exit_close;
     }
 
@@ -1180,7 +1180,7 @@ exit_out:
 
 exit_recurse:
   ret = load_world(mzx_world, file, savegame, faded);
-  goto exit_close;
+  goto exit_out;
 }
 
 // After clearing the above, use this to get default values. Use
@@ -1325,8 +1325,12 @@ int reload_savegame(World *mzx_world, const char *file, int *faded)
 int reload_swap(World *mzx_world, const char *file, int *faded)
 {
   int load_return;
-  clear_world(mzx_world);
+
+  if(mzx_world->active)
+    clear_world(mzx_world);
+
   load_return = load_world(mzx_world, file, 0, faded);
+
   mzx_world->current_board_id = mzx_world->first_board;
   set_current_board_ext(mzx_world,
    mzx_world->board_list[mzx_world->current_board_id]);

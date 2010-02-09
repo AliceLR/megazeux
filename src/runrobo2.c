@@ -5387,31 +5387,35 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 226: // Swap world str
       {
-        int redo_load = 0;
         char name_buffer[ROBOT_MAX_TR];
         char *translated_name = malloc(MAX_PATH);
+        int redo_load;
 
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
 
-        if(!fsafetranslate(name_buffer, translated_name))
+        // Couldn't find world to swap to; abort cleanly
+        if(fsafetranslate(name_buffer, translated_name))
         {
-          do
-          {
-            if(reload_swap(mzx_world, translated_name, &fade))
-            {
-              redo_load = error("Error swapping to next world", 1, 7, 0x2C01);
-            }
-          } while(redo_load == 2);
-
-          strcpy(curr_file, translated_name);
-          mzx_world->swapped = 1;
-
           free(translated_name);
-          return;
+          break;
         }
 
-	free(translated_name);
-        break;
+        /* Because reload_swap() requires that the world be cleared before
+         * loading the new world, we only allow the user to retry a failed
+         * swap or exit the program, at this point. By the time we get to
+         * the strcpy() below, the world must have been successfully swapped.
+         */
+        do
+        {
+          redo_load = 0;
+          if(reload_swap(mzx_world, translated_name, &fade))
+            redo_load = error("Error swapping to next world", 1, 6, 0x2C01);
+        } while(redo_load == 2);
+
+        strcpy(curr_file, translated_name);
+        mzx_world->swapped = 1;
+        free(translated_name);
+        return;
       }
 
       case 227: // If allignedrobot str str
