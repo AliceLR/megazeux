@@ -34,7 +34,7 @@ See http://digitalmzx.net/ for more information.
 
 %build
 ./config.sh --platform unix --as-needed-hack \
-            --enable-release --disable-glsl
+            --enable-release
 %{__make}
 
 %install
