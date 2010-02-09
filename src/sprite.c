@@ -397,7 +397,8 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
   int vlayer_width = mzx_world->vlayer_width;
   int board_collide = 0;
 
-  if(!(check_sprite->flags & SPRITE_INITIALIZED)) return -1;
+  if(!(check_sprite->flags & SPRITE_INITIALIZED))
+    return -1;
 
   // Check against the background, will only collide against customblock for now
   //  (id 5)
@@ -411,7 +412,7 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
   {
     bwidth = board_width;
   }
-  
+
   // Check for <= 0 width or height (prevent crashing)
   if((check_sprite->col_width <= 0) || (check_sprite->col_height <= 0))
   {

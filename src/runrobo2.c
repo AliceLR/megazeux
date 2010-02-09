@@ -1937,7 +1937,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           ret = sprite_colliding_xy(mzx_world, check_sprite,
            check_x, check_y);
 
-          if(ret)
+          if(ret > 0)
           {
             char *p6 = next_param_pos(p5);
             gotoed = send_self_label_tr(mzx_world, p6 + 1, id);
@@ -1949,8 +1949,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           offset = check_x + (check_y * board_width);
 
           split_colors(check_color, &fg, &bg);
-          if(check_at_xy(src_board, check_id, fg, bg, check_param,
-           offset))
+          if(check_at_xy(src_board, check_id, fg, bg, check_param, offset))
           {
             char *p6 = next_param_pos(p5);
             gotoed = send_self_label_tr(mzx_world, p6 + 1, id);
