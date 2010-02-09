@@ -61,25 +61,31 @@
 
 static const char main_menu_1[] =
  "Enter- Menu\n"
- "Esc  - Exit MegaZeux\n"
- "F1/H - Help\n"
+ "Esc  - Exit MegaZeux\n";
+
+static const char main_menu_2[] =
+ "F1/H - Help\n";
+
+static const char main_menu_3[] =
  "F2/S - Settings\n"
  "F3/L - Load world\n"
  "F4/R - Restore game\n"
  "F5/P - Play world";
 
-static const char main_menu_2[] =
+static const char main_menu_4[] =
  "F7/U - Updater";
 
-static const char main_menu_3[] =
+static const char main_menu_5[] =
  "F8/E - Editor";
 
-static const char main_menu_4[] =
+static const char main_menu_6[] =
  "F10  - Quickload\n"
  "";  // unused
 
 static const char game_menu_1[] =
- "F1    - Help\n"
+ "F1    - Help\n";
+
+static const char game_menu_2[] =
  "Enter - Menu/status\n"
  "Esc   - Exit to title\n"
  "F2    - Settings\n"
@@ -87,10 +93,10 @@ static const char game_menu_1[] =
  "F4    - Restore game\n"
  "F5/Ins- Toggle bomb type";
 
-static const char game_menu_2[] =
+static const char game_menu_3[] =
  "F6    - Debug Menu";
 
-static const char game_menu_3[] =
+static const char game_menu_4[] =
  "F9    - Quicksave\n"
  "F10   - Quickload\n"
  "Arrows- Move\n"
@@ -128,11 +134,20 @@ void set_intro_mesg_timer(unsigned int time)
   intro_mesg_timer = time;
 }
 
-static void draw_intro_mesg(void)
+static void draw_intro_mesg(struct world *mzx_world)
 {
-  static const char mesg[] =
-   "F1: Help   Enter: Menu   Ctrl-Alt-Enter: Fullscreen";
-  write_string(mesg, (80 - strlen(mesg)) >> 1, 24, scroll_color, 0);
+  static const char mesg1[] = "F1: Help";
+  static const char mesg2[] = "Enter: Menu   Ctrl-Alt-Enter: Fullscreen";
+
+  if(mzx_world->help_file)
+  {
+    write_string(mesg1, 14, 24, scroll_color, 0);
+    write_string(mesg2, 25, 24, scroll_color, 0);
+  }
+  else
+  {
+    write_string(mesg2, 20, 24, scroll_color, 0);
+  }
 }
 
 static void load_world_file(struct world *mzx_world, char *name)
@@ -1437,7 +1452,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     }
 
     else if(intro_mesg_timer > 0)
-      draw_intro_mesg();
+      draw_intro_mesg(mzx_world);
 
     // Add debug box
     if(draw_debug_box && debug_mode)
@@ -2073,10 +2088,12 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
             draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
             write_string(" Game Menu ", 17, 4, 30, 0);
-            write_string(game_menu_1, 10, 5, 31, 1);
+            if(mzx_world->help_file)
+              write_string(game_menu_1, 10, 5, 31, 1);
+            write_string(game_menu_2, 10, 6, 31, 1);
             if(debug_counters && editing)
-              write_string(game_menu_2, 10, 12, 31, 1);
-            write_string(game_menu_3, 10, 13, 31, 1);
+              write_string(game_menu_3, 10, 12, 31, 1);
+            write_string(game_menu_4, 10, 13, 31, 1);
 
             show_status(mzx_world); // Status screen too
             update_screen();
@@ -2149,7 +2166,7 @@ void title_screen(struct world *mzx_world)
   }
 
   src_board = mzx_world->current_board;
-  draw_intro_mesg();
+  draw_intro_mesg(mzx_world);
 
   // Main game loop
 
@@ -2523,11 +2540,14 @@ void title_screen(struct world *mzx_world)
           draw_window_box(28, 4, 51, 16, 25, 16, 24, 1, 1);
           write_string(" Main Menu ", 35, 4, 30, 0);
           write_string(main_menu_1, 30, 5, 31, 1);
+          if(mzx_world->help_file)
+            write_string(main_menu_2, 30, 7, 31, 1);
+          write_string(main_menu_3, 30, 8, 31, 1);
           if(check_for_updates)
-            write_string(main_menu_2, 30, 12, 31, 1);
+            write_string(main_menu_4, 30, 12, 31, 1);
           if(edit_world)
-            write_string(main_menu_3, 30, 13, 31, 1);
-          write_string(main_menu_4, 30, 14, 31, 1);
+            write_string(main_menu_5, 30, 13, 31, 1);
+          write_string(main_menu_6, 30, 14, 31, 1);
           update_screen();
           m_show();
 
@@ -2557,7 +2577,7 @@ void title_screen(struct world *mzx_world)
           break;
         }
       }
-      draw_intro_mesg();
+      draw_intro_mesg(mzx_world);
     }
   } while(key != IKEY_ESCAPE);
 
