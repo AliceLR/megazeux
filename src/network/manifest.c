@@ -116,7 +116,7 @@ static struct manifest_entry *manifest_list_copy(struct manifest_entry *src)
   return dest;
 }
 
-static struct manifest_entry *manifest_list_create(FILE *f)
+struct manifest_entry *manifest_list_create(FILE *f)
 {
   struct manifest_entry *head = NULL, *e = NULL, *next_e;
   char buffer[LINE_BUF_LEN];
@@ -187,10 +187,10 @@ static struct manifest_entry *manifest_get_local(void)
   struct manifest_entry *manifest;
   FILE *f;
 
-  f = fopen("manifest.txt", "rb");
+  f = fopen(MANIFEST_TXT, "rb");
   if(!f)
   {
-    warn("Local manifest.txt is missing\n");
+    warn("Local " MANIFEST_TXT " is missing\n");
     return NULL;
   }
 
@@ -208,19 +208,19 @@ static struct manifest_entry *manifest_get_remote(struct host *h,
   host_status_t ret;
   FILE *f;
 
-  snprintf(url, LINE_BUF_LEN, "%s/manifest.txt", base);
+  snprintf(url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, base);
 
-  f = fopen("manifest.txt", "w+b");
+  f = fopen(MANIFEST_TXT, "w+b");
   if(!f)
   {
-    warn("Failed to open local manifest.txt for writing\n");
+    warn("Failed to open local " MANIFEST_TXT " for writing\n");
     return NULL;
   }
 
   ret = host_recv_file(h, url, f, "text/plain");
   if(ret != HOST_SUCCESS)
   {
-    warn("Processing manifest.txt failed (error %d)\n", ret);
+    warn("Processing " MANIFEST_TXT " failed (error %d)\n", ret);
     return NULL;
   }
 
@@ -302,7 +302,7 @@ bool manifest_compute_sha256(SHA256_ctx *ctx, FILE *f, unsigned long len)
   return true;
 }
 
-static bool manifest_entry_check_validity(struct manifest_entry *e, FILE *f)
+bool manifest_entry_check_validity(struct manifest_entry *e, FILE *f)
 {
   unsigned long len = e->size;
   SHA256_ctx ctx;

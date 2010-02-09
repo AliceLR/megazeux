@@ -28,6 +28,8 @@ __M_BEGIN_DECLS
 #include "sha256.h"
 #include "host.h"
 
+#define MANIFEST_TXT "manifest.txt"
+
 struct manifest_entry
 {
   struct manifest_entry *next;
@@ -38,6 +40,9 @@ struct manifest_entry
 
 NETWORK_LIBSPEC bool manifest_compute_sha256(SHA256_ctx *ctx, FILE *f,
  unsigned long len);
+NETWORK_LIBSPEC bool manifest_entry_check_validity(struct manifest_entry *e,
+ FILE *f);
+NETWORK_LIBSPEC struct manifest_entry *manifest_list_create(FILE *f);
 
 NETWORK_LIBSPEC void manifest_list_free(struct manifest_entry **head);
 NETWORK_LIBSPEC bool manifest_get_updates(struct host *h, const char *basedir,

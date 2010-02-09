@@ -44,6 +44,7 @@
 
 #define OUTBOUND_PORT 80
 #define LINE_BUF_LEN  256
+
 #define UPDATES_TXT   "updates.txt"
 #define DELETE_TXT    "delete.txt"
 
@@ -58,8 +59,6 @@
 #define WIDGET_BUF_LEN 80
 
 static char **process_argv;
-
-#if 0
 
 static bool check_prune_basedir(const char *file)
 {
@@ -83,8 +82,6 @@ static bool check_prune_basedir(const char *file)
   // Recursion; remove any parent directory
   return check_prune_basedir(path);
 }
-
-#endif
 
 /* FIXME: The allocation of MAX_PATH on the stack in a recursive
  *        function WILL cause problems, eventually!
@@ -174,19 +171,6 @@ static bool cancel_cb(void)
   return false;
 }
 
-#if 0
-    if(unlink(e->name))
-    {
-      error();
-    }
-
-    /* Obtain the path for this file. If the file isn't at the top
-     * level, and the directory is empty (rmdir ensures this)
-     * the directory will be pruned.
-     */
-    check_prune_basedir(e->name);
-#endif
-
 static struct manifest_entry *delete_list, *delete_p;
 
 static void delete_hook(const char *file)
@@ -232,11 +216,85 @@ err_out:
   return;
 }
 
+static bool swivel_current_dir(void)
+{
+  bool ret = false;
+  char *base_path;
+
+  // Store the user's current directory, so we can get back to it
+  getcwd(current_dir, MAX_PATH);
+
+  // Find and change into the base path for this MZX binary
+  base_path = malloc(MAX_PATH);
+  get_path(process_argv[0], base_path, MAX_PATH);
+
+  if(chdir(base_path))
+  {
+    error("Failed to change into install directory.", 1, 8, 0);
+    goto err_free_base_path;
+  }
+
+  ret = true;
+err_free_base_path:
+  free(base_path);
+  return ret;
+}
+
+static bool swivel_current_dir_back(void)
+{
+  if(chdir(current_dir))
+  {
+    error("Failed to change back to user directory.", 1, 8, 0);
+    return false;
+  }
+
+  return true;
+}
+
+static bool backup_original_manifest(void)
+{
+  struct stat s;
+
+  /* If there's a manifest, move it to a backup location.
+   * Fatal error if rename fails.
+   */
+  if(!stat(MANIFEST_TXT, &s))
+    if(rename(MANIFEST_TXT, MANIFEST_TXT "~"))
+      return false;
+
+  return true;
+}
+
+static bool restore_original_manifest(void)
+{
+  struct stat s;
+
+  // Try to remove original manifest before restoration
+  if(unlink(MANIFEST_TXT))
+  {
+    error("Failed to remove manifest. Check permissions.", 1, 8, 0);
+    return false;
+  }
+
+  // No manifest to restore; consider this successful
+  if(stat(MANIFEST_TXT "~", &s))
+    return true;
+
+  // Try to restore backup manifest
+  if(rename(MANIFEST_TXT "~", MANIFEST_TXT))
+  {
+    error("Failed to roll back manifest. Check permissions.", 1, 8, 0);
+    return false;
+  }
+
+  return true;
+}
+
 static void __check_for_updates(void)
 {
-  char *base_path, buffer[LINE_BUF_LEN], *url_base, *value;
   struct manifest_entry *removed, *replaced, *added, *e;
   char **list_entries, widget_buf[WIDGET_BUF_LEN];
+  char buffer[LINE_BUF_LEN], *url_base, *value;
   int i = 0, entries = 0, buf_len, result;
   const char *version = "2.82";
   size_t list_entry_width = 0;
@@ -245,17 +303,8 @@ static void __check_for_updates(void)
   struct host *h;
   FILE *f;
 
-  // Store the user's current directory, so we can get back to it
-  getcwd(current_dir, MAX_PATH);
-
-  // Find and change into the base path for this MZX binary
-  base_path = malloc(MAX_PATH);
-  get_path(process_argv[0], base_path, MAX_PATH);
-  if(chdir(base_path))
-  {
-    error("Failed to change into install directory.", 1, 8, 0);
-    goto err_free_base_path;
-  }
+  if(!swivel_current_dir())
+    goto err_out;
 
   // Acid test: Can we write to this directory?
   f = fopen(UPDATES_TXT, "w+b");
@@ -407,10 +456,21 @@ static void __check_for_updates(void)
    13, 12, DI_TEXT, 0);
   update_screen();
 
+  /* The call to manifest_get_updates() destroys any existing manifest
+   * file in this directory. Since we still allow user to abort after
+   * this call, and downloading the updates may fail, we copy the
+   * old manifest to a backup location and optionally restore it later.
+   */
+  if(!backup_original_manifest())
+  {
+    error("Failed to back up manifest. Check permissions.", 1, 8, 0);
+    goto err_free_url_base;
+  }
+
   if(!manifest_get_updates(h, url_base, &removed, &replaced, &added))
   {
     error("Failed to compute update manifests", 1, 8, 0);
-    goto err_free_url_base;
+    goto err_roll_back_manifest;
   }
 
   clear_screen(32, 7);
@@ -549,6 +609,9 @@ err_free_delete_list:
 err_free_update_manifests:
   manifest_list_free(&removed);
   manifest_list_free(&replaced);
+err_roll_back_manifest:
+  if(!ret)
+    restore_original_manifest();
 err_free_url_base:
   free(url_base);
 err_host_destroy:
@@ -560,9 +623,8 @@ err_clear_screen:
 err_layer_exit:
   host_layer_exit();
 err_chdir:
-  chdir(current_dir);
-err_free_base_path:
-  free(base_path);
+  swivel_current_dir_back();
+err_out:
 
   /* At this point we found updates and we successfully updated
    * to them. Reload the program with the original argv.
@@ -571,11 +633,54 @@ err_free_base_path:
   {
     const void *argv = process_argv;
     execv(process_argv[0], argv);
+    perror("execv");
+
+    error("Attempt to invoke self failed!", 1, 8, 0);
+    return;
   }
 }
 
 void updater_init(char *argv[])
 {
+  struct manifest_entry *e;
+  bool ret;
+  FILE *f;
+
   check_for_updates = __check_for_updates;
   process_argv = argv;
+
+  if(!swivel_current_dir())
+    return;
+
+  f = fopen(DELETE_TXT, "rb");
+  if(!f)
+    return;
+
+  delete_list = manifest_list_create(f);
+  fclose(f);
+
+  for(e = delete_list; e; e = e->next)
+  {
+    f = fopen(e->name, "rb");
+    if(!f)
+      continue;
+
+    ret = manifest_entry_check_validity(e, f);
+    fclose(f);
+
+    if(!ret)
+      continue;
+
+    if(unlink(e->name))
+      continue;
+
+    /* Obtain the path for this file. If the file isn't at the top
+     * level, and the directory is empty (rmdir ensures this)
+     * the directory will be pruned.
+     */
+    check_prune_basedir(e->name);
+  }
+
+  manifest_list_free(&delete_list);
+  swivel_current_dir_back();
 }
