@@ -98,5 +98,6 @@ mzx_help.fil: ${txt2hlp} docs/WIPHelp.txt
 help_check: ${hlp2txt} mzx_help.fil
 	@src/utils/hlp2txt mzx_help.fil help.txt
 	@diff -q docs/WIPHelp.txt help.txt
+	@rm -f help.txt
 
 endif
