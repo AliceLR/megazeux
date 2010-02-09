@@ -64,7 +64,6 @@
 
 #define FP_SHIFT      13
 #define FP_AND        ((1 << FP_SHIFT) - 1)
-#define FP_MULT(a, b) ((a * b) << FP_SHIFT)
 
 struct wav_info
 {

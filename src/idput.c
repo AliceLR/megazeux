@@ -40,7 +40,6 @@
 #define cw_anim              190
 #define ccw_anim             194
 #define open_door            198
-#define transport_anims      230
 #define trans_north          230
 #define trans_south          234
 #define trans_east           238

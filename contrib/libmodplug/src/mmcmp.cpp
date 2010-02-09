@@ -46,9 +46,7 @@ typedef struct MMCMPSUBBLOCK
 #define MMCMP_COMP		0x0001
 #define MMCMP_DELTA		0x0002
 #define MMCMP_16BIT		0x0004
-#define MMCMP_STEREO	0x0100
 #define MMCMP_ABS16		0x0200
-#define MMCMP_ENDIAN	0x0400
 
 typedef struct MMCMPBITBUFFER
 {

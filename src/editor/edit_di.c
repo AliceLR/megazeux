@@ -40,8 +40,6 @@
 #include "robo_ed.h"
 #include "window.h"
 
-#define MAX_ELEMS 15
-
 // The 8th bit set indicates that it's a color, not a char
 static const int char_values[8][24] =
 {

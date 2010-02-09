@@ -15,7 +15,9 @@
 #define VOLUMERAMPLEN	146	// 1.46ms = 64 samples at 44.1kHz
 
 // VU-Meter
+#if defined(MODPLUG_PLAYER) || defined(ENABLE_STEREOVU)
 #define VUMETER_DECAY		4
+#endif
 
 // SNDMIX: These are global flags for playback control
 UINT CSoundFile::m_nStereoSeparation = 128;

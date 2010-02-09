@@ -51,9 +51,6 @@ static char last_char = 0;
 // function, the cursor is automatically off. If password is set, all
 // characters appear as x.
 
-// Password character
-#define PW_CHAR 42
-
 // Mouse support- Clicking inside string sends cursor there. Clicking
 // outside string returns a MOUSE_EVENT to caller without acknowledging
 // the event.

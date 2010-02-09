@@ -18,44 +18,21 @@ extern void Log(LPCSTR s, ...);
 // OctaMed MED file support (import only)
 
 // flags
-#define	MMD_FLAG_FILTERON	0x1
-#define	MMD_FLAG_JUMPINGON	0x2
-#define	MMD_FLAG_JUMP8TH	0x4
-#define	MMD_FLAG_INSTRSATT	0x8 // instruments are attached (this is a module)
 #define	MMD_FLAG_VOLHEX		0x10
-#define MMD_FLAG_STSLIDE	0x20 // SoundTracker mode for slides
 #define MMD_FLAG_8CHANNEL	0x40 // OctaMED 8 channel song
-#define	MMD_FLAG_SLOWHQ		0x80 // HQ slows playing speed (V2-V4 compatibility)
 // flags2
 #define MMD_FLAG2_BMASK		0x1F
 #define MMD_FLAG2_BPM		0x20
-#define	MMD_FLAG2_MIX		0x80 // uses Mixing (V7+)
-// flags3:
-#define	MMD_FLAG3_STEREO	0x1	// mixing in Stereo mode
-#define	MMD_FLAG3_FREEPAN	0x2	// free panning
-#define MMD_FLAG3_GM		0x4 // module designed for GM/XG compatibility
-
 
 // generic MMD tags
 #define	MMDTAG_END		0
 #define	MMDTAG_PTR		0x80000000	// data needs relocation
-#define	MMDTAG_MUSTKNOW	0x40000000	// loader must fail if this isn't recognized
-#define	MMDTAG_MUSTWARN	0x20000000	// loader must warn if this isn't recognized
 
 // ExpData tags
 // # of effect groups, including the global group (will
 // override settings in MMDSong struct), default = 1
-#define	MMDTAG_EXP_NUMFXGROUPS	1
 #define	MMDTAG_TRK_NAME		(MMDTAG_PTR|1)	// trackinfo tags
 #define	MMDTAG_TRK_NAMELEN	2				// namelen includes zero term.
-#define	MMDTAG_TRK_FXGROUP	3
-// effectinfo tags
-#define	MMDTAG_FX_ECHOTYPE	1
-#define MMDTAG_FX_ECHOLEN	2
-#define	MMDTAG_FX_ECHODEPTH	3
-#define	MMDTAG_FX_STEREOSEP	4
-#define	MMDTAG_FX_GROUPNAME	(MMDTAG_PTR|5)	// the Global Effects group shouldn't have name saved!
-#define	MMDTAG_FX_GRPNAMELEN 6	// namelen includes zero term.
 
 #pragma pack(1)
 

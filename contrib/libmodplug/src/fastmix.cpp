@@ -94,7 +94,6 @@ extern short int gKaiserSinc[]; // 8-taps polyphase
 #define SPLINE_CLAMPFORUNITY
 // log2(number) of precalculated splines (range is [4..14])
 #define SPLINE_FRACBITS 10
-#define SPLINE_LUTLEN (1L<<SPLINE_FRACBITS)
 
 class CzCUBICSPLINE
 {	public:
@@ -168,7 +167,6 @@ CzCUBICSPLINE sspline;
 // number of samples in window
 #define WFIR_LOG2WIDTH		3
 #define WFIR_WIDTH			(1L<<WFIR_LOG2WIDTH)
-#define WFIR_SMPSPERWING	((WFIR_WIDTH-1)>>1)
 // cutoff (1.0 == pi/2)
 #define WFIR_CUTOFF		0.90f
 // wfir type
@@ -186,7 +184,6 @@ CzCUBICSPLINE sspline;
 #define M_zPI		3.1415926535897932384626433832795
 #endif
 #define M_zEPS		1e-8
-#define M_zBESSELEPS	1e-21
 
 class CzWINDOWEDFIR
 {	
@@ -308,9 +305,6 @@ CzWINDOWEDFIR sfir;
 	} while (pvol < pbufmax);\
 	pChn->nPos += nPos >> 16;\
 	pChn->nPosLo = nPos & 0xFFFF;
-
-#define SNDMIX_ENDSAMPLELOOP8	SNDMIX_ENDSAMPLELOOP
-#define SNDMIX_ENDSAMPLELOOP16	SNDMIX_ENDSAMPLELOOP
 
 //////////////////////////////////////////////////////////////////////////////
 // Mono
@@ -2062,11 +2056,10 @@ VOID MPPASMCALL X86_MonoFromStereo(int *pMixBuf, UINT nSamples)
 }
 #endif
 
-#define OFSDECAYSHIFT	8
-#define OFSDECAYMASK	0xFF
-
 
 #ifdef MSC_VER
+#define OFSDECAYSHIFT	8
+#define OFSDECAYMASK	0xFF
 void MPPASMCALL X86_StereoFill(int *pBuffer, UINT nSamples, LPLONG lpROfs, LPLONG lpLOfs)
 //------------------------------------------------------------------------------
 {

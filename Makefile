@@ -74,8 +74,8 @@ endif
 # Android headers are busted and we get too many warnings..
 #
 ifneq (${PLATFORM},android)
-CFLAGS   += -Wundef
-CXXFLAGS += -Wundef
+CFLAGS   += -Wundef -Wunused-macros
+CXXFLAGS += -Wundef -Wunused-macros
 endif
 
 #

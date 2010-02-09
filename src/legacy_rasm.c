@@ -41,10 +41,8 @@
 #define CONDITION          (1 << 9)
 #define ITEM               (1 << 10)
 #define EXTRA              (1 << 11)
-#define COMMAND            (1 << 12)
 #define UNDEFINED          (1 << 13)
 
-#define ERR_BADSTRING      1
 #define ERR_BADCHARACTER   2
 #define ERR_INVALID        3
 
@@ -114,14 +112,11 @@
 #define CMD_MATCHES        CMD | 62
 #define CMD_NONE           CMD | 63
 #define CMD_INPUT          CMD | 64
-#define CMD_DIR            CMD | 65
 #define CMD_COUNTER        CMD | 66
 #define CMD_DUPLICATE      CMD | 67
 #define CMD_NO             CMD | 68
 
 #define IGNORE_TYPE             (1 << 30)
-#define IGNORE_TYPE_COMMA       IGNORE_TYPE | 0
-#define IGNORE_TYPE_SEMICOLON   IGNORE_TYPE | 1
 #define IGNORE_TYPE_A           IGNORE_TYPE | 2
 #define IGNORE_TYPE_AN          IGNORE_TYPE | 3
 #define IGNORE_TYPE_AND         IGNORE_TYPE | 4
@@ -131,14 +126,10 @@
 #define IGNORE_TYPE_ELSE        IGNORE_TYPE | 8
 #define IGNORE_TYPE_FOR         IGNORE_TYPE | 9
 #define IGNORE_TYPE_FROM        IGNORE_TYPE | 10
-#define IGNORE_TYPE_INTO        IGNORE_TYPE | 11
 #define IGNORE_TYPE_IS          IGNORE_TYPE | 12
 #define IGNORE_TYPE_OF          IGNORE_TYPE | 13
 #define IGNORE_TYPE_THE         IGNORE_TYPE | 14
 #define IGNORE_TYPE_THEN        IGNORE_TYPE | 15
-#define IGNORE_TYPE_THERE       IGNORE_TYPE | 16
-#define IGNORE_TYPE_THROUGH     IGNORE_TYPE | 17
-#define IGNORE_TYPE_THRU        IGNORE_TYPE | 18
 #define IGNORE_TYPE_TO          IGNORE_TYPE | 19
 #define IGNORE_TYPE_WITH        IGNORE_TYPE | 20
 
