@@ -1,5 +1,5 @@
 /**
- * This tool modifies stadard Microsoft PE32 and PE32+ (Portable Executable)
+ * This tool modifies standard Microsoft PE32 and PE32+ (Portable Executable)
  * files on the i386 and AMD64 platforms, such that two identical programs
  * compiled with identical compilers produce an identical binary. Generally,
  * PE binaries are not identical, because TimeDateStamp (which changes
@@ -235,6 +235,10 @@ static error_t walk_rvas(FILE *f, uint16_t cpu_type,
           break;
       }
 
+      // Win32 I/O needs this between interleaved read/write
+      if(fseek(f, ftell(f), SEEK_SET))
+        return READ_ERROR;
+
       // Compute and rewrite pad as zero
       pad = phys - last_phys - (i + 1);
       for(i = 0; i < pad; i++)
@@ -300,6 +304,10 @@ static error_t modify_pe(FILE *f)
 
   // Read NumberOfSections (used below)
   if(fread(&num_sections, sizeof(uint16_t), 1, f) != 1)
+    return READ_ERROR;
+
+  // Win32 I/O needs this between interleaved read/write
+  if(fseek(f, ftell(f), SEEK_SET))
     return READ_ERROR;
 
   // Re-write TimeDateStamp as zero (new Checksum computed later)
