@@ -858,6 +858,8 @@ __audio_c_maybe_static void construct_audio_stream(
 
   a_src->next = NULL;
 
+  LOCK();
+
   if(audio.stream_list_base == NULL)
   {
     audio.stream_list_base = a_src;
@@ -869,6 +871,8 @@ __audio_c_maybe_static void construct_audio_stream(
 
   a_src->previous = audio.stream_list_end;
   audio.stream_list_end = a_src;
+
+  UNLOCK();
 }
 
 __audio_c_maybe_static void initialize_sampled_stream(
@@ -1619,6 +1623,7 @@ __editor_maybe_static void load_module(char *filename, bool safely,
  int volume)
 {
   char translated_filename[MAX_PATH];
+  struct audio_stream *a_src;
 
   // FIXME: Weird hack, why not use end_module() directly?
   if(!filename || !filename[0])
@@ -1647,10 +1652,12 @@ __editor_maybe_static void load_module(char *filename, bool safely,
 
   end_module();
 
+  a_src = construct_stream_audio_file(filename, 0,
+   volume * audio.music_volume / 8, 1);
+
   LOCK();
 
-  audio.primary_stream = construct_stream_audio_file(filename, 0,
-   volume * audio.music_volume / 8, 1);
+  audio.primary_stream = a_src;
 
   UNLOCK();
 }
@@ -1689,8 +1696,6 @@ void play_sample(int freq, char *filename, bool safely)
     filename = translated_filename;
   }
 
-  LOCK();
-
   if(freq == 0)
   {
     a_src = construct_stream_audio_file(filename, 0, vol, 0);
@@ -1700,8 +1705,6 @@ void play_sample(int freq, char *filename, bool safely)
     a_src = construct_stream_audio_file(filename,
      (freq_conversion / freq) / 2, vol, 0);
   }
-
-  UNLOCK();
 }
 
 void end_sample(void)
