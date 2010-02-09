@@ -1827,14 +1827,14 @@ static void force_string_length(World *mzx_world, const char *name,
 
 static void force_string_splice(World *mzx_world, const char *name,
  int next, mzx_string **str, unsigned int s_length, unsigned int offset,
- unsigned int *size, unsigned int zero_special)
+ unsigned int *size)
 {
   force_string_length(mzx_world, name, next, str, s_length);
 
   if((*size == 0) || (*size > s_length))
     *size = s_length;
 
-  if((offset == 0 && zero_special) || (offset + *size > (*str)->length))
+  if((offset == 0) || (offset + *size > (*str)->length))
     (*str)->length = offset + *size;
 }
 
@@ -1842,15 +1842,15 @@ static void force_string_copy(World *mzx_world, const char *name,
  int next, mzx_string **str, unsigned int s_length, unsigned int offset,
  unsigned int *size, char *src)
 {
-  force_string_splice(mzx_world, name, next, str, s_length, offset, size, 1);
+  force_string_splice(mzx_world, name, next, str, s_length, offset, size);
   memcpy((*str)->value + offset, src, *size);
 }
 
-static void force_string_move_notrunc(World *mzx_world, const char *name,
+static void force_string_move(World *mzx_world, const char *name,
  int next, mzx_string **str, unsigned int s_length, unsigned int offset,
  unsigned int *size, char *src)
 {
-  force_string_splice(mzx_world, name, next, str, s_length, offset, size, 0);
+  force_string_splice(mzx_world, name, next, str, s_length, offset, size);
   memmove((*str)->value + offset, src, *size);
 }
 
@@ -2909,7 +2909,7 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
       int actual_read;
 
       force_string_splice(mzx_world, name, next, &dest,
-       read_count, offset, &size, 1);
+       read_count, offset, &size);
 
       actual_read = fread(dest->value + offset, 1, size, input_file);
 
@@ -2927,7 +2927,7 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
       unsigned int new_allocated = allocated;
 
       force_string_splice(mzx_world, name, next, &dest,
-       allocated, offset, &size, 1);
+       allocated, offset, &size);
       dest_value = dest->value;
 
       while(1)
@@ -3051,7 +3051,7 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
   else
   {
     // Just a normal string here.
-    force_string_move_notrunc(mzx_world, name, next, &dest, src_length,
+    force_string_move(mzx_world, name, next, &dest, src_length,
      offset, &size, src_value);
   }
 }

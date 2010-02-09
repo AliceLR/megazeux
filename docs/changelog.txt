@@ -4,9 +4,6 @@ USERS
 
 + Writing to $str.length (which previously did undefined things) will now
   truncate or enlarge the string to the size specified.
-+ Writing to $str+0 is no longer interpreted in the same way as a plain
-  write to $str. Instead, it behaves like writes to non-zero offsets (as more
-  of a paste than a replace).
 
 DEVELOPERS
 
