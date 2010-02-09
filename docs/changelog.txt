@@ -74,6 +74,8 @@ USERS
 + Have IF [dir] PLAYER [color] [thing] [param] "label" interpret
   SEEK direction wrt robot coordinates, rather than player
   coordinates. Other directions are not affected.
++ Zapping a label at the end of a robot program will no longer
+  corrupt the robot list, usually causing crashes.
 
 DEVELOPERS
 
