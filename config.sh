@@ -170,16 +170,18 @@ fi
 
 ### PLATFORM DEFINITION #######################################################
 
-if [ "$PLATFORM" = "win32" ]; then
-	echo "MINGWBASE="          > Makefile.platform
-	echo                      >> Makefile.platform
-	cat arch/Makefile.mingw32 >> Makefile.platform
-	PLATFORM="mingw32"
-elif [ "$PLATFORM" = "win64" ]; then
-	echo "MINGWBASE="          > Makefile.platform
-	echo                      >> Makefile.platform
-	cat arch/Makefile.mingw64 >> Makefile.platform
-	PLATFORM="mingw64"
+if [ "$PLATFORM" = "win32" -o "$PLATFORM" = "win64" ]; then
+	echo "MINGWBASE="        > Makefile.platform
+	cat arch/Makefile.mingw >> Makefile.platform
+	PLATFORM="mingw"
+elif [ "$PLATFORM" = "mingw32" ]; then
+	echo "MINGWBASE=i586-mingw32msvc-" > Makefile.platform
+        cat arch/Makefile.mingw           >> Makefile.platform
+	PLATFORM="mingw"
+elif [ "$PLATFORM" = "mingw64" ]; then
+	echo "MINGWBASE=x86_64-pc-mingw32-" > Makefile.platform
+        cat arch/Makefile.mingw            >> Makefile.platform
+	PLATFORM="mingw"
 else
 	cp -f arch/Makefile.$PLATFORM Makefile.platform
 
@@ -583,7 +585,7 @@ if [ "$ICON" = "true" ]; then
 	#
 	# On Windows we want the icons to be compiled in
 	#
-	if [ "$PLATFORM" = "mingw32" -o "$PLATFORM" = "mingw64" ]; then
+	if [ "$PLATFORM" = "mingw" ]; then
 		echo "EMBED_ICONS=1" >> Makefile.platform
 	fi
 else
