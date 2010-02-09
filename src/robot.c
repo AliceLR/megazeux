@@ -1982,7 +1982,6 @@ void robot_box_display(struct world *mzx_world, char *program,
   struct robot *cur_robot = src_board->robot_list[id];
   int pos = 0, old_pos;
   int key;
-  int fade_status;
   int mouse_press;
 
   label_storage[0] = 0;
@@ -1991,13 +1990,7 @@ void robot_box_display(struct world *mzx_world, char *program,
   save_screen();
   m_show();
 
-  fade_status = get_fade_status();
-
-  if(fade_status)
-  {
-    clear_screen(32, 0);
-    insta_fadein();
-  }
+  dialog_fadein();
 
   scroll_edging_ext(mzx_world, 4, 0, 0);
   // Write robot name
@@ -2185,8 +2178,7 @@ void robot_box_display(struct world *mzx_world, char *program,
 
   } while(1);
 
-  if(fade_status)
-    insta_fadeout();
+  dialog_fadeout();
 
   // Restore screen and exit
   m_hide();

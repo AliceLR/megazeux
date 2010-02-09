@@ -501,9 +501,21 @@ Uint32 get_fade_status(void)
   return graphics.fade_status;
 }
 
-static void set_fade_status(Uint32 fade)
+void dialog_fadein(void)
 {
-  graphics.fade_status = fade;
+  if(get_fade_status())
+  {
+    clear_screen(32, 0);
+    insta_fadein();
+  }
+}
+
+void dialog_fadeout(void)
+{
+  if(get_fade_status())
+  {
+    insta_fadeout();
+  }
 }
 
 void set_screen_mode(Uint32 mode)
@@ -535,14 +547,8 @@ void set_screen_mode(Uint32 mode)
 
   if((graphics.screen_mode >= 2) && (mode < 2))
   {
-    int fade_status = graphics.fade_status;
     swap_palettes();
 
-    if(fade_status)
-    {
-      set_fade_status(0);
-      set_fade_status(fade_status);
-    }
     graphics.screen_mode = mode;
 
     set_gui_palette();

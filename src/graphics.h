@@ -218,6 +218,8 @@ void ec_mem_save_set(Uint8 *chars);
 void set_color_intensity(Uint32 color, Uint32 percent);
 Uint32 get_color_intensity(Uint32 color);
 Uint32 get_fade_status(void);
+void dialog_fadein(void);
+void dialog_fadeout(void);
 void vquick_fadein(void);
 void dump_screen(void);
 

@@ -854,7 +854,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 {
   struct board *src_board = mzx_world->current_board;
   struct robot *cur_robot;
-  int fade = get_fade_status();
   int cmd; // Command to run
   int lines_run = 0;
   int gotoed;
@@ -3383,11 +3382,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
         m_hide();
         save_screen();
-        if(fade)
-        {
-          clear_screen(32, 7);
-          insta_fadein();
-        }
+        dialog_fadein();
 
         draw_window_box(3, 11, 77, 14, DI_INPUT_BOX, DI_INPUT_BOX_DARK,
          DI_INPUT_BOX_CORNER, 1, 1);
@@ -3403,8 +3398,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
         intake(mzx_world, src_board->input_string,
          70, 5, 13, 15, 1, 0, NULL, 0, NULL);
-        if(fade)
-          insta_fadeout();
+
+        dialog_fadeout();
 
         restore_screen();
         src_board->input_size = strlen(src_board->input_string);
@@ -4016,11 +4011,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         char question_buffer[ROBOT_MAX_TR];
         int send_status;
 
-        if(fade)
-        {
-          clear_screen(32, 7);
-          insta_fadein();
-        }
+        dialog_fadein();
 
         tr_msg(mzx_world, cmd_ptr + 2, id, question_buffer);
 
@@ -4032,8 +4023,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(!send_status)
           gotoed = 1;
 
-        if(fade)
-          insta_fadeout();
+        dialog_fadeout();
         break;
       }
 
@@ -5442,6 +5432,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
          */
         do
         {
+          int fade; // FIXME: Hack!
           redo_load = 0;
           if(!reload_swap(mzx_world, translated_name, &fade))
             redo_load = error("Error swapping to next world", 1, 7, 0x2C01);

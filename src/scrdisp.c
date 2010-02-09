@@ -114,17 +114,12 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
   char *where; // Where scroll is
   char line[80]; // For editing
   int scroll_base_color = mzx_world->scroll_base_color;
-  int fade_status = get_fade_status();
   bool editing = (type == 2);
 
   // Draw screen
   save_screen();
 
-  if(fade_status)
-  {
-    clear_screen(32, 7);
-    insta_fadein();
-  }
+  dialog_fadein();
 
   if(editing)
     scroll_edging_ext(mzx_world, type, 256, 16);
@@ -385,8 +380,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
   // Restore screen and exit
   restore_screen();
 
-  if(fade_status)
-    insta_fadeout();
+  dialog_fadeout();
 }
 
 void scroll_edging_ext(struct world *mzx_world, int type, int offset,
@@ -555,18 +549,14 @@ void help_display(struct world *mzx_world, char *help, int offs, char *file,
 {
   // Display a help file
   int pos = offs, old_pos; // Where
-  int key = 0, fad = get_fade_status();
+  int key = 0;
   int t1;
   char mclick;
   // allow_help = 0;
   // Draw screen
   save_screen();
 
-  if(fad)
-  {
-    clear_screen(32, 7);
-    insta_fadein();
-  }
+  dialog_fadein();
 
   scroll_edging_ext(mzx_world, 3, 256, 16);
 
@@ -774,9 +764,8 @@ void help_display(struct world *mzx_world, char *help, int offs, char *file,
   } while(key != IKEY_ESCAPE);
 
   // Restore screen and exit
-  ex:
-  if(fad)
-    insta_fadeout();
+ex:
+  dialog_fadeout();
 
   restore_screen();
 }

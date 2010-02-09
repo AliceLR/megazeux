@@ -50,7 +50,6 @@ int error(const char *string, unsigned int type, unsigned int options,
 {
   const char *type_name;
   int t1 = 9, ret = 0;
-  int fade_status;
   char temp[5];
   int x;
 
@@ -72,12 +71,7 @@ int error(const char *string, unsigned int type, unsigned int options,
   m_hide();
   save_screen();
 
-  fade_status = get_fade_status();
-  if(fade_status)
-  {
-    clear_screen(32, 7);
-    insta_fadein();
-  }
+  dialog_fadein();
 
   draw_window_box(1, 10, 78, 14, 76, 64, 72, 1, 1);
   // Add title and error name
@@ -177,8 +171,7 @@ int error(const char *string, unsigned int type, unsigned int options,
   pop_context();
 
   // Restore screen and exit appropriately
-  if(fade_status)
-    insta_fadeout();
+  dialog_fadeout();
 
   restore_screen();
   m_show();
