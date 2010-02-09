@@ -36,6 +36,37 @@ void replace_scroll(struct board *src_board, struct scroll *src_scroll,
 void replace_sensor(struct board *src_board, struct sensor *src_sensor,
  int dest_id);
 
+#ifdef CONFIG_DEBYTECODE
+
+void duplicate_robot_direct_source(struct robot *cur_robot,
+ struct robot *copy_robot, int x, int y);
+int duplicate_robot_source(struct board *src_board, struct robot *cur_robot,
+ int x, int y);
+void replace_robot_source(struct board *src_board, struct robot *src_robot,
+ int dest_id);
+
+#else // !CONFIG_DEBYTECODE
+
+static inline void duplicate_robot_direct_source(struct robot *cur_robot,
+ struct robot *copy_robot, int x, int y)
+{
+  duplicate_robot_direct(cur_robot, copy_robot, x, y);
+}
+
+static inline int duplicate_robot_source(struct board *src_board,
+ struct robot *cur_robot, int x, int y)
+{
+  return duplicate_robot(src_board, cur_robot, x, y);
+}
+
+static inline void replace_robot_source(struct board *src_board,
+ struct robot *src_robot, int dest_id)
+{
+  replace_robot(src_board, src_robot, dest_id);
+}
+
+#endif // !CONFIG_DEBYTECODE
+
 __M_END_DECLS
 
 #endif // __EDITOR_ROBOT_H

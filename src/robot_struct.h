@@ -57,6 +57,10 @@ struct sensor
 
 struct robot
 {
+#ifdef CONFIG_DEBYTECODE
+  int program_source_length;
+  char *program_source;
+#endif
   int program_bytecode_length;
   char *program_bytecode;         // Pointer to robot's program
   char robot_name[15];

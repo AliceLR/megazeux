@@ -37,7 +37,6 @@
 #include "../audio.h"
 #include "../world.h"
 #include "../util.h"
-#include "../robot.h"
 #include "debug.h"
 
 #include "block.h"
@@ -484,13 +483,13 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
         if(is_robot(old_id))
         {
           int old_param = src_board->level_param[offset];
-          replace_robot(src_board, copy_robot, old_param);
+          replace_robot_source(src_board, copy_robot, old_param);
           src_board->level_color[offset] = color;
           src_board->level_id[offset] = id;
           return old_param;
         }
 
-        param = duplicate_robot(src_board, copy_robot, x, y);
+        param = duplicate_robot_source(src_board, copy_robot, x, y);
         if(param != -1)
         {
           (src_board->robot_list[param])->xpos = x;
@@ -588,7 +587,7 @@ static void grab_at_xy(struct world *mzx_world, enum thing *new_id,
     if(is_robot(grab_id))
     {
       struct robot *src_robot = src_board->robot_list[grab_param];
-      duplicate_robot_direct(src_robot, copy_robot, 0, 0);
+      duplicate_robot_direct_source(src_robot, copy_robot, 0, 0);
     }
     else
 
@@ -3688,6 +3687,12 @@ static void __edit_world(struct world *mzx_world)
   clear_screen(32, 7);
   insta_fadeout();
   strcpy(curr_file, current_world);
+
+  // Clear the copy stuff.
+  if(copy_robot.used)
+    clear_robot_contents(&copy_robot);
+  if(copy_scroll.used)
+    clear_scroll_contents(&copy_scroll);
 }
 
 void editor_init(void)
