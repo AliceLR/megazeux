@@ -1,0 +1,41 @@
+##
+# MegaZeux Network Makefile fragment
+##
+
+.PHONY: updater updater_clean
+
+network_base = src/network
+
+updater := ${network_base}/updater${BINEXT}
+updater_objs := ${mzx_base}/util.${o}
+updater_objs += ${network_base}/host.${o} ${network_base}/manifest.${o}
+updater_objs += ${network_base}/sha256.${o} ${network_base}/updater.${o}
+updater_ldflags := -L${PREFIX}/lib -lz
+
+-include $(updater_objs:.o=.d)
+
+updater: ${updater}
+
+${updater}: ${updater_objs}
+ifeq (${V},1)
+	${HOST_CC} ${updater_objs} \
+	        -o ${updater} ${LDFLAGS} ${updater_ldflags}
+else
+	@echo "  LINK    " ${updater}
+	@${HOST_CC} ${updater_objs} \
+	         -o ${updater} ${LDFLAGS} ${updater_ldflags}
+endif
+ifneq (${DEBUG},1)
+ifeq (${V},1)
+	${STRIP} ${updater}
+else
+	@echo "  STRIP   " ${updater}
+	@${STRIP} ${updater}
+endif
+endif
+
+updater_clean: ${updater}_clean
+
+${updater}_clean:
+	@echo "  CLEAN   " ${updater}
+	@rm -f ${updater_objs} ${updater} $(updater_objs:.o=.d)

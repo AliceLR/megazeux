@@ -55,6 +55,9 @@
 #undef BOOL
 #endif // CONFIG_WII
 
+// Could use C99's _Bool type instead?
+typedef int bool;
+
 #endif /* __cplusplus */
 
 #ifdef CONFIG_EDITOR
