@@ -26,34 +26,34 @@ __M_BEGIN_DECLS
 
 #include "graphics.h"
 
-typedef struct
+struct renderer_data
 {
   const char *name;
-  void (*reg)(renderer_t *renderer);
-} renderer_data;
+  void (*reg)(struct renderer *renderer);
+};
 
 #if defined(CONFIG_RENDER_SOFT)
-void render_soft_register(renderer_t *renderer);
+void render_soft_register(struct renderer *renderer);
 #endif
 #if defined(CONFIG_RENDER_GL)
-void render_gl1_register(renderer_t *renderer);
-void render_gl2_register(renderer_t *renderer);
+void render_gl1_register(struct renderer *renderer);
+void render_gl2_register(struct renderer *renderer);
 #endif
 #if defined(CONFIG_RENDER_GLSL)
-void render_glsl_register(renderer_t *renderer);
+void render_glsl_register(struct renderer *renderer);
 #endif
 #if defined(CONFIG_RENDER_YUV)
-void render_yuv1_register(renderer_t *renderer);
-void render_yuv2_register(renderer_t *renderer);
+void render_yuv1_register(struct renderer *renderer);
+void render_yuv2_register(struct renderer *renderer);
 #endif
 #if defined(CONFIG_RENDER_GP2X)
-void render_gp2x_register(renderer_t *renderer);
+void render_gp2x_register(struct renderer *renderer);
 #endif
 #if defined(CONFIG_NDS)
-void render_nds_register(renderer_t *renderer);
+void render_nds_register(struct renderer *renderer);
 #endif
 #if defined(CONFIG_RENDER_GX)
-void render_gx_register(renderer_t *renderer);
+void render_gx_register(struct renderer *renderer);
 #endif
 
 __M_END_DECLS

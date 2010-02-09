@@ -38,16 +38,16 @@ __M_BEGIN_DECLS
 #define MOUSE_BUTTON_WHEELUP    4
 #define MOUSE_BUTTON_WHEELDOWN  5
 
-typedef struct
+struct input_status
 {
   Uint8 keymap[512];
-  keycode last_key_pressed;
-  keycode last_key;
-  keycode last_key_repeat;
-  keycode last_key_release;
+  enum keycode last_key_pressed;
+  enum keycode last_key;
+  enum keycode last_key_repeat;
+  enum keycode last_key_release;
   Uint16 last_unicode;
   Uint16 last_unicode_repeat;
-  keycode last_key_repeat_stack[KEY_REPEAT_STACK_SIZE];
+  enum keycode last_key_repeat_stack[KEY_REPEAT_STACK_SIZE];
   Uint16 last_unicode_repeat_stack[KEY_REPEAT_STACK_SIZE];
   Uint32 repeat_stack_pointer;
   Uint32 last_keypress_time;
@@ -67,23 +67,23 @@ typedef struct
   Uint32 unfocus_pause;
 
   // Joystick map information
-  keycode joystick_button_map[16][256];
-  keycode joystick_axis_map[16][16][2];
+  enum keycode joystick_button_map[16][256];
+  enum keycode joystick_axis_map[16][16][2];
   Uint32 last_axis[16][16];
 
   Uint32 last_update_time;
-} input_status;
+};
 
-typedef enum
+enum keycode_type
 {
   keycode_pc_xt,
   keycode_internal,
   keycode_unicode
-} keycode_type;
+};
 
 CORE_LIBSPEC Uint32 update_event_status(void);
 CORE_LIBSPEC Uint32 update_event_status_delay(void);
-CORE_LIBSPEC Uint32 get_key(keycode_type type);
+CORE_LIBSPEC Uint32 get_key(enum keycode_type type);
 CORE_LIBSPEC void get_mouse_position(int *x, int *y);
 CORE_LIBSPEC void get_real_mouse_position(int *x, int *y);
 CORE_LIBSPEC Uint32 get_mouse_press(void);
@@ -91,17 +91,17 @@ CORE_LIBSPEC Uint32 get_mouse_press_ext(void);
 CORE_LIBSPEC Uint32 get_mouse_status(void);
 CORE_LIBSPEC void warp_mouse(Uint32 x, Uint32 y);
 CORE_LIBSPEC Uint32 get_mouse_drag(void);
-CORE_LIBSPEC int get_alt_status(keycode_type type);
-CORE_LIBSPEC int get_shift_status(keycode_type type);
-CORE_LIBSPEC int get_ctrl_status(keycode_type type);
+CORE_LIBSPEC int get_alt_status(enum keycode_type type);
+CORE_LIBSPEC int get_shift_status(enum keycode_type type);
+CORE_LIBSPEC int get_ctrl_status(enum keycode_type type);
 CORE_LIBSPEC void initialize_joysticks(void);
 
-extern input_status input;
+extern struct input_status input;
 
 void wait_event(void);
-Uint32 get_last_key(keycode_type type);
-void force_last_key(keycode_type type, int val);
-Uint32 get_key_status(keycode_type type, Uint32 index);
+Uint32 get_last_key(enum keycode_type type);
+void force_last_key(enum keycode_type type, int val);
+Uint32 get_key_status(enum keycode_type type, Uint32 index);
 void warp_mouse_x(Uint32 x);
 void warp_mouse_y(Uint32 y);
 void warp_real_mouse_x(Uint32 x);
@@ -110,10 +110,10 @@ Uint32 get_mouse_x(void);
 Uint32 get_mouse_y(void);
 Uint32 get_real_mouse_x(void);
 Uint32 get_real_mouse_y(void);
-Uint32 get_last_key_released(keycode_type type);
-void map_joystick_axis(int joystick, int axis, keycode min_key,
- keycode max_key);
-void map_joystick_button(int joystick, int button, keycode key);
+Uint32 get_last_key_released(enum keycode_type type);
+void map_joystick_axis(int joystick, int axis, enum keycode min_key,
+ enum keycode max_key);
+void map_joystick_button(int joystick, int button, enum keycode key);
 void set_refocus_pause(int val);
 
 Uint32 update_autorepeat(void);

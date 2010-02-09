@@ -27,7 +27,7 @@
 
 // This is assumed to not go over the edges.
 
-void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
+void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
  int width, int height, int mode, int savegame)
 {
   FILE *output_file = fopen(name, "wb");
@@ -57,7 +57,7 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
       // Board, raw
       case 0:
       {
-        Board *src_board = mzx_world->current_board;
+        struct board *src_board = mzx_world->current_board;
         int board_width = src_board->board_width;
         char *level_id = src_board->level_id;
         char *level_param = src_board->level_param;
@@ -71,14 +71,14 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
         int num_robots = 0;
         int robot_numbers[256];
         int robot_table_position;
-        mzx_thing current_id;
+        enum thing current_id;
         int i;
 
         for(y = 0; y < height; y++)
         {
           for(x = 0; x < width; x++, offset++)
           {
-            current_id = (mzx_thing)level_id[offset];
+            current_id = (enum thing)level_id[offset];
 
             if(is_robot(current_id))
             {
@@ -123,7 +123,7 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
         // Go back to header to put robot table information
         if(num_robots)
         {
-          Robot **robot_list = src_board->robot_list;
+          struct robot **robot_list = src_board->robot_list;
 
           robot_table_position = ftell(output_file);
           fseek(output_file, 8, SEEK_SET);
@@ -153,7 +153,7 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
       case 1:
       case 2:
       {
-        Board *src_board = mzx_world->current_board;
+        struct board *src_board = mzx_world->current_board;
         int board_width;
         int x, y;
         int offset;
@@ -198,7 +198,7 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
       // Board, char based
       case 3:
       {
-        Board *src_board = mzx_world->current_board;
+        struct board *src_board = mzx_world->current_board;
         int board_width = src_board->board_width;
         int x, y;
         int offset = start_x + (start_y * board_width);
@@ -224,7 +224,7 @@ void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
 
 // This will clip.
 
-int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
+int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
  int mode, int savegame)
 {
   FILE *input_file = fopen(name, "rb");
@@ -276,7 +276,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
       // Write to board
       case 0:
       {
-        Board *src_board = mzx_world->current_board;
+        struct board *src_board = mzx_world->current_board;
         int board_width = src_board->board_width;
         int board_height = src_board->board_height;
         int effective_width = width;
@@ -291,7 +291,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
         char *level_under_id = src_board->level_under_id;
         char *level_under_param = src_board->level_under_param;
         char *level_under_color = src_board->level_under_color;
-        mzx_thing src_id;
+        enum thing src_id;
 
         // Clip
 
@@ -308,7 +308,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
           case 0:
           {
             // Board style, write as is
-            mzx_thing current_id;
+            enum thing current_id;
             int current_robot_loaded = 0;
             int robot_x_locations[256];
             int robot_y_locations[256];
@@ -321,7 +321,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
             {
               for(x = 0; x < effective_width; x++, offset++)
               {
-                current_id = (mzx_thing)fgetc(input_file);
+                current_id = (enum thing)fgetc(input_file);
                 if(is_robot(current_id))
                 {
                   robot_x_locations[current_robot_loaded] = x + start_x;
@@ -329,7 +329,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
                   current_robot_loaded++;
                 }
 
-                src_id = (mzx_thing)level_id[offset];
+                src_id = (enum thing)level_id[offset];
 
                 if(src_id == SENSOR)
                   clear_sensor_id(src_board, level_param[offset]);
@@ -363,7 +363,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
               // Gotta run through and mark the next robots to be skipped
               for(i = 0; i < width_difference; i++)
               {
-                current_id = (mzx_thing)fgetc(input_file);
+                current_id = (enum thing)fgetc(input_file);
                 fseek(input_file, 5, SEEK_CUR);
 
                 if(is_robot(current_id))
@@ -381,7 +381,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
 
             if(num_robots)
             {
-              Robot *cur_robot;
+              struct robot *cur_robot;
               int current_x, current_y;
               int offset;
               int new_param;
@@ -401,7 +401,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
 
                   if(new_param != -1)
                   {
-                    if((mzx_thing)level_id[offset] != PLAYER)
+                    if((enum thing)level_id[offset] != PLAYER)
                     {
                       add_robot_name_entry(src_board, cur_robot,
                        cur_robot->robot_name);
@@ -444,7 +444,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
             {
               for(x = 0; x < effective_width; x++, offset++)
               {
-                src_id = (mzx_thing)level_id[offset];
+                src_id = (enum thing)level_id[offset];
 
                 if(src_id == SENSOR)
                   clear_sensor_id(src_board, level_param[offset]);
@@ -486,7 +486,7 @@ int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
       case 1:
       case 2:
       {
-        Board *src_board = mzx_world->current_board;
+        struct board *src_board = mzx_world->current_board;
         int dest_width = src_board->board_width;
         int dest_height = src_board->board_height;
         char *dest_chars;

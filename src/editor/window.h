@@ -32,18 +32,18 @@ EDITOR_LIBSPEC int list_menu(const char **choices, int choice_size,
  const char *title, int current, int num_choices, int xpos, int ypos);
 int color_selection(int current, int allow_wild);
 void draw_color_box(int color, int q_bit, int x, int y);
-element *construct_check_box(int x, int y, const char **choices,
+struct element *construct_check_box(int x, int y, const char **choices,
  int num_choices, int max_length, int *results);
-element *construct_char_box(int x, int y, const char *question,
+struct element *construct_char_box(int x, int y, const char *question,
  int allow_char_255, int *result);
-element *construct_color_box(int x, int y,
+struct element *construct_color_box(int x, int y,
  const char *question, int allow_wildcard, int *result);
-element *construct_board_list(int x, int y,
+struct element *construct_board_list(int x, int y,
  const char *title, int board_zero_as_none, int *result);
-int add_board(World *mzx_world, int current);
-int choose_board(World *mzx_world, int current, const char *title,
+int add_board(struct world *mzx_world, int current);
+int choose_board(struct world *mzx_world, int current, const char *title,
  int board0_none);
-int choose_file(World *mzx_world, const char **wildcards, char *ret,
+int choose_file(struct world *mzx_world, const char **wildcards, char *ret,
  const char *title, int dirs_okay);
 
 __M_END_DECLS

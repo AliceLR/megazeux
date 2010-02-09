@@ -29,7 +29,7 @@ static void sdl_audio_callback(void *userdata, Uint8 *stream, int len)
   audio_callback((Sint16 *)stream, len);
 }
 
-void init_audio_platform(config_info *conf)
+void init_audio_platform(struct config_info *conf)
 {
   SDL_AudioSpec desired_spec =
   {

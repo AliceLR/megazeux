@@ -62,7 +62,7 @@ static char open_door_max_wait[] =
   32 , 32 , 32 , 32 , 32 , 32 , 32 , 32
 };
 
-void hurt_player_id(World *mzx_world, mzx_thing id)
+void hurt_player_id(struct world *mzx_world, enum thing id)
 {
   int amount = id_dmg[id];
   dec_counter(mzx_world, "health", amount, 0);
@@ -72,7 +72,7 @@ void hurt_player_id(World *mzx_world, mzx_thing id)
 
 // Return the seek dir relative to the player.
 
-static int find_seek(World *mzx_world, int x, int y)
+static int find_seek(struct world *mzx_world, int x, int y)
 {
   int dir;
   int player_x = mzx_world->player_x;
@@ -141,7 +141,7 @@ static int inc_param(int param, int max)
 // Function to take an x/y position and return an array offset
 // (within the board)
 
-static int xy2array2(Board *src_board, int x, int y)
+static int xy2array2(struct board *src_board, int x, int y)
 {
   return (y * src_board->board_width) + x;
 }
@@ -150,8 +150,8 @@ static int xy2array2(Board *src_board, int x, int y)
 // what ret_x/ret_y point to)
 // Returns -1 if offscreen, 0 otherwise.
 
-static int arraydir2(Board *src_board, int x, int y, int *ret_x, int *ret_y,
- int direction)
+static int arraydir2(struct board *src_board, int x, int y,
+ int *ret_x, int *ret_y, int direction)
 {
   int new_x = x, new_y = y;
 
@@ -188,13 +188,13 @@ static int arraydir2(Board *src_board, int x, int y, int *ret_x, int *ret_y,
 
 // This is the big one. Update all of the stuff on the screen..
 
-void update_board(World *mzx_world)
+void update_board(struct world *mzx_world)
 {
   int i;
   int x, y;
   int level_offset;
-  Board *src_board = mzx_world->current_board;
-  Robot *cur_robot;
+  struct board *src_board = mzx_world->current_board;
+  struct robot *cur_robot;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
   char *level_color = src_board->level_color;
@@ -203,10 +203,10 @@ void update_board(World *mzx_world)
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
   int slow_down;
-  mzx_thing current_id;
+  enum thing current_id;
   char current_param;
   char current_color;
-  mzx_thing current_under_id;
+  enum thing current_under_id;
   char *update_done = mzx_world->update_done;
 
   // Toggle slow_down
@@ -227,7 +227,7 @@ void update_board(World *mzx_world)
   {
     for(x = 0; x < board_width; x++, level_offset++)
     {
-      current_id = (mzx_thing)level_id[level_offset];
+      current_id = (enum thing)level_id[level_offset];
 
       // If the char's update done value is set or the id is < 25
       // (space trough W water) then there's nothing to do here;
@@ -329,7 +329,7 @@ void update_board(World *mzx_world)
 
           // Check under for water, ice, or lava; these all kill the fire.
 
-          current_under_id = (mzx_thing)level_under_id[level_offset];
+          current_under_id = (enum thing)level_under_id[level_offset];
           if((current_under_id >= STILL_WATER) &&
            (current_under_id <= LAVA))
           {
@@ -368,7 +368,7 @@ void update_board(World *mzx_world)
               int offset = xy2array2(src_board, new_x, new_y);
               int place = 0;
               // Save ID and param there
-              mzx_thing new_id = (mzx_thing)level_id[offset];
+              enum thing new_id = (enum thing)level_id[offset];
               char new_color = level_color[offset];
 
               // Fire does things to certain ID's
@@ -454,7 +454,7 @@ void update_board(World *mzx_world)
                   // Get offset
                   int offset = xy2array2(src_board, new_x, new_y);
                   // Save ID and param there
-                  mzx_thing new_id = (mzx_thing)level_id[offset];
+                  enum thing new_id = (enum thing)level_id[offset];
                   char new_param = level_param[offset];
                   // Get the flags for that ID
                   int flag = flags[(int)new_id];
@@ -463,7 +463,8 @@ void update_board(World *mzx_world)
                   // Also, some further things can happen.
                   // Does what's there..
                   // Blow up (removed by explosion)?
-                  // Slimes, ghosts, and dragons might also die if the bit isn't set
+                  // Slimes, ghosts, and dragons might also die if the
+                  // bit isn't set
                   if((flag & A_BLOW_UP) ||
                    ((new_id == SLIMEBLOB) && !(new_param & 0x80)) ||
                    ((new_id == GHOST) && !(new_param & 0x08)) ||
@@ -541,7 +542,7 @@ void update_board(World *mzx_world)
           {
             // Get what's underneath it
             current_under_id =
-             (mzx_thing)level_under_id[level_offset];
+             (enum thing)level_under_id[level_offset];
             // Leave space if over goop, water, lava, or ice
             if((current_under_id == GOOP) ||
              ((current_under_id >= STILL_WATER) &&
@@ -613,9 +614,9 @@ void update_board(World *mzx_world)
 
         case SHOOTING_FIRE:
         {
-          move_status status;
+          enum move_status status;
           // Get direction
-          mzx_dir direction = (mzx_dir)(current_param >> 1);
+          enum dir direction = (enum dir)(current_param >> 1);
           // Flip animation and store
           current_param ^= 1;
           level_param[level_offset] = current_param;
@@ -637,7 +638,7 @@ void update_board(World *mzx_world)
             {
               // Didn't hit the player.. check stuff
               current_under_id =
-               (mzx_thing)level_under_id[level_offset];
+               (enum thing)level_under_id[level_offset];
               // See if it hit an entrance
               if((current_under_id == STAIRS) ||
                (current_under_id == CAVE) ||
@@ -665,7 +666,7 @@ void update_board(World *mzx_world)
            REACT_PLAYER | CAN_GOOPWALK;
 
           // Param is the direction
-          move_status status = move(mzx_world, x, y,
+          enum move_status status = move(mzx_world, x, y,
            current_param, move_params);
           // Did it hit something that's not the player?
           if((status == HIT) || (status == HIT_EDGE))
@@ -760,7 +761,7 @@ void update_board(World *mzx_world)
 
         case SNAKE:
         {
-          move_status status;
+          enum move_status status;
 
           // Flip count and store
           current_param ^= 8;
@@ -919,7 +920,7 @@ void update_board(World *mzx_world)
                   // Get offset
                   int offset = xy2array2(src_board, new_x, new_y);
                   // Save ID and param there
-                  mzx_thing new_id = (mzx_thing)level_id[offset];
+                  enum thing new_id = (enum thing)level_id[offset];
 
                   // See if it hits a fake
                   if(is_fake(new_id))
@@ -960,7 +961,7 @@ void update_board(World *mzx_world)
           {
             // Get direction
             int direction = current_param & 0x03;
-            move_status status;
+            enum move_status status;
             // Clear cycle
             level_param[level_offset] = current_param & 0xCF;
 
@@ -1053,7 +1054,7 @@ void update_board(World *mzx_world)
             if(cycle == 0x18)
             {
               int m_dir;
-              move_status status;
+              enum move_status status;
               // Zero out movement
               level_param[level_offset] = current_param & 0xE7;
 
@@ -1159,7 +1160,7 @@ void update_board(World *mzx_world)
           int intelligence;
           int rval;
           int m_dir;
-          move_status status;
+          enum move_status status;
           int new_x = 0, new_y = 0;
           int fire_rate;
           int shoot_type;
@@ -1337,7 +1338,7 @@ void update_board(World *mzx_world)
           int intelligence;
           int rval;
           int m_dir;
-          move_status status;
+          enum move_status status;
           int new_x = 0, new_y = 0;
           int fire_rate;
           int shoot_type;
@@ -1680,7 +1681,7 @@ void update_board(World *mzx_world)
         case W_MOVING_WALL:
         {
           // Get direction
-          current_id = (mzx_thing)((int)current_id - N_MOVING_WALL);
+          current_id = (enum thing)((int)current_id - N_MOVING_WALL);
           // Try the move
           if(move(mzx_world, x, y, current_id, CAN_PUSH |
            CAN_TRANSPORT | CAN_LAVAWALK | CAN_FIREWALK |
@@ -1802,7 +1803,7 @@ void update_board(World *mzx_world)
   {
     for(x = board_width - 1; x >= 0; x--)
     {
-      current_id = (mzx_thing)level_id[level_offset];
+      current_id = (enum thing)level_id[level_offset];
       if(is_robot(current_id))
       {
         current_param = level_param[level_offset];
@@ -1822,17 +1823,17 @@ void update_board(World *mzx_world)
   find_player(mzx_world);
 }
 
-void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
+void shoot_lazer(struct world *mzx_world, int x, int y, int dir, int length,
  int color)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
 
   int lx = x;
   int ly = y;
   int offset;
-  mzx_thing id;
+  enum thing id;
   char param;
 
   while(1)
@@ -1844,7 +1845,7 @@ void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
     }
 
     offset = xy2array2(src_board, lx, ly);
-    id = (mzx_thing)level_id[offset];
+    id = (enum thing)level_id[offset];
 
     if(id == PLAYER)
     {
@@ -1906,12 +1907,12 @@ void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
 // This is an additional helper function to try to sanitize transport
 // Returns 1 if successful, 0 if not
 
-static int try_transport(World *mzx_world, int x, int y, int push_status,
- int can_push, mzx_thing id, int dir)
+static int try_transport(struct world *mzx_world, int x, int y, int push_status,
+ int can_push, enum thing id, int dir)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int d_offset = xy2array2(src_board, x, y);
-  mzx_thing d_id = (mzx_thing)src_board->level_id[d_offset];
+  enum thing d_id = (enum thing)src_board->level_id[d_offset];
 
   // Not gonna be happening with goop or a transport
   if((d_id != GOOP) && (d_id != TRANSPORT))
@@ -1950,10 +1951,10 @@ static int try_transport(World *mzx_world, int x, int y, int push_status,
   return 0;
 }
 
-int transport(World *mzx_world, int x, int y, int dir, mzx_thing id,
+int transport(struct world *mzx_world, int x, int y, int dir, enum thing id,
  int param, int color, int can_push)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
   // East/west or north/south
@@ -2017,10 +2018,10 @@ int transport(World *mzx_world, int x, int y, int dir, mzx_thing id,
   return 0;
 }
 
-static void push_player_sensor(World *mzx_world, int p_offset,
+static void push_player_sensor(struct world *mzx_world, int p_offset,
  int d_offset, char param, char color)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   char *level_under_id = src_board->level_under_id;
   char *level_under_color = src_board->level_under_color;
   char *level_under_param = src_board->level_under_param;
@@ -2043,9 +2044,9 @@ static void push_player_sensor(World *mzx_world, int p_offset,
   push_sensor(mzx_world, level_under_param[d_offset]);
 }
 
-int push(World *mzx_world, int x, int y, int dir, int checking)
+int push(struct world *mzx_world, int x, int y, int dir, int checking)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
   char *level_color = src_board->level_color;
@@ -2055,12 +2056,12 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
 
   int push_status = A_PUSHEW;
   int dx = x, dy = y, d_offset, d_flag;
-  mzx_thing d_id = NO_ID;
+  enum thing d_id = NO_ID;
   char d_param, d_color;
-  mzx_thing d_under_id;
-  mzx_thing p_id = NO_ID;
+  enum thing d_under_id;
+  enum thing p_id = NO_ID;
   char p_param = 0xFF, p_color = 0xFF;
-  mzx_thing p_under_id = NO_ID;
+  enum thing p_under_id = NO_ID;
   char sensor_param = 0xFF, sensor_color = 0xFF;
   int p_offset = -1;
 
@@ -2078,7 +2079,7 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
     if(arraydir2(src_board, dx, dy, &dx, &dy, dir))
       return 1;
     d_offset = xy2array2(src_board, dx, dy);
-    d_id = (mzx_thing)level_id[d_offset];
+    d_id = (enum thing)level_id[d_offset];
     d_flag = flags[(int)d_id];
 
     // If a push can be made here, the destination has been found
@@ -2131,10 +2132,10 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
       // Get thing at next location
       arraydir2(src_board, dx, dy, &dx, &dy, dir);
       d_offset = xy2array2(src_board, dx, dy);
-      d_id = (mzx_thing)level_id[d_offset];
+      d_id = (enum thing)level_id[d_offset];
       d_param = level_param[d_offset];
       d_color = level_color[d_offset];
-      d_under_id = (mzx_thing)level_under_id[d_offset];
+      d_under_id = (enum thing)level_under_id[d_offset];
       d_flag = flags[(int)d_id];
 
       // Sensor? Mark it
@@ -2226,11 +2227,11 @@ int push(World *mzx_world, int x, int y, int dir, int checking)
   return 0;
 }
 
-void shoot(World *mzx_world, int x, int y, int dir, int type)
+void shoot(struct world *mzx_world, int x, int y, int dir, int type)
 {
   int dx, dy, d_offset, d_flag;
   char d_id, d_param;
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
 
@@ -2461,11 +2462,11 @@ void shoot(World *mzx_world, int x, int y, int dir, int type)
   }
 }
 
-void shoot_fire(World *mzx_world, int x, int y, int dir)
+void shoot_fire(struct world *mzx_world, int x, int y, int dir)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int dx, dy, d_offset;
-  mzx_thing d_id;
+  enum thing d_id;
   char d_param, d_flag;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
@@ -2474,7 +2475,7 @@ void shoot_fire(World *mzx_world, int x, int y, int dir)
     return;
 
   d_offset = xy2array2(src_board, dx, dy);
-  d_id = (mzx_thing)level_id[d_offset];
+  d_id = (enum thing)level_id[d_offset];
   d_param = level_param[d_offset];
   d_flag = flags[(int)d_id];
 
@@ -2500,11 +2501,11 @@ void shoot_fire(World *mzx_world, int x, int y, int dir)
   }
 }
 
-void shoot_seeker(World *mzx_world, int x, int y, int dir)
+void shoot_seeker(struct world *mzx_world, int x, int y, int dir)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int dx, dy, d_offset;
-  mzx_thing d_id;
+  enum thing d_id;
   char d_param, d_flag;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
@@ -2513,7 +2514,7 @@ void shoot_seeker(World *mzx_world, int x, int y, int dir)
     return;
 
   d_offset = xy2array2(src_board, dx, dy);
-  d_id = (mzx_thing)level_id[d_offset];
+  d_id = (enum thing)level_id[d_offset];
   d_param = level_param[d_offset];
   d_flag = flags[(int)d_id];
 
@@ -2531,11 +2532,11 @@ void shoot_seeker(World *mzx_world, int x, int y, int dir)
   }
 }
 
-void shoot_missile(World *mzx_world, int x, int y, int dir)
+void shoot_missile(struct world *mzx_world, int x, int y, int dir)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int dx, dy, d_offset;
-  mzx_thing d_id;
+  enum thing d_id;
   char d_param, d_flag;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
@@ -2544,7 +2545,7 @@ void shoot_missile(World *mzx_world, int x, int y, int dir)
     return;
 
   d_offset = xy2array2(src_board, dx, dy);
-  d_id = (mzx_thing)level_id[d_offset];
+  d_id = (enum thing)level_id[d_offset];
   d_param = level_param[d_offset];
   d_flag = flags[(int)d_id];
 
@@ -2561,15 +2562,15 @@ void shoot_missile(World *mzx_world, int x, int y, int dir)
   }
 }
 
-move_status move(World *mzx_world, int x, int y, int dir,
+enum move_status move(struct world *mzx_world, int x, int y, int dir,
  int move_flags)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int dx, dy, d_offset, d_flag;
-  mzx_thing d_id;
+  enum thing d_id;
   char d_param;
   int p_offset = xy2array2(src_board, x, y);
-  mzx_thing p_id;
+  enum thing p_id;
   char p_param, p_color;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
@@ -2582,11 +2583,11 @@ move_status move(World *mzx_world, int x, int y, int dir,
   }
 
   d_offset = xy2array2(src_board, dx, dy);
-  d_id = (mzx_thing)level_id[d_offset];
+  d_id = (enum thing)level_id[d_offset];
   d_param = level_param[d_offset];
   d_flag = flags[(int)d_id];
 
-  p_id = (mzx_thing)level_id[p_offset];
+  p_id = (enum thing)level_id[p_offset];
   p_param = level_param[p_offset];
   p_color = level_color[p_offset];
 
@@ -2696,8 +2697,8 @@ move_status move(World *mzx_world, int x, int y, int dir,
   return NO_HIT;
 }
 
-mzx_dir parsedir(World *mzx_world, mzx_dir old_dir, int x, int y,
- mzx_dir flow_dir, int bln, int bls, int ble, int blw)
+enum dir parsedir(struct world *mzx_world, enum dir old_dir, int x, int y,
+ enum dir flow_dir, int bln, int bls, int ble, int blw)
 {
   int n_dir = (int)old_dir & 0x0F;
 
@@ -2708,7 +2709,7 @@ mzx_dir parsedir(World *mzx_world, mzx_dir old_dir, int x, int y,
     case BENEATH:
     case ANYDIR:
     case NODIR:
-      return (mzx_dir)n_dir;
+      return (enum dir)n_dir;
 
     case NORTH:
     case SOUTH:
@@ -2809,5 +2810,5 @@ mzx_dir parsedir(World *mzx_world, mzx_dir old_dir, int x, int y,
     }
   }
 
-  return (mzx_dir)(n_dir + 1);
+  return (enum dir)(n_dir + 1);
 }

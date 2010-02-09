@@ -21,12 +21,12 @@
 
 #ifdef CONFIG_EDITOR
 void editor_init(void) { }
-void init_macros(World *mzx_world) { }
-void free_extended_macros(World *mzx_world) { }
-void load_editor_config(World *mzx_world, int argc, char *argv[]) { }
+void init_macros(struct world *mzx_world) { }
+void free_extended_macros(struct world *mzx_world) { }
+void load_editor_config(struct world *mzx_world, int argc, char *argv[]) { }
 #endif
 
 #ifdef CONFIG_UPDATER
-bool network_layer_init(config_info *info, char *argv[]) { return true; }
-void network_layer_exit(config_info *info) {}
+bool network_layer_init(struct config_info *info, char *argv[]) { return true; }
+void network_layer_exit(struct config_info *info) {}
 #endif

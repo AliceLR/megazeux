@@ -46,8 +46,8 @@
 #define M_PI 3.14159265358979323846
 #endif
 
-typedef int (* builtin_read_function)(World *mzx_world,
- function_counter *counter, const char *name, int id);
+typedef int (* builtin_read_function)(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id);
 
 // Please only use string literals with this, thanks.
 
@@ -59,8 +59,8 @@ typedef int (* builtin_read_function)(World *mzx_world,
   ((src_length >= (int)(sizeof(n) - 1)) &&                      \
    !strncasecmp(src_value, n, sizeof(n) - 1))                   \
 
-static int local_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int local_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int local_num = 0;
 
@@ -70,8 +70,8 @@ static int local_read(World *mzx_world, function_counter *counter,
   return (mzx_world->current_board->robot_list[id])->local[local_num];
 }
 
-static void local_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void local_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int local_num = 0;
 
@@ -81,23 +81,23 @@ static void local_write(World *mzx_world, function_counter *counter,
   (mzx_world->current_board->robot_list[id])->local[local_num] = value;
 }
 
-static int loopcount_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int loopcount_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return (mzx_world->current_board->robot_list[id])->loop_count;
 }
 
-static void loopcount_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void loopcount_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   (mzx_world->current_board->robot_list[id])->loop_count = value;
 }
 
-static int playerdist_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int playerdist_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
-  Board *src_board = mzx_world->current_board;
-  Robot *cur_robot = src_board->robot_list[id];
+  struct board *src_board = mzx_world->current_board;
+  struct robot *cur_robot = src_board->robot_list[id];
 
   int player_x = mzx_world->player_x;
   int player_y = mzx_world->player_y;
@@ -107,104 +107,104 @@ static int playerdist_read(World *mzx_world, function_counter *counter,
   return abs(player_x - this_x) + abs(player_y - this_y);
 }
 
-static int score_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int score_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->score;
 }
 
-static void score_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void score_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   mzx_world->score = value;
 }
 
-static int sin_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int sin_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int theta = strtol(name + 3, NULL, 10);
   return (int)(sin(theta * (2 * M_PI) / mzx_world->c_divisions)
    * mzx_world->multiplier);
 }
 
-static int cos_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int cos_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int theta = strtol(name + 3, NULL, 10);
   return (int)(cos(theta * (2 * M_PI) / mzx_world->c_divisions)
    * mzx_world->multiplier);
 }
 
-static int tan_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int tan_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int theta = strtol(name + 3, NULL, 10);
   return (int)(tan(theta * (2 * M_PI) / mzx_world->c_divisions)
    * mzx_world->multiplier);
 }
 
-static int asin_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int asin_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int val = strtol(name + 4, NULL, 10);
   return (int)((asinf((float)val / mzx_world->divider) *
    mzx_world->c_divisions) / (2 * M_PI));
 }
 
-static int acos_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int acos_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int val = strtol(name + 4, NULL, 10);
   return (int)((acosf((float)val / mzx_world->divider) *
    mzx_world->c_divisions) / (2 * M_PI));
 }
 
-static int atan_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int atan_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int val = strtol(name + 4, NULL, 10);
   return (int)((atan2f((float)val, mzx_world->divider) *
    mzx_world->c_divisions) / (2 * M_PI));
 }
 
-static int c_divisions_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int c_divisions_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->c_divisions;
 }
 
-static int divider_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int divider_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->divider;
 }
 
-static int multiplier_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int multiplier_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->multiplier;
 }
 
-static void c_divisions_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void c_divisions_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   mzx_world->c_divisions = value;
 }
 
-static void divider_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void divider_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   mzx_world->divider = value;
 }
 
-static void multiplier_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void multiplier_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   mzx_world->multiplier = value;
 }
 
-static int thisx_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int thisx_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->mid_prefix == 2)
     return (mzx_world->current_board->robot_list[id])->xpos -
@@ -213,8 +213,8 @@ static int thisx_read(World *mzx_world, function_counter *counter,
   return (mzx_world->current_board->robot_list[id])->xpos;
 }
 
-static int thisy_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int thisy_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->mid_prefix == 2)
     return (mzx_world->current_board->robot_list[id])->ypos -
@@ -223,29 +223,29 @@ static int thisy_read(World *mzx_world, function_counter *counter,
   return (mzx_world->current_board->robot_list[id])->ypos;
 }
 
-static int playerx_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int playerx_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->player_x;
 }
 
-static int playery_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int playery_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->player_y;
 }
 
-static int this_char_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int this_char_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return (mzx_world->current_board->robot_list[id])->robot_char;
 }
 
-static int this_color_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int this_color_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
-  Board *src_board = mzx_world->current_board;
-  Robot *cur_robot = src_board->robot_list[id];
+  struct board *src_board = mzx_world->current_board;
+  struct robot *cur_robot = src_board->robot_list[id];
   int x = cur_robot->xpos;
   int y = cur_robot->ypos;
   int offset = x + (y * src_board->board_width);
@@ -253,30 +253,30 @@ static int this_color_read(World *mzx_world, function_counter *counter,
   return src_board->level_color[offset];
 }
 
-static int sqrt_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int sqrt_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int val = strtol(name + 4, NULL, 10);
   return (int)(sqrt(val));
 }
 
-static int abs_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int abs_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int val = strtol(name + 3, NULL, 10);
   return abs(val);
 }
 
-static int playerfacedir_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int playerfacedir_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->current_board->player_last_dir >> 4;
 }
 
-static void playerfacedir_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void playerfacedir_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
 
   if(value < 0)
     value = 0;
@@ -288,16 +288,16 @@ static void playerfacedir_write(World *mzx_world, function_counter *counter,
    (src_board->player_last_dir & 0x0F) | (value << 4);
 }
 
-static int playerlastdir_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int playerlastdir_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->current_board->player_last_dir & 0x0F;
 }
 
-static void playerlastdir_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void playerlastdir_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
 
   if(value < 0)
     value = 0;
@@ -309,24 +309,24 @@ static void playerlastdir_write(World *mzx_world, function_counter *counter,
    (src_board->player_last_dir & 0xF0) | value;
 }
 
-static int horizpld_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int horizpld_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return abs(mzx_world->player_x -
    (mzx_world->current_board->robot_list[id])->xpos);
 }
 
-static int vertpld_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int vertpld_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return abs(mzx_world->player_y -
    (mzx_world->current_board->robot_list[id])->ypos);
 }
 
-static int board_char_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int board_char_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int offset = get_counter(mzx_world, "board_x", id) +
    (get_counter(mzx_world, "board_y", id) * src_board->board_width);
   int board_size = src_board->board_width * src_board->board_height;
@@ -337,10 +337,10 @@ static int board_char_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static int board_color_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int board_color_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int offset = get_counter(mzx_world, "board_x", id) +
    (get_counter(mzx_world, "board_y", id) * src_board->board_width);
   int board_size = src_board->board_width * src_board->board_height;
@@ -351,22 +351,22 @@ static int board_color_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static int board_w_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int board_w_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->current_board->board_width;
 }
 
-static int board_h_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int board_h_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->current_board->board_height;
 }
 
-static int board_id_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int board_id_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int offset = get_counter(mzx_world, "board_x", id) +
    (get_counter(mzx_world, "board_y", id) * src_board->board_width);
   int board_size = src_board->board_width * src_board->board_height;
@@ -377,10 +377,10 @@ static int board_id_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static void board_id_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void board_id_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int offset = get_counter(mzx_world, "board_x", id) +
    (get_counter(mzx_world, "board_y", id) * src_board->board_width);
   int board_size = src_board->board_width * src_board->board_height;
@@ -394,10 +394,10 @@ static void board_id_write(World *mzx_world, function_counter *counter,
   }
 }
 
-static int board_param_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int board_param_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int offset = get_counter(mzx_world, "board_x", id) +
    (get_counter(mzx_world, "board_y", id) * src_board->board_width);
   int board_size = src_board->board_width * src_board->board_height;
@@ -408,10 +408,10 @@ static int board_param_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static void board_param_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void board_param_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int offset = get_counter(mzx_world, "board_x", id) +
    (get_counter(mzx_world, "board_y", id) * src_board->board_width);
   int board_size = src_board->board_width * src_board->board_height;
@@ -423,65 +423,65 @@ static void board_param_write(World *mzx_world, function_counter *counter,
   }
 }
 
-static int red_value_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int red_value_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
   return get_red_component(cur_color);
 }
 
-static int green_value_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int green_value_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
   return get_green_component(cur_color);
 }
 
-static int blue_value_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int blue_value_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
   return get_blue_component(cur_color);
 }
 
-static void red_value_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void red_value_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
   set_red_component(cur_color, value);
   pal_update = 1;
 }
 
-static void green_value_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void green_value_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
   set_green_component(cur_color, value);
   pal_update = 1;
 }
 
-static void blue_value_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void blue_value_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
   set_blue_component(cur_color, value);
   pal_update = 1;
 }
 
-static int overlay_mode_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int overlay_mode_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->current_board->overlay_mode;
 }
 
-static int mzx_speed_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int mzx_speed_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->mzx_speed;
 }
 
-static void mzx_speed_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void mzx_speed_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   if(value == 0)
   {
@@ -494,10 +494,10 @@ static void mzx_speed_write(World *mzx_world, function_counter *counter,
   }
 }
 
-static int overlay_char_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int overlay_char_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int offset = get_counter(mzx_world, "overlay_x", id) +
    (get_counter(mzx_world, "overlay_y", id) * src_board->board_width);
   int board_size = src_board->board_width * src_board->board_height;
@@ -508,10 +508,10 @@ static int overlay_char_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static int overlay_color_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int overlay_color_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int offset = get_counter(mzx_world, "overlay_x", id) +
    (get_counter(mzx_world, "overlay_y", id) * src_board->board_width);
   int board_size = src_board->board_width * src_board->board_height;
@@ -522,171 +522,171 @@ static int overlay_color_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static int smzx_mode_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int smzx_mode_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return get_screen_mode();
 }
 
-static void smzx_mode_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void smzx_mode_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   set_screen_mode(value);
 }
 
-static int smzx_r_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int smzx_r_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int cur_color = strtol(name + 6, NULL, 10);
   return get_red_component(cur_color);
 }
 
-static int smzx_g_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int smzx_g_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int cur_color = strtol(name + 6, NULL, 10);
   return get_green_component(cur_color);
 }
 
-static int smzx_b_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int smzx_b_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int cur_color = strtol(name + 6, NULL, 10);
   return get_blue_component(cur_color);
 }
 
-static void smzx_r_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void smzx_r_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int cur_color = strtol(name + 6, NULL, 10);
   set_red_component(cur_color, value);
   pal_update = 1;
 }
 
-static void smzx_g_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void smzx_g_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int cur_color = strtol(name + 6, NULL, 10);
   set_green_component(cur_color, value);
   pal_update = 1;
 }
 
-static void smzx_b_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void smzx_b_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int cur_color = strtol(name + 6, NULL, 10);
   set_blue_component(cur_color, value);
   pal_update = 1;
 }
 
-static int spr_clist_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int spr_clist_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int clist_num = strtol(name + 9, NULL, 10) & (MAX_SPRITES - 1);
   return mzx_world->collision_list[clist_num];
 }
 
-static int spr_collisions_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int spr_collisions_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->collision_count;
 }
 
-static int spr_num_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int spr_num_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->sprite_num;
 }
 
-static int spr_cx_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int spr_cx_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->col_x;
 }
 
-static int spr_cy_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int spr_cy_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->col_y;
 }
 
-static int spr_width_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int spr_width_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->width;
 }
 
-static int spr_height_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int spr_height_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->height;
 }
 
-static int spr_refx_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int spr_refx_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->ref_x;
 }
 
-static int spr_refy_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int spr_refy_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->ref_y;
 }
 
-static int spr_x_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int spr_x_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->x;
 }
 
-static int spr_y_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int spr_y_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->y;
 }
 
-static int spr_cwidth_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int spr_cwidth_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->col_width;
 }
 
-static int spr_cheight_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int spr_cheight_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   return (mzx_world->sprite_list[spr_num])->col_height;
 }
 
-static void spr_num_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_num_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   value &= 0xFF;
 
   mzx_world->sprite_num = (unsigned int)value;
 }
 
-static void spr_yorder_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_yorder_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   mzx_world->sprite_y_order = value & 1;
 }
 
-static void spr_ccheck_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_ccheck_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  Sprite *cur_sprite = mzx_world->sprite_list[spr_num];
+  struct sprite *cur_sprite = mzx_world->sprite_list[spr_num];
 
   value %= 3;
   switch(value)
@@ -711,45 +711,45 @@ static void spr_ccheck_write(World *mzx_world, function_counter *counter,
   }
 }
 
-static void spr_clist_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_clist_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  Sprite *cur_sprite = mzx_world->sprite_list[spr_num];
+  struct sprite *cur_sprite = mzx_world->sprite_list[spr_num];
   sprite_colliding_xy(mzx_world, cur_sprite, cur_sprite->x,
    cur_sprite->y);
 }
 
-static void spr_cx_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_cx_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->col_x = value;
 }
 
-static void spr_cy_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_cy_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->col_y = value;
 }
 
-static void spr_height_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_height_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->height = value;
 }
 
-static void spr_width_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_width_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->width = value;
 }
 
-static void spr_refx_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_refx_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
 
@@ -759,8 +759,8 @@ static void spr_refx_write(World *mzx_world, function_counter *counter,
   (mzx_world->sprite_list[spr_num])->ref_x = value;
 }
 
-static void spr_refy_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_refy_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
 
@@ -770,22 +770,22 @@ static void spr_refy_write(World *mzx_world, function_counter *counter,
   (mzx_world->sprite_list[spr_num])->ref_y = value;
 }
 
-static void spr_x_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_x_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->x = value;
 }
 
-static void spr_y_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_y_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->y = value;
 }
 
-static void spr_vlayer_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_vlayer_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   if(value)
@@ -794,8 +794,8 @@ static void spr_vlayer_write(World *mzx_world, function_counter *counter,
     (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_VLAYER;
 }
 
-static void spr_static_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_static_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   if(value)
@@ -804,8 +804,8 @@ static void spr_static_write(World *mzx_world, function_counter *counter,
     (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_STATIC;
 }
 
-static void spr_overlaid_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_overlaid_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   if(value)
@@ -814,44 +814,44 @@ static void spr_overlaid_write(World *mzx_world, function_counter *counter,
     (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_OVER_OVERLAY;
 }
 
-static void spr_off_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_off_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->flags &= ~SPRITE_INITIALIZED;
 }
 
-static void spr_swap_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_swap_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  Sprite *src = mzx_world->sprite_list[spr_num];
-  Sprite *dest = mzx_world->sprite_list[value];
+  struct sprite *src = mzx_world->sprite_list[spr_num];
+  struct sprite *dest = mzx_world->sprite_list[value];
   mzx_world->sprite_list[value] = src;
   mzx_world->sprite_list[spr_num] = dest;
 }
 
-static void spr_cwidth_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_cwidth_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->col_width = value;
 }
 
-static void spr_cheight_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_cheight_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
   (mzx_world->sprite_list[spr_num])->col_height = value;
 }
 
-static void spr_setview_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void spr_setview_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int n_scroll_x, n_scroll_y;
   int spr_num = strtol(name + 3, NULL, 10) & (MAX_SPRITES - 1);
-  Sprite *cur_sprite = mzx_world->sprite_list[spr_num];
+  struct sprite *cur_sprite = mzx_world->sprite_list[spr_num];
   src_board->scroll_x = 0;
   src_board->scroll_y = 0;
   calculate_xytop(mzx_world, &n_scroll_x, &n_scroll_y);
@@ -864,150 +864,150 @@ static void spr_setview_write(World *mzx_world, function_counter *counter,
   return;
 }
 
-static int bullettype_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int bullettype_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return (mzx_world->current_board->robot_list[id])->bullet_type;
 }
 
-static void bullettype_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void bullettype_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   (mzx_world->current_board->robot_list[id])->bullet_type = value;
 }
 
-static int inputsize_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int inputsize_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->current_board->input_size;
 }
 
-static void inputsize_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void inputsize_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   mzx_world->current_board->input_size = value;
 }
 
-static int input_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int input_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->current_board->num_input;
 }
 
-static void input_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void input_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   mzx_world->current_board->num_input = value;
   sprintf(mzx_world->current_board->input_string, "%d", value);
 }
 
-static int key_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int key_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return toupper(get_last_key(keycode_internal));
 }
 
-static void key_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void key_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   force_last_key(keycode_internal, toupper(value));
 }
 
-static int keyn_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int keyn_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int key_num = strtol(name + 3, NULL, 10);
   return get_key_status(keycode_pc_xt, key_num);
 }
 
-static int key_code_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int key_code_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return get_key(keycode_pc_xt);
 }
 
-static int key_pressed_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int key_pressed_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return get_key(keycode_internal);
 }
 
-static int key_release_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int key_release_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return get_last_key_released(keycode_pc_xt);
 }
 
-static int scrolledx_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int scrolledx_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int scroll_x, scroll_y;
   calculate_xytop(mzx_world, &scroll_x, &scroll_y);
   return scroll_x;
 }
 
-static int scrolledy_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int scrolledy_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int scroll_x, scroll_y;
   calculate_xytop(mzx_world, &scroll_x, &scroll_y);
   return scroll_y;
 }
 
-static int timereset_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int timereset_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->current_board->time_limit;
 }
 
-static void timereset_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void timereset_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   mzx_world->current_board->time_limit = CLAMP(value, 0, 32767);
 }
 
-static int date_day_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int date_day_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   time_t e_time = time(NULL);
   struct tm *t = localtime(&e_time);
   return t->tm_mday;
 }
 
-static int date_year_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int date_year_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   time_t e_time = time(NULL);
   struct tm *t = localtime(&e_time);
   return t->tm_year + 1900;
 }
 
-static int date_month_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int date_month_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   time_t e_time = time(NULL);
   struct tm *t = localtime(&e_time);
   return t->tm_mon + 1;
 }
 
-static int time_hours_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int time_hours_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   time_t e_time = time(NULL);
   struct tm *t = localtime(&e_time);
   return t->tm_hour;
 }
 
-static int time_minutes_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int time_minutes_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   time_t e_time = time(NULL);
   struct tm *t = localtime(&e_time);
   return t->tm_min;
 }
 
-static int time_seconds_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int time_seconds_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   time_t e_time = time(NULL);
   struct tm *t = localtime(&e_time);
@@ -1031,8 +1031,8 @@ static int translate_coordinates(const char *src, unsigned int *x,
   }
 }
 
-static int vch_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int vch_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   unsigned int x = 0, y = 0;
   unsigned int vlayer_width = mzx_world->vlayer_width;
@@ -1048,8 +1048,8 @@ static int vch_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static void vch_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void vch_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   unsigned int x = 0, y = 0;
   unsigned int vlayer_width = mzx_world->vlayer_width;
@@ -1063,8 +1063,8 @@ static void vch_write(World *mzx_world, function_counter *counter,
   }
 }
 
-static int vco_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int vco_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   unsigned int x = 0, y = 0;
   unsigned int vlayer_width = mzx_world->vlayer_width;
@@ -1080,8 +1080,8 @@ static int vco_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static void vco_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void vco_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   unsigned int x = 0, y = 0;
   unsigned int vlayer_width = mzx_world->vlayer_width;
@@ -1095,22 +1095,22 @@ static void vco_write(World *mzx_world, function_counter *counter,
   }
 }
 
-static int char_byte_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int char_byte_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return ec_read_byte(get_counter(mzx_world, "CHAR", id),
    get_counter(mzx_world, "BYTE", id));
 }
 
-static void char_byte_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void char_byte_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   ec_change_byte(get_counter(mzx_world, "CHAR", id),
    get_counter(mzx_world, "BYTE", id), value);
 }
 
-static int pixel_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int pixel_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int pixel_x = CLAMP(get_counter(mzx_world, "CHAR_X", id), 0, 256);
   int pixel_y = CLAMP(get_counter(mzx_world, "CHAR_Y", id), 0, 112);
@@ -1126,8 +1126,8 @@ static int pixel_read(World *mzx_world, function_counter *counter,
   return (current_byte & pixel_mask) >> (7 - sub_x);
 }
 
-static void pixel_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void pixel_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   int pixel_x = CLAMP(get_counter(mzx_world, "CHAR_X", id), 0, 256);
   int pixel_y = CLAMP(get_counter(mzx_world, "CHAR_Y", id), 0, 112);
@@ -1165,15 +1165,15 @@ static void pixel_write(World *mzx_world, function_counter *counter,
   return;
 }
 
-static int int2bin_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int int2bin_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int place = get_counter(mzx_world, "BIT_PLACE", id) & 15;
   return ((get_counter(mzx_world, "INT", id) >> place) & 1);
 }
 
-static void int2bin_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void int2bin_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   unsigned int integer;
   int place;
@@ -1207,76 +1207,76 @@ static void int2bin_write(World *mzx_world, function_counter *counter,
   set_counter(mzx_world, "INT", integer, id);
 }
 
-static int commands_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int commands_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->commands;
 }
 
-static void commands_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void commands_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   mzx_world->commands = value;
 }
 
-static int fread_open_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int fread_open_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_FREAD;
   return 0;
 }
 
-static int fwrite_open_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int fwrite_open_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_FWRITE;
   return 0;
 }
 
-static int fwrite_append_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int fwrite_append_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_FAPPEND;
   return 0;
 }
 
-static int fwrite_modify_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int fwrite_modify_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_FMODIFY;
   return 0;
 }
 
-static int smzx_palette_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int smzx_palette_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_SMZX_PALETTE;
   return 0;
 }
 
-static int load_game_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int load_game_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_LOAD_GAME;
   return 0;
 }
 
-static int save_game_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int save_game_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_SAVE_GAME;
   return 0;
 }
 
-static int save_world_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int save_world_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_SAVE_WORLD;
   return 0;
 }
 
-static int save_robot_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int save_robot_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_SAVE_ROBOT;
   if(name[10])
@@ -1285,8 +1285,8 @@ static int save_robot_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static int load_robot_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int load_robot_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_LOAD_ROBOT;
   if(name[10])
@@ -1295,8 +1295,8 @@ static int load_robot_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static int load_bc_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int load_bc_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_LOAD_BC;
   if(name[7])
@@ -1305,8 +1305,8 @@ static int load_bc_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static int save_bc_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int save_bc_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   mzx_world->special_counter_return = FOPEN_SAVE_BC;
   if(name[7])
@@ -1315,16 +1315,16 @@ static int save_bc_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static int fread_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int fread_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->input_file)
     return fgetc(mzx_world->input_file);
   return -1;
 }
 
-static int fread_counter_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int fread_counter_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->input_file)
   {
@@ -1336,8 +1336,8 @@ static int fread_counter_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static int fread_pos_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int fread_pos_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->input_file)
     return ftell(mzx_world->input_file);
@@ -1345,8 +1345,8 @@ static int fread_pos_read(World *mzx_world, function_counter *counter,
     return -1;
 }
 
-static void fread_pos_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void fread_pos_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   if(mzx_world->input_file)
   {
@@ -1357,8 +1357,8 @@ static void fread_pos_write(World *mzx_world, function_counter *counter,
   }
 }
 
-static int fwrite_pos_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int fwrite_pos_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   if(mzx_world->output_file)
     return ftell(mzx_world->output_file);
@@ -1366,8 +1366,8 @@ static int fwrite_pos_read(World *mzx_world, function_counter *counter,
     return -1;
 }
 
-static void fwrite_pos_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void fwrite_pos_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   if(mzx_world->output_file)
   {
@@ -1378,15 +1378,15 @@ static void fwrite_pos_write(World *mzx_world, function_counter *counter,
   }
 }
 
-static void fwrite_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void fwrite_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   if(mzx_world->output_file)
     fputc(value, mzx_world->output_file);
 }
 
-static void fwrite_counter_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void fwrite_counter_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   if(mzx_world->output_file)
   {
@@ -1397,40 +1397,40 @@ static void fwrite_counter_write(World *mzx_world, function_counter *counter,
   }
 }
 
-static int lava_walk_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int lava_walk_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return (mzx_world->current_board->robot_list[id])->can_lavawalk;
 }
 
-static void lava_walk_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void lava_walk_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   (mzx_world->current_board->robot_list[id])->can_lavawalk = value;
 }
 
-static int robot_id_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int robot_id_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return id;
 }
 
-static int robot_id_n_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int robot_id_n_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return get_robot_id(mzx_world->current_board, name + 9);
 }
 
-static int rid_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int rid_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return get_robot_id(mzx_world->current_board, name + 3);
 }
 
-static int r_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int r_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   char *next;
   unsigned int robot_num = strtol(name + 1, &next, 10);
 
@@ -1443,10 +1443,10 @@ static int r_read(World *mzx_world, function_counter *counter,
   return -1;
 }
 
-static void r_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void r_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   char *next;
   unsigned int robot_num = strtol(name + 1, &next, 10);
 
@@ -1457,26 +1457,26 @@ static void r_write(World *mzx_world, function_counter *counter,
   }
 }
 
-static int vlayer_height_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int vlayer_height_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->vlayer_height;
 }
 
-static int vlayer_size_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int vlayer_size_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->vlayer_size;
 }
 
-static int vlayer_width_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int vlayer_width_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return mzx_world->vlayer_width;
 }
 
-static void vlayer_height_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void vlayer_height_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   if(value <= 0)
     value = 1;
@@ -1486,8 +1486,8 @@ static void vlayer_height_write(World *mzx_world, function_counter *counter,
   mzx_world->vlayer_width = mzx_world->vlayer_size / value;
 }
 
-static void vlayer_size_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void vlayer_size_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   if(value <= 0)
     value = 1;
@@ -1515,8 +1515,8 @@ static void vlayer_size_write(World *mzx_world, function_counter *counter,
   }
 }
 
-static void vlayer_width_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void vlayer_width_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   if(value <= 0)
     value = 1;
@@ -1526,8 +1526,8 @@ static void vlayer_width_write(World *mzx_world, function_counter *counter,
   mzx_world->vlayer_height = mzx_world->vlayer_size / value;
 }
 
-static int buttons_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int buttons_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int buttons_formatted, raw_status = get_mouse_status();
 
@@ -1545,20 +1545,20 @@ static int buttons_read(World *mzx_world, function_counter *counter,
   return buttons_formatted;
 }
 
-static int mousex_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int mousex_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return get_mouse_x();
 }
 
-static int mousey_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int mousey_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return get_mouse_y();
 }
 
-static void mousex_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void mousex_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   if(value > 79)
     value = 79;
@@ -1569,8 +1569,8 @@ static void mousex_write(World *mzx_world, function_counter *counter,
   warp_mouse_x(value);
 }
 
-static void mousey_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void mousey_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   if(value > 24)
     value = 24;
@@ -1581,20 +1581,20 @@ static void mousey_write(World *mzx_world, function_counter *counter,
   warp_mouse_y(value);
 }
 
-static int mousepx_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int mousepx_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return get_real_mouse_x();
 }
 
-static int mousepy_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int mousepy_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return get_real_mouse_y();
 }
 
-static void mousepx_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void mousepx_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   if(value > 639)
     value = 639;
@@ -1605,8 +1605,8 @@ static void mousepx_write(World *mzx_world, function_counter *counter,
   warp_real_mouse_x(value);
 }
 
-static void mousepy_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void mousepy_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   if(value > 349)
     value = 349;
@@ -1617,8 +1617,8 @@ static void mousepy_write(World *mzx_world, function_counter *counter,
   warp_real_mouse_y(value);
 }
 
-static int mboardx_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int mboardx_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int scroll_x, scroll_y;
   calculate_xytop(mzx_world, &scroll_x, &scroll_y);
@@ -1626,8 +1626,8 @@ static int mboardx_read(World *mzx_world, function_counter *counter,
    scroll_x - mzx_world->current_board->viewport_x;
 }
 
-static int mboardy_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int mboardy_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   int scroll_x, scroll_y;
   calculate_xytop(mzx_world, &scroll_x, &scroll_y);
@@ -1635,18 +1635,19 @@ static int mboardy_read(World *mzx_world, function_counter *counter,
    scroll_y - mzx_world->current_board->viewport_y;
 }
 
-static void bimesg_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void bimesg_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   mzx_world->bi_mesg_status = value & 1;
 }
 
-static mzx_string *find_string(World *mzx_world, const char *name, int *next)
+static struct string *find_string(struct world *mzx_world, const char *name,
+ int *next)
 {
   int bottom = 0, top = (mzx_world->num_strings) - 1, middle = 0;
   int cmpval = 0;
-  mzx_string **base = mzx_world->string_list;
-  mzx_string *current;
+  struct string **base = mzx_world->string_list;
+  struct string *current;
 
   while(bottom <= top)
   {
@@ -1679,11 +1680,11 @@ static mzx_string *find_string(World *mzx_world, const char *name, int *next)
   return NULL;
 }
 
-static int str_num_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int str_num_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   char *dot_ptr = strrchr(name + 1, '.');
-  mzx_string src;
+  struct string src;
 
   // User may have provided $str.N or $str.length explicitly
   if(dot_ptr)
@@ -1697,7 +1698,7 @@ static int str_num_read(World *mzx_world, function_counter *counter,
       int next;
 
       // If the user's string is found, return the length of it
-      mzx_string *src = find_string(mzx_world, name, &next);
+      struct string *src = find_string(mzx_world, name, &next);
       if(src)
         return src->length;
     }
@@ -1736,14 +1737,14 @@ static int str_num_read(World *mzx_world, function_counter *counter,
   return 0;
 }
 
-static mzx_string *add_string_preallocate(World *mzx_world, const char *name,
- int length, int position)
+static struct string *add_string_preallocate(struct world *mzx_world,
+ const char *name, int length, int position)
 {
   int count = mzx_world->num_strings;
   int allocated = mzx_world->num_strings_allocated;
   int name_length = strlen(name);
-  mzx_string **base = mzx_world->string_list;
-  mzx_string *dest;
+  struct string **base = mzx_world->string_list;
+  struct string *dest;
 
   // Need a reallocation?
   if(count == allocated)
@@ -1754,7 +1755,7 @@ static mzx_string *add_string_preallocate(World *mzx_world, const char *name,
       allocated = MIN_STRING_ALLOCATE;
 
     mzx_world->string_list =
-     realloc(base, sizeof(mzx_string *) * allocated);
+     realloc(base, sizeof(struct string *) * allocated);
     mzx_world->num_strings_allocated = allocated;
     base = mzx_world->string_list;
   }
@@ -1765,11 +1766,11 @@ static mzx_string *add_string_preallocate(World *mzx_world, const char *name,
   {
     base += position;
     memmove((char *)(base + 1), (char *)base,
-     (count - position) * sizeof(mzx_string *));
+     (count - position) * sizeof(struct string *));
   }
 
-  // Allocate a mzx_string with room for the name and initial value
-  dest = malloc(sizeof(mzx_string) + name_length + length);
+  // Allocate a string with room for the name and initial value
+  dest = malloc(sizeof(struct string) + name_length + length);
 
   // Copy in the name, including NULL terminator.
   strcpy(dest->name, name);
@@ -1788,8 +1789,8 @@ static mzx_string *add_string_preallocate(World *mzx_world, const char *name,
   return dest;
 }
 
-static mzx_string *reallocate_string(World *mzx_world,
- mzx_string *src, int pos, unsigned int length)
+static struct string *reallocate_string(struct world *mzx_world,
+ struct string *src, int pos, unsigned int length)
 {
   // Find the base length (take out the current length)
   int base_length = (int)(src->value - (char *)src);
@@ -1811,8 +1812,8 @@ static mzx_string *reallocate_string(World *mzx_world,
   return src;
 }
 
-static void force_string_length(World *mzx_world, const char *name,
- int next, mzx_string **str, unsigned int *length)
+static void force_string_length(struct world *mzx_world, const char *name,
+ int next, struct string **str, unsigned int *length)
 {
   if(*length > MAX_STRING_LEN)
     *length = MAX_STRING_LEN;
@@ -1823,8 +1824,8 @@ static void force_string_length(World *mzx_world, const char *name,
     *str = reallocate_string(mzx_world, *str, next, *length);
 }
 
-static void force_string_splice(World *mzx_world, const char *name,
- int next, mzx_string **str, unsigned int s_length, unsigned int offset,
+static void force_string_splice(struct world *mzx_world, const char *name,
+ int next, struct string **str, unsigned int s_length, unsigned int offset,
  bool offset_specified, unsigned int *size, bool size_specified)
 {
   force_string_length(mzx_world, name, next, str, &s_length);
@@ -1845,8 +1846,8 @@ static void force_string_splice(World *mzx_world, const char *name,
   }
 }
 
-static void force_string_copy(World *mzx_world, const char *name,
- int next, mzx_string **str, unsigned int s_length, unsigned int offset,
+static void force_string_copy(struct world *mzx_world, const char *name,
+ int next, struct string **str, unsigned int s_length, unsigned int offset,
  bool offset_specified, unsigned int *size, bool size_specified, char *src)
 {
   force_string_splice(mzx_world, name, next, str, s_length,
@@ -1855,8 +1856,8 @@ static void force_string_copy(World *mzx_world, const char *name,
     memcpy((*str)->value + offset, src, *size);
 }
 
-static void force_string_move(World *mzx_world, const char *name,
- int next, mzx_string **str, unsigned int s_length, unsigned int offset,
+static void force_string_move(struct world *mzx_world, const char *name,
+ int next, struct string **str, unsigned int s_length, unsigned int offset,
  bool offset_specified, unsigned int *size, bool size_specified, char *src)
 {
   bool src_dest_match = false;
@@ -1879,8 +1880,8 @@ static void force_string_move(World *mzx_world, const char *name,
     memmove((*str)->value + offset, src, *size);
 }
 
-static void str_num_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void str_num_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   char *dot_ptr = strrchr(name + 1, '.');
 
@@ -1889,7 +1890,7 @@ static void str_num_write(World *mzx_world, function_counter *counter,
   {
     unsigned int old_length, new_length;
     int next, write_value = false;
-    mzx_string *src;
+    struct string *src;
     int str_num = 0;
 
     *dot_ptr = 0;
@@ -1964,7 +1965,7 @@ static void str_num_write(World *mzx_world, function_counter *counter,
   }
   else
   {
-    mzx_string src_str;
+    struct string src_str;
     char n_buffer[16];
     snprintf(n_buffer, 16, "%d", value);
 
@@ -1974,38 +1975,38 @@ static void str_num_write(World *mzx_world, function_counter *counter,
   }
 }
 
-static int mod_order_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int mod_order_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return get_order();
 }
 
-static void mod_order_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void mod_order_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   jump_module(value);
 }
 
-static int mod_position_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int mod_position_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return get_position();
 }
 
-static void mod_position_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void mod_position_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   set_position(value);
 }
 
-static int mod_freq_read(World *mzx_world, function_counter *counter,
- const char *name, int id)
+static int mod_freq_read(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int id)
 {
   return get_frequency();
 }
 
-static void mod_freq_write(World *mzx_world, function_counter *counter,
- const char *name, int value, int id)
+static void mod_freq_write(struct world *mzx_world,
+ struct function_counter *counter, const char *name, int value, int id)
 {
   if((value == 0) || ((value >= 16) && (value <= (2 << 20))))
     shift_frequency(value);
@@ -2041,7 +2042,7 @@ static void mod_freq_write(World *mzx_world, function_counter *counter,
  *       in these versions. This is unfortunately not fixable.
  */
 
-static function_counter builtin_counters[] =
+static struct function_counter builtin_counters[] =
 {
   { "$*", 0x023E, str_num_read, str_num_write },                     // 2.62
   { "abs!", 0x0244, abs_read, NULL },                                // 2.68
@@ -2173,7 +2174,7 @@ static function_counter builtin_counters[] =
 
 static int counter_first_letter[512];
 
-int set_counter_special(World *mzx_world, int spec_type,
+int set_counter_special(struct world *mzx_world, int spec_type,
  char *char_value, int value, int id)
 {
   switch(spec_type)
@@ -2319,8 +2320,8 @@ int set_counter_special(World *mzx_world, int spec_type,
       new_program = assemble_file(char_value, &new_size);
       if(new_program)
       {
-        Board *src_board = mzx_world->current_board;
-        Robot *cur_robot;
+        struct board *src_board = mzx_world->current_board;
+        struct robot *cur_robot;
         int robot_id = id;
 
         if(value != -1)
@@ -2359,12 +2360,12 @@ int set_counter_special(World *mzx_world, int spec_type,
     case FOPEN_LOAD_BC:
     {
       FILE *bc_file = fsafeopen(char_value, "rb");
-      Board *src_board = mzx_world->current_board;
+      struct board *src_board = mzx_world->current_board;
       int new_size;
 
       if(bc_file)
       {
-        Robot *cur_robot;
+        struct robot *cur_robot;
         int robot_id = id;
 
         if(value != -1)
@@ -2404,8 +2405,8 @@ int set_counter_special(World *mzx_world, int spec_type,
 
     case FOPEN_SAVE_ROBOT:
     {
-      Robot *cur_robot;
-      Board *src_board = mzx_world->current_board;
+      struct robot *cur_robot;
+      struct board *src_board = mzx_world->current_board;
       int robot_id = id;
       int allow_extras = mzx_world->conf.disassemble_extras;
       int base = mzx_world->conf.disassemble_base;
@@ -2432,8 +2433,8 @@ int set_counter_special(World *mzx_world, int spec_type,
 
       if(bc_file)
       {
-        Robot *cur_robot;
-        Board *src_board = mzx_world->current_board;
+        struct robot *cur_robot;
+        struct board *src_board = mzx_world->current_board;
         int robot_id = id;
 
         if(value != -1)
@@ -2460,14 +2461,14 @@ int set_counter_special(World *mzx_world, int spec_type,
 
 // I don't know yet if this works in pure C
 const int num_builtin_counters =
- sizeof(builtin_counters) / sizeof(function_counter);
+ sizeof(builtin_counters) / sizeof(struct function_counter);
 
-static int hurt_player(World *mzx_world, int value)
+static int hurt_player(struct world *mzx_world, int value)
 {
   // Must not be invincible
   if(get_counter(mzx_world, "INVINCO", 0) <= 0)
   {
-    Board *src_board = mzx_world->current_board;
+    struct board *src_board = mzx_world->current_board;
     send_robot_def(mzx_world, 0, 13);
     if(src_board->restart_if_zapped)
     {
@@ -2496,7 +2497,7 @@ static int hurt_player(World *mzx_world, int value)
   return value;
 }
 
-static int health_dec_gateway(World *mzx_world, counter *counter,
+static int health_dec_gateway(struct world *mzx_world, struct counter *counter,
  const char *name, int value, int id)
 {
   // Trying to decrease health? (legacy support)
@@ -2509,7 +2510,7 @@ static int health_dec_gateway(World *mzx_world, counter *counter,
   return value;
 }
 
-static int health_gateway(World *mzx_world, counter *counter,
+static int health_gateway(struct world *mzx_world, struct counter *counter,
  const char *name, int value, int id)
 {
   // Make sure health is within 0 and max health
@@ -2533,7 +2534,7 @@ static int health_gateway(World *mzx_world, counter *counter,
   return value;
 }
 
-static int lives_gateway(World *mzx_world, counter *counter,
+static int lives_gateway(struct world *mzx_world, struct counter *counter,
  const char *name, int value, int id)
 {
   // Make sure lives is within 0 and max lives
@@ -2549,7 +2550,7 @@ static int lives_gateway(World *mzx_world, counter *counter,
   return value;
 }
 
-static int invinco_gateway(World *mzx_world, counter *counter,
+static int invinco_gateway(struct world *mzx_world, struct counter *counter,
  const char *name, int value, int id)
 {
   if(!counter->value)
@@ -2569,7 +2570,7 @@ static int invinco_gateway(World *mzx_world, counter *counter,
   return value;
 }
 
-static int time_gateway(World *mzx_world, counter *counter,
+static int time_gateway(struct world *mzx_world, struct counter *counter,
  const char *name, int value, int id)
 {
   return CLAMP(value, 0, 32767);
@@ -2577,18 +2578,19 @@ static int time_gateway(World *mzx_world, counter *counter,
 
 // The other builtins simply can't go below 0
 
-static int builtin_gateway(World *mzx_world, counter *counter,
+static int builtin_gateway(struct world *mzx_world, struct counter *counter,
  const char *name, int value, int id)
 {
   return MAX(value, 0);
 }
 
-static counter *find_counter(World *mzx_world, const char *name, int *next)
+static struct counter *find_counter(struct world *mzx_world, const char *name,
+ int *next)
 {
   int bottom = 0, top = (mzx_world->num_counters) - 1, middle = 0;
   int cmpval = 0;
-  counter **base = mzx_world->counter_list;
-  counter *current;
+  struct counter **base = mzx_world->counter_list;
+  struct counter *current;
 
   while(bottom <= top)
   {
@@ -2615,25 +2617,25 @@ static counter *find_counter(World *mzx_world, const char *name, int *next)
 }
 
 // Setup builtin gateway functions
-static void set_gateway(World *mzx_world, const char *name,
+static void set_gateway(struct world *mzx_world, const char *name,
  gateway_write_function function)
 {
   int next;
-  counter *cdest = find_counter(mzx_world, name, &next);
+  struct counter *cdest = find_counter(mzx_world, name, &next);
   if(cdest)
     cdest->gateway_write = function;
 }
 
-static void set_dec_gateway(World *mzx_world, const char *name,
+static void set_dec_gateway(struct world *mzx_world, const char *name,
  gateway_dec_function function)
 {
   int next;
-  counter *cdest = find_counter(mzx_world, name, &next);
+  struct counter *cdest = find_counter(mzx_world, name, &next);
   if(cdest)
     cdest->gateway_dec = function;
 }
 
-void initialize_gateway_functions(World *mzx_world)
+void initialize_gateway_functions(struct world *mzx_world)
 {
   set_gateway(mzx_world, "HEALTH", health_gateway);
   set_dec_gateway(mzx_world, "HEALTH", health_dec_gateway);
@@ -2714,12 +2716,12 @@ int match_function_counter(const char *dest, const char *src)
   return 0;
 }
 
-static function_counter *find_function_counter(const char *name)
+static struct function_counter *find_function_counter(const char *name)
 {
   int bottom, top, middle;
   int first_letter = tolower(name[0]) * 2;
   int cmpval;
-  function_counter *base = builtin_counters;
+  struct function_counter *base = builtin_counters;
 
   bottom = counter_first_letter[first_letter];
   top = counter_first_letter[first_letter + 1];
@@ -2745,13 +2747,13 @@ static function_counter *find_function_counter(const char *name)
   return NULL;
 }
 
-static void add_counter(World *mzx_world, const char *name,
+static void add_counter(struct world *mzx_world, const char *name,
  int value, int position)
 {
   int count = mzx_world->num_counters;
   int allocated = mzx_world->num_counters_allocated;
-  counter **base = mzx_world->counter_list;
-  counter *cdest;
+  struct counter **base = mzx_world->counter_list;
+  struct counter *cdest;
 
   // Need a reallocation?
   if(count == allocated)
@@ -2762,7 +2764,7 @@ static void add_counter(World *mzx_world, const char *name,
       allocated = MIN_COUNTER_ALLOCATE;
 
     mzx_world->counter_list =
-     realloc(base, sizeof(counter *) * allocated);
+     realloc(base, sizeof(struct counter *) * allocated);
     base = mzx_world->counter_list;
     mzx_world->num_counters_allocated = allocated;
   }
@@ -2773,10 +2775,10 @@ static void add_counter(World *mzx_world, const char *name,
   {
     base += position;
     memmove((char *)(base + 1), (char *)base,
-     (count - position) * sizeof(counter *));
+     (count - position) * sizeof(struct counter *));
   }
 
-  cdest = malloc(sizeof(counter) + strlen(name));
+  cdest = malloc(sizeof(struct counter) + strlen(name));
   strcpy(cdest->name, name);
   cdest->value = value;
   cdest->gateway_write = NULL;
@@ -2786,19 +2788,19 @@ static void add_counter(World *mzx_world, const char *name,
   mzx_world->num_counters = count + 1;
 }
 
-static void add_string(World *mzx_world, const char *name, mzx_string *src,
- int position)
+static void add_string(struct world *mzx_world, const char *name,
+ struct string *src, int position)
 {
-  mzx_string *dest = add_string_preallocate(mzx_world, name,
+  struct string *dest = add_string_preallocate(mzx_world, name,
    src->length, position);
 
   memcpy(dest->value, src->value, src->length);
 }
 
-void set_counter(World *mzx_world, const char *name, int value, int id)
+void set_counter(struct world *mzx_world, const char *name, int value, int id)
 {
-  function_counter *fdest;
-  counter *cdest;
+  struct function_counter *fdest;
+  struct counter *cdest;
   int next = 0;
 
   fdest = find_function_counter(name);
@@ -2881,8 +2883,8 @@ static void get_string_size_offset(char *name, unsigned int *ssize,
   }
 }
 
-static int load_string_board_direct(World *mzx_world, mzx_string *str,
- int next, int w, int h, char l, char *src, int width)
+static int load_string_board_direct(struct world *mzx_world,
+ struct string *str, int next, int w, int h, char l, char *src, int width)
 {
   int i;
   int size = w * h;
@@ -2917,13 +2919,14 @@ static int load_string_board_direct(World *mzx_world, mzx_string *str,
   }
 }
 
-void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
+void set_string(struct world *mzx_world, const char *name, struct string *src,
+ int id)
 {
   bool offset_specified = false, size_specified = false;
   unsigned int src_length = src->length;
   unsigned int size = 0, offset = 0;
   char *src_value = src->value;
-  mzx_string *dest;
+  struct string *dest;
   int next = 0;
 
   // this generates an unfixable warning at -O3
@@ -3046,7 +3049,7 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
   // Okay, I implemented this stupid thing, you can all die.
   if(special_name("board_scan"))
   {
-    Board *src_board = mzx_world->current_board;
+    struct board *src_board = mzx_world->current_board;
     int board_width = src_board->board_width;
     unsigned int board_size = board_width * src_board->board_height;
     unsigned int board_pos = get_counter(mzx_world, "board_x", id) +
@@ -3106,10 +3109,10 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
   }
 }
 
-int get_counter(World *mzx_world, const char *name, int id)
+int get_counter(struct world *mzx_world, const char *name, int id)
 {
-  function_counter *fdest;
-  counter *cdest;
+  struct function_counter *fdest;
+  struct counter *cdest;
   int next;
 
   fdest = find_function_counter(name);
@@ -3132,11 +3135,12 @@ int get_counter(World *mzx_world, const char *name, int id)
   return 0;
 }
 
-int get_string(World *mzx_world, const char *name, mzx_string *dest, int id)
+int get_string(struct world *mzx_world, const char *name, struct string *dest,
+ int id)
 {
   bool offset_specified = false, size_specified = false;
   unsigned int size = 0, offset = 0;
-  mzx_string *src;
+  struct string *src;
   int next;
 
   // this generates an unfixable warning at -O3
@@ -3165,10 +3169,10 @@ int get_string(World *mzx_world, const char *name, mzx_string *dest, int id)
   return 0;
 }
 
-void inc_counter(World *mzx_world, const char *name, int value, int id)
+void inc_counter(struct world *mzx_world, const char *name, int value, int id)
 {
-  function_counter *fdest;
-  counter *cdest;
+  struct function_counter *fdest;
+  struct counter *cdest;
   int current_value;
   int next = 0;
 
@@ -3209,9 +3213,10 @@ void inc_counter(World *mzx_world, const char *name, int value, int id)
 // You can't increment spliced strings (it's not really useful and
 // would introduce a world of problems..)
 
-void inc_string(World *mzx_world, const char *name, mzx_string *src, int id)
+void inc_string(struct world *mzx_world, const char *name, struct string *src,
+ int id)
 {
-  mzx_string *dest;
+  struct string *dest;
   int next;
 
   dest = find_string(mzx_world, name, &next);
@@ -3247,10 +3252,10 @@ void inc_string(World *mzx_world, const char *name, mzx_string *src, int id)
   }
 }
 
-void dec_counter(World *mzx_world, const char *name, int value, int id)
+void dec_counter(struct world *mzx_world, const char *name, int value, int id)
 {
-  function_counter *fdest;
-  counter *cdest;
+  struct function_counter *fdest;
+  struct counter *cdest;
   int current_value;
   int next = 0;
 
@@ -3295,9 +3300,10 @@ void dec_counter(World *mzx_world, const char *name, int value, int id)
   }
 }
 
-void dec_string_int(World *mzx_world, const char *name, int value, int id)
+void dec_string_int(struct world *mzx_world, const char *name, int value,
+ int id)
 {
-  mzx_string *dest;
+  struct string *dest;
   int next;
 
   dest = find_string(mzx_world, name, &next);
@@ -3312,10 +3318,10 @@ void dec_string_int(World *mzx_world, const char *name, int value, int id)
   }
 }
 
-void mul_counter(World *mzx_world, const char *name, int value, int id)
+void mul_counter(struct world *mzx_world, const char *name, int value, int id)
 {
-  function_counter *fdest;
-  counter *cdest;
+  struct function_counter *fdest;
+  struct counter *cdest;
   int current_value;
   int next;
 
@@ -3348,10 +3354,10 @@ void mul_counter(World *mzx_world, const char *name, int value, int id)
   }
 }
 
-void div_counter(World *mzx_world, const char *name, int value, int id)
+void div_counter(struct world *mzx_world, const char *name, int value, int id)
 {
-  function_counter *fdest;
-  counter *cdest;
+  struct function_counter *fdest;
+  struct counter *cdest;
   int current_value;
   int next;
 
@@ -3388,10 +3394,10 @@ void div_counter(World *mzx_world, const char *name, int value, int id)
   }
 }
 
-void mod_counter(World *mzx_world, const char *name, int value, int id)
+void mod_counter(struct world *mzx_world, const char *name, int value, int id)
 {
-  function_counter *fdest;
-  counter *cdest;
+  struct function_counter *fdest;
+  struct counter *cdest;
   int current_value;
   int next;
 
@@ -3418,7 +3424,7 @@ void mod_counter(World *mzx_world, const char *name, int value, int id)
   }
 }
 
-int compare_strings(mzx_string *dest, mzx_string *src)
+int compare_strings(struct string *dest, struct string *src)
 {
   char *src_value;
   char *dest_value;
@@ -3496,11 +3502,11 @@ int compare_strings(mzx_string *dest, mzx_string *src)
   return 0;
 }
 
-void load_string_board(World *mzx_world, const char *name, int w, int h,
+void load_string_board(struct world *mzx_world, const char *name, int w, int h,
  char l, char *src, int width)
 {
   unsigned int length = (unsigned int)(w * h);
-  mzx_string *src_str;
+  struct string *src_str;
   int next;
 
   src_str = find_string(mzx_world, name, &next);
@@ -3512,7 +3518,7 @@ void load_string_board(World *mzx_world, const char *name, int w, int h,
 
 int is_string(char *buffer)
 {
-  // For something to be a mzx_string it has to start with a $ and
+  // For something to be a string it has to start with a $ and
   // not have a . in its name
   if((buffer[0] == '$') && (strchr(buffer + 1, '.') == NULL))
     return 1;
@@ -3549,13 +3555,13 @@ void counter_fsg(void)
   }
 }
 
-counter *load_counter(FILE *fp)
+struct counter *load_counter(FILE *fp)
 {
   int value = fgetd(fp);
   int name_length = fgetd(fp);
 
-  counter *src_counter =
-   malloc(sizeof(counter) + name_length);
+  struct counter *src_counter =
+   malloc(sizeof(struct counter) + name_length);
   fread(src_counter->name, name_length, 1, fp);
   src_counter->name[name_length] = 0;
   src_counter->value = value;
@@ -3566,13 +3572,13 @@ counter *load_counter(FILE *fp)
   return src_counter;
 }
 
-mzx_string *load_string(FILE *fp)
+struct string *load_string(FILE *fp)
 {
   int name_length = fgetd(fp);
   int str_length = fgetd(fp);
 
-  mzx_string *src_string =
-   malloc(sizeof(mzx_string) + name_length + str_length - 1);
+  struct string *src_string =
+   malloc(sizeof(struct string) + name_length + str_length - 1);
 
   fread(src_string->name, name_length, 1, fp);
 
@@ -3587,7 +3593,7 @@ mzx_string *load_string(FILE *fp)
   return src_string;
 }
 
-void save_counter(FILE *fp, counter *src_counter)
+void save_counter(FILE *fp, struct counter *src_counter)
 {
   int name_length = strlen(src_counter->name);
 
@@ -3596,7 +3602,7 @@ void save_counter(FILE *fp, counter *src_counter)
   fwrite(src_counter->name, name_length, 1, fp);
 }
 
-void save_string(FILE *fp, mzx_string *src_string)
+void save_string(FILE *fp, struct string *src_string)
 {
   int name_length = strlen(src_string->name);
   int str_length = src_string->length;

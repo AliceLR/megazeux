@@ -31,7 +31,7 @@
 
 static bool numlock_status_initialized;
 
-static keycode convert_SDL_internal(SDLKey key)
+static enum keycode convert_SDL_internal(SDLKey key)
 {
   switch(key)
   {
@@ -149,7 +149,7 @@ static keycode convert_SDL_internal(SDLKey key)
 static Uint32 process_event(SDL_Event *event)
 {
   Uint32 rval = 1;
-  keycode ckey;
+  enum keycode ckey;
 
   /* SDL's numlock keyboard modifier handling seems to be broken on X11,
    * and it will only get numlock's status right on application init. We
@@ -373,7 +373,7 @@ static Uint32 process_event(SDL_Event *event)
       int which = event->jaxis.which;
       int axis = event->jaxis.axis;
       int last_axis = input.last_axis[which][axis];
-      keycode stuffed_key;
+      enum keycode stuffed_key;
 
       if(axis_value > 10000)
         digital_value = 1;

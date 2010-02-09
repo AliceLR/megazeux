@@ -25,13 +25,13 @@
 
 __M_BEGIN_DECLS
 
-typedef struct _counter
+struct counter
 {
   int value;
   void *gateway_write;
   void *gateway_dec;
   char name[1];
-} counter;
+};
 
 // TODO - Give strings a dynamic length. It would expand
 // set ends up being larger than the current size.
@@ -41,7 +41,7 @@ typedef struct _counter
 // space efficient.
 
 // storage_space doesn't actually have to have anything,
-// however (in fact, neither does name). mzx_strings can
+// however (in fact, neither does name). Strings can
 // be used as pointers to hold intermediate or immediate
 // values. For instance, string literals and spliced
 // strings. Anyone who uses strings in this way has a few
@@ -66,7 +66,7 @@ typedef struct _counter
 // Allocated_length will typically end up larger than
 // length if the string's size is changed.
 
-typedef struct
+struct string
 {
   unsigned int length;
   unsigned int allocated_length;
@@ -74,7 +74,7 @@ typedef struct
 
   char name[1];
   char storage_space[1];
-} mzx_string;
+};
 
 __M_END_DECLS
 

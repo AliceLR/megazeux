@@ -26,8 +26,8 @@ __M_BEGIN_DECLS
 
 #include "configure.h"
 
-bool network_layer_init(config_info *conf, char *argv[]);
-void network_layer_exit(config_info *conf);
+bool network_layer_init(struct config_info *conf, char *argv[]);
+void network_layer_exit(struct config_info *conf);
 
 __M_END_DECLS
 

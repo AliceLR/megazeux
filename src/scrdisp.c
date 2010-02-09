@@ -36,12 +36,13 @@
 static char scr_nm_strs[5][12] =
  { "  Scroll   ", "   Sign    ", "Edit Scroll", "   Help    ", "" };
 
-static void scroll_edging(World *mzx_world, int type)
+static void scroll_edging(struct world *mzx_world, int type)
 {
   scroll_edging_ext(mzx_world, type, 256, 16);
 }
 
-static void scroll_frame(World *mzx_world, Scroll *scroll, int pos)
+static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
+ int pos)
 {
   // Displays one frame of a scroll. The scroll edging, arrows, and title
   // must already be shown. Simply prints each line. POS is the position
@@ -98,7 +99,7 @@ static void scroll_frame(World *mzx_world, Scroll *scroll, int pos)
 // Also used to display scrolls. Use a type of 0 for Show Scroll, 1 for Show
 // Sign, 2 for Edit Scroll.
 
-void scroll_edit(World *mzx_world, Scroll *scroll, int type)
+void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
 {
   // Important status vars (insert kept in intake.cpp)
   unsigned int pos = 1, old_pos; // Where IN scroll?
@@ -376,7 +377,8 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
     insta_fadeout();
 }
 
-void scroll_edging_ext(World *mzx_world, int type, int offset, int c_offset)
+void scroll_edging_ext(struct world *mzx_world, int type, int offset,
+ int c_offset)
 {
   int scroll_base_color = mzx_world->scroll_base_color;
   int scroll_corner_color = mzx_world->scroll_corner_color;
@@ -448,7 +450,7 @@ void scroll_edging_ext(World *mzx_world, int type, int offset, int c_offset)
 
 #ifdef CONFIG_HELPSYS
 
-static void help_frame(World *mzx_world, char *help, int pos)
+static void help_frame(struct world *mzx_world, char *help, int pos)
 {
   // Displays one frame of the help. Simply prints each line. POS is the
   // position of the center line.
@@ -536,7 +538,7 @@ static void help_frame(World *mzx_world, char *help, int pos)
   update_screen();
 }
 
-void help_display(World *mzx_world, char *help, int offs, char *file,
+void help_display(struct world *mzx_world, char *help, int offs, char *file,
  char *label)
 {
   // Display a help file

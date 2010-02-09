@@ -43,8 +43,8 @@ CORE_LIBSPEC int draw_window_box(int x1, int y1, int x2, int y2, int color,
 CORE_LIBSPEC int char_selection(int current);
 
 // Shell for run_dialog() (returns 0 for ok, 1 for cancel, -1 for ESC)
-CORE_LIBSPEC int confirm(World *mzx_world, const char *str);
-CORE_LIBSPEC int ask_yes_no(World *mzx_world, char *str);
+CORE_LIBSPEC int confirm(struct world *mzx_world, const char *str);
+CORE_LIBSPEC int ask_yes_no(struct world *mzx_world, char *str);
 
 int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
  int dark_color, int corner_color, int shadow, int fill_center,
@@ -52,128 +52,125 @@ int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,
 
 // Dialog box structure definition
 
-typedef struct _dialog dialog;
-typedef struct _element element;
-
-struct _dialog
+struct dialog
 {
   int x, y;
   int width, height;
   const char *title;
   char num_elements;
-  element **elements;
+  struct element **elements;
   int current_element;
   int done;
   int return_value;
   int sfx_test_for_input;
   int pad_space;
-  int (* idle_function)(World *mzx_world, dialog *di, int key);
+  int (* idle_function)(struct world *mzx_world, struct dialog *di, int key);
 };
 
-struct _element
+struct element
 {
   int x, y;
   int width, height;
-  void (* draw_function)(World *mzx_world, dialog *di,
-   element *e, int color, int active);
-  int (* key_function)(World *mzx_world, dialog *di,
-   element *e, int key);
-  int (* click_function)(World *mzx_world, dialog *di,
-   element *e, int mouse_button, int mouse_x, int mouse_y,
+  void (* draw_function)(struct world *mzx_world, struct dialog *di,
+   struct element *e, int color, int active);
+  int (* key_function)(struct world *mzx_world, struct dialog *di,
+   struct element *e, int key);
+  int (* click_function)(struct world *mzx_world, struct dialog *di,
+   struct element *e, int mouse_button, int mouse_x, int mouse_y,
    int new_active);
-  int (* drag_function)(World *mzx_world, dialog *di,
-   element *e, int mouse_button, int mouse_x, int mouse_y);
-  int (* idle_function)(World *mzx_world, dialog *di,
-   element *e);
+  int (* drag_function)(struct world *mzx_world, struct dialog *di,
+   struct element *e, int mouse_button, int mouse_x, int mouse_y);
+  int (* idle_function)(struct world *mzx_world, struct dialog *di,
+   struct element *e);
 };
 
-typedef struct
+struct label_element
 {
-  element e;
+  struct element e;
   const char *text;
-} label;
+};
 
-typedef struct
+struct box
 {
-  element e;
-} box;
+  struct element e;
+};
 
-typedef enum
+enum align
 {
   vertical,
   horizontal
-} align;
+};
 
-typedef struct
+struct line
 {
-  element e;
-  align alignment;
-} line;
+  struct element e;
+  enum align alignment;
+};
 
-typedef struct
+struct input_box
 {
-  element e;
+  struct element e;
   const char *question;
   int input_flags;
   int max_length;
   char *result;
-} input_box;
+};
 
-typedef struct
+struct check_box
 {
-  element e;
+  struct element e;
   const char **choices;
   int num_choices;
   int current_choice;
   int max_length;
   int *results;
-} check_box;
+};
 
-typedef struct
+struct radio_button
 {
-  element e;
+  struct element e;
   const char **choices;
   int num_choices;
   int max_length;
   int *result;
-} radio_button;
+};
 
-typedef struct
+struct char_box
 {
-  element e;
+  struct element e;
   const char *question;
   int allow_char_255;
   int *result;
-} char_box;
+};
 
-typedef struct
+struct color_box
 {
-  element e;
+  struct element e;
   const char *question;
   int allow_wildcard;
   int *result;
-} color_box;
+};
 
-typedef struct
+struct button
 {
-  element e;
+  struct element e;
   const char *label;
   int return_value;
-} button;
+};
 
-typedef struct
+struct number_box
 {
-  element e;
+  struct element e;
   const char *question;
   int lower_limit;
   int upper_limit;
   int mult_five;
   int *result;
-} number_box;
+};
 
-typedef struct
+struct list_box
 {
-  element e;
+  struct element e;
   int num_choices;
   int num_choices_visible;
   int choice_length;
@@ -185,33 +182,33 @@ typedef struct
   int key_position;
   int last_keypress_time;
   int clicked_scrollbar;
-} list_box;
+};
 
-typedef struct
+struct board_list
 {
-  element e;
+  struct element e;
   const char *title;
   int board_zero_as_none;
   int *result;
-} board_list;
+};
 
-CORE_LIBSPEC void construct_dialog(dialog *src, const char *title,
- int x, int y, int width, int height, element **elements, int num_elements,
- int start_element);
-CORE_LIBSPEC void destruct_dialog(dialog *src);
+CORE_LIBSPEC void construct_dialog(struct dialog *src, const char *title,
+ int x, int y, int width, int height, struct element **elements,
+ int num_elements, int start_element);
+CORE_LIBSPEC void destruct_dialog(struct dialog *src);
 
-CORE_LIBSPEC element *construct_label(int x, int y, const char *text);
-CORE_LIBSPEC element *construct_radio_button(int x, int y,
+CORE_LIBSPEC struct element *construct_label(int x, int y, const char *text);
+CORE_LIBSPEC struct element *construct_radio_button(int x, int y,
  const char **choices, int num_choices, int max_length, int *result);
-CORE_LIBSPEC element *construct_button(int x, int y, const char *label,
+CORE_LIBSPEC struct element *construct_button(int x, int y, const char *label,
  int return_value);
-CORE_LIBSPEC element *construct_number_box(int x, int y,
+CORE_LIBSPEC struct element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
  int mult_five, int *result);
 
-CORE_LIBSPEC int choose_file_ch(World *mzx_world, const char **wildcards,
- char *ret, const char *title, int dirs_okay);
-CORE_LIBSPEC int new_file(World *mzx_world, const char **wildcards,
+CORE_LIBSPEC int choose_file_ch(struct world *mzx_world,
+ const char **wildcards, char *ret, const char *title, int dirs_okay);
+CORE_LIBSPEC int new_file(struct world *mzx_world, const char **wildcards,
  const char *default_ext, char *ret, const char *title, int dirs_okay);
 
 #if defined(CONFIG_UPDATER) || defined(CONFIG_LOADSAVE_METER)
@@ -261,7 +258,7 @@ CORE_LIBSPEC void meter_interior(unsigned int progress, unsigned int out_of);
 #define pc_dot '\xFE'
 #define pc_meter 219
 
-CORE_LIBSPEC int run_dialog(World *mzx_world, dialog *di);
+CORE_LIBSPEC int run_dialog(struct world *mzx_world, struct dialog *di);
 
 // Characters for dialog box elements
 extern char radio_on[4];
@@ -271,34 +268,34 @@ extern char num_buttons[7];
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC extern int context;
 
-CORE_LIBSPEC void construct_element(element *e, int x, int y,
+CORE_LIBSPEC void construct_element(struct element *e, int x, int y,
  int width, int height,
- void (* draw_function)(World *mzx_world, dialog *di,
-  element *e, int color, int active),
- int (* key_function)(World *mzx_world, dialog *di,
-  element *e, int key),
- int (* click_function)(World *mzx_world, dialog *di,
-  element *e, int mouse_button, int mouse_x, int mouse_y,
+ void (* draw_function)(struct world *mzx_world, struct dialog *di,
+  struct element *e, int color, int active),
+ int (* key_function)(struct world *mzx_world, struct dialog *di,
+  struct element *e, int key),
+ int (* click_function)(struct world *mzx_world, struct dialog *di,
+  struct element *e, int mouse_button, int mouse_x, int mouse_y,
   int new_active),
- int (* drag_function)(World *mzx_world, dialog *di,
-  element *e, int mouse_button, int mouse_x, int mouse_y),
- int (* idle_function)(World *mzx_world, dialog *di,
-  element *e));
-CORE_LIBSPEC element *construct_list_box(int x, int y, const char **choices,
- int num_choices, int num_choices_visible, int choice_length,
- int return_value, int *result);
-CORE_LIBSPEC void construct_dialog_ext(dialog *src, const char *title,
- int x, int y, int width, int height, element **elements, int num_elements,
- int sfx_test_for_input, int pad_space, int start_element,
- int (* idle_function)(World *mzx_world, dialog *di, int key));
+ int (* drag_function)(struct world *mzx_world, struct dialog *di,
+  struct element *e, int mouse_button, int mouse_x, int mouse_y),
+ int (* idle_function)(struct world *mzx_world, struct dialog *di,
+  struct element *e));
+CORE_LIBSPEC struct element *construct_list_box(int x, int y,
+ const char **choices, int num_choices, int num_choices_visible,
+ int choice_length, int return_value, int *result);
+CORE_LIBSPEC void construct_dialog_ext(struct dialog *src, const char *title,
+ int x, int y, int width, int height, struct element **elements,
+ int num_elements, int sfx_test_for_input, int pad_space, int start_element,
+ int (* idle_function)(struct world *mzx_world, struct dialog *di, int key));
 
 CORE_LIBSPEC int char_selection_ext(int current, int allow_multichar,
  int *width_ptr, int *height_ptr);
-CORE_LIBSPEC element *construct_input_box(int x, int y, const char *question,
- int max_length, int input_flags, char *result);
-CORE_LIBSPEC int file_manager(World *mzx_world, const char **wildcards,
+CORE_LIBSPEC struct element *construct_input_box(int x, int y,
+ const char *question, int max_length, int input_flags, char *result);
+CORE_LIBSPEC int file_manager(struct world *mzx_world, const char **wildcards,
  const char *default_ext, char *ret, const char *title, int dirs_okay,
- int allow_new, element **dialog_ext, int num_ext, int ext_height,
+ int allow_new, struct element **dialog_ext, int num_ext, int ext_height,
  int allow_dir_change);
 #endif // CONFIG_EDITOR
 

@@ -61,7 +61,7 @@ static void dma_callback(void)
   LWP_ThreadSignal(audio_queue);
 }
 
-void init_audio_platform(config_info *conf)
+void init_audio_platform(struct config_info *conf)
 {
   int i, audfreq;
 

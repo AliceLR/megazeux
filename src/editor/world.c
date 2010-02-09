@@ -143,14 +143,14 @@ static const unsigned char def_id_chars[455] =
   0, 0, 0, 0, 0, 0  /* 122-127 */
 };
 
-bool append_world(World *mzx_world, const char *file)
+bool append_world(struct world *mzx_world, const char *file)
 {
   int i, i2;
   int num_boards, old_num_boards = mzx_world->num_boards;
   int last_pos;
   int offset;
   int d_flag;
-  Board *cur_board;
+  struct board *cur_board;
   int board_width, board_height;
   char *level_id, *level_param;
   FILE *fp;
@@ -190,7 +190,7 @@ bool append_world(World *mzx_world, const char *file)
   mzx_world->num_boards_allocated += num_boards;
   mzx_world->board_list =
    realloc(mzx_world->board_list,
-   sizeof(Board *) * (old_num_boards + num_boards));
+   sizeof(struct board *) * (old_num_boards + num_boards));
 
   // Append boards
   for(i = old_num_boards; i < old_num_boards + num_boards; i++)
@@ -248,7 +248,7 @@ bool append_world(World *mzx_world, const char *file)
 }
 
 // Create a new, blank, world, suitable for editing.
-void create_blank_world(World *mzx_world)
+void create_blank_world(struct world *mzx_world)
 {
   // Make default global data
   // Make a blank board
@@ -256,7 +256,7 @@ void create_blank_world(World *mzx_world)
 
   mzx_world->num_boards = 1;
   mzx_world->num_boards_allocated = 1;
-  mzx_world->board_list = malloc(sizeof(Board *));
+  mzx_world->board_list = malloc(sizeof(struct board *));
   mzx_world->board_list[0] = create_blank_board();
   mzx_world->current_board_id = 0;
   mzx_world->current_board = mzx_world->board_list[0];
@@ -302,9 +302,9 @@ void create_blank_world(World *mzx_world)
   default_global_data(mzx_world);
 }
 
-void set_update_done_current(World *mzx_world)
+void set_update_done_current(struct world *mzx_world)
 {
-  Board *current_board = mzx_world->current_board;
+  struct board *current_board = mzx_world->current_board;
   int size = current_board->board_width * current_board->board_height;
 
   if(size > mzx_world->update_done_size)

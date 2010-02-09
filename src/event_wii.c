@@ -32,7 +32,7 @@
 #include <wiiuse/wpad.h>
 #undef BOOL
 
-typedef enum
+enum event_type
 {
   EVENT_BUTTON_DOWN,
   EVENT_BUTTON_UP,
@@ -42,51 +42,51 @@ typedef enum
   EVENT_POINTER_OUT,
   EVENT_KEY_DOWN,
   EVENT_KEY_UP
-} event_type;
+};
 
-typedef struct
+struct button_event
 {
-  event_type type;
+  enum event_type type;
   Uint32 pad;
   Uint32 button;
-} button_event;
+};
 
-typedef struct
+struct axis_event
 {
-  event_type type;
+  enum event_type type;
   Uint32 pad;
   Uint32 axis;
   Sint16 pos;
-} axis_event;
+};
 
-typedef struct
+struct ext_event
 {
-  event_type type;
+  enum event_type type;
   Uint32 pad;
   int ext;
-} ext_event;
+};
 
-typedef struct
+struct pointer_event
 {
-  event_type type;
+  enum event_type type;
   Uint32 x;
   Uint32 y;
-} pointer_event;
+};
 
-typedef struct
+struct key_event
 {
-  event_type type;
+  enum event_type type;
   Uint32 key;
-} key_event;
+};
 
-typedef union
+union
 {
-  event_type type;
-  button_event button;
-  axis_event axis;
-  ext_event ext;
-  pointer_event pointer;
-  key_event key;
+  enum event_type type;
+  struct button_event button;
+  struct axis_event axis;
+  struct ext_event ext;
+  struct pointer_event pointer;
+  struct key_event key;
 } event;
 
 #define STACKSIZE 8192
@@ -113,7 +113,7 @@ static char kbd_fs[] ATTRIBUTE_ALIGN(32) = "/dev/usb/kbd";
 static int write_eq(event *ev)
 {
   event *new_ev;
-  new_ev = malloc(sizeof(event));
+  new_ev = malloc(sizeof(struct event));
   if(!new_ev)
     return false;
   *new_ev = *ev;

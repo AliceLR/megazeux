@@ -42,7 +42,7 @@ extern unsigned char current_help_sec0;
 extern char saved_pl_color;
 extern int was_zapped;
 
-typedef enum
+enum thing
 {
   SPACE           = 0,
   NORMAL          = 1,
@@ -150,7 +150,7 @@ typedef enum
   SCROLL          = 126,
   PLAYER          = 127,
   NO_ID           = 255
-} mzx_thing;
+};
 
 #define is_fake(id)                                       \
   ((id == SPACE) || ((id >= FAKE) && (id <= THICK_WEB)))  \
@@ -174,7 +174,7 @@ typedef enum
 #define is_storageless(id)                                \
   (id < SENSOR)                                           \
 
-typedef enum
+enum dir
 {
   IDLE    = 0,
   NORTH   = 1,
@@ -196,7 +196,7 @@ typedef enum
   CW      = 32,
   OPP     = 64,
   RANDNOT = 128
-} mzx_dir;
+};
 
 #define is_cardinal_dir(d)                                \
   ((d >= NORTH) && (d <= WEST))                           \
@@ -205,7 +205,7 @@ typedef enum
   ((int)d - 1)                                            \
 
 #define int_to_dir(d)                                     \
-  ((mzx_dir)(d + 1))                                      \
+  ((enum dir)(d + 1))                                     \
 
 #define CAN_PUSH      (1 << 0)
 #define CAN_TRANSPORT (1 << 1)
@@ -220,15 +220,15 @@ typedef enum
 #define CAN_GOOPWALK  (1 << 10)
 #define SPITFIRE      (1 << 11)
 
-typedef enum
+enum move_status
 {
   NO_HIT      = 0,
   HIT         = 1,
   HIT_PLAYER  = 2,
   HIT_EDGE    = 3
-} move_status;
+};
 
-typedef enum
+enum equality
 {
   EQUAL                 = 0,
   LESS_THAN             = 1,
@@ -236,9 +236,9 @@ typedef enum
   GREATER_THAN_OR_EQUAL = 3,
   LESS_THAN_OR_EQUAL    = 4,
   NOT_EQUAL             = 5,
-} mzx_equality;
+};
 
-typedef enum
+enum condition
 {
   WALKING               = 0,
   SWIMMING              = 1,
@@ -258,9 +258,9 @@ typedef enum
   DELPRESSED            = 15,
   MUSICON               = 16,
   SOUNDON               = 17
-} mzx_condition;
+};
 
-typedef enum
+enum chest_contents
 {
   ITEM_KEY              = 1,
   ITEM_COINS            = 2,
@@ -272,9 +272,9 @@ typedef enum
   ITEM_RING             = 8,
   ITEM_LOBOMBS          = 9,
   ITEM_HIBOMBS          = 10,
-} mzx_chest_contents;
+};
 
-typedef enum
+enum potion
 {
   POTION_DUD            = 0,
   POTION_INVINCO        = 1,
@@ -292,15 +292,15 @@ typedef enum
   POTION_FREEZE         = 13,
   POTION_WIND           = 14,
   POTION_SLOW           = 15
-} mzx_potion;
+};
 
-typedef enum
+enum board_target
 {
   TARGET_NONE           = 0,
   TARGET_POSITION       = 1,
   TARGET_ENTRANCE       = 2,
   TARGET_TELEPORT       = 3
-} mzx_board_target;
+};
 
 __M_END_DECLS
 

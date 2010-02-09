@@ -28,14 +28,15 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-CORE_LIBSPEC void id_remove_top(World *mzx_world, int array_x, int array_y);
+CORE_LIBSPEC void id_remove_top(struct world *mzx_world,
+ int array_x, int array_y);
 
-void id_place(World *mzx_world, int array_x, int array_y,
- mzx_thing id, char color, char param);
-void offs_place_id(World *mzx_world, unsigned int offset,
- mzx_thing id, char color, char param);
-void offs_remove_id(World *mzx_world, unsigned int offset);
-void id_remove_under(World *mzx_world, int array_x, int array_y);
+void id_place(struct world *mzx_world, int array_x, int array_y,
+ enum thing id, char color, char param);
+void offs_place_id(struct world *mzx_world, unsigned int offset,
+ enum thing id, char color, char param);
+void offs_remove_id(struct world *mzx_world, unsigned int offset);
+void id_remove_under(struct world *mzx_world, int array_x, int array_y);
 
 __M_END_DECLS
 

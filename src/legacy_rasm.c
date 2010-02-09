@@ -443,7 +443,7 @@ static int cm253[] = { CMD_LOOP };
 static int cm254[] = { CMD_MESG, CMD_EDGE };
 static int cm255[] = { CMD_MESG, CMD_EDGE };
 
-static const mzx_command command_list[] =
+static const struct mzx_command command_list[] =
 {
   { (char*)"end",            0, NULL },
   { (char*)"die",            0, NULL },
@@ -832,7 +832,7 @@ static const char *ignore_list[21] =
   "into", "is", "of", "the", "then", "there", "through", "thru", "to", "with"
 };
 
-static const search_entry_short sorted_argument_list[] =
+static const struct search_entry_short sorted_argument_list[] =
 {
   { "!=",               5,   S_EQUALITY  },
   { ",",                0,   S_EXTRA     },
@@ -1098,7 +1098,7 @@ static const search_entry_short sorted_argument_list[] =
 };
 
 const int num_argument_names =
- sizeof(sorted_argument_list) / sizeof(search_entry_short);
+ sizeof(sorted_argument_list) / sizeof(struct search_entry_short);
 
 static int escape_chars(char *dest, char *src)
 {
@@ -1176,9 +1176,9 @@ static int is_param(char *cmd_line)
   }
 }
 
-__editor_maybe_static const search_entry_short *find_argument(char *name)
+__editor_maybe_static const struct search_entry_short *find_argument(char *name)
 {
-  const search_entry_short *base = sorted_argument_list;
+  const struct search_entry_short *base = sorted_argument_list;
   int bottom = 0, top = num_argument_names - 1, middle;
   int cmpval;
 
@@ -1225,12 +1225,12 @@ __editor_maybe_static int get_color(char *cmd_line)
   return strtol(cmd_line + 1, NULL, 16);
 }
 
-static int rasm_parse_argument(char *cmd_line, char **next, int *arg_translated,
- int *error, int *arg_short)
+static int rasm_parse_argument(char *cmd_line, char **next,
+ int *arg_translated, int *error, int *arg_short)
 {
   char current = *cmd_line;
   char *space_position;
-  const search_entry_short *matched_argument;
+  const struct search_entry_short *matched_argument;
 
   *error = 0;
 
@@ -1409,7 +1409,7 @@ static int get_word(char *str, char *source, char t)
   return i;
 }
 
-static const search_entry sorted_command_list[] =
+static const struct search_entry sorted_command_list[] =
 {
   { "%",              1, { 116 } },
   { "&",              1, { 117 } },
@@ -1533,12 +1533,12 @@ static const search_entry sorted_command_list[] =
 };
 
 static const int num_command_names =
- sizeof(sorted_command_list) / sizeof(search_entry);
+ sizeof(sorted_command_list) / sizeof(struct search_entry);
 
-static const search_entry *find_command(char *name)
+static const struct search_entry *find_command(char *name)
 {
   int bottom = 0, top = num_command_names - 1, middle;
-  const search_entry *base = sorted_command_list;
+  const struct search_entry *base = sorted_command_list;
   int cmpval;
 
   while(bottom <= top)
@@ -1622,12 +1622,12 @@ static void print_error(int arg_number, char *error_buffer, int bad_arg,
    correct_arg_err, bad_arg_err);
 }
 
-static int match_command(mzx_command *cmd, char *error_buffer)
+static int match_command(struct mzx_command *cmd, char *error_buffer)
 {
   int i, i2, i3;
   int num_params;
-  const search_entry *matched_command;
-  const mzx_command *current_command;
+  const struct search_entry *matched_command;
+  const struct mzx_command *current_command;
 
   error_buffer[0] = 0;
 
@@ -1752,7 +1752,7 @@ static void rasm_skip_whitespace(char *cpos, char **next)
   *next = cpos;
 }
 
-static int assemble_command(int command_number, mzx_command *cmd,
+static int assemble_command(int command_number, struct mzx_command *cmd,
  void *params[32], char *obj_pos, char **next_obj_pos)
 {
   int i;
@@ -1814,7 +1814,7 @@ __editor_maybe_static int assemble_line(char *cpos,
   int bytes_assembled;
   int i;
 
-  mzx_command current_command;
+  struct mzx_command current_command;
 
   current_command.name = command_name;
   current_command.param_types = command_params;
@@ -2180,7 +2180,7 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
   int i;
   char *input_position = cpos + 2;
   char *output_position = output_buffer;
-  const mzx_command *current_command;
+  const struct mzx_command *current_command;
 
   if(length)
   {
@@ -2266,7 +2266,8 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
         {
           case IMM_U16:
           {
-            int imm = (short)(*(input_position + 1) | (*(input_position + 2) << 8));
+            int imm = (short)(*(input_position + 1) |
+             (*(input_position + 2) << 8));
             char imm_buffer[16];
 
             if(arg_types)
@@ -2423,7 +2424,8 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
             {
               char dir_buffer[64];
               dir_buffer[0] = ' ';
-              words = print_dir(direction, dir_buffer + 1, arg_types, words + 1);
+              words = print_dir(direction, dir_buffer + 1, arg_types,
+               words + 1);
               strcpy(output_position, dir_buffer);
               output_position += strlen(dir_buffer);
             }

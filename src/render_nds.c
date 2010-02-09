@@ -45,7 +45,7 @@ static bool mouselook;
 enum Subscreen_Mode subscreen_mode;
 
 // Forward declarations
-void nds_mainscreen_focus(graphics_data *graphics, Uint32 x, Uint32 y);
+void nds_mainscreen_focus(struct graphics_data *graphics, Uint32 x, Uint32 y);
 
 bool is_scaled_mode(enum Subscreen_Mode mode)
 {
@@ -97,7 +97,7 @@ static void nds_subscreen_keyboard_init(void)
   BLEND_CR = 0;
 }
 
-static void nds_mainscreen_init(graphics_data *graphics)
+static void nds_mainscreen_init(struct graphics_data *graphics)
 {
   u16 *vram;
   int i;
@@ -140,7 +140,7 @@ void nds_video_jitter(void)
     0x0a0, 0x100,   /* 0.625, 1.000 */
   };
   static size_t jidx = 0;    /* jitter table index */
-  
+
   /* Jitter the backgrounds for scaled mode. */
   if(is_scaled_mode(subscreen_mode))
   {
@@ -203,7 +203,8 @@ void nds_sleep_check(void)
   }
 }
 
-static bool nds_init_video(graphics_data *graphics, config_info *config)
+static bool nds_init_video(struct graphics_data *graphics,
+ struct config_info *config)
 {
   lcdMainOnBottom();
 
@@ -218,27 +219,27 @@ static bool nds_init_video(graphics_data *graphics, config_info *config)
   return true;
 }
 
-static bool nds_check_video_mode(graphics_data *graphics, int width, int height,
-    int depth, int fullscreen, int resize)
+static bool nds_check_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize)
 {
   return true;  // stub
 }
 
-static bool nds_set_video_mode(graphics_data *graphics, int width, int height,
-    int depth, int fullscreen, int resize)
+static bool nds_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize)
 {
   return true;	// stub
 }
 
 // Render the scaled screen.
-static void nds_render_graph_scaled(graphics_data *graphics)
+static void nds_render_graph_scaled(struct graphics_data *graphics)
 {
   int const WIDTH_IN_PIXELS  = 80 * 4;  // Screen width in pixels
   int const WIDTH_IN_CELLS   = 80;      // Screen width in chars
   int const CHARACTER_HEIGHT = 14;      // Character height in pixels
   int const VRAM_WIDTH       = 512;     // HW surface width in pixels
 
-  char_element *text_cell = graphics->text_video;
+  struct char_element *text_cell = graphics->text_video;
   u32 *vram_ptr  = (u32*)BG_BMP_RAM(0);
   int chars, lines;
 
@@ -292,10 +293,11 @@ static void nds_render_graph_scaled(graphics_data *graphics)
   }
 }
 
-static void nds_render_graph_1to1(graphics_data *graphics)
+static void nds_render_graph_1to1(struct graphics_data *graphics)
 {
-  char_element *text_start = graphics->text_video + cell_pan_x + 80*cell_pan_y;
-  char_element *text_cell  = text_start;
+  struct char_element *text_start =
+   graphics->text_video + cell_pan_x + 80*cell_pan_y;
+  struct char_element *text_cell  = text_start;
   u16 *vram;
   int x, y;
 
@@ -360,7 +362,7 @@ static void nds_render_graph_1to1(graphics_data *graphics)
 
         text_cell++;
         vram++;
-      } 
+      }
 
       // Plot the 33rd column (in the next plane)
       bg = (*text_cell).bg_color & 0x0F;
@@ -376,7 +378,7 @@ static void nds_render_graph_1to1(graphics_data *graphics)
   }
 }
 
-static void nds_render_graph(graphics_data *graphics)
+static void nds_render_graph(struct graphics_data *graphics)
 {
   // Render the scaled screen if requested.
   if(is_scaled_mode(subscreen_mode))
@@ -386,10 +388,10 @@ static void nds_render_graph(graphics_data *graphics)
   nds_render_graph_1to1(graphics);
 }
 
-static void nds_update_palette_entry(rgb_color *palette, Uint32 idx)
+static void nds_update_palette_entry(struct rgb_color *palette, Uint32 idx)
 {
   u16* hw_pal  = PALETTE + idx;
-  rgb_color color1 = palette[idx];
+  struct rgb_color color1 = palette[idx];
   int entry2;
 
   if(idx < 16)
@@ -405,7 +407,7 @@ static void nds_update_palette_entry(rgb_color *palette, Uint32 idx)
       for(entry2 = 0; entry2 < 16; entry2++)
       {
         /* Average the colors while reducing their accuracy to 5 bits. */
-        rgb_color color2 = palette[entry2];
+        struct rgb_color color2 = palette[entry2];
         u16 r = (color1.r + color2.r) / 16;
         u16 g = (color1.g + color2.g) / 16;
         u16 b = (color1.b + color2.b) / 16;
@@ -419,8 +421,8 @@ static void nds_update_palette_entry(rgb_color *palette, Uint32 idx)
   }
 }
 
-static void nds_update_colors(graphics_data *graphics, rgb_color *palette,
-    Uint32 count)
+static void nds_update_colors(struct graphics_data *graphics,
+ struct rgb_color *palette, Uint32 count)
 {
   Uint32 i;
 
@@ -428,29 +430,29 @@ static void nds_update_colors(graphics_data *graphics, rgb_color *palette,
     nds_update_palette_entry(palette, i);
 }
 
-static void nds_resize_screen(graphics_data *graphics, int w, int h)
+static void nds_resize_screen(struct graphics_data *graphics, int w, int h)
 {
   // stub
 }
 
-static void nds_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
-    Uint8 color, Uint8 lines, Uint8 offset)
+static void nds_render_cursor(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
 {
   // stub
 }
 
-static void nds_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
-    Uint8 w, Uint8 h)
+static void nds_render_mouse(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
   // stub
 }
 
-static void nds_sync_screen(graphics_data *graphics)
+static void nds_sync_screen(struct graphics_data *graphics)
 {
   // stub
 }
 
-static void nds_remap_char(graphics_data *graphics, Uint16 chr)
+static void nds_remap_char(struct graphics_data *graphics, Uint16 chr)
 {
   if(chr < 256)
   {
@@ -477,7 +479,7 @@ static void nds_remap_char(graphics_data *graphics, Uint16 chr)
   }
 }
 
-static void nds_remap_charsets(graphics_data *graphics)
+static void nds_remap_charsets(struct graphics_data *graphics)
 {
   int i;
 
@@ -486,11 +488,11 @@ static void nds_remap_charsets(graphics_data *graphics)
 }
 
 // Focus on a given screen position (in pixels up to 640x350).
-void nds_mainscreen_focus(graphics_data *graphics, Uint32 x, Uint32 y)
+void nds_mainscreen_focus(struct graphics_data *graphics, Uint32 x, Uint32 y)
 {
   int scroll_x, scroll_y;
   int i;
-  
+
   if(mouselook)
   {
     // We're mouselooking, don't move the focus.
@@ -537,9 +539,9 @@ void nds_mainscreen_focus(graphics_data *graphics, Uint32 x, Uint32 y)
   nds_render_graph_1to1(graphics);
 }
 
-void render_nds_register(renderer_t *renderer)
+void render_nds_register(struct renderer *renderer)
 {
-  memset(renderer, 0, sizeof(renderer_t));
+  memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = nds_init_video;
   renderer->check_video_mode = nds_check_video_mode;
   renderer->set_video_mode = nds_set_video_mode;
@@ -594,7 +596,7 @@ void warning_screen(u8 *pcx_data)
   {
     videoSetMode(MODE_5_2D | DISPLAY_BG2_ACTIVE);
     vramSetBankA(VRAM_A_MAIN_BG);
-    
+
     BG2_CR  = BG_BMP8_256x256;
     BG2_XDX = 1 << 8;
     BG2_XDY = 0;

@@ -46,11 +46,11 @@
 //    _OK_      _Cancel_
 //
 //--------------------------
-int block_cmd(World *mzx_world)
+int block_cmd(struct world *mzx_world)
 {
   int dialog_result;
-  element *elements[3];
-  dialog di;
+  struct element *elements[3];
+  struct dialog di;
   int block_operation = 0;
   const char *radio_button_strings[] =
   {
@@ -85,11 +85,11 @@ int block_cmd(World *mzx_world)
   return block_operation;
 }
 
-int rtoo_obj_type(World *mzx_world)
+int rtoo_obj_type(struct world *mzx_world)
 {
   int dialog_result;
-  element *elements[3];
-  dialog di;
+  struct element *elements[3];
+  struct dialog di;
   int object_type = 0;
   const char *radio_button_strings[] =
   {
@@ -118,11 +118,11 @@ int rtoo_obj_type(World *mzx_world)
   return object_type;
 }
 
-int choose_char_set(World *mzx_world)
+int choose_char_set(struct world *mzx_world)
 {
   int dialog_result;
-  element *elements[3];
-  dialog di;
+  struct element *elements[3];
+  struct dialog di;
   int charset_type = 0;
   const char *radio_button_strings[] =
   {
@@ -152,12 +152,12 @@ int choose_char_set(World *mzx_world)
   return charset_type;
 }
 
-int export_type(World *mzx_world)
+int export_type(struct world *mzx_world)
 {
   int export_choice = 0;
   int dialog_result;
-  element *elements[3];
-  dialog di;
+  struct element *elements[3];
+  struct dialog di;
   const char *radio_strings[] =
   {
     "Board file (MZB)", "Character set (CHR)",
@@ -184,12 +184,12 @@ int export_type(World *mzx_world)
   return export_choice;
 }
 
-int import_type(World *mzx_world)
+int import_type(struct world *mzx_world)
 {
   int import_choice = 0;
   int dialog_result;
-  element *elements[3];
-  dialog di;
+  struct element *elements[3];
+  struct dialog di;
   const char *radio_strings[] =
   {
     "Board file (MZB)", "Character set (CHR)",

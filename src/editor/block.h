@@ -28,11 +28,11 @@ __M_BEGIN_DECLS
 
 #include "../world_struct.h"
 
-int block_cmd(World *mzx_world);
-int rtoo_obj_type(World *mzx_world);
-int choose_char_set(World *mzx_world);
-int export_type(World *mzx_world);
-int import_type(World *mzx_world);
+int block_cmd(struct world *mzx_world);
+int rtoo_obj_type(struct world *mzx_world);
+int choose_char_set(struct world *mzx_world);
+int export_type(struct world *mzx_world);
+int import_type(struct world *mzx_world);
 
 __M_END_DECLS
 

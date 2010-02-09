@@ -34,7 +34,7 @@ __M_BEGIN_DECLS
 #define CLAMP(x, low, high) \
   (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
-typedef enum
+enum resource_id
 {
   CONFIG_TXT = 0,
   MZX_ASCII_CHR,
@@ -47,12 +47,11 @@ typedef enum
   MZX_EDIT_CHR,
   SMZX_PAL,
   END_RESOURCE_ID_T, // must be last
-}
-mzx_resource_id_t;
+};
 
 CORE_LIBSPEC int mzx_res_init(const char *argv0);
 CORE_LIBSPEC void mzx_res_free(void);
-CORE_LIBSPEC char *mzx_res_get_by_id(mzx_resource_id_t id);
+CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
 
 CORE_LIBSPEC long ftell_and_rewind(FILE *f);
 int Random(int range);

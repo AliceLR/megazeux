@@ -26,7 +26,7 @@ __M_BEGIN_DECLS
 
 #define MAX_SPRITES         256
 
-typedef struct
+struct sprite
 {
   int x;
   int y;
@@ -40,13 +40,13 @@ typedef struct
   signed char col_y;
   char col_width;
   char col_height;
-} Sprite;
+};
 
-typedef struct
+struct collision_list
 {
   int num;
   int collisions[MAX_SPRITES];
-} Collision_list;
+};
 
 __M_END_DECLS
 

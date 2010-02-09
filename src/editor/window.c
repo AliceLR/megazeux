@@ -646,10 +646,10 @@ void draw_color_box(int color, int q_bit, int x, int y)
   }
 }
 
-static void draw_check_box(World *mzx_world, dialog *di, element *e,
- int color, int active)
+static void draw_check_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int color, int active)
 {
-  check_box *src = (check_box *)e;
+  struct check_box *src = (struct check_box *)e;
   int x = di->x + e->x;
   int y = di->y + e->y;
   int i;
@@ -672,10 +672,10 @@ static void draw_check_box(World *mzx_world, dialog *di, element *e,
   }
 }
 
-static void draw_char_box(World *mzx_world, dialog *di, element *e,
- int color, int active)
+static void draw_char_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int color, int active)
 {
-  char_box *src = (char_box *)e;
+  struct char_box *src = (struct char_box *)e;
   int x = di->x + e->x;
   int y = di->y + e->y;
   int question_len = strlen(src->question) + di->pad_space;
@@ -687,10 +687,10 @@ static void draw_char_box(World *mzx_world, dialog *di, element *e,
   draw_char(' ', DI_CHAR, x + question_len + 2, y);
 }
 
-static void draw_color_box_element(World *mzx_world, dialog *di,
- element *e, int color, int active)
+static void draw_color_box_element(struct world *mzx_world, struct dialog *di,
+ struct element *e, int color, int active)
 {
-  color_box *src = (color_box *)e;
+  struct color_box *src = (struct color_box *)e;
   int x = di->x + e->x;
   int y = di->y + e->y;
   int current_color = *(src->result);
@@ -700,15 +700,15 @@ static void draw_color_box_element(World *mzx_world, dialog *di,
    x + strlen(src->question) + di->pad_space, y);
 }
 
-static void draw_board_list(World *mzx_world, dialog *di,
- element *e, int color, int active)
+static void draw_board_list(struct world *mzx_world, struct dialog *di,
+ struct element *e, int color, int active)
 {
-  board_list *src = (board_list *)e;
+  struct board_list *src = (struct board_list *)e;
   int x = di->x + e->x;
   int y = di->y + e->y;
   int current_board = *(src->result);
 
-  Board *src_board;
+  struct board *src_board;
   char board_name[BOARD_NAME_SIZE] = "(none)";
 
   if(current_board || (!src->board_zero_as_none))
@@ -735,9 +735,10 @@ static void draw_board_list(World *mzx_world, dialog *di,
    DI_ARROWBUTTON, 0);
 }
 
-static int key_check_box(World *mzx_world, dialog *di, element *e, int key)
+static int key_check_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int key)
 {
-  check_box *src = (check_box *)e;
+  struct check_box *src = (struct check_box *)e;
 
   switch(key)
   {
@@ -787,9 +788,10 @@ static int key_check_box(World *mzx_world, dialog *di, element *e, int key)
   return 0;
 }
 
-static int key_char_box(World *mzx_world, dialog *di, element *e, int key)
+static int key_char_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int key)
 {
-  char_box *src = (char_box *)e;
+  struct char_box *src = (struct char_box *)e;
 
   switch(key)
   {
@@ -827,9 +829,10 @@ static int key_char_box(World *mzx_world, dialog *di, element *e, int key)
   return 0;
 }
 
-static int key_color_box(World *mzx_world, dialog *di, element *e, int key)
+static int key_color_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int key)
 {
-  color_box *src = (color_box *)e;
+  struct color_box *src = (struct color_box *)e;
 
   switch(key)
   {
@@ -853,9 +856,10 @@ static int key_color_box(World *mzx_world, dialog *di, element *e, int key)
   return 0;
 }
 
-static int key_board_list(World *mzx_world, dialog *di, element *e, int key)
+static int key_board_list(struct world *mzx_world, struct dialog *di,
+ struct element *e, int key)
 {
-  board_list *src = (board_list *)e;
+  struct board_list *src = (struct board_list *)e;
 
   switch(key)
   {
@@ -881,11 +885,11 @@ static int key_board_list(World *mzx_world, dialog *di, element *e, int key)
   return 0;
 }
 
-static int click_check_box(World *mzx_world, dialog *di,
- element *e, int mouse_button, int mouse_x, int mouse_y,
+static int click_check_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
-  check_box *src = (check_box *)e;
+  struct check_box *src = (struct check_box *)e;
 
   src->current_choice = mouse_y;
   src->results[src->current_choice] ^= 1;
@@ -893,24 +897,24 @@ static int click_check_box(World *mzx_world, dialog *di,
   return 0;
 }
 
-static int click_char_box(World *mzx_world, dialog *di,
- element *e, int mouse_button, int mouse_x, int mouse_y,
+static int click_char_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
   return IKEY_RETURN;
 }
 
-static int click_color_box(World *mzx_world, dialog *di,
- element *e, int mouse_button, int mouse_x, int mouse_y,
+static int click_color_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
   return IKEY_RETURN;
 }
 
-element *construct_check_box(int x, int y, const char **choices,
+struct element *construct_check_box(int x, int y, const char **choices,
  int num_choices, int max_length, int *results)
 {
-  check_box *src = malloc(sizeof(check_box));
+  struct check_box *src = malloc(sizeof(struct check_box));
   src->current_choice = 0;
   src->choices = choices;
   src->num_choices = num_choices;
@@ -919,26 +923,26 @@ element *construct_check_box(int x, int y, const char **choices,
   construct_element(&(src->e), x, y, max_length + 4, num_choices,
    draw_check_box, key_check_box, click_check_box, NULL, NULL);
 
-  return (element *)src;
+  return (struct element *)src;
 }
 
-element *construct_char_box(int x, int y, const char *question,
+struct element *construct_char_box(int x, int y, const char *question,
  int allow_char_255, int *result)
 {
-  char_box *src = malloc(sizeof(char_box));
+  struct char_box *src = malloc(sizeof(struct char_box));
   src->question = question;
   src->allow_char_255 = allow_char_255;
   src->result = result;
   construct_element(&(src->e), x, y, strlen(question) + 4,
    1, draw_char_box, key_char_box, click_char_box, NULL, NULL);
 
-  return (element *)src;
+  return (struct element *)src;
 }
 
-element *construct_color_box(int x, int y,
+struct element *construct_color_box(int x, int y,
  const char *question, int allow_wildcard, int *result)
 {
-  color_box *src = malloc(sizeof(color_box));
+  struct color_box *src = malloc(sizeof(struct color_box));
   src->question = question;
   src->allow_wildcard = allow_wildcard;
   src->result = result;
@@ -946,20 +950,20 @@ element *construct_color_box(int x, int y,
    1, draw_color_box_element, key_color_box, click_color_box,
    NULL, NULL);
 
-  return (element *)src;
+  return (struct element *)src;
 }
 
-static int click_board_list(World *mzx_world, dialog *di,
- element *e, int mouse_button, int mouse_x, int mouse_y,
+static int click_board_list(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
   return IKEY_RETURN;
 }
 
-element *construct_board_list(int x, int y,
+struct element *construct_board_list(int x, int y,
  const char *title, int board_zero_as_none, int *result)
 {
-  board_list *src = malloc(sizeof(board_list));
+  struct board_list *src = malloc(sizeof(struct board_list));
   src->title = title;
   src->board_zero_as_none = board_zero_as_none;
   src->result = result;
@@ -967,12 +971,12 @@ element *construct_board_list(int x, int y,
    2, draw_board_list, key_board_list, click_board_list,
    NULL, NULL);
 
-  return (element *)src;
+  return (struct element *)src;
 }
 
-int add_board(World *mzx_world, int current)
+int add_board(struct world *mzx_world, int current)
 {
-  Board *new_board;
+  struct board *new_board;
   char temp_board_str[BOARD_NAME_SIZE];
   // ..get a name...
   save_screen();
@@ -989,7 +993,7 @@ int add_board(World *mzx_world, int current)
   {
     mzx_world->num_boards_allocated *= 2;
     mzx_world->board_list = realloc(mzx_world->board_list,
-     mzx_world->num_boards_allocated * sizeof(Board *));
+     mzx_world->num_boards_allocated * sizeof(struct board *));
   }
 
   mzx_world->num_boards++;
@@ -1006,7 +1010,7 @@ int add_board(World *mzx_world, int current)
 }
 
 // Shell for list_menu()
-int choose_board(World *mzx_world, int current, const char *title,
+int choose_board(struct world *mzx_world, int current, const char *title,
  int board0_none)
 {
   char **board_names = calloc(mzx_world->num_boards + 1, sizeof(char *));
@@ -1074,7 +1078,7 @@ int choose_board(World *mzx_world, int current, const char *title,
   return current;
 }
 
-int choose_file(World *mzx_world, const char **wildcards, char *ret,
+int choose_file(struct world *mzx_world, const char **wildcards, char *ret,
  const char *title, int dirs_okay)
 {
   return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,

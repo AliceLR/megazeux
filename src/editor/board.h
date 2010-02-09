@@ -27,10 +27,10 @@ __M_BEGIN_DECLS
 #include "../board_struct.h"
 #include "../world_struct.h"
 
-void replace_current_board(World *mzx_world, char *name);
-Board *create_blank_board(void);
-void save_board_file(Board *cur_board, char *name);
-void change_board_size(Board *src_board, int new_width, int new_height);
+void replace_current_board(struct world *mzx_world, char *name);
+struct board *create_blank_board(void);
+void save_board_file(struct board *cur_board, char *name);
+void change_board_size(struct board *src_board, int new_width, int new_height);
 
 __M_END_DECLS
 

@@ -75,9 +75,9 @@ __editor_maybe_static const int def_params[128] =
   -2, -2, -2, -2, -2, -2, -2, -2, -2, -2,  0,  0,  0,  0,  0, -2  // 0x70 - 0x7F
 };
 
-static void magic_load_mod(World *mzx_world, char *filename)
+static void magic_load_mod(struct world *mzx_world, char *filename)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int mod_name_size = strlen(filename);
   if((mod_name_size > 1) && (filename[mod_name_size - 1] == '*'))
   {
@@ -98,14 +98,14 @@ static void magic_load_mod(World *mzx_world, char *filename)
   strcpy(mzx_world->real_mod_playing, filename);
 }
 
-static void save_player_position(World *mzx_world, int pos)
+static void save_player_position(struct world *mzx_world, int pos)
 {
   mzx_world->pl_saved_x[pos] = mzx_world->player_x;
   mzx_world->pl_saved_y[pos] = mzx_world->player_y;
   mzx_world->pl_saved_board[pos] = mzx_world->current_board_id;
 }
 
-static void restore_player_position(World *mzx_world, int pos)
+static void restore_player_position(struct world *mzx_world, int pos)
 {
   mzx_world->target_x = mzx_world->pl_saved_x[pos];
   mzx_world->target_y = mzx_world->pl_saved_y[pos];
@@ -113,9 +113,10 @@ static void restore_player_position(World *mzx_world, int pos)
   mzx_world->target_where = TARGET_POSITION;
 }
 
-static void calculate_blocked(World *mzx_world, int x, int y, int id, int bl[4])
+static void calculate_blocked(struct world *mzx_world, int x, int y, int id,
+ int bl[4])
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   char *level_id = src_board->level_id;
 
@@ -144,13 +145,13 @@ static void calculate_blocked(World *mzx_world, int x, int y, int id, int bl[4])
   }
 }
 
-int place_at_xy(World *mzx_world, mzx_thing id, int color, int param,
+int place_at_xy(struct world *mzx_world, enum thing id, int color, int param,
  int x, int y)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int offset = x + (y * board_width);
-  mzx_thing new_id = (mzx_thing)src_board->level_id[offset];
+  enum thing new_id = (enum thing)src_board->level_id[offset];
 
   // Okay, I'm really stabbing at behavior here.
   // Wildcard param, use source but only if id matches and isn't
@@ -209,7 +210,7 @@ int place_at_xy(World *mzx_world, mzx_thing id, int color, int param,
   return 1;
 }
 
-static int place_under_xy(Board *src_board, mzx_thing id, int color,
+static int place_under_xy(struct board *src_board, enum thing id, int color,
  int param, int x, int y)
 {
   int board_width = src_board->board_width;
@@ -232,10 +233,11 @@ static int place_under_xy(Board *src_board, mzx_thing id, int color,
   return 1;
 }
 
-static int place_dir_xy(World *mzx_world, mzx_thing id, int color, int param,
- int x, int y, mzx_dir direction, Robot *cur_robot, int *_bl)
+static int place_dir_xy(struct world *mzx_world, enum thing id, int color,
+ int param, int x, int y, enum dir direction, struct robot *cur_robot,
+ int *_bl)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
 
   // Check under
   if(direction == BENEATH)
@@ -260,11 +262,11 @@ static int place_dir_xy(World *mzx_world, mzx_thing id, int color, int param,
   }
 }
 
-int place_player_xy(World *mzx_world, int x, int y)
+int place_player_xy(struct world *mzx_world, int x, int y)
 {
   if((mzx_world->player_x != x) || (mzx_world->player_y != y))
   {
-    Board *src_board = mzx_world->current_board;
+    struct board *src_board = mzx_world->current_board;
     int offset = x + (y * src_board->board_width);
     int did = src_board->level_id[offset];
     int dparam = src_board->level_param[offset];
@@ -297,11 +299,12 @@ int place_player_xy(World *mzx_world, int x, int y)
   return 0;
 }
 
-static void send_at_xy(World *mzx_world, int id, int x, int y, char *label)
+static void send_at_xy(struct world *mzx_world, int id, int x, int y,
+ char *label)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int offset = x + (y * src_board->board_width);
-  mzx_thing d_id = (mzx_thing)src_board->level_id[offset];
+  enum thing d_id = (enum thing)src_board->level_id[offset];
 
   if(is_robot(d_id))
   {
@@ -350,7 +353,7 @@ static int get_random_range(int min_value, int max_value)
   return result;
 }
 
-static int send_self_label_tr(World *mzx_world, char *param, int id)
+static int send_self_label_tr(struct world *mzx_world, char *param, int id)
 {
   char label_buffer[ROBOT_MAX_TR];
   tr_msg(mzx_world, param, id, label_buffer);
@@ -396,10 +399,10 @@ static void split_colors(int color, int *fg, int *bg)
   }
 }
 
-static int check_at_xy(Board *src_board, mzx_thing id, int fg, int bg,
+static int check_at_xy(struct board *src_board, enum thing id, int fg, int bg,
  int param, int offset)
 {
-  mzx_thing d_id = (mzx_thing)src_board->level_id[offset];
+  enum thing d_id = (enum thing)src_board->level_id[offset];
   int dcolor = src_board->level_color[offset];
   int dparam = src_board->level_param[offset];
 
@@ -417,10 +420,10 @@ static int check_at_xy(Board *src_board, mzx_thing id, int fg, int bg,
   return 0;
 }
 
-static int check_under_xy(Board *src_board, mzx_thing id, int fg, int bg,
- int param, int offset)
+static int check_under_xy(struct board *src_board, enum thing id,
+ int fg, int bg, int param, int offset)
 {
-  mzx_thing did = (mzx_thing)src_board->level_under_id[offset];
+  enum thing did = (enum thing)src_board->level_under_id[offset];
   int dcolor = src_board->level_under_color[offset];
   int dparam = src_board->level_under_param[offset];
 
@@ -432,10 +435,11 @@ static int check_under_xy(Board *src_board, mzx_thing id, int fg, int bg,
   return 0;
 }
 
-static int check_dir_xy(World *mzx_world, mzx_thing id, int color, int param,
- int x, int y, mzx_dir direction, Robot *cur_robot, int *_bl)
+static int check_dir_xy(struct world *mzx_world, enum thing id, int color,
+ int param, int x, int y, enum dir direction, struct robot *cur_robot,
+ int *_bl)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int fg, bg;
   int offset;
@@ -468,13 +472,13 @@ static int check_dir_xy(World *mzx_world, mzx_thing id, int color, int param,
   }
 }
 
-static void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
+static void copy_xy_to_xy(struct world *mzx_world, int src_x, int src_y,
  int dest_x, int dest_y)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int src_offset = src_x + (src_y * board_width);
-  mzx_thing src_id = (mzx_thing)src_board->level_id[src_offset];
+  enum thing src_id = (enum thing)src_board->level_id[src_offset];
 
   // Cannot copy from player to player
   if(src_id != PLAYER)
@@ -483,7 +487,7 @@ static void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
 
     if(is_robot(src_id))
     {
-      Robot *src_robot = src_board->robot_list[src_param];
+      struct robot *src_robot = src_board->robot_list[src_param];
       src_param = duplicate_robot(src_board, src_robot,
        dest_x, dest_y);
     }
@@ -491,14 +495,14 @@ static void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
 
     if(is_signscroll(src_id))
     {
-      Scroll *src_scroll = src_board->scroll_list[src_param];
+      struct scroll *src_scroll = src_board->scroll_list[src_param];
       src_param = duplicate_scroll(src_board, src_scroll);
     }
     else
 
     if(src_id == SENSOR)
     {
-      Sensor *src_sensor = src_board->sensor_list[src_param];
+      struct sensor *src_sensor = src_board->sensor_list[src_param];
       src_param = duplicate_sensor(src_board, src_sensor);
     }
 
@@ -513,10 +517,10 @@ static void copy_xy_to_xy(World *mzx_world, int src_x, int src_y,
   }
 }
 
-__editor_maybe_static void copy_board_to_board_buffer(Board *src_board,
+__editor_maybe_static void copy_board_to_board_buffer(struct board *src_board,
  int x, int y, int width, int height, char *dest_id, char *dest_param,
  char *dest_color, char *dest_under_id, char *dest_under_param,
- char *dest_under_color, Board *dest_board)
+ char *dest_under_color, struct board *dest_board)
 {
   int board_width = src_board->board_width;
   int src_offset = x + (y * board_width);
@@ -528,7 +532,7 @@ __editor_maybe_static void copy_board_to_board_buffer(Board *src_board,
   char *level_under_id = src_board->level_under_id;
   char *level_under_param = src_board->level_under_param;
   char *level_under_color = src_board->level_under_color;
-  mzx_thing src_id;
+  enum thing src_id;
   int src_param;
   int i, i2;
 
@@ -537,11 +541,11 @@ __editor_maybe_static void copy_board_to_board_buffer(Board *src_board,
     for(i2 = 0; i2 < width; i2++, src_offset++,
      dest_offset++)
     {
-      src_id = (mzx_thing)level_id[src_offset];
+      src_id = (enum thing)level_id[src_offset];
       src_param = level_param[src_offset];
       if(is_robot(src_id))
       {
-        Robot *src_robot = src_board->robot_list[src_param];
+        struct robot *src_robot = src_board->robot_list[src_param];
         src_param = duplicate_robot(dest_board, src_robot,
          0, 0);
       }
@@ -549,14 +553,14 @@ __editor_maybe_static void copy_board_to_board_buffer(Board *src_board,
 
       if(is_signscroll(src_id))
       {
-        Scroll *src_scroll = src_board->scroll_list[src_param];
+        struct scroll *src_scroll = src_board->scroll_list[src_param];
         src_param = duplicate_scroll(dest_board, src_scroll);
       }
       else
 
       if(src_id == SENSOR)
       {
-        Sensor *src_sensor = src_board->sensor_list[src_param];
+        struct sensor *src_sensor = src_board->sensor_list[src_param];
         src_param = duplicate_sensor(dest_board, src_sensor);
       }
 
@@ -580,7 +584,7 @@ __editor_maybe_static void copy_board_to_board_buffer(Board *src_board,
   }
 }
 
-__editor_maybe_static void copy_board_buffer_to_board(Board *src_board,
+__editor_maybe_static void copy_board_buffer_to_board(struct board *src_board,
  int x, int y, int width, int height, char *src_id, char *src_param,
  char *src_color, char *src_under_id, char *src_under_param,
  char *src_under_color)
@@ -595,7 +599,7 @@ __editor_maybe_static void copy_board_buffer_to_board(Board *src_board,
   char *level_under_id = src_board->level_under_id;
   char *level_under_param = src_board->level_under_param;
   char *level_under_color = src_board->level_under_color;
-  mzx_thing src_id_cur, dest_id;
+  enum thing src_id_cur, dest_id;
   int dest_param;
   int i, i2;
 
@@ -603,8 +607,8 @@ __editor_maybe_static void copy_board_buffer_to_board(Board *src_board,
   {
     for(i2 = 0; i2 < width; i2++, src_offset++, dest_offset++)
     {
-      dest_id = (mzx_thing)level_id[dest_offset];
-      src_id_cur = (mzx_thing)src_id[src_offset];
+      dest_id = (enum thing)level_id[dest_offset];
+      src_id_cur = (enum thing)src_id[src_offset];
 
       if(dest_id != PLAYER)
       {
@@ -724,7 +728,7 @@ static void copy_layer_to_layer(int src_x, int src_y, int dest_x, int dest_y,
   }
 }
 
-__editor_maybe_static void copy_board_to_layer(Board *src_board,
+__editor_maybe_static void copy_board_to_layer(struct board *src_board,
  int x, int y, int width, int height,
  char *dest_char, char *dest_color, int dest_width)
 {
@@ -753,9 +757,9 @@ __editor_maybe_static void copy_board_to_layer(Board *src_board,
 }
 
 // Make sure convert ID is a custom_*, otherwise this could get ugly
-__editor_maybe_static void copy_layer_to_board(Board *src_board,
+__editor_maybe_static void copy_layer_to_board(struct board *src_board,
  int x, int y, int width, int height, char *src_char, char *src_color,
- int src_width, mzx_thing convert_id)
+ int src_width, enum thing convert_id)
 {
   int board_width = src_board->board_width;
   int dest_offset = x + (y * board_width);
@@ -785,7 +789,7 @@ __editor_maybe_static void copy_layer_to_board(Board *src_board,
   }
 }
 
-void setup_overlay(Board *src_board, int mode)
+void setup_overlay(struct board *src_board, int mode)
 {
   if(!mode && src_board->overlay_mode)
   {
@@ -806,9 +810,9 @@ void setup_overlay(Board *src_board, int mode)
   src_board->overlay_mode = mode;
 }
 
-void replace_player(World *mzx_world)
+void replace_player(struct world *mzx_world)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   char *level_id = src_board->level_id;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
@@ -837,10 +841,10 @@ void replace_player(World *mzx_world)
 
 // Run a single robot through a single cycle.
 // If id is negative, only run it if status is 2
-void run_robot(World *mzx_world, int id, int x, int y)
+void run_robot(struct world *mzx_world, int id, int x, int y)
 {
-  Board *src_board = mzx_world->current_board;
-  Robot *cur_robot;
+  struct board *src_board = mzx_world->current_board;
+  struct robot *cur_robot;
   int fade = get_fade_status();
   int cmd; // Command to run
   int lines_run = 0;
@@ -881,7 +885,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
   }
   else
   {
-    mzx_dir walk_dir;
+    enum dir walk_dir;
     cur_robot = src_board->robot_list[id];
 
     walk_dir = cur_robot->walk_dir;
@@ -909,7 +913,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
     // Walk?
     if(id && is_cardinal_dir(walk_dir))
     {
-      move_status status = move(mzx_world, x, y, dir_to_int(walk_dir),
+      enum move_status status = move(mzx_world, x, y, dir_to_int(walk_dir),
        CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK |
        CAN_WATERWALK | (CAN_LAVAWALK * cur_robot->can_lavawalk));
 
@@ -921,7 +925,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       }
       else if(status == NO_HIT)
       {
-        mzx_thing l_id;
+        enum thing l_id;
 
         move_dir(src_board, &x, &y, walk_dir);
 
@@ -934,7 +938,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
          * updated x,y location of the robot for this cycle, we simply end the
          * cycle if the robot enters a transport.
          */
-        l_id = (mzx_thing)level_id[x + (y * board_width)];
+        l_id = (enum thing)level_id[x + (y * board_width)];
         if(l_id == TRANSPORT)
           goto breaker;
       }
@@ -1035,8 +1039,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          mzx_dir direction =
-           parsedir((mzx_dir)cmd_ptr[2], x, y, cur_robot->walk_dir);
+          enum dir direction =
+           parsedir((enum dir)cmd_ptr[2], x, y, cur_robot->walk_dir);
           char *p2 = next_param_pos(cmd_ptr + 1);
           int num = parse_param(mzx_world, p2, id);
 
@@ -1048,7 +1052,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             // Parse dir
             if(is_cardinal_dir(direction))
             {
-              move_status status;
+              enum move_status status;
 
               status = move(mzx_world, x, y, dir_to_int(direction),
                CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK |
@@ -1071,12 +1075,12 @@ void run_robot(World *mzx_world, int id, int x, int y)
         if(id)
         {
           // Parse dir
-          mzx_dir direction = parsedir((mzx_dir)cmd_ptr[2], x, y,
+          enum dir direction = parsedir((enum dir)cmd_ptr[2], x, y,
            cur_robot->walk_dir);
 
           if(is_cardinal_dir(direction))
           {
-            move_status status;
+            enum move_status status;
 
             status = move(mzx_world, x, y, dir_to_int(direction),
              CAN_PUSH | CAN_TRANSPORT | CAN_FIREWALK | CAN_WATERWALK |
@@ -1103,8 +1107,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          mzx_dir direction =
-           parsedir((mzx_dir)cmd_ptr[2], x, y, cur_robot->walk_dir);
+          enum dir direction =
+           parsedir((enum dir)cmd_ptr[2], x, y, cur_robot->walk_dir);
 
           if(!is_cardinal_dir(direction))
           {
@@ -1125,7 +1129,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           int offset = x + (y * board_width);
           int color = parse_param(mzx_world, cmd_ptr + 1, id);
           char *p2 = next_param_pos(cmd_ptr + 1);
-          mzx_thing new_id = parse_param_thing(mzx_world, p2);
+          enum thing new_id = parse_param_thing(mzx_world, p2);
           int param = parse_param(mzx_world, p2 + 3, id);
           color = fix_color(color, level_color[offset]);
           level_color[offset] = color;
@@ -1189,7 +1193,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           {
             // delete at x y
             int offset = x + (y * board_width);
-            mzx_thing new_id = (mzx_thing)level_id[offset];
+            enum thing new_id = (enum thing)level_id[offset];
             int color = level_color[offset];
             if(place_at_xy(mzx_world, new_id, color, id, new_x, new_y))
             {
@@ -1214,7 +1218,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         // Setting a string
         if(is_string(dest_buffer))
         {
-          mzx_string dest;
+          struct string dest;
 
           // Is it a non-immediate
           if(*src_string)
@@ -1305,7 +1309,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           // Must be a non-immediate
           if(*src_string)
           {
-            mzx_string dest;
+            struct string dest;
             // Translate into src buffer
             tr_msg(mzx_world, src_string + 1, id, src_buffer);
 
@@ -1365,15 +1369,15 @@ void run_robot(World *mzx_world, int id, int x, int y)
         char *dest_string = cmd_ptr + 2;
         char *p2 = next_param_pos(cmd_ptr + 1);
         char *src_string = p2 + 3;
-        mzx_equality comparison = parse_param_eq(mzx_world, p2);
+        enum equality comparison = parse_param_eq(mzx_world, p2);
         char src_buffer[ROBOT_MAX_TR];
         char dest_buffer[ROBOT_MAX_TR];
         int success = 0;
 
         if(is_string(dest_string))
         {
-          mzx_string dest;
-          mzx_string src;
+          struct string dest;
+          struct string src;
 
           tr_msg(mzx_world, dest_string, id, dest_buffer);
           // Get a pointer to the dest string
@@ -1467,8 +1471,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 18: // if condition label
       case 19: // if not cond. label
       {
-        mzx_dir direction;
-        mzx_condition condition =
+        enum dir direction;
+        enum condition condition =
          parse_param_cond(mzx_world, cmd_ptr + 1, &direction);
         int success = 0;
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
@@ -1516,7 +1520,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             if(id)
             {
               int offset = x + (y * board_width);
-              mzx_thing under = (mzx_thing)level_under_id[offset];
+              enum thing under = (enum thing)level_under_id[offset];
 
               if((under == LAVA) || (under == FIRE))
                 success = 1;
@@ -1760,7 +1764,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int color = parse_param(mzx_world, cmd_ptr + 1, id);
         int fg, bg;
         char *p2 = next_param_pos(cmd_ptr + 1);
-        mzx_thing check_id = parse_param_thing(mzx_world, p2);
+        enum thing check_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         // Param
         int check_param = parse_param(mzx_world, p3, id);
@@ -1786,7 +1790,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         int color = parse_param(mzx_world, cmd_ptr + 1, id);
         int fg, bg;
         char *p2 = next_param_pos(cmd_ptr + 1);
-        mzx_thing check_id = parse_param_thing(mzx_world, p2);
+        enum thing check_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         // Param
         int check_param = parse_param(mzx_world, p3, id);
@@ -1814,11 +1818,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
           char *p2 = next_param_pos(cmd_ptr + 1);
-          mzx_thing check_id = parse_param_thing(mzx_world, p2);
+          enum thing check_id = parse_param_thing(mzx_world, p2);
           char *p3 = next_param_pos(p2);
           int check_param = parse_param(mzx_world, p3, id);
           char *p4 = next_param_pos(p3);
-          mzx_dir direction = parse_param_dir(mzx_world, p4);
+          enum dir direction = parse_param_dir(mzx_world, p4);
 
           if(check_dir_xy(mzx_world, check_id, check_color,
            check_param, x, y, direction, cur_robot, _bl))
@@ -1836,11 +1840,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
           char *p2 = next_param_pos(cmd_ptr + 1);
-          mzx_thing check_id = parse_param_thing(mzx_world, p2);
+          enum thing check_id = parse_param_thing(mzx_world, p2);
           char *p3 = next_param_pos(p2);
           int check_param = parse_param(mzx_world, p3, id);
           char *p4 = next_param_pos(p3);
-          mzx_dir direction = parse_param_dir(mzx_world, p4);
+          enum dir direction = parse_param_dir(mzx_world, p4);
 
           if(!check_dir_xy(mzx_world, check_id, check_color,
            check_param, x, y, direction, cur_robot, _bl))
@@ -1856,7 +1860,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
-        mzx_thing check_id = parse_param_thing(mzx_world, p2);
+        enum thing check_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         unsigned int check_param = parse_param(mzx_world, p3, id);
         char *p4 = next_param_pos(p3);
@@ -1916,7 +1920,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         if(check_id == SPR_COLLISION)
         {
-          Sprite *check_sprite;
+          struct sprite *check_sprite;
 
           int ret;
           if(check_param >= 256)
@@ -1978,11 +1982,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 26: // if dir of player is thing, "label"
       {
-        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+        enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         char *p2 = next_param_pos(cmd_ptr + 1);
         int check_color = parse_param(mzx_world, p2, id);
         char *p3 = next_param_pos(p2);
-        mzx_thing check_id = parse_param_thing(mzx_world, p3);
+        enum thing check_id = parse_param_thing(mzx_world, p3);
         char *p4 = next_param_pos(p3);
         int check_param = parse_param(mzx_world, p4, id);
 
@@ -2054,11 +2058,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           int put_color = parse_param(mzx_world, cmd_ptr + 1, id);
           char *p2 = next_param_pos(cmd_ptr + 1);
-          mzx_thing put_id = parse_param_thing(mzx_world, p2);
+          enum thing put_id = parse_param_thing(mzx_world, p2);
           char *p3 = next_param_pos(p2);
           int put_param = parse_param(mzx_world, p3, id);
           char *p4 = next_param_pos(p3);
-          mzx_dir direction = parse_param_dir(mzx_world, p4);
+          enum dir direction = parse_param_dir(mzx_world, p4);
 
           if(put_id < SENSOR)
           {
@@ -2238,7 +2242,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+          enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           parsedir(direction, x, y, cur_robot->walk_dir);
 
           if(is_cardinal_dir(direction))
@@ -2248,13 +2252,13 @@ void run_robot(World *mzx_world, int id, int x, int y)
             if(!move_dir(src_board, &new_x, &new_y, direction))
             {
               int new_offset = new_x + (new_y * board_width);
-              mzx_thing new_id = (mzx_thing)level_id[new_offset];
+              enum thing new_id = (enum thing)level_id[new_offset];
 
               if((new_id == DOOR) || (new_id == GATE))
               {
                 // Become pushable for right now
                 int offset = x + (y * board_width);
-                mzx_thing old_id = (mzx_thing)level_id[offset];
+                enum thing old_id = (enum thing)level_id[offset];
                 level_id[offset] = (char)ROBOT_PUSHABLE;
                 grab_item(mzx_world, new_offset, 0);
                 // Find the robot
@@ -2307,7 +2311,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           int send_x = x;
           int send_y = y;
-          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+          enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           char *p2 = next_param_pos(cmd_ptr + 1);
           direction = parsedir(direction, x, y, cur_robot->walk_dir);
 
@@ -2394,14 +2398,14 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 61: // move player dir
       case 62: // move pl dir "label"
       {
-        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+        enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
         if(is_cardinal_dir(direction))
         {
           int old_x = mzx_world->player_x;
           int old_y = mzx_world->player_y;
           int old_board = mzx_world->current_board_id;
-          mzx_board_target old_target = mzx_world->target_where;
+          enum board_target old_target = mzx_world->target_where;
 
           // Have to fix vars and move to next command NOW, in case player
           // is sent to another screen!
@@ -2472,7 +2476,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 67: // put player dir
       {
-        mzx_dir put_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
+        enum dir put_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
         put_dir = parsedir(put_dir, x, y, cur_robot->walk_dir);
 
         if(is_cardinal_dir(put_dir))
@@ -2525,9 +2529,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
           int dest_x = x;
           int src_y = y;
           int dest_y = y;
-          mzx_dir dest_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
+          enum dir dest_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
           char *p2 = next_param_pos(cmd_ptr + 1);
-          mzx_dir src_dir = parse_param_dir(mzx_world, p2);
+          enum dir src_dir = parse_param_dir(mzx_world, p2);
 
           src_dir = parsedir(src_dir, x, y, cur_robot->walk_dir);
           dest_dir = parsedir(dest_dir, x, y, cur_robot->walk_dir);
@@ -2546,7 +2550,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
               {
                 int src_offset = src_x + (src_y * board_width);
                 int dest_offset = dest_x + (dest_y * board_width);
-                mzx_thing cp_id = (mzx_thing)level_id[src_offset];
+                enum thing cp_id = (enum thing)level_id[src_offset];
                 int cp_param = level_param[src_offset];
                 int cp_color = level_color[src_offset];
                 level_id[src_offset] = level_id[dest_offset];
@@ -2568,8 +2572,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          mzx_dir direction =
-           parsedir((mzx_dir)cmd_ptr[2], x, y, cur_robot->walk_dir);
+          enum dir direction =
+           parsedir((enum dir)cmd_ptr[2], x, y, cur_robot->walk_dir);
           if(is_cardinal_dir(direction) && !(_bl[dir_to_int(direction)] & 2))
           {
             // Block
@@ -2586,7 +2590,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+          enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           place_dir_xy(mzx_world, LIT_BOMB, 8, 0, x, y, direction,
            cur_robot, _bl);
           update_blocked = 1;
@@ -2598,7 +2602,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+          enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           place_dir_xy(mzx_world, LIT_BOMB, 8, 128, x, y, direction,
            cur_robot, _bl);
           update_blocked = 1;
@@ -2610,7 +2614,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+          enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           direction = parsedir(direction, x, y, cur_robot->walk_dir);
           if(is_cardinal_dir(direction))
           {
@@ -2626,7 +2630,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+          enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           direction = parsedir(direction, x, y, cur_robot->walk_dir);
           if(is_cardinal_dir(direction))
           {
@@ -2642,7 +2646,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+          enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           direction = parsedir(direction, x, y, cur_robot->walk_dir);
           if(is_cardinal_dir(direction))
           {
@@ -2658,7 +2662,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+          enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
           direction = parsedir(direction, x, y, cur_robot->walk_dir);
 
           if(is_cardinal_dir(direction))
@@ -2680,7 +2684,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         // might be an MZM name string instead.
         int put_color;
         char *p2 = next_param_pos(cmd_ptr + 1);
-        mzx_thing put_id = parse_param_thing(mzx_world, p2);
+        enum thing put_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         int put_param = parse_param(mzx_world, p3, id);
         char *p4 = next_param_pos(p3);
@@ -2727,7 +2731,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           if(id)
           {
             int offset = x + (y * board_width);
-            mzx_thing d_id = (mzx_thing)level_id[offset];
+            enum thing d_id = (enum thing)level_id[offset];
 
             if(!is_robot(d_id))
               return;
@@ -2812,7 +2816,8 @@ void run_robot(World *mzx_world, int id, int x, int y)
           // Find the first robot that matches
           if(find_robot(src_board, robot_name_buffer, &first, &last))
           {
-            Robot *found_robot = src_board->robot_list_name_sorted[first];
+            struct robot *found_robot =
+             src_board->robot_list_name_sorted[first];
 
             if(found_robot != cur_robot)
             {
@@ -2834,7 +2839,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
         prefix_mid_xy(mzx_world, &copy_x, &copy_y, x, y);
         offset = copy_x + (copy_y * board_width);
-        d_id = (mzx_thing)level_id[offset];
+        d_id = (enum thing)level_id[offset];
 
         if(is_robot(d_id))
         {
@@ -2848,9 +2853,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 84: // copyrobot dir
       {
-        mzx_dir copy_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
+        enum dir copy_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
         int offset;
-        mzx_thing d_id;
+        enum thing d_id;
         int copy_x = x;
         int copy_y = y;
 
@@ -2861,7 +2866,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           if(!move_dir(src_board, &copy_x, &copy_y, copy_dir))
           {
             offset = copy_x + (copy_y * board_width);
-            d_id = (mzx_thing)level_id[offset];
+            d_id = (enum thing)level_id[offset];
 
             if(is_robot(d_id))
             {
@@ -2878,9 +2883,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          mzx_dir duplicate_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
+          enum dir duplicate_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
           int dest_id;
-          mzx_thing duplicate_id;
+          enum thing duplicate_id;
           int duplicate_color, offset;
           int duplicate_x = x;
           int duplicate_y = y;
@@ -2892,7 +2897,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           {
             offset = x + (y * board_width);
             duplicate_color = level_color[offset];
-            duplicate_id = (mzx_thing)level_id[offset];
+            duplicate_id = (enum thing)level_id[offset];
 
             if(!move_dir(src_board, &duplicate_x, &duplicate_y, duplicate_dir))
             {
@@ -2914,7 +2919,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         char *p2 = next_param_pos(cmd_ptr + 1);
         int duplicate_y = parse_param(mzx_world, p2, id);
         int dest_id;
-        mzx_thing duplicate_id;
+        enum thing duplicate_id;
         int duplicate_color, offset;
 
         prefix_mid_xy(mzx_world, &duplicate_x, &duplicate_y, x, y);
@@ -2925,7 +2930,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           {
             offset = x + (y * board_width);
             duplicate_color = level_color[offset];
-            duplicate_id = (mzx_thing)level_id[offset];
+            duplicate_id = (enum thing)level_id[offset];
           }
           else
           {
@@ -3095,7 +3100,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int send_x = mzx_world->player_x;
         int send_y = mzx_world->player_y;
-        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+        enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, send_x, send_y,
          cur_robot->walk_dir);
 
@@ -3114,11 +3119,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int put_color = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
-        mzx_thing put_id = parse_param_thing(mzx_world, p2);
+        enum thing put_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         int put_param = parse_param(mzx_world, p3, id);
         char *p4 = next_param_pos(p3);
-        mzx_dir direction = parse_param_dir(mzx_world, p4);
+        enum dir direction = parse_param_dir(mzx_world, p4);
 
         if(put_id < SENSOR)
         {
@@ -3315,7 +3320,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 110: // scrollview dir num
       {
-        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+        enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
 
         if(is_cardinal_dir(direction))
@@ -3475,11 +3480,11 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int move_color = parse_param(mzx_world, cmd_ptr + 1, id); // Color
         char *p2 = next_param_pos(cmd_ptr + 1);
-        mzx_thing move_id = parse_param_thing(mzx_world, p2);
+        enum thing move_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         int move_param = parse_param(mzx_world, p3, id);
         char *p4 = next_param_pos(p3);
-        mzx_dir move_dir = parse_param_dir(mzx_world, p4);
+        enum dir move_dir = parse_param_dir(mzx_world, p4);
         int int_dir;
         int lx, ly;
         int fg, bg;
@@ -3569,7 +3574,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 121: // board dir
       {
-        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+        enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
         if(is_cardinal_dir(direction))
         {
@@ -3588,7 +3593,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 122: // board dir is none
       {
-        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+        enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
         if(is_cardinal_dir(direction))
         {
@@ -3693,9 +3698,9 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          mzx_dir src_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
+          enum dir src_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
           char *p2 = next_param_pos(cmd_ptr + 1);
-          mzx_dir dest_dir = parse_param_dir(mzx_world, p2);
+          enum dir dest_dir = parse_param_dir(mzx_world, p2);
 
           src_dir = parsedir(src_dir, x, y, cur_robot->walk_dir);
           dest_dir = parsedir(dest_dir, x, y, cur_robot->walk_dir);
@@ -3743,17 +3748,17 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
-        mzx_thing check_id = parse_param_thing(mzx_world, p2);
+        enum thing check_id = parse_param_thing(mzx_world, p2);
         char *p3 = next_param_pos(p2);
         int check_param = parse_param(mzx_world, p3, id);
         char *p4 = next_param_pos(p3);
         int put_color = parse_param(mzx_world, p4, id);
         char *p5 = next_param_pos(p4);
-        mzx_thing put_id = parse_param_thing(mzx_world, p5);
+        enum thing put_id = parse_param_thing(mzx_world, p5);
         char *p6 = next_param_pos(p5);
         int put_param = parse_param(mzx_world, p6, id);
         int check_fg, check_bg, put_fg, put_bg;
-        mzx_thing d_id;
+        enum thing d_id;
         int offset, d_param, d_color;
 
         split_colors(check_color, &check_fg, &check_bg);
@@ -3801,7 +3806,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           for(offset = 0; offset < (board_width * board_height); offset++)
           {
-            d_id = (mzx_thing)level_id[offset];
+            d_id = (enum thing)level_id[offset];
             d_param = level_param[offset];
             d_color = level_color[offset];
 
@@ -3862,7 +3867,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
           if(id)
           {
-            d_id = (mzx_thing)level_id[x + (y * board_width)];
+            d_id = (enum thing)level_id[x + (y * board_width)];
 
             if(!is_robot(d_id))
               return;
@@ -4014,7 +4019,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 147: // thick arrow dir char
       {
-        mzx_dir dir = parse_param_dir(mzx_world, cmd_ptr + 1);
+        enum dir dir = parse_param_dir(mzx_world, cmd_ptr + 1);
         char *p2 = next_param_pos(cmd_ptr + 1);
         dir = parsedir(dir, x, y, cur_robot->walk_dir);
 
@@ -4027,7 +4032,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 148: // thin arrow dir char
       {
-        mzx_dir dir = parse_param_dir(mzx_world, cmd_ptr + 1);
+        enum dir dir = parse_param_dir(mzx_world, cmd_ptr + 1);
         char *p2 = next_param_pos(cmd_ptr + 1);
         dir = parsedir(dir, x, y, cur_robot->walk_dir);
 
@@ -4249,7 +4254,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           offset = x + (y * board_width);
           duplicate_color = level_color[offset];
-          duplicate_id = (mzx_thing)level_id[offset];
+          duplicate_id = (enum thing)level_id[offset];
         }
         else
         {
@@ -4296,7 +4301,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         {
           offset = x + (y * board_width);
           duplicate_color = level_color[offset];
-          duplicate_id = (mzx_thing)level_id[offset];
+          duplicate_id = (enum thing)level_id[offset];
         }
         else
         {
@@ -4680,7 +4685,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
         if(id)
         {
           int offset = x + (y * board_width);
-          int d_id = (mzx_thing)level_id[offset];
+          int d_id = (enum thing)level_id[offset];
           int d_param = level_param[offset];
 
           if(((d_id != 123) && (d_id != 124)) || (d_param != id))
@@ -4985,7 +4990,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          mzx_dir push_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
+          enum dir push_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
           push_dir = parsedir(push_dir, x, y, cur_robot->walk_dir);
 
           if(is_cardinal_dir(push_dir))
@@ -4997,7 +5002,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
             if(!move_dir(src_board, &push_x, &push_y, push_dir))
             {
               int offset = push_x + (push_y * board_width);
-              int d_id = (mzx_thing)level_id[offset];
+              int d_id = (enum thing)level_id[offset];
               int d_flag = flags[d_id];
 
               if((d_id == ROBOT_PUSHABLE) || (d_id == PLAYER) ||
@@ -5017,7 +5022,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int char_num = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
-        mzx_dir scroll_dir = parse_param_dir(mzx_world, p2);
+        enum dir scroll_dir = parse_param_dir(mzx_world, p2);
         scroll_dir = parsedir(scroll_dir, x, y, cur_robot->walk_dir);
 
         if(is_cardinal_dir(scroll_dir))
@@ -5095,7 +5100,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         int char_num = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
-        mzx_dir flip_dir = parse_param_dir(mzx_world, p2);
+        enum dir flip_dir = parse_param_dir(mzx_world, p2);
         char char_buffer[14];
         char current_row;
         int i;
@@ -5310,7 +5315,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
 
       case 220: // Player char dir 'c'
       {
-        mzx_dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
+        enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         char *p2 = next_param_pos(cmd_ptr + 1);
         int new_char = parse_param(mzx_world, p2, id);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
@@ -5426,7 +5431,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       {
         if(id)
         {
-          Robot *dest_robot;
+          struct robot *dest_robot;
           int first, last;
           char robot_name_buffer[ROBOT_MAX_TR];
           tr_msg(mzx_world, cmd_ptr + 2, id, robot_name_buffer);
@@ -5802,4 +5807,3 @@ void run_robot(World *mzx_world, int id, int x, int y)
   cur_robot->xpos = x;
   cur_robot->ypos = y;
 }
-

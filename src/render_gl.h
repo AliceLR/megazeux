@@ -82,12 +82,12 @@
 
 __M_BEGIN_DECLS
 
-bool gl_check_video_mode(graphics_data *graphics, int width, int height,
+bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize);
 void gl_set_filter_method(const char *method,
  void (APIENTRY *glTexParameteri_p)(GLenum target, GLenum pname, GLint param));
-void gl_set_attributes(graphics_data *graphics);
-void get_context_width_height(graphics_data *graphics,
+void gl_set_attributes(struct graphics_data *graphics);
+void get_context_width_height(struct graphics_data *graphics,
  int *width, int *height);
 
 __M_END_DECLS

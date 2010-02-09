@@ -43,26 +43,26 @@ __M_BEGIN_DECLS
 #define S_CMD              12
 #define S_UNDEFINED        13
 
-typedef struct
+struct mzx_command
 {
   char *name;
   int parameters;
   int *param_types;
-} mzx_command;
+};
 
-typedef struct
+struct search_entry
 {
   const char *name;
   int count;
   int offsets[19];
-} search_entry;
+};
 
-typedef struct
+struct search_entry_short
 {
   const char *name;
   int offset;
   int type;
-} search_entry_short;
+};
 
 int is_dir(char *cmd_line, char **next);
 int is_condition(char *cmd_line, char **next);
@@ -72,7 +72,7 @@ int is_command_fragment(char *cmd_line, char **next);
 int is_extra(char *cmd_line, char **next);
 
 int assemble_text(char *input_name, char *output_name);
-void print_command(mzx_command *cmd);
+void print_command(struct mzx_command *cmd);
 char *assemble_file(char *name, int *size);
 void disassemble_file(char *name, char *program, int program_length,
  int allow_ignores, int base);
@@ -83,7 +83,7 @@ CORE_LIBSPEC int assemble_line(char *cpos, char *output_buffer, char *error_buff
 CORE_LIBSPEC int disassemble_line(char *cpos, char **next, char *output_buffer,
  char *error_buffer, int *total_bytes, int print_ignores, char *arg_types,
  int *arg_count, int base);
-CORE_LIBSPEC const search_entry_short *find_argument(char *name);
+CORE_LIBSPEC const struct search_entry_short *find_argument(char *name);
 CORE_LIBSPEC void print_color(int color, char *color_buffer);
 CORE_LIBSPEC int unescape_char(char *dest, char c);
 CORE_LIBSPEC int get_color(char *cmd_line);

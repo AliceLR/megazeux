@@ -27,12 +27,14 @@ __M_BEGIN_DECLS
 #include "../board_struct.h"
 #include "../robot_struct.h"
 
-void create_blank_robot_direct(Robot *cur_robot, int x, int y);
-void create_blank_scroll_direct(Scroll *cur_croll);
-void create_blank_sensor_direct(Sensor *cur_sensor);
-void clear_scroll_contents(Scroll *cur_scroll);
-void replace_scroll(Board *src_board, Scroll *src_scroll, int dest_id);
-void replace_sensor(Board *src_board, Sensor *src_sensor, int dest_id);
+void create_blank_robot_direct(struct robot *cur_robot, int x, int y);
+void create_blank_scroll_direct(struct scroll *cur_croll);
+void create_blank_sensor_direct(struct sensor *cur_sensor);
+void clear_scroll_contents(struct scroll *cur_scroll);
+void replace_scroll(struct board *src_board, struct scroll *src_scroll,
+ int dest_id);
+void replace_sensor(struct board *src_board, struct sensor *src_sensor,
+ int dest_id);
 
 __M_END_DECLS
 

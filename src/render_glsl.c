@@ -30,7 +30,7 @@
 #include "util.h"
 #include "data.h"
 
-typedef struct
+struct glsl_syms
 {
   int syms_loaded;
   void (APIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
@@ -74,9 +74,9 @@ typedef struct
   void (APIENTRY *glLinkProgramARB)(GLhandleARB program);
   void (APIENTRY *glGetInfoLogARB)(GLhandleARB object, int maxLen, int *len,
    char *log);
-} glsl_syms;
+};
 
-typedef struct
+struct glsl_render_data
 {
   Uint32 *pixels;
   Uint32 charset_texture[CHAR_H * CHARSET_SIZE * CHAR_W * 2];
@@ -86,17 +86,17 @@ typedef struct
   Uint8 remap_texture;
   Uint8 remap_char[CHARSET_SIZE * 2];
   Uint8 ignore_linear;
-  glsl_syms gl;
+  struct glsl_syms gl;
   char gl_tilemap_fragment_shader_path[MAX_PATH];
   char gl_tilemap_vertex_shader_path[MAX_PATH];
   char gl_scaling_fragment_shader_path[MAX_PATH];
   char gl_scaling_vertex_shader_path[MAX_PATH];
   Uint32 gl_tilemap;
   Uint32 gl_scaling;
-  ratio_type_t ratio;
-} glsl_render_data;
+  enum ratio_type ratio;
+};
 
-static int glsl_load_syms(glsl_syms *gl)
+static int glsl_load_syms(struct glsl_syms *gl)
 {
   if(gl->syms_loaded)
     return true;
@@ -191,10 +191,10 @@ err_out:
 
 #define SHADER_INFO_MAX 1000
 
-static void glsl_verify_shader_compile(glsl_render_data *render_data,
+static void glsl_verify_shader_compile(struct glsl_render_data *render_data,
  GLenum shader)
 {
-  glsl_syms *gl = &render_data->gl;
+  struct glsl_syms *gl = &render_data->gl;
   char buffer[SHADER_INFO_MAX];
   int len = 0;
 
@@ -205,7 +205,7 @@ static void glsl_verify_shader_compile(glsl_render_data *render_data,
     warn("%s", buffer);
 }
 
-static void glsl_load_shaders(graphics_data *graphics)
+static void glsl_load_shaders(struct graphics_data *graphics)
 {
   int len;
   GLenum shader_vert_scaling;
@@ -218,8 +218,8 @@ static void glsl_load_shaders(graphics_data *graphics)
   char *shader_frag_source_scaling;
   char *shader_vert_source_tilemap;
   char *shader_frag_source_tilemap;
-  glsl_syms *gl;
-  glsl_render_data *render_data = graphics->render_data;
+  struct glsl_syms *gl;
+  struct glsl_render_data *render_data = graphics->render_data;
   gl = &render_data->gl;
 
   shader_vert_source_tilemap =
@@ -304,10 +304,12 @@ static void glsl_load_shaders(graphics_data *graphics)
   render_data->gl_tilemap = tilemap_program;
 }
 
-static bool glsl_init_video(graphics_data *graphics, config_info *conf)
+static bool glsl_init_video(struct graphics_data *graphics,
+ struct config_info *conf)
 {
-  glsl_render_data *render_data = malloc(sizeof(glsl_render_data));
-  glsl_syms *gl = &render_data->gl;
+  struct glsl_render_data *render_data =
+   malloc(sizeof(struct glsl_render_data));
+  struct glsl_syms *gl = &render_data->gl;
   const char *version, *extensions;
 
   if(!render_data)
@@ -370,23 +372,24 @@ err_free:
   return false;
 }
 
-static void glsl_free_video(graphics_data *graphics)
+static void glsl_free_video(struct graphics_data *graphics)
 {
   free(graphics->render_data);
   graphics->render_data = NULL;
 }
 
-static void glsl_remap_charsets(graphics_data *graphics)
+static void glsl_remap_charsets(struct graphics_data *graphics)
 {
-  glsl_render_data *render_data = graphics->render_data;
+  struct glsl_render_data *render_data = graphics->render_data;
   render_data->remap_texture = true;
 }
 
 // FIXME: Many magic numbers
-static void glsl_resize_screen(graphics_data *graphics, int width, int height)
+static void glsl_resize_screen(struct graphics_data *graphics,
+ int width, int height)
 {
-  glsl_render_data *render_data = graphics->render_data;
-  glsl_syms *gl = &render_data->gl;
+  struct glsl_render_data *render_data = graphics->render_data;
+  struct glsl_syms *gl = &render_data->gl;
 
   render_data->ignore_linear = false;
 
@@ -438,11 +441,11 @@ static void glsl_resize_screen(graphics_data *graphics, int width, int height)
   glsl_load_shaders(graphics);
 }
 
-static bool glsl_set_video_mode(graphics_data *graphics, int width, int height,
- int depth, int fullscreen, int resize)
+static bool glsl_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize)
 {
-  glsl_render_data *render_data = graphics->render_data;
-  glsl_syms *gl = &render_data->gl;
+  struct glsl_render_data *render_data = graphics->render_data;
+  struct glsl_syms *gl = &render_data->gl;
 
   gl_set_attributes(graphics);
 
@@ -457,13 +460,14 @@ static bool glsl_set_video_mode(graphics_data *graphics, int width, int height,
   return true;
 }
 
-static void glsl_remap_char(graphics_data *graphics, Uint16 chr)
+static void glsl_remap_char(struct graphics_data *graphics, Uint16 chr)
 {
-  glsl_render_data *render_data = graphics->render_data;
+  struct glsl_render_data *render_data = graphics->render_data;
   render_data->remap_char[chr] = true;
 }
 
-static void glsl_remap_charbyte(graphics_data *graphics, Uint16 chr, Uint8 byte)
+static void glsl_remap_charbyte(struct graphics_data *graphics,
+ Uint16 chr, Uint8 byte)
 {
   glsl_remap_char(graphics, chr);
 }
@@ -484,10 +488,10 @@ static int *glsl_char_bitmask_to_texture(signed char *c, int *p)
   return p;
 }
 
-static inline void glsl_do_remap_charsets(graphics_data *graphics)
+static inline void glsl_do_remap_charsets(struct graphics_data *graphics)
 {
-  glsl_render_data *render_data = graphics->render_data;
-  glsl_syms *gl = &render_data->gl;
+  struct glsl_render_data *render_data = graphics->render_data;
+  struct glsl_syms *gl = &render_data->gl;
   signed char *c = (signed char *)graphics->charset;
   int *p = (int *)render_data->charset_texture;
   unsigned int i, j, k;
@@ -501,10 +505,11 @@ static inline void glsl_do_remap_charsets(graphics_data *graphics)
     GL_UNSIGNED_BYTE, render_data->charset_texture);
 }
 
-static inline void glsl_do_remap_char(graphics_data *graphics, Uint16 chr)
+static inline void glsl_do_remap_char(struct graphics_data *graphics,
+ Uint16 chr)
 {
-  glsl_render_data *render_data = graphics->render_data;
-  glsl_syms *gl = &render_data->gl;
+  struct glsl_render_data *render_data = graphics->render_data;
+  struct glsl_syms *gl = &render_data->gl;
   signed char *c = (signed char *)graphics->charset;
   int *p = (int *)render_data->charset_texture;
   unsigned int i;
@@ -517,10 +522,10 @@ static inline void glsl_do_remap_char(graphics_data *graphics, Uint16 chr)
    GL_RGBA, GL_UNSIGNED_BYTE, render_data->charset_texture);
 }
 
-static void glsl_update_colors(graphics_data *graphics, rgb_color *palette,
- Uint32 count)
+static void glsl_update_colors(struct graphics_data *graphics,
+ struct rgb_color *palette, Uint32 count)
 {
-  glsl_render_data *render_data = graphics->render_data;
+  struct glsl_render_data *render_data = graphics->render_data;
   Uint32 i;
   for(i = 0; i < count; i++)
   {
@@ -537,11 +542,11 @@ static void glsl_update_colors(graphics_data *graphics, rgb_color *palette,
   }
 }
 
-static void glsl_render_graph(graphics_data *graphics)
+static void glsl_render_graph(struct graphics_data *graphics)
 {
-  glsl_render_data *render_data = graphics->render_data;
-  char_element *src = graphics->text_video;
-  glsl_syms *gl = &render_data->gl;
+  struct glsl_render_data *render_data = graphics->render_data;
+  struct char_element *src = graphics->text_video;
+  struct glsl_syms *gl = &render_data->gl;
   Uint32 *colorptr, *dest, i;
   int width, height;
 
@@ -616,11 +621,11 @@ static void glsl_render_graph(graphics_data *graphics)
 
 }
 
-static void glsl_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
- Uint8 color, Uint8 lines, Uint8 offset)
+static void glsl_render_cursor(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
 {
-  glsl_render_data *render_data = graphics->render_data;
-  glsl_syms *gl = &render_data->gl;
+  struct glsl_render_data *render_data = graphics->render_data;
+  struct glsl_syms *gl = &render_data->gl;
 
   gl->glDisable(GL_TEXTURE_2D);
   gl->glUseProgramObjectARB(0);
@@ -640,11 +645,11 @@ static void glsl_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
   gl->glEnable(GL_TEXTURE_2D);
 }
 
-static void glsl_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
- Uint8 w, Uint8 h)
+static void glsl_render_mouse(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
-  glsl_render_data *render_data = graphics->render_data;
-  glsl_syms *gl = &render_data->gl;
+  struct glsl_render_data *render_data = graphics->render_data;
+  struct glsl_syms *gl = &render_data->gl;
 
   gl->glDisable(GL_TEXTURE_2D);
   gl->glEnable(GL_BLEND);
@@ -662,11 +667,11 @@ static void glsl_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
   gl->glDisable(GL_BLEND);
 }
 
-static void glsl_sync_screen(graphics_data *graphics)
+static void glsl_sync_screen(struct graphics_data *graphics)
 {
-  glsl_render_data *render_data = graphics->render_data;
+  struct glsl_render_data *render_data = graphics->render_data;
   int v_width, v_height, width, height;
-  glsl_syms *gl = &render_data->gl;
+  struct glsl_syms *gl = &render_data->gl;
 
   gl->glUseProgramObjectARB(render_data->gl_scaling);
 
@@ -675,7 +680,7 @@ static void glsl_sync_screen(graphics_data *graphics)
 
   get_context_width_height(graphics, &width, &height);
   fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
-  gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,            
+  gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
    v_width, v_height);
 
   gl->glColor4f(1.0, 1.0, 1.0, 1.0);
@@ -719,9 +724,9 @@ static void glsl_sync_screen(graphics_data *graphics)
   gl->glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void render_glsl_register(renderer_t *renderer)
+void render_glsl_register(struct renderer *renderer)
 {
-  memset(renderer, 0, sizeof(renderer_t));
+  memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = glsl_init_video;
   renderer->free_video = glsl_free_video;
   renderer->check_video_mode = gl_check_video_mode;

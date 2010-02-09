@@ -27,7 +27,7 @@
 #include "counter.h"
 #include "robot.h"
 
-typedef enum
+enum op
 {
   op_addition,
   op_subtraction,
@@ -46,7 +46,7 @@ typedef enum
   op_greater_than_or_equal,
   op_less_than_or_equal,
   op_not_equal
-} op;
+};
 
 static int last_val;
 
@@ -58,7 +58,8 @@ static void expr_skip_whitespace(char **expression)
   }
 }
 
-static int parse_argument(World *mzx_world, char **argument, int *type, int id)
+static int parse_argument(struct world *mzx_world, char **argument,
+ int *type, int id)
 {
   int first_char = **argument;
 
@@ -348,7 +349,7 @@ static int parse_argument(World *mzx_world, char **argument, int *type, int id)
   }
 }
 
-static int evaluate_operation(int operand_a, op c_operator, int operand_b)
+static int evaluate_operation(int operand_a, enum op c_operator, int operand_b)
 {
   switch(c_operator)
   {
@@ -474,7 +475,7 @@ static int evaluate_operation(int operand_a, op c_operator, int operand_b)
   }
 }
 
-int parse_expression(World *mzx_world, char **expression,
+int parse_expression(struct world *mzx_world, char **expression,
  int *error, int id)
 {
   int operand_val;
@@ -526,7 +527,7 @@ int parse_expression(World *mzx_world, char **expression,
         return -102;
       }
       // Evaluate it.
-      value = evaluate_operation(value, (op)c_operator, operand_val);
+      value = evaluate_operation(value, (enum op)c_operator, operand_val);
     }
     expr_skip_whitespace(expression);
   }

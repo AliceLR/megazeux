@@ -30,33 +30,33 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-CORE_LIBSPEC void title_screen(World *mzx_world);
-CORE_LIBSPEC void find_player(World *mzx_world);
+CORE_LIBSPEC void title_screen(struct world *mzx_world);
+CORE_LIBSPEC void find_player(struct world *mzx_world);
 
 void set_intro_mesg_timer(unsigned int time);
-void calculate_xytop(World *mzx_world, int *x, int *y);
-int move_player(World *mzx_world, int dir);
-int grab_item(World *mzx_world, int offset, int dir);
-void set_mesg(World *mzx_world, const char *str);
-void set_mesg_direct(Board *src_board, const char *str);
-void rotate(World *mzx_world, int x, int y, int dir);
-void check_find_player(World *mzx_world);
-int take_key(World *mzx_world, int color);
-int give_key(World *mzx_world, int color);
+void calculate_xytop(struct world *mzx_world, int *x, int *y);
+int move_player(struct world *mzx_world, int dir);
+int grab_item(struct world *mzx_world, int offset, int dir);
+void set_mesg(struct world *mzx_world, const char *str);
+void set_mesg_direct(struct board *src_board, const char *str);
+void rotate(struct world *mzx_world, int x, int y, int dir);
+void check_find_player(struct world *mzx_world);
+int take_key(struct world *mzx_world, int color);
+int give_key(struct world *mzx_world, int color);
 
 extern int pal_update;
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC void play_game(World *mzx_world, int fadein);
-CORE_LIBSPEC void draw_viewport(World *src_board);
+CORE_LIBSPEC void play_game(struct world *mzx_world, int fadein);
+CORE_LIBSPEC void draw_viewport(struct world *src_board);
 
 CORE_LIBSPEC extern char debug_mode;
 CORE_LIBSPEC extern const char *world_ext[2];
-CORE_LIBSPEC extern void (*edit_world)(World *mzx_world);
+CORE_LIBSPEC extern void (*edit_world)(struct world *mzx_world);
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_UPDATER
-CORE_LIBSPEC extern void (*check_for_updates)(config_info *conf);
+CORE_LIBSPEC extern void (*check_for_updates)(struct config_info *conf);
 #endif
 
 __M_END_DECLS

@@ -24,19 +24,16 @@
 
 __M_BEGIN_DECLS
 
-typedef struct _config_info config_info;
-
 #define OPTION_NAME_LEN 32
 
-typedef enum
+enum ratio_type
 {
   RATIO_CLASSIC_4_3,
   RATIO_MODERN_64_35,
   RATIO_STRETCH,
-}
-ratio_type_t;
+};
 
-struct _config_info
+struct config_info
 {
   // Video options
   int fullscreen;
@@ -47,7 +44,7 @@ struct _config_info
   int allow_resize;
   char video_output[16];
   int force_bpp;
-  ratio_type_t video_ratio;
+  enum ratio_type video_ratio;
   char gl_filter_method[16];
   char gl_tilemap_vertex_shader[42];
   char gl_tilemap_fragment_shader[42];
@@ -86,13 +83,13 @@ struct _config_info
 #endif
 };
 
-typedef void (* config_function)(config_info *conf,
+typedef void (* config_function)(struct config_info *conf,
  char *name, char *value, char *extended_data);
 
-CORE_LIBSPEC void set_config_from_file(config_info *conf,
+CORE_LIBSPEC void set_config_from_file(struct config_info *conf,
  const char *conf_file_name);
-CORE_LIBSPEC void default_config(config_info *conf);
-CORE_LIBSPEC void set_config_from_command_line(config_info *conf,
+CORE_LIBSPEC void default_config(struct config_info *conf);
+CORE_LIBSPEC void set_config_from_command_line(struct config_info *conf,
  int argc, char *argv[]);
 
 typedef void (* find_change_option)(void *conf, char *name, char *value,

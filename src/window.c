@@ -84,7 +84,7 @@ int get_context(void)
 // Big fat hack. This will be initialized to a bunch of 0's, or NULLs.
 // Use this to replace the null strings before they get dereferenced.
 
-static char_element screen_storage[NUM_SAVSCR][80 * 25];
+static struct char_element screen_storage[NUM_SAVSCR][80 * 25];
 int cur_screen = 0; // Current space for save_screen and restore_screen
 
 // Free up memory.
@@ -518,19 +518,19 @@ int char_selection(int current)
   return char_selection_ext(current, 0, NULL, NULL);
 }
 
-__editor_maybe_static void construct_element(element *e, int x, int y,
+__editor_maybe_static void construct_element(struct element *e, int x, int y,
  int width, int height,
- void (* draw_function)(World *mzx_world, dialog *di,
-  element *e, int color, int active),
- int (* key_function)(World *mzx_world, dialog *di,
-  element *e, int key),
- int (* click_function)(World *mzx_world, dialog *di,
-  element *e, int mouse_button, int mouse_x, int mouse_y,
+ void (* draw_function)(struct world *mzx_world, struct dialog *di,
+  struct element *e, int color, int active),
+ int (* key_function)(struct world *mzx_world, struct dialog *di,
+  struct element *e, int key),
+ int (* click_function)(struct world *mzx_world, struct dialog *di,
+  struct element *e, int mouse_button, int mouse_x, int mouse_y,
   int new_active),
- int (* drag_function)(World *mzx_world, dialog *di,
-  element *e, int mouse_button, int mouse_x, int mouse_y),
- int (* idle_function)(World *mzx_world, dialog *di,
-  element *e))
+ int (* drag_function)(struct world *mzx_world, struct dialog *di,
+  struct element *e, int mouse_button, int mouse_x, int mouse_y),
+ int (* idle_function)(struct world *mzx_world, struct dialog *di,
+  struct element *e))
 {
   e->x = x;
   e->y = y;
@@ -543,7 +543,7 @@ __editor_maybe_static void construct_element(element *e, int x, int y,
   e->idle_function = idle_function;
 }
 
-static void fill_vid_usage(dialog *di, element *e,
+static void fill_vid_usage(struct dialog *di, struct element *e,
  signed char *vid_usage, int vid_fill)
 {
   int x = di->x + e->x;
@@ -559,25 +559,25 @@ static void fill_vid_usage(dialog *di, element *e,
 }
 
 // Prototype- Internal function that displays a dialog box element.
-void display_element(World *mzx_world, int type, int x, int y,
+void display_element(struct world *mzx_world, int type, int x, int y,
  char *str, int p1, int p2, void *value, int active, int curr_check,
  int set_vid_usage, int space_label);
 
-static void unhighlight_element(World *mzx_world, dialog *di,
+static void unhighlight_element(struct world *mzx_world, struct dialog *di,
  int current_element_num)
 {
   (di->elements[current_element_num])->draw_function(mzx_world, di,
    di->elements[current_element_num], DI_NONACTIVE, 0);
 }
 
-static void highlight_element(World *mzx_world, dialog *di,
+static void highlight_element(struct world *mzx_world, struct dialog *di,
  int current_element_num)
 {
   (di->elements[current_element_num])->draw_function(mzx_world, di,
    di->elements[current_element_num], DI_ACTIVE, 1);
 }
 
-static int find_first_element(World *mzx_world, dialog *di,
+static int find_first_element(struct world *mzx_world, struct dialog *di,
  int current_element_num)
 {
   int i;
@@ -595,7 +595,7 @@ static int find_first_element(World *mzx_world, dialog *di,
   return -1;
 }
 
-static int find_last_element(World *mzx_world, dialog *di,
+static int find_last_element(struct world *mzx_world, struct dialog *di,
  int current_element_num)
 {
   int i;
@@ -613,7 +613,7 @@ static int find_last_element(World *mzx_world, dialog *di,
   return -1;
 }
 
-static int change_current_element(World *mzx_world, dialog *di,
+static int change_current_element(struct world *mzx_world, struct dialog *di,
  int current_element_num, int displacement)
 {
   int increment = 1;
@@ -643,13 +643,13 @@ static int change_current_element(World *mzx_world, dialog *di,
   return current_element_num;
 }
 
-int run_dialog(World *mzx_world, dialog *di)
+int run_dialog(struct world *mzx_world, struct dialog *di)
 {
   int mouse_press;
   int x = di->x;
   int y = di->y;
   int title_x_offset = x + (di->width / 2) - (strlen(di->title) / 2);
-  element *current_element = di->elements[di->current_element];
+  struct element *current_element = di->elements[di->current_element];
 
   int current_element_num = di->current_element;
   signed char vid_usage[2000];
@@ -914,20 +914,20 @@ static int find_entry(const char **choices, char *name, int total_num)
 
 // "Member" functions for GUI elements
 
-static void draw_label(World *mzx_world, dialog *di, element *e,
- int color, int active)
+static void draw_label(struct world *mzx_world, struct dialog *di,
+ struct element *e, int color, int active)
 {
-  label *src = (label *)e;
+  struct label_element *src = (struct label_element *)e;
   int x = di->x + e->x;
   int y = di->y + e->y;
 
   color_string(src->text, x, y, DI_TEXT);
 }
 
-static void draw_input_box(World *mzx_world, dialog *di, element *e,
- int color, int active)
+static void draw_input_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int color, int active)
 {
-  input_box *src = (input_box *)e;
+  struct input_box *src = (struct input_box *)e;
   int x = di->x + e->x;
   int y = di->y + e->y;
   int question_length = strlen(src->question) + di->pad_space;
@@ -939,10 +939,10 @@ static void draw_input_box(World *mzx_world, dialog *di, element *e,
    DI_INPUT, 0);
 }
 
-static void draw_radio_button(World *mzx_world, dialog *di, element *e,
- int color, int active)
+static void draw_radio_button(struct world *mzx_world, struct dialog *di,
+ struct element *e, int color, int active)
 {
-  radio_button *src = (radio_button *)e;
+  struct radio_button *src = (struct radio_button *)e;
   int x = di->x + e->x;
   int y = di->y + e->y;
   int i;
@@ -971,10 +971,10 @@ static void draw_radio_button(World *mzx_world, dialog *di, element *e,
   }
 }
 
-static void draw_button(World *mzx_world, dialog *di, element *e,
- int color, int active)
+static void draw_button(struct world *mzx_world, struct dialog *di,
+ struct element *e, int color, int active)
 {
-  button *src = (button *)e;
+  struct button *src = (struct button *)e;
   int x = di->x + e->x;
   int y = di->y + e->y;
 
@@ -988,10 +988,10 @@ static void draw_button(World *mzx_world, dialog *di, element *e,
   draw_char(' ', color, x + strlen(src->label) + 1, y);
 }
 
-static void draw_number_box(World *mzx_world, dialog *di,
- element *e, int color, int active)
+static void draw_number_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int color, int active)
 {
-  number_box *src = (number_box *)e;
+  struct number_box *src = (struct number_box *)e;
   int x = di->x + e->x;
   int y = di->y + e->y;
   int increment = 1;
@@ -1031,10 +1031,10 @@ static void draw_number_box(World *mzx_world, dialog *di,
 
 #define MAX_NAME_BUFFER 512
 
-static void draw_list_box(World *mzx_world, dialog *di,
- element *e, int color, int active)
+static void draw_list_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int color, int active)
 {
-  list_box *src = (list_box *)e;
+  struct list_box *src = (struct list_box *)e;
   int x = di->x + e->x;
   int y = di->y + e->y;
   int choice_length = src->choice_length;
@@ -1119,9 +1119,10 @@ static void draw_list_box(World *mzx_world, dialog *di,
   }
 }
 
-static int key_input_box(World *mzx_world, dialog *di, element *e, int key)
+static int key_input_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int key)
 {
-  input_box *src = (input_box *)e;
+  struct input_box *src = (struct input_box *)e;
 
   if(get_alt_status(keycode_internal) && (key == IKEY_t) &&
    di->sfx_test_for_input)
@@ -1134,9 +1135,10 @@ static int key_input_box(World *mzx_world, dialog *di, element *e, int key)
   return key;
 }
 
-static int key_radio_button(World *mzx_world, dialog *di, element *e, int key)
+static int key_radio_button(struct world *mzx_world, struct dialog *di,
+ struct element *e, int key)
 {
-  radio_button *src = (radio_button *)e;
+  struct radio_button *src = (struct radio_button *)e;
 
   switch(key)
   {
@@ -1179,9 +1181,10 @@ static int key_radio_button(World *mzx_world, dialog *di, element *e, int key)
   return 0;
 }
 
-static int key_button(World *mzx_world, dialog *di, element *e, int key)
+static int key_button(struct world *mzx_world, struct dialog *di,
+ struct element *e, int key)
 {
-  button *src = (button *)e;
+  struct button *src = (struct button *)e;
 
   switch(key)
   {
@@ -1203,9 +1206,10 @@ static int key_button(World *mzx_world, dialog *di, element *e, int key)
   return 0;
 }
 
-static int key_number_box(World *mzx_world, dialog *di, element *e, int key)
+static int key_number_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int key)
 {
-  number_box *src = (number_box *)e;
+  struct number_box *src = (struct number_box *)e;
   int increment_value = 0;
   int current_value = *(src->result);
 
@@ -1325,9 +1329,10 @@ static int key_number_box(World *mzx_world, dialog *di, element *e, int key)
   return 0;
 }
 
-static int key_list_box(World *mzx_world, dialog *di, element *e, int key)
+static int key_list_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int key)
 {
-  list_box *src = (list_box *)e;
+  struct list_box *src = (struct list_box *)e;
   int current_choice = *(src->result);
   int num_choices = src->num_choices;
   int num_choices_visible = src->num_choices_visible;
@@ -1496,11 +1501,11 @@ static int key_list_box(World *mzx_world, dialog *di, element *e, int key)
   return 0;
 }
 
-static int click_input_box(World *mzx_world, dialog *di,
- element *e, int mouse_button, int mouse_x, int mouse_y,
+static int click_input_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
-  input_box *src = (input_box *)e;
+  struct input_box *src = (struct input_box *)e;
   int question_len = strlen(src->question);
   int start_x = mouse_x - question_len;
   int x = di->x + e->x;
@@ -1518,18 +1523,18 @@ static int click_input_box(World *mzx_world, dialog *di,
   }
 }
 
-static int click_radio_button(World *mzx_world, dialog *di,
- element *e, int mouse_button, int mouse_x, int mouse_y,
+static int click_radio_button(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
-  radio_button *src = (radio_button *)e;
+  struct radio_button *src = (struct radio_button *)e;
   *(src->result) = mouse_y;
 
   return 0;
 }
 
-static int click_button(World *mzx_world, dialog *di,
- element *e, int mouse_button, int mouse_x, int mouse_y,
+static int click_button(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
   if(!new_active)
@@ -1541,11 +1546,11 @@ static int click_button(World *mzx_world, dialog *di,
   return 0;
 }
 
-static int click_number_box(World *mzx_world, dialog *di,
- element *e, int mouse_button, int mouse_x, int mouse_y,
+static int click_number_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
-  number_box *src = (number_box *)e;
+  struct number_box *src = (struct number_box *)e;
   mouse_x -= strlen(src->question) + 7;
 
   if((src->lower_limit == 1) &&
@@ -1572,11 +1577,11 @@ static int click_number_box(World *mzx_world, dialog *di,
   return 0;
 }
 
-static int click_list_box(World *mzx_world, dialog *di,
- element *e, int mouse_button, int mouse_x, int mouse_y,
+static int click_list_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y,
  int new_active)
 {
-  list_box *src = (list_box *)e;
+  struct list_box *src = (struct list_box *)e;
   int scroll_offset = src->scroll_offset;
   int choice_length = src->choice_length;
   int num_choices = src->num_choices;
@@ -1640,10 +1645,10 @@ static int click_list_box(World *mzx_world, dialog *di,
   return 0;
 }
 
-static int drag_list_box(World *mzx_world, dialog *di,
- element *e, int mouse_button, int mouse_x, int mouse_y)
+static int drag_list_box(struct world *mzx_world, struct dialog *di,
+ struct element *e, int mouse_button, int mouse_x, int mouse_y)
 {
-  list_box *src = (list_box *)e;
+  struct list_box *src = (struct list_box *)e;
 
   if(src->clicked_scrollbar)
   {
@@ -1672,9 +1677,10 @@ static int drag_list_box(World *mzx_world, dialog *di,
   return 0;
 }
 
-static int idle_input_box(World *mzx_world, dialog *di, element *e)
+static int idle_input_box(struct world *mzx_world, struct dialog *di,
+ struct element *e)
 {
-  input_box *src = (input_box *)e;
+  struct input_box *src = (struct input_box *)e;
   int x = di->x + e->x;
   int y = di->y + e->y;
 
@@ -1683,8 +1689,8 @@ static int idle_input_box(World *mzx_world, dialog *di, element *e)
    src->input_flags, NULL, 0, NULL);
 }
 
-void construct_dialog(dialog *src, const char *title, int x, int y,
- int width, int height, element **elements, int num_elements,
+void construct_dialog(struct dialog *src, const char *title, int x, int y,
+ int width, int height, struct element **elements, int num_elements,
  int start_element)
 {
   src->title = title;
@@ -1702,11 +1708,11 @@ void construct_dialog(dialog *src, const char *title, int x, int y,
   src->idle_function = NULL;
 }
 
-__editor_maybe_static void construct_dialog_ext(dialog *src,
+__editor_maybe_static void construct_dialog_ext(struct dialog *src,
  const char *title, int x, int y, int width, int height,
- element **elements, int num_elements, int sfx_test_for_input,
+ struct element **elements, int num_elements, int sfx_test_for_input,
  int pad_space, int start_element,
- int (* idle_function)(World *mzx_world, dialog *di, int key))
+ int (* idle_function)(struct world *mzx_world, struct dialog *di, int key))
 {
   src->title = title;
   src->x = x;
@@ -1723,7 +1729,7 @@ __editor_maybe_static void construct_dialog_ext(dialog *src,
   src->idle_function = idle_function;
 }
 
-void destruct_dialog(dialog *src)
+void destruct_dialog(struct dialog *src)
 {
   int i;
 
@@ -1735,20 +1741,20 @@ void destruct_dialog(dialog *src)
   restore_screen();
 }
 
-element *construct_label(int x, int y, const char *text)
+struct element *construct_label(int x, int y, const char *text)
 {
-  label *src = malloc(sizeof(label));
+  struct label_element *src = malloc(sizeof(struct label_element));
   src->text = text;
   construct_element(&(src->e), x, y, strlen(text), 1,
    draw_label, NULL, NULL, NULL, NULL);
 
-  return (element *)src;
+  return (struct element *)src;
 }
 
-__editor_maybe_static element *construct_input_box(int x, int y,
+__editor_maybe_static struct element *construct_input_box(int x, int y,
  const char *question, int max_length, int input_flags, char *result)
 {
-  input_box *src = malloc(sizeof(input_box));
+  struct input_box *src = malloc(sizeof(struct input_box));
   src->question = question;
   src->input_flags = input_flags;
   src->max_length = max_length;
@@ -1758,13 +1764,13 @@ __editor_maybe_static element *construct_input_box(int x, int y,
    draw_input_box, key_input_box, click_input_box,
    NULL, idle_input_box);
 
-  return (element *)src;
+  return (struct element *)src;
 }
 
-element *construct_radio_button(int x, int y,
+struct element *construct_radio_button(int x, int y,
  const char **choices, int num_choices, int max_length, int *result)
 {
-  radio_button *src = malloc(sizeof(radio_button));
+  struct radio_button *src = malloc(sizeof(struct radio_button));
   src->choices = choices;
   src->num_choices = num_choices;
   src->result = result;
@@ -1773,27 +1779,27 @@ element *construct_radio_button(int x, int y,
    num_choices, draw_radio_button, key_radio_button,
    click_radio_button, NULL, NULL);
 
-  return (element *)src;
+  return (struct element *)src;
 }
 
-element *construct_button(int x, int y, const char *label,
+struct element *construct_button(int x, int y, const char *label,
  int return_value)
 {
-  button *src = malloc(sizeof(button));
+  struct button *src = malloc(sizeof(struct button));
   src->label = label;
   src->return_value = return_value;
 
   construct_element(&(src->e), x, y, strlen(src->label) + 2,
    1, draw_button, key_button, click_button, NULL, NULL);
 
-  return (element *)src;
+  return (struct element *)src;
 }
 
-element *construct_number_box(int x, int y,
+struct element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
  int mult_five, int *result)
 {
-  number_box *src = malloc(sizeof(number_box));
+  struct number_box *src = malloc(sizeof(struct number_box));
   int width;
 
   src->question = question;
@@ -1811,16 +1817,16 @@ element *construct_number_box(int x, int y,
   construct_element(&(src->e), x, y, width, 1,
    draw_number_box, key_number_box, click_number_box, NULL, NULL);
 
-  return (element *)src;
+  return (struct element *)src;
 }
 
-__editor_maybe_static element *construct_list_box(int x, int y,
+__editor_maybe_static struct element *construct_list_box(int x, int y,
  const char **choices, int num_choices, int num_choices_visible,
  int choice_length, int return_value, int *result)
 {
   int scroll_offset = *result - (num_choices_visible / 2);
 
-  list_box *src = malloc(sizeof(list_box));
+  struct list_box *src = malloc(sizeof(struct list_box));
   src->choices = choices;
   src->num_choices = num_choices;
   src->num_choices_visible = num_choices_visible;
@@ -1849,14 +1855,14 @@ __editor_maybe_static element *construct_list_box(int x, int y,
    num_choices_visible, draw_list_box, key_list_box,
    click_list_box, drag_list_box, NULL);
 
-  return (element *)src;
+  return (struct element *)src;
 }
 
 // Shell for run_dialog()
-int confirm(World *mzx_world, const char *str)
+int confirm(struct world *mzx_world, const char *str)
 {
-  dialog di;
-  element *elements[2];
+  struct dialog di;
+  struct element *elements[2];
   int dialog_result;
 
   elements[0] = construct_button(15, 2, "OK", 0);
@@ -1871,10 +1877,10 @@ int confirm(World *mzx_world, const char *str)
 }
 
 // Shell for run_dialog()
-int ask_yes_no(World *mzx_world, char *str)
+int ask_yes_no(struct world *mzx_world, char *str)
 {
-  dialog di;
-  element *elements[2];
+  struct dialog di;
+  struct element *elements[2];
   int dialog_result;
   int dialog_width = 60;
   int str_length = strlen(str);
@@ -1951,20 +1957,21 @@ static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
 #define FILESEL_FILES_LABEL   5
 #define FILESEL_DIRS_LABEL    6
 
-static int file_dialog_function(World *mzx_world, dialog *di, int key)
+static int file_dialog_function(struct world *mzx_world, struct dialog *di,
+ int key)
 {
   int current_element_num = di->current_element;
-  element *current_element = di->elements[current_element_num];
+  struct element *current_element = di->elements[current_element_num];
 
   switch(current_element_num)
   {
     case FILESEL_DIR_LIST:
     case FILESEL_FILE_LIST:
     {
-      list_box *src = (list_box *)current_element;
-      input_box *dest =
-       (input_box *)di->elements[FILESEL_FILENAME];
-      element *e = (element *)dest;
+      struct list_box *src = (struct list_box *)current_element;
+      struct input_box *dest =
+       (struct input_box *)di->elements[FILESEL_FILENAME];
+      struct element *e = (struct element *)dest;
 
       if(src->num_choices)
       {
@@ -2053,10 +2060,10 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
 
     case FILESEL_FILENAME:
     {
-      input_box *src = (input_box *)current_element;
-      list_box *dest =
-       (list_box *)di->elements[FILESEL_FILE_LIST];
-      element *e = (element *)dest;
+      struct input_box *src = (struct input_box *)current_element;
+      struct list_box *dest =
+       (struct list_box *)di->elements[FILESEL_FILE_LIST];
+      struct element *e = (struct element *)dest;
       int current_choice = *(dest->result);
       int new_choice =
        find_entry(dest->choices, src->result, dest->num_choices);
@@ -2148,10 +2155,10 @@ static void remove_files(char *directory_name, int remove_recursively)
   dir_close(current_dir);
 }
 
-__editor_maybe_static int file_manager(World *mzx_world,
- const char **wildcards, const char *default_ext, char *ret, const char *title,
- int dirs_okay, int allow_new, element **dialog_ext, int num_ext, int ext_height,
- int allow_dir_change)
+__editor_maybe_static int file_manager(struct world *mzx_world,
+ const char **wildcards, const char *default_ext, char *ret,
+ const char *title, int dirs_okay, int allow_new, struct element **dialog_ext,
+ int num_ext, int ext_height, int allow_dir_change)
 {
   dir_t *current_dir;
   char *file_name;
@@ -2171,8 +2178,8 @@ __editor_maybe_static int file_manager(World *mzx_world,
   int chosen_file, chosen_dir;
   int dialog_result = 1;
   int return_value = 1;
-  dialog di;
-  element *elements[FILESEL_MAX_ELEMENTS];
+  struct dialog di;
+  struct element *elements[FILESEL_MAX_ELEMENTS];
   int list_length = 17 - ext_height;
   int last_element = FILESEL_FILE_LIST;
   int i;
@@ -2365,7 +2372,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
     if(num_ext)
     {
       memcpy(elements + FILESEL_BASE_ELEMENTS, dialog_ext,
-       sizeof(element *) * num_ext);
+       sizeof(struct element *) * num_ext);
     }
 
     construct_dialog_ext(&di, title, 2, 1, 76, 23,
@@ -2459,10 +2466,10 @@ __editor_maybe_static int file_manager(World *mzx_world,
 
       case 3:
       {
-        element *b_elements[3];
+        struct element *b_elements[3];
         int b_dialog_result;
         char *new_name;
-        dialog b_di;
+        struct dialog b_di;
 
         new_name = malloc(MAX_PATH);
         new_name[0] = 0;
@@ -2610,15 +2617,15 @@ __editor_maybe_static int file_manager(World *mzx_world,
   return return_value;
 }
 
-int choose_file_ch(World *mzx_world, const char **wildcards, char *ret,
+int choose_file_ch(struct world *mzx_world, const char **wildcards, char *ret,
  const char *title, int dirs_okay)
 {
   return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
    0, NULL, 0, 0, 1);
 }
 
-int new_file(World *mzx_world, const char **wildcards, const char *default_ext,
- char *ret, const char *title, int dirs_okay)
+int new_file(struct world *mzx_world, const char **wildcards,
+ const char *default_ext, char *ret, const char *title, int dirs_okay)
 {
   return file_manager(mzx_world, wildcards, default_ext, ret, title, dirs_okay,
    1, NULL, 0, 0, 0);

@@ -97,11 +97,11 @@ __editor_maybe_static char sfx_strs[NUM_SFX][69] =
 // Special freqs
 #define F_REST          1
 
-typedef struct
+struct noise
 {
   int duration;//This is the struc of the sound queue
   int freq;
-} noise;
+};
 
 // Frequencies of 6C thru 6B
 static int note_freq[12] =
@@ -111,7 +111,7 @@ static int note_freq[12] =
 static int sam_freq[12] =
  { 3424, 3232, 3048, 2880, 2712, 2560, 2416, 2280, 2152, 2032, 1920, 1812 };
 
-static noise background[NOISEMAX]; // The sound queue itself
+static struct noise background[NOISEMAX]; // The sound queue itself
 static int sound_in_queue = 0;     // Tells if sound in queue
 
 char *custom_sfx = NULL;
@@ -139,7 +139,7 @@ static void play_note(int note, int octave, int delay)
   submit_sound(note_freq[note - 1] >> (6 - octave), delay);
 }
 
-void play_sfx(World *mzx_world, int sfxn)
+void play_sfx(struct world *mzx_world, int sfxn)
 {
   if(sfxn < NUM_SFX)
   {

@@ -31,16 +31,16 @@ __M_BEGIN_DECLS
 #ifdef CONFIG_NDS
 
 // Move the board's memory from normal RAM to extra RAM.
-void store_board_to_extram(Board *board);
+void store_board_to_extram(struct board *board);
 
 // Move the board's memory from normal RAM to extra RAM.
-void retrieve_board_from_extram(Board *board);
+void retrieve_board_from_extram(struct board *board);
 
 // Set the current board to cur_board, in regular memory.
-void set_current_board(World *mzx_world, Board *cur_board);
+void set_current_board(struct world *mzx_world, struct board *cur_board);
 
 // Set the current board to cur_board, in extra memory.
-void set_current_board_ext(World *mzx_world, Board *cur_board);
+void set_current_board_ext(struct world *mzx_world, struct board *cur_board);
 
 #else // !CONFIG_NDS
 
@@ -48,15 +48,17 @@ void set_current_board_ext(World *mzx_world, Board *cur_board);
  * away. The implementations are obvious enough.
  */
 
-static inline void store_board_to_extram(Board *board) {}
-static inline void retrieve_board_from_extram(Board *board) {}
+static inline void store_board_to_extram(struct board *board) {}
+static inline void retrieve_board_from_extram(struct board *board) {}
 
-static inline void set_current_board(World *mzx_world, Board *cur_board)
+static inline void set_current_board(struct world *mzx_world,
+ struct board *cur_board)
 {
   mzx_world->current_board = cur_board;
 }
 
-static inline void set_current_board_ext(World *mzx_world, Board *cur_board)
+static inline void set_current_board_ext(struct world *mzx_world,
+ struct board *cur_board)
 {
   set_current_board(mzx_world, cur_board);
 }

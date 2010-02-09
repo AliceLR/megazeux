@@ -34,13 +34,13 @@ void save_editor_palette(void)
 {
   if(graphics.screen_mode < 2)
     memcpy(graphics.editor_backup_palette, graphics.palette,
-     sizeof(rgb_color) * SMZX_PAL_SIZE);
+     sizeof(struct rgb_color) * SMZX_PAL_SIZE);
 }
 
 void load_editor_palette(void)
 {
   memcpy(graphics.palette, graphics.editor_backup_palette,
-   sizeof(rgb_color) * SMZX_PAL_SIZE);
+   sizeof(struct rgb_color) * SMZX_PAL_SIZE);
 }
 
 void save_palette(char *fname)
@@ -76,7 +76,7 @@ void clear_screen_no_update(Uint8 chr, Uint8 color)
   Uint32 i;
   Uint8 fg_color = color & 0x0F;
   Uint8 bg_color = color >> 4;
-  char_element *dest = graphics.text_video;
+  struct char_element *dest = graphics.text_video;
 
   for(i = 0; i < (SCREEN_W * SCREEN_H); i++)
   {

@@ -26,16 +26,16 @@ __M_BEGIN_DECLS
 
 #include "data.h"
 
-typedef struct
+struct label
 {
   // Point this to the name in the robot
   char *name;
   int position;
   // Set to 1 if zapped
   int zapped;
-} Label;
+};
 
-typedef struct
+struct scroll
 {
   int num_lines;
 
@@ -44,18 +44,18 @@ typedef struct
   int mesg_size;
 
   char used;
-} Scroll;
+};
 
-typedef struct
+struct sensor
 {
   char sensor_name[15];
   char sensor_char;
   char robot_to_mesg[15];
 
   char used;
-} Sensor;
+};
 
-typedef struct
+struct robot
 {
   int program_length;
   char *program;                  // Pointer to robot's program
@@ -69,9 +69,9 @@ typedef struct
   char bullet_type;
   char is_locked;
   char can_lavawalk;              // Can always travel on fire
-  mzx_dir walk_dir;
-  mzx_dir last_touch_dir;
-  mzx_dir last_shot_dir;
+  enum dir walk_dir;
+  enum dir last_touch_dir;
+  enum dir last_shot_dir;
 
   // Used for IF ALIGNED "robot", THISX/THISY, PLAYERDIST,
   // HORIZPLD, VERTPLD, and others. Keep udpated at all
@@ -92,7 +92,7 @@ typedef struct
   int loop_count;
 
   int num_labels;
-  Label **label_list;
+  struct label **label_list;
 
   int stack_size;
   int stack_pointer;
@@ -100,7 +100,7 @@ typedef struct
 
   // Local counters - store in save file
   int local[32];
-} Robot;
+};
 
 __M_END_DECLS
 

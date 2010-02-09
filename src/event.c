@@ -28,9 +28,9 @@
 #define MOUSE_REPEAT_START  200
 #define MOUSE_REPEAT_RATE   10
 
-input_status input;
+struct input_status input;
 
-static Uint32 convert_internal_xt(keycode key)
+static Uint32 convert_internal_xt(enum keycode key)
 {
   switch(key)
   {
@@ -144,7 +144,7 @@ static Uint32 convert_internal_xt(keycode key)
   }
 }
 
-static keycode convert_xt_internal(Uint32 key, keycode *second)
+static enum keycode convert_xt_internal(Uint32 key, enum keycode *second)
 {
   *second = IKEY_UNKNOWN;
   switch(key)
@@ -377,7 +377,7 @@ Uint32 update_event_status_delay(void)
   return rval;
 }
 
-static keycode emit_keysym_wrt_numlock(keycode key)
+static enum keycode emit_keysym_wrt_numlock(enum keycode key)
 {
   if(input.numlock_status)
   {
@@ -420,7 +420,7 @@ static keycode emit_keysym_wrt_numlock(keycode key)
   return key;
 }
 
-Uint32 get_key(keycode_type type)
+Uint32 get_key(enum keycode_type type)
 {
   switch(type)
   {
@@ -444,15 +444,14 @@ Uint32 get_key(keycode_type type)
   return 0;
 }
 
-Uint32 get_key_status(keycode_type type, Uint32 index)
+Uint32 get_key_status(enum keycode_type type, Uint32 index)
 {
   switch(type)
   {
     case keycode_pc_xt:
     {
-      keycode first, second;
+      enum keycode first, second;
       first = convert_xt_internal(index, &second);
-
       return (input.keymap[first] || input.keymap[second]);
     }
 
@@ -472,7 +471,7 @@ Uint32 get_key_status(keycode_type type, Uint32 index)
   return 0;
 }
 
-Uint32 get_last_key(keycode_type type)
+Uint32 get_last_key(enum keycode_type type)
 {
   switch(type)
   {
@@ -497,7 +496,7 @@ Uint32 get_last_key(keycode_type type)
   return 0;
 }
 
-Uint32 get_last_key_released(keycode_type type)
+Uint32 get_last_key_released(enum keycode_type type)
 {
   switch(type)
   {
@@ -630,20 +629,20 @@ void warp_real_mouse_y(Uint32 my)
   real_warp_mouse(mx_real, my_real);
 }
 
-void force_last_key(keycode_type type, int val)
+void force_last_key(enum keycode_type type, int val)
 {
   switch(type)
   {
     case keycode_pc_xt:
     {
-      keycode second;
+      enum keycode second;
       input.last_key_pressed = convert_xt_internal(val, &second);
       break;
     }
 
     case keycode_internal:
     {
-      input.last_key_pressed = (keycode)val;
+      input.last_key_pressed = (enum keycode)val;
       break;
     }
 
@@ -655,7 +654,7 @@ void force_last_key(keycode_type type, int val)
   }
 }
 
-int get_alt_status(keycode_type type)
+int get_alt_status(enum keycode_type type)
 {
   if(get_key_status(type, IKEY_LALT) ||
    get_key_status(type, IKEY_RALT))
@@ -668,13 +667,13 @@ int get_alt_status(keycode_type type)
   }
 }
 
-int get_shift_status(keycode_type type)
+int get_shift_status(enum keycode_type type)
 {
   return(get_key_status(type, IKEY_LSHIFT) ||
    get_key_status(type, IKEY_RSHIFT));
 }
 
-int get_ctrl_status(keycode_type type)
+int get_ctrl_status(enum keycode_type type)
 {
   if(get_key_status(type, IKEY_LCTRL) ||
    get_key_status(type, IKEY_RCTRL))
@@ -687,14 +686,14 @@ int get_ctrl_status(keycode_type type)
   }
 }
 
-void map_joystick_axis(int joystick, int axis, keycode min_key,
- keycode max_key)
+void map_joystick_axis(int joystick, int axis, enum keycode min_key,
+ enum keycode max_key)
 {
   input.joystick_axis_map[joystick][axis][0] = min_key;
   input.joystick_axis_map[joystick][axis][1] = max_key;
 }
 
-void map_joystick_button(int joystick, int button, keycode key)
+void map_joystick_button(int joystick, int button, enum keycode key)
 {
   input.joystick_button_map[joystick][button] = key;
 }

@@ -45,13 +45,15 @@
 
 #define EOS EOF
 
-typedef struct stream_info
+enum stream_type
 {
-  enum stream_type
-  {
-    FILE_STREAM,
-    BUFFER_STREAM
-  } type;
+  FILE_STREAM,
+  BUFFER_STREAM
+};
+
+struct stream
+{
+  enum stream_type type;
 
   union
   {
@@ -64,9 +66,9 @@ typedef struct stream_info
       unzFile f;
     } buffer;
   } stream;
-} stream_t;
+};
 
-typedef enum status
+enum status
 {
   SUCCESS = 0,
   INVALID_ARGUMENTS,
@@ -82,8 +84,7 @@ typedef enum status
   UNZ_FAILED,
   NO_WORLD,
   MISSING_FILE
-}
-status_t;
+};
 
 static struct board
 {
@@ -103,7 +104,7 @@ static unsigned int stb_hash(char *str)
    return hash + (hash >> 16);
 }
 
-static status_t add_to_hash_table(char *stack_str)
+static enum status add_to_hash_table(char *stack_str)
 {
   unsigned int slot;
   int count = 0;
@@ -150,13 +151,14 @@ static status_t add_to_hash_table(char *stack_str)
   return SUCCESS;
 }
 
-static status_t s_open(const char *filename, const char *mode, stream_t **s)
+static enum status s_open(const char *filename, const char *mode,
+ struct stream **s)
 {
   unz_file_info info;
-  status_t ret;
+  enum status ret;
   unzFile f;
 
-  *s = malloc(sizeof(stream_t));
+  *s = malloc(sizeof(struct stream));
 
   // not a ZIP, handle in a conventional manner
   if(strcasecmp(filename + strlen(filename) - 3, "zip"))
@@ -273,7 +275,7 @@ exit_free_stream:
   return ret;
 }
 
-static int sclose(stream_t *s)
+static int sclose(struct stream *s)
 {
   FILE *f;
 
@@ -295,7 +297,7 @@ static int sclose(stream_t *s)
   }
 }
 
-static int sgetc(stream_t *s)
+static int sgetc(struct stream *s)
 {
   switch(s->type)
   {
@@ -313,7 +315,7 @@ static int sgetc(stream_t *s)
   }
 }
 
-static size_t sread(void *ptr, size_t size, size_t count, stream_t *s)
+static size_t sread(void *ptr, size_t size, size_t count, struct stream *s)
 {
   switch(s->type)
   {
@@ -340,7 +342,7 @@ static size_t sread(void *ptr, size_t size, size_t count, stream_t *s)
   }
 }
 
-static int sseek(stream_t *s, long int offset, int origin)
+static int sseek(struct stream *s, long int offset, int origin)
 {
   switch(s->type)
   {
@@ -370,7 +372,7 @@ static int sseek(stream_t *s, long int offset, int origin)
   }
 }
 
-static long int stell(stream_t *s)
+static long int stell(struct stream *s)
 {
   switch(s->type)
   {
@@ -383,18 +385,18 @@ static long int stell(stream_t *s)
   }
 }
 
-static unsigned int sgetud(stream_t *s)
+static unsigned int sgetud(struct stream *s)
 {
   return (sgetc(s) << 0)  | (sgetc(s) << 8) |
          (sgetc(s) << 16) | (sgetc(s) << 24);
 }
 
-static unsigned short sgetus(stream_t *s)
+static unsigned short sgetus(struct stream *s)
 {
   return (sgetc(s) << 0) | (sgetc(s) << 8);
 }
 
-static const char *decode_status(status_t status)
+static const char *decode_status(enum status status)
 {
   switch(status)
   {
@@ -425,11 +427,11 @@ static const char *decode_status(status_t status)
   }
 }
 
-static status_t parse_board_direct(stream_t *s)
+static enum status parse_board_direct(struct stream *s)
 {
   int i, j, num_robots, skip_rle_blocks = 6;
   char tmp[256], tmp2[256], *str;
-  status_t ret;
+  enum status ret;
 
   // junk the undocumented (and unused) board_mode
   sgetc(s);
@@ -707,7 +709,7 @@ static status_t parse_board_direct(stream_t *s)
 
 // same as internal boards except for a 4 byte magic header
 
-static status_t parse_board(stream_t *s)
+static enum status parse_board(struct stream *s)
 {
   int c;
 
@@ -726,9 +728,9 @@ static status_t parse_board(stream_t *s)
   return parse_board_direct(s);
 }
 
-static status_t parse_world(stream_t *s)
+static enum status parse_world(struct stream *s)
 {
-  status_t ret = SUCCESS;
+  enum status ret = SUCCESS;
   int i, c, num_boards;
 
   // skip to protected byte; don't care about world name
@@ -797,7 +799,7 @@ static status_t parse_world(stream_t *s)
   return ret;
 }
 
-static status_t file_exists(const char *file, stream_t *s)
+static enum status file_exists(const char *file, struct stream *s)
 {
   char newpath[MAX_PATH];
 
@@ -822,8 +824,8 @@ int main(int argc, char *argv[])
 {
   const char *found_append = " - FOUND", *not_found_append = " - NOT FOUND";
   int i, len, print_all_files = 0, got_world = 0, quiet_mode = 0;
-  status_t ret;
-  stream_t *s;
+  struct stream *s;
+  enum status ret;
 
   if(argc < 2)
   {

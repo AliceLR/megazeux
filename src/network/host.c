@@ -607,7 +607,7 @@ static inline ssize_t platform_recvfrom(int s, void *buf, size_t len,
 
 #endif // __WIN32__
 
-struct host *host_create(host_type_t type, host_family_t fam)
+struct host *host_create(enum host_type type, enum host_family fam)
 {
   struct linger linger = { 1, 30 };
   const uint32_t on = 1;
@@ -980,7 +980,7 @@ static int zlib_skip_gzip_header(char *initial, unsigned long len)
   return gzip - (Bytef *)initial;
 }
 
-host_status_t host_recv_file(struct host *h, const char *url,
+enum host_status host_recv_file(struct host *h, const char *url,
  FILE *file, const char *expected_type)
 {
   bool mid_inflate = false, mid_chunk = false, deflated = false;
@@ -1548,7 +1548,8 @@ static int zlib_forge_gzip_header(char *buffer)
   return 10;
 }
 
-host_status_t host_send_file(struct host *h, FILE *file, const char *mime_type)
+enum host_status host_send_file(struct host *h, FILE *file,
+ const char *mime_type)
 {
   bool mid_deflate = false;
   char line[LINE_BUF_LEN];
@@ -1746,7 +1747,7 @@ bool host_handle_http_request(struct host *h)
   const char *mime_type = "application/octet-stream";
   char buffer[LINE_BUF_LEN], *buf = buffer;
   char *cmd_type, *path, *proto;
-  host_status_t ret;
+  enum host_status ret;
   size_t path_len;
   FILE *f;
 

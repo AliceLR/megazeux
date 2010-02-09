@@ -28,25 +28,23 @@ __M_BEGIN_DECLS
 
 struct host;
 
-typedef enum
+enum host_family
 {
   /** Prefer IPv4 address resolution for hostnames */
   HOST_FAMILY_IPV4,
   /** Prefer IPv6 address resolution for hostnames */
   HOST_FAMILY_IPV6,
-}
-host_family_t;
+};
 
-typedef enum
+enum host_type
 {
   /** Use TCP protocol for sockets */
   HOST_TYPE_TCP,
   /** Use UDP protocol for sockets */
   HOST_TYPE_UDP,
-}
-host_type_t;
+};
 
-typedef enum
+enum host_status
 {
   HOST_SUCCESS,
   HOST_FREAD_FAILED,
@@ -64,7 +62,7 @@ typedef enum
   HOST_ZLIB_INVALID_GZIP_HEADER,
   HOST_ZLIB_DEFLATE_FAILED,
   HOST_ZLIB_INFLATE_FAILED,
-} host_status_t;
+};
 
 #ifdef __WIN32__
 
@@ -98,7 +96,8 @@ static inline void host_layer_exit(void) { }
  * @return A host object that can be passed to other network functions,
  *         or NULL if an error occurred.
  */
-NETWORK_LIBSPEC struct host *host_create(host_type_t type, host_family_t fam);
+NETWORK_LIBSPEC struct host *host_create(enum host_type type,
+ enum host_family fam);
 
 /**
  * Destroys a host created by @ref host_create (this closes the socket and
@@ -127,10 +126,10 @@ NETWORK_LIBSPEC bool host_connect(struct host *h, const char *hostname,
  * @param file          File to create and stream to disk
  * @param expected_type MIME type to expect in response
  *
- * @return See \ref host_status_t.
+ * @return See \ref host_status.
  */
-NETWORK_LIBSPEC host_status_t host_recv_file(struct host *h, const char *url,
- FILE *file, const char *expected_type);
+NETWORK_LIBSPEC enum host_status host_recv_file(struct host *h,
+ const char *url, FILE *file, const char *expected_type);
 
 /**
  * Set send/recv callbacks which will be called (potentially many times) as
@@ -263,7 +262,7 @@ NETWORK_LIBSPEC bool host_sendto_raw(struct host *h, const char *buffer,
  *
  * @return See \ref host_status_t.
  */
-NETWORK_LIBSPEC host_status_t host_send_file(struct host *h, FILE *file,
+NETWORK_LIBSPEC enum host_status host_send_file(struct host *h, FILE *file,
  const char *mime_type);
 
 // FIXME: Document?

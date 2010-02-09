@@ -32,7 +32,7 @@
 
 static char *help;
 
-void help_open(World *mzx_world, const char *file_name)
+void help_open(struct world *mzx_world, const char *file_name)
 {
   mzx_world->help_file = fopen(file_name, "rb");
   if(!mzx_world->help_file)
@@ -41,7 +41,7 @@ void help_open(World *mzx_world, const char *file_name)
   help = malloc(1024 * 64);
 }
 
-void help_close(World *mzx_world)
+void help_close(struct world *mzx_world)
 {
   if(!mzx_world->help_file)
     return;
@@ -50,11 +50,11 @@ void help_close(World *mzx_world)
   free(help);
 }
 
-void help_system(World *mzx_world)
+void help_system(struct world *mzx_world)
 {
   char file[13], file2[13], label[13];
   int where, offs, size, t1, t2;
-  cursor_mode_types old_cmode;
+  enum cursor_mode_types old_cmode;
   FILE *fp;
 
   fp = mzx_world->help_file;

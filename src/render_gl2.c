@@ -33,7 +33,7 @@
 #define SAFE_TEXTURE_MARGIN_X 0.0004f
 #define SAFE_TEXTURE_MARGIN_Y 0.0002f
 
-typedef struct
+struct gl2_syms
 {
   int syms_loaded;
   void (APIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
@@ -66,9 +66,9 @@ typedef struct
   void (APIENTRY *glVertex2f)(GLfloat x, GLfloat y);
   void (APIENTRY *glVertex2i)(GLint x, GLint y);
   void (APIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
-} gl2_syms;
+};
 
-typedef struct
+struct gl2_render_data
 {
   Uint32 *pixels;
   Uint8 charset_texture[CHAR_H * CHARSET_SIZE * CHAR_W * 2];
@@ -78,11 +78,11 @@ typedef struct
   Uint8 remap_texture;
   Uint8 remap_char[CHARSET_SIZE * 2];
   Uint8 ignore_linear;
-  gl2_syms gl;
-  ratio_type_t ratio;
-} gl2_render_data;
+  struct gl2_syms gl;
+  enum ratio_type ratio;
+};
 
-static int gl2_load_syms (gl2_syms *gl)
+static int gl2_load_syms (struct gl2_syms *gl)
 {
   if(gl->syms_loaded)
     return true;
@@ -136,10 +136,11 @@ static int gl2_load_syms (gl2_syms *gl)
   return true;
 }
 
-static bool gl2_init_video(graphics_data *graphics, config_info *conf)
+static bool gl2_init_video(struct graphics_data *graphics,
+ struct config_info *conf)
 {
-  gl2_render_data *render_data = malloc(sizeof(gl2_render_data));
-  gl2_syms *gl = &render_data->gl;
+  struct gl2_render_data *render_data = malloc(sizeof(struct gl2_render_data));
+  struct gl2_syms *gl = &render_data->gl;
   const char *version;
 
   if(!render_data)
@@ -189,34 +190,36 @@ err_out:
   return false;
 }
 
-static void gl2_free_video(graphics_data *graphics)
+static void gl2_free_video(struct graphics_data *graphics)
 {
   free(graphics->render_data);
   graphics->render_data = NULL;
 }
 
-static void gl2_remap_charsets(graphics_data *graphics)
+static void gl2_remap_charsets(struct graphics_data *graphics)
 {
-  gl2_render_data *render_data = graphics->render_data;
+  struct gl2_render_data *render_data = graphics->render_data;
   render_data->remap_texture = true;
 }
 
-static void gl2_remap_char(graphics_data *graphics, Uint16 chr)
+static void gl2_remap_char(struct graphics_data *graphics, Uint16 chr)
 {
-  gl2_render_data *render_data = graphics->render_data;
+  struct gl2_render_data *render_data = graphics->render_data;
   render_data->remap_char[chr] = true;
 }
 
-static void gl2_remap_charbyte(graphics_data *graphics, Uint16 chr, Uint8 byte)
+static void gl2_remap_charbyte(struct graphics_data *graphics,
+ Uint16 chr, Uint8 byte)
 {
   gl2_remap_char(graphics, chr);
 }
 
 // FIXME: Many magic numbers
-static void gl2_resize_screen(graphics_data *graphics, int width, int height)
+static void gl2_resize_screen(struct graphics_data *graphics,
+ int width, int height)
 {
-  gl2_render_data *render_data = graphics->render_data;
-  gl2_syms *gl = &render_data->gl;
+  struct gl2_render_data *render_data = graphics->render_data;
+  struct gl2_syms *gl = &render_data->gl;
   int v_width, v_height;
 
   /* If the window is exactly 640x350, then any filtering is useless.
@@ -280,11 +283,11 @@ static void gl2_resize_screen(graphics_data *graphics, int width, int height)
    GL_UNSIGNED_BYTE, render_data->pixels);
 }
 
-static bool gl2_set_video_mode(graphics_data *graphics, int width, int height,
- int depth, int fullscreen, int resize)
+static bool gl2_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize)
 {
-  gl2_render_data *render_data = graphics->render_data;
-  gl2_syms *gl = &render_data->gl;
+  struct gl2_render_data *render_data = graphics->render_data;
+  struct gl2_syms *gl = &render_data->gl;
 
   gl_set_attributes(graphics);
 
@@ -300,10 +303,10 @@ static bool gl2_set_video_mode(graphics_data *graphics, int width, int height,
   return true;
 }
 
-static void gl2_update_colors(graphics_data *graphics, rgb_color *palette,
- Uint32 count)
+static void gl2_update_colors(struct graphics_data *graphics,
+ struct rgb_color *palette, Uint32 count)
 {
-  gl2_render_data *render_data = graphics->render_data;
+  struct gl2_render_data *render_data = graphics->render_data;
   Uint32 i;
   for(i = 0; i < count; i++)
   {
@@ -336,10 +339,10 @@ static char *gl2_char_bitmask_to_texture(signed char *c, char *p)
   return p;
 }
 
-static inline void gl2_do_remap_charsets(graphics_data *graphics)
+static inline void gl2_do_remap_charsets(struct graphics_data *graphics)
 {
-  gl2_render_data *render_data = graphics->render_data;
-  gl2_syms *gl = &render_data->gl;
+  struct gl2_render_data *render_data = graphics->render_data;
+  struct gl2_syms *gl = &render_data->gl;
   signed char *c = (signed char *)graphics->charset;
   char *p = (char *)render_data->charset_texture;
   unsigned int i, j, k;
@@ -353,10 +356,11 @@ static inline void gl2_do_remap_charsets(graphics_data *graphics)
     GL_UNSIGNED_BYTE, render_data->charset_texture);
 }
 
-static inline void gl2_do_remap_char(graphics_data *graphics, Uint16 chr)
+static inline void gl2_do_remap_char(struct graphics_data *graphics,
+ Uint16 chr)
 {
-  gl2_render_data *render_data = graphics->render_data;
-  gl2_syms *gl = &render_data->gl;
+  struct gl2_render_data *render_data = graphics->render_data;
+  struct gl2_syms *gl = &render_data->gl;
   signed char *c = (signed char *)graphics->charset;
   char *p = (char *)render_data->charset_texture;
   unsigned int i;
@@ -369,23 +373,23 @@ static inline void gl2_do_remap_char(graphics_data *graphics, Uint16 chr)
    GL_ALPHA, GL_UNSIGNED_BYTE, render_data->charset_texture);
 }
 
-static int gl2_linear_filter_method(graphics_data *graphics)
+static int gl2_linear_filter_method(struct graphics_data *graphics)
 {
-  gl2_render_data *render_data = graphics->render_data;
+  struct gl2_render_data *render_data = graphics->render_data;
 
   if(render_data->ignore_linear)
     return false;
-  return (strcasecmp(graphics->gl_filter_method, CONFIG_GL_FILTER_LINEAR) == 0);
+  return strcasecmp(graphics->gl_filter_method, CONFIG_GL_FILTER_LINEAR) == 0;
 }
 
-static void gl2_render_graph(graphics_data *graphics)
+static void gl2_render_graph(struct graphics_data *graphics)
 {
-  gl2_render_data *render_data = graphics->render_data;
-  gl2_syms *gl = &render_data->gl;
+  struct gl2_render_data *render_data = graphics->render_data;
+  struct gl2_syms *gl = &render_data->gl;
   Uint32 i;
   float fi, fi2;
   Uint32 *dest;
-  char_element *src = graphics->text_video;
+  struct char_element *src = graphics->text_video;
 
   if(!graphics->screen_mode)
   {
@@ -512,11 +516,11 @@ static void gl2_render_graph(graphics_data *graphics)
   }
 }
 
-static void gl2_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
- Uint8 color, Uint8 lines, Uint8 offset)
+static void gl2_render_cursor(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
 {
-  gl2_render_data *render_data = graphics->render_data;
-  gl2_syms *gl = &render_data->gl;
+  struct gl2_render_data *render_data = graphics->render_data;
+  struct gl2_syms *gl = &render_data->gl;
 
   gl->glDisable(GL_TEXTURE_2D);
 
@@ -535,11 +539,11 @@ static void gl2_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
   gl->glEnable(GL_TEXTURE_2D);
 }
 
-static void gl2_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
- Uint8 w, Uint8 h)
+static void gl2_render_mouse(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
-  gl2_render_data *render_data = graphics->render_data;
-  gl2_syms *gl = &render_data->gl;
+  struct gl2_render_data *render_data = graphics->render_data;
+  struct gl2_syms *gl = &render_data->gl;
 
   gl->glDisable(GL_TEXTURE_2D);
   gl->glEnable(GL_BLEND);
@@ -556,10 +560,10 @@ static void gl2_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
   gl->glDisable(GL_BLEND);
 }
 
-static void gl2_sync_screen(graphics_data *graphics)
+static void gl2_sync_screen(struct graphics_data *graphics)
 {
-  gl2_render_data *render_data = graphics->render_data;
-  gl2_syms *gl = &render_data->gl;
+  struct gl2_render_data *render_data = graphics->render_data;
+  struct gl2_syms *gl = &render_data->gl;
 
   if(gl2_linear_filter_method(graphics) && !graphics->screen_mode)
   {
@@ -597,9 +601,9 @@ static void gl2_sync_screen(graphics_data *graphics)
   gl->glClear(GL_COLOR_BUFFER_BIT);
 }
 
-void render_gl2_register(renderer_t *renderer)
+void render_gl2_register(struct renderer *renderer)
 {
-  memset(renderer, 0, sizeof(renderer_t));
+  memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gl2_init_video;
   renderer->free_video = gl2_free_video;
   renderer->check_video_mode = gl_check_video_mode;

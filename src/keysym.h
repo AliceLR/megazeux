@@ -24,7 +24,7 @@
 
 __M_BEGIN_DECLS
 
-typedef enum
+enum keycode
 {
   IKEY_UNKNOWN      = 0,
   IKEY_FIRST        = 0,
@@ -135,7 +135,7 @@ typedef enum
   IKEY_BREAK        = 318,
   IKEY_MENU         = 319,
   IKEY_LAST
-} keycode;
+};
 
 __M_END_DECLS
 

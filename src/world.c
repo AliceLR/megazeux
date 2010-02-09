@@ -300,20 +300,20 @@ __editor_maybe_static int world_magic(const char magic_string[3])
 
 #ifdef CONFIG_LOADSAVE_METER
 
-static void meter_update_screen(World *mzx_world, int *curr, int target)
+static void meter_update_screen(struct world *mzx_world, int *curr, int target)
 {
   (*curr)++;
   meter_interior(*curr, target);
   update_screen();
 }
 
-static void meter_restore_screen(World *mzx_world)
+static void meter_restore_screen(struct world *mzx_world)
 {
   restore_screen();
   update_screen();
 }
 
-static void meter_initial_draw(World *mzx_world, int curr, int target,
+static void meter_initial_draw(struct world *mzx_world, int curr, int target,
  const char *title)
 {
   save_screen();
@@ -323,15 +323,16 @@ static void meter_initial_draw(World *mzx_world, int curr, int target,
 
 #else // !CONFIG_LOADSAVE_METER
 
-static inline void meter_update_screen(World *mzx_world, int *curr,
+static inline void meter_update_screen(struct world *mzx_world, int *curr,
  int target) {}
-static inline void meter_restore_screen(World *mzx_world) {}
-static inline void meter_initial_draw(World *mzx_world, int curr, int target,
- const char *title) {}
+static inline void meter_restore_screen(struct world *mzx_world) {}
+static inline void meter_initial_draw(struct world *mzx_world, int curr,
+ int target, const char *title) {}
 
 #endif // CONFIG_LOADSAVE_METER
 
-int save_world(World *mzx_world, const char *file, int savegame, int faded)
+int save_world(struct world *mzx_world, const char *file, int savegame,
+ int faded)
 {
   int i, num_boards;
   int gl_rob_position, gl_rob_save_position;
@@ -340,7 +341,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
   unsigned int *size_offset_list;
   unsigned char *charset_mem;
   unsigned char r, g, b;
-  Board *cur_board;
+  struct board *cur_board;
 
   int meter_target = 2 + mzx_world->num_boards, meter_curr = 0;
 
@@ -708,10 +709,10 @@ static int save_magic(const char magic_string[5])
   }
 }
 
-__editor_maybe_static void set_update_done(World *mzx_world)
+__editor_maybe_static void set_update_done(struct world *mzx_world)
 {
-  Board **board_list = mzx_world->board_list;
-  Board *cur_board;
+  struct board **board_list = mzx_world->board_list;
+  struct board *cur_board;
   int max_size = 0;
   int cur_size;
   int i;
@@ -741,16 +742,17 @@ __editor_maybe_static void set_update_done(World *mzx_world)
   }
 }
 
-__editor_maybe_static void optimize_null_boards(World *mzx_world)
+__editor_maybe_static void optimize_null_boards(struct world *mzx_world)
 {
   // Optimize out null objects while keeping a translation list mapping
   // board numbers from the old list to the new list.
   int num_boards = mzx_world->num_boards;
-  Board **board_list = mzx_world->board_list;
-  Board **optimized_board_list = calloc(num_boards, sizeof(Board *));
+  struct board **board_list = mzx_world->board_list;
+  struct board **optimized_board_list =
+   calloc(num_boards, sizeof(struct board *));
   int *board_id_translation_list = calloc(num_boards, sizeof(int));
 
-  Board *cur_board;
+  struct board *cur_board;
   int i, i2;
 
   for(i = 0, i2 = 0; i < num_boards; i++)
@@ -795,7 +797,7 @@ __editor_maybe_static void optimize_null_boards(World *mzx_world)
 
     free(board_list);
     board_list =
-     realloc(optimized_board_list, sizeof(Board *) * i2);
+     realloc(optimized_board_list, sizeof(struct board *) * i2);
 
     mzx_world->num_boards = i2;
     mzx_world->num_boards_allocated = i2;
@@ -989,9 +991,9 @@ err_out:
   return NULL;
 }
 
-// Loads a world into a World struct
+// Loads a world into a struct world
 
-static void load_world(World *mzx_world, FILE *fp, const char *file,
+static void load_world(struct world *mzx_world, FILE *fp, const char *file,
  bool savegame, int version, char *name, int *faded)
 {
   int i;
@@ -999,7 +1001,7 @@ static void load_world(World *mzx_world, FILE *fp, const char *file,
   int gl_rob, last_pos;
   unsigned char *charset_mem;
   unsigned char r, g, b;
-  Board *cur_board;
+  struct board *cur_board;
   char *config_file_name;
   int file_name_len = strlen(file) - 4;
   struct stat file_info;
@@ -1147,7 +1149,7 @@ static void load_world(World *mzx_world, FILE *fp, const char *file,
     num_counters = fgetd(fp);
     mzx_world->num_counters = num_counters;
     mzx_world->num_counters_allocated = num_counters;
-    mzx_world->counter_list = calloc(num_counters, sizeof(counter *));
+    mzx_world->counter_list = calloc(num_counters, sizeof(struct counter *));
 
     for(i = 0; i < num_counters; i++)
     {
@@ -1157,11 +1159,11 @@ static void load_world(World *mzx_world, FILE *fp, const char *file,
     // Setup gateway functions
     initialize_gateway_functions(mzx_world);
 
-    // Read mzx_strings
+    // Read strings
     num_strings = fgetd(fp);
     mzx_world->num_strings = num_strings;
     mzx_world->num_strings_allocated = num_strings;
-    mzx_world->string_list = calloc(num_strings, sizeof(mzx_string *));
+    mzx_world->string_list = calloc(num_strings, sizeof(struct string *));
 
     for(i = 0; i < num_strings; i++)
     {
@@ -1170,11 +1172,11 @@ static void load_world(World *mzx_world, FILE *fp, const char *file,
 
     // Allocate space for sprites and clist
     mzx_world->num_sprites = MAX_SPRITES;
-    mzx_world->sprite_list = calloc(MAX_SPRITES, sizeof(Sprite *));
+    mzx_world->sprite_list = calloc(MAX_SPRITES, sizeof(struct sprite *));
 
     for(i = 0; i < MAX_SPRITES; i++)
     {
-      mzx_world->sprite_list[i] = calloc(1, sizeof(Sprite));
+      mzx_world->sprite_list[i] = calloc(1, sizeof(struct sprite));
     }
 
     mzx_world->collision_list = calloc(MAX_SPRITES, sizeof(int));
@@ -1332,7 +1334,7 @@ static void load_world(World *mzx_world, FILE *fp, const char *file,
 
   mzx_world->num_boards = num_boards;
   mzx_world->num_boards_allocated = num_boards;
-  mzx_world->board_list = malloc(sizeof(Board *) * num_boards);
+  mzx_world->board_list = malloc(sizeof(struct board *) * num_boards);
 
   // Skip the names for now
   // Gonna wanna come back to here
@@ -1402,18 +1404,18 @@ static void load_world(World *mzx_world, FILE *fp, const char *file,
 // After clearing the above, use this to get default values. Use
 // for loading of worlds (as opposed to save games).
 
-__editor_maybe_static void default_global_data(World *mzx_world)
+__editor_maybe_static void default_global_data(struct world *mzx_world)
 {
   int i;
 
   // Allocate space for sprites and give them default values (all 0's)
   mzx_world->num_sprites = MAX_SPRITES;
-  mzx_world->sprite_list = calloc(MAX_SPRITES, sizeof(Sprite *));
+  mzx_world->sprite_list = calloc(MAX_SPRITES, sizeof(struct sprite *));
 
   for(i = 0; i < 256; i++)
   {
-    mzx_world->sprite_list[i] = malloc(sizeof(Sprite));
-    memset(mzx_world->sprite_list[i], 0, sizeof(Sprite));
+    mzx_world->sprite_list[i] = malloc(sizeof(struct sprite));
+    memset(mzx_world->sprite_list[i], 0, sizeof(struct sprite));
   }
 
   mzx_world->collision_list = calloc(MAX_SPRITES, sizeof(int));
@@ -1496,7 +1498,7 @@ __editor_maybe_static void default_global_data(World *mzx_world)
   mzx_world->target_where = TARGET_NONE;
 }
 
-bool reload_world(World *mzx_world, const char *file, int *faded)
+bool reload_world(struct world *mzx_world, const char *file, int *faded)
 {
   char name[BOARD_NAME_SIZE];
   int version;
@@ -1525,7 +1527,7 @@ bool reload_world(World *mzx_world, const char *file, int *faded)
   return true;
 }
 
-bool reload_savegame(World *mzx_world, const char *file, int *faded)
+bool reload_savegame(struct world *mzx_world, const char *file, int *faded)
 {
   int version;
   FILE *fp;
@@ -1547,7 +1549,7 @@ bool reload_savegame(World *mzx_world, const char *file, int *faded)
   return true;
 }
 
-bool reload_swap(World *mzx_world, const char *file, int *faded)
+bool reload_swap(struct world *mzx_world, const char *file, int *faded)
 {
   char name[BOARD_NAME_SIZE];
   int version;
@@ -1572,13 +1574,13 @@ bool reload_swap(World *mzx_world, const char *file, int *faded)
 // This only clears boards, no global data. Useful for swap world,
 // when you want to maintain counters and sprites and all that.
 
-void clear_world(World *mzx_world)
+void clear_world(struct world *mzx_world)
 {
   // Do this before loading, when there's a world
 
   int i;
   int num_boards = mzx_world->num_boards;
-  Board **board_list = mzx_world->board_list;
+  struct board **board_list = mzx_world->board_list;
 
   for(i = 0; i < num_boards; i++)
   {
@@ -1609,15 +1611,15 @@ void clear_world(World *mzx_world)
 
 // This clears the rest of the stuff.
 
-void clear_global_data(World *mzx_world)
+void clear_global_data(struct world *mzx_world)
 {
   int i;
   int num_sprites = mzx_world->num_sprites;
   int num_counters = mzx_world->num_counters;
   int num_strings = mzx_world->num_strings;
-  counter **counter_list = mzx_world->counter_list;
-  mzx_string **string_list = mzx_world->string_list;
-  Sprite **sprite_list = mzx_world->sprite_list;
+  struct counter **counter_list = mzx_world->counter_list;
+  struct string **string_list = mzx_world->string_list;
+  struct sprite **sprite_list = mzx_world->sprite_list;
 
   free(mzx_world->vlayer_chars);
   free(mzx_world->vlayer_colors);
@@ -1670,7 +1672,7 @@ void clear_global_data(World *mzx_world)
   mzx_world->dead = 0;
 }
 
-void default_scroll_values(World *mzx_world)
+void default_scroll_values(struct world *mzx_world)
 {
   mzx_world->scroll_base_color = 143;
   mzx_world->scroll_corner_color = 135;

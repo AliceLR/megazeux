@@ -34,7 +34,7 @@
    which case the operation is cancelled. A STACK size of about 500
    elements is usally enough for a fairly complex 100 by 100 section.)
 
-  (Note that the usual Robot#0 code is NOT performed- If current is a
+  (Note that the usual struct robot#0 code is NOT performed- If current is a
    robot, it is already #0 and must stay that way for proper filling.)
 
   1) Initialize fill stack and record what we are filling over.
@@ -146,7 +146,7 @@
     check = 0;                                          \
 
 // Structure for one element of the stack
-struct _StackElem
+struct stack_elem
 {
   short int x;
   short int y;
@@ -154,17 +154,15 @@ struct _StackElem
   signed char dir;
 };
 
-typedef struct _StackElem StackElem;
-
 // The stack
 #define STACK_SIZE 4096
 
-void fill_area(World *mzx_world, mzx_thing id, int color, int param,
- int x, int y, Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor,
+void fill_area(struct world *mzx_world, enum thing id, int color, int param,
+ int x, int y, struct robot *copy_robot, struct scroll *copy_scroll, struct sensor *copy_sensor,
  int overlay_edit)
 {
-  Board *src_board = mzx_world->current_board;
-  mzx_thing fill_over_id;
+  struct board *src_board = mzx_world->current_board;
+  enum thing fill_over_id;
   int fill_over_param, fill_over_color;
   int dir, above_match, below_match;
   int new_offset;
@@ -176,7 +174,7 @@ void fill_area(World *mzx_world, mzx_thing id, int color, int param,
   int offset = x + (y * board_width);
 
   int stack_pos; // Current element. -1 = empty.
-  StackElem *stack = malloc(sizeof(StackElem) * (STACK_SIZE + 1));
+  struct stack_elem *stack = malloc(sizeof(struct stack_elem) * (STACK_SIZE + 1));
 
   if(overlay_edit)
   {
@@ -292,7 +290,7 @@ void fill_area(World *mzx_world, mzx_thing id, int color, int param,
     color_check = src_board->level_color;
 
     // 1) Initialize fill stack and record what we are filling over.
-    fill_over_id = (mzx_thing)id_check[offset];
+    fill_over_id = (enum thing)id_check[offset];
     fill_over_color = color_check[offset];
     fill_over_param = param_check[offset];
 

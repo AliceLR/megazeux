@@ -29,21 +29,21 @@ __M_BEGIN_DECLS
 #include "data.h"
 #include "world_struct.h"
 
-void hurt_player_id(World *mzx_world, mzx_thing id);
-void update_board(World *mzx_world);
-void shoot_lazer(World *mzx_world, int x, int y, int dir, int length,
+void hurt_player_id(struct world *mzx_world, enum thing id);
+void update_board(struct world *mzx_world);
+void shoot_lazer(struct world *mzx_world, int x, int y, int dir, int length,
  int color);
-int transport(World *mzx_world, int x, int y, int dir, mzx_thing id,
+int transport(struct world *mzx_world, int x, int y, int dir, enum thing id,
  int param, int color, int can_push);
-int push(World *mzx_world, int x, int y, int dir, int checking);
-void shoot(World *mzx_world, int x, int y, int dir, int type);
-void shoot_fire(World *mzx_world, int x, int y, int dir);
-void shoot_seeker(World *mzx_world, int x, int y, int dir);
-void shoot_missile(World *mzx_world, int x, int y, int dir);
-move_status move(World *mzx_world, int x, int y, int dir,
+int push(struct world *mzx_world, int x, int y, int dir, int checking);
+void shoot(struct world *mzx_world, int x, int y, int dir, int type);
+void shoot_fire(struct world *mzx_world, int x, int y, int dir);
+void shoot_seeker(struct world *mzx_world, int x, int y, int dir);
+void shoot_missile(struct world *mzx_world, int x, int y, int dir);
+enum move_status move(struct world *mzx_world, int x, int y, int dir,
  int flags);
-mzx_dir parsedir(World *mzx_world, mzx_dir old_dir, int x, int y,
- mzx_dir flow_dir, int bln, int bls, int ble, int blw);
+enum dir parsedir(struct world *mzx_world, enum dir old_dir, int x, int y,
+ enum dir flow_dir, int bln, int bls, int ble, int blw);
 int flip_dir(int dir);
 
 __M_END_DECLS

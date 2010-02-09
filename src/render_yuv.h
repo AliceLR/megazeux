@@ -37,25 +37,26 @@
 
 __M_BEGIN_DECLS
 
-typedef struct
+struct yuv_render_data
 {
   SDL_Surface *screen;
   SDL_Overlay *overlay;
   Uint32 y0mask;
   Uint32 y1mask;
   Uint32 uvmask;
-  ratio_type_t ratio;
-} yuv_render_data;
+  enum ratio_type ratio;
+};
 
-bool yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
- int depth, int fullscreen, int resize, int yuv_width, int yuv_height);
-bool yuv_init_video(graphics_data *graphics, config_info *conf);
-void yuv_free_video(graphics_data *graphics);
-bool yuv_check_video_mode(graphics_data *graphics,  int width, int height,
- int depth, int fullscreen, int resize);
-void yuv_update_colors(graphics_data *graphics, rgb_color *palette,
- Uint32 count);
-void yuv_sync_screen (graphics_data *graphics);
+bool yuv_set_video_mode_size(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize,
+ int yuv_width, int yuv_height);
+bool yuv_init_video(struct graphics_data *graphics, struct config_info *conf);
+void yuv_free_video(struct graphics_data *graphics);
+bool yuv_check_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize);
+void yuv_update_colors(struct graphics_data *graphics,
+ struct rgb_color *palette, Uint32 count);
+void yuv_sync_screen (struct graphics_data *graphics);
 
 __M_END_DECLS
 

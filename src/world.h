@@ -37,8 +37,8 @@ __M_BEGIN_DECLS
 #include "configure.h"
 
 /* When making new versions, change the number below, and
- * change the number in the version mzx_strings to follow. From now on,
- * be sure that the last two characters are the hex equivilent of the
+ * change the number in the version strings to follow. From now on,
+ * be sure that the last two characters are the hex equivalent of the
  * MINOR version number.
  */
 
@@ -103,17 +103,18 @@ __M_BEGIN_DECLS
 
 CORE_LIBSPEC FILE *try_load_world(const char *file, bool savegame,
  int *version, char *name);
-CORE_LIBSPEC int save_world(World *mzx_world, const char *file, int savegame,
- int faded);
-CORE_LIBSPEC bool reload_world(World *mzx_world, const char *file, int *faded);
-CORE_LIBSPEC void clear_world(World *mzx_world);
-CORE_LIBSPEC void clear_global_data(World *mzx_world);
-CORE_LIBSPEC void default_scroll_values(World *mzx_world);
+CORE_LIBSPEC int save_world(struct world *mzx_world, const char *file,
+ int savegame, int faded);
+CORE_LIBSPEC bool reload_world(struct world *mzx_world, const char *file,
+ int *faded);
+CORE_LIBSPEC void clear_world(struct world *mzx_world);
+CORE_LIBSPEC void clear_global_data(struct world *mzx_world);
+CORE_LIBSPEC void default_scroll_values(struct world *mzx_world);
 
 CORE_LIBSPEC void add_ext(char *src, const char *ext);
 
-bool reload_savegame(World *mzx_world, const char *file, int *faded);
-bool reload_swap(World *mzx_world, const char *file, int *faded);
+bool reload_savegame(struct world *mzx_world, const char *file, int *faded);
+bool reload_swap(struct world *mzx_world, const char *file, int *faded);
 
 // Code to load multi-byte ints from little endian file
 
@@ -123,9 +124,9 @@ void fputw(int src, FILE *fp);
 void fputd(int src, FILE *fp);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC void default_global_data(World *mzx_world);
-CORE_LIBSPEC void optimize_null_boards(World *mzx_world);
-CORE_LIBSPEC void set_update_done(World *mzx_world);
+CORE_LIBSPEC void default_global_data(struct world *mzx_world);
+CORE_LIBSPEC void optimize_null_boards(struct world *mzx_world);
+CORE_LIBSPEC void set_update_done(struct world *mzx_world);
 CORE_LIBSPEC int world_magic(const char magic_string[3]);
 CORE_LIBSPEC extern char world_version_string[4];
 #endif // CONFIG_EDITOR

@@ -72,13 +72,13 @@ static const char main_menu_1[] =
 #ifdef CONFIG_UPDATER
 static const char main_menu_2[] =
  "F7/U - Updater";
-void (*check_for_updates)(config_info *conf);
+void (*check_for_updates)(struct config_info *conf);
 #endif
 
 #ifdef CONFIG_EDITOR
 static const char main_menu_3[] =
  "F8/E - Editor";
-void (*edit_world)(World *mzx_world);
+void (*edit_world)(struct world *mzx_world);
 #endif
 
 static const char main_menu_4[] =
@@ -136,9 +136,9 @@ static void draw_intro_mesg(void)
   write_string(mesg, (80 - strlen(mesg)) >> 1, 24, scroll_color, 0);
 }
 
-static void load_world_file(World *mzx_world, char *name)
+static void load_world_file(struct world *mzx_world, char *name)
 {
-  Board *src_board;
+  struct board *src_board;
   int fade = 0;
 
   // Load world curr_file
@@ -160,7 +160,7 @@ static void load_world_file(World *mzx_world, char *name)
   }
 }
 
-static void load_world_selection(World *mzx_world)
+static void load_world_selection(struct world *mzx_world)
 {
   char world_name[512] = { 0 };
 
@@ -173,14 +173,14 @@ static void load_world_selection(World *mzx_world)
   }
 }
 
-static void update_player(World *mzx_world)
+static void update_player(struct world *mzx_world)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int player_x = mzx_world->player_x;
   int player_y = mzx_world->player_y;
   int board_width = src_board->board_width;
-  mzx_thing under_id =
-   (mzx_thing)src_board->level_under_id[player_x +
+  enum thing under_id =
+   (enum thing)src_board->level_under_id[player_x +
    (player_y * board_width)];
 
   // t1 = ID stood on
@@ -238,9 +238,9 @@ static void update_player(World *mzx_world)
 // Slowed = 1 to not update lazwall or time
 // due to slowtime or freezetime
 
-static void update_variables(World *mzx_world, int slowed)
+static void update_variables(struct world *mzx_world, int slowed)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int blind_dur = mzx_world->blind_dur;
   int firewalker_dur = mzx_world->firewalker_dur;
   int freeze_time_dur = mzx_world->freeze_time_dur;
@@ -335,12 +335,12 @@ static void update_variables(World *mzx_world, int slowed)
   // Done
 }
 
-static void set_3_mesg(World *mzx_world, const char *str1, int num,
+static void set_3_mesg(struct world *mzx_world, const char *str1, int num,
  const char *str2)
 {
   if(mzx_world->bi_mesg_status)
   {
-    Board *src_board = mzx_world->current_board;
+    struct board *src_board = mzx_world->current_board;
     sprintf(src_board->bottom_mesg, "%s%d%s", str1, num, str2);
     src_board->b_mesg_timer = MESG_TIMEOUT;
   }
@@ -366,12 +366,12 @@ static void set_3_mesg(World *mzx_world, const char *str1, int num,
 //
 //----------------------------
 
-static void game_settings(World *mzx_world)
+static void game_settings(struct world *mzx_world)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int mzx_speed, music, sfx;
   int music_volume, sound_volume, sfx_volume;
-  dialog di;
+  struct dialog di;
   int dialog_result;
   int speed_option = 0;
   int num_elements = 8;
@@ -385,7 +385,7 @@ static void game_settings(World *mzx_world)
   {
     "PC speaker SFX on", "PC speaker SFX off"
   };
-  element *elements[9];
+  struct element *elements[9];
 
   if(!mzx_world->lock_speed)
   {
@@ -467,9 +467,9 @@ static void game_settings(World *mzx_world)
   }
 }
 
-static void place_player(World *mzx_world, int x, int y, int dir)
+static void place_player(struct world *mzx_world, int x, int y, int dir)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   if((mzx_world->player_x != x) || (mzx_world->player_y != y))
   {
     id_remove_top(mzx_world, mzx_world->player_x, mzx_world->player_y);
@@ -481,9 +481,9 @@ static void place_player(World *mzx_world, int x, int y, int dir)
    (src_board->player_last_dir & 240) | (dir + 1);
 }
 
-static void give_potion(World *mzx_world, mzx_potion type)
+static void give_potion(struct world *mzx_world, enum potion type)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
   char *level_id = src_board->level_id;
@@ -512,7 +512,7 @@ static void give_potion(World *mzx_world, mzx_potion type)
     case POTION_BLAST:
     {
       int x, y, offset;
-      mzx_thing d_id;
+      enum thing d_id;
       int d_flag;
 
       // Set the placement rate
@@ -521,7 +521,7 @@ static void give_potion(World *mzx_world, mzx_potion type)
       {
         for(x = 0; x < board_width; x++, offset++)
         {
-          d_id = (mzx_thing)level_id[offset];
+          d_id = (enum thing)level_id[offset];
           d_flag = flags[d_id];
 
           if((d_flag & A_UNDER) && !(d_flag & A_ENTRANCE))
@@ -572,13 +572,13 @@ static void give_potion(World *mzx_world, mzx_potion type)
     case POTION_KILL:
     {
       int x, y, offset;
-      mzx_thing d_id;
+      enum thing d_id;
 
       for(y = 0, offset = 0; y < board_height; y++)
       {
         for(x = 0; x < board_width; x++, offset++)
         {
-          d_id = (mzx_thing)level_id[offset];
+          d_id = (enum thing)level_id[offset];
 
           if(is_enemy(d_id))
             id_remove_top(mzx_world, x, y);
@@ -636,14 +636,14 @@ static void give_potion(World *mzx_world, mzx_potion type)
 
     case POTION_SUMMON:
     {
-      mzx_thing d_id;
+      enum thing d_id;
       int x, y, offset;
 
       for(y = 0, offset = 0; y < board_height; y++)
       {
         for(x = 0; x < board_width; x++, offset++)
         {
-          d_id = (mzx_thing)level_id[offset];
+          d_id = (enum thing)level_id[offset];
           if(is_enemy(d_id))
           {
             level_id[offset] = (char)DRAGON;
@@ -704,8 +704,8 @@ static void give_potion(World *mzx_world, mzx_potion type)
   }
 }
 
-static void show_counter(World *mzx_world, const char *str, int x, int y,
- int skip_if_zero)
+static void show_counter(struct world *mzx_world, const char *str,
+ int x, int y, int skip_if_zero)
 {
   int counter_value = get_counter(mzx_world, str, 0);
   if((skip_if_zero) && (!counter_value))
@@ -716,7 +716,7 @@ static void show_counter(World *mzx_world, const char *str, int x, int y,
 }
 
 // Show status screen
-static void show_status(World *mzx_world)
+static void show_status(struct world *mzx_world)
 {
   int i;
   char temp[11];
@@ -775,10 +775,10 @@ static void show_status(World *mzx_world)
     write_string("-B-", 59, 21, 25, 0);
 }
 
-__editor_maybe_static void draw_viewport(World *mzx_world)
+__editor_maybe_static void draw_viewport(struct world *mzx_world)
 {
   int i, i2;
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int viewport_x = src_board->viewport_x;
   int viewport_y = src_board->viewport_y;
   int viewport_width = src_board->viewport_width;
@@ -883,14 +883,14 @@ __editor_maybe_static void draw_viewport(World *mzx_world)
 }
 
 // Returns non-0 to skip all keys this cycle
-static int update(World *mzx_world, int game, int *fadein)
+static int update(struct world *mzx_world, int game, int *fadein)
 {
   int start_ticks = get_ticks();
   int time_remaining;
   static int reload = 0;
   static int slowed = 0; // Flips between 0 and 1 during slow_time
   char tmp_str[10];
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int volume = src_board->volume;
   int volume_inc = src_board->volume_inc;
   int volume_target = src_board->volume_target;
@@ -1194,7 +1194,7 @@ static int update(World *mzx_world, int game, int *fadein)
         mzx_world->target_board = d_board;
         mzx_world->target_where = TARGET_ENTRANCE;
         mzx_world->target_color = level_under_color[d_offset];
-        mzx_world->target_id = (mzx_thing)level_under_id[d_offset];
+        mzx_world->target_id = (enum thing)level_under_id[d_offset];
       }
     }
 
@@ -1467,12 +1467,12 @@ static int update(World *mzx_world, int game, int *fadein)
     if(mzx_world->clear_on_exit)
     {
       int offset;
-      mzx_thing d_id;
+      enum thing d_id;
 
       src_board->b_mesg_timer = 0;
       for(offset = 0; offset < (board_width * board_height); offset++)
       {
-        d_id = (mzx_thing)level_id[offset];
+        d_id = (enum thing)level_id[offset];
         if((d_id == SHOOTING_FIRE) || (d_id == BULLET))
           offs_remove_id(mzx_world, offset);
       }
@@ -1515,8 +1515,8 @@ static int update(World *mzx_world, int game, int *fadein)
       int tmp_x[5];
       int tmp_y[5];
       int x, y, offset;
-      mzx_thing d_id;
-      mzx_thing target_id = mzx_world->target_id;
+      enum thing d_id;
+      enum thing target_id = mzx_world->target_id;
       int target_color = mzx_world->target_color;
 
       // Entrance
@@ -1542,7 +1542,7 @@ static int update(World *mzx_world, int game, int *fadein)
       {
         for(x = 0; x < board_width; x++, offset++)
         {
-          d_id = (mzx_thing)level_id[offset];
+          d_id = (enum thing)level_id[offset];
 
           if(d_id == PLAYER)
           {
@@ -1551,7 +1551,7 @@ static int update(World *mzx_world, int game, int *fadein)
             mzx_world->player_y = y;
             id_remove_top(mzx_world, x, y);
             // Grab again - might have revealed an entrance
-            d_id = (mzx_thing)level_id[offset];
+            d_id = (enum thing)level_id[offset];
           }
 
           if(is_whirlpool(d_id))
@@ -1656,7 +1656,7 @@ static int update(World *mzx_world, int game, int *fadein)
      (saved_player_last_dir & 0xF0);
 
     // ...and if player ended up on ICE, set last dir pressed as well
-    if((mzx_thing)level_under_id[mzx_world->player_x +
+    if((enum thing)level_under_id[mzx_world->player_x +
      (mzx_world->player_y * board_width)] == ICE)
     {
       src_board->player_last_dir = saved_player_last_dir;
@@ -1681,7 +1681,7 @@ static int update(World *mzx_world, int game, int *fadein)
   return 0;
 }
 
-static void focus_on_player(World *mzx_world)
+static void focus_on_player(struct world *mzx_world)
 {
   int player_x   = mzx_world->player_x;
   int player_y   = mzx_world->player_y;
@@ -1695,13 +1695,13 @@ static void focus_on_player(World *mzx_world)
   focus_screen(player_x - top_x + viewport_x, player_y - top_y + viewport_y);
 }
 
-__editor_maybe_static void play_game(World *mzx_world, int fadein)
+__editor_maybe_static void play_game(struct world *mzx_world, int fadein)
 {
   // We have the world loaded, on the proper scene.
   // We are faded out. Commence playing!
   int key = -1;
   char keylbl[5] = "KEY?";
-  Board *src_board;
+  struct board *src_board;
 
   // Main game loop
   // Mouse remains hidden unless menu/etc. is invoked
@@ -2085,13 +2085,13 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
   clear_sfx_queue();
 }
 
-void title_screen(World *mzx_world)
+void title_screen(struct world *mzx_world)
 {
   int fadein = 1;
   int key = 0;
   int fade;
   struct stat file_info;
-  Board *src_board;
+  struct board *src_board;
   char *current_dir;
 
 #ifdef CONFIG_EDITOR
@@ -2543,7 +2543,7 @@ void title_screen(World *mzx_world)
   free(current_dir);
 }
 
-void set_mesg(World *mzx_world, const char *str)
+void set_mesg(struct world *mzx_world, const char *str)
 {
   if(mzx_world->bi_mesg_status)
   {
@@ -2551,7 +2551,7 @@ void set_mesg(World *mzx_world, const char *str)
   }
 }
 
-void set_mesg_direct(Board *src_board, const char *str)
+void set_mesg_direct(struct board *src_board, const char *str)
 {
   char *bottom_mesg = src_board->bottom_mesg;
 
@@ -2569,9 +2569,9 @@ void set_mesg_direct(Board *src_board, const char *str)
 }
 
 // Rotate an area
-void rotate(World *mzx_world, int x, int y, int dir)
+void rotate(struct world *mzx_world, int x, int y, int dir)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   char *offsp = cw_offs;
   int offs[8];
   int offset, i;
@@ -2581,9 +2581,9 @@ void rotate(World *mzx_world, int x, int y, int dir)
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
   char *level_color = src_board->level_color;
-  mzx_thing id;
+  enum thing id;
   char param, color;
-  mzx_thing cur_id;
+  enum thing cur_id;
   int d_flag;
   int cur_offset, next_offset;
 
@@ -2615,7 +2615,7 @@ void rotate(World *mzx_world, int x, int y, int dir)
 
   for(i = 0; i < 8; i++)
   {
-    cur_id = (mzx_thing)level_id[offset + offs[i]];
+    cur_id = (enum thing)level_id[offset + offs[i]];
     if((flags[(int)cur_id] & A_UNDER) && (cur_id != GOOP))
       break;
   }
@@ -2624,7 +2624,7 @@ void rotate(World *mzx_world, int x, int y, int dir)
   {
     for(i = 0; i < 8; i++)
     {
-      cur_id = (mzx_thing)level_id[offset + offs[i]];
+      cur_id = (enum thing)level_id[offset + offs[i]];
       d_flag = flags[(int)cur_id];
 
       if((!(d_flag & A_PUSHABLE) || (d_flag & A_SPEC_PUSH)) &&
@@ -2637,7 +2637,7 @@ void rotate(World *mzx_world, int x, int y, int dir)
     if(i == 8)
     {
       cur_offset = offset + offs[0];
-      id = (mzx_thing)level_id[cur_offset];
+      id = (enum thing)level_id[cur_offset];
       color = level_color[cur_offset];
       param = level_param[cur_offset];
 
@@ -2671,7 +2671,7 @@ void rotate(World *mzx_world, int x, int y, int dir)
 
       cur_offset = offset + offs[ccw];
       next_offset = offset + offs[i];
-      cur_id = (mzx_thing)level_id[cur_offset];
+      cur_id = (enum thing)level_id[cur_offset];
       d_flag = flags[(int)cur_id];
 
       if(((d_flag & A_PUSHABLE) || (d_flag & A_SPEC_PUSH)) &&
@@ -2688,7 +2688,7 @@ void rotate(World *mzx_world, int x, int y, int dir)
         i = ccw;
         while(i != cw)
         {
-          cur_id = (mzx_thing)level_id[offset + offs[i]];
+          cur_id = (enum thing)level_id[offset + offs[i]];
           if((flags[(int)cur_id] & A_UNDER) && (cur_id != GOOP))
             break;
 
@@ -2701,9 +2701,9 @@ void rotate(World *mzx_world, int x, int y, int dir)
   }
 }
 
-void calculate_xytop(World *mzx_world, int *x, int *y)
+void calculate_xytop(struct world *mzx_world, int *x, int *y)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int nx, ny;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
@@ -2758,9 +2758,9 @@ void calculate_xytop(World *mzx_world, int *x, int *y)
 }
 
 // Returns 1 if didn't move
-int move_player(World *mzx_world, int dir)
+int move_player(struct world *mzx_world, int dir)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   // Dir is from 0 to 3
   int player_x = mzx_world->player_x;
   int player_y = mzx_world->player_y;
@@ -2841,7 +2841,7 @@ int move_player(World *mzx_world, int dir)
   {
     // Not edge
     int d_offset = new_x + (new_y * src_board->board_width);
-    mzx_thing d_id = (mzx_thing)src_board->level_id[d_offset];
+    enum thing d_id = (enum thing)src_board->level_id[d_offset];
     int d_flag = flags[(int)d_id];
 
     if(d_flag & A_SPEC_STOOD)
@@ -2880,7 +2880,7 @@ int move_player(World *mzx_world, int dir)
     if((d_flag & A_ITEM) && (d_id != ROBOT_PUSHABLE))
     {
       // Item
-      mzx_thing d_under_id = (mzx_thing)mzx_world->under_player_id;
+      enum thing d_under_id = (enum thing)mzx_world->under_player_id;
       char d_under_color = mzx_world->under_player_color;
       char d_under_param = mzx_world->under_player_param;
       int grab_result = grab_item(mzx_world, d_offset, dir);
@@ -2985,11 +2985,11 @@ int move_player(World *mzx_world, int dir)
   return 1;
 }
 
-int grab_item(World *mzx_world, int offset, int dir)
+int grab_item(struct world *mzx_world, int offset, int dir)
 {
   // Dir is for transporter
-  Board *src_board = mzx_world->current_board;
-  mzx_thing id = (mzx_thing)src_board->level_id[offset];
+  struct board *src_board = mzx_world->current_board;
+  enum thing id = (enum thing)src_board->level_id[offset];
   char param = src_board->level_param[offset];
   char color = src_board->level_color[offset];
   int remove = 0;
@@ -3012,7 +3012,7 @@ int grab_item(World *mzx_world, int offset, int dir)
       play_sfx(mzx_world, 41);
       item = ((param & 240) >> 4); // Amount for most things
 
-      switch((mzx_chest_contents)(param & 15))
+      switch((enum chest_contents)(param & 15))
       {
         case ITEM_KEY: // Key
         {
@@ -3091,7 +3091,7 @@ int grab_item(World *mzx_world, int offset, int dir)
             return 0;
 
           src_board->level_param[offset] = 0;
-          give_potion(mzx_world, (mzx_potion)item);
+          give_potion(mzx_world, (enum potion)item);
           break;
         }
 
@@ -3108,7 +3108,7 @@ int grab_item(World *mzx_world, int offset, int dir)
             return 0;
 
           src_board->level_param[offset] = 0;
-          give_potion(mzx_world, (mzx_potion)item);
+          give_potion(mzx_world, (enum potion)item);
           break;
         }
 
@@ -3160,7 +3160,7 @@ int grab_item(World *mzx_world, int offset, int dir)
     case RING:
     case POTION:
     {
-      give_potion(mzx_world, (mzx_potion)param);
+      give_potion(mzx_world, (enum potion)param);
       remove = 1;
       break;
     }
@@ -3483,9 +3483,9 @@ int grab_item(World *mzx_world, int offset, int dir)
   return remove; // Not grabbed
 }
 
-void find_player(World *mzx_world)
+void find_player(struct world *mzx_world)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
   char *level_id = src_board->level_id;
@@ -3497,14 +3497,14 @@ void find_player(World *mzx_world)
   if(mzx_world->player_y >= board_height)
     mzx_world->player_y = 0;
 
-  if((mzx_thing)level_id[mzx_world->player_x +
+  if((enum thing)level_id[mzx_world->player_x +
    (mzx_world->player_y * board_width)] != PLAYER)
   {
     for(dy = 0, offset = 0; dy < board_height; dy++)
     {
       for(dx = 0; dx < board_width; dx++, offset++)
       {
-        if((mzx_thing)level_id[offset] == PLAYER)
+        if((enum thing)level_id[offset] == PLAYER)
         {
           mzx_world->player_x = dx;
           mzx_world->player_y = dy;
@@ -3517,7 +3517,7 @@ void find_player(World *mzx_world)
   }
 }
 
-int take_key(World *mzx_world, int color)
+int take_key(struct world *mzx_world, int color)
 {
   int i;
   char *keys = mzx_world->keys;
@@ -3539,7 +3539,7 @@ int take_key(World *mzx_world, int color)
 }
 
 // Give a key. Returns non-0 if no room.
-int give_key(World *mzx_world, int color)
+int give_key(struct world *mzx_world, int color)
 {
   int i;
   char *keys = mzx_world->keys;

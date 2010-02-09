@@ -36,30 +36,26 @@ __M_BEGIN_DECLS
 #include "modplug.h"
 #endif
 
-typedef struct _audio_stream audio_stream;
-
-struct _audio_stream
+struct audio_stream
 {
-  struct _audio_stream *next;
-  struct _audio_stream *previous;
+  struct audio_stream *next;
+  struct audio_stream *previous;
   Uint32 volume;
   Uint32 repeat;
-  Uint32 (* mix_data)(audio_stream *a_src, Sint32 *buffer,
+  Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer,
    Uint32 len);
-  void (* set_volume)(audio_stream *a_src, Uint32 volume);
-  void (* set_repeat)(audio_stream *a_src, Uint32 repeat);
-  void (* set_order)(audio_stream *a_src, Uint32 order);
-  void (* set_position)(audio_stream *a_src, Uint32 pos);
-  Uint32 (* get_order)(audio_stream *a_src);
-  Uint32 (* get_position)(audio_stream *a_src);
-  void (* destruct)(audio_stream *a_src);
+  void (* set_volume)(struct audio_stream *a_src, Uint32 volume);
+  void (* set_repeat)(struct audio_stream *a_src, Uint32 repeat);
+  void (* set_order)(struct audio_stream *a_src, Uint32 order);
+  void (* set_position)(struct audio_stream *a_src, Uint32 pos);
+  Uint32 (* get_order)(struct audio_stream *a_src);
+  Uint32 (* get_position)(struct audio_stream *a_src);
+  void (* destruct)(struct audio_stream *a_src);
 };
 
-typedef struct _sampled_stream sampled_stream;
-
-struct _sampled_stream
+struct sampled_stream
 {
-  audio_stream a;
+  struct audio_stream a;
   Uint32 frequency;
   Sint16 *output_data;
   Uint32 data_window_length;
@@ -72,13 +68,13 @@ struct _sampled_stream
   Uint32 use_volume;
   Sint64 frequency_delta;
   Sint64 sample_index;
-  void (* set_frequency)(sampled_stream *s_src, Uint32 frequency);
-  Uint32 (* get_frequency)(sampled_stream *s_src);
+  void (* set_frequency)(struct sampled_stream *s_src, Uint32 frequency);
+  Uint32 (* get_frequency)(struct sampled_stream *s_src);
 };
 
-typedef struct
+struct pc_speaker_stream
 {
-  audio_stream a;
+  struct audio_stream a;
   Uint32 volume;
   Uint32 playing;
   Uint32 frequency;
@@ -88,9 +84,9 @@ typedef struct
   Uint32 last_playing;
   Uint32 sample_cutoff;
   Uint32 last_increment_buffer;
-} pc_speaker_stream;
+};
 
-typedef struct
+struct audio
 {
 #ifdef CONFIG_MODPLUG
   // for config.txt settings only
@@ -104,10 +100,10 @@ typedef struct
   Uint32 output_frequency;
   Uint32 master_resample_mode;
 
-  audio_stream *primary_stream;
-  pc_speaker_stream *pcs_stream;
-  audio_stream *stream_list_base;
-  audio_stream *stream_list_end;
+  struct audio_stream *primary_stream;
+  struct pc_speaker_stream *pcs_stream;
+  struct audio_stream *stream_list_base;
+  struct audio_stream *stream_list_end;
 
   platform_mutex audio_mutex;
 
@@ -116,11 +112,11 @@ typedef struct
   Uint32 music_volume;
   Uint32 sound_volume;
   Uint32 sfx_volume;
-} audio_struct;
+};
 
-extern audio_struct audio;
+extern struct audio audio;
 
-CORE_LIBSPEC void init_audio(config_info *conf);
+CORE_LIBSPEC void init_audio(struct config_info *conf);
 CORE_LIBSPEC void quit_audio(void);
 CORE_LIBSPEC void load_module(char *filename);
 CORE_LIBSPEC void end_module(void);
@@ -153,7 +149,7 @@ void set_sound_volume(int volume);
 void set_sfx_volume(int volume);
 
 void audio_callback(Sint16 *stream, int len);
-void init_audio_platform(config_info *conf);
+void init_audio_platform(struct config_info *conf);
 void quit_audio_platform(void);
 
 #ifdef CONFIG_MODPLUG
@@ -168,23 +164,23 @@ int check_ext_for_gdm_and_convert(const char *filename, char *new_file);
 
 #if defined(CONFIG_MODPLUG) || defined(CONFIG_MIKMOD)
 
-void sampled_set_buffer(sampled_stream *s_src);
-void sampled_mix_data(sampled_stream *s_src, Sint32 *dest_buffer,
+void sampled_set_buffer(struct sampled_stream *s_src);
+void sampled_mix_data(struct sampled_stream *s_src, Sint32 *dest_buffer,
  Uint32 len);
-void sampled_destruct(audio_stream *a_src);
-void initialize_sampled_stream(sampled_stream *s_src,
-void (* set_frequency)(sampled_stream *s_src, Uint32 frequency),
- Uint32 (* get_frequency)(sampled_stream *s_src),
+void sampled_destruct(struct audio_stream *a_src);
+void initialize_sampled_stream(struct sampled_stream *s_src,
+void (* set_frequency)(struct sampled_stream *s_src, Uint32 frequency),
+ Uint32 (* get_frequency)(struct sampled_stream *s_src),
  Uint32 frequency, Uint32 channels, Uint32 use_volume);
-void construct_audio_stream(audio_stream *a_src,
- Uint32 (* mix_data)(audio_stream *a_src, Sint32 *buffer, Uint32 len),
- void (* set_volume)(audio_stream *a_src, Uint32 volume),
- void (* set_repeat)(audio_stream *a_src, Uint32 repeat),
- void (* set_order)(audio_stream *a_src, Uint32 order),
- void (* set_position)(audio_stream *a_src, Uint32 pos),
- Uint32 (* get_order)(audio_stream *a_src),
- Uint32 (* get_position)(audio_stream *a_src),
- void (* destruct)(audio_stream *a_src),
+void construct_audio_stream(struct audio_stream *a_src,
+ Uint32 (* mix_data)(struct audio_stream *a_src, Sint32 *buffer, Uint32 len),
+ void (* set_volume)(struct audio_stream *a_src, Uint32 volume),
+ void (* set_repeat)(struct audio_stream *a_src, Uint32 repeat),
+ void (* set_order)(struct audio_stream *a_src, Uint32 order),
+ void (* set_position)(struct audio_stream *a_src, Uint32 pos),
+ Uint32 (* get_order)(struct audio_stream *a_src),
+ Uint32 (* get_position)(struct audio_stream *a_src),
+ void (* destruct)(struct audio_stream *a_src),
  Uint32 volume, Uint32 repeat);
 
 #endif // CONFIG_MODPLUG || CONFIG_MIKMOD
@@ -193,7 +189,7 @@ void construct_audio_stream(audio_stream *a_src,
 
 #else // !CONFIG_AUDIO
 
-static inline void init_audio(config_info *conf) {}
+static inline void init_audio(struct config_info *conf) {}
 static inline void quit_audio(void) {}
 static inline void set_music_volume(int volume) {}
 static inline void set_sound_volume(int volume) {}

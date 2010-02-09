@@ -26,48 +26,52 @@ __M_BEGIN_DECLS
 
 #include "graphics.h"
 
-extern void (*set_colors8[4])(graphics_data *graphics,
+extern void (*set_colors8[4])(struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg);
-extern void (*set_colors16[4])(graphics_data *graphics,
+extern void (*set_colors16[4])(struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg);
-extern void (*set_colors32[4])(graphics_data *graphics,
+extern void (*set_colors32[4])(struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg);
 #ifdef CONFIG_RENDER_YUV
-extern void (*yuv2_set_colors[4])(graphics_data *graphics,
+extern void (*yuv2_set_colors[4])(struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg);
 #endif
 
-void render_graph8(Uint8 *pixels, Uint32 pitch, graphics_data *graphics,
- void (*set_colors)(graphics_data *, Uint32 *, Uint8, Uint8));
-void render_graph16(Uint16 *pixels, Uint32 pitch, graphics_data *graphics,
- void (*set_colors)(graphics_data *, Uint32 *, Uint8, Uint8));
-void render_graph32(Uint32 *pixels, Uint32 pitch, graphics_data *graphics,
- void (*set_colors)(graphics_data *, Uint32 *, Uint8, Uint8));
-void render_graph32s(Uint32 *pixels, Uint32 pitch, graphics_data *graphics,
- void (*set_colors)(graphics_data *, Uint32 *, Uint8, Uint8));
+void render_graph8(Uint8 *pixels, Uint32 pitch,
+ struct graphics_data *graphics,
+ void (*set_colors)(struct graphics_data *, Uint32 *, Uint8, Uint8));
+void render_graph16(Uint16 *pixels, Uint32 pitch,
+ struct graphics_data *graphics,
+ void (*set_colors)(struct graphics_data *, Uint32 *, Uint8, Uint8));
+void render_graph32(Uint32 *pixels, Uint32 pitch,
+ struct graphics_data *graphics,
+ void (*set_colors)(struct graphics_data *, Uint32 *, Uint8, Uint8));
+void render_graph32s(Uint32 *pixels, Uint32 pitch,
+ struct graphics_data *graphics,
+ void (*set_colors)(struct graphics_data *, Uint32 *, Uint8, Uint8));
 
 void render_cursor(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
  Uint32 color, Uint8 lines, Uint8 offset);
 void render_mouse(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
  Uint32 mask, Uint8 w, Uint8 h);
 
-void get_screen_coords_centered(graphics_data *graphics, int screen_x,
+void get_screen_coords_centered(struct graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);
-void set_screen_coords_centered(graphics_data *graphics, int x, int y,
+void set_screen_coords_centered(struct graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y);
 
 #if defined(CONFIG_RENDER_GL) || defined(CONFIG_RENDER_YUV)
 
-void get_screen_coords_scaled(graphics_data *graphics, int screen_x,
+void get_screen_coords_scaled(struct graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);
-void set_screen_coords_scaled(graphics_data *graphics, int x, int y,
+void set_screen_coords_scaled(struct graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y);
 void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
- ratio_type_t ratio);
+ enum ratio_type ratio);
 
 #endif // CONFIG_RENDER_GL || CONFIG_RENDER_YUV
 
-void resize_screen_standard(graphics_data *graphics, int w, int h);
+void resize_screen_standard(struct graphics_data *graphics, int w, int h);
 
 __M_END_DECLS
 

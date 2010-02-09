@@ -27,17 +27,17 @@
 
 #include <string.h>
 
-static Board *load_board_allocate_direct(FILE *fp, int savegame)
+static struct board *load_board_allocate_direct(FILE *fp, int savegame)
 {
-  Board *cur_board = malloc(sizeof(Board));
+  struct board *cur_board = malloc(sizeof(struct board));
   load_board_direct(cur_board, fp, savegame);
   fread(cur_board->board_name, 25, 1, fp);
   return cur_board;
 }
 
-void replace_current_board(World *mzx_world, char *name)
+void replace_current_board(struct world *mzx_world, char *name)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   FILE *input_mzb = fopen(name, "rb");
   int first_byte = fgetc(input_mzb);
   char version_string[4];
@@ -72,9 +72,9 @@ void replace_current_board(World *mzx_world, char *name)
   fclose(input_mzb);
 }
 
-Board *create_blank_board(void)
+struct board *create_blank_board(void)
 {
-  Board *cur_board = malloc(sizeof(Board));
+  struct board *cur_board = malloc(sizeof(struct board));
   int i;
 
   cur_board->size = 0;
@@ -138,14 +138,14 @@ Board *create_blank_board(void)
   cur_board->num_robots = 0;
   cur_board->num_robots_active = 0;
   cur_board->num_robots_allocated = 0;
-  cur_board->robot_list = malloc(sizeof(Robot *));
+  cur_board->robot_list = malloc(sizeof(struct robot *));
   cur_board->robot_list_name_sorted = NULL;
   cur_board->num_scrolls = 0;
   cur_board->num_scrolls_allocated = 0;
-  cur_board->scroll_list = malloc(sizeof(Scroll *));
+  cur_board->scroll_list = malloc(sizeof(struct scroll *));
   cur_board->num_sensors = 0;
   cur_board->num_sensors_allocated = 0;
-  cur_board->sensor_list = malloc(sizeof(Sensor *));
+  cur_board->sensor_list = malloc(sizeof(struct sensor *));
 
   memset(cur_board->level_id, 0, 100 * 100);
   memset(cur_board->level_color, 7, 100 * 100);
@@ -161,7 +161,7 @@ Board *create_blank_board(void)
   return cur_board;
 }
 
-void save_board_file(Board *cur_board, char *name)
+void save_board_file(struct board *cur_board, char *name)
 {
   FILE *board_file = fopen(name, "wb");
 
@@ -181,7 +181,7 @@ void save_board_file(Board *cur_board, char *name)
   }
 }
 
-void change_board_size(Board *src_board, int new_width, int new_height)
+void change_board_size(struct board *src_board, int new_width, int new_height)
 {
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;

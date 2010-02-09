@@ -43,7 +43,7 @@ struct mzx_resource
  * them and we try to allow compilation with that compiler.
  *
  * As a result, these must be in exactly the same order as the
- * mzx_resource_id_t enumeration defines them.
+ * enum resource_id enumeration defines them.
  */
 static struct mzx_resource mzx_res[] = {
   { CONFFILE,          NULL },
@@ -170,7 +170,7 @@ void mzx_res_free(void)
       free(mzx_res[i].path);
 }
 
-char *mzx_res_get_by_id(mzx_resource_id_t id)
+char *mzx_res_get_by_id(enum resource_id id)
 {
   return mzx_res[id].path;
 }

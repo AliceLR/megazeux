@@ -26,10 +26,10 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-CORE_LIBSPEC void save_mzm(World *mzx_world, char *name, int start_x, int start_y,
- int width, int height, int mode, int savegame);
-CORE_LIBSPEC int load_mzm(World *mzx_world, char *name, int start_x, int start_y,
- int mode, int savegame);
+CORE_LIBSPEC void save_mzm(struct world *mzx_world, char *name,
+ int start_x, int start_y, int width, int height, int mode, int savegame);
+CORE_LIBSPEC int load_mzm(struct world *mzx_world, char *name,
+ int start_x, int start_y, int mode, int savegame);
 
 __M_END_DECLS
 

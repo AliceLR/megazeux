@@ -25,11 +25,9 @@
 
 __M_BEGIN_DECLS
 
-typedef struct _editor_config_info editor_config_info;
-
 #include "macro.h"
 
-struct _editor_config_info
+struct editor_config_info
 {
   // Board editor options
   int editor_space_toggles;
@@ -52,16 +50,16 @@ struct _editor_config_info
   char default_macros[5][64];
   int num_extended_macros;
   int num_macros_allocated;
-  ext_macro **extended_macros;
+  struct ext_macro **extended_macros;
 };
 
-typedef void (* editor_config_function)(editor_config_info *conf,
+typedef void (* editor_config_function)(struct editor_config_info *conf,
  char *name, char *value, char *extended_data);
 
-void set_editor_config_from_file(editor_config_info *conf,
+void set_editor_config_from_file(struct editor_config_info *conf,
  const char *conf_file_name);
-void default_editor_config(editor_config_info *conf);
-void set_editor_config_from_command_line(editor_config_info *conf,
+void default_editor_config(struct editor_config_info *conf);
+void set_editor_config_from_command_line(struct editor_config_info *conf,
  int argc, char *argv[]);
 
 __M_END_DECLS

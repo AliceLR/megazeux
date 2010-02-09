@@ -44,9 +44,9 @@
 #define ROBOT_START_STACK 4
 #define ROBOT_MAX_STACK   65536
 
-Robot *load_robot_allocate(FILE *fp, int savegame)
+struct robot *load_robot_allocate(FILE *fp, int savegame)
 {
-  Robot *cur_robot = malloc(sizeof(Robot));
+  struct robot *cur_robot = malloc(sizeof(struct robot));
   load_robot(cur_robot, fp, savegame);
 
   return cur_robot;
@@ -54,7 +54,7 @@ Robot *load_robot_allocate(FILE *fp, int savegame)
 
 // Most of this stuff does not have to be loaded unless savegame
 // is set.
-void load_robot(Robot *cur_robot, FILE *fp, int savegame)
+void load_robot(struct robot *cur_robot, FILE *fp, int savegame)
 {
   int program_size = fgetw(fp);
   int i;
@@ -71,9 +71,9 @@ void load_robot(Robot *cur_robot, FILE *fp, int savegame)
   cur_robot->bullet_type = fgetc(fp);
   cur_robot->is_locked = fgetc(fp);
   cur_robot->can_lavawalk = fgetc(fp);
-  cur_robot->walk_dir = (mzx_dir)fgetc(fp);
-  cur_robot->last_touch_dir = (mzx_dir)fgetc(fp);
-  cur_robot->last_shot_dir = (mzx_dir)fgetc(fp);
+  cur_robot->walk_dir = (enum dir)fgetc(fp);
+  cur_robot->last_touch_dir = (enum dir)fgetc(fp);
+  cur_robot->last_shot_dir = (enum dir)fgetc(fp);
   cur_robot->xpos = fgetw(fp);
   cur_robot->ypos = fgetw(fp);
   cur_robot->status = fgetc(fp);
@@ -121,10 +121,13 @@ void load_robot(Robot *cur_robot, FILE *fp, int savegame)
 
   // Now create a label cache IF the robot is in use
   if(cur_robot->used)
-    cur_robot->label_list = cache_robot_labels(cur_robot, &(cur_robot->num_labels));
+  {
+    cur_robot->label_list =
+     cache_robot_labels(cur_robot, &(cur_robot->num_labels));
+  }
 }
 
-static void robot_stack_push(Robot *cur_robot, int value)
+static void robot_stack_push(struct robot *cur_robot, int value)
 {
   int stack_pointer = cur_robot->stack_pointer;
   int stack_size = cur_robot->stack_size;
@@ -145,7 +148,7 @@ static void robot_stack_push(Robot *cur_robot, int value)
   cur_robot->stack_pointer = stack_pointer + 1;
 }
 
-static int robot_stack_pop(Robot *cur_robot)
+static int robot_stack_pop(struct robot *cur_robot)
 {
   int stack_pointer = cur_robot->stack_pointer;
 
@@ -161,7 +164,7 @@ static int robot_stack_pop(Robot *cur_robot)
   }
 }
 
-static void load_scroll(Scroll *cur_scroll, FILE *fp, int savegame)
+static void load_scroll(struct scroll *cur_scroll, FILE *fp, int savegame)
 {
   int scroll_size;
 
@@ -176,15 +179,15 @@ static void load_scroll(Scroll *cur_scroll, FILE *fp, int savegame)
   fread(cur_scroll->mesg, scroll_size, 1, fp);
 }
 
-Scroll *load_scroll_allocate(FILE *fp, int savegame)
+struct scroll *load_scroll_allocate(FILE *fp, int savegame)
 {
-  Scroll *cur_scroll = malloc(sizeof(Scroll));
+  struct scroll *cur_scroll = malloc(sizeof(struct scroll));
   load_scroll(cur_scroll, fp, savegame);
 
   return cur_scroll;
 }
 
-static void load_sensor(Sensor *cur_sensor, FILE *fp, int savegame)
+static void load_sensor(struct sensor *cur_sensor, FILE *fp, int savegame)
 {
   fread(cur_sensor->sensor_name, 15, 1, fp);
   cur_sensor->sensor_char = fgetc(fp);
@@ -193,15 +196,15 @@ static void load_sensor(Sensor *cur_sensor, FILE *fp, int savegame)
   cur_sensor->used = fgetc(fp);
 }
 
-Sensor *load_sensor_allocate(FILE *fp, int savegame)
+struct sensor *load_sensor_allocate(FILE *fp, int savegame)
 {
-  Sensor *cur_sensor = malloc(sizeof(Sensor));
+  struct sensor *cur_sensor = malloc(sizeof(struct sensor));
   load_sensor(cur_sensor, fp, savegame);
 
   return cur_sensor;
 }
 
-void save_robot(Robot *cur_robot, FILE *fp, int savegame)
+void save_robot(struct robot *cur_robot, FILE *fp, int savegame)
 {
   int program_size = cur_robot->program_length;
   int i;
@@ -277,7 +280,7 @@ void save_robot(Robot *cur_robot, FILE *fp, int savegame)
   fwrite(cur_robot->program, program_size, 1, fp);
 }
 
-void save_scroll(Scroll *cur_scroll, FILE *fp, int savegame)
+void save_scroll(struct scroll *cur_scroll, FILE *fp, int savegame)
 {
   int scroll_size = cur_scroll->mesg_size;
 
@@ -289,7 +292,7 @@ void save_scroll(Scroll *cur_scroll, FILE *fp, int savegame)
   fwrite(cur_scroll->mesg, scroll_size, 1, fp);
 }
 
-void save_sensor(Sensor *cur_sensor, FILE *fp, int savegame)
+void save_sensor(struct sensor *cur_sensor, FILE *fp, int savegame)
 {
   fwrite(cur_sensor->sensor_name, 15, 1, fp);
   fputc(cur_sensor->sensor_char, fp);
@@ -297,7 +300,7 @@ void save_sensor(Sensor *cur_sensor, FILE *fp, int savegame)
   fputc(cur_sensor->used, fp);
 }
 
-void clear_robot(Robot *cur_robot)
+void clear_robot(struct robot *cur_robot)
 {
   if(cur_robot->used)
     clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
@@ -306,7 +309,7 @@ void clear_robot(Robot *cur_robot)
   free(cur_robot);
 }
 
-void clear_robot_contents(Robot *cur_robot)
+void clear_robot_contents(struct robot *cur_robot)
 {
   if(cur_robot->used)
     clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
@@ -314,20 +317,20 @@ void clear_robot_contents(Robot *cur_robot)
   free(cur_robot->program);
 }
 
-void clear_scroll(Scroll *cur_scroll)
+void clear_scroll(struct scroll *cur_scroll)
 {
   free(cur_scroll->mesg);
   free(cur_scroll);
 }
 
 // Does not remove entry from the normal list
-static void remove_robot_name_entry(Board *src_board, Robot *cur_robot,
- char *name)
+static void remove_robot_name_entry(struct board *src_board,
+ struct robot *cur_robot, char *name)
 {
   // Find the position
   int first, last;
   int active = src_board->num_robots_active;
-  Robot **name_list = src_board->robot_list_name_sorted;
+  struct robot **name_list = src_board->robot_list_name_sorted;
 
   find_robot(src_board, name, &first, &last);
 
@@ -341,14 +344,14 @@ static void remove_robot_name_entry(Board *src_board, Robot *cur_robot,
   if(first != active)
   {
     memmove(name_list + first, name_list + first + 1,
-     (active - first) * sizeof(Robot *));
+     (active - first) * sizeof(struct robot *));
   }
   src_board->num_robots_active = active;
 }
 
-void clear_robot_id(Board *src_board, int id)
+void clear_robot_id(struct board *src_board, int id)
 {
-  Robot *cur_robot = src_board->robot_list[id];
+  struct robot *cur_robot = src_board->robot_list[id];
 
   if(id)
   {
@@ -363,30 +366,30 @@ void clear_robot_id(Board *src_board, int id)
   }
 }
 
-void clear_scroll_id(Board *src_board, int id)
+void clear_scroll_id(struct board *src_board, int id)
 {
   clear_scroll(src_board->scroll_list[id]);
   src_board->scroll_list[id] = NULL;
 }
 
-void clear_sensor_id(Board *src_board, int id)
+void clear_sensor_id(struct board *src_board, int id)
 {
   clear_sensor(src_board->sensor_list[id]);
   src_board->sensor_list[id] = NULL;
 }
 
-void clear_sensor(Sensor *cur_sensor)
+void clear_sensor(struct sensor *cur_sensor)
 {
   free(cur_sensor);
 }
 
-void reallocate_robot(Robot *robot, int size)
+void reallocate_robot(struct robot *robot, int size)
 {
   robot->program = realloc(robot->program, size);
   robot->program_length = size;
 }
 
-void reallocate_scroll(Scroll *scroll, int size)
+void reallocate_scroll(struct scroll *scroll, int size)
 {
   scroll->mesg = realloc(scroll->mesg, size);
   scroll->mesg_size = size;
@@ -394,8 +397,8 @@ void reallocate_scroll(Scroll *scroll, int size)
 
 static int cmp_labels(const void *dest, const void *src)
 {
-  Label *lsrc = *((Label **)src);
-  Label *ldest = *((Label **)dest);
+  struct label *lsrc = *((struct label **)src);
+  struct label *ldest = *((struct label **)dest);
   int cmp_primary = strcasecmp(ldest->name, lsrc->name);
 
   // A match needs to go on a secondary criteria.
@@ -412,7 +415,7 @@ static int cmp_labels(const void *dest, const void *src)
   }
 }
 
-Label **cache_robot_labels(Robot *robot, int *num_labels)
+struct label **cache_robot_labels(struct robot *robot, int *num_labels)
 {
   int labels_allocated = 16;
   int labels_found = 0;
@@ -421,8 +424,8 @@ Label **cache_robot_labels(Robot *robot, int *num_labels)
   int i;
 
   char *robot_program = robot->program;
-  Label **label_list = calloc(16, sizeof(Label *));
-  Label *current_label;
+  struct label **label_list = calloc(16, sizeof(struct label *));
+  struct label *current_label;
 
   for(i = 1; i < (robot->program_length - 1); i++)
   {
@@ -436,7 +439,7 @@ Label **cache_robot_labels(Robot *robot, int *num_labels)
 
     if((cmd == 106) || (cmd == 108))
     {
-      current_label = malloc(sizeof(Label));
+      current_label = malloc(sizeof(struct label));
       current_label->name = robot_program + i + 3;
 
       if(next >= (robot->program_length - 2))
@@ -453,7 +456,8 @@ Label **cache_robot_labels(Robot *robot, int *num_labels)
       if(labels_found == labels_allocated)
       {
         labels_allocated *= 2;
-        label_list = realloc(label_list, sizeof(Label *) * labels_allocated);
+        label_list = realloc(label_list,
+         sizeof(struct label *) * labels_allocated);
       }
       label_list[labels_found] = current_label;
       labels_found++;
@@ -473,17 +477,17 @@ Label **cache_robot_labels(Robot *robot, int *num_labels)
   if(labels_found != labels_allocated)
   {
     label_list =
-     realloc(label_list, sizeof(Label *) * labels_found);
+     realloc(label_list, sizeof(struct label *) * labels_found);
   }
 
   // Now sort the list
-  qsort(label_list, labels_found, sizeof(Label *), cmp_labels);
+  qsort(label_list, labels_found, sizeof(struct label *), cmp_labels);
 
   *num_labels = labels_found;
   return label_list;
 }
 
-void clear_label_cache(Label **label_list, int num_labels)
+void clear_label_cache(struct label **label_list, int num_labels)
 {
   int i;
 
@@ -498,13 +502,13 @@ void clear_label_cache(Label **label_list, int num_labels)
   }
 }
 
-static Label *find_label(Robot *cur_robot, const char *name)
+static struct label *find_label(struct robot *cur_robot, const char *name)
 {
   int total = cur_robot->num_labels - 1;
   int bottom = 0, top = total, middle = 0;
   int cmpval = 0;
-  Label **base = cur_robot->label_list;
-  Label *current;
+  struct label **base = cur_robot->label_list;
+  struct label *current;
 
   while(bottom <= top)
   {
@@ -570,9 +574,9 @@ static Label *find_label(Robot *cur_robot, const char *name)
   return NULL;
 }
 
-static int find_label_position(Robot *cur_robot, const char *name)
+static int find_label_position(struct robot *cur_robot, const char *name)
 {
-  Label *cur_label = find_label(cur_robot, name);
+  struct label *cur_label = find_label(cur_robot, name);
 
   if(cur_label)
   {
@@ -587,13 +591,13 @@ static int find_label_position(Robot *cur_robot, const char *name)
 // This should return the last zapped label found, for restore label
 // to work correctly.
 
-static Label *find_zapped_label(Robot *cur_robot, char *name)
+static struct label *find_zapped_label(struct robot *cur_robot, char *name)
 {
   int total = cur_robot->num_labels - 1;
   int bottom = 0, top = total, middle = 0;
   int cmpval = 0;
-  Label **base = cur_robot->label_list;
-  Label *current;
+  struct label **base = cur_robot->label_list;
+  struct label *current;
 
   while(bottom <= top)
   {
@@ -662,13 +666,14 @@ static Label *find_zapped_label(Robot *cur_robot, char *name)
 // last is the last. If not found, first and last are the position to place
 // into.
 
-int find_robot(Board *src_board, const char *name, int *first, int *last)
+int find_robot(struct board *src_board, const char *name,
+ int *first, int *last)
 {
   int total = src_board->num_robots_active - 1;
   int bottom = 0, top = total, middle = 0;
   int cmpval = 0;
-  Robot **base = src_board->robot_list_name_sorted;
-  Robot *current;
+  struct robot **base = src_board->robot_list_name_sorted;
+  struct robot *current;
   int f, l;
 
   while(bottom <= top)
@@ -725,7 +730,7 @@ int find_robot(Board *src_board, const char *name, int *first, int *last)
   return 0;
 }
 
-void send_robot_def(World *mzx_world, int robot_id, int mesg_id)
+void send_robot_def(struct world *mzx_world, int robot_id, int mesg_id)
 {
   switch(mesg_id)
   {
@@ -796,10 +801,10 @@ void send_robot_def(World *mzx_world, int robot_id, int mesg_id)
   }
 }
 
-static void send_sensor_command(World *mzx_world, int id, int command)
+static void send_sensor_command(struct world *mzx_world, int id, int command)
 {
-  Board *src_board = mzx_world->current_board;
-  Sensor *cur_sensor = src_board->sensor_list[id];
+  struct board *src_board = mzx_world->current_board;
+  struct sensor *cur_sensor = src_board->sensor_list[id];
   int x = -1, y = -1, under = -1;
   char *level_under_id = src_board->level_under_id;
   char *level_under_param = src_board->level_under_param;
@@ -958,9 +963,9 @@ static void send_sensor_command(World *mzx_world, int id, int command)
   }
 }
 
-static void send_sensors(World *mzx_world, char *name, const char *mesg)
+static void send_sensors(struct world *mzx_world, char *name, const char *mesg)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
 
   if(src_board->num_sensors)
   {
@@ -1017,8 +1022,8 @@ static void send_sensors(World *mzx_world, char *name, const char *mesg)
 
     if(command != -1)
     {
-      Sensor **sensor_list = src_board->sensor_list;
-      Sensor *current_sensor;
+      struct sensor **sensor_list = src_board->sensor_list;
+      struct sensor *current_sensor;
       int i;
 
       if(!strcasecmp(name, "ALL"))
@@ -1049,7 +1054,7 @@ static void send_sensors(World *mzx_world, char *name, const char *mesg)
   }
 }
 
-static void set_robot_position(Robot *cur_robot, int position)
+static void set_robot_position(struct robot *cur_robot, int position)
 {
   cur_robot->cur_prog_line = position;
   cur_robot->pos_within_line = 0;
@@ -1068,7 +1073,7 @@ static void set_robot_position(Robot *cur_robot, int position)
     cur_robot->status = 2;
 }
 
-static int send_robot_direct(Robot *cur_robot, const char *mesg,
+static int send_robot_direct(struct robot *cur_robot, const char *mesg,
  int ignore_lock, int send_self)
 {
   char *robot_program = cur_robot->program;
@@ -1154,10 +1159,10 @@ static int send_robot_direct(Robot *cur_robot, const char *mesg,
   return 0;
 }
 
-void send_robot(World *mzx_world, char *name, const char *mesg,
+void send_robot(struct world *mzx_world, char *name, const char *mesg,
  int ignore_lock)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int first, last;
 
   if(!strcasecmp(name, "all"))
@@ -1188,20 +1193,22 @@ void send_robot(World *mzx_world, char *name, const char *mesg,
   send_sensors(mzx_world, name, mesg);
 }
 
-int send_robot_id(World *mzx_world, int id, const char *mesg, int ignore_lock)
+int send_robot_id(struct world *mzx_world, int id, const char *mesg,
+ int ignore_lock)
 {
-  Robot *cur_robot = mzx_world->current_board->robot_list[id];
+  struct robot *cur_robot = mzx_world->current_board->robot_list[id];
   return send_robot_direct(cur_robot, mesg, ignore_lock, 0);
 }
 
-int send_robot_self(World *mzx_world, Robot *src_robot, const char *mesg)
+int send_robot_self(struct world *mzx_world, struct robot *src_robot,
+ const char *mesg)
 {
   return send_robot_direct(src_robot, mesg, 1, 1);
 }
 
-void send_robot_all(World *mzx_world, const char *mesg)
+void send_robot_all(struct world *mzx_world, const char *mesg)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int i;
 
   if(mzx_world->global_robot->used)
@@ -1216,10 +1223,10 @@ void send_robot_all(World *mzx_world, const char *mesg)
 }
 
 // Run a set of x/y pairs through the prefixes
-void prefix_first_last_xy(World *mzx_world, int *fx, int *fy,
+void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
  int *lx, int *ly, int robotx, int roboty)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
   int tfx = *fx;
@@ -1330,7 +1337,7 @@ void prefix_first_last_xy(World *mzx_world, int *fx, int *fy,
 // simply the board (for instance vlayer). In the future this could
 // also be used to copy inbetween boards, perhaps.
 
-void prefix_first_xy_var(World *mzx_world, int *fx, int *fy,
+void prefix_first_xy_var(struct world *mzx_world, int *fx, int *fy,
  int robotx, int roboty, int width, int height)
 {
   int tfx = *fx;
@@ -1386,7 +1393,7 @@ void prefix_first_xy_var(World *mzx_world, int *fx, int *fy,
   *fy = tfy;
 }
 
-void prefix_last_xy_var(World *mzx_world, int *lx, int *ly,
+void prefix_last_xy_var(struct world *mzx_world, int *lx, int *ly,
  int robotx, int roboty, int width, int height)
 {
   int tlx = *lx;
@@ -1442,7 +1449,7 @@ void prefix_last_xy_var(World *mzx_world, int *lx, int *ly,
   *ly = tly;
 }
 
-void prefix_mid_xy_var(World *mzx_world, int *mx, int *my,
+void prefix_mid_xy_var(struct world *mzx_world, int *mx, int *my,
  int robotx, int roboty, int width, int height)
 {
   int tmx = *mx;
@@ -1491,9 +1498,9 @@ void prefix_mid_xy_var(World *mzx_world, int *mx, int *my,
 
 // Just does the middle prefixes, since those are all that's usually
 // needed...
-void prefix_mid_xy(World *mzx_world, int *mx, int *my, int x, int y)
+void prefix_mid_xy(struct world *mzx_world, int *mx, int *my, int x, int y)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
   int tmx = *mx;
@@ -1538,7 +1545,7 @@ void prefix_mid_xy(World *mzx_world, int *mx, int *my, int x, int y)
 }
 
 // Move an x/y pair in a given direction. Returns non-0 if edge reached.
-int move_dir(Board *src_board, int *x, int *y, mzx_dir dir)
+int move_dir(struct board *src_board, int *x, int *y, enum dir dir)
 {
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
@@ -1602,7 +1609,7 @@ int move_dir(Board *src_board, int *x, int *y, mzx_dir dir)
 // command)
 // Sign extends the result, for now...
 
-int parse_param(World *mzx_world, char *program, int id)
+int parse_param(struct world *mzx_world, char *program, int id)
 {
   char ibuff[ROBOT_MAX_TR];
 
@@ -1628,29 +1635,29 @@ int parse_param(World *mzx_world, char *program, int id)
 }
 
 // These will always return numeric values
-mzx_thing parse_param_thing(World *mzx_world, char *program)
+enum thing parse_param_thing(struct world *mzx_world, char *program)
 {
-  return (mzx_thing)
+  return (enum thing)
    ((int)program[1] | (int)(program[2] << 8));
 }
 
-mzx_dir parse_param_dir(World *mzx_world, char *program)
+enum dir parse_param_dir(struct world *mzx_world, char *program)
 {
-  return (mzx_dir)
+  return (enum dir)
    ((int)program[1] | (int)(program[2] << 8));
 }
 
-mzx_equality parse_param_eq(World *mzx_world, char *program)
+enum equality parse_param_eq(struct world *mzx_world, char *program)
 {
-  return (mzx_equality)
+  return (enum equality)
    ((int)program[1] | (int)(program[2] << 8));
 }
 
-mzx_condition parse_param_cond(World *mzx_world, char *program,
- mzx_dir *direction)
+enum condition parse_param_cond(struct world *mzx_world, char *program,
+ enum dir *direction)
 {
-  *direction = (mzx_dir)program[2];
-  return (mzx_condition)program[1];
+  *direction = (enum dir)program[2];
+  return (enum condition)program[1];
 }
 
 // Returns location of next parameter (pos is loc of current parameter)
@@ -1682,9 +1689,9 @@ char *next_param_pos(char *ptr)
 // Internal only. NOTE- IF WE EVER ALLOW ZAPPING OF LABELS NOT IN CURRENT
 // ROBOT, USE A COPY OF THE *LABEL BEFORE THE PREPARE_ROBOT_MEM!
 
-int restore_label(Robot *cur_robot, char *label)
+int restore_label(struct robot *cur_robot, char *label)
 {
-  Label *dest_label = find_zapped_label(cur_robot, label);
+  struct label *dest_label = find_zapped_label(cur_robot, label);
 
   if(dest_label)
   {
@@ -1701,9 +1708,9 @@ int restore_label(Robot *cur_robot, char *label)
   }
 }
 
-int zap_label(Robot *cur_robot, char *label)
+int zap_label(struct robot *cur_robot, char *label)
 {
-  Label *dest_label = find_label(cur_robot, label);
+  struct label *dest_label = find_label(cur_robot, label);
 
   if(dest_label)
   {
@@ -1836,7 +1843,8 @@ static int num_ccode_chars(char *str)
   return count;
 }
 
-static void display_robot_line(World *mzx_world, char *program, int y, int id)
+static void display_robot_line(struct world *mzx_world, char *program,
+ int y, int id)
 {
   char ibuff[ROBOT_MAX_TR];
   char *next;
@@ -1905,7 +1913,7 @@ static void display_robot_line(World *mzx_world, char *program, int y, int id)
   // Others, like 47 and 106, are blank lines
 }
 
-static void robot_frame(World *mzx_world, char *program, int id)
+static void robot_frame(struct world *mzx_world, char *program, int id)
 {
   // Displays one frame of a robot. The scroll edging, arrows, and title
   // must already be shown. Simply prints each line. The pointer points
@@ -1941,11 +1949,11 @@ static void robot_frame(World *mzx_world, char *program, int id)
   }
 }
 
-void robot_box_display(World *mzx_world, char *program,
+void robot_box_display(struct world *mzx_world, char *program,
  char *label_storage, int id)
 {
-  Board *src_board = mzx_world->current_board;
-  Robot *cur_robot = src_board->robot_list[id];
+  struct board *src_board = mzx_world->current_board;
+  struct robot *cur_robot = src_board->robot_list[id];
   int pos = 0, old_pos;
   int key;
   int fade_status;
@@ -2160,16 +2168,16 @@ void robot_box_display(World *mzx_world, char *program,
   update_event_status();
 }
 
-void push_sensor(World *mzx_world, int id)
+void push_sensor(struct world *mzx_world, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   send_robot(mzx_world, (src_board->sensor_list[id])->robot_to_mesg,
    "SENSORPUSHED", 0);
 }
 
-void step_sensor(World *mzx_world, int id)
+void step_sensor(struct world *mzx_world, int id)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   send_robot(mzx_world, (src_board->sensor_list[id])->robot_to_mesg,
    "SENSORON", 0);
 }
@@ -2179,9 +2187,9 @@ void step_sensor(World *mzx_world, int id)
 // and &COUNTER& becomes the value of COUNTER. The size of the string is
 // clipped to 512 chars.
 
-char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer)
+char *tr_msg(struct world *mzx_world, char *mesg, int id, char *buffer)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   char name_buffer[256];
   char number_buffer[16];
   char *name_ptr;
@@ -2288,7 +2296,7 @@ char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer)
         if(is_string(name_buffer))
         {
           // Write the value of the counter name
-          mzx_string str_src;
+          struct string str_src;
 
           get_string(mzx_world, name_buffer, &str_src, 0);
 
@@ -2357,26 +2365,28 @@ char *tr_msg(World *mzx_world, char *mesg, int id, char *buffer)
 }
 
 // Don't do this if the entry is not in the normal list
-void add_robot_name_entry(Board *src_board, Robot *cur_robot, char *name)
+void add_robot_name_entry(struct board *src_board, struct robot *cur_robot,
+ char *name)
 {
   // Find the position
   int first, last;
   int active = src_board->num_robots_active;
-  Robot **name_list = src_board->robot_list_name_sorted;
+  struct robot **name_list = src_board->robot_list_name_sorted;
 
   find_robot(src_board, name, &first, &last);
   // Insert into name list, if it's not at the end
   if(first != active)
   {
     memmove(name_list + first + 1, name_list + first,
-     (active - first) * sizeof(Robot *));
+     (active - first) * sizeof(struct robot *));
   }
   name_list[first] = cur_robot;
   src_board->num_robots_active = active + 1;
 }
 
 // This could probably be done in a more efficient manner.
-void change_robot_name(Board *src_board, Robot *cur_robot, char *new_name)
+void change_robot_name(struct board *src_board, struct robot *cur_robot,
+ char *new_name)
 {
   // Remove the old one
   remove_robot_name_entry(src_board, cur_robot, cur_robot->robot_name);
@@ -2387,11 +2397,11 @@ void change_robot_name(Board *src_board, Robot *cur_robot, char *new_name)
 }
 
 // Works with the ID-list. Will make room for a new one if there aren't any.
-int find_free_robot(Board *src_board)
+int find_free_robot(struct board *src_board)
 {
   int num_robots = src_board->num_robots;
   int i;
-  Robot **robot_list = src_board->robot_list;
+  struct robot **robot_list = src_board->robot_list;
 
   for(i = 1; i <= num_robots; i++)
   {
@@ -2414,11 +2424,11 @@ int find_free_robot(Board *src_board)
           num_robots_allocated = 1;
 
         src_board->robot_list = realloc(robot_list,
-         (num_robots_allocated + 1) * sizeof(Robot *));
+         (num_robots_allocated + 1) * sizeof(struct robot *));
 
         src_board->robot_list_name_sorted =
          realloc(src_board->robot_list_name_sorted,
-         (num_robots_allocated) * sizeof(Robot *));
+         (num_robots_allocated) * sizeof(struct robot *));
         src_board->num_robots_allocated = num_robots_allocated;
       }
       src_board->num_robots = num_robots + 1;
@@ -2430,11 +2440,11 @@ int find_free_robot(Board *src_board)
 
 // Like find_free_robot, but for scrolls. Will also expand the list if
 // necessary.
-static int find_free_scroll(Board *src_board)
+static int find_free_scroll(struct board *src_board)
 {
   int num_scrolls = src_board->num_scrolls;
   int i;
-  Scroll **scroll_list = src_board->scroll_list;
+  struct scroll **scroll_list = src_board->scroll_list;
 
   for(i = 1; i <= num_scrolls; i++)
   {
@@ -2456,7 +2466,7 @@ static int find_free_scroll(Board *src_board)
           num_scrolls_allocated = 1;
 
         src_board->scroll_list = realloc(scroll_list,
-         (num_scrolls_allocated + 1) * sizeof(Scroll *));
+         (num_scrolls_allocated + 1) * sizeof(struct scroll *));
         src_board->num_scrolls_allocated = num_scrolls_allocated;
       }
       src_board->num_scrolls = num_scrolls + 1;
@@ -2469,11 +2479,11 @@ static int find_free_scroll(Board *src_board)
 
 // Like find_free_robot, but for sensors. Will also expand the list if
 // necessary.
-static int find_free_sensor(Board *src_board)
+static int find_free_sensor(struct board *src_board)
 {
   int num_sensors = src_board->num_sensors;
   int i;
-  Sensor **sensor_list = src_board->sensor_list;
+  struct sensor **sensor_list = src_board->sensor_list;
 
   for(i = 1; i <= num_sensors; i++)
   {
@@ -2495,7 +2505,7 @@ static int find_free_sensor(Board *src_board)
           num_sensors_allocated = 1;
 
         src_board->sensor_list = realloc(sensor_list,
-         (num_sensors_allocated + 1) * sizeof(Sensor *));
+         (num_sensors_allocated + 1) * sizeof(struct sensor *));
         src_board->num_sensors_allocated = num_sensors_allocated;
       }
       src_board->num_sensors = num_sensors + 1;
@@ -2511,10 +2521,10 @@ static int find_free_sensor(Board *src_board)
 // placed. Returns the ID of location. Does NOT place the robot on the
 // board (so be sure to do that). The given id is the slot to add it in;
 // be sure that this is a valid (NULL) entry!
-__editor_maybe_static void duplicate_robot_direct(Robot *cur_robot,
- Robot *copy_robot, int x, int y)
+__editor_maybe_static void duplicate_robot_direct(struct robot *cur_robot,
+ struct robot *copy_robot, int x, int y)
 {
-  Label *src_label, *dest_label;
+  struct label *src_label, *dest_label;
   char *dest_program_location, *src_program_location;
   int program_offset;
   int program_length = cur_robot->program_length;
@@ -2522,7 +2532,7 @@ __editor_maybe_static void duplicate_robot_direct(Robot *cur_robot,
   int i;
 
   // Copy all the contents
-  memcpy(copy_robot, cur_robot, sizeof(Robot));
+  memcpy(copy_robot, cur_robot, sizeof(struct robot));
   // We need unique copies of the program and the label cache.
   copy_robot->program = malloc(program_length);
 
@@ -2532,7 +2542,7 @@ __editor_maybe_static void duplicate_robot_direct(Robot *cur_robot,
   memcpy(dest_program_location, src_program_location, program_length);
 
   if(num_labels)
-    copy_robot->label_list = calloc(num_labels, sizeof(Label *));
+    copy_robot->label_list = calloc(num_labels, sizeof(struct label *));
   else
     copy_robot->label_list = NULL;
 
@@ -2541,12 +2551,12 @@ __editor_maybe_static void duplicate_robot_direct(Robot *cur_robot,
   // Copy each individual label pointer over
   for(i = 0; i < num_labels; i++)
   {
-    copy_robot->label_list[i] = malloc(sizeof(Label));
+    copy_robot->label_list[i] = malloc(sizeof(struct label));
 
     src_label = cur_robot->label_list[i];
     dest_label = copy_robot->label_list[i];
 
-    memcpy(dest_label, src_label, sizeof(Label));
+    memcpy(dest_label, src_label, sizeof(struct label));
     // The name pointer actually has to be readjusted to match the new program
     dest_label->name += program_offset;
   }
@@ -2567,12 +2577,13 @@ __editor_maybe_static void duplicate_robot_direct(Robot *cur_robot,
 
 // Finds a robot ID then duplicates a robot there.
 
-int duplicate_robot(Board *src_board, Robot *cur_robot, int x, int y)
+int duplicate_robot(struct board *src_board, struct robot *cur_robot,
+ int x, int y)
 {
   int dest_id = find_free_robot(src_board);
   if(dest_id != -1)
   {
-    Robot *copy_robot = malloc(sizeof(Robot));
+    struct robot *copy_robot = malloc(sizeof(struct robot));
     duplicate_robot_direct(cur_robot, copy_robot, x, y);
     add_robot_name_entry(src_board, copy_robot, copy_robot->robot_name);
     src_board->robot_list[dest_id] = copy_robot;
@@ -2585,12 +2596,13 @@ int duplicate_robot(Board *src_board, Robot *cur_robot, int x, int y)
 // so that it can modify the ID table. The dest position is assumed
 // to already contain something, and is thus cleared first.
 // Will not allow replacing the global robot.
-void replace_robot(Board *src_board, Robot *src_robot, int dest_id)
+void replace_robot(struct board *src_board, struct robot *src_robot,
+ int dest_id)
 {
   char old_name[64];
   int x = (src_board->robot_list[dest_id])->xpos;
   int y = (src_board->robot_list[dest_id])->ypos;
-  Robot *cur_robot = src_board->robot_list[dest_id];
+  struct robot *cur_robot = src_board->robot_list[dest_id];
 
   strcpy(old_name, cur_robot->robot_name);
 
@@ -2603,32 +2615,32 @@ void replace_robot(Board *src_board, Robot *src_robot, int dest_id)
 }
 
 // Like duplicate_robot_direct, but for scrolls.
-__editor_maybe_static void duplicate_scroll_direct(Scroll *cur_scroll,
- Scroll *copy_scroll)
+__editor_maybe_static void duplicate_scroll_direct(struct scroll *cur_scroll,
+ struct scroll *copy_scroll)
 {
   int mesg_size = cur_scroll->mesg_size;
 
   // Copy all the contents
-  memcpy(copy_scroll, cur_scroll, sizeof(Scroll));
+  memcpy(copy_scroll, cur_scroll, sizeof(struct scroll));
   // We need unique copies of the program and the label cache.
   copy_scroll->mesg = malloc(mesg_size);
   memcpy(copy_scroll->mesg, cur_scroll->mesg, mesg_size);
 }
 
 // Like duplicate_robot_direct, but for sensors.
-__editor_maybe_static void duplicate_sensor_direct(Sensor *cur_sensor,
- Sensor *copy_sensor)
+__editor_maybe_static void duplicate_sensor_direct(struct sensor *cur_sensor,
+ struct sensor *copy_sensor)
 {
   // Copy all the contents
-  memcpy(copy_sensor, cur_sensor, sizeof(Sensor));
+  memcpy(copy_sensor, cur_sensor, sizeof(struct sensor));
 }
 
-int duplicate_scroll(Board *src_board, Scroll *cur_scroll)
+int duplicate_scroll(struct board *src_board, struct scroll *cur_scroll)
 {
   int dest_id = find_free_scroll(src_board);
   if(dest_id != -1)
   {
-    Scroll *copy_scroll = malloc(sizeof(Scroll));
+    struct scroll *copy_scroll = malloc(sizeof(struct scroll));
     duplicate_scroll_direct(cur_scroll, copy_scroll);
     src_board->scroll_list[dest_id] = copy_scroll;
   }
@@ -2636,12 +2648,12 @@ int duplicate_scroll(Board *src_board, Scroll *cur_scroll)
   return dest_id;
 }
 
-int duplicate_sensor(Board *src_board, Sensor *cur_sensor)
+int duplicate_sensor(struct board *src_board, struct sensor *cur_sensor)
 {
   int dest_id = find_free_sensor(src_board);
   if(dest_id != -1)
   {
-    Sensor *copy_sensor = malloc(sizeof(Sensor));
+    struct sensor *copy_sensor = malloc(sizeof(struct sensor));
     duplicate_sensor_direct(cur_sensor, copy_sensor);
     src_board->sensor_list[dest_id] = copy_sensor;
   }
@@ -2654,30 +2666,33 @@ int duplicate_sensor(Board *src_board, Sensor *cur_sensor)
 // params to compensate. This should always be used before saving
 // the world/game, and ideally when loading too.
 
-void optimize_null_objects(Board *src_board)
+void optimize_null_objects(struct board *src_board)
 {
   int num_robots = src_board->num_robots;
   int num_scrolls = src_board->num_scrolls;
   int num_sensors = src_board->num_sensors;
-  Robot **robot_list = src_board->robot_list;
-  Scroll **scroll_list = src_board->scroll_list;
-  Sensor **sensor_list = src_board->sensor_list;
-  Robot **optimized_robot_list = calloc(num_robots + 1, sizeof(Robot *));
-  Scroll **optimized_scroll_list = calloc(num_scrolls + 1, sizeof(Scroll *));
-  Sensor **optimized_sensor_list = calloc(num_sensors + 1, sizeof(Sensor *));
+  struct robot **robot_list = src_board->robot_list;
+  struct scroll **scroll_list = src_board->scroll_list;
+  struct sensor **sensor_list = src_board->sensor_list;
+  struct robot **optimized_robot_list =
+   calloc(num_robots + 1, sizeof(struct robot *));
+  struct scroll **optimized_scroll_list =
+   calloc(num_scrolls + 1, sizeof(struct scroll *));
+  struct sensor **optimized_sensor_list =
+   calloc(num_sensors + 1, sizeof(struct sensor *));
   int *robot_id_translation_list = calloc(num_robots + 1, sizeof(int));
   int *scroll_id_translation_list = calloc(num_scrolls + 1, sizeof(int));
   int *sensor_id_translation_list = calloc(num_sensors + 1, sizeof(int));
-  Robot *cur_robot;
-  Scroll *cur_scroll;
-  Sensor *cur_sensor;
+  struct robot *cur_robot;
+  struct scroll *cur_scroll;
+  struct sensor *cur_sensor;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
   int i, i2;
   int x, y, offset;
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
-  mzx_thing d_id;
+  enum thing d_id;
   int d_param, d_new_param;
   int do_modify = 0;
 
@@ -2703,7 +2718,7 @@ void optimize_null_objects(Board *src_board)
     optimized_robot_list[0] = robot_list[0];
     free(robot_list);
     src_board->robot_list =
-     realloc(optimized_robot_list, sizeof(Robot *) * i2);
+     realloc(optimized_robot_list, sizeof(struct robot *) * i2);
     src_board->num_robots = i2 - 1;
     src_board->num_robots_allocated = i2 - 1;
   }
@@ -2729,7 +2744,7 @@ void optimize_null_objects(Board *src_board)
     optimized_scroll_list[0] = scroll_list[0];
     free(scroll_list);
     src_board->scroll_list =
-     realloc(optimized_scroll_list, sizeof(Scroll *) * i2);
+     realloc(optimized_scroll_list, sizeof(struct scroll *) * i2);
     src_board->num_scrolls = i2 - 1;
     src_board->num_scrolls_allocated = i2 - 1;
   }
@@ -2756,7 +2771,7 @@ void optimize_null_objects(Board *src_board)
     optimized_sensor_list[0] = sensor_list[0];
     free(sensor_list);
     src_board->sensor_list =
-     realloc(optimized_sensor_list, sizeof(Sensor *) * i2);
+     realloc(optimized_sensor_list, sizeof(struct sensor *) * i2);
     src_board->num_sensors = i2 - 1;
     src_board->num_sensors_allocated = i2 - 1;
   }
@@ -2775,7 +2790,7 @@ void optimize_null_objects(Board *src_board)
     {
       for(x = 0; x < board_width; x++, offset++)
       {
-        d_id = (mzx_thing)level_id[offset];
+        d_id = (enum thing)level_id[offset];
         // Is it a robot?
         if(is_robot(d_id))
         {
@@ -2816,18 +2831,18 @@ void optimize_null_objects(Board *src_board)
   free(sensor_id_translation_list);
 }
 
-int get_robot_id(Board *src_board, const char *name)
+int get_robot_id(struct board *src_board, const char *name)
 {
   int first, last;
 
   if(find_robot(src_board, name, &first, &last))
   {
-    Robot *cur_robot = src_board->robot_list_name_sorted[first];
+    struct robot *cur_robot = src_board->robot_list_name_sorted[first];
     // This is a cheap trick for now since robots don't have
     // a back-reference for ID's
     int offset = cur_robot->xpos +
      (cur_robot->ypos * src_board->board_width);
-    mzx_thing d_id = (mzx_thing)src_board->level_id[offset];
+    enum thing d_id = (enum thing)src_board->level_id[offset];
 
     if(is_robot(d_id))
     {

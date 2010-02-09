@@ -30,49 +30,54 @@ __M_BEGIN_DECLS
 #include "counter_struct.h"
 #include "world_struct.h"
 
-typedef struct _function_counter
+struct function_counter
 {
   char name[20];
   int minimum_version;
-  int (*function_read)(World *mzx_world, struct _function_counter *counter,
-   const char *name, int id);
-  void (*function_write)(World *mzx_world, struct _function_counter *counter,
-   const char *name, int value, int id);
-} function_counter;
+  int (*function_read)(struct world *mzx_world,
+   struct function_counter *counter, const char *name, int id);
+  void (*function_write)(struct world *mzx_world,
+   struct function_counter *counter, const char *name, int value, int id);
+};
 
-typedef int (*gateway_write_function)(World *mzx_world,
- counter *counter, const char *name, int value, int id);
-typedef int (*gateway_dec_function)(World *mzx_world,
- counter *counter, const char *name, int value, int id);
+typedef int (*gateway_write_function)(struct world *mzx_world,
+ struct counter *counter, const char *name, int value, int id);
+typedef int (*gateway_dec_function)(struct world *mzx_world,
+ struct counter *counter, const char *name, int value, int id);
 
 CORE_LIBSPEC int match_function_counter(const char *dest, const char *src);
-CORE_LIBSPEC void set_counter(World *mzx_world, const char *name, int value, int id);
+CORE_LIBSPEC void set_counter(struct world *mzx_world, const char *name,
+ int value, int id);
 CORE_LIBSPEC void counter_fsg(void);
 
-void initialize_gateway_functions(World *mzx_world);
-int get_counter(World *mzx_world, const char *name, int id);
-void inc_counter(World *mzx_world, const char *name, int value, int id);
-void dec_counter(World *mzx_world, const char *name, int value, int id);
-void mul_counter(World *mzx_world, const char *name, int value, int id);
-void div_counter(World *mzx_world, const char *name, int value, int id);
-void mod_counter(World *mzx_world, const char *name, int value, int id);
+void initialize_gateway_functions(struct world *mzx_world);
+int get_counter(struct world *mzx_world, const char *name, int id);
+void inc_counter(struct world *mzx_world, const char *name, int value, int id);
+void dec_counter(struct world *mzx_world, const char *name, int value, int id);
+void mul_counter(struct world *mzx_world, const char *name, int value, int id);
+void div_counter(struct world *mzx_world, const char *name, int value, int id);
+void mod_counter(struct world *mzx_world, const char *name, int value, int id);
 
-int get_string(World *mzx_world, const char *name, mzx_string *dest, int id);
-void set_string(World *mzx_world, const char *name, mzx_string *src, int id);
-void inc_string(World *mzx_world, const char *name, mzx_string *src, int id);
-void dec_string_int(World *mzx_world, const char *name, int value, int id);
-int compare_strings(mzx_string *dest, mzx_string *src);
+int get_string(struct world *mzx_world, const char *name, struct string *dest,
+ int id);
+void set_string(struct world *mzx_world, const char *name, struct string *src,
+ int id);
+void inc_string(struct world *mzx_world, const char *name, struct string *src,
+ int id);
+void dec_string_int(struct world *mzx_world, const char *name, int value,
+ int id);
+int compare_strings(struct string *dest, struct string *src);
 
-void load_string_board(World *mzx_world, const char *expression,
+void load_string_board(struct world *mzx_world, const char *expression,
  int w, int h, char l, char *src, int width);
-int set_counter_special(World *mzx_world, int spec_type,
+int set_counter_special(struct world *mzx_world, int spec_type,
  char *char_value, int value, int id);
 int is_string(char *buffer);
 
-counter *load_counter(FILE *fp);
-mzx_string *load_string(FILE *fp);
-void save_counter(FILE *fp, counter *src_counter);
-void save_string(FILE *fp, mzx_string *src_string);
+struct counter *load_counter(FILE *fp);
+struct string *load_string(FILE *fp);
+void save_counter(FILE *fp, struct counter *src_counter);
+void save_string(FILE *fp, struct string *src_string);
 
 // Even old games tended to use at least this many.
 #define MIN_COUNTER_ALLOCATE 32

@@ -42,7 +42,7 @@ extern int topindex, backindex;
 
 #ifdef CONFIG_AUDIO
 
-void play_sfx(World *mzx_world, int sfx);
+void play_sfx(struct world *mzx_world, int sfx);
 void clear_sfx_queue(void);
 void sound_system(void);
 char is_playing(void);
@@ -54,7 +54,7 @@ extern int custom_sfx_on; //1 to turn on custom sfx
 #else // !CONFIG_AUDIO
 
 static inline void clear_sfx_queue(void) {}
-static inline void play_sfx(World *mzx_world, int sfxn) {}
+static inline void play_sfx(struct world *mzx_world, int sfxn) {}
 static inline void play_str(char *str, int sfx_play) {}
 static inline char is_playing(void) { return 0; }
 

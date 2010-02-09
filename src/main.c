@@ -76,7 +76,7 @@ static void nds_on_vblank(void)
 
 #endif // CONFIG_NDS
 
-/* The World structure used to be pretty big (around 7.2k) which
+/* The struct world structure used to be pretty big (around 7.2k) which
  * caused some platforms grief. Early hacks moved it entirely onto
  * the heap, but this will reduce performance of a constantly
  * accessed data structure in multiple hot paths.
@@ -85,9 +85,9 @@ static void nds_on_vblank(void)
  * or which is simply too large to be worth it. This means we need
  * a couple of functions for allocating/freeing MZX worlds.
  */
-static void allocate_world(World *mzx_world)
+static void allocate_world(struct world *mzx_world)
 {
-  memset(mzx_world, 0, sizeof(World));
+  memset(mzx_world, 0, sizeof(struct world));
 
   mzx_world->real_mod_playing = malloc(256);
   memset(mzx_world->real_mod_playing, 0, 256);
@@ -98,13 +98,13 @@ static void allocate_world(World *mzx_world)
   mzx_world->output_file_name = malloc(512);
   memset(mzx_world->output_file_name, 0, 512);
 
-  mzx_world->global_robot = malloc(sizeof(Robot));
-  memset(mzx_world->global_robot, 0, sizeof(Robot));
+  mzx_world->global_robot = malloc(sizeof(struct robot));
+  memset(mzx_world->global_robot, 0, sizeof(struct robot));
 
   mzx_world->custom_sfx = calloc(69, NUM_SFX);
 }
 
-static void free_world(World *mzx_world)
+static void free_world(struct world *mzx_world)
 {
   // allocated once by world.c:set_update_done()
   if(mzx_world->update_done)
@@ -122,7 +122,7 @@ static void free_world(World *mzx_world)
 
 __libspec int main(int argc, char *argv[])
 {
-  World mzx_world;
+  struct world mzx_world;
 
   if(!platform_init())
     return 1;

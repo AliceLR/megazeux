@@ -37,7 +37,7 @@ __M_BEGIN_DECLS
 // FIXME: Hack
 #define NUM_SFX 50
 
-typedef struct
+struct world
 {
   // 0 if a world has been loaded, 1 if it hasn't
   int active;
@@ -94,14 +94,14 @@ typedef struct
   int player_restart_y;
   int num_counters;
   int num_counters_allocated;
-  counter **counter_list;
+  struct counter **counter_list;
   int num_strings;
   int num_strings_allocated;
-  mzx_string **string_list;
+  struct string **string_list;
   int num_sprites;
   int num_sprites_allocated;
   int sprite_num;
-  Sprite **sprite_list;
+  struct sprite **sprite_list;
   int active_sprites;
   int sprite_y_order;
   int collision_count;
@@ -123,11 +123,11 @@ typedef struct
 
   int num_boards;
   int num_boards_allocated;
-  Board **board_list;
-  Board *current_board;
+  struct board **board_list;
+  struct board *current_board;
   int current_board_id;
 
-  Robot *global_robot;
+  struct robot *global_robot;
 
   int custom_sfx_on;
   char *custom_sfx;
@@ -137,13 +137,13 @@ typedef struct
   int player_y;
 
   // For moving the player between boards
-  mzx_board_target target_where;
+  enum board_target target_where;
   int target_board;
   int target_x;
   int target_y;
-  mzx_thing target_id;
+  enum thing target_id;
   int target_color;
-  mzx_thing target_d_id;
+  enum thing target_d_id;
   int target_d_color;
 
   // Indiciates if the player is dead
@@ -184,10 +184,10 @@ typedef struct
   // If we can change the speed from the F2 menu.
   int lock_speed;
 
-  config_info conf;
+  struct config_info conf;
 
 #ifdef CONFIG_EDITOR
-  editor_config_info editor_conf;
+  struct editor_config_info editor_conf;
   bool editing;
 #endif
 
@@ -199,7 +199,7 @@ typedef struct
   // An array for game2.cpp
   char *update_done;
   int update_done_size;
-} World;
+};
 
 __M_END_DECLS
 

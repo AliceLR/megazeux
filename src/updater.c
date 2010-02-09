@@ -168,7 +168,7 @@ static bool cancel_cb(void)
 static void delete_hook(const char *file)
 {
   struct manifest_entry *new_entry;
-  SHA256_ctx ctx;
+  struct SHA256_ctx ctx;
   FILE *f;
 
   new_entry = calloc(1, sizeof(struct manifest_entry));
@@ -334,7 +334,7 @@ static bool restore_original_manifest(bool ret)
   return true;
 }
 
-static bool reissue_connection(config_info *conf, struct host **h)
+static bool reissue_connection(struct config_info *conf, struct host **h)
 {
   bool ret = true;
   int buf_len;
@@ -382,7 +382,7 @@ err_out:
   return ret;
 }
 
-static void __check_for_updates(config_info *conf)
+static void __check_for_updates(struct config_info *conf)
 {
   char **list_entries, buffer[LINE_BUF_LEN], *url_base, *value;
   struct manifest_entry *removed, *replaced, *added, *e;
@@ -391,7 +391,7 @@ static void __check_for_updates(config_info *conf)
   const char *version = VERSION;
   size_t list_entry_width = 0;
   struct host *h = NULL;
-  host_status_t status;
+  enum host_status status;
   unsigned int retries;
   bool ret = false;
   FILE *f;
@@ -482,8 +482,8 @@ static void __check_for_updates(config_info *conf)
    */
   if(strcmp(value, version) != 0)
   {
-    element *elements[6];
-    dialog di;
+    struct element *elements[6];
+    struct dialog di;
 
     buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
      "A new major version is available (%s)", value);
@@ -568,8 +568,8 @@ static void __check_for_updates(config_info *conf)
 
   if(!removed && !replaced && !added)
   {
-    element *elements[2];
-    dialog di;
+    struct element *elements[2];
+    struct dialog di;
 
     elements[0] = construct_label(2, 2, "This client is already current.");
     elements[1] = construct_button(15, 4, "OK", 0);
@@ -750,8 +750,8 @@ err_out:
   if(ret)
   {
     const void *argv = process_argv;
-    element *elements[2];
-    dialog di;
+    struct element *elements[2];
+    struct dialog di;
 
     elements[0] = construct_label(2, 2,
      "This client will now attempt to restart itself.");
@@ -819,7 +819,7 @@ err_swivel_back:
   return true;
 }
 
-bool network_layer_init(config_info *conf, char *argv[])
+bool network_layer_init(struct config_info *conf, char *argv[])
 {
   if(!conf->network_enabled)
     return false;
@@ -834,7 +834,7 @@ bool network_layer_init(config_info *conf, char *argv[])
   return true;
 }
 
-void network_layer_exit(config_info *conf)
+void network_layer_exit(struct config_info *conf)
 {
   if(!conf->network_enabled)
     return;

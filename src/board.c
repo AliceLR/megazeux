@@ -31,8 +31,8 @@
 
 static int cmp_robots(const void *dest, const void *src)
 {
-  Robot *rsrc = *((Robot **)src);
-  Robot *rdest = *((Robot **)dest);
+  struct robot *rsrc = *((struct robot **)src);
+  struct robot *rdest = *((struct robot **)dest);
   return strcasecmp(rdest->robot_name, rsrc->robot_name);
 }
 
@@ -60,16 +60,16 @@ static void load_RLE2_plane(char *plane, FILE *fp, int size)
   }
 }
 
-__editor_maybe_static void load_board_direct(Board *cur_board, FILE *fp,
+__editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
  int savegame)
 {
   int num_robots, num_scrolls, num_sensors, num_robots_active;
   int overlay_mode, board_mode;
   int size, board_width, board_height;
   int i;
-  Robot *cur_robot;
-  Scroll *cur_scroll;
-  Sensor *cur_sensor;
+  struct robot *cur_robot;
+  struct scroll *cur_scroll;
+  struct sensor *cur_sensor;
 
   char *test_buffer;
 
@@ -186,9 +186,10 @@ __editor_maybe_static void load_board_direct(Board *cur_board, FILE *fp,
   num_robots = fgetc(fp);
   num_robots_active = 0;
 
-  cur_board->robot_list = calloc(num_robots + 1, sizeof(Robot *));
+  cur_board->robot_list = calloc(num_robots + 1, sizeof(struct robot *));
   // Also allocate for name sorted list
-  cur_board->robot_list_name_sorted = calloc(num_robots, sizeof(Robot *));
+  cur_board->robot_list_name_sorted =
+   calloc(num_robots, sizeof(struct robot *));
 
   // Any null objects being placed will later be optimized out
 
@@ -218,10 +219,10 @@ __editor_maybe_static void load_board_direct(Board *cur_board, FILE *fp,
     {
       cur_board->robot_list_name_sorted =
        realloc(cur_board->robot_list_name_sorted,
-       sizeof(Robot *) * num_robots_active);
+       sizeof(struct robot *) * num_robots_active);
     }
     qsort(cur_board->robot_list_name_sorted, num_robots_active,
-     sizeof(Robot *), cmp_robots);
+     sizeof(struct robot *), cmp_robots);
   }
   else
   {
@@ -235,7 +236,7 @@ __editor_maybe_static void load_board_direct(Board *cur_board, FILE *fp,
 
   // Load scrolls
   num_scrolls = fgetc(fp);
-  cur_board->scroll_list = calloc(num_scrolls + 1, sizeof(Scroll *));
+  cur_board->scroll_list = calloc(num_scrolls + 1, sizeof(struct scroll *));
 
   if(num_scrolls)
   {
@@ -254,7 +255,7 @@ __editor_maybe_static void load_board_direct(Board *cur_board, FILE *fp,
 
   // Load sensors
   num_sensors = fgetc(fp);
-  cur_board->sensor_list = calloc(num_sensors + 1, sizeof(Sensor *));
+  cur_board->sensor_list = calloc(num_sensors + 1, sizeof(struct sensor *));
 
   if(num_sensors)
   {
@@ -275,7 +276,7 @@ __editor_maybe_static void load_board_direct(Board *cur_board, FILE *fp,
 // The file given should point to a name/location combo. This will
 // restore the file position to after the name/location.
 
-static void load_board(Board *cur_board, FILE *fp, int savegame)
+static void load_board(struct board *cur_board, FILE *fp, int savegame)
 {
   int board_size = fgetd(fp);
 
@@ -298,9 +299,9 @@ static void load_board(Board *cur_board, FILE *fp, int savegame)
   }
 }
 
-Board *load_board_allocate(FILE *fp, int savegame)
+struct board *load_board_allocate(FILE *fp, int savegame)
 {
-  Board *cur_board = malloc(sizeof(Board));
+  struct board *cur_board = malloc(sizeof(struct board));
   load_board(cur_board, fp, savegame);
 
   if(!cur_board->board_width)
@@ -343,7 +344,7 @@ static void save_RLE2_plane(char *plane, FILE *fp, int size)
   }
 }
 
-int save_board(Board *cur_board, FILE *fp, int savegame)
+int save_board(struct board *cur_board, FILE *fp, int savegame)
 {
   int num_robots, num_scrolls, num_sensors;
   int start_location = ftell(fp);
@@ -438,7 +439,7 @@ int save_board(Board *cur_board, FILE *fp, int savegame)
 
   if(num_robots)
   {
-    Robot *cur_robot;
+    struct robot *cur_robot;
 
     for(i = 1; i <= num_robots; i++)
     {
@@ -453,7 +454,7 @@ int save_board(Board *cur_board, FILE *fp, int savegame)
 
   if(num_scrolls)
   {
-    Scroll *cur_scroll;
+    struct scroll *cur_scroll;
 
     for(i = 1; i <= num_scrolls; i++)
     {
@@ -468,7 +469,7 @@ int save_board(Board *cur_board, FILE *fp, int savegame)
 
   if(num_sensors)
   {
-    Sensor *cur_sensor;
+    struct sensor *cur_sensor;
 
     for(i = 1; i <= num_sensors; i++)
     {
@@ -480,17 +481,17 @@ int save_board(Board *cur_board, FILE *fp, int savegame)
   return (ftell(fp) - start_location);
 }
 
-void clear_board(Board *cur_board)
+void clear_board(struct board *cur_board)
 {
   int i;
   int num_robots_active = cur_board->num_robots_active;
   int num_scrolls = cur_board->num_scrolls;
   int num_sensors = cur_board->num_sensors;
-  Robot **robot_list = cur_board->robot_list;
-  Robot **robot_name_list = cur_board->robot_list_name_sorted;
-  Robot *cur_robot;
-  Scroll **scroll_list = cur_board->scroll_list;
-  Sensor **sensor_list = cur_board->sensor_list;
+  struct robot **robot_list = cur_board->robot_list;
+  struct robot **robot_name_list = cur_board->robot_list_name_sorted;
+  struct robot *cur_robot;
+  struct scroll **scroll_list = cur_board->scroll_list;
+  struct sensor **sensor_list = cur_board->sensor_list;
 
   free(cur_board->level_id);
   free(cur_board->level_param);
@@ -529,10 +530,10 @@ void clear_board(Board *cur_board)
 }
 
 // Just a linear search. Boards aren't addressed by name very often.
-int find_board(World *mzx_world, char *name)
+int find_board(struct world *mzx_world, char *name)
 {
-  Board **board_list = mzx_world->board_list;
-  Board *current_board;
+  struct board **board_list = mzx_world->board_list;
+  struct board *current_board;
   int num_boards = mzx_world->num_boards;
   int i;
   for(i = 0; i < num_boards; i++)

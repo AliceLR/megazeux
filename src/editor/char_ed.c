@@ -495,7 +495,7 @@ static void replace_filenum(char *src, char *dest, int num)
   *dest_ptr = 0;
 }
 
-int char_editor(World *mzx_world)
+int char_editor(struct world *mzx_world)
 {
   int x = 0;
   int y = 0;
@@ -1177,10 +1177,13 @@ int char_editor(World *mzx_world)
 
         if(num_factors > 1)
         {
-          element **elements = malloc(sizeof(element *) * num_factors);
-          char **radio_button_strings = malloc(sizeof (char *) * num_factors);
-          char **radio_button_substrings = malloc(sizeof (char *) * num_factors);
-          dialog di;
+          struct element **elements =
+           malloc(sizeof(struct element *) * num_factors);
+          char **radio_button_strings =
+           malloc(sizeof(char *) * num_factors);
+          char **radio_button_substrings =
+           malloc(sizeof(char *) * num_factors);
+          struct dialog di;
 
           for(i = 0; i < num_factors; i++)
           {
@@ -1554,7 +1557,7 @@ int char_editor(World *mzx_world)
           int char_size = current_width * current_height;
           int current_file = 0;
 
-          element *elements[] =
+          struct element *elements[] =
           {
             construct_number_box(3, 20, "Offset:  ",
              0, 255, 0, &char_offset),
@@ -1594,7 +1597,7 @@ int char_editor(World *mzx_world)
           int current_file = 0;
           int char_size;
 
-          element *elements[] =
+          struct element *elements[] =
           {
             construct_number_box(3, 20, "Offset:  ",
              0, 255, 0, &char_offset),

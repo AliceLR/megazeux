@@ -27,7 +27,7 @@ __M_BEGIN_DECLS
 
 #include "world.h"
 
-void run_robot(World *mzx_world, int id, int x, int y);
+void run_robot(struct world *mzx_world, int id, int x, int y);
 
 __M_END_DECLS
 

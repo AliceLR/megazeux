@@ -30,7 +30,7 @@
 #include "renderers.h"
 #include "util.h"
 
-typedef struct
+struct gl1_syms
 {
   int syms_loaded;
   void (APIENTRY *glBegin)(GLenum mode);
@@ -47,18 +47,18 @@ typedef struct
   void (APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
   void (APIENTRY *glVertex3f)(GLfloat x, GLfloat y, GLfloat z);
   void (APIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
-} gl1_syms;
+};
 
-typedef struct
+struct gl1_render_data
 {
   Uint32 *pixels;
   Uint32 w;
   Uint32 h;
-  gl1_syms gl;
-  ratio_type_t ratio;
-} gl1_render_data;
+  struct gl1_syms gl;
+  enum ratio_type ratio;
+};
 
-static int gl1_load_syms (gl1_syms *gl)
+static int gl1_load_syms (struct gl1_syms *gl)
 {
   if(gl->syms_loaded)
     return true;
@@ -92,10 +92,11 @@ static int gl1_load_syms (gl1_syms *gl)
   return true;
 }
 
-static bool gl1_init_video(graphics_data *graphics, config_info *conf)
+static bool gl1_init_video(struct graphics_data *graphics,
+ struct config_info *conf)
 {
-  gl1_render_data *render_data = malloc(sizeof(gl1_render_data));
-  gl1_syms *gl = &render_data->gl;
+  struct gl1_render_data *render_data = malloc(sizeof(struct gl1_render_data));
+  struct gl1_syms *gl = &render_data->gl;
   int internal_width, internal_height;
   const char *version, *extensions;
 
@@ -160,11 +161,11 @@ err_out:
   return false;
 }
 
-static bool gl1_set_video_mode(graphics_data *graphics, int width, int height,
- int depth, int fullscreen, int resize)
+static bool gl1_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize)
 {
-  gl1_render_data *render_data = graphics->render_data;
-  gl1_syms *gl = &render_data->gl;
+  struct gl1_render_data *render_data = graphics->render_data;
+  struct gl1_syms *gl = &render_data->gl;
   int v_width, v_height;
 
   GLuint texture_number;
@@ -193,14 +194,14 @@ static bool gl1_set_video_mode(graphics_data *graphics, int width, int height,
   return true;
 }
 
-static void gl1_free_video(graphics_data *graphics)
+static void gl1_free_video(struct graphics_data *graphics)
 {
   free(graphics->render_data);
   graphics->render_data = NULL;
 }
 
-static void gl1_update_colors(graphics_data *graphics, rgb_color *palette,
- Uint32 count)
+static void gl1_update_colors(struct graphics_data *graphics,
+ struct rgb_color *palette, Uint32 count)
 {
   Uint32 i;
   for(i = 0; i < count; i++)
@@ -215,9 +216,9 @@ static void gl1_update_colors(graphics_data *graphics, rgb_color *palette,
   }
 }
 
-static void gl1_render_graph(graphics_data *graphics)
+static void gl1_render_graph(struct graphics_data *graphics)
 {
-  gl1_render_data *render_data = graphics->render_data;
+  struct gl1_render_data *render_data = graphics->render_data;
   Uint32 mode = graphics->screen_mode;
 
   if(!mode)
@@ -232,28 +233,28 @@ static void gl1_render_graph(graphics_data *graphics)
   }
 }
 
-static void gl1_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
- Uint8 color, Uint8 lines, Uint8 offset)
+static void gl1_render_cursor(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
 {
-  gl1_render_data *render_data = graphics->render_data;
+  struct gl1_render_data *render_data = graphics->render_data;
 
   render_cursor(render_data->pixels, render_data->w * 4, 32, x, y,
    graphics->flat_intensity_palette[color], lines, offset);
 }
 
-static void gl1_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
- Uint8 w, Uint8 h)
+static void gl1_render_mouse(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
-  gl1_render_data *render_data = graphics->render_data;
+  struct gl1_render_data *render_data = graphics->render_data;
 
   render_mouse(render_data->pixels, render_data->w * 4, 32, x, y, 0xFFFFFFFF,
    w, h);
 }
 
-static void gl1_sync_screen(graphics_data *graphics)
+static void gl1_sync_screen(struct graphics_data *graphics)
 {
-  gl1_render_data *render_data = graphics->render_data;
-  gl1_syms *gl = &render_data->gl;
+  struct gl1_render_data *render_data = graphics->render_data;
+  struct gl1_syms *gl = &render_data->gl;
   float texture_width, texture_height;
 
   texture_width = (float)640 / render_data->w;
@@ -281,9 +282,9 @@ static void gl1_sync_screen(graphics_data *graphics)
   SDL_GL_SwapBuffers();
 }
 
-void render_gl1_register(renderer_t *renderer)
+void render_gl1_register(struct renderer *renderer)
 {
-  memset(renderer, 0, sizeof(renderer_t));
+  memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gl1_init_video;
   renderer->free_video = gl1_free_video;
   renderer->check_video_mode = gl_check_video_mode;

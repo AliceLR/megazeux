@@ -38,7 +38,7 @@ struct manifest_entry
   char *name;
 };
 
-NETWORK_LIBSPEC bool manifest_compute_sha256(SHA256_ctx *ctx, FILE *f,
+NETWORK_LIBSPEC bool manifest_compute_sha256(struct SHA256_ctx *ctx, FILE *f,
  unsigned long len);
 NETWORK_LIBSPEC bool manifest_entry_check_validity(struct manifest_entry *e,
  FILE *f);

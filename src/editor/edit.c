@@ -63,10 +63,11 @@
 #include <unistd.h>
 #endif
 
-void load_editor_config(World *mzx_world, int argc, char *argv[])
+void load_editor_config(struct world *mzx_world, int argc, char *argv[])
 {
   default_editor_config(&mzx_world->editor_conf);
-  set_editor_config_from_file(&mzx_world->editor_conf, mzx_res_get_by_id(CONFIG_TXT));
+  set_editor_config_from_file(&mzx_world->editor_conf,
+   mzx_res_get_by_id(CONFIG_TXT));
   set_editor_config_from_command_line(&mzx_world->editor_conf, argc, argv);
 }
 
@@ -90,9 +91,10 @@ void load_editor_config(World *mzx_world, int argc, char *argv[])
   overlay commands on overlay mode.
 */
 
-static void synchronize_board_values(World *mzx_world, Board **src_board,
- int *board_width, int *board_height, char **level_id, char **level_param,
- char **level_color, char **overlay, char **overlay_color)
+static void synchronize_board_values(struct world *mzx_world,
+ struct board **src_board, int *board_width, int *board_height,
+ char **level_id, char **level_param, char **level_color,
+ char **overlay, char **overlay_color)
 {
   *src_board = mzx_world->current_board;
   *board_width = (*src_board)->board_width;
@@ -130,13 +132,13 @@ static void fix_scroll(int *cursor_board_x, int *cursor_board_y,
     *cursor_board_y = (board_height - 1);
 }
 
-static void fix_board(World *mzx_world, int new_board)
+static void fix_board(struct world *mzx_world, int new_board)
 {
   mzx_world->current_board_id = new_board;
   mzx_world->current_board = mzx_world->board_list[new_board];
 }
 
-static void fix_mod(World *mzx_world, Board *src_board)
+static void fix_mod(struct world *mzx_world, struct board *src_board)
 {
   load_module(src_board->mod_playing);
   strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
@@ -165,7 +167,7 @@ static const char *menu_lines[NUM_MENUS][2]=
   },
   {
     " Alt+Z:Clear   X:Exits\t  Alt+P:Size/Pos  I:Info  A:Add  D:Delete  V:View",
-    " Alt+I:Import  Alt+X:Export  B:Select Board  Alt+O:Edit Overlay"
+    " Alt+I:Import  Alt+X:Export  B:Select board  Alt+O:Edit Overlay"
   },
   {
     " F3:Terrain  F4:Item\tF5:Creature  F6:Puzzle  F7:Transport  F8:Element",
@@ -176,7 +178,7 @@ static const char *menu_lines[NUM_MENUS][2]=
     " F:Fill   Tab:Draw\tF2:Text\t\t  Alt+B:Block   Alt+\x12\x1d:Move 10"
   },
   {
-    " Shift+F1:Show InvisWalls  Shift+F2:Show Robots  Shift+F3:Show Fakes",
+    " Shift+F1:Show InvisWalls  Shift+F2:Show robots  Shift+F3:Show Fakes",
     " Shift+F4:Show Spaces"
   },
   {
@@ -333,7 +335,7 @@ static const char *thing_menus[8][20] =
   }
 };
 
-static const mzx_thing tmenu_thing_ids[8][18] =
+static const enum thing tmenu_thing_ids[8][18] =
 {
   // Terrain (F3)
   {
@@ -484,8 +486,9 @@ static int truncate_filename(const char *old_name, char *new_name,
 // It's important that after changing the param the thing is placed (using
 // place_current_at_xy) so that scrolls/sensors/robots get copied.
 
-static int change_param(World *mzx_world, mzx_thing id, int param,
- Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor)
+static int change_param(struct world *mzx_world, enum thing id, int param,
+ struct robot *copy_robot, struct scroll *copy_scroll,
+ struct sensor *copy_sensor)
 {
   if(id == SENSOR)
   {
@@ -509,14 +512,14 @@ static int change_param(World *mzx_world, mzx_thing id, int param,
   }
 }
 
-int place_current_at_xy(World *mzx_world, mzx_thing id, int color,
- int param, int x, int y, Robot *copy_robot, Scroll *copy_scroll,
- Sensor *copy_sensor, int overlay_edit)
+int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
+ int param, int x, int y, struct robot *copy_robot,
+ struct scroll *copy_scroll, struct sensor *copy_sensor, int overlay_edit)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int offset = x + (y * src_board->board_width);
   char *level_id = src_board->level_id;
-  mzx_thing old_id = (mzx_thing)level_id[offset];
+  enum thing old_id = (enum thing)level_id[offset];
 
   if(!overlay_edit)
   {
@@ -599,19 +602,20 @@ int place_current_at_xy(World *mzx_world, mzx_thing id, int color,
   return param;
 }
 
-static void grab_at_xy(World *mzx_world, mzx_thing *new_id, int *new_color,
- int *new_param, Robot *copy_robot, Scroll *copy_scroll,
- Sensor *copy_sensor, int x, int y, int overlay_edit)
+static void grab_at_xy(struct world *mzx_world, enum thing *new_id,
+ int *new_color, int *new_param, struct robot *copy_robot,
+ struct scroll *copy_scroll, struct sensor *copy_sensor,
+ int x, int y, int overlay_edit)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
   int offset = x + (y * board_width);
-  mzx_thing old_id = *new_id;
+  enum thing old_id = *new_id;
   int old_param = *new_param;
 
   if(!overlay_edit)
   {
-    mzx_thing grab_id = (mzx_thing)src_board->level_id[offset];
+    enum thing grab_id = (enum thing)src_board->level_id[offset];
     int grab_param = src_board->level_param[offset];
 
     // Hack.
@@ -637,21 +641,21 @@ static void grab_at_xy(World *mzx_world, mzx_thing *new_id, int *new_color,
 
     if(is_robot(grab_id))
     {
-      Robot *src_robot = src_board->robot_list[grab_param];
+      struct robot *src_robot = src_board->robot_list[grab_param];
       duplicate_robot_direct(src_robot, copy_robot, 0, 0);
     }
     else
 
     if(is_signscroll(grab_id))
     {
-      Scroll *src_scroll = src_board->scroll_list[grab_param];
+      struct scroll *src_scroll = src_board->scroll_list[grab_param];
       duplicate_scroll_direct(src_scroll, copy_scroll);
     }
     else
 
     if(grab_id == SENSOR)
     {
-      Sensor *src_sensor = src_board->sensor_list[grab_param];
+      struct sensor *src_sensor = src_board->sensor_list[grab_param];
       duplicate_sensor_direct(src_sensor, copy_sensor);
     }
 
@@ -665,11 +669,12 @@ static void grab_at_xy(World *mzx_world, mzx_thing *new_id, int *new_color,
   }
 }
 
-static void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
- int *new_color, int *new_param, Robot *copy_robot, Scroll *copy_scroll,
- Sensor *copy_sensor, int x, int y)
+static void thing_menu(struct world *mzx_world, int menu_number,
+ enum thing *new_id, int *new_color, int *new_param,
+ struct robot *copy_robot, struct scroll *copy_scroll,
+ struct sensor *copy_sensor, int x, int y)
 {
-  mzx_thing id;
+  enum thing id;
   int color, param;
   int chosen;
   int old_id = *new_id;
@@ -730,7 +735,7 @@ static void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
   }
 }
 
-static void draw_edit_window(Board *src_board, int array_x, int array_y,
+static void draw_edit_window(struct board *src_board, int array_x, int array_y,
  int window_height)
 {
   int viewport_width = 80, viewport_height = window_height;
@@ -753,11 +758,11 @@ static void draw_edit_window(Board *src_board, int array_x, int array_y,
   }
 }
 
-static void flash_thing(World *mzx_world, int start, int end,
+static void flash_thing(struct world *mzx_world, int start, int end,
  int flash_one, int flash_two, int scroll_x, int scroll_y,
  int edit_screen_height)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int backup[32];
   int i, i2;
 
@@ -823,7 +828,7 @@ static void clear_layer_block(int src_x, int src_y, int width,
   }
 }
 
-static void clear_board_block(Board *src_board, int x, int y,
+static void clear_board_block(struct board *src_board, int x, int y,
  int width, int height)
 {
   int board_width = src_board->board_width;
@@ -836,7 +841,7 @@ static void clear_board_block(Board *src_board, int x, int y,
   char *level_under_id = src_board->level_under_id;
   char *level_under_param = src_board->level_under_param;
   char *level_under_color = src_board->level_under_color;
-  mzx_thing dest_id;
+  enum thing dest_id;
   int dest_param;
   int i, i2;
 
@@ -845,7 +850,7 @@ static void clear_board_block(Board *src_board, int x, int y,
     for(i2 = 0; i2 < width; i2++, src_offset++,
      dest_offset++)
     {
-      dest_id = (mzx_thing)level_id[dest_offset];
+      dest_id = (enum thing)level_id[dest_offset];
       if(dest_id != PLAYER)
       {
         dest_param = level_param[dest_offset];
@@ -879,18 +884,18 @@ static void clear_board_block(Board *src_board, int x, int y,
   }
 }
 
-static void __edit_world(World *mzx_world)
+static void __edit_world(struct world *mzx_world)
 {
-  Board *src_board;
-  Robot copy_robot;
-  Scroll copy_scroll;
-  Sensor copy_sensor;
+  struct board *src_board;
+  struct robot copy_robot;
+  struct scroll copy_scroll;
+  struct sensor copy_sensor;
 
   int i;
   int cursor_board_x = 0, cursor_board_y = 0;
   int cursor_x = 0, cursor_y = 0;
   int scroll_x = 0, scroll_y = 0;
-  mzx_thing current_id = SPACE;
+  enum thing current_id = SPACE;
   int current_color = 7;
   int current_param = 0;
   int board_width, board_height;
@@ -903,7 +908,7 @@ static void __edit_world(World *mzx_world)
   int block_x = -1, block_y = -1;
   int block_dest_x = -1, block_dest_y = -1;
   int block_command = -1;
-  Board *block_board = NULL;
+  struct board *block_board = NULL;
   int text_place;
   int text_start_x = -1;
   int modified = 0;
@@ -2064,7 +2069,7 @@ static void __edit_world(World *mzx_world)
               {
                 // Character set
                 int char_offset = 0;
-                element *elements[] =
+                struct element *elements[] =
                 {
                   construct_number_box(21, 20, "Offset:  ",
                    0, 255, 0, &char_offset),
@@ -2256,7 +2261,7 @@ static void __edit_world(World *mzx_world)
                 // Character set
                 int char_offset = 0;
                 int char_size = 256;
-                element *elements[] =
+                struct element *elements[] =
                 {
                   construct_number_box(9, 20, "Offset:  ",
                    0, 255, 0, &char_offset),
@@ -3016,7 +3021,7 @@ static void __edit_world(World *mzx_world)
               {
                 // Copy from overlay
                 int convert_select = rtoo_obj_type(mzx_world);
-                mzx_thing convert_id = NO_ID;
+                enum thing convert_id = NO_ID;
 
                 switch(convert_select)
                 {
@@ -3576,7 +3581,7 @@ static void __edit_world(World *mzx_world)
         if(get_alt_status(keycode_internal))
         {
           int offset = cursor_board_x + (cursor_board_y * board_width);
-          mzx_thing d_id = (mzx_thing)level_id[offset];
+          enum thing d_id = (enum thing)level_id[offset];
           int d_param = level_param[offset];
 
           if(d_id == SENSOR)

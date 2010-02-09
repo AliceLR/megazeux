@@ -61,7 +61,7 @@ static const char *potion_fx[16] =
   "Slow Time   "
 };
 
-static int pe_chest(World *mzx_world, int param)
+static int pe_chest(struct world *mzx_world, int param)
 {
   int type = param & 0x0F;
   int var = param >> 4;
@@ -111,8 +111,8 @@ static int pe_chest(World *mzx_world, int param)
 
     default: // Number
     {
-      dialog di;
-      element *elements[3];
+      struct dialog di;
+      struct element *elements[3];
       int mult_five = 1;
       int dialog_result;
       const char *question = "Amount (multiple of five): ";
@@ -146,10 +146,10 @@ static int pe_chest(World *mzx_world, int param)
   return (var << 4) | type;
 }
 
-static int pe_health(World *mzx_world, int param)
+static int pe_health(struct world *mzx_world, int param)
 {
-  dialog di;
-  element *elements[3];
+  struct dialog di;
+  struct element *elements[3];
   int dialog_result;
 
   set_confirm_buttons(elements);
@@ -168,7 +168,7 @@ static int pe_health(World *mzx_world, int param)
   return param;
 }
 
-static int pe_ring(World *mzx_world, int param)
+static int pe_ring(struct world *mzx_world, int param)
 {
   int p;
   if(param >= 16)
@@ -180,10 +180,10 @@ static int pe_ring(World *mzx_world, int param)
     return p;
 }
 
-static int pe_bomb(World *mzx_world, int param)
+static int pe_bomb(struct world *mzx_world, int param)
 {
-  dialog di;
-  element *elements[3];
+  struct dialog di;
+  struct element *elements[3];
   int dialog_result;
   const char *radio_strings[] =
   {
@@ -206,10 +206,10 @@ static int pe_bomb(World *mzx_world, int param)
   return param;
 }
 
-static int pe_lit_bomb(World *mzx_world, int param)
+static int pe_lit_bomb(struct world *mzx_world, int param)
 {
-  dialog di;
-  element *elements[4];
+  struct dialog di;
+  struct element *elements[4];
   int dialog_result;
   int type = param >> 7;
   int stage = 7 - (param & 0x3F);
@@ -236,12 +236,12 @@ static int pe_lit_bomb(World *mzx_world, int param)
   return (type << 7) | (7 - stage);
 }
 
-static int pe_explosion(World *mzx_world, int param)
+static int pe_explosion(struct world *mzx_world, int param)
 {
   int size = param >> 4;
   int stage = (param & 0x0F) + 1;
-  dialog di;
-  element *elements[4];
+  struct dialog di;
+  struct element *elements[4];
   int dialog_result;
 
   set_confirm_buttons(elements);
@@ -262,13 +262,13 @@ static int pe_explosion(World *mzx_world, int param)
   return (size << 4) | (stage - 1);
 }
 
-static int pe_door(World *mzx_world, int param)
+static int pe_door(struct world *mzx_world, int param)
 {
   int alignment = param & 1;
   int opens = (param >> 1) & 0x03;
   int check_results[1] = { (param >> 3) & 0x01 };
-  dialog di;
-  element *elements[5];
+  struct dialog di;
+  struct element *elements[5];
   int dialog_result;
   const char *radio_strings_1[] =
   {
@@ -300,11 +300,11 @@ static int pe_door(World *mzx_world, int param)
   return alignment | (opens << 1) | (check_results[0] << 3);
 }
 
-static int pe_gate(World *mzx_world, int param)
+static int pe_gate(struct world *mzx_world, int param)
 {
   int check_results[1] = { param };
-  dialog di;
-  element *elements[3];
+  struct dialog di;
+  struct element *elements[3];
   int dialog_result;
   const char *check_strings[] = { "Locked gate" };
 
@@ -324,10 +324,10 @@ static int pe_gate(World *mzx_world, int param)
   return check_results[0];
 }
 
-static int pe_transport(World *mzx_world, int param)
+static int pe_transport(struct world *mzx_world, int param)
 {
-  dialog di;
-  element *elements[3];
+  struct dialog di;
+  struct element *elements[3];
   int dialog_result;
   const char *radio_strings[] =
   {
@@ -350,12 +350,12 @@ static int pe_transport(World *mzx_world, int param)
   return param;
 }
 
-static int pe_pouch(World *mzx_world, int param)
+static int pe_pouch(struct world *mzx_world, int param)
 {
   int coins = param >> 4;
   int gems = param & 0x0F;
-  dialog di;
-  element *elements[4];
+  struct dialog di;
+  struct element *elements[4];
   int dialog_result;
 
   set_confirm_buttons(elements);
@@ -376,10 +376,10 @@ static int pe_pouch(World *mzx_world, int param)
   return (coins << 4) | gems;
 }
 
-static int pe_pusher(World *mzx_world, int param)
+static int pe_pusher(struct world *mzx_world, int param)
 {
-  dialog di;
-  element *elements[3];
+  struct dialog di;
+  struct element *elements[3];
   int dialog_result;
   const char *radio_strings[] =
   {
@@ -402,13 +402,13 @@ static int pe_pusher(World *mzx_world, int param)
   return param;
 }
 
-static int pe_lazer_gun(World *mzx_world, int param)
+static int pe_lazer_gun(struct world *mzx_world, int param)
 {
   int dir = param & 0x03;
   int start = ((param >> 2) & 0x07) + 1;
   int end = (param >> 5) + 1;
-  dialog di;
-  element *elements[5];
+  struct dialog di;
+  struct element *elements[5];
   int dialog_result;
   const char *radio_strings[] =
   {
@@ -435,12 +435,12 @@ static int pe_lazer_gun(World *mzx_world, int param)
   return dir | (((start - 1) << 2) + ((end - 1) << 5));
 }
 
-static int pe_bullet(World *mzx_world, int param)
+static int pe_bullet(struct world *mzx_world, int param)
 {
   int dir = param & 0x03;
   int type = param >> 2;
-  dialog di;
-  element *elements[4];
+  struct dialog di;
+  struct element *elements[4];
   int dialog_result;
   const char *radio_strings_1[] =
   {
@@ -469,10 +469,10 @@ static int pe_bullet(World *mzx_world, int param)
   return dir | (type << 2);
 }
 
-static int pe_ricochet_panel(World *mzx_world, int param)
+static int pe_ricochet_panel(struct world *mzx_world, int param)
 {
-  dialog di;
-  element *elements[3];
+  struct dialog di;
+  struct element *elements[3];
   int dialog_result;
   const char *radio_strings[] =
   {
@@ -495,10 +495,10 @@ static int pe_ricochet_panel(World *mzx_world, int param)
   return param;
 }
 
-static int pe_mine(World *mzx_world, int param)
+static int pe_mine(struct world *mzx_world, int param)
 {
-  dialog di;
-  element *elements[3];
+  struct dialog di;
+  struct element *elements[3];
   int dialog_result;
 
   param = (param >> 4) + 1;
@@ -519,13 +519,13 @@ static int pe_mine(World *mzx_world, int param)
   return (param - 1) << 4;
 }
 
-static int pe_snake(World *mzx_world, int param)
+static int pe_snake(struct world *mzx_world, int param)
 {
   int dir = param & 0x3;
   int intel = (param >> 4) + 1;
   int check_results[1] = { ((param >> 2) & 1) ^ 1 };
-  dialog di;
-  element *elements[5];
+  struct dialog di;
+  struct element *elements[5];
   int dialog_result;
   const char *radio_strings[] =
   {
@@ -553,13 +553,13 @@ static int pe_snake(World *mzx_world, int param)
   return dir | ((check_results[0] ^ 1) << 2) | ((intel - 1) << 4);
 }
 
-static int pe_eye(World *mzx_world, int param)
+static int pe_eye(struct world *mzx_world, int param)
 {
   int intel = (param & 0x07) + 1;
   int radius = ((param >> 3) & 0x07) + 1;
   int check_results[1] = { (param >> 6) ^ 1 };
-  dialog di;
-  element *elements[5];
+  struct dialog di;
+  struct element *elements[5];
   int dialog_result;
   const char *check_strings[] = { "Fast movement " };
 
@@ -583,13 +583,13 @@ static int pe_eye(World *mzx_world, int param)
   return (intel - 1) | ((radius - 1) << 3) | ((check_results[0] ^ 1) << 6);
 }
 
-static int pe_thief(World *mzx_world, int param)
+static int pe_thief(struct world *mzx_world, int param)
 {
   int intel = (param & 0x07) + 1;
   int speed = ((param >> 3) & 0x03) + 1;
   int gems = (param >> 7) + 1;
-  dialog di;
-  element *elements[5];
+  struct dialog di;
+  struct element *elements[5];
   int dialog_result;
 
   set_confirm_buttons(elements);
@@ -612,12 +612,12 @@ static int pe_thief(World *mzx_world, int param)
   return (intel - 1) | ((speed - 1) << 3) | ((gems - 1) << 7);
 }
 
-static int pe_slime_blob(World *mzx_world, int param)
+static int pe_slime_blob(struct world *mzx_world, int param)
 {
   int speed = (param & 0x07) + 1;
   int check_results[2] = { (param >> 6) & 0x01, (param >> 7) & 0x01 };
-  dialog di;
-  element *elements[4];
+  struct dialog di;
+  struct element *elements[4];
   int dialog_result;
   const char *check_strings[] =
   {
@@ -643,13 +643,13 @@ static int pe_slime_blob(World *mzx_world, int param)
    (check_results[1] << 7);
 }
 
-static int pe_runner(World *mzx_world, int param)
+static int pe_runner(struct world *mzx_world, int param)
 {
   int dir = param & 0x03;
   int hp = (param >> 6) + 1;
   int speed = ((param >> 2) & 3) + 1;
-  dialog di;
-  element *elements[5];
+  struct dialog di;
+  struct element *elements[5];
   int dialog_result;
   const char *radio_strings[] =
   {
@@ -676,13 +676,13 @@ static int pe_runner(World *mzx_world, int param)
   return dir | ((speed - 1) << 2) | ((hp - 1) << 6);
 }
 
-static int pe_ghost(World *mzx_world, int param)
+static int pe_ghost(struct world *mzx_world, int param)
 {
   int intel = (param & 0x07) + 1;
   int speed = ((param >> 4) & 0x03) + 1;
   int check_results[] = { (param >> 3) & 0x01 };
-  dialog di;
-  element *elements[5];
+  struct dialog di;
+  struct element *elements[5];
   int dialog_result;
   const char *check_strings[] = { "Invincible" };
 
@@ -706,13 +706,13 @@ static int pe_ghost(World *mzx_world, int param)
   return (intel - 1) | ((speed - 1) << 4) | (check_results[0] << 3);
 }
 
-static int pe_dragon(World *mzx_world, int param)
+static int pe_dragon(struct world *mzx_world, int param)
 {
   int fire_rate = (param & 0x03) + 1;
   int hp = ((param >> 5) & 0x03) + 1;
   int check_results[1] = { ((param >> 2) & 0x01) };
-  dialog di;
-  element *elements[5];
+  struct dialog di;
+  struct element *elements[5];
   int dialog_result;
   const char *check_strings[] = { "Moves" };
 
@@ -736,7 +736,7 @@ static int pe_dragon(World *mzx_world, int param)
   return (fire_rate - 1) | ((hp - 1) << 5) | (check_results[0] << 2);
 }
 
-static int pe_fish(World *mzx_world, int param)
+static int pe_fish(struct world *mzx_world, int param)
 {
   int intel = (param & 0x07) + 1;
   int check_results[4] =
@@ -745,8 +745,8 @@ static int pe_fish(World *mzx_world, int param)
     (param >> 7) & 0x01, ((param >> 3) & 0x01) ^ 1
   };
 
-  dialog di;
-  element *elements[4];
+  struct dialog di;
+  struct element *elements[4];
   int dialog_result;
   const char *check_strings[] =
   {
@@ -774,13 +774,13 @@ static int pe_fish(World *mzx_world, int param)
    ((check_results[3] ^1) << 3);
 }
 
-static int pe_shark(World *mzx_world, int param)
+static int pe_shark(struct world *mzx_world, int param)
 {
   int intel = (param & 0x03) + 1;
   int fire_rate = ((param >> 5) & 0x03) + 1;
   int fires = ((param >> 3) & 0x03);
-  dialog di;
-  element *elements[5];
+  struct dialog di;
+  struct element *elements[5];
   int dialog_result;
   const char *radio_strings[] =
   {
@@ -808,7 +808,7 @@ static int pe_shark(World *mzx_world, int param)
   return (intel - 1) | ((fire_rate - 1) << 5) | (fires << 3);
 }
 
-static int pe_spider(World *mzx_world, int param)
+static int pe_spider(struct world *mzx_world, int param)
 {
   int intel = (param & 0x03) + 1;
   int web = ((param >> 3) & 0x03);
@@ -817,8 +817,8 @@ static int pe_spider(World *mzx_world, int param)
     ((param >> 5) & 0x01) ^ 1, ((param >> 7) & 0x01)
   };
 
-  dialog di;
-  element *elements[5];
+  struct dialog di;
+  struct element *elements[5];
   int dialog_result;
   const char *radio_strings[] =
   {
@@ -850,12 +850,12 @@ static int pe_spider(World *mzx_world, int param)
    ((check_results[0] ^ 1) << 5) | (check_results[1] << 7);
 }
 
-static int pe_goblin(World *mzx_world, int param)
+static int pe_goblin(struct world *mzx_world, int param)
 {
   int intel = ((param >> 6) & 0x03) + 1;
   int rest_len = (param & 0x03) + 1;
-  dialog di;
-  element *elements[4];
+  struct dialog di;
+  struct element *elements[4];
   int dialog_result;
 
   set_confirm_buttons(elements);
@@ -876,14 +876,14 @@ static int pe_goblin(World *mzx_world, int param)
   return (rest_len - 1) | ((intel - 1) << 6);
 }
 
-static int pe_bullet_gun(World *mzx_world, int param)
+static int pe_bullet_gun(struct world *mzx_world, int param)
 {
   int dir = (param >> 3) & 0x03;
   int intel = ((param >> 5) & 0x03) + 1;
   int fire_rate = (param & 0x07) + 1;
   int type = (param >> 7);
-  dialog di;
-  element *elements[6];
+  struct dialog di;
+  struct element *elements[6];
   int dialog_result;
   const char *radio_strings_1[] =
   {
@@ -916,13 +916,13 @@ static int pe_bullet_gun(World *mzx_world, int param)
   return (fire_rate - 1) | ((dir << 3) + ((intel - 1) << 5) + (type << 7));
 }
 
-static int pe_bear(World *mzx_world, int param)
+static int pe_bear(struct world *mzx_world, int param)
 {
   int sens = (param & 0x07) + 1;
   int speed = ((param >> 3) & 0x03) + 1;
   int check_results[1] = { (param >> 7) };
-  dialog di;
-  element *elements[5];
+  struct dialog di;
+  struct element *elements[5];
   int dialog_result;
   const char *check_strings[] = { "2 hit points" };
 
@@ -946,12 +946,12 @@ static int pe_bear(World *mzx_world, int param)
   return (sens - 1) | ((speed - 1) << 3) | (check_results[0] << 7);
 }
 
-static int pe_bear_cub(World *mzx_world, int param)
+static int pe_bear_cub(struct world *mzx_world, int param)
 {
   int intel = (param & 0x03) + 1;
   int switch_rate = ((param >> 2) & 0x03) + 1;
-  dialog di;
-  element *elements[4];
+  struct dialog di;
+  struct element *elements[4];
   int dialog_result;
 
   set_confirm_buttons(elements);
@@ -972,14 +972,14 @@ static int pe_bear_cub(World *mzx_world, int param)
   return (intel - 1) | ((switch_rate - 1) << 2);
 }
 
-static int pe_missile_gun(World *mzx_world, int param)
+static int pe_missile_gun(struct world *mzx_world, int param)
 {
   int dir = (param >> 3) & 0x03;
   int intel = ((param >> 5) & 0x03) + 1;
   int fire_rate = (param & 0x07) + 1;
   int type = (param >> 7);
-  dialog di;
-  element *elements[6];
+  struct dialog di;
+  struct element *elements[6];
   int dialog_result;
   const char *radio_strings_1[] =
   {
@@ -1013,13 +1013,13 @@ static int pe_missile_gun(World *mzx_world, int param)
    ((intel - 1) << 5) | (type << 7);
 }
 
-int edit_sensor(World *mzx_world, Sensor *cur_sensor)
+int edit_sensor(struct world *mzx_world, struct sensor *cur_sensor)
 {
   char sensor_name[15];
   char sensor_robot[15];
   int sensor_char = cur_sensor->sensor_char;
-  dialog di;
-  element *elements[5];
+  struct dialog di;
+  struct element *elements[5];
   int dialog_result;
 
   set_context(94);
@@ -1051,13 +1051,13 @@ int edit_sensor(World *mzx_world, Sensor *cur_sensor)
   return 0;
 }
 
-int edit_scroll(World *mzx_world, Scroll *cur_scroll)
+int edit_scroll(struct world *mzx_world, struct scroll *cur_scroll)
 {
   scroll_edit(mzx_world, cur_scroll, 2);
   return 0;
 }
 
-int edit_robot(World *mzx_world, Robot *cur_robot)
+int edit_robot(struct world *mzx_world, struct robot *cur_robot)
 {
   int new_char;
   // First get name...
@@ -1104,7 +1104,7 @@ int edit_robot(World *mzx_world, Robot *cur_robot)
 
 // Returns parameter or -1 for ESC. Must pass a legit parameter, or -1 to
 // use default or load up a new robot/scroll/sign.
-int edit_param(World *mzx_world, int id, int param)
+int edit_param(struct world *mzx_world, int id, int param)
 {
   if(def_params[id] == -2)
   {

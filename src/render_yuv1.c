@@ -22,16 +22,16 @@
 #include "render_yuv.h"
 #include "renderers.h"
 
-static bool yuv1_set_video_mode(graphics_data *graphics, int width, int height,
- int depth, int fullscreen, int resize)
+static bool yuv1_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize)
 {
   return yuv_set_video_mode_size(graphics, width, height, depth, fullscreen,
    resize, YUV1_OVERLAY_WIDTH, YUV1_OVERLAY_HEIGHT);
 }
 
-static void yuv1_render_graph(graphics_data *graphics)
+static void yuv1_render_graph(struct graphics_data *graphics)
 {
-  yuv_render_data *render_data = graphics->render_data;
+  struct yuv_render_data *render_data = graphics->render_data;
   Uint32 mode = graphics->screen_mode;
 
   SDL_LockYUVOverlay(render_data->overlay);
@@ -50,10 +50,10 @@ static void yuv1_render_graph(graphics_data *graphics)
   SDL_UnlockYUVOverlay(render_data->overlay);
 }
 
-static void yuv1_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
- Uint8 color, Uint8 lines, Uint8 offset)
+static void yuv1_render_cursor(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
 {
-  yuv_render_data *render_data = graphics->render_data;
+  struct yuv_render_data *render_data = graphics->render_data;
 
   SDL_LockYUVOverlay(render_data->overlay);
   render_cursor((Uint32 *)render_data->overlay->pixels[0],
@@ -62,10 +62,10 @@ static void yuv1_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
   SDL_UnlockYUVOverlay(render_data->overlay);
 }
 
-static void yuv1_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
- Uint8 w, Uint8 h)
+static void yuv1_render_mouse(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
-  yuv_render_data *render_data = graphics->render_data;
+  struct yuv_render_data *render_data = graphics->render_data;
 
   SDL_LockYUVOverlay(render_data->overlay);
   render_mouse((Uint32 *)render_data->overlay->pixels[0],
@@ -73,9 +73,9 @@ static void yuv1_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
   SDL_UnlockYUVOverlay(render_data->overlay);
 }
 
-void render_yuv1_register(renderer_t *renderer)
+void render_yuv1_register(struct renderer *renderer)
 {
-  memset(renderer, 0, sizeof(renderer_t));
+  memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = yuv_init_video;
   renderer->free_video = yuv_free_video;
   renderer->check_video_mode = yuv_check_video_mode;

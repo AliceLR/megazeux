@@ -66,7 +66,7 @@ char last_char = 0;
 // of the line is supported. The current character (1 on) is shown at
 // x = 32, y = 0, in color 79, min. 3 chars.
 
-int intake(World *mzx_world, char *string, int max_len,
+int intake(struct world *mzx_world, char *string, int max_len,
  int x, int y, char color, int exit_type, int filter_type,
  int *return_x_pos, bool robo_intk, char *macro)
 {

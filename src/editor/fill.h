@@ -28,9 +28,9 @@ __M_BEGIN_DECLS
 
 #include "../world_struct.h"
 
-void fill_area(World *mzx_world, mzx_thing id, int color, int param,
- int x, int y, Robot *copy_robot, Scroll *copy_scroll, Sensor *copy_sensor,
- int overlay_edit);
+void fill_area(struct world *mzx_world, enum thing id, int color, int param,
+ int x, int y, struct robot *copy_robot, struct scroll *copy_scroll,
+ struct sensor *copy_sensor, int overlay_edit);
 
 __M_END_DECLS
 

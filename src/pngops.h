@@ -26,7 +26,7 @@ __M_BEGIN_DECLS
 
 #include "graphics.h"
 
-int png_write_screen(Uint8 *pixels, rgb_color *pal, int count,
+int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
  const char *name);
 
 #if defined(CONFIG_SDL) && defined(CONFIG_ICON) && !defined(__WIN32__)

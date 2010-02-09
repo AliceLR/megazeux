@@ -68,8 +68,8 @@ unsigned char bullet_color[3] = { 15, 15, 15 };
 unsigned char missile_color = 8;
 unsigned char id_dmg[128];
 
-static unsigned char get_special_id_char(Board *src_board, mzx_thing cell_id,
- int offset)
+static unsigned char get_special_id_char(struct board *src_board,
+ enum thing cell_id, int offset)
 {
   char *level_id = src_board->level_id;
   char *level_param = src_board->level_param;
@@ -334,7 +334,7 @@ static unsigned char get_special_id_char(Board *src_board, mzx_thing cell_id,
   }
 }
 
-unsigned char get_id_char(Board *src_board, int id_offset)
+unsigned char get_id_char(struct board *src_board, int id_offset)
 {
   unsigned char cell_id, cell_char;
   cell_id = src_board->level_id[id_offset];
@@ -344,18 +344,18 @@ unsigned char get_id_char(Board *src_board, int id_offset)
   {
     case 255: return src_board->level_param[id_offset];
     case 0: return
-      get_special_id_char(src_board, (mzx_thing)cell_id, id_offset);
+      get_special_id_char(src_board, (enum thing)cell_id, id_offset);
     default: return cell_char;
   }
 }
 
-unsigned char get_id_color(Board *src_board, int id_offset)
+unsigned char get_id_color(struct board *src_board, int id_offset)
 {
-  mzx_thing cell_id;
+  enum thing cell_id;
   unsigned char normal_color;
   unsigned char spec_color;
 
-  cell_id = (mzx_thing)src_board->level_id[id_offset];
+  cell_id = (enum thing)src_board->level_id[id_offset];
   normal_color = src_board->level_color[id_offset];
   spec_color = 0;
   switch(cell_id)
@@ -366,7 +366,7 @@ unsigned char get_id_color(Board *src_board, int id_offset)
 
     case EXPLOSION:
       normal_color =
-        id_chars[explosion_colors + (src_board->level_param[id_offset] & 0x0F)];
+       id_chars[explosion_colors + (src_board->level_param[id_offset] & 0x0F)];
       goto no_spec;
 
     case FIRE:
@@ -425,7 +425,7 @@ unsigned char get_id_color(Board *src_board, int id_offset)
   return normal_color;
 }
 
-void id_put(Board *src_board, unsigned char x_pos, unsigned char y_pos,
+void id_put(struct board *src_board, unsigned char x_pos, unsigned char y_pos,
  int array_x, int array_y, int ovr_x, int ovr_y)
 {
   int array_offset, overlay_offset;
@@ -499,7 +499,7 @@ void id_put(Board *src_board, unsigned char x_pos, unsigned char y_pos,
   draw_char_ext(c, color, x_pos, y_pos, 0, 0);
 }
 
-void draw_game_window(Board *src_board, int array_x, int array_y)
+void draw_game_window(struct board *src_board, int array_x, int array_y)
 {
   int x_limit, y_limit;
   int x, y;

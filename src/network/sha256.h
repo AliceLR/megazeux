@@ -26,18 +26,18 @@ __M_BEGIN_DECLS
 
 #include "../platform.h"
 
-typedef struct
+struct SHA256_ctx
 {
   Uint32 H[8];
   Uint32 hbits;
   Uint32 lbits;
   Uint8 M[64];
   Uint8 mlen;
-} SHA256_ctx;
+};
 
-void SHA256_init(SHA256_ctx *ctx);
-void SHA256_update(SHA256_ctx *ctx, const void *vdata, Uint32 data_len);
-void SHA256_final(SHA256_ctx *ctx);
+void SHA256_init(struct SHA256_ctx *ctx);
+void SHA256_update(struct SHA256_ctx *ctx, const void *vdata, Uint32 data_len);
+void SHA256_final(struct SHA256_ctx *ctx);
 
 __M_END_DECLS
 

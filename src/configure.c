@@ -59,29 +59,29 @@
 #define AUDIO_SAMPLE_RATE 44100
 #endif
 
-typedef struct
+struct config_entry
 {
   char option_name[OPTION_NAME_LEN];
   config_function change_option;
-} config_entry;
+};
 
 #ifdef CONFIG_UPDATER
 
-static void config_set_network_enabled(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_set_network_enabled(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   conf->network_enabled = strtol(value, NULL, 10);
 }
 
-static void config_update_host(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_update_host(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   strncpy(conf->update_host, value, 256);
   conf->update_host[256 - 1] = 0;
 }
 
-static void config_update_branch_pin(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_update_branch_pin(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   strncpy(conf->update_branch_pin, value, 256);
   conf->update_branch_pin[256 - 1] = 0;
@@ -89,14 +89,14 @@ static void config_update_branch_pin(config_info *conf, char *name, char *value,
 
 #endif // CONFIG_UPDATER
 
-static void config_disassemble_extras(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_disassemble_extras(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   conf->disassemble_extras = strtol(value, NULL, 10);
 }
 
-static void config_disassemble_base(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_disassemble_base(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   int new_base = strtol(value, NULL, 10);
 
@@ -104,34 +104,34 @@ static void config_disassemble_base(config_info *conf, char *name, char *value,
     conf->disassemble_base = new_base;
 }
 
-static void config_set_audio_buffer(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_set_audio_buffer(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   conf->buffer_size = strtol(value, NULL, 10);
 }
 
-static void config_set_resolution(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_set_resolution(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   char *next;
   conf->resolution_width = strtol(value, &next, 10);
   conf->resolution_height = strtol(next + 1, NULL, 10);
 }
 
-static void config_set_fullscreen(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_set_fullscreen(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   conf->fullscreen = strtol(value, NULL, 10);
 }
 
-static void config_set_music(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_set_music(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   conf->music_on = strtol(value, NULL, 10);
 }
 
-static void config_set_mod_volume(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_set_mod_volume(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   int new_volume = strtol(value, NULL, 10);
 
@@ -144,8 +144,8 @@ static void config_set_mod_volume(config_info *conf, char *name, char *value,
   conf->music_volume = new_volume;
 }
 
-static void config_set_mzx_speed(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_set_mzx_speed(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   int new_speed = strtol(value, NULL, 10);
 
@@ -158,14 +158,14 @@ static void config_set_mzx_speed(config_info *conf, char *name, char *value,
   conf->mzx_speed = new_speed;
 }
 
-static void config_set_pc_speaker(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_set_pc_speaker(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   conf->pc_speaker_on = strtol(value, NULL, 10);
 }
 
-static void config_set_sam_volume(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_set_sam_volume(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   int new_volume = strtol(value, NULL, 10);
 
@@ -178,26 +178,26 @@ static void config_set_sam_volume(config_info *conf, char *name, char *value,
   conf->sam_volume = new_volume;
 }
 
-static void config_save_file(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_save_file(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   strncpy(conf->default_save_name, value, 256);
 }
 
-static void config_startup_file(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_startup_file(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   strncpy(conf->startup_file, value, 256);
 }
 
-static void config_enable_oversampling(config_info *conf, char *name,
+static void config_enable_oversampling(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   conf->oversampling_on = strtol(value, NULL, 10);
 }
 
-static void config_resample_mode(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_resample_mode(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   if(!strcasecmp(value, "none"))
   {
@@ -217,7 +217,7 @@ static void config_resample_mode(config_info *conf, char *name, char *value,
   }
 }
 
-static void config_mp_resample_mode(config_info *conf, char *name,
+static void config_mp_resample_mode(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   if(!strcasecmp(value, "none"))
@@ -244,8 +244,8 @@ static void config_mp_resample_mode(config_info *conf, char *name,
   }
 }
 
-static void joy_axis_set(config_info *conf, char *name, char *value,
- char *extended_data)
+static void joy_axis_set(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   int joy_num, joy_axis;
   int joy_key_min, joy_key_max;
@@ -265,18 +265,18 @@ static void joy_axis_set(config_info *conf, char *name, char *value,
   if(joy_axis > 16)
     joy_axis = 16;
 
-  map_joystick_axis(joy_num - 1, joy_axis - 1, (keycode)joy_key_min,
-   (keycode)joy_key_max);
+  map_joystick_axis(joy_num - 1, joy_axis - 1, (enum keycode)joy_key_min,
+   (enum keycode)joy_key_max);
 }
 
-static void joy_button_set(config_info *conf, char *name, char *value,
- char *extended_data)
+static void joy_button_set(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   int joy_num, joy_button;
   int joy_key;
 
   sscanf(name, "joy%dbutton%d", &joy_num, &joy_button);
-  joy_key = (keycode)strtol(value, NULL, 10);
+  joy_key = (enum keycode)strtol(value, NULL, 10);
 
   if(joy_num < 1)
     joy_num = 1;
@@ -284,33 +284,33 @@ static void joy_button_set(config_info *conf, char *name, char *value,
   if(joy_num > 16)
     joy_num = 16;
 
-  map_joystick_button(joy_num - 1, joy_button - 1, (keycode)joy_key);
+  map_joystick_button(joy_num - 1, joy_button - 1, (enum keycode)joy_key);
 }
 
-static void pause_on_unfocus(config_info *conf, char *name, char *value,
- char *extended_data)
+static void pause_on_unfocus(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   int int_val = strtol(value, NULL, 10);
 
   set_refocus_pause(int_val);
 }
 
-static void include_config(config_info *conf, char *name, char *value,
- char *extended_data)
+static void include_config(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   // This one's for the original include N form
   set_config_from_file(conf, name + 7);
 }
 
-static void include2_config(config_info *conf, char *name, char *value,
- char *extended_data)
+static void include2_config(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   // This one's for the include = N form
   set_config_from_file(conf, value);
 }
 
-static void config_set_sfx_volume(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_set_sfx_volume(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   int new_volume = strtol(value, NULL, 10);
 
@@ -323,87 +323,87 @@ static void config_set_sfx_volume(config_info *conf, char *name, char *value,
   conf->pc_speaker_volume = new_volume;
 }
 
-static void config_mask_midchars(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_mask_midchars(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   conf->mask_midchars = strtol(value, NULL, 10);
 }
 
-static void config_set_audio_freq(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_set_audio_freq(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   conf->output_frequency = strtol(value, NULL, 10);
 }
 
-static void config_force_bpp(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_force_bpp(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   conf->force_bpp = strtol(value, NULL, 10);
 }
 
-static void config_window_resolution(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_window_resolution(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   char *next;
   conf->window_width = strtol(value, &next, 10);
   conf->window_height = strtol(next + 1, NULL, 10);
 }
 
-static void config_set_video_output(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_set_video_output(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   strncpy(conf->video_output, value, 16);
 }
 
-static void config_enable_resizing(config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_enable_resizing(struct config_info *conf, char *name,
+ char *value, char *extended_data)
 {
   conf->allow_resize = strtol(value, NULL, 10);
 }
 
-static void config_set_gl_filter_method(config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_gl_filter_method(struct config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   strncpy(conf->gl_filter_method, value, 16);
 }
 
-static void config_gl_vsync(config_info *conf, char *name,
+static void config_gl_vsync(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   conf->gl_vsync = strtol(value, NULL, 10);
 }
 
-static void config_set_gl_tilemap_fragment_shader(config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_gl_tilemap_fragment_shader(struct config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   strncpy(conf->gl_tilemap_fragment_shader, value, 42);
 }
 
-static void config_set_gl_tilemap_vertex_shader(config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_gl_tilemap_vertex_shader(struct config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   strncpy(conf->gl_tilemap_vertex_shader, value, 42);
 }
 
-static void config_set_gl_scaling_fragment_shader(config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_gl_scaling_fragment_shader(struct config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   strncpy(conf->gl_scaling_fragment_shader, value, 42);
 }
 
-static void config_set_gl_scaling_vertex_shader(config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_set_gl_scaling_vertex_shader(struct config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   strncpy(conf->gl_scaling_vertex_shader, value, 42);
 }
 
-static void config_startup_editor(config_info *conf, char *name,
+static void config_startup_editor(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   conf->startup_editor = strtol(value, NULL, 10);
 }
 
-static void config_set_video_ratio(config_info *conf, char *name,
+static void config_set_video_ratio(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   if(!strcasecmp(value, "classic"))
@@ -417,7 +417,7 @@ static void config_set_video_ratio(config_info *conf, char *name,
 /* FAT NOTE: This is searched as a binary tree, the nodes must be
  *           sorted alphabetically, or they risk being ignored.
  */
-static const config_entry config_options[] =
+static const struct config_entry config_options[] =
 {
   { "audio_buffer", config_set_audio_buffer },
   { "audio_sample_rate", config_set_audio_freq },
@@ -464,13 +464,13 @@ static const config_entry config_options[] =
 };
 
 static const int num_config_options =
- sizeof(config_options) / sizeof(config_entry);
+ sizeof(config_options) / sizeof(struct config_entry);
 
-static const config_entry *find_option(char *name,
- const config_entry options[], int num_options)
+static const struct config_entry *find_option(char *name,
+ const struct config_entry options[], int num_options)
 {
   int cmpval, top = num_options - 1, middle, bottom = 0;
-  const config_entry *base = options;
+  const struct config_entry *base = options;
 
   while(bottom <= top)
   {
@@ -490,7 +490,7 @@ static const config_entry *find_option(char *name,
   return NULL;
 }
 
-static config_info default_options =
+static struct config_info default_options =
 {
   // Video options
   0,                            // fullscreen
@@ -538,10 +538,10 @@ static config_info default_options =
 #endif
 };
 
-static void config_change_option(void *conf, char *name, char *value,
- char *extended_data)
+static void config_change_option(void *conf, char *name,
+ char *value, char *extended_data)
 {
-  const config_entry *current_option = find_option(name,
+  const struct config_entry *current_option = find_option(name,
    config_options, num_config_options);
 
   if(current_option)
@@ -696,17 +696,18 @@ __editor_maybe_static void __set_config_from_command_line(
   }
 }
 
-void set_config_from_file(config_info *conf, const char *conf_file_name)
+void set_config_from_file(struct config_info *conf, const char *conf_file_name)
 {
   __set_config_from_file(config_change_option, conf, conf_file_name);
 }
 
-void default_config(config_info *conf)
+void default_config(struct config_info *conf)
 {
-  memcpy(conf, &default_options, sizeof(config_info));
+  memcpy(conf, &default_options, sizeof(struct config_info));
 }
 
-void set_config_from_command_line(config_info *conf, int argc, char *argv[])
+void set_config_from_command_line(struct config_info *conf,
+ int argc, char *argv[])
 {
   __set_config_from_command_line(config_change_option, conf, argc, argv);
 }

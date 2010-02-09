@@ -25,10 +25,11 @@
 #include "render_sdl.h"
 #include "render_yuv.h"
 
-bool yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
- int depth, int fullscreen, int resize, int yuv_width, int yuv_height)
+bool yuv_set_video_mode_size(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize,
+ int yuv_width, int yuv_height)
 {
-  yuv_render_data *render_data = graphics->render_data;
+  struct yuv_render_data *render_data = graphics->render_data;
 
   // the YUV renderer _requires_ 32bit colour
   render_data->screen = SDL_SetVideoMode(width, height, 32,
@@ -59,9 +60,9 @@ bool yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
   return true;
 }
 
-bool yuv_init_video(graphics_data *graphics, config_info *conf)
+bool yuv_init_video(struct graphics_data *graphics, struct config_info *conf)
 {
-  yuv_render_data *render_data = malloc(sizeof(yuv_render_data));
+  struct yuv_render_data *render_data = malloc(sizeof(struct yuv_render_data));
   if(!render_data)
     return false;
 
@@ -78,14 +79,14 @@ bool yuv_init_video(graphics_data *graphics, config_info *conf)
   return true;
 }
 
-void yuv_free_video(graphics_data *graphics)
+void yuv_free_video(struct graphics_data *graphics)
 {
   free(graphics->render_data);
   graphics->render_data = NULL;
 }
 
-bool yuv_check_video_mode(graphics_data *graphics, int width, int height,
- int depth, int fullscreen, int resize)
+bool yuv_check_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize)
 {
   // requires 32bit colour
   return SDL_VideoModeOK(width, height, 32,
@@ -100,10 +101,10 @@ static inline void rgb_to_yuv(Uint8 r, Uint8 g, Uint8 b,
   *v = ((23372 * (r - *y)) >> 15) + 128;
 }
 
-void yuv_update_colors(graphics_data *graphics, rgb_color *palette,
- Uint32 count)
+void yuv_update_colors(struct graphics_data *graphics,
+ struct rgb_color *palette, Uint32 count)
 {
-  yuv_render_data *render_data = graphics->render_data;
+  struct yuv_render_data *render_data = graphics->render_data;
   Uint8 y, u, v;
   Uint32 i;
 
@@ -142,9 +143,9 @@ void yuv_update_colors(graphics_data *graphics, rgb_color *palette,
   }
 }
 
-void yuv_sync_screen(graphics_data *graphics)
+void yuv_sync_screen(struct graphics_data *graphics)
 {
-  yuv_render_data *render_data = graphics->render_data;
+  struct yuv_render_data *render_data = graphics->render_data;
   int width = render_data->screen->w, v_width;
   int height = render_data->screen->h, v_height;
   SDL_Rect rect;

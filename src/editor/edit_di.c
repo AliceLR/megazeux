@@ -521,16 +521,16 @@ static const char *dmg_strs[22] =
   "Bear Cub-"
 };
 
-void set_confirm_buttons(element **elements)
+void set_confirm_buttons(struct element **elements)
 {
   elements[0] = construct_button(15, 15, "OK", 0);
   elements[1] = construct_button(37, 15, "Cancel", 1);
 }
 
-void status_counter_info(World *mzx_world)
+void status_counter_info(struct world *mzx_world)
 {
-  dialog di;
-  element *elements[2 + NUM_STATUS_COUNTERS];
+  struct dialog di;
+  struct element *elements[2 + NUM_STATUS_COUNTERS];
   const char *status_counters_strings[NUM_STATUS_COUNTERS] =
   {
     "Status counter 1: ", "2: ", "3: ",
@@ -561,11 +561,11 @@ void status_counter_info(World *mzx_world)
   pop_context();
 }
 
-void board_exits(World *mzx_world)
+void board_exits(struct world *mzx_world)
 {
-  dialog di;
-  element *elements[6];
-  Board *src_board = mzx_world->current_board;
+  struct dialog di;
+  struct element *elements[6];
+  struct board *src_board = mzx_world->current_board;
   int dialog_result;
   int exits[4];
 
@@ -597,12 +597,12 @@ void board_exits(World *mzx_world)
 }
 
 // Size/pos of board/viewport
-void size_pos(World *mzx_world)
+void size_pos(struct world *mzx_world)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int dialog_result;
-  element *elements[8];
-  dialog di;
+  struct element *elements[8];
+  struct dialog di;
 
   int redo = 1;
 
@@ -723,12 +723,12 @@ void size_pos(World *mzx_world)
 //----------------------------------------------------------
 
 // Board info
-void board_info(World *mzx_world)
+void board_info(struct world *mzx_world)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int dialog_result;
-  element *elements[8];
-  dialog di;
+  struct element *elements[8];
+  struct dialog di;
   int check_box_results[13] =
   {
     src_board->can_shoot, src_board->can_bomb,
@@ -824,14 +824,14 @@ void board_info(World *mzx_world)
 }
 
 // Chars #1-8
-static void global_chars(World *mzx_world)
+static void global_chars(struct world *mzx_world)
 {
   int i;
   int current_id, dialog_result;
   int current_menu = 0;
   int results[24];
-  element *elements[27];
-  dialog di;
+  struct element *elements[27];
+  struct dialog di;
   set_context(89);
 
   do
@@ -986,11 +986,11 @@ static void global_chars(World *mzx_world)
   pop_context();
 }
 
-static void global_dmg(World *mzx_world)
+static void global_dmg(struct world *mzx_world)
 {
   int dialog_result;
-  element *elements[24];
-  dialog di;
+  struct element *elements[24];
+  struct dialog di;
   int results[22];
   int i;
 
@@ -1029,7 +1029,7 @@ static void global_dmg(World *mzx_world)
   pop_context();
 }
 
-void global_info(World *mzx_world)
+void global_info(struct world *mzx_world)
 {
   int death_board = mzx_world->death_board;
   int endgame_board = mzx_world->endgame_board;
@@ -1067,10 +1067,10 @@ void global_info(World *mzx_world)
     "Clear messages and projectiles on exit",
     "Can only play world from a 'SWAP WORLD'"
   };
-  dialog a_di;
-  dialog b_di;
-  element *a_elements[15];
-  element *b_elements[10];
+  struct dialog a_di;
+  struct dialog b_di;
+  struct element *a_elements[15];
+  struct element *b_elements[10];
   int dialog_result;
   int redo = 0;
 
@@ -1233,7 +1233,7 @@ void global_info(World *mzx_world)
 
       case 5:
       {
-        Robot *cur_robot = mzx_world->global_robot;
+        struct robot *cur_robot = mzx_world->global_robot;
         // First get name...
         m_hide();
         save_screen();

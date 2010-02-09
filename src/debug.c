@@ -30,7 +30,7 @@
 
 #define CVALUE_COL_OFFSET 63
 
-static void copy_substring_escaped(mzx_string *str, char *buf,
+static void copy_substring_escaped(struct string *str, char *buf,
  unsigned int size)
 {
   unsigned int i, j;
@@ -91,7 +91,7 @@ static void unescape_string(char *buf)
   }
 }
 
-void debug_counters(World *mzx_world)
+void debug_counters(struct world *mzx_world)
 {
   // +1 for SCORE, +1 for mzx_speed
   int num_vars = mzx_world->num_counters + mzx_world->num_strings + 1 + 1;
@@ -100,8 +100,8 @@ void debug_counters(World *mzx_world)
   int cp_len;
   int selected = 0;
   int i, i2;
-  dialog di;
-  element *elements[3];
+  struct dialog di;
+  struct element *elements[3];
 
   m_show();
 
@@ -215,10 +215,10 @@ void debug_counters(World *mzx_world)
       {
         if(edit_type > 0)
         {
-          mzx_string src;
+          struct string src;
 
           unescape_string(new_value);
-          memset(&src, 0, sizeof(mzx_string));
+          memset(&src, 0, sizeof(struct string));
           src.length = strlen(new_value);
           src.value = new_value;
 
@@ -308,9 +308,9 @@ void debug_counters(World *mzx_world)
   free(var_list);
 }
 
-void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y)
+void draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int i;
   int robot_mem = 0;
 

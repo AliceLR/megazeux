@@ -88,7 +88,7 @@ static inline void convert_to_bigendian(void *data, int len) { }
 
 #endif
 
-static void SHA256_transform(SHA256_ctx *ctx)
+static void SHA256_transform(struct SHA256_ctx *ctx)
  {
   Uint32 A = ctx->H[0];
   Uint32 B = ctx->H[1];
@@ -131,7 +131,7 @@ static void SHA256_transform(SHA256_ctx *ctx)
   ctx->H[7] += H;
 }
 
-void SHA256_init(SHA256_ctx *ctx)
+void SHA256_init(struct SHA256_ctx *ctx)
 {
   memcpy(ctx->H, H_initial, 8 * sizeof(Uint32));
   ctx->lbits = 0;
@@ -139,7 +139,7 @@ void SHA256_init(SHA256_ctx *ctx)
   ctx->mlen = 0;
 }
 
-void SHA256_update(SHA256_ctx *ctx, const void *vdata, Uint32 data_len)
+void SHA256_update(struct SHA256_ctx *ctx, const void *vdata, Uint32 data_len)
 {
   const Uint8 *data = vdata;
   Uint32 low_bits;
@@ -176,7 +176,7 @@ void SHA256_update(SHA256_ctx *ctx, const void *vdata, Uint32 data_len)
   }
 }
 
-void SHA256_final(SHA256_ctx *ctx)
+void SHA256_final(struct SHA256_ctx *ctx)
 {
   if(ctx->mlen < 56)
   {
@@ -201,7 +201,7 @@ void SHA256_final(SHA256_ctx *ctx)
 
 int main(void)
 {
-  SHA256_ctx ctx;
+  struct SHA256_ctx ctx;
   int i;
 
   const char *test1 = "abc";

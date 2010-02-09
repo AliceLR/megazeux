@@ -26,11 +26,11 @@
 #include <string.h>
 #include <ctype.h>
 
-typedef struct
+struct editor_config_entry
 {
   char option_name[OPTION_NAME_LEN];
   editor_config_function change_option;
-} editor_config_entry;
+};
 
 // Default colors for color coding:
 // 0 current line - 11
@@ -47,88 +47,88 @@ typedef struct
 // 11 extras - 7
 // 12 commands and command fragments - 15
 
-static void config_ccode_colors(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_ccode_colors(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->color_codes[4] = (char)strtol(value, NULL, 10);
 }
 
-static void config_ccode_commands(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_ccode_commands(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->color_codes[13] = (char)strtol(value, NULL, 10);
 }
 
-static void config_ccode_conditions(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_ccode_conditions(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->color_codes[10] = (char)strtol(value, NULL, 10);
 }
 
-static void config_ccode_current_line(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_ccode_current_line(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->color_codes[0] = (char)strtol(value, NULL, 10);
 }
 
-static void config_ccode_directions(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_ccode_directions(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->color_codes[5] = (char)strtol(value, NULL, 10);
 }
 
-static void config_ccode_equalities(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_ccode_equalities(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->color_codes[9] = (char)strtol(value, NULL, 10);
 }
 
-static void config_ccode_extras(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_ccode_extras(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->color_codes[8] = (char)strtol(value, NULL, 10);
 }
 
-static void config_ccode_on(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_ccode_on(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->color_coding_on = strtol(value, NULL, 10);
 }
 
-static void config_ccode_immediates(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_ccode_immediates(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   int new_color = strtol(value, NULL, 10);
   conf->color_codes[1] = new_color;
   conf->color_codes[2] = new_color;
 }
 
-static void config_ccode_items(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_ccode_items(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->color_codes[11] = (char)strtol(value, NULL, 10);
 }
 
-static void config_ccode_params(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_ccode_params(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->color_codes[7] = (char)strtol(value, NULL, 10);
 }
 
-static void config_ccode_strings(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_ccode_strings(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->color_codes[8] = (char)strtol(value, NULL, 10);
 }
 
-static void config_ccode_things(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_ccode_things(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->color_codes[6] = (char)strtol(value, NULL, 10);
 }
 
-static void config_default_invald(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_default_invald(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   if(!strcasecmp(value, "ignore"))
   {
@@ -148,8 +148,8 @@ static void config_default_invald(editor_config_info *conf, char *name,
   }
 }
 
-static void config_macro(editor_config_info *conf, char *name, char *value,
- char *extended_data)
+static void config_macro(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   char *macro_name = name + 6;
 
@@ -166,50 +166,50 @@ static void config_macro(editor_config_info *conf, char *name, char *value,
   }
 }
 
-static void bedit_hhelp(editor_config_info *conf, char *name, char *value,
- char *extended_data)
+static void bedit_hhelp(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->bedit_hhelp = strtol(value, NULL, 10);
 }
 
-static void redit_hhelp(editor_config_info *conf, char *name, char *value,
- char *extended_data)
+static void redit_hhelp(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->redit_hhelp = strtol(value, NULL, 10);
 }
 
-static void backup_count(editor_config_info *conf, char *name, char *value,
- char *extended_data)
+static void backup_count(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->backup_count = strtol(value, NULL, 10);
 }
 
-static void backup_interval(editor_config_info *conf, char *name, char *value,
- char *extended_data)
+static void backup_interval(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->backup_interval = strtol(value, NULL, 10);
 }
 
-static void backup_name(editor_config_info *conf, char *name, char *value,
- char *extended_data)
+static void backup_name(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   strncpy(conf->backup_name, value, 256);
 }
 
-static void backup_ext(editor_config_info *conf, char *name, char *value,
- char *extended_data)
+static void backup_ext(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   strncpy(conf->backup_ext, value, 256);
 }
 
-static void config_editor_space_toggles(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_editor_space_toggles(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->editor_space_toggles = strtol(value, NULL, 10);
 }
 
-static void config_editor_enter_splits(editor_config_info *conf, char *name,
- char *value, char *extended_data)
+static void config_editor_enter_splits(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
 {
   conf->editor_enter_splits = strtol(value, NULL, 10);
 }
@@ -217,7 +217,7 @@ static void config_editor_enter_splits(editor_config_info *conf, char *name,
 /* FAT NOTE: This is searched as a binary tree, the nodes must be
  *           sorted alphabetically, or they risk being ignored.
  */
-static const editor_config_entry editor_config_options[] =
+static const struct editor_config_entry editor_config_options[] =
 {
   { "backup_count", backup_count },
   { "backup_ext", backup_ext },
@@ -245,13 +245,13 @@ static const editor_config_entry editor_config_options[] =
 };
 
 static const int num_editor_config_options =
- sizeof(editor_config_options) / sizeof(editor_config_entry);
+ sizeof(editor_config_options) / sizeof(struct editor_config_entry);
 
-static const editor_config_entry *find_editor_option(char *name,
- const editor_config_entry options[], int num_options)
+static const struct editor_config_entry *find_editor_option(char *name,
+ const struct editor_config_entry options[], int num_options)
 {
   int cmpval, top = num_options - 1, middle, bottom = 0;
-  const editor_config_entry *base = options;
+  const struct editor_config_entry *base = options;
 
   while(bottom <= top)
   {
@@ -271,7 +271,7 @@ static const editor_config_entry *find_editor_option(char *name,
   return NULL;
 }
 
-static editor_config_info default_editor_options =
+static struct editor_config_info default_editor_options =
 {
   // Board editor options
   0,                            // editor_space_toggles
@@ -300,25 +300,25 @@ static editor_config_info default_editor_options =
 static void editor_config_change_option(void *conf, char *name, char *value,
  char *extended_data)
 {
-  const editor_config_entry *current_option = find_editor_option(name,
+  const struct editor_config_entry *current_option = find_editor_option(name,
    editor_config_options, num_editor_config_options);
 
   if(current_option)
     current_option->change_option(conf, name, value, extended_data);
 }
 
-void set_editor_config_from_file(editor_config_info *conf,
+void set_editor_config_from_file(struct editor_config_info *conf,
  const char *conf_file_name)
 {
   __set_config_from_file(editor_config_change_option, conf, conf_file_name);
 }
 
-void default_editor_config(editor_config_info *conf)
+void default_editor_config(struct editor_config_info *conf)
 {
-  memcpy(conf, &default_editor_options, sizeof(editor_config_info));
+  memcpy(conf, &default_editor_options, sizeof(struct editor_config_info));
 }
 
-void set_editor_config_from_command_line(editor_config_info *conf,
+void set_editor_config_from_command_line(struct editor_config_info *conf,
  int argc, char *argv[])
 {
   __set_config_from_command_line(editor_config_change_option, conf, argc, argv);

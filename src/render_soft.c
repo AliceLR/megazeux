@@ -29,7 +29,8 @@
 
 static SDL_Color sdlpal[SMZX_PAL_SIZE];
 
-static bool soft_init_video(graphics_data *graphics, config_info *conf)
+static bool soft_init_video(struct graphics_data *graphics,
+ struct config_info *conf)
 {
   graphics->allow_resize = 0;
   graphics->bits_per_pixel = 32;
@@ -51,23 +52,23 @@ static bool soft_init_video(graphics_data *graphics, config_info *conf)
   return set_video_mode();
 }
 
-static bool soft_check_video_mode(graphics_data *graphics, int width, int height,
- int depth, int fullscreen, int resize)
+static bool soft_check_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize)
 {
   return SDL_VideoModeOK(width, height, depth,
    sdl_flags(depth, fullscreen, resize));
 }
 
-static bool soft_set_video_mode(graphics_data *graphics, int width, int height,
- int depth, int fullscreen, int resize)
+static bool soft_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize)
 {
   graphics->render_data = SDL_SetVideoMode(width, height, depth,
    sdl_flags(depth, fullscreen, resize));
   return graphics->render_data != NULL;
 }
 
-static void soft_update_colors(graphics_data *graphics, rgb_color *palette,
- Uint32 count)
+static void soft_update_colors(struct graphics_data *graphics,
+ struct rgb_color *palette, Uint32 count)
 {
   SDL_Surface *screen = graphics->render_data;
   Uint32 i;
@@ -93,7 +94,7 @@ static void soft_update_colors(graphics_data *graphics, rgb_color *palette,
   }
 }
 
-static void soft_render_graph(graphics_data *graphics)
+static void soft_render_graph(struct graphics_data *graphics)
 {
   SDL_Surface *screen = graphics->render_data;
   Uint32 *pixels = (Uint32 *)screen->pixels;
@@ -119,8 +120,8 @@ static void soft_render_graph(graphics_data *graphics)
   SDL_UnlockSurface(screen);
 }
 
-static void soft_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
- Uint8 color, Uint8 lines, Uint8 offset)
+static void soft_render_cursor(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
 {
   SDL_Surface *screen = graphics->render_data;
   Uint32 *pixels = (Uint32 *)screen->pixels;
@@ -144,8 +145,8 @@ static void soft_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
   SDL_UnlockSurface(screen);
 }
 
-static void soft_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
- Uint8 w, Uint8 h)
+static void soft_render_mouse(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
   SDL_Surface *screen = graphics->render_data;
   Uint32 *pixels = (Uint32 *)screen->pixels;
@@ -166,14 +167,14 @@ static void soft_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
   SDL_UnlockSurface(screen);
 }
 
-static void soft_sync_screen(graphics_data *graphics)
+static void soft_sync_screen(struct graphics_data *graphics)
 {
   SDL_Flip(graphics->render_data);
 }
 
-void render_soft_register(renderer_t *renderer)
+void render_soft_register(struct renderer *renderer)
 {
-  memset(renderer, 0, sizeof(renderer_t));
+  memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = soft_init_video;
   renderer->check_video_mode = soft_check_video_mode;
   renderer->set_video_mode = soft_set_video_mode;

@@ -24,68 +24,71 @@
 
 __M_BEGIN_DECLS
 
-typedef enum
+enum variable_type
 {
   number,
   string,
   character,
   color
-} variable_type;
+};
 
-typedef enum
+enum reference_mode
 {
   decimal,
   hexidecimal
-} reference_mode;
+};
 
-typedef union
+union variable_storage
 {
   int int_storage;
   char *str_storage;
-} variable_storage;
+};
 
-typedef struct
+struct macro_variable
 {
-  variable_storage storage;
-  variable_storage def;
+  union variable_storage storage;
+  union variable_storage def;
   char *name;
-} macro_variable;
+};
 
-typedef struct
+struct macro_type
 {
   int type_attributes[16];
-  variable_type type;
+  enum variable_type type;
   int num_variables;
-  macro_variable *variables;
-  macro_variable **variables_sorted;
-} macro_type;
+  struct macro_variable *variables;
+  struct macro_variable **variables_sorted;
+};
 
-typedef struct
+struct macro_variable_reference
 {
-  macro_type *type;
-  variable_storage *storage;
-  reference_mode ref_mode;
-} macro_variable_reference;
+  struct macro_type *type;
+  union variable_storage *storage;
+  enum reference_mode ref_mode;
+};
 
-typedef struct
+struct ext_macro
 {
   char *name;
   char *label;
   int num_lines;
   char ***lines;
-  macro_variable_reference **variable_references;
+  struct macro_variable_reference **variable_references;
   int *line_element_count;
   int num_types;
   int total_variables;
-  macro_type types[32];
+  struct macro_type types[32];
   char *text;
-} ext_macro;
+};
 
-void free_macro(ext_macro *macro_src);
-void add_ext_macro(editor_config_info *conf, char *name, char *line_data,
- char *label);
-ext_macro *find_macro(editor_config_info *conf, char *name, int *next);
-variable_storage *find_macro_variable(char *name, macro_type *m);
+struct editor_config_info;
+
+void free_macro(struct ext_macro *macro_src);
+void add_ext_macro(struct editor_config_info *conf, char *name,
+ char *line_data, char *label);
+struct ext_macro *find_macro(struct editor_config_info *conf, char *name,
+ int *next);
+union variable_storage *find_macro_variable(char *name, struct macro_type *m);
 char *skip_whitespace(char *src);
 char *skip_to_next(char *src, char t, char a, char b);
 

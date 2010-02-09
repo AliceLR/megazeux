@@ -26,7 +26,7 @@ __M_BEGIN_DECLS
 
 #include "robot_struct.h"
 
-typedef struct
+struct board
 {
   int size;
 
@@ -88,15 +88,15 @@ typedef struct
   int num_robots;
   int num_robots_active;
   int num_robots_allocated;
-  Robot **robot_list;
-  Robot **robot_list_name_sorted;
+  struct robot **robot_list;
+  struct robot **robot_list_name_sorted;
   int num_scrolls;
   int num_scrolls_allocated;
-  Scroll **scroll_list;
+  struct scroll **scroll_list;
   int num_sensors;
   int num_sensors_allocated;
-  Sensor **sensor_list;
-} Board;
+  struct sensor **sensor_list;
+};
 
 __M_END_DECLS
 

@@ -58,9 +58,9 @@
 
 #define CURSOR_BLINK_RATE 115
 
-__editor_maybe_static graphics_data graphics;
+__editor_maybe_static struct graphics_data graphics;
 
-static const renderer_data renderers[] =
+static const struct renderer_data renderers[] =
 {
 #if defined(CONFIG_RENDER_SOFT)
   { "software", render_soft_register },
@@ -88,7 +88,7 @@ static const renderer_data renderers[] =
   { NULL, NULL }
 };
 
-static const rgb_color default_pal[16] =
+static const struct rgb_color default_pal[16] =
 {
   /* r, g, b, unused */
   { 0, 0, 0, 0 },
@@ -209,12 +209,12 @@ __editor_maybe_static void ec_load_mzx(void)
   ec_mem_load_set(graphics.default_charset);
 }
 
-static void update_colors(rgb_color *palette, Uint32 count)
+static void update_colors(struct rgb_color *palette, Uint32 count)
 {
   graphics.renderer.update_colors(&graphics, palette, count);
 }
 
-static Uint32 make_palette(rgb_color *palette)
+static Uint32 make_palette(struct rgb_color *palette)
 {
   Uint32 i;
 
@@ -239,22 +239,22 @@ static Uint32 make_palette(rgb_color *palette)
     }
     else
     {
-      memcpy(palette, graphics.intensity_palette, sizeof(rgb_color) *
-       SMZX_PAL_SIZE);
+      memcpy(palette, graphics.intensity_palette,
+       sizeof(struct rgb_color) * SMZX_PAL_SIZE);
     }
     return SMZX_PAL_SIZE;
   }
   else
   {
-    memcpy(palette, graphics.intensity_palette, sizeof(rgb_color) * PAL_SIZE *
-     NUM_PALS);
+    memcpy(palette, graphics.intensity_palette,
+     sizeof(struct rgb_color) * PAL_SIZE * NUM_PALS);
     return PAL_SIZE * NUM_PALS;
   }
 }
 
 void update_palette(void)
 {
-  rgb_color new_palette[SMZX_PAL_SIZE];
+  struct rgb_color new_palette[SMZX_PAL_SIZE];
   update_colors(new_palette, make_palette(new_palette));
 }
 
@@ -263,9 +263,9 @@ static void set_gui_palette(void)
   int i;
 
   memcpy(graphics.palette + PAL_SIZE, default_pal,
-   sizeof(rgb_color) * PAL_SIZE);
+   sizeof(struct rgb_color) * PAL_SIZE);
   memcpy(graphics.intensity_palette + PAL_SIZE, default_pal,
-   sizeof(rgb_color) * PAL_SIZE);
+   sizeof(struct rgb_color) * PAL_SIZE);
 
   for(i = 16; i < PAL_SIZE * NUM_PALS; i++)
     graphics.current_intensity[i] = 100;
@@ -275,9 +275,12 @@ static void init_palette(void)
 {
   Uint32 i;
 
-  memcpy(graphics.palette, default_pal, sizeof(rgb_color) * PAL_SIZE);
-  memcpy(graphics.intensity_palette, default_pal, sizeof(rgb_color) * PAL_SIZE);
-  memset(graphics.current_intensity, 0, sizeof(Uint32) * PAL_SIZE);
+  memcpy(graphics.palette, default_pal,
+   sizeof(struct rgb_color) * PAL_SIZE);
+  memcpy(graphics.intensity_palette, default_pal,
+   sizeof(struct rgb_color) * PAL_SIZE);
+  memset(graphics.current_intensity, 0,
+   sizeof(Uint32) * PAL_SIZE);
 
   for(i = 0; i < SMZX_PAL_SIZE; i++)
     graphics.saved_intensity[i] = 100;
@@ -472,14 +475,14 @@ static void update_intensity_palette(void)
 
 static void swap_palettes(void)
 {
-  rgb_color temp_colors[SMZX_PAL_SIZE];
+  struct rgb_color temp_colors[SMZX_PAL_SIZE];
   Uint32 temp_intensities[SMZX_PAL_SIZE];
   memcpy(temp_colors, graphics.backup_palette,
-   sizeof(rgb_color) * SMZX_PAL_SIZE);
+   sizeof(struct rgb_color) * SMZX_PAL_SIZE);
   memcpy(graphics.backup_palette, graphics.palette,
-   sizeof(rgb_color) * SMZX_PAL_SIZE);
+   sizeof(struct rgb_color) * SMZX_PAL_SIZE);
   memcpy(graphics.palette, temp_colors,
-   sizeof(rgb_color) * SMZX_PAL_SIZE);
+   sizeof(struct rgb_color) * SMZX_PAL_SIZE);
   memcpy(temp_intensities, graphics.backup_intensity,
    sizeof(Uint32) * SMZX_PAL_SIZE);
   if(graphics.fade_status)
@@ -581,8 +584,8 @@ void update_screen(void)
   if(graphics.cursor_flipflop &&
    (graphics.cursor_mode != cursor_mode_invisible))
   {
-    char_element *cursor_element = graphics.text_video + graphics.cursor_x +
-     (graphics.cursor_y * SCREEN_W);
+    struct char_element *cursor_element =
+     graphics.text_video + graphics.cursor_x + (graphics.cursor_y * SCREEN_W);
     Uint8 cursor_color;
     Uint32 cursor_char = cursor_element->char_value;
     Uint32 lines = 0;
@@ -638,8 +641,8 @@ void update_screen(void)
         cursor_color = ((bg_color << 4) | (cursor_color & 0x0F)) + 3;
     }
 
-    graphics.renderer.render_cursor(&graphics, graphics.cursor_x, graphics.cursor_y,
-     cursor_color, lines, offset);
+    graphics.renderer.render_cursor(&graphics,
+     graphics.cursor_x, graphics.cursor_y, cursor_color, lines, offset);
   }
   if(graphics.mouse_status)
   {
@@ -649,8 +652,8 @@ void update_screen(void)
     mouse_x = (mouse_x / graphics.mouse_width_mul) * graphics.mouse_width_mul;
     mouse_y = (mouse_y / graphics.mouse_height_mul) * graphics.mouse_height_mul;
 
-    graphics.renderer.render_mouse(&graphics, mouse_x, mouse_y, graphics.mouse_width_mul,
-     graphics.mouse_height_mul);
+    graphics.renderer.render_mouse(&graphics, mouse_x, mouse_y,
+     graphics.mouse_width_mul, graphics.mouse_height_mul);
   }
   graphics.renderer.sync_screen(&graphics);
 }
@@ -768,15 +771,17 @@ void insta_fadein(void)
 
 void default_palette(void)
 {
-  memcpy(graphics.palette, default_pal, sizeof(rgb_color) * PAL_SIZE);
-  memcpy(graphics.intensity_palette, default_pal, sizeof(rgb_color) * PAL_SIZE);
+  memcpy(graphics.palette, default_pal,
+   sizeof(struct rgb_color) * PAL_SIZE);
+  memcpy(graphics.intensity_palette, default_pal,
+   sizeof(struct rgb_color) * PAL_SIZE);
   update_palette();
 }
 
-static bool set_graphics_output(config_info *conf)
+static bool set_graphics_output(struct config_info *conf)
 {
   const char *video_output = conf->video_output;
-  const renderer_data *renderer = renderers;
+  const struct renderer_data *renderer = renderers;
 
   // The first renderer was NULL, this shouldn't happen
   if(!renderer->name)
@@ -802,7 +807,7 @@ static bool set_graphics_output(config_info *conf)
   return true;
 }
 
-bool init_video(config_info *conf)
+bool init_video(struct config_info *conf)
 {
   graphics.screen_mode = 0;
   graphics.fullscreen = conf->fullscreen;
@@ -932,7 +937,7 @@ bool set_video_mode(void)
 
 #if 0
 
-static bool change_video_output(config_info *conf, const char *output)
+static bool change_video_output(struct config_info *conf, const char *output)
 {
   char old_video_output[16];
 
@@ -990,7 +995,7 @@ void resize_screen(Uint32 w, Uint32 h)
 void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
  Uint32 offset, Uint32 c_offset)
 {
-  char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
   Uint8 next;
@@ -1098,7 +1103,7 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset,
  Uint32 c_offset)
 {
-  char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
   Uint8 next_str[2];
@@ -1144,7 +1149,7 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
 void write_string_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed)
 {
-  char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
   Uint8 next_str[2];
@@ -1197,7 +1202,7 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset,
  Uint32 c_offset)
 {
-  char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
   Uint8 next_str[2];
@@ -1234,7 +1239,7 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
 void write_line_mask(const char *str, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed)
 {
-  char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
   Uint8 next_str[2];
@@ -1307,7 +1312,7 @@ void write_number(int number, char color, int x, int y,
 static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
  Uint8 color, Uint32 offset, Uint32 c_offset)
 {
-  char_element *dest = graphics.text_video + (y * 80) + x;
+  struct char_element *dest = graphics.text_video + (y * 80) + x;
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
   Uint32 i;
@@ -1323,7 +1328,7 @@ static void color_line_ext(Uint32 length, Uint32 x, Uint32 y,
 void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
  Uint8 chr, Uint8 color, Uint32 offset, Uint32 c_offset)
 {
-  char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
   Uint32 i;
@@ -1340,7 +1345,7 @@ void fill_line_ext(Uint32 length, Uint32 x, Uint32 y,
 void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
  Uint32 y, Uint32 offset, Uint32 c_offset)
 {
-  char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
+  struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
   dest->char_value = chr + offset;
   dest->bg_color = (color >> 4) + c_offset;
   dest->fg_color = (color & 0x0F) + c_offset;
@@ -1349,7 +1354,7 @@ void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
 void draw_char_linear_ext(Uint8 color, Uint8 chr,
  Uint32 offset, Uint32 offset_b, Uint32 c_offset)
 {
-  char_element *dest = graphics.text_video + offset;
+  struct char_element *dest = graphics.text_video + offset;
   dest->char_value = chr + offset_b;
   dest->bg_color = (color >> 4) + c_offset;
   dest->fg_color = (color & 0x0F) + c_offset;
@@ -1383,7 +1388,7 @@ void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y)
 
 Uint8 get_color_linear(Uint32 offset)
 {
-  char_element *dest = graphics.text_video + offset;
+  struct char_element *dest = graphics.text_video + offset;
   return (dest->bg_color << 4) | (dest->fg_color & 0x0F);
 }
 
@@ -1392,7 +1397,7 @@ void clear_screen(Uint8 chr, Uint8 color)
   Uint32 i;
   Uint8 fg_color = color & 0x0F;
   Uint8 bg_color = color >> 4;
-  char_element *dest = graphics.text_video;
+  struct char_element *dest = graphics.text_video;
 
   for(i = 0; i < (SCREEN_W * SCREEN_H); i++)
   {
@@ -1404,16 +1409,16 @@ void clear_screen(Uint8 chr, Uint8 color)
   update_screen();
 }
 
-void set_screen(char_element *src)
+void set_screen(struct char_element *src)
 {
   memcpy(graphics.text_video, src,
-   SCREEN_W * SCREEN_H * sizeof(char_element));
+   SCREEN_W * SCREEN_H * sizeof(struct char_element));
 }
 
-void get_screen(char_element *dest)
+void get_screen(struct char_element *dest)
 {
   memcpy(dest, graphics.text_video,
-   SCREEN_W * SCREEN_H * sizeof(char_element));
+   SCREEN_W * SCREEN_H * sizeof(struct char_element));
 }
 
 void cursor_underline(void)
@@ -1439,12 +1444,12 @@ void move_cursor(Uint32 x, Uint32 y)
 
 #ifdef CONFIG_HELPSYS
 
-void set_cursor_mode(cursor_mode_types mode)
+void set_cursor_mode(enum cursor_mode_types mode)
 {
   graphics.cursor_mode = mode;
 }
 
-cursor_mode_types get_cursor_mode(void)
+enum cursor_mode_types get_cursor_mode(void)
 {
   return graphics.cursor_mode;
 }
@@ -1473,7 +1478,7 @@ void m_show(void)
  * Copyright (C) 2006 Angelo "Encelo" Theodorou
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
  */
-static void dump_screen_real(Uint8 *pix, rgb_color *pal, int count,
+static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
  const char *name)
 {
   png_write_screen(pix, pal, count, name);
@@ -1483,7 +1488,7 @@ static void dump_screen_real(Uint8 *pix, rgb_color *pal, int count,
 
 #define DUMP_FMT_EXT "bmp"
 
-static void dump_screen_real(Uint8 *pix, rgb_color *pal, int count,
+static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
  const char *name)
 {
   FILE *file;
@@ -1536,7 +1541,7 @@ static void dump_screen_real(Uint8 *pix, rgb_color *pal, int count,
 
 void dump_screen(void)
 {
-  rgb_color palette[SMZX_PAL_SIZE];
+  struct rgb_color palette[SMZX_PAL_SIZE];
   char name[MAX_NAME_SIZE];
   struct stat file_info;
   Uint8 *ss;

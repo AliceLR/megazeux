@@ -34,8 +34,8 @@
 // For the qsort.
 static int compare_spr(const void *dest, const void *src)
 {
-  Sprite *spr_dest = *((Sprite **)dest);
-  Sprite *spr_src = *((Sprite **)src);
+  struct sprite *spr_dest = *((struct sprite **)dest);
+  struct sprite *spr_src = *((struct sprite **)src);
 
   return ((spr_dest->y + spr_dest->col_y) -
    (spr_src->y + spr_src->col_y));
@@ -57,7 +57,8 @@ static int is_blank(char c)
   return !blank;
 }
 
-void plot_sprite(World *mzx_world, Sprite *cur_sprite, int color, int x, int y)
+void plot_sprite(struct world *mzx_world, struct sprite *cur_sprite, int color,
+ int x, int y)
 {
   if(((cur_sprite->width) && (cur_sprite->height)))
   {
@@ -82,16 +83,16 @@ void plot_sprite(World *mzx_world, Sprite *cur_sprite, int color, int x, int y)
   }
 }
 
-void draw_sprites(World *mzx_world)
+void draw_sprites(struct world *mzx_world)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int i, i2, i3, i4, i5, i6, start_x, start_y, offset_x, offset_y;
   int skip, skip2, skip3;
   int draw_width, draw_height, ref_x, ref_y, screen_x, screen_y;
   int bwidth, bheight, use_chars = 1;
-  Sprite **sprite_list = mzx_world->sprite_list;
-  Sprite *draw_order[MAX_SPRITES];
-  Sprite *cur_sprite;
+  struct sprite **sprite_list = mzx_world->sprite_list;
+  struct sprite *draw_order[MAX_SPRITES];
+  struct sprite *cur_sprite;
   char ch, color, dcolor;
   int viewport_x = src_board->viewport_x;
   int viewport_y = src_board->viewport_y;
@@ -125,7 +126,7 @@ void draw_sprites(World *mzx_world)
 
     // Now sort it, using qsort.
 
-    qsort(draw_order, i2, sizeof(Sprite *), compare_spr);
+    qsort(draw_order, i2, sizeof(struct sprite *), compare_spr);
   }
 
   // draw this on top of the SCREEN window.
@@ -277,7 +278,8 @@ void draw_sprites(World *mzx_world)
               if(!(color & 0xF0))
                 color = (color & 0x0F) | (get_color_linear(i5) & 0xF0);
 
-              if((!overlay_mode || overlay_mode == 3 || (overlay[i6] == 32)) && ch != 32)
+              if((!overlay_mode || overlay_mode == 3 ||
+               (overlay[i6] == 32)) && ch != 32)
               {
                 if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
                   draw_char_linear_ext(color, ch, i5, 0, 0);
@@ -343,7 +345,8 @@ void draw_sprites(World *mzx_world)
               if(!(color & 0xF0))
                 dcolor = (color & 0x0F) | (get_color_linear(i5) & 0xF0);
 
-              if((!overlay_mode || overlay_mode == 3 || (overlay[i6] == 32)) && ch != 32)
+              if((!overlay_mode || overlay_mode == 3 ||
+               (overlay[i6] == 32)) && ch != 32)
               {
                 if(!(cur_sprite->flags & SPRITE_CHAR_CHECK2) || !is_blank(ch))
                   draw_char_linear_ext(dcolor, ch, i5, 0, 0);
@@ -364,7 +367,7 @@ void draw_sprites(World *mzx_world)
 }
 
 
-int sprite_at_xy(Sprite *cur_sprite, int x, int y)
+int sprite_at_xy(struct sprite *cur_sprite, int x, int y)
 {
   if((x >= cur_sprite->x) && (x < cur_sprite->x + cur_sprite->width) &&
    (y >= cur_sprite->y) && (y < cur_sprite->y + cur_sprite->height)
@@ -378,19 +381,21 @@ int sprite_at_xy(Sprite *cur_sprite, int x, int y)
   }
 }
 
-int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
+int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
+ int x, int y)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
-  Sprite **sprite_list = mzx_world->sprite_list;
-  Sprite *cur_sprite;
+  struct sprite **sprite_list = mzx_world->sprite_list;
+  struct sprite *cur_sprite;
   int colliding = 0;
   int skip, skip2, i, i2, i3, i4, i5;
   int bwidth;
   int x1, x2, y1, y2;
   int mw, mh;
   int use_chars = 1, use_chars2 = 1;
-  unsigned int x_lmask, x_gmask, y_lmask, y_gmask, xl, xg, yl, yg, wl, hl, wg, hg;
+  unsigned int x_lmask, x_gmask, y_lmask, y_gmask;
+  unsigned int xl, xg, yl, yg, wl, hl, wg, hg;
   char *vlayer_chars = mzx_world->vlayer_chars;
   char *level_id = src_board->level_id;
   int *collision_list = mzx_world->collision_list;
@@ -400,8 +405,8 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
   if(!(check_sprite->flags & SPRITE_INITIALIZED))
     return -1;
 
-  // Check against the background, will only collide against customblock for now
-  //  (id 5)
+  // Check against the background, will only collide against
+  // customblock for now (id 5)
 
   if(check_sprite->flags & SPRITE_VLAYER)
   {
@@ -471,7 +476,8 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
   for(i = 0; i < MAX_SPRITES; i++)
   {
     cur_sprite = sprite_list[i];
-    if((cur_sprite == check_sprite) || !(cur_sprite->flags & SPRITE_INITIALIZED))
+    if((cur_sprite == check_sprite) ||
+     !(cur_sprite->flags & SPRITE_INITIALIZED))
       continue;
 
     if(!(cur_sprite->col_width) || !(cur_sprite->col_height))
@@ -527,8 +533,8 @@ int sprite_colliding_xy(World *mzx_world, Sprite *check_sprite, int x, int y)
           mh = hg;
         }
 
-        // Now iterate through the rect; if both are NOT 32 then a collision is
-        // flagged.
+        // Now iterate through the rect; if both are NOT 32 then a
+        // collision is flagged.
 
         if(cur_sprite->flags & SPRITE_VLAYER)
         {

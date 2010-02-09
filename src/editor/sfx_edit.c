@@ -110,13 +110,13 @@ static const char *sfx_names[NUM_SFX] =
 
 // 17 on pg 1/2, 16 on pg 3
 
-void sfx_edit(World *mzx_world)
+void sfx_edit(struct world *mzx_world)
 {
   // First, ask whether sfx should be INTERNAL or CUSTOM. If change is made
   // from CUSTOM to INTERNAL, verify deletion of CUSTOM sfx. If changed to
   // CUSTOM, copy over INTERNAL to CUSTOM. If changed to or left at CUSTOM,
   // go to sfx editing.
-  dialog a_di, b_di;
+  struct dialog a_di, b_di;
   int i;
   int old_sfx_mode = mzx_world->custom_sfx_on;
   int page = 0;
@@ -126,7 +126,7 @@ void sfx_edit(World *mzx_world)
   {
     "Default internal SFX", "Custom SFX"
   };
-  element *a_elements[3] =
+  struct element *a_elements[3] =
   {
     construct_radio_button(2, 2, radio_strings, 2, 20,
      &mzx_world->custom_sfx_on),
@@ -134,7 +134,7 @@ void sfx_edit(World *mzx_world)
     construct_button(15, 5, "Cancel", -1)
   };
 
-  element *b_elements[21];
+  struct element *b_elements[21];
 
   set_context(97);
 

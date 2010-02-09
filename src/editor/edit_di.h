@@ -29,12 +29,12 @@ __M_BEGIN_DECLS
 #include "../world_struct.h"
 #include "../window.h"
 
-void board_info(World *mzx_world);
-void board_exits(World *mzx_world);
-void global_info(World *mzx_world);
-void size_pos(World *mzx_world);
-void set_confirm_buttons(element **elements);
-void status_counter_info(World *mzx_world);
+void board_info(struct world *mzx_world);
+void board_exits(struct world *mzx_world);
+void global_info(struct world *mzx_world);
+void size_pos(struct world *mzx_world);
+void set_confirm_buttons(struct element **elements);
+void status_counter_info(struct world *mzx_world);
 
 __M_END_DECLS
 

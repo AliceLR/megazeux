@@ -34,17 +34,18 @@ struct _ModPlugFile
   CSoundFile mSoundFile;
 };
 
-typedef struct
+struct modplug_stream
 {
-  sampled_stream s;
+  struct sampled_stream s;
   ModPlugFile *module_data;
   Uint32 effective_frequency;
-} modplug_stream;
+};
 
-static Uint32 mp_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
+static Uint32 mp_mix_data(struct audio_stream *a_src, Sint32 *buffer,
+ Uint32 len)
 {
   Uint32 read_len;
-  modplug_stream *mp_stream = (modplug_stream *)a_src;
+  struct modplug_stream *mp_stream = (struct modplug_stream *)a_src;
   Uint32 read_wanted = mp_stream->s.allocated_data_length -
    mp_stream->s.stream_offset;
   Uint8 *read_buffer = (Uint8 *)mp_stream->s.output_data +
@@ -84,22 +85,22 @@ static Uint32 mp_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
     read_len = 0;
   }
 
-  sampled_mix_data((sampled_stream *)mp_stream, buffer, len);
+  sampled_mix_data((struct sampled_stream *)mp_stream, buffer, len);
 
   return r_val;
 }
 
-static void mp_set_volume(audio_stream *a_src, Uint32 volume)
+static void mp_set_volume(struct audio_stream *a_src, Uint32 volume)
 {
-  ModPlugFile *mp_file = ((modplug_stream *)a_src)->module_data;
+  ModPlugFile *mp_file = ((struct modplug_stream *)a_src)->module_data;
 
   a_src->volume = volume;
   mp_file->mSoundFile.SetMasterVolume(volume);
 }
 
-static void mp_set_repeat(audio_stream *a_src, Uint32 repeat)
+static void mp_set_repeat(struct audio_stream *a_src, Uint32 repeat)
 {
-  ModPlugFile *mp_file = ((modplug_stream *)a_src)->module_data;
+  ModPlugFile *mp_file = ((struct modplug_stream *)a_src)->module_data;
 
   a_src->repeat = repeat;
 
@@ -109,28 +110,28 @@ static void mp_set_repeat(audio_stream *a_src, Uint32 repeat)
     mp_file->mSoundFile.SetRepeatCount(0);
 }
 
-static void mp_set_order(audio_stream *a_src, Uint32 order)
+static void mp_set_order(struct audio_stream *a_src, Uint32 order)
 {
-  ((modplug_stream *)a_src)->module_data->
+  ((struct modplug_stream *)a_src)->module_data->
    mSoundFile.SetCurrentOrder(order);
 }
 
-static void mp_set_position(audio_stream *a_src, Uint32 position)
+static void mp_set_position(struct audio_stream *a_src, Uint32 position)
 {
-  ((modplug_stream *)a_src)->module_data->
+  ((struct modplug_stream *)a_src)->module_data->
    mSoundFile.SetCurrentPos(position);
 }
 
-static void mp_set_frequency(sampled_stream *s_src, Uint32 frequency)
+static void mp_set_frequency(struct sampled_stream *s_src, Uint32 frequency)
 {
   if(frequency == 0)
   {
-    ((modplug_stream *)s_src)->effective_frequency = 44100;
+    ((struct modplug_stream *)s_src)->effective_frequency = 44100;
     frequency = audio.output_frequency;
   }
   else
   {
-    ((modplug_stream *)s_src)->effective_frequency = frequency;
+    ((struct modplug_stream *)s_src)->effective_frequency = frequency;
     frequency = (Uint32)((float)frequency *
      audio.output_frequency / 44100);
   }
@@ -140,35 +141,35 @@ static void mp_set_frequency(sampled_stream *s_src, Uint32 frequency)
   sampled_set_buffer(s_src);
 }
 
-static Uint32 mp_get_order(audio_stream *a_src)
+static Uint32 mp_get_order(struct audio_stream *a_src)
 {
-  return ((modplug_stream *)a_src)->module_data->
+  return ((struct modplug_stream *)a_src)->module_data->
    mSoundFile.GetCurrentOrder();
 }
 
-static Uint32 mp_get_position(audio_stream *a_src)
+static Uint32 mp_get_position(struct audio_stream *a_src)
 {
-  return ((modplug_stream *)a_src)->module_data->
+  return ((struct modplug_stream *)a_src)->module_data->
    mSoundFile.GetCurrentPos();
 }
 
-static Uint32 mp_get_frequency(sampled_stream *s_src)
+static Uint32 mp_get_frequency(struct sampled_stream *s_src)
 {
-  return ((modplug_stream *)s_src)->effective_frequency;
+  return ((struct modplug_stream *)s_src)->effective_frequency;
 }
 
-static void mp_destruct(audio_stream *a_src)
+static void mp_destruct(struct audio_stream *a_src)
 {
-  modplug_stream *mp_stream = (modplug_stream *)a_src;
+  struct modplug_stream *mp_stream = (struct modplug_stream *)a_src;
   ModPlug_Unload(mp_stream->module_data);
   sampled_destruct(a_src);
 }
 
-audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
+struct audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
  Uint32 volume, Uint32 repeat)
 {
   ssize_t ext_pos = strlen(filename) - 4;
-  audio_stream *ret_val = NULL;
+  struct audio_stream *ret_val = NULL;
   char new_file[MAX_PATH];
   char *input_buffer;
   FILE *input_file;
@@ -195,8 +196,8 @@ audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
 
     if(open_file)
     {
-      modplug_stream *mp_stream =
-       (modplug_stream *)malloc(sizeof(modplug_stream));
+      struct modplug_stream *mp_stream =
+       (struct modplug_stream *)malloc(sizeof(struct modplug_stream));
 
       mp_stream->module_data = open_file;
 
@@ -208,12 +209,12 @@ audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
         frequency = 0;
       }
 
-      initialize_sampled_stream((sampled_stream *)mp_stream,
+      initialize_sampled_stream((struct sampled_stream *)mp_stream,
        mp_set_frequency, mp_get_frequency, frequency, 2, 0);
 
-      ret_val = (audio_stream *)mp_stream;
+      ret_val = (struct audio_stream *)mp_stream;
 
-      construct_audio_stream((audio_stream *)mp_stream, mp_mix_data,
+      construct_audio_stream((struct audio_stream *)mp_stream, mp_mix_data,
        mp_set_volume, mp_set_repeat, mp_set_order, mp_set_position,
        mp_get_order, mp_get_position, mp_destruct, volume, repeat);
     }
@@ -225,7 +226,7 @@ audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
   return ret_val;
 }
 
-void init_modplug(config_info *conf)
+void init_modplug(struct config_info *conf)
 {
   if(conf->oversampling_on)
     audio.mod_settings.mFlags = MODPLUG_ENABLE_OVERSAMPLING;

@@ -25,7 +25,7 @@
 #include "render_gl.h"
 #include "util.h"
 
-bool gl_check_video_mode(graphics_data *graphics, int width, int height,
+bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   return SDL_VideoModeOK(width, height, depth,
@@ -44,7 +44,7 @@ void gl_set_filter_method(const char *method,
   glTexParameteri_p(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_method);
 }
 
-void gl_set_attributes(graphics_data *graphics)
+void gl_set_attributes(struct graphics_data *graphics)
 {
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
 
@@ -54,7 +54,7 @@ void gl_set_attributes(graphics_data *graphics)
     SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
 }
 
-void get_context_width_height(graphics_data *graphics,
+void get_context_width_height(struct graphics_data *graphics,
  int *width, int *height)
 {
   if(!graphics->fullscreen)

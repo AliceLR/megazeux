@@ -28,10 +28,10 @@
 // "under", then automatically clear lower no matter what. Also mark as
 // updated.
 
-void id_place(World *mzx_world, int array_x, int array_y,
- mzx_thing id, char color, char param)
+void id_place(struct world *mzx_world, int array_x, int array_y,
+ enum thing id, char color, char param)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int offset;
   
   array_x = CLAMP(array_x, 0, src_board->board_width - 1);
@@ -42,11 +42,11 @@ void id_place(World *mzx_world, int array_x, int array_y,
 }
 
 // Place ID using an offset instead of coordinate
-void offs_place_id(World *mzx_world, unsigned int offset,
- mzx_thing id, char color, char param)
+void offs_place_id(struct world *mzx_world, unsigned int offset,
+ enum thing id, char color, char param)
 {
-  Board *src_board = mzx_world->current_board;
-  mzx_thing p_id = (mzx_thing)src_board->level_id[offset];
+  struct board *src_board = mzx_world->current_board;
+  enum thing p_id = (enum thing)src_board->level_id[offset];
   int p_flag = flags[p_id];
   int d_flag = flags[(int)id];
 
@@ -87,19 +87,19 @@ void offs_place_id(World *mzx_world, unsigned int offset,
 }
 
 // Remove the top thing at a position
-void id_remove_top(World *mzx_world, int array_x, int array_y)
+void id_remove_top(struct world *mzx_world, int array_x, int array_y)
 {
-  Board *current_board = mzx_world->current_board;
+  struct board *current_board = mzx_world->current_board;
   int offset = (array_y * current_board->board_width) + array_x;
 
   offs_remove_id(mzx_world, offset);
 }
 
 // Remove the top thing at an offset
-void offs_remove_id(World *mzx_world, unsigned int offset)
+void offs_remove_id(struct world *mzx_world, unsigned int offset)
 {
-  Board *src_board = mzx_world->current_board;
-  mzx_thing id = (mzx_thing)src_board->level_id[offset];
+  struct board *src_board = mzx_world->current_board;
+  enum thing id = (enum thing)src_board->level_id[offset];
 
   src_board->level_id[offset] = src_board->level_under_id[offset];
   src_board->level_param[offset] = src_board->level_under_param[offset];
@@ -124,13 +124,13 @@ void offs_remove_id(World *mzx_world, unsigned int offset)
   }
 }
 
-void id_remove_under(World *mzx_world, int array_x, int array_y)
+void id_remove_under(struct world *mzx_world, int array_x, int array_y)
 {
-  Board *src_board = mzx_world->current_board;
+  struct board *src_board = mzx_world->current_board;
   int offset = (array_y * src_board->board_width) + array_x;
 
   // If removing something under the player place this stuff instead
-  if((mzx_thing)src_board->level_id[offset] == PLAYER)
+  if((enum thing)src_board->level_id[offset] == PLAYER)
   {
     src_board->level_under_id[offset] = mzx_world->under_player_id;
     src_board->level_under_param[offset] = mzx_world->under_player_param;

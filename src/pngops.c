@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <png.h>
 
-int png_write_screen(Uint8 *pixels, rgb_color *pal, int count,
+int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
  const char *name)
 {
   png_structp png_ptr = NULL;

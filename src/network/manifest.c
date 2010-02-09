@@ -205,7 +205,7 @@ static struct manifest_entry *manifest_get_remote(struct host *h,
 {
   struct manifest_entry *manifest = NULL;
   char url[LINE_BUF_LEN];
-  host_status_t ret;
+  enum host_status ret;
   FILE *f;
 
   snprintf(url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, base);
@@ -282,7 +282,7 @@ static void manifest_lists_remove_duplicates(struct manifest_entry **local,
   }
 }
 
-bool manifest_compute_sha256(SHA256_ctx *ctx, FILE *f, unsigned long len)
+bool manifest_compute_sha256(struct SHA256_ctx *ctx, FILE *f, unsigned long len)
 {
   unsigned long pos = 0;
 
@@ -307,7 +307,7 @@ bool manifest_compute_sha256(SHA256_ctx *ctx, FILE *f, unsigned long len)
 bool manifest_entry_check_validity(struct manifest_entry *e, FILE *f)
 {
   unsigned long len = e->size;
-  SHA256_ctx ctx;
+  struct SHA256_ctx ctx;
 
   // It must be the same length
   if((unsigned long)ftell_and_rewind(f) != len)
@@ -415,8 +415,8 @@ bool manifest_entry_download_replace(struct host *h, const char *basedir,
  struct manifest_entry *e, void (*delete_hook)(const char *file))
 {
   char buf[LINE_BUF_LEN];
+  enum host_status ret;
   bool valid = false;
-  host_status_t ret;
   FILE *f;
 
   /* Try to open our target file. If we can't open it, it might be

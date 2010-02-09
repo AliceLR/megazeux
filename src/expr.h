@@ -26,7 +26,8 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-int parse_expression(World *mzx_world, char **expression, int *error, int id);
+int parse_expression(struct world *mzx_world, char **expression, int *error,
+ int id);
 
 __M_END_DECLS
 

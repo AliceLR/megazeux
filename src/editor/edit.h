@@ -28,12 +28,13 @@ __M_BEGIN_DECLS
 
 #include "../world_struct.h"
 
-EDITOR_LIBSPEC void load_editor_config(World *mzx_world, int argc, char *argv[]);
+EDITOR_LIBSPEC void load_editor_config(struct world *mzx_world, int argc,
+ char *argv[]);
 EDITOR_LIBSPEC void editor_init(void);
 
-int place_current_at_xy(World *mzx_world, mzx_thing id, int color,
- int param, int x, int y, Robot *copy_robot, Scroll *copy_scroll,
- Sensor *copy_sensor, int overlay_edit);
+int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
+ int param, int x, int y, struct robot *copy_robot,
+ struct scroll *copy_scroll, struct sensor *copy_sensor, int overlay_edit);
 
 // Debug box x pos
 extern char debug_x;

@@ -25,8 +25,8 @@
 #include "graphics.h"
 #include "render.h"
 
-static void set_colors8_mzx (graphics_data *graphics, Uint32 *char_colors,
- Uint8 bg, Uint8 fg)
+static void set_colors8_mzx (struct graphics_data *graphics,
+ Uint32 *char_colors, Uint8 bg, Uint8 fg)
 {
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
   char_colors[0] = (bg << 24) | (bg << 16) | (bg << 8) | bg;
@@ -65,8 +65,8 @@ static void set_colors8_mzx (graphics_data *graphics, Uint32 *char_colors,
 #endif
 }
 
-static void set_colors8_smzx (graphics_data *graphics, Uint32 *char_colors,
- Uint8 bg, Uint8 fg)
+static void set_colors8_smzx (struct graphics_data *graphics,
+ Uint32 *char_colors, Uint8 bg, Uint8 fg)
 {
   Uint32 bb, bf, fb, ff;
   bg &= 0x0F;
@@ -117,8 +117,8 @@ static void set_colors8_smzx (graphics_data *graphics, Uint32 *char_colors,
 #endif
 }
 
-static void set_colors8_smzx3 (graphics_data *graphics, Uint32 *char_colors,
- Uint8 bg, Uint8 fg)
+static void set_colors8_smzx3 (struct graphics_data *graphics,
+ Uint32 *char_colors, Uint8 bg, Uint8 fg)
 {
   Uint32 c0, c1, c2, c3;
   c0 = ((bg << 4) | (fg & 0x0F)) & 0xFF;
@@ -168,8 +168,8 @@ static void set_colors8_smzx3 (graphics_data *graphics, Uint32 *char_colors,
 #endif
 }
 
-static void set_colors16_mzx (graphics_data *graphics, Uint32 *char_colors,
- Uint8 bg, Uint8 fg)
+static void set_colors16_mzx (struct graphics_data *graphics,
+ Uint32 *char_colors, Uint8 bg, Uint8 fg)
 {
   Uint32 cb_bg, cb_fg;
 
@@ -189,8 +189,8 @@ static void set_colors16_mzx (graphics_data *graphics, Uint32 *char_colors,
 #endif
 }
 
-static void set_colors16_smzx (graphics_data *graphics, Uint32 *char_colors,
- Uint8 bg, Uint8 fg)
+static void set_colors16_smzx (struct graphics_data *graphics,
+ Uint32 *char_colors, Uint8 bg, Uint8 fg)
 {
   bg &= 0x0F;
   fg &= 0x0F;
@@ -206,8 +206,8 @@ static void set_colors16_smzx (graphics_data *graphics, Uint32 *char_colors,
   char_colors[3] = (char_colors[3] << 16) | char_colors[3];
 }
 
-static void set_colors16_smzx3 (graphics_data *graphics, Uint32 *char_colors,
- Uint8 bg, Uint8 fg)
+static void set_colors16_smzx3 (struct graphics_data *graphics,
+ Uint32 *char_colors, Uint8 bg, Uint8 fg)
 {
   Uint8 base;
 
@@ -224,15 +224,15 @@ static void set_colors16_smzx3 (graphics_data *graphics, Uint32 *char_colors,
   char_colors[3] = (char_colors[3] << 16) | char_colors[3];
 }
 
-static void set_colors32_mzx (graphics_data *graphics, Uint32 *char_colors,
- Uint8 bg, Uint8 fg)
+static void set_colors32_mzx (struct graphics_data *graphics,
+ Uint32 *char_colors, Uint8 bg, Uint8 fg)
 {
   char_colors[0] = graphics->flat_intensity_palette[bg];
   char_colors[1] = graphics->flat_intensity_palette[fg];
 }
 
-static void set_colors32_smzx (graphics_data *graphics, Uint32 *char_colors,
- Uint8 bg, Uint8 fg)
+static void set_colors32_smzx (struct graphics_data *graphics,
+ Uint32 *char_colors, Uint8 bg, Uint8 fg)
 {
   bg &= 0x0F;
   fg &= 0x0F;
@@ -243,8 +243,8 @@ static void set_colors32_smzx (graphics_data *graphics, Uint32 *char_colors,
   char_colors[3] = graphics->flat_intensity_palette[(fg << 4) | fg];
 }
 
-static void set_colors32_smzx3 (graphics_data *graphics, Uint32 *char_colors,
- Uint8 bg, Uint8 fg)
+static void set_colors32_smzx3 (struct graphics_data *graphics,
+ Uint32 *char_colors, Uint8 bg, Uint8 fg)
 {
   Uint8 base;
 
@@ -256,7 +256,7 @@ static void set_colors32_smzx3 (graphics_data *graphics, Uint32 *char_colors,
   char_colors[3] = graphics->flat_intensity_palette[(base + 3) & 0xFF];
 }
 
-void (*set_colors8[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+void (*set_colors8[4])(struct graphics_data *, Uint32 *, Uint8, Uint8) =
 {
   set_colors8_mzx,
   set_colors8_smzx,
@@ -264,7 +264,7 @@ void (*set_colors8[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
   set_colors8_smzx3
 };
 
-void (*set_colors16[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+void (*set_colors16[4])(struct graphics_data *, Uint32 *, Uint8, Uint8) =
 {
   set_colors16_mzx,
   set_colors16_smzx,
@@ -272,7 +272,7 @@ void (*set_colors16[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
   set_colors16_smzx3
 };
 
-void (*set_colors32[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+void (*set_colors32[4])(struct graphics_data *, Uint32 *, Uint8, Uint8) =
 {
   set_colors32_mzx,
   set_colors32_smzx,
@@ -284,10 +284,10 @@ void (*set_colors32[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
 
 #include "render_yuv.h"
 
-static void yuv2_set_colors_mzx(graphics_data *graphics, Uint32 *char_colors,
- Uint8 bg, Uint8 fg)
+static void yuv2_set_colors_mzx(struct graphics_data *graphics,
+ Uint32 *char_colors, Uint8 bg, Uint8 fg)
 {
-  yuv_render_data *render_data = graphics->render_data;
+  struct yuv_render_data *render_data = graphics->render_data;
   Uint32 y0mask = render_data->y0mask;
   Uint32 y1mask = render_data->y1mask;
   Uint32 uvmask = render_data->uvmask;
@@ -303,7 +303,7 @@ static void yuv2_set_colors_mzx(graphics_data *graphics, Uint32 *char_colors,
   char_colors[3] = cb_fg;
 }
 
-void (*yuv2_set_colors[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
+void (*yuv2_set_colors[4])(struct graphics_data *, Uint32 *, Uint8, Uint8) =
 {
   yuv2_set_colors_mzx,
   set_colors32_smzx,
@@ -314,12 +314,12 @@ void (*yuv2_set_colors[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
 #endif
 
 // Nominally 8-bit (Character graphics 8 bytes wide)
-void render_graph8(Uint8 *pixels, Uint32 pitch, graphics_data *graphics,
- void (*set_colors)(graphics_data *, Uint32 *, Uint8, Uint8))
+void render_graph8(Uint8 *pixels, Uint32 pitch, struct graphics_data *graphics,
+ void (*set_colors)(struct graphics_data *, Uint32 *, Uint8, Uint8))
 {
   Uint32 *dest;
   Uint32 *ldest, *ldest2;
-  char_element *src = graphics->text_video;
+  struct char_element *src = graphics->text_video;
   Uint8 old_bg = 255;
   Uint8 old_fg = 255;
   Uint8 *char_ptr;
@@ -365,12 +365,13 @@ void render_graph8(Uint8 *pixels, Uint32 pitch, graphics_data *graphics,
 }
 
 // Nominally 16-bit (Character graphics 16 bytes wide)
-void render_graph16(Uint16 *pixels, Uint32 pitch, graphics_data *graphics,
- void (*set_colors)(graphics_data *, Uint32 *, Uint8, Uint8))
+void render_graph16(Uint16 *pixels, Uint32 pitch,
+ struct graphics_data *graphics,
+ void (*set_colors)(struct graphics_data *, Uint32 *, Uint8, Uint8))
 {
   Uint32 *dest;
   Uint32 *ldest, *ldest2;
-  char_element *src = graphics->text_video;
+  struct char_element *src = graphics->text_video;
   Uint8 old_bg = 255;
   Uint8 old_fg = 255;
   Uint8 *char_ptr;
@@ -418,12 +419,13 @@ void render_graph16(Uint16 *pixels, Uint32 pitch, graphics_data *graphics,
 }
 
 // Nominally 32-bit (Character graphics 32 bytes wide)
-void render_graph32(Uint32 *pixels, Uint32 pitch, graphics_data *graphics,
- void (*set_colors)(graphics_data *, Uint32 *, Uint8, Uint8))
+void render_graph32(Uint32 *pixels, Uint32 pitch,
+ struct graphics_data *graphics,
+ void (*set_colors)(struct graphics_data *, Uint32 *, Uint8, Uint8))
 {
   Uint32 *dest;
   Uint32 *ldest, *ldest2;
-  char_element *src = graphics->text_video;
+  struct char_element *src = graphics->text_video;
   Uint8 old_bg = 255;
   Uint8 old_fg = 255;
   Uint8 *char_ptr;
@@ -472,12 +474,13 @@ void render_graph32(Uint32 *pixels, Uint32 pitch, graphics_data *graphics,
   }
 }
 
-void render_graph32s(Uint32 *pixels, Uint32 pitch, graphics_data *graphics,
- void (*set_colors)(graphics_data *, Uint32 *, Uint8, Uint8))
+void render_graph32s(Uint32 *pixels, Uint32 pitch,
+ struct graphics_data *graphics,
+ void (*set_colors)(struct graphics_data *, Uint32 *, Uint8, Uint8))
 {
   Uint32 *dest;
   Uint32 *ldest, *ldest2;
-  char_element *src = graphics->text_video;
+  struct char_element *src = graphics->text_video;
   Uint8 old_bg = 255;
   Uint8 old_fg = 255;
   Uint8 *char_ptr;
@@ -563,7 +566,7 @@ void render_mouse(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
   }
 }
 
-void get_screen_coords_centered(graphics_data *graphics, int screen_x,
+void get_screen_coords_centered(struct graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y)
 {
   int w_offset, h_offset;
@@ -588,7 +591,7 @@ void get_screen_coords_centered(graphics_data *graphics, int screen_x,
   *max_y = 349 + h_offset;
 }
 
-void set_screen_coords_centered(graphics_data *graphics, int x, int y,
+void set_screen_coords_centered(struct graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y)
 {
   int target_width = graphics->window_width;
@@ -606,7 +609,7 @@ void set_screen_coords_centered(graphics_data *graphics, int x, int y,
 
 #if defined(CONFIG_RENDER_GL) || defined(CONFIG_RENDER_YUV)
 
-void get_screen_coords_scaled(graphics_data *graphics, int screen_x,
+void get_screen_coords_scaled(struct graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y)
 {
   int target_width = graphics->window_width;
@@ -626,7 +629,7 @@ void get_screen_coords_scaled(graphics_data *graphics, int screen_x,
   *max_y = target_height - 1;
 }
 
-void set_screen_coords_scaled(graphics_data *graphics, int x, int y,
+void set_screen_coords_scaled(struct graphics_data *graphics, int x, int y,
  int *screen_x, int *screen_y)
 {
   int target_width = graphics->window_width;
@@ -645,7 +648,7 @@ void set_screen_coords_scaled(graphics_data *graphics, int x, int y,
 // FIXME: Integerize
 
 void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
- ratio_type_t ratio)
+ enum ratio_type ratio)
 {
   int numerator = 0, denominator = 0;
 
@@ -674,7 +677,7 @@ void fix_viewport_ratio(int width, int height, int *v_width, int *v_height,
 
 #endif // CONFIG_RENDER_GL || CONFIG_RENDER_YUV
 
-void resize_screen_standard(graphics_data *graphics, int w, int h)
+void resize_screen_standard(struct graphics_data *graphics, int w, int h)
 {
   update_screen();
   update_palette();

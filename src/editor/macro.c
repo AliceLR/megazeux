@@ -30,13 +30,13 @@
 
 static int cmp_variables(const void *dest, const void *src)
 {
-  macro_variable *m_src = *((macro_variable **)src);
-  macro_variable *m_dest = *((macro_variable **)dest);
+  struct macro_variable *m_src = *((struct macro_variable **)src);
+  struct macro_variable *m_dest = *((struct macro_variable **)dest);
 
   return strcasecmp(m_dest->name, m_src->name);
 }
 
-void free_macro(ext_macro *macro_src)
+void free_macro(struct ext_macro *macro_src)
 {
   int i, i2;
 
@@ -106,12 +106,12 @@ char *skip_whitespace(char *src)
   return current;
 }
 
-variable_storage *find_macro_variable(char *name, macro_type *m)
+union variable_storage *find_macro_variable(char *name, struct macro_type *m)
 {
   int bottom = 0, top = m->num_variables - 1, middle = 0;
   int cmpval = 0;
-  macro_variable **base = m->variables_sorted;
-  macro_variable *current;
+  struct macro_variable **base = m->variables_sorted;
+  struct macro_variable *current;
 
   while(bottom <= top)
   {
@@ -132,15 +132,15 @@ variable_storage *find_macro_variable(char *name, macro_type *m)
   return NULL;
 }
 
-static ext_macro *process_macro(char *line_data, char *name, char *label)
+static struct ext_macro *process_macro(char *line_data, char *name, char *label)
 {
   char *line_position, *line_position_old;
-  macro_variable *variables;
+  struct macro_variable *variables;
   char ***text_lines;
   char **line_text_segments;
-  macro_variable_reference *line_variable_references;
-  variable_storage *current_storage;
-  macro_variable_reference **variable_references;
+  struct macro_variable_reference *line_variable_references;
+  union variable_storage *current_storage;
+  struct macro_variable_reference **variable_references;
   int *line_variables_count;
   int num_variables;
   int num_types = 0;
@@ -148,22 +148,23 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
   int num_lines = 0;
   int num_lines_allocated = 32;
   int total_variables = 0;
-  macro_type *current_type;
+  struct macro_type *current_type;
   char current_char;
-  ext_macro *macro_dest;
+  struct ext_macro *macro_dest;
   int i;
   int def_val;
 
   line_text_segments = calloc(256, sizeof(char *));
-  variables = calloc(256, sizeof(macro_variable));
-  line_variable_references = calloc(256, sizeof(macro_variable_reference));
+  variables = calloc(256, sizeof(struct macro_variable));
+  line_variable_references = calloc(256,
+   sizeof(struct macro_variable_reference));
 
   text_lines = calloc(num_lines_allocated, sizeof(char **));
   variable_references =
-   calloc(num_lines_allocated, sizeof(macro_variable_reference *));
+   calloc(num_lines_allocated, sizeof(struct macro_variable_reference *));
   line_variables_count = calloc(num_lines_allocated, sizeof(int));
 
-  macro_dest = malloc(sizeof(ext_macro));
+  macro_dest = malloc(sizeof(struct ext_macro));
   macro_dest->name = malloc(strlen(name) + 1);
   strcpy(macro_dest->name, name);
 
@@ -351,7 +352,7 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
         else
         {
           memcpy(&(variables[num_variables].storage),
-           &(variables[num_variables].def), sizeof(variable_storage));
+           &(variables[num_variables].def), sizeof(union variable_storage));
         }
 
         num_variables++;
@@ -375,11 +376,11 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
 
       current_type->num_variables = num_variables;
       current_type->variables =
-       calloc(num_variables, sizeof(macro_variable));
+       calloc(num_variables, sizeof(struct macro_variable));
       current_type->variables_sorted =
-       calloc(num_variables, sizeof(macro_variable *));
+       calloc(num_variables, sizeof(struct macro_variable *));
       memcpy(current_type->variables, variables,
-       sizeof(macro_variable) * num_variables);
+       sizeof(struct macro_variable) * num_variables);
 
       for(i = 0; i < num_variables; i++)
       {
@@ -389,7 +390,7 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
       total_variables += num_variables;
 
       qsort(current_type->variables_sorted,
-       num_variables, sizeof(macro_variable *), cmp_variables);
+       num_variables, sizeof(struct macro_variable *), cmp_variables);
 
       current_type++;
       num_types++;
@@ -475,9 +476,9 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
       line_variables_count[num_lines] = num_line_variables;
 
       variable_references[num_lines] =
-       calloc(num_line_variables, sizeof(macro_variable_reference));
+       calloc(num_line_variables, sizeof(struct macro_variable_reference));
       memcpy(variable_references[num_lines], line_variable_references,
-       sizeof(macro_variable_reference) * num_line_variables);
+       sizeof(struct macro_variable_reference) * num_line_variables);
 
       text_lines[num_lines] =
        calloc(num_line_variables + 1, sizeof(char *));
@@ -493,7 +494,7 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
         text_lines = realloc(text_lines,
          sizeof(char **) * num_lines_allocated);
         variable_references = realloc(variable_references,
-         sizeof(macro_variable_reference *) * num_lines_allocated);
+         sizeof(struct macro_variable_reference *) * num_lines_allocated);
         line_variables_count = realloc(line_variables_count,
          sizeof(int) * num_lines_allocated);
       }
@@ -507,9 +508,9 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
   memcpy(macro_dest->lines, text_lines, sizeof(char **) * num_lines);
 
   macro_dest->variable_references =
-   calloc(num_lines, sizeof(macro_variable_reference *));
+   calloc(num_lines, sizeof(struct macro_variable_reference *));
   memcpy(macro_dest->variable_references, variable_references,
-   sizeof(macro_variable_reference *) * num_lines);
+   sizeof(struct macro_variable_reference *) * num_lines);
 
   macro_dest->line_element_count = calloc(num_lines, sizeof(int));
   memcpy(macro_dest->line_element_count, line_variables_count,
@@ -527,12 +528,13 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
   return macro_dest;
 }
 
-ext_macro *find_macro(editor_config_info *conf, char *name, int *next)
+struct ext_macro *find_macro(struct editor_config_info *conf, char *name,
+ int *next)
 {
   int bottom = 0, top = (conf->num_extended_macros) - 1, middle = 0;
   int cmpval = 0;
-  ext_macro **base = conf->extended_macros;
-  ext_macro *current;
+  struct ext_macro **base = conf->extended_macros;
+  struct ext_macro *current;
 
   while(bottom <= top)
   {
@@ -558,16 +560,16 @@ ext_macro *find_macro(editor_config_info *conf, char *name, int *next)
   return NULL;
 }
 
-void add_ext_macro(editor_config_info *conf, char *name, char *line_data,
- char *label)
+void add_ext_macro(struct editor_config_info *conf, char *name,
+ char *line_data, char *label)
 {
-  ext_macro *macro_dest;
-  ext_macro **macro_list;
+  struct ext_macro *macro_dest;
+  struct ext_macro **macro_list;
   int next = 0;
 
   if(!(conf->num_macros_allocated))
   {
-    conf->extended_macros = malloc(sizeof(ext_macro *));
+    conf->extended_macros = malloc(sizeof(struct ext_macro *));
     conf->extended_macros[0] = process_macro(line_data, name, label);
     conf->num_extended_macros = 1;
     conf->num_macros_allocated = 1;
@@ -589,7 +591,7 @@ void add_ext_macro(editor_config_info *conf, char *name, char *line_data,
         conf->num_macros_allocated *= 2;
         conf->extended_macros =
          realloc(conf->extended_macros,
-         sizeof(ext_macro *) * conf->num_macros_allocated);
+         sizeof(struct ext_macro *) * conf->num_macros_allocated);
       }
 
       macro_list = conf->extended_macros;
@@ -599,7 +601,7 @@ void add_ext_macro(editor_config_info *conf, char *name, char *line_data,
         macro_list += next;
         memmove((char *)(macro_list + 1),
          (char *)macro_list, (conf->num_extended_macros - next) *
-         sizeof(ext_macro *));
+         sizeof(struct ext_macro *));
       }
 
       conf->extended_macros[next] =

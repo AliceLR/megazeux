@@ -41,17 +41,17 @@
 #define TEX_OFF_Y (0.5 / 512)
 
 // Must be multiple of 32 bytes
-typedef struct
+struct ci4tlut
 {
   u16 pal[16];
-} ci4tlut;
+};
 
-typedef struct
+struct gx_render_data
 {
   void *xfb[2];
   void *fifo;
   GXRModeObj *rmode;
-  ci4tlut *smzxtlut;
+  struct ci4tlut *smzxtlut;
   void *charimg;
   GXTlutObj mzxtlutobj;
   GXTlutObj smzxtlutobj[512];
@@ -61,10 +61,10 @@ typedef struct
   int chrdirty;
   int paldirty;
   int curfb;
-} gx_render_data;
+};
 
 // IA8 TLUT for MZX/SMZX mode 1
-static ci4tlut mzxtlut ATTRIBUTE_ALIGN(32) =
+static struct ci4tlut mzxtlut ATTRIBUTE_ALIGN(32) =
 {{
   0x00FF,
   0x0000,
@@ -222,11 +222,12 @@ static u32 smzxtexline[256] =
   0xFFFFFF00, 0xFFFFFF55, 0xFFFFFFAA, 0xFFFFFFFF
 };
 
-static bool gx_init_video(graphics_data *graphics, config_info *conf)
+static bool gx_init_video(struct graphics_data *graphics,
+ struct config_info *conf)
 {
   const GXColor black = {0, 0, 0, 255};
 
-  gx_render_data *render_data;
+  struct gx_render_data *render_data;
   f32 yscale;
   u32 xfbHeight;
   Mtx identmtx;
@@ -238,7 +239,7 @@ static bool gx_init_video(graphics_data *graphics, config_info *conf)
   graphics->window_width = 640;
   graphics->window_height = 350;
 
-  render_data = malloc(sizeof(gx_render_data));
+  render_data = malloc(sizeof(struct gx_render_data));
   graphics->render_data = render_data;
 
   rmode = render_data->rmode = VIDEO_GetPreferredMode(NULL);
@@ -248,8 +249,8 @@ static bool gx_init_video(graphics_data *graphics, config_info *conf)
 
   render_data->charimg = memalign(32, CHAR_TEX_SIZE);
   memset(render_data->charimg, 0, CHAR_TEX_SIZE);
-  render_data->smzxtlut = memalign(32, sizeof(ci4tlut) * 512);
-  memset(render_data->smzxtlut, 0, sizeof(ci4tlut) * 512);
+  render_data->smzxtlut = memalign(32, sizeof(struct ci4tlut) * 512);
+  memset(render_data->smzxtlut, 0, sizeof(struct ci4tlut) * 512);
 
   GX_InitTlutObj(&render_data->mzxtlutobj, &mzxtlut, GX_TL_IA8, 16);
   for(i = 0; i < 512; i++)
@@ -318,22 +319,22 @@ static bool gx_init_video(graphics_data *graphics, config_info *conf)
   return set_video_mode();
 }
 
-static void gx_free_video(graphics_data *graphics)
+static void gx_free_video(struct graphics_data *graphics)
 {
   free(graphics->render_data);
   graphics->render_data = NULL;
 }
 
-static bool gx_check_video_mode(graphics_data *graphics, int width, int height,
- int depth, int fullscreen, int resize)
+static bool gx_check_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize)
 {
   return true;
 }
 
-static bool gx_set_video_mode(graphics_data *graphics, int width, int height,
- int depth, int fullscreen, int resize)
+static bool gx_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, int fullscreen, int resize)
 {
-  gx_render_data *render_data = graphics->render_data;
+  struct gx_render_data *render_data = graphics->render_data;
   float w, h, scale;
   Mtx projmtx;
 
@@ -351,10 +352,10 @@ static bool gx_set_video_mode(graphics_data *graphics, int width, int height,
   return true;
 }
 
-static void gx_update_colors(graphics_data *graphics, rgb_color *palette,
- Uint32 count)
+static void gx_update_colors(struct graphics_data *graphics,
+ struct rgb_color *palette, Uint32 count)
 {
-  gx_render_data *render_data = graphics->render_data;
+  struct gx_render_data *render_data = graphics->render_data;
   Uint32 i;
 
   render_data->paldirty = 1;
@@ -364,8 +365,9 @@ static void gx_update_colors(graphics_data *graphics, rgb_color *palette,
     render_data->palette[i].g = palette[i].g;
     render_data->palette[i].b = palette[i].b;
     render_data->palette[i].a = 255;
-    render_data->tlutpal[i] = (palette[i].b >> 3) | ((palette[i].g & 0xFC) << 3)
-     | ((palette[i].r & 0xF8) << 8);
+    render_data->tlutpal[i] = (palette[i].b >> 3)         |
+                             ((palette[i].g & 0xFC) << 3) |
+                             ((palette[i].r & 0xF8) << 8);
   }
 }
 
@@ -393,9 +395,9 @@ static void gx_draw_char(u32 *tex, Uint8 *chr)
   }
 }
 
-static void gx_remap_charsets(graphics_data *graphics)
+static void gx_remap_charsets(struct graphics_data *graphics)
 {
-  gx_render_data *render_data = graphics->render_data;
+  struct gx_render_data *render_data = graphics->render_data;
   Uint8 *src = graphics->charset;
   u32 *dest = render_data->charimg;
   int i;
@@ -411,18 +413,19 @@ static void gx_remap_charsets(graphics_data *graphics)
   }
 }
 
-static void gx_remap_char(graphics_data *graphics, Uint16 chr)
+static void gx_remap_char(struct graphics_data *graphics, Uint16 chr)
 {
-  gx_render_data *render_data = graphics->render_data;
+  struct gx_render_data *render_data = graphics->render_data;
   u32 *tex = render_data->charimg;
   int offset = (chr & 0x1F) * 8 + (chr >> 5) * 512;
   render_data->chrdirty = 1;
   gx_draw_char(tex + offset, graphics->charset + (chr * 14));
 }
 
-static void gx_remap_charbyte(graphics_data *graphics, Uint16 chr, Uint8 byte)
+static void gx_remap_charbyte(struct graphics_data *graphics,
+ Uint16 chr, Uint8 byte)
 {
-  gx_render_data *render_data = graphics->render_data;
+  struct gx_render_data *render_data = graphics->render_data;
   u32 *tex = render_data->charimg;
   int offset = (chr & 0x1F) * 8 + (chr >> 5) * 512 + byte;
   if(byte > 7)
@@ -433,13 +436,13 @@ static void gx_remap_charbyte(graphics_data *graphics, Uint16 chr, Uint8 byte)
    smzxtexline[graphics->charset[chr * 14 + byte]];
 }
 
-static void gx_render_graph(graphics_data *graphics)
+static void gx_render_graph(struct graphics_data *graphics)
 {
-  gx_render_data *render_data = graphics->render_data;
+  struct gx_render_data *render_data = graphics->render_data;
   GXColor *pal = render_data->palette;
   int i, j, x, y;
   float u, v;
-  char_element *src = graphics->text_video;
+  struct char_element *src = graphics->text_video;
 
   if(render_data->chrdirty)
   {
@@ -585,7 +588,7 @@ static void gx_render_graph(graphics_data *graphics)
               render_data->smzxtlut[i].pal[15] =
                render_data->tlutpal[(i & 0xF) * 0x11];
               render_data->smzxtlut[i].pal[1] = 0xFFFF;
-              DCFlushRange(render_data->smzxtlut + i, sizeof(ci4tlut));
+              DCFlushRange(render_data->smzxtlut + i, sizeof(struct ci4tlut));
             }
             GX_LoadTlut(&render_data->smzxtlutobj[i], GX_TLUT0);
             GX_LoadTexObj(&render_data->chartex, GX_TEXMAP0);
@@ -630,7 +633,7 @@ static void gx_render_graph(graphics_data *graphics)
               render_data->smzxtlut[i].pal[15] =
                render_data->tlutpal[(i + 3) & 0xFF];
               render_data->smzxtlut[i].pal[1] = 0xFFFF;
-              DCFlushRange(render_data->smzxtlut + i, sizeof(ci4tlut));
+              DCFlushRange(render_data->smzxtlut + i, sizeof(struct ci4tlut));
             }
             GX_LoadTlut(&render_data->smzxtlutobj[i], GX_TLUT0);
             GX_LoadTexObj(&render_data->chartex, GX_TEXMAP0);
@@ -659,10 +662,10 @@ static void gx_render_graph(graphics_data *graphics)
   GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
 }
 
-static void gx_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
- Uint8 color, Uint8 lines, Uint8 offset)
+static void gx_render_cursor(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
 {
-  gx_render_data *render_data = graphics->render_data;
+  struct gx_render_data *render_data = graphics->render_data;
   GXColor *pal = render_data->palette;
 
   GX_SetChanMatColor(GX_COLOR0A0, pal[color]);
@@ -678,8 +681,8 @@ static void gx_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
   GX_End();
 }
 
-static void gx_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
- Uint8 w, Uint8 h)
+static void gx_render_mouse(struct graphics_data *graphics,
+ Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
   const GXColor white = {255, 255, 255, 255};
 
@@ -698,9 +701,9 @@ static void gx_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
   GX_End();
 }
 
-static void gx_sync_screen(graphics_data *graphics)
+static void gx_sync_screen(struct graphics_data *graphics)
 {
-  gx_render_data *render_data = graphics->render_data;
+  struct gx_render_data *render_data = graphics->render_data;
 
   render_data->curfb ^= 1;
   GX_DrawDone();
@@ -713,9 +716,9 @@ static void gx_sync_screen(graphics_data *graphics)
   VIDEO_WaitVSync();
 }
 
-void render_gx_register(renderer_t *renderer)
+void render_gx_register(struct renderer *renderer)
 {
-  memset(renderer, 0, sizeof(renderer_t));
+  memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gx_init_video;
   renderer->free_video = gx_free_video;
   renderer->check_video_mode = gx_check_video_mode;

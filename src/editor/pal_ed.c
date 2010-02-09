@@ -56,7 +56,7 @@ static int saved_r = -1;
 static int saved_g = -1;
 static int saved_b = -1;
 
-void palette_editor(World *mzx_world)
+void palette_editor(struct world *mzx_world)
 {
   int i, i2, key, chr, color;
   int current_color = 0;

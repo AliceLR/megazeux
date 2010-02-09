@@ -24,11 +24,11 @@
 
 #include <string.h>
 
-void create_blank_robot_direct(Robot *cur_robot, int x, int y)
+void create_blank_robot_direct(struct robot *cur_robot, int x, int y)
 {
   char *program = malloc(2);
 
-  memset(cur_robot, 0, sizeof(Robot));
+  memset(cur_robot, 0, sizeof(struct robot));
 
   cur_robot->robot_name[0] = 0;
   cur_robot->program = program;
@@ -43,11 +43,11 @@ void create_blank_robot_direct(Robot *cur_robot, int x, int y)
   cur_robot->used = 1;
 }
 
-void create_blank_scroll_direct(Scroll *cur_scroll)
+void create_blank_scroll_direct(struct scroll *cur_scroll)
 {
   char *message = malloc(3);
 
-  memset(cur_scroll, 0, sizeof(Scroll));
+  memset(cur_scroll, 0, sizeof(struct scroll));
 
   cur_scroll->num_lines = 1;
   cur_scroll->mesg_size = 3;
@@ -58,26 +58,28 @@ void create_blank_scroll_direct(Scroll *cur_scroll)
   message[2] = 0x00;
 }
 
-void create_blank_sensor_direct(Sensor *cur_sensor)
+void create_blank_sensor_direct(struct sensor *cur_sensor)
 {
-  memset(cur_sensor, 0, sizeof(Sensor));
+  memset(cur_sensor, 0, sizeof(struct sensor));
   cur_sensor->used = 1;
 }
 
-void clear_scroll_contents(Scroll *cur_scroll)
+void clear_scroll_contents(struct scroll *cur_scroll)
 {
   free(cur_scroll->mesg);
 }
 
-void replace_scroll(Board *src_board, Scroll *src_scroll, int dest_id)
+void replace_scroll(struct board *src_board, struct scroll *src_scroll,
+ int dest_id)
 {
-  Scroll *cur_scroll = src_board->scroll_list[dest_id];
+  struct scroll *cur_scroll = src_board->scroll_list[dest_id];
   clear_scroll_contents(cur_scroll);
   duplicate_scroll_direct(src_scroll, cur_scroll);
 }
 
-void replace_sensor(Board *src_board, Sensor *src_sensor, int dest_id)
+void replace_sensor(struct board *src_board, struct sensor *src_sensor,
+ int dest_id)
 {
-  Sensor *cur_sensor = src_board->sensor_list[dest_id];
+  struct sensor *cur_sensor = src_board->sensor_list[dest_id];
   duplicate_sensor_direct(src_sensor, cur_sensor);
 }

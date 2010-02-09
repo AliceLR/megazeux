@@ -29,18 +29,17 @@ __M_BEGIN_DECLS
 
 #define COMMAND_BUFFER_LEN 512
 
-typedef struct _robot_line robot_line;
-typedef struct _robot_state robot_state;
+#define validity_types enum Validity_types
 
-typedef enum
+enum Validity_types
 {
   valid,
   invalid_uncertain,
   invalid_discard,
   invalid_comment
-} validity_types;
+};
 
-struct _robot_line
+struct robot_line
 {
   int line_text_length;
   int line_bytecode_length;
@@ -50,14 +49,14 @@ struct _robot_line
   int num_args;
   validity_types validity_status;
 
-  struct _robot_line *next;
-  struct _robot_line *previous;
+  struct robot_line *next;
+  struct robot_line *previous;
 };
 
-struct _robot_state
+struct robot_state
 {
   int current_line;
-  robot_line *current_rline;
+  struct robot_line *current_rline;
   int total_lines;
   int size;
   int max_size;
@@ -73,9 +72,9 @@ struct _robot_state
   int scr_line_middle;
   int scr_line_end;
   int scr_hide_mode;
-  robot_line *base;
-  robot_line *mark_start_rline;
-  robot_line *mark_end_rline;
+  struct robot_line *base;
+  struct robot_line *mark_start_rline;
+  struct robot_line *mark_end_rline;
   char *ccodes;
   validity_types default_invalid;
   char *active_macro;
@@ -84,13 +83,13 @@ struct _robot_state
   int macro_recurse_level;
   int macro_repeat_level;
 
-  World *mzx_world;
+  struct world *mzx_world;
 };
 
-void robot_editor(World *mzx_world, Robot *cur_robot);
+void robot_editor(struct world *mzx_world, struct robot *cur_robot);
 
-EDITOR_LIBSPEC void init_macros(World *mzx_world);
-EDITOR_LIBSPEC void free_extended_macros(World *mzx_world);
+EDITOR_LIBSPEC void init_macros(struct world *mzx_world);
+EDITOR_LIBSPEC void free_extended_macros(struct world *mzx_world);
 
 __M_END_DECLS
 
