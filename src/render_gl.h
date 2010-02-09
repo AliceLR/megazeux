@@ -27,6 +27,7 @@
 __M_BEGIN_DECLS
 
 #include "graphics.h"
+#include "util.h"
 
 #ifndef CONFIG_EGL
 #include "SDL_opengl.h"
@@ -51,6 +52,7 @@ __M_BEGIN_DECLS
 extern const float vertex_array_single[2 * 4];
 extern const GLubyte color_array_white[3 * 4];
 
+bool gl_load_syms(const struct dso_syms_map *map);
 void gl_set_filter_method(const char *method,
  void (GL_APIENTRY *glTexParameterf_p)(GLenum target, GLenum pname, GLfloat param));
 void get_context_width_height(struct graphics_data *graphics,

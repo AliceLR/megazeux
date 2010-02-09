@@ -38,16 +38,16 @@
 
 #include "render_gl.h"
 
+static bool syms_loaded;
+
 // NOTE: This renderer should work with almost any GL capable video card.
 //       However, if you plan to change it, please bear in mind that this
 //       has been carefully written to work with both OpenGL 1.x and
 //       OpenGL ES 1.x. The latter API lacks many functions present in
 //       desktop OpenGL. GL ES is typically used on cellphones.
 
-struct gl2_syms
+static struct
 {
-  int syms_loaded;
-
   void (GL_APIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
   void (GL_APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
@@ -78,6 +78,31 @@ struct gl2_syms
    GLsizei stride, const GLvoid *ptr);
   void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width,
    GLsizei height);
+}
+gl2;
+
+static const struct dso_syms_map gl2_syms_map[] =
+{
+  { "glAlphaFunc",          (void **)&gl2.glAlphaFunc },
+  { "glBindTexture",        (void **)&gl2.glBindTexture },
+  { "glBlendFunc",          (void **)&gl2.glBlendFunc },
+  { "glClear",              (void **)&gl2.glClear },
+  { "glColorPointer",       (void **)&gl2.glColorPointer },
+  { "glCopyTexImage2D",     (void **)&gl2.glCopyTexImage2D },
+  { "glDisable",            (void **)&gl2.glDisable },
+  { "glDisableClientState", (void **)&gl2.glDisableClientState },
+  { "glDrawArrays",         (void **)&gl2.glDrawArrays },
+  { "glEnable",             (void **)&gl2.glEnable },
+  { "glEnableClientState",  (void **)&gl2.glEnableClientState },
+  { "glGenTextures",        (void **)&gl2.glGenTextures },
+  { "glGetString",          (void **)&gl2.glGetString },
+  { "glTexCoordPointer",    (void **)&gl2.glTexCoordPointer },
+  { "glTexImage2D",         (void **)&gl2.glTexImage2D },
+  { "glTexParameterf",      (void **)&gl2.glTexParameterf },
+  { "glTexSubImage2D",      (void **)&gl2.glTexSubImage2D },
+  { "glVertexPointer",      (void **)&gl2.glVertexPointer },
+  { "glViewport",           (void **)&gl2.glViewport },
+  { NULL, NULL }
 };
 
 struct gl2_render_data
@@ -93,54 +118,23 @@ struct gl2_render_data
   Uint8 remap_texture;
   Uint8 remap_char[CHARSET_SIZE * 2];
   Uint8 ignore_linear;
-  struct gl2_syms gl;
   enum ratio_type ratio;
 };
-
-static int gl2_load_syms (struct gl2_syms *gl)
-{
-  if(gl->syms_loaded)
-    return true;
-
-  GL_LOAD_SYM(gl, glAlphaFunc)
-  GL_LOAD_SYM(gl, glBindTexture)
-  GL_LOAD_SYM(gl, glBlendFunc)
-  GL_LOAD_SYM(gl, glClear)
-  GL_LOAD_SYM(gl, glColorPointer)
-  GL_LOAD_SYM(gl, glDisable)
-  GL_LOAD_SYM(gl, glDisableClientState)
-  GL_LOAD_SYM(gl, glDrawArrays)
-  GL_LOAD_SYM(gl, glCopyTexImage2D)
-  GL_LOAD_SYM(gl, glEnable)
-  GL_LOAD_SYM(gl, glEnableClientState)
-  GL_LOAD_SYM(gl, glGenTextures)
-  GL_LOAD_SYM(gl, glGetString)
-  GL_LOAD_SYM(gl, glTexCoordPointer)
-  GL_LOAD_SYM(gl, glTexImage2D)
-  GL_LOAD_SYM(gl, glTexParameterf)
-  GL_LOAD_SYM(gl, glTexSubImage2D)
-  GL_LOAD_SYM(gl, glVertexPointer)
-  GL_LOAD_SYM(gl, glViewport)
-
-  gl->syms_loaded = true;
-  return true;
-}
 
 static bool gl2_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct gl2_render_data *render_data = malloc(sizeof(struct gl2_render_data));
-  struct gl2_syms *gl = &render_data->gl;
   const char *version;
 
   if(!render_data)
     goto err_out;
 
-  if(!GL_CAN_USE)
+  syms_loaded = gl_load_syms(gl2_syms_map);
+  if(!syms_loaded)
     goto err_free_render_data;
 
   graphics->render_data = render_data;
-  gl->syms_loaded = false;
 
   graphics->gl_vsync = conf->gl_vsync;
   graphics->allow_resize = conf->allow_resize;
@@ -163,7 +157,7 @@ static bool gl2_init_video(struct graphics_data *graphics,
     goto err_free_render_data;
 
   // NOTE: This must come AFTER set_video_mode()!
-  version = (const char *)gl->glGetString(GL_VERSION);
+  version = (const char *)gl2.glGetString(GL_VERSION);
 
   // We need a specific version of OpenGL; desktop GL must be 1.1.
   // All OpenGL ES implementations are supported, so don't do the check
@@ -212,7 +206,6 @@ static void gl2_resize_screen(struct graphics_data *graphics,
  int width, int height)
 {
   struct gl2_render_data *render_data = graphics->render_data;
-  struct gl2_syms *gl = &render_data->gl;
 
   // FIXME: Hack, remove
   get_context_width_height(graphics, &width, &height);
@@ -234,58 +227,52 @@ static void gl2_resize_screen(struct graphics_data *graphics,
     int v_width, v_height;
 
     fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
-    gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
+    gl2.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
      v_width, v_height);
   }
 #endif
 
-  gl->glGenTextures(3, render_data->texture_number);
+  gl2.glGenTextures(3, render_data->texture_number);
 
-  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+  gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
 
-  gl_set_filter_method(graphics->gl_filter_method, gl->glTexParameterf);
+  gl_set_filter_method(graphics->gl_filter_method, gl2.glTexParameterf);
 
-  gl->glEnable(GL_TEXTURE_2D);
-  gl->glAlphaFunc(GL_GREATER, 0.565f);
+  gl2.glEnable(GL_TEXTURE_2D);
+  gl2.glAlphaFunc(GL_GREATER, 0.565f);
 
-  gl->glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
+  gl2.glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
 
   memset(render_data->pixels, 255,
    sizeof(Uint32) * GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
 
-  gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, GL_POWER_2_WIDTH,
+  gl2.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, GL_POWER_2_WIDTH,
    GL_POWER_2_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE,
    render_data->pixels);
 
-  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 
-  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl->glTexParameterf);
+  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl2.glTexParameterf);
 
-  gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 256, 256, 0, GL_ALPHA,
+  gl2.glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 256, 256, 0, GL_ALPHA,
    GL_UNSIGNED_BYTE, render_data->pixels);
 
   gl2_remap_charsets(graphics);
 
-  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[2]);
+  gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[2]);
 
-  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl->glTexParameterf);
+  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl2.glTexParameterf);
 
-  gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 32, 0, GL_RGBA,
+  gl2.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 32, 0, GL_RGBA,
    GL_UNSIGNED_BYTE, render_data->pixels);
 }
 
 static bool gl2_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, bool fullscreen, bool resize)
 {
-  struct gl2_render_data *render_data = graphics->render_data;
-  struct gl2_syms *gl = &render_data->gl;
-
   gl_set_attributes(graphics);
 
   if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
-    return false;
-
-  if(!gl2_load_syms(gl))
     return false;
 
   gl2_resize_screen(graphics, width, height);
@@ -332,7 +319,6 @@ static char *gl2_char_bitmask_to_texture(signed char *c, char *p)
 static inline void gl2_do_remap_charsets(struct graphics_data *graphics)
 {
   struct gl2_render_data *render_data = graphics->render_data;
-  struct gl2_syms *gl = &render_data->gl;
   signed char *c = (signed char *)graphics->charset;
   char *p = (char *)render_data->charset_texture;
   unsigned int i, j, k;
@@ -342,7 +328,7 @@ static inline void gl2_do_remap_charsets(struct graphics_data *graphics)
       for(k = 0; k < 32; k++, c += 14)
         p = gl2_char_bitmask_to_texture(c, p);
 
-  gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 32 * 8, 16 * 14, GL_ALPHA,
+  gl2.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 32 * 8, 16 * 14, GL_ALPHA,
     GL_UNSIGNED_BYTE, render_data->charset_texture);
 }
 
@@ -350,7 +336,6 @@ static inline void gl2_do_remap_char(struct graphics_data *graphics,
  Uint16 chr)
 {
   struct gl2_render_data *render_data = graphics->render_data;
-  struct gl2_syms *gl = &render_data->gl;
   signed char *c = (signed char *)graphics->charset;
   char *p = (char *)render_data->charset_texture;
   unsigned int i;
@@ -359,7 +344,7 @@ static inline void gl2_do_remap_char(struct graphics_data *graphics,
 
   for(i = 0; i < 14; i++, c++)
     p = gl2_char_bitmask_to_texture(c, p);
-  gl->glTexSubImage2D(GL_TEXTURE_2D, 0, chr % 32 * 8, chr / 32 * 14, 8, 14,
+  gl2.glTexSubImage2D(GL_TEXTURE_2D, 0, chr % 32 * 8, chr / 32 * 14, 8, 14,
    GL_ALPHA, GL_UNSIGNED_BYTE, render_data->charset_texture);
 }
 
@@ -376,7 +361,6 @@ static void gl2_render_graph(struct graphics_data *graphics)
 {
   struct gl2_render_data *render_data = graphics->render_data;
   struct char_element *src = graphics->text_video;
-  struct gl2_syms *gl = &render_data->gl;
   Sint32 i, i2, i3;
   Uint32 *dest;
 
@@ -392,7 +376,7 @@ static void gl2_render_graph(struct graphics_data *graphics)
       80.0f / 128.0f, 25.0f / 32.0f
     };
 
-    gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
     if(render_data->remap_texture)
     {
       gl2_do_remap_charsets(graphics);
@@ -421,7 +405,7 @@ static void gl2_render_graph(struct graphics_data *graphics)
        * masked by the stretched image.
        */
       get_context_width_height(graphics, &width, &height);
-      gl->glViewport((width - 640) >> 1, (height - 350) >> 1, 640, 350);
+      gl2.glViewport((width - 640) >> 1, (height - 350) >> 1, 640, 350);
     }
 #endif
 
@@ -430,38 +414,38 @@ static void gl2_render_graph(struct graphics_data *graphics)
     for(i = 0; i < SCREEN_W * SCREEN_H; i++, dest++, src++)
      *dest = graphics->flat_intensity_palette[src->bg_color];
 
-    gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[2]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[2]);
 
-    gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SCREEN_W, SCREEN_H, GL_RGBA,
+    gl2.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SCREEN_W, SCREEN_H, GL_RGBA,
      GL_UNSIGNED_BYTE, render_data->background_texture);
     
-    gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    gl->glEnableClientState(GL_VERTEX_ARRAY);
-    gl->glEnableClientState(GL_COLOR_ARRAY);
+    gl2.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl2.glEnableClientState(GL_VERTEX_ARRAY);
+    gl2.glEnableClientState(GL_COLOR_ARRAY);
 
-    gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
-    gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
-    gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
+    gl2.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
+    gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
+    gl2.glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
 
-    gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    gl->glDisableClientState(GL_VERTEX_ARRAY);
-    gl->glDisableClientState(GL_COLOR_ARRAY);
+    gl2.glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl2.glDisableClientState(GL_VERTEX_ARRAY);
+    gl2.glDisableClientState(GL_COLOR_ARRAY);
 
-    gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 
-    gl->glEnable(GL_ALPHA_TEST);
+    gl2.glEnable(GL_ALPHA_TEST);
 
     src = graphics->text_video;
 
-    gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    gl->glEnableClientState(GL_VERTEX_ARRAY);
-    gl->glEnableClientState(GL_COLOR_ARRAY);
+    gl2.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl2.glEnableClientState(GL_VERTEX_ARRAY);
+    gl2.glEnableClientState(GL_COLOR_ARRAY);
 
-    gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array);
-    gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array);
-    gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array);
+    gl2.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array);
+    gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array);
+    gl2.glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array);
 
     for(i = 0; i < 25; i++)
     {
@@ -496,17 +480,17 @@ static void gl2_render_graph(struct graphics_data *graphics)
         for(i3 = 0; i3 < 4; i3++)
           memcpy(&color_array[i3 * 3], pal_base, 3);
 
-        gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+        gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         src++;
       }
     }
 
-    gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    gl->glDisableClientState(GL_VERTEX_ARRAY);
-    gl->glDisableClientState(GL_COLOR_ARRAY);
+    gl2.glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl2.glDisableClientState(GL_VERTEX_ARRAY);
+    gl2.glDisableClientState(GL_COLOR_ARRAY);
 
-    gl->glDisable(GL_ALPHA_TEST);
+    gl2.glDisable(GL_ALPHA_TEST);
   }
   else
   {
@@ -520,26 +504,26 @@ static void gl2_render_graph(struct graphics_data *graphics)
     render_graph32s(render_data->pixels, 640 * 4, graphics,
      set_colors32[graphics->screen_mode]);
 
-    gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
 
-    gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 640, 350, GL_RGBA,
+    gl2.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 640, 350, GL_RGBA,
       GL_UNSIGNED_BYTE, render_data->pixels);
 
-    gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    gl->glEnableClientState(GL_VERTEX_ARRAY);
-    gl->glEnableClientState(GL_COLOR_ARRAY);
+    gl2.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl2.glEnableClientState(GL_VERTEX_ARRAY);
+    gl2.glEnableClientState(GL_COLOR_ARRAY);
 
-    gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
-    gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
-    gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
+    gl2.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
+    gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
+    gl2.glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
 
-    gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    gl->glDisableClientState(GL_VERTEX_ARRAY);
-    gl->glDisableClientState(GL_COLOR_ARRAY);
+    gl2.glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl2.glDisableClientState(GL_VERTEX_ARRAY);
+    gl2.glDisableClientState(GL_COLOR_ARRAY);
 
-    gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
   }
 }
 
@@ -548,7 +532,6 @@ static void gl2_render_cursor(struct graphics_data *graphics,
 {
   struct gl2_render_data *render_data = graphics->render_data;
   GLubyte *pal_base = &render_data->palette[color * 3];
-  struct gl2_syms *gl = &render_data->gl;
 
   const float vertex_array[2 * 4] = {
     (x * 8)*2.0f/640.0f-1.0f,     (y * 14 + offset)*-2.0f/350.0f+1.0f,
@@ -564,28 +547,25 @@ static void gl2_render_cursor(struct graphics_data *graphics,
     pal_base[0], pal_base[1], pal_base[2]
   };
 
-  gl->glDisable(GL_TEXTURE_2D);
+  gl2.glDisable(GL_TEXTURE_2D);
 
-  gl->glEnableClientState(GL_VERTEX_ARRAY);
-  gl->glEnableClientState(GL_COLOR_ARRAY);
+  gl2.glEnableClientState(GL_VERTEX_ARRAY);
+  gl2.glEnableClientState(GL_COLOR_ARRAY);
 
-  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array);
-  gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array);
+  gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array);
+  gl2.glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array);
 
-  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-  gl->glDisableClientState(GL_VERTEX_ARRAY);
-  gl->glDisableClientState(GL_COLOR_ARRAY);
+  gl2.glDisableClientState(GL_VERTEX_ARRAY);
+  gl2.glDisableClientState(GL_COLOR_ARRAY);
 
-  gl->glEnable(GL_TEXTURE_2D);
+  gl2.glEnable(GL_TEXTURE_2D);
 }
 
 static void gl2_render_mouse(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
-  struct gl2_render_data *render_data = graphics->render_data;
-  struct gl2_syms *gl = &render_data->gl;
-
   const float vertex_array[2 * 4] = {
      x*2.0f/640.0f-1.0f,       y*-2.0f/350.0f+1.0f,
      x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f,
@@ -593,28 +573,27 @@ static void gl2_render_mouse(struct graphics_data *graphics,
     (x + w)*2.0f/640.0f-1.0f, (y + h)*-2.0f/350.0f+1.0f
   };
 
-  gl->glDisable(GL_TEXTURE_2D);
-  gl->glEnable(GL_BLEND);
+  gl2.glDisable(GL_TEXTURE_2D);
+  gl2.glEnable(GL_BLEND);
 
-  gl->glEnableClientState(GL_VERTEX_ARRAY);
-  gl->glEnableClientState(GL_COLOR_ARRAY);
+  gl2.glEnableClientState(GL_VERTEX_ARRAY);
+  gl2.glEnableClientState(GL_COLOR_ARRAY);
   
-  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array);
-  gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
+  gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array);
+  gl2.glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
 
-  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-  gl->glDisableClientState(GL_VERTEX_ARRAY);
-  gl->glDisableClientState(GL_COLOR_ARRAY);
+  gl2.glDisableClientState(GL_VERTEX_ARRAY);
+  gl2.glDisableClientState(GL_COLOR_ARRAY);
 
-  gl->glEnable(GL_TEXTURE_2D);
-  gl->glDisable(GL_BLEND);
+  gl2.glEnable(GL_TEXTURE_2D);
+  gl2.glDisable(GL_BLEND);
 }
 
 static void gl2_sync_screen(struct graphics_data *graphics)
 {
   struct gl2_render_data *render_data = graphics->render_data;
-  struct gl2_syms *gl = &render_data->gl;
 
   if(gl2_linear_filter_method(graphics) && !graphics->screen_mode)
   {
@@ -627,10 +606,10 @@ static void gl2_sync_screen(struct graphics_data *graphics)
        640.0f / 1024.0f, 0.0f,
     };
 
-    gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
 
     get_context_width_height(graphics, &width, &height);
-    gl->glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+    gl2.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
      (width - 640) >> 1, (height - 350) >> 1, 1024, 512, 0);
 
 #ifndef ANDROID
@@ -638,33 +617,33 @@ static void gl2_sync_screen(struct graphics_data *graphics)
       int v_width, v_height;
 
       fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
-      gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
+      gl2.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
        v_width, v_height);
     }
 #endif
 
-    gl->glClear(GL_COLOR_BUFFER_BIT);
+    gl2.glClear(GL_COLOR_BUFFER_BIT);
 
-    gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-    gl->glEnableClientState(GL_VERTEX_ARRAY);
-    gl->glEnableClientState(GL_COLOR_ARRAY);
+    gl2.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl2.glEnableClientState(GL_VERTEX_ARRAY);
+    gl2.glEnableClientState(GL_COLOR_ARRAY);
 
-    gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
-    gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
-    gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
+    gl2.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
+    gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
+    gl2.glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
 
-    gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-    gl->glDisableClientState(GL_VERTEX_ARRAY);
-    gl->glDisableClientState(GL_COLOR_ARRAY);
+    gl2.glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+    gl2.glDisableClientState(GL_VERTEX_ARRAY);
+    gl2.glDisableClientState(GL_COLOR_ARRAY);
 
-    gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+    gl2.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
   }
 
   gl_swap_buffers(graphics);
 
-  gl->glClear(GL_COLOR_BUFFER_BIT);
+  gl2.glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void render_gl2_register(struct renderer *renderer)

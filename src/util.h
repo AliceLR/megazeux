@@ -73,6 +73,12 @@ CORE_LIBSPEC int get_path(const char *file_name, char *dest, unsigned int buf_le
 int __get_path(const char *file_name, char *dest, unsigned int buf_len);
 #endif
 
+struct dso_syms_map
+{
+  const char *name;
+  void **sym_ptr;
+};
+
 #if defined(CONFIG_NDS) || defined(CONFIG_WII)
 
 #include <sys/dir.h>

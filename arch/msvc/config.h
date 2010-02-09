@@ -3,7 +3,6 @@
 #define CONFDIR "./"
 #define SHAREDIR "./"
 #define CONFFILE "config.txt"
-#define LINK_OPENGL
 #define CONFIG_EDITOR
 #define CONFIG_HELPSYS
 #define CONFIG_RENDER_SOFT

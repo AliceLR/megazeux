@@ -368,12 +368,7 @@ static struct
 }
 socksyms;
 
-static const struct
-{
-  const char *name;
-  void **sym_ptr;
-}
-socksyms_map[] =
+static const struct dso_syms_map socksyms_map[] =
 {
   { "accept",                (void **)&socksyms.accept },
   { "bind",                  (void **)&socksyms.bind },

@@ -43,21 +43,41 @@ typedef GLint GLiftype;
 
 #include "render_gl.h"
 
-struct glsl_syms
+enum
 {
-  int syms_loaded;
+  ATTRIB_POSITION,
+  ATTRIB_TEXCOORD,
+  ATTRIB_COLOR,
+};
 
+static bool syms_loaded;
+
+static struct
+{
+  void (GL_APIENTRY *glAttachShader)(GLuint program, GLuint shader);
+  void (GL_APIENTRY *glBindAttribLocation)(GLuint program, GLuint index,
+   const char *name);
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
   void (GL_APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
   void (GL_APIENTRY *glClear)(GLbitfield mask);
+  void (GL_APIENTRY *glCompileShader)(GLuint shader);
   void (GL_APIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
    GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height,
    GLint border);
+  GLenum (GL_APIENTRY *glCreateProgram)(void);
+  GLenum (GL_APIENTRY *glCreateShader)(GLenum type);
   void (GL_APIENTRY *glDisable)(GLenum cap);
+  void (GL_APIENTRY *glDisableVertexAttribArray)(GLuint index);
   void (GL_APIENTRY *glDrawArrays)(GLenum mode, GLint first, GLsizei count);
   void (GL_APIENTRY *glEnable)(GLenum cap);
+  void (GL_APIENTRY *glEnableVertexAttribArray)(GLuint index);
   void (GL_APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
+  void (GL_APIENTRY *glGetProgramInfoLog)(GLuint program, GLsizei bufsize,
+   GLsizei *len, char *infolog);
   const GLubyte* (GL_APIENTRY *glGetString)(GLenum name);
+  void (GL_APIENTRY *glLinkProgram)(GLuint program);
+  void (GL_APIENTRY *glShaderSource)(GLuint shader, GLsizei count,
+   const char **strings, const GLint *length);
   void (GL_APIENTRY *glTexImage2D)(GLenum target, GLint level,
    GLiftype internalformat, GLsizei width, GLsizei height, GLint border,
    GLenum format, GLenum type, const GLvoid *pixels);
@@ -66,33 +86,42 @@ struct glsl_syms
   void (GL_APIENTRY *glTexSubImage2D)(GLenum target, GLint level,
    GLint xoffset, GLint yoffset, GLsizei width, GLsizei height,
    GLenum format, GLenum type, const void *pixels);
-  void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width,
-   GLsizei height);
-
-  // These are loaded as extensions on at least Windows
-  void (GL_APIENTRY *glAttachShader)(GLuint program, GLuint shader);
-  void (GL_APIENTRY *glBindAttribLocation)(GLuint program, GLuint index,
-   const char *name);
-  void (GL_APIENTRY *glCompileShader)(GLuint shader);
-  GLenum (GL_APIENTRY *glCreateProgram)(void);
-  GLenum (GL_APIENTRY *glCreateShader)(GLenum type);
-  void (GL_APIENTRY *glDisableVertexAttribArray)(GLuint index);
-  void (GL_APIENTRY *glEnableVertexAttribArray)(GLuint index);
-  void (GL_APIENTRY *glGetProgramInfoLog)(GLuint program, GLsizei bufsize,
-   GLsizei *len, char *infolog);
-  void (GL_APIENTRY *glLinkProgram)(GLuint program);
-  void (GL_APIENTRY *glShaderSource)(GLuint shader, GLsizei count,
-   const char **strings, const GLint *length);
   void (GL_APIENTRY *glUseProgram)(GLuint program);
   void (GL_APIENTRY *glVertexAttribPointer)(GLuint index, GLint size,
    GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer);
-};
+  void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width,
+   GLsizei height);
+}
+glsl;
 
-enum
+static const struct dso_syms_map glsl_syms_map[] =
 {
-  ATTRIB_POSITION,
-  ATTRIB_TEXCOORD,
-  ATTRIB_COLOR,
+  { "glAttachShader",             (void **)&glsl.glAttachShader },
+  { "glBindAttribLocation",       (void **)&glsl.glBindAttribLocation },
+  { "glBindTexture",              (void **)&glsl.glBindTexture },
+  { "glBlendFunc",                (void **)&glsl.glBlendFunc },
+  { "glClear",                    (void **)&glsl.glClear },
+  { "glCompileShader",            (void **)&glsl.glCompileShader },
+  { "glCopyTexImage2D",           (void **)&glsl.glCopyTexImage2D },
+  { "glCreateProgram",            (void **)&glsl.glCreateProgram },
+  { "glCreateShader",             (void **)&glsl.glCreateShader },
+  { "glDisable",                  (void **)&glsl.glDisable },
+  { "glDisableVertexAttribArray", (void **)&glsl.glDisableVertexAttribArray },
+  { "glDrawArrays",               (void **)&glsl.glDrawArrays },
+  { "glEnable",                   (void **)&glsl.glEnable },
+  { "glEnableVertexAttribArray",  (void **)&glsl.glEnableVertexAttribArray },
+  { "glGenTextures",              (void **)&glsl.glGenTextures },
+  { "glGetProgramInfoLog",        (void **)&glsl.glGetProgramInfoLog },
+  { "glGetString",                (void **)&glsl.glGetString },
+  { "glLinkProgram",              (void **)&glsl.glLinkProgram },
+  { "glShaderSource",             (void **)&glsl.glShaderSource },
+  { "glTexImage2D",               (void **)&glsl.glTexImage2D },
+  { "glTexParameterf",            (void **)&glsl.glTexParameterf },
+  { "glTexSubImage2D",            (void **)&glsl.glTexSubImage2D },
+  { "glUseProgram",               (void **)&glsl.glUseProgram },
+  { "glVertexAttribPointer",      (void **)&glsl.glVertexAttribPointer },
+  { "glViewport",                 (void **)&glsl.glViewport },
+  { NULL, NULL}
 };
 
 struct glsl_render_data
@@ -108,7 +137,6 @@ struct glsl_render_data
   Uint8 remap_texture;
   Uint8 remap_char[CHARSET_SIZE * 2];
   Uint8 ignore_linear;
-  struct glsl_syms gl;
   enum ratio_type ratio;
   GLuint scaler_program;
   GLuint tilemap_program;
@@ -120,57 +148,15 @@ struct glsl_render_data
 
 static const char *source_cache[SHADERS_CURSOR_FRAG - SHADERS_SCALER_VERT + 1];
 
-static int glsl_load_syms(struct glsl_syms *gl)
-{
-  if(gl->syms_loaded)
-    return true;
-
-  GL_LOAD_SYM(gl, glBindTexture)
-  GL_LOAD_SYM(gl, glBlendFunc)
-  GL_LOAD_SYM(gl, glClear)
-  GL_LOAD_SYM(gl, glCopyTexImage2D)
-  GL_LOAD_SYM(gl, glDisable)
-  GL_LOAD_SYM(gl, glDrawArrays)
-  GL_LOAD_SYM(gl, glEnable)
-  GL_LOAD_SYM(gl, glGenTextures)
-  GL_LOAD_SYM(gl, glGetString)
-  GL_LOAD_SYM(gl, glTexImage2D)
-  GL_LOAD_SYM(gl, glTexParameterf)
-  GL_LOAD_SYM(gl, glTexSubImage2D)
-  GL_LOAD_SYM(gl, glViewport)
-
-  // Even though these aren't "extensions" in OpenGL 2.0, on Windows
-  // these symbols are too new to be present in OPENGL32.DLL, so we
-  // must dynamically load them. For OpenGL ES 2.0 it's a non-issue,
-  // and these are resolved at link time.
-
-  GL_LOAD_SYM_EXT(gl, glAttachShader)
-  GL_LOAD_SYM_EXT(gl, glBindAttribLocation)
-  GL_LOAD_SYM_EXT(gl, glCompileShader)
-  GL_LOAD_SYM_EXT(gl, glCreateProgram)
-  GL_LOAD_SYM_EXT(gl, glCreateShader)
-  GL_LOAD_SYM_EXT(gl, glDisableVertexAttribArray)
-  GL_LOAD_SYM_EXT(gl, glEnableVertexAttribArray)
-  GL_LOAD_SYM_EXT(gl, glGetProgramInfoLog)
-  GL_LOAD_SYM_EXT(gl, glLinkProgram)
-  GL_LOAD_SYM_EXT(gl, glShaderSource)
-  GL_LOAD_SYM_EXT(gl, glUseProgram)
-  GL_LOAD_SYM_EXT(gl, glVertexAttribPointer)
-
-  gl->syms_loaded = true;
-  return true;
-}
-
 #define SHADER_INFO_MAX 1000
 
 static void glsl_verify_compile_link(struct glsl_render_data *render_data,
  GLenum shader)
 {
-  struct glsl_syms *gl = &render_data->gl;
   char buffer[SHADER_INFO_MAX];
   int len = 0;
 
-  gl->glGetProgramInfoLog(shader, SHADER_INFO_MAX - 1, &len, buffer);
+  glsl.glGetProgramInfoLog(shader, SHADER_INFO_MAX - 1, &len, buffer);
   buffer[len] = 0;
 
   if(len > 0)
@@ -210,7 +196,6 @@ static GLenum glsl_load_shader(struct graphics_data *graphics,
  enum resource_id res, GLenum type)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  struct glsl_syms *gl = &render_data->gl;
   int index = res - SHADERS_SCALER_VERT;
   GLenum shader;
   GLint length;
@@ -230,12 +215,12 @@ static GLenum glsl_load_shader(struct graphics_data *graphics,
     }
   }
 
-  shader = gl->glCreateShader(type);
+  shader = glsl.glCreateShader(type);
 
   length = (GLint)strlen(source_cache[index]);
-  gl->glShaderSource(shader, 1, &source_cache[index], &length);
+  glsl.glShaderSource(shader, 1, &source_cache[index], &length);
 
-  gl->glCompileShader(shader);
+  glsl.glCompileShader(shader);
   glsl_verify_compile_link(render_data, shader);
 
   return shader;
@@ -244,8 +229,6 @@ static GLenum glsl_load_shader(struct graphics_data *graphics,
 static GLuint glsl_load_program(struct graphics_data *graphics,
  enum resource_id v_res, enum resource_id f_res)
 {
-  struct glsl_render_data *render_data = graphics->render_data;
-  struct glsl_syms *gl = &render_data->gl;
   GLenum vertex, fragment;
   GLuint program = 0;
   char *path;
@@ -260,10 +243,10 @@ static GLuint glsl_load_program(struct graphics_data *graphics,
   if(!fragment)
     goto err_free_path;
 
-  program = gl->glCreateProgram();
+  program = glsl.glCreateProgram();
 
-  gl->glAttachShader(program, vertex);
-  gl->glAttachShader(program, fragment);
+  glsl.glAttachShader(program, vertex);
+  glsl.glAttachShader(program, fragment);
 
 err_free_path:
   free(path);
@@ -273,17 +256,16 @@ err_free_path:
 static void glsl_load_shaders(struct graphics_data *graphics)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  struct glsl_syms *gl = &render_data->gl;
 
   render_data->scaler_program = glsl_load_program(graphics,
    SHADERS_SCALER_VERT, SHADERS_SCALER_FRAG);
   if(render_data->scaler_program)
   {
-    gl->glBindAttribLocation(render_data->scaler_program,
+    glsl.glBindAttribLocation(render_data->scaler_program,
      ATTRIB_POSITION, "Position");
-    gl->glBindAttribLocation(render_data->scaler_program,
+    glsl.glBindAttribLocation(render_data->scaler_program,
      ATTRIB_TEXCOORD, "Texcoord");
-    gl->glLinkProgram(render_data->scaler_program);
+    glsl.glLinkProgram(render_data->scaler_program);
     glsl_verify_compile_link(render_data, render_data->scaler_program);
   }
 
@@ -291,11 +273,11 @@ static void glsl_load_shaders(struct graphics_data *graphics)
    SHADERS_TILEMAP_VERT, SHADERS_TILEMAP_FRAG);
   if(render_data->tilemap_program)
   {
-    gl->glBindAttribLocation(render_data->tilemap_program,
+    glsl.glBindAttribLocation(render_data->tilemap_program,
      ATTRIB_POSITION, "Position");
-    gl->glBindAttribLocation(render_data->tilemap_program,
+    glsl.glBindAttribLocation(render_data->tilemap_program,
      ATTRIB_TEXCOORD, "Texcoord");
-    gl->glLinkProgram(render_data->tilemap_program);
+    glsl.glLinkProgram(render_data->tilemap_program);
     glsl_verify_compile_link(render_data, render_data->tilemap_program);
   }
 
@@ -303,11 +285,11 @@ static void glsl_load_shaders(struct graphics_data *graphics)
    SHADERS_TILEMAP_VERT, SHADERS_TILEMAP_SMZX12_FRAG);
   if(render_data->tilemap_smzx12_program)
   {
-    gl->glBindAttribLocation(render_data->tilemap_smzx12_program,
+    glsl.glBindAttribLocation(render_data->tilemap_smzx12_program,
      ATTRIB_POSITION, "Position");
-    gl->glBindAttribLocation(render_data->tilemap_smzx12_program,
+    glsl.glBindAttribLocation(render_data->tilemap_smzx12_program,
      ATTRIB_TEXCOORD, "Texcoord");
-    gl->glLinkProgram(render_data->tilemap_smzx12_program);
+    glsl.glLinkProgram(render_data->tilemap_smzx12_program);
     glsl_verify_compile_link(render_data, render_data->tilemap_smzx12_program);
   }
 
@@ -315,11 +297,11 @@ static void glsl_load_shaders(struct graphics_data *graphics)
    SHADERS_TILEMAP_VERT, SHADERS_TILEMAP_SMZX3_FRAG);
   if(render_data->tilemap_smzx3_program)
   {
-    gl->glBindAttribLocation(render_data->tilemap_smzx3_program,
+    glsl.glBindAttribLocation(render_data->tilemap_smzx3_program,
      ATTRIB_POSITION, "Position");
-    gl->glBindAttribLocation(render_data->tilemap_smzx3_program,
+    glsl.glBindAttribLocation(render_data->tilemap_smzx3_program,
      ATTRIB_TEXCOORD, "Texcoord");
-    gl->glLinkProgram(render_data->tilemap_smzx3_program);
+    glsl.glLinkProgram(render_data->tilemap_smzx3_program);
     glsl_verify_compile_link(render_data, render_data->tilemap_smzx3_program);
   }
 
@@ -327,9 +309,9 @@ static void glsl_load_shaders(struct graphics_data *graphics)
    SHADERS_MOUSE_VERT, SHADERS_MOUSE_FRAG);
   if(render_data->mouse_program)
   {
-    gl->glBindAttribLocation(render_data->mouse_program,
+    glsl.glBindAttribLocation(render_data->mouse_program,
      ATTRIB_POSITION, "Position");
-    gl->glLinkProgram(render_data->mouse_program);
+    glsl.glLinkProgram(render_data->mouse_program);
     glsl_verify_compile_link(render_data, render_data->mouse_program);
   }
 
@@ -337,11 +319,11 @@ static void glsl_load_shaders(struct graphics_data *graphics)
    SHADERS_CURSOR_VERT, SHADERS_CURSOR_FRAG);
   if(render_data->cursor_program)
   {
-    gl->glBindAttribLocation(render_data->cursor_program,
+    glsl.glBindAttribLocation(render_data->cursor_program,
      ATTRIB_POSITION, "Position");
-    gl->glBindAttribLocation(render_data->cursor_program,
+    glsl.glBindAttribLocation(render_data->cursor_program,
      ATTRIB_COLOR, "Color");
-    gl->glLinkProgram(render_data->cursor_program);
+    glsl.glLinkProgram(render_data->cursor_program);
     glsl_verify_compile_link(render_data, render_data->cursor_program);
   }
 }
@@ -351,19 +333,16 @@ static bool glsl_init_video(struct graphics_data *graphics,
 {
   struct glsl_render_data *render_data;
   const char *version, *extensions;
-  struct glsl_syms *gl;
 
   render_data = malloc(sizeof(struct glsl_render_data));
   if(!render_data)
     return false;
 
-  gl = &render_data->gl;
-
-  if(!GL_CAN_USE)
+  syms_loaded = gl_load_syms(glsl_syms_map);
+  if(!syms_loaded)
     goto err_free;
 
   graphics->render_data = render_data;
-  gl->syms_loaded = false;
 
   graphics->gl_vsync = conf->gl_vsync;
   graphics->allow_resize = conf->allow_resize;
@@ -384,8 +363,8 @@ static bool glsl_init_video(struct graphics_data *graphics,
     goto err_free;
 
   // NOTE: These must come AFTER set_video_mode()!
-  version = (const char *)gl->glGetString(GL_VERSION);
-  extensions = (const char *)gl->glGetString(GL_EXTENSIONS);
+  version = (const char *)glsl.glGetString(GL_VERSION);
+  extensions = (const char *)glsl.glGetString(GL_EXTENSIONS);
 
   // We need a specific version of OpenGL; desktop GL must be 1.1.
   // We also need the shading language extension for desktop GL.
@@ -435,43 +414,42 @@ static void glsl_resize_screen(struct graphics_data *graphics,
  int width, int height)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  struct glsl_syms *gl = &render_data->gl;
 
   render_data->ignore_linear = false;
 
-  gl->glViewport(0, 0, width, height);
+  glsl.glViewport(0, 0, width, height);
 
-  gl->glGenTextures(3, render_data->texture_number);
+  glsl.glGenTextures(3, render_data->texture_number);
 
-  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
 
-  gl_set_filter_method(CONFIG_GL_FILTER_LINEAR, gl->glTexParameterf);
+  gl_set_filter_method(CONFIG_GL_FILTER_LINEAR, glsl.glTexParameterf);
 
-  gl->glEnable(GL_TEXTURE_2D);
+  glsl.glEnable(GL_TEXTURE_2D);
 
-  gl->glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
+  glsl.glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
 
   memset(render_data->pixels, 255,
    sizeof(Uint32) * GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
 
-  gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, GL_POWER_2_WIDTH,
+  glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, GL_POWER_2_WIDTH,
    GL_POWER_2_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE,
    render_data->pixels);
 
-  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 
-  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl->glTexParameterf);
+  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, glsl.glTexParameterf);
 
-  gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256, 0, GL_RGBA,
+  glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256, 0, GL_RGBA,
    GL_UNSIGNED_BYTE, render_data->pixels);
 
   glsl_remap_charsets(graphics);
 
-  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[2]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[2]);
 
-  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl->glTexParameterf);
+  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, glsl.glTexParameterf);
 
-  gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 32, 0, GL_RGBA,
+  glsl.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 32, 0, GL_RGBA,
    GL_UNSIGNED_BYTE, render_data->pixels);
 
   glsl_load_shaders(graphics);
@@ -480,15 +458,9 @@ static void glsl_resize_screen(struct graphics_data *graphics,
 static bool glsl_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, bool fullscreen, bool resize)
 {
-  struct glsl_render_data *render_data = graphics->render_data;
-  struct glsl_syms *gl = &render_data->gl;
-
   gl_set_attributes(graphics);
 
   if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
-    return false;
-
-  if(!glsl_load_syms(gl))
     return false;
 
   glsl_resize_screen(graphics, width, height);
@@ -526,7 +498,6 @@ static int *glsl_char_bitmask_to_texture(signed char *c, int *p)
 static inline void glsl_do_remap_charsets(struct graphics_data *graphics)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  struct glsl_syms *gl = &render_data->gl;
   signed char *c = (signed char *)graphics->charset;
   int *p = (int *)render_data->charset_texture;
   unsigned int i, j, k;
@@ -536,7 +507,7 @@ static inline void glsl_do_remap_charsets(struct graphics_data *graphics)
       for(k = 0; k < 32; k++, c += 14)
         p = glsl_char_bitmask_to_texture(c, p);
 
-  gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 32 * 8, 16 * 14, GL_RGBA,
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 32 * 8, 16 * 14, GL_RGBA,
     GL_UNSIGNED_BYTE, render_data->charset_texture);
 }
 
@@ -544,7 +515,6 @@ static inline void glsl_do_remap_char(struct graphics_data *graphics,
  Uint16 chr)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  struct glsl_syms *gl = &render_data->gl;
   signed char *c = (signed char *)graphics->charset;
   int *p = (int *)render_data->charset_texture;
   unsigned int i;
@@ -553,7 +523,7 @@ static inline void glsl_do_remap_char(struct graphics_data *graphics,
 
   for(i = 0; i < 14; i++, c++)
     p = glsl_char_bitmask_to_texture(c, p);
-  gl->glTexSubImage2D(GL_TEXTURE_2D, 0, chr % 32 * 8, chr / 32 * 14, 8, 14,
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, chr % 32 * 8, chr / 32 * 14, 8, 14,
    GL_RGBA, GL_UNSIGNED_BYTE, render_data->charset_texture);
 }
 
@@ -581,7 +551,6 @@ static void glsl_render_graph(struct graphics_data *graphics)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   struct char_element *src = graphics->text_video;
-  struct glsl_syms *gl = &render_data->gl;
   Uint32 *colorptr, *dest, i;
   int width, height;
 
@@ -606,28 +575,28 @@ static void glsl_render_graph(struct graphics_data *graphics)
     height = 350;
   }
 
-  gl->glViewport(0, 0, width, height);
+  glsl.glViewport(0, 0, width, height);
 
   switch(graphics->screen_mode)
   {
     // Regular MZX (mode 0)
     default:
-      gl->glUseProgram(render_data->tilemap_program);
+      glsl.glUseProgram(render_data->tilemap_program);
       break;
 
     // SMZX modes 1 & 2
     case 1:
     case 2:
-      gl->glUseProgram(render_data->tilemap_smzx12_program);
+      glsl.glUseProgram(render_data->tilemap_smzx12_program);
       break;
 
     // SMZX mode 3
     case 3:
-      gl->glUseProgram(render_data->tilemap_smzx3_program);
+      glsl.glUseProgram(render_data->tilemap_smzx3_program);
       break;
   }
 
-  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
   if(render_data->remap_texture)
   {
     glsl_do_remap_charsets(graphics);
@@ -651,9 +620,9 @@ static void glsl_render_graph(struct graphics_data *graphics)
   for(i = 0; i < SCREEN_W * SCREEN_H; i++, dest++, src++)
     *dest = (src->char_value<<16) + (src->bg_color<<8) + src->fg_color;
 
-  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 
-  gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 225, SCREEN_W, SCREEN_H, GL_RGBA,
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 225, SCREEN_W, SCREEN_H, GL_RGBA,
    GL_UNSIGNED_BYTE, render_data->background_texture);
 
   colorptr = graphics->flat_intensity_palette;
@@ -662,21 +631,21 @@ static void glsl_render_graph(struct graphics_data *graphics)
   for(i = 0; i < SMZX_PAL_SIZE; i++, dest++, colorptr++)
     *dest = *colorptr;
 
-  gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 224, SMZX_PAL_SIZE, 1, GL_RGBA,
+  glsl.glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 224, SMZX_PAL_SIZE, 1, GL_RGBA,
    GL_UNSIGNED_BYTE, render_data->background_texture);
 
-  gl->glEnableVertexAttribArray(ATTRIB_POSITION);
-  gl->glEnableVertexAttribArray(ATTRIB_TEXCOORD);
+  glsl.glEnableVertexAttribArray(ATTRIB_POSITION);
+  glsl.glEnableVertexAttribArray(ATTRIB_TEXCOORD);
 
-  gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
+  glsl.glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
    vertex_array_single);
-  gl->glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
+  glsl.glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
    tex_coord_array_single);
 
-  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glsl.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-  gl->glDisableVertexAttribArray(ATTRIB_POSITION);
-  gl->glDisableVertexAttribArray(ATTRIB_TEXCOORD);
+  glsl.glDisableVertexAttribArray(ATTRIB_POSITION);
+  glsl.glDisableVertexAttribArray(ATTRIB_TEXCOORD);
 }
 
 static void glsl_render_cursor(struct graphics_data *graphics,
@@ -684,7 +653,6 @@ static void glsl_render_cursor(struct graphics_data *graphics,
 {
   struct glsl_render_data *render_data = graphics->render_data;
   GLubyte *pal_base = &render_data->palette[color * 3];
-  struct glsl_syms *gl = &render_data->gl;
 
   const float vertex_array[2 * 4] = {
     (x * 8)*2.0f/640.0f-1.0f,     (y * 14 + offset)*-2.0f/350.0f+1.0f,
@@ -700,31 +668,30 @@ static void glsl_render_cursor(struct graphics_data *graphics,
     pal_base[0], pal_base[1], pal_base[2],
   };
 
-  gl->glDisable(GL_TEXTURE_2D);
+  glsl.glDisable(GL_TEXTURE_2D);
 
-  gl->glUseProgram(render_data->cursor_program);
+  glsl.glUseProgram(render_data->cursor_program);
 
-  gl->glEnableVertexAttribArray(ATTRIB_POSITION);
-  gl->glEnableVertexAttribArray(ATTRIB_COLOR);
+  glsl.glEnableVertexAttribArray(ATTRIB_POSITION);
+  glsl.glEnableVertexAttribArray(ATTRIB_COLOR);
 
-  gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
+  glsl.glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
    vertex_array);
-  gl->glVertexAttribPointer(ATTRIB_COLOR, 3, GL_UNSIGNED_BYTE, GL_FALSE, 0,
+  glsl.glVertexAttribPointer(ATTRIB_COLOR, 3, GL_UNSIGNED_BYTE, GL_FALSE, 0,
    color_array);
 
-  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glsl.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-  gl->glDisableVertexAttribArray(ATTRIB_POSITION);
-  gl->glDisableVertexAttribArray(ATTRIB_COLOR);
+  glsl.glDisableVertexAttribArray(ATTRIB_POSITION);
+  glsl.glDisableVertexAttribArray(ATTRIB_COLOR);
 
-  gl->glEnable(GL_TEXTURE_2D);
+  glsl.glEnable(GL_TEXTURE_2D);
 }
 
 static void glsl_render_mouse(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  struct glsl_syms *gl = &render_data->gl;
 
   const float vertex_array[2 * 4] = {
      x*2.0f/640.0f-1.0f,       y*-2.0f/350.0f+1.0f,
@@ -733,33 +700,32 @@ static void glsl_render_mouse(struct graphics_data *graphics,
     (x + w)*2.0f/640.0f-1.0f, (y + h)*-2.0f/350.0f+1.0f
   };
 
-  gl->glDisable(GL_TEXTURE_2D);
-  gl->glEnable(GL_BLEND);
+  glsl.glDisable(GL_TEXTURE_2D);
+  glsl.glEnable(GL_BLEND);
 
-  gl->glUseProgram(render_data->mouse_program);
+  glsl.glUseProgram(render_data->mouse_program);
 
-  gl->glEnableVertexAttribArray(ATTRIB_POSITION);
+  glsl.glEnableVertexAttribArray(ATTRIB_POSITION);
 
-  gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
+  glsl.glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
    vertex_array);
 
-  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glsl.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-  gl->glDisableVertexAttribArray(ATTRIB_POSITION);
+  glsl.glDisableVertexAttribArray(ATTRIB_POSITION);
 
-  gl->glEnable(GL_TEXTURE_2D);
-  gl->glDisable(GL_BLEND);
+  glsl.glEnable(GL_TEXTURE_2D);
+  glsl.glDisable(GL_BLEND);
 }
 
 static void glsl_sync_screen(struct graphics_data *graphics)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  struct glsl_syms *gl = &render_data->gl;
   int v_width, v_height, width, height;
 
   get_context_width_height(graphics, &width, &height);
   fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
-  gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
+  glsl.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
    v_width, v_height);
 
   if(width < 640 || height < 350)
@@ -773,17 +739,17 @@ static void glsl_sync_screen(struct graphics_data *graphics)
     height = 350;
   }
 
-  gl->glUseProgram(render_data->scaler_program);
+  glsl.glUseProgram(render_data->scaler_program);
 
-  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
-  gl->glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 1024, 512, 0);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+  glsl.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 1024, 512, 0);
 
-  gl->glClear(GL_COLOR_BUFFER_BIT);
+  glsl.glClear(GL_COLOR_BUFFER_BIT);
 
-  gl->glEnableVertexAttribArray(ATTRIB_POSITION);
-  gl->glEnableVertexAttribArray(ATTRIB_TEXCOORD);
+  glsl.glEnableVertexAttribArray(ATTRIB_POSITION);
+  glsl.glEnableVertexAttribArray(ATTRIB_TEXCOORD);
  
-  gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
+  glsl.glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
    vertex_array_single);
 
   {
@@ -794,20 +760,20 @@ static void glsl_sync_screen(struct graphics_data *graphics)
        width / 1024.0f, 0.0f,
     };
 
-    gl->glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
+    glsl.glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
      tex_coord_array_single);
   }
 
-  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  glsl.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-  gl->glDisableVertexAttribArray(ATTRIB_POSITION);
-  gl->glDisableVertexAttribArray(ATTRIB_TEXCOORD);
+  glsl.glDisableVertexAttribArray(ATTRIB_POSITION);
+  glsl.glDisableVertexAttribArray(ATTRIB_TEXCOORD);
 
-  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 
   gl_swap_buffers(graphics);
 
-  gl->glClear(GL_COLOR_BUFFER_BIT);
+  glsl.glClear(GL_COLOR_BUFFER_BIT);
 }
 
 void render_glsl_register(struct renderer *renderer)

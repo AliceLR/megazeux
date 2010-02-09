@@ -28,14 +28,6 @@ __M_BEGIN_DECLS
 
 #include <EGL/egl.h>
 
-#define GL_LOAD_SYM_EXT(OBJ,FUNC) \
-  OBJ->FUNC = FUNC;               \
-
-#define GL_LOAD_SYM(OBJ,FUNC)     \
-  OBJ->FUNC = FUNC;               \
-
-#define GL_CAN_USE true
-
 bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize);
 bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
@@ -43,6 +35,11 @@ bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
 void gl_set_attributes(struct graphics_data *graphics);
 bool gl_swap_buffers(struct graphics_data *graphics);
 void gl_cleanup(struct graphics_data *graphics);
+
+static inline void *GL_GetProcAddress(const char *proc)
+{
+  return eglGetProcAddress(proc);
+}
 
 struct egl_render_data
 {

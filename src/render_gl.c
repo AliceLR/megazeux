@@ -47,6 +47,28 @@ const GLubyte color_array_white[3 * 4] = {
   255, 255, 255,
 };
 
+bool gl_load_syms(const struct dso_syms_map *map)
+{
+  int i = 0;
+
+#ifdef CONFIG_SDL
+  if(SDL_GL_LoadLibrary(NULL))
+    return false;
+#endif
+
+  for(i = 0; map[i].name != NULL; i++)
+  {
+    *map[i].sym_ptr = GL_GetProcAddress(map[i].name);
+    if(!*map[i].sym_ptr)
+    {
+      warn("Failed to load GL function '%s', aborting..\n", map[i].name);
+      return false;
+    }
+  }
+
+  return true;
+}
+
 void gl_set_filter_method(const char *method,
  void (GL_APIENTRY *glTexParameterf_p)(GLenum target, GLenum pname, GLfloat param))
 {

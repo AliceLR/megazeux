@@ -38,15 +38,16 @@
 
 #include "render_gl.h"
 
+static bool syms_loaded;
+
 // NOTE: This renderer should work with almost any GL capable video card.
 //       However, if you plan to change it, please bear in mind that this
 //       has been carefully written to work with both OpenGL 1.x and
 //       OpenGL ES 1.x. The latter API lacks many functions present in
 //       desktop OpenGL. GL ES is typically used on cellphones.
 
-struct gl1_syms
+static struct
 {
-  int syms_loaded;
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
   void (GL_APIENTRY *glClear)(GLbitfield mask);
   void (GL_APIENTRY *glDisableClientState)(GLenum cap);
@@ -66,6 +67,25 @@ struct gl1_syms
    GLsizei stride, const GLvoid *ptr);
   void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width,
    GLsizei height);
+}
+gl1;
+
+static const struct dso_syms_map gl1_syms_map[] =
+{
+  { "glBindTexture",        (void **)&gl1.glBindTexture },
+  { "glClear",              (void **)&gl1.glClear },
+  { "glDisableClientState", (void **)&gl1.glDisableClientState },
+  { "glDrawArrays",         (void **)&gl1.glDrawArrays },
+  { "glEnable",             (void **)&gl1.glEnable },
+  { "glEnableClientState",  (void **)&gl1.glEnableClientState },
+  { "glGenTextures",        (void **)&gl1.glGenTextures },
+  { "glGetString",          (void **)&gl1.glGetString },
+  { "glTexCoordPointer",    (void **)&gl1.glTexCoordPointer },
+  { "glTexImage2D",         (void **)&gl1.glTexImage2D },
+  { "glTexParameterf",      (void **)&gl1.glTexParameterf },
+  { "glVertexPointer",      (void **)&gl1.glVertexPointer },
+  { "glViewport",           (void **)&gl1.glViewport },
+  { NULL, NULL }
 };
 
 struct gl1_render_data
@@ -76,50 +96,25 @@ struct gl1_render_data
   Uint32 *pixels;
   Uint32 w;
   Uint32 h;
-  struct gl1_syms gl;
   enum ratio_type ratio;
 };
-
-static int gl1_load_syms (struct gl1_syms *gl)
-{
-  if(gl->syms_loaded)
-    return true;
-
-  GL_LOAD_SYM(gl, glBindTexture)
-  GL_LOAD_SYM(gl, glClear)
-  GL_LOAD_SYM(gl, glDisableClientState)
-  GL_LOAD_SYM(gl, glDrawArrays)
-  GL_LOAD_SYM(gl, glEnable)
-  GL_LOAD_SYM(gl, glEnableClientState)
-  GL_LOAD_SYM(gl, glGenTextures)
-  GL_LOAD_SYM(gl, glGetString)
-  GL_LOAD_SYM(gl, glTexCoordPointer)
-  GL_LOAD_SYM(gl, glTexImage2D)
-  GL_LOAD_SYM(gl, glTexParameterf)
-  GL_LOAD_SYM(gl, glVertexPointer)
-  GL_LOAD_SYM(gl, glViewport)
-
-  gl->syms_loaded = true;
-  return true;
-}
 
 static bool gl1_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct gl1_render_data *render_data = malloc(sizeof(struct gl1_render_data));
-  struct gl1_syms *gl = &render_data->gl;
   int internal_width, internal_height;
   const char *version, *extensions;
 
   if(!render_data)
     goto err_out;
 
-  if(!GL_CAN_USE)
+  syms_loaded = gl_load_syms(gl1_syms_map);
+  if(!syms_loaded)
     goto err_free_render_data;
 
   graphics->render_data = render_data;
   render_data->ratio = conf->video_ratio;
-  gl->syms_loaded = false;
 
   graphics->gl_vsync = conf->gl_vsync;
   graphics->allow_resize = conf->allow_resize;
@@ -134,8 +129,8 @@ static bool gl1_init_video(struct graphics_data *graphics,
     goto err_free_render_data;
 
   // NOTE: These must come AFTER set_video_mode()!
-  version = (const char *)gl->glGetString(GL_VERSION);
-  extensions = (const char *)gl->glGetString(GL_EXTENSIONS);
+  version = (const char *)gl1.glGetString(GL_VERSION);
+  extensions = (const char *)gl1.glGetString(GL_EXTENSIONS);
 
   // We need a specific version of OpenGL; desktop GL must be 1.1.
   // All OpenGL ES implementations are supported, so don't do the check
@@ -180,15 +175,11 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, bool fullscreen, bool resize)
 {
   struct gl1_render_data *render_data = graphics->render_data;
-  struct gl1_syms *gl = &render_data->gl;
   GLuint texture_number;
 
   gl_set_attributes(graphics);
 
   if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
-    return false;
-
-  if(!gl1_load_syms(gl))
     return false;
 
 #ifndef ANDROID
@@ -197,17 +188,17 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
 
     get_context_width_height(graphics, &width, &height);
     fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
-    gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
+    gl1.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
      v_width, v_height);
   }
 #endif
 
-  gl->glEnable(GL_TEXTURE_2D);
+  gl1.glEnable(GL_TEXTURE_2D);
 
-  gl->glGenTextures(1, &texture_number);
-  gl->glBindTexture(GL_TEXTURE_2D, texture_number);
+  gl1.glGenTextures(1, &texture_number);
+  gl1.glBindTexture(GL_TEXTURE_2D, texture_number);
 
-  gl_set_filter_method(graphics->gl_filter_method, gl->glTexParameterf);
+  gl_set_filter_method(graphics->gl_filter_method, gl1.glTexParameterf);
   return true;
 }
 
@@ -272,7 +263,6 @@ static void gl1_render_mouse(struct graphics_data *graphics,
 static void gl1_sync_screen(struct graphics_data *graphics)
 {
   struct gl1_render_data *render_data = graphics->render_data;
-  struct gl1_syms *gl = &render_data->gl;
 
   const float texture_width = 640.0f / render_data->w;
   const float texture_height = 350.0f / render_data->h;
@@ -284,21 +274,21 @@ static void gl1_sync_screen(struct graphics_data *graphics)
     texture_width, texture_height
   };
 
-  gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, render_data->w, render_data->h,
+  gl1.glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, render_data->w, render_data->h,
    0, GL_RGBA, GL_UNSIGNED_BYTE, render_data->pixels);
 
-  gl->glClear(GL_COLOR_BUFFER_BIT);
+  gl1.glClear(GL_COLOR_BUFFER_BIT);
 
-  gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-  gl->glEnableClientState(GL_VERTEX_ARRAY);
+  gl1.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+  gl1.glEnableClientState(GL_VERTEX_ARRAY);
 
-  gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array);
-  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
+  gl1.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array);
+  gl1.glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
 
-  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+  gl1.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-  gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-  gl->glDisableClientState(GL_VERTEX_ARRAY);
+  gl1.glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+  gl1.glDisableClientState(GL_VERTEX_ARRAY);
 
   gl_swap_buffers(graphics);
 }
