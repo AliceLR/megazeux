@@ -41,7 +41,7 @@ endif
 
 ifeq (${BUILD_UTILS},1)
 
-${checkres}: ${mzx} ${checkres_objs}
+${checkres}: ${checkres_objs}
 ifeq (${V},1)
 	${HOST_CC} ${checkres_objs} -o ${checkres} ${checkres_ldflags}
 else

@@ -6,7 +6,7 @@ include contrib/gdm2s3m/src/Makefile.in
 include contrib/icons/Makefile.in
 include contrib/libmodplug/src/Makefile.in
 
-.PHONY: ${mzx}_clean
+.PHONY: ${mzx}_clean ${mzx}_link
 
 LINK_CC := ${CC}
 
@@ -205,7 +205,7 @@ else
 	      -fwhole-program --combine -c ${mzx_cobjs:.${o}=.c} -o src/c.o
 endif
 
-${mzx}: ${mzx_cxxobjs} src/c.o ${mzx}_link
+${mzx}: ${mzx_cxxobjs} src/c.o
 
 else
 
@@ -216,11 +216,11 @@ else
 
 mzx_cobjs_link := ${mzx_cobjs}
 
-${mzx}: ${mzx_cobjs} ${mzx_cxxobjs} ${mzx}_link
+${mzx}: ${mzx_cobjs} ${mzx_cxxobjs}
 
 endif
 
-${mzx}_link: ${mzx_cobjs_link} ${mzx_cxxobjs}
+${mzx}: ${mzx_cobjs_link} ${mzx_cxxobjs}
 ifeq (${V},1)
 	${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} -o ${mzx} ${mzx_ldflags}
 else
