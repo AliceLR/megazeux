@@ -34,9 +34,6 @@
 #include "const.h" // for MAX_PATH
 #include "error.h"
 
-#define ASSETS   "assets/"
-#define SHADERS  ASSETS "shaders/"
-
 struct mzx_resource
 {
   const char *const base_name;
@@ -53,6 +50,7 @@ struct mzx_resource
  * enum resource_id enumeration defines them.
  */
 static struct mzx_resource mzx_res[] = {
+#define ASSETS "assets/"
   { CONFFILE,                      NULL, false },
   { ASSETS "default.chr",          NULL, false },
   { ASSETS "edit.chr",             NULL, false },
@@ -66,6 +64,7 @@ static struct mzx_resource mzx_res[] = {
   { ASSETS "help.fil",             NULL, true },
 #endif
 #ifdef CONFIG_RENDER_GL_PROGRAM
+#define SHADERS ASSETS "shaders/"
   { SHADERS "scaler.vert",         NULL, false },
   { SHADERS "scaler.frag",         NULL, false },
   { SHADERS "tilemap.vert",        NULL, false },
