@@ -25,11 +25,16 @@
 #include "../util.h"
 
 #define MAX_GLOBAL_COMMENT_LEN  (1 << 16)
-#define ECDR_STATIC_LENGTH      (4 + 2 + 2 + 2 + 2 + 4 + 4 + 2)
 
 #define CENTRAL_DIRECTORY_MAGIC 0x02014b50
 #define LOCAL_FILE_HEADER_MAGIC 0x04034b50
 #define DATA_DESCRIPTOR_MAGIC   0x08074b50
+
+struct segment
+{
+  Uint32 offset;
+  Uint32 length;
+};
 
 enum zip_method
 {
@@ -38,32 +43,52 @@ enum zip_method
   ZIP_METHOD_DEFLATE64 = 9,
 };
 
-struct zip_segment
-{
-  Uint32 offset;
-  Uint32 length;
-};
+// The goal of the entry abstraction is to take just enough pertinent
+// information from the LFH in order to rewrite it, should the file data
+// be modified.
+//
+// We don't attempt to preserve file comments or so-called "extra field"
+// data, because it was felt that this information could become inconsistent
+// with respect to the written data.
+//
+// Additionally, the abstraction has been minimally extended with segment
+// information to allow unchanged files to be moved inside the on-disk file.
 
-struct zip_dirent {
+struct zip_entry
+{
+  struct zip_entry *next;
+
   Uint32 crc32;
   Uint32 uncompressed_size;
 
   enum zip_method method;
-  time_t datetime;
   char *file_name;
+  time_t datetime;
 
-  struct zip_segment local_header;
-  struct zip_segment file_data;
-  struct zip_segment data_descriptor;
+  struct segment cd_entry;
+  struct segment local_header;
+  struct segment file_data;
+  struct segment data_descriptor;
 };
+
+// Construction of the CD segment is done by walking each entry and either
+// copying its cd_entry (CDE) or generating a new one.
+//
+// The ECDR is wholly static apart from the CD offset/length (which must be
+// computed at runtime) and the file comment, which is stored here.
+
+struct zip_file
+{
+  struct zip_entry *entries;
+  Uint16 comment_length;
+  char *comment;
+};
+
+// Contains the file abstraction and (of course) the open file handle.
 
 struct zip_handle
 {
-  struct zip_dirent **entries;
-  struct zip_segment cd;
-  struct zip_segment ecdr;
-
-  Uint16 num_entries;
+  struct zip_file file;
   FILE *f;
 };
 
@@ -180,12 +205,30 @@ const char *zipio_strerror(zipio_error_t err)
   }
 }
 
+static void free_entries(zip_handle_t *z)
+{
+  struct zip_entry *entry, *next_entry;
+
+  for(entry = z->file.entries; entry; entry = next_entry)
+  {
+    next_entry = entry->next;
+    free(entry->file_name);
+    free(entry);
+  }
+
+  free(z->file.entries);
+  z->file.entries = NULL;
+}
+
 zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
 {
   static const unsigned char ecdr_sig[] = { 'P', 'K', 0x5, 0x6 };
-  Uint32 zip_comment_length, segment_total = 0;
   long pos, size, start, cur_ecdr_offset = 0;
   zipio_error_t err = ZIPIO_SUCCESS;
+  Uint32 segment_total = 0;
+  struct segment cd, ecdr;
+  struct zip_entry *entry;
+  Uint16 num_entries;
   int ecdr_sig_off;
   zip_handle_t *z;
   Sint64 d;
@@ -193,7 +236,7 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
 
   assert(filename != NULL);
 
-  *_z = malloc(sizeof(zip_handle_t));
+  *_z = calloc(1, sizeof(struct zip_handle));
   z = *_z;
 
   assert(*_z != NULL);
@@ -283,6 +326,7 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     err = ZIPIO_SEEK_FAILED;
     goto err_close;
   }
+  ecdr.offset = cur_ecdr_offset - sizeof(ecdr_sig);
 
   // "number of this disk"
   if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
@@ -314,59 +358,81 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
   // "total number of entries in the central directory"
   if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
     goto err_close;
-  z->num_entries = d;
+  num_entries = d;
 
   // "size of the central directory"
   if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
     goto err_close;
-  z->cd.length = d;
+  cd.length = d;
 
   // "offset of start of central directory with respect to
   //  the starting disk number"
   if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
     goto err_close;
-  z->cd.offset = d;
+  cd.offset = d;
 
   // ".ZIP file comment length"
   if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
     goto err_close;
-  zip_comment_length = (Uint32)d;
+  z->file.comment_length = d;
 
+  // ".ZIP file comment"
+  if(z->file.comment_length > 0)
+  {
+    z->file.comment = malloc(z->file.comment_length);
+    if(fread(z->file.comment, z->file.comment_length, 1, z->f) != 1)
+    {
+      err = ZIPIO_READ_FAILED;
+      goto err_close;
+    }
+  }
+
+  // Compute ECDR length
   d = ftell(z->f);
   if(d < 0)
   {
     err = ZIPIO_READ_FAILED;
     goto err_close;
   }
-
-  // Can now compute ECDR offset/length reliably
-  z->ecdr.offset = d - ECDR_STATIC_LENGTH;
-  z->ecdr.length = ECDR_STATIC_LENGTH + zip_comment_length;
+  ecdr.length = d - ecdr.offset;
 
   debug("Valid ZIP ECDR found at offset 0x%x; length is %u.\n",
-   z->ecdr.offset, z->ecdr.length);
+   ecdr.offset, ecdr.length);
 
   debug("ZIP CD found at offset 0x%x; length is %u. %u entries.\n",
-   z->cd.offset, z->cd.length, z->num_entries);
+   cd.offset, cd.length, num_entries);
 
   // Move to supposed Central Directory
-  if(fseek(z->f, z->cd.offset, SEEK_SET))
+  if(fseek(z->f, cd.offset, SEEK_SET))
   {
     err = ZIPIO_SEEK_FAILED;
     goto err_close;
   }
 
-  z->entries = calloc(z->num_entries, sizeof(struct zip_dirent *));
-
-  for(i = 0; i < z->num_entries; i++)
+  for(i = 0; i < num_entries; i++)
   {
     Uint16 file_name_length, extra_field_length, file_comment_length;
-    struct zip_dirent *entry;
+    struct zip_entry *new_entry;
     Uint16 time, date;
 
-    // Keep a short hand for this entry, and pass it along
-    entry = calloc(1, sizeof(struct zip_dirent));
-    z->entries[i] = entry;
+    new_entry = calloc(1, sizeof(struct zip_entry));
+
+    if(z->file.entries)
+    {
+      entry->next = new_entry;
+      entry = entry->next;
+    }
+    else
+      z->file.entries = entry = new_entry;
+
+    // compute CD entry offset
+    pos = ftell(z->f);
+    if(pos < 0)
+    {
+      err = ZIPIO_READ_FAILED;
+      goto err_free_entries;
+    }
+    entry->cd_entry.offset = pos;
 
     // "central file header signature"
     if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
@@ -452,6 +518,13 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
       goto err_free_entries;
     file_name_length = d;
 
+    // File name cannot be NULL
+    if(file_name_length == 0)
+    {
+      err = ZIPIO_CORRUPT_CENTRAL_DIRECTORY;
+      goto err_free_entries;
+    }
+
     // "extra field length"
     if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
       goto err_free_entries;
@@ -529,11 +602,20 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     }
 
     // Check we've not exceeded this segment's bounds
-    if(ftell(z->f) > z->cd.offset + z->cd.length)
+    if(ftell(z->f) > cd.offset + cd.length)
     {
       err = ZIPIO_CORRUPT_CENTRAL_DIRECTORY;
       goto err_free_entries;
     }
+
+    // compute CD entry length
+    pos = ftell(z->f);
+    if(pos < 0)
+    {
+      err = ZIPIO_READ_FAILED;
+      goto err_free_entries;
+    }
+    entry->cd_entry.length = pos - entry->cd_entry.offset;
 
     // Convert to standard C89/C99 time_t
     entry->datetime = dos_to_time_t(time, date);
@@ -546,10 +628,9 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
 
   // Sanity check Local File Header (LFH) for each of the CD entries
 
-  for(i = 0; i < z->num_entries; i++)
+  for(entry = z->file.entries; entry; entry = entry->next)
   {
     Uint16 file_name_length, extra_field_length, time, date;
-    struct zip_dirent *entry = z->entries[i];
     bool data_descriptor = false;
     time_t datetime;
     char *file_name;
@@ -666,6 +747,13 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
       goto err_free_entries;
     file_name_length = d;
+
+    // File name cannot be NULL
+    if(file_name_length == 0)
+    {
+      err = ZIPIO_CORRUPT_LOCAL_FILE_HEADER;
+      goto err_free_entries;
+    }
 
     // "extra field length"
     if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
@@ -822,33 +910,37 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     debug("Uncompressed Size:   %u\n", entry->uncompressed_size);
   }
 
-  // Total all recorded segment sizes
-  for(i = 0; i < z->num_entries; i++)
+  // Total all entry segments..
+  for(entry = z->file.entries; entry; entry = entry->next)
   {
-    struct zip_dirent *e = z->entries[i];
+    debug("LFH  [0x%.8x-0x%.8x]\n", entry->local_header.offset,
+     entry->local_header.offset + entry->local_header.length);
 
-    debug("LFH  [0x%.8x-0x%.8x]\n", e->local_header.offset,
-     e->local_header.offset + e->local_header.length);
+    debug("DATA [0x%.8x-0x%.8x]\n", entry->file_data.offset,
+     entry->file_data.offset + entry->file_data.length);
 
-    debug("DATA [0x%.8x-0x%.8x]\n", e->file_data.offset,
-     e->file_data.offset + e->file_data.length);
-
-    if(e->data_descriptor.offset)
+    if(entry->data_descriptor.offset)
     {
-      debug("DESC [0x%.8x-0x%.8x]\n", e->data_descriptor.offset,
-        e->data_descriptor.offset + e->data_descriptor.length);
+      debug("DESC [0x%.8x-0x%.8x]\n", entry->data_descriptor.offset,
+       entry->data_descriptor.offset + entry->data_descriptor.length);
     }
 
-    segment_total += e->local_header.length +
-                     e->file_data.length +
-                     e->data_descriptor.length;
+    segment_total += entry->local_header.length +
+                     entry->file_data.length +
+                     entry->data_descriptor.length;
   }
 
-  debug("CD   [0x%.8x-0x%.8x]\n", z->cd.offset, z->cd.offset + z->cd.length);
-  segment_total += z->cd.length;
+  // ..all CD entry segments..
+  for(entry = z->file.entries; entry; entry = entry->next)
+  {
+    debug("CDE  [0x%.8x-0x%.8x]\n", entry->cd_entry.offset,
+     entry->cd_entry.offset + entry->cd_entry.length);
+    segment_total += entry->cd_entry.length;
+  }
 
-  debug("ECDR [0x%.8x-0x%.8x]\n", z->ecdr.offset, z->ecdr.offset + z->ecdr.length);
-  segment_total += z->ecdr.length;
+  // ..and the ECDR trailer segment
+  debug("ECDR [0x%.8x-0x%.8x]\n", ecdr.offset, ecdr.offset + ecdr.length);
+  segment_total += ecdr.length;
 
   // Compare with file size for contiguity
   pos = ftell_and_rewind(z->f);
@@ -876,16 +968,7 @@ err_free:
   return err;
 
 err_free_entries:
-  for(i = 0; i < z->num_entries; i++)
-  {
-    struct zip_dirent *entry = z->entries[i];
-    if(entry)
-    {
-      free(entry->file_name);
-      free(entry);
-    }
-  }
-  free(z->entries);
+  free_entries(z);
   goto err_close;
 }
 
@@ -897,6 +980,9 @@ zipio_error_t zipio_close(zip_handle_t *z)
 
   if(fclose(z->f))
     err = ZIPIO_CLOSE_FAILED;
+
+  free(z->file.comment);
+  free_entries(z);
   free(z);
 
   return err;
