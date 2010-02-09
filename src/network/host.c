@@ -208,6 +208,7 @@ static struct
   WINSOCK_API_LINKAGE int PASCAL (*WSACleanup)(void);
   WINSOCK_API_LINKAGE int PASCAL (*WSAGetLastError)(void);
   WINSOCK_API_LINKAGE int PASCAL (*WSAStartup)(WORD, LPWSADATA);
+  int PASCAL (*__WSAFDIsSet)(SOCKET, fd_set *);
 
   // These functions were only implemented as of Windows XP (5.1)
   void WSAAPI (*freeaddrinfo)(struct addrinfo *);
@@ -243,6 +244,7 @@ socksyms_map[] =
   { "WSACleanup",            (void **)&socksyms.WSACleanup },
   { "WSAGetLastError",       (void **)&socksyms.WSAGetLastError },
   { "WSAStartup",            (void **)&socksyms.WSAStartup },
+  { "__WSAFDIsSet",          (void **)&socksyms.__WSAFDIsSet },
 
   { "freeaddrinfo",          (void **)&socksyms.freeaddrinfo },
   { "getaddrinfo",           (void **)&socksyms.getaddrinfo },
@@ -253,6 +255,9 @@ socksyms_map[] =
 typedef int sockaddr_t;
 
 static int init_ref_count;
+
+#undef  FD_ISSET
+#define FD_ISSET(fd,set) socksyms.__WSAFDIsSet((SOCKET)(fd),(fd_set *)(set))
 
 #define WINSOCK2 "ws2_32.dll"
 #define WINSOCK  "wsock32.dll"
@@ -820,7 +825,7 @@ int host_poll_raw(struct host *h, unsigned int timeout)
   tv.tv_sec  = (timeout / 1000);
   tv.tv_usec = (timeout % 1000) * 1000;
 
-  ret = select(h->fd + 1, &mask, NULL, NULL, &tv);
+  ret = platform_select(h->fd + 1, &mask, NULL, NULL, &tv);
   if(ret < 0)
     return -1;
 
