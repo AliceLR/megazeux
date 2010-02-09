@@ -68,6 +68,17 @@ struct function_counter
    int id);
 };
 
+static unsigned int get_board_x_board_y_offset(struct world *mzx_world, int id)
+{
+  int board_x = get_counter(mzx_world, "board_x", id);
+  int board_y = get_counter(mzx_world, "board_y", id);
+
+  board_x = CLAMP(board_x, 0, mzx_world->current_board->board_width);
+  board_y = CLAMP(board_y, 0, mzx_world->current_board->board_height);
+
+  return board_y * mzx_world->current_board->board_width + board_x;
+}
+
 static int local_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -323,29 +334,15 @@ static int vertpld_read(struct world *mzx_world,
 static int board_char_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  struct board *src_board = mzx_world->current_board;
-  int offset = get_counter(mzx_world, "board_x", id) +
-   (get_counter(mzx_world, "board_y", id) * src_board->board_width);
-  int board_size = src_board->board_width * src_board->board_height;
-
-  if((offset >= 0) && (offset < board_size))
-    return get_id_char(src_board, offset);
-
-  return -1;
+  unsigned int offset = get_board_x_board_y_offset(mzx_world, id);
+  return get_id_char(mzx_world->current_board, offset);
 }
 
 static int board_color_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  struct board *src_board = mzx_world->current_board;
-  int offset = get_counter(mzx_world, "board_x", id) +
-   (get_counter(mzx_world, "board_y", id) * src_board->board_width);
-  int board_size = src_board->board_width * src_board->board_height;
-
-  if((offset >= 0) && (offset < board_size))
-    return get_id_color(src_board, offset);
-
-  return -1;
+  unsigned int offset = get_board_x_board_y_offset(mzx_world, id);
+  return get_id_color(mzx_world->current_board, offset);
 }
 
 static int board_w_read(struct world *mzx_world,
@@ -363,60 +360,36 @@ static int board_h_read(struct world *mzx_world,
 static int board_id_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  struct board *src_board = mzx_world->current_board;
-  int offset = get_counter(mzx_world, "board_x", id) +
-   (get_counter(mzx_world, "board_y", id) * src_board->board_width);
-  int board_size = src_board->board_width * src_board->board_height;
-
-  if((offset >= 0) && (offset < board_size))
-    return src_board->level_id[offset];
-
-  return -1;
+  unsigned int offset = get_board_x_board_y_offset(mzx_world, id);
+  return mzx_world->current_board->level_id[offset];
 }
 
 static void board_id_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
+  unsigned int offset = get_board_x_board_y_offset(mzx_world, id);
   struct board *src_board = mzx_world->current_board;
-  int offset = get_counter(mzx_world, "board_x", id) +
-   (get_counter(mzx_world, "board_y", id) * src_board->board_width);
-  int board_size = src_board->board_width * src_board->board_height;
   char cvalue = value;
 
-  if((cvalue < SENSOR) && (src_board->level_id[offset] < SENSOR) &&
-   (offset >= 0) && (offset < board_size))
-  {
+  if((cvalue < SENSOR) && (src_board->level_id[offset] < SENSOR))
     src_board->level_id[offset] = cvalue;
-  }
 }
 
 static int board_param_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  struct board *src_board = mzx_world->current_board;
-  int offset = get_counter(mzx_world, "board_x", id) +
-   (get_counter(mzx_world, "board_y", id) * src_board->board_width);
-  int board_size = src_board->board_width * src_board->board_height;
-
-  if((offset >= 0) && (offset < board_size))
-    return src_board->level_param[offset];
-
-  return -1;
+  unsigned int offset = get_board_x_board_y_offset(mzx_world, id);
+  return mzx_world->current_board->level_param[offset];
 }
 
 static void board_param_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
+  unsigned int offset = get_board_x_board_y_offset(mzx_world, id);
   struct board *src_board = mzx_world->current_board;
-  int offset = get_counter(mzx_world, "board_x", id) +
-   (get_counter(mzx_world, "board_y", id) * src_board->board_width);
-  int board_size = src_board->board_width * src_board->board_height;
 
-  if((src_board->level_id[offset] < 122) &&
-   (offset >= 0) && (offset < board_size))
-  {
+  if(src_board->level_id[offset] < 122)
     src_board->level_param[offset] = value;
-  }
 }
 
 static int red_value_read(struct world *mzx_world,
@@ -3060,12 +3033,12 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
   // Okay, I implemented this stupid thing, you can all die.
   if(special_name("board_scan"))
   {
+    unsigned int board_width, board_size, board_pos, read_length = 63;
     struct board *src_board = mzx_world->current_board;
-    int board_width = src_board->board_width;
-    unsigned int board_size = board_width * src_board->board_height;
-    unsigned int board_pos = get_counter(mzx_world, "board_x", id) +
-     (get_counter(mzx_world, "board_y", id) * board_width);
-    unsigned int read_length = 63;
+
+    board_width = src_board->board_width;
+    board_size = board_width * src_board->board_height;
+    board_pos = get_board_x_board_y_offset(mzx_world, id);
 
     force_string_length(mzx_world, name, next, &dest, &read_length);
 
