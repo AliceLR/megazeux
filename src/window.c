@@ -2397,7 +2397,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
         char *path;
 
         if(default_ext)
-            add_ext(ret, default_ext);
+          add_ext(ret, default_ext);
 
         path = malloc(MAX_PATH);
         get_path(ret, path, MAX_PATH);

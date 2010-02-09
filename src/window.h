@@ -195,8 +195,8 @@ typedef struct
   int *result;
 } board_list;
 
-CORE_LIBSPEC void construct_dialog(dialog *src, const char *title, int x, int y,
- int width, int height, element **elements, int num_elements,
+CORE_LIBSPEC void construct_dialog(dialog *src, const char *title,
+ int x, int y, int width, int height, element **elements, int num_elements,
  int start_element);
 CORE_LIBSPEC void destruct_dialog(dialog *src);
 
@@ -209,10 +209,10 @@ CORE_LIBSPEC element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
  int mult_five, int *result);
 
-CORE_LIBSPEC int choose_file_ch(World *mzx_world, const char **wildcards, char *ret,
- const char *title, int dirs_okay);
-CORE_LIBSPEC int new_file(World *mzx_world, const char **wildcards, const char *default_ext,
+CORE_LIBSPEC int choose_file_ch(World *mzx_world, const char **wildcards,
  char *ret, const char *title, int dirs_okay);
+CORE_LIBSPEC int new_file(World *mzx_world, const char **wildcards,
+ const char *default_ext, char *ret, const char *title, int dirs_okay);
 
 #if defined(CONFIG_UPDATER) || defined(CONFIG_LOADSAVE_METER)
 CORE_LIBSPEC void meter(const char *title, unsigned int progress,
