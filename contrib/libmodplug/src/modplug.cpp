@@ -86,11 +86,9 @@ ModPlugFile* ModPlug_Load(const void* data, int size)
 		result->mSoundFile.SetRepeatCount(ModPlug::gSettings.mLoopCount);
 		return result;
 	}
-	else
-	{
-		delete result;
-		return NULL;
-	}
+
+	delete result;
+	return NULL;
 }
 
 void ModPlug_Unload(ModPlugFile* file)

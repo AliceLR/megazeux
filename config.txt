@@ -214,12 +214,12 @@ enable_resizing = 1
 # cubic (slow, great quality)
 # fir (very slow, excellent quality)
 
-# modplug_resample_mode = cubic
+modplug_resample_mode = linear
 
 # Whether music/samples should be played or not.
 # Does not include PC speaker effects.
 
-# music_on = 1
+music_on = 1
 
 # Whether PC speaker effects should be played or not.
 

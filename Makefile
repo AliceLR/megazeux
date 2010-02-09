@@ -72,16 +72,15 @@ CFLAGS   += -g -Wall -std=gnu99 ${ARCH_CFLAGS}
 CXXFLAGS += -g -Wall ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
 
+ifneq (${PLATFORM},mingw)
 ifeq (${shell ${CC} -dumpversion | cut -d. -f1},4)
 
 #
 # Symbols in COFF binaries are implicitly hidden unless exported; this
 # flag just confuses GCC and must be disabled.
 #
-ifneq (${PLATFORM},mingw)
 CFLAGS   += -fvisibility=hidden
 CXXFLAGS += -fvisibility=hidden
-endif
 
 #
 # Skip the stack protector on embedded platforms; it just unnecessarily
@@ -91,11 +90,9 @@ endif
 ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_PSP},${BUILD_WII}),)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
-ifeq (${PLATFORM},mingw)
-ARCH_LDFLAGS += -lssp
-endif
 endif
 
+endif
 endif
 
 #
