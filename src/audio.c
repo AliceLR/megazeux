@@ -891,7 +891,7 @@ __audio_c_maybe_static void initialize_sampled_stream(
 static struct audio_stream *construct_vorbis_stream(char *filename,
  Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
-  FILE *input_file = fsafeopen(filename, "rb");
+  FILE *input_file = fopen(filename, "rb");
   struct audio_stream *ret_val = NULL;
   vorbis_comment *comment;
   int loopstart = -1;
@@ -1393,15 +1393,13 @@ static struct audio_stream *construct_wav_stream(char *filename,
 {
   struct wav_info w_info = {0,0,0,0,0};
   struct audio_stream *ret_val = NULL;
-  char safe_filename[MAX_PATH];
   char new_file[MAX_PATH];
   Uint32 data_length = 0;
   Uint8 *wav_data = NULL;
 
   check_ext_for_sam_and_convert(filename, new_file);
-  fsafetranslate(new_file, safe_filename);
 
-  if(load_wav_file(safe_filename, &w_info, &wav_data, &data_length))
+  if(load_wav_file(new_file, &w_info, &wav_data, &data_length))
   {
     // Surround WAVs not supported yet..
     if(w_info.channels <= 2)
@@ -1617,17 +1615,29 @@ void quit_audio(void)
   free(audio.pcs_stream);
 }
 
-void load_module(char *filename)
+void load_module(char *filename, bool safely)
 {
+  char translated_filename[MAX_PATH];
+
+  if(safely)
+  {
+    if(fsafetranslate(filename, translated_filename) != FSAFE_SUCCESS)
+    {
+      warn("Module filename '%s' failed safety checks\n", filename);
+      return;
+    }
+
+    filename = translated_filename;
+  }
+
   end_module();
 
-  if(filename && filename[0])
-  {
-    LOCK();
-    audio.primary_stream = construct_stream_audio_file(filename, 0,
-     audio.music_volume * 255 / 8, 1);
-    UNLOCK();
-  }
+  LOCK();
+
+  audio.primary_stream = construct_stream_audio_file(filename, 0,
+   audio.music_volume * 255 / 8, 1);
+
+  UNLOCK();
 }
 
 void end_module(void)
@@ -1642,10 +1652,22 @@ void end_module(void)
   audio.primary_stream = NULL;
 }
 
-void play_sample(int freq, char *filename)
+void play_sample(int freq, char *filename, bool safely)
 {
-  struct audio_stream *a_src;
   Uint32 vol = 255 * audio.sound_volume / 8;
+  char translated_filename[MAX_PATH];
+  struct audio_stream *a_src;
+
+  if(safely)
+  {
+    if(fsafetranslate(filename, translated_filename) != FSAFE_SUCCESS)
+    {
+      warn("Sample filename '%s' failed safety checks\n", filename);
+      return;
+    }
+
+    filename = translated_filename;
+  }
 
   LOCK();
 

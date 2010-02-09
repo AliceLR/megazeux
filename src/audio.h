@@ -118,9 +118,9 @@ extern struct audio audio;
 
 CORE_LIBSPEC void init_audio(struct config_info *conf);
 CORE_LIBSPEC void quit_audio(void);
-CORE_LIBSPEC void load_module(char *filename);
+CORE_LIBSPEC void load_module(char *filename, bool safely);
 CORE_LIBSPEC void end_module(void);
-CORE_LIBSPEC void play_sample(int freq, char *filename);
+CORE_LIBSPEC void play_sample(int freq, char *filename, bool safely);
 
 void end_sample(void);
 void jump_module(int order);
@@ -198,12 +198,12 @@ static inline void set_sfx_on(int val) {}
 static inline void set_sfx_volume(int volume) {}
 static inline void end_sample(void) {}
 static inline void end_module(void) {}
-static inline void load_module(char *filename) {}
+static inline void load_module(char *filename, bool safely) {}
 static inline void volume_module(int vol) {}
 static inline void set_position(int pos) {}
 static inline void jump_module(int order) {}
 static inline void shift_frequency(int freq) {}
-static inline void play_sample(int freq, char *filename) {}
+static inline void play_sample(int freq, char *filename, bool safely) {}
 static inline void spot_sample(int freq, int sample) {}
 static inline int get_music_on_state(void) { return 0; }
 static inline int get_sfx_on_state(void) { return 0; }

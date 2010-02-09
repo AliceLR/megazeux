@@ -83,14 +83,14 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
   {
     filename[mod_name_size - 1] = 0;
     if(strcasecmp(src_board->mod_playing, filename))
-      load_module(filename);
+      load_module(filename, true);
 
     src_board->mod_playing[0] = '*';
   }
   else
   {
     if(filename[0] != '*')
-      load_module(filename);
+      load_module(filename, true);
 
     strcpy(src_board->mod_playing, filename);
   }
@@ -2148,7 +2148,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(frequency < 0)
           frequency = 0;
 
-        play_sample(frequency, sam_name_buffer);
+        play_sample(frequency, sam_name_buffer, true);
 
         break;
       }

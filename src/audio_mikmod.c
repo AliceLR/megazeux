@@ -22,7 +22,6 @@
 
 #include "audio.h"
 #include "audio_mikmod.h"
-#include "fsafeopen.h"
 #include "const.h"
 #include "util.h"
 
@@ -189,7 +188,7 @@ struct audio_stream *construct_mikmod_stream(char *filename, Uint32 frequency,
   Uint32 file_size;
   struct audio_stream *ret_val = NULL;
 
-  input_file = fsafeopen(filename, "rb");
+  input_file = fopen(filename, "rb");
 
   if(input_file)
   {

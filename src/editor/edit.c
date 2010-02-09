@@ -143,7 +143,7 @@ static void fix_board(struct world *mzx_world, int new_board)
 
 static void fix_mod(struct world *mzx_world, struct board *src_board)
 {
-  load_module(src_board->mod_playing);
+  load_module(src_board->mod_playing, true);
   strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
 }
 
@@ -2021,7 +2021,7 @@ static void __edit_world(struct world *mzx_world)
           if(!choose_file(mzx_world, sam_ext, test_wav,
            "Choose a wav file", 1))
           {
-            play_sample(0, test_wav);
+            play_sample(0, test_wav, false);
           }
         }
         else
@@ -2403,7 +2403,7 @@ static void __edit_world(struct world *mzx_world)
                     char trnc_mod[13] = { 0 };
                     if(!truncate_filename(new_mod, trnc_mod, 12))
                     {
-                      load_module(trnc_mod);
+                      load_module(trnc_mod, true);
                       strcpy(src_board->mod_playing, trnc_mod);
                       strcpy(mzx_world->real_mod_playing, trnc_mod);
                     }
@@ -2411,7 +2411,7 @@ static void __edit_world(struct world *mzx_world)
                 }
                 else
                 {
-                  load_module(new_mod);
+                  load_module(new_mod, true);
                   strcpy(src_board->mod_playing, new_mod);
                   strcpy(mzx_world->real_mod_playing, new_mod);
                 }
@@ -2441,7 +2441,7 @@ static void __edit_world(struct world *mzx_world)
                "Choose a module file (listening only)", 1, 0,
                NULL, 0, 0, 1))
               {
-                load_module(new_mod);
+                load_module(new_mod, false);
                 strcpy(current_listening_mod, new_mod);
                 getcwd(current_listening_dir, MAX_PATH);
                 listening_flag = 1;
@@ -2454,7 +2454,7 @@ static void __edit_world(struct world *mzx_world)
               end_module();
               listening_flag = 0;
               if(mzx_world->real_mod_playing[0])
-                load_module(mzx_world->real_mod_playing);
+                load_module(mzx_world->real_mod_playing, true);
             }
           }
         }
@@ -3321,7 +3321,7 @@ static void __edit_world(struct world *mzx_world)
             mzx_world->player_restart_y = mzx_world->player_y;
 
             strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-            load_module(mzx_world->real_mod_playing);
+            load_module(mzx_world->real_mod_playing, true);
 
             mzx_world->editing = true;
 
@@ -3358,7 +3358,7 @@ static void __edit_world(struct world *mzx_world)
             {
               getcwd(current_dir, MAX_PATH);
               chdir(current_listening_dir);
-              load_module(current_listening_mod);
+              load_module(current_listening_mod, true);
               chdir(current_dir);
             }
 

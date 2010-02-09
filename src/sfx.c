@@ -243,7 +243,7 @@ void play_str(char *str, int sfx_play)
         {
           str[digi_end] = 0;
 
-          play_sample(sam_freq[note - 1] >> oct, str + digi_st);
+          play_sample(sam_freq[note - 1] >> oct, str + digi_st, true);
 
           str[digi_end] = '&';
           digi_st = -1;
@@ -347,7 +347,7 @@ void play_str(char *str, int sfx_play)
   {
     str[digi_end] = 0;
 
-    play_sample(0, str + digi_st);
+    play_sample(0, str + digi_st, true);
 
     str[digi_end] = '&';
   }

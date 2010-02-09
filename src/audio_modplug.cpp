@@ -25,7 +25,6 @@
 
 #include "audio.h"
 #include "audio_modplug.h"
-#include "fsafeopen.h"
 #include "const.h"
 #include "util.h"
 
@@ -183,7 +182,7 @@ struct audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
     }
   }
 
-  input_file = fsafeopen(new_file, "rb");
+  input_file = fopen(new_file, "rb");
 
   if(input_file)
   {
