@@ -127,20 +127,20 @@
  (ARG_TYPE_PARAM | ARG_TYPE_COUNTER_LOAD_NAME)                                 \
 
 // wait for N
-static enum arg_type cm2[] =
+static const enum arg_type cm2[] =
 {
   ARG_TYPE_IGNORE_FOR,
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // cycle N
-static enum arg_type cm3[] =
+static const enum arg_type cm3[] =
 {
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // go DIR for N
-static enum arg_type cm4[] =
+static const enum arg_type cm4[] =
 {
   ARG_TYPE_DIRECTION,
   ARG_TYPE_IGNORE_FOR,
@@ -148,13 +148,13 @@ static enum arg_type cm4[] =
 };
 
 // walk N
-static enum arg_type cm5[] =
+static const enum arg_type cm5[] =
 {
   ARG_TYPE_DIRECTION
 };
 
 // become COLOR ARG_TYPE_THING PARAM
-static enum arg_type cm6[] =
+static const enum arg_type cm6[] =
 {
   ARG_TYPE_COLOR_INDIRECT,
   ARG_TYPE_THING,
@@ -162,26 +162,26 @@ static enum arg_type cm6[] =
 };
 
 // char CHAR
-static enum arg_type cm7[] =
+static const enum arg_type cm7[] =
 {
   ARG_TYPE_CHARACTER_INDIRECT
 };
 
 // color COLOR
-static enum arg_type cm8[] =
+static const enum arg_type cm8[] =
 {
   ARG_TYPE_COLOR_INDIRECT
 };
 
 // gotoxy N N
-static enum arg_type cm9[] =
+static const enum arg_type cm9[] =
 {
   ARG_TYPE_NUMERIC_INDIRECT,
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // set COUNTER to N
-static enum arg_type cm10[] =
+static const enum arg_type cm10[] =
 {
   ARG_TYPE_COUNTER_STORE_NAME,
   ARG_TYPE_IGNORE_TO,
@@ -189,7 +189,7 @@ static enum arg_type cm10[] =
 };
 
 // inc COUNTER by N
-static enum arg_type cm11[] =
+static const enum arg_type cm11[] =
 {
   ARG_TYPE_COUNTER_STORE_NAME,
   ARG_TYPE_IGNORE_BY,
@@ -197,7 +197,7 @@ static enum arg_type cm11[] =
 };
 
 // dec COUNTER by N
-static enum arg_type cm12[] =
+static const enum arg_type cm12[] =
 {
   ARG_TYPE_COUNTER_STORE_NAME,
   ARG_TYPE_IGNORE_BY,
@@ -205,7 +205,7 @@ static enum arg_type cm12[] =
 };
 
 // if COUNTER EQUALITY N then LABEL
-static enum arg_type cm16[] =
+static const enum arg_type cm16[] =
 {
   ARG_TYPE_COUNTER_LOAD_NAME,
   ARG_TYPE_EQUALITY,
@@ -215,7 +215,7 @@ static enum arg_type cm16[] =
 };
 
 // if CONDITION then LABEL
-static enum arg_type cm18[] =
+static const enum arg_type cm18[] =
 {
   ARG_TYPE_CONDITION,
   ARG_TYPE_IGNORE_THEN,
@@ -223,7 +223,7 @@ static enum arg_type cm18[] =
 };
 
 // if not CONDITION then LABEL
-static enum arg_type cm19[] =
+static const enum arg_type cm19[] =
 {
   ARG_TYPE_FRAGMENT_NOT,
   ARG_TYPE_CONDITION,
@@ -232,7 +232,7 @@ static enum arg_type cm19[] =
 };
 
 // if any COLOR THING PARAM then LABEL
-static enum arg_type cm20[] =
+static const enum arg_type cm20[] =
 {
   ARG_TYPE_FRAGMENT_ANY,
   ARG_TYPE_COLOR_INDIRECT,
@@ -243,7 +243,7 @@ static enum arg_type cm20[] =
 };
 
 // if no COLOR THING PARAM then LABEL
-static enum arg_type cm21[] =
+static const enum arg_type cm21[] =
 {
   ARG_TYPE_FRAGMENT_NO,
   ARG_TYPE_COLOR_INDIRECT,
@@ -254,7 +254,7 @@ static enum arg_type cm21[] =
 };
 
 // if COLOR THING PARAM at DIR then LABEL
-static enum arg_type cm22[] =
+static const enum arg_type cm22[] =
 {
   ARG_TYPE_COLOR_INDIRECT,
   ARG_TYPE_THING,
@@ -266,7 +266,7 @@ static enum arg_type cm22[] =
 };
 
 // if not COLOR THING PARAM at DIR then LABEL
-static enum arg_type cm23[] =
+static const enum arg_type cm23[] =
 {
   ARG_TYPE_FRAGMENT_NOT,
   ARG_TYPE_COLOR_INDIRECT,
@@ -279,7 +279,7 @@ static enum arg_type cm23[] =
 };
 
 // if COLOR THING PARAM at N N then LABEL
-static enum arg_type cm24[] =
+static const enum arg_type cm24[] =
 {
   ARG_TYPE_COLOR_INDIRECT,
   ARG_TYPE_THING,
@@ -292,7 +292,7 @@ static enum arg_type cm24[] =
 };
 
 // ifat N N then LABEL
-static enum arg_type cm25[] =
+static const enum arg_type cm25[] =
 {
   ARG_TYPE_IGNORE_AT,
   ARG_TYPE_NUMERIC_INDIRECT,
@@ -302,7 +302,7 @@ static enum arg_type cm25[] =
 };
 
 // if at DIR of player is COLOR THING PARAM then LABEL
-static enum arg_type cm26[] =
+static const enum arg_type cm26[] =
 {
   ARG_TYPE_IGNORE_AT,
   ARG_TYPE_DIRECTION,
@@ -317,25 +317,25 @@ static enum arg_type cm26[] =
 };
 
 // double COUNTER
-static enum arg_type cm27[] =
+static const enum arg_type cm27[] =
 {
   ARG_TYPE_COUNTER_STORE_NAME
 };
 
 // half COUNTER
-static enum arg_type cm28[] =
+static const enum arg_type cm28[] =
 {
   ARG_TYPE_COUNTER_STORE_NAME
 };
 
 // goto LABEL
-static enum arg_type cm29[] =
+static const enum arg_type cm29[] =
 {
   ARG_TYPE_LABEL_NAME
 };
 
 // send ROBOT to EXT_LABEL
-static enum arg_type cm30[] =
+static const enum arg_type cm30[] =
 {
   ARG_TYPE_ROBOT_NAME,
   ARG_TYPE_IGNORE_TO,
@@ -343,13 +343,13 @@ static enum arg_type cm30[] =
 };
 
 // explode N
-static enum arg_type cm31[] =
+static const enum arg_type cm31[] =
 {
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // put COLOR THING PARAM to DIR
-static enum arg_type cm32[] =
+static const enum arg_type cm32[] =
 {
   ARG_TYPE_COLOR_INDIRECT,
   ARG_TYPE_THING,
@@ -359,21 +359,21 @@ static enum arg_type cm32[] =
 };
 
 // give N ITEM
-static enum arg_type cm33[] =
+static const enum arg_type cm33[] =
 {
   ARG_TYPE_NUMERIC_INDIRECT,
   ARG_TYPE_ITEM
 };
 
 // take N ITEM
-static enum arg_type cm34[] =
+static const enum arg_type cm34[] =
 {
   ARG_TYPE_NUMERIC_INDIRECT,
   ARG_TYPE_ITEM
 };
 
 // take N ITEM else LABEL
-static enum arg_type cm35[] =
+static const enum arg_type cm35[] =
 {
   ARG_TYPE_NUMERIC_INDIRECT,
   ARG_TYPE_ITEM,
@@ -382,83 +382,83 @@ static enum arg_type cm35[] =
 };
 
 // mod STRING
-static enum arg_type cm38[] =
+static const enum arg_type cm38[] =
 {
   ARG_TYPE_STRING
 };
 
 // sam N STRING
-static enum arg_type cm39[] =
+static const enum arg_type cm39[] =
 {
   ARG_TYPE_NUMERIC_INDIRECT,
   ARG_TYPE_STRING
 };
 
 // volume N
-static enum arg_type cm40[] =
+static const enum arg_type cm40[] =
 {
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // end mod
-static enum arg_type cm41[] =
+static const enum arg_type cm41[] =
 {
   ARG_TYPE_FRAGMENT_MOD
 };
 
 // end sam
-static enum arg_type cm42[] =
+static const enum arg_type cm42[] =
 {
   ARG_TYPE_FRAGMENT_SAM
 };
 
 // play STRING
-static enum arg_type cm43[] =
+static const enum arg_type cm43[] =
 {
   ARG_TYPE_STRING
 };
 
 // end play
-static enum arg_type cm44[] =
+static const enum arg_type cm44[] =
 {
   ARG_TYPE_FRAGMENT_PLAY
 };
 
 // end play STRING
-static enum arg_type cm45[] =
+static const enum arg_type cm45[] =
 {
   ARG_TYPE_FRAGMENT_PLAY,
   ARG_TYPE_STRING
 };
 
 // wait play
-static enum arg_type cm46[] =
+static const enum arg_type cm46[] =
 {
   ARG_TYPE_FRAGMENT_PLAY
 };
 
 // sfx N
-static enum arg_type cm48[] =
+static const enum arg_type cm48[] =
 {
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // play sfx STRING
-static enum arg_type cm49[] =
+static const enum arg_type cm49[] =
 {
   ARG_TYPE_FRAGMENT_SFX,
   ARG_TYPE_STRING
 };
 
 // open at DIR
-static enum arg_type cm50[] =
+static const enum arg_type cm50[] =
 {
   ARG_TYPE_IGNORE_AT,
   ARG_TYPE_DIRECTION
 };
 
 // send at DIR to EXT_LABEL
-static enum arg_type cm53[] =
+static const enum arg_type cm53[] =
 {
   ARG_TYPE_IGNORE_AT,
   ARG_TYPE_DIRECTION,
@@ -467,39 +467,39 @@ static enum arg_type cm53[] =
 };
 
 // zap LABEL N
-static enum arg_type cm54[] =
+static const enum arg_type cm54[] =
 {
   ARG_TYPE_LABEL_NAME,
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // restore LABEL N
-static enum arg_type cm55[] =
+static const enum arg_type cm55[] =
 {
   ARG_TYPE_LABEL_NAME,
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // lockplayer ns
-static enum arg_type cm58[] =
+static const enum arg_type cm58[] =
 {
   ARG_TYPE_FRAGMENT_NS
 };
 
 // lockplayer ew
-static enum arg_type cm59[] =
+static const enum arg_type cm59[] =
 {
   ARG_TYPE_FRAGMENT_EW
 };
 
 // lockplayer attack
-static enum arg_type cm60[] =
+static const enum arg_type cm60[] =
 {
   ARG_TYPE_FRAGMENT_ATTACK
 };
 
 // move player to DIR
-static enum arg_type cm61[] =
+static const enum arg_type cm61[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_IGNORE_TO,
@@ -507,7 +507,7 @@ static enum arg_type cm61[] =
 };
 
 // move player to DIR else LABEL
-static enum arg_type cm62[] =
+static const enum arg_type cm62[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_IGNORE_TO,
@@ -517,7 +517,7 @@ static enum arg_type cm62[] =
 };
 
 // put player at N N
-static enum arg_type cm63[] =
+static const enum arg_type cm63[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_IGNORE_AT,
@@ -526,7 +526,7 @@ static enum arg_type cm63[] =
 };
 
 // if player at N N then LABEL
-static enum arg_type cm66[] =
+static const enum arg_type cm66[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_IGNORE_AT,
@@ -537,14 +537,14 @@ static enum arg_type cm66[] =
 };
 
 // put player DIR
-static enum arg_type cm67[] =
+static const enum arg_type cm67[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_DIRECTION
 };
 
 // try DIR else LABEL
-static enum arg_type cm68[] =
+static const enum arg_type cm68[] =
 {
   ARG_TYPE_DIRECTION,
   ARG_TYPE_IGNORE_ELSE,
@@ -552,7 +552,7 @@ static enum arg_type cm68[] =
 };
 
 // switch DIR with DIR
-static enum arg_type cm71[] =
+static const enum arg_type cm71[] =
 {
   ARG_TYPE_DIRECTION,
   ARG_TYPE_IGNORE_WITH,
@@ -560,45 +560,45 @@ static enum arg_type cm71[] =
 };
 
 // shoot to DIR
-static enum arg_type cm72[] =
+static const enum arg_type cm72[] =
 {
   ARG_TYPE_IGNORE_TO,
   ARG_TYPE_DIRECTION
 };
 
 // laybomb DIR
-static enum arg_type cm73[] =
+static const enum arg_type cm73[] =
 {
   ARG_TYPE_DIRECTION
 };
 
 // laybomb high DIR
-static enum arg_type cm74[] =
+static const enum arg_type cm74[] =
 {
   ARG_TYPE_FRAGMENT_HIGH,
   ARG_TYPE_DIRECTION
 };
 
 // shootmissile DIR
-static enum arg_type cm75[] =
+static const enum arg_type cm75[] =
 {
   ARG_TYPE_DIRECTION
 };
 
 // shootseeker DIR
-static enum arg_type cm76[] =
+static const enum arg_type cm76[] =
 {
   ARG_TYPE_DIRECTION
 };
 
 // spitfire DIR
-static enum arg_type cm77[] =
+static const enum arg_type cm77[] =
 {
   ARG_TYPE_DIRECTION
 };
 
 // lazerwall DIR for N
-static enum arg_type cm78[] =
+static const enum arg_type cm78[] =
 {
   ARG_TYPE_DIRECTION,
   ARG_TYPE_IGNORE_FOR,
@@ -606,7 +606,7 @@ static enum arg_type cm78[] =
 };
 
 // put COLOR THING PARAM at N N
-static enum arg_type cm79[] =
+static const enum arg_type cm79[] =
 {
   ARG_TYPE_COLOR_INDIRECT,
   ARG_TYPE_THING,
@@ -617,7 +617,7 @@ static enum arg_type cm79[] =
 };
 
 // die as an item
-static enum arg_type cm80[] =
+static const enum arg_type cm80[] =
 {
   ARG_TYPE_IGNORE_AS,
   ARG_TYPE_IGNORE_AN,
@@ -625,7 +625,7 @@ static enum arg_type cm80[] =
 };
 
 // send at N N to LABEL
-static enum arg_type cm81[] =
+static const enum arg_type cm81[] =
 {
   ARG_TYPE_IGNORE_AT,
   ARG_TYPE_NUMERIC_INDIRECT,
@@ -635,13 +635,13 @@ static enum arg_type cm81[] =
 };
 
 // copyrobot ROBOT
-static enum arg_type cm82[] =
+static const enum arg_type cm82[] =
 {
   ARG_TYPE_ROBOT_NAME
 };
 
 // copyrobot at N N
-static enum arg_type cm83[] =
+static const enum arg_type cm83[] =
 {
   ARG_TYPE_IGNORE_AT,
   ARG_TYPE_NUMERIC_INDIRECT,
@@ -649,21 +649,21 @@ static enum arg_type cm83[] =
 };
 
 // copyrobot from DIR
-static enum arg_type cm84[] =
+static const enum arg_type cm84[] =
 {
   ARG_TYPE_IGNORE_FROM,
   ARG_TYPE_DIRECTION
 };
 
 // duplicate self DIR
-static enum arg_type cm85[] =
+static const enum arg_type cm85[] =
 {
   ARG_TYPE_FRAGMENT_SELF,
   ARG_TYPE_DIRECTION
 };
 
 // duplicate self to N N
-static enum arg_type cm86[] =
+static const enum arg_type cm86[] =
 {
   ARG_TYPE_FRAGMENT_SELF,
   ARG_TYPE_IGNORE_AT,
@@ -672,41 +672,41 @@ static enum arg_type cm86[] =
 };
 
 // bulletn is CHAR
-static enum arg_type cm87[] =
+static const enum arg_type cm87[] =
 {
   ARG_TYPE_IGNORE_IS,
   ARG_TYPE_CHARACTER_INDIRECT
 };
 
 // bullets is CHAR
-static enum arg_type cm88[] =
+static const enum arg_type cm88[] =
 {
   ARG_TYPE_IGNORE_IS,
   ARG_TYPE_CHARACTER_INDIRECT
 };
 
 // bullete is CHAR
-static enum arg_type cm89[] =
+static const enum arg_type cm89[] =
 {
   ARG_TYPE_IGNORE_IS,
   ARG_TYPE_CHARACTER_INDIRECT
 };
 
 // bullete is CHAR
-static enum arg_type cm90[] =
+static const enum arg_type cm90[] =
 {
   ARG_TYPE_IGNORE_IS,
   ARG_TYPE_CHARACTER_INDIRECT
 };
 
 // givekey COLOR
-static enum arg_type cm91[] =
+static const enum arg_type cm91[] =
 {
   ARG_TYPE_COLOR_INDIRECT
 };
 
 // givekey COLOR else LABEL
-static enum arg_type cm92[] =
+static const enum arg_type cm92[] =
 {
   ARG_TYPE_COLOR_INDIRECT,
   ARG_TYPE_IGNORE_ELSE,
@@ -714,13 +714,13 @@ static enum arg_type cm92[] =
 };
 
 // takekey COLOR
-static enum arg_type cm93[] =
+static const enum arg_type cm93[] =
 {
   ARG_TYPE_COLOR_INDIRECT
 };
 
 // takekey COLOR else LABEL
-static enum arg_type cm94[] =
+static const enum arg_type cm94[] =
 {
   ARG_TYPE_COLOR_INDIRECT,
   ARG_TYPE_IGNORE_ELSE,
@@ -728,7 +728,7 @@ static enum arg_type cm94[] =
 };
 
 // inc COUNTER by random N to N
-static enum arg_type cm95[] =
+static const enum arg_type cm95[] =
 {
   ARG_TYPE_COUNTER_STORE_NAME,
   ARG_TYPE_IGNORE_BY,
@@ -739,7 +739,7 @@ static enum arg_type cm95[] =
 };
 
 // dec COUNTER by random N to N
-static enum arg_type cm96[] =
+static const enum arg_type cm96[] =
 {
   ARG_TYPE_COUNTER_STORE_NAME,
   ARG_TYPE_IGNORE_BY,
@@ -750,7 +750,7 @@ static enum arg_type cm96[] =
 };
 
 // set COUNTER by random N to N
-static enum arg_type cm97[] =
+static const enum arg_type cm97[] =
 {
   ARG_TYPE_COUNTER_STORE_NAME,
   ARG_TYPE_IGNORE_TO,
@@ -761,7 +761,7 @@ static enum arg_type cm97[] =
 };
 
 // trade N item for N item else LABEL
-static enum arg_type cm98[] =
+static const enum arg_type cm98[] =
 {
   ARG_TYPE_NUMERIC_INDIRECT,
   ARG_TYPE_ITEM,
@@ -773,7 +773,7 @@ static enum arg_type cm98[] =
 };
 
 // send at DIR of PLAYER to EXT_LABEL
-static enum arg_type cm99[] =
+static const enum arg_type cm99[] =
 {
   ARG_TYPE_IGNORE_AT,
   ARG_TYPE_DIRECTION,
@@ -784,7 +784,7 @@ static enum arg_type cm99[] =
 };
 
 // put COLOR THING PARAM to DIR of player
-static enum arg_type cm100[] =
+static const enum arg_type cm100[] =
 {
   ARG_TYPE_COLOR_INDIRECT,
   ARG_TYPE_THING,
@@ -796,32 +796,32 @@ static enum arg_type cm100[] =
 };
 
 // / STRING
-static enum arg_type cm101[] =
+static const enum arg_type cm101[] =
 {
   ARG_TYPE_STRING
 };
 
 // * STRING
-static enum arg_type cm102[] =
+static const enum arg_type cm102[] =
 {
   ARG_TYPE_STRING
 };
 
 // [ STRING
-static enum arg_type cm103[] =
+static const enum arg_type cm103[] =
 {
   ARG_TYPE_STRING
 };
 
 // ? LABEL STRING
-static enum arg_type cm104[] =
+static const enum arg_type cm104[] =
 {
   ARG_TYPE_LABEL_NAME,
   ARG_TYPE_STRING
 };
 
 // ? COUNTER LABEL STRING
-static enum arg_type cm105[] =
+static const enum arg_type cm105[] =
 {
   ARG_TYPE_COUNTER_LOAD_NAME,
   ARG_TYPE_LABEL_NAME,
@@ -829,25 +829,25 @@ static enum arg_type cm105[] =
 };
 
 // : LABEL
-static enum arg_type cm106[] =
+static const enum arg_type cm106[] =
 {
   ARG_TYPE_LABEL_NAME
 };
 
 // . STRING
-static enum arg_type cm107[] =
+static const enum arg_type cm107[] =
 {
   ARG_TYPE_STRING
 };
 
 // | LABEL
-static enum arg_type cm108[] =
+static const enum arg_type cm108[] =
 {
   ARG_TYPE_LABEL_NAME
 };
 
 // teleport player to BOARD at N N
-static enum arg_type cm109[] =
+static const enum arg_type cm109[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_IGNORE_TO,
@@ -858,7 +858,7 @@ static enum arg_type cm109[] =
 };
 
 // scrollview DIR for N
-static enum arg_type cm110[] =
+static const enum arg_type cm110[] =
 {
   ARG_TYPE_DIRECTION,
   ARG_TYPE_IGNORE_FOR,
@@ -866,14 +866,14 @@ static enum arg_type cm110[] =
 };
 
 // input name STRING
-static enum arg_type cm111[] =
+static const enum arg_type cm111[] =
 {
   ARG_TYPE_FRAGMENT_STRING,
   ARG_TYPE_STRING
 };
 
 // if string is STRING then LABEL
-static enum arg_type cm112[] =
+static const enum arg_type cm112[] =
 {
   ARG_TYPE_FRAGMENT_STRING,
   ARG_TYPE_IGNORE_IS,
@@ -883,7 +883,7 @@ static enum arg_type cm112[] =
 };
 
 // if string IS not STRING then LABEL
-static enum arg_type cm113[] =
+static const enum arg_type cm113[] =
 {
   ARG_TYPE_FRAGMENT_STRING,
   ARG_TYPE_IGNORE_IS,
@@ -894,7 +894,7 @@ static enum arg_type cm113[] =
 };
 
 // if string matches STRING then LABEL
-static enum arg_type cm114[] =
+static const enum arg_type cm114[] =
 {
   ARG_TYPE_FRAGMENT_STRING,
   ARG_TYPE_FRAGMENT_MATCHES,
@@ -904,7 +904,7 @@ static enum arg_type cm114[] =
 };
 
 // player char is CHAR
-static enum arg_type cm115[] =
+static const enum arg_type cm115[] =
 {
   ARG_TYPE_FRAGMENT_CHAR,
   ARG_TYPE_IGNORE_IS,
@@ -912,19 +912,19 @@ static enum arg_type cm115[] =
 };
 
 // % STRING
-static enum arg_type cm116[] =
+static const enum arg_type cm116[] =
 {
   ARG_TYPE_STRING
 };
 
 // & STRING
-static enum arg_type cm117[] =
+static const enum arg_type cm117[] =
 {
   ARG_TYPE_STRING
 };
 
 // move all COLOR THING PARAM to DIR
-static enum arg_type cm118[] =
+static const enum arg_type cm118[] =
 {
   ARG_TYPE_FRAGMENT_ALL,
   ARG_TYPE_COLOR_INDIRECT,
@@ -935,7 +935,7 @@ static enum arg_type cm118[] =
 };
 
 // copy at N N to N N
-static enum arg_type cm119[] =
+static const enum arg_type cm119[] =
 {
   ARG_TYPE_IGNORE_AT,
   ARG_TYPE_NUMERIC_INDIRECT,
@@ -946,7 +946,7 @@ static enum arg_type cm119[] =
 };
 
 // set edge color to COLOR
-static enum arg_type cm120[] =
+static const enum arg_type cm120[] =
 {
   ARG_TYPE_FRAGMENT_EDGE,
   ARG_TYPE_FRAGMENT_COLOR,
@@ -955,7 +955,7 @@ static enum arg_type cm120[] =
 };
 
 // board to the DIR is BOARD
-static enum arg_type cm121[] =
+static const enum arg_type cm121[] =
 {
   ARG_TYPE_IGNORE_TO,
   ARG_TYPE_IGNORE_THE,
@@ -965,7 +965,7 @@ static enum arg_type cm121[] =
 };
 
 // board to the DIR is none
-static enum arg_type cm122[] =
+static const enum arg_type cm122[] =
 {
   ARG_TYPE_IGNORE_TO,
   ARG_TYPE_IGNORE_THE,
@@ -974,7 +974,7 @@ static enum arg_type cm122[] =
 };
 
 // char edit CHAR to N N N N N N N N N N N N N N
-static enum arg_type cm123[] =
+static const enum arg_type cm123[] =
 {
   ARG_TYPE_FRAGMENT_EDIT,
   ARG_TYPE_CHARACTER_INDIRECT,
@@ -996,54 +996,54 @@ static enum arg_type cm123[] =
 };
 
 // become pushable
-static enum arg_type cm124[] =
+static const enum arg_type cm124[] =
 {
   ARG_TYPE_FRAGMENT_PUSHABLE
 };
 
 // become nonpushable
-static enum arg_type cm125[] =
+static const enum arg_type cm125[] =
 {
   ARG_TYPE_FRAGMENT_NONPUSHABLE
 };
 
 // blind for N
-static enum arg_type cm126[] =
+static const enum arg_type cm126[] =
 {
   ARG_TYPE_IGNORE_FOR,
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // firewalker for N
-static enum arg_type cm127[] =
+static const enum arg_type cm127[] =
 {
   ARG_TYPE_IGNORE_FOR,
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // freezetime for N
-static enum arg_type cm128[] =
+static const enum arg_type cm128[] =
 {
   ARG_TYPE_IGNORE_FOR,
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // slowtime for N
-static enum arg_type cm129[] =
+static const enum arg_type cm129[] =
 {
   ARG_TYPE_IGNORE_FOR,
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // wind for N
-static enum arg_type cm130[] =
+static const enum arg_type cm130[] =
 {
   ARG_TYPE_IGNORE_FOR,
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // copy from DIR to DIR
-static enum arg_type cm132[] =
+static const enum arg_type cm132[] =
 {
   ARG_TYPE_IGNORE_FROM,
   ARG_TYPE_DIRECTION,
@@ -1052,21 +1052,21 @@ static enum arg_type cm132[] =
 };
 
 // become a lavawalker
-static enum arg_type cm133[] =
+static const enum arg_type cm133[] =
 {
   ARG_TYPE_IGNORE_A,
   ARG_TYPE_FRAGMENT_LAVAWALKER
 };
 
 // become a nonlavawalker
-static enum arg_type cm134[] =
+static const enum arg_type cm134[] =
 {
   ARG_TYPE_IGNORE_A,
   ARG_TYPE_FRAGMENT_NONLAVAWALKER
 };
 
 // change from COLOR THING PARAM to COLOR THING PARAM
-static enum arg_type cm135[] =
+static const enum arg_type cm135[] =
 {
   ARG_TYPE_IGNORE_FROM,
   ARG_TYPE_COLOR_INDIRECT,
@@ -1079,28 +1079,28 @@ static enum arg_type cm135[] =
 };
 
 // playercolor is COLOR
-static enum arg_type cm136[] =
+static const enum arg_type cm136[] =
 {
   ARG_TYPE_IGNORE_IS,
   ARG_TYPE_COLOR_INDIRECT
 };
 
 // bulletcolor is COLOR
-static enum arg_type cm137[] =
+static const enum arg_type cm137[] =
 {
   ARG_TYPE_IGNORE_IS,
   ARG_TYPE_COLOR_INDIRECT
 };
 
 // missiliecolor is COLOR
-static enum arg_type cm138[] =
+static const enum arg_type cm138[] =
 {
   ARG_TYPE_IGNORE_IS,
   ARG_TYPE_COLOR_INDIRECT
 };
 
 // message row is N
-static enum arg_type cm139[] =
+static const enum arg_type cm139[] =
 {
   ARG_TYPE_FRAGMENT_ROW,
   ARG_TYPE_IGNORE_IS,
@@ -1108,28 +1108,28 @@ static enum arg_type cm139[] =
 };
 
 // rel to self
-static enum arg_type cm140[] =
+static const enum arg_type cm140[] =
 {
   ARG_TYPE_IGNORE_TO,
   ARG_TYPE_FRAGMENT_SELF
 };
 
 // rel to player
-static enum arg_type cm141[] =
+static const enum arg_type cm141[] =
 {
   ARG_TYPE_IGNORE_TO,
   ARG_TYPE_FRAGMENT_PLAYER
 };
 
 // rel to counters
-static enum arg_type cm142[] =
+static const enum arg_type cm142[] =
 {
   ARG_TYPE_IGNORE_TO,
   ARG_TYPE_FRAGMENT_COUNTERS
 };
 
 // change char id N to CHAR
-static enum arg_type cm143[] =
+static const enum arg_type cm143[] =
 {
   ARG_TYPE_FRAGMENT_CHAR,
   ARG_TYPE_FRAGMENT_ID,
@@ -1139,7 +1139,7 @@ static enum arg_type cm143[] =
 };
 
 // jump to mod order N
-static enum arg_type cm144[] =
+static const enum arg_type cm144[] =
 {
   ARG_TYPE_IGNORE_TO,
   ARG_TYPE_FRAGMENT_MOD,
@@ -1148,13 +1148,13 @@ static enum arg_type cm144[] =
 };
 
 // ask STRING
-static enum arg_type cm145[] =
+static const enum arg_type cm145[] =
 {
   ARG_TYPE_STRING
 };
 
 // change thick arrow char DIR to CHAR
-static enum arg_type cm147[] =
+static const enum arg_type cm147[] =
 {
   ARG_TYPE_FRAGMENT_THICK,
   ARG_TYPE_FRAGMENT_ARROW,
@@ -1165,7 +1165,7 @@ static enum arg_type cm147[] =
 };
 
 // change thin arrow char DIR to CHAR
-static enum arg_type cm148[] =
+static const enum arg_type cm148[] =
 {
   ARG_TYPE_FRAGMENT_THIN,
   ARG_TYPE_FRAGMENT_ARROW,
@@ -1176,7 +1176,7 @@ static enum arg_type cm148[] =
 };
 
 // set maxhealth to N
-static enum arg_type cm149[] =
+static const enum arg_type cm149[] =
 {
   ARG_TYPE_FRAGMENT_MAXHEALTH,
   ARG_TYPE_IGNORE_TO,
@@ -1184,28 +1184,28 @@ static enum arg_type cm149[] =
 };
 
 // save player position
-static enum arg_type cm150[] =
+static const enum arg_type cm150[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_FRAGMENT_POSITION
 };
 
 // restore player position
-static enum arg_type cm151[] =
+static const enum arg_type cm151[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_FRAGMENT_POSITION
 };
 
 // exchange player position
-static enum arg_type cm152[] =
+static const enum arg_type cm152[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_FRAGMENT_POSITION
 };
 
 // set mesg column to N
-static enum arg_type cm153[] =
+static const enum arg_type cm153[] =
 {
   ARG_TYPE_FRAGMENT_MESG,
   ARG_TYPE_FRAGMENT_COLUMN,
@@ -1213,19 +1213,19 @@ static enum arg_type cm153[] =
   ARG_TYPE_NUMERIC_INDIRECT
 };
 // clear mesg
-static enum arg_type cm154[] =
+static const enum arg_type cm154[] =
 {
   ARG_TYPE_FRAGMENT_MESG
 };
 
 // center mesg
-static enum arg_type cm155[] =
+static const enum arg_type cm155[] =
 {
   ARG_TYPE_FRAGMENT_MESG
 };
 
 // mod sam N N
-static enum arg_type cm157[] =
+static const enum arg_type cm157[] =
 {
   ARG_TYPE_FRAGMENT_SAM,
   ARG_TYPE_NUMERIC_INDIRECT,
@@ -1233,13 +1233,13 @@ static enum arg_type cm157[] =
 };
 
 // volume N
-static enum arg_type cm158[] =
+static const enum arg_type cm158[] =
 {
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // scrollbase color is COLOR
-static enum arg_type cm159[] =
+static const enum arg_type cm159[] =
 {
   ARG_TYPE_FRAGMENT_COLOR,
   ARG_TYPE_IGNORE_IS,
@@ -1247,7 +1247,7 @@ static enum arg_type cm159[] =
 };
 
 // scrollcorner color is COLOR
-static enum arg_type cm160[] =
+static const enum arg_type cm160[] =
 {
   ARG_TYPE_FRAGMENT_COLOR,
   ARG_TYPE_IGNORE_IS,
@@ -1255,7 +1255,7 @@ static enum arg_type cm160[] =
 };
 
 // scrolltitle color is COLOR
-static enum arg_type cm161[] =
+static const enum arg_type cm161[] =
 {
   ARG_TYPE_FRAGMENT_COLOR,
   ARG_TYPE_IGNORE_IS,
@@ -1263,7 +1263,7 @@ static enum arg_type cm161[] =
 };
 
 // scrollpointer color is COLOR
-static enum arg_type cm162[] =
+static const enum arg_type cm162[] =
 {
   ARG_TYPE_FRAGMENT_COLOR,
   ARG_TYPE_IGNORE_IS,
@@ -1271,7 +1271,7 @@ static enum arg_type cm162[] =
 };
 
 // scrollarrow color is COLOR
-static enum arg_type cm163[] =
+static const enum arg_type cm163[] =
 {
   ARG_TYPE_FRAGMENT_COLOR,
   ARG_TYPE_IGNORE_IS,
@@ -1279,7 +1279,7 @@ static enum arg_type cm163[] =
 };
 
 // viewport is at N N
-static enum arg_type cm164[] =
+static const enum arg_type cm164[] =
 {
   ARG_TYPE_IGNORE_IS,
   ARG_TYPE_IGNORE_AT,
@@ -1288,7 +1288,7 @@ static enum arg_type cm164[] =
 };
 
 // viewport size is N by N
-static enum arg_type cm165[] =
+static const enum arg_type cm165[] =
 {
   ARG_TYPE_FRAGMENT_SIZE,
   ARG_TYPE_IGNORE_IS,
@@ -1298,7 +1298,7 @@ static enum arg_type cm165[] =
 };
 
 // save player position to N
-static enum arg_type cm168[] =
+static const enum arg_type cm168[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_FRAGMENT_POSITION,
@@ -1307,7 +1307,7 @@ static enum arg_type cm168[] =
 };
 
 // restore player position from N
-static enum arg_type cm169[] =
+static const enum arg_type cm169[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_FRAGMENT_POSITION,
@@ -1316,7 +1316,7 @@ static enum arg_type cm169[] =
 };
 
 // exchange player position with N
-static enum arg_type cm170[] =
+static const enum arg_type cm170[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_FRAGMENT_POSITION,
@@ -1325,7 +1325,7 @@ static enum arg_type cm170[] =
 };
 
 // restore player position from N and duplicate self
-static enum arg_type cm171[] =
+static const enum arg_type cm171[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_FRAGMENT_POSITION,
@@ -1337,7 +1337,7 @@ static enum arg_type cm171[] =
 };
 
 // exchange player position with N and duplicate self
-static enum arg_type cm172[] =
+static const enum arg_type cm172[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_FRAGMENT_POSITION,
@@ -1349,7 +1349,7 @@ static enum arg_type cm172[] =
 };
 
 // player bulletn is CHAR
-static enum arg_type cm173[] =
+static const enum arg_type cm173[] =
 {
   ARG_TYPE_FRAGMENT_BULLETN,
   ARG_TYPE_IGNORE_IS,
@@ -1357,7 +1357,7 @@ static enum arg_type cm173[] =
 };
 
 // player bullets is CHAR
-static enum arg_type cm174[] =
+static const enum arg_type cm174[] =
 {
   ARG_TYPE_FRAGMENT_BULLETS,
   ARG_TYPE_IGNORE_IS,
@@ -1365,7 +1365,7 @@ static enum arg_type cm174[] =
 };
 
 // player bullete is CHAR
-static enum arg_type cm175[] =
+static const enum arg_type cm175[] =
 {
   ARG_TYPE_FRAGMENT_BULLETE,
   ARG_TYPE_IGNORE_IS,
@@ -1373,7 +1373,7 @@ static enum arg_type cm175[] =
 };
 
 // player bulletw is CHAR
-static enum arg_type cm176[] =
+static const enum arg_type cm176[] =
 {
   ARG_TYPE_FRAGMENT_BULLETW,
   ARG_TYPE_IGNORE_IS,
@@ -1381,7 +1381,7 @@ static enum arg_type cm176[] =
 };
 
 // neutral bulletn is CHAR
-static enum arg_type cm177[] =
+static const enum arg_type cm177[] =
 {
   ARG_TYPE_FRAGMENT_BULLETN,
   ARG_TYPE_IGNORE_IS,
@@ -1389,7 +1389,7 @@ static enum arg_type cm177[] =
 };
 
 // neutral bullets is CHAR
-static enum arg_type cm178[] =
+static const enum arg_type cm178[] =
 {
   ARG_TYPE_FRAGMENT_BULLETS,
   ARG_TYPE_IGNORE_IS,
@@ -1397,7 +1397,7 @@ static enum arg_type cm178[] =
 };
 
 // neutral bullete is CHAR
-static enum arg_type cm179[] =
+static const enum arg_type cm179[] =
 {
   ARG_TYPE_FRAGMENT_BULLETE,
   ARG_TYPE_IGNORE_IS,
@@ -1405,7 +1405,7 @@ static enum arg_type cm179[] =
 };
 
 // neutral bulletw is CHAR
-static enum arg_type cm180[] =
+static const enum arg_type cm180[] =
 {
   ARG_TYPE_FRAGMENT_BULLETW,
   ARG_TYPE_IGNORE_IS,
@@ -1413,7 +1413,7 @@ static enum arg_type cm180[] =
 };
 
 // enemy bulletn is CHAR
-static enum arg_type cm181[] =
+static const enum arg_type cm181[] =
 {
   ARG_TYPE_FRAGMENT_BULLETN,
   ARG_TYPE_IGNORE_IS,
@@ -1421,7 +1421,7 @@ static enum arg_type cm181[] =
 };
 
 // enemy bullets is CHAR
-static enum arg_type cm182[] =
+static const enum arg_type cm182[] =
 {
   ARG_TYPE_FRAGMENT_BULLETS,
   ARG_TYPE_IGNORE_IS,
@@ -1429,7 +1429,7 @@ static enum arg_type cm182[] =
 };
 
 // enemy bullete is CHAR
-static enum arg_type cm183[] =
+static const enum arg_type cm183[] =
 {
   ARG_TYPE_FRAGMENT_BULLETE,
   ARG_TYPE_IGNORE_IS,
@@ -1437,7 +1437,7 @@ static enum arg_type cm183[] =
 };
 
 // enemy bulletw is CHAR
-static enum arg_type cm184[] =
+static const enum arg_type cm184[] =
 {
   ARG_TYPE_FRAGMENT_BULLETW,
   ARG_TYPE_IGNORE_IS,
@@ -1445,7 +1445,7 @@ static enum arg_type cm184[] =
 };
 
 // player bulletcolor is COLOR
-static enum arg_type cm185[] =
+static const enum arg_type cm185[] =
 {
   ARG_TYPE_FRAGMENT_BULLETCOLOR,
   ARG_TYPE_IGNORE_IS,
@@ -1453,7 +1453,7 @@ static enum arg_type cm185[] =
 };
 
 // neutral bulletcolor is COLOR
-static enum arg_type cm186[] =
+static const enum arg_type cm186[] =
 {
   ARG_TYPE_FRAGMENT_BULLETCOLOR,
   ARG_TYPE_IGNORE_IS,
@@ -1461,7 +1461,7 @@ static enum arg_type cm186[] =
 };
 
 // enemy bulletcolor is COLOR
-static enum arg_type cm187[] =
+static const enum arg_type cm187[] =
 {
   ARG_TYPE_FRAGMENT_BULLETCOLOR,
   ARG_TYPE_IGNORE_IS,
@@ -1469,56 +1469,56 @@ static enum arg_type cm187[] =
 };
 
 // rel self first
-static enum arg_type cm193[] =
+static const enum arg_type cm193[] =
 {
   ARG_TYPE_FRAGMENT_SELF,
   ARG_TYPE_FRAGMENT_FIRST
 };
 
 // rel self last
-static enum arg_type cm194[] =
+static const enum arg_type cm194[] =
 {
   ARG_TYPE_FRAGMENT_SELF,
   ARG_TYPE_FRAGMENT_LAST
 };
 
 // rel player first
-static enum arg_type cm195[] =
+static const enum arg_type cm195[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_FRAGMENT_FIRST
 };
 
 // rel player last
-static enum arg_type cm196[] =
+static const enum arg_type cm196[] =
 {
   ARG_TYPE_FRAGMENT_PLAYER,
   ARG_TYPE_FRAGMENT_LAST
 };
 
 // rel counters first
-static enum arg_type cm197[] =
+static const enum arg_type cm197[] =
 {
   ARG_TYPE_FRAGMENT_COUNTERS,
   ARG_TYPE_FRAGMENT_FIRST
 };
 
 // rel counters last
-static enum arg_type cm198[] =
+static const enum arg_type cm198[] =
 {
   ARG_TYPE_FRAGMENT_COUNTERS,
   ARG_TYPE_FRAGMENT_LAST
 };
 
 // mod fade out
-static enum arg_type cm199[] =
+static const enum arg_type cm199[] =
 {
   ARG_TYPE_FRAGMENT_FADE,
   ARG_TYPE_FRAGMENT_OUT
 };
 
 // mod fade in STRING
-static enum arg_type cm200[] =
+static const enum arg_type cm200[] =
 {
   ARG_TYPE_FRAGMENT_FADE,
   ARG_TYPE_FRAGMENT_IN,
@@ -1526,7 +1526,7 @@ static enum arg_type cm200[] =
 };
 
 // copy block at N N for N by N to N N
-static enum arg_type cm201[] =
+static const enum arg_type cm201[] =
 {
   ARG_TYPE_FRAGMENT_BLOCK,
   ARG_TYPE_IGNORE_AT,
@@ -1542,19 +1542,19 @@ static enum arg_type cm201[] =
 };
 
 // clip input
-static enum arg_type cm202[] =
+static const enum arg_type cm202[] =
 {
   ARG_TYPE_FRAGMENT_INPUT
 };
 
 // push DIR
-static enum arg_type cm203[] =
+static const enum arg_type cm203[] =
 {
   ARG_TYPE_DIRECTION
 };
 
 // scroll char CHAR DIR
-static enum arg_type cm204[] =
+static const enum arg_type cm204[] =
 {
   ARG_TYPE_FRAGMENT_CHAR,
   ARG_TYPE_CHARACTER_INDIRECT,
@@ -1562,7 +1562,7 @@ static enum arg_type cm204[] =
 };
 
 // flip char CHAR DIR
-static enum arg_type cm205[] =
+static const enum arg_type cm205[] =
 {
   ARG_TYPE_FRAGMENT_CHAR,
   ARG_TYPE_CHARACTER_INDIRECT,
@@ -1570,7 +1570,7 @@ static enum arg_type cm205[] =
 };
 
 // copy char CHAR to CHAR
-static enum arg_type cm206[] =
+static const enum arg_type cm206[] =
 {
   ARG_TYPE_FRAGMENT_CHAR,
   ARG_TYPE_CHARACTER_INDIRECT,
@@ -1579,7 +1579,7 @@ static enum arg_type cm206[] =
 };
 
 // change SFX N to STRING
-static enum arg_type cm210[] =
+static const enum arg_type cm210[] =
 {
   ARG_TYPE_FRAGMENT_SFX,
   ARG_TYPE_NUMERIC_INDIRECT,
@@ -1588,7 +1588,7 @@ static enum arg_type cm210[] =
 };
 
 // color intensity is at N percent
-static enum arg_type cm211[] =
+static const enum arg_type cm211[] =
 {
   ARG_TYPE_FRAGMENT_INTENSITY,
   ARG_TYPE_IGNORE_IS,
@@ -1598,7 +1598,7 @@ static enum arg_type cm211[] =
 };
 
 // color intensity N is at N percent
-static enum arg_type cm212[] =
+static const enum arg_type cm212[] =
 {
   ARG_TYPE_FRAGMENT_INTENSITY,
   ARG_TYPE_NUMERIC_INDIRECT,
@@ -1609,21 +1609,21 @@ static enum arg_type cm212[] =
 };
 
 // color fade out
-static enum arg_type cm213[] =
+static const enum arg_type cm213[] =
 {
   ARG_TYPE_FRAGMENT_FADE,
   ARG_TYPE_FRAGMENT_OUT
 };
 
 // color fade in
-static enum arg_type cm214[] =
+static const enum arg_type cm214[] =
 {
   ARG_TYPE_FRAGMENT_FADE,
   ARG_TYPE_FRAGMENT_IN
 };
 
 // set color N to N N N
-static enum arg_type cm215[] =
+static const enum arg_type cm215[] =
 {
   ARG_TYPE_FRAGMENT_COLOR,
   ARG_TYPE_NUMERIC_INDIRECT,
@@ -1634,7 +1634,7 @@ static enum arg_type cm215[] =
 };
 
 // load char set STRING
-static enum arg_type cm216[] =
+static const enum arg_type cm216[] =
 {
   ARG_TYPE_FRAGMENT_CHAR,
   ARG_TYPE_FRAGMENT_SET,
@@ -1642,7 +1642,7 @@ static enum arg_type cm216[] =
 };
 
 // multiply COUNTER by N
-static enum arg_type cm217[] =
+static const enum arg_type cm217[] =
 {
   ARG_TYPE_COUNTER_STORE_NAME,
   ARG_TYPE_IGNORE_BY,
@@ -1650,7 +1650,7 @@ static enum arg_type cm217[] =
 };
 
 // divide counter by N
-static enum arg_type cm218[] =
+static const enum arg_type cm218[] =
 {
   ARG_TYPE_COUNTER_STORE_NAME,
   ARG_TYPE_IGNORE_BY,
@@ -1658,7 +1658,7 @@ static enum arg_type cm218[] =
 };
 
 // modulo counter by N
-static enum arg_type cm219[] =
+static const enum arg_type cm219[] =
 {
   ARG_TYPE_COUNTER_STORE_NAME,
   ARG_TYPE_IGNORE_BY,
@@ -1666,7 +1666,7 @@ static enum arg_type cm219[] =
 };
 
 // player char DIR is CHAR
-static enum arg_type cm220[] =
+static const enum arg_type cm220[] =
 {
   ARG_TYPE_FRAGMENT_CHAR,
   ARG_TYPE_DIRECTION,
@@ -1675,14 +1675,14 @@ static enum arg_type cm220[] =
 };
 
 // load palette STRING
-static enum arg_type cm222[] =
+static const enum arg_type cm222[] =
 {
   ARG_TYPE_FRAGMENT_PALETTE,
   ARG_TYPE_STRING
 };
 
 // mod fade to N by N
-static enum arg_type cm224[] =
+static const enum arg_type cm224[] =
 {
   ARG_TYPE_FRAGMENT_FADE,
   ARG_TYPE_IGNORE_TO,
@@ -1692,7 +1692,7 @@ static enum arg_type cm224[] =
 };
 
 // scrollview position N N
-static enum arg_type cm225[] =
+static const enum arg_type cm225[] =
 {
   ARG_TYPE_FRAGMENT_POSITION,
   ARG_TYPE_NUMERIC_INDIRECT,
@@ -1700,14 +1700,14 @@ static enum arg_type cm225[] =
 };
 
 // swap world STRING
-static enum arg_type cm226[] =
+static const enum arg_type cm226[] =
 {
   ARG_TYPE_FRAGMENT_WORLD,
   ARG_TYPE_STRING
 };
 
 // if alignedrobot with ROBOT then LABEL
-static enum arg_type cm227[] =
+static const enum arg_type cm227[] =
 {
   ARG_TYPE_FRAGMENT_ALIGNEDROBOT,
   ARG_TYPE_IGNORE_WITH,
@@ -1717,7 +1717,7 @@ static enum arg_type cm227[] =
 };
 
 // if first string is STRING then LABEL
-static enum arg_type cm231[] =
+static const enum arg_type cm231[] =
 {
   ARG_TYPE_FRAGMENT_FIRST,
   ARG_TYPE_FRAGMENT_STRING,
@@ -1728,39 +1728,39 @@ static enum arg_type cm231[] =
 };
 
 // persistent go STRING
-static enum arg_type cm232[] =
+static const enum arg_type cm232[] =
 {
   ARG_TYPE_FRAGMENT_GO,
   ARG_TYPE_STRING
 };
 
 // wait for mod fade
-static enum arg_type cm233[] ={
+static const enum arg_type cm233[] ={
   ARG_TYPE_IGNORE_FOR,
   ARG_TYPE_FRAGMENT_MOD,
   ARG_TYPE_FRAGMENT_FADE
 };
 
 // enable saving
-static enum arg_type cm235[] =
+static const enum arg_type cm235[] =
 {
   ARG_TYPE_FRAGMENT_SAVING
 };
 
 // disable saving
-static enum arg_type cm236[] =
+static const enum arg_type cm236[] =
 {
   ARG_TYPE_FRAGMENT_SAVING
 };
 
 // enable sensoronly saving
-static enum arg_type cm237[] ={
+static const enum arg_type cm237[] ={
   ARG_TYPE_FRAGMENT_SENSORONLY,
   ARG_TYPE_FRAGMENT_SAVING
 };
 
 // status counter N is COUNTER
-static enum arg_type cm238[] =
+static const enum arg_type cm238[] =
 {
   ARG_TYPE_FRAGMENT_COUNTER,
   ARG_TYPE_NUMERIC_INDIRECT,
@@ -1769,28 +1769,28 @@ static enum arg_type cm238[] =
 };
 
 // overlay is on
-static enum arg_type cm239[] =
+static const enum arg_type cm239[] =
 {
   ARG_TYPE_IGNORE_IS,
   ARG_TYPE_FRAGMENT_ON
 };
 
 // overlay is static
-static enum arg_type cm240[] =
+static const enum arg_type cm240[] =
 {
   ARG_TYPE_IGNORE_IS,
   ARG_TYPE_FRAGMENT_STATIC
 };
 
 // overlay is transparent
-static enum arg_type cm241[] =
+static const enum arg_type cm241[] =
 {
   ARG_TYPE_IGNORE_IS,
   ARG_TYPE_FRAGMENT_TRANSPARENT
 };
 
 // put COLOR CHAR overlay to N N
-static enum arg_type cm242[] =
+static const enum arg_type cm242[] =
 {
   ARG_TYPE_COLOR_INDIRECT,
   ARG_TYPE_CHARACTER_INDIRECT,
@@ -1801,7 +1801,7 @@ static enum arg_type cm242[] =
 };
 
 // copy overlay block at N N for N by N to N N
-static enum arg_type cm243[] =
+static const enum arg_type cm243[] =
 {
   ARG_TYPE_FRAGMENT_OVERLAY,
   ARG_TYPE_FRAGMENT_BLOCK,
@@ -1818,7 +1818,7 @@ static enum arg_type cm243[] =
 };
 
 // change overlay COLOR CHAR to COLOR CHAR
-static enum arg_type cm245[] =
+static const enum arg_type cm245[] =
 {
   ARG_TYPE_FRAGMENT_OVERLAY,
   ARG_TYPE_COLOR_INDIRECT,
@@ -1829,7 +1829,7 @@ static enum arg_type cm245[] =
 };
 
 // change overlay COLOR to COLOR
-static enum arg_type cm246[] =
+static const enum arg_type cm246[] =
 {
   ARG_TYPE_FRAGMENT_OVERLAY,
   ARG_TYPE_COLOR_INDIRECT,
@@ -1838,7 +1838,7 @@ static enum arg_type cm246[] =
 };
 
 // write overlay COLOR STRING at N N
-static enum arg_type cm247[] =
+static const enum arg_type cm247[] =
 {
   ARG_TYPE_FRAGMENT_OVERLAY,
   ARG_TYPE_COLOR_INDIRECT,
@@ -1849,33 +1849,33 @@ static enum arg_type cm247[] =
 };
 
 // loop start
-static enum arg_type cm251[] =
+static const enum arg_type cm251[] =
 {
   ARG_TYPE_FRAGMENT_START
 };
 
 // loop for N
-static enum arg_type cm252[] =
+static const enum arg_type cm252[] =
 {
   ARG_TYPE_IGNORE_FOR,
   ARG_TYPE_NUMERIC_INDIRECT
 };
 
 // abort loop
-static enum arg_type cm253[] =
+static const enum arg_type cm253[] =
 {
   ARG_TYPE_FRAGMENT_LOOP
 };
 
 // disable mesg edge
-static enum arg_type cm254[] =
+static const enum arg_type cm254[] =
 {
   ARG_TYPE_FRAGMENT_MESG,
   ARG_TYPE_FRAGMENT_EDGE
 };
 
 // enable mesg edge
-static enum arg_type cm255[] =
+static const enum arg_type cm255[] =
 {
   ARG_TYPE_FRAGMENT_MESG,
   ARG_TYPE_FRAGMENT_EDGE
@@ -1885,7 +1885,7 @@ struct mzx_command
 {
   const char *name;
   int parameters;
-  enum arg_type *param_types;
+  const enum arg_type *param_types;
 };
 
 static const struct mzx_command command_list[] =
@@ -2148,9 +2148,9 @@ static const struct mzx_command command_list[] =
   { "enable",         2,  cm255 }
 };
 
-static struct mzx_command empty_command = { "", 0, NULL };
+static const struct mzx_command empty_command = { "", 0, NULL };
 
-static const char *dir_names[20] =
+static const char *const dir_names[20] =
 {
   "IDLE",
   "NORTH",
@@ -2174,7 +2174,7 @@ static const char *dir_names[20] =
   "RANDNOT"
 };
 
-static const char *equality_names[6] =
+static const char *const equality_names[6] =
 {
   "=",
   "<",
@@ -2184,7 +2184,7 @@ static const char *equality_names[6] =
   "!="
 };
 
-static const char *condition_names[18] =
+static const char *const condition_names[18] =
 {
   "walking",
   "swimming",
@@ -2206,7 +2206,7 @@ static const char *condition_names[18] =
   "pcsfxon"
 };
 
-static const char *item_names[9] =
+static const char *const item_names[9] =
 {
   "GEMS",
   "AMMOS",
@@ -2220,7 +2220,7 @@ static const char *item_names[9] =
 };
 
 
-static const char *ignore_type_names[21] =
+static const char *const ignore_type_names[21] =
 {
   "a",
   "an",
@@ -2239,7 +2239,7 @@ static const char *ignore_type_names[21] =
   "with"
 };
 
-static const char *command_fragment_type_names[69] =
+static const char *const command_fragment_type_names[69] =
 {
   "not",
   "any",
@@ -3308,10 +3308,10 @@ static char *get_token(char *src, struct token *token)
 
 struct command_set
 {
-  const const char *name;
+  const char *const name;
   int name_length;
   int count;
-  int *offsets;
+  const int *const offsets;
 };
 
 #define command_set(name, count, ...)                                  \

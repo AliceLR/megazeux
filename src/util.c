@@ -153,7 +153,7 @@ int mzx_res_init(const char *argv0, bool editor)
    */
   for(i = 0; i < END_RESOURCE_ID_T; i++)
   {
-    const int base_name_len = strlen(mzx_res[i].base_name);
+    int base_name_len = strlen(mzx_res[i].base_name);
     char *full_path;
     int p_dir_len;
 

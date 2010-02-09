@@ -661,7 +661,7 @@ void update_board(struct world *mzx_world)
 
         case MISSILE:
         {
-          const int move_params =
+          int move_params =
            CAN_LAVAWALK | CAN_FIREWALK | CAN_WATERWALK |
            REACT_PLAYER | CAN_GOOPWALK;
 

@@ -134,9 +134,9 @@
 
 struct mzx_command
 {
-  const char *name;
-  const int parameters;
-  const int *param_types;
+  const char *const name;
+  int parameters;
+  const int *const param_types;
 };
 
 struct mzx_command_rw

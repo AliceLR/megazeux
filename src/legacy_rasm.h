@@ -45,16 +45,16 @@ __M_BEGIN_DECLS
 
 struct search_entry
 {
-  const char *name;
-  const int count;
+  const char *const name;
+  int count;
   const int offsets[19];
 };
 
 struct search_entry_short
 {
-  const char *name;
-  const int offset;
-  const int type;
+  const char *const name;
+  int offset;
+  int type;
 };
 
 CORE_LIBSPEC int get_color(char *cmd_line);

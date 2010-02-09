@@ -60,7 +60,7 @@
 struct function_counter
 {
   const char *const name;
-  const int minimum_version;
+  int minimum_version;
   int (*const function_read)(struct world *mzx_world,
    const struct function_counter *counter, const char *name, int id);
   void (*const function_write)(struct world *mzx_world,
