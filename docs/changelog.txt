@@ -55,9 +55,6 @@ USERS
 + Fix IF c?? Sprite p?? # # "label" so that a non-wildcard parameter is
   respected (previously it would always just check sprite 0).
 + NDS port updated from dsmzx2 release. (kvance, ajs)
-+ Altered FWRITE_APPEND to open the file in POSIX's "r+" mode rather than
-  "a" mode. In "a" mode, writes cannot be made to earlier offsets in the
-  file; in "r+" mode, writes can be made randomly.
 
 DEVELOPERS
 
