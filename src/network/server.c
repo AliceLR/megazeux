@@ -35,12 +35,14 @@ int main(int argc, char *argv[])
     goto exit_out;
   }
 
-  s = host_create(HOST_TYPE_TCP, HOST_FAMILY_IPV4, false);
+  s = host_create(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
   if(!s)
   {
     warning("Error creating host for outgoing data\n");
     goto exit_socket_layer;
   }
+
+  host_blocking(s, false);
 
   if(!host_bind(s, "localhost", INBOUND_PORT))
   {
@@ -59,9 +61,9 @@ int main(int argc, char *argv[])
     c = host_accept(s);
     if(c)
     {
-      warning("GOT HERE!\n");
+      if(!host_handle_http_request(c))
+        warning("Received garbage from client\n");
       host_destroy(c);
-      break;
     }
     SDL_Delay(10);
   }

@@ -108,7 +108,7 @@ int main(int argc, char *argv[])
     goto exit_out;
   }
 
-  h = host_create(HOST_TYPE_TCP, HOST_FAMILY_IPV4, true);
+  h = host_create(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
   if(!h)
   {
     warning("Error creating host for outgoing data.\n");

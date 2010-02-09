@@ -76,16 +76,24 @@ static inline void host_layer_exit(void) { }
 bool host_last_error_fatal(void);
 
 /**
- * Creates a host for use either as a client or a server.
+ * Sets a socket blocking mode on the given host.
+ *
+ * @param h        Host to alter block mode on
+ * @param blocking `true' if the socket should block, `false' otherwise
+ */
+void host_blocking(struct host *h, bool blocking);
+
+/**
+ * Creates a host for use either as a client or a server. The new host will
+ * be blocking by default.
  *
  * @param proto    The IP protocol, typically IPPROTO_TCP or IPPROTO_UDP
  * @param af       Address family of socket, typically AF_INET or AF_INET6
- * @param blocking Whether or not the socket should block for I/O
  *
  * @return A host object that can be passed to other network functions,
  *         or NULL if an error occurred.
  */
-struct host *host_create(host_type_t type, host_family_t fam, bool blocking);
+struct host *host_create(host_type_t type, host_family_t fam);
 
 /**
  * Destroys a host created by @ref host_create (this closes the socket and
@@ -98,7 +106,8 @@ void host_destroy(struct host *h);
 /**
  * Accepts a connection from a host processed by \ref host_bind and
  * \ref host_listen previously. The new connection is assigned a new
- * host data structure which must be freed.
+ * host data structure which must be freed. The new host will be
+ * blocking by default.
  *
  * @param s Serving host to accept connection with
  *
@@ -150,6 +159,8 @@ bool host_listen(struct host *h);
  */
 char *host_get_file(struct host *h, const char *file,
  const char *expected_type, unsigned long *file_len);
+
+bool host_handle_http_request(struct host *h);
 
 __M_END_DECLS
 

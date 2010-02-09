@@ -484,7 +484,12 @@ static inline ssize_t platform_recv(int s, void *buf, size_t len, int flags)
 
 #endif // __WIN32__
 
-struct host *host_create(host_type_t type, host_family_t fam, bool blocking)
+void host_blocking(struct host *h, bool blocking)
+{
+  platform_socket_blocking(h->fd, blocking);
+}
+
+struct host *host_create(host_type_t type, host_family_t fam)
 {
   struct linger linger = { .l_onoff = 1, .l_linger = 30 };
   int err, fd, af, proto;
@@ -549,8 +554,8 @@ struct host *host_create(host_type_t type, host_family_t fam, bool blocking)
     }
   }
 
-  // Give the socket an initial block mode as specified by the user
-  platform_socket_blocking(fd, blocking);
+  // Initially the socket is blocking
+  platform_socket_blocking(fd, true);
 
   // Create our "host" abstraction (latterly augmented)
   h = malloc(sizeof(struct host));
@@ -675,6 +680,8 @@ struct host *host_accept(struct host *s)
   if(newfd >= 0)
   {
     assert(addr->sa_family == s->af);
+
+    platform_socket_blocking(newfd, true);
     c = malloc(sizeof(struct host));
     c->af = addr->sa_family;
     c->proto = s->proto;
@@ -808,6 +815,24 @@ static int host_get_line(struct host *h, char *buffer, int len)
 
 #define LINE_BUF_LEN 256
 
+static bool http_skip_headers(struct host *h)
+{
+  char buffer[LINE_BUF_LEN];
+
+  while(true)
+  {
+    int len = host_get_line(h, buffer, LINE_BUF_LEN);
+
+    // We read the final newline (empty, with CRLF)
+    if(len == 0)
+      return true;
+
+    // Connection probably failed; fail hard
+    else if(len < 0)
+      return false;
+  }
+}
+
 char *host_get_file(struct host *h, const char *file,
  const char *expected_type, unsigned long *file_len)
 {
@@ -815,6 +840,7 @@ char *host_get_file(struct host *h, const char *file,
   char buffer[LINE_BUF_LEN];
   bool deflated = false;
   char *file_data;
+  size_t buf_len;
 
   enum {
     NONE,
@@ -829,8 +855,7 @@ char *host_get_file(struct host *h, const char *file,
     return NULL;
 
   // Read in the HTTP status line
-  if(host_get_line(h, buffer, LINE_BUF_LEN) < 0)
-    return NULL;
+  buf_len = host_get_line(h, buffer, LINE_BUF_LEN);
 
   /* These two conditionals check the status line is formatted:
    *   "HTTP/1.? 200 OK" (where ? is anything)
@@ -841,7 +866,8 @@ char *host_get_file(struct host *h, const char *file,
    *
    * MegaZeux only cares about pipelining.
    */
-  if(strncmp(buffer, "HTTP/1.", 7) != 0 ||
+  if(buf_len != 15 ||
+   strncmp(buffer, "HTTP/1.", 7) != 0 ||
    strcmp(&buffer[7 + 1], " 200 OK") != 0)
   {
     warning("Received an unexpected HTTP response (status).\n");
@@ -1001,21 +1027,11 @@ char *host_get_file(struct host *h, const char *file,
         content_length += chunk_length;
       }
 
-      while(true)
+      // May be "footers" or newlines we don't care about
+      if(!http_skip_headers(h))
       {
-        // May be "footers" or newlines we don't care about
-        int len = host_get_line(h, buffer, LINE_BUF_LEN);
-
-        // We read the final newline (empty, with CRLF)
-        if(len == 0)
-          break;
-
-        // Connection probably failed; fail hard
-        else if(len < 0)
-        {
-          warning("Transfer error when finalizing chunking.\n");
-          goto err_free_file_data;
-        }
+        warning("Transfer error when finalizing chunking.\n");
+        goto err_free_file_data;
       }
 
       // add space for NULL terminator (useful for text/plain)
@@ -1136,4 +1152,68 @@ err_free_file_data:
   if(file_data)
     free(file_data);
   return NULL;
+}
+
+static const char resp_404[] =
+ "<html>"
+  "<head><title>404</title></head>"
+  "<body><pre>404 ;-(</pre></body>"
+ "</html>";
+
+bool host_handle_http_request(struct host *h)
+{
+  char buffer[LINE_BUF_LEN], *buf = buffer;
+  char *cmd_type, *path, *proto;
+
+  if(host_get_line(h, buffer, LINE_BUF_LEN) < 0)
+  {
+    warning("Failed to receive HTTP request\n");
+    return false;
+  }
+
+  cmd_type = strsep(&buf, " ");
+  if(!cmd_type)
+    return false;
+
+  if(strcmp(cmd_type, "GET") != 0)
+    return false;
+
+  path = strsep(&buf, " ");
+  if(!path)
+    return false;
+
+  proto = strsep(&buf, " ");
+  if(!proto)
+    return false;
+
+  if(strncmp("HTTP/1.", proto, 7) != 0)
+    return false;
+
+  warning("Received request for '%s'\n", path);
+
+  if(!http_skip_headers(h))
+  {
+    warning("Failed to skip HTTP headers\n");
+    return false;
+  }
+
+  snprintf(buffer, LINE_BUF_LEN,
+   "HTTP/1.1 404 Not Found\r\n"
+   "Content-Length: %zd\r\n"
+   "Content-Type: text/html\r\n"
+   "Connection: close\r\n\r\n", strlen(resp_404));
+
+  if(!__send(h->fd, buffer, strlen(buffer)))
+  {
+    warning("Failed to send HTTP status code\n");
+    return false;
+  }
+
+  if(!__send(h->fd, resp_404, strlen(resp_404)))
+  {
+    warning("Failed to send 404 HTML\n");
+    return false;
+  }
+
+  return true;
 }
