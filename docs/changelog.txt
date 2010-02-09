@@ -49,6 +49,8 @@ USERS
   pressing return or space (would previously always return char 247).
 + Backspacing a line and then expanding a macro no longer restores the
   original line contents immediately after the expansion.
++ MacOS 10.x clipboard support (via Cocoa Pasteboard). Alt+Ins can be entered
+  with Fn+Alt+Numpad0 on a Macbook or Powerbook keyboard.
 
 DEVELOPERS
 

@@ -990,6 +990,8 @@ err_unlock:
 #define Random Random_
 #include <Carbon/Carbon.h>
 
+static const CFStringRef PLAIN = CFSTR("com.apple.traditional-mac-plain-text");
+
 static void copy_buffer_to_selection(void)
 {
   PasteboardSyncFlags syncFlags;
@@ -1033,7 +1035,7 @@ static void copy_buffer_to_selection(void)
     goto err_release;
 
   if(PasteboardPutItemFlavor(clipboard, (PasteboardItemID)1,
-   CFSTR("com.apple.traditional-mac-plain-text"), textData, 0) != noErr)
+   PLAIN, textData, 0) != noErr)
     goto err_release;
 
 err_release:
@@ -1042,7 +1044,73 @@ err_release:
 
 static bool copy_selection_to_buffer(robot_state *rstate)
 {
-  return false;
+  PasteboardRef clipboard;
+  ItemCount itemCount;
+  UInt32 itemIndex;
+  bool ret = false;
+
+  if(PasteboardCreate(kPasteboardClipboard, &clipboard) != noErr)
+    return false;
+
+  if(PasteboardGetItemCount(clipboard, &itemCount) != noErr)
+    goto err_release;
+
+  for(itemIndex = 1; itemIndex <= itemCount; itemIndex++)
+  {
+    CFIndex flavorCount, flavorIndex;
+    CFArrayRef flavorTypeArray;
+    PasteboardItemID itemID;
+
+    if(PasteboardGetItemIdentifier(clipboard, itemIndex, &itemID) != noErr)
+      goto err_release;
+
+    if(PasteboardCopyItemFlavors(clipboard, itemID, &flavorTypeArray) != noErr)
+      goto err_release;
+
+    flavorCount = CFArrayGetCount(flavorTypeArray);
+
+    for(flavorIndex = 0; flavorIndex < flavorCount; flavorIndex++)
+    {
+      char line_buffer[COMMAND_BUFFER_LEN];
+      char *src_data, *src_ptr;
+      CFDataRef flavorData;
+      int line_length;
+
+      CFStringRef flavorType =
+       (CFStringRef)CFArrayGetValueAtIndex(flavorTypeArray, flavorIndex);
+
+      if(!UTTypeConformsTo(flavorType, PLAIN))
+        continue;
+
+      if(PasteboardCopyItemFlavorData(clipboard, itemID,
+       flavorType, &flavorData) != noErr)
+        continue;
+
+      rstate->command_buffer = line_buffer;
+
+      src_data = (char *)CFDataGetBytePtr(flavorData);
+      src_ptr = src_data;
+
+      while(*src_ptr)
+      {
+        line_length = strcspn((const char *)src_ptr, "\n");
+        memcpy(line_buffer, src_ptr, line_length);
+        line_buffer[line_length] = 0;
+        add_line(rstate);
+        src_ptr += line_length;
+        if(*src_ptr)
+          src_ptr++;
+      }
+
+      rstate->command_buffer = rstate->command_buffer_space;
+      CFRelease(flavorData);
+      ret = true;
+    }
+  }
+
+err_release:
+  CFRelease(clipboard);
+  return ret;
 }
 
 #else // !__WIN32__ && !CONFIG_X11 && !SDL_VIDEO_DRIVER_QUARTZ
