@@ -266,9 +266,9 @@ int rename(const char *oldpath, const char *newpath)
 
 #endif // NEED_RENAME
 
-#ifdef CONFIG_NDS
+#if defined(CONFIG_NDS) || defined(CONFIG_WII)
 
-// NDS versions of these functions backend directly to libfat
+// NDS/Wii versions of these functions backend directly to libfat
 
 dir_t *dir_open(const char *path)
 {
@@ -288,7 +288,7 @@ int dir_get_next_entry(dir_t *dir, char *entry)
   return dirnext(dir, entry, NULL);
 }
 
-#else // !CONFIG_NDS
+#else // !(CONFIG_NDS || CONFIG_WII)
 
 dir_t *dir_open(const char *path)
 {
@@ -320,7 +320,7 @@ int dir_get_next_entry(dir_t *dir, char *entry)
   return 0;
 }
 
-#endif // CONFIG_NDS
+#endif // CONFIG_NDS || CONFIG_WII
 
 #if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
 

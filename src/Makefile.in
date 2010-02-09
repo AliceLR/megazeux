@@ -50,12 +50,14 @@ mzx_objs += ${mzx_base}/scrdisp.${o} ${mzx_base}/sfx.${o}
 mzx_objs += ${mzx_base}/sprite.${o} ${mzx_base}/util.${o}
 mzx_objs += ${mzx_base}/window.${o} ${mzx_base}/world.${o}
 
+ifneq (${BUILD_WII},1)
 ifneq (${BUILD_NDS},1)
 ifneq (${BUILD_PSP},1)
 #
 # Hack to avoid silly warnings from devkitPro headers
 #
 mzx_cflags += -Wstrict-prototypes
+endif
 endif
 endif
 
@@ -95,6 +97,10 @@ endif
 
 ifeq (${BUILD_RENDER_GP2X},1)
 mzx_objs += ${mzx_base}/render_gp2x.${o}
+endif
+
+ifeq (${BUILD_RENDER_GX},1)
+mzx_objs += ${mzx_base}/render_gx.${o}
 endif
 
 ifeq (${BUILD_NDS},1)
@@ -146,6 +152,13 @@ endif
 mzx_flags += ${SDL_CFLAGS}
 mzx_ldflags += ${SDL_LDFLAGS}
 
+endif
+
+ifeq (${BUILD_WII},1)
+mzx_objs += ${mzx_base}/event_wii.${o} ${mzx_base}/platform_wii.${o}
+ifeq (${BUILD_AUDIO},1)
+mzx_objs += ${mzx_base}/audio_wii.${o}
+endif
 endif
 
 -include $(mzx_objs:.o=.d)

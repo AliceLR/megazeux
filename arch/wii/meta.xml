@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="UTF-8 standalone="yes"?>
+<app version="1">
+	<name>MegaZeux</name>
+	<coder>Alistair John Strachan &lt;alistair@devzero.co.uk&gt;</coder>
+	<version>SVN</version>
+	<release_date>200806140000</release_date>
+	<short_description>A simple game creation system (GCS)</short_description>
+	<long_description>MegaZeux is a Game Creation System (GCS), inspired by
+	Epic MegaGames' ZZT, first released by Gregory Janson in 1994. It was
+	recently ported from 16bit MSDOS C/ASM to portable C/C++, improving its
+	platform support and hardware compatibility.
+	Many features have been added since the original DOS version, and with
+	the help of an intuitive editor and a simple but powerful
+	object-oriented programming language, MegaZeux allows you to create your
+	own ANSI-esque games regardless of genre. It is actively maintained by a
+	thriving community.
+	See http://digitalmzx.net/ for more information.</long_description>
+</app>

@@ -38,8 +38,10 @@ typedef uint64_t Uint64;
 typedef int64_t Sint64;
 #endif // !CONFIG_SDL
 
-#ifdef CONFIG_SDL
+#if defined(CONFIG_SDL)
 #include "platform_sdl.h"
+#elif defined(CONFIG_WII)
+#include "platform_wii.h"
 #else
 #error No platform chosen!
 #endif

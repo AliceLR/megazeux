@@ -89,20 +89,6 @@ else
 endif
 endif
 
-else
-
-${checkres}:
-	@echo "--> Building of checkres disabled."
-${downver}:
-	@echo "--> Building of downver disabled."
-${txt2hlp}:
-	@echo "--> Building of txt2hlp disabled."
-
-endif
-
-utils: ${checkres} ${downver} ${txt2hlp}
-utils_clean: ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
-
 utils_package_clean:
 	mv ${checkres} ${checkres}.backup
 	mv ${downver} ${downver}.backup
@@ -112,6 +98,21 @@ utils_package_clean:
 	mv ${txt2hlp}.backup ${txt2hlp}
 	mv ${downver}.backup ${downver}
 	mv ${checkres}.backup ${checkres}
+
+else
+
+${checkres}:
+	@echo "--> Building of checkres disabled."
+${downver}:
+	@echo "--> Building of downver disabled."
+${txt2hlp}:
+	@echo "--> Building of txt2hlp disabled."
+utils_package_clean:
+
+endif
+
+utils: ${checkres} ${downver} ${txt2hlp}
+utils_clean: ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
 
 ${checkres}_clean: ${unzip}_clean
 	@echo "  CLEAN   " ${checkres}

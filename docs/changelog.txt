@@ -14,6 +14,8 @@ DEVELOPERS
 + Ported to AmigaOS. You need to install the clib2 version of libSDL, and the
   build system assumes you are using a cross compiler. The OpenGL renderers
   are not supported.
++ Added experimental port to the Wii. See arch/wii/README for more
+  information. (Mr_Alert)
 
 June 10, 2008 - MZX 2.82
 

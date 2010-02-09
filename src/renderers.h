@@ -49,6 +49,9 @@ void render_gp2x_register(graphics_data *graphics);
 #if defined(CONFIG_NDS)
 void render_nds_register(graphics_data *graphics);
 #endif
+#if defined(CONFIG_RENDER_GX)
+void render_gx_register(graphics_data *graphics);
+#endif
 
 __M_END_DECLS
 

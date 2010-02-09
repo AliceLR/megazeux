@@ -38,6 +38,10 @@
 #define __M_BEGIN_DECLS
 #define __M_END_DECLS
 
+// gctypes.h tries to define a bool enum with true and false
+// gctypes.h also tries to define a BOOL type which interferes
+// with stdafx.h from libmodplug.
+#ifndef CONFIG_WII
 #ifndef true
 #define true 1
 #endif
@@ -45,6 +49,11 @@
 #ifndef false
 #define false 0
 #endif
+#else // !CONFIG_WII
+#define BOOL _BOOL
+#include <gctypes.h>
+#undef BOOL
+#endif // CONFIG_WII
 
 #endif /* __cplusplus */
 

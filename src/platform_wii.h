@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2004 Alistair Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2008 Alan Williams <mralert@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,31 +17,28 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __FSAFEOPEN_H
-#define __FSAFEOPEN_H
+#ifndef __PLATFORM_WII_H
+#define __PLATFORM_WII_H
 
 #include "compat.h"
 
-#include <stdio.h>
-
 __M_BEGIN_DECLS
 
-enum
-{
-  FSAFE_SUCCESS = 0,
-  FSAFE_MATCH_FAILED,
-  FSAFE_BRUTE_FORCE_FAILED,
-  FSAFE_INVALID_ARGUMENT,
-  FSAFE_ABSOLUTE_PATH_ERROR,
-  FSAFE_WINDOWS_DRIVE_LETTER_ERROR,
-  FSAFE_PARENT_DIRECTORY_ERROR,
-};
+#include "platform.h"
 
-int fsafetest(const char *path, char *newpath);
-int fsafetranslate(const char *path, char *newpath);
-FILE *fsafeopen(const char *path, const char *mode);
-char *fsafegets(char *s, int size, FILE *stream);
+#define BOOL _BOOL
+#include <ogc/mutex.h>
+#undef BOOL
+
+typedef mutex_t platform_mutex;
+#define platform_mutex_init(mutex) LWP_MutexInit(&mutex, false)
+#define platform_mutex_lock(mutex) LWP_MutexLock(mutex)
+#define platform_mutex_unlock(mutex) LWP_MutexUnlock(mutex)
+
+int real_main(int argc, char *argv[]);
+
+#define main real_main
 
 __M_END_DECLS
 
-#endif // __FSAFEOPEN_H
+#endif // __PLATFORM_WII_H

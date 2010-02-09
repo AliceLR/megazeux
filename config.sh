@@ -21,6 +21,7 @@ usage() {
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
+	echo "  wii            Experimental Wii port"
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  mingw32        Use MinGW32 on Linux, to build for win32"
 	echo "  mingw64        Use MinGW64 on Linux, to build for win64"
@@ -240,6 +241,9 @@ if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "solaris" ]; then
 elif [ "$PLATFORM" = "nds" ]; then
 	echo "#define SHAREDIR \"/games/megazeux/\"" >>src/config.h
 	echo "#define CONFFILE \"config.txt\""       >>src/config.h
+elif [ "$PLATFORM" = "wii" ]; then
+	echo "#define SHAREDIR \"/apps/megazeux/\"" >>src/config.h
+	echo "#define CONFFILE \"config.txt\""      >>src/config.h
 elif [ "$PLATFORM" = "darwin" ]; then
 	echo "#define SHAREDIR \"../Resources/\"" >>src/config.h
 	echo "#define CONFFILE \"config.txt\""    >>src/config.h
@@ -257,10 +261,18 @@ echo "TARGET=`grep TARGET Makefile | head -n1 | \
 echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 
 #
-# Use SDL (will change when non-SDL platforms are supported)
+# Use platform-specific code or use SDL
 #
-echo "#define CONFIG_SDL" >> src/config.h
-echo "BUILD_SDL=1" >> Makefile.platform
+if [ "$PLATFORM" = "wii" ]; then
+	echo "#define CONFIG_WII" >> src/config.h
+	echo "BUILD_WII=1" >> Makefile.platform
+
+	echo "Force disabling software renderer on Wii."
+	SOFTWARE="false"
+else
+	echo "#define CONFIG_SDL" >> src/config.h
+	echo "BUILD_SDL=1" >> Makefile.platform
+fi
 
 #
 # If the NDS arch is enabled, some code has to be compile time
@@ -318,7 +330,8 @@ fi
 # Force-disable OpenGL and overlay renderers on PSP, GP2X and NDS
 #
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "nds" -o "$PLATFORM" = "amiga" ]; then
+  -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" \
+  -o "$PLATFORM" = "amiga" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
 	OPENGL="false"
 	OVERLAY="false"
@@ -365,7 +378,8 @@ if [ "$ICON" = "true" ]; then
 	fi
 
 	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "gp2x" \
-	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" ]; then
+	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" \
+	  -o "$PLATFORM" = "wii" ]; then
 		echo "Force-disabling icon branding (redundant)."
 		ICON="false"
 	fi
@@ -503,6 +517,15 @@ if [ "$OVERLAY" = "true" ]; then
 	echo "BUILD_RENDER_YUV=1" >> Makefile.platform
 else
 	echo "Overlay renderers disabled."
+fi
+
+#
+# GX renderer (Wii and GameCube)
+#
+if [ "$PLATFORM" = "wii" ]; then
+	echo "Building custom GX renderer."
+	echo "#define CONFIG_RENDER_GX" >> src/config.h
+	echo "BUILD_RENDER_GX=1" >> Makefile.platform
 fi
 
 #

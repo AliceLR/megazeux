@@ -1,0 +1,23 @@
+BUILDING MEGAZEUX FOR WII
+
+As of 2.82b, MegaZeux can be built for the Wii. You will need the devkitPPC
+toolchain, and libogc. You will also need the following in this directory:
+
+  - libfat
+  - libogg (audio only)
+  - libvorbis (audio only)
+
+Make sure DEVKITPRO and DEVKITPPC are both defined and valid, and use a
+config.sh configure line such as:
+
+./config.sh --platform wii --prefix $DEVKITPPC --disable-libpng --disable-utils
+
+Then build with the command:
+
+make package
+
+This will create a "boot.dol" file which you should know how to launch.
+
+PACKAGING
+
+Use "./package.sh -b wii" to build a dist/mzxsvn-wii.zip file for distribution.

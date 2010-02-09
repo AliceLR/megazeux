@@ -19,15 +19,15 @@
 
 // Provides a ModPlug module stream backend
 
+#include "modplug.h"
+#include "stdafx.h"
+#include "sndfile.h"
+
 #include "audio.h"
 #include "audio_modplug.h"
 #include "fsafeopen.h"
 #include "const.h"
 #include "util.h"
-
-#include "modplug.h"
-#include "stdafx.h"
-#include "sndfile.h"
 
 struct _ModPlugFile
 {

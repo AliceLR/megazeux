@@ -8,7 +8,7 @@
 #
 
 usage() {
-	echo "usage: $0 [-b win32 | win64 | psp | nds | gp2x | darwin]"
+	echo "usage: $0 [-b win32 | win64 | psp | nds | gp2x | wii | darwin]"
 	echo
 	echo "	-b	Builds a binary distribution for the specified arch."
 	echo "	-h	Displays this help text."
@@ -45,6 +45,21 @@ createzip_gp2x() {
 	$SEVENZIP a -tzip dist/$TARGET-gp2x.zip \
 		$BINARY_DEPS $TARGET.gpe $DOCS pad.config $TARGET.png &&
 	rm -f pad.config $TARGET.png
+}
+
+#
+# createzip_wii
+#
+createzip_wii() {
+	mkdir apps &&
+	mkdir apps/megazeux &&
+	mkdir apps/megazeux/docs &&
+	cp -f $WIIPAD apps/megazeux/pad.config &&
+	cp -f arch/wii/icon.png arch/wii/meta.xml apps/megazeux/ &&
+	cp -f $BINARY_DEPS $HELP_FILE boot.dol apps/megazeux/ &&
+	cp -f $DOCS apps/megazeux/docs/ &&
+	$SEVENZIP a -tzip dist/$TARGET-wii.zip apps &&
+	rm -rf apps
 }
 
 #
@@ -192,6 +207,7 @@ DOCS="docs/COPYING.DOC docs/changelog.txt docs/port.txt docs/macro.txt"
 PSPPAD="arch/psp/pad.config"
 GP2XPAD="arch/gp2x/pad.config"
 NDSPAD="arch/nds/pad.config"
+WIIPAD="arch/wii/pad.config"
 
 #
 # MegaZeux's build system dependencies; these are packaged in
@@ -302,6 +318,14 @@ fi
 #
 if [ "$2" = "gp2x" ]; then
 	createzip_gp2x
+	exit
+fi
+
+#
+# Wii, using ZIP compression via 7ZIP compressor (pad config)
+#
+if [ "$2" = "wii" ]; then
+	createzip_wii
 	exit
 fi
 
