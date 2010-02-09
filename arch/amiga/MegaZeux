@@ -1,0 +1,15 @@
+STACK 1000000
+
+Assign >NIL: "USR:" EXISTS
+IF NOT WARN
+ELSE
+Assign USR: RAM:
+ENDIF
+
+Assign >NIL: "ETC:" EXISTS
+IF NOT WARN
+ELSE
+Assign ETC: RAM:
+ENDIF
+
+run >NIL: megazeux.exe;

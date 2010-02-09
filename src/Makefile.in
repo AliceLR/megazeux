@@ -20,7 +20,7 @@ core_cflags  += ${CFLAGS} -Wmissing-prototypes
 core_cxxflags = ${CXXFLAGS} -DHAVE_INTTYPES_H
 
 core_flags   += -I${core_src} -I${PREFIX}/include
-core_ldflags := ${core_ldflags} ${ARCH_LDFLAGS}
+core_ldflags := ${core_ldflags}
 
 ifeq (${PLATFORM},mingw)
 core_spec := -DCORE_LIBSPEC="__declspec(dllexport)"

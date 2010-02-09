@@ -51,9 +51,9 @@ EXTRA_LIBS = -Larch/nds/ndsLibfat/nds/lib \
              -L$(LIBNDS)/lib \
              -lfat -lm -lndsKeyboardExt5 -lndsScreens -lnds9
 
-ARCH_CFLAGS  := ${EXTRA_INCLUDES} -DARM9 -D__NDS__ -Iarch/nds
-ARCH_CXXFLAGS = ${ARCH_CFLAGS}
-ARCH_LDFLAGS := ${EXTRA_LIBS} -specs=ds_arm9.specs
+ARCH_CFLAGS   += ${EXTRA_INCLUDES} -DARM9 -D__NDS__ -Iarch/nds
+ARCH_CXXFLAGS += ${ARCH_CFLAGS}
+ARCH_LDFLAGS  += ${EXTRA_LIBS} -specs=ds_arm9.specs
 
 #
 # Vile hack, remove me ASAP

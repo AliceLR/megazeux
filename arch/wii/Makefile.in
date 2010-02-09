@@ -44,9 +44,9 @@ EXTRA_LIBS     = -Larch/wii/libfat/lib/wii -lfat \
 
 MACHDEP = -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
 
-ARCH_CFLAGS  := ${EXTRA_INCLUDES} $(MACHDEP)
-ARCH_CXXFLAGS = ${ARCH_CFLAGS}
-ARCH_LDFLAGS := ${EXTRA_LIBS} $(MACHDEP)
+ARCH_CFLAGS   += ${EXTRA_INCLUDES} $(MACHDEP)
+ARCH_CXXFLAGS += ${ARCH_CFLAGS}
+ARCH_LDFLAGS  += ${EXTRA_LIBS} $(MACHDEP)
 
 package: mzx
 	${OBJCOPY} -O binary ${mzxrun} boot.dol

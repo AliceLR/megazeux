@@ -5,5 +5,15 @@
 CC      = ppc-amigaos-gcc -mcrt=clib2 -I${PREFIX}/clib2/include
 CXX     = ppc-amigaos-g++ -mcrt=clib2 -I${PREFIX}/clib2/include
 STRIP   = ppc-amigaos-strip --strip-unneeded
+OBJCOPY = true
+CHMOD   = true
 
 BINEXT  = .exe
+DSOPRE  = lib
+DSOPOST = .so
+
+ifeq (${BUILD_MODULAR},1)
+ARCH_CFLAGS   += -fPIC
+ARCH_CXXFLAGS += -fPIC
+ARCH_LDFLAGS  += -use-dynld
+endif

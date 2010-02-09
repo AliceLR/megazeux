@@ -8,11 +8,28 @@
 #
 
 usage() {
-	echo "usage: $0 [-b win32 | win64 | psp | nds | gp2x | wii | darwin]"
+	echo "usage: $0 [-b win32 | win64 | psp | nds | gp2x | wii | darwin | amiga]"
 	echo
 	echo "	-b	Builds a binary distribution for the specified arch."
 	echo "	-h	Displays this help text."
 	exit 0
+}
+
+#
+# createlha_amiga
+#
+createlha_amigaos() {
+	mkdir -p MegaZeux/docs &&
+	cp -r $BINARY_DEPS $HELP_FILE MegaZeux &&
+	cp -r $DOCS MegaZeux/docs &&
+	cp -r megazeux.exe mzxrun.exe libcore.so libeditor.so MegaZeux &&
+	cp arch/amiga/MegaZeux MegaZeux &&
+	cp arch/amiga/MZXRun MegaZeux &&
+	cp arch/amiga/MegaZeux.info MegaZeux/MegaZeux.info &&
+	cp arch/amiga/MegaZeux.info MegaZeux/MZXRun.info &&
+	cp arch/amiga/MegaZeux.info . &&
+	lha a dist/$TARGET-amigaos.lha MegaZeux.info MegaZeux &&
+	rm -rf MegaZeux.info MegaZeux
 }
 
 #
@@ -291,6 +308,14 @@ fi
 echo "Generating binary package for $2.."
 
 #
+# Amiga, using LHA compression and exotic directory structure
+#
+if [ "$2" = "amiga" ]; then
+	createlha_amigaos
+	exit
+fi
+
+#
 # PSP, using ZIP compression via 7ZIP compressor (pad config, no help file)
 #
 if [ "$2" = "psp" ]; then
@@ -340,6 +365,9 @@ if [ "$2" = "win64" ]; then
 	exit
 fi
 
+#
+# Mac OS X, specialized DMG
+#
 if [ "$2" = "darwin" ]; then
 	createUnifiedDMG
 	exit

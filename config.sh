@@ -429,8 +429,8 @@ fi
 #
 # Force disable modular DSOs.
 #
-if [ "$PLATFORM" != "unix" -a "$PLATFORM" != "unix-devel" \
-  -a "$PLATFORM" != "mingw" ]; then
+if [ "$PLATFORM" != "unix"  -a "$PLATFORM" != "unix-devel" \
+  -a "$PLATFORM" != "mingw" -a "$PLATFORM" != "amiga" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
 fi
