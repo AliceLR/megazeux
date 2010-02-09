@@ -453,10 +453,10 @@ fi
 # User may want to compile utils (checkres, downver, txt2hlp)
 #
 if [ "$UTILS" = "true" ]; then
-	echo "Building utils (checkres, downver, txt2hlp)."
+	echo "Building utils (checkres, downver, hlp2txt, txt2hlp)."
 	echo "BUILD_UTILS=1" >> platform.inc
 else
-	echo "Disabled utils (txt2hlp, checkres)."
+	echo "Disabled utils (checkres, downver, hlp2txt, txt2hlp)."
 fi
 
 #

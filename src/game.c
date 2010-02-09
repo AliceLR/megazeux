@@ -54,7 +54,7 @@
 #include "util.h"
 #include "debug.h"
 
-void (*edit_world)(World *mzx_world);
+__editor_maybe_static void (*edit_world)(World *mzx_world);
 
 // Number of cycles to make player idle before repeating a
 // directional move

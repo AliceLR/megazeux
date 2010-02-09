@@ -192,7 +192,11 @@ ifeq (${EMBED_ICONS},1)
 mzx_objs += ${icons}
 endif
 
-${mzx}: ${core_target}.debug ${editor_target}.debug ${mzx_objs}
+ifeq (${BUILD_MODULAR},1)
+${mzx}: ${core_target}.debug ${editor_target}.debug
+endif
+
+${mzx}: ${core_target} ${editor_target} ${mzx_objs}
 	$(if ${V},,@echo "  LINK    " ${mzx})
 ifeq (${BUILD_MODULAR},1)
 	${LINK_CC} ${mzx_objs} -o ${mzx} ${LDFLAGS} \
@@ -221,7 +225,11 @@ ifeq (${EMBED_ICONS},1)
 mzxrun_objs += ${icons}
 endif
 
-${mzxrun}: ${core_target}.debug ${mzxrun_objs}
+ifeq (${BUILD_MODULAR},1)
+${mzxrun}: ${core_target}.debug
+endif
+
+${mzxrun}: ${core_target} ${mzxrun_objs}
 	$(if ${V},,@echo "  LINK    " ${mzxrun})
 ifeq (${BUILD_MODULAR},1)
 	${LINK_CC} ${mzxrun_objs} -o ${mzxrun} ${LDFLAGS} \
