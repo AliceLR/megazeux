@@ -91,7 +91,9 @@ char *strsep(char **stringp, const char *delim);
  || defined(CONFIG_NDS) || defined(CONFIG_WII)
 #include <string.h>
 #else
+#ifndef _MSC_VER
 #include <strings.h>
+#endif
 #endif
 #endif // __WIN32__
 
@@ -109,7 +111,7 @@ int rename(const char *oldpath, const char *newpath);
 #define rmdir(x)
 #endif
 
-#ifdef __WIN32__
+#if defined(__WIN32__) && !defined(_MSC_VER)
 #define mkdir(file,mode) mkdir(file)
 #endif
 

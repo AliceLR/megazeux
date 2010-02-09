@@ -23,6 +23,7 @@
 static inline void ProcessPlugins(int n) {}
 
 #define sleep(x) Sleep(x * 1000)
+#define strnicmp _strnicmp
 
 #else
 

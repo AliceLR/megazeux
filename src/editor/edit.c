@@ -38,11 +38,11 @@
 #include "../world.h"
 #include "../util.h"
 #include "../robot.h"
+#include "../debug.h"
 
 #include "block.h"
 #include "board.h"
 #include "char_ed.h"
-#include "debug.h"
 #include "edit.h"
 #include "edit_di.h"
 #include "fill.h"

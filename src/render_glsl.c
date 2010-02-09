@@ -616,14 +616,14 @@ static void glsl_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
 
   gl->glBegin(GL_QUADS);
     gl->glColor3ubv(&render_data->palette[color * 3]);
-    gl->glVertex2f((x * 8)*2.0/640.0-1.0,
-                (y * 14 + lines + offset)*-2.0/350.0+1.0);
-    gl->glVertex2f((x * 8)*2.0/640.0-1.0,
-                (y * 14 + offset)*-2.0/350.0+1.0);
-    gl->glVertex2f((x * 8 + 8)*2.0/640.0-1.0,
-                (y * 14 + offset)*-2.0/350.0+1.0);
-    gl->glVertex2f((x * 8 + 8)*2.0/640.0-1.0,
-                (y * 14 + lines + offset)*-2.0/350.0+1.0);
+    gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
+                (y * 14 + lines + offset)*-2.0f/350.0f+1.0f);
+    gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
+                (y * 14 + offset)*-2.0f/350.0f+1.0f);
+    gl->glVertex2f((x * 8 + 8)*2.0f/640.0f-1.0f,
+                (y * 14 + offset)*-2.0f/350.0f+1.0f);
+    gl->glVertex2f((x * 8 + 8)*2.0f/640.0f-1.0f,
+                (y * 14 + lines + offset)*-2.0f/350.0f+1.0f);
   gl->glEnd();
 
   gl->glEnable(GL_TEXTURE_2D);
@@ -641,10 +641,10 @@ static void glsl_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
 
   gl->glBegin(GL_QUADS);
     gl->glColor4ub(255, 255, 255, 255);
-    gl->glVertex2f( x*2.0/640.0-1.0,         (y + h)*-2.0/350.0+1.0);
-    gl->glVertex2f( x*2.0/640.0-1.0,          y*-2.0/350.0+1.0);
-    gl->glVertex2f((x + w)*2.0/640.0-1.0,     y*-2.0/350.0+1.0);
-    gl->glVertex2f((x + w)*2.0/640.0-1.0,    (y + h)*-2.0/350.0+1.0);
+    gl->glVertex2f( x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f);
+    gl->glVertex2f( x*2.0f/640.0f-1.0f,       y*-2.0f/350.0f+1.0f);
+    gl->glVertex2f((x + w)*2.0f/640.0f-1.0f,  y*-2.0f/350.0f+1.0f);
+    gl->glVertex2f((x + w)*2.0f/640.0f-1.0f, (y + h)*-2.0f/350.0f+1.0f);
   gl->glEnd();
 
   gl->glEnable(GL_TEXTURE_2D);
@@ -673,16 +673,16 @@ static void glsl_sync_screen(graphics_data *graphics)
   {
     gl->glBegin(GL_QUADS);
       gl->glTexCoord2f(0,
-        ((graphics->window_height<512)?graphics->window_height:512)/512.0);
+        ((graphics->window_height<512)?graphics->window_height:512)/512.0f);
       gl->glVertex2i(-1, 1);
       gl->glTexCoord2f(0, 0);
       gl->glVertex2i(-1, -1);
       gl->glTexCoord2f(
-        ((graphics->window_width<1024)?graphics->window_width:1024)/1024.0, 0);
+        ((graphics->window_width<1024)?graphics->window_width:1024)/1024.0f, 0);
       gl->glVertex2i(1, -1);
       gl->glTexCoord2f(
-        ((graphics->window_width<1024)?graphics->window_width:1024)/1024.0,
-        ((graphics->window_height<512)?graphics->window_height:512)/512.0);
+        ((graphics->window_width<1024)?graphics->window_width:1024)/1024.0f,
+        ((graphics->window_height<512)?graphics->window_height:512)/512.0f);
       gl->glVertex2i(1, 1);
     gl->glEnd();
   }

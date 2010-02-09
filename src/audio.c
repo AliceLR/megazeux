@@ -162,8 +162,8 @@ const int freq_conversion = 3579364;
 #define NEAREST_SETUP_INDEX(channels)
 
 #define FRACTIONAL_SETUP_INDEX(channels)                                \
-  int_index = (s_index >> FP_SHIFT) * channels;                         \
-  frac_index = s_index & FP_AND;                                        \
+  int_index = (Sint32)(s_index >> FP_SHIFT) * channels;                 \
+  frac_index = (Sint32)(s_index & FP_AND);                              \
 
 #define LINEAR_SETUP_INDEX(channels)                                    \
   FRACTIONAL_SETUP_INDEX(channels)                                      \
@@ -336,10 +336,11 @@ __audio_c_maybe_static void sampled_set_buffer(sampled_stream *s_src)
   s_src->negative_comp = 0;
 
   data_window_length =
-   (Uint32)(ceil((float)audio.buffer_samples *
+   (Uint32)(ceil((double)audio.buffer_samples *
    frequency / audio.output_frequency) * bytes_per_sample);
 
-  prologue_length += (Uint32)(ceil(frequency_delta) * bytes_per_sample);
+  prologue_length +=
+   (Uint32)ceil((double)frequency_delta) * bytes_per_sample;
 
   allocated_data_length = data_window_length + prologue_length +
    epilogue_length;
@@ -418,7 +419,7 @@ static Uint32 vorbis_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
     read_wanted -= read_len;
 
     if(a_src->repeat && v_stream->loop_end)
-      pos = ov_pcm_tell(&(v_stream->vorbis_file_handle));
+      pos = (Uint32)ov_pcm_tell(&v_stream->vorbis_file_handle);
 
 #ifdef CONFIG_TREMOR
     read_len =
@@ -503,7 +504,7 @@ static void vorbis_set_frequency(sampled_stream *s_src, Uint32 frequency)
 
 static Uint32 vorbis_get_position(audio_stream *a_src)
 {
-  return ov_pcm_tell(&(((vorbis_stream *)a_src)->vorbis_file_handle));
+  return (Uint32)ov_pcm_tell(&((vorbis_stream *)a_src)->vorbis_file_handle);
 }
 
 static Uint32 vorbis_get_frequency(sampled_stream *s_src)

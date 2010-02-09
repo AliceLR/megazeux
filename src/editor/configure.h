@@ -21,7 +21,7 @@
 #ifndef __EDITOR_CONFIGURE_H
 #define __EDITOR_CONFIGURE_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 

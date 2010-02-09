@@ -30,8 +30,8 @@
 #include "renderers.h"
 #include "util.h"
 
-#define SAFE_TEXTURE_MARGIN_X 0.0004
-#define SAFE_TEXTURE_MARGIN_Y 0.0002
+#define SAFE_TEXTURE_MARGIN_X 0.0004f
+#define SAFE_TEXTURE_MARGIN_Y 0.0002f
 
 typedef struct
 {
@@ -435,35 +435,35 @@ static void gl2_render_graph(graphics_data *graphics)
 
     gl->glBegin(GL_QUADS);
       src = graphics->text_video;
-      for(fi = 1; fi > -1; fi = fi - 2.0/25.0)
+      for(fi = 1; fi > -1; fi = fi - 2.0f/25.0f)
       {
-        for(fi2 = -1; fi2 < 0.98; fi2 = fi2 + 2.0/80.0)
+        for(fi2 = -1; fi2 < 0.98; fi2 = fi2 + 2.0f/80.0f)
         {
           gl->glColor3ubv(&render_data->palette[src->fg_color * 3]);
 
           gl->glTexCoord2f(
-            ((src->char_value % 32) + 1) * 0.03125   - SAFE_TEXTURE_MARGIN_X,
-            ((src->char_value / 32) + 1) * 0.0546875 - SAFE_TEXTURE_MARGIN_Y
+            ((src->char_value % 32) + 1) * 0.03125f   - SAFE_TEXTURE_MARGIN_X,
+            ((src->char_value / 32) + 1) * 0.0546875f - SAFE_TEXTURE_MARGIN_Y
           );
-          gl->glVertex2f(fi2 + 2.0/80.0, fi - 2.0/25.0);
+          gl->glVertex2f(fi2 + 2.0f/80.0f, fi - 2.0f/25.0f);
 
           gl->glTexCoord2f(
-            ((src->char_value % 32) + 1) * 0.03125   - SAFE_TEXTURE_MARGIN_X,
-             (src->char_value / 32)      * 0.0546875 + SAFE_TEXTURE_MARGIN_Y
+            ((src->char_value % 32) + 1) * 0.03125f   - SAFE_TEXTURE_MARGIN_X,
+             (src->char_value / 32)      * 0.0546875f + SAFE_TEXTURE_MARGIN_Y
           );
-          gl->glVertex2f(fi2 + 2.0/80.0, fi);
+          gl->glVertex2f(fi2 + 2.0f/80.0f, fi);
 
           gl->glTexCoord2f(
-             (src->char_value % 32)      * 0.03125   + SAFE_TEXTURE_MARGIN_X,
-             (src->char_value / 32)      * 0.0546875 + SAFE_TEXTURE_MARGIN_Y
+             (src->char_value % 32)      * 0.03125f   + SAFE_TEXTURE_MARGIN_X,
+             (src->char_value / 32)      * 0.0546875f + SAFE_TEXTURE_MARGIN_Y
           );
           gl->glVertex2f(fi2, fi);
 
           gl->glTexCoord2f(
-             (src->char_value % 32)      * 0.03125   + SAFE_TEXTURE_MARGIN_X,
-            ((src->char_value / 32) + 1) * 0.0546875 - SAFE_TEXTURE_MARGIN_Y
+             (src->char_value % 32)      * 0.03125f   + SAFE_TEXTURE_MARGIN_X,
+            ((src->char_value / 32) + 1) * 0.0546875f - SAFE_TEXTURE_MARGIN_Y
           );
-          gl->glVertex2f(fi2, fi - 2.0/25.0);
+          gl->glVertex2f(fi2, fi - 2.0f/25.0f);
           src++;
         }
       }
@@ -508,14 +508,14 @@ static void gl2_render_cursor(graphics_data *graphics, Uint32 x, Uint32 y,
 
   gl->glBegin(GL_QUADS);
     gl->glColor3ubv(&render_data->palette[color * 3]);
-    gl->glVertex2f((x * 8)*2.0/640.0-1.0,
-                  (y * 14 + lines + offset)*-2.0/350.0+1.0);
-    gl->glVertex2f((x * 8)*2.0/640.0-1.0,
-                  (y * 14 + offset)*-2.0/350.0+1.0);
-    gl->glVertex2f((x * 8 + 8)*2.0/640.0-1.0,
-                  (y * 14 + offset)*-2.0/350.0+1.0);
-    gl->glVertex2f((x * 8 + 8)*2.0/640.0-1.0,
-                  (y * 14 + lines + offset)*-2.0/350.0+1.0);
+    gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
+                  (y * 14 + lines + offset)*-2.0f/350.0f+1.0f);
+    gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
+                  (y * 14 + offset)*-2.0f/350.0f+1.0f);
+    gl->glVertex2f((x * 8 + 8)*2.0f/640.0f-1.0f,
+                  (y * 14 + offset)*-2.0f/350.0f+1.0f);
+    gl->glVertex2f((x * 8 + 8)*2.0f/640.0f-1.0f,
+                  (y * 14 + lines + offset)*-2.0f/350.0f+1.0f);
   gl->glEnd();
 
   gl->glEnable(GL_TEXTURE_2D);
@@ -532,10 +532,10 @@ static void gl2_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
 
   gl->glBegin(GL_QUADS);
     gl->glColor4ub(255, 255, 255, 255);
-    gl->glVertex2f( x*2.0/640.0-1.0,         (y + h)*-2.0/350.0+1.0);
-    gl->glVertex2f( x*2.0/640.0-1.0,          y*-2.0/350.0+1.0);
-    gl->glVertex2f((x + w)*2.0/640.0-1.0,     y*-2.0/350.0+1.0);
-    gl->glVertex2f((x + w)*2.0/640.0-1.0,    (y + h)*-2.0/350.0+1.0);
+    gl->glVertex2f( x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f);
+    gl->glVertex2f( x*2.0f/640.0f-1.0f,       y*-2.0f/350.0f+1.0f);
+    gl->glVertex2f((x + w)*2.0f/640.0f-1.0f,  y*-2.0f/350.0f+1.0f);
+    gl->glVertex2f((x + w)*2.0f/640.0f-1.0f, (y + h)*-2.0f/350.0f+1.0f);
   gl->glEnd();
 
   gl->glEnable(GL_TEXTURE_2D);

@@ -51,43 +51,43 @@ typedef struct
 static void config_ccode_colors(editor_config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  conf->color_codes[4] = strtol(value, NULL, 10);
+  conf->color_codes[4] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_commands(editor_config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  conf->color_codes[13] = strtol(value, NULL, 10);
+  conf->color_codes[13] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_conditions(editor_config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  conf->color_codes[10] = strtol(value, NULL, 10);
+  conf->color_codes[10] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_current_line(editor_config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  conf->color_codes[0] = strtol(value, NULL, 10);
+  conf->color_codes[0] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_directions(editor_config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  conf->color_codes[5] = strtol(value, NULL, 10);
+  conf->color_codes[5] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_equalities(editor_config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  conf->color_codes[9] = strtol(value, NULL, 10);
+  conf->color_codes[9] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_extras(editor_config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  conf->color_codes[8] = strtol(value, NULL, 10);
+  conf->color_codes[8] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_on(editor_config_info *conf, char *name,
@@ -107,25 +107,25 @@ static void config_ccode_immediates(editor_config_info *conf, char *name,
 static void config_ccode_items(editor_config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  conf->color_codes[11] = strtol(value, NULL, 10);
+  conf->color_codes[11] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_params(editor_config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  conf->color_codes[7] = strtol(value, NULL, 10);
+  conf->color_codes[7] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_strings(editor_config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  conf->color_codes[8] = strtol(value, NULL, 10);
+  conf->color_codes[8] = (char)strtol(value, NULL, 10);
 }
 
 static void config_ccode_things(editor_config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  conf->color_codes[6] = strtol(value, NULL, 10);
+  conf->color_codes[6] = (char)strtol(value, NULL, 10);
 }
 
 static void config_default_invald(editor_config_info *conf, char *name,

@@ -20,7 +20,7 @@
 #ifndef __EDITOR_SFX_EDIT_H
 #define __EDITOR_SFX_EDIT_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 

@@ -23,7 +23,7 @@
 #ifndef __EDITOR_CHAR_ED_H
 #define __EDITOR_CHAR_ED_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 

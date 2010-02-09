@@ -20,7 +20,7 @@
 #ifndef __EDITOR_GRAPHICS_H
 #define __EDITOR_GRAPHICS_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 

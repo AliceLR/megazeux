@@ -17,12 +17,12 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-
-#include "util.h"
-
 #include <sys/stat.h>
 #include <ctype.h>
 #include <time.h>
+
+// Must include after <time.h> (MSVC bug)
+#include "util.h"
 
 #ifndef _MSC_VER
 #include <unistd.h>

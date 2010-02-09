@@ -30,12 +30,13 @@
 
 #define chdir       _chdir
 #define getcwd      _getcwd
-#define mkdir       _mkdir
 #define rmdir       _rmdir
 #define snprintf    _snprintf
 #define strcasecmp  _stricmp
 #define strncasecmp _strnicmp
 #define unlink      _unlink
+
+#define mkdir(name,mode) _mkdir(name)
 
 #define inline __inline
 

@@ -1682,8 +1682,8 @@ static void execute_macro(robot_state *rstate, ext_macro *macro_src)
     // two for borders
     nominal_height = total_lines_needed + 5;
 
-    optimal_delta = fabs((80.0 / 25) -
-     (float)(nominal_width + 3) / nominal_height);
+    optimal_delta = (float)fabs((80.0 / 25) -
+     (double)(nominal_width + 3) / nominal_height);
 
     if((old_optimal_delta < optimal_delta) ||
      (nominal_width < largest_column_width) || (nominal_height > 25))

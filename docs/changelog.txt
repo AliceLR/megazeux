@@ -61,6 +61,8 @@ DEVELOPERS
   optimization for GNU ld platforms.
 + Windows builds now use a patched version of SDL 1.2.13 containing a fix
   for the directx+F10 issue.
++ Updated MSVC projects. Fixed all warnings emitted by MSVC 2008, and
+  implemented icon support with existing mingw resource files.
 
 June 10, 2008 - MZX 2.82
 

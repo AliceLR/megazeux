@@ -22,7 +22,7 @@
 #ifndef __EDITOR_PAL_ED_H
 #define __EDITOR_PAL_ED_H
 
-#include "compat.h"
+#include "../compat.h"
 
 __M_BEGIN_DECLS
 

@@ -36,7 +36,6 @@
 #include "event.h"
 #include "render.h"
 #include "renderers.h"
-#include "util.h"
 #include "platform.h"
 #include "pngops.h"
 
@@ -49,6 +48,8 @@
 #endif // __WIN32__
 #endif // CONFIG_ICON
 #endif // CONFIG_SDL
+
+#include "util.h"
 
 #ifndef VERSION
 #error Must define VERSION for MegaZeux version string
@@ -978,7 +979,7 @@ void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
         if(isxdigit(next))
         {
           next_str[0] = next;
-          bg_color = strtol(next_str, NULL, 16) + c_offset;
+          bg_color = (Uint8)(strtol(next_str, NULL, 16) + c_offset);
         }
         else
         {
@@ -1010,7 +1011,7 @@ void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
         if(isxdigit(next))
         {
           next_str[0] = next;
-          fg_color = strtol(next_str, NULL, 16) + c_offset;
+          fg_color = (Uint8)(strtol(next_str, NULL, 16) + c_offset);
         }
         else
         {

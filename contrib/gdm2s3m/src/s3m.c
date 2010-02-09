@@ -60,7 +60,7 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
   check_a_to_s (&backup, stream_len, &hdr->title, &stream, 28);
 
   /* pad with junk */
-  check_a_to_s (&backup, stream_len, &junk1, &stream, 4);
+  check_a_to_s (&backup, stream_len, (uint8_t *)&junk1, &stream, 4);
 
   /* dump quantities */
   CHECK_ENDIAN_16 (&hdr->numorders);
@@ -74,7 +74,7 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
   CHECK_ENDIAN_16 (&hdr->numpatterns);
 
   /* pad with more junk */
-  check_a_to_s (&backup, stream_len, &junk2, &stream, 6);
+  check_a_to_s (&backup, stream_len, (uint8_t *)&junk2, &stream, 6);
 
   /* dump magic bytes */
   check_a_to_s (&backup, stream_len, s3m_magic, &stream, 4);
@@ -85,7 +85,7 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
   check_a_to_s (&backup, stream_len, &hdr->tempo, &stream, 1);
 
   /* pad with remaining junk */
-  check_a_to_s (&backup, stream_len, &junk3, &stream, 13);
+  check_a_to_s (&backup, stream_len, (uint8_t *)&junk3, &stream, 13);
 
   /* channel settings */
   check_a_to_s (&backup, stream_len, &hdr->chansett, &stream, 32);
@@ -134,7 +134,7 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
     struct S3M_samhdr *sample = &s3m->samples[i].header;
 
     /* write out junk byte */
-    check_a_to_s (&backup, stream_len, &junk4, &stream, 1);
+    check_a_to_s (&backup, stream_len, (uint8_t *)&junk4, &stream, 1);
 
     /* dos filename */
     check_a_to_s (&backup, stream_len, &sample->filename, &stream, 12);
@@ -159,7 +159,7 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
     check_a_to_s (&backup, stream_len, &sample->volume, &stream, 1);
 
     /* more junk */
-    check_a_to_s (&backup, stream_len, &junk5, &stream, 2);
+    check_a_to_s (&backup, stream_len, (uint8_t *)&junk5, &stream, 2);
 
     /* flags */
     check_a_to_s (&backup, stream_len, &sample->flags, &stream, 1);
@@ -169,7 +169,7 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
     check_a_to_s (&backup, stream_len, &sample->rate, &stream, 2);
 
     /* last bit of junk */
-    check_a_to_s (&backup, stream_len, &junk6, &stream, 14);
+    check_a_to_s (&backup, stream_len, (uint8_t *)&junk6, &stream, 14);
 
     /* sample name */
     check_a_to_s (&backup, stream_len, &sample->name, &stream, 28);
@@ -178,7 +178,7 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
     check_a_to_s (&backup, stream_len, sam_magic, &stream, 4);
 
     /* work out segment */
-    segment = offset / 16;
+    segment = (uint16_t)(offset / 16);
 
     /* update sample parapointer */
     CHECK_ENDIAN_16 (&segment);
@@ -210,7 +210,7 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
                     pattern->length - 2);
 
     /* work out segment */
-    segment = offset / 16;
+    segment = (uint16_t)(offset / 16);
 
     /* update pattern parapointer */
     CHECK_ENDIAN_16 (&segment);
@@ -260,7 +260,7 @@ uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
     spare = segment * 16 + 13;
 
     /* work out segment */
-    segment = offset / 16;
+    segment = (uint16_t)(offset / 16);
 
     /* stick it into that awkward 24bit parapointer */
     CHECK_ENDIAN_16 (&segment);
@@ -656,7 +656,7 @@ struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm)
     }
 
     /* copy over length */
-    pattern->length = plen;
+    pattern->length = (uint16_t)plen;
 
     /* copy over data */
     pattern->data = backup;
