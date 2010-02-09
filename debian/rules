@@ -16,14 +16,14 @@ endif
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
-	./config.sh --platform unix --disable-utils --as-needed-hack
+	./config.sh --platform unix --as-needed-hack
 	touch configure-stamp
 
 build: build-stamp
 
 build-stamp: configure-stamp 
 	dh_testdir
-	$(MAKE) STRIP=/bin/true
+	$(MAKE)
 	touch $@
 
 clean:

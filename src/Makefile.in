@@ -200,10 +200,10 @@ ${mzx}: ${core_target} ${editor_target} ${mzx_objs}
 	$(if ${V},,@echo "  LINK    " ${mzx})
 ifeq (${BUILD_MODULAR},1)
 	${LINK_CC} ${mzx_objs} -o ${mzx} ${LDFLAGS} \
-	  -L. -Wl,-rpath . -lcore -leditor ${SDL_LDFLAGS}
+	  -Wl,-rpath=${LIBDIR} -L. -lcore -leditor ${SDL_LDFLAGS}
 else
 	${LINK_CC} ${mzx_objs} ${core_target} ${editor_target} \
-	  -o ${mzx} ${LDFLAGS} ${core_ldflags}
+	  -o ${mzx} ${LDFLAGS} ${core_ldflags} ${editor_ldflags}
 endif
 
 ${mzx}.debug: ${mzx}
@@ -233,7 +233,7 @@ ${mzxrun}: ${core_target} ${mzxrun_objs}
 	$(if ${V},,@echo "  LINK    " ${mzxrun})
 ifeq (${BUILD_MODULAR},1)
 	${LINK_CC} ${mzxrun_objs} -o ${mzxrun} ${LDFLAGS} \
-	  -L. -Wl,-rpath . -lcore ${SDL_LDFLAGS}
+	  -Wl,-rpath=${LIBDIR} -L. -lcore ${SDL_LDFLAGS}
 else
 	${LINK_CC} ${mzxrun_objs} ${core_target} \
 	  -o ${mzxrun} ${LDFLAGS} ${core_ldflags}

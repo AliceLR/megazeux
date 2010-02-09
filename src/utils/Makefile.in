@@ -44,7 +44,7 @@ ${checkres}: ${checkres_objs} ${core_target}
 	$(if ${V},,@echo "  LINK    " ${checkres})
 ifeq (${BUILD_MODULAR},1)
 	${CC} ${checkres_objs} -o ${checkres} \
-	  ${LDFLAGS} ${checkres_ldflags} -Wl,-rpath . -L. -lcore
+	  ${LDFLAGS} ${checkres_ldflags} -Wl,-rpath=${LIBDIR} -L. -lcore
 else
 	${CC} ${checkres_objs} ${core_obj}/util.o ${core_obj}/fsafeopen.o \
 	  -o ${checkres} ${LDFLAGS} ${checkres_ldflags}

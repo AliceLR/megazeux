@@ -7,9 +7,11 @@
 editor_src = src/editor
 editor_obj = src/editor/.build
 
+editor_flags := ${editor_flags} ${core_flags}
+
 ${editor_obj}/%.o: ${editor_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${CFLAGS} ${core_flags} ${core_cflags} -c $< -o $@
+	${CC} -MD ${CFLAGS} ${editor_flags} ${core_cflags} -c $< -o $@
 
 editor_objs := ${editor_obj}/board.o ${editor_obj}/block.o
 editor_objs += ${editor_obj}/configure.o ${editor_obj}/char_ed.o
@@ -30,8 +32,8 @@ editor_target := ${DSOPRE}editor${DSOPOST}
 
 ${editor_target}: ${editor_objs} ${core_target}
 	$(if ${V},,@echo "  LINK    " $@)
-	${LINK_CC} -shared -o $@ ${editor_objs} ${LDFLAGS} \
-	   -Wl,-rpath . -L. -lcore
+	${LINK_CC} -shared -o $@ ${editor_objs} ${editor_ldflags} \
+	  ${LDFLAGS} -Wl,-rpath=${LIBDIR} -L. -lcore
 
 editor_target_clean:
 	$(if ${V},,@echo "  RM      " ${editor_target} ${editor_target}.debug)

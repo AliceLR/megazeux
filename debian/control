@@ -2,7 +2,7 @@ Source: megazeux
 Section: games
 Priority: extra
 Maintainer: Alistair John Strachan <alistair@devzero.co.uk>
-Build-Depends: debhelper (>= 5), libsdl1.2-dev, libvorbis-dev, libpng12-dev
+Build-Depends: debhelper (>= 5), libsdl1.2-dev, libvorbis-dev, libpng12-dev, zlib1g-dev
 Standards-Version: 3.8.0
 
 Package: megazeux
@@ -13,9 +13,10 @@ Description: A simple game creation system (GCS)
  first released by Gregory Janson in 1994. It was recently ported from 16bit
  MSDOS C/ASM to portable SDL C/C++, improving its platform support and
  hardware compatibility.
+ .
  Many features have been added since the original DOS version, and with the
  help of an intuitive editor and a simple but powerful object-oriented
  programming language, MegaZeux allows you to create your own ANSI-esque games
  regardless of genre. It is actively maintained by a thriving community.
+ .
  See http://digitalmzx.net/ for more information.
-

@@ -178,26 +178,34 @@ fi
 
 ### PLATFORM DEFINITION #######################################################
 
+echo "PREFIX?=$PREFIX" > platform.inc
+
 if [ "$PLATFORM" = "win32" -o "$PLATFORM" = "win64" ]; then
 	PLATFORM="mingw"
-	echo "PLATFORM=$PLATFORM" > platform.inc
-	echo "MINGWBASE="        >> platform.inc
+	echo "PLATFORM=$PLATFORM" >> platform.inc
+	echo "MINGWBASE="         >> platform.inc
 elif [ "$PLATFORM" = "mingw32" ]; then
 	PLATFORM="mingw"
-	echo "PLATFORM=$PLATFORM"           > platform.inc
+	echo "PLATFORM=$PLATFORM"          >> platform.inc
 	echo "MINGWBASE=i586-mingw32msvc-" >> platform.inc
 elif [ "$PLATFORM" = "mingw64" ]; then
 	PLATFORM="mingw"
-	echo "PLATFORM=$PLATFORM"            > platform.inc
+	echo "PLATFORM=$PLATFORM"           >> platform.inc
 	echo "MINGWBASE=x86_64-pc-mingw32-" >> platform.inc
 elif [ "$PLATFORM" = "unix-devel" ]; then
-	echo "PLATFORM=unix" > platform.inc
+	echo "PLATFORM=unix" >> platform.inc
 else
 	if [ ! -d arch/$PLATFORM ]; then
 		echo "Invalid platform selection (see arch/)."
 		exit 1
 	fi
-	echo "PLATFORM=$PLATFORM" > platform.inc
+	echo "PLATFORM=$PLATFORM" >> platform.inc
+fi
+
+if [ "$PLATFORM" = "unix" ]; then
+	echo "LIBDIR=\${PREFIX}/lib/megazeux" >> platform.inc
+else
+	echo "LIBDIR=." >> platform.inc
 fi
 
 ### SYSTEM CONFIG DIRECTORY ###################################################
@@ -220,8 +228,6 @@ echo
 ### GENERATE CONFIG.H HEADER ##################################################
 
 . ./version.inc
-
-echo "PREFIX?=$PREFIX" >> platform.inc
 
 #
 # Set the version to build with
@@ -497,8 +503,8 @@ if [ "$X11" = "true" ]; then
 	X11PATH=`which $XBIN`
 	X11DIR=`dirname $X11PATH`
 
-	echo "core_flags+=-I$X11DIR/../include" >> platform.inc
-	echo "core_ldflags+=-L$X11DIR/../lib -lX11" >> platform.inc
+	echo "editor_flags:=-I$X11DIR/../include" >> platform.inc
+	echo "editor_ldflags:=-L$X11DIR/../lib -lX11" >> platform.inc
 fi
 
 #
