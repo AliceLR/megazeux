@@ -33,7 +33,7 @@ typedef mutex_t platform_mutex;
 static inline void platform_mutex_init(platform_mutex *mutex)
 {
   // FIXME: Okay to ignore retval?
-  LWP_MutexInit(*mutex, false);
+  LWP_MutexInit(mutex, false);
 }
 
 static inline bool platform_mutex_lock(platform_mutex *mutex)
