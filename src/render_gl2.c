@@ -119,6 +119,13 @@ struct gl2_render_data
   enum ratio_type ratio;
 };
 
+static const GLubyte color_array_white[4 * 4] = {
+  255, 255, 255, 255,
+  255, 255, 255, 255,
+  255, 255, 255, 255,
+  255, 255, 255, 255
+};
+
 static bool gl2_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
@@ -362,7 +369,7 @@ static void gl2_render_graph(struct graphics_data *graphics)
   if(!graphics->screen_mode)
   {
     float tex_coord_array[8], vertex_array[8];
-    GLubyte color_array[12];
+    GLubyte color_array[4 * 4];
 
     static const float tex_coord_array_single[2 * 4] = {
       0.0f,           0.0f,
@@ -418,7 +425,7 @@ static void gl2_render_graph(struct graphics_data *graphics)
 
     gl2.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
     gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
-    gl2.glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
+    gl2.glColorPointer(4, GL_UNSIGNED_BYTE, 0, color_array_white);
 
     gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -438,7 +445,7 @@ static void gl2_render_graph(struct graphics_data *graphics)
 
     gl2.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array);
     gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array);
-    gl2.glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array);
+    gl2.glColorPointer(4, GL_UNSIGNED_BYTE, 0, color_array);
 
     for(i = 0; i < 25; i++)
     {
@@ -471,7 +478,10 @@ static void gl2_render_graph(struct graphics_data *graphics)
         vertex_array[7] = (((25 - i + 0) * 2.0f) / 25.0f) - 1.0f;
 
         for(i3 = 0; i3 < 4; i3++)
-          memcpy(&color_array[i3 * 3], pal_base, 3);
+        {
+          memcpy(&color_array[i3 * 4], pal_base, 3);
+          color_array[i3 * 4 + 3] = 255;
+        }
 
         gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -508,7 +518,7 @@ static void gl2_render_graph(struct graphics_data *graphics)
 
     gl2.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
     gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
-    gl2.glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
+    gl2.glColorPointer(4, GL_UNSIGNED_BYTE, 0, color_array_white);
 
     gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -533,11 +543,11 @@ static void gl2_render_cursor(struct graphics_data *graphics,
     (x * 8 + 8)*2.0f/640.0f-1.0f, (y * 14 + lines + offset)*-2.0f/350.0f+1.0f
   };
 
-  const GLubyte color_array[3 * 4] = {
-    pal_base[0], pal_base[1], pal_base[2],
-    pal_base[0], pal_base[1], pal_base[2],
-    pal_base[0], pal_base[1], pal_base[2],
-    pal_base[0], pal_base[1], pal_base[2]
+  const GLubyte color_array[4 * 4] = {
+    pal_base[0], pal_base[1], pal_base[2], 255,
+    pal_base[0], pal_base[1], pal_base[2], 255,
+    pal_base[0], pal_base[1], pal_base[2], 255,
+    pal_base[0], pal_base[1], pal_base[2], 255
   };
 
   gl2.glDisable(GL_TEXTURE_2D);
@@ -546,7 +556,7 @@ static void gl2_render_cursor(struct graphics_data *graphics,
   gl2.glEnableClientState(GL_COLOR_ARRAY);
 
   gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array);
-  gl2.glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array);
+  gl2.glColorPointer(4, GL_UNSIGNED_BYTE, 0, color_array);
 
   gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -573,7 +583,7 @@ static void gl2_render_mouse(struct graphics_data *graphics,
   gl2.glEnableClientState(GL_COLOR_ARRAY);
   
   gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array);
-  gl2.glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
+  gl2.glColorPointer(4, GL_UNSIGNED_BYTE, 0, color_array_white);
 
   gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -618,7 +628,7 @@ static void gl2_sync_screen(struct graphics_data *graphics)
 
     gl2.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
     gl2.glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
-    gl2.glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
+    gl2.glColorPointer(4, GL_UNSIGNED_BYTE, 0, color_array_white);
 
     gl2.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 

@@ -40,13 +40,6 @@ const float vertex_array_single[2 * 4] = {
    1.0f, -1.0f,
 };
 
-const GLubyte color_array_white[3 * 4] = {
-  255, 255, 255,
-  255, 255, 255,
-  255, 255, 255,
-  255, 255, 255,
-};
-
 bool gl_load_syms(const struct dso_syms_map *map)
 {
   int i = 0;

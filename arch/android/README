@@ -35,11 +35,13 @@ CONFIGURATION
 
 The config.sh line I've been using is:
 
-./config.sh --platform android --prefix $HOME/android --disable-utils
+./config.sh --platform android --prefix $HOME/android --disable-editor \
+            --disable-modular --disable-utils --disable-audio
 
 However, I've made sure the utils build too, so the --disable-utils is
 optional.
 
 INSTALLATION
 
-Fixme, right?
+The "make build" and "make archive" targets work for Android, but they
+generate ZIP files rather than .apk's, so you can only run MZX from SD.

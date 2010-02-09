@@ -50,7 +50,6 @@ __M_BEGIN_DECLS
 #define CONFIG_GL_FILTER_NEAREST  "nearest"
 
 extern const float vertex_array_single[2 * 4];
-extern const GLubyte color_array_white[3 * 4];
 
 bool gl_load_syms(const struct dso_syms_map *map);
 void gl_set_filter_method(const char *method,

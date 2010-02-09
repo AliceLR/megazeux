@@ -104,3 +104,12 @@ arch/android/sfwrapper.o: arch/android/sfwrapper.cpp
 clean:
 	$(if ${V},,@echo "  RM      " arch/android/sfwrapper.{o,d})
 	${RM} arch/android/sfwrapper.o arch/android/sfwrapper.d
+
+#
+# Need to nest Android binaries in a subdir
+# FIXME: Convert this to .apk and wrap it with a Java class
+#
+build := build/${SUBPLATFORM}/data/megazeux
+build: ${build}
+
+include arch/zip.inc
