@@ -26,6 +26,8 @@
 #include "intake.h"
 #include "world.h"
 
+#include <string.h>
+
 #define CVALUE_COL_OFFSET 63
 
 void debug_counters(World *mzx_world)
