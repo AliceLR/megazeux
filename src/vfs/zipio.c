@@ -169,10 +169,10 @@ const char *zipio_strerror(zipio_error_t err)
 zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
 {
   static const unsigned char ecdr_sig[] = { 'P', 'K', 0x5, 0x6 };
+  long size, start, cur_ecdr_offset = 0;
   zipio_error_t err = ZIPIO_SUCCESS;
   Uint32 zip_comment_length;
   int ecdr_sig_off;
-  long size, start;
   zip_handle_t *z;
   Sint64 d;
   int i;
@@ -208,29 +208,65 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
   }
 
   // Find End Central Directory Record (by signature)
-  ecdr_sig_off = 0;
   while(true)
   {
-    // May "fail" for unexpected reasons or simply because we got to EOF
-    d = fgetc(z->f);
-    if(d < 0)
-      break;
+    // Because we might have scanned too far back into the file, it's
+    // possible we'll encounter ECDRs that are actually nested (stored) ZIP
+    // files themselves and which do not reflect this ZIP's ECDR.
+    //
+    // So, if we locate an ECDR, keep looking for another until we
+    // reach the end of the file.
 
-    // Does the current byte look like our magic (so far?)
-    if((unsigned char)d == ecdr_sig[ecdr_sig_off])
+    ecdr_sig_off = 0;
+    while(true)
     {
-      ecdr_sig_off++;
-      if(ecdr_sig_off == sizeof(ecdr_sig))
+      // May "fail" for unexpected reasons or simply because we got to EOF
+      d = fgetc(z->f);
+      if(d < 0)
         break;
+
+      // Does the current byte look like our magic (so far?)
+      if((unsigned char)d == ecdr_sig[ecdr_sig_off])
+      {
+        ecdr_sig_off++;
+        if(ecdr_sig_off == sizeof(ecdr_sig))
+        {
+          cur_ecdr_offset = ftell(z->f);
+          if(cur_ecdr_offset < 0)
+          {
+            err = ZIPIO_READ_FAILED;
+            goto err_close;
+          }
+          break;
+        }
+      }
+
+      // We may want to restart, but if we got another 'P' we've made progress
+      else if((unsigned char)d == ecdr_sig[0])
+        ecdr_sig_off = 1;
+
+      // Otherwise, no progress has been made; discard all bytes read so far
+      else
+        ecdr_sig_off = 0;
     }
-    else
-      ecdr_sig_off = 0;
+
+    // I/O error or we reached end of ZIP
+    if(d < 0)
+    {
+      // Found at least one ECDR
+      if(cur_ecdr_offset)
+        break;
+
+      // Failed to locate End Central Directory Record
+      err = ZIPIO_NO_END_CENTRAL_DIRECTORY;
+      goto err_close;
+    }
   }
 
-  // Failed to locate End Central Directory Record
-  if(d < 0)
+  // Seek back to found location of ECDR
+  if(fseek(z->f, cur_ecdr_offset, SEEK_SET))
   {
-    err = ZIPIO_NO_END_CENTRAL_DIRECTORY;
+    err = ZIPIO_SEEK_FAILED;
     goto err_close;
   }
 
