@@ -49,6 +49,7 @@ host_type_t;
 typedef enum
 {
   HOST_SUCCESS,
+  HOST_FREAD_FAILED,
   HOST_FWRITE_FAILED,
   HOST_SEND_FAILED,
   HOST_RECV_FAILED,
@@ -61,6 +62,7 @@ typedef enum
   HOST_HTTP_INVALID_CHUNK_LENGTH,
   HOST_ZLIB_INVALID_DATA,
   HOST_ZLIB_INVALID_GZIP_HEADER,
+  HOST_ZLIB_DEFLATE_FAILED,
   HOST_ZLIB_INFLATE_FAILED,
 } host_status_t;
 
@@ -201,18 +203,30 @@ bool host_send_raw(struct host *h, const char *buffer, unsigned int len);
 int host_poll_raw(struct host *h, unsigned int timeout);
 
 /**
- * Obtain a buffer containing a file, referenced by URL, over HTTP.
+ * Stream a file from a network socket to disk.
  *
- * @param h             Host to converse in HTTP over
+ * @param h             Host to converse in HTTP with
  * @param url           HTTP URL to transfer
- * @param file          File to create and stream to
+ * @param file          File to create and stream to disk
  * @param expected_type MIME type to expect in response
  *
  * @return See \ref host_status_t.
  */
-host_status_t host_get_file(struct host *h, const char *url,
+host_status_t host_recv_file(struct host *h, const char *url,
  FILE *file, const char *expected_type);
 
+/**
+ * Stream a file from disk to a network socket.
+ *
+ * @param h           Host to converse in HTTP with
+ * @param file        File to stream to socket (must already exist)
+ * @param mime_type   MIME type of payload
+ *
+ * @return See \ref host_status_t.
+ */
+host_status_t host_send_file(struct host *h, FILE *file, const char *mime_type);
+
+// FIXME: Document?
 bool host_handle_http_request(struct host *h);
 
 __M_END_DECLS

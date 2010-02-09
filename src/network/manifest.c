@@ -219,7 +219,7 @@ static struct manifest_entry *manifest_get_remote(struct host *h,
     return NULL;
   }
 
-  ret = host_get_file(h, url, f, "text/plain");
+  ret = host_recv_file(h, url, f, "text/plain");
   if(ret != HOST_SUCCESS)
   {
     warning("Processing manifest.txt failed (error %d)\n", ret);
@@ -437,7 +437,7 @@ bool manifest_entry_download_replace(struct host *h, const char *basedir,
     e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
     e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7]);
 
-  ret = host_get_file(h, buf, f, "application/octet-stream");
+  ret = host_recv_file(h, buf, f, "application/octet-stream");
   if(ret != HOST_SUCCESS)
   {
     warning("File '%s' could not be downloaded (error %d)\n", e->name, ret);

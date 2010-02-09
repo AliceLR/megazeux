@@ -23,6 +23,8 @@
 
 #include "SDL.h"
 
+#include <assert.h>
+
 #define INBOUND_PORT 5656
 
 int main(int argc, char *argv[])
@@ -62,7 +64,7 @@ int main(int argc, char *argv[])
     if(c)
     {
       if(!host_handle_http_request(c))
-        warning("Received garbage from client\n");
+        warning("Failure handling HTTP request\n");
       host_destroy(c);
     }
     SDL_Delay(10);
