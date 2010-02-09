@@ -22,10 +22,6 @@
 
 #include <string.h>
 
-editor_syms_t editor_syms;
-
-#ifdef CONFIG_EDITOR
-
 // for 'macros' below
 #include "editor/robo_ed.h"
 
@@ -119,5 +115,3 @@ void editor_free_hook(World *mzx_world)
   if(editor_syms.handle)
     editor_syms.free_extended_macros(mzx_world);
 }
-
-#endif // CONFIG_EDITOR

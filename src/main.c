@@ -53,6 +53,8 @@
 #include "counter.h"
 #include "editor_syms.h"
 
+editor_syms_t editor_syms;
+
 #ifdef CONFIG_NDS
 
 static void nds_on_vblank(void)
