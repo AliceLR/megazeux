@@ -13,7 +13,3 @@ VORBIS_LDFLAGS = ${PREFIX}/lib/libvorbisfile.a \
 # need PNG to be statically linked (inc. zlib)
 LIBPNG_CFLAGS = `libpng-config --cflags`
 LIBPNG_LDFLAGS = `libpng-config --static --libs`
-
-# X11 is in a bizarre place on OBSD
-mzx_flags += -I/usr/X11R6/include
-mzx_ldflags += -L/usr/X11R6/lib
