@@ -1037,7 +1037,8 @@ static int load_wav_file(const char *file, wav_info *spec,
          free(copy_buf);
          goto exit_close;
       }
-      goto exit_close_success;
+      ret = 1;
+      goto exit_close;
     }
 #endif // CONFIG_SDL
     goto exit_close;
@@ -1082,7 +1083,6 @@ static int load_wav_file(const char *file, wav_info *spec,
     spec->format = SAMPLE_S16LSB;
   spec->channels = channels;
 
-exit_close_success:
   ret = 1;
 exit_close:
   fclose(fp);
