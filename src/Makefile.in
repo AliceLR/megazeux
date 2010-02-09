@@ -214,7 +214,7 @@ mzxrun_objs := ${core_obj}/main.o ${core_obj}/edit_stubs.o
 -include ${mzxrun_objs:.o=.d}
 
 ifeq (${EMBED_ICONS},1)
-mzx_objs += ${icons}
+mzxrun_objs += ${icons}
 endif
 
 ${mzxrun}: ${core_target}.debug ${mzxrun_objs}
