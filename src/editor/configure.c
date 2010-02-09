@@ -163,7 +163,7 @@ static void config_macro(editor_config_info *conf, char *name, char *value,
   else
   {
     if(extended_data)
-      editor_syms.add_ext_macro(conf, macro_name, extended_data, value);
+      add_ext_macro(conf, macro_name, extended_data, value);
   }
 }
 

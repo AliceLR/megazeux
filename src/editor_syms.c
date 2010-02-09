@@ -41,7 +41,6 @@ static const struct
 editor_sym_map[] =
 {
   { "edit_world", (void **)&editor_syms.edit_world },
-  { "add_ext_macro", (void **)&editor_syms.add_ext_macro },
   { "init_macros", (void **)&editor_syms.init_macros },
   { "free_extended_macros", (void **)&editor_syms.free_extended_macros },
   { NULL, NULL }
@@ -100,7 +99,6 @@ static int editor_init_syms(void)
 {
   editor_syms.handle = (void *)1;
   editor_syms.edit_world = edit_world;
-  editor_syms.add_ext_macro = add_ext_macro;
   editor_syms.init_macros = init_macros;
   editor_syms.free_extended_macros = free_extended_macros;
   return true;
