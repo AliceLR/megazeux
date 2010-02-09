@@ -7,7 +7,7 @@
 editor_src = src/editor
 editor_obj = src/editor/.build
 
-editor_flags := ${editor_flags} ${core_flags}
+editor_flags := ${core_flags}
 
 ifeq (${PLATFORM},mingw)
 editor_spec := -DEDITOR_LIBSPEC="__declspec(dllexport)"
@@ -15,6 +15,11 @@ endif
 
 ifeq (${PLATFORM},darwin)
 editor_ldflags += -framework Cocoa
+endif
+
+ifneq (${X11DIR},)
+editor_flags   += -I${X11DIR}/../include
+editor_ldflags += -L${X11DIR}/../${RAWLIBDIR} -lX11 ${SDL_LDFLAGS}
 endif
 
 ${editor_obj}/%.o: ${editor_src}/%.c

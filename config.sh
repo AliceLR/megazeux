@@ -255,6 +255,10 @@ else
 	echo "PLATFORM=$PLATFORM"            >> platform.inc
 fi
 
+if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
+	echo "RAWLIBDIR=${LIBDIR}" >> platform.inc
+fi
+
 if [ "$PLATFORM" = "unix" ]; then
 	echo "LIBDIR=\${PREFIX}/${LIBDIR}/megazeux" >> platform.inc
 else
@@ -572,8 +576,8 @@ if [ "$X11" = "true" ]; then
 	X11PATH=`which $XBIN`
 	X11DIR=`dirname $X11PATH`
 
-	echo "editor_flags:=-I${X11DIR}/../include" >> platform.inc
-	echo "editor_ldflags:=-L${X11DIR}/../${LIBDIR} -lX11" >> platform.inc
+	# pass this along to the build system
+	echo "X11DIR=${X11DIR}" >> platform.inc
 fi
 
 #
