@@ -726,6 +726,11 @@ static int execute_named_macro(robot_state *rstate, char *macro_name)
     }
   }
 
+  // Wipe any existing buffered content for this line
+  rstate->command_buffer_space[0] = '\0';
+  update_current_line(rstate);
+
+  // And replace it with the macro contents
   output_macro(rstate, macro_src);
   return 0;
 }

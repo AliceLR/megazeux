@@ -52,6 +52,8 @@ USERS
 + Remove some bogus handling of lines containing "only" ';', ',' or ' '.
 + Honor user's robot character selection if they are holding shift when
   pressing return or space (would previously always return char 247).
++ Backspacing a line and then expanding a macro no longer restores the
+  original line contents immediately after the expansion.
 
 DEVELOPERS
 
