@@ -1487,7 +1487,6 @@ static int update(struct world *mzx_world, int game, int *fadein)
     {
        mzx_world->current_board_id = target_board;
        set_current_board_ext(mzx_world, mzx_world->board_list[target_board]);
-       volume_module(mzx_world->current_board->volume);
     }
 
     src_board = mzx_world->current_board;
