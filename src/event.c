@@ -53,6 +53,10 @@ static void bump_status(void)
   input.store_offset = (input.store_offset + 1) % num_buffered_events;
   input.load_offset = (input.store_offset + 1) % num_buffered_events;
 
+  // No event buffering; nothing to do
+  if(input.store_offset == input.load_offset)
+    return;
+
   // Some events can "echo" from the previous buffer
   memcpy(store_status(), &input.buffer[last_store_offset],
          sizeof(struct buffered_status));
