@@ -738,7 +738,7 @@ static enum status parse_robot(struct stream *s)
 
 static enum status parse_board_direct(struct stream *s, int version)
 {
-  int i, num_robots, skip_rle_blocks = 6;
+  int i, num_robots, skip_rle_blocks = 6, skip_bytes;
   unsigned short board_mod_len;
   enum status ret = SUCCESS;
   char tmp[MAX_PATH];
@@ -804,8 +804,13 @@ static enum status parse_board_direct(struct stream *s, int version)
       return ret;
   }
 
+  if(version < 0x0253)
+    skip_bytes = 208;
+  else
+    skip_bytes = 25;
+
   // skip to the robot count
-  if(sseek(s, 220 - 12, SEEK_CUR) != 0)
+  if(sseek(s, skip_bytes, SEEK_CUR) != 0)
     return FSEEK_FAILED;
 
   // walk the robot list, scan the robotic

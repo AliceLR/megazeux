@@ -80,8 +80,28 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
 
   char *test_buffer;
 
-  board_mode = fgetc(fp);
+  // Initialize some fields that may no longer be loaded
+  // from the board file itself..
 
+  cur_board->last_key = '?';
+  cur_board->num_input = 0;
+  cur_board->input_size = 0;
+  cur_board->input_string[0] = 0;
+  cur_board->player_last_dir = 0x10;
+  cur_board->bottom_mesg[0] = 0;
+  cur_board->b_mesg_timer = 0;
+  cur_board->lazwall_start = 7;
+  cur_board->b_mesg_row = 24;
+  cur_board->b_mesg_col = -1;
+  cur_board->scroll_x = 0;
+  cur_board->scroll_y = 0;
+  cur_board->locked_x = -1;
+  cur_board->locked_y = -1;
+  cur_board->volume = 255;
+  cur_board->volume_inc = 0;
+  cur_board->volume_target = 255;
+
+  board_mode = fgetc(fp);
   overlay_mode = fgetc(fp);
 
   if(!overlay_mode)
@@ -175,6 +195,7 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
   cur_board->forest_becomes = fgetc(fp);
   cur_board->collect_bombs = fgetc(fp);
   cur_board->fire_burns = fgetc(fp);
+
   for(i = 0; i < 4; i++)
   {
     cur_board->board_dir[i] = fgetc(fp);
@@ -182,56 +203,74 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
 
   cur_board->restart_if_zapped = fgetc(fp);
   cur_board->time_limit = fgetw(fp);
-  cur_board->last_key = fgetc(fp);
-  cur_board->num_input = fgetw(fp);
-  cur_board->input_size = fgetc(fp);
 
   if(version < 0x0253)
   {
+    cur_board->last_key = fgetc(fp);
+    cur_board->num_input = fgetw(fp);
+    cur_board->input_size = fgetc(fp);
+
     fread(cur_board->input_string, LEGACY_INPUT_STRING_MAX + 1, 1, fp);
     cur_board->input_string[LEGACY_INPUT_STRING_MAX] = 0;
+
+    cur_board->player_last_dir = fgetc(fp);
+
+    fread(cur_board->bottom_mesg, LEGACY_BOTTOM_MESG_MAX + 1, 1, fp);
+    cur_board->bottom_mesg[LEGACY_BOTTOM_MESG_MAX] = 0;
+
+    cur_board->b_mesg_timer = fgetc(fp);
+    cur_board->lazwall_start = fgetc(fp);
+    cur_board->b_mesg_row = fgetc(fp);
+    cur_board->b_mesg_col = (signed char)fgetc(fp);
+    cur_board->scroll_x = (signed short)fgetw(fp);
+    cur_board->scroll_y = (signed short)fgetw(fp);
+    cur_board->locked_x = (signed short)fgetw(fp);
+    cur_board->locked_y = (signed short)fgetw(fp);
   }
-  else
+  else if(savegame)
   {
-    size_t len = fgetw(fp);
+    size_t len;
+
+    cur_board->last_key = fgetc(fp);
+    cur_board->num_input = fgetw(fp);
+    cur_board->input_size = fgetw(fp);
+
+    len = fgetw(fp);
     if(len >= ROBOT_MAX_TR)
       len = ROBOT_MAX_TR - 1;
 
     fread(cur_board->input_string, len, 1, fp);
     cur_board->input_string[len] = 0;
-  }
 
-  cur_board->player_last_dir = fgetc(fp);
+    cur_board->player_last_dir = fgetc(fp);
 
-  if(version < 0x0253)
-  {
-    fread(cur_board->bottom_mesg, LEGACY_BOTTOM_MESG_MAX + 1, 1, fp);
-    cur_board->bottom_mesg[LEGACY_BOTTOM_MESG_MAX] = 0;
-  }
-  else
-  {
-    size_t len = fgetw(fp);
+    len = fgetw(fp);
     if(len >= ROBOT_MAX_TR)
       len = ROBOT_MAX_TR - 1;
 
     fread(cur_board->bottom_mesg, len, 1, fp);
     cur_board->bottom_mesg[len] = 0;
+
+    cur_board->b_mesg_timer = fgetc(fp);
+    cur_board->lazwall_start = fgetc(fp);
+    cur_board->b_mesg_row = fgetc(fp);
+    cur_board->b_mesg_col = (signed char)fgetc(fp);
+    cur_board->scroll_x = (signed short)fgetw(fp);
+    cur_board->scroll_y = (signed short)fgetw(fp);
+    cur_board->locked_x = (signed short)fgetw(fp);
+    cur_board->locked_y = (signed short)fgetw(fp);
   }
 
-  cur_board->b_mesg_timer = fgetc(fp);
-  cur_board->lazwall_start = fgetc(fp);
-  cur_board->b_mesg_row = fgetc(fp);
-  cur_board->b_mesg_col = (signed char)fgetc(fp);
-  cur_board->scroll_x = (signed short)fgetw(fp);
-  cur_board->scroll_y = (signed short)fgetw(fp);
-  cur_board->locked_x = (signed short)fgetw(fp);
-  cur_board->locked_y = (signed short)fgetw(fp);
   cur_board->player_ns_locked = fgetc(fp);
   cur_board->player_ew_locked = fgetc(fp);
   cur_board->player_attack_locked = fgetc(fp);
-  cur_board->volume = fgetc(fp);
-  cur_board->volume_inc = fgetc(fp);
-  cur_board->volume_target = fgetc(fp);
+
+  if(version < 0x0253 || savegame)
+  {
+    cur_board->volume = fgetc(fp);
+    cur_board->volume_inc = fgetc(fp);
+    cur_board->volume_target = fgetc(fp);
+  }
 
   // Load robots
   num_robots = fgetc(fp);
@@ -324,43 +363,27 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
   cur_board->num_sensors_allocated = num_sensors;
 }
 
-// The file given should point to a name/location combo. This will
-// restore the file position to after the name/location.
-
-static void load_board(struct board *cur_board, FILE *fp, int savegame,
- int version)
-{
-  int board_size = fgetd(fp);
-
-  if(board_size)
-  {
-    int board_location, last_location;
-
-    board_location = fgetd(fp);
-    last_location = ftell(fp);
-
-    fseek(fp, board_location, SEEK_SET);
-    load_board_direct(cur_board, fp, savegame, version);
-    fseek(fp, last_location, SEEK_SET);
-  }
-  else
-  {
-    cur_board->board_width = 0;
-    // And skip board location
-    fseek(fp, 4, SEEK_CUR);
-  }
-}
-
 struct board *load_board_allocate(FILE *fp, int savegame, int version)
 {
   struct board *cur_board = cmalloc(sizeof(struct board));
-  load_board(cur_board, fp, savegame, version);
+  int board_size, board_location, last_location;
 
-  if(!cur_board->board_width)
+  board_size = fgetd(fp);
+
+  // Skip deleted boards
+  if(!board_size)
   {
+    fseek(fp, 4, SEEK_CUR);
     free(cur_board);
     return NULL;
   }
+
+  board_location = fgetd(fp);
+  last_location = ftell(fp);
+
+  fseek(fp, board_location, SEEK_SET);
+  load_board_direct(cur_board, fp, savegame, version);
+  fseek(fp, last_location, SEEK_SET);
 
   return cur_board;
 }
@@ -469,42 +492,50 @@ int save_board(struct board *cur_board, FILE *fp, int savegame)
   {
     fputc(cur_board->board_dir[i], fp);
   }
+
   fputc(cur_board->restart_if_zapped, fp);
   fputw(cur_board->time_limit, fp);
-  fputc(cur_board->last_key, fp);
-  fputw(cur_board->num_input, fp);
-  fputc(cur_board->input_size, fp);
 
+  if(savegame)
   {
-    size_t len = strlen(cur_board->input_string);
+    size_t len;
+
+    fputc(cur_board->last_key, fp);
+    fputw(cur_board->num_input, fp);
+    fputw(cur_board->input_size, fp);
+
+    len = strlen(cur_board->input_string);
     fputw(len, fp);
     if(len)
       fwrite(cur_board->input_string, len, 1, fp);
-  }
 
-  fputc(cur_board->player_last_dir, fp);
+    fputc(cur_board->player_last_dir, fp);
 
-  {
-    size_t len = strlen(cur_board->bottom_mesg);
+    len = strlen(cur_board->bottom_mesg);
     fputw(len, fp);
     if(len)
       fwrite(cur_board->bottom_mesg, len, 1, fp);
+
+    fputc(cur_board->b_mesg_timer, fp);
+    fputc(cur_board->lazwall_start, fp);
+    fputc(cur_board->b_mesg_row, fp);
+    fputc(cur_board->b_mesg_col, fp);
+    fputw(cur_board->scroll_x, fp);
+    fputw(cur_board->scroll_y, fp);
+    fputw(cur_board->locked_x, fp);
+    fputw(cur_board->locked_y, fp);
   }
 
-  fputc(cur_board->b_mesg_timer, fp);
-  fputc(cur_board->lazwall_start, fp);
-  fputc(cur_board->b_mesg_row, fp);
-  fputc(cur_board->b_mesg_col, fp);
-  fputw(cur_board->scroll_x, fp);
-  fputw(cur_board->scroll_y, fp);
-  fputw(cur_board->locked_x, fp);
-  fputw(cur_board->locked_y, fp);
   fputc(cur_board->player_ns_locked, fp);
   fputc(cur_board->player_ew_locked, fp);
   fputc(cur_board->player_attack_locked, fp);
-  fputc(cur_board->volume, fp);
-  fputc(cur_board->volume_inc, fp);
-  fputc(cur_board->volume_target, fp);
+
+  if(savegame)
+  {
+    fputc(cur_board->volume, fp);
+    fputc(cur_board->volume_inc, fp);
+    fputc(cur_board->volume_target, fp);
+  }
 
   // Save robots
   num_robots = cur_board->num_robots;
