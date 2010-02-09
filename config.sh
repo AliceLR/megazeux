@@ -28,6 +28,7 @@ usage() {
 	echo
 	echo "  --as-needed-hack     Pass --as-needed through to GNU ld."
 	echo "  --enable-release     Optimize and remove debugging code."
+	echo "  --enable-verbose     Build system is always verbose (V=1)."
 	echo "  --optimize-size      Perform size optimizations (-Os)."
 	echo "  --disable-datestamp  Disable adding date to version."
 	echo "  --disable-editor     Disable the built-in editor."
@@ -87,6 +88,7 @@ PTHREAD="true"
 ICON="true"
 MODULAR="true"
 UPDATER="true"
+VERBOSE="false"
 
 #
 # User may override above settings
@@ -175,6 +177,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-updater" ] && UPDATER="false"
 	[ "$1" = "--enable-updater" ]  && UPDATER="true"
+
+	[ "$1" = "--disable-verbose" ] && VERBOSE="false"
+	[ "$1" = "--enable-verbose" ]  && VERBOSE="true"
 
 	shift
 done
@@ -732,6 +737,14 @@ if [ "$UPDATER" = "true" ]; then
 	echo "BUILD_UPDATER=1" >> platform.inc
 else
 	echo "Built-in updater disabled."
+fi
+
+#
+# Some users may prefer the build system to ALWAYS be verbose
+#
+if [ "$VERBOSE" = "true" ]; then
+	echo "Verbose build system (always)."
+	echo "export V=1" >> platform.inc
 fi
 
 echo
