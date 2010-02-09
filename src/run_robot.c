@@ -2583,8 +2583,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             // Block
             shoot(mzx_world, x, y, dir_to_int(direction),
              cur_robot->bullet_type);
+
             if(_bl[direction])
               _bl[direction] = 3;
+
+            // Move on to the next command; the robot isn't
+            // sent anywhere, so otherwise it'll just keep
+            // re-doing the shoot if we end the cycle..
+            cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
             goto breaker;
           }
         }
