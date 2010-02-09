@@ -60,7 +60,7 @@ extern "C" bool SurfaceFlingerInitialize(int target_width, int target_height,
 
   if(mSurfaceControl == NULL)
   {
-	uint32_t flags = 0;
+    uint32_t flags = 0;
     DisplayInfo dinfo;
     status_t status;
     int pixelFormat;
@@ -128,7 +128,7 @@ extern "C" void SurfaceFlingerDeinitialize(void)
   if(mSession != NULL)
   {
     mSession = NULL;
-	IPCThreadState::self()->stopProcess();
+    IPCThreadState::self()->stopProcess();
   }
 }
 

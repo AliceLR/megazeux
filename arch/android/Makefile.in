@@ -30,7 +30,7 @@ DSOLDFLAGS = -shared -Wl,-T,${PREFIX}/build/core/armelf.xsc
 
 else ifeq (${ARCH},x86)
 
-TOOLCHAIN		?= ${PREFIX}/prebuilt/linux-x86/toolchain/i686-unknown-linux-gnu-4.2.1
+TOOLCHAIN	?= ${PREFIX}/prebuilt/linux-x86/toolchain/i686-unknown-linux-gnu-4.2.1
 CROSS_COMPILE	?= ${TOOLCHAIN}/bin/i686-unknown-linux-gnu-
 
 ARCH_CFLAGS = -march=i686 -fPIC \
