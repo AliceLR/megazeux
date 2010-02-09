@@ -436,7 +436,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
       case IKEY_SPACE:
       case IKEY_RETURN:
       {
-        if(get_shift_status(keycode_internal))
+        if(get_shift_status(keycode_internal) && allow_multichar)
         {
           int size = width * height;
 
