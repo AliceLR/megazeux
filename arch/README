@@ -16,7 +16,7 @@ system.
 Additionally, all of these directories must have a Makefile.in which the build
 system will automatically include. This file should initialize any variables
 that can be tweaked, for example the location of libraries or compiler flags.
-The existing Makefile.in files should be a reasonable guide of this
+The existing Makefile.in files should be a reasonable guide to this
 functionality.
 
 ADDING A PLATFORM TO MEGAZEUX
