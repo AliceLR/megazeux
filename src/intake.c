@@ -66,14 +66,11 @@ char last_char = 0;
 // of the line is supported. The current character (1 on) is shown at
 // x = 32, y = 0, in color 79, min. 3 chars.
 
-// Also, if robo_intk is set, then ANY line consisting of ONLY semicolons,
-// commas, and spaces is returned as a blank line (0 length)
-
 int intake(World *mzx_world, char *string, int max_len,
  int x, int y, char color, int exit_type, int filter_type,
  int *return_x_pos, char robo_intk, char *macro)
 {
-  int currx, key, curr_len, i;
+  int currx, key, curr_len;
   int macro_position = -1;
   int done = 0, place = 0;
   char cur_char = 0;
@@ -709,26 +706,5 @@ int intake(World *mzx_world, char *string, int max_len,
   if(return_x_pos)
     *return_x_pos = currx;
 
-  // Return ret. If robo_intk, verify that the string is valid
-  if(robo_intk)
-  {
-    curr_len = strlen(string);
-    if(curr_len)
-    {
-      for(i = 0; i < curr_len; i++)
-      {
-        if((string[i] != ';') && (string[i] != ',') &&
-         (string[i] != ' '))
-          break;
-      }
-
-      if(i >= curr_len)
-      {
-        string[0] = 0; // Become an empty string
-        if(return_x_pos)
-          *return_x_pos = 0;
-      }
-    }
-  }
   return key;
 }
