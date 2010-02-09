@@ -14,16 +14,16 @@ include contrib/unzip/src/Makefile.in
 
 utils_base = src/utils
 
-checkres = ${utils_base}/checkres${BINEXT}
-checkres_objs := ${utils_base}/checkres.${o} ${unzip_objs}
-checkres_ldflags := src/fsafeopen.${o} src/util.${o}
-checkres_ldflags += -L${PREFIX}/lib -lz
+checkres := ${utils_base}/checkres${BINEXT}
+checkres_objs := src/fsafeopen.${o} src/util.${o}
+checkres_objs += ${utils_base}/checkres.${o} ${unzip_objs}
+checkres_ldflags := -L${PREFIX}/lib -lz
 
-downver = ${utils_base}/downver${BINEXT}
-downver_objs = ${utils_base}/downver.${o}
+downver := ${utils_base}/downver${BINEXT}
+downver_objs := ${utils_base}/downver.${o}
 
-txt2hlp = ${utils_base}/txt2hlp${BINEXT}
-txt2hlp_objs = ${utils_base}/txt2hlp.${o}
+txt2hlp := ${utils_base}/txt2hlp${BINEXT}
+txt2hlp_objs := ${utils_base}/txt2hlp.${o}
 
 ${utils_base}/%.${o}: ${utils_base}/%.c
 ifeq (${V},1)
