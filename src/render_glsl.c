@@ -642,11 +642,11 @@ static void glsl_render_cursor(struct graphics_data *graphics,
     (x * 8 + 8)*2.0f/640.0f-1.0f, (y * 14 + lines + offset)*-2.0f/350.0f+1.0f
   };
 
-  const float color_array[3 * 4] = {
-    pal_base[0] / 255.0f, pal_base[1] / 255.0f, pal_base[2] / 255.0f,
-    pal_base[0] / 255.0f, pal_base[1] / 255.0f, pal_base[2] / 255.0f,
-    pal_base[0] / 255.0f, pal_base[1] / 255.0f, pal_base[2] / 255.0f,
-    pal_base[0] / 255.0f, pal_base[1] / 255.0f, pal_base[2] / 255.0f
+  const GLubyte color_array[3 * 4] = {
+    pal_base[0], pal_base[1], pal_base[2],
+    pal_base[0], pal_base[1], pal_base[2],
+    pal_base[0], pal_base[1], pal_base[2],
+    pal_base[0], pal_base[1], pal_base[2],
   };
 
   gl->glDisable(GL_TEXTURE_2D);
@@ -658,7 +658,7 @@ static void glsl_render_cursor(struct graphics_data *graphics,
 
   gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
    vertex_array);
-  gl->glVertexAttribPointer(ATTRIB_COLOR, 3, GL_FLOAT, GL_FALSE, 0,
+  gl->glVertexAttribPointer(ATTRIB_COLOR, 3, GL_UNSIGNED_BYTE, GL_FALSE, 0,
    color_array);
 
   gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
