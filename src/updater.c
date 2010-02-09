@@ -157,8 +157,7 @@ static void recv_cb(long offset)
 
   if(final_size > 0 && offset > final_size)
   {
-    warn("Transferred more than expected uncompressed size.\n");
-    warn("It is probable that corruption occurred.\n");
+    error("Transferred more than expected uncompressed size.", 1, 8, 0);
     cancel_update = true;
     return;
   }
@@ -238,7 +237,7 @@ static bool swivel_current_dir(bool have_video)
     if(have_video)
       error("Failed to change into install directory.", 1, 8, 0);
     else
-      warn("Failed to change into install directory.");
+      warn("Failed to change into install directory.\n");
     goto err_free_base_path;
   }
 
@@ -255,7 +254,7 @@ static bool swivel_current_dir_back(bool have_video)
     if(have_video)
       error("Failed to change back to user directory.", 1, 8, 0);
     else
-      warn("Failed to change back to user directory.");
+      warn("Failed to change back to user directory.\n");
     return false;
   }
 
