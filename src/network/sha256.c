@@ -36,7 +36,7 @@
 #define sig0(x)    (S(x, 7) ^ S(x,18) ^ R(x, 3))
 #define sig1(x)    (S(x,17) ^ S(x,19) ^ R(x,10))
 
-static uint32_t K[] =
+static const uint32_t K[] =
 {
   0x428a2f98, 0x71374491, 0xb5c0fbcf, 0xe9b5dba5,
   0x3956c25b, 0x59f111f1, 0x923f82a4, 0xab1c5ed5,
@@ -56,7 +56,7 @@ static uint32_t K[] =
   0x90befffa, 0xa4506ceb, 0xbef9a3f7, 0xc67178f2
 };
 
-static uint32_t H[] = {
+static const uint32_t H_initial[] = {
   0x6a09e667, 0xbb67ae85, 0x3c6ef372, 0xa54ff53a,
   0x510e527f, 0x9b05688c, 0x1f83d9ab, 0x5be0cd19
 };
@@ -134,7 +134,7 @@ static void SHA256_transform(SHA256_ctx *ctx)
 
 void SHA256_init(SHA256_ctx *ctx)
 {
-  memcpy(ctx->H, H, 8 * sizeof(uint32_t));
+  memcpy(ctx->H, H_initial, 8 * sizeof(uint32_t));
   ctx->lbits = 0;
   ctx->hbits = 0;
   ctx->mlen = 0;
