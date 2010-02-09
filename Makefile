@@ -37,7 +37,11 @@ else
 VORBIS_LDFLAGS ?= -L${PREFIX}/lib -lvorbisidec
 endif
 
-MIKMOD_LDFLAGS ?= -L${PREFIX} -lmikmod
+MIKMOD_CFLAGS  ?= -I${PREFIX}/include
+MIKMOD_LDFLAGS ?= -L${PREFIX}/lib -lmikmod
+
+ZLIB_CFLAGS  ?= -I${PREFIX}/include
+ZLIB_LDFLAGS ?= -L${PREFIX}/lib -lz
 
 ifeq (${LIBPNG},1)
 LIBPNG_CFLAGS  ?= `libpng12-config --cflags`

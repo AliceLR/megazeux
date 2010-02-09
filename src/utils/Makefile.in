@@ -17,7 +17,7 @@ utils_obj = src/utils/.build
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o ${core_obj}/fsafeopen.o
 checkres_objs += ${core_obj}/util.o ${unzip_objs}
-checkres_ldflags := -L${PREFIX}/lib -lz
+checkres_ldflags := ${ZLIB_LDFLAGS}
 
 downver := ${utils_src}/downver${BINEXT}
 downver_objs := ${utils_obj}/downver.o
@@ -30,8 +30,7 @@ txt2hlp_objs := ${utils_obj}/txt2hlp.o
 
 ${utils_obj}/%.o: ${utils_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${CFLAGS} -I${core_src} -I${unzip_src} \
-	  -I${PREFIX}/include -c $< -o $@
+	${CC} -MD ${CFLAGS} -I${core_src} -I${unzip_src} ${ZLIB_CFLAGS} -c $< -o $@
 
 -include $(checkres_objs:.o=.d)
 -include $(downver_objs:.o=.d)
@@ -57,7 +56,8 @@ ${txt2hlp}: ${txt2hlp_objs}
 utils: $(filter-out $(wildcard ${utils_obj}), ${utils_obj})
 
 utils: ${checkres} ${downver} ${hlp2txt} ${txt2hlp}
-utils.debug: ${checkres}.debug ${downver}.debug ${hlp2txt}.debug ${txt2hlp}.debug
+utils.debug: ${checkres}.debug ${downver}.debug
+utils.debug: ${hlp2txt}.debug ${txt2hlp}.debug
 
 utils_clean: unzip_clean
 	$(if ${V},,@echo "  RM      " ${utils_obj})

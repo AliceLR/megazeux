@@ -7,8 +7,8 @@
 network_src = src/network
 network_obj = src/network/.build
 
-network_flags   := ${core_cflags} ${core_flags}
-network_ldflags := -L${PREFIX}/lib -lz
+network_flags   := ${ZLIB_CFLAGS} ${core_cflags} ${core_flags}
+network_ldflags := ${ZLIB_LDFLAGS}
 
 ifeq (${PLATFORM},mingw)
 network_flags   += -DNETWORK_LIBSPEC="__declspec(dllexport)" ${SDL_CFLAGS}

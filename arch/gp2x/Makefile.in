@@ -16,4 +16,3 @@ BINEXT = .gpe
 SDL_LDFLAGS    = -L${PREFIX}/lib/static -lSDL -lSDLmain -lpthread -lm -ldl
 VORBIS_LDFLAGS = -L${PREFIX}/lib/static -lvorbisidec
 LIBPNG_LDFLAGS = -L${PREFIX}/lib/static -lpng12 -lz -lm
-MIKMOD_LDFLAGS = ${PREFIX}/lib/libmikmod.a
