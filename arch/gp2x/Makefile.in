@@ -2,9 +2,11 @@
 # gp2x makefile generics
 #
 
-CC     = arm-gp2x-linux-gcc
-CXX    = arm-gp2x-linux-g++
-STRIP  = arm-gp2x-linux-strip --strip-unneeded
+CC      = arm-gp2x-linux-gcc
+CXX     = arm-gp2x-linux-g++
+STRIP   = arm-gp2x-linux-strip --strip-unneeded
+OBJCOPY = arm-gp2x-linux-objcopy
+
 BINEXT = .gpe
 
 #

@@ -38,6 +38,27 @@ else
 	@${CXX} -MD ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
 endif
 
+%.debug: %${BINEXT}
+ifeq (${V},1)
+	${OBJCOPY} --only-keep-debug $< $@
+else
+	@echo "  OBJCOPY " --only-keep-debug $< $@
+	@${OBJCOPY} --only-keep-debug $< $@
+endif
+ifeq (${V},1)
+	${STRIP} $<
+else
+	@echo "  STRIP   " $<
+	@${STRIP} $<
+endif
+ifeq (${V},1)
+	${OBJCOPY} --add-gnu-debuglink=$@ $<
+else
+	@echo "  OBJCOPY " --add-gnu-debuglink $@ $<
+	@${OBJCOPY} --add-gnu-debuglink=$@ $<
+endif
+
+
 #
 # Lists mandatory C language sources (mangled to object names) required
 # to build the main binary. Please keep this sorted alphabetically.
@@ -239,16 +260,10 @@ else
 	@${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} \
 	         -o ${mzx} ${LDFLAGS} ${mzx_ldflags}
 endif
-ifneq (${DEBUG},1)
-ifeq (${V},1)
-	${STRIP} ${mzx}
-else
-	@echo "  STRIP   " ${mzx}
-	@${STRIP} ${mzx}
-endif
-endif
+
+${mzxdbg}: ${mzx}
 
 ${mzx}_clean: gdm2s3m_clean ${icons}_clean libmodplug_clean
 	@echo "  CLEAN   " ${mzx_base}
-	@rm -f ${mzx} src/c.o ${mzx_cobjs} ${mzx_cobjs:.o=.d}
+	@rm -f ${mzx} ${mzxdbg} src/c.o ${mzx_cobjs} ${mzx_cobjs:.o=.d}
 	@rm -f ${mzx_cxxobjs} ${mzx_cxxobjs:.o=.d}

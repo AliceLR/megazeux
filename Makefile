@@ -15,18 +15,10 @@ all: mzx utils
 
 include arch/${PLATFORM}/Makefile.in
 
-CC  ?= gcc
-CXX ?= g++
-AR  ?= ar
-
-ifeq (${DEBUG},1)
-#
-# Force debug builds to disable the optimizer
-#
-OPTIMIZE_CFLAGS = -O0
-else
-OPTIMIZE_CFLAGS ?= -O2
-endif
+CC      ?= gcc
+CXX     ?= g++
+AR      ?= ar
+OBJCOPY ?= objcopy
 
 SDL_CFLAGS  ?= `sdl-config --cflags`
 SDL_LDFLAGS ?= `sdl-config --libs`
@@ -45,15 +37,28 @@ LIBPNG_CFLAGS ?= `libpng12-config --cflags`
 LIBPNG_LDFLAGS ?= `libpng12-config --libs`
 endif
 
+OPTIMIZE_CFLAGS ?= -O2
+
 ifeq (${DEBUG},1)
-CFLAGS    = ${OPTIMIZE_CFLAGS} -g -Wall -std=gnu99 -DDEBUG ${ARCH_CFLAGS}
-CXXFLAGS  = ${OPTIMIZE_CFLAGS} -g -Wall -DDEBUG ${ARCH_CXXFLAGS}
-o         = dbg.o
+#
+# Disable the optimizer for "true" debug builds
+#
+CFLAGS   = -O0 -DDEBUG
+CXXFLAGS = -O0 -DDEBUG
 else
-CFLAGS   += ${OPTIMIZE_CFLAGS} -Wall -std=gnu99 -DNDEBUG ${ARCH_CFLAGS}
-CXXFLAGS += ${OPTIMIZE_CFLAGS} -Wall -DNDEBUG ${ARCH_CXXFLAGS}
-o         = o
+#
+# Optimized builds have assert() compiled out
+#
+CFLAGS   = ${OPTIMIZE_CFLAGS} -DNDEBUG
+CXXFLAGS = ${OPTIMIZE_CFLAGS} -DNDEBUG
 endif
+
+#
+# Always generate debug information; this may end up being stripped
+# stripped (on embedded platforms) or objcopy'ed out.
+#
+CFLAGS   += -g -Wall -std=gnu99 ${ARCH_CFLAGS}
+CXXFLAGS += -g -Wall ${ARCH_CXXFLAGS}
 
 #
 # The SUPPRESS_BUILD hack is required to allow the placebo "dist"
@@ -62,13 +67,11 @@ endif
 #
 ifneq (${SUPPRESS_BUILD},1)
 
-ifneq (${DEBUG},1)
+o = o
 mzx = ${TARGET}${BINEXT}
-else
-mzx = ${TARGET}.dbg${BINEXT}
-endif
+mzxdbg = ${TARGET}.debug
 
-mzx: ${mzx}
+mzx: ${mzxdbg}
 
 ifeq (${BUILD_MODPLUG},1)
 BUILD_GDM2S3M=1
@@ -80,11 +83,12 @@ include src/network/Makefile.in
 
 package_clean: utils_package_clean
 	@mv ${mzx} ${mzx}.backup
-	-@${MAKE} DEBUG=1 ${TARGET}.dbg${BINEXT}_clean # hack
-	@${MAKE}         ${mzx}_clean
+	@mv ${mzxdbg} ${mzxdbg}.backup
+	@${MAKE} ${mzx}_clean
 	@rm -f src/config.h
 	@echo "PLATFORM=none" > platform.inc
 	@mv ${mzx}.backup ${mzx}
+	@mv ${mzxdbg}.backup ${mzxdbg}
 
 clean: ${mzx}_clean utils_clean
 

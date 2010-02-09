@@ -5,10 +5,10 @@
 CC      = ${MINGWBASE}gcc
 CXX     = ${MINGWBASE}g++
 AR      = ${MINGWBASE}ar
+OBJCOPY = ${MINGWBASE}objcopy
 STRIP   = ${MINGWBASE}strip --strip-unneeded
 WINDRES = ${MINGWBASE}windres
 
-# windows requires a binary extension
 BINEXT = .exe
 
 # OpenGL must be linked to MZX
