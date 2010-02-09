@@ -208,6 +208,12 @@ static void config_editor_space_toggles(editor_config_info *conf, char *name,
   conf->editor_space_toggles = strtol(value, NULL, 10);
 }
 
+static void config_editor_enter_splits(editor_config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  conf->editor_enter_splits = strtol(value, NULL, 10);
+}
+
 /* FAT NOTE: This is searched as a binary tree, the nodes must be
  *           sorted alphabetically, or they risk being ignored.
  */
@@ -232,6 +238,7 @@ static const editor_config_entry editor_config_options[] =
   { "ccode_things", config_ccode_things },
   { "color_coding_on", config_ccode_on },
   { "default_invalid_status", config_default_invald },
+  { "editor_enter_splits", config_editor_enter_splits },
   { "editor_space_toggles", config_editor_space_toggles },
   { "macro_*", config_macro },
   { "robot_editor_hide_help", redit_hhelp },
@@ -271,6 +278,7 @@ static editor_config_info default_editor_options =
   0,                            // board_editor_hide_help
 
   // Robot editor options
+  true,
   { 11, 10, 10, 14, 255, 3, 11, 2, 14, 0, 15, 11, 7, 15, 1, 2, 3 },
   1,                            // color_coding_on
   1,                            // default_invalid_status

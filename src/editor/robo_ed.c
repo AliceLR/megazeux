@@ -2991,13 +2991,10 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       case IKEY_RETURN:
       {
         if(get_alt_status(keycode_internal))
-        {
           block_action(&rstate);
-        }
-        else
 
         // Split line into two
-        if(rstate.current_x)
+        else if(rstate.current_x && mzx_world->editor_conf.editor_enter_splits)
         {
           char *command_buffer = rstate.command_buffer;
           char line_remainder[241];
@@ -3014,10 +3011,15 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
           update_current_line(&rstate);
         }
+
+        // Old way, just navigate down a line
+        else if(rstate.current_x)
+          move_and_update(&rstate, 1);
+
+        // If we're right at the start of a line, always make a new one
         else
-        {
           add_blank_line(&rstate, -1);
-        }
+
         break;
       }
 

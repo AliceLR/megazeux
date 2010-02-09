@@ -239,6 +239,13 @@
 
 # editor_space_toggles = 1
 
+# If this is set to 1 (the default), enter can be used to split
+# a line in the robot editor. However, the classic behaviour is
+# that enter moves the cursor down a line. If you would like to
+# restore the old behaviour, please set this to 0.
+
+# editor_enter_splits = 1
+
 # Set to 1 if you want the board editor to not show the hotkey
 # help by default.
 

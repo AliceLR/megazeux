@@ -36,6 +36,7 @@ struct _editor_config_info
   int bedit_hhelp;
 
   // Robot editor options
+  bool editor_enter_splits;
   char color_codes[32];
   int color_coding_on;
   int default_invalid_status;
