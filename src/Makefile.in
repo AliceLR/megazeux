@@ -213,6 +213,6 @@ mzx_clean: editor_clean gdm2s3m_clean icons_clean libmodplug_clean
 	$(if ${V},,@echo "  RM      " ${mzx_obj})
 	${RM} -r ${mzx_obj}
 	$(if ${V},,@echo "  RM      " ${mzxrun} ${mzxrundbg})
-	${RM} ${mzx} ${mzxdbg}
+	${RM} ${mzxrun} ${mzxrundbg}
 	$(if ${V},,@echo "  RM      " ${mzx} ${mzxdbg})
 	${RM} ${mzx} ${mzxdbg}
