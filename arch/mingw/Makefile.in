@@ -21,10 +21,3 @@ LIBPNG_LDFLAGS = `libpng12-config --static --libs`
 
 # MZX uses lots of globals that need to be imported when using DLLs
 LINK_CC_FLAGS = -Wl,--enable-auto-import
-
-# debug does something different
-ifdef DEBUG
-core_ldflags += -mconsole
-else
-core_ldflags += -mwindows
-endif

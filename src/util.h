@@ -121,7 +121,7 @@ extern const char *mod_gdm_ext[];
 
 #define info(...) \
  do { \
-   fprintf(stdout, "INFO: " __VA_ARGS___; \
+   fprintf(stdout, "INFO: " __VA_ARGS__); \
    fflush(stdout); \
  } while(0)
 

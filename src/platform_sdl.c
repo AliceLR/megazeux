@@ -57,10 +57,6 @@ bool platform_init(void)
 {
   Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
 
-#if defined(__WIN32__) && defined(DEBUG)
-  freopen("CON", "wb", stdout);
-#endif
-
 #ifdef CONFIG_PSP
   scePowerSetClockFrequency(333, 333, 166);
 #endif
