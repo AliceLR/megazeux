@@ -261,8 +261,6 @@ mzx_objs += arch/darwin/SDLMain.o
 mzx_ldflags += -framework Cocoa
 endif
 
-core_ldflags := ${core_ldflags} -Xlinker -rpath-link=/home/alistair/work/eurasia/eurasiacon/binary_omap3430_linux_debug -L/home/alistair/work/eurasia/eurasiacon/binary_omap3430_linux_debug
-
 ifeq (${BUILD_UPDATER},1)
 
 include src/network/Makefile.in
