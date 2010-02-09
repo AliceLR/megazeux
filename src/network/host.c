@@ -783,6 +783,16 @@ bool host_listen(struct host *h)
   return true;
 }
 
+bool host_recv_raw(struct host *h, char *buffer, unsigned int len)
+{
+  return __recv(h->fd, buffer, len);
+}
+
+bool host_send_raw(struct host *h, const char *buffer, unsigned int len)
+{
+  return __send(h->fd, buffer, len);
+}
+
 static int host_get_line(struct host *h, char *buffer, int len)
 {
   int pos;

@@ -146,6 +146,30 @@ bool host_connect(struct host *h, const char *hostname, int port);
 bool host_listen(struct host *h);
 
 /**
+ * Receive a buffer on a host via raw socket access.
+ *
+ * @param h      Host to receive buffer with
+ * @param buffer Buffer to receive into (pre-allocated)
+ * @param len    Length of data to receive (implicitly, length of buffer)
+ *
+ * @return `true' if the buffer was received, `false' if there was a
+ *         communication error.
+ */
+bool host_recv_raw(struct host *h, char *buffer, unsigned int len);
+
+/**
+ * Send a buffer on a host via raw socket access.
+ *
+ * @param h      Host to send buffer with
+ * @param buffer Buffer to send from (pre-allocated)
+ * @param len    Length of data to send (buffer must be large enough)
+ *
+ * @return `true' if the buffer was sent, `false' if there was a
+ *         communication error.
+ */
+bool host_send_raw(struct host *h, const char *buffer, unsigned int len);
+
+/**
  * Obtain a buffer containing a file, referenced by URL, over HTTP.
  *
  * @param h             Host to converse in HTTP over
