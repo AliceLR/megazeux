@@ -28,8 +28,6 @@ __M_BEGIN_DECLS
 #include "board_struct.h"
 #include "world_struct.h"
 
-#define ROBOT_MAX_TR      512
-
 CORE_LIBSPEC void clear_robot_contents(struct robot *cur_robot);
 CORE_LIBSPEC void clear_robot_id(struct board *src_board, int id);
 CORE_LIBSPEC void clear_scroll_id(struct board *src_board, int id);

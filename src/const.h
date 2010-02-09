@@ -96,6 +96,20 @@ enum
 
 #define NUM_STATUS_COUNTERS   6
 
+/* 12 (w/o saved NULL terminator) */
+#define LEGACY_MOD_FILENAME_MAX    12
+
+/* 12 (NULL terminator not saved) */
+#define LEGACY_INOUT_FILENAME_MAX  12
+
+/* 80 (w/o saved NULL terminator) */
+#define LEGACY_BOTTOM_MESG_MAX     80
+
+/* 80 (w/o saved NULL terminator) */
+#define LEGACY_INPUT_STRING_MAX    80
+
+#define ROBOT_MAX_TR 512
+
 __M_END_DECLS
 
 #endif // __CONST_H

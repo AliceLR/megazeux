@@ -431,7 +431,11 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
     fputc(mzx_world->scroll_pointer_color, fp);
     fputc(mzx_world->scroll_title_color, fp);
     fputc(mzx_world->scroll_arrow_color, fp);
-    fwrite(mzx_world->real_mod_playing, 13, 1, fp);
+
+    {
+      fwrite(mzx_world->real_mod_playing, LEGACY_MOD_FILENAME_MAX, 1, fp);
+      fputc(0, fp);
+    }
   }
 
   fputc(mzx_world->edge_color, fp);
@@ -528,8 +532,11 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
     // Builtin message status
     fputc(mzx_world->bi_mesg_status, fp);
 
-    // Write input file name and if open, size
-    fwrite(mzx_world->input_file_name, 1, 12, fp);
+    // Write input file name and if open, position
+    {
+      fwrite(mzx_world->input_file_name, 1, LEGACY_INOUT_FILENAME_MAX, fp);
+    }
+
     if(mzx_world->input_file)
     {
       fputd(ftell(mzx_world->input_file), fp);
@@ -539,8 +546,11 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
       fputd(0, fp);
     }
 
-    // Write output file name and if open, size
-    fwrite(mzx_world->output_file_name, 1, 12, fp);
+    // Write output file name and if open, position
+    {
+      fwrite(mzx_world->output_file_name, 1, LEGACY_INOUT_FILENAME_MAX, fp);
+    }
+
     if(mzx_world->output_file)
     {
       fputd(ftell(mzx_world->output_file), fp);
@@ -1095,7 +1105,11 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     mzx_world->scroll_pointer_color = fgetc(fp);
     mzx_world->scroll_title_color = fgetc(fp);
     mzx_world->scroll_arrow_color = fgetc(fp);
-    fread(mzx_world->real_mod_playing, 13, 1, fp);
+
+    {
+      fread(mzx_world->real_mod_playing, LEGACY_MOD_FILENAME_MAX + 1, 1, fp);
+      mzx_world->real_mod_playing[LEGACY_MOD_FILENAME_MAX] = 0;
+    }
   }
 
   mzx_world->edge_color = fgetc(fp);
@@ -1220,8 +1234,11 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     mzx_world->bi_mesg_status = fgetc(fp);
 
     // Load input file name, open
-    fread(mzx_world->input_file_name, 1, 12, fp);
-    mzx_world->input_file_name[12] = 0;
+    {
+      fread(mzx_world->input_file_name, 1, LEGACY_INOUT_FILENAME_MAX, fp);
+      mzx_world->input_file_name[LEGACY_INOUT_FILENAME_MAX] = 0;
+    }
+
     if(mzx_world->input_file_name[0] != '\0')
     {
       mzx_world->input_file =
@@ -1242,8 +1259,11 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     }
 
     // Load ouput file name, open
-    fread(mzx_world->output_file_name, 1, 12, fp);
-    mzx_world->output_file_name[12] = 0;
+    {
+      fread(mzx_world->output_file_name, 1, LEGACY_INOUT_FILENAME_MAX, fp);
+      mzx_world->output_file_name[LEGACY_INOUT_FILENAME_MAX] = 0;
+    }
+
     if(mzx_world->output_file_name[0] != '\0')
     {
       mzx_world->output_file =

@@ -2541,18 +2541,8 @@ void set_mesg(struct world *mzx_world, const char *str)
 
 void set_mesg_direct(struct board *src_board, const char *str)
 {
-  char *bottom_mesg = src_board->bottom_mesg;
-
-  // Sets the current message
-  if(strlen(str) > 80)
-  {
-    memcpy(bottom_mesg, str, 80);
-    bottom_mesg[80] = 0;
-  }
-  else
-  {
-    strcpy(bottom_mesg, str);
-  }
+  strncpy(src_board->bottom_mesg, str, ROBOT_MAX_TR - 1);
+  src_board->bottom_mesg[ROBOT_MAX_TR - 1] = 0;
   src_board->b_mesg_timer = MESG_TIMEOUT;
 }
 

@@ -45,7 +45,7 @@ struct board
   char *overlay;
   char *overlay_color;
 
-  char mod_playing[256];
+  char mod_playing[MAX_PATH];
   int viewport_x;
   int viewport_y;
   int viewport_width;
@@ -67,9 +67,9 @@ struct board
   int last_key;
   int num_input;
   int input_size;
-  char input_string[81];
+  char input_string[ROBOT_MAX_TR];
   int player_last_dir;
-  char bottom_mesg[81];
+  char bottom_mesg[ROBOT_MAX_TR];
   int b_mesg_timer;
   int lazwall_start;
   int b_mesg_row;

@@ -27,8 +27,6 @@
 #include "extmem.h"
 #include "util.h"
 
-#define MOD_FILENAME_SIZE 13
-
 static int cmp_robots(const void *dest, const void *src)
 {
   struct robot *rsrc = *((struct robot **)src);
@@ -137,8 +135,11 @@ __editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
   load_RLE2_plane(cur_board->level_under_param, fp, size);
 
   // Load board parameters
-  fread(cur_board->mod_playing, MOD_FILENAME_SIZE, 1, fp);
-  cur_board->mod_playing[MOD_FILENAME_SIZE] = 0;
+  {
+    fread(cur_board->mod_playing, LEGACY_MOD_FILENAME_MAX + 1, 1, fp);
+    cur_board->mod_playing[LEGACY_MOD_FILENAME_MAX] = 0;
+  }
+
   cur_board->viewport_x = fgetc(fp);
   cur_board->viewport_y = fgetc(fp);
   cur_board->viewport_width = fgetc(fp);
@@ -164,9 +165,19 @@ __editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
   cur_board->last_key = fgetc(fp);
   cur_board->num_input = fgetw(fp);
   cur_board->input_size = fgetc(fp);
-  fread(cur_board->input_string, 81, 1, fp);
+
+  {
+    fread(cur_board->input_string, LEGACY_INPUT_STRING_MAX + 1, 1, fp);
+    cur_board->input_string[LEGACY_INPUT_STRING_MAX] = 0;
+  }
+
   cur_board->player_last_dir = fgetc(fp);
-  fread(cur_board->bottom_mesg, 81, 1, fp);
+
+  {
+    fread(cur_board->bottom_mesg, LEGACY_BOTTOM_MESG_MAX + 1, 1, fp);
+    cur_board->bottom_mesg[LEGACY_BOTTOM_MESG_MAX] = 0;
+  }
+
   cur_board->b_mesg_timer = fgetc(fp);
   cur_board->lazwall_start = fgetc(fp);
   cur_board->b_mesg_row = fgetc(fp);
@@ -389,7 +400,11 @@ int save_board(struct board *cur_board, FILE *fp, int savegame)
   save_RLE2_plane(cur_board->level_under_param, fp, board_size);
 
   // Save board parameters
-  fwrite(cur_board->mod_playing, MOD_FILENAME_SIZE, 1, fp);
+  {
+    fwrite(cur_board->mod_playing, LEGACY_MOD_FILENAME_MAX, 1, fp);
+    fputc(0, fp);
+  }
+
   fputc(cur_board->viewport_x, fp);
   fputc(cur_board->viewport_y, fp);
   fputc(cur_board->viewport_width, fp);
@@ -415,9 +430,19 @@ int save_board(struct board *cur_board, FILE *fp, int savegame)
   fputc(cur_board->last_key, fp);
   fputw(cur_board->num_input, fp);
   fputc(cur_board->input_size, fp);
-  fwrite(cur_board->input_string, 81, 1, fp);
+
+  {
+    fwrite(cur_board->input_string, LEGACY_INPUT_STRING_MAX, 1, fp);
+    fputc(0, fp);
+  }
+
   fputc(cur_board->player_last_dir, fp);
-  fwrite(cur_board->bottom_mesg, 81, 1, fp);
+
+  {
+    fwrite(cur_board->bottom_mesg, LEGACY_BOTTOM_MESG_MAX, 1, fp);
+    fputc(0, fp);
+  }
+
   fputc(cur_board->b_mesg_timer, fp);
   fputc(cur_board->lazwall_start, fp);
   fputc(cur_board->b_mesg_row, fp);

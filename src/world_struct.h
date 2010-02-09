@@ -68,7 +68,7 @@ struct world
   int scroll_pointer_color;
   int scroll_title_color;
   int scroll_arrow_color;
-  char real_mod_playing[256];
+  char real_mod_playing[MAX_PATH];
 
   int edge_color;
   int first_board;
@@ -108,8 +108,8 @@ struct world
   int divider;
   int c_divisions;
   int bi_mesg_status;
-  char input_file_name[512];
-  char output_file_name[512];
+  char input_file_name[MAX_PATH];
+  char output_file_name[MAX_PATH];
   FILE *input_file;
   FILE *output_file;
   int commands;
