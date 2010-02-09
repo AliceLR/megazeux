@@ -31,7 +31,7 @@ ifeq (${BUILD_MODULAR},1)
 
 network_target := ${DSOPRE}network${DSOPOST}
 
-${network_target}: ${network_objs}
+${network_target}: ${network_objs} ${core_target}
 	$(if ${V},,@echo "  LINK    " $@)
 	${LINK_CC} -shared -o $@ ${network_objs} ${network_ldflags} \
 	  ${LDFLAGS} -Wl,-rpath=${LIBDIR} -L. -lcore
