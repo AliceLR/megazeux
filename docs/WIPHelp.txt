@@ -1353,9 +1353,11 @@ A: Short answer: Not that way. This has been discussed
   would insert network capabilities into a MegaZeux world, as
   well as the structure in general). It's definitely possible,
   and possible to do soundly, but developers aren't interested
-  in it. As for other networking capabilities and MZX, maybe.
-  Implementing tools and aids for MZX relying on networking is
-  a lot less thorny of an issue, and might be considered.
+  in it. As for other networking capabilities and MZX, this has
+  already been done to some extent (2.82b ships with an updater
+  program). Implementing tools and aids for MZX relying on
+  networking is a lot less thorny of an issue, and might be
+  considered.
 
 Q: Will MegaZeux games ever be playable without MegaZeux
   itself?
