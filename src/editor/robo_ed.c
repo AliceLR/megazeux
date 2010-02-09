@@ -809,6 +809,43 @@ static void copy_buffer_to_selection(void)
   CloseClipboard();
 }
 
+static bool copy_selection_to_buffer(robot_state *rstate)
+{
+  char line_buffer[COMMAND_BUFFER_LEN];
+  char *src_data, *src_ptr;
+  HANDLE global_memory;
+  int line_length;
+
+  if(!IsClipboardFormatAvailable(CF_TEXT) || !OpenClipboard(NULL))
+    return FALSE;
+
+  rstate->command_buffer = line_buffer;
+
+  global_memory = GetClipboardData(CF_TEXT);
+  if(global_memory != NULL )
+  {
+    src_data = (char *)GlobalLock(global_memory);
+    src_ptr = src_data;
+
+    while(*src_ptr)
+    {
+      line_length = strcspn(src_ptr, "\r");
+      memcpy(line_buffer, src_ptr, line_length);
+      line_buffer[line_length] = 0;
+      add_line(rstate);
+      src_ptr += line_length;
+      if(*src_ptr)
+        src_ptr += 2;
+    }
+
+    GlobalUnlock(global_memory);
+    CloseClipboard();
+  }
+
+  rstate->command_buffer = rstate->command_buffer_space;
+  return TRUE;
+}
+
 #elif defined(CONFIG_X11)
 
 static int copy_buffer_to_X11_selection(const SDL_Event *event)
@@ -885,10 +922,88 @@ static void copy_buffer_to_selection(void)
   SDL_SetEventFilter(copy_buffer_to_X11_selection);
 }
 
-#else // !__WIN32__ && !CONFIG_X11
-
-static inline void copy_buffer_to_selection(void)
+static bool copy_selection_to_buffer(robot_state *rstate)
 {
+  int selection_format, line_length, ret_type;
+  char line_buffer[COMMAND_BUFFER_LEN];
+  unsigned long int nbytes, overflow;
+  unsigned char *src_data, *src_ptr;
+  Window window, owner;
+  Atom selection_type;
+  SDL_SysWMinfo info;
+  Display *display;
+  bool ret = false;
+
+  SDL_VERSION(&info.version);
+
+  if(!SDL_GetWMInfo(&info) || (info.subsystem != SDL_SYSWM_X11))
+    return ret;
+
+  display = info.info.x11.display;
+  window = info.info.x11.window;
+  owner = XGetSelectionOwner(display, XA_PRIMARY);
+
+  if((owner == None) || (owner == window))
+    return ret;
+
+  XConvertSelection(display, XA_PRIMARY, XA_STRING, None,
+    owner, CurrentTime);
+
+  info.info.x11.lock_func();
+
+  ret_type =
+    XGetWindowProperty(display, owner,
+    XA_STRING, 0, INT_MAX / 4, False, AnyPropertyType, &selection_type,
+    &selection_format, &nbytes, &overflow, &src_data);
+
+  if((ret_type != Success) || ((selection_type != XA_STRING) &&
+    (selection_type != XInternAtom(display, "TEXT", False)) &&
+    (selection_type != XInternAtom(display, "COMPOUND_TEXT", False)) &&
+    (selection_type != XInternAtom(display, "UTF8_STRING", False))))
+    goto err_unlock;
+
+  rstate->command_buffer = line_buffer;
+  src_ptr = src_data;
+
+  while(*src_ptr)
+  {
+    line_length = strcspn((const char *)src_ptr, "\n");
+    memcpy(line_buffer, src_ptr, line_length);
+    line_buffer[line_length] = 0;
+    add_line(rstate);
+    src_ptr += line_length;
+    if(*src_ptr)
+      src_ptr++;
+  }
+
+  XFree(src_data);
+  rstate->command_buffer = rstate->command_buffer_space;
+  ret = true;
+
+err_unlock:
+  info.info.x11.unlock_func();
+  return ret;
+}
+
+#elif defined(SDL_VIDEO_DRIVER_QUARTZ)
+
+static void copy_buffer_to_selection(void)
+{
+#warning Unimplemented!
+}
+
+static bool copy_selection_to_buffer(robot_state *rstate)
+{
+  return false;
+}
+
+#else // !__WIN32__ && !CONFIG_X11 && !SDL_VIDEO_DRIVER_QUARTZ
+
+static inline void copy_buffer_to_selection(void) {}
+
+static inline bool copy_selection_to_buffer(robot_state *rstate)
+{
+  return false;
 }
 
 #endif
@@ -2317,101 +2432,9 @@ static void paste_buffer(robot_state *rstate)
 {
   int i;
 
-#ifdef __WIN32__
-  if(IsClipboardFormatAvailable(CF_TEXT) && OpenClipboard(NULL))
-  {
-    HANDLE global_memory;
-    char *src_data, *src_ptr;
-    char line_buffer[COMMAND_BUFFER_LEN];
-    int line_length;
-
-    rstate->command_buffer = line_buffer;
-
-    global_memory = GetClipboardData(CF_TEXT);
-    if(global_memory != NULL )
-    {
-      src_data = (char *)GlobalLock(global_memory);
-      src_ptr = src_data;
-
-      while(*src_ptr)
-      {
-        line_length = strcspn(src_ptr, "\r");
-        memcpy(line_buffer, src_ptr, line_length);
-        line_buffer[line_length] = 0;
-        add_line(rstate);
-        src_ptr += line_length;
-        if(*src_ptr)
-          src_ptr += 2;
-      }
-
-      GlobalUnlock(global_memory);
-      CloseClipboard();
-    }
-
-    rstate->command_buffer = rstate->command_buffer_space;
-
+  // If we can use an OS buffer instead, do so
+  if(copy_selection_to_buffer(rstate))
     return;
-  }
-#elif defined(CONFIG_X11)
-  SDL_SysWMinfo info;
-  SDL_VERSION(&info.version);
-
-  if(SDL_GetWMInfo(&info) && (info.subsystem == SDL_SYSWM_X11))
-  {
-    Display *display = info.info.x11.display;
-    Window window = info.info.x11.window;
-    Window owner = XGetSelectionOwner(display, XA_PRIMARY);
-
-    if((owner != None) && (owner != window))
-    {
-      Atom selection_type;
-      int selection_format;
-      unsigned long int nbytes;
-      unsigned long int overflow;
-      unsigned char *src_data, *src_ptr;
-      char line_buffer[COMMAND_BUFFER_LEN];
-      int line_length;
-      int ret_type;
-
-      XConvertSelection(display, XA_PRIMARY, XA_STRING, None,
-       owner, CurrentTime);
-
-      info.info.x11.lock_func();
-      ret_type =
-       XGetWindowProperty(display, owner,
-       XA_STRING, 0, INT_MAX / 4, False, AnyPropertyType, &selection_type,
-       &selection_format, &nbytes, &overflow, &src_data);
-
-      if((ret_type == Success) && ((selection_type == XA_STRING) ||
-       (selection_type == XInternAtom(display, "TEXT", False)) ||
-       (selection_type == XInternAtom(display, "COMPOUND_TEXT", False)) ||
-       (selection_type == XInternAtom(display, "UTF8_STRING", False))))
-      {
-        rstate->command_buffer = line_buffer;
-        src_ptr = src_data;
-
-        while(*src_ptr)
-        {
-          line_length = strcspn((const char *)src_ptr, "\n");
-          memcpy(line_buffer, src_ptr, line_length);
-          line_buffer[line_length] = 0;
-          add_line(rstate);
-          src_ptr += line_length;
-          if(*src_ptr)
-            src_ptr++;
-        }
-
-        XFree(src_data);
-
-        rstate->command_buffer = rstate->command_buffer_space;
-        info.info.x11.unlock_func();
-        return;
-      }
-
-      info.info.x11.unlock_func();
-    }
-  }
-#endif /* CONFIG_X11 */
 
   if(copy_buffer)
   {
