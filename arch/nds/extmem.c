@@ -37,7 +37,7 @@ static void store_robot_to_extram(struct robot *robot)
     // TODO: handle out-of-memory
 
   // Store the program in extram, noting the address change.
-  if(!nds_ext_in(&robot->program, robot->program_length)) {}
+  if(!nds_ext_in(&robot->program_bytecode, robot->program_bytecode_length)) {}
     // TODO: handle out-of-memory
 
   if(robot->used)
@@ -56,7 +56,7 @@ static void retrieve_robot_from_extram(struct robot *robot)
   if(!nds_ext_out(&robot->stack, robot->stack_size * sizeof(int))) {}
     // TODO: handle out-of-memory
 
-  if(!nds_ext_out(&robot->program, robot->program_length)) {}
+  if(!nds_ext_out(&robot->program_bytecode, robot->program_bytecode_length)) {}
     // TODO: handle out-of-memory
 
   if(robot->used)
