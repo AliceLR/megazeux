@@ -29,8 +29,8 @@ LIBPNG_LDFLAGS = `libpng12-config --static --ldflags`
 #
 build: ${build}
 	${CP} ${shell sdl-config --prefix}/bin/SDL.dll ${build}
-	${shell echo set SDL_VIDEODRIVER=directx > ${build}/directx.bat}
-	${shell echo start megazeux.exe >> ${build}/directx.bat}
+	${CP} arch/mingw/directx.bat ${build}
+	${CP} arch/mingw/checkres* ${build}/utils
 
 SUBARCH := ${shell echo ${SUBPLATFORM} | sed 's,windows-,,'}
 include arch/zip.inc 
