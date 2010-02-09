@@ -32,21 +32,22 @@ usage() {
 	echo "  --disable-datestamp  Disable adding date to version."
 	echo "  --disable-editor     Disable the built-in editor."
 	echo "  --disable-helpsys    Disable the built-in help system."
-	echo "  --disable-utils      Disables compilation of utils."
-	echo "  --disable-x11        Disables X11, removing binary dependency."
+	echo "  --disable-utils      Disable compilation of utils."
+	echo "  --disable-x11        Disable X11, removing binary dependency."
 	echo "  --disable-software   Disable software renderer."
-	echo "  --disable-gl         Disables all OpenGL renderers."
-	echo "  --disable-glsl	     Disables all GLSL renderers."
-	echo "  --disable-overlay    Disables all overlay renderers."
+	echo "  --disable-gl         Disable all OpenGL renderers."
+	echo "  --disable-glsl       Disable all GLSL renderers."
+	echo "  --disable-overlay    Disable all overlay renderers."
 	echo "  --enable-gp2x        Enables half-width software renderer."
-	echo "  --disable-modplug    Disables ModPlug music engine."
+	echo "  --disable-modplug    Disable ModPlug music engine."
 	echo "  --enable-mikmod      Enables MikMod music engine."
-	echo "  --disable-libpng     Disables PNG screendump support."
-	echo "  --disable-audio      Disables all audio (sound + music)."
+	echo "  --disable-libpng     Disable PNG screendump support."
+	echo "  --disable-audio      Disable all audio (sound + music)."
 	echo "  --enable-tremor      Switches out libvorbis for libtremor."
 	echo "  --disable-pthread    Use SDL's locking instead of pthread."
 	echo "  --enable-icon        Try to brand executable with icon."
-	echo "  --disable-modular    Disables dynamically shared objects."
+	echo "  --disable-modular    Disable dynamically shared objects."
+	echo "  --disable-network    Disable all network support."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -85,6 +86,7 @@ TREMOR="false"
 PTHREAD="true"
 ICON="true"
 MODULAR="true"
+NETWORK="true"
 
 #
 # User may override above settings
@@ -170,6 +172,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-modular" ] && MODULAR="false"
 	[ "$1" = "--enable-modular" ]  && MODULAR="true"
+
+	[ "$1" = "--disable-network" ] && NETWORK="false"
+	[ "$1" = "--enable-network" ]  && NETWORK="true"
 
 	shift
 done
@@ -385,7 +390,7 @@ if [ "$PLATFORM" != "unix" -a "$PLATFORM" != "unix-devel" \
 fi
 
 #
-# Force disable icon branding if we lack prereqs
+# Force disable icon branding.
 #
 if [ "$ICON" = "true" ]; then
 	if [ "$X11_PLATFORM" = "true" -a "$X11" = "false" ]; then
@@ -407,13 +412,21 @@ if [ "$ICON" = "true" ]; then
 fi
 
 #
-# Force disable modular DSOs on platforms where they either can't be
-# supported or don't make sense.
+# Force disable modular DSOs.
 #
 if [ "$PLATFORM" != "unix" -a "$PLATFORM" != "unix-devel" \
   -a "$PLATFORM" != "mingw" ]; then
 	echo "Force-disabling modular build (nonsensical or unsupported)."
 	MODULAR="false"
+fi
+
+#
+# Force disable network support.
+#
+if [ "$PLATFORM" != "unix" -a "$PLATFORM" != "unix-devel" \
+  -a "$PLATFORM" != "mingw" ]; then
+	echo "Force-disabling network support (nonsensical or unsupported)."
+	NETWORK="false"
 fi
 
 #
@@ -678,6 +691,17 @@ if [ "$MODULAR" = "true" ]; then
 	fi
 else
 	echo "Modular build disabled."
+fi
+
+#
+# Handle network support, if enabled
+#
+if [ "$NETWORK" = "true" ]; then
+	echo "Network support enabled."
+	echo "#define CONFIG_NETWORK" >> src/config.h
+	echo "BUILD_NETWORK=1" >> platform.inc
+else
+	echo "Network support disabled."
 fi
 
 echo

@@ -2,45 +2,120 @@
 # MegaZeux Network Makefile fragment
 ##
 
-.PHONY: network network_clean
+.PHONY: network network.debug network_clean network_target_clean
 
-network_base = src/network
+network_src = src/network
+network_obj = src/network/.build
 
-updater := ${network_base}/updater${BINEXT}
-updater_objs := ${mzx_base}/util.o
-updater_objs += ${network_base}/host.o ${network_base}/manifest.o
-updater_objs += ${network_base}/sha256.o ${network_base}/updater.o
-updater_ldflags := -L${PREFIX}/lib -lz
+network_flags   := ${core_cflags} ${core_flags}
+network_ldflags := -L${PREFIX}/lib -lz
 
 ifeq (${PLATFORM},mingw)
-updater_ldflags += ${SDL_LDFLAGS}
+network_flags   += -DNETWORK_LIBSPEC="__declspec(dllexport)" ${SDL_CFLAGS}
+network_ldflags += ${SDL_LDFLAGS}
 endif
 
-server := ${network_base}/server${BINEXT}
-server_objs := ${mzx_base}/util.o
-server_objs += ${network_base}/host.o ${network_base}/manifest.o
-server_objs += ${network_base}/sha256.o ${network_base}/server.o
-server_ldflags := ${SDL_LDFLAGS} -L${PREFIX}/lib -lz
+${network_obj}/%.o: ${network_src}/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${network_flags} -c $< -o $@
+
+network_objs := \
+  ${network_obj}/host.o ${network_obj}/manifest.o \
+  ${network_obj}/sha256.o
+
+-include ${network_objs:.o=.d}
+
+${network_objs}: $(filter-out $(wildcard ${network_obj}), ${network_obj})
+
+ifeq (${BUILD_MODULAR},1)
+
+network_target := ${DSOPRE}network${DSOPOST}
+
+${network_target}: ${network_objs}
+	$(if ${V},,@echo "  LINK    " $@)
+	${LINK_CC} -shared -o $@ ${network_objs} ${network_ldflags} \
+	  ${LDFLAGS} -Wl,-rpath=${LIBDIR} -L. -lcore
+
+network_target_clean:
+	$(if ${V},,@echo "  RM      " ${network_target} ${network_target}.debug)
+	${RM} ${network_target} ${network_target}.debug
+
+else
+
+network_target := ${network_objs}
+
+network_target_clean:
+
+endif
+
+updater      := updater${BINEXT}
+updater_objs := ${network_obj}/updater.o
+
+ifeq (${PLATFORM},mingw)
+updater_ldflags := ${SDL_LDFLAGS}
+endif
 
 -include ${updater_objs:.o=.d}
+
+${updater}: ${core_target} ${network_target} ${updater_objs}
+	$(if ${V},,@echo "  LINK    " ${updater})
+ifeq (${BUILD_MODULAR},1)
+	${CC} ${updater_objs} -o ${updater} ${LDFLAGS} \
+	  -Wl,-rpath=${LIBDIR} -L. -lcore -lnetwork ${updater_ldflags}
+else
+	${CC} ${updater_objs} ${core_target} ${network_target} \
+	  -o ${updater} ${LDFLAGS} ${updater_ldflags}
+endif
+
+server         := server${BINEXT}
+server_objs    := ${network_obj}/server.o
+server_ldflags := ${SDL_LDFLAGS}
+
 -include ${server_objs:.o=.d}
 
-network: ${updater}.debug ${server}.debug
-
-${updater}: ${updater_objs}
-	$(if ${V},,@echo "  LINK    " ${updater})
-	${CC} ${updater_objs} -o ${updater} ${LDFLAGS} ${updater_ldflags}
-
-${server}: ${server_objs}
+${server}: ${core_target} ${network_target} ${server_objs}
 	$(if ${V},,@echo "  LINK    " ${server})
-	${CC} ${server_objs} -o ${server} ${LDFLAGS} ${server_ldflags}
+ifeq (${BUILD_MODULAR},1)
+	${CC} ${server_objs} -o ${server} ${LDFLAGS} \
+	  -Wl,-rpath=${LIBDIR} -L. -lcore -lnetwork ${server_ldflags}
+else
+	${CC} ${server_objs} ${core_target} ${network_target} \
+	  -o ${server} ${LDFLAGS} ${server_ldflags}
+endif
 
-network_clean: ${updater}_clean ${server}_clean
+network: ${updater}
+#network: ${server}
 
-${updater}_clean:
-	@echo "  CLEAN   " ${updater}
-	${RM} ${updater_objs} ${updater} ${updater_objs:.o=.d}
+ifeq (${BUILD_MODULAR},1)
+network.debug: ${network_target}.debug
+endif
 
-${server}_clean:
-	@echo "  CLEAN   " ${server}
-	${RM} ${server_objs} ${server} ${server_objs:.o=.d}
+network.debug: ${updater}.debug
+#network.debug: ${server}.debug
+
+network_clean: network_target_clean
+	$(if ${V},,@echo "  RM      " ${network_obj})
+	${RM} -r ${network_obj}
+	$(if ${V},,@echo "  RM      " ${updater} ${updater}.debug)
+	${RM} ${updater} ${updater}.debug
+	$(if ${V},,@echo "  RM      " ${server} ${server}.debug)
+	${RM} ${server} ${server}.debug
+
+network_package_clean:
+	-@mv ${updater}        ${updater}.backup
+	-@mv ${updater}.debug  ${updater}.debug.backup
+#	-@mv ${server}         ${server}.backup
+#	-@mv ${server}.debug   ${server}.debug.backup
+ifeq (${BUILD_MODULAR},1)
+	-@mv ${network_target}       ${network_target}.backup
+	-@mv ${network_target}.debug ${network_target}.debug.backup
+endif
+	@${MAKE} network_clean
+ifeq (${BUILD_MODULAR},1)
+	-@mv ${network_target}.backup       ${network_target}
+	-@mv ${network_target}.debug.backup ${network_target}.debug
+endif
+	-@mv ${updater}.backup       ${updater}
+	-@mv ${updater}.debug.backup ${updater}.debug
+#	-@mv ${server}.backup        ${server}
+#	-@mv ${server}.debug.backup  ${server}.debug

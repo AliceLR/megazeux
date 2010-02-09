@@ -38,9 +38,7 @@ ${utils_obj}/%.o: ${utils_src}/%.c
 -include $(hlp2txt_objs:.o=.d)
 -include $(txt2hlp_objs:.o=.d)
 
-ifeq (${BUILD_UTILS},1)
-
-${checkres}: ${checkres_objs} ${core_target} 
+${checkres}: ${checkres_objs} ${core_target}
 	$(if ${V},,@echo "  LINK    " ${checkres})
 	${CC} ${checkres_objs} -o ${checkres} ${LDFLAGS} ${checkres_ldflags}
 
@@ -55,6 +53,23 @@ ${hlp2txt}: ${hlp2txt_objs}
 ${txt2hlp}: ${txt2hlp_objs}
 	$(if ${V},,@echo "  LINK    " ${txt2hlp})
 	${CC} ${txt2hlp_objs} -o ${txt2hlp} ${LDFLAGS}
+
+utils: $(filter-out $(wildcard ${utils_obj}), ${utils_obj})
+
+utils: ${checkres} ${downver} ${hlp2txt} ${txt2hlp}
+utils.debug: ${checkres}.debug ${downver}.debug ${hlp2txt}.debug ${txt2hlp}.debug
+
+utils_clean: unzip_clean
+	$(if ${V},,@echo "  RM      " ${utils_obj})
+	${RM} -r ${utils_obj}
+	$(if ${V},,@echo "  RM      " ${checkres} ${checkres}.debug)
+	${RM} ${checkres} ${checkres}.debug
+	$(if ${V},,@echo "  RM      " ${downver} ${downver}.debug)
+	${RM} ${downver} ${downver}.debug
+	$(if ${V},,@echo "  RM      " ${hlp2txt} ${hlp2txt}.debug)
+	${RM} ${hlp2txt} ${hlp2txt}.debug
+	$(if ${V},,@echo "  RM      " ${txt2hlp} ${txt2hlp}.debug)
+	${RM} ${txt2hlp} ${txt2hlp}.debug
 
 utils_package_clean:
 	-@mv ${checkres}       ${checkres}.backup
@@ -74,33 +89,3 @@ utils_package_clean:
 	-@mv ${hlp2txt}.debug.backup  ${hlp2txt}.debug
 	-@mv ${txt2hlp}.backup        ${txt2hlp}
 	-@mv ${txt2hlp}.debug.backup  ${txt2hlp}.debug
-
-utils: $(filter-out $(wildcard ${utils_obj}), ${utils_obj})
-
-utils: ${checkres} ${downver} ${hlp2txt} ${txt2hlp}
-utils.debug: ${checkres}.debug ${downver}.debug ${hlp2txt}.debug ${txt2hlp}.debug
-
-else
-
-.PHONY: utils.debug
-
-utils_package_clean:
-
-utils:
-	@echo "--> Building of utilities disabled."
-
-utils.debug:
-
-endif
-
-utils_clean: unzip_clean
-	$(if ${V},,@echo "  RM      " ${utils_obj})
-	${RM} -r ${utils_obj}
-	$(if ${V},,@echo "  RM      " ${checkres} ${checkres}.debug)
-	${RM} ${checkres} ${checkres}.debug
-	$(if ${V},,@echo "  RM      " ${downver} ${downver}.debug)
-	${RM} ${downver} ${downver}.debug
-	$(if ${V},,@echo "  RM      " ${hlp2txt} ${hlp2txt}.debug)
-	${RM} ${hlp2txt} ${hlp2txt}.debug
-	$(if ${V},,@echo "  RM      " ${txt2hlp} ${txt2hlp}.debug)
-	${RM} ${txt2hlp} ${txt2hlp}.debug

@@ -11,8 +11,8 @@
 include platform.inc
 include version.inc
 
-all: mzx utils
-debuglink: all mzx.debug utils.debug
+all: mzx
+debuglink: all mzx.debug
 
 include arch/${PLATFORM}/Makefile.in
 
@@ -40,7 +40,7 @@ endif
 MIKMOD_LDFLAGS ?= -L${PREFIX} -lmikmod
 
 ifeq (${LIBPNG},1)
-LIBPNG_CFLAGS ?= `libpng12-config --cflags`
+LIBPNG_CFLAGS  ?= `libpng12-config --cflags`
 LIBPNG_LDFLAGS ?= `libpng12-config --libs`
 endif
 
@@ -132,10 +132,10 @@ endif
 	@touch $@
 
 include src/Makefile.in
-include src/utils/Makefile.in
-include src/network/Makefile.in
 
-package_clean: utils_package_clean
+clean: mzx_clean
+
+package_clean:
 	-@mv ${mzxrun}       ${mzxrun}.backup
 	-@mv ${mzxrun}.debug ${mzxrun}.debug.backup
 ifeq (${BUILD_EDITOR},1)
@@ -164,7 +164,21 @@ ifeq (${BUILD_EDITOR},1)
 	-@mv ${mzx}.debug.backup    ${mzx}.debug
 endif
 
-clean: mzx_clean utils_clean
+ifeq (${BUILD_UTILS},1)
+include src/utils/Makefile.in
+package_clean: utils_package_clean
+debuglink: utils utils.debug
+clean: utils_clean
+all: utils
+endif
+
+ifeq (${BUILD_NETWORK},1)
+include src/network/Makefile.in
+package_clean: network_package_clean
+debuglink: network network.debug
+clean: network_clean
+all: network
+endif
 
 distclean: clean
 	@echo "  DISTCLEAN"

@@ -27,6 +27,10 @@
 #include <unistd.h>
 #include <errno.h>
 
+#ifdef __WIN32__
+#include "SDL.h"
+#endif
+
 #define OUTBOUND_PORT 80
 
 static bool check_prune_basedir(const char *file)

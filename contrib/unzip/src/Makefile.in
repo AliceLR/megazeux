@@ -2,7 +2,7 @@
 # unzip Makefile fragment
 ##
 
-.PHONY: ${unzip}_clean
+.PHONY: unzip_clean
 
 .SUFFIXES: .c
 

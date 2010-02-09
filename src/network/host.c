@@ -46,6 +46,11 @@
 #include <fcntl.h>
 #endif // __WIN32__
 
+// Suppress unfixable sign comparison warning.
+#if defined(__WIN32__) && defined(__GNUC__)
+#pragma GCC diagnostic ignored "-Wsign-compare"
+#endif
+
 #include "zlib.h"
 
 #define BLOCK_SIZE    4096UL
@@ -516,7 +521,7 @@ void host_blocking(struct host *h, bool blocking)
 struct host *host_create(host_type_t type, host_family_t fam)
 {
   struct linger linger = { .l_onoff = 1, .l_linger = 30 };
-  const uint32_t on = 1, off = 0;
+  const uint32_t on = 1;
   int err, fd, af, proto;
   struct host *h;
 
@@ -550,8 +555,10 @@ struct host *host_create(host_type_t type, host_family_t fam)
     return NULL;
   }
 
+#ifdef IPV6_V6ONLY
   if(af == AF_INET6)
   {
+    const uint32_t off = 0;
     err = setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &off, 4);
     if(err < 0)
     {
@@ -559,6 +566,7 @@ struct host *host_create(host_type_t type, host_family_t fam)
       return NULL;
     }
   }
+#endif
 
   /* We need to turn off bind address checking, allowing
    * port numbers to be reused; otherwise, TIME_WAIT will

@@ -105,4 +105,8 @@ typedef enum {
 #define EDITOR_LIBSPEC LIBSPEC
 #endif
 
+#ifndef NETWORK_LIBSPEC
+#define NETWORK_LIBSPEC LIBSPEC
+#endif
+
 #endif // __COMPAT_H

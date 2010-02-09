@@ -83,10 +83,10 @@ int dir_get_next_entry(dir_t *dir, char *entry);
 
 #if defined(__WIN32__)
 #if defined(__STRICT_ANSI__)
-int strcasecmp(const char *s1, const char *s2);
-int strncasecmp(const char *s1, const char *s2, size_t n);
+CORE_LIBSPEC int strcasecmp(const char *s1, const char *s2);
+CORE_LIBSPEC int strncasecmp(const char *s1, const char *s2, size_t n);
 #endif // __STRICT_ANSI__
-char *strsep(char **stringp, const char *delim);
+CORE_LIBSPEC char *strsep(char **stringp, const char *delim);
 #else // !__WIN32__
 #if defined(CONFIG_PSP) || defined(CONFIG_GP2X) \
  || defined(CONFIG_NDS) || defined(CONFIG_WII)
