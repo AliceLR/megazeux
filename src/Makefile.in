@@ -89,9 +89,9 @@ mzx_cobjs += ${editor_base}/char_ed.${o} ${editor_base}/edit.${o}
 mzx_cobjs += ${editor_base}/edit_di.${o} ${editor_base}/fill.${o}
 mzx_cobjs += ${editor_base}/graphics.${o} ${editor_base}/macro.${o}
 mzx_cobjs += ${editor_base}/pal_ed.${o} ${editor_base}/param.${o}
-mzx_cobjs += ${editor_base}/robo_ed.${o} ${editor_base}/robot.${o}
-mzx_cobjs += ${editor_base}/sfx_edit.${o} ${editor_base}/window.${o}
-mzx_cobjs += ${editor_base}/world.${o}
+mzx_cobjs += ${editor_base}/resource.${o} ${editor_base}/robo_ed.${o}
+mzx_cobjs += ${editor_base}/robot.${o} ${editor_base}/sfx_edit.${o}
+mzx_cobjs += ${editor_base}/window.${o} ${editor_base}/world.${o}
 endif
 
 ifeq (${BUILD_HELPSYS},1)
