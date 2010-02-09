@@ -23,6 +23,7 @@
 #include "render.h"
 #include "render_sdl.h"
 #include "renderers.h"
+#include "util.h"
 
 #include "SDL.h"
 
