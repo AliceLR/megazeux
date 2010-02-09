@@ -123,8 +123,11 @@ bool platform_init(void)
 
 void platform_quit(void)
 {
+#warning fatUnmount/fatUnsafeUnmount APIs have changed
+#if 0
   if (!fatUnmount(PI_DEFAULT))
     fatUnsafeUnmount(PI_DEFAULT);
+#endif
 }
 
 // argc/argv may be invalid on the Wii :(
@@ -134,10 +137,4 @@ int main(int argc, char *argv[])
   static char *_argv[] = {_argv0};
 
   real_main(1, _argv);
-}
-
-// clock() is unlinkable
-clock_t clock(void)
-{
-  return 0;
 }
