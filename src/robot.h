@@ -28,6 +28,13 @@ __M_BEGIN_DECLS
 #include "board_struct.h"
 #include "world_struct.h"
 
+// Let's not let a robot's stack get larger than 64k right now.
+// The value is a bit arbitrary, but it's mainly there to prevent MZX from
+// crashing when under infinite recursion.
+
+#define ROBOT_START_STACK 4
+#define ROBOT_MAX_STACK   65536
+
 CORE_LIBSPEC void clear_robot_contents(struct robot *cur_robot);
 CORE_LIBSPEC void clear_robot_id(struct board *src_board, int id);
 CORE_LIBSPEC void clear_scroll_id(struct board *src_board, int id);
