@@ -291,6 +291,9 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 	elif [ "`echo $MACH | sed 's,i.86,x86,'`" = "x86" ]; then
 		ARCHNAME=x86
 		LIBDIR=lib
+	elif [ "`echo $MACH | sed 's,^arm.*,arm,'`" = "arm" ]; then
+		ARCHNAME=arm
+		LIBDIR=lib
 	else
 		echo "Add a friendly MACH to config.sh."
 		exit 1
