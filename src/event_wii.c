@@ -79,7 +79,7 @@ struct key_event
   Uint32 key;
 };
 
-union
+union event
 {
   enum event_type type;
   struct button_event button;
@@ -87,7 +87,7 @@ union
   struct ext_event ext;
   struct pointer_event pointer;
   struct key_event key;
-} event;
+};
 
 #define STACKSIZE 8192
 static u8 poll_stack[STACKSIZE];
@@ -110,22 +110,22 @@ static s32 kbd_fd;
 static Uint8 kbd_buf[16] ATTRIBUTE_ALIGN(32);
 static char kbd_fs[] ATTRIBUTE_ALIGN(32) = "/dev/usb/kbd";
 
-static int write_eq(event *ev)
+static int write_eq(union event *ev)
 {
-  event *new_ev;
-  new_ev = malloc(sizeof(struct event));
+  union event *new_ev;
+  new_ev = malloc(sizeof(union event));
   if(!new_ev)
     return false;
   *new_ev = *ev;
   return MQ_Send(eq, (mqmsg_t)(&new_ev), MQ_MSG_NOBLOCK);
 }
 
-static int read_eq(event *ev)
+static int read_eq(union event *ev)
 {
   mqmsg_t new_ev = NULL;
   if(MQ_Receive(eq, &new_ev, MQ_MSG_NOBLOCK))
   {
-    *ev = *(event *)new_ev;
+    *ev = *(union event *)new_ev;
     free(new_ev);
     return true;
   }
@@ -136,7 +136,7 @@ static int read_eq(event *ev)
 static void scan_buttons(Uint32 pad, Uint32 old_btns, Uint32 new_btns)
 {
   Uint32 chg_btns;
-  event ev;
+  union event ev;
   int i;
 
   if(old_btns != new_btns)
@@ -169,7 +169,7 @@ static Sint16 adjust_axis(Uint8 pos, Uint8 min, Uint8 cen, Uint8 max)
 
 static void scan_joystick(Uint32 pad, Uint32 xaxis, joystick_t js, Sint16 axes[])
 {
-  event ev;
+  union event ev;
   Sint16 temp;
 
   ev.type = EVENT_AXIS_MOVE;
@@ -209,7 +209,7 @@ static void poll_input(void)
   WPADData *wd;
   PADStatus pad[4];
   u32 type;
-  event ev;
+  union event ev;
   Uint32 i, j;
 
   WPAD_ScanPads();
@@ -373,7 +373,7 @@ static void *wii_kbd_thread(void *dud)
   static Uint8 old_mods = 0;
   static Uint8 old_keys[6] = {0};
 
-  event ev;
+  union event ev;
   int i, j, chg;
 
   delay(1000);
@@ -599,7 +599,7 @@ static Uint32 map_button(Uint32 pad, Uint32 button)
     return 256;
 }
 
-static keycode convert_USB_internal(Uint32 key)
+static enum keycode convert_USB_internal(Uint32 key)
 {
   switch(key)
   {
@@ -719,7 +719,7 @@ static keycode convert_USB_internal(Uint32 key)
   (input.numlock_status ? B : A)
 
 // TODO: Support non-US keyboard layouts
-static Uint32 convert_internal_unicode(keycode key)
+static Uint32 convert_internal_unicode(enum keycode key)
 {
   switch(key)
   {
@@ -790,7 +790,7 @@ static Uint32 convert_internal_unicode(keycode key)
   }
 }
 
-static Uint32 process_event(event *ev)
+static Uint32 process_event(union event *ev)
 {
   Uint32 rval = 1;
 
@@ -823,7 +823,7 @@ static Uint32 process_event(event *ev)
       }
       if((button < 256))
       {
-        keycode skey = input.joystick_button_map[ev->button.pad][button];
+        enum keycode skey = input.joystick_button_map[ev->button.pad][button];
         if(skey && (input.keymap[skey] == 0))
         {
           input.last_key_pressed = skey;
@@ -878,7 +878,7 @@ static Uint32 process_event(event *ev)
       }
       if((button < 256))
       {
-        keycode skey = input.joystick_button_map[ev->button.pad][button];
+        enum keycode skey = input.joystick_button_map[ev->button.pad][button];
         if(skey)
         {
           input.keymap[skey] = 0;
@@ -895,7 +895,7 @@ static Uint32 process_event(event *ev)
       int digital_value = -1;
       int axis = ev->axis.axis;
       int last_axis;
-      keycode skey;
+      enum keycode skey;
       if(ev->axis.pad < 4)
       {
         switch(ext_type[ev->axis.pad])
@@ -980,7 +980,7 @@ static Uint32 process_event(event *ev)
     }
     case EVENT_KEY_DOWN:
     {
-      keycode ckey = convert_USB_internal(ev->key.key);
+      enum keycode ckey = convert_USB_internal(ev->key.key);
       if(!ckey)
       {
         rval = 0;
@@ -1022,7 +1022,7 @@ static Uint32 process_event(event *ev)
     }
     case EVENT_KEY_UP:
     {
-      keycode ckey = convert_USB_internal(ev->key.key);
+      enum keycode ckey = convert_USB_internal(ev->key.key);
       if(!ckey)
       {
         rval = 0;
@@ -1051,7 +1051,7 @@ static Uint32 process_event(event *ev)
 Uint32 update_event_status(void)
 {
   Uint32 rval = 0;
-  event ev;
+  union event ev;
 
   input.last_key = IKEY_UNKNOWN;
   input.last_unicode = 0;
@@ -1077,7 +1077,7 @@ void wait_event(void)
 
   if(MQ_Receive(eq, &ev, MQ_MSG_BLOCK))
   {
-    process_event((event *)ev);
+    process_event((union event *)ev);
     free(ev);
   }
   update_autorepeat();

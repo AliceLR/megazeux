@@ -27,7 +27,7 @@
 #include "robot.h"
 
 // Move the robot's memory from normal RAM to extra RAM.
-static void store_robot_to_extram(Robot *robot)
+static void store_robot_to_extram(struct robot *robot)
 {
   if(!robot)
     return;
@@ -48,7 +48,7 @@ static void store_robot_to_extram(Robot *robot)
 }
 
 // Move the robot's memory from extra RAM to normal RAM.
-static void retrieve_robot_from_extram(Robot *robot)
+static void retrieve_robot_from_extram(struct robot *robot)
 {
   if(!robot)
     return;
@@ -67,7 +67,7 @@ static void retrieve_robot_from_extram(Robot *robot)
 }
 
 // Move the board's memory from normal RAM to extra RAM.
-void store_board_to_extram(Board *board)
+void store_board_to_extram(struct board *board)
 {
   size_t i, num_fields;
   int size, j;
@@ -96,7 +96,7 @@ void store_board_to_extram(Board *board)
 }
 
 // Move the board's memory from normal RAM to extra RAM.
-void retrieve_board_from_extram(Board *board)
+void retrieve_board_from_extram(struct board *board)
 {
   size_t i, num_fields;
   int j, size;
@@ -126,7 +126,7 @@ void retrieve_board_from_extram(Board *board)
 
 
 // Set the current board to cur_board, in regular memory.
-void set_current_board(World *mzx_world, Board *cur_board)
+void set_current_board(struct world *mzx_world, struct board *cur_board)
 {
   if(mzx_world->current_board)
     store_board_to_extram(mzx_world->current_board);
@@ -134,7 +134,7 @@ void set_current_board(World *mzx_world, Board *cur_board)
 }
 
 // Set the current board to cur_board, in extra memory.
-void set_current_board_ext(World *mzx_world, Board *cur_board)
+void set_current_board_ext(struct world *mzx_world, struct board *cur_board)
 {
   set_current_board(mzx_world, cur_board);
   retrieve_board_from_extram(cur_board);

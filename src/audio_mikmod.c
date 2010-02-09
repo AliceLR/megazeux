@@ -103,7 +103,7 @@ static MODULE *MikMod_LoadSongRW(SDL_RWops *rw, int maxchan)
 static Uint32 mm_mix_data(struct audio_stream *a_src, Sint32 *buffer,
  Uint32 len)
 {
-  struct mikmod_stream *mm_stream = (mikmod_stream *)a_src;
+  struct mikmod_stream *mm_stream = (struct mikmod_stream *)a_src;
   Uint32 read_wanted = mm_stream->s.allocated_data_length -
    mm_stream->s.stream_offset;
   Uint8 *read_buffer = (Uint8 *)mm_stream->s.output_data +
@@ -211,12 +211,12 @@ struct audio_stream *construct_mikmod_stream(char *filename, Uint32 frequency,
       mm_stream->module_data = open_file;
       Player_Start(mm_stream->module_data);
 
-      initialize_struct sampled_stream((struct sampled_stream *)mm_stream,
+      initialize_sampled_stream((struct sampled_stream *)mm_stream,
        mm_set_frequency, mm_get_frequency, frequency, 2, 0);
 
       ret_val = (struct audio_stream *)mm_stream;
 
-      construct_struct audio_stream((struct audio_stream *)mm_stream,
+      construct_audio_stream((struct audio_stream *)mm_stream,
        mm_mix_data, mm_set_volume, mm_set_repeat, mm_set_order,
        mm_set_position, mm_get_order, mm_get_position, mm_destruct,
        volume, repeat);
