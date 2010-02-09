@@ -116,7 +116,7 @@ static enum status add_to_hash_table(char *stack_str)
 
   len = strlen(stack_str);
   if(!len)
-    return MALLOC_FAILED;
+    return SUCCESS;
 
   str = malloc(len + 1);
   if(!str)
