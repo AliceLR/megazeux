@@ -9,8 +9,8 @@
 unzip_src = contrib/unzip/src
 unzip_obj = contrib/unzip/src/.build
 
-unzip_cflags := -W -Wmissing-format-attribute -Wpointer-arith -Wcast-align
-unzip_cflags += -Wwrite-strings -Wno-unused-parameter
+unzip_cflags := -Wmissing-format-attribute -Wpointer-arith
+unzip_cflags += -Wcast-align -Wwrite-string
 unzip_cflags += ${ZLIB_CFLAGS} -I${unzip_src} -DNOUNCRYPT
 
 unzip_objs = ${unzip_obj}/unzip.o ${unzip_obj}/ioapi.o
