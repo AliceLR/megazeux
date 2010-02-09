@@ -96,6 +96,7 @@
       <DebugInformationFormat>
       </DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
+      <PreprocessorDefinitions>__WIN32__;_CRT_SECURE_NO_WARNINGS;CORE_LIBSPEC=__declspec(dllexport)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalDependencies>SDL.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;libpng12.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
@@ -140,6 +141,7 @@
     </ClCompile>
     <ClCompile Include="..\..\contrib\libmodplug\src\load_amf.cpp">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
     </ClCompile>
     <ClCompile Include="..\..\contrib\libmodplug\src\load_dsm.cpp">
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>

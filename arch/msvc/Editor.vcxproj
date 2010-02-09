@@ -95,6 +95,7 @@
       <DebugInformationFormat>
       </DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
+      <PreprocessorDefinitions>__WIN32__;_CRT_SECURE_NO_WARNINGS;EDITOR_LIBSPEC=__declspec(dllexport)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
       <AdditionalLibraryDirectories>Deps\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
