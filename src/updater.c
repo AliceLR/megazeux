@@ -308,13 +308,11 @@ static bool restore_original_manifest(bool ret)
 
   if(ret)
   {
-    // The update was successful, so we simply remove the backup manifest.
-    if(unlink(MANIFEST_TXT "~"))
-    {
-      error("Failed to remove " MANIFEST_TXT "~. Check permissions.", 1, 8, 0);
-      return false;
-    }
-
+    /* The update was successful, so we try to remove the backup manifest.
+     * Ignore any errors that might occur as a result of this file not
+     * existing (it won't if we never backed a manifest up).
+     */
+    unlink(MANIFEST_TXT "~");
     return true;
   }
 
@@ -662,7 +660,7 @@ static void __check_for_updates(void)
 
   host_set_callbacks(h, NULL, recv_cb, cancel_cb);
 
-  i = 0;
+  i = 1;
   for(e = replaced; e; e = e->next, i++)
   {
     for(retries = 0; retries < MAX_RETRIES; retries++)

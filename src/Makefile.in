@@ -34,6 +34,10 @@ ${core_obj}/run_stubs.o: ${core_src}/run_stubs.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
 
+${core_obj}/updater.o: ${core_src}/updater.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
+
 ${core_obj}/%.o: ${core_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} ${core_spec} -c $< -o $@
