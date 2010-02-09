@@ -1727,6 +1727,11 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
     if(key)
     {
       int key_char = get_key(keycode_unicode);
+      bool editing = true;
+#ifdef CONFIG_EDITOR
+      if(edit_world)
+        editing = mzx_world->editing;
+#endif
 
       if(key_char)
       {
@@ -1864,18 +1869,15 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
         // Toggle debug mode
         case IKEY_F6:
         {
-          if(mzx_world->editing)
-          {
-            // Debug information
+          if(edit_world && editing)
             debug_mode ^= 1;
-            break;
-          }
+          break;
         }
-
+#endif
         // Cheat
         case IKEY_F7:
         {
-          if(mzx_world->editing)
+          if(editing)
           {
             int i;
 
@@ -1908,7 +1910,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
         // Cheat More
         case IKEY_F8:
         {
-          if(mzx_world->editing)
+          if(editing)
           {
             int player_x = mzx_world->player_x;
             int player_y = mzx_world->player_y;
@@ -1966,7 +1968,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
 
           break;
         }
-#endif
+
         // Quick save
         case IKEY_F9:
         {
@@ -2020,7 +2022,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
         // Debug counter editor
         case IKEY_F11:
         {
-          if(mzx_world->editing)
+          if(editing)
             debug_counters(mzx_world);
           break;
         }
@@ -2040,7 +2042,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
             write_string(" Game Menu ", 14, 4, 30, 0);
             write_string(game_menu_1, 10, 5, 31, 1);
 #ifdef CONFIG_EDITOR
-            if(mzx_world->editing)
+            if(editing)
               write_string(game_menu_2, 10, 12, 31, 1);
 #endif
             write_string(game_menu_3, 10, 13, 31, 1);

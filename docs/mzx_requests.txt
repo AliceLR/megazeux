@@ -60,7 +60,6 @@ MZX REQUESTS:
 -Expanded quicksave/load abilities. Quicksave in "slots" determined by going to a menu and picking the active slot. Interval-based quicksaving where one can step backwards through quicksaves.
 -A platform-neutral onscreen keyboard (for handheld platforms).
 -Pixel-accurate block copy with scaling.
--Cheat functions toggleable in MZXRun builds.
 -board_editor_hide_help to still display current item in buffer and editor mode.
 -Ability to quickly restore a Robot's code to what it was before entering the Robot (to allow quick and sane recovery from major flaws like a "replace all" gone bad).
 -Octave range in sound commands increased to 8th octave.

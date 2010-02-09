@@ -43,6 +43,8 @@ CORE_LIBSPEC int duplicate_sensor(Board *src_board, Sensor *cur_sensor);
 CORE_LIBSPEC void send_robot_def(World *mzx_world, int robot_id, int mesg_id);
 CORE_LIBSPEC void optimize_null_objects(Board *src_board);
 
+CORE_LIBSPEC int place_at_xy(World *mzx_world, mzx_thing id, int color,
+ int param, int x, int y);
 CORE_LIBSPEC int place_player_xy(World *mzx_world, int x, int y);
 CORE_LIBSPEC void setup_overlay(Board *src_board, int mode);
 CORE_LIBSPEC void replace_player(World *mzx_world);
@@ -104,9 +106,6 @@ CORE_LIBSPEC void duplicate_robot_direct(Robot *cur_robot, Robot *copy_robot,
  int x, int y);
 CORE_LIBSPEC void duplicate_scroll_direct(Scroll *cur_scroll, Scroll *copy_scroll);
 CORE_LIBSPEC void duplicate_sensor_direct(Sensor *cur_sensor, Sensor *copy_sensor);
-
-CORE_LIBSPEC int place_at_xy(World *mzx_world, mzx_thing id, int color,
- int param, int x, int y);
 
 CORE_LIBSPEC void copy_buffer_to_layer(int x, int y, int width, int height,
  char *src_char, char *src_color, char *dest_char,

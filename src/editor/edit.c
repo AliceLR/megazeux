@@ -3270,11 +3270,11 @@ static void __edit_world(World *mzx_world)
             strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
             load_module(mzx_world->real_mod_playing);
 
-            mzx_world->editing = 1;
+            mzx_world->editing = true;
 
             play_game(mzx_world, 1);
 
-            mzx_world->editing = 0;
+            mzx_world->editing = false;
 
             if(reload_world(mzx_world, "__test.mzx", &fade))
             {

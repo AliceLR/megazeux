@@ -188,7 +188,7 @@ typedef struct
 
 #ifdef CONFIG_EDITOR
   editor_config_info editor_conf;
-  int editing;
+  bool editing;
 #endif
 
 #ifdef CONFIG_HELPSYS

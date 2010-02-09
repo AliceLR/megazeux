@@ -58,6 +58,8 @@ USERS
   places where the protected UI charset should be used instead.
 + The introductory help message is displayed if the load dialog is cancelled
   prior to loading a game. Hopefully the screen is now never totally blank.
++ The F7/F8 cheats can now be used freely in MZXRun (in MegaZeux proper they
+  remain usable only in editor tests).
 
 DEVELOPERS
 
