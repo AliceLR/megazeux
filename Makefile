@@ -21,6 +21,7 @@ AR      ?= ar
 STRIP   ?= strip --strip-unneeded
 OBJCOPY ?= objcopy
 MKDIR   ?= mkdir
+RM      ?= rm
 
 #
 # We don't want these commands to be echo'ed in non-verbose mode
@@ -33,6 +34,7 @@ AR      := @${AR}
 STRIP   := @${STRIP}
 OBJCOPY := @${OBJCOPY}
 MKDIR   := @${MKDIR}
+RM      := @${RM}
 endif
 
 SDL_CFLAGS  ?= `sdl-config --cflags`

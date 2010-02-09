@@ -27,5 +27,5 @@ ${icons}:
 endif
 
 ${icons}_clean:
-	@echo "  RM      " ${icons_obj}
-	@rm -rf ${icons_obj}
+	$(if ${V},,@echo "  RM      " ${icons_obj})
+	${RM} -r ${icons_obj}

@@ -242,9 +242,9 @@ ${mzx}: ${mzx_cobjs_link} ${mzx_cxxobjs}
 ${mzxdbg}: ${mzx}
 
 ${mzx}_clean: gdm2s3m_clean ${icons}_clean libmodplug_clean
-	@echo "  RM      " ${mzx_obj}
-	@rm -rf ${mzx_obj}
-	@echo "  RM      " ${editor_obj}
-	@rm -rf ${editor_obj}
-	@echo "  RM      " ${mzx} ${mzxdbg}
-	@rm -f ${mzx} ${mzxdbg}
+	$(if ${V},,@echo "  RM      " ${mzx_obj})
+	${RM} -r ${mzx_obj}
+	$(if ${V},,@echo "  RM      " ${editor_obj})
+	${RM} -r ${editor_obj}
+	$(if ${V},,@echo "  RM      " ${mzx} ${mzxdbg})
+	${RM} ${mzx} ${mzxdbg}

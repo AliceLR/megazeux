@@ -40,5 +40,5 @@ ${libmodplug_obj}/%.o: ${libmodplug_src}/%.cpp
 ${libmodplug_objs}: $(filter-out $(wildcard ${libmodplug_obj}), ${libmodplug_obj})
 
 libmodplug_clean:
-	@echo "  RM      " ${libmodplug_obj}
-	@rm -rf ${libmodplug_obj}
+	$(if ${V},,@echo "  RM      " ${libmodplug_obj})
+	${RM} -r ${libmodplug_obj}

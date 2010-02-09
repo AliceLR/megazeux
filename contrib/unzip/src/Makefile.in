@@ -25,5 +25,5 @@ ${unzip_obj}/%.o: ${unzip_src}/%.c
 ${unzip_objs}: $(filter-out $(wildcard ${unzip_obj}), ${unzip_obj})
 
 unzip_clean:
-	@echo "  RM      " ${unzip_obj}
-	@rm -rf ${unzip_obj}
+	$(if ${V},,@echo "  RM      " ${unzip_obj})
+	${RM} -r ${unzip_obj}
