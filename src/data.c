@@ -37,7 +37,7 @@ char config_dir[MAX_PATH];
 unsigned char scroll_color = 15;
 
 // Array of flags for things
-unsigned int flags[] =
+const unsigned int flags[] =
 {
   A_UNDER,                                                    // 0x00 Space
   0,                                                          // 0x01 Normal
@@ -170,7 +170,7 @@ unsigned int flags[] =
 };
 
 //Names for all things
-const char *thing_names[128] =
+const char *const thing_names[128] =
 {
   "Space",
   "Normal",

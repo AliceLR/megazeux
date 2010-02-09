@@ -34,13 +34,8 @@ CORE_LIBSPEC extern char current_dir[MAX_PATH];
 CORE_LIBSPEC extern char config_dir[MAX_PATH];
 
 CORE_LIBSPEC extern unsigned char scroll_color;
-CORE_LIBSPEC extern const char *thing_names[128];
-CORE_LIBSPEC extern unsigned int flags[128];
-
-extern unsigned char cheats_active;
-extern unsigned char current_help_sec0;
-extern char saved_pl_color;
-extern int was_zapped;
+CORE_LIBSPEC extern const char *const thing_names[128];
+CORE_LIBSPEC extern const unsigned int flags[128];
 
 enum thing
 {
@@ -152,27 +147,41 @@ enum thing
   NO_ID           = 255
 };
 
-#define is_fake(id)                                       \
-  ((id == SPACE) || ((id >= FAKE) && (id <= THICK_WEB)))  \
+static inline bool is_fake(enum thing id)
+{
+  return (id == SPACE) || ((id >= FAKE) && (id <= THICK_WEB));
+}
 
-#define is_robot(id)                                      \
-  ((id == ROBOT) || (id == ROBOT_PUSHABLE))               \
+static inline bool is_robot(enum thing id)
+{
+  return (id == ROBOT) || (id == ROBOT_PUSHABLE);
+}
 
-#define is_signscroll(id)                                 \
-  ((id == SIGN) || (id == SCROLL))                        \
+static inline bool is_signscroll(enum thing id)
+{
+  return (id == SIGN) || (id == SCROLL);
+}
 
-#define is_water(id)                                      \
-  ((id >= STILL_WATER) && (id <= W_WATER))                \
+static inline bool is_water(enum thing id)
+{
+  return (id >= STILL_WATER) && (id <= W_WATER);
+}
 
-#define is_whirlpool(id)                                  \
-  ((id >= WHIRLPOOL_1) && (id <= WHIRLPOOL_2))            \
+static inline bool is_whirlpool(enum thing id)
+{
+  return (id >= WHIRLPOOL_1) && (id <= WHIRLPOOL_2);
+}
 
-#define is_enemy(id)                                      \
-  ((id >= SNAKE) && (id <= BEAR_CUB) &&                   \
-   (id != BULLET_GUN) && (id != SPINNING_GUN))            \
+static inline bool is_enemy(enum thing id)
+{
+  return (id >= SNAKE) && (id <= BEAR_CUB) &&
+   (id != BULLET_GUN) && (id != SPINNING_GUN);
+}
 
-#define is_storageless(id)                                \
-  (id < SENSOR)                                           \
+static inline bool is_storageless(enum thing id)
+{
+  return id < SENSOR;
+}
 
 enum dir
 {
@@ -198,14 +207,20 @@ enum dir
   RANDNOT = 128
 };
 
-#define is_cardinal_dir(d)                                \
-  ((d >= NORTH) && (d <= WEST))                           \
+static inline bool is_cardinal_dir(enum dir d)
+{
+  return (d >= NORTH) && (d <= WEST);
+}
 
-#define dir_to_int(d)                                     \
-  ((int)d - 1)                                            \
+static inline int dir_to_int(enum dir d)
+{
+  return (int)d - 1;
+}
 
-#define int_to_dir(d)                                     \
-  ((enum dir)(d + 1))                                     \
+static inline enum dir int_to_dir(int d)
+{
+  return (enum dir)(d + 1);
+}
 
 #define CAN_PUSH      (1 << 0)
 #define CAN_TRANSPORT (1 << 1)
