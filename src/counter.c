@@ -3542,11 +3542,13 @@ void counter_fsg(void)
       counter_first_letter[i * 2] = i2;
       old_char = cur_char;
 
-      do
+      while(cur_char == old_char)
       {
         i2++;
+        if(i2 == num_builtin_counters)
+          break;
         cur_char = builtin_counters[i2].name[0];
-      } while(i2 < num_builtin_counters - 1 && cur_char == old_char);
+      }
 
       counter_first_letter[(i * 2) + 1] = i2 - 1;
     }
