@@ -415,16 +415,9 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
   {
     cur_board = mzx_world->board_list[i];
 
-    /* Before messing with the board, make sure the board is rid of
-     * any gaps in the object lists. Normally this is necessary for
-     * the save_board() function below.
-     *
-     * In the special case that we're making a save game, don't bother
-     * optimizing the robot list -- this might be during a cycle via
-     * SET "file.sav" TO "save_world" and we can't shuffle the robot
-     * list along, or commands following (like DIE) may not succeed.
-     */
-    optimize_null_objects(cur_board, !savegame);
+    // Before messing with the board, make sure the board is
+    // rid of any gaps in the object lists...
+    optimize_null_objects(cur_board);
 
     // First save the offset of where the board will be placed
     board_begin_position = ftell(fp);
@@ -1152,7 +1145,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
 
       // Also optimize out null objects
       retrieve_board_from_extram(mzx_world->board_list[i]);
-      optimize_null_objects(mzx_world->board_list[i], true);
+      optimize_null_objects(mzx_world->board_list[i]);
       store_board_to_extram(mzx_world->board_list[i]);
     }
     else
@@ -1326,7 +1319,7 @@ int append_world(World *mzx_world, const char *file)
         cur_board->robot_list[0] = mzx_world->global_robot;
       }
       // Also optimize out null objects
-      optimize_null_objects(cur_board, true);
+      optimize_null_objects(cur_board);
 
       board_width = cur_board->board_width;
       board_height = cur_board->board_height;
