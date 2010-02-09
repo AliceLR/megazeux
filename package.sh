@@ -270,7 +270,7 @@ cp -pr $SUBDIRS dist/$TARGET &&
 cp -pr src/* dist/$TARGET/src &&
 
 # nasty hack for binary packaging (not removed by package_clean)
-rm -f dist/$TARGET/src/utils/*{,.dbg}{,.exe} &&
+rm -f dist/$TARGET/src/utils/{checkres,downver,hlp2txt,txt2hlp}{,.dbg}{,.exe}&&
 
 echo "PLATFORM=none" > dist/$TARGET/platform.inc
 
