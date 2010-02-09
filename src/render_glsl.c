@@ -365,7 +365,6 @@ static bool glsl_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct glsl_render_data *render_data;
-  const char *version, *extensions;
 
   render_data = cmalloc(sizeof(struct glsl_render_data));
   if(!render_data)
@@ -393,28 +392,6 @@ static bool glsl_init_video(struct graphics_data *graphics,
   render_data->ratio = conf->video_ratio;
   if(!set_video_mode())
     goto err_free;
-
-  // NOTE: These must come AFTER set_video_mode()!
-  version = (const char *)glsl.glGetString(GL_VERSION);
-  extensions = (const char *)glsl.glGetString(GL_EXTENSIONS);
-
-  // We need a specific version of OpenGL; desktop GL must be 1.1.
-  // We also need the shading language extension for desktop GL.
-  // All OpenGL ES implementations are supported, so don't do the check
-  // with EGL configurations (EGL implies OpenGL ES).
-#ifndef CONFIG_EGL
-  if(version && atof(version) < 1.1)
-  {
-    warn("OpenGL implementation is too old (need v1.1).\n");
-    goto err_free;
-  }
-
-  if(!(extensions && strstr(extensions, "GL_ARB_shading_language_100")))
-  {
-    warn("OpenGL missing GL_ARB_shading_language_100 extension.\n");
-    goto err_free;
-  }
-#endif
 
   return true;
 
@@ -501,6 +478,35 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
 
   if(!gl_load_syms(glsl_syms_map))
     return false;
+
+  // We need a specific version of OpenGL; desktop GL must be 2.0.
+  // All OpenGL ES 2.0 implementations are supported, so don't do
+  // the check with EGL configurations (EGL implies OpenGL ES).
+#ifndef CONFIG_EGL
+  {
+    static bool initialized = false;
+
+    if(!initialized)
+    {
+      const char *version;
+      float version_float;
+
+      // NOTE: This must come AFTER gl_set_video_mode()!
+      version = (const char *)glsl.glGetString(GL_VERSION);
+      if(!version)
+        return false;
+
+      version_float = atof(version);
+      if(version_float < 2.0)
+      {
+        warn("Need >= OpenGL 2.0, got OpenGL %.1f.\n", version_float);
+        return false;
+      }
+
+      initialized = true;
+    }
+  }
+#endif
 
   glsl_resize_screen(graphics, width, height);
   return true;
