@@ -61,7 +61,8 @@ arch/wii/%.o: arch/wii/%.c
 #
 build := build/${SUBPLATFORM}/apps/megazeux
 build: package ${build}
-	${CP} arch/wii/pad.config arch/wii/icon.png boot.dol ${build}
+	${CP} arch/wii/pad.config arch/wii/icon.png ${build}
+	${CP} boot.dol megazeux.dol ${build}
 	@sed "s/%VERSION%/${VERSION}/g;s/%DATE%/`date -u +%Y%m%d%H%M`/g" \
 	    arch/wii/meta.xml > ${build}/meta.xml
 	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug
