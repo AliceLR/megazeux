@@ -930,12 +930,12 @@ UINT CSoundFile::WriteSample(FILE *f, MODINSTRUMENT *pins, UINT nFlags, UINT nMa
 				if (nFlags == RS_PCM16D)
 				{
 					int16_t temp = bswapLE16((int16_t)(s_new - s_old));
-					*((int16_t*)(&buffer[bufcount])) = temp;
+					memcpy(&buffer[bufcount], &temp, sizeof(int16_t));
 					s_old = s_new;
 				} else
 				{
 					int16_t temp = bswapLE16((int16_t)(s_new + s_ofs));
-					*((int16_t *)(&buffer[bufcount])) = temp;
+					memcpy(&buffer[bufcount], &temp, sizeof(int16_t));
 				}
 				bufcount += 2;
 				if (bufcount >= sizeof(buffer) - 1)
@@ -1004,12 +1004,12 @@ UINT CSoundFile::WriteSample(FILE *f, MODINSTRUMENT *pins, UINT nFlags, UINT nMa
 					if (nFlags == RS_STPCM16D)
 					{
 						int16_t temp = bswapLE16((int16_t)(s_new - s_old));
-						*((int16_t *)(&buffer[bufcount])) = temp;
+						memcpy(&buffer[bufcount], &temp, sizeof(int16_t));
 						s_old = s_new;
 					} else
 					{
 						int16_t temp = bswapLE16((int16_t)(s_new - s_ofs));
-						*((int16_t*)(&buffer[bufcount])) = temp;
+						memcpy(&buffer[bufcount], &temp, sizeof(int16_t));
 					}
 					bufcount += 2;
 					if (bufcount >= sizeof(buffer))
