@@ -35,6 +35,8 @@ USERS
   "Bocco Chronicles 1" and probably several other titles.
 + Fix a crash when using RIDn or ROBOT_ID_n in the same cycle as DIE for
   another robot positioned earlier in the board scan.
++ Fix poor sanity checks on BOARD_ID counter writes. Illegal character IDs such
+  as -1 can no longer be used to bypass the check (causing subsequent crashes).
 
 DEVELOPERS
 

@@ -384,12 +384,13 @@ static void board_id_write(World *mzx_world, function_counter *counter,
   int offset = get_counter(mzx_world, "board_x", id) +
    (get_counter(mzx_world, "board_y", id) * src_board->board_width);
   int board_size = src_board->board_width * src_board->board_height;
+  char cvalue = value;
 
-  if(((value < (int)SENSOR) || (value == (int)PLAYER)) &&
-   (src_board->level_id[offset] < (int)SENSOR) && (offset >= 0) &&
+  if(((cvalue < SENSOR) || (cvalue == PLAYER)) &&
+   (src_board->level_id[offset] < SENSOR) && (offset >= 0) &&
    (offset < board_size))
   {
-    src_board->level_id[offset] = value;
+    src_board->level_id[offset] = cvalue;
   }
 }
 
