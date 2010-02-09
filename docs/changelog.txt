@@ -2,6 +2,10 @@ SVN
 
 USERS
 
++ Fixed a bug where LOAD_ROBOT would not reset the stack pointer for the
+  newly loaded program. This could cause crashes if a robot popped the
+  stack in the new program.
+
 DEVELOPERS
 
 December 29, 2009 - MZX 2.83
