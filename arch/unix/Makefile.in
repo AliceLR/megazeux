@@ -63,5 +63,7 @@ ifeq (${BUILD_RENDER_GL_PROGRAM},1)
 	                    shaders/mouse.frag   shaders/mouse.vert \
 	                    shaders/scaler.frag  shaders/scaler.vert \
 	                    shaders/tilemap.frag shaders/tilemap.vert \
+	                    shaders/tilemap.smzx12.frag \
+	                    shaders/tilemap.smzx3.frag \
 	                 ${DESTDIR}${SHAREDIR}/megazeux/shaders
 endif
