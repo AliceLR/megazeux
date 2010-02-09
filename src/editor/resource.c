@@ -109,10 +109,200 @@ static void sread(char *dest, int unused, int len, char ** const src)
   *src += len;
 }
 
+static status_t parse_robot_program(char *program, int program_length)
+{
+  int j;
+  char tmp[256], tmp2[256], *str;
+  char *orig_program = program;
+  status_t ret = SUCCESS;
+  sgetc(&program);
+  while(1)
+  {
+    int command_length = sgetc(&program);
+    if(!command_length)
+      break;
+    int command = sgetc(&program);
+    int str_len;
+
+    switch(command)
+    {
+      case 0xa:
+        str_len = sgetc(&program);
+
+        sread(tmp, 1, str_len, &program);
+
+        str_len = sgetc(&program);
+
+        if(str_len == 0)
+        {
+          sgetus(&program);
+          break;
+        }
+
+        sread(tmp2, 1, str_len, &program);
+
+        if(!strcasecmp(tmp2, "FREAD_OPEN")
+          || !strcasecmp(tmp2, "SMZX_PALETTE")
+          || !strcasecmp(tmp2, "LOAD_GAME")
+          || !strncasecmp(tmp2, "LOAD_BC", 7)
+          || !strncasecmp(tmp2, "LOAD_ROBOT", 10))
+        {
+          debug("SET: %s (%s)\n", tmp, tmp2);
+          ret = add_to_hash_table(tmp);
+          if(ret != SUCCESS)
+            return ret;
+        }
+        break;
+
+      case 0x26:
+        str_len = sgetc(&program);
+
+        sread(tmp, 1, str_len, &program);
+
+        // ignore MOD *
+        if(!strcmp(tmp, "*"))
+          break;
+
+        // FIXME: Should only match pairs?
+        if(strstr(tmp, "&"))
+          break;
+
+        debug("MOD: %s\n", tmp);
+        ret = add_to_hash_table(tmp);
+        if(ret != SUCCESS)
+          return ret;
+        break;
+
+      case 0x27:
+        str_len = sgetc(&program);
+
+        if(str_len == 0)
+          sgetus(&program);
+        else
+        {
+          for(j = 0; j < str_len; j++)
+            sgetc(&program);
+        }
+
+        str_len = sgetc(&program);
+
+        sread(tmp, 1, str_len, &program);
+
+        // FIXME: Should only match pairs?
+        if(strstr(tmp, "&"))
+            break;
+
+        debug("SAM: %s\n", tmp);
+        ret = add_to_hash_table(tmp);
+        if(ret != SUCCESS)
+          return ret;
+        break;
+
+      case 0x2b:
+      case 0x2d:
+      case 0x31:
+        str_len = sgetc(&program);
+
+        sread(tmp, 1, str_len, &program);
+
+        str = strtok(tmp, "&");
+
+        // no & enclosed tokens were found
+        if(strlen(str) == strlen(tmp))
+          break;
+
+        while(str)
+        {
+          debug("PLAY (class): %s\n", str);
+          ret = add_to_hash_table(str);
+          if(ret != SUCCESS)
+            return ret;
+
+          // tokenise twice, because we only care about
+          // every _other '&'; e.g. &programam.sam&ff&programam2.sam&ee
+          str = strtok(NULL, "&");
+          str = strtok(NULL, "&");
+        }
+        break;
+
+      case 0xc8:
+        str_len = sgetc(&program);
+
+        sread(tmp, 1, str_len, &program);
+
+        debug("MOD FADE IN: %s\n", tmp);
+        ret = add_to_hash_table(tmp);
+        if(ret != SUCCESS)
+          return ret;
+        break;
+
+      case 0xd8:
+        str_len = sgetc(&program);
+
+        sread(tmp, 1, str_len, &program);
+
+        debug("LOAD CHAR SET: %s\n", tmp);
+
+        if(tmp[0] == '+')
+        {
+          char *rest, tempc = tmp[3];
+          tmp[3] = 0;
+          strtol(tmp + 1, &rest, 16);
+          tmp[3] = tempc;
+          memmove(tmp, rest, str_len - (rest - tmp));
+        }
+        else if(tmp[0] == '@')
+        {
+          char *rest, tempc = tmp[4];
+          tmp[4] = 0;
+          strtol(tmp + 1, &rest, 10);
+          tmp[4] = tempc;
+          memmove(tmp, rest, str_len - (rest - tmp));
+        }
+
+        ret = add_to_hash_table(tmp);
+        if(ret != SUCCESS)
+          return ret;
+        break;
+
+      case 0xde:
+        str_len = sgetc(&program);
+
+        sread(tmp, 1, str_len, &program);
+
+        debug("LOAD PALETTE: %s\n", tmp);
+        ret = add_to_hash_table(tmp);
+        if(ret != SUCCESS)
+          return ret;
+        break;
+
+      case 0xe2:
+        str_len = sgetc(&program);
+
+        sread(tmp, 1, str_len, &program);
+
+        debug("SWAP WORLD: %s\n", tmp);
+        ret = add_to_hash_table(tmp);
+        if(ret != SUCCESS)
+          return ret;
+        break;
+
+      default:
+        program += command_length - 1;
+        break;
+    }
+    sgetc(&program);
+    
+    if(program - orig_program >= program_length)
+      break;
+  }
+  
+  return ret;
+}
+
 static status_t parse_board_direct(Board *board)
 {
-  int i, j;
-  char tmp[256], tmp2[256], *str;
+  int i;
   status_t ret;
 
   if(strlen(board->mod_playing) > 0 && strcmp(board->mod_playing, "*"))
@@ -124,190 +314,7 @@ static status_t parse_board_direct(Board *board)
   }
 
   for(i = 0; i <= board->num_robots; i++)
-  {
-    char *program = board->robot_list[i]->program;
-    sgetc(&program);
-    while(1)
-    {
-      int command_length = sgetc(&program);
-      if(!command_length)
-        break;
-      int command = sgetc(&program);
-      int str_len;
-
-      switch(command)
-      {
-        case 0xa:
-          str_len = sgetc(&program);
-
-          sread(tmp, 1, str_len, &program);
-
-          str_len = sgetc(&program);
-
-          if(str_len == 0)
-          {
-            sgetus(&program);
-            break;
-          }
-
-          sread(tmp2, 1, str_len, &program);
-
-          if(!strcasecmp(tmp2, "FREAD_OPEN")
-            || !strcasecmp(tmp2, "SMZX_PALETTE")
-            || !strcasecmp(tmp2, "LOAD_GAME")
-            || !strncasecmp(tmp2, "LOAD_BC", 7)
-            || !strncasecmp(tmp2, "LOAD_ROBOT", 10))
-          {
-            debug("SET: %s (%s)\n", tmp, tmp2);
-            ret = add_to_hash_table(tmp);
-            if(ret != SUCCESS)
-              return ret;
-          }
-          break;
-
-        case 0x26:
-          str_len = sgetc(&program);
-
-          sread(tmp, 1, str_len, &program);
-
-          // ignore MOD *
-          if(!strcmp(tmp, "*"))
-            break;
-
-          // FIXME: Should only match pairs?
-          if(strstr(tmp, "&"))
-            break;
-
-          debug("MOD: %s\n", tmp);
-          ret = add_to_hash_table(tmp);
-          if(ret != SUCCESS)
-            return ret;
-          break;
-
-        case 0x27:
-          str_len = sgetc(&program);
-
-          if(str_len == 0)
-            sgetus(&program);
-          else
-          {
-            for(j = 0; j < str_len; j++)
-              sgetc(&program);
-          }
-
-          str_len = sgetc(&program);
-
-          sread(tmp, 1, str_len, &program);
-
-          // FIXME: Should only match pairs?
-          if(strstr(tmp, "&"))
-              break;
-
-          debug("SAM: %s\n", tmp);
-          ret = add_to_hash_table(tmp);
-          if(ret != SUCCESS)
-            return ret;
-          break;
-
-        case 0x2b:
-        case 0x2d:
-        case 0x31:
-          str_len = sgetc(&program);
-
-          sread(tmp, 1, str_len, &program);
-
-          str = strtok(tmp, "&");
-
-          // no & enclosed tokens were found
-          if(strlen(str) == strlen(tmp))
-            break;
-
-          while(str)
-          {
-            debug("PLAY (class): %s\n", str);
-            ret = add_to_hash_table(str);
-            if(ret != SUCCESS)
-              return ret;
-
-            // tokenise twice, because we only care about
-            // every _other '&'; e.g. &programam.sam&ff&programam2.sam&ee
-            str = strtok(NULL, "&");
-            str = strtok(NULL, "&");
-          }
-          break;
-
-        case 0xc8:
-          str_len = sgetc(&program);
-
-          sread(tmp, 1, str_len, &program);
-
-          debug("MOD FADE IN: %s\n", tmp);
-          ret = add_to_hash_table(tmp);
-          if(ret != SUCCESS)
-            return ret;
-          break;
-
-        case 0xd8:
-          str_len = sgetc(&program);
-
-          sread(tmp, 1, str_len, &program);
-
-          debug("LOAD CHAR SET: %s\n", tmp);
-
-          if(tmp[0] == '+')
-          {
-            char *rest, tempc = tmp[3];
-            tmp[3] = 0;
-            strtol(tmp + 1, &rest, 16);
-            tmp[3] = tempc;
-            memmove(tmp, rest, str_len - (rest - tmp));
-          }
-          else if(tmp[0] == '@')
-          {
-            char *rest, tempc = tmp[4];
-            tmp[4] = 0;
-            strtol(tmp + 1, &rest, 10);
-            tmp[4] = tempc;
-            memmove(tmp, rest, str_len - (rest - tmp));
-          }
-
-          ret = add_to_hash_table(tmp);
-          if(ret != SUCCESS)
-            return ret;
-          break;
-
-        case 0xde:
-          str_len = sgetc(&program);
-
-          sread(tmp, 1, str_len, &program);
-
-          debug("LOAD PALETTE: %s\n", tmp);
-          ret = add_to_hash_table(tmp);
-          if(ret != SUCCESS)
-            return ret;
-          break;
-
-        case 0xe2:
-          str_len = sgetc(&program);
-
-          sread(tmp, 1, str_len, &program);
-
-          debug("SWAP WORLD: %s\n", tmp);
-          ret = add_to_hash_table(tmp);
-          if(ret != SUCCESS)
-            return ret;
-          break;
-
-        default:
-          program += command_length - 1;
-          break;
-      }
-      sgetc(&program);
-      
-      if(program - board->robot_list[i]->program >= board->robot_list[i]->program_length)
-        break;
-    }
-  }
+    parse_robot_program(board->robot_list[i]->program, board->robot_list[i]->program_length);
 
   return SUCCESS;
 }
@@ -362,7 +369,7 @@ void list_resources(World *mzx_world, char ***resources, int *num_resources)
     parse_board_direct(mzx_world->board_list[i]);
   
   *num_resources = count_resources();
-  *resources = malloc(*num_resources * sizeof(char *));
+  *resources = calloc(*num_resources, sizeof(char *));
   p = hash_table[j];
   for(i = 0; i < *num_resources; i++)
   {
