@@ -79,20 +79,22 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
 {
   struct board *src_board = mzx_world->current_board;
   int mod_name_size = strlen(filename);
+
   if((mod_name_size > 1) && (filename[mod_name_size - 1] == '*'))
   {
     filename[mod_name_size - 1] = 0;
+
     if(strcasecmp(src_board->mod_playing, filename))
-      load_module(filename, true);
+      load_board_module(src_board);
 
     src_board->mod_playing[0] = '*';
   }
   else
   {
-    if(filename[0] != '*')
-      load_module(filename, true);
-
     strcpy(src_board->mod_playing, filename);
+
+    if(filename[0] != '*')
+      load_board_module(src_board);
   }
 
   strcpy(mzx_world->real_mod_playing, filename);

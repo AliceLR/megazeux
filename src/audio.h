@@ -29,6 +29,7 @@ __M_BEGIN_DECLS
 
 #include "platform.h"
 #include "configure.h"
+#include "board_struct.h"
 
 #ifdef CONFIG_AUDIO
 
@@ -118,8 +119,8 @@ extern struct audio audio;
 
 CORE_LIBSPEC void init_audio(struct config_info *conf);
 CORE_LIBSPEC void quit_audio(void);
-CORE_LIBSPEC void load_module(char *filename, bool safely);
 CORE_LIBSPEC void end_module(void);
+CORE_LIBSPEC void load_board_module(struct board *src_board);
 CORE_LIBSPEC void play_sample(int freq, char *filename, bool safely);
 
 void end_sample(void);
@@ -151,6 +152,10 @@ void set_sfx_volume(int volume);
 void audio_callback(Sint16 *stream, int len);
 void init_audio_platform(struct config_info *conf);
 void quit_audio_platform(void);
+
+#ifdef CONFIG_EDITOR
+CORE_LIBSPEC void load_module(char *filename, bool safely, int volume);
+#endif
 
 #ifdef CONFIG_MODPLUG
 int check_ext_for_sam_and_convert(const char *filename, char *new_file);
@@ -198,7 +203,8 @@ static inline void set_sfx_on(int val) {}
 static inline void set_sfx_volume(int volume) {}
 static inline void end_sample(void) {}
 static inline void end_module(void) {}
-static inline void load_module(char *filename, bool safely) {}
+static inline void load_module(char *filename, bool safely, int volume) {}
+static inline void load_board_module(struct board *src_board) {}
 static inline void volume_module(int vol) {}
 static inline void set_position(int pos) {}
 static inline void jump_module(int order) {}

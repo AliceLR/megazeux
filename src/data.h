@@ -250,7 +250,7 @@ enum equality
   GREATER_THAN          = 2,
   GREATER_THAN_OR_EQUAL = 3,
   LESS_THAN_OR_EQUAL    = 4,
-  NOT_EQUAL             = 5,
+  NOT_EQUAL             = 5
 };
 
 enum condition
@@ -286,7 +286,7 @@ enum chest_contents
   ITEM_POTION           = 7,
   ITEM_RING             = 8,
   ITEM_LOBOMBS          = 9,
-  ITEM_HIBOMBS          = 10,
+  ITEM_HIBOMBS          = 10
 };
 
 enum potion

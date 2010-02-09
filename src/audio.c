@@ -1615,14 +1615,22 @@ void quit_audio(void)
   free(audio.pcs_stream);
 }
 
-void load_module(char *filename, bool safely)
+__editor_maybe_static void load_module(char *filename, bool safely,
+ int volume)
 {
   char translated_filename[MAX_PATH];
 
-  // FIXME: Weird hack, why not use end_module()?
-  if(!filename[0])
+  // FIXME: Weird hack, why not use end_module() directly?
+  if(!filename || !filename[0])
   {
     end_module();
+    return;
+  }
+
+  // Should never happen, but let's find out
+  if(!strcmp(filename, "*"))
+  {
+    warn("Passed '*' as a file to load! Report this!\n");
     return;
   }
 
@@ -1642,9 +1650,14 @@ void load_module(char *filename, bool safely)
   LOCK();
 
   audio.primary_stream = construct_stream_audio_file(filename, 0,
-   audio.music_volume * 255 / 8, 1);
+   volume * audio.music_volume / 8, 1);
 
   UNLOCK();
+}
+
+void load_board_module(struct board *src_board)
+{
+  load_module(src_board->mod_playing, true, src_board->volume);
 }
 
 void end_module(void)

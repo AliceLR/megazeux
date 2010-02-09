@@ -58,6 +58,8 @@ USERS
 + Updated SDL to 1.2.14 in Windows x86, Windows x64 and Mac OS X builds.
 + Security checks are no longer applied to filenames in module or
   sample playback in "listening only" modes in the editor.
++ Module volume is applied immediately before playback upon switching
+  boards. This prevents one cycle of audio "leaking" at the wrong volume.
 
 DEVELOPERS
 

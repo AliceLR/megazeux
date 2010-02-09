@@ -154,7 +154,7 @@ static void load_world_file(struct world *mzx_world, char *name)
     send_robot_def(mzx_world, 0, 10);
 
     src_board = mzx_world->current_board;
-    load_module(src_board->mod_playing, true);
+    load_board_module(src_board);
     strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
     set_counter(mzx_world, "TIME", src_board->time_limit, 0);
     set_intro_mesg_timer(MESG_TIMEOUT);
@@ -460,7 +460,7 @@ static void game_settings(struct world *mzx_world)
     {
       // Turn on music.
       strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
-      load_module(mzx_world->real_mod_playing, true);
+      load_board_module(src_board);
     }
 
     set_music_on(music);
@@ -1153,7 +1153,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
 
   if(update_music)
   {
-    load_module(src_board->mod_playing, true);
+    load_board_module(src_board);
     strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
   }
 
@@ -1444,7 +1444,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
   if(mzx_world->swapped)
   {
     src_board = mzx_world->current_board;
-    load_module(src_board->mod_playing, true);
+    load_board_module(src_board);
     strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
 
     // send both JUSTLOADED and JUSTENTERED respectively; the
@@ -1827,7 +1827,7 @@ __editor_maybe_static void play_game(struct world *mzx_world, int fadein)
               // Reset this
               src_board = mzx_world->current_board;
               // Swap in starting board
-              load_module(src_board->mod_playing, true);
+              load_board_module(src_board);
               strcpy(mzx_world->real_mod_playing,
                src_board->mod_playing);
 
@@ -2012,7 +2012,7 @@ __editor_maybe_static void play_game(struct world *mzx_world, int fadein)
             find_player(mzx_world);
 
             // Swap in starting board
-            load_module(src_board->mod_playing, true);
+            load_board_module(src_board);
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
 
@@ -2230,7 +2230,7 @@ void title_screen(struct world *mzx_world)
             {
               src_board = mzx_world->current_board;
               // Swap in starting board
-              load_module(src_board->mod_playing, true);
+              load_board_module(src_board);
               strcpy(mzx_world->real_mod_playing,
                src_board->mod_playing);
 
@@ -2266,7 +2266,7 @@ void title_screen(struct world *mzx_world)
                 if(reload_world(mzx_world, curr_file, &fade))
                 {
                   src_board = mzx_world->current_board;
-                  load_module(src_board->mod_playing, true);
+                  load_board_module(src_board);
                   strcpy(mzx_world->real_mod_playing,
                    src_board->mod_playing);
                   set_counter(mzx_world, "TIME",
@@ -2340,7 +2340,7 @@ void title_screen(struct world *mzx_world)
               if(strcmp(src_board->mod_playing, "*") &&
                strcmp(src_board->mod_playing, old_mod_playing))
               {
-                load_module(src_board->mod_playing, true);
+                load_board_module(src_board);
               }
 
               strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
@@ -2367,7 +2367,7 @@ void title_screen(struct world *mzx_world)
               if(reload_world(mzx_world, curr_file, &fade))
               {
                 src_board = mzx_world->current_board;
-                load_module(src_board->mod_playing, true);
+                load_board_module(src_board);
                 strcpy(mzx_world->real_mod_playing,
                  src_board->mod_playing);
                 set_counter(mzx_world, "TIME", src_board->time_limit, 0);
@@ -2437,7 +2437,7 @@ void title_screen(struct world *mzx_world)
           {
             src_board = mzx_world->current_board;
             // Swap in starting board
-            load_module(src_board->mod_playing, true);
+            load_board_module(src_board);
             strcpy(mzx_world->real_mod_playing,
              src_board->mod_playing);
 
@@ -2471,7 +2471,7 @@ void title_screen(struct world *mzx_world)
               if(reload_world(mzx_world, curr_file, &fade))
               {
                 src_board = mzx_world->current_board;
-                load_module(src_board->mod_playing, true);
+                load_board_module(src_board);
                 strcpy(mzx_world->real_mod_playing,
                  src_board->mod_playing);
                 set_counter(mzx_world, "TIME",
