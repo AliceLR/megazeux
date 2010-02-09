@@ -1801,7 +1801,7 @@ int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
   char command_name[256];
   int command_params[32];
   char temp[256];
-  char *first_non_space;
+  char *first_non_space = NULL;
   void *param_list[32];
   int advance;
   int dir_modifier_buffer = 0;
