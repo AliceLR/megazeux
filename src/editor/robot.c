@@ -160,4 +160,4 @@ int duplicate_robot_source(struct board *src_board, struct robot *cur_robot,
   return dest_id;
 }
 
-#endif // CONFIG_BYTECODE
+#endif // CONFIG_DEBYTECODE

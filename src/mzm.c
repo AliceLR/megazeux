@@ -42,7 +42,7 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     if(savegame)
       savegame = 1;
 
-#ifdef CONFIG_DEBYTCODE
+#ifdef CONFIG_DEBYTECODE
     fwrite("MZM3", 4, 1, output_file);
 #else
     fwrite("MZM2", 4, 1, output_file);
