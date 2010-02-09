@@ -51,11 +51,6 @@ extern const char *mod_gdm_ext[];
 #define EC_CURR_PARAM         23
 #define EC_OPTION             26
 #define EC_HIGHLIGHTED_OPTION 31
-#define EC_DEBUG_BOX          DI_INPUT_BOX
-#define EC_DEBUG_BOX_DARK     DI_INPUT_BOX_DARK
-#define EC_DEBUG_BOX_CORNER   DI_INPUT_BOX_CORNER
-#define EC_DEBUG_LABEL        DI_INPUT_BOX_LABEL
-#define EC_DEBUG_NUMBER       79
 #define EC_NA_FILL            1
 
 __M_END_DECLS

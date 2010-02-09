@@ -197,6 +197,10 @@ typedef struct
 void construct_dialog(dialog *src, const char *title, int x, int y,
  int width, int height, element **elements, int num_elements,
  int start_element);
+void construct_dialog_ext(dialog *src, const char *title, int x, int y,
+ int width, int height, element **elements, int num_elements,
+ int sfx_test_for_input, int pad_space, int start_element,
+ int (* idle_function)(World *mzx_world, dialog *di, int key));
 void destruct_dialog(dialog *src);
 
 element *construct_label(int x, int y, const char *text);
@@ -204,6 +208,9 @@ element *construct_radio_button(int x, int y,
  const char **choices, int num_choices, int max_length, int *result);
 element *construct_button(int x, int y, const char *label,
  int return_value);
+element *construct_list_box(int x, int y, const char **choices,
+ int num_choices, int num_choices_visible, int choice_length,
+ int return_value, int *result);
 element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
  int mult_five, int *result);
@@ -241,6 +248,12 @@ int new_file(World *mzx_world, const char **wildcards, char *ret,
 #define DI_INPUT_BOX_CORNER 70
 #define DI_INPUT_BOX_LABEL  78
 
+#define DI_DEBUG_BOX          DI_INPUT_BOX
+#define DI_DEBUG_BOX_DARK     DI_INPUT_BOX_DARK
+#define DI_DEBUG_BOX_CORNER   DI_INPUT_BOX_CORNER
+#define DI_DEBUG_LABEL        DI_INPUT_BOX_LABEL
+#define DI_DEBUG_NUMBER       79
+
 #define arrow_char '\x10'
 #define pc_top_arrow '\x1E'
 #define pc_bottom_arrow '\x1F'
@@ -274,15 +287,8 @@ void construct_element(element *e, int x, int y,
 
 int char_selection_ext(int current, int allow_multichar,
  int *width_ptr, int *height_ptr);
-void construct_dialog_ext(dialog *src, const char *title, int x, int y,
- int width, int height, element **elements, int num_elements,
- int sfx_test_for_input, int pad_space, int start_element,
- int (* idle_function)(World *mzx_world, dialog *di, int key));
 element *construct_input_box(int x, int y, const char *question,
  int max_length, int input_flags, char *result);
-element *construct_list_box(int x, int y, const char **choices,
- int num_choices, int num_choices_visible, int choice_length,
- int return_value, int *result);
 int file_manager(World *mzx_world, const char **wildcards, char *ret,
  const char *title, int dirs_okay, int allow_new, element **dialog_ext,
  int num_ext, int ext_height, int allow_dir_change);

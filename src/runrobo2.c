@@ -145,7 +145,7 @@ static void calculate_blocked(World *mzx_world, int x, int y, int id, int bl[4])
   }
 }
 
-__editor_maybe_static int place_at_xy(World *mzx_world, mzx_thing id,
+int place_at_xy(World *mzx_world, mzx_thing id,
  int color, int param, int x, int y)
 {
   Board *src_board = mzx_world->current_board;

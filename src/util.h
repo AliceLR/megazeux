@@ -110,6 +110,24 @@ int rename(const char *oldpath, const char *newpath);
 extern const char *mod_gdm_ext[];
 #endif
 
+#define info(...) \
+ do { \
+   fprintf(stdout, "INFO: " __VA_ARGS___; \
+   fflush(stdout); \
+ } while(0)
+
+#define warning(...) \
+ do { \
+   fprintf(stderr, "WARNING: " __VA_ARGS__); \
+   fflush(stderr); \
+ } while(0)
+
+#ifdef DEBUG
+#define debug(...) warning(__VA_ARGS__)
+#else
+#define debug(...) do { } while(0)
+#endif
+
 __M_END_DECLS
 
 #endif // __UTIL_H

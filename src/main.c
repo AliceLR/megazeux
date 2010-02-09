@@ -51,11 +51,7 @@
 #include "util.h"
 #include "world.h"
 #include "counter.h"
-
-#ifdef CONFIG_EDITOR
-// for 'macros' below
-#include "editor/robo_ed.h"
-#endif
+#include "editor_syms.h"
 
 #ifdef CONFIG_NDS
 
@@ -108,16 +104,8 @@ static void free_world(World *mzx_world)
   if(mzx_world->update_done)
     free(mzx_world->update_done);
 
-#ifdef CONFIG_EDITOR
-  // allocated by macro.c:add_ext_macro()
-  if(mzx_world->conf.extended_macros)
-  {
-    int i;
-    for(i = 0; i < mzx_world->conf.num_extended_macros; i++)
-      free_macro(mzx_world->conf.extended_macros[i]);
-    free(mzx_world->conf.extended_macros);
-  }
-#endif // CONFIG_EDITOR
+  // could be a nop in an editor-free build
+  editor_free_hook(mzx_world);
 
   free(mzx_world->real_mod_playing);
   free(mzx_world->input_file_name);
@@ -129,6 +117,9 @@ static void free_world(World *mzx_world)
 int main(int argc, char *argv[])
 {
   World mzx_world;
+
+  if(!editor_init_hook(&mzx_world))
+    debug("Editor function disabled.\n");
 
   platform_init();
 
@@ -187,10 +178,6 @@ int main(int argc, char *argv[])
   mzx_world.mzx_speed = mzx_world.conf.mzx_speed;
   mzx_world.default_speed = mzx_world.mzx_speed;
 
-#ifdef CONFIG_EDITOR
-  memcpy(macros, mzx_world.conf.default_macros, 5 * 64);
-#endif
-
   // Run main game (mouse is hidden and palette is faded)
   title_screen(&mzx_world);
 
@@ -209,6 +196,7 @@ int main(int argc, char *argv[])
   quit_audio();
 
 exit_free_world:
+  editor_free_hook(&mzx_world);
   free_world(&mzx_world);
 
 exit_free_res:

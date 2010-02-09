@@ -18,6 +18,7 @@
  */
 
 #include "pngops.h"
+#include "util.h"
 
 #include <stdlib.h>
 #include <png.h>
@@ -141,7 +142,7 @@ SDL_Surface *png_read_icon(const char *name)
 
   if(w != h || (w % 16) != 0 || (h % 16) != 0)
   {
-    fprintf(stderr, "Requested icon '%s' not a valid dimension.\n", name);
+    warning("Requested icon '%s' not a valid dimension.\n", name);
     goto exit_free_close;
   }
 
@@ -153,7 +154,7 @@ SDL_Surface *png_read_icon(const char *name)
       png_set_gray_to_rgb(png_ptr);
       break;
     default:
-      fprintf(stderr, "Requested icon '%s' not an RGBA image.\n", name);
+      warning("Requested icon '%s' not an RGBA image.\n", name);
       goto exit_free_close;
   }
 

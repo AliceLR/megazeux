@@ -707,10 +707,9 @@ static config_info default_options =
   1,                            // disassemble_extras
   10,                           // disassemble_base
 
-#ifdef CONFIG_EDITOR
-  // Editor only options
   0,                            // startup_editor
 
+#ifdef CONFIG_EDITOR
   // Board editor options
   0,                            // editor_space_toggles
   0,				// board_editor_hide_help

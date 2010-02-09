@@ -35,12 +35,6 @@
 
 #undef DEBUG
 
-#ifdef DEBUG
-#define debug(...) fprintf(stdout, __VA_ARGS__)
-#else
-#define debug(...)
-#endif
-
 #define BOARD_NAME_SIZE         25
 
 // "You may now have up to 250 boards." -- port.txt

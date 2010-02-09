@@ -3291,9 +3291,9 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
           macro_line[0] = 0;
 
           save_screen();
-          draw_window_box(15, 11, 65, 13, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
-           EC_DEBUG_BOX_CORNER, 1, 1);
-          write_string("Configure macro:", 17, 12, EC_DEBUG_LABEL, 0);
+          draw_window_box(15, 11, 65, 13, DI_DEBUG_BOX, DI_DEBUG_BOX_DARK,
+           DI_DEBUG_BOX_CORNER, 1, 1);
+          write_string("Configure macro:", 17, 12, DI_DEBUG_LABEL, 0);
 
           if(intake(mzx_world, macro_line, 29, 34, 12, 15, 1, 0, NULL,
            0, NULL) != IKEY_ESCAPE)

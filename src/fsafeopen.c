@@ -200,10 +200,8 @@ static int match(char *path)
               // try brute force
               if(case5(path, oldtoken) < 0)
               {
-#ifdef DEBUG
-                fprintf(stderr, "%s:%d: file matches for %s failed.\n",
-                        __FILE__, __LINE__, path);
-#endif
+                debug("%s:%d: file matches for %s failed.\n",
+                 __FILE__, __LINE__, path);
                 return -FSAFE_MATCH_FAILED;
               }
           }
@@ -232,10 +230,8 @@ static int match(char *path)
             // try brute force
             if(case5(path, oldtoken) < 0)
             {
-#ifdef DEBUG
-              fprintf(stderr, "%s:%d: directory matches for %s failed.\n",
-                      __FILE__, __LINE__, path);
-#endif
+              debug("%s:%d: directory matches for %s failed.\n",
+               __FILE__, __LINE__, path);
               return -FSAFE_MATCH_FAILED;
             }
         }
@@ -341,17 +337,12 @@ int fsafetranslate(const char *path, char *newpath)
     }
   }
 
-#if defined(DEBUG) && !defined(__WIN32__)
+#if !defined(__WIN32__)
   if(ret == FSAFE_SUCCESS)
-  {
-    fprintf(stderr, "%s:%d: translated %s to %s.\n",
-            __FILE__, __LINE__, path, newpath);
-  }
+    debug("%s:%d: translated %s to %s.\n", __FILE__, __LINE__, path, newpath);
   else
-  {
-    fprintf(stderr, "%s:%d: failed to translate %s (err %d).\n",
-            __FILE__, __LINE__, path, ret);
-  }
+    debug("%s:%d: failed to translate %s (err %d).\n",
+     __FILE__, __LINE__, path, ret);
 #endif
 
   return ret;

@@ -52,57 +52,43 @@
 #include "fsafeopen.h"
 #include "extmem.h"
 #include "util.h"
-
-#ifdef CONFIG_EDITOR
-#include "editor/debug.h"
-#include "editor/edit.h"
-#endif
+#include "debug.h"
+#include "editor_syms.h"
 
 // Number of cycles to make player idle before repeating a
 // directional move
 #define REPEAT_WAIT 2
 
-static char main_menu[] =
+static const char main_menu_1[] =
  "Enter- Menu\n"
  "Esc  - Exit to DOS\n"
  "F1/H - Help\n"
  "F2/S - Settings\n"
  "F3/L - Load world\n"
  "F4/R - Restore game\n"
- "F5/P - Play world\n"
-#ifdef CONFIG_EDITOR
- "F8/E - World editor\n"
-#else
- "\n"
-#endif
+ "F5/P - Play world";
+
+static const char main_menu_2[] =
+ "F8/E - Editor";
+
+static const char main_menu_3[] =
  "F10  - Quickload\n"
- ""  // unused
- ""; // unused
+ "\n"  // unused
+ "";   // unused
 
-static char game_menu[] =
+static const char game_menu_1[] =
  "F1    - Help\n"
  "Enter - Menu/status\n"
  "Esc   - Exit to title\n"
  "F2    - Settings\n"
  "F3    - Save game\n"
  "F4    - Restore game\n"
- "F5/Ins- Toggle bomb type\n"
- "\n"  // Debug Menu (disabled in game)
- "F9    - Quicksave\n"
- "F10   - Quickload\n"
- "Arrows- Move\n"
- "Space - Shoot (w/dir)\n"
- "Delete- Bomb";
+ "F5/Ins- Toggle bomb type";
 
-static char editing_menu[] =
- "F1    - Help\n"
- "Enter - Menu/status\n"
- "Esc   - Exit to title\n"
- "F2    - Settings\n"
- "F3    - Save game\n"
- "F4    - Restore game\n"
- "F5/Ins- Toggle bomb type\n"
- "F6    - Debug Menu\n"
+static const char game_menu_2[] =
+ "F6    - Debug Menu";
+
+static const char game_menu_3[] =
  "F9    - Quicksave\n"
  "F10   - Quickload\n"
  "Arrows- Move\n"
@@ -123,9 +109,7 @@ int pal_update; // Whether to update a palette from robot activity
 
 __editor_maybe_static const char *world_ext[] = { ".MZX", NULL };
 
-#ifdef CONFIG_EDITOR
-char debug_mode = 0;
-#endif
+__editor_maybe_static char debug_mode = 0;
 
 static void load_world_file(World *mzx_world, char *name)
 {
@@ -1394,14 +1378,12 @@ static int update(World *mzx_world, int game, int *fadein)
         draw_char_ext(' ', scroll_color, mesg_x, mesg_y, 0, 0);
     }
 
-#ifdef CONFIG_EDITOR
     // Add debug box
     if(debug_mode)
     {
       draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
        mzx_world->player_y);
     }
-#endif // CONFIG_EDITOR
 
     if(pal_update)
       update_palette();
@@ -1766,14 +1748,16 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
             save_screen();
 
             draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
-            if(mzx_world->editing)
-              write_string(editing_menu, 10, 5, 31, 1);
-            else
-              write_string(game_menu, 10, 5, 31, 1);
             write_string(" Game Menu ", 14, 4, 30, 0);
+            write_string(game_menu_1, 10, 5, 31, 1);
+            if(mzx_world->editing)
+              write_string(game_menu_2, 10, 12, 31, 1);
+            write_string(game_menu_3, 10, 13, 31, 1);
+
             show_status(mzx_world); // Status screen too
             update_screen();
             m_show();
+
             do
             {
               update_event_status_delay();
@@ -1897,7 +1881,6 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 
-#ifdef CONFIG_EDITOR
         case IKEY_F6:
         {
           if(mzx_world->editing)
@@ -2000,7 +1983,6 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
 
           break;
         }
-#endif // CONFIG_EDITOR
 
         // Quick save
         case IKEY_F9:
@@ -2052,7 +2034,6 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 
-#ifdef CONFIG_EDITOR
         case IKEY_F11:
         {
           if(mzx_world->editing)
@@ -2060,7 +2041,6 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
 
           break;
         }
-#endif // CONFIG_EDITOR
       }
     }
   } while(key != IKEY_ESCAPE);
@@ -2079,9 +2059,7 @@ void title_screen(World *mzx_world)
   Board *src_board;
   char *current_dir;
 
-#ifdef CONFIG_EDITOR
   debug_mode = 0;
-#endif // CONFIG_EDITOR
 
   // Clear screen
   clear_screen(32, 7);
@@ -2094,11 +2072,9 @@ void title_screen(World *mzx_world)
   set_config_from_file(&(mzx_world->conf), "title.cnf");
   chdir(current_dir);
 
-#ifdef CONFIG_EDITOR
-  if(mzx_world->conf.startup_editor)
-    edit_world(mzx_world);
+  if(mzx_world->conf.startup_editor && editor_syms.handle)
+    editor_syms.edit_world(mzx_world);
   else
-#endif
   {
     if(!stat(curr_file, &file_info))
       load_world_file(mzx_world, curr_file);
@@ -2147,22 +2123,23 @@ void title_screen(World *mzx_world)
     {
       switch(key)
       {
-#ifdef CONFIG_EDITOR
         case IKEY_e: // E
         case IKEY_F8: // F8
         {
-          // Editor
-          clear_sfx_queue();
-          vquick_fadeout();
-          edit_world(mzx_world);
+          if(editor_syms.handle)
+          {
+            // Editor
+            clear_sfx_queue();
+            vquick_fadeout();
+            editor_syms.edit_world(mzx_world);
 
-          if(curr_file[0])
-            load_world_file(mzx_world, curr_file);
+            if(curr_file[0])
+              load_world_file(mzx_world, curr_file);
 
-          fadein = 1;
+            fadein = 1;
+          }
           break;
         }
-#endif // CONFIG_EDITOR
 
         case IKEY_s: // S
         case IKEY_F2: // F2
@@ -2186,10 +2163,12 @@ void title_screen(World *mzx_world)
 
             save_screen();
             draw_window_box(30, 4, 52, 16, 25, 16, 24, 1, 1);
-            write_string(main_menu, 32, 5, 31, 1);
             write_string(" Main Menu ", 36, 4, 30, 0);
+            write_string(main_menu_1, 32, 5, 31, 1);
+            if(editor_syms.handle)
+              write_string(main_menu_2, 32, 12, 31, 1);
+            write_string(main_menu_3, 32, 13, 31, 1);
             update_screen();
-
             m_show();
 
             do

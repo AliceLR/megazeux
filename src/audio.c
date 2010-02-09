@@ -111,7 +111,7 @@ static void lock(const char *file, int line)
 {
   // lock should _not_ be held here
   if(locked)
-    fprintf(stderr, "%s:%d: locked at %s already!\n", file, line, last_lock);
+    debug("%s:%d: locked at %s already!\n", file, line, last_lock);
 
   // acquire the mutex
   __lock();
@@ -125,7 +125,7 @@ static void unlock(const char *file, int line)
 {
   // lock should be held here
   if(!locked)
-    fprintf(stderr, "%s:%d: tried to unlock when not locked!\n", file, line);
+    debug("%s:%d: tried to unlock when not locked!\n", file, line);
 
   // all ok, unlock this mutex
   locked = 0;
@@ -1469,10 +1469,6 @@ void init_audio(config_info *conf)
   set_sfx_volume(conf->pc_speaker_volume);
 
   init_audio_platform(conf);
-
-#ifdef DEBUG
-  fprintf(stdout, "Started audio subsystem\n");
-#endif
 }
 
 void quit_audio(void)

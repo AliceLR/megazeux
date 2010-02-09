@@ -141,7 +141,7 @@ int mzx_res_init(const char *argv0)
   {
     if(!mzx_res[i].path)
     {
-      fprintf(stderr, "Failed to locate critical resource '%s'.\n",
+      warning("Failed to locate critical resource '%s'.\n",
        mzx_res[i].base_name);
       ret = 1;
     }

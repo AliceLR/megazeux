@@ -776,7 +776,7 @@ static int set_graphics_output(const char *video_output)
   // The first renderer was NULL, this shouldn't happen
   if(!renderer->name)
   {
-    fprintf(stderr, "No renderers built, please provide a valid config.h\n");
+    warning("No renderers built, please provide a valid config.h!\n");
     return false;
   }
 
@@ -793,9 +793,7 @@ static int set_graphics_output(const char *video_output)
 
   renderer->reg(&graphics);
 
-#ifdef DEBUG
-  fprintf(stdout, "Selected video output: %s\n", renderer->name);
-#endif
+  debug("Video: using '%s' renderer.\n", renderer->name);
   return true;
 }
 

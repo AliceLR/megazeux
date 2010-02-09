@@ -1065,9 +1065,9 @@ int edit_robot(World *mzx_world, Robot *cur_robot)
   // First get name...
   m_hide();
   save_screen();
-  draw_window_box(16, 12, 50, 14, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
-   EC_DEBUG_BOX_CORNER, 1, 1);
-  write_string("Name for robot:", 18, 13, EC_DEBUG_LABEL, 0);
+  draw_window_box(16, 12, 50, 14, DI_DEBUG_BOX, DI_DEBUG_BOX_DARK,
+   DI_DEBUG_BOX_CORNER, 1, 1);
+  write_string("Name for robot:", 18, 13, DI_DEBUG_LABEL, 0);
   m_show();
 
   if(intake(mzx_world, cur_robot->robot_name, 14, 34, 13,

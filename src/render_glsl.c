@@ -200,7 +200,7 @@ static void glsl_verify_shader_compile(glsl_render_data *render_data,
   gl->glGetInfoLogARB(shader, SHADER_INFO_MAX - 1, &len, buffer);
   buffer[len] = 0;
 
-  fprintf(stderr, "%s", buffer);
+  warning("%s", buffer);
 }
 
 static void glsl_load_shaders(graphics_data *graphics)
@@ -349,14 +349,14 @@ static int glsl_init_video(graphics_data *graphics, config_info *conf)
   // we need a specific "version" of OpenGL compatibility
   if(version && atof(version) < 1.1)
   {
-    fprintf(stderr, "OpenGL implementation is too old (need v1.1).\n");
+    warning("OpenGL implementation is too old (need v1.1).\n");
     goto err_free;
   }
 
   // we also need to be able to utilise shader extensions
   if(!(extensions && strstr(extensions, "GL_ARB_shading_language_100")))
   {
-    fprintf(stderr, "OpenGL missing GL_ARB_shading_language_100 extension.");
+    warning("OpenGL missing GL_ARB_shading_language_100 extension.");
     goto err_free;
   }
 

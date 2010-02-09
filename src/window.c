@@ -1705,10 +1705,9 @@ void construct_dialog(dialog *src, const char *title, int x, int y,
   src->idle_function = NULL;
 }
 
-__editor_maybe_static void construct_dialog_ext(dialog *src,
- const char *title, int x, int y, int width, int height,
- element **elements, int num_elements, int sfx_test_for_input,
- int pad_space, int start_element,
+void construct_dialog_ext(dialog *src, const char *title, int x, int y,
+ int width, int height, element **elements, int num_elements,
+ int sfx_test_for_input, int pad_space, int start_element,
  int (* idle_function)(World *mzx_world, dialog *di, int key))
 {
   src->title = title;
@@ -1817,9 +1816,9 @@ element *construct_number_box(int x, int y,
   return (element *)src;
 }
 
-__editor_maybe_static element *construct_list_box(int x, int y,
- const char **choices, int num_choices, int num_choices_visible,
- int choice_length, int return_value, int *result)
+element *construct_list_box(int x, int y, const char **choices,
+ int num_choices, int num_choices_visible, int choice_length,
+ int return_value, int *result)
 {
   int scroll_offset = *result - (num_choices_visible / 2);
 

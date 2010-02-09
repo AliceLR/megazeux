@@ -66,11 +66,11 @@ struct _config_info
   int mzx_speed;
   int disassemble_extras;
   int disassemble_base;
- 
-#ifdef CONFIG_EDITOR
-  // Editor only options
+
+  // Whether or not to start MZX in the editor
   int startup_editor;
 
+#ifdef CONFIG_EDITOR
   // Board editor options
   int editor_space_toggles;
   int bedit_hhelp;
