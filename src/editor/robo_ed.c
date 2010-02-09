@@ -859,9 +859,10 @@ static void add_line(struct robot_state *rstate, int relation)
       int current_line = rstate->current_line;
 
       if(relation < 0)
+      {
         rstate->current_line++;
-
-      rstate->current_rline = current_rline;
+        rstate->current_rline = current_rline;
+      }
 
       if(rstate->mark_mode)
       {
