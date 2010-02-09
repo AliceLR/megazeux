@@ -655,7 +655,7 @@ static void glsl_render_mouse(struct graphics_data *graphics,
   gl->glEnable(GL_BLEND);
   gl->glUseProgramObjectARB(0);
 
-  gl->glBegin(GL_QUADS);
+  gl->glBegin(GL_TRIANGLE_STRIP);
     gl->glColor4ub(255, 255, 255, 255);
     gl->glVertex2f( x*2.0f/640.0f-1.0f,       y*-2.0f/350.0f+1.0f);
     gl->glVertex2f( x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f);
@@ -688,7 +688,7 @@ static void glsl_sync_screen(struct graphics_data *graphics)
 
   if(graphics->window_width < 640 || graphics->window_height < 350)
   {
-    gl->glBegin(GL_QUADS);
+    gl->glBegin(GL_TRIANGLE_STRIP);
       gl->glTexCoord2f(0, 0);
       gl->glVertex2i(-1, -1);
       gl->glTexCoord2f(0,
@@ -705,7 +705,7 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   }
   else
   {
-    gl->glBegin(GL_QUADS);
+    gl->glBegin(GL_TRIANGLE_STRIP);
       gl->glTexCoord2f(0, 0);
       gl->glVertex2i(-1, -1);
       gl->glTexCoord2f(0, 0.68359375);
