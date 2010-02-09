@@ -189,10 +189,8 @@ struct world
   bool editing;
 #endif
 
-#ifdef CONFIG_HELPSYS
   // Keep this open, just once
   FILE *help_file;
-#endif
 
   // An array for game2.cpp
   char *update_done;
