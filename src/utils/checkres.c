@@ -620,7 +620,7 @@ static status_t parse_board_direct(stream_t *s)
             return FREAD_FAILED;
 
           debug("LOAD CHAR SET: %s\n", tmp);
-          
+
           if(tmp[0] == '+')
           {
             char *rest, tempc = tmp[3];
@@ -637,7 +637,7 @@ static status_t parse_board_direct(stream_t *s)
             tmp[4] = tempc;
             memmove(tmp, rest, str_len - (rest - tmp));
           }
-          
+
           ret = add_to_hash_table(tmp);
           if(ret != SUCCESS)
             return ret;
