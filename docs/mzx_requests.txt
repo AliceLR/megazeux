@@ -71,3 +71,4 @@ MZX REQUESTS:
 -Functions.
 -Online support in games, lozl
 -A SMALLHACKER COUNTER
+-Ability to store >80 char board bottom messages and add an adjustable counter for altering the timeout, with 0 for infinite (clear with clear mesg) (version bump).
