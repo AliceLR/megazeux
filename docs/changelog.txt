@@ -37,6 +37,8 @@ USERS
   another robot positioned earlier in the board scan.
 + Fix poor sanity checks on BOARD_ID counter writes. Illegal character IDs such
   as -1 can no longer be used to bypass the check (causing subsequent crashes).
++ Windows builds now use a patched version of SDL 1.2.13 containing a fix
+  for the directx+F10 issue.
 
 DEVELOPERS
 
@@ -61,10 +63,11 @@ DEVELOPERS
   platform is now "unix-devel" and available on all UNIX derivatives/clones.
 + Add a special hack to enable linking with --as-needed for DT_NEEDED link
   optimization for GNU ld platforms.
-+ Windows builds now use a patched version of SDL 1.2.13 containing a fix
-  for the directx+F10 issue.
 + Updated MSVC projects. Fixed all warnings emitted by MSVC 2008, and
   implemented icon support with existing mingw resource files.
++ Use the GNU ld "debuglink" feature on all platforms to enable shipping of
+  a side-by-side symbol package. Optimized release builds can now be
+  debugged with minimal user effort.
 
 June 10, 2008 - MZX 2.82
 
