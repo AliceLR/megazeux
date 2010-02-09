@@ -1,3 +1,5 @@
+precision mediump float;
+
 attribute vec2 Position;
 attribute vec3 Color;
 

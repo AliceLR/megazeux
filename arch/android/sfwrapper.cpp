@@ -106,7 +106,10 @@ extern "C" bool SurfaceFlingerInitialize(int target_width, int target_height,
   }
 
   if(mSurface == NULL)
+  {
     mSurface = mSurfaceControl->getSurface();
+    assert(mSurface != NULL);
+  }
 
   return true;
 }

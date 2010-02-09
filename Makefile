@@ -103,8 +103,10 @@ endif
 # The "long long" type is only used in one platform's header files, and we
 # don't use it at all in MegaZeux (even if we did it's quite portable).
 #
+ifneq (${PLATFORM},android)
 CFLAGS   += -pedantic -Wno-variadic-macros -Wno-long-long
 CXXFLAGS += -pedantic -fpermissive -Wno-variadic-macros -Wno-long-long
+endif
 
 ifneq (${PLATFORM},mingw)
 

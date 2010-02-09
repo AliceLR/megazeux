@@ -61,35 +61,57 @@ void *GL_GetProcAddress(const char *proc)
 // in the traditional sense. It is expected that the platform provides a
 // native "window" type that handles things like resolution and resizing.
 
-static const EGLint config16[] =
+static EGLint config16[] =
 {
-  EGL_RED_SIZE,   5,
-  EGL_GREEN_SIZE, 6,
-  EGL_BLUE_SIZE,  5,
-  EGL_ALPHA_SIZE, 0,
-  EGL_DEPTH_SIZE, 0,
+  EGL_RED_SIZE,        5,
+  EGL_GREEN_SIZE,      6,
+  EGL_BLUE_SIZE,       5,
+  EGL_ALPHA_SIZE,      0,
+  EGL_DEPTH_SIZE,      0,
+  EGL_RENDERABLE_TYPE, 0, /* Placeholder */
   EGL_NONE,
 };
 
-static const EGLint config32[] =
+static EGLint config32[] =
 {
-  EGL_RED_SIZE,   8,
-  EGL_GREEN_SIZE, 8,
-  EGL_BLUE_SIZE,  8,
-  EGL_ALPHA_SIZE, 8,
-  EGL_DEPTH_SIZE, 0,
+  EGL_RED_SIZE,        8,
+  EGL_GREEN_SIZE,      8,
+  EGL_BLUE_SIZE,       8,
+  EGL_ALPHA_SIZE,      8,
+  EGL_DEPTH_SIZE,      0,
+  EGL_RENDERABLE_TYPE, 0, /* Placeholder */
   EGL_NONE,
 };
+
+static void update_config_attribs(EGLint *config)
+{
+  int i;
+
+  for(i = 0; config[i] != EGL_NONE; i++)
+  {
+    if(config[i] != EGL_RENDERABLE_TYPE)
+      continue;
+
+    if(gl_type == GL_LIB_FIXED)
+      config[i + 1] = EGL_OPENGL_ES_BIT;
+    else
+      config[i + 1] = EGL_OPENGL_ES2_BIT;
+
+    break;
+  }
+}
 
 static const EGLint *get_current_config(int depth)
 {
   if(depth == 32)
   {
     debug("Selected RGBA 8888 EGLConfig\n");
+    update_config_attribs(config32);
     return config32;
   }
 
   debug("Selected RGB 565 EGLConfig\n");
+  update_config_attribs(config16);
   return config16;
 }
 
@@ -126,10 +148,15 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
     goto err_cleanup;
   }
 
+  if(!eglBindAPI(EGL_OPENGL_ES_API))
+  {
+    warn("eglBindAPI failed\n");
+    goto err_cleanup;
+  }
+
   if(gl_type == GL_LIB_PROGRAMMABLE)
     attribs = gles_v2_attribs;
 
-  eglBindAPI(EGL_OPENGL_ES_API);
   egl_render_data->context = eglCreateContext(egl_render_data->display,
                                               egl_render_data->config,
                                               EGL_NO_CONTEXT, attribs);

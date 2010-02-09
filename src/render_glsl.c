@@ -72,6 +72,8 @@ static struct
   void (GL_APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
   void (GL_APIENTRY *glGetProgramInfoLog)(GLuint program, GLsizei bufsize,
    GLsizei *len, char *infolog);
+  void (GL_APIENTRY *glGetShaderInfoLog)(GLuint shader, GLsizei bufsize,
+   GLsizei *len, char *infolog);
   const GLubyte* (GL_APIENTRY *glGetString)(GLenum name);
   void (GL_APIENTRY *glLinkProgram)(GLuint program);
   void (GL_APIENTRY *glShaderSource)(GLuint shader, GLsizei count,
@@ -110,6 +112,7 @@ static const struct dso_syms_map glsl_syms_map[] =
   { "glEnableVertexAttribArray",  (void **)&glsl.glEnableVertexAttribArray },
   { "glGenTextures",              (void **)&glsl.glGenTextures },
   { "glGetProgramInfoLog",        (void **)&glsl.glGetProgramInfoLog },
+  { "glGetShaderInfoLog",         (void **)&glsl.glGetShaderInfoLog },
   { "glGetString",                (void **)&glsl.glGetString },
   { "glLinkProgram",              (void **)&glsl.glLinkProgram },
   { "glShaderSource",             (void **)&glsl.glShaderSource },
@@ -146,15 +149,28 @@ struct glsl_render_data
 
 static const char *source_cache[SHADERS_CURSOR_FRAG - SHADERS_SCALER_VERT + 1];
 
-#define SHADER_INFO_MAX 1000
+#define INFO_MAX 1000
 
-static void glsl_verify_compile_link(struct glsl_render_data *render_data,
+static void glsl_verify_compile(struct glsl_render_data *render_data,
  GLenum shader)
 {
-  char buffer[SHADER_INFO_MAX];
+  char buffer[INFO_MAX];
   int len = 0;
 
-  glsl.glGetProgramInfoLog(shader, SHADER_INFO_MAX - 1, &len, buffer);
+  glsl.glGetShaderInfoLog(shader, INFO_MAX - 1, &len, buffer);
+  buffer[len] = 0;
+
+  if(len > 0)
+    warn("%s", buffer);
+}
+
+static void glsl_verify_link(struct glsl_render_data *render_data,
+ GLenum program)
+{
+  char buffer[INFO_MAX];
+  int len = 0;
+
+  glsl.glGetProgramInfoLog(program, INFO_MAX - 1, &len, buffer);
   buffer[len] = 0;
 
   if(len > 0)
@@ -219,7 +235,7 @@ static GLenum glsl_load_shader(struct graphics_data *graphics,
   glsl.glShaderSource(shader, 1, &source_cache[index], &length);
 
   glsl.glCompileShader(shader);
-  glsl_verify_compile_link(render_data, shader);
+  glsl_verify_compile(render_data, shader);
 
   return shader;
 }
@@ -264,7 +280,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
     glsl.glBindAttribLocation(render_data->scaler_program,
      ATTRIB_TEXCOORD, "Texcoord");
     glsl.glLinkProgram(render_data->scaler_program);
-    glsl_verify_compile_link(render_data, render_data->scaler_program);
+    glsl_verify_link(render_data, render_data->scaler_program);
   }
 
   render_data->tilemap_program = glsl_load_program(graphics,
@@ -276,7 +292,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
     glsl.glBindAttribLocation(render_data->tilemap_program,
      ATTRIB_TEXCOORD, "Texcoord");
     glsl.glLinkProgram(render_data->tilemap_program);
-    glsl_verify_compile_link(render_data, render_data->tilemap_program);
+    glsl_verify_link(render_data, render_data->tilemap_program);
   }
 
   render_data->tilemap_smzx12_program = glsl_load_program(graphics,
@@ -288,7 +304,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
     glsl.glBindAttribLocation(render_data->tilemap_smzx12_program,
      ATTRIB_TEXCOORD, "Texcoord");
     glsl.glLinkProgram(render_data->tilemap_smzx12_program);
-    glsl_verify_compile_link(render_data, render_data->tilemap_smzx12_program);
+    glsl_verify_link(render_data, render_data->tilemap_smzx12_program);
   }
 
   render_data->tilemap_smzx3_program = glsl_load_program(graphics,
@@ -300,7 +316,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
     glsl.glBindAttribLocation(render_data->tilemap_smzx3_program,
      ATTRIB_TEXCOORD, "Texcoord");
     glsl.glLinkProgram(render_data->tilemap_smzx3_program);
-    glsl_verify_compile_link(render_data, render_data->tilemap_smzx3_program);
+    glsl_verify_link(render_data, render_data->tilemap_smzx3_program);
   }
 
   render_data->mouse_program = glsl_load_program(graphics,
@@ -310,7 +326,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
     glsl.glBindAttribLocation(render_data->mouse_program,
      ATTRIB_POSITION, "Position");
     glsl.glLinkProgram(render_data->mouse_program);
-    glsl_verify_compile_link(render_data, render_data->mouse_program);
+    glsl_verify_link(render_data, render_data->mouse_program);
   }
 
   render_data->cursor_program  = glsl_load_program(graphics,
@@ -322,7 +338,7 @@ static void glsl_load_shaders(struct graphics_data *graphics)
     glsl.glBindAttribLocation(render_data->cursor_program,
      ATTRIB_COLOR, "Color");
     glsl.glLinkProgram(render_data->cursor_program);
-    glsl_verify_compile_link(render_data, render_data->cursor_program);
+    glsl_verify_link(render_data, render_data->cursor_program);
   }
 }
 

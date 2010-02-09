@@ -64,8 +64,7 @@ ARCH_LDFLAGS = \
   -nostdlib \
   -Wl,-dynamic-linker,/system/bin/linker \
   -Wl,-rpath-link=${ANDROID_LIBPATH} \
-  -L${ANDROID_LIBPATH} -lc -lcutils -lsurfaceflinger \
-  $(shell $(CC) -print-libgcc-file-name)
+  -L${ANDROID_LIBPATH} -lc -lcutils -lsurfaceflinger
 
 ARCH_EXE_LDFLAGS += \
   ${ANDROID_LIBPATH}/crtbegin_dynamic.o \
@@ -91,7 +90,7 @@ LIBPNG_CFLAGS = -I${PREFIX}/external/libpng ${ZLIB_CFLAGS}
 #
 # Skia provides libpng symbols on Android
 #
-LIBPNG_LDFLAGS = -lsgl
+LIBPNG_LDFLAGS = -lskiagl
 
 #
 # Some of SurfaceFlinger is only available to C++; this wraps
