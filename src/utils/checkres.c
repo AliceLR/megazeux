@@ -3,7 +3,7 @@
  * so false positives are theoretically impossible.
  *
  * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
- * Copyright (C) 2007 Josh Matthews <mrlachatte@gmail.com>
+ * Copyright (C) 2007 Josh Matthews <josh@joshmatthews.net>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -154,6 +154,23 @@ static enum status add_to_hash_table(char *stack_str)
   return SUCCESS;
 }
 
+static bool is_zip_file(const char *filename)
+{
+    int signature = 0;
+    FILE *fp = fopen(filename, "rb");
+    if(!fp)
+      return false;
+
+    signature |= fgetc(fp) << 0;
+    signature |= fgetc(fp) << 8;
+    signature |= fgetc(fp) << 16;
+    signature |= fgetc(fp) << 24;
+    fclose(fp);
+
+    // Zip file header obtained from http://www.pkware.com/documents/casestudies/APPNOTE.TXT
+    return (strcasecmp(filename + strlen(filename) - 3, "zip") == 0 || signature == 0x04034b50);
+}
+
 static enum status s_open(const char *filename, const char *mode,
  struct stream **s)
 {
@@ -163,8 +180,7 @@ static enum status s_open(const char *filename, const char *mode,
 
   *s = malloc(sizeof(struct stream));
 
-  // not a ZIP, handle in a conventional manner
-  if(strcasecmp(filename + strlen(filename) - 3, "zip"))
+  if(!is_zip_file(filename))
   {
     char path[MAX_PATH];
     int path_len;
