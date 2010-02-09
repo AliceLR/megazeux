@@ -24,7 +24,7 @@ MZX REQUESTS:
 -Ability to enter the number lists from CHAR EDIT commands into the character editor to create a character.
 -Ability to remove "edges" from characters.
 -An installer.
--Ability to access default save/load menus via Robotic, as well as a way to disable the F4 loading menu. [Exo skipped]
+-Ability to prompt default save/load menus via Robotic. [Exo skipped]
 -Listing of number of commands executed last cycle in F11 debug.
 -Looping sound effects independent of the MOD command. [Exo skipped]
 -Read-only viewport height and viewport width characters. [Exo skipped]
@@ -33,7 +33,7 @@ MZX REQUESTS:
 -MOD_LENGTH counter (based on current mod row or PCM sample).
 -Charsets/palettes bound to the current board via displaying in the editor.
 -Editing of all bomb anim chars outside of #1 in global's "Edit Chars" menu. (CHAR ID values 169-175).
--Display of "Key_pressed", "key_code", "keyn" and "key_release" in the F11 menu, or the debug window.
+-Display of "key_pressed", "key_code", "key", "keyn" and "key_release" in the F11 menu, or the debug window.
 -Mutable length of time message row is active (or even 0 for no expiration).
 -Zoom.
 -Per-pixel camera offset.
@@ -42,9 +42,9 @@ MZX REQUESTS:
 -A grid of variable size in the board editor.
 -Splicing strings via offsetting by negative values. EX: SET "$word" "-ism" || SET "$word+-6" "atropin" || . "* &$word& yields \"atropinism\""
 -Universal button layouts easily accessible in Robotic (e.g. "Joy1", "Joy2" or "JoyA", "JoyB" counters)
--IF command that takes no label (and skips the next line if false)
+-IF command that takes no label (and skips the next line if false).
 -Separate font characters from normal chars.
--Ability to set individual volumes to 0.
+-Ability to set individual sound volumes to 0.
 -"modname" and "samvolume" counters.
 -Hardier F11 menu (stronger name seeks, ability to set new counters/strings, ability to see/manip local counters (in Rn.<counter> format)).
 -Ability for Alt+F to display index # of SFX currently being edited.
@@ -58,5 +58,18 @@ MZX REQUESTS:
 -Copyrobot-esque command which appends to the end the code of the given Robot to the Robot executing the command instead of replacing the code of the executing Robot altogether.
 -MOD END WAIT command.
 -Expanded quicksave/load abilities. Quicksave in "slots" determined by going to a menu and picking the active slot. Interval-based quicksaving where one can step backwards through quicksaves.
--Online support, lozl
+-A platform-neutral onscreen keyboard (for handheld platforms).
+-Pixel-accurate block copy with scaling.
+-Cheat functions toggleable in MZXRun builds.
+-board_editor_hide_help to still display current item in buffer and editor mode.
+-Ability to quickly restore a Robot's code to what it was before entering the Robot (to allow quick and sane recovery from major flaws like a "replace all" gone bad).
+-Octave range in sound commands increased to 8th octave.
+-Energizer state with customisable animations/colors.
+-Ability to halt a loop which doesn't end a cycle.
+-Extension of sound commands to allow loading of music/sound at given volumes.
+-Support for more mouse buttons and the scrollwheel (forward-back button support minimum).
+-Enforcement of old-style sound system limitations for pre-port games (i.e. four simultaneous sound effects maximum), to allow overdriven sounds in older games to play as intended. The drawbridge lowering sound sequence in Bernard the Bard is a good example. Version pegged + config file option? Version pegged + F2 menu option?
+-Background color fading that ends at a given percentage.
+-Functions.
+-Online support in games, lozl
 -A SMALLHACKER COUNTER
