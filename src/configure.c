@@ -564,6 +564,30 @@ static void config_gl_vsync(config_info *conf, char *name,
   conf->gl_vsync = strtol(value, NULL, 10);
 }
 
+static void config_set_gl_tilemap_fragment_shader(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  strncpy(conf->gl_tilemap_fragment_shader, value, 42);
+}
+
+static void config_set_gl_tilemap_vertex_shader(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  strncpy(conf->gl_tilemap_vertex_shader, value, 42);
+}
+
+static void config_set_gl_scaling_fragment_shader(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  strncpy(conf->gl_scaling_fragment_shader, value, 42);
+}
+
+static void config_set_gl_scaling_vertex_shader(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  strncpy(conf->gl_scaling_vertex_shader, value, 42);
+}
+
 /* FAT NOTE: This is searched as a binary tree, the nodes must be
  *           sorted alphabetically, or they risk being ignored.
  */
@@ -580,6 +604,10 @@ static const config_entry core_config_options[] =
   { "fullscreen", config_set_fullscreen },
   { "fullscreen_resolution", config_set_resolution },
   { "gl_filter_method", config_set_gl_filter_method },
+  { "gl_scaling_fragment_shader", config_set_gl_scaling_fragment_shader },
+  { "gl_scaling_vertex_shader", config_set_gl_scaling_vertex_shader },
+  { "gl_tilemap_fragment_shader", config_set_gl_tilemap_fragment_shader },
+  { "gl_tilemap_vertex_shader", config_set_gl_tilemap_vertex_shader },
   { "gl_vsync", config_gl_vsync },
   { "include", include2_config },
   { "include*", include_config },
@@ -654,6 +682,10 @@ static config_info default_options =
   VIDEO_OUTPUT_DEFAULT,         // video_output
   FORCE_BPP_DEFAULT,            // force_bpp
   "linear",                     // opengl filter method
+  "shaders/tilemap.vert",       // opengl tilemap vertex shader
+  "shaders/tilemap.frag",       // opengl tilemap fragment shader
+  "shaders/simple.vert",        // opengl scaling vertex shader
+  "shaders/hqscale.frag",       // opengl scaling fragment shader
   0,                            // opengl vsync mode
 
   // Audio options

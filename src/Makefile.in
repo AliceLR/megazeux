@@ -106,6 +106,10 @@ mzx_cobjs += ${mzx_base}/render_gl.${o}
 mzx_cobjs += ${mzx_base}/render_gl1.${o} ${mzx_base}/render_gl2.${o}
 endif
 
+ifeq (${BUILD_RENDER_GLSL},1)
+mzx_cobjs += ${mzx_base}/render_glsl.${o}
+endif
+
 ifeq (${BUILD_RENDER_YUV},1)
 mzx_cobjs += ${mzx_base}/render_yuv.${o}
 mzx_cobjs += ${mzx_base}/render_yuv1.${o} ${mzx_base}/render_yuv2.${o}

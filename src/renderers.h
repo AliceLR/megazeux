@@ -39,6 +39,9 @@ void render_soft_register(graphics_data *graphics);
 void render_gl1_register(graphics_data *graphics);
 void render_gl2_register(graphics_data *graphics);
 #endif
+#if defined(CONFIG_RENDER_GLSL)
+void render_glsl_register(graphics_data *graphics);
+#endif
 #if defined(CONFIG_RENDER_YUV)
 void render_yuv1_register(graphics_data *graphics);
 void render_yuv2_register(graphics_data *graphics);

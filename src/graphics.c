@@ -65,6 +65,9 @@ static const renderer_data renderers[] =
   { "opengl1", render_gl1_register },
   { "opengl2", render_gl2_register },
 #endif
+#if defined(CONFIG_RENDER_GLSL)
+  { "glsl", render_glsl_register },
+#endif
 #if defined(CONFIG_RENDER_YUV)
   { "overlay1", render_yuv1_register },
   { "overlay2", render_yuv2_register },

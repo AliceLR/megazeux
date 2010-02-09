@@ -19,22 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* GL_LOAD_SYM() should be used as follows:
- *
- * static int gl_load_syms (gl_syms *gl)
- * {
- *   if(gl->syms_loaded)
- *     return true;
- *
- *   GL_LOAD_SYM(gl, glBegin)
- *   GL_LOAD_SYM(gl, glBindTexture)
- *   GL_LOAD_SYM(gl, glEnd)
- *
- *   gl->syms_loaded = true;
- *   return true;
- * }
-*/
-
 #ifndef __RENDER_GL_H
 #define __RENDER_GL_H
 
@@ -52,6 +36,31 @@
 #define CONFIG_GL_FILTER_LINEAR   "linear"
 #define CONFIG_GL_FILTER_NEAREST  "nearest"
 
+/* GL_LOAD_SYM() should be used as follows:
+ *
+ * static int gl_load_syms (gl_syms *gl)
+ * {
+ *   if(gl->syms_loaded)
+ *     return true;
+ *
+ *   GL_LOAD_SYM(gl, glBegin)
+ *   GL_LOAD_SYM(gl, glBindTexture)
+ *   GL_LOAD_SYM(gl, glEnd)
+ *
+ *   gl->syms_loaded = true;
+ *   return true;
+ * }
+ *
+ * GL_LOAD_SYM_EXT() can be used instead to always
+ * dynamically resolve GL API functions, and must be used
+ * for uncommon ARB extensions (see render_glsl.c)
+ */
+
+#define GL_LOAD_SYM_EXT(OBJ,FUNC)           \
+  OBJ->FUNC = SDL_GL_GetProcAddress(#FUNC); \
+  if(!OBJ->FUNC)                            \
+    return false;                           \
+
 #ifdef LINK_OPENGL
 
 #include "GL/gl.h"
@@ -63,14 +72,11 @@
 
 #else // !LINK_OPENGL
 
-#define GL_LOAD_SYM(OBJ,FUNC)               \
-  OBJ->FUNC = SDL_GL_GetProcAddress(#FUNC); \
-  if(!OBJ->FUNC)                            \
-    return false;                           \
+#define GL_LOAD_SYM  GL_LOAD_SYM_EXT
 
 #define GL_CAN_USE (SDL_GL_LoadLibrary(NULL) >= 0)
 
-#endif
+#endif // LINK_OPENGL
 
 #define GL_STRIP_FLAGS(A) ((A & (SDL_FULLSCREEN | SDL_RESIZABLE)) | SDL_OPENGL)
 

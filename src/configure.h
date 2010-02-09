@@ -42,6 +42,10 @@ struct _config_info
   char video_output[16];
   int force_bpp;
   char gl_filter_method[16];
+  char gl_tilemap_vertex_shader[42];
+  char gl_tilemap_fragment_shader[42];
+  char gl_scaling_vertex_shader[42];
+  char gl_scaling_fragment_shader[42];
   int gl_vsync;
 
   // Audio options

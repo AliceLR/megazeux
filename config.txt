@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# June 7th, 2008 --ajs.
+# August 26th, 2008 --logicow.
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -64,17 +64,23 @@
 # whole game to a GL texture and then uses OpenGL to stretch it. This render
 # is called "opengl1", and is high quality but quite slow.
 #
-# The second OpenGL scaler was written by LogiCow, and it more extensively
+# The second OpenGL scaler was written by Logicow, and it more extensively
 # remaps all the character sets to textures and uses more GL features to
 # do the tiling entirely in OpenGL. This yields a performance increase, at
 # the cost of compatibility. It's been tested and works well on NVIDIA and
 # ATI video cards, but your mileage might vary. This renderer is called
 # "opengl2".
 #
+# The third OpenGL scaler was written by Logicow, and uses GLSL
+# to do the tiling and scaling, in two separate shader programs.
+# This scaler requires a fast video card with shader support. This render
+# is called "glsl".
+#
 # Uncomment ONE of the lines below:
 
 # video_output = opengl1
 # video_output = opengl2
+# video_output = glsl
 
 # OpenGL will, by default, linearly interpolate pixels as it upscales
 # to your requested resolution. This creates an output with more "blur",
@@ -84,6 +90,33 @@
 # setting is "linear".
 
 # gl_filter_method = nearest
+
+# These GLSL shaders work with the glsl scaler. The scaler requires
+# exactly one tilemap shader and one scaling shader.
+
+## Tilemap shaders ##
+
+# The standard tilemap shader.
+# gl_tilemap_vertex_shader   = shaders/tilemap.vert
+# gl_tilemap_fragment_shader = shaders/tilemap.frag
+
+## Scaling shaders ##
+
+# High quality scaling shader. Requires modern video card.
+# gl_scaling_vertex_shader   = shaders/simple.vert
+# gl_scaling_fragment_shader = shaders/hqscale.frag
+
+# Simple linear shader.
+# gl_scaling_vertex_shader   = shaders/simple.vert
+# gl_scaling_fragment_shader = shaders/simple.frag
+
+# Simple nearest neighbor shader.
+# gl_scaling_vertex_shader   = shaders/simple.vert
+# gl_scaling_fragment_shader = shaders/nearest.frag
+
+# Simple emboss shader.
+# gl_scaling_vertex_shader = shaders/simple.vert
+# gl_scaling_fragment_shader = shaders/emboss.frag
 
 # Some OpenGL driver settings may default vertical sync on, which looks
 # visually better (especially on CRTs) but can cause "speed 1" to run

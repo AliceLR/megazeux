@@ -36,6 +36,7 @@ usage() {
 	echo "  --disable-x11        Disables X11, removing binary dependency."
 	echo "  --disable-software   Disable software renderer."
 	echo "  --disable-gl         Disables all OpenGL renderers."
+	echo "  --disable-glsl	     Disables all GLSL renderers."
 	echo "  --disable-overlay    Disables all overlay renderers."
 	echo "  --enable-gp2x        Enables half-width software renderer."
 	echo "  --disable-modplug    Disables ModPlug music engine."
@@ -72,6 +73,7 @@ X11="true"
 X11_PLATFORM="true"
 SOFTWARE="true"
 OPENGL="true"
+GLSL="true"
 OVERLAY="true"
 GP2X="false"
 MODPLUG="true"
@@ -132,6 +134,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-gl" ] && OPENGL="false"
 	[ "$1" = "--enable-gl" ]  && OPENGL="true"
+
+	[ "$1" = "--disable-glsl" ] && GLSL="false"
+	[ "$1" = "--enable-glsl" ]  && GLSL="true"
 
 	[ "$1" = "--disable-overlay" ] && OVERLAY="false"
 	[ "$1" = "--enable-overlay" ]  && OVERLAY="true"
@@ -335,6 +340,14 @@ if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
 fi
 
 #
+# Force-disable GLSL if OpenGL is disabled
+#
+if [ "$OPENGL" = "false" -a "$GLSL" = true ]; then
+	echo "Force-disabling GLSL renderer (OpenGL not enabled)."
+	GLSL="false"
+fi
+
+#
 # Force-enable tremor on PSP/GP2X
 #
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" ]; then
@@ -509,6 +522,17 @@ if [ "$OPENGL" = "true" ]; then
 	echo "BUILD_RENDER_GL=1" >> platform.inc
 else
 	echo "OpenGL renderers disabled."
+fi
+
+#
+# GLSL renderers
+#
+if [ "$GLSL" = "true" ]; then
+	echo "GLSL renderers enabled."
+	echo "#define CONFIG_RENDER_GLSL" >> src/config.h
+	echo "BUILD_RENDER_GLSL=1" >> platform.inc
+else
+	echo "GLSL renderers disabled."
 fi
 
 #
