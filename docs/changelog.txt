@@ -100,6 +100,10 @@ USERS
 + Added support for MacOS 10.6 (Snow Leopard) and removed support for 10.3.
 + Loading a save game from robotic will now correctly restore intensities
   to their saved values.
++ Copy/pasting a block either with COPY BLOCK or the editor, where the
+  copy would exceed the limit on robots/signs/scrolls/sensors, will no
+  longer place junk at the target co-ordinates. Instead, the object's
+  background will be copied in isolation.
 
 DEVELOPERS
 

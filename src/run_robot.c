@@ -588,6 +588,9 @@ __editor_maybe_static void copy_board_to_board_buffer(struct board *src_board,
         dest_id[dest_offset] = level_under_id[src_offset];
         dest_param[dest_offset] = level_under_param[src_offset];
         dest_color[dest_offset] = level_under_color[src_offset];
+        dest_under_id[dest_offset] = level_under_id[src_offset];
+        dest_under_param[dest_offset] = level_under_param[src_offset];
+        dest_under_color[dest_offset] = level_under_color[src_offset];
       }
     }
   }
