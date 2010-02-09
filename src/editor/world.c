@@ -211,7 +211,7 @@ bool append_world(struct world *mzx_world, const char *file)
       // Also patch a pointer to the global robot
       if(cur_board->robot_list)
       {
-        cur_board->robot_list[0] = mzx_world->global_robot;
+        cur_board->robot_list[0] = &mzx_world->global_robot;
       }
       // Also optimize out null objects
       optimize_null_objects(cur_board);
@@ -281,8 +281,8 @@ void create_blank_world(struct world *mzx_world)
   memcpy(bullet_color, def_id_chars + 324, 3);
   memcpy(id_dmg, def_id_chars + 327, 128);
 
-  create_blank_robot_direct(mzx_world->global_robot, -1, -1);
-  mzx_world->current_board->robot_list[0] = mzx_world->global_robot;
+  create_blank_robot_direct(&mzx_world->global_robot, -1, -1);
+  mzx_world->current_board->robot_list[0] = &mzx_world->global_robot;
 
   for(i = 0; i < 6; i++)
   {

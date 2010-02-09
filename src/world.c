@@ -646,7 +646,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
 
   // Save for global robot position
   gl_rob_position = ftell(fp);
-  save_robot(mzx_world->global_robot, fp, savegame);
+  save_robot(&mzx_world->global_robot, fp, savegame);
 
   meter_update_screen(mzx_world, &meter_curr, meter_target);
 
@@ -1349,7 +1349,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
 
   // Read global robot
   fseek(fp, gl_rob, SEEK_SET);
-  load_robot(mzx_world->global_robot, fp, savegame);
+  load_robot(&mzx_world->global_robot, fp, savegame);
 
   // Go back to where the names are
   fseek(fp, last_pos, SEEK_SET);
@@ -1363,7 +1363,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
 
       // Also patch a pointer to the global robot
       if(cur_board->robot_list)
-        (mzx_world->board_list[i])->robot_list[0] = mzx_world->global_robot;
+        (mzx_world->board_list[i])->robot_list[0] = &mzx_world->global_robot;
 
       // Also optimize out null objects
       retrieve_board_from_extram(mzx_world->board_list[i]);
@@ -1590,7 +1590,7 @@ void clear_world(struct world *mzx_world)
   }
   free(board_list);
 
-  clear_robot_contents(mzx_world->global_robot);
+  clear_robot_contents(&mzx_world->global_robot);
 
   if(mzx_world->input_file)
   {

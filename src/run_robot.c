@@ -2803,10 +2803,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         tr_msg(mzx_world, cmd_ptr + 2, id, robot_name_buffer);
 
         // Check the global robot
-        if(!strcasecmp(mzx_world->global_robot->robot_name,
+        if(!strcasecmp(mzx_world->global_robot.robot_name,
          robot_name_buffer))
         {
-          replace_robot(src_board, mzx_world->global_robot, id);
+          replace_robot(src_board, &mzx_world->global_robot, id);
         }
         else
         {

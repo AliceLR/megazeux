@@ -1181,10 +1181,10 @@ void send_robot(struct world *mzx_world, char *name, const char *mesg,
   else
   {
     // See if it's the global robot
-    if(!strcasecmp(name, mzx_world->global_robot->robot_name) &&
-     mzx_world->global_robot->used)
+    if(!strcasecmp(name, mzx_world->global_robot.robot_name) &&
+     mzx_world->global_robot.used)
     {
-      send_robot_direct(mzx_world->global_robot, mesg,
+      send_robot_direct(&mzx_world->global_robot, mesg,
        ignore_lock, 0);
     }
 
@@ -1220,9 +1220,9 @@ void send_robot_all(struct world *mzx_world, const char *mesg)
   struct board *src_board = mzx_world->current_board;
   int i;
 
-  if(mzx_world->global_robot->used)
+  if(mzx_world->global_robot.used)
   {
-    send_robot_direct(mzx_world->global_robot, mesg, 0, 0);
+    send_robot_direct(&mzx_world->global_robot, mesg, 0, 0);
   }
 
   for(i = 0; i < src_board->num_robots_active; i++)

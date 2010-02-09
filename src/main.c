@@ -65,53 +65,10 @@
 #define __libspec
 #endif
 
-// The world structure used to be pretty big (around 7.2k) which
-// caused some platforms grief. Early hacks moved it entirely onto
-// the heap, but this will reduce performance of a constantly
-// accessed data structure in multiple hot paths.
-
-// As a compromise, move out stuff that's accessed less frequently,
-// or which is simply too large to be worth it. This means we need
-// a couple of functions for allocating/freeing MZX worlds.
-
-static void allocate_world(struct world *mzx_world)
-{
-  memset(mzx_world, 0, sizeof(struct world));
-
-  mzx_world->real_mod_playing = cmalloc(256);
-  memset(mzx_world->real_mod_playing, 0, 256);
-
-  mzx_world->input_file_name = cmalloc(512);
-  memset(mzx_world->input_file_name, 0, 512);
-
-  mzx_world->output_file_name = cmalloc(512);
-  memset(mzx_world->output_file_name, 0, 512);
-
-  mzx_world->global_robot = cmalloc(sizeof(struct robot));
-  memset(mzx_world->global_robot, 0, sizeof(struct robot));
-
-  mzx_world->custom_sfx = ccalloc(69, NUM_SFX);
-}
-
-static void free_world(struct world *mzx_world)
-{
-  // allocated once by world.c:set_update_done()
-  if(mzx_world->update_done)
-    free(mzx_world->update_done);
-
-  // could be a nop in an editor-free build
-  free_extended_macros(mzx_world);
-
-  free(mzx_world->real_mod_playing);
-  free(mzx_world->input_file_name);
-  free(mzx_world->output_file_name);
-  free(mzx_world->global_robot);
-  free(mzx_world->custom_sfx);
-}
-
 __libspec int main(int argc, char *argv[])
 {
-  struct world mzx_world;
+  // Keep this 7.2k structure off the stack..
+  static struct world mzx_world;
 
   if(!platform_init())
     return 1;
@@ -124,7 +81,6 @@ __libspec int main(int argc, char *argv[])
     goto err_free_res;
 
   editor_init();
-  allocate_world(&mzx_world);
   init_macros(&mzx_world);
 
   // Figure out where all configuration files should be loaded
@@ -200,7 +156,9 @@ __libspec int main(int argc, char *argv[])
 
 err_network_layer_exit:
   network_layer_exit(&mzx_world.conf);
-  free_world(&mzx_world);
+  if(mzx_world.update_done)
+    free(mzx_world.update_done);
+  free_extended_macros(&mzx_world);
 err_free_res:
   mzx_res_free();
   platform_quit();

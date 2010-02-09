@@ -1231,7 +1231,7 @@ void global_info(struct world *mzx_world)
 
       case 5:
       {
-        struct robot *cur_robot = mzx_world->global_robot;
+        struct robot *cur_robot = &mzx_world->global_robot;
         // First get name...
         m_hide();
         save_screen();

@@ -62,7 +62,7 @@ void replace_current_board(struct world *mzx_world, char *name)
       set_update_done_current(mzx_world);
 
       if(src_board->robot_list)
-        src_board->robot_list[0] = mzx_world->global_robot;
+        src_board->robot_list[0] = &mzx_world->global_robot;
 
       set_current_board(mzx_world, src_board);
       mzx_world->board_list[current_board_id] = src_board;

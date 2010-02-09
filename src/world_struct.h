@@ -69,7 +69,7 @@ struct world
   int scroll_pointer_color;
   int scroll_title_color;
   int scroll_arrow_color;
-  char *real_mod_playing;
+  char real_mod_playing[256];
 
   int edge_color;
   int first_board;
@@ -109,8 +109,8 @@ struct world
   int divider;
   int c_divisions;
   int bi_mesg_status;
-  char *input_file_name;
-  char *output_file_name;
+  char input_file_name[512];
+  char output_file_name[512];
   FILE *input_file;
   FILE *output_file;
   int commands;
@@ -126,10 +126,10 @@ struct world
   struct board *current_board;
   int current_board_id;
 
-  struct robot *global_robot;
+  struct robot global_robot;
 
   int custom_sfx_on;
-  char *custom_sfx;
+  char custom_sfx[69];
 
   // Not part of world/save files, but runtime globals
   int player_x;

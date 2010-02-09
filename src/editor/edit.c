@@ -3520,7 +3520,7 @@ static void __edit_world(struct world *mzx_world)
           {
             clear_board(src_board);
             src_board = create_blank_board();
-            mzx_world->current_board->robot_list[0] = mzx_world->global_robot;
+            mzx_world->current_board->robot_list[0] = &mzx_world->global_robot;
             mzx_world->board_list[mzx_world->current_board_id] = src_board;
             mzx_world->current_board = src_board;
             synchronize_board_values(mzx_world, &src_board, &board_width,
