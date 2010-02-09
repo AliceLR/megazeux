@@ -46,16 +46,26 @@ struct mzx_resource
  * enum resource_id enumeration defines them.
  */
 static struct mzx_resource mzx_res[] = {
-  { CONFFILE,          NULL },
-  { "mzx_ascii.chr",   NULL },
-  { "mzx_blank.chr",   NULL },
-  { "mzx_default.chr", NULL },
+  { CONFFILE,               NULL },
+  { "mzx_ascii.chr",        NULL },
+  { "mzx_blank.chr",        NULL },
+  { "mzx_default.chr",      NULL },
 #ifdef CONFIG_HELPSYS
-  { "mzx_help.fil",    NULL },
+  { "mzx_help.fil",         NULL },
 #endif
-  { "mzx_smzx.chr",    NULL },
-  { "mzx_edit.chr",    NULL },
-  { "smzx.pal",        NULL },
+  { "mzx_smzx.chr",         NULL },
+  { "mzx_edit.chr",         NULL },
+  { "smzx.pal",             NULL },
+#ifdef CONFIG_RENDER_GLSL
+  { "shaders/scaler.vert",  NULL },
+  { "shaders/scaler.frag",  NULL },
+  { "shaders/tilemap.vert", NULL },
+  { "shaders/tilemap.frag", NULL },
+  { "shaders/mouse.vert",   NULL },
+  { "shaders/mouse.frag",   NULL },
+  { "shaders/cursor.vert",  NULL },
+  { "shaders/cursor.frag",  NULL },
+#endif  
 };
 
 int mzx_res_init(const char *argv0)

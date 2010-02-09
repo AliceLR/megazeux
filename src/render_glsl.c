@@ -112,6 +112,8 @@ struct glsl_render_data
   GLuint cursor_program;
 };
 
+static const char *source_cache[SHADERS_CURSOR_FRAG - SHADERS_SCALER_VERT + 1];
+
 static int glsl_load_syms(struct glsl_syms *gl)
 {
   if(gl->syms_loaded)
@@ -199,37 +201,42 @@ err_out:
 }
 
 static GLenum glsl_load_shader(struct graphics_data *graphics,
- const char *path, GLenum type)
+ enum resource_id res, GLenum type)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   struct glsl_syms *gl = &render_data->gl;
-  const char *source;
+  int index = res - SHADERS_SCALER_VERT;
   GLenum shader;
   GLint length;
 
-  assert(path != NULL);
+  assert(res >= SHADERS_SCALER_VERT && res <= SHADERS_CURSOR_FRAG);
 
-  source = glsl_load_string(path);
-  if(!source)
+  // If we've already seen this shader, it's loaded, and we don't
+  // need to do any more file I/O.
+
+  if(!source_cache[index])
   {
-    warn("Failed to load shader '%s'\n", path);
-    return 0;
+    source_cache[index] = glsl_load_string(mzx_res_get_by_id(res));
+    if(!source_cache[index])
+    {
+      warn("Failed to load shader '%s'\n", mzx_res_get_by_id(res));
+      return 0;
+    }
   }
 
   shader = gl->glCreateShader(type);
 
-  length = (GLint)strlen(source);
-  gl->glShaderSource(shader, 1, &source, &length);
+  length = (GLint)strlen(source_cache[index]);
+  gl->glShaderSource(shader, 1, &source_cache[index], &length);
 
   gl->glCompileShader(shader);
   glsl_verify_compile_link(render_data, shader);
 
-  free((void *)source);
   return shader;
 }
 
 static GLuint glsl_load_program(struct graphics_data *graphics,
- const char *base_path)
+ enum resource_id v_res, enum resource_id f_res)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   struct glsl_syms *gl = &render_data->gl;
@@ -239,17 +246,11 @@ static GLuint glsl_load_program(struct graphics_data *graphics,
 
   path = malloc(MAX_PATH);
 
-  // FIXME: Don't use current_dir, it's just WRONG
-  snprintf(path, MAX_PATH, "%s/shaders/%s.vert", current_dir, base_path);
-
-  vertex = glsl_load_shader(graphics, path, GL_VERTEX_SHADER);
+  vertex = glsl_load_shader(graphics, v_res, GL_VERTEX_SHADER);
   if(!vertex)
     goto err_free_path;
 
-  // FIXME: Don't use current_dir, it's just WRONG
-  snprintf(path, MAX_PATH, "%s/shaders/%s.frag", current_dir, base_path);
-
-  fragment = glsl_load_shader(graphics, path, GL_FRAGMENT_SHADER);
+  fragment = glsl_load_shader(graphics, f_res, GL_FRAGMENT_SHADER);
   if(!fragment)
     goto err_free_path;
 
@@ -268,7 +269,8 @@ static void glsl_load_shaders(struct graphics_data *graphics)
   struct glsl_render_data *render_data = graphics->render_data;
   struct glsl_syms *gl = &render_data->gl;
 
-  render_data->scaler_program = glsl_load_program(graphics, "scaler");
+  render_data->scaler_program = glsl_load_program(graphics,
+   SHADERS_SCALER_VERT, SHADERS_SCALER_FRAG);
   if(render_data->scaler_program)
   {
     gl->glBindAttribLocation(render_data->scaler_program,
@@ -279,7 +281,8 @@ static void glsl_load_shaders(struct graphics_data *graphics)
     glsl_verify_compile_link(render_data, render_data->scaler_program);
   }
 
-  render_data->tilemap_program = glsl_load_program(graphics, "tilemap");
+  render_data->tilemap_program = glsl_load_program(graphics,
+   SHADERS_TILEMAP_VERT, SHADERS_TILEMAP_FRAG);
   if(render_data->tilemap_program)
   {
     gl->glBindAttribLocation(render_data->tilemap_program,
@@ -290,7 +293,8 @@ static void glsl_load_shaders(struct graphics_data *graphics)
     glsl_verify_compile_link(render_data, render_data->tilemap_program);
   }
 
-  render_data->mouse_program = glsl_load_program(graphics, "mouse");
+  render_data->mouse_program = glsl_load_program(graphics,
+   SHADERS_MOUSE_VERT, SHADERS_MOUSE_FRAG);
   if(render_data->mouse_program)
   {
     gl->glBindAttribLocation(render_data->mouse_program,
@@ -299,7 +303,8 @@ static void glsl_load_shaders(struct graphics_data *graphics)
     glsl_verify_compile_link(render_data, render_data->mouse_program);
   }
 
-  render_data->cursor_program  = glsl_load_program(graphics, "cursor");
+  render_data->cursor_program  = glsl_load_program(graphics,
+   SHADERS_CURSOR_VERT, SHADERS_CURSOR_FRAG);
   if(render_data->cursor_program)
   {
     gl->glBindAttribLocation(render_data->cursor_program,
@@ -375,6 +380,12 @@ err_free:
 
 static void glsl_free_video(struct graphics_data *graphics)
 {
+  int i;
+
+  for(i = 0; i < SHADERS_CURSOR_FRAG - SHADERS_SCALER_VERT + 1; i++)
+    if(source_cache[i])
+      free((void *)source_cache[i]);
+
   free(graphics->render_data);
   graphics->render_data = NULL;
 }
