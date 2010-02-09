@@ -35,7 +35,6 @@ char config_dir[MAX_PATH];
 // Some global world values that haven't been removed yet.
 
 unsigned char scroll_color = 15;
-unsigned char current_help_sec = 0;
 
 // Array of flags for things
 unsigned int flags[] =

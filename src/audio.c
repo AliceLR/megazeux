@@ -146,7 +146,7 @@ static void unlock(const char *file, int line)
 
 #endif // DEBUG
 
-const int freq_conversion = 3579364;
+static const int freq_conversion = 3579364;
 
 // Macros are used to generate functions to help reduce redundancy and
 // maintain some kind of speed. Additional, fixed point is used (again,
@@ -1066,7 +1066,7 @@ static void* get_riff_chunk_by_id(FILE *fp, int filesize,
   if(!i)
     return NULL;
 
-  return get_riff_chunk(fp, filesize, 0, size);
+  return get_riff_chunk(fp, filesize, NULL, size);
 }
 
 // More lenient than SDL's WAV loader, but only supports

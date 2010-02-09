@@ -85,7 +85,9 @@ int get_context(void)
 // Use this to replace the null strings before they get dereferenced.
 
 static struct char_element screen_storage[NUM_SAVSCR][80 * 25];
-int cur_screen = 0; // Current space for save_screen and restore_screen
+
+// Current space for save_screen and restore_screen
+static int cur_screen = 0;
 
 // Free up memory.
 

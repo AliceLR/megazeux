@@ -1097,7 +1097,7 @@ static const struct search_entry_short sorted_argument_list[] =
   { "wwater",           24,  S_THING     }
 };
 
-const int num_argument_names =
+static const int num_argument_names =
  sizeof(sorted_argument_list) / sizeof(struct search_entry_short);
 
 static int escape_chars(char *dest, char *src)

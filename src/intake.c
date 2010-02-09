@@ -30,7 +30,7 @@
 // Global status of insert
 static char insert_on = 1;
 
-char last_char = 0;
+static char last_char = 0;
 
 // (returns the key used to exit) String points to your memory for storing
 // the new string. The current "value" is used- clear the string before

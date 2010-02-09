@@ -67,7 +67,7 @@ static int highlight_width = 1;
 static int highlight_height = 1;
 static int num_files = 1;
 
-int char_copy_use_offset = 0;
+static int char_copy_use_offset = 0;
 
 static void fill_region(char *buffer, int x, int y,
  int buffer_width, int buffer_height, int check, int draw)

@@ -2446,7 +2446,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 }
 
 // I don't know yet if this works in pure C
-const int num_builtin_counters =
+static const int num_builtin_counters =
  sizeof(builtin_counters) / sizeof(struct function_counter);
 
 static int hurt_player(struct world *mzx_world, int value)

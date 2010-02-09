@@ -435,7 +435,7 @@ static Uint32 process_event(SDL_Event *event)
     {
       int which = event->jbutton.which;
       int button = event->jbutton.button;
-      SDLKey stuffed_key =
+      enum keycode stuffed_key =
         input.joystick_button_map[which][button];
 
 #ifdef CONFIG_NDS
@@ -456,7 +456,7 @@ static Uint32 process_event(SDL_Event *event)
         input.last_unicode_repeat = stuffed_key;
         input.keymap[stuffed_key] = 1;
         input.last_keypress_time = SDL_GetTicks();
-        input.last_key_release = (SDLKey)0;
+        input.last_key_release = (enum keycode)0;
       }
 
       break;
@@ -466,7 +466,7 @@ static Uint32 process_event(SDL_Event *event)
     {
       int which = event->jbutton.which;
       int button = event->jbutton.button;
-      SDLKey stuffed_key =
+      enum keycode stuffed_key =
         input.joystick_button_map[which][button];
 
 #ifdef CONFIG_NDS
@@ -478,7 +478,7 @@ static Uint32 process_event(SDL_Event *event)
       if(stuffed_key)
       {
         input.keymap[stuffed_key] = 0;
-        input.last_key_repeat = (SDLKey)0;
+        input.last_key_repeat = (enum keycode)0;
         input.last_unicode_repeat = 0;
         input.last_key_release = stuffed_key;
       }
@@ -519,7 +519,7 @@ void wait_event(void)
 {
   SDL_Event event;
 
-  input.last_key = (SDLKey)0;
+  input.last_key = (enum keycode)0;
   input.last_unicode = 0;
   input.mouse_moved = 0;
   input.last_mouse_button = 0;
