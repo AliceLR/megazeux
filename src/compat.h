@@ -79,6 +79,15 @@ typedef enum {
 #include "msvc.h"
 #endif
 
+#ifdef __WIN32__
+#define WIN32_LEAN_AND_MEAN
+#include <windows.h>
+#endif
+
+#ifndef MAX_PATH
+#define MAX_PATH 512
+#endif
+
 #if defined(CONFIG_MODULAR) && defined(__WIN32__)
 #define LIBSPEC __declspec(dllimport)
 #elif defined(CONFIG_MODULAR)

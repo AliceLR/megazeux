@@ -31,10 +31,6 @@
 #include <unistd.h>
 #endif
 
-#ifdef __WIN32__
-#include <windows.h>
-#endif
-
 #include "platform.h"
 #include "event.h"
 #include "helpsys.h"

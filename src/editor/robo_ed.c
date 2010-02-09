@@ -44,8 +44,8 @@
 #include "robo_ed.h"
 #include "window.h"
 
-#ifdef __WIN32__
-#include <windows.h>
+#ifndef __WIN32__
+#include <limits.h>
 #endif
 
 #ifdef CONFIG_X11

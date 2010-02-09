@@ -27,18 +27,6 @@
 
 __M_BEGIN_DECLS
 
-#ifndef __WIN32__
-#include <limits.h>
-#endif
-
-#ifdef _MSC_VER
-#include <windows.h> // for MAX_PATH
-#endif
-
-#ifndef MAX_PATH
-#define MAX_PATH 512
-#endif
-
 enum
 {
   EXPL_LEAVE_SPACE,

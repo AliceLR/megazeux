@@ -43,9 +43,6 @@
 #include "SDL.h"
 #ifdef CONFIG_ICON
 #include "SDL_syswm.h"
-#ifdef __WIN32__
-#include <windows.h>
-#endif // __WIN32__
 #endif // CONFIG_ICON
 #endif // CONFIG_SDL
 
