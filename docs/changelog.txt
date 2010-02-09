@@ -117,6 +117,8 @@ USERS
 + Restored the meter widget from the old DOS MZX for use with the world
   loader and saver routines. This reassures users, especially on consoles,
   where loading a world can take a long time. (Mr_Alert)
++ On Windows, directx.bat now passes %cd% through to `start' so that features
+  such as the updater continue to work. (MZXGiant)
 
 DEVELOPERS
 
