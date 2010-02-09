@@ -501,7 +501,7 @@ static Uint32 process_event(SDL_Event *event)
 Uint32 __update_event_status(void)
 {
   SDL_Event event;
-  Uint32 rval;
+  Uint32 rval = 0;
 
   while(SDL_PollEvent(&event))
     rval |= process_event(&event);
