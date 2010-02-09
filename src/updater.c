@@ -306,19 +306,22 @@ static bool restore_original_manifest(bool ret)
 {
   struct stat s;
 
-  /* The update was successful, so we simply remove the
-   * backup manifest.
-   */
   if(ret)
   {
-    unlink(MANIFEST_TXT "~");
+    // The update was successful, so we simply remove the backup manifest.
+    if(unlink(MANIFEST_TXT "~"))
+    {
+      error("Failed to remove " MANIFEST_TXT "~. Check permissions.", 1, 8, 0);
+      return false;
+    }
+
     return true;
   }
 
   // Try to remove original manifest before restoration
   if(unlink(MANIFEST_TXT))
   {
-    error("Failed to remove manifest. Check permissions.", 1, 8, 0);
+    error("Failed to remove " MANIFEST_TXT ". Check permissions.", 1, 8, 0);
     return false;
   }
 
@@ -806,5 +809,7 @@ void updater_init(char *argv[])
   }
 
   manifest_list_free(&delete_list);
+  unlink(DELETE_TXT);
+
   swivel_current_dir_back();
 }
