@@ -37,6 +37,7 @@
 #include "../fsafeopen.h"
 #include "../configure.h"
 #include "../util.h"
+#include "../error.h"
 
 #include "char_ed.h"
 #include "edit.h"
@@ -59,14 +60,16 @@
 #define MAX_MACRO_RECURSION 16
 #define MAX_MACRO_REPEAT 128
 
+#ifndef CONFIG_DEBYTECODE
 // fix cyclic dependency (could be done in several ways)
 static int execute_named_macro(struct robot_state *rstate, char *macro_name);
+#endif
 
 static int copy_buffer_lines;
 static int copy_buffer_total_length;
 static char **copy_buffer;
 
-static int last_find_option = -1;
+static enum find_option last_find_option = FIND_OPTION_NONE;
 static char search_string[256];
 static char replace_string[256];
 static int wrap_option = 1;
@@ -148,7 +151,9 @@ static void insert_string(char *dest, char *string, int *position)
 
 static void add_blank_line(struct robot_state *rstate, int relation)
 {
+#ifndef CONFIG_DEBYTECODE
   if(rstate->size + 3 < rstate->max_size)
+#endif
   {
     struct robot_line *new_rline = cmalloc(sizeof(struct robot_line));
     struct robot_line *current_rline = rstate->current_rline;
@@ -156,16 +161,22 @@ static void add_blank_line(struct robot_state *rstate, int relation)
 
     new_rline->line_text_length = 0;
     new_rline->line_text = cmalloc(1);
-    new_rline->line_bytecode = cmalloc(3);
     new_rline->line_text[0] = 0;
+
+#ifdef CONFIG_DEBYTECODE
+    new_rline->command_type = COMMAND_TYPE_BLANK_LINE;
+    new_rline->color_codes = NULL;
+#else
+    new_rline->line_bytecode = cmalloc(3);
     new_rline->line_bytecode[0] = 1;
     new_rline->line_bytecode[1] = 47;
     new_rline->line_bytecode[2] = 1;
     new_rline->line_bytecode_length = 3;
     new_rline->validity_status = valid;
+    rstate->size += 3;
+#endif
 
     rstate->total_lines++;
-    rstate->size += 3;
 
     if(relation > 0)
     {
@@ -210,25 +221,34 @@ static void add_blank_line(struct robot_state *rstate, int relation)
   }
 }
 
+static void delete_line_contents(struct robot_line *delete_rline)
+{
+#ifdef CONFIG_DEBYTECODE
+  free(delete_rline->color_codes);
+#else
+  free(delete_rline->line_bytecode);
+#endif
+  free(delete_rline->line_text);
+  free(delete_rline);
+}
+
 static void delete_current_line(struct robot_state *rstate, int move)
 {
   if(rstate->total_lines != 1)
   {
     struct robot_line *current_rline = rstate->current_rline;
-    int last_size = current_rline->line_bytecode_length;
     struct robot_line *next = current_rline->next;
     struct robot_line *previous = current_rline->previous;
 
-    previous->next = next;
+#ifndef CONFIG_DEBYTECODE
+    rstate->size -= current_rline->line_bytecode_length;
+#endif
 
+    previous->next = next;
     if(next)
       next->previous = previous;
 
-    free(current_rline->line_text);
-    free(current_rline->line_bytecode);
-    free(current_rline);
-
-    rstate->size -= last_size;
+    delete_line_contents(current_rline);
 
     if(rstate->mark_mode)
     {
@@ -279,6 +299,22 @@ static void delete_current_line(struct robot_state *rstate, int move)
   }
 }
 
+#ifdef CONFIG_DEBYTECODE
+
+static void delete_robot_lines(struct robot_state *rstate)
+{
+  struct robot_line *current_rline = rstate->base->next;
+  struct robot_line *next_rline;
+  while(current_rline)
+  {
+    next_rline = current_rline->next;
+    delete_line_contents(current_rline);
+    current_rline = next_rline;
+  }
+}
+
+#endif /* CONFIG_DEBYTECODE */
+
 static void macro_default_values(struct robot_state *rstate,
  struct ext_macro *macro_src)
 {
@@ -311,6 +347,8 @@ static void macro_default_values(struct robot_state *rstate,
   }
 }
 
+#ifndef CONFIG_DEBYTECODE
+
 static void trim_whitespace(char *buffer, int length)
 {
   int i;
@@ -332,6 +370,8 @@ static void trim_whitespace(char *buffer, int length)
   // bounds should be OK as caller has already nul-terminated
   buffer[i + 1] = '\0';
 }
+
+#endif /* !CONFIG_DEBYTECODE */
 
 static int update_current_line(struct robot_state *rstate)
 {
@@ -628,6 +668,8 @@ err_cancel_expansion:
   rstate->macro_recurse_level--;
 }
 
+#ifndef CONFIG_DEBYTECODE
+
 static int execute_named_macro(struct robot_state *rstate, char *macro_name)
 {
   char *line_pos, *line_pos_old, *lone_name;
@@ -788,6 +830,8 @@ static int execute_named_macro(struct robot_state *rstate, char *macro_name)
   output_macro(rstate, macro_src);
   return 0;
 }
+
+#endif /* !CONFIG_DEBYTECODE */
 
 static int block_menu(struct world *mzx_world)
 {
@@ -1229,9 +1273,8 @@ static void clear_block(struct robot_state *rstate)
     next_rline = current_rline->next;
 
     rstate->size -= current_rline->line_bytecode_length;
-    free(current_rline->line_text);
-    free(current_rline->line_bytecode);
-    free(current_rline);
+
+    delete_line_contents(current_rline);
 
     current_rline = next_rline;
   }
@@ -1747,7 +1790,7 @@ static void find_replace_action(struct robot_state *rstate)
 
   switch(last_find_option)
   {
-    case 0:
+    case FIND_OPTION_FIND:
     {
       // Find
       int l_pos;
@@ -1763,7 +1806,7 @@ static void find_replace_action(struct robot_state *rstate)
       break;
     }
 
-    case 1:
+    case FIND_OPTION_REPLACE:
     {
       // Find & Replace
       int l_pos;
@@ -1780,7 +1823,7 @@ static void find_replace_action(struct robot_state *rstate)
       break;
     }
 
-    case 2:
+    case FIND_OPTION_REPLACE_ALL:
     {
       int l_pos;
       int l_num;
@@ -3613,10 +3656,8 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
       object_code_position = cur_robot->program_bytecode + rstate.size - 1;
     }
 
-    free(current_rline->line_bytecode);
-    free(current_rline->line_text);
     next_line = current_rline->next;
-    free(current_rline);
+    delete_line_contents(current_rline);
     current_rline = next_line;
   }
 
