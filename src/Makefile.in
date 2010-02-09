@@ -83,15 +83,11 @@ mzx_cobjs += ${mzx_obj}/window.o ${mzx_obj}/world.o
 #
 mzx_cxxobjs :=
 
-ifneq (${BUILD_WII},1)
-ifneq (${BUILD_NDS},1)
-ifneq (${BUILD_PSP},1)
 #
 # Hack to avoid silly warnings from devkitPro headers
 #
+ifeq ($(or ${BUILD_WII},${BUILD_NDS},${BUILD_PSP}),)
 mzx_cflags += -Wstrict-prototypes
-endif
-endif
 endif
 
 ifeq (${BUILD_NDS},1)
