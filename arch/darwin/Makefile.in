@@ -52,7 +52,6 @@ package:
 	@mv ${network_target} ${network_target}.${REAL_ARCH}
 	@mv ${mzx} ${mzx}.${REAL_ARCH}
 	@mv ${mzxrun} ${mzxrun}.${REAL_ARCH}
-	@mv ${updater} ${updater}.${REAL_ARCH}
 
 clean:
 	@echo "  CLEAN   " arch/darwin
