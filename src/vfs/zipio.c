@@ -33,8 +33,9 @@
 
 enum zip_method
 {
-  ZIP_METHOD_STORE   = 0,
-  ZIP_METHOD_DEFLATE = 8,
+  ZIP_METHOD_STORE     = 0,
+  ZIP_METHOD_DEFLATE   = 8,
+  ZIP_METHOD_DEFLATE64 = 9,
 };
 
 struct zip_segment
@@ -608,7 +609,8 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
 
     // Can only support Stored and Deflated right now
     if(entry->method != ZIP_METHOD_STORE &&
-       entry->method != ZIP_METHOD_DEFLATE)
+       entry->method != ZIP_METHOD_DEFLATE &&
+       entry->method != ZIP_METHOD_DEFLATE64)
     {
       err = ZIPIO_UNSUPPORTED_COMPRESSION_METHOD;
       goto err_free_entries;
@@ -812,8 +814,14 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
 
   // Total all recorded segment sizes
   for(i = 0; i < z->num_entries; i++)
+  {
+    debug("LF   [0x%.8x-0x%.8x]\n", z->entries[i]->segment.offset,
+     z->entries[i]->segment.offset + z->entries[i]->segment.length);
     segment_total += z->entries[i]->segment.length;
+  }
+  debug("CD   [0x%.8x-0x%.8x]\n", z->cd.offset, z->cd.offset + z->cd.length);
   segment_total += z->cd.length;
+  debug("ECDR [0x%.8x-0x%.8x]\n", z->ecdr.offset, z->ecdr.offset + z->ecdr.length);
   segment_total += z->ecdr.length;
 
   // Compare with file size for contiguity
@@ -823,6 +831,8 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     err = ZIPIO_READ_FAILED;
     goto err_free_entries;
   }
+
+  debug("EOF  [0x%.8lx]\n", pos);
 
   if(segment_total != (Uint32)pos)
   {
