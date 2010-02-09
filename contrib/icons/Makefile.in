@@ -13,6 +13,10 @@ icons = ${icons_obj}/icons.o
 
 icons_objs = ${icons_obj}/quantump.o
 
+ifneq (${V},1)
+WINDRES := @${WINDRES}
+endif
+
 ${icons_obj}/%.o: ${icons_src}/%.rc
 	$(if ${V},,@echo "  WINDRES " $<)
 	${WINDRES} -i $< -o $@
@@ -20,11 +24,13 @@ ${icons_obj}/%.o: ${icons_src}/%.rc
 ifeq (${EMBED_ICONS},1)
 ${icons}: ${icons_obj} ${icons_objs}
 	$(if ${V},,@echo "  CP      " ${icons_objs} ${icons})
-	cp ${icons_objs} ${icons}
+	${CP} ${icons_objs} ${icons}
 else
 ${icons}:
 	@echo "--> Embedding of icon branding disabled."
 endif
+
+${icons_objs}: $(filter-out $(wildcard ${icons_obj}), ${icons_obj})
 
 icons_clean:
 	$(if ${V},,@echo "  RM      " ${icons_obj})

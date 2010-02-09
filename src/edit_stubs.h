@@ -26,14 +26,14 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-extern const bool editor_present;
+__weak extern const bool editor_present;
 
-void init_macros(World *mzx_world);
-void free_extended_macros(World *mzx_world);
+__weak void init_macros(World *mzx_world);
+__weak void free_extended_macros(World *mzx_world);
 
-void edit_world(World *mzx_world);
+__weak void edit_world(World *mzx_world);
 
-void load_editor_config(World *mzx_world, int argc, char *argv[]);
+__weak void load_editor_config(World *mzx_world, int argc, char *argv[]);
 
 __M_END_DECLS
 

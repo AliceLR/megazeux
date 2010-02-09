@@ -21,6 +21,7 @@ AR      ?= ar
 STRIP   ?= strip --strip-unneeded
 OBJCOPY ?= objcopy
 MKDIR   ?= mkdir
+CP      ?= cp
 RM      ?= rm
 
 #
@@ -34,6 +35,7 @@ AR      := @${AR}
 STRIP   := @${STRIP}
 OBJCOPY := @${OBJCOPY}
 MKDIR   := @${MKDIR}
+CP      := @${CP}
 RM      := @${RM}
 endif
 
@@ -66,8 +68,8 @@ else
 #
 # Optimized builds have assert() compiled out
 #
-CFLAGS   = ${OPTIMIZE_CFLAGS} -DNDEBUG
-CXXFLAGS = ${OPTIMIZE_CFLAGS} -DNDEBUG
+CFLAGS   += ${OPTIMIZE_CFLAGS} -DNDEBUG
+CXXFLAGS += ${OPTIMIZE_CFLAGS} -DNDEBUG
 endif
 
 #
@@ -85,12 +87,9 @@ CXXFLAGS += -g -Wall ${ARCH_CXXFLAGS}
 ifneq (${SUPPRESS_BUILD},1)
 
 mzxrun = ${TARGET}run${BINEXT}
-mzxrundbg = ${TARGET}run.debug
-
 mzx = ${TARGET}${BINEXT}
-mzxdbg = ${TARGET}.debug
 
-mzx: ${mzxrundbg} ${mzxdbg}
+mzx: ${mzxrun}.debug ${mzx}.debug
 
 ifeq (${BUILD_MODPLUG},1)
 BUILD_GDM2S3M=1
@@ -100,8 +99,18 @@ endif
 	$(if ${V},,@echo "  MKDIR   " $@)
 	${MKDIR} $@
 
-include src/utils/Makefile.in
+%.debug: %
+	$(if ${V},,@echo "  OBJCOPY " --only-keep-debug $< $@)
+	${OBJCOPY} --only-keep-debug $< $@
+	@chmod a-x $@
+	$(if ${V},,@echo "  STRIP   " $<)
+	${STRIP} $<
+	$(if ${V},,@echo "  OBJCOPY " --add-gnu-debuglink $@ $<)
+	${OBJCOPY} --add-gnu-debuglink=$@ $<
+	@touch $@
+
 include src/Makefile.in
+include src/utils/Makefile.in
 include src/network/Makefile.in
 
 package_clean: utils_package_clean

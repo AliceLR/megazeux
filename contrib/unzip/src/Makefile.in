@@ -16,9 +16,8 @@ unzip_cflags += -I${unzip_src} -DNOUNCRYPT
 unzip_objs = ${unzip_obj}/unzip.o ${unzip_obj}/ioapi.o
 
 ${unzip_obj}/%.o: ${unzip_src}/%.c
-	$(if ${V},,@echo "  HOST_CC " $<)
-	${HOST_CC} -MD ${CFLAGS} ${unzip_cflags} \
-	                         -I${PREFIX}/include -c $< -o $@
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${CFLAGS} ${unzip_cflags} -I${PREFIX}/include -c $< -o $@
 
 -include $(unzip_objs:.o=.d)
 

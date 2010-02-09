@@ -25,32 +25,22 @@ server_ldflags := ${SDL_LDFLAGS} -L${PREFIX}/lib -lz
 -include ${updater_objs:.o=.d}
 -include ${server_objs:.o=.d}
 
-network: ${updater} ${server}
+network: ${updater}.debug ${server}.debug
 
 ${updater}: ${updater_objs}
 	$(if ${V},,@echo "  LINK    " ${updater})
-	${HOST_CC} ${updater_objs} \
-	        -o ${updater} ${LDFLAGS} ${updater_ldflags}
-ifneq (${DEBUG},1)
-	$(if ${V},,@echo "  STRIP   " ${updater})
-	${STRIP} ${updater}
-endif
+	${CC} ${updater_objs} -o ${updater} ${LDFLAGS} ${updater_ldflags}
 
 ${server}: ${server_objs}
 	$(if ${V},,@echo "  LINK    " ${server})
-	${HOST_CC} ${server_objs} \
-	        -o ${server} ${LDFLAGS} ${server_ldflags}
-ifneq (${DEBUG},1)
-	$(if ${V},,@echo "  STRIP   " ${server})
-	${STRIP} ${server}
-endif
+	${CC} ${server_objs} -o ${server} ${LDFLAGS} ${server_ldflags}
 
 network_clean: ${updater}_clean ${server}_clean
 
 ${updater}_clean:
 	@echo "  CLEAN   " ${updater}
-	@rm -f ${updater_objs} ${updater} ${updater_objs:.o=.d}
+	${RM} ${updater_objs} ${updater} ${updater_objs:.o=.d}
 
 ${server}_clean:
 	@echo "  CLEAN   " ${server}
-	@rm -f ${server_objs} ${server} ${server_objs:.o=.d}
+	${RM} ${server_objs} ${server} ${server_objs:.o=.d}

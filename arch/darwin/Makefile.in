@@ -24,6 +24,9 @@ else
 REAL_ARCH := $(error Invalid architecture selection)
 endif
 
+DSOPRE  = lib
+DSOPOST = .dylib
+
 SDL_CFLAGS  = -I${PREFIX}/SDL.Framework/Headers
 SDL_LDFLAGS = -framework SDL
 

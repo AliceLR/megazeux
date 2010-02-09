@@ -2,10 +2,10 @@
 # MegaZeux Editor Makefile fragment
 ##
 
-.PHONY: editor_clean
+.PHONY: editor_clean editor_target_clean
 
-editor_obj = src/editor/.build
 editor_src = src/editor
+editor_obj = src/editor/.build
 
 ${editor_obj}/%.o: ${editor_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
@@ -24,6 +24,27 @@ editor_objs += ${editor_obj}/window.o ${editor_obj}/world.o
 
 ${editor_objs}: $(filter-out $(wildcard ${editor_obj}), ${editor_obj})
 
-editor_clean:
+ifeq (${BUILD_MODULAR},1)
+
+editor_target := ${DSOPRE}editor${DSOPOST}
+
+${editor_target}: ${editor_objs} ${core_target}
+	$(if ${V},,@echo "  LINK    " $@)
+	${LINK_CC} -shared -o $@ ${editor_objs} ${LDFLAGS} \
+	   -Wl,-rpath . -L. -lcore
+
+editor_target_clean:
+	$(if ${V},,@echo "  RM      " ${editor_target} ${editor_target}.debug)
+	${RM} ${editor_target} ${editor_target}.debug
+
+else
+
+editor_target := ${editor_objs}
+
+editor_target_clean:
+
+endif
+
+editor_clean: editor_target_clean
 	$(if ${V},,@echo "  RM      " ${editor_obj})
 	${RM} -r ${editor_obj}

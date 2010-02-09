@@ -77,8 +77,10 @@ typedef enum {
 
 #if __GNUC__ >= 4 && __GNUC_MINOR__ >= 1
 #define __global __attribute__((externally_visible))
+#define __weak __attribute__((weak))
 #else
 #define __global
+#define __weak
 #endif
 
 #ifdef _MSC_VER

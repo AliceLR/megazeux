@@ -31,7 +31,6 @@ usage() {
 	echo "  --disable-datestamp  Disable adding date to version."
 	echo "  --disable-editor     Disable the built-in editor."
 	echo "  --disable-helpsys    Disable the built-in help system."
-	echo "  --enable-host-utils  Use 'cc' to build utils."
 	echo "  --disable-utils      Disables compilation of utils."
 	echo "  --disable-x11        Disables X11, removing binary dependency."
 	echo "  --disable-software   Disable software renderer."
@@ -46,6 +45,7 @@ usage() {
 	echo "  --enable-tremor      Switches out libvorbis for libtremor."
 	echo "  --disable-pthread    Use SDL's locking instead of pthread."
 	echo "  --enable-icon        Try to brand executable with icon."
+	echo "  --disable-modular    Disables dynamically shared objects."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -67,7 +67,6 @@ AS_NEEDED="false"
 OPT_SIZE="false"
 EDITOR="true"
 HELPSYS="true"
-HOST_TOOLS="false"
 UTILS="true"
 X11="true"
 X11_PLATFORM="true"
@@ -83,6 +82,7 @@ AUDIO="true"
 TREMOR="false"
 PTHREAD="true"
 ICON="true"
+MODULAR="true"
 
 #
 # User may override above settings
@@ -112,16 +112,13 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--optimize-size" ] && OPT_SIZE="true"
 
 	[ "$1" = "--disable-datestamp" ] && DATE_STAMP="false"
-	[ "$1" = "--enable-datestamp" ] && DATE_STAMP="true"
+	[ "$1" = "--enable-datestamp" ]  && DATE_STAMP="true"
 
 	[ "$1" = "--disable-editor" ] && EDITOR="false"
-	[ "$1" = "--enable-editor" ] && EDITOR="true"
+	[ "$1" = "--enable-editor" ]  && EDITOR="true"
 
 	[ "$1" = "--disable-helpsys" ] && HELPSYS="false"
-	[ "$1" = "--enable-helpsys" ] && HELPSYS="true"
-
-	[ "$1" = "--disable-host-utils" ] && HOST_UTILS="false"
-	[ "$1" = "--enable-host-utils" ] && HOST_UTILS="true"
+	[ "$1" = "--enable-helpsys" ]  && HELPSYS="true"
 
 	[ "$1" = "--disable-utils" ] && UTILS="false"
 	[ "$1" = "--enable-utils" ] && UTILS="true"
@@ -151,19 +148,22 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--enable-mikmod" ]  && MIKMOD="true"
 
 	[ "$1" = "--disable-libpng" ] && LIBPNG="false"
-	[ "$1" = "--enable-libpng" ] && LIBPNG="true"
+	[ "$1" = "--enable-libpng" ]  && LIBPNG="true"
 
 	[ "$1" = "--disable-audio" ] && AUDIO="false"
-	[ "$1" = "--enable-audio" ] && AUDIO="true"
+	[ "$1" = "--enable-audio" ]  && AUDIO="true"
 
 	[ "$1" = "--disable-tremor" ] && TREMOR="false"
-	[ "$1" = "--enable-tremor" ] && TREMOR="true"
+	[ "$1" = "--enable-tremor" ]  && TREMOR="true"
 
 	[ "$1" = "--disable-pthread" ] && PTHREAD="false"
-	[ "$1" = "--enable-pthread" ] && PTHREAD="true"
+	[ "$1" = "--enable-pthread" ]  && PTHREAD="true"
 
 	[ "$1" = "--disable-icon" ] && ICON="false"
-	[ "$1" = "--enable-icon" ] && ICON="true"
+	[ "$1" = "--enable-icon" ]  && ICON="true"
+
+	[ "$1" = "--disable-modular" ] && MODULAR="false"
+	[ "$1" = "--enable-modular" ]  && MODULAR="true"
 
 	shift
 done
@@ -395,6 +395,16 @@ if [ "$ICON" = "true" ]; then
 fi
 
 #
+# Force disable modular DSOs on platforms where they either can't be
+# supported or don't make sense.
+#
+if [ "$PLATFORM" != "unix" -a "$PLATFORM" != "unix-devel" \
+  -a "$PLATFORM" != "mingw" ]; then
+	echo "Force-disabling modular build (nonsensical or unsupported)."
+	MODULAR="false"
+fi
+
+#
 # As GNU ld supports recursive dylib dependency tracking, we don't need to
 # explicitly link to as many libraries as the authors would have us provide.
 #
@@ -443,17 +453,6 @@ fi
 # User may want to compile utils (checkres, downver, txt2hlp)
 #
 if [ "$UTILS" = "true" ]; then
-	#
-	# User may not want to use her cross compiler for utils
-	#
-	if [ "$HOST_UTILS" = "true" ]; then
-		echo "Using host's compiler for utils."
-		echo "HOST_CC=cc" >> platform.inc
-	else
-		echo "Using default compiler for utils."
-		echo "HOST_CC=\${CC}" >> platform.inc
-	fi
-
 	echo "Building utils (checkres, downver, txt2hlp)."
 	echo "BUILD_UTILS=1" >> platform.inc
 else
@@ -640,6 +639,24 @@ if [ "$ICON" = "true" ]; then
 	fi
 else
 	echo "Icon branding disabled."
+fi
+
+#
+# Inform build system of modular build, if appropriate
+#
+if [ "$MODULAR" = "true" ]; then
+	echo "Modular build enabled."
+	echo "BUILD_MODULAR=1" >> platform.inc
+
+	if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
+		if [ "`uname -o`" = "GNU/Linux" \
+		  -a "`uname -m`" = "x86_64" ]; then
+			echo "ARCH_CFLAGS+=-fPIC" >> platform.inc
+			echo "ARCH_CXXFLAGS+=-fPIC" >> platform.inc
+		fi
+	fi
+else
+	echo "Modular build disabled."
 fi
 
 echo

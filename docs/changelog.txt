@@ -41,6 +41,7 @@ USERS
   for the directx+F10 issue.
 + Fix a bug where one robot could send another robot to "#return", with an
   address outside its program. In such cases, the robot will now terminate.
++ A "mzxrun" binary is now shipped alongside the editor-capable MZX binary.
 
 DEVELOPERS
 
@@ -55,9 +56,6 @@ DEVELOPERS
   information. (Mr_Alert)
 + get_path() in util.c now returns <0 for failure, or the length of the path
   for the given file. (Revvy)
-+ Add the make time WHOLE_PROGRAM=1 flag which enables compilation of the
-  core binary in GCC's "-fwhole-program --combine" mode. This makes all
-  symbols static and improves optimization, somewhat like MSVC's LTO does.
 + Add a valgrind.supp file to suppress bugs in third party libraries when
   valgrinding MegaZeux.
 + Cleaned up all the ports and documented making new ports. The platforms
@@ -70,6 +68,12 @@ DEVELOPERS
 + Use the GNU ld "debuglink" feature on all platforms to enable shipping of
   a side-by-side symbol package. Optimized release builds can now be
   debugged with minimal user effort.
+- Removed HOST_CC feature for cross compilation; since the utilities now
+  intimately depend on the MZX runtime, they must be built with the same
+  compiler.
++ MegaZeux now provides the option for "modular" linkage, factoring out the
+  "core" and "editor" features to shared objects that other binaries can link
+  against.
 
 June 10, 2008 - MZX 2.82
 
