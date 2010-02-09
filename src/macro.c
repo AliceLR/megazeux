@@ -36,11 +36,13 @@ static int cmp_variables(const void *dest, const void *src)
   return strcasecmp(m_dest->name, m_src->name);
 }
 
-static void free_macro(ext_macro *macro_src)
+void free_macro(ext_macro *macro_src)
 {
   int i, i2;
 
   free(macro_src->name);
+  free(macro_src->label);
+
   for(i = 0; i < macro_src->num_lines; i++)
   {
     free(macro_src->lines[i]);
@@ -65,11 +67,12 @@ static void free_macro(ext_macro *macro_src)
       }
     }
 
+    free(macro_src->types[i].variables_sorted);
     free(macro_src->types[i].variables);
-
   }
 
   free(macro_src->text);
+  free(macro_src);
 }
 
 __editor_maybe_static char *skip_to_next(char *src, char t, char a, char b)
@@ -489,11 +492,11 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
         num_lines_allocated *= 2;
 
         text_lines = realloc(text_lines,
-	 sizeof(char **) * num_lines_allocated);
+         sizeof(char **) * num_lines_allocated);
         variable_references = realloc(variable_references,
-	 sizeof(macro_variable_reference *) * num_lines_allocated);
+         sizeof(macro_variable_reference *) * num_lines_allocated);
         line_variables_count = realloc(line_variables_count,
-	 sizeof(int) * num_lines_allocated);
+         sizeof(int) * num_lines_allocated);
       }
     }
   } while(*line_position);
@@ -516,8 +519,11 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
   macro_dest->num_types = num_types;
 
   free(line_variable_references);
+  free(line_variables_count);
   free(line_text_segments);
+  free(variable_references);
   free(variables);
+  free(text_lines);
 
   return macro_dest;
 }

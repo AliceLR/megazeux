@@ -108,6 +108,15 @@ static void free_world(World *mzx_world)
   if(mzx_world->update_done)
     free(mzx_world->update_done);
 
+  // allocated by macro.c:add_ext_macro()
+  if(mzx_world->conf.extended_macros)
+  {
+    int i;
+    for(i = 0; i < mzx_world->conf.num_extended_macros; i++)
+      free_macro(mzx_world->conf.extended_macros[i]);
+    free(mzx_world->conf.extended_macros);
+  }
+
   free(mzx_world->real_mod_playing);
   free(mzx_world->input_file_name);
   free(mzx_world->output_file_name);

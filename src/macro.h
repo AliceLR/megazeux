@@ -81,6 +81,7 @@ typedef struct
   char *text;
 } ext_macro;
 
+void free_macro(ext_macro *macro_src);
 void add_ext_macro(config_info *conf, char *name, char *line_data,
  char *label);
 
