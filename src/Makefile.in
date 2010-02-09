@@ -97,6 +97,13 @@ ifeq (${PLATFORM},android)
 core_cxxobjs += arch/android/sfwrapper.o
 endif
 
+ifeq (${BUILD_WII},1)
+core_cobjs += arch/wii/event.o arch/wii/platform.o
+ifeq (${BUILD_AUDIO},1)
+core_cobjs += arch/wii/audio.o
+endif
+endif
+
 #
 # Other modular stuff
 #
@@ -190,17 +197,18 @@ endif
 
 else
 
-ifeq (${BUILD_WII},1)
-
-core_cobjs += ${core_obj}/event_wii.o ${core_obj}/platform_wii.o
-
-ifeq (${BUILD_AUDIO},1)
-core_cobjs += ${core_obj}/audio_wii.o
-endif
-
-else
+ifneq (${BUILD_WII},1)
 
 core_cobjs += ${core_obj}/platform_dummy.o
+
+#
+# Currently only usable with GL, but could theoretically be used
+# with OpenVG in the future.
+#
+ifeq (${BUILD_EGL},1)
+core_cobjs += ${core_obj}/render_egl.o
+core_ldflags := -lEGL -lGLESv1_CM ${core_ldflags}
+endif
 
 #
 # Normally SDL would provide us with pthread, but in the case
@@ -209,10 +217,6 @@ core_cobjs += ${core_obj}/platform_dummy.o
 #
 ifeq (${PTHREAD},1)
 core_ldflags := ${PTHREAD_LDFLAGS} ${core_ldflags}
-endif
-
-ifeq (${BUILD_EGL},1)
-core_ldflags := -lEGL -lGLES_CM ${core_ldflags}
 endif
 
 endif

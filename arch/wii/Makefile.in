@@ -47,7 +47,14 @@ package: mzx
 	${OBJCOPY} -O binary ${mzxrun} boot.dol
 
 clean:
-	@rm -f boot.dol
+	@rm -f boot.dol arch/wii/*.d arch/wii/*.o
+
+#
+# Vile hack, remove me ASAP
+#
+arch/wii/%.o: arch/wii/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
 
 #
 # Need to nest Wii binaries in a subdir
