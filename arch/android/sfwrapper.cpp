@@ -24,18 +24,25 @@
 #include <ui/PixelFormat.h>
 #include <ui/DisplayInfo.h>
 #include <ui/SurfaceComposerClient.h>
-#include <ui/EGLNativeWindowSurface.h>
 
-#include <utils/ProcessState.h>
+#include <binder/ProcessState.h>
+#include <binder/IPCThreadState.h>
 
 // Android has a util.h too
 #include "../../src/util.h"
 
+extern "C"
+{
+  /* FIXME: Hack, remove! */
+  void *__dso_handle = NULL;
+}
+
 namespace android {
 
 static sp<SurfaceComposerClient>  mSession;
-static sp<Surface>                mFlingerSurface;
-static sp<EGLNativeWindowSurface> mNativeWindowSurface;
+
+static sp<SurfaceControl>         mSurfaceControl;
+static sp<Surface>                mSurface;
 
 extern "C" bool SurfaceFlingerInitialize(int target_width, int target_height,
  int depth, bool fullscreen)
@@ -51,8 +58,9 @@ extern "C" bool SurfaceFlingerInitialize(int target_width, int target_height,
     }
   }
 
-  if(mFlingerSurface == NULL)
+  if(mSurfaceControl == NULL)
   {
+	uint32_t flags = 0;
     DisplayInfo dinfo;
     status_t status;
     int pixelFormat;
@@ -75,11 +83,14 @@ extern "C" bool SurfaceFlingerInitialize(int target_width, int target_height,
     else
       pixelFormat = PIXEL_FORMAT_RGB_565;
 
-    mFlingerSurface = mSession->createSurface(getpid(), 0,
-     target_width, target_height, pixelFormat);
-    if(mFlingerSurface == NULL)
+    // FIXME: Don't assume GL renderers
+    flags |= ISurfaceComposer::eHardware | ISurfaceComposer::eGPU;
+
+    mSurfaceControl = mSession->createSurface(getpid(), 0,
+     target_width, target_height, pixelFormat, flags);
+    if(mSurfaceControl == NULL)
     {
-      warn("Failed to create native window surface\n");
+      warn("Failed to create surface control\n");
       return false;
     }
 
@@ -89,48 +100,50 @@ extern "C" bool SurfaceFlingerInitialize(int target_width, int target_height,
     if(fullscreen)
     {
       mSession->openTransaction();
-      mFlingerSurface->setLayer(0x40000000);
+      mSurfaceControl->setLayer(0x40000000);
       mSession->closeTransaction();
     }
   }
 
-  if(mNativeWindowSurface == NULL)
-    mNativeWindowSurface = new EGLNativeWindowSurface(mFlingerSurface);
+  if(mSurface == NULL)
+    mSurface = mSurfaceControl->getSurface();
 
   return true;
 }
 
 extern "C" void SurfaceFlingerDeinitialize(void)
 {
-  if(mNativeWindowSurface != NULL)
+  if(mSurface != NULL)
   {
-    mNativeWindowSurface.clear();
-    mNativeWindowSurface = NULL;
+    mSurface.clear();
+    mSurface = NULL;
   }
 
-  if(mFlingerSurface != NULL)
+  if(mSurfaceControl != NULL)
   {
-    // FIXME: Should de-initialize properly
+    mSurfaceControl.clear();
+    mSurfaceControl = NULL;
   }
 
   if(mSession != NULL)
   {
-    // FIXME: Should de-initialize properly
+    mSession = NULL;
+	IPCThreadState::self()->stopProcess();
   }
 }
 
-extern "C" EGLNativeWindowType SurfaceFlingerGetNativeWindow(void)
+extern "C" NativeWindowType SurfaceFlingerGetNativeWindow(void)
 {
-  assert(mNativeWindowSurface != NULL);
-  return mNativeWindowSurface.get();
+  assert(mSurface != NULL);
+  return mSurface.get();
 }
 
 extern "C" void SurfaceFlingerSetSwapRectangle(int x, int y, int w, int h)
 {
-  assert(mNativeWindowSurface != NULL);
-  const android::Rect r(x, y, w, h);
+  assert(mSurface != NULL);
+  const android::Rect r(x, y, 0 + w, 0 + h);
+  mSurface->setSwapRectangle(r);
   debug("Set swap rectangle (%d,%d) [%d,%d]\n", r.left, r.top, r.width(), r.height());
-  mNativeWindowSurface->setSwapRectangle(r.left, r.top, r.width(), r.height());
 }
 
 } // namespace android

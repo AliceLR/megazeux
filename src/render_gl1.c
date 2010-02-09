@@ -173,6 +173,7 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
 {
   struct gl1_render_data *render_data = graphics->render_data;
   GLuint texture_number;
+  int v_width, v_height;
 
   gl_set_attributes(graphics);
 
@@ -182,16 +183,10 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
   if(!gl_load_syms(gl1_syms_map))
     return false;
 
-#ifndef ANDROID
-  {
-    int v_width, v_height;
-
-    get_context_width_height(graphics, &width, &height);
-    fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
-    gl1.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
-     v_width, v_height);
-  }
-#endif
+  get_context_width_height(graphics, &width, &height);
+  fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+  gl1.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
+   v_width, v_height);
 
   gl1.glEnable(GL_TEXTURE_2D);
 

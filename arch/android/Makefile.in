@@ -2,9 +2,7 @@
 # android makefile generics
 #
 
-TOOLCHAIN       ?= ${PREFIX}/prebuilt/linux-x86/toolchain/arm-eabi-4.2.1
-CROSS_COMPILE   ?= ${TOOLCHAIN}/bin/arm-eabi-
-ANDROID_LIBPATH ?= ${PREFIX}/out/target/product/${ANDROID_PRODUCT}/obj/lib
+ANDROID_LIBPATH ?= ${PREFIX}/out/debug/target/product/${ANDROID_PRODUCT}/obj/lib
 ANDROID_PRODUCT ?= generic
 
 CC      = ${CROSS_COMPILE}gcc
@@ -13,12 +11,44 @@ AR      = ${CROSS_COMPILE}ar
 OBJCOPY = ${CROSS_COMPILE}objcopy
 STRIP   = ${CROSS_COMPILE}strip --strip-unneeded
 
-ARCH_CFLAGS = \
-  -march=armv5te -fno-short-enums -DANDROID \
-  -I${PREFIX}/bionic/libc/include \
+ifeq (${ARCH},)
+ARCH=arm
+endif
+
+ifeq (${ARCH},arm)
+
+TOOLCHAIN       ?= ${PREFIX}/prebuilt/linux-x86/toolchain/arm-eabi-4.2.1
+CROSS_COMPILE   ?= ${TOOLCHAIN}/bin/arm-eabi-
+
+ARCH_CFLAGS = -march=armv5te \
   -I${PREFIX}/bionic/libc/arch-arm/include \
+  -I${PREFIX}/bionic/libc/kernel/arch-arm
+
+ARCH_EXE_LDFLAGS = -Bdynamic -Wl,-T,${PREFIX}/build/core/armelf.x
+
+DSOLDFLAGS = -shared -Wl,-T,${PREFIX}/build/core/armelf.xsc
+
+else ifeq (${ARCH},x86)
+
+TOOLCHAIN		?= ${PREFIX}/prebuilt/linux-x86/toolchain/i686-unknown-linux-gnu-4.2.1
+CROSS_COMPILE	?= ${TOOLCHAIN}/bin/i686-unknown-linux-gnu-
+
+ARCH_CFLAGS = -march=i686 -fPIC \
+  -I${PREFIX}/bionic/libc/arch-x86/include \
+  -I${PREFIX}/bionic/libc/kernel/arch-x86
+
+DSOLDFLAGS = -shared
+
+else
+
+$(error Specify a valid supported architecture)
+
+endif
+
+ARCH_CFLAGS += \
+  -DANDROID -fno-short-enums \
+  -I${PREFIX}/bionic/libc/include \
   -I${PREFIX}/bionic/libc/kernel/common \
-  -I${PREFIX}/bionic/libc/kernel/arch-arm \
   -I${PREFIX}/bionic/libm/include \
   -I${PREFIX}/frameworks/base/include \
   -I${PREFIX}/frameworks/base/opengl/include \
@@ -34,15 +64,13 @@ ARCH_LDFLAGS = \
   -nostdlib \
   -Wl,-dynamic-linker,/system/bin/linker \
   -Wl,-rpath-link=${ANDROID_LIBPATH} \
-  ${TOOLCHAIN}/lib/gcc/arm-eabi/4.2.1/interwork/libgcc.a \
-  -L${ANDROID_LIBPATH} -lc -lcutils
+  -L${ANDROID_LIBPATH} -lc -lcutils -lsurfaceflinger \
+  $(shell $(CC) -print-libgcc-file-name)
 
-ARCH_EXE_LDFLAGS = \
-  -Bdynamic -Wl,-T,${PREFIX}/build/core/armelf.x \
+ARCH_EXE_LDFLAGS += \
   ${ANDROID_LIBPATH}/crtbegin_dynamic.o \
   ${ANDROID_LIBPATH}/crtend_android.o
 
-DSOLDFLAGS = -shared -Wl,-T,${PREFIX}/build/core/armelf.xsc
 DSOPRE     = lib
 DSOPOST    = .so
 DSORPATH   = -Wl,-rpath,${LIBDIR}

@@ -203,6 +203,7 @@ static void gl2_resize_screen(struct graphics_data *graphics,
  int width, int height)
 {
   struct gl2_render_data *render_data = graphics->render_data;
+  int v_width, v_height;
 
   // FIXME: Hack, remove
   get_context_width_height(graphics, &width, &height);
@@ -219,15 +220,9 @@ static void gl2_resize_screen(struct graphics_data *graphics,
   else
     render_data->ignore_linear = false;
 
-#ifndef ANDROID
-  {
-    int v_width, v_height;
-
-    fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
-    gl2.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
-     v_width, v_height);
-  }
-#endif
+  fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+  gl2.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
+   v_width, v_height);
 
   gl2.glGenTextures(3, render_data->texture_number);
 
@@ -395,7 +390,6 @@ static void gl2_render_graph(struct graphics_data *graphics)
       }
     }
 
-#ifndef ANDROID
     if(gl2_linear_filter_method(graphics))
     {
       int width, height;
@@ -407,7 +401,6 @@ static void gl2_render_graph(struct graphics_data *graphics)
       get_context_width_height(graphics, &width, &height);
       gl2.glViewport((width - 640) >> 1, (height - 350) >> 1, 640, 350);
     }
-#endif
 
     dest = render_data->background_texture;
 
@@ -597,6 +590,7 @@ static void gl2_sync_screen(struct graphics_data *graphics)
 
   if(gl2_linear_filter_method(graphics) && !graphics->screen_mode)
   {
+    int v_width, v_height;
     int width, height;
 
     static const float tex_coord_array_single[2 * 4] = {
@@ -612,15 +606,9 @@ static void gl2_sync_screen(struct graphics_data *graphics)
     gl2.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
      (width - 640) >> 1, (height - 350) >> 1, 1024, 512, 0);
 
-#ifndef ANDROID
-    {
-      int v_width, v_height;
-
-      fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
-      gl2.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
-       v_width, v_height);
-    }
-#endif
+    fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+    gl2.glViewport((width - v_width) >> 1, (height - v_height) >> 1,
+     v_width, v_height);
 
     gl2.glClear(GL_COLOR_BUFFER_BIT);
 
