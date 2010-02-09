@@ -2187,14 +2187,18 @@ static const struct function_counter builtin_counters[] =
 
 static int counter_first_letter[512];
 
+static struct robot *get_robot_by_id(struct world *mzx_world, int id)
+{
+  if(id >= 0 && id <= mzx_world->current_board->num_robots)
+    return mzx_world->current_board->robot_list[id];
+  else
+    return NULL;
+}
+
 int set_counter_special(struct world *mzx_world, char *char_value,
  int value, int id)
 {
-  struct board *src_board = mzx_world->current_board;
-  struct robot *cur_robot = NULL;
-
-  if(id && id <= src_board->num_robots)
-    cur_robot = mzx_world->current_board->robot_list[id];
+  struct robot *cur_robot = get_robot_by_id(mzx_world, id);
 
   switch(mzx_world->special_counter_return)
   {
@@ -2295,9 +2299,12 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       int faded = get_fade_status();
       int err;
 
-      // Advance the program so that loading a SAV doesn't re-run this line
-      cur_robot->cur_prog_line +=
-       cur_robot->program[cur_robot->cur_prog_line] + 2;
+      if(cur_robot)
+      {
+        // Advance the program so that loading a SAV doesn't re-run this line
+        cur_robot->cur_prog_line +=
+         cur_robot->program[cur_robot->cur_prog_line] + 2;
+      }
 
       err = fsafetranslate(char_value, translated_path);
       if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
@@ -2312,9 +2319,12 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       char *translated_path = malloc(MAX_PATH);
       int err;
 
-      // Advance the program so that loading a SAV doesn't re-run this line
-      cur_robot->cur_prog_line +=
-       cur_robot->program[cur_robot->cur_prog_line] + 2;
+      if(cur_robot)
+      {
+        // Advance the program so that loading a SAV doesn't re-run this line
+        cur_robot->cur_prog_line +=
+         cur_robot->program[cur_robot->cur_prog_line] + 2;
+      }
 
       err = fsafetranslate(char_value, translated_path);
       if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
@@ -2351,8 +2361,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       new_program = assemble_file(char_value, &new_size);
       if(new_program)
       {
-        if(value != -1 && value <= src_board->num_robots)
-          cur_robot = mzx_world->current_board->robot_list[value];
+        if(value >= 0)
+          cur_robot = get_robot_by_id(mzx_world, value);
 
         if(cur_robot)
         {
@@ -2386,8 +2396,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
       if(bc_file)
       {
-        if(value != -1 && value <= src_board->num_robots)
-          cur_robot = mzx_world->current_board->robot_list[value];
+        if(value >= 0)
+          cur_robot = get_robot_by_id(mzx_world, value);
 
         if(cur_robot)
         {
@@ -2421,8 +2431,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       int allow_extras = mzx_world->conf.disassemble_extras;
       int base = mzx_world->conf.disassemble_base;
 
-      if(value != -1 && value <= src_board->num_robots)
-        cur_robot = mzx_world->current_board->robot_list[value];
+      if(value >= 0)
+        cur_robot = get_robot_by_id(mzx_world, value);
 
       if(cur_robot)
       {
@@ -2438,8 +2448,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
       if(bc_file)
       {
-        if(value != -1 && value <= src_board->num_robots)
-          cur_robot = mzx_world->current_board->robot_list[value];
+        if(value >= 0)
+          cur_robot = get_robot_by_id(mzx_world, value);
 
         if(cur_robot)
           fwrite(cur_robot->program, cur_robot->program_length, 1, bc_file);
