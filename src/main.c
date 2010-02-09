@@ -196,7 +196,6 @@ int main(int argc, char *argv[])
   quit_audio();
 
 exit_free_world:
-  editor_free_hook(&mzx_world);
   free_world(&mzx_world);
 
 exit_free_res:
