@@ -93,8 +93,8 @@ static void unescape_string(char *buf)
 
 void debug_counters(struct world *mzx_world)
 {
-  // +1 for SCORE, +1 for mzx_speed
-  int num_vars = mzx_world->num_counters + mzx_world->num_strings + 1 + 1;
+  // +1 for mzx_speed
+  int num_vars = mzx_world->num_counters + mzx_world->num_strings + 1;
   char **var_list = ccalloc(num_vars, sizeof(char *));
   int dialog_result;
   int cp_len;
@@ -121,14 +121,7 @@ void debug_counters(struct world *mzx_world)
      mzx_world->counter_list[i]->value);
   }
 
-  // SCORE isn't a real counter, so we have a special case here
-  var_list[i] = cmalloc(76);
-  memset(var_list[i], ' ', 75);
-  memcpy(var_list[i], "SCORE", 5);
-  sprintf(var_list[i] + CVALUE_COL_OFFSET, "%d", mzx_world->score);
-  i++;
-
-  // mzx_speed isn't a real counter either, so another special case is needed
+  // mzx_speed isn't a real counter, so special case here
   var_list[i] = cmalloc(76);
   memset(var_list[i], ' ', 75);
   memcpy(var_list[i], "mzx_speed", 9);
@@ -186,12 +179,6 @@ void debug_counters(struct world *mzx_world)
         if(selected == mzx_world->num_counters)
         {
           edit_type = -1;
-          strncpy(name + 5, "counter SCORE", 70 - 5);
-          sprintf(new_value, "%d", mzx_world->score);
-        }
-        else if(selected == mzx_world->num_counters + 1)
-        {
-          edit_type = -2;
           strncpy(name + 5, "counter mzx_speed", 70 - 5);
           sprintf(new_value, "%d", mzx_world->mzx_speed);
         }
@@ -232,10 +219,6 @@ void debug_counters(struct world *mzx_world)
         {
           int counter_value = strtol(new_value, NULL, 10);
           if(edit_type == -1)
-          {
-            mzx_world->score = counter_value;
-          }
-          else if(edit_type == -2)
           {
             if(counter_value < 1)
               counter_value = 1;
@@ -278,7 +261,6 @@ void debug_counters(struct world *mzx_world)
            mzx_world->counter_list[i]->value);
         }
 
-        fprintf(fp, "set \"SCORE\" to %d\n", mzx_world->score);
         fprintf(fp, "set \"mzx_speed\" to %d\n", mzx_world->mzx_speed);
 
         for(i = 0; i < mzx_world->num_strings; i++)

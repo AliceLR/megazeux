@@ -1885,14 +1885,14 @@ __editor_maybe_static void play_game(struct world *mzx_world, int fadein)
             int i;
 
             // Cheat #1- Give all
-            set_counter(mzx_world, "GEMS", 32767, 1);
             set_counter(mzx_world, "AMMO", 32767, 1);
-            set_counter(mzx_world, "HEALTH", 32767, 1);
             set_counter(mzx_world, "COINS", 32767, 1);
-            set_counter(mzx_world, "LIVES", 32767, 1);
-            set_counter(mzx_world, "TIME", src_board->time_limit, 1);
-            set_counter(mzx_world, "LOBOMBS", 32767, 1);
+            set_counter(mzx_world, "GEMS", 32767, 1);
+            set_counter(mzx_world, "HEALTH", 32767, 1);
             set_counter(mzx_world, "HIBOMBS", 32767, 1);
+            set_counter(mzx_world, "LIVES", 32767, 1);
+            set_counter(mzx_world, "LOBOMBS", 32767, 1);
+            set_counter(mzx_world, "TIME", src_board->time_limit, 1);
 
             mzx_world->score = 0;
             mzx_world->dead = 0;

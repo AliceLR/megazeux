@@ -1424,19 +1424,21 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
 
   // Set some default counter values
   // The others have to be here so their gateway functions will stick
-  set_counter(mzx_world, "LIVES", mzx_world->starting_lives, 0);
-  set_counter(mzx_world, "HEALTH", mzx_world->starting_health, 0);
-  set_counter(mzx_world, "INVINCO", 0, 0);
-  set_counter(mzx_world, "GEMS", 0, 0);
-  set_counter(mzx_world, "HIBOMBS", 0, 0);
-  set_counter(mzx_world, "LOBOMBS", 0, 0);
+  set_counter(mzx_world, "AMMO", 0, 0);
   set_counter(mzx_world, "COINS", 0, 0);
-  set_counter(mzx_world, "TIME", 0, 0);
   set_counter(mzx_world, "ENTER_MENU", 1, 0);
-  set_counter(mzx_world, "HELP_MENU", 1, 0);
   set_counter(mzx_world, "F2_MENU", 1, 0);
+  set_counter(mzx_world, "GEMS", 0, 0);
+  set_counter(mzx_world, "HEALTH", mzx_world->starting_health, 0);
+  set_counter(mzx_world, "HELP_MENU", 1, 0);
+  set_counter(mzx_world, "HIBOMBS", 0, 0);
+  set_counter(mzx_world, "INVINCO", 0, 0);
+  set_counter(mzx_world, "LIVES", mzx_world->starting_lives, 0);
   set_counter(mzx_world, "LOAD_MENU", 1, 0);
-
+  set_counter(mzx_world, "LOBOMBS", 0, 0);
+  set_counter(mzx_world, "SCORE", 0, 0);
+  set_counter(mzx_world, "TIME", 0, 0);
+  
   // Setup their gateways
   initialize_gateway_functions(mzx_world);
 

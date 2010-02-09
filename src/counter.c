@@ -116,22 +116,6 @@ static int playerdist_read(struct world *mzx_world,
   return abs(player_x - this_x) + abs(player_y - this_y);
 }
 
-static int score_read(struct world *mzx_world,
- const struct function_counter *counter, const char *name, int id)
-{
-  return mzx_world->score;
-}
-
-static void score_write(struct world *mzx_world,
- const struct function_counter *counter, const char *name, int value, int id)
-{
-  // Protection for score < 0, as per the behavior in DOS MZX.
-  if((value < 0) && (mzx_world->version <= 0x249))
-    mzx_world->score = 0;
-  else
-    mzx_world->score = value;
-}
-
 static int sin_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2135,7 +2119,6 @@ static const struct function_counter builtin_counters[] =
   { "save_game", 0x0244, save_game_read, NULL },                     // 2.68
   { "save_robot?", 0x0249, save_robot_read, NULL },                  // 2.70
   { "save_world", 0x0248, save_world_read, NULL },                   // 2.69c
-  { "score", 0, score_read, score_write },                           // <=2.51
   { "scrolledx", 0x0208, scrolledx_read, NULL },                     // 2.51s1
   { "scrolledy", 0x0208, scrolledy_read, NULL },                     // 2.51s1
   { "sin!", 0x0244, sin_read, NULL },                                // 2.68
@@ -2578,6 +2561,16 @@ static int invinco_gateway(struct world *mzx_world, struct counter *counter,
   return value;
 }
 
+static int score_gateway(struct world *mzx_world, struct counter *counter,
+ const char *name, int value, int id)
+{
+  // Protection for score < 0, as per the behavior in DOS MZX.
+  if((value < 0) && (mzx_world->version <= 0x249))
+    return 0;
+
+  return value;
+}
+
 static int time_gateway(struct world *mzx_world, struct counter *counter,
  const char *name, int value, int id)
 {
@@ -2645,15 +2638,17 @@ static void set_dec_gateway(struct world *mzx_world, const char *name,
 
 void initialize_gateway_functions(struct world *mzx_world)
 {
-  set_gateway(mzx_world, "HEALTH", health_gateway);
-  set_dec_gateway(mzx_world, "HEALTH", health_dec_gateway);
-  set_gateway(mzx_world, "LIVES", lives_gateway);
-  set_gateway(mzx_world, "INVINCO", invinco_gateway);
-  set_gateway(mzx_world, "TIME", time_gateway);
-  set_gateway(mzx_world, "LOBOMBS", builtin_gateway);
-  set_gateway(mzx_world, "HIBOMBS", builtin_gateway);
+  set_gateway(mzx_world, "AMMO", builtin_gateway);
   set_gateway(mzx_world, "COINS", builtin_gateway);
   set_gateway(mzx_world, "GEMS", builtin_gateway);
+  set_gateway(mzx_world, "HEALTH", health_gateway);
+  set_dec_gateway(mzx_world, "HEALTH", health_dec_gateway);
+  set_gateway(mzx_world, "HIBOMBS", builtin_gateway);
+  set_gateway(mzx_world, "INVINCO", invinco_gateway);
+  set_gateway(mzx_world, "LIVES", lives_gateway);
+  set_gateway(mzx_world, "LOBOMBS", builtin_gateway);
+  set_gateway(mzx_world, "SCORE", score_gateway);
+  set_gateway(mzx_world, "TIME", time_gateway);
 }
 
 int match_function_counter(const char *dest, const char *src)
