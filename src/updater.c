@@ -170,13 +170,7 @@ static void recv_cb(long offset)
 
 static bool cancel_cb(void)
 {
-  if(cancel_update)
-  {
-    cancel_update = false;
-    return true;
-  }
-
-  return false;
+  return cancel_update;
 }
 
 static void delete_hook(const char *file)
@@ -669,6 +663,7 @@ static void __check_for_updates(void)
   else
     replaced = added;
 
+  cancel_update = false;
   host_set_callbacks(h, NULL, recv_cb, cancel_cb);
 
   i = 1;
@@ -697,6 +692,12 @@ static void __check_for_updates(void)
 
       if(m_ret)
         break;
+
+      if(cancel_update)
+      {
+        error("Download was cancelled; update aborted.", 1, 8, 0);
+        goto err_free_delete_list;
+      }
 
       if(!reissue_connection(&h))
         goto err_free_delete_list;
