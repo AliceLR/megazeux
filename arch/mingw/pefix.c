@@ -29,6 +29,8 @@
 #include <stdio.h>
 #include <time.h>
 
+#define SECTION_NAME_LEN 8
+
 typedef enum
 {
   SUCCESS,
@@ -37,8 +39,6 @@ typedef enum
   WRITE_ERROR,
   INVALID_MAGIC,
 } error_t;
-
-#define SECTION_NAME_LEN 8
 
 static const char *err_str(error_t err)
 {
@@ -100,17 +100,11 @@ static error_t pe_csum(FILE *f, uint32_t *csum)
   return SUCCESS;
 }
 
-struct rsrc_dir {
-  uint32_t name;
-  uint32_t data;
-};
-
 static error_t process_rsrc(FILE *f, uint32_t rsrc_offset)
 {
   uint16_t num_name, num_id, i;
-  struct rsrc_dir *dirs;
   error_t err = SUCCESS;
-  uint32_t ul;
+  uint32_t ul, *dirs;
 
   // Skip Characteristics
   if(fseek(f, 4, SEEK_CUR))
@@ -133,21 +127,19 @@ static error_t process_rsrc(FILE *f, uint32_t rsrc_offset)
   if(fread(&num_id, sizeof(uint16_t), 1, f) != 1)
     return READ_ERROR;
 
-  dirs = malloc(sizeof(struct rsrc_dir) * (num_name + num_id));
+  dirs = malloc(sizeof(uint32_t) * (num_name + num_id));
 
   for(i = 0; i < num_name + num_id; i++)
   {
-    struct rsrc_dir *dir = &dirs[i];
-
-    // Read Name
-    if(fread(&dir->name, sizeof(uint32_t), 1, f) != 1)
+    // Skip Name (never used)
+    if(fseek(f, 4, SEEK_CUR))
     {
       err = READ_ERROR;
       goto err_free_dirs;
     }
 
     // Read OffsetToData
-    if(fread(&dir->data, sizeof(uint32_t), 1, f) != 1)
+    if(fread(&dirs[i], sizeof(uint32_t), 1, f) != 1)
     {
       err = READ_ERROR;
       goto err_free_dirs;
@@ -156,21 +148,15 @@ static error_t process_rsrc(FILE *f, uint32_t rsrc_offset)
 
   for(i = 0; i < num_name + num_id; i++)
   {
-    struct rsrc_dir *dir = &dirs[i];
-
-    // We don't care about name, as it can only refer either to
-    // a STRING (which isn't timestamped) or a resource ID (which
-    // we don't care about.
-    //
     // Data is interesting because if the high bit is set on this,
     // we need to read a subdirectory (recursively).
 
-    if(!(dir->data & 0x80000000))
+    if(!(dirs[i] & 0x80000000))
       continue;
-    dir->data &= ~0x80000000;
+    dirs[i] &= ~0x80000000;
 
     // Skip to the specified .rsrc subdirectory
-    if(fseek(f, rsrc_offset + dir->data, SEEK_SET))
+    if(fseek(f, rsrc_offset + dirs[i], SEEK_SET))
     {
       err = READ_ERROR;
       goto err_free_dirs;
@@ -187,17 +173,29 @@ err_free_dirs:
   return err;
 }
 
-#if 0
-static error_t walk_rvas(FILE *f, uint32_t virtaddr, uint32_t offset)
+static error_t walk_rvas(FILE *f, uint16_t cpu_type,
+ uint32_t virtaddr, uint32_t offset)
 {
-  uint32_t rva, phys;
+  uint32_t rva32, pad, phys, last_phys = 0;
+  uint64_t rva;
   long pos;
+  int i;
 
   while(1)
   {
-    // Get RVA
-    if(fread(&rva, sizeof(uint32_t), 1, f) != 1)
-      return READ_ERROR;
+    // RVAs are real virtual addresses, not just relative ones,
+    // so reading them is machine specific
+    if(cpu_type == 0x014c)
+    {
+      if(fread(&rva32, sizeof(uint32_t), 1, f) != 1)
+        return READ_ERROR;
+      rva = rva32;
+    }
+    else if(cpu_type == 0x8664)
+    {
+      if(fread(&rva, sizeof(uint64_t), 1, f) != 1)
+        return READ_ERROR;
+    }
 
     // Zero RVA means "stop reading"
     if(!rva)
@@ -206,34 +204,55 @@ static error_t walk_rvas(FILE *f, uint32_t virtaddr, uint32_t offset)
     // Convert to file offset (physaddr)
     phys = rva - virtaddr + offset;
 
-    // Store current offset
-    pos = ftell(f);
+    // We need to have processed at least one phys
+    // before pad can be computed.
 
-    // Seek to (import name - 2)
-    if(fseek(f, phys - 2, SEEK_SET))
-      return READ_ERROR;
+    if(last_phys)
+    {
+      // Store current offset
+      pos = ftell(f);
 
-    // Rewrite the byte before the ordinal as zero (patches binutils bug)
-    if(fputc(0, f) < 0)
-      return WRITE_ERROR;
+      // Seek to import name
+      if(fseek(f, last_phys, SEEK_SET))
+        return READ_ERROR;
 
-    // Seek back to where we were
-    if(fseek(f, pos, SEEK_SET))
-      return READ_ERROR;
+      // Compute string length for this RVA function
+      for(i = 0; ; i++)
+      {
+        int b = fgetc(f);
+        if(b < 0)
+          return READ_ERROR;
+
+        if(i >= 2 && !b)
+          break;
+      }
+
+      // Compute and rewrite pad as zero
+      pad = phys - last_phys - (i + 1);
+      for(i = 0; i < pad; i++)
+        if(fputc(0, f) < 0)
+          return WRITE_ERROR;
+
+      // Seek back to where we were
+      if(fseek(f, pos, SEEK_SET))
+        return READ_ERROR;
+    }
+
+    last_phys = phys;
   }
 
   return SUCCESS;
 }
-#endif
 
 static error_t modify_pe(FILE *f)
 {
   uint32_t rsrc_offset = 0, edata_offset = 0, idata_offset = 0;
   char section_name[SECTION_NAME_LEN + 1];
+  uint16_t cpu_type, num_sections;
   uint32_t ul, idata_virtaddr;
-  uint16_t num_sections;
   error_t err = SUCCESS;
   long csum_offset;
+  int skip = 0;
 
   // Check 'MZ' magic
   if(fgetc(f) != 'M')
@@ -263,9 +282,13 @@ static error_t modify_pe(FILE *f)
   if(fgetc(f) != 0)
     return INVALID_MAGIC;
 
-  // Skip Machine
-  if(fseek(f, 2, SEEK_CUR))
+  // Read in Machine (we support limited CPU types)
+  if(fread(&cpu_type, sizeof(uint16_t), 1, f) != 1)
     return READ_ERROR;
+
+  // Can only support i386 and AMD64 binaries
+  if(cpu_type != 0x014c && cpu_type != 0x8664)
+    return INVALID_MAGIC;
 
   // Read NumberOfSections (used below)
   if(fread(&num_sections, sizeof(uint16_t), 1, f) != 1)
@@ -283,12 +306,17 @@ static error_t modify_pe(FILE *f)
 
   // Skip Magic, MajorLinkerVersion, MinorLinkerVersion, SizeOfCode,
   // SizeOfInitializedData, SizeOfUninitializedData, AddressOfEntryPoint,
-  // BaseOfCode, BaseOfData, ImageBase, SectionAlignment, FileAlignment,
-  // MajorOperatingSystemVersion, MinorOperatingSystemVersion,
+  // BaseOfCode, BaseOfData [i386], ImageBase*, SectionAlignment,
+  // FileAlignment, MajorOperatingSystemVersion, MinorOperatingSystemVersion,
   // MajorImageVersion, MinorImageVersion, MajorSubsystemVersion,
   // MinorSubsystemVersion, Reserved1, SizeOfImage, SizeOfHeaders
-  if(fseek(f, 2 + 1 + 1 + 4 + 4 + 4 + 4 + 4 + 4 +
-              4 + 4 + 4 + 2 + 2 + 2 + 2 + 2 + 2 + 4 + 4 + 4, SEEK_CUR))
+  if(cpu_type == 0x014c)
+    skip = 2 + 1 + 1 + 4 + 4 + 4 + 4 + 4 + 4 +
+           4 + 4 + 4 + 2 + 2 + 2 + 2 + 2 + 2 + 4 + 4 + 4;
+  else if(cpu_type == 0x8664)
+    skip = 2 + 1 + 1 + 4 + 4 + 4 + 4 + 4 +
+           8 + 4 + 4 + 2 + 2 + 2 + 2 + 2 + 2 + 4 + 4 + 4;
+  if(fseek(f, skip, SEEK_CUR))
     return READ_ERROR;
 
   // Squash obsolete Checksum with zero
@@ -297,10 +325,14 @@ static error_t modify_pe(FILE *f)
   if(fwrite(&ul, sizeof(uint32_t), 1, f) != 1)
     return WRITE_ERROR;
 
-  // Skip Subsystem, DllCharacteristics, SizeOfStackReserve,
-  // SizeOfStackCommit, SizeOfHeapReserve, SizeOfHeapCommit,
+  // Skip Subsystem, DllCharacteristics, SizeOfStackReserve*,
+  // SizeOfStackCommit*, SizeOfHeapReserve*, SizeOfHeapCommit*,
   // LoaderFlags, NumberOfRvaAndSizes, DataDirectory (16*(4+4))
-  if(fseek(f, 2 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 16 * (4 + 4), SEEK_CUR))
+  if(cpu_type == 0x014c)
+    skip = 2 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 16 * (4 + 4);
+  else if(cpu_type == 0x8664)
+    skip = 2 + 2 + 8 + 8 + 8 + 8 + 4 + 4 + 16 * (4 + 4);
+  if(fseek(f, skip, SEEK_CUR))
     return READ_ERROR;
 
   // PE Section Header processing (find .rsrc if present)
@@ -380,7 +412,6 @@ static error_t modify_pe(FILE *f)
       return WRITE_ERROR;
   }
 
-#if 0
   if(idata_offset != 0)
   {
     // Reposition file pointer at (.idata)
@@ -414,7 +445,7 @@ static error_t modify_pe(FILE *f)
         return READ_ERROR;
 
       // Walk fnlist RVAs
-      err = walk_rvas(f, idata_virtaddr, idata_offset);
+      err = walk_rvas(f, cpu_type, idata_virtaddr, idata_offset);
       if(err != SUCCESS)
         return err;
 
@@ -423,7 +454,6 @@ static error_t modify_pe(FILE *f)
         return READ_ERROR;
     }
   }
-#endif
 
   // Compute and write back valid checksum
   err = pe_csum(f, &ul);
