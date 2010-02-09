@@ -325,7 +325,7 @@ static int update_current_line(struct robot_state *rstate)
    arg_types, &arg_count);
   int last_bytecode_length = current_rline->line_bytecode_length;
   int current_size = rstate->size;
-  validity_types use_type = rstate->default_invalid;
+  enum validity_types use_type = rstate->default_invalid;
 
   // Trigger macro expansion; if the macro doesn't exist, do nothing
   if(command_buffer[0] == '#')
@@ -2334,7 +2334,7 @@ static int validate_lines(struct robot_state *rstate, int show_none)
   char null_buffer[256];
   struct robot_line *line_pointers[MAX_ERRORS];
   struct robot_line *current_rline = rstate->base->next;
-  validity_types validity_options[MAX_ERRORS];
+  enum validity_types validity_options[MAX_ERRORS];
   int redo = 1;
   int element_pos;
   int errors_shown;
@@ -2629,7 +2629,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   rstate.include_ignores = mzx_world->conf.disassemble_extras;
   rstate.disassemble_base = mzx_world->conf.disassemble_base;
   rstate.default_invalid =
-   (validity_types)(mzx_world->editor_conf.default_invalid_status);
+   (enum validity_types)(mzx_world->editor_conf.default_invalid_status);
   rstate.ccodes = mzx_world->editor_conf.color_codes;
   rstate.mark_mode = 0;
   rstate.mark_start = -1;

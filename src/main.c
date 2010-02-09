@@ -76,7 +76,7 @@ static void nds_on_vblank(void)
 
 #endif // CONFIG_NDS
 
-/* The struct world structure used to be pretty big (around 7.2k) which
+/* The world structure used to be pretty big (around 7.2k) which
  * caused some platforms grief. Early hacks moved it entirely onto
  * the heap, but this will reduce performance of a constantly
  * accessed data structure in multiple hot paths.

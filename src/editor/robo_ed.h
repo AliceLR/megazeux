@@ -29,9 +29,7 @@ __M_BEGIN_DECLS
 
 #define COMMAND_BUFFER_LEN 512
 
-#define validity_types enum Validity_types
-
-enum Validity_types
+enum validity_types
 {
   valid,
   invalid_uncertain,
@@ -47,7 +45,7 @@ struct robot_line
   char *line_bytecode;
   char arg_types[20];
   int num_args;
-  validity_types validity_status;
+  enum validity_types validity_status;
 
   struct robot_line *next;
   struct robot_line *previous;
@@ -76,7 +74,7 @@ struct robot_state
   struct robot_line *mark_start_rline;
   struct robot_line *mark_end_rline;
   char *ccodes;
-  validity_types default_invalid;
+  enum validity_types default_invalid;
   char *active_macro;
   char *command_buffer;
   char command_buffer_space[COMMAND_BUFFER_LEN];
