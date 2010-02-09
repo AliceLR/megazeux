@@ -22,9 +22,9 @@
 // Code to handle module playing, sample playing, and PC speaker
 // sfx emulation.
 
-#include <math.h>
 #include <stdlib.h>
-#include <string.h>
+#include <math.h>
+
 #include <sys/stat.h>
 
 #include "platform.h"

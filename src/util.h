@@ -83,7 +83,13 @@ int dir_get_next_entry(dir_t *dir, char *entry);
 #ifdef __WIN32__
 int strcasecmp(const char *s1, const char *s2);
 int strncasecmp(const char *s1, const char *s2, size_t n);
+#else // !__WIN32__
+#if defined(CONFIG_PSP) || defined(CONFIG_GP2X) || defined(CONFIG_NDS)
+#include <string.h>
+#else
+#include <strings.h>
 #endif
+#endif // __WIN32__
 
 /* Some platforms like NDS don't have a rename(2), so we need
  * to implement it.

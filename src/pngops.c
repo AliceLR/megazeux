@@ -19,6 +19,7 @@
 
 #include "pngops.h"
 
+#include <stdlib.h>
 #include <png.h>
 
 int png_write_screen(Uint8 *pixels, rgb_color *pal, int count,
