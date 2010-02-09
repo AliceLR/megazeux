@@ -1536,16 +1536,18 @@ static void vlayer_width_write(World *mzx_world, function_counter *counter,
 static int buttons_read(World *mzx_world, function_counter *counter,
  const char *name, int id)
 {
-  int buttons_current, buttons_formatted = 0;
-  buttons_current = get_mouse_status();
-  if(buttons_current & (1 << (MOUSE_BUTTON_LEFT - 1)))
-    buttons_formatted |= 1;
+  int buttons_formatted, raw_status = get_mouse_status();
 
-  if(buttons_current & (1 << (MOUSE_BUTTON_RIGHT - 1)))
-    buttons_formatted |= 2;
+  // Initially just grab the left button status
+  buttons_formatted = raw_status & MOUSE_BUTTON(MOUSE_BUTTON_LEFT);
 
-  if(buttons_current & (1 << (MOUSE_BUTTON_MIDDLE - 1)))
-    buttons_formatted |= 4;
+  /* For legacy reasons, MegaZeux wants the second bit to be RIGHT, and
+   * the third bit to be MIDDLE, but SDL has these swapped around.
+   */
+  if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_MIDDLE))
+    buttons_formatted |= MOUSE_BUTTON(MOUSE_BUTTON_RIGHT);
+  if (raw_status & MOUSE_BUTTON(MOUSE_BUTTON_RIGHT))
+    buttons_formatted |= MOUSE_BUTTON(MOUSE_BUTTON_MIDDLE);
 
   return buttons_formatted;
 }

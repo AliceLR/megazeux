@@ -568,8 +568,7 @@ Uint32 get_mouse_press_ext(void)
 
 Uint32 get_mouse_status(void)
 {
-  return (input.mouse_button_state &
-   (MOUSE_BUTTON(1) | MOUSE_BUTTON(2) | MOUSE_BUTTON(3)));
+  return input.mouse_button_state;
 }
 
 void warp_mouse(Uint32 x, Uint32 y)

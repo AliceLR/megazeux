@@ -866,7 +866,7 @@ int char_editor(World *mzx_world)
 
         if(!block_mode)
         {
-          if(get_mouse_status() == MOUSE_BUTTON(1))
+          if(get_mouse_status() & MOUSE_BUTTON(MOUSE_BUTTON_LEFT))
           {
             int dx = x - last_x;
             int dy = y - last_y;

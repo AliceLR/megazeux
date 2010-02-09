@@ -223,7 +223,7 @@ static Uint32 process_event(SDL_Event *event)
     {
       input.last_mouse_button = event->button.button;
       input.last_mouse_repeat = event->button.button;
-      input.mouse_button_state |= 1 << (event->button.button - 1);
+      input.mouse_button_state |= SDL_BUTTON(event->button.button);
       input.last_mouse_repeat_state = 1;
       input.mouse_drag_state = -1;
       input.last_mouse_time = SDL_GetTicks();
@@ -232,7 +232,7 @@ static Uint32 process_event(SDL_Event *event)
 
     case SDL_MOUSEBUTTONUP:
     {
-      input.mouse_button_state &= ~(1 << (event->button.button - 1));
+      input.mouse_button_state &= ~SDL_BUTTON(event->button.button);
       input.last_mouse_repeat = 0;
       input.mouse_drag_state = 0;
       input.last_mouse_repeat_state = 0;

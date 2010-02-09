@@ -1148,7 +1148,7 @@ void edit_world(World *mzx_world)
         }
         else
 
-        if(get_mouse_status() == MOUSE_BUTTON(3))
+        if(get_mouse_status() & MOUSE_BUTTON(MOUSE_BUTTON_RIGHT))
         {
           grab_at_xy(mzx_world, &current_id, &current_color,
            &current_param, &copy_robot, &copy_scroll, &copy_sensor,
