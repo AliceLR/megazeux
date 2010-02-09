@@ -7,10 +7,11 @@
 
 #include "stdafx.h"
 #include "sndfile.h"
+#include "tables.h"
 
+#ifdef _MSC_VER
 //#pragma warning(disable:4244)
-
-extern WORD ProTrackerPeriodTable[6*12];
+#endif
 
 //////////////////////////////////////////////////////////
 // ProTracker / NoiseTracker MOD/NST file support
@@ -363,7 +364,10 @@ BOOL CSoundFile::ReadMod(const BYTE *lpStream, DWORD dwMemLength)
 
 
 #ifndef MODPLUG_NO_FILESAVE
+
+#ifdef _MSC_VER
 #pragma warning(disable:4100)
+#endif
 
 BOOL CSoundFile::SaveMod(LPCSTR lpszFileName, UINT nPacking)
 //----------------------------------------------------------
@@ -494,5 +498,8 @@ BOOL CSoundFile::SaveMod(LPCSTR lpszFileName, UINT nPacking)
 	return TRUE;
 }
 
+#ifdef _MSC_VER
 #pragma warning(default:4100)
+#endif
+
 #endif // MODPLUG_NO_FILESAVE

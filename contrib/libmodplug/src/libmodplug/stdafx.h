@@ -4,35 +4,12 @@
  * Authors: Rani Assaf <rani@magic.metawire.com>,
  *          Olivier Lapicque <olivierl@jps.net>,
  *          Adam Goode       <adam@evdebs.org> (endian and char fixes for PPC)
-*/
+ */
 
 #ifndef _STDAFX_H_
 #define _STDAFX_H_
 
-#define MODPLUG_NO_FILESAVE
-#define NO_AGC
-#define LPCTSTR LPCSTR
-#define WAVE_FORMAT_PCM 1
-//#define ENABLE_EQ
-
-#ifdef _MSC_VER
-
-#pragma warning (disable:4201)
-#pragma warning (disable:4514)
-#include <windows.h>
-#include <windowsx.h>
-#include <mmsystem.h>
-#include <stdio.h>
-
-#include "msvc.h"
-
-static inline void ProcessPlugins(int n) {}
-
-#define sleep(x) Sleep(x * 1000)
-#define strnicmp _strnicmp
-
-#else // !_MSC_VER
-
+/* Autoconf detection of stdint/inttypes */
 #if defined(HAVE_CONFIG_H) && !defined(CONFIG_H_INCLUDED)
 # include "config.h"
 # define CONFIG_H_INCLUDED 1
@@ -43,20 +20,36 @@ static inline void ProcessPlugins(int n) {}
 #ifdef HAVE_STDINT_H
 # include <stdint.h>
 #endif
-#include <stdlib.h>
-#include <stdio.h>
-#include <string.h>
 
-#ifdef __WIN32__
+
+#ifdef _WIN32
+
+#ifdef MSC_VER
+#pragma warning (disable:4201)
+#pragma warning (disable:4514)
+#endif
 
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
+#include <windowsx.h>
+#include <mmsystem.h>
+#include <stdio.h>
+#include <malloc.h>
 
-#define sleep(x) Sleep(x * 1000)
+#define srandom(_seed)  srand(_seed)
+#define random()        rand()
+#define sleep(_ms)      Sleep(_ms * 1000)
 
-#else // !__WIN32__
+static inline void ProcessPlugins(int n) {}
 
-#include <unistd.h> // for sleep()
+#else
+
+#include <stdlib.h>
+#include <stdio.h>
+#include <string.h>
+#ifdef HAVE_MALLOC_H
+#include <malloc.h>
+#endif
 
 #ifdef __amigaos__
 
@@ -102,24 +95,22 @@ typedef uint16_t* LPWORD;
 typedef const char* LPCSTR;
 typedef void* PVOID;
 
-#define lstrcpynA	strncpy
-#define lstrcpyA	strcpy
-#define lstrcmpA	strcmp
-#define wsprintfA	sprintf
-
-#ifndef strnicmp
-#define strnicmp(a,b,c)	strncasecmp(a,b,c)
-#endif
-
-#define GHND		0
-
-#endif // !__WIN32__
-
 static inline LONG MulDiv (long a, long b, long c)
 {
   // if (!c) return 0;
   return ((uint64_t) a * (uint64_t) b ) / c;
 }
+
+#define MODPLUG_NO_FILESAVE
+#define NO_AGC
+#define LPCTSTR LPCSTR
+#define lstrcpynA strncpy
+#define lstrcpyA strcpy
+#define lstrcmpA strcmp
+#define WAVE_FORMAT_PCM 1
+//#define ENABLE_EQ
+
+#define  GHND   0
 
 static inline int8_t * GlobalAllocPtr(unsigned int, size_t size)
 {
@@ -133,6 +124,9 @@ static inline void ProcessPlugins(int n) {}
 
 #define GlobalFreePtr(p) free((void *)(p))
 
+#define strnicmp(a,b,c)		strncasecmp(a,b,c)
+#define wsprintfA		sprintf
+
 #ifndef FALSE
 #define FALSE	false
 #endif
@@ -141,6 +135,9 @@ static inline void ProcessPlugins(int n) {}
 #define TRUE	true
 #endif
 
-#endif // !MSC_VER
+#endif // _WIN32
 
 #endif
+
+
+

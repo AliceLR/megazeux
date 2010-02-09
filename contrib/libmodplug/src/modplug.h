@@ -26,6 +26,17 @@ typedef struct _ModPlugNote ModPlugNote;
 
 typedef void (*ModPlugMixerProc)(int*, unsigned long, unsigned long);
 
+/* Load a mod file.  [data] should point to a block of memory containing the complete
+ * file, and [size] should be the size of that block.
+ * Return the loaded mod file on success, or NULL on failure. */
+ModPlugFile* ModPlug_Load(const void* data, int size);
+/* Unload a mod file. */
+void ModPlug_Unload(ModPlugFile* file);
+
+/* Read sample data into the buffer.  Returns the number of bytes read.  If the end
+ * of the mod has been reached, zero is returned. */
+int  ModPlug_Read(ModPlugFile* file, void* buffer, int size);
+
 enum _ModPlug_Flags
 {
 	MODPLUG_ENABLE_OVERSAMPLING     = 1 << 0,  /* Enable oversampling (*highly* recommended) */
@@ -46,14 +57,14 @@ enum _ModPlug_ResamplingMode
 typedef struct _ModPlug_Settings
 {
 	int mFlags;  /* One or more of the MODPLUG_ENABLE_* flags above, bitwise-OR'ed */
-
+	
 	/* Note that ModPlug always decodes sound at 44100kHz, 32 bit, stereo and then
 	 * down-mixes to the settings you choose. */
 	int mChannels;       /* Number of channels - 1 for mono or 2 for stereo */
 	int mBits;           /* Bits per sample - 8, 16, or 32 */
 	int mFrequency;      /* Sampling rate - 11025, 22050, or 44100 */
 	int mResamplingMode; /* One of MODPLUG_RESAMPLE_*, above */
-
+	
 	int mReverbDepth;    /* Reverb level 0(quiet)-100(loud)      */
 	int mReverbDelay;    /* Reverb delay in ms, usually 40-200ms */
 	int mBassAmount;     /* XBass level 0(quiet)-100(loud)       */
@@ -63,17 +74,6 @@ typedef struct _ModPlug_Settings
 	int mLoopCount;      /* Number of times to loop.  Zero prevents looping.
 	                        -1 loops forever. */
 } ModPlug_Settings;
-
-/* Load a mod file.  [data] should point to a block of memory containing the complete
- * file, and [size] should be the size of that block.
- * Return the loaded mod file on success, or NULL on failure. */
-ModPlugFile* ModPlug_Load(const void* data, int size);
-/* Unload a mod file. */
-void ModPlug_Unload(ModPlugFile* file);
-
-/* Read sample data into the buffer.  Returns the number of bytes read.  If the end
- * of the mod has been reached, zero is returned. */
-int  ModPlug_Read(ModPlugFile* file, void* buffer, int size);
 
 void ModPlug_SetSettings(const ModPlug_Settings* settings);
 
@@ -152,7 +152,7 @@ ModPlugNote* ModPlug_GetPattern(ModPlugFile* file, int pattern, unsigned int* nu
  * =================
  *
  * Use this callback if you want to 'modify' the mixed data of LibModPlug.
- *
+ * 
  * void proc(int* buffer,unsigned long channels,unsigned long nsamples) ;
  *
  * 'buffer': A buffer of mixed samples

@@ -1,0 +1,121 @@
+diff -Nudr -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmix.cpp
+--- libmodplug.pristine/src/fastmix.cpp	2009-04-21 15:03:19.000000000 +0100
++++ libmodplug/src/fastmix.cpp	2009-12-31 16:20:25.000000000 +0000
+@@ -94,7 +94,6 @@
+ #define SPLINE_CLAMPFORUNITY
+ // log2(number) of precalculated splines (range is [4..14])
+ #define SPLINE_FRACBITS 10
+-#define SPLINE_LUTLEN (1L<<SPLINE_FRACBITS)
+ 
+ class CzCUBICSPLINE
+ {	public:
+@@ -168,7 +167,6 @@
+ // number of samples in window
+ #define WFIR_LOG2WIDTH		3
+ #define WFIR_WIDTH			(1L<<WFIR_LOG2WIDTH)
+-#define WFIR_SMPSPERWING	((WFIR_WIDTH-1)>>1)
+ // cutoff (1.0 == pi/2)
+ #define WFIR_CUTOFF		0.90f
+ // wfir type
+@@ -186,7 +184,6 @@
+ #define M_zPI		3.1415926535897932384626433832795
+ #endif
+ #define M_zEPS		1e-8
+-#define M_zBESSELEPS	1e-21
+ 
+ class CzWINDOWEDFIR
+ {	
+@@ -309,9 +306,6 @@
+ 	pChn->nPos += nPos >> 16;\
+ 	pChn->nPosLo = nPos & 0xFFFF;
+ 
+-#define SNDMIX_ENDSAMPLELOOP8	SNDMIX_ENDSAMPLELOOP
+-#define SNDMIX_ENDSAMPLELOOP16	SNDMIX_ENDSAMPLELOOP
+-
+ //////////////////////////////////////////////////////////////////////////////
+ // Mono
+ 
+@@ -2112,9 +2106,6 @@
+ }
+ #endif
+ 
+-#define OFSDECAYSHIFT	8
+-#define OFSDECAYMASK	0xFF
+-
+ 
+ #ifdef MSC_VER
+ void MPPASMCALL X86_StereoFill(int *pBuffer, UINT nSamples, LPLONG lpROfs, LPLONG lpLOfs)
+diff -Nudr -x .svn libmodplug.pristine/src/load_med.cpp libmodplug/src/load_med.cpp
+--- libmodplug.pristine/src/load_med.cpp	2009-04-23 14:14:48.000000000 +0100
++++ libmodplug/src/load_med.cpp	2009-12-31 16:28:01.000000000 +0000
+@@ -18,44 +18,22 @@
+ // OctaMed MED file support (import only)
+ 
+ // flags
+-#define	MMD_FLAG_FILTERON	0x1
+-#define	MMD_FLAG_JUMPINGON	0x2
+-#define	MMD_FLAG_JUMP8TH	0x4
+-#define	MMD_FLAG_INSTRSATT	0x8 // instruments are attached (this is a module)
+ #define	MMD_FLAG_VOLHEX		0x10
+-#define MMD_FLAG_STSLIDE	0x20 // SoundTracker mode for slides
+ #define MMD_FLAG_8CHANNEL	0x40 // OctaMED 8 channel song
+-#define	MMD_FLAG_SLOWHQ		0x80 // HQ slows playing speed (V2-V4 compatibility)
+ // flags2
+ #define MMD_FLAG2_BMASK		0x1F
+ #define MMD_FLAG2_BPM		0x20
+-#define	MMD_FLAG2_MIX		0x80 // uses Mixing (V7+)
+-// flags3:
+-#define	MMD_FLAG3_STEREO	0x1	// mixing in Stereo mode
+-#define	MMD_FLAG3_FREEPAN	0x2	// free panning
+-#define MMD_FLAG3_GM		0x4 // module designed for GM/XG compatibility
+ 
+ 
+ // generic MMD tags
+ #define	MMDTAG_END		0
+ #define	MMDTAG_PTR		0x80000000	// data needs relocation
+-#define	MMDTAG_MUSTKNOW	0x40000000	// loader must fail if this isn't recognized
+-#define	MMDTAG_MUSTWARN	0x20000000	// loader must warn if this isn't recognized
+ 
+ // ExpData tags
+ // # of effect groups, including the global group (will
+ // override settings in MMDSong struct), default = 1
+-#define	MMDTAG_EXP_NUMFXGROUPS	1
+ #define	MMDTAG_TRK_NAME		(MMDTAG_PTR|1)	// trackinfo tags
+ #define	MMDTAG_TRK_NAMELEN	2				// namelen includes zero term.
+-#define	MMDTAG_TRK_FXGROUP	3
+-// effectinfo tags
+-#define	MMDTAG_FX_ECHOTYPE	1
+-#define MMDTAG_FX_ECHOLEN	2
+-#define	MMDTAG_FX_ECHODEPTH	3
+-#define	MMDTAG_FX_STEREOSEP	4
+-#define	MMDTAG_FX_GROUPNAME	(MMDTAG_PTR|5)	// the Global Effects group shouldn't have name saved!
+-#define	MMDTAG_FX_GRPNAMELEN 6	// namelen includes zero term.
+ 
+ #pragma pack(1)
+ 
+diff -Nudr -x .svn libmodplug.pristine/src/mmcmp.cpp libmodplug/src/mmcmp.cpp
+--- libmodplug.pristine/src/mmcmp.cpp	2004-09-10 06:19:07.000000000 +0100
++++ libmodplug/src/mmcmp.cpp	2009-12-31 16:21:16.000000000 +0000
+@@ -46,9 +46,7 @@
+ #define MMCMP_COMP		0x0001
+ #define MMCMP_DELTA		0x0002
+ #define MMCMP_16BIT		0x0004
+-#define MMCMP_STEREO	0x0100
+ #define MMCMP_ABS16		0x0200
+-#define MMCMP_ENDIAN	0x0400
+ 
+ typedef struct MMCMPBITBUFFER
+ {
+diff -Nudr -x .svn libmodplug.pristine/src/sndmix.cpp libmodplug/src/sndmix.cpp
+--- libmodplug.pristine/src/sndmix.cpp	2009-12-31 15:47:12.000000000 +0000
++++ libmodplug/src/sndmix.cpp	2009-12-31 16:20:59.000000000 +0000
+@@ -15,9 +15,6 @@
+ // Volume ramp length, in 1/10 ms
+ #define VOLUMERAMPLEN	146	// 1.46ms = 64 samples at 44.1kHz
+ 
+-// VU-Meter
+-#define VUMETER_DECAY		4
+-
+ // SNDMIX: These are global flags for playback control
+ UINT CSoundFile::m_nStereoSeparation = 128;
+ LONG CSoundFile::m_nStreamVolume = 0x8000;

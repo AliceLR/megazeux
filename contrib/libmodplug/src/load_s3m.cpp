@@ -7,10 +7,11 @@
 
 #include "stdafx.h"
 #include "sndfile.h"
+#include "tables.h"
 
+#ifdef _MSC_VER
 //#pragma warning(disable:4244)
-
-extern WORD S3MFineTuneTable[16];
+#endif
 
 //////////////////////////////////////////////////////
 // ScreamTracker S3M file support
@@ -398,7 +399,10 @@ BOOL CSoundFile::ReadS3M(const BYTE *lpStream, DWORD dwMemLength)
 
 
 #ifndef MODPLUG_NO_FILESAVE
+
+#ifdef _MSC_VER
 #pragma warning(disable:4100)
+#endif
 
 static BYTE S3MFiller[16] =
 {
@@ -645,6 +649,9 @@ BOOL CSoundFile::SaveS3M(LPCSTR lpszFileName, UINT nPacking)
 	return TRUE;
 }
 
+#ifdef _MSC_VER
 #pragma warning(default:4100)
+#endif
+
 #endif // MODPLUG_NO_FILESAVE
 

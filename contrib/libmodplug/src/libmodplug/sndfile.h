@@ -458,8 +458,8 @@ typedef struct _MODCOMMAND
 
 class IMixPlugin
 {
-	virtual ~IMixPlugin();
 public:
+	virtual ~IMixPlugin();
 	virtual int AddRef() = 0;
 	virtual int Release() = 0;
 	virtual void SaveAllParameters() = 0;
@@ -528,6 +528,7 @@ typedef struct MODMIDICFG
         char szMidiZXXExt[128*32]; // changed from CHAR
 } MODMIDICFG, *LPMODMIDICFG;
 
+#define NOTE_MAX                        120 //Defines maximum notevalue as well as maximum number of notes.
 
 typedef VOID (* LPSNDMIXHOOKPROC)(int *, unsigned long, unsigned long); // buffer, samples, channels
 

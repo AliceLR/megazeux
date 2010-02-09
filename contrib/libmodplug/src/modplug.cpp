@@ -265,6 +265,7 @@ void ModPlug_GetSettings(ModPlug_Settings* settings)
 {
 	memcpy(settings, &ModPlug::gSettings, sizeof(ModPlug_Settings));
 }
+
 #endif // MODPLUG_DEADCODE
 
 void ModPlug_SetSettings(const ModPlug_Settings* settings)

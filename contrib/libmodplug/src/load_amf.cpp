@@ -53,11 +53,11 @@ extern void Log(LPCSTR, ...);
 #endif
 
 static VOID AMF_Unpack(MODCOMMAND *pPat, const BYTE *pTrack, UINT nRows, UINT nChannels)
-//--------------------------------------------------------------------------------------
+//-------------------------------------------------------------------------------
 {
 	UINT lastinstr = 0;
 	UINT nTrkSize = bswapLE16(*(USHORT *)pTrack);
-	nTrkSize += (UINT)pTrack[2] <<16;
+	nTrkSize += (UINT)pTrack[2] << 16;
 	pTrack += 3;
 	while (nTrkSize--)
 	{
@@ -107,7 +107,7 @@ static VOID AMF_Unpack(MODCOMMAND *pPat, const BYTE *pTrack, UINT nRows, UINT nC
 						else param = (param&0x0F)<<4;
 						break;
 			// 0x04: Porta Up/Down
-			case 0x04:	if (param & 0x80) { command = CMD_PORTAMENTOUP; param = -(signed char)param; }
+			case 0x04:	if (param & 0x80) { command = CMD_PORTAMENTOUP; param = (-(signed char)param)&0x7F; }
 						else { command = CMD_PORTAMENTODOWN; } break;
 			// 0x06: Tone Portamento
 			case 0x06:	command = CMD_TONEPORTAMENTO; break;
@@ -163,10 +163,10 @@ static VOID AMF_Unpack(MODCOMMAND *pPat, const BYTE *pTrack, UINT nRows, UINT nC
 
 
 
-BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, DWORD dwMemLength)
+BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, const DWORD dwMemLength)
 //-----------------------------------------------------------
 {
-	AMFFILEHEADER *pfh = (AMFFILEHEADER *)lpStream;
+	const AMFFILEHEADER *pfh = (AMFFILEHEADER *)lpStream;
 	DWORD dwMemPos;
 	
 	if ((!lpStream) || (dwMemLength < 2048)) return FALSE;
@@ -251,6 +251,7 @@ BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, DWORD dwMemLength)
 			MODINSTRUMENT *psmp = &Ins[iData+1];
 			if (psmp->nLength)
 			{
+				if (dwMemPos > dwMemLength) return FALSE;
 				dwMemPos += ReadSample(psmp, RS_PCM8S, (LPCSTR)(lpStream+dwMemPos), dwMemLength);
 			}
 		}
@@ -371,7 +372,6 @@ BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, DWORD dwMemLength)
 	{
 		UINT nTrkSize = bswapLE16(*(USHORT *)(lpStream+dwMemPos));
 		nTrkSize += (UINT)lpStream[dwMemPos+2] << 16;
-
 		if (dwMemPos + nTrkSize * 3 + 3 <= dwMemLength)
 		{
 			pTrackData[iTrack] = (BYTE *)(lpStream + dwMemPos);
@@ -401,7 +401,7 @@ BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, DWORD dwMemLength)
 			}
 		}
 	}
-	delete pTrackData;
+	delete[] pTrackData;
 	// Read Sample Data
 	for (UINT iSeek=1; iSeek<=maxsampleseekpos; iSeek++)
 	{
@@ -415,3 +415,4 @@ BOOL CSoundFile::ReadAMF(LPCBYTE lpStream, DWORD dwMemLength)
 	}
 	return TRUE;
 }
+

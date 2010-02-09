@@ -24,8 +24,7 @@ libmodplug_objs = \
     ${libmodplug_obj}/load_xm.o ${libmodplug_obj}/mmcmp.o \
     ${libmodplug_obj}/modplug.o ${libmodplug_obj}/snd_dsp.o \
     ${libmodplug_obj}/sndfile.o ${libmodplug_obj}/snd_flt.o \
-    ${libmodplug_obj}/snd_fx.o ${libmodplug_obj}/sndmix.o \
-    ${libmodplug_obj}/tables.o
+    ${libmodplug_obj}/snd_fx.o ${libmodplug_obj}/sndmix.o
 
 ${libmodplug_obj}/%.o: ${libmodplug_src}/%.cpp
 	$(if ${V},,@echo "  CXX     " $<)
