@@ -127,7 +127,7 @@ static void str_lower_case(char *str, char *dest)
 
   while(c)
   {
-    dest[i] = tolower(c);
+    dest[i] = tolower((int)c);
     i++;
     c = str[i];
   }

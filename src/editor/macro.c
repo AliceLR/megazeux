@@ -97,7 +97,7 @@ char *skip_whitespace(char *src)
   char *current = src;
   char current_char = *current;
 
-  while(isspace(current_char))
+  while(isspace((int)current_char))
   {
     current++;
     current_char = *current;

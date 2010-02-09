@@ -153,7 +153,7 @@ static void config_macro(struct editor_config_info *conf,
 {
   char *macro_name = name + 6;
 
-  if(isdigit(macro_name[0]) && !macro_name[1] && !extended_data)
+  if(isdigit((int)macro_name[0]) && !macro_name[1] && !extended_data)
   {
     int macro_num = macro_name[0] - 0x31;
     value[63] = 0;
