@@ -1729,7 +1729,6 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 #endif
-
         case IKEY_F2:
         {
           // Settings
@@ -1743,57 +1742,6 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
 
             update_event_status();
           }
-          break;
-        }
-
-        case IKEY_RETURN:
-        {
-          int enter_menu_status =
-           get_counter(mzx_world, "ENTER_MENU", 0);
-          send_robot_all(mzx_world, "KeyEnter");
-          // Menu
-          // 19x9
-          if(mzx_world->version < 0x0209 || enter_menu_status)
-          {
-            int key;
-            save_screen();
-
-            draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
-            write_string(" Game Menu ", 14, 4, 30, 0);
-            write_string(game_menu_1, 10, 5, 31, 1);
-#ifdef CONFIG_EDITOR
-            if(mzx_world->editing)
-              write_string(game_menu_2, 10, 12, 31, 1);
-#endif
-            write_string(game_menu_3, 10, 13, 31, 1);
-
-            show_status(mzx_world); // Status screen too
-            update_screen();
-            m_show();
-
-            do
-            {
-              update_event_status_delay();
-              update_screen();
-              key = get_key(keycode_internal);
-            } while(key != IKEY_RETURN);
-
-            restore_screen();
-
-            update_event_status();
-          }
-          break;
-        }
-
-        case IKEY_ESCAPE:
-        {
-          // Quit
-          m_show();
-
-          if(confirm(mzx_world, "Quit playing- Are you sure?"))
-            key = 0;
-
-          update_event_status();
           break;
         }
 
@@ -1893,57 +1841,6 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           }
           break;
         }
-
-        // Quick save
-        case IKEY_F9:
-        {
-          if(!mzx_world->dead)
-          {
-            // Can we?
-            if((src_board->save_mode != CANT_SAVE) &&
-             ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
-             (src_board->level_under_id[mzx_world->player_x +
-             (src_board->board_width * mzx_world->player_y)] ==
-             SENSOR)))
-            {
-              // Save entire game
-              save_world(mzx_world, curr_sav, 1, get_fade_status());
-            }
-          }
-          break;
-        }
-
-        // Quick load
-        case IKEY_F10:
-        {
-          struct stat file_info;
-
-          if(!stat(curr_sav, &file_info))
-          {
-            // Load game
-            fadein = 0;
-            if(reload_savegame(mzx_world, curr_sav, &fadein))
-            {
-              vquick_fadeout();
-              return;
-            }
-
-            // Reset this
-            src_board = mzx_world->current_board;
-
-            find_player(mzx_world);
-
-            // Swap in starting board
-            load_module(src_board->mod_playing);
-            strcpy(mzx_world->real_mod_playing,
-             src_board->mod_playing);
-
-            send_robot_def(mzx_world, 0, 10);
-            fadein ^= 1;
-          }
-          break;
-        }
-
 #ifdef CONFIG_EDITOR
 	// Toggle debug mode
         case IKEY_F6:
@@ -2050,7 +1947,57 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
 
           break;
         }
+#endif
+        // Quick save
+        case IKEY_F9:
+        {
+          if(!mzx_world->dead)
+          {
+            // Can we?
+            if((src_board->save_mode != CANT_SAVE) &&
+             ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
+             (src_board->level_under_id[mzx_world->player_x +
+             (src_board->board_width * mzx_world->player_y)] ==
+             SENSOR)))
+            {
+              // Save entire game
+              save_world(mzx_world, curr_sav, 1, get_fade_status());
+            }
+          }
+          break;
+        }
 
+        // Quick load
+        case IKEY_F10:
+        {
+          struct stat file_info;
+
+          if(!stat(curr_sav, &file_info))
+          {
+            // Load game
+            fadein = 0;
+            if(reload_savegame(mzx_world, curr_sav, &fadein))
+            {
+              vquick_fadeout();
+              return;
+            }
+
+            // Reset this
+            src_board = mzx_world->current_board;
+
+            find_player(mzx_world);
+
+            // Swap in starting board
+            load_module(src_board->mod_playing);
+            strcpy(mzx_world->real_mod_playing,
+             src_board->mod_playing);
+
+            send_robot_def(mzx_world, 0, 10);
+            fadein ^= 1;
+          }
+          break;
+        }
+#ifdef CONFIG_EDITOR
         // Debug counter editor
         case IKEY_F11:
         {
@@ -2059,6 +2006,55 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 #endif // CONFIG_EDITOR
+        case IKEY_RETURN:
+        {
+          int enter_menu_status =
+           get_counter(mzx_world, "ENTER_MENU", 0);
+          send_robot_all(mzx_world, "KeyEnter");
+
+          if(mzx_world->version < 0x0209 || enter_menu_status)
+          {
+            int key;
+            save_screen();
+
+            draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
+            write_string(" Game Menu ", 14, 4, 30, 0);
+            write_string(game_menu_1, 10, 5, 31, 1);
+#ifdef CONFIG_EDITOR
+            if(mzx_world->editing)
+              write_string(game_menu_2, 10, 12, 31, 1);
+#endif
+            write_string(game_menu_3, 10, 13, 31, 1);
+
+            show_status(mzx_world); // Status screen too
+            update_screen();
+            m_show();
+
+            do
+            {
+              update_event_status_delay();
+              update_screen();
+              key = get_key(keycode_internal);
+            } while(key != IKEY_RETURN);
+
+            restore_screen();
+
+            update_event_status();
+          }
+          break;
+        }
+
+        case IKEY_ESCAPE:
+        {
+          // Quit
+          m_show();
+
+          if(confirm(mzx_world, "Quit playing- Are you sure?"))
+            key = 0;
+
+          update_event_status();
+          break;
+        }
       }
     }
   } while(key != IKEY_ESCAPE);
@@ -2145,36 +2141,21 @@ void title_screen(World *mzx_world)
     {
       switch(key)
       {
-#ifdef CONFIG_EDITOR
-        case IKEY_e: // E
-        case IKEY_F8: // F8
+#ifdef CONFIG_HELPSYS
+        case IKEY_F1:
+	case IKEY_h:
         {
-          if(edit_world)
+          if(!mzx_world->active)
           {
-            // Editor
-            clear_sfx_queue();
-            vquick_fadeout();
-            edit_world(mzx_world);
-
-            if(curr_file[0])
-              load_world_file(mzx_world, curr_file);
-
-            fadein = 1;
+            m_show();
+            help_system(mzx_world);
+            update_screen();
           }
           break;
         }
 #endif
-#ifdef CONFIG_UPDATER
-        case IKEY_u:
-        case IKEY_F7:
-        {
-          if(check_for_updates)
-            check_for_updates();
-          break;
-        }
-#endif
-        case IKEY_s: // S
-        case IKEY_F2: // F2
+        case IKEY_F2:
+        case IKEY_s:
         {
           // Settings
           m_show();
@@ -2186,58 +2167,8 @@ void title_screen(World *mzx_world)
           break;
         }
 
-        case IKEY_RETURN: // Enter
-        {
-          if(mzx_world->version < 0x0209 ||
-           get_counter(mzx_world, "ENTER_MENU", 0))
-          {
-            int key;
-
-            save_screen();
-            draw_window_box(30, 4, 52, 16, 25, 16, 24, 1, 1);
-            write_string(" Main Menu ", 36, 4, 30, 0);
-            write_string(main_menu_1, 32, 5, 31, 1);
-#ifdef CONFIG_UPDATER
-            if(check_for_updates)
-              write_string(main_menu_2, 32, 12, 31, 1);
-#endif
-#ifdef CONFIG_EDITOR
-            if(edit_world)
-              write_string(main_menu_3, 32, 13, 31, 1);
-#endif
-            write_string(main_menu_4, 32, 14, 31, 1);
-            update_screen();
-            m_show();
-
-            do
-            {
-              update_event_status_delay();
-              update_screen();
-              key = get_key(keycode_internal);
-            } while(key != IKEY_RETURN);
-
-            restore_screen();
-            update_screen();
-            update_event_status();
-          }
-          break;
-        }
-
-        case IKEY_ESCAPE: // ESC
-        {
-          // Quit
-          m_show();
-
-          if(confirm(mzx_world, "Exit MegaZeux - Are you sure?"))
-            key = 0;
-
-          update_screen();
-          update_event_status();
-          break;
-        }
-
-        case IKEY_l: // L
-        case IKEY_F3: // F3
+        case IKEY_F3:
+        case IKEY_l:
         {
           load_world_selection(mzx_world);
           fadein = 1;
@@ -2247,8 +2178,8 @@ void title_screen(World *mzx_world)
           break;
         }
 
-        case IKEY_r: // R
-        case IKEY_F4: // F4
+        case IKEY_F4:
+        case IKEY_r:
         {
           char save_file_name[64];
 
@@ -2335,8 +2266,8 @@ void title_screen(World *mzx_world)
           break;
         }
 
-        case IKEY_p: // P
-        case IKEY_F5: // F5
+        case IKEY_F5:
+        case IKEY_p:
         {
           if(mzx_world->active)
           {
@@ -2428,22 +2359,35 @@ void title_screen(World *mzx_world)
           }
           break;
         }
-
-#ifdef CONFIG_HELPSYS
-        case IKEY_F1:
+#ifdef CONFIG_UPDATER
+        case IKEY_F7:
+        case IKEY_u:
         {
-          if(get_counter(mzx_world, "HELP_MENU", 0) ||
-            (!mzx_world->active))
-          {
-            m_show();
-            help_system(mzx_world);
-            update_screen();
-          }
+          if(check_for_updates)
+            check_for_updates();
           break;
         }
 #endif
+#ifdef CONFIG_EDITOR
+        case IKEY_F8:
+        case IKEY_e:
+        {
+          if(edit_world)
+          {
+            // Editor
+            clear_sfx_queue();
+            vquick_fadeout();
+            edit_world(mzx_world);
 
-        // Quick load
+            if(curr_file[0])
+              load_world_file(mzx_world, curr_file);
+
+            fadein = 1;
+          }
+          break;
+        }
+
+        // Quickload
         case IKEY_F10:
         {
           // Restore
@@ -2522,7 +2466,53 @@ void title_screen(World *mzx_world)
 
           break;
         }
-      }
+#endif
+        case IKEY_RETURN: // Enter
+        {
+          int key;
+
+          save_screen();
+          draw_window_box(30, 4, 52, 16, 25, 16, 24, 1, 1);
+          write_string(" Main Menu ", 36, 4, 30, 0);
+          write_string(main_menu_1, 32, 5, 31, 1);
+#ifdef CONFIG_UPDATER
+          if(check_for_updates)
+            write_string(main_menu_2, 32, 12, 31, 1);
+#endif
+#ifdef CONFIG_EDITOR
+          if(edit_world)
+            write_string(main_menu_3, 32, 13, 31, 1);
+#endif
+          write_string(main_menu_4, 32, 14, 31, 1);
+          update_screen();
+          m_show();
+
+          do
+          {
+            update_event_status_delay();
+            update_screen();
+            key = get_key(keycode_internal);
+          } while(key != IKEY_RETURN);
+
+          restore_screen();
+          update_screen();
+          update_event_status();
+          break;
+        }
+
+        case IKEY_ESCAPE:
+        {
+          // Quit
+          m_show();
+
+          if(confirm(mzx_world, "Exit MegaZeux - Are you sure?"))
+            key = 0;
+
+          update_screen();
+          update_event_status();
+          break;
+        }
+     }
     }
   } while(key != IKEY_ESCAPE);
 
