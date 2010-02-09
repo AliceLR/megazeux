@@ -1116,14 +1116,14 @@ host_status_t host_get_file(struct host *h, const char *url,
 
     if(deflated)
     {
-      int ret, deflate_offset = 0;
-
       /* This is the first block requiring inflation. In this case, we must
        * parse the GZIP header in order to compute an offset to the DEFLATE
        * formatted data.
        */
       if(!mid_inflate)
       {
+        int deflate_offset = 0;
+
         /* Compute the offset within this block to begin the inflation
          * process. For all but the first block, deflate_offset will be
          * zero.
@@ -1156,6 +1156,7 @@ host_status_t host_get_file(struct host *h, const char *url,
       while(true)
       {
         char outbuf[BLOCK_SIZE];
+        int ret;
 
         // Each pass, only decompress a maximum of BLOCK_SIZE
         stream.avail_out = BLOCK_SIZE;
