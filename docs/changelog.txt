@@ -56,6 +56,8 @@ USERS
   the ' S_CHARACTER (which is completely reasonable).
 + Fix robot editor glitches where the game charset SPACE would be used in
   places where the protected UI charset should be used instead.
++ The introductory help message is displayed if the load dialog is cancelled
+  prior to loading a game. Hopefully the screen is now never totally blank.
 
 DEVELOPERS
 

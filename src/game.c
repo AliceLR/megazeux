@@ -120,6 +120,20 @@ __editor_maybe_static const char *world_ext[] = { ".MZX", NULL };
 char debug_mode;
 #endif
 
+static unsigned int intro_mesg_timer;
+
+static void flag_intro_mesg(void)
+{
+  intro_mesg_timer = 160;
+}
+
+static void draw_intro_mesg(void)
+{
+  static const char mesg[] =
+   "F1: Help   Enter: Menu   Ctrl-Alt-Enter: Fullscreen";
+  write_string(mesg, (80 - strlen(mesg)) >> 1, 24, scroll_color, 0);
+}
+
 static void load_world_file(World *mzx_world, char *name)
 {
   Board *src_board;
@@ -140,8 +154,7 @@ static void load_world_file(World *mzx_world, char *name)
     load_module(src_board->mod_playing);
     strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
     set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-
-    set_mesg(mzx_world, "F1: Help   Enter: Menu   Ctrl-Alt-Enter: Fullscreen");
+    flag_intro_mesg();
   }
 }
 
@@ -287,6 +300,10 @@ static void update_variables(World *mzx_world, int slowed)
   // Decrease message timer
   if(b_mesg_timer > 0)
     src_board->b_mesg_timer = b_mesg_timer - 1;
+
+  // Decrease intro message timer
+  if(intro_mesg_timer > 0)
+    intro_mesg_timer--;
 
   // Invinco
   invinco = get_counter(mzx_world, "INVINCO", 0);
@@ -1386,6 +1403,8 @@ static int update(World *mzx_world, int game, int *fadein)
       if((mesg_x < 80) && (mesg_edges))
         draw_char_ext(' ', scroll_color, mesg_x, mesg_y, 0, 0);
     }
+    else if(intro_mesg_timer > 0)
+      draw_intro_mesg();
 
 #ifdef CONFIG_EDITOR
     // Add debug box
@@ -2101,6 +2120,7 @@ void title_screen(World *mzx_world)
   }
 
   src_board = mzx_world->current_board;
+  draw_intro_mesg();
 
   // Main game loop
 
