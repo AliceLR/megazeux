@@ -70,6 +70,9 @@ USERS
   applications.
 + SHOOT now ends the cycle, to restore compatibility with pre-port MZX
   and fix games such as Kya's Sword and Stones & Roks II.
++ Have IF [dir] PLAYER [color] [thing] [param] "label" interpret
+  SEEK direction wrt robot coordinates, rather than player
+  coordinates. Other directions are not affected.
 
 DEVELOPERS
 

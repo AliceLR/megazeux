@@ -461,6 +461,13 @@ static int check_dir_xy(struct world *mzx_world, enum thing id, int color,
   {
     int new_x = x;
     int new_y = y;
+
+    if((direction & 0x1F) == SEEK)
+    {
+      x = cur_robot->xpos;
+      y = cur_robot->ypos;
+    }
+
     direction = parsedir(direction, x, y, cur_robot->walk_dir);
 
     if(!move_dir(src_board, &new_x, &new_y, direction))
