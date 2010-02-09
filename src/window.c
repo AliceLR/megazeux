@@ -2462,6 +2462,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
         dialog b_di;
 
         new_name = malloc(MAX_PATH);
+        new_name[0] = 0;
 
         b_elements[0] = construct_input_box(2, 2,
          "New directory name: ", 32, 0, new_name);
