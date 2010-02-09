@@ -1,0 +1,372 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
+                      "http://www.w3.org/tr/xhtml11/DTD/xhtml11.dtd">
+
+<html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
+
+<head>
+<title>MegaZeux Platform Support Matrix</title>
+<style type="text/css">
+table {
+	font-family : "Verdana", "Bitstream Vera Sans";
+	border-collapse : collapse;
+	border : 2px solid black;
+	border-spacing : 0;
+	font-size : 9pt;
+}
+
+td, th {
+	text-align : center;
+	border-width: 1px 1px 1px 1px;
+	border-style: inset inset inset inset;
+	padding : 5px;
+	color : black;
+}
+
+td {
+	vertical-align : top;
+}
+
+th {
+	background-color : rgb(200,200,200);
+}
+
+td.yes {
+	background-color : rgb(0,255,0);
+	vertical-align : middle;
+}
+
+td.no {
+	background-color : rgb(255,0,0);
+	font-weight : bold;
+	color : white;
+}
+
+td.no2 {
+	background-color : rgb(255,150,150);
+	vertical-align : middle;
+	font-weight : bold;
+	color : white;
+}
+
+td.na {
+	background-color : rgb(220,220,200);
+	vertical-align : middle;
+}
+
+td.std {
+	background-color : rgb(150,255,150);
+	vertical-align : middle;
+}
+</style>
+</head>
+
+<body>
+
+<table>
+
+<tr>
+<th>$PLATFORM</th>
+<th>amiga</th>
+<th>darwin</th>
+<th>gp2x</th>
+<th>mingw</th>
+<th>msvc</th>
+<th>nds</th>
+<th>psp</th>
+<th>unix</th>
+<th>wii</th>
+</tr>
+
+<tr>
+<th>Description</th>
+<td>AmigaOS 4.x</td>
+<td>MacOS 10.x</td>
+<td>GP2X</td>
+<td>Windows<br/>GNU toolchain</td>
+<td>Windows<br/>Visual Studio</td>
+<td>Nintendo DS</td>
+<td>Playstation Portable</td>
+<td>Linux, BSD, Solaris<br/>HaikuOS, etc.</td>
+<td>Nintendo Wii</td>
+</tr>
+
+<tr>
+<th>Architecture(s)<br/>(Tested Only)</th>
+<td>PPC (ELF)</td>
+<td>PPC (Mach-O)<br/>i686 (Mach-O)</td>
+<td>ARM9 (ELF)</td>
+<td>x86 (PE COFF)</td>
+<td>x86 (PE COFF)<br/>x64 (PE+ COFF)</td>
+<td>ARM9 (ELF)</td>
+<td>MIPS (ELF)</td>
+<td>x86 (ELF)<br/>AMD64 (ELF)<br/>PPC64 (ELF)</td>
+<td>PPC (ELF)</td>
+</tr>
+
+<tr>
+<th>Endian</th>
+<td>Big</td>
+<td>Varies</td>
+<td>Little</td>
+<td>Little</td>
+<td>Little</td>
+<td>Little</td>
+<td>Big</td>
+<td>Varies</td>
+<td>Big</td>
+</tr>
+
+<tr>
+<th>Toolchain</th>
+<td>gcc 4.2.2<br/>binutils 2.14<br/>clib2</td>
+<td>gcc 4.0.1<br/>cctools 667.3<br/>10.3 (min ver)</td>
+<td>gcc 3.4.6<br/>binutils 2.16.1<br/>glibc 2.2.5</td>
+<td>gcc 4.3.2<br/>binutils 2.18.50</td>
+<td>Visual Studio 2008</td>
+<td>gcc 4.2.3 (dk r15)<br/>binutils 2.18.50</td>
+<td>gcc 4.1.0 (pspdev)<br/>binutils 2.16.1</td>
+<td>Various</td>
+<td>gcc 4.3.0 (dk r23)<br/>binutils 2.18.50</td>
+</tr>
+
+<tr>
+<th>Packaged</th>
+<td class="yes">LHA</td>
+<td class="yes">DMG</td>
+<td class="yes">ZIP</td>
+<td class="yes">ZIP</td>
+<td class="no2">NO</td>
+<td class="yes">ZIP</td>
+<td class="yes">ZIP</td>
+<td class="yes">DEB, RPM, ebuild</td>
+<td class="yes">ZIP</td>
+</tr>
+
+<tr>
+<th>Modular</th>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+<td class="no">NO</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+</tr>
+
+<tr>
+<th>Optimized<br/>Visibility</th>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="na">N/A</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="na">N/A</td>
+<td class="na">N/A</td>
+<td class="yes">YES</td>
+<td class="na">N/A</td>
+</tr>
+
+<tr>
+<th>Stack Protector</th>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+<td class="no">NO</td>
+<td class="no">NO</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+</tr>
+
+<tr>
+<th>Module Engine</th>
+<td class="std">ModPlug</td>
+<td class="std">ModPlug</td>
+<td>MikMod</td>
+<td class="std">ModPlug</td>
+<td class="std">ModPlug</td>
+<td class="na">N/A</td>
+<td class="std">ModPlug</td>
+<td class="std">ModPlug</td>
+<td class="std">ModPlug</td>
+</tr>
+
+<tr>
+<th>Ogg Vorbis</th>
+<td class="std">libvorbis</td>
+<td class="std">libvorbis</td>
+<td>tremor</td>
+<td class="std">libvorbis</td>
+<td class="std">libvorbis</td>
+<td class="na">N/A</td>
+<td>tremor</td>
+<td class="std">libvorbis</td>
+<td class="std">libvorbis</td>
+</tr>
+
+
+<tr>
+<th>Optimization</th>
+<td>Speed</td>
+<td>Speed</td>
+<td>Size</td>
+<td>Speed</td>
+<td>Speed</td>
+<td>Size</td>
+<td>Size</td>
+<td>Speed</td>
+<td>Size</td>
+</tr>
+
+<tr>
+<th>CONFIG_SDL</th>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+</tr>
+
+<tr>
+<th>CONFIG_EDITOR</th>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no2">NO</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no2">NO</td>
+<td class="no2">NO</td>
+<td class="yes">YES</td>
+<td class="no2">NO</td>
+</tr>
+
+<tr>
+<th>CONFIG_HELPSYS</th>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no2">NO</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no2">NO</td>
+<td class="no2">NO</td>
+<td class="yes">YES</td>
+<td class="no2">NO</td>
+</tr>
+
+<tr>
+<th>CONFIG_AUDIO</th>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+</tr>
+
+<tr>
+<th>CONFIG_SOFTWARE</th>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no2">render_gp2x</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no2">render_nds</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no2">render_gx</td>
+</tr>
+
+<tr>
+<th>CONFIG_GL</th>
+<td class="no2">NO</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+<td class="no">NO</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+</tr>
+
+<tr>
+<th>CONFIG_OVERLAY</th>
+<td class="no2">NO</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+<td class="no">NO</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+</tr>
+
+<tr>
+<th>CONFIG_GLSL</th>
+<td class="na">N/A</td>
+<td class="yes">YES</td>
+<td class="na">N/A</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="na">N/A</td>
+<td class="na">N/A</td>
+<td class="yes">YES</td>
+<td class="na">N/A</td>
+</tr>
+
+<tr>
+<th>CONFIG_PNG</th>
+<td class="no2">NO</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no2">NO</td>
+<td class="no2">NO</td>
+<td class="yes">YES</td>
+<td class="no2">NO</td>
+</tr>
+
+<tr>
+<th>CONFIG_NETWORK</th>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+<td class="no">NO</td>
+<td class="yes">YES</td>
+<td class="no">NO</td>
+</tr>
+
+<tr>
+<th>CONFIG_X11</th>
+<td class="na">N/A</td>
+<td class="no2">NO</td>
+<td class="na">N/A</td>
+<td class="na">N/A</td>
+<td class="na">N/A</td>
+<td class="na">N/A</td>
+<td class="na">N/A</td>
+<td class="yes">YES</td>
+<td class="na">N/A</td>
+</tr>
+
+</table>
+
+</body>
+
+</html>
