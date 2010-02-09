@@ -113,6 +113,8 @@ __editor_maybe_static void (*draw_debug_box)(struct world *mzx_world,
 static const char *const save_ext[] = { ".SAV", NULL };
 static int update_music;
 
+static bool editing = true;
+
 //Bit 1- +1
 //Bit 2- -1
 //Bit 4- +width
@@ -401,7 +403,7 @@ static void game_settings(struct world *mzx_world)
   };
   struct element *elements[9];
 
-  if(!mzx_world->lock_speed || mzx_world->editing)
+  if(!mzx_world->lock_speed || editing)
   {
     speed_option = 2;
     num_elements = 9;
@@ -1778,7 +1780,6 @@ __editor_maybe_static void play_game(struct world *mzx_world)
     if(key)
     {
       int key_char = get_key(keycode_unicode);
-      bool editing = true;
 
 #ifdef CONFIG_EDITOR
       if(edit_world)
