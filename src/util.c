@@ -155,10 +155,6 @@ int mzx_res_init(const char *argv0, bool editor)
     char *full_path;
     int p_dir_len;
 
-    /* Skip non-essential resources */
-    if(!editor && mzx_res[i].optional)
-      continue;
-
     if(i == CONFIG_TXT)
       chdir(CONFDIR);
     else
