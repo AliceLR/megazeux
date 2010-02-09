@@ -128,7 +128,7 @@ static bool gl2_init_video(struct graphics_data *graphics,
   if(!render_data)
     goto err_out;
 
-  if(!GL_LoadLibrary())
+  if(!GL_LoadLibrary(GL_LIB_FIXED))
     goto err_free_render_data;
 
   graphics->render_data = render_data;

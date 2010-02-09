@@ -33,10 +33,20 @@
 #include <dlfcn.h>
 
 static void *glso;
+static enum gl_lib_type gl_type;
 
-bool GL_LoadLibrary(void)
+bool GL_LoadLibrary(enum gl_lib_type type)
 {
-  glso = dlopen("libGLESv1_CM.so", RTLD_NOW);
+  const char *filename;
+
+  gl_type = type;
+
+  if(type == GL_LIB_FIXED)
+    filename = "libGLESv1_CM.so";
+  else
+    filename = "libGLESv2.so";
+
+  glso = dlopen(filename, RTLD_NOW);
   return glso != NULL;
 }
 
@@ -83,10 +93,21 @@ static const EGLint *get_current_config(int depth)
   return config16;
 }
 
+static const EGLint gles_v1_attribs[] =
+{
+  EGL_CONTEXT_CLIENT_VERSION, 1, EGL_NONE
+};
+
+static const EGLint gles_v2_attribs[] =
+{
+  EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE
+};
+
 bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize)
 {
   struct egl_render_data *egl_render_data = graphics->render_data;
+  const EGLint *attribs = gles_v1_attribs;
   EGLNativeWindowType window = 0;
   EGLint w, h;
 
@@ -105,9 +126,13 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
     goto err_cleanup;
   }
 
+  if(gl_type == GL_LIB_PROGRAMMABLE)
+    attribs = gles_v2_attribs;
+
+  eglBindAPI(EGL_OPENGL_ES_API);
   egl_render_data->context = eglCreateContext(egl_render_data->display,
                                               egl_render_data->config,
-                                              EGL_NO_CONTEXT, NULL);
+                                              EGL_NO_CONTEXT, attribs);
   if(egl_render_data->context == EGL_NO_CONTEXT)
   {
     warn("eglCreateContext failed\n");

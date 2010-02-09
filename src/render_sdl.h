@@ -45,7 +45,7 @@ bool gl_swap_buffers(struct graphics_data *graphics);
 
 static inline void gl_cleanup(struct graphics_data *graphics) { }
 
-static inline bool GL_LoadLibrary(void)
+static inline bool GL_LoadLibrary(enum gl_lib_type type)
 {
   return SDL_GL_LoadLibrary(NULL) == 0;
 }

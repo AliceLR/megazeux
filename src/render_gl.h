@@ -58,6 +58,12 @@ void gl_set_filter_method(const char *method,
 void get_context_width_height(struct graphics_data *graphics,
  int *width, int *height);
 
+enum gl_lib_type
+{
+  GL_LIB_FIXED,
+  GL_LIB_PROGRAMMABLE,
+};
+
 __M_END_DECLS
 
 #endif // __RENDER_GL_H

@@ -336,7 +336,7 @@ static bool glsl_init_video(struct graphics_data *graphics,
   if(!render_data)
     return false;
 
-  if(!GL_LoadLibrary())
+  if(!GL_LoadLibrary(GL_LIB_PROGRAMMABLE))
     goto err_free;
 
   graphics->render_data = render_data;

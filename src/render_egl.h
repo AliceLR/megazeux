@@ -38,7 +38,10 @@ void gl_cleanup(struct graphics_data *graphics);
 
 #ifndef ANDROID
 
-static inline bool GL_LoadLibrary(void) { }
+static inline bool GL_LoadLibrary(enum gl_lib_type type)
+{
+  // Implement me
+}
 
 static inline void *GL_GetProcAddress(const char *proc)
 {
@@ -50,7 +53,7 @@ static inline void *GL_GetProcAddress(const char *proc)
 /* Android's eglGetProcAddress is currently broken, so we
  * have to roll our own..
  */
-bool GL_LoadLibrary(void);
+bool GL_LoadLibrary(enum gl_lib_type type);
 void *GL_GetProcAddress(const char *proc);
 
 #endif /* !ANDROID */
