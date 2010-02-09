@@ -75,7 +75,7 @@ void free_macro(ext_macro *macro_src)
   free(macro_src);
 }
 
-__editor_maybe_static char *skip_to_next(char *src, char t, char a, char b)
+char *skip_to_next(char *src, char t, char a, char b)
 {
   char *current = src;
   char current_char = *current;
@@ -92,7 +92,7 @@ __editor_maybe_static char *skip_to_next(char *src, char t, char a, char b)
   return current;
 }
 
-__editor_maybe_static char *skip_whitespace(char *src)
+char *skip_whitespace(char *src)
 {
   char *current = src;
   char current_char = *current;
@@ -106,8 +106,7 @@ __editor_maybe_static char *skip_whitespace(char *src)
   return current;
 }
 
-__editor_maybe_static variable_storage *find_macro_variable(char *name,
- macro_type *m)
+variable_storage *find_macro_variable(char *name, macro_type *m)
 {
   int bottom = 0, top = m->num_variables - 1, middle = 0;
   int cmpval = 0;
@@ -528,8 +527,7 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
   return macro_dest;
 }
 
-__editor_maybe_static ext_macro *find_macro(config_info *conf,
- char *name, int *next)
+ext_macro *find_macro(config_info *conf, char *name, int *next)
 {
   int bottom = 0, top = (conf->num_extended_macros) - 1, middle = 0;
   int cmpval = 0;
