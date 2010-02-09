@@ -2607,28 +2607,6 @@ __editor_maybe_static void duplicate_sensor_direct(Sensor *cur_sensor,
   memcpy(copy_sensor, cur_sensor, sizeof(Sensor));
 }
 
-#ifdef CONFIG_EDITOR
-
-void clear_scroll_contents(Scroll *cur_scroll)
-{
-  free(cur_scroll->mesg);
-}
-
-void replace_scroll(Board *src_board, Scroll *src_scroll, int dest_id)
-{
-  Scroll *cur_scroll = src_board->scroll_list[dest_id];
-  clear_scroll_contents(cur_scroll);
-  duplicate_scroll_direct(src_scroll, cur_scroll);
-}
-
-void replace_sensor(Board *src_board, Sensor *src_sensor, int dest_id)
-{
-  Sensor *cur_sensor = src_board->sensor_list[dest_id];
-  duplicate_sensor_direct(src_sensor, cur_sensor);
-}
-
-#endif // CONFIG_EDITOR
-
 int duplicate_scroll(Board *src_board, Scroll *cur_scroll)
 {
   int dest_id = find_free_scroll(src_board);
@@ -2821,50 +2799,6 @@ void optimize_null_objects(Board *src_board)
   free(scroll_id_translation_list);
   free(sensor_id_translation_list);
 }
-
-#ifdef CONFIG_EDITOR
-
-void create_blank_robot_direct(Robot *cur_robot, int x, int y)
-{
-  char *program = malloc(2);
-
-  memset(cur_robot, 0, sizeof(Robot));
-
-  cur_robot->robot_name[0] = 0;
-  cur_robot->program = program;
-  cur_robot->program_length = 2;
-  program[0] = 0xFF;
-  program[1] = 0x00;
-
-  cur_robot->xpos = x;
-  cur_robot->ypos = y;
-  cur_robot->robot_char = 2;
-  cur_robot->bullet_type = 1;
-  cur_robot->used = 1;
-}
-
-void create_blank_scroll_direct(Scroll *cur_scroll)
-{
-  char *message = malloc(3);
-
-  memset(cur_scroll, 0, sizeof(Scroll));
-
-  cur_scroll->num_lines = 1;
-  cur_scroll->mesg_size = 3;
-  cur_scroll->mesg = message;
-  cur_scroll->used = 1;
-  message[0] = 0x01;
-  message[1] = '\n';
-  message[2] = 0x00;
-}
-
-void create_blank_sensor_direct(Sensor *cur_sensor)
-{
-  memset(cur_sensor, 0, sizeof(Sensor));
-  cur_sensor->used = 1;
-}
-
-#endif // CONFIG_EDITOR
 
 int get_robot_id(Board *src_board, const char *name)
 {

@@ -56,6 +56,7 @@
 #include "fill.h"
 #include "pal_ed.h"
 #include "param.h"
+#include "robot.h"
 #include "sfx_edit.h"
 #include "window.h"
 #include "world.h"

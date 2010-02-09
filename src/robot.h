@@ -102,19 +102,13 @@ void setup_overlay(Board *src_board, int mode);
 void replace_player(World *mzx_world);
 
 #ifdef CONFIG_EDITOR
-void create_blank_robot_direct(Robot *cur_robot, int x, int y);
-void create_blank_scroll_direct(Scroll *cur_croll);
-void create_blank_sensor_direct(Sensor *cur_sensor);
 void clear_robot_contents(Robot *cur_robot);
-void clear_scroll_contents(Scroll *cur_scroll);
 void duplicate_robot_direct(Robot *cur_robot, Robot *copy_robot,
  int x, int y);
 void duplicate_scroll_direct(Scroll *cur_scroll, Scroll *copy_scroll);
 void duplicate_sensor_direct(Sensor *cur_sensor, Sensor *copy_sensor);
 int place_at_xy(World *mzx_world, mzx_thing id, int color,
  int param, int x, int y);
-void replace_scroll(Board *src_board, Scroll *src_scroll, int dest_id);
-void replace_sensor(Board *src_board, Sensor *src_sensor, int dest_id);
 
 void copy_buffer_to_layer(int x, int y, int width, int height,
  char *src_char, char *src_color, char *dest_char,

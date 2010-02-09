@@ -28,6 +28,8 @@
 #include "../world.h"
 #include "../idput.h"
 
+#include "robot.h"
+
 #include <string.h>
 
 int append_world(World *mzx_world, const char *file)
