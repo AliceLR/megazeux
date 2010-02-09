@@ -46,10 +46,6 @@ struct config_info
   int force_bpp;
   enum ratio_type video_ratio;
   char gl_filter_method[16];
-  char gl_tilemap_vertex_shader[42];
-  char gl_tilemap_fragment_shader[42];
-  char gl_scaling_vertex_shader[42];
-  char gl_scaling_fragment_shader[42];
   int gl_vsync;
 
   // Audio options

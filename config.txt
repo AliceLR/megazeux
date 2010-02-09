@@ -100,38 +100,6 @@
 
 # gl_filter_method = nearest
 
-# These GLSL shaders work with the glsl scaler. The scaler requires
-# exactly one tilemap shader and one scaling shader.
-
-## Tilemap shaders ##
-
-# The standard tilemap shader.
-
-# gl_tilemap_vertex_shader   = shaders/tilemap.vert
-# gl_tilemap_fragment_shader = shaders/tilemap.frag
-
-## Scaling shaders ##
-
-# High quality scaling shader. Requires modern video card.
-
-# gl_scaling_vertex_shader   = shaders/simple.vert
-# gl_scaling_fragment_shader = shaders/hqscale.frag
-
-# Simple linear shader.
-
-# gl_scaling_vertex_shader   = shaders/simple.vert
-# gl_scaling_fragment_shader = shaders/simple.frag
-
-# Simple nearest neighbor shader.
-
-# gl_scaling_vertex_shader   = shaders/simple.vert
-# gl_scaling_fragment_shader = shaders/nearest.frag
-
-# Simple emboss shader.
-
-# gl_scaling_vertex_shader = shaders/simple.vert
-# gl_scaling_fragment_shader = shaders/emboss.frag
-
 # Some OpenGL driver settings may default vertical sync on, which looks
 # visually better (especially on CRTs) but can cause "speed 1" to run
 # noticably slower than with other renderers. For consistency with other

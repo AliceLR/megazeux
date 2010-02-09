@@ -20,6 +20,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 
 #include "platform.h"
 #include "render.h"
@@ -34,6 +35,9 @@
 #ifdef CONFIG_EGL
 #include <GLES2/gl2.h>
 #include "render_egl.h"
+typedef GLenum GLiftype;
+#else
+typedef GLint GLiftype;
 #endif
 
 #include "render_gl.h"
@@ -45,44 +49,49 @@ struct glsl_syms
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
   void (GL_APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
   void (GL_APIENTRY *glClear)(GLbitfield mask);
-  void (GL_APIENTRY *glColorPointer)(GLint size, GLenum type, GLsizei stride,
-   const GLvoid *pointer);
   void (GL_APIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
    GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height,
    GLint border);
   void (GL_APIENTRY *glDisable)(GLenum cap);
-  void (GL_APIENTRY *glDisableClientState)(GLenum cap);
   void (GL_APIENTRY *glDrawArrays)(GLenum mode, GLint first, GLsizei count);
   void (GL_APIENTRY *glEnable)(GLenum cap);
-  void (GL_APIENTRY *glEnableClientState)(GLenum cap);
   void (GL_APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
   const GLubyte* (GL_APIENTRY *glGetString)(GLenum name);
-  void (GL_APIENTRY *glTexCoordPointer)(GLint size, GLenum type,
-   GLsizei stride, const GLvoid *ptr);
   void (GL_APIENTRY *glTexImage2D)(GLenum target, GLint level,
-   GLint internalformat, GLsizei width, GLsizei height, GLint border,
+   GLiftype internalformat, GLsizei width, GLsizei height, GLint border,
    GLenum format, GLenum type, const GLvoid *pixels);
   void (GL_APIENTRY *glTexParameterf)(GLenum target, GLenum pname,
    GLfloat param);
   void (GL_APIENTRY *glTexSubImage2D)(GLenum target, GLint level,
    GLint xoffset, GLint yoffset, GLsizei width, GLsizei height,
    GLenum format, GLenum type, const void *pixels);
-  void (GL_APIENTRY *glVertexPointer)(GLint size, GLenum type,
-   GLsizei stride, const GLvoid *ptr);
   void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width,
    GLsizei height);
 
   // These are loaded as extensions on at least Windows
+  void (GL_APIENTRY *glAttachShader)(GLuint program, GLuint shader);
+  void (GL_APIENTRY *glBindAttribLocation)(GLuint program, GLuint index,
+   const char *name);
+  void (GL_APIENTRY *glCompileShader)(GLuint shader);
   GLenum (GL_APIENTRY *glCreateProgram)(void);
   GLenum (GL_APIENTRY *glCreateShader)(GLenum type);
-  void (GL_APIENTRY *glShaderSource)(GLuint shader, GLsizei count,
-   const char **strings, const GLint *length);
-  void (GL_APIENTRY *glCompileShader)(GLuint shader);
-  void (GL_APIENTRY *glAttachShader)(GLuint program, GLuint shader);
-  void (GL_APIENTRY *glUseProgram)(GLuint program);
-  void (GL_APIENTRY *glLinkProgram)(GLuint program);
+  void (GL_APIENTRY *glDisableVertexAttribArray)(GLuint index);
+  void (GL_APIENTRY *glEnableVertexAttribArray)(GLuint index);
   void (GL_APIENTRY *glGetProgramInfoLog)(GLuint program, GLsizei bufsize,
    GLsizei *len, char *infolog);
+  void (GL_APIENTRY *glLinkProgram)(GLuint program);
+  void (GL_APIENTRY *glShaderSource)(GLuint shader, GLsizei count,
+   const char **strings, const GLint *length);
+  void (GL_APIENTRY *glUseProgram)(GLuint program);
+  void (GL_APIENTRY *glVertexAttribPointer)(GLuint index, GLint size,
+   GLenum type, GLboolean normalized, GLsizei stride, const GLvoid *pointer);
+};
+
+enum
+{
+  ATTRIB_POSITION,
+  ATTRIB_TEXCOORD,
+  ATTRIB_COLOR,
 };
 
 struct glsl_render_data
@@ -96,13 +105,11 @@ struct glsl_render_data
   Uint8 remap_char[CHARSET_SIZE * 2];
   Uint8 ignore_linear;
   struct glsl_syms gl;
-  char gl_tilemap_fragment_shader_path[MAX_PATH];
-  char gl_tilemap_vertex_shader_path[MAX_PATH];
-  char gl_scaling_fragment_shader_path[MAX_PATH];
-  char gl_scaling_vertex_shader_path[MAX_PATH];
-  Uint32 gl_tilemap;
-  Uint32 gl_scaling;
   enum ratio_type ratio;
+  GLuint scaler_program;
+  GLuint tilemap_program;
+  GLuint mouse_program;
+  GLuint cursor_program;
 };
 
 static int glsl_load_syms(struct glsl_syms *gl)
@@ -113,40 +120,56 @@ static int glsl_load_syms(struct glsl_syms *gl)
   GL_LOAD_SYM(gl, glBindTexture)
   GL_LOAD_SYM(gl, glBlendFunc)
   GL_LOAD_SYM(gl, glClear)
-  GL_LOAD_SYM(gl, glColorPointer)
   GL_LOAD_SYM(gl, glCopyTexImage2D)
   GL_LOAD_SYM(gl, glDisable)
-  GL_LOAD_SYM(gl, glDisableClientState)
   GL_LOAD_SYM(gl, glDrawArrays)
   GL_LOAD_SYM(gl, glEnable)
-  GL_LOAD_SYM(gl, glEnableClientState)
   GL_LOAD_SYM(gl, glGenTextures)
   GL_LOAD_SYM(gl, glGetString)
-  GL_LOAD_SYM(gl, glTexCoordPointer)
   GL_LOAD_SYM(gl, glTexImage2D)
   GL_LOAD_SYM(gl, glTexParameterf)
   GL_LOAD_SYM(gl, glTexSubImage2D)
-  GL_LOAD_SYM(gl, glVertexPointer)
   GL_LOAD_SYM(gl, glViewport)
 
   // Even though these aren't "extensions" in OpenGL 2.0, on Windows
   // these symbols are too new to be present in OPENGL32.DLL, so we
   // must dynamically load them. For OpenGL ES 2.0 it's a non-issue,
   // and these are resolved at link time.
+
+  GL_LOAD_SYM_EXT(gl, glAttachShader)
+  GL_LOAD_SYM_EXT(gl, glBindAttribLocation)
+  GL_LOAD_SYM_EXT(gl, glCompileShader)
   GL_LOAD_SYM_EXT(gl, glCreateProgram)
   GL_LOAD_SYM_EXT(gl, glCreateShader)
+  GL_LOAD_SYM_EXT(gl, glDisableVertexAttribArray)
+  GL_LOAD_SYM_EXT(gl, glEnableVertexAttribArray)
+  GL_LOAD_SYM_EXT(gl, glGetProgramInfoLog)
+  GL_LOAD_SYM_EXT(gl, glLinkProgram)
   GL_LOAD_SYM_EXT(gl, glShaderSource)
-  GL_LOAD_SYM_EXT(gl, glCompileShader);
-  GL_LOAD_SYM_EXT(gl, glAttachShader);
-  GL_LOAD_SYM_EXT(gl, glUseProgram);
-  GL_LOAD_SYM_EXT(gl, glLinkProgram);
-  GL_LOAD_SYM_EXT(gl, glGetProgramInfoLog);
+  GL_LOAD_SYM_EXT(gl, glUseProgram)
+  GL_LOAD_SYM_EXT(gl, glVertexAttribPointer)
 
   gl->syms_loaded = true;
   return true;
 }
 
-static char *glsl_loadstring(char *filename)
+#define SHADER_INFO_MAX 1000
+
+static void glsl_verify_compile_link(struct glsl_render_data *render_data,
+ GLenum shader)
+{
+  struct glsl_syms *gl = &render_data->gl;
+  char buffer[SHADER_INFO_MAX];
+  int len = 0;
+
+  gl->glGetProgramInfoLog(shader, SHADER_INFO_MAX - 1, &len, buffer);
+  buffer[len] = 0;
+
+  if(len > 0)
+    warn("%s", buffer);
+}
+
+static char *glsl_load_string(const char *filename)
 {
   char *buffer = NULL;
   unsigned long size;
@@ -175,120 +198,117 @@ err_out:
   return buffer;
 }
 
-#define SHADER_INFO_MAX 1000
-
-static void glsl_verify_shader_compile(struct glsl_render_data *render_data,
- GLenum shader)
+static GLenum glsl_load_shader(struct graphics_data *graphics,
+ const char *path, GLenum type)
 {
+  struct glsl_render_data *render_data = graphics->render_data;
   struct glsl_syms *gl = &render_data->gl;
-  char buffer[SHADER_INFO_MAX];
-  int len = 0;
+  const char *source;
+  GLenum shader;
+  GLint length;
 
-  gl->glGetProgramInfoLog(shader, SHADER_INFO_MAX - 1, &len, buffer);
-  buffer[len] = 0;
+  assert(path != NULL);
 
-  if(len > 0)
-    warn("%s", buffer);
+  source = glsl_load_string(path);
+  if(!source)
+  {
+    warn("Failed to load shader '%s'\n", path);
+    return 0;
+  }
+
+  shader = gl->glCreateShader(type);
+
+  length = (GLint)strlen(source);
+  gl->glShaderSource(shader, 1, &source, &length);
+
+  gl->glCompileShader(shader);
+  glsl_verify_compile_link(render_data, shader);
+
+  free((void *)source);
+  return shader;
+}
+
+static GLuint glsl_load_program(struct graphics_data *graphics,
+ const char *base_path)
+{
+  struct glsl_render_data *render_data = graphics->render_data;
+  struct glsl_syms *gl = &render_data->gl;
+  GLenum vertex, fragment;
+  GLuint program = 0;
+  char *path;
+
+  path = malloc(MAX_PATH);
+
+  // FIXME: Don't use current_dir, it's just WRONG
+  snprintf(path, MAX_PATH, "%s/shaders/%s.vert", current_dir, base_path);
+
+  vertex = glsl_load_shader(graphics, path, GL_VERTEX_SHADER);
+  if(!vertex)
+    goto err_free_path;
+
+  // FIXME: Don't use current_dir, it's just WRONG
+  snprintf(path, MAX_PATH, "%s/shaders/%s.frag", current_dir, base_path);
+
+  fragment = glsl_load_shader(graphics, path, GL_FRAGMENT_SHADER);
+  if(!fragment)
+    goto err_free_path;
+
+  program = gl->glCreateProgram();
+
+  gl->glAttachShader(program, vertex);
+  gl->glAttachShader(program, fragment);
+
+err_free_path:
+  free(path);
+  return program;
 }
 
 static void glsl_load_shaders(struct graphics_data *graphics)
 {
-  int len;
-  GLenum shader_vert_scaling;
-  GLenum shader_frag_scaling;
-  GLenum shader_vert_tilemap;
-  GLenum shader_frag_tilemap;
-  GLenum scaling_program;
-  GLenum tilemap_program;
-  const char *shader_vert_source_scaling;
-  const char *shader_frag_source_scaling;
-  const char *shader_vert_source_tilemap;
-  const char *shader_frag_source_tilemap;
-  struct glsl_syms *gl;
   struct glsl_render_data *render_data = graphics->render_data;
-  gl = &render_data->gl;
+  struct glsl_syms *gl = &render_data->gl;
 
-  shader_vert_source_tilemap =
-    glsl_loadstring(render_data->gl_tilemap_vertex_shader_path);
-  shader_frag_source_tilemap =
-    glsl_loadstring(render_data->gl_tilemap_fragment_shader_path);
-
-  if(shader_vert_source_tilemap != NULL && shader_frag_source_tilemap != NULL)
+  render_data->scaler_program = glsl_load_program(graphics, "scaler");
+  if(render_data->scaler_program)
   {
-    tilemap_program = gl->glCreateProgram();
-    shader_vert_tilemap = gl->glCreateShader(GL_VERTEX_SHADER);
-    shader_frag_tilemap = gl->glCreateShader(GL_FRAGMENT_SHADER);
-
-    len = (int)strlen(shader_vert_source_tilemap);
-    gl->glShaderSource(shader_vert_tilemap, 1, &shader_vert_source_tilemap,
-     &len);
-
-    len = (int)strlen(shader_frag_source_tilemap);
-    gl->glShaderSource(shader_frag_tilemap, 1, &shader_frag_source_tilemap,
-     &len);
-
-    gl->glCompileShader(shader_vert_tilemap);
-    glsl_verify_shader_compile(render_data, shader_vert_tilemap);
-    gl->glCompileShader(shader_frag_tilemap);
-    glsl_verify_shader_compile(render_data, shader_frag_tilemap);
-
-    gl->glAttachShader(tilemap_program, shader_vert_tilemap);
-    gl->glAttachShader(tilemap_program, shader_frag_tilemap);
-    gl->glLinkProgram(tilemap_program);
-
-    free((void *)shader_vert_source_tilemap);
-    free((void *)shader_frag_source_tilemap);
-  }
-  else
-  {
-    if(shader_vert_source_tilemap != NULL)
-       free((char *)shader_vert_source_tilemap);
-    if(shader_frag_source_tilemap != NULL)
-       free((char *)shader_frag_source_tilemap);
-    tilemap_program = 0;
+    gl->glBindAttribLocation(render_data->scaler_program,
+     ATTRIB_POSITION, "Position");
+    gl->glBindAttribLocation(render_data->scaler_program,
+     ATTRIB_TEXCOORD, "Texcoord");
+    gl->glLinkProgram(render_data->scaler_program);
+    glsl_verify_compile_link(render_data, render_data->scaler_program);
   }
 
-  shader_vert_source_scaling =
-    glsl_loadstring(render_data->gl_scaling_vertex_shader_path);
-  shader_frag_source_scaling =
-    glsl_loadstring(render_data->gl_scaling_fragment_shader_path);
-
-  if(shader_vert_source_scaling != NULL && shader_frag_source_scaling != NULL)
+  render_data->tilemap_program = glsl_load_program(graphics, "tilemap");
+  if(render_data->tilemap_program)
   {
-    scaling_program = gl->glCreateProgram();
-    shader_vert_scaling = gl->glCreateShader(GL_VERTEX_SHADER);
-    shader_frag_scaling = gl->glCreateShader(GL_FRAGMENT_SHADER);
-
-    len = (int)strlen(shader_vert_source_scaling);
-    gl->glShaderSource(shader_vert_scaling, 1, &shader_vert_source_scaling,
-     &len);
-    len = (int)strlen(shader_frag_source_scaling);
-    gl->glShaderSource(shader_frag_scaling, 1, &shader_frag_source_scaling,
-     &len);
-
-    gl->glCompileShader(shader_vert_scaling);
-    glsl_verify_shader_compile(render_data, shader_vert_scaling);
-    gl->glCompileShader(shader_frag_scaling);
-    glsl_verify_shader_compile(render_data, shader_frag_scaling);
-
-    gl->glAttachShader(scaling_program, shader_vert_scaling);
-    gl->glAttachShader(scaling_program, shader_frag_scaling);
-    gl->glLinkProgram(scaling_program);
-
-    free((void *)shader_vert_source_scaling);
-    free((void *)shader_frag_source_scaling);
-  }
-  else
-  {
-    if(shader_vert_source_scaling != NULL)
-       free((void *)shader_vert_source_scaling);
-    if(shader_frag_source_scaling != NULL)
-       free((void *)shader_frag_source_scaling);
-    scaling_program = 0;
+    gl->glBindAttribLocation(render_data->tilemap_program,
+     ATTRIB_POSITION, "Position");
+    gl->glBindAttribLocation(render_data->tilemap_program,
+     ATTRIB_TEXCOORD, "Texcoord");
+    gl->glLinkProgram(render_data->tilemap_program);
+    glsl_verify_compile_link(render_data, render_data->tilemap_program);
   }
 
-  render_data->gl_scaling = scaling_program;
-  render_data->gl_tilemap = tilemap_program;
+  render_data->mouse_program = glsl_load_program(graphics, "mouse");
+  if(render_data->mouse_program)
+  {
+    gl->glBindAttribLocation(render_data->mouse_program,
+     ATTRIB_POSITION, "Position");
+    gl->glLinkProgram(render_data->mouse_program);
+    glsl_verify_compile_link(render_data, render_data->mouse_program);
+  }
+
+  render_data->cursor_program  = glsl_load_program(graphics, "cursor");
+  if(render_data->cursor_program)
+  {
+    gl->glBindAttribLocation(render_data->cursor_program,
+     ATTRIB_POSITION, "Position");
+    gl->glBindAttribLocation(render_data->cursor_program,
+     ATTRIB_COLOR, "Color");
+    gl->glLinkProgram(render_data->cursor_program);
+    glsl_verify_compile_link(render_data, render_data->cursor_program);
+  }
 }
 
 static bool glsl_init_video(struct graphics_data *graphics,
@@ -313,14 +333,6 @@ static bool glsl_init_video(struct graphics_data *graphics,
   graphics->gl_vsync = conf->gl_vsync;
   graphics->allow_resize = conf->allow_resize;
   graphics->gl_filter_method = conf->gl_filter_method;
-  sprintf(render_data->gl_tilemap_fragment_shader_path, "%s/%s", current_dir,
-    conf->gl_tilemap_fragment_shader);
-  sprintf(render_data->gl_tilemap_vertex_shader_path, "%s/%s", current_dir,
-    conf->gl_tilemap_vertex_shader);
-  sprintf(render_data->gl_scaling_fragment_shader_path, "%s/%s", current_dir,
-    conf->gl_scaling_fragment_shader);
-  sprintf(render_data->gl_scaling_vertex_shader_path, "%s/%s", current_dir,
-    conf->gl_scaling_vertex_shader);
   graphics->bits_per_pixel = 32;
 
   // OpenGL only supports 16/32bit colour
@@ -535,7 +547,7 @@ static void glsl_render_graph(struct graphics_data *graphics)
     1.0f, 1.0f,
   };
 
-  gl->glUseProgram(render_data->gl_tilemap);
+  gl->glUseProgram(render_data->tilemap_program);
 
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
   if(render_data->remap_texture)
@@ -591,16 +603,18 @@ static void glsl_render_graph(struct graphics_data *graphics)
   gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 224, 256, 1, GL_RGBA,
     GL_UNSIGNED_BYTE, render_data->background_texture);
 
-  gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-  gl->glEnableClientState(GL_VERTEX_ARRAY);
+  gl->glEnableVertexAttribArray(ATTRIB_POSITION);
+  gl->glEnableVertexAttribArray(ATTRIB_TEXCOORD);
 
-  gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
-  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
+  gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
+   vertex_array_single);
+  gl->glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
+   tex_coord_array_single);
 
   gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-  gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-  gl->glDisableClientState(GL_VERTEX_ARRAY);
+  gl->glDisableVertexAttribArray(ATTRIB_POSITION);
+  gl->glDisableVertexAttribArray(ATTRIB_TEXCOORD);
 }
 
 static void glsl_render_cursor(struct graphics_data *graphics,
@@ -617,26 +631,29 @@ static void glsl_render_cursor(struct graphics_data *graphics,
     (x * 8 + 8)*2.0f/640.0f-1.0f, (y * 14 + lines + offset)*-2.0f/350.0f+1.0f
   };
 
-  const GLubyte color_array[3 * 4] = {
-    pal_base[0], pal_base[1], pal_base[2],
-    pal_base[0], pal_base[1], pal_base[2],
-    pal_base[0], pal_base[1], pal_base[2],
-    pal_base[0], pal_base[1], pal_base[2]
+  const float color_array[3 * 4] = {
+    pal_base[0] / 255.0f, pal_base[1] / 255.0f, pal_base[2] / 255.0f,
+    pal_base[0] / 255.0f, pal_base[1] / 255.0f, pal_base[2] / 255.0f,
+    pal_base[0] / 255.0f, pal_base[1] / 255.0f, pal_base[2] / 255.0f,
+    pal_base[0] / 255.0f, pal_base[1] / 255.0f, pal_base[2] / 255.0f
   };
 
   gl->glDisable(GL_TEXTURE_2D);
-  gl->glUseProgram(0);
 
-  gl->glEnableClientState(GL_VERTEX_ARRAY);
-  gl->glEnableClientState(GL_COLOR_ARRAY);
+  gl->glUseProgram(render_data->cursor_program);
 
-  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array);
-  gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array);
+  gl->glEnableVertexAttribArray(ATTRIB_POSITION);
+  gl->glEnableVertexAttribArray(ATTRIB_COLOR);
+
+  gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
+   vertex_array);
+  gl->glVertexAttribPointer(ATTRIB_COLOR, 3, GL_FLOAT, GL_FALSE, 0,
+   color_array);
 
   gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-  gl->glDisableClientState(GL_VERTEX_ARRAY);
-  gl->glDisableClientState(GL_COLOR_ARRAY);
+  gl->glDisableVertexAttribArray(ATTRIB_POSITION);
+  gl->glDisableVertexAttribArray(ATTRIB_COLOR);
 
   gl->glEnable(GL_TEXTURE_2D);
 }
@@ -656,15 +673,17 @@ static void glsl_render_mouse(struct graphics_data *graphics,
 
   gl->glDisable(GL_TEXTURE_2D);
   gl->glEnable(GL_BLEND);
-  gl->glUseProgram(0);
 
-  gl->glEnableClientState(GL_VERTEX_ARRAY);
+  gl->glUseProgram(render_data->mouse_program);
 
-  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array);
+  gl->glEnableVertexAttribArray(ATTRIB_POSITION);
+
+  gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
+   vertex_array);
 
   gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-  gl->glDisableClientState(GL_VERTEX_ARRAY);
+  gl->glDisableVertexAttribArray(ATTRIB_POSITION);
 
   gl->glEnable(GL_TEXTURE_2D);
   gl->glDisable(GL_BLEND);
@@ -675,11 +694,6 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   struct glsl_render_data *render_data = graphics->render_data;
   struct glsl_syms *gl = &render_data->gl;
   int v_width, v_height, width, height;
-
-  gl->glUseProgram(render_data->gl_scaling);
-
-  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
-  gl->glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 1024, 512, 0);
 
   get_context_width_height(graphics, &width, &height);
   fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
@@ -697,10 +711,18 @@ static void glsl_sync_screen(struct graphics_data *graphics)
     height = 350;
   }
 
+  gl->glUseProgram(render_data->scaler_program);
+
+  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+  gl->glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 1024, 512, 0);
+
   gl->glClear(GL_COLOR_BUFFER_BIT);
 
-  gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-  gl->glEnableClientState(GL_VERTEX_ARRAY);
+  gl->glEnableVertexAttribArray(ATTRIB_POSITION);
+  gl->glEnableVertexAttribArray(ATTRIB_TEXCOORD);
+ 
+  gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
+   vertex_array_single);
 
   {
     const float tex_coord_array_single[2 * 4] = {
@@ -710,15 +732,14 @@ static void glsl_sync_screen(struct graphics_data *graphics)
        width / 1024.0f, 0.0f,
     };
 
-    gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
+    gl->glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
+     tex_coord_array_single);
   }
-
-  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
 
   gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-  gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-  gl->glDisableClientState(GL_VERTEX_ARRAY);
+  gl->glDisableVertexAttribArray(ATTRIB_POSITION);
+  gl->glDisableVertexAttribArray(ATTRIB_TEXCOORD);
 
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 

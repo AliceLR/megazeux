@@ -1,6 +1,6 @@
 uniform sampler2D baseMap;
 
-varying vec2 Texcoord;
+varying vec2 vTexcoord;
 #define XS 1024.0
 #define YS 512.0
 #define AX1 -0.5/XS
@@ -30,26 +30,26 @@ varying vec2 Texcoord;
 void main( void )
 {
    
-   vec4 c = (texture2D( baseMap, Texcoord+vec2(((XBLUR1+XBLUR2)/2.0), (YBLUR1+YBLUR2)/2.0)) *F5 + 
-               /*texture2D( baseMap, Texcoord+vec2(((XBLUR1+XBLUR2)/2.0), YBLUR1))              *F2 +*/ 
-             texture2D( baseMap, Texcoord+vec2(((XBLUR1+XBLUR2)/2.0), YBLUR2))              *F8 + 
-               /*texture2D( baseMap, Texcoord+vec2(XBLUR1,                (YBLUR1+YBLUR2)/2.0)) *F4 +*/
-               /*texture2D( baseMap, Texcoord+vec2(XBLUR2,                (YBLUR1+YBLUR2)/2.0)) *F6 +*/
-             texture2D( baseMap, Texcoord+vec2(XBLUR3,                YBLUR3))              *F1
-               /*texture2D( baseMap, Texcoord+vec2(XBLUR4,                YBLUR3))              *F3 +*/
-               /*texture2D( baseMap, Texcoord+vec2(XBLUR3,                YBLUR4))              *F7 +*/
-               /*texture2D( baseMap, Texcoord+vec2(XBLUR4,                YBLUR4))              *F9  */
+   vec4 c = (texture2D( baseMap, vTexcoord+vec2(((XBLUR1+XBLUR2)/2.0), (YBLUR1+YBLUR2)/2.0)) *F5 + 
+               /*texture2D( baseMap, vTexcoord+vec2(((XBLUR1+XBLUR2)/2.0), YBLUR1))              *F2 +*/ 
+             texture2D( baseMap, vTexcoord+vec2(((XBLUR1+XBLUR2)/2.0), YBLUR2))              *F8 + 
+               /*texture2D( baseMap, vTexcoord+vec2(XBLUR1,                (YBLUR1+YBLUR2)/2.0)) *F4 +*/
+               /*texture2D( baseMap, vTexcoord+vec2(XBLUR2,                (YBLUR1+YBLUR2)/2.0)) *F6 +*/
+             texture2D( baseMap, vTexcoord+vec2(XBLUR3,                YBLUR3))              *F1
+               /*texture2D( baseMap, vTexcoord+vec2(XBLUR4,                YBLUR3))              *F3 +*/
+               /*texture2D( baseMap, vTexcoord+vec2(XBLUR3,                YBLUR4))              *F7 +*/
+               /*texture2D( baseMap, vTexcoord+vec2(XBLUR4,                YBLUR4))              *F9  */
 													)/FT;
    float d1, d2, d3, d4, dt, w1, w2, w3, w4, wt;
    vec4 final;
-   vec4 c1 = texture2D( baseMap, vec2(floor(Texcoord.x*XS)/XS+AX1, 
-floor(Texcoord.y*YS)/YS+AY1));
-   vec4 c2 = texture2D( baseMap, vec2(floor(Texcoord.x*XS)/XS+AX2, 
-floor(Texcoord.y*YS)/YS+AY1));
-   vec4 c3 = texture2D( baseMap, vec2(floor(Texcoord.x*XS)/XS+AX1, 
-floor(Texcoord.y*YS)/YS+AY2));
-   vec4 c4 = texture2D( baseMap, vec2(floor(Texcoord.x*XS)/XS+AX2, 
-floor(Texcoord.y*YS)/YS+AY2));
+   vec4 c1 = texture2D( baseMap, vec2(floor(vTexcoord.x*XS)/XS+AX1, 
+floor(vTexcoord.y*YS)/YS+AY1));
+   vec4 c2 = texture2D( baseMap, vec2(floor(vTexcoord.x*XS)/XS+AX2, 
+floor(vTexcoord.y*YS)/YS+AY1));
+   vec4 c3 = texture2D( baseMap, vec2(floor(vTexcoord.x*XS)/XS+AX1, 
+floor(vTexcoord.y*YS)/YS+AY2));
+   vec4 c4 = texture2D( baseMap, vec2(floor(vTexcoord.x*XS)/XS+AX2, 
+floor(vTexcoord.y*YS)/YS+AY2));
    d1 = (c1.x - c.x)*(c1.x - c.x) + (c1.y - c.y)*(c1.y - c.y) + (c1.z - c.z)*(c1.z - c.z);
    d2 = (c2.x - c.x)*(c2.x - c.x) + (c2.y - c.y)*(c2.y - c.y) + (c2.z - c.z)*(c2.z - c.z);
    d3 = (c3.x - c.x)*(c3.x - c.x) + (c3.y - c.y)*(c3.y - c.y) + (c3.z - c.z)*(c3.z - c.z);
