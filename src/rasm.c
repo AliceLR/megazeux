@@ -2732,7 +2732,9 @@ static int get_param(char *cmd_line)
   return strtol(cmd_line + 1, NULL, 16);
 }
 
-__editor_maybe_static int get_thing(char *name, int name_length)
+#ifdef CONFIG_EDITOR
+
+int get_thing(char *name, int name_length)
 {
   const struct special_word *special_word =
    find_special_word(name, name_length);
@@ -2743,6 +2745,7 @@ __editor_maybe_static int get_thing(char *name, int name_length)
   return special_word->instance_type;
 }
 
+#endif /* CONFIG_EDITOR */
 
 __editor_maybe_static int unescape_char(char *dest, char c)
 {
@@ -3996,7 +3999,7 @@ __editor_maybe_static struct token *parse_command(char *src, char **_next,
  int *_num_tokens)
 {
   const struct command_set *command_set;
-  const struct mzx_command *current_command;
+  const struct mzx_command *current_command = NULL;
   struct token *tokens;
   int command_number;
   int command_in_set;
