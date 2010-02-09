@@ -903,22 +903,20 @@ static void input_write(World *mzx_world, function_counter *counter,
 static int key_read(World *mzx_world, function_counter *counter,
  const char *name, int id)
 {
-  if(name[3])
-  {
-    int key_num = strtol(name + 3, NULL, 10);
-    return get_key_status(keycode_pc_xt, key_num);
-  }
-  else
-  {
-    return toupper(get_last_key(keycode_internal));
-  }
+  return toupper(get_last_key(keycode_internal));
 }
 
 static void key_write(World *mzx_world, function_counter *counter,
  const char *name, int value, int id)
 {
-  if(!name[3])
-    force_last_key(keycode_internal, toupper(value));
+  force_last_key(keycode_internal, toupper(value));
+}
+
+static int keyn_read(World *mzx_world, function_counter *counter,
+ const char *name, int id)
+{
+  int key_num = strtol(name + 3, NULL, 10);
+  return get_key_status(keycode_pc_xt, key_num);
 }
 
 static int key_code_read(World *mzx_world, function_counter *counter,
@@ -2053,7 +2051,8 @@ static function_counter builtin_counters[] =
   { "input", 0, input_read, input_write },                           // <=2.51
   { "inputsize", 0, inputsize_read, inputsize_write },               // <=2.51
   { "int2bin", 0x0209, int2bin_read, int2bin_write },                // 2.60
-  { "key?", 0x0245, key_read, key_write },                           // 2.69
+  { "key", 0, key_read, key_write },                                 // <=2.51
+  { "key?", 0x0245, keyn_read, NULL },                               // 2.69
   { "key_code", 0x0245, key_code_read, NULL },                       // 2.69
   { "key_pressed", 0x0209, key_pressed_read, NULL },                 // 2.60
   { "key_release", 0x0245, key_release_read, NULL },                 // 2.69

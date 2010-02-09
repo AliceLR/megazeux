@@ -30,6 +30,9 @@ USERS
   first loop is used, and only forward looping is supported. The OGG loop
   support uses the "LOOPSTART" and "LOOPLENGTH" tags as used by RPG Maker VX.
   (Mr_Alert)
++ Un-group the handling of the KEY and KEYn counters so that different
+  compatibility checks can be applied to either counter. Fixes
+  "Bocco Chronicles 1" and probably several other titles.
 
 DEVELOPERS
 
@@ -54,6 +57,8 @@ DEVELOPERS
   platform is now "unix-devel" and available on all UNIX derivatives/clones.
 + Add a special hack to enable linking with --as-needed for DT_NEEDED link
   optimization for GNU ld platforms.
++ Windows builds now use a patched version of SDL 1.2.13 containing a fix
+  for the directx+F10 issue.
 
 June 10, 2008 - MZX 2.82
 
