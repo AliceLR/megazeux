@@ -51,7 +51,7 @@ binary-arch: build install
 	dh_installchangelogs 
 	dh_installdocs
 	dh_installman
-	dh_strip
+	dh_strip --dbg-package=megazeux-dbg
 	dh_compress
 	dh_fixperms
 	dh_installdeb

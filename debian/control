@@ -20,3 +20,9 @@ Description: A simple game creation system (GCS)
  regardless of genre. It is actively maintained by a thriving community.
  .
  See http://digitalmzx.net/ for more information.
+
+Package: megazeux-dbg
+Architecture: any
+Depends: ${shlibs:Depends}, ${misc:Depends}
+Description: MegaZeux debug symbols
+ Debug symbols for MegaZeux.
