@@ -58,9 +58,8 @@ DEVELOPERS
   X11 clipboard support.
 + Remove dependency on SDL_image on non-win32 platforms when enabling
   the icon branding feature (see pngops.c).
-+ Ported to AmigaOS. You need to install the clib2 version of libSDL, and the
-  build system assumes you are using a cross compiler. The OpenGL renderers
-  are not supported.
++ Ported to AmigaOS. You need to install the clib2 version of libSDL and
+  miniGL, and the build system assumes you are using a cross compiler.
 + Added experimental port to the Wii. See arch/wii/README for more
   information. (Mr_Alert)
 + get_path() in util.c now returns <0 for failure, or the length of the path
@@ -81,8 +80,9 @@ DEVELOPERS
   intimately depend on the MZX runtime, they must be built with the same
   compiler.
 + MegaZeux now provides the option for "modular" linkage, factoring out the
-  "core" and "editor" features to shared objects that other binaries can link
-  against. This feature works on the unix, mingw, amiga and darwin ports.
+  "core", "editor" and "network" features to shared objects that other
+  binaries can link against. This feature works on the unix, mingw,
+  amiga and darwin ports.
 + Added RPM .spec file. Capable of building (at least) Fedora 10 RPMs.
 
 June 10, 2008 - MZX 2.82
