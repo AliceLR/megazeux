@@ -13,9 +13,6 @@ LINK_CC := ${CC}
 mzx_obj = src/.build
 mzx_src = src
 
-editor_obj = src/editor/.build
-editor_src = src/editor
-
 core_flags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
 core_flags   += -Wmissing-format-attribute -Wpointer-arith
 core_flags   += -Wwrite-strings
@@ -24,10 +21,6 @@ core_cxxflags = -DHAVE_INTTYPES_H
 
 core_flags   += -I${mzx_src} -I${PREFIX}/include
 core_ldflags := ${core_ldflags} ${ARCH_LDFLAGS}
-
-${editor_obj}/%.o: ${editor_src}/%.c
-	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${CFLAGS} ${core_flags} ${core_cflags} -c $< -o $@
 
 ${mzx_obj}/%.o: ${mzx_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
