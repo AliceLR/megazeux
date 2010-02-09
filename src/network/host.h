@@ -67,6 +67,15 @@ static inline void host_layer_exit(void) { }
 #endif
 
 /**
+ * Some socket operations "fail" for non-fatal reasons. If using non-blocking
+ * sockets, they may fail with EAGAIN, EINTR, or in some other
+ * platform-specific way, if there was no data available at that time.
+ *
+ * @return Whether the last socket error was fatal, or not
+ */
+bool host_last_error_fatal(void);
+
+/**
  * Creates a host for use either as a client or a server.
  *
  * @param proto    The IP protocol, typically IPPROTO_TCP or IPPROTO_UDP
@@ -87,6 +96,27 @@ struct host *host_create(host_type_t type, host_family_t fam, bool blocking);
 void host_destroy(struct host *h);
 
 /**
+ * Accepts a connection from a host processed by \ref host_bind and
+ * \ref host_listen previously. The new connection is assigned a new
+ * host data structure which must be freed.
+ *
+ * @param s Serving host to accept connection with
+ *
+ * @return Connected client connection, or NULL if a failure occurred
+ */
+struct host *host_accept(struct host *s);
+
+/**
+ * Binds a host `h' to the specified host and port.
+ *
+ * @param hostname Hostname or IP address to bind to
+ * @param port     Target port (service) to use
+ *
+ * @return Whether the bind was possible and successful, or not
+ */
+bool host_bind(struct host *h, const char *hostname, int port);
+
+/**
  * Connects a host `h' to the specified host and port.
  *
  * @param hostname Hostname or IP address to connect to
@@ -95,6 +125,16 @@ void host_destroy(struct host *h);
  * @return Whether the connection was possible and successful, or not
  */
 bool host_connect(struct host *h, const char *hostname, int port);
+
+/**
+ * Prepares a socket processed with @ref host_bind to listen for
+ * connections. Only applies to @ref HOST_TYPE_TCP sockets.
+ *
+ * @param h Host to start listening with
+ *
+ * @return Whether it was possible to listen with this host, or not
+ */
+bool host_listen(struct host *h);
 
 /**
  * Obtain a buffer containing a file, referenced by URL, over HTTP.

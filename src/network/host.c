@@ -56,7 +56,7 @@ struct host
   int fd;
 };
 
-static inline bool __socket_error_fatal(void)
+static inline bool __host_last_error_fatal(void)
 {
   switch(errno)
   {
@@ -71,9 +71,21 @@ static inline bool __socket_error_fatal(void)
 
 #ifndef __WIN32__
 
-static inline bool socket_error_fatal(void)
+bool host_last_error_fatal(void)
 {
-  return __socket_error_fatal();
+  return __host_last_error_fatal();
+}
+
+static inline int platform_accept(int sockfd,
+ struct sockaddr *addr, socklen_t *addrlen)
+{
+  return accept(sockfd, addr, addrlen);
+}
+
+static inline int platform_bind(int sockfd,
+ const struct sockaddr *addr, socklen_t addrlen)
+{
+  return bind(sockfd, addr, addrlen);
 }
 
 static inline void platform_close(int fd)
@@ -101,6 +113,11 @@ static inline int platform_getaddrinfo(const char *node, const char *service,
 static inline struct hostent *platform_gethostbyname(const char *name)
 {
   return gethostbyname(name);
+}
+
+static inline int platform_listen(int sockfd, int backlog)
+{
+  return listen(sockfd, backlog);
 }
 
 static inline ssize_t platform_send(int s, const void *buf, size_t len,
@@ -160,6 +177,10 @@ static struct
   /* These are Winsock 2.0 functions that should be present all the
    * way back to 98 (and 95 with the additional Winsock 2.0 update).
    */
+  WINSOCK_API_LINKAGE int PASCAL
+   (*accept)(SOCKET, const struct sockaddr *, int *);
+  WINSOCK_API_LINKAGE int PASCAL
+   (*bind)(SOCKET, const struct sockaddr *, int);
   WINSOCK_API_LINKAGE int PASCAL (*closesocket)(SOCKET);
   WINSOCK_API_LINKAGE int PASCAL
    (*connect)(SOCKET, const struct sockaddr *, int);
@@ -167,6 +188,7 @@ static struct
    (*gethostbyname)(const char*);
   WINSOCK_API_LINKAGE u_short PASCAL (*htons)(u_short);
   WINSOCK_API_LINKAGE int PASCAL (*ioctlsocket)(SOCKET, long, u_long *);
+  WINSOCK_API_LINKAGE int PASCAL (*listen)(SOCKET, int);
   WINSOCK_API_LINKAGE int PASCAL (*send)(SOCKET, const char *, int, int);
   WINSOCK_API_LINKAGE int PASCAL
    (*setsockopt)(SOCKET, int, int, const char *, int);
@@ -195,11 +217,14 @@ static const struct
 }
 socksyms_map[] =
 {
+  { "accept",                (void **)&socksyms.accept },
+  { "bind",                  (void **)&socksyms.bind },
   { "closesocket",           (void **)&socksyms.closesocket },
   { "connect",               (void **)&socksyms.connect },
   { "gethostbyname",         (void **)&socksyms.gethostbyname },
   { "htons",                 (void **)&socksyms.htons },
   { "ioctlsocket",           (void **)&socksyms.ioctlsocket },
+  { "listen",                (void **)&socksyms.listen },
   { "send",                  (void **)&socksyms.send },
   { "setsockopt",            (void **)&socksyms.setsockopt },
   { "socket",                (void **)&socksyms.socket },
@@ -308,11 +333,23 @@ void host_layer_exit(void)
   socket_free_syms();
 }
 
-static inline bool socket_error_fatal(void)
+bool host_last_error_fatal(void)
 {
   if(socksyms.WSAGetLastError() == WSAEWOULDBLOCK)
     return false;
-  return __socket_error_fatal();
+  return __host_last_error_fatal();
+}
+
+static inline int platform_accept(int sockfd,
+ struct sockaddr *addr, sockaddr_t *addrlen)
+{
+  return socksyms.accept(sockfd, addr, addrlen);
+}
+
+static inline int platform_bind(int sockfd,
+ const struct sockaddr *addr, sockaddr_t addrlen)
+{
+  return socksyms.bind(sockfd, addr, addrlen);
 }
 
 static inline void platform_close(int fd)
@@ -410,6 +447,11 @@ static inline int platform_getaddrinfo(const char *node, const char *service,
   if(socksyms.getaddrinfo)
     return socksyms.getaddrinfo(node, service, hints, res);
   return getaddrinfo_legacy_wrapper(node, service, hints, res);
+}
+
+static inline int platform_listen(int sockfd, int backlog)
+{
+  return socksyms.listen(sockfd, backlog);
 }
 
 static inline ssize_t platform_send(int s, const void *buf, size_t len,
@@ -552,7 +594,7 @@ static bool __send(int fd, const char *buffer, unsigned int len)
     if(count < 0)
     {
       // non-blocking socket, so can fail and still be ok
-      if(!socket_error_fatal())
+      if(!host_last_error_fatal())
       {
         count = 0;
         continue;
@@ -594,7 +636,7 @@ static bool __recv(int fd, char *buffer, unsigned int len)
     if(count < 0)
     {
       // non-blocking socket, so can fail and still be ok
-      if(!socket_error_fatal())
+      if(!host_last_error_fatal())
       {
         count = 0;
         continue;
@@ -609,7 +651,48 @@ exit_out:
   return ret;
 }
 
-bool host_connect(struct host *h, const char *hostname, int port)
+struct host *host_accept(struct host *s)
+{
+  struct sockaddr *addr;
+  struct host *c = NULL;
+  socklen_t addrlen;
+  int newfd;
+
+  switch(s->af)
+  {
+    case AF_INET6:
+      addrlen = sizeof(struct sockaddr_in6);
+      break;
+
+    default:
+      addrlen = sizeof(struct sockaddr_in);
+      break;
+  }
+
+  addr = malloc(addrlen);
+
+  newfd = platform_accept(s->fd, addr, &addrlen);
+  if(newfd >= 0)
+  {
+    assert(addr->sa_family == s->af);
+    c = malloc(sizeof(struct host));
+    c->af = addr->sa_family;
+    c->proto = s->proto;
+    c->name = NULL;
+    c->fd = newfd;
+  }
+  else
+  {
+    if(host_last_error_fatal())
+      perror("accept");
+  }
+
+  free(addr);
+  return c;
+}
+
+static bool host_connect_or_bind(struct host *h, const char *hostname,
+ int port, bool connect)
 {
   struct addrinfo hints, *ais, *ai;
   char port_str[6];
@@ -640,11 +723,23 @@ bool host_connect(struct host *h, const char *hostname, int port)
     if(ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
       continue;
 
-    if(platform_connect(h->fd, ai->ai_addr, ai->ai_addrlen) < 0)
+    if(connect)
     {
-      perror("connect");
-      continue;
+      if(platform_connect(h->fd, ai->ai_addr, ai->ai_addrlen) < 0)
+      {
+        perror("connect");
+        continue;
+      }
     }
+    else
+    {
+      if(platform_bind(h->fd, ai->ai_addr, ai->ai_addrlen) < 0)
+      {
+        perror("bind");
+        continue;
+      }
+    }
+
     break;
   }
 
@@ -653,11 +748,31 @@ bool host_connect(struct host *h, const char *hostname, int port)
   // None of the listed hosts (if any) were connectable
   if(!ai)
   {
-    warning("No connectable host '%s' found\n", hostname);
+    warning("No routeable host '%s' found\n", hostname);
     return false;
   }
 
   h->name = hostname;
+  return true;
+}
+
+bool host_bind(struct host *h, const char *hostname, int port)
+{
+  return host_connect_or_bind(h, hostname, port, false);
+}
+
+bool host_connect(struct host *h, const char *hostname, int port)
+{
+  return host_connect_or_bind(h, hostname, port, true);
+}
+
+bool host_listen(struct host *h)
+{
+  if(platform_listen(h->fd, 0) < 0)
+  {
+    perror("listen");
+    return false;
+  }
   return true;
 }
 

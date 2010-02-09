@@ -2,7 +2,7 @@
 # MegaZeux Network Makefile fragment
 ##
 
-.PHONY: updater updater_clean
+.PHONY: network network_clean
 
 network_base = src/network
 
@@ -16,9 +16,16 @@ ifeq (${PLATFORM},mingw)
 updater_ldflags += ${SDL_LDFLAGS}
 endif
 
--include $(updater_objs:.o=.d)
+server := ${network_base}/server${BINEXT}
+server_objs := ${mzx_base}/util.${o}
+server_objs += ${network_base}/host.${o} ${network_base}/manifest.${o}
+server_objs += ${network_base}/sha256.${o} ${network_base}/server.${o}
+server_ldflags := ${SDL_LDFLAGS} -L${PREFIX}/lib -lz
 
-updater: ${updater}
+-include ${updater_objs:.o=.d}
+-include ${server_objs:.o=.d}
+
+network: ${updater} ${server}
 
 ${updater}: ${updater_objs}
 ifeq (${V},1)
@@ -38,8 +45,30 @@ else
 endif
 endif
 
-updater_clean: ${updater}_clean
+${server}: ${server_objs}
+ifeq (${V},1)
+	${HOST_CC} ${server_objs} \
+	        -o ${server} ${LDFLAGS} ${server_ldflags}
+else
+	@echo "  LINK    " ${updater}
+	@${HOST_CC} ${server_objs} \
+	         -o ${server} ${LDFLAGS} ${server_ldflags}
+endif
+ifneq (${DEBUG},1)
+ifeq (${V},1)
+	${STRIP} ${server}
+else
+	@echo "  STRIP   " ${server}
+	@${STRIP} ${server}
+endif
+endif
+
+network_clean: ${updater}_clean ${server}_clean
 
 ${updater}_clean:
 	@echo "  CLEAN   " ${updater}
-	@rm -f ${updater_objs} ${updater} $(updater_objs:.o=.d)
+	@rm -f ${updater_objs} ${updater} ${updater_objs:.o=.d}
+
+${server}_clean:
+	@echo "  CLEAN   " ${server}
+	@rm -f ${server_objs} ${server} ${server_objs:.o=.d}
