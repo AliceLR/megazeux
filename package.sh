@@ -153,7 +153,8 @@ createUnifiedDMG() {
 	DMGNAME=dist/$TARGET.dmg
 	VOLNAME=MegaZeux
 
-	hdiutil create $DMGNAME -size 10m -fs HFS+ -volname "$VOLNAME" &&
+	hdiutil create $DMGNAME -size 10m -fs HFS+ \
+	                        -volname "$VOLNAME" -layout SPUD &&
 	DEV_HANDLE=`hdid $DMGNAME | grep Apple_HFS | \
 	            perl -e '\$_=<>; /^\\/dev\\/(disk.)/; print \$1'`
 	ditto -rsrcFork dist/dmgroot /Volumes/$VOLNAME &&
