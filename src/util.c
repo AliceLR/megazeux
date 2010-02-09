@@ -38,6 +38,9 @@ struct mzx_resource
 {
   const char *const base_name;
   char *path;
+
+  /* So mzxrun requires fewer files even in CONFIG_EDITOR=1 build */
+  bool editor_only;
 };
 
 /* Using C99 initializers would be nicer here, but MSVC doesn't support
@@ -47,29 +50,29 @@ struct mzx_resource
  * enum resource_id enumeration defines them.
  */
 static struct mzx_resource mzx_res[] = {
-  { CONFFILE,               NULL },
-  { "mzx_default.chr",      NULL },
-  { "mzx_edit.chr",         NULL },
-  { "mzx_smzx.chr",         NULL },
-  { "smzx.pal",             NULL },
+  { CONFFILE,               NULL, false },
+  { "mzx_default.chr",      NULL, false },
+  { "mzx_edit.chr",         NULL, false },
+  { "smzx.pal",             NULL, false },
 #ifdef CONFIG_EDITOR
-  { "mzx_ascii.chr",        NULL },
-  { "mzx_blank.chr",        NULL },
+  { "mzx_ascii.chr",        NULL, true },
+  { "mzx_blank.chr",        NULL, true },
+  { "mzx_smzx.chr",         NULL, true },
 #endif
 #ifdef CONFIG_HELPSYS
-  { "mzx_help.fil",         NULL },
+  { "mzx_help.fil",         NULL, false },
 #endif
 #ifdef CONFIG_RENDER_GL_PROGRAM
-  { "shaders/scaler.vert",         NULL },
-  { "shaders/scaler.frag",         NULL },
-  { "shaders/tilemap.vert",        NULL },
-  { "shaders/tilemap.frag",        NULL },
-  { "shaders/tilemap.smzx12.frag", NULL },
-  { "shaders/tilemap.smzx3.frag",  NULL },
-  { "shaders/mouse.vert",          NULL },
-  { "shaders/mouse.frag",          NULL },
-  { "shaders/cursor.vert",         NULL },
-  { "shaders/cursor.frag",         NULL },
+  { "shaders/scaler.vert",         NULL, false },
+  { "shaders/scaler.frag",         NULL, false },
+  { "shaders/tilemap.vert",        NULL, false },
+  { "shaders/tilemap.frag",        NULL, false },
+  { "shaders/tilemap.smzx12.frag", NULL, false },
+  { "shaders/tilemap.smzx3.frag",  NULL, false },
+  { "shaders/mouse.vert",          NULL, false },
+  { "shaders/mouse.frag",          NULL, false },
+  { "shaders/cursor.vert",         NULL, false },
+  { "shaders/cursor.frag",         NULL, false },
 #endif
 };
 
@@ -109,7 +112,7 @@ void *check_realloc(void *ptr, size_t size, const char *file, int line)
 
 #endif /* CONFIG_CHECK_ALLOC */
 
-int mzx_res_init(const char *argv0)
+int mzx_res_init(const char *argv0, bool editor)
 {
   int i, bin_path_len = 0;
   struct stat file_info;
@@ -151,6 +154,10 @@ int mzx_res_init(const char *argv0)
     const int base_name_len = strlen(mzx_res[i].base_name);
     char *full_path;
     int p_dir_len;
+
+    /* Skip non-essential editor resources */
+    if(!editor && mzx_res[i].editor_only)
+      continue;
 
     if(i == CONFIG_TXT)
       chdir(CONFDIR);
@@ -199,6 +206,10 @@ int mzx_res_init(const char *argv0)
 
   for(i = 0; i < END_RESOURCE_ID_T; i++)
   {
+    /* Skip non-essential editor resources */
+    if(!editor && mzx_res[i].editor_only)
+      continue;
+
     if(!mzx_res[i].path)
     {
       warn("Failed to locate critical resource '%s'.\n",

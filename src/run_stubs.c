@@ -20,6 +20,7 @@
 #include "run_stubs.h"
 
 #ifdef CONFIG_EDITOR
+bool is_editor(void) { return false; }
 void editor_init(void) { }
 void init_macros(struct world *mzx_world) { }
 void free_extended_macros(struct world *mzx_world) { }

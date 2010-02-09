@@ -222,7 +222,7 @@ build: ${build}
 ${build}:
 	${MKDIR} -p ${build}/docs
 	${CP} config.txt mzx_default.chr ${build}
-	${CP} mzx_edit.chr mzx_smzx.chr smzx.pal ${build}
+	${CP} mzx_edit.chr smzx.pal ${build}
 	${CP} docs/COPYING.DOC docs/changelog.txt docs/port.txt ${build}/docs
 	${CP} docs/macro.txt docs/keycodes2.png ${build}/docs
 	${CP} docs/platform_matrix.html ${build}/docs
@@ -231,7 +231,7 @@ ${build}:
 		cp ${mzxrun}.debug ${build}; \
 	fi
 ifeq (${BUILD_EDITOR},1)
-	${CP} mzx_ascii.chr mzx_blank.chr ${build}
+	${CP} mzx_ascii.chr mzx_blank.chr mzx_smzx.chr ${build}
 	${CP} ${mzx} ${build}
 	@if test -f ${mzx}.debug; then \
 		cp ${mzx}.debug ${build}; \

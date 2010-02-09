@@ -31,6 +31,7 @@ __M_BEGIN_DECLS
 EDITOR_LIBSPEC void load_editor_config(struct world *mzx_world, int argc,
  char *argv[]);
 EDITOR_LIBSPEC void editor_init(void);
+EDITOR_LIBSPEC bool is_editor(void);
 
 int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
  int param, int x, int y, struct robot *copy_robot,

@@ -27,9 +27,14 @@
 #include "graphics.h"
 
 #include "../graphics.h"
+#include "../util.h"
 
 #include <string.h>
 #include <stdio.h>
+
+static Uint8 ascii_charset[CHAR_SIZE * CHARSET_SIZE];
+static Uint8 blank_charset[CHAR_SIZE * CHARSET_SIZE];
+static Uint8 smzx_charset[CHAR_SIZE * CHARSET_SIZE];
 
 void save_editor_palette(void)
 {
@@ -104,25 +109,32 @@ void ec_save_set_var(char *name, Uint8 offset, Uint32 size)
   }
 }
 
+void load_editor_charsets(void)
+{
+  ec_load_set_secondary(mzx_res_get_by_id(MZX_ASCII_CHR), ascii_charset);
+  ec_load_set_secondary(mzx_res_get_by_id(MZX_BLANK_CHR), blank_charset);
+  ec_load_set_secondary(mzx_res_get_by_id(MZX_SMZX_CHR),  smzx_charset);
+}
+
 void ec_load_smzx(void)
 {
-  ec_mem_load_set(graphics.smzx_charset);
+  ec_mem_load_set(smzx_charset);
 }
 
 void ec_load_blank(void)
 {
-  ec_mem_load_set(graphics.blank_charset);
+  ec_mem_load_set(blank_charset);
 }
 
 void ec_load_ascii(void)
 {
-  ec_mem_load_set(graphics.ascii_charset);
+  ec_mem_load_set(ascii_charset);
 }
 
 void ec_load_char_ascii(Uint32 char_number)
 {
   memcpy(graphics.charset + (char_number * CHAR_SIZE),
-   graphics.ascii_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
+   ascii_charset + (char_number * CHAR_SIZE), CHAR_SIZE);
 
   // some renderers may want to map charsets to textures
   if(graphics.renderer.remap_charsets)

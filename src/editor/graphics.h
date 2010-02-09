@@ -32,6 +32,7 @@ void save_palette(char *fname);
 void draw_char_linear(Uint8 color, Uint8 chr, Uint32 offset);
 void clear_screen_no_update(Uint8 chr, Uint8 color);
 void ec_save_set_var(char *name, Uint8 offset, Uint32 size);
+void load_editor_charsets(void);
 void ec_load_smzx(void);
 void ec_load_blank(void);
 void ec_load_ascii(void);

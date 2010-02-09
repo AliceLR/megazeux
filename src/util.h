@@ -39,11 +39,11 @@ enum resource_id
   CONFIG_TXT = 0,
   MZX_DEFAULT_CHR,
   MZX_EDIT_CHR,
-  MZX_SMZX_CHR,
   SMZX_PAL,
 #ifdef CONFIG_EDITOR
   MZX_ASCII_CHR,
   MZX_BLANK_CHR,
+  MZX_SMZX_CHR,
 #endif
 #ifdef CONFIG_HELPSYS
   MZX_HELP_FIL,
@@ -63,7 +63,7 @@ enum resource_id
   END_RESOURCE_ID_T // must be last
 };
 
-CORE_LIBSPEC int mzx_res_init(const char *argv0);
+CORE_LIBSPEC int mzx_res_init(const char *argv0, bool editor);
 CORE_LIBSPEC void mzx_res_free(void);
 CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
 

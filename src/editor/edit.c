@@ -3769,4 +3769,10 @@ static void __edit_world(struct world *mzx_world)
 void editor_init(void)
 {
   edit_world = __edit_world;
+  load_editor_charsets();
+}
+
+bool is_editor(void)
+{
+  return true;
 }

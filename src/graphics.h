@@ -123,12 +123,6 @@ struct graphics_data
   int gl_vsync;
 
   Uint8 default_charset[CHAR_SIZE * CHARSET_SIZE];
-  Uint8 smzx_charset[CHAR_SIZE * CHARSET_SIZE];
-
-#ifdef CONFIG_EDITOR
-  Uint8 ascii_charset[CHAR_SIZE * CHARSET_SIZE];
-  Uint8 blank_charset[CHAR_SIZE * CHARSET_SIZE];
-#endif
 
   Uint32 flat_intensity_palette[SMZX_PAL_SIZE];
   struct renderer renderer;
@@ -240,6 +234,7 @@ void focus_pixel(int x, int y);  // Pixel coordinates
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC extern struct graphics_data graphics;
 CORE_LIBSPEC void ec_load_mzx(void);
+CORE_LIBSPEC void ec_load_set_secondary(const char *name, Uint8 *dest);
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_HELPSYS

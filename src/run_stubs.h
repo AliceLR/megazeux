@@ -27,11 +27,13 @@ __M_BEGIN_DECLS
 #include "world_struct.h"
 
 #ifdef CONFIG_EDITOR
+bool is_editor(void);
 void editor_init(void);
 void init_macros(struct world *mzx_world);
 void free_extended_macros(struct world *mzx_world);
 void load_editor_config(struct world *mzx_world, int argc, char *argv[]);
 #else
+static inline bool is_editor(void) { return false; }
 static inline void editor_init(void) {}
 static inline void init_macros(struct world *mzx_world) {}
 static inline void free_extended_macros(struct world *mzx_world) {}
