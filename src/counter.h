@@ -27,8 +27,8 @@ __M_BEGIN_DECLS
 
 #include <stdio.h>
 
-#include "counter_struct.h"
 #include "world_struct.h"
+#include "counter_struct.h"
 
 struct function_counter
 {
@@ -39,11 +39,6 @@ struct function_counter
   void (*function_write)(struct world *mzx_world,
    struct function_counter *counter, const char *name, int value, int id);
 };
-
-typedef int (*gateway_write_function)(struct world *mzx_world,
- struct counter *counter, const char *name, int value, int id);
-typedef int (*gateway_dec_function)(struct world *mzx_world,
- struct counter *counter, const char *name, int value, int id);
 
 CORE_LIBSPEC int match_function_counter(const char *dest, const char *src);
 CORE_LIBSPEC void set_counter(struct world *mzx_world, const char *name,

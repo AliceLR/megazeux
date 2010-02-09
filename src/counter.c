@@ -2811,9 +2811,7 @@ void set_counter(struct world *mzx_world, const char *name, int value, int id)
       // See if there's a gateway
       if(cdest->gateway_write)
       {
-        gateway_write_function gateway_write =
-         (gateway_write_function)cdest->gateway_write;
-        value = gateway_write(mzx_world, cdest, name, value, id);
+        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
       }
 
       cdest->value = value;
@@ -3187,9 +3185,7 @@ void inc_counter(struct world *mzx_world, const char *name, int value, int id)
 
       if(cdest->gateway_write)
       {
-        gateway_write_function gateway_write =
-         (gateway_write_function)cdest->gateway_write;
-        value = gateway_write(mzx_world, cdest, name, value, id);
+        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
       }
 
       cdest->value = value;
@@ -3277,9 +3273,7 @@ void dec_counter(struct world *mzx_world, const char *name, int value, int id)
 
       if(cdest->gateway_write)
       {
-        gateway_write_function gateway_write =
-         (gateway_write_function)cdest->gateway_write;
-        value = gateway_write(mzx_world, cdest, name, value, id);
+        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
       }
 
       cdest->value = value;
@@ -3335,9 +3329,7 @@ void mul_counter(struct world *mzx_world, const char *name, int value, int id)
       value *= cdest->value;
       if(cdest->gateway_write)
       {
-        gateway_write_function gateway_write =
-         (gateway_write_function)cdest->gateway_write;
-        value = gateway_write(mzx_world, cdest, name, value, id);
+        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
       }
 
       cdest->value = value;
@@ -3375,9 +3367,7 @@ void div_counter(struct world *mzx_world, const char *name, int value, int id)
 
       if(cdest->gateway_write)
       {
-        gateway_write_function gateway_write =
-         (gateway_write_function)cdest->gateway_write;
-        value = gateway_write(mzx_world, cdest, name, value, id);
+        value = cdest->gateway_write(mzx_world, cdest, name, value, id);
       }
 
       cdest->value = value;

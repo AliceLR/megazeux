@@ -58,7 +58,7 @@ enum resource_id
   SHADERS_CURSOR_VERT,
   SHADERS_CURSOR_FRAG,
 #endif
-  END_RESOURCE_ID_T, // must be last
+  END_RESOURCE_ID_T // must be last
 };
 
 CORE_LIBSPEC int mzx_res_init(const char *argv0);

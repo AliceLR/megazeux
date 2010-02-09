@@ -83,15 +83,18 @@ endif
 # stripped (on embedded platforms) or objcopy'ed out.
 #
 CFLAGS   += -g -Wall -std=gnu99 ${ARCH_CFLAGS}
-CXXFLAGS += -g -Wall -fno-exceptions ${ARCH_CXXFLAGS}
+CXXFLAGS += -g -Wall -std=gnu++0x -fno-exceptions ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
 
 ifeq (${shell ${CC} -dumpversion | cut -d. -f1},4)
 
 ifeq (${DEBUG},1)
-CFLAGS += -fbounds-check
+CFLAGS   += -fbounds-check
 CXXFLAGS += -fbounds-check
 endif
+
+CFLAGS   += -pedantic
+CXXFLAGS += -pedantic
 
 ifneq (${PLATFORM},mingw)
 

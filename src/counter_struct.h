@@ -25,11 +25,20 @@
 
 __M_BEGIN_DECLS
 
+struct world;
+struct counter;
+
+typedef int (*gateway_write_function)(struct world *mzx_world,
+ struct counter *counter, const char *name, int value, int id);
+
+typedef int (*gateway_dec_function)(struct world *mzx_world,
+ struct counter *counter, const char *name, int value, int id);
+
 struct counter
 {
   int value;
-  void *gateway_write;
-  void *gateway_dec;
+  gateway_write_function gateway_write;
+  gateway_dec_function gateway_dec;
   char name[1];
 };
 
