@@ -420,10 +420,10 @@ if [ "$UTILS" = "true" ]; then
 	#
 	if [ "$HOST_UTILS" = "true" ]; then
 		echo "Using host's compiler for utils."
-		echo "HOST_CC = cc" >> platform.inc
+		echo "HOST_CC=cc" >> platform.inc
 	else
 		echo "Using default compiler for utils."
-		echo "HOST_CC := \${CC}" >> platform.inc
+		echo "HOST_CC=\${CC}" >> platform.inc
 	fi
 
 	echo "Building utils (checkres, downver, txt2hlp)."
