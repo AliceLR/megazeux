@@ -1828,19 +1828,11 @@ int parse_param(struct world *mzx_world, char *program, int id)
   if((program[1] == '(') && mzx_world->version >= 0x244)
   {
     char *e_ptr = program + 2;
-    int error;
+    int val, error;
 
-#ifdef CONFIG_DEBYTECODE
-    /* FIXME: Should probably push handling into parse_expression */
-    if(program[1 + strlen(program + 1) - 1] == ')')
-      return parse_expression(mzx_world, &e_ptr, &error, id);
-#else /* !CONFIG_DEBYTECODE */
-    {
-      int val = parse_expression(mzx_world, &e_ptr, &error, id);
-      if(!error && !(*e_ptr))
+    val = parse_expression(mzx_world, &e_ptr, &error, id);
+    if(!error && !(*e_ptr))
         return val;
-    }
-#endif /* !CONFIG_DEBYTECODE */
   }
 
   tr_msg(mzx_world, program + 1, id, ibuff);
