@@ -2294,19 +2294,7 @@ static void robo_ed_display_robot_line(struct robot_state *rstate,
           temp_buffer[arg_length - 1] = 0;
 
           if((x + arg_length) > 78)
-          {
             temp_buffer[78 - x] = 0;
-            if(use_mask)
-            {
-              write_string_mask(temp_buffer, x, y, current_color, 0);
-            }
-            else
-            {
-              write_string_ext(temp_buffer, x, y, current_color,
-               0, chars_offset, 16);
-            }
-            break;
-          }
 
           if(use_mask)
           {
@@ -2314,9 +2302,23 @@ static void robo_ed_display_robot_line(struct robot_state *rstate,
           }
           else
           {
-            write_string_ext(temp_buffer, x, y, current_color,
-             0, chars_offset, 16);
+            if(current_arg == S_CHARACTER)
+            {
+              temp_buffer[arg_length - 2] = 0;
+              write_string_mask("'", x, y, current_color, 0);
+              write_string_ext(temp_buffer + 1, x + 1, y, current_color,
+               0, chars_offset, 16);
+              write_string_mask("'", x + arg_length - 2, y, current_color, 0);
+            }
+            else
+            {
+              write_string_ext(temp_buffer, x, y, current_color,
+               0, chars_offset, 16);
+            }
           }
+
+          if((x + arg_length) > 78)
+            break;
         }
 
         line_pos += arg_length;
