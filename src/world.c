@@ -404,7 +404,6 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
   if(savegame)
   {
     fwrite(mzx_world->keys, NUM_KEYS, 1, fp);
-    fputd(0, fp); /* SCORE, converted to regular counter in 2.83 */
     fputc(mzx_world->blind_dur, fp);
     fputc(mzx_world->firewalker_dur, fp);
     fputc(mzx_world->freeze_time_dur, fp);
@@ -1069,7 +1068,6 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
   if(savegame)
   {
     fread(mzx_world->keys, NUM_KEYS, 1, fp);
-    fgetd(fp); /* SCORE, converted to regular counter in 2.83 */
     mzx_world->blind_dur = fgetc(fp);
     mzx_world->firewalker_dur = fgetc(fp);
     mzx_world->freeze_time_dur = fgetc(fp);
