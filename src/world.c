@@ -1249,7 +1249,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     if(mzx_world->output_file_name[0] != '\0')
     {
       mzx_world->output_file =
-       fsafeopen(mzx_world->output_file_name, "ab");
+       fsafeopen(mzx_world->output_file_name, "r+b");
 
       if(mzx_world->output_file)
       {

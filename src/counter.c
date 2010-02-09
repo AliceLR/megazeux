@@ -2251,7 +2251,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
         if(mzx_world->output_file)
           fclose(mzx_world->output_file);
 
-        mzx_world->output_file = fsafeopen(char_value, "ab");
+        mzx_world->output_file = fsafeopen(char_value, "r+b");
+        fseek(mzx_world->output_file, 0, SEEK_END);
       }
       else
       {
