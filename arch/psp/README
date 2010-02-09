@@ -1,12 +1,7 @@
 BUILDING MEGAZEUX FOR PSP
 
 As of 2.81d, MegaZeux can be built for PSP. The only supported toolchain for
-this is ps2dev's 'psptoolchain' and 'pspsdk' projects. These can be installed
-from here:
-
-http://ps2dev.org/psp/Tools (see "Toolchain")
-
-Follow the instructions to build the toolchain.
+this is devkitPSP.
 
 BUILDING DEPENDENCIES
 
@@ -39,11 +34,11 @@ BUILDING MEGAZEUX FROM SOURCES
 
 Extract the latest version of MegaZeux, or obtain it from SVN. Before starting,
 we need to add another path to the PATH variable, so that SDL may be correctly
-detected. You should have the $PSPDEV variable already defined from toolkit
-installation. I will assume that this exists and is correct. Enter the
+detected. You should have the $DEVKITPRO and $DEVKITPSP variables defined
+correctly. I will assume that these exist and are correct. Enter the
 following:
 
-export PATH=$PSPDEV/psp/bin:$PATH
+export PATH=$DEVKITPSP/psp/bin:$PATH
 
 cd megazeux
 ./config.sh --platform psp --prefix $PSPDEV/psp --optimize-size \

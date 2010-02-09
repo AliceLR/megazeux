@@ -102,3 +102,12 @@ void platform_quit(void)
   execl("/usr/gp2x/gp2xmenu", "/usr/gp2x/gp2xmenu", NULL);
 #endif
 }
+
+#ifdef CONFIG_PSP
+#define _COMPILING_NEWLIB
+#include <sys/unistd.h>
+int _isatty(int fd)
+{
+  return isatty(fd);
+}
+#endif
