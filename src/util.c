@@ -216,7 +216,7 @@ void get_path(const char *file_name, char *dest, unsigned int buf_len)
   dest[c] = 0;
 }
 
-#ifdef __WIN32__
+#if defined(__WIN32__) && defined(__STRICT_ANSI__)
 
 /* On WIN32 with C99 defining __STRICT_ANSI__ these POSIX.1-2001 functions
  * are not available. The stricmp/strnicmp functions are available, but not
@@ -252,7 +252,7 @@ int strncasecmp(const char *s1, const char *s2, size_t n)
   return tolower(*(unsigned char *)s1) - tolower(*(unsigned char *)s2);
 }
 
-#endif // __WIN32__
+#endif // __WIN32__ && __STRICT_ANSI__
 
 #ifdef NEED_RENAME
 
