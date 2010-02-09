@@ -2197,8 +2197,6 @@ int set_counter_special(World *mzx_world, int spec_type,
     {
       if(char_value[0])
       {
-        char_value[12] = 0;
-
         if(mzx_world->output_file)
           fclose(mzx_world->output_file);
 
@@ -2220,8 +2218,6 @@ int set_counter_special(World *mzx_world, int spec_type,
     {
       if(char_value[0])
       {
-        char_value[12] = 0;
-
         if(mzx_world->output_file)
           fclose(mzx_world->output_file);
 
