@@ -52,6 +52,37 @@
 static const char magic_code[16] =
  "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
 
+#ifdef CONFIG_LOADSAVE_METER
+
+static void meter_update_screen(int *curr, int target)
+{
+  (*curr)++;
+  meter_interior(*curr, target);
+  update_screen();
+}
+
+static void meter_restore_screen(void)
+{
+  restore_screen();
+  update_screen();
+}
+
+static void meter_initial_draw(int curr, int target, const char *title)
+{
+  save_screen();
+  meter(title, curr, target);
+  update_screen();
+}
+
+#else // !CONFIG_LOADSAVE_METER
+
+static inline void meter_update_screen(int *curr, int target) {}
+static inline void meter_restore_screen(void) {}
+static inline void meter_initial_draw(int curr, int target,
+ const char *title) {}
+
+#endif // CONFIG_LOADSAVE_METER
+
 // Get 2 bytes
 
 int fgetw(FILE *fp)
@@ -152,13 +183,22 @@ static void decrypt(const char *file_name)
   char *file_buffer;
   char *src_ptr;
 
+  int meter_target, meter_curr = 0;
+
   source = fopen(file_name, "rb");
   file_length = ftell_and_rewind(source);
+
+  meter_target = file_length + (file_length - 15) + 4;
+ 
+  meter_initial_draw(meter_curr, meter_target, "Decrypting...");
 
   file_buffer = cmalloc(file_length);
   src_ptr = file_buffer;
   fread(file_buffer, file_length, 1, source);
   fclose(source);
+
+  meter_curr = file_length - 1;
+  meter_update_screen(&meter_curr, meter_target);
 
   src_ptr += 25;
 
@@ -187,15 +227,27 @@ static void decrypt(const char *file_name)
 
   // Copy title
   fwrite(file_buffer, 25, 1, dest);
-
   fputc(0, dest);
   fputs("M\x02\x11", dest);
+
+  meter_curr += 25 + 1 + 3 - 1;
+  meter_update_screen(&meter_curr, meter_target);
+
   len = file_length - 44;
   for(; len > 0; len--)
   {
     fputc((*src_ptr) ^ xor_val, dest);
     src_ptr++;
+
+    if((len % 1000) == 0)
+    {
+      meter_curr += 999;
+      meter_update_screen(&meter_curr, meter_target);
+    }
   }
+
+  meter_curr = file_length + (file_length - 15) - 1;
+  meter_update_screen(&meter_curr, meter_target);
 
   // Must fix all the absolute file positions so that they're 15
   // less now
@@ -215,6 +267,9 @@ static void decrypt(const char *file_name)
   fputc(src_ptr[2] ^ xor_val, dest);
   fputc(src_ptr[3] ^ xor_val, dest);
 
+  meter_curr += 4 - 1;
+  meter_update_screen(&meter_curr, meter_target);
+
   src_ptr += 4;
 
   num_boards = ((*src_ptr) ^ xor_val);
@@ -229,6 +284,10 @@ static void decrypt(const char *file_name)
     num_boards = (*src_ptr) ^ xor_val;
     src_ptr++;
   }
+
+  meter_target += num_boards * 4;
+  meter_curr--;
+  meter_update_screen(&meter_curr, meter_target);
 
   // Skip titles
   src_ptr += (25 * num_boards);
@@ -256,9 +315,15 @@ static void decrypt(const char *file_name)
     fputc(src_ptr[2] ^ xor_val, dest);
     fputc(src_ptr[3] ^ xor_val, dest);
     src_ptr += 4;
+
+    meter_target += 4 - 1;
+    meter_update_screen(&meter_curr, meter_target);
   }
+
   free(file_buffer);
   fclose(dest);
+
+  meter_restore_screen();
 }
 
 static int world_magic(const char magic_string[3])
@@ -288,39 +353,6 @@ static int world_magic(const char magic_string[3])
   return 0;
 }
 
-#ifdef CONFIG_LOADSAVE_METER
-
-static void meter_update_screen(struct world *mzx_world, int *curr, int target)
-{
-  (*curr)++;
-  meter_interior(*curr, target);
-  update_screen();
-}
-
-static void meter_restore_screen(struct world *mzx_world)
-{
-  restore_screen();
-  update_screen();
-}
-
-static void meter_initial_draw(struct world *mzx_world, int curr, int target,
- const char *title)
-{
-  save_screen();
-  meter(title, curr, target);
-  update_screen();
-}
-
-#else // !CONFIG_LOADSAVE_METER
-
-static inline void meter_update_screen(struct world *mzx_world, int *curr,
- int target) {}
-static inline void meter_restore_screen(struct world *mzx_world) {}
-static inline void meter_initial_draw(struct world *mzx_world, int curr,
- int target, const char *title) {}
-
-#endif // CONFIG_LOADSAVE_METER
-
 int save_world(struct world *mzx_world, const char *file, int savegame,
  int faded)
 {
@@ -343,7 +375,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
     return -1;
   }
 
-  meter_initial_draw(mzx_world, meter_curr, meter_target, "Saving...");
+  meter_initial_draw(meter_curr, meter_target, "Saving...");
 
   if(savegame)
   {
@@ -611,7 +643,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
     fseek(fp, next_pos, SEEK_SET);
   }
 
-  meter_update_screen(mzx_world, &meter_curr, meter_target);
+  meter_update_screen(&meter_curr, meter_target);
 
   num_boards = mzx_world->num_boards;
   fputc(num_boards, fp);
@@ -649,14 +681,14 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
     size_offset_list[2 * i] = board_size;
     size_offset_list[2 * i + 1] = board_begin_position;
 
-    meter_update_screen(mzx_world, &meter_curr, meter_target);
+    meter_update_screen(&meter_curr, meter_target);
   }
 
   // Save for global robot position
   gl_rob_position = ftell(fp);
   save_robot(&mzx_world->global_robot, fp, savegame);
 
-  meter_update_screen(mzx_world, &meter_curr, meter_target);
+  meter_update_screen(&meter_curr, meter_target);
 
   // Go back to where the global robot position should be saved
   fseek(fp, gl_rob_save_position, SEEK_SET);
@@ -674,7 +706,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
   // ...All done!
   fclose(fp);
 
-  meter_restore_screen(mzx_world);
+  meter_restore_screen();
   return 0;
 }
 
@@ -1030,7 +1062,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     mzx_world->current_board_id = 0;
   }
 
-  meter_initial_draw(mzx_world, meter_curr, meter_target, "Loading...");
+  meter_initial_draw(meter_curr, meter_target, "Loading...");
 
   file_path = cmalloc(MAX_PATH);
   current_dir = cmalloc(MAX_PATH);
@@ -1358,7 +1390,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
   }
 
   meter_target += num_boards;
-  meter_update_screen(mzx_world, &meter_curr, meter_target);
+  meter_update_screen(&meter_curr, meter_target);
 
   mzx_world->num_boards = num_boards;
   mzx_world->num_boards_allocated = num_boards;
@@ -1373,7 +1405,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
   {
     mzx_world->board_list[i] = load_board_allocate(fp, savegame, version);
     store_board_to_extram(mzx_world->board_list[i]);
-    meter_update_screen(mzx_world, &meter_curr, meter_target);
+    meter_update_screen(&meter_curr, meter_target);
   }
 
   // Read global robot
@@ -1405,7 +1437,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     }
   }
 
-  meter_update_screen(mzx_world, &meter_curr, meter_target);
+  meter_update_screen(&meter_curr, meter_target);
 
   // This pointer is now invalid. Clear it before we try to
   // send it back to extra RAM.
@@ -1424,7 +1456,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
   // Find the player
   find_player(mzx_world);
 
-  meter_restore_screen(mzx_world);
+  meter_restore_screen();
 
   fclose(fp);
 }

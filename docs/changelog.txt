@@ -92,6 +92,7 @@ USERS
 + Relaxed limit of INPUT string and bottom ("*") messages from 80 characters
   to ROBOT_MAX_TR (512) characters. In the case of bottom messages this can
   be usefully exploited to ~200 characters.
++ Progress meter will be shown for world decrypt on console platforms.
 
 DEVELOPERS
 
