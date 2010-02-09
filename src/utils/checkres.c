@@ -80,6 +80,8 @@ typedef enum status
   INVALID_ARGUMENTS,
   CORRUPT_WORLD,
   FOPEN_FAILED,
+  GET_PATH_FAILED,
+  CHDIR_FAILED,
   FREAD_FAILED,
   FSEEK_FAILED,
   MALLOC_FAILED,
@@ -167,13 +169,13 @@ static status_t s_open(const char *filename, const char *mode, stream_t **s)
   // not a ZIP, handle in a conventional manner
   if(strcasecmp(filename + strlen(filename) - 3, "zip"))
   {
-    char basepath[MAX_PATH];
+    char path[MAX_PATH];
     int path_len;
 
     /* Move into the world's directory first; this lets us look up
      * resources relative to the world.
      */
-    path_len = get_path(file, basepath, MAX_PATH);
+    path_len = get_path(filename, path, MAX_PATH);
 
     if(path_len < 0)
     {
@@ -183,13 +185,13 @@ static status_t s_open(const char *filename, const char *mode, stream_t **s)
 
     if(path_len > 0)
     {
-      if(chdir(basepath))
+      if(chdir(path))
       {
         ret = CHDIR_FAILED;
         goto exit_free_stream;
       }
 
-      file += path_len + 1;
+      filename += path_len + 1;
     }
 
     (*s)->type = FILE_STREAM;
