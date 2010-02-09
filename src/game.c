@@ -1861,7 +1861,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 #ifdef CONFIG_EDITOR
-	// Toggle debug mode
+        // Toggle debug mode
         case IKEY_F6:
         {
           if(mzx_world->editing)
@@ -2163,7 +2163,7 @@ void title_screen(World *mzx_world)
       {
 #ifdef CONFIG_HELPSYS
         case IKEY_F1:
-	case IKEY_h:
+        case IKEY_h:
         {
           m_show();
           help_system(mzx_world);
