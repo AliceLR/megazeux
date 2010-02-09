@@ -22,6 +22,8 @@
 #include "util.h"
 #include "platform.h"
 
+#include <stdlib.h>
+
 #define KEY_REPEAT_START    250
 #define KEY_REPEAT_RATE     33
 
@@ -390,10 +392,10 @@ static bool update_autorepeat(void)
   return rval;
 }
 
-Uint32 update_event_status(void)
+bool update_event_status(void)
 {
   struct buffered_status *status = store_status();
-  Uint32 rval;
+  bool rval;
 
   status->key = IKEY_UNKNOWN;
   status->unicode = 0;

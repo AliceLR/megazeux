@@ -92,7 +92,7 @@ CORE_LIBSPEC void init_event(void);
 struct buffered_status *store_status(void);
 const struct buffered_status *load_status(void);
 
-CORE_LIBSPEC Uint32 update_event_status(void);
+CORE_LIBSPEC bool update_event_status(void);
 CORE_LIBSPEC Uint32 update_event_status_delay(void);
 CORE_LIBSPEC Uint32 get_key(enum keycode_type type);
 CORE_LIBSPEC void get_mouse_position(int *x, int *y);
@@ -109,7 +109,7 @@ CORE_LIBSPEC void initialize_joysticks(void);
 
 // Implemented by "drivers" (SDL or Wii currently)
 void __wait_event(void);
-Uint32 __update_event_status(void);
+bool __update_event_status(void);
 
 void wait_event(void);
 Uint32 get_last_key(enum keycode_type type);

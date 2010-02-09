@@ -29,8 +29,6 @@
 #include "render_nds.h"
 #endif
 
-#include <stdlib.h>
-
 extern struct input_status input;
 
 static bool numlock_status_initialized;
@@ -150,11 +148,10 @@ static enum keycode convert_SDL_internal(SDLKey key)
   }
 }
 
-static Uint32 process_event(SDL_Event *event)
+static bool process_event(SDL_Event *event)
 {
   struct buffered_status *status = store_status();
   enum keycode ckey;
-  Uint32 rval = 1;
 
   /* SDL's numlock keyboard modifier handling seems to be broken on X11,
    * and it will only get numlock's status right on application init. We
@@ -492,18 +489,16 @@ static Uint32 process_event(SDL_Event *event)
     }
 
     default:
-    {
-      rval = 0;
-    }
+      return false;
   }
 
-  return rval;
+  return true;
 }
 
-Uint32 __update_event_status(void)
+bool __update_event_status(void)
 {
+  Uint32 rval = false;
   SDL_Event event;
-  Uint32 rval = 0;
 
   while(SDL_PollEvent(&event))
     rval |= process_event(&event);

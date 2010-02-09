@@ -714,15 +714,17 @@ static enum keycode convert_USB_internal(Uint32 key)
 }
 
 #define UNICODE_SHIFT(A, B) \
-  ((input.keymap[IKEY_LSHIFT] || input.keymap[IKEY_RSHIFT]) ? B : A)
+  ((status->keymap[IKEY_LSHIFT] || status->keymap[IKEY_RSHIFT]) ? B : A)
 #define UNICODE_CAPS(A, B) \
-  (input.caps_status ? UNICODE_SHIFT(B, A) : UNICODE_SHIFT(A, B))
+  (status->caps_status ? UNICODE_SHIFT(B, A) : UNICODE_SHIFT(A, B))
 #define UNICODE_NUM(A, B) \
-  (input.numlock_status ? B : A)
+  (status->numlock_status ? B : A)
 
 // TODO: Support non-US keyboard layouts
 static Uint32 convert_internal_unicode(enum keycode key)
 {
+  struct buffered_status *status = store_status();
+
   switch(key)
   {
     case IKEY_SPACE: return ' ';
@@ -792,16 +794,17 @@ static Uint32 convert_internal_unicode(enum keycode key)
   }
 }
 
-static Uint32 process_event(union event *ev)
+static bool process_event(union event *ev)
 {
-  Uint32 rval = 1;
+  struct buffered_status *status = store_status();
+  bool rval = true;
 
   switch(ev->type)
   {
     case EVENT_BUTTON_DOWN:
     {
       Uint32 button = map_button(ev->button.pad, ev->button.button);
-      rval = 0;
+      rval = false;
       if((ev->button.pad == 0) && pointing)
       {
         Uint32 mousebutton;
@@ -813,30 +816,30 @@ static Uint32 process_event(union event *ev)
         }
         if(mousebutton)
         {
-          input.last_mouse_button = mousebutton;
-          input.last_mouse_repeat = mousebutton;
-          input.mouse_button_state |= MOUSE_BUTTON(mousebutton);
-          input.last_mouse_repeat_state = 1;
-          input.mouse_drag_state = -1;
-          input.last_mouse_time = get_ticks();
+          status->mouse_button = mousebutton;
+          status->mouse_repeat = mousebutton;
+          status->mouse_button_state |= MOUSE_BUTTON(mousebutton);
+          status->mouse_repeat_state = 1;
+          status->mouse_drag_state = -1;
+          status->mouse_time = get_ticks();
           button = 256;
-          rval = 1;
+          rval = true;
         }
       }
       if((button < 256))
       {
         enum keycode skey = input.joystick_button_map[ev->button.pad][button];
-        if(skey && (input.keymap[skey] == 0))
+        if(skey && (status->keymap[skey] == 0))
         {
-          input.last_key_pressed = skey;
-          input.last_key = skey;
-          input.last_unicode = skey;
-          input.last_key_repeat = skey;
-          input.last_unicode_repeat = skey;
-          input.keymap[skey] = 1;
-          input.last_keypress_time = get_ticks();
-          input.last_key_release = IKEY_UNKNOWN;
-          rval = 1;
+          status->key_pressed = skey;
+          status->key = skey;
+          status->unicode = skey;
+          status->key_repeat = skey;
+          status->unicode_repeat = skey;
+          status->keymap[skey] = 1;
+          status->keypress_time = get_ticks();
+          status->key_release = IKEY_UNKNOWN;
+          rval = true;
         }
       }
       else
@@ -845,10 +848,10 @@ static Uint32 process_event(union event *ev)
          ((ext_type[ev->button.pad] == WPAD_EXP_CLASSIC) &&
          (ev->button.button == WPAD_CLASSIC_BUTTON_HOME))))
         {
-          input.keymap[IKEY_ESCAPE] = 1;
-          input.last_key = IKEY_ESCAPE;
-          input.last_keypress_time = get_ticks();
-          rval = 1;
+          status->keymap[IKEY_ESCAPE] = 1;
+          status->key = IKEY_ESCAPE;
+          status->keypress_time = get_ticks();
+          rval = true;
           break;
         }
       }
@@ -857,8 +860,8 @@ static Uint32 process_event(union event *ev)
     case EVENT_BUTTON_UP:
     {
       Uint32 button = map_button(ev->button.pad, ev->button.button);
-      rval = 0;
-      if((ev->button.pad == 0) && input.mouse_button_state)
+      rval = false;
+      if((ev->button.pad == 0) && status->mouse_button_state)
       {
         Uint32 mousebutton;
         switch(ev->button.button)
@@ -868,14 +871,14 @@ static Uint32 process_event(union event *ev)
           default: mousebutton = 0; break;
         }
         if(mousebutton &&
-         (input.mouse_button_state & MOUSE_BUTTON(mousebutton)))
+         (status->mouse_button_state & MOUSE_BUTTON(mousebutton)))
         {
-          input.mouse_button_state &= ~MOUSE_BUTTON(mousebutton);
-          input.last_mouse_repeat = 0;
-          input.mouse_drag_state = 0;
-          input.last_mouse_repeat_state = 0;
+          status->mouse_button_state &= ~MOUSE_BUTTON(mousebutton);
+          status->mouse_repeat = 0;
+          status->mouse_drag_state = 0;
+          status->mouse_repeat_state = 0;
           button = 256;
-          rval = 1;
+          rval = true;
         }
       }
       if((button < 256))
@@ -883,11 +886,11 @@ static Uint32 process_event(union event *ev)
         enum keycode skey = input.joystick_button_map[ev->button.pad][button];
         if(skey)
         {
-          input.keymap[skey] = 0;
-          input.last_key_repeat = IKEY_UNKNOWN;
-          input.last_unicode_repeat = 0;
-          input.last_key_release = skey;
-          rval = 1;
+          status->keymap[skey] = 0;
+          status->key_repeat = IKEY_UNKNOWN;
+          status->unicode_repeat = 0;
+          status->key_release = skey;
+          rval = true;
         }
       }
       break;
@@ -909,37 +912,36 @@ static Uint32 process_event(union event *ev)
         }
       }
       if(axis == 256) break;
-      last_axis = input.last_axis[ev->axis.pad][axis];
+      last_axis = status->axis[ev->axis.pad][axis];
 
       if(ev->axis.pos > 10000)
         digital_value = 1;
-      else
-        if(ev->axis.pos < -10000)
-          digital_value = 0;
+      else if(ev->axis.pos < -10000)
+        digital_value = 0;
 
       if(digital_value != -1)
       {
         skey = input.joystick_axis_map[ev->axis.pad][axis][digital_value];
         if(skey)
         {
-          if(input.keymap[skey] == 0)
+          if(status->keymap[skey] == 0)
           {
-            input.last_key_pressed = skey;
-            input.last_key = skey;
-            input.last_unicode = skey;
-            input.last_key_repeat = skey;
-            input.last_unicode_repeat = skey;
-            input.keymap[skey] = 1;
-            input.last_keypress_time = get_ticks();
-            input.last_key_release = IKEY_UNKNOWN;
+            status->key_pressed = skey;
+            status->key = skey;
+            status->unicode = skey;
+            status->key_repeat = skey;
+            status->unicode_repeat = skey;
+            status->keymap[skey] = 1;
+            status->keypress_time = get_ticks();
+            status->key_release = IKEY_UNKNOWN;
           }
           if(last_axis == (digital_value ^ 1))
           {
             skey = input.joystick_axis_map[ev->axis.pad][axis][last_axis];
-            input.keymap[skey] = 0;
-            input.last_key_repeat = IKEY_UNKNOWN;
-            input.last_unicode_repeat = 0;
-            input.last_key_release = skey;
+            status->keymap[skey] = 0;
+            status->key_repeat = IKEY_UNKNOWN;
+            status->unicode_repeat = 0;
+            status->key_release = skey;
           }
         }
       }
@@ -950,14 +952,14 @@ static Uint32 process_event(union event *ev)
           skey = input.joystick_axis_map[ev->axis.pad][axis][last_axis];
           if(skey)
           {
-            input.keymap[skey] = 0;
-            input.last_key_repeat = IKEY_UNKNOWN;
-            input.last_unicode_repeat = 0;
-            input.last_key_release = skey;
+            status->keymap[skey] = 0;
+            status->key_repeat = IKEY_UNKNOWN;
+            status->unicode_repeat = 0;
+            status->key_release = skey;
           }
         }
       }
-      input.last_axis[ev->axis.pad][axis] = digital_value;
+      status->axis[ev->axis.pad][axis] = digital_value;
       break;
     }
     case EVENT_CHANGE_EXT:
@@ -968,11 +970,11 @@ static Uint32 process_event(union event *ev)
     case EVENT_POINTER_MOVE:
     {
       pointing = 1;
-      input.mouse_moved = true;
-      input.real_mouse_x = ev->pointer.x;
-      input.real_mouse_y = ev->pointer.y;
-      input.mouse_x = ev->pointer.x / 8;
-      input.mouse_y = ev->pointer.y / 14;
+      status->mouse_moved = true;
+      status->real_mouse_x = ev->pointer.x;
+      status->real_mouse_y = ev->pointer.y;
+      status->mouse_x = ev->pointer.x / 8;
+      status->mouse_y = ev->pointer.y / 14;
       break;
     }
     case EVENT_POINTER_OUT:
@@ -985,41 +987,41 @@ static Uint32 process_event(union event *ev)
       enum keycode ckey = convert_USB_internal(ev->key.key);
       if(!ckey)
       {
-        rval = 0;
+        rval = false;
         break;
       }
       if(ckey == IKEY_NUMLOCK)
-        input.numlock_status = !input.numlock_status;
+        status->numlock_status = !status->numlock_status;
       if(ckey == IKEY_CAPSLOCK)
-        input.caps_status = !input.caps_status;
+        status->caps_status = !status->caps_status;
 
-      if(input.last_key_repeat &&
-       (input.last_key_repeat != IKEY_LSHIFT) &&
-       (input.last_key_repeat != IKEY_RSHIFT) &&
-       (input.last_key_repeat != IKEY_LALT) &&
-       (input.last_key_repeat != IKEY_RALT) &&
-       (input.last_key_repeat != IKEY_LCTRL) &&
-       (input.last_key_repeat != IKEY_RCTRL))
+      if(status->key_repeat &&
+       (status->key_repeat != IKEY_LSHIFT) &&
+       (status->key_repeat != IKEY_RSHIFT) &&
+       (status->key_repeat != IKEY_LALT) &&
+       (status->key_repeat != IKEY_RALT) &&
+       (status->key_repeat != IKEY_LCTRL) &&
+       (status->key_repeat != IKEY_RCTRL))
       {
         // Stack current repeat key if it isn't shift, alt, or ctrl
         if(input.repeat_stack_pointer != KEY_REPEAT_STACK_SIZE)
         {
-          input.last_key_repeat_stack[input.repeat_stack_pointer] =
-           input.last_key_repeat;
-          input.last_unicode_repeat_stack[input.repeat_stack_pointer] =
-           input.last_unicode_repeat;
+          input.key_repeat_stack[input.repeat_stack_pointer] =
+           status->key_repeat;
+          input.unicode_repeat_stack[input.repeat_stack_pointer] =
+           status->unicode_repeat;
           input.repeat_stack_pointer++;
         }
       }
 
-      input.keymap[ckey] = 1;
-      input.last_key_pressed = ckey;
-      input.last_key = ckey;
-      input.last_unicode = convert_internal_unicode(ckey);
-      input.last_key_repeat = ckey;
-      input.last_unicode_repeat = input.last_unicode;
-      input.last_keypress_time = get_ticks();
-      input.last_key_release = IKEY_UNKNOWN;
+      status->keymap[ckey] = 1;
+      status->key_pressed = ckey;
+      status->key = ckey;
+      status->unicode = convert_internal_unicode(ckey);
+      status->key_repeat = ckey;
+      status->unicode_repeat = status->unicode;
+      status->keypress_time = get_ticks();
+      status->key_release = IKEY_UNKNOWN;
       break;
     }
     case EVENT_KEY_UP:
@@ -1027,22 +1029,22 @@ static Uint32 process_event(union event *ev)
       enum keycode ckey = convert_USB_internal(ev->key.key);
       if(!ckey)
       {
-        rval = 0;
+        rval = false;
         break;
       }
 
-      input.keymap[ckey] = 0;
-      if(input.last_key_repeat == ckey)
+      status->keymap[ckey] = 0;
+      if(status->key_repeat == ckey)
       {
-        input.last_key_repeat = IKEY_UNKNOWN;
-        input.last_unicode_repeat = 0;
+        status->key_repeat = IKEY_UNKNOWN;
+        status->unicode_repeat = 0;
       }
-      input.last_key_release = ckey;
+      status->key_release = ckey;
       break;
     }
     default:
     {
-      rval = 0;
+      rval = false;
       break;
     }
   }
@@ -1050,9 +1052,9 @@ static Uint32 process_event(union event *ev)
   return rval;
 }
 
-Uint32 __update_event_status(void)
+bool __update_event_status(void)
 {
-  Uint32 rval = 0;
+  bool rval = false;
   union event ev;
 
   while(read_eq(&ev))
