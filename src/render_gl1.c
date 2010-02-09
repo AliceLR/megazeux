@@ -105,8 +105,6 @@ static bool gl1_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct gl1_render_data *render_data = cmalloc(sizeof(struct gl1_render_data));
-  int internal_width, internal_height;
-  const char *version, *extensions;
 
   if(!render_data)
     goto err_out;
@@ -127,41 +125,6 @@ static bool gl1_init_video(struct graphics_data *graphics,
     graphics->bits_per_pixel = conf->force_bpp;
 
   if(!set_video_mode())
-    goto err_free_render_data;
-
-  // NOTE: These must come AFTER set_video_mode()!
-  version = (const char *)gl1.glGetString(GL_VERSION);
-  extensions = (const char *)gl1.glGetString(GL_EXTENSIONS);
-
-  // We need a specific version of OpenGL; desktop GL must be 1.1.
-  // All OpenGL ES implementations are supported, so don't do the check
-  // with EGL configurations (EGL implies OpenGL ES).
-#ifndef CONFIG_EGL
-  if(version && atof(version) < 1.1)
-  {
-    warn("Your OpenGL implementation is too old (need v1.1).\n");
-    goto err_free_render_data;
-  }
-#endif
-
-  // we also might be able to utilise an extension
-  if(extensions && strstr(extensions, "GL_ARB_texture_non_power_of_two"))
-  {
-    internal_width = GL_NON_POWER_2_WIDTH;
-    internal_height = GL_NON_POWER_2_HEIGHT;
-  }
-  else
-  {
-    internal_width = GL_POWER_2_WIDTH;
-    internal_height = GL_POWER_2_HEIGHT;
-  }
-
-  render_data->pixels = cmalloc(sizeof(Uint32) * internal_width *
-   internal_height);
-  render_data->w = internal_width;
-  render_data->h = internal_height;
-
-  if(!render_data->pixels)
     goto err_free_render_data;
 
   return true;
@@ -200,6 +163,9 @@ static void gl1_resize_screen(struct graphics_data *graphics,
 static bool gl1_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, bool fullscreen, bool resize)
 {
+  int internal_width = GL_POWER_2_WIDTH, internal_height = GL_POWER_2_HEIGHT;
+  struct gl1_render_data *render_data = graphics->render_data;
+
   gl_set_attributes(graphics);
 
   if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
@@ -207,6 +173,54 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
 
   if(!gl_load_syms(gl1_syms_map))
     return false;
+
+  // We need a specific version of OpenGL; desktop GL must be 1.1.
+  // All OpenGL ES 1.x implementations are supported, so don't do
+  // the check with EGL configurations (EGL implies OpenGL ES).
+  // No OpenGL ES 1.x supports NPOT textures, so we can also skip
+  // the extension check.
+#ifndef CONFIG_EGL
+  {
+    static bool initialized = false;
+
+    if(!initialized)
+    {
+      const char *version, *extensions;
+      float version_float;
+
+      version = (const char *)gl1.glGetString(GL_VERSION);
+      if(!version)
+        return false;
+
+      extensions = (const char *)gl1.glGetString(GL_EXTENSIONS);
+      if(!extensions)
+        return false;
+
+      version_float = atof(version);
+      if(version_float < 1.1)
+      {
+        warn("Need >= OpenGL 1.1, got OpenGL %.1f.\n", version_float);
+        return false;
+      }
+
+      if(strstr(extensions, "GL_ARB_texture_non_power_of_two"))
+      {
+        internal_width = GL_NON_POWER_2_WIDTH;
+        internal_height = GL_NON_POWER_2_HEIGHT;
+      }
+
+      initialized = true;
+    }
+  }
+#endif
+
+  render_data->pixels =
+   cmalloc(sizeof(Uint32) * internal_width * internal_height);
+  if(!render_data->pixels)
+    return false;
+
+  render_data->w = internal_width;
+  render_data->h = internal_height;
 
   gl1_resize_screen(graphics, width, height);
   return true;

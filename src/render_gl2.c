@@ -134,7 +134,6 @@ static bool gl2_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct gl2_render_data *render_data = cmalloc(sizeof(struct gl2_render_data));
-  const char *version;
 
   if(!render_data)
     goto err_out;
@@ -163,20 +162,6 @@ static bool gl2_init_video(struct graphics_data *graphics,
   render_data->ratio = conf->video_ratio;
   if(!set_video_mode())
     goto err_free_render_data;
-
-  // NOTE: This must come AFTER set_video_mode()!
-  version = (const char *)gl2.glGetString(GL_VERSION);
-
-  // We need a specific version of OpenGL; desktop GL must be 1.1.
-  // All OpenGL ES implementations are supported, so don't do the check
-  // with EGL configurations (EGL implies OpenGL ES).
-#ifndef CONFIG_EGL
-  if(version && atof(version) < 1.1)
-  {
-    warn("Your OpenGL implementation is too old (need v1.1).\n");
-    goto err_free_render_data;
-  }
-#endif
 
   return true;
 
@@ -292,8 +277,35 @@ static bool gl2_set_video_mode(struct graphics_data *graphics,
   if(!gl_load_syms(gl2_syms_map))
     return false;
 
-  gl2_resize_screen(graphics, width, height);
+  // We need a specific version of OpenGL; desktop GL must be 1.1.
+  // All OpenGL ES 1.x implementations are supported, so don't do
+  // the check with EGL configurations (EGL implies OpenGL ES).
+#ifndef CONFIG_EGL
+  {
+    static bool initialized = false;
 
+    if(!initialized)
+    {
+      const char *version;
+      float version_float;
+
+      version = (const char *)gl2.glGetString(GL_VERSION);
+      if(!version)
+        return false;
+
+      version_float = atof(version);
+      if(version_float < 1.1)
+      {
+        warn("Need >= OpenGL 1.1, got OpenGL %.1f.\n", version_float);
+        return false;
+      }
+
+      initialized = true;
+    }
+  }
+#endif
+
+  gl2_resize_screen(graphics, width, height);
   return true;
 }
 
