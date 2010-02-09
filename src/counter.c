@@ -2052,7 +2052,7 @@ static function_counter builtin_counters[] =
   { "fwrite_pos", 0x0209, fwrite_pos_read, fwrite_pos_write },       // 2.60
   { "green_value", 0x0209, green_value_read, green_value_write },    // 2.60
   { "horizpld", 0, horizpld_read, NULL },                            // <=2.51
-  { "input", 0x023E, input_read, input_write },                      // 2.62
+  { "input", 0, input_read, input_write },                           // <=2.51
   { "inputsize", 0, inputsize_read, inputsize_write },               // <=2.51
   { "int2bin", 0x0209, int2bin_read, int2bin_write },                // 2.60
   { "key?", 0x0245, key_read, key_write },                           // 2.69
