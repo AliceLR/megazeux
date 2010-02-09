@@ -35,11 +35,44 @@ __M_BEGIN_DECLS
 #define ROBOT_START_STACK 4
 #define ROBOT_MAX_STACK   65536
 
+#ifdef CONFIG_DEBYTECODE
+
+// This is the version where programs became source code instead of
+// bytecode.
+#define VERSION_PROGRAM_SOURCE   0x025A
+
+// And the last one where bytecode was used.
+#define VERSION_PROGRAM_BYTECODE 0x0253
+
+CORE_LIBSPEC void change_robot_name(struct board *src_board,
+ struct robot *cur_robot, char *new_name);
+CORE_LIBSPEC void add_robot_name_entry(struct board *src_board,
+ struct robot *cur_robot, char *name);
+CORE_LIBSPEC int find_free_robot(struct board *src_board);
+
+void prepare_robot_bytecode(struct robot *cur_robot);
+
+#else /* !CONFIG_DEBYTECODE */
+
+CORE_LIBSPEC void reallocate_robot(struct robot *robot, int size);
+
+void change_robot_name(struct board *src_board, struct robot *cur_robot,
+ char *new_name);
+void add_robot_name_entry(struct board *src_board, struct robot *cur_robot,
+ char *name);
+int find_free_robot(struct board *src_board);
+
+#ifdef CONFIG_EDITOR
+CORE_LIBSPEC void duplicate_robot_direct(struct robot *cur_robot,
+ struct robot *copy_robot, int x, int y);
+#endif
+
+#endif /* !CONFIG_DEBYTECODE */
+
 CORE_LIBSPEC void clear_robot_contents(struct robot *cur_robot);
 CORE_LIBSPEC void clear_robot_id(struct board *src_board, int id);
 CORE_LIBSPEC void clear_scroll_id(struct board *src_board, int id);
 CORE_LIBSPEC void clear_sensor_id(struct board *src_board, int id);
-CORE_LIBSPEC void reallocate_robot(struct robot *robot, int size);
 CORE_LIBSPEC struct label **cache_robot_labels(struct robot *robot,
  int *num_labels);
 CORE_LIBSPEC void replace_robot(struct board *src_board,
@@ -108,11 +141,6 @@ void push_sensor(struct world *mzx_world, int id);
 void step_sensor(struct world *mzx_world, int id);
 char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
  char terminating_char);
-void add_robot_name_entry(struct board *src_board, struct robot *cur_robot,
- char *name);
-void change_robot_name(struct board *src_board, struct robot *cur_robot,
- char *new_name);
-int find_free_robot(struct board *src_board);
 int get_robot_id(struct board *src_board, const char *name);
 
 static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
@@ -124,8 +152,6 @@ static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
 void run_robot(struct world *mzx_world, int id, int x, int y);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC void duplicate_robot_direct(struct robot *cur_robot,
- struct robot *copy_robot, int x, int y);
 CORE_LIBSPEC void duplicate_scroll_direct(struct scroll *cur_scroll,
  struct scroll *copy_scroll);
 CORE_LIBSPEC void duplicate_sensor_direct(struct sensor *cur_sensor,

@@ -3196,36 +3196,37 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 {
   int key;
   int i;
-  int line_text_length, line_bytecode_length;
   int mouse_press;
-  char arg_types[32];
   char str_buffer[32], max_size_buffer[32];
-  char *current_robot_pos = cur_robot->program_bytecode + 1;
-  char *next;
   int first_line_draw_position;
   int first_line_count_back;
-  int new_line;
-  int arg_count;
   int last_color = 0;
   int last_char = 0;
   struct robot_line base;
-  struct robot_line *current_rline = NULL;
-  struct robot_line *previous_rline = &base;
   struct robot_line *draw_rline;
   int mark_current_line;
-  char text_buffer[COMMAND_BUFFER_LEN], error_buffer[COMMAND_BUFFER_LEN];
   int current_line_color;
   struct robot_state rstate;
+
+#ifdef CONFIG_DEBYTECODE
+  char *source_pos;
+  char *newline_pos;
+  int line_length;
+#else
+  char text_buffer[COMMAND_BUFFER_LEN], error_buffer[COMMAND_BUFFER_LEN];
+  int line_text_length, line_bytecode_length, new_line, arg_count;
+  char *current_robot_pos = cur_robot->program_bytecode + 1;
+  struct robot_line *previous_rline = &base;
+  struct robot_line *current_rline = NULL;
+  char arg_types[32], *next;
+#endif
 
   rstate.current_line = 0;
   rstate.current_rline = &base;
   rstate.total_lines = 0;
-  rstate.size = 2;
   rstate.max_size = 65535;
   rstate.include_ignores = mzx_world->conf.disassemble_extras;
   rstate.disassemble_base = mzx_world->conf.disassemble_base;
-  rstate.default_invalid =
-   (enum validity_types)(mzx_world->editor_conf.default_invalid_status);
   rstate.ccodes = mzx_world->editor_conf.color_codes;
   rstate.mark_mode = 0;
   rstate.mark_start = -1;
@@ -3240,10 +3241,55 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   rstate.command_buffer = rstate.command_buffer_space;
   rstate.mzx_world = mzx_world;
 
-  base.previous = NULL;
+#ifdef CONFIG_DEBYTECODE
+  rstate.size = 0;
+  rstate.cur_robot = cur_robot;
+  rstate.program_modified = false;
+  base.next = NULL;
+#else
+  rstate.size = 2;
+  rstate.default_invalid =
+   (enum validity_types)(mzx_world->editor_conf.default_invalid_status);
   base.line_bytecode_length = -1;
+#endif
+
+  base.previous = NULL;
 
   current_line_color = combine_colors(rstate.ccodes[0], bg_color);
+
+#ifdef CONFIG_DEBYTECODE
+
+  // This should take care of everything for loading the program from
+  // source.
+  source_pos = cur_robot->program_source;
+
+  do
+  {
+    newline_pos = strchr(source_pos, '\n');
+
+    if(newline_pos == NULL)
+    {
+      strcpy(rstate.command_buffer, source_pos);
+    }
+    else
+    {
+      line_length = newline_pos - source_pos;
+      if(line_length)
+        memcpy(rstate.command_buffer, source_pos, line_length);
+
+      rstate.command_buffer[line_length] = 0;
+    }
+
+    add_line(&rstate, 1);
+    source_pos = newline_pos + 1;
+  }
+  while(newline_pos);
+
+  // Move it back to the start
+  rstate.current_rline = base.next;
+  rstate.current_line = 1;
+
+#else /* !CONFIG_DEBYTECODE */
 
   // Disassemble robots into lines
   do
@@ -3283,7 +3329,8 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
     {
       previous_rline->next = NULL;
     }
-  } while(new_line);
+  }
+  while(new_line);
 
   // Add a blank line to the end too if there aren't any lines
   if(!rstate.total_lines)
@@ -3294,6 +3341,8 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   {
     move_line_down(&rstate, 1);
   }
+
+#endif /* !CONFIG_DEBYTECODE */
 
   save_screen();
   fill_line(80, 0, 0, top_char, top_color);
@@ -3320,6 +3369,15 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 
   do
   {
+#ifdef CONFIG_DEBYTECODE
+    // Update program status if it has been modified.
+    if(rstate.program_modified)
+    {
+      update_program_status(&rstate, rstate.base->next, NULL);
+      rstate.program_modified = false;
+    }
+#endif
+
     draw_char(top_line_connect, line_color, 0, 1);
     draw_char(top_line_connect, line_color, 79, 1);
     draw_char(bottom_line_connect, line_color, 0, 21);
@@ -3602,13 +3660,17 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
           strncpy(line_remainder, command_buffer + rstate.current_x, 241);
           line_remainder[240] = 0;
           command_buffer[rstate.current_x] = 0;
-          update_current_line(&rstate);
 
+#ifdef CONFIG_DEBYTECODE
+          add_line(&rstate, -1);
+#else
+          update_current_line(&rstate);
           add_blank_line(&rstate, 1);
+#endif
+
           strncpy(command_buffer, line_remainder, 241);
           command_buffer[240] = 0;
           rstate.current_x = 0;
-
           update_current_line(&rstate);
         }
 
@@ -3667,10 +3729,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 
       case IKEY_F4:
       {
-        int start_x = rstate.current_x;
-        const struct search_entry_short *matched_arg;
-        int end_x;
-        char temp_char;
+        int thing_index, end_x, start_x = rstate.current_x;
 
         if(!rstate.command_buffer[start_x])
           start_x--;
@@ -3679,7 +3738,6 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
           start_x--;
 
         end_x = start_x + 1;
-        temp_char = rstate.command_buffer[end_x];
 
         while(start_x && (rstate.command_buffer[start_x] != ' '))
           start_x--;
@@ -3687,15 +3745,34 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
         if(start_x)
           start_x++;
 
-        temp_char = rstate.command_buffer[end_x];
-        rstate.command_buffer[end_x] = 0;
-        matched_arg = find_argument(rstate.command_buffer + start_x);
-        rstate.command_buffer[end_x] = temp_char;
-
-        if(matched_arg && (matched_arg->type == S_THING) &&
-         (matched_arg->offset < 122))
+#ifdef CONFIG_DEBYTECODE
         {
-          int new_param = edit_param(mzx_world, matched_arg->offset, -1);
+          thing_index =
+           get_thing(rstate.command_buffer + start_x, end_x - start_x);
+
+          if((thing_index == -1) || (thing_index >= SENSOR))
+            break;
+        }
+#else /* !CONFIG_DEBYTECODE */
+        {
+          const struct search_entry_short *matched_arg;
+          char temp_char;
+
+          temp_char = rstate.command_buffer[end_x];
+          rstate.command_buffer[end_x] = 0;
+          matched_arg = find_argument(rstate.command_buffer + start_x);
+          rstate.command_buffer[end_x] = temp_char;
+
+          if(!matched_arg || (matched_arg->type != S_THING) ||
+           (matched_arg->offset >= 122))
+            break;
+
+          thing_index = matched_arg->offset;
+        }
+#endif /* !CONFIG_DEBYTECODE */
+
+        {
+          int new_param = edit_param(mzx_world, thing_index, -1);
           if(new_param >= 0)
           {
             char param_buffer[16];
