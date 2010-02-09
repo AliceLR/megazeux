@@ -120,6 +120,12 @@ static inline int platform_listen(int sockfd, int backlog)
   return listen(sockfd, backlog);
 }
 
+static inline int platform_select(int nfds, fd_set *readfds,
+ fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
+{
+  return select(nfds, readfds, writefds, exceptfds, timeout);
+}
+
 static inline ssize_t platform_send(int s, const void *buf, size_t len,
  int flags)
 {
@@ -189,6 +195,8 @@ static struct
   WINSOCK_API_LINKAGE u_short PASCAL (*htons)(u_short);
   WINSOCK_API_LINKAGE int PASCAL (*ioctlsocket)(SOCKET, long, u_long *);
   WINSOCK_API_LINKAGE int PASCAL (*listen)(SOCKET, int);
+  WINSOCK_API_LINKAGE int PASCAL
+   (*select)(int, fd_set *, fd_set *, fd_set *, const struct timeval *);
   WINSOCK_API_LINKAGE int PASCAL (*send)(SOCKET, const char *, int, int);
   WINSOCK_API_LINKAGE int PASCAL
    (*setsockopt)(SOCKET, int, int, const char *, int);
@@ -225,6 +233,7 @@ socksyms_map[] =
   { "htons",                 (void **)&socksyms.htons },
   { "ioctlsocket",           (void **)&socksyms.ioctlsocket },
   { "listen",                (void **)&socksyms.listen },
+  { "select",                (void **)&socksyms.select },
   { "send",                  (void **)&socksyms.send },
   { "setsockopt",            (void **)&socksyms.setsockopt },
   { "socket",                (void **)&socksyms.socket },
@@ -452,6 +461,12 @@ static inline int platform_getaddrinfo(const char *node, const char *service,
 static inline int platform_listen(int sockfd, int backlog)
 {
   return socksyms.listen(sockfd, backlog);
+}
+
+static inline int platform_select(int nfds, fd_set *readfds,
+ fd_set *writefds, fd_set *exceptfds, struct timeval *timeout)
+{
+  return socksyms.select(nfds, readfds, writefds, exceptfds, timeout);
 }
 
 static inline ssize_t platform_send(int s, const void *buf, size_t len,
@@ -791,6 +806,29 @@ bool host_recv_raw(struct host *h, char *buffer, unsigned int len)
 bool host_send_raw(struct host *h, const char *buffer, unsigned int len)
 {
   return __send(h->fd, buffer, len);
+}
+
+int host_poll_raw(struct host *h, unsigned int timeout)
+{
+  struct timeval tv;
+  fd_set mask;
+  int ret;
+
+  FD_ZERO(&mask);
+  FD_SET(h->fd, &mask);
+
+  tv.tv_sec  = (timeout / 1000);
+  tv.tv_usec = (timeout % 1000) * 1000;
+
+  ret = select(h->fd + 1, &mask, NULL, NULL, &tv);
+  if(ret < 0)
+    return -1;
+
+  if(ret > 0)
+    if(FD_ISSET(h->fd, &mask))
+      return 1;
+
+  return 0;
 }
 
 static int host_get_line(struct host *h, char *buffer, int len)

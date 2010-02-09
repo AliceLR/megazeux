@@ -170,6 +170,17 @@ bool host_recv_raw(struct host *h, char *buffer, unsigned int len);
 bool host_send_raw(struct host *h, const char *buffer, unsigned int len);
 
 /**
+ * Polls a host via raw socket access.
+ *
+ * @param h       Host to poll socket of
+ * @param timeout Timeout in milliseconds for poll
+ *
+ * @return <0 if there was a failure, 0 if there was no data, and the
+ *         >0 if there was activity on the socket.
+ */
+int host_poll_raw(struct host *h, unsigned int timeout);
+
+/**
  * Obtain a buffer containing a file, referenced by URL, over HTTP.
  *
  * @param h             Host to converse in HTTP over
