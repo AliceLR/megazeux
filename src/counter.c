@@ -118,7 +118,7 @@ static void score_write(struct world *mzx_world,
  struct function_counter *counter, const char *name, int value, int id)
 {
   // Protection for score < 0, as per the behavior in DOS MZX.
-  if((value < 0) && (mzx_world_version <= 0x249))
+  if((value < 0) && (mzx_world->version <= 0x249))
     mzx_world->score = 0;
   else
     mzx_world->score = value;
