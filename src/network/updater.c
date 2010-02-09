@@ -107,8 +107,10 @@ static char **process_argv;
 
 static void __check_for_updates(void)
 {
+  void *argv = process_argv;
+
   info("Reloading..\n");
-  execv(process_argv[0], (const char *const *)process_argv);
+  execv(process_argv[0], argv);
 }
 
 void updater_init(char *argv[])
