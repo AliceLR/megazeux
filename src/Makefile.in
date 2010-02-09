@@ -193,7 +193,8 @@ mzx_objs += ${icons}
 endif
 
 ifeq (${BUILD_MODULAR},1)
-${mzx}: ${core_target}.debug ${editor_target}.debug
+${mzx}: ${core_target} ${editor_target}
+${mzx}.debug: ${core_target}.debug ${editor_target}.debug
 endif
 
 ${mzx}: ${core_target} ${editor_target} ${mzx_objs}
@@ -206,14 +207,16 @@ else
 	  -o ${mzx} ${LDFLAGS} ${core_ldflags} ${editor_ldflags}
 endif
 
-${mzx}.debug: ${mzx}
-
 mzx_clean: editor_clean
 
 else
 
-${mzx}.debug:
+.PHONY: ${mzx}.debug
+
+${mzx}:
 	@echo "--> Building of editor disabled."
+
+${mzx}.debug:
 
 endif
 
@@ -230,7 +233,8 @@ mzxrun_objs += ${icons}
 endif
 
 ifeq (${BUILD_MODULAR},1)
-${mzxrun}: ${core_target}.debug
+${mzxrun}: ${core_target}
+${mzxrun}.debug: ${core_target}.debug
 endif
 
 ${mzxrun}: ${core_target} ${mzxrun_objs}
@@ -242,8 +246,6 @@ else
 	${LINK_CC} ${mzxrun_objs} ${core_target} \
 	  -o ${mzxrun} ${LDFLAGS} ${core_ldflags}
 endif
-
-${mzxrun}.debug : ${mzxrun}
 
 mzx_clean: core_target_clean gdm2s3m_clean icons_clean libmodplug_clean
 	$(if ${V},,@echo "  RM      " ${core_obj})

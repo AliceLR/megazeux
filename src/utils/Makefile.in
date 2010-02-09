@@ -9,7 +9,7 @@ include contrib/unzip/src/Makefile.in
 #        and needs some love (and refactoring) to fix it
 #
 
-.PHONY: utils utils_clean utils_package_clean
+.PHONY: utils utils.debug utils_clean utils_package_clean
 
 utils_src = src/utils
 utils_obj = src/utils/.build
@@ -77,14 +77,19 @@ utils_package_clean:
 
 utils: $(filter-out $(wildcard ${utils_obj}), ${utils_obj})
 
-utils: ${checkres}.debug ${downver}.debug ${hlp2txt}.debug ${txt2hlp}.debug
+utils: ${checkres} ${downver} ${hlp2txt} ${txt2hlp}
+utils.debug: ${checkres}.debug ${downver}.debug ${hlp2txt}.debug ${txt2hlp}.debug
 
 else
+
+.PHONY: utils.debug
 
 utils_package_clean:
 
 utils:
 	@echo "--> Building of utilities disabled."
+
+utils.debug:
 
 endif
 

@@ -6,12 +6,13 @@
 #                  http://aegis.sourceforge.net/auug97.pdf
 ##
 
-.PHONY: clean package_clean help_check
+.PHONY: clean package_clean help_check mzx mzx.debug
 
 include platform.inc
 include version.inc
 
 all: mzx utils
+debuglink: all mzx.debug utils.debug
 
 include arch/${PLATFORM}/Makefile.in
 
@@ -94,7 +95,8 @@ ifneq (${SUPPRESS_BUILD},1)
 mzxrun = mzxrun${BINEXT}
 mzx = megazeux${BINEXT}
 
-mzx: ${mzxrun}.debug ${mzx}.debug
+mzx: ${mzxrun} ${mzx}
+mzx.debug: ${mzxrun}.debug ${mzx}.debug
 
 ifeq (${BUILD_MODPLUG},1)
 BUILD_GDM2S3M=1
