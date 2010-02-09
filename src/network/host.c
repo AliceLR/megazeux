@@ -40,6 +40,7 @@
 #include <winsock2.h>
 #include <ws2tcpip.h>
 #else // !__WIN32__
+#include <netinet/in.h>
 #include <sys/socket.h>
 #include <sys/select.h>
 #include <sys/types.h>
