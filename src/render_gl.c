@@ -42,7 +42,8 @@ const float vertex_array_single[2 * 4] = {
 
 #ifdef DEBUG
 
-void gl_error(const char *file, int line, GLenum (*glGetError)(void))
+void gl_error(const char *file, int line,
+              GLenum (GL_APIENTRY *glGetError)(void))
 {
   const char *error;
 
