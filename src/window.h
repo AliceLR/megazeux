@@ -197,10 +197,6 @@ typedef struct
 void construct_dialog(dialog *src, const char *title, int x, int y,
  int width, int height, element **elements, int num_elements,
  int start_element);
-void construct_dialog_ext(dialog *src, const char *title, int x, int y,
- int width, int height, element **elements, int num_elements,
- int sfx_test_for_input, int pad_space, int start_element,
- int (* idle_function)(World *mzx_world, dialog *di, int key));
 void destruct_dialog(dialog *src);
 
 element *construct_label(int x, int y, const char *text);
@@ -208,9 +204,6 @@ element *construct_radio_button(int x, int y,
  const char **choices, int num_choices, int max_length, int *result);
 element *construct_button(int x, int y, const char *label,
  int return_value);
-element *construct_list_box(int x, int y, const char **choices,
- int num_choices, int num_choices_visible, int choice_length,
- int return_value, int *result);
 element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
  int mult_five, int *result);
@@ -284,6 +277,13 @@ void construct_element(element *e, int x, int y,
   element *e, int mouse_button, int mouse_x, int mouse_y),
  int (* idle_function)(World *mzx_world, dialog *di,
   element *e));
+element *construct_list_box(int x, int y, const char **choices,
+ int num_choices, int num_choices_visible, int choice_length,
+ int return_value, int *result);
+void construct_dialog_ext(dialog *src, const char *title, int x, int y,
+ int width, int height, element **elements, int num_elements,
+ int sfx_test_for_input, int pad_space, int start_element,
+ int (* idle_function)(World *mzx_world, dialog *di, int key));
 
 int char_selection_ext(int current, int allow_multichar,
  int *width_ptr, int *height_ptr);
