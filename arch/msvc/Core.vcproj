@@ -69,7 +69,7 @@
 			<Tool
 				Name="VCLinkerTool"
 				AdditionalOptions="/NODEFAULTLIB:libcmt"
-				AdditionalDependencies="SDL.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib libpng12.lib zlib.lib"
+				AdditionalDependencies="SDL.lib ogg_static.lib vorbis_static.lib vorbisfile_static.lib libpng12.lib zlib.lib opengl32.lib"
 				OutputFile="$(SolutionDir)\..\..\$(ProjectName).dll"
 				AdditionalLibraryDirectories="Deps\lib\x86"
 				ProgramDatabaseFile="$(SolutionDir)\..\..\$(ProjectName).pdb"
