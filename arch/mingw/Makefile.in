@@ -8,6 +8,7 @@ AR      = ${MINGWBASE}ar
 OBJCOPY = ${MINGWBASE}objcopy
 STRIP   = ${MINGWBASE}strip --strip-unneeded
 WINDRES = ${MINGWBASE}windres
+PEFIX   = ${pefix}
 
 BINEXT  = .exe
 
@@ -23,6 +24,23 @@ core_ldflags += -lopengl32
 
 # Windows needs PNG to be statically linked (inc. zlib)
 LIBPNG_LDFLAGS = `libpng12-config --static --ldflags`
+
+pefix := arch/mingw/pefix${BINEXT}
+
+-include arch/mingw/pefix.d
+
+arch/mingw/pefix.o: arch/mingw/pefix.c
+	$(if ${V},,@echo "  CC      " $<)
+	${HOST_CC} -MD ${CFLAGS} -c $< -o $@
+
+${pefix}: arch/mingw/pefix.o
+	$(if ${V},,@echo "  LINK    " ${pefix})
+	${HOST_CC} arch/mingw/pefix.o -o ${pefix}
+
+all: ${pefix}
+
+clean:
+	${RM} -f ${pefix} arch/mingw/pefix.o arch/mingw/pefix.d
 
 #
 # Windows builds must copy SDL.dll and create a directx.bat

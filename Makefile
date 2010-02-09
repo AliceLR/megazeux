@@ -21,9 +21,11 @@ CXX     ?= g++
 AR      ?= ar
 STRIP   ?= strip --strip-unneeded
 OBJCOPY ?= objcopy
+PEFIX   ?= true
 
 CHMOD   ?= chmod
 CP      ?= cp
+HOST_CC ?= gcc
 LN      ?= ln
 MKDIR   ?= mkdir
 MV      ?= mv
@@ -108,9 +110,11 @@ CXX     := @${CXX}
 AR      := @${AR}
 STRIP   := @${STRIP}
 OBJCOPY := @${OBJCOPY}
+PEFIX   := @${PEFIX}
 
 CHMOD   := @${CHMOD}
 CP      := @${CP}
+HOST_CC := @${HOST_CC}
 LN      := @${LN}
 MKDIR   := @${MKDIR}
 MV      := @${MV}
@@ -154,11 +158,13 @@ endif
 %.debug: %
 	$(if ${V},,@echo "  OBJCOPY " --only-keep-debug $< $@)
 	${OBJCOPY} --only-keep-debug $< $@
+	${PEFIX} $@
 	${CHMOD} a-x $@
 	$(if ${V},,@echo "  STRIP   " $<)
 	${STRIP} $<
 	$(if ${V},,@echo "  OBJCOPY " --add-gnu-debuglink $@ $<)
 	${OBJCOPY} --add-gnu-debuglink=$@ $<
+	${PEFIX} $<
 	@touch $@
 
 include src/Makefile.in
