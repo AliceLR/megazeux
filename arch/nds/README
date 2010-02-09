@@ -6,7 +6,6 @@ You need to extract the following additional libraries here:
   - ndsKeyboardExt5
   - ndsLibfat
   - ndsScreens
-  - ndsSDL
 
 This document should be updated with info on where to find them.
 

@@ -47,6 +47,8 @@ USERS
 + Do not apply masking to chars 32-127 in signs or scrolls when playing a
   world. Previously, even the mask_midchars option would have no effect on
   the display of signs or scrolls. This has been broken since 2.80g.
++ Re-work board editor's Alt+H option to provide minimal editor (one row)
+  status info, rather than completely hiding the help.
 
 DEVELOPERS
 
@@ -61,6 +63,8 @@ DEVELOPERS
   information.
 + Ported opengl1 and opengl2 renderers to OpenGL ES 1.x and glsl
   renderer to OpenGL ES 2.0, used increasingly by mobile devices.
++ Removed SDL dependency from NDS port. It only used it for timing and
+  stuffed events.
 
 December 29, 2008 - MZX 2.82b
 
