@@ -6,7 +6,7 @@ usage() {
 	echo "usage: ./config.sh --platform [platform] <--prefix prefix>"
 	echo "                   <--sysconfdir sysconfdir> <option..>"
 	echo
-	echo " <prefix>        Where MegaZeux's dependencies should be found." 
+	echo " <prefix>        Where MegaZeux's dependencies should be found."
 	echo " <sysconfdir>    Where MegaZeux's config should be read from."
 	echo
 	echo "Supported [platform] values:"
@@ -26,6 +26,7 @@ usage() {
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
+	echo "  --as-needed-hack     Pass --as-needed through to GNU ld."
 	echo "  --optimize-size      Perform size optimizations (-Os)."
 	echo "  --disable-datestamp  Disable adding date to version."
 	echo "  --disable-editor     Disable the built-in editor."
@@ -61,6 +62,7 @@ PREFIX="/usr"
 SYSCONFDIR="/etc"
 SYSCONFDIR_SET="false"
 DATE_STAMP="true"
+AS_NEEDED="false"
 OPT_SIZE="false"
 EDITOR="true"
 HELPSYS="true"
@@ -102,6 +104,8 @@ while [ "$1" != "" ]; do
 		SYSCONFDIR="$1"
 		SYSCONFDIR_SET="true"
 	fi
+
+	[ "$1" = "--as-needed-hack" ] && AS_NEEDED="true"
 
 	[ "$1" = "--optimize-size" ] && OPT_SIZE="true"
 
@@ -215,7 +219,7 @@ echo
 echo "PREFIX?=$PREFIX" >> platform.inc
 
 #
-# Set the version to build with 
+# Set the version to build with
 #
 
 if [ "$DATE_STAMP" = "true" ]; then
@@ -378,6 +382,19 @@ if [ "$ICON" = "true" ]; then
 fi
 
 #
+# As GNU ld supports recursive dylib dependency tracking, we don't need to
+# explicitly link to as many libraries as the authors would have us provide.
+#
+# Instead, pass the linker --as-needed to discard libraries explicitly
+# passed through but not directly used. Fixes warnings with the Debian
+# packaging infrastructure.
+#
+if [ "$AS_NEEDED" = "true" ]; then
+	echo "Assuming GNU ld and passing --as-needed through."
+	echo "LDFLAGS+=-Wl,--as-needed" >> platform.inc
+fi
+
+#
 # Users may want size optimizations
 #
 if [ "$OPT_SIZE" = "true" ]; then
@@ -468,8 +485,8 @@ if [ "$X11" = "true" ]; then
 	X11PATH=`which $XBIN`
 	X11DIR=`dirname $X11PATH`
 
-	echo "mzx_flags := -I$X11DIR/../include" >> platform.inc
-	echo "mzx_ldflags := -L$X11DIR/../lib -lX11" >> platform.inc
+	echo "mzx_flags+=-I$X11DIR/../include" >> platform.inc
+	echo "mzx_ldflags+=-L$X11DIR/../lib -lX11" >> platform.inc
 fi
 
 #

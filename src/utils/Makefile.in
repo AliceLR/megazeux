@@ -43,10 +43,12 @@ ifeq (${BUILD_UTILS},1)
 
 ${checkres}: ${checkres_objs}
 ifeq (${V},1)
-	${HOST_CC} ${checkres_objs} -o ${checkres} ${checkres_ldflags}
+	${HOST_CC} ${checkres_objs} \
+	        -o ${checkres} ${LDFLAGS} ${checkres_ldflags}
 else
 	@echo "  LINK    " ${checkres}
-	@${HOST_CC} ${checkres_objs} -o ${checkres} ${checkres_ldflags}
+	@${HOST_CC} ${checkres_objs} \
+	         -o ${checkres} ${LDFLAGS} ${checkres_ldflags}
 endif
 ifneq (${DEBUG},1)
 ifeq (${V},1)
@@ -59,10 +61,10 @@ endif
 
 ${downver}: ${downver_objs}
 ifeq (${V},1)
-	${HOST_CC} ${downver_objs} -o ${downver}
+	${HOST_CC} ${downver_objs} -o ${downver} ${LDFLAGS}
 else
 	@echo "  LINK    " ${downver}
-	@${HOST_CC} ${downver_objs} -o ${downver}
+	@${HOST_CC} ${downver_objs} -o ${downver} ${LDFLAGS}
 endif
 ifneq (${DEBUG},1)
 ifeq (${V},1)
@@ -75,10 +77,10 @@ endif
 
 ${txt2hlp}: ${txt2hlp_objs}
 ifeq (${V},1)
-	${HOST_CC} ${txt2hlp_objs} -o ${txt2hlp}
+	${HOST_CC} ${txt2hlp_objs} -o ${txt2hlp} ${LDFLAGS}
 else
 	@echo "  LINK    " ${txt2hlp}
-	@${HOST_CC} ${txt2hlp_objs} -o ${txt2hlp}
+	@${HOST_CC} ${txt2hlp_objs} -o ${txt2hlp} ${LDFLAGS}
 endif
 ifneq (${DEBUG},1)
 ifeq (${V},1)

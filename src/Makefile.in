@@ -222,10 +222,12 @@ endif
 
 ${mzx}: ${mzx_cobjs_link} ${mzx_cxxobjs}
 ifeq (${V},1)
-	${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} -o ${mzx} ${mzx_ldflags}
+	${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} \
+	        -o ${mzx} ${LDFLAGS} ${mzx_ldflags}
 else
 	@echo "  LINK    " ${mzx}
-	@${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} -o ${mzx} ${mzx_ldflags}
+	@${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} \
+	         -o ${mzx} ${LDFLAGS} ${mzx_ldflags}
 endif
 ifneq (${DEBUG},1)
 ifeq (${V},1)
