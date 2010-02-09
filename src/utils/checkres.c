@@ -36,15 +36,15 @@
 
 #include "unzip.h"
 
-#define BOARD_NAME_SIZE         25
+#define BOARD_NAME_SIZE 25
 
 // "You may now have up to 250 boards." -- port.txt
-#define MAX_BOARDS              250
+#define MAX_BOARDS 250
 
-#define WORLD_PROTECTED_OFFSET  BOARD_NAME_SIZE
-#define WORLD_NUM_BOARDS_OFFSET 4234
+#define WORLD_PROTECTED_OFFSET      BOARD_NAME_SIZE
+#define WORLD_GLOBAL_OFFSET_OFFSET  4230
 
-#define HASH_TABLE_SIZE         100
+#define HASH_TABLE_SIZE 100
 
 #define EOS EOF
 
@@ -156,19 +156,23 @@ static enum status add_to_hash_table(char *stack_str)
 
 static bool is_zip_file(const char *filename)
 {
-    int signature = 0;
-    FILE *fp = fopen(filename, "rb");
-    if(!fp)
-      return false;
+  int signature = 0;
+  FILE *fp;
 
-    signature |= fgetc(fp) << 0;
-    signature |= fgetc(fp) << 8;
-    signature |= fgetc(fp) << 16;
-    signature |= fgetc(fp) << 24;
-    fclose(fp);
+  fp = fopen(filename, "rb");
+  if(!fp)
+    return false;
 
-    // Zip file header obtained from http://www.pkware.com/documents/casestudies/APPNOTE.TXT
-    return (strcasecmp(filename + strlen(filename) - 3, "zip") == 0 || signature == 0x04034b50);
+  signature |= fgetc(fp) << 0;
+  signature |= fgetc(fp) << 8;
+  signature |= fgetc(fp) << 16;
+  signature |= fgetc(fp) << 24;
+  fclose(fp);
+
+  // Zip file header obtained from:
+  //   http://www.pkware.com/documents/casestudies/APPNOTE.TXT
+  return (strcasecmp(filename + strlen(filename) - 3, "zip") == 0 ||
+          signature == 0x04034b50);
 }
 
 static enum status s_open(const char *filename, const char *mode,
@@ -446,11 +450,229 @@ static const char *decode_status(enum status status)
   }
 }
 
+static enum status parse_robot(struct stream *s)
+{
+  char tmp[256], tmp2[256], *str;
+  unsigned short robot_size;
+  enum status ret = SUCCESS;
+  long start;
+  int i;
+
+  // robot's size
+  robot_size = sgetus(s);
+
+  // skip to robot code
+  if(sseek(s, 40 - 2 + 1, SEEK_CUR) != 0)
+    return FSEEK_FAILED;
+
+  start = stell(s);
+
+  // skip 0xff marker
+  if(sgetc(s) != 0xff)
+    return CORRUPT_WORLD;
+
+  while(1)
+  {
+    int command, command_length, str_len;
+
+    if(stell(s) - start >= robot_size)
+      return CORRUPT_WORLD;
+
+    command_length = sgetc(s);
+    if(command_length == 0)
+      break;
+
+    command = sgetc(s);
+    switch(command)
+    {
+      case 0xa:
+        str_len = sgetc(s);
+
+        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
+          return FREAD_FAILED;
+
+        str_len = sgetc(s);
+
+        if(str_len == 0)
+        {
+          sgetus(s);
+          break;
+        }
+
+        if(sread(tmp2, 1, str_len, s) != (size_t)str_len)
+          return FREAD_FAILED;
+
+        if(!strcasecmp(tmp2, "FREAD_OPEN")
+          || !strcasecmp(tmp2, "SMZX_PALETTE")
+          || !strcasecmp(tmp2, "LOAD_GAME")
+          || !strncasecmp(tmp2, "LOAD_BC", 7)
+          || !strncasecmp(tmp2, "LOAD_ROBOT", 10))
+        {
+          debug("SET: %s (%s)\n", tmp, tmp2);
+          ret = add_to_hash_table(tmp);
+          if(ret != SUCCESS)
+            return ret;
+        }
+        break;
+
+      case 0x26:
+        str_len = sgetc(s);
+
+        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
+          return FREAD_FAILED;
+
+        // ignore MOD *
+        if(!strcmp(tmp, "*"))
+          break;
+
+        // FIXME: Should only match pairs?
+        if(strstr(tmp, "&"))
+          break;
+
+        debug("MOD: %s\n", tmp);
+        ret = add_to_hash_table(tmp);
+        if(ret != SUCCESS)
+          return ret;
+        break;
+
+      case 0x27:
+        str_len = sgetc(s);
+
+        if(str_len == 0)
+          sgetus(s);
+        else
+        {
+          for(i = 0; i < str_len; i++)
+            sgetc(s);
+        }
+
+        str_len = sgetc(s);
+
+        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
+          return FREAD_FAILED;
+
+        // FIXME: Should only match pairs?
+        if(strstr(tmp, "&"))
+            break;
+
+        debug("SAM: %s\n", tmp);
+        ret = add_to_hash_table(tmp);
+        if(ret != SUCCESS)
+          return ret;
+        break;
+
+      case 0x2b:
+      case 0x2d:
+      case 0x31:
+        str_len = sgetc(s);
+
+        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
+          return FREAD_FAILED;
+
+        str = strtok(tmp, "&");
+
+        // no & enclosed tokens were found
+        if(strlen(str) == strlen(tmp))
+          break;
+
+        while(str)
+        {
+          debug("PLAY (class): %s\n", str);
+          ret = add_to_hash_table(str);
+          if(ret != SUCCESS)
+            return ret;
+
+          // tokenise twice, because we only care about
+          // every _other '&'; e.g. &sam.sam&ff&sam2.sam&ee
+          str = strtok(NULL, "&");
+          str = strtok(NULL, "&");
+        }
+        break;
+
+      case 0xc8:
+        str_len = sgetc(s);
+
+        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
+          return FREAD_FAILED;
+
+        debug("MOD FADE IN: %s\n", tmp);
+        ret = add_to_hash_table(tmp);
+        if(ret != SUCCESS)
+          return ret;
+        break;
+
+      case 0xd8:
+        str_len = sgetc(s);
+
+        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
+          return FREAD_FAILED;
+
+        debug("LOAD CHAR SET: %s\n", tmp);
+
+        if(tmp[0] == '+')
+        {
+          char *rest, tempc = tmp[3];
+          tmp[3] = 0;
+          strtol(tmp + 1, &rest, 16);
+          tmp[3] = tempc;
+          memmove(tmp, rest, str_len - (rest - tmp));
+        }
+        else if(tmp[0] == '@')
+        {
+          char *rest, tempc = tmp[4];
+          tmp[4] = 0;
+          strtol(tmp + 1, &rest, 10);
+          tmp[4] = tempc;
+          memmove(tmp, rest, str_len - (rest - tmp));
+        }
+
+        ret = add_to_hash_table(tmp);
+        if(ret != SUCCESS)
+          return ret;
+        break;
+
+      case 0xde:
+        str_len = sgetc(s);
+
+        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
+          return FREAD_FAILED;
+
+        debug("LOAD PALETTE: %s\n", tmp);
+        ret = add_to_hash_table(tmp);
+        if(ret != SUCCESS)
+          return ret;
+        break;
+
+      case 0xe2:
+        str_len = sgetc(s);
+
+        if(sread(tmp, 1, str_len, s) != (size_t)str_len)
+          return FREAD_FAILED;
+
+        debug("SWAP WORLD: %s\n", tmp);
+        ret = add_to_hash_table(tmp);
+        if(ret != SUCCESS)
+          return ret;
+        break;
+
+      default:
+        if(sseek(s, command_length - 1, SEEK_CUR) != 0)
+          return FSEEK_FAILED;
+        break;
+    }
+
+    if(sgetc(s) != command_length)
+      return CORRUPT_WORLD;
+  }
+
+  return ret;
+}
+
 static enum status parse_board_direct(struct stream *s)
 {
-  int i, j, num_robots, skip_rle_blocks = 6;
-  char tmp[256], tmp2[256], *str;
-  enum status ret;
+  int i, num_robots, skip_rle_blocks = 6;
+  enum status ret = SUCCESS;
+  char tmp[256];
 
   // junk the undocumented (and unused) board_mode
   sgetc(s);
@@ -515,215 +737,12 @@ static enum status parse_board_direct(struct stream *s)
   num_robots = sgetc(s);
   for(i = 0; i < num_robots; i++)
   {
-    unsigned short robot_size = sgetus(s);
-    long start;
-
-    // skip to robot code
-    if(sseek(s, 40 - 2 + 1, SEEK_CUR) != 0)
-      return FSEEK_FAILED;
-
-    start = stell(s);
-
-    // skip 0xff marker
-    if(sgetc(s) != 0xff)
-      return CORRUPT_WORLD;
-
-    while(1)
-    {
-      int command, command_length, str_len;
-
-      if(stell(s) - start >= robot_size)
-        return CORRUPT_WORLD;
-
-      command_length = sgetc(s);
-      if(command_length == 0)
-        break;
-
-      command = sgetc(s);
-      switch(command)
-      {
-        case 0xa:
-          str_len = sgetc(s);
-
-          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
-            return FREAD_FAILED;
-
-          str_len = sgetc(s);
-
-          if(str_len == 0)
-          {
-            sgetus(s);
-            break;
-          }
-
-          if(sread(tmp2, 1, str_len, s) != (size_t)str_len)
-            return FREAD_FAILED;
-
-          if(!strcasecmp(tmp2, "FREAD_OPEN")
-            || !strcasecmp(tmp2, "SMZX_PALETTE")
-            || !strcasecmp(tmp2, "LOAD_GAME")
-            || !strncasecmp(tmp2, "LOAD_BC", 7)
-            || !strncasecmp(tmp2, "LOAD_ROBOT", 10))
-          {
-            debug("SET: %s (%s)\n", tmp, tmp2);
-            ret = add_to_hash_table(tmp);
-            if(ret != SUCCESS)
-              return ret;
-          }
-          break;
-
-        case 0x26:
-          str_len = sgetc(s);
-
-          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
-            return FREAD_FAILED;
-
-          // ignore MOD *
-          if(!strcmp(tmp, "*"))
-            break;
-
-          // FIXME: Should only match pairs?
-          if(strstr(tmp, "&"))
-            break;
-
-          debug("MOD: %s\n", tmp);
-          ret = add_to_hash_table(tmp);
-          if(ret != SUCCESS)
-            return ret;
-          break;
-
-        case 0x27:
-          str_len = sgetc(s);
-
-          if(str_len == 0)
-            sgetus(s);
-          else
-          {
-            for(j = 0; j < str_len; j++)
-              sgetc(s);
-          }
-
-          str_len = sgetc(s);
-
-          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
-            return FREAD_FAILED;
-
-          // FIXME: Should only match pairs?
-          if(strstr(tmp, "&"))
-              break;
-
-          debug("SAM: %s\n", tmp);
-          ret = add_to_hash_table(tmp);
-          if(ret != SUCCESS)
-            return ret;
-          break;
-
-        case 0x2b:
-        case 0x2d:
-        case 0x31:
-          str_len = sgetc(s);
-
-          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
-            return FREAD_FAILED;
-
-          str = strtok(tmp, "&");
-
-          // no & enclosed tokens were found
-          if(strlen(str) == strlen(tmp))
-            break;
-
-          while(str)
-          {
-            debug("PLAY (class): %s\n", str);
-            ret = add_to_hash_table(str);
-            if(ret != SUCCESS)
-              return ret;
-
-            // tokenise twice, because we only care about
-            // every _other '&'; e.g. &sam.sam&ff&sam2.sam&ee
-            str = strtok(NULL, "&");
-            str = strtok(NULL, "&");
-          }
-          break;
-
-        case 0xc8:
-          str_len = sgetc(s);
-
-          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
-            return FREAD_FAILED;
-
-          debug("MOD FADE IN: %s\n", tmp);
-          ret = add_to_hash_table(tmp);
-          if(ret != SUCCESS)
-            return ret;
-          break;
-
-        case 0xd8:
-          str_len = sgetc(s);
-
-          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
-            return FREAD_FAILED;
-
-          debug("LOAD CHAR SET: %s\n", tmp);
-
-          if(tmp[0] == '+')
-          {
-            char *rest, tempc = tmp[3];
-            tmp[3] = 0;
-            strtol(tmp + 1, &rest, 16);
-            tmp[3] = tempc;
-            memmove(tmp, rest, str_len - (rest - tmp));
-          }
-          else if(tmp[0] == '@')
-          {
-            char *rest, tempc = tmp[4];
-            tmp[4] = 0;
-            strtol(tmp + 1, &rest, 10);
-            tmp[4] = tempc;
-            memmove(tmp, rest, str_len - (rest - tmp));
-          }
-
-          ret = add_to_hash_table(tmp);
-          if(ret != SUCCESS)
-            return ret;
-          break;
-
-        case 0xde:
-          str_len = sgetc(s);
-
-          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
-            return FREAD_FAILED;
-
-          debug("LOAD PALETTE: %s\n", tmp);
-          ret = add_to_hash_table(tmp);
-          if(ret != SUCCESS)
-            return ret;
-          break;
-
-        case 0xe2:
-          str_len = sgetc(s);
-
-          if(sread(tmp, 1, str_len, s) != (size_t)str_len)
-            return FREAD_FAILED;
-
-          debug("SWAP WORLD: %s\n", tmp);
-          ret = add_to_hash_table(tmp);
-          if(ret != SUCCESS)
-            return ret;
-          break;
-
-        default:
-          if(sseek(s, command_length - 1, SEEK_CUR) != 0)
-            return FSEEK_FAILED;
-          break;
-      }
-
-      if(sgetc(s) != command_length)
-        return CORRUPT_WORLD;
-    }
+    ret = parse_robot(s);
+    if(ret != SUCCESS)
+      break;
   }
 
-  return SUCCESS;
+  return ret;
 }
 
 // same as internal boards except for a 4 byte magic header
@@ -749,8 +768,8 @@ static enum status parse_board(struct stream *s)
 
 static enum status parse_world(struct stream *s)
 {
+  int i, c, num_boards, global_robot_offset;
   enum status ret = SUCCESS;
-  int i, c, num_boards;
 
   // skip to protected byte; don't care about world name
   if(sseek(s, WORLD_PROTECTED_OFFSET, SEEK_SET) != 0)
@@ -768,11 +787,14 @@ static enum status parse_world(struct stream *s)
   if(c != '\x2' && c != 'Z')
     return MAGIC_CHECK_FAILED;
 
-  // num_boards doubles as the check for custom sfx, if zero
-  if(sseek(s, WORLD_NUM_BOARDS_OFFSET, SEEK_SET) != 0)
+  // Jump to the global robot offset
+  if(sseek(s, WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET) != 0)
     return FSEEK_FAILED;
 
-  // so read it, and..
+  // Absolute offset (in bytes) of global robot
+  global_robot_offset = sgetud(s);
+
+  // num_boards doubles as the check for custom sfx, if zero
   num_boards = sgetc(s);
 
   // if we have sfx, they must be skipped
@@ -813,8 +835,16 @@ static enum status parse_world(struct stream *s)
 
     // parse this board atomically
     ret = parse_board_direct(s);
+    if(ret != SUCCESS)
+      goto err_out;
   }
 
+  // Do the global robot too..
+  if(sseek(s, global_robot_offset, SEEK_SET) != 0)
+    return FSEEK_FAILED;
+  ret = parse_robot(s);
+
+err_out:
   return ret;
 }
 
@@ -855,17 +885,17 @@ int main(int argc, char *argv[])
     return INVALID_ARGUMENTS;
   }
 
-  if((argc > 2 && !strcmp(argv[1], "-q"))
-   ||(argc > 3 && !strcmp(argv[2], "-q")))
+  for(i = 1; i < argc - 1; i++)
   {
-    quiet_mode = 1;
-    found_append = "";
-    not_found_append = "";
+    if(!strcmp(argv[i], "-q"))
+    {
+      quiet_mode = 1;
+      found_append = "";
+      not_found_append = "";
+    }
+    else if(!strcmp(argv[i], "-a"))
+      print_all_files = 1;
   }
-
-  if((argc > 2 && !strcmp(argv[1], "-a"))
-   ||(argc > 3 && !strcmp(argv[2], "-a")))
-    print_all_files = 1;
 
   len = strlen(argv[argc - 1]);
   if(len < 4)

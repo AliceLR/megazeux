@@ -49,6 +49,8 @@ USERS
   the display of signs or scrolls. This has been broken since 2.80g.
 + Re-work board editor's Alt+H option to provide minimal editor (one row)
   status info, rather than completely hiding the help.
++ The checkres utility now checks the global robot for missing resources
+  too.
 
 DEVELOPERS
 
