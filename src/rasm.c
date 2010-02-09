@@ -2484,8 +2484,7 @@ void disassemble_file(char *name, char *program, int program_length,
     }
 
     current_robot_pos = next;
-  }
-  while(new_line);
+  } while(new_line);
 
   fclose(output_file);
 }
