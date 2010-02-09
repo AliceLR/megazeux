@@ -221,7 +221,7 @@ err_out:
   return;
 }
 
-static bool swivel_current_dir(void)
+static bool swivel_current_dir(bool have_video)
 {
   bool ret = false;
   char *base_path;
@@ -235,7 +235,10 @@ static bool swivel_current_dir(void)
 
   if(chdir(base_path))
   {
-    error("Failed to change into install directory.", 1, 8, 0);
+    if(have_video)
+      error("Failed to change into install directory.", 1, 8, 0);
+    else
+      warn("Failed to change into install directory.");
     goto err_free_base_path;
   }
 
@@ -245,11 +248,14 @@ err_free_base_path:
   return ret;
 }
 
-static bool swivel_current_dir_back(void)
+static bool swivel_current_dir_back(bool have_video)
 {
   if(chdir(current_dir))
   {
-    error("Failed to change back to user directory.", 1, 8, 0);
+    if(have_video)
+      error("Failed to change back to user directory.", 1, 8, 0);
+    else
+      warn("Failed to change back to user directory.");
     return false;
   }
 
@@ -395,7 +401,7 @@ static void __check_for_updates(void)
   bool ret = false;
   FILE *f;
 
-  if(!swivel_current_dir())
+  if(!swivel_current_dir(true))
     goto err_out;
 
   // Acid test: Can we write to this directory?
@@ -737,7 +743,7 @@ err_host_destroy:
   host_destroy(h);
   host_layer_exit();
 err_chdir:
-  swivel_current_dir_back();
+  swivel_current_dir_back(true);
 err_out:
 
   /* At this point we found updates and we successfully updated
@@ -774,7 +780,7 @@ void updater_init(char *argv[])
   check_for_updates = __check_for_updates;
   process_argv = argv;
 
-  if(!swivel_current_dir())
+  if(!swivel_current_dir(false))
     return;
 
   f = fopen(DELETE_TXT, "rb");
@@ -809,5 +815,5 @@ void updater_init(char *argv[])
   manifest_list_free(&delete_list);
   unlink(DELETE_TXT);
 
-  swivel_current_dir_back();
+  swivel_current_dir_back(false);
 }
