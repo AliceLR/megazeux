@@ -87,10 +87,8 @@ int png_write_screen(Uint8 *pixels, rgb_color *pal, int count,
 
 exit_free_close:
   png_destroy_write_struct(&png_ptr, &info_ptr);
-  if(pal_ptr)
-    free(pal_ptr);
-  if(row_ptrs)
-    free(row_ptrs);
+  free(pal_ptr);
+  free(row_ptrs);
 exit_close:
   fclose(f);
 exit_out:
@@ -193,8 +191,7 @@ SDL_Surface *png_read_icon(const char *name)
 
 exit_free_close:
   png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
-  if(row_ptrs)
-    free(row_ptrs);
+  free(row_ptrs);
 exit_close:
   fclose(f);
 exit_out:

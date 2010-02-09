@@ -511,30 +511,20 @@ void clear_board(Board *cur_board)
     clear_robot(cur_robot);
   }
 
-  if(robot_name_list)
-    free(robot_name_list);
-
-  if(robot_list)
-    free(robot_list);
+  free(robot_name_list);
+  free(robot_list);
 
   for(i = 1; i <= num_scrolls; i++)
-  {
     if(scroll_list[i])
       clear_scroll(scroll_list[i]);
-  }
 
-  if(scroll_list)
-    free(scroll_list);
+  free(scroll_list);
 
   for(i = 1; i <= num_sensors; i++)
-  {
     if(sensor_list[i])
       clear_sensor(sensor_list[i]);
-  }
 
-  if(sensor_list)
-    free(sensor_list);
-
+  free(sensor_list);
   free(cur_board);
 }
 
