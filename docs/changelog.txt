@@ -104,6 +104,10 @@ USERS
   copy would exceed the limit on robots/signs/scrolls/sensors, will no
   longer place junk at the target co-ordinates. Instead, the object's
   background will be copied in isolation.
++ Pasting from the clipboard, expanding a macro,  or importing .txt
+  or .bc files that would cause a robot to exceed the 64k limit now has
+  the operation ignored at the point it exceeds the limit, rather than
+  adding an unlimited number of unrecognized lines.
 
 DEVELOPERS
 

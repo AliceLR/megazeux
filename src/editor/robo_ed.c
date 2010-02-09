@@ -452,43 +452,46 @@ static int update_current_line(struct robot_state *rstate)
 
 static void add_line(struct robot_state *rstate)
 {
-  struct robot_line *new_rline = cmalloc(sizeof(struct robot_line));
-  struct robot_line *current_rline = rstate->current_rline;
-  new_rline->line_text = NULL;
-  new_rline->line_bytecode = NULL;
-  new_rline->line_bytecode_length = 0;
-  new_rline->validity_status = valid;
-
-  rstate->current_rline = new_rline;
-  new_rline->next = current_rline;
-  new_rline->previous = current_rline->previous;
-
-  current_rline->previous->next = new_rline;
-  current_rline->previous = new_rline;
-
-  if(update_current_line(rstate) != -1)
+  if(rstate->size + 3 < rstate->max_size)
   {
+    struct robot_line *new_rline = cmalloc(sizeof(struct robot_line));
+    struct robot_line *current_rline = rstate->current_rline;
 
-    rstate->current_rline = current_rline;
+    new_rline->line_text = NULL;
+    new_rline->line_bytecode = NULL;
+    new_rline->line_bytecode_length = 0;
+    new_rline->validity_status = valid;
 
-    if(rstate->mark_mode)
+    rstate->current_rline = new_rline;
+    new_rline->next = current_rline;
+    new_rline->previous = current_rline->previous;
+
+    current_rline->previous->next = new_rline;
+    current_rline->previous = new_rline;
+
+    if(update_current_line(rstate) != -1)
     {
-      if(rstate->mark_start >= rstate->current_line)
-        rstate->mark_start++;
+      rstate->current_rline = current_rline;
 
-      if(rstate->mark_end >= rstate->current_line)
-        rstate->mark_end++;
+      if(rstate->mark_mode)
+      {
+        if(rstate->mark_start >= rstate->current_line)
+          rstate->mark_start++;
+
+        if(rstate->mark_end >= rstate->current_line)
+          rstate->mark_end++;
+      }
+
+      rstate->total_lines++;
+      rstate->current_line++;
     }
-
-    rstate->total_lines++;
-    rstate->current_line++;
-  }
-  else
-  {
-    current_rline->previous = new_rline->previous;
-    current_rline->previous->next = new_rline->next;
-    rstate->current_rline = current_rline;
-    free(new_rline);
+    else
+    {
+      current_rline->previous = new_rline->previous;
+      current_rline->previous->next = new_rline->next;
+      rstate->current_rline = current_rline;
+      free(new_rline);
+    }
   }
 }
 
