@@ -207,6 +207,18 @@ void draw_sprites(struct world *mzx_world)
         src_colors = src_board->level_color;
       }
 
+      if(ref_x < 0)
+      {
+        draw_width += ref_x;
+        ref_x = 0;
+      }
+
+      if(ref_y < 0)
+      {
+        draw_height += ref_y;
+        ref_y = 0;
+      }
+
       if((ref_x + draw_width) > bwidth)
         draw_width = bwidth - ref_x;
 
@@ -386,11 +398,18 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
 {
   struct board *src_board = mzx_world->current_board;
   int board_width = src_board->board_width;
+  int board_height = src_board->board_height;
+  int ref_x = check_sprite->ref_x + check_sprite->col_x;
+  int ref_y = check_sprite->ref_y + check_sprite->col_y;
+  int col_width = check_sprite->col_width;
+  int col_height = check_sprite->col_height;
+  int check_x = x + check_sprite->col_x;
+  int check_y = y + check_sprite->col_y;
   struct sprite **sprite_list = mzx_world->sprite_list;
   struct sprite *cur_sprite;
   int colliding = 0;
   int skip, skip2, i, i2, i3, i4, i5;
-  int bwidth;
+  int bwidth, bheight;
   int x1, x2, y1, y2;
   int mw, mh;
   int use_chars = 1, use_chars2 = 1;
@@ -412,14 +431,52 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
   {
     use_chars = 0;
     bwidth = vlayer_width;
+    bheight = mzx_world->vlayer_height;
   }
   else
   {
     bwidth = board_width;
+    bheight = src_board->board_height;
   }
 
+  if(ref_x < 0)
+  {
+    col_width += ref_x;
+    ref_x = 0;
+  }
+
+  if(ref_y < 0)
+  {
+    col_height += ref_y;
+    ref_y = 0;
+  }
+
+  if(check_x < 0)
+  {
+    col_width += check_x;
+    check_x = 0;
+  }
+
+  if(check_y < 0)
+  {
+    col_height += check_y;
+    check_y = 0;
+  }
+
+  if((ref_x + col_width) >= bwidth)
+    col_width = bwidth - ref_x;
+
+  if((ref_y + col_width) >= bheight)
+    col_height = bheight - ref_y;
+
+  if((check_x + col_width) >= board_width)
+    col_width = board_width - check_x;
+
+  if((check_y + col_height) >= board_height)
+    col_height = board_height - check_y;
+
   // Check for <= 0 width or height (prevent crashing)
-  if((check_sprite->col_width <= 0) || (check_sprite->col_height <= 0))
+  if((col_width <= 0) || (col_height <= 0))
   {
     mzx_world->collision_count = 0;
     return 0;
@@ -427,16 +484,15 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
 
   // Scan board area
 
-  skip = board_width - check_sprite->col_width;
-  skip2 = bwidth - check_sprite->col_width;
+  skip = board_width - col_width;
+  skip2 = bwidth - col_width;
 
-  i3 = ((y + check_sprite->col_y) * board_width) + x + check_sprite->col_x;
-  i4 = ((check_sprite->ref_y + check_sprite->col_y) * bwidth) +
-   check_sprite->ref_x + check_sprite->col_x;
+  i3 = (check_y * board_width) + check_x;
+  i4 = (ref_y * bwidth) + ref_x;
 
-  for(i = 0; i < check_sprite->col_height; i++)
+  for(i = 0; i < col_height; i++)
   {
-    for(i2 = 0; i2 < check_sprite->col_width; i2++)
+    for(i2 = 0; i2 < col_width; i2++)
     {
       // First, if ccheck is on, it won't care if the source is 32
       int c;
@@ -449,6 +505,7 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
       {
         c = get_id_char(src_board, i4);
       }
+
       if(!(check_sprite->flags & SPRITE_CHAR_CHECK) ||
        (c != 32))
       {
@@ -466,6 +523,7 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
           }
         }
       }
+
       i3++;
       i4++;
     }
