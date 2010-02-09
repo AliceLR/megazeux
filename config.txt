@@ -60,23 +60,22 @@
 # An OpenGL renderer is a good choice if you want a highly configurable,
 # cheap (in terms of CPU cycles) renderer and have a fairly good video
 # card. This method provides the highest quality scaler and should work
-# on all platforms with a compliant OpenGL 1.1 implementation.
+# on all platforms with OpenGL or OpenGL ES support.
 #
-# MegaZeux provides two OpenGL scalers, one by Exophase which renders the
-# whole game to a GL texture and then uses OpenGL to stretch it. This render
-# is called "opengl1", and is high quality but quite slow.
+# MegaZeux provides two fixed-function scalers. The first, by Exophase,
+# renders the whole game to a texture and uses OpenGL to stretch it.
+# This renderer is called "opengl1" and is high quality but quite slow.
 #
-# The second OpenGL scaler was written by Logicow, and it more extensively
-# remaps all the character sets to textures and uses more GL features to
-# do the tiling entirely in OpenGL. This yields a performance increase, at
-# the cost of compatibility. It's been tested and works well on NVIDIA and
-# ATI video cards, but your mileage might vary. This renderer is called
-# "opengl2".
+# The second fixed-function scaler was written by Logicow, and it uses the
+# features of GL more extensively, remapping the character sets to a texture
+# does the tiling entirely in OpenGL. This yields a performance increase, at
+# the cost of some compatibility. This renderer is called "opengl2".
 #
-# The third OpenGL scaler was written by Logicow, and uses GLSL
-# to do the tiling and scaling, in two separate shader programs.
-# This scaler requires a fast video card with shader support. This render
-# is called "glsl".
+# MegaZeux also provides a scaler for programmable hardware. If you have
+# OpenGL 2.0 or OpenGL ES 2.0 capable hardware, you can use this renderer.
+# Written by Logicow, it uses shaders to do the tiling and scaling. There
+# are four shader programs that can be customized. This renderer is called
+# "glsl".
 #
 # Uncomment ONE of the lines below:
 
