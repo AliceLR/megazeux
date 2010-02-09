@@ -33,8 +33,6 @@
 
 #include "unzip.h"
 
-#undef DEBUG
-
 #define BOARD_NAME_SIZE         25
 
 // "You may now have up to 250 boards." -- port.txt
