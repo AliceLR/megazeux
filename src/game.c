@@ -1392,7 +1392,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
         mesg_x = 40 - (mesg_length / 2);
 
       color_string_ext(bottom_mesg, mesg_x,
-       mesg_y, scroll_color, 0, 0);
+       mesg_y, scroll_color, 0, 0, true);
 
       if((mesg_x > 0) && (mesg_edges))
         draw_char_ext(' ', scroll_color, mesg_x - 1, mesg_y, 0, 0);

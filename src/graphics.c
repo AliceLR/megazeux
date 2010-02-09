@@ -1000,7 +1000,7 @@ void resize_screen(Uint32 w, Uint32 h)
 }
 
 void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
- Uint32 offset, Uint32 c_offset)
+ Uint32 offset, Uint32 c_offset, bool respect_newline)
 {
   struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
@@ -1016,13 +1016,6 @@ void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
   {
     switch(cur_char)
     {
-      // Newline
-      case '\n':
-      {
-        y++;
-        dest = graphics.text_video + (y * SCREEN_W) + x;
-        break;
-      }
       // Color character
       case '@':
       {
@@ -1087,6 +1080,17 @@ void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
         }
 
         break;
+      }
+      // Newline
+      case '\n':
+      {
+        if(respect_newline)
+        {
+          y++;
+          dest = graphics.text_video + (y * SCREEN_W) + x;
+          break;
+        }
+        // Fall thru
       }
       default:
       {
@@ -1371,7 +1375,7 @@ void draw_char_linear_ext(Uint8 color, Uint8 chr,
 
 void color_string(const char *string, Uint32 x, Uint32 y, Uint8 color)
 {
-  color_string_ext(string, x, y, color, 256, 16);
+  color_string_ext(string, x, y, color, 256, 16, false);
 }
 
 void write_string(const char *string, Uint32 x, Uint32 y, Uint8 color,

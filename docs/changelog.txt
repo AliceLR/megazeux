@@ -64,6 +64,7 @@ USERS
   is now correctly limited to total string length.
 + Help file is now optional for MZXRun, even with CONFIG_HELPSYS=1 builds.
 + Fix crash when robot editor macros expanded other macros.
++ The lock icon is no longer missing from the Items THING menu (F4).
 
 DEVELOPERS
 
