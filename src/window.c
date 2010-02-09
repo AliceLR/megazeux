@@ -2188,6 +2188,11 @@ __editor_maybe_static int file_manager(World *mzx_world,
 
   getcwd(previous_dir_name, MAX_PATH);
 
+  i = get_path(ret, current_dir_name, MAX_PATH);
+  if(i > 0)
+    if(!chdir(current_dir_name))
+      memmove(ret, ret + i + 1, strlen(ret) - i);
+
   while(return_value == 1)
   {
     total_filenames_allocated = 32;

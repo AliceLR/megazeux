@@ -60,6 +60,9 @@ USERS
   prior to loading a game. Hopefully the screen is now never totally blank.
 + The F7/F8 cheats can now be used freely in MZXRun (in MegaZeux proper they
   remain usable only in editor tests).
++ Saving to a directory above the MegaZeux startup directory, then attempting
+  to save to this location again, will no longer crash MegaZeux. Instead, the
+  parent directory will be changed into before the dialog is displayed.
 
 DEVELOPERS
 
