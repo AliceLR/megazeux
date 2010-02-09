@@ -23,6 +23,6 @@ Description: A simple game creation system (GCS)
 
 Package: megazeux-dbg
 Architecture: any
-Depends: ${shlibs:Depends}, ${misc:Depends}
+Depends: megazeux, ${shlibs:Depends}, ${misc:Depends}
 Description: MegaZeux debug symbols
  Debug symbols for MegaZeux.

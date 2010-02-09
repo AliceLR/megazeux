@@ -39,6 +39,9 @@ install: build
 	dh_clean -k 
 	dh_installdirs
 	$(MAKE) DESTDIR=$(CURDIR)/debian/megazeux install
+	mkdir -p $(CURDIR)/debian/megazeux/usr/share/lintian/overrides
+	cp debian/binary.lintian-overrides \
+	  $(CURDIR)/debian/megazeux/usr/share/lintian/overrides/megazeux
 
 # Build architecture-independent files here.
 binary-indep: build install
