@@ -13,6 +13,8 @@ USERS
   required extensions with a compile failure of the shader program will         
   silently fall back to the fixed pipeline (similar to opengl2). A variety      
   of shaders have been provided and these can be customized. 
++ Files will no longer be silently overwritten by save dialogs if the user
+  enters an existing filename without the default extension. (revvy)
 
 DEVELOPERS
 
