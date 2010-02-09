@@ -224,9 +224,11 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 		UNIX="unix"
 	fi
 
-	if [ "$MACH" = "x86_64" ]; then
+	if [ "$MACH" = "x86_64" -o "$MACH" = "amd64" ]; then
 		echo "#define PLATFORM \"$UNIX-amd64\"" > src/config.h
 		LIBDIR=lib64
+		# FIXME: FreeBSD amd64 hack
+		[ "$UNIX" = "freebsd" ] && LIBDIR=lib
 		if [ "$MODULAR" = "true" ]; then
 			echo "ARCH_CFLAGS+=-fPIC" >> platform.inc
 			echo "ARCH_CXXFLAGS+=-fPIC" >> platform.inc
