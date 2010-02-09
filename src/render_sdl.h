@@ -36,6 +36,10 @@ int sdl_flags(int depth, bool fullscreen, bool resize);
 
 #include "SDL_opengl.h"
 
+#ifndef GLAPIENTRY
+#define GLAPIENTRY APIENTRY
+#endif
+
 #define GL_STRIP_FLAGS(A) ((A & (SDL_FULLSCREEN | SDL_RESIZABLE)) | SDL_OPENGL)
 
 /* GL_LOAD_SYM() should be used as follows:
