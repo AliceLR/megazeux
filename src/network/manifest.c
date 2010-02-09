@@ -25,7 +25,8 @@
 #include <string.h>
 #include <assert.h>
 
-#define URL_BUF_LEN 256
+#define BLOCK_SIZE    4096UL
+#define LINE_BUF_LEN  256
 
 static bool manifest_parse_sha256(const char *p, uint32_t sha256[8])
 {
@@ -117,17 +118,20 @@ static struct manifest_entry *manifest_list_copy(struct manifest_entry *src)
   return dest;
 }
 
-static struct manifest_entry *manifest_list_create(char *buffer,
- unsigned long len)
+static struct manifest_entry *manifest_list_create(FILE *f)
 {
   struct manifest_entry *head = NULL, *e = NULL, *next_e;
-  char *m = buffer;
+  char buffer[LINE_BUF_LEN];
 
   // Walk the manifest line by line
-  while(m[0])
+  while(true)
   {
+    char *m = buffer, *line;
     size_t line_len;
-    char *line;
+
+    // Grab a single line from the manifest
+    if(!fgets(buffer, LINE_BUF_LEN, f))
+      break;
 
     next_e = calloc(1, sizeof(struct manifest_entry));
     if(head)
@@ -169,7 +173,9 @@ static struct manifest_entry *manifest_list_create(char *buffer,
     e->name[line_len] = 0;
   }
 
-  e->next = NULL;
+  if(e)
+    e->next = NULL;
+
   return head;
 
 err_invalid_manifest:
@@ -181,8 +187,6 @@ err_invalid_manifest:
 static struct manifest_entry *manifest_get_local(void)
 {
   struct manifest_entry *manifest;
-  char *manifest_buffer;
-  long manifest_len;
   FILE *f;
 
   f = fopen("manifest.txt", "rb");
@@ -192,56 +196,39 @@ static struct manifest_entry *manifest_get_local(void)
     return NULL;
   }
 
-  manifest_len = ftell_and_rewind(f);
-  if(manifest_len <= 0)
-  {
-    warning("Local manifest.txt is too short\n");
-    return NULL;
-  }
-
-  manifest_buffer = malloc(manifest_len + 1);
-  if(fread(manifest_buffer, manifest_len, 1, f) != 1)
-  {
-    warning("Local manifest.txt could not be read\n");
-    free(manifest_buffer);
-    fclose(f);
-    return NULL;
-  }
-  manifest_buffer[manifest_len] = 0;
+  manifest = manifest_list_create(f);
   fclose(f);
 
-  manifest = manifest_list_create(manifest_buffer, manifest_len);
-  free(manifest_buffer);
   return manifest;
 }
 
 static struct manifest_entry *manifest_get_remote(struct host *h,
  const char *base)
 {
-  char *manifest_buffer, buf[URL_BUF_LEN];
-  struct manifest_entry *manifest = NULL;
-  unsigned long manifest_len;
+  struct manifest_entry *manifest;
+  char url[LINE_BUF_LEN];
+  host_status_t ret;
+  FILE *f;
 
-  snprintf(buf, URL_BUF_LEN, "%s/manifest.txt", base);
+  snprintf(url, LINE_BUF_LEN, "%s/manifest.txt", base);
 
-  manifest_buffer = host_get_file(h, buf, "text/plain", &manifest_len);
-  if(manifest_buffer)
+  f = fopen("manifest.txt", "w+b");
+  if(!f)
   {
-    FILE *f = fopen("manifest.txt", "wb");
-    if(f)
-    {
-      if(fwrite(manifest_buffer, manifest_len, 1, f) == 1)
-        manifest = manifest_list_create(manifest_buffer, manifest_len);
-      else
-        warning("Local manifest.txt could not be rewritten\n");
-      fclose(f);
-    }
-    else
-      warning("Local manifest.txt could not be opened for writing\n");
-    free(manifest_buffer);
+    warning("Failed to open local manifest.txt for writing\n");
+    return NULL;
   }
-  else
-    warning("Remote manifest.txt could not be read\n");
+
+  ret = host_get_file(h, url, f, "text/plain");
+  if(ret != HOST_SUCCESS)
+  {
+    warning("Processing manifest.txt failed (error %d)\n", ret);
+    return NULL;
+  }
+
+  rewind(f);
+  manifest = manifest_list_create(f);
+  fclose(f);
 
   return manifest;
 }
@@ -295,46 +282,40 @@ static void manifest_lists_remove_duplicates(struct manifest_entry **local,
   }
 }
 
-static bool manifest_entry_check_buffer_validity(struct manifest_entry *e,
- char *buffer, unsigned long buffer_len)
+static bool manifest_entry_check_validity(struct manifest_entry *e, FILE *f)
 {
+  unsigned long len = e->size, pos = 0;
   SHA256_ctx ctx;
 
-  if(e->size != buffer_len)
+  // It must be the same length
+  if((unsigned long)ftell_and_rewind(f) != len)
     return false;
 
+  /* Compute the SHA256 digest for this file. Do it block-wise so as to
+   * conserve RAM and scale to enormously large files.
+   */
+
   SHA256_init(&ctx);
-  SHA256_update(&ctx, buffer, buffer_len);
+
+  while(pos < len)
+  {
+    unsigned long block_size = MIN(BLOCK_SIZE, len - pos);
+    char block[BLOCK_SIZE];
+
+    if(fread(block, block_size, 1, f) != 1)
+      return false;
+
+    SHA256_update(&ctx, block, block_size);
+    pos += block_size;
+  }
+
   SHA256_final(&ctx);
 
+  // Verify the digest against the manifest
   if(memcmp(ctx.H, e->sha256, sizeof(uint32_t) * 8) != 0)
     return false;
 
   return true;
-}
-
-static bool manifest_entry_check_local_validity(struct manifest_entry *e)
-{
-  bool valid = false;
-  FILE *f;
-
-  /* Local validation poses two additional checks -- whether
-   * or not the file can be opened, and whether or not it can be read.
-   */
-  f = fopen(e->name, "rb");
-  if(f)
-  {
-    unsigned long file_length = ftell_and_rewind(f);
-    char *file_data = malloc(file_length);
-
-    if(fread(file_data, file_length, 1, f) == 1)
-      valid = manifest_entry_check_buffer_validity(e, file_data, file_length);
-
-    free(file_data);
-    fclose(f);
-  }
-
-  return valid;
 }
 
 static void manifest_add_list_validate_augment(struct manifest_entry *local,
@@ -350,9 +331,18 @@ static void manifest_add_list_validate_augment(struct manifest_entry *local,
   for(e = local; e; e = e->next)
   {
     struct manifest_entry *new_added;
+    FILE *f;
 
-    if(manifest_entry_check_local_validity(e))
-     continue;
+    f = fopen(e->name, "rb");
+    if(f)
+    {
+      if(manifest_entry_check_validity(e, f))
+      {
+        fclose(f);
+        continue;
+      }
+      fclose(f);
+    }
 
     warning("Local file '%s' failed manifest validation\n", e->name);
 
@@ -416,58 +406,54 @@ bool manifest_get_updates(struct host *h, const char *basedir,
 bool manifest_entry_download_replace(struct host *h, const char *basedir,
  struct manifest_entry *e)
 {
-  char *file_data, buf[URL_BUF_LEN];
-  unsigned long file_size;
-  bool ret = false;
+  char buf[LINE_BUF_LEN];
+  host_status_t ret;
+  bool valid = false;
   FILE *f;
 
-  snprintf(buf, URL_BUF_LEN, "%s/%08x%08x%08x%08x%08x%08x%08x%08x", basedir,
-    e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
-    e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7]);
-
-  file_data = host_get_file(h, buf, "application/octet-stream", &file_size);
-  if(!file_data)
-  {
-    warning("File '%s' could not be downloaded\n", e->name);
-    goto err_out;
-  }
-
-  if(!manifest_entry_check_buffer_validity(e, file_data, file_size))
-  {
-    warning("File '%s' failed validation\n", e->name);
-    goto err_free_file_data;
-  }
-
-  f = fopen(e->name, "wb");
+  /* Try to open our target file. If we can't open it, it might be
+   * write protected or in-use. In this case, it may be possible to
+   * rename the original file out of the way. Try this trick first.
+   */
+  f = fopen(e->name, "w+b");
   if(!f)
   {
-    // Since directly overwriting failed, try moving it out of the way
-    snprintf(buf, URL_BUF_LEN, "%s~", e->name);
+    snprintf(buf, LINE_BUF_LEN, "%s~", e->name);
     if(rename(e->name, buf))
     {
       warning("Failed to rename in-use file '%s' to '%s'\n", e->name, buf);
-      goto err_close_free_file_data;
+      goto err_out;
     }
 
-    f = fopen(e->name, "wb");
+    f = fopen(e->name, "w+b");
     if(!f)
     {
       warning("Unable to open file '%s' for writing\n", e->name);
-      goto err_close_free_file_data;
+      goto err_out;
     }
   }
 
-  if(fwrite(file_data, file_size, 1, f) != 1)
+  snprintf(buf, LINE_BUF_LEN, "%s/%08x%08x%08x%08x%08x%08x%08x%08x", basedir,
+    e->sha256[0], e->sha256[1], e->sha256[2], e->sha256[3],
+    e->sha256[4], e->sha256[5], e->sha256[6], e->sha256[7]);
+
+  ret = host_get_file(h, buf, f, "application/octet-stream");
+  if(ret != HOST_SUCCESS)
   {
-    warning("Failed to write out updated file '%s'\n", e->name);
-    goto err_close_free_file_data;
+    warning("File '%s' could not be downloaded (error %d)\n", e->name, ret);
+    goto err_close;
   }
 
-  ret = true;
-err_close_free_file_data:
+  rewind(f);
+  if(!manifest_entry_check_validity(e, f))
+  {
+    warning("File '%s' failed validation\n", e->name);
+    goto err_close;
+  }
+
+  valid = true;
+err_close:
   fclose(f);
-err_free_file_data:
-  free(file_data);
 err_out:
-  return ret;
+  return valid;
 }

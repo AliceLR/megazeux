@@ -24,6 +24,8 @@
 
 __M_BEGIN_DECLS
 
+#include <stdio.h> // for FILE
+
 struct host;
 
 typedef enum
@@ -43,6 +45,24 @@ typedef enum
   HOST_TYPE_UDP,
 }
 host_type_t;
+
+typedef enum
+{
+  HOST_SUCCESS,
+  HOST_FWRITE_FAILED,
+  HOST_SEND_FAILED,
+  HOST_RECV_FAILED,
+  HOST_HTTP_INVALID_STATUS,
+  HOST_HTTP_INVALID_HEADER,
+  HOST_HTTP_INVALID_CONTENT_LENGTH,
+  HOST_HTTP_INVALID_TRANSFER_ENCODING,
+  HOST_HTTP_INVALID_CONTENT_TYPE,
+  HOST_HTTP_INVALID_CONTENT_ENCODING,
+  HOST_HTTP_INVALID_CHUNK_LENGTH,
+  HOST_ZLIB_INVALID_DATA,
+  HOST_ZLIB_INVALID_GZIP_HEADER,
+  HOST_ZLIB_INFLATE_FAILED,
+} host_status_t;
 
 #ifdef WIN32
 
@@ -184,16 +204,14 @@ int host_poll_raw(struct host *h, unsigned int timeout);
  * Obtain a buffer containing a file, referenced by URL, over HTTP.
  *
  * @param h             Host to converse in HTTP over
- * @param file          HTTP URL to transfer
+ * @param url           HTTP URL to transfer
+ * @param file          File to create and stream to
  * @param expected_type MIME type to expect in response
- * @param file_len      Length of response in bytes
  *
- * @return The file contents as a character buffer. This buffer can be
- *         freed using the C library free() function. It is always NULL
- *         terminated (not included in `file_len').
+ * @return See \ref host_status_t.
  */
-char *host_get_file(struct host *h, const char *file,
- const char *expected_type, unsigned long *file_len);
+host_status_t host_get_file(struct host *h, const char *url,
+ FILE *file, const char *expected_type);
 
 bool host_handle_http_request(struct host *h);
 

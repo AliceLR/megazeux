@@ -886,8 +886,8 @@ static bool http_skip_headers(struct host *h)
   }
 }
 
-char *host_get_file(struct host *h, const char *file,
- const char *expected_type, unsigned long *file_len)
+host_status_t host_get_file(struct host *h, const char *url,
+ FILE *file, const char *expected_type)
 {
   unsigned int content_length = 0;
   char buffer[LINE_BUF_LEN];
@@ -902,10 +902,10 @@ char *host_get_file(struct host *h, const char *file,
   } transfer_type = NONE;
 
   snprintf(buffer, LINE_BUF_LEN,
-   "GET %s HTTP/1.1\nHost: %s\nAccept-Encoding: gzip\n\n", file, h->name);
+   "GET %s HTTP/1.1\nHost: %s\nAccept-Encoding: gzip\n\n", url, h->name);
 
   if(!__send(h->fd, buffer, strlen(buffer)))
-    return NULL;
+    return -HOST_SEND_FAILED;
 
   // Read in the HTTP status line
   buf_len = host_get_line(h, buffer, LINE_BUF_LEN);
@@ -922,10 +922,7 @@ char *host_get_file(struct host *h, const char *file,
   if(buf_len != 15 ||
    strncmp(buffer, "HTTP/1.", 7) != 0 ||
    strcmp(&buffer[7 + 1], " 200 OK") != 0)
-  {
-    warning("Received an unexpected HTTP response (status).\n");
-    return NULL;
-  }
+    return -HOST_HTTP_INVALID_STATUS;
 
   // Now parse the HTTP headers, extracting only the pertinent fields
 
@@ -935,10 +932,7 @@ char *host_get_file(struct host *h, const char *file,
     char *key, *value, *buf = buffer;
 
     if(len < 0)
-    {
-      warning("Received an unexpected HTTP response (headers).\n");
-      return NULL;
-    }
+      return -HOST_HTTP_INVALID_HEADER;
     else if(len == 0)
       break;
 
@@ -946,10 +940,7 @@ char *host_get_file(struct host *h, const char *file,
     value = strsep(&buf, ":");
 
     if(!key || !value)
-    {
-      warning("Encountered invalid HTTP header.\n");
-      return NULL;
-    }
+      return -HOST_HTTP_INVALID_HEADER;
 
     // Skip common prefix space if present
     if(value[0] == ' ')
@@ -969,10 +960,7 @@ char *host_get_file(struct host *h, const char *file,
 
       content_length = (unsigned int)strtoul(value, &endptr, 10);
       if(endptr[0])
-      {
-        warning("Corrupted Content-Length header.\n");
-        return NULL;
-      }
+        return -HOST_HTTP_INVALID_CONTENT_LENGTH;
 
       transfer_type = NORMAL;
     }
@@ -980,10 +968,7 @@ char *host_get_file(struct host *h, const char *file,
     else if(strcmp(key, "Transfer-Encoding") == 0)
     {
       if(strcmp(value, "chunked") != 0)
-      {
-        warning("Unknown Transfer-Encoding type.\n");
-        return NULL;
-      }
+        return -HOST_HTTP_INVALID_TRANSFER_ENCODING;
 
       transfer_type = CHUNKED;
     }
@@ -991,20 +976,14 @@ char *host_get_file(struct host *h, const char *file,
     else if(strcmp(key, "Content-Type") == 0)
     {
       if(strcmp(value, expected_type) != 0)
-      {
-        warning("Invalid remote Content-Type (expected '%s', got '%s').\n",
-         expected_type, value);
-        return NULL;
-      }
+        return -HOST_HTTP_INVALID_CONTENT_TYPE;
     }
 
     else if(strcmp(key, "Content-Encoding") == 0)
     {
       if(strcmp(value, "gzip") != 0)
-      {
-        warning("Invalid or unknown Content-Encoding (got '%s').\n", value);
-        return NULL;
-      }
+        return -HOST_HTTP_INVALID_CONTENT_ENCODING;
+
       deflated = true;
     }
   }
@@ -1017,10 +996,8 @@ char *host_get_file(struct host *h, const char *file,
 
       // Receive whole file contents at once
       if(!__recv(h->fd, file_data, content_length))
-      {
-        warning("Failed to receive file contents (normal).\n");
-        goto err_free_file_data;
-      }
+        return -HOST_RECV_FAILED;
+
       break;
     }
 
@@ -1035,24 +1012,27 @@ char *host_get_file(struct host *h, const char *file,
         // Get a chunk_length;parameters formatted line (CRLF terminated)
         if(host_get_line(h, buffer, LINE_BUF_LEN) <= 0)
         {
-          warning("Received an invalid chunk length (non-existent).\n");
-          goto err_free_file_data;
+          if(file_data)
+            free(file_data);
+          return -HOST_HTTP_INVALID_CHUNK_LENGTH;
         }
 
         // HTTP 1.1 says we can ignore trailing parameters
         length = strsep(&buf, ";");
         if(!length)
         {
-          warning("Received an invalid chunk length (malformed).\n");
-          goto err_free_file_data;
+          if(file_data)
+            free(file_data);
+          return -HOST_HTTP_INVALID_CHUNK_LENGTH;
         }
 
         // Convert hex length to unsigned int; check for conversion errors
         chunk_length = (unsigned int)strtoul(length, &endptr, 16);
         if(endptr[0])
         {
-          warning("Received an invalid chunk length (corrupt).\n");
-          goto err_free_file_data;
+          if(file_data)
+            free(file_data);
+          return -HOST_HTTP_INVALID_CHUNK_LENGTH;
         }
 
         // A length of zero indicates we can stop chunking
@@ -1065,15 +1045,17 @@ char *host_get_file(struct host *h, const char *file,
         // receive file_data chunk
         if(!__recv(h->fd, file_data + content_length, chunk_length))
         {
-          warning("Failed to receive file contents (chunked).\n");
-          goto err_free_file_data;
+          if(file_data)
+            free(file_data);
+          return -HOST_RECV_FAILED;
         }
 
         // and trailing CRLF (no line payload)
         if(host_get_line(h, buffer, LINE_BUF_LEN) != 0)
         {
-          warning("Received data when there should have been none.\n");
-          goto err_free_file_data;
+          if(file_data)
+            free(file_data);
+          return -HOST_HTTP_INVALID_HEADER;
         }
 
         // update total content length
@@ -1083,8 +1065,9 @@ char *host_get_file(struct host *h, const char *file,
       // May be "footers" or newlines we don't care about
       if(!http_skip_headers(h))
       {
-        warning("Transfer error when finalizing chunking.\n");
-        goto err_free_file_data;
+        if(file_data)
+          free(file_data);
+        return -HOST_HTTP_INVALID_HEADER;
       }
 
       // add space for NULL terminator (useful for text/plain)
@@ -1094,8 +1077,7 @@ char *host_get_file(struct host *h, const char *file,
     }
 
     default:
-      warning("Failed to determine transfer type or length.\n");
-      return NULL;
+      return -HOST_HTTP_INVALID_TRANSFER_ENCODING;
   }
 
   // Null terminate the buffer for convenience
@@ -1113,8 +1095,8 @@ char *host_get_file(struct host *h, const char *file,
 
     if(content_length < 10)
     {
-      warning("Cannot deflate buffer (<10 bytes).\n");
-      goto err_free_file_data;
+      free(file_data);
+      return -HOST_ZLIB_INVALID_DATA;
     }
 
     /* Unfortunately, Apache (and probably other httpds) send deflated
@@ -1126,8 +1108,8 @@ char *host_get_file(struct host *h, const char *file,
      */
     if(*gzip++ != 0x1F || *gzip++ != 0x8B || *gzip++ != Z_DEFLATED)
     {
-      warning("Missing gzip header while inflating.\n");
-      goto err_free_file_data;
+      free(file_data);
+      return -HOST_ZLIB_INVALID_GZIP_HEADER;
     }
 
     // Grab gzip flags from header and skip MTIME+XFL+OS
@@ -1137,8 +1119,8 @@ char *host_get_file(struct host *h, const char *file,
     // Header "reserved" bits must not be set
     if(flags & 0xE0)
     {
-      warning("Gzip header had reserved bits set; unhandled.\n");
-      goto err_free_file_data;
+      free(file_data);
+      return -HOST_ZLIB_INVALID_GZIP_HEADER;
     }
 
     // Skip extended headers
@@ -1171,8 +1153,8 @@ char *host_get_file(struct host *h, const char *file,
     ret = inflateInit2(&stream, -MAX_WBITS);
     if(ret != Z_OK)
     {
-      warning("Deflating file contents failed.\n");
-      goto err_free_file_data;
+      free(file_data);
+      return -HOST_ZLIB_INFLATE_FAILED;
     }
 
     inflate_buffer = malloc(inflate_length + 1);
@@ -1188,23 +1170,17 @@ char *host_get_file(struct host *h, const char *file,
 
     if(ret != Z_STREAM_END)
     {
-      warning("One-shot inflate failed.\n");
-      goto err_free_file_data;
+      free(file_data);
+      return -HOST_ZLIB_INFLATE_FAILED;
     }
 
     inflateEnd(&stream);
   }
 
-  // The user will probably also want to know the file length
-  if(file_len)
-    *file_len = content_length;
+  if(fwrite(file_data, content_length, 1, file) != 1)
+    return -HOST_FWRITE_FAILED;
 
-  return file_data;
-
-err_free_file_data:
-  if(file_data)
-    free(file_data);
-  return NULL;
+  return HOST_SUCCESS;
 }
 
 static const char resp_404[] =
