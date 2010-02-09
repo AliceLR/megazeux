@@ -27,7 +27,7 @@ endif
 
 -include $(unzip_objs:.o=.d)
 
-${unzip_objs}: ${unzip_obj}
+${unzip_objs}: $(filter-out $(wildcard ${unzip_obj}), ${unzip_obj})
 
 unzip_clean:
 	@echo "  RM      " ${unzip_obj}

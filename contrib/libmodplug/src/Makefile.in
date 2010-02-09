@@ -41,7 +41,7 @@ endif
 
 -include $(libmodplug_objs:.o=.d)
 
-${libmodplug_objs}: ${libmodplug_obj}
+${libmodplug_objs}: $(filter-out $(wildcard ${libmodplug_obj}), ${libmodplug_obj})
 
 libmodplug_clean:
 	@echo "  RM      " ${libmodplug_obj}

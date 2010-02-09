@@ -27,7 +27,7 @@ endif
 
 -include $(gdm2s3m_objs:.o=.d)
 
-${gdm2s3m_objs}: ${gdm2s3m_obj}
+${gdm2s3m_objs}: $(filter-out $(wildcard ${gdm2s3m_obj}), ${gdm2s3m_obj})
 
 gdm2s3m_clean:
 	@echo "  RM      " ${gdm2s3m_obj}

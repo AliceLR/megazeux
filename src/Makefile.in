@@ -259,8 +259,11 @@ mzx_cobjs_link := ${mzx_cobjs}
 
 endif
 
-${mzx_cobjs}: ${mzx_obj} ${editor_obj}
-${mzx_cxxobjs}: ${mzx_obj} ${editor_obj}
+${mzx_cobjs}: $(filter-out $(wildcard ${mzx_obj}), ${mzx_obj})
+${mzx_cobjs}: $(filter-out $(wildcard ${editor_obj}), ${editor_obj})
+
+${mzx_cxxobjs}: $(filter-out $(wildcard ${mzx_obj}), ${mzx_obj})
+${mzx_cxxobjs}: $(filter-out $(wildcard ${editor_obj}), ${editor_obj})
 
 ${mzx}: ${mzx_cobjs_link} ${mzx_cxxobjs}
 ifeq (${V},1)
