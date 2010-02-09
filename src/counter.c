@@ -2326,6 +2326,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
         {
           if(faded)
             insta_fadeout();
+          else
+            insta_fadein();
           mzx_world->swapped = 1;
         }
       }

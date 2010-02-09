@@ -98,6 +98,8 @@ USERS
 + Optimize audio locking; do file I/O outside of critical sections to
   decrease stalling, particularly on platforms with slow I/O. (Mr_Alert)
 + Added support for MacOS 10.6 (Snow Leopard) and removed support for 10.3.
++ Loading a save game from robotic will now correctly restore intensities
+  to their saved values.
 
 DEVELOPERS
 
