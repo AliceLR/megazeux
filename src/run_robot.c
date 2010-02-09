@@ -17,7 +17,6 @@
  * along with this program; if not, write to the Free Software
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
-#include "run_robot.h"
 
 #include <stdio.h>
 #include <stdlib.h>
@@ -42,6 +41,8 @@
 #include "mzm.h"
 #include "sprite.h"
 #include "event.h"
+#include "robot.h"
+#include "world.h"
 #include "fsafeopen.h"
 #include "extmem.h"
 #include "util.h"
@@ -998,14 +999,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     // Act according to command
     switch(cmd)
     {
-      case 0: // End
+      case ROBOTIC_CMD_END: // End
       {
         if(first_cmd)
           cur_robot->status = 1;
         goto end_prog;
       }
 
-      case 1: // Die
+      case ROBOTIC_CMD_DIE: // Die
       {
         if(id)
         {
@@ -1015,7 +1016,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         return;
       }
 
-      case 80: // Die item
+      case ROBOTIC_CMD_DIE_ITEM: // Die item
       {
         if(id)
         {
@@ -1026,7 +1027,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         return;
       }
 
-      case 2: // Wait
+      case ROBOTIC_CMD_WAIT: // Wait
       {
         int wait_time = parse_param(mzx_world, cmd_ptr + 1, id) & 0xFF;
         if(wait_time <= cur_robot->pos_within_line)
@@ -1039,14 +1040,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         goto breaker;
       }
 
-      case 3: // Cycle
+      case ROBOTIC_CMD_CYCLE: // Cycle
       {
         cur_robot->robot_cycle = parse_param(mzx_world, cmd_ptr + 1,id);
         done = 1;
         break;
       }
 
-      case 4: // Go dir num
+      case ROBOTIC_CMD_GO: // Go dir num
       {
         if(id)
         {
@@ -1081,7 +1082,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 68: // Go dir label
+      case ROBOTIC_CMD_TRY_DIR: // Try dir label
       {
         if(id)
         {
@@ -1114,7 +1115,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 5: // Walk dir
+      case ROBOTIC_CMD_WALK: // Walk dir
       {
         if(id)
         {
@@ -1133,7 +1134,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 6: // Become color thing param
+      case ROBOTIC_CMD_BECOME: // Become color thing param
       {
         if(id)
         {
@@ -1173,13 +1174,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 7: // Char
+      case ROBOTIC_CMD_CHAR: // Char
       {
         cur_robot->robot_char = parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
-      case 8: // Color
+      case ROBOTIC_CMD_COLOR: // Color
       {
         if(id)
         {
@@ -1191,7 +1192,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 9: // Gotoxy
+      case ROBOTIC_CMD_GOTOXY: // Gotoxy
       {
         if(id)
         {
@@ -1218,7 +1219,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 10: // set counter #
+      case ROBOTIC_CMD_SET: // set counter #
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = next_param_pos(cmd_ptr + 1);
@@ -1245,8 +1246,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             else
             {
               dest.value = src_buffer;
-
-              // TODO: Make tr_msg return length.
               dest.length = strlen(src_buffer);
             }
           }
@@ -1285,7 +1284,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             //        "optimize" a live board, which breaks commands like
             //        DIE which expect robot IDs to be in sequence (the ID is
             //        cached for the whole cycle).
-
             if(mzx_world->special_counter_return == FOPEN_SAVE_GAME ||
              (mzx_world->special_counter_return == FOPEN_SAVE_WORLD))
             {
@@ -1303,7 +1301,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 11: // inc counter #
+      case ROBOTIC_CMD_INC: // inc counter #
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = next_param_pos(cmd_ptr + 1);
@@ -1330,8 +1328,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             else
             {
               dest.value = src_buffer;
-
-              // TODO: Make tr_msg return length.
               dest.length = strlen(src_buffer);
             }
             // Set it
@@ -1347,7 +1343,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 12: // dec counter #
+      case ROBOTIC_CMD_DEC: // dec counter #
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = next_param_pos(cmd_ptr + 1);
@@ -1371,7 +1367,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 16: // if c?n l
+      case ROBOTIC_CMD_IF: // if c?n l
       {
         int difference = 0;
         char *dest_string = cmd_ptr + 2;
@@ -1476,8 +1472,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 18: // if condition label
-      case 19: // if not cond. label
+      case ROBOTIC_CMD_IF_CONDITION: // if condition label
+      case ROBOTIC_CMD_IF_NOT_CONDITION: // if not cond. label
       {
         enum dir direction;
         enum condition condition =
@@ -1765,7 +1761,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 20: // if any thing label
+      case ROBOTIC_CMD_IF_ANY: // if any thing label
       {
         // Get foreg/backg allowed in fb/bg
         int offset;
@@ -1791,7 +1787,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 21: // if no thing label
+      case ROBOTIC_CMD_IF_NO: // if no thing label
       {
         // Get foreg/backg allowed in fb/bg
         int offset;
@@ -1820,7 +1816,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 22: // if thing dir
+      case ROBOTIC_CMD_IF_THING_DIR: // if thing dir
       {
         if(id)
         {
@@ -1842,7 +1838,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 23: // if NOT thing dir
+      case ROBOTIC_CMD_IF_NOT_THING_DIR: // if NOT thing dir
       {
         if(id)
         {
@@ -1864,7 +1860,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 24: // if thing x y
+      case ROBOTIC_CMD_IF_THING_XY: // if thing x y
       {
         int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -1971,7 +1967,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 25: // if at x y label
+      case ROBOTIC_CMD_IF_AT: // if at x y label
       {
         if(id)
         {
@@ -1989,7 +1985,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 26: // if dir of player is thing, "label"
+      case ROBOTIC_CMD_IF_DIR_OF_PLAYER: // if dir of player is thing, "label"
       {
         enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -2009,7 +2005,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 27: // double c
+      case ROBOTIC_CMD_DOUBLE: // double c
       {
         char dest_buffer[ROBOT_MAX_TR];
         tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
@@ -2017,7 +2013,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 28: // half c
+      case ROBOTIC_CMD_HALF: // half c
       {
         char dest_buffer[ROBOT_MAX_TR];
         tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
@@ -2025,13 +2021,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 29: // Goto
+      case ROBOTIC_CMD_GOTO: // Goto
       {
         gotoed = send_self_label_tr(mzx_world, cmd_ptr + 2, id);
         break;
       }
 
-      case 30: // Send robot label
+      case ROBOTIC_CMD_SEND: // Send robot label
       {
         char robot_name_buffer[ROBOT_MAX_TR];
         char label_buffer[ROBOT_MAX_TR];
@@ -2048,7 +2044,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 31: // Explode
+      case ROBOTIC_CMD_EXPLODE: // Explode
       {
         if(id)
         {
@@ -2061,7 +2057,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         return;
       }
 
-      case 32: // put thing dir
+      case ROBOTIC_CMD_PUT_DIR: // put thing dir
       {
         if(id)
         {
@@ -2083,7 +2079,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 33: // Give # item
+      case ROBOTIC_CMD_GIVE: // Give # item
       {
         int amount = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -2092,7 +2088,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 34: // Take # item
+      case ROBOTIC_CMD_TAKE: // Take # item
       {
         int amount = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -2109,7 +2105,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 35: // Take # item "label"
+      case ROBOTIC_CMD_TAKE_OR: // Take # item "label"
       {
         int amount = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -2130,20 +2126,20 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 36: // Endgame
+      case ROBOTIC_CMD_ENDGAME: // Endgame
       {
         set_counter(mzx_world, "LIVES", 0, 0);
         set_counter(mzx_world, "HEALTH", 0, 0);
         break;
       }
 
-      case 37: // Endlife
+      case ROBOTIC_CMD_ENDLIFE: // Endlife
       {
         set_counter(mzx_world, "HEALTH", 0, 0);
         break;
       }
 
-      case 38: // Mod
+      case ROBOTIC_CMD_MOD: // Mod
       {
         char mod_name_buffer[ROBOT_MAX_TR];
         tr_msg(mzx_world, cmd_ptr + 2, id, mod_name_buffer);
@@ -2152,7 +2148,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 39: // sam
+      case ROBOTIC_CMD_SAM: // sam
       {
         char sam_name_buffer[ROBOT_MAX_TR];
         int frequency = parse_param(mzx_world, cmd_ptr + 1, id);
@@ -2167,8 +2163,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 158:
-      case 40: // Volume
+      case ROBOTIC_CMD_VOLUME2:
+      case ROBOTIC_CMD_VOLUME: // Volume
       {
         int volume = parse_param(mzx_world, cmd_ptr + 1, id);
 
@@ -2179,7 +2175,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 41: // End mod
+      case ROBOTIC_CMD_END_MOD: // End mod
       {
         end_module();
         src_board->mod_playing[0] = 0;
@@ -2187,26 +2183,26 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 42: // End sam
+      case ROBOTIC_CMD_END_SAM: // End sam
       {
         end_sample();
         break;
       }
 
-      case 43: // Play notes
+      case ROBOTIC_CMD_PLAY: // Play notes
       {
         play_str(cmd_ptr + 2, 0);
         break;
       }
 
-      case 44: // End play
+      case ROBOTIC_CMD_END_PLAY: // End play
       {
         clear_sfx_queue();
         break;
       }
 
       // FIXME - This probably needs a different implementation
-      case 45: // wait play "str"
+      case ROBOTIC_CMD_WAIT_THEN_PLAY: // wait play "str"
       {
         int index_dif = topindex - backindex;
         if(index_dif < 0)
@@ -2220,7 +2216,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 46: // wait play
+      case ROBOTIC_CMD_WAIT_PLAY: // wait play
       {
         int index_dif = topindex - backindex;
         if(index_dif < 0)
@@ -2232,14 +2228,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 48: // sfx num
+      case ROBOTIC_CMD_SFX: // sfx num
       {
         int sfx_num = parse_param(mzx_world, cmd_ptr + 1, id);
         play_sfx(mzx_world, sfx_num);
         break;
       }
 
-      case 49: // play sfx notes
+      case ROBOTIC_CMD_PLAY_IF_SILENT: // play sfx notes
       {
         if(!is_playing())
           play_str(cmd_ptr + 2, 0);
@@ -2247,7 +2243,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 50: // open
+      case ROBOTIC_CMD_OPEN: // open
       {
         if(id)
         {
@@ -2302,19 +2298,19 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 51: // Lockself
+      case ROBOTIC_CMD_LOCKSELF: // Lockself
       {
         cur_robot->is_locked = 1;
         break;
       }
 
-      case 52: // Unlockself
+      case ROBOTIC_CMD_UNLOCKSELF: // Unlockself
       {
         cur_robot->is_locked = 0;
         break;
       }
 
-      case 53: // Send DIR "label"
+      case ROBOTIC_CMD_SEND_DIR: // Send DIR "label"
       {
         if(id)
         {
@@ -2338,7 +2334,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 54: // Zap label num
+      case ROBOTIC_CMD_ZAP: // Zap label num
       {
         char label_buffer[ROBOT_MAX_TR];
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -2354,7 +2350,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 55: // Restore label num
+      case ROBOTIC_CMD_RESTORE: // Restore label num
       {
         char label_buffer[ROBOT_MAX_TR];
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -2370,7 +2366,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 56: // Lockplayer
+      case ROBOTIC_CMD_LOCKPLAYER: // Lockplayer
       {
         src_board->player_ns_locked = 1;
         src_board->player_ew_locked = 1;
@@ -2378,7 +2374,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 57: // unlockplayer
+      case ROBOTIC_CMD_UNLOCKPLAYER: // unlockplayer
       {
         src_board->player_ns_locked = 0;
         src_board->player_ew_locked = 0;
@@ -2386,26 +2382,26 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 58: // lockplayer ns
+      case ROBOTIC_CMD_LOCKPLAYER_NS: // lockplayer ns
       {
         src_board->player_ns_locked = 1;
         break;
       }
 
-      case 59: // lockplayer ew
+      case ROBOTIC_CMD_LOCKPLAYER_EW: // lockplayer ew
       {
         src_board->player_ew_locked = 1;
         break;
       }
 
-      case 60: // lockplayer attack
+      case ROBOTIC_CMD_LOCKPLAYER_ATTACK: // lockplayer attack
       {
         src_board->player_attack_locked = 1;
         break;
       }
 
-      case 61: // move player dir
-      case 62: // move pl dir "label"
+      case ROBOTIC_CMD_MOVE_PLAYER_DIR: // move player dir
+      case ROBOTIC_CMD_MOVE_PLAYER_DIR_OR: // move pl dir "label"
       {
         enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
@@ -2448,7 +2444,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 63: // Put player x y
+      case ROBOTIC_CMD_PUT_PLAYER_XY: // Put player x y
       {
         int put_x = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -2467,7 +2463,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 66: // if player x y
+      case ROBOTIC_CMD_IF_PLAYER_XY: // if player x y
       {
         int check_x = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -2483,7 +2479,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 67: // put player dir
+      case ROBOTIC_CMD_PUT_PLAYER_DIR: // put player dir
       {
         enum dir put_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
         put_dir = parsedir(put_dir, x, y, cur_robot->walk_dir);
@@ -2508,7 +2504,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 69: // rotate cw
+      case ROBOTIC_CMD_ROTATECW: // rotate cw
       {
         if(id)
         {
@@ -2519,7 +2515,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 70: // rotate ccw
+      case ROBOTIC_CMD_ROTATECCW: // rotate ccw
       {
         if(id)
         {
@@ -2530,7 +2526,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         }
       }
 
-      case 71: // switch dir dir
+      case ROBOTIC_CMD_SWITCH: // switch dir dir
       {
         if(id)
         {
@@ -2577,7 +2573,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 72: // Shoot
+      case ROBOTIC_CMD_SHOOT: // Shoot
       {
         if(id)
         {
@@ -2605,7 +2601,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 73: // laybomb
+      case ROBOTIC_CMD_LAYBOMB: // laybomb
       {
         if(id)
         {
@@ -2617,7 +2613,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 74: // laybomb high
+      case ROBOTIC_CMD_LAYBOMB_HIGH: // laybomb high
       {
         if(id)
         {
@@ -2629,7 +2625,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 75: // shoot missile
+      case ROBOTIC_CMD_SHOOTMISSILE: // shoot missile
       {
         if(id)
         {
@@ -2653,7 +2649,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 76: // shoot seeker
+      case ROBOTIC_CMD_SHOOTSEEKER: // shoot seeker
       {
         if(id)
         {
@@ -2677,7 +2673,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 77: // spit fire
+      case ROBOTIC_CMD_SPITFIRE: // spit fire
       {
         if(id)
         {
@@ -2701,7 +2697,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 78: // lazer wall
+      case ROBOTIC_CMD_LAZERWALL: // lazer wall
       {
         if(id)
         {
@@ -2721,7 +2717,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 79: // put at xy
+      case ROBOTIC_CMD_PUT_XY: // put at xy
       {
         // Defer initialization of color until later because it
         // might be an MZM name string instead.
@@ -2825,7 +2821,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 81: // Send x y "label"
+      case ROBOTIC_CMD_SEND_XY: // Send x y "label"
       {
         int send_x = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -2841,7 +2837,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 82: // copyrobot ""
+      case ROBOTIC_CMD_COPYROBOT_NAMED: // copyrobot ""
       {
         int first, last;
         char robot_name_buffer[ROBOT_MAX_TR];
@@ -2872,7 +2868,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         goto breaker;
       }
 
-      case 83: // copyrobot x y
+      case ROBOTIC_CMD_COPYROBOT_XY: // copyrobot x y
       {
         int copy_x = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -2894,7 +2890,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         goto breaker;
       }
 
-      case 84: // copyrobot dir
+      case ROBOTIC_CMD_COPYROBOT_DIR: // copyrobot dir
       {
         enum dir copy_dir = parse_param_dir(mzx_world, cmd_ptr + 1);
         int offset;
@@ -2922,7 +2918,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         goto breaker;
       }
 
-      case 85: // dupe self dir
+      case ROBOTIC_CMD_DUPLICATE_SELF_DIR: // dupe self dir
       {
         if(id)
         {
@@ -2956,7 +2952,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 86: // dupe self xy
+      case ROBOTIC_CMD_DUPLICATE_SELF_XY: // dupe self xy
       {
         int duplicate_x = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -2998,7 +2994,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 87: // bulletn
+      case ROBOTIC_CMD_BULLETN: // bulletn
       {
         int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
         id_chars[bullet_char + 0] = new_char;
@@ -3007,7 +3003,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 88: // bullets
+      case ROBOTIC_CMD_BULLETS: // bullets
       {
         int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
         id_chars[bullet_char + 1] = new_char;
@@ -3016,7 +3012,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 89: // bullete
+      case ROBOTIC_CMD_BULLETE: // bullete
       {
         int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
         id_chars[bullet_char + 2] = new_char;
@@ -3025,7 +3021,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 90: // bulletw
+      case ROBOTIC_CMD_BULLETW: // bulletw
       {
         int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
         id_chars[bullet_char + 3] = new_char;
@@ -3034,14 +3030,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 91: // givekey col
+      case ROBOTIC_CMD_GIVEKEY: // givekey col
       {
         int key_num = parse_param(mzx_world, cmd_ptr + 1, id) & 0x0F;
         give_key(mzx_world, key_num);
         break;
       }
 
-      case 92: // givekey col "l"
+      case ROBOTIC_CMD_GIVEKEY_OR: // givekey col "l"
       {
         int key_num = parse_param(mzx_world, cmd_ptr + 1, id) & 0x0F;
         if(give_key(mzx_world, key_num))
@@ -3052,14 +3048,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 93: // takekey col
+      case ROBOTIC_CMD_TAKEKEY: // takekey col
       {
         int key_num = parse_param(mzx_world, cmd_ptr + 1, id) & 0x0F;
         take_key(mzx_world, key_num);
         break;
       }
 
-      case 94: // takekey col "l"
+      case ROBOTIC_CMD_TAKEKEY_OR: // takekey col "l"
       {
         int key_num = parse_param(mzx_world, cmd_ptr + 1, id) & 0x0F;
         if(take_key(mzx_world, key_num))
@@ -3070,7 +3066,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 95: // inc c r
+      case ROBOTIC_CMD_INC_RANDOM: // inc c r
       {
         char dest_buffer[ROBOT_MAX_TR];
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -3085,7 +3081,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 96: // dec c r
+      case ROBOTIC_CMD_DEC_RANDOM: // dec c r
       {
         char dest_buffer[ROBOT_MAX_TR];
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -3100,7 +3096,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 97: // set c r
+      case ROBOTIC_CMD_SET_RANDOM: // set c r
       {
         char dest_buffer[ROBOT_MAX_TR];
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -3115,7 +3111,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 98: // Trade givenum givetype takenum taketype poorlabel
+      // Trade givenum givetype takenum taketype poorlabel
+      case ROBOTIC_CMD_TRADE:
       {
         int give_num = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -3139,7 +3136,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 99: // Send DIR of player "label"
+      case ROBOTIC_CMD_SEND_DIR_PLAYER: // Send DIR of player "label"
       {
         int send_x = mzx_world->player_x;
         int send_y = mzx_world->player_y;
@@ -3158,7 +3155,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 100: // put thing dir of player
+      case ROBOTIC_CMD_PUT_DIR_PLAYER: // put thing dir of player
       {
         int put_color = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -3192,8 +3189,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 101: // /"dirs"
-      case 232: // Persistent go [str]
+      case ROBOTIC_CMD_SLASH: // /"dirs"
+      case ROBOTIC_CMD_PERSISTENT_GO: // Persistent go [str]
       {
         if(id)
         {
@@ -3252,7 +3249,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 102: // Mesg
+      case ROBOTIC_CMD_MESSAGE_LINE: // Mesg
       {
         char message_buffer[ROBOT_MAX_TR];
 
@@ -3261,11 +3258,11 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 103:
-      case 104:
-      case 105:
-      case 116:
-      case 117:
+      case ROBOTIC_CMD_MESSAGE_BOX_LINE:
+      case ROBOTIC_CMD_MESSAGE_BOX_OPTION:
+      case ROBOTIC_CMD_MESSAGE_BOX_MAYBE_OPTION:
+      case ROBOTIC_CMD_MESSAGE_BOX_COLOR_LINE:
+      case ROBOTIC_CMD_MESSAGE_BOX_CENTER_LINE:
       {
         // Box messages!
         char label_buffer[ROBOT_MAX_TR];
@@ -3308,7 +3305,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         goto breaker;
       }
 
-      case 107: // comment-do nothing! Maybe.
+      case ROBOTIC_CMD_COMMENT: // comment-do nothing! Maybe.
       {
         // (unless first char is a @)
         if(cmd_ptr[2] == '@')
@@ -3330,7 +3327,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 109: // teleport
+      case ROBOTIC_CMD_TELEPORT: // teleport
       {
         char board_dest_buffer[ROBOT_MAX_TR];
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -3361,7 +3358,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 110: // scrollview dir num
+      case ROBOTIC_CMD_SCROLLVIEW: // scrollview dir num
       {
         enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
@@ -3393,7 +3390,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 111: // input string
+      case ROBOTIC_CMD_INPUT: // input string
       {
         char input_buffer[ROBOT_MAX_TR];
         char input_buffer_msg[71 + 1];
@@ -3425,7 +3422,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 112: // If string "" "l"
+      case ROBOTIC_CMD_IF_INPUT: // If string "" "l"
       {
         char cmp_buffer[ROBOT_MAX_TR];
         tr_msg(mzx_world, cmd_ptr + 2, id, cmp_buffer);
@@ -3437,7 +3434,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 113: // If string not "" "l"
+      case ROBOTIC_CMD_IF_INPUT_NOT: // If string not "" "l"
       {
         char cmp_buffer[ROBOT_MAX_TR];
         tr_msg(mzx_world, cmd_ptr + 2, id, cmp_buffer);
@@ -3449,7 +3446,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 114: // If string matches "" "l"
+      case ROBOTIC_CMD_IF_INPUT_MATCHES: // If string matches "" "l"
       {
         // compare
         char cmp_buffer[ROBOT_MAX_TR];
@@ -3503,7 +3500,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 115: // Player char
+      case ROBOTIC_CMD_PLAYER_CHAR: // Player char
       {
         int new_char = parse_param(mzx_world, cmd_ptr + 1, id);
         int i;
@@ -3515,7 +3512,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 118: // move all thing dir
+      case ROBOTIC_CMD_MOVE_ALL: // move all thing dir
       {
         int move_color = parse_param(mzx_world, cmd_ptr + 1, id); // Color
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -3583,7 +3580,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 119: // copy x y x y
+      case ROBOTIC_CMD_COPY: // copy x y x y
       {
         int src_x = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -3605,13 +3602,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 120: // set edge color
+      case ROBOTIC_CMD_SET_EDGE_COLOR: // set edge color
       {
         mzx_world->edge_color = parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
-      case 121: // board dir
+      case ROBOTIC_CMD_BOARD: // board dir
       {
         enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
@@ -3630,7 +3627,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 122: // board dir is none
+      case ROBOTIC_CMD_BOARD_IS_NONE: // board dir is none
       {
         enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         direction = parsedir(direction, x, y, cur_robot->walk_dir);
@@ -3641,7 +3638,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 123: // char edit
+      case ROBOTIC_CMD_CHAR_EDIT: // char edit
       {
         int char_num = parse_param(mzx_world, cmd_ptr + 1, id);
         char *next_param = next_param_pos(cmd_ptr + 1);
@@ -3658,7 +3655,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 124: // Become push
+      case ROBOTIC_CMD_BECOME_PUSHABLE: // Become push
       {
         if(id)
         {
@@ -3667,7 +3664,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 125: // Become nonpush
+      case ROBOTIC_CMD_BECOME_NONPUSHABLE: // Become nonpush
       {
         if(id)
         {
@@ -3676,41 +3673,41 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 126: // blind
+      case ROBOTIC_CMD_BLIND: // blind
       {
         mzx_world->blind_dur = parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
-      case 127: // firewalker
+      case ROBOTIC_CMD_FIREWALKER: // firewalker
       {
         mzx_world->firewalker_dur =
          parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
-      case 128: // freezetime
+      case ROBOTIC_CMD_FREEZETIME: // freezetime
       {
         mzx_world->freeze_time_dur =
          parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
-      case 129: // slow time
+      case ROBOTIC_CMD_SLOWTIME: // slow time
       {
         mzx_world->slow_time_dur =
          parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
-      case 130: // wind
+      case ROBOTIC_CMD_WIND: // wind
       {
         mzx_world->wind_dur =
          parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
-      case 131: // avalanche
+      case ROBOTIC_CMD_AVALANCHE: // avalanche
       {
         int x, y, offset;
         // Set the placement rate
@@ -3733,7 +3730,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 132: // copy dir dir
+      case ROBOTIC_CMD_COPY_DIR: // copy dir dir
       {
         if(id)
         {
@@ -3765,7 +3762,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 133: // become lavawalker
+      case ROBOTIC_CMD_BECOME_LAVAWALKER: // become lavawalker
       {
         if(id)
         {
@@ -3774,7 +3771,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 134: // become non lavawalker
+      case ROBOTIC_CMD_BECOME_NONLAVAWALKER: // become non lavawalker
       {
         if(id)
         {
@@ -3783,7 +3780,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 135: // change color thing param color thing param
+      case ROBOTIC_CMD_CHANGE: // change color thing param color thing param
       {
         int check_color = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -3918,7 +3915,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 136: // player color
+      case ROBOTIC_CMD_PLAYERCOLOR: // player color
       {
         int new_color = parse_param(mzx_world, cmd_ptr + 1, id);
         if(get_counter(mzx_world, "INVINCO", 0))
@@ -3928,12 +3925,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         }
         else
         {
-          id_chars[player_color] = fix_color(new_color, id_chars[player_color]);
+          id_chars[player_color] = fix_color(new_color,
+           id_chars[player_color]);
         }
         break;
       }
 
-      case 137: // bullet color
+      case ROBOTIC_CMD_BULLETCOLOR: // bullet color
       {
         int new_color = parse_param(mzx_world, cmd_ptr + 1, id);
         int i;
@@ -3946,14 +3944,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 138: // missile color
+      case ROBOTIC_CMD_MISSILECOLOR: // missile color
       {
         missile_color =
          fix_color(parse_param(mzx_world, cmd_ptr + 1, id), missile_color);
         break;
       }
 
-      case 139: // message row
+      case ROBOTIC_CMD_MESSAGE_ROW: // message row
       {
         int b_mesg_row = parse_param(mzx_world, cmd_ptr + 1, id);
         if(b_mesg_row > 24)
@@ -3966,7 +3964,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 140: // rel self
+      case ROBOTIC_CMD_REL_SELF: // rel self
       {
         if(id)
         {
@@ -3979,7 +3977,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 141: // rel player
+      case ROBOTIC_CMD_REL_PLAYER: // rel player
       {
         mzx_world->first_prefix = 2;
         mzx_world->mid_prefix = 2;
@@ -3988,7 +3986,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         goto next_cmd_prefix;
       }
 
-      case 142: // rel counters
+      case ROBOTIC_CMD_REL_COUNTERS: // rel counters
       {
         mzx_world->first_prefix = 3;
         mzx_world->mid_prefix = 3;
@@ -3997,7 +3995,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         goto next_cmd_prefix;
       }
 
-      case 143: // set id char # to 'c'
+      case ROBOTIC_CMD_SET_ID_CHAR: // set id char # to 'c'
       {
         int id_char = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -4018,13 +4016,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 144: // jump mod order #
+      case ROBOTIC_CMD_JUMP_MOD_ORDER: // jump mod order #
       {
         jump_module(parse_param(mzx_world, cmd_ptr + 1, id));
         break;
       }
 
-      case 145: // ask yes/no
+      case ROBOTIC_CMD_ASK: // ask yes/no
       {
         char question_buffer[ROBOT_MAX_TR];
         int send_status;
@@ -4045,13 +4043,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 146: // fill health
+      case ROBOTIC_CMD_FILLHEALTH: // fill health
       {
         set_counter(mzx_world, "HEALTH", mzx_world->health_limit, 0);
         break;
       }
 
-      case 147: // thick arrow dir char
+      case ROBOTIC_CMD_THICK_ARROW: // thick arrow dir char
       {
         enum dir dir = parse_param_dir(mzx_world, cmd_ptr + 1);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -4064,7 +4062,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 148: // thin arrow dir char
+      case ROBOTIC_CMD_THIN_ARROW: // thin arrow dir char
       {
         enum dir dir = parse_param_dir(mzx_world, cmd_ptr + 1);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -4078,27 +4076,27 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 149: // set max health
+      case ROBOTIC_CMD_SET_MAX_HEALTH: // set max health
       {
         mzx_world->health_limit = parse_param(mzx_world, cmd_ptr + 1, id);
         inc_counter(mzx_world, "HEALTH", 0, 0);
         break;
       }
 
-      case 150: // save pos
+      case ROBOTIC_CMD_SAVE_PLAYER_POSITION: // save pos
       {
         save_player_position(mzx_world, 0);
         break;
       }
 
-      case 151: // restore
+      case ROBOTIC_CMD_RESTORE_PLAYER_POSITION: // restore
       {
         restore_player_position(mzx_world, 0);
         done = 1;
         break;
       }
 
-      case 152: // exchange
+      case ROBOTIC_CMD_EXCHANGE_PLAYER_POSITION: // exchange
       {
         restore_player_position(mzx_world, 0);
         save_player_position(mzx_world, 0);
@@ -4106,7 +4104,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 153: // mesg col
+      case ROBOTIC_CMD_MESSAGE_COLUMN: // mesg col
       {
         int b_mesg_col = parse_param(mzx_world, cmd_ptr + 1, id);
 
@@ -4120,20 +4118,20 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 154: // center mesg
+      case ROBOTIC_CMD_CENTER_MESSAGE: // center mesg
       {
         src_board->b_mesg_col = -1;
         break;
       }
 
-      case 155: // clear mesg
+      case ROBOTIC_CMD_CLEAR_MESSAGE: // clear mesg
       {
         src_board->b_mesg_timer = 0;
         set_intro_mesg_timer(0);
         break;
       }
 
-      case 156: // resetview
+      case ROBOTIC_CMD_RESETVIEW: // resetview
       {
         src_board->scroll_x = 0;
         src_board->scroll_y = 0;
@@ -4142,7 +4140,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       // FIXME - There may be no way to get this to work.
       // It may have to be removed.
-      case 157: // modsam freq num
+      case ROBOTIC_CMD_MOD_SAM: // modsam freq num
       {
         if(get_music_on_state())
         {
@@ -4154,42 +4152,42 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 159: // scrollbase
+      case ROBOTIC_CMD_SCROLLBASE: // scrollbase
       {
         mzx_world->scroll_base_color =
          parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
-      case 160: // scrollcorner
+      case ROBOTIC_CMD_SCROLLCORNER: // scrollcorner
       {
         mzx_world->scroll_corner_color =
          parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
-      case 161: // scrolltitle
+      case ROBOTIC_CMD_SCROLLTITLE: // scrolltitle
       {
         mzx_world->scroll_title_color =
          parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
-      case 162: // scrollpointer
+      case ROBOTIC_CMD_SCROLLPOINTER: // scrollpointer
       {
         mzx_world->scroll_pointer_color =
          parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
-      case 163: // scrollarrow
+      case ROBOTIC_CMD_SCROLLARROW: // scrollarrow
       {
         mzx_world->scroll_arrow_color =
          parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
-      case 164: // viewport x y
+      case ROBOTIC_CMD_VIEWPORT: // viewport x y
       {
         int viewport_x = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -4208,7 +4206,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 165: // viewport width height
+      case ROBOTIC_CMD_VIEWPORT_WIDTH: // viewport width height
       {
         int viewport_width = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -4240,7 +4238,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 168: // save pos #
+      case ROBOTIC_CMD_SAVE_PLAYER_POSITION_N: // save pos #
       {
         int pos = parse_param(mzx_world, cmd_ptr + 1, id) - 1;
         if((pos < 0) || (pos > 7))
@@ -4249,7 +4247,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 169: // restore pos #
+      case ROBOTIC_CMD_RESTORE_PLAYER_POSITION_N: // restore pos #
       {
         int pos = parse_param(mzx_world, cmd_ptr + 1, id) - 1;
         if((pos < 0) || (pos > 7))
@@ -4259,7 +4257,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 170: // exchange pos #
+      case ROBOTIC_CMD_EXCHANGE_PLAYER_POSITION_N: // exchange pos #
       {
         int pos = parse_param(mzx_world, cmd_ptr + 1, id) - 1;
         if((pos < 0) || (pos > 7))
@@ -4270,7 +4268,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 171: // restore pos # duplicate self
+      // restore pos # duplicate self
+      case ROBOTIC_CMD_RESTORE_PLAYER_POSITION_N_DUPLICATE_SELF:
       {
         int pos = parse_param(mzx_world, cmd_ptr + 1, id) - 1;
         int duplicate_x = mzx_world->player_x;
@@ -4316,7 +4315,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 172: // exchange pos # duplicate self
+      // exchange pos # duplicate self
+      case ROBOTIC_CMD_EXCHANGE_PLAYER_POSITION_N_DUPLICATE_SELF:
       {
         int pos = parse_param(mzx_world, cmd_ptr + 1, id) - 1;
         int duplicate_x = mzx_world->player_x;
@@ -4363,18 +4363,18 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 173: // Pl bulletn
-      case 174: // Pl bullets
-      case 175: // Pl bullete
-      case 176: // Pl bulletw
-      case 177: // Nu bulletn
-      case 178: // Nu bullets
-      case 179: // Nu bullete
-      case 180: // Nu bulletw
-      case 181: // En bulletn
-      case 182: // En bullets
-      case 183: // En bullete
-      case 184: // En bulletw
+      case ROBOTIC_CMD_PLAYER_BULLETN: // Pl bulletn
+      case ROBOTIC_CMD_PLAYER_BULLETS: // Pl bullets
+      case ROBOTIC_CMD_PLAYER_BULLETE: // Pl bullete
+      case ROBOTIC_CMD_PLAYER_BULLETW: // Pl bulletw
+      case ROBOTIC_CMD_NEUTRAL_BULLETN: // Nu bulletn
+      case ROBOTIC_CMD_NEUTRAL_BULLETS: // Nu bullets
+      case ROBOTIC_CMD_NEUTRAL_BULLETE: // Nu bullete
+      case ROBOTIC_CMD_NEUTRAL_BULLETW: // Nu bulletw
+      case ROBOTIC_CMD_ENEMY_BULLETN: // En bulletn
+      case ROBOTIC_CMD_ENEMY_BULLETS: // En bullets
+      case ROBOTIC_CMD_ENEMY_BULLETE: // En bullete
+      case ROBOTIC_CMD_ENEMY_BULLETW: // En bulletw
       {
         // Id' make these all separate, but this is really too convenient
         id_chars[bullet_char + (cmd - 173)] =
@@ -4382,15 +4382,15 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 185: // Pl bcolor
-      case 186: // Nu bcolor
-      case 187: // En bcolor
+      case ROBOTIC_CMD_PLAYER_BULLET_COLOR: // Pl bcolor
+      case ROBOTIC_CMD_NEUTRAL_BULLET_COLOR: // Nu bcolor
+      case ROBOTIC_CMD_ENEMY_BULLET_COLOR: // En bcolor
       {
         bullet_color[cmd - 185] = parse_param(mzx_world, cmd_ptr + 1, id);
         break;
       }
 
-      case 193: // Rel self first
+      case ROBOTIC_CMD_REL_SELF_FIRST: // Rel self first
       {
         if(id)
         {
@@ -4401,7 +4401,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 194: // Rel self last
+      case ROBOTIC_CMD_REL_SELF_LAST: // Rel self last
       {
         if(id)
         {
@@ -4412,42 +4412,42 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 195: // Rel player first
+      case ROBOTIC_CMD_REL_PLAYER_FIRST: // Rel player first
       {
         mzx_world->first_prefix = 6;
         lines_run--;
         goto next_cmd_prefix;
       }
 
-      case 196: // Rel player last
+      case ROBOTIC_CMD_REL_PLAYER_LAST: // Rel player last
       {
         mzx_world->last_prefix = 6;
         lines_run--;
         goto next_cmd_prefix;
       }
 
-      case 197: // Rel counters first
+      case ROBOTIC_CMD_REL_COUNTERS_FIRST: // Rel counters first
       {
         mzx_world->first_prefix = 7;
         lines_run--;
         goto next_cmd_prefix;
       }
 
-      case 198: // Rel counters last
+      case ROBOTIC_CMD_REL_COUNTERS_LAST: // Rel counters last
       {
         mzx_world->last_prefix = 7;
         lines_run--;
         goto next_cmd_prefix;
       }
 
-      case 199: // Mod fade out
+      case ROBOTIC_CMD_MOD_FADE_OUT: // Mod fade out
       {
         src_board->volume_inc = -8;
         src_board->volume_target = 0;
         break;
       }
 
-      case 200: // Mod fade in
+      case ROBOTIC_CMD_MOD_FADE_IN: // Mod fade in
       {
         char name_buffer[ROBOT_MAX_TR];
         src_board->volume_inc = 8;
@@ -4460,7 +4460,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 201: // Copy block sx sy width height dx dy
+      case ROBOTIC_CMD_COPY_BLOCK: // Copy block sx sy width height dx dy
       {
         char *p1 = cmd_ptr + 1;
         char *p2 = next_param_pos(p1);
@@ -4733,7 +4733,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 243: // Copy overlay block sx sy width height dx dy
+      // Copy overlay block sx sy width height dx dy
+      case ROBOTIC_CMD_COPY_OVERLAY_BLOCK:
       {
         char *p1 = cmd_ptr + 1;
         char *p2 = next_param_pos(p1);
@@ -4991,7 +4992,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 202: // Clip input
+      case ROBOTIC_CMD_CLIP_INPUT: // Clip input
       {
         char *input_string = src_board->input_string;
         int input_size = src_board->input_size;
@@ -5024,7 +5025,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 203: // Push dir
+      case ROBOTIC_CMD_PUSH: // Push dir
       {
         if(id)
         {
@@ -5056,7 +5057,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 204: // Scroll char dir
+      case ROBOTIC_CMD_SCROLL_CHAR: // Scroll char dir
       {
         int char_num = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -5134,7 +5135,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 205: // Flip char dir
+      case ROBOTIC_CMD_FLIP_CHAR: // Flip char dir
       {
         int char_num = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -5189,7 +5190,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 206: // copy char char
+      case ROBOTIC_CMD_COPY_CHAR: // copy char char
       {
         int src_char = parse_param(mzx_world, cmd_ptr + 1, id);
         char char_buffer[14];
@@ -5200,7 +5201,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 210: // change sfx
+      case ROBOTIC_CMD_CHANGE_SFX: // change sfx
       {
         int fx_num = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -5211,7 +5212,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 211: // color intensity #%
+      case ROBOTIC_CMD_COLOR_INTENSITY_ALL: // color intensity #%
       {
         int intensity = parse_param(mzx_world, cmd_ptr + 1, id);
         if(intensity < 0)
@@ -5222,7 +5223,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 212: // color intensity # #%
+      case ROBOTIC_CMD_COLOR_INTENSITY_N: // color intensity # #%
       {
         int color = parse_param(mzx_world, cmd_ptr + 1, id) & 0xFF;
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -5235,19 +5236,19 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 213: // color fade out
+      case ROBOTIC_CMD_COLOR_FADE_OUT: // color fade out
       {
         vquick_fadeout();
         break;
       }
 
-      case 214: // color fade in
+      case ROBOTIC_CMD_COLOR_FADE_IN: // color fade in
       {
         vquick_fadein();
         break;
       }
 
-      case 215: // set color # r g b
+      case ROBOTIC_CMD_SET_COLOR: // set color # r g b
       {
         // Now you can set all 256 colors this way (for SMZX)
         int pal_number = parse_param(mzx_world, cmd_ptr + 1, id) & 0xFF;
@@ -5269,7 +5270,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 216: // Load char set ""
+      case ROBOTIC_CMD_LOAD_CHAR_SET: // Load char set ""
       {
         char charset_name[ROBOT_MAX_TR];
         char *translated_name = cmalloc(MAX_PATH);
@@ -5315,7 +5316,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 217: // multiply counter #
+      case ROBOTIC_CMD_MULTIPLY: // multiply counter #
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = cmd_ptr + next_param(cmd_ptr, 1);
@@ -5327,7 +5328,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 218: // divide counter #
+      case ROBOTIC_CMD_DIVIDE: // divide counter #
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = cmd_ptr + next_param(cmd_ptr, 1);
@@ -5339,7 +5340,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 219: // mul counter #
+      case ROBOTIC_CMD_MODULO: // mod counter #
       {
         char *dest_string = cmd_ptr + 2;
         char *src_string = cmd_ptr + next_param(cmd_ptr, 1);
@@ -5351,7 +5352,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 220: // Player char dir 'c'
+      case ROBOTIC_CMD_PLAYER_CHAR_DIR: // Player char dir 'c'
       {
         enum dir direction = parse_param_dir(mzx_world, cmd_ptr + 1);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -5367,7 +5368,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       // Can load full 256 color ones too now. Will use file size to
       // determine how many to load.
-      case 222: // Load palette
+      case ROBOTIC_CMD_LOAD_PALETTE: // Load palette
       {
         char name_buffer[ROBOT_MAX_TR];
         char *translated_name = cmalloc(MAX_PATH);
@@ -5382,7 +5383,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 224: // Mod fade #t #s
+      case ROBOTIC_CMD_MOD_FADE_TO: // Mod fade #t #s
       {
         int volume_target = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -5409,7 +5410,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 225: // Scrollview x y
+      case ROBOTIC_CMD_SCROLLVIEW_XY: // Scrollview x y
       {
         int scroll_x = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -5428,7 +5429,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 226: // Swap world str
+      case ROBOTIC_CMD_SWAP_WORLD: // Swap world str
       {
         char name_buffer[ROBOT_MAX_TR];
         char *translated_name = cmalloc(MAX_PATH);
@@ -5466,7 +5467,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         return;
       }
 
-      case 227: // If allignedrobot str str
+      case ROBOTIC_CMD_IF_ALIGNEDROBOT: // If allignedrobot str str
       {
         if(id)
         {
@@ -5491,7 +5492,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 229: // Lockscroll
+      case ROBOTIC_CMD_LOCKSCROLL: // Lockscroll
       {
         // The scrolling is locked at the current position.
         // Further scrollview cmds can change it.
@@ -5508,14 +5509,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 230: // Unlockscroll
+      case ROBOTIC_CMD_UNLOCKSCROLL: // Unlockscroll
       {
         src_board->locked_x = -1;
         src_board->locked_y = -1;
         break;
       }
 
-      case 231: // If first string str str
+      case ROBOTIC_CMD_IF_FIRST_INPUT: // If first string str str
       {
         char *input_string = src_board->input_string;
         char match_string_buffer[ROBOT_MAX_TR];
@@ -5550,32 +5551,32 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 233: // Wait mod fade
+      case ROBOTIC_CMD_WAIT_MOD_FADE: // Wait mod fade
       {
         if(src_board->volume != src_board->volume_target)
           goto breaker;
         break;
       }
 
-      case 235: // Enable saving
+      case ROBOTIC_CMD_ENABLE_SAVING: // Enable saving
       {
         src_board->save_mode = 0;
         break;
       }
 
-      case 236: // Disable saving
+      case ROBOTIC_CMD_DISABLE_SAVING: // Disable saving
       {
         src_board->save_mode = 1;
         break;
       }
 
-      case 237: // Enable sensoronly saving
+      case ROBOTIC_CMD_ENABLE_SENSORONLY_SAVING: // Enable sensoronly saving
       {
         src_board->save_mode = 2;
         break;
       }
 
-      case 238: // Status counter ## str
+      case ROBOTIC_CMD_STATUS_COUNTER: // Status counter ## str
       {
         int counter_slot = parse_param(mzx_world, cmd_ptr + 1, id);
         if((counter_slot >= 1) && (counter_slot <= 6))
@@ -5593,25 +5594,25 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 239: // Overlay on
+      case ROBOTIC_CMD_OVERLAY_ON: // Overlay on
       {
         setup_overlay(src_board, 1);
         break;
       }
 
-      case 240: // Overlay static
+      case ROBOTIC_CMD_OVERLAY_STATIC: // Overlay static
       {
         setup_overlay(src_board, 2);
         break;
       }
 
-      case 241: // Overlay transparent
+      case ROBOTIC_CMD_OVERLAY_TRANSPARENT: // Overlay transparent
       {
         setup_overlay(src_board, 3);
         break;
       }
 
-      case 242: // put col ch overlay x y
+      case ROBOTIC_CMD_OVERLAY_PUT_OVERLAY: // put col ch overlay x y
       {
         int put_color = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -5636,7 +5637,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 245: // Change overlay col ch col ch
+      case ROBOTIC_CMD_CHANGE_OVERLAY: // Change overlay col ch col ch
       {
         int src_color = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -5673,7 +5674,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 246: // Change overlay col col
+      case ROBOTIC_CMD_CHANGE_OVERLAY_COLOR: // Change overlay col col
       {
         int src_color = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -5703,7 +5704,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 247: // Write overlay col str # #
+      case ROBOTIC_CMD_WRITE_OVERLAY: // Write overlay col str # #
       {
         int write_color = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
@@ -5745,13 +5746,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 251: // Loop start
+      case ROBOTIC_CMD_LOOP_START: // Loop start
       {
         cur_robot->loop_count = 0;
         break;
       }
 
-      case 252: // Loop #
+      case ROBOTIC_CMD_LOOP_FOR: // Loop #
       {
         int loop_amount = parse_param(mzx_world, cmd_ptr + 1, id);
         int loop_count = cur_robot->loop_count;
@@ -5775,7 +5776,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 253: // Abort loop
+      case ROBOTIC_CMD_ABORT_LOOP: // Abort loop
       {
         int forward_cmd = cur_robot->cur_prog_line;
 
@@ -5793,14 +5794,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         break;
       }
 
-      case 254: // Disable mesg edge
+      case ROBOTIC_CMD_DISABLE_MESG_EDGE: // Disable mesg edge
       {
         mzx_world->mesg_edges = 0;
         break;
       }
 
 
-      case 255: // Enable mesg edge
+      case ROBOTIC_CMD_ENABLE_MESG_EDGE: // Enable mesg edge
       {
         mzx_world->mesg_edges = 1;
         break;

@@ -48,7 +48,7 @@
 #include "game2.h"
 #include "sprite.h"
 #include "world.h"
-#include "run_robot.h"
+#include "robot.h"
 #include "fsafeopen.h"
 #include "extmem.h"
 #include "util.h"

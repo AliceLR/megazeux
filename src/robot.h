@@ -99,13 +99,22 @@ void robot_box_display(struct world *mzx_world, char *program,
  char *label_storage, int id);
 void push_sensor(struct world *mzx_world, int id);
 void step_sensor(struct world *mzx_world, int id);
-char *tr_msg(struct world *mzx_world, char *mesg, int id, char *buffer);
+char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
+ char terminating_char);
 void add_robot_name_entry(struct board *src_board, struct robot *cur_robot,
  char *name);
 void change_robot_name(struct board *src_board, struct robot *cur_robot,
  char *new_name);
 int find_free_robot(struct board *src_board);
 int get_robot_id(struct board *src_board, const char *name);
+
+static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
+ char *buffer)
+{
+  return tr_msg_ext(mzx_world, mesg, id, buffer, 0);
+}
+
+void run_robot(struct world *mzx_world, int id, int x, int y);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void duplicate_robot_direct(struct robot *cur_robot,

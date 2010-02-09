@@ -33,7 +33,7 @@
 #include "idput.h"
 #include "const.h"
 #include "idarray.h"
-#include "run_robot.h"
+#include "robot.h"
 #include "util.h"
 
 // For missile turning (directions)

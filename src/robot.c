@@ -2204,7 +2204,8 @@ void step_sensor(struct world *mzx_world, int id)
 // and &COUNTER& becomes the value of COUNTER. The size of the string is
 // clipped to 512 chars.
 
-char *tr_msg(struct world *mzx_world, char *mesg, int id, char *buffer)
+char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
+ char terminating_char)
 {
   struct board *src_board = mzx_world->current_board;
   char name_buffer[256];
