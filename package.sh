@@ -89,13 +89,6 @@ createzip_dynamic_sdl() {
 	echo "start $TARGET.exe"          >> $DIRECTX_BAT &&
 
 	#
-	# pack the EXEs
-	#
-	for BINARY in $TARGET.exe utils/*.exe; do
-		( $UPX --best $BINARY || echo "UPX unavailable." );
-	done &&
-
-	#
 	# Create the binary package.
 	#
 	$SEVENZIP a -tzip dist/$TARGET-$2.zip \
@@ -236,13 +229,6 @@ SUBDIRS="arch contrib debian docs"
 # otherwise GNU tar is used instead.
 #
 SEVENZIP="7za"
-
-#
-# Name of the Ultimate Packer for eXecutables program. On Windows, this is
-# 'upx.exe'. On Linux, this is 'upx'. If yours is called something different,
-# change it here. This program has to be in $PATH or it is not used.
-#
-UPX="upx"
 
 #
 # Do source package.
