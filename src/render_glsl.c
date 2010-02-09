@@ -96,6 +96,9 @@ enum
 
 struct glsl_render_data
 {
+#ifdef CONFIG_EGL
+  struct egl_render_data egl;
+#endif
   Uint32 *pixels;
   Uint32 charset_texture[CHAR_H * CHARSET_SIZE * CHAR_W * 2];
   Uint32 background_texture[SCREEN_W * SCREEN_H];
@@ -357,19 +360,23 @@ static bool glsl_init_video(struct graphics_data *graphics,
   version = (const char *)gl->glGetString(GL_VERSION);
   extensions = (const char *)gl->glGetString(GL_EXTENSIONS);
 
-  // we need a specific "version" of OpenGL compatibility
+  // We need a specific version of OpenGL; desktop GL must be 1.1.
+  // We also need the shading language extension for desktop GL.
+  // All OpenGL ES implementations are supported, so don't do the check
+  // with EGL configurations (EGL implies OpenGL ES).
+#ifndef CONFIG_EGL
   if(version && atof(version) < 1.1)
   {
     warn("OpenGL implementation is too old (need v1.1).\n");
     goto err_free;
   }
 
-  // we also need to be able to utilise shader extensions
   if(!(extensions && strstr(extensions, "GL_ARB_shading_language_100")))
   {
     warn("OpenGL missing GL_ARB_shading_language_100 extension.\n");
     goto err_free;
   }
+#endif
 
   return true;
 

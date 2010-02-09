@@ -68,7 +68,7 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize)
 {
   struct egl_render_data *egl_render_data = graphics->render_data;
-  EGLNativeWindowType window;
+  EGLNativeWindowType window = 0;
   EGLint w, h;
 
   assert(egl_render_data != NULL);
