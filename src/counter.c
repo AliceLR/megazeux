@@ -2916,7 +2916,7 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
        * current position and the file end; this won't affect normal reads,
        * it just prevents people from crashing MZX by reading 2G from a 3K file.
        */
-      if(current_pos + read_count > file_size)
+      if(current_pos + read_count > (unsigned int)file_size)
         read_count = file_size - current_pos;
 
       force_string_splice(mzx_world, name, next, &dest,
