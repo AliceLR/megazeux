@@ -454,7 +454,8 @@ static inline void platform_freeaddrinfo(struct addrinfo *res)
 {
   if(socksyms.freeaddrinfo)
     socksyms.freeaddrinfo(res);
-  return freeaddrinfo_legacy_wrapper(res);
+  else
+    freeaddrinfo_legacy_wrapper(res);
 }
 
 static inline int platform_getaddrinfo(const char *node, const char *service,
