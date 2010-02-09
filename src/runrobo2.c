@@ -1338,6 +1338,16 @@ void run_robot(World *mzx_world, int id, int x, int y)
             gotoed = set_counter_special(mzx_world,
              mzx_world->special_counter_return, dest_buffer, value, id);
 
+            /* FIXME: For the moment, end the cycle if we save the game
+             *        or the world. The save_world() function is trying to
+             *        "optimize" a live board, which breaks commands like
+             *        DIE which expect robot IDs to be in sequence (the ID is
+             *        cached for the whole cycle).
+             */
+            if(mzx_world->special_counter_return == FOPEN_SAVE_GAME ||
+             (mzx_world->special_counter_return == FOPEN_SAVE_WORLD))
+              goto breaker;
+
             // some specials might have changed these
             program = cur_robot->program;
             cmd_ptr = program + cur_robot->cur_prog_line;

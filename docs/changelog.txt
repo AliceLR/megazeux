@@ -5,7 +5,13 @@ USERS
 + Writing to $str.length (which previously did undefined things) will now
   truncate or enlarge the string to the size specified.
 + Removed filename size limit for FWRITE_MODIFY and FWRITE_APPEND. (Revvy)
-+ Added support to the checkres tool to check worlds in non-local directories. (Revvy)
++ Added support to the checkres tool to check worlds in non-local
+  directories. (Revvy)
++ Fix an old bug with saving games and worlds from Robotic where a board could
+  be prematurely "optimized", renumbering robot IDs within the same cycle. For
+  commands like DIE this could cause unpredictable behaviour or simply crashes
+  (if invoked in the same cycle). As a special case, end the cycle if either
+  of these SET specials are used.
 
 DEVELOPERS
 

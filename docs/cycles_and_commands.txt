@@ -218,7 +218,7 @@ SEND # # "label"                                        |     NO      |
 SEND "Robot" "label"                                    |     NO      |
 SEND [dir] "label"                                      |     NO      |
 SEND [dir] PLAYER "label"                               |     NO      |
-SET "counter" #                                         |     NO      |
+SET "counter" #                                         |    NO(8)    |
 SET "counter" RANDOM # #                                |     NO      |
 SET "$string" "text"                                    |     NO      |
 SET "$string1" "$string2"                               |     NO      |
@@ -265,3 +265,4 @@ ZAP "label" #                                           |     NO      |
 (5) = Does not end a cycle if # is 0.
 (6) = Has a sub-cycle end, and thus acts differently from the DOS version (most notably, being shot point-blank happens far faster).
 (7) = A special case exists where it currently executes a cycle end going through a transporter.
+(8) = A special case exists for the SAVE_GAME and SAVE_WORLD "special" counters which do end the cycle if used.
