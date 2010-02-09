@@ -33,25 +33,48 @@
 static void copy_substring_escaped(mzx_string *str, char *buf,
  unsigned int size)
 {
-  unsigned int i;
+  unsigned int i, j;
 
-  for(i = 0; i < str->length && i < size; i++)
+  for(i = 0, j = 0; i < str->length && i < size; i++, j++)
   {
-    if(str->value[i] == '\\')
+    if(str->value[j] == '\\')
     {
       buf[i++] = '\\';
       buf[i] = '\\';
     }
-    else if(str->value[i] == '\n')
+    else if(str->value[j] == '\n')
     {
       buf[i++] = '\\';
       buf[i] = 'n';
     }
     else
-      buf[i] = str->value[i];
+      buf[i] = str->value[j];
   }
 
   buf[i] = 0;
+}
+
+static void unescape_string(char *buf)
+{
+  unsigned int i, j, len = strlen(buf);
+
+  for(i = 0, j = 0; j < len; i++, j++)
+  {
+    if(buf[j] != '\\')
+    {
+      buf[i] = buf[j];
+      continue;
+    }
+
+    j++;
+
+    if(buf[j] == 'n')
+      buf[i] = '\n';
+    else if(buf[j] == '\\')
+      buf[i] = '\\';
+    else
+      buf[i] = buf[j];
+  }
 }
 
 void debug_counters(World *mzx_world)
@@ -178,19 +201,18 @@ void debug_counters(World *mzx_world)
       {
         if(edit_type > 0)
         {
-          mzx_string src = { strlen(new_value), 0, new_value, { 0 }, { 0 } };
+          mzx_string src;
+
+          unescape_string(new_value);
+          memset(&src, 0, sizeof(mzx_string));
+          src.length = strlen(new_value);
+          src.value = new_value;
+
           set_string(mzx_world,
            mzx_world->string_list[offset]->name, &src, 0);
 
-          cp_len = mzx_world->string_list[offset]->length;
-
-          if(cp_len > 58)
-            cp_len = 58;
-
-          memcpy(var_list[selected] + 17,
-           mzx_world->string_list[offset]->value,
-           cp_len);
-          var_list[selected][17 + cp_len] = 0;
+          copy_substring_escaped(mzx_world->string_list[offset],
+           var_list[selected] + 17, 58);
         }
         else
         {
