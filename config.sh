@@ -209,7 +209,7 @@ echo
 
 ### GENERATE CONFIG.H HEADER ##################################################
 
-source version.inc
+. version.inc
 
 echo "PREFIX?=$PREFIX" >> platform.inc
 
