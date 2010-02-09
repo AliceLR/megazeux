@@ -8,13 +8,13 @@
 
 .PHONY: clean package_clean help_check mzx mzx.debug
 
-include platform.inc
+-include platform.inc
 include version.inc
 
 all: mzx
 debuglink: all mzx.debug
 
-include arch/${PLATFORM}/Makefile.in
+-include arch/${PLATFORM}/Makefile.in
 
 CC      ?= gcc
 CXX     ?= g++
