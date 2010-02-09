@@ -256,15 +256,7 @@ ${mzx}.debug:
 
 endif
 
-mzxrun_objs := ${core_obj}/main.o
-
-ifeq (${BUILD_EDITOR},1)
-mzxrun_objs += ${core_obj}/run_stubs.o
-endif
-
-ifeq (${BUILD_NETWORK},1)
-mzxrun_objs += ${core_obj}/run_stubs.o
-endif
+mzxrun_objs := ${core_obj}/main.o ${core_obj}/run_stubs.o
 
 ifeq (${PLATFORM},darwin)
 mzxrun_objs += arch/darwin/SDLMain.o
