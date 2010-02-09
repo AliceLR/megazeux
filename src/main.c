@@ -49,21 +49,31 @@
 #include "run_stubs.h"
 #include "network/network.h"
 
+#ifndef VERSION
+#error Must define VERSION for MegaZeux version string
+#endif
+
+#ifndef VERSION_DATE
+#define VERSION_DATE
+#endif
+
+#define CAPTION "MegaZeux " VERSION VERSION_DATE
+
 #ifdef __amigaos__
 #define __libspec LIBSPEC
 #else
 #define __libspec
 #endif
 
-/* The world structure used to be pretty big (around 7.2k) which
- * caused some platforms grief. Early hacks moved it entirely onto
- * the heap, but this will reduce performance of a constantly
- * accessed data structure in multiple hot paths.
- *
- * As a compromise, move out stuff that's accessed less frequently,
- * or which is simply too large to be worth it. This means we need
- * a couple of functions for allocating/freeing MZX worlds.
- */
+// The world structure used to be pretty big (around 7.2k) which
+// caused some platforms grief. Early hacks moved it entirely onto
+// the heap, but this will reduce performance of a constantly
+// accessed data structure in multiple hot paths.
+
+// As a compromise, move out stuff that's accessed less frequently,
+// or which is simply too large to be worth it. This means we need
+// a couple of functions for allocating/freeing MZX worlds.
+
 static void allocate_world(struct world *mzx_world)
 {
   memset(mzx_world, 0, sizeof(struct world));
@@ -152,7 +162,7 @@ __libspec int main(int argc, char *argv[])
 
   init_event();
 
-  if(!init_video(&(mzx_world.conf)))
+  if(!init_video(&mzx_world.conf, CAPTION))
     goto err_network_layer_exit;
   init_audio(&(mzx_world.conf));
 
@@ -160,9 +170,7 @@ __libspec int main(int argc, char *argv[])
   cursor_off();
   default_scroll_values(&mzx_world);
 
-#ifdef CONFIG_HELPSYS
   help_open(&mzx_world, mzx_res_get_by_id(MZX_HELP_FIL));
-#endif
 
   strncpy(curr_file, mzx_world.conf.startup_file, MAX_PATH - 1);
   curr_file[MAX_PATH - 1] = '\0';
@@ -183,9 +191,7 @@ __libspec int main(int argc, char *argv[])
     clear_global_data(&mzx_world);
   }
 
-#ifdef CONFIG_HELPSYS
   help_close(&mzx_world);
-#endif
 
   quit_audio();
 

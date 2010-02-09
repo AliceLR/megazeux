@@ -48,14 +48,6 @@
 
 #include "util.h"
 
-#ifndef VERSION
-#error Must define VERSION for MegaZeux version string
-#endif
-
-#ifndef VERSION_DATE
-#define VERSION_DATE
-#endif
-
 #define CURSOR_BLINK_RATE 115
 
 __editor_maybe_static struct graphics_data graphics;
@@ -807,7 +799,7 @@ static bool set_graphics_output(struct config_info *conf)
   return true;
 }
 
-bool init_video(struct config_info *conf)
+bool init_video(struct config_info *conf, const char *caption)
 {
   graphics.screen_mode = 0;
   graphics.fullscreen = conf->fullscreen;
@@ -823,7 +815,7 @@ bool init_video(struct config_info *conf)
     return false;
 
 #ifdef CONFIG_SDL
-  SDL_WM_SetCaption("MegaZeux " VERSION VERSION_DATE, "");
+  SDL_WM_SetCaption(caption, "");
 #endif
 
   // These values (the defaults, actually) are special and tell MZX to try

@@ -159,7 +159,7 @@ CORE_LIBSPEC void cursor_solid(void);
 CORE_LIBSPEC void cursor_off(void);
 CORE_LIBSPEC void move_cursor(Uint32 x, Uint32 y);
 
-CORE_LIBSPEC bool init_video(struct config_info *conf);
+CORE_LIBSPEC bool init_video(struct config_info *conf, const char *caption);
 CORE_LIBSPEC void update_screen(void);
 
 CORE_LIBSPEC void ec_read_char(Uint8 chr, char *matrix);
