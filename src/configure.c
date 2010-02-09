@@ -498,7 +498,7 @@ static const struct config_info default_options =
   true,                         // network_enabled
 #endif
 #ifdef CONFIG_UPDATER
-  "updates.mzx.devzero.co.uk",  // update_host
+  "updates.digitalmzx.net",     // update_host
   "Stable",                     // update_branch_pin
 #endif
 };

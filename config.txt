@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# Dec 26th, 2009
+# Dec 30th, 2009
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -444,7 +444,7 @@
 # unofficial updates. Please note, this is not a URL and should not
 # contain protocol specifiers such as http://
 
-# update_host = updates.mzx.devzero.co.uk
+# update_host = updates.digitalmzx.net
 
 # The update "branch" is consulted each time the updater runs. Typically,
 # there are only two branches, "Stable" and "Unstable". Please note, this
