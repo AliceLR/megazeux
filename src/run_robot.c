@@ -1278,8 +1278,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             if(mzx_world->special_counter_return == FOPEN_SAVE_GAME ||
              (mzx_world->special_counter_return == FOPEN_SAVE_WORLD))
             {
-              cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
-
               if(!program[cur_robot->cur_prog_line])
                 cur_robot->cur_prog_line = 0;
 
