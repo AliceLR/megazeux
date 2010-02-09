@@ -104,6 +104,7 @@ endif
 
 ifeq (${PLATFORM},android)
 core_cxxobjs += arch/android/sfwrapper.o
+LINK_CC := ${CXX}
 endif
 
 ifeq (${BUILD_WII},1)
@@ -146,7 +147,7 @@ endif
 #
 ifeq (${BUILD_EGL},1)
 core_cobjs += ${core_obj}/render_egl.o
-core_ldflags := -lEGL -lGLESv1_CM ${core_ldflags}
+core_ldflags := -lEGL ${core_ldflags}
 endif
 
 ifeq (${BUILD_RENDER_YUV},1)
