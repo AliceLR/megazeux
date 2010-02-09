@@ -60,8 +60,8 @@ static struct mzx_resource mzx_res[] = {
 
 int mzx_res_init(const char *argv0)
 {
+  int i, bin_path_len = 0;
   struct stat file_info;
-  int i, bin_path_len;
   char *bin_path;
   char *p_dir;
   int ret = 0;
