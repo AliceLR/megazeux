@@ -557,7 +557,7 @@ static void __check_for_updates(config_info *conf)
       break;
 
     if(!reissue_connection(conf, &h))
-      goto err_free_url_base;
+      goto err_roll_back_manifest;
   }
 
   if(retries == MAX_RETRIES)
