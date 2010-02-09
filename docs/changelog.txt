@@ -35,6 +35,9 @@ USERS
   the existing icon. (Sci-freak)
 + Clamp score to >= 0 if world <= 2.70. Fixes "Gates: The Puzzles" and
   possibly other old titles depending on this behavior. (Exophase)
++ Fullscreen modes will now automatically use your current desktop resolution
+  if using any hardware renderer (i.e. not the default software renderer). To
+  get the old behaviour back you must set fullscreen_resolution explicitly.
 
 DEVELOPERS
 

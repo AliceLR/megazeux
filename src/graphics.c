@@ -826,6 +826,22 @@ bool init_video(struct config_info *conf)
   SDL_WM_SetCaption("MegaZeux " VERSION VERSION_DATE, "");
 #endif
 
+  // These values (the defaults, actually) are special and tell MZX to try
+  // to use the current desktop resolution as the fullscreen resolution
+  if(conf->resolution_width == -1 && conf->resolution_height == -1)
+  {
+    graphics.resolution_width = 640;
+    graphics.resolution_height = 480;
+
+    // We'll only do this for hardware scaling renderers
+    if(strcmp(conf->video_output, "software") != 0)
+    {
+      const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
+      graphics.resolution_width = video_info->current_w;
+      graphics.resolution_height = video_info->current_h;
+    }
+  }
+
   if(!graphics.renderer.init_video(&graphics, conf))
   {
     // Try falling back to the first registered renderer

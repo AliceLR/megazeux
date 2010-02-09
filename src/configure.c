@@ -473,8 +473,8 @@ static struct config_info default_options =
 {
   // Video options
   FULLSCREEN_DEFAULT,           // fullscreen
-  640,                          // resolution_width
-  480,                          // resolution_height
+  -1,                           // resolution_width
+  -1,                           // resolution_height
   640,                          // window_width
   350,                          // window_height
   1,                            // allow_resize
