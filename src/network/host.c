@@ -659,8 +659,11 @@ struct host *host_create(host_type_t type, host_family_t fam)
 
 void host_destroy(struct host *h)
 {
-  platform_close(h->fd);
-  free(h);
+  if(h)
+  {
+    platform_close(h->fd);
+    free(h);
+  }
 }
 
 static bool __send(struct host *h, const void *buffer, unsigned int len)

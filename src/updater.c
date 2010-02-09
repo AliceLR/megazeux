@@ -32,6 +32,7 @@
 #include <sys/types.h>
 #include <sys/stat.h>
 
+#include <assert.h>
 #include <errno.h>
 
 #ifndef _MSC_VER
@@ -41,6 +42,8 @@
 #ifndef PLATFORM
 #error Must define a valid "friendly" platform name!
 #endif
+
+#define MAX_RETRIES   3
 
 #define OUTBOUND_PORT 80
 #define LINE_BUF_LEN  256
@@ -58,6 +61,13 @@
 #endif
 
 #define WIDGET_BUF_LEN 80
+
+static struct manifest_entry *delete_list, *delete_p;
+
+static char widget_buf[WIDGET_BUF_LEN];
+
+static long final_size = -1;
+static bool cancel_update;
 
 static char **process_argv;
 
@@ -124,7 +134,6 @@ static bool check_create_basedir(const char *file)
 
   if(!S_ISDIR(s.st_mode))
   {
-    static char widget_buf[WIDGET_BUF_LEN];
     snprintf(widget_buf, WIDGET_BUF_LEN,
      "File \"%s\" prevents creation of directory by same name", path);
     widget_buf[WIDGET_BUF_LEN - 1] = 0;
@@ -134,9 +143,6 @@ static bool check_create_basedir(const char *file)
 
   return true;
 }
-
-static long final_size = -1;
-static bool cancel_update;
 
 static void check_cancel_update(void)
 {
@@ -171,8 +177,6 @@ static bool cancel_cb(void)
 
   return false;
 }
-
-static struct manifest_entry *delete_list, *delete_p;
 
 static void delete_hook(const char *file)
 {
@@ -323,17 +327,62 @@ static bool restore_original_manifest(void)
   return true;
 }
 
+static bool reissue_connection(struct host **h)
+{
+  bool ret = true;
+  int buf_len;
+
+  assert(h != NULL);
+
+  /* We might be passed an existing socket. If we have been, close
+   * and destroy the associated host, and create a new one.
+   */
+  if(*h)
+    host_destroy(*h);
+
+  *h = host_create(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
+  if(!*h)
+  {
+    error("Failed to create TCP client socket.", 1, 8, 0);
+    ret = false;
+    goto err_out;
+  }
+
+  m_hide();
+
+  buf_len = snprintf(widget_buf, WIDGET_BUF_LEN, "Connecting to \""
+   UPDATE_HOST "\". Please wait..");
+  widget_buf[WIDGET_BUF_LEN - 1] = 0;
+
+  draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+  write_string(widget_buf, (WIDGET_BUF_LEN - buf_len) >> 1, 12, DI_TEXT, 0);
+  update_screen();
+
+  if(!host_connect(*h, UPDATE_HOST, OUTBOUND_PORT))
+  {
+    error("Connection to \"" UPDATE_HOST "\" failed.", 1, 8, 0);
+    ret = false;
+  }
+
+  clear_screen(32, 7);
+  m_show();
+  update_screen();
+
+err_out:
+  return ret;
+}
+
 static void __check_for_updates(void)
 {
+  char **list_entries, buffer[LINE_BUF_LEN], *url_base, *value;
   struct manifest_entry *removed, *replaced, *added, *e;
-  char **list_entries, widget_buf[WIDGET_BUF_LEN];
-  char buffer[LINE_BUF_LEN], *url_base, *value;
   int i = 0, entries = 0, buf_len, result;
   const char *version = "2.82";
   size_t list_entry_width = 0;
+  struct host *h = NULL;
   host_status_t status;
+  unsigned int retries;
   bool ret = false;
-  struct host *h;
   FILE *f;
 
   if(!swivel_current_dir())
@@ -353,36 +402,23 @@ static void __check_for_updates(void)
     goto err_chdir;
   }
 
-  h = host_create(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
-  if(!h)
+  if(!reissue_connection(&h))
+    goto err_host_destroy;
+
+  for(retries = 0; retries < MAX_RETRIES; retries++)
   {
-    error("Failed to create TCP client socket.", 1, 8, 0);
-    goto err_layer_exit;
+    // Grab the file containing the names of the current Stable and Unstable
+    status = host_recv_file(h, "/" UPDATES_TXT, f, "text/plain");
+    rewind(f);
+
+    if(status == HOST_SUCCESS)
+      break;
+
+    if(!reissue_connection(&h))
+      goto err_host_destroy;
   }
 
-  m_hide();
-
-  buf_len = snprintf(widget_buf, WIDGET_BUF_LEN, "Connecting to \""
-   UPDATE_HOST "\" to receive version list..");
-  widget_buf[WIDGET_BUF_LEN - 1] = 0;
-
-  draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
-  write_string(widget_buf, (WIDGET_BUF_LEN - buf_len) >> 1, 12, DI_TEXT, 0);
-  update_screen();
-
-  if(!host_connect(h, UPDATE_HOST, OUTBOUND_PORT))
-  {
-    error("Connection to \"" UPDATE_HOST "\" failed.", 1, 8, 0);
-    goto err_clear_screen;
-  }
-
-  clear_screen(32, 7);
-  m_show();
-  update_screen();
-
-  // Grab the file containing the names of the current Stable and Unstable
-  status = host_recv_file(h, "/" UPDATES_TXT, f, "text/plain");
-  if(status != HOST_SUCCESS)
+  if(retries == MAX_RETRIES)
   {
     snprintf(widget_buf, WIDGET_BUF_LEN, "Failed to download \""
      UPDATES_TXT "\" (err=%d).\n", status);
@@ -392,7 +428,6 @@ static void __check_for_updates(void)
   }
 
   // Walk this list (of two, hopefully)
-  rewind(f);
   while(true)
   {
     char *m = buffer, *key;
@@ -482,13 +517,6 @@ static void __check_for_updates(void)
   snprintf(url_base, LINE_BUF_LEN, "/%s/" PLATFORM, version);
   debug("Update base URL: %s\n", url_base);
 
-  m_hide();
-
-  draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
-  write_string("Computing manifest deltas (added, replaced, deleted)..",
-   13, 12, DI_TEXT, 0);
-  update_screen();
-
   /* The call to manifest_get_updates() destroys any existing manifest
    * file in this directory. Since we still allow user to abort after
    * this call, and downloading the updates may fail, we copy the
@@ -500,15 +528,35 @@ static void __check_for_updates(void)
     goto err_free_url_base;
   }
 
-  if(!manifest_get_updates(h, url_base, &removed, &replaced, &added))
+  for(retries = 0; retries < MAX_RETRIES; retries++)
+  {
+    bool m_ret;
+
+    m_hide();
+
+    draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+    write_string("Computing manifest deltas (added, replaced, deleted)..",
+     13, 12, DI_TEXT, 0);
+    update_screen();
+
+    m_ret = manifest_get_updates(h, url_base, &removed, &replaced, &added);
+
+    clear_screen(32, 7);
+    m_show();
+    update_screen();
+
+    if(m_ret)
+      break;
+
+    if(!reissue_connection(&h))
+      goto err_free_url_base;
+  }
+
+  if(retries == MAX_RETRIES)
   {
     error("Failed to compute update manifests", 1, 8, 0);
     goto err_roll_back_manifest;
   }
-
-  clear_screen(32, 7);
-  m_show();
-  update_screen();
 
   if(!removed && !replaced && !added)
   {
@@ -576,8 +624,6 @@ static void __check_for_updates(void)
   clear_screen(32, 7);
   update_screen();
 
-  host_set_callbacks(h, NULL, recv_cb, cancel_cb);
-
   for(e = removed; e; e = e->next)
     delete_hook(e->name);
 
@@ -598,21 +644,47 @@ static void __check_for_updates(void)
   else
     replaced = added;
 
+  host_set_callbacks(h, NULL, recv_cb, cancel_cb);
+
   for(e = replaced; e; e = e->next)
   {
-    char name[72];
+    for(retries = 0; retries < MAX_RETRIES; retries++)
+    {
+      char name[72];
+      bool m_ret;
 
-    if(!check_create_basedir(e->name))
+      if(!check_create_basedir(e->name))
+        goto err_free_delete_list;
+
+      final_size = (long)e->size;
+
+      m_hide();
+      snprintf(name, 72, "%s (%ldb)", e->name, final_size);
+      meter(name, 0, final_size);
+      update_screen();
+
+      m_ret = manifest_entry_download_replace(h, url_base, e, delete_hook);
+
+      clear_screen(32, 7);
+      m_show();
+      update_screen();
+
+      if(m_ret)
+        break;
+
+      if(!reissue_connection(&h))
+        goto err_free_delete_list;
+      host_set_callbacks(h, NULL, recv_cb, cancel_cb);
+    }
+
+    if(retries == MAX_RETRIES)
+    {
+      snprintf(widget_buf, WIDGET_BUF_LEN,
+       "Failed to download \"%s\" (after %d attempts).", e->name, retries);
+      widget_buf[WIDGET_BUF_LEN - 1] = 0;
+      error(widget_buf, 1, 8, 0);
       goto err_free_delete_list;
-
-    final_size = (long)e->size;
-
-    snprintf(name, 72, "%s (%ldb)", e->name, final_size);
-    meter(name, 0, final_size);
-    update_screen();
-
-    if(!manifest_entry_download_replace(h, url_base, e, delete_hook))
-      goto err_free_delete_list;
+    }
   }
 
   if(delete_list)
@@ -649,11 +721,6 @@ err_free_url_base:
   free(url_base);
 err_host_destroy:
   host_destroy(h);
-err_clear_screen:
-  clear_screen(32, 7);
-  update_screen();
-  m_show();
-err_layer_exit:
   host_layer_exit();
 err_chdir:
   swivel_current_dir_back();
