@@ -30,6 +30,30 @@
 
 #define CVALUE_COL_OFFSET 63
 
+static void copy_substring_escaped(mzx_string *str, char *buf,
+ unsigned int size)
+{
+  unsigned int i;
+
+  for(i = 0; i < str->length && i < size; i++)
+  {
+    if(str->value[i] == '\\')
+    {
+      buf[i++] = '\\';
+      buf[i] = '\\';
+    }
+    else if(str->value[i] == '\n')
+    {
+      buf[i++] = '\\';
+      buf[i] = 'n';
+    }
+    else
+      buf[i] = str->value[i];
+  }
+
+  buf[i] = 0;
+}
+
 void debug_counters(World *mzx_world)
 {
   // +1 for SCORE, +1 for mzx_speed
@@ -88,14 +112,7 @@ void debug_counters(World *mzx_world)
 
     var_list[i][cp_len] = ' ';
 
-    cp_len = mzx_world->string_list[i2]->length;
-
-    if(cp_len > 58)
-      cp_len = 58;
-
-    memcpy(var_list[i] + 17,
-     mzx_world->string_list[i2]->value, cp_len);
-    var_list[i][17 + cp_len] = 0;
+    copy_substring_escaped(mzx_world->string_list[i2], var_list[i] + 17, 58);
   }
 
   do
@@ -125,15 +142,7 @@ void debug_counters(World *mzx_world)
         snprintf(name + 5, 70 - 5, "string %s",
          mzx_world->string_list[offset]->name);
 
-        cp_len = mzx_world->string_list[offset]->length;
-
-        if(cp_len > 68)
-          cp_len = 68;
-
-        memcpy(new_value,
-         mzx_world->string_list[offset]->value, cp_len);
-
-        new_value[cp_len] = 0;
+        copy_substring_escaped(mzx_world->string_list[offset], new_value, 68);
       }
       else
       {
