@@ -208,18 +208,18 @@ typedef enum
 #define int_to_dir(d)                                     \
   ((mzx_dir)(d + 1))                                      \
 
-static const int CAN_PUSH      = 0x001;
-static const int CAN_TRANSPORT = 0x002;
-static const int CAN_LAVAWALK  = 0x004;
-static const int CAN_FIREWALK  = 0x008;
-static const int CAN_WATERWALK = 0x010;
-static const int MUST_WEB      = 0x020;
-static const int MUST_THICKWEB = 0x040;
-static const int REACT_PLAYER  = 0x080;
-static const int MUST_WATER    = 0x100;
-static const int MUST_LAVAGOOP = 0x200;
-static const int CAN_GOOPWALK  = 0x400;
-static const int SPITFIRE      = 0x800;
+#define CAN_PUSH      (1 << 0)
+#define CAN_TRANSPORT (1 << 1)
+#define CAN_LAVAWALK  (1 << 2)
+#define CAN_FIREWALK  (1 << 3)
+#define CAN_WATERWALK (1 << 4)
+#define MUST_WEB      (1 << 5)
+#define MUST_THICKWEB (1 << 6)
+#define REACT_PLAYER  (1 << 7)
+#define MUST_WATER    (1 << 8)
+#define MUST_LAVAGOOP (1 << 9)
+#define CAN_GOOPWALK  (1 << 10)
+#define SPITFIRE      (1 << 11)
 
 typedef enum
 {
