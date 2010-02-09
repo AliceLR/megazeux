@@ -478,7 +478,7 @@ gems,  full bombs, full health (set to maxhealth) and full
 lives (set to maxlives). This is a cheating function, so do not
 use unless fully necessary; a few games punish the player for
 using this function. This will only work during playtesting in
-the editor.
+the editor, or in MZXRun builds.
 
 F8 - Zap Cheat
 
@@ -487,7 +487,7 @@ around the player, replacing all eight squares with spaces.
 This is a cheating function, so do not use unless fully
 necessary; a few games punish the player for using this
 function. This will only work during playtesting in
-the editor.
+the editor, or in MZXRun builds.
 
 F9 - Quicksave
 This will save the game, like F3, but to the last filename you
@@ -511,7 +511,7 @@ listed. Highlight any counter/string and press Enter to change
 its value. The Export button allows exporting Robotic code,
 which sets all of the shown counters and strings at their shown
 values to a text file. This will only work during playtesting
-in the editor.
+in the editor, on in MZXRun builds.
 
 F12 - Take Screendump
 Pressing F12 will make a 640x350 screendump (in PNG format by
@@ -562,6 +562,17 @@ F4 or R - Restore Game (see above)
 
 F5 or P - Play Game
 This will stop the title screen and actually begin game play.
+
+F7 or U - Updater
+This will load the updater. The updater will connect to an
+online repository and check if a new MegaZeux version is
+available. If so, the user gets the option to update MegaZeux.
+MZX will then list the files added/changed/deleted in the
+update, and if the user decides to update, MZX will reset when
+the update is finished.
+WARNING: This will most likely replace your config.txt file, so
+if you want to keep your settings, make a backup first so you
+can apply your settings to the new file!
 
 F8 or E - World Editor
 This will quit the gaming portion of MegaZeux and enter the
@@ -1230,25 +1241,28 @@ criticism, or suggestions. We especially appreciate QUALITY
 MegaZeux worlds. Here's the contact information as of this
 writing:
 
-Check the reports on DigitalMZX (http://digitalmzx.net/forums/)
-to see if your problem has already been addressed. Problems are
-listed in a thread called "MZX 2.80+ bug reports" in the
-General forum as of this writing.
+Check the reports on DigitalMZX's Bug Tracker
+(http://www.digitalmzx.net/forums/index.php?autocom=bugtracker)
+to see if your problem has already been addressed. Active
+problems are listed, as of this writing, in the "MegaZeux"
+category, while the fixed bugs are in the "Closed MegaZeux
+Bugs" category.
 
 To make things sane for all parties, do this before submitting:
-  1) Make sure you have the most current version.
-  2) Make sure that the Bug Report thread doesn't address your
-     bug, nor the list of bugs outstanding.
+  1) Make sure you have the most current version of MegaZeux.
+  2) Make sure that the Bug Tracker doesn't address your bug.
   3) Try to write down what specifically happens.
-  4) Try to pinpoint the problem to a specific Robotic line or
+  4) List what platform(s) you know show this problem.
+  5) Try to pinpoint the problem to a specific Robotic line or
      MZX function; at the very least, try to narrow it down. 
      Pinpointing which version introduced the bug is very
      helpful, if possible.
-  5) If you're unsure if the bug's been addressed, try to build
+  6) If you're unsure if the bug's been addressed, try to build
      a version from SourceForge's SVN repository and see if it
      hasn't been fixed in the test build.
-  6) Optimally, upload a world made in 2.70 that works in 2.70
-     but does not in the current version to best isolate the
+  7) Optimally, if the problems is a regression caused by the
+     port, upload a world made in 2.70 that works in 2.70 but
+     does not in the current version to best isolate the
      problem.
 
 >#MAIN.HLP:072:Table of Contents
@@ -1266,20 +1280,25 @@ Q: I hate that MegaZeux is always windowed! Could you change
 A: There's already a way to switch between fullscreen and
   windowed modes - press ctrl+Alt+ENTER.
 
-Q: How can I get option foobar in the config file to work?
+Q: How can I get option (foobar) in the config file to work?
 
 A: Make sure the pound / hash sign in front of the command is
   deleted. Otherwise, the option is treated as a comment and
   ignored.
+  
+Q: Are there any MZX-specific tools that can make developing an
+  MZX game easier?
 
-Q: Why doesn't my music play?
-
-A: Likely it's because the music file's filename is over 12
-  characters long in total. Shorten the name if so, or load the
-  file through Robotic instead of having it set as the native
-  board module. If you still have problems, see if the file
-  will load at all in an appropriate player. If all else fails,
-  inform the coder(s).
+A: Yes, plenty! MegaZeux comes with two helpful tools:
+  "Checkres" will detect what files referenced by an MZX world
+  are present, and "Downver" will change the given MZX world's
+  version to its preceding version. There are several graphical
+  conversion programs such as CharCon, and SMZX palette tools
+  such as Palzor and PalMaster.  
+  MZX has natural time-savers, of course. Automated backups,
+  macros, Robotic code import/export, expressions, repeated
+  block copying and other features can help speed up
+  development time.  
 
 Q: Can I distribute a world I made with MegaZeux? Is it
   legal? Must I/can I include MegaZeux with it? Can they
@@ -1303,12 +1322,11 @@ A: Of course you can distribute your worlds! That is what
   ground-breaking game, then you can attempt to ask for
   registration money in a shareware demo version.
 
-Q: I WANT FUNCTION FOOBAR ADDED OR I LEAVE THE COMMUNITY
+Q: I WANT FUNCTION (FOOBAR) ADDED OR I LEAVE THE COMMUNITY
   FOREVER :<
 
 A: Before you go bugging the maintainer(s) of MegaZeux to add
   new functions, consider these things:
-
   1) Some things require massive work to implement. These
      things require changing the world format, and world
      format changes are explicitly reserved for large version
@@ -1326,53 +1344,57 @@ A: Before you go bugging the maintainer(s) of MegaZeux to add
      currently the method of storing Robotic severely limits
      the amount of new commands. Until this system is retooled,
      there will be no new commands.
+     
+Q: Is adding network capabilities to MegaZeux planned?
+
+A: Short answer: Not that way. This has been discussed
+  at-length; the biggest problems with adding these to GAMES
+  are thorny  implementation issues (how the MZX programmer
+  would insert network capabilities into a MegaZeux world, as
+  well as the structure in general). It's definitely possible,
+  and possible to do soundly, but developers aren't interested
+  in it. As for other networking capabilities and MZX, maybe.
+  Implementing tools and aids for MZX relying on networking is
+  a lot less thorny of an issue, and might be considered.
 
 Q: Will MegaZeux games ever be playable without MegaZeux
   itself?
 
 A: Likely not. It's a consensus among most developers that the
-  possible hassle saved for newbies is not worth implementing
-  this feature.
+  possible hassle saved for newbies and the "spoiled" is not
+  worth implementing this feature.
 
+Q: I need more than 256 characters! Could you help with this?
+
+A: Then you'll need to carefully utilize the Robot command
+  LOAD CHAR SET and ration your characters carefully. The
+  256-char limit is set within the world format and will
+  currently be left alone. Also, you might not REALLY
+  need 256 characters at once. If you're wanting more
+  characters because of heavy character use in animation,
+  partial character set loading will probably be the best
+  solution. Otherwise, find out which characters will never be
+  shown when other characters are and replace them with
+  characters you WILL use (such as the alphanumeric
+  characters).
+  
+>#PARTIAL.HLP:par:Partial Character Sets
+  
 Q: Why is my MegaZeux world starting on the title screen?
 
 A: The first board has to be set. Press 'G' in the editor, then
   click the 'More' button and the option appears on the top of
   the box.
 
-Q: Why doesn't [ work for taking screenshots?
+Q: Why doesn't my music play?
 
-A: It has been changed to F12 and now works in any area in MZX,
-  including any part of the editor. It currently outputs PNG
-  files by default, but will output MS BMP format files on
-  platforms unable to support PNG.
-
-Q: My Robot can't change its/the player's characters! I
-  use CHAR "A" but it turns invisible! What am I doing wrong?
-
-A: Use CHAR 'A' instead. You MUST use single quotes
-  (apostrophes) or it will use the value of the COUNTER
-  A which is probably 0.
-
-Q: How can I input a number over 32767 or under -32768 in
-  Robotic?
-
-A: You must use an expression. Encase the number in
-  parentheses, as shown here:
-  ~Eset "largesse" to "(2000000000)"
-
-Q: I heard only certain graphics cards can properly show Super
-  MZX mode games. Is this true?
-
-A: Not anymore. Any computer which can display normal games in
-  MegaZeux can now display Super MZX mode games.
-
-Q: How can I get "mod *" to work?
-
-A: Alt+8 and Alt+*, the old "mod *" keys, have a new function
-  now. To "mod *" in the port, use either Shift+8 or the
-  asterisk (*) on the numpad.
-
+A: Likely it's because the music file's filename is over 12
+  characters long in total. Shorten the name if so, or load the
+  file through Robotic instead of having it set as the native
+  board module. If you still have problems, see if the file
+  will load at all in an appropriate player. If all else fails,
+  inform the coder(s).
+  
 Q: Whenever I place a string on the overlay, the spaces aren't
   acting like overlay at all! Is this a bug?
 
@@ -1380,6 +1402,20 @@ A: No, it's not. Char 32 (the natural space) is never part of
   the overlay. You have to reserve an extra character or use
   the solid character for spaces, or otherwise convert spaces
   to useable replacements during run-time.
+
+Q: How can I input a number over 32767 or under -32768 in
+  Robotic?
+
+A: You must use an expression. Encase the number in
+  parentheses, as shown here:
+  ~Eset "largesse" to "(2000000000)"
+  
+Q: My Robot can't change its/the player's characters! I
+  use CHAR "A" but it turns invisible! What am I doing wrong?
+
+A: Use CHAR 'A' instead. You MUST use single quotes
+  (apostrophes) or it will use the value of the COUNTER
+  A, which is probably 0.
 
 Q: Can I use the music from Caverns in my games? How about
   the music from the registered games? How about the SAM
@@ -1444,44 +1480,38 @@ Q: Why do I get garbage when I try reading a file?
 A: You likely have it open for writing. To close a file, use
   the command SET "" to "FWRITE_OPEN".
 
-Q: I need more than 256 characters! Could you help with this?
-
-A: Then you'll need to carefully utilize the Robot command
-  LOAD CHAR SET and ration your characters carefully. The
-  256-char limit is set within the world format and will
-  currently be left alone. Also, you might not REALLY
-  need 256 characters at once. If you're wanting more
-  characters because of heavy character use in animation,
-  partial character set loading will probably be the best
-  solution. Otherwise, find out which characters will never be
-  shown when other characters are and replace them with
-  characters you WILL use (such as the alphanumeric
-  characters).
-
->#PARTIAL.HLP:par:Partial Character Sets
-
 Q: Why does MegaZeux slow to a crawl or even lock up completely
   when I set the "commands" counter to a high value?
 
-A: You're likely using an idle loop without a WAIT 1 command
+A: You're likely using an idle loop without a CYCLE 1 command
   inserted. Add one; if you're wary about possible delay
-  effects, rest assured that adding a WAIT 1 will not
-  unnecessarily add delays. It simply ends a cycle.
+  effects, rest assured that adding a CYCLE 1 will not
+  unnecessarily add delays. It will simply end a cycle.
+  
+Q: I heard only certain graphics cards can properly show Super
+  MZX mode games. Is this true?
+
+A: Not anymore. Any computer that can display normal games in
+  MegaZeux can now display Super MZX mode games.
+
+Q: How can I get "mod *" to work?
+
+A: Alt+8 and Alt+*, the old "mod *" keys, have a new function
+  now. To "mod *" in the port, use either Shift+8 or the
+  asterisk (*) on the numpad.
 
 Q: What's with these "~~roboclp.tmp" files packed with so many
   games?
 
 A: Those held clipboard information in DOS versions of MegaZeux.
   They are useless and should be freely deleted.
+  
+Q: Why doesn't [ work for taking screenshots?
 
-Q: Is adding network capabilities to MegaZeux planned?
-
-A: Short answer: No. This has been discussed at-length;
-  the biggest problems with adding these are thorny 
-  implementation issues (how the MZX programmer would insert
-  network capabilities into a MegaZeux world, as well as the
-  structure in general). It's definitely possible, and possible
-  to do soundly, but developers aren't interested in it.
+A: It has been changed to F12 and now works in any area in MZX,
+  including any part of the editor. It currently outputs PNG
+  files by default, but will output MS BMP format files on
+  platforms unable to support PNG.
 
 >#MAIN.HLP:072:Table of Contents
 #MEGAZEUX.HLP
@@ -1909,11 +1939,11 @@ options are covered in another section.
 
 Alt+I allows you to import a number of different file types
 into the current board or world. You can import a board file
-(MZB) unique to MegaZeux. You can import a character set file
-(CHR). You can import another world (MZX) which is appended
-to the list of boards (the global of the imported world will be
-ignored). Unlike old versions of MegaZeux, all exits will work.
-You can import a palette (PAL) file or a sound effects (SFX)
+(.MZB) unique to MegaZeux. You can import a character set file
+(.CHR). You can import another world (.MZX), which is appended
+to the list of boards. The global of the imported world will be
+ignored. Unlike old versions of MegaZeux, all exits will work.
+You can import a palette (.PAL) file or a sound effects (.SFX)
 file, both unique to MegaZeux. Finally, you can import an MZM
 file at a given position.
 
@@ -2623,7 +2653,7 @@ game, you should instead use one of the following:
 
 NOTE: The above text only applies to ModPlug (the default
 module engine). It is now possible to build using MikMod, to
-support platforms which cannot handle ModPlug. It can play
+support platforms that cannot handle ModPlug. It can play these
 formats: {669, AMF, APUN, DSM, FAR, GDM, IT, IMF, MOD, MED,
 MTM, OKT, S3M, STM, STX, ULT, UNI, XM}, while MZX will natively
 play the WAV and OGG formats. GDMs load natively in MikMod, in
@@ -3148,9 +3178,11 @@ The following is a list of error messages in alphabetical order,
 which link to descriptions of the error and possible remedies.
 MegaZeux silently ignores many other possible errors.
 
+MegaZeux General Errors:
+
 >era:Attempt to load non-MZX world.
 >erb:Cannot decrypt write-protected world.
->erc:Cannot load password protected worlds.
+>erc:Cannot load password protected world.
 >erd:Can't truncate file: the extension is too long.
 >ere:Error loading world
 >erf:Error saving world
@@ -3165,6 +3197,24 @@ MegaZeux silently ignores many other possible errors.
 >ero:World is from old version (1.0); use converter
 >erp:You can only play this game via a swap from another game
 
+MegaZeux Updater Errors:
+
+>erq:Attempt to invoke self failed!
+>ers:Failed to back up manifest. Check permissions.
+>ert:Failed to change back to user directory.
+>eru:Failed to change into install directory.
+>erv:Failed to compute update manifests
+>erw:Failed to create (filename). Check permissions.
+>erx:Failed to create directories (path too long)
+>ery:Failed to create TCP client socket.
+>erz:Failed to identify applicable update version.
+>er1:Failed to initialize network layer.
+>er2:Failed to remove (filename). Check permissions.
+>er3:Failed to roll back manifest. Check permissions.
+>er4:Failed to prune directories (path too long)
+>er5:Transferred more than expected uncompressed size.
+>er6:Unknown stat() error occurred
+
 :era:~AAttempt to load non-MZX world
 
 This can be caused when loading a cohesive game file not made
@@ -3176,11 +3226,11 @@ This can be caused by file errors or a hard disk space
 shortage. It can also result from an attempt to overwrite a
 read-only file.
 
-:erc:~ACannot load password protected worlds.
+:erc:~ACannot load password protected world.
 
 Since MegaZeux 2.80, worlds that are password protected have to
-be stripped of the password to run. This command is seen when
-the user refuses to decrypt the password-protected file.
+be stripped of the password to run. This error is seen when the
+user refuses to decrypt the password-protected file.
 
 :erd:~ACan't truncate file: the extension is too long
 
@@ -3236,7 +3286,7 @@ simply not valid at all.
 
 This is an internal error. Try to isolate the reason for the
 problem and notify the maintainer(s), as this error signifies a
-bug in MegaZeux.
+severe bug in MegaZeux.
 
 :ern:~AWorld is from a more recent version of MegaZeux
 
@@ -3259,6 +3309,66 @@ the option set to disallow normal gameplay. The world can only
 be played as a swap from another game. For example, this may be
 the second half of another game, or a separate world for
 showing the introduction.
+
+:erq:~AAttempt to invoke self failed!
+
+This error occurs when MZX fails to reload itself after an
+update. This signifies a major bug in MegaZeux; please contact
+the maintainer(s).
+
+:ers:~AFailed to back up manifest. Check permissions.
+:erw:~AFailed to create (filename). Check permissions.
+:er2:~AFailed to remove (filename). Check permissions.
+:er3:~AFailed to roll back manifest. Check permissions.
+
+MZX tried to write/delete a file from the working directory,
+but could not, likely due to the user's MZX's working directory
+disallowing write access.
+
+:ert:~AFailed to change back to user directory.
+:eru:~AFailed to change into install directory.
+
+These errors occur when MZX fails to change active directories
+during the updating process.
+
+:erv:~AFailed to compute update manifests
+
+This error occurs when the hash check in a manifest file fails.
+This error can also appear if the download of the manifest file
+times out.
+
+:erx:~AFailed to create directories (path too long)
+:er4:~AFailed to prune directories (path too long)
+
+This error occurs when the pathnames of the subdirectories
+included in or deleted by the selected update are too long.
+
+:ery:~AFailed to create TCP client socket.
+
+MZX failed to create a socket. This may be because the last one
+created is still in use. This signifies a major bug in
+MegaZeux; please contact the maintainer(s).
+
+:erz:~AFailed to identify applicable update version.
+
+MZX could not find an update in the branch the user selected.
+Please check the update_branch_pin and update_host options in
+config.txt and make sure they are correct.
+
+:er1:~AFailed to initialize network layer.
+
+MZX's networking code is unable to load. This signifies a major
+bug in MegaZeux; please contact the maintainer(s).
+
+:er5:~ATransferred more than expected uncompressed size.
+
+The updater has sent the user more data than needed. The update
+may be corrupt.
+
+:er6:~AUnknown stat() error occurred
+
+A fatal error outside of the ones mentioned occured. Please
+contact the developer(s) if you see this error.
 
 >#MAIN.HLP:072:Table of Contents
 #SENSORSW.HLP
@@ -3759,7 +3869,7 @@ $Simple Strings
 
 Generally, a string is a series of symbols within quotes- "BUG",
 "Hi there!", or even "ÅEA9 _±Ç". There are two special aspects
-or features of strings which may be useful.
+or features of strings that may be useful.
 
 $Color
 
@@ -4215,6 +4325,12 @@ will wait until it can before moving on to the next symbol.
 Use GO to move in a single direction for a given number of
 spaces (limited to 255; higher numbers wrap).
 
+These commands can be used concurrently with ~AWALK [dir]~F, 
+allowing Robots to move in double-speed steps. However, this
+can only happen when the commands are in the same cycle and if
+the given string/number for the moving command is small.
+
+>_w5:WALK [dir]
 >#COMMANDS.HLP:dir:Directions
 
 :__6:~A:~A "label"
@@ -4257,7 +4373,7 @@ called "messaging" a Robot, and the label given is the
 as listed above respectively:
 
 1- State the target Robot's name. Use "ALL" to message all
-  Robots, excluding the Robot which does the SEND "All"
+  Robots, excluding the Robot that does the SEND "All"
   command.
 2- State the direction of target Robot.
 3- State the direction of target Robot, relative to the player.
@@ -4404,6 +4520,12 @@ This will cause the Robot to move one space in the given
 direction every cycle. Use a direction of IDLE to turn walking
 off.
 
+This can be used concurrently with ~AGO [dir] #~F and its
+relatives to make Robots move in double-speed steps.
+
+>_g4:GO [dir] #
+>__5:/ "string"
+>_p1:PERSISTENT GO "string"
 >#COMMANDS.HLP:dir:Directions
 
 :_sP:~ASHOOT [dir]
@@ -6010,7 +6132,7 @@ defined behavior. Use the others at your own risk!
 
 ~BCOMMANDS
 
-The number of commands executed per cycle (30 is default). This
+The number of commands executed per cycle (40 is default). This
 number is global. It can severely slow MegaZeux if set too high
 and coupled with poor coding (especially busy loops lacking
 waits).
@@ -6026,18 +6148,18 @@ LOOP #, and ABORT LOOP.
 
 The internal ID of the Robot.
 
-~BRID<robot name>
-~BROBOT_ID_<robot name>
+~BRID<Robot name> (read-only)
+~BROBOT_ID_<Robot name> (read-only)
 
 Both of these give the robot_id number of the given named
-Robot. In the case of multiple robots with the same name the ID
-number corresponds to one of them (which one is undefined). If
-no robots have the name, or if the name in question only
-belongs to the global Robot, -1 is given.
+Robot. In the case of multiple robots with the same name, the
+ID number corresponds to only one of them (the one with the
+largest robot_id). If no robots have the name, or if the name
+in question only belongs to the global Robot, -1 is given.
 
 BEWARE: The existence of this counter makes it impossible to
 use words which start with "rid" as counters. The port will NOT
-fall through and give the values of any counter which starts
+fall through and give the values of any counter that starts
 with "rid"; instead, it ends at -1 (since the Robot the counter
 is trying to find, like "dles" (for "riddles"), will most
 likely not exist). Older games will allow this, but only for
@@ -6045,8 +6167,8 @@ compatibility reasons.
 
 ~BRn.<counter>
 
-Gives the value of the counter in the Robot with the robot_id
-number n.
+Contains the value of the given counter in the Robot with the
+robot_id number n.
 
 ~BTHIS_COLOR (read-only, local)
 ~BTHIS_CHAR (read-only, local)
@@ -6101,8 +6223,8 @@ current board.
 
 The time limit for the current board. 0 for no time limit.
 
-~BSCROLLEDX (board)
-~BSCROLLEDY (board)
+~BSCROLLEDX (board, read-only)
+~BSCROLLEDY (board, read-only)
 
 The top-left corner of the screen's x or y coordinates
 (respectively).
@@ -6167,7 +6289,7 @@ Gives the integer approximation of the square root of n.
 ~BMULTIPLIER
 ~BDIVIDER
 
-Counters which multiply or divide the temporary float value
+Counters that multiply or divide the temporary float value
 before truncating in MegaZeux's trigonometry functions.
 
 ~BC_DIVISIONS
@@ -6422,7 +6544,7 @@ $Super MZX Counters
 
 ~BSMZX_MODE
 
-Determines whether Super MZX mode is off, 1, 2, or 3.
+Determines whether Super MZX mode is off (0), 1, 2, or 3.
 
 ~BSMZX_Rn
 ~BSMZX_Bn
@@ -6549,36 +6671,39 @@ the left, 2 for the right and 3 for both).
 ~BCURSORSTATE
 
 Determines whether the default mouse cursor is on or off (0 is
-off, 1 is on - defaults off).
+off, 1 (or any non-zero value) is on - defaults off).
 
 $Defaults Counters
 :def:
 ~BENTER_MENU
 
 Determines whether the built-in status window is loaded when
-the enter key is pressed. 1 is yes, 0 is no, defaults to yes.
+the enter key is pressed. 1 (or any non-zero value) is yes, 0
+is no, defaults to yes.
 
 ~BHELP_MENU
 
 Determines whether the built-in help window is loaded when the
-F1 key is pressed. 1 is yes, 0 is no, defaults to yes.
+F1 key is pressed. 1 (or any non-zero value) is yes, 0 is no,
+defaults to yes.
 
 ~BF2_MENU
 
 Determines whether the built-in MegaZeux options window is
-loaded when the F2 key is pressed. 1 is yes, 0 is no, defaults
-to yes.
+loaded when the F2 key is pressed. 1 (or any non-zero value) is
+yes, 0 is no, defaults to yes.
 
 ~BLOAD_MENU
 
 Determines whether the built-in MegaZeux loadgame window is
-loaded when the F4 key is pressed. 1 is yes, 0 is no, defaults
-to yes.
+loaded when the F4 key is pressed. 1 (or any non-zero value) is
+yes, 0 is no, defaults to yes.
 
 ~BBIMESG (write-only)
 
 Controls built-in game messages (e.g. the message given for
-touching goop); 1 is on while 0 is off.
+touching goop); 1 (or any non-zero value) is on while 0 is off,
+defaults to on.
 
 $Vlayer Counters
 :vlc:
@@ -6617,7 +6742,7 @@ The current game speed (1-9) of MegaZeux. Once set in-game, the
 player cannot change the speed in the F2 menu until MZX_SPEED
 is set to 0. Setting MZX_SPEED to 0 will not affect the current
 speed. Neither MZX speed nor speed locking is preserved in
-saves, so games which change the speed must alter the speed
+saves, so games that change the speed must alter the speed
 using the "justloaded" label to stay consistent. MZX_SPEED will
 revert back to the default value listed in the configuration
 file upon loading a different game.
@@ -6686,6 +6811,7 @@ instead of the current 32). Follow the link below to read more.
 >#EXPRESS.HLP:1st:Expressions
 
 ~BKEY_PRESSED (read-only)
+~BKEY (read-only)
 ~BKEY_CODE (read-only)
 
 Tests whether any key (each referenced by a number) is
@@ -6697,6 +6823,7 @@ negative numbers will not work. "Autorepeat" affects
 KEY_PRESSED, so if you hold down a key you will get the value,
 then get zeros for a period, then get the values again. This is
 useful for many applications.
+KEY acts like KEY_PRESSED, but lacks autorepeat.
 KEY_CODE acts the same as KEY_PRESSED but lacks autorepeat and
 has different keycodes. Its keycode set is more limited, making
 KEY_CODE only preferable if autorepeat has to be off.
@@ -6743,13 +6870,18 @@ $~9Using the Editor
 The Robotic editor is quite simple to use. After selecting your
 Robot's character and name, you will enter the editor screen.
 There are three major sections to the editor screen: The top
-box, showing current statistics; The middle box, showing the
+box, showing current statistics; the middle box, showing the
 Robot's program with the current line highlighted in the center;
-The bottom box, showing the available editing commands.
+and the bottom box, showing the available editing commands.
 
 To edit the Robot, you enter lines just as in editing Scrolls.
 Use up and down or PageUp and PageDown to Scroll between lines,
-and use Enter to insert new blank lines.
+and use Enter at the end of a line to insert new blank lines.
+Pressing Enter in the middle of a line will remove everything
+to the right of the cursor and place it onto a new, following
+line. Press Backspace at the beginning of a line to place its
+contents onto the preceding line (this will not work if there
+is not enough space).
 
 After you enter a line, it will be checked for proper syntax.
 If it passes, it will be reformatted and redisplayed, and you
@@ -7092,7 +7224,6 @@ program:
  ~E: "start"
  ~EGO NORTH 2
  ~EGO SOUTH 2
- ~EWAIT 1
  ~EGOTO "start"
 
 Now test the world. As you can see, this program makes the
@@ -7348,7 +7479,7 @@ command forms that take a relative direction (like LAYBOMB and
 DUPLICATE SELF EAST). DIE, DIE ITEM and GOTOXY # # are
 completely ignored as well.
 
-Finally, the global is the only Robot which ignores FREEZETIME
+Finally, the global is the only Robot that ignores FREEZETIME
 and SLOWTIME states. This is extremely handy in creating the
 ability to pause and unpause a MegaZeux game, among other
 things.
@@ -7369,7 +7500,7 @@ are several practises to avoid, as well as proper replacements.
 
 ~cBAD: Creating anything with c?? or p??
   Anything that has an undefined value will use a default
-  which may be undesirable. The correct action would therefore
+  that may be undesirable. The correct action would therefore
   be to define the object's color and parameter values.
 ~9GOOD: Putting in any set value for colors and parameters.
 
@@ -7394,20 +7525,20 @@ are several practises to avoid, as well as proper replacements.
 ~9GOOD: Using DUPLICATE SELF or COPY ROBOT when the copied
 ~9Robot's location at code execution is known.
 
-~CBAD: Looping without using WAIT commands of any kind.
-  Looping without WAIT 1 in idle loops is more severe than many
-  think. Coupled with the "commands" counter set to a high
-  number, loops without WAIT 1 can absolutely choke a game's
+~CBAD: Looping without using cycle-ending commands of any kind.
+  Looping without CYCLE 1 in idle loops is more severe than
+  many think. Coupled with the "commands" counter set to a high
+  number, loops without CYCLE 1 can absolutely choke a game's
   speed, especially idle loops, and potentially FREEZE MZX.
-~9GOOD: Including WAIT 1 in every loop except loops that are
+~9GOOD: Including CYCLE 1 in every loop except loops that are
   ~9designed to get a finite length task done as quickly as
   ~9possible.
-  You should add a WAIT 1 for any loop that constantly checks
+  You should add a CYCLE 1 for any loop that constantly checks
   for events (such as keypresses or board status).
 
 ~cBAD: Ending Robots with a label.
 ~9GOOD: Ending Robots with the END command.
-  It's debatable whether putting END after commands which
+  It's debatable whether putting END after commands that
   destroy the Robot (e.g. DIE, EXPLODE #) is necessary, but it
   is still recommended in order to prevent a habit of leaving
   it out in less redundant places.
@@ -7452,7 +7583,7 @@ A quick example of subroutines:
 ~Ewait 5
 ~E. "We don't want the space action to happen immediately again."
 ~E: "notspaceloop"
-~Ewait 1
+~Ecycle 1
 ~Eif not spacepressed "notspaceloop"
 ~Egoto "#return"
 
@@ -7798,7 +7929,7 @@ y from its current position will cause it to collide with
 something. If anything besides c?? is used then [x, y] are
 absolute board coordinates instead.
 
-If collision is gone to then the spr_clistN counters will be
+If collision is gone to, then the spr_clistN counters will be
 set to what it collided with and spr_collisions will be set to
 the number of things that the sprite collided with. If the
 sprite will have collided with the background spr_clist0 will
@@ -8130,6 +8261,188 @@ replace in the target character set.
 :1st: 
 $~9NEW in MegaZeux!
 
+December 27, 2008 - MZX 2.82b
+
+This release contains plenty of important bug fixes, ranging
+from regressions such as the broken command-line editor macro
+expansion to third party bugs like the Windows "directx" SDL
+video driver breakage.
+
+There are also some new ports and features. MegaZeux now runs
+on the Wii (port by Mr_Alert) and AmigaOS 4.x (port by myself
+and Spot from os4depot). The Windows x64 port has matured
+immensely and can now be considered stable. MacOS X builds now
+have clipboard support. The hardware stretching renderers now
+have a couple of fixed aspect ratio modes.
+
+The biggest feature of this release is the introduction of a
+portable network layer, which is currently being tested by the
+new built-in updater (F7/U).
+
+Internally, MegaZeux is now modularized and builds as several
+DLL and EXE files, which should make redesigning parts like the
+help system and editor a little easier, as well as allowing us
+to ship a "mzxrun" executable for the first time since 2.69c.
+This "mzxrun" executable is now used by a majority of the
+console ports.
+
+Contributions from Revvy, Mr_Alert, Terryn and Exophase have
+helped make this another solid release.
+
+USERS
+
++ Writing to $str.length (which previously did undefined
+  things) will now truncate or enlarge the string to the size
+  specified.
++ Removed filename size limit for FWRITE_MODIFY and
+  FWRITE_APPEND. (Revvy)
++ Added support to the checkres tool to check worlds in
+  non-local directories. (Revvy)
++ Fixed an old bug with saving games and worlds from Robotic
+  where a board could be prematurely "optimized", renumbering
+  robot IDs within the same cycle. For commands like DIE this
+  could cause unpredictable behaviour or simply crashes (if
+  invoked in the same cycle). As a special case, end the cycle
+  if either of these SET specials are used.
++ Mistaken or malicious file I/O such as set "$test" to
+  "fread(-1>>1)" will no longer crash MegaZeux. The read size
+  will be truncated to a contextual maximum for the current
+  file.
++ Fixed a crash using "fwrite0" in conjunction with an empty
+  string.
++ Fixed a bug where checking sprite_collisions on a disabled
+  target sprite would unconditionally trigger (regardless of
+  whether a collision was present or not).
++ Un-grouped the handling of the KEY and KEYn counters so that
+  different compatibility checks can be applied to either
+  counter. Fixes "Bocco Chronicles 1" and probably several
+  other titles.
++ Fixed a crash when using RIDn or ROBOT_ID_n in the same cycle
+  as DIE for another robot positioned earlier in the board
+  scan.
++ Fixed poor sanity checks on BOARD_ID counter writes. Illegal
+  character IDs such as -1 can no longer be used to bypass the
+  check (causing subsequent crashes).
++ Windows builds now use a patched version of SDL 1.2.13
+  containing a fix for the directx+F10 issue.
++ Fixed a bug where one robot could send another robot to
+  "#return", with an address outside its program. In such
+  cases, the robot will now terminate.
++ An "mzxrun" binary is now shipped alongside the
+  editor-capable MZX binary.
++ Fixed TIME/TIMERESET overflows with very large values. Board
+  timeout is now programmatically limited to 32767, which is
+  consistent with the Board Info control.
++ Clamped CHAR_X/CHAR_Y properly so that negative numbers can
+  no longer be used to corrupt the editor charset and
+  potentially other process memory.
++ Fixed recent breakage of SHIFT+F{1,2,3,4} so that the
+  percentage of time spent displaying the original character
+  and the '!' are equal.
++ Removed some bogus handling of lines containing "only" ';',
+  ',' or ' '.
++ Honor user's robot character selection if they are holding
+  shift when pressing return or space (would previously always
+  return char 247).
++ Backspacing a line and then expanding a macro no longer
+  restores the original line contents immediately after the
+  expansion.
++ MacOS 10.x clipboard support (via Cocoa Pasteboard). Alt+Ins
+  can be entered with Fn+Alt+Numpad0 on a Macbook or Powerbook
+  keyboard.
++ Robot editor S_CHARACTER fields no longer bogusly escape
+  characters such as ". In addition, rendering glitches are no
+  longer encountered when using the ' S_CHARACTER (which is
+  completely reasonable).
++ Fixed robot editor glitches where the game charset SPACE
+  would be used in places where the protected UI charset should
+  be used instead.
++ The introductory help message is displayed if the load dialog
+  is cancelled prior to loading a game. Hopefully the screen is
+  now never totally blank.
++ The F7/F8 cheats can now be used freely in MZXRun (in
+  MegaZeux proper they remain usable only in editor tests).
++ Saving to a directory above the MegaZeux startup directory,
+  then attempting to save to this location again, will no
+  longer crash MegaZeux. Instead, the parent directory will be
+  changed into before the dialog is displayed.
++ Fixed numerous crash bugs with the scroll editor; it should
+  be relatively usable now.
++ Writing to $str+0 is no longer interpreted in the same way as
+  a plain write to $str. Instead, it behaves like writes to
+  non-zero offsets (as more of a paste than a replace).
++ Display of current X,Y position of robot in the robot editor
+  status bar.
++ Fixed directory rename so that it no longer displays garbage
+  and/or crashes MegaZeux (Alt+R to rename a directory in any
+  file picker).
++ In the robot editor, lines can now be split at a midpoint
+  with enter and two consecutive lines merged together with
+  backspace. (Exophase)
++ Fixed use of status counter 6 and display of status counters
+  in general, which has been broken since 2.80.
++ Fixed swapping to encrypted worlds if initially the user
+  decides to not decrypt the world. Previously, this would
+  either crash, or loop forever.
++ When using the OpenGL or overlay renderers, in either
+  windowed or fullscreen mode, the aspect ratio can now be
+  preserved as either 4:3 (most similar to DOS) or 64:35 (most
+  similar to the port). The display will be letterboxed or
+  margins applied as appropriate. See the "video_ratio"
+  configuration option for more information.
++ Fixed a bug on some systems where numlock could not be used
+  as a key, only as a flag. The numlock "key" is now masked out
+  of "key_code" and similar; hopefully this won't break any
+  games.
++ Restored the meter widget from the old DOS MZX for use with
+  the world loader and saver routines. This reassures users,
+  especially on consoles, where loading a world can take a long
+  time. (Mr_Alert)
+- Removed the legacy "force_resolution" option which was
+  replaced long ago by the more accurate
+  "fullscreen_resolution" option.
+
+DEVELOPERS
+
++ Ported to OpenSolaris. You need to install `SUNWxorg-headers'
+  if you want X11 clipboard support.
++ Removed dependency on SDL_image on non-win32 platforms when
+  enabling the icon branding feature (see pngops.c).
++ Ported to AmigaOS. You need to install the clib2 version of
+  libSDL and miniGL, and the build system assumes you are using
+  a cross compiler.
++ Added experimental port to the Wii. See arch/wii/README for
+  more information. (Mr_Alert)
++ get_path() in util.c now returns <0 for failure, or the
+  length of the path for the given file. (Revvy)
++ Added the make time WHOLE_PROGRAM=1 flag which enables
+  compilation of the core binary in GCC's "-fwhole-program
+  --combine" mode. This makes all symbols static and improves
+  optimization, somewhat like MSVC's LTO does.
++ Added a valgrind.supp file to suppress bugs in third party
+  libraries when valgrinding MegaZeux.
++ Cleaned up all the ports and documented making new ports. The
+  platforms "linux", "solaris" and "obsd" are now called
+  "unix", and the "linux-static" platform is now "unix-devel"
+  and available on all UNIX derivatives/clones.
++ Added a special hack to enable linking with --as-needed for
+  DT_NEEDED link optimization for GNU ld platforms.
++ Updated MSVC projects. Fixed all warnings emitted by MSVC
+  2008, and implemented icon support with existing mingw
+  resource files.
++ Now uses the GNU ld "debuglink" feature on all platforms to
+  enable shipping of a side-by-side symbol package. Optimized
+  release builds can now be debugged with minimal user effort.
++ MegaZeux now provides the option for "modular" linkage,
+  factoring out the "core", "editor" and "network" features to
+  shared objects that other binaries can link against. This
+  feature works on the unix, mingw, amiga and darwin ports.
++ Added RPM .spec file. Capable of building (at least) Fedora
+  10 RPMs.
+- Removed HOST_CC feature for cross compilation; since the
+  utilities now intimately depend on the MZX runtime, they must
+  be built with the same compiler.
+
 June 10, 2008 - MZX 2.82
 
 Despite the increase in minor version, this release mostly
@@ -8321,7 +8634,6 @@ USERS
   expanded incorrectly. Relatedly, fixed a bug where #<string>
   in the robot exitor would "disappear" on entry, if there was
   no correspondingly named macro.
-  
 
 DEVELOPERS
 
@@ -8366,16 +8678,16 @@ DEVELOPERS
   but this can be disabled, so port authors can start using the
   feature right away (see config.sh). (Mr_Alert)
 
->#281CLOG.HLP:281:New in Versions 2.81-2.81h
->#280CLOG.HLP:280:New in Versions 2.80-2.80h
->#OLDERVER.HLP:099:New in versions 2.60 to 2.70
->#OLDESVER.HLP:100:New in versions 2.01 to 2.60
->#NEWIN200.HLP:1st:New in version 2.00
->#ANCENVER.HLP:103:New in versions thru 1.03
+>#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
+>#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
+>#OLDERVER.HLP:099:New in Versions 2.60 to 2.70
+>#OLDESVER.HLP:100:New in Versions 2.01 to 2.60
+>#NEWIN200.HLP:1st:New in Version 2.00
+>#ANCENVER.HLP:103:New in Versions Through 1.03
 >#MAIN.HLP:072:Table of Contents
 #281CLOG.HLP
 :281:
-$~9New in Versions 2.81-2.81h
+$~9New in Versions 2.81 to 2.81h
 
 December 8, 2007 - MZX 2.81h
 
@@ -9112,15 +9424,15 @@ November 20, 2005 - MZX 2.81
   changes in the save format.
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
->#280CLOG.HLP:280:New in Versions 2.80-2.80h
->#OLDERVER.HLP:099:New in versions 2.60 to 2.70
->#OLDESVER.HLP:100:New in versions 2.01 to 2.60
->#NEWIN200.HLP:1st:New in version 2.00
->#ANCENVER.HLP:103:New in versions thru 1.03
+>#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
+>#OLDERVER.HLP:099:New in Versions 2.60 to 2.70
+>#OLDESVER.HLP:100:New in Versions 2.01 to 2.60
+>#NEWIN200.HLP:1st:New in Version 2.00
+>#ANCENVER.HLP:103:New in Versions Through 1.03
 >#MAIN.HLP:072:Table of Contents
 #280CLOG.HLP
 :280: 
-$~9New in Versions 2.80-2.80h
+$~9New in Versions 2.80 to 2.80h
 
 June 6, 2005 - MZX 2.80h
 
@@ -9796,15 +10108,15 @@ August 9, 2004 - First release, MZX 2.80 BETA
   before new values were set. They will not work here.
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
->#281CLOG.HLP:281:New in Versions 2.81-2.81h
->#OLDERVER.HLP:099:New in versions 2.60 to 2.70
->#OLDESVER.HLP:100:New in versions 2.01 to 2.60
->#NEWIN200.HLP:1st:New in version 2.00
->#ANCENVER.HLP:103:New in versions thru 1.03
+>#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
+>#OLDERVER.HLP:099:New in Versions 2.60 to 2.70
+>#OLDESVER.HLP:100:New in Versions 2.01 to 2.60
+>#NEWIN200.HLP:1st:New in Version 2.00
+>#ANCENVER.HLP:103:New in Versions Through 1.03
 >#MAIN.HLP:072:Table of Contents
 #OLDERVER.HLP
 :099: 
-$~9New in Versions 2.60-2.70
+$~9New in Versions 2.60 to 2.70
 
 **NEW in 2.70***
 
@@ -9935,15 +10247,15 @@ $~9New in Versions 2.60-2.70
 $***
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
->#281CLOG.HLP:281:New in Versions 2.81-2.81h
->#280CLOG.HLP:280:New in Versions 2.80-2.80h
->#OLDESVER.HLP:100:New in versions 2.01 to 2.60
->#NEWIN200.HLP:1st:New in version 2.00
->#ANCENVER.HLP:103:New in versions thru 1.03
+>#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
+>#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
+>#OLDESVER.HLP:100:New in Versions 2.01 to 2.60
+>#NEWIN200.HLP:1st:New in Version 2.00
+>#ANCENVER.HLP:103:New in Versions Through 1.03
 >#MAIN.HLP:072:Table of Contents
 #OLDESVER.HLP
 :100: 
-$~9New in versions 2.01 to 2.60
+$~9New in Versions 2.01 to 2.60
 
 ~E2.60 release:
 
@@ -10360,15 +10672,15 @@ before, you probably won't understand much of this list.
  * Fill in editor now works with board sizes over 127x127
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
->#281CLOG.HLP:281:New in Versions 2.81-2.81h
->#280CLOG.HLP:280:New in Versions 2.80-2.80h
->#OLDERVER.HLP:099:New in versions 2.60 to 2.70
->#NEWIN200.HLP:1st:New in version 2.00
->#ANCENVER.HLP:103:New in versions thru 1.03
+>#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
+>#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
+>#OLDERVER.HLP:099:New in Versions 2.60 to 2.70
+>#NEWIN200.HLP:1st:New in Version 2.00
+>#ANCENVER.HLP:103:New in Versions Through 1.03
 >#MAIN.HLP:072:Table of Contents
 #NEWIN200.HLP
 :1st: 
-$~9New in version 2.00:
+$~9New in Version 2.00:
 
  * All code has been rewritten or at least stepped through line
   by line, except for the music code.
@@ -10597,15 +10909,15 @@ $~9New in version 2.00:
  * Different player pics per direction.
 
 >#NEWINVER.HLP:1st:NEW in MegaZeux!
->#281CLOG.HLP:281:New in Versions 2.81-2.81h
->#280CLOG.HLP:280:New in Versions 2.80-2.80h
->#OLDERVER.HLP:099:New in versions 2.60 to 2.70
->#OLDESVER.HLP:100:New in versions 2.01 to 2.60
->#ANCENVER.HLP:103:New in versions thru 1.03
+>#281CLOG.HLP:281:New in Versions 2.81 to 2.81h
+>#280CLOG.HLP:280:New in Versions 2.80 to 2.80h
+>#OLDERVER.HLP:099:New in Versions 2.60 to 2.70
+>#OLDESVER.HLP:100:New in Versions 2.01 to 2.60
+>#ANCENVER.HLP:103:New in Versions Through 1.03
 >#MAIN.HLP:072:Table of Contents
 #ANCENVER.HLP
 :103: 
-$~9New in versions thru 1.03
+$~9New in Versions Through 1.03
 
 1.03 release: QUICK FIXES, LIMITED DISTRIBUTION
 

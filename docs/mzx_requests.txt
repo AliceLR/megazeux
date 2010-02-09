@@ -69,6 +69,12 @@ MZX REQUESTS:
 -Enforcement of old-style sound system limitations for pre-port games (i.e. four simultaneous sound effects maximum), to allow overdriven sounds in older games to play as intended. The drawbridge lowering sound sequence in Bernard the Bard is a good example. Version pegged + config file option? Version pegged + F2 menu option?
 -Background color fading that ends at a given percentage.
 -Functions.
+-Ability to store >80 char board bottom messages and add an adjustable counter for altering the timeout, with 0 for infinite (clear with clear mesg) (version bump).
+-MIDI.
+-Changing sprite cx/cy values into signed ints as opposed to signed bytes.
+-A subroutine send that stalls the sending Robot until the sent Robot returns.
+-Removal of fade transitions when loading a game for testing.
+-Loading of compressed files, most notably MZMs.
+-String comparison wildcards or regex support.
 -Online support in games, lozl
 -A SMALLHACKER COUNTER
--Ability to store >80 char board bottom messages and add an adjustable counter for altering the timeout, with 0 for infinite (clear with clear mesg) (version bump).
