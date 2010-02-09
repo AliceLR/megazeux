@@ -79,6 +79,13 @@ endif
 include src/utils/Makefile.in
 include src/Makefile.in
 
+package_clean:
+	mv ${mzx} ${mzx}.backup
+	${MAKE} clean
+	${MAKE} DEBUG=1 clean
+	${MAKE} distclean
+	mv ${mzx}.backup ${mzx}
+
 clean: ${mzx}_clean utils_clean
 
 distclean: clean

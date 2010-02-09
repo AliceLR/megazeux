@@ -240,8 +240,7 @@ if [ -d dist ]; then
 fi
 
 # clean the source tree for DEBUG and non-DEBUG
-make DEBUG=1 clean
-make distclean
+make package_clean
 
 mkdir -p dist/$TARGET/src &&
 cp -pv $BINARY_DEPS $HELP_FILE $BUILD_DEPS dist/$TARGET &&
