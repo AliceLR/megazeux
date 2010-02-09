@@ -50,7 +50,7 @@ ifeq (${V},1)
 	${HOST_CC} ${server_objs} \
 	        -o ${server} ${LDFLAGS} ${server_ldflags}
 else
-	@echo "  LINK    " ${updater}
+	@echo "  LINK    " ${server}
 	@${HOST_CC} ${server_objs} \
 	         -o ${server} ${LDFLAGS} ${server_ldflags}
 endif
