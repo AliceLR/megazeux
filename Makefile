@@ -19,16 +19,14 @@ CC  ?= gcc
 CXX ?= g++
 AR  ?= ar
 
-#
-# This hack should go away once the DS build can be created without DEBUG=1
-#
-ifneq (${BUILD_NDS},1)
 ifeq (${DEBUG},1)
+#
+# Force debug builds to disable the optimizer
+#
 OPTIMIZE_CFLAGS = -O0
-endif
-endif
-
+else
 OPTIMIZE_CFLAGS ?= -O2
+endif
 
 SDL_CFLAGS  ?= `sdl-config --cflags`
 SDL_LDFLAGS ?= `sdl-config --libs`
