@@ -26,7 +26,7 @@
 
 __M_BEGIN_DECLS
 
-typedef enum
+enum zip_error
 {
   ZIPIO_SUCCESS,
   ZIPIO_OPEN_FAILED,
@@ -44,15 +44,15 @@ typedef enum
   ZIPIO_UNSUPPORTED_ZIP64,
   ZIPIO_UNSUPPORTED_COMPRESSION_METHOD,
   ZIPIO_PATH_NOT_FOUND,
-} zipio_error_t;
+};
 
-typedef struct zip_handle zip_handle_t;
+struct zip_handle;
 
-const char *zipio_strerror(zipio_error_t err);
-zipio_error_t zipio_open(const char *filename, zip_handle_t **_z);
-zipio_error_t zipio_close(zip_handle_t *z);
+const char *zipio_strerror(enum zip_error err);
+enum zip_error zipio_open(const char *filename, struct zip_handle **_z);
+enum zip_error zipio_close(struct zip_handle *z);
 
-zipio_error_t zipio_unlink(zip_handle_t *z, const char *pathname);
+enum zip_error zipio_unlink(struct zip_handle *z, const char *pathname);
 
 __M_END_DECLS
 

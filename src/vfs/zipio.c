@@ -92,6 +92,8 @@ struct zip_handle
   FILE *f;
 };
 
+static const unsigned char ecdr_sig[] = { 'P', 'K', 0x5, 0x6 };
+
 static Sint64 fgetuw(FILE *f)
 {
   Uint16 d = 0;
@@ -124,7 +126,7 @@ static Sint64 fgetud(FILE *f)
   return d;
 }
 
-static bool zgetuw(FILE *f, Sint64 *d, zipio_error_t *err, zipio_error_t code)
+static bool zgetuw(FILE *f, Sint64 *d, enum zip_error *err, enum zip_error code)
 {
   *d = fgetuw(f);
 
@@ -137,7 +139,7 @@ static bool zgetuw(FILE *f, Sint64 *d, zipio_error_t *err, zipio_error_t code)
   return true;
 }
 
-static bool zgetud(FILE *f, Sint64 *d, zipio_error_t *err, zipio_error_t code)
+static bool zgetud(FILE *f, Sint64 *d, enum zip_error *err, enum zip_error code)
 {
   *d = fgetud(f);
 
@@ -166,7 +168,7 @@ static time_t dos_to_time_t(Uint16 time, Uint16 date)
   return mktime(&tm);
 }
 
-const char *zipio_strerror(zipio_error_t err)
+const char *zipio_strerror(enum zip_error err)
 {
   switch(err)
   {
@@ -211,7 +213,7 @@ static void free_entry(struct zip_entry *entry)
   free(entry);
 }
 
-static void free_entries(zip_handle_t *z)
+static void free_entries(struct zip_handle *z)
 {
   struct zip_entry *entry, *next_entry;
 
@@ -230,17 +232,16 @@ static int compare_offset(const void *_a, const void *_b)
   return (int)(*a)->local_header.offset - (int)(*b)->local_header.offset;
 }
 
-zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
+enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
 {
-  static const unsigned char ecdr_sig[] = { 'P', 'K', 0x5, 0x6 };
   long pos, size, start, cur_ecdr_offset = 0;
   struct zip_entry *entry, *last_entry;
-  zipio_error_t err = ZIPIO_SUCCESS;
+  enum zip_error err = ZIPIO_SUCCESS;
   Uint32 entry_terminal_offset = 0;
   struct segment cd, ecdr;
   Uint16 num_entries;
   int ecdr_sig_off;
-  zip_handle_t *z;
+  struct zip_handle *z;
   Sint64 d;
   int i;
 
@@ -1049,12 +1050,54 @@ err_free_entries:
   goto err_close;
 }
 
-zipio_error_t zipio_repack(zip_handle_t *z)
+static enum zip_error zipio_stash_cd(struct zip_handle *z, Uint16 *num_entries,
+ char ***_cd)
+{
+  enum zip_error err = ZIPIO_SUCCESS;
+  struct zip_entry *entry;
+  char **cd;
+  Uint16 i;
+
+  assert(z != NULL);
+  assert(num_entries != NULL);
+
+  for(entry = z->file.entries; entry; entry = entry->next)
+    (*num_entries)++;
+
+  cd = malloc(sizeof(char *) * (*num_entries));
+
+  for(entry = z->file.entries, i = 0; entry; entry = entry->next, i++)
+  {
+    cd[i] = malloc(entry->cd_entry.length);
+
+    if(fseek(z->f, entry->cd_entry.offset, SEEK_SET))
+    {
+      err = ZIPIO_SEEK_FAILED;
+      goto err_free_cd;
+    }
+
+    if(fread(cd[i], entry->cd_entry.length, 1, z->f) != 1)
+    {
+      err = ZIPIO_READ_FAILED;
+      goto err_free_cd;
+    }
+  }
+
+  *_cd = cd;
+  return err;
+
+err_free_cd:
+  free(cd);
+  *_cd = NULL;
+  return err;
+}
+
+static enum zip_error zipio_rebuild_cd(struct zip_handle *z)
 {
 
 }
 
-zipio_error_t zipio_unlink(zip_handle_t *z, const char *pathname)
+enum zip_error zipio_unlink(struct zip_handle *z, const char *pathname)
 {
   struct zip_entry *entry, *last_entry = NULL;
 
@@ -1078,9 +1121,9 @@ zipio_error_t zipio_unlink(zip_handle_t *z, const char *pathname)
   return ZIPIO_SUCCESS;
 }
 
-zipio_error_t zipio_close(zip_handle_t *z)
+enum zip_error zipio_close(struct zip_handle *z)
 {
-  zipio_error_t err = ZIPIO_SUCCESS;
+  enum zip_error err = ZIPIO_SUCCESS;
 
   assert(z != NULL);
 
@@ -1098,8 +1141,8 @@ zipio_error_t zipio_close(zip_handle_t *z)
 
 int main(int argc, char *argv[])
 {
-  zipio_error_t err = ZIPIO_SUCCESS;
-  zip_handle_t *z;
+  enum zip_error err = ZIPIO_SUCCESS;
+  struct zip_handle *z;
 
   if(argc != 2)
   {
