@@ -194,20 +194,6 @@ typedef struct
   int *result;
 } board_list;
 
-void construct_element(element *e, int x, int y,
- int width, int height,
- void (* draw_function)(World *mzx_world, dialog *di,
-  element *e, int color, int active),
- int (* key_function)(World *mzx_world, dialog *di,
-  element *e, int key),
- int (* click_function)(World *mzx_world, dialog *di,
-  element *e, int mouse_button, int mouse_x, int mouse_y,
-  int new_active),
- int (* drag_function)(World *mzx_world, dialog *di,
-  element *e, int mouse_button, int mouse_x, int mouse_y),
- int (* idle_function)(World *mzx_world, dialog *di,
-  element *e));
-
 void construct_dialog(dialog *src, const char *title, int x, int y,
  int width, int height, element **elements, int num_elements,
  int start_element);
@@ -271,6 +257,20 @@ extern char num_buttons[7];
 
 #ifdef CONFIG_EDITOR
 extern int context;
+
+void construct_element(element *e, int x, int y,
+ int width, int height,
+ void (* draw_function)(World *mzx_world, dialog *di,
+  element *e, int color, int active),
+ int (* key_function)(World *mzx_world, dialog *di,
+  element *e, int key),
+ int (* click_function)(World *mzx_world, dialog *di,
+  element *e, int mouse_button, int mouse_x, int mouse_y,
+  int new_active),
+ int (* drag_function)(World *mzx_world, dialog *di,
+  element *e, int mouse_button, int mouse_x, int mouse_y),
+ int (* idle_function)(World *mzx_world, dialog *di,
+  element *e));
 
 int char_selection_ext(int current, int allow_multichar,
  int *width_ptr, int *height_ptr);

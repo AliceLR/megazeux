@@ -521,7 +521,7 @@ int char_selection(int current)
   return char_selection_ext(current, 0, NULL, NULL);
 }
 
-void construct_element(element *e, int x, int y,
+__editor_maybe_static void construct_element(element *e, int x, int y,
  int width, int height,
  void (* draw_function)(World *mzx_world, dialog *di,
   element *e, int color, int active),
