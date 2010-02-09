@@ -83,7 +83,7 @@ endif
 # stripped (on embedded platforms) or objcopy'ed out.
 #
 CFLAGS   += -g -Wall -std=gnu99 ${ARCH_CFLAGS}
-CXXFLAGS += -g -Wall -std=gnu++0x -fno-exceptions ${ARCH_CXXFLAGS}
+CXXFLAGS += -g -Wall -std=gnu++98 -fno-exceptions ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
 
 ifeq (${shell ${CC} -dumpversion | cut -d. -f1},4)
@@ -93,8 +93,18 @@ CFLAGS   += -fbounds-check
 CXXFLAGS += -fbounds-check
 endif
 
-CFLAGS   += -pedantic
-CXXFLAGS += -pedantic
+#
+# We enable pedantic warnings here, but this ends up turning on some things
+# we must disable by hand.
+#
+# Variadic macros are arguably less portable, but all the compilers we
+# support have them.
+#
+# The "long long" type is only used in one platform's header files, and we
+# don't use it at all in MegaZeux (even if we did it's quite portable).
+#
+CFLAGS   += -pedantic -Wno-variadic-macros -Wno-long-long
+CXXFLAGS += -pedantic -Wno-variadic-macros -Wno-long-long
 
 ifneq (${PLATFORM},mingw)
 
