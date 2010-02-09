@@ -48,8 +48,7 @@
 
 #include "zlib.h"
 
-//#define BLOCK_SIZE    4096UL
-#define BLOCK_SIZE    65536UL
+#define BLOCK_SIZE    4096UL
 #define LINE_BUF_LEN  256
 
 struct host
@@ -650,7 +649,7 @@ static bool __recv(int fd, void *buffer, unsigned int len)
 
   gettimeofday(&start, NULL);
 
-  // send stuff in blocks, incrementally
+  // receive stuff in blocks, incrementally
   for(pos = 0; pos < len; pos += count)
   {
     gettimeofday(&now, NULL);
@@ -1028,8 +1027,6 @@ host_status_t host_recv_file(struct host *h, const char *url,
     int len = http_recv_line(h, line, LINE_BUF_LEN);
     char *key, *value, *buf = line;
 
-    debug("Header: %s\n", line);
-
     if(len < 0)
       return -HOST_HTTP_INVALID_HEADER;
     else if(len == 0)
@@ -1321,21 +1318,25 @@ host_status_t host_send_file(struct host *h, FILE *file, const char *mime_type)
   if(size < 0)
     return -HOST_FREAD_FAILED;
 
-  // HACK: Remove this (initial chunk length)
-  snprintf(line, LINE_BUF_LEN, "%x", 5928);
-  line[LINE_BUF_LEN - 1] = 0;
-  if(http_send_line(h, line) < 0)
-    return -HOST_SEND_FAILED;
-
   while(true)
   {
     int deflate_offset = 0, ret = Z_OK, deflate_flag = Z_SYNC_FLUSH;
     char block[BLOCK_SIZE], zblock[BLOCK_SIZE];
     size_t block_size;
 
+    /* Read a block from the disk source and compute a CRC32 on the
+     * fly. This CRC will be dumped at the end of the deflated data
+     * and is required for RFC 1952 compliancy.
+     */
     block_size = fread(block, 1, BLOCK_SIZE, file);
     crc = crc32(crc, (Bytef *)block, block_size);
 
+    /* The fread() above pretty much guarantees that block_size will
+     * be BLOCK_SIZE up to the final block. However, fread() also
+     * returns a short count if there was an I/O error, and we must
+     * detect this. If it's legitimately the final block, give the
+     * compressor this information.
+     */
     if(block_size != BLOCK_SIZE)
     {
       if(!feof(file))
@@ -1343,10 +1344,17 @@ host_status_t host_send_file(struct host *h, FILE *file, const char *mime_type)
       deflate_flag = Z_FINISH;
     }
 
-    // FIXME: Probably wrong
+    /* We exhausted input at a block boundary. This is unlikely,
+     * but in the event that it happens we can simply ignore
+     * the deflate stage and write out the terminal chunk signature.
+     */
     if(block_size == 0)
       break;
 
+    /* Regardless of whether we are initializing the compressor in
+     * the next section or not, we always have BLOCK_SIZE aligned
+     * input data available.
+     */
     stream.avail_in = block_size;
     stream.next_in = (Bytef *)block;
 
@@ -1375,22 +1383,45 @@ host_status_t host_send_file(struct host *h, FILE *file, const char *mime_type)
 
     while(true)
     {
-      ret = deflate(&stream, deflate_flag);
+      unsigned long chunk_size;
 
-      if(ret != Z_OK && ret != Z_BUF_ERROR && ret != Z_STREAM_END)
+      // Deflate a chunk of the input (partially or fully)
+      ret = deflate(&stream, deflate_flag);
+      if(ret != Z_OK && ret != Z_STREAM_END)
         return -HOST_ZLIB_INFLATE_FAILED;
 
+      // Compute chunk length (final chunk includes GZIP footer)
+      chunk_size = BLOCK_SIZE - stream.avail_out;
+      if(ret == Z_STREAM_END)
+        chunk_size += 2 * sizeof(uint32_t);
+
+      // Dump compressed chunk length
+      snprintf(line, LINE_BUF_LEN, "%lx", chunk_size);
+      if(http_send_line(h, line) < 0)
+        return -HOST_SEND_FAILED;
+
+      // Send the compressed output block over the socket
       if(!__send(h->fd, zblock, BLOCK_SIZE - stream.avail_out))
         return -HOST_SEND_FAILED;
 
-      if(ret == Z_STREAM_END || ret == Z_BUF_ERROR)
+      /* We might not have finished the entire stream, but the
+       * available input is likely to have been exhausted. With
+       * Z_SYNC_FLUSH this will commonly result in zero bytes
+       * remaining in the input source. Additionally, if this is
+       * the final chunk (and Z_FINISH was flagged), Z_STREAM_END
+       * will be set. In either case, we must break out.
+       */
+      if((ret == Z_OK && stream.avail_in == 0) || ret == Z_STREAM_END)
         break;
 
+      // Output has been flushed; start over for the remaining input (if any)
       stream.avail_out = BLOCK_SIZE;
       stream.next_out = (Bytef *)zblock;
     }
 
-    // Z_FINISH was flagged, stream ended; terminate compression
+    /* Z_FINISH was flagged, stream ended
+     * Terminate compression
+     */
     if(ret == Z_STREAM_END)
     {
       // Free any zlib allocated resources
@@ -1407,17 +1438,21 @@ host_status_t host_send_file(struct host *h, FILE *file, const char *mime_type)
       mid_deflate = false;
     }
 
+    // Newline after chunk's data
+    if(http_send_line(h, "") < 0)
+      return -HOST_SEND_FAILED;
+
     // Final block; can break out
     if(block_size != BLOCK_SIZE)
       break;
   }
 
-  // Terminal newline
-  if(http_send_line(h, "") < 0)
+  // Terminal chunk signature, so called "trailer"
+  if(http_send_line(h, "0") < 0)
     return -HOST_SEND_FAILED;
 
-  // Terminal chunk signature (0 = no more chunks)
-  if(http_send_line(h, "0") < 0)
+  // Post-trailer newline
+  if(http_send_line(h, "") < 0)
     return -HOST_SEND_FAILED;
 
   return HOST_SUCCESS;
@@ -1431,9 +1466,11 @@ static const char resp_404[] =
 
 bool host_handle_http_request(struct host *h)
 {
+  const char *mime_type = "application/octet-stream";
   char buffer[LINE_BUF_LEN], *buf = buffer;
   char *cmd_type, *path, *proto;
   host_status_t ret;
+  size_t path_len;
   FILE *f;
 
   if(http_recv_line(h, buffer, LINE_BUF_LEN) < 0)
@@ -1498,7 +1535,11 @@ bool host_handle_http_request(struct host *h)
     return false;
   }
 
-  ret = host_send_file(h, f, /*"application/octet-stream"*/ "text/plain");
+  path_len = strlen(path);
+  if(path_len >= 4 && strcasecmp(&path[path_len - 4], ".txt") == 0)
+    mime_type = "text/plain";
+
+  ret = host_send_file(h, f, mime_type);
   if(ret != HOST_SUCCESS)
   {
     warning("Failed to send file '%s' over HTTP (error %d)\n", path, ret);

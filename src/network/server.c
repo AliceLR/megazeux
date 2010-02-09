@@ -63,9 +63,15 @@ int main(int argc, char *argv[])
     c = host_accept(s);
     if(c)
     {
-      if(!host_handle_http_request(c))
-        warning("Failure handling HTTP request\n");
-      host_destroy(c);
+      while(true)
+      {
+        if(!host_handle_http_request(c))
+        {
+          warning("Failure handling HTTP request\n");
+          host_destroy(c);
+          break;
+        }
+      }
     }
     SDL_Delay(10);
   }
