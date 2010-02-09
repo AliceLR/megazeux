@@ -2392,6 +2392,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
           fread(cur_robot->program, new_size, 1, bc_file);
           cur_robot->cur_prog_line = 1;
+          cur_robot->stack_pointer = 0;
           cur_robot->label_list =
             cache_robot_labels(cur_robot, &(cur_robot->num_labels));
 
