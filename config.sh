@@ -213,8 +213,23 @@ else
 	echo "PLATFORM=$PLATFORM" >> platform.inc
 fi
 
+if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
+	#
+	# FIXME: Should add other 64bit architectures
+	#
+	if [ "`uname -m`" = "x86_64" ]; then
+		if [ "$MODULAR" = "true" ]; then
+			echo "ARCH_CFLAGS+=-fPIC" >> platform.inc
+			echo "ARCH_CXXFLAGS+=-fPIC" >> platform.inc
+		fi
+		LIBDIR=lib64
+	else
+		LIBDIR=lib
+	fi
+fi
+
 if [ "$PLATFORM" = "unix" ]; then
-	echo "LIBDIR=\${PREFIX}/lib/megazeux" >> platform.inc
+	echo "LIBDIR=\${PREFIX}/${LIBDIR}/megazeux" >> platform.inc
 else
 	echo "LIBDIR=." >> platform.inc
 fi
@@ -529,8 +544,8 @@ if [ "$X11" = "true" ]; then
 	X11PATH=`which $XBIN`
 	X11DIR=`dirname $X11PATH`
 
-	echo "editor_flags:=-I$X11DIR/../include" >> platform.inc
-	echo "editor_ldflags:=-L$X11DIR/../lib -lX11" >> platform.inc
+	echo "editor_flags:=-I${X11DIR}/../include" >> platform.inc
+	echo "editor_ldflags:=-L${X11DIR}/../${LIBDIR} -lX11" >> platform.inc
 fi
 
 #
@@ -681,13 +696,6 @@ if [ "$MODULAR" = "true" ]; then
 	echo "BUILD_MODULAR=1" >> platform.inc
 	echo "#define CONFIG_MODULAR" >> src/config.h
 
-	if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
-		if [ "`uname -o`" = "GNU/Linux" \
-		  -a "`uname -m`" = "x86_64" ]; then
-			echo "ARCH_CFLAGS+=-fPIC" >> platform.inc
-			echo "ARCH_CXXFLAGS+=-fPIC" >> platform.inc
-		fi
-	fi
 else
 	echo "Modular build disabled."
 fi
