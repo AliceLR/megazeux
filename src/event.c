@@ -48,7 +48,7 @@ static const struct buffered_status *load_status(void)
 
 static void bump_status(void)
 {
-  Uint8 last_store_offset = input.store_offset;
+  Uint16 last_store_offset = input.store_offset;
 
   input.store_offset = (input.store_offset + 1) % num_buffered_events;
   input.load_offset = (input.store_offset + 1) % num_buffered_events;

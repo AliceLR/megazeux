@@ -9,6 +9,12 @@
 #ifndef _STDAFX_H_
 #define _STDAFX_H_
 
+#define MODPLUG_NO_FILESAVE
+#define NO_AGC
+#define LPCTSTR LPCSTR
+#define WAVE_FORMAT_PCM 1
+//#define ENABLE_EQ
+
 #ifdef _MSC_VER
 
 #pragma warning (disable:4201)
@@ -25,7 +31,7 @@ static inline void ProcessPlugins(int n) {}
 #define sleep(x) Sleep(x * 1000)
 #define strnicmp _strnicmp
 
-#else
+#else // !_MSC_VER
 
 #if defined(HAVE_CONFIG_H) && !defined(CONFIG_H_INCLUDED)
 # include "config.h"
@@ -109,19 +115,13 @@ typedef void* PVOID;
 
 #endif // !__WIN32__
 
-inline LONG MulDiv (long a, long b, long c)
+static inline LONG MulDiv (long a, long b, long c)
 {
   // if (!c) return 0;
   return ((uint64_t) a * (uint64_t) b ) / c;
 }
 
-#define MODPLUG_NO_FILESAVE
-#define NO_AGC
-#define LPCTSTR LPCSTR
-#define WAVE_FORMAT_PCM 1
-//#define ENABLE_EQ
-
-inline int8_t * GlobalAllocPtr(unsigned int, size_t size)
+static inline int8_t * GlobalAllocPtr(unsigned int, size_t size)
 {
   int8_t * p = (int8_t *) malloc(size);
 
@@ -129,7 +129,7 @@ inline int8_t * GlobalAllocPtr(unsigned int, size_t size)
   return p;
 }
 
-inline void ProcessPlugins(int n) {}
+static inline void ProcessPlugins(int n) {}
 
 #define GlobalFreePtr(p) free((void *)(p))
 
@@ -141,6 +141,6 @@ inline void ProcessPlugins(int n) {}
 #define TRUE	true
 #endif
 
-#endif // MSC_VER
+#endif // !MSC_VER
 
 #endif

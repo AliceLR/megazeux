@@ -1,7 +1,8 @@
 BUILDING MEGAZEUX WITH MICROSOFT VISUAL STUDIO
 
 This document covers the rationale and caveats regarding MegaZeux
-compilation with Microsoft's Visual C++ 2008 compiler (henceforth MSVC).
+compilation with Microsoft's Visual C++ 2010 Beta 1 compiler
+(henceforth MSVC).
 
 RATIONALE
 
@@ -52,8 +53,8 @@ OPENING THE PROJECT
 
 The pre-built project files can be found in this directory as "MegaZeux.sln".
 The solution may not always work, as it is not tested often. At the time of
-writing, Visual Studio 2008 was the minimum working version required to
-open it. You must also build MZX's dependencies into a "Deps" folder
+writing, Visual Studio 2010 beta 1 was the minimum working version required
+to open it. You must also build MZX's dependencies into a "Deps" folder
 alongside the solution, or use these prebuilt Deps:
 
 http://mzx.devzero.co.uk/junk/MegaZeux-VC9-x86-x64-deps.zip

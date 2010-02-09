@@ -1,0 +1,382 @@
+﻿<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup Label="ProjectConfigurations">
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|Win32">
+      <Configuration>Release</Configuration>
+      <Platform>Win32</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+    <ProjectConfiguration Include="Release|x64">
+      <Configuration>Release</Configuration>
+      <Platform>x64</Platform>
+    </ProjectConfiguration>
+  </ItemGroup>
+  <PropertyGroup Label="Globals">
+    <ProjectGUID>{B4B378A1-90C6-4A5A-983B-25214A40BC78}</ProjectGUID>
+    <RootNamespace>MegaZeux</RootNamespace>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.Default.props" />
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
+    <ConfigurationType>Application</ConfigurationType>
+  </PropertyGroup>
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'" Label="Configuration">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|X64'">
+    <ConfigurationType>DynamicLibrary</ConfigurationType>
+    <CharacterSet>MultiByte</CharacterSet>
+    <WholeProgramOptimization>true</WholeProgramOptimization>
+  </PropertyGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
+  <ImportGroup Label="ExtensionSettings">
+  </ImportGroup>
+  <ImportGroup Label="PropertySheets">
+    <Import Project="$(LocalAppData)\Microsoft\VisualStudio\10.0\Microsoft.Cpp.$(Platform).user.props" Condition="exists('$(LocalAppData)\Microsoft\VisualStudio\10.0\Microsoft.Cpp.$(Platform).user.props')" />
+  </ImportGroup>
+  <PropertyGroup Label="UserMacros" />
+  <PropertyGroup>
+    <_ProjectFileVersion>10.0.20506.1</_ProjectFileVersion>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(SolutionDir)\..\..\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(Configuration)\Core\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(ProjectName)</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">.dll</TargetExt>
+    <OutDir Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(SolutionDir)\..\..\</OutDir>
+    <IntDir Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(Configuration)\Core\</IntDir>
+    <TargetName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(ProjectName)</TargetName>
+    <TargetExt Condition="'$(Configuration)|$(Platform)'=='Release|X64'">.dll</TargetExt>
+  </PropertyGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">
+    <ClCompile>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>../../arch/msvc;Deps/include;Deps/include/SDL;Deps/include/libpng12;../../contrib/libmodplug/src;../../contrib/libmodplug/src/libmodplug;../../contrib/gdm2s3m/src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <StringPooling>true</StringPooling>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <RuntimeLibrary>MultiThreadedDLL</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <AdditionalOptions> /J</AdditionalOptions>
+      <WarningLevel>Level3</WarningLevel>
+      <CompileAs>CompileAsC</CompileAs>
+      <PreprocessorDefinitions>__WIN32__;_CRT_SECURE_NO_WARNINGS;CORE_LIBSPEC=__declspec(dllexport)</PreprocessorDefinitions>
+    </ClCompile>
+    <Link>
+      <AdditionalOptions>/NODEFAULTLIB:libcmt %(AdditionalOptions)</AdditionalOptions>
+      <AdditionalDependencies>SDL.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;libpng12.lib;zlib.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>Deps\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <ProgramDatabaseFile>$(SolutionDir)\..\..\$(ProjectName).pdb</ProgramDatabaseFile>
+      <TargetMachine>MachineX86</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemDefinitionGroup Condition="'$(Configuration)|$(Platform)'=='Release|X64'">
+    <Midl>
+      <TargetEnvironment>X64</TargetEnvironment>
+    </Midl>
+    <ClCompile>
+      <Optimization>MaxSpeed</Optimization>
+      <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
+      <WholeProgramOptimization>true</WholeProgramOptimization>
+      <AdditionalIncludeDirectories>../../arch/msvc;Deps/include;Deps/include/SDL;Deps/include/libpng12;../../contrib/libmodplug/src;../../contrib/libmodplug/src/libmodplug;../../contrib/gdm2s3m/src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <ExceptionHandling>
+      </ExceptionHandling>
+      <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
+      <FunctionLevelLinking>true</FunctionLevelLinking>
+      <FloatingPointModel>Fast</FloatingPointModel>
+      <AdditionalOptions> /J</AdditionalOptions>
+      <WarningLevel>Level3</WarningLevel>
+      <DebugInformationFormat>
+      </DebugInformationFormat>
+      <CompileAs>CompileAsC</CompileAs>
+    </ClCompile>
+    <Link>
+      <AdditionalDependencies>SDL.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;libpng12.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalLibraryDirectories>Deps\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
+      <GenerateManifest>false</GenerateManifest>
+      <GenerateDebugInformation>false</GenerateDebugInformation>
+      <TargetMachine>MachineX64</TargetMachine>
+    </Link>
+  </ItemDefinitionGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\contrib\gdm2s3m\src\error.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)gdm2s3m\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)gdm2s3m\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\gdm2s3m\src\gdm.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)gdm2s3m\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)gdm2s3m\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\gdm2s3m\src\gdm2s3m.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)gdm2s3m\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)gdm2s3m\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\gdm2s3m\src\s3m.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)gdm2s3m\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)gdm2s3m\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\gdm2s3m\src\utility.c">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)gdm2s3m\</ObjectFileName>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)gdm2s3m\</ObjectFileName>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\fastmix.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_669.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_amf.cpp">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_dsm.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_far.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_it.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_med.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_mod.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_mtm.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_okt.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_s3m.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_stm.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_ult.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_wav.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\load_xm.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\mmcmp.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\modplug.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\sndfile.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\sndmix.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\snd_dsp.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\snd_flt.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\snd_fx.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\contrib\libmodplug\src\tables.cpp">
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio.c" />
+    <ClCompile Include="..\..\src\audio_modplug.cpp">
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
+      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
+    </ClCompile>
+    <ClCompile Include="..\..\src\audio_sdl.c" />
+    <ClCompile Include="..\..\src\board.c" />
+    <ClCompile Include="..\..\src\configure.c" />
+    <ClCompile Include="..\..\src\counter.c" />
+    <ClCompile Include="..\..\src\data.c" />
+    <ClCompile Include="..\..\src\debug.c" />
+    <ClCompile Include="..\..\src\error.c" />
+    <ClCompile Include="..\..\src\event.c" />
+    <ClCompile Include="..\..\src\event_sdl.c" />
+    <ClCompile Include="..\..\src\expr.c" />
+    <ClCompile Include="..\..\src\fsafeopen.c" />
+    <ClCompile Include="..\..\src\game.c" />
+    <ClCompile Include="..\..\src\game2.c" />
+    <ClCompile Include="..\..\src\graphics.c" />
+    <ClCompile Include="..\..\src\helpsys.c" />
+    <ClCompile Include="..\..\src\idarray.c" />
+    <ClCompile Include="..\..\src\idput.c" />
+    <ClCompile Include="..\..\src\intake.c" />
+    <ClCompile Include="..\..\src\legacy_rasm.c" />
+    <ClCompile Include="..\..\src\mzm.c" />
+    <ClCompile Include="..\..\src\network\host.c" />
+    <ClCompile Include="..\..\src\network\manifest.c" />
+    <ClCompile Include="..\..\src\network\network.c" />
+    <ClCompile Include="..\..\src\network\sha256.c" />
+    <ClCompile Include="..\..\src\platform_sdl.c" />
+    <ClCompile Include="..\..\src\pngops.c" />
+    <ClCompile Include="..\..\src\render.c" />
+    <ClCompile Include="..\..\src\render_gl.c" />
+    <ClCompile Include="..\..\src\render_gl1.c" />
+    <ClCompile Include="..\..\src\render_gl2.c" />
+    <ClCompile Include="..\..\src\render_glsl.c" />
+    <ClCompile Include="..\..\src\render_sdl.c" />
+    <ClCompile Include="..\..\src\render_soft.c" />
+    <ClCompile Include="..\..\src\render_yuv.c" />
+    <ClCompile Include="..\..\src\render_yuv1.c" />
+    <ClCompile Include="..\..\src\render_yuv2.c" />
+    <ClCompile Include="..\..\src\robot.c" />
+    <ClCompile Include="..\..\src\run_robot.c" />
+    <ClCompile Include="..\..\src\scrdisp.c" />
+    <ClCompile Include="..\..\src\sfx.c" />
+    <ClCompile Include="..\..\src\sprite.c" />
+    <ClCompile Include="..\..\src\util.c" />
+    <ClCompile Include="..\..\src\window.c" />
+    <ClCompile Include="..\..\src\world.c" />
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\contrib\gdm2s3m\src\error.h" />
+    <ClInclude Include="..\..\contrib\gdm2s3m\src\gdm.h" />
+    <ClInclude Include="..\..\contrib\gdm2s3m\src\gdm2s3m.h" />
+    <ClInclude Include="..\..\contrib\gdm2s3m\src\s3m.h" />
+    <ClInclude Include="..\..\contrib\gdm2s3m\src\types.h" />
+    <ClInclude Include="..\..\contrib\gdm2s3m\src\utility.h" />
+    <ClInclude Include="..\..\contrib\libmodplug\src\libmodplug\it_defs.h" />
+    <ClInclude Include="..\..\contrib\libmodplug\src\libmodplug\sndfile.h" />
+    <ClInclude Include="..\..\contrib\libmodplug\src\libmodplug\stdafx.h" />
+    <ClInclude Include="..\..\contrib\libmodplug\src\modplug.h" />
+    <ClInclude Include="..\..\src\audio.h" />
+    <ClInclude Include="..\..\src\audio_modplug.h" />
+    <ClInclude Include="..\..\src\board.h" />
+    <ClInclude Include="..\..\src\board_struct.h" />
+    <ClInclude Include="..\..\src\compat.h" />
+    <ClInclude Include="..\..\src\configure.h" />
+    <ClInclude Include="..\..\src\const.h" />
+    <ClInclude Include="..\..\src\counter.h" />
+    <ClInclude Include="..\..\src\counter_struct.h" />
+    <ClInclude Include="..\..\src\data.h" />
+    <ClInclude Include="..\..\src\debug.h" />
+    <ClInclude Include="..\..\src\error.h" />
+    <ClInclude Include="..\..\src\event.h" />
+    <ClInclude Include="..\..\src\expr.h" />
+    <ClInclude Include="..\..\src\extmem.h" />
+    <ClInclude Include="..\..\src\fsafeopen.h" />
+    <ClInclude Include="..\..\src\game.h" />
+    <ClInclude Include="..\..\src\game2.h" />
+    <ClInclude Include="..\..\src\graphics.h" />
+    <ClInclude Include="..\..\src\helpsys.h" />
+    <ClInclude Include="..\..\src\idarray.h" />
+    <ClInclude Include="..\..\src\idput.h" />
+    <ClInclude Include="..\..\src\intake.h" />
+    <ClInclude Include="..\..\src\keysym.h" />
+    <ClInclude Include="..\..\src\legacy_rasm.h" />
+    <ClInclude Include="..\..\src\mzm.h" />
+    <ClInclude Include="..\..\src\network\host.h" />
+    <ClInclude Include="..\..\src\network\manifest.h" />
+    <ClInclude Include="..\..\src\network\network.h" />
+    <ClInclude Include="..\..\src\network\sha256.h" />
+    <ClInclude Include="..\..\src\platform.h" />
+    <ClInclude Include="..\..\src\platform_endian.h" />
+    <ClInclude Include="..\..\src\platform_sdl.h" />
+    <ClInclude Include="..\..\src\pngops.h" />
+    <ClInclude Include="..\..\src\render.h" />
+    <ClInclude Include="..\..\src\renderers.h" />
+    <ClInclude Include="..\..\src\render_gl.h" />
+    <ClInclude Include="..\..\src\render_sdl.h" />
+    <ClInclude Include="..\..\src\render_yuv.h" />
+    <ClInclude Include="..\..\src\robot.h" />
+    <ClInclude Include="..\..\src\robot_struct.h" />
+    <ClInclude Include="..\..\src\run_robot.h" />
+    <ClInclude Include="..\..\src\scrdisp.h" />
+    <ClInclude Include="..\..\src\sfx.h" />
+    <ClInclude Include="..\..\src\sprite.h" />
+    <ClInclude Include="..\..\src\sprite_struct.h" />
+    <ClInclude Include="..\..\src\util.h" />
+    <ClInclude Include="..\..\src\window.h" />
+    <ClInclude Include="..\..\src\world.h" />
+    <ClInclude Include="..\..\src\world_struct.h" />
+    <ClInclude Include="config.h" />
+    <ClInclude Include="dirent.h" />
+    <ClInclude Include="msvc.h" />
+  </ItemGroup>
+  <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
+  <ImportGroup Label="ExtensionTargets">
+  </ImportGroup>
+</Project>
