@@ -431,6 +431,47 @@ static unsigned short sgetus(struct stream *s)
   return (sgetc(s) << 0) | (sgetc(s) << 8);
 }
 
+static int world_magic(const unsigned char magic_string[3])
+{
+  if(magic_string[0] == 'M')
+  {
+    if(magic_string[1] == 'Z')
+    {
+      switch(magic_string[2])
+      {
+        case '2':
+          return 0x0205;
+        case 'A':
+          return 0x0208;
+      }
+    }
+    else
+    {
+      if((magic_string[1] > 1) && (magic_string[1] < 10))
+        return ((int)magic_string[1] << 8) + (int)magic_string[2];
+    }
+  }
+
+  return 0;
+}
+
+static int board_magic(const unsigned char magic_string[4])
+{
+  if(magic_string[0] == 0xFF)
+  {
+    if(magic_string[1] == 'M')
+    {
+      if(magic_string[2] == 'B' && magic_string[3] == '2')
+        return 0x0200;
+
+      if((magic_string[2] > 1) && (magic_string[2] < 10))
+        return ((int)magic_string[2] << 8) + (int)magic_string[3];
+    }
+  }
+
+  return 0;
+}
+
 static const char *decode_status(enum status status)
 {
   switch(status)
@@ -697,11 +738,12 @@ static enum status parse_robot(struct stream *s)
   return ret;
 }
 
-static enum status parse_board_direct(struct stream *s)
+static enum status parse_board_direct(struct stream *s, int version)
 {
   int i, num_robots, skip_rle_blocks = 6;
+  unsigned short board_mod_len;
   enum status ret = SUCCESS;
-  char tmp[256];
+  char tmp[MAX_PATH];
 
   // junk the undocumented (and unused) board_mode
   sgetc(s);
@@ -744,10 +786,16 @@ static enum status parse_board_direct(struct stream *s)
     }
   }
 
+  // get length of board MOD string
+  if(version < 0x0253)
+    board_mod_len = 12;
+  else
+    board_mod_len = sgetus(s);
+
   // grab board's default MOD
-  if(sread(tmp, 1, 12, s) != 12)
-    return FREAD_FAILED;
-  tmp[12] = '\0';
+  if(sread(tmp, 1, board_mod_len, s) != board_mod_len)
+      return FREAD_FAILED;
+  tmp[board_mod_len] = '\0';
 
   // check the board MOD exists
   if(strlen(tmp) > 0 && strcmp(tmp, "*"))
@@ -778,27 +826,24 @@ static enum status parse_board_direct(struct stream *s)
 
 static enum status parse_board(struct stream *s)
 {
-  int c;
+  unsigned char magic[4];
+  int version;
 
-  if(sgetc(s) != 0xff)
+  if(sread(magic, 1, 4, s) != (size_t)4)
+    return FREAD_FAILED;
+
+  version = board_magic(magic);
+  if(version <= 0)
     return MAGIC_CHECK_FAILED;
 
-  if(sgetc(s) != 'M')
-    return MAGIC_CHECK_FAILED;
-
-  c = sgetc(s);
-  if(c != 'B' && c != '\x2')
-    return MAGIC_CHECK_FAILED;
-
-  sgetc(s);
-
-  return parse_board_direct(s);
+  return parse_board_direct(s, version);
 }
 
 static enum status parse_world(struct stream *s)
 {
-  int i, c, num_boards, global_robot_offset;
+  int version, i, num_boards, global_robot_offset;
   enum status ret = SUCCESS;
+  unsigned char magic[3];
 
   // skip to protected byte; don't care about world name
   if(sseek(s, WORLD_PROTECTED_OFFSET, SEEK_SET) != 0)
@@ -808,12 +853,13 @@ static enum status parse_world(struct stream *s)
   if(sgetc(s) != 0)
     return PROTECTED_WORLD;
 
-  // can only support 2.00+ versioned worlds
-  if(sgetc(s) != 'M')
-    return MAGIC_CHECK_FAILED;
+  // read in world magic (version)
+  if(sread(magic, 1, 3, s) != (size_t)3)
+    return FREAD_FAILED;
 
-  c = sgetc(s);
-  if(c != '\x2' && c != 'Z')
+  // can only support 2.00+ versioned worlds
+  version = world_magic(magic);
+  if(version <= 0)
     return MAGIC_CHECK_FAILED;
 
   // Jump to the global robot offset
@@ -888,7 +934,7 @@ static enum status parse_world(struct stream *s)
       return FSEEK_FAILED;
 
     // parse this board atomically
-    ret = parse_board_direct(s);
+    ret = parse_board_direct(s, version);
     if(ret != SUCCESS)
       goto err_out;
   }
