@@ -186,8 +186,7 @@ elif [ "$PLATFORM" = "mingw64" ]; then
 	PLATFORM="mingw"
 else
 	cp -f arch/Makefile.$PLATFORM Makefile.platform
-
-	if [ ! -f Makefile.platform ]; then
+	if [ "$?" != "0" ]; then
 		echo "Invalid platform selection (see arch/)."
 		exit 1
 	fi
