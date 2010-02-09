@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# October 19th, 2008
+# December 24th, 2008
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -441,5 +441,32 @@
 # GUI set.
 
 # mask_midchars = 1
+
+###################
+# NETWORK OPTIONS #
+###################
+
+# If networking is enabled, MZX is permitted to bind ports and connect
+# out to the network or Internet. This option is a global kill switch
+# for the paranoid and allows the entire network layer to be disabled.
+
+# network_enabled = 1
+
+# The update host is an HTTP server containing all data and metadata
+# associated with updates for MegaZeux. You normally won't want to
+# change this, but it may be useful if you are a third party distributing
+# unofficial updates. Please note, this is not a URL and should not
+# contain protocol specifiers such as http://
+
+# update_host = updates.digitalmzx.net
+
+# The update "branch" is consulted each time the updater runs. Typically,
+# there are only two branches, "Stable" and "Unstable". Please note, this
+# option is case sensitive. The "Stable" branch is the default, but if
+# you are interested in helping find bugs in the latest development
+# version, or are instructed to follow development, you will need to
+# change this to "Unstable". Third parties may use different branch names.
+
+# update_branch_pin = Stable
 
 include pad.config

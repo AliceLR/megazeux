@@ -127,7 +127,6 @@ __libspec int main(int argc, char *argv[])
   if(!platform_init())
     return 1;
 
-  updater_init(argv);
   editor_init();
 
   // We need to store the current working directory so it's
@@ -135,7 +134,7 @@ __libspec int main(int argc, char *argv[])
   getcwd(current_dir, MAX_PATH);
 
   if(mzx_res_init(argv[0]))
-    goto exit_free_res;
+    goto err_free_res;
 
   allocate_world(&mzx_world);
   init_macros(&mzx_world);
@@ -164,8 +163,11 @@ __libspec int main(int argc, char *argv[])
 
   set_mouse_mul(8, 14);
 
+  if(!network_layer_init(&mzx_world.conf, argv))
+    info("Network layer disabled.\n");
+
   if(!init_video(&(mzx_world.conf)))
-    goto exit_free_world;
+    goto err_network_layer_exit;
   init_audio(&(mzx_world.conf));
 
 #ifdef CONFIG_NDS
@@ -207,12 +209,11 @@ __libspec int main(int argc, char *argv[])
 
   quit_audio();
 
-exit_free_world:
+err_network_layer_exit:
+  network_layer_exit(&mzx_world.conf);
   free_world(&mzx_world);
-
-exit_free_res:
+err_free_res:
   mzx_res_free();
   platform_quit();
-
   return 0;
 }

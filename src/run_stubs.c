@@ -27,5 +27,6 @@ void load_editor_config(World *mzx_world, int argc, char *argv[]) { }
 #endif
 
 #ifdef CONFIG_UPDATER
-void updater_init(char *argv[]) { }
+bool network_layer_init(config_info *info, char *argv[]) { return true; }
+void network_layer_exit(config_info *info) {}
 #endif

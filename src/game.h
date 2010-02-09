@@ -55,7 +55,7 @@ CORE_LIBSPEC extern void (*edit_world)(World *mzx_world);
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_UPDATER
-CORE_LIBSPEC extern void (*check_for_updates)(void);
+CORE_LIBSPEC extern void (*check_for_updates)(config_info *conf);
 #endif
 
 __M_END_DECLS

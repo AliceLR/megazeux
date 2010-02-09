@@ -52,14 +52,6 @@
 #define UPDATES_TXT   "updates.txt"
 #define DELETE_TXT    "delete.txt"
 
-#define UPDATE_HOST   "updates.digitalmzx.net"
-
-#ifdef DEBUG
-#define UPDATE_BRANCH "Current-Unstable"
-#else
-#define UPDATE_BRANCH "Current-Stable"
-#endif
-
 #define WIDGET_BUF_LEN 80
 
 static struct manifest_entry *delete_list, *delete_p;
@@ -342,7 +334,7 @@ static bool restore_original_manifest(bool ret)
   return true;
 }
 
-static bool reissue_connection(struct host **h)
+static bool reissue_connection(config_info *conf, struct host **h)
 {
   bool ret = true;
   int buf_len;
@@ -365,17 +357,20 @@ static bool reissue_connection(struct host **h)
 
   m_hide();
 
-  buf_len = snprintf(widget_buf, WIDGET_BUF_LEN, "Connecting to \""
-   UPDATE_HOST "\". Please wait..");
+  buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
+   "Connecting to \"%s\". Please wait..", conf->update_host);
   widget_buf[WIDGET_BUF_LEN - 1] = 0;
 
   draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
   write_string(widget_buf, (WIDGET_BUF_LEN - buf_len) >> 1, 12, DI_TEXT, 0);
   update_screen();
 
-  if(!host_connect(*h, UPDATE_HOST, OUTBOUND_PORT))
+  if(!host_connect(*h, conf->update_host, OUTBOUND_PORT))
   {
-    error("Connection to \"" UPDATE_HOST "\" failed.", 1, 8, 0);
+    buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
+     "Connection to \"%s\" failed.", conf->update_host);
+    widget_buf[WIDGET_BUF_LEN - 1] = 0;
+    error(widget_buf, 1, 8, 0);
     ret = false;
   }
 
@@ -387,11 +382,12 @@ err_out:
   return ret;
 }
 
-static void __check_for_updates(void)
+static void __check_for_updates(config_info *conf)
 {
   char **list_entries, buffer[LINE_BUF_LEN], *url_base, *value;
   struct manifest_entry *removed, *replaced, *added, *e;
   int i = 0, entries = 0, buf_len, result;
+  char update_branch[LINE_BUF_LEN];
   const char *version = VERSION;
   size_t list_entry_width = 0;
   struct host *h = NULL;
@@ -411,13 +407,7 @@ static void __check_for_updates(void)
     goto err_chdir;
   }
 
-  if(!host_layer_init())
-  {
-    error("Failed to initialize network layer.", 1, 8, 0);
-    goto err_chdir;
-  }
-
-  if(!reissue_connection(&h))
+  if(!reissue_connection(conf, &h))
     goto err_host_destroy;
 
   for(retries = 0; retries < MAX_RETRIES; retries++)
@@ -429,7 +419,7 @@ static void __check_for_updates(void)
     if(status == HOST_SUCCESS)
       break;
 
-    if(!reissue_connection(&h))
+    if(!reissue_connection(conf, &h))
       goto err_host_destroy;
   }
 
@@ -441,6 +431,9 @@ static void __check_for_updates(void)
     error(widget_buf, 1, 8, 0);
     goto err_host_destroy;
   }
+
+  snprintf(update_branch, LINE_BUF_LEN, "Current-%s", 
+   conf->update_branch_pin);
 
   // Walk this list (of two, hopefully)
   while(true)
@@ -460,7 +453,7 @@ static void __check_for_updates(void)
     if(!value)
       break;
 
-    if(strcmp(key, UPDATE_BRANCH) == 0)
+    if(strcmp(key, update_branch) == 0)
       break;
   }
 
@@ -563,7 +556,7 @@ static void __check_for_updates(void)
     if(m_ret)
       break;
 
-    if(!reissue_connection(&h))
+    if(!reissue_connection(conf, &h))
       goto err_free_url_base;
   }
 
@@ -699,7 +692,7 @@ static void __check_for_updates(void)
         goto err_free_delete_list;
       }
 
-      if(!reissue_connection(&h))
+      if(!reissue_connection(conf, &h))
         goto err_free_delete_list;
       host_set_callbacks(h, NULL, recv_cb, cancel_cb);
     }
@@ -777,7 +770,7 @@ err_out:
   }
 }
 
-void updater_init(char *argv[])
+static bool updater_init(char *argv[])
 {
   struct manifest_entry *e;
   bool ret;
@@ -786,7 +779,7 @@ void updater_init(char *argv[])
   process_argv = argv;
 
   if(!swivel_current_dir(false))
-    return;
+    return false;
 
   check_for_updates = __check_for_updates;
 
@@ -824,4 +817,27 @@ void updater_init(char *argv[])
 
 err_swivel_back:
   swivel_current_dir_back(false);
+  return true;
+}
+
+bool network_layer_init(config_info *conf, char *argv[])
+{
+  if(!conf->network_enabled)
+    return false;
+
+  if(!host_layer_init())
+  {
+    error("Failed to initialize network layer.", 1, 8, 0);
+    return false;
+  }
+
+  updater_init(argv);
+  return true;
+}
+
+void network_layer_exit(config_info *conf)
+{
+  if(!conf->network_enabled)
+    return;
+  host_layer_exit();
 }

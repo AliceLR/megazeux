@@ -68,6 +68,13 @@ struct _config_info
 
   // Misc options
   int mask_midchars;
+
+#ifdef CONFIG_UPDATER
+  // Network layer options
+  bool network_enabled;
+  char update_host[256];
+  char update_branch_pin[256];
+#endif
 };
 
 typedef void (* config_function)(config_info *conf,

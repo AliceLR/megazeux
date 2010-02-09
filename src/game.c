@@ -72,7 +72,7 @@ static const char main_menu_1[] =
 #ifdef CONFIG_UPDATER
 static const char main_menu_2[] =
  "F7/U - Updater";
-void (*check_for_updates)(void);
+void (*check_for_updates)(config_info *conf);
 #endif
 
 #ifdef CONFIG_EDITOR
@@ -2385,7 +2385,7 @@ void title_screen(World *mzx_world)
         case IKEY_u:
         {
           if(check_for_updates)
-            check_for_updates();
+            check_for_updates(&mzx_world->conf);
           break;
         }
 #endif

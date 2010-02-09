@@ -77,6 +77,8 @@ USERS
   which has been broken since 2.80.
 + Fix swapping to encrypted worlds if initially the user decides to not
   decrypt the world. Previously, this would either crash, or loop forever.
+- Removed the legacy "force_resolution" option which was replaced long ago
+  by the more accurate "fullscreen_resolution" option.
 
 DEVELOPERS
 

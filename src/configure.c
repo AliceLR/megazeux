@@ -65,6 +65,30 @@ typedef struct
   config_function change_option;
 } config_entry;
 
+#ifdef CONFIG_UPDATER
+
+static void config_set_network_enabled(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  conf->network_enabled = strtol(value, NULL, 10);
+}
+
+static void config_update_host(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  strncpy(conf->update_host, value, 256);
+  conf->update_host[256 - 1] = 0;
+}
+
+static void config_update_branch_pin(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  strncpy(conf->update_branch_pin, value, 256);
+  conf->update_branch_pin[256 - 1] = 0;
+}
+
+#endif // CONFIG_UPDATER
+
 static void config_disassemble_extras(config_info *conf, char *name, char *value,
  char *extended_data)
 {
@@ -391,7 +415,6 @@ static const config_entry config_options[] =
   { "enable_oversampling", config_enable_oversampling },
   { "enable_resizing", config_enable_resizing },
   { "force_bpp", config_force_bpp },
-  { "force_resolution", config_set_resolution }, /* backwards compatibility */
   { "fullscreen", config_set_fullscreen },
   { "fullscreen_resolution", config_set_resolution },
   { "gl_filter_method", config_set_gl_filter_method },
@@ -409,6 +432,9 @@ static const config_entry config_options[] =
   { "music_on", config_set_music },
   { "music_volume", config_set_mod_volume },
   { "mzx_speed", config_set_mzx_speed },
+#ifdef CONFIG_UPDATER
+  { "network_enabled", config_set_network_enabled },
+#endif
   { "pause_on_unfocus", pause_on_unfocus },
   { "pc_speaker_on", config_set_pc_speaker },
   { "pc_speaker_volume", config_set_sfx_volume },
@@ -417,6 +443,10 @@ static const config_entry config_options[] =
   { "save_file", config_save_file },
   { "startup_editor", config_startup_editor },
   { "startup_file", config_startup_file },
+#ifdef CONFIG_UPDATER
+  { "update_branch_pin", config_update_branch_pin },
+  { "update_host", config_update_host },
+#endif
   { "video_output", config_set_video_output },
   { "window_resolution", config_window_resolution }
 };
@@ -487,6 +517,12 @@ static config_info default_options =
   0,                            // startup_editor
 
   1,                            // mask_midchars
+
+#ifdef CONFIG_UPDATER
+  true,                         // network_enabled
+  "updates.digitalmzx.net",     // update_host
+  "Stable",                     // update_branch_pin
+#endif
 };
 
 static void config_change_option(void *conf, char *name, char *value,

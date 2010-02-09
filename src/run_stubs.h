@@ -40,9 +40,12 @@ static inline void load_editor_config(World *mzx_world,
 #endif
 
 #ifdef CONFIG_UPDATER
-void updater_init(char *argv[]);
+bool network_layer_init(config_info *conf, char *argv[]);
+void network_layer_exit(config_info *conf);
 #else
-static inline void updater_init(char *argv[]) {}
+static inline bool network_layer_init(config_info *conf, char *argv[])
+ { return true; }
+static inline void network_layer_exit(config_info *conf) {}
 #endif
 
 __M_END_DECLS
