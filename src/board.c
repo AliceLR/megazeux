@@ -27,6 +27,8 @@
 #include "extmem.h"
 #include "util.h"
 
+#define MOD_FILENAME_SIZE 13
+
 static int cmp_robots(const void *dest, const void *src)
 {
   Robot *rsrc = *((Robot **)src);
@@ -135,8 +137,8 @@ __editor_maybe_static void load_board_direct(Board *cur_board, FILE *fp,
   load_RLE2_plane(cur_board->level_under_param, fp, size);
 
   // Load board parameters
-  fread(cur_board->mod_playing, FILENAME_SIZE, 1, fp);
-  cur_board->mod_playing[FILENAME_SIZE] = 0;
+  fread(cur_board->mod_playing, MOD_FILENAME_SIZE, 1, fp);
+  cur_board->mod_playing[MOD_FILENAME_SIZE] = 0;
   cur_board->viewport_x = fgetc(fp);
   cur_board->viewport_y = fgetc(fp);
   cur_board->viewport_width = fgetc(fp);
@@ -386,7 +388,7 @@ int save_board(Board *cur_board, FILE *fp, int savegame)
   save_RLE2_plane(cur_board->level_under_param, fp, board_size);
 
   // Save board parameters
-  fwrite(cur_board->mod_playing, FILENAME_SIZE, 1, fp);
+  fwrite(cur_board->mod_playing, MOD_FILENAME_SIZE, 1, fp);
   fputc(cur_board->viewport_x, fp);
   fputc(cur_board->viewport_y, fp);
   fputc(cur_board->viewport_width, fp);

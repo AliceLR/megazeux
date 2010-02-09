@@ -364,8 +364,7 @@ fi
 # Force-disable OpenGL and overlay renderers on PSP, GP2X and NDS
 #
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" \
-  -o "$PLATFORM" = "amiga" ]; then
+  -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
   	echo "Force-disabling OpenGL and overlay renderers."
 	OPENGL="false"
 	OVERLAY="false"

@@ -103,7 +103,6 @@ __M_BEGIN_DECLS
 
 // "SIZE" includes terminating \0
 // This is legacy, for world format only
-#define FILENAME_SIZE         13
 #define NUM_BOARDS            250
 #define BOARD_NAME_SIZE       25
 // This is legacy, for status counters only

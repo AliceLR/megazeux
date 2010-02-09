@@ -75,7 +75,7 @@ void load_editor_config(World *mzx_world, int argc, char *argv[])
   although all keys are available at all times. PGUP/PGDN changes menu.
   The menus are shown in listed order. [draw] can be [text]. (in which case
   there is the words "Type to place text" after the ->) [draw] can also be
-  [place] or [block]. The options DRAW, TEXT, DEBUG, BLOCK, MOD, and DEF.
+  [place] or [block]. The options DRAW, __TEXT, DEBUG, BLOCK, MOD, and DEF.
   COLORS are highlighted white (instead of green) when active. Debug mode
   pops up a small window in the lower left corner, which rushes to the right
   side and back when the cursor reaches 3/4 of the way towards it,
@@ -374,7 +374,7 @@ static const mzx_thing tmenu_thing_ids[8][18] =
   // Misc (F9)
   {
     DOOR, GATE, RICOCHET_PANEL, RICOCHET, MINE, SPIKE, CUSTOM_HURT,
-    TEXT, N_MOVING_WALL, S_MOVING_WALL, E_MOVING_WALL, W_MOVING_WALL
+    __TEXT, N_MOVING_WALL, S_MOVING_WALL, E_MOVING_WALL, W_MOVING_WALL
   },
 
   // Objects (F10)
@@ -1462,7 +1462,7 @@ static void __edit_world(World *mzx_world)
       {
         if(draw_mode == 2)
         {
-          place_current_at_xy(mzx_world, TEXT, current_color,
+          place_current_at_xy(mzx_world, __TEXT, current_color,
            ' ', cursor_board_x, cursor_board_y, &copy_robot,
            &copy_scroll, &copy_sensor, overlay_edit);
 
@@ -1531,7 +1531,7 @@ static void __edit_world(World *mzx_world)
           if(((cursor_board_x - scroll_x) < 5) && scroll_x)
             scroll_x--;
 
-          place_current_at_xy(mzx_world, TEXT, current_color,
+          place_current_at_xy(mzx_world, __TEXT, current_color,
            ' ', cursor_board_x, cursor_board_y, &copy_robot,
            &copy_scroll, &copy_sensor, overlay_edit);
           modified = 1;
@@ -1572,7 +1572,7 @@ static void __edit_world(World *mzx_world)
       {
         if(draw_mode == 2)
         {
-          place_current_at_xy(mzx_world, TEXT, current_color, ' ',
+          place_current_at_xy(mzx_world, __TEXT, current_color, ' ',
            cursor_board_x, cursor_board_y, &copy_robot,
            &copy_scroll, &copy_sensor, overlay_edit);
         }
@@ -3039,7 +3039,7 @@ static void __edit_world(World *mzx_world)
 
                   case 2:
                   {
-                    convert_id = TEXT;
+                    convert_id = __TEXT;
                     break;
                   }
                 }
@@ -3676,7 +3676,7 @@ static void __edit_world(World *mzx_world)
       key = get_key(keycode_unicode);
       if(key != 0)
       {
-        place_current_at_xy(mzx_world, TEXT, current_color,
+        place_current_at_xy(mzx_world, __TEXT, current_color,
          key, cursor_board_x, cursor_board_y, &copy_robot,
          &copy_scroll, &copy_sensor, overlay_edit);
 

@@ -79,16 +79,6 @@ typedef enum {
 #include "msvc.h"
 #endif
 
-/* The AmigaOS toolchain litters the namespace with strange MSVC-like
- * type declarations such as TEXT (const char *). What this does is
- * rename any of MegaZeux's uses of TEXT from data.h to _TEXT at
- * compile time after including the AmigaOS header.
- */
-#ifdef __amigaos__
-#include <unistd.h>
-#define TEXT _TEXT
-#endif
-
 #if defined(CONFIG_MODULAR) && defined(__WIN32__)
 #define LIBSPEC __declspec(dllimport)
 #elif defined(CONFIG_MODULAR)
