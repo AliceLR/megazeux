@@ -22,7 +22,8 @@ createlha_amigaos() {
 	mkdir -p MegaZeux/docs &&
 	cp -r $BINARY_DEPS $HELP_FILE MegaZeux &&
 	cp -r $DOCS MegaZeux/docs &&
-	cp -r megazeux.exe mzxrun.exe libcore.so libeditor.so MegaZeux &&
+	cp -r megazeux.exe mzxrun.exe MegaZeux &&
+	cp -r libcore.so libeditor.so libnetwork.so MegaZeux &&
 	cp arch/amiga/MegaZeux MegaZeux &&
 	cp arch/amiga/MZXRun MegaZeux &&
 	cp arch/amiga/MegaZeux.info MegaZeux/MegaZeux.info &&
@@ -110,7 +111,7 @@ createzip_dynamic_sdl() {
 	#
 	$SEVENZIP a -tzip dist/$TARGET-$2.zip \
 		$BINARY_DEPS $HELP_FILE $GLSL_PROGRAMS $DOCS \
-		megazeux.exe mzxrun.exe core.dll editor.dll \
+		megazeux.exe mzxrun.exe core.dll editor.dll network.dll \
 		SDL.dll $DIRECTX_BAT utils &&
 
 	#
