@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __RASM_H
-#define __RASM_H
+#ifndef __LEGACY_RASM_H
+#define __LEGACY_RASM_H
 
 #include "compat.h"
 
@@ -83,4 +83,4 @@ CORE_LIBSPEC int get_color(char *cmd_line);
 
 __M_END_DECLS
 
-#endif // __RASM_H
+#endif // __LEGACY_RASM_H

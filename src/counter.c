@@ -35,7 +35,7 @@
 #include "event.h"
 #include "time.h"
 #include "audio.h"
-#include "legacy_rasm.h"
+#include "rasm.h"
 #include "fsafeopen.h"
 #include "intake.h"
 #include "robot.h"

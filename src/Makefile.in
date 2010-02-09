@@ -238,6 +238,10 @@ endif
 
 endif
 
+ifeq (${BUILD_DEBYTECODE},1)
+core_cobjs += ${core_obj}/rasm.o
+endif
+
 core_objs := ${core_cobjs} ${core_cxxobjs}
 
 -include ${core_objs:.o=.d}

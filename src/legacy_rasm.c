@@ -28,7 +28,6 @@
 #include "fsafeopen.h"
 #include "util.h"
 
-
 #define IMM_U16            (1 << 0)
 #define IMM_S16            (1 << 0)
 #define CHARACTER          (1 << 2)

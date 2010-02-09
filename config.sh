@@ -61,6 +61,7 @@ usage() {
 	echo "  --disable-sdl         Disables SDL dependencies and features."
 	echo "  --enable-egl          Enables EGL backend (if SDL disabled)."
 	echo "  --disable-check-alloc Disables memory allocator error handling."
+	echo "  --enable-debytecode   Enable experimental 'debytecode' transform."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -110,6 +111,7 @@ METER="false"
 SDL="true"
 EGL="false"
 CHECK_ALLOC="true"
+DEBYTECODE="false"
 
 #
 # User may override above settings
@@ -240,6 +242,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-check-alloc" ] && CHECK_ALLOC="false"
 	[ "$1" = "--enable-check-alloc" ]  && CHECK_ALLOC="true"
+
+	[ "$1" = "--enable-debytecode" ]  && DEBYTECODE="true"
+	[ "$1" = "--disable-debytecode" ] && DEBYTECODE="false"
 
 	if [ "$1" = "--help" ]; then
 		usage
@@ -941,6 +946,17 @@ if [ "$CHECK_ALLOC" = "true" ]; then
 	echo "#define CONFIG_CHECK_ALLOC" >> src/config.h
 else
 	echo "Memory allocation error checking disabled."
+fi
+
+#
+# Experimental 'debytecode' transformation, if enabled
+#
+if [ "$DEBYTECODE" = "true" ]; then
+	echo "Experimental 'debytecode' transform enabled."
+	echo "#define CONFIG_DEBYTECODE" >> src/config.h
+	echo "BUILD_DEBYTECODE=1" >> platform.inc
+else
+	echo "Experimental 'debytecode' transform disabled."
 fi
 
 echo
