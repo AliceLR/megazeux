@@ -66,7 +66,7 @@ static int editor_init_syms(void)
     return false;
   }
 
-  for (i = 0; editor_sym_map[i].name; i++)
+  for(i = 0; editor_sym_map[i].name; i++)
   {
     *editor_sym_map[i].sym_ptr =
      SDL_LoadFunction(editor_syms.handle, editor_sym_map[i].name);

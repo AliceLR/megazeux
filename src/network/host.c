@@ -98,6 +98,11 @@ static inline int platform_getaddrinfo(const char *node, const char *service,
   return getaddrinfo(node, service, hints, res);
 }
 
+static inline struct hostent *platform_gethostbyname(const char *name)
+{
+  return gethostbyname(name);
+}
+
 static inline ssize_t platform_send(int s, const void *buf, size_t len,
  int flags)
 {
@@ -141,74 +146,115 @@ static inline ssize_t platform_recv(int s, void *buf, size_t len, int flags)
  * protocol specific resolves. This is useful stuff for the future.
  *
  * Therefore, it was decided to rely on Winsock2, specifically the
- * version introduced in Windows XP. This unfortunately ties the netcode
- * in MegaZeux to XP or newer, which isn't unusual for software, but
- * may leave some existing users in the dark. I plan to implement
- * a modular fallback to regular winsock, gethostbyname() and friends
- * in a future version. This should enable compatibility back to Win95.
- *
- * Since we don't want MegaZeux to simply fail on older Windows, we
- * load the ws2_32.dll using SDL's library loading code, and resolve
- * the symbols using the socksyms table below. If the DLL can't be
- * loaded, or the APIs aren't found, the network features are simply
- * disabled at runtime.
- *
- * This increases the complexity of the network code somewhat,
- * especially the Windows side, but is a very extensible solution.
+ * version introduced in Windows XP. If the new XP-added functions cannot
+ * be loaded, the old gethostbyname() method will be wrapped to produce
+ * an interface identical to that of getaddrinfo(). This allows us to
+ * support all Winsock 2.0 platforms, which was officially 98 onwards,
+ * but 95 was also supported with an additional download.
  */
 
 #include "SDL.h" // for LoadObject/LoadFunction
 
-static struct {
+static struct
+{
+  /* These are Winsock 2.0 functions that should be present all the
+   * way back to 98 (and 95 with the additional Winsock 2.0 update).
+   */
   WINSOCK_API_LINKAGE int PASCAL (*closesocket)(SOCKET);
-  WINSOCK_API_LINKAGE int PASCAL (*connect)(SOCKET,
-   const struct sockaddr *, int);
-  void WSAAPI (*freeaddrinfo)(struct addrinfo *);
-  int WSAAPI (*getaddrinfo)(const char *, const char *,
-   const struct addrinfo *, struct addrinfo **);
+  WINSOCK_API_LINKAGE int PASCAL
+   (*connect)(SOCKET, const struct sockaddr *, int);
+  WINSOCK_API_LINKAGE DECLARE_STDCALL_P(struct hostent *)
+   (*gethostbyname)(const char*);
   WINSOCK_API_LINKAGE int PASCAL (*ioctlsocket)(SOCKET, long, u_long *);
   WINSOCK_API_LINKAGE int PASCAL (*send)(SOCKET, const char *, int, int);
-  WINSOCK_API_LINKAGE int PASCAL (*setsockopt)(SOCKET, int, int,
-   const char *, int);
+  WINSOCK_API_LINKAGE int PASCAL
+   (*setsockopt)(SOCKET, int, int, const char *, int);
   WINSOCK_API_LINKAGE SOCKET PASCAL (*socket)(int, int, int);
   WINSOCK_API_LINKAGE int PASCAL (*recv)(SOCKET, char *, int, int);
+
+  // Similar to above but these are extensions of Berkeley sockets
   WINSOCK_API_LINKAGE int PASCAL (*WSACancelBlockingCall)(void);
   WINSOCK_API_LINKAGE int PASCAL (*WSACleanup)(void);
   WINSOCK_API_LINKAGE int PASCAL (*WSAGetLastError)(void);
   WINSOCK_API_LINKAGE int PASCAL (*WSAStartup)(WORD, LPWSADATA);
-  bool syms_loaded;
-} socksyms;
+
+  // These functions were only implemented as of Windows XP (5.1)
+  void WSAAPI (*freeaddrinfo)(struct addrinfo *);
+  int WSAAPI (*getaddrinfo)(const char *, const char *,
+   const struct addrinfo *, struct addrinfo **);
+
+  void *handle;
+}
+socksyms;
+
+static const struct
+{
+  const char *name;
+  void **sym_ptr;
+}
+socksyms_map[] =
+{
+  { "closesocket",           (void **)&socksyms.closesocket },
+  { "connect",               (void **)&socksyms.connect },
+  { "gethostbyname",         (void **)&socksyms.gethostbyname },
+  { "ioctlsocket",           (void **)&socksyms.ioctlsocket },
+  { "send",                  (void **)&socksyms.send },
+  { "setsockopt",            (void **)&socksyms.setsockopt },
+  { "socket",                (void **)&socksyms.socket },
+  { "recv",                  (void **)&socksyms.recv },
+
+  { "WSACancelBlockingCall", (void **)&socksyms.WSACancelBlockingCall },
+  { "WSACleanup",            (void **)&socksyms.WSACleanup },
+  { "WSAGetLastError",       (void **)&socksyms.WSAGetLastError },
+  { "WSAStartup",            (void **)&socksyms.WSAStartup },
+
+  { "freeaddrinfo",          (void **)&socksyms.freeaddrinfo },
+  { "getaddrinfo",           (void **)&socksyms.getaddrinfo },
+
+  { NULL, NULL }
+};
 
 typedef int sockaddr_t;
 
 static int init_ref_count;
-static void *ws2_dll;
 
-#define WS2_LOAD_SYM(DLL,OBJ,FUNC)         \
-  OBJ.FUNC = SDL_LoadFunction(DLL, #FUNC); \
-  if(!OBJ.FUNC)                            \
-    return false;
+#define WINSOCK2 "ws2_32.dll"
+#define WINSOCK  "winsock.dll"
 
 static bool socket_load_syms(void)
 {
-  ws2_dll = SDL_LoadObject("ws2_32.dll");
-  if(!ws2_dll)
-    return false;
+  int i;
 
-  WS2_LOAD_SYM(ws2_dll, socksyms, closesocket)
-  WS2_LOAD_SYM(ws2_dll, socksyms, connect)
-  WS2_LOAD_SYM(ws2_dll, socksyms, freeaddrinfo);
-  WS2_LOAD_SYM(ws2_dll, socksyms, getaddrinfo);
-  WS2_LOAD_SYM(ws2_dll, socksyms, ioctlsocket)
-  WS2_LOAD_SYM(ws2_dll, socksyms, send)
-  WS2_LOAD_SYM(ws2_dll, socksyms, setsockopt)
-  WS2_LOAD_SYM(ws2_dll, socksyms, socket)
-  WS2_LOAD_SYM(ws2_dll, socksyms, recv)
+  socksyms.handle = SDL_LoadObject(WINSOCK2);
+  if(!socksyms.handle)
+  {
+    warning("Failed to load Winsock 2.0, falling back to Winsock");
+    socksyms.handle = SDL_LoadObject(WINSOCK);
+    if(!socksyms.handle)
+    {
+      warning("Failed to load Winsock fallback\n");
+      return false;
+    }
+  }
 
-  WS2_LOAD_SYM(ws2_dll, socksyms, WSACancelBlockingCall)
-  WS2_LOAD_SYM(ws2_dll, socksyms, WSACleanup)
-  WS2_LOAD_SYM(ws2_dll, socksyms, WSAGetLastError)
-  WS2_LOAD_SYM(ws2_dll, socksyms, WSAStartup)
+  for(i = 0; socksyms_map[i].name; i++)
+  {
+    *socksyms_map[i].sym_ptr =
+     SDL_LoadFunction(socksyms.handle, socksyms_map[i].name);
+
+    if(!*socksyms_map[i].sym_ptr)
+    {
+      // Skip these NT 5.1 WS2 extensions; we can fall back
+      if((strcmp(socksyms_map[i].name, "freeaddrinfo") == 0) ||
+         (strcmp(socksyms_map[i].name, "getaddrinfo") == 0))
+        continue;
+
+      // However all other Winsock symbols must be loaded, or we fail hard
+      warning("Failed to load Winsock symbol '%s'\n", socksyms_map[i].name);
+      socket_free_syms();
+      return false;
+    }
+  }
 
   socksyms.syms_loaded = true;
   return true;
@@ -216,16 +262,77 @@ static bool socket_load_syms(void)
 
 static void socket_free_syms(void)
 {
-  if(ws2_dll && socksyms.syms_loaded)
+  if(socksyms.handle)
   {
-    SDL_UnloadObject(ws2_dll);
+    SDL_UnloadObject(socksyms.handle);
     socksyms.syms_loaded = false;
+  }
+}
+
+static int getaddrinfo_legacy_wrapper(const char *node, const char *service,
+ const struct addrinfo *hints, struct addrinfo **res)
+{
+  struct addrinfo *r, *r_head = NULL;
+  struct hostent *hostent;
+  int i;
+
+  if(hints->ai_family != AF_INET)
+    return EAI_FAMILY;
+
+  hostent = platform_gethostbyname(node);
+  if(hostent->h_addrtype != AF_INET)
+    return EAI_NONAME;
+
+  /* Walk the h_addr_list and create faked addrinfo structures
+   * corresponding to the addresses. We don't support non-IPV4
+   * addresses or any other magic, but that's an acceptable
+   * fallback, and it won't affect users on XP or newer.
+   */
+  for(i = 0; hostent->h_addr_list[i]; i++)
+  {
+    struct sockaddr_in *addr;
+
+    if(r_head)
+    {
+      r->ai_next = malloc(sizeof(struct addrinfo));
+      r = r->ai_next;
+    }
+    else
+      r_head = r = malloc(sizeof(struct addrinfo));
+
+    // Zero the fake addrinfo and fill out the essential fields
+    memset(r, 0, sizeof(struct addrinfo));
+    r->ai_family = hints->ai_family;
+    r->ai_socktype = hints->ai_socktype;
+    r->ai_protocol = hints->ai_protocol;
+    r->ai_addrlen = sizeof(struct sockaddr_in);
+    r->ai_addr = malloc(r->ai_addrlen);
+
+    // Zero the fake ipv4 addr and fill our all of the fields
+    addr = (struct sockaddr_in *)r->ai_addr;
+    memcpy(&addr->sin_addr.s_addr, hostent->h_addr_list[i], sizeof(uint32_t));
+    addr->sin_family = r->ai_family;
+    addr->sin_port = htons(atoi(service));
+  }
+
+  *res = r_head;
+  return 0;
+}
+
+static void freeaddrinfo_legacy_wrapper(struct addrinfo *res)
+{
+  struct addrinfo *r, *r_next;
+  for(r = res; r; r = r_next)
+  {
+    r_next = r->ai_next;
+    free(r->ai_addr);
+    free(r);
   }
 }
 
 bool host_layer_init(void)
 {
-  WORD version = MAKEWORD(2, 2);
+  WORD version = MAKEWORD(1, 0);
   WSADATA ws_data;
 
   if(init_ref_count == 0)
@@ -281,13 +388,22 @@ static inline int platform_connect(int sockfd,
 
 static inline void platform_freeaddrinfo(struct addrinfo *res)
 {
-  socksyms.freeaddrinfo(res);
+  if(socksyms.freeaddrinfo)
+    socksyms.freeaddrinfo(res);
+  return freeaddrinfo_legacy_wrapper(res);
 }
 
 static inline int platform_getaddrinfo(const char *node, const char *service,
  const struct addrinfo *hints, struct addrinfo **res)
 {
-  return socksyms.getaddrinfo(node, service, hints, res);
+  if(socksyms.getaddrinfo)
+    return socksyms.getaddrinfo(node, service, hints, res);
+  return getaddrinfo_legacy_wrapper(node, service, hints, res);
+}
+
+static inline struct hostent *platform_gethostbyname(const char *name)
+{
+  return socksyms.gethostbyname(name);
 }
 
 static inline ssize_t platform_send(int s, const void *buf, size_t len,
@@ -318,7 +434,7 @@ static inline ssize_t platform_recv(int s, void *buf, size_t len, int flags)
   return socksyms.recv(s, buf, len, flags);
 }
 
-#endif // !__WIN32__
+#endif // __WIN32__
 
 struct host *host_create(host_type_t type, host_family_t fam, bool blocking)
 {
@@ -500,6 +616,7 @@ bool host_connect(struct host *h, const char *hostname, int port)
   // Set some hints for the getaddrinfo() call
   memset(&hints, 0, sizeof(struct addrinfo));
   hints.ai_socktype = (h->proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM;
+  hints.ai_protocol = h->proto;
   hints.ai_family = h->af;
 
   // Look up host(s) matching hints
