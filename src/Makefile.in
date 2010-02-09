@@ -347,8 +347,8 @@ ${mzxrun}.debug:
 endif
 
 mzx_clean: core_target_clean gdm2s3m_clean icons_clean libmodplug_clean
-	$(if ${V},,@echo "  RM      " ${core_obj})
-	${RM} -r ${core_obj}
+	$(if ${V},,@echo "  RM      " ${core_obj} ${network_obj})
+	${RM} -r ${core_obj} ${network_obj}
 	$(if ${V},,@echo "  RM      " ${mzxrun} ${mzxrun}.debug)
 	${RM} ${mzxrun} ${mzxrun}.debug
 	$(if ${V},,@echo "  RM      " ${mzx} ${mzx}.debug)
