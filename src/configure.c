@@ -41,6 +41,9 @@
 #define FORCE_BPP_DEFAULT 8
 #elif defined(CONFIG_WII)
 #define AUDIO_SAMPLE_RATE 48000
+#elif defined(ANDROID)
+#define FORCE_BPP_DEFAULT 16
+#define FULLSCREEN_DEFAULT 1
 #endif
 
 #ifndef FORCE_BPP_DEFAULT
@@ -57,6 +60,10 @@
 
 #ifndef AUDIO_SAMPLE_RATE
 #define AUDIO_SAMPLE_RATE 44100
+#endif
+
+#ifndef FULLSCREEN_DEFAULT
+#define FULLSCREEN_DEFAULT 0
 #endif
 
 struct config_entry
@@ -493,7 +500,7 @@ static const struct config_entry *find_option(char *name,
 static struct config_info default_options =
 {
   // Video options
-  0,                            // fullscreen
+  FULLSCREEN_DEFAULT,           // fullscreen
   640,                          // resolution_width
   480,                          // resolution_height
   640,                          // window_width

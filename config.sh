@@ -304,7 +304,7 @@ fi
 if [ "$PLATFORM" = "unix" ]; then
 	echo "LIBDIR=\${PREFIX}/${LIBDIR}/megazeux" >> platform.inc
 elif [ "$PLATFORM" = "android" ]; then
-	echo "LIBDIR=/system/lib" >> platform.inc
+	echo "LIBDIR=/data/megazeux" >> platform.inc
 else
 	echo "LIBDIR=." >> platform.inc
 fi
@@ -314,7 +314,7 @@ fi
 if [ "$PLATFORM" = "darwin" ]; then
 	SYSCONFDIR="../Resources"
 elif [ "$PLATFORM" = "android" ]; then
-	SYSCONFDIR="/system/etc"
+	SYSCONFDIR="/data/megazeux"
 elif [ "$PLATFORM" != "unix" ]; then
 	if [ "$SYSCONFDIR_SET" != "true" ]; then
 		SYSCONFDIR="."
@@ -370,10 +370,10 @@ elif [ "$PLATFORM" = "darwin" ]; then
 	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\""      >> src/config.h
 elif [ "$PLATFORM" = "android" ]; then
-	SHAREDIR=/system/lib/megazeux
-	GAMESDIR=/system/bin
-	BINDIR=/system/bin
-	echo "#define CONFFILE \"megazeux-config\"" >> src/config.h
+	SHAREDIR=/data/megazeux
+	GAMESDIR=/data/megazeux
+	BINDIR=/data/megazeux
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
 else
 	SHAREDIR=.
 	GAMESDIR=.

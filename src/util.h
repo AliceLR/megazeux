@@ -127,6 +127,8 @@ CORE_LIBSPEC extern long __stack_chk_guard[8];
 CORE_LIBSPEC void __stack_chk_fail(void);
 #endif
 
+#ifndef ANDROID
+
 #define info(...) \
  do { \
    fprintf(stdout, "INFO: " __VA_ARGS__); \
@@ -148,6 +150,19 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 #else
 #define debug(...) do { } while(0)
 #endif
+
+#else /* ANDROID */
+
+#define info(...)  LOGI(__VA_ARGS__)
+#define warn(...)  LOGW(__VA_ARGS__)
+
+#ifdef DEBUG
+#define debug(...) LOGD(__VA_ARGS__)
+#else
+#define debug(...) do { } while(0)
+#endif
+
+#endif /* ANDROID */
 
 __M_END_DECLS
 

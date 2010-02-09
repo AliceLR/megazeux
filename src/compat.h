@@ -97,6 +97,13 @@ typedef enum
 #include <windows.h>
 #endif
 
+#ifdef ANDROID
+#define HAVE_SYS_UIO_H
+#define LOG_TAG "MegaZeux"
+#include <cutils/log.h>
+#undef CONDITION
+#endif
+
 #ifndef MAX_PATH
 #define MAX_PATH 512
 #endif

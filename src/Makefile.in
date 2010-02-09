@@ -85,13 +85,21 @@ ifeq (${PLATFORM},android)
 core_cflags += -Wno-strict-prototypes
 endif
 
+#
+# These are really just hacks and should be moved elsewhere
+#
 ifeq (${BUILD_NDS},1)
-#
-# This is really just a hack and should be moved elsewhere
-#
 core_cobjs += arch/nds/ram.o arch/nds/exception.o
 core_cobjs += arch/nds/malloc.o arch/nds/extmem.o
 endif
+
+ifeq (${PLATFORM},android)
+core_cxxobjs += arch/android/sfwrapper.o
+endif
+
+#
+# Other modular stuff
+#
 
 ifeq (${BUILD_HELPSYS},1)
 core_cobjs += ${core_obj}/helpsys.o
@@ -196,7 +204,7 @@ core_ldflags := ${PTHREAD_LDFLAGS} ${core_ldflags}
 endif
 
 ifeq (${BUILD_EGL},1)
-core_ldflags := -lEGL ${core_ldflags}
+core_ldflags := -lEGL -lGLESv1_CM ${core_ldflags}
 endif
 
 endif

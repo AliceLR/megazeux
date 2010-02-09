@@ -31,7 +31,8 @@ __M_BEGIN_DECLS
   if(!OBJ->FUNC)                                \
     return false;                               \
 
-#define GL_LOAD_SYM GL_LOAD_SYM_EXT
+#define GL_LOAD_SYM(OBJ,FUNC)               \
+  OBJ->FUNC = FUNC;                         \
 
 #define GL_CAN_USE true
 

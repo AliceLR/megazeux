@@ -36,12 +36,11 @@
 #include "render_egl.h"
 #endif
 
-/* NOTE: This renderer should work with almost any GL capable video card.
- *       However, if you plan to change it, please bear in mind that this
- *       has been carefully written to work with both OpenGL 1.x and
- *       OpenGL ES 1.x. The latter API lacks many functions present in
- *       desktop OpenGL. GLES is typically used on cellphones.
- */
+// NOTE: This renderer should work with almost any GL capable video card.
+//       However, if you plan to change it, please bear in mind that this
+//       has been carefully written to work with both OpenGL 1.x and
+//       OpenGL ES 1.x. The latter API lacks many functions present in
+//       desktop OpenGL. GL ES is typically used on cellphones.
 
 struct gl1_syms
 {
@@ -134,12 +133,16 @@ static bool gl1_init_video(struct graphics_data *graphics,
   version = (const char *)gl->glGetString(GL_VERSION);
   extensions = (const char *)gl->glGetString(GL_EXTENSIONS);
 
-  // we need a specific "version" of OpenGL compatibility
+  // We need a specific version of OpenGL; desktop GL must be 1.1.
+  // All OpenGL ES implementations are supported, so don't do the check
+  // with EGL configurations (EGL implies OpenGL ES).
+#ifndef CONFIG_EGL
   if(version && atof(version) < 1.1)
   {
     warn("Your OpenGL implementation is too old (need v1.1).\n");
     goto err_free_render_data;
   }
+#endif
 
   // we also might be able to utilise an extension
   if(extensions && strstr(extensions, "GL_ARB_texture_non_power_of_two"))
@@ -174,8 +177,6 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
 {
   struct gl1_render_data *render_data = graphics->render_data;
   struct gl1_syms *gl = &render_data->gl;
-  int v_width, v_height;
-
   GLuint texture_number;
 
   gl_set_attributes(graphics);
@@ -186,10 +187,16 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
   if(!gl1_load_syms(gl))
     return false;
 
-  fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+#ifndef ANDROID
+  {
+    int v_width, v_height;
 
-  gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
-   v_width, v_height);
+    get_context_width_height(graphics, &width, &height);
+    fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+    gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
+     v_width, v_height);
+  }
+#endif
 
   gl->glEnable(GL_TEXTURE_2D);
 
@@ -197,7 +204,6 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
   gl->glBindTexture(GL_TEXTURE_2D, texture_number);
 
   gl_set_filter_method(graphics->gl_filter_method, gl->glTexParameteri);
-
   return true;
 }
 

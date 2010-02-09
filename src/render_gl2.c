@@ -36,6 +36,12 @@
 #include "render_egl.h"
 #endif
 
+// NOTE: This renderer should work with almost any GL capable video card.
+//       However, if you plan to change it, please bear in mind that this
+//       has been carefully written to work with both OpenGL 1.x and
+//       OpenGL ES 1.x. The latter API lacks many functions present in
+//       desktop OpenGL. GL ES is typically used on cellphones.
+
 struct gl2_syms
 {
   int syms_loaded;
@@ -159,12 +165,16 @@ static bool gl2_init_video(struct graphics_data *graphics,
   // NOTE: This must come AFTER set_video_mode()!
   version = (const char *)gl->glGetString(GL_VERSION);
 
-  // we need a specific "version" of OpenGL compatibility
+  // We need a specific version of OpenGL; desktop GL must be 1.1.
+  // All OpenGL ES implementations are supported, so don't do the check
+  // with EGL configurations (EGL implies OpenGL ES).
+#ifndef CONFIG_EGL
   if(version && atof(version) < 1.1)
   {
     warn("Your OpenGL implementation is too old (need v1.1).\n");
     goto err_free_render_data;
   }
+#endif
 
   return true;
 
@@ -203,14 +213,15 @@ static void gl2_resize_screen(struct graphics_data *graphics,
 {
   struct gl2_render_data *render_data = graphics->render_data;
   struct gl2_syms *gl = &render_data->gl;
-  int v_width, v_height;
 
-  /* If the window is exactly 640x350, then any filtering is useless.
-   * Turning filtering off here might speed things up.
-   *
-   * Otherwise, linear filtering breaks if the window is smaller than
-   * 640x350, so also turn it off here.
-   */
+  // FIXME: Hack, remove
+  get_context_width_height(graphics, &width, &height);
+
+  // If the window is exactly 640x350, then any filtering is useless.
+  // Turning filtering off here might speed things up.
+  //
+  // Otherwise, linear filtering breaks if the window is smaller than
+  // 640x350, so also turn it off here.
   if(width == 640 && height == 350)
     render_data->ignore_linear = true;
   else if(width < 640 || height < 350)
@@ -218,9 +229,15 @@ static void gl2_resize_screen(struct graphics_data *graphics,
   else
     render_data->ignore_linear = false;
 
-  fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
-  gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
-   v_width, v_height);
+#ifndef ANDROID
+  {
+    int v_width, v_height;
+
+    fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+    gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
+     v_width, v_height);
+  }
+#endif
 
   gl->glGenTextures(3, render_data->texture_number);
 
@@ -403,6 +420,7 @@ static void gl2_render_graph(struct graphics_data *graphics)
       }
     }
 
+#ifndef ANDROID
     if(gl2_linear_filter_method(graphics))
     {
       int width, height;
@@ -414,6 +432,7 @@ static void gl2_render_graph(struct graphics_data *graphics)
       get_context_width_height(graphics, &width, &height);
       gl->glViewport((width - 640) >> 1, (height - 350) >> 1, 640, 350);
     }
+#endif
 
     dest = render_data->background_texture;
 
@@ -597,7 +616,7 @@ static void gl2_sync_screen(struct graphics_data *graphics)
 
   if(gl2_linear_filter_method(graphics) && !graphics->screen_mode)
   {
-    int width, height, v_width, v_height;
+    int width, height;
 
     static const float tex_coord_array_single[2 * 4] = {
        0.0f,             350.0f / 512.0f,
@@ -612,9 +631,15 @@ static void gl2_sync_screen(struct graphics_data *graphics)
     gl->glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
      (width - 640) >> 1, (height - 350) >> 1, 1024, 512, 0);
 
-    fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
-    gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
-     v_width, v_height);
+#ifndef ANDROID
+    {
+      int v_width, v_height;
+
+      fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
+      gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
+       v_width, v_height);
+    }
+#endif
 
     gl->glColor4ub(255, 255, 255, 255);
     gl->glClear(GL_COLOR_BUFFER_BIT);

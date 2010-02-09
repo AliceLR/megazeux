@@ -14,13 +14,18 @@ OBJCOPY = ${CROSS_COMPILE}objcopy
 STRIP   = ${CROSS_COMPILE}strip --strip-unneeded
 
 ARCH_CFLAGS = \
-  -march=armv5te -DANDROID \
+  -march=armv5te -fno-short-enums -DANDROID \
   -I${PREFIX}/bionic/libc/include \
   -I${PREFIX}/bionic/libc/arch-arm/include \
   -I${PREFIX}/bionic/libc/kernel/common \
   -I${PREFIX}/bionic/libc/kernel/arch-arm \
   -I${PREFIX}/bionic/libm/include \
-  -I${PREFIX}/frameworks/base/opengl/include
+  -I${PREFIX}/frameworks/base/include \
+  -I${PREFIX}/frameworks/base/opengl/include \
+  -I${PREFIX}/system/core/include \
+  -I${PREFIX}/hardware/libhardware/include \
+  -I${PREFIX}/external/skia/include \
+  -Iarch/android
 
 ARCH_CXXFLAGS = \
   ${ARCH_CFLAGS} -I${PREFIX}/bionic/libstdc++/include
@@ -30,7 +35,7 @@ ARCH_LDFLAGS = \
   -Wl,-dynamic-linker,/system/bin/linker \
   -Wl,-rpath-link=${ANDROID_LIBPATH} \
   ${TOOLCHAIN}/lib/gcc/arm-eabi/4.2.1/interwork/libgcc.a \
-  -L${ANDROID_LIBPATH} -lc
+  -L${ANDROID_LIBPATH} -lc -lcutils
 
 ARCH_EXE_LDFLAGS = \
   -Bdynamic -Wl,-T,${PREFIX}/build/core/armelf.x \
@@ -59,3 +64,16 @@ LIBPNG_CFLAGS = -I${PREFIX}/external/libpng ${ZLIB_CFLAGS}
 # Skia provides libpng symbols on Android
 #
 LIBPNG_LDFLAGS = -lsgl
+
+#
+# Some of SurfaceFlinger is only available to C++; this wraps
+# those bits and makes them available to render_egl (C).
+#
+arch/android/sfwrapper.o: arch/android/sfwrapper.cpp
+	$(if ${V},,@echo "  CXX     " $<)
+	${CXX} -MD ${core_cxxflags} -Isrc -c $< -o $@
+
+.PHONY: clean
+clean:
+	$(if ${V},,@echo "  RM      " arch/android/sfwrapper.{o,d})
+	${RM} arch/android/sfwrapper.o arch/android/sfwrapper.d
