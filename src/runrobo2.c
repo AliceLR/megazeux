@@ -4091,6 +4091,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
       case 155: // clear mesg
       {
         src_board->b_mesg_timer = 0;
+        set_intro_mesg_timer(0);
         break;
       }
 

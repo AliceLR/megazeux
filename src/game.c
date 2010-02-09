@@ -124,7 +124,7 @@ char debug_mode;
 
 static unsigned int intro_mesg_timer;
 
-static void set_intro_mesg_timer(int time)
+void set_intro_mesg_timer(unsigned int time)
 {
   intro_mesg_timer = time;
 }

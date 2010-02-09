@@ -33,6 +33,7 @@ __M_BEGIN_DECLS
 CORE_LIBSPEC void title_screen(World *mzx_world);
 CORE_LIBSPEC void find_player(World *mzx_world);
 
+void set_intro_mesg_timer(unsigned int time);
 void calculate_xytop(World *mzx_world, int *x, int *y);
 int move_player(World *mzx_world, int dir);
 int grab_item(World *mzx_world, int offset, int dir);
