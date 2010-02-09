@@ -2,18 +2,9 @@ SVN
 
 USERS
 
-+ Setting a substring size to zero with $string#0 will no longer return the
-  whole string; it will instead return the empty string.
-+ Accessing a substring with an offset >= $string.length will no longer return
-  the last character from the string; it will instead return the empty string.
-+ Writing beyond MAX_STRING_LEN (1MB) or using negative offsets (which has the
-  same effect) no longer crashes. Instead, the write is ignored.
-+ Fix crash when pasting to and from the same string, specifically in
-  conjunction with $str+offset.
-
 DEVELOPERS
 
-December 27, 2008 - MZX 2.82b
+December 29, 2008 - MZX 2.82b
 
 This release contains plenty of important bug fixes, ranging from regressions
 such as the broken command-line editor macro expansion to third party bugs
@@ -127,6 +118,14 @@ USERS
   longer crash MZX.
 + "Exit to DOS" is now "Exit MegaZeux" to reflect the multi-platform nature
   of the program.
++ Setting a substring size to zero with $string#0 will no longer return the
+  whole string; it will instead return the empty string.
++ Accessing a substring with an offset >= $string.length will no longer return
+  the last character from the string; it will instead return the empty string.
++ Writing beyond MAX_STRING_LEN (1MB) or using negative offsets (which has the
+  same effect) no longer crashes. Instead, the write is ignored.
++ Fix crash when pasting to and from the same string, specifically in
+  conjunction with $str+offset.
 
 DEVELOPERS
 
