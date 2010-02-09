@@ -10,7 +10,8 @@ toolchain, and libogc. You will also need the following in this directory:
 Make sure DEVKITPRO and DEVKITPPC are both defined and valid, and use a
 config.sh configure line such as:
 
-./config.sh --platform wii --prefix $DEVKITPPC --disable-libpng --disable-utils
+./config.sh --platform wii --prefix $DEVKITPPC --disable-libpng \
+            --disable-utils --enable-release
 
 Then build with the command:
 

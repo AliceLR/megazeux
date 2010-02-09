@@ -34,8 +34,7 @@ stub headers and fails).
  probably be easily re-enabled. I'm not sure about icon support on this
  platform, actually.)
 
-Then start the build with "make". You can do a build with "make DEBUG=1" if
-you want a debuggable version.
+Then start the build with "make".
 
 INSTALLING MEGAZEUX
 

@@ -42,7 +42,7 @@ example, if you have the SDK installed to $TOOLCHAIN, you should specify:
 
   ./config.sh --platform gp2x --prefix $TOOLCHAIN --optimize-size \
               --disable-editor --disable-helpsys --disable-utils \
-              --enable-mikmod
+              --enable-mikmod --enable-release
 
 The configuration script will automatically enable/disable other flags on this
 platform; do not vary the command above, other than to change the prefix. The

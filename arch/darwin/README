@@ -16,7 +16,7 @@ CONFIGURATION
 The only tested config.sh line used to build for OS X is:
 
 ./config.sh --platform darwin --prefix $HOME/workspace/Frameworks \
-            --disable-utils --disable-x11
+            --disable-utils --disable-x11 --enable-release
 
 (X11 support is disabled because it is incompatible with the Framework SDL
  package. If this bug is corrected, it can be re-enabled.)

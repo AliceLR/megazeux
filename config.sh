@@ -27,6 +27,7 @@ usage() {
 	echo "Supported <option> values (negatives can be used):"
 	echo
 	echo "  --as-needed-hack     Pass --as-needed through to GNU ld."
+	echo "  --enable-release     Optimize and remove debugging code."
 	echo "  --optimize-size      Perform size optimizations (-Os)."
 	echo "  --disable-datestamp  Disable adding date to version."
 	echo "  --disable-editor     Disable the built-in editor."
@@ -64,6 +65,7 @@ SYSCONFDIR="/etc"
 SYSCONFDIR_SET="false"
 DATE_STAMP="true"
 AS_NEEDED="false"
+RELEASE="false"
 OPT_SIZE="false"
 EDITOR="true"
 HELPSYS="true"
@@ -109,7 +111,11 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--as-needed-hack" ] && AS_NEEDED="true"
 
-	[ "$1" = "--optimize-size" ] && OPT_SIZE="true"
+	[ "$1" = "--enable-release" ]  && RELEASE="true"
+	[ "$1" = "--disable-release" ] && RELEASE="false"
+
+	[ "$1" = "--optimize-size" ]  && OPT_SIZE="true"
+	[ "$1" = "--optimize-speed" ] && OPT_SIZE="false"
 
 	[ "$1" = "--disable-datestamp" ] && DATE_STAMP="false"
 	[ "$1" = "--enable-datestamp" ]  && DATE_STAMP="true"
@@ -424,13 +430,21 @@ if [ "$AS_NEEDED" = "true" ]; then
 fi
 
 #
-# Users may want size optimizations
+# Users may enable release mode
 #
-if [ "$OPT_SIZE" = "true" ]; then
-	echo "Optimizing for size."
-	echo "OPTIMIZE_CFLAGS=-Os" >> platform.inc
+if [ "$RELEASE" = "true" ]; then
+	#
+	# Users may want size optimizations
+	#
+	if [ "$OPT_SIZE" = "true" ]; then
+		echo "Optimizing for size."
+		echo "OPTIMIZE_CFLAGS=-Os" >> platform.inc
+	else
+		echo "Optimizing for speed."
+	fi
 else
-	echo "Optimizing for speed."
+	echo "Disabling optimization, debug enabled."
+	echo "DEBUG=1" >> platform.inc
 fi
 
 #

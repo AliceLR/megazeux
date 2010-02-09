@@ -16,7 +16,7 @@ endif
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
-	./config.sh --platform unix --as-needed-hack
+	./config.sh --platform unix --as-needed-hack --enable-release
 	touch configure-stamp
 
 build: build-stamp
