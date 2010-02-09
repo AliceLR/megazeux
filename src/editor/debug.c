@@ -164,9 +164,9 @@ void __debug_counters(struct world *mzx_world)
       int edit_type = 0;
       int offset = selected;
 
-      if(selected > mzx_world->num_counters + 1)
+      if(selected > mzx_world->num_counters)
       {
-        offset -= mzx_world->num_counters + 1 + 1;
+        offset -= mzx_world->num_counters + 1;
         edit_type = 1;
 
         snprintf(name + 5, 70 - 5, "string %s",
