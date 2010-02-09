@@ -813,7 +813,7 @@ int init_video(config_info *conf)
     return false;
 
 #ifdef CONFIG_SDL
-  SDL_WM_SetCaption("MegaZeux " VERSION, "");
+  SDL_WM_SetCaption("MegaZeux " VERSION VERSION_DATE, "");
 #endif
 
   if(!graphics.init_video(&graphics, conf))

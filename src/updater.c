@@ -302,9 +302,18 @@ err_out:
   return ret;
 }
 
-static bool restore_original_manifest(void)
+static bool restore_original_manifest(bool ret)
 {
   struct stat s;
+
+  /* The update was successful, so we simply remove the
+   * backup manifest.
+   */
+  if(ret)
+  {
+    unlink(MANIFEST_TXT "~");
+    return true;
+  }
 
   // Try to remove original manifest before restoration
   if(unlink(MANIFEST_TXT))
@@ -377,7 +386,7 @@ static void __check_for_updates(void)
   char **list_entries, buffer[LINE_BUF_LEN], *url_base, *value;
   struct manifest_entry *removed, *replaced, *added, *e;
   int i = 0, entries = 0, buf_len, result;
-  const char *version = "2.82";
+  const char *version = VERSION;
   size_t list_entry_width = 0;
   struct host *h = NULL;
   host_status_t status;
@@ -624,7 +633,11 @@ static void __check_for_updates(void)
   clear_screen(32, 7);
   update_screen();
 
-  for(e = removed; e; e = e->next)
+  /* Defer deletions until we restart; any of these files may still be
+   * in use by this (old) process. Reduce the number of entries by the
+   * number of removed items for the progress meter below.
+   */
+  for(e = removed; e; e = e->next, entries--)
     delete_hook(e->name);
 
   /* Since the operations for adding and replacing a file are identical,
@@ -646,7 +659,8 @@ static void __check_for_updates(void)
 
   host_set_callbacks(h, NULL, recv_cb, cancel_cb);
 
-  for(e = replaced; e; e = e->next)
+  i = 0;
+  for(e = replaced; e; e = e->next, i++)
   {
     for(retries = 0; retries < MAX_RETRIES; retries++)
     {
@@ -659,7 +673,7 @@ static void __check_for_updates(void)
       final_size = (long)e->size;
 
       m_hide();
-      snprintf(name, 72, "%s (%ldb)", e->name, final_size);
+      snprintf(name, 72, "%s (%ldb) [%u/%u]", e->name, final_size, i, entries);
       meter(name, 0, final_size);
       update_screen();
 
@@ -715,8 +729,7 @@ err_free_update_manifests:
   manifest_list_free(&removed);
   manifest_list_free(&replaced);
 err_roll_back_manifest:
-  if(!ret)
-    restore_original_manifest();
+  restore_original_manifest(ret);
 err_free_url_base:
   free(url_base);
 err_host_destroy:
@@ -732,6 +745,17 @@ err_out:
   if(ret)
   {
     const void *argv = process_argv;
+    element *elements[2];
+    dialog di;
+
+    elements[0] = construct_label(2, 2,
+     "This client will now attempt to restart itself.");
+    elements[1] = construct_button(23, 4, "OK", 0);
+
+    construct_dialog(&di, "Update Successful", 14, 9, 51, 6, elements, 2, 1);
+    run_dialog(NULL, &di);
+    destruct_dialog(&di);
+
     execv(process_argv[0], argv);
     perror("execv");
 
