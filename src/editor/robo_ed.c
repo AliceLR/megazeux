@@ -2103,7 +2103,7 @@ static void execute_macro(struct robot_state *rstate,
 
   construct_dialog_ext(&di, macro_src->label, start_x,
    start_y, nominal_width, nominal_height, elements,
-   total_dialog_elements, 0, 1, 3, NULL);
+   total_dialog_elements, 0, 1, 2, NULL);
 
   do
   {
