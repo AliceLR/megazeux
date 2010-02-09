@@ -1852,12 +1852,11 @@ static void __edit_world(World *mzx_world)
           {
             char world_name[256];
             strcpy(world_name, current_world);
-            if(!new_file(mzx_world, world_ext, world_name,
+            if(!new_file(mzx_world, world_ext, ".mzx", world_name,
              "Save world", 1))
             {
               // Save entire game
               strcpy(current_world, world_name);
-              add_ext(current_world, ".mzx");
               save_world(mzx_world, current_world, 0, 1);
 
               modified = 0;
@@ -2071,7 +2070,7 @@ static void __edit_world(World *mzx_world)
                    0, 255, 0, &char_offset),
                 };
 
-                if(!file_manager(mzx_world, chr_ext, import_name,
+                if(!file_manager(mzx_world, chr_ext, NULL, import_name,
                  "Choose character set to import", 1, 0,
                  elements, 1, 2, 0))
                 {
@@ -2243,10 +2242,9 @@ static void __edit_world(World *mzx_world)
               case 0:
               {
                 // Board file
-                if(!new_file(mzx_world, mzb_ext, export_name,
+                if(!new_file(mzx_world, mzb_ext, ".mzb", export_name,
                  "Export board file", 1))
                 {
-                  add_ext(export_name, ".mzb");
                   save_board_file(src_board, export_name);
                 }
                 break;
@@ -2265,7 +2263,7 @@ static void __edit_world(World *mzx_world)
                    1, 256, 0, &char_size)
                 };
 
-                if(!file_manager(mzx_world, chr_ext, export_name,
+                if(!file_manager(mzx_world, chr_ext, NULL, export_name,
                  "Export character set", 1, 1, elements, 2, 2, 0))
                 {
                   add_ext(export_name, ".chr");
@@ -2279,10 +2277,9 @@ static void __edit_world(World *mzx_world)
               case 2:
               {
                 // Palette
-                if(!new_file(mzx_world, pal_ext, export_name,
+                if(!new_file(mzx_world, pal_ext, ".pal", export_name,
                  "Export palette", 1))
                 {
-                  add_ext(export_name, ".pal");
                   save_palette(export_name);
                 }
 
@@ -2292,12 +2289,11 @@ static void __edit_world(World *mzx_world)
               case 3:
               {
                 // Sound effects
-                if(!new_file(mzx_world, sfx_ext, export_name,
+                if(!new_file(mzx_world, sfx_ext, ".sfx", export_name,
                  "Export SFX file", 1))
                 {
                   FILE *sfx_file;
 
-                  add_ext(export_name, ".sfx");
                   sfx_file = fopen(export_name, "wb");
 
                   if(sfx_file)
@@ -2385,7 +2381,7 @@ static void __edit_world(World *mzx_world)
               getcwd(current_dir, MAX_PATH);
               chdir(current_listening_dir);
 
-              if(!file_manager(mzx_world, mod_gdm_ext, new_mod,
+              if(!file_manager(mzx_world, mod_gdm_ext, NULL, new_mod,
                "Choose a module file (listening only)", 1, 0,
                NULL, 0, 0, 1))
               {
@@ -2696,10 +2692,9 @@ static void __edit_world(World *mzx_world)
               // Save as MZM
               mzm_name_buffer[0] = 0;
 
-              if(!new_file(mzx_world, mzm_ext, mzm_name_buffer,
+              if(!new_file(mzx_world, mzm_ext, ".mzm", mzm_name_buffer,
                "Export MZM", 1))
               {
-                add_ext(mzm_name_buffer, ".mzm");
                 save_mzm(mzx_world, mzm_name_buffer, start_x,
                  start_y, block_width, block_height,
                  overlay_edit, 0);

@@ -1291,7 +1291,7 @@ static void export_block(robot_state *rstate, int region_default)
 
   export_name[0] = 0;
 
-  if(!file_manager(mzx_world, export_ext, export_name,
+  if(!file_manager(mzx_world, export_ext, ".txt", export_name,
    "Export robot", 1, 1, elements, num_elements, 3, 0))
   {
     FILE *export_file;

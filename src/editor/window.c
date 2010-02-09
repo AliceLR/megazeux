@@ -1077,6 +1077,6 @@ int choose_board(World *mzx_world, int current, const char *title,
 int choose_file(World *mzx_world, const char **wildcards, char *ret,
  const char *title, int dirs_okay)
 {
-  return file_manager(mzx_world, wildcards, ret, title, dirs_okay,
+  return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
    0, NULL, 0, 0, 0);
 }

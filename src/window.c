@@ -2149,8 +2149,8 @@ static void remove_files(char *directory_name, int remove_recursively)
 }
 
 __editor_maybe_static int file_manager(World *mzx_world,
- const char **wildcards, char *ret, const char *title, int dirs_okay,
- int allow_new, element **dialog_ext, int num_ext, int ext_height,
+ const char **wildcards, const char *default_ext, char *ret, const char *title,
+ int dirs_okay, int allow_new, element **dialog_ext, int num_ext, int ext_height,
  int allow_dir_change)
 {
   dir_t *current_dir;
@@ -2396,6 +2396,9 @@ __editor_maybe_static int file_manager(World *mzx_world,
         int stat_result;
         char *path;
 
+        if(default_ext)
+            add_ext(ret, default_ext);
+
         path = malloc(MAX_PATH);
         get_path(ret, path, MAX_PATH);
         stat_result = stat(ret, &file_info);
@@ -2610,14 +2613,14 @@ __editor_maybe_static int file_manager(World *mzx_world,
 int choose_file_ch(World *mzx_world, const char **wildcards, char *ret,
  const char *title, int dirs_okay)
 {
-  return file_manager(mzx_world, wildcards, ret, title, dirs_okay,
+  return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
    0, NULL, 0, 0, 1);
 }
 
-int new_file(World *mzx_world, const char **wildcards, char *ret,
- const char *title, int dirs_okay)
+int new_file(World *mzx_world, const char **wildcards, const char *default_ext,
+ char *ret, const char *title, int dirs_okay)
 {
-  return file_manager(mzx_world, wildcards, ret, title, dirs_okay,
+  return file_manager(mzx_world, wildcards, default_ext, ret, title, dirs_okay,
    1, NULL, 0, 0, 0);
 }
 

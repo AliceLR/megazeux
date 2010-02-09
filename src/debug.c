@@ -219,12 +219,11 @@ void debug_counters(World *mzx_world)
 
       export_name[0] = 0;
 
-      if(!new_file(mzx_world, txt_ext, export_name,
+      if(!new_file(mzx_world, txt_ext, ".txt", export_name,
        "Export counters/strings", 1))
       {
         FILE *fp;
 
-        add_ext(export_name, ".txt");
         fp = fopen(export_name, "wb");
 
         for(i = 0; i < mzx_world->num_counters; i++)

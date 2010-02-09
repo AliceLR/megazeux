@@ -1788,12 +1788,10 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
               strcpy(save_game, curr_sav);
 
               m_show();
-              if(!new_file(mzx_world, save_ext, save_game,
+              if(!new_file(mzx_world, save_ext, ".sav", save_game,
                "Save game", 1))
               {
                 strcpy(curr_sav, save_game);
-                // Name in curr_sav....
-                add_ext(curr_sav, ".sav");
                 // Save entire game
                 save_world(mzx_world, curr_sav, 1, get_fade_status());
               }

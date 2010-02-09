@@ -1564,7 +1564,7 @@ int char_editor(World *mzx_world)
              1, 256, 0, &num_files)
           };
 
-          if(!file_manager(mzx_world, chr_ext, export_string,
+          if(!file_manager(mzx_world, chr_ext, ".chr", export_string,
            "Export character set(s)", 1, 1, elements, 3, 2, 0))
           {
             for(i = 0; i < num_files; i++, current_file++,
@@ -1604,7 +1604,7 @@ int char_editor(World *mzx_world)
              1, 256, 0, &num_files)
           };
 
-          if(!file_manager(mzx_world, chr_ext, import_string,
+          if(!file_manager(mzx_world, chr_ext, NULL, import_string,
            "Import character set(s)", 1, 2, elements, 3, 2, 0))
           {
             for(i = 0; i < num_files; i++, current_file++)
