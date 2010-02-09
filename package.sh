@@ -247,6 +247,9 @@ cp -pv $BINARY_DEPS $HELP_FILE $BUILD_DEPS dist/$TARGET &&
 cp -pvr $SUBDIRS dist/$TARGET &&
 cp -pvr $SRC dist/$TARGET/src &&
 
+# nasty hack for binary packaging (not removed by package_clean)
+rm -f dist/$TARGET/src/utils/{checkres,downver,txt2hlp}{,.dbg}{,.exe} &&
+
 cp dist/$TARGET/arch/Makefile.dist dist/$TARGET/Makefile.platform
 
 [ "$?" != "0" ] && breakout 2
