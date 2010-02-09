@@ -29,6 +29,8 @@
 #include "render_nds.h"
 #endif
 
+#include <stdlib.h>
+
 extern struct input_status input;
 
 static bool numlock_status_initialized;
