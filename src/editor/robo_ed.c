@@ -61,6 +61,8 @@ static int execute_named_macro(robot_state *rstate, char *macro_name);
 
 static int copy_buffer_lines;
 static int copy_buffer_total_length;
+static char **copy_buffer;
+
 static int last_find_option = -1;
 static char search_string[256];
 static char replace_string[256];
@@ -111,7 +113,6 @@ static const char mark_color = combine_colors(0, 7);
 
 static const int max_size = 65535;
 
-static char **copy_buffer = NULL;
 static int case_option = 0;
 
 static char macros[5][64];
@@ -764,66 +765,133 @@ static int block_menu(World *mzx_world)
     return block_op;
 }
 
-#ifdef CONFIG_X11
+#ifdef __WIN32__
+
+static void copy_buffer_to_selection(void)
+{
+  HANDLE global_memory;
+  int i, line_length;
+  char *dest_data;
+  char *dest_ptr;
+
+  // Room for \r's
+  copy_buffer_total_length += copy_buffer_lines - 1;
+
+  global_memory = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE,
+    copy_buffer_total_length);
+  if(!global_memory)
+    return;
+
+  if(!OpenClipboard(NULL))
+    return;
+
+  dest_data = (char *)GlobalLock(global_memory);
+  dest_ptr = dest_data;
+
+  for(i = 0; i < copy_buffer_lines - 1; i++)
+  {
+    line_length = strlen(copy_buffer[i]);
+    memcpy(dest_ptr, copy_buffer[i], line_length);
+    dest_ptr += line_length;
+    dest_ptr[0] = '\r';
+    dest_ptr[1] = '\n';
+    dest_ptr += 2;
+  }
+
+  line_length = strlen(copy_buffer[i]);
+  memcpy(dest_ptr, copy_buffer[i], line_length);
+  dest_ptr[line_length] = 0;
+
+  GlobalUnlock(global_memory);
+  EmptyClipboard();
+  SetClipboardData(CF_TEXT, global_memory);
+
+  CloseClipboard();
+}
+
+#elif defined(CONFIG_X11)
+
 static int copy_buffer_to_X11_selection(const SDL_Event *event)
 {
+  XSelectionRequestEvent *request;
+  char *dest_data, *dest_ptr;
+  SDL_SysWMinfo info;
+  int i, line_length;
+  Display *display;
+  XEvent response;
+  Window window;
+
   if(event->type != SDL_SYSWMEVENT)
     return 1;
 
-  if((event->syswm.msg->event.xevent.type == SelectionRequest) && copy_buffer)
+  if(event->syswm.msg->event.xevent.type != SelectionRequest || !copy_buffer)
+    return 0;
+
+  SDL_VERSION(&info.version);
+  SDL_GetWMInfo(&info);
+
+  display = info.info.x11.display;
+  window = info.info.x11.window;
+  dest_data = malloc(copy_buffer_total_length + 1);
+  dest_ptr = dest_data;
+
+  for(i = 0; i < copy_buffer_lines - 1; i++)
   {
-    SDL_SysWMinfo info;
-    Display *display;
-    Window window;
-    char *dest_data, *dest_ptr;
-    XSelectionRequestEvent *request;
-    XEvent response;
-    int i, line_length;
-
-    SDL_VERSION(&info.version);
-    SDL_GetWMInfo(&info);
-
-    display = info.info.x11.display;
-    window = info.info.x11.window;
-    dest_data = malloc(copy_buffer_total_length + 1);
-    dest_ptr = dest_data;
-
-    for(i = 0; i < copy_buffer_lines - 1; i++)
-    {
-      line_length = strlen(copy_buffer[i]);
-      memcpy(dest_ptr, copy_buffer[i], line_length);
-      dest_ptr += line_length;
-
-      dest_ptr[0] = '\n';
-      dest_ptr++;
-    }
-
     line_length = strlen(copy_buffer[i]);
     memcpy(dest_ptr, copy_buffer[i], line_length);
-    dest_ptr[line_length] = 0;
+    dest_ptr += line_length;
 
-    request = &(event->syswm.msg->event.xevent.xselectionrequest);
-    response.xselection.type = SelectionNotify;
-    response.xselection.display = request->display;
-    response.xselection.selection = request->selection;
-    response.xselection.target = XA_STRING;
-    response.xselection.property = request->property;
-    response.xselection.requestor = request->requestor;
-    response.xselection.time = request->time;
-
-    XChangeProperty(display, request->requestor, request->property,
-     XA_STRING, 8, PropModeReplace, (const unsigned char *)dest_data,
-     copy_buffer_total_length);
-
-    free(dest_data);
-
-    XSendEvent(display, request->requestor, True, 0, &response);
-    XFlush(display);
+    dest_ptr[0] = '\n';
+    dest_ptr++;
   }
 
+  line_length = strlen(copy_buffer[i]);
+  memcpy(dest_ptr, copy_buffer[i], line_length);
+  dest_ptr[line_length] = 0;
+
+  request = &(event->syswm.msg->event.xevent.xselectionrequest);
+  response.xselection.type = SelectionNotify;
+  response.xselection.display = request->display;
+  response.xselection.selection = request->selection;
+  response.xselection.target = XA_STRING;
+  response.xselection.property = request->property;
+  response.xselection.requestor = request->requestor;
+  response.xselection.time = request->time;
+
+  XChangeProperty(display, request->requestor, request->property,
+    XA_STRING, 8, PropModeReplace, (const unsigned char *)dest_data,
+    copy_buffer_total_length);
+
+  free(dest_data);
+
+  XSendEvent(display, request->requestor, True, 0, &response);
+  XFlush(display);
   return 0;
 }
-#endif /* CONFIG_X11 */
+
+static void copy_buffer_to_selection(void)
+{
+  SDL_SysWMinfo info;
+
+  SDL_VERSION(&info.version);
+
+  if(!SDL_GetWMInfo(&info) || (info.subsystem != SDL_SYSWM_X11))
+    return;
+
+  XSetSelectionOwner(info.info.x11.display, XA_PRIMARY,
+    info.info.x11.window, CurrentTime);
+
+  SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
+  SDL_SetEventFilter(copy_buffer_to_X11_selection);
+}
+
+#else // !__WIN32__ && !CONFIG_X11
+
+static inline void copy_buffer_to_selection(void)
+{
+}
+
+#endif
 
 static void copy_block_to_buffer(robot_state *rstate)
 {
@@ -832,22 +900,15 @@ static void copy_block_to_buffer(robot_state *rstate)
   int line_length;
   int i;
 
-#ifdef CONFIG_X11
-  SDL_SysWMinfo info;
-  SDL_VERSION(&info.version);
-#endif
-
   copy_buffer_total_length = 0;
 
-  // First, if there's something already there, clear all the lines and
-  // the buffer.
+  /* First, if there's something already there, clear all the
+   * lines and the buffer.
+   */
   if(copy_buffer)
   {
     for(i = 0; i < copy_buffer_lines; i++)
-    {
       free(copy_buffer[i]);
-    }
-
     free(copy_buffer);
   }
 
@@ -864,60 +925,10 @@ static void copy_block_to_buffer(robot_state *rstate)
     copy_buffer_total_length += line_length;
   }
 
-#ifdef __WIN32__
-  if(OpenClipboard(NULL))
-  {
-    HANDLE global_memory;
-    char *dest_data;
-    char *dest_ptr;
-
-    // Room for \r's
-    copy_buffer_total_length += num_lines - 1;
-
-    global_memory = GlobalAlloc(GMEM_MOVEABLE | GMEM_DDESHARE,
-     copy_buffer_total_length);
-    if(global_memory)
-    {
-      dest_data = (char *)GlobalLock(global_memory);
-      dest_ptr = dest_data;
-
-      current_rline = rstate->mark_start_rline;
-
-      for(i = 0; i < num_lines - 1; i++)
-      {
-        line_length = current_rline->line_text_length;
-        memcpy(dest_ptr, current_rline->line_text, line_length);
-        dest_ptr += line_length;
-
-        dest_ptr[0] = '\r';
-        dest_ptr[1] = '\n';
-        dest_ptr += 2;
-
-        current_rline = current_rline->next;
-      }
-
-      line_length = current_rline->line_text_length;
-      memcpy(dest_ptr, current_rline->line_text, line_length);
-      dest_ptr += line_length;
-      dest_ptr[0] = 0;
-
-      GlobalUnlock(global_memory);
-      EmptyClipboard();
-      SetClipboardData(CF_TEXT, global_memory);
-    }
-    CloseClipboard();
-  }
-#elif defined(CONFIG_X11)
-  if(SDL_GetWMInfo(&info) && (info.subsystem == SDL_SYSWM_X11))
-  {
-    XSetSelectionOwner(info.info.x11.display, XA_PRIMARY,
-     info.info.x11.window, CurrentTime);
-
-    SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
-
-    SDL_SetEventFilter(copy_buffer_to_X11_selection);
-  }
-#endif // CONFIG_X11
+  /* It may be possible to copy this buffer out of process,
+   * to an operating system clipboard.
+   */
+  copy_buffer_to_selection();
 }
 
 static void clear_block(robot_state *rstate)
