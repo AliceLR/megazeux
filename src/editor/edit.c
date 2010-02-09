@@ -778,7 +778,9 @@ static void flash_thing(World *mzx_world, int start, int end,
     }
 
     draw_edit_window(src_board, scroll_x, scroll_y, edit_screen_height);
+
     update_screen();
+    delay(UPDATE_DELAY * 2);
 
     for(i = start; i < end + 1; i++)
     {
@@ -786,9 +788,11 @@ static void flash_thing(World *mzx_world, int start, int end,
     }
 
     draw_edit_window(src_board, scroll_x, scroll_y, edit_screen_height);
-    update_screen();
 
-    update_event_status_delay();
+    update_screen();
+    delay(UPDATE_DELAY * 2);
+
+    update_event_status();
   } while(!get_key(keycode_internal));
 
   update_event_status_delay();

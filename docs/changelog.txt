@@ -47,6 +47,8 @@ USERS
   control.
 + Clamp CHAR_X/CHAR_Y properly so that negative numbers can no longer be used
   to corrupt the editor charset and potentially other process memory.
++ Fix recent breakage of SHIFT+F{1,2,3,4} so that the percentage time spent
+  displaying the original character and the '!' are equal.
 
 DEVELOPERS
 
