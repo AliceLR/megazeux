@@ -732,19 +732,19 @@ static const struct mzx_command command_list[] =
   { "enable",         2, cm255 }
 };
 
-static const char *dir_types[20] =
+static const char *const dir_types[20] =
 {
   "IDLE", "NORTH", "SOUTH", "EAST", "WEST", "RANDNS", "RANDEW", "RANDNE",
   "RANDNB", "SEEK", "RANDANY", "BENEATH", "ANYDIR", "FLOW", "NODIR", "RANDB",
   "RANDP", "CW", "OPP", "RANDNOT"
 };
 
-static const char *equality_types[6] =
+static const char *const equality_types[6] =
 {
   "=", "<", ">", ">=", "<=", "!="
 };
 
-static const char *condition_types[18] =
+static const char *const condition_types[18] =
 {
   "walking", "swimming", "firewalking", "touching", "blocked", "aligned",
   "alignedns", "alignedew", "lastshot", "lasttouch", "rightpressed",
@@ -752,13 +752,13 @@ static const char *condition_types[18] =
   "musicon", "pcsfxon"
 };
 
-static const char *item_types[9] =
+static const char *const item_types[9] =
 {
   "GEMS", "AMMOS", "TIME", "SCORE", "HEALTHS", "LIVES", "LOBOMBS", "HIBOMBS",
   "COINS"
 };
 
-static const char *command_fragments[69] =
+static const char *const command_fragments[69] =
 {
   "not",
   "any",
@@ -855,7 +855,7 @@ static const char special_first_char[256] =
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0    // 0xF0-0xFF
 };
 
-static const char *ignore_list[21] =
+static const char *const ignore_list[21] =
 {
   ",", ";", "a", "an", "and", "as", "at", "by", "else", "for", "from",
   "into", "is", "of", "the", "then", "there", "through", "thru", "to", "with"

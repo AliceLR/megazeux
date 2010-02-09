@@ -46,15 +46,15 @@ __M_BEGIN_DECLS
 struct search_entry
 {
   const char *name;
-  int count;
-  int offsets[19];
+  const int count;
+  const int offsets[19];
 };
 
 struct search_entry_short
 {
   const char *name;
-  int offset;
-  int type;
+  const int offset;
+  const int type;
 };
 
 int is_dir(char *cmd_line, char **next);
