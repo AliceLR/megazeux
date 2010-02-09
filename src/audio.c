@@ -1134,7 +1134,7 @@ static void convert_sam_to_wav(const char *source_name, const char *dest_name)
 
   dest = fopen(dest_name, "wb");
   if(!dest)
-    return;
+    goto err_close_source;
 
   source_length = ftell_and_rewind(source);
 
@@ -1171,8 +1171,9 @@ static void convert_sam_to_wav(const char *source_name, const char *dest_name)
   fwrite(data, dest_length, 1, dest);
 
   free(data);
-  fclose(source);
   fclose(dest);
+err_close_source:
+  fclose(source);
 }
 
 static void convert_sam_to_wav_translate(const char *src, const char *dest)
