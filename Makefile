@@ -24,7 +24,9 @@ OBJCOPY ?= objcopy
 
 CHMOD   ?= chmod
 CP      ?= cp
+LN      ?= ln
 MKDIR   ?= mkdir
+MV      ?= mv
 RM      ?= rm
 
 SDL_CFLAGS  ?= `sdl-config --cflags`
@@ -109,7 +111,9 @@ OBJCOPY := @${OBJCOPY}
 
 CHMOD   := @${CHMOD}
 CP      := @${CP}
+LN      := @${LN}
 MKDIR   := @${MKDIR}
+MV      := @${MV}
 RM      := @${RM}
 endif
 
@@ -182,28 +186,41 @@ ${build}: all
 	${CP} docs/COPYING.DOC docs/changelog.txt ${build}/docs
 	${CP} docs/port.txt docs/macro.txt ${build}/docs
 	${CP} ${mzxrun} ${build}
-	-${CP} ${mzxrun}.debug ${build}
+	@if test -f ${mzxrun}.debug; then \
+		${CP} ${mzxrun}.debug ${build}; \
+	fi
 ifeq (${BUILD_EDITOR},1)
 	${CP} ${mzx} ${build}
-	-${CP} ${mzx}.debug ${build}
+	@if test -f ${mzx}.debug; then \
+		${CP} ${mzx}.debug ${build}; \
+	fi
 endif
 ifeq (${BUILD_HELPSYS},1)
 	${CP} mzx_help.fil ${build}
 endif
 ifeq (${BUILD_MODULAR},1)
 	${CP} ${core_target} ${editor_target} ${build}
-	-${CP} ${core_target}.debug ${editor_target}.debug ${build}
+	@if test -f ${core_target}.debug; then \
+		${CP} ${core_target}.debug ${build}; \
+	fi
+	@if test -f ${editor_target}.debug; then \
+		${CP} ${editor_target}.debug ${build}; \
+	fi
 ifeq (${BUILD_UPDATER},1)
 	${CP} ${network_target} ${build}
-	-${CP} ${network_target}.debug ${build}
+	@if test -f ${network_target}.debug; then \
+		${CP} ${network_target}.debug ${build}; \
+	fi
 endif
 endif
 ifeq (${BUILD_UTILS},1)
 	${MKDIR} ${build}/utils
 	${CP} ${checkres} ${downver} ${build}/utils
 	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
-	-${CP} ${checkres}.debug ${downver}.debug ${build}/utils
-	-${CP} ${hlp2txt}.debug ${txt2hlp}.debug ${build}/utils
+	@if test -f ${checkres}.debug; then \
+		${CP} ${checkres}.debug ${downver}.debug ${build}/utils; \
+		${CP} ${hlp2txt}.debug  ${txt2hlp}.debug ${build}/utils; \
+	fi
 endif
 ifeq (${BUILD_RENDER_GLSL},1)
 	${MKDIR} ${build}/shaders

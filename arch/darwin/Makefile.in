@@ -4,6 +4,10 @@
 
 STRIP   ?= strip
 
+ifeq (${ARCH},)
+ARCH := i686
+endif
+
 ifeq (${ARCH},i686)
 CC        := i686-apple-darwin9-gcc-4.0.1 -mmacosx-version-min=10.3
 CXX       := i686-apple-darwin9-g++-4.0.1 -mmacosx-version-min=10.3
@@ -46,13 +50,48 @@ arch/darwin/SDLMain.o: arch/darwin/SDLMain.m
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${SDL_CFLAGS} -c $< -o $@
 
-package:
-	@mv ${core_target} ${core_target}.${REAL_ARCH}
-	@mv ${editor_target} ${editor_target}.${REAL_ARCH}
-	@mv ${network_target} ${network_target}.${REAL_ARCH}
-	@mv ${mzx} ${mzx}.${REAL_ARCH}
-	@mv ${mzxrun} ${mzxrun}.${REAL_ARCH}
+package: all
+	${MV} ${core_target} ${core_target}.${REAL_ARCH}
+	${MV} ${editor_target} ${editor_target}.${REAL_ARCH}
+	${MV} ${network_target} ${network_target}.${REAL_ARCH}
+	${MV} ${mzx} ${mzx}.${REAL_ARCH}
+	${MV} ${mzxrun} ${mzxrun}.${REAL_ARCH}
 
 clean:
-	@echo "  CLEAN   " arch/darwin
-	@rm -f arch/darwin/SDLMain.o arch/darwin/SDLMain.d
+	${RM} arch/darwin/SDLMain.o arch/darwin/SDLMain.d
+
+package_clean: clean
+	${RM} ${core_target}.${REAL_ARCH}
+	${RM} ${editor_target}.${REAL_ARCH}
+	${RM} ${network_target}.${REAL_ARCH}
+	${RM} ${mzx}.${REAL_ARCH}
+	${RM} ${mzxrun}.${REAL_ARCH}
+
+lipo:
+	@arch/darwin/lipo.sh
+
+build := build/${SUBPLATFORM}/MegaZeux.app/Contents/Resources
+build:
+	${MKDIR} ${build}/../MacOS
+	${MKDIR} ${build}/../Frameworks
+	${CP} -R ../Frameworks/* ${build}/../Frameworks
+	${CP} arch/darwin/MegaZeux.plist ${build}/../Info.plist
+	${CP} contrib/icons/quantump.icns ${build}/MegaZeux.icns
+	${RM} ${build}/*.debug ${build}/utils/*.debug
+	${MV} ${build}/docs ${build}/../../..
+	${MV} ${build}/${mzx} ${build}/../MacOS/MegaZeux
+	${MV} ${build}/${mzxrun} ${build}/../MacOS/MZXRun
+	${MV} ${build}/*.dylib ${build}/../MacOS
+	${LN} -s MegaZeux.app/Contents/Resources/config.txt ${build}/../../..
+	${MKDIR} -p ${build}/../../../MZXRun.app/Contents
+	${CP} arch/darwin/MZXRun.plist \
+		${build}/../../../MZXRun.app/Contents/Info.plist
+	${LN} -s ../../MegaZeux.app/Contents/Frameworks \
+		${build}/../../../MZXRun.app/Contents/Frameworks
+	${LN} -s ../../MegaZeux.app/Contents/Resources \
+		${build}/../../../MZXRun.app/Contents/Resources
+	${LN} -s ../../MegaZeux.app/Contents/MacOS \
+		${build}/../../../MZXRun.app/Contents/MacOS
+
+archive:
+	@arch/darwin/dmg.sh ${TARGET}
