@@ -32,11 +32,6 @@
 #include "compat.h"
 #include "platform.h"
 
-#ifdef CONFIG_NDS
-#include "nds.h"
-#include "render_nds.h"
-#endif
-
 #include "configure.h"
 #include "event.h"
 #include "helpsys.h"
@@ -59,23 +54,6 @@
 #else
 #define __libspec
 #endif
-
-#ifdef CONFIG_NDS
-
-static void nds_on_vblank(void)
-{
-  /* Handle sleep mode. */
-  nds_sleep_check();
-
-  /* Do all special video handling. */
-  nds_video_rasterhack();
-  nds_video_jitter();
-
-  /* Handle the virtual keyboard and mouse. */
-  nds_inject_input();
-}
-
-#endif // CONFIG_NDS
 
 /* The world structure used to be pretty big (around 7.2k) which
  * caused some platforms grief. Early hacks moved it entirely onto
@@ -177,12 +155,6 @@ __libspec int main(int argc, char *argv[])
   if(!init_video(&(mzx_world.conf)))
     goto err_network_layer_exit;
   init_audio(&(mzx_world.conf));
-
-#ifdef CONFIG_NDS
-  // Steal the interrupt handler back from SDL.
-  irqSet(IRQ_VBLANK, nds_on_vblank);
-  irqEnable(IRQ_VBLANK);
-#endif
 
   warp_mouse(39, 12);
   cursor_off();

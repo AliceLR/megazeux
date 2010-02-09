@@ -98,6 +98,8 @@ endif
 ifeq (${BUILD_NDS},1)
 core_cobjs += arch/nds/ram.o arch/nds/exception.o
 core_cobjs += arch/nds/malloc.o arch/nds/extmem.o
+core_cobjs += arch/nds/platform.o arch/nds/event.o
+core_cobjs += arch/nds/render.o
 endif
 
 ifeq (${PLATFORM},android)
@@ -160,10 +162,6 @@ ifeq (${BUILD_RENDER_GX},1)
 core_cobjs += ${core_obj}/render_gx.o
 endif
 
-ifeq (${BUILD_NDS},1)
-core_cobjs += ${core_obj}/render_nds.o
-endif
-
 ifeq (${BUILD_MODPLUG},1)
 core_cflags += -I${gdm2s3m_src}
 core_cobjs += ${gdm2s3m_objs}
@@ -208,7 +206,7 @@ endif
 
 else
 
-ifneq (${BUILD_WII},1)
+ifeq ($(or ${BUILD_WII},${BUILD_NDS}),)
 
 core_cobjs += ${core_obj}/platform_dummy.o
 

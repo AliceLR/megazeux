@@ -132,10 +132,6 @@ void set_num_buffered_events(Uint8 value);
 
 void real_warp_mouse(Uint32 x, Uint32 y);
 
-#ifdef CONFIG_NDS
-void nds_inject_input(void);
-#endif
-
 __M_END_DECLS
 
 #endif // __EVENT_H

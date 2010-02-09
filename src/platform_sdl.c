@@ -30,15 +30,6 @@
 PSP_MAIN_THREAD_STACK_SIZE_KB(512);
 #endif
 
-#ifdef CONFIG_NDS
-#include <fat.h>
-#include "render_nds.h"
-#include "ram.h"
-#include "malloc.h"
-#include "exception.h"
-#include "memory_warning_pcx.h"
-#endif
-
 #ifdef CONFIG_GP2X
 #include <unistd.h> //for chdir, execl
 #endif
@@ -59,16 +50,6 @@ bool platform_init(void)
 
 #ifdef CONFIG_PSP
   scePowerSetClockFrequency(333, 333, 166);
-#endif
-
-#ifdef CONFIG_NDS
-  powerOn(POWER_ALL);
-  //setMzxExceptionHandler();
-  fatInitDefault();
-  // If the "extra RAM" is missing, warn the user
-  if(!nds_ram_init(DETECT_RAM))
-    warning_screen((u8*)memory_warning_pcx);
-  nds_ext_lock();
 #endif
 
 #ifdef DEBUG
@@ -92,10 +73,6 @@ bool platform_init(void)
 void platform_quit(void)
 {
   SDL_Quit();
-
-#ifdef CONFIG_NDS
-  nds_ext_unlock();
-#endif
 
 #ifdef CONFIG_GP2X
   chdir("/usr/gp2x");

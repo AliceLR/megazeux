@@ -428,6 +428,11 @@ if [ "$PLATFORM" = "wii" ]; then
 	SDL="false"
 fi
 
+if [ "$PLATFORM" = "nds" ]; then
+	echo "Disabling SDL (NDS)."
+	SDL="false"
+fi
+
 if [ "$PLATFORM" = "android" ]; then
 	echo "Disabling SDL (Android), force-enabling EGL."
 	SDL="false"

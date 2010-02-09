@@ -30,10 +30,6 @@
 #include "SDL.h"
 #include <mikmod.h>
 
-#ifdef CONFIG_NDS
-#include <mikmod9.h>
-#endif
-
 struct mikmod_stream
 {
   struct sampled_stream s;

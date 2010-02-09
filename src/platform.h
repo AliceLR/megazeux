@@ -50,6 +50,11 @@ int real_main(int argc, char *argv[]);
 
 #endif // CONFIG_SDL
 
+// Normally only need mutexes for audio, but the Wii port
+// uses them for events too
+
+#if defined(CONFIG_WII) || defined(CONFIG_AUDIO)
+
 #ifdef CONFIG_PTHREAD_MUTEXES
 #include "mutex_pthread.h"
 #elif defined(CONFIG_SDL)
@@ -59,6 +64,8 @@ int real_main(int argc, char *argv[]);
 #else
 #error Provide a valid mutex implementation for this platform!
 #endif
+
+#endif // defined(CONFIG_WII) || defined(CONFIG_AUDIO)
 
 CORE_LIBSPEC void delay(Uint32 ms);
 CORE_LIBSPEC Uint32 get_ticks(void);

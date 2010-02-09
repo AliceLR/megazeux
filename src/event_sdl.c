@@ -24,11 +24,6 @@
 
 #include "SDL.h"
 
-#ifdef CONFIG_NDS
-#include "keyboard.h"
-#include "render_nds.h"
-#endif
-
 extern struct input_status input;
 
 static bool numlock_status_initialized;
@@ -206,12 +201,6 @@ static bool process_event(SDL_Event *event)
 
       if(my < 0)
         SDL_WarpMouse(mx_real, min_y);
-
-#ifdef CONFIG_NDS
-      nds_mouselook(false);
-      focus_pixel(mx_real, my_real);
-      nds_mouselook(true);
-#endif
 
       status->real_mouse_x = mx;
       status->real_mouse_y = my;
@@ -440,15 +429,6 @@ static bool process_event(SDL_Event *event)
       enum keycode stuffed_key =
         input.joystick_button_map[which][button];
 
-#ifdef CONFIG_NDS
-      // For the NDS, button 5 is hardcoded to subscreen mode switch.
-      if(button == 5)
-      {
-        nds_subscreen_switch();
-        break;
-      }
-#endif
-
       if(stuffed_key && (status->keymap[stuffed_key] == 0))
       {
         status->key_pressed = stuffed_key;
@@ -470,12 +450,6 @@ static bool process_event(SDL_Event *event)
       int button = event->jbutton.button;
       enum keycode stuffed_key =
         input.joystick_button_map[which][button];
-
-#ifdef CONFIG_NDS
-      // Probably unnecessary, but filter out button 5.
-      if(button == 5)
-        break;
-#endif
 
       if(stuffed_key)
       {
@@ -535,151 +509,3 @@ void initialize_joysticks(void)
 
   SDL_JoystickEventState(SDL_ENABLE);
 }
-
-#ifdef CONFIG_NDS
-
-static void convert_nds_SDL(int c, SDL_keysym *sym)
-{
-  sym->scancode = c;
-  sym->unicode = c;
-
-  sym->mod = KMOD_NONE;
-
-  // Uppercase letters
-  if(c >= 65 && c <= 90)
-  {
-    sym->sym = c + 26;
-    sym->mod = KMOD_SHIFT;
-  }
-
-  // Function keys
-  else if(c <= -59 && c >= -68)
-    sym->sym = SDLK_F1 - c - 59;
-  else if(c <= -133 && c >= -134)
-    sym->sym = SDLK_F11 - c - 133;
-
-  // Home, PgUp, etc.
-  else if(c == -71)
-    sym->sym = SDLK_HOME;
-  else if(c == -73)
-    sym->sym = SDLK_PAGEUP;
-  else if(c == -81)
-    sym->sym = SDLK_PAGEDOWN;
-  else if(c == -79)
-    sym->sym = SDLK_END;
-
-  // Arrow keys
-  else if(c == -72)
-    sym->sym = SDLK_UP;
-  else if(c == -80)
-    sym->sym = SDLK_DOWN;
-  else if(c == -75)
-    sym->sym = SDLK_LEFT;
-  else if(c == -77)
-    sym->sym = SDLK_RIGHT;
-
-  // Other normal-ish keys
-  else if(c > 0 && c < 512)
-    sym->sym = c;
-
-  // Unknown key
-  else
-    sym->sym = SDLK_UNKNOWN;
-}
-
-static void nds_inject_keyboard(void)
-{
-  // Hold down a key for this many vblanks.
-  const int NUM_HOLD_VBLANKS = 5;
-  static SDL_Event key_event;
-  static int hold_count = 0;
-
-  if(hold_count == 1)
-  {
-    // Inject the key release.
-    key_event.type = SDL_KEYUP;
-    SDL_PushEvent(&key_event);
-    hold_count = 0;
-  }
-  else if(hold_count > 1)
-  {
-    // Count down.
-    hold_count--;
-  }
-  else if(hold_count == 0 && subscreen_mode == SUBSCREEN_KEYBOARD)
-  {
-    // Check for a new keypress.
-    int c;
-    if((c = processKeyboard()))
-    {
-      // Inject the keypress.
-      key_event.type = SDL_KEYDOWN;
-      convert_nds_SDL(c, &key_event.key.keysym);
-      SDL_PushEvent(&key_event);
-
-      // Remember to release it after a number of vblanks.
-      hold_count = NUM_HOLD_VBLANKS + 1;
-    }
-  }
-}
-
-static void nds_inject_mouse(void)
-{
-  static bool touch_held = false;
-  static int last_x = -1;
-  static int last_y = -1;
-  SDL_Event motion_event;
-  SDL_Event button_event;
-
-  if(is_scaled_mode(subscreen_mode))
-  {
-    // Inject mouse motion events.
-    if(keysHeld() & KEY_TOUCH)
-    {
-      touchPosition touch;
-      touchRead(&touch);
-
-      if(touch.px != last_x || touch.py != last_y)
-      {
-        // Send the event to SDL.
-        motion_event.type = SDL_MOUSEMOTION;
-        motion_event.motion.x = touch.px * 640 / 256;
-        motion_event.motion.y = touch.py * 350 / 192;
-        SDL_PushEvent(&motion_event);
-
-        last_x = touch.px;
-        last_y = touch.py;
-      }
-
-      if(!touch_held)
-      {
-       // Inject the mouse button press.
-        button_event.type = SDL_MOUSEBUTTONDOWN;
-        button_event.button.button = 1;
-        SDL_PushEvent(&button_event);
-
-        touch_held = true;
-        last_x = -1;
-        last_y = -1;
-      }
-    }
-    else
-    {
-      // Inject the mouse button release.
-      touch_held = false;
-      nds_mouselook(false);
-
-      button_event.type = SDL_MOUSEBUTTONUP;
-      button_event.button.button = 1;
-      SDL_PushEvent(&button_event);
-    }
-  }
-}
-
-void nds_inject_input(void)
-{
-  nds_inject_keyboard();
-  nds_inject_mouse();
-}
-
-#endif // CONFIG_NDS

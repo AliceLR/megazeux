@@ -4,7 +4,6 @@
 
 #include <nds.h>
 #include <stdlib.h>
-#include "soundcommon.h"
 
 /* -------------------------------------------------------------------------
  * Sleep handler
@@ -37,26 +36,6 @@ void lid_closed(void)
     swiChangeSoundBias(1, 0x400);
 }
 
-//---------------------------------------------------------------------------------
-void startSound(int sampleRate, const void* data, u32 bytes, u8 channel, u8 vol,  u8 pan, u8 format) {
-//---------------------------------------------------------------------------------
-	SCHANNEL_TIMER(channel)  = SOUND_FREQ(sampleRate);
-	SCHANNEL_SOURCE(channel) = (u32)data;
-	SCHANNEL_LENGTH(channel) = bytes >> 2 ;
-	SCHANNEL_CR(channel)     = SCHANNEL_ENABLE | SOUND_ONE_SHOT | SOUND_VOL(vol) | SOUND_PAN(pan) | (format==1?SOUND_8BIT:SOUND_16BIT);
-}
-
-
-//---------------------------------------------------------------------------------
-s32 getFreeSoundChannel(void) {
-//---------------------------------------------------------------------------------
-	int i;
-	for (i=0; i<16; i++) {
-		if ( (SCHANNEL_CR(i) & SCHANNEL_ENABLE) == 0 ) return i;
-	}
-	return -1;
-}
-
 int vcount;
 touchPosition first,tempPos;
 
@@ -73,15 +52,14 @@ void VcountHandler(void) {
 		lid_closed();
 
 	if (!( (but ^ lastbut) & (1<<6))) {
- 
-		tempPos = touchReadXY();
+		touchReadXY(&tempPos);
 
-		if ( tempPos.x == 0 || tempPos.y == 0 ) {
+		if ( tempPos.rawx == 0 || tempPos.rawy == 0 ) {
 			but |= (1 <<6);
 			lastbut = but;
 		} else {
-			x = tempPos.x;
-			y = tempPos.y;
+			x = tempPos.rawx;
+			y = tempPos.rawy;
 			xpx = tempPos.px;
 			ypx = tempPos.py;
 			z1 = tempPos.z1;
@@ -103,46 +81,20 @@ void VcountHandler(void) {
 			lastbut = but;
 
 		} else { 	
-			IPC->mailBusy = 1;
+			//IPC->mailBusy = 1;
 			IPC->touchX			= x;
 			IPC->touchY			= y;
 			IPC->touchXpx		= xpx;
 			IPC->touchYpx		= ypx;
 			IPC->touchZ1		= z1;
 			IPC->touchZ2		= z2;
-			IPC->mailBusy = 0;
+			//IPC->mailBusy = 0;
 		}
 	}
 	IPC->buttons		= but;
 	vcount ^= (80 ^ 130);
 	SetYtrigger(vcount);
 
-}
-
-//---------------------------------------------------------------------------------
-void VblankHandler(void) {
-//---------------------------------------------------------------------------------
-
-	u32 i;
-
-//	SoundVBlankIrq();
-
-	//sound code  :)
-	TransferSound *snd = IPC->soundData;
-	IPC->soundData = 0;
-
-	if (0 != snd) {
-
-		for (i=0; i<snd->count; i++) {
-			s32 chan = getFreeSoundChannel();
-
-			if (chan >= 0) {
-				startSound(snd->data[i].rate, snd->data[i].data, snd->data[i].len, chan, snd->data[i].vol, snd->data[i].pan, snd->data[i].format);
-			}
-		}
-	}
-
-        //Wifi_Update(); // update wireless in vblank
 }
 
 // callback to allow wifi library to notify arm9
@@ -169,20 +121,11 @@ int main(int argc, char ** argv) {
 	// Reset the clock if needed
 	rtcReset();
 
-	//enable sound
-	powerON(POWER_SOUND);
-	SOUND_CR = SOUND_ENABLE | SOUND_VOL(0x7F);
-	IPC->soundData = 0;
-
 	irqInit();
-	irqSet(IRQ_VBLANK, VblankHandler);
 	SetYtrigger(80);
 	vcount = 80;
 	irqSet(IRQ_VCOUNT, VcountHandler);
-	irqEnable(IRQ_VBLANK | IRQ_VCOUNT);
-
-	//irqSet(IRQ_WIFI, Wifi_Interrupt);
-	//irqEnable(IRQ_WIFI);
+	irqEnable(IRQ_VCOUNT);
 
 { // sync with arm9 and init wifi
         u32 fifo_temp;
