@@ -170,6 +170,8 @@ const char *zipio_strerror(zipio_error_t err)
       return "Multiple volume ZIPs are unsupported";
     case ZIPIO_UNSUPPORTED_ZIP64:
       return "No support for ZIP64 entries";
+    case ZIPIO_UNSUPPORTED_COMPRESSION_METHOD:
+      return "Unsupported ZIP compression method";
     default:
       return "Unknown error";
   }
@@ -580,11 +582,14 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     // We don't support Encryption (0), Method 8 (4), Patched Data (5),
     // Strong Encryption (6), Unused (7-10), Enhanced Compression (12),
     // Central Direction Encryption (13), PKZIP Reserved (14-15)
-    if(d & 0xF7F1)
+    if(d & 0x77F1)
     {
       err = ZIPIO_UNSUPPORTED_FEATURE;
       goto err_free_entries;
     }
+
+    if(d & 8000)
+      warn("LFH GPBF bit 15 set (PKWARE reserved)!\n");
 
     // "crc-32", "compressed size" and "uncompressed size" fields are deferred
     if(d & 0x8)
@@ -704,6 +709,7 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
       goto err_free_entries;
     }
 
+#if 0
     // Store current file position so we can roll back if data descriptor
     // signature is not present (some older ZIPs may do this)
     pos = ftell(z->f);
@@ -764,6 +770,7 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
        "differing CD uncompressed size!\n");
       entry->uncompressed_size = d;
     }
+#endif
 
     // Convert to standard C89/C99 time_t
     datetime = dos_to_time_t(time, date);
