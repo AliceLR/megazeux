@@ -310,8 +310,11 @@ static error_t modify_pe(FILE *f)
   if(fseek(f, ftell(f), SEEK_SET))
     return READ_ERROR;
 
-  // Re-write TimeDateStamp as zero (new Checksum computed later)
-  ul = 0;
+  // The checksum must be rewritten as a constant value. However,
+  // the logical choice of zero does not work correctly, as this
+  // exposes a Windows bug which leaves the EXE open after it has
+  // loaded, breaking the updater. Use the 2038 timestamp instead.
+  ul = 0x7fffffff;
   if(fwrite(&ul, sizeof(uint32_t), 1, f) != 1)
     return WRITE_ERROR;
 
