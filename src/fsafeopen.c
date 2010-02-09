@@ -259,7 +259,7 @@ static int match(char *path)
  * including "..". Do so here.
  */
 
-int fsafetest(const char *path, char *newpath)
+static int fsafetest(const char *path, char *newpath)
 {
   int i, pathlen;
 

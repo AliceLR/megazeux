@@ -4491,6 +4491,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             int copy_type = parse_param(mzx_world, p6, id);
             char name_buffer[ROBOT_MAX_TR];
             char *translated_name = malloc(MAX_PATH);
+            int err;
 
             tr_msg(mzx_world, p5 + 2, id, name_buffer);
             prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
@@ -4499,7 +4500,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             if(copy_type && !src_type)
               src_type = 3;
 
-            if(!fsafetest(name_buffer, translated_name))
+            err = fsafetranslate(name_buffer, translated_name);
+            if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
             {
               save_mzm(mzx_world, translated_name, src_x, src_y,
                width, height, src_type, 1);
@@ -4761,12 +4763,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           {
             char name_buffer[ROBOT_MAX_TR];
             char *translated_name = malloc(MAX_PATH);
+            int err;
 
             tr_msg(mzx_world, p5 + 2, id, name_buffer);
             prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
              src_width, src_height);
 
-            if(!fsafetest(name_buffer, translated_name))
+            err = fsafetranslate(name_buffer, translated_name);
+            if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
             {
               save_mzm(mzx_world, translated_name, src_x, src_y,
                width, height, src_type, 1);

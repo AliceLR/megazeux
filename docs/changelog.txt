@@ -41,6 +41,9 @@ USERS
 + Fix a bug where web and thick web would be treated the same.
 + Fixed a bug in the updater where modified/replaced files would be considered
   for deletion.
++ Fixed a bug on case-sensitive filesystems where saving a game, world or MZM
+  could fail to overwrite any existing file by the same name (if matched
+  case insensitively).
 
 DEVELOPERS
 

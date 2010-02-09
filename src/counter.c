@@ -2285,12 +2285,14 @@ int set_counter_special(struct world *mzx_world, char *char_value,
     {
       char *translated_path = malloc(MAX_PATH);
       int faded = get_fade_status();
+      int err;
 
       // Advance the program so that loading a SAV doesn't re-run this line
       cur_robot->cur_prog_line +=
        cur_robot->program[cur_robot->cur_prog_line] + 2;
 
-      if(!fsafetest(char_value, translated_path))
+      err = fsafetranslate(char_value, translated_path);
+      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
         save_world(mzx_world, translated_path, 1, faded);
 
       free(translated_path);
@@ -2300,12 +2302,14 @@ int set_counter_special(struct world *mzx_world, char *char_value,
     case FOPEN_SAVE_WORLD:
     {
       char *translated_path = malloc(MAX_PATH);
+      int err;
 
       // Advance the program so that loading a SAV doesn't re-run this line
       cur_robot->cur_prog_line +=
        cur_robot->program[cur_robot->cur_prog_line] + 2;
 
-      if(!fsafetest(char_value, translated_path))
+      err = fsafetranslate(char_value, translated_path);
+      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
         save_world(mzx_world, translated_path, 0, 0);
 
       free(translated_path);
