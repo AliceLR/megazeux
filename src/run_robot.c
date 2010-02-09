@@ -2596,6 +2596,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             // sent anywhere, so otherwise it'll just keep
             // re-doing the shoot if we end the cycle..
             cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+            if(!program[cur_robot->cur_prog_line])
+              goto end_prog;
+
             goto breaker;
           }
         }
@@ -2641,6 +2644,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             // sent anywhere, so otherwise it'll just keep
             // re-doing the shoot if we end the cycle..
             cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+            if(!program[cur_robot->cur_prog_line])
+              goto end_prog;
+
             goto breaker;
           }
         }
@@ -2662,6 +2668,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             // sent anywhere, so otherwise it'll just keep
             // re-doing the shoot if we end the cycle..
             cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+            if(!program[cur_robot->cur_prog_line])
+              goto end_prog;
+
             goto breaker;
           }
         }
@@ -2683,6 +2692,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             // sent anywhere, so otherwise it'll just keep
             // re-doing the shoot if we end the cycle..
             cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+            if(!program[cur_robot->cur_prog_line])
+              goto end_prog;
+
             goto breaker;
           }
         }
