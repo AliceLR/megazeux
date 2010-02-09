@@ -217,7 +217,11 @@ ${mzx}.debug:
 
 endif
 
-mzxrun_objs := ${core_obj}/main.o ${core_obj}/edit_stubs.o
+mzxrun_objs := ${core_obj}/main.o
+
+ifeq (${BUILD_EDITOR},1)
+mzxrun_objs += ${core_obj}/edit_stubs.o
+endif
 
 -include ${mzxrun_objs:.o=.d}
 

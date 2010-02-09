@@ -26,10 +26,21 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
+#ifdef CONFIG_EDITOR
+
 void edit_stubs_hack(void);
 void init_macros(World *mzx_world);
 void free_extended_macros(World *mzx_world);
 void load_editor_config(World *mzx_world, int argc, char *argv[]);
+
+#else // !CONFIG_EDITOR
+
+static inline void edit_stubs_hack(void) {}
+static inline void init_macros(World *mzx_world) {}
+static inline void free_extended_macros(World *mzx_world) {}
+static inline void load_editor_config(World *mzx_world, int argc, char *argv[]) {}
+
+#endif // CONFIG_EDITOR
 
 __M_END_DECLS
 
