@@ -80,17 +80,20 @@ dir_t *dir_open(const char *path);
 void dir_close(dir_t *dir);
 int dir_get_next_entry(dir_t *dir, char *entry);
 
-#if defined(__WIN32__) && defined(__STRICT_ANSI__)
+#if defined(__WIN32__)
+#if defined(__STRICT_ANSI__)
 int strcasecmp(const char *s1, const char *s2);
 int strncasecmp(const char *s1, const char *s2, size_t n);
-#else
-#if defined(CONFIG_PSP) || defined(CONFIG_GP2X) || defined(CONFIG_NDS) \
- || defined(CONFIG_WII)
+#endif // __STRICT_ANSI__
+char *strsep(char **stringp, const char *delim);
+#else // !__WIN32__
+#if defined(CONFIG_PSP) || defined(CONFIG_GP2X) \
+ || defined(CONFIG_NDS) || defined(CONFIG_WII)
 #include <string.h>
 #else
 #include <strings.h>
 #endif
-#endif // __WIN32__ && __STRICT_ANSI__
+#endif // __WIN32__
 
 /* Some platforms like NDS don't have a rename(2), so we need
  * to implement it.
@@ -123,7 +126,11 @@ extern const char *mod_gdm_ext[];
  } while(0)
 
 #ifdef DEBUG
-#define debug(...) warning(__VA_ARGS__)
+#define debug(...) \
+ do { \
+   fprintf(stderr, "DEBUG: " __VA_ARGS__); \
+   fflush(stderr); \
+ } while(0)
 #else
 #define debug(...) do { } while(0)
 #endif
