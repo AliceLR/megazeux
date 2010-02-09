@@ -58,7 +58,7 @@ createzip_wii() {
 	cp -f arch/wii/icon.png arch/wii/meta.xml apps/megazeux/ &&
 	sed "s/%VERSION%/$VERSION/g;s/%DATE%/`date -u +%Y%m%d%H%M`/g" \
 		arch/wii/meta.xml > apps/megazeux/meta.xml &&
-	cp -f $BINARY_DEPS $HELP_FILE boot.dol apps/megazeux/ &&
+	cp -f $BINARY_DEPS boot.dol apps/megazeux/ &&
 	cp -f $DOCS apps/megazeux/docs/ &&
 	$SEVENZIP a -tzip dist/$TARGET-wii.zip apps &&
 	rm -rf apps
@@ -99,7 +99,7 @@ createzip_dynamic_sdl() {
 	# Create the binary package.
 	#
 	$SEVENZIP a -tzip dist/$TARGET-$2.zip \
-		$BINARY_DEPS $HELP_FILE $DOCS \
+		$BINARY_DEPS $HELP_FILE $GLSL_PROGRAMS $DOCS \
 		$TARGET.exe SDL.dll $DIRECTX_BAT utils &&
 
 	#
@@ -139,9 +139,11 @@ createUnifiedDMG() {
 
 	mkdir -p ${CONTENTS}/MacOS &&
 	mkdir -p ${CONTENTS}/Resources &&
+	mkdir -p ${CONTENTS}/Resources/shaders &&
 	cp -RP $HOME/workspace/Frameworks ${CONTENTS} &&
 	cp $TARGET ${CONTENTS}/MacOS/MegaZeux &&
 	cp $BINARY_DEPS $HELP_FILE ${CONTENTS}/Resources &&
+        cp $GLSL_PROGRAMS ${CONTENTS}/Resources/shaders &&
 	cp contrib/icons/quantump.icns ${CONTENTS}/Resources/MegaZeux.icns &&
 	cp arch/darwin/Info.plist ${CONTENTS} &&
 	ln -s MegaZeux.app/Contents/Resources/config.txt dist/dmgroot &&
@@ -196,6 +198,12 @@ BINARY_DEPS="smzx.pal mzx_ascii.chr mzx_blank.chr mzx_default.chr \
 # embedded platforms can omit it if they disable the help system.
 #
 HELP_FILE="mzx_help.fil"
+
+#
+# The GLSL shader programs are technically "binary deps" too, but
+# they're useless on embedded platforms, which can choose to omit them.
+#
+GLSL_PROGRAMS="shaders/*.frag shaders/*.vert"
 
 #
 # Documents that the binary zip should contain (pathname will be stored too).
@@ -255,7 +263,9 @@ fi
 make package_clean
 
 mkdir -p dist/$TARGET/src &&
+mkdir -p dist/$TARGET/shaders &&
 cp -p $BINARY_DEPS $HELP_FILE $BUILD_DEPS dist/$TARGET &&
+cp -p $GLSL_PROGRAMS dist/$TARGET/shaders &&
 cp -pr $SUBDIRS dist/$TARGET &&
 cp -pr src/* dist/$TARGET/src &&
 
