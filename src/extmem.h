@@ -28,7 +28,7 @@ __M_BEGIN_DECLS
 #include "board_struct.h"
 #include "world_struct.h"
 
-#ifdef CONFIG_NDS
+#if defined(CONFIG_NDS) && !defined(CONFIG_DEBYTECODE)
 
 // Move the board's memory from normal RAM to extra RAM.
 void store_board_to_extram(struct board *board);
@@ -42,7 +42,7 @@ void set_current_board(struct world *mzx_world, struct board *cur_board);
 // Set the current board to cur_board, in extra memory.
 void set_current_board_ext(struct world *mzx_world, struct board *cur_board);
 
-#else // !CONFIG_NDS
+#else // !CONFIG_NDS || CONFIG_DEBYTECODE
 
 /* If we're not on NDS, these inline functions should get optimised
  * away. The implementations are obvious enough.
@@ -63,7 +63,7 @@ static inline void set_current_board_ext(struct world *mzx_world,
   set_current_board(mzx_world, cur_board);
 }
 
-#endif // CONFIG_NDS
+#endif // CONFIG_NDS && !CONFIG_DEBYTECODE
 
 __M_END_DECLS
 
