@@ -21,6 +21,9 @@ USERS
   old board state after load, causing crashes. (Lancer-X)
 + Fixed a bug where status counters containing numbers >6 characters would
   cause MegaZeux to crash or behave strangely.
++ Fix a bug in the robot editor's find/replace function that caused crashes
+  when replacing a string with another longer string, with a replacement at
+  the end of a line.
 
 DEVELOPERS
 

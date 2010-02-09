@@ -1630,7 +1630,8 @@ static int robo_ed_find_string(struct robot_state *rstate, char *str, int wrap,
   else
     use_buffer = current_rline->line_text;
 
-  pos = strstr(use_buffer + rstate->current_x + 1, str);
+  if(rstate->current_x + 1 < (int)strlen(use_buffer))
+    pos = strstr(use_buffer + rstate->current_x + 1, str);
 
   if(pos == NULL)
   {
