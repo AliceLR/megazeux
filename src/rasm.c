@@ -4358,7 +4358,7 @@ static char *assemble_command(char *src, char **_output)
     {
       strncpy(short_output, src, newline_pos);
       short_output[newline_pos] = 0;
-      printf("Failed to assemble command: %s\n", short_output);
+      warn("Failed to assemble command: %s\n", short_output);
     }
   }
   return NULL;
