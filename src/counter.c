@@ -1829,9 +1829,12 @@ static void force_string_splice(World *mzx_world, const char *name,
   if((*size == 0 && !size_specified) || *size > s_length)
     *size = s_length;
 
-  if((offset == 0 && !offset_specified) ||
-   (offset + *size > (*str)->length))
+  if((offset == 0 && !offset_specified) || (offset + *size > (*str)->length))
+  {
+    if(offset + *size > (*str)->length)
+      force_string_length(mzx_world, name, next, str, offset + *size);
     (*str)->length = offset + *size;
+  }
 }
 
 static void force_string_copy(World *mzx_world, const char *name,
