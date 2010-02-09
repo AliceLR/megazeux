@@ -179,10 +179,10 @@ breakout() {
 #
 # The basename for the source and binary packages.
 #
-. version.inc
+. ./version.inc
 
-[ "$TARGET" == "" ] && breakout 1
-[ "$1" == "-h" ] && usage
+[ "$TARGET" = "" ] && breakout 1
+[ "$1" = "-h" ] && usage
 
 #
 # MegaZeux source AND binary distributions depend on these
@@ -216,7 +216,7 @@ WIIPAD="arch/wii/pad.config"
 # MegaZeux's build system dependencies; these are packaged in
 # addition to binary deps above to complete the source package.
 #
-BUILD_DEPS="config.sh Makefile package.sh msvc.zip"
+BUILD_DEPS="config.sh Makefile package.sh msvc.zip version.inc"
 
 #
 # These directories are purely for source distributions.
