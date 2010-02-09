@@ -65,7 +65,7 @@ void replace_current_board(struct world *mzx_world, char *name)
   fread(version_string, 4, 1, input_mzb);
   version = board_magic(version_string);
 
-  if(version > 0 && version < WORLD_VERSION)
+  if(version > 0 && version <= WORLD_VERSION)
   {
     clear_board(src_board);
     src_board = load_board_allocate_direct(input_mzb, version);
