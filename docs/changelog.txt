@@ -21,6 +21,7 @@ USERS
 + Mistaken or malicious file I/O such as set "$test" to "fread(-1>>1)" will
   no longer crash MegaZeux. The read size will be truncated to a contextual
   maximum for the current file.
++ Fixed a crash using "fwrite0" in conjunction with an empty string.
 
 DEVELOPERS
 

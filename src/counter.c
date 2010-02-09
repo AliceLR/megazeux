@@ -3033,9 +3033,10 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
 
   if(special_name_partial("fwrite") && mzx_world->output_file)
   {
-    // You can't write a string that doesn't exist.
-
-    if(dest != NULL)
+    /* You can't write a string that doesn't exist, or a string
+     * of zero length (the file will still be created, of course).
+     */
+    if(dest != NULL && dest->length > 0)
     {
       FILE *output_file = mzx_world->output_file;
       char *dest_value = dest->value;
