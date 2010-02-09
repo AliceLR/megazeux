@@ -1390,7 +1390,7 @@ A: The first board has to be set. Press 'G' in the editor, then
 
 Q: Why doesn't my music play?
 
-A: Likely it's because the music file's filename is over 12
+A: It's probably because the music file's filename is over 12
   characters long in total. Shorten the name if so, or load the
   file through Robotic instead of having it set as the native
   board module. If you still have problems, see if the file
@@ -3027,7 +3027,7 @@ under the cursor is not affected.
 Press F to fill in an enclosed area with the current character
 and color. The area must be completely surrounded by characters
 other than the character beneath the cursor. For example, you
-can fill over a solid square of A's with something else. The
+can fill over a solid square of As with something else. The
 current fill command may not work right for very large and
 complex areas- In this case, you must move to the unfilled areas
 and press F to continue filling. However, this happens very
@@ -3271,7 +3271,7 @@ board info and turn it to Normal, Static, or Transparent.
 :erj:~A.SAV files from other versions of MZX are not supported
 
 The .SAV file the user attempted to load is a different format
-than the current version's and cannot be loaded.
+than the current version's .SAV and cannot be loaded.
 
 :erk:~AThis world is password protected.
 
@@ -3324,7 +3324,7 @@ the maintainer(s).
 :er3:~AFailed to roll back manifest. Check permissions.
 
 MZX tried to write/delete a file from the working directory,
-but could not, likely due to the user's MZX's working directory
+but could not, likely due to the user's MZX working directory
 disallowing write access.
 
 :ert:~AFailed to change back to user directory.
@@ -3424,7 +3424,7 @@ represented by the number ###, from 0 to 255.
 This will cause the Sensor to change its color to that
 represented by the code xx, a hexadecimal number from 00 to
 FF. The color coding is the same as used for Robotic commands,
-except without the c and ?'s are not allowed.
+except without the c and ?s are not allowed.
 
 ~EN
 ~ES
@@ -3894,7 +3894,7 @@ To show a ~~, use a ~~~~. To show a @@, use @@@@.
 $Counters
 
 Strings can show the values of counters, using the counter name
-surrounded with &'s. For example, if the player has 55 gems,
+surrounded with &s. For example, if the player has 55 gems,
 "You have &GEMS& gems." will become "You have 55 gems." If you
 use &INPUT&, then the last inputted string will be shown. Use &&
 to show a true '&'. The above features are available in ALL
@@ -4737,7 +4737,7 @@ impossible, the command is ignored.
 :_pI:~APUT "@@FILENAME.XXX" Image_File [param] # #
 
 Puts an MZM of the given filename and given type on the board.
-The numbers mark the {x,y} coordinates of the MZX's upper-left
+The numbers mark the {x,y} coordinates of the MZM's upper-left
 corner; the parameter determines the placement of the MZM (00
 = board, 01 = overlay, 02 = vlayer). See the MZM section for
 further details.
@@ -6417,8 +6417,8 @@ their numbers.
 
 ~BSPRn_CCHECK (write-only)
 
-If set to 1, overlapping char 32's will not cause a collision
-between sprites or the background. If set to 2 char 32's and
+If set to 1, overlapping char 32s will not cause a collision
+between sprites or the background. If set to 2, char 32s and
 blank chars will also not collide.
 
 ~BSPRn_CWIDTH
@@ -7658,7 +7658,7 @@ Unary operators (operator followed by value):
 (two's complement). (-10) would return -10.
 ~~ Bitwise negation; returns the bitwise NOT value of the
 operand (one's complement). Using an 8-bit signed counter for
-clarity's sake, (~10) [00001010] would return -11. [11110101]
+clarity's sake, (~~10) [00001010] would return -11. [11110101]
 
 Using a constant expression "(n)" is the only way to directly
 use numbers over 32767 or under -32768. This can not be changed
