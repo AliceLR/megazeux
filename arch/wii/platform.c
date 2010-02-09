@@ -123,11 +123,7 @@ bool platform_init(void)
 
 void platform_quit(void)
 {
-#warning fatUnmount/fatUnsafeUnmount APIs have changed
-#if 0
-  if (!fatUnmount(PI_DEFAULT))
-    fatUnsafeUnmount(PI_DEFAULT);
-#endif
+  // FIXME: stub
 }
 
 // argc/argv may be invalid on the Wii :(
