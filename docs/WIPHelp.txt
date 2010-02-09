@@ -1301,7 +1301,7 @@ Q: Are there any MZX-specific tools that can make developing an
 
 A: Yes, plenty! MegaZeux comes with two helpful tools:
   "Checkres" will detect what files referenced by an MZX world
-  are present, and can also change the given MZX world's
+  are present, and "downver" can change the given MZX world's
   version to its preceding version. There are several graphical
   conversion programs such as CharCon, and SMZX palette tools
   such as Palzor and PalMaster.  
