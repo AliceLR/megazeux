@@ -226,13 +226,17 @@ static bool swivel_current_dir(bool have_video)
 {
   bool ret = false;
   char *base_path;
+  int g_ret;
 
   // Store the user's current directory, so we can get back to it
   getcwd(previous_dir, MAX_PATH);
 
-  // Find and change into the base path for this MZX binary
   base_path = malloc(MAX_PATH);
-  get_path(process_argv[0], base_path, MAX_PATH);
+
+  // Find and change into the base path for this MZX binary
+  g_ret = get_path(process_argv[0], base_path, MAX_PATH);
+  if(g_ret <= 0)
+    goto err_free_base_path;
 
   if(chdir(base_path))
   {
@@ -778,15 +782,16 @@ void updater_init(char *argv[])
   bool ret;
   FILE *f;
 
-  check_for_updates = __check_for_updates;
   process_argv = argv;
 
   if(!swivel_current_dir(false))
     return;
 
+  check_for_updates = __check_for_updates;
+
   f = fopen(DELETE_TXT, "rb");
   if(!f)
-    return;
+    goto err_swivel_back;
 
   delete_list = manifest_list_create(f);
   fclose(f);
@@ -816,5 +821,6 @@ void updater_init(char *argv[])
   manifest_list_free(&delete_list);
   unlink(DELETE_TXT);
 
+err_swivel_back:
   swivel_current_dir_back(false);
 }

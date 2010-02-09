@@ -65,20 +65,28 @@ int mzx_res_init(const char *argv0)
   char *bin_path;
   char *p_dir;
   int ret = 0;
+  int g_ret;
 
   bin_path = malloc(MAX_PATH);
   p_dir = malloc(MAX_PATH);
 
-  get_path(argv0, bin_path, MAX_PATH);
+  g_ret = get_path(argv0, bin_path, MAX_PATH);
+  if(g_ret > 0)
+  {
+    // move and convert to absolute path style
+    chdir(bin_path);
+    getcwd(bin_path, MAX_PATH);
+    bin_path_len = strlen(bin_path);
 
-  // move and convert to absolute path style
-  chdir(bin_path);
-  getcwd(bin_path, MAX_PATH);
-  bin_path_len = strlen(bin_path);
-
-  // append the trailing '/'
-  bin_path[bin_path_len++] = '/';
-  bin_path[bin_path_len] = 0;
+    // append the trailing '/'
+    bin_path[bin_path_len++] = '/';
+    bin_path[bin_path_len] = 0;
+  }
+  else
+  {
+    free(bin_path);
+    bin_path = NULL;
+  }
 
   /* Always try to use SHAREDIR/CONFDIR first, if possible. On some
    * platforms, such as Linux, this will be something other than
@@ -122,20 +130,21 @@ int mzx_res_init(const char *argv0)
     }
 
     free(full_path);
-    chdir(bin_path);
 
-    // We located the file related to bin_path
-    if(!stat(mzx_res[i].base_name, &file_info))
+    // Try to locate the resource relative to the bin_path
+    if(bin_path)
     {
-      mzx_res[i].path = malloc(bin_path_len + base_name_len + 1);
-      memcpy(mzx_res[i].path, bin_path, bin_path_len);
-      memcpy(mzx_res[i].path + bin_path_len,
-       mzx_res[i].base_name, base_name_len);
-      mzx_res[i].path[bin_path_len + base_name_len] = 0;
+      chdir(bin_path);
+      if(!stat(mzx_res[i].base_name, &file_info))
+      {
+        mzx_res[i].path = malloc(bin_path_len + base_name_len + 1);
+        memcpy(mzx_res[i].path, bin_path, bin_path_len);
+        memcpy(mzx_res[i].path + bin_path_len,
+         mzx_res[i].base_name, base_name_len);
+        mzx_res[i].path[bin_path_len + base_name_len] = 0;
+      }
     }
   }
-
-  chdir(bin_path);
 
   for(i = 0; i < END_RESOURCE_ID_T; i++)
   {
