@@ -1517,7 +1517,7 @@ static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
 
   // BMP header
   fputw(0x4D42, file); // BM
-  fputd(14 + 40 + count * 3 + 640 * 350, file); // BMP + DIB + palette + image
+  fputd(14 + 40 + count * 4 + 640 * 350, file); // BMP + DIB + palette + image
   fputd(0, file); // Reserved
   fputd(14, file); // DIB header offset
 
