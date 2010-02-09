@@ -2161,7 +2161,7 @@ static void reset_on_error(mstate m);
 
 /* -------------------------- Debugging setup ---------------------------- */
 
-#if ! DEBUG
+#ifndef DEBUG
 
 #define check_free_chunk(M,P)
 #define check_inuse_chunk(M,P)
@@ -2517,7 +2517,7 @@ static int change_mparam(int param_number, int value) {
   }
 }
 
-#if DEBUG
+#ifdef DEBUG
 /* ------------------------- Debugging Support --------------------------- */
 
 /* Check properties of any chunk, whether free, inuse, mmapped etc  */
@@ -2787,7 +2787,7 @@ static void do_check_malloc_state(mstate m) {
 
 /* ----------------------------- statistics ------------------------------ */
 
-#if !NO_MALLINFO
+#ifndef NO_MALLINFO
 static struct mallinfo internal_mallinfo(mstate m) {
   struct mallinfo nm = { 0, 0, 0, 0, 0, 0, 0, 0, 0, 0 };
   if (!PREACTION(m)) {
@@ -4001,7 +4001,7 @@ static void** ialloc(mstate m,
     }
   }
 
-#if DEBUG
+#ifdef DEBUG
   if (marray != chunks) {
     /* final element must have exactly exhausted chunk */
     if (element_size != 0) {
@@ -4342,7 +4342,7 @@ size_t dlmalloc_max_footprint(void) {
   return gm->max_footprint;
 }
 
-#if !NO_MALLINFO
+#ifndef NO_MALLINFO
 struct mallinfo dlmallinfo(void) {
   return internal_mallinfo(gm);
 }
@@ -4776,7 +4776,7 @@ size_t mspace_max_footprint(mspace msp) {
 }
 
 
-#if !NO_MALLINFO
+#ifndef NO_MALLINFO
 struct mallinfo mspace_mallinfo(mspace msp) {
   mstate ms = (mstate)msp;
   if (!ok_magic(ms)) {

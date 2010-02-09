@@ -167,7 +167,7 @@ int dlmallopt(int, int);
 */
 size_t dlmalloc_footprint();
 
-#if !NO_MALLINFO
+#ifndef NO_MALLINFO
 /*
   mallinfo()
   Returns (by copy) a struct containing various summary statistics:
@@ -498,7 +498,7 @@ void** mspace_independent_comalloc(mspace msp, size_t n_elements,
 size_t mspace_footprint(mspace msp);
 
 
-#if !NO_MALLINFO
+#ifndef NO_MALLINFO
 /*
   mspace_mallinfo behaves as mallinfo, but reports properties of
   the given space.

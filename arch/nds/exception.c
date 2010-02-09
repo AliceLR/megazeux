@@ -48,13 +48,16 @@
 // Modified by kvance 2007-09-13
 // Disable DMA and reset scrolling as soon as the exception handler is called.
 
-#ifdef NDS_BUILD
+#include "exception.h"
+#include "../../src/config.h"
+
+#ifdef CONFIG_NDS
 
 #include <nds.h>
 #include <stdio.h>
 
 //---------------------------------------------------------------------------------
-unsigned long ARMShift(unsigned long value,unsigned char shift) {
+static unsigned long ARMShift(unsigned long value,unsigned char shift) {
 //---------------------------------------------------------------------------------
 	// no shift at all
 	if (shift == 0x0B) return value ;
@@ -96,7 +99,7 @@ unsigned long ARMShift(unsigned long value,unsigned char shift) {
 
 
 //---------------------------------------------------------------------------------
-u32 getExceptionAddress( u32 opcodeAddress, u32 thumbState) {
+static u32 getExceptionAddress( u32 opcodeAddress, u32 thumbState) {
 //---------------------------------------------------------------------------------
 
 	int Rf, Rb, Rd, Rn, Rm;
@@ -296,4 +299,4 @@ void setMzxExceptionHandler() {
 	setExceptionHandler(mzxExceptionHandler) ;
 }
 
-#endif // NDS_BUILD
+#endif // CONFIG_NDS
