@@ -1086,6 +1086,31 @@ __editor_maybe_static const search_entry_short *find_argument(char *name)
   return NULL;
 }
 
+__editor_maybe_static int get_color(char *cmd_line)
+{
+  if(cmd_line[1] == '?')
+  {
+    if(cmd_line[2] == '?')
+    {
+      return 288;
+    }
+    else
+    {
+      return strtol(cmd_line + 2, NULL, 16) | 256;
+    }
+  }
+
+  if(cmd_line[2] == '?')
+  {
+    char temp[2];
+    temp[0] = cmd_line[1];
+    temp[1] = 0;
+    return (strtol(temp, NULL, 16) + 16) | 256;
+  }
+
+  return strtol(cmd_line + 1, NULL, 16);
+}
+
 static int rasm_parse_argument(char *cmd_line, char **next, int *arg_translated,
  int *error, int *arg_short)
 {
@@ -1248,31 +1273,6 @@ static int rasm_parse_argument(char *cmd_line, char **next, int *arg_translated,
   *arg_translated = 0;
   *error = ERR_INVALID;
   return UNDEFINED;
-}
-
-int get_color(char *cmd_line)
-{
-  if(cmd_line[1] == '?')
-  {
-    if(cmd_line[2] == '?')
-    {
-      return 288;
-    }
-    else
-    {
-      return strtol(cmd_line + 2, NULL, 16) | 256;
-    }
-  }
-
-  if(cmd_line[2] == '?')
-  {
-    char temp[2];
-    temp[0] = cmd_line[1];
-    temp[1] = 0;
-    return (strtol(temp, NULL, 16) + 16) | 256;
-  }
-
-  return strtol(cmd_line + 1, NULL, 16);
 }
 
 static int get_word(char *str, char *source, char t)

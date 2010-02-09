@@ -184,8 +184,6 @@ int is_item(char *cmd_line, char **next);
 int is_command_fragment(char *cmd_line, char **next);
 int is_extra(char *cmd_line, char **next);
 
-int get_color(char *cmd_line);
-
 int assemble_text(char *input_name, char *output_name);
 void print_command(mzx_command *cmd);
 char *assemble_file(char *name, int *size);
@@ -201,6 +199,7 @@ int disassemble_line(char *cpos, char **next, char *output_buffer,
 const search_entry_short *find_argument(char *name);
 void print_color(int color, char *color_buffer);
 int unescape_char(char *dest, char c);
+int get_color(char *cmd_line);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

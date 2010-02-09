@@ -26,7 +26,9 @@ __M_BEGIN_DECLS
 
 typedef struct _config_info config_info;
 
-#include "macro.h"
+#ifdef CONFIG_EDITOR
+#include "editor/macro.h"
+#endif
 
 struct _config_info
 {
@@ -58,6 +60,11 @@ struct _config_info
   char startup_file[256];
   char default_save_name[256];
   int mzx_speed;
+  int disassemble_extras;
+  int disassemble_base;
+ 
+#ifdef CONFIG_EDITOR
+  // Editor only options
   int startup_editor;
 
   // Board editor options
@@ -67,10 +74,7 @@ struct _config_info
   // Robot editor options
   char color_codes[32];
   int color_coding_on;
-  int disassemble_extras;
-  int disassemble_base;
   int default_invalid_status;
-  char default_macros[5][64];
   int redit_hhelp;
 
   // Backup options
@@ -80,9 +84,11 @@ struct _config_info
   char backup_ext[256];
 
   // Macro options
+  char default_macros[5][64];
   int num_extended_macros;
   int num_macros_allocated;
   ext_macro **extended_macros;
+#endif // CONFIG_EDITOR
 
   // Misc option
   int mask_midchars;

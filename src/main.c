@@ -108,6 +108,7 @@ static void free_world(World *mzx_world)
   if(mzx_world->update_done)
     free(mzx_world->update_done);
 
+#ifdef CONFIG_EDITOR
   // allocated by macro.c:add_ext_macro()
   if(mzx_world->conf.extended_macros)
   {
@@ -116,6 +117,7 @@ static void free_world(World *mzx_world)
       free_macro(mzx_world->conf.extended_macros[i]);
     free(mzx_world->conf.extended_macros);
   }
+#endif // CONFIG_EDITOR
 
   free(mzx_world->real_mod_playing);
   free(mzx_world->input_file_name);

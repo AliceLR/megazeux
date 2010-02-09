@@ -44,7 +44,6 @@
 #include "robot.h"
 #include "world.h"
 #include "fsafeopen.h"
-#include "macro.h"
 #include "extmem.h"
 #include "util.h"
 

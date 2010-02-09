@@ -29,7 +29,6 @@
 #include "counter.h"
 #include "event.h"
 #include "rasm.h"
-#include "macro.h"
 #include "fsafeopen.h"
 #include "util.h"
 
@@ -60,11 +59,7 @@
 #define AUDIO_SAMPLE_RATE 44100
 #endif
 
-static void config_set_audio_buffer(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->buffer_size = strtol(value, NULL, 10);
-}
+#ifdef CONFIG_EDITOR
 
 // Default colors for color coding:
 // 0 current line - 11
@@ -182,35 +177,6 @@ static void config_default_invald(config_info *conf, char *name, char *value,
   }
 }
 
-static void config_disassemble_extras(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->disassemble_extras = strtol(value, NULL, 10);
-}
-
-static void config_disassemble_base(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  int new_base = strtol(value, NULL, 10);
-
-  if((new_base == 10) || (new_base == 16))
-    conf->disassemble_base = new_base;
-}
-
-static void config_set_resolution(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  char *next;
-  conf->resolution_width = strtol(value, &next, 10);
-  conf->resolution_height = strtol(next + 1, NULL, 10);
-}
-
-static void config_set_fullscreen(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->fullscreen = strtol(value, NULL, 10);
-}
-
 static void config_macro(config_info *conf, char *name, char *value,
  char *extended_data)
 {
@@ -228,6 +194,91 @@ static void config_macro(config_info *conf, char *name, char *value,
     if(extended_data)
       add_ext_macro(conf, macro_name, extended_data, value);
   }
+}
+
+static void config_startup_editor(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  conf->startup_editor = strtol(value, NULL, 10);
+}
+
+static void bedit_hhelp(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  conf->bedit_hhelp = strtol(value, NULL, 10);
+}
+
+static void redit_hhelp(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  conf->redit_hhelp = strtol(value, NULL, 10);
+}
+
+static void backup_count(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  conf->backup_count = strtol(value, NULL, 10);
+}
+
+static void backup_interval(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  conf->backup_interval = strtol(value, NULL, 10);
+}
+
+static void backup_name(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  strncpy(conf->backup_name, value, 256);
+}
+
+static void backup_ext(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  strncpy(conf->backup_ext, value, 256);
+}
+
+static void config_editor_space_toggles(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  conf->editor_space_toggles = strtol(value, NULL, 10);
+}
+
+#endif // CONFIG_EDITOR
+
+static void config_disassemble_extras(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  conf->disassemble_extras = strtol(value, NULL, 10);
+}
+
+static void config_disassemble_base(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  int new_base = strtol(value, NULL, 10);
+
+  if((new_base == 10) || (new_base == 16))
+    conf->disassemble_base = new_base;
+}
+
+static void config_set_audio_buffer(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  conf->buffer_size = strtol(value, NULL, 10);
+}
+
+static void config_set_resolution(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  char *next;
+  conf->resolution_width = strtol(value, &next, 10);
+  conf->resolution_height = strtol(next + 1, NULL, 10);
+}
+
+static void config_set_fullscreen(config_info *conf, char *name, char *value,
+ char *extended_data)
+{
+  conf->fullscreen = strtol(value, NULL, 10);
 }
 
 static void config_set_music(config_info *conf, char *name, char *value,
@@ -290,12 +341,6 @@ static void config_save_file(config_info *conf, char *name, char *value,
   strncpy(conf->default_save_name, value, 256);
 }
 
-static void config_startup_editor(config_info *conf, char *name,
- char *value, char *extended_data)
-{
-  conf->startup_editor = strtol(value, NULL, 10);
-}
-
 static void config_startup_file(config_info *conf, char *name, char *value,
  char *extended_data)
 {
@@ -354,42 +399,6 @@ static void config_mp_resample_mode(config_info *conf, char *name,
   {
     conf->modplug_resample_mode = 3;
   }
-}
-
-static void bedit_hhelp(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->bedit_hhelp = strtol(value, NULL, 10);
-}
-
-static void redit_hhelp(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->redit_hhelp = strtol(value, NULL, 10);
-}
-
-static void backup_count(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->backup_count = strtol(value, NULL, 10);
-}
-
-static void backup_interval(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->backup_interval = strtol(value, NULL, 10);
-}
-
-static void backup_name(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  strncpy(conf->backup_name, value, 256);
-}
-
-static void backup_ext(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  strncpy(conf->backup_ext, value, 256);
 }
 
 static void joy_axis_set(config_info *conf, char *name, char *value,
@@ -515,12 +524,6 @@ static void config_set_gl_filter_method(config_info *conf, char *name,
   strncpy(conf->gl_filter_method, value, 16);
 }
 
-static void config_editor_space_toggles(config_info *conf, char *name,
- char *value, char *extended_data)
-{
-  conf->editor_space_toggles = strtol(value, NULL, 10);
-}
-
 static void config_gl_vsync(config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -534,6 +537,7 @@ static config_entry config_options[] =
 {
   { "audio_buffer", config_set_audio_buffer },
   { "audio_sample_rate", config_set_audio_freq },
+#ifdef CONFIG_EDITOR
   { "backup_count", backup_count },
   { "backup_ext", backup_ext },
   { "backup_interval", backup_interval },
@@ -553,9 +557,12 @@ static config_entry config_options[] =
   { "ccode_things", config_ccode_things },
   { "color_coding_on", config_ccode_on },
   { "default_invalid_status", config_default_invald },
+#endif // CONFIG_EDITOR
   { "disassemble_base", config_disassemble_base },
   { "disassemble_extras", config_disassemble_extras },
+#ifdef CONFIG_EDITOR
   { "editor_space_toggles", config_editor_space_toggles },
+#endif // CONFIG_EDITOR
   { "enable_oversampling", config_enable_oversampling },
   { "enable_resizing", config_enable_resizing },
   { "force_bpp", config_force_bpp },
@@ -568,7 +575,9 @@ static config_entry config_options[] =
   { "include*", include_config },
   { "joy!axis!", joy_axis_set },
   { "joy!button!", joy_button_set },
+#ifdef CONFIG_EDITOR
   { "macro_*", config_macro },
+#endif // CONFIG_EDITOR
   { "mask_midchars", config_mask_midchars },
   { "modplug_resample_mode", config_mp_resample_mode },
   { "music_on", config_set_music },
@@ -578,10 +587,14 @@ static config_entry config_options[] =
   { "pc_speaker_on", config_set_pc_speaker },
   { "pc_speaker_volume", config_set_sfx_volume },
   { "resample_mode", config_resample_mode },
+#ifdef CONFIG_EDITOR
   { "robot_editor_hide_help", redit_hhelp },
+#endif // CONFIG_EDITOR
   { "sample_volume", config_set_sam_volume },
   { "save_file", config_save_file },
+#ifdef CONFIG_EDITOR
   { "startup_editor", config_startup_editor },
+#endif // CONFIG_EDITOR
   { "startup_file", config_startup_file },
   { "video_output", config_set_video_output },
   { "window_resolution", config_window_resolution }
@@ -645,6 +658,11 @@ static config_info default_options =
   "caverns.mzx",                // startup_file
   "saved.sav",                  // default_save_name
   4,                            // mzx_speed
+  1,                            // disassemble_extras
+  10,                           // disassemble_base
+ 
+#ifdef CONFIG_EDITOR
+  // Editor only options
   0,                            // startup_editor
 
   // Board editor options
@@ -654,10 +672,7 @@ static config_info default_options =
   // Robot editor options
   { 11, 10, 10, 14, 255, 3, 11, 2, 14, 0, 15, 11, 7, 15, 1, 2, 3 },
   1,                            // color_coding_on
-  1,                            // disassemble_extras
-  10,                           // disassemble_base
   1,                            // default_invalid_status
-  { "char ", "color ", "goto ", "send ", ": playershot^" },
   0,                            // robot_editor_hide_help
 
   // Backup options
@@ -667,9 +682,11 @@ static config_info default_options =
   ".mzx",                       // backup_ext
 
   // Macro options
+  { "char ", "color ", "goto ", "send ", ": playershot^" },
   0,                            // num_extended_macros
   0,
   NULL,
+#endif // CONFIG_EDITOR
 
   // Misc options
   1
@@ -846,6 +863,3 @@ void set_config_from_command_line(config_info *conf, int argc,
     }
   }
 }
-
-
-
