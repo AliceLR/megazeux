@@ -24,11 +24,19 @@
 #include "../platform.h"
 #include "../util.h"
 
+// Maximum length of any ZIP file comment (bounds search for ECDR)
 #define MAX_GLOBAL_COMMENT_LEN  (1 << 16)
 
+// PKZIP-defined signatures for various ZIP headers
 #define CENTRAL_DIRECTORY_MAGIC 0x02014b50
 #define LOCAL_FILE_HEADER_MAGIC 0x04034b50
 #define DATA_DESCRIPTOR_MAGIC   0x08074b50
+
+// Offset in CD entry to Local Header offset (used by repack)
+#define CDE_OFFSET_TO_LH        (4+2+2+2+2+2+2+4+4+4+2+2+2+2+2+4)
+
+// Maximum block size for repacker
+#define BUFFER_SIZE             4096
 
 struct segment
 {
@@ -1114,6 +1122,17 @@ err_free_entries:
   goto err_close;
 }
 
+static void cde_rewrite_lh_offset(char *cde, Uint16 lh_offset)
+{
+  int i;
+
+  for(i = 0; i < 4; i++)
+  {
+    *(cde + CDE_OFFSET_TO_LH + i) = lh_offset & 0xff;
+    lh_offset >>= 8;
+  }
+}
+
 static enum zip_error zipio_stash_cd(struct zip_handle *z, Uint16 *num_entries,
  char ***_cd)
 {
@@ -1153,26 +1172,21 @@ err_free_cd:
   return err;
 }
 
-static enum zip_error zipio_rebuild_cd(struct zip_handle *z)
+static enum zip_error zipio_rebuild_cd(struct zip_handle *z, Uint32 cd_offset)
 {
-  Uint32 cd_offset, cd_length = 0;
   struct zip_entry *entry;
   Uint16 i, num_entries;
+  Uint32 cd_length = 0;
   enum zip_error err;
   char **cd;
   long pos;
 
-  assert(z != NULL);
-
   // Store the existing (valid) CD entries on the heap temporarily
   err = zipio_stash_cd(z, &num_entries, &cd);
-  if(err != ZIPIO_SUCCESS)
+  if(err)
     goto err_out;
 
-  // CD offset must be after last file (entry list sorted by offset)
-  for(entry = z->file.entries; entry->next; entry = entry->next);
-  cd_offset = compute_terminal_offset(entry);
-
+  // FIXME: If this function is consolidated, the call below isn't required
   // Scan back to the original start of the CD
   if(fseek(z->f, cd_offset, SEEK_SET))
   {
@@ -1191,6 +1205,9 @@ static enum zip_error zipio_rebuild_cd(struct zip_handle *z)
       goto err_free_cd;
     }
     entry->cd_entry.offset = pos;
+
+    // Unconditionally rewrite the CDE's LH offset
+    cde_rewrite_lh_offset(cd[i], entry->local_header.offset);
 
     // Write back original CDE
     if(fwrite(cd[i], entry->cd_entry.length, 1, z->f) != 1)
@@ -1261,6 +1278,87 @@ err_out:
   return err;
 }
 
+static enum zip_error zipio_sync(struct zip_handle *z)
+{
+  enum zip_error err = ZIPIO_SUCCESS;
+  struct zip_entry *entry;
+  Uint32 file_offset = 0;
+  char *buffer;
+
+  buffer = malloc(BUFFER_SIZE);
+
+  for(entry = z->file.entries; entry; entry = entry->next)
+  {
+    Uint32 move_length, pos = 0;
+    long src_pos, dest_pos;
+
+    // This file doesn't need to be moved
+    if(entry->local_header.offset == file_offset)
+    {
+      file_offset = compute_terminal_offset(entry);
+      continue;
+    }
+
+    // Can only move data in one direction (closer to start) at the moment
+    assert(entry->local_header.offset > file_offset);
+
+    // Compute the length of the moved block
+    move_length = compute_terminal_offset(entry) - entry->local_header.offset;
+
+    // Initial file cursor positions
+    src_pos = (long)entry->local_header.offset;
+    dest_pos = (long)file_offset;
+
+    // Move file block-wise to conserve RAM
+    while(pos != move_length)
+    {
+      Uint32 block_length = MIN(BUFFER_SIZE, move_length - pos);
+
+      if(fseek(z->f, src_pos, SEEK_SET))
+      {
+        err = ZIPIO_SEEK_FAILED;
+        goto err_free_buffer;
+      }
+
+      if(fread(buffer, block_length, 1, z->f) != 1)
+      {
+        err = ZIPIO_READ_FAILED;
+        goto err_free_buffer;
+      }
+
+      if(fseek(z->f, dest_pos, SEEK_SET))
+      {
+        err = ZIPIO_SEEK_FAILED;
+        goto err_free_buffer;
+      }
+
+      if(fwrite(buffer, block_length, 1, z->f) != 1)
+      {
+        err = ZIPIO_WRITE_FAILED;
+        goto err_free_buffer;
+      }
+
+      pos += block_length;
+      src_pos += block_length;
+      dest_pos += block_length;
+    }
+
+    // Fix segment offsets wrt to new destination
+    entry->local_header.offset -= src_pos - dest_pos;
+    entry->file_data.offset -= src_pos - dest_pos;
+    entry->data_descriptor.offset -= src_pos - dest_pos;
+
+    // Compute offset for next file (if any)
+    file_offset += move_length;
+  }
+
+  err = zipio_rebuild_cd(z, file_offset);
+
+err_free_buffer:
+  free(buffer);
+  return err;
+}
+
 enum zip_error zipio_unlink(struct zip_handle *z, const char *pathname)
 {
   struct zip_entry *entry, *last_entry = NULL;
@@ -1286,7 +1384,6 @@ enum zip_error zipio_unlink(struct zip_handle *z, const char *pathname)
     last_entry->next = entry->next;
 
   free_entry(entry);
-  err = zipio_rebuild_cd(z);
 
 err_out:
   return err;
@@ -1351,6 +1448,10 @@ int main(int argc, char *argv[])
     default:
       goto err_out;
   }
+
+  err = zipio_sync(z);
+  if(err)
+    goto err_out;
 
   err = zipio_close(z);
 
