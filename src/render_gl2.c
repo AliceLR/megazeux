@@ -666,7 +666,7 @@ static void gl2_sync_screen(struct graphics_data *graphics)
     gl_check_error();
 
     get_context_width_height(graphics, &width, &height);
-    gl2.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB,
+    gl2.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA,
      (width - 640) >> 1, (height - 350) >> 1, 1024, 512, 0);
     gl_check_error();
 
