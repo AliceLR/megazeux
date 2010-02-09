@@ -42,7 +42,6 @@ struct glsl_syms
 {
   int syms_loaded;
 
-  void (GL_APIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
   void (GL_APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
   void (GL_APIENTRY *glClear)(GLbitfield mask);
@@ -61,8 +60,8 @@ struct glsl_syms
   void (GL_APIENTRY *glTexCoordPointer)(GLint size, GLenum type,
    GLsizei stride, const GLvoid *ptr);
   void (GL_APIENTRY *glTexImage2D)(GLenum target, GLint level,
-   GLenum internalformat, GLsizei width, GLsizei height, GLint border,
-   GLenum format, GLenum type, const void *pixels);
+   GLint internalformat, GLsizei width, GLsizei height, GLint border,
+   GLenum format, GLenum type, const GLvoid *pixels);
   void (GL_APIENTRY *glTexParameterf)(GLenum target, GLenum pname,
    GLfloat param);
   void (GL_APIENTRY *glTexSubImage2D)(GLenum target, GLint level,
@@ -111,7 +110,6 @@ static int glsl_load_syms(struct glsl_syms *gl)
   if(gl->syms_loaded)
     return true;
 
-  GL_LOAD_SYM(gl, glAlphaFunc)
   GL_LOAD_SYM(gl, glBindTexture)
   GL_LOAD_SYM(gl, glBlendFunc)
   GL_LOAD_SYM(gl, glClear)
@@ -393,7 +391,6 @@ static void glsl_resize_screen(struct graphics_data *graphics,
   gl_set_filter_method(CONFIG_GL_FILTER_LINEAR, gl->glTexParameterf);
 
   gl->glEnable(GL_TEXTURE_2D);
-  gl->glAlphaFunc(GL_GREATER, 0.565f);
 
   gl->glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
 

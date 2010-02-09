@@ -33,6 +33,10 @@ __M_BEGIN_DECLS
 #include <GL/gl.h>
 #endif
 
+#ifndef GLAPIENTRY
+#define GLAPIENTRY APIENTRY
+#endif
+
 #ifndef GL_APIENTRY
 #define GL_APIENTRY GLAPIENTRY
 #endif
