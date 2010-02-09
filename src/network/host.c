@@ -165,6 +165,7 @@ static struct
    (*connect)(SOCKET, const struct sockaddr *, int);
   WINSOCK_API_LINKAGE DECLARE_STDCALL_P(struct hostent *)
    (*gethostbyname)(const char*);
+  WINSOCK_API_LINKAGE u_short PASCAL (*htons)(u_short);
   WINSOCK_API_LINKAGE int PASCAL (*ioctlsocket)(SOCKET, long, u_long *);
   WINSOCK_API_LINKAGE int PASCAL (*send)(SOCKET, const char *, int, int);
   WINSOCK_API_LINKAGE int PASCAL
@@ -197,6 +198,7 @@ socksyms_map[] =
   { "closesocket",           (void **)&socksyms.closesocket },
   { "connect",               (void **)&socksyms.connect },
   { "gethostbyname",         (void **)&socksyms.gethostbyname },
+  { "htons",                 (void **)&socksyms.htons },
   { "ioctlsocket",           (void **)&socksyms.ioctlsocket },
   { "send",                  (void **)&socksyms.send },
   { "setsockopt",            (void **)&socksyms.setsockopt },
@@ -219,7 +221,16 @@ typedef int sockaddr_t;
 static int init_ref_count;
 
 #define WINSOCK2 "ws2_32.dll"
-#define WINSOCK  "winsock.dll"
+#define WINSOCK  "wsock32.dll"
+
+static void socket_free_syms(void)
+{
+  if(socksyms.handle)
+  {
+    SDL_UnloadObject(socksyms.handle);
+    socksyms.handle = NULL;
+  }
+}
 
 static bool socket_load_syms(void)
 {
@@ -228,7 +239,7 @@ static bool socket_load_syms(void)
   socksyms.handle = SDL_LoadObject(WINSOCK2);
   if(!socksyms.handle)
   {
-    warning("Failed to load Winsock 2.0, falling back to Winsock");
+    warning("Failed to load Winsock 2.0, falling back to Winsock\n");
     socksyms.handle = SDL_LoadObject(WINSOCK);
     if(!socksyms.handle)
     {
@@ -256,78 +267,7 @@ static bool socket_load_syms(void)
     }
   }
 
-  socksyms.syms_loaded = true;
   return true;
-}
-
-static void socket_free_syms(void)
-{
-  if(socksyms.handle)
-  {
-    SDL_UnloadObject(socksyms.handle);
-    socksyms.syms_loaded = false;
-  }
-}
-
-static int getaddrinfo_legacy_wrapper(const char *node, const char *service,
- const struct addrinfo *hints, struct addrinfo **res)
-{
-  struct addrinfo *r, *r_head = NULL;
-  struct hostent *hostent;
-  int i;
-
-  if(hints->ai_family != AF_INET)
-    return EAI_FAMILY;
-
-  hostent = platform_gethostbyname(node);
-  if(hostent->h_addrtype != AF_INET)
-    return EAI_NONAME;
-
-  /* Walk the h_addr_list and create faked addrinfo structures
-   * corresponding to the addresses. We don't support non-IPV4
-   * addresses or any other magic, but that's an acceptable
-   * fallback, and it won't affect users on XP or newer.
-   */
-  for(i = 0; hostent->h_addr_list[i]; i++)
-  {
-    struct sockaddr_in *addr;
-
-    if(r_head)
-    {
-      r->ai_next = malloc(sizeof(struct addrinfo));
-      r = r->ai_next;
-    }
-    else
-      r_head = r = malloc(sizeof(struct addrinfo));
-
-    // Zero the fake addrinfo and fill out the essential fields
-    memset(r, 0, sizeof(struct addrinfo));
-    r->ai_family = hints->ai_family;
-    r->ai_socktype = hints->ai_socktype;
-    r->ai_protocol = hints->ai_protocol;
-    r->ai_addrlen = sizeof(struct sockaddr_in);
-    r->ai_addr = malloc(r->ai_addrlen);
-
-    // Zero the fake ipv4 addr and fill our all of the fields
-    addr = (struct sockaddr_in *)r->ai_addr;
-    memcpy(&addr->sin_addr.s_addr, hostent->h_addr_list[i], sizeof(uint32_t));
-    addr->sin_family = r->ai_family;
-    addr->sin_port = htons(atoi(service));
-  }
-
-  *res = r_head;
-  return 0;
-}
-
-static void freeaddrinfo_legacy_wrapper(struct addrinfo *res)
-{
-  struct addrinfo *r, *r_next;
-  for(r = res; r; r = r_next)
-  {
-    r_next = r->ai_next;
-    free(r->ai_addr);
-    free(r);
-  }
 }
 
 bool host_layer_init(void)
@@ -386,6 +326,77 @@ static inline int platform_connect(int sockfd,
   return socksyms.connect(sockfd, serv_addr, addrlen);
 }
 
+static inline struct hostent *platform_gethostbyname(const char *name)
+{
+  return socksyms.gethostbyname(name);
+}
+
+static inline uint16_t platform_htons(uint16_t hostshort)
+{
+  return socksyms.htons(hostshort);
+}
+
+static int getaddrinfo_legacy_wrapper(const char *node, const char *service,
+ const struct addrinfo *hints, struct addrinfo **res)
+{
+  struct addrinfo *r, *r_head = NULL;
+  struct hostent *hostent;
+  int i;
+
+  if(hints->ai_family != AF_INET)
+    return EAI_FAMILY;
+
+  hostent = platform_gethostbyname(node);
+  if(hostent->h_addrtype != AF_INET)
+    return EAI_NONAME;
+
+  /* Walk the h_addr_list and create faked addrinfo structures
+   * corresponding to the addresses. We don't support non-IPV4
+   * addresses or any other magic, but that's an acceptable
+   * fallback, and it won't affect users on XP or newer.
+   */
+  for(i = 0; hostent->h_addr_list[i]; i++)
+  {
+    struct sockaddr_in *addr;
+
+    if(r_head)
+    {
+      r->ai_next = malloc(sizeof(struct addrinfo));
+      r = r->ai_next;
+    }
+    else
+      r_head = r = malloc(sizeof(struct addrinfo));
+
+    // Zero the fake addrinfo and fill out the essential fields
+    memset(r, 0, sizeof(struct addrinfo));
+    r->ai_family = hints->ai_family;
+    r->ai_socktype = hints->ai_socktype;
+    r->ai_protocol = hints->ai_protocol;
+    r->ai_addrlen = sizeof(struct sockaddr_in);
+    r->ai_addr = malloc(r->ai_addrlen);
+
+    // Zero the fake ipv4 addr and fill our all of the fields
+    addr = (struct sockaddr_in *)r->ai_addr;
+    memcpy(&addr->sin_addr.s_addr, hostent->h_addr_list[i], sizeof(uint32_t));
+    addr->sin_family = r->ai_family;
+    addr->sin_port = platform_htons(atoi(service));
+  }
+
+  *res = r_head;
+  return 0;
+}
+
+static void freeaddrinfo_legacy_wrapper(struct addrinfo *res)
+{
+  struct addrinfo *r, *r_next;
+  for(r = res; r; r = r_next)
+  {
+    r_next = r->ai_next;
+    free(r->ai_addr);
+    free(r);
+  }
+}
+
 static inline void platform_freeaddrinfo(struct addrinfo *res)
 {
   if(socksyms.freeaddrinfo)
@@ -399,11 +410,6 @@ static inline int platform_getaddrinfo(const char *node, const char *service,
   if(socksyms.getaddrinfo)
     return socksyms.getaddrinfo(node, service, hints, res);
   return getaddrinfo_legacy_wrapper(node, service, hints, res);
-}
-
-static inline struct hostent *platform_gethostbyname(const char *name)
-{
-  return socksyms.gethostbyname(name);
 }
 
 static inline ssize_t platform_send(int s, const void *buf, size_t len,
