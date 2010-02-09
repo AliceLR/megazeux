@@ -63,6 +63,7 @@ USERS
 + Prevent crash with negative string clip where clip + offset = 0. Clip
   is now correctly limited to total string length.
 + Help file is now optional for MZXRun, even with CONFIG_HELPSYS=1 builds.
++ Fix crash when robot editor macros expanded other macros.
 
 DEVELOPERS
 

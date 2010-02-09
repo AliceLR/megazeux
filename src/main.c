@@ -81,7 +81,6 @@ __libspec int main(int argc, char *argv[])
     goto err_free_res;
 
   editor_init();
-  init_macros(&mzx_world);
 
   // Figure out where all configuration files should be loaded
   // form. For game.cnf, et al this should eventually be wrt
@@ -98,6 +97,8 @@ __libspec int main(int argc, char *argv[])
   set_config_from_command_line(&mzx_world.conf, argc, argv);
 
   load_editor_config(&mzx_world, argc, argv);
+
+  init_macros(&mzx_world);
 
   chdir(current_dir);
 

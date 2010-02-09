@@ -755,7 +755,7 @@ static int execute_named_macro(struct robot_state *rstate, char *macro_name)
   }
 
   // Wipe any existing buffered content for this line
-  rstate->command_buffer_space[0] = '\0';
+  rstate->command_buffer[0] = '\0';
   update_current_line(rstate);
 
   // And replace it with the macro contents
