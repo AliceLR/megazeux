@@ -179,7 +179,7 @@ breakout() {
 #
 # The basename for the source and binary packages.
 #
-source version.inc
+. version.inc
 
 [ "$TARGET" == "" ] && breakout 1
 [ "$1" == "-h" ] && usage
