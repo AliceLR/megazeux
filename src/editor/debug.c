@@ -314,7 +314,8 @@ void __draw_debug_box(struct world *mzx_world, int x, int y, int d_x, int d_y)
 
   for(i = 0; i < src_board->num_robots_active; i++)
   {
-    robot_mem += (src_board->robot_list_name_sorted[i])->program_length;
+    robot_mem +=
+     (src_board->robot_list_name_sorted[i])->program_bytecode_length;
   }
 
   write_number((robot_mem + 512) / 1024, DI_DEBUG_NUMBER,

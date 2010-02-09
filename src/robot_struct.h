@@ -57,8 +57,8 @@ struct sensor
 
 struct robot
 {
-  int program_length;
-  char *program;                  // Pointer to robot's program
+  int program_bytecode_length;
+  char *program_bytecode;         // Pointer to robot's program
   char robot_name[15];
   unsigned char robot_char;
   // Location of start of line (pt to FF for none)

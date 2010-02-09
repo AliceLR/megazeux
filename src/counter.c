@@ -2284,7 +2284,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       {
         // Advance the program so that loading a SAV doesn't re-run this line
         cur_robot->cur_prog_line +=
-         cur_robot->program[cur_robot->cur_prog_line] + 2;
+         cur_robot->program_bytecode[cur_robot->cur_prog_line] + 2;
       }
 
       err = fsafetranslate(char_value, translated_path);
@@ -2304,7 +2304,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       {
         // Advance the program so that loading a SAV doesn't re-run this line
         cur_robot->cur_prog_line +=
-         cur_robot->program[cur_robot->cur_prog_line] + 2;
+         cur_robot->program_bytecode[cur_robot->cur_prog_line] + 2;
       }
 
       err = fsafetranslate(char_value, translated_path);
@@ -2352,7 +2352,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           reallocate_robot(cur_robot, new_size);
           clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
 
-          memcpy(cur_robot->program, new_program, new_size);
+          memcpy(cur_robot->program_bytecode, new_program, new_size);
           cur_robot->stack_pointer = 0;
           cur_robot->cur_prog_line = 1;
           cur_robot->label_list =
@@ -2390,7 +2390,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           reallocate_robot(cur_robot, new_size);
           clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
 
-          fread(cur_robot->program, new_size, 1, bc_file);
+          fread(cur_robot->program_bytecode, new_size, 1, bc_file);
           cur_robot->cur_prog_line = 1;
           cur_robot->stack_pointer = 0;
           cur_robot->label_list =
@@ -2421,8 +2421,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
       if(cur_robot)
       {
-        disassemble_file(char_value, cur_robot->program,
-	 cur_robot->program_length, allow_extras, base);
+        disassemble_file(char_value, cur_robot->program_bytecode,
+	 cur_robot->program_bytecode_length, allow_extras, base);
       }
       break;
     }
@@ -2437,7 +2437,10 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           cur_robot = get_robot_by_id(mzx_world, value);
 
         if(cur_robot)
-          fwrite(cur_robot->program, cur_robot->program_length, 1, bc_file);
+        {
+          fwrite(cur_robot->program_bytecode,
+           cur_robot->program_bytecode_length, 1, bc_file);
+        }
 
         fclose(bc_file);
       }

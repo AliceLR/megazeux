@@ -916,7 +916,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     cur_robot->cycle_count = 0;
 
     // Does program exist?
-    if(cur_robot->program_length < 3)
+    if(cur_robot->program_bytecode_length < 3)
     {
       return; // (nope)
     }
@@ -965,7 +965,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
   }
 
   // Get program location
-  program = cur_robot->program;
+  program = cur_robot->program_bytecode;
 
   // NOW quit if inactive (had to do walk first)
   if(cur_robot->cur_prog_line == 0)
@@ -1277,7 +1277,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
               return;
 
             // Some specials might have changed these
-            program = cur_robot->program;
+            program = cur_robot->program_bytecode;
             cmd_ptr = program + cur_robot->cur_prog_line;
 
             // FIXME: For the moment, end the cycle if we save the game
@@ -2783,7 +2783,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             cur_robot = src_board->robot_list[id];
 
             // Update position
-            program = cur_robot->program;
+            program = cur_robot->program_bytecode;
             cmd_ptr = program + cur_robot->cur_prog_line;
 
             update_blocked = 1;

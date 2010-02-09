@@ -2631,7 +2631,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   int mouse_press;
   char arg_types[32];
   char str_buffer[32], max_size_buffer[32];
-  char *current_robot_pos = cur_robot->program + 1;
+  char *current_robot_pos = cur_robot->program_bytecode + 1;
   char *next;
   char *object_code_position;
   int first_line_draw_position;
@@ -3577,7 +3577,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   reallocate_robot(cur_robot, rstate.size);
 
   current_rline = base.next;
-  object_code_position = cur_robot->program;
+  object_code_position = cur_robot->program_bytecode;
   object_code_position[0] = 0xFF;
   object_code_position++;
 
@@ -3610,7 +3610,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
       // Get rid of trailing three bytes if present
       rstate.size -= current_rline->line_bytecode_length;
       reallocate_robot(cur_robot, rstate.size);
-      object_code_position = cur_robot->program + rstate.size - 1;
+      object_code_position = cur_robot->program_bytecode + rstate.size - 1;
     }
 
     free(current_rline->line_bytecode);

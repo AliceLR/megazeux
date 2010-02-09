@@ -59,7 +59,7 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   int program_size = fgetw(fp);
   int i;
 
-  cur_robot->program_length = program_size;
+  cur_robot->program_bytecode_length = program_size;
   // Skip junk
   fseek(fp, 2, SEEK_CUR);
   fread(cur_robot->robot_name, 15, 1, fp);
@@ -116,8 +116,8 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
     cur_robot->stack_pointer = 0;
   }
 
-  cur_robot->program = cmalloc(program_size);
-  fread(cur_robot->program, program_size, 1, fp);
+  cur_robot->program_bytecode = cmalloc(program_size);
+  fread(cur_robot->program_bytecode, program_size, 1, fp);
 
   // Now create a label cache IF the robot is in use
   if(cur_robot->used)
@@ -204,7 +204,7 @@ struct sensor *load_sensor_allocate(FILE *fp)
 
 void save_robot(struct robot *cur_robot, FILE *fp, int savegame)
 {
-  int program_size = cur_robot->program_length;
+  int program_size = cur_robot->program_bytecode_length;
   int i;
 
   fputw(program_size, fp);
@@ -275,7 +275,7 @@ void save_robot(struct robot *cur_robot, FILE *fp, int savegame)
   }
 
   // Write the program
-  fwrite(cur_robot->program, program_size, 1, fp);
+  fwrite(cur_robot->program_bytecode, program_size, 1, fp);
 }
 
 void save_scroll(struct scroll *cur_scroll, FILE *fp, int savegame)
@@ -303,7 +303,7 @@ void clear_robot(struct robot *cur_robot)
   if(cur_robot->used)
     clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
   free(cur_robot->stack);
-  free(cur_robot->program);
+  free(cur_robot->program_bytecode);
   free(cur_robot);
 }
 
@@ -312,7 +312,7 @@ void clear_robot_contents(struct robot *cur_robot)
   if(cur_robot->used)
     clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
   free(cur_robot->stack);
-  free(cur_robot->program);
+  free(cur_robot->program_bytecode);
 }
 
 void clear_scroll(struct scroll *cur_scroll)
@@ -383,8 +383,8 @@ void clear_sensor(struct sensor *cur_sensor)
 
 void reallocate_robot(struct robot *robot, int size)
 {
-  robot->program = crealloc(robot->program, size);
-  robot->program_length = size;
+  robot->program_bytecode = crealloc(robot->program_bytecode, size);
+  robot->program_bytecode_length = size;
 }
 
 void reallocate_scroll(struct scroll *scroll, int size)
@@ -421,11 +421,11 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
   int next;
   int i;
 
-  char *robot_program = robot->program;
+  char *robot_program = robot->program_bytecode;
   struct label **label_list = ccalloc(16, sizeof(struct label *));
   struct label *current_label;
 
-  for(i = 1; i < (robot->program_length - 1); i++)
+  for(i = 1; i < (robot->program_bytecode_length - 1); i++)
   {
     // NOTE: The assignment of 'next' below seems to produce a false positive
     //       from valgrind, but it's also been a crash vector in the past
@@ -440,7 +440,7 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
       current_label = cmalloc(sizeof(struct label));
       current_label->name = robot_program + i + 3;
 
-      if(next >= (robot->program_length - 2))
+      if(next >= (robot->program_bytecode_length - 2))
         current_label->position = 0;
       else
         current_label->position = next + 1;
@@ -1064,7 +1064,7 @@ static void set_robot_position(struct robot *cur_robot, int position)
    * will terminate in the next cycle. We need -2 here to ignore
    * the initial 0xff and terminal 0x00 signature bytes.
    */
-  if(cur_robot->cur_prog_line > cur_robot->program_length - 2)
+  if(cur_robot->cur_prog_line > cur_robot->program_bytecode_length - 2)
     cur_robot->cur_prog_line = 0;
 
   if(cur_robot->status == 1)
@@ -1074,13 +1074,13 @@ static void set_robot_position(struct robot *cur_robot, int position)
 static int send_robot_direct(struct robot *cur_robot, const char *mesg,
  int ignore_lock, int send_self)
 {
-  char *robot_program = cur_robot->program;
+  char *robot_program = cur_robot->program_bytecode;
   int new_position;
 
   if((cur_robot->is_locked) && (!ignore_lock))
     return 1; // Locked
 
-  if(cur_robot->program_length < 3)
+  if(cur_robot->program_bytecode_length < 3)
     return 2; // No program!
 
   // Are we going to a subroutine? Returning?
@@ -1701,16 +1701,16 @@ static int get_label_cmd_offset(struct robot *cur_robot, int position)
   int label_cmd_offset;
 
   if(position > 0)
-    return position - cur_robot->program[position - 1] - 1;
+    return position - cur_robot->program_bytecode[position - 1] - 1;
 
   // Position will be zero if the label was
   // the last command in the program..
 
   // gets us to the length parameter for the last command
-  label_cmd_offset = cur_robot->program_length - 1 - 1;
+  label_cmd_offset = cur_robot->program_bytecode_length - 1 - 1;
 
   // then to the base of the last command..
-  return label_cmd_offset - cur_robot->program[label_cmd_offset];
+  return label_cmd_offset - cur_robot->program_bytecode[label_cmd_offset];
 }
 
 int restore_label(struct robot *cur_robot, char *label)
@@ -1723,9 +1723,9 @@ int restore_label(struct robot *cur_robot, char *label)
      get_label_cmd_offset(cur_robot, dest_label->position);
 
     assert(label_cmd_offset > 0 &&
-           label_cmd_offset < cur_robot->program_length);
+           label_cmd_offset < cur_robot->program_bytecode_length);
 
-    cur_robot->program[label_cmd_offset] = 106;
+    cur_robot->program_bytecode[label_cmd_offset] = 106;
     dest_label->zapped = 0;
     return 1;
   }
@@ -1743,9 +1743,9 @@ int zap_label(struct robot *cur_robot, char *label)
      get_label_cmd_offset(cur_robot, dest_label->position);
 
     assert(label_cmd_offset > 0 &&
-           label_cmd_offset < cur_robot->program_length);
+           label_cmd_offset < cur_robot->program_bytecode_length);
 
-    cur_robot->program[label_cmd_offset] = 108;
+    cur_robot->program_bytecode[label_cmd_offset] = 108;
     dest_label->zapped = 1;
     return 1;
   }
@@ -2544,17 +2544,17 @@ __editor_maybe_static void duplicate_robot_direct(struct robot *cur_robot,
   struct label *src_label, *dest_label;
   char *dest_program_location, *src_program_location;
   int program_offset;
-  int program_length = cur_robot->program_length;
+  int program_length = cur_robot->program_bytecode_length;
   int num_labels = cur_robot->num_labels;
   int i;
 
   // Copy all the contents
   memcpy(copy_robot, cur_robot, sizeof(struct robot));
   // We need unique copies of the program and the label cache.
-  copy_robot->program = cmalloc(program_length);
+  copy_robot->program_bytecode = cmalloc(program_length);
 
-  src_program_location = cur_robot->program;
-  dest_program_location = copy_robot->program;
+  src_program_location = cur_robot->program_bytecode;
+  dest_program_location = copy_robot->program_bytecode;
 
   memcpy(dest_program_location, src_program_location, program_length);
 

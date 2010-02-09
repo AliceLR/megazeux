@@ -31,8 +31,8 @@ void create_blank_robot_direct(struct robot *cur_robot, int x, int y)
   memset(cur_robot, 0, sizeof(struct robot));
 
   cur_robot->robot_name[0] = 0;
-  cur_robot->program = program;
-  cur_robot->program_length = 2;
+  cur_robot->program_bytecode = program;
+  cur_robot->program_bytecode_length = 2;
   program[0] = 0xFF;
   program[1] = 0x00;
 
