@@ -46,13 +46,15 @@ struct zip_segment
 
 struct zip_dirent {
   Uint32 crc32;
-  Uint32 compressed_size;
   Uint32 uncompressed_size;
 
-  struct zip_segment segment;
   enum zip_method method;
   time_t datetime;
   char *file_name;
+
+  struct zip_segment local_header;
+  struct zip_segment file_data;
+  struct zip_segment data_descriptor;
 };
 
 struct zip_handle
@@ -363,8 +365,7 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     Uint16 time, date;
 
     // Keep a short hand for this entry, and pass it along
-    entry = malloc(sizeof(struct zip_dirent));
-    entry->file_name = NULL;
+    entry = calloc(1, sizeof(struct zip_dirent));
     z->entries[i] = entry;
 
     // "central file header signature"
@@ -425,7 +426,7 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     // "compressed size"
     if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
       goto err_free_entries;
-    entry->compressed_size = d;
+    entry->file_data.length = d;
 
     // FIXME: No ZIP64 support
     if(d == 0xffffffff)
@@ -491,7 +492,7 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     // "relative offset of local header"
     if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
       goto err_free_entries;
-    entry->segment.offset = d;
+    entry->local_header.offset = d;
 
     // FIXME: No ZIP64 support
     if(d == 0xffffffff)
@@ -554,7 +555,7 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     char *file_name;
 
     // Move to this entry's LFH
-    if(fseek(z->f, entry->segment.offset, SEEK_SET))
+    if(fseek(z->f, entry->local_header.offset, SEEK_SET))
     {
       err = ZIPIO_SEEK_FAILED;
       goto err_free_entries;
@@ -644,10 +645,10 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
       goto err_free_entries;
 
     // Same check as "crc-32" but for "compressed size"
-    if(!(d == 0 && data_descriptor) && d != entry->compressed_size)
+    if(!(d == 0 && data_descriptor) && d != entry->file_data.length)
     {
       warn("LFH compressed size overrides differing CD compressed size!\n");
-      entry->compressed_size = d;
+      entry->file_data.length = d;
     }
 
     // "uncompressed size"
@@ -704,8 +705,19 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
       goto err_free_entries;
     }
 
+    // We can now compute the length of the LFH..
+    // ..and the offset of the file data
+    pos = ftell(z->f);
+    if(pos < 0)
+    {
+      err = ZIPIO_READ_FAILED;
+      goto err_free_entries;
+    }
+    entry->local_header.length = pos - entry->local_header.offset;
+    entry->file_data.offset = pos;
+
     // Skip file data (if any)
-    if(fseek(z->f, entry->compressed_size, SEEK_CUR))
+    if(fseek(z->f, entry->file_data.length, SEEK_CUR))
     {
       err = ZIPIO_READ_FAILED;
       goto err_free_entries;
@@ -715,14 +727,14 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     // and validate the a data descriptor.
     if(data_descriptor)
     {
-      // Store current file position so we can roll back if data descriptor
-      // signature is not present (some older ZIPs may do this)
+      // Compute the offset of the Data Descriptor (also used for rollback)
       pos = ftell(z->f);
       if(pos < 0)
       {
         err = ZIPIO_READ_FAILED;
         goto err_free_entries;
       }
+      entry->data_descriptor.offset = pos;
 
       // Read "Data descriptor" signature (if present)
       if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
@@ -755,11 +767,11 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
         goto err_free_entries;
 
       // Same check as for "crc-32"
-      if(d != entry->compressed_size)
+      if(d != entry->file_data.length)
       {
         warn("Data descriptor compressed size overrides "
           "differing CD compressed size!\n");
-        entry->compressed_size = d;
+        entry->file_data.length = d;
       }
 
       // "uncompressed size" (again)
@@ -773,18 +785,16 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
         "differing CD uncompressed size!\n");
         entry->uncompressed_size = d;
       }
-    }
 
-    // The current position should be at the end of either the file data
-    // or the data descriptor (if present). We can use this to compute
-    // the segment length.
-    pos = ftell(z->f);
-    if(pos < 0)
-    {
-      err = ZIPIO_READ_FAILED;
-      goto err_free_entries;
+      // Finally, compute length of data descriptor
+      pos = ftell(z->f);
+      if(pos < 0)
+      {
+        err = ZIPIO_READ_FAILED;
+        goto err_free_entries;
+      }
+      entry->data_descriptor.length = pos - entry->data_descriptor.offset;
     }
-    entry->segment.length = pos - entry->segment.offset;
 
     // Convert to standard C89/C99 time_t
     datetime = dos_to_time_t(time, date);
@@ -804,23 +814,39 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
 
     debug("LFH -- Parsed file '%s' OK.\n", entry->file_name);
     debug("LFH offset/length:   0x%x (%u)\n",
-     entry->segment.offset, entry->segment.length);
+     entry->local_header.offset, entry->local_header.length);
     debug("Compression Method:  %s\n", (entry->method) ? "Deflate" : "Store");
     debug("Time/Date:           %s", ctime(&entry->datetime));
     debug("CRC-32:              0x%x\n", entry->crc32);
-    debug("Compressed Size:     %u\n", entry->compressed_size);
+    debug("Compressed Size:     %u\n", entry->file_data.length);
     debug("Uncompressed Size:   %u\n", entry->uncompressed_size);
   }
 
   // Total all recorded segment sizes
   for(i = 0; i < z->num_entries; i++)
   {
-    debug("LF   [0x%.8x-0x%.8x]\n", z->entries[i]->segment.offset,
-     z->entries[i]->segment.offset + z->entries[i]->segment.length);
-    segment_total += z->entries[i]->segment.length;
+    struct zip_dirent *e = z->entries[i];
+
+    debug("LFH  [0x%.8x-0x%.8x]\n", e->local_header.offset,
+     e->local_header.offset + e->local_header.length);
+
+    debug("DATA [0x%.8x-0x%.8x]\n", e->file_data.offset,
+     e->file_data.offset + e->file_data.length);
+
+    if(e->data_descriptor.offset)
+    {
+      debug("DESC [0x%.8x-0x%.8x]\n", e->data_descriptor.offset,
+        e->data_descriptor.offset + e->data_descriptor.length);
+    }
+
+    segment_total += e->local_header.length +
+                     e->file_data.length +
+                     e->data_descriptor.length;
   }
+
   debug("CD   [0x%.8x-0x%.8x]\n", z->cd.offset, z->cd.offset + z->cd.length);
   segment_total += z->cd.length;
+
   debug("ECDR [0x%.8x-0x%.8x]\n", z->ecdr.offset, z->ecdr.offset + z->ecdr.length);
   segment_total += z->ecdr.length;
 
