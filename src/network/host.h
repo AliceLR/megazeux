@@ -71,13 +71,13 @@ enum host_status
  *
  * @return Whether initialization succeeded, or not
  */
-NETWORK_LIBSPEC bool host_layer_init(void);
+bool host_layer_init(void);
 
 /**
  * Shuts down the host layer.
  * Frees any associated operating system resources.
  */
-NETWORK_LIBSPEC void host_layer_exit(void);
+void host_layer_exit(void);
 
 #else
 
@@ -96,7 +96,7 @@ static inline void host_layer_exit(void) { }
  * @return A host object that can be passed to other network functions,
  *         or NULL if an error occurred.
  */
-NETWORK_LIBSPEC struct host *host_create(enum host_type type,
+UPDATER_LIBSPEC struct host *host_create(enum host_type type,
  enum host_family fam);
 
 /**
@@ -105,7 +105,7 @@ NETWORK_LIBSPEC struct host *host_create(enum host_type type,
  *
  * @param h Host to destroy.
  */
-NETWORK_LIBSPEC void host_destroy(struct host *h);
+UPDATER_LIBSPEC void host_destroy(struct host *h);
 
 /**
  * Connects a host `h' to the specified host and port.
@@ -115,7 +115,7 @@ NETWORK_LIBSPEC void host_destroy(struct host *h);
  *
  * @return Whether the connection was possible and successful, or not
  */
-NETWORK_LIBSPEC bool host_connect(struct host *h, const char *hostname,
+UPDATER_LIBSPEC bool host_connect(struct host *h, const char *hostname,
  int port);
 
 /**
@@ -128,7 +128,7 @@ NETWORK_LIBSPEC bool host_connect(struct host *h, const char *hostname,
  *
  * @return See \ref host_status.
  */
-NETWORK_LIBSPEC enum host_status host_recv_file(struct host *h,
+UPDATER_LIBSPEC enum host_status host_recv_file(struct host *h,
  const char *url, FILE *file, const char *expected_type);
 
 /**
@@ -153,7 +153,7 @@ NETWORK_LIBSPEC enum host_status host_recv_file(struct host *h,
  * @param recv_cb   Implementation of a recv callback (or NULL for none)
  * @param cancel_cb Implementation of a cancel callback (or NULL for none)
  */
-NETWORK_LIBSPEC void host_set_callbacks(struct host *h,
+UPDATER_LIBSPEC void host_set_callbacks(struct host *h,
  void (*send_cb)(long offset), void (*recv_cb)(long offset),
  bool (*cancel_cb)(void));
 
@@ -166,7 +166,7 @@ NETWORK_LIBSPEC void host_set_callbacks(struct host *h,
  *
  * @return Whether the last socket error was fatal, or not
  */
-NETWORK_LIBSPEC bool host_last_error_fatal(void);
+bool host_last_error_fatal(void);
 
 /**
  * Sets a socket blocking mode on the given host.
@@ -174,7 +174,7 @@ NETWORK_LIBSPEC bool host_last_error_fatal(void);
  * @param h        Host to alter block mode on
  * @param blocking `true' if the socket should block, `false' otherwise
  */
-NETWORK_LIBSPEC void host_blocking(struct host *h, bool blocking);
+void host_blocking(struct host *h, bool blocking);
 
 /**
  * Accepts a connection from a host processed by \ref host_bind and
@@ -186,7 +186,7 @@ NETWORK_LIBSPEC void host_blocking(struct host *h, bool blocking);
  *
  * @return Connected client connection, or NULL if a failure occurred
  */
-NETWORK_LIBSPEC struct host *host_accept(struct host *s);
+struct host *host_accept(struct host *s);
 
 /**
  * Binds a host `h' to the specified host and port.
@@ -196,7 +196,7 @@ NETWORK_LIBSPEC struct host *host_accept(struct host *s);
  *
  * @return Whether the bind was possible and successful, or not
  */
-NETWORK_LIBSPEC bool host_bind(struct host *h, const char *hostname, int port);
+bool host_bind(struct host *h, const char *hostname, int port);
 
 /**
  * Prepares a socket processed with @ref host_bind to listen for
@@ -206,7 +206,7 @@ NETWORK_LIBSPEC bool host_bind(struct host *h, const char *hostname, int port);
  *
  * @return Whether it was possible to listen with this host, or not
  */
-NETWORK_LIBSPEC bool host_listen(struct host *h);
+bool host_listen(struct host *h);
 
 /**
  * Receive a buffer on a host via raw socket access.
@@ -218,7 +218,7 @@ NETWORK_LIBSPEC bool host_listen(struct host *h);
  * @return `true' if the buffer was received, `false' if there was a
  *         communication error.
  */
-NETWORK_LIBSPEC bool host_recv_raw(struct host *h, char *buffer,
+bool host_recv_raw(struct host *h, char *buffer,
  unsigned int len);
 
 /**
@@ -231,7 +231,7 @@ NETWORK_LIBSPEC bool host_recv_raw(struct host *h, char *buffer,
  * @return `true' if the buffer was sent, `false' if there was a
  *         communication error.
  */
-NETWORK_LIBSPEC bool host_send_raw(struct host *h, const char *buffer,
+bool host_send_raw(struct host *h, const char *buffer,
  unsigned int len);
 
 /**
@@ -243,14 +243,14 @@ NETWORK_LIBSPEC bool host_send_raw(struct host *h, const char *buffer,
  * @return <0 if there was a failure, 0 if there was no data, and the
  *         >0 if there was activity on the socket.
  */
-NETWORK_LIBSPEC int host_poll_raw(struct host *h, unsigned int timeout);
+int host_poll_raw(struct host *h, unsigned int timeout);
 
 // FIXME: Document
-NETWORK_LIBSPEC bool host_recvfrom_raw(struct host *h, char *buffer,
+bool host_recvfrom_raw(struct host *h, char *buffer,
  unsigned int len, const char *hostname, int port);
 
 // FIXME: Document
-NETWORK_LIBSPEC bool host_sendto_raw(struct host *h, const char *buffer,
+bool host_sendto_raw(struct host *h, const char *buffer,
  unsigned int len, const char *hostname, int port);
 
 /**
@@ -262,11 +262,11 @@ NETWORK_LIBSPEC bool host_sendto_raw(struct host *h, const char *buffer,
  *
  * @return See \ref host_status_t.
  */
-NETWORK_LIBSPEC enum host_status host_send_file(struct host *h, FILE *file,
+enum host_status host_send_file(struct host *h, FILE *file,
  const char *mime_type);
 
 // FIXME: Document?
-NETWORK_LIBSPEC bool host_handle_http_request(struct host *h);
+bool host_handle_http_request(struct host *h);
 
 #endif // NETWORK_DEADCODE
 

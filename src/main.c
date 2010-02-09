@@ -52,7 +52,7 @@
 #include "world.h"
 #include "counter.h"
 #include "run_stubs.h"
-#include "network.h"
+#include "network/network.h"
 
 #ifdef __amigaos__
 #define __libspec LIBSPEC
@@ -164,10 +164,13 @@ __libspec int main(int argc, char *argv[])
 
   set_mouse_mul(8, 14);
 
-  if(!network_layer_init(&mzx_world.conf, argv))
+  if(network_layer_init(&mzx_world.conf))
+  {
+    if(!updater_init(argv))
+      info("Updater disabled.\n");
+  }
+  else
     info("Network layer disabled.\n");
-  else if(!updater_init(argv))
-    info("Updater disabled.\n");
 
   init_event();
 

@@ -241,12 +241,6 @@ ifeq (${BUILD_MODULAR},1)
 	@if test -f ${editor_target}.debug; then \
 		cp ${editor_target}.debug ${build}; \
 	fi
-ifeq (${BUILD_NETWORK},1)
-	${CP} ${network_target} ${build}
-	@if test -f ${network_target}.debug; then \
-		cp ${network_target}.debug ${build}; \
-	fi
-endif
 endif
 ifeq (${BUILD_UTILS},1)
 	${MKDIR} ${build}/utils

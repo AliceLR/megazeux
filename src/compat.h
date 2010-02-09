@@ -124,8 +124,10 @@ typedef enum
 #define EDITOR_LIBSPEC LIBSPEC
 #endif
 
-#ifndef NETWORK_LIBSPEC
-#define NETWORK_LIBSPEC LIBSPEC
+#ifdef CONFIG_UPDATER
+#define UPDATER_LIBSPEC CORE_LIBSPEC
+#else
+#define UPDATER_LIBSPEC
 #endif
 
 #endif // __COMPAT_H

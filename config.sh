@@ -46,7 +46,7 @@ usage() {
 	echo "  --disable-gl-fixed   Disable GL renderers for fixed-function h/w."
 	echo "  --disable-gl-prog    Disable GL renderers for programmable h/w."
 	echo "  --disable-overlay    Disable all overlay renderers."
-	<echo "  --enable-gp2x        Enables half-res software renderer."
+	echo "  --enable-gp2x        Enables half-res software renderer."
 	echo "  --disable-modplug    Disable ModPlug music engine."
 	echo "  --enable-mikmod      Enables MikMod music engine."
 	echo "  --disable-libpng     Disable PNG screendump support."

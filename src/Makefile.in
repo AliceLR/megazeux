@@ -13,6 +13,9 @@ LINK_CC := ${CC}
 core_src = src
 core_obj = src/.build
 
+network_src = src/network
+network_obj = src/network/.build
+
 core_flags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
 core_flags   += -Wmissing-format-attribute -Wpointer-arith
 core_flags   += -Wwrite-strings
@@ -37,6 +40,10 @@ ${core_obj}/run_stubs.o: ${core_src}/run_stubs.c
 ${core_obj}/updater.o: ${core_src}/updater.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
+
+${network_obj}/%.o: ${network_src}/%.c
+	$(if ${V},,@echo "  CC      " $<)
+	${CC} -MD ${core_cflags} ${core_flags} ${core_spec} -c $< -o $@
 
 ${core_obj}/%.o: ${core_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
@@ -218,33 +225,36 @@ endif
 
 endif
 
-core_objs := ${core_cobjs} ${core_cxxobjs}
-
 ifeq (${BUILD_NETWORK},1)
 
-include src/network/Makefile.in
+core_cflags += ${ZLIB_CFLAGS}
+core_ldflags := ${ZLIB_LDFLAGS} ${core_ldflags} 
 
-mzx_clean: network_clean
-
-core_objs := ${core_objs} ${core_obj}/network.o
+core_cobjs += ${network_obj}/host.o ${network_obj}/manifest.o
+core_cobjs += ${network_obj}/network.o ${network_obj}/sha256.o
 
 ifeq (${BUILD_UPDATER},1)
 mzx_objs += ${core_obj}/updater.o
 endif
 
-network_link := -lnetwork
+ifeq (${PLATFORM},amiga)
+core_ldflags := ${core_ldflags} -lnet
+endif
 
 endif
+
+core_objs := ${core_cobjs} ${core_cxxobjs}
 
 -include ${core_objs:.o=.d}
 
 ${core_objs}: $(filter-out $(wildcard ${core_obj}), ${core_obj})
+${core_objs}: $(filter-out $(wildcard ${network_obj}), ${network_obj})
 
 ifeq (${BUILD_MODULAR},1)
 
 core_target := ${DSOPRE}core${DSOPOST}
 
-${core_target}: ${core_objs} ${network_target}
+${core_target}: ${core_objs}
 	$(if ${V},,@echo "  LINK    " $@)
 	${LINK_CC} ${DSOLDFLAGS} -o $@ ${core_objs} ${LDFLAGS} \
 	  ${DSOSONAME}$@ ${core_ldflags}
@@ -279,19 +289,19 @@ mzx_objs += ${icons}
 endif
 
 ifeq (${BUILD_MODULAR},1)
-${mzx}.debug: ${core_target}.debug ${editor_target}.debug ${network_target}.debug
+${mzx}.debug: ${core_target}.debug ${editor_target}.debug
 endif
 
 ${mzx}: ${core_target} ${editor_target} ${mzx_objs}
 	$(if ${V},,@echo "  LINK    " ${mzx})
 ifeq (${BUILD_MODULAR},1)
 	${CC} ${mzx_objs} -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
-	  ${DSORPATH} -L. -lcore -leditor ${network_link} \
+	  ${DSORPATH} -L. -lcore -leditor \
 	  ${mzx_ldflags}
 else
 	${LINK_CC} ${mzx_objs} ${core_target} ${editor_target} \
 	  -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
-	  ${core_ldflags} ${editor_ldflags} ${network_ldflags}
+	  ${core_ldflags} ${editor_ldflags}
 endif
 
 mzx_clean: editor_clean
@@ -320,7 +330,7 @@ mzxrun_objs += ${icons}
 endif
 
 ifeq (${BUILD_MODULAR},1)
-${mzxrun}.debug: ${core_target}.debug ${network_target}.debug
+${mzxrun}.debug: ${core_target}.debug
 endif
 
 ${mzxrun}: ${core_target} ${mzxrun_objs}
