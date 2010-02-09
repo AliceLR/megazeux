@@ -516,8 +516,8 @@ void host_blocking(struct host *h, bool blocking)
 struct host *host_create(host_type_t type, host_family_t fam)
 {
   struct linger linger = { .l_onoff = 1, .l_linger = 30 };
+  const uint32_t on = 1, off = 0;
   int err, fd, af, proto;
-  const uint32_t on = 1;
   struct host *h;
 
   switch(fam)
@@ -550,6 +550,16 @@ struct host *host_create(host_type_t type, host_family_t fam)
     return NULL;
   }
 
+  if(af == AF_INET6)
+  {
+    err = setsockopt(fd, IPPROTO_IPV6, IPV6_V6ONLY, &off, 4);
+    if(err < 0)
+    {
+      perror("setsockopt(IPV6_V6ONLY)");
+      return NULL;
+    }
+  }
+
   /* We need to turn off bind address checking, allowing
    * port numbers to be reused; otherwise, TIME_WAIT will
    * delay binding to these ports for 2 * MSL seconds.
@@ -557,7 +567,7 @@ struct host *host_create(host_type_t type, host_family_t fam)
   err = platform_setsockopt(fd, SOL_SOCKET, SO_REUSEADDR, (void *)&on, 4);
   if(err < 0)
   {
-    perror("setsockopt1");
+    perror("setsockopt(SO_REUSEADDR)");
     return NULL;
   }
 
@@ -573,7 +583,7 @@ struct host *host_create(host_type_t type, host_family_t fam)
      (void *)&linger, sizeof(struct linger));
     if(err < 0)
     {
-      perror("setsockopt2");
+      perror("setsockopt(SO_LINGER)");
       return NULL;
     }
   }
@@ -724,8 +734,80 @@ struct host *host_accept(struct host *s)
   return c;
 }
 
-static bool host_connect_or_bind(struct host *h, const char *hostname,
- int port, bool connect)
+static struct addrinfo *connect_op(int fd, struct addrinfo *ais)
+{
+  struct addrinfo *ai;
+
+  /* First try to connect to an IPv6 address (if any)
+   */
+  for(ai = ais; ai; ai = ai->ai_next)
+  {
+    if(ai->ai_family != AF_INET6)
+      continue;
+
+    if(platform_connect(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
+      break;
+
+    perror("connect");
+  }
+
+  if(ai)
+    return ai;
+
+  /* No IPv6 addresses could be connected; try IPv4 (if any)
+   */
+  for(ai = ais; ai; ai = ai->ai_next)
+  {
+    if(ai->ai_family != AF_INET)
+      continue;
+
+    if(platform_connect(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
+      break;
+
+    perror("connect");
+  }
+
+  return ai;
+}
+
+static struct addrinfo *bind_op(int fd, struct addrinfo *ais)
+{
+  struct addrinfo *ai;
+
+  /* First try to bind to an IPv6 address (if any)
+   */
+  for(ai = ais; ai; ai = ai->ai_next)
+  {
+    if(ai->ai_family != AF_INET6)
+      continue;
+
+    if(platform_bind(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
+      break;
+
+    perror("bind");
+  }
+
+  if(ai)
+    return ai;
+
+  /* No IPv6 addresses could be bound; try IPv4 (if any)
+   */
+  for(ai = ais; ai; ai = ai->ai_next)
+  {
+    if(ai->ai_family != AF_INET)
+      continue;
+
+    if(platform_bind(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
+      break;
+
+    perror("bind");
+  }
+
+  return ai;
+}
+
+static bool host_address_op(struct host *h, const char *hostname,
+ int port, struct addrinfo *(*op)(int fd, struct addrinfo *ais))
 {
   struct addrinfo hints, *ais, *ai;
   char port_str[6];
@@ -749,33 +831,7 @@ static bool host_connect_or_bind(struct host *h, const char *hostname,
     return false;
   }
 
-  // Walk the list of hosts and attempt to connect in-order
-  for(ai = ais; ai; ai = ai->ai_next)
-  {
-    // We can be flexible on this -- it doesn't matter
-    if(ai->ai_family != AF_INET && ai->ai_family != AF_INET6)
-      continue;
-
-    if(connect)
-    {
-      if(platform_connect(h->fd, ai->ai_addr, ai->ai_addrlen) < 0)
-      {
-        perror("connect");
-        continue;
-      }
-    }
-    else
-    {
-      if(platform_bind(h->fd, ai->ai_addr, ai->ai_addrlen) < 0)
-      {
-        perror("bind");
-        continue;
-      }
-    }
-
-    break;
-  }
-
+  ai = op(h->fd, ais);
   platform_freeaddrinfo(ais);
 
   // None of the listed hosts (if any) were connectable
@@ -791,12 +847,12 @@ static bool host_connect_or_bind(struct host *h, const char *hostname,
 
 bool host_bind(struct host *h, const char *hostname, int port)
 {
-  return host_connect_or_bind(h, hostname, port, false);
+  return host_address_op(h, hostname, port, bind_op);
 }
 
 bool host_connect(struct host *h, const char *hostname, int port)
 {
-  return host_connect_or_bind(h, hostname, port, true);
+  return host_address_op(h, hostname, port, connect_op);
 }
 
 bool host_listen(struct host *h)
