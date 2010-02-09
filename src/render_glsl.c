@@ -72,6 +72,8 @@ typedef struct
   void (APIENTRY *glAttachObjectARB)(GLhandleARB program, GLhandleARB shader);
   void (APIENTRY *glUseProgramObjectARB)(GLhandleARB program);
   void (APIENTRY *glLinkProgramARB)(GLhandleARB program);
+  void (APIENTRY *glGetInfoLogARB)(GLhandleARB object, int maxLen, int *len,
+   char *log);
 } glsl_syms;
 
 typedef struct
@@ -151,6 +153,7 @@ static int glsl_load_syms(glsl_syms *gl)
   GL_LOAD_SYM_EXT(gl, glAttachObjectARB);
   GL_LOAD_SYM_EXT(gl, glUseProgramObjectARB);
   GL_LOAD_SYM_EXT(gl, glLinkProgramARB);
+  GL_LOAD_SYM_EXT(gl, glGetInfoLogARB);
 
   gl->syms_loaded = true;
   return true;
@@ -183,6 +186,21 @@ err_close:
   fclose(f);
 err_out:
   return buffer;
+}
+
+#define SHADER_INFO_MAX 1000
+
+static void glsl_verify_shader_compile(glsl_render_data *render_data,
+ GLenum shader)
+{
+  glsl_syms *gl = &render_data->gl;
+  char buffer[SHADER_INFO_MAX];
+  int len = 0;
+
+  gl->glGetInfoLogARB(shader, SHADER_INFO_MAX - 1, &len, buffer);
+  buffer[len] = 0;
+
+  fprintf(stderr, "%s", buffer);
 }
 
 static void glsl_load_shaders(graphics_data *graphics)
@@ -221,7 +239,10 @@ static void glsl_load_shaders(graphics_data *graphics)
       (const GLcharARB**)&shader_frag_source_tilemap, &len);
 
     gl->glCompileShaderARB(shader_vert_tilemap);
+    glsl_verify_shader_compile(render_data, shader_vert_tilemap);
     gl->glCompileShaderARB(shader_frag_tilemap);
+    glsl_verify_shader_compile(render_data, shader_frag_tilemap);
+
     gl->glAttachObjectARB(tilemap_program, shader_vert_tilemap);
     gl->glAttachObjectARB(tilemap_program, shader_frag_tilemap);
     gl->glLinkProgramARB(tilemap_program);
@@ -257,7 +278,10 @@ static void glsl_load_shaders(graphics_data *graphics)
       (const GLcharARB**)&shader_frag_source_scaling, &len);
 
     gl->glCompileShaderARB(shader_vert_scaling);
+    glsl_verify_shader_compile(render_data, shader_vert_scaling);
     gl->glCompileShaderARB(shader_frag_scaling);
+    glsl_verify_shader_compile(render_data, shader_frag_scaling);
+
     gl->glAttachObjectARB(scaling_program, shader_vert_scaling);
     gl->glAttachObjectARB(scaling_program, shader_frag_scaling);
     gl->glLinkProgramARB(scaling_program);
