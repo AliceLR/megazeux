@@ -17,6 +17,8 @@ USERS
   enters an existing filename without the default extension. (revvy)
 + The string editor in the counter debug menu (F11) now escapes newlines
   and backslashes to prevent UI corruption.
++ Fix a bug where the LOAD_GAME counter handler could continue to use the
+  old board state after load, causing crashes. (Lancer-X)
 
 DEVELOPERS
 
