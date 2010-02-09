@@ -173,24 +173,22 @@ fi
 ### PLATFORM DEFINITION #######################################################
 
 if [ "$PLATFORM" = "win32" -o "$PLATFORM" = "win64" ]; then
-	echo "MINGWBASE="        > Makefile.platform
-	cat arch/Makefile.mingw >> Makefile.platform
 	PLATFORM="mingw"
+	echo "MINGWBASE=" > platform.inc
 elif [ "$PLATFORM" = "mingw32" ]; then
-	echo "MINGWBASE=i586-mingw32msvc-" > Makefile.platform
-        cat arch/Makefile.mingw           >> Makefile.platform
 	PLATFORM="mingw"
+	echo "MINGWBASE=i586-mingw32msvc-" > platform.inc
 elif [ "$PLATFORM" = "mingw64" ]; then
-	echo "MINGWBASE=x86_64-pc-mingw32-" > Makefile.platform
-        cat arch/Makefile.mingw            >> Makefile.platform
 	PLATFORM="mingw"
+	echo "MINGWBASE=x86_64-pc-mingw32-" > platform.inc
 else
-	cp -f arch/Makefile.$PLATFORM Makefile.platform
-	if [ "$?" != "0" ]; then
+	if [ ! -f arch/Makefile.$PLATFORM ]; then
 		echo "Invalid platform selection (see arch/)."
 		exit 1
 	fi
 fi
+
+echo "PLATFORM=$PLATFORM" > platform.inc
 
 ### SYSTEM CONFIG DIRECTORY ###################################################
 
@@ -213,9 +211,7 @@ echo
 
 source version.inc
 
-echo                       >> Makefile.platform
-echo "# config time stuff" >> Makefile.platform
-echo "PREFIX?=$PREFIX"     >> Makefile.platform
+echo "PREFIX?=$PREFIX" >> platform.inc
 
 #
 # Set the version to build with 
@@ -238,14 +234,14 @@ if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "solaris" ]; then
 	echo "#define SHAREDIR \"$PREFIX/share/megazeux/\"" >> src/config.h
 	echo "#define CONFFILE \"megazeux-config\""         >> src/config.h
 elif [ "$PLATFORM" = "nds" ]; then
-	echo "#define SHAREDIR \"/games/megazeux/\"" >>src/config.h
-	echo "#define CONFFILE \"config.txt\""       >>src/config.h
+	echo "#define SHAREDIR \"/games/megazeux/\"" >> src/config.h
+	echo "#define CONFFILE \"config.txt\""       >> src/config.h
 elif [ "$PLATFORM" = "wii" ]; then
-	echo "#define SHAREDIR \"/apps/megazeux/\"" >>src/config.h
-	echo "#define CONFFILE \"config.txt\""      >>src/config.h
+	echo "#define SHAREDIR \"/apps/megazeux/\"" >> src/config.h
+	echo "#define CONFFILE \"config.txt\""      >> src/config.h
 elif [ "$PLATFORM" = "darwin" ]; then
-	echo "#define SHAREDIR \"../Resources/\"" >>src/config.h
-	echo "#define CONFFILE \"config.txt\""    >>src/config.h
+	echo "#define SHAREDIR \"../Resources/\"" >> src/config.h
+	echo "#define CONFFILE \"config.txt\""    >> src/config.h
 else
 	echo "#define SHAREDIR \"./\""         >> src/config.h
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
@@ -254,20 +250,20 @@ fi
 #
 # Some architectures define an "install" target, and need these.
 #
-echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
+echo "SYSCONFDIR=$SYSCONFDIR" >> platform.inc
 
 #
 # Use platform-specific code or use SDL
 #
 if [ "$PLATFORM" = "wii" ]; then
 	echo "#define CONFIG_WII" >> src/config.h
-	echo "BUILD_WII=1" >> Makefile.platform
+	echo "BUILD_WII=1" >> platform.inc
 
 	echo "Force disabling software renderer on Wii."
 	SOFTWARE="false"
 else
 	echo "#define CONFIG_SDL" >> src/config.h
-	echo "BUILD_SDL=1" >> Makefile.platform
+	echo "BUILD_SDL=1" >> platform.inc
 fi
 
 #
@@ -280,7 +276,7 @@ fi
 if [ "$PLATFORM" = "nds" ]; then
 	echo "Enabling NDS-specific hacks."
 	echo "#define CONFIG_NDS" >> src/config.h
-	echo "BUILD_NDS=1" >> Makefile.platform
+	echo "BUILD_NDS=1" >> platform.inc
 
 	echo "Force-disabling audio on NDS (fixme)."
 	AUDIO="false"
@@ -297,7 +293,7 @@ fi
 if [ "$PLATFORM" = "psp" ]; then
 	echo "Enabling PSP-specific hacks."
 	echo "#define CONFIG_PSP" >> src/config.h
-	echo "BUILD_PSP=1" >> Makefile.platform
+	echo "BUILD_PSP=1" >> platform.inc
 fi
 
 #
@@ -310,7 +306,7 @@ fi
 if [ "$PLATFORM" = "gp2x" ]; then
 	echo "Enabling GP2X-specific hacks."
 	echo "#define CONFIG_GP2X" >> src/config.h
-	echo "BUILD_GP2X=1" >> Makefile.platform
+	echo "BUILD_GP2X=1" >> platform.inc
 
 	echo "Force disabling software renderer on GP2X."
 	SOFTWARE="false"
@@ -386,7 +382,7 @@ fi
 #
 if [ "$OPT_SIZE" = "true" ]; then
 	echo "Optimizing for size."
-	echo "OPTIMIZE_CFLAGS=-Os" >> Makefile.platform
+	echo "OPTIMIZE_CFLAGS=-Os" >> platform.inc
 else
 	echo "Optimizing for speed."
 fi
@@ -396,7 +392,7 @@ fi
 #
 if [ "$EDITOR" = "true" ]; then
 	echo "Built-in editor enabled."
-	echo "BUILD_EDITOR=1" >> Makefile.platform
+	echo "BUILD_EDITOR=1" >> platform.inc
 	echo "#define CONFIG_EDITOR" >> src/config.h
 else
 	echo "Built-in editor disabled."
@@ -407,7 +403,7 @@ fi
 #
 if [ "$HELPSYS" = "true" ]; then
 	echo "Built-in help system enabled."
-	echo "BUILD_HELPSYS=1" >> Makefile.platform
+	echo "BUILD_HELPSYS=1" >> platform.inc
 	echo "#define CONFIG_HELPSYS" >> src/config.h
 else
 	echo "Built-in help system disabled."
@@ -422,14 +418,14 @@ if [ "$UTILS" = "true" ]; then
 	#
 	if [ "$HOST_UTILS" = "true" ]; then
 		echo "Using host's compiler for utils."
-		echo "HOST_CC = cc" >> Makefile.platform
+		echo "HOST_CC = cc" >> platform.inc
 	else
 		echo "Using default compiler for utils."
-		echo "HOST_CC := \${CC}" >> Makefile.platform
+		echo "HOST_CC := \${CC}" >> platform.inc
 	fi
 
 	echo "Building utils (checkres, downver, txt2hlp)."
-	echo "BUILD_UTILS=1" >> Makefile.platform
+	echo "BUILD_UTILS=1" >> platform.inc
 else
 	echo "Disabled utils (txt2hlp, checkres)."
 fi
@@ -478,8 +474,8 @@ if [ "$X11" = "true" ]; then
 	X11PATH=`which $XBIN`
 	X11DIR=`dirname $X11PATH`
 
-	echo "mzx_flags += -I$X11DIR/../include" >> Makefile.platform
-	echo "mzx_ldflags += -L$X11DIR/../lib -lX11" >> Makefile.platform
+	echo "mzx_flags := -I$X11DIR/../include" >> platform.inc
+	echo "mzx_ldflags := -L$X11DIR/../lib -lX11" >> platform.inc
 fi
 
 #
@@ -488,7 +484,7 @@ fi
 if [ "$SOFTWARE" = "true" ]; then
 	echo "Software renderer enabled."
 	echo "#define CONFIG_RENDER_SOFT" >> src/config.h
-	echo "BUILD_RENDER_SOFT=1" >> Makefile.platform
+	echo "BUILD_RENDER_SOFT=1" >> platform.inc
 else
 	echo "Software renderer disabled."
 fi
@@ -499,7 +495,7 @@ fi
 if [ "$OPENGL" = "true" ]; then
 	echo "OpenGL renderers enabled."
 	echo "#define CONFIG_RENDER_GL" >> src/config.h
-	echo "BUILD_RENDER_GL=1" >> Makefile.platform
+	echo "BUILD_RENDER_GL=1" >> platform.inc
 else
 	echo "OpenGL renderers disabled."
 fi
@@ -510,7 +506,7 @@ fi
 if [ "$OVERLAY" = "true" ]; then
 	echo "Overlay renderers enabled."
 	echo "#define CONFIG_RENDER_YUV" >> src/config.h
-	echo "BUILD_RENDER_YUV=1" >> Makefile.platform
+	echo "BUILD_RENDER_YUV=1" >> platform.inc
 else
 	echo "Overlay renderers disabled."
 fi
@@ -521,7 +517,7 @@ fi
 if [ "$PLATFORM" = "wii" ]; then
 	echo "Building custom GX renderer."
 	echo "#define CONFIG_RENDER_GX" >> src/config.h
-	echo "BUILD_RENDER_GX=1" >> Makefile.platform
+	echo "BUILD_RENDER_GX=1" >> platform.inc
 fi
 
 #
@@ -530,7 +526,7 @@ fi
 if [ "$GP2X" = "true" ]; then
 	echo "GP2X half-width renderer enabled."
 	echo "#define CONFIG_RENDER_GP2X" >> src/config.h
-	echo "BUILD_RENDER_GP2X=1" >> Makefile.platform
+	echo "BUILD_RENDER_GP2X=1" >> platform.inc
 else
 	echo "GP2X half-width renderer disabled."
 fi
@@ -541,11 +537,11 @@ fi
 if [ "$MODPLUG" = "true" ]; then
 	echo "Selected Modplug music engine."
 	echo "#define CONFIG_MODPLUG" >> src/config.h
-	echo "BUILD_MODPLUG=1" >> Makefile.platform
+	echo "BUILD_MODPLUG=1" >> platform.inc
 elif [ "$MIKMOD" = "true" ]; then
 	echo "Selected Mikmod music engine."
 	echo "#define CONFIG_MIKMOD" >> src/config.h
-	echo "BUILD_MIKMOD=1" >> Makefile.platform
+	echo "BUILD_MIKMOD=1" >> platform.inc
 else
 	echo "Music engine disabled."
 fi
@@ -556,7 +552,7 @@ fi
 if [ "$AUDIO" = "true" ]; then
 	echo "Audio subsystem enabled."
 	echo "#define CONFIG_AUDIO" >> src/config.h
-	echo "BUILD_AUDIO=1" >> Makefile.platform
+	echo "BUILD_AUDIO=1" >> platform.inc
 else
 	echo "Audio subsystem disabled."
 fi
@@ -567,7 +563,7 @@ fi
 if [ "$LIBPNG" = "true" ]; then
 	echo "PNG screendump support enabled."
 	echo "#define CONFIG_PNG" >> src/config.h
-	echo "LIBPNG=1" >> Makefile.platform
+	echo "LIBPNG=1" >> platform.inc
 else
 	echo "PNG screendump support disabled."
 fi
@@ -578,7 +574,7 @@ fi
 if [ "$TREMOR" = "true" ]; then
 	echo "Using tremor in place of ogg/vorbis."
 	echo "#define CONFIG_TREMOR" >> src/config.h
-	echo "TREMOR=1" >> Makefile.platform
+	echo "TREMOR=1" >> platform.inc
 else
 	echo "Not using tremor in place of ogg/vorbis."
 fi
@@ -589,7 +585,7 @@ fi
 if [ "$PTHREAD" = "true" ]; then
 	echo "Using pthread for locking primitives."
 	echo "#define CONFIG_PTHREAD_MUTEXES" >> src/config.h
-	echo "PTHREAD=1" >> Makefile.platform
+	echo "PTHREAD=1" >> platform.inc
 else
 	echo "Not using pthread for locking primitives."
 fi
@@ -605,7 +601,7 @@ if [ "$ICON" = "true" ]; then
 	# On Windows we want the icons to be compiled in
 	#
 	if [ "$PLATFORM" = "mingw" ]; then
-		echo "EMBED_ICONS=1" >> Makefile.platform
+		echo "EMBED_ICONS=1" >> platform.inc
 	fi
 else
 	echo "Icon branding disabled."

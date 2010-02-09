@@ -12,7 +12,7 @@ WINDRES = ${MINGWBASE}windres
 BINEXT = .exe
 
 # OpenGL must be linked to MZX
-mzx_flags  += -DLINK_OPENGL
+mzx_flags   += -DLINK_OPENGL
 mzx_ldflags += -lopengl32
 
 # Windows needs PNG to be statically linked (inc. zlib)

@@ -8,11 +8,12 @@
 
 .PHONY: clean package_clean
 
+include platform.inc
 include version.inc
 
 all: mzx
 
-include Makefile.platform
+include arch/Makefile.${PLATFORM}
 
 CC  ?= gcc
 CXX ?= g++
@@ -91,6 +92,6 @@ clean: ${mzx}_clean utils_clean
 distclean: clean
 	@echo "  DISTCLEAN"
 	@rm -f src/config.h
-	@cp -f arch/Makefile.dist Makefile.platform
+	@echo "PLATFORM=none" > platform.inc
 
 endif

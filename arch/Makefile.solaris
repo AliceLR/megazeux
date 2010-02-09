@@ -8,7 +8,7 @@
 STRIP ?= strip --strip-unneeded
 
 # Solaris doesn't have this pulled in by other deps
-mzx_ldflags := -lm
+mzx_ldflags += -lm
 
 # solaris os specific install target
 install:
