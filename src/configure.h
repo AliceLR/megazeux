@@ -26,9 +26,7 @@ __M_BEGIN_DECLS
 
 typedef struct _config_info config_info;
 
-#ifdef CONFIG_EDITOR
-#include "editor/macro.h"
-#endif
+#define OPTION_NAME_LEN 32
 
 struct _config_info
 {
@@ -66,51 +64,31 @@ struct _config_info
   int mzx_speed;
   int disassemble_extras;
   int disassemble_base;
-
-  // Whether or not to start MZX in the editor
   int startup_editor;
 
-#ifdef CONFIG_EDITOR
-  // Board editor options
-  int editor_space_toggles;
-  int bedit_hhelp;
-
-  // Robot editor options
-  char color_codes[32];
-  int color_coding_on;
-  int default_invalid_status;
-  int redit_hhelp;
-
-  // Backup options
-  int backup_count;
-  int backup_interval;
-  char backup_name[256];
-  char backup_ext[256];
-
-  // Macro options
-  char default_macros[5][64];
-  int num_extended_macros;
-  int num_macros_allocated;
-  ext_macro **extended_macros;
-#endif // CONFIG_EDITOR
-
-  // Misc option
+  // Misc options
   int mask_midchars;
 };
 
 typedef void (* config_function)(config_info *conf,
  char *name, char *value, char *extended_data);
 
-typedef struct
-{
-  char option_name[32];
-  config_function change_option;
-} config_entry;
-
 void set_config_from_file(config_info *conf, const char *conf_file_name);
 void default_config(config_info *conf);
-void set_config_from_command_line(config_info *conf, int argc,
- char *argv[]);
+void set_config_from_command_line(config_info *conf,
+ int argc, char *argv[]);
+
+typedef void (* find_change_option)(void *conf, char *name, char *value,
+ char *extended_data);
+
+#ifdef CONFIG_EDITOR
+
+void __set_config_from_file(find_change_option find_change_handler,
+ void *conf, const char *conf_file_name);
+void __set_config_from_command_line(find_change_option find_change_handler,
+ void *conf, int argc, char *argv[]);
+
+#endif // CONFIG_EDITOR
 
 __M_END_DECLS
 

@@ -30,6 +30,10 @@ __M_BEGIN_DECLS
 #include "sprite_struct.h"
 #include "configure.h"
 
+#ifdef CONFIG_EDITOR
+#include "editor/configure.h"
+#endif
+
 // FIXME: Hack
 #define NUM_SFX 50
 
@@ -181,6 +185,10 @@ typedef struct
   int lock_speed;
 
   config_info conf;
+
+#ifdef CONFIG_EDITOR
+  editor_config_info editor_conf;
+#endif
 
 #ifdef CONFIG_HELPSYS
   // Keep this open, just once

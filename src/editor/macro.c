@@ -19,7 +19,7 @@
 
 // Extended macro support
 
-#include "../configure.h"
+#include "configure.h"
 #include "macro.h"
 #include "../rasm.h"
 #include "../util.h"
@@ -527,7 +527,7 @@ static ext_macro *process_macro(char *line_data, char *name, char *label)
   return macro_dest;
 }
 
-ext_macro *find_macro(config_info *conf, char *name, int *next)
+ext_macro *find_macro(editor_config_info *conf, char *name, int *next)
 {
   int bottom = 0, top = (conf->num_extended_macros) - 1, middle = 0;
   int cmpval = 0;
@@ -558,7 +558,7 @@ ext_macro *find_macro(config_info *conf, char *name, int *next)
   return NULL;
 }
 
-void add_ext_macro(config_info *conf, char *name, char *line_data,
+void add_ext_macro(editor_config_info *conf, char *name, char *line_data,
  char *label)
 {
   ext_macro *macro_dest;

@@ -25,13 +25,13 @@
 __M_BEGIN_DECLS
 
 #include "world_struct.h"
-#include "configure.h"
+#include "editor/configure.h"
 
 typedef struct
 {
   void *handle;
   void (*edit_world)(World *mzx_world);
-  void (*add_ext_macro)(config_info *conf, char *name,
+  void (*add_ext_macro)(editor_config_info *conf, char *name,
    char *line_data, char *label);
   void (*init_macros)(World *mzx_world);
   void (*free_extended_macros)(World *mzx_world);

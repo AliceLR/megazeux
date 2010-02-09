@@ -32,8 +32,6 @@
 #include "fsafeopen.h"
 #include "util.h"
 
-#include "editor_syms.h"
-
 #if defined(CONFIG_NDS)
 #define VIDEO_OUTPUT_DEFAULT "nds"
 #elif defined(CONFIG_GP2X)
@@ -61,226 +59,11 @@
 #define AUDIO_SAMPLE_RATE 44100
 #endif
 
-#ifdef CONFIG_EDITOR
-
-// Default colors for color coding:
-// 0 current line - 11
-// 1 immediates - 10
-// 2 characters - 14
-// 3 colors - color box or 2
-// 4 directions - 3
-// 5 things - 11
-// 6 params - 2
-// 7 strings - 14
-// 8 equalities - 0
-// 9 conditions - 15
-// 10 items - 11
-// 11 extras - 7
-// 12 commands and command fragments - 15
-
-static void config_ccode_colors(config_info *conf, char *name, char *value,
- char *extended_data)
+typedef struct
 {
-  conf->color_codes[4] = strtol(value, NULL, 10);
-}
-
-static void config_ccode_commands(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->color_codes[13] = strtol(value, NULL, 10);
-}
-
-static void config_ccode_conditions(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->color_codes[10] = strtol(value, NULL, 10);
-}
-
-static void config_ccode_current_line(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->color_codes[0] = strtol(value, NULL, 10);
-}
-
-static void config_ccode_directions(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->color_codes[5] = strtol(value, NULL, 10);
-}
-
-static void config_ccode_equalities(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->color_codes[9] = strtol(value, NULL, 10);
-}
-
-static void config_ccode_extras(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->color_codes[8] = strtol(value, NULL, 10);
-}
-
-static void config_ccode_on(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->color_coding_on = strtol(value, NULL, 10);
-}
-
-static void config_ccode_immediates(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  int new_color = strtol(value, NULL, 10);
-  conf->color_codes[1] = new_color;
-  conf->color_codes[2] = new_color;
-}
-
-static void config_ccode_items(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->color_codes[11] = strtol(value, NULL, 10);
-}
-
-static void config_ccode_params(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->color_codes[7] = strtol(value, NULL, 10);
-}
-
-static void config_ccode_strings(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->color_codes[8] = strtol(value, NULL, 10);
-}
-
-static void config_ccode_things(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->color_codes[6] = strtol(value, NULL, 10);
-}
-
-static void config_default_invald(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  if(!strcasecmp(value, "ignore"))
-  {
-    conf->default_invalid_status = 1;
-  }
-  else
-
-  if(!strcasecmp(value, "delete"))
-  {
-    conf->default_invalid_status = 2;
-  }
-  else
-
-  if(!strcasecmp(value, "comment"))
-  {
-    conf->default_invalid_status = 3;
-  }
-}
-
-static void config_macro(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  char *macro_name = name + 6;
-
-  if(isdigit(macro_name[0]) && !macro_name[1] && !extended_data)
-  {
-    int macro_num = macro_name[0] - 0x31;
-    value[63] = 0;
-    strcpy(conf->default_macros[macro_num], value);
-  }
-  else
-  {
-    // FIXME: Hack, remove
-    if(extended_data && editor_syms.handle)
-      editor_syms.add_ext_macro(conf, macro_name, extended_data, value);
-  }
-}
-
-static void config_startup_editor(config_info *conf, char *name,
- char *value, char *extended_data)
-{
-  conf->startup_editor = strtol(value, NULL, 10);
-}
-
-static void bedit_hhelp(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->bedit_hhelp = strtol(value, NULL, 10);
-}
-
-static void redit_hhelp(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->redit_hhelp = strtol(value, NULL, 10);
-}
-
-static void backup_count(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->backup_count = strtol(value, NULL, 10);
-}
-
-static void backup_interval(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  conf->backup_interval = strtol(value, NULL, 10);
-}
-
-static void backup_name(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  strncpy(conf->backup_name, value, 256);
-}
-
-static void backup_ext(config_info *conf, char *name, char *value,
- char *extended_data)
-{
-  strncpy(conf->backup_ext, value, 256);
-}
-
-static void config_editor_space_toggles(config_info *conf, char *name,
- char *value, char *extended_data)
-{
-  conf->editor_space_toggles = strtol(value, NULL, 10);
-}
-
-
-/* FAT NOTE: This is searched as a binary tree, the nodes must be
- *           sorted alphabetically, or they risk being ignored.
- */
-static const config_entry editor_config_options[] =
-{
-  { "backup_count", backup_count },
-  { "backup_ext", backup_ext },
-  { "backup_interval", backup_interval },
-  { "backup_name", backup_name },
-  { "board_editor_hide_help", bedit_hhelp },
-  { "ccode_colors", config_ccode_colors },
-  { "ccode_commands", config_ccode_commands },
-  { "ccode_conditions", config_ccode_conditions },
-  { "ccode_current_line", config_ccode_current_line },
-  { "ccode_directions", config_ccode_directions },
-  { "ccode_equalities", config_ccode_equalities },
-  { "ccode_extras", config_ccode_extras },
-  { "ccode_immediates", config_ccode_immediates },
-  { "ccode_items", config_ccode_items },
-  { "ccode_params", config_ccode_params },
-  { "ccode_strings", config_ccode_strings },
-  { "ccode_things", config_ccode_things },
-  { "color_coding_on", config_ccode_on },
-  { "default_invalid_status", config_default_invald },
-  { "editor_space_toggles", config_editor_space_toggles },
-  { "macro_*", config_macro },
-  { "robot_editor_hide_help", redit_hhelp },
-  { "startup_editor", config_startup_editor },
-};
-
-static const int num_editor_config_options =
- sizeof(editor_config_options) / sizeof(config_entry);
-
-#endif // CONFIG_EDITOR
+  char option_name[OPTION_NAME_LEN];
+  config_function change_option;
+} config_entry;
 
 static void config_disassemble_extras(config_info *conf, char *name, char *value,
  char *extended_data)
@@ -590,10 +373,16 @@ static void config_set_gl_scaling_vertex_shader(config_info *conf, char *name,
   strncpy(conf->gl_scaling_vertex_shader, value, 42);
 }
 
+static void config_startup_editor(config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  conf->startup_editor = strtol(value, NULL, 10);
+}
+
 /* FAT NOTE: This is searched as a binary tree, the nodes must be
  *           sorted alphabetically, or they risk being ignored.
  */
-static const config_entry core_config_options[] =
+static const config_entry config_options[] =
 {
   { "audio_buffer", config_set_audio_buffer },
   { "audio_sample_rate", config_set_audio_freq },
@@ -626,15 +415,16 @@ static const config_entry core_config_options[] =
   { "resample_mode", config_resample_mode },
   { "sample_volume", config_set_sam_volume },
   { "save_file", config_save_file },
+  { "startup_editor", config_startup_editor },
   { "startup_file", config_startup_file },
   { "video_output", config_set_video_output },
   { "window_resolution", config_window_resolution }
 };
 
-static const int num_core_config_options =
- sizeof(core_config_options) / sizeof(config_entry);
+static const int num_config_options =
+ sizeof(config_options) / sizeof(config_entry);
 
-static const config_entry *__find_option(char *name,
+static const config_entry *find_option(char *name,
  const config_entry options[], int num_options)
 {
   int cmpval, top = num_options - 1, middle, bottom = 0;
@@ -656,20 +446,6 @@ static const config_entry *__find_option(char *name,
   }
 
   return NULL;
-}
-
-static const config_entry *find_option(char *name)
-{
-  const config_entry *entry = __find_option(name, core_config_options,
-   num_core_config_options);
-
-#ifdef CONFIG_EDITOR
-  if(!entry)
-    entry = __find_option(name, editor_config_options,
-     num_editor_config_options);
-#endif // CONFIG_EDITOR
-
-  return entry;
 }
 
 static config_info default_options =
@@ -708,162 +484,125 @@ static config_info default_options =
   4,                            // mzx_speed
   1,                            // disassemble_extras
   10,                           // disassemble_base
-
   0,                            // startup_editor
 
-#ifdef CONFIG_EDITOR
-  // Board editor options
-  0,                            // editor_space_toggles
-  0,				// board_editor_hide_help
-
-  // Robot editor options
-  { 11, 10, 10, 14, 255, 3, 11, 2, 14, 0, 15, 11, 7, 15, 1, 2, 3 },
-  1,                            // color_coding_on
-  1,                            // default_invalid_status
-  0,                            // robot_editor_hide_help
-
-  // Backup options
-  3,                            // backup_count
-  60,                           // backup_interval
-  "backup",                     // backup_name
-  ".mzx",                       // backup_ext
-
-  // Macro options
-  { "char ", "color ", "goto ", "send ", ": playershot^" },
-  0,                            // num_extended_macros
-  0,
-  NULL,
-#endif // CONFIG_EDITOR
-
-  // Misc options
-  1
+  1,                            // mask_midchars
 };
 
-void default_config(config_info *conf)
+static void config_change_option(void *conf, char *name, char *value,
+ char *extended_data)
 {
-  memcpy(conf, &default_options, sizeof(config_info));
+  const config_entry *current_option = find_option(name,
+   config_options, num_config_options);
+
+  if(current_option)
+    current_option->change_option(conf, name, value, extended_data);
 }
 
-void set_config_from_file(config_info *conf, const char *conf_file_name)
+__editor_maybe_static void __set_config_from_file(
+ find_change_option find_change_handler, void *conf, const char *conf_file_name)
 {
-  FILE *conf_file = fopen(conf_file_name, "rb");
+  char current_char, *input_position, *output_position, *use_extended_buffer;
+  int line_size, extended_size, extended_allocate_size = 512;
+  char line_buffer_alternate[256], line_buffer[256];
+  int extended_buffer_offset, peek_char;
+  char *extended_buffer = malloc(512);
+  char *equals_position, *value;
+  FILE *conf_file;
 
-  if(conf_file)
+  conf_file = fopen(conf_file_name, "rb");
+  if(!conf_file)
+    return;
+
+  while(fsafegets(line_buffer_alternate, 255, conf_file))
   {
-    char line_buffer[256];
-    char line_buffer_alternate[256];
-    char *extended_buffer = malloc(512);
-    char current_char, *input_position, *output_position;
-    char *equals_position;
-    char *value;
-    const config_entry *current_option;
-    int line_size;
-    int extended_size;
-    int extended_allocate_size = 512;
-    int peek_char;
-    int extended_buffer_offset;
-    char *use_extended_buffer;
-
-    while(fsafegets(line_buffer_alternate, 255, conf_file))
+    if(line_buffer_alternate[0] != '#')
     {
-      if(line_buffer_alternate[0] != '#')
+      input_position = line_buffer_alternate;
+      output_position = line_buffer;
+      equals_position = NULL;
+
+      do
       {
-        input_position = line_buffer_alternate;
-        output_position = line_buffer;
-        equals_position = NULL;
-        do
-        {
-          current_char = *input_position;
+        current_char = *input_position;
 
-          if(!isspace(current_char))
+        if(!isspace(current_char))
+        {
+          if((current_char == '\\') &&
+            (input_position[1] == 's'))
           {
-            if((current_char == '\\') &&
-             (input_position[1] == 's'))
+            input_position++;
+            current_char = ' ';
+          }
+
+          if((current_char == '=') && (equals_position == NULL))
+            equals_position = output_position;
+
+          *output_position = current_char;
+          output_position++;
+        }
+        input_position++;
+      } while(current_char);
+
+      if(equals_position)
+      {
+        *equals_position = 0;
+        value = equals_position + 1;
+      }
+      else
+      {
+        value = (char *)"1";
+      }
+
+      if(line_buffer[0])
+      {
+        // There might be extended information too - get it.
+        peek_char = fgetc(conf_file);
+        extended_size = 0;
+        extended_buffer_offset = 0;
+        use_extended_buffer = NULL;
+
+        while((peek_char == ' ') || (peek_char == '\t'))
+        {
+          // Extended data line
+          use_extended_buffer = extended_buffer;
+          if(fsafegets(line_buffer_alternate, 254, conf_file))
+          {
+            line_size = strlen(line_buffer_alternate);
+            line_buffer_alternate[line_size] = '\n';
+            line_size++;
+
+            extended_size += line_size;
+            if(extended_size >= extended_allocate_size)
             {
-              input_position++;
-              current_char = ' ';
+              extended_allocate_size *= 2;
+              extended_buffer = realloc(extended_buffer,
+                extended_allocate_size);
             }
 
-            if((current_char == '=') && (equals_position == NULL))
-              equals_position = output_position;
-
-            *output_position = current_char;
-            output_position++;
+            strcpy(extended_buffer + extended_buffer_offset,
+              line_buffer_alternate);
+            extended_buffer_offset += line_size;
           }
-          input_position++;
-        } while(current_char);
 
-        if(equals_position)
-        {
-          *equals_position = 0;
-          value = equals_position + 1;
-        }
-        else
-        {
-          value = (char *)"1";
-        }
-
-        if(line_buffer[0])
-        {
-          // There might be extended information too - get it.
           peek_char = fgetc(conf_file);
-          extended_size = 0;
-          extended_buffer_offset = 0;
-          use_extended_buffer = NULL;
-
-          while((peek_char == ' ') || (peek_char == '\t'))
-          {
-            // Extended data line
-            use_extended_buffer = extended_buffer;
-            if(fsafegets(line_buffer_alternate, 254, conf_file))
-            {
-              line_size = strlen(line_buffer_alternate);
-              line_buffer_alternate[line_size] = '\n';
-              line_size++;
-
-              extended_size += line_size;
-              if(extended_size >= extended_allocate_size)
-              {
-                extended_allocate_size *= 2;
-                extended_buffer = realloc(extended_buffer,
-                 extended_allocate_size);
-              }
-
-              strcpy(extended_buffer + extended_buffer_offset,
-               line_buffer_alternate);
-              extended_buffer_offset += line_size;
-            }
-
-            peek_char = fgetc(conf_file);
-          }
-          ungetc(peek_char, conf_file);
-
-          current_option = find_option(line_buffer);
-
-          if(current_option)
-          {
-            current_option->change_option(conf, line_buffer, value,
-             use_extended_buffer);
-          }
         }
+        ungetc(peek_char, conf_file);
+
+        find_change_handler(conf, line_buffer, value, use_extended_buffer);
       }
     }
-
-    free(extended_buffer);
-
-    fclose(conf_file);
   }
+
+  free(extended_buffer);
+  fclose(conf_file);
 }
 
-void set_config_from_command_line(config_info *conf, int argc,
- char *argv[])
+__editor_maybe_static void __set_config_from_command_line(
+ find_change_option find_change_handler, void *conf, int argc, char *argv[])
 {
-  char line_buffer[256];
   char current_char, *input_position, *output_position;
-  char *equals_position;
-  char *value;
-  const config_entry *current_option;
-
+  char *equals_position, line_buffer[256], *value;
   int i;
 
   for(i = 1; i < argc; i++)
@@ -902,11 +641,21 @@ void set_config_from_command_line(config_info *conf, int argc,
     }
 
     if(line_buffer[0])
-    {
-      current_option = find_option(line_buffer);
-
-      if(current_option)
-        current_option->change_option(conf, line_buffer, value, NULL);
-    }
+      find_change_handler(conf, line_buffer, value, NULL);
   }
+}
+
+void set_config_from_file(config_info *conf, const char *conf_file_name)
+{
+  __set_config_from_file(config_change_option, conf, conf_file_name);
+}
+
+void default_config(config_info *conf)
+{
+  memcpy(conf, &default_options, sizeof(config_info));
+}
+
+void set_config_from_command_line(config_info *conf, int argc, char *argv[])
+{
+  __set_config_from_command_line(config_change_option, conf, argc, argv);
 }

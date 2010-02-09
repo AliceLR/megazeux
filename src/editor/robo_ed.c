@@ -590,7 +590,7 @@ static int execute_named_macro(robot_state *rstate, char *macro_name)
   lone_name[line_pos - macro_name] = 0;
 
   // see if such a macro exists
-  macro_src = find_macro(&(rstate->mzx_world->conf), macro_name, &next);
+  macro_src = find_macro(&rstate->mzx_world->editor_conf, macro_name, &next);
   free(lone_name);
 
   // it doesn't, carefully abort
@@ -1868,7 +1868,7 @@ static void execute_numbered_macro(robot_state *rstate, int num)
   int next;
 
   sprintf(macro_name, "%d", num);
-  macro_src = find_macro(&(mzx_world->conf), macro_name, &next);
+  macro_src = find_macro(&mzx_world->editor_conf, macro_name, &next);
 
   if(macro_src)
     execute_macro(rstate, macro_src);
@@ -2444,15 +2444,15 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
   rstate.include_ignores = mzx_world->conf.disassemble_extras;
   rstate.disassemble_base = mzx_world->conf.disassemble_base;
   rstate.default_invalid =
-   (validity_types)(mzx_world->conf.default_invalid_status);
-  rstate.ccodes = mzx_world->conf.color_codes;
+   (validity_types)(mzx_world->editor_conf.default_invalid_status);
+  rstate.ccodes = mzx_world->editor_conf.color_codes;
   rstate.mark_mode = 0;
   rstate.mark_start = -1;
   rstate.mark_end = -1;
   rstate.mark_start_rline = NULL;
   rstate.mark_end_rline = NULL;
   rstate.show_line_numbers = 0;
-  rstate.color_code = mzx_world->conf.color_coding_on;
+  rstate.color_code = mzx_world->editor_conf.color_coding_on;
   rstate.current_x = 0;
   rstate.active_macro = NULL;
   rstate.base = &base;
@@ -2517,7 +2517,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
   save_screen();
   fill_line(80, 0, 0, top_char, top_color);
 
-  if(mzx_world->conf.redit_hhelp)
+  if(mzx_world->editor_conf.redit_hhelp)
   {
     rstate.scr_hide_mode = 1;
     write_string(key_help_hide, 0, 24, bottom_text_color, 0);
@@ -3302,7 +3302,7 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
             int next;
 
             restore_screen();
-            macro_src = find_macro(&(mzx_world->conf), macro_line, &next);
+            macro_src = find_macro(&mzx_world->editor_conf, macro_line, &next);
 
             if(macro_src)
               execute_macro(&rstate, macro_src);
@@ -3379,19 +3379,19 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
 
 void init_macros(World *mzx_world)
 {
-  memcpy(macros, mzx_world->conf.default_macros, 5 * 64);
+  memcpy(macros, mzx_world->editor_conf.default_macros, 5 * 64);
 }
 
 void free_extended_macros(World *mzx_world)
 {
   int i;
 
-  if(!mzx_world->conf.extended_macros)
+  if(!mzx_world->editor_conf.extended_macros)
     return;
 
-  for(i = 0; i < mzx_world->conf.num_extended_macros; i++)
-    free_macro(mzx_world->conf.extended_macros[i]);
+  for(i = 0; i < mzx_world->editor_conf.num_extended_macros; i++)
+    free_macro(mzx_world->editor_conf.extended_macros[i]);
 
-  free(mzx_world->conf.extended_macros);
+  free(mzx_world->editor_conf.extended_macros);
 }
 

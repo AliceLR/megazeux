@@ -901,10 +901,10 @@ void edit_world(World *mzx_world)
   int edit_screen_height;
   int copy_repeat_width = -1;
   int copy_repeat_height = -1;
-  int backup_count = mzx_world->conf.backup_count;
-  unsigned int backup_interval = mzx_world->conf.backup_interval;
-  char *backup_name = mzx_world->conf.backup_name;
-  char *backup_ext = mzx_world->conf.backup_ext;
+  int backup_count = mzx_world->editor_conf.backup_count;
+  unsigned int backup_interval = mzx_world->editor_conf.backup_interval;
+  char *backup_name = mzx_world->editor_conf.backup_name;
+  char *backup_ext = mzx_world->editor_conf.backup_ext;
   int backup_timestamp = get_ticks();
   int backup_num = 0;
   char *level_id;
@@ -968,7 +968,7 @@ void edit_world(World *mzx_world)
   save_editor_palette();
   insta_fadein();
 
-  if(mzx_world->conf.bedit_hhelp)
+  if(mzx_world->editor_conf.bedit_hhelp)
     edit_screen_height = 25;
   else
     edit_screen_height = 19;
@@ -1484,7 +1484,7 @@ void edit_world(World *mzx_world)
            */
           if((!overlay_edit) && (current_id == level_id[offset]) &&
              (current_color == level_color[offset]) &&
-             mzx_world->conf.editor_space_toggles)
+             mzx_world->editor_conf.editor_space_toggles)
           {
             place_current_at_xy(mzx_world, SPACE, 7, 0, cursor_board_x,
              cursor_board_y, &copy_robot, &copy_scroll, &copy_sensor,
@@ -1498,7 +1498,7 @@ void edit_world(World *mzx_world)
              * as usual.
              */
             if(!((is_robot(level_id[offset]) && (!overlay_edit)) &&
-                 !mzx_world->conf.editor_space_toggles))
+                 !mzx_world->editor_conf.editor_space_toggles))
             {
               current_param = place_current_at_xy(mzx_world, current_id,
                current_color, current_param, cursor_board_x, cursor_board_y,

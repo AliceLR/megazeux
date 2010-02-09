@@ -141,9 +141,17 @@ int main(int argc, char *argv[])
   // "include" statements are done wrt this path. Move back
   // into the "current" directory after loading.
   chdir(config_dir);
-  default_config(&(mzx_world.conf));
-  set_config_from_file(&(mzx_world.conf), mzx_res_get_by_id(CONFIG_TXT));
-  set_config_from_command_line(&(mzx_world.conf), argc, argv);
+
+  default_config(&mzx_world.conf);
+  set_config_from_file(&mzx_world.conf, mzx_res_get_by_id(CONFIG_TXT));
+  set_config_from_command_line(&mzx_world.conf, argc, argv);
+
+#ifdef CONFIG_EDITOR
+  default_editor_config(&mzx_world.editor_conf);
+  set_editor_config_from_file(&mzx_world.editor_conf, mzx_res_get_by_id(CONFIG_TXT));
+  set_editor_config_from_command_line(&mzx_world.editor_conf, argc, argv);
+#endif
+
   chdir(current_dir);
 
   counter_fsg();
