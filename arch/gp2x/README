@@ -15,26 +15,24 @@ be automatically selected; there is no need to set it explicitly in the
 config.txt.
 
 The file pad.config must be included in the distribution and copied from
-arch/gp2x. This file contains necessary pad mappings for the GP2X controls
-(the original is for the PSP platform).
+arch/gp2x. This file contains necessary pad mappings for the GP2X controls.
 
 COMPILATION
 
-A suitable cross-compiler for ARM (which may be `gp2x-sdk' or `Open2x' for
-GP2X) must be installed and added to your environment's PATH variable. For
-example, if you have `arm-linux-gcc' in /usr/arm-linux/bin, you should do
+The only support toolchain for GP2X is the Open2X toolchain. It must be
+installed andadded to your environment's PATH variable. For example, if
+you have `arm-open2x-linux-gcc' in /usr/arm-linux/bin, you should do
 the following:
 
   export PATH=/usr/arm-linux/bin:$PATH
 
-It is now necessary to compile `SDL', `libmikmod', `tremor' and `glibc'.
-Compilation of these libraries is not covered in this document. It may also
-be possible to use the pre-compiled libraries come with your toolchain.
+It is now necessary to compile `SDL', `libmikmod' and `tremor'. Compilation 
+of these libraries is not covered in this document. It may also be possible
+to use the pre-compiled libraries come with your toolchain.
 
   http://libsdl.org/ (1.2.10 or later)
   http://mikmod.raphnet.net/ (3.1.11 or later)
   http://svn.xiph.org/trunk/Tremor/
-  http://www.gnu.org/software/libc/
 
 Now you must run `config.sh'. The configuration script (config.sh) for the GP2X
 platform assumes that --prefix will specify the path to the GP2X SDK. For

@@ -2,20 +2,18 @@
 # gp2x makefile generics
 #
 
-CC      = arm-gp2x-linux-gcc
-CXX     = arm-gp2x-linux-g++
-STRIP   = arm-gp2x-linux-strip --strip-unneeded
-OBJCOPY = arm-gp2x-linux-objcopy
+CC      = arm-open2x-linux-gcc
+CXX     = arm-open2x-linux-g++
+STRIP   = arm-open2x-linux-strip --strip-unneeded
+OBJCOPY = arm-open2x-linux-objcopy
 
 BINEXT = .gpe
 
 #
 # GP2X binaries must be statically linked.
-# This assumes the locations in the ancient vendor "gp2x_sdk" package.
 #
-SDL_LDFLAGS    = -L${PREFIX}/lib/static -lSDL -lSDLmain -lpthread -lm -ldl
-VORBIS_LDFLAGS = -L${PREFIX}/lib/static -lvorbisidec
-LIBPNG_LDFLAGS = -L${PREFIX}/lib/static -lpng12 -lz -lm
+LIBPNG_LDFLAGS = `libpng12-config --static --ldflags`
+ARCH_EXE_LDFLAGS = -static
 
 #
 # There's a couple of other packaged files on GP2X
