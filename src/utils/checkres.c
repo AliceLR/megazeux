@@ -96,15 +96,24 @@ static struct board
 }
 board_list[MAX_BOARDS];
 
+#ifdef __WIN32__
+// FIXME: Fix this better
+int error(const char *string, unsigned int type, unsigned int options,
+ unsigned int code)
+{
+  return 0;
+}
+#endif // __WIN32__
+
 static char **hash_table[HASH_TABLE_SIZE];
 
 //From http://nothings.org/stb.h, by Sean
 static unsigned int stb_hash(char *str)
 {
-   unsigned int hash = 0;
-   while(*str)
-      hash = (hash << 7) + (hash >> 25) + *str++;
-   return hash + (hash >> 16);
+  unsigned int hash = 0;
+  while(*str)
+    hash = (hash << 7) + (hash >> 25) + *str++;
+  return hash + (hash >> 16);
 }
 
 static enum status add_to_hash_table(char *stack_str)
@@ -118,7 +127,7 @@ static enum status add_to_hash_table(char *stack_str)
   if(!len)
     return SUCCESS;
 
-  str = cmalloc(len + 1);
+  str = malloc(len + 1);
   if(!str)
     return MALLOC_FAILED;
 
@@ -129,7 +138,7 @@ static enum status add_to_hash_table(char *stack_str)
 
   if(!hash_table[slot])
   {
-    hash_table[slot] = cmalloc(sizeof(char *) * 2);
+    hash_table[slot] = malloc(sizeof(char *) * 2);
     if(!hash_table[slot])
       return MALLOC_FAILED;
   }
@@ -145,7 +154,7 @@ static enum status add_to_hash_table(char *stack_str)
       count++;
     }
 
-    hash_table[slot] = crealloc(hash_table[slot], sizeof(char *) * (count + 2));
+    hash_table[slot] = realloc(hash_table[slot], sizeof(char *) * (count + 2));
   }
 
   hash_table[slot][count] = str;
@@ -182,7 +191,7 @@ static enum status s_open(const char *filename, const char *mode,
   enum status ret;
   unzFile f;
 
-  *s = cmalloc(sizeof(struct stream));
+  *s = malloc(sizeof(struct stream));
 
   if(!is_zip_file(filename))
   {
@@ -268,7 +277,7 @@ static enum status s_open(const char *filename, const char *mode,
   }
 
   (*s)->stream.buffer.len = info.uncompressed_size;
-  (*s)->stream.buffer.buf = cmalloc((*s)->stream.buffer.len);
+  (*s)->stream.buffer.buf = malloc((*s)->stream.buffer.len);
   if(!(*s)->stream.buffer.buf)
   {
     ret = MALLOC_FAILED;
