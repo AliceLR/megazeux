@@ -7,9 +7,8 @@ USERS
 
 DEVELOPERS
 
-+ Ported to OpenSolaris.
-  Run config.sh with "bash config.sh --platform solaris" to use it. You
-  need to install `SUNWxorg-headers' if you want X11 clipboard support.
++ Ported to OpenSolaris. You need to install `SUNWxorg-headers' if you want
+  X11 clipboard support.
 + Remove dependency on SDL_image on non-win32 platforms when enabling
   the icon branding feature (see pngops.c).
 

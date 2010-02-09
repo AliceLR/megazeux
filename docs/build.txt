@@ -39,9 +39,6 @@ All platforms must first invoke the config.sh script to configure the
 build system. Type "./config.sh" inside a POSIX sh compatible shell
 environment (on Windows, install MSYS/MINGW) to get more usage info.
 
-On OpenSolaris, this script must be run as "bash config.sh", as the
-default /bin/sh shell is not POSIX compliant.
-
 A normal compile line for Windows might be:
 
 ./config.sh --platform win32 --disable-libpng
