@@ -37,11 +37,12 @@ static lwp_t audio_thread;
 static u8 audio_stack[STACKSIZE];
 static Sint16 *audio_buffer[2];
 static volatile int current = 0;
+static volatile int audio_stop = 0;
 static int buffer_size;
 
 static void *wii_audio_thread(void *dud)
 {
-  while(1) {
+  while(!audio_stop) {
     LWP_ThreadSleep(audio_queue);
     audio_callback(audio_buffer[current ^ 1], buffer_size);
     DCFlushRange(audio_buffer[current ^ 1], buffer_size);
@@ -68,7 +69,7 @@ void init_audio_platform(config_info *conf)
   {
     case 32000: audfreq = AI_SAMPLERATE_32KHZ; break;
     case 48000: audfreq = AI_SAMPLERATE_48KHZ; break;
-    default: return;
+    default: audio.mix_buffer = NULL; return;
   }
 
   // buffer size must be multiple of 32 bytes, so samples must be multiple of 8
@@ -94,5 +95,20 @@ void init_audio_platform(config_info *conf)
     AUDIO_RegisterDMACallback(dma_callback);
     AUDIO_InitDMA((u32)audio_buffer[0], buffer_size);
     AUDIO_StartDMA();
+  }
+}
+
+void quit_audio_platform(void)
+{
+  void *dud;
+  if(audio.mix_buffer)
+  {
+    audio_stop = 1;
+    LWP_JoinThread(audio_thread, &dud);
+    free(audio.mix_buffer);
+    AUDIO_StopDMA();
+    LWP_CloseQueue(audio_queue);
+    // Don't free hardware audio buffers
+    // Memory allocated with memalign() can't neccessarily be free()'d
   }
 }
