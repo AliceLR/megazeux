@@ -1446,7 +1446,7 @@ static struct audio_stream *construct_pc_speaker_stream(void)
   if(!audio.sfx_on)
     return NULL;
 
-  pcs_stream = cmalloc(sizeof(struct pc_speaker_stream));
+  pcs_stream = ccalloc(1, sizeof(struct pc_speaker_stream));
 
   construct_audio_stream((struct audio_stream *)pcs_stream, pcs_mix_data,
    pcs_set_volume, NULL, NULL, NULL, NULL, NULL, pcs_destruct,
