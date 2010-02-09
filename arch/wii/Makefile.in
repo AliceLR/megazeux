@@ -12,20 +12,15 @@ ifeq ($(strip $(DEVKITPPC)),)
 $(error "DEVKITPPC must be set in your environment.")
 endif
 
-export PATH := $(DEVKITPPC)/bin:$(PATH)
-
-MACHTYPE := powerpc-gekko-
-
-AS      := $(MACHTYPE)as
-CC      := $(MACHTYPE)gcc
-CXX     := $(MACHTYPE)g++
-AR      := $(MACHTYPE)ar
-OBJCOPY := $(MACHTYPE)objcopy
+AS      := powerpc-gekko-as
+CC      := powerpc-gekko-gcc
+CXX     := powerpc-gekko-g++
+AR      := powerpc-gekko-ar
+OBJCOPY := powerpc-gekko-objcopy
 
 #
 # Wii target rules
 #
-BINEXT = .elf
 STRIP  = /bin/true
 
 #
@@ -53,3 +48,15 @@ package: mzx
 
 clean:
 	@rm -f boot.dol
+
+#
+# Need to nest Wii binaries in a subdir
+#
+build := build/${SUBPLATFORM}/apps/megazeux
+build: package ${build}
+	${CP} arch/wii/pad.config arch/wii/icon.png boot.dol ${build}
+	@sed "s/%VERSION%/$VERSION/g;s/%DATE%/`date -u +%Y%m%d%H%M`/g" \
+	    arch/wii/meta.xml > ${build}/meta.xml
+	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug
+
+include arch/zip.inc

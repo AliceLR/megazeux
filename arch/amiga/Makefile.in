@@ -24,3 +24,16 @@ endif
 
 # Amiga needs PNG to be statically linked (inc. zlib)
 LIBPNG_LDFLAGS = `libpng12-config --static --ldflags`
+
+#
+# Need to nest Amiga binaries in a subdir
+#
+build := build/${SUBPLATFORM}/MegaZeux
+build: ${build}
+	${CP} arch/amiga/MegaZeux.info ${build}
+	${CP} arch/amiga/MegaZeux.info ${build}/MZXRun.info
+	${CP} arch/amiga/MegaZeux.info build/${SUBPLATFORM}
+	${CP} arch/amiga/MegaZeux arch/amiga/MZXRun ${build}
+	${RM} ${build}/*.debug
+
+include arch/lha.inc

@@ -9,7 +9,7 @@ include contrib/unzip/src/Makefile.in
 #        and needs some love (and refactoring) to fix it
 #
 
-.PHONY: utils utils.debug utils_clean utils_package_clean
+.PHONY: utils utils.debug utils_clean
 
 utils_cflags := -fno-stack-protector
 
@@ -73,22 +73,3 @@ utils_clean: unzip_clean
 	${RM} ${hlp2txt} ${hlp2txt}.debug
 	$(if ${V},,@echo "  RM      " ${txt2hlp} ${txt2hlp}.debug)
 	${RM} ${txt2hlp} ${txt2hlp}.debug
-
-utils_package_clean:
-	-@mv ${checkres}       ${checkres}.backup
-	-@mv ${checkres}.debug ${checkres}.debug.backup
-	-@mv ${downver}        ${downver}.backup
-	-@mv ${downver}.debug  ${downver}.debug.backup
-	-@mv ${hlp2txt}        ${hlp2txt}.backup
-	-@mv ${hlp2txt}.debug  ${hlp2txt}.debug.backup
-	-@mv ${txt2hlp}        ${txt2hlp}.backup
-	-@mv ${txt2hlp}.debug  ${txt2hlp}.debug.backup
-	@${MAKE} utils_clean
-	-@mv ${checkres}.backup       ${checkres}
-	-@mv ${checkres}.debug.backup ${checkres}.debug
-	-@mv ${downver}.backup        ${downver}
-	-@mv ${downver}.debug.backup  ${downver}.debug
-	-@mv ${hlp2txt}.backup        ${hlp2txt}
-	-@mv ${hlp2txt}.debug.backup  ${hlp2txt}.debug
-	-@mv ${txt2hlp}.backup        ${txt2hlp}
-	-@mv ${txt2hlp}.debug.backup  ${txt2hlp}.debug

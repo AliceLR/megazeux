@@ -35,3 +35,10 @@ package: mzx
 
 clean:
 	@rm -f EBOOT.PBP PARAM.SFO ICON0.PNG
+
+build: package ${build}
+	${CP} arch/psp/pad.config ${build}
+	${CP} EBOOT.PBP ${build}
+	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug
+
+include arch/zip.inc

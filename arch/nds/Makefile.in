@@ -24,7 +24,6 @@ LIBNDS  := $(DEVKITPRO)/libnds
 #
 # NDS target rules
 #
-BINEXT = .elf
 STRIP  = /bin/true
 
 #
@@ -74,3 +73,13 @@ package: arm7bin arm9bin
 clean:
 	@${MAKE} -C arch/nds TARGET=${mzxrun} clean
 	@rm -f ${mzxrun}.nds arch/nds/${mzxrun}.arm7 ${mzxrun}.arm9 arch/nds/*.{d,o}
+
+#
+# We're only interested in our packaged binary; remove the ELF intermediaries
+#
+build: package ${build}
+	${CP} arch/nds/pad.config ${build}
+	${CP} ${mzxrun}.nds ${build}
+	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug
+
+include arch/zip.inc

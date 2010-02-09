@@ -191,41 +191,36 @@ fi
 
 echo "PREFIX?=$PREFIX" > platform.inc
 
-if [ "$PLATFORM" = "win32" ]; then
+if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
+  -o "$PLATFORM" = "mingw32" -o "$PLATFORM" = "mingw64" ]; then
+	[ "$PLATFORM" = "win32" -o "$PLATFORM" = "mingw32" ] && ARCHNAME=x86
+	[ "$PLATFORM" = "win64" -o "$PLATFORM" = "mingw64" ] && ARCHNAME=x64
+	[ "$PLATFORM" = "mingw32" ] && MINGWBASE=i586-mingw32msvc-
+	[ "$PLATFORM" = "mingw64" ] && MINGWBASE=x86_64-pc-mingw32-
 	PLATFORM="mingw"
-	echo "#define PLATFORM \"windows-x86\"" > src/config.h
-	echo "PLATFORM=$PLATFORM"              >> platform.inc
-	echo "MINGWBASE="                      >> platform.inc
-elif [ "$PLATFORM" = "win64" ]; then
-	PLATFORM="mingw"
-	echo "#define PLATFORM \"windows-x64\"" > src/config.h
-	echo "PLATFORM=$PLATFORM"              >> platform.inc
-	echo "MINGWBASE="                      >> platform.inc
-elif [ "$PLATFORM" = "mingw32" ]; then
-	PLATFORM="mingw"
-	echo "#define PLATFORM \"windows-x86\"" > src/config.h
-	echo "PLATFORM=$PLATFORM"              >> platform.inc
-	echo "MINGWBASE=i586-mingw32msvc-"     >> platform.inc
-elif [ "$PLATFORM" = "mingw64" ]; then
-	PLATFORM="mingw"
-	echo "#define PLATFORM \"windows-x64\"" > src/config.h
-	echo "PLATFORM=$PLATFORM"              >> platform.inc
-	echo "MINGWBASE=x86_64-pc-mingw32-"    >> platform.inc
+	echo "#define PLATFORM \"windows-$ARCHNAME\"" > src/config.h
+	echo "SUBPLATFORM=windows-$ARCHNAME"         >> platform.inc
+	echo "PLATFORM=$PLATFORM"                    >> platform.inc
+	echo "MINGWBASE=$MINGWBASE"                  >> platform.inc
 elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 	OS="`uname -s`"
 	MACH="`uname -m`"
 
-	if [ "$OS" = "Linux" ]; then
-		UNIX="linux"
-	elif [ "$OS" = "FreeBSD" ]; then
-		UNIX="freebsd"
-	else
-		echo "WARNING: Should define proper UNIX name here!"
-		UNIX="unix"
-	fi
+	case "$OS" in
+		"Linux")
+			UNIX="linux"
+			;;
+		"FreeBSD")
+			UNIX="freebsd"
+			;;
+		*)
+			echo "WARNING: Should define proper UNIX name here!"
+			UNIX="unix"
+			;;
+	esac
 
 	if [ "$MACH" = "x86_64" -o "$MACH" = "amd64" ]; then
-		echo "#define PLATFORM \"$UNIX-amd64\"" > src/config.h
+		ARCHNAME=amd64
 		LIBDIR=lib64
 		# FIXME: FreeBSD amd64 hack
 		[ "$UNIX" = "freebsd" ] && LIBDIR=lib
@@ -234,14 +229,16 @@ elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 			echo "ARCH_CXXFLAGS+=-fPIC" >> platform.inc
 		fi
 	elif [ "`echo $MACH | sed 's,i.86,x86,'`" = "x86" ]; then
-		echo "#define PLATFORM \"$UNIX-i386\"" > src/config.h
+		ARCHNAME=x86
 		LIBDIR=lib
 	else
-		echo "Add a friendly ARCH name to config.sh."
+		echo "Add a friendly MACH to config.sh."
 		exit 1
 	fi
 
-	echo "PLATFORM=unix" >> platform.inc
+	echo "#define PLATFORM \"$UNIX-$ARCHNAME\"" > src/config.h
+	echo "SUBPLATFORM=$UNIX-$ARCHNAME"         >> platform.inc
+	echo "PLATFORM=unix"                       >> platform.inc
 else
 	if [ ! -d arch/$PLATFORM ]; then
 		echo "Invalid platform selection (see arch/)."
@@ -249,7 +246,8 @@ else
 	fi
 
 	echo "#define PLATFORM \"$PLATFORM\"" > src/config.h
-	echo "PLATFORM=$PLATFORM" >> platform.inc
+	echo "SUBPLATFORM=$PLATFORM"         >> platform.inc
+	echo "PLATFORM=$PLATFORM"            >> platform.inc
 fi
 
 if [ "$PLATFORM" = "unix" ]; then

@@ -16,3 +16,13 @@ BINEXT = .gpe
 SDL_LDFLAGS    = -L${PREFIX}/lib/static -lSDL -lSDLmain -lpthread -lm -ldl
 VORBIS_LDFLAGS = -L${PREFIX}/lib/static -lvorbisidec
 LIBPNG_LDFLAGS = -L${PREFIX}/lib/static -lpng12 -lz -lm
+
+#
+# There's a couple of other packaged files on GP2X
+#
+build: ${build}
+	${RM} ${build}/${mzxrun}.debug
+	${CP} arch/gp2x/pad.config ${build}
+	-@convert -scale 32x32 contrib/icons/quantump.png ${build}/mzxrun.png
+
+include arch/zip.inc

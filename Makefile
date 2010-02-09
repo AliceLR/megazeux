@@ -6,7 +6,7 @@
 #                  http://aegis.sourceforge.net/auug97.pdf
 ##
 
-.PHONY: clean package_clean help_check mzx mzx.debug
+.PHONY: clean help_check mzx mzx.debug build build_clean build_source
 
 -include platform.inc
 include version.inc
@@ -113,6 +113,19 @@ MKDIR   := @${MKDIR}
 RM      := @${RM}
 endif
 
+build_clean:
+	$(if ${V},,@echo "  RM      " build)
+	${RM} -r build
+
+build_source: build/${TARGET}src
+
+build/${TARGET}src:
+	${RM} -r build/${TARGET}
+	${MKDIR} -p build/dist/source
+	@svn export . build/${TARGET}
+	@cd build/${TARGET} && make distclean
+	@tar -C build -jcvf build/dist/source/${TARGET}src.tar.bz2 ${TARGET}
+
 #
 # The SUPPRESS_BUILD hack is required to allow the placebo "dist"
 # Makefile to provide an 'all:' target, which allows it to print
@@ -148,49 +161,53 @@ include src/Makefile.in
 
 clean: mzx_clean
 
-package_clean:
-	-@mv ${mzxrun}       ${mzxrun}.backup
-	-@mv ${mzxrun}.debug ${mzxrun}.debug.backup
-ifeq (${BUILD_EDITOR},1)
-	-@mv ${mzx}          ${mzx}.backup
-	-@mv ${mzx}.debug    ${mzx}.debug.backup
-endif
-ifeq (${BUILD_MODULAR},1)
-	-@mv ${core_target}          ${core_target}.backup
-	-@mv ${core_target}.debug    ${core_target}.debug.backup
-	-@mv ${editor_target}        ${editor_target}.backup
-	-@mv ${editor_target}.debug  ${editor_target}.debug.backup
-ifeq (${BUILD_UPDATER},1)
-	-@mv ${network_target}       ${network_target}.backup
-	-@mv ${network_target}.debug ${network_target}.debug.backup
-endif
-endif
-	-@${MAKE} mzx_clean
-	@rm -f src/config.h
-	@echo "PLATFORM=none" > platform.inc
-ifeq (${BUILD_MODULAR},1)
-	-@mv ${core_target}.backup          ${core_target}
-	-@mv ${core_target}.debug.backup    ${core_target}.debug
-	-@mv ${editor_target}.backup        ${editor_target}
-	-@mv ${editor_target}.debug.backup  ${editor_target}.debug
-ifeq (${BUILD_UPDATER},1)
-	-@mv ${network_target}.backup       ${network_target}
-	-@mv ${network_target}.debug.backup ${network_target}.debug
-endif
-endif
-	-@mv ${mzxrun}.backup       ${mzxrun}
-	-@mv ${mzxrun}.debug.backup ${mzxrun}.debug
-ifeq (${BUILD_EDITOR},1)
-	-@mv ${mzx}.backup          ${mzx}
-	-@mv ${mzx}.debug.backup    ${mzx}.debug
-endif
-
 ifeq (${BUILD_UTILS},1)
 include src/utils/Makefile.in
-package_clean: utils_package_clean
 debuglink: utils utils.debug
 clean: utils_clean
 all: utils
+endif
+
+ifeq (${build},)
+build := build/${SUBPLATFORM}
+endif
+
+build: ${build}
+
+${build}: all
+	${MKDIR} -p ${build}
+	${MKDIR} -p ${build}/docs
+	${CP} config.txt mzx_ascii.chr mzx_blank.chr mzx_default.chr ${build}
+	${CP} mzx_edit.chr mzx_smzx.chr smzx.pal ${build}
+	${CP} docs/COPYING.DOC docs/changelog.txt ${build}/docs
+	${CP} docs/port.txt docs/macro.txt ${build}/docs
+	${CP} ${mzxrun} ${build}
+	-${CP} ${mzxrun}.debug ${build}
+ifeq (${BUILD_EDITOR},1)
+	${CP} ${mzx} ${build}
+	-${CP} ${mzx}.debug ${build}
+endif
+ifeq (${BUILD_HELPSYS},1)
+	${CP} mzx_help.fil ${build}
+endif
+ifeq (${BUILD_MODULAR},1)
+	${CP} ${core_target} ${editor_target} ${build}
+	-${CP} ${core_target}.debug ${editor_target}.debug ${build}
+ifeq (${BUILD_UPDATER},1)
+	${CP} ${network_target} ${build}
+	-${CP} ${network_target}.debug ${build}
+endif
+endif
+ifeq (${BUILD_UTILS},1)
+	${MKDIR} ${build}/utils
+	${CP} ${checkres} ${downver} ${build}/utils
+	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
+	-${CP} ${checkres}.debug ${downver}.debug ${build}/utils
+	-${CP} ${hlp2txt}.debug ${txt2hlp}.debug ${build}/utils
+endif
+ifeq (${BUILD_RENDER_GLSL},1)
+	${MKDIR} ${build}/shaders
+	${CP} shaders/*.vert shaders/*.frag ${build}/shaders
 endif
 
 distclean: clean

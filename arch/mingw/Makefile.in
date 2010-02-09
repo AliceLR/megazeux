@@ -22,4 +22,15 @@ core_flags   += -DLINK_OPENGL
 core_ldflags += -lopengl32
 
 # Windows needs PNG to be statically linked (inc. zlib)
-LIBPNG_LDFLAGS = `libpng12-config --static --libs`
+LIBPNG_LDFLAGS = `libpng12-config --static --ldflags`
+
+#
+# Windows builds must copy SDL.dll and create a directx.bat
+#
+build: ${build}
+	${CP} ${shell sdl-config --prefix}/bin/SDL.dll ${build}
+	${shell echo set SDL_VIDEODRIVER=directx > ${build}/directx.bat}
+	${shell echo start megazeux.exe >> ${build}/directx.bat}
+
+SUBARCH := ${shell echo ${SUBPLATFORM} | sed 's,windows-,,'}
+include arch/zip.inc 
