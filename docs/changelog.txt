@@ -2,6 +2,28 @@ SVN
 
 USERS
 
+DEVELOPERS
+
+December 29, 2009 - MZX 2.83
+
+It's been a year since the last release, due in part to my reduced free
+time, and less contribution from other developers in 2009. I'd also like
+to believe that 2.82b was such a good release, there was no need to rush.
+
+There's over 30 bugs fixed this time. A few features I had to withhold for
+2.82b have been added; sample loop markers and some changes to the board
+file format necessitated the bump to 2.83. Logicow's GLSL renderer has
+finally made it in (various bits had to be re-written to extend
+portability to other platforms).
+
+There's a new (semi-complete) Android port this time; I hope to complete
+it, and provide binaries for Android 2.0 phones, in 2.83b.
+
+Thanks go out to the usual suspects -- Terryn, Mr_Alert, Logicow, kvance,
+Lancer-X, revvy and Exophase -- for supporting development this year.
+
+USERS
+
 + Added support for loop markers in WAV and OGG files. The WAV loop support uses
   the "smpl" chunk used by ModPlug Tracker and Wavosaur among others. Only the
   first loop is used, and only forward looping is supported. The OGG loop
