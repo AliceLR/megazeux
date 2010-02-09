@@ -258,8 +258,10 @@ endif
 
 mzxrun_objs := ${core_obj}/main.o
 
-ifneq ($(or ${BUILD_EDITOR},${BUILD_NETWORK}),)
+ifneq (${BUILD_EDITOR},)
+ifneq (${BUILD_NETWORK},)
 mzxrun_objs += ${core_obj}/run_stubs.o
+endif
 endif
 
 ifeq (${PLATFORM},darwin)
