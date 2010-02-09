@@ -144,6 +144,12 @@ static inline ssize_t platform_send(int s, const void *buf, size_t len,
   return send(s, buf, len, flags);
 }
 
+static inline ssize_t platform_sendto(int s, const void *buf, size_t len,
+ int flags, const struct sockaddr *to, socklen_t tolen)
+{
+  return sendto(s, buf, len, flags, to, tolen);
+}
+
 static inline int platform_setsockopt(int s, int level, int optname,
  const void *optval, socklen_t optlen)
 {
@@ -170,6 +176,12 @@ static inline void platform_socket_blocking(int s, bool blocking)
 static inline ssize_t platform_recv(int s, void *buf, size_t len, int flags)
 {
   return recv(s, buf, len, flags);
+}
+
+static inline ssize_t platform_recvfrom(int s, void *buf, size_t len,
+ int flags, struct sockaddr *from, socklen_t *fromlen)
+{
+  return recvfrom(s, buf, len, flags, from, fromlen);
 }
 
 #else // __WIN32__
@@ -223,10 +235,14 @@ static struct
   WINSOCK_API_LINKAGE int PASCAL
    (*select)(int, fd_set *, fd_set *, fd_set *, const struct timeval *);
   WINSOCK_API_LINKAGE int PASCAL (*send)(SOCKET, const char *, int, int);
+  WINSOCK_API_LINKAGE int PASCAL (*sendto)(SOCKET, const char*, int, int,
+   const struct sockaddr *, int);
   WINSOCK_API_LINKAGE int PASCAL
    (*setsockopt)(SOCKET, int, int, const char *, int);
   WINSOCK_API_LINKAGE SOCKET PASCAL (*socket)(int, int, int);
   WINSOCK_API_LINKAGE int PASCAL (*recv)(SOCKET, char *, int, int);
+  WINSOCK_API_LINKAGE int PASCAL (*recvfrom)(SOCKET, char*, int, int,
+   struct sockaddr *, int *);
 
   // Similar to above but these are extensions of Berkeley sockets
   WINSOCK_API_LINKAGE int PASCAL (*WSACancelBlockingCall)(void);
@@ -261,9 +277,11 @@ socksyms_map[] =
   { "listen",                (void **)&socksyms.listen },
   { "select",                (void **)&socksyms.select },
   { "send",                  (void **)&socksyms.send },
+  { "sendto",                (void **)&socksyms.sendto },
   { "setsockopt",            (void **)&socksyms.setsockopt },
   { "socket",                (void **)&socksyms.socket },
   { "recv",                  (void **)&socksyms.recv },
+  { "recvfrom",              (void **)&socksyms.recvfrom },
 
   { "WSACancelBlockingCall", (void **)&socksyms.WSACancelBlockingCall },
   { "WSACleanup",            (void **)&socksyms.WSACleanup },
@@ -506,6 +524,12 @@ static inline ssize_t platform_send(int s, const void *buf, size_t len,
   return socksyms.send(s, buf, len, flags);
 }
 
+static inline ssize_t platform_sendto(int s, const void *buf, size_t len,
+ int flags, const struct sockaddr *to, socklen_t tolen)
+{
+  return socksyms.sendto(s, buf, len, flags, to, tolen);
+}
+
 static inline int platform_setsockopt(int s, int level, int optname,
  const void *optval, socklen_t optlen)
 {
@@ -526,6 +550,12 @@ static inline void platform_socket_blocking(int s, bool blocking)
 static inline ssize_t platform_recv(int s, void *buf, size_t len, int flags)
 {
   return socksyms.recv(s, buf, len, flags);
+}
+
+static inline ssize_t platform_recvfrom(int s, void *buf, size_t len,
+ int flags, struct sockaddr *from, socklen_t *fromlen)
+{
+  return socksyms.recvfrom(s, buf, len, flags, from, fromlen);
 }
 
 #endif // __WIN32__
@@ -757,7 +787,7 @@ struct host *host_accept(struct host *s)
   return c;
 }
 
-static struct addrinfo *connect_op(int fd, struct addrinfo *ais)
+static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
 {
   struct addrinfo *ai;
 
@@ -793,7 +823,7 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais)
   return ai;
 }
 
-static struct addrinfo *bind_op(int fd, struct addrinfo *ais)
+static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv)
 {
   struct addrinfo *ai;
 
@@ -830,7 +860,8 @@ static struct addrinfo *bind_op(int fd, struct addrinfo *ais)
 }
 
 static bool host_address_op(struct host *h, const char *hostname,
- int port, struct addrinfo *(*op)(int fd, struct addrinfo *ais))
+ int port, void *priv,
+ struct addrinfo *(*op)(int fd, struct addrinfo *ais, void *priv))
 {
   struct addrinfo hints, *ais, *ai;
   char port_str[6];
@@ -854,7 +885,7 @@ static bool host_address_op(struct host *h, const char *hostname,
     return false;
   }
 
-  ai = op(h->fd, ais);
+  ai = op(h->fd, ais, priv);
   platform_freeaddrinfo(ais);
 
   // None of the listed hosts (if any) were connectable
@@ -864,18 +895,20 @@ static bool host_address_op(struct host *h, const char *hostname,
     return false;
   }
 
-  h->name = hostname;
+  if(!h->name)
+    h->name = hostname;
+
   return true;
 }
 
 bool host_bind(struct host *h, const char *hostname, int port)
 {
-  return host_address_op(h, hostname, port, bind_op);
+  return host_address_op(h, hostname, port, NULL, bind_op);
 }
 
 bool host_connect(struct host *h, const char *hostname, int port)
 {
-  return host_address_op(h, hostname, port, connect_op);
+  return host_address_op(h, hostname, port, NULL, connect_op);
 }
 
 bool host_listen(struct host *h)
@@ -896,6 +929,104 @@ bool host_recv_raw(struct host *h, char *buffer, unsigned int len)
 bool host_send_raw(struct host *h, const char *buffer, unsigned int len)
 {
   return __send(h->fd, buffer, len);
+}
+
+struct buf_priv_data {
+  char *buffer;
+  unsigned int len;
+  struct host *h;
+  bool ret;
+};
+
+static struct addrinfo *recvfrom_raw_op(int fd,struct addrinfo *ais,
+ void *priv)
+{
+  struct buf_priv_data *buf_priv = priv;
+  unsigned int len = buf_priv->len;
+  char *buffer = buf_priv->buffer;
+  struct host *h = buf_priv->h;
+  struct addrinfo *ai;
+  ssize_t ret;
+
+  for(ai = ais; ai; ai = ai->ai_next)
+  {
+    if(ai->ai_family != h->af)
+      continue;
+
+    ret = platform_recvfrom(h->fd, buffer, len, 0,
+     ai->ai_addr, &ai->ai_addrlen);
+
+    if(ret < 0)
+    {
+      warn("Failed to recvfrom() any data.\n");
+      buf_priv->ret = false;
+    }
+    else if(ret != len)
+    {
+      //warn("Failed to recvfrom() all data (sent %z wanted %z).\n", ret, len);
+      buf_priv->ret = false;
+    }
+
+    break;
+  }
+
+  if(!ai)
+    buf_priv->ret = false;
+
+  return ai;
+}
+
+static struct addrinfo *sendto_raw_op(int fd, struct addrinfo *ais, void *priv)
+{
+  struct buf_priv_data *buf_priv = priv;
+  unsigned int len = buf_priv->len;
+  char *buffer = buf_priv->buffer;
+  struct host *h = buf_priv->h;
+  struct addrinfo *ai;
+  ssize_t ret;
+
+  for(ai = ais; ai; ai = ai->ai_next)
+  {
+    if(ai->ai_family != h->af)
+      continue;
+
+    ret = platform_sendto(h->fd, buffer, len, 0,
+     ai->ai_addr, ai->ai_addrlen);
+
+    if(ret < 0)
+    {
+      warn("Failed to sendto() any data.\n");
+      buf_priv->ret = false;
+    }
+    else if(ret != len)
+    {
+      //warn("Failed to sendto() all data (sent %z wanted %z).\n", ret, len);
+      buf_priv->ret = false;
+    }
+
+    break;
+  }
+
+  if(!ai)
+    buf_priv->ret = false;
+
+  return ai;
+}
+
+bool host_recvfrom_raw(struct host *h, char *buffer, unsigned int len,
+ const char *hostname, int port)
+{
+  struct buf_priv_data buf_priv = { buffer, len, h, true };
+  host_address_op(h, hostname, port, &buf_priv, recvfrom_raw_op);
+  return buf_priv.ret;
+}
+
+bool host_sendto_raw(struct host *h, const char *buffer, unsigned int len,
+ const char *hostname, int port)
+{
+  struct buf_priv_data buf_priv = { (char *)buffer, len, h, true };
+  host_address_op(h, hostname, port, &buf_priv, sendto_raw_op);
+  return buf_priv.ret;
 }
 
 int host_poll_raw(struct host *h, unsigned int timeout)

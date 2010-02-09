@@ -205,6 +205,14 @@ NETWORK_LIBSPEC bool host_send_raw(struct host *h, const char *buffer,
  */
 NETWORK_LIBSPEC int host_poll_raw(struct host *h, unsigned int timeout);
 
+// FIXME: Document
+NETWORK_LIBSPEC bool host_recvfrom_raw(struct host *h, char *buffer,
+ unsigned int len, const char *hostname, int port);
+
+// FIXME: Document
+NETWORK_LIBSPEC bool host_sendto_raw(struct host *h, const char *buffer,
+ unsigned int len, const char *hostname, int port);
+
 /**
  * Stream a file from a network socket to disk.
  *
