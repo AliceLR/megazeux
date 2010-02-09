@@ -2,7 +2,9 @@
 # OS X makefile generics
 #
 
-STRIP ?= strip
+STRIP   ?= strip
+OBJCOPY ?= true
+CHMOD   ?= true
 
 ifeq (${ARCH},i686)
 CC        := i686-apple-darwin9-gcc-4.0.1 -mmacosx-version-min=10.3

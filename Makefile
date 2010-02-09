@@ -20,8 +20,10 @@ CXX     ?= g++
 AR      ?= ar
 STRIP   ?= strip --strip-unneeded
 OBJCOPY ?= objcopy
-MKDIR   ?= mkdir
+
+CHMOD   ?= chmod
 CP      ?= cp
+MKDIR   ?= mkdir
 RM      ?= rm
 
 #
@@ -29,13 +31,16 @@ RM      ?= rm
 #
 ifneq (${V},1)
 override V:=
+
 CC      := @${CC}
 CXX     := @${CXX}
 AR      := @${AR}
 STRIP   := @${STRIP}
 OBJCOPY := @${OBJCOPY}
-MKDIR   := @${MKDIR}
+
+CHMOD   := @${CHMOD}
 CP      := @${CP}
+MKDIR   := @${MKDIR}
 RM      := @${RM}
 endif
 
@@ -102,7 +107,7 @@ endif
 %.debug: %
 	$(if ${V},,@echo "  OBJCOPY " --only-keep-debug $< $@)
 	${OBJCOPY} --only-keep-debug $< $@
-	@chmod a-x $@
+	${CHMOD} a-x $@
 	$(if ${V},,@echo "  STRIP   " $<)
 	${STRIP} $<
 	$(if ${V},,@echo "  OBJCOPY " --add-gnu-debuglink $@ $<)
@@ -126,7 +131,7 @@ ifeq (${BUILD_MODULAR},1)
 	-@mv ${editor_target}       ${editor_target}.backup
 	-@mv ${editor_target}.debug ${editor_target}.debug.backup
 endif
-	@${MAKE} mzx_clean
+	-@${MAKE} mzx_clean
 	@rm -f src/config.h
 	@echo "PLATFORM=none" > platform.inc
 ifeq (${BUILD_MODULAR},1)
