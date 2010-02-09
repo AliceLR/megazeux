@@ -79,7 +79,7 @@ CXXFLAGS += -Wundef
 endif
 
 #
-# Always generate debug information; this may end up being stripped
+# Always generate debug information; this may end up being
 # stripped (on embedded platforms) or objcopy'ed out.
 #
 CFLAGS   += -g -Wall -std=gnu99 ${ARCH_CFLAGS}
