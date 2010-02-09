@@ -1977,19 +1977,23 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
             case IKEY_r:
             {
               char *new_name = malloc(MAX_PATH);
+              int offset = 56;
               int width = 29;
 
-              strncpy(new_name, file_name + 56, MAX_PATH - 1);
-              new_name[MAX_PATH - 1] = '\0';
-
               if(current_element_num == FILESEL_DIR_LIST)
+              {
+                offset = 0; // no game name
                 width = 14;
+              }
+
+              strncpy(new_name, file_name + offset, MAX_PATH);
+              new_name[MAX_PATH - 1] = '\0';
 
               intake(mzx_world, new_name, width,
                src->e.x + di->x, src->e.y + di->y + *(src->result)
                - src->scroll_offset, DI_ACTIVELIST, 2, 0, NULL, 0,
                NULL);
-              rename(file_name + 56, new_name);
+              rename(file_name + offset, new_name);
 
               di->done = 1;
               di->return_value = 5;

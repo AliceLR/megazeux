@@ -69,6 +69,8 @@ USERS
   write to $str. Instead, it behaves like writes to non-zero offsets (as more
   of a paste than a replace).
 + Display current X,Y position of robot in the robot editor status bar.
++ Fix directory rename so that it no longer displays garbage and/or crashes
+  MegaZeux (Alt+R to rename a directory in any file picker).
 
 DEVELOPERS
 
