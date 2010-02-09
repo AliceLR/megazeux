@@ -74,7 +74,8 @@ static void timer_init(void)
  * Special handling for debug output
  */
 
-static void handle_debug_info(const char *type, const char *format, va_list args)
+static __attribute__((format(printf, 2, 0)))
+void handle_debug_info(const char *type, const char *format, va_list args)
 {
   if(!has_video_initialized())
   {
