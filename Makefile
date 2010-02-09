@@ -187,12 +187,12 @@ ${build}: all
 	${CP} docs/port.txt docs/macro.txt ${build}/docs
 	${CP} ${mzxrun} ${build}
 	@if test -f ${mzxrun}.debug; then \
-		${CP} ${mzxrun}.debug ${build}; \
+		cp ${mzxrun}.debug ${build}; \
 	fi
 ifeq (${BUILD_EDITOR},1)
 	${CP} ${mzx} ${build}
 	@if test -f ${mzx}.debug; then \
-		${CP} ${mzx}.debug ${build}; \
+		cp ${mzx}.debug ${build}; \
 	fi
 endif
 ifeq (${BUILD_HELPSYS},1)
@@ -201,15 +201,15 @@ endif
 ifeq (${BUILD_MODULAR},1)
 	${CP} ${core_target} ${editor_target} ${build}
 	@if test -f ${core_target}.debug; then \
-		${CP} ${core_target}.debug ${build}; \
+		cp ${core_target}.debug ${build}; \
 	fi
 	@if test -f ${editor_target}.debug; then \
-		${CP} ${editor_target}.debug ${build}; \
+		cp ${editor_target}.debug ${build}; \
 	fi
 ifeq (${BUILD_UPDATER},1)
 	${CP} ${network_target} ${build}
 	@if test -f ${network_target}.debug; then \
-		${CP} ${network_target}.debug ${build}; \
+		cp ${network_target}.debug ${build}; \
 	fi
 endif
 endif
@@ -218,8 +218,8 @@ ifeq (${BUILD_UTILS},1)
 	${CP} ${checkres} ${downver} ${build}/utils
 	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
 	@if test -f ${checkres}.debug; then \
-		${CP} ${checkres}.debug ${downver}.debug ${build}/utils; \
-		${CP} ${hlp2txt}.debug  ${txt2hlp}.debug ${build}/utils; \
+		cp ${checkres}.debug ${downver}.debug ${build}/utils; \
+		cp ${hlp2txt}.debug  ${txt2hlp}.debug ${build}/utils; \
 	fi
 endif
 ifeq (${BUILD_RENDER_GLSL},1)
