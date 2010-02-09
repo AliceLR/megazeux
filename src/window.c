@@ -2609,3 +2609,44 @@ int new_file(World *mzx_world, const char **wildcards, char *ret,
   return file_manager(mzx_world, wildcards, ret, title, dirs_okay,
    1, NULL, 0, 0, 0);
 }
+
+// Calculates the percent from progress and out_of as in (progress/out_of).
+void meter(const char *title, int progress, int out_of)
+{
+  int titlex = 40 - (strlen(title) >> 1);
+
+  draw_window_box(5, 10, 74, 12, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+  // Add title
+  write_string(title, titlex, 10, DI_TITLE, 0);
+  draw_char(' ', DI_TITLE, titlex - 1, 10);
+  draw_char(' ', DI_TITLE, titlex + strlen(title), 10);
+  meter_interior(progress, out_of);
+}
+
+// Draws the meter but only the interior where the percent is.
+void meter_interior(int progress, int out_of)
+{
+  // The actual meter has 66 spaces, or 132 half spaces, to use, so barsize is
+  // the number of half spaces to display.
+  int barsize = progress * 132 / out_of;
+  int percent = progress * 100 / out_of;
+  int revcolor = ((DI_METER & 15) << 4) + (DI_METER >> 4);
+  char percentstr[5];
+
+  fill_line(66, 7, 11, 32, revcolor);
+  // Draw half-space if appropriate
+  if(barsize & 1)
+    draw_char('\xDD', DI_METER, 7 + (barsize >> 1), 11);
+
+  // Determine percentage
+  snprintf(percentstr, 5, "%3d%%", percent);
+  write_string(percentstr, 37, 11, DI_METER, 1);
+
+  // Fill in meter
+  if(barsize > 1)
+    color_line(barsize >> 1, 7, 11, revcolor);
+  if(barsize < 131)
+    color_line((133 - barsize) >> 1, 7 + (barsize >> 1), 11, DI_METER);
+
+  // Done! :)
+}
