@@ -114,7 +114,7 @@ static void free_world(World *mzx_world)
   free(mzx_world->custom_sfx);
 }
 
-int main(int argc, char *argv[])
+LIBSPEC int main(int argc, char *argv[])
 {
   World mzx_world;
 

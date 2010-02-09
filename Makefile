@@ -72,23 +72,27 @@ CFLAGS   += -g -Wall -std=gnu99 ${ARCH_CFLAGS}
 CXXFLAGS += -g -Wall ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
 
-#
-# If we've got a new enough version of GCC, try to use the Stack Protector
-# and visibility features.
-#
 ifeq (${shell ${CC} -dumpversion | cut -d. -f1},4)
+
+#
+# Symbols in COFF binaries are implicitly hidden unless exported; this
+# flag just confuses GCC and must be disabled.
+#
 ifneq (${PLATFORM},mingw)
-ifneq (${PLATFORM},amiga)
 CFLAGS   += -fvisibility=hidden
 CXXFLAGS += -fvisibility=hidden
 endif
+
+#
+# Skip the stack protector on embedded platforms; it just unnecessarily
+# slows things down, and there's no easy way to write a convincing
+# __stack_chk_fail function.
+#
 ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_PSP},${BUILD_WII}),)
-ifneq (${PLATFORM},amiga)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
 endif
-endif
-endif
+
 endif
 
 #
