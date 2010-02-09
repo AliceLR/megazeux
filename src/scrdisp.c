@@ -36,13 +36,8 @@
 static char scr_nm_strs[5][12] =
  { "  Scroll   ", "   Sign    ", "Edit Scroll", "   Help    ", "" };
 
-static void scroll_edging(struct world *mzx_world, int type)
-{
-  scroll_edging_ext(mzx_world, type, 256, 16);
-}
-
 static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
- int pos)
+ int pos, bool mask)
 {
   // Displays one frame of a scroll. The scroll edging, arrows, and title
   // must already be shown. Simply prints each line. POS is the position
@@ -56,7 +51,11 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
 
   // Display center line
   fill_line(64, 8, 12, 32, scroll_base_color);
-  write_line_mask(where + pos, 8, 12, scroll_base_color, 1);
+  if(mask)
+    write_line_mask(where + pos, 8, 12, scroll_base_color, 1);
+  else
+    write_line_ext(where + pos, 8, 12, scroll_base_color, 1, 0, 16);
+
   // Display lines above center line
   for(t1 = 11; t1 >= 6; t1--)
   {
@@ -73,7 +72,10 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
         } while((where[pos] != '\n') && (where[pos] != 1));
         // At start of prev. line -1. Display.
         pos++;
-        write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
+        if(mask)
+          write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
+        else
+          write_line_ext(where + pos, 8, t1, scroll_base_color, 1, 0, 16);
       }
     }
     // Next line...
@@ -90,7 +92,10 @@ static void scroll_frame(struct world *mzx_world, struct scroll *scroll,
     pos++;
     if(where[pos])
     {
-      write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
+      if(mask)
+        write_line_mask(where + pos, 8, t1, scroll_base_color, 1);
+      else
+        write_line_ext(where + pos, 8, t1, scroll_base_color, 1, 0, 16);
     }
     // Next line...
   }
@@ -110,6 +115,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
   char line[80]; // For editing
   int scroll_base_color = mzx_world->scroll_base_color;
   int fade_status = get_fade_status();
+  bool editing = (type == 2);
 
   // Draw screen
   save_screen();
@@ -120,18 +126,24 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
     insta_fadein();
   }
 
-  scroll_edging(mzx_world, type);
-  // Loop
+  if(editing)
+    scroll_edging_ext(mzx_world, type, 256, 16);
+  else
+    scroll_edging_ext(mzx_world, type, 0, 16);
 
+  // Loop
   where = scroll->mesg;
 
   do
   {
+    // If the user wants to mask, and we're in the editor..
+    bool mask = mzx_world->conf.mask_midchars && editing;
+
     // Display scroll
-    scroll_frame(mzx_world, scroll, pos);
+    scroll_frame(mzx_world, scroll, pos, mask);
     update_screen();
 
-    if(type == 2)
+    if(editing)
     {
       // Figure length
       for(t1 = 0; t1 < 80; t1++)
@@ -556,7 +568,8 @@ void help_display(struct world *mzx_world, char *help, int offs, char *file,
     insta_fadein();
   }
 
-  scroll_edging(mzx_world, 3);
+  scroll_edging_ext(mzx_world, 3, 256, 16);
+
   // Loop
   file[0] = label[0] = 0;
   do

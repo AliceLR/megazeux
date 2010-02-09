@@ -44,6 +44,9 @@ USERS
 + Fixed a bug on case-sensitive filesystems where saving a game, world or MZM
   could fail to overwrite any existing file by the same name (if matched
   case insensitively).
++ Do not apply masking to chars 32-127 in signs or scrolls when playing a
+  world. Previously, even the mask_midchars option would have no effect on
+  the display of signs or scrolls. This has been broken since 2.80g.
 
 DEVELOPERS
 
