@@ -34,20 +34,20 @@ ${core_obj}/%.o: ${core_src}/%.cpp
 # Lists mandatory C language sources (mangled to object names) required
 # to build the main binary. Please keep this sorted alphabetically.
 #
-core_cobjs := ${core_obj}/board.o ${core_obj}/configure.o
-core_cobjs += ${core_obj}/counter.o ${core_obj}/debug.o
-core_cobjs += ${core_obj}/data.o ${core_obj}/decrypt.o
-core_cobjs += ${core_obj}/error.o ${core_obj}/event.o
-core_cobjs += ${core_obj}/expr.o ${core_obj}/fsafeopen.o
-core_cobjs += ${core_obj}/game2.o ${core_obj}/game.o
-core_cobjs += ${core_obj}/graphics.o ${core_obj}/idarray.o
-core_cobjs += ${core_obj}/idput.o ${core_obj}/intake.o
-core_cobjs += ${core_obj}/mzm.o ${core_obj}/rasm.o
-core_cobjs += ${core_obj}/render.o ${core_obj}/robot.o
-core_cobjs += ${core_obj}/runrobo2.o ${core_obj}/scrdisp.o
-core_cobjs += ${core_obj}/sfx.o ${core_obj}/sprite.o
-core_cobjs += ${core_obj}/util.o ${core_obj}/window.o
-core_cobjs += ${core_obj}/world.o
+core_cobjs := \
+  ${core_obj}/board.o ${core_obj}/configure.o ${core_obj}/counter.o \
+  ${core_obj}/data.o ${core_obj}/decrypt.o ${core_obj}/error.o      \
+  ${core_obj}/event.o ${core_obj}/expr.o ${core_obj}/fsafeopen.o    \
+  ${core_obj}/game2.o ${core_obj}/game.o ${core_obj}/graphics.o     \
+  ${core_obj}/idarray.o ${core_obj}/idput.o ${core_obj}/intake.o    \
+  ${core_obj}/mzm.o ${core_obj}/rasm.o ${core_obj}/render.o         \
+  ${core_obj}/robot.o ${core_obj}/runrobo2.o ${core_obj}/scrdisp.o  \
+  ${core_obj}/sfx.o ${core_obj}/sprite.o ${core_obj}/util.o         \
+  ${core_obj}/window.o ${core_obj}/world.o
+
+ifeq (${BUILD_EDITOR},1)
+core_cobjs += ${core_obj}/debug.o
+endif
 
 #
 # Lists mandatory C++ language sources (mangled to object names) required

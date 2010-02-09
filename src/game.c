@@ -110,7 +110,9 @@ int pal_update; // Whether to update a palette from robot activity
 
 __editor_maybe_static const char *world_ext[] = { ".MZX", NULL };
 
-__editor_maybe_static char debug_mode = 0;
+#ifdef CONFIG_EDITOR
+char debug_mode;
+#endif
 
 static void load_world_file(World *mzx_world, char *name)
 {
@@ -1379,12 +1381,14 @@ static int update(World *mzx_world, int game, int *fadein)
         draw_char_ext(' ', scroll_color, mesg_x, mesg_y, 0, 0);
     }
 
+#ifdef CONFIG_EDITOR
     // Add debug box
     if(debug_mode)
     {
       draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
        mzx_world->player_y);
     }
+#endif
 
     if(pal_update)
       update_palette();
@@ -1751,8 +1755,10 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
             draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
             write_string(" Game Menu ", 14, 4, 30, 0);
             write_string(game_menu_1, 10, 5, 31, 1);
+#ifdef CONFIG_EDITOR
             if(mzx_world->editing)
               write_string(game_menu_2, 10, 12, 31, 1);
+#endif
             write_string(game_menu_3, 10, 13, 31, 1);
 
             show_status(mzx_world); // Status screen too
@@ -1882,6 +1888,58 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 
+        // Quick save
+        case IKEY_F9:
+        {
+          if(!mzx_world->dead)
+          {
+            // Can we?
+            if((src_board->save_mode != CANT_SAVE) &&
+             ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
+             (src_board->level_under_id[mzx_world->player_x +
+             (src_board->board_width * mzx_world->player_y)] ==
+             SENSOR)))
+            {
+              // Save entire game
+              save_world(mzx_world, curr_sav, 1, get_fade_status());
+            }
+          }
+          break;
+        }
+
+        // Quick load
+        case IKEY_F10:
+        {
+          struct stat file_info;
+
+          if(!stat(curr_sav, &file_info))
+          {
+            // Load game
+            fadein = 0;
+            if(reload_savegame(mzx_world, curr_sav, &fadein))
+            {
+              vquick_fadeout();
+              return;
+            }
+
+            // Reset this
+            src_board = mzx_world->current_board;
+
+            find_player(mzx_world);
+
+            // Swap in starting board
+            load_module(src_board->mod_playing);
+            strcpy(mzx_world->real_mod_playing,
+             src_board->mod_playing);
+
+            send_robot_def(mzx_world, 0, 10);
+            fadein ^= 1;
+          }
+          break;
+        }
+ 
+#ifdef CONFIG_EDITOR
+	// Toggle debug mode
         case IKEY_F6:
         {
           if(mzx_world->editing)
@@ -1892,6 +1950,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           }
         }
 
+        // Cheat
         case IKEY_F7:
         {
           if(mzx_world->editing)
@@ -1924,6 +1983,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 
+        // Cheat More
         case IKEY_F8:
         {
           if(mzx_world->editing)
@@ -1985,63 +2045,14 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           break;
         }
 
-        // Quick save
-        case IKEY_F9:
-        {
-          if(!mzx_world->dead)
-          {
-            // Can we?
-            if((src_board->save_mode != CANT_SAVE) &&
-             ((src_board->save_mode != CAN_SAVE_ON_SENSOR) ||
-             (src_board->level_under_id[mzx_world->player_x +
-             (src_board->board_width * mzx_world->player_y)] ==
-             SENSOR)))
-            {
-              // Save entire game
-              save_world(mzx_world, curr_sav, 1, get_fade_status());
-            }
-          }
-          break;
-        }
-
-        // Quick load
-        case IKEY_F10:
-        {
-          struct stat file_info;
-
-          if(!stat(curr_sav, &file_info))
-          {
-            // Load game
-            fadein = 0;
-            if(reload_savegame(mzx_world, curr_sav, &fadein))
-            {
-              vquick_fadeout();
-              return;
-            }
-
-            // Reset this
-            src_board = mzx_world->current_board;
-
-            find_player(mzx_world);
-
-            // Swap in starting board
-            load_module(src_board->mod_playing);
-            strcpy(mzx_world->real_mod_playing,
-             src_board->mod_playing);
-
-            send_robot_def(mzx_world, 0, 10);
-            fadein ^= 1;
-          }
-          break;
-        }
-
+        // Debug counter editor
         case IKEY_F11:
         {
           if(mzx_world->editing)
             debug_counters(mzx_world);
-
           break;
         }
+#endif // CONFIG_EDITOR
       }
     }
   } while(key != IKEY_ESCAPE);
@@ -2060,7 +2071,9 @@ void title_screen(World *mzx_world)
   Board *src_board;
   char *current_dir;
 
+#ifdef CONFIG_EDITOR
   debug_mode = 0;
+#endif
 
   // Clear screen
   clear_screen(32, 7);

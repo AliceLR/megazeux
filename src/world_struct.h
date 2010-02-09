@@ -188,6 +188,7 @@ typedef struct
 
 #ifdef CONFIG_EDITOR
   editor_config_info editor_conf;
+  int editing;
 #endif
 
 #ifdef CONFIG_HELPSYS
@@ -198,9 +199,6 @@ typedef struct
   // An array for game2.cpp
   char *update_done;
   int update_done_size;
-
-  // Determines if you're in the editor or not
-  int editing;
 } World;
 
 __M_END_DECLS

@@ -96,8 +96,6 @@ int duplicate_sensor(Board *src_board, Sensor *cur_sensor);
 void optimize_null_objects(Board *src_board);
 int get_robot_id(Board *src_board, const char *name);
 
-int place_at_xy(World *mzx_world, mzx_thing id, int color,
- int param, int x, int y);
 int place_player_xy(World *mzx_world, int x, int y);
 void run_robot(World *mzx_world, int id, int x, int y);
 void setup_overlay(Board *src_board, int mode);
@@ -109,6 +107,9 @@ void duplicate_robot_direct(Robot *cur_robot, Robot *copy_robot,
  int x, int y);
 void duplicate_scroll_direct(Scroll *cur_scroll, Scroll *copy_scroll);
 void duplicate_sensor_direct(Sensor *cur_sensor, Sensor *copy_sensor);
+
+int place_at_xy(World *mzx_world, mzx_thing id, int color,
+ int param, int x, int y);
 
 void copy_buffer_to_layer(int x, int y, int width, int height,
  char *src_char, char *src_color, char *dest_char,
