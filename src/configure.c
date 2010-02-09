@@ -506,13 +506,15 @@ __editor_maybe_static void __set_config_from_file(
   int line_size, extended_size, extended_allocate_size = 512;
   char line_buffer_alternate[256], line_buffer[256];
   int extended_buffer_offset, peek_char;
-  char *extended_buffer = malloc(512);
+  char *extended_buffer;
   char *equals_position, *value;
   FILE *conf_file;
 
   conf_file = fopen(conf_file_name, "rb");
   if(!conf_file)
     return;
+
+  extended_buffer = malloc(extended_allocate_size);
 
   while(fsafegets(line_buffer_alternate, 255, conf_file))
   {
