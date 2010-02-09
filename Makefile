@@ -76,8 +76,14 @@ CFLAGS   += -g -Wall -std=gnu99 ${ARCH_CFLAGS}
 CXXFLAGS += -g -Wall ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
 
-ifneq (${PLATFORM},mingw)
 ifeq (${shell ${CC} -dumpversion | cut -d. -f1},4)
+
+ifeq (${DEBUG},1)
+CFLAGS += -fbounds-check
+CXXFLAGS += -fbounds-check
+endif
+
+ifneq (${PLATFORM},mingw)
 
 #
 # Symbols in COFF binaries are implicitly hidden unless exported; this
