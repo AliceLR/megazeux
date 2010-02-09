@@ -361,7 +361,7 @@ static bool glsl_init_video(struct graphics_data *graphics,
   // we also need to be able to utilise shader extensions
   if(!(extensions && strstr(extensions, "GL_ARB_shading_language_100")))
   {
-    warn("OpenGL missing GL_ARB_shading_language_100 extension.");
+    warn("OpenGL missing GL_ARB_shading_language_100 extension.\n");
     goto err_free;
   }
 
@@ -608,11 +608,11 @@ static void glsl_render_graph(struct graphics_data *graphics)
 
   gl->glColor4f(1.0, 1.0, 1.0, 1.0);
 
-  gl->glBegin(GL_QUADS);
-    gl->glTexCoord2f(0, 1);
-    gl->glVertex2i(-1, -1);
+  gl->glBegin(GL_TRIANGLE_STRIP);
     gl->glTexCoord2f(0, 0);
     gl->glVertex2i(-1, 1);
+    gl->glTexCoord2f(0, 1);
+    gl->glVertex2i(-1, -1);
     gl->glTexCoord2f(1, 0);
     gl->glVertex2i(1, 1);
     gl->glTexCoord2f(1, 1);
@@ -630,12 +630,12 @@ static void glsl_render_cursor(struct graphics_data *graphics,
   gl->glDisable(GL_TEXTURE_2D);
   gl->glUseProgramObjectARB(0);
 
-  gl->glBegin(GL_QUADS);
+  gl->glBegin(GL_TRIANGLE_STRIP);
     gl->glColor3ubv(&render_data->palette[color * 3]);
     gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
-                (y * 14 + lines + offset)*-2.0f/350.0f+1.0f);
-    gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
                 (y * 14 + offset)*-2.0f/350.0f+1.0f);
+    gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
+                (y * 14 + lines + offset)*-2.0f/350.0f+1.0f);
     gl->glVertex2f((x * 8 + 8)*2.0f/640.0f-1.0f,
                 (y * 14 + offset)*-2.0f/350.0f+1.0f);
     gl->glVertex2f((x * 8 + 8)*2.0f/640.0f-1.0f,
@@ -657,8 +657,8 @@ static void glsl_render_mouse(struct graphics_data *graphics,
 
   gl->glBegin(GL_QUADS);
     gl->glColor4ub(255, 255, 255, 255);
-    gl->glVertex2f( x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f);
     gl->glVertex2f( x*2.0f/640.0f-1.0f,       y*-2.0f/350.0f+1.0f);
+    gl->glVertex2f( x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f);
     gl->glVertex2f((x + w)*2.0f/640.0f-1.0f,  y*-2.0f/350.0f+1.0f);
     gl->glVertex2f((x + w)*2.0f/640.0f-1.0f, (y + h)*-2.0f/350.0f+1.0f);
   gl->glEnd();
@@ -689,11 +689,11 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   if(graphics->window_width < 640 || graphics->window_height < 350)
   {
     gl->glBegin(GL_QUADS);
+      gl->glTexCoord2f(0, 0);
+      gl->glVertex2i(-1, -1);
       gl->glTexCoord2f(0,
         ((graphics->window_height<512)?graphics->window_height:512)/512.0f);
       gl->glVertex2i(-1, 1);
-      gl->glTexCoord2f(0, 0);
-      gl->glVertex2i(-1, -1);
       gl->glTexCoord2f(
         ((graphics->window_width<1024)?graphics->window_width:1024)/1024.0f, 0);
       gl->glVertex2i(1, -1);
@@ -706,10 +706,10 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   else
   {
     gl->glBegin(GL_QUADS);
-      gl->glTexCoord2f(0, 0.68359375);
-      gl->glVertex2i(-1, 1);
       gl->glTexCoord2f(0, 0);
       gl->glVertex2i(-1, -1);
+      gl->glTexCoord2f(0, 0.68359375);
+      gl->glVertex2i(-1, 1);
       gl->glTexCoord2f(0.625, 0);
       gl->glVertex2i(1, -1);
       gl->glTexCoord2f(0.625, 0.68359375);

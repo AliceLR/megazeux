@@ -436,11 +436,11 @@ static void gl2_render_graph(struct graphics_data *graphics)
 
     gl->glColor4f(1.0, 1.0, 1.0, 1.0);
 
-    gl->glBegin(GL_QUADS);
-      gl->glTexCoord2f(0, 25.0/32.0);
-      gl->glVertex2i(-1, -1);
+    gl->glBegin(GL_TRIANGLE_STRIP);
       gl->glTexCoord2f(0, 0);
       gl->glVertex2i(-1, 1);
+      gl->glTexCoord2f(0, 25.0/32.0);
+      gl->glVertex2i(-1, -1);
       gl->glTexCoord2f(80.0/128.0, 0);
       gl->glVertex2i(1, 1);
       gl->glTexCoord2f(80.0/128.0, 25.0/32.0);
@@ -451,13 +451,25 @@ static void gl2_render_graph(struct graphics_data *graphics)
 
     gl->glEnable(GL_ALPHA_TEST);
 
-    gl->glBegin(GL_QUADS);
+    gl->glBegin(GL_TRIANGLE_STRIP);
       src = graphics->text_video;
       for(fi = 1; fi > -1; fi = fi - 2.0f/25.0f)
       {
         for(fi2 = -1; fi2 < 0.98; fi2 = fi2 + 2.0f/80.0f)
         {
           gl->glColor3ubv(&render_data->palette[src->fg_color * 3]);
+
+          gl->glTexCoord2f(
+             (src->char_value % 32)      * 0.03125f   + SAFE_TEXTURE_MARGIN_X,
+            ((src->char_value / 32) + 1) * 0.0546875f - SAFE_TEXTURE_MARGIN_Y
+          );
+          gl->glVertex2f(fi2, fi - 2.0f/25.0f);
+
+          gl->glTexCoord2f(
+             (src->char_value % 32)      * 0.03125f   + SAFE_TEXTURE_MARGIN_X,
+             (src->char_value / 32)      * 0.0546875f + SAFE_TEXTURE_MARGIN_Y
+          );
+          gl->glVertex2f(fi2, fi);
 
           gl->glTexCoord2f(
             ((src->char_value % 32) + 1) * 0.03125f   - SAFE_TEXTURE_MARGIN_X,
@@ -471,17 +483,6 @@ static void gl2_render_graph(struct graphics_data *graphics)
           );
           gl->glVertex2f(fi2 + 2.0f/80.0f, fi);
 
-          gl->glTexCoord2f(
-             (src->char_value % 32)      * 0.03125f   + SAFE_TEXTURE_MARGIN_X,
-             (src->char_value / 32)      * 0.0546875f + SAFE_TEXTURE_MARGIN_Y
-          );
-          gl->glVertex2f(fi2, fi);
-
-          gl->glTexCoord2f(
-             (src->char_value % 32)      * 0.03125f   + SAFE_TEXTURE_MARGIN_X,
-            ((src->char_value / 32) + 1) * 0.0546875f - SAFE_TEXTURE_MARGIN_Y
-          );
-          gl->glVertex2f(fi2, fi - 2.0f/25.0f);
           src++;
         }
       }
@@ -501,11 +502,11 @@ static void gl2_render_graph(struct graphics_data *graphics)
 
     gl->glColor4f(1.0, 1.0, 1.0, 1.0);
 
-    gl->glBegin(GL_QUADS);
-      gl->glTexCoord2f(0, 0.68359375);
-      gl->glVertex2i(-1, -1);
+    gl->glBegin(GL_TRIANGLE_STRIP);
       gl->glTexCoord2f(0, 0);
       gl->glVertex2i(-1, 1);
+      gl->glTexCoord2f(0, 0.68359375);
+      gl->glVertex2i(-1, -1);
       gl->glTexCoord2f(0.625, 0);
       gl->glVertex2i(1, 1);
       gl->glTexCoord2f(0.625, 0.68359375);
@@ -524,12 +525,12 @@ static void gl2_render_cursor(struct graphics_data *graphics,
 
   gl->glDisable(GL_TEXTURE_2D);
 
-  gl->glBegin(GL_QUADS);
+  gl->glBegin(GL_TRIANGLE_STRIP);
     gl->glColor3ubv(&render_data->palette[color * 3]);
     gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
-                  (y * 14 + lines + offset)*-2.0f/350.0f+1.0f);
-    gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
                   (y * 14 + offset)*-2.0f/350.0f+1.0f);
+    gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
+                  (y * 14 + lines + offset)*-2.0f/350.0f+1.0f);
     gl->glVertex2f((x * 8 + 8)*2.0f/640.0f-1.0f,
                   (y * 14 + offset)*-2.0f/350.0f+1.0f);
     gl->glVertex2f((x * 8 + 8)*2.0f/640.0f-1.0f,
@@ -548,10 +549,10 @@ static void gl2_render_mouse(struct graphics_data *graphics,
   gl->glDisable(GL_TEXTURE_2D);
   gl->glEnable(GL_BLEND);
 
-  gl->glBegin(GL_QUADS);
+  gl->glBegin(GL_TRIANGLE_STRIP);
     gl->glColor4ub(255, 255, 255, 255);
-    gl->glVertex2f( x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f);
     gl->glVertex2f( x*2.0f/640.0f-1.0f,       y*-2.0f/350.0f+1.0f);
+    gl->glVertex2f( x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f);
     gl->glVertex2f((x + w)*2.0f/640.0f-1.0f,  y*-2.0f/350.0f+1.0f);
     gl->glVertex2f((x + w)*2.0f/640.0f-1.0f, (y + h)*-2.0f/350.0f+1.0f);
   gl->glEnd();
@@ -582,11 +583,11 @@ static void gl2_sync_screen(struct graphics_data *graphics)
     gl->glColor4f(1.0, 1.0, 1.0, 1.0);
     gl->glClear(GL_COLOR_BUFFER_BIT);
 
-    gl->glBegin(GL_QUADS);
-      gl->glTexCoord2f(0, 0.68359375);
-      gl->glVertex2i(-1, 1);
+    gl->glBegin(GL_TRIANGLE_STRIP);
       gl->glTexCoord2f(0, 0);
       gl->glVertex2i(-1, -1);
+      gl->glTexCoord2f(0, 0.68359375);
+      gl->glVertex2i(-1, 1);
       gl->glTexCoord2f(0.625, 0);
       gl->glVertex2i(1, -1);
       gl->glTexCoord2f(0.625, 0.68359375);

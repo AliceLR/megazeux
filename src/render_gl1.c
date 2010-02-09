@@ -265,18 +265,18 @@ static void gl1_sync_screen(struct graphics_data *graphics)
 
   gl->glClear(GL_COLOR_BUFFER_BIT);
 
-  gl->glBegin(GL_QUADS);
+  gl->glBegin(GL_TRIANGLE_STRIP);
+    gl->glTexCoord2f(0.0, 0.0);
+    gl->glVertex3f(-1.0, 1.0, 0.0);
+
     gl->glTexCoord2f(0.0, texture_height);
     gl->glVertex3f(-1.0, -1.0, 0.0);
-
-    gl->glTexCoord2f(texture_width, texture_height);
-    gl->glVertex3f(1.0, -1.0, 0.0);
 
     gl->glTexCoord2f(texture_width, 0.0);
     gl->glVertex3f(1.0, 1.0, 0.0);
 
-    gl->glTexCoord2f(0.0, 0.0);
-    gl->glVertex3f(-1.0, 1.0, 0.0);
+    gl->glTexCoord2f(texture_width, texture_height);
+    gl->glVertex3f(1.0, -1.0, 0.0);
   gl->glEnd();
 
   SDL_GL_SwapBuffers();
