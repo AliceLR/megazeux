@@ -28,6 +28,14 @@
 #define ECDR_STATIC_LENGTH      (4 + 2 + 2 + 2 + 2 + 4 + 4 + 2)
 
 #define CENTRAL_DIRECTORY_MAGIC 0x02014b50
+#define LOCAL_FILE_HEADER_MAGIC 0x04034b50
+#define DATA_DESCRIPTOR_MAGIC   0x08074b50
+
+enum zip_method
+{
+  ZIP_METHOD_STORE   = 0,
+  ZIP_METHOD_DEFLATE = 8,
+};
 
 struct zip_segment
 {
@@ -36,15 +44,12 @@ struct zip_segment
 };
 
 struct zip_dirent {
-  Uint16 compression_method;
-  Uint16 file_name_length;
-  Uint16 extra_field_length;
-  Uint16 file_comment_length;
   Uint32 crc32;
   Uint32 compressed_size;
   Uint32 uncompressed_size;
 
   struct zip_segment segment;
+  enum zip_method method;
   time_t datetime;
   char *file_name;
 };
@@ -117,9 +122,11 @@ static bool zgetud(FILE *f, Sint64 *d, zipio_error_t *err, zipio_error_t code)
   return true;
 }
 
-static time_t zip_dos_to_time_t(Uint16 time, Uint16 date)
+static time_t dos_to_time_t(Uint16 time, Uint16 date)
 {
   struct tm tm;
+
+  memset(&tm, 0, sizeof(struct tm));
 
   tm.tm_sec  = ((time & 0x1F)   << 1);      // seconds (0-58)
   tm.tm_min  = ((time & 0x7E0)  >> 5);      // minutes (0-59)
@@ -153,6 +160,8 @@ const char *zipio_strerror(zipio_error_t err)
       return "Failed to locate end central directory record";
     case ZIPIO_CORRUPT_CENTRAL_DIRECTORY:
       return "Central directory is corrupt";
+    case ZIPIO_CORRUPT_LOCAL_FILE_HEADER:
+      return "Local file header is corrupt";
     case ZIPIO_CORRUPT_DATETIME:
       return "Date/Time specifier is corrupt";
     case ZIPIO_UNSUPPORTED_FEATURE:
@@ -346,6 +355,7 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
 
   for(i = 0; i < z->num_entries; i++)
   {
+    Uint16 file_name_length, extra_field_length, file_comment_length;
     struct zip_dirent *entry;
     Uint16 time, date;
 
@@ -380,11 +390,10 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
       goto err_free_entries;
 
-    // We don't support Encryption (0), Delayed CRC (3), Method 8 (4),
-    // Patched Data (5), Strong Encryption (6), Unused (7-10),
-    // Enhanced Compression (12), Central Direction Encryption (13),
-    // PKZIP Reserved (14-15)
-    if(d & 0xF7F9)
+    // We don't support Encryption (0), Method 8 (4), Patched Data (5),
+    // Strong Encryption (6), Unused (7-10), Enhanced Compression (12),
+    // Central Direction Encryption (13), PKZIP Reserved (14-15)
+    if(d & 0xF7F1)
     {
       err = ZIPIO_UNSUPPORTED_FEATURE;
       goto err_free_entries;
@@ -393,7 +402,7 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     // "compression method"
     if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
       goto err_free_entries;
-    entry->compression_method = d;
+    entry->method = d;
 
     // "time"
     if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
@@ -437,25 +446,17 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     // "file name length"
     if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
       goto err_free_entries;
-    entry->file_name_length = d;
+    file_name_length = d;
 
     // "extra field length"
     if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
       goto err_free_entries;
-    entry->extra_field_length = d;
-
-    // FIXME: Hack
-    if(d > 0)
-      warn("Extra field of %ub skipped.\n", entry->extra_field_length);
+    extra_field_length = d;
 
     // "file comment length"
     if(!zgetuw(z->f, &d, &err, ZIPIO_UNSUPPORTED_MULTIPLE_DISKS))
       goto err_free_entries;
-    entry->file_comment_length = d;
-
-    // FIXME: Hack
-    if(d > 0)
-      warn("File comment of %ub skipped.\n", entry->file_comment_length);
+    file_comment_length = d;
 
     // "disk number start"
     if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
@@ -472,16 +473,15 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
       goto err_free_entries;
 
-    // FIXME: Hack
+    // Don't support variable length preamble (yet)
     if(d & 0x2)
     {
-      warn("Support for variable record preamble not implemented.\n");
-      err = ZIPIO_READ_FAILED;
+      err = ZIPIO_UNSUPPORTED_FEATURE;
       goto err_free_entries;
     }
 
     // Skip "external file attributes"
-    // Can be skipped because this only provides MSDOS attributes (??)
+    // Can be skipped because this only provides MSDOS attributes
     if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
       goto err_free_entries;
 
@@ -497,25 +497,28 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
       goto err_free_entries;
     }
 
-    entry->file_name = malloc(entry->file_name_length + 1);
-    entry->file_name[entry->file_name_length] = 0;
+    // Add NULL terminator to file_name (file may have none)
+    entry->file_name = malloc(file_name_length + 1);
+    entry->file_name[file_name_length] = 0;
 
     // "file name"
-    if(fread(entry->file_name, entry->file_name_length, 1, z->f) != 1)
+    if(fread(entry->file_name, file_name_length, 1, z->f) != 1)
     {
       err = ZIPIO_READ_FAILED;
       goto err_free_entries;
     }
 
     // Skip "extra field"
-    if(fseek(z->f, entry->extra_field_length, SEEK_CUR))
+    // We can skip this because MZX never uses the extra data
+    if(fseek(z->f, extra_field_length, SEEK_CUR))
     {
       err = ZIPIO_READ_FAILED;
       goto err_free_entries;
     }
 
     // Skip "file comment"
-    if(fseek(z->f, entry->file_comment_length, SEEK_CUR))
+    // We can skip this because MZX never uses the file comments
+    if(fseek(z->f, file_comment_length, SEEK_CUR))
     {
       err = ZIPIO_READ_FAILED;
       goto err_free_entries;
@@ -529,23 +532,261 @@ zipio_error_t zipio_open(const char *filename, zip_handle_t **_z)
     }
 
     // Convert to standard C89/C99 time_t
-    entry->datetime = zip_dos_to_time_t(time, date);
+    entry->datetime = dos_to_time_t(time, date);
     if(entry->datetime < 0)
     {
       err = ZIPIO_CORRUPT_DATETIME;
       goto err_free_entries;
     }
+  }
 
-    debug("Found file '%s' OK.\n", entry->file_name);
-    debug("Compression Method:  %u\n", entry->compression_method);
+  // Sanity check Local File Header (LFH) for each of the CD entries
+
+  for(i = 0; i < z->num_entries; i++)
+  {
+    Uint16 file_name_length, extra_field_length, time, date;
+    bool deferred_fields = false, descriptor_magic = true;
+    struct zip_dirent *entry = z->entries[i];
+    time_t datetime;
+    char *file_name;
+    long pos;
+
+    // Move to this entry's LFH
+    if(fseek(z->f, entry->segment.offset, SEEK_SET))
+    {
+      err = ZIPIO_SEEK_FAILED;
+      goto err_free_entries;
+    }
+
+    // "local file header signature"
+    if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+
+    // Invalid LFH header; offset must be corrupt
+    if(d != LOCAL_FILE_HEADER_MAGIC)
+    {
+      err = ZIPIO_CORRUPT_LOCAL_FILE_HEADER;
+      goto err_free_entries;
+    }
+
+    // Skip "version needed to extract"
+    if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+
+    // "general purpose bit flag"
+    if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+
+    // We don't support Encryption (0), Method 8 (4), Patched Data (5),
+    // Strong Encryption (6), Unused (7-10), Enhanced Compression (12),
+    // Central Direction Encryption (13), PKZIP Reserved (14-15)
+    if(d & 0xF7F1)
+    {
+      err = ZIPIO_UNSUPPORTED_FEATURE;
+      goto err_free_entries;
+    }
+
+    // "crc-32", "compressed size" and "uncompressed size" fields are deferred
+    if(d & 0x8)
+      deferred_fields = true;
+
+    // "compression method"
+    if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+
+    // Method doesn't match CD's record; take LFH's
+    if(d != entry->method)
+    {
+      warn("LFH method overrides differing CD method!\n");
+      entry->method = d;
+    }
+
+    // Can only support Stored and Deflated right now
+    if(entry->method != ZIP_METHOD_STORE &&
+       entry->method != ZIP_METHOD_DEFLATE)
+    {
+      err = ZIPIO_UNSUPPORTED_COMPRESSION_METHOD;
+      goto err_free_entries;
+    }
+
+    // Skip "last mod file time"
+    if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+    time = d;
+
+    // Skip "last mod file date"
+    if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+    date = d;
+
+    // "crc-32"
+    if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+
+    // If CRC is zero but we expected it to be deferred, we tolerate any
+    // mismatch. Otherwise, inherit the LFH's CRC and warn the user about
+    // the inconsistency.
+    if(!(d == 0 && deferred_fields) && d != entry->crc32)
+    {
+      warn("LFH crc-32 overrides differing CD crc-32!\n");
+      entry->crc32 = d;
+    }
+
+    // "compressed size"
+    if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+
+    // Same check as "crc-32" but for "compressed size"
+    if(!(d == 0 && deferred_fields) && d != entry->compressed_size)
+    {
+      warn("LFH compressed size overrides differing CD compressed size!\n");
+      entry->compressed_size = d;
+    }
+
+    // "uncompressed size"
+    if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+
+    // Same check as "crc-32" but for "uncompressed size"
+    if(!(d == 0 && deferred_fields) && d != entry->uncompressed_size)
+    {
+      warn("LFH uncompressed size overrides differing CD uncompressed size!\n");
+      entry->uncompressed_size = d;
+    }
+
+    // "file name length"
+    if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+    file_name_length = d;
+
+    // "extra field length"
+    if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+    extra_field_length = d;
+
+    // Add NULL terminator to file_name (file may have none)
+    file_name = malloc(file_name_length + 1);
+    file_name[file_name_length] = 0;
+
+    // "file name" (again)
+    if(fread(file_name, file_name_length, 1, z->f) != 1)
+    {
+      free(file_name);
+      err = ZIPIO_READ_FAILED;
+      goto err_free_entries;
+    }
+
+    // The "file name" here should always match the CD. If it doesn't, inherit
+    // the LFH's "file name" and warn the user about the inconsistency.
+    if(strcmp(entry->file_name, file_name) != 0)
+    {
+      char *old_name = entry->file_name;
+      entry->file_name = file_name;
+      file_name = old_name;
+      warn("LFH file name overrides differing CD file name!\n");
+    }
+
+    // May be the CD or LFH filename, depending only on above condition
+    free(file_name);
+
+    // Skip "extra field" (again)
+    // We can skip this because MZX never uses the extra data
+    if(fseek(z->f, extra_field_length, SEEK_CUR))
+    {
+      err = ZIPIO_READ_FAILED;
+      goto err_free_entries;
+    }
+
+    // Skip file data (if any)
+    if(fseek(z->f, entry->compressed_size, SEEK_CUR))
+    {
+      err = ZIPIO_READ_FAILED;
+      goto err_free_entries;
+    }
+
+    // Store current file position so we can roll back if data descriptor
+    // signature is not present (some older ZIPs may do this)
+    pos = ftell(z->f);
+    if(pos < 0)
+    {
+      err = ZIPIO_READ_FAILED;
+      goto err_free_entries;
+    }
+
+    // Read "Data descriptor" signature (if present)
+    if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+
+    if(d != DATA_DESCRIPTOR_MAGIC)
+    {
+      // Found no signature, so roll back and assume this was actually
+      // the crc-32 (NOTE: this aspect of ZIP is horrible indeed).
+      if(fseek(z->f, pos, SEEK_SET))
+      {
+        err = ZIPIO_SEEK_FAILED;
+        goto err_free_entries;
+      }
+    }
+    else
+      descriptor_magic = true;
+
+    // "crc-32" (again)
+    if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+
+    // Data descriptor crc-32 is considered superior to all others
+    if(d != entry->crc32)
+    {
+      warn("Data descriptor crc-32 overrides differing CD crc-32!\n");
+      entry->crc32 = d;
+    }
+
+    // "compressed size" (again)
+    if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+
+    // Same check as for "crc-32"
+    if(d != entry->compressed_size)
+    {
+      warn("Data descriptor compressed size overrides "
+       "differing CD compressed size!\n");
+      entry->compressed_size = d;
+    }
+
+    // "uncompressed size" (again)
+    if(!zgetud(z->f, &d, &err, ZIPIO_READ_FAILED))
+      goto err_free_entries;
+
+    // Same check as for "crc-32"
+    if(d != entry->uncompressed_size)
+    {
+      warn("Data descriptor uncompressed size overrides "
+       "differing CD uncompressed size!\n");
+      entry->uncompressed_size = d;
+    }
+
+    // Convert to standard C89/C99 time_t
+    datetime = dos_to_time_t(time, date);
+    if(datetime < 0)
+    {
+      err = ZIPIO_CORRUPT_DATETIME;
+      goto err_free_entries;
+    }
+
+    // The datetime should always match the CD. If it doesn't, inherit
+    // the LFH's datetime and warn the user about the inconsistency.
+    if(datetime != entry->datetime)
+    {
+      warn("LFH time/date overrides differing CD time/date!\n");
+      entry->datetime = datetime;
+    }
+
+    debug("LFH -- Parsed file '%s' OK.\n", entry->file_name);
+    debug("Compression Method:  %s\n", (entry->method) ? "Deflate" : "Store");
     debug("Time/Date:           %s", ctime(&entry->datetime));
     debug("CRC-32:              0x%x\n", entry->crc32);
     debug("Compressed Size:     %u\n", entry->compressed_size);
     debug("Uncompressed Size:   %u\n", entry->uncompressed_size);
-    debug("File Name Length:    %u\n", entry->file_name_length);
-    debug("Extra Field Length:  %u\n", entry->extra_field_length);
-    debug("File Comment Length: %u\n", entry->file_comment_length);
-    debug("File data offset:    0x%x\n", entry->segment.offset);
   }
 
   return ZIPIO_SUCCESS;
