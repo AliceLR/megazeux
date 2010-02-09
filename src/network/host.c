@@ -48,6 +48,8 @@
 
 #include "zlib.h"
 
+#define BLOCK_SIZE 4096UL
+
 struct host
 {
   const char *name;
@@ -886,14 +888,61 @@ static bool http_skip_headers(struct host *h)
   }
 }
 
+static int zlib_skip_gzip_header(char *initial, unsigned long len)
+{
+  Bytef *gzip = (Bytef *)initial;
+  uint8_t flags;
+
+  if(len < 10)
+    return -HOST_ZLIB_INVALID_DATA;
+
+  /* Unfortunately, Apache (and probably other httpds) send deflated
+   * data in the gzip format. Internally, gzip is identical to zlib's
+   * DEFLATE format, but it has some additional headers that must be
+   * skipped before we can proceed with the inflation.
+   *
+   * RFC 1952 details the gzip headers.
+   */
+  if(*gzip++ != 0x1F || *gzip++ != 0x8B || *gzip++ != Z_DEFLATED)
+    return -HOST_ZLIB_INVALID_GZIP_HEADER;
+
+  // Grab gzip flags from header and skip MTIME+XFL+OS
+  flags = *gzip++;
+  gzip += 6;
+
+  // Header "reserved" bits must not be set
+  if(flags & 0xE0)
+    return -HOST_ZLIB_INVALID_GZIP_HEADER;
+
+  // Skip extended headers
+  if(flags & 0x4)
+    gzip += 2 + *gzip + (*(gzip + 1) << 8);
+
+  // Skip filename (null terminated string)
+  if(flags & 0x8)
+    while(*gzip++);
+
+  // Skip comment
+  if(flags & 0x10)
+    while(*gzip++);
+
+  // FIXME: Skip CRC16 (should verify if exists)
+  if(flags & 0x2)
+    gzip += 2;
+
+  // Return number of bytes to skip from buffer
+  return gzip - (Bytef *)initial;
+}
+
 host_status_t host_get_file(struct host *h, const char *url,
  FILE *file, const char *expected_type)
 {
+  bool mid_inflate = false, mid_chunk = false, deflated = false;
   unsigned int content_length = 0;
-  char buffer[LINE_BUF_LEN];
-  bool deflated = false;
-  char *file_data;
-  size_t buf_len;
+  unsigned long len = 0, pos = 0;
+  char line[LINE_BUF_LEN];
+  z_stream stream;
+  size_t line_len;
 
   enum {
     NONE,
@@ -901,14 +950,14 @@ host_status_t host_get_file(struct host *h, const char *url,
     CHUNKED,
   } transfer_type = NONE;
 
-  snprintf(buffer, LINE_BUF_LEN,
+  snprintf(line, LINE_BUF_LEN,
    "GET %s HTTP/1.1\nHost: %s\nAccept-Encoding: gzip\n\n", url, h->name);
 
-  if(!__send(h->fd, buffer, strlen(buffer)))
+  if(!__send(h->fd, line, strlen(line)))
     return -HOST_SEND_FAILED;
 
   // Read in the HTTP status line
-  buf_len = host_get_line(h, buffer, LINE_BUF_LEN);
+  line_len = host_get_line(h, line, LINE_BUF_LEN);
 
   /* These two conditionals check the status line is formatted:
    *   "HTTP/1.? 200 OK" (where ? is anything)
@@ -919,17 +968,17 @@ host_status_t host_get_file(struct host *h, const char *url,
    *
    * MegaZeux only cares about pipelining.
    */
-  if(buf_len != 15 ||
-   strncmp(buffer, "HTTP/1.", 7) != 0 ||
-   strcmp(&buffer[7 + 1], " 200 OK") != 0)
+  if(line_len != 15 ||
+   strncmp(line, "HTTP/1.", 7) != 0 ||
+   strcmp(&line[7 + 1], " 200 OK") != 0)
     return -HOST_HTTP_INVALID_STATUS;
 
   // Now parse the HTTP headers, extracting only the pertinent fields
 
   while(true)
   {
-    int len = host_get_line(h, buffer, LINE_BUF_LEN);
-    char *key, *value, *buf = buffer;
+    int len = host_get_line(h, line, LINE_BUF_LEN);
+    char *key, *value, *buf = line;
 
     if(len < 0)
       return -HOST_HTTP_INVALID_HEADER;
@@ -988,197 +1037,189 @@ host_status_t host_get_file(struct host *h, const char *url,
     }
   }
 
-  switch(transfer_type)
+  if(transfer_type != NORMAL && transfer_type != CHUNKED)
+    return -HOST_HTTP_INVALID_TRANSFER_ENCODING;
+
+  while(true)
   {
-    case NORMAL: {
-      // Content-Length + null terminator (useful for text/plain)
-      file_data = malloc(content_length + 1);
+    unsigned long block_size;
+    char block[BLOCK_SIZE];
 
-      // Receive whole file contents at once
-      if(!__recv(h->fd, file_data, content_length))
-        return -HOST_RECV_FAILED;
+    /* Both transfer mechanisms need preambles. For NORMAL, this will
+     * happen only once, because we have a predetermined length for
+     * transfer. However, for CHUNKED we don't know the total payload
+     * size, so this will be invoked each time we exhaust a chunk.
+     *
+     * The CHUNKED handling basically involves chopping away the
+     * headers and determining the next chunk size.
+     */
+    if(!mid_chunk)
+    {
+      if(transfer_type == NORMAL)
+        len = content_length;
 
-      break;
-    }
-
-    case CHUNKED: {
-      content_length = 0;
-      file_data = NULL;
-
-      while(true) {
-        char *endptr, *length, *buf = buffer;
-        unsigned int chunk_length;
+      else if(transfer_type == CHUNKED)
+      {
+        char *endptr, *length, *buf = line;
 
         // Get a chunk_length;parameters formatted line (CRLF terminated)
-        if(host_get_line(h, buffer, LINE_BUF_LEN) <= 0)
-        {
-          if(file_data)
-            free(file_data);
+        if(host_get_line(h, line, LINE_BUF_LEN) <= 0)
           return -HOST_HTTP_INVALID_CHUNK_LENGTH;
-        }
 
         // HTTP 1.1 says we can ignore trailing parameters
         length = strsep(&buf, ";");
         if(!length)
-        {
-          if(file_data)
-            free(file_data);
           return -HOST_HTTP_INVALID_CHUNK_LENGTH;
-        }
 
-        // Convert hex length to unsigned int; check for conversion errors
-        chunk_length = (unsigned int)strtoul(length, &endptr, 16);
+        // Convert hex length to unsigned long; check for conversion errors
+        len = strtoul(length, &endptr, 16);
         if(endptr[0])
-        {
-          if(file_data)
-            free(file_data);
           return -HOST_HTTP_INVALID_CHUNK_LENGTH;
-        }
+      }
 
-        // A length of zero indicates we can stop chunking
-        if(chunk_length == 0)
-          break;
+      mid_chunk = true;
+      pos = 0;
+    }
 
-        // re-allocate file_data += chunk_length
-        file_data = realloc(file_data, content_length + chunk_length);
-
-        // receive file_data chunk
-        if(!__recv(h->fd, file_data + content_length, chunk_length))
-        {
-          if(file_data)
-            free(file_data);
-          return -HOST_RECV_FAILED;
-        }
-
-        // and trailing CRLF (no line payload)
-        if(host_get_line(h, buffer, LINE_BUF_LEN) != 0)
-        {
-          if(file_data)
-            free(file_data);
+    /* For NORMAL transfers, this indicates that there was a zero byte
+     * payload. This is unusual but we can handle it safely by aborting.
+     *
+     * For CHUNKED transfers, zero indicates that there are no more chunks
+     * to process, and that final footer handling should occur. We then
+     * abort as with NORMAL.
+     */
+    if(len == 0)
+    {
+      if(transfer_type == CHUNKED)
+        if(!http_skip_headers(h))
           return -HOST_HTTP_INVALID_HEADER;
-        }
-
-        // update total content length
-        content_length += chunk_length;
-      }
-
-      // May be "footers" or newlines we don't care about
-      if(!http_skip_headers(h))
-      {
-        if(file_data)
-          free(file_data);
-        return -HOST_HTTP_INVALID_HEADER;
-      }
-
-      // add space for NULL terminator (useful for text/plain)
-      file_data = realloc(file_data, content_length + 1);
-      file_data[content_length] = 0;
       break;
     }
 
-    default:
-      return -HOST_HTTP_INVALID_TRANSFER_ENCODING;
-  }
-
-  // Null terminate the buffer for convenience
-  file_data[content_length] = 0;
-
-  // The contents may be deflated with zlib; inflate them
-  if(deflated)
-  {
-    Bytef *gzip = (Bytef *)file_data;
-    Bytef *inflate_buffer;
-    int inflate_length;
-    z_stream stream;
-    uint8_t flags;
-    int ret;
-
-    if(content_length < 10)
-    {
-      free(file_data);
-      return -HOST_ZLIB_INVALID_DATA;
-    }
-
-    /* Unfortunately, Apache (and probably other httpds) send deflated
-     * data in the gzip format. Internally, gzip is identical to zlib's
-     * DEFLATE format, but it has some additional headers that must be
-     * skipped before we can proceed with the inflation.
+    /* For a NORMAL transfer, the block_size computation should yield
+     * BLOCK_SIZE until the final block, which will be len % BLOCK_SIZE.
      *
-     * RFC 1952 details the gzip headers.
+     * For CHUNKED, this block_size can be more volatile. In most cases it
+     * will be BLOCK_SIZE if chunk size > BLOCK_SIZE, until the final block.
+     *
+     * However for very small chunks (which are unlikely) this will always
+     * be shorter than BLOCK_SIZE.
      */
-    if(*gzip++ != 0x1F || *gzip++ != 0x8B || *gzip++ != Z_DEFLATED)
+    block_size = MIN(BLOCK_SIZE, len - pos);
+
+    /* In either case, all headers and block computation has now been done,
+     * and the buffer can be streamed to disk.
+     */
+    if(!__recv(h->fd, block, block_size))
+      return -HOST_RECV_FAILED;
+
+    if(deflated)
     {
-      free(file_data);
-      return -HOST_ZLIB_INVALID_GZIP_HEADER;
+      int ret, deflate_offset = 0;
+      unsigned long ipos = 0;
+
+      /* This is the first block requiring inflation. In this case, we must
+       * parse the GZIP header in order to compute an offset to the DEFLATE
+       * formatted data.
+       */
+      if(!mid_inflate)
+      {
+        /* Compute the offset within this block to begin the inflation
+         * process. For all but the first block, deflate_offset will be
+         * zero.
+         */
+        deflate_offset = zlib_skip_gzip_header(block, block_size);
+        if(deflate_offset < 0)
+          return deflate_offset;
+
+        /* Now we can initialize the decompressor. Pass along the block
+         * without the GZIP header (and for a GZIP, this is also without
+         * the DEFLATE header too, which is what the -MAX_WBITS trick is for).
+         */
+        stream.avail_in = block_size - (unsigned long)deflate_offset;
+        stream.next_in = (Bytef *)&block[deflate_offset];
+        stream.zalloc = Z_NULL;
+        stream.zfree = Z_NULL;
+        stream.opaque = Z_NULL;
+
+        if(inflateInit2(&stream, -MAX_WBITS) != Z_OK)
+          return -HOST_ZLIB_INFLATE_FAILED;
+
+        mid_inflate = true;
+      }
+      else
+      {
+        stream.avail_in = block_size;
+        stream.next_in = (Bytef *)block;
+      }
+
+      while(ipos < block_size)
+      {
+        char outbuf[BLOCK_SIZE];
+
+        // Each pass, only decompress a maximum of BLOCK_SIZE
+        stream.avail_out = BLOCK_SIZE;
+        stream.next_out = (Bytef *)outbuf;
+
+        /* Perform the inflation (this will modify avail_in and
+         * next_in automatically.
+         */
+        ret = inflate(&stream, Z_NO_FLUSH);
+        if(ret != Z_OK && ret != Z_STREAM_END)
+          return -HOST_ZLIB_INFLATE_FAILED;
+
+        // Push the block to disk
+        if(fwrite(outbuf, BLOCK_SIZE - stream.avail_out, 1, file) != 1)
+          return -HOST_FWRITE_FAILED;
+
+        // If the stream has terminated, flag it and break out
+        if(ret == Z_STREAM_END)
+        {
+          mid_inflate = false;
+          break;
+        }
+
+        /* The stream hasn't terminated but we've exhausted input
+         * data for this pass.
+         */
+        if(stream.avail_in == 0)
+          break;
+      }
+
+      // The stream terminated, so we should free associated data-structures
+      if(!mid_inflate)
+        inflateEnd(&stream);
+    }
+    else
+    {
+      /* If the transfer is not deflated, we can simply write out
+       * block_size bytes to the file now.
+       */
+      if(fwrite(block, block_size, 1, file) != 1)
+        return -HOST_FWRITE_FAILED;
     }
 
-    // Grab gzip flags from header and skip MTIME+XFL+OS
-    flags = *gzip++;
-    gzip += 6;
+    pos += block_size;
 
-    // Header "reserved" bits must not be set
-    if(flags & 0xE0)
+    /* For NORMAL transfers we can now abort since we have reached the end
+     * of our payload.
+     *
+     * For CHUNKED transfers, we remove the trailing newline and flag that
+     * a new set of chunk headers should be read.
+     */
+    if(len == pos)
     {
-      free(file_data);
-      return -HOST_ZLIB_INVALID_GZIP_HEADER;
+      if(transfer_type == NORMAL)
+        break;
+
+      else if(transfer_type == CHUNKED)
+      {
+        if(host_get_line(h, line, LINE_BUF_LEN) != 0)
+          return -HOST_HTTP_INVALID_HEADER;
+        mid_chunk = false;
+      }
     }
-
-    // Skip extended headers
-    if(flags & 0x4)
-      gzip += 2 + *gzip + (*(gzip + 1) << 8);
-
-    // Skip filename (null terminated string)
-    if(flags & 0x8)
-       while(*gzip++);
-
-    // Skip comment
-    if(flags & 0x10)
-      while(*gzip++);
-
-    // FIXME: Skip CRC16 (should verify if exists)
-    if(flags & 0x2)
-      gzip += 2;
-
-    // Update the content length to skip the GZIP header and footer
-    // FIXME: Skips CRC32 (should verify) and original content length
-    content_length -= ((char *)gzip - file_data) + 4 + 4;
-    inflate_length = *(uint32_t *)(gzip + content_length + 4);
-
-    stream.avail_in = content_length;
-    stream.next_in = gzip;
-    stream.zalloc = Z_NULL;
-    stream.zfree = Z_NULL;
-    stream.opaque = Z_NULL;
-
-    ret = inflateInit2(&stream, -MAX_WBITS);
-    if(ret != Z_OK)
-    {
-      free(file_data);
-      return -HOST_ZLIB_INFLATE_FAILED;
-    }
-
-    inflate_buffer = malloc(inflate_length + 1);
-    stream.avail_out = inflate_length;
-    stream.next_out = inflate_buffer;
-
-    ret = inflate(&stream, Z_FINISH);
-
-    free(file_data);
-    content_length = inflate_length;
-    file_data = (char *)inflate_buffer;
-    file_data[content_length] = 0;
-
-    if(ret != Z_STREAM_END)
-    {
-      free(file_data);
-      return -HOST_ZLIB_INFLATE_FAILED;
-    }
-
-    inflateEnd(&stream);
   }
-
-  if(fwrite(file_data, content_length, 1, file) != 1)
-    return -HOST_FWRITE_FAILED;
 
   return HOST_SUCCESS;
 }
