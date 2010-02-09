@@ -18,6 +18,9 @@ DSOPOST    = .dll
 DSORPATH   =
 DSOSONAME  = -Wl,-soname,
 
+# Drop dependency on libgcc_s_dw2-1.dll
+ARCH_LDFLAGS += -static-libgcc
+
 # OpenGL must be linked to MZX
 core_ldflags += -lopengl32
 
