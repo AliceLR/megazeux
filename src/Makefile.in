@@ -220,7 +220,7 @@ ${mzx}: ${mzx_cobjs} ${mzx_cxxobjs} ${mzx}_link
 
 endif
 
-${mzx}_link: 
+${mzx}_link: ${mzx_cobjs_link} ${mzx_cxxobjs}
 ifeq (${V},1)
 	${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} -o ${mzx} ${mzx_ldflags}
 else
