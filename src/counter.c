@@ -2030,7 +2030,7 @@ static function_counter builtin_counters[] =
   { "board_id", 0x0241, board_id_read, board_id_write },             // 2.65
   { "board_param", 0x0241, board_param_read, board_param_write },    // 2.65
   { "board_w", 0x0241, board_w_read, NULL },                         // 2.65
-  { "bullettype", 0x0209, bullettype_read, bullettype_write },       // 2.60
+  { "bullettype", 0, bullettype_read, bullettype_write },            // <=2.51
   { "buttons", 0x0208, buttons_read, NULL },                         // 2.51s1
   { "char_byte", 0x0209, char_byte_read, char_byte_write },          // 2.60
   { "commands", 0x0209, commands_read, commands_write },             // 2.60
