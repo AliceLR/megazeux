@@ -30,16 +30,6 @@ __M_BEGIN_DECLS
 #include "world_struct.h"
 #include "counter_struct.h"
 
-struct function_counter
-{
-  char name[20];
-  int minimum_version;
-  int (*function_read)(struct world *mzx_world,
-   struct function_counter *counter, const char *name, int id);
-  void (*function_write)(struct world *mzx_world,
-   struct function_counter *counter, const char *name, int value, int id);
-};
-
 CORE_LIBSPEC int match_function_counter(const char *dest, const char *src);
 CORE_LIBSPEC void set_counter(struct world *mzx_world, const char *name,
  int value, int id);
