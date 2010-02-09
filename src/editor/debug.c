@@ -148,7 +148,7 @@ void __debug_counters(struct world *mzx_world)
   do
   {
     elements[0] = construct_list_box(2, 2, (const char **)var_list,
-     num_vars, 19, 75, 0, &selected);
+     num_vars, 19, 75, 0, &selected, false);
     elements[1] = construct_button(23, 22, "Export", 1);
     elements[2] = construct_button(45, 22, "Done", -1);
 
