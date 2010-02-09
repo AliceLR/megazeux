@@ -363,12 +363,36 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
   unsigned char *charset_mem;
   unsigned char r, g, b;
   struct board *cur_board;
+  FILE *fp;
 
   int meter_target = 2 + mzx_world->num_boards, meter_curr = 0;
 
-  FILE *fp = fopen(file, "wb");
+#ifdef CONFIG_DEBYTECODE
+  if(!savegame)
+  {
+    fp = fopen(file, "rb");
+    if(fp)
+    {
+      if(!fseek(fp, 0x1A, SEEK_SET))
+      {
+        char tmp[3];
+        if(fread(tmp, 1, 3, fp) == 3)
+        {
+          // If it's not a 2.90 world, abort the save
+          if(world_magic(tmp) < 0x025A)
+          {
+            error("Save would overwrite older world. Aborted.", 0, 1, 1337);
+            goto exit_close;
+          }
+        }
+      }
+    }
+    fclose(fp);
+  }
+#endif
 
-  if(fp == NULL)
+  fp = fopen(file, "wb");
+  if(!fp)
   {
     error("Error saving world", 1, 8, 0x0D01);
     return -1;
@@ -702,10 +726,12 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
   }
   free(size_offset_list);
 
-  // ...All done!
-  fclose(fp);
-
   meter_restore_screen();
+
+#ifdef CONFIG_DEBYTECODE
+exit_close:
+#endif
+  fclose(fp);
   return 0;
 }
 
