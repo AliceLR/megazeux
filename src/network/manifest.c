@@ -203,7 +203,7 @@ static struct manifest_entry *manifest_get_local(void)
 static struct manifest_entry *manifest_get_remote(struct host *h,
  const char *base)
 {
-  struct manifest_entry *manifest;
+  struct manifest_entry *manifest = NULL;
   char url[LINE_BUF_LEN];
   host_status_t ret;
   FILE *f;
@@ -214,20 +214,22 @@ static struct manifest_entry *manifest_get_remote(struct host *h,
   if(!f)
   {
     warn("Failed to open local " MANIFEST_TXT " for writing\n");
-    return NULL;
+    goto err_out;
   }
 
   ret = host_recv_file(h, url, f, "text/plain");
   if(ret != HOST_SUCCESS)
   {
     warn("Processing " MANIFEST_TXT " failed (error %d)\n", ret);
-    return NULL;
+    goto err_fclose;
   }
 
   rewind(f);
   manifest = manifest_list_create(f);
-  fclose(f);
 
+err_fclose:
+  fclose(f);
+err_out:
   return manifest;
 }
 
