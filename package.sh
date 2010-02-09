@@ -93,7 +93,8 @@ createzip_dynamic_sdl() {
 	#
 	$SEVENZIP a -tzip dist/$TARGET-$2.zip \
 		$BINARY_DEPS $HELP_FILE $GLSL_PROGRAMS $DOCS \
-		$TARGET.exe SDL.dll $DIRECTX_BAT utils &&
+		$TARGET.exe ${TARGET}run.exe core.dll editor.dll \
+		SDL.dll $DIRECTX_BAT utils &&
 
 	#
 	# Remove SDL, and the bat file.
@@ -256,7 +257,7 @@ cp -pr $SUBDIRS dist/$TARGET &&
 cp -pr src/* dist/$TARGET/src &&
 
 # nasty hack for binary packaging (not removed by package_clean)
-rm -f dist/$TARGET/src/utils/{checkres,downver,hlp2txt,txt2hlp}{,.dbg}{,.exe}&&
+rm -f dist/$TARGET/src/utils/{checkres,downver,hlp2txt,txt2hlp}{,.exe}{,.debug} &&
 
 echo "PLATFORM=none" > dist/$TARGET/platform.inc
 

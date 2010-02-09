@@ -63,15 +63,23 @@ ${txt2hlp}: ${txt2hlp_objs}
 	${CC} ${txt2hlp_objs} -o ${txt2hlp} ${LDFLAGS}
 
 utils_package_clean:
-	@mv ${checkres} ${checkres}.backup
-	@mv ${downver} ${downver}.backup
-	@mv ${hlp2txt} ${hlp2txt}.backup
-	@mv ${txt2hlp} ${txt2hlp}.backup
+	-@mv ${checkres}       ${checkres}.backup
+	-@mv ${checkres}.debug ${checkres}.debug.backup
+	-@mv ${downver}        ${downver}.backup
+	-@mv ${downver}.debug  ${downver}.debug.backup
+	-@mv ${hlp2txt}        ${hlp2txt}.backup
+	-@mv ${hlp2txt}.debug  ${hlp2txt}.debug.backup
+	-@mv ${txt2hlp}        ${txt2hlp}.backup
+	-@mv ${txt2hlp}.debug  ${txt2hlp}.debug.backup
 	@${MAKE} utils_clean
-	@mv ${txt2hlp}.backup ${txt2hlp}
-	@mv ${hlp2txt}.backup ${hlp2txt}
-	@mv ${downver}.backup ${downver}
-	@mv ${checkres}.backup ${checkres}
+	-@mv ${checkres}.backup       ${checkres}
+	-@mv ${checkres}.debug.backup ${checkres}.debug
+	-@mv ${downver}.backup        ${downver}
+	-@mv ${downver}.debug.backup  ${downver}.debug
+	-@mv ${hlp2txt}.backup        ${hlp2txt}
+	-@mv ${hlp2txt}.debug.backup  ${hlp2txt}.debug
+	-@mv ${txt2hlp}.backup        ${txt2hlp}
+	-@mv ${txt2hlp}.debug.backup  ${txt2hlp}.debug
 
 utils: $(filter-out $(wildcard ${utils_obj}), ${utils_obj})
 

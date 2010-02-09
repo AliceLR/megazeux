@@ -114,17 +114,25 @@ include src/utils/Makefile.in
 include src/network/Makefile.in
 
 package_clean: utils_package_clean
-	@mv ${mzxrun} ${mzxrun}.backup
-	@mv ${mzxrundbg} ${mzxrundbg}.backup
-	@mv ${mzx} ${mzx}.backup
-	@mv ${mzxdbg} ${mzxdbg}.backup
+	-@mv ${mzxrun}       ${mzxrun}.backup
+	-@mv ${mzxrun}.debug ${mzxrun}.debug.backup
+	-@mv ${mzx}          ${mzx}.backup
+	-@mv ${mzx}.debug    ${mzx}.debug.backup
+ifeq (${BUILD_MODULAR},1)
+	-@mv ${core_target}   ${core_target}.backup
+	-@mv ${editor_target} ${editor_target}.backup
+endif
 	@${MAKE} mzx_clean
 	@rm -f src/config.h
 	@echo "PLATFORM=none" > platform.inc
-	@mv ${mzxrun}.backup ${mzxrun}
-	@mv ${mzxrundbg}.backup ${mzxrundbg}
-	@mv ${mzx}.backup ${mzx}
-	@mv ${mzxdbg}.backup ${mzxdbg}
+ifeq (${BUILD_MODULAR},1)
+	-@mv ${core_target}.backup   ${core_target}
+	-@mv ${editor_target}.backup ${editor_target}
+endif
+	-@mv ${mzxrun}.backup       ${mzxrun}
+	-@mv ${mzxrun}.debug.backup ${mzxrun}.debug
+	-@mv ${mzx}.backup          ${mzx}
+	-@mv ${mzx}.debug.backup    ${mzx}.debug
 
 clean: mzx_clean utils_clean
 
