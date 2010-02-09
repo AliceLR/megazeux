@@ -1048,6 +1048,15 @@ static void set_robot_position(Robot *cur_robot, int position)
   cur_robot->pos_within_line = 0;
   cur_robot->cycle_count = cur_robot->robot_cycle - 1;
 
+  /* Popping a subroutine's retval from the stack may legitimately
+   * try to position another robot's code beyond the end of its
+   * program. Ensure that if this happens, the robot's program
+   * will terminate in the next cycle. We need -2 here to ignore
+   * the initial 0xff and terminal 0x00 signature bytes.
+   */
+  if(cur_robot->cur_prog_line > cur_robot->program_length - 2)
+    cur_robot->cur_prog_line = 0;
+
   if(cur_robot->status == 1)
     cur_robot->status = 2;
 }

@@ -39,6 +39,8 @@ USERS
   as -1 can no longer be used to bypass the check (causing subsequent crashes).
 + Windows builds now use a patched version of SDL 1.2.13 containing a fix
   for the directx+F10 issue.
++ Fix a bug where one robot could send another robot to "#return", with an
+  address outside its program. In such cases, the robot will now terminate.
 
 DEVELOPERS
 
