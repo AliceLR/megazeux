@@ -124,24 +124,32 @@ createzip_dynamic_sdl() {
 # createUnifiedDMG
 #
 createUnifiedDMG() {
-	if [ ! -f megazeux -a ! -f megazeux.i686 -a ! -f megazeux.ppc ]; then
-		echo "Neither megazeux.i686 nor megazeux.ppc are present!"
-		breakout 4
-	fi
+	#
+	# Lipo all the binaries together, if not already done
+	#
+	for FILE in megazeux mzxrun updater libcore.dylib \
+	            libeditor.dylib libnetwork.dylib; do
+		[ -f ${FILE} ] && continue
 
-	if [ -f megazeux.i686 -a ! -f megazeux.ppc ]; then
-		mv megazeux.i686 megazeux
-	elif [ -f megazeux.ppc -a ! -f megazeux.i686 ]; then
-		mv megazeux.ppc megazeux
-	elif [ ! -f megazeux ]; then
-		lipo -create megazeux.i686 megazeux.ppc -output megazeux &&
-		rm -f megazeux.i686 megazeux.ppc
-	fi
+		if [ ! -f ${FILE}.i686 -a ! -f ${FILE}.ppc ]; then
+			echo "Neither ${FILE}.i686 nor ${FILE}.ppc are present!"
+			breakout 4
+		fi
 
-	if [ ! -f megazeux ]; then
-		echo "Failed to compile 'megazeux'.."
-		breakout 5
-	fi
+		if [ -f ${FILE}.i686 -a ! -f ${FILE}.ppc ]; then
+			mv ${FILE}.i686 ${FILE}
+		elif [ -f ${FILE}.ppc -a ! -f ${FILE}.i686 ]; then
+			mv ${FILE}.ppc ${FILE}
+		else
+			lipo -create ${FILE}.i686 ${FILE}.ppc -output ${FILE}
+			rm -f ${FILE}.i686 ${FILE}.ppc
+		fi
+
+		if [ ! -f ${FILE} ]; then
+			echo "Failed to compile '${FILE}'.."
+			breakout 5
+		fi
+	done
 
 	#
 	# Prep the DMG's directory structure in a temp directory
@@ -153,6 +161,8 @@ createUnifiedDMG() {
 	mkdir -p ${CONTENTS}/Resources/shaders &&
 	cp -RP $HOME/workspace/Frameworks ${CONTENTS} &&
 	cp megazeux ${CONTENTS}/MacOS/MegaZeux &&
+	cp mzxrun ${CONTENTS}/MacOS/MZXRun &&
+	cp libcore.dylib libeditor.dylib libnetwork.dylib ${CONTENTS}/MacOS &&
 	cp $BINARY_DEPS $HELP_FILE ${CONTENTS}/Resources &&
         cp $GLSL_PROGRAMS ${CONTENTS}/Resources/shaders &&
 	cp contrib/icons/quantump.icns ${CONTENTS}/Resources/MegaZeux.icns &&

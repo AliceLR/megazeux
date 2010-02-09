@@ -24,8 +24,11 @@ else
 REAL_ARCH := $(error Invalid architecture selection)
 endif
 
-DSOPRE  = lib
-DSOPOST = .dylib
+DSOLDFLAGS = -dynamiclib
+DSOPRE     = lib
+DSOPOST    = .dylib
+DSORPATH   =
+DSOSONAME  = -install_name @executable_path/
 
 SDL_CFLAGS  = -I${PREFIX}/SDL.Framework/Headers
 SDL_LDFLAGS = -framework SDL
@@ -37,20 +40,19 @@ VORBIS_CFLAGS  = -I${PREFIX}/Ogg.Framework/Headers \
                  -I${PREFIX}/Vorbis.Framework/Headers
 VORBIS_LDFLAGS = -framework Ogg -framework Vorbis
 
-arch/darwin/%.o: arch/darwin/%.m
+ARCH_LDFLAGS = -F/Users/ajs/workspace/Frameworks
+
+arch/darwin/SDLMain.o: arch/darwin/SDLMain.m
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${SDL_CFLAGS} -c $< -o $@
 
--include arch/darwin/SDLMain.d
-
-core_ldflags += arch/darwin/SDLMain.o
-core_ldflags += -F${PREFIX} -framework Cocoa -framework OpenGL
-
-mzx: arch/darwin/SDLMain.o
-
 all:
+	@mv ${core_target} ${core_target}.${REAL_ARCH}
+	@mv ${editor_target} ${editor_target}.${REAL_ARCH}
+	@mv ${network_target} ${network_target}.${REAL_ARCH}
 	@mv ${mzx} ${mzx}.${REAL_ARCH}
 	@mv ${mzxrun} ${mzxrun}.${REAL_ARCH}
+	@mv ${updater} ${updater}.${REAL_ARCH}
 
 clean:
 	@echo "  CLEAN   " arch/darwin

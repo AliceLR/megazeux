@@ -33,8 +33,8 @@ network_target := ${DSOPRE}network${DSOPOST}
 
 ${network_target}: ${network_objs} ${core_target}
 	$(if ${V},,@echo "  LINK    " $@)
-	${CC} -shared -o $@ ${network_objs} ${network_ldflags} \
-	  ${LDFLAGS} -Wl,-rpath=${LIBDIR} -L. -lcore
+	${CC} ${DSOLDFLAGS} -o $@ ${network_objs} ${network_ldflags} \
+	  ${LDFLAGS} ${DSOSONAME}$@ ${DSORPATH} -L. -lcore
 
 network_target_clean:
 	$(if ${V},,@echo "  RM      " ${network_target} ${network_target}.debug)
@@ -61,7 +61,7 @@ ${updater}: ${core_target} ${network_target} ${updater_objs}
 	$(if ${V},,@echo "  LINK    " ${updater})
 ifeq (${BUILD_MODULAR},1)
 	${CC} ${updater_objs} -o ${updater} ${LDFLAGS} \
-	  -Wl,-rpath=${LIBDIR} -L. -lcore -lnetwork ${updater_ldflags}
+	  ${DSORPATH} -L. -lcore -lnetwork ${updater_ldflags}
 else
 	${LINK_CC} ${updater_objs} ${core_target} ${network_target} \
 	  -o ${updater} ${LDFLAGS} ${core_ldflags} ${network_ldflags} \
@@ -78,7 +78,7 @@ ${server}: ${core_target} ${network_target} ${server_objs}
 	$(if ${V},,@echo "  LINK    " ${server})
 ifeq (${BUILD_MODULAR},1)
 	${CC} ${server_objs} -o ${server} ${LDFLAGS} \
-	  -Wl,-rpath=${LIBDIR} -L. -lcore -lnetwork ${server_ldflags}
+	  ${DSORPATH} -L. -lcore -lnetwork ${server_ldflags}
 else
 	${LINK_CC} ${server_objs} ${core_target} ${network_target} \
 	  -o ${server} ${LDFLAGS} ${core_ldflags} ${network_ldflags} \

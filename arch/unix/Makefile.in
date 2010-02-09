@@ -4,8 +4,11 @@
 
 .PHONY: install
 
-DSOPRE  = lib
-DSOPOST = .so
+DSOLDFLAGS = -shared
+DSOPRE     = lib
+DSOPOST    = .so
+DSORPATH   = -Wl,-rpath,${LIBDIR}
+DSOSONAME  = -Wl,-soname,
 
 ifeq (${USER},root)
 install = install -o root

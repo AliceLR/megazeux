@@ -29,6 +29,8 @@
 
 #ifdef __WIN32__
 #include "SDL.h"
+#else
+#define SDL_main main
 #endif
 
 #define OUTBOUND_PORT 80

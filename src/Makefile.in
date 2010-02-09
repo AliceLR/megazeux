@@ -184,7 +184,8 @@ core_target := ${DSOPRE}core${DSOPOST}
 
 ${core_target}: ${core_objs}
 	$(if ${V},,@echo "  LINK    " $@)
-	${LINK_CC} -shared -o $@ ${core_objs} ${LDFLAGS} ${core_ldflags}
+	${LINK_CC} ${DSOLDFLAGS} -o $@ ${core_objs} ${LDFLAGS} \
+	  ${DSOSONAME}$@ ${core_ldflags}
 
 core_target_clean:
 	$(if ${V},,@echo "  RM      " ${core_target} ${core_target}.debug)
@@ -204,6 +205,11 @@ include src/editor/Makefile.in
 
 mzx_objs := ${core_obj}/main.o
 
+ifeq (${PLATFORM},darwin)
+mzx_objs += arch/darwin/SDLMain.o
+mzx_ldflags := -framework Cocoa
+endif
+
 -include ${mzx_objs:.o=.d}
 
 ifeq (${EMBED_ICONS},1)
@@ -219,7 +225,7 @@ ${mzx}: ${core_target} ${editor_target} ${mzx_objs}
 	$(if ${V},,@echo "  LINK    " ${mzx})
 ifeq (${BUILD_MODULAR},1)
 	${CC} ${mzx_objs} -o ${mzx} ${LDFLAGS} \
-	  -Wl,-rpath=${LIBDIR} -L. -lcore -leditor ${SDL_LDFLAGS}
+	  ${DSORPATH} -L. -lcore -leditor ${SDL_LDFLAGS} ${mzx_ldflags}
 else
 	${LINK_CC} ${mzx_objs} ${core_target} ${editor_target} \
 	  -o ${mzx} ${LDFLAGS} ${core_ldflags} ${editor_ldflags}
@@ -244,6 +250,11 @@ ifeq (${BUILD_EDITOR},1)
 mzxrun_objs += ${core_obj}/edit_stubs.o
 endif
 
+ifeq (${PLATFORM},darwin)
+mzxrun_objs += arch/darwin/SDLMain.o
+mzxrun_ldflags := -framework Cocoa
+endif
+
 -include ${mzxrun_objs:.o=.d}
 
 ifeq (${EMBED_ICONS},1)
@@ -258,7 +269,7 @@ ${mzxrun}: ${core_target} ${mzxrun_objs}
 	$(if ${V},,@echo "  LINK    " ${mzxrun})
 ifeq (${BUILD_MODULAR},1)
 	${CC} ${mzxrun_objs} -o ${mzxrun} ${LDFLAGS} \
-	  -Wl,-rpath=${LIBDIR} -L. -lcore ${SDL_LDFLAGS}
+	  ${DSORPATH} -L. -lcore ${SDL_LDFLAGS} ${mzxrun_ldflags}
 else
 	${LINK_CC} ${mzxrun_objs} ${core_target} \
 	  -o ${mzxrun} ${LDFLAGS} ${core_ldflags}

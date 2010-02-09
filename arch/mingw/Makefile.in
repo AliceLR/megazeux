@@ -10,7 +10,12 @@ STRIP   = ${MINGWBASE}strip --strip-unneeded
 WINDRES = ${MINGWBASE}windres
 
 BINEXT  = .exe
-DSOPOST = .dll
+
+DSOLDFLAGS = -shared
+DSOPRE     =
+DSOPOST    = .dll
+DSORPATH   =
+DSOSONAME  = -Wl,-soname,
 
 # OpenGL must be linked to MZX
 core_flags   += -DLINK_OPENGL

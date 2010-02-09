@@ -9,8 +9,12 @@ OBJCOPY = true
 CHMOD   = true
 
 BINEXT  = .exe
-DSOPRE  = lib
-DSOPOST = .so
+
+DSOLDFLAGS = -shared
+DSOPRE     = lib
+DSOPOST    = .so
+DSORPATH   = -Wl,-rpath,${LIBDIR}
+DSOSONAME  = -Wl,-soname,
 
 ifeq (${BUILD_MODULAR},1)
 ARCH_CFLAGS   += -fPIC
