@@ -1,10 +1,18 @@
 /**
- * Zeroes the TimeDateStamp fields and recomputes checksums in Microsoft
- * Portable-Executable (PE) files so that two identical programs generate
- * two identical binaries when compiled with the same toolchain.
+ * This tool modifies stadard Microsoft PE32 and PE32+ (Portable Executable)
+ * files on the i386 and AMD64 platforms, such that two identical programs
+ * compiled with identical compilers produce an identical binary. Generally,
+ * PE binaries are not identical, because TimeDateStamp (which changes
+ * continuously) is used in several mandatory executable sections.
  *
- * It is also necessary to modify the .rsrc section if resources are compiled
- * into the binary, since the .rsrc headers also use TimeDateStamp.
+ * Apart from the main PE32 header, it is also necessary to modify the
+ * optional .edata, .idata and .rsrc sections, since these sections' headers
+ * (and in the case of .rsrc, contents) also contain TimeDateStamps.
+ *
+ * Finally, this program works around a binutils bug which generates
+ * random garbage between module names in the idata section. Normally,
+ * this wouldn't affect program execution, but it does make the binaries
+ * non-identical. Replacing this garbage with zeroes solves the problem.
  *
  * Copyright (C) 2009 Alistair John Strachan <alistair@devzero.co.uk>
  *
