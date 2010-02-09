@@ -67,7 +67,6 @@ CXXFLAGS += -g -Wall ${ARCH_CXXFLAGS}
 #
 ifneq (${SUPPRESS_BUILD},1)
 
-o = o
 mzx = ${TARGET}${BINEXT}
 mzxdbg = ${TARGET}.debug
 

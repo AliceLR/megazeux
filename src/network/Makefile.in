@@ -7,9 +7,9 @@
 network_base = src/network
 
 updater := ${network_base}/updater${BINEXT}
-updater_objs := ${mzx_base}/util.${o}
-updater_objs += ${network_base}/host.${o} ${network_base}/manifest.${o}
-updater_objs += ${network_base}/sha256.${o} ${network_base}/updater.${o}
+updater_objs := ${mzx_base}/util.o
+updater_objs += ${network_base}/host.o ${network_base}/manifest.o
+updater_objs += ${network_base}/sha256.o ${network_base}/updater.o
 updater_ldflags := -L${PREFIX}/lib -lz
 
 ifeq (${PLATFORM},mingw)
@@ -17,9 +17,9 @@ updater_ldflags += ${SDL_LDFLAGS}
 endif
 
 server := ${network_base}/server${BINEXT}
-server_objs := ${mzx_base}/util.${o}
-server_objs += ${network_base}/host.${o} ${network_base}/manifest.${o}
-server_objs += ${network_base}/sha256.${o} ${network_base}/server.${o}
+server_objs := ${mzx_base}/util.o
+server_objs += ${network_base}/host.o ${network_base}/manifest.o
+server_objs += ${network_base}/sha256.o ${network_base}/server.o
 server_ldflags := ${SDL_LDFLAGS} -L${PREFIX}/lib -lz
 
 -include ${updater_objs:.o=.d}

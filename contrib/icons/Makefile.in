@@ -9,9 +9,9 @@
 icons_base = contrib/icons
 icons = ${icons_base}/icons.o
 
-icons_objs = ${icons_base}/quantump.${o}
+icons_objs = ${icons_base}/quantump.o
 
-${icons_base}/%.${o}: ${icons_base}/%.rc
+${icons_base}/%.o: ${icons_base}/%.rc
 ifeq (${V},1)
 	${WINDRES} -i $< -o $@
 else
