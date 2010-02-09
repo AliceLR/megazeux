@@ -1112,27 +1112,26 @@ static void char_byte_write(World *mzx_world, function_counter *counter,
 static int pixel_read(World *mzx_world, function_counter *counter,
  const char *name, int id)
 {
+  int pixel_x = CLAMP(get_counter(mzx_world, "CHAR_X", id), 0, 256);
+  int pixel_y = CLAMP(get_counter(mzx_world, "CHAR_Y", id), 0, 112);
+  char sub_x, sub_y, current_byte, current_char;
   int pixel_mask;
-  int pixel_x = get_counter(mzx_world, "CHAR_X", id);
-  int pixel_y = get_counter(mzx_world, "CHAR_Y", id);
 
-  char sub_x, sub_y, current_byte;
-  unsigned char current_char;
   sub_x = pixel_x % 8;
   sub_y = pixel_y % 14;
   current_char = ((pixel_y / 14) * 32) + (pixel_x / 8);
   current_byte = ec_read_byte(current_char, sub_y);
   pixel_mask = (128 >> sub_x);
+
   return (current_byte & pixel_mask) >> (7 - sub_x);
 }
 
 static void pixel_write(World *mzx_world, function_counter *counter,
  const char *name, int value, int id)
 {
-  char sub_x, sub_y, current_byte;
-  unsigned char current_char;
-  int pixel_x = get_counter(mzx_world, "CHAR_X", id) & 255;
-  int pixel_y = get_counter(mzx_world, "CHAR_Y", id) % 112;
+  int pixel_x = CLAMP(get_counter(mzx_world, "CHAR_X", id), 0, 256);
+  int pixel_y = CLAMP(get_counter(mzx_world, "CHAR_Y", id), 0, 112);
+  char sub_x, sub_y, current_byte, current_char;
 
   sub_x = pixel_x & 7;
   sub_y = pixel_y % 14;

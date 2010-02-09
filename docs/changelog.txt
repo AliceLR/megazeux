@@ -45,6 +45,8 @@ USERS
 + Fix TIME/TIMERESET overflows with very large values. Board timeout is now
   programmatically limited to 32767, which is consistent with the Board Info
   control.
++ Clamp CHAR_X/CHAR_Y properly so that negative numbers can no longer be used
+  to corrupt the editor charset and potentially other process memory.
 
 DEVELOPERS
 
