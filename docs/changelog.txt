@@ -38,6 +38,8 @@ DEVELOPERS
 + Disabling SDL can now be done with --disable-sdl and the resulting
   configuration will automatically disable any SDL-dependent components.
   This is useless to anybody except developers doing new ports.
++ Game directory, utility directory and resource directories can now
+  be specified and will be respected on "make install". (Sci-Freak, ajs)
 
 December 29, 2008 - MZX 2.82b
 

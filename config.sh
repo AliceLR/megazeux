@@ -3,11 +3,15 @@
 ### CONFIG.SH HELP TEXT #######################################################
 
 usage() {
-	echo "usage: ./config.sh --platform [platform] <--prefix prefix>"
-	echo "                   <--sysconfdir sysconfdir> <option..>"
+	echo "usage: ./config.sh --platform [platform] <--prefix [dir]> <--sysconfdir [dir]>"
+	echo "                                         <--gamesdir [dir]> <--bindir [dir]>"
+	echo "                                         <--sharedir [dir]> <options..>"
 	echo
-	echo " <prefix>        Where MegaZeux's dependencies should be found."
-	echo " <sysconfdir>    Where MegaZeux's config should be read from."
+	echo "  --prefix       Where dependencies should be found."
+	echo "  --sysconfdir   Where the config should be read from."
+	echo "  --gamesdir     Where binaries should be installed."
+	echo "  --bindir       Where utilities should be installed."
+	echo "  --sharedir     Where resources should be installed." 
 	echo
 	echo "Supported [platform] values:"
 	echo
@@ -67,6 +71,9 @@ usage() {
 PLATFORM=""
 PREFIX="/usr"
 SYSCONFDIR="/etc"
+GAMESDIR="${PREFIX}/games"
+BINDIR="${PREFIX}/bin"
+SHAREDIR="${PREFIX}/share"
 SYSCONFDIR_SET="false"
 DATE_STAMP="true"
 AS_NEEDED="false"
@@ -117,6 +124,24 @@ while [ "$1" != "" ]; do
 		shift
 		SYSCONFDIR="$1"
 		SYSCONFDIR_SET="true"
+	fi
+
+	# e.g. --gamesdir /usr/games
+	if [ "$1" = "--gamesdir" ]; then
+		shift
+		GAMESDIR="$1"
+	fi
+
+	# e.g. --bindir /usr/bin
+	if [ "$1" = "--bindir" ]; then
+		shift
+		BINDIR="$1"
+	fi
+
+	# e.g. --sharedir /usr/share
+	if [ "$1" = "--sharedir" ]; then
+		shift
+		SHAREDIR="$1"
 	fi
 
 	[ "$1" = "--as-needed-hack" ] && AS_NEEDED="true"
@@ -318,9 +343,10 @@ echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 
 #
 # Some platforms may have filesystem hierarchies they need to fit into
+# FIXME: SHAREDIR should be hardcoded in fewer cases
 #
 if [ "$PLATFORM" = "unix" ]; then
-	echo "#define SHAREDIR \"$PREFIX/share/megazeux/\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\"" >> src/config.h
 	echo "#define CONFFILE \"megazeux-config\""         >> src/config.h
 elif [ "$PLATFORM" = "nds" ]; then
 	echo "#define SHAREDIR \"/games/megazeux/\"" >> src/config.h
@@ -340,6 +366,9 @@ fi
 # Some architectures define an "install" target, and need these.
 #
 echo "SYSCONFDIR=$SYSCONFDIR" >> platform.inc
+echo "GAMESDIR=$GAMESDIR"     >> platform.inc
+echo "BINDIR=$BINDIR"         >> platform.inc
+echo "SHAREDIR=$SHAREDIR"     >> platform.inc
 
 #
 # Use platform-specific code or use SDL
