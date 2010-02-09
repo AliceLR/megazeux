@@ -13,11 +13,6 @@ AR      = psp-ar
 OBJCOPY = psp-objcopy
 STRIP   = /bin/true
 
-#
-# PSP target rules
-#
-BINEXT = .elf
-
 # flag PSP build and link in c/psppower
 ARCH_CFLAGS   += -G0 -I${PREFIX}/sdk/include
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}
