@@ -80,7 +80,7 @@ DEVELOPERS
   compiler.
 + MegaZeux now provides the option for "modular" linkage, factoring out the
   "core" and "editor" features to shared objects that other binaries can link
-  against.
+  against. This feature works on the unix, mingw, amiga and darwin ports.
 + Added RPM .spec file. Capable of building (at least) Fedora 10 RPMs.
 
 June 10, 2008 - MZX 2.82
