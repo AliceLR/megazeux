@@ -6,7 +6,7 @@
 #                  http://aegis.sourceforge.net/auug97.pdf
 ##
 
-.PHONY: clean help_check mzx mzx.debug build build_clean build_source
+.PHONY: clean help_check mzx mzx.debug build build_clean source
 
 -include platform.inc
 include version.inc
@@ -117,7 +117,7 @@ build_clean:
 	$(if ${V},,@echo "  RM      " build)
 	${RM} -r build
 
-build_source: build/${TARGET}src
+source: build/${TARGET}src
 
 build/${TARGET}src:
 	${RM} -r build/${TARGET}
