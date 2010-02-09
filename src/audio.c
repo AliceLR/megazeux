@@ -1224,19 +1224,26 @@ int check_ext_for_gdm_and_convert(const char *filename, char *new_file)
     // GDM -> S3M
     memcpy(new_file + ext_pos, ".s3m", 4);
 
-    /* If the destination S3M already exists, check its size.
-     * If it doesn't exist, or the size is zero, recreate the S3M.
+    fprintf(stderr, "got here %s %s\n", filename, new_file);
+
+    /* If the destination S3M already exists, check its size. If it's
+     * non-zero in size, abort early.
      */
     if(!fsafetranslate(new_file, translated_filename_dest))
     {
       FILE *f = fopen(translated_filename_dest, "r");
-      if(ftell_and_rewind(f) == 0)
-        convert_gdm_s3m(filename, new_file);
-      fclose(f);
-    }
-    else
-      convert_gdm_s3m(filename, new_file);
+      long file_len = ftell_and_rewind(f);
 
+      fclose(f);
+      if(file_len > 0)
+        return 1;
+    }
+
+    /* In the case we need to convert the GDM, we need to find
+     * the real source path for it. Translate accordingly.
+     */
+    if(!fsafetranslate(filename, translated_filename_dest))
+      convert_gdm_s3m(translated_filename_dest, new_file);
     return 1;
   }
 
