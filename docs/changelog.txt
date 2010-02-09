@@ -38,6 +38,7 @@ USERS
 + Fullscreen modes will now automatically use your current desktop resolution
   if using any hardware renderer (i.e. not the default software renderer). To
   get the old behaviour back you must set fullscreen_resolution explicitly.
++ Fix a bug where web and thick web would be treated the same.
 
 DEVELOPERS
 

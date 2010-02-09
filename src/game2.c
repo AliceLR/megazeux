@@ -2610,16 +2610,12 @@ enum move_status move(struct world *mzx_world, int x, int y, int dir,
   if(d_flag & A_UNDER)
   {
     int web_flags = (move_flags & (MUST_WEB | MUST_THICKWEB)) >> 5;
-    int web = (d_id == WEB) || (d_id == THICK_WEB);
-    if((web < 1) || (web > 2))
-      web = 0;
+    int web = (d_id == WEB) | ((d_id == THICK_WEB) << 1);
 
-    if(web_flags)
-    {
-      // Must be one of these
-      if(!(web_flags & web))
-        return HIT;
-    }
+    // Web and thick web may be flagged separately, or together.
+    // If they're both on, we must allow either WEB or THICK_WEB ids.
+    if(web_flags && !(web_flags & web))
+      return HIT;
 
     // Must be water?
     if((move_flags & MUST_WATER) && !(is_water(d_id)))
