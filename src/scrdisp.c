@@ -149,10 +149,21 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
       t2 = strlen(line); // Get length of NEW line
       // Resize and move
       t3 = scroll->mesg_size;
-      reallocate_scroll(scroll, t3 + t2 - t1);
-      where = scroll->mesg;
-      // Now move.
-      memmove(where + pos + t2, where + pos + t1, t3 - pos - t1);
+
+      if(t2 - t1 > 0)
+      {
+        reallocate_scroll(scroll, t3 + t2 - t1);
+        where = scroll->mesg;
+
+        memmove(where + pos + t2, where + pos + t1, t3 - pos - t1);
+      }
+      else if(t2 - t1 < 0)
+      {
+        memmove(where + pos + t2, where + pos + t1, t3 - pos - t1);
+
+        reallocate_scroll(scroll, t3 + t2 - t1);
+        where = scroll->mesg;
+      }
 
       // Copy in new line
       strcpy(where + pos, line);
@@ -279,7 +290,7 @@ void scroll_edit(World *mzx_world, Scroll *scroll, int type)
         // OKAY! Just copy backwards over the \n in the middle to
         // append...
         t3 = scroll->mesg_size;
-        memmove(where + old_pos - 1, where + old_pos, t3 - old_pos + 1);
+        memmove(where + (old_pos - 1), where + old_pos, t3 - (old_pos + 1));
         // ...and reallocate to one space less!
         reallocate_scroll(scroll, t3 - 1);
         where = scroll->mesg;
