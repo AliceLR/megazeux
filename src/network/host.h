@@ -238,6 +238,32 @@ NETWORK_LIBSPEC host_status_t host_recv_file(struct host *h, const char *url,
 NETWORK_LIBSPEC host_status_t host_send_file(struct host *h, FILE *file,
  const char *mime_type);
 
+/**
+ * Set send/recv callbacks which will be called (potentially many times) as
+ * the library fills the send/recv buffers for "block transfers". HTTP headers
+ * and other preambles are explicitly ignored. Raw transfers are always fully
+ * accounted. This code is primarily used by UI widgets like progress meters.
+ *
+ * Additionally, include a callback for cancellation. This will cause the
+ * send/recv functions to fail and subsequently abort the transfer process.
+ * This is again useful for cancelling long or slow transfers with UI widgets.
+ *
+ * Please note that this code does not abstract away protocol specific
+ * knowledge. For example, CHUNKED HTTP transfers will appear as many
+ * incrementally filled, fixed size buffers. Therefore, you should not use
+ * `len' below to compute the transfer amount remaining. If you do not have
+ * any expectations about transfer size, these callbacks may in fact not be
+ * very useful.
+ *
+ * @param h         Host to set callbacks on
+ * @param send_cb   Implementation of a send callback (or NULL for none)
+ * @param recv_cb   Implementation of a recv callback (or NULL for none)
+ * @param cancel_cb Implementation of a cancel callback (or NULL for none)
+ */
+NETWORK_LIBSPEC void host_set_callbacks(struct host *h,
+ void (*send_cb)(long offset), void (*recv_cb)(long offset),
+ bool (*cancel_cb)(void));
+
 // FIXME: Document?
 NETWORK_LIBSPEC bool host_handle_http_request(struct host *h);
 

@@ -62,6 +62,9 @@
 
 struct host
 {
+  void (*recv_cb)(long offset);
+  bool (*cancel_cb)(void);
+
   const char *name;
   int proto;
   int af;
@@ -647,8 +650,7 @@ struct host *host_create(host_type_t type, host_family_t fam)
   platform_socket_blocking(fd, true);
 
   // Create our "host" abstraction (latterly augmented)
-  h = malloc(sizeof(struct host));
-  memset(h, 0, sizeof(struct host));
+  h = calloc(1, sizeof(struct host));
   h->proto = proto;
   h->af = af;
   h->fd = fd;
@@ -661,12 +663,11 @@ void host_destroy(struct host *h)
   free(h);
 }
 
-static bool __send(int fd, const void *buffer, unsigned int len)
+static bool __send(struct host *h, const void *buffer, unsigned int len)
 {
   const char *buf = buffer;
   Uint32 start, now;
   unsigned int pos;
-  bool ret = true;
   int count;
 
   start = get_ticks();
@@ -678,13 +679,10 @@ static bool __send(int fd, const void *buffer, unsigned int len)
 
     // time out in 10 seconds if no data is sent
     if(now - start > 10 * 1000)
-    {
-      ret = false;
-      goto exit_out;
-    }
+      return false;
 
     // normally it won't all get through at once
-    count = platform_send(fd, &buf[pos], len - pos, 0);
+    count = platform_send(h->fd, &buf[pos], len - pos, 0);
     if(count < 0)
     {
       // non-blocking socket, so can fail and still be ok
@@ -694,21 +692,21 @@ static bool __send(int fd, const void *buffer, unsigned int len)
         continue;
       }
 
-      ret = false;
-      goto exit_out;
-   }
- }
+      return false;
+    }
 
-exit_out:
-  return ret;
+    if(h->cancel_cb && h->cancel_cb())
+      return false;
+  }
+
+  return true;
 }
 
-static bool __recv(int fd, void *buffer, unsigned int len)
+static bool __recv(struct host *h, void *buffer, unsigned int len)
 {
   char *buf = buffer;
   Uint32 start, now;
   unsigned int pos;
-  bool ret = true;
   int count;
 
   start = get_ticks();
@@ -720,13 +718,10 @@ static bool __recv(int fd, void *buffer, unsigned int len)
 
     // time out in 10 seconds if no data is received
     if(now - start > 10 * 1000)
-    {
-      ret = false;
-      goto exit_out;
-    }
+      return false;
 
     // normally it won't all get through at once
-    count = platform_recv(fd, &buf[pos], len - pos, 0);
+    count = platform_recv(h->fd, &buf[pos], len - pos, 0);
     if(count < 0)
     {
       // non-blocking socket, so can fail and still be ok
@@ -736,13 +731,14 @@ static bool __recv(int fd, void *buffer, unsigned int len)
         continue;
       }
 
-      ret = false;
-      goto exit_out;
+      return false;
     }
+
+    if(h->cancel_cb && h->cancel_cb())
+      return false;
   }
 
-exit_out:
-  return ret;
+  return true;
 }
 
 struct host *host_accept(struct host *s)
@@ -771,7 +767,7 @@ struct host *host_accept(struct host *s)
     assert(addr->sa_family == s->af);
 
     platform_socket_blocking(newfd, true);
-    c = malloc(sizeof(struct host));
+    c = calloc(1, sizeof(struct host));
     c->af = addr->sa_family;
     c->proto = s->proto;
     c->name = NULL;
@@ -923,12 +919,12 @@ bool host_listen(struct host *h)
 
 bool host_recv_raw(struct host *h, char *buffer, unsigned int len)
 {
-  return __recv(h->fd, buffer, len);
+  return __recv(h, buffer, len);
 }
 
 bool host_send_raw(struct host *h, const char *buffer, unsigned int len)
 {
-  return __send(h->fd, buffer, len);
+  return __send(h, buffer, len);
 }
 
 struct buf_priv_data {
@@ -938,7 +934,7 @@ struct buf_priv_data {
   bool ret;
 };
 
-static struct addrinfo *recvfrom_raw_op(int fd,struct addrinfo *ais,
+static struct addrinfo *recvfrom_raw_op(int fd, struct addrinfo *ais,
  void *priv)
 {
   struct buf_priv_data *buf_priv = priv;
@@ -1063,8 +1059,11 @@ static int http_recv_line(struct host *h, char *buffer, int len)
   for(pos = 0; pos < len; pos++)
   {
     // If recv() times out or fails, abort
-    if(!__recv(h->fd, &buffer[pos], 1))
-      return -HOST_RECV_FAILED;
+    if(!__recv(h, &buffer[pos], 1))
+    {
+      pos = -HOST_RECV_FAILED;
+      goto err_out;
+    }
 
     // Erase terminating CRLF and fix up count
     if(buffer[pos] == '\n')
@@ -1077,9 +1076,9 @@ static int http_recv_line(struct host *h, char *buffer, int len)
 
   // We didn't find CRLF; this is bad
   if(pos == len)
-    return -2;
+    pos = -2;
 
-  // All went well; return the line length
+err_out:
   return pos;
 }
 
@@ -1091,8 +1090,8 @@ static int http_send_line(struct host *h, const char *message)
   snprintf(line, LINE_BUF_LEN, "%s\r\n", message);
   len = strlen(line);
 
-  if(!__send(h->fd, line, len))
-    return -HOST_SEND_FAILED;
+  if(!__send(h, line, len))
+    len = -HOST_SEND_FAILED;
 
   return len;
 }
@@ -1368,7 +1367,7 @@ host_status_t host_recv_file(struct host *h, const char *url,
     /* In either case, all headers and block computation has now been done,
      * and the buffer can be streamed to disk.
      */
-    if(!__recv(h->fd, block, block_size))
+    if(!__recv(h, block, block_size))
       return -HOST_RECV_FAILED;
 
     if(deflated)
@@ -1458,6 +1457,9 @@ host_status_t host_recv_file(struct host *h, const char *url,
     }
 
     pos += block_size;
+
+    if(h->recv_cb)
+      h->recv_cb(ftell(file));
 
     /* For NORMAL transfers we can now abort since we have reached the end
      * of our payload.
@@ -1612,7 +1614,7 @@ host_status_t host_send_file(struct host *h, FILE *file, const char *mime_type)
         return -HOST_SEND_FAILED;
 
       // Send the compressed output block over the socket
-      if(!__send(h->fd, zblock, BLOCK_SIZE - stream.avail_out))
+      if(!__send(h, zblock, BLOCK_SIZE - stream.avail_out))
         return -HOST_SEND_FAILED;
 
       /* We might not have finished the entire stream, but the
@@ -1639,11 +1641,11 @@ host_status_t host_send_file(struct host *h, FILE *file, const char *mime_type)
       deflateEnd(&stream);
 
       // Write out GZIP `CRC32' footer
-      if(!__send(h->fd, &crc, sizeof(uint32_t)))
+      if(!__send(h, &crc, sizeof(uint32_t)))
         return -HOST_SEND_FAILED;
 
       // Write out GZIP `ISIZE' footer
-      if(!__send(h->fd, &uSize, sizeof(uint32_t)))
+      if(!__send(h, &uSize, sizeof(uint32_t)))
         return -HOST_SEND_FAILED;
 
       mid_deflate = false;
@@ -1667,6 +1669,15 @@ host_status_t host_send_file(struct host *h, FILE *file, const char *mime_type)
     return -HOST_SEND_FAILED;
 
   return HOST_SUCCESS;
+}
+
+void host_set_callbacks(struct host *h, void (*send_cb)(long offset),
+ void (*recv_cb)(long offset), bool (*cancel_cb)(void))
+{
+  assert(h != NULL);
+  assert(send_cb == NULL);
+  h->recv_cb = recv_cb;
+  h->cancel_cb = cancel_cb;
 }
 
 static const char resp_404[] =
@@ -1731,17 +1742,13 @@ bool host_handle_http_request(struct host *h)
      "Content-Type: text/html\r\n"
      "Connection: close\r\n\r\n", strlen(resp_404));
 
-    if(!__send(h->fd, buffer, strlen(buffer)))
+    if(__send(h, buffer, strlen(buffer)))
     {
+      if(!__send(h, resp_404, strlen(resp_404)))
+        warn("Failed to send 404 payload\n");
+    }
+    else
       warn("Failed to send 404 status code\n");
-      return false;
-    }
-
-    if(!__send(h->fd, resp_404, strlen(resp_404)))
-    {
-      warn("Failed to send 404 payload\n");
-      return false;
-    }
 
     return false;
   }
