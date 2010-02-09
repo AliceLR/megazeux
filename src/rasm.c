@@ -2624,28 +2624,30 @@ static const struct special_word *find_special_word(const char *name,
                                                                                \
   return str;                                                                  \
 
-#define is_identifier_char(char)                                               \
-  (isalnum(char) || (char == '$') || (char == '_') || (char == '?') ||         \
-   (char == '#') || (char == '.'))                                             \
+static inline bool is_identifier_char(char c)
+{
+  return isalnum((int)c) || (c == '$') || (c == '_') || (c == '?') ||
+                            (c == '#') || (c == '.');
+}
 
 static char *skip_whitespace(char *str)
 {
-  skip_sequence(isspace(*str));
+  skip_sequence(isspace((int)*str));
 }
 
 static char *skip_decimal(char *str)
 {
-  skip_sequence(isdigit(*str));
+  skip_sequence(isdigit((int)*str));
 }
 
 static char *skip_hex(char *str)
 {
-  skip_sequence(isxdigit(*str));
+  skip_sequence(isxdigit((int)*str));
 }
 
 static char *find_whitespace(char *str)
 {
-  skip_sequence(*str && !isspace(*str));
+  skip_sequence(*str && !isspace((int)*str));
 }
 
 static char *find_newline(char *str)
@@ -2657,7 +2659,6 @@ char *find_non_identifier_char(char *str)
 {
   skip_sequence(is_identifier_char(*str));
 }
-
 
 static char *find_comment(char *src)
 {
@@ -3521,8 +3522,8 @@ static const struct command_set *find_command_set(const char *name,
 static bool is_color(char *value)
 {
   if((value[0] == 'c') && (value[1] != 0) &&
-   ((isxdigit(value[1]) || (value[1] == '?')) &&
-   (isxdigit(value[2]) || (value[2] == '?'))))
+   ((isxdigit((int)value[1]) || (value[1] == '?')) &&
+   (isxdigit((int)value[2]) || (value[2] == '?'))))
   {
     return true;
   }
@@ -3535,7 +3536,7 @@ static bool is_color(char *value)
 static bool is_param(char *value)
 {
   if((value[0] == 'p') && (value[1] != 0) &&
-   ((isxdigit(value[1]) && isxdigit(value[2])) ||
+   ((isxdigit((int)value[1]) && isxdigit((int)value[2])) ||
    ((value[1] == '?') && (value[2] == '?'))))
   {
     return true;
@@ -3744,7 +3745,7 @@ static bool whitespace_until_newline(char *src, char **_next)
       break;
 
     // Make sure there's only whitespace until the newline or null terminator.
-    if(!isspace(*next))
+    if(!isspace((int)*next))
     {
       *_next = next;
       return false;
@@ -4701,7 +4702,7 @@ static bool is_simple_identifier_name(char *src, int length,
   }
 
   // Can't start with numeric
-  if(isdigit(*src))
+  if(isdigit((int)*src))
     return false;
 
   // And it must not contain any invalid chars.
@@ -4743,13 +4744,13 @@ static char *legacy_disassemble_print_spaces(char *src, char **_output,
 static char *legacy_disassemble_print_decimal(char *src, char **_output,
  int *_string_length)
 {
-  legacy_disassemble_print_sequence(isdigit(*src));
+  legacy_disassemble_print_sequence(isdigit((int)*src));
 }
 
 static char *legacy_disassemble_print_hex(char *src, char **_output,
  int *_string_length)
 {
-  legacy_disassemble_print_sequence(isxdigit(*src));
+  legacy_disassemble_print_sequence(isxdigit((int)*src));
 }
 
 static char *legacy_disassemble_print_expression(char *src, char **_output,
