@@ -43,12 +43,15 @@ arch/darwin/%.o: arch/darwin/%.m
 
 -include arch/darwin/SDLMain.d
 
+core_ldflags += arch/darwin/SDLMain.o
+core_ldflags += -F${PREFIX} -framework Cocoa -framework OpenGL
+
 mzx: arch/darwin/SDLMain.o
+
 all:
-	@mv ${TARGET} ${TARGET}.${REAL_ARCH}
+	@mv ${mzx} ${mzx}.${REAL_ARCH}
+	@mv ${mzxrun} ${mzxrun}.${REAL_ARCH}
+
 clean:
 	@echo "  CLEAN   " arch/darwin
 	@rm -f arch/darwin/SDLMain.o arch/darwin/SDLMain.d
-
-core_ldflags += arch/darwin/SDLMain.o
-core_ldflags += -F${PREFIX} -framework Cocoa -framework OpenGL

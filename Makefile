@@ -86,8 +86,8 @@ CXXFLAGS += -g -Wall ${ARCH_CXXFLAGS}
 #
 ifneq (${SUPPRESS_BUILD},1)
 
-mzxrun = ${TARGET}run${BINEXT}
-mzx = ${TARGET}${BINEXT}
+mzxrun = mzxrun${BINEXT}
+mzx = megazeux${BINEXT}
 
 mzx: ${mzxrun}.debug ${mzx}.debug
 
@@ -116,8 +116,10 @@ include src/network/Makefile.in
 package_clean: utils_package_clean
 	-@mv ${mzxrun}       ${mzxrun}.backup
 	-@mv ${mzxrun}.debug ${mzxrun}.debug.backup
+ifeq (${BUILD_EDITOR},1)
 	-@mv ${mzx}          ${mzx}.backup
 	-@mv ${mzx}.debug    ${mzx}.debug.backup
+endif
 ifeq (${BUILD_MODULAR},1)
 	-@mv ${core_target}         ${core_target}.backup
 	-@mv ${core_target}.debug   ${core_target}.debug.backup
@@ -135,8 +137,10 @@ ifeq (${BUILD_MODULAR},1)
 endif
 	-@mv ${mzxrun}.backup       ${mzxrun}
 	-@mv ${mzxrun}.debug.backup ${mzxrun}.debug
+ifeq (${BUILD_EDITOR},1)
 	-@mv ${mzx}.backup          ${mzx}
 	-@mv ${mzx}.debug.backup    ${mzx}.debug
+endif
 
 clean: mzx_clean utils_clean
 

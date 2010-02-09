@@ -29,10 +29,10 @@ createzip_psp() {
 # createzip_nds
 #
 createzip_nds() {
-	mv ${TARGET}run.elf.nds ${TARGET}run.nds &&
+	mv mzxrun.elf.nds mzxrun.nds &&
 	cp -f $NDSPAD pad.config &&
 	$SEVENZIP a -tzip dist/$TARGET-nds.zip \
-		$BINARY_DEPS ${TARGET}run.nds $DOCS pad.config &&
+		$BINARY_DEPS mzxrun.nds $DOCS pad.config &&
 	rm -f pad.config
 }
 
@@ -41,10 +41,10 @@ createzip_nds() {
 #
 createzip_gp2x() {
 	cp -f $GP2XPAD pad.config &&
-	convert -scale 32x32 contrib/icons/quantump.png $TARGET.png &&
+	convert -scale 32x32 contrib/icons/quantump.png mzxrun.png &&
 	$SEVENZIP a -tzip dist/$TARGET-gp2x.zip \
-		$BINARY_DEPS ${TARGET}run.gpe $DOCS pad.config $TARGET.png &&
-	rm -f pad.config $TARGET.png
+		$BINARY_DEPS mzxrun.gpe $DOCS pad.config mzxrun.png &&
+	rm -f pad.config mzxrun.png
 }
 
 #
@@ -86,14 +86,14 @@ createzip_dynamic_sdl() {
 	# Generate a suitable directx.bat
 	#
 	echo "set SDL_VIDEODRIVER=directx" > $DIRECTX_BAT &&
-	echo "start $TARGET.exe"          >> $DIRECTX_BAT &&
+	echo "start megazeux.exe"         >> $DIRECTX_BAT &&
 
 	#
 	# Create the binary package.
 	#
 	$SEVENZIP a -tzip dist/$TARGET-$2.zip \
 		$BINARY_DEPS $HELP_FILE $GLSL_PROGRAMS $DOCS \
-		$TARGET.exe ${TARGET}run.exe core.dll editor.dll \
+		megazeux.exe mzxrun.exe core.dll editor.dll \
 		SDL.dll $DIRECTX_BAT utils &&
 
 	#
@@ -107,22 +107,22 @@ createzip_dynamic_sdl() {
 # createUnifiedDMG
 #
 createUnifiedDMG() {
-	if [ ! -f $TARGET -a ! -f $TARGET.i686 -a ! -f $TARGET.ppc ]; then
-		echo "Neither $TARGET.i686 nor $TARGET.ppc are present!"
+	if [ ! -f megazeux -a ! -f megazeux.i686 -a ! -f megazeux.ppc ]; then
+		echo "Neither megazeux.i686 nor megazeux.ppc are present!"
 		breakout 4
 	fi
 
-	if [ -f $TARGET.i686 -a ! -f $TARGET.ppc ]; then
-		mv $TARGET.i686 $TARGET
-	elif [ -f $TARGET.ppc -a ! -f $TARGET.i686 ]; then
-		mv $TARGET.ppc $TARGET
-	elif [ ! -f $TARGET ]; then
-		lipo -create $TARGET.i686 $TARGET.ppc -output $TARGET &&
-		rm -f $TARGET.i686 $TARGET.ppc
+	if [ -f megazeux.i686 -a ! -f megazeux.ppc ]; then
+		mv megazeux.i686 megazeux
+	elif [ -f megazeux.ppc -a ! -f megazeux.i686 ]; then
+		mv megazeux.ppc megazeux
+	elif [ ! -f megazeux ]; then
+		lipo -create megazeux.i686 megazeux.ppc -output megazeux &&
+		rm -f megazeux.i686 megazeux.ppc
 	fi
 
-	if [ ! -f $TARGET ]; then
-		echo "Failed to compile $TARGET.."
+	if [ ! -f megazeux ]; then
+		echo "Failed to compile 'megazeux'.."
 		breakout 5
 	fi
 
@@ -135,7 +135,7 @@ createUnifiedDMG() {
 	mkdir -p ${CONTENTS}/Resources &&
 	mkdir -p ${CONTENTS}/Resources/shaders &&
 	cp -RP $HOME/workspace/Frameworks ${CONTENTS} &&
-	cp $TARGET ${CONTENTS}/MacOS/MegaZeux &&
+	cp megazeux ${CONTENTS}/MacOS/MegaZeux &&
 	cp $BINARY_DEPS $HELP_FILE ${CONTENTS}/Resources &&
         cp $GLSL_PROGRAMS ${CONTENTS}/Resources/shaders &&
 	cp contrib/icons/quantump.icns ${CONTENTS}/Resources/MegaZeux.icns &&

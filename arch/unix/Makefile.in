@@ -28,7 +28,7 @@ install:
 	 install -m 0644 smzx.pal ${DESTDIR}/${PREFIX}/share/megazeux && \
 	 install -m 0644 mzx_help.fil ${DESTDIR}/${PREFIX}/share/megazeux && \
 	 install -m 0644 config.txt ${DESTDIR}/${SYSCONFDIR}/megazeux-config &&\
-	 install -m 0755 ${TARGET} ${DESTDIR}/${PREFIX}/games/megazeux && \
+	 install -m 0755 ${mzx} ${DESTDIR}/${PREFIX}/games/megazeux && \
 	 install -m 0644 contrib/icons/quantump.png \
 	                 ${DESTDIR}/${PREFIX}/share/icons/megazeux.png
 
