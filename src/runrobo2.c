@@ -1352,6 +1352,10 @@ void run_robot(World *mzx_world, int id, int x, int y)
              (mzx_world->special_counter_return == FOPEN_SAVE_WORLD))
             {
               cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+
+              if(!program[cur_robot->cur_prog_line])
+                cur_robot->cur_prog_line = 0;
+
               goto breaker;
             }
 
