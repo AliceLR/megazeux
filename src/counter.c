@@ -1865,7 +1865,7 @@ static void force_string_move(World *mzx_world, const char *name,
   if(*str)
   {
     off = (*str)->value - src;
-    if(off >= 0 && off <= (*str)->length)
+    if(off >= 0 && (unsigned int)off <= (*str)->length)
       src_dest_match = true;
   }
 
