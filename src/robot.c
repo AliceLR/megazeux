@@ -1091,12 +1091,16 @@ static int send_robot_direct(struct robot *cur_robot, const char *mesg,
     // returning?
     if(!strcasecmp(mesg + 1, "return"))
     {
-      // Don't let a return into nothingness happen..
       if(cur_robot->stack_pointer)
       {
         int return_pos = robot_stack_pop(cur_robot);
-
         set_robot_position(cur_robot, return_pos);
+      }
+      else
+      {
+        // Contextually invalid return; skip the command
+        cur_robot->cur_prog_line +=
+         1 + robot_program[cur_robot->cur_prog_line] + 1;
       }
     }
     else
@@ -1104,11 +1108,16 @@ static int send_robot_direct(struct robot *cur_robot, const char *mesg,
     // returning to the TOP?
     if(!strcasecmp(mesg + 1, "top"))
     {
-      // Don't let a return into nothingness happen..
       if(cur_robot->stack_pointer)
       {
         set_robot_position(cur_robot, cur_robot->stack[0]);
         cur_robot->stack_pointer = 0;
+      }
+      else
+      {
+        // Contextually invalid top; skip the command
+        cur_robot->cur_prog_line +=
+         1 + robot_program[cur_robot->cur_prog_line] + 1;
       }
     }
     else

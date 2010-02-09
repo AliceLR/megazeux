@@ -30,6 +30,8 @@ USERS
 + Fix a bug that caused the SMZX mode 3 palette to become corrupted upon
   entering the char editor (the editor would re-write colours 2-4 and not
   restore them from backup correctly).
++ Fix a bug where a robot program would never progress if the subroutine
+  stack was popped more times than it was pushed (via return or top).
 
 DEVELOPERS
 
