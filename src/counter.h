@@ -70,8 +70,8 @@ int compare_strings(struct string *dest, struct string *src);
 
 void load_string_board(struct world *mzx_world, const char *expression,
  int w, int h, char l, char *src, int width);
-int set_counter_special(struct world *mzx_world, int spec_type,
- char *char_value, int value, int id);
+int set_counter_special(struct world *mzx_world, char *char_value,
+ int value, int id);
 int is_string(char *buffer);
 
 struct counter *load_counter(FILE *fp);
@@ -90,22 +90,6 @@ void save_string(FILE *fp, struct string *src_string);
 
 // Maximum space board can consume
 #define MAX_BOARD_SIZE 16 * 1024 * 1024
-
-// Special counter returns for opening files
-
-#define NONE               0
-#define FOPEN_FREAD        1
-#define FOPEN_FWRITE       2
-#define FOPEN_FAPPEND      3
-#define FOPEN_FMODIFY      4
-#define FOPEN_SMZX_PALETTE 5
-#define FOPEN_LOAD_GAME    6
-#define FOPEN_SAVE_GAME    7
-#define FOPEN_SAVE_WORLD   8
-#define FOPEN_LOAD_ROBOT   9
-#define FOPEN_SAVE_ROBOT   10
-#define FOPEN_LOAD_BC      11
-#define FOPEN_SAVE_BC      12
 
 __M_END_DECLS
 

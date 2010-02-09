@@ -76,6 +76,25 @@ struct string
   char storage_space[1];
 };
 
+// Special counter returns for opening files
+
+enum special_counter_return
+{
+  FOPEN_NONE = 0,
+  FOPEN_FREAD,
+  FOPEN_FWRITE,
+  FOPEN_FAPPEND,
+  FOPEN_FMODIFY,
+  FOPEN_SMZX_PALETTE,
+  FOPEN_LOAD_GAME,
+  FOPEN_SAVE_GAME,
+  FOPEN_SAVE_WORLD,
+  FOPEN_LOAD_ROBOT,
+  FOPEN_SAVE_ROBOT,
+  FOPEN_LOAD_BC,
+  FOPEN_SAVE_BC,
+};
+
 __M_END_DECLS
 
 #endif // __COUNTER_STRUCT_H

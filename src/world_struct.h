@@ -171,8 +171,8 @@ struct world
   // Lets the get counter routines indiciate to the caller
   // that the result is not a typical counter but something
   // special. It's there for those horribly hacked file open
-  // counters. It should normally be set to 0.
-  int special_counter_return;
+  // counters. It should normally be set to FOPEN_NONE.
+  enum special_counter_return special_counter_return;
 
   // Indicates if a robot swapped the world
   int swapped;

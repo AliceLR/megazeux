@@ -2174,10 +2174,10 @@ static struct function_counter builtin_counters[] =
 
 static int counter_first_letter[512];
 
-int set_counter_special(struct world *mzx_world, int spec_type,
- char *char_value, int value, int id)
+int set_counter_special(struct world *mzx_world, char *char_value,
+ int value, int id)
 {
-  switch(spec_type)
+  switch(mzx_world->special_counter_return)
   {
     case FOPEN_FREAD:
     {
@@ -2454,6 +2454,10 @@ int set_counter_special(struct world *mzx_world, int spec_type,
       }
       break;
     }
+
+    default:
+      debug("Invalid special_counter_return!\n");
+      break;
   }
 
   return 0;

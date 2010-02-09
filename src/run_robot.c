@@ -1254,13 +1254,12 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         {
           // Set to counter
           int value;
-          mzx_world->special_counter_return = NONE;
+          mzx_world->special_counter_return = FOPEN_NONE;
           value = parse_param(mzx_world, src_string, id);
 
-          if(mzx_world->special_counter_return != NONE)
+          if(mzx_world->special_counter_return != FOPEN_NONE)
           {
-            gotoed = set_counter_special(mzx_world,
-             mzx_world->special_counter_return, dest_buffer, value, id);
+            gotoed = set_counter_special(mzx_world, dest_buffer, value, id);
 
             // We loaded a new game successfully; get out of here
             if(mzx_world->swapped)
