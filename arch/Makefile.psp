@@ -24,7 +24,7 @@ ARCH_CFLAGS   = -G0 -I${PREFIX}/sdk/include
 ARCH_CXXFLAGS = ${ARCH_CFLAGS}
 ARCH_LDFLAGS  = -lc -lpsppower
 
-package:
+package: mzx
 	psp-fixup-imports ${BINNAME}
 	mksfo 'MegaZeux ${VERSION}' PARAM.SFO
 	psp-strip ${BINNAME} -o ${BINNAME_STRIP}

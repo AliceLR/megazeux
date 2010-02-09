@@ -68,7 +68,7 @@ else
 	@${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
 endif
 
-arm9bin: all
+arm9bin: mzx
 	${OBJCOPY} -O binary ${mzx} ${mzx}.arm9
 
 arm7bin:
