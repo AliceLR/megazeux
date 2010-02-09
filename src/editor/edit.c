@@ -66,7 +66,7 @@
 #define EDIT_SCREEN_EXTENDED 24
 #define EDIT_SCREEN_NORMAL   19
 
-void load_editor_config(struct world *mzx_world, int argc, char *argv[])
+void load_editor_config(struct world *mzx_world, int *argc, char *argv[])
 {
   default_editor_config(&mzx_world->editor_conf);
   set_editor_config_from_file(&mzx_world->editor_conf,

@@ -319,7 +319,7 @@ void default_editor_config(struct editor_config_info *conf)
 }
 
 void set_editor_config_from_command_line(struct editor_config_info *conf,
- int argc, char *argv[])
+ int *argc, char *argv[])
 {
   __set_config_from_command_line(editor_config_change_option, conf, argc, argv);
 }

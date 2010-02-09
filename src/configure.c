@@ -607,13 +607,13 @@ __editor_maybe_static void __set_config_from_file(
 }
 
 __editor_maybe_static void __set_config_from_command_line(
- find_change_option find_change_handler, void *conf, int argc, char *argv[])
+ find_change_option find_change_handler, void *conf, int *argc, char *argv[])
 {
   char current_char, *input_position, *output_position;
   char *equals_position, line_buffer[256], *value;
-  int i;
+  int i = 1;
 
-  for(i = 1; i < argc; i++)
+  while(i < *argc)
   {
     input_position = argv[i];
     output_position = line_buffer;
@@ -638,18 +638,22 @@ __editor_maybe_static void __set_config_from_command_line(
       input_position++;
     } while(current_char);
 
-    if(equals_position)
+    if(equals_position && line_buffer[0])
     {
+      int j;
+
       *equals_position = 0;
       value = equals_position + 1;
+      find_change_handler(conf, line_buffer, value, NULL);
+
+      for(j = i; j < *argc - 1; j++)
+        argv[j] = argv[j + 1];
+      (*argc)--;
     }
     else
     {
-      value = (char *)"1";
+      i++;
     }
-
-    if(line_buffer[0])
-      find_change_handler(conf, line_buffer, value, NULL);
   }
 }
 
@@ -664,7 +668,7 @@ void default_config(struct config_info *conf)
 }
 
 void set_config_from_command_line(struct config_info *conf,
- int argc, char *argv[])
+ int *argc, char *argv[])
 {
   __set_config_from_command_line(config_change_option, conf, argc, argv);
 }
