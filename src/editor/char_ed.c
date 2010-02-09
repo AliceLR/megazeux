@@ -1728,8 +1728,6 @@ int char_editor(struct world *mzx_world)
 
   if(screen_mode)
   {
-    set_screen_mode(screen_mode);
-
     for(i = 0; i < 4; i++)
     {
       set_rgb(i + 2, saved_rgb[i][0], saved_rgb[i][1],
@@ -1737,6 +1735,7 @@ int char_editor(struct world *mzx_world)
     }
 
     update_palette();
+    set_screen_mode(screen_mode);
   }
 
   free(previous);

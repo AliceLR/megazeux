@@ -27,6 +27,9 @@ USERS
 + Programmatically writing to a read-only "built-in" counter will no longer
   allocate it general heap space. This prevents writes from showing up in
   the F11 counter debugger that are inaccessible from robotic.
++ Fix a bug that caused the SMZX mode 3 palette to become corrupted upon
+  entering the char editor (the editor would re-write colours 2-4 and not
+  restore them from backup correctly).
 
 DEVELOPERS
 
