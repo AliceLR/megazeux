@@ -338,6 +338,11 @@ static bool glsl_init_video(struct graphics_data *graphics,
   if(!render_data)
     return false;
 
+#ifdef CONFIG_SDL
+  if(SDL_GL_LoadLibrary(NULL))
+    goto err_free;
+#endif
+
   graphics->render_data = render_data;
 
   graphics->gl_vsync = conf->gl_vsync;

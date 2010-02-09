@@ -130,6 +130,11 @@ static bool gl2_init_video(struct graphics_data *graphics,
   if(!render_data)
     goto err_out;
 
+#ifdef CONFIG_SDL
+  if(SDL_GL_LoadLibrary(NULL))
+    goto err_free_render_data;
+#endif
+
   graphics->render_data = render_data;
 
   graphics->gl_vsync = conf->gl_vsync;

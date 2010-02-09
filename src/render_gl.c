@@ -51,11 +51,6 @@ bool gl_load_syms(const struct dso_syms_map *map)
 {
   int i = 0;
 
-#ifdef CONFIG_SDL
-  if(SDL_GL_LoadLibrary(NULL))
-    return false;
-#endif
-
   for(i = 0; map[i].name != NULL; i++)
   {
     *map[i].sym_ptr = GL_GetProcAddress(map[i].name);
