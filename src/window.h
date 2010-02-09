@@ -214,11 +214,9 @@ CORE_LIBSPEC int choose_file_ch(World *mzx_world, const char **wildcards, char *
 CORE_LIBSPEC int new_file(World *mzx_world, const char **wildcards, char *ret,
  const char *title, int dirs_okay);
 
-#ifdef CONFIG_UPDATER
 CORE_LIBSPEC void meter(const char *title, unsigned int progress,
  unsigned int out_of);
 CORE_LIBSPEC void meter_interior(unsigned int progress, unsigned int out_of);
-#endif
 
 // Dialog box color #define's-
 #define DI_MAIN             31
