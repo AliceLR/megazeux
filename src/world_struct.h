@@ -34,8 +34,7 @@ __M_BEGIN_DECLS
 #include "editor/configure.h"
 #endif
 
-// FIXME: Hack
-#define NUM_SFX 50
+#include "sfx.h"
 
 struct world
 {
@@ -129,7 +128,7 @@ struct world
   struct robot global_robot;
 
   int custom_sfx_on;
-  char custom_sfx[69];
+  char custom_sfx[NUM_SFX * 69];
 
   // Not part of world/save files, but runtime globals
   int player_x;
