@@ -75,7 +75,7 @@ void init_audio_platform(config_info *conf)
 
   // buffer size must be multiple of 32 bytes, so samples must be multiple of 8
   audio.buffer_samples = conf->buffer_size & ~7;
-  if (!audio.buffer_samples)
+  if(!audio.buffer_samples)
     audio.buffer_samples = 2048;
 
   buffer_size = sizeof(Sint16) * 2 * audio.buffer_samples;
