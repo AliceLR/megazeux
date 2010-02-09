@@ -71,6 +71,8 @@ USERS
 + Display current X,Y position of robot in the robot editor status bar.
 + Fix directory rename so that it no longer displays garbage and/or crashes
   MegaZeux (Alt+R to rename a directory in any file picker).
++ In the robot editor, lines can now be split at a midpoint with enter and
+  two consecutive lines merged together with backspace. (Exophase)
 
 DEVELOPERS
 

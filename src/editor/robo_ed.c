@@ -2946,15 +2946,32 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       {
         if(rstate.current_x == 0)
         {
-          rstate.current_x = 10000;
-          if(rstate.command_buffer[0] == 0)
+          if(rstate.current_line > 1)
           {
+            char *command_buffer = rstate.command_buffer;
+            char line_buffer[241];
+
             update_current_line(&rstate);
+            strncpy(line_buffer, rstate.command_buffer, 241);
+            line_buffer[240] = 0;
+
             delete_current_line(&rstate, -1);
-          }
-          else
-          {
-            move_and_update(&rstate, -1);
+
+            if(strlen(line_buffer) + strlen(command_buffer) > 240)
+            {
+              // Lines could not be merged; backtrack
+              add_blank_line(&rstate, 1);
+              strncpy(command_buffer, line_buffer, 241);
+            }
+            else
+            {
+              rstate.current_x = strlen(command_buffer);
+              strncat(command_buffer, line_buffer,
+               241 - strlen(command_buffer));
+            }
+
+            command_buffer[240] = 0;
+            update_current_line(&rstate);
           }
         }
         break;
@@ -2979,10 +2996,23 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
         }
         else
 
+        // Split line into two
         if(rstate.current_x)
         {
-          move_and_update(&rstate, 1);
+          char *command_buffer = rstate.command_buffer;
+          char line_remainder[241];
+
+          strncpy(line_remainder, command_buffer + rstate.current_x, 241);
+          line_remainder[240] = 0;
+          command_buffer[rstate.current_x] = 0;
+          update_current_line(&rstate);
+
+          add_blank_line(&rstate, 1);
+          strncpy(command_buffer, line_remainder, 241);
+          command_buffer[240] = 0;
           rstate.current_x = 0;
+
+          update_current_line(&rstate);
         }
         else
         {
