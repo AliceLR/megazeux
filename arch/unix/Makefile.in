@@ -18,23 +18,24 @@ endif
 
 # linux os specific install target
 install:
-	@${install} -m 0755 -d ${DESTDIR}${SHAREDIR} && \
-	 ${install} -m 0755 -d ${DESTDIR}${SHAREDIR}/megazeux && \
-	 ${install} -m 0644 mzx_default.chr ${DESTDIR}${SHAREDIR}/megazeux && \
-	 ${install} -m 0644 mzx_blank.chr ${DESTDIR}${SHAREDIR}/megazeux && \
-	 ${install} -m 0644 mzx_smzx.chr ${DESTDIR}${SHAREDIR}/megazeux && \
-	 ${install} -m 0644 mzx_ascii.chr ${DESTDIR}${SHAREDIR}/megazeux && \
-	 ${install} -m 0644 mzx_edit.chr ${DESTDIR}${SHAREDIR}/megazeux && \
-	 ${install} -m 0644 smzx.pal ${DESTDIR}${SHAREDIR}/megazeux && \
-	 ${install} -m 0644 mzx_help.fil ${DESTDIR}${SHAREDIR}/megazeux && \
-	 ${install} -m 0755 -d ${DESTDIR}${SYSCONFDIR} && \
+	@${install} -m 0755 -d \
+		${DESTDIR}${SYSCONFDIR} \
+		${DESTDIR}${SHAREDIR} \
+		${DESTDIR}${SHAREDIR}/icons \
+		${DESTDIR}${SHAREDIR}/applications \
+		${DESTDIR}${SHAREDIR}/megazeux \
+		${DESTDIR}${SHAREDIR}/megazeux/assets && \
+	 ${install} -m 0644 assets/default.chr assets/edit.chr \
+		assets/smzx.pal ${DESTDIR}${SHAREDIR}/megazeux/assets && \
 	 ${install} -m 0644 config.txt ${DESTDIR}${SYSCONFDIR}/megazeux-config && \
-	 ${install} -m 0755 -d ${DESTDIR}${SHAREDIR}/icons && \
 	 ${install} -m 0644 contrib/icons/quantump.png \
-	                 ${DESTDIR}${SHAREDIR}/icons/megazeux.png && \
-	 ${install} -m 0755 -d ${DESTDIR}${SHAREDIR}/applications && \
+		${DESTDIR}${SHAREDIR}/icons/megazeux.png && \
 	 ${install} -m 0644 arch/unix/megazeux.desktop \
-	                 ${DESTDIR}${SHAREDIR}/applications/megazeux.desktop
+		${DESTDIR}${SHAREDIR}/applications/megazeux.desktop
+ifeq (${BUILD_HELPSYS},1)
+	@${install} -m 0644 assets/help.fil \
+		${DESTDIR}${SHAREDIR}/megazeux/assets
+endif
 ifeq (${BUILD_MODULAR},1)
 	@${install} -m 0755 -d ${DESTDIR}${LIBDIR} && \
 	 ${install} -m 0755 ${core_target} ${DESTDIR}${LIBDIR} && \
@@ -44,11 +45,13 @@ ifeq (${BUILD_MZXRUN},1)
 	@${install} -m 0755 -d ${DESTDIR}${GAMESDIR} && \
 	 ${install} -m 0755 ${mzxrun} ${DESTDIR}${GAMESDIR}/ && \
 	 ${install} -m 0644 arch/unix/mzxrun.desktop \
-	                 ${DESTDIR}${SHAREDIR}/applications/mzxrun.desktop
+		${DESTDIR}${SHAREDIR}/applications/mzxrun.desktop
 endif
 ifeq (${BUILD_EDITOR},1)
 	@${install} -m 0755 -d ${DESTDIR}${GAMESDIR} && \
-	 ${install} -m 0755 ${mzx} ${DESTDIR}${GAMESDIR}/
+	 ${install} -m 0755 ${mzx} ${DESTDIR}${GAMESDIR}/ && \
+	 ${install} -m 0644 assets/ascii.chr assets/blank.chr \
+		assets/smzx.chr ${DESTDIR}${SHAREDIR}/megazeux/assets
 endif
 ifeq (${BUILD_UTILS},1)
 	@${install} -m 0755 -d ${DESTDIR}${BINDIR} && \
@@ -58,12 +61,17 @@ ifeq (${BUILD_UTILS},1)
 	 ${install} -m 0755 ${txt2hlp} ${DESTDIR}${BINDIR}/
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
-	@${install} -m 0755 -d ${DESTDIR}${SHAREDIR}/megazeux/shaders && \
-	 ${install} -m 0644 shaders/cursor.frag  shaders/cursor.vert \
-	                    shaders/mouse.frag   shaders/mouse.vert \
-	                    shaders/scaler.frag  shaders/scaler.vert \
-	                    shaders/tilemap.frag shaders/tilemap.vert \
-	                    shaders/tilemap.smzx12.frag \
-	                    shaders/tilemap.smzx3.frag \
-	                 ${DESTDIR}${SHAREDIR}/megazeux/shaders
+	@${install} -m 0755 -d \
+		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders && \
+	 ${install} -m 0644 assets/shaders/cursor.frag \
+		assets/shaders/cursor.vert \
+		assets/shaders/mouse.frag \
+		assets/shaders/mouse.vert \
+		assets/shaders/scaler.frag \
+		assets/shaders/scaler.vert \
+		assets/shaders/tilemap.frag \
+		assets/shaders/tilemap.vert \
+		assets/shaders/tilemap.smzx12.frag \
+		assets/shaders/tilemap.smzx3.frag \
+		${DESTDIR}${SHAREDIR}/megazeux/assets/shaders
 endif

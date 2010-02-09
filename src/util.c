@@ -34,6 +34,9 @@
 #include "const.h" // for MAX_PATH
 #include "error.h"
 
+#define ASSETS   "assets/"
+#define SHADERS  ASSETS "shaders/"
+
 struct mzx_resource
 {
   const char *const base_name;
@@ -50,29 +53,29 @@ struct mzx_resource
  * enum resource_id enumeration defines them.
  */
 static struct mzx_resource mzx_res[] = {
-  { CONFFILE,               NULL, false },
-  { "mzx_default.chr",      NULL, false },
-  { "mzx_edit.chr",         NULL, false },
-  { "smzx.pal",             NULL, false },
+  { CONFFILE,                      NULL, false },
+  { ASSETS "default.chr",          NULL, false },
+  { ASSETS "edit.chr",             NULL, false },
+  { ASSETS "smzx.pal",             NULL, false },
 #ifdef CONFIG_EDITOR
-  { "mzx_ascii.chr",        NULL, true },
-  { "mzx_blank.chr",        NULL, true },
-  { "mzx_smzx.chr",         NULL, true },
+  { ASSETS "ascii.chr",            NULL, true },
+  { ASSETS "blank.chr",            NULL, true },
+  { ASSETS "smzx.chr",             NULL, true },
 #endif
 #ifdef CONFIG_HELPSYS
-  { "mzx_help.fil",         NULL, true },
+  { ASSETS "help.fil",             NULL, true },
 #endif
 #ifdef CONFIG_RENDER_GL_PROGRAM
-  { "shaders/scaler.vert",         NULL, false },
-  { "shaders/scaler.frag",         NULL, false },
-  { "shaders/tilemap.vert",        NULL, false },
-  { "shaders/tilemap.frag",        NULL, false },
-  { "shaders/tilemap.smzx12.frag", NULL, false },
-  { "shaders/tilemap.smzx3.frag",  NULL, false },
-  { "shaders/mouse.vert",          NULL, false },
-  { "shaders/mouse.frag",          NULL, false },
-  { "shaders/cursor.vert",         NULL, false },
-  { "shaders/cursor.frag",         NULL, false },
+  { SHADERS "scaler.vert",         NULL, false },
+  { SHADERS "scaler.frag",         NULL, false },
+  { SHADERS "tilemap.vert",        NULL, false },
+  { SHADERS "tilemap.frag",        NULL, false },
+  { SHADERS "tilemap.smzx12.frag", NULL, false },
+  { SHADERS "tilemap.smzx3.frag",  NULL, false },
+  { SHADERS "mouse.vert",          NULL, false },
+  { SHADERS "mouse.frag",          NULL, false },
+  { SHADERS "cursor.vert",         NULL, false },
+  { SHADERS "cursor.frag",         NULL, false },
 #endif
 };
 

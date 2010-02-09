@@ -221,8 +221,10 @@ build: ${build}
 
 ${build}:
 	${MKDIR} -p ${build}/docs
-	${CP} config.txt mzx_default.chr ${build}
-	${CP} mzx_edit.chr smzx.pal ${build}
+	${MKDIR} -p ${build}/assets
+	${CP} config.txt ${build}
+	${CP} assets/default.chr assets/edit.chr ${build}/assets
+	${CP} assets/smzx.pal ${build}/assets
 	${CP} docs/COPYING.DOC docs/changelog.txt docs/port.txt ${build}/docs
 	${CP} docs/macro.txt docs/keycodes2.png ${build}/docs
 	${CP} docs/platform_matrix.html ${build}/docs
@@ -231,14 +233,15 @@ ${build}:
 		cp ${mzxrun}.debug ${build}; \
 	fi
 ifeq (${BUILD_EDITOR},1)
-	${CP} mzx_ascii.chr mzx_blank.chr mzx_smzx.chr ${build}
+	${CP} assets/ascii.chr assets/blank.chr ${build}/assets
+	${CP} assets/smzx.chr ${build}/assets
 	${CP} ${mzx} ${build}
 	@if test -f ${mzx}.debug; then \
 		cp ${mzx}.debug ${build}; \
 	fi
 endif
 ifeq (${BUILD_HELPSYS},1)
-	${CP} mzx_help.fil ${build}
+	${CP} assets/help.fil ${build}/assets
 endif
 ifeq (${BUILD_MODULAR},1)
 	${CP} ${core_target} ${editor_target} ${build}
@@ -259,10 +262,11 @@ ifeq (${BUILD_UTILS},1)
 	fi
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)
-	${MKDIR} -p ${build}/shaders/extra
-	${CP} shaders/*.vert shaders/*.frag ${build}/shaders
-	${CP} shaders/extra/*.frag shaders/extra/README.txt \
-	 	${build}/shaders/extra
+	${MKDIR} -p ${build}/assets/shaders/extra
+	${CP} assets/shaders/*.vert ${build}/assets/shaders
+	${CP} assets/shaders/*.frag ${build}/assets/shaders
+	${CP} assets/shaders/extra/*.frag assets/shaders/extra/README.txt \
+	 	${build}/assets/shaders/extra
 endif
 
 distclean: clean
@@ -270,11 +274,11 @@ distclean: clean
 	@rm -f src/config.h
 	@echo "PLATFORM=none" > platform.inc
 
-mzx_help.fil: ${txt2hlp} docs/WIPHelp.txt
+assets/help.fil: ${txt2hlp} docs/WIPHelp.txt
 	@src/utils/txt2hlp docs/WIPHelp.txt $@
 
-help_check: ${hlp2txt} mzx_help.fil
-	@src/utils/hlp2txt mzx_help.fil help.txt
+help_check: ${hlp2txt} assets/help.fil
+	@src/utils/hlp2txt assets/help.fil help.txt
 	@diff -q docs/WIPHelp.txt help.txt
 	@rm -f help.txt
 
