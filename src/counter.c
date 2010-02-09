@@ -1244,16 +1244,6 @@ static int save_world_read(struct world *mzx_world,
   return 0;
 }
 
-static int save_robot_read(struct world *mzx_world,
- const struct function_counter *counter, const char *name, int id)
-{
-  mzx_world->special_counter_return = FOPEN_SAVE_ROBOT;
-  if(name[10])
-    return strtol(name + 10, NULL, 10);
-
-  return -1;
-}
-
 static int load_robot_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -1274,6 +1264,18 @@ static int load_bc_read(struct world *mzx_world,
   return -1;
 }
 
+#ifndef CONFIG_DEBYTECODE
+
+static int save_robot_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  mzx_world->special_counter_return = FOPEN_SAVE_ROBOT;
+  if(name[10])
+    return strtol(name + 10, NULL, 10);
+
+  return -1;
+}
+
 static int save_bc_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -1283,6 +1285,8 @@ static int save_bc_read(struct world *mzx_world,
 
   return -1;
 }
+
+#endif // CONFIG_DEBYTECODE
 
 static int fread_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
@@ -1668,6 +1672,9 @@ static int str_num_read(struct world *mzx_world,
 
       // If the user's string is found, return the length of it
       struct string *src = find_string(mzx_world, name, &next);
+
+      *(dot_ptr - 1) = '.';
+
       if(src)
         return src->length;
     }
@@ -1675,11 +1682,12 @@ static int str_num_read(struct world *mzx_world,
     {
       // char offset handler
       unsigned int str_num = strtol(dot_ptr, NULL, 10);
+      bool found_string = get_string(mzx_world, name, &src, id);
 
-      if(get_string(mzx_world, name, &src, id))
+      *(dot_ptr - 1) = '.';
+
+      if(found_string)
       {
-        *(dot_ptr - 1) = '.';
-
         // If we're in bounds return the char at this offset
         if(str_num < src.length)
           return src.value[str_num];
@@ -2087,9 +2095,13 @@ static const struct function_counter builtin_counters[] =
   { "rid*", 0x0246, rid_read, NULL },                                // 2.69b
   { "robot_id", 0x0209, robot_id_read, NULL },                       // 2.60
   { "robot_id_*", 0x0241, robot_id_n_read, NULL },                   // 2.65
+#ifndef CONFIG_DEBYTECODE
   { "save_bc?", 0x0249, save_bc_read, NULL },                        // 2.70
+#endif
   { "save_game", 0x0244, save_game_read, NULL },                     // 2.68
+#ifndef CONFIG_DEBYTECODE
   { "save_robot?", 0x0249, save_robot_read, NULL },                  // 2.70
+#endif
   { "save_world", 0x0248, save_world_read, NULL },                   // 2.69c
   { "scrolledx", 0x0208, scrolledx_read, NULL },                     // 2.51s1
   { "scrolledy", 0x0208, scrolledy_read, NULL },                     // 2.51s1
@@ -2309,6 +2321,106 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       break;
     }
 
+#ifdef CONFIG_DEBYTECODE
+
+    // TODO: Implement new one: right now load_robot loads legacy bots.
+    case FOPEN_LOAD_ROBOT:
+    {
+      if(value >= 0)
+        cur_robot = get_robot_by_id(mzx_world, value);
+
+      if(cur_robot)
+      {
+        cur_robot->program_source = legacy_convert_file(char_value,
+         &(cur_robot->program_source_length),
+         mzx_world->conf.disassemble_extras,
+         mzx_world->conf.disassemble_base);
+
+        // TODO: Move this outside of here.
+        free(cur_robot->program_bytecode);
+        cur_robot->program_bytecode = NULL;
+        cur_robot->stack_pointer = 0;
+        cur_robot->cur_prog_line = 1;
+
+        prepare_robot_bytecode(cur_robot);
+
+        // Restart this robot if either it was just a LOAD_ROBOT
+        // OR LOAD_ROBOTn was used where n is &robot_id&.
+        if(value == -1 || value == id)
+          return 1;
+      }
+      break;
+    }
+
+    case FOPEN_LOAD_BC:
+    {
+      // Although this pseudo-command is still usable, it'll no longer be
+      // possible to actually export bytecode. So this means that the bytecode
+      // is always from a version that legacy_disassemble_program
+
+      // It's basically like LOAD_ROBOT except that it first has to disassmble
+      // the bytecode.
+
+      FILE *bc_file = fsafeopen(char_value, "rb");
+
+      if(bc_file)
+      {
+        if(value >= 0)
+          cur_robot = get_robot_by_id(mzx_world, value);
+
+        if(cur_robot)
+        {
+          int program_bytecode_length = ftell_and_rewind(bc_file);
+          char *program_legacy_bytecode = malloc(program_bytecode_length + 1);
+
+          fread(program_legacy_bytecode, program_bytecode_length, 1,
+           bc_file);
+
+          cur_robot->program_source =
+           legacy_disassemble_program(program_legacy_bytecode,
+           program_bytecode_length, &(cur_robot->program_source_length),
+           mzx_world->conf.disassemble_extras,
+           mzx_world->conf.disassemble_base);
+          free(program_legacy_bytecode);
+
+          // TODO: Move this outside of here.
+          if(cur_robot->program_bytecode)
+          {
+            free(cur_robot->program_bytecode);
+            cur_robot->program_bytecode = NULL;
+          }
+
+          cur_robot->cur_prog_line = 1;
+          cur_robot->stack_pointer = 0;
+          prepare_robot_bytecode(cur_robot);
+
+          // Restart this robot if either it was just a LOAD_BC
+          // OR LOAD_BCn was used where n is &robot_id&.
+          if(value == -1 || value == id)
+          {
+            fclose(bc_file);
+            return 1;
+          }
+        }
+
+        fclose(bc_file);
+      }
+      break;
+    }
+
+    // TODO: show some kind of error - we can't support this. That's
+    // because there probably won't be source code present to save.
+    // If any games use it then they just can't be supported. There just
+    // isn't an easy fix for this.
+    /* case FOPEN_SAVE_ROBOT: */
+
+    // TODO: This can't really exist anymore... do something here to send
+    // out an error. In practice I doubt any games use it, but they can't
+    // be supported - there's no really easy fix for this.
+    /* case FOPEN_SAVE_BC: */
+
+#else // !CONFIG_DEBYTECODE
+
     case FOPEN_LOAD_ROBOT:
     {
       char *new_program;
@@ -2331,9 +2443,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           cur_robot->label_list =
            cache_robot_labels(cur_robot, &(cur_robot->num_labels));
 
-          /* Restart this robot if either it was just a LOAD_ROBOT
-           * OR LOAD_ROBOTn was used where n is &robot_id&.
-           */
+          // Restart this robot if either it was just a LOAD_ROBOT
+          // OR LOAD_ROBOTn was used where n is &robot_id&.
           if(value == -1 || value == id)
           {
             free(new_program);
@@ -2369,9 +2480,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           cur_robot->label_list =
             cache_robot_labels(cur_robot, &(cur_robot->num_labels));
 
-          /* Restart this robot if either it was just a LOAD_BC
-           * OR LOAD_BCn was used where n is &robot_id&.
-           */
+          // Restart this robot if either it was just a LOAD_BC
+          // OR LOAD_BCn was used where n is &robot_id&.
           if(value == -1 || value == id)
           {
             fclose(bc_file);
@@ -2395,7 +2505,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       if(cur_robot)
       {
         disassemble_file(char_value, cur_robot->program_bytecode,
-	 cur_robot->program_bytecode_length, allow_extras, base);
+         cur_robot->program_bytecode_length, allow_extras, base);
       }
       break;
     }
@@ -2419,6 +2529,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       }
       break;
     }
+
+#endif // !CONFIG_DEBYTECODE
 
     default:
       debug("Invalid special_counter_return!\n");

@@ -352,7 +352,7 @@ static int update_current_line(struct robot_state *rstate)
   line_text_length = strlen(command_buffer);
   trim_whitespace(command_buffer, line_text_length);
 
-  bytecode_length = assemble_line(command_buffer, bytecode_buffer,
+  bytecode_length = legacy_assemble_line(command_buffer, bytecode_buffer,
    error_buffer, arg_types, &arg_count);
 
   // Trigger macro expansion; if the macro doesn't exist, do nothing
@@ -2283,7 +2283,7 @@ static void robo_ed_display_robot_line(struct robot_state *rstate,
         if((current_arg == S_COLOR) && (color_codes[current_arg + 1] == 255))
         {
           unsigned int color = get_color(line_pos);
-          draw_color_box(color & 0xFF, color >> 8, x, y);
+          draw_color_box(color & 0xFF, color >> 8, x, y, 78);
         }
         else
         {
@@ -2383,7 +2383,7 @@ static int validate_lines(struct robot_state *rstate, int show_none)
     {
       memset(error_messages[num_errors], ' ', 64);
       sprintf(error_messages[num_errors], "%05d: ", line_number + 1);
-      assemble_line(current_rline->line_text, null_buffer,
+      legacy_assemble_line(current_rline->line_text, null_buffer,
        error_messages[num_errors] + 7, NULL, NULL);
       error_messages[num_errors][strlen(error_messages[num_errors])] = ' ';
       line_pointers[num_errors] = current_rline;

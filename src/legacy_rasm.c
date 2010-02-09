@@ -23,7 +23,7 @@
 #include <stdlib.h>
 #include <ctype.h>
 
-#include "legacy_rasm.h"
+#include "rasm.h"
 #include "data.h"
 #include "fsafeopen.h"
 #include "util.h"
@@ -722,32 +722,6 @@ static const struct mzx_command command_list[] =
   { "enable",         2, cm255 }
 };
 
-static const char *const dir_types[20] =
-{
-  "IDLE", "NORTH", "SOUTH", "EAST", "WEST", "RANDNS", "RANDEW", "RANDNE",
-  "RANDNB", "SEEK", "RANDANY", "BENEATH", "ANYDIR", "FLOW", "NODIR", "RANDB",
-  "RANDP", "CW", "OPP", "RANDNOT"
-};
-
-static const char *const equality_types[6] =
-{
-  "=", "<", ">", ">=", "<=", "!="
-};
-
-static const char *const condition_types[18] =
-{
-  "walking", "swimming", "firewalking", "touching", "blocked", "aligned",
-  "alignedns", "alignedew", "lastshot", "lasttouch", "rightpressed",
-  "leftpressed", "uppressed", "downpressed", "spacepressed", "delpressed",
-  "musicon", "pcsfxon"
-};
-
-static const char *const item_types[9] =
-{
-  "GEMS", "AMMOS", "TIME", "SCORE", "HEALTHS", "LIVES", "LOBOMBS", "HIBOMBS",
-  "COINS"
-};
-
 static const char *const command_fragments[69] =
 {
   "not",
@@ -843,12 +817,6 @@ static const char special_first_char[256] =
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 0xD0-0xDF
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0,   // 0xE0-0xEF
   0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0    // 0xF0-0xFF
-};
-
-static const char *const ignore_list[21] =
-{
-  ",", ";", "a", "an", "and", "as", "at", "by", "else", "for", "from",
-  "into", "is", "of", "the", "then", "there", "through", "thru", "to", "with"
 };
 
 static const struct search_entry_short sorted_argument_list[] =
@@ -1195,7 +1163,12 @@ static int is_param(char *cmd_line)
   }
 }
 
-__editor_maybe_static const struct search_entry_short *find_argument(char *name)
+#ifdef CONFIG_DEBYTECODE
+static
+#else
+__editor_maybe_static
+#endif
+const struct search_entry_short *find_argument(char *name)
 {
   const struct search_entry_short *base = sorted_argument_list;
   int bottom = 0, top = num_argument_names - 1, middle;
@@ -1219,17 +1192,17 @@ __editor_maybe_static const struct search_entry_short *find_argument(char *name)
   return NULL;
 }
 
-__editor_maybe_static int get_color(char *cmd_line)
+int get_color(char *cmd_line)
 {
   if(cmd_line[1] == '?')
   {
     if(cmd_line[2] == '?')
     {
-      return 288;
+      return 0x100 + 0x10 + 0x10;
     }
     else
     {
-      return strtol(cmd_line + 2, NULL, 16) | 256;
+      return strtol(cmd_line + 2, NULL, 16) | 0x100;
     }
   }
 
@@ -1238,7 +1211,7 @@ __editor_maybe_static int get_color(char *cmd_line)
     char temp[2];
     temp[0] = cmd_line[1];
     temp[1] = 0;
-    return (strtol(temp, NULL, 16) + 16) | 256;
+    return (strtol(temp, NULL, 16) + 0x10) | 0x100;
   }
 
   return strtol(cmd_line + 1, NULL, 16);
@@ -1379,7 +1352,7 @@ static int rasm_parse_argument(char *cmd_line, char **next,
   {
     space_position++;
     current = *space_position;
-  } while((current != ' ') && current);
+  } while((current != ' ') && (current) && (current != '\n'));
 
   *space_position = 0;
   matched_argument = find_argument(cmd_line);
@@ -1416,7 +1389,7 @@ static int get_word(char *str, char *source, char t)
 
   current = *source;
 
-  while((current != t) && (current != 0) && (i < 256))
+  while((current != t) && (current != 0) && (current != '\n') && (i < 256))
   {
     source += escape_chars(str + i, source);
     current = *source;
@@ -1811,8 +1784,10 @@ static int assemble_command(int command_number, struct mzx_command_rw *cmd,
   return size + 2;
 }
 
-__editor_maybe_static int assemble_line(char *cpos,
- char *output_buffer, char *error_buffer,
+#ifndef CONFIG_DEBYTECODE
+__editor_maybe_static
+#endif
+int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
  char *param_listing, int *arg_count_ext)
 {
   char *current_line_position, *next_line_position;
@@ -1842,10 +1817,10 @@ __editor_maybe_static int assemble_line(char *cpos,
   if(cpos[0])
     rasm_skip_whitespace(cpos + 1, &first_non_space);
 
-  if(!cpos[0])
+  if(!cpos[0] || (cpos[0] == '\n'))
   {
     translated_command = 47;
-    strcpy(current_command.name, command_list[47].name);
+    strcpy(command_name, command_list[47].name);
     current_command.parameters = 0;
     arg_count = 0;
   }
@@ -1855,8 +1830,8 @@ __editor_maybe_static int assemble_line(char *cpos,
   {
     int str_size;
 
-    current_command.name[0] = cpos[0];
-    current_command.name[1] = 0;
+    command_name[0] = cpos[0];
+    command_name[1] = 0;
     current_command.parameters = 1;
 
     str_size = strlen(first_non_space) + 1;
@@ -1879,11 +1854,11 @@ __editor_maybe_static int assemble_line(char *cpos,
     current_line_position = cpos;
 
     current_line_position +=
-     get_word(current_command.name, current_line_position, ' ');
+     get_word(command_name, current_line_position, ' ');
     words++;
     last_arg_type = 0;
 
-    while(*current_line_position != 0)
+    while((*current_line_position != 0) && (*current_line_position != '\n'))
     {
       rasm_skip_whitespace(current_line_position, &current_line_position);
 
@@ -2015,6 +1990,8 @@ __editor_maybe_static int assemble_line(char *cpos,
   return bytes_assembled;
 }
 
+#ifndef CONFIG_DEBYTECODE
+
 char *assemble_file(char *name, int *size)
 {
   FILE *input_file = fsafeopen(name, "r");
@@ -2037,7 +2014,7 @@ char *assemble_file(char *name, int *size)
   while(fsafegets(line_buffer, 255, input_file))
   {
     line_bytecode_length =
-     assemble_line(line_buffer, bytecode_buffer, error_buffer, NULL, NULL);
+     legacy_assemble_line(line_buffer, bytecode_buffer, error_buffer, NULL, NULL);
 
     if((line_bytecode_length != -1) &&
      ((current_size + line_bytecode_length) < MAX_OBJ_SIZE))
@@ -2098,6 +2075,13 @@ __editor_maybe_static void print_color(int color, char *color_buffer)
 static int print_dir(int dir, char *dir_buffer, char *arg_types,
  int arg_place)
 {
+  static const char *const dir_types[20] =
+  {
+    "IDLE", "NORTH", "SOUTH", "EAST", "WEST", "RANDNS", "RANDEW", "RANDNE",
+    "RANDNB", "SEEK", "RANDANY", "BENEATH", "ANYDIR", "FLOW", "NODIR",
+    "RANDB", "RANDP", "CW", "OPP", "RANDNOT"
+  };
+
   char *dir_write = dir_buffer;
 
   if(dir & 0x10)
@@ -2196,6 +2180,32 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
  char *output_buffer, char *error_buffer, int *total_bytes,
  int print_ignores, char *arg_types, int *arg_count, int base)
 {
+  static const char *const equality_types[6] =
+  {
+    "=", "<", ">", ">=", "<=", "!="
+  };
+
+  static const char *const condition_types[18] =
+  {
+    "walking", "swimming", "firewalking", "touching", "blocked", "aligned",
+    "alignedns", "alignedew", "lastshot", "lasttouch", "rightpressed",
+    "leftpressed", "uppressed", "downpressed", "spacepressed", "delpressed",
+    "musicon", "pcsfxon"
+  };
+
+  static const char *const item_types[9] =
+  {
+    "GEMS", "AMMOS", "TIME", "SCORE", "HEALTHS", "LIVES",
+    "LOBOMBS", "HIBOMBS", "COINS"
+  };
+
+  static const char *const ignore_list[21] =
+  {
+    ",", ";", "a", "an", "and", "as", "at", "by", "else", "for", "from",
+    "into", "is", "of", "the", "then", "there", "through", "thru", "to",
+    "with"
+  };
+
   int length = *cpos;
   int i;
   char *input_position = cpos + 2;
@@ -2514,3 +2524,5 @@ void disassemble_file(char *name, char *program, int program_length,
 
   fclose(output_file);
 }
+
+#endif // CONFIG_DEBYTECODE

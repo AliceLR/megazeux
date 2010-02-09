@@ -885,7 +885,7 @@ static void draw_menu_status(int overlay_edit, int line, int draw_mode,
 
     display_next_pos += 4;
     draw_char('(', EC_CURR_THING, display_next_pos, line);
-    draw_color_box(display_color, 0, display_next_pos + 1, line);
+    draw_color_box(display_color, 0, display_next_pos + 1, line, 80);
     display_next_pos += 5;
 
     if(overlay_edit)

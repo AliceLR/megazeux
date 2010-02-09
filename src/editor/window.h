@@ -31,7 +31,7 @@ __M_BEGIN_DECLS
 EDITOR_LIBSPEC int list_menu(const char *const *choices, int choice_size,
  const char *title, int current, int num_choices, int xpos, int ypos);
 int color_selection(int current, int allow_wild);
-void draw_color_box(int color, int q_bit, int x, int y);
+void draw_color_box(int color, int q_bit, int x, int y, int x_limit);
 struct element *construct_check_box(int x, int y, const char **choices,
  int num_choices, int max_length, int *results);
 struct element *construct_char_box(int x, int y, const char *question,

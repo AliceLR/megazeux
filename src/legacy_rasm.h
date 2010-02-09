@@ -57,29 +57,31 @@ struct search_entry_short
   const int type;
 };
 
-int is_dir(char *cmd_line, char **next);
-int is_condition(char *cmd_line, char **next);
-int is_equality(char *cmd_line, char **next);
-int is_item(char *cmd_line, char **next);
-int is_command_fragment(char *cmd_line, char **next);
-int is_extra(char *cmd_line, char **next);
+CORE_LIBSPEC int get_color(char *cmd_line);
 
-int assemble_text(char *input_name, char *output_name);
+#ifdef CONFIG_DEBYTECODE
+
+int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
+ char *param_listing, int *arg_count_ext);
+
+#else // !CONFIG_DEBYTECODE
+
 char *assemble_file(char *name, int *size);
 void disassemble_file(char *name, char *program, int program_length,
  int allow_ignores, int base);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC int assemble_line(char *cpos, char *output_buffer, char *error_buffer,
- char *param_listing, int *arg_count_ext);
+CORE_LIBSPEC int legacy_assemble_line(char *cpos, char *output_buffer,
+ char *error_buffer, char *param_listing, int *arg_count_ext);
 CORE_LIBSPEC int disassemble_line(char *cpos, char **next, char *output_buffer,
  char *error_buffer, int *total_bytes, int print_ignores, char *arg_types,
  int *arg_count, int base);
 CORE_LIBSPEC const struct search_entry_short *find_argument(char *name);
 CORE_LIBSPEC void print_color(int color, char *color_buffer);
 CORE_LIBSPEC int unescape_char(char *dest, char c);
-CORE_LIBSPEC int get_color(char *cmd_line);
 #endif // CONFIG_EDITOR
+
+#endif // !CONFIG_DEBYTECODE
 
 __M_END_DECLS
 

@@ -602,7 +602,7 @@ int color_selection(int current, int allow_wild)
 }
 
 // Short function to display a color as a colored box
-void draw_color_box(int color, int q_bit, int x, int y)
+void draw_color_box(int color, int q_bit, int x, int y, int x_limit)
 {
   // If q_bit is set, there are unknowns
   if(q_bit)
@@ -614,9 +614,14 @@ void draw_color_box(int color, int q_bit, int x, int y)
       if(color == 0)
         color = 8;
 
-      draw_char_ext(color_wild, color, x, y, 256, 0);
-      draw_char_ext(color_dot, color, x + 1, y, 256, 0);
-      draw_char_ext(color_wild, color, x + 2, y, 256, 0);
+      if(x < x_limit)
+        draw_char_ext(color_wild, color, x, y, 256, 0);
+
+      if(x + 1 < x_limit)
+        draw_char_ext(color_dot, color, x + 1, y, 256, 0);
+
+      if(x + 2 < x_limit)
+        draw_char_ext(color_wild, color, x + 2, y, 256, 0);
     }
     else
 
@@ -626,23 +631,39 @@ void draw_color_box(int color, int q_bit, int x, int y)
       // Use foreground from array
       color -= 16;
       color = (color << 4) + fg_per_bk[color];
-      draw_char_ext(color_wild, color, x, y, 256, 0);
-      draw_char_ext(color_wild, color, x + 1, y, 256, 0);
-      draw_char_ext(color_wild, color, x + 2, y, 256, 0);
+
+      if(x < x_limit)
+        draw_char_ext(color_wild, color, x, y, 256, 0);
+
+      if(x + 1 < x_limit)
+        draw_char_ext(color_wild, color, x + 1, y, 256, 0);
+
+      if(x + 2 < x_limit)
+        draw_char_ext(color_wild, color, x + 2, y, 256, 0);
     }
     else
     {
       // Both unknown
-      draw_char(color_wild, 8, x, y);
-      draw_char(color_wild, 135, x + 1, y);
-      draw_char(color_wild, 127, x + 2, y);
+      if(x < x_limit)
+        draw_char(color_wild, 8, x, y);
+
+      if(x + 1 < x_limit)
+        draw_char(color_wild, 135, x + 1, y);
+
+      if(x + 2 < x_limit)
+        draw_char(color_wild, 127, x + 2, y);
     }
   }
   else
   {
-    draw_char_ext(color_blank, color, x, y, 256, 0);
-    draw_char_ext(color_dot, color, x + 1, y, 256, 0);
-    draw_char_ext(color_blank, color, x + 2, y, 256, 0);
+    if(x < x_limit)
+      draw_char_ext(color_blank, color, x, y, 256, 0);
+
+    if(x + 1 < x_limit)
+      draw_char_ext(color_dot, color, x + 1, y, 256, 0);
+
+    if(x + 2 < x_limit)
+      draw_char_ext(color_blank, color, x + 2, y, 256, 0);
   }
 }
 
@@ -697,7 +718,7 @@ static void draw_color_box_element(struct world *mzx_world, struct dialog *di,
 
   write_string(src->question, x, y, color, 0);
   draw_color_box(current_color & 0xFF, current_color >> 8,
-   x + strlen(src->question) + di->pad_space, y);
+   x + strlen(src->question) + di->pad_space, y, 80);
 }
 
 static void draw_board_list(struct world *mzx_world, struct dialog *di,

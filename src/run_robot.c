@@ -916,6 +916,10 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
     cur_robot->cycle_count = 0;
 
+#ifdef CONFIG_DEBYTECODE
+    prepare_robot_bytecode(cur_robot);
+#endif
+
     // Does program exist?
     if(cur_robot->program_bytecode_length < 3)
     {
@@ -1276,6 +1280,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
               return;
 
             // Some specials might have changed these
+#ifdef CONFIG_DEBYTECODE
+            prepare_robot_bytecode(cur_robot);
+#endif
             program = cur_robot->program_bytecode;
             cmd_ptr = program + cur_robot->cur_prog_line;
 

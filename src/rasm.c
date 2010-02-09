@@ -2732,31 +2732,6 @@ static int get_param(char *cmd_line)
   return strtol(cmd_line + 1, NULL, 16);
 }
 
-__editor_maybe_static int get_color(char *cmd_line)
-{
-  if(cmd_line[1] == '?')
-  {
-    if(cmd_line[2] == '?')
-    {
-      return 0x100 + 0x10 + 0x10;
-    }
-    else
-    {
-      return strtol(cmd_line + 2, NULL, 16) | 0x100;
-    }
-  }
-
-  if(cmd_line[2] == '?')
-  {
-    char temp[2];
-    temp[0] = cmd_line[1];
-    temp[1] = 0;
-    return (strtol(temp, NULL, 16) + 0x10) | 0x100;
-  }
-
-  return strtol(cmd_line + 1, NULL, 16);
-}
-
 __editor_maybe_static int get_thing(char *name, int name_length)
 {
   const struct special_word *special_word =

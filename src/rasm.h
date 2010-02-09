@@ -23,7 +23,7 @@
 #include "compat.h"
 #include "legacy_rasm.h"
 
-#if defined(CONFIG_DEBYTECODE)
+#ifdef CONFIG_DEBYTECODE
 
 #include "data.h"
 
@@ -269,7 +269,6 @@ CORE_LIBSPEC struct token *parse_command(char *src, char **_next,
  int *num_parse_tokens);
 CORE_LIBSPEC void print_color(int color, char *color_buffer);
 CORE_LIBSPEC int unescape_char(char *dest, char c);
-CORE_LIBSPEC int get_color(char *cmd_line);
 CORE_LIBSPEC int get_thing(char *name, int name_length);
 
 #endif // CONFIG_EDITOR

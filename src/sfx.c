@@ -114,6 +114,14 @@ static const int sam_freq[12] =
 static struct noise background[NOISEMAX]; // The sound queue itself
 static int sound_in_queue = 0;     // Tells if sound in queue
 
+#ifdef CONFIG_DEBYTECODE
+static const char open_char  = '(';
+static const char close_char = ')';
+#else
+static const char open_char  = '&';
+static const char close_char = '&';
+#endif
+
 static void submit_sound(int freq, int delay)
 {
   if((backindex == 0) && (topindex == NOISEMAX))
@@ -245,7 +253,7 @@ void play_str(char *str, int sfx_play)
 
           play_sample(sam_freq[note - 1] >> oct, str + digi_st, true);
 
-          str[digi_end] = '&';
+          str[digi_end] = close_char;
           digi_st = -1;
           break;
         }
@@ -310,7 +318,7 @@ void play_str(char *str, int sfx_play)
         break;
     }
 
-    if(chr == '&')
+    if(chr == open_char)
     {
       // Digitized
       t1++;
@@ -325,7 +333,7 @@ void play_str(char *str, int sfx_play)
         if(str[t1] == 0)
           break;
 
-        if(str[t1] == '&')
+        if(str[t1] == close_char)
           break;
 
       } while(1);
@@ -349,7 +357,7 @@ void play_str(char *str, int sfx_play)
 
     play_sample(0, str + digi_st, true);
 
-    str[digi_end] = '&';
+    str[digi_end] = close_char;
   }
 }
 

@@ -1570,7 +1570,12 @@ int char_editor(struct world *mzx_world)
           if(!file_manager(mzx_world, chr_ext, ".chr", export_string,
            "Export character set(s)", 1, 1, elements, 3, 2, 0))
           {
-            for(i = 0; i < num_files; i++, current_file++,
+            int num_files_present = num_files;
+
+            if(strchr(export_string, '#') == NULL)
+              num_files_present = 1;
+
+            for(i = 0; i < num_files_present; i++, current_file++,
              char_offset += char_size)
             {
               replace_filenum(export_string, export_name,
@@ -1610,7 +1615,12 @@ int char_editor(struct world *mzx_world)
           if(!file_manager(mzx_world, chr_ext, NULL, import_string,
            "Import character set(s)", 1, 2, elements, 3, 2, 0))
           {
-            for(i = 0; i < num_files; i++, current_file++)
+            int num_files_present = num_files;
+
+            if(strchr(import_string, '#') == NULL)
+              num_files_present = 1;
+
+            for(i = 0; i < num_files_present; i++, current_file++)
             {
               replace_filenum(import_string, import_name,
                current_file);
