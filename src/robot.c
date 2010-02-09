@@ -1629,7 +1629,12 @@ int parse_param(struct world *mzx_world, char *program, int id)
   if((program[1] == '(') && mzx_world->version >= 0x244)
   {
     char *e_ptr = (char *)program + 2;
-    return parse_expression(mzx_world, &e_ptr, id);
+    int error, val;
+    val = parse_expression(mzx_world, &e_ptr, &error, id);
+#ifndef CONFIG_DEBYTECODE
+    if(!error && !(*e_ptr))
+#endif
+      return val;
   }
   tr_msg(mzx_world, program + 1, id, ibuff);
 
@@ -2212,6 +2217,7 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
 
   int dest_pos = 0;
   int name_length;
+  int error;
   int val;
 
   do
@@ -2223,10 +2229,22 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
       src_ptr++;
       old_ptr = src_ptr;
 
-      val = parse_expression(mzx_world, &src_ptr, id);
-      buffer[dest_pos] = '(';
-      dest_pos++;
-      src_ptr = old_ptr;
+      val = parse_expression(mzx_world, &src_ptr, &error, id);
+
+#ifndef CONFIG_DEBYTECODE
+      if(!error)
+      {
+        sprintf(number_buffer, "%d", val);
+        strcpy(buffer + dest_pos, number_buffer);
+        dest_pos += strlen(number_buffer);
+      }
+      else
+#endif
+      {
+        buffer[dest_pos] = '(';
+        dest_pos++;
+        src_ptr = old_ptr;
+      }
 
       current_char = *src_ptr;
     }
@@ -2253,7 +2271,15 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
           if(current_char == '(' && (mzx_world->version >= 0x244))
           {
             src_ptr++;
-            val = parse_expression(mzx_world, &src_ptr, id);
+            val = parse_expression(mzx_world, &src_ptr, &error, id);
+#ifndef CONFIG_DEBYTECODE
+            if(!error)
+            {
+              sprintf(number_buffer, "%d", val);
+              strcpy(name_ptr, number_buffer);
+              name_ptr += strlen(number_buffer);
+            }
+#endif
           }
           else
           {

@@ -87,6 +87,14 @@ static int parse_argument(struct world *mzx_world, char **_argument,
       if(!isspace((int)*argument))
       {
         int t2, val = parse_argument(mzx_world, &argument, &t2, id);
+#ifndef CONFIG_DEBYTECODE
+        if((t2 != 0) && (t2 != 2))
+        {
+          *type = -1;
+          *_argument = argument;
+          return -1;
+        }
+#endif
         val = -val;
         *type = 2;
         *_argument = argument;
@@ -244,8 +252,17 @@ static int parse_argument(struct world *mzx_world, char **_argument,
       int t2, val;
 
       argument++;
-
       val = parse_argument(mzx_world, &argument, &t2, id);
+
+#ifndef CONFIG_DEBYTECODE
+      if((t2 != 0) && (t2 != 2))
+      {
+        *type = -1;
+        *_argument = argument;
+        return -1;
+      }
+#endif
+
       val = ~val;
       *type = 2;
       *_argument = argument;
@@ -273,9 +290,17 @@ static int parse_argument(struct world *mzx_world, char **_argument,
     // Treat a valid return as an argument.
     case '(':
     {
-      int val;
+      int val, error;
       argument++;
-      val = parse_expression(mzx_world, &argument, id);
+      val = parse_expression(mzx_world, &argument, &error, id);
+#ifndef CONFIG_DEBYTECODE
+      if(error)
+      {
+        *type = -1;
+        *_argument = argument;
+        return -1;
+      }
+#endif
       *type = 0;
       *_argument = argument;
       return val;
@@ -379,21 +404,24 @@ static int parse_argument(struct world *mzx_world, char **_argument,
       }
       else
       {
-        int value = 0;
-
 #ifdef CONFIG_DEBYTECODE
         char *end_p = find_non_identifier_char(argument);
         char temp = *end_p;
+        int value;
 
         *end_p = 0;
         value = get_counter(mzx_world, argument, id);
         *end_p = temp;
 
-        *_argument = end_p;
-#endif
-
         *type = 0;
+        *_argument = end_p;
         return value;
+#else
+        // It's not so good..
+        *type = -1;
+        *_argument = argument;
+        return -1;
+#endif
       }
     }
   }
@@ -508,7 +536,8 @@ static int evaluate_operation(int operand_a, enum op c_operator, int operand_b)
   }
 }
 
-int parse_expression(struct world *mzx_world, char **_expression, int id)
+int parse_expression(struct world *mzx_world, char **_expression, int *error,
+ int id)
 {
   char *expression = *_expression;
   int operand_val;
@@ -516,9 +545,22 @@ int parse_expression(struct world *mzx_world, char **_expression, int id)
   int c_operator;
   int value;
 
+  *error = 0;
+
   // Skip initial whitespace..
   expression = expr_skip_whitespace(expression);
   value = parse_argument(mzx_world, &expression, &current_arg, id);
+
+#ifndef CONFIG_DEBYTECODE
+  if((current_arg != 0) && (current_arg != 2))
+  {
+    // First argument must be a value type.
+    *error = 1;
+    value = -99;
+    goto err_out;
+  }
+#endif
+
   expression = expr_skip_whitespace(expression);
 
   while(1)
@@ -538,14 +580,38 @@ int parse_expression(struct world *mzx_world, char **_expression, int id)
     }
     else
     {
+#ifndef CONFIG_DEBYTECODE
+      if(current_arg != 1)
+      {
+        *error = 2;
+        value = -100;
+        goto err_out;
+      }
+#endif
+
       expression = expr_skip_whitespace(expression);
       operand_val = parse_argument(mzx_world, &expression, &current_arg, id);
+
+#ifndef CONFIG_DEBYTECODE
+      // And now it must be an integer.
+      if((current_arg != 0) && (current_arg != 2))
+      {
+        *error = 3;
+        value = -102;
+        goto err_out;
+      }
+#endif
+
       value = evaluate_operation(value, (enum op)c_operator, operand_val);
     }
     expression = expr_skip_whitespace(expression);
   }
 
   last_val = value;
+
+#ifndef CONFIG_DEBYTECODE
+err_out:
+#endif
   *_expression = expression;
   return value;
 }
