@@ -124,7 +124,10 @@ static inline void ProcessPlugins(int n) {}
 
 #define GlobalFreePtr(p) free((void *)(p))
 
+#ifndef strnicmp
 #define strnicmp(a,b,c)		strncasecmp(a,b,c)
+#endif
+
 #define wsprintfA		sprintf
 
 #ifndef FALSE
