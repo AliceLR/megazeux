@@ -2,6 +2,18 @@ SVN
 
 USERS
 
++ Added support for loop markers in WAV and OGG files. The WAV loop support uses
+  the "smpl" chunk used by ModPlug Tracker and Wavosaur among others. Only the
+  first loop is used, and only forward looping is supported. The OGG loop
+  support uses the "LOOPSTART" and "LOOPLENGTH" tags as used by RPG Maker VX.
+  (Mr_Alert)
++ Added Logicow's new OpenGL Shader Language (GLSL) renderer which allows       
+  shaders to be applied to the character set ("tileset") and post-processing    
+  of the hardware scaler. Requires a modern video card. Detection of the        
+  required extensions with a compile failure of the shader program will         
+  silently fall back to the fixed pipeline (similar to opengl2). A variety      
+  of shaders have been provided and these can be customized. 
+
 DEVELOPERS
 
 December 29, 2008 - MZX 2.82b

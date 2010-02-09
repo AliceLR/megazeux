@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# December 24th, 2008
+# January 1st, 2009
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -73,10 +73,16 @@
 # ATI video cards, but your mileage might vary. This renderer is called
 # "opengl2".
 #
+# The third OpenGL scaler was written by Logicow, and uses GLSL
+# to do the tiling and scaling, in two separate shader programs.
+# This scaler requires a fast video card with shader support. This render
+# is called "glsl".
+#
 # Uncomment ONE of the lines below:
 
 # video_output = opengl1
 # video_output = opengl2
+# video_output = glsl
 
 # The OpenGL and YUV overlay renderers can be configured to preserve aspect
 # ratio where possible, in window and fullscreen modes. The supported
@@ -93,6 +99,38 @@
 # setting is "linear".
 
 # gl_filter_method = nearest
+
+# These GLSL shaders work with the glsl scaler. The scaler requires
+# exactly one tilemap shader and one scaling shader.
+
+## Tilemap shaders ##
+
+# The standard tilemap shader.
+
+# gl_tilemap_vertex_shader   = shaders/tilemap.vert
+# gl_tilemap_fragment_shader = shaders/tilemap.frag
+
+## Scaling shaders ##
+
+# High quality scaling shader. Requires modern video card.
+
+# gl_scaling_vertex_shader   = shaders/simple.vert
+# gl_scaling_fragment_shader = shaders/hqscale.frag
+
+# Simple linear shader.
+
+# gl_scaling_vertex_shader   = shaders/simple.vert
+# gl_scaling_fragment_shader = shaders/simple.frag
+
+# Simple nearest neighbor shader.
+
+# gl_scaling_vertex_shader   = shaders/simple.vert
+# gl_scaling_fragment_shader = shaders/nearest.frag
+
+# Simple emboss shader.
+
+# gl_scaling_vertex_shader = shaders/simple.vert
+# gl_scaling_fragment_shader = shaders/emboss.frag
 
 # Some OpenGL driver settings may default vertical sync on, which looks
 # visually better (especially on CRTs) but can cause "speed 1" to run

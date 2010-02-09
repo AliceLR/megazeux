@@ -92,14 +92,14 @@ __M_BEGIN_DECLS
  * such as altering semantics or actually changing the binary format, this
  * value MUST be bumped.
  */
-#define WORLD_VERSION      0x0252
+#define WORLD_VERSION      0x0253
 
 /* See the downver.c tool for more information. Please, if you bump the
  * WORLD_VERSION, always make sure this is updated with its previous
  * value. Therefore, users in a naive frenzy can always downgrade their
  * work to an older version (if it at all makes sense to do so).
  */
-#define WORLD_VERSION_PREV 0x0251
+#define WORLD_VERSION_PREV 0x0252
 
 CORE_LIBSPEC int save_world(World *mzx_world, const char *file, int savegame,
  int faded);
