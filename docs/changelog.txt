@@ -5,7 +5,11 @@ USERS
 + Writing to $str.length (which previously did undefined things) will now
   truncate or enlarge the string to the size specified.
 + Removed filename size limit for FWRITE_MODIFY and FWRITE_APPEND. (Revvy)
-+ Added support to the checkres tool to check worlds in non-local directories. (Revvy)
++ Added support to the checkres tool to check worlds in non-local
+  directories. (Revvy)
++ Fix a bug where SET "blah.sav" TO "save_game" could corrupt the robot
+  list causing commands that use it (such as DIE) to crash MZX if
+  executed in the same cycle.
 
 DEVELOPERS
 

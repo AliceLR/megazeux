@@ -93,7 +93,7 @@ int duplicate_robot(Board *src_board, Robot *cur_robot, int x, int y);
 void replace_robot(Board *src_board, Robot *src_robot, int dest_id);
 int duplicate_scroll(Board *src_board, Scroll *cur_scroll);
 int duplicate_sensor(Board *src_board, Sensor *cur_sensor);
-void optimize_null_objects(Board *src_board);
+void optimize_null_objects(Board *src_board, int optimize_robots);
 int get_robot_id(Board *src_board, const char *name);
 
 // These are part of runrobo2.cpp

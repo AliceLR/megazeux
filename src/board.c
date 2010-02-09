@@ -441,18 +441,27 @@ int save_board(Board *cur_board, FILE *fp, int savegame)
   fputc(cur_board->volume_inc, fp);
   fputc(cur_board->volume_target, fp);
 
-  // Save robots
+  /* As a special case for saving an unoptimized robot list, check we actually
+   * have the number of live robots we should and fake the write out if we
+   * don't.
+   */
   num_robots = cur_board->num_robots;
+
+  for(i = 1; i <= num_robots; i++)
+    if(!cur_board->robot_list[i])
+      num_robots--;
+
   fputc(num_robots, fp);
+
+  /* Now actually save them out (ignoring dead robots). */
 
   if(num_robots)
   {
-    Robot *cur_robot;
-
-    for(i = 1; i <= num_robots; i++)
+    for(i = 1; i <= cur_board->num_robots; i++)
     {
-      cur_robot = cur_board->robot_list[i];
-      save_robot(cur_robot, fp, savegame);
+      Robot *cur_robot = cur_board->robot_list[i];
+      if(cur_robot)
+        save_robot(cur_robot, fp, savegame);
     }
   }
 
@@ -595,7 +604,7 @@ void replace_current_board(World *mzx_world, char *name)
     {
       clear_board(src_board);
       src_board = load_board_allocate_direct(input_mzb, 0);
-      optimize_null_objects(src_board);
+      optimize_null_objects(src_board, true);
 
       set_update_done_current(mzx_world);
 
@@ -711,7 +720,7 @@ void save_board_file(Board *cur_board, char *name)
     fputc((WORLD_VERSION >> 8) & 0xff, board_file);
     fputc(WORLD_VERSION & 0xff, board_file);
 
-    optimize_null_objects(cur_board);
+    optimize_null_objects(cur_board, true);
     save_board(cur_board, board_file, 0);
     // Write name
     fwrite(cur_board->board_name, 25, 1, board_file);

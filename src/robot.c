@@ -2660,7 +2660,7 @@ int duplicate_sensor(Board *src_board, Sensor *cur_sensor)
 // params to compensate. This should always be used before saving
 // the world/game, and ideally when loading too.
 
-void optimize_null_objects(Board *src_board)
+void optimize_null_objects(Board *src_board, int optimize_robots)
 {
   int num_robots = src_board->num_robots;
   int num_scrolls = src_board->num_scrolls;
@@ -2668,7 +2668,6 @@ void optimize_null_objects(Board *src_board)
   Robot **robot_list = src_board->robot_list;
   Scroll **scroll_list = src_board->scroll_list;
   Sensor **sensor_list = src_board->sensor_list;
-  Robot **optimized_robot_list = calloc(num_robots + 1, sizeof(Robot *));
   Scroll **optimized_scroll_list = calloc(num_scrolls + 1, sizeof(Scroll *));
   Sensor **optimized_sensor_list = calloc(num_sensors + 1, sizeof(Sensor *));
   int *robot_id_translation_list = calloc(num_robots + 1, sizeof(int));
@@ -2687,35 +2686,37 @@ void optimize_null_objects(Board *src_board)
   int d_param, d_new_param;
   int do_modify = 0;
 
-  for(i = 1, i2 = 1; i <= num_robots; i++)
+  if(optimize_robots)
   {
-    cur_robot = robot_list[i];
-    if(cur_robot != NULL)
+    Robot **optimized_robot_list = calloc(num_robots + 1, sizeof(Robot *));
+
+    for(i = 1, i2 = 1; i <= num_robots; i++)
     {
-      optimized_robot_list[i2] = cur_robot;
-      robot_id_translation_list[i] = i2;
-      i2++;
+      cur_robot = robot_list[i];
+
+      if(cur_robot)
+      {
+        optimized_robot_list[i2] = cur_robot;
+        robot_id_translation_list[i] = i2;
+        i2++;
+      }
+    }
+
+    if(i2 != i)
+    {
+      do_modify |= 1;
+      optimized_robot_list[0] = robot_list[0];
+      free(robot_list);
+      src_board->robot_list =
+       realloc(optimized_robot_list, sizeof(Robot *) * i2);
+      src_board->num_robots = i2 - 1;
+      src_board->num_robots_allocated = i2 - 1;
     }
     else
     {
-     // FIXME: Hack, probably bogus!
-     robot_id_translation_list[i] = 0;
+      free(optimized_robot_list);
     }
-  }
 
-  if(i2 != i)
-  {
-    do_modify |= 1;
-    optimized_robot_list[0] = robot_list[0];
-    free(robot_list);
-    src_board->robot_list =
-     realloc(optimized_robot_list, sizeof(Robot *) * i2);
-    src_board->num_robots = i2 - 1;
-    src_board->num_robots_allocated = i2 - 1;
-  }
-  else
-  {
-    free(optimized_robot_list);
   }
 
   for(i = 1, i2 = 1; i <= num_scrolls; i++)
@@ -2768,6 +2769,8 @@ void optimize_null_objects(Board *src_board)
   }
   else
   {
+    for(i = 1; i <= num_robots; i++)
+      robot_id_translation_list[i] = i;
     free(optimized_sensor_list);
   }
 
@@ -2816,7 +2819,6 @@ void optimize_null_objects(Board *src_board)
     }
   }
 
-  // Free the lists
   free(robot_id_translation_list);
   free(scroll_id_translation_list);
   free(sensor_id_translation_list);
