@@ -256,7 +256,8 @@ static void set_colors32_smzx3 (struct graphics_data *graphics,
   char_colors[3] = graphics->flat_intensity_palette[(base + 3) & 0xFF];
 }
 
-void (*set_colors8[4])(struct graphics_data *, Uint32 *, Uint8, Uint8) =
+void (*const set_colors8[4])
+ (struct graphics_data *, Uint32 *, Uint8, Uint8) =
 {
   set_colors8_mzx,
   set_colors8_smzx,
@@ -264,7 +265,8 @@ void (*set_colors8[4])(struct graphics_data *, Uint32 *, Uint8, Uint8) =
   set_colors8_smzx3
 };
 
-void (*set_colors16[4])(struct graphics_data *, Uint32 *, Uint8, Uint8) =
+void (*const set_colors16[4])
+ (struct graphics_data *, Uint32 *, Uint8, Uint8) =
 {
   set_colors16_mzx,
   set_colors16_smzx,
@@ -272,7 +274,8 @@ void (*set_colors16[4])(struct graphics_data *, Uint32 *, Uint8, Uint8) =
   set_colors16_smzx3
 };
 
-void (*set_colors32[4])(struct graphics_data *, Uint32 *, Uint8, Uint8) =
+void (*const set_colors32[4])
+ (struct graphics_data *, Uint32 *, Uint8, Uint8) =
 {
   set_colors32_mzx,
   set_colors32_smzx,
@@ -303,7 +306,8 @@ static void yuv2_set_colors_mzx(struct graphics_data *graphics,
   char_colors[3] = cb_fg;
 }
 
-void (*yuv2_set_colors[4])(struct graphics_data *, Uint32 *, Uint8, Uint8) =
+void (*const yuv2_set_colors[4])
+ (struct graphics_data *, Uint32 *, Uint8, Uint8) =
 {
   yuv2_set_colors_mzx,
   set_colors32_smzx,

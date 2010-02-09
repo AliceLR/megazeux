@@ -5181,7 +5181,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           intensity = 0;
 
         set_palette_intensity(intensity);
-        pal_update = 1;
+        pal_update = true;
         break;
       }
 
@@ -5194,7 +5194,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           intensity = 0;
 
         set_color_intensity(color, intensity);
-        pal_update = 1;
+        pal_update = true;
         break;
       }
 
@@ -5228,7 +5228,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         b = CLAMP(b, 0, 63);
 
         set_rgb(pal_number, r, g, b);
-        pal_update = 1;
+        pal_update = true;
         break;
       }
 
@@ -5341,7 +5341,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           load_palette(translated_name);
 
         free(translated_name);
-        pal_update = 1;
+        pal_update = true;
         break;
       }
 

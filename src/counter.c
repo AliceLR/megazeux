@@ -454,7 +454,7 @@ static void red_value_write(struct world *mzx_world,
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
   set_red_component(cur_color, value);
-  pal_update = 1;
+  pal_update = true;
 }
 
 static void green_value_write(struct world *mzx_world,
@@ -462,7 +462,7 @@ static void green_value_write(struct world *mzx_world,
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
   set_green_component(cur_color, value);
-  pal_update = 1;
+  pal_update = true;
 }
 
 static void blue_value_write(struct world *mzx_world,
@@ -470,7 +470,7 @@ static void blue_value_write(struct world *mzx_world,
 {
   int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
   set_blue_component(cur_color, value);
-  pal_update = 1;
+  pal_update = true;
 }
 
 static int overlay_mode_read(struct world *mzx_world,
@@ -565,7 +565,7 @@ static void smzx_r_write(struct world *mzx_world,
 {
   int cur_color = strtol(name + 6, NULL, 10);
   set_red_component(cur_color, value);
-  pal_update = 1;
+  pal_update = true;
 }
 
 static void smzx_g_write(struct world *mzx_world,
@@ -573,7 +573,7 @@ static void smzx_g_write(struct world *mzx_world,
 {
   int cur_color = strtol(name + 6, NULL, 10);
   set_green_component(cur_color, value);
-  pal_update = 1;
+  pal_update = true;
 }
 
 static void smzx_b_write(struct world *mzx_world,
@@ -581,7 +581,7 @@ static void smzx_b_write(struct world *mzx_world,
 {
   int cur_color = strtol(name + 6, NULL, 10);
   set_blue_component(cur_color, value);
-  pal_update = 1;
+  pal_update = true;
 }
 
 static int spr_clist_read(struct world *mzx_world,
@@ -2277,7 +2277,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
     case FOPEN_SMZX_PALETTE:
     {
       load_palette(char_value);
-      pal_update = 1;
+      pal_update = true;
       break;
     }
 

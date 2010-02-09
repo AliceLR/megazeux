@@ -114,9 +114,6 @@ static int sam_freq[12] =
 static struct noise background[NOISEMAX]; // The sound queue itself
 static int sound_in_queue = 0;     // Tells if sound in queue
 
-char *custom_sfx = NULL;
-int custom_sfx_on = 0; // 1 to turn on custom sfx
-
 static void submit_sound(int freq, int delay)
 {
   if((backindex == 0) && (topindex == NOISEMAX))

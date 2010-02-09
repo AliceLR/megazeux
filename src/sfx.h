@@ -48,9 +48,6 @@ void sound_system(void);
 char is_playing(void);
 void play_str(char *str, int sfx_play);
 
-extern char *custom_sfx; //Ref. in chunks of 69
-extern int custom_sfx_on; //1 to turn on custom sfx
-
 #else // !CONFIG_AUDIO
 
 static inline void clear_sfx_queue(void) {}

@@ -127,7 +127,6 @@ CORE_LIBSPEC FILE *try_load_world(const char *file, bool savegame,
 CORE_LIBSPEC void default_global_data(struct world *mzx_world);
 CORE_LIBSPEC void optimize_null_boards(struct world *mzx_world);
 CORE_LIBSPEC void set_update_done(struct world *mzx_world);
-CORE_LIBSPEC extern char world_version_string[4];
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

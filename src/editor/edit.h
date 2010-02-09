@@ -36,9 +36,6 @@ int place_current_at_xy(struct world *mzx_world, enum thing id, int color,
  int param, int x, int y, struct robot *copy_robot,
  struct scroll *copy_scroll, struct sensor *copy_sensor, int overlay_edit);
 
-// Debug box x pos
-extern char debug_x;
-
 #define EC_MAIN_BOX           25
 #define EC_MAIN_BOX_DARK      16
 #define EC_MAIN_BOX_CORNER    24

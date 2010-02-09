@@ -260,11 +260,6 @@ CORE_LIBSPEC void meter_interior(unsigned int progress, unsigned int out_of);
 
 CORE_LIBSPEC int run_dialog(struct world *mzx_world, struct dialog *di);
 
-// Characters for dialog box elements
-extern char radio_on[4];
-extern char radio_off[4];
-extern char num_buttons[7];
-
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC extern int context;
 

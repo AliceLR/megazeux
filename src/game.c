@@ -114,7 +114,8 @@ static int update_music;
 static char cw_offs[8] = { 10, 2, 6, 4, 5, 1, 9, 8 };
 static char ccw_offs[8] = { 10, 8, 9, 1, 5, 4, 6, 2 };
 
-int pal_update; // Whether to update a palette from robot activity
+// Whether to update a palette from robot activity
+bool pal_update; 
 
 __editor_maybe_static const char *world_ext[] = { ".MZX", NULL };
 
@@ -904,7 +905,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
   char *level_under_param = src_board->level_under_param;
   int total_ticks;
 
-  pal_update = 0;
+  pal_update = false;
 
   if(game && mzx_world->version >= 0x0208 &&
    get_counter(mzx_world, "CURSORSTATE", 0))

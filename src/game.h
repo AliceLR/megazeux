@@ -44,7 +44,7 @@ void check_find_player(struct world *mzx_world);
 int take_key(struct world *mzx_world, int color);
 int give_key(struct world *mzx_world, int color);
 
-extern int pal_update;
+extern bool pal_update;
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void play_game(struct world *mzx_world, int fadein);

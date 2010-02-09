@@ -26,14 +26,14 @@ __M_BEGIN_DECLS
 
 #include "graphics.h"
 
-extern void (*set_colors8[4])(struct graphics_data *graphics,
+extern void (*const set_colors8[4])(struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg);
-extern void (*set_colors16[4])(struct graphics_data *graphics,
+extern void (*const set_colors16[4])(struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg);
-extern void (*set_colors32[4])(struct graphics_data *graphics,
+extern void (*const set_colors32[4])(struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg);
 #ifdef CONFIG_RENDER_YUV
-extern void (*yuv2_set_colors[4])(struct graphics_data *graphics,
+extern void (*const yuv2_set_colors[4])(struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg);
 #endif
 
