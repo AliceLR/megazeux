@@ -244,6 +244,40 @@ static void config_editor_space_toggles(config_info *conf, char *name,
   conf->editor_space_toggles = strtol(value, NULL, 10);
 }
 
+
+/* FAT NOTE: This is searched as a binary tree, the nodes must be
+ *           sorted alphabetically, or they risk being ignored.
+ */
+static const config_entry editor_config_options[] =
+{
+  { "backup_count", backup_count },
+  { "backup_ext", backup_ext },
+  { "backup_interval", backup_interval },
+  { "backup_name", backup_name },
+  { "board_editor_hide_help", bedit_hhelp },
+  { "ccode_colors", config_ccode_colors },
+  { "ccode_commands", config_ccode_commands },
+  { "ccode_conditions", config_ccode_conditions },
+  { "ccode_current_line", config_ccode_current_line },
+  { "ccode_directions", config_ccode_directions },
+  { "ccode_equalities", config_ccode_equalities },
+  { "ccode_extras", config_ccode_extras },
+  { "ccode_immediates", config_ccode_immediates },
+  { "ccode_items", config_ccode_items },
+  { "ccode_params", config_ccode_params },
+  { "ccode_strings", config_ccode_strings },
+  { "ccode_things", config_ccode_things },
+  { "color_coding_on", config_ccode_on },
+  { "default_invalid_status", config_default_invald },
+  { "editor_space_toggles", config_editor_space_toggles },
+  { "macro_*", config_macro },
+  { "robot_editor_hide_help", redit_hhelp },
+  { "startup_editor", config_startup_editor },
+};
+
+static const int num_editor_config_options =
+ sizeof(editor_config_options) / sizeof(config_entry);
+
 #endif // CONFIG_EDITOR
 
 static void config_disassemble_extras(config_info *conf, char *name, char *value,
@@ -533,36 +567,12 @@ static void config_gl_vsync(config_info *conf, char *name,
 /* FAT NOTE: This is searched as a binary tree, the nodes must be
  *           sorted alphabetically, or they risk being ignored.
  */
-static config_entry config_options[] =
+static const config_entry core_config_options[] =
 {
   { "audio_buffer", config_set_audio_buffer },
   { "audio_sample_rate", config_set_audio_freq },
-#ifdef CONFIG_EDITOR
-  { "backup_count", backup_count },
-  { "backup_ext", backup_ext },
-  { "backup_interval", backup_interval },
-  { "backup_name", backup_name },
-  { "board_editor_hide_help", bedit_hhelp },
-  { "ccode_colors", config_ccode_colors },
-  { "ccode_commands", config_ccode_commands },
-  { "ccode_conditions", config_ccode_conditions },
-  { "ccode_current_line", config_ccode_current_line },
-  { "ccode_directions", config_ccode_directions },
-  { "ccode_equalities", config_ccode_equalities },
-  { "ccode_extras", config_ccode_extras },
-  { "ccode_immediates", config_ccode_immediates },
-  { "ccode_items", config_ccode_items },
-  { "ccode_params", config_ccode_params },
-  { "ccode_strings", config_ccode_strings },
-  { "ccode_things", config_ccode_things },
-  { "color_coding_on", config_ccode_on },
-  { "default_invalid_status", config_default_invald },
-#endif // CONFIG_EDITOR
   { "disassemble_base", config_disassemble_base },
   { "disassemble_extras", config_disassemble_extras },
-#ifdef CONFIG_EDITOR
-  { "editor_space_toggles", config_editor_space_toggles },
-#endif // CONFIG_EDITOR
   { "enable_oversampling", config_enable_oversampling },
   { "enable_resizing", config_enable_resizing },
   { "force_bpp", config_force_bpp },
@@ -575,9 +585,6 @@ static config_entry config_options[] =
   { "include*", include_config },
   { "joy!axis!", joy_axis_set },
   { "joy!button!", joy_button_set },
-#ifdef CONFIG_EDITOR
-  { "macro_*", config_macro },
-#endif // CONFIG_EDITOR
   { "mask_midchars", config_mask_midchars },
   { "modplug_resample_mode", config_mp_resample_mode },
   { "music_on", config_set_music },
@@ -587,27 +594,21 @@ static config_entry config_options[] =
   { "pc_speaker_on", config_set_pc_speaker },
   { "pc_speaker_volume", config_set_sfx_volume },
   { "resample_mode", config_resample_mode },
-#ifdef CONFIG_EDITOR
-  { "robot_editor_hide_help", redit_hhelp },
-#endif // CONFIG_EDITOR
   { "sample_volume", config_set_sam_volume },
   { "save_file", config_save_file },
-#ifdef CONFIG_EDITOR
-  { "startup_editor", config_startup_editor },
-#endif // CONFIG_EDITOR
   { "startup_file", config_startup_file },
   { "video_output", config_set_video_output },
   { "window_resolution", config_window_resolution }
 };
 
-const int num_config_options =
- sizeof(config_options) / sizeof(config_entry);
+static const int num_core_config_options =
+ sizeof(core_config_options) / sizeof(config_entry);
 
-static config_entry *find_option(char *name)
+static const config_entry *__find_option(char *name,
+ const config_entry options[], int num_options)
 {
-  int bottom = 0, top = num_config_options - 1, middle;
-  int cmpval;
-  config_entry *base = config_options;
+  int cmpval, top = num_options - 1, middle, bottom = 0;
+  const config_entry *base = options;
 
   while(bottom <= top)
   {
@@ -627,7 +628,20 @@ static config_entry *find_option(char *name)
   return NULL;
 }
 
-// FIXME: Use C99 initializers?
+static const config_entry *find_option(char *name)
+{
+  const config_entry *entry = __find_option(name, core_config_options,
+   num_core_config_options);
+
+#ifdef CONFIG_EDITOR
+  if(!entry)
+    entry = __find_option(name, editor_config_options,
+     num_editor_config_options);
+#endif // CONFIG_EDITOR
+
+  return entry;
+}
+
 static config_info default_options =
 {
   // Video options
@@ -660,7 +674,7 @@ static config_info default_options =
   4,                            // mzx_speed
   1,                            // disassemble_extras
   10,                           // disassemble_base
- 
+
 #ifdef CONFIG_EDITOR
   // Editor only options
   0,                            // startup_editor
@@ -709,7 +723,7 @@ void set_config_from_file(config_info *conf, const char *conf_file_name)
     char current_char, *input_position, *output_position;
     char *equals_position;
     char *value;
-    config_entry *current_option;
+    const config_entry *current_option;
     int line_size;
     int extended_size;
     int extended_allocate_size = 512;
@@ -815,7 +829,7 @@ void set_config_from_command_line(config_info *conf, int argc,
   char current_char, *input_position, *output_position;
   char *equals_position;
   char *value;
-  config_entry *current_option;
+  const config_entry *current_option;
 
   int i;
 
