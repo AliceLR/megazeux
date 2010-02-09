@@ -84,8 +84,11 @@ woven in by Terry Thorsen 1/2003.
 #define SIZECENTRALDIRITEM (0x2e)
 #define SIZEZIPLOCALHEADER (0x1e)
 
-
-
+#ifdef UNZIP_DEADCODE
+#define __unzip_maybe_static extern ZEXPORT
+#else
+#define __unzip_maybe_static static
+#endif
 
 const char unz_copyright[] =
    " unzip 1.01 Copyright 1998-2004 Gilles Vollant - http://www.winimage.com/zLibDll";
@@ -302,7 +305,7 @@ local int strcmpcasenosensitive_internal (fileName1,fileName2)
         (like 1 on Unix, 2 on Windows)
 
 */
-extern int ZEXPORT unzStringFileNameCompare (fileName1,fileName2,iCaseSensitivity)
+__unzip_maybe_static int unzStringFileNameCompare (fileName1,fileName2,iCaseSensitivity)
     const char* fileName1;
     const char* fileName2;
     int iCaseSensitivity;
@@ -394,7 +397,7 @@ local uLong unzlocal_SearchCentralDir(pzlib_filefunc_def,filestream)
      Else, the return value is a unzFile Handle, usable with other function
        of this unzip package.
 */
-extern unzFile ZEXPORT unzOpen2 (path, pzlib_filefunc_def)
+__unzip_maybe_static unzFile unzOpen2 (path, pzlib_filefunc_def)
     const char *path;
     zlib_filefunc_def* pzlib_filefunc_def;
 {
@@ -496,7 +499,6 @@ extern unzFile ZEXPORT unzOpen2 (path, pzlib_filefunc_def)
     return (unzFile)s;
 }
 
-
 extern unzFile ZEXPORT unzOpen (path)
     const char *path;
 {
@@ -523,24 +525,6 @@ extern int ZEXPORT unzClose (file)
     TRYFREE(s);
     return UNZ_OK;
 }
-
-
-/*
-  Write info about the ZipFile in the *pglobal_info structure.
-  No preparation of the structure is needed
-  return UNZ_OK if there is no problem. */
-extern int ZEXPORT unzGetGlobalInfo (file,pglobal_info)
-    unzFile file;
-    unz_global_info *pglobal_info;
-{
-    unz_s* s;
-    if (file==NULL)
-        return UNZ_PARAMERROR;
-    s=(unz_s*)file;
-    *pglobal_info=s->gi;
-    return UNZ_OK;
-}
-
 
 /*
    Translate date/time from Dos format to tm_unz (readable more easilty)
@@ -884,67 +868,6 @@ extern int ZEXPORT unzLocateFile (file, szFileName, iCaseSensitivity)
     return err;
 }
 
-
-/*
-///////////////////////////////////////////
-// Contributed by Ryan Haksi (mailto://cryogen@infoserve.net)
-// I need random access
-//
-// Further optimization could be realized by adding an ability
-// to cache the directory in memory. The goal being a single
-// comprehensive file read to put the file I need in a memory.
-*/
-
-/*
-typedef struct unz_file_pos_s
-{
-    uLong pos_in_zip_directory;   // offset in file
-    uLong num_of_file;            // # of file
-} unz_file_pos;
-*/
-
-extern int ZEXPORT unzGetFilePos(file, file_pos)
-    unzFile file;
-    unz_file_pos* file_pos;
-{
-    unz_s* s;
-
-    if (file==NULL || file_pos==NULL)
-        return UNZ_PARAMERROR;
-    s=(unz_s*)file;
-    if (!s->current_file_ok)
-        return UNZ_END_OF_LIST_OF_FILE;
-
-    file_pos->pos_in_zip_directory  = s->pos_in_central_dir;
-    file_pos->num_of_file           = s->num_file;
-
-    return UNZ_OK;
-}
-
-extern int ZEXPORT unzGoToFilePos(file, file_pos)
-    unzFile file;
-    unz_file_pos* file_pos;
-{
-    unz_s* s;
-    int err;
-
-    if (file==NULL || file_pos==NULL)
-        return UNZ_PARAMERROR;
-    s=(unz_s*)file;
-
-    /* jump to the right spot */
-    s->pos_in_central_dir = file_pos->pos_in_zip_directory;
-    s->num_file           = file_pos->num_of_file;
-
-    /* set the current file */
-    err = unzlocal_GetCurrentFileInfoInternal(file,&s->cur_file_info,
-                                               &s->cur_file_info_internal,
-                                               NULL,0,NULL,0,NULL,0);
-    /* return results */
-    s->current_file_ok = (err == UNZ_OK);
-    return err;
-}
-
 /*
 // Unzip Helper Functions - should be here?
 ///////////////////////////////////////////
@@ -1048,7 +971,7 @@ local int unzlocal_CheckCurrentFileCoherencyHeader (s,piSizeVar,
   Open for reading data the current file in the zipfile.
   If there is no error and the file is opened, the return value is UNZ_OK.
 */
-extern int ZEXPORT unzOpenCurrentFile3 (file, method, level, raw, password)
+__unzip_maybe_static int unzOpenCurrentFile3 (file, method, level, raw, password)
     unzFile file;
     int* method;
     int* level;
@@ -1197,22 +1120,6 @@ extern int ZEXPORT unzOpenCurrentFile (file)
     unzFile file;
 {
     return unzOpenCurrentFile3(file, NULL, NULL, 0, NULL);
-}
-
-extern int ZEXPORT unzOpenCurrentFilePassword (file, password)
-    unzFile file;
-    const char* password;
-{
-    return unzOpenCurrentFile3(file, NULL, NULL, 0, password);
-}
-
-extern int ZEXPORT unzOpenCurrentFile2 (file,method,level,raw)
-    unzFile file;
-    int* method;
-    int* level;
-    int raw;
-{
-    return unzOpenCurrentFile3(file, method, level, raw, NULL);
 }
 
 /*
@@ -1382,6 +1289,140 @@ extern int ZEXPORT unzReadCurrentFile  (file, buf, len)
     return err;
 }
 
+/*
+  Close the file in zip opened with unzipOpenCurrentFile
+  Return UNZ_CRCERROR if all the file was read but the CRC is not good
+*/
+extern int ZEXPORT unzCloseCurrentFile (file)
+    unzFile file;
+{
+    int err=UNZ_OK;
+
+    unz_s* s;
+    file_in_zip_read_info_s* pfile_in_zip_read_info;
+    if (file==NULL)
+        return UNZ_PARAMERROR;
+    s=(unz_s*)file;
+    pfile_in_zip_read_info=s->pfile_in_zip_read;
+
+    if (pfile_in_zip_read_info==NULL)
+        return UNZ_PARAMERROR;
+
+
+    if ((pfile_in_zip_read_info->rest_read_uncompressed == 0) &&
+        (!pfile_in_zip_read_info->raw))
+    {
+        if (pfile_in_zip_read_info->crc32 != pfile_in_zip_read_info->crc32_wait)
+            err=UNZ_CRCERROR;
+    }
+
+
+    TRYFREE(pfile_in_zip_read_info->read_buffer);
+    pfile_in_zip_read_info->read_buffer = NULL;
+    if (pfile_in_zip_read_info->stream_initialised)
+        inflateEnd(&pfile_in_zip_read_info->stream);
+
+    pfile_in_zip_read_info->stream_initialised = 0;
+    TRYFREE(pfile_in_zip_read_info);
+
+    s->pfile_in_zip_read=NULL;
+
+    return err;
+}
+
+#ifdef UNZIP_DEADCODE
+
+/*
+  Write info about the ZipFile in the *pglobal_info structure.
+  No preparation of the structure is needed
+  return UNZ_OK if there is no problem. */
+extern int ZEXPORT unzGetGlobalInfo (file,pglobal_info)
+    unzFile file;
+    unz_global_info *pglobal_info;
+{
+    unz_s* s;
+    if (file==NULL)
+        return UNZ_PARAMERROR;
+    s=(unz_s*)file;
+    *pglobal_info=s->gi;
+    return UNZ_OK;
+}
+
+extern int ZEXPORT unzGetFilePos(file, file_pos)
+    unzFile file;
+    unz_file_pos* file_pos;
+{
+    unz_s* s;
+
+    if (file==NULL || file_pos==NULL)
+        return UNZ_PARAMERROR;
+    s=(unz_s*)file;
+    if (!s->current_file_ok)
+        return UNZ_END_OF_LIST_OF_FILE;
+
+    file_pos->pos_in_zip_directory  = s->pos_in_central_dir;
+    file_pos->num_of_file           = s->num_file;
+
+    return UNZ_OK;
+}
+
+/*
+///////////////////////////////////////////
+// Contributed by Ryan Haksi (mailto://cryogen@infoserve.net)
+// I need random access
+//
+// Further optimization could be realized by adding an ability
+// to cache the directory in memory. The goal being a single
+// comprehensive file read to put the file I need in a memory.
+*/
+
+/*
+typedef struct unz_file_pos_s
+{
+    uLong pos_in_zip_directory;   // offset in file
+    uLong num_of_file;            // # of file
+} unz_file_pos;
+*/
+
+extern int ZEXPORT unzGoToFilePos(file, file_pos)
+    unzFile file;
+    unz_file_pos* file_pos;
+{
+    unz_s* s;
+    int err;
+
+    if (file==NULL || file_pos==NULL)
+        return UNZ_PARAMERROR;
+    s=(unz_s*)file;
+
+    /* jump to the right spot */
+    s->pos_in_central_dir = file_pos->pos_in_zip_directory;
+    s->num_file           = file_pos->num_of_file;
+
+    /* set the current file */
+    err = unzlocal_GetCurrentFileInfoInternal(file,&s->cur_file_info,
+                                               &s->cur_file_info_internal,
+                                               NULL,0,NULL,0,NULL,0);
+    /* return results */
+    s->current_file_ok = (err == UNZ_OK);
+    return err;
+}
+
+extern int ZEXPORT unzOpenCurrentFilePassword (file, password)
+    unzFile file;
+    const char* password;
+{
+    return unzOpenCurrentFile3(file, NULL, NULL, 0, password);
+}
+
+extern int ZEXPORT unzOpenCurrentFile2 (file,method,level,raw)
+    unzFile file;
+    int* method;
+    int* level;
+    int raw;
+{
+    return unzOpenCurrentFile3(file, method, level, raw, NULL);
+}
 
 /*
   Give the current position in uncompressed data
@@ -1401,7 +1442,6 @@ extern z_off_t ZEXPORT unztell (file)
 
     return (z_off_t)pfile_in_zip_read_info->stream.total_out;
 }
-
 
 /*
   return 1 if the end of file was reached, 0 elsewhere
@@ -1424,8 +1464,6 @@ extern int ZEXPORT unzeof (file)
     else
         return 0;
 }
-
-
 
 /*
   Read extra field from the current file (opened by unzOpenCurrentFile)
@@ -1485,48 +1523,6 @@ extern int ZEXPORT unzGetLocalExtrafield (file,buf,len)
 
     return (int)read_now;
 }
-
-/*
-  Close the file in zip opened with unzipOpenCurrentFile
-  Return UNZ_CRCERROR if all the file was read but the CRC is not good
-*/
-extern int ZEXPORT unzCloseCurrentFile (file)
-    unzFile file;
-{
-    int err=UNZ_OK;
-
-    unz_s* s;
-    file_in_zip_read_info_s* pfile_in_zip_read_info;
-    if (file==NULL)
-        return UNZ_PARAMERROR;
-    s=(unz_s*)file;
-    pfile_in_zip_read_info=s->pfile_in_zip_read;
-
-    if (pfile_in_zip_read_info==NULL)
-        return UNZ_PARAMERROR;
-
-
-    if ((pfile_in_zip_read_info->rest_read_uncompressed == 0) &&
-        (!pfile_in_zip_read_info->raw))
-    {
-        if (pfile_in_zip_read_info->crc32 != pfile_in_zip_read_info->crc32_wait)
-            err=UNZ_CRCERROR;
-    }
-
-
-    TRYFREE(pfile_in_zip_read_info->read_buffer);
-    pfile_in_zip_read_info->read_buffer = NULL;
-    if (pfile_in_zip_read_info->stream_initialised)
-        inflateEnd(&pfile_in_zip_read_info->stream);
-
-    pfile_in_zip_read_info->stream_initialised = 0;
-    TRYFREE(pfile_in_zip_read_info);
-
-    s->pfile_in_zip_read=NULL;
-
-    return err;
-}
-
 
 /*
   Get the global comment string of the ZipFile, in the szComment buffer.
@@ -1599,3 +1595,5 @@ extern int ZEXPORT unzSetOffset (file, pos)
     s->current_file_ok = (err == UNZ_OK);
     return err;
 }
+
+#endif // UNZIP_DEADCODE
