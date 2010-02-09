@@ -774,7 +774,7 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   glsl.glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
   gl_check_error();
 
-  glsl.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 1024, 512, 0);
+  glsl.glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 0, 0, 1024, 512, 0);
   gl_check_error();
 
   glsl.glClear(GL_COLOR_BUFFER_BIT);
