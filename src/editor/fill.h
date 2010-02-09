@@ -19,8 +19,8 @@
 
 /* Declaration for FILL.CPP */
 
-#ifndef __FILL_H
-#define __FILL_H
+#ifndef __EDITOR_FILL_H
+#define __EDITOR_FILL_H
 
 #include "compat.h"
 
@@ -34,4 +34,4 @@ void fill_area(World *mzx_world, mzx_thing id, int color, int param,
 
 __M_END_DECLS
 
-#endif // __FILL_H
+#endif // __EDITOR_FILL_H

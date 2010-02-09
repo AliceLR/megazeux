@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __SFX_EDIT_H
-#define __SFX_EDIT_H
+#ifndef __EDITOR_SFX_EDIT_H
+#define __EDITOR_SFX_EDIT_H
 
 #include "compat.h"
 
@@ -31,4 +31,4 @@ void sfx_edit(World *mzx_world);
 
 __M_END_DECLS
 
-#endif // __SFX_EDIT_H
+#endif // __EDITOR_SFX_EDIT_H

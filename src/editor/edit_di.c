@@ -33,6 +33,7 @@
 #include "world_struct.h"
 #include "robo_ed.h"
 #include "error.h"
+#include "counter.h"
 
 #include "board.h"
 #include "world.h"

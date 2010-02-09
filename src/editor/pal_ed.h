@@ -19,8 +19,8 @@
 
 /* Declaration for PAL_ED.CPP */
 
-#ifndef __PAL_ED_H
-#define __PAL_ED_H
+#ifndef __EDITOR_PAL_ED_H
+#define __EDITOR_PAL_ED_H
 
 #include "compat.h"
 
@@ -30,4 +30,4 @@ void palette_editor(World *mzx_world);
 
 __M_END_DECLS
 
-#endif // __PAL_ED_H
+#endif // __EDITOR_PAL_ED_H

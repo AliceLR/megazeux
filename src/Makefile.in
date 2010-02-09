@@ -88,6 +88,7 @@ mzx_cobjs += ${editor_base}/debug.${o} ${editor_base}/edit.${o}
 mzx_cobjs += ${editor_base}/edit_di.${o} ${editor_base}/fill.${o}
 mzx_cobjs += ${editor_base}/pal_ed.${o} ${editor_base}/param.${o}
 mzx_cobjs += ${editor_base}/robo_ed.${o} ${editor_base}/sfx_edit.${o}
+mzx_cobjs += ${editor_base}/world.${o}
 endif
 
 ifeq (${BUILD_HELPSYS},1)

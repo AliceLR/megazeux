@@ -19,8 +19,8 @@
 
 /* Declarations for PARAM.CPP */
 
-#ifndef __PARAM_H
-#define __PARAM_H
+#ifndef __EDITOR_PARAM_H
+#define __EDITOR_PARAM_H
 
 #include "compat.h"
 
@@ -33,4 +33,4 @@ int edit_sensor(World *mzx_world, Sensor *cur_sensor);
 
 __M_END_DECLS
 
-#endif // __PARAM_H
+#endif // __EDITOR_PARAM_H

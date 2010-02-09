@@ -19,8 +19,8 @@
 
 /* Declarations */
 
-#ifndef __BLOCK_H
-#define __BLOCK_H
+#ifndef __EDITOR_BLOCK_H
+#define __EDITOR_BLOCK_H
 
 #include "compat.h"
 
@@ -34,4 +34,4 @@ int import_type(World *mzx_world);
 
 __M_END_DECLS
 
-#endif  // __BLOCK_H
+#endif  // __EDITOR_BLOCK_H

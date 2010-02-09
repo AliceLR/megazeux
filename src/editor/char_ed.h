@@ -20,8 +20,8 @@
 
 // Declaration
 
-#ifndef __CHAR_ED_H
-#define __CHAR_ED_H
+#ifndef __EDITOR_CHAR_ED_H
+#define __EDITOR_CHAR_ED_H
 
 #include "compat.h"
 
@@ -36,4 +36,4 @@ void fill_region_smzx(char *matrix, int x, int y, int check, int draw);
 
 __M_END_DECLS
 
-#endif // __CHAR_ED_H
+#endif // __EDITOR_CHAR_ED_H

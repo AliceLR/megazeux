@@ -19,8 +19,8 @@
 
 /* Declarations for EDIT.CPP */
 
-#ifndef __EDIT_H
-#define __EDIT_H
+#ifndef __EDITOR_EDIT_H
+#define __EDITOR_EDIT_H
 
 #include "compat.h"
 
@@ -60,4 +60,4 @@ extern const char *mod_gdm_ext[];
 
 __M_END_DECLS
 
-#endif // __EDIT_H
+#endif // __EDITOR_EDIT_H

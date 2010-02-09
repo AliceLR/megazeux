@@ -19,8 +19,8 @@
 
 //EDIT_DI.CPP prototypes
 
-#ifndef __EDIT_DI_H
-#define __EDIT_DI_H
+#ifndef __EDITOR_EDIT_DI_H
+#define __EDITOR_EDIT_DI_H
 
 #include "compat.h"
 
@@ -37,4 +37,4 @@ void status_counter_info(World *mzx_world);
 
 __M_END_DECLS
 
-#endif // __EDIT_DI_H
+#endif // __EDITOR_EDIT_DI_H

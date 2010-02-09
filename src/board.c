@@ -27,6 +27,8 @@
 #include "extmem.h"
 #include "util.h"
 
+#include "editor/world.h"
+
 static int cmp_robots(const void *dest, const void *src)
 {
   Robot *rsrc = *((Robot **)src);

@@ -1,7 +1,6 @@
 /* MegaZeux
  *
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
- * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __EDITOR_DEBUG_H
-#define __EDITOR_DEBUG_H
+#ifndef __EDITOR_WORLD_H
+#define __EDITOR_WORLD_H
 
 #include "compat.h"
 
@@ -27,9 +26,10 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-void debug_counters(World *mzx_world);
-void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y);
+int append_world(World *mzx_world, const char *file);
+void create_blank_world(World *mzx_world);
+void set_update_done_current(World *mzx_world);
 
 __M_END_DECLS
 
-#endif // __EDITOR_DEBUG_H
+#endif // __EDITOR_WORLD_H

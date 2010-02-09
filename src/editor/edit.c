@@ -52,9 +52,11 @@
 #include "mzm.h"
 #include "event.h"
 #include "audio.h"
+#include "../world.h"
 #include "world.h"
 #include "util.h"
 #include "debug.h"
+#include "robot.h"
 
 /* Edit menu- (w/box ends on sides) Current menu name is highlighted. The
   bottom section zooms to show a list of options for the current menu,

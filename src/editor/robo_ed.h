@@ -17,8 +17,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __ROBO_ED_H
-#define __ROBO_ED_H
+#ifndef __EDITOR_ROBO_ED_H
+#define __EDITOR_ROBO_ED_H
 
 #include "compat.h"
 
@@ -95,4 +95,4 @@ void robot_editor(World *mzx_world, Robot *cur_robot);
 
 __M_END_DECLS
 
-#endif // __ROBO_ED_H
+#endif // __EDITOR_ROBO_ED_H
