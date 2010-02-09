@@ -1283,13 +1283,15 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
 void write_number(int number, char color, int x, int y,
  int minlen, int rightalign, int base)
 {
-  char temp[7];
+  char temp[12];
   int t1, t2;
 
   if(base == 10)
-    sprintf(temp, "%d", number);
+    snprintf(temp, 12, "%d", number);
   else
-    sprintf(temp, "%x", number);
+    snprintf(temp, 12, "%x", number);
+
+  temp[11] = 0;
 
   if(rightalign)
   {
