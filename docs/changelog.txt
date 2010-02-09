@@ -2,6 +2,11 @@ SVN
 
 USERS
 
++ Setting a substring size to zero with $string#0 will no longer return the
+  whole string; it will instead return the empty string.
++ Accessing a substring with an offset >= $string.length will no longer return
+  the last character from the string; it will instead return the empty string.
+
 DEVELOPERS
 
 December 27, 2008 - MZX 2.82b
