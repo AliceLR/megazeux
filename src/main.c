@@ -67,11 +67,13 @@
 
 __libspec int main(int argc, char *argv[])
 {
+  int err = 1;
+
   // Keep this 7.2k structure off the stack..
   static struct world mzx_world;
 
   if(!platform_init())
-    return 1;
+    goto err_out;
 
   // We need to store the current working directory so it's
   // always possible to get back to it..
@@ -162,6 +164,7 @@ __libspec int main(int argc, char *argv[])
 
   quit_audio();
 
+  err = 0;
 err_network_layer_exit:
   network_layer_exit(&mzx_world.conf);
   if(mzx_world.update_done)
@@ -170,5 +173,6 @@ err_network_layer_exit:
 err_free_res:
   mzx_res_free();
   platform_quit();
-  return 0;
+err_out:
+  return err;
 }
