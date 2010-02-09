@@ -1068,7 +1068,7 @@ static void draw_list_box(struct world *mzx_world, struct dialog *di,
     strncpy(name_buffer, choices[scroll_offset + i], MAX_NAME_BUFFER - 1);
     name_buffer[MAX_NAME_BUFFER - 1] = '\0';
     name_buffer[draw_width - 1] = 0;
-    color_string(name_buffer, x, y + i, DI_LIST);
+    write_string(name_buffer, x, y + i, DI_LIST, false);
   }
 
   for(; i < num_choices_visible; i++)
@@ -1093,8 +1093,7 @@ static void draw_list_box(struct world *mzx_world, struct dialog *di,
     else
       name_buffer[MAX_NAME_BUFFER - 1] = '\0';
 
-    color_string(name_buffer, x,
-     y + current_in_window, color);
+    write_string(name_buffer, x, y + current_in_window, color, false);
   }
 
   if(num_choices > num_choices_visible)

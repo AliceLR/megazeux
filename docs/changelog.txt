@@ -7,6 +7,8 @@ USERS
   popped the stack in the new program.
 + Fixed a bug where range checking of BOARD_X and BOARD_Y would sometimes
   not be done correctly, leading to crashes.
++ Strings in the debug menu list no longer interpret any color codes they
+  may contain.
 
 DEVELOPERS
 
