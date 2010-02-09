@@ -2260,7 +2260,7 @@ void shoot(struct world *mzx_world, int x, int y, int dir, int type)
     // Score isn't supposed to overflow.. but the overflow
     // detection in game2.asm is broken anyway....
     // Just let it wrap around for now.
-    mzx_world->score += 3;
+    inc_counter(mzx_world, "SCORE", 3, 0);
   }
 
   // If it's underable the bullet can move here

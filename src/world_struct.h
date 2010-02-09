@@ -50,7 +50,6 @@ struct world
 
   // Save game material, part 1
   char keys[NUM_KEYS];
-  int score;
   int blind_dur;
   int firewalker_dur;
   int freeze_time_dur;

@@ -719,9 +719,8 @@ static void show_counter(struct world *mzx_world, const char *str,
 // Show status screen
 static void show_status(struct world *mzx_world)
 {
-  int i;
-  char temp[11];
   char *keys = mzx_world->keys;
+  int i;
 
   draw_window_box(37, 4, 67, 21, 25, 16, 24, 1, 1);
   show_counter(mzx_world, "Gems", 39, 5, 0);
@@ -731,9 +730,7 @@ static void show_status(struct world *mzx_world)
   show_counter(mzx_world, "Lobombs", 39, 9, 0);
   show_counter(mzx_world, "Hibombs", 39, 10, 0);
   show_counter(mzx_world, "Coins", 39, 11, 0);
-  write_string("Score", 39, 12, 27, 0);
-  sprintf(temp, "%d", mzx_world->score);
-  write_string(temp, 55, 12, 31, 0); // Show score
+  show_counter(mzx_world, "Score", 39, 12, 0);
   write_string("Keys", 39, 13, 27, 0);
 
   for(i = 0; i < 8; i++) // Show keys
@@ -1892,9 +1889,9 @@ __editor_maybe_static void play_game(struct world *mzx_world, int fadein)
             set_counter(mzx_world, "HIBOMBS", 32767, 1);
             set_counter(mzx_world, "LIVES", 32767, 1);
             set_counter(mzx_world, "LOBOMBS", 32767, 1);
+            set_counter(mzx_world, "SCORE", 0, 1);
             set_counter(mzx_world, "TIME", src_board->time_limit, 1);
 
-            mzx_world->score = 0;
             mzx_world->dead = 0;
 
             for(i = 0; i < 16; i++)
