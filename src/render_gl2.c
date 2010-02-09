@@ -69,7 +69,6 @@ struct gl2_syms
    GLint internalformat, GLsizei width, GLsizei height, GLint border,
    GLenum format, GLenum type, const GLvoid *pixels);
   void (GL_APIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
-  void (GL_APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
   void (GL_APIENTRY *glTexSubImage2D)(GLenum target, GLint level, GLint xoffset,
    GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type,
    const GLvoid *pixels);
@@ -117,7 +116,6 @@ static int gl2_load_syms (struct gl2_syms *gl)
   GL_LOAD_SYM(gl, glTexCoordPointer)
   GL_LOAD_SYM(gl, glTexImage2D)
   GL_LOAD_SYM(gl, glTexParameterf)
-  GL_LOAD_SYM(gl, glTexParameteri)
   GL_LOAD_SYM(gl, glTexSubImage2D)
   GL_LOAD_SYM(gl, glVertexPointer)
   GL_LOAD_SYM(gl, glViewport)
@@ -243,10 +241,7 @@ static void gl2_resize_screen(struct graphics_data *graphics,
 
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
 
-  gl_set_filter_method(graphics->gl_filter_method, gl->glTexParameteri);
-
-  gl->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  gl->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  gl_set_filter_method(graphics->gl_filter_method, gl->glTexParameterf);
 
   gl->glEnable(GL_TEXTURE_2D);
   gl->glAlphaFunc(GL_GREATER, 0.565f);
@@ -262,10 +257,7 @@ static void gl2_resize_screen(struct graphics_data *graphics,
 
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 
-  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl->glTexParameteri);
-
-  gl->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  gl->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl->glTexParameterf);
 
   gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_ALPHA, 256, 256, 0, GL_ALPHA,
    GL_UNSIGNED_BYTE, render_data->pixels);
@@ -274,10 +266,7 @@ static void gl2_resize_screen(struct graphics_data *graphics,
 
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[2]);
 
-  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl->glTexParameteri);
-
-  gl->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  gl->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl->glTexParameterf);
 
   gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 32, 0, GL_RGBA,
    GL_UNSIGNED_BYTE, render_data->pixels);

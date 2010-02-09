@@ -51,7 +51,7 @@ __M_BEGIN_DECLS
 extern const float vertex_array_single[2 * 4];
 
 void gl_set_filter_method(const char *method,
- void (GL_APIENTRY *glTexParameteri_p)(GLenum target, GLenum pname, GLint param));
+ void (GL_APIENTRY *glTexParameterf_p)(GLenum target, GLenum pname, GLfloat param));
 void get_context_width_height(struct graphics_data *graphics,
  int *width, int *height);
 

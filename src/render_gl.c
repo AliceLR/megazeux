@@ -39,15 +39,17 @@ const float vertex_array_single[2 * 4] = {
 };
 
 void gl_set_filter_method(const char *method,
- void (GL_APIENTRY *glTexParameteri_p)(GLenum target, GLenum pname, GLint param))
+ void (GL_APIENTRY *glTexParameterf_p)(GLenum target, GLenum pname, GLfloat param))
 {
-  GLint gl_filter_method = GL_LINEAR;
+  GLfloat gl_filter_method = GL_LINEAR;
 
   if(!strcasecmp(method, CONFIG_GL_FILTER_NEAREST))
     gl_filter_method = GL_NEAREST;
 
-  glTexParameteri_p(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_method);
-  glTexParameteri_p(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_method);
+  glTexParameterf_p(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_method);
+  glTexParameterf_p(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_method);
+  glTexParameterf_p(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
+  glTexParameterf_p(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
 }
 
 void get_context_width_height(struct graphics_data *graphics,

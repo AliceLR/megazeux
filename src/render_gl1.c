@@ -58,7 +58,7 @@ struct gl1_syms
   void (GL_APIENTRY *glTexImage2D)(GLenum target, GLint level,
    GLint internalformat,GLsizei width, GLsizei height, GLint border,
    GLenum format, GLenum type, const GLvoid *pixels);
-  void (GL_APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
+  void (GL_APIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
   void (GL_APIENTRY *glVertexPointer)(GLint size, GLenum type,
    GLsizei stride, const GLvoid *ptr);
   void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
@@ -91,7 +91,7 @@ static int gl1_load_syms (struct gl1_syms *gl)
   GL_LOAD_SYM(gl, glGetString)
   GL_LOAD_SYM(gl, glTexCoordPointer)
   GL_LOAD_SYM(gl, glTexImage2D)
-  GL_LOAD_SYM(gl, glTexParameteri)
+  GL_LOAD_SYM(gl, glTexParameterf)
   GL_LOAD_SYM(gl, glVertexPointer)
   GL_LOAD_SYM(gl, glViewport)
 
@@ -203,7 +203,7 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
   gl->glGenTextures(1, &texture_number);
   gl->glBindTexture(GL_TEXTURE_2D, texture_number);
 
-  gl_set_filter_method(graphics->gl_filter_method, gl->glTexParameteri);
+  gl_set_filter_method(graphics->gl_filter_method, gl->glTexParameterf);
   return true;
 }
 
@@ -280,8 +280,8 @@ static void gl1_sync_screen(struct graphics_data *graphics)
     texture_width, texture_height
   };
 
-  gl->glTexImage2D(GL_TEXTURE_2D, 0, 3, render_data->w, render_data->h, 0,
-   GL_RGBA, GL_UNSIGNED_BYTE, render_data->pixels);
+  gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, render_data->w, render_data->h,
+   0, GL_RGBA, GL_UNSIGNED_BYTE, render_data->pixels);
 
   gl->glClear(GL_COLOR_BUFFER_BIT);
 
