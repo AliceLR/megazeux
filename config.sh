@@ -174,21 +174,23 @@ fi
 
 if [ "$PLATFORM" = "win32" -o "$PLATFORM" = "win64" ]; then
 	PLATFORM="mingw"
-	echo "MINGWBASE=" > platform.inc
+	echo "PLATFORM=$PLATFORM" > platform.inc
+	echo "MINGWBASE="        >> platform.inc
 elif [ "$PLATFORM" = "mingw32" ]; then
 	PLATFORM="mingw"
-	echo "MINGWBASE=i586-mingw32msvc-" > platform.inc
+	echo "PLATFORM=$PLATFORM"           > platform.inc
+	echo "MINGWBASE=i586-mingw32msvc-" >> platform.inc
 elif [ "$PLATFORM" = "mingw64" ]; then
 	PLATFORM="mingw"
-	echo "MINGWBASE=x86_64-pc-mingw32-" > platform.inc
+	echo "PLATFORM=$PLATFORM"            > platform.inc
+	echo "MINGWBASE=x86_64-pc-mingw32-" >> platform.inc
 else
 	if [ ! -f arch/Makefile.$PLATFORM ]; then
 		echo "Invalid platform selection (see arch/)."
 		exit 1
 	fi
+	echo "PLATFORM=$PLATFORM" > platform.inc
 fi
-
-echo "PLATFORM=$PLATFORM" > platform.inc
 
 ### SYSTEM CONFIG DIRECTORY ###################################################
 
