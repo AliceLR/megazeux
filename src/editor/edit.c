@@ -1982,7 +1982,7 @@ static void __edit_world(World *mzx_world)
               int fade;
               // Load world curr_file
               end_module();
-              if(reload_world(mzx_world, current_world, &fade))
+              if(!reload_world(mzx_world, current_world, &fade))
                 create_blank_world(mzx_world);
 
               mzx_world->current_board_id = mzx_world->first_board;
@@ -2086,6 +2086,7 @@ static void __edit_world(World *mzx_world)
                 if(!choose_file(mzx_world, world_ext, import_name,
                  "Choose world to import", 1))
                 {
+                  // FIXME: Check retval?
                   append_world(mzx_world, import_name);
                 }
 
@@ -3273,7 +3274,7 @@ static void __edit_world(World *mzx_world)
 
             mzx_world->editing = false;
 
-            if(reload_world(mzx_world, "__test.mzx", &fade))
+            if(!reload_world(mzx_world, "__test.mzx", &fade))
             {
               create_blank_world(mzx_world);
               current_board_id = mzx_world->current_board_id;

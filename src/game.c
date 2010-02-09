@@ -148,7 +148,7 @@ static void load_world_file(World *mzx_world, char *name)
   clear_screen(32, 7);
   // Palette
   default_palette();
-  if(!reload_world(mzx_world, name, &fade))
+  if(reload_world(mzx_world, name, &fade))
   {
     send_robot_def(mzx_world, 0, 10);
 
@@ -1815,7 +1815,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
             {
               // Load game
               fadein = 0;
-              if(reload_savegame(mzx_world, save_file_name, &fadein))
+              if(!reload_savegame(mzx_world, save_file_name, &fadein))
               {
                 vquick_fadeout();
                 return;
@@ -1997,7 +1997,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
           {
             // Load game
             fadein = 0;
-            if(reload_savegame(mzx_world, curr_sav, &fadein))
+            if(!reload_savegame(mzx_world, curr_sav, &fadein))
             {
               vquick_fadeout();
               return;
@@ -2219,7 +2219,7 @@ void title_screen(World *mzx_world)
             set_config_from_file(&(mzx_world->conf), "game.cnf");
             chdir(current_dir);
 
-            if(reload_savegame(mzx_world, save_file_name, &fadein))
+            if(!reload_savegame(mzx_world, save_file_name, &fadein))
             {
               vquick_fadeout();
             }
@@ -2260,7 +2260,7 @@ void title_screen(World *mzx_world)
               // Reload original file
               if(!stat(curr_file, &file_info))
               {
-                if(!reload_world(mzx_world, curr_file, &fade))
+                if(reload_world(mzx_world, curr_file, &fade))
                 {
                   src_board = mzx_world->current_board;
                   load_module(src_board->mod_playing);
@@ -2318,7 +2318,7 @@ void title_screen(World *mzx_world)
             set_config_from_file(&(mzx_world->conf), "game.cnf");
             chdir(current_dir);
 
-            if(!reload_world(mzx_world, curr_file, &fade))
+            if(reload_world(mzx_world, curr_file, &fade))
             {
               if(mzx_world->current_board_id != mzx_world->first_board)
               {
@@ -2359,7 +2359,7 @@ void title_screen(World *mzx_world)
               default_palette();
               insta_fadein();
               // Reload original file
-              if(!reload_world(mzx_world, curr_file, &fade))
+              if(reload_world(mzx_world, curr_file, &fade))
               {
                 src_board = mzx_world->current_board;
                 load_module(src_board->mod_playing);
@@ -2424,7 +2424,7 @@ void title_screen(World *mzx_world)
           set_config_from_file(&(mzx_world->conf), "game.cnf");
           chdir(current_dir);
 
-          if(reload_savegame(mzx_world, curr_sav, &fadein))
+          if(!reload_savegame(mzx_world, curr_sav, &fadein))
           {
             vquick_fadeout();
           }
@@ -2463,7 +2463,7 @@ void title_screen(World *mzx_world)
             // Reload original file
             if(!stat(curr_file, &file_info))
             {
-              if(!reload_world(mzx_world, curr_file, &fade))
+              if(reload_world(mzx_world, curr_file, &fade))
               {
                 src_board = mzx_world->current_board;
                 load_module(src_board->mod_playing);

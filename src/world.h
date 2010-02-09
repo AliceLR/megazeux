@@ -101,17 +101,19 @@ __M_BEGIN_DECLS
  */
 #define WORLD_VERSION_PREV 0x0252
 
+CORE_LIBSPEC FILE *try_load_world(const char *file, bool savegame,
+ int *version, char *name);
 CORE_LIBSPEC int save_world(World *mzx_world, const char *file, int savegame,
  int faded);
-CORE_LIBSPEC int reload_world(World *mzx_world, const char *file, int *faded);
+CORE_LIBSPEC bool reload_world(World *mzx_world, const char *file, int *faded);
 CORE_LIBSPEC void clear_world(World *mzx_world);
 CORE_LIBSPEC void clear_global_data(World *mzx_world);
 CORE_LIBSPEC void default_scroll_values(World *mzx_world);
 
 CORE_LIBSPEC void add_ext(char *src, const char *ext);
 
-int reload_savegame(World *mzx_world, const char *file, int *faded);
-int reload_swap(World *mzx_world, const char *file, int *faded);
+bool reload_savegame(World *mzx_world, const char *file, int *faded);
+bool reload_swap(World *mzx_world, const char *file, int *faded);
 
 // Code to load multi-byte ints from little endian file
 

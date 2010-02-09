@@ -2299,7 +2299,7 @@ int set_counter_special(World *mzx_world, int spec_type,
 
       if(!fsafetranslate(char_value, translated_path))
       {
-        if(!reload_savegame(mzx_world, translated_path, &faded))
+        if(reload_savegame(mzx_world, translated_path, &faded))
         {
           if(faded)
             insta_fadeout();

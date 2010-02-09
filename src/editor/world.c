@@ -21,7 +21,6 @@
 
 #include "world.h"
 
-#include "../decrypt.h"
 #include "../error.h"
 #include "../graphics.h"
 #include "../window.h"
@@ -144,85 +143,21 @@ static const unsigned char def_id_chars[455] =
   0, 0, 0, 0, 0, 0  /* 122-127 */
 };
 
-int append_world(World *mzx_world, const char *file)
+bool append_world(World *mzx_world, const char *file)
 {
-  int version;
   int i, i2;
   int num_boards, old_num_boards = mzx_world->num_boards;
   int last_pos;
-  int protection_method;
   int offset;
   int d_flag;
-  char magic[3];
-  char error_string[80];
   Board *cur_board;
   int board_width, board_height;
   char *level_id, *level_param;
+  FILE *fp;
 
-  FILE *fp = fopen(file, "rb");
-  if(fp == NULL)
-  {
-    error("Error loading world", 1, 8, 0x0D01);
-    return 1;
-  }
-
-  // Name of game - skip it.
-  fseek(fp, BOARD_NAME_SIZE, SEEK_CUR);
-  // Get protection method
-  protection_method = fgetc(fp);
-
-  if(protection_method)
-  {
-    int do_decrypt;
-    error("This world is password protected.", 1, 8, 0x0D02);
-    do_decrypt = confirm(mzx_world, "Would you like to decrypt it?");
-    if(!do_decrypt)
-    {
-      int rval;
-
-      fclose(fp);
-      decrypt(file);
-      // Ah recursion.....
-      rval = append_world(mzx_world, file);
-      return rval;
-    }
-    else
-    {
-      error("Cannot load password protected worlds.", 1, 8, 0x0D02);
-      fclose(fp);
-      return 1;
-    }
-  }
-
-  fread(magic, 1, 3, fp);
-  version = world_magic(magic);
-  if(version == 0)
-  {
-    sprintf(error_string, "Attempt to load non-MZX world.");
-  }
-  else
-
-  if(version < 0x0205)
-  {
-    sprintf(error_string, "World is from old version (%d.%d); use converter",
-      (version & 0xFF00) >> 8, version & 0xFF);
-    version = 0;
-  }
-  else
-
-  if(version > WORLD_VERSION)
-  {
-    sprintf(error_string, "World is from more recent version (%d.%d)",
-      (version & 0xFF00) >> 8, version & 0xFF);
-    version = 0;
-  }
-
-  if(!version)
-  {
-    error(error_string, 1, 8, 0x0D02);
-    fclose(fp);
-    return 1;
-  }
+  fp = try_load_world(file, false, NULL, NULL);
+  if(!fp)
+    return false;
 
   fseek(fp, 4234, SEEK_SET);
 
@@ -308,10 +243,8 @@ int append_world(World *mzx_world, const char *file)
   // Remove any null boards
   optimize_null_boards(mzx_world);
 
-  // ...All done!
   fclose(fp);
-
-  return 0;
+  return true;
 }
 
 // Create a new, blank, world, suitable for editing.

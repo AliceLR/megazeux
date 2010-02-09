@@ -43,12 +43,14 @@
 #include "world.h"
 #include "data.h"
 #include "idput.h"
-#include "decrypt.h"
 #include "fsafeopen.h"
 #include "game.h"
 #include "audio.h"
 #include "extmem.h"
 #include "util.h"
+
+static char magic_code[16] =
+ "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
 
 // Get 2 bytes
 
@@ -87,6 +89,176 @@ void fputd(int src, FILE *fp)
   fputc((src >> 8) & 0xFF, fp);
   fputc((src >> 16) & 0xFF, fp);
   fputc((src >> 24) & 0xFF, fp);
+}
+
+static int get_pw_xor_code(char *password, int pro_method)
+{
+  int work = 85; // Start with 85... (01010101)
+  int i;
+  // Clear pw after first null
+
+  for(i = strlen(password); i < 16; i++)
+  {
+    password[i] = 0;
+  }
+
+  for(i = 0; i < 15; i++)
+  {
+    //For each byte, roll once to the left and xor in pw byte if it
+    //is an odd character, or add in pw byte if it is an even character.
+    work <<= 1;
+    if(work > 255)
+      work ^= 257; // Wraparound from roll
+
+    if(i & 1)
+    {
+      work += (signed char)password[i]; // Add (even byte)
+      if(work > 255)
+        work ^= 257; // Wraparound from add
+    }
+    else
+    {
+      work ^= (signed char)password[i]; // XOR (odd byte);
+    }
+  }
+  // To factor in protection method, add it in and roll one last time
+  work += pro_method;
+  if(work > 255)
+    work ^= 257;
+
+  work <<= 1;
+  if(work > 255)
+    work ^= 257;
+
+  // Can't be 0-
+  if(work == 0)
+    work = 86; // (01010110)
+  // Done!
+  return work;
+}
+
+static void decrypt(const char *file_name)
+{
+  FILE *source;
+  FILE *dest;
+  int file_length;
+  int pro_method;
+  int i;
+  int len;
+  char num_boards;
+  char offset_low_byte;
+  char xor_val;
+  char password[15];
+  char *file_buffer;
+  char *src_ptr;
+
+  source = fopen(file_name, "rb");
+  file_length = ftell_and_rewind(source);
+
+  file_buffer = malloc(file_length);
+  src_ptr = file_buffer;
+  fread(file_buffer, file_length, 1, source);
+  fclose(source);
+
+  src_ptr += 25;
+
+  dest = fopen(file_name, "wb");
+  if(!dest)
+  {
+    error("Cannot decrypt write-protected world.", 1, 8, 0x0DD5);
+    return;
+  }
+  pro_method = *src_ptr;
+  src_ptr++;
+
+  // Get password
+  memcpy(password, src_ptr, 15);
+  src_ptr += 18;
+  // First, normalize password...
+  for(i = 0; i < 15; i++)
+  {
+    password[i] ^= magic_code[i];
+    password[i] -= 0x12 + pro_method;
+    password[i] ^= 0x8D;
+  }
+
+  // Xor code
+  xor_val = get_pw_xor_code(password, pro_method);
+
+  // Copy title
+  fwrite(file_buffer, 25, 1, dest);
+
+  fputc(0, dest);
+  fputs("M\x02\x11", dest);
+  len = file_length - 44;
+  for(; len > 0; len--)
+  {
+    fputc((*src_ptr) ^ xor_val, dest);
+    src_ptr++;
+  }
+
+  // Must fix all the absolute file positions so that they're 15
+  // less now
+  src_ptr = file_buffer + 4245;
+  fseek(dest, 4230, SEEK_SET);
+  offset_low_byte = src_ptr[0] ^ xor_val;
+  fputc(offset_low_byte - 15, dest);
+  if(offset_low_byte < 15)
+  {
+    fputc((src_ptr[1] ^ xor_val) - 1, dest);
+  }
+  else
+  {
+    fputc(src_ptr[1] ^ xor_val, dest);
+  }
+
+  fputc(src_ptr[2] ^ xor_val, dest);
+  fputc(src_ptr[3] ^ xor_val, dest);
+
+  src_ptr += 4;
+
+  num_boards = ((*src_ptr) ^ xor_val);
+  src_ptr++;
+
+  // If custom SFX is there, run through and skip it
+  if(!num_boards)
+  {
+    int sfx_length = (char)(src_ptr[0] ^ xor_val);
+    sfx_length |= ((char)(src_ptr[1] ^ xor_val)) << 8;
+    src_ptr += sfx_length + 2;
+    num_boards = (*src_ptr) ^ xor_val;
+    src_ptr++;
+  }
+
+  // Skip titles
+  src_ptr += (25 * num_boards);
+  // Synchronize source and dest positions
+  fseek(dest, src_ptr - file_buffer - 15, SEEK_SET);
+
+  // Offset boards
+  for(i = 0; i < num_boards; i++)
+  {
+    // Skip length
+    src_ptr += 4;
+    fseek(dest, 4, SEEK_CUR);
+
+    // Get offset
+    offset_low_byte = src_ptr[0] ^ xor_val;
+    fputc(offset_low_byte - 15, dest);
+    if(offset_low_byte < 15)
+    {
+      fputc((src_ptr[1] ^ xor_val) - 1, dest);
+    }
+    else
+    {
+      fputc(src_ptr[1] ^ xor_val, dest);
+    }
+    fputc(src_ptr[2] ^ xor_val, dest);
+    fputc(src_ptr[3] ^ xor_val, dest);
+    src_ptr += 4;
+  }
+  free(file_buffer);
+  fclose(dest);
 }
 
 __editor_maybe_static int world_magic(const char magic_string[3])
@@ -712,16 +884,119 @@ __editor_maybe_static void optimize_null_boards(World *mzx_world)
   free(board_id_translation_list);
 }
 
+FILE *try_load_world(const char *file, bool savegame, int *version, char *name)
+{
+  char magic[5];
+  FILE *fp;
+  int v;
+
+  fp = fopen(file, "rb");
+  if(!fp)
+  {
+    error("Error loading world", 1, 8, 0x0D01);
+    goto err_out;
+  }
+
+  if(savegame)
+  {
+    if(fread(magic, 5, 1, fp) != 1)
+      goto err_close;
+
+    v = save_magic(magic);
+    if(v != WORLD_VERSION)
+    {
+      const char *msg;
+
+      if(v > WORLD_VERSION)
+        msg = ".SAV files from newer versions of MZX are not supported";
+      else if(v < WORLD_VERSION)
+        msg = ".SAV files from older versions of MZX are not supported";
+      else
+        msg = "Unrecognized magic: file may not be .SAV file";
+
+      error(msg, 1, 8, 0x2101);
+      goto err_close;
+    }
+  }
+  else
+  {
+    int protection_method;
+    char error_string[80];
+
+    if(name)
+      fread(name, BOARD_NAME_SIZE, 1, fp);
+    else
+      fseek(fp, BOARD_NAME_SIZE, SEEK_CUR);
+
+    protection_method = fgetc(fp);
+    if(protection_method)
+    {
+      int do_decrypt;
+
+      error("This world is password protected.", 1, 8, 0x0D02);
+
+      do_decrypt = confirm(NULL, "Would you like to decrypt it?");
+      if(!do_decrypt)
+      {
+        fclose(fp);
+        decrypt(file);
+        // Ah recursion.....
+        return try_load_world(file, savegame, version, name);
+      }
+
+      error("Cannot load password protected world.", 1, 8, 0x0D02);
+      goto err_close;
+    }
+
+    fread(magic, 1, 3, fp);
+
+    v = world_magic(magic);
+    if(v == 0)
+    {
+      sprintf(error_string, "Attempt to load non-MZX world.");
+    }
+    else
+
+    if(v < 0x0205)
+    {
+      sprintf(error_string, "World is from old version (%d.%d); use converter",
+       (v & 0xFF00) >> 8, v & 0xFF);
+      v = 0;
+    }
+    else
+
+    if(v > WORLD_VERSION)
+    {
+      sprintf(error_string, "World is from more recent version (%d.%d)",
+       (v & 0xFF00) >> 8, v & 0xFF);
+      v = 0;
+    }
+
+    if(!v)
+    {
+      error(error_string, 1, 8, 0x0D02);
+      goto err_close;
+    }
+  }
+
+  if(version)
+    *version = v;
+  return fp;
+
+err_close:
+  fclose(fp);
+err_out:
+  return NULL;
+}
+
 // Loads a world into a World struct
 
-static int load_world(World *mzx_world, const char *file, int savegame,
- int *faded)
+static void load_world(World *mzx_world, FILE *fp, const char *file,
+ bool savegame, int version, char *name, int *faded)
 {
-  int version;
   int i;
   int num_boards;
   int gl_rob, last_pos;
-  char tempstr[16];
   unsigned char *charset_mem;
   unsigned char r, g, b;
   Board *cur_board;
@@ -730,126 +1005,19 @@ static int load_world(World *mzx_world, const char *file, int savegame,
   struct stat file_info;
   char *file_path;
   char *current_dir;
-  int ret = 1;
-  FILE *fp;
 
   int meter_target = 2, meter_curr = 0;
 
-  fp = fopen(file, "rb");
-  if(fp == NULL)
-  {
-    error("Error loading world", 1, 8, 0x0D01);
-    goto exit_out;
-  }
-
   if(savegame)
   {
-    fread(tempstr, 1, 5, fp);
-
-    version = save_magic(tempstr);
-
-    if(version != WORLD_VERSION)
-    {
-      const char *msg;
-
-      if(version > WORLD_VERSION)
-        msg = ".SAV files from newer versions of MZX are not supported";
-      else if(version < WORLD_VERSION)
-        msg = ".SAV files from older versions of MZX are not supported";
-      else
-        msg = "Unrecognized magic: file may not be .SAV file";
-
-      error(msg, 1, 8, 0x2101);
-      goto exit_close;
-    }
-
-    if(!mzx_world)
-      goto exit_ok_close;
-
     mzx_world->version = fgetw(fp);
     mzx_world->current_board_id = fgetc(fp);
   }
   else
   {
-    int protection_method;
-    char magic[3];
-    char error_string[80];
-
-    if(mzx_world)
-    {
-      // Name of game- skip it.
-      fread(mzx_world->name, BOARD_NAME_SIZE, 1, fp);
-    }
-    else
-    {
-      /* In the case where mzx_world is NULL, it means we only want to
-       * CHECK the world, we don't want to actually load anything. In
-       * this case, we can simply skip the game name.
-       */
-      fseek(fp, BOARD_NAME_SIZE, SEEK_CUR);
-    }
-
-    // Skip protection method
-    protection_method = fgetc(fp);
-
-    if(protection_method)
-    {
-      /* Again, if we're just checking the world, we don't have a
-       * mzx_world with which to ask the user about decrypting. So in
-       * this case, we just fail if the world is encrypted.
-       */
-      if(mzx_world)
-      {
-        int do_decrypt;
-
-        error("This world is password protected.", 1, 8, 0x0D02);
-        do_decrypt = confirm(mzx_world, "Would you like to decrypt it?");
-        if(!do_decrypt)
-        {
-          fclose(fp);
-          decrypt(file);
-          goto exit_recurse;
-        }
-      }
-
-      error("Cannot load password protected world.", 1, 8, 0x0D02);
-      goto exit_close;
-    }
-
-    fread(magic, 1, 3, fp);
-    version = world_magic(magic);
-    if(version == 0)
-    {
-      sprintf(error_string, "Attempt to load non-MZX world.");
-    }
-    else
-
-    if(version < 0x0205)
-    {
-      sprintf(error_string, "World is from old version (%d.%d); use converter",
-       (version & 0xFF00) >> 8, version & 0xFF);
-      version = 0;
-    }
-    else
-
-    if(version > WORLD_VERSION)
-    {
-      sprintf(error_string, "World is from more recent version (%d.%d)",
-       (version & 0xFF00) >> 8, version & 0xFF);
-      version = 0;
-    }
-
-    if(!version)
-    {
-      error(error_string, 1, 8, 0x0D02);
-      goto exit_close;
-    }
-
-    if(!mzx_world)
-      goto exit_ok_close;
-
-    mzx_world->current_board_id = 0;
+    strcpy(mzx_world->name, name);
     mzx_world->version = version;
+    mzx_world->current_board_id = 0;
   }
 
   meter_initial_draw(mzx_world, meter_curr, meter_target, "Loading...");
@@ -1228,16 +1396,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
 
   meter_restore_screen(mzx_world);
 
-exit_ok_close:
-  ret = 0;
-exit_close:
   fclose(fp);
-exit_out:
-  return ret;
-
-exit_recurse:
-  ret = load_world(mzx_world, file, savegame, faded);
-  goto exit_out;
 }
 
 // After clearing the above, use this to get default values. Use
@@ -1337,9 +1496,15 @@ __editor_maybe_static void default_global_data(World *mzx_world)
   mzx_world->target_where = TARGET_NONE;
 }
 
-int reload_world(World *mzx_world, const char *file, int *faded)
+bool reload_world(World *mzx_world, const char *file, int *faded)
 {
-  int rval;
+  char name[BOARD_NAME_SIZE];
+  int version;
+  FILE *fp;
+
+  fp = try_load_world(file, false, &version, name);
+  if(!fp)
+    return false;
 
   if(mzx_world->active)
   {
@@ -1353,20 +1518,22 @@ int reload_world(World *mzx_world, const char *file, int *faded)
   smzx_palette_loaded(0);
   set_palette_intensity(100);
 
-  rval = load_world(mzx_world, file, 0, faded);
-
+  load_world(mzx_world, fp, file, false, version, name, faded);
   default_global_data(mzx_world);
-
   *faded = 0;
-  return rval;
+
+  return true;
 }
 
-int reload_savegame(World *mzx_world, const char *file, int *faded)
+bool reload_savegame(World *mzx_world, const char *file, int *faded)
 {
+  int version;
+  FILE *fp;
+
   // Check this SAV is actually loadable
-  int ret = load_world(NULL, file, 1, faded);
-  if(ret)
-    return ret;
+  fp = try_load_world(file, true, &version, NULL);
+  if(!fp)
+    return false;
 
   // It is, so wipe the old world
   if(mzx_world->active)
@@ -1376,23 +1543,30 @@ int reload_savegame(World *mzx_world, const char *file, int *faded)
   }
 
   // And load the new one
-  return load_world(mzx_world, file, 1, faded);
+  load_world(mzx_world, fp, file, true, version, NULL, faded);
+  return true;
 }
 
-int reload_swap(World *mzx_world, const char *file, int *faded)
+bool reload_swap(World *mzx_world, const char *file, int *faded)
 {
-  int load_return;
+  char name[BOARD_NAME_SIZE];
+  int version;
+  FILE *fp;
+
+  fp = try_load_world(file, false, &version, name);
+  if(!fp)
+    return false;
 
   if(mzx_world->active)
     clear_world(mzx_world);
 
-  load_return = load_world(mzx_world, file, 0, faded);
+  load_world(mzx_world, fp, file, false, version, name, faded);
 
   mzx_world->current_board_id = mzx_world->first_board;
   set_current_board_ext(mzx_world,
    mzx_world->board_list[mzx_world->current_board_id]);
 
-  return load_return;
+  return true;
 }
 
 // This only clears boards, no global data. Useful for swap world,
