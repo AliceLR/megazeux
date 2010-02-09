@@ -299,21 +299,70 @@ static void delete_current_line(struct robot_state *rstate, int move)
   }
 }
 
-#ifdef CONFIG_DEBYTECODE
-
-static void delete_robot_lines(struct robot_state *rstate)
+static void delete_robot_lines(struct robot *cur_robot,
+ struct robot_state *rstate)
 {
   struct robot_line *current_rline = rstate->base->next;
   struct robot_line *next_rline;
+#ifndef CONFIG_DEBYTECODE
+  char *object_code_position;
+
+  object_code_position = cur_robot->program_bytecode;
+  object_code_position[0] = 0xFF;
+  object_code_position++;
+#endif
+
   while(current_rline)
   {
+#ifndef CONFIG_DEBYTECODE
+    if((current_rline->next != NULL) || (current_rline->line_text[0]))
+    {
+      if(current_rline->validity_status == invalid_comment)
+      {
+        object_code_position[0] = current_rline->line_text_length + 3;
+        object_code_position[1] = 107;
+        object_code_position[2] = current_rline->line_text_length + 1;
+
+        strcpy(object_code_position + 3, current_rline->line_text);
+        object_code_position[current_rline->line_text_length + 4] =
+         current_rline->line_text_length + 3;
+        object_code_position += current_rline->line_text_length + 5;
+      }
+      else
+
+      if(current_rline->validity_status == valid)
+      {
+        memcpy(object_code_position, current_rline->line_bytecode,
+         current_rline->line_bytecode_length);
+        object_code_position += current_rline->line_bytecode_length;
+      }
+    }
+    else
+    {
+      // Get rid of trailing three bytes if present
+      rstate->size -= current_rline->line_bytecode_length;
+      reallocate_robot(cur_robot, rstate->size);
+      object_code_position = cur_robot->program_bytecode + rstate->size - 1;
+    }
+#endif /* !CONFIG_DEBYTECODE */
+
     next_rline = current_rline->next;
     delete_line_contents(current_rline);
     current_rline = next_rline;
   }
-}
 
-#endif /* CONFIG_DEBYTECODE */
+#ifndef CONFIG_DEBYTECODE
+  object_code_position[0] = 0;
+
+  if(rstate->size > 2)
+  {
+    cur_robot->used = 1;
+    cur_robot->cur_prog_line = 1;
+    cur_robot->label_list = cache_robot_labels(cur_robot,
+     &(cur_robot->num_labels));
+  }
+#endif
+}
 
 static void macro_default_values(struct robot_state *rstate,
  struct ext_macro *macro_src)
@@ -2689,6 +2738,11 @@ static void display_robot_line(struct robot_state *rstate,
   }
 }
 
+static inline int validate_lines(struct robot_state *rstate, int show_none)
+{
+  return 0;
+}
+
 #else /* !CONFIG_DEBYTECODE */
 
 static void display_robot_line(struct robot_state *rstate,
@@ -3112,6 +3166,7 @@ static int validate_lines(struct robot_state *rstate, int show_none)
     } while(redo);
   }
 
+  update_current_line(rstate);
   return num_ignore;
 }
 
@@ -3147,7 +3202,6 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   char str_buffer[32], max_size_buffer[32];
   char *current_robot_pos = cur_robot->program_bytecode + 1;
   char *next;
-  char *object_code_position;
   int first_line_draw_position;
   int first_line_count_back;
   int new_line;
@@ -3158,7 +3212,6 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   struct robot_line *current_rline = NULL;
   struct robot_line *previous_rline = &base;
   struct robot_line *draw_rline;
-  struct robot_line *next_line;
   int mark_current_line;
   char text_buffer[COMMAND_BUFFER_LEN], error_buffer[COMMAND_BUFFER_LEN];
   int current_line_color;
@@ -3712,18 +3765,137 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
         {
           update_current_line(&rstate);
           validate_lines(&rstate, 1);
-          update_current_line(&rstate);
         }
         break;
       }
 
+#ifdef CONFIG_DEBYTECODE
+      case IKEY_c:
+      {
+        if(get_ctrl_status(keycode_internal))
+        {
+          int line_length;
+
+          if((rstate.command_buffer[0] == '/') && (rstate.command_buffer[1] == '/'))
+          {
+            line_length = strlen(rstate.command_buffer + 2);
+            memmove(rstate.command_buffer, rstate.command_buffer + 2, line_length + 1);
+          }
+          else
+          {
+            line_length = strlen(rstate.command_buffer);
+            memmove(rstate.command_buffer + 2, rstate.command_buffer, line_length + 1);
+            rstate.command_buffer[0] = '/';
+            rstate.command_buffer[1] = '/';
+          }
+          update_current_line(&rstate);
+        }
+        break;
+      }
+#else /* !CONFIG_DEBYTECODE */
+      case IKEY_c:
+      {
+        if(rstate.current_rline->validity_status != valid)
+        {
+          rstate.current_rline->validity_status = invalid_comment;
+          update_current_line(&rstate);
+        }
+        else
+
+        if(rstate.command_buffer[0] != '.')
+        {
+          char comment_buffer[COMMAND_BUFFER_LEN];
+          char current_char;
+          char *in_position = rstate.command_buffer;
+          char *out_position = comment_buffer + 3;
+
+          comment_buffer[0] = '.';
+          comment_buffer[1] = ' ';
+          comment_buffer[2] = '"';
+
+          do
+          {
+            current_char = *in_position;
+            if((current_char == '\"') || (current_char == '\\'))
+            {
+              *out_position = '\\';
+              out_position++;
+            }
+
+            *out_position = current_char;
+            out_position++;
+            in_position++;
+          } while(out_position - comment_buffer < 240 && current_char);
+
+          *(out_position - 1) = '"';
+          *out_position = 0;
+
+          strcpy(rstate.command_buffer, comment_buffer);
+        }
+        else
+
+        if(get_ctrl_status(keycode_internal) &&
+         (rstate.command_buffer[0] == '.') &&
+         (rstate.command_buffer[1] == ' ') &&
+         (rstate.command_buffer[2] == '"') &&
+         (rstate.command_buffer[strlen(rstate.command_buffer) - 1] == '"'))
+        {
+          char uncomment_buffer[COMMAND_BUFFER_LEN];
+          char current_char;
+          char *in_position = rstate.command_buffer + 3;
+          char *out_position = uncomment_buffer;
+
+          do
+          {
+            current_char = *in_position;
+            if((current_char == '\\') && (in_position[1] == '"'))
+            {
+              current_char = '"';
+              in_position++;
+            }
+
+            if((current_char == '\\') && (in_position[1] == '\\'))
+            {
+              current_char = '\\';
+              in_position++;
+            }
+
+
+            *out_position = current_char;
+            out_position++;
+            in_position++;
+          } while(current_char);
+
+          *(out_position - 2) = 0;
+
+          strcpy(rstate.command_buffer, uncomment_buffer);
+        }
+
+        break;
+      }
+
+      case IKEY_d:
+      {
+        if(rstate.current_rline->validity_status != valid)
+        {
+          rstate.current_rline->validity_status = invalid_discard;
+          update_current_line(&rstate);
+        }
+
+        break;
+      }
+#endif /* !CONFIG_DEBYTECODE */
+
       case IKEY_ESCAPE:
       {
         update_current_line(&rstate);
+
+#ifdef CONFIG_DEBYTECODE
+        cur_robot->program_source = package_program(rstate.base->next,
+         NULL, &(cur_robot->program_source_length), cur_robot->program_source);
+#endif
         if(validate_lines(&rstate, 0))
           key = 0;
-
-        update_current_line(&rstate);
         break;
       }
 
@@ -3820,98 +3992,6 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
         break;
       }
 
-      case IKEY_d:
-      {
-        if(rstate.current_rline->validity_status != valid)
-        {
-          rstate.current_rline->validity_status = invalid_discard;
-          update_current_line(&rstate);
-        }
-
-        break;
-      }
-
-      case IKEY_c:
-      {
-        if(rstate.current_rline->validity_status != valid)
-        {
-          rstate.current_rline->validity_status = invalid_comment;
-          update_current_line(&rstate);
-        }
-        else
-
-        if(rstate.command_buffer[0] != '.')
-        {
-          char comment_buffer[COMMAND_BUFFER_LEN];
-          char current_char;
-          char *in_position = rstate.command_buffer;
-          char *out_position = comment_buffer + 3;
-
-          comment_buffer[0] = '.';
-          comment_buffer[1] = ' ';
-          comment_buffer[2] = '"';
-
-          do
-          {
-            current_char = *in_position;
-            if((current_char == '\"') || (current_char == '\\'))
-            {
-              *out_position = '\\';
-              out_position++;
-            }
-
-            *out_position = current_char;
-            out_position++;
-            in_position++;
-          } while(out_position - comment_buffer < 240 && current_char);
-
-          *(out_position - 1) = '"';
-          *out_position = 0;
-
-          strcpy(rstate.command_buffer, comment_buffer);
-        }
-        else
-
-        if(get_ctrl_status(keycode_internal) &&
-         (rstate.command_buffer[0] == '.') &&
-         (rstate.command_buffer[1] == ' ') &&
-         (rstate.command_buffer[2] == '"') &&
-         (rstate.command_buffer[strlen(rstate.command_buffer) - 1] == '"'))
-        {
-          char uncomment_buffer[COMMAND_BUFFER_LEN];
-          char current_char;
-          char *in_position = rstate.command_buffer + 3;
-          char *out_position = uncomment_buffer;
-
-          do
-          {
-            current_char = *in_position;
-            if((current_char == '\\') && (in_position[1] == '"'))
-            {
-              current_char = '"';
-              in_position++;
-            }
-
-            if((current_char == '\\') && (in_position[1] == '\\'))
-            {
-              current_char = '\\';
-              in_position++;
-            }
-
-
-            *out_position = current_char;
-            out_position++;
-            in_position++;
-          } while(current_char);
-
-          *(out_position - 2) = 0;
-
-          strcpy(rstate.command_buffer, uncomment_buffer);
-        }
-
-        break;
-      }
-
       case IKEY_p:
       case IKEY_INSERT:
       {
@@ -3929,8 +4009,8 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
         {
           import_block(mzx_world, &rstate);
         }
+#ifndef CONFIG_DEBYTECODE
         else
-
         if(get_ctrl_status(keycode_internal))
         {
           if(rstate.current_rline->validity_status != valid)
@@ -3938,6 +4018,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
             rstate.current_rline->validity_status = invalid_uncertain;
           }
         }
+#endif
         break;
       }
 
@@ -4087,60 +4168,12 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
     }
   } while(key != IKEY_ESCAPE);
 
+#ifndef CONFIG_DEBYTECODE
   // Package time
   reallocate_robot(cur_robot, rstate.size);
+#endif
 
-  current_rline = base.next;
-  object_code_position = cur_robot->program_bytecode;
-  object_code_position[0] = 0xFF;
-  object_code_position++;
-
-  while(current_rline)
-  {
-    if((current_rline->next != NULL) || (current_rline->line_text[0]))
-    {
-      if(current_rline->validity_status == invalid_comment)
-      {
-        object_code_position[0] = current_rline->line_text_length + 3;
-        object_code_position[1] = 107;
-        object_code_position[2] = current_rline->line_text_length + 1;
-
-        strcpy(object_code_position + 3, current_rline->line_text);
-        object_code_position[current_rline->line_text_length + 4] =
-         current_rline->line_text_length + 3;
-        object_code_position += current_rline->line_text_length + 5;
-      }
-      else
-
-      if(current_rline->validity_status == valid)
-      {
-        memcpy(object_code_position, current_rline->line_bytecode,
-         current_rline->line_bytecode_length);
-        object_code_position += current_rline->line_bytecode_length;
-      }
-    }
-    else
-    {
-      // Get rid of trailing three bytes if present
-      rstate.size -= current_rline->line_bytecode_length;
-      reallocate_robot(cur_robot, rstate.size);
-      object_code_position = cur_robot->program_bytecode + rstate.size - 1;
-    }
-
-    next_line = current_rline->next;
-    delete_line_contents(current_rline);
-    current_rline = next_line;
-  }
-
-  object_code_position[0] = 0;
-
-  if(rstate.size > 2)
-  {
-    cur_robot->used = 1;
-    cur_robot->cur_prog_line = 1;
-    cur_robot->label_list = cache_robot_labels(cur_robot,
-     &(cur_robot->num_labels));
-  }
+  delete_robot_lines(cur_robot, &rstate);
 
   restore_screen();
 }
