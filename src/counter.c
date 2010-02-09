@@ -2956,9 +2956,8 @@ void set_string(World *mzx_world, const char *name, mzx_string *src, int id)
 
           if((current_char == terminate_char) || (current_char == EOF))
           {
-            if(offset == 0)
+            if(offset == 0 && !offset_specified_zero)
               dest->length = read_pos;
-
             return;
           }
 
