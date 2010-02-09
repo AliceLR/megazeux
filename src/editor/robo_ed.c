@@ -2241,7 +2241,7 @@ static void robo_ed_display_robot_line(robot_state *rstate,
           }
 
           memcpy(temp_buffer, line_pos, arg_length);
-          temp_buffer[arg_length] = 0;
+          temp_buffer[arg_length - 1] = 0;
 
           if((x + arg_length) > 78)
           {
