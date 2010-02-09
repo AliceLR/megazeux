@@ -109,6 +109,10 @@ DEVELOPERS
   to OpenGL ES 2.0, used increasingly by mobile devices.
 + Removed SDL dependency from NDS port. It only used it for timing and
   stuffed events.
++ On Windows platforms, binaries are processed with the `pefix' in-tree
+  tool to eliminate data section differences in programs with identical
+  texts. This minimizes the amount of content required to be sent for
+  updates.
 
 December 29, 2008 - MZX 2.82b
 
