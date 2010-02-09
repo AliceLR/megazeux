@@ -56,45 +56,42 @@ USERS
   respected (previously it would always just check sprite 0).
 + NDS port updated from dsmzx2 release. (kvance, ajs)
 + Updated SDL to 1.2.14 in Windows x86, Windows x64 and Mac OS X builds.
-+ Security checks are no longer applied to filenames in module or
-  sample playback in "listening only" modes in the editor.
-+ Module volume is applied immediately before playback upon switching
-  boards. This prevents one cycle of audio "leaking" at the wrong volume.
-+ Prevent crash with negative string clip where clip + offset = 0. Clip
-  is now correctly limited to total string length.
++ Security checks are no longer applied to filenames in module or sample
+  playback in "listening only" modes in the editor.
++ Module volume is applied immediately before playback upon switching boards.
+  This prevents one cycle of audio "leaking" at the wrong volume.
++ Prevent crash with negative string clip where clip + offset = 0. Clip is
+  now correctly limited to total string length.
 + Help file is now optional for MZXRun, even with CONFIG_HELPSYS=1 builds.
 + Fix crash when robot editor macros expanded other macros.
 + The lock icon is no longer missing from the Items THING menu (F4).
 + A world to start up with can now be passed to megazeux without the
   startup_file= prefix. This makes megazeux consistent with other
   applications.
-+ SHOOT, SHOOTMISSILE, SHOOTSEEKER and SPITFIRE now end the cycle,
-  to restore compatibility with pre-port MZX and fix games such as
-  Kya's Sword and Stones & Roks II.
-+ Have IF [dir] PLAYER [color] [thing] [param] "label" interpret
-  SEEK direction wrt robot coordinates, rather than player
-  coordinates. Other directions are not affected.
-+ Zapping a label at the end of a robot program will no longer
-  corrupt the robot list, usually causing crashes.
-+ Entering lines in the robot editor with leading or trailing 
-  spaces will be trimmed before the line is compiled.
-+ The single quote characters encasing S_CHARACTER parameters in
-  the robot editor will now use the protected (GUI) charset
-  rather than the game one.
-+ Add a "system_mouse" config.txt option that allows the mouse
-  cursor to be replaced with the system mouse cursor, rather than
-  being drawn by MegaZeux.
++ SHOOT, SHOOTMISSILE, SHOOTSEEKER and SPITFIRE now end the cycle, to restore
+  compatibility with pre-port MZX and fix games such as Kya's Sword and
+  Stones & Roks II.
++ Have IF [dir] PLAYER [color] [thing] [param] "label" interpret SEEK
+  direction wrt robot coordinates, rather than player coordinates.
+  Other directions are not affected.
++ Zapping a label at the end of a robot program will no longer corrupt the
+  robot list, usually causing crashes.
++ Entering lines in the robot editor with leading or trailing spaces will be
+  trimmed before the line is compiled.
++ The single quote characters encasing S_CHARACTER parameters in the robot
+  editor will now use the protected (GUI) charset rather than the game one.
++ Add a "system_mouse" config.txt option that allows the mouse cursor to be
+  replaced with the system mouse cursor, rather than being drawn by MegaZeux.
 + Disallow placing player clones with SET "board_id" 127.
-+ Relaxed file name limit on board MOD file. The board MOD
-  can now be as long as the limit imposed by file dialog's
-  input box (previously limited to 12 characters).
-+ Truncation of currently open input/output file names will now
-  only occur at MAX_PATH bytes (typically 512 characters). The
-  previous limit was 13 characters.
-+ Relaxed limit of INPUT string and bottom ("*") messages from
-  80 characters to ROBOT_MAX_TR (512) characters. In the case
-  of bottom messages this can be usefully exploited for ~200
++ Relaxed file name limit on board MOD file. The board MOD can now be as long
+  as the limit imposed by file dialog's input box (previously limited to 12
+  characters).
++ Truncation of currently open input/output file names will now only occur
+  at MAX_PATH bytes (typically 512 characters). The previous limit was 13
   characters.
++ Relaxed limit of INPUT string and bottom ("*") messages from 80 characters
+  to ROBOT_MAX_TR (512) characters. In the case of bottom messages this can
+  be usefully exploited to ~200 characters.
 
 DEVELOPERS
 
@@ -107,8 +104,8 @@ DEVELOPERS
   be specified and will be respected on "make install". (Sci-freak, ajs)
 + Added experimental port to Android. See arch/android/README for more
   information.
-+ Ported opengl1 and opengl2 renderers to OpenGL ES 1.x and glsl
-  renderer to OpenGL ES 2.0, used increasingly by mobile devices.
++ Ported opengl1 and opengl2 renderers to OpenGL ES 1.x and glsl renderer
+  to OpenGL ES 2.0, used increasingly by mobile devices.
 + Removed SDL dependency from NDS port. It only used it for timing and
   stuffed events.
 
