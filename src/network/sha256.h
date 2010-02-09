@@ -26,7 +26,8 @@ __M_BEGIN_DECLS
 
 #include "../platform.h"
 
-typedef struct {
+typedef struct
+{
   Uint32 H[8];
   Uint32 hbits;
   Uint32 lbits;

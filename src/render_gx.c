@@ -41,11 +41,13 @@
 #define TEX_OFF_Y (0.5 / 512)
 
 // Must be multiple of 32 bytes
-typedef struct {
+typedef struct
+{
   u16 pal[16];
 } ci4tlut;
 
-typedef struct {
+typedef struct
+{
   void *xfb[2];
   void *fifo;
   GXRModeObj *rmode;
