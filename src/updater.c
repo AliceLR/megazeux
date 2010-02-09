@@ -740,7 +740,6 @@ err_free_url_base:
   free(url_base);
 err_host_destroy:
   host_destroy(h);
-  host_layer_exit();
 err_chdir:
   swivel_current_dir_back(true);
 err_out:
