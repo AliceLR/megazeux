@@ -10,7 +10,7 @@ include contrib/unzip/src/Makefile.in
 #
 
 .PHONY: ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
-.PHONY: utils utils_clean
+.PHONY: utils utils_clean utils_package_clean
 
 utils_base = src/utils
 
@@ -102,6 +102,16 @@ endif
 
 utils: ${checkres} ${downver} ${txt2hlp}
 utils_clean: ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
+
+utils_package_clean:
+	mv ${checkres} ${checkres}.backup
+	mv ${downver} ${downver}.backup
+	mv ${txt2hlp} ${txt2hlp}.backup
+	${MAKE} DEBUG=1 ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
+	${MAKE}         ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
+	mv ${txt2hlp}.backup ${txt2hlp}
+	mv ${downver}.backup ${downver}
+	mv ${checkres}.backup ${checkres}
 
 ${checkres}_clean: ${unzip}_clean
 	@echo "  CLEAN   " ${checkres}

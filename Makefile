@@ -6,7 +6,7 @@
 #                  http://aegis.sourceforge.net/auug97.pdf
 ##
 
-.PHONY: clean
+.PHONY: clean package_clean
 
 VERSION=2.81h
 TARGET=mzx281h
@@ -79,11 +79,12 @@ endif
 include src/utils/Makefile.in
 include src/Makefile.in
 
-package_clean:
+package_clean: utils_package_clean
 	mv ${mzx} ${mzx}.backup
-	${MAKE} clean
-	${MAKE} DEBUG=1 clean
-	${MAKE} distclean
+	${MAKE} DEBUG=1 ${mzx}_clean
+	${MAKE}         ${mzx}_clean
+	rm -f src/config.h
+	cp -f arch/Makefile.dist Makefile.platform
 	mv ${mzx}.backup ${mzx}
 
 clean: ${mzx}_clean utils_clean
