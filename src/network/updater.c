@@ -26,6 +26,7 @@
 #include "../game.h"
 #include "../graphics.h"
 #include "../window.h"
+#include "../error.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -158,15 +159,21 @@ static bool cancel_cb(void)
   return false;
 }
 
+#define WIDGET_BUF_LEN 80
+
 static void __check_for_updates(void)
 {
   char *base_path, buffer[LINE_BUF_LEN], *url_base, *value;
   struct manifest_entry *removed, *replaced, *added, *e;
+  char widget_buf[WIDGET_BUF_LEN];
   const char *version = "2.82";
   host_status_t status;
   bool ret = false;
   struct host *h;
+  int buf_len;
   FILE *f;
+
+  m_hide();
 
   // Store the user's current directory, so we can get back to it
   getcwd(current_dir, MAX_PATH);
@@ -176,7 +183,7 @@ static void __check_for_updates(void)
   get_path(process_argv[0], base_path, MAX_PATH);
   if(chdir(base_path))
   {
-    warn("Failed to change into %s base dir.\n", process_argv[0]);
+    error("Failed to change into install directory.", 1, 8, 0);
     goto err_free_base_path;
   }
 
@@ -184,33 +191,49 @@ static void __check_for_updates(void)
   f = fopen(UPDATES_TXT, "w+b");
   if(!f)
   {
-    warn("Failed to open " UPDATES_TXT " for writing.\n");
-    warn("This program does not have write permission.\n");
+    error("Failed to create \"" UPDATES_TXT "\". Check permissions.",
+     1, 8, 0);
     goto err_chdir;
   }
 
   if(!host_layer_init())
   {
-    warn("Error initializing socket layer!\n");
+    error("Failed to initialize network layer.", 1, 8, 0);
     goto err_chdir;
   }
 
   h = host_create(HOST_TYPE_TCP, HOST_FAMILY_IPV4);
   if(!h)
   {
-    warn("Error creating host for outgoing data.\n");
+    error("Failed to create TCP client socket.", 1, 8, 0);
     goto err_layer_exit;
   }
 
-  debug("Attemption connection to '" UPDATE_HOST "'..\n");
+  buf_len = snprintf(widget_buf, WIDGET_BUF_LEN - 1, "Connecting to \""
+   UPDATE_HOST "\" to receive version list..");
+  widget_buf[WIDGET_BUF_LEN - 1] = 0;
+
+  draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+  write_string(widget_buf, (WIDGET_BUF_LEN - buf_len) >> 1, 12, DI_TEXT, 0);
+  update_screen();
+
   if(!host_connect(h, UPDATE_HOST, OUTBOUND_PORT))
-    goto err_host_destroy;
+  {
+    error("Connection to \"" UPDATE_HOST "\" failed.", 1, 8, 0);
+    goto err_clear_screen;
+  }
+
+  clear_screen(32, 7);
+  update_screen();
 
   // Grab the file containing the names of the current Stable and Unstable
   status = host_recv_file(h, "/" UPDATES_TXT, f, "text/plain");
   if(status != HOST_SUCCESS)
   {
-    warn("Failed to receive " UPDATES_TXT " (err=%d)\n", status);
+    snprintf(widget_buf, WIDGET_BUF_LEN - 1, "Failed to download \""
+     UPDATES_TXT "\" (err=%d).\n", status);
+    widget_buf[WIDGET_BUF_LEN - 1] = 0;
+    error(widget_buf, 1, 8, 0);
     goto err_host_destroy;
   }
 
@@ -245,7 +268,7 @@ static void __check_for_updates(void)
    */
   if(!value)
   {
-    warn("Failed to identify applicable update version.\n");
+    error("Failed to identify applicable update version.", 1, 8, 0);
     goto err_host_destroy;
   }
 
@@ -262,9 +285,39 @@ static void __check_for_updates(void)
    */
   if(strcmp(value, version) != 0)
   {
-    warn("Should ask user question here.\n");
-    info("Assuming user always want the latest..\n");
-    version = value;
+    element *elements[5];
+    int result;
+    dialog di;
+
+    buf_len = snprintf(widget_buf, WIDGET_BUF_LEN - 1,
+     "A new major version is available (%s)", value);
+    widget_buf[WIDGET_BUF_LEN - 1] = 0;
+
+    elements[0] = construct_label((55 - buf_len) >> 1, 2, widget_buf);
+
+    elements[1] = construct_label(2, 4,
+     "You can continue to receive updates for the version\n"
+     "installed (if available), or you can upgrade to the\n"
+     "newest major version (recommended).");
+
+    elements[2] = construct_label(2, 8,
+     "If you do not upgrade, this question will be asked\n"
+     "again the next time you run the updater.\n");
+
+    elements[3] = construct_button(14, 11, "Upgrade", 0);
+    elements[4] = construct_button(29, 11, "Update Old", 1);
+
+    construct_dialog(&di, "New Major Version", 11, 6, 55, 14, elements, 5, 3);
+    result = run_dialog(NULL, &di);
+    destruct_dialog(&di);
+
+    // User pressed Escape, abort all updates
+    if(result < 0)
+      goto err_host_destroy;
+
+    // User pressed Upgrade, use new major
+    if(result == 0)
+      version = value;
   }
 
   /* We can now compute a unique URL base for the updater. This will
@@ -275,21 +328,37 @@ static void __check_for_updates(void)
   snprintf(url_base, LINE_BUF_LEN, "/%s/" PLATFORM, version);
   debug("Update base URL: %s\n", url_base);
 
+  draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
+  write_string("Computing manifest deltas (added, replaced, deleted)..",
+   13, 12, DI_TEXT, 0);
+  update_screen();
+
   if(!manifest_get_updates(h, url_base, &removed, &replaced, &added))
   {
-    warn("Failed to compute update manifests; aborting\n");
+    error("Failed to compute update manifests", 1, 8, 0);
     goto err_free_url_base;
   }
 
+  clear_screen(32, 7);
+  update_screen();
+
   if(!removed && !replaced && !added)
   {
-    debug("Nothing to update; aborting.\n");
+    element *elements[2];
+    int result;
+    dialog di;
+
+    elements[0] = construct_label(2, 2, "This client is already current.");
+    elements[1] = construct_button(15, 4, "OK", 0);
+
+    construct_dialog(&di, "No Updates", 22, 9, 35, 6, elements, 2, 1);
+    result = run_dialog(NULL, &di);
+    destruct_dialog(&di);
+
     goto err_free_update_manifests;
   }
 
   host_set_callbacks(h, NULL, recv_cb, cancel_cb);
-
-  m_hide();
 
   for(e = removed; e; e = e->next)
   {
@@ -311,7 +380,7 @@ static void __check_for_updates(void)
     char name[72];
 
     if(!check_create_basedir(e->name))
-      goto err_clear_screen;
+      goto err_free_update_manifests;
 
     final_size = (long)e->size;
 
@@ -320,7 +389,7 @@ static void __check_for_updates(void)
     update_screen();
 
     if(!manifest_entry_download_replace(h, url_base, e))
-      goto err_clear_screen;
+      goto err_free_update_manifests;
   }
 
   for(e = replaced; e; e = e->next)
@@ -328,7 +397,7 @@ static void __check_for_updates(void)
     char name[72];
 
     if(!check_create_basedir(e->name))
-      goto err_clear_screen;
+      goto err_free_update_manifests;
 
     final_size = (long)e->size;
 
@@ -337,15 +406,10 @@ static void __check_for_updates(void)
     update_screen();
 
     if(!manifest_entry_download_replace(h, url_base, e))
-      goto err_clear_screen;
+      goto err_free_update_manifests;
   }
 
   ret = true;
-
-err_clear_screen:
-  clear_screen(32, 7);
-  m_show();
-  update_screen();
 err_free_update_manifests:
   manifest_list_free(&removed);
   manifest_list_free(&replaced);
@@ -354,6 +418,10 @@ err_free_url_base:
   free(url_base);
 err_host_destroy:
   host_destroy(h);
+err_clear_screen:
+  clear_screen(32, 7);
+  update_screen();
+  m_show();
 err_layer_exit:
   host_layer_exit();
 err_chdir:
