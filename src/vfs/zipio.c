@@ -82,6 +82,8 @@ struct zip_file
   struct zip_entry *entries;
   Uint16 comment_length;
   char *comment;
+
+  struct segment ecdr;
 };
 
 // Contains the file abstraction and (of course) the open file handle.
@@ -89,6 +91,7 @@ struct zip_file
 struct zip_handle
 {
   struct zip_file file;
+  char *path;
   FILE *f;
 };
 
@@ -99,7 +102,7 @@ static Sint64 fgetuw(FILE *f)
   Uint16 d = 0;
   int i, j;
 
-  for(i = 0, j = 0; i < 2; i++, j += 8)
+  for(i = 0, j = 0; i < sizeof(Uint16); i++, j += 8)
   {
     int r = fgetc(f);
     if(r < 0)
@@ -115,12 +118,42 @@ static Sint64 fgetud(FILE *f)
   Uint32 d = 0;
   int i, j;
 
-  for(i = 0, j = 0; i < 4; i++, j += 8)
+  for(i = 0, j = 0; i < sizeof(Uint32); i++, j += 8)
   {
     int r = fgetc(f);
     if(r < 0)
       return r;
     d |= r << j;
+  }
+
+  return d;
+}
+
+static Sint64 fputuw(Uint16 d, FILE *f)
+{
+  int i;
+
+  for(i = 0; i < sizeof(Uint16); i++)
+  {
+    int r = fputc(d & 0xff, f);
+    if(r < 0)
+      return r;
+    d >>= 8;
+  }
+
+  return d;
+}
+
+static Sint64 fputud(Uint32 d, FILE *f)
+{
+  int i;
+
+  for(i = 0; i < sizeof(Uint32); i++)
+  {
+    int r = fputc(d & 0xff, f);
+    if(r < 0)
+      return r;
+    d >>= 8;
   }
 
   return d;
@@ -144,6 +177,28 @@ static bool zgetud(FILE *f, Sint64 *d, enum zip_error *err, enum zip_error code)
   *d = fgetud(f);
 
   if(*d < 0)
+  {
+    *err = code;
+    return false;
+  }
+
+  return true;
+}
+
+static bool zputuw(FILE *f, Uint16 d, enum zip_error *err, enum zip_error code)
+{
+  if(fputuw(d, f) < 0)
+  {
+    *err = code;
+    return false;
+  }
+
+  return true;
+}
+
+static bool zputud(FILE *f, Uint32 d, enum zip_error *err, enum zip_error code)
+{
+  if(fputud(d, f) < 0)
   {
     *err = code;
     return false;
@@ -184,6 +239,10 @@ const char *zipio_strerror(enum zip_error err)
       return "Could not seek to requested file position";
     case ZIPIO_READ_FAILED:
       return "Failure reading from file";
+    case ZIPIO_WRITE_FAILED:
+      return "Failure writing to file";
+    case ZIPIO_TRUNCATE_FAILED:
+      return "Failed to truncate file on close";
     case ZIPIO_NO_CENTRAL_DIRECTORY:
       return "Failed to locate central directory record";
     case ZIPIO_NO_END_CENTRAL_DIRECTORY:
@@ -202,6 +261,8 @@ const char *zipio_strerror(enum zip_error err)
       return "No support for ZIP64 entries";
     case ZIPIO_UNSUPPORTED_COMPRESSION_METHOD:
       return "Unsupported ZIP compression method";
+    case ZIPIO_PATH_NOT_FOUND:
+      return "Requested path not found within ZIP";
     default:
       return "Unknown error";
   }
@@ -225,6 +286,16 @@ static void free_entries(struct zip_handle *z)
   z->file.entries = NULL;
 }
 
+static Uint32 compute_terminal_offset(struct zip_entry *entry)
+{
+  if(entry->data_descriptor.offset > 0)
+    return entry->data_descriptor.offset + entry->data_descriptor.length;
+  else if(entry->file_data.offset > 0)
+    return entry->file_data.offset + entry->file_data.length;
+  else
+    return entry->local_header.offset + entry->local_header.length;
+}
+
 static int compare_offset(const void *_a, const void *_b)
 {
   const struct zip_entry **a = (const struct zip_entry **)_a;
@@ -238,10 +309,11 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
   struct zip_entry *entry, *last_entry;
   enum zip_error err = ZIPIO_SUCCESS;
   Uint32 entry_terminal_offset = 0;
-  struct segment cd, ecdr;
-  Uint16 num_entries;
-  int ecdr_sig_off;
   struct zip_handle *z;
+  size_t filename_len;
+  Uint16 num_entries;
+  struct segment cd;
+  int ecdr_sig_off;
   Sint64 d;
   int i;
 
@@ -302,7 +374,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
           cur_ecdr_offset = ftell(z->f);
           if(cur_ecdr_offset < 0)
           {
-            err = ZIPIO_READ_FAILED;
+            err = ZIPIO_TELL_FAILED;
             goto err_close;
           }
           break;
@@ -337,7 +409,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
     err = ZIPIO_SEEK_FAILED;
     goto err_close;
   }
-  ecdr.offset = cur_ecdr_offset - sizeof(ecdr_sig);
+  z->file.ecdr.offset = cur_ecdr_offset - sizeof(ecdr_sig);
 
   // "number of this disk"
   if(!zgetuw(z->f, &d, &err, ZIPIO_READ_FAILED))
@@ -402,13 +474,13 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
   d = ftell(z->f);
   if(d < 0)
   {
-    err = ZIPIO_READ_FAILED;
+    err = ZIPIO_TELL_FAILED;
     goto err_close;
   }
-  ecdr.length = d - ecdr.offset;
+  z->file.ecdr.length = d - z->file.ecdr.offset;
 
   debug("Valid ZIP ECDR found at offset 0x%x; length is %u.\n",
-   ecdr.offset, ecdr.length);
+   z->file.ecdr.offset, z->file.ecdr.length);
 
   debug("ZIP CD found at offset 0x%x; length is %u. %u entries.\n",
    cd.offset, cd.length, num_entries);
@@ -440,7 +512,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
     pos = ftell(z->f);
     if(pos < 0)
     {
-      err = ZIPIO_READ_FAILED;
+      err = ZIPIO_TELL_FAILED;
       goto err_free_entries;
     }
     entry->cd_entry.offset = pos;
@@ -612,20 +684,21 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
       goto err_free_entries;
     }
 
+    pos = ftell(z->f);
+    if(pos < 0)
+    {
+      err = ZIPIO_TELL_FAILED;
+      goto err_free_entries;
+    }
+
     // Check we've not exceeded this segment's bounds
-    if(ftell(z->f) > cd.offset + cd.length)
+    if(pos > cd.offset + cd.length)
     {
       err = ZIPIO_CORRUPT_CENTRAL_DIRECTORY;
       goto err_free_entries;
     }
 
-    // compute CD entry length
-    pos = ftell(z->f);
-    if(pos < 0)
-    {
-      err = ZIPIO_READ_FAILED;
-      goto err_free_entries;
-    }
+    // Compute CD entry length
     entry->cd_entry.length = pos - entry->cd_entry.offset;
 
     // Convert to standard C89/C99 time_t
@@ -856,7 +929,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
     pos = ftell(z->f);
     if(pos < 0)
     {
-      err = ZIPIO_READ_FAILED;
+      err = ZIPIO_TELL_FAILED;
       goto err_free_entries;
     }
     entry->local_header.length = pos - entry->local_header.offset;
@@ -877,7 +950,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
       pos = ftell(z->f);
       if(pos < 0)
       {
-        err = ZIPIO_READ_FAILED;
+        err = ZIPIO_TELL_FAILED;
         goto err_free_entries;
       }
       entry->data_descriptor.offset = pos;
@@ -936,7 +1009,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
       pos = ftell(z->f);
       if(pos < 0)
       {
-        err = ZIPIO_READ_FAILED;
+        err = ZIPIO_TELL_FAILED;
         goto err_free_entries;
       }
       entry->data_descriptor.length = pos - entry->data_descriptor.offset;
@@ -993,21 +1066,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
       }
     }
 
-    if(entry->data_descriptor.offset > 0)
-    {
-      entry_terminal_offset = entry->data_descriptor.offset +
-       entry->data_descriptor.length;
-    }
-    else if(entry->file_data.offset > 0)
-    {
-      entry_terminal_offset = entry->file_data.offset +
-       entry->file_data.length;
-    }
-    else
-    {
-      entry_terminal_offset = entry->local_header.offset +
-       entry->local_header.length;
-    }
+    entry_terminal_offset = compute_terminal_offset(entry);
   }
 
   if(entry_terminal_offset < cd.offset)
@@ -1016,25 +1075,30 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
      cd.offset - entry_terminal_offset);
   }
 
-  if(cd.offset + cd.length < ecdr.offset)
+  if(cd.offset + cd.length < z->file.ecdr.offset)
   {
     warn("Detected %u bytes junk between CD and ECDR!\n",
-     ecdr.offset - (cd.offset + cd.length));
+     z->file.ecdr.offset - (cd.offset + cd.length));
   }
 
   // Compare with file size for contiguity
   pos = ftell_and_rewind(z->f);
   if(pos < 0)
   {
-    err = ZIPIO_READ_FAILED;
+    err = ZIPIO_TELL_FAILED;
     goto err_free_entries;
   }
 
-  if(ecdr.offset + ecdr.length < pos)
+  if(z->file.ecdr.offset + z->file.ecdr.length < pos)
   {
     warn("Detected %u bytes junk between ECDR and EOF!\n",
-     pos - (ecdr.offset + ecdr.length));
+     pos - (z->file.ecdr.offset + z->file.ecdr.length));
   }
+
+  // Keep a record of the original filename for truncate-on-close
+  filename_len = strlen(filename);
+  z->path = malloc(filename_len + 1);
+  strncpy(z->path, filename, filename_len + 1);
 
   return ZIPIO_SUCCESS;
 
@@ -1057,9 +1121,6 @@ static enum zip_error zipio_stash_cd(struct zip_handle *z, Uint16 *num_entries,
   struct zip_entry *entry;
   char **cd;
   Uint16 i;
-
-  assert(z != NULL);
-  assert(num_entries != NULL);
 
   for(entry = z->file.entries; entry; entry = entry->next)
     (*num_entries)++;
@@ -1094,12 +1155,116 @@ err_free_cd:
 
 static enum zip_error zipio_rebuild_cd(struct zip_handle *z)
 {
+  Uint32 cd_offset, cd_length = 0;
+  struct zip_entry *entry;
+  Uint16 i, num_entries;
+  enum zip_error err;
+  char **cd;
+  long pos;
 
+  assert(z != NULL);
+
+  // Store the existing (valid) CD entries on the heap temporarily
+  err = zipio_stash_cd(z, &num_entries, &cd);
+  if(err != ZIPIO_SUCCESS)
+    goto err_out;
+
+  // CD offset must be after last file (entry list sorted by offset)
+  for(entry = z->file.entries; entry->next; entry = entry->next);
+  cd_offset = compute_terminal_offset(entry);
+
+  // Scan back to the original start of the CD
+  if(fseek(z->f, cd_offset, SEEK_SET))
+  {
+    err = ZIPIO_SEEK_FAILED;
+    goto err_free_cd;
+  }
+
+  // Re-write the CD using the collated CDEs
+  for(entry = z->file.entries, i = 0; entry; entry = entry->next, i++)
+  {
+    // Update CDE with new offset
+    pos = ftell(z->f);
+    if(pos < 0)
+    {
+      err = ZIPIO_TELL_FAILED;
+      goto err_free_cd;
+    }
+    entry->cd_entry.offset = pos;
+
+    // Write back original CDE
+    if(fwrite(cd[i], entry->cd_entry.length, 1, z->f) != 1)
+    {
+      err = ZIPIO_WRITE_FAILED;
+      goto err_free_cd;
+    }
+
+    // Must account the CD length for the ECDR writeout
+    cd_length += entry->cd_entry.length;
+  }
+
+  z->file.ecdr.offset = pos;
+
+  // Write out ECDR signature
+  if(fwrite(ecdr_sig, sizeof(ecdr_sig), 1, z->f) != 1)
+  {
+    err = ZIPIO_WRITE_FAILED;
+    goto err_free_cd;
+  }
+
+  // "number of this disk" (0)
+  if(!zputuw(z->f, 0, &err, ZIPIO_WRITE_FAILED))
+    goto err_free_cd;
+
+  // "number of the disk with the start of the central directory" (0)
+  if(!zputuw(z->f, 0, &err, ZIPIO_WRITE_FAILED))
+    goto err_free_cd;
+
+  // "total number of entries in the central directory on this disk"
+  if(!zputuw(z->f, num_entries, &err, ZIPIO_WRITE_FAILED))
+    goto err_free_cd;
+
+  // "total number of entries in the central directory"
+  if(!zputuw(z->f, num_entries, &err, ZIPIO_WRITE_FAILED))
+    goto err_free_cd;
+
+  // "size of the central directory"
+  if(!zputud(z->f, cd_length, &err, ZIPIO_WRITE_FAILED))
+    goto err_free_cd;
+
+  // "offset of start of central directory with respect to
+  //  the starting disk number"
+  if(!zputud(z->f, cd_offset, &err, ZIPIO_WRITE_FAILED))
+    goto err_free_cd;
+
+  // ".ZIP file comment length"
+  if(!zputuw(z->f, z->file.comment_length, &err, ZIPIO_WRITE_FAILED))
+    goto err_free_cd;
+
+  // ".ZIP file comment" (skip if none)
+  if(z->file.comment_length)
+    if(fwrite(z->file.comment, z->file.comment_length, 1, z->f) != 1)
+      err = ZIPIO_WRITE_FAILED;
+
+  // Compute new ECDR length (necessary for truncate-on-close)
+  pos = ftell(z->f);
+  if(pos < 0)
+  {
+    err = ZIPIO_TELL_FAILED;
+    goto err_free_cd;
+  }
+  z->file.ecdr.length = pos - z->file.ecdr.offset;
+
+err_free_cd:
+  free(cd);
+err_out:
+  return err;
 }
 
 enum zip_error zipio_unlink(struct zip_handle *z, const char *pathname)
 {
   struct zip_entry *entry, *last_entry = NULL;
+  enum zip_error err = ZIPIO_SUCCESS;
 
   assert(z != NULL);
   assert(z->f != NULL);
@@ -1110,7 +1275,10 @@ enum zip_error zipio_unlink(struct zip_handle *z, const char *pathname)
       break;
 
   if(!entry)
-    return ZIPIO_PATH_NOT_FOUND;
+  {
+    err = ZIPIO_PATH_NOT_FOUND;
+    goto err_out;
+  }
 
   if(!last_entry)
     z->file.entries = entry->next;
@@ -1118,20 +1286,34 @@ enum zip_error zipio_unlink(struct zip_handle *z, const char *pathname)
     last_entry->next = entry->next;
 
   free_entry(entry);
-  return ZIPIO_SUCCESS;
+  err = zipio_rebuild_cd(z);
+
+err_out:
+  return err;
 }
 
 enum zip_error zipio_close(struct zip_handle *z)
 {
   enum zip_error err = ZIPIO_SUCCESS;
+  long length;
 
   assert(z != NULL);
+
+  // Obtain original file length
+  length = ftell_and_rewind(z->f);
+  if(length < 0)
+    err = ZIPIO_TELL_FAILED;
 
   if(fclose(z->f))
     err = ZIPIO_CLOSE_FAILED;
 
+  if(length >= 0 && z->file.ecdr.offset + z->file.ecdr.length < length)
+    if(truncate(z->path, z->file.ecdr.offset + z->file.ecdr.length) < 0)
+      err = ZIPIO_TRUNCATE_FAILED;
+
   free(z->file.comment);
   free_entries(z);
+  free(z->path);
   free(z);
 
   return err;
@@ -1141,6 +1323,7 @@ enum zip_error zipio_close(struct zip_handle *z)
 
 int main(int argc, char *argv[])
 {
+  static const char unlink_path[] = "test";
   enum zip_error err = ZIPIO_SUCCESS;
   struct zip_handle *z;
 
@@ -1153,6 +1336,21 @@ int main(int argc, char *argv[])
   err = zipio_open(argv[1], &z);
   if(err)
     goto err_out;
+
+  err = zipio_unlink(z, unlink_path);
+  switch(err)
+  {
+    case ZIPIO_SUCCESS:
+      break;
+
+    case ZIPIO_PATH_NOT_FOUND:
+      warn("Path '%s' not found in ZIP.\n", unlink_path);
+      err = ZIPIO_SUCCESS;
+      break;
+
+    default:
+      goto err_out;
+  }
 
   err = zipio_close(z);
 
