@@ -356,36 +356,39 @@ echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 # FIXME: SHAREDIR should be hardcoded in fewer cases
 #
 if [ "$PLATFORM" = "unix" ]; then
-	SHAREDIR=$SHAREDIR/megazeux
-	echo "#define CONFFILE \"megazeux-config\"" >> src/config.h
+	echo "#define CONFFILE \"megazeux-config\""    >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\"" >> src/config.h
 elif [ "$PLATFORM" = "nds" ]; then
 	SHAREDIR=/games/megazeux
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\""      >> src/config.h
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "wii" ]; then
 	SHAREDIR=/apps/megazeux
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\""      >> src/config.h
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "darwin" ]; then
 	SHAREDIR=../Resources
 	GAMESDIR=$SHAREDIR
 	BINDIR=$SHAREDIR
-	echo "#define CONFFILE \"config.txt\""      >> src/config.h
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 elif [ "$PLATFORM" = "android" ]; then
 	SHAREDIR=/data/megazeux
 	GAMESDIR=/data/megazeux
 	BINDIR=/data/megazeux
 	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 else
 	SHAREDIR=.
 	GAMESDIR=.
 	BINDIR=.
-	echo "#define CONFFILE \"config.txt\""      >> src/config.h
+	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	echo "#define SHAREDIR \"$SHAREDIR\""  >> src/config.h
 fi
-
-echo "#define SHAREDIR \"$SHAREDIR/\"" >> src/config.h
 
 #
 # Some architectures define an "install" target, and need these.

@@ -18,13 +18,8 @@ endif
 
 # linux os specific install target
 install:
-	@${install} -m 0755 -d ${DESTDIR}${BINDIR} && \
-	 ${install} -m 0755 -d ${DESTDIR}${GAMESDIR} && \
-	 ${install} -m 0755 -d ${DESTDIR}${SHAREDIR} && \
-	 ${install} -m 0755 -d ${DESTDIR}${SHAREDIR}/icons && \
+	@${install} -m 0755 -d ${DESTDIR}${SHAREDIR} && \
 	 ${install} -m 0755 -d ${DESTDIR}${SHAREDIR}/megazeux && \
-	 ${install} -m 0755 -d ${DESTDIR}${LIBDIR} && \
-	 ${install} -m 0755 -d ${DESTDIR}${SYSCONFDIR} && \
 	 ${install} -m 0644 mzx_default.chr ${DESTDIR}${SHAREDIR}/megazeux && \
 	 ${install} -m 0644 mzx_blank.chr ${DESTDIR}${SHAREDIR}/megazeux && \
 	 ${install} -m 0644 mzx_smzx.chr ${DESTDIR}${SHAREDIR}/megazeux && \
@@ -32,14 +27,33 @@ install:
 	 ${install} -m 0644 mzx_edit.chr ${DESTDIR}${SHAREDIR}/megazeux && \
 	 ${install} -m 0644 smzx.pal ${DESTDIR}${SHAREDIR}/megazeux && \
 	 ${install} -m 0644 mzx_help.fil ${DESTDIR}${SHAREDIR}/megazeux && \
+	 ${install} -m 0755 -d ${DESTDIR}${SYSCONFDIR} && \
 	 ${install} -m 0644 config.txt ${DESTDIR}${SYSCONFDIR}/megazeux-config && \
+	 ${install} -m 0755 -d ${DESTDIR}${SHAREDIR}/icons && \
+	 ${install} -m 0644 contrib/icons/quantump.png \
+	                 ${DESTDIR}${SHAREDIR}/icons/megazeux.png
+ifeq (${BUILD_MODULAR},1)
+	@${install} -m 0755 -d ${DESTDIR}${LIBDIR} && \
 	 ${install} -m 0755 ${core_target} ${DESTDIR}${LIBDIR} && \
-	 ${install} -m 0755 ${editor_target} ${DESTDIR}${LIBDIR} && \
-	 ${install} -m 0755 ${mzxrun} ${DESTDIR}${GAMESDIR}/ && \
-	 ${install} -m 0755 ${mzx} ${DESTDIR}${GAMESDIR}/ && \
+	 ${install} -m 0755 ${editor_target} ${DESTDIR}${LIBDIR}
+endif
+ifeq (${BUILD_MZXRUN},1)
+	@${install} -m 0755 -d ${DESTDIR}${GAMESDIR} && \
+	 ${install} -m 0755 ${mzxrun} ${DESTDIR}${GAMESDIR}/
+endif
+ifeq (${BUILD_EDITOR},1)
+	@${install} -m 0755 -d ${DESTDIR}${GAMESDIR} && \
+	 ${install} -m 0755 ${mzx} ${DESTDIR}${GAMESDIR}/
+endif
+ifeq (${BUILD_UTILS},1)
+	@${install} -m 0755 -d ${DESTDIR}${BINDIR} && \
 	 ${install} -m 0755 ${checkres} ${DESTDIR}${BINDIR}/ && \
 	 ${install} -m 0755 ${downver} ${DESTDIR}${BINDIR}/ && \
 	 ${install} -m 0755 ${hlp2txt} ${DESTDIR}${BINDIR}/ && \
-	 ${install} -m 0755 ${txt2hlp} ${DESTDIR}${BINDIR}/ && \
-	 ${install} -m 0644 contrib/icons/quantump.png \
-	                 ${DESTDIR}${SHAREDIR}/icons/megazeux.png
+	 ${install} -m 0755 ${txt2hlp} ${DESTDIR}${BINDIR}/
+endif
+ifeq (${BUILD_RENDER_GLSL},1)
+	@${install} -m 0755 -d ${DESTDIR}${SHAREDIR}/megazeux/shaders && \
+	 ${install} -m 0644 shaders/*.{frag,vert} \
+	                 ${DESTDIR}${SHAREDIR}/megazeux/shaders
+endif
