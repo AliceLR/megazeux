@@ -1873,17 +1873,15 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
           prefix_mid_xy(mzx_world, &check_x, &check_y, x, y);
 
-          if(check_color == 288)
-            check_param = mzx_world->sprite_num;
-
+          /* 256 == p?? */
           if(check_param == 256)
           {
             int i;
 
             for(i = check_color; i < MAX_SPRITES; i++)
             {
-              if(sprite_at_xy(mzx_world->sprite_list[i], check_x,
-               check_y)) break;
+              if(sprite_at_xy(mzx_world->sprite_list[i], check_x, check_y))
+                break;
             }
             if(i == MAX_SPRITES)
             {
