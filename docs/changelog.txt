@@ -19,6 +19,8 @@ USERS
   and backslashes to prevent UI corruption.
 + Fix a bug where the LOAD_GAME counter handler could continue to use the
   old board state after load, causing crashes. (Lancer-X)
++ Fixed a bug where status counters containing numbers >6 characters would
+  cause MegaZeux to crash or behave strangely.
 
 DEVELOPERS
 
