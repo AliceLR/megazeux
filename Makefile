@@ -126,7 +126,6 @@ ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_PSP},${BUILD_WII}),)
 ifneq (${PLATFORM},android)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
-utils_cflags := -fno-stack-protector
 endif
 endif
 
