@@ -104,7 +104,7 @@ struct gl1_render_data
 static bool gl1_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
-  struct gl1_render_data *render_data = malloc(sizeof(struct gl1_render_data));
+  struct gl1_render_data *render_data = cmalloc(sizeof(struct gl1_render_data));
   int internal_width, internal_height;
   const char *version, *extensions;
 
@@ -156,7 +156,7 @@ static bool gl1_init_video(struct graphics_data *graphics,
     internal_height = GL_POWER_2_HEIGHT;
   }
 
-  render_data->pixels = malloc(sizeof(Uint32) * internal_width *
+  render_data->pixels = cmalloc(sizeof(Uint32) * internal_width *
    internal_height);
   render_data->w = internal_width;
   render_data->h = internal_height;

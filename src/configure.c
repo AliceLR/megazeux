@@ -520,7 +520,7 @@ __editor_maybe_static void __set_config_from_file(
   if(!conf_file)
     return;
 
-  extended_buffer = malloc(extended_allocate_size);
+  extended_buffer = cmalloc(extended_allocate_size);
 
   while(fsafegets(line_buffer_alternate, 255, conf_file))
   {
@@ -584,7 +584,7 @@ __editor_maybe_static void __set_config_from_file(
             if(extended_size >= extended_allocate_size)
             {
               extended_allocate_size *= 2;
-              extended_buffer = realloc(extended_buffer,
+              extended_buffer = crealloc(extended_buffer,
                 extended_allocate_size);
             }
 

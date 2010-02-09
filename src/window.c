@@ -1745,7 +1745,7 @@ void destruct_dialog(struct dialog *src)
 
 struct element *construct_label(int x, int y, const char *text)
 {
-  struct label_element *src = malloc(sizeof(struct label_element));
+  struct label_element *src = cmalloc(sizeof(struct label_element));
   src->text = text;
   construct_element(&(src->e), x, y, strlen(text), 1,
    draw_label, NULL, NULL, NULL, NULL);
@@ -1756,7 +1756,7 @@ struct element *construct_label(int x, int y, const char *text)
 __editor_maybe_static struct element *construct_input_box(int x, int y,
  const char *question, int max_length, int input_flags, char *result)
 {
-  struct input_box *src = malloc(sizeof(struct input_box));
+  struct input_box *src = cmalloc(sizeof(struct input_box));
   src->question = question;
   src->input_flags = input_flags;
   src->max_length = max_length;
@@ -1772,7 +1772,7 @@ __editor_maybe_static struct element *construct_input_box(int x, int y,
 struct element *construct_radio_button(int x, int y,
  const char **choices, int num_choices, int max_length, int *result)
 {
-  struct radio_button *src = malloc(sizeof(struct radio_button));
+  struct radio_button *src = cmalloc(sizeof(struct radio_button));
   src->choices = choices;
   src->num_choices = num_choices;
   src->result = result;
@@ -1787,7 +1787,7 @@ struct element *construct_radio_button(int x, int y,
 struct element *construct_button(int x, int y, const char *label,
  int return_value)
 {
-  struct button *src = malloc(sizeof(struct button));
+  struct button *src = cmalloc(sizeof(struct button));
   src->label = label;
   src->return_value = return_value;
 
@@ -1801,7 +1801,7 @@ struct element *construct_number_box(int x, int y,
  const char *question, int lower_limit, int upper_limit,
  int mult_five, int *result)
 {
-  struct number_box *src = malloc(sizeof(struct number_box));
+  struct number_box *src = cmalloc(sizeof(struct number_box));
   int width;
 
   src->question = question;
@@ -1828,7 +1828,7 @@ __editor_maybe_static struct element *construct_list_box(int x, int y,
 {
   int scroll_offset = *result - (num_choices_visible / 2);
 
-  struct list_box *src = malloc(sizeof(struct list_box));
+  struct list_box *src = cmalloc(sizeof(struct list_box));
   src->choices = choices;
   src->num_choices = num_choices;
   src->num_choices_visible = num_choices_visible;
@@ -1985,7 +1985,7 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
           {
             case IKEY_r:
             {
-              char *new_name = malloc(MAX_PATH);
+              char *new_name = cmalloc(MAX_PATH);
               int offset = 56;
               int width = 29;
 
@@ -2121,8 +2121,8 @@ static void remove_files(char *directory_name, int remove_recursively)
   if(!current_dir)
     return;
 
-  current_dir_name = malloc(MAX_PATH);
-  file_name = malloc(PATH_BUF_LEN);
+  current_dir_name = cmalloc(MAX_PATH);
+  file_name = cmalloc(PATH_BUF_LEN);
 
   getcwd(current_dir_name, MAX_PATH);
   chdir(directory_name);
@@ -2192,9 +2192,9 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
   // These are stack heavy so put them on the heap
   // This function is not performance sensitive anyway.
-  file_name = malloc(PATH_BUF_LEN);
-  current_dir_name = malloc(MAX_PATH);
-  previous_dir_name = malloc(MAX_PATH);
+  file_name = cmalloc(PATH_BUF_LEN);
+  current_dir_name = cmalloc(MAX_PATH);
+  previous_dir_name = cmalloc(MAX_PATH);
 
   if(allow_new)
     last_element = FILESEL_FILENAME;
@@ -2210,8 +2210,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   {
     total_filenames_allocated = 32;
     total_dirnames_allocated = 32;
-    file_list = calloc(32, sizeof(char *));
-    dir_list = calloc(32, sizeof(char *));
+    file_list = ccalloc(32, sizeof(char *));
+    dir_list = ccalloc(32, sizeof(char *));
 
     num_files = 0;
     num_dirs = 0;
@@ -2235,7 +2235,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
         {
           if(dirs_okay)
           {
-            dir_list[num_dirs] = malloc(file_name_length + 1);
+            dir_list[num_dirs] = cmalloc(file_name_length + 1);
             strncpy(dir_list[num_dirs], file_name, file_name_length);
             dir_list[num_dirs][file_name_length] = '\0';
             num_dirs++;
@@ -2257,7 +2257,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
             {
               if(!strcasecmp(file_name + ext_pos, wildcards[i]))
               {
-                file_list[num_files] = malloc(56 + file_name_length + 1);
+                file_list[num_files] = cmalloc(56 + file_name_length + 1);
 
                 if(!strcasecmp(file_name + file_name_length - 4, ".mzx"))
                 {
@@ -2289,7 +2289,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
       if(num_files == total_filenames_allocated)
       {
-        file_list = realloc(file_list, sizeof(char *) *
+        file_list = crealloc(file_list, sizeof(char *) *
          total_filenames_allocated * 2);
         memset(file_list + total_filenames_allocated, 0,
          sizeof(char *) * total_filenames_allocated);
@@ -2298,7 +2298,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
       if(num_dirs == total_dirnames_allocated)
       {
-        dir_list = realloc(dir_list, sizeof(char *) *
+        dir_list = crealloc(dir_list, sizeof(char *) *
          total_dirnames_allocated * 2);
         memset(dir_list + total_dirnames_allocated, 0,
          sizeof(char *) * total_dirnames_allocated);
@@ -2320,14 +2320,14 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       {
         if(drive_letter_bitmap & (1 << i))
         {
-          dir_list[num_dirs] = malloc(3);
+          dir_list[num_dirs] = cmalloc(3);
           sprintf(dir_list[num_dirs], "%c:", 'A' + i);
 
           num_dirs++;
 
           if(num_dirs == total_dirnames_allocated)
           {
-            dir_list = realloc(dir_list, sizeof(char *) *
+            dir_list = crealloc(dir_list, sizeof(char *) *
              total_dirnames_allocated * 2);
             memset(dir_list + total_dirnames_allocated, 0,
              sizeof(char *) * total_dirnames_allocated);
@@ -2408,7 +2408,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
         if(default_ext)
           add_ext(ret, default_ext);
 
-        path = malloc(MAX_PATH);
+        path = cmalloc(MAX_PATH);
         get_path(ret, path, MAX_PATH);
         stat_result = stat(ret, &file_info);
 
@@ -2473,7 +2473,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
         char *new_name;
         struct dialog b_di;
 
-        new_name = malloc(MAX_PATH);
+        new_name = cmalloc(MAX_PATH);
         new_name[0] = 0;
 
         b_elements[0] = construct_input_box(2, 2,
@@ -2512,7 +2512,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
         {
           char *confirm_string;
 
-          confirm_string = malloc(MAX_PATH);
+          confirm_string = cmalloc(MAX_PATH);
           snprintf(confirm_string, MAX_PATH,
            "Delete %s - are you sure?", ret);
 
@@ -2597,7 +2597,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     {
       char *ret_buffer;
 
-      ret_buffer = malloc(MAX_PATH);
+      ret_buffer = cmalloc(MAX_PATH);
       strncpy(ret_buffer, ret, MAX_PATH - 1);
       ret_buffer[MAX_PATH - 1] = '\0';
 

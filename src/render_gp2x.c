@@ -199,7 +199,7 @@ static bool gp2x_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
   struct gp2x_render_data *render_data =
-   malloc(sizeof(struct gp2x_render_data));
+   cmalloc(sizeof(struct gp2x_render_data));
 
   if(!render_data)
     return false;

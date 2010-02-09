@@ -155,7 +155,7 @@ static void decrypt(const char *file_name)
   source = fopen(file_name, "rb");
   file_length = ftell_and_rewind(source);
 
-  file_buffer = malloc(file_length);
+  file_buffer = cmalloc(file_length);
   src_ptr = file_buffer;
   fread(file_buffer, file_length, 1, source);
   fclose(source);
@@ -381,7 +381,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
   }
 
   // Save charset
-  charset_mem = malloc(3584);
+  charset_mem = cmalloc(3584);
   ec_mem_save_set(charset_mem);
   fwrite(charset_mem, 3584, 1, fp);
   free(charset_mem);
@@ -620,7 +620,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
    * a little bit of memory caching the offsets of the board data so
    * we can rewrite the size/offset list with less seeking later.
    */
-  size_offset_list = malloc(8 * num_boards);
+  size_offset_list = cmalloc(8 * num_boards);
   board_offsets_position = ftell(fp);
   fseek(fp, 8 * num_boards, SEEK_CUR);
 
@@ -730,12 +730,12 @@ __editor_maybe_static void set_update_done(struct world *mzx_world)
   {
     if(mzx_world->update_done == NULL)
     {
-      mzx_world->update_done = malloc(max_size);
+      mzx_world->update_done = cmalloc(max_size);
     }
     else
     {
       mzx_world->update_done =
-       realloc(mzx_world->update_done, max_size);
+       crealloc(mzx_world->update_done, max_size);
     }
 
     mzx_world->update_done_size = max_size;
@@ -749,8 +749,8 @@ __editor_maybe_static void optimize_null_boards(struct world *mzx_world)
   int num_boards = mzx_world->num_boards;
   struct board **board_list = mzx_world->board_list;
   struct board **optimized_board_list =
-   calloc(num_boards, sizeof(struct board *));
-  int *board_id_translation_list = calloc(num_boards, sizeof(int));
+   ccalloc(num_boards, sizeof(struct board *));
+  int *board_id_translation_list = ccalloc(num_boards, sizeof(int));
 
   struct board *cur_board;
   int i, i2;
@@ -797,7 +797,7 @@ __editor_maybe_static void optimize_null_boards(struct world *mzx_world)
 
     free(board_list);
     board_list =
-     realloc(optimized_board_list, sizeof(struct board *) * i2);
+     crealloc(optimized_board_list, sizeof(struct board *) * i2);
 
     mzx_world->num_boards = i2;
     mzx_world->num_boards_allocated = i2;
@@ -1025,9 +1025,9 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
 
   meter_initial_draw(mzx_world, meter_curr, meter_target, "Loading...");
 
-  file_path = malloc(MAX_PATH);
-  current_dir = malloc(MAX_PATH);
-  config_file_name = malloc(MAX_PATH);
+  file_path = cmalloc(MAX_PATH);
+  current_dir = cmalloc(MAX_PATH);
+  config_file_name = cmalloc(MAX_PATH);
 
   get_path(file, file_path, MAX_PATH);
 
@@ -1051,7 +1051,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
   free(current_dir);
   free(file_path);
 
-  charset_mem = malloc(3584);
+  charset_mem = cmalloc(3584);
   fread(charset_mem, 3584, 1, fp);
   ec_mem_load_set(charset_mem);
   free(charset_mem);
@@ -1150,7 +1150,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     num_counters = fgetd(fp);
     mzx_world->num_counters = num_counters;
     mzx_world->num_counters_allocated = num_counters;
-    mzx_world->counter_list = calloc(num_counters, sizeof(struct counter *));
+    mzx_world->counter_list = ccalloc(num_counters, sizeof(struct counter *));
 
     for(i = 0; i < num_counters; i++)
     {
@@ -1164,7 +1164,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     num_strings = fgetd(fp);
     mzx_world->num_strings = num_strings;
     mzx_world->num_strings_allocated = num_strings;
-    mzx_world->string_list = calloc(num_strings, sizeof(struct string *));
+    mzx_world->string_list = ccalloc(num_strings, sizeof(struct string *));
 
     for(i = 0; i < num_strings; i++)
     {
@@ -1173,14 +1173,14 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
 
     // Allocate space for sprites and clist
     mzx_world->num_sprites = MAX_SPRITES;
-    mzx_world->sprite_list = calloc(MAX_SPRITES, sizeof(struct sprite *));
+    mzx_world->sprite_list = ccalloc(MAX_SPRITES, sizeof(struct sprite *));
 
     for(i = 0; i < MAX_SPRITES; i++)
     {
-      mzx_world->sprite_list[i] = calloc(1, sizeof(struct sprite));
+      mzx_world->sprite_list[i] = ccalloc(1, sizeof(struct sprite));
     }
 
-    mzx_world->collision_list = calloc(MAX_SPRITES, sizeof(int));
+    mzx_world->collision_list = ccalloc(MAX_SPRITES, sizeof(int));
     mzx_world->sprite_num = 0;
 
     // Sprite data
@@ -1295,8 +1295,8 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     mzx_world->vlayer_height = fgetw(fp);
     mzx_world->vlayer_size = vlayer_size;
 
-    mzx_world->vlayer_chars = malloc(vlayer_size);
-    mzx_world->vlayer_colors = malloc(vlayer_size);
+    mzx_world->vlayer_chars = cmalloc(vlayer_size);
+    mzx_world->vlayer_colors = cmalloc(vlayer_size);
 
     fread(mzx_world->vlayer_chars, 1, vlayer_size, fp);
     fread(mzx_world->vlayer_colors, 1, vlayer_size, fp);
@@ -1335,7 +1335,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
 
   mzx_world->num_boards = num_boards;
   mzx_world->num_boards_allocated = num_boards;
-  mzx_world->board_list = malloc(sizeof(struct board *) * num_boards);
+  mzx_world->board_list = cmalloc(sizeof(struct board *) * num_boards);
 
   // Skip the names for now
   // Gonna wanna come back to here
@@ -1411,15 +1411,15 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
 
   // Allocate space for sprites and give them default values (all 0's)
   mzx_world->num_sprites = MAX_SPRITES;
-  mzx_world->sprite_list = calloc(MAX_SPRITES, sizeof(struct sprite *));
+  mzx_world->sprite_list = ccalloc(MAX_SPRITES, sizeof(struct sprite *));
 
   for(i = 0; i < 256; i++)
   {
-    mzx_world->sprite_list[i] = malloc(sizeof(struct sprite));
+    mzx_world->sprite_list[i] = cmalloc(sizeof(struct sprite));
     memset(mzx_world->sprite_list[i], 0, sizeof(struct sprite));
   }
 
-  mzx_world->collision_list = calloc(MAX_SPRITES, sizeof(int));
+  mzx_world->collision_list = ccalloc(MAX_SPRITES, sizeof(int));
   mzx_world->sprite_num = 0;
 
   // Set some default counter values
@@ -1450,8 +1450,8 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->vlayer_size = 0x8000;
   mzx_world->vlayer_width = 256;
   mzx_world->vlayer_height = 128;
-  mzx_world->vlayer_chars = malloc(0x8000);
-  mzx_world->vlayer_colors = malloc(0x8000);
+  mzx_world->vlayer_chars = cmalloc(0x8000);
+  mzx_world->vlayer_colors = cmalloc(0x8000);
   memset(mzx_world->vlayer_chars, 32, 0x8000);
   memset(mzx_world->vlayer_colors, 7, 0x8000);
 

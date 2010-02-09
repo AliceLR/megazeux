@@ -106,7 +106,7 @@ CORE_LIBSPEC bool get_shift_status(enum keycode_type type);
 CORE_LIBSPEC bool get_ctrl_status(enum keycode_type type);
 CORE_LIBSPEC void initialize_joysticks(void);
 
-// Implemented by "drivers" (SDL or Wii currently)
+// Implemented by "drivers" (SDL, Wii, and NDS currently)
 void __wait_event(void);
 bool __update_event_status(void);
 

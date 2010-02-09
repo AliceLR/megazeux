@@ -1,7 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2009 Alistair John Strachan <alistair@devzero.co.uk>
- * Copyright (C) 2007 Kevin Vance <kvance@kvance.com>
+ * Copyright (C) 2007-2009 Kevin Vance <kvance@kvance.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -18,18 +18,22 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdarg.h>
+
 #include "../../src/platform.h"
+#undef main
+
 #include "../../src/util.h"
 
 #include <fat.h>
 #include "render.h"
 #include "ram.h"
-#include "malloc.h"
+#include "dlmalloc.h"
 #include "exception.h"
 #include "memory_warning_pcx.h"
 
 // from arch/nds/event.c
-extern void nds_inject_input(void);
+extern void nds_update_input(void);
 
 // Timer code stolen from SDL (LGPL)
 
@@ -50,30 +54,75 @@ Uint32 get_ticks(void)
 
 static void timer_init(void)
 {
+  // TIMER0, TIMER1: Tick timer
   TIMER0_DATA = 0; 
   TIMER1_DATA = 0; 
   TIMER0_CR = TIMER_ENABLE | TIMER_DIV_1024; 
   TIMER1_CR = TIMER_ENABLE | TIMER_CASCADE;
+
+  // TIMER2: Input handler IRQ
+  // We could do this in vblank, but sometimes we need to block new input
+  // events when the event queue is in use.  Using a hardware timer, we can
+  // keep the graphics flicker running.
+  TIMER2_DATA = TIMER_FREQ_1024(60);
+  TIMER2_CR = TIMER_ENABLE | TIMER_DIV_1024 | TIMER_IRQ_REQ;
+  irqSet(IRQ_TIMER2, nds_update_input);
+  irqEnable(IRQ_TIMER2);
 }
 
-static void nds_on_vblank(void)
+/*
+ * Special handling for debug output
+ */
+
+static void handle_debug_info(const char *type, const char *format, va_list args)
 {
-  /* Handle sleep mode. */
-  nds_sleep_check();
-
-  /* Do all special video handling. */
-  nds_video_rasterhack();
-  nds_video_jitter();
-
-  /* Handle the virtual keyboard and mouse. */
-  nds_inject_input();
+  if(!has_video_initialized())
+  {
+    iprintf("%s: ", type);
+    viprintf(format, args);
+    fflush(stdout);
+  }
+  // TODO: Have a debug console on the subscreen show these.
 }
+
+void info(const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  handle_debug_info("INFO", format, args);
+  va_end(args);
+}
+
+void warn(const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  handle_debug_info("WARNING", format, args);
+  va_end(args);
+}
+
+#ifdef DEBUG
+void debug(const char *format, ...)
+{
+  va_list args;
+  va_start(args, format);
+  handle_debug_info("DEBUG", format, args);
+  va_end(args);
+}
+#endif // DEBUG
 
 bool platform_init(void)
 {
   powerOn(POWER_ALL);
-  //setMzxExceptionHandler();
-  fatInitDefault();
+  setMzxExceptionHandler();
+
+  if(!fatInitDefault())
+  {
+    consoleDemoInit();
+    iprintf("Unable to initialize FAT.\n"
+            "Check your DLDI driver.\n");
+    return false;
+  }
 
   // If the "extra RAM" is missing, warn the user
   if(!nds_ram_init(DETECT_RAM))
@@ -82,8 +131,12 @@ bool platform_init(void)
   nds_ext_lock();
   timer_init();
 
-  irqSet(IRQ_VBLANK, nds_on_vblank);
+  // Enable vblank interrupts, but don't install the handler until the
+  // graphics have initialized.
   irqEnable(IRQ_VBLANK);
+
+  // Show the default text console, in case warning messages appear.
+  consoleDemoInit();
 
   return true;
 }
@@ -91,4 +144,14 @@ bool platform_init(void)
 void platform_quit(void)
 {
   nds_ext_unlock();
+}
+
+// argc/argv is unreliable on NDS.  On my R4, argv[0] is an invalid pointer.
+
+int main(int argc, char *argv[])
+{
+  static char _argv0[] = SHAREDIR "megazeux";
+  static char *_argv[] = {_argv0};
+
+  real_main(1, _argv);
 }

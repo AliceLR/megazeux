@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2007 Kevin Vance <kvance@kvance.com>
+ * Copyright (C) 2007-2009 Kevin Vance <kvance@kvance.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -25,13 +25,12 @@
 #include <string.h>
 
 #include "render.h"
-#include "keyboard.h"
 
 #include "../../src/renderers.h"
 #include "../../src/graphics.h"
 #include "../../src/render.h"
 
-#include <nds/registers_alt.h>
+#include <nds/arm9/keyboard.h>
 
 // These variables control the panning along the 1:1 "main" screen.
 static int cell_pan_x = 0;
@@ -40,18 +39,69 @@ static int cell_pan_y = 0;
 // This table stores scroll register values for each scanline.
 static u16 scroll_table[192];
 
+// This table maps palette color combinations to their index in BG_PALETTE.
+static int palette_idx_table[16][16];
+
 // If we're looking around with the mouse, ignore the next call to focus.
 static bool mouselook;
 
+// The current transition state.
+static struct {
+  enum { TRANSITION_NONE = 0, TRANSITION_IN, TRANSITION_OUT } state;
+  int time;
+} transition;
+
 // The subscreen can display different information.
+enum Subscreen_Mode last_subscreen_mode;
 enum Subscreen_Mode subscreen_mode;
+
 
 // Forward declarations
 void nds_mainscreen_focus(struct graphics_data *graphics, Uint32 x, Uint32 y);
+static void nds_keyboard_scroll_in(void);
+static void nds_keyboard_scroll_out(void);
+
+
+// Do this every vblank irq:
+static void nds_on_vblank(void)
+{
+  /* Handle sleep mode. */
+  nds_sleep_check();
+
+  /* Do all special video handling. */
+  nds_video_rasterhack();
+  nds_video_jitter();
+  nds_video_do_transition();
+}
+
+
 
 bool is_scaled_mode(enum Subscreen_Mode mode)
 {
   return (mode == SUBSCREEN_SCALED);
+}
+
+static void palette_idx_table_init(void)
+{
+  // Start the palette at 16, reserving colors 0-16 for the overlay.
+  const int offset = 16;
+  int idx;
+
+  // Store the normal palette sequentially.
+  for(idx = 0; idx < 16; idx++)
+    palette_idx_table[idx][idx] = idx + offset;
+
+  // Store the blends after that.
+  idx += offset;
+  for(int a = 0; a < 16; a++)
+  {
+    for(int b = a+1; b < 16; b++)
+    {
+      palette_idx_table[a][b] = idx;
+      palette_idx_table[b][a] = idx;
+      idx++;
+    }
+  }
 }
 
 static void nds_subscreen_scaled_init(void)
@@ -65,25 +115,26 @@ static void nds_subscreen_scaled_init(void)
   vramSetBankB(VRAM_B_MAIN_BG);
 
   /* Use flickered alpha lerp to scale 320x350 to 256x192. */
-  BG2_CR  = BG_BMP8_512x512 | BG_BMP_BASE(0) | BG_PRIORITY(0);
-  BG2_XDX = xscale;
-  BG2_XDY = 0;
-  BG2_YDX = 0;
-  BG2_YDY = yscale;
-  BG2_CX  = 0;
-  BG2_CY  = 0;
+  /* (Bump the BG up to base 3 (+0xc0000) to make room for the keyboard.) */
+  REG_BG2CNT = BG_BMP8_512x512 | BG_BMP_BASE(3) | BG_PRIORITY(0);
+  REG_BG2PA  = xscale;
+  REG_BG2PB  = 0;
+  REG_BG2PC  = 0;
+  REG_BG2PD  = yscale;
+  REG_BG2X   = 0;
+  REG_BG2Y   = 0;
 
-  BG3_CR  = BG_BMP8_512x512 | BG_BMP_BASE(0) | BG_PRIORITY(0);
-  BG3_XDX = xscale;
-  BG3_XDY = 0;
-  BG3_YDX = 0;
-  BG3_YDY = yscale;
-  BG3_CX  = 0;
-  BG3_CY  = 0;
+  REG_BG3CNT = BG_BMP8_512x512 | BG_BMP_BASE(3) | BG_PRIORITY(0);
+  REG_BG3PA  = xscale;
+  REG_BG3PB  = 0;
+  REG_BG3PC  = 0;
+  REG_BG3PD  = yscale;
+  REG_BG3X   = 0;
+  REG_BG3Y   = 0;
 
   /* Enable BG2/BG3 blending. */
-  BLEND_CR = BLEND_ALPHA | BLEND_SRC_BG2 | BLEND_DST_BG3;
-  BLEND_AB = (8 << 8) | 8; /* 50% / 50% */
+  REG_BLDCNT   = BLEND_ALPHA | BLEND_SRC_BG2 | BLEND_DST_BG3;
+  REG_BLDALPHA = (8 << 8) | 8; /* 50% / 50% */
 
   update_palette();
   update_screen();
@@ -92,12 +143,24 @@ static void nds_subscreen_scaled_init(void)
 
 static void nds_subscreen_keyboard_init(void)
 {
-  vramSetBankA(VRAM_A_MAIN_BG);
-  initKeyboard();
+  Keyboard *kb = keyboardGetDefault();
 
-  // Disable blending.
-  BLEND_CR = 0;
+  // BG0: Keyboard 256x512 text, map following tiles (45056 bytes total)
+  // Clear the keyboard area before drawing it.
+  dmaFillWords(0, BG_MAP_RAM(20), 4096);
+  keyboardInit(kb, 0, BgType_Text4bpp, BgSize_T_256x512, 20, 0, true, true);
+  bgHide(0);
+  kb->scrollSpeed = 7;
+  transition.time = 0;
+  transition.state = TRANSITION_IN;
 }
+
+static void nds_subscreen_keyboard_exit(void)
+{
+  transition.time = 0;
+  transition.state = TRANSITION_OUT;
+}
+
 
 static void nds_mainscreen_init(struct graphics_data *graphics)
 {
@@ -113,16 +176,16 @@ static void nds_mainscreen_init(struct graphics_data *graphics)
   vramSetBankC(VRAM_C_SUB_BG);
 
   /* BG0: foreground characters. */
-  SUB_BG0_CR = BG_64x32 | BG_COLOR_16 | BG_MAP_BASE(0) |
-               BG_TILE_BASE(1);
-  SUB_BG0_X0 = 0;
-  SUB_BG0_Y0 = 0;
+  REG_BG0CNT_SUB  = BG_64x32 | BG_COLOR_16 | BG_MAP_BASE(0) |
+                    BG_TILE_BASE(1);
+  REG_BG0HOFS_SUB = 0;
+  REG_BG0VOFS_SUB = 0;
 
   /* BG1: background characters. */
-  SUB_BG1_CR = BG_64x32 | BG_COLOR_16 | BG_MAP_BASE(2) |
-               BG_TILE_BASE(1);
-  SUB_BG1_X0 = 0;
-  SUB_BG1_Y0 = 0;
+  REG_BG1CNT_SUB  = BG_64x32 | BG_COLOR_16 | BG_MAP_BASE(2) |
+                    BG_TILE_BASE(1);
+  REG_BG1HOFS_SUB = 0;
+  REG_BG1VOFS_SUB = 0;
 
   // By default, pan to the center of the screen.
   nds_mainscreen_focus(graphics, 640/2, 350/2);
@@ -144,37 +207,107 @@ void nds_video_jitter(void)
   static size_t jidx = 0;    /* jitter table index */
 
   /* Jitter the backgrounds for scaled mode. */
-  if(is_scaled_mode(subscreen_mode))
-  {
-    if(jidx >= sizeof(jitterF4)/sizeof(*jitterF4))
-      jidx = 0;
+  if(jidx >= sizeof(jitterF4)/sizeof(*jitterF4))
+    jidx = 0;
 
-    BG2_CX = jitterF4[jidx];
-    BG2_CY = jitterF4[jidx+1];
-    BG3_CX = jitterF4[jidx+2];
-    BG3_CY = jitterF4[jidx+3];
-    jidx += 4;
-  }
+  REG_BG2X = jitterF4[jidx];
+  REG_BG2Y = jitterF4[jidx+1];
+  REG_BG3X = jitterF4[jidx+2];
+  REG_BG3Y = jitterF4[jidx+3];
+  jidx += 4;
 }
 
 /* Use HBlank DMA to load row scroll values in for each line. */
 void nds_video_rasterhack(void)
 {
   /* Prepare DMA transfer. */
-  DMA1_CR    = 0;
-  SUB_BG0_Y0 = scroll_table[0];
-  DMA1_SRC   = (u32)(scroll_table + 1);
-  DMA1_DEST  = (u32)&SUB_BG0_Y0;
-  DMA1_CR    = DMA_DST_FIX | DMA_SRC_INC | DMA_REPEAT | DMA_16_BIT |
-               DMA_START_HBL | DMA_ENABLE | 1;
+  DMA1_CR         = 0;
+  REG_BG0VOFS_SUB = scroll_table[0];
+  DMA1_SRC        = (u32)(scroll_table + 1);
+  DMA1_DEST       = (u32)&REG_BG0VOFS_SUB;
+  DMA1_CR         = DMA_DST_FIX | DMA_SRC_INC | DMA_REPEAT | DMA_16_BIT |
+                    DMA_START_HBL | DMA_ENABLE | 1;
 
-  DMA2_CR    = 0;
-  SUB_BG1_Y0 = scroll_table[0];
-  DMA2_SRC   = (u32)(scroll_table + 1);
-  DMA2_DEST  = (u32)&SUB_BG1_Y0;
-  DMA2_CR    = DMA_DST_FIX | DMA_SRC_INC | DMA_REPEAT | DMA_16_BIT |
-               DMA_START_HBL | DMA_ENABLE | 1;
+  DMA2_CR         = 0;
+  REG_BG1VOFS_SUB = scroll_table[0];
+  DMA2_SRC        = (u32)(scroll_table + 1);
+  DMA2_DEST       = (u32)&REG_BG1VOFS_SUB;
+  DMA2_CR         = DMA_DST_FIX | DMA_SRC_INC | DMA_REPEAT | DMA_16_BIT |
+                    DMA_START_HBL | DMA_ENABLE | 1;
 }
+
+// Handle the transition animation.
+void nds_video_do_transition(void)
+{
+  // On transitioning in, use the current screen.  Out, use the last screen.
+  enum Subscreen_Mode mode;
+  if(transition.state == TRANSITION_NONE)
+    return;
+  if(transition.state == TRANSITION_IN)
+    mode = subscreen_mode;
+  else                // TRANSITION_OUT
+    mode = last_subscreen_mode;
+
+  if(mode == SUBSCREEN_KEYBOARD)
+  {
+    if(transition.state == TRANSITION_IN)
+      nds_keyboard_scroll_in();
+    else
+      nds_keyboard_scroll_out();
+  }
+}
+
+static void nds_keyboard_scroll_in(void)
+{
+  Keyboard *kb = keyboardGetDefault();
+  if(transition.time == 0)
+  {
+    // Show the background.
+    kb->visible = 1;
+    bgSetScroll(kb->background, 0, -192);
+    bgUpdate();
+    bgShow(kb->background);
+  }
+  else
+  {
+    // Scroll 80 pixels.
+    if(transition.time < 80)
+    {
+      bgSetScroll(kb->background, 0, -192 + transition.time);
+    }
+    else
+    {
+      bgSetScroll(kb->background, 0, kb->offset_y);
+      transition.state = TRANSITION_NONE;
+    }
+    bgUpdate();
+  }
+
+  transition.time += kb->scrollSpeed;
+}
+
+static void nds_keyboard_scroll_out(void)
+{
+  Keyboard *kb = keyboardGetDefault();
+  if(transition.time == 0)
+    kb->visible = 0;
+
+  if(transition.time >= 80)
+  {
+    // Hide the background.
+    bgHide(kb->background);
+    transition.state = TRANSITION_NONE;
+  }
+  else
+  {
+    // Scroll 80 pixels.
+    bgSetScroll(kb->background, 0, kb->offset_y - transition.time);
+    bgUpdate();
+  }
+
+  transition.time += kb->scrollSpeed;
+}
+
 
 void nds_sleep_check(void)
 {
@@ -210,14 +343,24 @@ static bool nds_init_video(struct graphics_data *graphics,
 {
   lcdMainOnBottom();
 
+  // Build the palette blend mapping table.
+  palette_idx_table_init();
+
   // Start with scaled mode.
   subscreen_mode = SUBSCREEN_SCALED;
+  last_subscreen_mode = SUBSCREEN_MODE_INVALID;
   nds_subscreen_scaled_init();
 
   // Initialize the 1:1 scaled "main" screen.
   nds_mainscreen_init(graphics);
 
   mouselook = false;
+  transition.state = TRANSITION_NONE;
+  transition.time = 0;
+
+  // Now that we're initialized, install the vblank handler.
+  irqSet(IRQ_VBLANK, nds_on_vblank);
+
   return true;
 }
 
@@ -242,7 +385,7 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
   int const VRAM_WIDTH       = 512;     // HW surface width in pixels
 
   struct char_element *text_cell = graphics->text_video;
-  u32 *vram_ptr  = (u32*)BG_BMP_RAM(0);
+  u32 *vram_ptr  = (u32*)BG_BMP_RAM(3);
   int chars, lines;
 
   /* Iterate over every character in text memory. */
@@ -254,13 +397,15 @@ static void nds_render_graph_scaled(struct graphics_data *graphics)
     int bg  = (*text_cell).bg_color   & 0x0F;
     int fg  = (*text_cell).fg_color   & 0x0F;
 
-    /* Construct a table mapping charset two-bit pairs to
-     * palette entries. */
+    // Construct a table mapping charset two-bit pairs to palette entries.
+    u32 bg_idx = bg + 16; // Solid colors are offset by 16.
+    u32 fg_idx = fg + 16;
+    u32 mix_idx = palette_idx_table[bg][fg];
     u32 pal_tbl[4] = {
-      bg*16 + bg,       /* 00: bg color    */
-      bg*16 + fg,       /* 01: fg+bg blend */
-      bg*16 + fg,       /* 10: "         " */
-      fg*16 + fg        /* 11: fg color    */
+      bg_idx,   /* 00: bg color    */
+      mix_idx,  /* 01: fg+bg blend */
+      mix_idx,  /* 10: "         " */
+      fg_idx    /* 11: fg color    */
     };
 
     /* Iterate over every line in the character. */
@@ -382,9 +527,8 @@ static void nds_render_graph_1to1(struct graphics_data *graphics)
 
 static void nds_render_graph(struct graphics_data *graphics)
 {
-  // Render the scaled screen if requested.
-  if(is_scaled_mode(subscreen_mode))
-    nds_render_graph_scaled(graphics);
+  // Always render the scaled screen.
+  nds_render_graph_scaled(graphics);
 
   // Always render the 1:1 "main" screen.
   nds_render_graph_1to1(graphics);
@@ -392,33 +536,26 @@ static void nds_render_graph(struct graphics_data *graphics)
 
 static void nds_update_palette_entry(struct rgb_color *palette, Uint32 idx)
 {
-  u16* hw_pal = BG_PALETTE + idx;
   struct rgb_color color1 = palette[idx];
-  int entry2;
+  int idx2;
 
   if(idx < 16)
   {
     // Update the mainscreen palette.
     BG_PALETTE_SUB[16*idx + 1] = RGB15(color1.r/8, color1.g/8, color1.b/8);
 
-    // Update the subscreen palette if requested.
-    if(is_scaled_mode(subscreen_mode))
+    // Update the subscreen palette.
+    /* Iterate over an entire column of the palette, blending this color
+     * with all 16 other colors (including itself). */
+    for(idx2 = 0; idx2 < 16; idx2++)
     {
-      /* Iterate over an entire column of the palette, blending this color
-       * with all 16 other colors (including itself). */
-      for(entry2 = 0; entry2 < 16; entry2++)
-      {
-        /* Average the colors while reducing their accuracy to 5 bits. */
-        struct rgb_color color2 = palette[entry2];
-        u16 r = (color1.r + color2.r) / 16;
-        u16 g = (color1.g + color2.g) / 16;
-        u16 b = (color1.b + color2.b) / 16;
+      /* Average the colors while reducing their accuracy to 5 bits. */
+      struct rgb_color color2 = palette[idx2];
+      u16 r = (color1.r + color2.r) / 16;
+      u16 g = (color1.g + color2.g) / 16;
+      u16 b = (color1.b + color2.b) / 16;
 
-        *hw_pal  = RGB15(r, g, b);
-
-        /* Advance to next row. */
-        hw_pal += 16;
-      }
+      BG_PALETTE[ palette_idx_table[idx][idx2] ] = RGB15(r, g, b);
     }
   }
 }
@@ -492,6 +629,8 @@ static void nds_remap_charsets(struct graphics_data *graphics)
 // Focus on a given screen position (in pixels up to 640x350).
 void nds_mainscreen_focus(struct graphics_data *graphics, Uint32 x, Uint32 y)
 {
+  static Uint32 old_x = -1;
+  static Uint32 old_y = -1;
   int scroll_x, scroll_y, i, ypos, ycounter;
   u16 *sptr;
 
@@ -500,6 +639,14 @@ void nds_mainscreen_focus(struct graphics_data *graphics, Uint32 x, Uint32 y)
     // We're mouselooking, don't move the focus.
     return;
   }
+
+  if(x == old_x && y == old_y)
+  {
+    // Already focused there, quick abort.
+    return;
+  }
+  old_x = x;
+  old_y = y;
 
   // Clamp the coordinates so we stay within the screen.
   if(x < 132) x = 132;
@@ -518,11 +665,11 @@ void nds_mainscreen_focus(struct graphics_data *graphics, Uint32 x, Uint32 y)
   scroll_y   = y % 14;
 
   // Adjust the X scroll registers now.
-  SUB_BG0_X0 = scroll_x;
-  SUB_BG1_X0 = scroll_x;
+  REG_BG0HOFS_SUB = scroll_x;
+  REG_BG1HOFS_SUB = scroll_x;
 
   // Recalculate the scroll table.
-  sptr    = scroll_table;
+  sptr     = scroll_table;
   ypos     = scroll_y;
   ycounter = scroll_y;
   for(i = 0; i < 192; i++)
@@ -562,24 +709,22 @@ void render_nds_register(struct renderer *renderer)
 
 void nds_subscreen_switch(void)
 {
+  // Don't switch during a transition.
+  if(transition.state != TRANSITION_NONE)
+    return;
+
+  // Call appropriate exit function.
+  if(subscreen_mode == SUBSCREEN_KEYBOARD)
+    nds_subscreen_keyboard_exit();
+
   // Cycle between modes.
+  last_subscreen_mode = subscreen_mode;
   if(++subscreen_mode == SUBSCREEN_MODE_COUNT)
     subscreen_mode = 0;
 
-  // Call appropriate initialization function.
-  switch(subscreen_mode)
-  {
-    case SUBSCREEN_SCALED:
-      nds_subscreen_scaled_init();
-      break;
-
-    case SUBSCREEN_KEYBOARD:
-      nds_subscreen_keyboard_init();
-      break;
-
-    default:
-      break;
-  }
+  // Call the appropriate init function.
+  if(subscreen_mode == SUBSCREEN_KEYBOARD)
+    nds_subscreen_keyboard_init();
 }
 
 void nds_mouselook(bool enabled)
@@ -596,29 +741,30 @@ void warning_screen(u8 *pcx_data)
 
   if(loadPCX(pcx_data, &image))
   {
+    u16 *img = image.image.data16;
+    int ox, oy;
+    u16 *gfx;
+
     videoSetMode(MODE_5_2D | DISPLAY_BG2_ACTIVE);
     vramSetBankA(VRAM_A_MAIN_BG);
 
-    BG2_CR  = BG_BMP8_256x256;
-    BG2_XDX = 1 << 8;
-    BG2_XDY = 0;
-    BG2_YDX = 0;
-    BG2_YDY = 1 << 8;
-    BG2_CX  = 0;
-    BG2_CY  = 0;
+    REG_BG2CNT = BG_BMP8_256x256;
+    REG_BG2PA  = 1 << 8;
+    REG_BG2PB  = 0;
+    REG_BG2PC  = 0;
+    REG_BG2PD  = 1 << 8;
+    REG_BG2X   = 0;
+    REG_BG2Y   = 0;
 
     memcpy(BG_PALETTE, image.palette, 2*256);
 
-    int ox = 128 - image.width/2;
-    int oy = 96 - image.height/2;
-    u16 *gfx = (u16*)(0x06000000 + 256*oy + ox);
-    u16 *img = image.image.data16;
-    int row;
-    int col;
+    ox = 128 - image.width/2;
+    oy = 96 - image.height/2;
+    gfx = (u16*)(0x06000000 + 256*oy + ox);
 
-    for(row = 0; row < image.height; row++)
+    for(int row = 0; row < image.height; row++)
     {
-      for(col = 0; col < image.width/2; col++)
+      for(int col = 0; col < image.width/2; col++)
         *(gfx++) = *(img++);
       gfx += ox;
     }

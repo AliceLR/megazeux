@@ -102,7 +102,7 @@ static int case5(char *path, char *string)
   char *newpath;
   dir_t *wd;
 
-  newpath = malloc(PATH_BUF_LEN);
+  newpath = cmalloc(PATH_BUF_LEN);
 
   // prepend the working directory
   strcpy(newpath, "./");
@@ -354,7 +354,7 @@ FILE *fsafeopen(const char *path, const char *mode)
   int i, ret;
   FILE *f;
 
-  newpath = malloc(MAX_PATH);
+  newpath = cmalloc(MAX_PATH);
 
   // validate pathname, and optionally retrieve a better name
   ret = fsafetranslate(path, newpath);

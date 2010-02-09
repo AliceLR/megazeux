@@ -340,7 +340,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
 
   assert(filename != NULL);
 
-  *_z = calloc(1, sizeof(struct zip_handle));
+  *_z = ccalloc(1, sizeof(struct zip_handle));
   z = *_z;
 
   assert(*_z != NULL);
@@ -483,7 +483,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
   // ".ZIP file comment"
   if(z->file.comment_length > 0)
   {
-    z->file.comment = malloc(z->file.comment_length);
+    z->file.comment = cmalloc(z->file.comment_length);
     if(fread(z->file.comment, z->file.comment_length, 1, z->f) != 1)
     {
       err = ZIPIO_READ_FAILED;
@@ -519,7 +519,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
     struct zip_entry *new_entry;
     Uint16 time, date;
 
-    new_entry = calloc(1, sizeof(struct zip_entry));
+    new_entry = ccalloc(1, sizeof(struct zip_entry));
 
     if(z->file.entries)
     {
@@ -679,7 +679,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
     }
 
     // Add NULL terminator to file_name (file may have none)
-    entry->file_name = malloc(file_name_length + 1);
+    entry->file_name = cmalloc(file_name_length + 1);
     entry->file_name[file_name_length] = 0;
 
     // "file name"
@@ -736,7 +736,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
   if(z->file.entries && z->file.entries->next)
   {
     struct zip_entry **earray =
-     malloc(num_entries * sizeof(struct zip_entry *));
+     cmalloc(num_entries * sizeof(struct zip_entry *));
 
     for(i = 0, entry = z->file.entries; i < num_entries; i++)
     {
@@ -913,7 +913,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
     extra_field_length = d;
 
     // Add NULL terminator to file_name (file may have none)
-    file_name = malloc(file_name_length + 1);
+    file_name = cmalloc(file_name_length + 1);
     file_name[file_name_length] = 0;
 
     // "file name" (again)
@@ -1118,7 +1118,7 @@ enum zip_error zipio_open(const char *filename, struct zip_handle **_z)
 
   // Keep a record of the original filename for truncate-on-close
   filename_len = strlen(filename);
-  z->path = malloc(filename_len + 1);
+  z->path = cmalloc(filename_len + 1);
   strncpy(z->path, filename, filename_len + 1);
 
   return ZIPIO_SUCCESS;
@@ -1157,11 +1157,11 @@ static enum zip_error zipio_stash_cd(struct zip_handle *z, Uint16 *num_entries,
   for(entry = z->file.entries; entry; entry = entry->next)
     (*num_entries)++;
 
-  cd = malloc(sizeof(char *) * (*num_entries));
+  cd = cmalloc(sizeof(char *) * (*num_entries));
 
   for(entry = z->file.entries, i = 0; entry; entry = entry->next, i++)
   {
-    cd[i] = malloc(entry->cd_entry.length);
+    cd[i] = cmalloc(entry->cd_entry.length);
 
     if(fseek(z->f, entry->cd_entry.offset, SEEK_SET))
     {
@@ -1298,7 +1298,7 @@ static enum zip_error zipio_sync(struct zip_handle *z)
   Uint32 file_offset = 0;
   char *buffer;
 
-  buffer = malloc(BUFFER_SIZE);
+  buffer = cmalloc(BUFFER_SIZE);
 
   for(entry = z->file.entries; entry; entry = entry->next)
   {
@@ -1451,7 +1451,7 @@ enum zip_error zipio_opendir(struct zip_handle *z, const char *name, struct zip_
   if(strncmp(z->path, name, strlen(z->path)))
     return ZIPIO_PATH_NOT_FOUND;
 
-  *_d = calloc(1, sizeof(struct zip_dir));
+  *_d = ccalloc(1, sizeof(struct zip_dir));
   d = *_d;
 
   // Skip past the base path
@@ -1466,7 +1466,7 @@ enum zip_error zipio_opendir(struct zip_handle *z, const char *name, struct zip_
       name++;
 
     // Store a stripped version of the path on the zip_dir
-    d->path = malloc(name_len);
+    d->path = cmalloc(name_len);
     strncpy(d->path, name, name_len - 1);
     d->path[name_len - 1] = 0;
   }

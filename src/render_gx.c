@@ -239,7 +239,7 @@ static bool gx_init_video(struct graphics_data *graphics,
   graphics->window_width = 640;
   graphics->window_height = 350;
 
-  render_data = malloc(sizeof(struct gx_render_data));
+  render_data = cmalloc(sizeof(struct gx_render_data));
   graphics->render_data = render_data;
 
   rmode = render_data->rmode = VIDEO_GetPreferredMode(NULL);

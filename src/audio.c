@@ -362,7 +362,7 @@ __audio_c_maybe_static void sampled_set_buffer(struct sampled_stream *s_src)
   s_src->stream_offset = prologue_length;
 
   s_src->output_data =
-   realloc(s_src->output_data, allocated_data_length);
+   crealloc(s_src->output_data, allocated_data_length);
 
   sampled_negative_threshold(s_src);
 }
@@ -910,7 +910,7 @@ static struct audio_stream *construct_vorbis_stream(char *filename,
       if(vorbis_file_info->channels <= 2)
       {
         struct vorbis_stream *v_stream =
-         malloc(sizeof(struct vorbis_stream));
+         cmalloc(sizeof(struct vorbis_stream));
 
         v_stream->vorbis_file_handle = open_file;
         v_stream->vorbis_file_info = vorbis_file_info;
@@ -997,7 +997,7 @@ static void *get_riff_chunk(FILE *fp, int filesize, char *id, int *size)
   *size = read_little_endian32(size_buf);
   if(*size > maxsize) *size = maxsize;
 
-  buf = malloc(*size);
+  buf = cmalloc(*size);
 
   if(buf)
     fread(buf, 1, *size, fp);
@@ -1126,7 +1126,7 @@ static int load_wav_file(const char *file, struct wav_info *spec,
 #ifdef CONFIG_SDL
     if(SDL_LoadWAV(file, &sdlspec, audio_buf, audio_len))
     {
-      void *copy_buf = malloc(*audio_len);
+      void *copy_buf = cmalloc(*audio_len);
       memcpy(copy_buf, *audio_buf, *audio_len);
       SDL_FreeWAV(*audio_buf);
       *audio_buf = copy_buf;
@@ -1269,7 +1269,7 @@ static void convert_sam_to_wav(const char *source_name, const char *dest_name)
 
   frequency = freq_conversion / default_period;
   dest_length = source_length + 44;
-  data = malloc(dest_length);
+  data = cmalloc(dest_length);
 
   write_chars(data, "RIFF");
   write_little_endian32(data + 4, dest_length);
@@ -1406,7 +1406,7 @@ static struct audio_stream *construct_wav_stream(char *filename,
     // Surround WAVs not supported yet..
     if(w_info.channels <= 2)
     {
-      struct wav_stream *w_stream = malloc(sizeof(struct wav_stream));
+      struct wav_stream *w_stream = cmalloc(sizeof(struct wav_stream));
 
       w_stream->wav_data = wav_data;
       w_stream->data_length = data_length;
@@ -1440,7 +1440,7 @@ static struct audio_stream *construct_wav_stream(char *filename,
 static struct audio_stream *construct_pc_speaker_stream(void)
 {
   struct pc_speaker_stream *pcs_stream =
-   malloc(sizeof(struct pc_speaker_stream));
+   cmalloc(sizeof(struct pc_speaker_stream));
 
   memset(pcs_stream, 0, sizeof(struct pc_speaker_stream));
 

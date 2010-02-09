@@ -23,7 +23,7 @@
  */
 
 #include "extmem.h"
-#include "malloc.h"
+#include "dlmalloc.h"
 #include "robot.h"
 
 // Move the robot's memory from normal RAM to extra RAM.

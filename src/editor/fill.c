@@ -174,7 +174,7 @@ void fill_area(struct world *mzx_world, enum thing id, int color, int param,
   int offset = x + (y * board_width);
 
   int stack_pos; // Current element. -1 = empty.
-  struct stack_elem *stack = malloc(sizeof(struct stack_elem) * (STACK_SIZE + 1));
+  struct stack_elem *stack = cmalloc(sizeof(struct stack_elem) * (STACK_SIZE + 1));
 
   if(overlay_edit)
   {

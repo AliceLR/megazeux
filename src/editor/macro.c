@@ -154,26 +154,26 @@ static struct ext_macro *process_macro(char *line_data, char *name, char *label)
   int i;
   int def_val;
 
-  line_text_segments = calloc(256, sizeof(char *));
-  variables = calloc(256, sizeof(struct macro_variable));
-  line_variable_references = calloc(256,
+  line_text_segments = ccalloc(256, sizeof(char *));
+  variables = ccalloc(256, sizeof(struct macro_variable));
+  line_variable_references = ccalloc(256,
    sizeof(struct macro_variable_reference));
 
-  text_lines = calloc(num_lines_allocated, sizeof(char **));
+  text_lines = ccalloc(num_lines_allocated, sizeof(char **));
   variable_references =
-   calloc(num_lines_allocated, sizeof(struct macro_variable_reference *));
-  line_variables_count = calloc(num_lines_allocated, sizeof(int));
+   ccalloc(num_lines_allocated, sizeof(struct macro_variable_reference *));
+  line_variables_count = ccalloc(num_lines_allocated, sizeof(int));
 
-  macro_dest = malloc(sizeof(struct ext_macro));
-  macro_dest->name = malloc(strlen(name) + 1);
+  macro_dest = cmalloc(sizeof(struct ext_macro));
+  macro_dest->name = cmalloc(strlen(name) + 1);
   strcpy(macro_dest->name, name);
 
-  macro_dest->label = malloc(strlen(label) + 1);
+  macro_dest->label = cmalloc(strlen(label) + 1);
   strcpy(macro_dest->label, label);
 
   current_type = macro_dest->types;
 
-  macro_dest->text = malloc(strlen(line_data) + 1);
+  macro_dest->text = cmalloc(strlen(line_data) + 1);
   strcpy(macro_dest->text, line_data);
   line_position = macro_dest->text;
 
@@ -329,12 +329,12 @@ static struct ext_macro *process_macro(char *line_data, char *name, char *label)
         if(current_type->type == string)
         {
           variables[num_variables].storage.str_storage =
-           malloc(current_type->type_attributes[0] + 1);
+           cmalloc(current_type->type_attributes[0] + 1);
 
           if(def_val)
           {
             variables[num_variables].def.str_storage =
-             malloc(current_type->type_attributes[0] + 1);
+             cmalloc(current_type->type_attributes[0] + 1);
             memcpy(variables[num_variables].def.str_storage,
              line_position_old, current_type->type_attributes[0]);
             variables[num_variables].def.
@@ -376,9 +376,9 @@ static struct ext_macro *process_macro(char *line_data, char *name, char *label)
 
       current_type->num_variables = num_variables;
       current_type->variables =
-       calloc(num_variables, sizeof(struct macro_variable));
+       ccalloc(num_variables, sizeof(struct macro_variable));
       current_type->variables_sorted =
-       calloc(num_variables, sizeof(struct macro_variable *));
+       ccalloc(num_variables, sizeof(struct macro_variable *));
       memcpy(current_type->variables, variables,
        sizeof(struct macro_variable) * num_variables);
 
@@ -476,12 +476,12 @@ static struct ext_macro *process_macro(char *line_data, char *name, char *label)
       line_variables_count[num_lines] = num_line_variables;
 
       variable_references[num_lines] =
-       calloc(num_line_variables, sizeof(struct macro_variable_reference));
+       ccalloc(num_line_variables, sizeof(struct macro_variable_reference));
       memcpy(variable_references[num_lines], line_variable_references,
        sizeof(struct macro_variable_reference) * num_line_variables);
 
       text_lines[num_lines] =
-       calloc(num_line_variables + 1, sizeof(char *));
+       ccalloc(num_line_variables + 1, sizeof(char *));
       memcpy(text_lines[num_lines], line_text_segments,
        sizeof(char *) * (num_line_variables + 1));
 
@@ -491,11 +491,11 @@ static struct ext_macro *process_macro(char *line_data, char *name, char *label)
       {
         num_lines_allocated *= 2;
 
-        text_lines = realloc(text_lines,
+        text_lines = crealloc(text_lines,
          sizeof(char **) * num_lines_allocated);
-        variable_references = realloc(variable_references,
+        variable_references = crealloc(variable_references,
          sizeof(struct macro_variable_reference *) * num_lines_allocated);
-        line_variables_count = realloc(line_variables_count,
+        line_variables_count = crealloc(line_variables_count,
          sizeof(int) * num_lines_allocated);
       }
     }
@@ -504,15 +504,15 @@ static struct ext_macro *process_macro(char *line_data, char *name, char *label)
   macro_dest->num_lines = num_lines;
   macro_dest->total_variables = total_variables;
 
-  macro_dest->lines = calloc(num_lines, sizeof(char **));
+  macro_dest->lines = ccalloc(num_lines, sizeof(char **));
   memcpy(macro_dest->lines, text_lines, sizeof(char **) * num_lines);
 
   macro_dest->variable_references =
-   calloc(num_lines, sizeof(struct macro_variable_reference *));
+   ccalloc(num_lines, sizeof(struct macro_variable_reference *));
   memcpy(macro_dest->variable_references, variable_references,
    sizeof(struct macro_variable_reference *) * num_lines);
 
-  macro_dest->line_element_count = calloc(num_lines, sizeof(int));
+  macro_dest->line_element_count = ccalloc(num_lines, sizeof(int));
   memcpy(macro_dest->line_element_count, line_variables_count,
    sizeof(int) * num_lines);
 
@@ -569,7 +569,7 @@ void add_ext_macro(struct editor_config_info *conf, char *name,
 
   if(!(conf->num_macros_allocated))
   {
-    conf->extended_macros = malloc(sizeof(struct ext_macro *));
+    conf->extended_macros = cmalloc(sizeof(struct ext_macro *));
     conf->extended_macros[0] = process_macro(line_data, name, label);
     conf->num_extended_macros = 1;
     conf->num_macros_allocated = 1;
@@ -590,7 +590,7 @@ void add_ext_macro(struct editor_config_info *conf, char *name,
       {
         conf->num_macros_allocated *= 2;
         conf->extended_macros =
-         realloc(conf->extended_macros,
+         crealloc(conf->extended_macros,
          sizeof(struct ext_macro *) * conf->num_macros_allocated);
       }
 

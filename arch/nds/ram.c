@@ -9,6 +9,8 @@ and GPLv2 (http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt) licenses.
 ***********************************/
 #include "ram.h"
 
+#include "../../src/compat.h"
+
 
 //===================================//
 //                                   //

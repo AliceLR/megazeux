@@ -32,6 +32,7 @@
 #include <string.h>
 
 #include "const.h" // for MAX_PATH
+#include "error.h"
 
 struct mzx_resource
 {
@@ -72,6 +73,42 @@ static struct mzx_resource mzx_res[] = {
 #endif
 };
 
+#ifdef CONFIG_CHECK_ALLOC
+
+static void out_of_memory_check(void *p, const char *file, int line)
+{
+  char msgbuf[128];
+  if(!p)
+  {
+    snprintf(msgbuf, sizeof(msgbuf), "Out of memory in %s:%d", file, line);
+    msgbuf[sizeof(msgbuf)-1] = '\0';
+    error(msgbuf, 2, 4, 0);
+  }
+}
+
+void *check_calloc(size_t nmemb, size_t size, const char *file, int line)
+{
+  void *result = calloc(nmemb, size);
+  out_of_memory_check(result, file, line);
+  return result;
+}
+
+void *check_malloc(size_t size, const char *file, int line)
+{
+  void *result = malloc(size);
+  out_of_memory_check(result, file, line);
+  return result;
+}
+
+void *check_realloc(void *ptr, size_t size, const char *file, int line)
+{
+  void *result = realloc(ptr, size);
+  out_of_memory_check(result, file, line);
+  return result;
+}
+
+#endif /* CONFIG_CHECK_ALLOC */
+
 int mzx_res_init(const char *argv0)
 {
   int i, bin_path_len = 0;
@@ -81,8 +118,8 @@ int mzx_res_init(const char *argv0)
   int ret = 0;
   int g_ret;
 
-  bin_path = malloc(MAX_PATH);
-  p_dir = malloc(MAX_PATH);
+  bin_path = cmalloc(MAX_PATH);
+  p_dir = cmalloc(MAX_PATH);
 
   g_ret = get_path(argv0, bin_path, MAX_PATH);
   if(g_ret > 0)
@@ -131,7 +168,7 @@ int mzx_res_init(const char *argv0)
     p_dir[p_dir_len++] = '/';
     p_dir[p_dir_len] = 0;
 
-    full_path = malloc(p_dir_len + base_name_len + 1);
+    full_path = cmalloc(p_dir_len + base_name_len + 1);
     memcpy(full_path, p_dir, p_dir_len);
     memcpy(full_path + p_dir_len, mzx_res[i].base_name, base_name_len);
     full_path[p_dir_len + base_name_len] = 0;
@@ -151,7 +188,7 @@ int mzx_res_init(const char *argv0)
       chdir(bin_path);
       if(!stat(mzx_res[i].base_name, &file_info))
       {
-        mzx_res[i].path = malloc(bin_path_len + base_name_len + 1);
+        mzx_res[i].path = cmalloc(bin_path_len + base_name_len + 1);
         memcpy(mzx_res[i].path, bin_path, bin_path_len);
         memcpy(mzx_res[i].path + bin_path_len,
          mzx_res[i].base_name, base_name_len);

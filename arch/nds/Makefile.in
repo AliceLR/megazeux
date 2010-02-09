@@ -30,25 +30,14 @@ STRIP  = /bin/true
 # Override library paths.
 #
 
-SDL_CFLAGS  = -Iarch/nds/ndsSDL/include/SDL
-SDL_LDFLAGS = -Larch/nds/ndsSDL/lib -lSDL
-
-VORBIS_CFLAGS  = -Iarch/nds/ndsTremor/include
-VORBIS_LDFLAGS = -Larch/nds/ndsTremor/lib -lndsTremor
-
-MIKMOD_CFLAGS  = -Larch/nds/ndsMikmod/include
-MIKMOD_LDFLAGS = -Larch/nds/ndsMikmod/lib -lmikmod
-
-EXTRA_INCLUDES = -Iarch/nds/ndsLibfat/nds/include \
-                 -Iarch/nds/ndsKeyboardExt5/source \
-                 -Iarch/nds/ndsScreens/build \
+EXTRA_INCLUDES = -Iarch/nds/ndsScreens/build \
+                 -Iarch/nds/ndsLibfat/nds/include \
                  -I$(LIBNDS)/include
 
-EXTRA_LIBS = -Larch/nds/ndsLibfat/nds/lib \
-             -Larch/nds/ndsKeyboardExt5/lib \
-             -Larch/nds/ndsScreens/lib \
+EXTRA_LIBS = -Larch/nds/ndsScreens/lib \
+             -Larch/nds/ndsLibfat/nds/lib \
              -L$(LIBNDS)/lib \
-             -lfat -lm -lndsKeyboardExt5 -lndsScreens -lnds9
+             -lfat -lm -lndsScreens -lnds9
 
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} -DARM9 -D__NDS__ -Iarch/nds
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}
@@ -59,7 +48,7 @@ ARCH_LDFLAGS  += ${EXTRA_LIBS} -specs=ds_arm9.specs
 #
 arch/nds/%.o: arch/nds/%.c
 	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${core_cflags} ${core_flags} -c $< -o $@
+	${CC} -MD ${core_cflags} ${core_flags} -Wno-unused-macros -c $< -o $@
 
 arm9bin: mzx
 	${OBJCOPY} -O binary ${mzxrun} ${mzxrun}.arm9
@@ -68,7 +57,7 @@ arm7bin:
 	${MAKE} -C arch/nds TARGET=${mzxrun}
 
 package: arm7bin arm9bin
-	ndstool -c ${mzxrun}.nds -7 arch/nds/${mzxrun}.arm7 -9 ${mzxrun}.arm9
+	ndstool -c ${mzxrun}.nds -7 arch/nds/${mzxrun}.arm7 -9 ${mzxrun}.arm9 -b arch/nds/icon.bmp "MegaZeux ${VERSION}"
 
 clean:
 	@${MAKE} -C arch/nds TARGET=${mzxrun} clean

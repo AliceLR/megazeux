@@ -26,7 +26,7 @@
 
 void create_blank_robot_direct(struct robot *cur_robot, int x, int y)
 {
-  char *program = malloc(2);
+  char *program = cmalloc(2);
 
   memset(cur_robot, 0, sizeof(struct robot));
 
@@ -45,7 +45,7 @@ void create_blank_robot_direct(struct robot *cur_robot, int x, int y)
 
 void create_blank_scroll_direct(struct scroll *cur_scroll)
 {
-  char *message = malloc(3);
+  char *message = cmalloc(3);
 
   memset(cur_scroll, 0, sizeof(struct scroll));
 

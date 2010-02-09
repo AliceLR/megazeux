@@ -194,7 +194,7 @@ static char *glsl_load_string(const char *filename)
   if(!size)
     goto err_close;
 
-  buffer = malloc(size + 1);
+  buffer = cmalloc(size + 1);
   buffer[size] = '\0';
 
   if(fread(buffer, size, 1, f) != 1)
@@ -250,7 +250,7 @@ static GLuint glsl_load_program(struct graphics_data *graphics,
   GLuint program = 0;
   char *path;
 
-  path = malloc(MAX_PATH);
+  path = cmalloc(MAX_PATH);
 
   vertex = glsl_load_shader(graphics, v_res, GL_VERTEX_SHADER);
   if(!vertex)
@@ -351,7 +351,7 @@ static bool glsl_init_video(struct graphics_data *graphics,
   struct glsl_render_data *render_data;
   const char *version, *extensions;
 
-  render_data = malloc(sizeof(struct glsl_render_data));
+  render_data = cmalloc(sizeof(struct glsl_render_data));
   if(!render_data)
     return false;
 
@@ -369,7 +369,7 @@ static bool glsl_init_video(struct graphics_data *graphics,
   if(conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
 
-  render_data->pixels = malloc(sizeof(Uint32) * GL_POWER_2_WIDTH *
+  render_data->pixels = cmalloc(sizeof(Uint32) * GL_POWER_2_WIDTH *
    GL_POWER_2_HEIGHT);
   if(!render_data->pixels)
     goto err_free;

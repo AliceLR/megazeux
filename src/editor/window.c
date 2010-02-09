@@ -914,7 +914,7 @@ static int click_color_box(struct world *mzx_world, struct dialog *di,
 struct element *construct_check_box(int x, int y, const char **choices,
  int num_choices, int max_length, int *results)
 {
-  struct check_box *src = malloc(sizeof(struct check_box));
+  struct check_box *src = cmalloc(sizeof(struct check_box));
   src->current_choice = 0;
   src->choices = choices;
   src->num_choices = num_choices;
@@ -929,7 +929,7 @@ struct element *construct_check_box(int x, int y, const char **choices,
 struct element *construct_char_box(int x, int y, const char *question,
  int allow_char_255, int *result)
 {
-  struct char_box *src = malloc(sizeof(struct char_box));
+  struct char_box *src = cmalloc(sizeof(struct char_box));
   src->question = question;
   src->allow_char_255 = allow_char_255;
   src->result = result;
@@ -942,7 +942,7 @@ struct element *construct_char_box(int x, int y, const char *question,
 struct element *construct_color_box(int x, int y,
  const char *question, int allow_wildcard, int *result)
 {
-  struct color_box *src = malloc(sizeof(struct color_box));
+  struct color_box *src = cmalloc(sizeof(struct color_box));
   src->question = question;
   src->allow_wildcard = allow_wildcard;
   src->result = result;
@@ -963,7 +963,7 @@ static int click_board_list(struct world *mzx_world, struct dialog *di,
 struct element *construct_board_list(int x, int y,
  const char *title, int board_zero_as_none, int *result)
 {
-  struct board_list *src = malloc(sizeof(struct board_list));
+  struct board_list *src = cmalloc(sizeof(struct board_list));
   src->title = title;
   src->board_zero_as_none = board_zero_as_none;
   src->result = result;
@@ -992,7 +992,7 @@ int add_board(struct world *mzx_world, int current)
   if(mzx_world->num_boards == mzx_world->num_boards_allocated)
   {
     mzx_world->num_boards_allocated *= 2;
-    mzx_world->board_list = realloc(mzx_world->board_list,
+    mzx_world->board_list = crealloc(mzx_world->board_list,
      mzx_world->num_boards_allocated * sizeof(struct board *));
   }
 
@@ -1013,7 +1013,7 @@ int add_board(struct world *mzx_world, int current)
 int choose_board(struct world *mzx_world, int current, const char *title,
  int board0_none)
 {
-  char **board_names = calloc(mzx_world->num_boards + 1, sizeof(char *));
+  char **board_names = ccalloc(mzx_world->num_boards + 1, sizeof(char *));
   int num_boards = mzx_world->num_boards;
   int i;
 
@@ -1021,7 +1021,7 @@ int choose_board(struct world *mzx_world, int current, const char *title,
   // of the number of boards.
   for(i = 0; i < num_boards; i++)
   {
-    board_names[i] = malloc(BOARD_NAME_SIZE);
+    board_names[i] = cmalloc(BOARD_NAME_SIZE);
 
     if(mzx_world->board_list[i] == NULL)
       strncpy(board_names[i], "(no board)", BOARD_NAME_SIZE - 1);
@@ -1032,7 +1032,7 @@ int choose_board(struct world *mzx_world, int current, const char *title,
     board_names[i][BOARD_NAME_SIZE - 1] = '\0';
   }
 
-  board_names[i] = malloc(BOARD_NAME_SIZE);
+  board_names[i] = cmalloc(BOARD_NAME_SIZE);
 
   if((current < 0) || (current >= mzx_world->num_boards))
     current = 0;

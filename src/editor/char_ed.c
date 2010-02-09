@@ -511,8 +511,8 @@ int char_editor(struct world *mzx_world)
   int dialog_width, dialog_height;
   int dialog_x, dialog_y;
   int chars_show_width;
-  char *buffer = malloc(8 * 14 * 32);
-  char *previous = malloc(8 * 14 * 32);
+  char *buffer = cmalloc(8 * 14 * 32);
+  char *previous = cmalloc(8 * 14 * 32);
   char mini_buffer[32];
   int last_x = -1, last_y = 0;
   int block_x = 0;
@@ -1025,7 +1025,7 @@ int char_editor(struct world *mzx_world)
         {
           char *buffer_ptr = buffer +
            block_start_x + (block_start_y * buffer_width);
-          char *wrap_row = malloc(block_width);
+          char *wrap_row = cmalloc(block_width);
 
           memcpy(previous, buffer, buffer_size);
           memcpy(wrap_row, buffer_ptr, block_width);
@@ -1063,7 +1063,7 @@ int char_editor(struct world *mzx_world)
           char *buffer_ptr = buffer +
            block_start_x + ((block_start_y + (block_height - 1)) *
            buffer_width);
-          char *wrap_row = malloc(block_width);
+          char *wrap_row = cmalloc(block_width);
 
           memcpy(previous, buffer, buffer_size);
           memcpy(wrap_row, buffer_ptr, block_width);
@@ -1178,16 +1178,16 @@ int char_editor(struct world *mzx_world)
         if(num_factors > 1)
         {
           struct element **elements =
-           malloc(sizeof(struct element *) * num_factors);
+           cmalloc(sizeof(struct element *) * num_factors);
           char **radio_button_strings =
-           malloc(sizeof(char *) * num_factors);
+           cmalloc(sizeof(char *) * num_factors);
           char **radio_button_substrings =
-           malloc(sizeof(char *) * num_factors);
+           cmalloc(sizeof(char *) * num_factors);
           struct dialog di;
 
           for(i = 0; i < num_factors; i++)
           {
-            radio_button_substrings[i] = malloc(32);
+            radio_button_substrings[i] = cmalloc(32);
             radio_button_strings[i] = radio_button_substrings[i];
             sprintf(radio_button_strings[i], "%d x %d",
              factors[i], highlight_size / factors[i]);
@@ -1376,7 +1376,7 @@ int char_editor(struct world *mzx_world)
         }
         else
         {
-          char *temp_buffer = malloc(sizeof(char) * block_width);
+          char *temp_buffer = cmalloc(sizeof(char) * block_width);
           int start_offset = block_start_x +
            (block_start_y * buffer_width);
           int end_offset = start_offset +
@@ -1464,7 +1464,7 @@ int char_editor(struct world *mzx_world)
         // Undo
         if(get_alt_status(keycode_internal))
         {
-          char *swap = malloc(sizeof(char) * buffer_size);
+          char *swap = cmalloc(sizeof(char) * buffer_size);
           memcpy(swap, buffer, buffer_size);
           memcpy(buffer, previous, buffer_size);
           memcpy(previous, swap, buffer_size);

@@ -31,35 +31,36 @@ usage() {
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
-	echo "  --as-needed-hack     Pass --as-needed through to GNU ld."
-	echo "  --enable-release     Optimize and remove debugging code."
-	echo "  --enable-verbose     Build system is always verbose (V=1)."
-	echo "  --optimize-size      Perform size optimizations (-Os)."
-	echo "  --disable-datestamp  Disable adding date to version."
-	echo "  --disable-editor     Disable the built-in editor."
-	echo "  --disable-mzxrun     Disable generation of separate MZXRun."
-	echo "  --disable-helpsys    Disable the built-in help system."
-	echo "  --disable-utils      Disable compilation of utils."
-	echo "  --disable-x11        Disable X11, removing binary dependency."
-	echo "  --disable-software   Disable software renderer."
-	echo "  --disable-gl         Disable all GL renderers."
-	echo "  --disable-gl-fixed   Disable GL renderers for fixed-function h/w."
-	echo "  --disable-gl-prog    Disable GL renderers for programmable h/w."
-	echo "  --disable-overlay    Disable all overlay renderers."
-	echo "  --enable-gp2x        Enables half-res software renderer."
-	echo "  --disable-modplug    Disable ModPlug music engine."
-	echo "  --enable-mikmod      Enables MikMod music engine."
-	echo "  --disable-libpng     Disable PNG screendump support."
-	echo "  --disable-audio      Disable all audio (sound + music)."
-	echo "  --enable-tremor      Switches out libvorbis for libtremor."
-	echo "  --disable-pthread    Use SDL's locking instead of pthread."
-	echo "  --disable-icon       Do not try to brand executable."
-	echo "  --disable-modular    Disable dynamically shared objects."
-	echo "  --disable-updater    Disable built-in updater."
-	echo "  --disable-network    Disable networking abilities."
-	echo "  --enable-meter       Enable load/save meter display."
-	echo "  --disable-sdl        Disables SDL dependencies and features."
-	echo "  --enable-egl         Enables EGL backend (if SDL disabled)."
+	echo "  --as-needed-hack      Pass --as-needed through to GNU ld."
+	echo "  --enable-release      Optimize and remove debugging code."
+	echo "  --enable-verbose      Build system is always verbose (V=1)."
+	echo "  --optimize-size       Perform size optimizations (-Os)."
+	echo "  --disable-datestamp   Disable adding date to version."
+	echo "  --disable-editor      Disable the built-in editor."
+	echo "  --disable-mzxrun      Disable generation of separate MZXRun."
+	echo "  --disable-helpsys     Disable the built-in help system."
+	echo "  --disable-utils       Disable compilation of utils."
+	echo "  --disable-x11         Disable X11, removing binary dependency."
+	echo "  --disable-software    Disable software renderer."
+	echo "  --disable-gl          Disable all GL renderers."
+	echo "  --disable-gl-fixed    Disable GL renderers for fixed-function h/w."
+	echo "  --disable-gl-prog     Disable GL renderers for programmable h/w."
+	echo "  --disable-overlay     Disable all overlay renderers."
+	echo "  --enable-gp2x         Enables half-res software renderer."
+	echo "  --disable-modplug     Disable ModPlug music engine."
+	echo "  --enable-mikmod       Enables MikMod music engine."
+	echo "  --disable-libpng      Disable PNG screendump support."
+	echo "  --disable-audio       Disable all audio (sound + music)."
+	echo "  --enable-tremor       Switches out libvorbis for libtremor."
+	echo "  --disable-pthread     Use SDL's locking instead of pthread."
+	echo "  --disable-icon        Do not try to brand executable."
+	echo "  --disable-modular     Disable dynamically shared objects."
+	echo "  --disable-updater     Disable built-in updater."
+	echo "  --disable-network     Disable networking abilities."
+	echo "  --enable-meter        Enable load/save meter display."
+	echo "  --disable-sdl         Disables SDL dependencies and features."
+	echo "  --enable-egl          Enables EGL backend (if SDL disabled)."
+	echo "  --disable-check-alloc Disables memory allocator error handling."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -108,6 +109,7 @@ VERBOSE="false"
 METER="false"
 SDL="true"
 EGL="false"
+CHECK_ALLOC="true"
 
 #
 # User may override above settings
@@ -235,6 +237,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-egl" ]  && EGL="true"
 	[ "$1" = "--disable-egl" ] && EGL="false"
+
+	[ "$1" = "--disable-check-alloc" ] && CHECK_ALLOC="false"
+	[ "$1" = "--enable-check-alloc" ]  && CHECK_ALLOC="true"
 
 	if [ "$1" = "--help" ]; then
 		usage
@@ -926,6 +931,16 @@ if [ "$METER" = "true" ]; then
 	echo "#define CONFIG_LOADSAVE_METER" >> src/config.h
 else
 	echo "Load/save meter display disabled."
+fi
+
+#
+# Memory allocation error handling, if enabled
+#
+if [ "$CHECK_ALLOC" = "true" ]; then
+	echo "Memory allocation error checking enabled."
+	echo "#define CONFIG_CHECK_ALLOC" >> src/config.h
+else
+	echo "Memory allocation error checking disabled."
 fi
 
 echo

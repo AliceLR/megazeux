@@ -30,17 +30,19 @@ enum Subscreen_Mode
 {
   SUBSCREEN_SCALED = 0,
   SUBSCREEN_KEYBOARD,
-  SUBSCREEN_MODE_COUNT
+  SUBSCREEN_MODE_COUNT,
+  SUBSCREEN_MODE_INVALID
 };
 
 extern enum Subscreen_Mode subscreen_mode;
 
 bool is_scaled_mode(enum Subscreen_Mode mode);
 
-// Call these 3 functions every vblank.
+// Call these 4 functions every vblank.
 void nds_sleep_check(void);
 void nds_video_jitter(void);
 void nds_video_rasterhack(void);
+void nds_video_do_transition(void);
 
 // Toggle to the next subscreen mode.
 void nds_subscreen_switch(void);

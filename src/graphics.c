@@ -51,6 +51,7 @@
 #define CURSOR_BLINK_RATE 115
 
 __editor_maybe_static struct graphics_data graphics;
+static bool graphics_was_initialized;
 
 static const struct renderer_data renderers[] =
 {
@@ -902,7 +903,13 @@ bool init_video(struct config_info *conf, const char *caption)
 
   ec_load_mzx();
   init_palette();
+  graphics_was_initialized = true;
   return true;
+}
+
+bool has_video_initialized(void)
+{
+  return graphics_was_initialized;
 }
 
 bool set_video_mode(void)
@@ -1565,7 +1572,7 @@ void dump_screen(void)
       break;
   }
 
-  ss = malloc(sizeof(Uint8) * 640 * 350);
+  ss = cmalloc(sizeof(Uint8) * 640 * 350);
   if(ss)
   {
     render_graph8(ss, 640, &graphics, set_colors8[graphics.screen_mode]);

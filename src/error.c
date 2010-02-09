@@ -29,22 +29,50 @@
 #include "graphics.h"
 #include "event.h"
 
+
+// Error type names by type code:
+static const char *const error_type_names[] =
+{
+  " WARNING: ",		// 0
+  " ERROR: ",		// 1
+  " FATAL ERROR: ",	// 2
+  " CRITICAL ERROR: ",	// 3
+};
+
+
 // Call for an error OR a warning. Type=0 for a warning, 1 for a recoverable
 // error, 2 for a fatal error. Options are (bits set in options and returned
 // as action) FAIL=1, RETRY=2, EXIT TO DOS=4, OK=8 (OK is for usually only
 // for warnings) Type = 3 for a critical error
 
-int error(const char *string, char type, char options, unsigned int code)
+int error(const char *string, unsigned int type, unsigned int options,
+ unsigned int code)
 {
+  const char *type_name;
   int t1 = 9, ret = 0;
-  int fade_status = get_fade_status();
+  int fade_status;
   char temp[5];
+  int x;
+
+  // Find the name of this error type.
+  if(type >= sizeof(error_type_names) / sizeof(*error_type_names))
+    type = 0;
+
+  type_name = error_type_names[type];
+
+  // If graphics couldn't initialize, print the error to stderr and abort.
+  if(!has_video_initialized())
+  {
+    fprintf(stderr, "%s%s\n", type_name, string);
+    exit(-1);
+  }
 
   // Window
   set_context(code >> 8);
   m_hide();
   save_screen();
 
+  fade_status = get_fade_status();
   if(fade_status)
   {
     clear_screen(32, 7);
@@ -53,22 +81,8 @@ int error(const char *string, char type, char options, unsigned int code)
 
   draw_window_box(1, 10, 78, 14, 76, 64, 72, 1, 1);
   // Add title and error name
-
-  switch(type)
-  {
-    case 0:
-      write_string(" WARNING: ", 35, 10, 78, 0);
-      break;
-    case 1:
-      write_string(" ERROR: ", 36, 10, 78, 0);
-      break;
-    case 2:
-      write_string(" FATAL ERROR: ",33,10,78, 0);
-      break;
-    case 3:
-      write_string(" CRITICAL ERROR: ",32,10,78, 0);
-      break;
-  }
+  x = 40 - strlen(type_name)/2;
+  write_string(type_name, x, 10, 78, 0);
 
   write_string(string, 40 - (strlen(string) / 2), 11, 79, 0);
 

@@ -1,157 +1,87 @@
-// ARM7 binary for MZX.
-// Includes ndsSDL ARM7 template.
-// kvance
+/*---------------------------------------------------------------------------------
+
+	default ARM7 core
+
+		Copyright (C) 2005
+		Michael Noland (joat)
+		Jason Rogers (dovoto)
+		Dave Murphy (WinterMute)
+
+	This software is provided 'as-is', without any express or implied
+	warranty.  In no event will the authors be held liable for any
+	damages arising from the use of this software.
+
+	Permission is granted to anyone to use this software for any
+	purpose, including commercial applications, and to alter it and
+	redistribute it freely, subject to the following restrictions:
+
+	1.	The origin of this software must not be misrepresented; you
+		must not claim that you wrote the original software. If you use
+		this software in a product, an acknowledgment in the product
+		documentation would be appreciated but is not required.
+
+	2.	Altered source versions must be plainly marked as such, and
+		must not be misrepresented as being the original software.
+
+	3.	This notice may not be removed or altered from any source
+		distribution.
+
+---------------------------------------------------------------------------------*/
+
+// WIFI and MAXMOD currently disabled --kvance 2009-10-02
 
 #include <nds.h>
-#include <stdlib.h>
-
-/* -------------------------------------------------------------------------
- * Sleep handler
- * ------------------------------------------------------------------------- */
-
-void lid_closed(void)
-{
-    // Disable the speaker.
-    swiChangeSoundBias(0, 0x400);
-
-    // Save the current power state.
-    int power = readPowerManagement(PM_CONTROL_REG);
-
-    // Set sleep LED.
-    writePowerManagement(PM_CONTROL_REG, PM_LED_CONTROL(1));
-
-    // Sleep until IRQ_LID.
-    u32 old_ie = REG_IE;
-    REG_IE = IRQ_LID;
-    swiSleep();
-
-    // Restore interrupts.
-    REG_IF = ~0;
-    REG_IE = old_ie;
-
-    // Restore power state.
-    writePowerManagement(PM_CONTROL_REG, power);
-
-    // Enable the speaker.
-    swiChangeSoundBias(1, 0x400);
-}
-
-int vcount;
-touchPosition first,tempPos;
+/*
+#include <dswifi7.h>
+#include <maxmod7.h>
+*/
 
 //---------------------------------------------------------------------------------
-void VcountHandler(void) {
+void VcountHandler() {
 //---------------------------------------------------------------------------------
-	static int lastbut = -1;
-	
-	uint16 but=0, x=0, y=0, xpx=0, ypx=0, z1=0, z2=0;
-
-	but = REG_KEYXY;
-
-	if (but & BIT(7))
-		lid_closed();
-
-	if (!( (but ^ lastbut) & (1<<6))) {
-		touchReadXY(&tempPos);
-
-		if ( tempPos.rawx == 0 || tempPos.rawy == 0 ) {
-			but |= (1 <<6);
-			lastbut = but;
-		} else {
-			x = tempPos.rawx;
-			y = tempPos.rawy;
-			xpx = tempPos.px;
-			ypx = tempPos.py;
-			z1 = tempPos.z1;
-			z2 = tempPos.z2;
-		}
-		
-	} else {
-		lastbut = but;
-		but |= (1 <<6);
-	}
-
-	if ( vcount == 80 ) {
-		first = tempPos;
-	} else {
-		if (	abs( xpx - first.px) > 10 || abs( ypx - first.py) > 10 ||
-				(but & ( 1<<6)) ) {
-
-			but |= (1 <<6);
-			lastbut = but;
-
-		} else { 	
-			//IPC->mailBusy = 1;
-			IPC->touchX			= x;
-			IPC->touchY			= y;
-			IPC->touchXpx		= xpx;
-			IPC->touchYpx		= ypx;
-			IPC->touchZ1		= z1;
-			IPC->touchZ2		= z2;
-			//IPC->mailBusy = 0;
-		}
-	}
-	IPC->buttons		= but;
-	vcount ^= (80 ^ 130);
-	SetYtrigger(vcount);
-
-}
-
-// callback to allow wifi library to notify arm9
-void arm7_synctoarm9(void) { // send fifo message
-   REG_IPC_FIFO_TX = 0x87654321;
-}
-// interrupt handler to allow incoming notifications from arm9
-void arm7_fifo(void) { // check incoming fifo messages
-  int syncd = 0;
-  while ( !(REG_IPC_FIFO_CR & IPC_FIFO_RECV_EMPTY)) {
-    u32 value = REG_IPC_FIFO_RX;
-    if ( value == 0x87654321 && !syncd) {
-      syncd = 1;
-      //Wifi_Sync();
-    }
-  }
+	inputGetAndSend();
 }
 
 //---------------------------------------------------------------------------------
-int main(int argc, char ** argv) {
+void VblankHandler(void) {
 //---------------------------------------------------------------------------------
-	REG_IPC_FIFO_CR = IPC_FIFO_ENABLE | IPC_FIFO_SEND_CLEAR;
+// WIFI	Wifi_Update();
+}
 
-	// Reset the clock if needed
-	rtcReset();
+
+//---------------------------------------------------------------------------------
+int main() {
+//---------------------------------------------------------------------------------
+
+	// read User Settings from firmware
+	readUserSettings();
+
+	powerOn(POWER_SOUND);
 
 	irqInit();
+// WIFI	irqSet(IRQ_WIFI, 0);
+	fifoInit();
+
+
 	SetYtrigger(80);
-	vcount = 80;
+
+// WIFI	installWifiFIFO();
+// MAXMOD	installSoundFIFO();
+// MAXMOD	mmInstall(FIFO_MAXMOD);
+
+	installSystemFIFO();
+	
 	irqSet(IRQ_VCOUNT, VcountHandler);
-	irqEnable(IRQ_VCOUNT);
+	irqSet(IRQ_VBLANK, VblankHandler);
 
-{ // sync with arm9 and init wifi
-        u32 fifo_temp;
+	// Start the RTC tracking IRQ
+	initClockIRQ();
 
-          while(1) { // wait for magic number
-        while(REG_IPC_FIFO_CR&IPC_FIFO_RECV_EMPTY) swiWaitForVBlank();
-      fifo_temp=REG_IPC_FIFO_RX;
-      if(fifo_temp==0x12345678) break;
-        }
-        while(REG_IPC_FIFO_CR&IPC_FIFO_RECV_EMPTY) swiWaitForVBlank();
-        fifo_temp=REG_IPC_FIFO_RX; // give next value to wifi_init
-        //Wifi_Init(fifo_temp);
+// WIFI	irqEnable( IRQ_VBLANK | IRQ_VCOUNT | IRQ_NETWORK);   
+	irqEnable( IRQ_VBLANK | IRQ_VCOUNT);   
 
-        irqSet(IRQ_FIFO_NOT_EMPTY,arm7_fifo); // set up fifo irq
-        irqEnable(IRQ_FIFO_NOT_EMPTY);
-        REG_IPC_FIFO_CR = IPC_FIFO_ENABLE | IPC_FIFO_RECV_IRQ;
-
-        //Wifi_SetSyncHandler(arm7_synctoarm9); // allow wifi lib to notify arm9
-  } // arm7 wifi init complete
-
-//	SoundSetTimer(0);
-
-	// Keep the ARM7 idle
-	while (1){
-		swiWaitForVBlank();
-	}
+	// Keep the ARM7 mostly idle
+	while (1) swiWaitForVBlank();
 }
 
 

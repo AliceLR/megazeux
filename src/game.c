@@ -2105,7 +2105,7 @@ void title_screen(struct world *mzx_world)
   clear_screen(32, 7);
   default_palette();
 
-  current_dir = malloc(MAX_PATH);
+  current_dir = cmalloc(MAX_PATH);
   getcwd(current_dir, MAX_PATH);
 
   chdir(config_dir);

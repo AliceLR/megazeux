@@ -88,17 +88,17 @@ __editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
 
     size = overlay_width * overlay_height;
 
-    cur_board->overlay = malloc(size);
-    cur_board->overlay_color = malloc(size);
+    cur_board->overlay = cmalloc(size);
+    cur_board->overlay_color = cmalloc(size);
 
     load_RLE2_plane(cur_board->overlay, fp, size);
-    test_buffer = malloc(1024);
+    test_buffer = cmalloc(1024);
     free(test_buffer);
 
     // Skip sizes
     fseek(fp, 4, SEEK_CUR);
     load_RLE2_plane(cur_board->overlay_color, fp, size);
-    test_buffer = malloc(1024);
+    test_buffer = cmalloc(1024);
     free(test_buffer);
   }
   else
@@ -117,12 +117,12 @@ __editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
 
   size = board_width * board_height;
 
-  cur_board->level_id = malloc(size);
-  cur_board->level_color = malloc(size);
-  cur_board->level_param = malloc(size);
-  cur_board->level_under_id = malloc(size);
-  cur_board->level_under_color = malloc(size);
-  cur_board->level_under_param = malloc(size);
+  cur_board->level_id = cmalloc(size);
+  cur_board->level_color = cmalloc(size);
+  cur_board->level_param = cmalloc(size);
+  cur_board->level_under_id = cmalloc(size);
+  cur_board->level_under_color = cmalloc(size);
+  cur_board->level_under_param = cmalloc(size);
 
   load_RLE2_plane(cur_board->level_id, fp, size);
   fseek(fp, 4, SEEK_CUR);
@@ -186,10 +186,10 @@ __editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
   num_robots = fgetc(fp);
   num_robots_active = 0;
 
-  cur_board->robot_list = calloc(num_robots + 1, sizeof(struct robot *));
+  cur_board->robot_list = ccalloc(num_robots + 1, sizeof(struct robot *));
   // Also allocate for name sorted list
   cur_board->robot_list_name_sorted =
-   calloc(num_robots, sizeof(struct robot *));
+   ccalloc(num_robots, sizeof(struct robot *));
 
   // Any null objects being placed will later be optimized out
 
@@ -218,7 +218,7 @@ __editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
     if(num_robots_active != num_robots)
     {
       cur_board->robot_list_name_sorted =
-       realloc(cur_board->robot_list_name_sorted,
+       crealloc(cur_board->robot_list_name_sorted,
        sizeof(struct robot *) * num_robots_active);
     }
     qsort(cur_board->robot_list_name_sorted, num_robots_active,
@@ -236,7 +236,7 @@ __editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
 
   // Load scrolls
   num_scrolls = fgetc(fp);
-  cur_board->scroll_list = calloc(num_scrolls + 1, sizeof(struct scroll *));
+  cur_board->scroll_list = ccalloc(num_scrolls + 1, sizeof(struct scroll *));
 
   if(num_scrolls)
   {
@@ -255,7 +255,7 @@ __editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
 
   // Load sensors
   num_sensors = fgetc(fp);
-  cur_board->sensor_list = calloc(num_sensors + 1, sizeof(struct sensor *));
+  cur_board->sensor_list = ccalloc(num_sensors + 1, sizeof(struct sensor *));
 
   if(num_sensors)
   {
@@ -301,7 +301,7 @@ static void load_board(struct board *cur_board, FILE *fp, int savegame)
 
 struct board *load_board_allocate(FILE *fp, int savegame)
 {
-  struct board *cur_board = malloc(sizeof(struct board));
+  struct board *cur_board = cmalloc(sizeof(struct board));
   load_board(cur_board, fp, savegame);
 
   if(!cur_board->board_width)

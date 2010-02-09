@@ -147,7 +147,30 @@ CORE_LIBSPEC extern long __stack_chk_guard[8];
 CORE_LIBSPEC void __stack_chk_fail(void);
 #endif
 
-#ifndef ANDROID
+#if defined(ANDROID)
+
+#define info(...)  LOGI(__VA_ARGS__)
+#define warn(...)  LOGW(__VA_ARGS__)
+
+#ifdef DEBUG
+#define debug(...) LOGD(__VA_ARGS__)
+#else
+#define debug(...) do { } while(0)
+#endif
+
+#elif defined(CONFIG_NDS) /* ANDROID */
+
+// When the graphics have initialized, print to a debug buffer rather than the screen.
+void info(const char *format, ...);
+void warn(const char *format, ...);
+
+#ifdef DEBUG
+void debug(const char *format, ...);
+#else
+#define debug(...) do { } while(0)
+#endif
+
+#else /* ANDROID, CONFIG_NDS */
 
 #define info(...) \
  do { \
@@ -171,18 +194,7 @@ CORE_LIBSPEC void __stack_chk_fail(void);
 #define debug(...) do { } while(0)
 #endif
 
-#else /* ANDROID */
-
-#define info(...)  LOGI(__VA_ARGS__)
-#define warn(...)  LOGW(__VA_ARGS__)
-
-#ifdef DEBUG
-#define debug(...) LOGD(__VA_ARGS__)
-#else
-#define debug(...) do { } while(0)
-#endif
-
-#endif /* ANDROID */
+#endif /* ANDROID, CONFIG_NDS */
 
 __M_END_DECLS
 

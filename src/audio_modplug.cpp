@@ -190,14 +190,14 @@ struct audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
     Uint32 file_size = ftell_and_rewind(input_file);
     ModPlugFile *open_file;
 
-    input_buffer = (char *)malloc(file_size);
+    input_buffer = (char *)cmalloc(file_size);
     fread(input_buffer, file_size, 1, input_file);
     open_file = ModPlug_Load(input_buffer, file_size);
 
     if(open_file)
     {
       struct modplug_stream *mp_stream =
-       (struct modplug_stream *)malloc(sizeof(struct modplug_stream));
+       (struct modplug_stream *)cmalloc(sizeof(struct modplug_stream));
 
       mp_stream->module_data = open_file;
 

@@ -130,4 +130,45 @@ typedef enum
 #define UPDATER_LIBSPEC
 #endif
 
+__M_BEGIN_DECLS
+
+#ifdef CONFIG_CHECK_ALLOC
+
+#include <stddef.h>
+
+#define ccalloc(nmemb, size) check_calloc(nmemb, size, __FILE__, __LINE__)
+CORE_LIBSPEC void *check_calloc(size_t nmemb, size_t size, const char *file,
+ int line);
+
+#define cmalloc(size) check_malloc(size, __FILE__, __LINE__)
+CORE_LIBSPEC void *check_malloc(size_t size, const char *file,
+ int line);
+
+#define crealloc(ptr, size) check_realloc(ptr, size, __FILE__, __LINE__)
+CORE_LIBSPEC void *check_realloc(void *ptr, size_t size, const char *file,
+ int line);
+
+#else /* CONFIG_CHECK_ALLOC */
+
+#include <stdlib.h>
+
+static inline void *ccalloc(size_t nmemb, size_t size)
+{
+  return calloc(nmemb, size);
+}
+
+static inline void *cmalloc(size_t size)
+{
+  return malloc(size);
+}
+
+static inline void *crealloc(void *ptr, size_t size)
+{
+  return realloc(ptr, size);
+}
+
+#endif /* CONFIG_CHECK_ALLOC */
+
+__M_END_DECLS
+
 #endif // __COMPAT_H

@@ -189,7 +189,7 @@ bool append_world(struct world *mzx_world, const char *file)
   mzx_world->num_boards += num_boards;
   mzx_world->num_boards_allocated += num_boards;
   mzx_world->board_list =
-   realloc(mzx_world->board_list,
+   crealloc(mzx_world->board_list,
    sizeof(struct board *) * (old_num_boards + num_boards));
 
   // Append boards
@@ -256,7 +256,7 @@ void create_blank_world(struct world *mzx_world)
 
   mzx_world->num_boards = 1;
   mzx_world->num_boards_allocated = 1;
-  mzx_world->board_list = malloc(sizeof(struct board *));
+  mzx_world->board_list = cmalloc(sizeof(struct board *));
   mzx_world->board_list[0] = create_blank_board();
   mzx_world->current_board_id = 0;
   mzx_world->current_board = mzx_world->board_list[0];
@@ -311,12 +311,12 @@ void set_update_done_current(struct world *mzx_world)
   {
     if(mzx_world->update_done == NULL)
     {
-     mzx_world->update_done = malloc(size);
+     mzx_world->update_done = cmalloc(size);
     }
     else
     {
       mzx_world->update_done =
-       realloc(mzx_world->update_done, size);
+       crealloc(mzx_world->update_done, size);
     }
 
     mzx_world->update_done_size = size;

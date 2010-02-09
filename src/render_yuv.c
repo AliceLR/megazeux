@@ -62,7 +62,7 @@ bool yuv_set_video_mode_size(struct graphics_data *graphics,
 
 bool yuv_init_video(struct graphics_data *graphics, struct config_info *conf)
 {
-  struct yuv_render_data *render_data = malloc(sizeof(struct yuv_render_data));
+  struct yuv_render_data *render_data = cmalloc(sizeof(struct yuv_render_data));
   if(!render_data)
     return false;
 

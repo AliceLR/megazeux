@@ -64,7 +64,7 @@ static void bump_status(void)
 
 void init_event(void)
 {
-  input.buffer = calloc(num_buffered_events, sizeof(struct buffered_status));
+  input.buffer = ccalloc(num_buffered_events, sizeof(struct buffered_status));
   input.load_offset = num_buffered_events - 1;
   input.store_offset = 0;
 }

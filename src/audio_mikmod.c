@@ -197,13 +197,13 @@ struct audio_stream *construct_mikmod_stream(char *filename, Uint32 frequency,
 
     file_size = ftell_and_rewind(input_file);
 
-    input_buffer = malloc(file_size);
+    input_buffer = cmalloc(file_size);
     fread(input_buffer, file_size, 1, input_file);
     open_file = MikMod_LoadSongRW(SDL_RWFromMem(input_buffer, file_size), 64);
 
     if(open_file)
     {
-      struct mikmod_stream *mm_stream = malloc(sizeof(struct mikmod_stream));
+      struct mikmod_stream *mm_stream = cmalloc(sizeof(struct mikmod_stream));
       mm_stream->module_data = open_file;
       Player_Start(mm_stream->module_data);
 

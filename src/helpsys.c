@@ -38,7 +38,7 @@ void help_open(struct world *mzx_world, const char *file_name)
   if(!mzx_world->help_file)
     return;
 
-  help = malloc(1024 * 64);
+  help = cmalloc(1024 * 64);
 }
 
 void help_close(struct world *mzx_world)

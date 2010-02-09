@@ -133,7 +133,7 @@ static const GLubyte color_array_white[4 * 4] = {
 static bool gl2_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
-  struct gl2_render_data *render_data = malloc(sizeof(struct gl2_render_data));
+  struct gl2_render_data *render_data = cmalloc(sizeof(struct gl2_render_data));
   const char *version;
 
   if(!render_data)
@@ -154,7 +154,7 @@ static bool gl2_init_video(struct graphics_data *graphics,
     graphics->bits_per_pixel = conf->force_bpp;
 
   // We want to deal internally with 32bit surfaces
-  render_data->pixels = malloc(sizeof(Uint32) * GL_POWER_2_WIDTH *
+  render_data->pixels = cmalloc(sizeof(Uint32) * GL_POWER_2_WIDTH *
    GL_POWER_2_HEIGHT);
 
   if(!render_data->pixels)

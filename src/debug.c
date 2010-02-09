@@ -95,7 +95,7 @@ void debug_counters(struct world *mzx_world)
 {
   // +1 for SCORE, +1 for mzx_speed
   int num_vars = mzx_world->num_counters + mzx_world->num_strings + 1 + 1;
-  char **var_list = calloc(num_vars, sizeof(char *));
+  char **var_list = ccalloc(num_vars, sizeof(char *));
   int dialog_result;
   int cp_len;
   int selected = 0;
@@ -107,7 +107,7 @@ void debug_counters(struct world *mzx_world)
 
   for(i = 0; i < mzx_world->num_counters; i++)
   {
-    var_list[i] = malloc(76);
+    var_list[i] = cmalloc(76);
     cp_len = strlen(mzx_world->counter_list[i]->name);
     memset(var_list[i], ' ', 75);
 
@@ -122,14 +122,14 @@ void debug_counters(struct world *mzx_world)
   }
 
   // SCORE isn't a real counter, so we have a special case here
-  var_list[i] = malloc(76);
+  var_list[i] = cmalloc(76);
   memset(var_list[i], ' ', 75);
   memcpy(var_list[i], "SCORE", 5);
   sprintf(var_list[i] + CVALUE_COL_OFFSET, "%d", mzx_world->score);
   i++;
 
   // mzx_speed isn't a real counter either, so another special case is needed
-  var_list[i] = malloc(76);
+  var_list[i] = cmalloc(76);
   memset(var_list[i], ' ', 75);
   memcpy(var_list[i], "mzx_speed", 9);
   sprintf(var_list[i] + CVALUE_COL_OFFSET, "%d", mzx_world->mzx_speed);
@@ -137,7 +137,7 @@ void debug_counters(struct world *mzx_world)
 
   for(i2 = 0; i2 < mzx_world->num_strings; i2++, i++)
   {
-    var_list[i] = malloc(76);
+    var_list[i] = cmalloc(76);
     cp_len = strlen(mzx_world->string_list[i2]->name);
     memset(var_list[i], ' ', 75);
 

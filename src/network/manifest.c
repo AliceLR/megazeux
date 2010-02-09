@@ -83,10 +83,10 @@ static struct manifest_entry *manifest_entry_copy(struct manifest_entry *src)
   struct manifest_entry *dest;
   size_t name_len;
 
-  dest = malloc(sizeof(struct manifest_entry));
+  dest = cmalloc(sizeof(struct manifest_entry));
 
   name_len = strlen(src->name);
-  dest->name = malloc(name_len + 1);
+  dest->name = cmalloc(name_len + 1);
   strncpy(dest->name, src->name, name_len);
   dest->name[name_len] = 0;
 
@@ -131,7 +131,7 @@ struct manifest_entry *manifest_list_create(FILE *f)
     if(!fgets(buffer, LINE_BUF_LEN, f))
       break;
 
-    next_e = calloc(1, sizeof(struct manifest_entry));
+    next_e = ccalloc(1, sizeof(struct manifest_entry));
     if(head)
     {
       e->next = next_e;
@@ -166,7 +166,7 @@ struct manifest_entry *manifest_list_create(FILE *f)
       goto err_invalid_manifest;
 
     line_len = strlen(line);
-    e->name = malloc(line_len + 1);
+    e->name = cmalloc(line_len + 1);
     strncpy(e->name, line, line_len);
     e->name[line_len] = 0;
   }

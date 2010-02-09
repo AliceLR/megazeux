@@ -43,10 +43,10 @@ typedef int32_t Sint32;
 typedef uint64_t Uint64;
 typedef int64_t Sint64;
 
-#ifdef CONFIG_WII
+#if defined(CONFIG_WII) || defined(CONFIG_NDS)
 int real_main(int argc, char *argv[]);
 #define main real_main
-#endif // CONFIG_WII
+#endif // CONFIG_WII || CONFIG_NDS
 
 #endif // CONFIG_SDL
 

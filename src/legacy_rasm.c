@@ -1860,7 +1860,7 @@ __editor_maybe_static int assemble_line(char *cpos,
     current_command.parameters = 1;
 
     str_size = strlen(first_non_space) + 1;
-    param_list[0] = malloc(str_size);
+    param_list[0] = cmalloc(str_size);
     memcpy((char *)param_list[0], first_non_space, str_size);
     current_command.param_types[0] = STRING;
 
@@ -1913,7 +1913,7 @@ __editor_maybe_static int assemble_line(char *cpos,
           int str_size =
            get_word(temp, current_line_position, ' ');
 
-          param_list[arg_count] = malloc(str_size + 1);
+          param_list[arg_count] = cmalloc(str_size + 1);
           memcpy((char *)param_list[arg_count], temp, str_size + 1);
           advance = 1;
           dir_modifier_buffer = 0;
@@ -1926,7 +1926,7 @@ __editor_maybe_static int assemble_line(char *cpos,
           int str_size =
            get_word(temp, current_line_position + 1, '"');
 
-          param_list[arg_count] = malloc(str_size + 1);
+          param_list[arg_count] = cmalloc(str_size + 1);
           memcpy((char *)param_list[arg_count], temp, str_size + 1);
           advance = 1;
           dir_modifier_buffer = 0;
@@ -1954,7 +1954,7 @@ __editor_maybe_static int assemble_line(char *cpos,
           else
           {
             // Store the translation into the command list.
-            param_list[arg_count] = malloc(2);
+            param_list[arg_count] = cmalloc(2);
             ((char *)param_list[arg_count])[0] =
              current_arg_translation | dir_modifier_buffer;
             ((char *)param_list[arg_count])[1] = 0;
@@ -1966,7 +1966,7 @@ __editor_maybe_static int assemble_line(char *cpos,
         else
         {
           // Store the translation into the command list.
-          param_list[arg_count] = malloc(2);
+          param_list[arg_count] = cmalloc(2);
           ((char *)param_list[arg_count])[0] = current_arg_translation;
           ((char *)param_list[arg_count])[1] = current_arg_translation >> 8;
           advance = 1;
@@ -2030,7 +2030,7 @@ char *assemble_file(char *name, int *size)
   if(!input_file)
     return NULL;
 
-  buffer = malloc(1024);
+  buffer = cmalloc(1024);
   buffer[0] = 0xFF;
 
   // fsafegets ensures no line terminators are present
@@ -2045,7 +2045,7 @@ char *assemble_file(char *name, int *size)
       if((current_size + line_bytecode_length) > allocated_size)
       {
         allocated_size *= 2;
-        buffer = realloc(buffer, allocated_size);
+        buffer = crealloc(buffer, allocated_size);
       }
       memcpy(buffer + output_position, bytecode_buffer, line_bytecode_length);
       output_position += line_bytecode_length;
@@ -2060,7 +2060,7 @@ char *assemble_file(char *name, int *size)
   }
 
   // trim the buffer to match the output size
-  buffer = realloc(buffer, current_size + 1);
+  buffer = crealloc(buffer, current_size + 1);
   buffer[current_size] = 0;
   *size = current_size + 1;
 

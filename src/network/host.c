@@ -163,11 +163,11 @@ static int __getaddrinfo(const char *node, const char *service,
 
     if(r_head)
     {
-      r->ai_next = malloc(sizeof(struct addrinfo));
+      r->ai_next = cmalloc(sizeof(struct addrinfo));
       r = r->ai_next;
     }
     else
-      r_head = r = malloc(sizeof(struct addrinfo));
+      r_head = r = cmalloc(sizeof(struct addrinfo));
 
     // Zero the fake addrinfo and fill out the essential fields
     memset(r, 0, sizeof(struct addrinfo));
@@ -175,7 +175,7 @@ static int __getaddrinfo(const char *node, const char *service,
     r->ai_socktype = hints->ai_socktype;
     r->ai_protocol = hints->ai_protocol;
     r->ai_addrlen = sizeof(struct sockaddr_in);
-    r->ai_addr = malloc(r->ai_addrlen);
+    r->ai_addr = cmalloc(r->ai_addrlen);
 
     // Zero the fake ipv4 addr and fill our all of the fields
     addr = (struct sockaddr_in *)r->ai_addr;
@@ -684,7 +684,7 @@ struct host *host_create(enum host_type type, enum host_family fam)
   platform_socket_blocking(fd, true);
 
   // Create our "host" abstraction (latterly augmented)
-  h = calloc(1, sizeof(struct host));
+  h = ccalloc(1, sizeof(struct host));
   h->proto = proto;
   h->af = af;
   h->fd = fd;
@@ -1319,7 +1319,7 @@ struct host *host_accept(struct host *s)
       break;
   }
 
-  addr = malloc(addrlen);
+  addr = cmalloc(addrlen);
 
   newfd = platform_accept(s->fd, addr, &addrlen);
   if(newfd >= 0)
@@ -1327,7 +1327,7 @@ struct host *host_accept(struct host *s)
     assert(addr->sa_family == s->af);
 
     platform_socket_blocking(newfd, true);
-    c = calloc(1, sizeof(struct host));
+    c = ccalloc(1, sizeof(struct host));
     c->af = addr->sa_family;
     c->proto = s->proto;
     c->name = NULL;

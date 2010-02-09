@@ -56,7 +56,7 @@ int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
    PNG_INTERLACE_NONE, PNG_COMPRESSION_TYPE_DEFAULT,
    PNG_FILTER_TYPE_DEFAULT);
 
-  pal_ptr = malloc(count * sizeof(png_color));
+  pal_ptr = cmalloc(count * sizeof(png_color));
   if(!pal_ptr)
     goto exit_free_close;
 
@@ -72,7 +72,7 @@ int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
   png_write_info(png_ptr, info_ptr);
   png_set_packing(png_ptr);
 
-  row_ptrs = malloc(sizeof(png_bytep) * 350);
+  row_ptrs = cmalloc(sizeof(png_bytep) * 350);
   if(!row_ptrs)
     goto exit_free_close;
 
@@ -180,7 +180,7 @@ SDL_Surface *png_read_icon(const char *name)
   if(!s)
     goto exit_free_close;
 
-  row_ptrs = malloc(sizeof(png_bytep) * h);
+  row_ptrs = cmalloc(sizeof(png_bytep) * h);
   if(!row_ptrs)
     goto exit_free_close;
 

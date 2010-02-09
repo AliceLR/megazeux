@@ -78,19 +78,19 @@ static void allocate_world(struct world *mzx_world)
 {
   memset(mzx_world, 0, sizeof(struct world));
 
-  mzx_world->real_mod_playing = malloc(256);
+  mzx_world->real_mod_playing = cmalloc(256);
   memset(mzx_world->real_mod_playing, 0, 256);
 
-  mzx_world->input_file_name = malloc(512);
+  mzx_world->input_file_name = cmalloc(512);
   memset(mzx_world->input_file_name, 0, 512);
 
-  mzx_world->output_file_name = malloc(512);
+  mzx_world->output_file_name = cmalloc(512);
   memset(mzx_world->output_file_name, 0, 512);
 
-  mzx_world->global_robot = malloc(sizeof(struct robot));
+  mzx_world->global_robot = cmalloc(sizeof(struct robot));
   memset(mzx_world->global_robot, 0, sizeof(struct robot));
 
-  mzx_world->custom_sfx = calloc(69, NUM_SFX);
+  mzx_world->custom_sfx = ccalloc(69, NUM_SFX);
 }
 
 static void free_world(struct world *mzx_world)

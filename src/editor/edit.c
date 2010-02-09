@@ -2865,8 +2865,8 @@ static void __edit_world(struct world *mzx_world)
               case 1:
               {
                 // Copy block
-                char *char_buffer = malloc(block_width * block_height);
-                char *color_buffer = malloc(block_width * block_height);
+                char *char_buffer = cmalloc(block_width * block_height);
+                char *color_buffer = cmalloc(block_width * block_height);
                 copy_layer_to_buffer(start_x, start_y, block_width,
                  block_height, block_board->overlay, block_board->overlay_color,
                  char_buffer, color_buffer, block_board->board_width);
@@ -2891,8 +2891,8 @@ static void __edit_world(struct world *mzx_world)
               case 2:
               {
                 // Move block
-                char *char_buffer = malloc(block_width * block_height);
-                char *color_buffer = malloc(block_width * block_height);
+                char *char_buffer = cmalloc(block_width * block_height);
+                char *color_buffer = cmalloc(block_width * block_height);
                 copy_layer_to_buffer(start_x, start_y, block_width,
                  block_height, block_board->overlay,
                  block_board->overlay_color, char_buffer,
@@ -2991,12 +2991,12 @@ static void __edit_world(struct world *mzx_world)
               {
                 // Copy block
                 int block_size = block_width * block_height;
-                char *id_buffer = malloc(block_size);
-                char *param_buffer = malloc(block_size);
-                char *color_buffer = malloc(block_size);
-                char *under_id_buffer = malloc(block_size);
-                char *under_param_buffer = malloc(block_size);
-                char *under_color_buffer = malloc(block_size);
+                char *id_buffer = cmalloc(block_size);
+                char *param_buffer = cmalloc(block_size);
+                char *color_buffer = cmalloc(block_size);
+                char *under_id_buffer = cmalloc(block_size);
+                char *under_param_buffer = cmalloc(block_size);
+                char *under_color_buffer = cmalloc(block_size);
                 copy_board_to_board_buffer(block_board, start_x, start_y,
                  block_width, block_height, id_buffer, param_buffer,
                  color_buffer, under_id_buffer, under_param_buffer,
@@ -3028,12 +3028,12 @@ static void __edit_world(struct world *mzx_world)
               {
                 // Move block
                 int block_size = block_width * block_height;
-                char *id_buffer = malloc(block_size);
-                char *param_buffer = malloc(block_size);
-                char *color_buffer = malloc(block_size);
-                char *under_id_buffer = malloc(block_size);
-                char *under_param_buffer = malloc(block_size);
-                char *under_color_buffer = malloc(block_size);
+                char *id_buffer = cmalloc(block_size);
+                char *param_buffer = cmalloc(block_size);
+                char *color_buffer = cmalloc(block_size);
+                char *under_id_buffer = cmalloc(block_size);
+                char *under_param_buffer = cmalloc(block_size);
+                char *under_color_buffer = cmalloc(block_size);
                 copy_board_to_board_buffer(block_board, start_x, start_y,
                  block_width, block_height, id_buffer, param_buffer,
                  color_buffer, under_id_buffer, under_param_buffer,

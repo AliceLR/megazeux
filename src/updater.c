@@ -172,7 +172,7 @@ static void delete_hook(const char *file)
   struct SHA256_ctx ctx;
   FILE *f;
 
-  new_entry = calloc(1, sizeof(struct manifest_entry));
+  new_entry = ccalloc(1, sizeof(struct manifest_entry));
   if(!new_entry)
     goto err_out;
 
@@ -184,7 +184,7 @@ static void delete_hook(const char *file)
   else
     delete_list = delete_p = new_entry;
 
-  delete_p->name = malloc(strlen(file) + 1);
+  delete_p->name = cmalloc(strlen(file) + 1);
   if(!delete_p->name)
     goto err_delete_p;
   strcpy(delete_p->name, file);
@@ -218,7 +218,7 @@ static bool swivel_current_dir(bool have_video)
   // Store the user's current directory, so we can get back to it
   getcwd(previous_dir, MAX_PATH);
 
-  base_path = malloc(MAX_PATH);
+  base_path = cmalloc(MAX_PATH);
 
   // Find and change into the base path for this MZX binary
   g_ret = get_path(process_argv[0], base_path, MAX_PATH);
@@ -522,7 +522,7 @@ static void __check_for_updates(struct config_info *conf)
    * be composed of a user-selected version and a static platform-archicture
    * name.
    */
-  url_base = malloc(LINE_BUF_LEN);
+  url_base = cmalloc(LINE_BUF_LEN);
   snprintf(url_base, LINE_BUF_LEN, "/%s/" PLATFORM, version);
   debug("Update base URL: %s\n", url_base);
 
@@ -592,25 +592,25 @@ static void __check_for_updates(struct config_info *conf)
   // We don't want the listbox to be too wide
   list_entry_width = MIN(list_entry_width, 60);
 
-  list_entries = malloc(entries * sizeof(char *));
+  list_entries = cmalloc(entries * sizeof(char *));
 
   for(e = removed; e; e = e->next, i++)
   {
-    list_entries[i] = malloc(list_entry_width);
+    list_entries[i] = cmalloc(list_entry_width);
     snprintf(list_entries[i], list_entry_width, "- %s", e->name);
     list_entries[i][list_entry_width - 1] = 0;
   }
 
   for(e = replaced; e; e = e->next, i++)
   {
-    list_entries[i] = malloc(list_entry_width);
+    list_entries[i] = cmalloc(list_entry_width);
     snprintf(list_entries[i], list_entry_width, "* %s", e->name);
     list_entries[i][list_entry_width - 1] = 0;
   }
 
   for(e = added; e; e = e->next, i++)
   {
-    list_entries[i] = malloc(list_entry_width);
+    list_entries[i] = cmalloc(list_entry_width);
     snprintf(list_entries[i], list_entry_width, "+ %s", e->name);
     list_entries[i][list_entry_width - 1] = 0;
   }

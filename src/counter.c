@@ -1510,8 +1510,8 @@ static void vlayer_size_write(struct world *mzx_world,
     int vlayer_width = mzx_world->vlayer_width;
     int vlayer_height = mzx_world->vlayer_height;
 
-    mzx_world->vlayer_chars = realloc(mzx_world->vlayer_chars, value);
-    mzx_world->vlayer_colors = realloc(mzx_world->vlayer_colors, value);
+    mzx_world->vlayer_chars = crealloc(mzx_world->vlayer_chars, value);
+    mzx_world->vlayer_colors = crealloc(mzx_world->vlayer_colors, value);
     mzx_world->vlayer_size = value;
 
     if(vlayer_width * vlayer_height > value)
@@ -1735,7 +1735,7 @@ static int str_num_read(struct world *mzx_world,
   // Otherwise fall back to looking up a regular string
   if(get_string(mzx_world, name, &src, id))
   {
-    char *n_buffer = malloc(src.length + 1);
+    char *n_buffer = cmalloc(src.length + 1);
     long ret;
 
     memcpy(n_buffer, src.value, src.length);
@@ -1768,7 +1768,7 @@ static struct string *add_string_preallocate(struct world *mzx_world,
       allocated = MIN_STRING_ALLOCATE;
 
     mzx_world->string_list =
-     realloc(base, sizeof(struct string *) * allocated);
+     crealloc(base, sizeof(struct string *) * allocated);
     mzx_world->num_strings_allocated = allocated;
     base = mzx_world->string_list;
   }
@@ -1783,7 +1783,7 @@ static struct string *add_string_preallocate(struct world *mzx_world,
   }
 
   // Allocate a string with room for the name and initial value
-  dest = malloc(sizeof(struct string) + name_length + length);
+  dest = cmalloc(sizeof(struct string) + name_length + length);
 
   // Copy in the name, including NULL terminator.
   strcpy(dest->name, name);
@@ -1808,7 +1808,7 @@ static struct string *reallocate_string(struct world *mzx_world,
   // Find the base length (take out the current length)
   int base_length = (int)(src->value - (char *)src);
 
-  src = realloc(src, base_length + length);
+  src = crealloc(src, base_length + length);
   src->value = (char *)src + base_length;
 
   // any new bits of the string should be space filled
@@ -2295,7 +2295,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
     case FOPEN_SAVE_GAME:
     {
-      char *translated_path = malloc(MAX_PATH);
+      char *translated_path = cmalloc(MAX_PATH);
       int faded = get_fade_status();
       int err;
 
@@ -2316,7 +2316,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
     case FOPEN_SAVE_WORLD:
     {
-      char *translated_path = malloc(MAX_PATH);
+      char *translated_path = cmalloc(MAX_PATH);
       int err;
 
       if(cur_robot)
@@ -2336,7 +2336,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
     case FOPEN_LOAD_GAME:
     {
-      char *translated_path = malloc(MAX_PATH);
+      char *translated_path = cmalloc(MAX_PATH);
       int faded;
 
       if(!fsafetranslate(char_value, translated_path))
@@ -2772,7 +2772,7 @@ static void add_counter(struct world *mzx_world, const char *name,
       allocated = MIN_COUNTER_ALLOCATE;
 
     mzx_world->counter_list =
-     realloc(base, sizeof(struct counter *) * allocated);
+     crealloc(base, sizeof(struct counter *) * allocated);
     base = mzx_world->counter_list;
     mzx_world->num_counters_allocated = allocated;
   }
@@ -2786,7 +2786,7 @@ static void add_counter(struct world *mzx_world, const char *name,
      (count - position) * sizeof(struct counter *));
   }
 
-  cdest = malloc(sizeof(struct counter) + strlen(name));
+  cdest = cmalloc(sizeof(struct counter) + strlen(name));
   strcpy(cdest->name, name);
   cdest->value = value;
   cdest->gateway_write = NULL;
@@ -3564,7 +3564,7 @@ struct counter *load_counter(FILE *fp)
   int name_length = fgetd(fp);
 
   struct counter *src_counter =
-   malloc(sizeof(struct counter) + name_length);
+   cmalloc(sizeof(struct counter) + name_length);
   fread(src_counter->name, name_length, 1, fp);
   src_counter->name[name_length] = 0;
   src_counter->value = value;
@@ -3581,7 +3581,7 @@ struct string *load_string(FILE *fp)
   int str_length = fgetd(fp);
 
   struct string *src_string =
-   malloc(sizeof(struct string) + name_length + str_length - 1);
+   cmalloc(sizeof(struct string) + name_length + str_length - 1);
 
   fread(src_string->name, name_length, 1, fp);
 

@@ -47,7 +47,7 @@ void init_audio_platform(struct config_info *conf)
   desired_spec.freq = audio.output_frequency;
 
   SDL_OpenAudio(&desired_spec, &audio_settings);
-  audio.mix_buffer = malloc(audio_settings.size * 2);
+  audio.mix_buffer = cmalloc(audio_settings.size * 2);
   audio.buffer_samples = audio_settings.samples;
 
   // now set the audio going

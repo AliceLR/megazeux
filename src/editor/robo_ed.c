@@ -150,13 +150,13 @@ static void add_blank_line(struct robot_state *rstate, int relation)
 {
   if(rstate->size + 3 < rstate->max_size)
   {
-    struct robot_line *new_rline = malloc(sizeof(struct robot_line));
+    struct robot_line *new_rline = cmalloc(sizeof(struct robot_line));
     struct robot_line *current_rline = rstate->current_rline;
     int current_line = rstate->current_line;
 
     new_rline->line_text_length = 0;
-    new_rline->line_text = malloc(1);
-    new_rline->line_bytecode = malloc(3);
+    new_rline->line_text = cmalloc(1);
+    new_rline->line_bytecode = cmalloc(3);
     new_rline->line_text[0] = 0;
     new_rline->line_bytecode[0] = 1;
     new_rline->line_bytecode[1] = 47;
@@ -347,11 +347,11 @@ static int update_current_line(struct robot_state *rstate)
     {
       current_rline->line_text_length = line_text_length;
       current_rline->line_text =
-       realloc(current_rline->line_text, line_text_length + 1);
+       crealloc(current_rline->line_text, line_text_length + 1);
 
       current_rline->line_bytecode_length = bytecode_length;
       current_rline->line_bytecode =
-       realloc(current_rline->line_bytecode, bytecode_length);
+       crealloc(current_rline->line_bytecode, bytecode_length);
       current_rline->num_args = arg_count;
       current_rline->validity_status = valid;
 
@@ -365,7 +365,7 @@ static int update_current_line(struct robot_state *rstate)
     {
       current_rline->line_text_length = 240;
       current_rline->line_text =
-       realloc(current_rline->line_text, 240 + 1);
+       crealloc(current_rline->line_text, 240 + 1);
       memcpy(current_rline->line_text, new_command_buffer, 240);
       current_rline->line_text[240] = 0;
 
@@ -391,7 +391,7 @@ static int update_current_line(struct robot_state *rstate)
       use_type = current_rline->validity_status;
 
     current_rline->line_text =
-     realloc(current_rline->line_text, line_text_length + 1);
+     crealloc(current_rline->line_text, line_text_length + 1);
 
     if(use_type == invalid_comment &&
      (current_size + (line_text_length + 5) - last_bytecode_length) >
@@ -429,7 +429,7 @@ static int update_current_line(struct robot_state *rstate)
 
 static void add_line(struct robot_state *rstate)
 {
-  struct robot_line *new_rline = malloc(sizeof(struct robot_line));
+  struct robot_line *new_rline = cmalloc(sizeof(struct robot_line));
   struct robot_line *current_rline = rstate->current_rline;
   new_rline->line_text = NULL;
   new_rline->line_bytecode = NULL;
@@ -613,7 +613,7 @@ static int execute_named_macro(struct robot_state *rstate, char *macro_name)
   line_pos = skip_to_next(macro_name, ',', '(', 0);
 
   // extract just the name of the macro, if valid
-  lone_name = malloc(line_pos - macro_name + 1);
+  lone_name = cmalloc(line_pos - macro_name + 1);
   memcpy(lone_name, macro_name, line_pos - macro_name);
   lone_name[line_pos - macro_name] = 0;
 
@@ -896,7 +896,7 @@ static int copy_buffer_to_X11_selection(const SDL_Event *event)
 
   display = info.info.x11.display;
   window = info.info.x11.window;
-  dest_data = malloc(copy_buffer_total_length + 1);
+  dest_data = cmalloc(copy_buffer_total_length + 1);
   dest_ptr = dest_data;
 
   for(i = 0; i < copy_buffer_lines - 1; i++)
@@ -1038,7 +1038,7 @@ static void copy_buffer_to_selection(void)
     !(syncFlags & kPasteboardClientIsOwner))
     goto err_release;
 
-  dest_data = malloc(copy_buffer_total_length + 1);
+  dest_data = cmalloc(copy_buffer_total_length + 1);
   dest_ptr = dest_data;
 
   for(i = 0; i < copy_buffer_lines - 1; i++)
@@ -1170,13 +1170,13 @@ static void copy_block_to_buffer(struct robot_state *rstate)
     free(copy_buffer);
   }
 
-  copy_buffer = calloc(num_lines, sizeof(char *));
+  copy_buffer = ccalloc(num_lines, sizeof(char *));
   copy_buffer_lines = num_lines;
 
   for(i = 0; i < num_lines; i++)
   {
     line_length = current_rline->line_text_length + 1;
-    copy_buffer[i] = malloc(COMMAND_BUFFER_LEN);
+    copy_buffer[i] = cmalloc(COMMAND_BUFFER_LEN);
     memcpy(copy_buffer[i], current_rline->line_text, line_length);
     current_rline = current_rline->next;
 
@@ -1371,7 +1371,7 @@ static void import_block(struct world *mzx_world, struct robot_state *rstate)
     // 0xff + length + cmd + length + 0x00
     if(file_size >= 5)
     {
-       char *buffer = malloc(file_size - 1);
+       char *buffer = cmalloc(file_size - 1);
        size_t ret;
 
        // skip 0xff
@@ -1848,14 +1848,14 @@ static void execute_macro(struct robot_state *rstate,
   int total_dialog_elements = macro_src->total_variables + 3;
   int num_types = macro_src->num_types;
   struct element **elements =
-   malloc(sizeof(struct element *) * total_dialog_elements);
-  int *nominal_column_widths = malloc(sizeof(int) * num_types);
-  int *nominal_column_subwidths = malloc(sizeof(int) * num_types);
-  int *vars_per_line = malloc(sizeof(int) * num_types);
+   cmalloc(sizeof(struct element *) * total_dialog_elements);
+  int *nominal_column_widths = cmalloc(sizeof(int) * num_types);
+  int *nominal_column_subwidths = cmalloc(sizeof(int) * num_types);
+  int *vars_per_line = cmalloc(sizeof(int) * num_types);
   int largest_column_width = 0;
   int total_width;
   int largest_total_width;
-  int *lines_needed = malloc(sizeof(int) * num_types);
+  int *lines_needed = cmalloc(sizeof(int) * num_types);
   int nominal_width = 77, old_width = 77;
   int nominal_height, old_height = 25;
   int total_lines_needed;
@@ -2659,13 +2659,13 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 
     if(new_line)
     {
-      current_rline = malloc(sizeof(struct robot_line));
+      current_rline = cmalloc(sizeof(struct robot_line));
 
       line_bytecode_length = next - current_robot_pos;
       current_rline->line_text_length = line_text_length;
       current_rline->line_bytecode_length = line_bytecode_length;
-      current_rline->line_text = malloc(line_text_length + 1);
-      current_rline->line_bytecode = malloc(line_bytecode_length);
+      current_rline->line_text = cmalloc(line_text_length + 1);
+      current_rline->line_bytecode = cmalloc(line_bytecode_length);
       current_rline->num_args = arg_count;
       current_rline->validity_status = valid;
 

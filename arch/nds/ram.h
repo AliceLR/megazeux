@@ -10,7 +10,7 @@ and GPLv2 (http://www.gnu.org/licenses/old-licenses/gpl-2.0.txt) licenses.
 #ifndef __RAM
 #define __RAM
 
-#include <nds.h>
+#include <nds/ndstypes.h>
 
 #ifdef __cplusplus
 extern "C" {

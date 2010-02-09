@@ -802,8 +802,8 @@ void setup_overlay(struct board *src_board, int mode)
   {
     int board_size = src_board->board_width * src_board->board_height;
     // Allocate an overlay
-    src_board->overlay = malloc(board_size);
-    src_board->overlay_color = malloc(board_size);
+    src_board->overlay = cmalloc(board_size);
+    src_board->overlay_color = cmalloc(board_size);
     memset(src_board->overlay, 32, board_size);
     memset(src_board->overlay_color, 7, board_size);
   }
@@ -2693,7 +2693,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         {
           int dest_width, dest_height;
           char mzm_name_buffer[ROBOT_MAX_TR];
-          char *translated_name = malloc(MAX_PATH);
+          char *translated_name = cmalloc(MAX_PATH);
 
           // "Type" must be 0, 1, or 2; board, overlay, or vlayer
           put_param %= 3;
@@ -4488,7 +4488,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           {
             int copy_type = parse_param(mzx_world, p6, id);
             char name_buffer[ROBOT_MAX_TR];
-            char *translated_name = malloc(MAX_PATH);
+            char *translated_name = cmalloc(MAX_PATH);
             int err;
 
             tr_msg(mzx_world, p5 + 2, id, name_buffer);
@@ -4596,12 +4596,12 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           // Board to board
           case 0:
           {
-            char *id_buffer = malloc(width * height);
-            char *param_buffer = malloc(width * height);
-            char *color_buffer = malloc(width * height);
-            char *under_id_buffer = malloc(width * height);
-            char *under_param_buffer = malloc(width * height);
-            char *under_color_buffer = malloc(width * height);
+            char *id_buffer = cmalloc(width * height);
+            char *param_buffer = cmalloc(width * height);
+            char *color_buffer = cmalloc(width * height);
+            char *under_id_buffer = cmalloc(width * height);
+            char *under_param_buffer = cmalloc(width * height);
+            char *under_color_buffer = cmalloc(width * height);
 
             copy_board_to_board_buffer(src_board, src_x, src_y, width,
              height, id_buffer, param_buffer, color_buffer,
@@ -4662,8 +4662,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           // Vlayer to vlayer
           case 10:
           {
-            char *char_buffer = malloc(width * height);
-            char *color_buffer = malloc(width * height);
+            char *char_buffer = cmalloc(width * height);
+            char *color_buffer = cmalloc(width * height);
 
             copy_layer_to_buffer(src_x, src_y, width, height,
              mzx_world->vlayer_chars, mzx_world->vlayer_colors,
@@ -4760,7 +4760,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           if(*(p5 + 1) == '@')
           {
             char name_buffer[ROBOT_MAX_TR];
-            char *translated_name = malloc(MAX_PATH);
+            char *translated_name = cmalloc(MAX_PATH);
             int err;
 
             tr_msg(mzx_world, p5 + 2, id, name_buffer);
@@ -4887,8 +4887,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           {
             if(src_board->overlay_mode)
             {
-              char *char_buffer = malloc(width * height);
-              char *color_buffer = malloc(width * height);
+              char *char_buffer = cmalloc(width * height);
+              char *color_buffer = cmalloc(width * height);
               copy_layer_to_buffer(src_x, src_y, width, height,
                src_board->overlay, src_board->overlay_color,
                char_buffer, color_buffer, board_width);
@@ -4934,8 +4934,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           // Vlayer to vlayer
           case 10:
           {
-            char *char_buffer = malloc(width * height);
-            char *color_buffer = malloc(width * height);
+            char *char_buffer = cmalloc(width * height);
+            char *color_buffer = cmalloc(width * height);
 
             copy_layer_to_buffer(src_x, src_y, width, height,
              mzx_world->vlayer_chars, mzx_world->vlayer_colors,
@@ -5233,7 +5233,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       case 216: // Load char set ""
       {
         char charset_name[ROBOT_MAX_TR];
-        char *translated_name = malloc(MAX_PATH);
+        char *translated_name = cmalloc(MAX_PATH);
 
         tr_msg(mzx_world, cmd_ptr + 2, id, charset_name);
 
@@ -5331,7 +5331,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       case 222: // Load palette
       {
         char name_buffer[ROBOT_MAX_TR];
-        char *translated_name = malloc(MAX_PATH);
+        char *translated_name = cmalloc(MAX_PATH);
 
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
 
@@ -5392,7 +5392,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       case 226: // Swap world str
       {
         char name_buffer[ROBOT_MAX_TR];
-        char *translated_name = malloc(MAX_PATH);
+        char *translated_name = cmalloc(MAX_PATH);
         int redo_load;
 
         tr_msg(mzx_world, cmd_ptr + 2, id, name_buffer);
