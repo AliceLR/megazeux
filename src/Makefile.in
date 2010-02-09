@@ -115,7 +115,6 @@ mzx_cobjs += arch/nds/malloc.o arch/nds/extmem.o
 endif
 
 ifeq (${BUILD_EDITOR},1)
-mzx_cobjs += ${mzx_obj}/editor_syms.o
 mzx_cobjs += ${editor_obj}/board.o ${editor_obj}/block.o
 mzx_cobjs += ${editor_obj}/configure.o ${editor_obj}/char_ed.o
 mzx_cobjs += ${editor_obj}/edit.o ${editor_obj}/edit_di.o
@@ -124,6 +123,8 @@ mzx_cobjs += ${editor_obj}/macro.o ${editor_obj}/pal_ed.o
 mzx_cobjs += ${editor_obj}/param.o ${editor_obj}/robo_ed.o
 mzx_cobjs += ${editor_obj}/robot.o ${editor_obj}/sfx_edit.o
 mzx_cobjs += ${editor_obj}/window.o ${editor_obj}/world.o
+else
+mzx_cobjs += ${mzx_obj}/edit_stubs.o
 endif
 
 ifeq (${BUILD_HELPSYS},1)

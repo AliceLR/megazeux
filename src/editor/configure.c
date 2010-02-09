@@ -21,7 +21,6 @@
 
 #include "../counter.h"
 #include "../configure.h"
-#include "../editor_syms.h"
 
 #include <stdlib.h>
 #include <string.h>

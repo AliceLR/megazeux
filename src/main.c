@@ -51,9 +51,7 @@
 #include "util.h"
 #include "world.h"
 #include "counter.h"
-#include "editor_syms.h"
-
-editor_syms_t editor_syms;
+#include "edit_stubs.h"
 
 #ifdef CONFIG_NDS
 
@@ -107,7 +105,7 @@ static void free_world(World *mzx_world)
     free(mzx_world->update_done);
 
   // could be a nop in an editor-free build
-  editor_free_hook(mzx_world);
+  free_extended_macros(mzx_world);
 
   free(mzx_world->real_mod_playing);
   free(mzx_world->input_file_name);
@@ -120,8 +118,7 @@ int main(int argc, char *argv[])
 {
   World mzx_world;
 
-  if(!editor_init_hook(&mzx_world))
-    debug("Editor function disabled.\n");
+  init_macros(&mzx_world);
 
   if(!platform_init())
     return 1;
