@@ -16,9 +16,11 @@ extern BOOL MMCMP_Unpack(LPCBYTE *ppMemFile, LPDWORD pdwMemLength);
 #endif
 
 // External decompressors
+#if 0
 extern void AMSUnpack(const char *psrc, UINT inputlen, char *pdest, UINT dmax, char packcharacter);
 extern WORD MDLReadBits(DWORD &bitbuf, UINT &bitnum, LPBYTE &ibuf, CHAR n);
 extern int DMFUnpack(LPBYTE psample, LPBYTE ibuf, LPBYTE ibufmax, UINT maxlen);
+#endif
 extern DWORD ITReadBits(DWORD &bitbuf, UINT &bitnum, LPBYTE &ibuf, CHAR n);
 extern void ITUnpack8Bit(signed char *pSample, DWORD dwLen, LPBYTE lpMemFile, DWORD dwMemLength, BOOL b215);
 extern void ITUnpack16Bit(signed char *pSample, DWORD dwLen, LPBYTE lpMemFile, DWORD dwMemLength, BOOL b215);
@@ -148,20 +150,20 @@ BOOL CSoundFile::Create(LPCBYTE lpStream, DWORD dwMemLength)
 		 && (!ReadSTM(lpStream, dwMemLength))
 		 && (!ReadMed(lpStream, dwMemLength))
 		 && (!ReadMTM(lpStream, dwMemLength))
-		 && (!ReadMDL(lpStream, dwMemLength))
-		 && (!ReadDBM(lpStream, dwMemLength))
+		 //&& (!ReadMDL(lpStream, dwMemLength))
+		 //&& (!ReadDBM(lpStream, dwMemLength))
 		 && (!Read669(lpStream, dwMemLength))
 		 && (!ReadFAR(lpStream, dwMemLength))
-		 && (!ReadAMS(lpStream, dwMemLength))
+		 //&& (!ReadAMS(lpStream, dwMemLength))
 		 && (!ReadOKT(lpStream, dwMemLength))
-		 && (!ReadPTM(lpStream, dwMemLength))
+		 //&& (!ReadPTM(lpStream, dwMemLength))
 		 && (!ReadUlt(lpStream, dwMemLength))
-		 && (!ReadDMF(lpStream, dwMemLength))
+		 //&& (!ReadDMF(lpStream, dwMemLength))
 		 && (!ReadDSM(lpStream, dwMemLength))
-		 && (!ReadUMX(lpStream, dwMemLength))
+		 //&& (!ReadUMX(lpStream, dwMemLength))
 		 && (!ReadAMF(lpStream, dwMemLength))
-		 && (!ReadPSM(lpStream, dwMemLength))
-		 && (!ReadMT2(lpStream, dwMemLength))
+		 //&& (!ReadPSM(lpStream, dwMemLength))
+		 //&& (!ReadMT2(lpStream, dwMemLength))
 #endif // MODPLUG_BASIC_SUPPORT
 		 && (!ReadMod(lpStream, dwMemLength))) m_nType = MOD_TYPE_NONE;
 #ifdef MMCMP_SUPPORT
@@ -1342,6 +1344,7 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 		}
 		break;
 
+#if 0
 	// AMS compressed samples
 	case RS_AMS8:
 	case RS_AMS16:
@@ -1430,6 +1433,7 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 			len = DMFUnpack((LPBYTE)pIns->pSample, ibuf, ibufmax, maxlen);
 		}
 		break;
+#endif
 
 #ifdef MODPLUG_TRACKER
 	// PCM 24-bit signed -> load sample, and normalize it to 16-bit

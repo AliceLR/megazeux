@@ -15,16 +15,12 @@ libmodplug_cflags = -DHAVE_INTTYPES_H -I${libmodplug_src} \
 
 libmodplug_objs = \
     ${libmodplug_obj}/fastmix.o ${libmodplug_obj}/load_669.o \
-    ${libmodplug_obj}/load_amf.o ${libmodplug_obj}/load_ams.o \
-    ${libmodplug_obj}/load_dbm.o ${libmodplug_obj}/load_dmf.o \
-    ${libmodplug_obj}/load_dsm.o ${libmodplug_obj}/load_far.o \
-    ${libmodplug_obj}/load_it.o ${libmodplug_obj}/load_mdl.o \
+    ${libmodplug_obj}/load_amf.o ${libmodplug_obj}/load_dsm.o \
+    ${libmodplug_obj}/load_far.o ${libmodplug_obj}/load_it.o \
     ${libmodplug_obj}/load_med.o ${libmodplug_obj}/load_mod.o \
-    ${libmodplug_obj}/load_mt2.o ${libmodplug_obj}/load_mtm.o \
-    ${libmodplug_obj}/load_okt.o ${libmodplug_obj}/load_psm.o \
-    ${libmodplug_obj}/load_ptm.o ${libmodplug_obj}/load_s3m.o \
-    ${libmodplug_obj}/load_stm.o ${libmodplug_obj}/load_ult.o \
-    ${libmodplug_obj}/load_umx.o ${libmodplug_obj}/load_wav.o \
+    ${libmodplug_obj}/load_mtm.o ${libmodplug_obj}/load_okt.o \
+    ${libmodplug_obj}/load_s3m.o ${libmodplug_obj}/load_stm.o \
+    ${libmodplug_obj}/load_ult.o ${libmodplug_obj}/load_wav.o \
     ${libmodplug_obj}/load_xm.o ${libmodplug_obj}/mmcmp.o \
     ${libmodplug_obj}/modplug.o ${libmodplug_obj}/snd_dsp.o \
     ${libmodplug_obj}/sndfile.o ${libmodplug_obj}/snd_flt.o \
