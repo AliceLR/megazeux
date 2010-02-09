@@ -383,9 +383,8 @@ static void board_id_write(struct world *mzx_world,
   int board_size = src_board->board_width * src_board->board_height;
   char cvalue = value;
 
-  if(((cvalue < SENSOR) || (cvalue == PLAYER)) &&
-   (src_board->level_id[offset] < SENSOR) && (offset >= 0) &&
-   (offset < board_size))
+  if((cvalue < SENSOR) && (src_board->level_id[offset] < SENSOR) &&
+   (offset >= 0) && (offset < board_size))
   {
     src_board->level_id[offset] = cvalue;
   }

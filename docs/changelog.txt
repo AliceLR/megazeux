@@ -84,6 +84,7 @@ USERS
 + Add a "system_mouse" config.txt option that allows the mouse
   cursor to be replaced with the system mouse cursor, rather than
   being drawn by MegaZeux.
++ Disallow placing player clones with SET "board_id" 127.
 
 DEVELOPERS
 
