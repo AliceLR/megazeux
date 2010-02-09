@@ -2822,6 +2822,8 @@ int get_robot_id(Board *src_board, const char *name)
       int i;
       for(i = 1; i <= src_board->num_robots; i++)
       {
+        if(!src_board->robot_list[i])
+          continue;
         if(!strcasecmp(name, (src_board->robot_list[i])->robot_name))
           return i;
       }
