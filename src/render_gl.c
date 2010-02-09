@@ -32,7 +32,7 @@
 #endif
 
 void gl_set_filter_method(const char *method,
- void (GLAPIENTRY *glTexParameteri_p)(GLenum target, GLenum pname, GLint param))
+ void (GL_APIENTRY *glTexParameteri_p)(GLenum target, GLenum pname, GLint param))
 {
   GLint gl_filter_method = GL_LINEAR;
 

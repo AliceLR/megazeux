@@ -1,7 +1,7 @@
 /* MegaZeux
  *
  * Copyright (C) 2006-2007 Gilead Kutnick <exophase@adelphia.net>
- * Copyright (C) 2007 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2007,2009 Alistair John Strachan <alistair@devzero.co.uk>
  * Copyright (C) 2007 Alan Williams <mralert@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
@@ -36,23 +36,33 @@
 #include "render_egl.h"
 #endif
 
+/* NOTE: This renderer should work with almost any GL capable video card.
+ *       However, if you plan to change it, please bear in mind that this
+ *       has been carefully written to work with both OpenGL 1.x and
+ *       OpenGL ES 1.x. The latter API lacks many functions present in
+ *       desktop OpenGL. GLES is typically used on cellphones.
+ */
+
 struct gl1_syms
 {
   int syms_loaded;
-  void (GLAPIENTRY *glBegin)(GLenum mode);
-  void (GLAPIENTRY *glBindTexture)(GLenum target, GLuint texture);
-  void (GLAPIENTRY *glClear)(GLbitfield mask);
-  void (GLAPIENTRY *glEnable)(GLenum cap);
-  void (GLAPIENTRY *glEnd)(void);
-  void (GLAPIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
-  const GLubyte* (GLAPIENTRY *glGetString)(GLenum name);
-  void (GLAPIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
-  void (GLAPIENTRY *glTexImage2D)(GLenum target, GLint level,
+  void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
+  void (GL_APIENTRY *glClear)(GLbitfield mask);
+  void (GL_APIENTRY *glDisableClientState)(GLenum cap);
+  void (GL_APIENTRY *glDrawArrays)(GLenum mode, GLint first, GLsizei count);
+  void (GL_APIENTRY *glEnable)(GLenum cap);
+  void (GL_APIENTRY *glEnableClientState)(GLenum cap);
+  void (GL_APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
+  const GLubyte* (GL_APIENTRY *glGetString)(GLenum name);
+  void (GL_APIENTRY *glTexCoordPointer)(GLint size, GLenum type,
+   GLsizei stride, const GLvoid *ptr);
+  void (GL_APIENTRY *glTexImage2D)(GLenum target, GLint level,
    GLint internalformat,GLsizei width, GLsizei height, GLint border,
    GLenum format, GLenum type, const GLvoid *pixels);
-  void (GLAPIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
-  void (GLAPIENTRY *glVertex3f)(GLfloat x, GLfloat y, GLfloat z);
-  void (GLAPIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
+  void (GL_APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
+  void (GL_APIENTRY *glVertexPointer)(GLint size, GLenum type,
+   GLsizei stride, const GLvoid *ptr);
+  void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 };
 
 struct gl1_render_data
@@ -69,29 +79,18 @@ static int gl1_load_syms (struct gl1_syms *gl)
   if(gl->syms_loaded)
     return true;
 
-  // Since 1.0
-  GL_LOAD_SYM(gl, glBegin)
-  // Since 1.1
   GL_LOAD_SYM(gl, glBindTexture)
-  // Since 1.0
   GL_LOAD_SYM(gl, glClear)
-  // Since 1.0 (parameters may require more recent version)
+  GL_LOAD_SYM(gl, glDrawArrays)
+  GL_LOAD_SYM(gl, glDisableClientState)
   GL_LOAD_SYM(gl, glEnable)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glEnd)
-  // Since 1.1
+  GL_LOAD_SYM(gl, glEnableClientState)
   GL_LOAD_SYM(gl, glGenTextures)
-  // Since 1.0
   GL_LOAD_SYM(gl, glGetString)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glTexCoord2f)
-  // Since 1.0 (parameters may require more recent version)
+  GL_LOAD_SYM(gl, glTexCoordPointer)
   GL_LOAD_SYM(gl, glTexImage2D)
-  // Since 1.0
   GL_LOAD_SYM(gl, glTexParameteri)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glVertex3f)
-  // Since 1.0
+  GL_LOAD_SYM(gl, glVertexPointer)
   GL_LOAD_SYM(gl, glViewport)
 
   gl->syms_loaded = true;
@@ -260,29 +259,39 @@ static void gl1_sync_screen(struct graphics_data *graphics)
 {
   struct gl1_render_data *render_data = graphics->render_data;
   struct gl1_syms *gl = &render_data->gl;
-  float texture_width, texture_height;
 
-  texture_width = (float)640 / render_data->w;
-  texture_height = (float)350 / render_data->h;
+  float texture_width = (float)640 / render_data->w;
+  float texture_height = (float)350 / render_data->h;
+
+  float texCoordArray[2 * 4] = {
+    0.0,           0.0,
+    0.0,           texture_height,
+    texture_width, 0.0,
+    texture_width, texture_height
+  };
+
+  float vertexArray[2 * 4] = {
+    -1.0,  1.0,
+    -1.0, -1.0,
+     1.0,  1.0,
+     1.0, -1.0,
+  };
 
   gl->glTexImage2D(GL_TEXTURE_2D, 0, 3, render_data->w, render_data->h, 0,
    GL_RGBA, GL_UNSIGNED_BYTE, render_data->pixels);
 
   gl->glClear(GL_COLOR_BUFFER_BIT);
 
-  gl->glBegin(GL_TRIANGLE_STRIP);
-    gl->glTexCoord2f(0.0, 0.0);
-    gl->glVertex3f(-1.0, 1.0, 0.0);
+  gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+  gl->glEnableClientState(GL_VERTEX_ARRAY);
 
-    gl->glTexCoord2f(0.0, texture_height);
-    gl->glVertex3f(-1.0, -1.0, 0.0);
+  gl->glTexCoordPointer(2, GL_FLOAT, 0, texCoordArray);
+  gl->glVertexPointer(2, GL_FLOAT, 0, vertexArray);
 
-    gl->glTexCoord2f(texture_width, 0.0);
-    gl->glVertex3f(1.0, 1.0, 0.0);
+  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
-    gl->glTexCoord2f(texture_width, texture_height);
-    gl->glVertex3f(1.0, -1.0, 0.0);
-  gl->glEnd();
+  gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+  gl->glDisableClientState(GL_VERTEX_ARRAY);
 
   gl_swap_buffers(graphics);
 }

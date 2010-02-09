@@ -47,36 +47,36 @@
 struct gl2_syms
 {
   int syms_loaded;
-  void (GLAPIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
-  void (GLAPIENTRY *glBegin)(GLenum mode);
-  void (GLAPIENTRY *glBindTexture)(GLenum target, GLuint texture);
-  void (GLAPIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
-  void (GLAPIENTRY *glClear)(GLbitfield mask);
-  void (GLAPIENTRY *glColor3ubv)(const GLubyte *v);
-  void (GLAPIENTRY *glColor4f)(GLfloat red, GLfloat green, GLfloat blue,
+  void (GL_APIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
+  void (GL_APIENTRY *glBegin)(GLenum mode);
+  void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
+  void (GL_APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
+  void (GL_APIENTRY *glClear)(GLbitfield mask);
+  void (GL_APIENTRY *glColor3ubv)(const GLubyte *v);
+  void (GL_APIENTRY *glColor4f)(GLfloat red, GLfloat green, GLfloat blue,
    GLfloat alpha);
-  void (GLAPIENTRY *glColor4ub)(GLubyte red, GLubyte green, GLubyte blue,
+  void (GL_APIENTRY *glColor4ub)(GLubyte red, GLubyte green, GLubyte blue,
    GLubyte alpha);
-  void (GLAPIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
+  void (GL_APIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
    GLenum internalFormat, GLint x, GLint y, GLsizei width, GLsizei height,
    GLint border);
-  void (GLAPIENTRY *glDisable)(GLenum cap);
-  void (GLAPIENTRY *glEnable)(GLenum cap);
-  void (GLAPIENTRY *glEnd)(void);
-  void (GLAPIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
-  const GLubyte* (GLAPIENTRY *glGetString)(GLenum name);
-  void (GLAPIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
-  void (GLAPIENTRY *glTexImage2D)(GLenum target, GLint level,
+  void (GL_APIENTRY *glDisable)(GLenum cap);
+  void (GL_APIENTRY *glEnable)(GLenum cap);
+  void (GL_APIENTRY *glEnd)(void);
+  void (GL_APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
+  const GLubyte* (GL_APIENTRY *glGetString)(GLenum name);
+  void (GL_APIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
+  void (GL_APIENTRY *glTexImage2D)(GLenum target, GLint level,
    GLint internalformat, GLsizei width, GLsizei height, GLint border,
    GLenum format, GLenum type, const GLvoid *pixels);
-  void (GLAPIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
-  void (GLAPIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
-  void (GLAPIENTRY *glTexSubImage2D)(GLenum target, GLint level, GLint xoffset,
+  void (GL_APIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
+  void (GL_APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
+  void (GL_APIENTRY *glTexSubImage2D)(GLenum target, GLint level, GLint xoffset,
    GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type,
    const GLvoid *pixels);
-  void (GLAPIENTRY *glVertex2f)(GLfloat x, GLfloat y);
-  void (GLAPIENTRY *glVertex2i)(GLint x, GLint y);
-  void (GLAPIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
+  void (GL_APIENTRY *glVertex2f)(GLfloat x, GLfloat y);
+  void (GL_APIENTRY *glVertex2i)(GLint x, GLint y);
+  void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 };
 
 struct gl2_render_data

@@ -28,6 +28,14 @@ __M_BEGIN_DECLS
 
 #include "graphics.h"
 
+#ifndef CONFIG_EGL
+#include "SDL_opengl.h"
+#include <GL/gl.h>
+#else
+#include <EGL/egl.h>
+#include <GLES/gl.h>
+#endif
+
 #define GL_NON_POWER_2_WIDTH      640
 #define GL_NON_POWER_2_HEIGHT     350
 #define GL_POWER_2_WIDTH          1024
@@ -36,7 +44,12 @@ __M_BEGIN_DECLS
 #define CONFIG_GL_FILTER_LINEAR   "linear"
 #define CONFIG_GL_FILTER_NEAREST  "nearest"
 
-void gl_set_attributes(struct graphics_data *graphics);
+#ifndef GL_APIENTRY
+#define GL_APIENTRY APIENTRY
+#endif
+
+void gl_set_filter_method(const char *method,
+ void (GL_APIENTRY *glTexParameteri_p)(GLenum target, GLenum pname, GLint param));
 void get_context_width_height(struct graphics_data *graphics,
  int *width, int *height);
 

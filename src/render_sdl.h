@@ -34,12 +34,6 @@ int sdl_flags(int depth, bool fullscreen, bool resize);
 
 #include "render_gl.h"
 
-#include "SDL_opengl.h"
-
-#ifndef GLAPIENTRY
-#define GLAPIENTRY APIENTRY
-#endif
-
 #define GL_STRIP_FLAGS(A) ((A & (SDL_FULLSCREEN | SDL_RESIZABLE)) | SDL_OPENGL)
 
 /* GL_LOAD_SYM() should be used as follows:
@@ -69,8 +63,6 @@ int sdl_flags(int depth, bool fullscreen, bool resize);
 
 #ifdef LINK_OPENGL
 
-#include "GL/gl.h"
-
 #define GL_LOAD_SYM(OBJ,FUNC)               \
   OBJ->FUNC = FUNC;                         \
 
@@ -88,8 +80,7 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize);
 bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize);
-void gl_set_filter_method(const char *method,
- void (GLAPIENTRY *glTexParameteri_p)(GLenum target, GLenum pname, GLint param));
+void gl_set_attributes(struct graphics_data *graphics);
 bool gl_swap_buffers(struct graphics_data *graphics);
 
 #endif // CONFIG_RENDER_GL

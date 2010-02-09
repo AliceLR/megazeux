@@ -26,17 +26,10 @@ __M_BEGIN_DECLS
 
 #include "render_gl.h"
 
-#include <EGL/egl.h>
-#include <GLES/gl.h>
-
-#ifndef GLAPIENTRY
-#define GLAPIENTRY GL_APIENTRY
-#endif
-
-#define GL_LOAD_SYM_EXT(OBJ,FUNC)       \
-  OBJ->FUNC = eglGetProcAddress(#FUNC); \
-  if(!OBJ->FUNC)                        \
-    return false;                       \
+#define GL_LOAD_SYM_EXT(OBJ,FUNC)               \
+  OBJ->FUNC = (void *)eglGetProcAddress(#FUNC); \
+  if(!OBJ->FUNC)                                \
+    return false;                               \
 
 #define GL_LOAD_SYM GL_LOAD_SYM_EXT
 
@@ -46,8 +39,7 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize);
 bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize);
-void gl_set_filter_method(const char *method,
- void (GLAPIENTRY *glTexParameteri_p)(GLenum target, GLenum pname, GLint param));
+void gl_set_attributes(struct graphics_data *graphics);
 bool gl_swap_buffers(struct graphics_data *graphics);
 
 __M_END_DECLS
