@@ -70,8 +70,6 @@ typedef struct
   Uint32 channels;
   Uint32 freq;
   Uint16 format;
-  Uint32 loop_start;
-  Uint32 loop_end;
 } wav_info;
 
 typedef struct
@@ -84,8 +82,6 @@ typedef struct
   Uint32 bytes_per_sample;
   Uint32 natural_frequency;
   Uint16 format;
-  Uint32 loop_start;
-  Uint32 loop_end;
 } wav_stream;
 
 typedef struct
@@ -93,8 +89,6 @@ typedef struct
   sampled_stream s;
   OggVorbis_File vorbis_file_handle;
   vorbis_info *vorbis_file_info;
-  Uint32 loop_start;
-  Uint32 loop_end;
 } vorbis_stream;
 
 static const int default_period = 428;
@@ -409,7 +403,6 @@ static Uint32 vorbis_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
   vorbis_stream *v_stream = (vorbis_stream *)a_src;
   Uint32 read_wanted = v_stream->s.allocated_data_length -
    v_stream->s.stream_offset;
-  Uint32 pos = 0;
   char *read_buffer = (char *)v_stream->s.output_data +
    v_stream->s.stream_offset;
   int current_section;
@@ -417,9 +410,6 @@ static Uint32 vorbis_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
   do
   {
     read_wanted -= read_len;
-
-    if(a_src->repeat && v_stream->loop_end)
-      pos = (Uint32)ov_pcm_tell(&v_stream->vorbis_file_handle);
 
 #ifdef CONFIG_TREMOR
     read_len =
@@ -430,13 +420,6 @@ static Uint32 vorbis_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
      ov_read(&(v_stream->vorbis_file_handle), read_buffer,
      read_wanted, ENDIAN_PACKING, 2, 1, &current_section);
 #endif
-
-    if(a_src->repeat && (pos < v_stream->loop_end)
-     && (pos + read_len / v_stream->s.channels / 2 >= v_stream->loop_end))
-    {
-      read_len = (v_stream->loop_end - pos) * v_stream->s.channels * 2;
-      ov_pcm_seek(&(v_stream->vorbis_file_handle), v_stream->loop_start);
-    }
 
     // If it hit the end go back to the beginning if repeat is on
 
@@ -512,13 +495,11 @@ static Uint32 vorbis_get_frequency(sampled_stream *s_src)
   return s_src->frequency;
 }
 
-static Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len,
- Uint32 repeat)
+static Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len)
 {
   Uint8 *src = (Uint8 *)w_stream->wav_data + w_stream->data_offset;
   Uint32 data_read;
   Uint32 read_len = len;
-  Uint32 new_offset;
   Uint32 i;
 
   switch(w_stream->format)
@@ -529,23 +510,8 @@ static Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len,
 
       read_len /= 2;
 
-      new_offset = w_stream->data_offset + read_len;
-
-      if(w_stream->data_offset + read_len >= w_stream->data_length)
-      {
+      if(w_stream->data_offset + read_len > w_stream->data_length)
         read_len = w_stream->data_length - w_stream->data_offset;
-        if(repeat)
-          new_offset = 0;
-        else
-          new_offset = w_stream->data_length;
-      }
-
-      if(repeat && (w_stream->data_offset < w_stream->loop_end)
-       && (w_stream->data_offset + read_len >= w_stream->loop_end))
-      {
-        read_len = w_stream->loop_end - w_stream->data_offset;
-        new_offset = w_stream->loop_start;
-      }
 
       data_read = read_len * 2;
 
@@ -561,23 +527,8 @@ static Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len,
     {
       Uint8 *dest = (Uint8 *) buffer;
 
-      new_offset = w_stream->data_offset + read_len;
-
-      if(w_stream->data_offset + read_len >= w_stream->data_length)
-      {
+      if(w_stream->data_offset + read_len > w_stream->data_length)
         read_len = w_stream->data_length - w_stream->data_offset;
-        if(repeat)
-          new_offset = 0;
-        else
-          new_offset = w_stream->data_length;
-      }
-
-      if(repeat && (w_stream->data_offset < w_stream->loop_end)
-       && (w_stream->data_offset + read_len >= w_stream->loop_end))
-      {
-        read_len = w_stream->loop_end - w_stream->data_offset;
-        new_offset = w_stream->loop_start;
-      }
 
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
       // swap bytes on big endian machines
@@ -597,7 +548,7 @@ static Uint32 wav_read_data(wav_stream *w_stream, Uint8 *buffer, Uint32 len,
     }
   }
 
-  w_stream->data_offset = new_offset;
+  w_stream->data_offset += read_len;
 
   return data_read;
 }
@@ -611,7 +562,7 @@ static Uint32 wav_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
   Uint8 *read_buffer = (Uint8 *)w_stream->s.output_data +
    w_stream->s.stream_offset;
 
-  read_len = wav_read_data(w_stream, read_buffer, read_wanted, a_src->repeat);
+  read_len = wav_read_data(w_stream, read_buffer, read_wanted);
 
   if(read_len < read_wanted)
   {
@@ -620,7 +571,8 @@ static Uint32 wav_mix_data(audio_stream *a_src, Sint32 *buffer, Uint32 len)
 
     if(a_src->repeat)
     {
-      read_len = wav_read_data(w_stream, read_buffer, read_wanted, true);
+      w_stream->data_offset = 0;
+      read_len = wav_read_data(w_stream, read_buffer, read_wanted);
     }
     else
     {
@@ -882,10 +834,6 @@ static audio_stream *construct_vorbis_stream(char *filename, Uint32 frequency,
 {
   FILE *input_file = fsafeopen(filename, "rb");
   audio_stream *ret_val = NULL;
-  vorbis_comment *comment;
-  int loopstart = -1;
-  int looplength = -1;
-  int i;
 
   if(input_file)
   {
@@ -903,29 +851,6 @@ static audio_stream *construct_vorbis_stream(char *filename, Uint32 frequency,
 
         v_stream->vorbis_file_handle = open_file;
         v_stream->vorbis_file_info = vorbis_file_info;
-
-        v_stream->loop_start = 0;
-        v_stream->loop_end = 0;
-
-        comment = ov_comment(&open_file, -1);
-        if(comment)
-        {
-          for(i = 0; i < comment->comments; i++)
-          {
-            if(!strncasecmp("loopstart=", comment->user_comments[i], 10))
-              loopstart = atoi(comment->user_comments[i] + 10);
-            else
-
-            if(!strncasecmp("looplength=", comment->user_comments[i], 11))
-              looplength = atoi(comment->user_comments[i] + 11);
-          }
-
-          if((loopstart >= 0) && (looplength > 0))
-          {
-            v_stream->loop_start = loopstart;
-            v_stream->loop_end = loopstart + looplength;
-          }
-        }
 
         initialize_sampled_stream((sampled_stream *)v_stream,
          vorbis_set_frequency, vorbis_get_frequency, frequency,
@@ -970,7 +895,6 @@ static int read_little_endian16(char *buf)
 static void *get_riff_chunk(FILE *fp, int filesize, char *id, int *size)
 {
   int maxsize = filesize - ftell(fp) - 8;
-  int c;
   char size_buf[4];
   void *buf;
 
@@ -991,14 +915,6 @@ static void *get_riff_chunk(FILE *fp, int filesize, char *id, int *size)
   if(buf)
     fread(buf, 1, *size, fp);
 
-  // Realign if odd size unless padding byte isn't 0
-  if(*size & 1)
-  {
-    c = fgetc(fp);
-    if ((c != 0) && (c != EOF))
-      fseek(fp, -1, SEEK_CUR);
-  }
-
   return buf;
 }
 
@@ -1014,7 +930,7 @@ static int get_next_riff_chunk_id(FILE *fp, int filesize, char *id)
 
 static void skip_riff_chunk(FILE *fp, int filesize)
 {
-  int s, c;
+  int s;
   int maxsize = filesize - ftell(fp) - 8;
   char size_buf[4];
 
@@ -1026,14 +942,6 @@ static void skip_riff_chunk(FILE *fp, int filesize)
     if(s > maxsize)
       s = maxsize;
     fseek(fp, s, SEEK_CUR);
-
-    // Realign if odd size unless padding byte isn't 0
-    if(s & 1)
-    {
-      c = fgetc(fp);
-      if ((c != 0) && (c != EOF))
-        fseek(fp, -1, SEEK_CUR);
-    }
   }
 }
 
@@ -1064,9 +972,7 @@ static int load_wav_file(const char *file, wav_info *spec,
  Uint8 **audio_buf, Uint32 *audio_len)
 {
   int data_size, filesize, riffsize, channels, srate, sbytes, fmt_size;
-  int smpl_size, numloops;
-  Uint32 loop_start, loop_end;
-  char *fmt_chunk, *smpl_chunk, tmp_buf[4];
+  char *fmt_chunk, tmp_buf[4];
   int ret = 0;
   FILE *fp;
 #ifdef CONFIG_SDL
@@ -1104,10 +1010,6 @@ static int load_wav_file(const char *file, wav_info *spec,
   if(!fmt_chunk || (fmt_size < 16))
     goto exit_close;
 
-  // Default to no loop
-  spec->loop_start = 0;
-  spec->loop_end = 0;
-
   // If the WAV file isn't uncompressed PCM (format 1), let SDL handle it.
   if(read_little_endian16(fmt_chunk) != 1)
   {
@@ -1136,8 +1038,8 @@ static int load_wav_file(const char *file, wav_info *spec,
          free(copy_buf);
          goto exit_close;
       }
-
-      goto exit_close_success;
+      ret = 1;
+      goto exit_close;
     }
 #endif // CONFIG_SDL
     goto exit_close;
@@ -1182,34 +1084,6 @@ static int load_wav_file(const char *file, wav_info *spec,
     spec->format = SAMPLE_S16LSB;
   spec->channels = channels;
 
-  // Check for "smpl" chunk for looping info
-  fseek(fp, 8, SEEK_SET);
-  smpl_chunk = get_riff_chunk_by_id(fp, filesize, "smpl", &smpl_size);
-
-  // If there's no "smpl" chunk or it's less than 60 bytes, there's no valid
-  // loop data
-  if(!smpl_chunk || (smpl_size < 60))
-    goto exit_close_success;
-
-  numloops = read_little_endian32(smpl_chunk + 28);
-  // First loop is at 36
-  loop_start = read_little_endian32(smpl_chunk + 44) * channels * sbytes;
-  loop_end = read_little_endian32(smpl_chunk + 48) * channels * sbytes;
-  free(smpl_chunk);
-
-  // If the number of loops is less than 1, the loop data's invalid
-  if (numloops < 1)
-    goto exit_close_success;
-
-  // Boundary check loop points
-  if ((loop_start >= *audio_len) || (loop_end > *audio_len)
-   || (loop_start >= loop_end))
-    goto exit_close_success;
-
-  spec->loop_start = loop_start;
-  spec->loop_end = loop_end;
-
-exit_close_success:
   ret = 1;
 exit_close:
   fclose(fp);
@@ -1383,7 +1257,7 @@ static audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
   audio_stream *ret_val = NULL;
   char safe_filename[MAX_PATH];
   char new_file[MAX_PATH];
-  wav_info w_info = {0,0,0,0,0};
+  wav_info w_info = {0,0,0};
   Uint32 data_length;
   Uint8 *wav_data;
 
@@ -1404,8 +1278,6 @@ static audio_stream *construct_wav_stream(char *filename, Uint32 frequency,
       w_stream->format = w_info.format;
       w_stream->natural_frequency = w_info.freq;
       w_stream->bytes_per_sample = w_info.channels;
-      w_stream->loop_start = w_info.loop_start;
-      w_stream->loop_end = w_info.loop_end;
 
       if((w_info.format != SAMPLE_U8) && (w_info.format != SAMPLE_S8))
         w_stream->bytes_per_sample *= 2;
