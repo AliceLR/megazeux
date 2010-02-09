@@ -26,6 +26,7 @@
 #include <string.h>
 #include <ctype.h>
 #include <sys/stat.h>
+#include <assert.h>
 
 #ifndef _MSC_VER
 #include <unistd.h>
@@ -2611,9 +2612,11 @@ int new_file(World *mzx_world, const char **wildcards, char *ret,
 }
 
 // Calculates the percent from progress and out_of as in (progress/out_of).
-void meter(const char *title, int progress, int out_of)
+void meter(const char *title, unsigned int progress, unsigned int out_of)
 {
   int titlex = 40 - (strlen(title) >> 1);
+
+  assert(titlex > 0);
 
   draw_window_box(5, 10, 74, 12, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
   // Add title
@@ -2624,14 +2627,16 @@ void meter(const char *title, int progress, int out_of)
 }
 
 // Draws the meter but only the interior where the percent is.
-void meter_interior(int progress, int out_of)
+void meter_interior(unsigned int progress, unsigned int out_of)
 {
   // The actual meter has 66 spaces, or 132 half spaces, to use, so barsize is
   // the number of half spaces to display.
-  int barsize = progress * 132 / out_of;
-  int percent = progress * 100 / out_of;
+  unsigned int barsize = progress * 132ULL / out_of;
+  unsigned int percent = progress * 100ULL / out_of;
   int revcolor = ((DI_METER & 15) << 4) + (DI_METER >> 4);
   char percentstr[5];
+
+  assert(progress <= out_of);
 
   fill_line(66, 7, 11, 32, revcolor);
   // Draw half-space if appropriate
@@ -2639,7 +2644,7 @@ void meter_interior(int progress, int out_of)
     draw_char('\xDD', DI_METER, 7 + (barsize >> 1), 11);
 
   // Determine percentage
-  snprintf(percentstr, 5, "%3d%%", percent);
+  snprintf(percentstr, 5, "%3u%%", percent);
   write_string(percentstr, 37, 11, DI_METER, 1);
 
   // Fill in meter
