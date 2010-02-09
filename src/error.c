@@ -95,8 +95,8 @@ int error(const char *string, unsigned int type, unsigned int options,
   }
   if(options & 4)
   {
-    write_string(", E to Exit to Dos", t1, 13, 78, 0);
-    t1 += 18;
+    write_string(", E to Exit", t1, 13, 78, 0);
+    t1 += 11;
   }
   if(options & 8)
   {
