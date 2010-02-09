@@ -401,7 +401,7 @@ static void game_settings(struct world *mzx_world)
   };
   struct element *elements[9];
 
-  if(!mzx_world->lock_speed)
+  if(!mzx_world->lock_speed || mzx_world->editing)
   {
     speed_option = 2;
     num_elements = 9;
