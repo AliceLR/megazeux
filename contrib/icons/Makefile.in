@@ -22,10 +22,10 @@ endif
 ifeq (${EMBED_ICONS},1)
 ${icons}: ${icons_objs}
 ifeq (${V},1)
-	mv ${icons_objs} ${icons}
+	cp ${icons_objs} ${icons}
 else
-	@echo "  MV      " ${icons_objs} ${icons}
-	@mv ${icons_objs} ${icons}
+	@echo "  CP      " ${icons_objs} ${icons}
+	@cp ${icons_objs} ${icons}
 endif
 else
 ${icons}:
@@ -34,4 +34,4 @@ endif
 
 ${icons}_clean:
 	@echo "  CLEAN   " ${icons_base}
-	@rm -f ${icons}
+	@rm -f ${icons} ${icons_objs}
