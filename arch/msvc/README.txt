@@ -50,15 +50,13 @@ However, MSVC has the following constraints:
 
 OPENING THE PROJECT
 
-The pre-built project files can be found in "msvc.zip" in the top level of
-the sources. This package may not always work, as it is not tested often. At
-the time of writing, Visual Studio 2008 was the minimum working version
-required to open it. The ZIP should create a directory, "msvc", in the top
-level, before this will work.
+The pre-built project files can be found in this directory as "MegaZeux.sln".
+The solution may not always work, as it is not tested often. At the time of
+writing, Visual Studio 2008 was the minimum working version required to
+open it. You must also build MZX's dependencies into a "Deps" folder
+alongside the solution, or use these prebuilt Deps:
 
-You may need to alter the include paths and possibly re-add the project
-libraries to get it to compile on your machine. Any suggestions for improving
-this are of course welcome.
+http://mzx.devzero.co.uk/junk/MegaZeux-VC9-x86-x64-deps.zip
 
 There may be instability with the MSVC binary that is not present in the GCC
 builds. If you find such instability, please report it (fixes are also
