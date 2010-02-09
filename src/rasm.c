@@ -4424,7 +4424,7 @@ enum legacy_command_number
   ROBOTIC_CMD_REMOVED = 0xFF01
 };
 
-enum legacy_command_number legacy_command_to_current[256] =
+static const enum legacy_command_number legacy_command_to_current[256] =
 {
   ROBOTIC_CMD_END,
   ROBOTIC_CMD_DIE,

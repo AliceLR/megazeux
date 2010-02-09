@@ -39,6 +39,138 @@
 #include "util.h"
 #include "rasm.h"
 
+static int cmp_labels(const void *dest, const void *src)
+{
+  struct label *lsrc = *((struct label **)src);
+  struct label *ldest = *((struct label **)dest);
+  int cmp_primary = strcasecmp(ldest->name, lsrc->name);
+
+  // A match needs to go on a secondary criteria.
+  if(!cmp_primary)
+  {
+    if(ldest->position == 0)
+      return 1;
+
+    return ldest->position - lsrc->position;
+  }
+  else
+  {
+    return cmp_primary;
+  }
+}
+
+// TODO: If bytecode isn't valid then this is done at a bad time. It should
+// really be done when robots are assembled, rather than when they're loaded.
+// So it's bundled with the function for that.
+
+#ifdef CONFIG_DEBYTECODE
+static
+#endif
+struct label **cache_robot_labels(struct robot *robot, int *num_labels)
+{
+  int labels_allocated = 16;
+  int labels_found = 0;
+  int cmd;
+  int next;
+  int i;
+
+  char *robot_program = robot->program_bytecode;
+  struct label **label_list = ccalloc(16, sizeof(struct label *));
+  struct label *current_label;
+
+  for(i = 1; i < (robot->program_bytecode_length - 1); i++)
+  {
+    // NOTE: The assignment of 'next' below seems to produce a false positive
+    //       from valgrind, but it's also been a crash vector in the past
+    //       so I'm not entirely sure. Stack corruption maybe?
+
+    // Is it a label?
+    cmd = robot_program[i + 1];
+    next = i + robot_program[i] + 1;
+
+    if((cmd == 106) || (cmd == 108))
+    {
+      current_label = cmalloc(sizeof(struct label));
+      current_label->name = robot_program + i + 3;
+
+      if(next >= (robot->program_bytecode_length - 2))
+        current_label->position = 0;
+      else
+        current_label->position = next + 1;
+
+      if(cmd == 108)
+        current_label->zapped = 1;
+      else
+        current_label->zapped = 0;
+
+      // Do we need more room?
+      if(labels_found == labels_allocated)
+      {
+        labels_allocated *= 2;
+        label_list = crealloc(label_list,
+         sizeof(struct label *) * labels_allocated);
+      }
+      label_list[labels_found] = current_label;
+      labels_found++;
+    }
+
+    // Go to next command
+    i = next;
+  }
+
+  if(!labels_found)
+  {
+    *num_labels = 0;
+    free(label_list);
+    return NULL;
+  }
+
+  if(labels_found != labels_allocated)
+  {
+    label_list =
+     crealloc(label_list, sizeof(struct label *) * labels_found);
+  }
+
+  // Now sort the list
+  qsort(label_list, labels_found, sizeof(struct label *), cmp_labels);
+
+  *num_labels = labels_found;
+  return label_list;
+}
+
+int get_robot_id(struct board *src_board, const char *name)
+{
+  int first, last;
+
+  if(find_robot(src_board, name, &first, &last))
+  {
+    struct robot *cur_robot = src_board->robot_list_name_sorted[first];
+    // This is a cheap trick for now since robots don't have
+    // a back-reference for ID's
+    int offset = cur_robot->xpos +
+     (cur_robot->ypos * src_board->board_width);
+    enum thing d_id = (enum thing)src_board->level_id[offset];
+
+    if(is_robot(d_id))
+    {
+      return src_board->level_param[offset];
+    }
+    else
+    {
+      int i;
+      for(i = 1; i <= src_board->num_robots; i++)
+      {
+        if(!src_board->robot_list[i])
+          continue;
+        if(!strcasecmp(name, (src_board->robot_list[i])->robot_name))
+          return i;
+      }
+    }
+  }
+
+  return -1;
+}
+
 struct robot *load_robot_allocate(FILE *fp, int savegame, int version)
 {
   struct robot *cur_robot = cmalloc(sizeof(struct robot));
@@ -429,6 +561,24 @@ void save_sensor(struct sensor *cur_sensor, FILE *fp, int savegame)
   fputc(cur_sensor->used, fp);
 }
 
+#ifdef CONFIG_DEBYTECODE
+static
+#endif
+void clear_label_cache(struct label **label_list, int num_labels)
+{
+  int i;
+
+  if(label_list)
+  {
+    for(i = 0; i < num_labels; i++)
+    {
+      free(label_list[i]);
+    }
+
+    free(label_list);
+  }
+}
+
 void clear_robot_contents(struct robot *cur_robot)
 {
   free(cur_robot->stack);
@@ -541,116 +691,6 @@ void reallocate_scroll(struct scroll *scroll, int size)
 {
   scroll->mesg = crealloc(scroll->mesg, size);
   scroll->mesg_size = size;
-}
-
-static int cmp_labels(const void *dest, const void *src)
-{
-  struct label *lsrc = *((struct label **)src);
-  struct label *ldest = *((struct label **)dest);
-  int cmp_primary = strcasecmp(ldest->name, lsrc->name);
-
-  // A match needs to go on a secondary criteria.
-  if(!cmp_primary)
-  {
-    if(ldest->position == 0)
-      return 1;
-
-    return ldest->position - lsrc->position;
-  }
-  else
-  {
-    return cmp_primary;
-  }
-}
-
-// TODO: If bytecode isn't valid then this is done at a bad time. It should
-// really be done when robots are assembled, rather than when they're loaded.
-// So it's bundled with the function for that.
-struct label **cache_robot_labels(struct robot *robot, int *num_labels)
-{
-  int labels_allocated = 16;
-  int labels_found = 0;
-  int cmd;
-  int next;
-  int i;
-
-  char *robot_program = robot->program_bytecode;
-  struct label **label_list = ccalloc(16, sizeof(struct label *));
-  struct label *current_label;
-
-  for(i = 1; i < (robot->program_bytecode_length - 1); i++)
-  {
-    // NOTE: The assignment of 'next' below seems to produce a false positive
-    //       from valgrind, but it's also been a crash vector in the past
-    //       so I'm not entirely sure. Stack corruption maybe?
-
-    // Is it a label?
-    cmd = robot_program[i + 1];
-    next = i + robot_program[i] + 1;
-
-    if((cmd == 106) || (cmd == 108))
-    {
-      current_label = cmalloc(sizeof(struct label));
-      current_label->name = robot_program + i + 3;
-
-      if(next >= (robot->program_bytecode_length - 2))
-        current_label->position = 0;
-      else
-        current_label->position = next + 1;
-
-      if(cmd == 108)
-        current_label->zapped = 1;
-      else
-        current_label->zapped = 0;
-
-      // Do we need more room?
-      if(labels_found == labels_allocated)
-      {
-        labels_allocated *= 2;
-        label_list = crealloc(label_list,
-         sizeof(struct label *) * labels_allocated);
-      }
-      label_list[labels_found] = current_label;
-      labels_found++;
-    }
-
-    // Go to next command
-    i = next;
-  }
-
-  if(!labels_found)
-  {
-    *num_labels = 0;
-    free(label_list);
-    return NULL;
-  }
-
-  if(labels_found != labels_allocated)
-  {
-    label_list =
-     crealloc(label_list, sizeof(struct label *) * labels_found);
-  }
-
-  // Now sort the list
-  qsort(label_list, labels_found, sizeof(struct label *), cmp_labels);
-
-  *num_labels = labels_found;
-  return label_list;
-}
-
-void clear_label_cache(struct label **label_list, int num_labels)
-{
-  int i;
-
-  if(label_list)
-  {
-    for(i = 0; i < num_labels; i++)
-    {
-      free(label_list[i]);
-    }
-
-    free(label_list);
-  }
 }
 
 static struct label *find_label(struct robot *cur_robot, const char *name)
@@ -3122,39 +3162,6 @@ void optimize_null_objects(struct board *src_board)
   free(robot_id_translation_list);
   free(scroll_id_translation_list);
   free(sensor_id_translation_list);
-}
-
-int get_robot_id(struct board *src_board, const char *name)
-{
-  int first, last;
-
-  if(find_robot(src_board, name, &first, &last))
-  {
-    struct robot *cur_robot = src_board->robot_list_name_sorted[first];
-    // This is a cheap trick for now since robots don't have
-    // a back-reference for ID's
-    int offset = cur_robot->xpos +
-     (cur_robot->ypos * src_board->board_width);
-    enum thing d_id = (enum thing)src_board->level_id[offset];
-
-    if(is_robot(d_id))
-    {
-      return src_board->level_param[offset];
-    }
-    else
-    {
-      int i;
-      for(i = 1; i <= src_board->num_robots; i++)
-      {
-        if(!src_board->robot_list[i])
-          continue;
-        if(!strcasecmp(name, (src_board->robot_list[i])->robot_name))
-          return i;
-      }
-    }
-  }
-
-  return -1;
 }
 
 #ifdef CONFIG_DEBYTECODE

@@ -75,6 +75,9 @@ void free_macro(struct ext_macro *macro_src)
   free(macro_src);
 }
 
+#ifdef CONFIG_DEBYTECODE
+static
+#endif
 char *skip_to_next(char *src, char t, char a, char b)
 {
   char *current = src;
@@ -92,6 +95,9 @@ char *skip_to_next(char *src, char t, char a, char b)
   return current;
 }
 
+#ifdef CONFIG_DEBYTECODE
+static
+#endif
 char *skip_whitespace(char *src)
 {
   char *current = src;
@@ -106,6 +112,9 @@ char *skip_whitespace(char *src)
   return current;
 }
 
+#ifdef CONFIG_DEBYTECODE
+static
+#endif
 union variable_storage *find_macro_variable(char *name, struct macro_type *m)
 {
   int bottom = 0, top = m->num_variables - 1, middle = 0;

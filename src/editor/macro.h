@@ -88,9 +88,12 @@ void add_ext_macro(struct editor_config_info *conf, char *name,
  char *line_data, char *label);
 struct ext_macro *find_macro(struct editor_config_info *conf, char *name,
  int *next);
+
+#ifndef CONFIG_DEBYTECODE
 union variable_storage *find_macro_variable(char *name, struct macro_type *m);
 char *skip_whitespace(char *src);
 char *skip_to_next(char *src, char t, char a, char b);
+#endif
 
 __M_END_DECLS
 
