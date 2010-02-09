@@ -60,6 +60,8 @@ USERS
   sample playback in "listening only" modes in the editor.
 + Module volume is applied immediately before playback upon switching
   boards. This prevents one cycle of audio "leaking" at the wrong volume.
++ Prevent crash with negative string clip where clip + offset = 0. Clip
+  is now correctly limited to total string length.
 
 DEVELOPERS
 
