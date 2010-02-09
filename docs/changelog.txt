@@ -2,9 +2,9 @@ SVN
 
 USERS
 
-+ Fixed a bug where LOAD_ROBOT would not reset the stack pointer for the
-  newly loaded program. This could cause crashes if a robot popped the
-  stack in the new program.
++ Fixed a bug where LOAD_ROBOT or LOAD_BC would not reset the stack
+  pointer for newly loaded programs. This could cause crashes if a robot
+  popped the stack in the new program.
 
 DEVELOPERS
 
