@@ -118,11 +118,10 @@ int main(int argc, char *argv[])
 {
   World mzx_world;
 
-  edit_stubs_hack();
-  init_macros(&mzx_world);
-
   if(!platform_init())
     return 1;
+
+  edit_stubs_hack();
 
   // We need to store the current working directory so it's
   // always possible to get back to it..
@@ -132,6 +131,7 @@ int main(int argc, char *argv[])
     goto exit_free_res;
 
   allocate_world(&mzx_world);
+  init_macros(&mzx_world);
 
   // Figure out where all configuration files should be loaded
   // form. For game.cnf, et al this should eventually be wrt
