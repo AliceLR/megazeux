@@ -44,7 +44,7 @@ VORBIS_CFLAGS  = -I${PREFIX}/Ogg.Framework/Headers \
                  -I${PREFIX}/Vorbis.Framework/Headers
 VORBIS_LDFLAGS = -framework Ogg -framework Vorbis
 
-ARCH_LDFLAGS = -F/Users/ajs/workspace/Frameworks
+ARCH_LDFLAGS = -F${PREFIX}
 
 arch/darwin/SDLMain.o: arch/darwin/SDLMain.m
 	$(if ${V},,@echo "  CC      " $<)
