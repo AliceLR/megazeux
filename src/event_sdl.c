@@ -495,38 +495,23 @@ static Uint32 process_event(SDL_Event *event)
   return rval;
 }
 
-Uint32 update_event_status(void)
+Uint32 __update_event_status(void)
 {
   SDL_Event event;
-  Uint32 rval = 0;
-
-  input.last_key = IKEY_UNKNOWN;
-  input.last_unicode = 0;
-  input.mouse_moved = 0;
-  input.last_mouse_button = 0;
+  Uint32 rval;
 
   while(SDL_PollEvent(&event))
-  {
     rval |= process_event(&event);
-  }
-
-  rval |= update_autorepeat();
 
   return rval;
 }
 
-void wait_event(void)
+void __wait_event(void)
 {
   SDL_Event event;
 
-  input.last_key = (enum keycode)0;
-  input.last_unicode = 0;
-  input.mouse_moved = 0;
-  input.last_mouse_button = 0;
-
   SDL_WaitEvent(&event);
   process_event(&event);
-  update_autorepeat();
 }
 
 void real_warp_mouse(Uint32 x, Uint32 y)

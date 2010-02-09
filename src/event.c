@@ -357,6 +357,33 @@ Uint32 update_autorepeat(void)
   return rval;
 }
 
+Uint32 update_event_status(void)
+{
+  Uint32 rval;
+
+  input.last_key = IKEY_UNKNOWN;
+  input.last_unicode = 0;
+  input.mouse_moved = 0;
+  input.last_mouse_button = 0;
+
+  rval  = __update_event_status();
+  rval |= update_autorepeat();
+
+  return rval;
+}
+
+void wait_event(void)
+{
+  input.last_key = IKEY_UNKNOWN;
+  input.last_unicode = 0;
+  input.mouse_moved = 0;
+  input.last_mouse_button = 0;
+
+  __wait_event();
+
+  update_autorepeat();
+}
+
 Uint32 update_event_status_delay(void)
 {
   int rval = update_event_status();

@@ -96,6 +96,10 @@ CORE_LIBSPEC int get_shift_status(enum keycode_type type);
 CORE_LIBSPEC int get_ctrl_status(enum keycode_type type);
 CORE_LIBSPEC void initialize_joysticks(void);
 
+// Implemented by "drivers" (SDL or Wii currently)
+CORE_LIBSPEC void __wait_event(void);
+CORE_LIBSPEC Uint32 __update_event_status(void);
+
 extern struct input_status input;
 
 void wait_event(void);

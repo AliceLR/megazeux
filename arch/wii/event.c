@@ -1048,39 +1048,26 @@ static Uint32 process_event(union event *ev)
   return rval;
 }
 
-Uint32 update_event_status(void)
+Uint32 __update_event_status(void)
 {
   Uint32 rval = 0;
   union event ev;
 
-  input.last_key = IKEY_UNKNOWN;
-  input.last_unicode = 0;
-  input.mouse_moved = 0;
-  input.last_mouse_button = 0;
-
   while(read_eq(&ev))
     rval |= process_event(&ev);
-
-  rval |= update_autorepeat();
 
   return rval;
 }
 
-void wait_event(void)
+void __wait_event(void)
 {
   mqmsg_t ev;
-
-  input.last_key = IKEY_UNKNOWN;
-  input.last_unicode = 0;
-  input.mouse_moved = 0;
-  input.last_mouse_button = 0;
 
   if(MQ_Receive(eq, &ev, MQ_MSG_BLOCK))
   {
     process_event((union event *)ev);
     free(ev);
   }
-  update_autorepeat();
 }
 
 void real_warp_mouse(Uint32 x, Uint32 y)
