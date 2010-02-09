@@ -82,9 +82,10 @@ endif
 # Always generate debug information; this may end up being
 # stripped (on embedded platforms) or objcopy'ed out.
 #
-CFLAGS   += -g -W -Wall -Wno-unused-parameter -std=gnu99 ${ARCH_CFLAGS}
-CXXFLAGS += -g -W -Wall -Wno-unused-parameter -std=gnu++98 ${ARCH_CXXFLAGS}
-CXXFLAGS += -fno-exceptions -fno-rtti
+CFLAGS   += -g -W -Wall -Wno-unused-parameter -Wvla -std=gnu99
+CFLAGS   += -Wdeclaration-after-statement ${ARCH_CFLAGS}
+CXXFLAGS += -g -W -Wall -Wno-unused-parameter -Wvla -std=gnu++98
+CXXFLAGS += -fno-exceptions -fno-rtti ${ARCH_CXXFLAGS}
 LDFLAGS  += ${ARCH_LDFLAGS}
 
 ifeq (${shell ${CC} -dumpversion | cut -d. -f1},4)

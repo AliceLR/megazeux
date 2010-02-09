@@ -84,6 +84,21 @@ int main(int argc, char *argv[])
   FILE *source;
   FILE *dest;
 
+  char curr_file[13]="MAIN.HLP";
+  char max_file[13]="(none)";
+  long file_offs;
+  long file_len=1;//For first byte
+  long curr_file_storage=2;//Location to store current file's info
+  int curr_lnum=1;//For error/warning info
+  //Links info-
+  int curr_link_ref=0;//Ref- not actual link number
+  int link_numbers[1000];//Actual numbers of the links
+  long link_offsets[1000];//Offsets within current file
+  //Current line info-
+  int line_len=0;//Used for warnings
+  //Global info-
+  long biggest_file=0;//For help allocation
+
   printf("\n\n");
 
   if(argc < 3)
@@ -167,21 +182,7 @@ int main(int argc, char *argv[])
     }
   }
 
-  //Now we start our actual file chain. Current file info-
-  char curr_file[13]="MAIN.HLP";
-  char max_file[13]="(none)";
-  long file_offs=ftell(dest);
-  long file_len=1;//For first byte
-  long curr_file_storage=2;//Location to store current file's info
-  int curr_lnum=1;//For error/warning info
-  //Links info-
-  int curr_link_ref=0;//Ref- not actual link number
-  int link_numbers[1000];//Actual numbers of the links
-  long link_offsets[1000];//Offsets within current file
-  //Current line info-
-  int line_len=0;//Used for warnings
-  //Global info-
-  long biggest_file=0;//For help allocation
+  file_offs=ftell(dest);
 
   //Reset position on source...
   fseek(source,0,SEEK_SET);
