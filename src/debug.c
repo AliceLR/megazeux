@@ -35,7 +35,7 @@ static void copy_substring_escaped(mzx_string *str, char *buf,
 {
   unsigned int i, j;
 
-  for(i = 0, j = 0; i < str->length && i < size; i++, j++)
+  for(i = 0, j = 0; j < str->length && i < size; i++, j++)
   {
     if(str->value[j] == '\\')
     {
@@ -46,6 +46,16 @@ static void copy_substring_escaped(mzx_string *str, char *buf,
     {
       buf[i++] = '\\';
       buf[i] = 'n';
+    }
+    else if(str->value[j] == '\r')
+    {
+      buf[i++] = '\\';
+      buf[i] = 'r';
+    }
+    else if(str->value[j] == '\t')
+    {
+      buf[i++] = '\\';
+      buf[i] = 't';
     }
     else
       buf[i] = str->value[j];
@@ -58,7 +68,7 @@ static void unescape_string(char *buf)
 {
   unsigned int i, j, len = strlen(buf);
 
-  for(i = 0, j = 0; j < len; i++, j++)
+  for(i = 0, j = 0; j < len + 1; i++, j++)
   {
     if(buf[j] != '\\')
     {
@@ -70,6 +80,10 @@ static void unescape_string(char *buf)
 
     if(buf[j] == 'n')
       buf[i] = '\n';
+    else if(buf[j] == 'r')
+      buf[i] = '\r';
+    else if(buf[j] == 't')
+      buf[i] = '\t';
     else if(buf[j] == '\\')
       buf[i] = '\\';
     else
