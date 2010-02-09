@@ -13,6 +13,7 @@ USERS
   used a '.' character in a splice parameter expression. Expressions such
   as IF "$str#('$str2.length'-4)" = "blah" THEN "label" will now work
   correctly.
++ Fixed negative sprN_cheight et al from crashing (Exophase).
 
 DEVELOPERS
 
