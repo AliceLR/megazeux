@@ -251,7 +251,7 @@ fi
 # Some architectures define an "install" target, and need these.
 #
 echo "TARGET=`grep TARGET Makefile | head -n1 | \
-              sed "s/ //g" | cut -d "=" -f 2`" \
+              sed 's/ //g' | cut -d '=' -f 2`" \
 	>> Makefile.platform
 echo "SYSCONFDIR=$SYSCONFDIR" >> Makefile.platform
 
