@@ -423,8 +423,7 @@ fi
 #
 # Force disable network support.
 #
-if [ "$PLATFORM" != "unix" -a "$PLATFORM" != "unix-devel" \
-  -a "$PLATFORM" != "mingw" ]; then
+if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
 	echo "Force-disabling network support (nonsensical or unsupported)."
 	NETWORK="false"
 fi
