@@ -40,7 +40,7 @@ struct mzx_resource
   char *path;
 
   /* So mzxrun requires fewer files even in CONFIG_EDITOR=1 build */
-  bool editor_only;
+  bool optional;
 };
 
 /* Using C99 initializers would be nicer here, but MSVC doesn't support
@@ -60,7 +60,7 @@ static struct mzx_resource mzx_res[] = {
   { "mzx_smzx.chr",         NULL, true },
 #endif
 #ifdef CONFIG_HELPSYS
-  { "mzx_help.fil",         NULL, false },
+  { "mzx_help.fil",         NULL, true },
 #endif
 #ifdef CONFIG_RENDER_GL_PROGRAM
   { "shaders/scaler.vert",         NULL, false },
@@ -155,8 +155,8 @@ int mzx_res_init(const char *argv0, bool editor)
     char *full_path;
     int p_dir_len;
 
-    /* Skip non-essential editor resources */
-    if(!editor && mzx_res[i].editor_only)
+    /* Skip non-essential resources */
+    if(!editor && mzx_res[i].optional)
       continue;
 
     if(i == CONFIG_TXT)
@@ -206,8 +206,8 @@ int mzx_res_init(const char *argv0, bool editor)
 
   for(i = 0; i < END_RESOURCE_ID_T; i++)
   {
-    /* Skip non-essential editor resources */
-    if(!editor && mzx_res[i].editor_only)
+    /* Skip non-essential resources */
+    if(!editor && mzx_res[i].optional)
       continue;
 
     if(!mzx_res[i].path)
