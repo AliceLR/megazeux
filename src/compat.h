@@ -53,11 +53,6 @@ typedef enum {
 #include <nds.h>
 #endif
 
-// FIXME: Hack, remove
-#ifdef CONFIG_NETWORK
-#define CONFIG_UPDATER
-#endif
-
 #ifdef CONFIG_WII
 #define BOOL _BOOL
 #include <gctypes.h>

@@ -352,7 +352,7 @@ li {
 </tr>
 
 <tr>
-<th>CONFIG_NETWORK</th>
+<th>CONFIG_UPDATER</th>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
@@ -360,7 +360,7 @@ li {
 <td class="yes">YES</td>
 <td class="no">NO</td>
 <td class="no">NO</td>
-<td class="yes">YES</td>
+<td class="no2">NO<a href="#note4">[4]</a></td>
 <td class="no">NO</td>
 </tr>
 
@@ -380,15 +380,15 @@ li {
 
 <tr>
 <th>CONFIG_PNG</th>
-<td class="no2">NO<a href="#note4">[4]</a></td>
+<td class="no2">NO<a href="#note5">[5]</a></td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
-<td class="no2">NO<a href="#note4">[4]</a></td>
-<td class="no2">NO<a href="#note4">[4]</a></td>
+<td class="no2">NO<a href="#note5">[5]</a></td>
+<td class="no2">NO<a href="#note5">[5]</a></td>
 <td class="yes">YES</td>
-<td class="no2">NO<a href="#note4">[4]</a></td>
+<td class="no2">NO<a href="#note5">[5]</a></td>
 </tr>
 
 <tr>
@@ -428,7 +428,15 @@ on these platforms, but they are basically unusable due to the lack of any
 on-screen keyboard.
 </li>
 
-<li><a name="note4"/>Simply not had the opportunity to cross compile
+<li><a name="note4"/>The updater is typically disabled in the Linux
+binaries that are shipped (for distributions like Debian or Fedora), even
+though the feature can easily be enabled.<br/>The issue is that MegaZeux is
+installed system-wide on these platforms and overwrites cannot be
+guaranteed.<br/>Additionally, it is felt that the advanced package management
+on these platforms supercedes any usefulness of the built-in updater.
+</li>
+
+<li><a name="note5"/>Simply not had the opportunity to cross compile
 this feature.<br/>
 Future developments may require it.
 </li>

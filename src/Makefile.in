@@ -220,7 +220,7 @@ ifeq (${BUILD_MODULAR},1)
 ${mzx}.debug: ${core_target}.debug ${editor_target}.debug
 endif
 
-ifeq (${BUILD_NETWORK},1)
+ifeq (${BUILD_UPDATER},1)
 
 include src/network/Makefile.in
 

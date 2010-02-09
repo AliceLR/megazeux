@@ -47,7 +47,7 @@ usage() {
 	echo "  --disable-pthread    Use SDL's locking instead of pthread."
 	echo "  --enable-icon        Try to brand executable with icon."
 	echo "  --disable-modular    Disable dynamically shared objects."
-	echo "  --disable-network    Disable all network support."
+	echo "  --disable-updater    Disable built-in updater."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -86,7 +86,7 @@ TREMOR="false"
 PTHREAD="true"
 ICON="true"
 MODULAR="true"
-NETWORK="true"
+UPDATER="true"
 
 #
 # User may override above settings
@@ -173,8 +173,8 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--disable-modular" ] && MODULAR="false"
 	[ "$1" = "--enable-modular" ]  && MODULAR="true"
 
-	[ "$1" = "--disable-network" ] && NETWORK="false"
-	[ "$1" = "--enable-network" ]  && NETWORK="true"
+	[ "$1" = "--disable-updater" ] && UPDATER="false"
+	[ "$1" = "--enable-updater" ]  && UPDATER="true"
 
 	shift
 done
@@ -191,41 +191,59 @@ fi
 
 echo "PREFIX?=$PREFIX" > platform.inc
 
-if [ "$PLATFORM" = "win32" -o "$PLATFORM" = "win64" ]; then
+if [ "$PLATFORM" = "win32" ]; then
 	PLATFORM="mingw"
-	echo "PLATFORM=$PLATFORM" >> platform.inc
-	echo "MINGWBASE="         >> platform.inc
+	echo "#define PLATFORM \"windows-x86\"" > src/config.h
+	echo "PLATFORM=$PLATFORM"              >> platform.inc
+	echo "MINGWBASE="                      >> platform.inc
+elif [ "$PLATFORM" = "win64" ]; then
+	PLATFORM="mingw"
+	echo "#define PLATFORM \"windows-x64\"" > src/config.h
+	echo "PLATFORM=$PLATFORM"              >> platform.inc
+	echo "MINGWBASE="                      >> platform.inc
 elif [ "$PLATFORM" = "mingw32" ]; then
 	PLATFORM="mingw"
-	echo "PLATFORM=$PLATFORM"          >> platform.inc
-	echo "MINGWBASE=i586-mingw32msvc-" >> platform.inc
+	echo "#define PLATFORM \"windows-x86\"" > src/config.h
+	echo "PLATFORM=$PLATFORM"              >> platform.inc
+	echo "MINGWBASE=i586-mingw32msvc-"     >> platform.inc
 elif [ "$PLATFORM" = "mingw64" ]; then
 	PLATFORM="mingw"
-	echo "PLATFORM=$PLATFORM"           >> platform.inc
-	echo "MINGWBASE=x86_64-pc-mingw32-" >> platform.inc
-elif [ "$PLATFORM" = "unix-devel" ]; then
+	echo "#define PLATFORM \"windows-x64\"" > src/config.h
+	echo "PLATFORM=$PLATFORM"              >> platform.inc
+	echo "MINGWBASE=x86_64-pc-mingw32-"    >> platform.inc
+elif [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
+	OS="`uname -o`"
+	MACH="`uname -m`"
+
+	if [ "$OS" = "GNU/Linux" ]; then
+		if [ "$MACH" = "x86_64" ]; then
+			echo "#define PLATFORM \"linux-amd64\"" > src/config.h
+			LIBDIR=lib64
+			if [ "$MODULAR" = "true" ]; then
+				echo "ARCH_CFLAGS+=-fPIC" >> platform.inc
+				echo "ARCH_CXXFLAGS+=-fPIC" >> platform.inc
+			fi
+		elif [ "`echo $MACH | sed 's,i.86,x86,'`" = "x86" ]; then
+			echo "#define PLATFORM \"linux-i386\"" > src/config.h
+			LIBDIR=lib
+		else
+			echo "Add a friendly Linux ARCH name to config.sh."
+			exit 1
+		fi
+	else
+		echo "Unknown UNIX, config.sh needs updating."
+		exit 1
+	fi
+
 	echo "PLATFORM=unix" >> platform.inc
 else
 	if [ ! -d arch/$PLATFORM ]; then
 		echo "Invalid platform selection (see arch/)."
 		exit 1
 	fi
-	echo "PLATFORM=$PLATFORM" >> platform.inc
-fi
 
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
-	#
-	# FIXME: Should add other 64bit architectures
-	#
-	if [ "`uname -m`" = "x86_64" ]; then
-		if [ "$MODULAR" = "true" ]; then
-			echo "ARCH_CFLAGS+=-fPIC" >> platform.inc
-			echo "ARCH_CXXFLAGS+=-fPIC" >> platform.inc
-		fi
-		LIBDIR=lib64
-	else
-		LIBDIR=lib
-	fi
+	echo "#define PLATFORM \"$PLATFORM\"" > src/config.h
+	echo "PLATFORM=$PLATFORM" >> platform.inc
 fi
 
 if [ "$PLATFORM" = "unix" ]; then
@@ -261,10 +279,10 @@ echo
 
 if [ "$DATE_STAMP" = "true" ]; then
 	echo "Stamping version with today's date."
-	echo "#define VERSION \"$VERSION (`date -u +%Y%m%d`)\"" > src/config.h
+	echo "#define VERSION \"$VERSION (`date -u +%Y%m%d`)\"" >> src/config.h
 else
 	echo "Not stamping version with today's date."
-	echo "#define VERSION \"$VERSION\"" > src/config.h
+	echo "#define VERSION \"$VERSION\"" >> src/config.h
 fi
 
 echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
@@ -435,11 +453,11 @@ if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
 fi
 
 #
-# Force disable network support.
+# Force disable built-in updater.
 #
 if [ "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" -o "$PLATFORM" = "wii" ]; then
-	echo "Force-disabling network support (nonsensical or unsupported)."
-	NETWORK="false"
+	echo "Force-disabling built-in updater (nonsensical or unsupported)."
+	UPDATER="false"
 fi
 
 #
@@ -700,14 +718,14 @@ else
 fi
 
 #
-# Handle network support, if enabled
+# Handle built-in updater, if enabled
 #
-if [ "$NETWORK" = "true" ]; then
-	echo "Network support enabled."
-	echo "#define CONFIG_NETWORK" >> src/config.h
-	echo "BUILD_NETWORK=1" >> platform.inc
+if [ "$UPDATER" = "true" ]; then
+	echo "Built-in updater enabled."
+	echo "#define CONFIG_UPDATER" >> src/config.h
+	echo "BUILD_UPDATER=1" >> platform.inc
 else
-	echo "Network support disabled."
+	echo "Built-in updater disabled."
 fi
 
 echo

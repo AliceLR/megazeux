@@ -163,7 +163,7 @@ ifeq (${BUILD_MODULAR},1)
 	-@mv ${core_target}.debug    ${core_target}.debug.backup
 	-@mv ${editor_target}        ${editor_target}.backup
 	-@mv ${editor_target}.debug  ${editor_target}.debug.backup
-ifeq (${BUILD_NETWORK},1)
+ifeq (${BUILD_UPDATER},1)
 	-@mv ${network_target}       ${network_target}.backup
 	-@mv ${network_target}.debug ${network_target}.debug.backup
 endif
@@ -176,7 +176,7 @@ ifeq (${BUILD_MODULAR},1)
 	-@mv ${core_target}.debug.backup    ${core_target}.debug
 	-@mv ${editor_target}.backup        ${editor_target}
 	-@mv ${editor_target}.debug.backup  ${editor_target}.debug
-ifeq (${BUILD_NETWORK},1)
+ifeq (${BUILD_UPDATER},1)
 	-@mv ${network_target}.backup       ${network_target}
 	-@mv ${network_target}.debug.backup ${network_target}.debug
 endif

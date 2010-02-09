@@ -1,3 +1,2 @@
 ./config.sh --platform amiga --prefix /usr/local/amiga \
-            --disable-libpng --disable-utils --enable-release \
-            --disable-network
+            --disable-libpng --disable-utils --enable-release
