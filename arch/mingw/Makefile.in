@@ -54,7 +54,9 @@ clean:
 build: ${build}
 	${CP} ${shell sdl-config --prefix}/bin/SDL.dll ${build}
 	${CP} arch/mingw/directx.bat ${build}
+ifeq (${BUILD_UTILS},1)
 	${CP} arch/mingw/checkres* ${build}/utils
+endif
 	@arch/manifest.sh ${build}
 
 SUBARCH := ${shell echo ${SUBPLATFORM} | sed 's,windows-,,'}
