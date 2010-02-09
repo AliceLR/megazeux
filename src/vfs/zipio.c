@@ -1122,11 +1122,11 @@ err_free_entries:
   goto err_close;
 }
 
-static void cde_rewrite_lh_offset(char *cde, Uint16 lh_offset)
+static void cde_rewrite_lh_offset(char *cde, Uint32 lh_offset)
 {
   int i;
 
-  for(i = 0; i < 4; i++)
+  for(i = 0; i < sizeof(Uint32); i++)
   {
     *(cde + CDE_OFFSET_TO_LH + i) = lh_offset & 0xff;
     lh_offset >>= 8;
