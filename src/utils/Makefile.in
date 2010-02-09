@@ -90,14 +90,14 @@ endif
 endif
 
 utils_package_clean:
-	mv ${checkres} ${checkres}.backup
-	mv ${downver} ${downver}.backup
-	mv ${txt2hlp} ${txt2hlp}.backup
-	${MAKE} DEBUG=1 ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
-	${MAKE}         ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
-	mv ${txt2hlp}.backup ${txt2hlp}
-	mv ${downver}.backup ${downver}
-	mv ${checkres}.backup ${checkres}
+	@mv ${checkres} ${checkres}.backup
+	@mv ${downver} ${downver}.backup
+	@mv ${txt2hlp} ${txt2hlp}.backup
+	@${MAKE} DEBUG=1 ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
+	@${MAKE}         ${checkres}_clean ${downver}_clean ${txt2hlp}_clean
+	@mv ${txt2hlp}.backup ${txt2hlp}
+	@mv ${downver}.backup ${downver}
+	@mv ${checkres}.backup ${checkres}
 
 else
 
