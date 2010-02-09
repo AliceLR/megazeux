@@ -11,8 +11,6 @@ include contrib/unzip/src/Makefile.in
 
 .PHONY: utils utils.debug utils_clean
 
-utils_cflags := -fno-stack-protector
-
 utils_src = src/utils
 utils_obj = src/utils/.build
 
@@ -32,7 +30,7 @@ txt2hlp_objs := ${utils_obj}/txt2hlp.o
 
 ${utils_obj}/%.o: ${utils_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
-	${CC} -MD ${CFLAGS} -fno-stack-protector -I${core_src} \
+	${CC} -MD ${CFLAGS} ${utils_cflags} -I${core_src} \
 	  -I${unzip_src} ${ZLIB_CFLAGS} -c $< -o $@
 
 -include $(checkres_objs:.o=.d)
