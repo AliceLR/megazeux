@@ -13,6 +13,10 @@ ifeq (${PLATFORM},mingw)
 editor_spec := -DEDITOR_LIBSPEC="__declspec(dllexport)"
 endif
 
+ifeq (${PLATFORM},darwin)
+editor_ldflags += -framework Cocoa
+endif
+
 ${editor_obj}/%.o: ${editor_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${core_cflags} ${editor_flags} ${editor_spec} -c $< -o $@

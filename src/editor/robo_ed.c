@@ -877,7 +877,6 @@ static int copy_buffer_to_X11_selection(const SDL_Event *event)
     line_length = strlen(copy_buffer[i]);
     memcpy(dest_ptr, copy_buffer[i], line_length);
     dest_ptr += line_length;
-
     dest_ptr[0] = '\n';
     dest_ptr++;
   }
@@ -987,9 +986,58 @@ err_unlock:
 
 #elif defined(SDL_VIDEO_DRIVER_QUARTZ)
 
+#define decimal decimal_
+#define Random Random_
+#include <Carbon/Carbon.h>
+
 static void copy_buffer_to_selection(void)
 {
-#warning Unimplemented!
+  PasteboardSyncFlags syncFlags;
+  char *dest_data, *dest_ptr;
+  PasteboardRef clipboard;
+  CFDataRef textData;
+  int i, line_length;
+
+  if(PasteboardCreate(kPasteboardClipboard, &clipboard) != noErr)
+    return;
+
+  if(PasteboardClear(clipboard) != noErr)
+    goto err_release;
+
+  syncFlags = PasteboardSynchronize(clipboard);
+  if((syncFlags & kPasteboardModified) ||
+    !(syncFlags & kPasteboardClientIsOwner))
+    goto err_release;
+
+  dest_data = malloc(copy_buffer_total_length + 1);
+  dest_ptr = dest_data;
+
+  for(i = 0; i < copy_buffer_lines - 1; i++)
+  {
+    line_length = strlen(copy_buffer[i]);
+    memcpy(dest_ptr, copy_buffer[i], line_length);
+    dest_ptr += line_length;
+    dest_ptr[0] = '\n';
+    dest_ptr++;
+  }
+
+  line_length = strlen(copy_buffer[i]);
+  memcpy(dest_ptr, copy_buffer[i], line_length);
+  dest_ptr[line_length] = 0;
+
+  textData = CFDataCreate(kCFAllocatorDefault,
+   (const UInt8 *)dest_data, copy_buffer_total_length + 1);
+  free(dest_data);
+
+  if(!textData)
+    goto err_release;
+
+  if(PasteboardPutItemFlavor(clipboard, (PasteboardItemID)1,
+   CFSTR("com.apple.traditional-mac-plain-text"), textData, 0) != noErr)
+    goto err_release;
+
+err_release:
+  CFRelease(clipboard);
 }
 
 static bool copy_selection_to_buffer(robot_state *rstate)

@@ -46,7 +46,7 @@ arch/darwin/SDLMain.o: arch/darwin/SDLMain.m
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${SDL_CFLAGS} -c $< -o $@
 
-all:
+package:
 	@mv ${core_target} ${core_target}.${REAL_ARCH}
 	@mv ${editor_target} ${editor_target}.${REAL_ARCH}
 	@mv ${network_target} ${network_target}.${REAL_ARCH}
