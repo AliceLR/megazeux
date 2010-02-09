@@ -1,3 +1,5 @@
+#version 120
+
 precision mediump float;
 
 void main(void)
