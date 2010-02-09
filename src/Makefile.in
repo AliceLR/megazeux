@@ -36,21 +36,30 @@ else
 	@${CXX} -MD ${CXXFLAGS} ${mzx_flags} ${mzx_cxxflags} -c $< -o $@
 endif
 
-# please keep this sorted alphabetically (yes, I know it's painful)
-mzx_objs := ${mzx_base}/board.${o} ${mzx_base}/configure.${o}
-mzx_objs += ${mzx_base}/counter.${o} ${mzx_base}/data.${o}
-mzx_objs += ${mzx_base}/decrypt.${o} ${mzx_base}/error.${o}
-mzx_objs += ${mzx_base}/event.${o} ${mzx_base}/expr.${o}
-mzx_objs += ${mzx_base}/fsafeopen.${o} ${mzx_base}/game2.${o}
-mzx_objs += ${mzx_base}/game.${o} ${mzx_base}/graphics.${o}
-mzx_objs += ${mzx_base}/idarray.${o} ${mzx_base}/idput.${o}
-mzx_objs += ${mzx_base}/intake.${o} ${mzx_base}/macro.${o}
-mzx_objs += ${mzx_base}/main.${o} ${mzx_base}/mzm.${o}
-mzx_objs += ${mzx_base}/rasm.${o} ${mzx_base}/render.${o}
-mzx_objs += ${mzx_base}/robot.${o} ${mzx_base}/runrobo2.${o}
-mzx_objs += ${mzx_base}/scrdisp.${o} ${mzx_base}/sfx.${o}
-mzx_objs += ${mzx_base}/sprite.${o} ${mzx_base}/util.${o}
-mzx_objs += ${mzx_base}/window.${o} ${mzx_base}/world.${o}
+#
+# Lists mandatory C language sources (mangled to object names) required
+# to build the main binary. Please keep this sorted alphabetically.
+#
+mzx_cobjs := ${mzx_base}/board.${o} ${mzx_base}/configure.${o}
+mzx_cobjs += ${mzx_base}/counter.${o} ${mzx_base}/data.${o}
+mzx_cobjs += ${mzx_base}/decrypt.${o} ${mzx_base}/error.${o}
+mzx_cobjs += ${mzx_base}/event.${o} ${mzx_base}/expr.${o}
+mzx_cobjs += ${mzx_base}/fsafeopen.${o} ${mzx_base}/game2.${o}
+mzx_cobjs += ${mzx_base}/game.${o} ${mzx_base}/graphics.${o}
+mzx_cobjs += ${mzx_base}/idarray.${o} ${mzx_base}/idput.${o}
+mzx_cobjs += ${mzx_base}/intake.${o} ${mzx_base}/macro.${o}
+mzx_cobjs += ${mzx_base}/main.${o} ${mzx_base}/mzm.${o}
+mzx_cobjs += ${mzx_base}/rasm.${o} ${mzx_base}/render.${o}
+mzx_cobjs += ${mzx_base}/robot.${o} ${mzx_base}/runrobo2.${o}
+mzx_cobjs += ${mzx_base}/scrdisp.${o} ${mzx_base}/sfx.${o}
+mzx_cobjs += ${mzx_base}/sprite.${o} ${mzx_base}/util.${o}
+mzx_cobjs += ${mzx_base}/window.${o} ${mzx_base}/world.${o}
+
+#
+# Lists mandatory C++ language sources (mangled to object names) required
+# to build the main binary. Currently there are only optional sources.
+#
+mzx_cxxobjs :=
 
 ifneq (${BUILD_WII},1)
 ifneq (${BUILD_NDS},1)
@@ -67,46 +76,46 @@ ifeq (${BUILD_NDS},1)
 #
 # This is really just a hack and should be moved elsewhere
 #
-mzx_objs += arch/nds/ram.${o} arch/nds/exception.${o}
-mzx_objs += arch/nds/malloc.${o} arch/nds/extmem.${o}
+mzx_cobjs += arch/nds/ram.${o} arch/nds/exception.${o}
+mzx_cobjs += arch/nds/malloc.${o} arch/nds/extmem.${o}
 endif
 
 ifeq (${BUILD_EDITOR},1)
-mzx_objs += ${mzx_base}/block.${o} ${mzx_base}/char_ed.${o}
-mzx_objs += ${mzx_base}/edit.${o} ${mzx_base}/edit_di.${o}
-mzx_objs += ${mzx_base}/fill.${o} ${mzx_base}/pal_ed.${o}
-mzx_objs += ${mzx_base}/param.${o} ${mzx_base}/robo_ed.${o}
-mzx_objs += ${mzx_base}/sfx_edit.${o}
+mzx_cobjs += ${mzx_base}/block.${o} ${mzx_base}/char_ed.${o}
+mzx_cobjs += ${mzx_base}/edit.${o} ${mzx_base}/edit_di.${o}
+mzx_cobjs += ${mzx_base}/fill.${o} ${mzx_base}/pal_ed.${o}
+mzx_cobjs += ${mzx_base}/param.${o} ${mzx_base}/robo_ed.${o}
+mzx_cobjs += ${mzx_base}/sfx_edit.${o}
 endif
 
 ifeq (${BUILD_HELPSYS},1)
-mzx_objs += ${mzx_base}/helpsys.${o}
+mzx_cobjs += ${mzx_base}/helpsys.${o}
 endif
 
 ifeq (${BUILD_RENDER_SOFT},1)
-mzx_objs += ${mzx_base}/render_soft.${o}
+mzx_cobjs += ${mzx_base}/render_soft.${o}
 endif
 
 ifeq (${BUILD_RENDER_GL},1)
-mzx_objs += ${mzx_base}/render_gl.${o}
-mzx_objs += ${mzx_base}/render_gl1.${o} ${mzx_base}/render_gl2.${o}
+mzx_cobjs += ${mzx_base}/render_gl.${o}
+mzx_cobjs += ${mzx_base}/render_gl1.${o} ${mzx_base}/render_gl2.${o}
 endif
 
 ifeq (${BUILD_RENDER_YUV},1)
-mzx_objs += ${mzx_base}/render_yuv.${o}
-mzx_objs += ${mzx_base}/render_yuv1.${o} ${mzx_base}/render_yuv2.${o}
+mzx_cobjs += ${mzx_base}/render_yuv.${o}
+mzx_cobjs += ${mzx_base}/render_yuv1.${o} ${mzx_base}/render_yuv2.${o}
 endif
 
 ifeq (${BUILD_RENDER_GP2X},1)
-mzx_objs += ${mzx_base}/render_gp2x.${o}
+mzx_cobjs += ${mzx_base}/render_gp2x.${o}
 endif
 
 ifeq (${BUILD_RENDER_GX},1)
-mzx_objs += ${mzx_base}/render_gx.${o}
+mzx_cobjs += ${mzx_base}/render_gx.${o}
 endif
 
 ifeq (${BUILD_NDS},1)
-mzx_objs += ${mzx_base}/render_nds.${o}
+mzx_cobjs += ${mzx_base}/render_nds.${o}
 endif
 
 ifeq (${EMBED_ICONS},1)
@@ -115,25 +124,26 @@ ${mzx}: ${icons}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
-mzx_flags += -I${gdm2s3m_base}
-mzx_flags += -I${libmodplug_base} -I${libmodplug_base}/libmodplug
-mzx_objs  += ${mzx_base}/audio_modplug.${o} ${gdm2s3m_objs} ${libmodplug_objs}
+mzx_flags += -I${gdm2s3m_base} # cflags?
+mzx_cobjs += ${gdm2s3m_objs}
+mzx_flags += -I${libmodplug_base} -I${libmodplug_base}/libmodplug # cxxflags?
+mzx_cxxobjs += ${mzx_base}/audio_modplug.${o} ${libmodplug_objs}
 LINK_CC := ${CXX}
 endif
 
 ifeq (${BUILD_MIKMOD},1)
 mzx_ldflags := ${MIKMOD_LDFLAGS} ${mzx_ldflags}
-mzx_objs += ${mzx_base}/audio_mikmod.${o}
+mzx_cobjs += ${mzx_base}/audio_mikmod.${o}
 endif
 
 ifeq (${LIBPNG},1)
 mzx_flags += ${LIBPNG_CFLAGS}
 mzx_ldflags := ${LIBPNG_LDFLAGS} ${mzx_ldflags}
-mzx_objs += ${mzx_base}/pngops.${o}
+mzx_cobjs += ${mzx_base}/pngops.${o}
 endif
 
 ifeq (${BUILD_AUDIO},1)
-mzx_objs += ${mzx_base}/audio.${o}
+mzx_cobjs += ${mzx_base}/audio.${o}
 mzx_flags += ${VORBIS_CFLAGS}
 mzx_ldflags := ${VORBIS_LDFLAGS} ${mzx_ldflags}
 endif
@@ -144,11 +154,11 @@ endif
 
 ifeq (${BUILD_SDL},1)
 
-mzx_objs += ${mzx_base}/event_sdl.${o} ${mzx_base}/platform_sdl.${o}
-mzx_objs += ${mzx_base}/render_sdl.${o}
+mzx_cobjs += ${mzx_base}/event_sdl.${o} ${mzx_base}/platform_sdl.${o}
+mzx_cobjs += ${mzx_base}/render_sdl.${o}
 
 ifeq (${BUILD_AUDIO},1)
-mzx_objs += ${mzx_base}/audio_sdl.${o}
+mzx_cobjs += ${mzx_base}/audio_sdl.${o}
 endif
 
 mzx_flags += ${SDL_CFLAGS}
@@ -157,20 +167,21 @@ mzx_ldflags += ${SDL_LDFLAGS}
 endif
 
 ifeq (${BUILD_WII},1)
-mzx_objs += ${mzx_base}/event_wii.${o} ${mzx_base}/platform_wii.${o}
+mzx_cobjs += ${mzx_base}/event_wii.${o} ${mzx_base}/platform_wii.${o}
 ifeq (${BUILD_AUDIO},1)
-mzx_objs += ${mzx_base}/audio_wii.${o}
+mzx_cobjs += ${mzx_base}/audio_wii.${o}
 endif
 endif
 
--include $(mzx_objs:.o=.d)
+-include ${mzx_cobjs:.o=.d}
+-include ${mzx_cxxobjs:.o=.d}
 
-${mzx}: ${gdm2s3m} ${libmodplug} ${mzx_objs}
+${mzx}: ${gdm2s3m} ${libmodplug} ${mzx_cobjs} ${mzx_cxxobjs}
 ifeq (${V},1)
-	${LINK_CC} ${mzx_objs} -o ${mzx} ${mzx_ldflags}
+	${LINK_CC} ${mzx_cobjs} ${mzx_cxxobjs} -o ${mzx} ${mzx_ldflags}
 else
 	@echo "  LINK    " ${mzx}
-	@${LINK_CC} ${mzx_objs} -o ${mzx} ${mzx_ldflags}
+	@${LINK_CC} ${mzx_cobjs} ${mzx_cxxobjs} -o ${mzx} ${mzx_ldflags}
 endif
 ifneq (${DEBUG},1)
 ifeq (${V},1)
@@ -183,4 +194,5 @@ endif
 
 ${mzx}_clean: gdm2s3m_clean ${icons}_clean libmodplug_clean
 	@echo "  CLEAN   " ${mzx_base}
-	@rm -f ${mzx_objs} ${mzx} $(mzx_objs:.o=.d)
+	@rm -f ${mzx} ${mzx_cobjs} ${mzx_cobjs:.o=.d}
+	@rm -f ${mzx_cxxobjs} ${mzx_cxxobjs:.o=.d}
