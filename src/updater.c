@@ -432,7 +432,7 @@ static void __check_for_updates(config_info *conf)
     goto err_host_destroy;
   }
 
-  snprintf(update_branch, LINE_BUF_LEN, "Current-%s", 
+  snprintf(update_branch, LINE_BUF_LEN, "Current-%s",
    conf->update_branch_pin);
 
   // Walk this list (of two, hopefully)
@@ -626,11 +626,11 @@ static void __check_for_updates(config_info *conf)
     free(list_entries[i]);
   free(list_entries);
 
-  if(result < 0)
-    goto err_free_update_manifests;
-
   clear_screen(32, 7);
   update_screen();
+
+  if(result < 0)
+    goto err_free_update_manifests;
 
   /* Defer deletions until we restart; any of these files may still be
    * in use by this (old) process. Reduce the number of entries by the
