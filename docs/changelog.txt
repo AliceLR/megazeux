@@ -22,6 +22,9 @@ USERS
   no longer crash MegaZeux. The read size will be truncated to a contextual
   maximum for the current file.
 + Fixed a crash using "fwrite0" in conjunction with an empty string.
++ Fixed a bug where checking sprite_collisions on a disabled target sprite
+  would unconditionally trigger (regardless of whether a collision was
+  present or not).
 
 DEVELOPERS
 
