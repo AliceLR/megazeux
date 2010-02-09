@@ -1094,7 +1094,7 @@ static void __edit_world(struct world *mzx_world)
       sprintf(backup_name_formatted,
        "%s%d%s", backup_name, backup_num + 1, backup_ext);
 
-      save_world(mzx_world, backup_name_formatted, 0, 1);
+      save_world(mzx_world, backup_name_formatted, 0);
       backup_num = (backup_num + 1) % backup_count;
       backup_timestamp = get_ticks();
     }
@@ -1855,7 +1855,7 @@ static void __edit_world(struct world *mzx_world)
             {
               // Save entire game
               strcpy(current_world, world_name);
-              save_world(mzx_world, current_world, 0, 1);
+              save_world(mzx_world, current_world, 0);
 
               modified = 0;
             }
@@ -3230,7 +3230,7 @@ static void __edit_world(struct world *mzx_world)
           int fade;
           int current_board_id = mzx_world->current_board_id;
 
-          if(!save_world(mzx_world, "__test.mzx", 0, 0))
+          if(!save_world(mzx_world, "__test.mzx", 0))
           {
             save_editor_palette();
             vquick_fadeout();

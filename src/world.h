@@ -103,7 +103,7 @@ __M_BEGIN_DECLS
 #define WORLD_VERSION_PREV 0x0252
 
 CORE_LIBSPEC int save_world(struct world *mzx_world, const char *file,
- int savegame, int faded);
+ int savegame);
 CORE_LIBSPEC bool reload_world(struct world *mzx_world, const char *file,
  int *faded);
 CORE_LIBSPEC void clear_world(struct world *mzx_world);

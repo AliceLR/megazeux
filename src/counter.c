@@ -2278,7 +2278,6 @@ int set_counter_special(struct world *mzx_world, char *char_value,
     case FOPEN_SAVE_GAME:
     {
       char *translated_path = cmalloc(MAX_PATH);
-      int faded = get_fade_status();
       int err;
 
       if(cur_robot)
@@ -2290,7 +2289,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
       err = fsafetranslate(char_value, translated_path);
       if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-        save_world(mzx_world, translated_path, 1, faded);
+        save_world(mzx_world, translated_path, 1);
 
       free(translated_path);
       break;
@@ -2310,7 +2309,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
       err = fsafetranslate(char_value, translated_path);
       if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-        save_world(mzx_world, translated_path, 0, 0);
+        save_world(mzx_world, translated_path, 0);
 
       free(translated_path);
       break;

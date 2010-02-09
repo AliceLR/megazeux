@@ -353,8 +353,7 @@ static int world_magic(const char magic_string[3])
   return 0;
 }
 
-int save_world(struct world *mzx_world, const char *file, int savegame,
- int faded)
+int save_world(struct world *mzx_world, const char *file, int savegame)
 {
   int i, num_boards;
   int gl_rob_position, gl_rob_save_position;
@@ -496,7 +495,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
     {
       fputc(get_color_intensity(i), fp);
     }
-    fputc(faded, fp);
+    fputc(get_fade_status(), fp);
 
     fputw(mzx_world->player_restart_x, fp);
     fputw(mzx_world->player_restart_y, fp);

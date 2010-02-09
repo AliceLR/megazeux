@@ -1790,7 +1790,7 @@ __editor_maybe_static void play_game(struct world *mzx_world, int fadein)
               {
                 strcpy(curr_sav, save_game);
                 // Save entire game
-                save_world(mzx_world, curr_sav, 1, get_fade_status());
+                save_world(mzx_world, curr_sav, 1);
               }
             }
           }
@@ -1979,7 +1979,7 @@ __editor_maybe_static void play_game(struct world *mzx_world, int fadein)
              SENSOR)))
             {
               // Save entire game
-              save_world(mzx_world, curr_sav, 1, get_fade_status());
+              save_world(mzx_world, curr_sav, 1);
             }
           }
           break;
