@@ -551,34 +551,6 @@ static void glsl_render_graph(struct graphics_data *graphics)
   Uint32 *colorptr, *dest, i;
   int width, height;
 
-  static const float tex_coord_array_single[2 * 4] = {
-    0.0f, 0.0f,
-    0.0f, 1.0f,
-    1.0f, 0.0f,
-    1.0f, 1.0f,
-  };
-
-  gl->glUseProgram(render_data->tilemap_program);
-
-  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
-  if(render_data->remap_texture)
-  {
-    glsl_do_remap_charsets(graphics);
-    render_data->remap_texture = false;
-    memset(render_data->remap_char, false, sizeof(Uint8) * CHARSET_SIZE * 2);
-  }
-  else
-  {
-    for(i = 0; i < CHARSET_SIZE * 2; i++)
-    {
-      if(render_data->remap_char[i])
-      {
-        glsl_do_remap_char(graphics, i);
-        render_data->remap_char[i] = false;
-      }
-    }
-  }
-
   get_context_width_height(graphics, &width, &height);
   if(width < 640 || height < 350)
   {
@@ -595,37 +567,102 @@ static void glsl_render_graph(struct graphics_data *graphics)
 
   gl->glViewport(0, 0, width, height);
 
-  dest = render_data->background_texture;
+  if(!graphics->screen_mode)
+  {
+    static const float tex_coord_array_single[2 * 4] = {
+      0.0f, 0.0f,
+      0.0f, 1.0f,
+      1.0f, 0.0f,
+      1.0f, 1.0f,
+    };
 
-  for(i = 0; i < SCREEN_W * SCREEN_H; i++, dest++, src++)
-    *dest = (src->char_value<<16) + (src->bg_color<<8) + src->fg_color;
+    gl->glUseProgram(render_data->tilemap_program);
 
-  gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+    gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+    if(render_data->remap_texture)
+    {
+      glsl_do_remap_charsets(graphics);
+      render_data->remap_texture = false;
+      memset(render_data->remap_char, false, sizeof(Uint8) * CHARSET_SIZE * 2);
+    }
+    else
+    {
+      for(i = 0; i < CHARSET_SIZE * 2; i++)
+      {
+        if(render_data->remap_char[i])
+        {
+          glsl_do_remap_char(graphics, i);
+          render_data->remap_char[i] = false;
+        }
+      }
+    }
 
-  gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 225, SCREEN_W, SCREEN_H, GL_RGBA,
-    GL_UNSIGNED_BYTE, render_data->background_texture);
+    dest = render_data->background_texture;
 
-  colorptr = graphics->flat_intensity_palette;
-  dest = render_data->background_texture;
+    for(i = 0; i < SCREEN_W * SCREEN_H; i++, dest++, src++)
+      *dest = (src->char_value<<16) + (src->bg_color<<8) + src->fg_color;
 
-  for(i = 0; i < 512; i++, dest++, colorptr++)
-    *dest = *colorptr;
+    gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 
-  gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 224, 256, 1, GL_RGBA,
-    GL_UNSIGNED_BYTE, render_data->background_texture);
+    gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 225, SCREEN_W, SCREEN_H, GL_RGBA,
+      GL_UNSIGNED_BYTE, render_data->background_texture);
 
-  gl->glEnableVertexAttribArray(ATTRIB_POSITION);
-  gl->glEnableVertexAttribArray(ATTRIB_TEXCOORD);
+    colorptr = graphics->flat_intensity_palette;
+    dest = render_data->background_texture;
 
-  gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
-   vertex_array_single);
-  gl->glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
-   tex_coord_array_single);
+    for(i = 0; i < 512; i++, dest++, colorptr++)
+      *dest = *colorptr;
 
-  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+    gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 224, 256, 1, GL_RGBA,
+      GL_UNSIGNED_BYTE, render_data->background_texture);
 
-  gl->glDisableVertexAttribArray(ATTRIB_POSITION);
-  gl->glDisableVertexAttribArray(ATTRIB_TEXCOORD);
+    gl->glEnableVertexAttribArray(ATTRIB_POSITION);
+    gl->glEnableVertexAttribArray(ATTRIB_TEXCOORD);
+
+    gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
+    vertex_array_single);
+    gl->glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
+    tex_coord_array_single);
+
+    gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    gl->glDisableVertexAttribArray(ATTRIB_POSITION);
+    gl->glDisableVertexAttribArray(ATTRIB_TEXCOORD);
+  }
+  else
+  {
+    static const float tex_coord_array_single[2 * 4] = {
+      0.0f,             0.0f,
+      0.0f,             350.0f / 512.0f,
+      640.0f / 1024.0f, 0.0f,
+      640.0f / 1024.0f, 350.0f / 512.0f,
+    };
+
+    render_graph32s(render_data->pixels, 640 * 4, graphics,
+     set_colors32[graphics->screen_mode]);
+
+    gl->glUseProgram(render_data->scaler_program);
+
+    gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
+
+    gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 640, 350, GL_RGBA,
+      GL_UNSIGNED_BYTE, render_data->pixels);
+
+    gl->glEnableVertexAttribArray(ATTRIB_POSITION);
+    gl->glEnableVertexAttribArray(ATTRIB_TEXCOORD);
+
+    gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
+      vertex_array_single);
+    gl->glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
+      tex_coord_array_single);
+
+    gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+    gl->glDisableVertexAttribArray(ATTRIB_POSITION);
+    gl->glDisableVertexAttribArray(ATTRIB_TEXCOORD);
+
+    gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
+  }
 }
 
 static void glsl_render_cursor(struct graphics_data *graphics,
