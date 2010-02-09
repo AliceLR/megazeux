@@ -1925,7 +1925,8 @@ static void str_num_write(World *mzx_world, function_counter *counter,
     if(write_value)
     {
       src->value[str_num] = value;
-      src->length = str_num + 1;
+      if(src->length <= (unsigned int)str_num)
+        src->length = str_num + 1;
     }
     else
     {
