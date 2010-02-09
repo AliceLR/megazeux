@@ -141,10 +141,6 @@ core_flags += ${VORBIS_CFLAGS}
 core_ldflags := ${VORBIS_LDFLAGS} ${core_ldflags}
 endif
 
-ifeq (${PTHREAD},1)
-core_ldflags := -lpthread ${core_ldflags}
-endif
-
 ifeq (${BUILD_SDL},1)
 
 core_cobjs += ${core_obj}/event_sdl.o ${core_obj}/platform_sdl.o
@@ -156,6 +152,16 @@ endif
 
 core_flags += ${SDL_CFLAGS}
 core_ldflags += ${SDL_LDFLAGS}
+
+else
+
+#
+# Normally SDL would provide us with pthread, but in the case
+# we're not using SDL we must link pthread ourselves.
+#
+ifeq (${PTHREAD},1)
+core_ldflags := -lpthread ${core_ldflags}
+endif
 
 endif
 
