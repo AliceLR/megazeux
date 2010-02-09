@@ -28,6 +28,7 @@
 #include "../world.h"
 #include "../idput.h"
 
+#include "board.h"
 #include "robot.h"
 
 #include <string.h>

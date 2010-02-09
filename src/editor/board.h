@@ -17,28 +17,21 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#ifndef __BOARD_H
-#define __BOARD_H
+#ifndef __EDITOR_BOARD_H
+#define __EDITOR_BOARD_H
 
 #include "compat.h"
 
 __M_BEGIN_DECLS
 
-#include "const.h"
-#include "board_struct.h"
-#include "world_struct.h"
+#include "../board_struct.h"
+#include "../world_struct.h"
 
-#define MAX_BOARDS 250
-
-Board *load_board_allocate(FILE *fp, int savegame);
-int save_board(Board *cur_board, FILE *fp, int savegame);
-void clear_board(Board *cur_board);
-int find_board(World *mzx_world, char *name);
-
-#ifdef CONFIG_EDITOR
-void load_board_direct(Board *cur_board, FILE *fp, int savegame);
-#endif // CONFIG_EDITOR
+void replace_current_board(World *mzx_world, char *name);
+Board *create_blank_board(void);
+void save_board_file(Board *cur_board, char *name);
+void change_board_size(Board *src_board, int new_width, int new_height);
 
 __M_END_DECLS
 
-#endif // __BOARD_H
+#endif // __EDITOR_BOARD_H

@@ -40,6 +40,7 @@
 #include "../robot.h"
 
 #include "block.h"
+#include "board.h"
 #include "char_ed.h"
 #include "debug.h"
 #include "edit.h"

@@ -27,6 +27,8 @@
 #include "../intake.h"
 #include "../window.h"
 
+#include "board.h"
+
 #include <string.h>
 
 #define list_button " \x1F "

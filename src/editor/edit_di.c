@@ -34,6 +34,7 @@
 #include "../board.h"
 #include "../world.h"
 
+#include "board.h"
 #include "edit.h"
 #include "edit_di.h"
 #include "robo_ed.h"
