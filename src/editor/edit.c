@@ -63,6 +63,9 @@
 #include <unistd.h>
 #endif
 
+#define EDIT_SCREEN_EXTENDED 24
+#define EDIT_SCREEN_NORMAL   19
+
 void load_editor_config(struct world *mzx_world, int argc, char *argv[])
 {
   default_editor_config(&mzx_world->editor_conf);
@@ -884,6 +887,155 @@ static void clear_board_block(struct board *src_board, int x, int y,
   }
 }
 
+static void draw_menu_status(int overlay_edit, int line, int draw_mode,
+ int current_color, int current_id, char sensor_char, char robot_char,
+ char *level_id, char *level_param, int current_param, struct board *src_board)
+{
+  int display_next_pos;
+
+  write_string(draw_names[draw_mode], 42, line, EC_MODE_STR, 0);
+  display_next_pos = strlen(draw_names[draw_mode]) + 42;
+
+  if(draw_mode > 1)
+  {
+    write_string(drawmode_help[draw_mode - 2],
+     display_next_pos, line, EC_MODE_HELP, 0);
+  }
+  else
+  {
+    int display_char, display_color = current_color;
+
+    if(!overlay_edit)
+    {
+      if(current_id == SENSOR)
+      {
+        display_char = sensor_char;
+      }
+      else
+
+      if(is_robot(current_id))
+      {
+        display_char = robot_char;
+      }
+      else
+      {
+        int temp_char = level_id[0];
+        int temp_param = level_param[0];
+        level_id[0] = current_id;
+        level_param[0] = current_param;
+
+        display_char = get_id_char(src_board, 0);
+
+        level_id[0] = temp_char;
+        level_param[0] = temp_param;
+      }
+    }
+    else
+    {
+      display_char = current_param;
+    }
+
+    draw_char(' ', 7, display_next_pos, line);
+    draw_char_ext(display_char, display_color,
+     display_next_pos + 1, line, 0, 0);
+    draw_char(' ', 7, display_next_pos + 2, line);
+
+    display_next_pos += 4;
+    draw_char('(', EC_CURR_THING, display_next_pos, line);
+    draw_color_box(display_color, 0, display_next_pos + 1, line);
+    display_next_pos += 5;
+
+    if(overlay_edit)
+    {
+      write_string("Character", display_next_pos, line, EC_CURR_THING, 0);
+      display_next_pos += 9;
+      write_hex_byte(current_param, EC_CURR_PARAM,
+       display_next_pos + 1, line);
+      display_next_pos += 3;
+    }
+    else
+    {
+      write_string(thing_names[current_id], display_next_pos, line,
+       EC_CURR_THING, 0);
+      display_next_pos += strlen(thing_names[current_id]);
+      draw_char('p', EC_CURR_PARAM, display_next_pos + 1, line);
+      write_hex_byte(current_param, EC_CURR_PARAM,
+      display_next_pos + 2, line);
+      display_next_pos += 4;
+    }
+
+    draw_char(')', EC_CURR_THING, display_next_pos, line);
+  }
+}
+
+static void draw_menu_normal(int overlay_edit, int draw_mode, int current_menu,
+ int current_color, int current_id, char sensor_char, char robot_char,
+ char *level_id, char *level_param, int current_param, struct board *src_board)
+{
+  draw_window_box(0, 19, 79, 24, EC_MAIN_BOX, EC_MAIN_BOX_DARK,
+   EC_MAIN_BOX_CORNER, 0, 1);
+  draw_window_box(0, 21, 79, 24, EC_MAIN_BOX, EC_MAIN_BOX_DARK,
+   EC_MAIN_BOX_CORNER, 0, 1);
+
+  if(!overlay_edit)
+  {
+    int i, write_color, x;
+    x = 1; // X position
+
+    for(i = 0; i < NUM_MENUS; i++)
+    {
+      if(i == current_menu)
+        write_color = EC_CURR_MENU_NAME;
+      else
+        write_color = EC_MENU_NAME; // Pick the color
+
+      // Write it
+      write_string(menu_names[i], x, 20, write_color, 0);
+      // Add to x
+      x += strlen(menu_names[i]);
+    }
+
+    write_string(menu_lines[current_menu][0], 1, 22, EC_OPTION, 1);
+    write_string(menu_lines[current_menu][1], 1, 23, EC_OPTION, 1);
+  }
+  else
+  {
+    write_string(overlay_menu_lines[0], 1, 20, EC_MENU_NAME, 1);
+    write_string(overlay_menu_lines[1], 1, 22, EC_OPTION, 1);
+    write_string(overlay_menu_lines[2], 1, 23, EC_OPTION, 1);
+  }
+
+  draw_menu_status(overlay_edit, EDIT_SCREEN_NORMAL + 1, draw_mode,
+   current_color, current_id, sensor_char, robot_char, level_id,
+   level_param, current_param, src_board);
+
+  draw_char(196, EC_MAIN_BOX_CORNER, 78, 21);
+  draw_char(217, EC_MAIN_BOX_DARK, 79, 21);
+}
+
+static void draw_menu_minimal(int overlay_edit, int draw_mode,
+ int current_color, int current_id, char sensor_char, char robot_char,
+ char *level_id, char *level_param, int current_param,
+ struct board *src_board, int cursor_board_x, int cursor_board_y)
+{
+  int i;
+
+  for(i = 0; i < 80; i++)
+    draw_char_ext(' ', EC_MAIN_BOX, i, EDIT_SCREEN_EXTENDED, 256, 16);
+
+  write_string("Alt+H: Toggle Help", 3, EDIT_SCREEN_EXTENDED, EC_OPTION, 1);
+
+  write_string("X/Y:      /     ", 3+21, EDIT_SCREEN_EXTENDED,
+   EC_MODE_STR, 1);
+
+  write_number(cursor_board_x, 31, 3+21+5, EDIT_SCREEN_EXTENDED, 5, 0, 10);
+  write_number(cursor_board_y, 31, 3+21+11, EDIT_SCREEN_EXTENDED, 5, 0, 10);
+
+  draw_menu_status(overlay_edit, EDIT_SCREEN_EXTENDED, draw_mode,
+   current_color, current_id, sensor_char, robot_char, level_id,
+   level_param, current_param, src_board);
+}
+
 static void __edit_world(struct world *mzx_world)
 {
   struct board *src_board;
@@ -904,7 +1056,6 @@ static void __edit_world(struct world *mzx_world)
   int overlay_edit = 0;
   int current_menu = 0;
   int show_level = 1;
-  int display_next_pos;
   int block_x = -1, block_y = -1;
   int block_dest_x = -1, block_dest_y = -1;
   int block_command = -1;
@@ -985,9 +1136,9 @@ static void __edit_world(struct world *mzx_world)
   insta_fadein();
 
   if(mzx_world->editor_conf.bedit_hhelp)
-    edit_screen_height = 25;
+    edit_screen_height = EDIT_SCREEN_EXTENDED;
   else
-    edit_screen_height = 19;
+    edit_screen_height = EDIT_SCREEN_NORMAL;
 
   do
   {
@@ -1046,118 +1197,17 @@ static void __edit_world(struct world *mzx_world)
     }
     src_board->overlay_mode = saved_overlay_mode;
 
-    if(edit_screen_height == 19)
+    if(edit_screen_height == EDIT_SCREEN_NORMAL)
     {
-      draw_window_box(0, 19, 79, 24, EC_MAIN_BOX, EC_MAIN_BOX_DARK,
-       EC_MAIN_BOX_CORNER, 0, 1);
-      draw_window_box(0, 21, 79, 24, EC_MAIN_BOX, EC_MAIN_BOX_DARK,
-       EC_MAIN_BOX_CORNER, 0, 1);
-
-      if(!overlay_edit)
-      {
-        int i, write_color, x;
-        x = 1; // X position
-
-        for(i = 0; i < NUM_MENUS; i++)
-        {
-          if(i == current_menu)
-            write_color = EC_CURR_MENU_NAME;
-          else
-            write_color = EC_MENU_NAME; // Pick the color
-
-          // Write it
-          write_string(menu_names[i], x, 20, write_color, 0);
-          // Add to x
-          x += strlen(menu_names[i]);
-        }
-
-        write_string(menu_lines[current_menu][0], 1, 22, EC_OPTION, 1);
-        write_string(menu_lines[current_menu][1], 1, 23, EC_OPTION, 1);
-      }
-      else
-      {
-        write_string(overlay_menu_lines[0], 1, 20, EC_MENU_NAME, 1);
-        write_string(overlay_menu_lines[1], 1, 22, EC_OPTION, 1);
-        write_string(overlay_menu_lines[2], 1, 23, EC_OPTION, 1);
-      }
-
-      write_string(draw_names[draw_mode], 42, 20, EC_MODE_STR, 0);
-      display_next_pos = strlen(draw_names[draw_mode]) + 42;
-
-      if(draw_mode > 1)
-      {
-        write_string(drawmode_help[draw_mode - 2],
-         display_next_pos, 20, EC_MODE_HELP, 0);
-      }
-      else
-      {
-        int display_char, display_color = current_color;
-
-        if(!overlay_edit)
-        {
-          if(current_id == SENSOR)
-          {
-            display_char = copy_sensor.sensor_char;
-          }
-          else
-
-          if(is_robot(current_id))
-          {
-            display_char = copy_robot.robot_char;
-          }
-          else
-          {
-            int temp_char = level_id[0];
-            int temp_param = level_param[0];
-            level_id[0] = current_id;
-            level_param[0] = current_param;
-
-            display_char = get_id_char(src_board, 0);
-
-            level_id[0] = temp_char;
-            level_param[0] = temp_param;
-          }
-        }
-        else
-        {
-          display_char = current_param;
-        }
-
-        draw_char(' ', 7, display_next_pos, 20);
-        draw_char_ext(display_char, display_color,
-         display_next_pos + 1, 20, 0, 0);
-        draw_char(' ', 7, display_next_pos + 2, 20);
-
-        display_next_pos += 4;
-        draw_char('(', EC_CURR_THING, display_next_pos, 20);
-        draw_color_box(display_color, 0, display_next_pos + 1, 20);
-        display_next_pos += 5;
-
-        if(overlay_edit)
-        {
-          write_string("Character", display_next_pos, 20,
-           EC_CURR_THING, 0);
-          display_next_pos += 9;
-          write_hex_byte(current_param, EC_CURR_PARAM,
-           display_next_pos + 1, 20);
-          display_next_pos += 3;
-        }
-        else
-        {
-          write_string(thing_names[current_id], display_next_pos, 20,
-           EC_CURR_THING, 0);
-          display_next_pos += strlen(thing_names[current_id]);
-          draw_char('p', EC_CURR_PARAM, display_next_pos + 1, 20);
-          write_hex_byte(current_param, EC_CURR_PARAM,
-           display_next_pos + 2, 20);
-          display_next_pos += 4;
-        }
-
-        draw_char(')', EC_CURR_THING, display_next_pos, 20);
-      }
-
-      draw_char(196, EC_MAIN_BOX_CORNER, 78, 21);
-      draw_char(217, EC_MAIN_BOX_DARK, 79, 21);
+      draw_menu_normal(overlay_edit, draw_mode, current_menu, current_color,
+       current_id, copy_sensor.sensor_char, copy_robot.robot_char,
+       level_id, level_param, current_param, src_board);
+    }
+    else
+    {
+      draw_menu_minimal(overlay_edit, draw_mode, current_color, current_id,
+       copy_sensor.sensor_char, copy_robot.robot_char, level_id, level_param,
+       current_param, src_board, cursor_board_x, cursor_board_y);
     }
 
     // Highlight block for draw mode 3
@@ -3633,9 +3683,9 @@ static void __edit_world(struct world *mzx_world)
       {
         if(get_alt_status(keycode_internal))
         {
-          if(edit_screen_height == 19)
+          if(edit_screen_height == EDIT_SCREEN_NORMAL)
           {
-            edit_screen_height = 25;
+            edit_screen_height = EDIT_SCREEN_EXTENDED;
             clear_screen_no_update(177, 1);
 
             if((scroll_y + 25) > board_height)
@@ -3646,7 +3696,7 @@ static void __edit_world(struct world *mzx_world)
           }
           else
           {
-            edit_screen_height = 19;
+            edit_screen_height = EDIT_SCREEN_NORMAL;
             if((cursor_board_y - scroll_y) > 18)
               scroll_y += cursor_board_y - scroll_y - 18;
           }
