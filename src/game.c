@@ -62,7 +62,7 @@
 
 static const char main_menu_1[] =
  "Enter- Menu\n"
- "Esc  - Exit to DOS\n"
+ "Esc  - Exit MegaZeux\n"
  "F1/H - Help\n"
  "F2/S - Settings\n"
  "F3/L - Load world\n"
@@ -2041,7 +2041,7 @@ __editor_maybe_static void play_game(World *mzx_world, int fadein)
             save_screen();
 
             draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
-            write_string(" Game Menu ", 14, 4, 30, 0);
+            write_string(" Game Menu ", 17, 4, 30, 0);
             write_string(game_menu_1, 10, 5, 31, 1);
 #ifdef CONFIG_EDITOR
             if(editing)
@@ -2494,18 +2494,18 @@ void title_screen(World *mzx_world)
           int key;
 
           save_screen();
-          draw_window_box(30, 4, 52, 16, 25, 16, 24, 1, 1);
-          write_string(" Main Menu ", 36, 4, 30, 0);
-          write_string(main_menu_1, 32, 5, 31, 1);
+          draw_window_box(28, 4, 51, 16, 25, 16, 24, 1, 1);
+          write_string(" Main Menu ", 35, 4, 30, 0);
+          write_string(main_menu_1, 30, 5, 31, 1);
 #ifdef CONFIG_UPDATER
           if(check_for_updates)
-            write_string(main_menu_2, 32, 12, 31, 1);
+            write_string(main_menu_2, 30, 12, 31, 1);
 #endif
 #ifdef CONFIG_EDITOR
           if(edit_world)
-            write_string(main_menu_3, 32, 13, 31, 1);
+            write_string(main_menu_3, 30, 13, 31, 1);
 #endif
-          write_string(main_menu_4, 32, 14, 31, 1);
+          write_string(main_menu_4, 30, 14, 31, 1);
           update_screen();
           m_show();
 

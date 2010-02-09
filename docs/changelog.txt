@@ -121,6 +121,8 @@ USERS
   such as the updater continue to work. (MZXGiant)
 + Pasting into a string with set "$str+N" with an N > str.length will no
   longer crash MZX.
++ "Exit to DOS" is now "Exit MegaZeux" to reflect the multi-platform nature
+  of the program.
 
 DEVELOPERS
 
