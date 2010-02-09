@@ -42,7 +42,8 @@ static int buffer_size;
 
 static void *wii_audio_thread(void *dud)
 {
-  while(!audio_stop) {
+  while(!audio_stop)
+  {
     LWP_ThreadSleep(audio_queue);
     audio_callback(audio_buffer[current ^ 1], buffer_size);
     DCFlushRange(audio_buffer[current ^ 1], buffer_size);
@@ -74,9 +75,10 @@ void init_audio_platform(config_info *conf)
 
   // buffer size must be multiple of 32 bytes, so samples must be multiple of 8
   audio.buffer_samples = conf->buffer_size & ~7;
-  if (!audio.buffer_samples) audio.buffer_samples = 2048;
-  buffer_size = sizeof(Sint16) * 2 * audio.buffer_samples;
+  if (!audio.buffer_samples)
+    audio.buffer_samples = 2048;
 
+  buffer_size = sizeof(Sint16) * 2 * audio.buffer_samples;
   audio.mix_buffer = malloc(buffer_size * 2);
 
   for(i = 0; i < 2; i++)
@@ -101,14 +103,15 @@ void init_audio_platform(config_info *conf)
 void quit_audio_platform(void)
 {
   void *dud;
-  if(audio.mix_buffer)
-  {
-    audio_stop = 1;
-    LWP_JoinThread(audio_thread, &dud);
-    free(audio.mix_buffer);
-    AUDIO_StopDMA();
-    LWP_CloseQueue(audio_queue);
-    // Don't free hardware audio buffers
-    // Memory allocated with memalign() can't neccessarily be free()'d
-  }
+
+  if(!audio.mix_buffer)
+    return;
+
+  audio_stop = 1;
+  LWP_JoinThread(audio_thread, &dud);
+  free(audio.mix_buffer);
+  AUDIO_StopDMA();
+  LWP_CloseQueue(audio_queue);
+  // Don't free hardware audio buffers
+  // Memory allocated with memalign() can't neccessarily be free()'d
 }
