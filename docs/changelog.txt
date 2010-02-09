@@ -8,6 +8,8 @@ USERS
   the last character from the string; it will instead return the empty string.
 + Writing beyond MAX_STRING_LEN (1MB) or using negative offsets (which has the
   same effect) no longer crashes. Instead, the write is ignored.
++ Fix crash when pasting to and from the same string, specifically in
+  conjunction with $str+offset.
 
 DEVELOPERS
 

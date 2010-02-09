@@ -1859,8 +1859,22 @@ static void force_string_move(World *mzx_world, const char *name,
  int next, mzx_string **str, unsigned int s_length, unsigned int offset,
  bool offset_specified, unsigned int *size, bool size_specified, char *src)
 {
+  bool src_dest_match = false;
+  ssize_t off;
+
+  if(*str)
+  {
+    off = (*str)->value - src;
+    if(off >= 0 && off <= (*str)->length)
+      src_dest_match = true;
+  }
+
   force_string_splice(mzx_world, name, next, str, s_length,
    offset, offset_specified, size, size_specified);
+
+  if(src_dest_match)
+    src = (*str)->value + off;
+
   if(offset <= (*str)->length - *size)
     memmove((*str)->value + offset, src, *size);
 }
