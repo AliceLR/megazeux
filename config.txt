@@ -295,20 +295,20 @@ modplug_resample_mode = cubic
 # The following is an example extended macro.
 # It sets up a sprite. If you find it useful, remove the #'s.
 
-#macro_1 = Sprite\sSetup
-# (number255 spr_num)
-# (number255 w, h, rx, ry)
-# (number255 cx, cy, cw, ch)
-# (number255 x, y)
-# set spr!spr_num!_width !w!
-# set spr!spr_num!_height !h!
-# set spr!spr_num!_refx !rx!
-# set spr!spr_num!_refy !ry!
-# set spr!spr_num!_cwidth !cw!
-# set spr!spr_num!_cheight !ch!
-# set spr!spr_num!_cx !cx!
-# set spr!spr_num!_cy !cy!
-# put !x1! sprite p!#spr_num! !x! !y!
+macro_sprite = Sprite\sSetup
+ (number255 spr_num)
+ (number255 w, h, rx, ry)
+ (number255 cx, cy, cw, ch)
+ (number255 x, y)
+ set spr!spr_num!_width !w!
+ set spr!spr_num!_height !h!
+ set spr!spr_num!_refx !rx!
+ set spr!spr_num!_refy !ry!
+ set spr!spr_num!_cwidth !cw!
+ set spr!spr_num!_cheight !ch!
+ set spr!spr_num!_cx !cx!
+ set spr!spr_num!_cy !cy!
+ put !x1! sprite p!#spr_num! !x! !y!
 
 # Whether or not the palette should be reverted to default
 # when the robot editor is load. If set, SMZX mode 0 will

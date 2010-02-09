@@ -5,20 +5,20 @@
 STRIP ?= strip
 
 ifeq (${ARCH},i686)
-CC        := i686-apple-darwin9-gcc-4.0.1
-CXX       := i686-apple-darwin9-g++-4.0.1
+CC        := i686-apple-darwin9-gcc-4.0.1 -mmacosx-version-min=10.3
+CXX       := i686-apple-darwin9-g++-4.0.1 -mmacosx-version-min=10.3
 REAL_ARCH := i686
 else ifeq (${ARCH},amd64)
-CC        := i686-apple-darwin9-gcc-4.0.1 -m64
-CXX       := i686-apple-darwin9-g++-4.0.1 -m64
+CC        := i686-apple-darwin9-gcc-4.0.1 -m64 -mmacosx-version-min=10.5
+CXX       := i686-apple-darwin9-g++-4.0.1 -m64 -mmacosx-version-min=10.5
 REAL_ARCH := amd64
 else ifeq (${ARCH},ppc)
-CC        := powerpc-apple-darwin9-gcc-4.0.1
-CXX       := powerpc-apple-darwin9-g++-4.0.1
+CC        := powerpc-apple-darwin9-gcc-4.0.1 -mmacosx-version-min=10.3
+CXX       := powerpc-apple-darwin9-g++-4.0.1 -mmacosx-version-min=10.3
 REAL_ARCH := ppc
 else ifeq (${ARCH},ppc64)
-CC        := powerpc-apple-darwin9-gcc-4.0.1 -m64
-CXX       := powerpc-apple-darwin9-g++-4.0.1 -m64
+CC        := powerpc-apple-darwin9-gcc-4.0.1 -m64 -mmacosx-version-min=10.4
+CXX       := powerpc-apple-darwin9-g++-4.0.1 -m64 -mmacosx-version-min=10.4
 REAL_ARCH := ppc64
 else
 REAL_ARCH := $(error Invalid architecture selection)
