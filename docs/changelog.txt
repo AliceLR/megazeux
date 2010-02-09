@@ -93,6 +93,10 @@ USERS
   to ROBOT_MAX_TR (512) characters. In the case of bottom messages this can
   be usefully exploited to ~200 characters.
 + Progress meter will be shown for world decrypt on console platforms.
++ Fix a bug where a malformatted BMP header would be written (length too
+  short, didn't include dummy channel in BMP palette). (Mr_Alert)
++ Optimize audio locking; do file I/O outside of critical sections to
+  decrease stalling, particularly on platforms with slow I/O. (Mr_Alert)
 
 DEVELOPERS
 
@@ -113,6 +117,8 @@ DEVELOPERS
   tool to eliminate data section differences in programs with identical
   texts. This minimizes the amount of content required to be sent for
   updates.
++ Updated Wii port: improved audio and video support, added USB mouse
+  support, numerous optimizations and improved file selector. (Mr_Alert)
 
 December 29, 2008 - MZX 2.82b
 

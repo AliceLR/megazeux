@@ -18,6 +18,7 @@
  */
 
 #include "event.h"
+#include "graphics.h"
 
 #include <stdlib.h>
 #include <stdio.h>
@@ -29,10 +30,22 @@
 #include <ogc/pad.h>
 #include <ogc/ipc.h>
 #include <ogc/video.h>
+#include <ogc/usbmouse.h>
+#include <wiikeyboard/keyboard.h>
 // Use of anonymous union in wiiuse header
 #pragma GCC diagnostic ignored "-pedantic"
 #include <wiiuse/wpad.h>
 #undef BOOL
+
+#define PTR_BORDER_W 128
+#define PTR_BORDER_H 70
+
+#define USB_MOUSE_BTN_LEFT   0x01
+#define USB_MOUSE_BTN_RIGHT  0x02
+#define USB_MOUSE_BTN_MIDDLE 0x04
+
+#define USB_MOUSE_BTN_MASK (USB_MOUSE_BTN_LEFT | USB_MOUSE_BTN_RIGHT | \
+ USB_MOUSE_BTN_MIDDLE)
 
 extern struct input_status input;
 
@@ -45,7 +58,11 @@ enum event_type
   EVENT_POINTER_MOVE,
   EVENT_POINTER_OUT,
   EVENT_KEY_DOWN,
-  EVENT_KEY_UP
+  EVENT_KEY_UP,
+  EVENT_KEY_LOCKS,
+  EVENT_MOUSE_MOVE,
+  EVENT_MOUSE_BUTTON_DOWN,
+  EVENT_MOUSE_BUTTON_UP
 };
 
 struct button_event
@@ -73,14 +90,34 @@ struct ext_event
 struct pointer_event
 {
   enum event_type type;
-  Uint32 x;
-  Uint32 y;
+  Sint32 x;
+  Sint32 y;
 };
 
 struct key_event
 {
   enum event_type type;
   Uint32 key;
+  Uint16 unicode;
+};
+
+struct locks_event
+{
+  enum event_type type;
+  Uint16 locks;
+};
+
+struct mouse_move_event
+{
+  enum event_type type;
+  Sint32 dx;
+  Sint32 dy;
+};
+
+struct mouse_button_event
+{
+  enum event_type type;
+  Uint32 button;
 };
 
 union event
@@ -91,17 +128,18 @@ union event
   struct ext_event ext;
   struct pointer_event pointer;
   struct key_event key;
+  struct locks_event locks;
+  struct mouse_move_event mmove;
+  struct mouse_button_event mbutton;
 };
 
 #define STACKSIZE 8192
 static u8 poll_stack[STACKSIZE];
 static lwp_t poll_thread;
 
-static u8 kbd_stack[STACKSIZE];
-static lwp_t kbd_thread;
-
 #define EVENT_QUEUE_SIZE 64
 static mqbox_t eq;
+static int eq_inited = 0;
 
 static int pointing = 0;
 static int ext_type[4] =
@@ -109,10 +147,6 @@ static int ext_type[4] =
   WPAD_EXP_NONE, WPAD_EXP_NONE,
   WPAD_EXP_NONE, WPAD_EXP_NONE
 };
-
-static s32 kbd_fd;
-static Uint8 kbd_buf[16] ATTRIBUTE_ALIGN(32);
-static char kbd_fs[] ATTRIBUTE_ALIGN(32) = "/dev/usb/kbd";
 
 static int write_eq(union event *ev)
 {
@@ -198,7 +232,7 @@ static void scan_joystick(Uint32 pad, Uint32 xaxis, joystick_t js, Sint16 axes[]
 
 static void poll_input(void)
 {
-  static Uint32 old_x = 1000, old_y = 1000;
+  static Sint32 old_x = 1000, old_y = 1000;
   static Uint32 old_point = 0;
   static Uint32 old_btns[4] = {0};
   static Sint16 old_axes[4][4] = {{0}};
@@ -209,9 +243,13 @@ static void poll_input(void)
   };
   static Uint32 old_gcbtns[4] = {0};
   static Sint8 old_gcaxes[4][4] = {{0}};
+  static Uint16 old_modifiers = 0;
+  static Uint8 old_mousebtns = 0;
 
   WPADData *wd;
   PADStatus pad[4];
+  keyboard_event ke;
+  mouse_event me;
   u32 type;
   union event ev;
   Uint32 i, j;
@@ -245,13 +283,26 @@ static void poll_input(void)
       }
       if(i == 0)
       {
-        if(wd->ir.valid && ((old_x != wd->ir.x) || (old_y != wd->ir.y)))
+        if(wd->ir.valid)
         {
-          ev.type = EVENT_POINTER_MOVE;
-          old_x = ev.pointer.x = (int)wd->ir.x;
-          old_y = ev.pointer.y = (int)wd->ir.y;
-          write_eq(&ev);
-          old_point = 1;
+          ev.pointer.x = wd->ir.x - PTR_BORDER_W;
+          ev.pointer.y = wd->ir.y - PTR_BORDER_H;
+          if (ev.pointer.x < 0)
+            ev.pointer.x = 0;
+          if (ev.pointer.y < 0)
+            ev.pointer.y = 0;
+          if (ev.pointer.x >= 640)
+            ev.pointer.x = 639;
+          if (ev.pointer.y >= 350)
+            ev.pointer.y = 349;
+          if ((ev.pointer.x != old_x) || (ev.pointer.y != old_y))
+          {
+            ev.type = EVENT_POINTER_MOVE;
+            write_eq(&ev);
+            old_point = 1;
+            old_x = ev.pointer.x;
+            old_y = ev.pointer.y;
+          }
         }
         else
         {
@@ -370,113 +421,70 @@ static void poll_input(void)
       }
     }
   }
-}
 
-static void *wii_kbd_thread(void *dud)
-{
-  static Uint8 old_mods = 0;
-  static Uint8 old_keys[6] = {0};
-
-  union event ev;
-  int i, j, chg;
-
-  delay(1000);
-
-  kbd_fd = IOS_Open(kbd_fs, IPC_OPEN_RW);
-
-  if(kbd_fd >= 0)
+  while(KEYBOARD_GetEvent(&ke))
   {
-    while(1)
+    ke.modifiers &= MOD_CAPSLOCK | MOD_NUMLOCK;
+    if(ke.modifiers != old_modifiers)
     {
-      if (IOS_Ioctl(kbd_fd, 0, NULL, 0, kbd_buf, 16) >= 0)
-      {
-        switch(kbd_buf[3])
-        {
-          case 0:
-          case 1:
-          {
-            ev.type = EVENT_KEY_UP;
-            for(i = 0; i < 6; i++)
-            {
-              if(old_keys[i] != 0)
-              {
-                ev.key.key = old_keys[i];
-                write_eq(&ev);
-                old_keys[i] = 0;
-              }
-            }
-            for(i = 0; i < 8; i++)
-            {
-              if(old_mods & (1 << i))
-              {
-                ev.key.key = 0xE0 + i;
-                write_eq(&ev);
-              }
-            }
-            old_mods = 0;
-            break;
-          }
-          case 2:
-          {
-            ev.type = EVENT_KEY_UP;
-            for(i = 0; i < 6; i++)
-            {
-              if(old_keys[i])
-              {
-                for(j = 10; j < 16; j++)
-                {
-                  if(old_keys[i] == kbd_buf[j])
-                    break;
-                }
-                if(j == 16)
-                {
-                  ev.key.key = old_keys[i];
-                  write_eq(&ev);
-                }
-              }
-            }
-            ev.type = EVENT_KEY_DOWN;
-            for(i = 10; i < 16; i++)
-            {
-              if(kbd_buf[i])
-              {
-                for(j = 0; j < 6; j++)
-                {
-                  if(kbd_buf[i] == old_keys[j])
-                    break;
-                }
-                if(j == 6)
-                {
-                  ev.key.key = kbd_buf[i];
-                  write_eq(&ev);
-                }
-              }
-            }
-            for(i = 0; i < 6; i++)
-              old_keys[i] = kbd_buf[i + 10];
-            chg = old_mods ^ kbd_buf[8];
-            for(i = 0; i < 8; i++)
-            {
-              if(chg & (1 << i))
-              {
-                if(old_mods & (1 << i))
-                  ev.type = EVENT_KEY_UP;
-                else
-                  ev.type = EVENT_KEY_DOWN;
-                ev.key.key = 0xE0 + i;
-                write_eq(&ev);
-              }
-            }
-            old_mods = kbd_buf[8];
-            break;
-          }
-          default: break;
-        }
-      }
+      ev.type = EVENT_KEY_LOCKS;
+      ev.locks.locks = ke.modifiers;
+      write_eq(&ev);
+      old_modifiers = ke.modifiers;
+    }
+    ev.key.key = ke.keycode;
+    // Non-character keys mapped to the private use area
+    if((ke.symbol >= 0xE000) && (ke.symbol < 0xF900))
+      ev.key.unicode = 0;
+    else
+      ev.key.unicode = ke.symbol;
+    switch(ke.type)
+    {
+      default:
+      case KEYBOARD_CONNECTED:
+      case KEYBOARD_DISCONNECTED:
+        break;
+      case KEYBOARD_PRESSED:
+        ev.type = EVENT_KEY_DOWN;
+        write_eq(&ev);
+        break;
+      case KEYBOARD_RELEASED:
+        ev.type = EVENT_KEY_UP;
+        write_eq(&ev);
+        break;
     }
   }
 
-  return 0;
+  ev.type = EVENT_MOUSE_MOVE;
+  ev.mmove.dx = ev.mmove.dy = 0;
+  while(MOUSE_GetEvent(&me))
+  {
+    ev.mmove.dx += me.rx;
+    ev.mmove.dy += me.ry;
+    me.button &= USB_MOUSE_BTN_MASK;
+    if(me.button != old_mousebtns)
+    {
+      if(ev.mmove.dx || ev.mmove.dy)
+        write_eq(&ev);
+      for(i = 1; i <= (me.button | old_mousebtns); i <<= 1)
+      {
+        if(i & (me.button ^ old_mousebtns))
+        {
+          if(i & me.button)
+            ev.type = EVENT_MOUSE_BUTTON_DOWN;
+          else
+            ev.type = EVENT_MOUSE_BUTTON_UP;
+          ev.mbutton.button = i;
+          write_eq(&ev);
+        }
+      }
+      old_mousebtns = me.button;
+      ev.type = EVENT_MOUSE_MOVE;
+      ev.mmove.dx = ev.mmove.dy = 0;
+    }
+  }
+  if(ev.mmove.dx || ev.mmove.dy)
+    write_eq(&ev);
 }
 
 static void *wii_poll_thread(void *dud)
@@ -484,9 +492,12 @@ static void *wii_poll_thread(void *dud)
   WPAD_Init();
   WPAD_SetDataFormat(WPAD_CHAN_ALL, WPAD_FMT_BTNS);
   WPAD_SetDataFormat(0, WPAD_FMT_BTNS_ACC_IR);
-  WPAD_SetVRes(0, 640, 350);
+  WPAD_SetVRes(0, 640 + PTR_BORDER_W * 2, 350 + PTR_BORDER_H * 2);
 
   PAD_Init();
+
+  KEYBOARD_Init(NULL);
+  MOUSE_Init();
 
   while(1)
   {
@@ -715,87 +726,6 @@ static enum keycode convert_USB_internal(Uint32 key)
   }
 }
 
-#define UNICODE_SHIFT(A, B) \
-  ((status->keymap[IKEY_LSHIFT] || status->keymap[IKEY_RSHIFT]) ? B : A)
-#define UNICODE_CAPS(A, B) \
-  (status->caps_status ? UNICODE_SHIFT(B, A) : UNICODE_SHIFT(A, B))
-#define UNICODE_NUM(A, B) \
-  (status->numlock_status ? B : A)
-
-// TODO: Support non-US keyboard layouts
-static Uint32 convert_internal_unicode(enum keycode key)
-{
-  struct buffered_status *status = store_status();
-
-  switch(key)
-  {
-    case IKEY_SPACE: return ' ';
-    case IKEY_QUOTE: return UNICODE_SHIFT('\'', '"');
-    case IKEY_COMMA: return UNICODE_SHIFT(',', '<');
-    case IKEY_MINUS: return UNICODE_SHIFT('-', '_');
-    case IKEY_PERIOD: return UNICODE_SHIFT('.', '>');
-    case IKEY_SLASH: return UNICODE_SHIFT('/', '?');
-    case IKEY_0: return UNICODE_SHIFT('0', ')');
-    case IKEY_1: return UNICODE_SHIFT('1', '!');
-    case IKEY_2: return UNICODE_SHIFT('2', '@');
-    case IKEY_3: return UNICODE_SHIFT('3', '#');
-    case IKEY_4: return UNICODE_SHIFT('4', '$');
-    case IKEY_5: return UNICODE_SHIFT('5', '%');
-    case IKEY_6: return UNICODE_SHIFT('6', '^');
-    case IKEY_7: return UNICODE_SHIFT('7', '&');
-    case IKEY_8: return UNICODE_SHIFT('8', '*');
-    case IKEY_9: return UNICODE_SHIFT('9', '(');
-    case IKEY_SEMICOLON: return UNICODE_SHIFT(';', ':');
-    case IKEY_EQUALS: return UNICODE_SHIFT('=', '+');
-    case IKEY_LEFTBRACKET: return UNICODE_SHIFT('[', '{');
-    case IKEY_BACKSLASH: return UNICODE_SHIFT('\\', '|');
-    case IKEY_RIGHTBRACKET: return UNICODE_SHIFT(']', '}');
-    case IKEY_BACKQUOTE: return UNICODE_SHIFT('`', '~');
-    case IKEY_a: return UNICODE_CAPS('a', 'A');
-    case IKEY_b: return UNICODE_CAPS('b', 'B');
-    case IKEY_c: return UNICODE_CAPS('c', 'C');
-    case IKEY_d: return UNICODE_CAPS('d', 'D');
-    case IKEY_e: return UNICODE_CAPS('e', 'E');
-    case IKEY_f: return UNICODE_CAPS('f', 'F');
-    case IKEY_g: return UNICODE_CAPS('g', 'G');
-    case IKEY_h: return UNICODE_CAPS('h', 'H');
-    case IKEY_i: return UNICODE_CAPS('i', 'I');
-    case IKEY_j: return UNICODE_CAPS('j', 'J');
-    case IKEY_k: return UNICODE_CAPS('k', 'K');
-    case IKEY_l: return UNICODE_CAPS('l', 'L');
-    case IKEY_m: return UNICODE_CAPS('m', 'M');
-    case IKEY_n: return UNICODE_CAPS('n', 'N');
-    case IKEY_o: return UNICODE_CAPS('o', 'O');
-    case IKEY_p: return UNICODE_CAPS('p', 'P');
-    case IKEY_q: return UNICODE_CAPS('q', 'Q');
-    case IKEY_r: return UNICODE_CAPS('r', 'R');
-    case IKEY_s: return UNICODE_CAPS('s', 'S');
-    case IKEY_t: return UNICODE_CAPS('t', 'T');
-    case IKEY_u: return UNICODE_CAPS('u', 'U');
-    case IKEY_v: return UNICODE_CAPS('v', 'V');
-    case IKEY_w: return UNICODE_CAPS('w', 'W');
-    case IKEY_x: return UNICODE_CAPS('x', 'X');
-    case IKEY_y: return UNICODE_CAPS('y', 'Y');
-    case IKEY_z: return UNICODE_CAPS('z', 'Z');
-    case IKEY_KP0: return UNICODE_NUM(0, '0');
-    case IKEY_KP1: return UNICODE_NUM(0, '1');
-    case IKEY_KP2: return UNICODE_NUM(0, '2');
-    case IKEY_KP3: return UNICODE_NUM(0, '3');
-    case IKEY_KP4: return UNICODE_NUM(0, '4');
-    case IKEY_KP5: return UNICODE_NUM(0, '5');
-    case IKEY_KP6: return UNICODE_NUM(0, '6');
-    case IKEY_KP7: return UNICODE_NUM(0, '7');
-    case IKEY_KP8: return UNICODE_NUM(0, '8');
-    case IKEY_KP9: return UNICODE_NUM(0, '9');
-    case IKEY_KP_PERIOD: return UNICODE_NUM(0, '.');
-    case IKEY_KP_DIVIDE: return '/';
-    case IKEY_KP_MULTIPLY: return '*';
-    case IKEY_KP_MINUS: return '-';
-    case IKEY_KP_PLUS: return '+';
-    default: return 0;
-  }
-}
-
 static bool process_event(union event *ev)
 {
   struct buffered_status *status = store_status();
@@ -989,13 +919,28 @@ static bool process_event(union event *ev)
       enum keycode ckey = convert_USB_internal(ev->key.key);
       if(!ckey)
       {
-        rval = false;
+        if(ev->key.unicode)
+          ckey = IKEY_UNICODE;
+        else
+        {
+          rval = false;
+          break;
+        }
+      }
+
+      if((ckey == IKEY_RETURN) &&
+       get_alt_status(keycode_internal) &&
+       get_ctrl_status(keycode_internal))
+      {
+        toggle_fullscreen();
         break;
       }
-      if(ckey == IKEY_NUMLOCK)
-        status->numlock_status = !status->numlock_status;
-      if(ckey == IKEY_CAPSLOCK)
-        status->caps_status = !status->caps_status;
+
+      if(ckey == IKEY_F12)
+      {
+        dump_screen();
+        break;
+      }
 
       if(status->key_repeat &&
        (status->key_repeat != IKEY_LSHIFT) &&
@@ -1019,7 +964,7 @@ static bool process_event(union event *ev)
       status->keymap[ckey] = 1;
       status->key_pressed = ckey;
       status->key = ckey;
-      status->unicode = convert_internal_unicode(ckey);
+      status->unicode = ev->key.unicode;
       status->key_repeat = ckey;
       status->unicode_repeat = status->unicode;
       status->keypress_time = get_ticks();
@@ -1031,8 +976,13 @@ static bool process_event(union event *ev)
       enum keycode ckey = convert_USB_internal(ev->key.key);
       if(!ckey)
       {
-        rval = false;
-        break;
+        if(status->keymap[IKEY_UNICODE])
+          ckey = IKEY_UNICODE;
+        else
+        {
+          rval = false;
+          break;
+        }
       }
 
       status->keymap[ckey] = 0;
@@ -1042,6 +992,89 @@ static bool process_event(union event *ev)
         status->unicode_repeat = 0;
       }
       status->key_release = ckey;
+      break;
+    }
+    case EVENT_KEY_LOCKS:
+    {
+      status->numlock_status = !!(ev->locks.locks & MOD_NUMLOCK);
+      status->caps_status = !!(ev->locks.locks & MOD_CAPSLOCK);
+      break;
+    }
+    case EVENT_MOUSE_MOVE:
+    {
+      int mx = status->real_mouse_x + ev->mmove.dx;
+      int my = status->real_mouse_y + ev->mmove.dy;
+
+      if(mx < 0)
+        mx = 0;
+      if(my < 0)
+        my = 0;
+      if(mx >= 640)
+        mx = 639;
+      if(my >= 350)
+        my = 349;
+
+      status->real_mouse_x = mx;
+      status->real_mouse_y = my;
+      status->mouse_x = mx / 8;
+      status->mouse_y = my / 14;
+      status->mouse_moved = true;
+      break;
+    }
+    case EVENT_MOUSE_BUTTON_DOWN:
+    {
+      Uint32 button = 0;
+      switch (ev->mbutton.button)
+      {
+        case USB_MOUSE_BTN_LEFT:
+          button = MOUSE_BUTTON_LEFT;
+          break;
+        case USB_MOUSE_BTN_RIGHT:
+          button = MOUSE_BUTTON_RIGHT;
+          break;
+        case USB_MOUSE_BTN_MIDDLE:
+          button = MOUSE_BUTTON_MIDDLE;
+          break;
+        default:
+          break;
+      }
+
+      if(!button)
+        break;
+
+      status->mouse_button = button;
+      status->mouse_repeat = button;
+      status->mouse_button_state |= MOUSE_BUTTON(button);
+      status->mouse_repeat_state = 1;
+      status->mouse_drag_state = -1;
+      status->mouse_time = get_ticks();
+      break;
+    }
+    case EVENT_MOUSE_BUTTON_UP:
+    {
+      Uint32 button = 0;
+      switch (ev->mbutton.button)
+      {
+        case USB_MOUSE_BTN_LEFT:
+          button = MOUSE_BUTTON_LEFT;
+          break;
+        case USB_MOUSE_BTN_RIGHT:
+          button = MOUSE_BUTTON_RIGHT;
+          break;
+        case USB_MOUSE_BTN_MIDDLE:
+          button = MOUSE_BUTTON_MIDDLE;
+          break;
+        default:
+          break;
+      }
+
+      if(!button)
+        break;
+
+      status->mouse_button_state &= ~MOUSE_BUTTON(button);
+      status->mouse_repeat = 0;
+      status->mouse_drag_state = 0;
+      status->mouse_repeat_state = 0;
       break;
     }
     default:
@@ -1059,6 +1092,9 @@ bool __update_event_status(void)
   bool rval = false;
   union event ev;
 
+  if(!eq_inited)
+    return false;
+
   while(read_eq(&ev))
     rval |= process_event(&ev);
 
@@ -1068,6 +1104,9 @@ bool __update_event_status(void)
 void __wait_event(void)
 {
   mqmsg_t ev;
+
+  if(!eq_inited)
+    return;
 
   if(MQ_Receive(eq, &ev, MQ_MSG_BLOCK))
   {
@@ -1084,7 +1123,7 @@ void real_warp_mouse(Uint32 x, Uint32 y)
 void initialize_joysticks(void)
 {
   MQ_Init(&eq, EVENT_QUEUE_SIZE);
+  eq_inited = 1;
   LWP_CreateThread(&poll_thread, wii_poll_thread, NULL, poll_stack, STACKSIZE,
    40);
-  LWP_CreateThread(&kbd_thread, wii_kbd_thread, NULL, kbd_stack, STACKSIZE, 20);
 }

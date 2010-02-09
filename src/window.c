@@ -48,6 +48,10 @@
 #include "world.h"
 #include "util.h"
 
+#ifdef CONFIG_WII
+#include <sys/iosupport.h>
+#endif
+
 // This context stuff was originally in helpsys, but it's actually
 // more of a property of the windowing system.
 
@@ -2322,6 +2326,31 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
         {
           dir_list[num_dirs] = cmalloc(3);
           sprintf(dir_list[num_dirs], "%c:", 'A' + i);
+
+          num_dirs++;
+
+          if(num_dirs == total_dirnames_allocated)
+          {
+            dir_list = crealloc(dir_list, sizeof(char *) *
+             total_dirnames_allocated * 2);
+            memset(dir_list + total_dirnames_allocated, 0,
+             sizeof(char *) * total_dirnames_allocated);
+            total_dirnames_allocated *= 2;
+          }
+        }
+      }
+    }
+#endif
+
+#ifdef CONFIG_WII
+    if(dirs_okay)
+    {
+      for(i = 0; i < STD_MAX; i++)
+      {
+        if(devoptab_list[i] && devoptab_list[i]->chdir_r)
+        {
+          dir_list[num_dirs] = cmalloc(strlen(devoptab_list[i]->name + 3));
+          sprintf(dir_list[num_dirs], "%s:/", devoptab_list[i]->name);
 
           num_dirs++;
 

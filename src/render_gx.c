@@ -27,6 +27,7 @@
 #include <malloc.h>
 #define BOOL _BOOL
 #include <ogc/system.h>
+#include <ogc/conf.h>
 #include <ogc/cache.h>
 #include <ogc/video.h>
 #include <ogc/gx.h>
@@ -37,8 +38,11 @@
 #define CHAR_TEX_SIZE (sizeof(u32) * 512 * 16 * 2)
 #define SMZX_TEX_OFFSET (512 * 16)
 
-#define TEX_OFF_X (0.5 / 256)
-#define TEX_OFF_Y (0.5 / 512)
+#define SCALE_TEX_SIZE (sizeof(u32) * 1024 * 512)
+#define SCALE_TEX_X0 (0.0 / 1024.0)
+#define SCALE_TEX_Y0 (1.0 / 512.0)
+#define SCALE_TEX_X1 (640.0 / 1024.0)
+#define SCALE_TEX_Y1 (351.0 / 512.0)
 
 // Must be multiple of 32 bytes
 struct ci4tlut
@@ -53,14 +57,18 @@ struct gx_render_data
   GXRModeObj *rmode;
   struct ci4tlut *smzxtlut;
   void *charimg;
+  void *scaleimg;
   GXTlutObj mzxtlutobj;
   GXTlutObj smzxtlutobj[512];
   GXTexObj chartex;
+  GXTexObj scaletex;
   GXColor palette[SMZX_PAL_SIZE];
   u16 tlutpal[SMZX_PAL_SIZE];
   int chrdirty;
   int paldirty;
   int curfb;
+  enum ratio_type ratio;
+  s16 sx0, sy0, sx1, sy1;
 };
 
 // IA8 TLUT for MZX/SMZX mode 1
@@ -232,6 +240,8 @@ static bool gx_init_video(struct graphics_data *graphics,
   u32 xfbHeight;
   Mtx identmtx;
   GXRModeObj *rmode;
+  Mtx44 projmtx;
+  u16 sw, sh;
   int i;
 
   graphics->resolution_width = 640;
@@ -241,6 +251,9 @@ static bool gx_init_video(struct graphics_data *graphics,
 
   render_data = cmalloc(sizeof(struct gx_render_data));
   graphics->render_data = render_data;
+  render_data->ratio = conf->video_ratio;
+
+  VIDEO_Init();
 
   rmode = render_data->rmode = VIDEO_GetPreferredMode(NULL);
   render_data->xfb[0] = MEM_K0_TO_K1(SYS_AllocateFramebuffer(rmode));
@@ -249,6 +262,8 @@ static bool gx_init_video(struct graphics_data *graphics,
 
   render_data->charimg = memalign(32, CHAR_TEX_SIZE);
   memset(render_data->charimg, 0, CHAR_TEX_SIZE);
+  render_data->scaleimg = memalign(32, SCALE_TEX_SIZE);
+  memset(render_data->scaleimg, 0, SCALE_TEX_SIZE);
   render_data->smzxtlut = memalign(32, sizeof(struct ci4tlut) * 512);
   memset(render_data->smzxtlut, 0, sizeof(struct ci4tlut) * 512);
 
@@ -258,6 +273,10 @@ static bool gx_init_video(struct graphics_data *graphics,
      GX_TL_RGB565, 16);
   GX_InitTexObjCI(&render_data->chartex, render_data->charimg, 256, 512,
    GX_TF_CI4, GX_REPEAT, GX_REPEAT, GX_FALSE, GX_TLUT0);
+  GX_InitTexObjLOD(&render_data->chartex, GX_NEAR, GX_NEAR, 0, 0, 0, GX_FALSE,
+   GX_TRUE, GX_ANISO_1);
+  GX_InitTexObj(&render_data->scaletex, render_data->scaleimg, 1024, 512,
+   GX_TF_RGBA8, GX_REPEAT, GX_REPEAT, GX_FALSE);
 
   VIDEO_Configure(rmode);
   VIDEO_SetNextFramebuffer(render_data->xfb[0]);
@@ -273,7 +292,9 @@ static bool gx_init_video(struct graphics_data *graphics,
 
   yscale = GX_GetYScaleFactor(rmode->efbHeight, rmode->xfbHeight);
   xfbHeight = GX_SetDispCopyYScale(yscale);
-  GX_SetScissor(0, 0, rmode->fbWidth, rmode->efbHeight);
+  sw = ((rmode->fbWidth > 640) ? rmode->fbWidth : 640);
+  sh = ((rmode->efbHeight > 352) ? rmode->efbHeight : 352);
+  GX_SetScissor(0, 0, sw, sh);
   GX_SetDispCopySrc(0, 0, rmode->fbWidth, rmode->efbHeight);
   GX_SetDispCopyDst(rmode->fbWidth, xfbHeight);
   GX_SetCopyFilter(rmode->aa, rmode->sample_pattern, GX_TRUE, rmode->vfilter);
@@ -285,12 +306,14 @@ static bool gx_init_video(struct graphics_data *graphics,
     GX_SetPixelFmt(GX_PF_RGB8_Z24, GX_ZC_LINEAR);
   GX_SetDispCopyGamma(GX_GM_1_0);
   GX_SetCopyClear(black, GX_MAX_Z24);
+  GX_SetTexCopySrc(0, 0, 640, 352);
+  GX_SetTexCopyDst(1024, 512, GX_TF_RGBA8, GX_FALSE);
 
   GX_ClearVtxDesc();
   GX_SetVtxDesc(GX_VA_POS, GX_DIRECT);
   GX_SetVtxDesc(GX_VA_TEX0, GX_DIRECT);
 
-  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_U16, 0);
+  GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_POS, GX_POS_XY, GX_S16, 0);
   GX_SetVtxAttrFmt(GX_VTXFMT0, GX_VA_TEX0, GX_TEX_ST, GX_F32, 0);
 
   GX_SetNumChans(1);
@@ -304,17 +327,19 @@ static bool gx_init_video(struct graphics_data *graphics,
   guMtxIdentity(identmtx);
   GX_LoadPosMtxImm(identmtx, GX_PNMTX0);
 
-  GX_SetViewport(0, 0, rmode->fbWidth, rmode->efbHeight, 0, 1);
+  GX_SetViewport(0, 0, sw, sh, 0, 1);
   GX_SetAlphaUpdate(GX_TRUE);
   GX_SetCullMode(GX_CULL_NONE);
 
   GX_CopyDisp(render_data->xfb[1], GX_TRUE);
   GX_CopyDisp(render_data->xfb[0], GX_FALSE);
   GX_Flush();
-  delay(500);
 
   render_data->chrdirty = 1;
   render_data->paldirty = 1;
+
+  guOrtho(projmtx, -1, sh - 1, 0, sw, -1.0, 1.0);
+  GX_LoadProjectionMtx(projmtx, GX_ORTHOGRAPHIC);
 
   return set_video_mode();
 }
@@ -335,19 +360,49 @@ static bool gx_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, bool fullscreen, bool resize)
 {
   struct gx_render_data *render_data = graphics->render_data;
-  float w, h, scale;
-  Mtx projmtx;
+  float x, y, w, h, scale, xscale, yscale;
+  int fh, fs, sw, sh, dw, dh;
 
   if(fullscreen)
     scale = 8.0 / 9.0;
   else
     scale = 8.0 / 10.0;
 
-  w = 640.0 * (int)render_data->rmode->viWidth / scale / 720.0;
-  h = 350.0 / scale;
-  guOrtho(projmtx, 175 - h / 2, 175 + h / 2, 320 - w / 2, 320 + w / 2,
-   -1.0, 1.0);
-  GX_LoadProjectionMtx(projmtx, GX_ORTHOGRAPHIC);
+  if(render_data->rmode->viTVMode == VI_TVMODE_PAL_INT)
+    fh = 574;
+  else
+    fh = 480;
+  fs = fh * 720;
+
+  if(CONF_GetAspectRatio() == CONF_ASPECT_16_9)
+  {
+    sw = fs * 16;
+    sh = fs * 9;
+  }
+  else
+  {
+    sw = fs * 4;
+    sh = fs * 3;
+  }
+
+  fix_viewport_ratio(sw, sh, &dw, &dh, render_data->ratio);
+
+  if(render_data->rmode->viWidth > render_data->rmode->fbWidth)
+    xscale = (float)render_data->rmode->fbWidth / render_data->rmode->viWidth;
+  else
+    xscale = 1.0;
+  yscale = (float)render_data->rmode->efbHeight / render_data->rmode->viHeight;
+
+  w = (float)dw * 720 / sw * scale;
+  h = (float)dh * fh / sh * scale;
+  x = (720 - w) / 2 - render_data->rmode->viXOrigin;
+  y = (fh - h) / 2 - render_data->rmode->viYOrigin;
+  w *= xscale; h *= yscale; x *= xscale; y *= yscale;
+
+  render_data->sx0 = x;
+  render_data->sy0 = y + 1;
+  render_data->sx1 = x + w;
+  render_data->sy1 = y + h + 1;
 
   return true;
 }
@@ -395,13 +450,12 @@ static void gx_draw_char(u32 *tex, Uint8 *chr)
   }
 }
 
-static void gx_remap_charsets(struct graphics_data *graphics)
+static void gx_draw_charsets(struct graphics_data *graphics)
 {
   struct gx_render_data *render_data = graphics->render_data;
   Uint8 *src = graphics->charset;
   u32 *dest = render_data->charimg;
   int i;
-  render_data->chrdirty = 1;
 
   for(i = 0; i < 512; i++)
   {
@@ -413,27 +467,23 @@ static void gx_remap_charsets(struct graphics_data *graphics)
   }
 }
 
+static void gx_remap_charsets(struct graphics_data *graphics)
+{
+  struct gx_render_data *render_data = graphics->render_data;
+  render_data->chrdirty = 1;
+}
+
 static void gx_remap_char(struct graphics_data *graphics, Uint16 chr)
 {
   struct gx_render_data *render_data = graphics->render_data;
-  u32 *tex = render_data->charimg;
-  int offset = (chr & 0x1F) * 8 + (chr >> 5) * 512;
   render_data->chrdirty = 1;
-  gx_draw_char(tex + offset, graphics->charset + (chr * 14));
 }
 
 static void gx_remap_charbyte(struct graphics_data *graphics,
  Uint16 chr, Uint8 byte)
 {
   struct gx_render_data *render_data = graphics->render_data;
-  u32 *tex = render_data->charimg;
-  int offset = (chr & 0x1F) * 8 + (chr >> 5) * 512 + byte;
-  if(byte > 7)
-    offset += 31 * 8;
   render_data->chrdirty = 1;
-  tex[offset] = mzxtexline[graphics->charset[chr * 14 + byte]];
-  tex[offset + SMZX_TEX_OFFSET] =
-   smzxtexline[graphics->charset[chr * 14 + byte]];
 }
 
 static void gx_render_graph(struct graphics_data *graphics)
@@ -446,6 +496,7 @@ static void gx_render_graph(struct graphics_data *graphics)
 
   if(render_data->chrdirty)
   {
+    gx_draw_charsets(graphics);
     DCFlushRange(render_data->charimg, CHAR_TEX_SIZE);
     GX_InvalidateTexAll();
   }
@@ -466,6 +517,7 @@ static void gx_render_graph(struct graphics_data *graphics)
   }
   else
   {
+    GX_SetTevOp(GX_TEVSTAGE0, GX_PASSCLR);
     GX_LoadTlut(&render_data->mzxtlutobj, GX_TLUT0);
     GX_LoadTexObj(&render_data->chartex, GX_TEXMAP0);
   }
@@ -482,13 +534,13 @@ static void gx_render_graph(struct graphics_data *graphics)
         {
           GX_SetChanMatColor(GX_COLOR0A0, pal[src->bg_color]);
           GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-            GX_Position2u16(x * 8, y * 14);
+            GX_Position2s16(x * 8, y * 14);
             GX_TexCoord2f32(0, 0);
-            GX_Position2u16(x * 8 + 8, y * 14);
+            GX_Position2s16(x * 8 + 8, y * 14);
             GX_TexCoord2f32(0, 0);
-            GX_Position2u16(x * 8 + 8, y * 14 + 14);
+            GX_Position2s16(x * 8 + 8, y * 14 + 14);
             GX_TexCoord2f32(0, 0);
-            GX_Position2u16(x * 8, y * 14 + 14);
+            GX_Position2s16(x * 8, y * 14 + 14);
             GX_TexCoord2f32(0, 0);
           GX_End();
           src++;
@@ -506,15 +558,14 @@ static void gx_render_graph(struct graphics_data *graphics)
           u = ((int)src->char_value & 0x1f) / 32.0;
           v = ((int)src->char_value >> 5) / 32.0;
           GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-            GX_Position2u16(x * 8, y * 14);
-            GX_TexCoord2f32(u + TEX_OFF_X, v + TEX_OFF_Y);
-            GX_Position2u16(x * 8 + 8, y * 14);
-            GX_TexCoord2f32(u + 1 / 32.0 - TEX_OFF_X, v + TEX_OFF_Y);
-            GX_Position2u16(x * 8 + 8, y * 14 + 14);
-            GX_TexCoord2f32(u + 1 / 32.0 - TEX_OFF_X,
-             v + 7 / 256.0 - TEX_OFF_Y);
-            GX_Position2u16(x * 8, y * 14 + 14);
-            GX_TexCoord2f32(u + TEX_OFF_X, v + 7 / 256.0 - TEX_OFF_Y);
+            GX_Position2s16(x * 8, y * 14);
+            GX_TexCoord2f32(u, v);
+            GX_Position2s16(x * 8 + 8, y * 14);
+            GX_TexCoord2f32(u + 1 / 32.0, v);
+            GX_Position2s16(x * 8 + 8, y * 14 + 14);
+            GX_TexCoord2f32(u + 1 / 32.0, v + 7 / 256.0);
+            GX_Position2s16(x * 8, y * 14 + 14);
+            GX_TexCoord2f32(u, v + 7 / 256.0);
           GX_End();
           src++;
         }
@@ -529,13 +580,13 @@ static void gx_render_graph(struct graphics_data *graphics)
         {
           GX_SetChanMatColor(GX_COLOR0A0, pal[(src->bg_color & 0xF) * 0x11]);
           GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-            GX_Position2u16(x * 8, y * 14);
+            GX_Position2s16(x * 8, y * 14);
             GX_TexCoord2f32(0, 0);
-            GX_Position2u16(x * 8 + 8, y * 14);
+            GX_Position2s16(x * 8 + 8, y * 14);
             GX_TexCoord2f32(0, 0);
-            GX_Position2u16(x * 8 + 8, y * 14 + 14);
+            GX_Position2s16(x * 8 + 8, y * 14 + 14);
             GX_TexCoord2f32(0, 0);
-            GX_Position2u16(x * 8, y * 14 + 14);
+            GX_Position2s16(x * 8, y * 14 + 14);
             GX_TexCoord2f32(0, 0);
           GX_End();
           src++;
@@ -553,15 +604,14 @@ static void gx_render_graph(struct graphics_data *graphics)
           u = ((int)src->char_value & 0x1f) / 32.0;
           v = ((int)src->char_value >> 5) / 32.0 + 0.5;
           GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-            GX_Position2u16(x * 8, y * 14);
-            GX_TexCoord2f32(u + TEX_OFF_X, v + TEX_OFF_Y);
-            GX_Position2u16(x * 8 + 8, y * 14);
-            GX_TexCoord2f32(u + 1 / 32.0 - TEX_OFF_X, v + TEX_OFF_Y);
-            GX_Position2u16(x * 8 + 8, y * 14 + 14);
-            GX_TexCoord2f32(u + 1 / 32.0 - TEX_OFF_X,
-             v + 7 / 256.0 - TEX_OFF_Y);
-            GX_Position2u16(x * 8, y * 14 + 14);
-            GX_TexCoord2f32(u + TEX_OFF_X, v + 7 / 256.0 - TEX_OFF_Y);
+            GX_Position2s16(x * 8, y * 14);
+            GX_TexCoord2f32(u, v);
+            GX_Position2s16(x * 8 + 8, y * 14);
+            GX_TexCoord2f32(u + 1 / 32.0, v);
+            GX_Position2s16(x * 8 + 8, y * 14 + 14);
+            GX_TexCoord2f32(u + 1 / 32.0, v + 7 / 256.0);
+            GX_Position2s16(x * 8, y * 14 + 14);
+            GX_TexCoord2f32(u, v + 7 / 256.0);
           GX_End();
           src++;
         }
@@ -597,15 +647,14 @@ static void gx_render_graph(struct graphics_data *graphics)
           u = ((int)src->char_value & 0x1f) / 32.0;
           v = ((int)src->char_value >> 5) / 32.0 + 0.5;
           GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-            GX_Position2u16(x * 8, y * 14);
-            GX_TexCoord2f32(u + TEX_OFF_X, v + TEX_OFF_Y);
-            GX_Position2u16(x * 8 + 8, y * 14);
-            GX_TexCoord2f32(u + 1 / 32.0 - TEX_OFF_X, v + TEX_OFF_Y);
-            GX_Position2u16(x * 8 + 8, y * 14 + 14);
-            GX_TexCoord2f32(u + 1 / 32.0 - TEX_OFF_X,
-             v + 7 / 256.0 - TEX_OFF_Y);
-            GX_Position2u16(x * 8, y * 14 + 14);
-            GX_TexCoord2f32(u + TEX_OFF_X, v + 7 / 256.0 - TEX_OFF_Y);
+            GX_Position2s16(x * 8, y * 14);
+            GX_TexCoord2f32(u, v);
+            GX_Position2s16(x * 8 + 8, y * 14);
+            GX_TexCoord2f32(u + 1 / 32.0, v);
+            GX_Position2s16(x * 8 + 8, y * 14 + 14);
+            GX_TexCoord2f32(u + 1 / 32.0, v + 7 / 256.0);
+            GX_Position2s16(x * 8, y * 14 + 14);
+            GX_TexCoord2f32(u, v + 7 / 256.0);
           GX_End();
           src++;
         }
@@ -642,15 +691,14 @@ static void gx_render_graph(struct graphics_data *graphics)
           u = ((int)src->char_value & 0x1f) / 32.0;
           v = ((int)src->char_value >> 5) / 32.0 + 0.5;
           GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-            GX_Position2u16(x * 8, y * 14);
-            GX_TexCoord2f32(u + TEX_OFF_X, v + TEX_OFF_Y);
-            GX_Position2u16(x * 8 + 8, y * 14);
-            GX_TexCoord2f32(u + 1 / 32.0 - TEX_OFF_X, v + TEX_OFF_Y);
-            GX_Position2u16(x * 8 + 8, y * 14 + 14);
-            GX_TexCoord2f32(u + 1 / 32.0 - TEX_OFF_X,
-             v + 7 / 256.0 - TEX_OFF_Y);
-            GX_Position2u16(x * 8, y * 14 + 14);
-            GX_TexCoord2f32(u + TEX_OFF_X, v + 7 / 256.0 - TEX_OFF_Y);
+            GX_Position2s16(x * 8, y * 14);
+            GX_TexCoord2f32(u, v);
+            GX_Position2s16(x * 8 + 8, y * 14);
+            GX_TexCoord2f32(u + 1 / 32.0, v);
+            GX_Position2s16(x * 8 + 8, y * 14 + 14);
+            GX_TexCoord2f32(u + 1 / 32.0, v + 7 / 256.0);
+            GX_Position2s16(x * 8, y * 14 + 14);
+            GX_TexCoord2f32(u, v + 7 / 256.0);
           GX_End();
           src++;
         }
@@ -670,13 +718,13 @@ static void gx_render_cursor(struct graphics_data *graphics,
 
   GX_SetChanMatColor(GX_COLOR0A0, pal[color]);
   GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-    GX_Position2u16(x * 8, y * 14 + offset);
+    GX_Position2s16(x * 8, y * 14 + offset);
     GX_TexCoord2f32(0, 0);
-    GX_Position2u16(x * 8 + 8, y * 14 + offset);
+    GX_Position2s16(x * 8 + 8, y * 14 + offset);
     GX_TexCoord2f32(0, 0);
-    GX_Position2u16(x * 8 + 8, y * 14 + offset + lines);
+    GX_Position2s16(x * 8 + 8, y * 14 + offset + lines);
     GX_TexCoord2f32(0, 0);
-    GX_Position2u16(x * 8, y * 14 + offset + lines);
+    GX_Position2s16(x * 8, y * 14 + offset + lines);
     GX_TexCoord2f32(0, 0);
   GX_End();
 }
@@ -690,13 +738,13 @@ static void gx_render_mouse(struct graphics_data *graphics,
 
   GX_SetChanMatColor(GX_COLOR0A0, white);
   GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
-    GX_Position2u16(x, y);
+    GX_Position2s16(x, y);
     GX_TexCoord2f32(0, 0);
-    GX_Position2u16(x + w, y);
+    GX_Position2s16(x + w, y);
     GX_TexCoord2f32(0, 0);
-    GX_Position2u16(x + w, y + h);
+    GX_Position2s16(x + w, y + h);
     GX_TexCoord2f32(0, 0);
-    GX_Position2u16(x, y + h);
+    GX_Position2s16(x, y + h);
     GX_TexCoord2f32(0, 0);
   GX_End();
 }
@@ -704,11 +752,35 @@ static void gx_render_mouse(struct graphics_data *graphics,
 static void gx_sync_screen(struct graphics_data *graphics)
 {
   struct gx_render_data *render_data = graphics->render_data;
-
+  static u8 tex_ptn[12][2] = {
+    {6, 6}, {6, 6}, {6, 6},
+    {6, 6}, {6, 6}, {6, 6},
+    {6, 6}, {6, 6}, {6, 6},
+    {6, 6}, {6, 6}, {6, 6},
+  };
+  static u8 tex_vf[7] = {0, 0, 21, 22, 21, 0, 0};
   render_data->curfb ^= 1;
+  GX_SetCopyFilter(GX_FALSE, tex_ptn, GX_FALSE, tex_vf);
+  GX_CopyTex(render_data->scaleimg, GX_TRUE);
+  GX_Flush();
+  GX_PixModeSync();
+  GX_SetTevOp(GX_TEVSTAGE0, GX_REPLACE);
+  GX_LoadTexObj(&render_data->scaletex, GX_TEXMAP0);
+  GX_Begin(GX_QUADS, GX_VTXFMT0, 4);
+    GX_Position2s16(render_data->sx0, render_data->sy0);
+    GX_TexCoord2f32(SCALE_TEX_X0, SCALE_TEX_Y0);
+    GX_Position2s16(render_data->sx1, render_data->sy0);
+    GX_TexCoord2f32(SCALE_TEX_X1, SCALE_TEX_Y0);
+    GX_Position2s16(render_data->sx1, render_data->sy1);
+    GX_TexCoord2f32(SCALE_TEX_X1, SCALE_TEX_Y1);
+    GX_Position2s16(render_data->sx0, render_data->sy1);
+    GX_TexCoord2f32(SCALE_TEX_X0, SCALE_TEX_Y1);
+  GX_End();
   GX_DrawDone();
   GX_SetZMode(GX_FALSE, GX_ALWAYS, GX_FALSE);
   GX_SetColorUpdate(GX_TRUE);
+  GX_SetCopyFilter(render_data->rmode->aa, render_data->rmode->sample_pattern,
+    GX_TRUE, render_data->rmode->vfilter);
   GX_CopyDisp(render_data->xfb[render_data->curfb], GX_TRUE);
   GX_Flush();
   VIDEO_SetNextFramebuffer(render_data->xfb[render_data->curfb]);
