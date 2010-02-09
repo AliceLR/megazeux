@@ -1,8 +1,9 @@
 BUILDING MEGAZEUX
 
 MegaZeux can currently be built for Microsoft Windows, Linux, MacOS X,
-OpenBSD, Solaris, HaikuOS, GP2X, PSP, NDS or Wii. On MacOS X, universal
-binaries can be created.
+OpenBSD, FreeBSD, OpenSolaris, HaikuOS, Android, GP2X, PSP, NDS or Wii.
+
+On MacOS X, universal binaries can be created.
 
 GCC and Microsoft compilers are supported.
 
@@ -16,7 +17,9 @@ The following instructions are generic for all platforms.
 DEPENDENCIES
 
 MegaZeux depends on only three libraries with the most basic configuration.
-These are the SDL, ogg and vorbis libraries.
+These are the SDL, ogg and vorbis libraries. Some of the ports (Wii, NDS,
+Android) do not require SDL. Some of the ports may substitute Ogg/Vorbis
+with Tremor.
 
 SDL:			http://www.libsdl.org/
 libogg/libvorbis:	http://xiph.org/downloads/
@@ -48,11 +51,10 @@ BUILDING MEGAZEUX
 Now, you need GNU GCC and GNU make to actually build. Type make and
 if you wish to install to ${PREFIX}/bin follow it with make install.
 
-The install target is only supported on Linux. package.sh can be
-used to build ZIPs containing binary builds of MegaZeux, and is the
-preferred means of distribution. This method is supported on all of
-the major desktop platforms (except Linux) and all of the embedded
-platforms.
+The install target is only supported on Linux. The "make build" and
+"make archive" targets can be used to build ZIPs containing binary
+builds of MegaZeux, and is the preferred means of distribution.
+This method is supported on all supported platforms.
 
 On Debian Linux, DEB files can be generated with a single command.
 See debian/README for more information.
