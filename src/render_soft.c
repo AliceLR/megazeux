@@ -172,19 +172,16 @@ static void soft_sync_screen(graphics_data *graphics)
 
 void render_soft_register(graphics_data *graphics)
 {
+  memset(graphics, 0, sizeof(graphics_data));
   graphics->init_video = soft_init_video;
   graphics->check_video_mode = soft_check_video_mode;
   graphics->set_video_mode = soft_set_video_mode;
   graphics->update_colors = soft_update_colors;
   graphics->resize_screen = resize_screen_standard;
-  graphics->remap_charsets = NULL;
-  graphics->remap_char = NULL;
-  graphics->remap_charbyte = NULL;
   graphics->get_screen_coords = get_screen_coords_centered;
   graphics->set_screen_coords = set_screen_coords_centered;
   graphics->render_graph = soft_render_graph;
   graphics->render_cursor = soft_render_cursor;
   graphics->render_mouse = soft_render_mouse;
   graphics->sync_screen = soft_sync_screen;
-  graphics->focus_pixel = NULL;
 }

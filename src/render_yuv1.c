@@ -75,19 +75,16 @@ static void yuv1_render_mouse(graphics_data *graphics, Uint32 x, Uint32 y,
 
 void render_yuv1_register(graphics_data *graphics)
 {
+  memset(graphics, 0, sizeof(graphics_data));
   graphics->init_video = yuv_init_video;
   graphics->check_video_mode = yuv_check_video_mode;
   graphics->set_video_mode = yuv1_set_video_mode;
   graphics->update_colors = yuv_update_colors;
   graphics->resize_screen = resize_screen_standard;
-  graphics->remap_charsets = NULL;
-  graphics->remap_char = NULL;
-  graphics->remap_charbyte = NULL;
   graphics->get_screen_coords = get_screen_coords_scaled;
   graphics->set_screen_coords = set_screen_coords_scaled;
   graphics->render_graph = yuv1_render_graph;
   graphics->render_cursor = yuv1_render_cursor;
   graphics->render_mouse = yuv1_render_mouse;
   graphics->sync_screen = yuv_sync_screen;
-  graphics->focus_pixel = NULL;
 }

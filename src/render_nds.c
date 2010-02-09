@@ -539,6 +539,7 @@ void nds_mainscreen_focus(graphics_data *graphics, Uint32 x, Uint32 y)
 
 void render_nds_register(graphics_data *graphics)
 {
+  memset(graphics, 0, sizeof(graphics_data));
   graphics->init_video = nds_init_video;
   graphics->check_video_mode = nds_check_video_mode;
   graphics->set_video_mode = nds_set_video_mode;
@@ -546,7 +547,6 @@ void render_nds_register(graphics_data *graphics)
   graphics->resize_screen = nds_resize_screen;
   graphics->remap_charsets = nds_remap_charsets;
   graphics->remap_char = nds_remap_char;
-  graphics->remap_charbyte = NULL;
   graphics->get_screen_coords = get_screen_coords_centered;
   graphics->set_screen_coords = set_screen_coords_centered;
   graphics->render_graph = nds_render_graph;

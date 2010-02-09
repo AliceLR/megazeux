@@ -265,19 +265,16 @@ static void gl1_sync_screen(graphics_data *graphics)
 
 void render_gl1_register(graphics_data *graphics)
 {
+  memset(graphics, 0, sizeof(graphics_data));
   graphics->init_video = gl1_init_video;
   graphics->check_video_mode = gl_check_video_mode;
   graphics->set_video_mode = gl1_set_video_mode;
   graphics->update_colors = gl1_update_colors;
   graphics->resize_screen = resize_screen_standard;
-  graphics->remap_charsets = NULL;
-  graphics->remap_char = NULL;
-  graphics->remap_charbyte = NULL;
   graphics->get_screen_coords = get_screen_coords_scaled;
   graphics->set_screen_coords = set_screen_coords_scaled;
   graphics->render_graph = gl1_render_graph;
   graphics->render_cursor = gl1_render_cursor;
   graphics->render_mouse = gl1_render_mouse;
   graphics->sync_screen = gl1_sync_screen;
-  graphics->focus_pixel = NULL;
 }

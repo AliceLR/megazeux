@@ -707,6 +707,7 @@ static void gx_sync_screen(graphics_data *graphics)
 
 void render_gx_register(graphics_data *graphics)
 {
+  memset(graphics, 0, sizeof(graphics_data));
   graphics->init_video = gx_init_video;
   graphics->check_video_mode = gx_check_video_mode;
   graphics->set_video_mode = gx_set_video_mode;
@@ -721,5 +722,4 @@ void render_gx_register(graphics_data *graphics)
   graphics->render_cursor = gx_render_cursor;
   graphics->render_mouse = gx_render_mouse;
   graphics->sync_screen = gx_sync_screen;
-  graphics->focus_pixel = NULL;
 }

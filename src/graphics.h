@@ -152,7 +152,7 @@ CORE_LIBSPEC void cursor_solid(void);
 CORE_LIBSPEC void cursor_off(void);
 CORE_LIBSPEC void move_cursor(Uint32 x, Uint32 y);
 
-CORE_LIBSPEC int init_video(config_info *conf);
+CORE_LIBSPEC bool init_video(config_info *conf);
 CORE_LIBSPEC void update_screen(void);
 
 CORE_LIBSPEC void ec_read_char(Uint8 chr, char *matrix);
@@ -198,7 +198,7 @@ Uint8 get_color_linear(Uint32 offset);
 
 void cursor_underline(void);
 
-int set_video_mode(void);
+bool set_video_mode(void);
 void toggle_fullscreen(void);
 void resize_screen(Uint32 w, Uint32 h);
 void set_screen(char_element *src);

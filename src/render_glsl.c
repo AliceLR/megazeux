@@ -709,6 +709,7 @@ static void glsl_sync_screen(graphics_data *graphics)
 
 void render_glsl_register(graphics_data *graphics)
 {
+  memset(graphics, 0, sizeof(graphics_data));
   graphics->init_video = glsl_init_video;
   graphics->check_video_mode = gl_check_video_mode;
   graphics->set_video_mode = glsl_set_video_mode;
@@ -723,5 +724,4 @@ void render_glsl_register(graphics_data *graphics)
   graphics->render_cursor = glsl_render_cursor;
   graphics->render_mouse = glsl_render_mouse;
   graphics->sync_screen = glsl_sync_screen;
-  graphics->focus_pixel = NULL;
 }

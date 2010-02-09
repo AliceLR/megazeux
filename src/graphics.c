@@ -801,7 +801,7 @@ static int set_graphics_output(const char *video_output)
   return true;
 }
 
-int init_video(config_info *conf)
+bool init_video(config_info *conf)
 {
   graphics.screen_mode = 0;
   graphics.fullscreen = conf->fullscreen;
@@ -880,7 +880,7 @@ int init_video(config_info *conf)
   return true;
 }
 
-int set_video_mode(void)
+bool set_video_mode(void)
 {
   int target_width, target_height;
   int target_depth = graphics.bits_per_pixel;
