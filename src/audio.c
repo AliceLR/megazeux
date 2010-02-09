@@ -1224,8 +1224,6 @@ int check_ext_for_gdm_and_convert(const char *filename, char *new_file)
     // GDM -> S3M
     memcpy(new_file + ext_pos, ".s3m", 4);
 
-    fprintf(stderr, "got here %s %s\n", filename, new_file);
-
     /* If the destination S3M already exists, check its size. If it's
      * non-zero in size, abort early.
      */
