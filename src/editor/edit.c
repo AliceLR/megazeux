@@ -38,7 +38,7 @@
 #include "../world.h"
 #include "../util.h"
 #include "../robot.h"
-#include "../debug.h"
+#include "debug.h"
 
 #include "block.h"
 #include "board.h"
@@ -3667,7 +3667,7 @@ static void __edit_world(struct world *mzx_world)
       {
         if(get_alt_status(keycode_internal))
         {
-          debug_mode ^= 1;
+          debug_mode = !debug_mode;
         }
         else
 
@@ -3753,8 +3753,7 @@ static void __edit_world(struct world *mzx_world)
 
   update_event_status();
 
-  // Turn off debug mode
-  debug_mode = 0;
+  debug_mode = false;
 
   clear_world(mzx_world);
   clear_global_data(mzx_world);
@@ -3769,6 +3768,8 @@ static void __edit_world(struct world *mzx_world)
 void editor_init(void)
 {
   edit_world = __edit_world;
+  draw_debug_box = __draw_debug_box;
+  debug_counters = __debug_counters;
   load_editor_charsets();
 }
 

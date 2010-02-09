@@ -33,6 +33,8 @@ __M_BEGIN_DECLS
 CORE_LIBSPEC int match_function_counter(const char *dest, const char *src);
 CORE_LIBSPEC void set_counter(struct world *mzx_world, const char *name,
  int value, int id);
+CORE_LIBSPEC void set_string(struct world *mzx_world, const char *name, 
+ struct string *src, int id);
 CORE_LIBSPEC void counter_fsg(void);
 
 void initialize_gateway_functions(struct world *mzx_world);
@@ -44,8 +46,6 @@ void div_counter(struct world *mzx_world, const char *name, int value, int id);
 void mod_counter(struct world *mzx_world, const char *name, int value, int id);
 
 int get_string(struct world *mzx_world, const char *name, struct string *dest,
- int id);
-void set_string(struct world *mzx_world, const char *name, struct string *src,
  int id);
 void inc_string(struct world *mzx_world, const char *name, struct string *src,
  int id);

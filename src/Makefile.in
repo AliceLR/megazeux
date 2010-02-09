@@ -68,10 +68,6 @@ core_cobjs := \
   ${core_obj}/sprite.o ${core_obj}/util.o ${core_obj}/window.o       \
   ${core_obj}/world.o
 
-ifeq (${BUILD_EDITOR},1)
-core_cobjs += ${core_obj}/debug.o
-endif
-
 #
 # Lists mandatory C++ language sources (mangled to object names) required
 # to build the main binary. Currently there are only optional sources.

@@ -52,7 +52,6 @@
 #include "fsafeopen.h"
 #include "extmem.h"
 #include "util.h"
-#include "debug.h"
 
 #define MESG_TIMEOUT 160
 
@@ -69,17 +68,11 @@ static const char main_menu_1[] =
  "F4/R - Restore game\n"
  "F5/P - Play world";
 
-#ifdef CONFIG_UPDATER
 static const char main_menu_2[] =
  "F7/U - Updater";
-void (*check_for_updates)(struct config_info *conf);
-#endif
 
-#ifdef CONFIG_EDITOR
 static const char main_menu_3[] =
  "F8/E - Editor";
-void (*edit_world)(struct world *mzx_world);
-#endif
 
 static const char main_menu_4[] =
  "F10  - Quickload\n"
@@ -104,6 +97,13 @@ static const char game_menu_3[] =
  "Space - Shoot (w/dir)\n"
  "Delete- Bomb";
 
+__updater_maybe_static void (*check_for_updates)(struct config_info *conf);
+
+__editor_maybe_static void (*edit_world)(struct world *mzx_world);
+__editor_maybe_static void (*debug_counters)(struct world *mzx_world);
+__editor_maybe_static void (*draw_debug_box)(struct world *mzx_world,
+ int x, int y, int d_x, int d_y);
+
 static const char *const save_ext[] = { ".SAV", NULL };
 static int update_music;
 
@@ -119,9 +119,7 @@ bool pal_update;
 
 __editor_maybe_static const char *const world_ext[] = { ".MZX", NULL };
 
-#ifdef CONFIG_EDITOR
-char debug_mode;
-#endif
+__editor_maybe_static bool debug_mode;
 
 static unsigned int intro_mesg_timer;
 
@@ -1406,14 +1404,12 @@ static int update(struct world *mzx_world, int game, int *fadein)
     else if(intro_mesg_timer > 0)
       draw_intro_mesg();
 
-#ifdef CONFIG_EDITOR
     // Add debug box
-    if(debug_mode)
+    if(draw_debug_box && debug_mode)
     {
       draw_debug_box(mzx_world, 60, 19, mzx_world->player_x,
        mzx_world->player_y);
     }
-#endif
 
     if(pal_update)
       update_palette();
@@ -1730,6 +1726,7 @@ __editor_maybe_static void play_game(struct world *mzx_world, int fadein)
     {
       int key_char = get_key(keycode_unicode);
       bool editing = true;
+
 #ifdef CONFIG_EDITOR
       if(edit_world)
         editing = mzx_world->editing;
@@ -1865,15 +1862,15 @@ __editor_maybe_static void play_game(struct world *mzx_world, int fadein)
           }
           break;
         }
-#ifdef CONFIG_EDITOR
+
         // Toggle debug mode
         case IKEY_F6:
         {
           if(edit_world && editing)
-            debug_mode ^= 1;
+            debug_mode = !debug_mode;
           break;
         }
-#endif
+
         // Cheat
         case IKEY_F7:
         {
@@ -2018,15 +2015,15 @@ __editor_maybe_static void play_game(struct world *mzx_world, int fadein)
           }
           break;
         }
-#ifdef CONFIG_EDITOR
+
         // Debug counter editor
         case IKEY_F11:
         {
-          if(editing)
+          if(debug_counters && editing)
             debug_counters(mzx_world);
           break;
         }
-#endif // CONFIG_EDITOR
+
         case IKEY_RETURN:
         {
           int enter_menu_status =
@@ -2041,10 +2038,8 @@ __editor_maybe_static void play_game(struct world *mzx_world, int fadein)
             draw_window_box(8, 4, 35, 18, 25, 16, 24, 1, 1);
             write_string(" Game Menu ", 17, 4, 30, 0);
             write_string(game_menu_1, 10, 5, 31, 1);
-#ifdef CONFIG_EDITOR
-            if(editing)
+            if(debug_counters && editing)
               write_string(game_menu_2, 10, 12, 31, 1);
-#endif
             write_string(game_menu_3, 10, 13, 31, 1);
 
             show_status(mzx_world); // Status screen too
@@ -2094,9 +2089,7 @@ void title_screen(struct world *mzx_world)
   struct board *src_board;
   char *current_dir;
 
-#ifdef CONFIG_EDITOR
-  debug_mode = 0;
-#endif
+  debug_mode = false;
 
   // Clear screen
   clear_screen(32, 7);
@@ -2109,11 +2102,9 @@ void title_screen(struct world *mzx_world)
   set_config_from_file(&(mzx_world->conf), "title.cnf");
   chdir(current_dir);
 
-#ifdef CONFIG_EDITOR
   if(edit_world && mzx_world->conf.startup_editor)
     edit_world(mzx_world);
   else
-#endif
   {
     if(!stat(curr_file, &file_info))
       load_world_file(mzx_world, curr_file);
@@ -2380,7 +2371,7 @@ void title_screen(struct world *mzx_world)
           }
           break;
         }
-#ifdef CONFIG_UPDATER
+
         case IKEY_F7:
         case IKEY_u:
         {
@@ -2388,8 +2379,7 @@ void title_screen(struct world *mzx_world)
             check_for_updates(&mzx_world->conf);
           break;
         }
-#endif
-#ifdef CONFIG_EDITOR
+
         case IKEY_F8:
         case IKEY_e:
         {
@@ -2488,7 +2478,7 @@ void title_screen(struct world *mzx_world)
 
           break;
         }
-#endif
+
         case IKEY_RETURN: // Enter
         {
           int key;
@@ -2497,14 +2487,10 @@ void title_screen(struct world *mzx_world)
           draw_window_box(28, 4, 51, 16, 25, 16, 24, 1, 1);
           write_string(" Main Menu ", 35, 4, 30, 0);
           write_string(main_menu_1, 30, 5, 31, 1);
-#ifdef CONFIG_UPDATER
           if(check_for_updates)
             write_string(main_menu_2, 30, 12, 31, 1);
-#endif
-#ifdef CONFIG_EDITOR
           if(edit_world)
             write_string(main_menu_3, 30, 13, 31, 1);
-#endif
           write_string(main_menu_4, 30, 14, 31, 1);
           update_screen();
           m_show();
