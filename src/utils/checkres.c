@@ -41,6 +41,9 @@
 // "You may now have up to 250 boards." -- port.txt
 #define MAX_BOARDS 250
 
+// From sfx.h
+#define NUM_SFX 50
+
 #define WORLD_PROTECTED_OFFSET      BOARD_NAME_SIZE
 #define WORLD_GLOBAL_OFFSET_OFFSET  4230
 
@@ -459,11 +462,43 @@ static const char *decode_status(enum status status)
   }
 }
 
+static enum status parse_sfx(char *sfx_buf)
+{
+  char *start, *end = sfx_buf - 1, str_buf_len;
+  enum status ret = SUCCESS;
+
+  str_buf_len = strlen(sfx_buf);
+
+  while(true)
+  {
+    // no starting & was found
+    start = strchr(end + 1, '&');
+    if(!start || start - sfx_buf + 1 > str_buf_len)
+      break;
+
+    // no ending & was found
+    end = strchr(start + 1, '&');
+    if(!end || end - sfx_buf + 1 > str_buf_len)
+      break;
+
+    // Wipe out the &s to get a token
+    *start = 0;
+    *end = 0;
+
+    debug("SFX (class): %s\n", start + 1);
+    ret = add_to_hash_table(start + 1);
+    if(ret != SUCCESS)
+      break;
+  }
+
+  return ret;
+}
+
 static enum status parse_robot(struct stream *s)
 {
-  char tmp[256], tmp2[256], *str;
   unsigned short robot_size;
   enum status ret = SUCCESS;
+  char tmp[256], tmp2[256];
   long start;
   int i;
 
@@ -578,24 +613,9 @@ static enum status parse_robot(struct stream *s)
         if(sread(tmp, 1, str_len, s) != (size_t)str_len)
           return FREAD_FAILED;
 
-        str = strtok(tmp, "&");
-
-        // no & enclosed tokens were found
-        if(strlen(str) == strlen(tmp))
-          break;
-
-        while(str)
-        {
-          debug("PLAY (class): %s\n", str);
-          ret = add_to_hash_table(str);
-          if(ret != SUCCESS)
-            return ret;
-
-          // tokenise twice, because we only care about
-          // every _other '&'; e.g. &sam.sam&ff&sam2.sam&ee
-          str = strtok(NULL, "&");
-          str = strtok(NULL, "&");
-        }
+        ret = parse_sfx(tmp);
+        if(ret != SUCCESS)
+          return ret;
         break;
 
       case 0xc8:
@@ -806,13 +826,38 @@ static enum status parse_world(struct stream *s)
   // num_boards doubles as the check for custom sfx, if zero
   num_boards = sgetc(s);
 
-  // if we have sfx, they must be skipped
+  // if we have custom sfx, check them for resources
   if(num_boards == 0)
   {
-    unsigned short sfx_len = sgetus(s);
+    unsigned short sfx_len_total = sgetus(s);
 
-    if(sseek(s, sfx_len, SEEK_CUR) != 0)
-      return FSEEK_FAILED;
+    for(i = 0; i < NUM_SFX; i++)
+    {
+      unsigned short sfx_len;
+      char sfx_buf[70];
+
+      sfx_len = sgetc(s);
+      if(sfx_len > 69)
+        return CORRUPT_WORLD;
+
+      if(sfx_len > 0)
+      {
+        if(sread(sfx_buf, 1, sfx_len, s) != (size_t)sfx_len)
+          return FREAD_FAILED;
+        sfx_buf[sfx_len] = 0;
+
+        ret = parse_sfx(sfx_buf);
+        if(ret != SUCCESS)
+          return ret;
+      }
+
+      // 1 for length byte + sfx string
+      sfx_len_total -= 1 + sfx_len;
+    }
+
+    // better check we moved by whole amount
+    if(sfx_len_total != 0)
+      return CORRUPT_WORLD;
 
     // read the "real" num_boards
     num_boards = sgetc(s);

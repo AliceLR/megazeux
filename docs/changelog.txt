@@ -49,8 +49,8 @@ USERS
   the display of signs or scrolls. This has been broken since 2.80g.
 + Re-work board editor's Alt+H option to provide minimal editor (one row)
   status info, rather than completely hiding the help.
-+ The checkres utility now checks the global robot for missing resources
-  too.
++ The checkres utility now checks the global robot and custom sfx tables
+  for missing resources.
 + Chests can be added with Hi Bombs (omission noted by zzo38).
 + Fix IF c?? Sprite p?? # # "label" so that a non-wildcard parameter is
   respected (previously it would always just check sprite 0).
