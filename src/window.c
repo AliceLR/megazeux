@@ -3053,7 +3053,7 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
               di->done = 1;
               di->return_value = 5;
 
-	      free(new_name);
+              free(new_name);
               return 0;
             }
 
@@ -3076,7 +3076,7 @@ static int file_dialog_function(World *mzx_world, dialog *di, int key)
         if(current_element_num == FILESEL_FILE_LIST)
         {
           strncpy(dest->result, file_name + 56, dest->max_length - 1);
-           dest->result[dest->max_length - 1] = '\0';
+          dest->result[dest->max_length - 1] = '\0';
           e->draw_function(mzx_world, di, e, DI_NONACTIVE, 0);
         }
       }
@@ -3446,14 +3446,14 @@ __editor_maybe_static int file_manager(World *mzx_world,
         int stat_result;
         char *path;
 
-	path = malloc(MAX_PATH);
+        path = malloc(MAX_PATH);
         get_path(ret, path, MAX_PATH);
         stat_result = stat(ret, &file_info);
 
         if((stat_result >= 0) && S_ISDIR(file_info.st_mode))
         {
           chdir(ret);
-	  free(path);
+          free(path);
           break;
         }
 
@@ -3494,7 +3494,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
           ret[0] = 0;
         }
 
-	free(path);
+        free(path);
         break;
       }
 
@@ -3511,7 +3511,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
         char *new_name;
         dialog b_di;
 
-	new_name = malloc(MAX_PATH);
+        new_name = malloc(MAX_PATH);
 
         b_elements[0] = construct_input_box(2, 2,
          "New directory name: ", 32, 0, new_name);
@@ -3542,7 +3542,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
           }
         }
 
-	free(new_name);
+        free(new_name);
         break;
       }
 
@@ -3555,7 +3555,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
 
           confirm_string = malloc(MAX_PATH);
           snprintf(confirm_string, MAX_PATH,
-	   "Delete %s - are you sure?", ret);
+           "Delete %s - are you sure?", ret);
 
           if(!confirm(mzx_world, confirm_string))
             unlink(ret);
