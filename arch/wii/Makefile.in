@@ -31,10 +31,8 @@ VORBIS_CFLAGS  = -Iarch/wii/libvorbis/include -Iarch/wii/libogg/include
 VORBIS_LDFLAGS = -Larch/wii/libvorbis/lib -Larch/wii/libogg/lib \
                  -lvorbisfile -lvorbis -logg
 
-EXTRA_INCLUDES = -Iarch/wii/libfat/include \
-                 -I$(DEVKITPRO)/libogc/include
-EXTRA_LIBS     = -Larch/wii/libfat/lib/wii -lfat \
-                 -L$(DEVKITPRO)/libogc/lib/wii -lwiiuse -lbte -logc \
+EXTRA_INCLUDES = -I$(DEVKITPRO)/libogc/include
+EXTRA_LIBS     = -L$(DEVKITPRO)/libogc/lib/wii -lfat -lwiiuse -lbte -logc \
                  -lstdc++ -lm
 
 MACHDEP = -DGEKKO -mrvl -mcpu=750 -meabi -mhard-float
