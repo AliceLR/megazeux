@@ -1,0 +1,15 @@
+MEGAZEUX ON UNIX / UNIX CLONES
+
+MegaZeux has been tested as compiling on the following UNIX / UNIX clones:
+
+ - Linux (x86 / AMD64 / PPC / PPC64 are tested)
+ - BSD (FreeBSD and OpenBSD are tested)
+ - Solaris (OpenSolaris 2008.3 is tested)
+ - HaikuOS (based on BeOS 5)
+
+Some of these platforms may have additional dependencies or installation
+instructions, which will be added to this document over time.
+
+MEGAZEUX ON OPENSOLARIS
+
+The package `SUNWxorg-headers' must be installed for X11 clipboard support.
