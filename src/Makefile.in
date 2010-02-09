@@ -202,9 +202,13 @@ else
 	  -o ${mzx} ${LDFLAGS} ${core_ldflags}
 endif
 
+${mzx}.debug: ${mzx}
+
+mzx_clean: editor_clean
+
 else
 
-${mzx}:
+${mzx}.debug:
 	@echo "--> Building of editor disabled."
 
 endif
@@ -227,11 +231,9 @@ else
 	  -o ${mzxrun} ${LDFLAGS} ${core_ldflags}
 endif
 
-${mzx}.debug: ${mzx}
 ${mzxrun}.debug : ${mzxrun}
 
-mzx_clean: core_target_clean editor_clean
-mzx_clean: gdm2s3m_clean icons_clean libmodplug_clean
+mzx_clean: core_target_clean gdm2s3m_clean icons_clean libmodplug_clean
 	$(if ${V},,@echo "  RM      " ${core_obj})
 	${RM} -r ${core_obj}
 	$(if ${V},,@echo "  RM      " ${mzxrun} ${mzxrun}.debug)
