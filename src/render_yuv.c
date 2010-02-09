@@ -26,7 +26,7 @@
 #include "render_yuv.h"
 
 bool yuv_set_video_mode_size(struct graphics_data *graphics,
- int width, int height, int depth, int fullscreen, int resize,
+ int width, int height, int depth, bool fullscreen, bool resize,
  int yuv_width, int yuv_height)
 {
   struct yuv_render_data *render_data = graphics->render_data;
@@ -86,7 +86,7 @@ void yuv_free_video(struct graphics_data *graphics)
 }
 
 bool yuv_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, int fullscreen, int resize)
+ int width, int height, int depth, bool fullscreen, bool resize)
 {
   // requires 32bit colour
   return SDL_VideoModeOK(width, height, 32,

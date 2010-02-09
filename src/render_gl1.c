@@ -23,30 +23,36 @@
 #include <string.h>
 
 #include "platform.h"
-#include "graphics.h"
-#include "render.h"
-#include "render_sdl.h"
 #include "render_gl.h"
+#include "render.h"
 #include "renderers.h"
 #include "util.h"
+
+#ifdef CONFIG_SDL
+#include "render_sdl.h"
+#endif
+
+#ifdef CONFIG_EGL
+#include "render_egl.h"
+#endif
 
 struct gl1_syms
 {
   int syms_loaded;
-  void (APIENTRY *glBegin)(GLenum mode);
-  void (APIENTRY *glBindTexture)(GLenum target, GLuint texture);
-  void (APIENTRY *glClear)(GLbitfield mask);
-  void (APIENTRY *glEnable)(GLenum cap);
-  void (APIENTRY *glEnd)(void);
-  void (APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
-  const GLubyte* (APIENTRY *glGetString)(GLenum name);
-  void (APIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
-  void (APIENTRY *glTexImage2D)(GLenum target, GLint level,
+  void (GLAPIENTRY *glBegin)(GLenum mode);
+  void (GLAPIENTRY *glBindTexture)(GLenum target, GLuint texture);
+  void (GLAPIENTRY *glClear)(GLbitfield mask);
+  void (GLAPIENTRY *glEnable)(GLenum cap);
+  void (GLAPIENTRY *glEnd)(void);
+  void (GLAPIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
+  const GLubyte* (GLAPIENTRY *glGetString)(GLenum name);
+  void (GLAPIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
+  void (GLAPIENTRY *glTexImage2D)(GLenum target, GLint level,
    GLint internalformat,GLsizei width, GLsizei height, GLint border,
    GLenum format, GLenum type, const GLvoid *pixels);
-  void (APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
-  void (APIENTRY *glVertex3f)(GLfloat x, GLfloat y, GLfloat z);
-  void (APIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
+  void (GLAPIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
+  void (GLAPIENTRY *glVertex3f)(GLfloat x, GLfloat y, GLfloat z);
+  void (GLAPIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 };
 
 struct gl1_render_data
@@ -162,7 +168,7 @@ err_out:
 }
 
 static bool gl1_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, int fullscreen, int resize)
+ int width, int height, int depth, bool fullscreen, bool resize)
 {
   struct gl1_render_data *render_data = graphics->render_data;
   struct gl1_syms *gl = &render_data->gl;
@@ -172,8 +178,7 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
 
   gl_set_attributes(graphics);
 
-  if(!SDL_SetVideoMode(width, height, depth,
-   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, resize))))
+  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
 
   if(!gl1_load_syms(gl))
@@ -279,7 +284,7 @@ static void gl1_sync_screen(struct graphics_data *graphics)
     gl->glVertex3f(1.0, -1.0, 0.0);
   gl->glEnd();
 
-  SDL_GL_SwapBuffers();
+  gl_swap_buffers(graphics);
 }
 
 void render_gl1_register(struct renderer *renderer)

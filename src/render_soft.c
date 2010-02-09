@@ -53,14 +53,14 @@ static bool soft_init_video(struct graphics_data *graphics,
 }
 
 static bool soft_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, int fullscreen, int resize)
+ int width, int height, int depth, bool fullscreen, bool resize)
 {
   return SDL_VideoModeOK(width, height, depth,
    sdl_flags(depth, fullscreen, resize));
 }
 
 static bool soft_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, int fullscreen, int resize)
+ int width, int height, int depth, bool fullscreen, bool resize)
 {
   graphics->render_data = SDL_SetVideoMode(width, height, depth,
    sdl_flags(depth, fullscreen, resize));

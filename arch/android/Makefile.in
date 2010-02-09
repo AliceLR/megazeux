@@ -14,12 +14,13 @@ OBJCOPY = ${CROSS_COMPILE}objcopy
 STRIP   = ${CROSS_COMPILE}strip --strip-unneeded
 
 ARCH_CFLAGS = \
-  -march=armv5te \
+  -march=armv5te -DANDROID \
   -I${PREFIX}/bionic/libc/include \
   -I${PREFIX}/bionic/libc/arch-arm/include \
   -I${PREFIX}/bionic/libc/kernel/common \
   -I${PREFIX}/bionic/libc/kernel/arch-arm \
-  -I${PREFIX}/bionic/libm/include
+  -I${PREFIX}/bionic/libm/include \
+  -I${PREFIX}/frameworks/base/opengl/include
 
 ARCH_CXXFLAGS = \
   ${ARCH_CFLAGS} -I${PREFIX}/bionic/libstdc++/include

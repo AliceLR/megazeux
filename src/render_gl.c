@@ -19,21 +19,20 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "graphics.h"
-#include "render.h"
-#include "render_sdl.h"
 #include "render_gl.h"
+#include "render.h"
 #include "util.h"
 
-bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
- int depth, int fullscreen, int resize)
-{
-  return SDL_VideoModeOK(width, height, depth,
-   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, resize)));
-}
+#ifdef CONFIG_SDL
+#include "render_sdl.h"
+#endif
+
+#ifdef CONFIG_EGL
+#include "render_egl.h"
+#endif
 
 void gl_set_filter_method(const char *method,
- void (APIENTRY *glTexParameteri_p)(GLenum target, GLenum pname, GLint param))
+ void (GLAPIENTRY *glTexParameteri_p)(GLenum target, GLenum pname, GLint param))
 {
   GLint gl_filter_method = GL_LINEAR;
 
@@ -42,16 +41,6 @@ void gl_set_filter_method(const char *method,
 
   glTexParameteri_p(GL_TEXTURE_2D, GL_TEXTURE_MIN_FILTER, gl_filter_method);
   glTexParameteri_p(GL_TEXTURE_2D, GL_TEXTURE_MAG_FILTER, gl_filter_method);
-}
-
-void gl_set_attributes(struct graphics_data *graphics)
-{
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-  if(graphics->gl_vsync == 0)
-    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 0);
-  else if(graphics->gl_vsync >= 1)
-    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
 }
 
 void get_context_width_height(struct graphics_data *graphics,

@@ -48,12 +48,12 @@ struct yuv_render_data
 };
 
 bool yuv_set_video_mode_size(struct graphics_data *graphics,
- int width, int height, int depth, int fullscreen, int resize,
+ int width, int height, int depth, bool fullscreen, bool resize,
  int yuv_width, int yuv_height);
 bool yuv_init_video(struct graphics_data *graphics, struct config_info *conf);
 void yuv_free_video(struct graphics_data *graphics);
 bool yuv_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, int fullscreen, int resize);
+ int width, int height, int depth, bool fullscreen, bool resize);
 void yuv_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, Uint32 count);
 void yuv_sync_screen (struct graphics_data *graphics);

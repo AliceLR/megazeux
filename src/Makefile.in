@@ -104,6 +104,9 @@ endif
 ifeq (${BUILD_RENDER_GL},1)
 core_cobjs += ${core_obj}/render_gl.o
 core_cobjs += ${core_obj}/render_gl1.o ${core_obj}/render_gl2.o
+ifeq (${BUILD_EGL},1)
+core_cobjs += ${core_obj}/render_egl.o
+endif
 endif
 
 ifeq (${BUILD_RENDER_GLSL},1)
@@ -190,6 +193,10 @@ core_cobjs += ${core_obj}/platform_dummy.o
 #
 ifeq (${PTHREAD},1)
 core_ldflags := ${PTHREAD_LDFLAGS} ${core_ldflags}
+endif
+
+ifeq (${BUILD_EGL},1)
+core_ldflags := -lEGL ${core_ldflags}
 endif
 
 endif

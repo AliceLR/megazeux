@@ -332,7 +332,7 @@ static bool gx_check_video_mode(struct graphics_data *graphics,
 }
 
 static bool gx_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, int fullscreen, int resize)
+ int width, int height, int depth, bool fullscreen, bool resize)
 {
   struct gx_render_data *render_data = graphics->render_data;
   float w, h, scale;

@@ -22,57 +22,63 @@
 #include <string.h>
 
 #include "platform.h"
-#include "graphics.h"
-#include "render.h"
-#include "render_sdl.h"
 #include "render_gl.h"
+#include "render.h"
 #include "renderers.h"
 #include "util.h"
 #include "data.h"
 
+#ifdef CONFIG_SDL
+#include "render_sdl.h"
+#endif
+
+#ifdef CONFIG_EGL
+#include "render_egl.h"
+#endif
+
 struct glsl_syms
 {
   int syms_loaded;
-  void (APIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
-  void (APIENTRY *glBegin)(GLenum mode);
-  void (APIENTRY *glBindTexture)(GLenum target, GLuint texture);
-  void (APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
-  void (APIENTRY *glClear)(GLbitfield mask);
-  void (APIENTRY *glColor3ubv)(const GLubyte *v);
-  void (APIENTRY *glColor4f)(GLfloat red, GLfloat green, GLfloat blue,
+  void (GLAPIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
+  void (GLAPIENTRY *glBegin)(GLenum mode);
+  void (GLAPIENTRY *glBindTexture)(GLenum target, GLuint texture);
+  void (GLAPIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
+  void (GLAPIENTRY *glClear)(GLbitfield mask);
+  void (GLAPIENTRY *glColor3ubv)(const GLubyte *v);
+  void (GLAPIENTRY *glColor4f)(GLfloat red, GLfloat green, GLfloat blue,
    GLfloat alpha);
-  void (APIENTRY *glColor4ub)(GLubyte red, GLubyte green, GLubyte blue,
+  void (GLAPIENTRY *glColor4ub)(GLubyte red, GLubyte green, GLubyte blue,
    GLubyte alpha);
-  void (APIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
+  void (GLAPIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
    GLenum internalFormat, GLint x, GLint y, GLsizei width, GLsizei height,
    GLint border);
-  void (APIENTRY *glDisable)(GLenum cap);
-  void (APIENTRY *glEnable)(GLenum cap);
-  void (APIENTRY *glEnd)(void);
-  void (APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
-  const GLubyte* (APIENTRY *glGetString)(GLenum name);
-  void (APIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
-  void (APIENTRY *glTexImage2D)(GLenum target, GLint level,
+  void (GLAPIENTRY *glDisable)(GLenum cap);
+  void (GLAPIENTRY *glEnable)(GLenum cap);
+  void (GLAPIENTRY *glEnd)(void);
+  void (GLAPIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
+  const GLubyte* (GLAPIENTRY *glGetString)(GLenum name);
+  void (GLAPIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
+  void (GLAPIENTRY *glTexImage2D)(GLenum target, GLint level,
    GLint internalformat, GLsizei width, GLsizei height, GLint border,
    GLenum format, GLenum type, const GLvoid *pixels);
-  void (APIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
-  void (APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
-  void (APIENTRY *glTexSubImage2D)(GLenum target, GLint level, GLint xoffset,
+  void (GLAPIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
+  void (GLAPIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
+  void (GLAPIENTRY *glTexSubImage2D)(GLenum target, GLint level, GLint xoffset,
    GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type,
    const GLvoid *pixels);
-  void (APIENTRY *glVertex2f)(GLfloat x, GLfloat y);
-  void (APIENTRY *glVertex2i)(GLint x, GLint y);
-  void (APIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
+  void (GLAPIENTRY *glVertex2f)(GLfloat x, GLfloat y);
+  void (GLAPIENTRY *glVertex2i)(GLint x, GLint y);
+  void (GLAPIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 
-  GLenum (APIENTRY *glCreateProgramObjectARB)(void);
-  GLenum (APIENTRY *glCreateShaderObjectARB)(GLenum shaderType);
-  void (APIENTRY *glShaderSourceARB)(GLhandleARB shader, GLuint number_strings,
+  GLenum (GLAPIENTRY *glCreateProgramObjectARB)(void);
+  GLenum (GLAPIENTRY *glCreateShaderObjectARB)(GLenum shaderType);
+  void (GLAPIENTRY *glShaderSourceARB)(GLhandleARB shader, GLuint number_strings,
    const GLcharARB** strings, GLint * length);
-  void (APIENTRY *glCompileShaderARB)(GLhandleARB shader);
-  void (APIENTRY *glAttachObjectARB)(GLhandleARB program, GLhandleARB shader);
-  void (APIENTRY *glUseProgramObjectARB)(GLhandleARB program);
-  void (APIENTRY *glLinkProgramARB)(GLhandleARB program);
-  void (APIENTRY *glGetInfoLogARB)(GLhandleARB object, int maxLen, int *len,
+  void (GLAPIENTRY *glCompileShaderARB)(GLhandleARB shader);
+  void (GLAPIENTRY *glAttachObjectARB)(GLhandleARB program, GLhandleARB shader);
+  void (GLAPIENTRY *glUseProgramObjectARB)(GLhandleARB program);
+  void (GLAPIENTRY *glLinkProgramARB)(GLhandleARB program);
+  void (GLAPIENTRY *glGetInfoLogARB)(GLhandleARB object, int maxLen, int *len,
    char *log);
 };
 
@@ -442,15 +448,14 @@ static void glsl_resize_screen(struct graphics_data *graphics,
 }
 
 static bool glsl_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, int fullscreen, int resize)
+ int width, int height, int depth, bool fullscreen, bool resize)
 {
   struct glsl_render_data *render_data = graphics->render_data;
   struct glsl_syms *gl = &render_data->gl;
 
   gl_set_attributes(graphics);
 
-  if(!SDL_SetVideoMode(width, height, depth,
-   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, resize))))
+  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
 
   if(!glsl_load_syms(gl))
@@ -719,7 +724,7 @@ static void glsl_sync_screen(struct graphics_data *graphics)
 
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 
-  SDL_GL_SwapBuffers();
+  gl_swap_buffers(graphics);
 
   gl->glClear(GL_COLOR_BUFFER_BIT);
 }

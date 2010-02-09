@@ -1,6 +1,6 @@
 /* MegaZeux
  *
- * Copyright (C) 2007-2008 Alistair John Strachan <alistair@devzero.co.uk>
+ * Copyright (C) 2009 Alistair John Strachan <alistair@devzero.co.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -17,57 +17,26 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "render_sdl.h"
-
-#include "SDL.h"
-
-int sdl_flags(int depth, bool fullscreen, bool resize)
-{
-  int flags = 0;
-
-  if(fullscreen)
-  {
-    flags |= SDL_FULLSCREEN;
-    if(depth == 8)
-      flags |= SDL_HWPALETTE;
-  }
-  else
-    if(resize)
-      flags |= SDL_RESIZABLE;
-
-  return flags;
-}
-
-#ifdef CONFIG_RENDER_GL
+#include "render_egl.h"
 
 bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize)
 {
-  return SDL_SetVideoMode(width, height, depth,
-   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, resize))) != NULL;
+  return true;
 }
 
 bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize)
 {
-  return SDL_VideoModeOK(width, height, depth,
-   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, resize)));
+  return true;
 }
 
 void gl_set_attributes(struct graphics_data *graphics)
 {
-  SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-  if(graphics->gl_vsync == 0)
-    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 0);
-  else if(graphics->gl_vsync >= 1)
-    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
+  // FIXME: stub
 }
 
 bool gl_swap_buffers(struct graphics_data *graphics)
 {
-  SDL_GL_SwapBuffers();
-  return true;
+  return eglSwapBuffers(NULL, NULL);
 }
-
-#endif // CONFIG_RENDER_GL

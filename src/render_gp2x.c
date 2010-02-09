@@ -225,14 +225,14 @@ static void gp2x_free_video(struct graphics_data *graphics)
 }
 
 static bool gp2x_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, int fullscreen, int resize)
+ int width, int height, int depth, bool fullscreen, bool resize)
 {
   return SDL_VideoModeOK(width, height, 16,
    sdl_flags(depth, fullscreen, resize));
 }
 
 static bool gp2x_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, int fullscreen, int resize)
+ int width, int height, int depth, bool fullscreen, bool resize)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
   SDL_PixelFormat *format;

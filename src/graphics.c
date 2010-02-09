@@ -894,8 +894,8 @@ bool set_video_mode(void)
 {
   int target_width, target_height;
   int target_depth = graphics.bits_per_pixel;
-  int fullscreen = graphics.fullscreen;
-  int resize = graphics.allow_resize;
+  bool fullscreen = graphics.fullscreen;
+  bool resize = graphics.allow_resize;
 
   if(fullscreen)
   {
@@ -922,8 +922,8 @@ bool set_video_mode(void)
     target_width = 640;
     target_height = 350;
     target_depth = 8;
-    fullscreen = 0;
-    resize = 0;
+    fullscreen = false;
+    resize = false;
 
     graphics.resolution_width = target_width;
     graphics.resolution_height = target_height;
@@ -975,7 +975,7 @@ static bool change_video_output(struct config_info *conf, const char *output)
 
 void toggle_fullscreen(void)
 {
-  graphics.fullscreen ^= 1;
+  graphics.fullscreen = !graphics.fullscreen;
   set_video_mode();
   update_screen();
   update_palette();

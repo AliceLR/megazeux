@@ -23,12 +23,23 @@
 #include <string.h>
 
 #include "platform.h"
-#include "graphics.h"
-#include "render.h"
-#include "render_sdl.h"
 #include "render_gl.h"
+#include "render.h"
 #include "renderers.h"
 #include "util.h"
+
+#ifdef CONFIG_SDL
+#include "render_sdl.h"
+#endif
+
+#ifdef CONFIG_EGL
+#include "render_egl.h"
+#endif
+
+#ifndef GL_BGRA
+#warning remove this hack
+#define GL_BGRA 1
+#endif
 
 #define SAFE_TEXTURE_MARGIN_X 0.0004f
 #define SAFE_TEXTURE_MARGIN_Y 0.0002f
@@ -36,36 +47,36 @@
 struct gl2_syms
 {
   int syms_loaded;
-  void (APIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
-  void (APIENTRY *glBegin)(GLenum mode);
-  void (APIENTRY *glBindTexture)(GLenum target, GLuint texture);
-  void (APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
-  void (APIENTRY *glClear)(GLbitfield mask);
-  void (APIENTRY *glColor3ubv)(const GLubyte *v);
-  void (APIENTRY *glColor4f)(GLfloat red, GLfloat green, GLfloat blue,
+  void (GLAPIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
+  void (GLAPIENTRY *glBegin)(GLenum mode);
+  void (GLAPIENTRY *glBindTexture)(GLenum target, GLuint texture);
+  void (GLAPIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
+  void (GLAPIENTRY *glClear)(GLbitfield mask);
+  void (GLAPIENTRY *glColor3ubv)(const GLubyte *v);
+  void (GLAPIENTRY *glColor4f)(GLfloat red, GLfloat green, GLfloat blue,
    GLfloat alpha);
-  void (APIENTRY *glColor4ub)(GLubyte red, GLubyte green, GLubyte blue,
+  void (GLAPIENTRY *glColor4ub)(GLubyte red, GLubyte green, GLubyte blue,
    GLubyte alpha);
-  void (APIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
+  void (GLAPIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
    GLenum internalFormat, GLint x, GLint y, GLsizei width, GLsizei height,
    GLint border);
-  void (APIENTRY *glDisable)(GLenum cap);
-  void (APIENTRY *glEnable)(GLenum cap);
-  void (APIENTRY *glEnd)(void);
-  void (APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
-  const GLubyte* (APIENTRY *glGetString)(GLenum name);
-  void (APIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
-  void (APIENTRY *glTexImage2D)(GLenum target, GLint level,
+  void (GLAPIENTRY *glDisable)(GLenum cap);
+  void (GLAPIENTRY *glEnable)(GLenum cap);
+  void (GLAPIENTRY *glEnd)(void);
+  void (GLAPIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
+  const GLubyte* (GLAPIENTRY *glGetString)(GLenum name);
+  void (GLAPIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
+  void (GLAPIENTRY *glTexImage2D)(GLenum target, GLint level,
    GLint internalformat, GLsizei width, GLsizei height, GLint border,
    GLenum format, GLenum type, const GLvoid *pixels);
-  void (APIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
-  void (APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
-  void (APIENTRY *glTexSubImage2D)(GLenum target, GLint level, GLint xoffset,
+  void (GLAPIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
+  void (GLAPIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
+  void (GLAPIENTRY *glTexSubImage2D)(GLenum target, GLint level, GLint xoffset,
    GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type,
    const GLvoid *pixels);
-  void (APIENTRY *glVertex2f)(GLfloat x, GLfloat y);
-  void (APIENTRY *glVertex2i)(GLint x, GLint y);
-  void (APIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
+  void (GLAPIENTRY *glVertex2f)(GLfloat x, GLfloat y);
+  void (GLAPIENTRY *glVertex2i)(GLint x, GLint y);
+  void (GLAPIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
 };
 
 struct gl2_render_data
@@ -284,15 +295,14 @@ static void gl2_resize_screen(struct graphics_data *graphics,
 }
 
 static bool gl2_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, int fullscreen, int resize)
+ int width, int height, int depth, bool fullscreen, bool resize)
 {
   struct gl2_render_data *render_data = graphics->render_data;
   struct gl2_syms *gl = &render_data->gl;
 
   gl_set_attributes(graphics);
 
-  if(!SDL_SetVideoMode(width, height, depth,
-   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, resize))))
+  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
 
   if(!gl2_load_syms(gl))
@@ -597,7 +607,7 @@ static void gl2_sync_screen(struct graphics_data *graphics)
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
   }
 
-  SDL_GL_SwapBuffers();
+  gl_swap_buffers(graphics);
 
   gl->glClear(GL_COLOR_BUFFER_BIT);
 }

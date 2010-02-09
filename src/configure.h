@@ -36,12 +36,12 @@ enum ratio_type
 struct config_info
 {
   // Video options
-  int fullscreen;
+  bool fullscreen;
   int resolution_width;
   int resolution_height;
   int window_width;
   int window_height;
-  int allow_resize;
+  bool allow_resize;
   char video_output[16];
   int force_bpp;
   enum ratio_type video_ratio;

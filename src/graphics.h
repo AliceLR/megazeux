@@ -69,8 +69,8 @@ struct renderer
 {
   bool (*init_video)       (struct graphics_data *, struct config_info *);
   void (*free_video)       (struct graphics_data *);
-  bool (*check_video_mode) (struct graphics_data *, int, int, int, int, int);
-  bool (*set_video_mode)   (struct graphics_data *, int, int, int, int, int);
+  bool (*check_video_mode) (struct graphics_data *, int, int, int, bool, bool);
+  bool (*set_video_mode)   (struct graphics_data *, int, int, int, bool, bool);
   void (*update_colors)    (struct graphics_data *, struct rgb_color *,
                              Uint32);
   void (*resize_screen)    (struct graphics_data *, int, int);
@@ -109,13 +109,13 @@ struct graphics_data
   Uint32 mouse_width_mul;
   Uint32 mouse_height_mul;
   Uint32 mouse_status;
-  Uint32 fullscreen;
+  bool fullscreen;
   Uint32 resolution_width;
   Uint32 resolution_height;
   Uint32 window_width;
   Uint32 window_height;
   Uint32 bits_per_pixel;
-  Uint32 allow_resize;
+  bool allow_resize;
   Uint32 cursor_timestamp;
   Uint32 cursor_flipflop;
   Uint32 default_smzx_loaded;

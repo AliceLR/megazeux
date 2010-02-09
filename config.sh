@@ -103,6 +103,7 @@ UPDATER="true"
 VERBOSE="false"
 METER="false"
 SDL="true"
+EGL="false"
 
 #
 # User may override above settings
@@ -398,9 +399,15 @@ if [ "$PLATFORM" = "wii" ]; then
 	echo "BUILD_WII=1" >> platform.inc
 fi
 
-if [ "$PLATFORM" = "wii"  -o "$PLATFORM" = "android" ]; then
-	echo "Disabling SDL."
+if [ "$PLATFORM" = "wii" ]; then
+	echo "Disabling SDL (Wii)."
 	SDL="false"
+fi
+
+if [ "$PLATFORM" = "android" ]; then
+	echo "Disabling SDL (Android), force-enabling EGL."
+	SDL="false"
+	EGL="true"
 fi
 
 #
@@ -408,15 +415,30 @@ fi
 #
 if [ "$SDL" = "false" ]; then
 	echo "Force-disabling SDL dependent components:"
-	echo " -> SOFTWARE, OVERLAY, OPENGL, MIKMOD, X11"
+	echo " -> SOFTWARE, OVERLAY, MIKMOD, X11"
 	SOFTWARE="false"
 	OVERLAY="false"
-	OPENGL="false"
 	MIKMOD="false"
 	X11="false"
 else
 	echo "#define CONFIG_SDL" >> src/config.h
 	echo "BUILD_SDL=1" >> platform.inc
+fi
+
+#
+# We have EGL support
+#
+if [ "$EGL" = "true" ]; then
+	echo "#define CONFIG_EGL" >> src/config.h
+	echo "BUILD_EGL=1" >> platform.inc
+fi
+
+#
+# We need either SDL or EGL for OpenGL
+#
+if [ "$SDL" = "false" -a "$EGL" = "false" ]; then
+	echo "Force-disabling OpenGL (no SDL or EGL support)."
+	OPENGL="false"
 fi
 
 #
