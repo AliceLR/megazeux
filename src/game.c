@@ -2532,7 +2532,8 @@ void title_screen(World *mzx_world)
           update_event_status();
           break;
         }
-     }
+      }
+      draw_intro_mesg();
     }
   } while(key != IKEY_ESCAPE);
 
