@@ -42,6 +42,9 @@ USERS
 + Fix a bug where one robot could send another robot to "#return", with an
   address outside its program. In such cases, the robot will now terminate.
 + A "mzxrun" binary is now shipped alongside the editor-capable MZX binary.
++ Fix TIME/TIMERESET overflows with very large values. Board timeout is now
+  programmatically limited to 32767, which is consistent with the Board Info
+  control.
 
 DEVELOPERS
 

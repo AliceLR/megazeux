@@ -963,7 +963,7 @@ static int timereset_read(World *mzx_world, function_counter *counter,
 static void timereset_write(World *mzx_world, function_counter *counter,
  const char *name, int value, int id)
 {
-  mzx_world->current_board->time_limit = value;
+  mzx_world->current_board->time_limit = CLAMP(value, 0, 32767);
 }
 
 static int date_day_read(World *mzx_world, function_counter *counter,
@@ -2540,15 +2540,18 @@ static int invinco_gateway(World *mzx_world, counter *counter,
   return value;
 }
 
+static int time_gateway(World *mzx_world, counter *counter,
+ const char *name, int value, int id)
+{
+  return CLAMP(value, 0, 32767);
+}
+
 // The other builtins simply can't go below 0
 
 static int builtin_gateway(World *mzx_world, counter *counter,
  const char *name, int value, int id)
 {
-  if(value < 0)
-    return 0;
-  else
-    return value;
+  return MAX(value, 0);
 }
 
 static counter *find_counter(World *mzx_world, const char *name, int *next)
@@ -2607,11 +2610,11 @@ void initialize_gateway_functions(World *mzx_world)
   set_dec_gateway(mzx_world, "HEALTH", health_dec_gateway);
   set_gateway(mzx_world, "LIVES", lives_gateway);
   set_gateway(mzx_world, "INVINCO", invinco_gateway);
+  set_gateway(mzx_world, "TIME", time_gateway);
   set_gateway(mzx_world, "LOBOMBS", builtin_gateway);
   set_gateway(mzx_world, "HIBOMBS", builtin_gateway);
   set_gateway(mzx_world, "COINS", builtin_gateway);
   set_gateway(mzx_world, "GEMS", builtin_gateway);
-  set_gateway(mzx_world, "TIME", builtin_gateway);
 }
 
 int match_function_counter(const char *dest, const char *src)
