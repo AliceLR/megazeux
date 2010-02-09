@@ -73,6 +73,8 @@ USERS
   MegaZeux (Alt+R to rename a directory in any file picker).
 + In the robot editor, lines can now be split at a midpoint with enter and
   two consecutive lines merged together with backspace. (Exophase)
++ Fix use of status counter 6 and display of status counters in general,
+  which has been broken since 2.80.
 
 DEVELOPERS
 

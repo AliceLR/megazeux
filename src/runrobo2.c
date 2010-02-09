@@ -5535,7 +5535,7 @@ void run_robot(World *mzx_world, int id, int x, int y)
           if(strlen(counter_name) >= COUNTER_NAME_SIZE)
             counter_name[COUNTER_NAME_SIZE - 1] = 0;
 
-          strcpy(mzx_world->status_counters_shown[counter_slot],
+          strcpy(mzx_world->status_counters_shown[counter_slot - 1],
            counter_name);
         }
         break;

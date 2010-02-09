@@ -94,7 +94,7 @@ enum
 #define A_SPEC_BOMB           (1 << 14)
 #define A_SPEC_STOOD          (1 << 15)
 
-#define NUM_STATUS_CNTRS      6
+#define NUM_STATUS_COUNTERS   6
 
 __M_END_DECLS
 

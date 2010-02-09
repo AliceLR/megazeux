@@ -730,14 +730,6 @@ static void show_status(World *mzx_world)
   show_counter(mzx_world, "Lobombs", 39, 9, 0);
   show_counter(mzx_world, "Hibombs", 39, 10, 0);
   show_counter(mzx_world, "Coins", 39, 11, 0);
-
-  for(i = 0; i < NUM_STATUS_CNTRS; i++) // Show custom status counters
-  {
-    char *name = mzx_world->status_counters_shown[i];
-    if(name[0])
-      show_counter(mzx_world, name, 39, i + 15, 1);
-  }
-
   write_string("Score", 39, 12, 27, 0);
   sprintf(temp, "%d", mzx_world->score);
   write_string(temp, 55, 12, 31, 0); // Show score
@@ -746,13 +738,21 @@ static void show_status(World *mzx_world)
   for(i = 0; i < 8; i++) // Show keys
   {
     if(keys[i] != NO_KEY)
-      draw_char('', 16 + keys[i], 55 + i, 13);
+      draw_char('\x0c', 16 + keys[i], 55 + i, 13);
   }
 
   for(; i < 16; i++) // Show keys, 2nd row
   {
     if(keys[i] != NO_KEY)
-      draw_char('', 16 + keys[i], 47 + i, 14);
+      draw_char('\x0c', 16 + keys[i], 47 + i, 14);
+  }
+
+  // Show custom status counters
+  for(i = 0; i < NUM_STATUS_COUNTERS; i++)
+  {
+    char *name = mzx_world->status_counters_shown[i];
+    if(name[0])
+      show_counter(mzx_world, name, 39, i + 15, 1);
   }
 
   // Show hi/lo bomb selection

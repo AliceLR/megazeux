@@ -183,7 +183,7 @@ int save_world(World *mzx_world, const char *file, int savegame, int faded)
 
   // Save status counters.
   fwrite((char *)mzx_world->status_counters_shown, COUNTER_NAME_SIZE,
-   NUM_STATUS_CNTRS, fp);
+   NUM_STATUS_COUNTERS, fp);
 
   /* Older MZX sources refer to SAVE_INDIVIDUAL, but it has always been
    * defined. Exo eventually removed the conditional code in 2.80.
@@ -844,7 +844,7 @@ static int load_world(World *mzx_world, const char *file, int savegame,
 
   // Status counters...
   fread((char *)mzx_world->status_counters_shown, COUNTER_NAME_SIZE,
-   NUM_STATUS_CNTRS, fp);
+   NUM_STATUS_COUNTERS, fp);
 
   if(savegame)
   {

@@ -530,8 +530,8 @@ void set_confirm_buttons(element **elements)
 void status_counter_info(World *mzx_world)
 {
   dialog di;
-  element *elements[2 + NUM_STATUS_CNTRS];
-  const char *status_counters_strings[NUM_STATUS_CNTRS] =
+  element *elements[2 + NUM_STATUS_COUNTERS];
+  const char *status_counters_strings[NUM_STATUS_COUNTERS] =
   {
     "Status counter 1: ", "2: ", "3: ",
     "4: ", "5: ", "6: "
@@ -545,7 +545,7 @@ void status_counter_info(World *mzx_world)
    status_counters_strings[0], COUNTER_NAME_SIZE - 1, 0,
    mzx_world->status_counters_shown[0]);
 
-  for(i = 1; i < NUM_STATUS_CNTRS; i++)
+  for(i = 1; i < NUM_STATUS_COUNTERS; i++)
   {
     elements[i + 2] = construct_input_box(27, 5 + i,
      status_counters_strings[i], COUNTER_NAME_SIZE - 1, 0,
@@ -553,7 +553,7 @@ void status_counter_info(World *mzx_world)
   }
 
   construct_dialog(&di, "Status Counters", 10, 4, 60, 18,
-   elements, 2 + NUM_STATUS_CNTRS, 2);
+   elements, 2 + NUM_STATUS_COUNTERS, 2);
 
   run_dialog(mzx_world, &di);
   destruct_dialog(&di);

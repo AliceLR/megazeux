@@ -46,7 +46,7 @@ typedef struct
   int version;
   // Move here eventually
   //char id_chars[455];
-  char status_counters_shown[NUM_STATUS_CNTRS][COUNTER_NAME_SIZE];
+  char status_counters_shown[NUM_STATUS_COUNTERS][COUNTER_NAME_SIZE];
 
   // Save game material, part 1
   char keys[NUM_KEYS];
