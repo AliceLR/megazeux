@@ -37,6 +37,7 @@
 #include "board.h"
 #include "world.h"
 #include "util.h"
+#include "rasm.h"
 
 struct robot *load_robot_allocate(FILE *fp, int savegame, int version)
 {
@@ -49,12 +50,21 @@ struct robot *load_robot_allocate(FILE *fp, int savegame, int version)
 // is set.
 void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
 {
-  int program_size = fgetw(fp);
+  int program_length;
   int i;
 
-  cur_robot->program_bytecode_length = program_size;
-  // Skip junk
-  fseek(fp, 2, SEEK_CUR);
+#ifdef CONFIG_DEBYTECODE
+  if(version >= VERSION_PROGRAM_SOURCE)
+  {
+    program_length = fgetd(fp);
+  }
+  else
+#endif
+  {
+    program_length = fgetw(fp);
+    fseek(fp, 2, SEEK_CUR);
+  }
+
   fread(cur_robot->robot_name, 15, 1, fp);
   cur_robot->robot_char = fgetc(fp);
   cur_robot->cur_prog_line = fgetw(fp);
@@ -80,37 +90,129 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   {
     int stack_size;
 
-    // Get the local counters
     for(i = 0; i < 32; i++)
-    {
       cur_robot->local[i] = fgetd(fp);
-    }
-    // Get the stack size
-    stack_size = fgetd(fp);
 
-    // Get the stack pointer
+    stack_size = fgetd(fp);
     cur_robot->stack_pointer = fgetd(fp);
-    // Allocate the stack
+
     cur_robot->stack = ccalloc(stack_size, sizeof(int));
     for(i = 0; i < stack_size; i++)
-    {
       cur_robot->stack[i] = fgetd(fp);
-    }
+
     cur_robot->stack_size = stack_size;
+
+#ifdef CONFIG_DEBYTECODE
+    // We're allowing legacy save robots to be loaded because lancer-x is
+    // a bad person and relies on savegame type MZMs (even though he claims
+    // to have made them in the editor)
+
+    if(version < VERSION_PROGRAM_SOURCE)
+    {
+      // The program is bytecode and we have to convert it to sourcecode.
+      char *program_legacy_bytecode = cmalloc(program_length);
+
+      fread(program_legacy_bytecode, program_length, 1, fp);
+
+      cur_robot->program_bytecode = NULL;
+      cur_robot->program_source =
+       legacy_disassemble_program(program_legacy_bytecode, program_length,
+       &(cur_robot->program_source_length), true, 10);
+
+      free(program_legacy_bytecode);
+      prepare_robot_bytecode(cur_robot);
+
+      // And if you thought that lancer-x was a bad person for relying
+      // on in-game saved MZMs then you should also know that these
+      // these had robots that MZMs weren't at start position. Fortunately,
+      // they were working more in spite of it than because of it, so
+      // they're safe to nudge back.
+
+      if(cur_robot->cur_prog_line)
+        cur_robot->cur_prog_line = 1;
+    }
+    else
+    {
+      // Save file loads bytecode. This also means that we can't ever
+      // ever edit save files, so make them null. In practice this
+      // shouldn't be possible though.
+      cur_robot->program_bytecode = cmalloc(program_length);
+      cur_robot->program_bytecode_length = program_length;
+      fread(cur_robot->program_bytecode, program_length, 1, fp);
+    }
+
+    cur_robot->program_source = NULL;
+    cur_robot->program_source_length = 0;
+
+    // TODO: This has to be made part of what's saved one day.
+    cur_robot->label_list =
+     cache_robot_labels(cur_robot, &(cur_robot->num_labels));
+#endif /* CONFIG_DEBYTECODE */
   }
   else
   {
     // Otherwise, allocate some stuff; local counters are 0
     memset(cur_robot->local, 0, sizeof(int) * 32);
-    // Start with a minimum stack size
-    cur_robot->stack_size = ROBOT_START_STACK;
-    cur_robot->stack = ccalloc(ROBOT_START_STACK, sizeof(int));
+
+    // Give an empty stack.
+    cur_robot->stack_size = 0;
+    cur_robot->stack = NULL;
+
     // Initialize the stack pointer to the bottom
     cur_robot->stack_pointer = 0;
+
+#ifdef CONFIG_DEBYTECODE
+    // World file loads source code.
+    if(version < VERSION_PROGRAM_SOURCE)
+    {
+      if((cur_robot->used) || (program_length >= 2))
+      {
+        // The program is bytecode and we have to convert it to sourcecode.
+        char *program_legacy_bytecode = cmalloc(program_length);
+        fread(program_legacy_bytecode, program_length, 1, fp);
+
+        // All programs length 2 are supposed to be blank, 0xFF 0x0. But
+        // there's a corruption in Catacombs - this fixes that. Also somehow
+        // corrupt global robots that don't start with 0xFF.
+
+        if((program_length == 2) || (program_legacy_bytecode[0] != 0xFF))
+        {
+          program_legacy_bytecode[0] = 0xFF;
+          program_legacy_bytecode[1] = 0x0;
+        }
+
+        cur_robot->program_source =
+         legacy_disassemble_program(program_legacy_bytecode, program_length,
+         &(cur_robot->program_source_length), true, 10);
+        free(program_legacy_bytecode);
+      }
+      else
+      {
+        // Skip over program, we're not going to use it.
+        fseek(fp, program_length, SEEK_CUR);
+        cur_robot->program_source = NULL;
+        cur_robot->program_source_length = 0;
+      }
+    }
+    else
+    {
+      // This program is source, just load it straight
+      cur_robot->program_source = cmalloc(program_length + 1);
+      cur_robot->program_source_length = program_length;
+      fread(cur_robot->program_source, program_length, 1, fp);
+      cur_robot->program_source[program_length] = 0;
+    }
+
+    // This will become non-null when the robot's executed.
+    cur_robot->program_bytecode = NULL;
+    cur_robot->program_bytecode_length = 0;
+#endif /* CONFIG_DEBYTECODE */
   }
 
-  cur_robot->program_bytecode = cmalloc(program_size);
-  fread(cur_robot->program_bytecode, program_size, 1, fp);
+#ifndef CONFIG_DEBYTECODE
+  cur_robot->program_bytecode = cmalloc(program_length);
+  cur_robot->program_bytecode_length = program_length;
+  fread(cur_robot->program_bytecode, program_length, 1, fp);
 
   // Now create a label cache IF the robot is in use
   if(cur_robot->used)
@@ -118,6 +220,7 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
     cur_robot->label_list =
      cache_robot_labels(cur_robot, &(cur_robot->num_labels));
   }
+#endif /* !CONFIG_DEBYTECODE */
 }
 
 static void robot_stack_push(struct robot *cur_robot, int value)
@@ -202,12 +305,34 @@ struct sensor *load_sensor_allocate(FILE *fp)
 
 void save_robot(struct robot *cur_robot, FILE *fp, int savegame)
 {
-  int program_size = cur_robot->program_bytecode_length;
+  int program_length;
   int i;
 
-  fputw(program_size, fp);
-  // This is junk, but put it anyway
+#ifdef CONFIG_DEBYTECODE
+  // Write the program's source code if it's a world file, or the
+  // bytecode if it's a save file. For save files we currently must write
+  // bytecode because it stores the zap status inside the programs
+  // themselves (even though it's in the label cache as well).
+
+  if(savegame)
+  {
+    prepare_robot_bytecode(cur_robot);
+    program_length = cur_robot->program_bytecode_length;
+  }
+  else
+  {
+    program_length = cur_robot->program_source_length;
+  }
+
+  // As of 2.83 we're writing out 4 byte sizes.
+  fputd(program_length, fp);
+#else /* !CONFIG_DEBYTECODE */
+  program_length = cur_robot->program_bytecode_length;
+  fputw(program_length, fp);
+  // Junk
   fputw(0, fp);
+#endif /* !CONFIG_DEBYTECODE */
+
   fwrite(cur_robot->robot_name, 15, 1, fp);
   fputc(cur_robot->robot_char, fp);
   if(savegame)
@@ -272,8 +397,16 @@ void save_robot(struct robot *cur_robot, FILE *fp, int savegame)
     }
   }
 
-  // Write the program
-  fwrite(cur_robot->program_bytecode, program_size, 1, fp);
+#ifdef CONFIG_DEBYTECODE
+  // NOTE: This will one day be a good thing to move out of the save game;
+  // this will require that the programs become immutable and thus have
+  // the zap status stored somewhere else.
+
+  if(!savegame)
+    fwrite(cur_robot->program_source, program_length, 1, fp);
+  else
+#endif
+    fwrite(cur_robot->program_bytecode, program_length, 1, fp);
 }
 
 void save_scroll(struct scroll *cur_scroll, FILE *fp, int savegame)
