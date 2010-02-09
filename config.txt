@@ -444,7 +444,7 @@
 # unofficial updates. Please note, this is not a URL and should not
 # contain protocol specifiers such as http://
 
-# update_host = updates.digitalmzx.net
+# update_host = updates.mzx.devzero.co.uk
 
 # The update "branch" is consulted each time the updater runs. Typically,
 # there are only two branches, "Stable" and "Unstable". Please note, this
