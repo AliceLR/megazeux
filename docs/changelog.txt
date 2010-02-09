@@ -109,6 +109,9 @@ USERS
 + Fixed a bug on some systems where numlock could not be used as a key,
   only as a flag. The numlock "key" is now masked out of "key_code" and
   similar; hopefully this won't break any games.
++ Restored the meter widget from the old DOS MZX for use with the world
+  loader and saver routines. This reassures users, especially on consoles,
+  where loading a world can take a long time. (Mr_Alert)
 
 DEVELOPERS
 
