@@ -22,7 +22,7 @@
 #include "render_yuv.h"
 #include "renderers.h"
 
-static int yuv1_set_video_mode(graphics_data *graphics, int width, int height,
+static bool yuv1_set_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   return yuv_set_video_mode_size(graphics, width, height, depth, fullscreen,

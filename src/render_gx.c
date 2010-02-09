@@ -220,7 +220,7 @@ static u32 smzxtexline[256] =
   0xFFFFFF00, 0xFFFFFF55, 0xFFFFFFAA, 0xFFFFFFFF
 };
 
-static int gx_init_video(graphics_data *graphics, config_info *conf)
+static bool gx_init_video(graphics_data *graphics, config_info *conf)
 {
   const GXColor black = {0, 0, 0, 255};
 
@@ -316,13 +316,13 @@ static int gx_init_video(graphics_data *graphics, config_info *conf)
   return set_video_mode();
 }
 
-static int gx_check_video_mode(graphics_data *graphics, int width, int height,
+static bool gx_check_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   return true;
 }
 
-static int gx_set_video_mode(graphics_data *graphics, int width, int height,
+static bool gx_set_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   gx_render_data *render_data = graphics->render_data;

@@ -303,7 +303,7 @@ static void glsl_load_shaders(graphics_data *graphics)
   render_data->gl_tilemap = tilemap_program;
 }
 
-static int glsl_init_video(graphics_data *graphics, config_info *conf)
+static bool glsl_init_video(graphics_data *graphics, config_info *conf)
 {
   glsl_render_data *render_data = malloc(sizeof(glsl_render_data));
   glsl_syms *gl = &render_data->gl;
@@ -431,7 +431,7 @@ static void glsl_resize_screen(graphics_data *graphics, int viewport_width,
   glsl_load_shaders(graphics);
 }
 
-static int glsl_set_video_mode(graphics_data *graphics, int width, int height,
+static bool glsl_set_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   glsl_render_data *render_data = graphics->render_data;

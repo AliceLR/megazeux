@@ -25,7 +25,7 @@
 #include "render_gl.h"
 #include "util.h"
 
-int gl_check_video_mode(graphics_data *graphics, int width, int height,
+bool gl_check_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   return SDL_VideoModeOK(width, height, depth,

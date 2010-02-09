@@ -106,9 +106,9 @@ struct _graphics_data
   Uint32 flat_intensity_palette[SMZX_PAL_SIZE];
   void *render_data;
 
-  int  (*init_video)       (graphics_data *, config_info*);
-  int  (*check_video_mode) (graphics_data *, int, int, int, int, int);
-  int  (*set_video_mode)   (graphics_data *, int, int, int, int, int);
+  bool (*init_video)       (graphics_data *, config_info*);
+  bool (*check_video_mode) (graphics_data *, int, int, int, int, int);
+  bool (*set_video_mode)   (graphics_data *, int, int, int, int, int);
   void (*update_colors)    (graphics_data *, rgb_color *, Uint32);
   void (*resize_screen)    (graphics_data *, int, int);
   void (*remap_charsets)   (graphics_data *);

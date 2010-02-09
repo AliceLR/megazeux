@@ -203,7 +203,7 @@ void nds_sleep_check(void)
   }
 }
 
-static int nds_init_video(graphics_data *graphics, config_info *config)
+static bool nds_init_video(graphics_data *graphics, config_info *config)
 {
   lcdMainOnBottom();
 
@@ -215,17 +215,16 @@ static int nds_init_video(graphics_data *graphics, config_info *config)
   nds_mainscreen_init(graphics);
 
   mouselook = false;
-
   return true;
 }
 
-static int nds_check_video_mode(graphics_data *graphics, int width, int height,
+static bool nds_check_video_mode(graphics_data *graphics, int width, int height,
     int depth, int fullscreen, int resize)
 {
   return true;  // stub
 }
 
-static int nds_set_video_mode(graphics_data *graphics, int width, int height,
+static bool nds_set_video_mode(graphics_data *graphics, int width, int height,
     int depth, int fullscreen, int resize)
 {
   return true;	// stub

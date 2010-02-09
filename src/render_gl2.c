@@ -135,7 +135,7 @@ static int gl2_load_syms (gl2_syms *gl)
   return true;
 }
 
-static int gl2_init_video(graphics_data *graphics, config_info *conf)
+static bool gl2_init_video(graphics_data *graphics, config_info *conf)
 {
   gl2_render_data *render_data = malloc(sizeof(gl2_render_data));
   gl2_syms *gl = &render_data->gl;
@@ -275,7 +275,7 @@ static void gl2_resize_screen(graphics_data *graphics, int viewport_width,
    GL_UNSIGNED_BYTE, render_data->pixels);
 }
 
-static int gl2_set_video_mode(graphics_data *graphics, int width, int height,
+static bool gl2_set_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   gl2_render_data *render_data = graphics->render_data;

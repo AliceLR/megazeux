@@ -23,7 +23,7 @@
 #include "render_yuv.h"
 #include "renderers.h"
 
-static int yuv2_set_video_mode(graphics_data *graphics, int width, int height,
+static bool yuv2_set_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   yuv_render_data *render_data = graphics->render_data;
@@ -54,8 +54,8 @@ static int yuv2_set_video_mode(graphics_data *graphics, int width, int height,
     render_data->uvmask = ~(render_data->y0mask | render_data->y1mask);
     return true;
   }
-  else
-    return false;
+
+  return false;
 }
 
 static void yuv2_render_graph(graphics_data *graphics)

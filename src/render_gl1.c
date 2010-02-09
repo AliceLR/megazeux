@@ -88,7 +88,7 @@ static int gl1_load_syms (gl1_syms *gl)
   return true;
 }
 
-static int gl1_init_video(graphics_data *graphics, config_info *conf)
+static bool gl1_init_video(graphics_data *graphics, config_info *conf)
 {
   gl1_render_data *render_data = malloc(sizeof(gl1_render_data));
   gl1_syms *gl = &render_data->gl;
@@ -154,7 +154,7 @@ static int gl1_init_video(graphics_data *graphics, config_info *conf)
   return render_data->pixels != NULL;
 }
 
-static int gl1_set_video_mode(graphics_data *graphics, int width, int height,
+static bool gl1_set_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   gl1_render_data *render_data = graphics->render_data;

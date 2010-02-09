@@ -194,7 +194,7 @@ static void (*gp2x_set_colors[4])(graphics_data *, Uint32 *, Uint8, Uint8) =
   gp2x_set_colors_smzx3
 };
 
-static int gp2x_init_video(graphics_data *graphics, config_info *conf)
+static bool gp2x_init_video(graphics_data *graphics, config_info *conf)
 {
   gp2x_render_data *render_data = malloc(sizeof(gp2x_render_data));
 
@@ -215,14 +215,14 @@ static int gp2x_init_video(graphics_data *graphics, config_info *conf)
   return set_video_mode();
 }
 
-static int gp2x_check_video_mode(graphics_data *graphics, int width, int height,
+static bool gp2x_check_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   return SDL_VideoModeOK(width, height, 16,
    sdl_flags(depth, fullscreen, resize));
 }
 
-static int gp2x_set_video_mode(graphics_data *graphics, int width, int height,
+static bool gp2x_set_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   gp2x_render_data *render_data = graphics->render_data;

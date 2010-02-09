@@ -46,10 +46,10 @@ typedef struct
   Uint32 uvmask;
 } yuv_render_data;
 
-int yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
+bool yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize, int yuv_width, int yuv_height);
-int yuv_init_video(graphics_data *graphics, config_info *conf);
-int yuv_check_video_mode(graphics_data *graphics,  int width, int height,
+bool yuv_init_video(graphics_data *graphics, config_info *conf);
+bool yuv_check_video_mode(graphics_data *graphics,  int width, int height,
  int depth, int fullscreen, int resize);
 void yuv_update_colors(graphics_data *graphics, rgb_color *palette,
  Uint32 count);

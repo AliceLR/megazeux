@@ -28,10 +28,9 @@
 
 static SDL_Color sdlpal[SMZX_PAL_SIZE];
 
-static int soft_init_video(graphics_data *graphics, config_info *conf)
+static bool soft_init_video(graphics_data *graphics, config_info *conf)
 {
   graphics->allow_resize = 0;
-
   graphics->bits_per_pixel = 32;
 
   // Screens smaller than 640x350 do weird things with the software renderer
@@ -51,14 +50,14 @@ static int soft_init_video(graphics_data *graphics, config_info *conf)
   return set_video_mode();
 }
 
-static int soft_check_video_mode(graphics_data *graphics, int width, int height,
+static bool soft_check_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   return SDL_VideoModeOK(width, height, depth,
    sdl_flags(depth, fullscreen, resize));
 }
 
-static int soft_set_video_mode(graphics_data *graphics, int width, int height,
+static bool soft_set_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   graphics->render_data = SDL_SetVideoMode(width, height, depth,

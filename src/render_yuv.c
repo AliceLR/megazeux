@@ -25,7 +25,7 @@
 #include "render_sdl.h"
 #include "render_yuv.h"
 
-int yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
+bool yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize, int yuv_width, int yuv_height)
 {
   yuv_render_data *render_data = graphics->render_data;
@@ -59,7 +59,7 @@ int yuv_set_video_mode_size(graphics_data *graphics, int width, int height,
   return true;
 }
 
-int yuv_init_video(graphics_data *graphics, config_info *conf)
+bool yuv_init_video(graphics_data *graphics, config_info *conf)
 {
   yuv_render_data *render_data = malloc(sizeof(yuv_render_data));
   if(!render_data)
@@ -71,7 +71,7 @@ int yuv_init_video(graphics_data *graphics, config_info *conf)
   return set_video_mode();
 }
 
-int yuv_check_video_mode(graphics_data *graphics, int width, int height,
+bool yuv_check_video_mode(graphics_data *graphics, int width, int height,
  int depth, int fullscreen, int resize)
 {
   // requires 32bit colour
