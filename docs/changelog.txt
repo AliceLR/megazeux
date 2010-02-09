@@ -92,9 +92,7 @@ USERS
   original line contents immediately after the expansion.
 + MacOS 10.x clipboard support (via Cocoa Pasteboard). Alt+Ins can be entered
   with Fn+Alt+Numpad0 on a Macbook or Powerbook keyboard.
-+ Robot editor S_CHARACTER fields no longer bogusly escape characters such
-  as ". In addition, rendering glitches are no longer encountered when using
-  the ' S_CHARACTER (which is completely reasonable).
++ Rendering glitches are no longer encountered when using the ' S_CHARACTER.
 + Fix robot editor glitches where the game charset SPACE would be used in
   places where the protected UI charset should be used instead.
 + The introductory help message is displayed if the load dialog is cancelled

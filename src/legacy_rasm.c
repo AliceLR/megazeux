@@ -2290,12 +2290,15 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
             if(arg_types)
               arg_types[words] = S_CHARACTER;
 
-            output_position[0] = '\'';
-            output_position[1] = character;
-            output_position[2] = '\'';
-
             input_position += 3;
-            output_position += 3;
+            output_position[0] = '\'';
+            output_position++;
+
+            output_position += unescape_char(output_position, character);
+
+            output_position[0] = '\'';
+            output_position++;
+
             break;
           }
 
