@@ -165,7 +165,7 @@ static int robot_stack_pop(struct robot *cur_robot)
   }
 }
 
-static void load_scroll(struct scroll *cur_scroll, FILE *fp, int savegame)
+static void load_scroll(struct scroll *cur_scroll, FILE *fp)
 {
   int scroll_size;
 
@@ -180,15 +180,14 @@ static void load_scroll(struct scroll *cur_scroll, FILE *fp, int savegame)
   fread(cur_scroll->mesg, scroll_size, 1, fp);
 }
 
-struct scroll *load_scroll_allocate(FILE *fp, int savegame)
+struct scroll *load_scroll_allocate(FILE *fp)
 {
   struct scroll *cur_scroll = cmalloc(sizeof(struct scroll));
-  load_scroll(cur_scroll, fp, savegame);
-
+  load_scroll(cur_scroll, fp);
   return cur_scroll;
 }
 
-static void load_sensor(struct sensor *cur_sensor, FILE *fp, int savegame)
+static void load_sensor(struct sensor *cur_sensor, FILE *fp)
 {
   fread(cur_sensor->sensor_name, 15, 1, fp);
   cur_sensor->sensor_char = fgetc(fp);
@@ -197,11 +196,10 @@ static void load_sensor(struct sensor *cur_sensor, FILE *fp, int savegame)
   cur_sensor->used = fgetc(fp);
 }
 
-struct sensor *load_sensor_allocate(FILE *fp, int savegame)
+struct sensor *load_sensor_allocate(FILE *fp)
 {
   struct sensor *cur_sensor = cmalloc(sizeof(struct sensor));
-  load_sensor(cur_sensor, fp, savegame);
-
+  load_sensor(cur_sensor, fp);
   return cur_sensor;
 }
 

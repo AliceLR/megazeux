@@ -85,6 +85,16 @@ USERS
   cursor to be replaced with the system mouse cursor, rather than
   being drawn by MegaZeux.
 + Disallow placing player clones with SET "board_id" 127.
++ Relaxed file name limit on board MOD file. The board MOD
+  can now be as long as the limit imposed by file dialog's
+  input box (previously limited to 12 characters).
++ Truncation of currently open input/output file names will now
+  only occur at MAX_PATH bytes (typically 512 characters). The
+  previous limit was 13 characters.
++ Relaxed limit of INPUT string and bottom ("*") messages from
+  80 characters to ROBOT_MAX_TR (512) characters. In the case
+  of bottom messages this can be usefully exploited for ~200
+  characters.
 
 DEVELOPERS
 

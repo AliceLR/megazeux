@@ -31,14 +31,15 @@ __M_BEGIN_DECLS
 #define MAX_BOARDS 250
 
 CORE_LIBSPEC void clear_board(struct board *cur_board);
-CORE_LIBSPEC struct board *load_board_allocate(FILE *fp, int savegame);
+CORE_LIBSPEC struct board *load_board_allocate(FILE *fp, int savegame,
+ int version);
 CORE_LIBSPEC int save_board(struct board *cur_board, FILE *fp, int savegame);
 
 int find_board(struct world *mzx_world, char *name);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void load_board_direct(struct board *cur_board, FILE *fp,
- int savegame);
+ int savegame, int version);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

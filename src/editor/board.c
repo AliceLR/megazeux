@@ -27,46 +27,57 @@
 
 #include <string.h>
 
-static struct board *load_board_allocate_direct(FILE *fp, int savegame)
+static int board_magic(const char magic_string[4])
+{
+  if(magic_string[0] == 0xFF)
+  {
+    if(magic_string[1] == 'M')
+    {
+      // MZX versions >= 2.00 && <= 2.51S1
+      if(magic_string[2] == 'B' && magic_string[3] == '2')
+        return 0x0200;
+
+      // MZX versions >= 2.51S2 && <= 9.xx
+      if((magic_string[2] > 1) && (magic_string[2] < 10))
+        return ((int)magic_string[2] << 8) + (int)magic_string[3];
+    }
+  }
+
+  // Not a recognized board magic
+  return 0;
+}
+
+static struct board *load_board_allocate_direct(FILE *fp, int version)
 {
   struct board *cur_board = cmalloc(sizeof(struct board));
-  load_board_direct(cur_board, fp, savegame);
+  load_board_direct(cur_board, fp, 0, version);
   fread(cur_board->board_name, 25, 1, fp);
   return cur_board;
 }
 
 void replace_current_board(struct world *mzx_world, char *name)
 {
+  int version, current_board_id = mzx_world->current_board_id;
   struct board *src_board = mzx_world->current_board;
   FILE *input_mzb = fopen(name, "rb");
-  int first_byte = fgetc(input_mzb);
   char version_string[4];
-  int current_board_id = mzx_world->current_board_id;
 
-  fread(version_string, 3, 1, input_mzb);
-  version_string[3] = 0;
+  fread(version_string, 4, 1, input_mzb);
+  version = board_magic(version_string);
 
-  // First two bytes are the same for any valid board
-  if(first_byte == 0xff && version_string[0] == 'M')
+  if(version > 0 && version < WORLD_VERSION)
   {
-    // MB2 are versions <= 2.51s1, otherwise it's M\x02\x?? where
-    // ?? is some version less than or equal to this MZX's version
-    if(!strcmp(version_string + 1, "B2") ||
-     ((version_string[1] == ((WORLD_VERSION >> 8) & 0xff)) &&
-      (version_string[2] <= (WORLD_VERSION & 0xff))))
-    {
-      clear_board(src_board);
-      src_board = load_board_allocate_direct(input_mzb, 0);
-      optimize_null_objects(src_board);
+    clear_board(src_board);
+    src_board = load_board_allocate_direct(input_mzb, version);
+    optimize_null_objects(src_board);
 
-      set_update_done_current(mzx_world);
+    set_update_done_current(mzx_world);
 
-      if(src_board->robot_list)
-        src_board->robot_list[0] = &mzx_world->global_robot;
+    if(src_board->robot_list)
+      src_board->robot_list[0] = &mzx_world->global_robot;
 
-      set_current_board(mzx_world, src_board);
-      mzx_world->board_list[current_board_id] = src_board;
-    }
+    set_current_board(mzx_world, src_board);
+    mzx_world->board_list[current_board_id] = src_board;
   }
 
   fclose(input_mzb);

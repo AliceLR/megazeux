@@ -27,6 +27,15 @@
 #include "extmem.h"
 #include "util.h"
 
+/* 12 (w/o saved NULL terminator) */
+#define LEGACY_MOD_FILENAME_MAX 12
+
+/* 80 (w/o saved NULL terminator) */
+#define LEGACY_BOTTOM_MESG_MAX  80
+
+/* 80 (w/o saved NULL terminator) */
+#define LEGACY_INPUT_STRING_MAX 80
+
 static int cmp_robots(const void *dest, const void *src)
 {
   struct robot *rsrc = *((struct robot **)src);
@@ -58,8 +67,8 @@ static void load_RLE2_plane(char *plane, FILE *fp, int size)
   }
 }
 
-__editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
- int savegame)
+__editor_maybe_static void load_board_direct(struct board *cur_board,
+ FILE *fp, int savegame, int version)
 {
   int num_robots, num_scrolls, num_sensors, num_robots_active;
   int overlay_mode, board_mode;
@@ -135,9 +144,20 @@ __editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
   load_RLE2_plane(cur_board->level_under_param, fp, size);
 
   // Load board parameters
+
+  if(version < 0x0253)
   {
     fread(cur_board->mod_playing, LEGACY_MOD_FILENAME_MAX + 1, 1, fp);
     cur_board->mod_playing[LEGACY_MOD_FILENAME_MAX] = 0;
+  }
+  else
+  {
+    size_t len = fgetw(fp);
+    if(len >= MAX_PATH)
+      len = MAX_PATH - 1;
+
+    fread(cur_board->mod_playing, len, 1, fp);
+    cur_board->mod_playing[len] = 0;
   }
 
   cur_board->viewport_x = fgetc(fp);
@@ -166,16 +186,36 @@ __editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
   cur_board->num_input = fgetw(fp);
   cur_board->input_size = fgetc(fp);
 
+  if(version < 0x0253)
   {
     fread(cur_board->input_string, LEGACY_INPUT_STRING_MAX + 1, 1, fp);
     cur_board->input_string[LEGACY_INPUT_STRING_MAX] = 0;
   }
+  else
+  {
+    size_t len = fgetw(fp);
+    if(len >= ROBOT_MAX_TR)
+      len = ROBOT_MAX_TR - 1;
+
+    fread(cur_board->input_string, len, 1, fp);
+    cur_board->input_string[len] = 0;
+  }
 
   cur_board->player_last_dir = fgetc(fp);
 
+  if(version < 0x0253)
   {
     fread(cur_board->bottom_mesg, LEGACY_BOTTOM_MESG_MAX + 1, 1, fp);
     cur_board->bottom_mesg[LEGACY_BOTTOM_MESG_MAX] = 0;
+  }
+  else
+  {
+    size_t len = fgetw(fp);
+    if(len >= ROBOT_MAX_TR)
+      len = ROBOT_MAX_TR - 1;
+
+    fread(cur_board->bottom_mesg, len, 1, fp);
+    cur_board->bottom_mesg[len] = 0;
   }
 
   cur_board->b_mesg_timer = fgetc(fp);
@@ -253,7 +293,7 @@ __editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
   {
     for(i = 1; i <= num_scrolls; i++)
     {
-      cur_scroll = load_scroll_allocate(fp, savegame);
+      cur_scroll = load_scroll_allocate(fp);
       if(cur_scroll->used)
         cur_board->scroll_list[i] = cur_scroll;
       else
@@ -272,7 +312,7 @@ __editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
   {
     for(i = 1; i <= num_sensors; i++)
     {
-      cur_sensor = load_sensor_allocate(fp, savegame);
+      cur_sensor = load_sensor_allocate(fp);
       if(cur_sensor->used)
         cur_board->sensor_list[i] = cur_sensor;
       else
@@ -287,7 +327,8 @@ __editor_maybe_static void load_board_direct(struct board *cur_board, FILE *fp,
 // The file given should point to a name/location combo. This will
 // restore the file position to after the name/location.
 
-static void load_board(struct board *cur_board, FILE *fp, int savegame)
+static void load_board(struct board *cur_board, FILE *fp, int savegame,
+ int version)
 {
   int board_size = fgetd(fp);
 
@@ -299,7 +340,7 @@ static void load_board(struct board *cur_board, FILE *fp, int savegame)
     last_location = ftell(fp);
 
     fseek(fp, board_location, SEEK_SET);
-    load_board_direct(cur_board, fp, savegame);
+    load_board_direct(cur_board, fp, savegame, version);
     fseek(fp, last_location, SEEK_SET);
   }
   else
@@ -310,10 +351,10 @@ static void load_board(struct board *cur_board, FILE *fp, int savegame)
   }
 }
 
-struct board *load_board_allocate(FILE *fp, int savegame)
+struct board *load_board_allocate(FILE *fp, int savegame, int version)
 {
   struct board *cur_board = cmalloc(sizeof(struct board));
-  load_board(cur_board, fp, savegame);
+  load_board(cur_board, fp, savegame, version);
 
   if(!cur_board->board_width)
   {
@@ -400,9 +441,12 @@ int save_board(struct board *cur_board, FILE *fp, int savegame)
   save_RLE2_plane(cur_board->level_under_param, fp, board_size);
 
   // Save board parameters
+
   {
-    fwrite(cur_board->mod_playing, LEGACY_MOD_FILENAME_MAX, 1, fp);
-    fputc(0, fp);
+    size_t len = strlen(cur_board->mod_playing);
+    fputw(len, fp);
+    if(len)
+      fwrite(cur_board->mod_playing, len, 1, fp);
   }
 
   fputc(cur_board->viewport_x, fp);
@@ -432,15 +476,19 @@ int save_board(struct board *cur_board, FILE *fp, int savegame)
   fputc(cur_board->input_size, fp);
 
   {
-    fwrite(cur_board->input_string, LEGACY_INPUT_STRING_MAX, 1, fp);
-    fputc(0, fp);
+    size_t len = strlen(cur_board->input_string);
+    fputw(len, fp);
+    if(len)
+      fwrite(cur_board->input_string, len, 1, fp);
   }
 
   fputc(cur_board->player_last_dir, fp);
 
   {
-    fwrite(cur_board->bottom_mesg, LEGACY_BOTTOM_MESG_MAX, 1, fp);
-    fputc(0, fp);
+    size_t len = strlen(cur_board->bottom_mesg);
+    fputw(len, fp);
+    if(len)
+      fwrite(cur_board->bottom_mesg, len, 1, fp);
   }
 
   fputc(cur_board->b_mesg_timer, fp);

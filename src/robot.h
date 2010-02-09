@@ -55,8 +55,8 @@ CORE_LIBSPEC void replace_player(struct world *mzx_world);
 
 struct robot *load_robot_allocate(FILE *fp, int savegame);
 void load_robot(struct robot *cur_robot, FILE *fp, int savegame);
-struct scroll *load_scroll_allocate(FILE *fp, int savegame);
-struct sensor *load_sensor_allocate(FILE *fp, int savegame);
+struct scroll *load_scroll_allocate(FILE *fp);
+struct sensor *load_sensor_allocate(FILE *fp);
 void save_robot(struct robot *cur_robot, FILE *fp, int savegame);
 void save_scroll(struct scroll *cur_scroll, FILE *fp, int savegame);
 void save_sensor(struct sensor *cur_sensor, FILE *fp, int savegame);

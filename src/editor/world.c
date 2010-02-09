@@ -195,7 +195,8 @@ bool append_world(struct world *mzx_world, const char *file)
   // Append boards
   for(i = old_num_boards; i < old_num_boards + num_boards; i++)
   {
-    mzx_world->board_list[i] = load_board_allocate(fp, 0);
+    mzx_world->board_list[i] =
+     load_board_allocate(fp, 0, mzx_world->version);
     cur_board = mzx_world->board_list[i];
   }
 

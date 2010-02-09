@@ -433,8 +433,10 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
     fputc(mzx_world->scroll_arrow_color, fp);
 
     {
-      fwrite(mzx_world->real_mod_playing, LEGACY_MOD_FILENAME_MAX, 1, fp);
-      fputc(0, fp);
+      size_t len = strlen(mzx_world->real_mod_playing);
+      fputw(len, fp);
+      if(len)
+        fwrite(mzx_world->real_mod_playing, len, 1, fp);
     }
   }
 
@@ -534,7 +536,10 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
 
     // Write input file name and if open, position
     {
-      fwrite(mzx_world->input_file_name, 1, LEGACY_INOUT_FILENAME_MAX, fp);
+      size_t len = strlen(mzx_world->input_file_name);
+      fputw(len, fp);
+      if(len)
+        fwrite(mzx_world->input_file_name, len, 1, fp);
     }
 
     if(mzx_world->input_file)
@@ -548,7 +553,10 @@ int save_world(struct world *mzx_world, const char *file, int savegame,
 
     // Write output file name and if open, position
     {
-      fwrite(mzx_world->output_file_name, 1, LEGACY_INOUT_FILENAME_MAX, fp);
+      size_t len = strlen(mzx_world->output_file_name);
+      fputw(len, fp);
+      if(len)
+        fwrite(mzx_world->output_file_name, len, 1, fp);
     }
 
     if(mzx_world->output_file)
@@ -1107,8 +1115,12 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     mzx_world->scroll_arrow_color = fgetc(fp);
 
     {
-      fread(mzx_world->real_mod_playing, LEGACY_MOD_FILENAME_MAX + 1, 1, fp);
-      mzx_world->real_mod_playing[LEGACY_MOD_FILENAME_MAX] = 0;
+      size_t len = fgetw(fp);
+      if(len >= MAX_PATH)
+        len = MAX_PATH - 1;
+
+      fread(mzx_world->real_mod_playing, len, 1, fp);
+      mzx_world->real_mod_playing[len] = 0;
     }
   }
 
@@ -1233,10 +1245,13 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     // Builtin message status
     mzx_world->bi_mesg_status = fgetc(fp);
 
-    // Load input file name, open
     {
-      fread(mzx_world->input_file_name, 1, LEGACY_INOUT_FILENAME_MAX, fp);
-      mzx_world->input_file_name[LEGACY_INOUT_FILENAME_MAX] = 0;
+      size_t len = fgetw(fp);
+      if(len >= MAX_PATH)
+        len = MAX_PATH - 1;
+
+      fread(mzx_world->input_file_name, len, 1, fp);
+      mzx_world->input_file_name[len] = 0;
     }
 
     if(mzx_world->input_file_name[0] != '\0')
@@ -1260,8 +1275,12 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
 
     // Load ouput file name, open
     {
-      fread(mzx_world->output_file_name, 1, LEGACY_INOUT_FILENAME_MAX, fp);
-      mzx_world->output_file_name[LEGACY_INOUT_FILENAME_MAX] = 0;
+      size_t len = fgetw(fp);
+      if(len >= MAX_PATH)
+        len = MAX_PATH - 1;
+
+      fread(mzx_world->output_file_name, len, 1, fp);
+      mzx_world->output_file_name[len] = 0;
     }
 
     if(mzx_world->output_file_name[0] != '\0')
@@ -1362,7 +1381,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
 
   for(i = 0; i < num_boards; i++)
   {
-    mzx_world->board_list[i] = load_board_allocate(fp, savegame);
+    mzx_world->board_list[i] = load_board_allocate(fp, savegame, version);
     store_board_to_extram(mzx_world->board_list[i]);
     meter_update_screen(mzx_world, &meter_curr, meter_target);
   }

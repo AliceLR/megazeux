@@ -46,9 +46,9 @@ __M_BEGIN_DECLS
  *
  * World files:
  *
- *  MZX - Ver 1.x MegaZeux
- *  MZ2 - Ver 2.x MegaZeux
- *  MZA - Ver 2.51S1 Megazeux          (fabricated as 0x0208)
+ *  MZX - Ver 1.x MegaZeux             (mzx_world->version == 0x0100)
+ *  MZ2 - Ver 2.x MegaZeux             (mzx_world->version == 0x0205)
+ *  MZA - Ver 2.51S1 Megazeux          (mzx_world->version == 0x0208)
  *  M\x02\x09 - 2.5.1spider2+
  *  M\x02\x3E - MZX 2.62.x
  *  M\x02\x41 - MZX 2.65
@@ -60,11 +60,12 @@ __M_BEGIN_DECLS
  *  M\x02\x50 - MZX 2.80 (non-DOS)
  *  M\x02\x51 - MZX 2.81
  *  M\x02\x52 - MZX 2.82
+ *  M\x02\x53 - MZX 2.83
  *
  * Save files:
  *
- *  MZSV2 - Ver 2.x MegaZeux
- *  MZXSA - Ver 2.51S1 MegaZeux        (fabricated as 0x0208)
+ *  MZSV2 - Ver 2.x MegaZeux           (mzx_world->version == 0x0205)
+ *  MZXSA - Ver 2.51S1 MegaZeux        (mzx_world->version == 0x0208)
  *  MZS\x02\x09 - 2.5.1spider2+
  *  MZS\x02\x3E - MZX 2.62.x
  *  MZS\x02\x41 - MZX 2.65
@@ -76,14 +77,14 @@ __M_BEGIN_DECLS
  *  MZS\x02\x50 - MZX 2.80 (non-DOS)
  *  MZS\x02\x51 - MZX 2.81
  *  MZS\x02\x52 - MZX 2.82
+ *  MZS\x02\x53 - MZX 2.83
  *
  * Board files follow a similar pattern to world files. Versions prior to
- * 2.51S1 failed to bump the magic number -- they are "MB2", which is the same
- * magic used back to 2.00. For versions greater than 2.51S1, they match
- * world file magic, but the first byte is always 0xFF (see board.c).
+ * 2.51S1 are "MB2". For versions greater than 2.51S1, they match the
+ * world file magic. For all boards, the first byte is always 0xFF.
  *
  * As of 2.80+, all letters after the name denote bug fixes/minor additions
- * and do not have different save formats. If a save format change is
+ * and may have different save formats. If a save format change is
  * necessitated, a numerical change must be enacted.
  */
 
