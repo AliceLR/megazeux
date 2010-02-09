@@ -215,7 +215,6 @@ static GLenum glsl_load_shader(struct graphics_data *graphics,
   struct glsl_render_data *render_data = graphics->render_data;
   int index = res - SHADERS_SCALER_VERT;
   GLenum shader;
-  GLint length;
 
   assert(res >= SHADERS_SCALER_VERT && res <= SHADERS_CURSOR_FRAG);
 
@@ -234,8 +233,25 @@ static GLenum glsl_load_shader(struct graphics_data *graphics,
 
   shader = glsl.glCreateShader(type);
 
-  length = (GLint)strlen(source_cache[index]);
-  glsl.glShaderSource(shader, 1, &source_cache[index], &length);
+#ifdef CONFIG_EGL
+  {
+    const GLchar *sources[2];
+    GLint lengths[2];
+
+    sources[0] = "precision mediump float;";
+    sources[1] = source_cache[index];
+
+    lengths[0] = (GLint)strlen(sources[0]);
+    lengths[1] = (GLint)strlen(source_cache[index]);
+
+    glsl.glShaderSource(shader, 2, sources, lengths);
+  }
+#else
+  {
+    GLint length = (GLint)strlen(source_cache[index]);
+    glsl.glShaderSource(shader, 1, &source_cache[index], &length);
+  }
+#endif
 
   glsl.glCompileShader(shader);
   glsl_verify_compile(render_data, shader);

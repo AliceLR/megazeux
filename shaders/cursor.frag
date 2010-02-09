@@ -1,9 +1,3 @@
-#ifndef GL_ES
-#version 120
-#endif
-
-precision mediump float;
-
 varying vec3 vColor;
 
 void main(void)

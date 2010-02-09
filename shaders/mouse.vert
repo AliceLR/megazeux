@@ -1,9 +1,3 @@
-#ifndef GL_ES
-#version 120
-#endif
-
-precision mediump float;
-
 attribute vec2 Position;
 
 void main(void)
