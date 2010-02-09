@@ -124,9 +124,9 @@ ${mzx}: ${icons}
 endif
 
 ifeq (${BUILD_MODPLUG},1)
-mzx_flags += -I${gdm2s3m_base} # cflags?
+mzx_cflags += -I${gdm2s3m_base}
 mzx_cobjs += ${gdm2s3m_objs}
-mzx_flags += -I${libmodplug_base} -I${libmodplug_base}/libmodplug # cxxflags?
+mzx_flags += -I${libmodplug_base} -I${libmodplug_base}/libmodplug
 mzx_cxxobjs += ${mzx_base}/audio_modplug.${o} ${libmodplug_objs}
 LINK_CC := ${CXX}
 endif
