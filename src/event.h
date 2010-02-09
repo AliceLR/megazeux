@@ -90,7 +90,6 @@ enum keycode_type
 CORE_LIBSPEC void init_event(void);
 
 struct buffered_status *store_status(void);
-const struct buffered_status *load_status(void);
 
 CORE_LIBSPEC bool update_event_status(void);
 CORE_LIBSPEC Uint32 update_event_status_delay(void);

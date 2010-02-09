@@ -41,7 +41,7 @@ struct buffered_status *store_status(void)
   return &input.buffer[input.store_offset];
 }
 
-const struct buffered_status *load_status(void)
+static const struct buffered_status *load_status(void)
 {
   return (const struct buffered_status *)&input.buffer[input.load_offset];
 }

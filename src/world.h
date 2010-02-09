@@ -101,8 +101,6 @@ __M_BEGIN_DECLS
  */
 #define WORLD_VERSION_PREV 0x0252
 
-CORE_LIBSPEC FILE *try_load_world(const char *file, bool savegame,
- int *version, char *name);
 CORE_LIBSPEC int save_world(struct world *mzx_world, const char *file,
  int savegame, int faded);
 CORE_LIBSPEC bool reload_world(struct world *mzx_world, const char *file,
@@ -124,10 +122,11 @@ void fputw(int src, FILE *fp);
 void fputd(int src, FILE *fp);
 
 #ifdef CONFIG_EDITOR
+CORE_LIBSPEC FILE *try_load_world(const char *file, bool savegame,
+ int *version, char *name);
 CORE_LIBSPEC void default_global_data(struct world *mzx_world);
 CORE_LIBSPEC void optimize_null_boards(struct world *mzx_world);
 CORE_LIBSPEC void set_update_done(struct world *mzx_world);
-CORE_LIBSPEC int world_magic(const char magic_string[3]);
 CORE_LIBSPEC extern char world_version_string[4];
 #endif // CONFIG_EDITOR
 

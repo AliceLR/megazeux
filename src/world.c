@@ -261,7 +261,7 @@ static void decrypt(const char *file_name)
   fclose(dest);
 }
 
-__editor_maybe_static int world_magic(const char magic_string[3])
+static int world_magic(const char magic_string[3])
 {
   if(magic_string[0] == 'M')
   {
@@ -886,7 +886,8 @@ __editor_maybe_static void optimize_null_boards(struct world *mzx_world)
   free(board_id_translation_list);
 }
 
-FILE *try_load_world(const char *file, bool savegame, int *version, char *name)
+__editor_maybe_static FILE *try_load_world(const char *file,
+ bool savegame, int *version, char *name)
 {
   char magic[5];
   FILE *fp;
