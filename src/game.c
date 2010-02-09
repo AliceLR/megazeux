@@ -2398,6 +2398,7 @@ void title_screen(World *mzx_world)
             // Editor
             clear_sfx_queue();
             vquick_fadeout();
+            set_intro_mesg_timer(0);
             edit_world(mzx_world);
 
             if(curr_file[0])
