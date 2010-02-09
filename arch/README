@@ -1,0 +1,37 @@
+MULTI-PLATFORM SUPPORT FOR MEGAZEUX
+
+The arch/ directory structure contains any code/machinery which is platform
+specific. Though is it dubiously named "arch" this refers to the platform
+"architecture" rather than the CPU architecture. For example, although GP2X
+and NDS both use ARM CPUs, they require different library and build system
+machinery to work correctly.
+
+DIRECTORY LAYOUT
+
+Most directories here contain at least a README file describing what toolchain
+and dependencies they require to work correctly. Some might also define
+additional targets, for post-processing binaries or installing them on the
+system.
+
+Additionally, all of these directories must have a Makefile.in which the build
+system will automatically include. This file should initialize any variables
+that can be tweaked, for example the location of libraries or compiler flags.
+The existing Makefile.in files should be a reasonable guide of this
+functionality.
+
+ADDING A PLATFORM TO MEGAZEUX
+
+Adding support for a new platform is trivial. Think of a short name for the
+platform (for example, Nintendo Dual-Screen is "nds") then create a directory
+in arch/ with that name. Create a Makefile.in for your platform. Initially,
+you may find configuring for "unix" and then manually altering the
+"platform.inc" in the top level is enough to get your build to succeed.
+
+Then, some changes must be made to config.sh to automatically generate both
+the src/config.h header (which is fully generic) and the platform.inc. This
+script is what users of your port will invoke to build the package.
+
+You might also find modifying package.sh is useful to allow me (the maintainer)
+to automatically package and ship binary packages for your platform.
+
+--ajs.

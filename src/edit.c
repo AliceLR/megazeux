@@ -738,6 +738,7 @@ static void flash_thing(World *mzx_world, int start, int end,
     {
       id_chars[i] = flash_one;
     }
+
     draw_edit_window(src_board, scroll_x, scroll_y, edit_screen_height);
     update_screen();
 
@@ -745,6 +746,7 @@ static void flash_thing(World *mzx_world, int start, int end,
     {
       id_chars[i] = flash_two;
     }
+
     draw_edit_window(src_board, scroll_x, scroll_y, edit_screen_height);
     update_screen();
 

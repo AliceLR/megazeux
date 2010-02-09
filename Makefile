@@ -13,7 +13,7 @@ include version.inc
 
 all: mzx
 
-include arch/Makefile.${PLATFORM}
+include arch/${PLATFORM}/Makefile.in
 
 CC  ?= gcc
 CXX ?= g++

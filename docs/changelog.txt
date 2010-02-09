@@ -31,6 +31,9 @@ DEVELOPERS
   symbols static and improves optimization, somewhat like MSVC's LTO does.
 + Add a valgrind.supp file to suppress bugs in third party libraries when
   valgrinding MegaZeux.
++ Cleaned up all the ports and documented making new ports. The platforms
+  "linux", "solaris" and "obsd" are now called "unix" and the "linux-static"
+  platform is now "unix-devel" and available on all UNIX derivatives/clones.
 
 June 10, 2008 - MZX 2.82
 

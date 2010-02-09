@@ -1,0 +1,38 @@
+#
+# psp makefile generics
+#
+
+.PHONY: package-pbp
+
+#
+# PSP toolchain overrides
+#
+CC  = psp-gcc
+CXX = psp-g++
+AR  = psp-ar
+
+#
+# PSP target rules
+#
+BINEXT = .elf
+BINNAME = ${TARGET}${BINEXT}
+BINNAME_STRIP = ${TARGET}${BINEXT}.strip
+STRIP = /bin/true
+
+# flag PSP build and link in c/psppower
+ARCH_CFLAGS   = -G0 -I${PREFIX}/sdk/include
+ARCH_CXXFLAGS = ${ARCH_CFLAGS}
+ARCH_LDFLAGS  = -lc -lpsppower
+
+package: mzx
+	psp-fixup-imports ${BINNAME}
+	mksfo 'MegaZeux ${VERSION}' PARAM.SFO
+	psp-strip ${BINNAME} -o ${BINNAME_STRIP}
+	convert -scale 80x80 -border 32x0 -bordercolor transparent \
+	        contrib/icons/quantump.png ICON0.PNG
+	pack-pbp EBOOT.PBP PARAM.SFO ICON0.PNG NULL \
+		 NULL NULL NULL ${BINNAME_STRIP} NULL
+	rm -f ${BINNAME_STRIP}
+
+clean:
+	@rm -f EBOOT.PBP PARAM.SFO ICON0.PNG

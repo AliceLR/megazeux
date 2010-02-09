@@ -13,18 +13,16 @@ usage() {
 	echo
 	echo "  win32          Microsoft Windows (x86)"
 	echo "  win64          Microsoft Windows (x64)"
-	echo "  linux          Linux / Embedded"
-	echo "  linux-static   Linux (statically linked)"
+	echo "  mingw32        Use MinGW32 on Linux, to build for win32"
+	echo "  mingw64        Use MinGW64 on Linux, to build for win64"
+	echo "  unix           Unix-like / Linux / Solaris / BSD / Embedded"
+	echo "  unix-devel     As above, but for running from current dir"
 	echo "  darwin         Macintosh OS X (not Classic)"
-	echo "  solaris        OpenSolaris (2008.05 tested)"
-	echo "  obsd           OpenBSD (4.2 tested) (statically linked)"
 	echo "  psp            Experimental PSP port"
 	echo "  gp2x           Experimental GP2X port"
 	echo "  nds            Experimental NDS port"
 	echo "  wii            Experimental Wii port"
 	echo "  amiga          Experimental AmigaOS 4 port"
-	echo "  mingw32        Use MinGW32 on Linux, to build for win32"
-	echo "  mingw64        Use MinGW64 on Linux, to build for win64"
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
@@ -47,7 +45,7 @@ usage() {
 	echo "  --enable-pthread     Use pthread instead of SDL for locking."
 	echo "  --enable-icon        Try to brand executable with icon."
 	echo
-	echo "e.g.: ./config.sh --platform linux --prefix /usr"
+	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
 	echo "e.g.: ./config.sh --platform win32"
 	echo
@@ -81,13 +79,12 @@ AUDIO="true"
 TREMOR="false"
 PTHREAD="false"
 ICON="true"
-XBIN="X"
 
 #
 # User may override above settings
 #
 while [ "$1" != "" ]; do
-	# e.g. --platform linux-static
+	# e.g. --platform unix-devel
 	if [ "$1" = "--platform" ]; then
 		shift
 		PLATFORM="$1"
@@ -184,6 +181,8 @@ elif [ "$PLATFORM" = "mingw64" ]; then
 	PLATFORM="mingw"
 	echo "PLATFORM=$PLATFORM"            > platform.inc
 	echo "MINGWBASE=x86_64-pc-mingw32-" >> platform.inc
+elif [ "$PLATFORM" = "unix-devel" ]; then
+	echo "PLATFORM=unix" > platform.inc
 else
 	if [ ! -f arch/Makefile.$PLATFORM ]; then
 		echo "Invalid platform selection (see arch/)."
@@ -196,7 +195,7 @@ fi
 
 if [ "$PLATFORM" = "darwin" ]; then
 	SYSCONFDIR="../Resources"
-elif [ "$PLATFORM" != "linux" -a "$PLATFORM" != "solaris" ]; then
+elif [ "$PLATFORM" != "unix" ]; then
 	if [ "$SYSCONFDIR_SET" != "true" ]; then
 		SYSCONFDIR="."
 	fi
@@ -232,7 +231,7 @@ echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 #
 # Some platforms may have filesystem hierarchies they need to fit into
 #
-if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "solaris" ]; then
+if [ "$PLATFORM" = "unix" ]; then
 	echo "#define SHAREDIR \"$PREFIX/share/megazeux/\"" >> src/config.h
 	echo "#define CONFFILE \"megazeux-config\""         >> src/config.h
 elif [ "$PLATFORM" = "nds" ]; then
@@ -350,9 +349,8 @@ fi
 #
 # Force-enable pthread on POSIX platforms (works around SDL bugs)
 #
-if [ "$PLATFORM" = "linux" -o "$PLATFORM" = "linux-static" \
-  -o "$PLATFORM" = "obsd"  -o "$PLATFORM" = "gp2x" \
-  -o "$PLATFORM" = "solaris" ]; then
+if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" \
+  -o "$PLATFORM" = "gp2x" ]; then
 	echo "Force-enabling pthread on POSIX platforms."
 	PTHREAD="true"
 fi
@@ -435,26 +433,20 @@ fi
 #
 # X11 support (linked against and needs headers installed)
 #
-if [ "$PLATFORM" = "linux"  -o "$PLATFORM" = "linux-static" \
-  -o "$PLATFORM" = "darwin" -o "$PLATFORM" = "obsd" \
-  -o "$PLATFORM" = "solaris" ]; then
-	if [ "$PLATFORM" = "solaris" ]; then
-		#
-		# Solaris's `X' binary isn't a symlink to Xorg, so you
-		# can't query the version of the server from it. Use
-		# the `Xorg' binary directly.
-		#
-		XBIN="Xorg"
-	fi
-
+if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" \
+  -o "$PLATFORM" = "darwin" ]; then
 	#
 	# Confirm the user's selection of X11, if they enabled it
 	#
 	if [ "$X11" = "true" ]; then
-		# try to run X
-		$XBIN -version >/dev/null 2>&1
+		for XBIN in X Xorg; do
+			# try to run X
+			$XBIN -version >/dev/null 2>&1
 
-		# X queried successfully
+			# X/Xorg queried successfully
+			[ "$?" = "0" ] && break
+		done
+
 		if [ "$?" != "0" ]; then
 			echo "Force-disabling X11 (could not be queried)."
 			X11="false"
