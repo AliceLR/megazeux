@@ -1889,6 +1889,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           {
             int i;
 
+            if(check_color == 288)
+              check_color = 0;
+
             for(i = check_color; i < MAX_SPRITES; i++)
             {
               if(sprite_at_xy(mzx_world->sprite_list[i], check_x, check_y))
