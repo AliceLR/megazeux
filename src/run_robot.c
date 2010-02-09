@@ -2627,6 +2627,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             // Figure blocked vars
             update_blocked = 1;
           }
+          goto breaker;
         }
         break;
       }
@@ -2643,6 +2644,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             // Figure blocked vars
             update_blocked = 1;
           }
+          goto breaker;
         }
         break;
       }
@@ -2659,6 +2661,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             // Figure blocked vars
             update_blocked = 1;
           }
+          goto breaker;
         }
         break;
       }
