@@ -74,6 +74,13 @@ int main(int argc, char *argv[])
     subfiles[i].length = fgetd(in);
   }
 
+  /* FIXME: Hack, remove!!
+   * txt2hlp seems to inject an unnecessary 0x0A at the end of the file
+   * which means we can't use hlp2txt for validation. Hack the final
+   * subfile so it's two characters short.
+   */
+  subfiles[i - 1].length-=2;
+
   for(i = 0; i < num_files; i++)
   {
     int start_pos;

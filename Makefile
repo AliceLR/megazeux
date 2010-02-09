@@ -6,7 +6,7 @@
 #                  http://aegis.sourceforge.net/auug97.pdf
 ##
 
-.PHONY: clean package_clean
+.PHONY: clean package_clean help_check
 
 include platform.inc
 include version.inc
@@ -68,7 +68,7 @@ else
 mzx = ${TARGET}.dbg${BINEXT}
 endif
 
-mzx: ${mzx} utils
+mzx: ${mzx}
 
 ifeq (${BUILD_MODPLUG},1)
 BUILD_GDM2S3M=1
@@ -91,5 +91,12 @@ distclean: clean
 	@echo "  DISTCLEAN"
 	@rm -f src/config.h
 	@echo "PLATFORM=none" > platform.inc
+
+mzx_help.fil: ${txt2hlp} docs/WIPHelp.txt
+	@src/utils/txt2hlp docs/WIPHelp.txt $@
+
+help_check: ${hlp2txt} mzx_help.fil
+	@src/utils/hlp2txt mzx_help.fil help.txt
+	@diff -q docs/WIPHelp.txt help.txt
 
 endif
