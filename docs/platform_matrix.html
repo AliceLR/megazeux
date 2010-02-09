@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.1//EN"
-                      "http://www.w3.org/tr/xhtml11/DTD/xhtml11.dtd">
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Strict//EN"
+                      "http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd">
 
 <html xmlns="http://www.w3.org/1999/xhtml" xml:lang="en">
 
@@ -410,33 +410,31 @@ li {
 
 <ol>
 
-<li><a title="note1"/>
-Could use existing `package.sh' however this does not handle PDB files.<br/>
+<li><a name="note1"/>Could use existing `package.sh' however this does
+not handle PDB files.<br/>
 MSVC binaries are poorly tested and are currently unstable.
 </li>
 
-<li><a title="note2"/>
-&quot;Optimized Visibility&quot; refers to the hiding of library symbols
-which are not required or referenced outside of that library. An
-&quot;optimized&quot; library is smaller and loads faster.<br/>
+<li><a name="note2"/>&quot;Optimized Visibility&quot; refers to the
+hiding of library symbols which are not required or referenced
+outside of that library. An &quot;optimized&quot; library is smaller
+and loads faster.<br/>
 Required on Win32. Only applicable with CONFIG_MODULAR=y builds.
 </li>
 
-<li><a title="note3"/>
-The editor and help system features are disabled to conserve program
-space on embedded platforms. The features build and work on these
-platforms, but they are basically unusable due to the lack of any
+<li><a name="note3"/>The editor and help system features are disabled
+to conserve cache on embedded platforms. The features build and work
+on these platforms, but they are basically unusable due to the lack of any
 on-screen keyboard.
 </li>
 
-<li><a title="note4"/>
-Simply not had the opportunity to cross compile this feature.<br/>
+<li><a name="note4"/>Simply not had the opportunity to cross compile
+this feature.<br/>
 Future developments may require it.
 </li>
 
-<li><a title="note5"/>
-Symbol collision when linking Cocoa and X11 libraries with Darwin
-linker. Potentially fixable with research.
+<li><a name="note5"/>Symbol collision when linking Cocoa and X11
+libraries with Darwin linker. Potentially fixable with research.
 </li>
 
 </ol>
