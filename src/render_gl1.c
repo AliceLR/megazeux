@@ -172,20 +172,12 @@ err_out:
   return false;
 }
 
-static bool gl1_set_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
+static void gl1_resize_screen(struct graphics_data *graphics,
+ int width, int height)
 {
   struct gl1_render_data *render_data = graphics->render_data;
   GLuint texture_number;
   int v_width, v_height;
-
-  gl_set_attributes(graphics);
-
-  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
-    return false;
-
-  if(!gl_load_syms(gl1_syms_map))
-    return false;
 
   get_context_width_height(graphics, &width, &height);
   fix_viewport_ratio(width, height, &v_width, &v_height, render_data->ratio);
@@ -203,6 +195,20 @@ static bool gl1_set_video_mode(struct graphics_data *graphics,
   gl_check_error();
 
   gl_set_filter_method(graphics->gl_filter_method, gl1.glTexParameterf);
+}
+
+static bool gl1_set_video_mode(struct graphics_data *graphics,
+ int width, int height, int depth, bool fullscreen, bool resize)
+{
+  gl_set_attributes(graphics);
+
+  if(!gl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+    return false;
+
+  if(!gl_load_syms(gl1_syms_map))
+    return false;
+
+  gl1_resize_screen(graphics, width, height);
   return true;
 }
 
@@ -311,7 +317,7 @@ void render_gl1_register(struct renderer *renderer)
   renderer->check_video_mode = gl_check_video_mode;
   renderer->set_video_mode = gl1_set_video_mode;
   renderer->update_colors = gl1_update_colors;
-  renderer->resize_screen = resize_screen_standard;
+  renderer->resize_screen = gl1_resize_screen;
   renderer->get_screen_coords = get_screen_coords_scaled;
   renderer->set_screen_coords = set_screen_coords_scaled;
   renderer->render_graph = gl1_render_graph;
