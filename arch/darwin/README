@@ -28,7 +28,8 @@ NOT mean you need all of the Xcode IDE, but you do need the DMG file it is
 installed from. This is normally included on your OS X install DVD #1. It is
 enough to install the UNIX tools.
 
-make ARCH=i686 all clean
+make ARCH=i686 package
+make distclean
 
 Will build the i686 binary, and put it in the root as "mzxsvn.i686". It will
 also clean the source tree, which is VERY IMPORTANT.
@@ -38,7 +39,8 @@ BUILDING (ppc)
 This step is optional, but if you want to support G4 Macs running 10.4, you
 need to do this.
 
-make ARCH=ppc all clean
+make ARCH=ppc package
+make distclean
 
 Will build the ppc binary, and put it in the root as "mzxsvn.ppc". It will
 also clean the source tree, which is VERY IMPORTANT.
@@ -52,9 +54,10 @@ PACKAGING (+ UNIVERSAL BINARIES)
 
 Simply run:
 
-./package.sh -b darwin
+make lipo
+make archive
 
-This will output two files to the "dist" directory at the top level. One of
-these is an installable universal Disk iMaGe, the other is a source package.
+This will output a file to the "build/dist/darwin" directory at the top level.
+One of these is an installable universal Disk iMaGe.
 
 --ajs (20080609)

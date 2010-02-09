@@ -21,4 +21,5 @@ This will create a "boot.dol" file which you should know how to launch.
 
 PACKAGING
 
-Use "./package.sh -b wii" to build a dist/mzxsvn-wii.zip file for distribution.
+Use "make archive" to build a build/dist/wii/mzxsvn-wii.zip file for
+distribution.

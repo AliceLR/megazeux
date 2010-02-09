@@ -49,17 +49,14 @@ cd megazeux
 ./config.sh --platform psp --prefix $PSPDEV/psp --optimize-size \
             --disable-editor --disable-helpsys --disable-utils \
             --disable-libpng --enable-release
-make
+make package
+
+This will create an EBOOT.PBP.
 
 PACKAGING THE BUILD
 
-Type:
+make archive
 
-make package
+To construct a bootable zip archive.
 
-To construct a bootable EBOOT.PBP file.
-
-You can then use "./package.sh -b psp" to build a dist/mzxsvn-psp.zip file for
-distribution.
-
---ajs (20071021)
+--ajs

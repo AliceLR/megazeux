@@ -30,14 +30,11 @@ CONFIG.AMIGA present in this subdirectory. Please note that --prefix MUST
 correctly point to the AmigaOS 4 SDK (otherwise it tries to use /usr's
 stub headers and fails).
 
-(The provided config omits PNG support; this is simply untested and can
- probably be easily re-enabled. I'm not sure about icon support on this
- platform, actually.)
-
 Then start the build with "make".
 
 INSTALLING MEGAZEUX
 
-Need more info ??
+The usual "make archive" works to generate an LHA compilation of MegaZeux
+binaries and Amiga specific scripts. Icons are provided where appropriate.
 
 --ajs
