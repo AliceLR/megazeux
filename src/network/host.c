@@ -950,11 +950,12 @@ static struct addrinfo *recvfrom_raw_op(int fd,struct addrinfo *ais,
 
   for(ai = ais; ai; ai = ai->ai_next)
   {
+    socklen_t addrlen = ai->ai_addrlen;
+
     if(ai->ai_family != h->af)
       continue;
 
-    ret = platform_recvfrom(h->fd, buffer, len, 0,
-     ai->ai_addr, &ai->ai_addrlen);
+    ret = platform_recvfrom(h->fd, buffer, len, 0, ai->ai_addr, &addrlen);
 
     if(ret < 0)
     {
