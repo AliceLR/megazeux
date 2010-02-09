@@ -91,6 +91,9 @@ endif
 ifeq ($(or ${BUILD_GP2X},${BUILD_NDS},${BUILD_PSP},${BUILD_WII}),)
 CFLAGS   += -fstack-protector-all
 CXXFLAGS += -fstack-protector-all
+ifeq (${PLATFORM},mingw)
+ARCH_LDFLAGS += -lssp
+endif
 endif
 
 endif

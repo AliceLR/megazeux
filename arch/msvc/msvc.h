@@ -25,10 +25,12 @@
 #include <io.h>
 #include <ctype.h>
 #include <direct.h>
+#include <process.h>
 
 #define S_ISDIR(mode) (mode & _S_IFDIR)
 
 #define chdir       _chdir
+#define execv       _execv
 #define getcwd      _getcwd
 #define rmdir       _rmdir
 #define snprintf    _snprintf

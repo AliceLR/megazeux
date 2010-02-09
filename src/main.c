@@ -53,6 +53,12 @@
 #include "counter.h"
 #include "run_stubs.h"
 
+#ifdef __amigaos__
+#define __libspec LIBSPEC
+#else
+#define __libspec
+#endif
+
 #ifdef CONFIG_NDS
 
 static void nds_on_vblank(void)
@@ -114,7 +120,7 @@ static void free_world(World *mzx_world)
   free(mzx_world->custom_sfx);
 }
 
-LIBSPEC int main(int argc, char *argv[])
+__libspec int main(int argc, char *argv[])
 {
   World mzx_world;
 
