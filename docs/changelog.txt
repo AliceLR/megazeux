@@ -12,12 +12,6 @@ USERS
   commands like DIE this could cause unpredictable behaviour or simply crashes
   (if invoked in the same cycle). As a special case, end the cycle if either
   of these SET specials are used.
-+ Added Logicow's new OpenGL Shader Language (GLSL) renderer which allows
-  shaders to be applied to the character set ("tileset") and post-processing
-  of the hardware scaler. Requires a modern video card. Detection of the
-  required extensions with a compile failure of the shader program will
-  silently fall back to the fixed pipeline (similar to opengl2). A variety
-  of shaders have been provided and these can be customized.
 + Mistaken or malicious file I/O such as set "$test" to "fread(-1>>1)" will
   no longer crash MegaZeux. The read size will be truncated to a contextual
   maximum for the current file.
