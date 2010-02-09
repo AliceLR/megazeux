@@ -23,7 +23,6 @@
 #include <string.h>
 
 #include "platform.h"
-#include "render_gl.h"
 #include "render.h"
 #include "renderers.h"
 #include "util.h"
@@ -33,8 +32,11 @@
 #endif
 
 #ifdef CONFIG_EGL
+#include <GLES/gl.h>
 #include "render_egl.h"
 #endif
+
+#include "render_gl.h"
 
 // NOTE: This renderer should work with almost any GL capable video card.
 //       However, if you plan to change it, please bear in mind that this
@@ -45,19 +47,18 @@
 struct gl2_syms
 {
   int syms_loaded;
+
   void (GL_APIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
   void (GL_APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
   void (GL_APIENTRY *glClear)(GLbitfield mask);
-  void (GL_APIENTRY *glColor4ub)(GLubyte red, GLubyte green, GLubyte blue,
-   GLubyte alpha);
   void (GL_APIENTRY *glColorPointer)(GLint size, GLenum type, GLsizei stride,
    const GLvoid *pointer);
   void (GL_APIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
    GLenum internalFormat, GLint x, GLint y, GLsizei width, GLsizei height,
    GLint border);
-  void (GL_APIENTRY *glDisableClientState)(GLenum cap);
   void (GL_APIENTRY *glDisable)(GLenum cap);
+  void (GL_APIENTRY *glDisableClientState)(GLenum cap);
   void (GL_APIENTRY *glDrawArrays)(GLenum mode, GLint first, GLsizei count);
   void (GL_APIENTRY *glEnable)(GLenum cap);
   void (GL_APIENTRY *glEnableClientState)(GLenum cap);
@@ -68,13 +69,15 @@ struct gl2_syms
   void (GL_APIENTRY *glTexImage2D)(GLenum target, GLint level,
    GLint internalformat, GLsizei width, GLsizei height, GLint border,
    GLenum format, GLenum type, const GLvoid *pixels);
-  void (GL_APIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
-  void (GL_APIENTRY *glTexSubImage2D)(GLenum target, GLint level, GLint xoffset,
-   GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type,
-   const GLvoid *pixels);
+  void (GL_APIENTRY *glTexParameterf)(GLenum target, GLenum pname,
+   GLfloat param);
+  void (GL_APIENTRY *glTexSubImage2D)(GLenum target, GLint level,
+   GLint xoffset, GLint yoffset, GLsizei width, GLsizei height,
+   GLenum format, GLenum type, const GLvoid *pixels);
   void (GL_APIENTRY *glVertexPointer)(GLint size, GLenum type,
    GLsizei stride, const GLvoid *ptr);
-  void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
+  void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width,
+   GLsizei height);
 };
 
 struct gl2_render_data
@@ -103,7 +106,6 @@ static int gl2_load_syms (struct gl2_syms *gl)
   GL_LOAD_SYM(gl, glBindTexture)
   GL_LOAD_SYM(gl, glBlendFunc)
   GL_LOAD_SYM(gl, glClear)
-  GL_LOAD_SYM(gl, glColor4ub)
   GL_LOAD_SYM(gl, glColorPointer)
   GL_LOAD_SYM(gl, glDisable)
   GL_LOAD_SYM(gl, glDisableClientState)
@@ -377,7 +379,7 @@ static void gl2_render_graph(struct graphics_data *graphics)
   struct gl2_syms *gl = &render_data->gl;
   Sint32 i, i2, i3;
   Uint32 *dest;
-  
+
   if(!graphics->screen_mode)
   {
     float tex_coord_array[8], vertex_array[8];
@@ -432,19 +434,20 @@ static void gl2_render_graph(struct graphics_data *graphics)
 
     gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, SCREEN_W, SCREEN_H, GL_RGBA,
      GL_UNSIGNED_BYTE, render_data->background_texture);
-
-    gl->glColor4ub(255, 255, 255, 255);
     
     gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     gl->glEnableClientState(GL_VERTEX_ARRAY);
+    gl->glEnableClientState(GL_COLOR_ARRAY);
 
     gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
     gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
+    gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
 
     gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     gl->glDisableClientState(GL_VERTEX_ARRAY);
+    gl->glDisableClientState(GL_COLOR_ARRAY);
 
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 
@@ -522,18 +525,19 @@ static void gl2_render_graph(struct graphics_data *graphics)
     gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 640, 350, GL_RGBA,
       GL_UNSIGNED_BYTE, render_data->pixels);
 
-    gl->glColor4ub(255, 255, 255, 255);
-
     gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     gl->glEnableClientState(GL_VERTEX_ARRAY);
+    gl->glEnableClientState(GL_COLOR_ARRAY);
 
     gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
     gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
+    gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
 
     gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     gl->glDisableClientState(GL_VERTEX_ARRAY);
+    gl->glDisableClientState(GL_COLOR_ARRAY);
 
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
   }
@@ -553,17 +557,25 @@ static void gl2_render_cursor(struct graphics_data *graphics,
     (x * 8 + 8)*2.0f/640.0f-1.0f, (y * 14 + lines + offset)*-2.0f/350.0f+1.0f
   };
 
+  const GLubyte color_array[3 * 4] = {
+    pal_base[0], pal_base[1], pal_base[2],
+    pal_base[0], pal_base[1], pal_base[2],
+    pal_base[0], pal_base[1], pal_base[2],
+    pal_base[0], pal_base[1], pal_base[2]
+  };
+
   gl->glDisable(GL_TEXTURE_2D);
 
-  gl->glColor4ub(pal_base[0], pal_base[1], pal_base[2], 255);
-
   gl->glEnableClientState(GL_VERTEX_ARRAY);
+  gl->glEnableClientState(GL_COLOR_ARRAY);
 
   gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array);
+  gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array);
 
   gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
   gl->glDisableClientState(GL_VERTEX_ARRAY);
+  gl->glDisableClientState(GL_COLOR_ARRAY);
 
   gl->glEnable(GL_TEXTURE_2D);
 }
@@ -584,15 +596,16 @@ static void gl2_render_mouse(struct graphics_data *graphics,
   gl->glDisable(GL_TEXTURE_2D);
   gl->glEnable(GL_BLEND);
 
-  gl->glColor4ub(255, 255, 255, 255);
-
   gl->glEnableClientState(GL_VERTEX_ARRAY);
-
+  gl->glEnableClientState(GL_COLOR_ARRAY);
+  
   gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array);
+  gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
 
   gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
   gl->glDisableClientState(GL_VERTEX_ARRAY);
+  gl->glDisableClientState(GL_COLOR_ARRAY);
 
   gl->glEnable(GL_TEXTURE_2D);
   gl->glDisable(GL_BLEND);
@@ -630,19 +643,21 @@ static void gl2_sync_screen(struct graphics_data *graphics)
     }
 #endif
 
-    gl->glColor4ub(255, 255, 255, 255);
     gl->glClear(GL_COLOR_BUFFER_BIT);
 
     gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
     gl->glEnableClientState(GL_VERTEX_ARRAY);
+    gl->glEnableClientState(GL_COLOR_ARRAY);
 
     gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
     gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
+    gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array_white);
 
     gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
     gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
     gl->glDisableClientState(GL_VERTEX_ARRAY);
+    gl->glDisableClientState(GL_COLOR_ARRAY);
 
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
   }

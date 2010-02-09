@@ -22,7 +22,6 @@
 #include <string.h>
 
 #include "platform.h"
-#include "render_gl.h"
 #include "render.h"
 #include "renderers.h"
 #include "util.h"
@@ -33,53 +32,58 @@
 #endif
 
 #ifdef CONFIG_EGL
+#include <GLES2/gl2.h>
 #include "render_egl.h"
 #endif
+
+#include "render_gl.h"
 
 struct glsl_syms
 {
   int syms_loaded;
+
   void (GL_APIENTRY *glAlphaFunc)(GLenum func, GLclampf ref);
-  void (GL_APIENTRY *glBegin)(GLenum mode);
   void (GL_APIENTRY *glBindTexture)(GLenum target, GLuint texture);
   void (GL_APIENTRY *glBlendFunc)(GLenum sfactor, GLenum dfactor);
   void (GL_APIENTRY *glClear)(GLbitfield mask);
-  void (GL_APIENTRY *glColor3ubv)(const GLubyte *v);
-  void (GL_APIENTRY *glColor4f)(GLfloat red, GLfloat green, GLfloat blue,
-   GLfloat alpha);
-  void (GL_APIENTRY *glColor4ub)(GLubyte red, GLubyte green, GLubyte blue,
-   GLubyte alpha);
+  void (GL_APIENTRY *glColorPointer)(GLint size, GLenum type, GLsizei stride,
+   const GLvoid *pointer);
   void (GL_APIENTRY *glCopyTexImage2D)(GLenum target, GLint level,
-   GLenum internalFormat, GLint x, GLint y, GLsizei width, GLsizei height,
+   GLenum internalformat, GLint x, GLint y, GLsizei width, GLsizei height,
    GLint border);
   void (GL_APIENTRY *glDisable)(GLenum cap);
+  void (GL_APIENTRY *glDisableClientState)(GLenum cap);
+  void (GL_APIENTRY *glDrawArrays)(GLenum mode, GLint first, GLsizei count);
   void (GL_APIENTRY *glEnable)(GLenum cap);
-  void (GL_APIENTRY *glEnd)(void);
+  void (GL_APIENTRY *glEnableClientState)(GLenum cap);
   void (GL_APIENTRY *glGenTextures)(GLsizei n, GLuint *textures);
   const GLubyte* (GL_APIENTRY *glGetString)(GLenum name);
-  void (GL_APIENTRY *glTexCoord2f)(GLfloat s, GLfloat t);
+  void (GL_APIENTRY *glTexCoordPointer)(GLint size, GLenum type,
+   GLsizei stride, const GLvoid *ptr);
   void (GL_APIENTRY *glTexImage2D)(GLenum target, GLint level,
-   GLint internalformat, GLsizei width, GLsizei height, GLint border,
-   GLenum format, GLenum type, const GLvoid *pixels);
-  void (GL_APIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
-  void (GL_APIENTRY *glTexParameteri)(GLenum target, GLenum pname, GLint param);
-  void (GL_APIENTRY *glTexSubImage2D)(GLenum target, GLint level, GLint xoffset,
-   GLint yoffset, GLsizei width, GLsizei height, GLenum format, GLenum type,
-   const GLvoid *pixels);
-  void (GL_APIENTRY *glVertex2f)(GLfloat x, GLfloat y);
-  void (GL_APIENTRY *glVertex2i)(GLint x, GLint y);
-  void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
+   GLenum internalformat, GLsizei width, GLsizei height, GLint border,
+   GLenum format, GLenum type, const void *pixels);
+  void (GL_APIENTRY *glTexParameterf)(GLenum target, GLenum pname,
+   GLfloat param);
+  void (GL_APIENTRY *glTexSubImage2D)(GLenum target, GLint level,
+   GLint xoffset, GLint yoffset, GLsizei width, GLsizei height,
+   GLenum format, GLenum type, const void *pixels);
+  void (GL_APIENTRY *glVertexPointer)(GLint size, GLenum type,
+   GLsizei stride, const GLvoid *ptr);
+  void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width,
+   GLsizei height);
 
-  GLenum (GL_APIENTRY *glCreateProgramObjectARB)(void);
-  GLenum (GL_APIENTRY *glCreateShaderObjectARB)(GLenum shaderType);
-  void (GL_APIENTRY *glShaderSourceARB)(GLhandleARB shader, GLuint number_strings,
-   const GLcharARB** strings, GLint * length);
-  void (GL_APIENTRY *glCompileShaderARB)(GLhandleARB shader);
-  void (GL_APIENTRY *glAttachObjectARB)(GLhandleARB program, GLhandleARB shader);
-  void (GL_APIENTRY *glUseProgramObjectARB)(GLhandleARB program);
-  void (GL_APIENTRY *glLinkProgramARB)(GLhandleARB program);
-  void (GL_APIENTRY *glGetInfoLogARB)(GLhandleARB object, int maxLen, int *len,
-   char *log);
+  // These are loaded as extensions on at least Windows
+  GLenum (GL_APIENTRY *glCreateProgram)(void);
+  GLenum (GL_APIENTRY *glCreateShader)(GLenum type);
+  void (GL_APIENTRY *glShaderSource)(GLuint shader, GLsizei count,
+   const char **strings, const GLint *length);
+  void (GL_APIENTRY *glCompileShader)(GLuint shader);
+  void (GL_APIENTRY *glAttachShader)(GLuint program, GLuint shader);
+  void (GL_APIENTRY *glUseProgram)(GLuint program);
+  void (GL_APIENTRY *glLinkProgram)(GLuint program);
+  void (GL_APIENTRY *glGetProgramInfoLog)(GLuint program, GLsizei bufsize,
+   GLsizei *len, char *infolog);
 };
 
 struct glsl_render_data
@@ -107,60 +111,38 @@ static int glsl_load_syms(struct glsl_syms *gl)
   if(gl->syms_loaded)
     return true;
 
-  // Since 1.1
   GL_LOAD_SYM(gl, glAlphaFunc)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glBegin)
-  // Since 1.1
   GL_LOAD_SYM(gl, glBindTexture)
-  // Since 1.0
   GL_LOAD_SYM(gl, glBlendFunc)
-  // Since 1.0
   GL_LOAD_SYM(gl, glClear)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glColor3ubv)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glColor4f)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glColor4ub)
-  // Since 1.1
+  GL_LOAD_SYM(gl, glColorPointer)
   GL_LOAD_SYM(gl, glCopyTexImage2D)
-  // Since 1.0 (parameters may require more recent version)
   GL_LOAD_SYM(gl, glDisable)
-  // Since 1.0 (parameters may require more recent version)
+  GL_LOAD_SYM(gl, glDisableClientState)
+  GL_LOAD_SYM(gl, glDrawArrays)
   GL_LOAD_SYM(gl, glEnable)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glEnd)
-  // Since 1.1
+  GL_LOAD_SYM(gl, glEnableClientState)
   GL_LOAD_SYM(gl, glGenTextures)
-  // Since 1.0
   GL_LOAD_SYM(gl, glGetString)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glTexCoord2f)
-  // Since 1.0 (parameters may require more recent version)
+  GL_LOAD_SYM(gl, glTexCoordPointer)
   GL_LOAD_SYM(gl, glTexImage2D)
-  // Since 1.0
   GL_LOAD_SYM(gl, glTexParameterf)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glTexParameteri)
-  // Since 1.1
   GL_LOAD_SYM(gl, glTexSubImage2D)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glVertex2f)
-  // Since 1.0
-  GL_LOAD_SYM(gl, glVertex2i)
-  // Since 1.0
+  GL_LOAD_SYM(gl, glVertexPointer)
   GL_LOAD_SYM(gl, glViewport)
 
-  // Added since 1.4/1.5: shader programming
-  GL_LOAD_SYM_EXT(gl, glCreateProgramObjectARB)
-  GL_LOAD_SYM_EXT(gl, glCreateShaderObjectARB)
-  GL_LOAD_SYM_EXT(gl, glShaderSourceARB)
-  GL_LOAD_SYM_EXT(gl, glCompileShaderARB);
-  GL_LOAD_SYM_EXT(gl, glAttachObjectARB);
-  GL_LOAD_SYM_EXT(gl, glUseProgramObjectARB);
-  GL_LOAD_SYM_EXT(gl, glLinkProgramARB);
-  GL_LOAD_SYM_EXT(gl, glGetInfoLogARB);
+  // Even though these aren't "extensions" in OpenGL 2.0, on Windows
+  // these symbols are too new to be present in OPENGL32.DLL, so we
+  // must dynamically load them. For OpenGL ES 2.0 it's a non-issue,
+  // and these are resolved at link time.
+  GL_LOAD_SYM_EXT(gl, glCreateProgram)
+  GL_LOAD_SYM_EXT(gl, glCreateShader)
+  GL_LOAD_SYM_EXT(gl, glShaderSource)
+  GL_LOAD_SYM_EXT(gl, glCompileShader);
+  GL_LOAD_SYM_EXT(gl, glAttachShader);
+  GL_LOAD_SYM_EXT(gl, glUseProgram);
+  GL_LOAD_SYM_EXT(gl, glLinkProgram);
+  GL_LOAD_SYM_EXT(gl, glGetProgramInfoLog);
 
   gl->syms_loaded = true;
   return true;
@@ -204,7 +186,7 @@ static void glsl_verify_shader_compile(struct glsl_render_data *render_data,
   char buffer[SHADER_INFO_MAX];
   int len = 0;
 
-  gl->glGetInfoLogARB(shader, SHADER_INFO_MAX - 1, &len, buffer);
+  gl->glGetProgramInfoLog(shader, SHADER_INFO_MAX - 1, &len, buffer);
   buffer[len] = 0;
 
   if(len > 0)
@@ -220,10 +202,10 @@ static void glsl_load_shaders(struct graphics_data *graphics)
   GLenum shader_frag_tilemap;
   GLenum scaling_program;
   GLenum tilemap_program;
-  char *shader_vert_source_scaling;
-  char *shader_frag_source_scaling;
-  char *shader_vert_source_tilemap;
-  char *shader_frag_source_tilemap;
+  const char *shader_vert_source_scaling;
+  const char *shader_frag_source_scaling;
+  const char *shader_vert_source_tilemap;
+  const char *shader_frag_source_tilemap;
   struct glsl_syms *gl;
   struct glsl_render_data *render_data = graphics->render_data;
   gl = &render_data->gl;
@@ -235,35 +217,36 @@ static void glsl_load_shaders(struct graphics_data *graphics)
 
   if(shader_vert_source_tilemap != NULL && shader_frag_source_tilemap != NULL)
   {
-    tilemap_program = gl->glCreateProgramObjectARB();
-    shader_vert_tilemap = gl->glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
-    shader_frag_tilemap = gl->glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
+    tilemap_program = gl->glCreateProgram();
+    shader_vert_tilemap = gl->glCreateShader(GL_VERTEX_SHADER);
+    shader_frag_tilemap = gl->glCreateShader(GL_FRAGMENT_SHADER);
 
     len = (int)strlen(shader_vert_source_tilemap);
-    gl->glShaderSourceARB(shader_vert_tilemap, 1,
-      (const GLcharARB**)&shader_vert_source_tilemap, &len);
-    len = (int)strlen(shader_frag_source_tilemap);
-    gl->glShaderSourceARB(shader_frag_tilemap, 1,
-      (const GLcharARB**)&shader_frag_source_tilemap, &len);
+    gl->glShaderSource(shader_vert_tilemap, 1, &shader_vert_source_tilemap,
+     &len);
 
-    gl->glCompileShaderARB(shader_vert_tilemap);
+    len = (int)strlen(shader_frag_source_tilemap);
+    gl->glShaderSource(shader_frag_tilemap, 1, &shader_frag_source_tilemap,
+     &len);
+
+    gl->glCompileShader(shader_vert_tilemap);
     glsl_verify_shader_compile(render_data, shader_vert_tilemap);
-    gl->glCompileShaderARB(shader_frag_tilemap);
+    gl->glCompileShader(shader_frag_tilemap);
     glsl_verify_shader_compile(render_data, shader_frag_tilemap);
 
-    gl->glAttachObjectARB(tilemap_program, shader_vert_tilemap);
-    gl->glAttachObjectARB(tilemap_program, shader_frag_tilemap);
-    gl->glLinkProgramARB(tilemap_program);
+    gl->glAttachShader(tilemap_program, shader_vert_tilemap);
+    gl->glAttachShader(tilemap_program, shader_frag_tilemap);
+    gl->glLinkProgram(tilemap_program);
 
-    free(shader_vert_source_tilemap);
-    free(shader_frag_source_tilemap);
+    free((void *)shader_vert_source_tilemap);
+    free((void *)shader_frag_source_tilemap);
   }
   else
   {
     if(shader_vert_source_tilemap != NULL)
-       free(shader_vert_source_tilemap);
+       free((char *)shader_vert_source_tilemap);
     if(shader_frag_source_tilemap != NULL)
-       free(shader_frag_source_tilemap);
+       free((char *)shader_frag_source_tilemap);
     tilemap_program = 0;
   }
 
@@ -274,35 +257,35 @@ static void glsl_load_shaders(struct graphics_data *graphics)
 
   if(shader_vert_source_scaling != NULL && shader_frag_source_scaling != NULL)
   {
-    scaling_program = gl->glCreateProgramObjectARB();
-    shader_vert_scaling = gl->glCreateShaderObjectARB(GL_VERTEX_SHADER_ARB);
-    shader_frag_scaling = gl->glCreateShaderObjectARB(GL_FRAGMENT_SHADER_ARB);
+    scaling_program = gl->glCreateProgram();
+    shader_vert_scaling = gl->glCreateShader(GL_VERTEX_SHADER);
+    shader_frag_scaling = gl->glCreateShader(GL_FRAGMENT_SHADER);
 
     len = (int)strlen(shader_vert_source_scaling);
-    gl->glShaderSourceARB(shader_vert_scaling, 1,
-      (const GLcharARB**)&shader_vert_source_scaling, &len);
+    gl->glShaderSource(shader_vert_scaling, 1, &shader_vert_source_scaling,
+     &len);
     len = (int)strlen(shader_frag_source_scaling);
-    gl->glShaderSourceARB(shader_frag_scaling, 1,
-      (const GLcharARB**)&shader_frag_source_scaling, &len);
+    gl->glShaderSource(shader_frag_scaling, 1, &shader_frag_source_scaling,
+     &len);
 
-    gl->glCompileShaderARB(shader_vert_scaling);
+    gl->glCompileShader(shader_vert_scaling);
     glsl_verify_shader_compile(render_data, shader_vert_scaling);
-    gl->glCompileShaderARB(shader_frag_scaling);
+    gl->glCompileShader(shader_frag_scaling);
     glsl_verify_shader_compile(render_data, shader_frag_scaling);
 
-    gl->glAttachObjectARB(scaling_program, shader_vert_scaling);
-    gl->glAttachObjectARB(scaling_program, shader_frag_scaling);
-    gl->glLinkProgramARB(scaling_program);
+    gl->glAttachShader(scaling_program, shader_vert_scaling);
+    gl->glAttachShader(scaling_program, shader_frag_scaling);
+    gl->glLinkProgram(scaling_program);
 
-    free(shader_vert_source_scaling);
-    free(shader_frag_source_scaling);
+    free((void *)shader_vert_source_scaling);
+    free((void *)shader_frag_source_scaling);
   }
   else
   {
     if(shader_vert_source_scaling != NULL)
-       free(shader_vert_source_scaling);
+       free((void *)shader_vert_source_scaling);
     if(shader_frag_source_scaling != NULL)
-       free(shader_frag_source_scaling);
+       free((void *)shader_frag_source_scaling);
     scaling_program = 0;
   }
 
@@ -313,13 +296,15 @@ static void glsl_load_shaders(struct graphics_data *graphics)
 static bool glsl_init_video(struct graphics_data *graphics,
  struct config_info *conf)
 {
-  struct glsl_render_data *render_data =
-   malloc(sizeof(struct glsl_render_data));
-  struct glsl_syms *gl = &render_data->gl;
+  struct glsl_render_data *render_data;
   const char *version, *extensions;
+  struct glsl_syms *gl;
 
+  render_data = malloc(sizeof(struct glsl_render_data));
   if(!render_data)
     return false;
+
+  gl = &render_data->gl;
 
   if(!GL_CAN_USE)
     goto err_free;
@@ -405,10 +390,7 @@ static void glsl_resize_screen(struct graphics_data *graphics,
 
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
 
-  gl_set_filter_method(CONFIG_GL_FILTER_LINEAR, gl->glTexParameteri);
-
-  gl->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  gl->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  gl_set_filter_method(CONFIG_GL_FILTER_LINEAR, gl->glTexParameterf);
 
   gl->glEnable(GL_TEXTURE_2D);
   gl->glAlphaFunc(GL_GREATER, 0.565f);
@@ -419,15 +401,12 @@ static void glsl_resize_screen(struct graphics_data *graphics,
    sizeof(Uint32) * GL_POWER_2_WIDTH * GL_POWER_2_HEIGHT);
 
   gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, GL_POWER_2_WIDTH,
-   GL_POWER_2_HEIGHT, 0, GL_BGRA, GL_UNSIGNED_BYTE,
+   GL_POWER_2_HEIGHT, 0, GL_RGBA, GL_UNSIGNED_BYTE,
    render_data->pixels);
 
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 
-  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl->glTexParameteri);
-
-  gl->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  gl->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl->glTexParameterf);
 
   gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 256, 256, 0, GL_RGBA,
    GL_UNSIGNED_BYTE, render_data->pixels);
@@ -436,10 +415,7 @@ static void glsl_resize_screen(struct graphics_data *graphics,
 
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[2]);
 
-  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl->glTexParameteri);
-
-  gl->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_S, GL_REPEAT);
-  gl->glTexParameterf(GL_TEXTURE_2D, GL_TEXTURE_WRAP_T, GL_REPEAT);
+  gl_set_filter_method(CONFIG_GL_FILTER_NEAREST, gl->glTexParameterf);
 
   gl->glTexImage2D(GL_TEXTURE_2D, 0, GL_RGBA, 128, 32, 0, GL_RGBA,
    GL_UNSIGNED_BYTE, render_data->pixels);
@@ -555,7 +531,14 @@ static void glsl_render_graph(struct graphics_data *graphics)
   Uint32 *colorptr, *dest, i;
   int width, height;
 
-  gl->glUseProgramObjectARB(render_data->gl_tilemap);
+  static const float tex_coord_array_single[2 * 4] = {
+    0.0f, 0.0f,
+    0.0f, 1.0f,
+    1.0f, 0.0f,
+    1.0f, 1.0f,
+  };
+
+  gl->glUseProgram(render_data->gl_tilemap);
 
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
   if(render_data->remap_texture)
@@ -611,41 +594,52 @@ static void glsl_render_graph(struct graphics_data *graphics)
   gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 224, 256, 1, GL_RGBA,
     GL_UNSIGNED_BYTE, render_data->background_texture);
 
-  gl->glColor4f(1.0, 1.0, 1.0, 1.0);
+  gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+  gl->glEnableClientState(GL_VERTEX_ARRAY);
 
-  gl->glBegin(GL_TRIANGLE_STRIP);
-    gl->glTexCoord2f(0, 0);
-    gl->glVertex2i(-1, 1);
-    gl->glTexCoord2f(0, 1);
-    gl->glVertex2i(-1, -1);
-    gl->glTexCoord2f(1, 0);
-    gl->glVertex2i(1, 1);
-    gl->glTexCoord2f(1, 1);
-    gl->glVertex2i(1, -1);
-  gl->glEnd();
+  gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
+  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
 
+  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+  gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+  gl->glDisableClientState(GL_VERTEX_ARRAY);
 }
 
 static void glsl_render_cursor(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
 {
   struct glsl_render_data *render_data = graphics->render_data;
+  GLubyte *pal_base = &render_data->palette[color * 3];
   struct glsl_syms *gl = &render_data->gl;
 
-  gl->glDisable(GL_TEXTURE_2D);
-  gl->glUseProgramObjectARB(0);
+  const float vertex_array[2 * 4] = {
+    (x * 8)*2.0f/640.0f-1.0f,     (y * 14 + offset)*-2.0f/350.0f+1.0f,
+    (x * 8)*2.0f/640.0f-1.0f,     (y * 14 + lines + offset)*-2.0f/350.0f+1.0f,
+    (x * 8 + 8)*2.0f/640.0f-1.0f, (y * 14 + offset)*-2.0f/350.0f+1.0f,
+    (x * 8 + 8)*2.0f/640.0f-1.0f, (y * 14 + lines + offset)*-2.0f/350.0f+1.0f
+  };
 
-  gl->glBegin(GL_TRIANGLE_STRIP);
-    gl->glColor3ubv(&render_data->palette[color * 3]);
-    gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
-                (y * 14 + offset)*-2.0f/350.0f+1.0f);
-    gl->glVertex2f((x * 8)*2.0f/640.0f-1.0f,
-                (y * 14 + lines + offset)*-2.0f/350.0f+1.0f);
-    gl->glVertex2f((x * 8 + 8)*2.0f/640.0f-1.0f,
-                (y * 14 + offset)*-2.0f/350.0f+1.0f);
-    gl->glVertex2f((x * 8 + 8)*2.0f/640.0f-1.0f,
-                (y * 14 + lines + offset)*-2.0f/350.0f+1.0f);
-  gl->glEnd();
+  const GLubyte color_array[3 * 4] = {
+    pal_base[0], pal_base[1], pal_base[2],
+    pal_base[0], pal_base[1], pal_base[2],
+    pal_base[0], pal_base[1], pal_base[2],
+    pal_base[0], pal_base[1], pal_base[2]
+  };
+
+  gl->glDisable(GL_TEXTURE_2D);
+  gl->glUseProgram(0);
+
+  gl->glEnableClientState(GL_VERTEX_ARRAY);
+  gl->glEnableClientState(GL_COLOR_ARRAY);
+
+  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array);
+  gl->glColorPointer(3, GL_UNSIGNED_BYTE, 0, color_array);
+
+  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+  gl->glDisableClientState(GL_VERTEX_ARRAY);
+  gl->glDisableClientState(GL_COLOR_ARRAY);
 
   gl->glEnable(GL_TEXTURE_2D);
 }
@@ -656,17 +650,24 @@ static void glsl_render_mouse(struct graphics_data *graphics,
   struct glsl_render_data *render_data = graphics->render_data;
   struct glsl_syms *gl = &render_data->gl;
 
+  const float vertex_array[2 * 4] = {
+     x*2.0f/640.0f-1.0f,       y*-2.0f/350.0f+1.0f,
+     x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f,
+    (x + w)*2.0f/640.0f-1.0f,  y*-2.0f/350.0f+1.0f,
+    (x + w)*2.0f/640.0f-1.0f, (y + h)*-2.0f/350.0f+1.0f
+  };
+
   gl->glDisable(GL_TEXTURE_2D);
   gl->glEnable(GL_BLEND);
-  gl->glUseProgramObjectARB(0);
+  gl->glUseProgram(0);
 
-  gl->glBegin(GL_TRIANGLE_STRIP);
-    gl->glColor4ub(255, 255, 255, 255);
-    gl->glVertex2f( x*2.0f/640.0f-1.0f,       y*-2.0f/350.0f+1.0f);
-    gl->glVertex2f( x*2.0f/640.0f-1.0f,      (y + h)*-2.0f/350.0f+1.0f);
-    gl->glVertex2f((x + w)*2.0f/640.0f-1.0f,  y*-2.0f/350.0f+1.0f);
-    gl->glVertex2f((x + w)*2.0f/640.0f-1.0f, (y + h)*-2.0f/350.0f+1.0f);
-  gl->glEnd();
+  gl->glEnableClientState(GL_VERTEX_ARRAY);
+
+  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array);
+
+  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+  gl->glDisableClientState(GL_VERTEX_ARRAY);
 
   gl->glEnable(GL_TEXTURE_2D);
   gl->glDisable(GL_BLEND);
@@ -675,10 +676,10 @@ static void glsl_render_mouse(struct graphics_data *graphics,
 static void glsl_sync_screen(struct graphics_data *graphics)
 {
   struct glsl_render_data *render_data = graphics->render_data;
-  int v_width, v_height, width, height;
   struct glsl_syms *gl = &render_data->gl;
+  int v_width, v_height, width, height;
 
-  gl->glUseProgramObjectARB(render_data->gl_scaling);
+  gl->glUseProgram(render_data->gl_scaling);
 
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
   gl->glCopyTexImage2D(GL_TEXTURE_2D, 0, GL_RGB, 0, 0, 1024, 512, 0);
@@ -688,39 +689,39 @@ static void glsl_sync_screen(struct graphics_data *graphics)
   gl->glViewport((width - v_width) >> 1, (height - v_height) >> 1,
    v_width, v_height);
 
-  gl->glColor4f(1.0, 1.0, 1.0, 1.0);
-  gl->glClear(GL_COLOR_BUFFER_BIT);
-
-  if(graphics->window_width < 640 || graphics->window_height < 350)
+  if(width < 640 || height < 350)
   {
-    gl->glBegin(GL_TRIANGLE_STRIP);
-      gl->glTexCoord2f(0, 0);
-      gl->glVertex2i(-1, -1);
-      gl->glTexCoord2f(0,
-        ((graphics->window_height<512)?graphics->window_height:512)/512.0f);
-      gl->glVertex2i(-1, 1);
-      gl->glTexCoord2f(
-        ((graphics->window_width<1024)?graphics->window_width:1024)/1024.0f, 0);
-      gl->glVertex2i(1, -1);
-      gl->glTexCoord2f(
-        ((graphics->window_width<1024)?graphics->window_width:1024)/1024.0f,
-        ((graphics->window_height<512)?graphics->window_height:512)/512.0f);
-      gl->glVertex2i(1, 1);
-    gl->glEnd();
+    width = (width < 1024) ? width : 1024;
+    height = (height < 512) ? height : 512;
   }
   else
   {
-    gl->glBegin(GL_TRIANGLE_STRIP);
-      gl->glTexCoord2f(0, 0);
-      gl->glVertex2i(-1, -1);
-      gl->glTexCoord2f(0, 0.68359375);
-      gl->glVertex2i(-1, 1);
-      gl->glTexCoord2f(0.625, 0);
-      gl->glVertex2i(1, -1);
-      gl->glTexCoord2f(0.625, 0.68359375);
-      gl->glVertex2i(1, 1);
-    gl->glEnd();
+    width = 640;
+    height = 350;
   }
+
+  gl->glClear(GL_COLOR_BUFFER_BIT);
+
+  gl->glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+  gl->glEnableClientState(GL_VERTEX_ARRAY);
+
+  {
+    const float tex_coord_array_single[2 * 4] = {
+       0.0f,            height / 512.0f,
+       0.0f,            0.0f,
+       width / 1024.0f, height / 512.0f,
+       width / 1024.0f, 0.0f,
+    };
+
+    gl->glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array_single);
+  }
+
+  gl->glVertexPointer(2, GL_FLOAT, 0, vertex_array_single);
+
+  gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
+
+  gl->glDisableClientState(GL_TEXTURE_COORD_ARRAY);
+  gl->glDisableClientState(GL_VERTEX_ARRAY);
 
   gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 

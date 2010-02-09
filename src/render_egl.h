@@ -26,13 +26,13 @@ __M_BEGIN_DECLS
 
 #include "render_gl.h"
 
-#define GL_LOAD_SYM_EXT(OBJ,FUNC)               \
-  OBJ->FUNC = (void *)eglGetProcAddress(#FUNC); \
-  if(!OBJ->FUNC)                                \
-    return false;                               \
+#include <EGL/egl.h>
 
-#define GL_LOAD_SYM(OBJ,FUNC)               \
-  OBJ->FUNC = FUNC;                         \
+#define GL_LOAD_SYM_EXT(OBJ,FUNC) \
+  OBJ->FUNC = FUNC;               \
+
+#define GL_LOAD_SYM(OBJ,FUNC)     \
+  OBJ->FUNC = FUNC;               \
 
 #define GL_CAN_USE true
 

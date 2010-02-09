@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-#include "render_gl.h"
 #include "render.h"
 #include "util.h"
 
@@ -28,14 +27,24 @@
 #endif
 
 #ifdef CONFIG_EGL
+#include <GLES/gl.h>
 #include "render_egl.h"
 #endif
+
+#include "render_gl.h"
 
 const float vertex_array_single[2 * 4] = {
   -1.0f,  1.0f,
   -1.0f, -1.0f,
    1.0f,  1.0f,
    1.0f, -1.0f,
+};
+
+const GLubyte color_array_white[3 * 4] = {
+  255, 255, 255,
+  255, 255, 255,
+  255, 255, 255,
+  255, 255, 255,
 };
 
 void gl_set_filter_method(const char *method,

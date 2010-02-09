@@ -31,9 +31,10 @@ __M_BEGIN_DECLS
 #ifndef CONFIG_EGL
 #include "SDL_opengl.h"
 #include <GL/gl.h>
-#else
-#include <EGL/egl.h>
-#include <GLES/gl.h>
+#endif
+
+#ifndef GL_APIENTRY
+#define GL_APIENTRY GLAPIENTRY
 #endif
 
 #define GL_NON_POWER_2_WIDTH      640
@@ -44,11 +45,8 @@ __M_BEGIN_DECLS
 #define CONFIG_GL_FILTER_LINEAR   "linear"
 #define CONFIG_GL_FILTER_NEAREST  "nearest"
 
-#ifndef GL_APIENTRY
-#define GL_APIENTRY APIENTRY
-#endif
-
 extern const float vertex_array_single[2 * 4];
+extern const GLubyte color_array_white[3 * 4];
 
 void gl_set_filter_method(const char *method,
  void (GL_APIENTRY *glTexParameterf_p)(GLenum target, GLenum pname, GLfloat param));

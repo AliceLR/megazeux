@@ -23,7 +23,6 @@
 #include <string.h>
 
 #include "platform.h"
-#include "render_gl.h"
 #include "render.h"
 #include "renderers.h"
 #include "util.h"
@@ -33,8 +32,11 @@
 #endif
 
 #ifdef CONFIG_EGL
+#include <GLES/gl.h>
 #include "render_egl.h"
 #endif
+
+#include "render_gl.h"
 
 // NOTE: This renderer should work with almost any GL capable video card.
 //       However, if you plan to change it, please bear in mind that this
@@ -58,10 +60,12 @@ struct gl1_syms
   void (GL_APIENTRY *glTexImage2D)(GLenum target, GLint level,
    GLint internalformat,GLsizei width, GLsizei height, GLint border,
    GLenum format, GLenum type, const GLvoid *pixels);
-  void (GL_APIENTRY *glTexParameterf)(GLenum target, GLenum pname, GLfloat param);
+  void (GL_APIENTRY *glTexParameterf)(GLenum target, GLenum pname,
+   GLfloat param);
   void (GL_APIENTRY *glVertexPointer)(GLint size, GLenum type,
    GLsizei stride, const GLvoid *ptr);
-  void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width, GLsizei height);
+  void (GL_APIENTRY *glViewport)(GLint x, GLint y, GLsizei width,
+   GLsizei height);
 };
 
 struct gl1_render_data
