@@ -225,6 +225,24 @@ endif
 
 core_objs := ${core_cobjs} ${core_cxxobjs}
 
+ifeq (${BUILD_NETWORK},1)
+
+include src/network/Makefile.in
+
+mzx_clean: network_clean
+
+core_objs += ${core_obj}/network.o
+
+ifeq (${BUILD_UPDATER},1)
+
+mzx_objs += ${core_obj}/updater.o
+
+endif
+
+network_link := -lnetwork
+
+endif
+
 -include ${core_objs:.o=.d}
 
 ${core_objs}: $(filter-out $(wildcard ${core_obj}), ${core_obj})
@@ -233,7 +251,7 @@ ifeq (${BUILD_MODULAR},1)
 
 core_target := ${DSOPRE}core${DSOPOST}
 
-${core_target}: ${core_objs}
+${core_target}: ${core_objs} ${network_target}
 	$(if ${V},,@echo "  LINK    " $@)
 	${LINK_CC} ${DSOLDFLAGS} -o $@ ${core_objs} ${LDFLAGS} \
 	  ${DSOSONAME}$@ ${core_ldflags}
@@ -254,23 +272,11 @@ ifeq (${BUILD_EDITOR},1)
 
 include src/editor/Makefile.in
 
-mzx_objs := ${core_obj}/main.o
+mzx_objs := ${mzx_objs} ${core_obj}/main.o
 
 ifeq (${PLATFORM},darwin)
 mzx_objs += arch/darwin/SDLMain.o
 mzx_ldflags += -framework Cocoa
-endif
-
-ifeq (${BUILD_UPDATER},1)
-
-include src/network/Makefile.in
-
-mzx_clean: network_clean
-${mzx}.debug: ${network_target}.debug
-
-mzx_objs += ${core_obj}/updater.o
-network_link := -lnetwork
-
 endif
 
 -include ${mzx_objs:.o=.d}
@@ -280,10 +286,10 @@ mzx_objs += ${icons}
 endif
 
 ifeq (${BUILD_MODULAR},1)
-${mzx}.debug: ${core_target}.debug ${editor_target}.debug
+${mzx}.debug: ${core_target}.debug ${editor_target}.debug ${network_target}.debug
 endif
 
-${mzx}: ${core_target} ${editor_target} ${network_target} ${mzx_objs}
+${mzx}: ${core_target} ${editor_target} ${mzx_objs}
 	$(if ${V},,@echo "  LINK    " ${mzx})
 ifeq (${BUILD_MODULAR},1)
 	${CC} ${mzx_objs} -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
@@ -291,7 +297,7 @@ ifeq (${BUILD_MODULAR},1)
 	  ${mzx_ldflags}
 else
 	${LINK_CC} ${mzx_objs} ${core_target} ${editor_target} \
-	  ${network_target} -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
+	  -o ${mzx} ${ARCH_EXE_LDFLAGS} ${LDFLAGS} \
 	  ${core_ldflags} ${editor_ldflags} ${network_ldflags}
 endif
 
@@ -321,7 +327,7 @@ mzxrun_objs += ${icons}
 endif
 
 ifeq (${BUILD_MODULAR},1)
-${mzxrun}.debug: ${core_target}.debug
+${mzxrun}.debug: ${core_target}.debug ${network_target}.debug
 endif
 
 ${mzxrun}: ${core_target} ${mzxrun_objs}

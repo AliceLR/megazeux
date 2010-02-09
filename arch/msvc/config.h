@@ -16,3 +16,4 @@
 #define CONFIG_ICON
 #define CONFIG_MODULAR
 #define CONFIG_UPDATER
+#define CONFIG_NETWORK

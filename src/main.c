@@ -52,6 +52,7 @@
 #include "world.h"
 #include "counter.h"
 #include "run_stubs.h"
+#include "network.h"
 
 #ifdef __amigaos__
 #define __libspec LIBSPEC
@@ -165,6 +166,8 @@ __libspec int main(int argc, char *argv[])
 
   if(!network_layer_init(&mzx_world.conf, argv))
     info("Network layer disabled.\n");
+  else if(!updater_init(argv))
+    info("Updater disabled.\n");
 
   init_event();
 

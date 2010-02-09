@@ -35,10 +35,10 @@ ifeq (${BUILD_MODULAR},1)
 
 network_target := ${DSOPRE}network${DSOPOST}
 
-${network_target}: ${network_objs} ${core_target}
+${network_target}: ${network_objs}
 	$(if ${V},,@echo "  LINK    " $@)
 	${CC} ${DSOLDFLAGS} -o $@ ${network_objs} ${network_ldflags} \
-	  ${LDFLAGS} ${DSOSONAME}$@ ${DSORPATH} -L. -lcore
+	  ${LDFLAGS} ${DSOSONAME}$@ ${DSORPATH} -L.
 
 network_target_clean:
 	$(if ${V},,@echo "  RM      " ${network_target} ${network_target}.debug)
@@ -47,6 +47,8 @@ network_target_clean:
 else
 
 network_target := ${network_objs}
+
+core_objs := ${core_objs} ${network_objs}
 
 network_target_clean:
 

@@ -56,6 +56,7 @@ usage() {
 	echo "  --disable-icon       Do not try to brand executable."
 	echo "  --disable-modular    Disable dynamically shared objects."
 	echo "  --disable-updater    Disable built-in updater."
+	echo "  --disable-network    Disable networking abilities."
 	echo "  --enable-meter       Enable load/save meter display."
 	echo "  --disable-sdl        Disables SDL dependencies and features."
 	echo "  --enable-egl         Enables EGL backend (if SDL disabled)."
@@ -102,6 +103,7 @@ PTHREAD="true"
 ICON="true"
 MODULAR="true"
 UPDATER="true"
+NETWORK="true"
 VERBOSE="false"
 METER="false"
 SDL="true"
@@ -217,7 +219,10 @@ while [ "$1" != "" ]; do
 	[ "$1" = "--enable-modular" ]  && MODULAR="true"
 
 	[ "$1" = "--disable-updater" ] && UPDATER="false"
-	[ "$1" = "--enable-updater" ]  && UPDATER="true"
+	[ "$1" = "--enable-updater" ]  && UPDATER="true" && NETWORK="true"
+
+	[ "$1" = "--disable-network" ] && NETWORK="false"&& UPDATER="false"
+	[ "$1" = "--enable-network" ]  && NETWORK="true"
 
 	[ "$1" = "--disable-verbose" ] && VERBOSE="false"
 	[ "$1" = "--enable-verbose" ]  && VERBOSE="true"
@@ -879,6 +884,17 @@ if [ "$UPDATER" = "true" ]; then
 	echo "BUILD_UPDATER=1" >> platform.inc
 else
 	echo "Built-in updater disabled."
+fi
+
+#
+# Handle networking, if enabled
+#
+if [ "$NETWORK" = "true" ]; then
+        echo "Networking enabled."
+	echo "#define CONFIG_NETWORK" >> src/config.h
+	echo "BUILD_NETWORK=1" >> platform.inc
+else
+	echo "Networking disabled."
 fi
 
 #

@@ -70,10 +70,13 @@ struct config_info
 
   // Misc options
   int mask_midchars;
-
-#ifdef CONFIG_UPDATER
+    
   // Network layer options
+#ifdef CONFIG_NETWORK    
   bool network_enabled;
+#endif
+    
+#ifdef CONFIG_UPDATER
   char update_host[256];
   char update_branch_pin[256];
 #endif

@@ -72,13 +72,17 @@ struct config_entry
   config_function change_option;
 };
 
-#ifdef CONFIG_UPDATER
+#ifdef CONFIG_NETWORK
 
 static void config_set_network_enabled(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   conf->network_enabled = strtoul(value, NULL, 10);
 }
+
+#endif // CONFIG_NETWORK
+
+#ifdef CONFIG_UPDATER
 
 static void config_update_host(struct config_info *conf, char *name,
  char *value, char *extended_data)
@@ -386,7 +390,7 @@ static const struct config_entry config_options[] =
   { "music_on", config_set_music },
   { "music_volume", config_set_mod_volume },
   { "mzx_speed", config_set_mzx_speed },
-#ifdef CONFIG_UPDATER
+#ifdef CONFIG_NETWORK
   { "network_enabled", config_set_network_enabled },
 #endif
   { "num_buffered_events", config_set_num_buffered_events },
@@ -471,8 +475,10 @@ static struct config_info default_options =
 
   1,                            // mask_midchars
 
-#ifdef CONFIG_UPDATER
+#ifdef CONFIG_NETWORK
   true,                         // network_enabled
+#endif
+#ifdef CONFIG_UPDATER
   "updates.digitalmzx.net",     // update_host
   "Stable",                     // update_branch_pin
 #endif

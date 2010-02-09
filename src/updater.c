@@ -770,7 +770,7 @@ err_out:
   }
 }
 
-static bool updater_init(char *argv[])
+bool updater_init(char *argv[])
 {
   struct manifest_entry *e;
   bool ret;
@@ -818,26 +818,4 @@ static bool updater_init(char *argv[])
 err_swivel_back:
   swivel_current_dir_back(false);
   return true;
-}
-
-bool network_layer_init(struct config_info *conf, char *argv[])
-{
-  if(!conf->network_enabled)
-    return false;
-
-  if(!host_layer_init())
-  {
-    error("Failed to initialize network layer.", 1, 8, 0);
-    return false;
-  }
-
-  updater_init(argv);
-  return true;
-}
-
-void network_layer_exit(struct config_info *conf)
-{
-  if(!conf->network_enabled)
-    return;
-  host_layer_exit();
 }
