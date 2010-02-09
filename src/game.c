@@ -1395,6 +1395,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
     if(src_board->b_mesg_timer > 0)
     {
       int mesg_y = src_board->b_mesg_row;
+      Uint8 tmp_color = scroll_color;
       char *lines[25];
       int i = 1, j;
 
@@ -1431,7 +1432,8 @@ static int update(struct world *mzx_world, int game, int *fadein)
         if(mesg_x == -1)
           mesg_x = 40 - (mesg_length / 2);
 
-        color_string_ext(lines[j], mesg_x, mesg_y, scroll_color, 0, 0, true);
+        color_string_ext_special(lines[j], mesg_x, mesg_y, &tmp_color,
+         0, 0, false);
 
         if((mesg_x > 0) && (mesg_edges))
           draw_char_ext(' ', scroll_color, mesg_x - 1, mesg_y, 0, 0);

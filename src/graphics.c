@@ -1007,15 +1007,15 @@ void resize_screen(Uint32 w, Uint32 h)
   }
 }
 
-void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
- Uint32 offset, Uint32 c_offset, bool respect_newline)
+void color_string_ext_special(const char *str, Uint32 x, Uint32 y,
+ Uint8 *color, Uint32 offset, Uint32 c_offset, bool respect_newline)
 {
   struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
   Uint8 next;
-  Uint8 bg_color = (color >> 4) + c_offset;
-  Uint8 fg_color = (color & 0x0F) + c_offset;
+  Uint8 bg_color = (*color >> 4) + c_offset;
+  Uint8 fg_color = (*color & 0x0F) + c_offset;
 
   char next_str[2];
   next_str[1] = 0;
@@ -1032,7 +1032,7 @@ void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
 
         // If 0, stop right there
         if(!next)
-          return;
+          goto exit_out;
 
         // If the next isn't hex, count as one
         if(isxdigit(next))
@@ -1064,7 +1064,7 @@ void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
 
         // If 0, stop right there
         if(!next)
-          return;
+          goto exit_out;
 
         // If the next isn't hex, count as one
         if(isxdigit(next))
@@ -1114,6 +1114,17 @@ void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
     str++;
     cur_char = *str;
   }
+
+exit_out:
+  *color = (((bg_color - c_offset) << 4) & 0xF0) |
+           (((fg_color - c_offset) << 0) & 0x0F);
+}
+
+void color_string_ext(const char *str, Uint32 x, Uint32 y, Uint8 color,
+ Uint32 offset, Uint32 c_offset, bool respect_newline)
+{
+  color_string_ext_special(str, x, y, &color, offset,
+   c_offset, respect_newline);
 }
 
 // Write a normal string

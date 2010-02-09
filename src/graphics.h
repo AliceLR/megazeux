@@ -142,8 +142,7 @@ CORE_LIBSPEC void fill_line(Uint32 length, Uint32 x, Uint32 y, Uint8 chr,
 CORE_LIBSPEC void draw_char(Uint8 chr, Uint8 color, Uint32 x, Uint32 y);
 
 CORE_LIBSPEC void write_string_ext(const char *string, Uint32 x, Uint32 y,
- Uint8 color, Uint32 tab_allowed, Uint32 offset,
- Uint32 c_offset);
+ Uint8 color, Uint32 tab_allowed, Uint32 offset, Uint32 c_offset);
 CORE_LIBSPEC void draw_char_ext(Uint8 chr, Uint8 color, Uint32 x,
  Uint32 y, Uint32 offset, Uint32 c_offset);
 CORE_LIBSPEC void draw_char_linear_ext(Uint8 color, Uint8 chr,
@@ -192,6 +191,8 @@ CORE_LIBSPEC void set_mouse_mul(int width_mul, int height_mul);
 
 void color_string_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 offset, Uint32 c_offset, bool respect_newline);
+void color_string_ext_special(const char *string, Uint32 x, Uint32 y,
+ Uint8 *color, Uint32 offset, Uint32 c_offset, bool respect_newline);
 void write_line_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 tab_allowed, Uint32 offset,
  Uint32 c_offset);
