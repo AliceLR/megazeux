@@ -26,6 +26,9 @@ DEVELOPERS
 
 + MZXRun compilation can now be disabled. Compilation of pre-2.82b style
   non-modular builds requires `--disable-modular --disable-mzxrun'.
++ Disabling SDL can now be done with --disable-sdl and the resulting
+  configuration will automatically disable any SDL-dependent components.
+  This is useless to anybody except developers doing new ports.
 
 December 29, 2008 - MZX 2.82b
 

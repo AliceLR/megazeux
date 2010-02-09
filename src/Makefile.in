@@ -159,9 +159,22 @@ core_ldflags += ${SDL_LDFLAGS}
 
 else
 
+ifeq (${BUILD_WII},1)
+
+core_cobjs += ${core_obj}/event_wii.o ${core_obj}/platform_wii.o
+
+ifeq (${BUILD_AUDIO},1)
+core_cobjs += ${core_obj}/audio_wii.o
+endif
+
+else
+
+core_cobjs += ${core_obj}/platform_dummy.o
+
 #
 # Normally SDL would provide us with pthread, but in the case
-# we're not using SDL we must link pthread ourselves.
+# we're not using SDL or any other platform mutex implementation,
+# we must link pthread ourselves.
 #
 ifeq (${PTHREAD},1)
 core_ldflags := -lpthread ${core_ldflags}
@@ -169,11 +182,6 @@ endif
 
 endif
 
-ifeq (${BUILD_WII},1)
-core_cobjs += ${core_obj}/event_wii.o ${core_obj}/platform_wii.o
-ifeq (${BUILD_AUDIO},1)
-core_cobjs += ${core_obj}/audio_wii.o
-endif
 endif
 
 core_objs := ${core_cobjs} ${core_cxxobjs}

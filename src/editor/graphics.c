@@ -29,6 +29,7 @@
 #include "../graphics.h"
 
 #include <string.h>
+#include <stdio.h>
 
 void save_editor_palette(void)
 {

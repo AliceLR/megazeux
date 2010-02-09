@@ -51,6 +51,7 @@ usage() {
 	echo "  --disable-modular    Disable dynamically shared objects."
 	echo "  --disable-updater    Disable built-in updater."
 	echo "  --enable-meter       Enable load/save meter display."
+	echo "  --disable-sdl        Disables SDL dependencies and features."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -93,6 +94,7 @@ MODULAR="true"
 UPDATER="true"
 VERBOSE="false"
 METER="false"
+SDL="true"
 
 #
 # User may override above settings
@@ -190,6 +192,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-meter" ]  && METER="true"
 	[ "$1" = "--disable-meter" ] && METER="false"
+
+	[ "$1" = "--disable-sdl" ] && SDL="false"
+	[ "$1" = "--enable-sdl" ]  && SDL="true"
 
 	shift
 done
@@ -340,11 +345,23 @@ echo "SYSCONFDIR=$SYSCONFDIR" >> platform.inc
 # Use platform-specific code or use SDL
 #
 if [ "$PLATFORM" = "wii" ]; then
+	echo "Wii platform; disabling SDL."
 	echo "#define CONFIG_WII" >> src/config.h
 	echo "BUILD_WII=1" >> platform.inc
+	SDL="false"
+fi
 
-	echo "Force disabling software renderer on Wii."
+#
+# SDL was disabled above; must also disable SDL-dependent modules
+#
+if [ "$SDL" = "false" ]; then
+	echo "Force-disabling SDL dependent components:"
+	echo " -> SOFTWARE, OVERLAY, OPENGL, MIKMOD, X11"
 	SOFTWARE="false"
+	OVERLAY="false"
+	OPENGL="false"
+	MIKMOD="false"
+	X11="false"
 else
 	echo "#define CONFIG_SDL" >> src/config.h
 	echo "BUILD_SDL=1" >> platform.inc
