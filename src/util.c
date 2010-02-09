@@ -365,18 +365,6 @@ char *strsep(char **stringp, const char *delim)
 
 #endif // __WIN32__ || __amigaos__
 
-#ifdef NEED_RENAME
-
-int rename(const char *oldpath, const char *newpath)
-{
-  int ret = link(oldpath, newpath);
-  if(!ret)
-    return unlink(oldpath);
-  return ret;
-}
-
-#endif // NEED_RENAME
-
 #if defined(CONFIG_NDS) || defined(CONFIG_WII)
 
 // NDS/Wii versions of these functions backend directly to libfat

@@ -120,15 +120,6 @@ CORE_LIBSPEC char *strsep(char **stringp, const char *delim);
 #endif
 #endif // !__WIN32__
 
-/* Some platforms like NDS don't have a rename(2), so we need
- * to implement it.
- */
-#if !defined(rename) && !defined(__WIN32__)
-#define NEED_RENAME
-#define rename rename
-CORE_LIBSPEC int rename(const char *oldpath, const char *newpath);
-#endif
-
 #if defined(CONFIG_NDS) || defined(CONFIG_WII)
 // FIXME: rmdir() needs implementing on NDS/Wii
 #define rmdir(x)
