@@ -803,12 +803,12 @@ These mystical items will bestow a magical effect on you when
 you wear or drink them. The effect, however, is unknown to
 you until you try it... and some effects aren't so nice.
 
-$@0~8± ~FPotion and Ring Effects~8 ±@8
+:prx:$@0~8± ~FPotion and Ring Effects~8 ±@8
 
 Effects are limited to the current room only, except for
 healing, hurting, and invinco.
 
-~BDud
+~BNo Effect
 
 This effect does absolutely nothing.
 
@@ -4771,8 +4771,8 @@ Changes the volume of the MOD playing, from 0 (silent) to 255.
 :_cO:~ACOPYROBOT [dir]
 
 The current Robot becomes an exact duplicate of the noted
-Robot, and then begins its program anew at the first command.
-The Robot to copy can be stated in one of three ways:
+Robot, and continues where its copy left off. The Robot to copy
+can be stated in one of three ways:
 
 1- State the target Robot's name.
 2- State the direction of target Robot.
@@ -5097,7 +5097,7 @@ current Robot. The third command will swap the things at the
 two directions.
 
 NOTE: DO NOT normally use COPY # # # # to copy Robots; use
-DUPLICATE SELF or COPY ROBOT. It is useful for copying by Robot
+DUPLICATE SELF or COPYROBOT. It is useful for copying by Robot
 id, however; use COPY r&id&.thisx and r&id&.thisy as the first
 pair of coordinates.
 
@@ -5394,7 +5394,7 @@ Enacts the potion/ring effect, Avalanche, placing boulders
 randomly about the board. Usually precedes the CHANGE c??
 Boulder p?? to c?? Explosion p?? command.
 
->#POTIONFX.HLP:1st:Potion and Ring Effects
+>#BUILTINS.HLP:prx:Potion and Ring Effects
 
 :_b4:~ABECOME LAVAWALKER
 :_b2:~ABECOME NONLAVAWALKER
@@ -5414,7 +5414,7 @@ affect the entire world. The only exception is the global
 Robot; FREEZETIME and SLOWTIME commands do not affect it.
 
 >#THEGLOBL.HLP:gbl:The Global
->#POTIONFX.HLP:1st:Potion and Ring Effects
+>#BUILTINS.HLP:prx:Potion and Ring Effects
 
 :_c3:~ACHANGE CHAR ID # [char]
 
@@ -6267,9 +6267,9 @@ OGG music.
 
 >#SOUNDEFX.HLP:frq:SAM, OGG, MOD and WAV Frequencies
 
-~BMOD_ORDER (read-only, board)
+~BMOD_ORDER (board)
 
-Reports the current mod order (that is, pattern) of the
+Controls the current mod order (that is, pattern) of the
 currently playing mod.
 
 ~BMOD_POSITION (board)
@@ -6417,7 +6417,7 @@ their numbers.
 
 ~BSPRn_CCHECK (write-only)
 
-If set to 1 overlapping char 32's will not cause a collision
+If set to 1, overlapping char 32's will not cause a collision
 between sprites or the background. If set to 2 char 32's and
 blank chars will also not collide.
 
@@ -6482,7 +6482,7 @@ of the board.
 ~BSPRn_WIDTH
 
 The dimensions of the sprite. (x and y dimensions,
-respectively)
+respectively.)
 
 ~BSPRn_X
 ~BSPRn_Y
@@ -6835,9 +6835,9 @@ KEY_CODE only preferable if autorepeat has to be off.
 
 KEYn checks whether the key with the keycode n is
 pressed; 1 means yes, 0 means no. KEY_RELEASE tests whether a
-key is released. These display the same keycodes as KEY_CODE.
-Results are now unsigned, so checking for negative numbers will
-not work.
+key is released. These display/use the same keycodes as
+KEY_CODE. Results are now unsigned, so checking for negative
+numbers will not work.
 
 ~BXPOS
 ~BYPOS
@@ -7522,11 +7522,6 @@ are several practises to avoid, as well as proper replacements.
   ~Cvariable.
 ~9GOOD: Using goto "label&number&" regarding one variable.
 
-~CBAD: Using COPY # # # # to copy Robots when the copied
-~CRobot's location at code execution is known.
-~9GOOD: Using DUPLICATE SELF or COPY ROBOT when the copied
-~9Robot's location at code execution is known.
-
 ~CBAD: Looping without using cycle-ending commands of any kind.
   Looping without CYCLE 1 in idle loops is more severe than
   many think. Coupled with the "commands" counter set to a high
@@ -7662,8 +7657,8 @@ Unary operators (operator followed by value):
 - Unary negation; returns the negative value of the operand
 (two's complement). (-10) would return -10.
 ~~ Bitwise negation; returns the bitwise NOT value of the
-operand (one's complement). (~~10) would return 5. (1010 to
-0101).
+operand (one's complement). Using an 8-bit signed counter for
+clarity's sake, (~10) [00001010] would return -11. [11110101]
 
 Using a constant expression "(n)" is the only way to directly
 use numbers over 32767 or under -32768. This can not be changed

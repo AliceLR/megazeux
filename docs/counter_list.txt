@@ -77,7 +77,7 @@ name                      r/w      g/n/f/b    i
 "MBOARDX"                 r           b       *
 "MBOARDY"                 r           b       *
 "MOD_FREQUENCY"           r w         b       *
-"MOD_ORDER"               r           b       *
+"MOD_ORDER"               r w         b       *
 "MOD_POSITION"            r w         b       *
 "MOUSEPX"                 r w         b       *
 "MOUSEPY"                 r w         b       *
