@@ -55,7 +55,7 @@ clean:
 build := build/${SUBPLATFORM}/apps/megazeux
 build: package ${build}
 	${CP} arch/wii/pad.config arch/wii/icon.png boot.dol ${build}
-	@sed "s/%VERSION%/$VERSION/g;s/%DATE%/`date -u +%Y%m%d%H%M`/g" \
+	@sed "s/%VERSION%/${VERSION}/g;s/%DATE%/`date -u +%Y%m%d%H%M`/g" \
 	    arch/wii/meta.xml > ${build}/meta.xml
 	${RM} ${build}/${mzxrun} ${build}/${mzxrun}.debug
 
