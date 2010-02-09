@@ -3606,12 +3606,26 @@ void load_string_board(struct world *mzx_world, const char *name, int w, int h,
 
 int is_string(char *buffer)
 {
-  // For something to be a string it has to start with a $ and
-  // not have a . in its name
-  if((buffer[0] == '$') && (strchr(buffer + 1, '.') == NULL))
-    return 1;
+  size_t namelen, i;
 
-  return 0;
+  // String doesn't start with $, that's an immediate reject
+  if(buffer[0] != '$')
+    return 0;
+
+  // We need to stub out any part of the buffer that describes a
+  // string offset or size constraint. This is because after the
+  // offset or size characters, there may be an expression which
+  // may use the .length operator on the same (or different)
+  // string. We must not consider such composites to be invalid.
+  namelen = strcspn(buffer, "#+");
+
+  // For something to be a string it must not have a . in its name
+  for(i = 0; i < namelen; i++)
+    if(buffer[i] == '.')
+      return 0;
+
+  // Valid string
+  return 1;
 }
 
 void counter_fsg(void)

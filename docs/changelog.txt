@@ -9,6 +9,10 @@ USERS
   not be done correctly, leading to crashes.
 + Strings in the debug menu list no longer interpret any color codes they
   may contain.
++ Fixed a bug where a string would not be interpreted correctly if it
+  used a '.' character in a splice parameter expression. Expressions such
+  as IF "$str#('$str2.length'-4)" = "blah" THEN "label" will now work
+  correctly.
 
 DEVELOPERS
 
