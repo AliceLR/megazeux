@@ -578,10 +578,10 @@ static void glsl_render_graph(struct graphics_data *graphics)
   if(!graphics->screen_mode)
   {
     static const float tex_coord_array_single[2 * 4] = {
-      0.0f, 0.0f,
-      0.0f, 1.0f,
-      1.0f, 0.0f,
-      1.0f, 1.0f,
+      0.0f,          0.0f,
+      0.0f,          25.0f,
+      25.0f / 80.0f, 0.0f,
+      25.0f / 80.0f, 25.0f,
     };
 
     gl->glUseProgram(render_data->tilemap_program);
@@ -613,7 +613,7 @@ static void glsl_render_graph(struct graphics_data *graphics)
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[1]);
 
     gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 225, SCREEN_W, SCREEN_H, GL_RGBA,
-      GL_UNSIGNED_BYTE, render_data->background_texture);
+     GL_UNSIGNED_BYTE, render_data->background_texture);
 
     colorptr = graphics->flat_intensity_palette;
     dest = render_data->background_texture;
@@ -622,15 +622,15 @@ static void glsl_render_graph(struct graphics_data *graphics)
       *dest = *colorptr;
 
     gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 224, 256, 1, GL_RGBA,
-      GL_UNSIGNED_BYTE, render_data->background_texture);
+     GL_UNSIGNED_BYTE, render_data->background_texture);
 
     gl->glEnableVertexAttribArray(ATTRIB_POSITION);
     gl->glEnableVertexAttribArray(ATTRIB_TEXCOORD);
 
     gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
-    vertex_array_single);
+     vertex_array_single);
     gl->glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
-    tex_coord_array_single);
+     tex_coord_array_single);
 
     gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
@@ -654,15 +654,15 @@ static void glsl_render_graph(struct graphics_data *graphics)
     gl->glBindTexture(GL_TEXTURE_2D, render_data->texture_number[0]);
 
     gl->glTexSubImage2D(GL_TEXTURE_2D, 0, 0, 0, 640, 350, GL_RGBA,
-      GL_UNSIGNED_BYTE, render_data->pixels);
+     GL_UNSIGNED_BYTE, render_data->pixels);
 
     gl->glEnableVertexAttribArray(ATTRIB_POSITION);
     gl->glEnableVertexAttribArray(ATTRIB_TEXCOORD);
 
     gl->glVertexAttribPointer(ATTRIB_POSITION, 2, GL_FLOAT, GL_FALSE, 0,
-      vertex_array_single);
+     vertex_array_single);
     gl->glVertexAttribPointer(ATTRIB_TEXCOORD, 2, GL_FLOAT, GL_FALSE, 0,
-      tex_coord_array_single);
+     tex_coord_array_single);
 
     gl->glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
