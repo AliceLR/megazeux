@@ -184,7 +184,7 @@ elif [ "$PLATFORM" = "mingw64" ]; then
 elif [ "$PLATFORM" = "unix-devel" ]; then
 	echo "PLATFORM=unix" > platform.inc
 else
-	if [ ! -f arch/Makefile.$PLATFORM ]; then
+	if [ ! -d arch/$PLATFORM ]; then
 		echo "Invalid platform selection (see arch/)."
 		exit 1
 	fi
