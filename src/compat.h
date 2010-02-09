@@ -24,10 +24,6 @@
 
 #include "config.h"
 
-#ifdef CONFIG_NDS
-#include <nds.h>
-#endif
-
 #ifdef __cplusplus
 
 #define __M_BEGIN_DECLS extern "C" {
@@ -38,7 +34,7 @@
 #define __M_BEGIN_DECLS
 #define __M_END_DECLS
 
-#ifndef CONFIG_WII
+#if !defined(CONFIG_WII) && !defined(CONFIG_NDS)
 
 #undef false
 #undef true
@@ -49,9 +45,13 @@ typedef enum {
   true  = 1,
 } bool;
 
-#endif // !CONFIG_WII
+#endif // !CONFIG_WII && !CONFIG_NDS
 
 #endif /* __cplusplus */
+
+#ifdef CONFIG_NDS
+#include <nds.h>
+#endif
 
 #ifdef CONFIG_WII
 #define BOOL _BOOL
