@@ -40,7 +40,7 @@
 #define color_dot '\xFE'
 
 //Foreground colors that look nice for each background color
-static char fg_per_bk[16] =
+static const char fg_per_bk[16] =
  { 15, 15, 15, 15, 15, 15, 15, 0, 15, 15, 0, 0, 15, 15, 0, 0 };
 
 // For list/choice menus-
@@ -63,7 +63,7 @@ static char fg_per_bk[16] =
 // column arrows to move one line, click on progress meter itself to move
 // there percentage-wise. If you click on the current choice, it exits.
 // If you click on a choice to move there, the mouse cursor moves with it.
-int list_menu(const char **choices, int choice_size, const char *title,
+int list_menu(const char *const *choices, int choice_size, const char *title,
  int current, int num_choices, int xpos, int ypos)
 {
   char key_buffer[64];
@@ -1078,8 +1078,8 @@ int choose_board(struct world *mzx_world, int current, const char *title,
   return current;
 }
 
-int choose_file(struct world *mzx_world, const char **wildcards, char *ret,
- const char *title, int dirs_okay)
+int choose_file(struct world *mzx_world, const char *const *wildcards,
+ char *ret, const char *title, int dirs_okay)
 {
   return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
    0, NULL, 0, 0, 0);

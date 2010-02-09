@@ -104,20 +104,20 @@ static const char game_menu_3[] =
  "Space - Shoot (w/dir)\n"
  "Delete- Bomb";
 
-static const char *save_ext[] = { ".SAV", NULL };
+static const char *const save_ext[] = { ".SAV", NULL };
 static int update_music;
 
 //Bit 1- +1
 //Bit 2- -1
 //Bit 4- +width
 //Bit 8- -width
-static char cw_offs[8] = { 10, 2, 6, 4, 5, 1, 9, 8 };
-static char ccw_offs[8] = { 10, 8, 9, 1, 5, 4, 6, 2 };
+static const char cw_offs[8] = { 10, 2, 6, 4, 5, 1, 9, 8 };
+static const char ccw_offs[8] = { 10, 8, 9, 1, 5, 4, 6, 2 };
 
 // Whether to update a palette from robot activity
 bool pal_update; 
 
-__editor_maybe_static const char *world_ext[] = { ".MZX", NULL };
+__editor_maybe_static const char *const world_ext[] = { ".MZX", NULL };
 
 #ifdef CONFIG_EDITOR
 char debug_mode;
@@ -2575,7 +2575,7 @@ void set_mesg_direct(struct board *src_board, const char *str)
 void rotate(struct world *mzx_world, int x, int y, int dir)
 {
   struct board *src_board = mzx_world->current_board;
-  char *offsp = cw_offs;
+  const char *offsp = cw_offs;
   int offs[8];
   int offset, i;
   int board_width = src_board->board_width;

@@ -71,14 +71,14 @@ static char search_string[256];
 static char replace_string[256];
 static int wrap_option = 1;
 
-static char key_help[(81 * 3) + 1] =
+static const char key_help[(81 * 3) + 1] =
 {
   " F1:Help  F2:Color  F3:Char  F4:Param  F5:Char edit  F6-F10:Macros  (see Alt+O) \n"
   " Alt+Home/S:Mark start  Alt+End/E:Mark end  Alt+U:Unmark   Alt+B:Block Action   \n"
   " Alt+Ins:Paste  Alt+X:Export  Alt+I:Import  Alt+V:Verify  Ctrl+I/D/C:Valid Mark \n"
 };
 
-static char key_help_hide[82] =
+static const char key_help_hide[82] =
   "     Press Alt + H to view hotkey information.  Press F1 for extended help.     \n";
 
 // Default colors for color coding:

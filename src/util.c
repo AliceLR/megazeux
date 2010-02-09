@@ -35,7 +35,7 @@
 
 struct mzx_resource
 {
-  const char *base_name;
+  const char *const base_name;
   char *path;
 };
 
@@ -403,7 +403,7 @@ int dir_get_next_entry(dir_t *dir, char *entry)
  *
  * In this case, the code wouldn't be compiled (noticed by the PSP port).
  */
-const char *mod_gdm_ext[] =
+const char *const mod_gdm_ext[] =
 {
   ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it", ".669", ".ult",
   ".wav", ".dsm", ".far", ".okt", ".amf", ".ogg", ".gdm", NULL

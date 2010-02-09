@@ -30,7 +30,7 @@
 
 // 8 char names per sfx
 
-static const char *sfx_names[NUM_SFX] =
+static const char *const sfx_names[NUM_SFX] =
 {
   "Gem      ",
   "MagicGem ",

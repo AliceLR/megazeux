@@ -162,7 +162,7 @@ static const char draw_names[7][10] =
   " Current:", " Drawing:", "    Text:", "   Block:", "   Block:", " Import:"
 };
 
-static const char *menu_lines[NUM_MENUS][2]=
+static const char *const menu_lines[NUM_MENUS][2]=
 {
   {
     " L:Load\tS:Save  G:Global Info    Alt+R:Restart  Alt+T:Test",
@@ -190,7 +190,7 @@ static const char *menu_lines[NUM_MENUS][2]=
   }
 };
 
-static const char *overlay_menu_lines[4] =
+static const char *const overlay_menu_lines[4] =
 {
   " OVERLAY EDITING- (Alt+O to end)",
   " \x12\x1d:Move  Space:Place  Ins:Grab  Enter:Character  Del:Delete\t   F:Fill",
@@ -200,14 +200,14 @@ static const char *overlay_menu_lines[4] =
 
 static const char tmenu_num_choices[8] = { 17, 14, 18, 8, 6, 11, 12, 10 };
 
-static const char *tmenu_titles[8] =
+static const char *const tmenu_titles[8] =
 {
   "Terrains", "Items", "Creatures", "Puzzle Pieces",
   "Transport", "Elements", "Miscellaneous", "Objects"
 };
 
 // Each 'item' is 20 char long, including '\0'.
-static const char *thing_menus[8][20] =
+static const char *const thing_menus[8][20] =
 {
   // Terrain (F3)
   {
@@ -402,7 +402,7 @@ static const char def_colors[128] =
   0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 0 , 6 , 15, 27    // 0x70-0x7F
 };
 
-static const char *mod_ext[] =
+static const char *const mod_ext[] =
 {
   ".xm", ".s3m", ".mod", ".med", ".mtm", ".stm", ".it", ".669", ".ult",
   ".wav", ".dsm", ".far", ".okt", ".amf", ".ogg", NULL
@@ -2016,7 +2016,7 @@ static void __edit_world(struct world *mzx_world)
         if(get_alt_status(keycode_internal))
         {
           char test_wav[128] = { 0, };
-          const char *sam_ext[] = { ".WAV", ".SAM", ".OGG", NULL };
+          const char *const sam_ext[] = { ".WAV", ".SAM", ".OGG", NULL };
 
           if(!choose_file(mzx_world, sam_ext, test_wav,
            "Choose a wav file", 1))

@@ -28,7 +28,7 @@ __M_BEGIN_DECLS
 #include "../window.h"
 #include "../world_struct.h"
 
-EDITOR_LIBSPEC int list_menu(const char **choices, int choice_size,
+EDITOR_LIBSPEC int list_menu(const char *const *choices, int choice_size,
  const char *title, int current, int num_choices, int xpos, int ypos);
 int color_selection(int current, int allow_wild);
 void draw_color_box(int color, int q_bit, int x, int y);
@@ -43,8 +43,8 @@ struct element *construct_board_list(int x, int y,
 int add_board(struct world *mzx_world, int current);
 int choose_board(struct world *mzx_world, int current, const char *title,
  int board0_none);
-int choose_file(struct world *mzx_world, const char **wildcards, char *ret,
- const char *title, int dirs_okay);
+int choose_file(struct world *mzx_world, const char *const *wildcards,
+ char *ret, const char *title, int dirs_okay);
 
 __M_END_DECLS
 

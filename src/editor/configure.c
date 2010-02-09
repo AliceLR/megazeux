@@ -271,7 +271,7 @@ static const struct editor_config_entry *find_editor_option(char *name,
   return NULL;
 }
 
-static struct editor_config_info default_editor_options =
+static const struct editor_config_info default_editor_options =
 {
   // Board editor options
   0,                            // editor_space_toggles

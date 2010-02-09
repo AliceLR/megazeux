@@ -49,7 +49,7 @@
 #include "extmem.h"
 #include "util.h"
 
-static char magic_code[16] =
+static const char magic_code[16] =
  "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
 
 // Get 2 bytes

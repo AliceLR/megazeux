@@ -449,7 +449,7 @@ static const struct config_entry *find_option(char *name,
   return NULL;
 }
 
-static struct config_info default_options =
+static const struct config_info default_options =
 {
   // Video options
   FULLSCREEN_DEFAULT,           // fullscreen

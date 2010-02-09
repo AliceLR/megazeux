@@ -139,7 +139,7 @@ CORE_LIBSPEC int rename(const char *oldpath, const char *newpath);
 #endif
 
 #if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
-CORE_LIBSPEC extern const char *mod_gdm_ext[];
+CORE_LIBSPEC extern const char *const mod_gdm_ext[];
 #endif
 
 #if defined(__amigaos__)

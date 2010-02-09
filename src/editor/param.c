@@ -41,7 +41,7 @@
 #include "robo_ed.h"
 #include "window.h"
 
-static const char *potion_fx[16] =
+static const char *const potion_fx[16] =
 {
   "No Effect   ",
   "Invinco     ",

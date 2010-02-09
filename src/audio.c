@@ -1455,7 +1455,7 @@ static struct audio_stream *construct_pc_speaker_stream(void)
 static struct audio_stream *construct_stream_audio_file(char *filename,
  Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
-  const char **exts = mod_gdm_ext;
+  const char *const *exts = mod_gdm_ext;
   struct audio_stream *a_return = NULL;
   size_t len = strlen(filename);
   int ext_pos;

@@ -33,7 +33,7 @@
 #include "world.h"
 #include "robot.h"
 
-static char scr_nm_strs[5][12] =
+static const char scr_nm_strs[5][12] =
  { "  Scroll   ", "   Sign    ", "Edit Scroll", "   Help    ", "" };
 
 static void scroll_frame(struct world *mzx_world, struct scroll *scroll,

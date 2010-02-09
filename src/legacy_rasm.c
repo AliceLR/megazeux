@@ -1588,7 +1588,7 @@ static const struct search_entry *find_command(const char *name)
   return NULL;
 }
 
-static const char *type_names[] =
+static const char *const type_names[] =
 {
   "imm",
   "imm",

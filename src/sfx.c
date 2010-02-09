@@ -104,11 +104,11 @@ struct noise
 };
 
 // Frequencies of 6C thru 6B
-static int note_freq[12] =
+static const int note_freq[12] =
  { 2032, 2152, 2280, 2416, 2560, 2712, 2880, 3048, 3232, 3424, 3624, 3840 };
 
 // Sample frequencies of 0C thru 0B
-static int sam_freq[12] =
+static const int sam_freq[12] =
  { 3424, 3232, 3048, 2880, 2712, 2560, 2416, 2280, 2152, 2032, 1920, 1812 };
 
 static struct noise background[NOISEMAX]; // The sound queue itself

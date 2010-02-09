@@ -207,9 +207,10 @@ CORE_LIBSPEC struct element *construct_number_box(int x, int y,
  int mult_five, int *result);
 
 CORE_LIBSPEC int choose_file_ch(struct world *mzx_world,
- const char **wildcards, char *ret, const char *title, int dirs_okay);
-CORE_LIBSPEC int new_file(struct world *mzx_world, const char **wildcards,
- const char *default_ext, char *ret, const char *title, int dirs_okay);
+ const char *const *wildcards, char *ret, const char *title, int dirs_okay);
+CORE_LIBSPEC int new_file(struct world *mzx_world,
+ const char *const *wildcards, const char *default_ext, char *ret,
+ const char *title, int dirs_okay);
 
 #if defined(CONFIG_UPDATER) || defined(CONFIG_LOADSAVE_METER)
 CORE_LIBSPEC void meter(const char *title, unsigned int progress,
@@ -288,9 +289,10 @@ CORE_LIBSPEC int char_selection_ext(int current, int allow_multichar,
  int *width_ptr, int *height_ptr);
 CORE_LIBSPEC struct element *construct_input_box(int x, int y,
  const char *question, int max_length, int input_flags, char *result);
-CORE_LIBSPEC int file_manager(struct world *mzx_world, const char **wildcards,
- const char *default_ext, char *ret, const char *title, int dirs_okay,
- int allow_new, struct element **dialog_ext, int num_ext, int ext_height,
+CORE_LIBSPEC int file_manager(struct world *mzx_world,
+ const char *const *wildcards, const char *default_ext, char *ret,
+ const char *title, int dirs_okay, int allow_new,
+ struct element **dialog_ext, int num_ext, int ext_height,
  int allow_dir_change);
 #endif // CONFIG_EDITOR
 

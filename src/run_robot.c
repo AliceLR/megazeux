@@ -49,7 +49,7 @@
 #define parsedir(a, b, c, d) \
  parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3])
 
-static const char *item_to_counter[9] =
+static const char *const item_to_counter[9] =
 {
   "GEMS",
   "AMMO",

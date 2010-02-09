@@ -256,7 +256,7 @@ static const int char_values[8][24] =
 };
 
 // Info for char funcs, 192 selections (24 per func, 8 funcs)
-static const char *char_strs[8][24] =
+static const char *const char_strs[8][24] =
 {
   {
     "Space (000)-",
@@ -495,7 +495,7 @@ static const char dmg_ids[22] =
   95
 };
 
-static const char *dmg_strs[22] =
+static const char *const dmg_strs[22] =
 {
   "Lava-",
   "Explosion-",

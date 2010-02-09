@@ -38,13 +38,13 @@
 
 // For missile turning (directions)
 
-static int cwturndir[4] = { 2, 3, 1, 0 };
-static int ccwturndir[4] = { 3, 2, 0, 1 };
+static const int cwturndir[4] = { 2, 3, 1, 0 };
+static const int ccwturndir[4] = { 3, 2, 0, 1 };
 
 // OPEN DOOR movement directions, use bits 1,2,4,8,16 to index it.
 // 0ffh=no movement.
 
-static char open_door_movement[] =
+static const char open_door_movement[] =
 {
   3   , 0   , 2   , 0   , 3   , 1   , 2   , 1   ,
   0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF,
@@ -54,7 +54,7 @@ static char open_door_movement[] =
 
 // Bits for WAIT, in proper bit form, for opening doors. Use bits 1-16.
 
-static char open_door_max_wait[] =
+static const char open_door_max_wait[] =
 {
   32 , 32 , 32 , 32 , 32 , 32 , 32 , 32 ,
   224, 224, 224, 224, 224, 224, 224, 224,
