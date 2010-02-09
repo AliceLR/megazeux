@@ -2723,19 +2723,30 @@ void robot_editor(World *mzx_world, Robot *cur_robot)
       fill_line(78, 1, i, bg_char, bg_color_solid);
     }
 
-    write_string("Line:", 1, 0, top_highlight_color, 0);
-    sprintf(str_buffer, "%05d", rstate.current_line);
-    write_string(str_buffer, 7, 0, top_text_color, 0);
-    write_string("/", 12, 0, top_highlight_color, 0);
-    sprintf(str_buffer, "%05d", rstate.total_lines);
-    write_string(str_buffer, 13, 0, top_text_color, 0);
-    write_string("Character:", 26, 0, top_highlight_color, 0);
-    write_string("/", 40, 0, top_highlight_color, 0);
-    write_string("Size:", 51, 0, top_highlight_color, 0);
-    sprintf(str_buffer, "%05d", rstate.size);
-    write_string(str_buffer, 57, 0, top_text_color, 0);
-    write_string("/", 62, 0, top_highlight_color, 0);
-    write_string(max_size_buffer, 63, 0, top_text_color, 0);
+    write_string("Line:", 2, 0, top_highlight_color, 0);
+    snprintf(str_buffer, 32, "%05d", rstate.current_line);
+    str_buffer[31] = 0;
+    write_string(str_buffer, 8, 0, top_text_color, 0);
+    write_string("/", 13, 0, top_highlight_color, 0);
+    snprintf(str_buffer, 32, "%05d", rstate.total_lines);
+    str_buffer[31] = 0;
+    write_string(str_buffer, 14, 0, top_text_color, 0);
+    write_string("Character:", 21, 0, top_highlight_color, 0);
+    write_string("/", 35, 0, top_highlight_color, 0);
+    write_string("Size:", 41, 0, top_highlight_color, 0);
+    snprintf(str_buffer, 32, "%05d", rstate.size);
+    str_buffer[31] = 0;
+    write_string(str_buffer, 47, 0, top_text_color, 0);
+    write_string("/", 52, 0, top_highlight_color, 0);
+    write_string(max_size_buffer, 53, 0, top_text_color, 0);
+    write_string("X:", 60, 0, top_highlight_color, 0);
+    snprintf(str_buffer, 32, "%05d", cur_robot->xpos);
+    str_buffer[31] = 0;
+    write_string(str_buffer, 63, 0, top_text_color, 0);
+    write_string("Y:", 70, 0, top_highlight_color, 0);
+    snprintf(str_buffer, 32, "%05d", cur_robot->ypos);
+    str_buffer[31] = 0;
+    write_string(str_buffer, 73, 0, top_text_color, 0);
 
     // Now, draw the lines. Start with 9 back from the current.
 

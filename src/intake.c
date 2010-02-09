@@ -68,7 +68,7 @@ char last_char = 0;
 
 int intake(World *mzx_world, char *string, int max_len,
  int x, int y, char color, int exit_type, int filter_type,
- int *return_x_pos, char robo_intk, char *macro)
+ int *return_x_pos, bool robo_intk, char *macro)
 {
   int currx, key, curr_len;
   int macro_position = -1;
@@ -184,8 +184,8 @@ int intake(World *mzx_world, char *string, int max_len,
     }
     else
     {
-      write_number(currx + 1, 79, 37, 0, 3, 0, 10);
-      write_number(curr_len + 1, 79, 41, 0, 3, 0, 10);
+      write_number(currx + 1, 79, 32, 0, 3, 0, 10);
+      write_number(curr_len + 1, 79, 36, 0, 3, 0, 10);
     }
 
     in_macro = 0;

@@ -35,7 +35,7 @@ __M_BEGIN_DECLS
 // MOUSE_EVENT! (must acknowledge_event() it)
 CORE_LIBSPEC int intake(World *mzx_world, char *string, int max_len,
  int x, int y, char color, int exit_type, int filter_type,
- int *return_x_pos, char robo_intk, char *macro);
+ int *return_x_pos, bool robo_intk, char *macro);
 
 __M_END_DECLS
 

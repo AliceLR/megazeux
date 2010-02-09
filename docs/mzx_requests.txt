@@ -7,7 +7,6 @@ MZX REQUESTS:
 -Demo format consisting of logged keypresses.
 -Visible vlayer, able to be placed over or under the overlay.
 -Extensive manipulation of MZX default text boxes (mutable size, mutable position, more powerful editing of border, images in textbox background, ability to similarly alter remove title bar or remove it entirely, lockable textbox scrolling, ability to change keys to view text/select options/exit textbox).
--{+Exo]Indication of current Robot's x/y in Robotic Editor.
 -Insertion of copy block params in Robotic Editor by visually selecting a block using a hotkey (Robotic editor jumps to a display of the current board, you select an area, and when done the copy block numbers resulting in this are placed in the line of Robotic code).
 -Ability to add color codes relevant to message commands when pressing F2 (*, &, %, ?, and so on). [Exo skipped]
 -Multiple temp slots for characters (currently there is one stored and placed with the char editor's "Copy to buffer" and "Copy from buffer" functions).

@@ -704,7 +704,7 @@ static void thing_menu(World *mzx_world, int menu_number, mzx_thing *new_id,
       if(is_robot(old_id))
         clear_robot_contents(copy_robot);
 
-      create_blank_robot_direct(copy_robot, 0, 0);
+      create_blank_robot_direct(copy_robot, x, y);
     }
 
     if(is_signscroll(id))
@@ -3076,6 +3076,8 @@ static void __edit_world(World *mzx_world)
              &current_param, &copy_robot, &copy_scroll, &copy_sensor,
              cursor_board_x, cursor_board_y, overlay_edit);
 
+            copy_robot.xpos = cursor_board_x;
+            copy_robot.ypos = cursor_board_y;
             new_param =
              change_param(mzx_world, current_id, current_param,
              &copy_robot, &copy_scroll, &copy_sensor);
