@@ -109,6 +109,10 @@ int rename(const char *oldpath, const char *newpath);
 #define rmdir(x)
 #endif
 
+#ifdef __WIN32__
+#define mkdir(file,mode) mkdir(file)
+#endif
+
 #if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
 extern const char *mod_gdm_ext[];
 #endif

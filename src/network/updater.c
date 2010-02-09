@@ -18,11 +18,83 @@
  */
 #include "manifest.h"
 
+#include "const.h"
 #include "util.h"
 
+#include <sys/types.h>
+#include <sys/stat.h>
+
 #include <unistd.h>
+#include <errno.h>
 
 #define OUTBOUND_PORT 80
+
+static bool check_prune_basedir(const char *file)
+{
+  char path[MAX_PATH];
+  int ret;
+
+  ret = get_path(file, path, MAX_PATH);
+  if(ret < 0)
+  {
+    warning("Path too long\n");
+    return false;
+  }
+
+  // This file has no base directory
+  if(ret == 0)
+    return true;
+
+  // At the head of the recursion we remove the directory
+  rmdir(path);
+
+  // Recursion; remove any parent directory
+  return check_prune_basedir(path);
+}
+
+static bool check_create_basedir(const char *file)
+{
+  char path[MAX_PATH];
+  struct stat s;
+  int ret;
+
+  ret = get_path(file, path, MAX_PATH);
+  if(ret < 0)
+  {
+    warning("Path too long\n");
+    return false;
+  }
+
+  // This file has no base directory
+  if(ret == 0)
+    return true;
+
+  if(stat(path, &s) < 0)
+  {
+    // Every other kind of error is fatal
+    if(errno != ENOENT)
+    {
+      perror("stat");
+      return false;
+    }
+
+    // Recursion; create any parent directory
+    if(!check_create_basedir(path))
+      return false;
+
+    // At the tail of the recursion we create the directory
+    mkdir(path, 0777);
+    return true;
+  }
+
+  if(!S_ISDIR(s.st_mode))
+  {
+    warning("Path '%s' is getting in the way (must be a directory)\n", path);
+    return false;
+  }
+
+  return true;
+}
 
 int main(int argc, char *argv[])
 {
@@ -61,15 +133,31 @@ int main(int argc, char *argv[])
       perror("unlink");
       goto err_free_update_manifests;
     }
+
+    /* Obtain the path for this file. If the file isn't at the top
+     * level, and the directory is empty (rmdir ensures this)
+     * the directory will be pruned.
+     */
+    check_prune_basedir(e->name);
   }
 
   for(e = added; e; e = e->next)
-    if(!manifest_entry_download_replace(h, basedir, e))
+  {
+    if(!check_create_basedir(e->name))
       goto err_free_update_manifests;
 
-  for(e = replaced; e; e = e->next)
     if(!manifest_entry_download_replace(h, basedir, e))
       goto err_free_update_manifests;
+  }
+
+  for(e = replaced; e; e = e->next)
+  {
+    if(!check_create_basedir(e->name))
+      goto err_free_update_manifests;
+
+    if(!manifest_entry_download_replace(h, basedir, e))
+      goto err_free_update_manifests;
+  }
 
   chdir("..");
 

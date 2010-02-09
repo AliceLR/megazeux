@@ -2471,11 +2471,7 @@ __editor_maybe_static int file_manager(World *mzx_world,
         {
           if(stat(new_name, &file_info) < 0)
           {
-#ifdef __WIN32__
-            mkdir(new_name);
-#else
             mkdir(new_name, 0777);
-#endif
           }
           else
           {
