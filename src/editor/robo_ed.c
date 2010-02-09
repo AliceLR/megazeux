@@ -498,7 +498,11 @@ static void output_macro(robot_state *rstate, ext_macro *macro_src)
   {
     line_pos = line_buffer;
     line_pos_old = line_pos;
+
     len = strlen(macro_src->lines[i][0]);
+    if((line_pos - line_pos_old) + len >= COMMAND_BUFFER_LEN)
+      goto err_cancel_expansion;
+
     strcpy(line_pos, macro_src->lines[i][0]);
     line_pos += len;
 
@@ -523,6 +527,9 @@ static void output_macro(robot_state *rstate, ext_macro *macro_src)
             }
 
             len = strlen(number_buffer);
+            if((line_pos - line_pos_old) + len >= COMMAND_BUFFER_LEN)
+              goto err_cancel_expansion;
+
             memcpy(line_pos, number_buffer, len);
             line_pos += len;
             break;
@@ -531,14 +538,19 @@ static void output_macro(robot_state *rstate, ext_macro *macro_src)
           case string:
           {
             len = strlen(current_reference->storage->str_storage);
-            memcpy(line_pos, current_reference->storage->str_storage,
-             len);
+            if((line_pos - line_pos_old) + len >= COMMAND_BUFFER_LEN)
+              goto err_cancel_expansion;
+
+            memcpy(line_pos, current_reference->storage->str_storage, len);
             line_pos += len;
             break;
           }
 
           case character:
           {
+            if((line_pos - line_pos_old) + 3 >= COMMAND_BUFFER_LEN)
+              goto err_cancel_expansion;
+
             sprintf(line_pos, "'%c'",
              current_reference->storage->int_storage);
             line_pos += 3;
@@ -547,29 +559,39 @@ static void output_macro(robot_state *rstate, ext_macro *macro_src)
 
           case color:
           {
-            print_color(current_reference->storage->int_storage,
-             line_pos);
+            if((line_pos - line_pos_old) + 3 >= COMMAND_BUFFER_LEN)
+              goto err_cancel_expansion;
+
+            print_color(current_reference->storage->int_storage, line_pos);
             line_pos += 3;
             break;
           }
 
           default:
-          {
             break;
-          }
         }
       }
       else
       {
-        strcpy(line_pos, "(undef)");
-        line_pos += strlen("(undef)");
+        const char undef[] = "(undef)";
+
+        len = strlen(undef);
+        if((line_pos - line_pos_old) + len >= COMMAND_BUFFER_LEN)
+          goto err_cancel_expansion;
+
+        strcpy(line_pos, undef);
+        line_pos += len;
       }
 
       len = strlen(macro_src->lines[i][i2 + 1]);
+      if((line_pos - line_pos_old) + len >= COMMAND_BUFFER_LEN)
+        goto err_cancel_expansion;
+
       memcpy(line_pos, macro_src->lines[i][i2 + 1], len);
       line_pos += len;
     }
 
+err_cancel_expansion:
     *line_pos = 0;
     add_line(rstate);
   }
