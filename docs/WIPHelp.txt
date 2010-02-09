@@ -147,6 +147,8 @@ can easily be used as flags if set only to 1 and 0.
 -There is no default mechanism for torches.
 -No equivalent of centipedes exists as a default enemy.
 -Multiple keys of the same color can be picked up at once.
+-There is no board setting controlling the amount of player
+shots that can be on a given board.
 -Cloning the player has no use in MZX; uses of player clones
 need simulated in Robotic.
 -The Shift-? hotkey (often used for inventory engines) does not
@@ -154,22 +156,28 @@ exist in MegaZeux but can be emulated with Robotic.
 -Bomb explosions are not instantaneous but instead radiate out
 from the center. They are also diamond-shaped as opposed to
 a flattened oval shape.
--MegaZeux uses cycle 1 as default (opposed to ZZT's cycle 3).
+-MegaZeux uses cycle 1 as default (as opposed to ZZT's cycle
+3).
 -No equivalent of duplicators exists.
--Seekers do not destroy Breakaway territories in MegaZeux.
--Scrolls cannot execute Robotic code. Use a Robot ending with
-the "die" command instead. 
+-Seekers (aka "stars") do not destroy Breakaway territories in
+MegaZeux.
+-MZX Scrolls cannot execute code. Use a Robot ending with the
+"die" command for ZZT scrolls with code instead. 
 -Terrains that give out a distinctive message on first touch
 (fakes, forests) give out no such message in MZX.
 -There are two types of Gems; the one that emulates ZZT gems is
 the Magic Gem.
 -Lasers will not push the player into other objects. This makes
 some ZZT laser configurations a lot less deadly.
+-Scrolls with only one line launch a message box (instead of
+using the message row for the line).
 -Putting in fake commands for comedic effect (e.g. putting in 
 ~A#GOSUCKANEGG~F to make ZZT beep and go "ERR: Bad command
 GOSUCKANEGG") does not work in MegaZeux and has to be emulated.
--Special exploits (e.g. black holes, monitors) have no direct
-MZX equivalent.
+-Special exploits (e.g. black holes, monitors, speed-up
+exploit) have no direct MZX equivalent.
+-Other, extremely minor, differences best left for total wonks
+or for ZZT port authors.
 
 Secondly, here is how the ZZT-OOP commands convert to Robotic.
 
@@ -453,7 +461,9 @@ or take precautions against unknown dangers.
 F4 - Restore Game
 This will let you select a saved game from a list of filenames.
 The game will then be reloaded from the same point you left
-off. Unlike saving, the option to load is always present.
+off. While most games will allow loading anywhere, some will
+restrict loading to certain times or will use a custom
+mechanism for loading games instead.
 
 NOTE: A few games may save or load automatically, and
 high-caliber games may have completely different methods of
@@ -1291,7 +1301,7 @@ Q: Are there any MZX-specific tools that can make developing an
 
 A: Yes, plenty! MegaZeux comes with two helpful tools:
   "Checkres" will detect what files referenced by an MZX world
-  are present, and "Downver" will change the given MZX world's
+  are present, and can also change the given MZX world's
   version to its preceding version. There are several graphical
   conversion programs such as CharCon, and SMZX palette tools
   such as Palzor and PalMaster.  
@@ -1387,15 +1397,6 @@ Q: Why is my MegaZeux world starting on the title screen?
 A: The first board has to be set. Press 'G' in the editor, then
   click the 'More' button and the option appears on the top of
   the box.
-
-Q: Why doesn't my music play?
-
-A: It's probably because the music file's filename is over 12
-  characters long in total. Shorten the name if so, or load the
-  file through Robotic instead of having it set as the native
-  board module. If you still have problems, see if the file
-  will load at all in an appropriate player. If all else fails,
-  inform the coder(s).
   
 Q: Whenever I place a string on the overlay, the spaces aren't
   acting like overlay at all! Is this a bug?
@@ -1456,7 +1457,8 @@ A: It's a matter of personal preference. Most people prefer
   prefer to work with Impulse Tracker. Finally, a few are
   still fond of Fast Tracker II, and therefore use the similar
   Mad Tracker. Be advised that the DOS-based trackers like IT
-  and FT2 might not work well with an NT-based Windows system.
+  and FT2 might not work well with an NT-based Windows system,
+  and will likely not work at all with a 64-bit OS.
 
   You Linuxites may want to try Schism Tracker, Milky Tracker
   or Sk@@le.
@@ -1562,12 +1564,6 @@ $Other Limitations
 Numbers less than -32768 or more than 32767 cannot be directly
 used in Robotic. This problem is a worldfile issue and can be
 circumvented by using a constant expression.
-
-Music filenames should not be larger than 12 characters. Board
-music can't be larger than this and while you can load these
-from a robot they won't get saved in a save file. If you must
-do this add a justloaded label to persistently reload the
-module/OGG.
 
 No board can have a width of a multiple of 256 chars because
 this corrupts the board if it lacks an overlay. This problem is
@@ -2680,10 +2676,7 @@ $Selecting Default Modules for Each Board
 This is perhaps the easiest method to get music in your games.
 Simply make sure that the proper module files are in the
 current directory, and use Alt+N to select music for a board.
-Press Alt+N to turn it back off again. However, it is limited
-to filenames of 12 characters or less due to the way MZX works;
-one must either shorten the module name or have the module
-loaded by Robotic instead.
+Press Alt+N to turn it back off again.
 
 >#EDITINGK.HLP:AltN:Details on Alt+N
 
@@ -3185,11 +3178,9 @@ MegaZeux General Errors:
 >era:Attempt to load non-MZX world.
 >erb:Cannot decrypt write-protected world.
 >erc:Cannot load password protected world.
->erd:Can't truncate file: the extension is too long.
 >ere:Error loading world
 >erf:Error saving world
 >erg:Error swapping to next world
->erh:Max rename attempts exceeded (100), giving up.
 >eri:Overlay mode is not on (see Board Info)
 >erj:.SAV files from other versions of MZX are not supported
 >erk:This world is password protected.
@@ -3234,11 +3225,6 @@ Since MegaZeux 2.80, worlds that are password protected have to
 be stripped of the password to run. This error is seen when the
 user refuses to decrypt the password-protected file.
 
-:erd:~ACan't truncate file: the extension is too long
-
-MegaZeux attempted to truncate a music file to 12 characters,
-but the file extension was too long to create a valid filename.
-
 :ere:~AError saving world
 
 This can be caused by file errors or a hard disk space
@@ -3255,13 +3241,6 @@ shortage.
 A Robotic command, SWAP to WORLD, was issued, but the stated
 world could not be found or otherwise could not be swapped to,
 due to version conflicts, file errors, etc.
-
-:erh:~AMax rename attempts exceeded (100), giving up.
-
-MegaZeux attempted to rename a module over 12 characters long,
-but could not. This is possibly due to an attempt to overwrite
-a read-only file, or trying to rename a module on read-only
-media.
 
 :eri:~AOverlay mode is not on (see Board Info)
 
@@ -3424,7 +3403,7 @@ represented by the number ###, from 0 to 255.
 This will cause the Sensor to change its color to that
 represented by the code xx, a hexadecimal number from 00 to
 FF. The color coding is the same as used for Robotic commands,
-except without the c and ?s are not allowed.
+except without the "c" character. ?s are not allowed.
 
 ~EN
 ~ES
@@ -4778,14 +4757,19 @@ can be stated in one of three ways:
 2- State the direction of target Robot.
 3- State the x/y coordinates of target Robot.
 
+NOTE: Exact means just that - EXACT. If one requires an group
+of objects differing only in name, COPYROBOT is unsuitable
+for this purpose because even the Robot name is copied.
+
 >#COMMANDS.HLP:dir:Directions
 
 :_d9:~ADUPLICATE SELF # #
 :_d0:~ADUPLICATE SELF [dir]
 
-The current Robot creates an exact duplicate of itself and
-places it at the noted x/y coordinates or direction. That Robot
-then begins its program at the first command.
+The current Robot creates an exact duplicate of itself 
+(including local counter values!) and places it at the noted
+{x,y} coordinates or direction. That Robot then begins its
+program at the first command.
 
 >#COMMANDS.HLP:dir:Directions
 
@@ -6329,7 +6313,8 @@ starting at the beginning of the file.
 
 ~BFWRITE_APPEND (function)
 
-This opens a file for writing at the END of the file.
+This opens a file for writing at the END of the file. Note that
+all FWRITE_POS functionality is ignored in this mode.
 
 ~BFREAD_COUNTER (function)
 
@@ -7720,6 +7705,13 @@ This means you can't select the same file to be the current
 same time.
 -Writing and reading operations change the current fwrite and
 fread positions.
+-There is a special character called the terminator (char #42,
+'*') placed at the end of a write when a string is written to a
+file with FWRITE. This character ends an FREAD to a string when
+encountered (the terminator character itself will not be
+written to the string). However, using FWRITEn will not place a
+terminator, and FREADn will ignore any terminator characters
+encountered.
 -Lastly, files need to be closed when the current task is
 finished. Otherwise, the file remains open and causes problems.
 To close a file, use SET "" to "FREAD_OPEN" to close a file for
@@ -7745,6 +7737,8 @@ overwriting it, starting at the beginning of the file.
 ~ASET "file.xxx" to "FWRITE_APPEND"
 
 This command opens a file for writing at the END of the file.
+Please note that FWRITE_POS settings will not work in this
+mode.
 
 ~ASET "FREAD_POS" to #
 ~ASET "FWRITE_POS" to #
@@ -8257,6 +8251,170 @@ replace in the target character set.
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
+
+December 29, 2009 - MZX 2.83
+
+USERS
+
++ Added support for loop markers in WAV and OGG files. The WAV
+  loop support uses the "smpl" chunk used by ModPlug Tracker
+  and Wavosaur among others. Only the first loop is used, and
+  only forward looping is supported. The OGG loop support uses
+  the "LOOPSTART" and "LOOPLENGTH" tags as used by RPG Maker
+  VX. (Mr_Alert)
++ Added OpenGL Shader Language (glsl) renderer which uses
+  shaders to render and scale the video. This renderer is
+  compatible with Open GL >=2.0 and Open GL-ES 2.0 video cards
+  only. A variety of shader programs have been provided and
+  these can be customized. Performance of all MZX modes
+  (including SMZX) is excellent. (Logicow, ajs)
++ Files will no longer be silently overwritten by save dialogs
+  if the user enters an existing filename without the default
+  extension. (revvy)
++ The string editor in the counter debug menu (F11) now escapes
+  newlines and backslashes to prevent UI corruption.
++ Fixed a bug where the LOAD_GAME counter handler could
+  continue to use the old board state after load, causing
+  crashes. (Lancer-X)
++ Fixed a bug where status counters containing numbers >6
+  characters would cause MegaZeux to crash or behave strangely.
++ Fixed a bug in the robot editor's find/replace function that
+  caused crashes when replacing a string with another longer
+  string, with a replacement at the end of a line.
++ Programmatically writing to a read-only "built-in" counter
+  will no longer allocate it general heap space. This prevents
+  writes from showing up in the F11 counter debugger that are
+  inaccessible from robotic.
++ Fixed a bug that caused the SMZX mode 3 palette to become
+  corrupted upon entering the char editor (the editor would
+  re-write colours 2-4 and not restore them from backup
+  correctly).
++ Fixed a bug where a robot program would never progress if the
+  subroutine stack was popped more times than it was pushed
+  (via return or top).
++ On UNIX platforms a desktop/menu entry is now installed by
+  default, using the existing icon. (Sci-freak)
++ Clamp score to >= 0 if world <= 2.70. Fixes "Gates: The
+  Puzzles" and possibly other old titles depending on this
+  behavior. (Exophase)
++ Fullscreen modes will now automatically use your current
+  desktop resolution if using any hardware renderer (i.e. not
+  the default software renderer). To get the old behaviour back
+  you must set fullscreen_resolution explicitly.
++ Fixed a bug where web and thick web would be treated the
+  same.
++ Fixed a bug in the updater where modified/replaced files
+  would be considered for deletion.
++ Fixed a bug on case-sensitive filesystems where saving a
+  game, world or MZM could fail to overwrite any existing file
+  by the same name (if matched case insensitively).
++ MZX no longer applies masking to chars 32-127 in signs or
+  scrolls when playing a world. Previously, even the 
+  mask_midchars option would have no effect on the display of
+  signs or scrolls. This has been broken since 2.80g.
++ Re-worked board editor's Alt+H option to provide minimal
+  editor (one row) status info, rather than completely hiding
+  the help.
++ The checkres utility now checks the global robot for missing
+  resources too.
++ Chests can be added with Hi Bombs (omission noted by zzo38).
++ Fix IF c?? Sprite p?? # # "label" so that a non-wildcard
+  parameter is respected (previously it would always just check
+  sprite 0).
++ NDS port updated from dsmzx2 release. (kvance, ajs)
++ Updated SDL to 1.2.14 in Windows x86, Windows x64 and Mac OS
+  X builds.
++ Security checks are no longer applied to filenames in module
+  or sample playback in "listening only" modes in the editor.
++ Module volume is applied immediately before playback upon
+  switching boards. This prevents one cycle of audio "leaking"
+  at the wrong volume.
++ Prevent crash with negative string clip where clip + offset =
+  0. Clip is now correctly limited to total string length.
++ Help file is now optional for MZXRun, even with
+  CONFIG_HELPSYS=1 builds.
++ Fixed crash when robot editor macros expanded other macros.
++ The lock icon is no longer missing from the Items THING menu
+  (F4).
++ A world to start up with can now be passed to MegaZeux
+  without the startup_file= prefix. This makes megazeux
+  consistent with other applications.
++ SHOOT, SHOOTMISSILE, SHOOTSEEKER and SPITFIRE now end the
+  cycle, to restore compatibility with pre-port MZX and fix
+  games such as Kya's Sword and Stones & Roks II.
++ Have IF [dir] PLAYER [color] [thing] [param] "label"
+  interpret SEEK direction wrt robot coordinates, rather than
+  player coordinates. Other directions are not affected.
++ Zapping a label at the end of a robot program will no longer
+  corrupt the robot list (which usually caused crashes).
++ Entering lines in the robot editor with leading or trailing
+  spaces will be trimmed before the line is compiled.
++ The single quote characters encasing S_CHARACTER parameters
+  in the robot editor will now use the protected (GUI) charset
+  rather than the game one.
++ Added a "system_mouse" config.txt option that allows the
+  mouse cursor to be replaced with the system mouse cursor,
+  rather than being drawn by MegaZeux.
++ Disallowed placing player clones with SET "board_id" 127.
++ Relaxed file name limit on board MOD file. The board MOD can
+  now be as long as the limit imposed by file dialog's input
+  box (previously limited to 12 characters).
++ Truncation of currently open input/output file names will now
+  only occur at MAX_PATH bytes (typically 512 characters). The
+  previous limit was 13 characters.
++ Relaxed limit of INPUT string and bottom ("*") messages from
+  80 characters to ROBOT_MAX_TR (512) characters. In the case
+  of bottom messages this can be usefully exploited to ~200
+  characters.
++ Progress meter will be shown for world decrypt on console
+  platforms.
++ Fixed a bug where a malformatted BMP header would be written
+  (length too short, didn't include dummy channel in BMP
+  palette). (Mr_Alert)
++ Optimized audio locking; do file I/O outside of critical
+  sections to decrease stalling, particularly on platforms with
+  slow I/O. (Mr_Alert)
++ Added support for MacOS 10.6 (Snow Leopard) and removed
+  support for 10.3.
++ Loading a save game from robotic will now correctly restore
+  intensities to their saved values.
++ Copy/pasting a block either with COPY BLOCK or the editor,
+  where the copy would exceed the limit on robots/signs/scrolls
+  /sensors, will no longer place junk at the target
+  co-ordinates. Instead, the object's background will be copied
+  in isolation.
++ Pasting from the clipboard, expanding a macro,  or importing
+  .txt or .bc files that would cause a robot to exceed the 64k
+  limit now has the operation ignored at the point it exceeds
+  the limit, rather than adding an unlimited number of
+  unrecognized lines.
+
+DEVELOPERS
+
++ MZXRun compilation can now be disabled. Compilation of
+  pre-2.82b style non-modular builds requires
+  `--disable-modular --disable-mzxrun'.
++ Disabling SDL can now be done with --disable-sdl and the
+  resulting configuration will automatically disable any
+  SDL-dependent components. This is useless to anybody except
+  developers doing new ports.
++ Game directory, utility directory and resource directories
+  can now be specified and will be respected on "make install".
+  (Sci-freak, ajs)
++ Added experimental port to Android. See arch/android/README
+  for more information.
++ Ported opengl1 and opengl2 renderers to OpenGL ES 1.x and
+  glsl renderer to OpenGL ES 2.0, used increasingly by mobile
+  devices.
++ Removed SDL dependency from NDS port. It only used it for
+  timing and stuffed events.
++ On Windows platforms, binaries are processed with the `pefix'
+  in-tree tool to eliminate data section differences in
+  programs with identical texts. This minimizes the amount of
+  content required to be sent for updates.
++ Updated Wii port: improved audio and video support, added USB
+  mouse support, numerous optimizations and improved file
+  selector. (Mr_Alert)
 
 December 29, 2008 - MZX 2.82b
 
