@@ -66,6 +66,8 @@ static struct manifest_entry *delete_list, *delete_p;
 
 static char widget_buf[WIDGET_BUF_LEN];
 
+static char previous_dir[MAX_PATH];
+
 static long final_size = -1;
 static bool cancel_update;
 
@@ -226,7 +228,7 @@ static bool swivel_current_dir(bool have_video)
   char *base_path;
 
   // Store the user's current directory, so we can get back to it
-  getcwd(current_dir, MAX_PATH);
+  getcwd(previous_dir, MAX_PATH);
 
   // Find and change into the base path for this MZX binary
   base_path = malloc(MAX_PATH);
@@ -249,7 +251,7 @@ err_free_base_path:
 
 static bool swivel_current_dir_back(bool have_video)
 {
-  if(chdir(current_dir))
+  if(chdir(previous_dir))
   {
     if(have_video)
       error("Failed to change back to user directory.", 1, 8, 0);
