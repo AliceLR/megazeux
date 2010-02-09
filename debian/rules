@@ -16,7 +16,7 @@ endif
 configure: configure-stamp
 configure-stamp:
 	dh_testdir
-	./config.sh --platform linux
+	./config.sh --platform linux --disable-utils
 	touch configure-stamp
 
 build: build-stamp
