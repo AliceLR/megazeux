@@ -76,6 +76,8 @@ USERS
   coordinates. Other directions are not affected.
 + Zapping a label at the end of a robot program will no longer
   corrupt the robot list, usually causing crashes.
++ Entering lines in the robot editor with leading or trailing 
+  spaces will be trimmed before the line is compiled.
 
 DEVELOPERS
 

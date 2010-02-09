@@ -311,6 +311,28 @@ static void macro_default_values(struct robot_state *rstate,
   }
 }
 
+static void trim_whitespace(char *buffer, int length)
+{
+  int i;
+
+  // trim any leading spaces
+
+  for(i = 0; i < length; i++)
+    if(buffer[i] != ' ')
+      break;
+
+  if(i != 0)
+    memmove(buffer, buffer + i, length - i + 1);
+
+  // and any trailing spaces
+  for (i = length - 1; i >= 0; i--)
+    if(buffer[i] != ' ')
+      break;
+
+  // bounds should be OK as caller has already nul-terminated
+  buffer[i + 1] = '\0';
+}
+
 static int update_current_line(struct robot_state *rstate)
 {
   char bytecode_buffer[COMMAND_BUFFER_LEN];
@@ -320,12 +342,18 @@ static int update_current_line(struct robot_state *rstate)
   struct robot_line *current_rline = rstate->current_rline;
   char *command_buffer = rstate->command_buffer;
   int arg_count;
-  int bytecode_length =
-   assemble_line(command_buffer, bytecode_buffer, error_buffer,
-   arg_types, &arg_count);
+  int bytecode_length;
   int last_bytecode_length = current_rline->line_bytecode_length;
   int current_size = rstate->size;
   enum validity_types use_type = rstate->default_invalid;
+  int line_text_length;
+
+  command_buffer[240] = 0;
+  line_text_length = strlen(command_buffer);
+  trim_whitespace(command_buffer, line_text_length);
+
+  bytecode_length = assemble_line(command_buffer, bytecode_buffer,
+   error_buffer, arg_types, &arg_count);
 
   // Trigger macro expansion; if the macro doesn't exist, do nothing
   if(command_buffer[0] == '#')
@@ -382,11 +410,6 @@ static int update_current_line(struct robot_state *rstate)
   }
   else
   {
-    int line_text_length;
-
-    command_buffer[240] = 0;
-    line_text_length = strlen(command_buffer);
-
     if(current_rline->validity_status != valid)
       use_type = current_rline->validity_status;
 
