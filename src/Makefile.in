@@ -253,13 +253,12 @@ mzx_clean: editor_clean
 else
 
 .PHONY: ${mzx}.debug
-
 ${mzx}:
-	@echo "--> Building of editor disabled."
-
 ${mzx}.debug:
 
 endif
+
+ifeq (${BUILD_MZXRUN},1)
 
 mzxrun_objs := ${core_obj}/main.o ${core_obj}/run_stubs.o
 
@@ -286,6 +285,14 @@ ifeq (${BUILD_MODULAR},1)
 else
 	${LINK_CC} ${mzxrun_objs} ${core_target} \
 	  -o ${mzxrun} ${LDFLAGS} ${core_ldflags}
+endif
+
+else
+
+.PHONY: ${mzxrun}.debug
+${mzxrun}:
+${mzxrun}.debug:
+
 endif
 
 mzx_clean: core_target_clean gdm2s3m_clean icons_clean libmodplug_clean

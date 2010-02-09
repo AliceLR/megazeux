@@ -40,7 +40,7 @@ ${utils_obj}/%.o: ${utils_src}/%.c
 -include $(hlp2txt_objs:.o=.d)
 -include $(txt2hlp_objs:.o=.d)
 
-${checkres}: ${checkres_objs} ${core_target}
+${checkres}: ${checkres_objs}
 	$(if ${V},,@echo "  LINK    " ${checkres})
 	${CC} ${checkres_objs} -o ${checkres} ${LDFLAGS} ${checkres_ldflags}
 

@@ -32,6 +32,7 @@ usage() {
 	echo "  --optimize-size      Perform size optimizations (-Os)."
 	echo "  --disable-datestamp  Disable adding date to version."
 	echo "  --disable-editor     Disable the built-in editor."
+	echo "  --disable-mzxrun     Disable generation of separate MZXRun."
 	echo "  --disable-helpsys    Disable the built-in help system."
 	echo "  --disable-utils      Disable compilation of utils."
 	echo "  --disable-x11        Disable X11, removing binary dependency."
@@ -71,6 +72,7 @@ AS_NEEDED="false"
 RELEASE="false"
 OPT_SIZE="false"
 EDITOR="true"
+MZXRUN="true"
 HELPSYS="true"
 UTILS="true"
 X11="true"
@@ -128,6 +130,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-editor" ] && EDITOR="false"
 	[ "$1" = "--enable-editor" ]  && EDITOR="true"
+
+	[ "$1" = "--disable-mzxrun" ] && MZXRUN="false"
+	[ "$1" = "--enable-mzxrun" ]  && MZXRUN="true"
 
 	[ "$1" = "--disable-helpsys" ] && HELPSYS="false"
 	[ "$1" = "--enable-helpsys" ]  && HELPSYS="true"
@@ -520,6 +525,16 @@ if [ "$EDITOR" = "true" ]; then
 	echo "#define CONFIG_EDITOR" >> src/config.h
 else
 	echo "Built-in editor disabled."
+fi
+
+#
+# User may disable `MZXRun' component
+#
+if [ "$MZXRUN" = "true" ]; then
+	echo "Building MZXRun executable."
+	echo "BUILD_MZXRUN=1" >> platform.inc
+else
+	echo "Not building MZXRun executable."
 fi
 
 #

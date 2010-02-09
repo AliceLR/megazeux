@@ -18,6 +18,9 @@ USERS
 
 DEVELOPERS
 
++ MZXRun compilation can now be disabled. Compilation of pre-2.82b style
+  non-modular builds requires `--disable-modular --disable-mzxrun'.
+
 December 29, 2008 - MZX 2.82b
 
 This release contains plenty of important bug fixes, ranging from regressions
