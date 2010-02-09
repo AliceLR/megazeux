@@ -342,7 +342,7 @@ fi
 #
 # Force-disable GLSL if OpenGL is disabled
 #
-if [ "$OPENGL" = "false" -a "$GLSL" = true ]; then
+if [ "$OPENGL" = "false" -a "$GLSL" = "true" ]; then
 	echo "Force-disabling GLSL renderer (OpenGL not enabled)."
 	GLSL="false"
 fi
