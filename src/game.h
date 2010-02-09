@@ -52,9 +52,9 @@ CORE_LIBSPEC void draw_viewport(struct world *src_board);
 
 CORE_LIBSPEC extern bool debug_mode;
 CORE_LIBSPEC extern const char *const world_ext[2];
-CORE_LIBSPEC void (*edit_world)(struct world *mzx_world);
-CORE_LIBSPEC void (*debug_counters)(struct world *mzx_world);
-CORE_LIBSPEC void (*draw_debug_box)(struct world *mzx_world,
+CORE_LIBSPEC extern void (*edit_world)(struct world *mzx_world);
+CORE_LIBSPEC extern void (*debug_counters)(struct world *mzx_world);
+CORE_LIBSPEC extern void (*draw_debug_box)(struct world *mzx_world,
  int x, int y, int d_x, int d_y);
 #endif // CONFIG_EDITOR
 
