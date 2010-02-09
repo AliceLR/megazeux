@@ -40,6 +40,8 @@
 #define AUDIO_BUFFER_SIZE 128
 #elif defined(CONFIG_PSP)
 #define FORCE_BPP_DEFAULT 8
+#elif defined(CONFIG_WII)
+#define AUDIO_SAMPLE_RATE 48000
 #endif
 
 #ifndef FORCE_BPP_DEFAULT
@@ -52,6 +54,10 @@
 
 #ifndef AUDIO_BUFFER_SIZE
 #define AUDIO_BUFFER_SIZE 4096
+#endif
+
+#ifndef AUDIO_SAMPLE_RATE
+#define AUDIO_SAMPLE_RATE 44100
 #endif
 
 static void config_set_audio_buffer(config_info *conf, char *name, char *value,
@@ -624,7 +630,7 @@ static config_info default_options =
   0,                            // opengl vsync mode
 
   // Audio options
-  44100,                        // output_frequency
+  AUDIO_SAMPLE_RATE,            // output_frequency
   AUDIO_BUFFER_SIZE,            // buffer_size
   0,                            // oversampling_on
   1,                            // resample_mode
