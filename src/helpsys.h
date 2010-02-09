@@ -32,12 +32,7 @@ CORE_LIBSPEC void help_open(struct world *mzx_world, const char *file_name);
 CORE_LIBSPEC void help_close(struct world *mzx_world);
 CORE_LIBSPEC void help_system(struct world *mzx_world);
 
-#else // !CONFIG_HELPSYS
-
-static inline void help_open(struct world *mzx_world, const char *file_name) {}
-static inline void help_close(struct world *mzx_world) {}
-
-#endif // !CONFIG_HELPSYS
+#endif
 
 __M_END_DECLS
 
