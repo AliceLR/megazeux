@@ -3250,7 +3250,7 @@ static void __edit_world(struct world *mzx_world)
 
             mzx_world->editing = true;
 
-            play_game(mzx_world, 1);
+            play_game(mzx_world);
 
             mzx_world->editing = false;
 

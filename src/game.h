@@ -47,7 +47,7 @@ int give_key(struct world *mzx_world, int color);
 extern bool pal_update;
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC void play_game(struct world *mzx_world, int fadein);
+CORE_LIBSPEC void play_game(struct world *mzx_world);
 CORE_LIBSPEC void draw_viewport(struct world *src_board);
 
 CORE_LIBSPEC extern bool debug_mode;

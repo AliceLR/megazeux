@@ -1691,13 +1691,14 @@ static void focus_on_player(struct world *mzx_world)
   focus_screen(player_x - top_x + viewport_x, player_y - top_y + viewport_y);
 }
 
-__editor_maybe_static void play_game(struct world *mzx_world, int fadein)
+__editor_maybe_static void play_game(struct world *mzx_world)
 {
   // We have the world loaded, on the proper scene.
   // We are faded out. Commence playing!
   int key = -1;
   char keylbl[5] = "KEY?";
   struct board *src_board;
+  int fadein = 1;
 
   // Main game loop
   // Mouse remains hidden unless menu/etc. is invoked
@@ -2238,7 +2239,7 @@ void title_screen(struct world *mzx_world)
               mzx_world->player_restart_y = mzx_world->player_y;
               vquick_fadeout();
 
-              play_game(mzx_world, 1);
+              play_game(mzx_world);
 
               // Done playing- load world again
               // Already faded out from play_game()
@@ -2342,7 +2343,7 @@ void title_screen(struct world *mzx_world)
               mzx_world->player_restart_y = mzx_world->player_y;
               vquick_fadeout();
 
-              play_game(mzx_world, 1);
+              play_game(mzx_world);
               // Done playing- load world again
               // Already faded out from play_game()
               end_module();
@@ -2442,7 +2443,7 @@ void title_screen(struct world *mzx_world)
             mzx_world->player_restart_y = mzx_world->player_y;
             vquick_fadeout();
 
-            play_game(mzx_world, 1);
+            play_game(mzx_world);
 
             // Done playing- load world again
             // Already faded out from play_game()
