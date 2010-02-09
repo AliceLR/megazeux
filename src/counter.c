@@ -22,6 +22,7 @@
 
 #include <stdlib.h>
 #include <string.h>
+#include <assert.h>
 #include <math.h>
 #include <ctype.h>
 
@@ -2786,11 +2787,16 @@ void set_counter(struct world *mzx_world, const char *name, int value, int id)
 
   fdest = find_function_counter(name);
 
-  if(fdest && fdest->function_write &&
-   (mzx_world->version >= fdest->minimum_version))
+  if(fdest && (mzx_world->version >= fdest->minimum_version))
   {
-    // Call write function
-    fdest->function_write(mzx_world, fdest, name, value, id);
+    // If we're a function counter and we have a write method,
+    // use it. However, if we don't have a write method, this is
+    // intentionally read-only counter and no storage space should
+    // be allocated for it. Fall through without error in this case.
+    if(fdest->function_write)
+      fdest->function_write(mzx_world, fdest, name, value, id);
+    else
+      assert(fdest->function_read);
   }
   else
   {

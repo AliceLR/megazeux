@@ -24,6 +24,9 @@ USERS
 + Fix a bug in the robot editor's find/replace function that caused crashes
   when replacing a string with another longer string, with a replacement at
   the end of a line.
++ Programmatically writing to a read-only "built-in" counter will no longer
+  allocate it general heap space. This prevents writes from showing up in
+  the F11 counter debugger that are inaccessible from robotic.
 
 DEVELOPERS
 
