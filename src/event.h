@@ -100,8 +100,6 @@ CORE_LIBSPEC void initialize_joysticks(void);
 CORE_LIBSPEC void __wait_event(void);
 CORE_LIBSPEC Uint32 __update_event_status(void);
 
-extern struct input_status input;
-
 void wait_event(void);
 Uint32 get_last_key(enum keycode_type type);
 void force_last_key(enum keycode_type type, int val);

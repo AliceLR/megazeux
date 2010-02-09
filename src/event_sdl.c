@@ -29,6 +29,8 @@
 #include "render_nds.h"
 #endif
 
+extern struct input_status input;
+
 static bool numlock_status_initialized;
 
 static enum keycode convert_SDL_internal(SDLKey key)

@@ -32,6 +32,8 @@
 #include <wiiuse/wpad.h>
 #undef BOOL
 
+extern struct input_status input;
+
 enum event_type
 {
   EVENT_BUTTON_DOWN,
