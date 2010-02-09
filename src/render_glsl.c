@@ -422,8 +422,6 @@ static void glsl_resize_screen(struct graphics_data *graphics,
 
   gl_set_filter_method(CONFIG_GL_FILTER_LINEAR, glsl.glTexParameterf);
 
-  glsl.glEnable(GL_TEXTURE_2D);
-
   glsl.glBlendFunc(GL_ONE_MINUS_DST_COLOR, GL_ZERO);
 
   memset(render_data->pixels, 255,
@@ -684,8 +682,6 @@ static void glsl_render_cursor(struct graphics_data *graphics,
 
   glsl.glDisableVertexAttribArray(ATTRIB_POSITION);
   glsl.glDisableVertexAttribArray(ATTRIB_COLOR);
-
-  glsl.glEnable(GL_TEXTURE_2D);
 }
 
 static void glsl_render_mouse(struct graphics_data *graphics,
@@ -700,7 +696,6 @@ static void glsl_render_mouse(struct graphics_data *graphics,
     (x + w)*2.0f/640.0f-1.0f, (y + h)*-2.0f/350.0f+1.0f
   };
 
-  glsl.glDisable(GL_TEXTURE_2D);
   glsl.glEnable(GL_BLEND);
 
   glsl.glUseProgram(render_data->mouse_program);
@@ -714,7 +709,6 @@ static void glsl_render_mouse(struct graphics_data *graphics,
 
   glsl.glDisableVertexAttribArray(ATTRIB_POSITION);
 
-  glsl.glEnable(GL_TEXTURE_2D);
   glsl.glDisable(GL_BLEND);
 }
 
