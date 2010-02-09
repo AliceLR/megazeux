@@ -497,10 +497,15 @@ static const struct config_info default_options =
 #ifdef CONFIG_NETWORK
   true,                         // network_enabled
 #endif
-#ifdef CONFIG_UPDATER
+#if defined(CONFIG_UPDATER)
+#if defined(CONFIG_DEBYTECODE)
+  "updates.mzx.devzero.co.uk",  // update_host
+  "Debytecode",                 // update_branch_pin
+#else /* !CONFIG_DEBYTECODE */
   "updates.digitalmzx.net",     // update_host
   "Stable",                     // update_branch_pin
-#endif
+#endif /* !CONFIG_DEBYTECODE */
+#endif /* CONFIG_UPDATER */
 };
 
 static void config_change_option(void *conf, char *name,
