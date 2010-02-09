@@ -52,10 +52,11 @@ __M_BEGIN_DECLS
 extern const float vertex_array_single[2 * 4];
 
 #ifdef DEBUG
-void gl_error(const char *file, int line, GLenum (*glGetError)(void));
+void gl_error(const char *file, int line,
+              GLenum (GL_APIENTRY *glGetError)(void));
 #else
 static inline void gl_error(const char *file, int line,
-                            GLenum (*glGetError)(void)) { }
+                            GLenum (GL_APIENTRY *glGetError)(void)) { }
 #endif
 
 bool gl_load_syms(const struct dso_syms_map *map);
