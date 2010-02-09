@@ -24,6 +24,7 @@
 #include <stdlib.h>
 #include <string.h>
 #include <stdio.h>
+#include <unistd.h>
 
 // From MZX itself
 #include "fsafeopen.h"
@@ -797,6 +798,7 @@ static status_t file_exists(const char *file, stream_t *s)
 int main(int argc, char *argv[])
 {
   const char *found_append = " - FOUND", *not_found_append = " - NOT FOUND";
+  char basepath[MAX_PATH];
   int i, len, print_all_files = 0, got_world = 0, quiet_mode = 0;
   status_t ret;
   stream_t *s;
@@ -842,7 +844,15 @@ int main(int argc, char *argv[])
     return INVALID_ARGUMENTS;
   }
 
-  ret = s_open(argv[argc - 1], "rb", &s);
+   /* Move into the world's directory first; this lets us look up
+    * resources relative to the world.
+    */
+  const char *file = argv[argc - 1];
+  get_path(file, basepath, MAX_PATH);
+  if(chdir(basepath))
+    fprintf(stderr, "Error changing directory to %s\n", basepath);
+
+  ret = s_open(file + strlen(basepath) + 1, "rb", &s);
   if(s)
   {
     if(got_world)
