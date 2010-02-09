@@ -272,7 +272,7 @@ static enum keycode convert_xt_internal(Uint32 key, enum keycode *second)
   }
 }
 
-Uint32 update_autorepeat(void)
+static Uint32 update_autorepeat(void)
 {
   Uint32 rval = 0;
 
@@ -503,24 +503,14 @@ Uint32 get_last_key(enum keycode_type type)
   switch(type)
   {
     case keycode_pc_xt:
-    {
       return convert_internal_xt(input.last_key_pressed);
-    }
 
     case keycode_internal:
-    {
       return input.last_key_pressed;
-    }
 
-    // Not currently handled (probably will never be)
-    case keycode_unicode:
-    {
+    default:
       return 0;
-    }
   }
-
-  // Unnecessary return to shut -Wall up
-  return 0;
 }
 
 Uint32 get_last_key_released(enum keycode_type type)
@@ -528,24 +518,14 @@ Uint32 get_last_key_released(enum keycode_type type)
   switch(type)
   {
     case keycode_pc_xt:
-    {
       return convert_internal_xt(input.last_key_release);
-    }
 
     case keycode_internal:
-    {
       return input.last_key_release;
-    }
 
-    // Not currently handled (probably will never be)
-    case keycode_unicode:
-    {
+    default:
       return 0;
-    }
   }
-
-  // Unnecessary return to shut -Wall up
-  return 0;
 }
 
 void get_mouse_position(int *x, int *y)
@@ -673,44 +653,27 @@ void force_last_key(enum keycode_type type, int val)
       break;
     }
 
-    // Not currently handled (probably will never be)
-    case keycode_unicode:
-    {
+    default:
       break;
-    }
   }
 }
 
-int get_alt_status(enum keycode_type type)
+bool get_alt_status(enum keycode_type type)
 {
-  if(get_key_status(type, IKEY_LALT) ||
-   get_key_status(type, IKEY_RALT))
-  {
-    return 1;
-  }
-  else
-  {
-    return 0;
-  }
+  return get_key_status(type, IKEY_LALT) ||
+         get_key_status(type, IKEY_RALT);
 }
 
-int get_shift_status(enum keycode_type type)
+bool get_shift_status(enum keycode_type type)
 {
-  return(get_key_status(type, IKEY_LSHIFT) ||
-   get_key_status(type, IKEY_RSHIFT));
+  return get_key_status(type, IKEY_LSHIFT) ||
+         get_key_status(type, IKEY_RSHIFT);
 }
 
-int get_ctrl_status(enum keycode_type type)
+bool get_ctrl_status(enum keycode_type type)
 {
-  if(get_key_status(type, IKEY_LCTRL) ||
-   get_key_status(type, IKEY_RCTRL))
-  {
-    return 1;
-  }
-  else
-  {
-    return 0;
-  }
+  return get_key_status(type, IKEY_LCTRL) ||
+         get_key_status(type, IKEY_RCTRL);
 }
 
 void map_joystick_axis(int joystick, int axis, enum keycode min_key,
@@ -725,7 +688,7 @@ void map_joystick_button(int joystick, int button, enum keycode key)
   input.joystick_button_map[joystick][button] = key;
 }
 
-void set_refocus_pause(int val)
+void set_unfocus_pause(bool val)
 {
   input.unfocus_pause = val;
 }

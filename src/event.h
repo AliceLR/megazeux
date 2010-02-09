@@ -64,7 +64,7 @@ struct input_status
   Uint32 mouse_button_state;
   Uint32 caps_status;
   Sint32 numlock_status;
-  Uint32 unfocus_pause;
+  bool unfocus_pause;
 
   // Joystick map information
   enum keycode joystick_button_map[16][256];
@@ -91,9 +91,9 @@ CORE_LIBSPEC Uint32 get_mouse_press_ext(void);
 CORE_LIBSPEC Uint32 get_mouse_status(void);
 CORE_LIBSPEC void warp_mouse(Uint32 x, Uint32 y);
 CORE_LIBSPEC Uint32 get_mouse_drag(void);
-CORE_LIBSPEC int get_alt_status(enum keycode_type type);
-CORE_LIBSPEC int get_shift_status(enum keycode_type type);
-CORE_LIBSPEC int get_ctrl_status(enum keycode_type type);
+CORE_LIBSPEC bool get_alt_status(enum keycode_type type);
+CORE_LIBSPEC bool get_shift_status(enum keycode_type type);
+CORE_LIBSPEC bool get_ctrl_status(enum keycode_type type);
 CORE_LIBSPEC void initialize_joysticks(void);
 
 // Implemented by "drivers" (SDL or Wii currently)
@@ -118,9 +118,7 @@ Uint32 get_last_key_released(enum keycode_type type);
 void map_joystick_axis(int joystick, int axis, enum keycode min_key,
  enum keycode max_key);
 void map_joystick_button(int joystick, int button, enum keycode key);
-void set_refocus_pause(int val);
-
-Uint32 update_autorepeat(void);
+void set_unfocus_pause(bool val);
 
 void real_warp_mouse(Uint32 x, Uint32 y);
 

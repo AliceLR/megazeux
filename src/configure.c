@@ -297,9 +297,7 @@ static void joy_button_set(struct config_info *conf, char *name,
 static void pause_on_unfocus(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  int int_val = strtol(value, NULL, 10);
-
-  set_refocus_pause(int_val);
+  set_unfocus_pause(strtol(value, NULL, 10) > 0);
 }
 
 static void include_config(struct config_info *conf, char *name,
