@@ -54,7 +54,8 @@
 #include "util.h"
 
 #ifdef CONFIG_EDITOR
-#include "edit.h"
+#include "editor/debug.h"
+#include "editor/edit.h"
 #endif
 
 // Number of cycles to make player idle before repeating a
@@ -1473,7 +1474,7 @@ static int update(World *mzx_world, int game, int *fadein)
        mzx_world->current_board_id = target_board;
        set_current_board_ext(mzx_world, mzx_world->board_list[target_board]);
     }
- 
+
     src_board = mzx_world->current_board;
 
     if(strcasecmp(mzx_world->real_mod_playing, src_board->mod_playing) &&
@@ -3528,57 +3529,3 @@ int give_key(World *mzx_world, int color)
 
   return 1;
 }
-
-#ifdef CONFIG_EDITOR
-void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y)
-{
-  Board *src_board = mzx_world->current_board;
-  int i;
-  int robot_mem = 0;
-
-  draw_window_box(x, y, x + 19, y + 5, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
-   EC_DEBUG_BOX_CORNER, 0, 1);
-
-  write_string
-  (
-    "X/Y:        /     \n"
-    "Board:            \n"
-    "Robot mem:      kb\n",
-    x + 1, y + 1, EC_DEBUG_LABEL, 0
-  );
-
-  write_number(d_x, EC_DEBUG_NUMBER, x + 8, y + 1, 5, 0, 10);
-  write_number(d_y, EC_DEBUG_NUMBER, x + 14, y + 1, 5, 0, 10);
-  write_number(mzx_world->current_board_id, EC_DEBUG_NUMBER,
-   x + 18, y + 2, 0, 1, 10);
-
-  for(i = 0; i < src_board->num_robots_active; i++)
-  {
-    robot_mem += (src_board->robot_list_name_sorted[i])->program_length;
-  }
-
-  write_number((robot_mem + 512) / 1024, EC_DEBUG_NUMBER,
-   x + 12, y + 3, 5, 0, 10);
-
-  if(*(src_board->mod_playing) != 0)
-  {
-    if(strlen(src_board->mod_playing) > 18)
-    {
-      char tempc = src_board->mod_playing[18];
-      src_board->mod_playing[18] = 0;
-      write_string(src_board->mod_playing, x + 1, y + 4,
-       EC_DEBUG_NUMBER, 0);
-      src_board->mod_playing[18] = tempc;
-    }
-    else
-    {
-      write_string(src_board->mod_playing, x + 1, y + 4,
-       EC_DEBUG_NUMBER, 0);
-    }
-  }
-  else
-  {
-    write_string("(no module)", x + 2, y + 4, EC_DEBUG_NUMBER, 0);
-  }
-}
-#endif // CONFIG_EDITOR

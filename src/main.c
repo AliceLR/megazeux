@@ -53,8 +53,8 @@
 #include "counter.h"
 
 #ifdef CONFIG_EDITOR
-#include "robo_ed.h"
-#include "edit.h"
+// for 'macros' below
+#include "editor/robo_ed.h"
 #endif
 
 #ifdef CONFIG_NDS

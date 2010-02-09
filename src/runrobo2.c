@@ -25,7 +25,6 @@
 
 #include "error.h"
 #include "intake.h"
-#include "edit.h"
 #include "graphics.h"
 #include "scrdisp.h"
 #include "window.h"
@@ -45,7 +44,6 @@
 #include "robot.h"
 #include "world.h"
 #include "fsafeopen.h"
-#include "param.h"
 #include "macro.h"
 #include "extmem.h"
 #include "util.h"
@@ -3439,18 +3437,15 @@ void run_robot(World *mzx_world, int id, int x, int y)
           insta_fadein();
         }
 
-#ifdef CONFIG_EDITOR
-        draw_window_box(3, 11, 77, 14, EC_DEBUG_BOX, EC_DEBUG_BOX_DARK,
-         EC_DEBUG_BOX_CORNER, 1, 1);
-#endif // CONFIG_EDITOR
+        draw_window_box(3, 11, 77, 14, DI_INPUT_BOX, DI_INPUT_BOX_DARK,
+         DI_INPUT_BOX_CORNER, 1, 1);
 
         // Copy and clip
         strncpy(input_buffer_msg, cmd_ptr + 2, 71);
 
         tr_msg(mzx_world, input_buffer_msg, id, input_buffer);
-#ifdef CONFIG_EDITOR
-        write_string(input_buffer, 5, 12, EC_DEBUG_LABEL, 1);
-#endif
+        write_string(input_buffer, 5, 12, DI_INPUT_BOX_LABEL, 1);
+
         m_show();
         src_board->input_string[0] = 0;
 

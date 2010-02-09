@@ -248,6 +248,11 @@ int new_file(World *mzx_world, const char **wildcards, char *ret,
 #define DI_ACTIVELIST       249
 #define DI_SEMIACTIVELIST   159
 
+#define DI_INPUT_BOX        76
+#define DI_INPUT_BOX_DARK   64
+#define DI_INPUT_BOX_CORNER 70
+#define DI_INPUT_BOX_LABEL  78
+
 int run_dialog(World *mzx_world, dialog *di);
 
 // Characters for dialog box elements

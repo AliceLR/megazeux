@@ -1,8 +1,7 @@
 /* MegaZeux
  *
- * Copyright (C) 1996 Greg Janson
- * Copyright (C) 1999 Charles Goetzman
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2008 Alistair John Strachan <alistair@devzero.co.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -19,10 +18,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-/* Declarations for GAME.CPP */
-
-#ifndef __GAME_H
-#define __GAME_H
+#ifndef __DEBUG_H
+#define __DEBUG_H
 
 #include "compat.h"
 
@@ -30,27 +27,9 @@ __M_BEGIN_DECLS
 
 #include "world_struct.h"
 
-void title_screen(World *mzx_world);
-void calculate_xytop(World *mzx_world, int *x, int *y);
-int move_player(World *mzx_world, int dir);
-int grab_item(World *mzx_world, int offset, int dir);
-void set_mesg(World *mzx_world, const char *str);
-void set_mesg_direct(Board *src_board, const char *str);
-void rotate(World *mzx_world, int x, int y, int dir);
-void check_find_player(World *mzx_world);
-void find_player(World *mzx_world);
-int take_key(World *mzx_world, int color);
-int give_key(World *mzx_world, int color);
-
-extern int pal_update;
-
-#ifdef CONFIG_EDITOR
-void play_game(World *mzx_world, int fadein);
-void draw_viewport(World *src_board);
-
-extern const char *world_ext[2];
-#endif // CONFIG_EDITOR
+void debug_counters(World *mzx_world);
+void draw_debug_box(World *mzx_world, int x, int y, int d_x, int d_y);
 
 __M_END_DECLS
 
-#endif // __GAME_H
+#endif // __DEBUG_H

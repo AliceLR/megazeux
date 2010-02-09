@@ -11,6 +11,7 @@ include contrib/libmodplug/src/Makefile.in
 LINK_CC := ${CC}
 
 mzx_base     = src
+editor_base  = src/editor
 mzx_flags   += -W -Wno-unused-parameter -ffast-math -funsigned-char
 mzx_flags   += -Wmissing-format-attribute -Wpointer-arith
 mzx_flags   += -Wwrite-strings
@@ -20,6 +21,7 @@ mzx_cxxflags = -DHAVE_INTTYPES_H
 mzx_flags   += -I${mzx_base} -I${PREFIX}/include
 mzx_ldflags := ${mzx_ldflags} ${ARCH_LDFLAGS}
 
+${editor_base}/%.${o} : ${editor_base}/%.c
 ${mzx_base}/%.${o}: ${mzx_base}/%.c
 ifeq (${V},1)
 	${CC} -MD ${CFLAGS} ${mzx_flags} ${mzx_cflags} -c $< -o $@
@@ -81,11 +83,11 @@ mzx_cobjs += arch/nds/malloc.${o} arch/nds/extmem.${o}
 endif
 
 ifeq (${BUILD_EDITOR},1)
-mzx_cobjs += ${mzx_base}/block.${o} ${mzx_base}/char_ed.${o}
-mzx_cobjs += ${mzx_base}/edit.${o} ${mzx_base}/edit_di.${o}
-mzx_cobjs += ${mzx_base}/fill.${o} ${mzx_base}/pal_ed.${o}
-mzx_cobjs += ${mzx_base}/param.${o} ${mzx_base}/robo_ed.${o}
-mzx_cobjs += ${mzx_base}/sfx_edit.${o}
+mzx_cobjs += ${editor_base}/block.${o} ${editor_base}/char_ed.${o}
+mzx_cobjs += ${editor_base}/debug.${o} ${editor_base}/edit.${o}
+mzx_cobjs += ${editor_base}/edit_di.${o} ${editor_base}/fill.${o}
+mzx_cobjs += ${editor_base}/pal_ed.${o} ${editor_base}/param.${o}
+mzx_cobjs += ${editor_base}/robo_ed.${o} ${editor_base}/sfx_edit.${o}
 endif
 
 ifeq (${BUILD_HELPSYS},1)

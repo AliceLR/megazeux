@@ -76,10 +76,6 @@ int is_string(char *buffer);
 
 void counter_fsg(void);
 
-#ifdef CONFIG_EDITOR
-void debug_counters(World *mzx_world);
-#endif // CONFIG_EDITOR
-
 counter *load_counter(FILE *fp);
 mzx_string *load_string(FILE *fp);
 void save_counter(FILE *fp, counter *src_counter);
