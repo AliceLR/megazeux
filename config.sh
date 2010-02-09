@@ -302,6 +302,8 @@ fi
 
 if [ "$PLATFORM" = "unix" ]; then
 	echo "LIBDIR=\${PREFIX}/${LIBDIR}/megazeux" >> platform.inc
+elif [ "$PLATFORM" = "android" ]; then
+	echo "LIBDIR=/system/lib" >> platform.inc
 else
 	echo "LIBDIR=." >> platform.inc
 fi
@@ -349,24 +351,36 @@ echo "#define CONFDIR \"$SYSCONFDIR/\"" >> src/config.h
 # FIXME: SHAREDIR should be hardcoded in fewer cases
 #
 if [ "$PLATFORM" = "unix" ]; then
-	echo "#define SHAREDIR \"$SHAREDIR/megazeux/\"" >> src/config.h
-	echo "#define CONFFILE \"megazeux-config\""     >> src/config.h
+	SHAREDIR=$SHAREDIR/megazeux
+	echo "#define CONFFILE \"megazeux-config\"" >> src/config.h
 elif [ "$PLATFORM" = "nds" ]; then
-	echo "#define SHAREDIR \"/games/megazeux/\"" >> src/config.h
-	echo "#define CONFFILE \"config.txt\""       >> src/config.h
+	SHAREDIR=/games/megazeux
+	GAMESDIR=$SHAREDIR
+	BINDIR=$SHAREDIR
+	echo "#define CONFFILE \"config.txt\""      >> src/config.h
 elif [ "$PLATFORM" = "wii" ]; then
-	echo "#define SHAREDIR \"/apps/megazeux/\"" >> src/config.h
+	SHAREDIR=/apps/megazeux
+	GAMESDIR=$SHAREDIR
+	BINDIR=$SHAREDIR
 	echo "#define CONFFILE \"config.txt\""      >> src/config.h
 elif [ "$PLATFORM" = "darwin" ]; then
-	echo "#define SHAREDIR \"../Resources/\"" >> src/config.h
-	echo "#define CONFFILE \"config.txt\""    >> src/config.h
+	SHAREDIR=../Resources
+	GAMESDIR=$SHAREDIR
+	BINDIR=$SHAREDIR
+	echo "#define CONFFILE \"config.txt\""      >> src/config.h
 elif [ "$PLATFORM" = "android" ]; then
-	echo "#define SHAREDIR \"/system/lib/megazeux\"" >> src/config.h
-	echo "#define CONFFILE \"megazeux-config\""      >> src/config.h
+	SHAREDIR=/system/lib/megazeux
+	GAMESDIR=/system/bin
+	BINDIR=/system/bin
+	echo "#define CONFFILE \"megazeux-config\"" >> src/config.h
 else
-	echo "#define SHAREDIR \"./\""         >> src/config.h
-	echo "#define CONFFILE \"config.txt\"" >> src/config.h
+	SHAREDIR=.
+	GAMESDIR=.
+	BINDIR=.
+	echo "#define CONFFILE \"config.txt\""      >> src/config.h
 fi
+
+echo "#define SHAREDIR \"$SHAREDIR/\"" >> src/config.h
 
 #
 # Some architectures define an "install" target, and need these.
