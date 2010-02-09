@@ -42,6 +42,8 @@ else
 	@${CC} -MD ${CFLAGS} ${SDL_CFLAGS} -c $< -o $@
 endif
 
+-include arch/darwin/SDLMain.d
+
 mzx: arch/darwin/SDLMain.o
 all:
 	@mv ${TARGET} ${TARGET}.${REAL_ARCH}
