@@ -1441,10 +1441,12 @@ static struct audio_stream *construct_wav_stream(char *filename,
 
 static struct audio_stream *construct_pc_speaker_stream(void)
 {
-  struct pc_speaker_stream *pcs_stream =
-   cmalloc(sizeof(struct pc_speaker_stream));
+  struct pc_speaker_stream *pcs_stream;
 
-  memset(pcs_stream, 0, sizeof(struct pc_speaker_stream));
+  if(!audio.sfx_on)
+    return NULL;
+
+  pcs_stream = cmalloc(sizeof(struct pc_speaker_stream));
 
   construct_audio_stream((struct audio_stream *)pcs_stream, pcs_mix_data,
    pcs_set_volume, NULL, NULL, NULL, NULL, NULL, pcs_destruct,
@@ -1602,12 +1604,13 @@ void init_audio(struct config_info *conf)
   init_mikmod(conf);
 #endif
 
-  init_pc_speaker(conf);
-
   set_music_volume(conf->music_volume);
   set_sound_volume(conf->sam_volume);
   set_music_on(conf->music_on);
   set_sfx_on(conf->pc_speaker_on);
+
+  init_pc_speaker(conf);
+
   set_sfx_volume(conf->pc_speaker_volume);
 
   init_audio_platform(conf);
@@ -1875,17 +1878,23 @@ int get_position(void)
 // This function is only used in sfx() under lock, DO NOT ADD LOCKING!
 void sound(int frequency, int duration)
 {
-  audio.pcs_stream->playing = 1;
-  audio.pcs_stream->frequency = frequency;
-  audio.pcs_stream->note_duration = duration;
+  if(audio.pcs_stream)
+  {
+    audio.pcs_stream->playing = 1;
+    audio.pcs_stream->frequency = frequency;
+    audio.pcs_stream->note_duration = duration;
+  }
 }
 
 // BIG FAT NOTE:
 // This function is only used in sfx() under lock, DO NOT ADD LOCKING!
 void nosound(int duration)
 {
-  audio.pcs_stream->playing = 0;
-  audio.pcs_stream->note_duration = duration;
+  if(audio.pcs_stream)
+  {
+    audio.pcs_stream->playing = 0;
+    audio.pcs_stream->note_duration = duration;
+  }
 }
 
 void set_music_on(int val)
@@ -1962,9 +1971,14 @@ void set_sound_volume(int volume)
 
 void set_sfx_volume(int volume)
 {
+  if(!audio.pcs_stream)
+    return;
+
   LOCK();
+
   audio.sfx_volume = volume;
   audio.pcs_stream->a.set_volume((struct audio_stream *)audio.pcs_stream,
    volume * 255 / 8);
+
   UNLOCK();
 }

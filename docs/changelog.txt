@@ -108,6 +108,8 @@ USERS
   or .bc files that would cause a robot to exceed the 64k limit now has
   the operation ignored at the point it exceeds the limit, rather than
   adding an unlimited number of unrecognized lines.
++ Fix a bug with the pc_speaker_on option which could cause the audio
+  thread to block indefinitely when PC speaker audio was disabled.
 
 DEVELOPERS
 
