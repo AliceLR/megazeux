@@ -3237,13 +3237,17 @@ int get_string(struct world *mzx_world, const char *name, struct string *dest,
   bool offset_specified = false, size_specified = false;
   unsigned int size = 0, offset = 0;
   struct string *src;
+  char *trimmed_name;
   int next;
 
-  // this generates an unfixable warning at -O3
-  get_string_size_offset((char *)name, &size, &size_specified,
+  trimmed_name = malloc(strlen(name) + 1);
+  memcpy(trimmed_name, name, strlen(name) + 1);
+
+  get_string_size_offset(trimmed_name, &size, &size_specified,
    &offset, &offset_specified);
 
-  src = find_string(mzx_world, name, &next);
+  src = find_string(mzx_world, trimmed_name, &next);
+  free(trimmed_name);
 
   if(src)
   {
