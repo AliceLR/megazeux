@@ -927,7 +927,7 @@ static void draw_label(struct world *mzx_world, struct dialog *di,
   int x = di->x + e->x;
   int y = di->y + e->y;
 
-  color_string(src->text, x, y, DI_TEXT);
+  color_string_ext(src->text, x, y, DI_TEXT, 256, 16, true);
 }
 
 static void draw_input_box(struct world *mzx_world, struct dialog *di,
