@@ -89,23 +89,6 @@ static inline void host_layer_exit(void) { }
 #endif
 
 /**
- * Some socket operations "fail" for non-fatal reasons. If using non-blocking
- * sockets, they may fail with EAGAIN, EINTR, or in some other
- * platform-specific way, if there was no data available at that time.
- *
- * @return Whether the last socket error was fatal, or not
- */
-NETWORK_LIBSPEC bool host_last_error_fatal(void);
-
-/**
- * Sets a socket blocking mode on the given host.
- *
- * @param h        Host to alter block mode on
- * @param blocking `true' if the socket should block, `false' otherwise
- */
-NETWORK_LIBSPEC void host_blocking(struct host *h, bool blocking);
-
-/**
  * Creates a host for use either as a client or a server. The new host will
  * be blocking by default.
  *
@@ -124,6 +107,75 @@ NETWORK_LIBSPEC struct host *host_create(host_type_t type, host_family_t fam);
  * @param h Host to destroy.
  */
 NETWORK_LIBSPEC void host_destroy(struct host *h);
+
+/**
+ * Connects a host `h' to the specified host and port.
+ *
+ * @param hostname Hostname or IP address to connect to
+ * @param port     Target port (service) to use
+ *
+ * @return Whether the connection was possible and successful, or not
+ */
+NETWORK_LIBSPEC bool host_connect(struct host *h, const char *hostname,
+ int port);
+
+/**
+ * Stream a file from a network socket to disk.
+ *
+ * @param h             Host to converse in HTTP with
+ * @param url           HTTP URL to transfer
+ * @param file          File to create and stream to disk
+ * @param expected_type MIME type to expect in response
+ *
+ * @return See \ref host_status_t.
+ */
+NETWORK_LIBSPEC host_status_t host_recv_file(struct host *h, const char *url,
+ FILE *file, const char *expected_type);
+
+/**
+ * Set send/recv callbacks which will be called (potentially many times) as
+ * the library fills the send/recv buffers for "block transfers". HTTP headers
+ * and other preambles are explicitly ignored. Raw transfers are always fully
+ * accounted. This code is primarily used by UI widgets like progress meters.
+ *
+ * Additionally, include a callback for cancellation. This will cause the
+ * send/recv functions to fail and subsequently abort the transfer process.
+ * This is again useful for cancelling long or slow transfers with UI widgets.
+ *
+ * Please note that this code does not abstract away protocol specific
+ * knowledge. For example, CHUNKED HTTP transfers will appear as many
+ * incrementally filled, fixed size buffers. Therefore, you should not use
+ * `len' below to compute the transfer amount remaining. If you do not have
+ * any expectations about transfer size, these callbacks may in fact not be
+ * very useful.
+ *
+ * @param h         Host to set callbacks on
+ * @param send_cb   Implementation of a send callback (or NULL for none)
+ * @param recv_cb   Implementation of a recv callback (or NULL for none)
+ * @param cancel_cb Implementation of a cancel callback (or NULL for none)
+ */
+NETWORK_LIBSPEC void host_set_callbacks(struct host *h,
+ void (*send_cb)(long offset), void (*recv_cb)(long offset),
+ bool (*cancel_cb)(void));
+
+#if NETWORK_DEADCODE
+
+/**
+ * Some socket operations "fail" for non-fatal reasons. If using non-blocking
+ * sockets, they may fail with EAGAIN, EINTR, or in some other
+ * platform-specific way, if there was no data available at that time.
+ *
+ * @return Whether the last socket error was fatal, or not
+ */
+NETWORK_LIBSPEC bool host_last_error_fatal(void);
+
+/**
+ * Sets a socket blocking mode on the given host.
+ *
+ * @param h        Host to alter block mode on
+ * @param blocking `true' if the socket should block, `false' otherwise
+ */
+NETWORK_LIBSPEC void host_blocking(struct host *h, bool blocking);
 
 /**
  * Accepts a connection from a host processed by \ref host_bind and
@@ -146,17 +198,6 @@ NETWORK_LIBSPEC struct host *host_accept(struct host *s);
  * @return Whether the bind was possible and successful, or not
  */
 NETWORK_LIBSPEC bool host_bind(struct host *h, const char *hostname, int port);
-
-/**
- * Connects a host `h' to the specified host and port.
- *
- * @param hostname Hostname or IP address to connect to
- * @param port     Target port (service) to use
- *
- * @return Whether the connection was possible and successful, or not
- */
-NETWORK_LIBSPEC bool host_connect(struct host *h, const char *hostname,
- int port);
 
 /**
  * Prepares a socket processed with @ref host_bind to listen for
@@ -214,19 +255,6 @@ NETWORK_LIBSPEC bool host_sendto_raw(struct host *h, const char *buffer,
  unsigned int len, const char *hostname, int port);
 
 /**
- * Stream a file from a network socket to disk.
- *
- * @param h             Host to converse in HTTP with
- * @param url           HTTP URL to transfer
- * @param file          File to create and stream to disk
- * @param expected_type MIME type to expect in response
- *
- * @return See \ref host_status_t.
- */
-NETWORK_LIBSPEC host_status_t host_recv_file(struct host *h, const char *url,
- FILE *file, const char *expected_type);
-
-/**
  * Stream a file from disk to a network socket.
  *
  * @param h           Host to converse in HTTP with
@@ -238,34 +266,10 @@ NETWORK_LIBSPEC host_status_t host_recv_file(struct host *h, const char *url,
 NETWORK_LIBSPEC host_status_t host_send_file(struct host *h, FILE *file,
  const char *mime_type);
 
-/**
- * Set send/recv callbacks which will be called (potentially many times) as
- * the library fills the send/recv buffers for "block transfers". HTTP headers
- * and other preambles are explicitly ignored. Raw transfers are always fully
- * accounted. This code is primarily used by UI widgets like progress meters.
- *
- * Additionally, include a callback for cancellation. This will cause the
- * send/recv functions to fail and subsequently abort the transfer process.
- * This is again useful for cancelling long or slow transfers with UI widgets.
- *
- * Please note that this code does not abstract away protocol specific
- * knowledge. For example, CHUNKED HTTP transfers will appear as many
- * incrementally filled, fixed size buffers. Therefore, you should not use
- * `len' below to compute the transfer amount remaining. If you do not have
- * any expectations about transfer size, these callbacks may in fact not be
- * very useful.
- *
- * @param h         Host to set callbacks on
- * @param send_cb   Implementation of a send callback (or NULL for none)
- * @param recv_cb   Implementation of a recv callback (or NULL for none)
- * @param cancel_cb Implementation of a cancel callback (or NULL for none)
- */
-NETWORK_LIBSPEC void host_set_callbacks(struct host *h,
- void (*send_cb)(long offset), void (*recv_cb)(long offset),
- bool (*cancel_cb)(void));
-
 // FIXME: Document?
 NETWORK_LIBSPEC bool host_handle_http_request(struct host *h);
+
+#endif // NETWORK_DEADCODE
 
 __M_END_DECLS
 

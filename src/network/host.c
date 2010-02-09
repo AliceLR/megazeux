@@ -56,6 +56,12 @@
 #pragma GCC diagnostic ignored "-Wsign-compare"
 #endif
 
+#ifdef NETWORK_DEADCODE
+#define __network_maybe_static
+#else
+#define __network_maybe_static static
+#endif
+
 #include "zlib.h"
 
 #define BLOCK_SIZE    4096UL
@@ -195,7 +201,7 @@ static void __freeaddrinfo(struct addrinfo *res)
 
 #ifndef __WIN32__
 
-bool host_last_error_fatal(void)
+__network_maybe_static bool host_last_error_fatal(void)
 {
   return __host_last_error_fatal();
 }
@@ -492,7 +498,7 @@ void host_layer_exit(void)
   socket_free_syms();
 }
 
-bool host_last_error_fatal(void)
+__network_maybe_static bool host_last_error_fatal(void)
 {
   if(socksyms.WSAGetLastError() == WSAEWOULDBLOCK)
     return false;
@@ -600,11 +606,6 @@ static inline ssize_t platform_recvfrom(int s, void *buf, size_t len,
 }
 
 #endif // __WIN32__
-
-void host_blocking(struct host *h, bool blocking)
-{
-  platform_socket_blocking(h->fd, blocking);
-}
 
 struct host *host_create(host_type_t type, host_family_t fam)
 {
@@ -783,49 +784,6 @@ static bool __recv(struct host *h, void *buffer, unsigned int len)
   return true;
 }
 
-struct host *host_accept(struct host *s)
-{
-  struct sockaddr *addr;
-  struct host *c = NULL;
-  socklen_t addrlen;
-  int newfd;
-
-  switch(s->af)
-  {
-#ifdef CONFIG_IPV6
-    case AF_INET6:
-      addrlen = sizeof(struct sockaddr_in6);
-      break;
-#endif
-    default:
-      addrlen = sizeof(struct sockaddr_in);
-      break;
-  }
-
-  addr = malloc(addrlen);
-
-  newfd = platform_accept(s->fd, addr, &addrlen);
-  if(newfd >= 0)
-  {
-    assert(addr->sa_family == s->af);
-
-    platform_socket_blocking(newfd, true);
-    c = calloc(1, sizeof(struct host));
-    c->af = addr->sa_family;
-    c->proto = s->proto;
-    c->name = NULL;
-    c->fd = newfd;
-  }
-  else
-  {
-    if(host_last_error_fatal())
-      perror("accept");
-  }
-
-  free(addr);
-  return c;
-}
-
 static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
 {
   struct addrinfo *ai;
@@ -859,44 +817,6 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
       break;
 
     perror("connect");
-  }
-
-  return ai;
-}
-
-static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv)
-{
-  struct addrinfo *ai;
-
-#ifdef CONFIG_IPV6
-  /* First try to bind to an IPv6 address (if any)
-   */
-  for(ai = ais; ai; ai = ai->ai_next)
-  {
-    if(ai->ai_family != AF_INET6)
-      continue;
-
-    if(platform_bind(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
-      break;
-
-    perror("bind");
-  }
-
-  if(ai)
-    return ai;
-#endif
-
-  /* No IPv6 addresses could be bound; try IPv4 (if any)
-   */
-  for(ai = ais; ai; ai = ai->ai_next)
-  {
-    if(ai->ai_family != AF_INET)
-      continue;
-
-    if(platform_bind(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
-      break;
-
-    perror("bind");
   }
 
   return ai;
@@ -944,156 +864,9 @@ static bool host_address_op(struct host *h, const char *hostname,
   return true;
 }
 
-bool host_bind(struct host *h, const char *hostname, int port)
-{
-  return host_address_op(h, hostname, port, NULL, bind_op);
-}
-
 bool host_connect(struct host *h, const char *hostname, int port)
 {
   return host_address_op(h, hostname, port, NULL, connect_op);
-}
-
-bool host_listen(struct host *h)
-{
-  if(platform_listen(h->fd, 0) < 0)
-  {
-    perror("listen");
-    return false;
-  }
-  return true;
-}
-
-bool host_recv_raw(struct host *h, char *buffer, unsigned int len)
-{
-  return __recv(h, buffer, len);
-}
-
-bool host_send_raw(struct host *h, const char *buffer, unsigned int len)
-{
-  return __send(h, buffer, len);
-}
-
-struct buf_priv_data {
-  char *buffer;
-  unsigned int len;
-  struct host *h;
-  bool ret;
-};
-
-static struct addrinfo *recvfrom_raw_op(int fd, struct addrinfo *ais,
- void *priv)
-{
-  struct buf_priv_data *buf_priv = priv;
-  unsigned int len = buf_priv->len;
-  char *buffer = buf_priv->buffer;
-  struct host *h = buf_priv->h;
-  struct addrinfo *ai;
-  ssize_t ret;
-
-  for(ai = ais; ai; ai = ai->ai_next)
-  {
-    socklen_t addrlen = ai->ai_addrlen;
-
-    if(ai->ai_family != h->af)
-      continue;
-
-    ret = platform_recvfrom(h->fd, buffer, len, 0, ai->ai_addr, &addrlen);
-
-    if(ret < 0)
-    {
-      warn("Failed to recvfrom() any data.\n");
-      buf_priv->ret = false;
-    }
-    else if((unsigned int)ret != len)
-    {
-      warn("Failed to recvfrom() all data (sent %zd wanted %u).\n", ret, len);
-      buf_priv->ret = false;
-    }
-
-    break;
-  }
-
-  if(!ai)
-    buf_priv->ret = false;
-
-  return ai;
-}
-
-static struct addrinfo *sendto_raw_op(int fd, struct addrinfo *ais, void *priv)
-{
-  struct buf_priv_data *buf_priv = priv;
-  unsigned int len = buf_priv->len;
-  char *buffer = buf_priv->buffer;
-  struct host *h = buf_priv->h;
-  struct addrinfo *ai;
-  ssize_t ret;
-
-  for(ai = ais; ai; ai = ai->ai_next)
-  {
-    if(ai->ai_family != h->af)
-      continue;
-
-    ret = platform_sendto(h->fd, buffer, len, 0,
-     ai->ai_addr, ai->ai_addrlen);
-
-    if(ret < 0)
-    {
-      warn("Failed to sendto() any data.\n");
-      buf_priv->ret = false;
-    }
-    else if((unsigned int)ret != len)
-    {
-      warn("Failed to sendto() all data (sent %zd wanted %u).\n", ret, len);
-      buf_priv->ret = false;
-    }
-
-    break;
-  }
-
-  if(!ai)
-    buf_priv->ret = false;
-
-  return ai;
-}
-
-bool host_recvfrom_raw(struct host *h, char *buffer, unsigned int len,
- const char *hostname, int port)
-{
-  struct buf_priv_data buf_priv = { buffer, len, h, true };
-  host_address_op(h, hostname, port, &buf_priv, recvfrom_raw_op);
-  return buf_priv.ret;
-}
-
-bool host_sendto_raw(struct host *h, const char *buffer, unsigned int len,
- const char *hostname, int port)
-{
-  struct buf_priv_data buf_priv = { (char *)buffer, len, h, true };
-  host_address_op(h, hostname, port, &buf_priv, sendto_raw_op);
-  return buf_priv.ret;
-}
-
-int host_poll_raw(struct host *h, unsigned int timeout)
-{
-  struct timeval tv;
-  fd_set mask;
-  int ret;
-
-  FD_ZERO(&mask);
-  FD_SET(h->fd, &mask);
-
-  tv.tv_sec  = (timeout / 1000);
-  tv.tv_usec = (timeout % 1000) * 1000;
-
-  ret = platform_select(h->fd + 1, &mask, NULL, NULL, &tv);
-  if(ret < 0)
-    return -1;
-
-  if(ret > 0)
-    if(FD_ISSET(h->fd, &mask))
-      return 1;
-
-  return 0;
 }
 
 static int http_recv_line(struct host *h, char *buffer, int len)
@@ -1159,23 +932,6 @@ static bool http_skip_headers(struct host *h)
     else if(len < 0)
       return false;
   }
-}
-
-static int zlib_forge_gzip_header(char *buffer)
-{
-  // GZIP magic (see RFC 1952)
-  buffer[0] = 0x1F;
-  buffer[1] = 0x8B;
-  buffer[2] = Z_DEFLATED;
-
-  // Flags (no flags required)
-  buffer[3] = 0x0;
-
-  // Zero mtime etc.
-  memset(&buffer[4], 0, 6);
-
-  // GZIP header is 10 bytes
-  return 10;
 }
 
 static int zlib_skip_gzip_header(char *initial, unsigned long len)
@@ -1531,6 +1287,267 @@ host_status_t host_recv_file(struct host *h, const char *url,
   return HOST_SUCCESS;
 }
 
+void host_set_callbacks(struct host *h, void (*send_cb)(long offset),
+ void (*recv_cb)(long offset), bool (*cancel_cb)(void))
+{
+  assert(h != NULL);
+  assert(send_cb == NULL);
+  h->recv_cb = recv_cb;
+  h->cancel_cb = cancel_cb;
+}
+
+#if NETWORK_DEADCODE
+
+void host_blocking(struct host *h, bool blocking)
+{
+  platform_socket_blocking(h->fd, blocking);
+}
+
+struct host *host_accept(struct host *s)
+{
+  struct sockaddr *addr;
+  struct host *c = NULL;
+  socklen_t addrlen;
+  int newfd;
+
+  switch(s->af)
+  {
+#ifdef CONFIG_IPV6
+    case AF_INET6:
+      addrlen = sizeof(struct sockaddr_in6);
+      break;
+#endif
+    default:
+      addrlen = sizeof(struct sockaddr_in);
+      break;
+  }
+
+  addr = malloc(addrlen);
+
+  newfd = platform_accept(s->fd, addr, &addrlen);
+  if(newfd >= 0)
+  {
+    assert(addr->sa_family == s->af);
+
+    platform_socket_blocking(newfd, true);
+    c = calloc(1, sizeof(struct host));
+    c->af = addr->sa_family;
+    c->proto = s->proto;
+    c->name = NULL;
+    c->fd = newfd;
+  }
+  else
+  {
+    if(host_last_error_fatal())
+      perror("accept");
+  }
+
+  free(addr);
+  return c;
+}
+
+static struct addrinfo *bind_op(int fd, struct addrinfo *ais, void *priv)
+{
+  struct addrinfo *ai;
+
+#ifdef CONFIG_IPV6
+  /* First try to bind to an IPv6 address (if any)
+   */
+  for(ai = ais; ai; ai = ai->ai_next)
+  {
+    if(ai->ai_family != AF_INET6)
+      continue;
+
+    if(platform_bind(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
+      break;
+
+    perror("bind");
+  }
+
+  if(ai)
+    return ai;
+#endif
+
+  /* No IPv6 addresses could be bound; try IPv4 (if any)
+   */
+  for(ai = ais; ai; ai = ai->ai_next)
+  {
+    if(ai->ai_family != AF_INET)
+      continue;
+
+    if(platform_bind(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
+      break;
+
+    perror("bind");
+  }
+
+  return ai;
+}
+
+bool host_bind(struct host *h, const char *hostname, int port)
+{
+  return host_address_op(h, hostname, port, NULL, bind_op);
+}
+
+bool host_listen(struct host *h)
+{
+  if(platform_listen(h->fd, 0) < 0)
+  {
+    perror("listen");
+    return false;
+  }
+  return true;
+}
+
+bool host_recv_raw(struct host *h, char *buffer, unsigned int len)
+{
+  return __recv(h, buffer, len);
+}
+
+bool host_send_raw(struct host *h, const char *buffer, unsigned int len)
+{
+  return __send(h, buffer, len);
+}
+
+struct buf_priv_data {
+  char *buffer;
+  unsigned int len;
+  struct host *h;
+  bool ret;
+};
+
+static struct addrinfo *recvfrom_raw_op(int fd, struct addrinfo *ais,
+ void *priv)
+{
+  struct buf_priv_data *buf_priv = priv;
+  unsigned int len = buf_priv->len;
+  char *buffer = buf_priv->buffer;
+  struct host *h = buf_priv->h;
+  struct addrinfo *ai;
+  ssize_t ret;
+
+  for(ai = ais; ai; ai = ai->ai_next)
+  {
+    socklen_t addrlen = ai->ai_addrlen;
+
+    if(ai->ai_family != h->af)
+      continue;
+
+    ret = platform_recvfrom(h->fd, buffer, len, 0, ai->ai_addr, &addrlen);
+
+    if(ret < 0)
+    {
+      warn("Failed to recvfrom() any data.\n");
+      buf_priv->ret = false;
+    }
+    else if((unsigned int)ret != len)
+    {
+      warn("Failed to recvfrom() all data (sent %zd wanted %u).\n", ret, len);
+      buf_priv->ret = false;
+    }
+
+    break;
+  }
+
+  if(!ai)
+    buf_priv->ret = false;
+
+  return ai;
+}
+
+static struct addrinfo *sendto_raw_op(int fd, struct addrinfo *ais, void *priv)
+{
+  struct buf_priv_data *buf_priv = priv;
+  unsigned int len = buf_priv->len;
+  char *buffer = buf_priv->buffer;
+  struct host *h = buf_priv->h;
+  struct addrinfo *ai;
+  ssize_t ret;
+
+  for(ai = ais; ai; ai = ai->ai_next)
+  {
+    if(ai->ai_family != h->af)
+      continue;
+
+    ret = platform_sendto(h->fd, buffer, len, 0,
+     ai->ai_addr, ai->ai_addrlen);
+
+    if(ret < 0)
+    {
+      warn("Failed to sendto() any data.\n");
+      buf_priv->ret = false;
+    }
+    else if((unsigned int)ret != len)
+    {
+      warn("Failed to sendto() all data (sent %zd wanted %u).\n", ret, len);
+      buf_priv->ret = false;
+    }
+
+    break;
+  }
+
+  if(!ai)
+    buf_priv->ret = false;
+
+  return ai;
+}
+
+bool host_recvfrom_raw(struct host *h, char *buffer, unsigned int len,
+ const char *hostname, int port)
+{
+  struct buf_priv_data buf_priv = { buffer, len, h, true };
+  host_address_op(h, hostname, port, &buf_priv, recvfrom_raw_op);
+  return buf_priv.ret;
+}
+
+bool host_sendto_raw(struct host *h, const char *buffer, unsigned int len,
+ const char *hostname, int port)
+{
+  struct buf_priv_data buf_priv = { (char *)buffer, len, h, true };
+  host_address_op(h, hostname, port, &buf_priv, sendto_raw_op);
+  return buf_priv.ret;
+}
+
+int host_poll_raw(struct host *h, unsigned int timeout)
+{
+  struct timeval tv;
+  fd_set mask;
+  int ret;
+
+  FD_ZERO(&mask);
+  FD_SET(h->fd, &mask);
+
+  tv.tv_sec  = (timeout / 1000);
+  tv.tv_usec = (timeout % 1000) * 1000;
+
+  ret = platform_select(h->fd + 1, &mask, NULL, NULL, &tv);
+  if(ret < 0)
+    return -1;
+
+  if(ret > 0)
+    if(FD_ISSET(h->fd, &mask))
+      return 1;
+
+  return 0;
+}
+
+static int zlib_forge_gzip_header(char *buffer)
+{
+  // GZIP magic (see RFC 1952)
+  buffer[0] = 0x1F;
+  buffer[1] = 0x8B;
+  buffer[2] = Z_DEFLATED;
+
+  // Flags (no flags required)
+  buffer[3] = 0x0;
+
+  // Zero mtime etc.
+  memset(&buffer[4], 0, 6);
+
+  // GZIP header is 10 bytes
+  return 10;
+}
+
 host_status_t host_send_file(struct host *h, FILE *file, const char *mime_type)
 {
   bool mid_deflate = false;
@@ -1718,15 +1735,6 @@ host_status_t host_send_file(struct host *h, FILE *file, const char *mime_type)
   return HOST_SUCCESS;
 }
 
-void host_set_callbacks(struct host *h, void (*send_cb)(long offset),
- void (*recv_cb)(long offset), bool (*cancel_cb)(void))
-{
-  assert(h != NULL);
-  assert(send_cb == NULL);
-  h->recv_cb = recv_cb;
-  h->cancel_cb = cancel_cb;
-}
-
 static const char resp_404[] =
  "<html>"
   "<head><title>404</title></head>"
@@ -1813,3 +1821,5 @@ bool host_handle_http_request(struct host *h)
 
   return true;
 }
+
+#endif // NETWORK_DEADCODE
