@@ -20,6 +20,7 @@
  */
 
 #include "platform.h"
+#include "util.h"
 
 #include "SDL.h"
 
@@ -52,8 +53,7 @@ Uint32 get_ticks(void)
   return SDL_GetTicks();
 }
 
-// TODO: Return success/failure
-int platform_init(void)
+bool platform_init(void)
 {
   Uint32 flags = SDL_INIT_VIDEO | SDL_INIT_JOYSTICK;
 
@@ -83,11 +83,14 @@ int platform_init(void)
   flags |= SDL_INIT_AUDIO;
 #endif
 
-  SDL_Init(flags);
+  if(SDL_Init(flags) < 0)
+  {
+    warning("Failed to initialize SDL: %s\n", SDL_GetError());
+    return false;
+  }
 
   SDL_EnableUNICODE(1);
-
-  return 1;
+  return true;
 }
 
 void platform_quit(void)

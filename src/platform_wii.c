@@ -97,7 +97,7 @@ static void reset_callback(void)
   LWP_ThreadSignal(reset_queue);
 }
 
-int platform_init(void)
+bool platform_init(void)
 {
   GXRModeObj *rmode = NULL;
 
@@ -116,9 +116,9 @@ int platform_init(void)
   SYS_SetResetCallback(reset_callback);
 
   if(!fatInit(1024, true)) // Allocate 512kB of cache
-    return 0;
+    return false;
 
-  return 1;
+  return true;
 }
 
 void platform_quit(void)

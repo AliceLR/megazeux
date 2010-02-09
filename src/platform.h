@@ -48,7 +48,7 @@ typedef int64_t Sint64;
 
 void delay(Uint32 ms);
 Uint32 get_ticks(void);
-int platform_init(void);
+bool platform_init(void);
 void platform_quit(void);
 
 __M_END_DECLS

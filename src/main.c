@@ -123,7 +123,8 @@ int main(int argc, char *argv[])
   if(!editor_init_hook(&mzx_world))
     debug("Editor function disabled.\n");
 
-  platform_init();
+  if(!platform_init())
+    return 1;
 
   // We need to store the current working directory so it's
   // always possible to get back to it..
