@@ -176,12 +176,56 @@ endif
 -include ${mzx_cobjs:.o=.d}
 -include ${mzx_cxxobjs:.o=.d}
 
-${mzx}: ${gdm2s3m} ${libmodplug} ${mzx_cobjs} ${mzx_cxxobjs}
+ifeq (${WHOLE_PROGRAM},1)
+
+#
+# If we're doing -fwhole-program optimizations, don't go through the source
+# files individually. Instead, compile all of the C source at once, but
+# continue to compile C++ source separately. Force the cobjs link line, and
+# link the combined C object with the C++ code. Hacky, but fairly maintainable.
+#
+
+mzx_cobjs_link := src/c.o
+
+#
+# Shouldn't really be phony but it's hard to get the dependencies right, and
+# this build option should only be used for "release" builds where deps aren't
+# very useful. Therefore, always rebuild c.o whenever the ${mzx} target is
+# invoked.
+#
+.PHONY: src/c.o
+
+src/c.o:
 ifeq (${V},1)
-	${LINK_CC} ${mzx_cobjs} ${mzx_cxxobjs} -o ${mzx} ${mzx_ldflags}
+	${CC} ${CFLAGS} ${mzx_flags} ${mzx_cflags} \
+	      -fwhole-program --combine -c ${mzx_cobjs:.${o}=.c} -o src/c.o
+else
+	@echo "  --> Compiling all C files with --combine -fwhole-program..."
+	@${CC} ${CFLAGS} ${mzx_flags} ${mzx_cflags} \
+	      -fwhole-program --combine -c ${mzx_cobjs:.${o}=.c} -o src/c.o
+endif
+
+${mzx}: ${mzx_cxxobjs} src/c.o ${mzx}_link
+
+else
+
+#
+# Regular compile mode -- the link objects are the sources, individually, and
+# we link as normal.
+#
+
+mzx_cobjs_link := ${mzx_cobjs}
+
+${mzx}: ${mzx_cobjs} ${mzx_cxxobjs} ${mzx}_link
+
+endif
+
+${mzx}_link: 
+ifeq (${V},1)
+	${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} -o ${mzx} ${mzx_ldflags}
 else
 	@echo "  LINK    " ${mzx}
-	@${LINK_CC} ${mzx_cobjs} ${mzx_cxxobjs} -o ${mzx} ${mzx_ldflags}
+	@${LINK_CC} ${mzx_cobjs_link} ${mzx_cxxobjs} -o ${mzx} ${mzx_ldflags}
 endif
 ifneq (${DEBUG},1)
 ifeq (${V},1)
@@ -194,5 +238,5 @@ endif
 
 ${mzx}_clean: gdm2s3m_clean ${icons}_clean libmodplug_clean
 	@echo "  CLEAN   " ${mzx_base}
-	@rm -f ${mzx} ${mzx_cobjs} ${mzx_cobjs:.o=.d}
+	@rm -f ${mzx} src/c.o ${mzx_cobjs} ${mzx_cobjs:.o=.d}
 	@rm -f ${mzx_cxxobjs} ${mzx_cxxobjs:.o=.d}

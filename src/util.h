@@ -54,7 +54,7 @@ int mzx_res_init(const char *argv0);
 void mzx_res_free(void);
 char *mzx_res_get_by_id(mzx_resource_id_t id);
 
-long ftell_and_rewind(FILE *f);
+long ftell_and_rewind(FILE *f) __global;
 int Random(int range);
 
 int get_path(const char *file_name, char *dest, unsigned int buf_len);

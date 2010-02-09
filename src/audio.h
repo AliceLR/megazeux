@@ -122,7 +122,7 @@ typedef struct
   Uint32 sfx_volume;
 } audio_struct;
 
-extern audio_struct audio;
+extern audio_struct audio __global;
 
 void init_audio(config_info *conf);
 void load_module(char *filename);
@@ -158,8 +158,8 @@ void audio_callback(Sint16 *stream, int len);
 void init_audio_platform(config_info *conf);
 
 #ifdef CONFIG_MODPLUG
-int check_ext_for_sam_and_convert(const char *filename, char *new_file);
-int check_ext_for_gdm_and_convert(const char *filename, char *new_file);
+int check_ext_for_sam_and_convert(const char *filename, char *new_file) __global;
+int check_ext_for_gdm_and_convert(const char *filename, char *new_file) __global;
 #define __sam_to_wav_maybe_static __audio_c_maybe_static
 #else
 #define __sam_to_wav_maybe_static static
@@ -169,14 +169,14 @@ int check_ext_for_gdm_and_convert(const char *filename, char *new_file);
 
 #if defined(CONFIG_MODPLUG) || defined(CONFIG_MIKMOD)
 
-void sampled_set_buffer(sampled_stream *s_src);
+void sampled_set_buffer(sampled_stream *s_src) __global;
 void sampled_mix_data(sampled_stream *s_src, Sint32 *dest_buffer,
- Uint32 len);
-void sampled_destruct(audio_stream *a_src);
+ Uint32 len) __global;
+void sampled_destruct(audio_stream *a_src) __global;
 void initialize_sampled_stream(sampled_stream *s_src,
  void (* set_frequency)(sampled_stream *s_src, Uint32 frequency),
  Uint32 (* get_frequency)(sampled_stream *s_src),
- Uint32 frequency, Uint32 channels, Uint32 use_volume);
+ Uint32 frequency, Uint32 channels, Uint32 use_volume) __global;
 void construct_audio_stream(audio_stream *a_src,
  Uint32 (* mix_data)(audio_stream *a_src, Sint32 *buffer,
   Uint32 len),
@@ -187,7 +187,7 @@ void construct_audio_stream(audio_stream *a_src,
  Uint32 (* get_order)(audio_stream *a_src),
  Uint32 (* get_position)(audio_stream *a_src),
  void (* destruct)(audio_stream *a_src),
- Uint32 volume, Uint32 repeat);
+ Uint32 volume, Uint32 repeat) __global;
 
 #endif // CONFIG_MODPLUG || CONFIG_MIKMOD
 

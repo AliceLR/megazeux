@@ -26,6 +26,9 @@ DEVELOPERS
   information. (Mr_Alert)
 + get_path() in util.c now returns <0 for failure, or the length of the path
   for the given file. (Revvy)
++ Add the make time WHOLE_PROGRAM=1 flag which enables compilation of the
+  core binary in GCC's "-fwhole-program --combine" mode. This makes all
+  symbols static and improves optimization, somewhat like MSVC's LTO does.
 
 June 10, 2008 - MZX 2.82
 

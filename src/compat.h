@@ -73,6 +73,12 @@
 #define __audio_c_maybe_static static
 #endif // CONFIG_AUDIO
 
+#if __GNUC__ >= 4
+#define __global __attribute__((externally_visible))
+#else
+#define __global
+#endif
+
 #ifdef _MSC_VER
 #include "msvc.h"
 #endif
