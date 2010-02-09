@@ -21,8 +21,11 @@
 #include "manifest.h"
 
 #include "../const.h"
+#include "../event.h"
 #include "../util.h"
 #include "../game.h"
+#include "../graphics.h"
+#include "../window.h"
 
 #include <sys/types.h>
 #include <sys/stat.h>
@@ -116,6 +119,43 @@ static bool check_create_basedir(const char *file)
   }
 
   return true;
+}
+
+static long final_size = -1;
+static bool cancel_update;
+
+static void check_cancel_update(void)
+{
+  update_event_status();
+  if(get_key(keycode_internal) == IKEY_ESCAPE)
+    cancel_update = true;
+}
+
+static void recv_cb(long offset)
+{
+  check_cancel_update();
+
+  if(final_size > 0 && offset > final_size)
+  {
+    warn("Transferred more than expected uncompressed size.\n");
+    warn("It is probable that corruption occurred.\n");
+    cancel_update = true;
+    return;
+  }
+
+  meter_interior(offset, final_size);
+  update_screen();
+}
+
+static bool cancel_cb(void)
+{
+  if(cancel_update)
+  {
+    cancel_update = false;
+    return true;
+  }
+
+  return false;
 }
 
 static void __check_for_updates(void)
@@ -247,6 +287,10 @@ static void __check_for_updates(void)
     goto err_free_update_manifests;
   }
 
+  host_set_callbacks(h, NULL, recv_cb, cancel_cb);
+
+  m_hide();
+
   for(e = removed; e; e = e->next)
   {
     if(unlink(e->name))
@@ -264,24 +308,44 @@ static void __check_for_updates(void)
 
   for(e = added; e; e = e->next)
   {
+    char name[72];
+
     if(!check_create_basedir(e->name))
-      goto err_free_update_manifests;
+      goto err_clear_screen;
+
+    final_size = (long)e->size;
+
+    snprintf(name, 72, "%s (%ldb)", e->name, final_size);
+    meter(name, 0, final_size);
+    update_screen();
 
     if(!manifest_entry_download_replace(h, url_base, e))
-      goto err_free_update_manifests;
+      goto err_clear_screen;
   }
 
   for(e = replaced; e; e = e->next)
   {
+    char name[72];
+
     if(!check_create_basedir(e->name))
-      goto err_free_update_manifests;
+      goto err_clear_screen;
+
+    final_size = (long)e->size;
+
+    snprintf(name, 72, "%s (%ldb)", e->name, final_size);
+    meter(name, 0, final_size);
+    update_screen();
 
     if(!manifest_entry_download_replace(h, url_base, e))
-      goto err_free_update_manifests;
+      goto err_clear_screen;
   }
 
   ret = true;
 
+err_clear_screen:
+  clear_screen(32, 7);
+  m_show();
+  update_screen();
 err_free_update_manifests:
   manifest_list_free(&removed);
   manifest_list_free(&replaced);
