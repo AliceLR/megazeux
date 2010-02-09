@@ -19,17 +19,15 @@
 
 #include "edit_stubs.h"
 
-const bool editor_present = false;
+void edit_stubs_hack(void)
+{
+}
 
 void init_macros(World *mzx_world)
 {
 }
 
 void free_extended_macros(World *mzx_world)
-{
-}
-
-void edit_world(World *mzx_world)
 {
 }
 

@@ -63,8 +63,6 @@
 #include <unistd.h>
 #endif
 
-const bool editor_present = true;
-
 void load_editor_config(World *mzx_world, int argc, char *argv[])
 {
   default_editor_config(&mzx_world->editor_conf);
@@ -877,7 +875,7 @@ static void clear_board_block(Board *src_board, int x, int y,
   }
 }
 
-void edit_world(World *mzx_world)
+static void __edit_world(World *mzx_world)
 {
   Board *src_board;
   Robot copy_robot;
@@ -3709,4 +3707,9 @@ void edit_world(World *mzx_world)
   clear_screen(32, 7);
   insta_fadeout();
   strcpy(curr_file, current_world);
+}
+
+void edit_stubs_hack(World *mzx_world)
+{
+  edit_world = __edit_world;
 }

@@ -53,7 +53,8 @@
 #include "extmem.h"
 #include "util.h"
 #include "debug.h"
-#include "edit_stubs.h"
+
+void (*edit_world)(World *mzx_world);
 
 // Number of cycles to make player idle before repeating a
 // directional move
@@ -2072,7 +2073,7 @@ void title_screen(World *mzx_world)
   set_config_from_file(&(mzx_world->conf), "title.cnf");
   chdir(current_dir);
 
-  if(editor_present && mzx_world->conf.startup_editor)
+  if(edit_world && mzx_world->conf.startup_editor)
     edit_world(mzx_world);
   else
   {
@@ -2126,7 +2127,7 @@ void title_screen(World *mzx_world)
         case IKEY_e: // E
         case IKEY_F8: // F8
         {
-          if(editor_present)
+          if(edit_world)
           {
             // Editor
             clear_sfx_queue();
@@ -2165,7 +2166,7 @@ void title_screen(World *mzx_world)
             draw_window_box(30, 4, 52, 16, 25, 16, 24, 1, 1);
             write_string(" Main Menu ", 36, 4, 30, 0);
             write_string(main_menu_1, 32, 5, 31, 1);
-            if(editor_present)
+            if(edit_world)
               write_string(main_menu_2, 32, 12, 31, 1);
             write_string(main_menu_3, 32, 13, 31, 1);
             update_screen();

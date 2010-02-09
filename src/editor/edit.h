@@ -30,10 +30,11 @@ __M_BEGIN_DECLS
 
 void load_editor_config(World *mzx_world, int argc, char *argv[]);
 
-void edit_world(World *mzx_world);
 int place_current_at_xy(World *mzx_world, mzx_thing id, int color,
  int param, int x, int y, Robot *copy_robot, Scroll *copy_scroll,
  Sensor *copy_sensor, int overlay_edit);
+
+void edit_stubs_hack(World *mzx_world);
 
 extern char debug_mode; // Debug mode
 extern char debug_x; // Debug box x pos

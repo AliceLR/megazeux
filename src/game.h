@@ -49,6 +49,7 @@ void play_game(World *mzx_world, int fadein);
 void draw_viewport(World *src_board);
 
 extern const char *world_ext[2];
+extern void (*edit_world)(World *mzx_world);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS

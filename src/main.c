@@ -118,6 +118,7 @@ int main(int argc, char *argv[])
 {
   World mzx_world;
 
+  edit_stubs_hack();
   init_macros(&mzx_world);
 
   if(!platform_init())
