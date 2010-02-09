@@ -275,27 +275,17 @@ static int world_magic(const char magic_string[3])
           return 0x0205;
         case 'A':
           return 0x0208;
-        default:
-          return 0;
       }
     }
     else
     {
+      // I hope to God that MZX doesn't last beyond 9.x
       if((magic_string[1] > 1) && (magic_string[1] < 10))
-      {
-        // I hope to God that MZX doesn't last beyond 9.x
         return ((int)magic_string[1] << 8) + (int)magic_string[2];
-      }
-      else
-      {
-        return 0;
-      }
     }
   }
-  else
-  {
-    return 0;
-  }
+
+  return 0;
 }
 
 #ifdef CONFIG_LOADSAVE_METER
