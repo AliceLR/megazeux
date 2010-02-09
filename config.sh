@@ -39,14 +39,14 @@ usage() {
 	echo "  --disable-gl         Disable all OpenGL renderers."
 	echo "  --disable-glsl       Disable all GLSL renderers."
 	echo "  --disable-overlay    Disable all overlay renderers."
-	echo "  --enable-gp2x        Enables half-width software renderer."
+	echo "  --enable-gp2x        Enables half-res software renderer."
 	echo "  --disable-modplug    Disable ModPlug music engine."
 	echo "  --enable-mikmod      Enables MikMod music engine."
 	echo "  --disable-libpng     Disable PNG screendump support."
 	echo "  --disable-audio      Disable all audio (sound + music)."
 	echo "  --enable-tremor      Switches out libvorbis for libtremor."
 	echo "  --disable-pthread    Use SDL's locking instead of pthread."
-	echo "  --enable-icon        Try to brand executable with icon."
+	echo "  --disable-icon       Do not try to brand executable."
 	echo "  --disable-modular    Disable dynamically shared objects."
 	echo "  --disable-updater    Disable built-in updater."
 	echo
@@ -633,11 +633,11 @@ fi
 # GP2X renderer
 #
 if [ "$GP2X" = "true" ]; then
-	echo "GP2X half-width renderer enabled."
+	echo "GP2X half-res renderer enabled."
 	echo "#define CONFIG_RENDER_GP2X" >> src/config.h
 	echo "BUILD_RENDER_GP2X=1" >> platform.inc
 else
-	echo "GP2X half-width renderer disabled."
+	echo "GP2X half-res renderer disabled."
 fi
 
 #
