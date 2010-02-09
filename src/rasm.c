@@ -4008,11 +4008,11 @@ __editor_maybe_static struct token *parse_command(char *src, char **_next,
   int match_strength;
   int best_match_strength = 10000;
   int best_match_tokens = -1;
-  int best_match_command_number;
+  int best_match_command_number = -1;
 
   enum arg_type_indexed *best_match_types = NULL;
   char *match_next;
-  char *best_match_next;
+  char *best_match_next = NULL;
 
   struct token_collection token_collection;
 
@@ -4172,7 +4172,7 @@ static int assemble_arg(struct token **_token, char *output,
  bool escape_interpolation)
 {
   bool string_type = false;
-  int arg_value;
+  int arg_value = 0;
   char *value;
   int length;
   struct token *token = *_token;
