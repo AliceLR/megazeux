@@ -1832,7 +1832,7 @@ int parse_param(struct world *mzx_world, char *program, int id)
 
     val = parse_expression(mzx_world, &e_ptr, &error, id);
     if(!error && !(*e_ptr))
-        return val;
+      return val;
   }
 
   tr_msg(mzx_world, program + 1, id, ibuff);
