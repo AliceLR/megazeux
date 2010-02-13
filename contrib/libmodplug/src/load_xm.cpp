@@ -11,7 +11,7 @@
 ////////////////////////////////////////////////////////
 // FastTracker II XM file support
 
-#ifdef MSC_VER
+#ifdef _MSC_VER
 #pragma warning(disable:4244)
 #endif
 
@@ -88,7 +88,7 @@ BOOL CSoundFile::ReadXM(const BYTE *lpStream, DWORD dwMemLength)
 
 	m_nChannels = 0;
 	if ((!lpStream) || (dwMemLength < 0x200)) return FALSE;
-	if (strnicmp((LPCSTR)lpStream, "Extended Module", 15)) return FALSE;
+	if (_strnicmp((LPCSTR)lpStream, "Extended Module", 15)) return FALSE;
 
 	memcpy(m_szNames[0], lpStream+17, 20);
 	dwHdrSize = bswapLE32(*((DWORD *)(lpStream+60)));
@@ -837,7 +837,7 @@ BOOL CSoundFile::SaveXM(LPCSTR lpszFileName, UINT nPacking)
 	{
 		DWORD d = 0x74786574;
 		fwrite(&d, 1, 4, f);
-		d = strlen(m_lpszSongComments);
+		d = (DWORD)strlen(m_lpszSongComments);
 		fwrite(&d, 1, 4, f);
 		fwrite(m_lpszSongComments, 1, d, f);
 	}

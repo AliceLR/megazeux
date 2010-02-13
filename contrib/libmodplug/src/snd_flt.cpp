@@ -13,7 +13,7 @@
 
 #ifndef NO_FILTER
 
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 #define _ASM_MATH
 #endif
 
@@ -80,7 +80,7 @@ void CSoundFile::SetupChannelFilter(MODCHANNEL *pChn, BOOL bReset, int flt_modif
 	float d = (1.0f-2.0f*dmpfac)* fc;
 	if (d>2.0) d = 2.0;
 	d = (2.0f*dmpfac - d)/fc;
-	float e = pow(1.0f/fc,2.0);
+	float e = pow(1.0f/fc,2.0f);
 
 	fg=1/(1+d+e);
 	fb0=(d+e+e)/(1+d+e);

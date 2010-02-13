@@ -691,7 +691,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 	if (m_lpszSongComments)
 	{
 		header.special |= 1;
-		header.msglength = strlen(m_lpszSongComments)+1;
+		header.msglength = (WORD)strlen(m_lpszSongComments)+1;
 		header.msgoffset = dwHdrPos + dwExtra + header.insnum*4 + header.patnum*4 + header.smpnum*4;
 	}
 	// Write file header
@@ -769,7 +769,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 	dwPos = dwHdrPos + dwExtra + (header.insnum + header.smpnum + header.patnum) * 4;
 	if (header.special & 1)
 	{
-		dwPos += strlen(m_lpszSongComments) + 1;
+		dwPos += (DWORD)strlen(m_lpszSongComments) + 1;
 		fwrite(m_lpszSongComments, 1, strlen(m_lpszSongComments)+1, f);
 	}
 	// Writing instruments

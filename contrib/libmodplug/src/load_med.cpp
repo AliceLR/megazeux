@@ -670,8 +670,8 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 			}
 		}
 		// Song Comments
-		uint32_t annotxt = bswapBE32(pmex->annotxt);
-		uint32_t annolen = bswapBE32(pmex->annolen);
+		DWORD annotxt = bswapBE32(pmex->annotxt);
+		DWORD annolen = bswapBE32(pmex->annolen);
 		if ((annotxt) && (annolen) && (annotxt + annolen > annotxt) // overflow checks.
 				&& (annotxt+annolen <= dwMemLength))
 		{
@@ -680,8 +680,8 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 			m_lpszSongComments[annolen] = 0;
 		}
 		// Song Name
-		uint32_t songname = bswapBE32(pmex->songname);
-		uint32_t songnamelen = bswapBE32(pmex->songnamelen);
+		DWORD songname = bswapBE32(pmex->songname);
+		DWORD songnamelen = bswapBE32(pmex->songnamelen);
 		if ((songname) && (songnamelen) && (songname+songnamelen > songname)
 				&& (songname+songnamelen <= dwMemLength))
 		{

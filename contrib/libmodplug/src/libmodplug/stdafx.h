@@ -24,11 +24,6 @@
 
 #ifdef _WIN32
 
-#ifdef MSC_VER
-#pragma warning (disable:4201)
-#pragma warning (disable:4514)
-#endif
-
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <windowsx.h>
@@ -54,6 +49,7 @@ static inline void ProcessPlugins(int n) {}
 typedef int8_t CHAR;
 typedef uint8_t UCHAR;
 typedef uint8_t* PUCHAR;
+typedef int16_t SHORT;
 typedef uint16_t USHORT;
 typedef uint32_t ULONG;
 typedef uint32_t UINT;
@@ -102,9 +98,7 @@ static inline void ProcessPlugins(int n) {}
 
 #define GlobalFreePtr(p) free((void *)(p))
 
-#ifndef strnicmp
-#define strnicmp(a,b,c)		strncasecmp(a,b,c)
-#endif
+#define _strnicmp(a,b,c)		strncasecmp(a,b,c)
 
 #define wsprintfA		sprintf
 

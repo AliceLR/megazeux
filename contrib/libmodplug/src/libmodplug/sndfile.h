@@ -931,7 +931,7 @@ typedef struct WAVEEXTRAHEADER
 #define AGC_UNITY			(1 << AGC_PRECISION)
 
 // Calling conventions
-#ifdef MSC_VER
+#ifdef _MSC_VER
 #define MPPASMCALL	__cdecl
 #define MPPFASTCALL	__fastcall
 #else

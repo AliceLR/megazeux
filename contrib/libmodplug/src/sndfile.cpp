@@ -784,7 +784,7 @@ UINT CSoundFile::GetSampleName(UINT nSample,LPSTR s) const
 	memcpy(sztmp, m_szNames[nSample],32);
 	sztmp[31] = 0;
 	if (s) strcpy(s, sztmp);
-	return strlen(sztmp);
+	return (UINT)strlen(sztmp);
 }
 
 
@@ -801,7 +801,7 @@ UINT CSoundFile::GetInstrumentName(UINT nInstr,LPSTR s) const
 	memcpy(sztmp, penv->name, 32);
 	sztmp[31] = 0;
 	if (s) strcpy(s, sztmp);
-	return strlen(sztmp);
+	return (UINT)strlen(sztmp);
 }
 
 
@@ -913,7 +913,7 @@ UINT CSoundFile::WriteSample(FILE *f, MODINSTRUMENT *pins, UINT nFlags, UINT nMa
 	case RS_PCM16D:
 	case RS_PCM16S:
 		{
-			int16_t *p = (int16_t *)pSample;
+			SHORT *p = (SHORT *)pSample;
 			int s_old = 0, s_ofs;
 			len = nLen * 2;
 			bufcount = 0;
@@ -929,13 +929,13 @@ UINT CSoundFile::WriteSample(FILE *f, MODINSTRUMENT *pins, UINT nFlags, UINT nMa
 				}
 				if (nFlags == RS_PCM16D)
 				{
-					int16_t temp = bswapLE16((int16_t)(s_new - s_old));
-					memcpy(&buffer[bufcount], &temp, sizeof(int16_t));
+					SHORT temp = bswapLE16((SHORT)(s_new - s_old));
+					memcpy(&buffer[bufcount], &temp, sizeof(SHORT));
 					s_old = s_new;
 				} else
 				{
-					int16_t temp = bswapLE16((int16_t)(s_new + s_ofs));
-					memcpy(&buffer[bufcount], &temp, sizeof(int16_t));
+					SHORT temp = bswapLE16((SHORT)(s_new + s_ofs));
+					memcpy(&buffer[bufcount], &temp, sizeof(SHORT));
 				}
 				bufcount += 2;
 				if (bufcount >= sizeof(buffer) - 1)
@@ -993,7 +993,7 @@ UINT CSoundFile::WriteSample(FILE *f, MODINSTRUMENT *pins, UINT nFlags, UINT nMa
 			int s_ofs = (nFlags == RS_STPCM16U) ? 0x8000 : 0;
 			for (UINT iCh=0; iCh<2; iCh++)
 			{
-				int16_t *p = ((int16_t *)pSample) + iCh;
+				SHORT *p = ((SHORT *)pSample) + iCh;
 				int s_old = 0;
 
 				bufcount = 0;
@@ -1003,13 +1003,13 @@ UINT CSoundFile::WriteSample(FILE *f, MODINSTRUMENT *pins, UINT nFlags, UINT nMa
 					p += 2;
 					if (nFlags == RS_STPCM16D)
 					{
-						int16_t temp = bswapLE16((int16_t)(s_new - s_old));
-						memcpy(&buffer[bufcount], &temp, sizeof(int16_t));
+						SHORT temp = bswapLE16((SHORT)(s_new - s_old));
+						memcpy(&buffer[bufcount], &temp, sizeof(SHORT));
 						s_old = s_new;
 					} else
 					{
-						int16_t temp = bswapLE16((int16_t)(s_new - s_ofs));
-						memcpy(&buffer[bufcount], &temp, sizeof(int16_t));
+						SHORT temp = bswapLE16((SHORT)(s_new - s_ofs));
+						memcpy(&buffer[bufcount], &temp, sizeof(SHORT));
 					}
 					bufcount += 2;
 					if (bufcount >= sizeof(buffer))
@@ -1164,13 +1164,13 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 		{
 			len = pIns->nLength * 2;
 			if (len > dwMemLength) break;
-			int16_t *pSample = (int16_t *)pIns->pSample;
-			int16_t *p = (int16_t *)lpMemFile;
+			SHORT *pSample = (SHORT *)pIns->pSample;
+			SHORT *p = (SHORT *)lpMemFile;
 			int delta16 = 0;
 			for (UINT j=0; j<len; j+=2)
 			{
 				delta16 += bswapLE16(*p++);
-				*pSample++ = (int16_t )delta16;
+				*pSample++ = (SHORT )delta16;
 			}
 		}
 		break;
@@ -1180,10 +1180,10 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 	        {
 		len = pIns->nLength * 2;
 		if (len <= dwMemLength) memcpy(pIns->pSample, lpMemFile, len);
-			int16_t *pSample = (int16_t *)pIns->pSample;
+			SHORT *pSample = (SHORT *)pIns->pSample;
 			for (UINT j=0; j<len; j+=2)
 			{
-				int16_t rawSample = *pSample;
+				SHORT rawSample = *pSample;
 			        *pSample++ = bswapLE16(rawSample);
 			}
 		}
@@ -1201,7 +1201,7 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 			{
 			  	// pSample[j] = pSrc[j+1];
 				// pSample[j+1] = pSrc[j];
-			        *((uint16_t *)(pSample+j)) = bswapBE16(*((uint16_t *)(pSrc+j)));
+			        *((WORD *)(pSample+j)) = bswapBE16(*((WORD *)(pSrc+j)));
 			}
 		}
 		break;
@@ -1211,8 +1211,8 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 		{
 			len = pIns->nLength * 2;
 			if (len > dwMemLength) break;
-			int16_t *pSample = (int16_t *)pIns->pSample;
-			int16_t *pSrc = (int16_t *)lpMemFile;
+			SHORT *pSample = (SHORT *)pIns->pSample;
+			SHORT *pSrc = (SHORT *)lpMemFile;
 			for (UINT j=0; j<len; j+=2) *pSample++ = bswapLE16(*(pSrc++)) - 0x8000;
 		}
 		break;
@@ -1230,8 +1230,8 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 				// pSample[j*2+1] = pSrc[j];
 				// pSample[j*2+2] = pSrc[j+1+len];
 				// pSample[j*2+3] = pSrc[j+len];
-			        *((uint16_t *)(pSample+j*2)) = bswapBE16(*((uint16_t *)(pSrc+j)));
-				*((uint16_t *)(pSample+j*2+2)) = bswapBE16(*((uint16_t *)(pSrc+j+len)));
+			        *((WORD *)(pSample+j*2)) = bswapBE16(*((WORD *)(pSrc+j)));
+				*((WORD *)(pSample+j*2+2)) = bswapBE16(*((WORD *)(pSrc+j+len)));
 			}
 			len *= 2;
 		}
@@ -1271,13 +1271,13 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 			int iadd_l = 0, iadd_r = 0;
 			if (nFlags == RS_STPCM16U) { iadd_l = iadd_r = -0x8000; }
 			len = pIns->nLength;
-			int16_t *psrc = (int16_t *)lpMemFile;
-			int16_t *pSample = (int16_t *)pIns->pSample;
+			SHORT *psrc = (SHORT *)lpMemFile;
+			SHORT *pSample = (SHORT *)pIns->pSample;
 			if (len*4 > dwMemLength) break;
 			for (UINT j=0; j<len; j++)
 			{
-				pSample[j*2] = (int16_t) (bswapLE16(psrc[0]) + iadd_l);
-				pSample[j*2+1] = (int16_t) (bswapLE16(psrc[len]) + iadd_r);
+				pSample[j*2] = (SHORT) (bswapLE16(psrc[0]) + iadd_l);
+				pSample[j*2+1] = (SHORT) (bswapLE16(psrc[len]) + iadd_r);
 				psrc++;
 				if (nFlags == RS_STPCM16D)
 				{
@@ -1332,12 +1332,12 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 			if (nFlags == RS_STIPCM16U) iadd = -32768;
 			len = pIns->nLength;
 			if (len*4 > dwMemLength) len = dwMemLength >> 2;
-			int16_t *psrc = (int16_t *)lpMemFile;
-			int16_t *pSample = (int16_t *)pIns->pSample;
+			SHORT *psrc = (SHORT *)lpMemFile;
+			SHORT *pSample = (SHORT *)pIns->pSample;
 			for (UINT j=0; j<len; j++)
 			{
-				pSample[j*2] = (int16_t)(bswapLE16(psrc[0]) + iadd);
-				pSample[j*2+1] = (int16_t)(bswapLE16(psrc[1]) + iadd);
+				pSample[j*2] = (SHORT)(bswapLE16(psrc[0]) + iadd);
+				pSample[j*2+1] = (SHORT)(bswapLE16(psrc[1]) + iadd);
 				psrc += 2;
 			}
 			len *= 4;
@@ -1456,7 +1456,7 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 				if (-l > max) max = -l;
 			}
 			max = (max / 128) + 1;
-			int16_t *pDest = (int16_t *)pIns->pSample;
+			SHORT *pDest = (SHORT *)pIns->pSample;
 			for (UINT k=0; k<len; k+=slsize)
 			{
 				LONG l = ((((pSrc[k+2] << 8) + pSrc[k+1]) << 8) + pSrc[k]) << 8;
@@ -1485,14 +1485,14 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 				if (-l > max) max = -l;
 			}
 			max = (max / 128) + 1;
-			int16_t *pDest = (int16_t *)pIns->pSample;
+			SHORT *pDest = (SHORT *)pIns->pSample;
 			for (UINT k=0; k<len; k+=slsize)
 			{
 				LONG lr = ((((pSrc[k+2] << 8) + pSrc[k+1]) << 8) + pSrc[k]) << 8;
 				k += slsize;
 				LONG ll = ((((pSrc[k+2] << 8) + pSrc[k+1]) << 8) + pSrc[k]) << 8;
-				pDest[0] = (int16_t)ll;
-				pDest[1] = (int16_t)lr;
+				pDest[0] = (SHORT)ll;
+				pDest[1] = (SHORT)lr;
 				pDest += 2;
 			}
 		}
@@ -1504,11 +1504,11 @@ UINT CSoundFile::ReadSample(MODINSTRUMENT *pIns, UINT nFlags, LPCSTR lpMemFile, 
 			len = pIns->nLength;
 			if (len*4 > dwMemLength) len = dwMemLength >> 2;
 			LPCBYTE psrc = (LPCBYTE)lpMemFile;
-			int16_t *pSample = (int16_t *)pIns->pSample;
+			SHORT *pSample = (SHORT *)pIns->pSample;
 			for (UINT j=0; j<len; j++)
 			{
-				pSample[j*2] = (int16_t)(((UINT)psrc[0] << 8) | (psrc[1]));
-				pSample[j*2+1] = (int16_t)(((UINT)psrc[2] << 8) | (psrc[3]));
+				pSample[j*2] = (SHORT)(((UINT)psrc[0] << 8) | (psrc[1]));
+				pSample[j*2+1] = (SHORT)(((UINT)psrc[2] << 8) | (psrc[3]));
 				psrc += 4;
 			}
 			len *= 4;
@@ -1553,7 +1553,7 @@ void CSoundFile::AdjustSampleLoop(MODINSTRUMENT *pIns)
 	UINT len = pIns->nLength;
 	if (pIns->uFlags & CHN_16BIT)
 	{
-		int16_t *pSample = (int16_t *)pIns->pSample;
+		SHORT *pSample = (SHORT *)pIns->pSample;
 		// Adjust end of sample
 		if (pIns->uFlags & CHN_STEREO)
 		{
@@ -1641,7 +1641,7 @@ DWORD CSoundFile::TransposeToFrequency(int transp, int ftune)
 	//---GCCFIX:  Removed assembly.
 	return (DWORD)(8363*pow(2.0, (transp*128+ftune)/(1536)));
 
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 	const float _fbase = 8363;
 	const float _factor = 1.0f/(12.0f*128.0f);
 	int result;
@@ -1681,7 +1681,7 @@ int CSoundFile::FrequencyToTranspose(DWORD freq)
 	//---GCCFIX:  Removed assembly.
 	return int(1536*(log((double)freq/8363.0)/log(2.0)));
 
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 	const float _f1_8363 = 1.0f / 8363.0f;
 	const float _factor = 128 * 12;
 	LONG result;

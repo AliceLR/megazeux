@@ -4,11 +4,13 @@
  * Authors: Olivier Lapicque <olivierl@jps.net>
 */
 
+#include <stdlib.h>
+
 #include "stdafx.h"
 #include "sndfile.h"
 #include "tables.h"
 
-#ifdef MSC_VER
+#ifdef _MSC_VER
 #pragma warning(disable:4244)
 #endif
 

@@ -77,7 +77,7 @@ const UINT PreAmpAGCTable[16] =
 // Return (a*b)/c - no divide error
 int _muldiv(long a, long b, long c)
 {
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 	int sign, result;
 	_asm {
 	mov eax, a
@@ -124,7 +124,7 @@ rneg:
 // Return (a*b+c/2)/c - no divide error
 int _muldivr(long a, long b, long c)
 {
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 	int sign, result;
 	_asm {
 	mov eax, a

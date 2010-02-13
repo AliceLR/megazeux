@@ -9,7 +9,7 @@
 #include "sndfile.h"
 #include <math.h>
 
-#ifdef MSC_VER
+#ifdef _MSC_VER
 #pragma bss_seg(".modplug")
 #endif
 
@@ -27,7 +27,7 @@ int MixRearBuffer[MIXBUFFERSIZE*2];
 float MixFloatBuffer[MIXBUFFERSIZE*2];
 #endif
 
-#ifdef MSC_VER
+#ifdef _MSC_VER
 #pragma bss_seg()
 #endif
 
@@ -128,7 +128,7 @@ CzCUBICSPLINE::CzCUBICSPLINE( )
 			if( lut[_LIdx+1]>lut[_LMax] ) _LMax = _LIdx+1;
 			if( lut[_LIdx+2]>lut[_LMax] ) _LMax = _LIdx+2;
 			if( lut[_LIdx+3]>lut[_LMax] ) _LMax = _LIdx+3;
-			lut[_LMax] += (SPLINE_QUANTSCALE-_LSum);
+			lut[_LMax] += (short)(SPLINE_QUANTSCALE-_LSum);
 		}
 #endif
 	}
@@ -1606,12 +1606,12 @@ UINT CSoundFile::CreateStereoMix(int count)
 }
 
 
-#ifdef MSC_VER
+#ifdef _MSC_VER
 #pragma warning (disable:4100)
 #endif
 
 // Clip and convert to 8 bit
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 __declspec(naked) DWORD MPPASMCALL X86_Convert32To8(LPVOID lp16, int *pBuffer, DWORD lSampleCount, LPLONG lpMin, LPLONG lpMax)
 //------------------------------------------------------------------------------
 {
@@ -1674,7 +1674,7 @@ cliphigh:
 	jmp cliprecover
 	}
 }
-#else //MSC_VER
+#else //_MSC_VER
 //---GCCFIX: Asm replaced with C function
 // The C version was written by Rani Assaf <rani@magic.metawire.com>, I believe
 DWORD MPPASMCALL X86_Convert32To8(LPVOID lp8, int *pBuffer, DWORD lSampleCount, LPLONG lpMin, LPLONG lpMax)
@@ -1698,10 +1698,10 @@ DWORD MPPASMCALL X86_Convert32To8(LPVOID lp8, int *pBuffer, DWORD lSampleCount, 
 	*lpMax = vumax;
 	return lSampleCount;
 }
-#endif //MSC_VER, else
+#endif //_MSC_VER, else
 
 
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 // Clip and convert to 16 bit
 __declspec(naked) DWORD MPPASMCALL X86_Convert32To16(LPVOID lp16, int *pBuffer, DWORD lSampleCount, LPLONG lpMin, LPLONG lpMax)
 //------------------------------------------------------------------------------
@@ -1768,7 +1768,7 @@ cliphigh:
 	jmp cliprecover
 	}
 }
-#else //MSC_VER
+#else //_MSC_VER
 //---GCCFIX: Asm replaced with C function
 // The C version was written by Rani Assaf <rani@magic.metawire.com>, I believe
 DWORD MPPASMCALL X86_Convert32To16(LPVOID lp16, int *pBuffer, DWORD lSampleCount, LPLONG lpMin, LPLONG lpMax)
@@ -1792,9 +1792,9 @@ DWORD MPPASMCALL X86_Convert32To16(LPVOID lp16, int *pBuffer, DWORD lSampleCount
 	*lpMax = vumax;
 	return lSampleCount * 2;
 }
-#endif //MSC_VER, else
+#endif //_MSC_VER, else
 
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 // Clip and convert to 24 bit
 __declspec(naked) DWORD MPPASMCALL X86_Convert32To24(LPVOID lp16, int *pBuffer, DWORD lSampleCount, LPLONG lpMin, LPLONG lpMax)
 //------------------------------------------------------------------------------
@@ -1865,7 +1865,7 @@ cliphigh:
 	jmp cliprecover
 	}
 }
-#else //MSC_VER
+#else //_MSC_VER
 //---GCCFIX: Asm replaced with C function
 DWORD MPPASMCALL X86_Convert32To24(LPVOID lp16, int *pBuffer, DWORD lSampleCount, LPLONG lpMin, LPLONG lpMax)
 {
@@ -1902,7 +1902,7 @@ DWORD MPPASMCALL X86_Convert32To24(LPVOID lp16, int *pBuffer, DWORD lSampleCount
 }
 #endif
 
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 // Clip and convert to 32 bit
 __declspec(naked) DWORD MPPASMCALL X86_Convert32To32(LPVOID lp16, int *pBuffer, DWORD lSampleCount, LPLONG lpMin, LPLONG lpMax)
 //------------------------------------------------------------------------------
@@ -1992,7 +1992,7 @@ DWORD MPPASMCALL X86_Convert32To32(LPVOID lp16, int *pBuffer, DWORD lSampleCount
 #endif
 
 
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 static void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples)
 //------------------------------------------------------------
 {
@@ -2034,7 +2034,7 @@ static void MPPASMCALL X86_InitMixBuffer(int *pBuffer, UINT nSamples)
 #endif
 
 
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 __declspec(naked) void MPPASMCALL X86_InterleaveFrontRear(int *pFrontBuf, int *pRearBuf, DWORD nSamples)
 //------------------------------------------------------------------------------
 {
@@ -2079,7 +2079,7 @@ void MPPASMCALL X86_InterleaveFrontRear(int *pFrontBuf, int *pRearBuf, DWORD nSa
 #endif
 
 
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 VOID MPPASMCALL X86_MonoFromStereo(int *pMixBuf, UINT nSamples)
 //-------------------------------------------------------------
 {
@@ -2113,7 +2113,9 @@ VOID MPPASMCALL X86_MonoFromStereo(int *pMixBuf, UINT nSamples)
 #endif
 
 
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
+#define OFSDECAYSHIFT	8
+#define OFSDECAYMASK	0xFF
 void MPPASMCALL X86_StereoFill(int *pBuffer, UINT nSamples, LPLONG lpROfs, LPLONG lpLOfs)
 //------------------------------------------------------------------------------
 {
@@ -2214,7 +2216,7 @@ void MPPASMCALL X86_StereoFill(int *pBuffer, UINT nSamples, LPLONG lpROfs, LPLON
 }
 #endif
 
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 static void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UINT nSamples)
 //------------------------------------------------------------------------------
 {
@@ -2288,7 +2290,7 @@ static void MPPASMCALL X86_EndChannelOfs(MODCHANNEL *pChannel, int *pBuffer, UIN
 #define MIXING_LIMITMAX		(0x08100000)
 #define MIXING_LIMITMIN		(-MIXING_LIMITMAX)
 
-#ifdef MSC_VER
+#if defined(_MSC_VER) && !defined(_WIN64)
 __declspec(naked) UINT MPPASMCALL X86_AGC(int *pBuffer, UINT nSamples, UINT nAGC)
 //------------------------------------------------------------------------------
 {
