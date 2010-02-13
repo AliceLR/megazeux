@@ -69,7 +69,7 @@ static char **process_argv;
 static bool check_prune_basedir(const char *file)
 {
   static char path[MAX_PATH];
-  int ret;
+  ssize_t ret;
 
   ret = get_path(file, path, MAX_PATH);
   if(ret < 0)
@@ -96,7 +96,7 @@ static bool check_create_basedir(const char *file)
 {
   static struct stat s;
   char path[MAX_PATH];
-  int ret;
+  ssize_t ret;
 
   ret = get_path(file, path, MAX_PATH);
   if(ret < 0)
@@ -390,9 +390,9 @@ static void __check_for_updates(struct config_info *conf)
   int i = 0, entries = 0, buf_len, result;
   char update_branch[LINE_BUF_LEN];
   const char *version = VERSION;
-  size_t list_entry_width = 0;
-  struct host *h = NULL;
+  int list_entry_width = 0;
   enum host_status status;
+  struct host *h = NULL;
   unsigned int retries;
   bool ret = false;
   FILE *f;
@@ -583,11 +583,11 @@ static void __check_for_updates(struct config_info *conf)
   }
 
   for(e = removed; e; e = e->next, entries++)
-    list_entry_width = MAX(list_entry_width, 2 + strlen(e->name) + 1 + 1);
+    list_entry_width = MAX(list_entry_width, 2 + (int)strlen(e->name)+1+1);
   for(e = replaced; e; e = e->next, entries++)
-    list_entry_width = MAX(list_entry_width, 2 + strlen(e->name) + 1 + 1);
+    list_entry_width = MAX(list_entry_width, 2 + (int)strlen(e->name)+1+1);
   for(e = added; e; e = e->next, entries++)
-    list_entry_width = MAX(list_entry_width, 2 + strlen(e->name) + 1 + 1);
+    list_entry_width = MAX(list_entry_width, 2 + (int)strlen(e->name)+1+1);
 
   // We don't want the listbox to be too wide
   list_entry_width = MIN(list_entry_width, 60);

@@ -467,7 +467,7 @@ int save_board(struct board *cur_board, FILE *fp, int savegame)
 
   {
     size_t len = strlen(cur_board->mod_playing);
-    fputw(len, fp);
+    fputw((int)len, fp);
     if(len)
       fwrite(cur_board->mod_playing, len, 1, fp);
   }
@@ -502,17 +502,17 @@ int save_board(struct board *cur_board, FILE *fp, int savegame)
 
     fputc(cur_board->last_key, fp);
     fputw(cur_board->num_input, fp);
-    fputw(cur_board->input_size, fp);
+    fputw((int)cur_board->input_size, fp);
 
     len = strlen(cur_board->input_string);
-    fputw(len, fp);
+    fputw((int)len, fp);
     if(len)
       fwrite(cur_board->input_string, len, 1, fp);
 
     fputc(cur_board->player_last_dir, fp);
 
     len = strlen(cur_board->bottom_mesg);
-    fputw(len, fp);
+    fputw((int)len, fp);
     if(len)
       fwrite(cur_board->bottom_mesg, len, 1, fp);
 

@@ -78,7 +78,7 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
   cursor_off();
 
   if(title && strlen(title) > (unsigned int)choice_size)
-    width = strlen(title) + 6;
+    width = (int)strlen(title) + 6;
 
   save_screen();
 
@@ -91,7 +91,7 @@ int list_menu(const char *const *choices, int choice_size, const char *title,
     // Add title
     write_string(title, xpos + 3, ypos + 2, DI_TITLE, 0);
     draw_char(' ', DI_TITLE, xpos + 2, ypos + 2);
-    draw_char(' ', DI_TITLE, xpos + 3 + strlen(title), ypos + 2);
+    draw_char(' ', DI_TITLE, xpos + 3 + (Uint32)strlen(title), ypos + 2);
   }
 
   // Add pointer
@@ -699,7 +699,7 @@ static void draw_char_box(struct world *mzx_world, struct dialog *di,
   struct char_box *src = (struct char_box *)e;
   int x = di->x + e->x;
   int y = di->y + e->y;
-  int question_len = strlen(src->question) + di->pad_space;
+  int question_len = (int)strlen(src->question) + di->pad_space;
 
   write_string(src->question, x, y, color, 0);
   draw_char_ext(*(src->result), DI_CHAR,
@@ -718,7 +718,7 @@ static void draw_color_box_element(struct world *mzx_world, struct dialog *di,
 
   write_string(src->question, x, y, color, 0);
   draw_color_box(current_color & 0xFF, current_color >> 8,
-   x + strlen(src->question) + di->pad_space, y, 80);
+   x + (int)strlen(src->question) + di->pad_space, y, 80);
 }
 
 static void draw_board_list(struct world *mzx_world, struct dialog *di,
@@ -954,7 +954,7 @@ struct element *construct_char_box(int x, int y, const char *question,
   src->question = question;
   src->allow_char_255 = allow_char_255;
   src->result = result;
-  construct_element(&(src->e), x, y, strlen(question) + 4,
+  construct_element(&(src->e), x, y, (int)strlen(question) + 4,
    1, draw_char_box, key_char_box, click_char_box, NULL, NULL);
 
   return (struct element *)src;
@@ -967,7 +967,7 @@ struct element *construct_color_box(int x, int y,
   src->question = question;
   src->allow_wildcard = allow_wildcard;
   src->result = result;
-  construct_element(&(src->e), x, y, strlen(question) + 4,
+  construct_element(&(src->e), x, y, (int)strlen(question) + 4,
    1, draw_color_box_element, key_color_box, click_color_box,
    NULL, NULL);
 

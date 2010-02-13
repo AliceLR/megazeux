@@ -654,7 +654,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
   int mouse_press;
   int x = di->x;
   int y = di->y;
-  int title_x_offset = x + (di->width / 2) - (strlen(di->title) / 2);
+  int title_x_offset = x + (di->width / 2) - ((int)strlen(di->title) / 2);
   struct element *current_element = di->elements[di->current_element];
 
   int current_element_num = di->current_element;
@@ -680,7 +680,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
   write_string(di->title, title_x_offset, y, DI_TITLE, 0);
   draw_char(' ', DI_TITLE, title_x_offset - 1, y);
-  draw_char(' ', DI_TITLE, title_x_offset + strlen(di->title), y);
+  draw_char(' ', DI_TITLE, title_x_offset + (Uint32)strlen(di->title), y);
 
   memset(vid_usage, -1, 2000);
 
@@ -893,7 +893,7 @@ static int find_entry(const char **choices, char *name, int total_num)
 {
   int current_entry;
   int cmpval = 0;
-  int name_length = strlen(name);
+  size_t name_length = strlen(name);
 
   for(current_entry = 0; current_entry < total_num; current_entry++)
   {
@@ -936,7 +936,7 @@ static void draw_input_box(struct world *mzx_world, struct dialog *di,
   struct input_box *src = (struct input_box *)e;
   int x = di->x + e->x;
   int y = di->y + e->y;
-  int question_length = strlen(src->question) + di->pad_space;
+  int question_length = (int)strlen(src->question) + di->pad_space;
 
   write_string(src->question, x, y, color, 0);
   fill_line(src->max_length + 1, x + question_length, y,
@@ -991,7 +991,7 @@ static void draw_button(struct world *mzx_world, struct dialog *di,
 
   write_string(src->label, x + 1, y, color, 0);
   draw_char(' ', color, x, y);
-  draw_char(' ', color, x + strlen(src->label) + 1, y);
+  draw_char(' ', color, x + (Uint32)strlen(src->label) + 1, y);
 }
 
 static void draw_number_box(struct world *mzx_world, struct dialog *di,
@@ -1008,7 +1008,7 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
 
   write_string(src->question, x, y, color, 0);
 
-  x += strlen(src->question) + di->pad_space;
+  x += (int)strlen(src->question) + di->pad_space;
 
   if((src->lower_limit == 1) && (src->upper_limit < 10) &&
    (increment == 1))
@@ -1028,7 +1028,7 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
     char num_buffer[32];
     sprintf(num_buffer, "%d", *(src->result) * increment);
     fill_line(7, x, y, 32, DI_NUMERIC);
-    write_string(num_buffer, x + 6 - strlen(num_buffer), y,
+    write_string(num_buffer, x + 6 - (Uint32)strlen(num_buffer), y,
      DI_NUMERIC, 0);
     // Buttons
     write_string(num_buttons, x + 7, y, DI_ARROWBUTTON, 0);
@@ -1518,15 +1518,15 @@ static int click_input_box(struct world *mzx_world, struct dialog *di,
  int new_active)
 {
   struct input_box *src = (struct input_box *)e;
-  int question_len = strlen(src->question);
-  int start_x = mouse_x - question_len;
+  size_t question_len = strlen(src->question);
+  int start_x = mouse_x - (int)question_len;
   int x = di->x + e->x;
   int y = di->y + e->y;
 
   if(start_x >= 0)
   {
     return intake(mzx_world, src->result, src->max_length, x +
-     question_len + di->pad_space, y, DI_INPUT, 2,
+     (int)question_len + di->pad_space, y, DI_INPUT, 2,
      src->input_flags, &start_x, 0, NULL);
   }
   else
@@ -1563,13 +1563,13 @@ static int click_number_box(struct world *mzx_world, struct dialog *di,
  int new_active)
 {
   struct number_box *src = (struct number_box *)e;
-  mouse_x -= strlen(src->question) + 7;
+  mouse_x -= (int)strlen(src->question) + 7;
 
   if((src->lower_limit == 1) &&
     (src->upper_limit < 10) && (!src->mult_five))
   {
     // Select number IF on the number line itself
-    mouse_x -= strlen(src->question);
+    mouse_x -= (int)strlen(src->question);
     if((mouse_x < src->upper_limit) && (mouse_x >= 0))
       *(src->result) = mouse_x + 1;
   }
@@ -1697,7 +1697,7 @@ static int idle_input_box(struct world *mzx_world, struct dialog *di,
   int y = di->y + e->y;
 
   return intake(mzx_world, src->result, src->max_length, x +
-   strlen(src->question) + di->pad_space, y, DI_INPUT, 2,
+   (int)strlen(src->question) + di->pad_space, y, DI_INPUT, 2,
    src->input_flags, NULL, 0, NULL);
 }
 
@@ -1757,7 +1757,7 @@ struct element *construct_label(int x, int y, const char *text)
 {
   struct label_element *src = cmalloc(sizeof(struct label_element));
   src->text = text;
-  construct_element(&(src->e), x, y, strlen(text), 1,
+  construct_element(&(src->e), x, y, (int)strlen(text), 1,
    draw_label, NULL, NULL, NULL, NULL);
 
   return (struct element *)src;
@@ -1772,7 +1772,7 @@ __editor_maybe_static struct element *construct_input_box(int x, int y,
   src->max_length = max_length;
   src->result = result;
   construct_element(&(src->e), x, y,
-   max_length + strlen(question) + 1, 1,
+   max_length + (int)strlen(question) + 1, 1,
    draw_input_box, key_input_box, click_input_box,
    NULL, idle_input_box);
 
@@ -1801,7 +1801,7 @@ struct element *construct_button(int x, int y, const char *label,
   src->label = label;
   src->return_value = return_value;
 
-  construct_element(&(src->e), x, y, strlen(src->label) + 2,
+  construct_element(&(src->e), x, y, (int)strlen(src->label) + 2,
    1, draw_button, key_button, click_button, NULL, NULL);
 
   return (struct element *)src;
@@ -1819,7 +1819,7 @@ struct element *construct_number_box(int x, int y,
   src->upper_limit = upper_limit;
   src->mult_five = mult_five;
   src->result = result;
-  width = strlen(question) + 1;
+  width = (int)strlen(question) + 1;
 
   if((lower_limit == 1) && (upper_limit < 10))
     width += upper_limit - 1;
@@ -1896,7 +1896,7 @@ int ask_yes_no(struct world *mzx_world, char *str)
   struct element *elements[2];
   int dialog_result;
   int dialog_width = 60;
-  int str_length = strlen(str);
+  size_t str_length = strlen(str);
 
   int yes_button_pos;
   int no_button_pos;
@@ -1908,7 +1908,7 @@ int ask_yes_no(struct world *mzx_world, char *str)
     if(str_length <= 76)
     {
       // Use a bigger ask dialog to fit the string
-      dialog_width = str_length + 4;
+      dialog_width = (int)str_length + 4;
       // If the dialog width is odd, bump it up to the next
       // even number, otherwise it will look uneven
       if((dialog_width % 2) == 1)
@@ -2178,7 +2178,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   struct stat file_info;
   char *current_dir_name;
   char current_dir_short[56];
-  int current_dir_length;
+  size_t current_dir_length;
   char *previous_dir_name;
   int total_filenames_allocated;
   int total_dirnames_allocated;
@@ -2186,8 +2186,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   char **dir_list;
   int num_files;
   int num_dirs;
-  int file_name_length;
-  int ext_pos = -1;
+  size_t file_name_length;
+  ssize_t ext_pos = -1;
   int chosen_file, chosen_dir;
   int dialog_result = 1;
   int return_value = 1;
@@ -2212,7 +2212,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
   getcwd(previous_dir_name, MAX_PATH);
 
-  i = get_path(ret, current_dir_name, MAX_PATH);
+  i = (int)get_path(ret, current_dir_name, MAX_PATH);
   if(i > 0)
     if(!chdir(current_dir_name))
       memmove(ret, ret + i + 1, strlen(ret) - i);
@@ -2258,9 +2258,9 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
           if(file_name_length >= 4)
           {
             if(file_name[file_name_length - 4] == '.')
-              ext_pos = file_name_length - 4;
+              ext_pos = (ssize_t)file_name_length - 4;
             else if(file_name[file_name_length - 3] == '.')
-              ext_pos = file_name_length - 3;
+              ext_pos = (ssize_t)file_name_length - 3;
             else
               ext_pos = 0;
 
@@ -2459,7 +2459,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
         {
           if(path[0])
           {
-            int path_len = strlen(path);
+            size_t path_len = strlen(path);
             chdir(path);
             memmove(ret, ret + path_len + 1, strlen(ret) - path_len);
           }
@@ -2674,7 +2674,7 @@ int new_file(struct world *mzx_world, const char *const *wildcards,
 // Calculates the percent from progress and out_of as in (progress/out_of).
 void meter(const char *title, unsigned int progress, unsigned int out_of)
 {
-  int titlex = 40 - (strlen(title) >> 1);
+  int titlex = 40 - ((int)strlen(title) >> 1);
 
   assert(titlex > 0);
 
@@ -2682,7 +2682,7 @@ void meter(const char *title, unsigned int progress, unsigned int out_of)
   // Add title
   write_string(title, titlex, 10, DI_TITLE, 0);
   draw_char(' ', DI_TITLE, titlex - 1, 10);
-  draw_char(' ', DI_TITLE, titlex + strlen(title), 10);
+  draw_char(' ', DI_TITLE, titlex + (int)strlen(title), 10);
   meter_interior(progress, out_of);
 }
 

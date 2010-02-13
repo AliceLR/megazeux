@@ -171,7 +171,7 @@ static int atan_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   int val = strtol(name + 4, NULL, 10);
-  return (int)((atan2f((float)val, mzx_world->divider) *
+  return (int)((atan2f((float)val, (float)mzx_world->divider) *
    mzx_world->c_divisions) / (2 * M_PI));
 }
 
@@ -848,7 +848,7 @@ static void bullettype_write(struct world *mzx_world,
 static int inputsize_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  return mzx_world->current_board->input_size;
+  return (int)mzx_world->current_board->input_size;
 }
 
 static void inputsize_write(struct world *mzx_world,
@@ -1656,7 +1656,7 @@ static struct string *find_string(struct world *mzx_world, const char *name,
 static int str_num_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  char *dot_ptr = strrchr(name + 1, '.');
+  char *dot_ptr = (char *)strrchr(name + 1, '.');
   struct string src;
 
   // User may have provided $str.N or $str.length explicitly
@@ -1676,7 +1676,7 @@ static int str_num_read(struct world *mzx_world,
       *(dot_ptr - 1) = '.';
 
       if(src)
-        return src->length;
+        return (int)src->length;
     }
     else
     {
@@ -1690,7 +1690,7 @@ static int str_num_read(struct world *mzx_world,
       {
         // If we're in bounds return the char at this offset
         if(str_num < src.length)
-          return src.value[str_num];
+          return (int)src.value[str_num];
       }
     }
   }
@@ -1707,7 +1707,7 @@ static int str_num_read(struct world *mzx_world,
     ret = strtol(n_buffer, NULL, 10);
 
     free(n_buffer);
-    return ret;
+    return (int)ret;
   }
 
   // The string wasn't found or the request was out of bounds
@@ -1715,11 +1715,11 @@ static int str_num_read(struct world *mzx_world,
 }
 
 static struct string *add_string_preallocate(struct world *mzx_world,
- const char *name, int length, int position)
+ const char *name, size_t length, int position)
 {
   int count = mzx_world->num_strings;
   int allocated = mzx_world->num_strings_allocated;
-  int name_length = strlen(name);
+  size_t name_length = strlen(name);
   struct string **base = mzx_world->string_list;
   struct string *dest;
 
@@ -1767,7 +1767,7 @@ static struct string *add_string_preallocate(struct world *mzx_world,
 }
 
 static struct string *reallocate_string(struct world *mzx_world,
- struct string *src, int pos, unsigned int length)
+ struct string *src, int pos, size_t length)
 {
   // Find the base length (take out the current length)
   int base_length = (int)(src->value - (char *)src);
@@ -1790,7 +1790,7 @@ static struct string *reallocate_string(struct world *mzx_world,
 }
 
 static void force_string_length(struct world *mzx_world, const char *name,
- int next, struct string **str, unsigned int *length)
+ int next, struct string **str, size_t *length)
 {
   if(*length > MAX_STRING_LEN)
     *length = MAX_STRING_LEN;
@@ -1802,8 +1802,8 @@ static void force_string_length(struct world *mzx_world, const char *name,
 }
 
 static void force_string_splice(struct world *mzx_world, const char *name,
- int next, struct string **str, unsigned int s_length, unsigned int offset,
- bool offset_specified, unsigned int *size, bool size_specified)
+ int next, struct string **str, size_t s_length, size_t offset,
+ bool offset_specified, size_t *size, bool size_specified)
 {
   force_string_length(mzx_world, name, next, str, &s_length);
 
@@ -1814,7 +1814,7 @@ static void force_string_splice(struct world *mzx_world, const char *name,
   {
     if(offset + *size > (*str)->length)
     {
-      unsigned int length = offset + *size;
+      size_t length = offset + *size;
       force_string_length(mzx_world, name, next, str, &length);
       (*str)->length = length;
     }
@@ -1824,8 +1824,8 @@ static void force_string_splice(struct world *mzx_world, const char *name,
 }
 
 static void force_string_copy(struct world *mzx_world, const char *name,
- int next, struct string **str, unsigned int s_length, unsigned int offset,
- bool offset_specified, unsigned int *size, bool size_specified, char *src)
+ int next, struct string **str, size_t s_length, size_t offset,
+ bool offset_specified, size_t *size, bool size_specified, char *src)
 {
   force_string_splice(mzx_world, name, next, str, s_length,
    offset, offset_specified, size, size_specified);
@@ -1834,15 +1834,15 @@ static void force_string_copy(struct world *mzx_world, const char *name,
 }
 
 static void force_string_move(struct world *mzx_world, const char *name,
- int next, struct string **str, unsigned int s_length, unsigned int offset,
- bool offset_specified, unsigned int *size, bool size_specified, char *src)
+ int next, struct string **str, size_t s_length, size_t offset,
+ bool offset_specified, size_t *size, bool size_specified, char *src)
 {
   bool src_dest_match = false;
   ssize_t off = 0;
 
   if(*str)
   {
-    off = (*str)->value - src;
+    off = (ssize_t)((*str)->value - src);
     if(off >= 0 && (unsigned int)off <= (*str)->length)
       src_dest_match = true;
   }
@@ -1865,7 +1865,7 @@ static void str_num_write(struct world *mzx_world,
   // User may have provided $str.N notation "write char at offset"
   if(dot_ptr)
   {
-    unsigned int old_length, new_length;
+    size_t old_length, new_length;
     int next, write_value = false;
     struct string *src;
     int str_num = 0;
@@ -2930,8 +2930,8 @@ void set_counter(struct world *mzx_world, const char *name, int value, int id)
   }
 }
 
-static void get_string_size_offset(char *name, unsigned int *ssize,
- bool *size_specified, unsigned int *soffset, bool *offset_specified)
+static void get_string_size_offset(char *name, size_t *ssize,
+ bool *size_specified, size_t *soffset, bool *offset_specified)
 {
   int offset_position = -1, size_position = -1;
   char current_char = name[0];
@@ -3019,9 +3019,9 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
  int id)
 {
   bool offset_specified = false, size_specified = false;
-  unsigned int src_length = src->length;
-  unsigned int size = 0, offset = 0;
+  size_t src_length = src->length;
   char *src_value = src->value;
+  size_t size = 0, offset = 0;
   struct string *dest;
   int next = 0;
 
@@ -3040,7 +3040,7 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
     {
       unsigned int read_count = strtoul(src_value + 5, NULL, 10);
       long current_pos, file_size;
-      int actual_read;
+      size_t actual_read;
 
       /* This is hacky, but we don't want to prematurely allocate more space
        * to the string than can possibly be read from the file. So we save the
@@ -3109,7 +3109,7 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
   if(special_name("board_name"))
   {
     char *board_name = mzx_world->current_board->board_name;
-    unsigned int str_length = strlen(board_name);
+    size_t str_length = strlen(board_name);
     force_string_copy(mzx_world, name, next, &dest, str_length,
      offset, offset_specified, &size, size_specified, board_name);
   }
@@ -3118,7 +3118,7 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
   if(special_name("robot_name"))
   {
     char *robot_name = (mzx_world->current_board->robot_list[id])->robot_name;
-    unsigned int str_length = strlen(robot_name);
+    size_t str_length = strlen(robot_name);
     force_string_copy(mzx_world, name, next, &dest, str_length,
      offset, offset_specified, &size, size_specified, robot_name);
   }
@@ -3127,7 +3127,7 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
   if(special_name("mod_name"))
   {
     char *mod_name = mzx_world->real_mod_playing;
-    unsigned int str_length = strlen(mod_name);
+    size_t str_length = strlen(mod_name);
     force_string_copy(mzx_world, name, next, &dest, str_length,
      offset, offset_specified, &size, size_specified, mod_name);
   }
@@ -3136,7 +3136,7 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
   if(special_name("input"))
   {
     char *input_string = mzx_world->current_board->input_string;
-    unsigned int str_length = strlen(input_string);
+    size_t str_length = strlen(input_string);
     force_string_copy(mzx_world, name, next, &dest, str_length,
      offset, offset_specified, &size, size_specified, input_string);
   }
@@ -3145,8 +3145,9 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
   // Okay, I implemented this stupid thing, you can all die.
   if(special_name("board_scan"))
   {
-    unsigned int board_width, board_size, board_pos, read_length = 63;
     struct board *src_board = mzx_world->current_board;
+    unsigned int board_width, board_size, board_pos;
+    size_t read_length = 63;
 
     board_width = src_board->board_width;
     board_size = board_width * src_board->board_height;
@@ -3160,7 +3161,7 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
         read_length = board_size - board_pos;
 
       load_string_board_direct(mzx_world, dest, next,
-       read_length, 1, '*', src_board->level_param + board_pos,
+       (int)read_length, 1, '*', src_board->level_param + board_pos,
        board_width);
     }
   }
@@ -3177,7 +3178,7 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
     {
       FILE *output_file = mzx_world->output_file;
       char *dest_value = dest->value;
-      unsigned int dest_length = dest->length;
+      size_t dest_length = dest->length;
 
       if(src_length > 6)
         size = strtol(src_value + 6, NULL, 10);
@@ -3235,7 +3236,7 @@ int get_string(struct world *mzx_world, const char *name, struct string *dest,
  int id)
 {
   bool offset_specified = false, size_specified = false;
-  unsigned int size = 0, offset = 0;
+  size_t size = 0, offset = 0;
   struct string *src;
   char *trimmed_name;
   int next;
@@ -3255,7 +3256,7 @@ int get_string(struct world *mzx_world, const char *name, struct string *dest,
       size = src->length;
 
     if(offset > src->length)
-        offset = src->length;
+      offset = src->length;
 
     if(offset + size > src->length)
       size = src->length - offset;
@@ -3321,7 +3322,7 @@ void inc_string(struct world *mzx_world, const char *name, struct string *src,
 
   if(dest)
   {
-    unsigned int new_length = src->length + dest->length;
+    size_t new_length = src->length + dest->length;
     // Concatenate
     if(new_length > dest->allocated_length)
     {
@@ -3525,9 +3526,8 @@ int compare_strings(struct string *dest, struct string *src)
   Uint32 val_src_32b, val_dest_32b;
   Uint32 difference;
   char val_src, val_dest;
-  unsigned int cmp_length = dest->length;
-  unsigned int length_32b;
-  unsigned int i;
+  size_t cmp_length = dest->length;
+  size_t length_32b, i;
 
   if(src->length < cmp_length)
     return 1;
@@ -3597,7 +3597,7 @@ int compare_strings(struct string *dest, struct string *src)
 void load_string_board(struct world *mzx_world, const char *name, int w, int h,
  char l, char *src, int width)
 {
-  unsigned int length = (unsigned int)(w * h);
+  size_t length = (size_t)(w * h);
   struct string *src_str;
   int next;
 
@@ -3703,20 +3703,20 @@ struct string *load_string(FILE *fp)
 
 void save_counter(FILE *fp, struct counter *src_counter)
 {
-  int name_length = strlen(src_counter->name);
+  size_t name_length = strlen(src_counter->name);
 
   fputd(src_counter->value, fp);
-  fputd(name_length, fp);
+  fputd((int)name_length, fp);
   fwrite(src_counter->name, name_length, 1, fp);
 }
 
 void save_string(FILE *fp, struct string *src_string)
 {
-  int name_length = strlen(src_string->name);
-  int str_length = src_string->length;
+  size_t name_length = strlen(src_string->name);
+  size_t str_length = src_string->length;
 
-  fputd(name_length, fp);
-  fputd(str_length, fp);
+  fputd((int)name_length, fp);
+  fputd((int)str_length, fp);
   fwrite(src_string->name, name_length, 1, fp);
   fwrite(src_string->value, str_length, 1, fp);
 }

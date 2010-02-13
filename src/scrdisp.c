@@ -154,7 +154,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
       key = intake(mzx_world, line, 64, 8, 12, scroll_base_color,
        2, 0, &currx, 0, NULL);
       // Modify scroll to hold new line (give errors here)
-      t2 = strlen(line); // Get length of NEW line
+      t2 = (int)strlen(line); // Get length of NEW line
       // Resize and move
       t3 = scroll->mesg_size;
 
@@ -306,7 +306,7 @@ void scroll_edit(struct world *mzx_world, struct scroll *scroll, int type)
         // pos is one before this start. Fix to the start of this new
         // line. Set currx to the length of the old line this was.
         pos++;
-        currx = t1 - 1;
+        currx = (int)t1 - 1;
         scroll->num_lines--;
 
         // FIXME - total hack!

@@ -589,7 +589,7 @@ __editor_maybe_static void __set_config_from_file(
           use_extended_buffer = extended_buffer;
           if(fsafegets(line_buffer_alternate, 254, conf_file))
           {
-            line_size = strlen(line_buffer_alternate);
+            line_size = (int)strlen(line_buffer_alternate);
             line_buffer_alternate[line_size] = '\n';
             line_size++;
 

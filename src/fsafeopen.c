@@ -261,7 +261,7 @@ static int match(char *path)
 
 static int fsafetest(const char *path, char *newpath)
 {
-  int i, pathlen;
+  size_t i, pathlen;
 
   // we don't accept it if it's NULL or too short
   if((path == NULL) || (path[0] == 0))
@@ -400,7 +400,7 @@ char *fsafegets(char *s, int size, FILE *stream)
 
   if(ret)
   {
-    int len = strlen(ret);
+    size_t len = strlen(ret);
 
     if(len > 0)
       if(s[len - 1] == '\r' || s[len - 1] == '\n')

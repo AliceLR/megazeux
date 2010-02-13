@@ -1320,7 +1320,7 @@ __sam_to_wav_maybe_static int check_ext_for_sam_and_convert(
  const char *filename, char *new_file)
 {
   char translated_filename_dest[MAX_PATH];
-  ssize_t ext_pos = strlen(filename) - 4;
+  ssize_t ext_pos = (ssize_t)strlen(filename) - 4;
 
   // this could end up being the same, or it might be modified
   // (if a SAM conversion is possible).
@@ -1355,7 +1355,7 @@ __sam_to_wav_maybe_static int check_ext_for_sam_and_convert(
 int check_ext_for_gdm_and_convert(const char *filename, char *new_file)
 {
   char translated_filename_dest[MAX_PATH];
-  ssize_t ext_pos = strlen(filename) - 4;
+  ssize_t ext_pos = (ssize_t)strlen(filename) - 4;
 
   // this could end up being the same, or it might be modified
   // (if a GDM conversion is possible).
@@ -1460,8 +1460,7 @@ static struct audio_stream *construct_stream_audio_file(char *filename,
 {
   const char *const *exts = mod_gdm_ext;
   struct audio_stream *a_return = NULL;
-  size_t len = strlen(filename);
-  int ext_pos;
+  size_t ext_pos, len = strlen(filename);
 
   if(!audio.music_on)
     return NULL;

@@ -106,9 +106,9 @@ static inline void gdm2s3m_swap32(uint32_t *var)
 #endif /* !_MSC_VER */
 
 /* function prototypes */
-void check_s_to_a (uint8_t *start, uint32_t size, void *dest,
+void check_s_to_a (uint8_t *start, size_t size, void *dest,
                    uint8_t **src, uint32_t n);
-void check_a_to_s (uint8_t **start, uint32_t *size, void *src,
+void check_a_to_s (uint8_t **start, size_t *size, void *src,
                    uint8_t **dest, uint32_t n);
 
 __G_END_DECLS

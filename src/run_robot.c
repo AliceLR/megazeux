@@ -79,7 +79,7 @@ __editor_maybe_static const int def_params[128] =
 static void magic_load_mod(struct world *mzx_world, char *filename)
 {
   struct board *src_board = mzx_world->current_board;
-  int mod_name_size = strlen(filename);
+  size_t mod_name_size = strlen(filename);
 
   if((mod_name_size > 1) && (filename[mod_name_size - 1] == '*'))
   {
@@ -3458,10 +3458,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         // compare
         char cmp_buffer[ROBOT_MAX_TR];
         char *input_string = src_board->input_string;
+        size_t i, cmp_len;
         char current_char;
         char cmp_char;
-        int cmp_len;
-        int i = 0;
 
         tr_msg(mzx_world, cmd_ptr + 2, id, cmp_buffer);
         cmp_len = strlen(cmp_buffer);
@@ -5001,9 +5000,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_CLIP_INPUT: // Clip input
       {
+        size_t i = 0, input_size = src_board->input_size;
         char *input_string = src_board->input_string;
-        int input_size = src_board->input_size;
-        int i = 0;
 
         // Chop up to and through first section of whitespace.
         // First, until non space or end
@@ -5527,7 +5525,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       {
         char *input_string = src_board->input_string;
         char match_string_buffer[ROBOT_MAX_TR];
-        int i = 0;
+        ssize_t i = 0;
 
         if(src_board->input_size)
         {
@@ -5535,7 +5533,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           {
             if(input_string[i] == 32) break;
             i++;
-          } while(i < src_board->input_size);
+          } while(i < (ssize_t)src_board->input_size);
         }
 
         if(input_string[i] == 32)

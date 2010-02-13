@@ -1758,8 +1758,8 @@ static int assemble_command(int command_number, struct mzx_command_rw *cmd,
   {
     if(cmd->param_types[i] & (STRING | UNDEFINED))
     {
-      int str_size = strlen((char *)params[i]);
-      *(c_obj_pos) = str_size + 1;
+      size_t str_size = strlen((char *)params[i]);
+      *(c_obj_pos) = (char)str_size + 1;
       strcpy(c_obj_pos + 1, (char *)params[i]);
       c_obj_pos += str_size + 2;
     }
@@ -1775,7 +1775,7 @@ static int assemble_command(int command_number, struct mzx_command_rw *cmd,
     }
   }
 
-  size = c_obj_pos - obj_pos - 1;
+  size = (int)(c_obj_pos - obj_pos - 1);
   *obj_pos = size;
   *c_obj_pos = size;
 
@@ -1828,7 +1828,7 @@ int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
 
   if(special_first_char[(int)cpos[0]] && (first_non_space[0] != '\"'))
   {
-    int str_size;
+    size_t str_size;
 
     command_name[0] = cpos[0];
     command_name[1] = 0;
@@ -2482,7 +2482,7 @@ __editor_maybe_static int disassemble_line(char *cpos, char **next,
     *output_position = 0;
 
     *next = cpos + (*cpos) + 2;
-    *total_bytes = output_position - output_buffer;
+    *total_bytes = (int)(output_position - output_buffer);
 
     if(arg_types)
       *arg_count = words;

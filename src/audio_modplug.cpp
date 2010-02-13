@@ -167,7 +167,7 @@ static void mp_destruct(struct audio_stream *a_src)
 struct audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
  Uint32 volume, Uint32 repeat)
 {
-  ssize_t ext_pos = strlen(filename) - 4;
+  ssize_t ext_pos = (ssize_t)strlen(filename) - 4;
   struct audio_stream *ret_val = NULL;
   char new_file[MAX_PATH];
   char *input_buffer;

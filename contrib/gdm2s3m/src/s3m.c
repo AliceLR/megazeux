@@ -25,7 +25,7 @@
 #include "error.h"
 #include "utility.h"
 
-uint8_t *save_s3m (struct S3M_file *s3m, uint32_t *stream_len)
+uint8_t *save_s3m (struct S3M_file *s3m, size_t *stream_len)
 {
   const uint8_t junk1[4] = { 0x1A, 16, 0, 0 };
   const uint8_t junk2[6] = { 0, 0, 0x17, 0x32, 2, 0 };
@@ -559,7 +559,7 @@ struct S3M_file *convert_gdm_to_s3m (struct GDM_file *gdm)
     struct S3M_pattern *pattern = &s3m->patterns[i];
     struct GDM_pattern *gpattern = &gdm->patterns[i];
     uint8_t *pdata = NULL, *backup = NULL;
-    uint32_t plen = 0;
+    size_t plen = 0;
 
     /* big pattern expander and collapser */
     for (j = 0; j < gpattern->length; j++) {

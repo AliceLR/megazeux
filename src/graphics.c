@@ -1325,13 +1325,13 @@ void write_number(int number, char color, int x, int y,
 
   if(rightalign)
   {
-    t1 = strlen(temp);
+    t1 = (int)strlen(temp);
     if(minlen > t1)
       t1 = minlen;
     x -= t1 - 1;
   }
 
-  if((t2 = strlen(temp)) < minlen)
+  if((t2 = (int)strlen(temp)) < minlen)
   {
     t2 = minlen - t2;
     for(t1 = 0; t1 < t2; t1++)

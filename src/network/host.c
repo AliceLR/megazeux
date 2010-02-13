@@ -400,8 +400,6 @@ static const struct dso_syms_map socksyms_map[] =
   { NULL, NULL }
 };
 
-typedef int sockaddr_t;
-
 static int init_ref_count;
 
 #define WINSOCK2 "ws2_32.dll"
@@ -500,13 +498,13 @@ __network_maybe_static bool host_last_error_fatal(void)
 }
 
 static inline int platform_accept(int sockfd,
- struct sockaddr *addr, sockaddr_t *addrlen)
+ struct sockaddr *addr, socklen_t *addrlen)
 {
   return socksyms.accept(sockfd, addr, addrlen);
 }
 
 static inline int platform_bind(int sockfd,
- const struct sockaddr *addr, sockaddr_t addrlen)
+ const struct sockaddr *addr, socklen_t addrlen)
 {
   return socksyms.bind(sockfd, addr, addrlen);
 }
@@ -517,7 +515,7 @@ static inline void platform_close(int fd)
 }
 
 static inline int platform_connect(int sockfd,
- const struct sockaddr *serv_addr, sockaddr_t addrlen)
+ const struct sockaddr *serv_addr, socklen_t addrlen)
 {
   return socksyms.connect(sockfd, serv_addr, addrlen);
 }
@@ -562,13 +560,13 @@ static inline int platform_select(int nfds, fd_set *readfds,
 static inline ssize_t platform_send(int s, const void *buf, size_t len,
  int flags)
 {
-  return socksyms.send(s, buf, len, flags);
+  return socksyms.send(s, buf, (int)len, flags);
 }
 
 static inline ssize_t platform_sendto(int s, const void *buf, size_t len,
  int flags, const struct sockaddr *to, socklen_t tolen)
 {
-  return socksyms.sendto(s, buf, len, flags, to, tolen);
+  return socksyms.sendto(s, buf, (int)len, flags, to, tolen);
 }
 
 static inline int platform_setsockopt(int s, int level, int optname,
@@ -579,7 +577,7 @@ static inline int platform_setsockopt(int s, int level, int optname,
 
 static inline int platform_socket(int af, int type, int protocol)
 {
-  return socksyms.socket(af, type, protocol);
+  return (int)socksyms.socket(af, type, protocol);
 }
 
 static inline void platform_socket_blocking(int s, bool blocking)
@@ -590,13 +588,13 @@ static inline void platform_socket_blocking(int s, bool blocking)
 
 static inline ssize_t platform_recv(int s, void *buf, size_t len, int flags)
 {
-  return socksyms.recv(s, buf, len, flags);
+  return socksyms.recv(s, buf, (int)len, flags);
 }
 
 static inline ssize_t platform_recvfrom(int s, void *buf, size_t len,
  int flags, struct sockaddr *from, socklen_t *fromlen)
 {
-  return socksyms.recvfrom(s, buf, len, flags, from, fromlen);
+  return socksyms.recvfrom(s, buf, (int)len, flags, from, fromlen);
 }
 
 #endif // __WIN32__
@@ -700,12 +698,12 @@ void host_destroy(struct host *h)
   }
 }
 
-static bool __send(struct host *h, const void *buffer, unsigned int len)
+static bool __send(struct host *h, const void *buffer, size_t len)
 {
   const char *buf = buffer;
   Uint32 start, now;
-  unsigned int pos;
-  int count;
+  ssize_t count;
+  size_t pos;
 
   start = get_ticks();
 
@@ -743,8 +741,8 @@ static bool __recv(struct host *h, void *buffer, unsigned int len)
 {
   char *buf = buffer;
   Uint32 start, now;
-  unsigned int pos;
-  int count;
+  ssize_t count;
+  size_t pos;
 
   start = get_ticks();
 
@@ -790,7 +788,7 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
     if(ai->ai_family != AF_INET6)
       continue;
 
-    if(platform_connect(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
+    if(platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen) >= 0)
       break;
 
     perror("connect");
@@ -807,7 +805,7 @@ static struct addrinfo *connect_op(int fd, struct addrinfo *ais, void *priv)
     if(ai->ai_family != AF_INET)
       continue;
 
-    if(platform_connect(fd, ai->ai_addr, ai->ai_addrlen) >= 0)
+    if(platform_connect(fd, ai->ai_addr, (socklen_t)ai->ai_addrlen) >= 0)
       break;
 
     perror("connect");
@@ -896,13 +894,13 @@ err_out:
   return pos;
 }
 
-static int http_send_line(struct host *h, const char *message)
+static ssize_t http_send_line(struct host *h, const char *message)
 {
   char line[LINE_BUF_LEN];
-  size_t len;
+  ssize_t len;
 
   snprintf(line, LINE_BUF_LEN, "%s\r\n", message);
-  len = strlen(line);
+  len = (ssize_t)strlen(line);
 
   if(!__send(h, line, len))
     len = -HOST_SEND_FAILED;
@@ -928,7 +926,7 @@ static bool http_skip_headers(struct host *h)
   }
 }
 
-static int zlib_skip_gzip_header(char *initial, unsigned long len)
+static ssize_t zlib_skip_gzip_header(char *initial, unsigned long len)
 {
   Bytef *gzip = (Bytef *)initial;
   uint8_t flags;
@@ -1175,7 +1173,7 @@ enum host_status host_recv_file(struct host *h, const char *url,
        */
       if(!mid_inflate)
       {
-        int deflate_offset = 0;
+        ssize_t deflate_offset = 0;
 
         /* Compute the offset within this block to begin the inflation
          * process. For all but the first block, deflate_offset will be

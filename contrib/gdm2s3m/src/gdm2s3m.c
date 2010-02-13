@@ -33,7 +33,7 @@ int convert_gdm_s3m (const char *gdmfile, const char *s3mfile)
 {
   struct GDM_file *gdm;
   struct S3M_file *s3m;
-  uint32_t filesize;
+  size_t filesize;
   uint8_t *stream;
   FILE *handle;
 

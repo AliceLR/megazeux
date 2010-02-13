@@ -843,13 +843,13 @@ static void global_chars(struct world *mzx_world)
       if(char_values[current_menu][i] & 512)
       {
         elements[i + 3] = construct_color_box(2 +
-         (25 - strlen(char_strs[current_menu][i])), 2 + i,
+         (25 - (int)strlen(char_strs[current_menu][i])), 2 + i,
          char_strs[current_menu][i], 0, results + i);
       }
       else
       {
         elements[i + 3] = construct_char_box(2 +
-         (25 - strlen(char_strs[current_menu][i])), 2 + i,
+         (25 - (int)strlen(char_strs[current_menu][i])), 2 + i,
          char_strs[current_menu][i],
          char_values[current_menu][i] > 127, results + i);
       }
@@ -870,13 +870,13 @@ static void global_chars(struct world *mzx_world)
       if(char_values[current_menu][i] & 512)
       {
         elements[i + 3] = construct_color_box(32 +
-         (25 - strlen(char_strs[current_menu][i])), i - 10,
+         (25 - (int)strlen(char_strs[current_menu][i])), i - 10,
          char_strs[current_menu][i], 0, results + i);
       }
       else
       {
         elements[i + 3] = construct_char_box(32 +
-         (25 - strlen(char_strs[current_menu][i])), i - 10,
+         (25 - (int)strlen(char_strs[current_menu][i])), i - 10,
          char_strs[current_menu][i],
          char_values[current_menu][i] > 127, results + i);
       }
@@ -999,7 +999,7 @@ static void global_dmg(struct world *mzx_world)
   {
     results[i] = id_dmg[(int)dmg_ids[i]];
     elements[i + 2] = construct_number_box(2 +
-     (14 - strlen(dmg_strs[i])), 2 + i,
+     (14 - (int)strlen(dmg_strs[i])), 2 + i,
      dmg_strs[i], 0, 255, 0, results + i);
   }
 
@@ -1007,7 +1007,7 @@ static void global_dmg(struct world *mzx_world)
   {
     results[i] = id_dmg[(int)dmg_ids[i]];
     elements[i + 2] = construct_number_box(31 +
-     (14 - strlen(dmg_strs[i])), i - 9,
+     (14 - (int)strlen(dmg_strs[i])), i - 9,
      dmg_strs[i], 0, 255, 0, results + i);
   }
 

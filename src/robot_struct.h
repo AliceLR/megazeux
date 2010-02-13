@@ -41,7 +41,7 @@ struct scroll
 
   // Pointer to scroll's message
   char *mesg;
-  int mesg_size;
+  size_t mesg_size;
 
   char used;
 };

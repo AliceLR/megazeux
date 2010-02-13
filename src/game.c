@@ -1389,7 +1389,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
       write_string(tmp_str, 1, 24, timer_color, 0);
 
       // Border with spaces
-      draw_char(' ', edge_color, strlen(tmp_str) + 1, 24);
+      draw_char(' ', edge_color, (Uint32)strlen(tmp_str) + 1, 24);
       draw_char(' ', edge_color, 0, 24);
     }
 

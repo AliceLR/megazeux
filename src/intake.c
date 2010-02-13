@@ -67,14 +67,14 @@ int intake(struct world *mzx_world, char *string, int max_len,
  int x, int y, char color, int exit_type, int filter_type,
  int *return_x_pos, bool robo_intk, char *macro)
 {
-  int currx, key, curr_len;
-  int macro_position = -1;
+  int currx, curr_len, macro_position = -1;
   int done = 0, place = 0;
   char cur_char = 0;
   char temp_char;
   int in_macro;
   int use_mask = mzx_world->conf.mask_midchars;
   int mouse_press;
+  int key;
 
   if(macro != NULL)
     macro_position = 0;
@@ -85,7 +85,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
   else
     cursor_solid();
   // Put cursor at the end of the string...
-  currx = curr_len = strlen(string);
+  currx = curr_len = (int)strlen(string);
 
   // ...unless return_x_pos says not to.
   if((return_x_pos) && (*return_x_pos < currx))

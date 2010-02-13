@@ -287,7 +287,7 @@ static bool gl2_set_video_mode(struct graphics_data *graphics,
     if(!initialized)
     {
       const char *version;
-      float version_float;
+      double version_float;
 
       version = (const char *)gl2.glGetString(GL_VERSION);
       if(!version)

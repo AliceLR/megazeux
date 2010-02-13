@@ -543,7 +543,7 @@ void save_robot(struct robot *cur_robot, FILE *fp, int savegame)
 
 void save_scroll(struct scroll *cur_scroll, FILE *fp, int savegame)
 {
-  int scroll_size = cur_scroll->mesg_size;
+  int scroll_size = (int)cur_scroll->mesg_size;
 
   fputw(cur_scroll->num_lines, fp);
   fputw(0, fp);
@@ -687,7 +687,7 @@ void reallocate_robot(struct robot *robot, int size)
 
 #endif /* CONFIG_DEBYTECODE */
 
-void reallocate_scroll(struct scroll *scroll, int size)
+void reallocate_scroll(struct scroll *scroll, size_t size)
 {
   scroll->mesg = crealloc(scroll->mesg, size);
   scroll->mesg_size = size;
@@ -2207,7 +2207,7 @@ void robot_box_display(struct world *mzx_world, char *program,
   else
   {
     write_string_ext(cur_robot->robot_name,
-     40 - strlen(cur_robot->robot_name) / 2, 4,
+     40 - (Uint32)strlen(cur_robot->robot_name) / 2, 4,
      mzx_world->scroll_title_color, 1, 0, 0);
   }
 
@@ -2508,8 +2508,8 @@ char *tr_msg_ext(struct world *mzx_world, char *mesg, int id, char *buffer,
   char *src_ptr = mesg;
   char *old_ptr;
 
-  int dest_pos = 0;
-  int name_length;
+  size_t dest_pos = 0;
+  size_t name_length;
   int error;
   int val;
 
@@ -2873,7 +2873,7 @@ void duplicate_robot_direct(struct robot *cur_robot,
   else
     copy_robot->label_list = NULL;
 
-  program_offset = dest_program_location - src_program_location;
+  program_offset = (int)(dest_program_location - src_program_location);
 
   // Copy each individual label pointer over
   for(i = 0; i < num_labels; i++)
@@ -2950,7 +2950,7 @@ void replace_robot(struct board *src_board, struct robot *src_robot,
 __editor_maybe_static void duplicate_scroll_direct(struct scroll *cur_scroll,
  struct scroll *copy_scroll)
 {
-  int mesg_size = cur_scroll->mesg_size;
+  size_t mesg_size = cur_scroll->mesg_size;
 
   // Copy all the contents
   memcpy(copy_scroll, cur_scroll, sizeof(struct scroll));

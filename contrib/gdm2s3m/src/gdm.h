@@ -83,7 +83,7 @@ struct GDM_sample {
 };
 
 /* function prototypes */
-struct GDM_file *load_gdm (uint8_t *stream, uint32_t stream_len);
+struct GDM_file *load_gdm (uint8_t *stream, size_t stream_len);
 void info_gdm (struct GDM_file *gdm);
 void free_gdm (struct GDM_file *gdm);
 

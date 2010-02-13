@@ -116,12 +116,12 @@ void *check_realloc(void *ptr, size_t size, const char *file, int line)
 
 int mzx_res_init(const char *argv0, bool editor)
 {
-  int i, bin_path_len = 0;
+  size_t i, bin_path_len = 0;
   struct stat file_info;
   char *bin_path;
+  ssize_t g_ret;
   char *p_dir;
   int ret = 0;
-  int g_ret;
 
   bin_path = cmalloc(MAX_PATH);
   p_dir = cmalloc(MAX_PATH);
@@ -153,9 +153,8 @@ int mzx_res_init(const char *argv0, bool editor)
    */
   for(i = 0; i < END_RESOURCE_ID_T; i++)
   {
-    int base_name_len = strlen(mzx_res[i].base_name);
+    size_t p_dir_len, base_name_len = strlen(mzx_res[i].base_name);
     char *full_path;
-    int p_dir_len;
 
     if(i == CONFIG_TXT)
       chdir(CONFDIR);
@@ -265,10 +264,10 @@ int Random(int range)
   return (int)value;
 }
 
-__utils_maybe_static int __get_path(const char *file_name, char *dest,
+__utils_maybe_static ssize_t __get_path(const char *file_name, char *dest,
  unsigned int buf_len)
 {
-  int c = strlen(file_name) - 1;
+  ssize_t c = (ssize_t)strlen(file_name) - 1;
 
   // no path, or it's too long to store
   if(c == -1 || c > (int)buf_len)
@@ -288,7 +287,7 @@ __utils_maybe_static int __get_path(const char *file_name, char *dest,
   return c;
 }
 
-int get_path(const char *file_name, char *dest, unsigned int buf_len)
+ssize_t get_path(const char *file_name, char *dest, unsigned int buf_len)
 {
   return __get_path(file_name, dest, buf_len);
 }

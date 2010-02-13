@@ -28,6 +28,10 @@
 
 __M_BEGIN_DECLS
 
+#ifndef _MSC_VER
+#include <unistd.h>
+#endif
+
 #define MIN(a, b) (((a) < (b)) ? (a) : (b))
 #define MAX(a, b) (((a) > (b)) ? (a) : (b))
 
@@ -70,9 +74,9 @@ CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
 CORE_LIBSPEC long ftell_and_rewind(FILE *f);
 int Random(int range);
 
-CORE_LIBSPEC int get_path(const char *file_name, char *dest, unsigned int buf_len);
+CORE_LIBSPEC ssize_t get_path(const char *file_name, char *dest, unsigned int buf_len);
 #ifdef CONFIG_UTILS
-int __get_path(const char *file_name, char *dest, unsigned int buf_len);
+ssize_t __get_path(const char *file_name, char *dest, unsigned int buf_len);
 #endif
 
 struct dso_syms_map

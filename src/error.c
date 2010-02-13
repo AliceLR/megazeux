@@ -75,10 +75,10 @@ int error(const char *string, unsigned int type, unsigned int options,
 
   draw_window_box(1, 10, 78, 14, 76, 64, 72, 1, 1);
   // Add title and error name
-  x = 40 - strlen(type_name)/2;
+  x = 40 - (int)strlen(type_name)/2;
   write_string(type_name, x, 10, 78, 0);
 
-  write_string(string, 40 - (strlen(string) / 2), 11, 79, 0);
+  write_string(string, 40 - ((Uint32)strlen(string) / 2), 11, 79, 0);
 
   // Add options
   write_string("Press", 4, 13, 78, 0);
@@ -113,7 +113,7 @@ int error(const char *string, unsigned int type, unsigned int options,
   {
     write_string(" Debug code:0000h ", 30, 14, 64, 0);
     sprintf(temp, "%x", code);
-    write_string(temp, 46 - strlen(temp), 14, 64, 0);
+    write_string(temp, 46 - (Uint32)strlen(temp), 14, 64, 0);
   }
 
   update_screen();

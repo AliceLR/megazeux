@@ -125,7 +125,7 @@ void fputd(int src, FILE *fp)
 static int get_pw_xor_code(char *password, int pro_method)
 {
   int work = 85; // Start with 85... (01010101)
-  int i;
+  size_t i;
   // Clear pw after first null
 
   for(i = strlen(password); i < 16; i++)
@@ -292,7 +292,7 @@ static void decrypt(const char *file_name)
   // Skip titles
   src_ptr += (25 * num_boards);
   // Synchronize source and dest positions
-  fseek(dest, src_ptr - file_buffer - 15, SEEK_SET);
+  fseek(dest, (long)(src_ptr - file_buffer - 15), SEEK_SET);
 
   // Offset boards
   for(i = 0; i < num_boards; i++)
@@ -479,7 +479,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
 
     {
       size_t len = strlen(mzx_world->real_mod_playing);
-      fputw(len, fp);
+      fputw((int)len, fp);
       if(len)
         fwrite(mzx_world->real_mod_playing, len, 1, fp);
     }
@@ -582,7 +582,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     // Write input file name and if open, position
     {
       size_t len = strlen(mzx_world->input_file_name);
-      fputw(len, fp);
+      fputw((int)len, fp);
       if(len)
         fwrite(mzx_world->input_file_name, len, 1, fp);
     }
@@ -599,7 +599,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     // Write output file name and if open, position
     {
       size_t len = strlen(mzx_world->output_file_name);
-      fputw(len, fp);
+      fputw((int)len, fp);
       if(len)
         fwrite(mzx_world->output_file_name, len, 1, fp);
     }
@@ -647,7 +647,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
   if(mzx_world->custom_sfx_on == 1)
   {
     int offset = 0;
-    int sfx_len;
+    size_t sfx_len;
     int length_slot_pos, next_pos, total_len;
     fputc(0, fp);
     length_slot_pos = ftell(fp);
@@ -655,7 +655,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     for(i = 0; i < NUM_SFX; i++, offset += 69)
     {
       sfx_len = strlen(mzx_world->custom_sfx + offset);
-      fputc(sfx_len, fp);
+      fputc((int)sfx_len, fp);
       fwrite(mzx_world->custom_sfx + offset, sfx_len, 1, fp);
     }
     // Get size of the block
@@ -1094,7 +1094,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
   unsigned char r, g, b;
   struct board *cur_board;
   char *config_file_name;
-  int file_name_len = strlen(file) - 4;
+  size_t file_name_len = strlen(file) - 4;
   struct stat file_info;
   char *file_path;
   char *current_dir;
@@ -1800,7 +1800,7 @@ void default_scroll_values(struct world *mzx_world)
 // FIXME: This function should probably die. It's unsafe.
 void add_ext(char *src, const char *ext)
 {
-  int len = strlen(src);
+  size_t len = strlen(src);
 
   if((len < 4) || ((src[len - 4] != '.') && (src[len - 3] != '.')
    && (src[len - 2] != '.')))

@@ -77,8 +77,8 @@ struct counter
 
 struct string
 {
-  unsigned int length;
-  unsigned int allocated_length;
+  size_t length;
+  size_t allocated_length;
   char *value;
 
   char name[1];

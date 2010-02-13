@@ -836,12 +836,12 @@ static void draw_menu_status(int overlay_edit, int line, int draw_mode,
   int display_next_pos;
 
   write_string(draw_names[draw_mode], 42, line, EC_MODE_STR, 0);
-  display_next_pos = strlen(draw_names[draw_mode]) + 42;
+  display_next_pos = (int)strlen(draw_names[draw_mode]) + 42;
 
   if(draw_mode > 1)
   {
     write_string(drawmode_help[draw_mode - 2],
-     display_next_pos, line, EC_MODE_HELP, 0);
+     (Uint32)display_next_pos, line, EC_MODE_HELP, 0);
   }
   else
   {
@@ -899,7 +899,7 @@ static void draw_menu_status(int overlay_edit, int line, int draw_mode,
     {
       write_string(thing_names[current_id], display_next_pos, line,
        EC_CURR_THING, 0);
-      display_next_pos += strlen(thing_names[current_id]);
+      display_next_pos += (int)strlen(thing_names[current_id]);
       draw_char('p', EC_CURR_PARAM, display_next_pos + 1, line);
       write_hex_byte(current_param, EC_CURR_PARAM,
       display_next_pos + 2, line);
@@ -934,7 +934,7 @@ static void draw_menu_normal(int overlay_edit, int draw_mode, int current_menu,
       // Write it
       write_string(menu_names[i], x, 20, write_color, 0);
       // Add to x
-      x += strlen(menu_names[i]);
+      x += (int)strlen(menu_names[i]);
     }
 
     write_string(menu_lines[current_menu][0], 1, 22, EC_OPTION, 1);

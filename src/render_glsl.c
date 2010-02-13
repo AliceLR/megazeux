@@ -489,7 +489,7 @@ static bool glsl_set_video_mode(struct graphics_data *graphics,
     if(!initialized)
     {
       const char *version;
-      float version_float;
+      double version_float;
 
       version = (const char *)glsl.glGetString(GL_VERSION);
       if(!version)

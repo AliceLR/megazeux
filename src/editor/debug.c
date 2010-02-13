@@ -66,7 +66,7 @@ static void copy_substring_escaped(struct string *str, char *buf,
 
 static void unescape_string(char *buf)
 {
-  unsigned int i, j, len = strlen(buf);
+  size_t i, j, len = strlen(buf);
 
   for(i = 0, j = 0; j < len + 1; i++, j++)
   {
@@ -97,7 +97,7 @@ void __debug_counters(struct world *mzx_world)
   int num_vars = mzx_world->num_counters + mzx_world->num_strings + 1;
   char **var_list = ccalloc(num_vars, sizeof(char *));
   int dialog_result;
-  int cp_len;
+  size_t cp_len;
   int selected = 0;
   int i, i2;
   struct dialog di;

@@ -24,7 +24,7 @@
 #include "error.h"
 #include "utility.h"
 
-struct GDM_file *load_gdm (uint8_t *stream, uint32_t stream_len)
+struct GDM_file *load_gdm (uint8_t *stream, size_t stream_len)
 {
   uint8_t *backup = stream, *trace, *trace2, magic[4];
   struct GDM_header *header;

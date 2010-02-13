@@ -141,12 +141,12 @@ static void str_lower_case(char *str, char *dest)
 static void insert_string(char *dest, char *string, int *position)
 {
   int n_pos = *position;
-  int remainder = strlen(dest + n_pos) + 1;
-  int insert_length = strlen(string);
+  size_t remainder = strlen(dest + n_pos) + 1;
+  size_t insert_length = strlen(string);
 
   memmove(dest + n_pos + insert_length, dest + n_pos, remainder);
   memcpy(dest + n_pos, string, insert_length);
-  *position = n_pos + insert_length;
+  *position = n_pos + (int)insert_length;
 }
 
 static void add_blank_line(struct robot_state *rstate, int relation)
@@ -704,7 +704,7 @@ static int update_current_line(struct robot_state *rstate)
   int line_text_length;
 
   command_buffer[240] = 0;
-  line_text_length = strlen(command_buffer);
+  line_text_length = (int)strlen(command_buffer);
   trim_whitespace(command_buffer, line_text_length);
 
   bytecode_length = legacy_assemble_line(command_buffer, bytecode_buffer,
@@ -906,7 +906,7 @@ static void output_macro(struct robot_state *rstate,
   char *old_buffer_space = rstate->command_buffer;
   struct macro_variable_reference *current_reference;
   int i, i2;
-  int len;
+  size_t len;
 
   if(rstate->macro_recurse_level == MAX_MACRO_RECURSION ||
    rstate->macro_repeat_level == MAX_MACRO_REPEAT)
@@ -1228,9 +1228,10 @@ static int block_menu(struct world *mzx_world)
 static void copy_buffer_to_selection(void)
 {
   HANDLE global_memory;
-  int i, line_length;
+  size_t line_length;
   char *dest_data;
   char *dest_ptr;
+  int i;
 
   // Room for \r's
   copy_buffer_total_length += copy_buffer_lines - 1;
@@ -1287,7 +1288,7 @@ static bool copy_selection_to_buffer(struct robot_state *rstate)
 
     while(*src_ptr)
     {
-      line_length = strcspn(src_ptr, "\r");
+      line_length = (int)strcspn(src_ptr, "\r");
       memcpy(line_buffer, src_ptr, line_length);
       line_buffer[line_length] = 0;
       add_line(rstate, -1);
@@ -1803,7 +1804,7 @@ static void import_block(struct world *mzx_world, struct robot_state *rstate)
   rstate->command_buffer = line_buffer;
 
 #ifndef CONFIG_DEBYTECODE
-  ext_pos = strlen(import_name) - 3;
+  ext_pos = (ssize_t)strlen(import_name) - 3;
 
   if(ext_pos >= 1 && !strcasecmp(import_name + ext_pos, ".BC"))
   {
@@ -2034,8 +2035,8 @@ static void replace_current_line(struct robot_state *rstate,
 {
   struct robot_line *current_rline = rstate->current_rline;
   char new_buffer[COMMAND_BUFFER_LEN];
-  int replace_size = strlen(replace);
-  int str_size = strlen(str);
+  size_t replace_size = strlen(replace);
+  size_t str_size = strlen(str);
 
   strncpy(new_buffer, current_rline->line_text, COMMAND_BUFFER_LEN - 1);
   new_buffer[COMMAND_BUFFER_LEN - 1] = '\0';
@@ -2128,7 +2129,7 @@ static int robo_ed_find_string(struct robot_state *rstate, char *str, int wrap,
 
   if(pos)
   {
-    *position = pos - use_buffer;
+    *position = (int)(pos - use_buffer);
     return current_line;
   }
 
@@ -2206,8 +2207,8 @@ static void find_replace_action(struct robot_state *rstate)
     {
       int l_pos;
       int l_num;
-      int r_len = strlen(replace_string);
-      int s_len = strlen(search_string);
+      int r_len = (int)strlen(replace_string);
+      int s_len = (int)strlen(search_string);
       int start_line = rstate->current_line;
       int start_pos = rstate->current_x;
       int last_line = start_line;
@@ -2316,7 +2317,7 @@ static void execute_macro(struct robot_state *rstate,
   int start_x, start_y;
   struct dialog di;
   int dialog_value;
-  int label_size = strlen(macro_src->label) + 1;
+  int label_size = (int)strlen(macro_src->label) + 1;
   int subwidths[3];
 
   // No variables? Just print bare lines...
@@ -2330,10 +2331,10 @@ static void execute_macro(struct robot_state *rstate,
 
   for(i = 0; i < num_types; i++, current_type++)
   {
-    largest = strlen(current_type->variables[0].name);
+    largest = (int)strlen(current_type->variables[0].name);
     for(i2 = 1; i2 < current_type->num_variables; i2++)
     {
-      current_len = strlen(current_type->variables[i2].name);
+      current_len = (int)strlen(current_type->variables[i2].name);
       if(current_len > largest)
         largest = current_len;
     }
@@ -2483,7 +2484,7 @@ static void execute_macro(struct robot_state *rstate,
        dialog_index++)
       {
         current_len = nominal_column_subwidths[i] -
-         strlen(current_variable->name);
+         (int)strlen(current_variable->name);
         x += current_len;
 
         switch(current_type->type)
@@ -2758,7 +2759,7 @@ static void display_robot_line(struct robot_state *rstate,
   char temp_buffer[COMMAND_BUFFER_LEN];
   char *line_pos = current_rline->line_text;
   int chars_offset = 0;
-  int arg_length;
+  size_t arg_length;
   int use_mask;
 
   if(current_rline->line_text[0] != 0)
@@ -2804,7 +2805,7 @@ static void display_robot_line(struct robot_state *rstate,
       write_string(temp_buffer, x, y, current_color, 0);
 
       line_pos += arg_length;
-      x += arg_length;
+      x += (int)arg_length;
 
       for(i = 0; i < current_rline->num_args; i++)
       {
@@ -2878,7 +2879,8 @@ static void display_robot_line(struct robot_state *rstate,
               write_string_mask("'", x, y, current_color, 0);
               write_string_ext(temp_buffer + 1, x + 1, y, current_color,
                0, chars_offset, 16);
-              write_string_mask("'", x + arg_length - 2, y, current_color, 0);
+              write_string_mask("'", x + (int)arg_length - 2, y,
+               current_color, 0);
             }
             else
             {
@@ -2891,8 +2893,8 @@ static void display_robot_line(struct robot_state *rstate,
             break;
         }
 
-        line_pos += arg_length;
-        x += arg_length;
+        line_pos += (int)arg_length;
+        x += (int)arg_length;
       }
     }
   }
@@ -3303,7 +3305,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
     {
       current_rline = cmalloc(sizeof(struct robot_line));
 
-      line_bytecode_length = next - current_robot_pos;
+      line_bytecode_length = (int)(next - current_robot_pos);
       current_rline->line_text_length = line_text_length;
       current_rline->line_bytecode_length = line_bytecode_length;
       current_rline->line_text = cmalloc(line_text_length + 1);
@@ -3624,7 +3626,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
             }
             else
             {
-              rstate.current_x = strlen(command_buffer);
+              rstate.current_x = (int)strlen(command_buffer);
               strncat(command_buffer, line_buffer,
                241 - strlen(command_buffer));
             }

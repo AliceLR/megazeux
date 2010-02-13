@@ -258,12 +258,6 @@
       <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
     </ClCompile>
-    <ClCompile Include="..\..\contrib\libmodplug\src\tables.cpp">
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">$(IntDir)libmodplug\</ObjectFileName>
-      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
-      <ObjectFileName Condition="'$(Configuration)|$(Platform)'=='Release|X64'">$(IntDir)libmodplug\</ObjectFileName>
-      <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|X64'">CompileAsCpp</CompileAs>
-    </ClCompile>
     <ClCompile Include="..\..\src\audio.c" />
     <ClCompile Include="..\..\src\audio_modplug.cpp">
       <CompileAs Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">CompileAsCpp</CompileAs>
@@ -324,6 +318,7 @@
     <ClInclude Include="..\..\contrib\libmodplug\src\libmodplug\sndfile.h" />
     <ClInclude Include="..\..\contrib\libmodplug\src\libmodplug\stdafx.h" />
     <ClInclude Include="..\..\contrib\libmodplug\src\modplug.h" />
+    <ClInclude Include="..\..\contrib\libmodplug\src\tables.h" />
     <ClInclude Include="..\..\src\audio.h" />
     <ClInclude Include="..\..\src\audio_modplug.h" />
     <ClInclude Include="..\..\src\board.h" />
