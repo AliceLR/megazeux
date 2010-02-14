@@ -28,7 +28,7 @@
 
 __M_BEGIN_DECLS
 
-#ifndef _MSC_VER
+#if !defined(_MSC_VER) && !defined(__amigaos__)
 #include <unistd.h>
 #endif
 
