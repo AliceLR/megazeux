@@ -5,5 +5,5 @@
 # NOTE: TARGET must NOT be kept in quotes, and spaces CANNOT be used.
 #
 
-VERSION="SVN"
-TARGET=mzxsvn
+VERSION="Git"
+TARGET=mzxgit

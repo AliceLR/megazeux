@@ -21,5 +21,5 @@ This will create a "boot.dol" file which you should know how to launch.
 
 PACKAGING
 
-Use "make archive" to build a build/dist/wii/mzxsvn-wii.zip file for
+Use "make archive" to build a build/dist/wii/mzxgit-wii.zip file for
 distribution.

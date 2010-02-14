@@ -165,7 +165,8 @@ source: build/${TARGET}src
 build/${TARGET}src:
 	${RM} -r build/${TARGET}
 	${MKDIR} -p build/dist/source
-	@svn export . build/${TARGET}
+	@git checkout-index -a --prefix build/${TARGET}/
+	${RM} -r build/${TARGET}/scripts
 	@cd build/${TARGET} && make distclean
 	@tar -C build -jcf build/dist/source/${TARGET}src.tar.bz2 ${TARGET}
 

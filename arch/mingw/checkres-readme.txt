@@ -64,6 +64,6 @@ checkres conclusion:
 checkres is a product of ajs and Revvy, and the source for those not win32
 inclined is available at:
 
-http://megazeux.svn.sourceforge.net/viewvc/*checkout*/megazeux/trunk/src/utils/checkres.c
+http://github.com/ajs1984/megazeux/raw/master/src/utils/checkres.c
 
 Copyright (c) 2007 Josh Matthews (mrlachatte@gmail.com)

@@ -1,0 +1,10 @@
+These scripts probably only work for me, but you might find them useful
+to adapt. They basically allow me to use a variety of cross compilers to build
+MZX for multiple non-Linux platforms, on Linux. This greatly speeds up the
+building of new release binaries.
+
+The deps/ folder contains some binaries for darwin, windows, nds and wii which
+aren't included in the MegaZeux tree for various licensing reasons. They're
+necessary to build binaries for these platforms.
+
+--ajs.

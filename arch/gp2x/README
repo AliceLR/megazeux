@@ -51,7 +51,7 @@ You may now type `make' as normal to contruct a suitable binary for the GP2X.
 
 PACKAGING THE BUILD
 
-You can then use "make archive" to build a build/dist/gp2x/mzxsvn-gp2x.zip
+You can then use "make archive" to build a build/dist/gp2x/mzxgit-gp2x.zip
 file for distribution.
 
 --ajs.

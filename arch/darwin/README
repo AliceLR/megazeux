@@ -49,7 +49,7 @@ enough to install the UNIX tools.
 make ARCH=i686 package
 make distclean
 
-Will build the i686 binary, and put it in the root as "mzxsvn.i686". It will
+Will build the i686 binary, and put it in the root as "mzxgit.i686". It will
 also clean the source tree, which is VERY IMPORTANT.
 
 BUILDING (ppc)
@@ -60,7 +60,7 @@ need to do this.
 make ARCH=ppc package
 make distclean
 
-Will build the ppc binary, and put it in the root as "mzxsvn.ppc". It will
+Will build the ppc binary, and put it in the root as "mzxgit.ppc". It will
 also clean the source tree, which is VERY IMPORTANT.
 
 BUILDING AMD64/PPC64

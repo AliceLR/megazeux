@@ -9,7 +9,7 @@ You need to extract the following additional libraries here:
 If you can't find the require versions online, or can't build them, you
 can use the prebuilts available from:
 
-http://megazeux.svn.sourceforge.net/viewvc/megazeux/scripts/deps/nds.zip
+scripts/deps/nds.zip
 
 You need to build or install the devkitARM toolchain (r26).
 
@@ -26,11 +26,11 @@ For the moment, you need to build with:
 
 make package
 
-This will emit a "mzxsvn.nds" which you should know how to launch.
+This will emit a "mzxgit.nds" which you should know how to launch.
 
 PACKAGING THE BUILD
 
 You can then use the usual "make archive" to build a
-build/dist/nds/mzxsvn-nds.zip file for distribution.
+build/dist/nds/mzxgit-nds.zip file for distribution.
 
 --ajs
