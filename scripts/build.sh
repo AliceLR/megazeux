@@ -19,7 +19,7 @@ fi
 . "$BASEDIR/$PLATFORM.sh"
 
 if [ "$1" = "" ]; then
-	pushd $HOME/megazeux/trunk >/dev/null
+	pushd $HOME/megazeux >/dev/null
 else
 	pushd $1 >/dev/null
 	shift

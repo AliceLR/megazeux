@@ -14,22 +14,22 @@ shift
 SVNBASE=$HOME/megazeux
 
 if [ "$2" = "" ]; then
-	MZXBASE=$HOME/megazeux/trunk
+	MZXBASE=$HOME/megazeux
 	OUTDIR=$1/trunk-$DATE-$REVISION
 else
 	# If there's no branch by the user's name, assume they want to
 	# override the output directory but continue to build trunk/.
 	#
-	if [ -d $HOME/megazeux/branch/$2 ]; then
-		MZXBASE=$HOME/megazeux/branch/$2
-	else
-		MZXBASE=$HOME/megazeux/trunk
-	fi
+	#if [ -d $HOME/megazeux/branch/$2 ]; then
+	#	MZXBASE=$HOME/megazeux/branch/$2
+	#else
+		MZXBASE=$HOME/megazeux
+	#fi
 	OUTDIR=$1/$2-$DATE-$REVISION
 fi
 
 if [ ! -d $MZXBASE ]; then
-	echo "Could not find specified SVN basedir, aborting."
+	echo "Could not find specified Git basedir, aborting."
 	exit 1
 fi
 
