@@ -38,7 +38,7 @@ mkdir -p $OUTDIR/source
 
 pushd $MZXBASE >/dev/null
 
-git reset --hard $REVISION
+git reset --hard $REVISION >/dev/null 2>&1
 if [ "$?" != "0" ]; then
 	echo "git reset --hard failed; aborting."
 	exit 1

@@ -1,6 +1,7 @@
 arch/mingw/pefix.d
 arch/mingw/pefix.exe
 arch/mingw/pefix.o
+build
 contrib/gdm2s3m/src/.build/
 contrib/icons/.build/
 contrib/libmodplug/src/.build/
