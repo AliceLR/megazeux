@@ -1,4 +1,4 @@
-SVN
+Git
 
 USERS
 
@@ -16,6 +16,8 @@ USERS
 + Fixed negative sprN_cheight et al from crashing (Exophase).
 
 DEVELOPERS
+
++ Source tarballs are now generated in XZ (LZMA2) format.
 
 December 29, 2009 - MZX 2.83
 

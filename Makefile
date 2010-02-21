@@ -168,7 +168,7 @@ build/${TARGET}src:
 	@git checkout-index -a --prefix build/${TARGET}/
 	${RM} -r build/${TARGET}/scripts
 	@cd build/${TARGET} && make distclean
-	@tar -C build -jcf build/dist/source/${TARGET}src.tar.bz2 ${TARGET}
+	@tar -C build -Jcf build/dist/source/${TARGET}src.tar.xz ${TARGET}
 
 #
 # The SUPPRESS_BUILD hack is required to allow the placebo "dist"
