@@ -47,7 +47,7 @@ fi
 rm -rf build
 make source >/dev/null 2>&1
 
-SRCPKG=$MZXBASE/build/dist/source/*.tar.bz2
+SRCPKG=$MZXBASE/build/dist/source/*.tar.xz
 if [ -f "$SRCPKG" ]; then
 	echo "Failed to compile source package; aborting."
 	exit 2
