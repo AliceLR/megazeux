@@ -82,7 +82,7 @@ export CONCURRENCY_LEVEL=3
 mkdir ubuntu
 
 for CHROOT in ubuntu-i386 ubuntu-amd64; do
-	tar -jxf $SRCPKG
+	tar -xf $SRCPKG
 	MZX=`echo mzx* | sed 's,^mzx,megazeux-,' | sed 's,-2,-2.,'`
 	mv mzx* $MZX
 
