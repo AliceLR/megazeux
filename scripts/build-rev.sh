@@ -57,7 +57,7 @@ fi
 mkdir /tmp/megazeux
 
 for PLATFORM in amiga gp2x nds psp wii windows-x86 windows-x64; do
-	tar -C/tmp/megazeux -jxf $SRCPKG
+	tar -C/tmp/megazeux -xf $SRCPKG
 
 	pushd /tmp/megazeux/mzx* >/dev/null
 	$SVNBASE/scripts/build.sh $PLATFORM $PWD >/dev/null 2>&1
