@@ -167,6 +167,7 @@ build/${TARGET}src:
 	${MKDIR} -p build/dist/source
 	@git checkout-index -a --prefix build/${TARGET}/
 	${RM} -r build/${TARGET}/scripts
+	${RM} build/${TARGET}/.gitignore build/${TARGET}/.gitattributes
 	@cd build/${TARGET} && make distclean
 	@tar -C build -Jcf build/dist/source/${TARGET}src.tar.xz ${TARGET}
 
