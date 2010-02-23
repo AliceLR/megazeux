@@ -57,7 +57,7 @@ fi
 mkdir /tmp/megazeux
 
 for PLATFORM in amiga gp2x nds psp wii windows-x86 windows-x64; do
-	tar -C/tmp/megazeux -jxf $SRCPKG
+	tar -C/tmp/megazeux -xf $SRCPKG
 
 	pushd /tmp/megazeux/mzx* >/dev/null
 	$SVNBASE/scripts/build.sh $PLATFORM $PWD >/dev/null 2>&1
@@ -82,7 +82,7 @@ export CONCURRENCY_LEVEL=3
 mkdir ubuntu
 
 for CHROOT in ubuntu-i386 ubuntu-amd64; do
-	tar -jxf $SRCPKG
+	tar -xf $SRCPKG
 	MZX=`echo mzx* | sed 's,^mzx,megazeux-,' | sed 's,-2,-2.,'`
 	mv mzx* $MZX
 
