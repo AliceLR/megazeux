@@ -27,8 +27,8 @@
 #include "extmem.h"
 #include "util.h"
 
-/* 12 (w/o saved NULL terminator) */
-#define LEGACY_MOD_FILENAME_MAX 12
+/* 13 (not NULL terminated in format) */
+#define LEGACY_MOD_FILENAME_MAX 13
 
 /* 80 (w/o saved NULL terminator) */
 #define LEGACY_BOTTOM_MESG_MAX  80
@@ -167,7 +167,7 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
 
   if(version < 0x0253)
   {
-    fread(cur_board->mod_playing, LEGACY_MOD_FILENAME_MAX + 1, 1, fp);
+    fread(cur_board->mod_playing, LEGACY_MOD_FILENAME_MAX, 1, fp);
     cur_board->mod_playing[LEGACY_MOD_FILENAME_MAX] = 0;
   }
   else
