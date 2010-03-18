@@ -629,7 +629,7 @@ static void thing_menu(struct world *mzx_world, int menu_number,
    list_menu(thing_menus[menu_number], 20, tmenu_titles[menu_number], 0,
    tmenu_num_choices[menu_number], 27, 0);
 
-  if(chosen >= 0)
+  if(chosen >= 0 && old_id != PLAYER)
   {
     id = tmenu_thing_ids[menu_number][chosen];
 

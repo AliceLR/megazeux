@@ -14,6 +14,10 @@ USERS
   as IF "$str#('$str2.length'-4)" = "blah" THEN "label" will now work
   correctly.
 + Fixed negative sprN_cheight et al from crashing (Exophase).
++ Objects can no longer be placed over the player, including robots, which
+  will no longer enter the editor if placed on top of the player object.
++ Fixed a bug where LOAD_ROBOT would not properly parse lines of imported
+  code that had leading whitespace. (Frobozz)
 
 DEVELOPERS
 

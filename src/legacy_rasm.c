@@ -1815,7 +1815,14 @@ int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
   current_command.param_types = command_params;
 
   if(cpos[0])
+  {
     rasm_skip_whitespace(cpos + 1, &first_non_space);
+    if(cpos[0] == ' ')
+    {
+      cpos = first_non_space;
+      rasm_skip_whitespace(cpos + 1, &first_non_space);
+    }
+  }
 
   if(!cpos[0] || (cpos[0] == '\n'))
   {
