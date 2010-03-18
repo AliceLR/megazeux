@@ -619,17 +619,18 @@ static void thing_menu(struct world *mzx_world, int menu_number,
  struct robot *copy_robot, struct scroll *copy_scroll,
  struct sensor *copy_sensor, int x, int y)
 {
+  struct board *src_board = mzx_world->current_board;
+  int color, param, chosen, old_id = *new_id;
   enum thing id;
-  int color, param;
-  int chosen;
-  int old_id = *new_id;
 
   cursor_off();
   chosen =
    list_menu(thing_menus[menu_number], 20, tmenu_titles[menu_number], 0,
    tmenu_num_choices[menu_number], 27, 0);
 
-  if(chosen >= 0 && old_id != PLAYER)
+  id = (enum thing)src_board->level_id[x + (y * src_board->board_width)];
+
+  if(chosen >= 0 && id != PLAYER)
   {
     id = tmenu_thing_ids[menu_number][chosen];
 
