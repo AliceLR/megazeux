@@ -3159,6 +3159,10 @@ static char *get_token(char *src, struct token *token)
         token_type = TOKEN_TYPE_NUMERIC_LITERAL_BASE10;
       }
 
+      if (token->arg_value.numeric_literal < -32768 ||
+       token->arg_value.numeric_literal > 32767)
+        token_type |= TOKEN_TYPE_INVALID;
+
       if(next == src)
         token_type |= TOKEN_TYPE_INVALID;
 

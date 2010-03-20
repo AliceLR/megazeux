@@ -13,11 +13,13 @@ USERS
   used a '.' character in a splice parameter expression. Expressions such
   as IF "$str#('$str2.length'-4)" = "blah" THEN "label" will now work
   correctly.
-+ Fixed negative sprN_cheight et al from crashing (Exophase).
-+ Objects can no longer be placed over the player, including robots, which
-  will no longer enter the editor if placed on top of the player object.
++ Fixed negative sprN_cheight et al from crashing. (Exophase)
++ Placement of objects on the player will be blocked with an error dialog
+  like DOS versions, instead of silenting failing after setup. (MZXGiant)
 + Fixed a bug where LOAD_ROBOT would not properly parse lines of imported
-  code that had leading whitespace. (Frobozz)
+  code that had leading whitespace. (MZXGiant)
++ Fixed an integer wrapping bug in debytecode, disallowed numeric literals
+  outside of the bounds of a signed short. (MZXGiant)
 
 DEVELOPERS
 

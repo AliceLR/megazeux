@@ -623,14 +623,19 @@ static void thing_menu(struct world *mzx_world, int menu_number,
   int color, param, chosen, old_id = *new_id;
   enum thing id;
 
+  id = (enum thing)src_board->level_id[x + (y * src_board->board_width)];
+  if(id == PLAYER)
+  {
+    error("Cannot overwrite the player- move it first", 0, 8, 0x0000);
+    return;
+  }
+
   cursor_off();
   chosen =
    list_menu(thing_menus[menu_number], 20, tmenu_titles[menu_number], 0,
    tmenu_num_choices[menu_number], 27, 0);
 
-  id = (enum thing)src_board->level_id[x + (y * src_board->board_width)];
-
-  if(chosen >= 0 && id != PLAYER)
+  if(chosen >= 0)
   {
     id = tmenu_thing_ids[menu_number][chosen];
 
