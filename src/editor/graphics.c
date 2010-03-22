@@ -47,6 +47,7 @@ void load_editor_palette(void)
 {
   memcpy(graphics.palette, graphics.editor_backup_palette,
    sizeof(struct rgb_color) * SMZX_PAL_SIZE);
+  set_gui_palette();
 }
 
 void save_palette(char *fname)
