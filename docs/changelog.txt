@@ -22,6 +22,9 @@ USERS
   outside of the bounds of a signed short. (MZXGiant)
 + Fixed a bug that would corrupt the UI palette if "set color" was run
   against a color index over 15. (MZXGiant)
++ If either board dimension is less than the editor viewport, the character
+  and colors used to indicate space outside of the board are taken from
+  protected sets. In game, they are taken from the game's sets.
 
 DEVELOPERS
 

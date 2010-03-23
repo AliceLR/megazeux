@@ -106,7 +106,7 @@ static void synchronize_board_values(struct world *mzx_world,
   *level_color = (*src_board)->level_color;
   *overlay = (*src_board)->overlay;
   *overlay_color = (*src_board)->overlay_color;
-  clear_screen_no_update(177, 1);
+  clear_screen_no_update();
 }
 
 static void fix_scroll(int *cursor_board_x, int *cursor_board_y,
@@ -1119,7 +1119,7 @@ static void __edit_world(struct world *mzx_world)
 
     saved_overlay_mode = src_board->overlay_mode;
 
-    clear_screen_no_update(177, 1);
+    clear_screen_no_update();
 
     if(!overlay_edit)
     {
@@ -1416,7 +1416,7 @@ static void __edit_world(struct world *mzx_world)
         if((cursor_board_x - scroll_x) < (debug_x + 25))
         {
           debug_x = 60;
-          clear_screen_no_update(177, 1);
+          clear_screen_no_update();
         }
 
         break;
@@ -1455,7 +1455,7 @@ static void __edit_world(struct world *mzx_world)
         if((cursor_board_x - scroll_x) > (debug_x - 5))
         {
           debug_x = 0;
-          clear_screen_no_update(177, 1);
+          clear_screen_no_update();
         }
 
         break;
@@ -1884,7 +1884,7 @@ static void __edit_world(struct world *mzx_world)
         if((cursor_board_x - scroll_x) < (debug_x + 25))
         {
           debug_x = 60;
-          clear_screen_no_update(177, 1);
+          clear_screen_no_update();
         }
 
         break;
@@ -1906,7 +1906,7 @@ static void __edit_world(struct world *mzx_world)
         if((cursor_board_x - scroll_x) > (debug_x - 5))
         {
           debug_x = 0;
-          clear_screen_no_update(177, 1);
+          clear_screen_no_update();
         }
 
         break;
@@ -2713,7 +2713,7 @@ static void __edit_world(struct world *mzx_world)
             if((cursor_board_x - scroll_x) < (debug_x + 25))
             {
               debug_x = 60;
-              clear_screen_no_update(177, 1);
+              clear_screen_no_update();
             }
           }
           else
@@ -2734,7 +2734,7 @@ static void __edit_world(struct world *mzx_world)
               if((cursor_board_x - scroll_x) > (debug_x - 5))
               {
                 debug_x = 0;
-                clear_screen_no_update(177, 1);
+                clear_screen_no_update();
               }
             }
           }
@@ -3220,7 +3220,7 @@ static void __edit_world(struct world *mzx_world)
           } while(v_key != IKEY_ESCAPE);
 
           m_show();
-          clear_screen_no_update(177, 1);
+          clear_screen_no_update();
         }
         else
         {
@@ -3616,7 +3616,7 @@ static void __edit_world(struct world *mzx_world)
           if(edit_screen_height == EDIT_SCREEN_NORMAL)
           {
             edit_screen_height = EDIT_SCREEN_EXTENDED;
-            clear_screen_no_update(177, 1);
+            clear_screen_no_update();
 
             if((scroll_y + 25) > board_height)
               scroll_y = board_height - 25;
@@ -3673,7 +3673,7 @@ static void __edit_world(struct world *mzx_world)
         if((cursor_board_x - scroll_x) > (debug_x - 5))
         {
           debug_x = 0;
-          clear_screen_no_update(177, 1);
+          clear_screen_no_update();
         }
 
         modified = 1;
