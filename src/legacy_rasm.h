@@ -59,6 +59,8 @@ struct search_entry_short
 
 CORE_LIBSPEC int get_color(char *cmd_line);
 
+extern const char special_first_char[256];
+
 #ifdef CONFIG_DEBYTECODE
 
 int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
