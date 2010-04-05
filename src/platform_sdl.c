@@ -19,6 +19,12 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include "compat.h"
+
+#ifdef CONFIG_PSP
+#define _COMPILING_NEWLIB
+#endif
+
 #include "platform.h"
 #include "util.h"
 
@@ -81,8 +87,6 @@ void platform_quit(void)
 }
 
 #ifdef CONFIG_PSP
-#define _COMPILING_NEWLIB
-#include <sys/unistd.h>
 int _isatty(int fd)
 {
   return isatty(fd);
