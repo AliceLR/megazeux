@@ -149,6 +149,9 @@ static void gl1_resize_screen(struct graphics_data *graphics,
    v_width, v_height);
   gl_check_error();
 
+  gl1.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
+  gl1.glEnableClientState(GL_VERTEX_ARRAY);
+
   gl1.glEnable(GL_TEXTURE_2D);
 
   gl1.glGenTextures(1, &texture_number);
@@ -305,9 +308,6 @@ static void gl1_sync_screen(struct graphics_data *graphics)
   gl1.glClear(GL_COLOR_BUFFER_BIT);
   gl_check_error();
 
-  gl1.glEnableClientState(GL_TEXTURE_COORD_ARRAY);
-  gl1.glEnableClientState(GL_VERTEX_ARRAY);
-
   gl1.glTexCoordPointer(2, GL_FLOAT, 0, tex_coord_array);
   gl_check_error();
 
@@ -316,9 +316,6 @@ static void gl1_sync_screen(struct graphics_data *graphics)
 
   gl1.glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
   gl_check_error();
-
-  gl1.glDisableClientState(GL_TEXTURE_COORD_ARRAY);
-  gl1.glDisableClientState(GL_VERTEX_ARRAY);
 
   gl_swap_buffers(graphics);
 }
