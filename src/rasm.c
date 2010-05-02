@@ -21,12 +21,13 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
-#include <ctype.h>
 
 #include "data.h"
 #include "rasm.h"
 #include "fsafeopen.h"
 #include "util.h"
+
+#ifdef CONFIG_DEBYTECODE
 
 #define ARG_TYPE_FRAGMENT_NOT            ARG_TYPE_FRAGMENT | 0
 #define ARG_TYPE_FRAGMENT_ANY            ARG_TYPE_FRAGMENT | 1
@@ -3294,11 +3295,11 @@ struct command_set
   const char *const name;
   int name_length;
   int count;
-  const int *const offsets;
+  const int offsets[16];
 };
 
-#define command_set(name, count, ...)                                  \
-  { name, sizeof(name) - 1, count, (int []){ __VA_ARGS__ } }           \
+#define command_set(name, count, ...) \
+  { name, sizeof(name) - 1, count, { __VA_ARGS__ } }
 
 static const struct command_set sorted_command_list[] =
 {
@@ -3468,7 +3469,7 @@ static const struct command_set sorted_command_list[] =
 static const int num_command_names =
  sizeof(sorted_command_list) / sizeof(struct command_set);
 
-static struct command_set empty_command_set = { "", 0, 0, (int []){ 0 } };
+static struct command_set empty_command_set = { "", 0, 0, { 0 } };
 
 static const struct command_set *find_command_set(const char *name,
  int name_length)
@@ -5666,3 +5667,4 @@ char *legacy_convert_file(char *file_name, int *_disasm_length,
   return NULL;
 }
 
+#endif /* CONFIG_DEBYTECODE */
