@@ -117,7 +117,14 @@ struct addrinfo
 #define getaddrinfo             __getaddrinfo
 #define freeaddrinfo            __freeaddrinfo
 
-static const char *gai_strerror(int errcode)
+#endif
+
+#if (defined(__GNUC__) && defined(__WIN64__)) || defined(__amigaos__)
+
+#if defined(__amigaos__)
+static
+#endif
+const char *gai_strerror(int errcode)
 {
   switch(errcode)
   {
@@ -130,7 +137,7 @@ static const char *gai_strerror(int errcode)
   }
 }
 
-#endif // __amigaos__
+#endif // (__GNUC__ && __WIN64__) || __amigaos__
 
 #if defined(__WIN32__) || defined(__amigaos__)
 

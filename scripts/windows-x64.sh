@@ -3,7 +3,7 @@ platform_enter_hook() {
 
 	BUILD_FLAGS="debuglink"
 	CONFIG_FLAGS="$CONFIG_FLAGS --platform mingw64 \
-	              --prefix $HOME/bin/mingw64/local"
+	              --prefix $HOME/bin/mingw64"
 }
 
 platform_exit_hook() {
