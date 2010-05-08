@@ -288,6 +288,7 @@
     <ClCompile Include="..\..\src\network\sha256.c" />
     <ClCompile Include="..\..\src\platform_sdl.c" />
     <ClCompile Include="..\..\src\pngops.c" />
+    <ClCompile Include="..\..\src\rasm.c" />
     <ClCompile Include="..\..\src\render.c" />
     <ClCompile Include="..\..\src\render_gl.c" />
     <ClCompile Include="..\..\src\render_gl1.c" />
@@ -352,6 +353,7 @@
     <ClInclude Include="..\..\src\platform_endian.h" />
     <ClInclude Include="..\..\src\platform_sdl.h" />
     <ClInclude Include="..\..\src\pngops.h" />
+    <ClInclude Include="..\..\src\rasm.h" />
     <ClInclude Include="..\..\src\render.h" />
     <ClInclude Include="..\..\src\renderers.h" />
     <ClInclude Include="..\..\src\render_gl.h" />

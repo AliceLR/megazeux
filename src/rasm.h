@@ -123,7 +123,7 @@ enum token_basic_string_type
 
 struct special_word
 {
-  const const char *name;
+  const char *const name;
   int instance_type;
   enum arg_type arg_type;
 };
