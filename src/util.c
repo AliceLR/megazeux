@@ -247,9 +247,9 @@ long ftell_and_rewind(FILE *f)
   return size;
 }
 
-// Random function, returns an integer between 0 and range
+// Random function, returns an integer [0-range)
 
-int Random(int range)
+unsigned int Random(unsigned long long range)
 {
   static unsigned long long seed = 0;
   unsigned long long value;
@@ -261,7 +261,7 @@ int Random(int range)
   seed = seed * 1664525 + 1013904223;
 
   value = (seed & 0xFFFFFFFF) * range / 0xFFFFFFFF;
-  return (int)value;
+  return (unsigned int)value;
 }
 
 __utils_maybe_static ssize_t __get_path(const char *file_name, char *dest,

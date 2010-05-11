@@ -72,7 +72,7 @@ CORE_LIBSPEC void mzx_res_free(void);
 CORE_LIBSPEC char *mzx_res_get_by_id(enum resource_id id);
 
 CORE_LIBSPEC long ftell_and_rewind(FILE *f);
-int Random(int range);
+unsigned int Random(unsigned long long range);
 
 CORE_LIBSPEC ssize_t get_path(const char *file_name, char *dest, unsigned int buf_len);
 #ifdef CONFIG_UTILS

@@ -350,7 +350,7 @@ static int get_random_range(int min_value, int max_value)
       min_value = max_value;
     }
 
-    result = (Random(difference + 1)) + min_value;
+    result = Random((unsigned long long)difference + 1) + min_value;
   }
 
   return result;

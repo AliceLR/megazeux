@@ -25,6 +25,9 @@ USERS
 + If either board dimension is less than the editor viewport, the character
   and colors used to indicate space outside of the board are taken from
   protected sets. In game, they are taken from the game's sets.
++ Increase limit on difference for RANDOM "A" TO "B" to UINT_MAX rather
+  than INT_MAX - 1 as it was previously. Since the entire range represented
+  by a counter is now usable, there are no cases where RANDOM will "break".
 
 DEVELOPERS
 
