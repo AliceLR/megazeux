@@ -807,6 +807,49 @@ static bool set_graphics_output(struct config_info *conf)
   return true;
 }
 
+#if defined(CONFIG_SDL) && defined(CONFIG_ICON) && !defined(__WIN32__)
+
+static bool icon_w_h_constraint(png_uint_32 w, png_uint_32 h)
+{
+  // Icons must be multiples of 16 and square
+  return (w == h) && ((w % 16) == 0) && ((h % 16) == 0);
+}
+
+static void *sdl_alloc_rgba_surface(png_uint_32 w, png_uint_32 h,
+ png_uint_32 *stride, void **pixels)
+{
+  Uint32 rmask, gmask, bmask, amask;
+  SDL_Surface *s;
+
+#if SDL_BYTEORDER == SDL_BIG_ENDIAN
+  rmask = 0xff000000;
+  gmask = 0x00ff0000;
+  bmask = 0x0000ff00;
+  amask = 0x000000ff;
+#else
+  rmask = 0x000000ff;
+  gmask = 0x0000ff00;
+  bmask = 0x00ff0000;
+  amask = 0xff000000;
+#endif
+
+  s = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, rmask, gmask, bmask, amask);
+  if(!s)
+    return NULL;
+
+  *stride = s->pitch;
+  *pixels = s->pixels;
+  return s;
+}
+
+static SDL_Surface *png_read_icon(const char *name)
+{
+  return png_read_file(name, NULL, NULL, icon_w_h_constraint,
+   sdl_alloc_rgba_surface);
+}
+
+#endif // CONFIG_SDL && CONFIG_ICON && !__WIN32__
+
 bool init_video(struct config_info *conf, const char *caption)
 {
   graphics.screen_mode = 0;

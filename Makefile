@@ -258,9 +258,11 @@ ifeq (${BUILD_UTILS},1)
 	${MKDIR} ${build}/utils
 	${CP} ${checkres} ${downver} ${build}/utils
 	${CP} ${hlp2txt} ${txt2hlp} ${build}/utils
+	${CP} ${png2smzx} ${build}/utils
 	@if test -f ${checkres}.debug; then \
 		cp ${checkres}.debug ${downver}.debug ${build}/utils; \
 		cp ${hlp2txt}.debug  ${txt2hlp}.debug ${build}/utils; \
+		cp ${png2smzx}.debug ${build}/utils; \
 	fi
 endif
 ifeq (${BUILD_RENDER_GL_PROGRAM},1)

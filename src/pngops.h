@@ -24,15 +24,32 @@
 
 __M_BEGIN_DECLS
 
+#include <png.h>
+
+#if !defined(NEED_PNG_READ_FILE) && defined(CONFIG_SDL) && \
+    defined(CONFIG_ICON) && !defined(__WIN32__)
+#define NEED_PNG_READ_FILE
+#endif
+
+#ifdef NEED_PNG_WRITE_SCREEN
+
 #include "graphics.h"
 
 int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
  const char *name);
 
-#if defined(CONFIG_SDL) && defined(CONFIG_ICON) && !defined(__WIN32__)
-#include "SDL.h"
-SDL_Surface *png_read_icon(const char *name);
-#endif
+#endif // NEED_PNG_WRITE_SCREEN
+
+#ifdef NEED_PNG_READ_FILE
+
+typedef bool (*check_w_h_constraint_t)(png_uint_32 w, png_uint_32 h);
+typedef void *(*rgba_surface_allocator_t)(png_uint_32 w, png_uint_32 h,
+                                          png_uint_32 *stride, void **pixels);
+
+void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
+ check_w_h_constraint_t constraint, rgba_surface_allocator_t allocator);
+
+#endif // NEED_PNG_READ_FILE
 
 __M_END_DECLS
 

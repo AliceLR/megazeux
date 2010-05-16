@@ -176,7 +176,7 @@ core_cobjs += ${core_obj}/audio_mikmod.o
 endif
 
 ifeq (${LIBPNG},1)
-core_flags += ${LIBPNG_CFLAGS}
+core_flags += ${LIBPNG_CFLAGS} -DNEED_PNG_WRITE_SCREEN
 core_ldflags := ${LIBPNG_LDFLAGS} ${core_ldflags}
 core_cobjs += ${core_obj}/pngops.o
 endif

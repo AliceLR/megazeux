@@ -14,6 +14,8 @@ include contrib/unzip/src/Makefile.in
 utils_src = src/utils
 utils_obj = src/utils/.build
 
+utils_cflags := -DNEED_PNG_READ_FILE ${LIBPNG_CFLAGS}
+
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o ${core_obj}/fsafeopen.o
 checkres_objs += ${core_obj}/util.o ${unzip_objs}
@@ -28,6 +30,11 @@ hlp2txt_objs := ${utils_obj}/hlp2txt.o
 txt2hlp := ${utils_src}/txt2hlp${BINEXT}
 txt2hlp_objs := ${utils_obj}/txt2hlp.o
 
+png2smzx := ${utils_src}/png2smzx${BINEXT}
+png2smzx_objs := ${utils_obj}/png2smzx.o ${utils_obj}/smzxconv.o
+png2smzx_objs += ${core_obj}/util.o ${core_obj}/pngops.o
+png2smzx_ldflags := ${LIBPNG_LDFLAGS}
+
 ${utils_obj}/%.o: ${utils_src}/%.c
 	$(if ${V},,@echo "  CC      " $<)
 	${CC} -MD ${CFLAGS} ${utils_cflags} -I${core_src} \
@@ -37,6 +44,7 @@ ${utils_obj}/%.o: ${utils_src}/%.c
 -include $(downver_objs:.o=.d)
 -include $(hlp2txt_objs:.o=.d)
 -include $(txt2hlp_objs:.o=.d)
+-include $(png2smzx_objs:.o=.d)
 
 ${checkres}: ${checkres_objs}
 	$(if ${V},,@echo "  LINK    " ${checkres})
@@ -58,11 +66,21 @@ ${txt2hlp}: ${txt2hlp_objs}
 	${CC} ${txt2hlp_objs} -o ${txt2hlp} \
 	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS}
 
+${png2smzx}: ${png2smzx_objs}
+	$(if ${V},,@echo "  LINK    " ${png2smzx})
+	${CC} ${png2smzx_objs} -o ${png2smzx} \
+	  ${ARCH_EXE_LDFLAGS} ${LDFLAGS} ${png2smzx_ldflags}
+
 utils: $(filter-out $(wildcard ${utils_obj}), ${utils_obj})
 
 utils: ${checkres} ${downver} ${hlp2txt} ${txt2hlp}
-utils.debug: ${checkres}.debug ${downver}.debug
-utils.debug: ${hlp2txt}.debug ${txt2hlp}.debug
+
+ifeq (${LIBPNG},1)
+utils: ${png2smzx}
+endif
+
+utils.debug: ${checkres}.debug ${downver}.debug ${hlp2txt}.debug
+utils.debug: ${txt2hlp}.debug ${png2smzx}.debug
 
 utils_clean: unzip_clean
 	$(if ${V},,@echo "  RM      " ${utils_obj})
@@ -75,3 +93,5 @@ utils_clean: unzip_clean
 	${RM} ${hlp2txt} ${hlp2txt}.debug
 	$(if ${V},,@echo "  RM      " ${txt2hlp} ${txt2hlp}.debug)
 	${RM} ${txt2hlp} ${txt2hlp}.debug
+	$(if ${V},,@echo "  RM      " ${png2smzx} ${png2smzx}.debug)
+	${RM} ${png2smzx} ${png2smzx}.debug

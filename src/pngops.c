@@ -21,7 +21,6 @@
 #include "util.h"
 
 #include <stdlib.h>
-#include <png.h>
 
 int png_write_screen(Uint8 *pixels, struct rgb_color *pal, int count,
  const char *name)
@@ -95,17 +94,17 @@ exit_out:
   return ret;
 }
 
-#if defined(CONFIG_SDL) && defined(CONFIG_ICON) && !defined(__WIN32__)
+#ifdef NEED_PNG_READ_FILE
 
-SDL_Surface *png_read_icon(const char *name)
+void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
+ check_w_h_constraint_t constraint, rgba_surface_allocator_t allocator)
 {
-  Uint32 rmask, gmask, bmask, amask;
-  const char magic[] = "\x89PNG";
+  png_uint_32 i, w, h, stride;
   png_structp png_ptr = NULL;
   png_bytep *row_ptrs = NULL;
   png_infop info_ptr = NULL;
-  SDL_Surface *s = NULL;
-  png_uint_32 i, w, h;
+  void *pixels, *s = NULL;
+  png_byte header[8];
   int type, bpp;
   FILE *f;
 
@@ -113,14 +112,11 @@ SDL_Surface *png_read_icon(const char *name)
   if(!f)
     goto exit_out;
 
-  // try to abort early if the file can't be a valid PNG.
-  for(i = 0; i < 4; i++)
-  {
-    int byte = fgetc(f);
-    if(byte != magic[i])
-      goto exit_close;
-  }
-  rewind(f);
+  if(fread(header, 1, 8, f) < 8)
+    goto exit_close;
+
+  if(png_sig_cmp(header, 0, 8))
+    goto exit_close;
 
   png_ptr = png_create_read_struct(PNG_LIBPNG_VER_STRING, NULL, NULL, NULL);
   if(!png_ptr)
@@ -131,63 +127,61 @@ SDL_Surface *png_read_icon(const char *name)
     goto exit_free_close;
 
   if(setjmp(png_ptr->jmpbuf))
-    goto err_free_close;
+    goto exit_free_close;
 
   png_init_io(png_ptr, f);
-
+  png_set_sig_bytes(png_ptr, 8);
   png_read_info(png_ptr, info_ptr);
   png_get_IHDR(png_ptr, info_ptr, &w, &h, &bpp, &type, NULL, NULL, NULL);
 
-  if(w != h || (w % 16) != 0 || (h % 16) != 0)
+  if(!constraint(w, h))
   {
-    warn("Requested icon '%s' not a valid dimension.\n", name);
+    warn("Requested image '%s' failed dimension checks.\n", name);
     goto exit_free_close;
   }
 
-  switch(type)
-  {
-    case PNG_COLOR_TYPE_RGB_ALPHA:
-      break;
-    case PNG_COLOR_TYPE_GRAY_ALPHA:
-      png_set_gray_to_rgb(png_ptr);
-      break;
-    default:
-      warn("Requested icon '%s' not an RGBA image.\n", name);
-      goto exit_free_close;
-  }
+  if(type == PNG_COLOR_TYPE_PALETTE)
+    png_set_palette_to_rgb(png_ptr);
 
-  png_set_strip_16(png_ptr);
+  else if(type == PNG_COLOR_TYPE_GRAY_ALPHA || !(type & PNG_COLOR_MASK_COLOR))
+    png_set_gray_to_rgb(png_ptr);
 
-  /* After this update the icon will be of a valid size (square, modulo 16)
-   * and RGB with alpha channel. It will also be 8bit per channel.
-   */
+  else if(!(type & PNG_COLOR_MASK_COLOR) && bpp < 8)
+    png_set_expand_gray_1_2_4_to_8(png_ptr);
+
+  if(bpp == 16)
+    png_set_strip_16(png_ptr);
+
+  else if(bpp < 8)
+    png_set_packing(png_ptr);
+
+  if(png_get_valid(png_ptr, info_ptr, PNG_INFO_tRNS))
+    png_set_tRNS_to_alpha(png_ptr);
+
+  else if(!(type & PNG_COLOR_MASK_ALPHA))
+    png_set_add_alpha(png_ptr, 0xff, PNG_FILLER_AFTER);
+
+  // FIXME: Are these necessary?
   png_read_update_info(png_ptr, info_ptr);
   png_get_IHDR(png_ptr, info_ptr, &w, &h, &bpp, &type, NULL, NULL, NULL);
-
-#if SDL_BYTEORDER == SDL_BIG_ENDIAN
-  rmask = 0xff000000;
-  gmask = 0x00ff0000;
-  bmask = 0x0000ff00;
-  amask = 0x000000ff;
-#else
-  rmask = 0x000000ff;
-  gmask = 0x0000ff00;
-  bmask = 0x00ff0000;
-  amask = 0xff000000;
-#endif
-
-  s = SDL_CreateRGBSurface(SDL_SWSURFACE, w, h, 32, rmask, gmask, bmask, amask);
-  if(!s)
-    goto exit_free_close;
 
   row_ptrs = cmalloc(sizeof(png_bytep) * h);
   if(!row_ptrs)
     goto exit_free_close;
 
+  s = allocator(w, h, &stride, &pixels);
+  if(!s)
+    goto exit_free_close;
+
   for(i = 0; i < h; i++)
-    row_ptrs[i] = (png_bytep)(Uint8 *)s->pixels + i * s->pitch;
+    row_ptrs[i] = (png_bytep)(unsigned char *)pixels + i * stride;
 
   png_read_image(png_ptr, row_ptrs);
+
+  if(_w)
+    *_w = w;
+  if(_h)
+    *_h = h;
 
 exit_free_close:
   png_destroy_read_struct(&png_ptr, &info_ptr, NULL);
@@ -196,12 +190,6 @@ exit_close:
   fclose(f);
 exit_out:
   return s;
-
-err_free_close:
-  if(s)
-    SDL_FreeSurface(s);
-  s = NULL;
-  goto exit_free_close;
 }
 
-#endif // CONFIG_SDL && CONFIG_ICON && !__WIN32__
+#endif // NEED_PNG_READ_FILE
