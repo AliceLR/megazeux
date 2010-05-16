@@ -26,8 +26,8 @@ __M_BEGIN_DECLS
 
 #include <png.h>
 
-#if !defined(NEED_PNG_READ_FILE) && defined(CONFIG_SDL) && \
-    defined(CONFIG_ICON) && !defined(__WIN32__)
+#if (defined(CONFIG_SDL) && defined(CONFIG_ICON) && !defined(__WIN32__)) || \
+    defined(CONFIG_UTILS)
 #define NEED_PNG_READ_FILE
 #endif
 

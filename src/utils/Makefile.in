@@ -14,7 +14,7 @@ include contrib/unzip/src/Makefile.in
 utils_src = src/utils
 utils_obj = src/utils/.build
 
-utils_cflags := -DNEED_PNG_READ_FILE ${LIBPNG_CFLAGS}
+utils_cflags := ${LIBPNG_CFLAGS}
 
 checkres := ${utils_src}/checkres${BINEXT}
 checkres_objs := ${utils_obj}/checkres.o ${core_obj}/fsafeopen.o

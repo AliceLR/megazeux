@@ -28,5 +28,7 @@ src/utils/hlp2txt.exe
 src/utils/hlp2txt
 src/utils/txt2hlp.exe
 src/utils/txt2hlp
+src/utils/png2smzx.exe
+src/utils/png2smzx
 stdout.txt
 stderr.txt
