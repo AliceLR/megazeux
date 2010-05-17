@@ -37,7 +37,10 @@
 #include "render.h"
 #include "renderers.h"
 #include "platform.h"
+
+#ifdef CONFIG_PNG
 #include "pngops.h"
+#endif
 
 #ifdef CONFIG_SDL
 #include "SDL.h"
