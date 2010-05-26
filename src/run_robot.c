@@ -3715,10 +3715,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_AVALANCHE: // avalanche
       {
-        int x, y, offset;
-        // Set the placement rate
-        int placement_rate = 18;
-        int d_flag;
+        int placement_period = 18;
+        int x, y, offset, d_flag;
 
         for(y = 0, offset = 0; y < board_height; y++)
         {
@@ -3727,7 +3725,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             d_flag = flags[(int)level_id[offset]];
 
             if((d_flag & A_UNDER) && !(d_flag & A_ENTRANCE) &&
-             (Random(placement_rate)) == 0)
+             (Random(placement_period)) == 0)
             {
               id_place(mzx_world, x, y, BOULDER, 7, 0);
             }

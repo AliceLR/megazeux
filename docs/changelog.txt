@@ -28,6 +28,8 @@ USERS
 + Increase limit on difference for RANDOM "A" TO "B" to UINT_MAX rather
   than INT_MAX - 1 as it was previously. Since the entire range represented
   by a counter is now usable, there are no cases where RANDOM will "break".
++ Fix avalanche rings and potions to limit boulder placement to 1/18,
+  matching the AVALANCHE command.
 
 DEVELOPERS
 

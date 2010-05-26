@@ -527,12 +527,10 @@ static void give_potion(struct world *mzx_world, enum potion type)
 
     case POTION_BLAST:
     {
-      int x, y, offset;
+      int placement_period = 18;
+      int x, y, offset, d_flag;
       enum thing d_id;
-      int d_flag;
 
-      // Set the placement rate
-      int placement_rate = 18;
       for(y = 0, offset = 0; y < board_height; y++)
       {
         for(x = 0; x < board_width; x++, offset++)
@@ -544,7 +542,7 @@ static void give_potion(struct world *mzx_world, enum potion type)
           {
             // Adjust the ratio for board size
 
-            if(Random(placement_rate) == 0)
+            if(Random(placement_period) == 0)
             {
               id_place(mzx_world, x, y, EXPLOSION, 0,
                16 * ((Random(5)) + 2));
@@ -674,9 +672,8 @@ static void give_potion(struct world *mzx_world, enum potion type)
 
     case POTION_AVALANCHE:
     {
+      int placement_period = 18;
       int x, y, offset;
-      // Adjust the rate for board size - it was hardcoded for 10000
-      int placement_rate = 18 * (board_width * board_height) / 10000;
 
       for(y = 0, offset = 0; y < board_height; y++)
       {
@@ -686,7 +683,7 @@ static void give_potion(struct world *mzx_world, enum potion type)
 
           if((d_flag & A_UNDER) && !(d_flag & A_ENTRANCE))
           {
-            if((Random(placement_rate)) == 0)
+            if((Random(placement_period)) == 0)
             {
               id_place(mzx_world, x, y, BOULDER, 7, 0);
             }
