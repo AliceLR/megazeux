@@ -4548,8 +4548,7 @@ and ~ABECOME NONPUSHABLE~F.
 :_c2:~ACHANGE [color] [thing] [param] [color] [thing] [param]
 
 All on-board objects of the given type will become objects of
-a new type. This command, if used too much, can slow down the
-game.
+a new type.
 
 >#COMMANDS.HLP:col:Colors
 
@@ -4883,8 +4882,7 @@ vertically or horizontally with the named Robot.
 
 If there are ANY of a given thing on the current board, jumps
 to the given label. The second form searches for the absence
-of the given thing. These commands can slow down your game
-if used too often.
+of the given thing.
 
 >#COMMANDS.HLP:col:Colors
 
@@ -5112,8 +5110,6 @@ numbers must be prefixed by plus signs, like so:
 COPY BLOCK # # # # "+#" "+#"
 COPY OVERLAY BLOCK # # # # "+#" "+#"
 
-This command can slow down the game if used too much.
-
 >#TOVERLAY.HLP:081:Editing and Using the Overlay
 
 :_cW:COPY BLOCK # # # # "#x" "#y"
@@ -5269,7 +5265,6 @@ care about the character, only the color.
 :_m0:~AMOVE ALL [color] [thing] [param] [dir]
 
 All of the stated thing are moved in the given direction.
-Overuse of this command can slow down your game.
 
 >#COMMANDS.HLP:col:Colors
 >#COMMANDS.HLP:dir:Directions
@@ -5295,9 +5290,9 @@ second is the number of the sample, from 1 on.
 :_l0:~ALOCKSCROLL
 :_u2:~AUNLOCKSCROLL
 
-Locks or unlocks scrolling. When scrolling is locked, the view
-will remain showing the same thing, even if the player moves. 
-The screen will not scroll.
+Locks or unlocks scrolling on the current board. When scrolling is
+locked, the view will remain showing the same thing, even if
+the player moves. The screen will not scroll.
 
 :_c0:~ACHAR EDIT [char] # # # # # # # # # # # # # #
 
@@ -6800,7 +6795,7 @@ This method of bit manipulation is heavily depreciated in favor
 of expressions (especially considering it only works on 16 bits
 instead of the current 32). Follow the link below to read more.
 
->#EXPRESS.HLP:1st:Expressions
+>#EXPRESS.HLP:exp:Expressions
 
 ~BKEY_PRESSED (read-only)
 ~BKEY (read-only)
@@ -8257,6 +8252,47 @@ replace in the target character set.
 :1st: 
 $~9NEW in MegaZeux!
 
+GIT
+
+USERS
+
++ Fixed a bug where LOAD_ROBOT or LOAD_BC would not reset the
+  stack pointer for newly loaded programs. This could cause
+  crashes if a robot popped the stack in the new program.
++ Fixed a bug where range checking of BOARD_X and BOARD_Y would
+  sometimes not be done correctly, leading to crashes.
++ Strings in the debug menu list no longer interpret any color
+  codes they may contain.
++ Fixed a bug where a string would not be interpreted correctly
+  if it used a '.' character in a splice parameter expression.
+  Expressions such as IF "$str#('$str2.length'-4)" = "blah"
+  THEN "label" will now work correctly.
++ Fixed negative sprN_cheight et al from crashing. (Exophase)
++ Placement of objects on the player will be blocked with an
+  error dialog like DOS versions, instead of silenting failing
+  after setup. (MZXGiant)
++ Fixed a bug where LOAD_ROBOT would not properly parse lines
+  of imported code that had leading whitespace. (MZXGiant)
++ Fixed an integer wrapping bug in debytecode, disallowed
+  numeric literals outside of the bounds of a signed short.
+  (MZXGiant)
++ Fixed a bug that would corrupt the UI palette if "set color"
+  was run against a color index over 15. (MZXGiant)
++ If either board dimension is less than the editor viewport,
+  the character and colors used to indicate space outside of
+  the board are taken from protected sets. In game, they are
+  taken from the game's sets.
++ Increased limit on difference for RANDOM "A" TO "B" to
+  UINT_MAX rather than INT_MAX - 1 as it was previously. Since
+  the entire range represented by a counter is now usable,
+  there are no cases where RANDOM will "break".
++ Fixed avalanche rings and potions to limit boulder placement
+  to 1/18, matching the AVALANCHE command.
+
+DEVELOPERS
+
++ Source tarballs are now generated in XZ (LZMA2) format.
+
 December 29, 2009 - MZX 2.83
 
 It's been a year since the last release, due in part to my
@@ -8408,14 +8444,11 @@ USERS
   /sensors, will no longer place junk at the target
   co-ordinates. Instead, the object's background will be copied
   in isolation.
-+ Pasting from the clipboard, expanding a macro, or importing
++ Pasting from the clipboard, expanding a macro,  or importing
   .txt or .bc files that would cause a robot to exceed the 64k
   limit now has the operation ignored at the point it exceeds
   the limit, rather than adding an unlimited number of
   unrecognized lines.
-+ Fix a bug with the pc_speaker_on option which could cause
-  the audio thread to block indefinitely when PC speaker audio
-  was disabled.
 
 DEVELOPERS
 
@@ -9716,9 +9749,9 @@ June 6, 2005 - MZX 2.80h
   s3.chr from 112.
 
   *** NOTE *** Series import/export will only work correctly
-  with char selections that are one in height (can still be
-  split up another way in the editor itself). So if you want to
-  use partial charsets on your edits it's important that you
+  with char selections that are one in height (they can still
+  be split up another way in the editor itself). If you want to
+  use partial charsets on your edits, it's important that you
   select all the chars in a row.
 
 + Made characters for the editor/GUI use another charset that's

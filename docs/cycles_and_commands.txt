@@ -218,7 +218,7 @@ SEND # # "label"                                        |     NO      |
 SEND "Robot" "label"                                    |     NO      |
 SEND [dir] "label"                                      |     NO      |
 SEND [dir] PLAYER "label"                               |     NO      |
-SET "counter" #                                         |    NO(8)    |
+SET "counter" #                                         |    NO(7)    |
 SET "counter" RANDOM # #                                |     NO      |
 SET "$string" "text"                                    |     NO      |
 SET "$string1" "$string2"                               |     NO      |
@@ -228,11 +228,11 @@ SET EDGE COLOR [color]                                  |     NO      |
 SET MAXHEALTH #                                         |     NO      |
 SET MESG COLUMN #                                       |     NO      |
 SFX #                                                   |     NO      |
-SHOOT [dir]                                             |    NO(6)    |
-SHOOTMISSILE [dir]                                      |    NO(6)    |
-SHOOTSEEKER [dir]                                       |    NO(6)    |
+SHOOT [dir]                                             |     YES     |
+SHOOTMISSILE [dir]                                      |     YES     |
+SHOOTSEEKER [dir]                                       |     YES     |
 SLOWTIME #                                              |     NO      |
-SPITFIRE [dir]                                          |    NO(6)    |
+SPITFIRE [dir]                                          |     YES     |
 STATUS COUNTER # "counter"                              |     NO      |
 SWAP WORLD "file"                                       |     NO      |
 SWITCH [dir] [dir]                                      |     NO      |
@@ -246,8 +246,8 @@ TRY [dir] "label"                                       |    YES(4)   |
 WAIT #                                                  |    YES(5)   |
 WAIT MOD FADE                                           |     NO      |
 WAIT PLAY                                               |     NO      |
-WAIT PLAY "string"                                      |  YES(2)(7)  |
-WALK [dir]                                              |     NO      |
+WAIT PLAY "string"                                      |    YES(2)   |
+WALK [dir]                                              |    NO(6)    |
 WIND #                                                  |     NO      |
 WRITE OVERLAY [color] "string" # #                      |     NO      |
 UNLOCKPLAYER                                            |     NO      |
@@ -263,6 +263,5 @@ ZAP "label" #                                           |     NO      |
 (3) = Considering "copyrobot" commands are executed always, even if no match is found, this may not be correct.
 (4) = Attempting to jump to labels that do not exist does not consume a cycle.
 (5) = Does not end a cycle if # is 0.
-(6) = Has a sub-cycle end, and thus acts differently from the DOS version (most notably, being shot point-blank happens far faster).
-(7) = A special case exists where it currently executes a cycle end going through a transporter.
-(8) = A special case exists for the SAVE_GAME and SAVE_WORLD "special" counters which do end the cycle if used.
+(6) = A special case exists where it currently executes a cycle end going through a transporter.
+(7) = A special case exists for the SAVE_GAME and SAVE_WORLD "special" counters which do end the cycle if used.
