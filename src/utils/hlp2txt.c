@@ -61,7 +61,7 @@ int main(int argc, char *argv[])
     goto exit_out;
   }
 
-  in = fopen(argv[1], "r");
+  in = fopen(argv[1], "rb");
   if(!in)
   {
     error("Failed to open input file '%s' for reading.\n", argv[1]);
