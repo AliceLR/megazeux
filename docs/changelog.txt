@@ -30,10 +30,14 @@ USERS
   by a counter is now usable, there are no cases where RANDOM will "break".
 + Fix avalanche rings and potions to limit boulder placement to 1/18,
   matching the AVALANCHE command.
++ Fix corruption and possible crashes when using VIEWPORT SIZE to set the
+  viewport to a size less than 80x25 but greater than the current board
+  dimensions. The viewport will now always be clamped to board size.
 
 DEVELOPERS
 
 + Source tarballs are now generated in XZ (LZMA2) format.
++ Make hlp2txt utility work correctly on Windows platforms.
 
 December 29, 2009 - MZX 2.83
 

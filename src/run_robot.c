@@ -4230,6 +4230,12 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if(viewport_height == 0)
           viewport_height = 1;
 
+        if(viewport_width > src_board->board_width)
+          viewport_width = src_board->board_width;
+
+        if(viewport_height > src_board->board_height)
+          viewport_height = src_board->board_height;
+
         if((viewport_x + viewport_width) > 80)
           src_board->viewport_x = 80 - viewport_width;
 
