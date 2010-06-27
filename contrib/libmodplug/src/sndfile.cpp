@@ -482,6 +482,16 @@ BOOL CSoundFile::SetWaveConfig(UINT nRate,UINT nBits,UINT nChannels,BOOL bMMX)
 	return TRUE;
 }
 
+BOOL CSoundFile::SetMixConfig(UINT nStereoSeparation, UINT nMaxMixChannels)
+//-------------------------------------------------------------------------
+{
+	if (nMaxMixChannels <= 2) return FALSE;
+
+	m_nMaxMixChannels = nMaxMixChannels;
+	m_nStereoSeparation = nStereoSeparation;
+	return TRUE;
+}
+
 
 BOOL CSoundFile::SetResamplingMode(UINT nMode)
 //--------------------------------------------

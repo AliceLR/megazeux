@@ -15,10 +15,15 @@
 // Volume ramp length, in 1/10 ms
 #define VOLUMERAMPLEN	146	// 1.46ms = 64 samples at 44.1kHz
 
-// SNDMIX: These are global flags for playback control
+#if defined(MODPLUG_PLAYER) || defined(ENABLE_STEREOVU)
+// VU-Meter
+#define VUMETER_DECAY		4
+#endif
+
+// SNDMIX: These are global flags for playback control (first two configurable via SetMixConfig)
 UINT CSoundFile::m_nStereoSeparation = 128;
-LONG CSoundFile::m_nStreamVolume = 0x8000;
 UINT CSoundFile::m_nMaxMixChannels = 32;
+LONG CSoundFile::m_nStreamVolume = 0x8000;
 // Mixing Configuration (SetWaveConfig)
 DWORD CSoundFile::gdwSysInfo = 0;
 DWORD CSoundFile::gnChannels = 1;
@@ -116,7 +121,7 @@ rneg:
 	}
 	return result;
 #else
-	return ((unsigned long long) a * (unsigned long long) b ) / c;
+	return ((uint64_t) a * (uint64_t) b ) / c;
 #endif
 }
 
@@ -167,7 +172,7 @@ rneg:
 	}
 	return result;
 #else
-	return ((unsigned long long) a * (unsigned long long) b + (c >> 1)) / c;
+	return ((uint64_t) a * (uint64_t) b + (c >> 1)) / c;
 #endif
 }
 

@@ -1,0 +1,33 @@
+diff -Nudr -U3 libmodplug-0.8.8.1.pre/src/sndfile.cpp libmodplug-0.8.8.1/src/sndfile.cpp
+--- libmodplug-0.8.8.1.pre/src/sndfile.cpp	2010-06-27 21:38:14.882964688 +0100
++++ libmodplug-0.8.8.1/src/sndfile.cpp	2010-06-27 21:41:13.223963909 +0100
+@@ -940,12 +940,12 @@
+ 				if (nFlags == RS_PCM16D)
+ 				{
+ 					int16_t temp = bswapLE16((int16_t)(s_new - s_old));
+-					*((int16_t*)(&buffer[bufcount])) = temp;
++					memcpy(&buffer[bufcount], &temp, sizeof(int16_t));
+ 					s_old = s_new;
+ 				} else
+ 				{
+ 					int16_t temp = bswapLE16((int16_t)(s_new + s_ofs));
+-					*((int16_t *)(&buffer[bufcount])) = temp;
++					memcpy(&buffer[bufcount], &temp, sizeof(int16_t));
+ 				}
+ 				bufcount += 2;
+ 				if (bufcount >= sizeof(buffer) - 1)
+@@ -1014,12 +1014,12 @@
+ 					if (nFlags == RS_STPCM16D)
+ 					{
+ 						int16_t temp = bswapLE16((int16_t)(s_new - s_old));
+-						*((int16_t *)(&buffer[bufcount])) = temp;
++						memcpy(&buffer[bufcount], &temp, sizeof(int16_t));
+ 						s_old = s_new;
+ 					} else
+ 					{
+ 						int16_t temp = bswapLE16((int16_t)(s_new - s_ofs));
+-						*((int16_t*)(&buffer[bufcount])) = temp;
++						memcpy(&buffer[bufcount], &temp, sizeof(int16_t));
+ 					}
+ 					bufcount += 2;
+ 					if (bufcount >= sizeof(buffer))

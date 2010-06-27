@@ -1,6 +1,6 @@
-diff -Nudr -U3 libmodplug/src/fastmix.cpp libmodplug/src/fastmix.cpp
---- libmodplug/src/fastmix.cpp	2010-01-02 15:42:30.000000000 +0000
-+++ libmodplug/src/fastmix.cpp	2010-02-13 19:20:50.703668330 +0000
+diff -Nudr -U3 libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmix.cpp
+--- libmodplug.pristine/src/fastmix.cpp	2010-06-27 22:04:00.921214193 +0100
++++ libmodplug/src/fastmix.cpp	2010-06-27 22:04:13.790964224 +0100
 @@ -9,7 +9,7 @@
  #include "sndfile.h"
  #include <math.h>
@@ -160,10 +160,19 @@ diff -Nudr -U3 libmodplug/src/fastmix.cpp libmodplug/src/fastmix.cpp
  __declspec(naked) UINT MPPASMCALL X86_AGC(int *pBuffer, UINT nSamples, UINT nAGC)
  //------------------------------------------------------------------------------
  {
-diff -Nudr -U3 libmodplug/src/libmodplug/sndfile.h libmodplug/src/libmodplug/sndfile.h
---- libmodplug/src/libmodplug/sndfile.h	2010-01-02 15:42:30.000000000 +0000
-+++ libmodplug/src/libmodplug/sndfile.h	2010-01-06 20:48:20.000000000 +0000
-@@ -931,7 +931,7 @@
+diff -Nudr -U3 libmodplug.pristine/src/libmodplug/sndfile.h libmodplug/src/libmodplug/sndfile.h
+--- libmodplug.pristine/src/libmodplug/sndfile.h	2010-06-27 22:04:00.932213823 +0100
++++ libmodplug/src/libmodplug/sndfile.h	2010-06-27 22:04:13.812963822 +0100
+@@ -602,7 +602,7 @@
+ 	UINT GetMaxPosition() const;
+ 	void SetCurrentPos(UINT nPos);
+ 	void SetCurrentOrder(UINT nOrder);
+-	void GetTitle(LPSTR s) const { lstrcpyn(s,m_szNames[0],32); }
++	void GetTitle(LPSTR s) const { lstrcpynA(s,m_szNames[0],32); }
+ 	LPCSTR GetTitle() const { return m_szNames[0]; }
+ 	UINT GetSampleName(UINT nSample,LPSTR s=NULL) const;
+ 	UINT GetInstrumentName(UINT nInstr,LPSTR s=NULL) const;
+@@ -932,7 +932,7 @@
  #define AGC_UNITY			(1 << AGC_PRECISION)
  
  // Calling conventions
@@ -172,9 +181,9 @@ diff -Nudr -U3 libmodplug/src/libmodplug/sndfile.h libmodplug/src/libmodplug/snd
  #define MPPASMCALL	__cdecl
  #define MPPFASTCALL	__fastcall
  #else
-diff -Nudr -U3 libmodplug/src/libmodplug/stdafx.h libmodplug/src/libmodplug/stdafx.h
---- libmodplug/src/libmodplug/stdafx.h	2010-01-02 18:34:52.000000000 +0000
-+++ libmodplug/src/libmodplug/stdafx.h	2010-01-06 21:01:54.000000000 +0000
+diff -Nudr -U3 libmodplug.pristine/src/libmodplug/stdafx.h libmodplug/src/libmodplug/stdafx.h
+--- libmodplug.pristine/src/libmodplug/stdafx.h	2010-06-27 22:04:00.965201561 +0100
++++ libmodplug/src/libmodplug/stdafx.h	2010-06-27 22:04:26.526201252 +0100
 @@ -24,11 +24,6 @@
  
  #ifdef _WIN32
@@ -187,20 +196,74 @@ diff -Nudr -U3 libmodplug/src/libmodplug/stdafx.h libmodplug/src/libmodplug/stda
  #define WIN32_LEAN_AND_MEAN
  #include <windows.h>
  #include <windowsx.h>
-@@ -102,9 +97,7 @@
+@@ -38,9 +33,9 @@
+ 
+ #define srandom(_seed)  srand(_seed)
+ #define random()        rand()
+-#define sleep(_ms)      Sleep(_ms)
++#define sleep(_ms)      Sleep(_ms * 1000)
+ 
+-inline void ProcessPlugins(int n) {}
++static inline void ProcessPlugins(int n) {}
+ 
+ #else
+ 
+@@ -54,6 +49,7 @@
+ typedef int8_t CHAR;
+ typedef uint8_t UCHAR;
+ typedef uint8_t* PUCHAR;
++typedef int16_t SHORT;
+ typedef uint16_t USHORT;
+ typedef uint32_t ULONG;
+ typedef uint32_t UINT;
+@@ -82,9 +78,9 @@
+ #define MODPLUG_NO_FILESAVE
+ #define NO_AGC
+ #define LPCTSTR LPCSTR
+-#define lstrcpyn strncpy
+-#define lstrcpy strcpy
+-#define lstrcmp strcmp
++#define lstrcpynA strncpy
++#define lstrcpyA strcpy
++#define lstrcmpA strcmp
+ #define WAVE_FORMAT_PCM 1
+ //#define ENABLE_EQ
+ 
+@@ -102,8 +98,8 @@
  
  #define GlobalFreePtr(p) free((void *)(p))
  
--#ifndef strnicmp
 -#define strnicmp(a,b,c)		strncasecmp(a,b,c)
--#endif
-+#define _strnicmp(a,b,c)		strncasecmp(a,b,c)
+-#define wsprintf			sprintf
++#define _strnicmp(a,b,c)	strncasecmp(a,b,c)
++#define wsprintfA		sprintf
  
- #define wsprintfA		sprintf
+ #ifndef FALSE
+ #define FALSE	false
+diff -Nudr -U3 libmodplug.pristine/src/load_amf.cpp libmodplug/src/load_amf.cpp
+--- libmodplug.pristine/src/load_amf.cpp	2010-06-27 22:04:01.032214480 +0100
++++ libmodplug/src/load_amf.cpp	2010-06-27 22:04:13.900065501 +0100
+@@ -170,7 +170,7 @@
+ 	DWORD dwMemPos;
+ 	
+ 	if ((!lpStream) || (dwMemLength < 2048)) return FALSE;
+-	if ((!strncmp((LPCTSTR)lpStream, "ASYLUM Music Format V1.0", 25)) && (dwMemLength > 4096))
++	if ((!strncmp((const char *)lpStream, "ASYLUM Music Format V1.0", 25)) && (dwMemLength > 4096))
+ 	{
+ 		UINT numorders, numpats, numsamples;
  
-diff -Nudr -U3 libmodplug/src/load_it.cpp libmodplug/src/load_it.cpp
---- libmodplug/src/load_it.cpp	2010-01-02 15:42:30.000000000 +0000
-+++ libmodplug/src/load_it.cpp	2010-01-06 21:22:34.000000000 +0000
+diff -Nudr -U3 libmodplug.pristine/src/load_it.cpp libmodplug/src/load_it.cpp
+--- libmodplug.pristine/src/load_it.cpp	2010-06-27 22:04:01.056963599 +0100
++++ libmodplug/src/load_it.cpp	2010-06-27 22:04:13.917007535 +0100
+@@ -626,7 +626,7 @@
+ 	dwPatNamLen = 0;
+ 	dwChnNamLen = 0;
+ 	header.id = 0x4D504D49; // IMPM
+-	lstrcpyn((char *)header.songname, m_szNames[0], 27);
++	lstrcpynA((char *)header.songname, m_szNames[0], 27);
+ 	header.reserved1 = 0x1004;
+ 	header.ordnum = 0;
+ 	while ((header.ordnum < MAX_ORDERS) && (Order[header.ordnum] < 0xFF)) header.ordnum++;
 @@ -691,7 +691,7 @@
  	if (m_lpszSongComments)
  	{
@@ -219,9 +282,9 @@ diff -Nudr -U3 libmodplug/src/load_it.cpp libmodplug/src/load_it.cpp
  		fwrite(m_lpszSongComments, 1, strlen(m_lpszSongComments)+1, f);
  	}
  	// Writing instruments
-diff -Nudr -U3 libmodplug/src/load_med.cpp libmodplug/src/load_med.cpp
---- libmodplug/src/load_med.cpp	2010-01-02 15:42:30.000000000 +0000
-+++ libmodplug/src/load_med.cpp	2010-01-06 21:02:23.000000000 +0000
+diff -Nudr -U3 libmodplug.pristine/src/load_med.cpp libmodplug/src/load_med.cpp
+--- libmodplug.pristine/src/load_med.cpp	2010-06-27 22:04:01.091976414 +0100
++++ libmodplug/src/load_med.cpp	2010-06-27 22:04:13.950963958 +0100
 @@ -670,8 +670,8 @@
  			}
  		}
@@ -244,9 +307,27 @@ diff -Nudr -U3 libmodplug/src/load_med.cpp libmodplug/src/load_med.cpp
  		if ((songname) && (songnamelen) && (songname+songnamelen > songname)
  				&& (songname+songnamelen <= dwMemLength))
  		{
-diff -Nudr -U3 libmodplug/src/load_mod.cpp libmodplug/src/load_mod.cpp
---- libmodplug/src/load_mod.cpp	2010-01-02 15:42:30.000000000 +0000
-+++ libmodplug/src/load_mod.cpp	2010-01-06 20:56:15.000000000 +0000
+@@ -707,7 +707,7 @@
+ 				if (maxnamelen > 32) maxnamelen = 32;
+ 				for (UINT i=0; i<ientries; i++) if (i < m_nSamples)
+ 				{
+-					lstrcpyn(m_szNames[i+1], psznames + i*ientrysz, maxnamelen);
++					lstrcpynA(m_szNames[i+1], psznames + i*ientrysz, maxnamelen);
+ 					m_szNames[i+1][31] = '\0';
+ 				}
+ 			}
+@@ -738,7 +738,7 @@
+ 					if (trknamelen > MAX_CHANNELNAME) trknamelen = MAX_CHANNELNAME;
+ 					if ((trknameofs) && (trknameofs + trknamelen < dwMemLength))
+ 					{
+-						lstrcpyn(ChnSettings[i].szName, (LPCSTR)(lpStream+trknameofs), MAX_CHANNELNAME);
++						lstrcpynA(ChnSettings[i].szName, (LPCSTR)(lpStream+trknameofs), MAX_CHANNELNAME);
+ 						ChnSettings[i].szName[MAX_CHANNELNAME-1] = '\0';
+ 					}
+ 				}
+diff -Nudr -U3 libmodplug.pristine/src/load_mod.cpp libmodplug/src/load_mod.cpp
+--- libmodplug.pristine/src/load_mod.cpp	2010-06-27 22:04:01.142282276 +0100
++++ libmodplug/src/load_mod.cpp	2010-06-27 22:04:13.967963742 +0100
 @@ -342,7 +342,7 @@
  		LPSTR p = (LPSTR)(lpStream+dwMemPos);
  		UINT flags = 0;
@@ -256,9 +337,33 @@ diff -Nudr -U3 libmodplug/src/load_mod.cpp libmodplug/src/load_mod.cpp
  		{
  			flags = 3;
  			p += 5;
-diff -Nudr -U3 libmodplug/src/load_stm.cpp libmodplug/src/load_stm.cpp
---- libmodplug/src/load_stm.cpp	2006-03-21 09:06:33.000000000 +0000
-+++ libmodplug/src/load_stm.cpp	2010-01-06 20:56:19.000000000 +0000
+@@ -437,9 +437,9 @@
+ 	fwrite(ord, 128, 1, f);
+ 	// Writing signature
+ 	if (m_nChannels == 4)
+-		lstrcpy((LPSTR)&bTab, "M.K.");
++		lstrcpyA((LPSTR)&bTab, "M.K.");
+ 	else
+-		wsprintf((LPSTR)&bTab, "%luCHN", m_nChannels);
++		wsprintfA((LPSTR)&bTab, "%luCHN", m_nChannels);
+ 	fwrite(bTab, 4, 1, f);
+ 	// Writing patterns
+ 	for (UINT ipat=0; ipat<nbp; ipat++) if (Patterns[ipat])
+diff -Nudr -U3 libmodplug.pristine/src/load_s3m.cpp libmodplug/src/load_s3m.cpp
+--- libmodplug.pristine/src/load_s3m.cpp	2010-06-27 22:04:01.159964383 +0100
++++ libmodplug/src/load_s3m.cpp	2010-06-27 22:04:13.984963850 +0100
+@@ -285,7 +285,7 @@
+ 		insflags[iSmp-1] = s[0x1F];
+ 		inspack[iSmp-1] = s[0x1E];
+ 		s[0x4C] = 0;
+-		lstrcpy(m_szNames[iSmp], (LPCSTR)&s[0x30]);
++		lstrcpyA(m_szNames[iSmp], (LPCSTR)&s[0x30]);
+ 		if ((s[0]==1) && (s[0x4E]=='R') && (s[0x4F]=='S'))
+ 		{
+ 			UINT j = bswapLE32(*((LPDWORD)(s+0x10)));
+diff -Nudr -U3 libmodplug.pristine/src/load_stm.cpp libmodplug/src/load_stm.cpp
+--- libmodplug.pristine/src/load_stm.cpp	2010-06-27 22:04:01.209788900 +0100
++++ libmodplug/src/load_stm.cpp	2010-06-27 22:04:14.025117764 +0100
 @@ -64,8 +64,8 @@
  	
  	if ((!lpStream) || (dwMemLength < sizeof(STMHEADER))) return FALSE;
@@ -270,9 +375,9 @@ diff -Nudr -U3 libmodplug/src/load_stm.cpp libmodplug/src/load_stm.cpp
  	memcpy(m_szNames[0], phdr->songname, 20);
  	// Read STM header
  	m_nType = MOD_TYPE_STM;
-diff -Nudr -U3 libmodplug/src/load_xm.cpp libmodplug/src/load_xm.cpp
---- libmodplug/src/load_xm.cpp	2007-10-10 23:43:33.000000000 +0100
-+++ libmodplug/src/load_xm.cpp	2010-01-06 21:22:39.000000000 +0000
+diff -Nudr -U3 libmodplug.pristine/src/load_xm.cpp libmodplug/src/load_xm.cpp
+--- libmodplug.pristine/src/load_xm.cpp	2010-06-27 22:04:01.226963989 +0100
++++ libmodplug/src/load_xm.cpp	2010-06-27 22:04:14.042024845 +0100
 @@ -11,7 +11,7 @@
  ////////////////////////////////////////////////////////
  // FastTracker II XM file support
@@ -291,6 +396,15 @@ diff -Nudr -U3 libmodplug/src/load_xm.cpp libmodplug/src/load_xm.cpp
  
  	memcpy(m_szNames[0], lpStream+17, 20);
  	dwHdrSize = bswapLE32(*((DWORD *)(lpStream+60)));
+@@ -600,7 +600,7 @@
+ 	fwrite("Extended Module: ", 17, 1, f);
+ 	fwrite(m_szNames[0], 20, 1, f);
+ 	s[0] = 0x1A;
+-	lstrcpy((LPSTR)&s[1], (nPacking) ? "MOD Plugin packed   " : "FastTracker v2.00   ");
++	lstrcpyA((LPSTR)&s[1], (nPacking) ? "MOD Plugin packed   " : "FastTracker v2.00   ");
+ 	s[21] = 0x04;
+ 	s[22] = 0x01;
+ 	fwrite(s, 23, 1, f);
 @@ -837,7 +837,7 @@
  	{
  		DWORD d = 0x74786574;
@@ -300,10 +414,31 @@ diff -Nudr -U3 libmodplug/src/load_xm.cpp libmodplug/src/load_xm.cpp
  		fwrite(&d, 1, 4, f);
  		fwrite(m_lpszSongComments, 1, d, f);
  	}
-diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
---- libmodplug/src/sndfile.cpp	2010-01-02 18:34:52.000000000 +0000
-+++ libmodplug/src/sndfile.cpp	2010-01-06 21:20:53.000000000 +0000
-@@ -784,7 +784,7 @@
+diff -Nudr -U3 libmodplug.pristine/src/sndfile.cpp libmodplug/src/sndfile.cpp
+--- libmodplug.pristine/src/sndfile.cpp	2010-06-27 22:04:01.257963753 +0100
++++ libmodplug/src/sndfile.cpp	2010-06-27 22:04:14.074232246 +0100
+@@ -378,13 +378,13 @@
+ //-----------------------------
+ {
+ 	memset(&m_MidiCfg, 0, sizeof(m_MidiCfg));
+-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_START*32], "FF");
+-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_STOP*32], "FC");
+-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEON*32], "9c n v");
+-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEOFF*32], "9c n 0");
+-	lstrcpy(&m_MidiCfg.szMidiGlb[MIDIOUT_PROGRAM*32], "Cc p");
+-	lstrcpy(&m_MidiCfg.szMidiSFXExt[0], "F0F000z");
+-	for (int iz=0; iz<16; iz++) wsprintf(&m_MidiCfg.szMidiZXXExt[iz*32], "F0F001%02X", iz*8);
++	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_START*32], "FF");
++	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_STOP*32], "FC");
++	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEON*32], "9c n v");
++	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_NOTEOFF*32], "9c n 0");
++	lstrcpyA(&m_MidiCfg.szMidiGlb[MIDIOUT_PROGRAM*32], "Cc p");
++	lstrcpyA(&m_MidiCfg.szMidiSFXExt[0], "F0F000z");
++	for (int iz=0; iz<16; iz++) wsprintfA(&m_MidiCfg.szMidiZXXExt[iz*32], "F0F001%02X", iz*8);
+ }
+ 
+ 
+@@ -794,7 +794,7 @@
  	memcpy(sztmp, m_szNames[nSample],32);
  	sztmp[31] = 0;
  	if (s) strcpy(s, sztmp);
@@ -312,7 +447,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  }
  
  
-@@ -801,7 +801,7 @@
+@@ -811,7 +811,7 @@
  	memcpy(sztmp, penv->name, 32);
  	sztmp[31] = 0;
  	if (s) strcpy(s, sztmp);
@@ -321,7 +456,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  }
  
  
-@@ -913,7 +913,7 @@
+@@ -923,7 +923,7 @@
  	case RS_PCM16D:
  	case RS_PCM16S:
  		{
@@ -330,7 +465,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  			int s_old = 0, s_ofs;
  			len = nLen * 2;
  			bufcount = 0;
-@@ -929,13 +929,13 @@
+@@ -939,13 +939,13 @@
  				}
  				if (nFlags == RS_PCM16D)
  				{
@@ -348,7 +483,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  				}
  				bufcount += 2;
  				if (bufcount >= sizeof(buffer) - 1)
-@@ -993,7 +993,7 @@
+@@ -1003,7 +1003,7 @@
  			int s_ofs = (nFlags == RS_STPCM16U) ? 0x8000 : 0;
  			for (UINT iCh=0; iCh<2; iCh++)
  			{
@@ -357,7 +492,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  				int s_old = 0;
  
  				bufcount = 0;
-@@ -1003,13 +1003,13 @@
+@@ -1013,13 +1013,13 @@
  					p += 2;
  					if (nFlags == RS_STPCM16D)
  					{
@@ -375,7 +510,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  					}
  					bufcount += 2;
  					if (bufcount >= sizeof(buffer))
-@@ -1164,13 +1164,13 @@
+@@ -1174,13 +1174,13 @@
  		{
  			len = pIns->nLength * 2;
  			if (len > dwMemLength) break;
@@ -392,7 +527,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  			}
  		}
  		break;
-@@ -1180,10 +1180,10 @@
+@@ -1190,10 +1190,10 @@
  	        {
  		len = pIns->nLength * 2;
  		if (len <= dwMemLength) memcpy(pIns->pSample, lpMemFile, len);
@@ -405,7 +540,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  			        *pSample++ = bswapLE16(rawSample);
  			}
  		}
-@@ -1201,7 +1201,7 @@
+@@ -1211,7 +1211,7 @@
  			{
  			  	// pSample[j] = pSrc[j+1];
  				// pSample[j+1] = pSrc[j];
@@ -414,7 +549,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  			}
  		}
  		break;
-@@ -1211,8 +1211,8 @@
+@@ -1221,8 +1221,8 @@
  		{
  			len = pIns->nLength * 2;
  			if (len > dwMemLength) break;
@@ -425,7 +560,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  			for (UINT j=0; j<len; j+=2) *pSample++ = bswapLE16(*(pSrc++)) - 0x8000;
  		}
  		break;
-@@ -1230,8 +1230,8 @@
+@@ -1240,8 +1240,8 @@
  				// pSample[j*2+1] = pSrc[j];
  				// pSample[j*2+2] = pSrc[j+1+len];
  				// pSample[j*2+3] = pSrc[j+len];
@@ -436,7 +571,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  			}
  			len *= 2;
  		}
-@@ -1271,13 +1271,13 @@
+@@ -1281,13 +1281,13 @@
  			int iadd_l = 0, iadd_r = 0;
  			if (nFlags == RS_STPCM16U) { iadd_l = iadd_r = -0x8000; }
  			len = pIns->nLength;
@@ -454,7 +589,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  				psrc++;
  				if (nFlags == RS_STPCM16D)
  				{
-@@ -1332,12 +1332,12 @@
+@@ -1342,12 +1342,12 @@
  			if (nFlags == RS_STIPCM16U) iadd = -32768;
  			len = pIns->nLength;
  			if (len*4 > dwMemLength) len = dwMemLength >> 2;
@@ -471,7 +606,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  				psrc += 2;
  			}
  			len *= 4;
-@@ -1456,7 +1456,7 @@
+@@ -1466,7 +1466,7 @@
  				if (-l > max) max = -l;
  			}
  			max = (max / 128) + 1;
@@ -480,7 +615,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  			for (UINT k=0; k<len; k+=slsize)
  			{
  				LONG l = ((((pSrc[k+2] << 8) + pSrc[k+1]) << 8) + pSrc[k]) << 8;
-@@ -1485,14 +1485,14 @@
+@@ -1495,14 +1495,14 @@
  				if (-l > max) max = -l;
  			}
  			max = (max / 128) + 1;
@@ -498,7 +633,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  				pDest += 2;
  			}
  		}
-@@ -1504,11 +1504,11 @@
+@@ -1514,11 +1514,11 @@
  			len = pIns->nLength;
  			if (len*4 > dwMemLength) len = dwMemLength >> 2;
  			LPCBYTE psrc = (LPCBYTE)lpMemFile;
@@ -513,7 +648,7 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  				psrc += 4;
  			}
  			len *= 4;
-@@ -1553,7 +1553,7 @@
+@@ -1563,7 +1563,7 @@
  	UINT len = pIns->nLength;
  	if (pIns->uFlags & CHN_16BIT)
  	{
@@ -522,27 +657,42 @@ diff -Nudr -U3 libmodplug/src/sndfile.cpp libmodplug/src/sndfile.cpp
  		// Adjust end of sample
  		if (pIns->uFlags & CHN_STEREO)
  		{
-@@ -1641,7 +1641,7 @@
+@@ -1649,9 +1649,9 @@
+ //-----------------------------------------------------------
+ {
  	//---GCCFIX:  Removed assembly.
- 	return (DWORD)(8363*pow(2.0, (transp*128+ftune)/(1536)));
+-	return (DWORD)(8363*pow(2, (transp*128+ftune)/(1536)));
++	return (DWORD)(8363*pow(2.0, (transp*128+ftune)/(1536)));
  
 -#ifdef MSC_VER
 +#if defined(_MSC_VER) && !defined(_WIN64)
  	const float _fbase = 8363;
  	const float _factor = 1.0f/(12.0f*128.0f);
  	int result;
-@@ -1681,7 +1681,7 @@
+@@ -1689,9 +1689,9 @@
+ //----------------------------------------------
+ {
  	//---GCCFIX:  Removed assembly.
- 	return int(1536*(log((double)freq/8363.0)/log(2.0)));
+-	return int(1536*(log(freq/8363)/log(2)));
++	return int(1536*(log((double)freq/8363.0)/log(2.0)));
  
 -#ifdef MSC_VER
 +#if defined(_MSC_VER) && !defined(_WIN64)
  	const float _f1_8363 = 1.0f / 8363.0f;
  	const float _factor = 128 * 12;
  	LONG result;
-diff -Nudr -U3 libmodplug/src/snd_flt.cpp libmodplug/src/snd_flt.cpp
---- libmodplug/src/snd_flt.cpp	2010-01-02 15:42:30.000000000 +0000
-+++ libmodplug/src/snd_flt.cpp	2010-01-06 21:19:47.000000000 +0000
+@@ -1763,7 +1763,7 @@
+ {
+         char szName[MAX_PATTERNNAME] = "";   // changed from CHAR
+ 	if (nPat >= MAX_PATTERNS) return FALSE;
+-	if (lpszName) lstrcpyn(szName, lpszName, MAX_PATTERNNAME);
++	if (lpszName) lstrcpynA(szName, lpszName, MAX_PATTERNNAME);
+ 	szName[MAX_PATTERNNAME-1] = 0;
+ 	if (!m_lpszPatternNames) m_nPatternNames = 0;
+ 	if (nPat >= m_nPatternNames)
+diff -Nudr -U3 libmodplug.pristine/src/snd_flt.cpp libmodplug/src/snd_flt.cpp
+--- libmodplug.pristine/src/snd_flt.cpp	2010-06-27 22:04:01.293963538 +0100
++++ libmodplug/src/snd_flt.cpp	2010-06-27 22:04:14.094170846 +0100
 @@ -13,7 +13,7 @@
  
  #ifndef NO_FILTER
@@ -561,9 +711,9 @@ diff -Nudr -U3 libmodplug/src/snd_flt.cpp libmodplug/src/snd_flt.cpp
  
  	fg=1/(1+d+e);
  	fb0=(d+e+e)/(1+d+e);
-diff -Nudr -U3 libmodplug/src/snd_fx.cpp libmodplug/src/snd_fx.cpp
---- libmodplug/src/snd_fx.cpp	2010-01-02 15:42:30.000000000 +0000
-+++ libmodplug/src/snd_fx.cpp	2010-01-06 20:57:34.000000000 +0000
+diff -Nudr -U3 libmodplug.pristine/src/snd_fx.cpp libmodplug/src/snd_fx.cpp
+--- libmodplug.pristine/src/snd_fx.cpp	2010-06-27 22:04:01.316963500 +0100
++++ libmodplug/src/snd_fx.cpp	2010-06-27 22:04:14.108000084 +0100
 @@ -4,11 +4,13 @@
   * Authors: Olivier Lapicque <olivierl@jps.net>
  */
@@ -579,10 +729,10 @@ diff -Nudr -U3 libmodplug/src/snd_fx.cpp libmodplug/src/snd_fx.cpp
  #pragma warning(disable:4244)
  #endif
  
-diff -Nudr -U3 libmodplug/src/sndmix.cpp libmodplug/src/sndmix.cpp
---- libmodplug/src/sndmix.cpp	2010-01-02 15:42:30.000000000 +0000
-+++ libmodplug/src/sndmix.cpp	2010-01-06 21:21:09.000000000 +0000
-@@ -77,7 +77,7 @@
+diff -Nudr -U3 libmodplug.pristine/src/sndmix.cpp libmodplug/src/sndmix.cpp
+--- libmodplug.pristine/src/sndmix.cpp	2010-06-27 22:04:01.356963593 +0100
++++ libmodplug/src/sndmix.cpp	2010-06-27 22:04:14.182964244 +0100
+@@ -82,7 +82,7 @@
  // Return (a*b)/c - no divide error
  int _muldiv(long a, long b, long c)
  {
@@ -591,7 +741,7 @@ diff -Nudr -U3 libmodplug/src/sndmix.cpp libmodplug/src/sndmix.cpp
  	int sign, result;
  	_asm {
  	mov eax, a
-@@ -124,7 +124,7 @@
+@@ -129,7 +129,7 @@
  // Return (a*b+c/2)/c - no divide error
  int _muldivr(long a, long b, long c)
  {
@@ -600,9 +750,9 @@ diff -Nudr -U3 libmodplug/src/sndmix.cpp libmodplug/src/sndmix.cpp
  	int sign, result;
  	_asm {
  	mov eax, a
-diff -Nudr -U3 libmodplug/src/tables.h libmodplug/src/tables.h
---- libmodplug/src/tables.h	2010-01-02 15:42:30.000000000 +0000
-+++ libmodplug/src/tables.h	2010-01-06 21:06:06.000000000 +0000
+diff -Nudr -U3 libmodplug.pristine/src/tables.h libmodplug/src/tables.h
+--- libmodplug.pristine/src/tables.h	2010-06-27 22:04:01.374963586 +0100
++++ libmodplug/src/tables.h	2010-06-27 22:04:14.241057864 +0100
 @@ -68,7 +68,7 @@
  
  
@@ -670,14 +820,3 @@ diff -Nudr -U3 libmodplug/src/tables.h libmodplug/src/tables.h
  {
  	0,-2,-3,-5,-6,-8,-9,-11,-12,-14,-16,-17,-19,-20,-22,-23,
  	-24,-26,-27,-29,-30,-32,-33,-34,-36,-37,-38,-39,-41,-42,
-diff -Nudr -U3 libmodplug/src/fastmix.cpp libmodplug/src/fastmix.cpp
---- libmodplug/src/libmodplug/stdafx.h
-+++ libmodplug/src/libmodplug/stdafx.h
-@@ -49,6 +49,7 @@ static inline void ProcessPlugins(int n) {}
- typedef int8_t CHAR;
- typedef uint8_t UCHAR;
- typedef uint8_t* PUCHAR;
-+typedef int16_t SHORT;
- typedef uint16_t USHORT;
- typedef uint32_t ULONG;
- typedef uint32_t UINT;

@@ -1,0 +1,33 @@
+diff -Nudr libmodplug-0.8.8.1.pre/src/fastmix.cpp libmodplug-0.8.8.1/src/fastmix.cpp
+--- libmodplug-0.8.8.1.pre/src/fastmix.cpp	2010-06-27 21:44:03.545964479 +0100
++++ libmodplug-0.8.8.1/src/fastmix.cpp	2010-06-27 21:50:04.021106028 +0100
+@@ -1886,7 +1886,7 @@
+ 		else if (n > vumax)
+ 			vumax = n;
+ 		p = n >> (8-MIXING_ATTENUATION) ; // 24-bit signed
+-#ifdef WORDS_BIGENDIAN
++#if defined(WORDS_BIGENDIAN)
+ 		buf[i*3+0] = (p >> 16) & 0xFF;
+ 		buf[i*3+1] = (p >> 8)  & 0xFF;
+ 		buf[i*3+2] = (p >> 0)  & 0xFF;
+diff -Nudr libmodplug-0.8.8.1.pre/src/libmodplug/sndfile.h libmodplug-0.8.8.1/src/libmodplug/sndfile.h
+--- libmodplug-0.8.8.1.pre/src/libmodplug/sndfile.h	2010-04-05 08:40:38.000000000 +0100
++++ libmodplug-0.8.8.1/src/libmodplug/sndfile.h	2010-06-27 21:50:49.466475574 +0100
+@@ -517,7 +517,7 @@
+ 	MIDIOUT_VOLUME,
+ 	MIDIOUT_PAN,
+ 	MIDIOUT_BANKSEL,
+-	MIDIOUT_PROGRAM,
++	MIDIOUT_PROGRAM
+ };
+ 
+ 
+@@ -1002,7 +1002,7 @@
+ #define bswapBE32(X) bswap_32(ARM_get32(&X))
+ 
+ // From libsdl
+-#elif defined(WORDS_BIGENDIAN) && WORDS_BIGENDIAN
++#elif defined(WORDS_BIGENDIAN)
+ #define bswapLE16(X) bswap_16(X)
+ #define bswapLE32(X) bswap_32(X)
+ #define bswapBE16(X) (X)

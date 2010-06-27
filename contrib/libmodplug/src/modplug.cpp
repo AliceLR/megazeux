@@ -19,11 +19,13 @@ namespace ModPlug
 	{
 		MODPLUG_ENABLE_OVERSAMPLING | MODPLUG_ENABLE_NOISE_REDUCTION,
 
-		2,
-		16,
-		44100,
-		MODPLUG_RESAMPLE_LINEAR,
+		2, // mChannels
+		16, // mBits
+		44100, // mFrequency
+		MODPLUG_RESAMPLE_LINEAR, //mResamplingMode
 
+		128, // mStereoSeparation
+		32, // mMaxMixChannels
 		0,
 		0,
 		0,
@@ -60,8 +62,10 @@ namespace ModPlug
 		if(updateBasicConfig)
 		{
 			CSoundFile::SetWaveConfig(gSettings.mFrequency,
-			                          gSettings.mBits,
+                                                  gSettings.mBits,
 			                          gSettings.mChannels);
+			CSoundFile::SetMixConfig(gSettings.mStereoSeparation,
+                                                 gSettings.mMaxMixChannels);
 
 			gSampleSize = gSettings.mBits / 8 * gSettings.mChannels;
 		}

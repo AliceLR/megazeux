@@ -1,10 +1,9 @@
-diff -Nudr -U3 -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmix.cpp
---- libmodplug.pristine/src/fastmix.cpp	2009-12-31 16:32:40.000000000 +0000
-+++ libmodplug/src/fastmix.cpp	2009-12-31 16:55:18.000000000 +0000
-@@ -1881,13 +1881,13 @@
+--- libmodplug-0.8.7/src/fastmix.cpp	2009-04-21 15:03:19.000000000 +0100
++++ libmodplug-0.8.7-patched/src/fastmix.cpp	2010-06-27 21:19:51.008963769 +0100
+@@ -1887,13 +1887,13 @@
  			vumax = n;
  		p = n >> (8-MIXING_ATTENUATION) ; // 24-bit signed
- #if defined(WORDS_BIGENDIAN)
+ #ifdef WORDS_BIGENDIAN
 -		buf[i*3+0] = p & 0xFF0000 >> 24;
 -		buf[i*3+1] = p & 0x00FF00 >> 16 ;
 -		buf[i*3+2] = p & 0x0000FF ;

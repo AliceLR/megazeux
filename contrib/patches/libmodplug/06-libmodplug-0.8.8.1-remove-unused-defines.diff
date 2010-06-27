@@ -1,6 +1,6 @@
-diff -Nudr -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmix.cpp
---- libmodplug.pristine/src/fastmix.cpp	2009-04-21 15:03:19.000000000 +0100
-+++ libmodplug/src/fastmix.cpp	2009-12-31 16:20:25.000000000 +0000
+diff -Nudr -U3 libmodplug-0.8.8.1.pre//src/fastmix.cpp libmodplug-0.8.8.1/src/fastmix.cpp
+--- libmodplug-0.8.8.1.pre//src/fastmix.cpp	2010-06-27 21:35:39.369214419 +0100
++++ libmodplug-0.8.8.1/src/fastmix.cpp	2010-06-27 21:44:03.545964479 +0100
 @@ -94,7 +94,6 @@
  #define SPLINE_CLAMPFORUNITY
  // log2(number) of precalculated splines (range is [4..14])
@@ -35,7 +35,7 @@ diff -Nudr -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmix.cp
  //////////////////////////////////////////////////////////////////////////////
  // Mono
  
-@@ -2112,9 +2106,6 @@
+@@ -2118,9 +2112,6 @@
  }
  #endif
  
@@ -45,9 +45,9 @@ diff -Nudr -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmix.cp
  
  #ifdef MSC_VER
  void MPPASMCALL X86_StereoFill(int *pBuffer, UINT nSamples, LPLONG lpROfs, LPLONG lpLOfs)
-diff -Nudr -x .svn libmodplug.pristine/src/load_med.cpp libmodplug/src/load_med.cpp
---- libmodplug.pristine/src/load_med.cpp	2009-04-23 14:14:48.000000000 +0100
-+++ libmodplug/src/load_med.cpp	2009-12-31 16:28:01.000000000 +0000
+diff -Nudr -U3 libmodplug-0.8.8.1.pre//src/load_med.cpp libmodplug-0.8.8.1/src/load_med.cpp
+--- libmodplug-0.8.8.1.pre//src/load_med.cpp	2010-04-04 13:15:24.000000000 +0100
++++ libmodplug-0.8.8.1/src/load_med.cpp	2010-06-27 21:44:03.558214044 +0100
 @@ -18,44 +18,22 @@
  // OctaMed MED file support (import only)
  
@@ -93,9 +93,9 @@ diff -Nudr -x .svn libmodplug.pristine/src/load_med.cpp libmodplug/src/load_med.
  
  #pragma pack(1)
  
-diff -Nudr -x .svn libmodplug.pristine/src/mmcmp.cpp libmodplug/src/mmcmp.cpp
---- libmodplug.pristine/src/mmcmp.cpp	2004-09-10 06:19:07.000000000 +0100
-+++ libmodplug/src/mmcmp.cpp	2009-12-31 16:21:16.000000000 +0000
+diff -Nudr -U3 libmodplug-0.8.8.1.pre//src/mmcmp.cpp libmodplug-0.8.8.1/src/mmcmp.cpp
+--- libmodplug-0.8.8.1.pre//src/mmcmp.cpp	2010-06-27 21:35:39.553964080 +0100
++++ libmodplug-0.8.8.1/src/mmcmp.cpp	2010-06-27 21:44:03.636028886 +0100
 @@ -46,9 +46,7 @@
  #define MMCMP_COMP		0x0001
  #define MMCMP_DELTA		0x0002
@@ -106,16 +106,17 @@ diff -Nudr -x .svn libmodplug.pristine/src/mmcmp.cpp libmodplug/src/mmcmp.cpp
  
  typedef struct MMCMPBITBUFFER
  {
-diff -Nudr -x .svn libmodplug.pristine/src/sndmix.cpp libmodplug/src/sndmix.cpp
---- libmodplug.pristine/src/sndmix.cpp	2009-12-31 15:47:12.000000000 +0000
-+++ libmodplug/src/sndmix.cpp	2009-12-31 16:20:59.000000000 +0000
-@@ -15,9 +15,6 @@
+diff -Nudr -U3 libmodplug-0.8.8.1.pre//src/sndmix.cpp libmodplug-0.8.8.1/src/sndmix.cpp
+--- libmodplug-0.8.8.1.pre//src/sndmix.cpp	2010-06-27 21:33:37.657964087 +0100
++++ libmodplug-0.8.8.1/src/sndmix.cpp	2010-06-27 21:47:32.420569554 +0100
+@@ -15,8 +15,10 @@
  // Volume ramp length, in 1/10 ms
  #define VOLUMERAMPLEN	146	// 1.46ms = 64 samples at 44.1kHz
  
--// VU-Meter
--#define VUMETER_DECAY		4
--
- // SNDMIX: These are global flags for playback control
++#if defined(MODPLUG_PLAYER) || defined(ENABLE_STEREOVU)
+ // VU-Meter
+ #define VUMETER_DECAY		4
++#endif
+ 
+ // SNDMIX: These are global flags for playback control (first two configurable via SetMixConfig)
  UINT CSoundFile::m_nStereoSeparation = 128;
- LONG CSoundFile::m_nStreamVolume = 0x8000;

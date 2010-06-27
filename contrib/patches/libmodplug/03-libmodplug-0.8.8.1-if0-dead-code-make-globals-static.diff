@@ -1,7 +1,7 @@
-diff -Nudr -U3 -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmix.cpp
---- libmodplug.pristine/src/fastmix.cpp	2009-12-31 16:56:03.000000000 +0000
-+++ libmodplug/src/fastmix.cpp	2009-12-31 17:11:13.000000000 +0000
-@@ -568,7 +568,7 @@
+diff -Nudr -U3 libmodplug-0.8.8.1.pre/src/fastmix.cpp libmodplug-0.8.8.1/src/fastmix.cpp
+--- libmodplug-0.8.8.1.pre/src/fastmix.cpp	2010-06-27 21:34:29.876963827 +0100
++++ libmodplug-0.8.8.1/src/fastmix.cpp	2010-06-27 21:35:39.369214419 +0100
+@@ -574,7 +574,7 @@
  typedef VOID (MPPASMCALL * LPMIXINTERFACE)(MODCHANNEL *, int *, int *);
  
  #define BEGIN_MIX_INTERFACE(func)\
@@ -10,7 +10,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmi
  	{\
  		LONG nPos;
  
-@@ -659,8 +659,8 @@
+@@ -665,8 +665,8 @@
  /////////////////////////////////////////////////////
  //
  
@@ -21,7 +21,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmi
  void MPPASMCALL X86_StereoFill(int *pBuffer, UINT nSamples, LPLONG lpROfs, LPLONG lpLOfs);
  void X86_StereoMixToFloat(const int *, float *, float *, UINT nCount);
  void X86_FloatToStereoMix(const float *pIn1, const float *pIn2, int *pOut, UINT nCount);
-@@ -794,6 +794,8 @@
+@@ -800,6 +800,8 @@
  	SNDMIX_STOREFASTMONOVOL
  END_MIX_INTERFACE()
  
@@ -30,7 +30,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmi
  BEGIN_MIX_INTERFACE(FastMono8BitSplineMix)
  	SNDMIX_BEGINSAMPLELOOP8
  	SNDMIX_GETMONOVOL8SPLINE
-@@ -818,6 +820,7 @@
+@@ -824,6 +826,7 @@
  	SNDMIX_STOREFASTMONOVOL
  END_MIX_INTERFACE()
  
@@ -38,7 +38,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmi
  
  // Fast Ramps
  BEGIN_FASTRAMPMIX_INTERFACE(FastMono8BitRampMix)
-@@ -844,6 +847,8 @@
+@@ -850,6 +853,8 @@
  	SNDMIX_RAMPFASTMONOVOL
  END_FASTRAMPMIX_INTERFACE()
  
@@ -47,7 +47,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmi
  BEGIN_FASTRAMPMIX_INTERFACE(FastMono8BitSplineRampMix)
  	SNDMIX_BEGINSAMPLELOOP8
  	SNDMIX_GETMONOVOL8SPLINE
-@@ -868,6 +873,7 @@
+@@ -874,6 +879,7 @@
  	SNDMIX_RAMPFASTMONOVOL
  END_FASTRAMPMIX_INTERFACE()
  
@@ -55,7 +55,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmi
  
  //////////////////////////////////////////////////////
  // Stereo samples
-@@ -1987,7 +1993,7 @@
+@@ -1993,7 +1999,7 @@
  
  
  #ifdef MSC_VER
@@ -64,7 +64,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmi
  //------------------------------------------------------------
  {
  	_asm {
-@@ -2021,7 +2027,7 @@
+@@ -2027,7 +2033,7 @@
  #else
  //---GCCFIX: Asm replaced with C function
  // Will fill in later.
@@ -73,7 +73,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmi
  {
  	memset(pBuffer, 0, nSamples * sizeof(int));
  }
-@@ -2209,7 +2215,7 @@
+@@ -2218,7 +2224,7 @@
  #endif
  
  #ifdef MSC_VER
@@ -82,7 +82,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmi
  //------------------------------------------------------------------------------
  {
  	_asm {
-@@ -2252,7 +2258,7 @@
+@@ -2261,7 +2267,7 @@
  #else
  //---GCCFIX: Asm replaced with C function
  // Will fill in later.
@@ -91,9 +91,9 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/fastmix.cpp libmodplug/src/fastmi
  {
  	int rofs = pChannel->nROfs;
  	int lofs = pChannel->nLOfs;
-diff -Nudr -U3 -x .svn libmodplug.pristine/src/libmodplug/it_defs.h libmodplug/src/libmodplug/it_defs.h
---- libmodplug.pristine/src/libmodplug/it_defs.h	2004-09-10 06:19:07.000000000 +0100
-+++ libmodplug/src/libmodplug/it_defs.h	2009-12-31 17:06:42.000000000 +0000
+diff -Nudr -U3 libmodplug-0.8.8.1.pre/src/libmodplug/it_defs.h libmodplug-0.8.8.1/src/libmodplug/it_defs.h
+--- libmodplug-0.8.8.1.pre/src/libmodplug/it_defs.h	2010-04-04 13:15:24.000000000 +0100
++++ libmodplug-0.8.8.1/src/libmodplug/it_defs.h	2010-06-27 21:35:39.385009443 +0100
 @@ -128,7 +128,4 @@
  
  #pragma pack()
@@ -102,19 +102,19 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/libmodplug/it_defs.h libmodplug/s
 -extern BYTE autovibxm2it[8];
 -
  #endif
-diff -Nudr -U3 -x .svn libmodplug.pristine/src/libmodplug/stdafx.h libmodplug/src/libmodplug/stdafx.h
---- libmodplug.pristine/src/libmodplug/stdafx.h	2009-12-31 16:33:36.000000000 +0000
-+++ libmodplug/src/libmodplug/stdafx.h	2009-12-31 17:05:45.000000000 +0000
-@@ -95,7 +95,7 @@
- typedef const char* LPCSTR;
+diff -Nudr -U3 libmodplug-0.8.8.1.pre/src/libmodplug/stdafx.h libmodplug-0.8.8.1/src/libmodplug/stdafx.h
+--- libmodplug-0.8.8.1.pre/src/libmodplug/stdafx.h	2010-04-04 13:15:24.000000000 +0100
++++ libmodplug-0.8.8.1/src/libmodplug/stdafx.h	2010-06-27 21:35:39.413165254 +0100
+@@ -73,7 +73,7 @@
  typedef void* PVOID;
+ typedef void VOID;
  
 -inline LONG MulDiv (long a, long b, long c)
 +static inline LONG MulDiv (long a, long b, long c)
  {
    // if (!c) return 0;
    return ((uint64_t) a * (uint64_t) b ) / c;
-@@ -112,7 +112,7 @@
+@@ -90,7 +90,7 @@
  
  #define  GHND   0
  
@@ -123,7 +123,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/libmodplug/stdafx.h libmodplug/sr
  {
    int8_t * p = (int8_t *) malloc(size);
  
-@@ -120,7 +120,7 @@
+@@ -98,7 +98,7 @@
    return p;
  }
  
@@ -132,9 +132,9 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/libmodplug/stdafx.h libmodplug/sr
  
  #define GlobalFreePtr(p) free((void *)(p))
  
-diff -Nudr -U3 -x .svn libmodplug.pristine/src/load_amf.cpp libmodplug/src/load_amf.cpp
---- libmodplug.pristine/src/load_amf.cpp	2009-12-31 16:33:36.000000000 +0000
-+++ libmodplug/src/load_amf.cpp	2009-12-31 16:59:37.000000000 +0000
+diff -Nudr -U3 libmodplug-0.8.8.1.pre/src/load_amf.cpp libmodplug-0.8.8.1/src/load_amf.cpp
+--- libmodplug-0.8.8.1.pre/src/load_amf.cpp	2010-04-04 13:15:24.000000000 +0100
++++ libmodplug-0.8.8.1/src/load_amf.cpp	2010-06-27 21:35:39.439140641 +0100
 @@ -52,7 +52,7 @@
  extern void Log(LPCSTR, ...);
  #endif
@@ -144,9 +144,9 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/load_amf.cpp libmodplug/src/load_
  //-------------------------------------------------------------------------------
  {
  	UINT lastinstr = 0;
-diff -Nudr -U3 -x .svn libmodplug.pristine/src/load_it.cpp libmodplug/src/load_it.cpp
---- libmodplug.pristine/src/load_it.cpp	2009-12-31 16:33:36.000000000 +0000
-+++ libmodplug/src/load_it.cpp	2009-12-31 17:07:19.000000000 +0000
+diff -Nudr -U3 libmodplug-0.8.8.1.pre/src/load_it.cpp libmodplug-0.8.8.1/src/load_it.cpp
+--- libmodplug-0.8.8.1.pre/src/load_it.cpp	2010-04-04 13:15:24.000000000 +0100
++++ libmodplug-0.8.8.1/src/load_it.cpp	2010-06-27 21:35:39.485963862 +0100
 @@ -15,11 +15,13 @@
  #pragma warning(disable:4244)
  #endif
@@ -172,9 +172,9 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/load_it.cpp libmodplug/src/load_i
  //-----------------------------------------------------------------
  {
  	DWORD retval = 0;
-diff -Nudr -U3 -x .svn libmodplug.pristine/src/load_mod.cpp libmodplug/src/load_mod.cpp
---- libmodplug.pristine/src/load_mod.cpp	2009-12-31 16:33:36.000000000 +0000
-+++ libmodplug/src/load_mod.cpp	2009-12-31 17:07:57.000000000 +0000
+diff -Nudr -U3 libmodplug-0.8.8.1.pre/src/load_mod.cpp libmodplug-0.8.8.1/src/load_mod.cpp
+--- libmodplug-0.8.8.1.pre/src/load_mod.cpp	2010-04-04 13:15:24.000000000 +0100
++++ libmodplug-0.8.8.1/src/load_mod.cpp	2010-06-27 21:35:39.525027504 +0100
 @@ -168,7 +168,7 @@
  
  #pragma pack()
@@ -184,9 +184,9 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/load_mod.cpp libmodplug/src/load_
  {
  	return ((*(DWORD *)s1) == (*(DWORD *)s2)) ? TRUE : FALSE;
  }
-diff -Nudr -U3 -x .svn libmodplug.pristine/src/mmcmp.cpp libmodplug/src/mmcmp.cpp
---- libmodplug.pristine/src/mmcmp.cpp	2009-12-31 16:28:57.000000000 +0000
-+++ libmodplug/src/mmcmp.cpp	2009-12-31 17:00:55.000000000 +0000
+diff -Nudr -U3 libmodplug-0.8.8.1.pre/src/mmcmp.cpp libmodplug-0.8.8.1/src/mmcmp.cpp
+--- libmodplug-0.8.8.1.pre/src/mmcmp.cpp	2010-04-04 13:15:24.000000000 +0100
++++ libmodplug-0.8.8.1/src/mmcmp.cpp	2010-06-27 21:35:39.553964080 +0100
 @@ -7,7 +7,7 @@
  #include "stdafx.h"
  #include "sndfile.h"
@@ -196,7 +196,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/mmcmp.cpp libmodplug/src/mmcmp.cp
  
  typedef struct MMCMPFILEHEADER
  {
-@@ -325,7 +325,7 @@
+@@ -327,7 +327,7 @@
  }
  
  
@@ -205,7 +205,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/mmcmp.cpp libmodplug/src/mmcmp.cp
  {
  	PPBITBUFFER BitBuffer;
  	ULONG nBytesLeft;
-@@ -380,7 +380,7 @@
+@@ -382,7 +382,7 @@
  }
  
  
@@ -214,9 +214,9 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/mmcmp.cpp libmodplug/src/mmcmp.cp
  {
  	DWORD dwMemLength = *pdwMemLength;
  	LPCBYTE lpMemFile = *ppMemFile;
-diff -Nudr -U3 -x .svn libmodplug.pristine/src/modplug.cpp libmodplug/src/modplug.cpp
---- libmodplug.pristine/src/modplug.cpp	2006-03-20 03:39:33.000000000 +0000
-+++ libmodplug/src/modplug.cpp	2009-12-31 17:12:43.000000000 +0000
+diff -Nudr -U3 libmodplug-0.8.8.1.pre/src/modplug.cpp libmodplug-0.8.8.1/src/modplug.cpp
+--- libmodplug-0.8.8.1.pre/src/modplug.cpp	2010-04-10 13:33:30.000000000 +0100
++++ libmodplug-0.8.8.1/src/modplug.cpp	2010-06-27 21:35:39.571964669 +0100
 @@ -15,7 +15,7 @@
  
  namespace ModPlug
@@ -226,7 +226,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/modplug.cpp libmodplug/src/modplu
  	{
  		MODPLUG_ENABLE_OVERSAMPLING | MODPLUG_ENABLE_NOISE_REDUCTION,
  
-@@ -33,9 +33,9 @@
+@@ -35,9 +35,9 @@
  		0
  	};
  
@@ -238,7 +238,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/modplug.cpp libmodplug/src/modplu
  	{
  		if(gSettings.mFlags & MODPLUG_ENABLE_REVERB)
  		{
-@@ -104,6 +104,8 @@
+@@ -108,6 +108,8 @@
  	return file->mSoundFile.Read(buffer, size) * ModPlug::gSampleSize;
  }
  
@@ -247,7 +247,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/modplug.cpp libmodplug/src/modplu
  const char* ModPlug_GetName(ModPlugFile* file)
  {
  	return file->mSoundFile.GetTitle();
-@@ -264,6 +266,8 @@
+@@ -268,6 +270,8 @@
  	memcpy(settings, &ModPlug::gSettings, sizeof(ModPlug_Settings));
  }
  
@@ -256,9 +256,9 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/modplug.cpp libmodplug/src/modplu
  void ModPlug_SetSettings(const ModPlug_Settings* settings)
  {
  	memcpy(&ModPlug::gSettings, settings, sizeof(ModPlug_Settings));
-diff -Nudr -U3 -x .svn libmodplug.pristine/src/modplug.h libmodplug/src/modplug.h
---- libmodplug.pristine/src/modplug.h	2006-03-20 03:39:34.000000000 +0000
-+++ libmodplug/src/modplug.h	2009-12-31 17:17:44.000000000 +0000
+diff -Nudr -U3 libmodplug-0.8.8.1.pre/src/modplug.h libmodplug-0.8.8.1/src/modplug.h
+--- libmodplug-0.8.8.1.pre/src/modplug.h	2010-04-04 13:40:03.000000000 +0100
++++ libmodplug-0.8.8.1/src/modplug.h	2010-06-27 21:35:39.616972672 +0100
 @@ -37,22 +37,6 @@
   * of the mod has been reached, zero is returned. */
  int  ModPlug_Read(ModPlugFile* file, void* buffer, int size);
@@ -282,7 +282,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/modplug.h libmodplug/src/modplug.
  enum _ModPlug_Flags
  {
  	MODPLUG_ENABLE_OVERSAMPLING     = 1 << 0,  /* Enable oversampling (*highly* recommended) */
-@@ -91,11 +75,30 @@
+@@ -94,11 +78,30 @@
  	                        -1 loops forever. */
  } ModPlug_Settings;
  
@@ -314,7 +314,7 @@ diff -Nudr -U3 -x .svn libmodplug.pristine/src/modplug.h libmodplug/src/modplug.
  
  /* New ModPlug API Functions */
  /* NOTE: Master Volume (1-512) */
-@@ -161,6 +164,8 @@
+@@ -164,6 +167,8 @@
  void ModPlug_InitMixerCallback(ModPlugFile* file,ModPlugMixerProc proc) ;
  void ModPlug_UnloadMixerCallback(ModPlugFile* file) ;
  

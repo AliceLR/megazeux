@@ -1,6 +1,6 @@
-diff -Nudr -x .svn libmodplug.pristine/src/sndfile.cpp libmodplug/src/sndfile.cpp
---- libmodplug.pristine/src/sndfile.cpp	2009-12-31 16:30:17.000000000 +0000
-+++ libmodplug/src/sndfile.cpp	2009-12-31 16:12:10.000000000 +0000
+diff -Nudr -U3 libmodplug-0.8.8.1.pre/src/sndfile.cpp libmodplug-0.8.8.1/src/sndfile.cpp
+--- libmodplug-0.8.8.1.pre/src/sndfile.cpp	2010-05-10 01:33:03.000000000 +0100
++++ libmodplug-0.8.8.1/src/sndfile.cpp	2010-06-27 21:38:14.882964688 +0100
 @@ -16,9 +16,11 @@
  #endif
  
@@ -51,7 +51,7 @@ diff -Nudr -x .svn libmodplug.pristine/src/sndfile.cpp libmodplug/src/sndfile.cp
  #endif // MODPLUG_BASIC_SUPPORT
  		 && (!ReadMod(lpStream, dwMemLength))) m_nType = MOD_TYPE_NONE;
  #ifdef MMCMP_SUPPORT
-@@ -1342,6 +1344,7 @@
+@@ -1352,6 +1354,7 @@
  		}
  		break;
  
@@ -59,7 +59,7 @@ diff -Nudr -x .svn libmodplug.pristine/src/sndfile.cpp libmodplug/src/sndfile.cp
  	// AMS compressed samples
  	case RS_AMS8:
  	case RS_AMS16:
-@@ -1430,6 +1433,7 @@
+@@ -1440,6 +1443,7 @@
  			len = DMFUnpack((LPBYTE)pIns->pSample, ibuf, ibufmax, maxlen);
  		}
  		break;
