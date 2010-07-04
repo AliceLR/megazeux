@@ -3991,7 +3991,6 @@ __editor_maybe_static struct token *parse_command(char *src, char **_next,
   int command_name_length;
   int arg_in_match;
   char *command_base;
-  char *command_arg_base;
   char *next;
   int match_strength;
   int best_match_strength = 10000;
@@ -4032,7 +4031,6 @@ __editor_maybe_static struct token *parse_command(char *src, char **_next,
 
   command_base = next;
   next += command_set->name_length;
-  command_arg_base = next;
 
   token_collection_initialize(&token_collection, next);
 
@@ -4132,7 +4130,7 @@ __editor_maybe_static struct token *parse_command(char *src, char **_next,
 #define assemble_get_token_skip_comments()                                     \
   token++;                                                                     \
                                                                                \
-  while(token->type == ARG_TYPE_INDEXED_COMMENT)                               \
+  while(token->type == TOKEN_TYPE_COMMENT)                                     \
   {                                                                            \
     token++;                                                                   \
   }                                                                            \

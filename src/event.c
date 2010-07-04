@@ -23,6 +23,7 @@
 #include "platform.h"
 
 #include <stdlib.h>
+#include <string.h>
 
 #define KEY_REPEAT_START    250
 #define KEY_REPEAT_RATE     33

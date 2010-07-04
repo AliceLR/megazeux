@@ -1685,7 +1685,6 @@ void play_sample(int freq, char *filename, bool safely)
 {
   Uint32 vol = 255 * audio.sound_volume / 8;
   char translated_filename[MAX_PATH];
-  struct audio_stream *a_src;
 
   if(safely)
   {
@@ -1700,11 +1699,11 @@ void play_sample(int freq, char *filename, bool safely)
 
   if(freq == 0)
   {
-    a_src = construct_stream_audio_file(filename, 0, vol, 0);
+    construct_stream_audio_file(filename, 0, vol, 0);
   }
   else
   {
-    a_src = construct_stream_audio_file(filename,
+    construct_stream_audio_file(filename,
      (freq_conversion / freq) / 2, vol, 0);
   }
 }

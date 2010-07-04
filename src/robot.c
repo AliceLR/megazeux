@@ -2185,9 +2185,7 @@ void robot_box_display(struct world *mzx_world, char *program,
 {
   struct board *src_board = mzx_world->current_board;
   struct robot *cur_robot = src_board->robot_list[id];
-  int pos = 0, old_pos;
-  int key;
-  int mouse_press;
+  int pos = 0, key, mouse_press;
 
   label_storage[0] = 0;
 
@@ -2259,8 +2257,6 @@ void robot_box_display(struct world *mzx_world, char *program,
 
     update_event_status_delay();
     key = get_key(keycode_internal);
-
-    old_pos = pos;
 
     mouse_press = get_mouse_press_ext();
 

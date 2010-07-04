@@ -503,7 +503,7 @@ int char_editor(struct world *mzx_world)
   int draw_new;
   int chars_width, chars_height;
   int chars_x, chars_y;
-  int info_width, info_height;
+  int info_height;
   int info_x, info_y;
   int buffer_width = current_width * 8;
   int buffer_height = current_height * 14;
@@ -598,7 +598,6 @@ int char_editor(struct world *mzx_world)
     if(highlight_height > pad_height)
       pad_height = highlight_height;
 
-    info_width = 25;
     info_height = 15 + pad_height;
 
     if(dialog_height < (info_height + 2))

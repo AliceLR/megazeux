@@ -357,7 +357,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
 {
   int i, num_boards;
   int gl_rob_position, gl_rob_save_position;
-  int board_offsets_position, board_begin_position, board_end_position;
+  int board_offsets_position, board_begin_position;
   int board_size;
   unsigned int *size_offset_list;
   unsigned char *charset_mem;
@@ -698,8 +698,8 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     board_begin_position = ftell(fp);
     // Now save the board and get the size
     board_size = save_board(cur_board, fp, savegame);
-    // Save where the next board should go
-    board_end_position = ftell(fp);
+    // board_end_position, unused
+    ftell(fp);
     // Record size/offset information.
     size_offset_list[2 * i] = board_size;
     size_offset_list[2 * i + 1] = board_begin_position;

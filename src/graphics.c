@@ -1182,10 +1182,8 @@ void write_string_ext(const char *str, Uint32 x, Uint32 y,
   struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
-  Uint8 next_str[2];
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
-  next_str[1] = 0;
 
   while(cur_char && (cur_char != 0))
   {
@@ -1228,10 +1226,8 @@ void write_string_mask(const char *str, Uint32 x, Uint32 y,
   struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
-  Uint8 next_str[2];
   Uint8 bg_color = (color >> 4) + 16;
   Uint8 fg_color = (color & 0x0F) + 16;
-  next_str[1] = 0;
 
   while(cur_char && (cur_char != 0))
   {
@@ -1281,10 +1277,8 @@ void write_line_ext(const char *str, Uint32 x, Uint32 y,
   struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
-  Uint8 next_str[2];
   Uint8 bg_color = (color >> 4) + c_offset;
   Uint8 fg_color = (color & 0x0F) + c_offset;
-  next_str[1] = 0;
 
   while(cur_char && (cur_char != '\n'))
   {
@@ -1318,10 +1312,8 @@ void write_line_mask(const char *str, Uint32 x, Uint32 y,
   struct char_element *dest = graphics.text_video + (y * SCREEN_W) + x;
   const char *src = str;
   Uint8 cur_char = *src;
-  Uint8 next_str[2];
   Uint8 bg_color = (color >> 4) + 16;
   Uint8 fg_color = (color & 0x0F) + 16;
-  next_str[1] = 0;
 
   while(cur_char && (cur_char != '\n'))
   {

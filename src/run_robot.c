@@ -2100,13 +2100,11 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         int amount = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
         int item_number = *(p2 + 1);
-        int success = 0;
 
         if(get_counter(mzx_world, item_to_counter[item_number], 0) >=
          amount)
         {
           dec_counter(mzx_world, item_to_counter[item_number], amount, 0);
-          success = 1;
         }
 
         break;
@@ -2117,13 +2115,11 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         int amount = parse_param(mzx_world, cmd_ptr + 1, id);
         char *p2 = next_param_pos(cmd_ptr + 1);
         int item_number = *(p2 + 1);
-        int success = 0;
 
         if(get_counter(mzx_world, item_to_counter[item_number], 0) >=
          amount)
         {
           dec_counter(mzx_world, item_to_counter[item_number], amount, 0);
-          success = 1;
         }
         else
         {
@@ -5689,13 +5685,12 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         char *p2 = next_param_pos(cmd_ptr + 1);
         int dest_color = parse_param(mzx_world, p2, id);
         int src_fg, src_bg, i;
-        char *overlay, *overlay_color;
+        char *overlay_color;
         int d_color;
 
         if(!src_board->overlay_mode)
           setup_overlay(src_board, 3);
 
-        overlay = src_board->overlay;
         overlay_color = src_board->overlay_color;
 
         split_colors(src_color, &src_fg, &src_bg);

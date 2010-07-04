@@ -1315,7 +1315,6 @@ static int copy_buffer_to_X11_selection(const SDL_Event *event)
   int i, line_length;
   Display *display;
   XEvent response;
-  Window window;
 
   if(event->type != SDL_SYSWMEVENT)
     return 1;
@@ -1327,7 +1326,6 @@ static int copy_buffer_to_X11_selection(const SDL_Event *event)
   SDL_GetWMInfo(&info);
 
   display = info.info.x11.display;
-  window = info.info.x11.window;
   dest_data = cmalloc(copy_buffer_total_length + 1);
   dest_ptr = dest_data;
 

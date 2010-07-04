@@ -908,7 +908,6 @@ static int update(struct world *mzx_world, int game, int *fadein)
   int board_height = src_board->board_height;
   char *level_id = src_board->level_id;
   char *level_color = src_board->level_color;
-  char *level_param = src_board->level_param;
   char *level_under_id = src_board->level_under_id;
   char *level_under_color = src_board->level_under_color;
   char *level_under_param = src_board->level_under_param;
@@ -1543,7 +1542,6 @@ static int update(struct world *mzx_world, int game, int *fadein)
     }
 
     level_id = src_board->level_id;
-    level_param = src_board->level_param;
     level_color = src_board->level_color;
     level_under_id = src_board->level_under_id;
     level_under_param = src_board->level_under_param;

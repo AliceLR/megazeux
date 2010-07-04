@@ -71,9 +71,8 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
  FILE *fp, int savegame, int version)
 {
   int num_robots, num_scrolls, num_sensors, num_robots_active;
-  int overlay_mode, board_mode;
-  int size, board_width, board_height;
-  int i;
+  int overlay_mode, size, board_width, board_height, i;
+
   struct robot *cur_robot;
   struct scroll *cur_scroll;
   struct sensor *cur_sensor;
@@ -101,7 +100,9 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
   cur_board->volume_inc = 0;
   cur_board->volume_target = 255;
 
-  board_mode = fgetc(fp);
+  // board_mode, unused
+  fgetc(fp);
+
   overlay_mode = fgetc(fp);
 
   if(!overlay_mode)

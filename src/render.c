@@ -332,11 +332,8 @@ void render_graph8(Uint8 *pixels, Uint32 pitch, struct graphics_data *graphics,
   Uint32 i, i2, i3;
   Uint32 line_advance = pitch / 4;
   Uint32 row_advance = line_advance * 14;
-  Uint32 *old_dest = NULL;
 
   dest = (Uint32 *)pixels;
-
-  old_dest = dest;
 
   for(i = 0; i < 25; i++)
   {
@@ -384,11 +381,8 @@ void render_graph16(Uint16 *pixels, Uint32 pitch,
   Uint32 i, i2, i3;
   Uint32 line_advance = pitch / 4;
   Uint32 row_advance = line_advance * 14;
-  Uint32 *old_dest = NULL;
 
   dest = (Uint32 *)pixels;
-
-  old_dest = dest;
 
   for(i = 0; i < 25; i++)
   {
@@ -440,11 +434,8 @@ void render_graph32(Uint32 *pixels, Uint32 pitch,
   Uint32 line_advance = pitch / 4;
   Uint32 line_advance_sub = line_advance - 8;
   Uint32 row_advance = line_advance * 14;
-  Uint32 *old_dest = NULL;
 
   dest = pixels;
-
-  old_dest = dest;
 
   for(i = 0; i < 25; i++)
   {
@@ -496,11 +487,8 @@ void render_graph32s(Uint32 *pixels, Uint32 pitch,
   Uint32 line_advance = pitch / 4;
   Uint32 line_advance_sub = line_advance - 8;
   Uint32 row_advance = line_advance * 14;
-  Uint32 *old_dest = NULL;
 
   dest = pixels;
-
-  old_dest = dest;
 
   for(i = 0; i < 25; i++)
   {

@@ -1,0 +1,112 @@
+diff --git a/contrib/libmodplug/src/fastmix.cpp b/contrib/libmodplug/src/fastmix.cpp
+index eacaecc..86fdcd6 100644
+--- a/contrib/libmodplug/src/fastmix.cpp
++++ b/contrib/libmodplug/src/fastmix.cpp
+@@ -1485,13 +1485,12 @@ UINT CSoundFile::CreateStereoMix(int count)
+ 	{
+ 		const LPMIXINTERFACE *pMixFuncTable;
+ 		MODCHANNEL * const pChannel = &Chn[ChnMix[nChn]];
+-		UINT nFlags, nMasterCh;
++		UINT nFlags;
+ 		LONG nSmpCount;
+ 		int nsamples;
+ 		int *pbuffer;
+ 
+ 		if (!pChannel->pCurrentSample) continue;
+-		nMasterCh = (ChnMix[nChn] < m_nChannels) ? ChnMix[nChn]+1 : pChannel->nMasterChn;
+ 		pOfsR = &gnDryROfsVol;
+ 		pOfsL = &gnDryLOfsVol;
+ 		nFlags = 0;
+diff --git a/contrib/libmodplug/src/load_669.cpp b/contrib/libmodplug/src/load_669.cpp
+index f3aa0ee..4087fa2 100644
+--- a/contrib/libmodplug/src/load_669.cpp
++++ b/contrib/libmodplug/src/load_669.cpp
+@@ -48,14 +48,12 @@ DWORD lengthArrayToDWORD(const BYTE length[4]) {
+ BOOL CSoundFile::Read669(const BYTE *lpStream, DWORD dwMemLength)
+ //---------------------------------------------------------------
+ {
+-	BOOL b669Ext;
+ 	const FILEHEADER669 *pfh = (const FILEHEADER669 *)lpStream;
+ 	const SAMPLE669 *psmp = (const SAMPLE669 *)(lpStream + 0x1F1);
+ 	DWORD dwMemPos = 0;
+ 
+ 	if ((!lpStream) || (dwMemLength < sizeof(FILEHEADER669))) return FALSE;
+ 	if ((bswapLE16(pfh->sig) != 0x6669) && (bswapLE16(pfh->sig) != 0x4E4A)) return FALSE;
+-	b669Ext = (bswapLE16(pfh->sig) == 0x4E4A) ? TRUE : FALSE;
+ 	if ((!pfh->samples) || (pfh->samples > 64) || (pfh->restartpos >= 128)
+ 	 || (!pfh->patterns) || (pfh->patterns > 128)) return FALSE;
+ 	DWORD dontfuckwithme = 0x1F1 + pfh->samples * sizeof(SAMPLE669) + pfh->patterns * 0x600;
+diff --git a/contrib/libmodplug/src/load_it.cpp b/contrib/libmodplug/src/load_it.cpp
+index 10b17af..bc57fb3 100644
+--- a/contrib/libmodplug/src/load_it.cpp
++++ b/contrib/libmodplug/src/load_it.cpp
+@@ -166,7 +166,7 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
+ 	DWORD inspos[MAX_INSTRUMENTS];
+ 	DWORD smppos[MAX_SAMPLES];
+ 	DWORD patpos[MAX_PATTERNS];
+-	BYTE chnmask[64], channels_used[64];
++	BYTE chnmask[64];
+ 	MODCOMMAND lastvalue[64];
+ 
+ 	pifh.id = bswapLE32(pifh.id);
+@@ -515,7 +515,6 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
+ 					if (note < 0x80) note++;
+ 					m[ch].note = note;
+ 					lastvalue[ch].note = note;
+-					channels_used[ch] = TRUE;
+ 				}
+ 			}
+ 			if (chnmask[ch] & 2)
+@@ -1214,7 +1213,6 @@ void ITUnpack8Bit(signed char *pSample, DWORD dwLen, LPBYTE lpMemFile, DWORD dwM
+ {
+ 	signed char *pDst = pSample;
+ 	LPBYTE pSrc = lpMemFile;
+-	DWORD wHdr = 0;
+ 	DWORD wCount = 0;
+ 	DWORD bitbuf = 0;
+ 	UINT bitnum = 0;
+@@ -1225,7 +1223,6 @@ void ITUnpack8Bit(signed char *pSample, DWORD dwLen, LPBYTE lpMemFile, DWORD dwM
+ 		if (!wCount)
+ 		{
+ 			wCount = 0x8000;
+-			wHdr = bswapLE16(*((LPWORD)pSrc));
+ 			pSrc += 2;
+ 			bLeft = 9;
+ 			bTemp = bTemp2 = 0;
+@@ -1296,7 +1293,6 @@ void ITUnpack16Bit(signed char *pSample, DWORD dwLen, LPBYTE lpMemFile, DWORD dw
+ {
+ 	signed short *pDst = (signed short *)pSample;
+ 	LPBYTE pSrc = lpMemFile;
+-	DWORD wHdr = 0;
+ 	DWORD wCount = 0;
+ 	DWORD bitbuf = 0;
+ 	UINT bitnum = 0;
+@@ -1308,7 +1304,6 @@ void ITUnpack16Bit(signed char *pSample, DWORD dwLen, LPBYTE lpMemFile, DWORD dw
+ 		if (!wCount)
+ 		{
+ 			wCount = 0x4000;
+-			wHdr = bswapLE16(*((LPWORD)pSrc));
+ 			pSrc += 2;
+ 			bLeft = 17;
+ 			wTemp = wTemp2 = 0;
+diff --git a/contrib/libmodplug/src/load_okt.cpp b/contrib/libmodplug/src/load_okt.cpp
+index 7968f0b..50b905f 100644
+--- a/contrib/libmodplug/src/load_okt.cpp
++++ b/contrib/libmodplug/src/load_okt.cpp
+@@ -43,7 +43,7 @@ BOOL CSoundFile::ReadOKT(const BYTE *lpStream, DWORD dwMemLength)
+ {
+ 	const OKTFILEHEADER *pfh = (OKTFILEHEADER *)lpStream;
+ 	DWORD dwMemPos = sizeof(OKTFILEHEADER);
+-	UINT nsamples = 0, npatterns = 0, norders = 0;
++	UINT nsamples = 0, norders = 0;
+ 
+ 	if ((!lpStream) || (dwMemLength < 1024)) return FALSE;
+ 	if ((pfh->okta != 0x41544B4F) || (pfh->song != 0x474E4F53)
+@@ -88,7 +88,6 @@ BOOL CSoundFile::ReadOKT(const BYTE *lpStream, DWORD dwMemLength)
+ 	if (dwMemPos >= dwMemLength) return TRUE;
+ 	if (*((DWORD *)(lpStream + dwMemPos)) == 0x4E454C53)
+ 	{
+-		npatterns = lpStream[dwMemPos+9];
+ 		dwMemPos += bswapBE32(*((DWORD *)(lpStream + dwMemPos + 4))) + 8;
+ 	}
+ 	// PLEN
