@@ -116,14 +116,7 @@ static void do_unicode_key_event(struct buffered_status *status, bool down,
 {
   if(down)
   {
-    status->keymap[code] = 1;
-    status->key_pressed = code;
-    status->key = code;
-    status->key_repeat = code;
-    status->unicode = unicode;
-    status->unicode_repeat = unicode;
-    status->keypress_time = get_ticks();
-    status->key_release = IKEY_UNKNOWN;
+    key_press(status, code, unicode);
   }
   else
   {

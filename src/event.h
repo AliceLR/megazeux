@@ -105,6 +105,9 @@ CORE_LIBSPEC bool get_alt_status(enum keycode_type type);
 CORE_LIBSPEC bool get_shift_status(enum keycode_type type);
 CORE_LIBSPEC bool get_ctrl_status(enum keycode_type type);
 CORE_LIBSPEC void initialize_joysticks(void);
+CORE_LIBSPEC void key_press(struct buffered_status *status, enum keycode key,
+ Uint16 unicode_key);
+CORE_LIBSPEC void key_release(struct buffered_status *status, enum keycode key);
 
 // Implemented by "drivers" (SDL, Wii, and NDS currently)
 void __wait_event(void);

@@ -109,10 +109,6 @@ static enum keycode convert_SDL_internal(SDLKey key)
     case SDLK_RIGHT: return IKEY_RIGHT;
     case SDLK_LEFT: return IKEY_LEFT;
     case SDLK_INSERT: return IKEY_INSERT;
-    case SDLK_HOME: return IKEY_HOME;
-    case SDLK_END: return IKEY_END;
-    case SDLK_PAGEUP: return IKEY_PAGEUP;
-    case SDLK_PAGEDOWN: return IKEY_PAGEDOWN;
     case SDLK_F1: return IKEY_F1;
     case SDLK_F2: return IKEY_F2;
     case SDLK_F3: return IKEY_F3;
@@ -128,9 +124,7 @@ static enum keycode convert_SDL_internal(SDLKey key)
     case SDLK_NUMLOCK: return IKEY_NUMLOCK;
     case SDLK_CAPSLOCK: return IKEY_CAPSLOCK;
     case SDLK_SCROLLOCK: return IKEY_SCROLLOCK;
-    case SDLK_RSHIFT: return IKEY_RSHIFT;
     case SDLK_LSHIFT: return IKEY_LSHIFT;
-    case SDLK_RCTRL: return IKEY_RCTRL;
     case SDLK_LCTRL: return IKEY_LCTRL;
     case SDLK_RALT: return IKEY_RALT;
     case SDLK_LALT: return IKEY_LALT;
@@ -139,6 +133,21 @@ static enum keycode convert_SDL_internal(SDLKey key)
     case SDLK_SYSREQ: return IKEY_SYSREQ;
     case SDLK_BREAK: return IKEY_BREAK;
     case SDLK_MENU: return IKEY_MENU;
+#ifndef CONFIG_PANDORA
+    case SDLK_HOME: return IKEY_HOME;
+    case SDLK_END: return IKEY_END;
+    case SDLK_PAGEUP: return IKEY_PAGEUP;
+    case SDLK_PAGEDOWN: return IKEY_PAGEDOWN;
+    case SDLK_RSHIFT: return IKEY_RSHIFT;
+    case SDLK_RCTRL: return IKEY_RCTRL;
+#else /* CONFIG_PANDORA */
+    case SDLK_HOME: return input.joystick_button_map[0][0];
+    case SDLK_END: return input.joystick_button_map[0][1];
+    case SDLK_PAGEUP: return input.joystick_button_map[0][2];
+    case SDLK_PAGEDOWN: return input.joystick_button_map[0][3];
+    case SDLK_RSHIFT: return input.joystick_button_map[0][4];
+    case SDLK_RCTRL: return input.joystick_button_map[0][5];
+#endif /* CONFIG_PANDORA */
     default: return IKEY_UNKNOWN;
   }
 }
@@ -293,14 +302,7 @@ static bool process_event(SDL_Event *event)
         }
       }
 
-      status->keymap[ckey] = 1;
-      status->key_pressed = ckey;
-      status->key = ckey;
-      status->unicode = event->key.keysym.unicode;
-      status->key_repeat = ckey;
-      status->unicode_repeat = event->key.keysym.unicode;
-      status->keypress_time = get_ticks();
-      status->key_release = IKEY_UNKNOWN;
+      key_press(status, ckey, event->key.keysym.unicode);
       break;
     }
 
@@ -382,40 +384,19 @@ static bool process_event(SDL_Event *event)
         if(stuffed_key)
         {
           if(status->keymap[stuffed_key] == 0)
-          {
-            status->key_pressed = stuffed_key;
-            status->key = stuffed_key;
-            status->unicode = stuffed_key;
-            status->key_repeat = stuffed_key;
-            status->unicode_repeat = stuffed_key;
-            status->keymap[stuffed_key] = 1;
-            status->keypress_time = get_ticks();
-            status->key_release = IKEY_UNKNOWN;
-          }
+            key_press(status, stuffed_key, stuffed_key);
 
           if(last_axis == (digital_value ^ 1))
           {
-            stuffed_key = input.joystick_axis_map[which][axis][last_axis];
-
-            status->keymap[stuffed_key] = 0;
-            status->key_repeat = IKEY_UNKNOWN;
-            status->unicode_repeat = 0;
-            status->key_release = stuffed_key;
+            key_release(status,
+             input.joystick_axis_map[which][axis][last_axis]);
           }
         }
       }
       else
       {
-        stuffed_key =
-          input.joystick_axis_map[which][axis][last_axis];
-
-        if(stuffed_key)
-        {
-          status->keymap[stuffed_key] = 0;
-          status->key_repeat = IKEY_UNKNOWN;
-          status->unicode_repeat = 0;
-          status->key_release = stuffed_key;
-        }
+        key_release(status,
+          input.joystick_axis_map[which][axis][last_axis]);
       }
 
       status->axis[which][axis] = digital_value;
@@ -426,20 +407,10 @@ static bool process_event(SDL_Event *event)
     {
       int which = event->jbutton.which;
       int button = event->jbutton.button;
-      enum keycode stuffed_key =
-        input.joystick_button_map[which][button];
+      enum keycode stuffed_key = input.joystick_button_map[which][button];
 
       if(stuffed_key && (status->keymap[stuffed_key] == 0))
-      {
-        status->key_pressed = stuffed_key;
-        status->key = stuffed_key;
-        status->unicode = stuffed_key;
-        status->key_repeat = stuffed_key;
-        status->unicode_repeat = stuffed_key;
-        status->keymap[stuffed_key] = 1;
-        status->keypress_time = SDL_GetTicks();
-        status->key_release = (enum keycode)0;
-      }
+        key_press(status, stuffed_key, stuffed_key);
 
       break;
     }
@@ -448,16 +419,10 @@ static bool process_event(SDL_Event *event)
     {
       int which = event->jbutton.which;
       int button = event->jbutton.button;
-      enum keycode stuffed_key =
-        input.joystick_button_map[which][button];
+      enum keycode stuffed_key = input.joystick_button_map[which][button];
 
       if(stuffed_key)
-      {
-        status->keymap[stuffed_key] = 0;
-        status->key_repeat = (enum keycode)0;
-        status->unicode_repeat = 0;
-        status->key_release = stuffed_key;
-      }
+        key_release(status, stuffed_key);
 
       break;
     }

@@ -28,6 +28,7 @@ usage() {
 	echo "  wii            Experimental Wii port"
 	echo "  amiga          Experimental AmigaOS 4 port"
 	echo "  android        Experimental Android port"
+	echo "  pandora        Experimental Pandora port"
 	echo
 	echo "Supported <option> values (negatives can be used):"
 	echo
@@ -447,6 +448,11 @@ if [ "$PLATFORM" = "android" ]; then
 	echo "Disabling SDL (Android), force-enabling EGL."
 	SDL="false"
 	EGL="true"
+fi
+
+if [ "$PLATFORM" = "pandora" ]; then
+	echo "#define CONFIG_PANDORA" >> src/config.h
+	echo "BUILD_PANDORA=1" >> platform.inc
 fi
 
 #

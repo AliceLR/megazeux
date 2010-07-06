@@ -753,3 +753,24 @@ void set_num_buffered_events(Uint8 value)
 {
   num_buffered_events = MAX(1, value);
 }
+
+void key_press(struct buffered_status *status, enum keycode key,
+ Uint16 unicode_key)
+{
+  status->keymap[key] = 1;
+  status->key_pressed = key;
+  status->key = key;
+  status->unicode = unicode_key;
+  status->key_repeat = key;
+  status->unicode_repeat = unicode_key;
+  status->keypress_time = get_ticks();
+  status->key_release = IKEY_UNKNOWN;
+}
+
+void key_release(struct buffered_status *status, enum keycode key)
+{
+  status->keymap[key] = 0;
+  status->key_repeat = IKEY_UNKNOWN;
+  status->unicode_repeat = 0;
+  status->key_release = key;
+}

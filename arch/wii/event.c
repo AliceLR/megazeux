@@ -763,14 +763,7 @@ static bool process_event(union event *ev)
         enum keycode skey = input.joystick_button_map[ev->button.pad][button];
         if(skey && (status->keymap[skey] == 0))
         {
-          status->key_pressed = skey;
-          status->key = skey;
-          status->unicode = skey;
-          status->key_repeat = skey;
-          status->unicode_repeat = skey;
-          status->keymap[skey] = 1;
-          status->keypress_time = get_ticks();
-          status->key_release = IKEY_UNKNOWN;
+          key_press(status, skey, skey);
           rval = true;
         }
       }
@@ -818,10 +811,7 @@ static bool process_event(union event *ev)
         enum keycode skey = input.joystick_button_map[ev->button.pad][button];
         if(skey)
         {
-          status->keymap[skey] = 0;
-          status->key_repeat = IKEY_UNKNOWN;
-          status->unicode_repeat = 0;
-          status->key_release = skey;
+          key_release(status, skey);
           rval = true;
         }
       }
@@ -857,23 +847,12 @@ static bool process_event(union event *ev)
         if(skey)
         {
           if(status->keymap[skey] == 0)
-          {
-            status->key_pressed = skey;
-            status->key = skey;
-            status->unicode = skey;
-            status->key_repeat = skey;
-            status->unicode_repeat = skey;
-            status->keymap[skey] = 1;
-            status->keypress_time = get_ticks();
-            status->key_release = IKEY_UNKNOWN;
-          }
+            key_press(status, skey, skey);
+
           if(last_axis == (digital_value ^ 1))
           {
             skey = input.joystick_axis_map[ev->axis.pad][axis][last_axis];
-            status->keymap[skey] = 0;
-            status->key_repeat = IKEY_UNKNOWN;
-            status->unicode_repeat = 0;
-            status->key_release = skey;
+            key_release(status, skey);
           }
         }
       }
@@ -883,12 +862,7 @@ static bool process_event(union event *ev)
         {
           skey = input.joystick_axis_map[ev->axis.pad][axis][last_axis];
           if(skey)
-          {
-            status->keymap[skey] = 0;
-            status->key_repeat = IKEY_UNKNOWN;
-            status->unicode_repeat = 0;
-            status->key_release = skey;
-          }
+            key_release(status, skey);
         }
       }
       status->axis[ev->axis.pad][axis] = digital_value;
@@ -961,14 +935,7 @@ static bool process_event(union event *ev)
         }
       }
 
-      status->keymap[ckey] = 1;
-      status->key_pressed = ckey;
-      status->key = ckey;
-      status->unicode = ev->key.unicode;
-      status->key_repeat = ckey;
-      status->unicode_repeat = status->unicode;
-      status->keypress_time = get_ticks();
-      status->key_release = IKEY_UNKNOWN;
+      key_press(status, skey, ev->key.unicode);
       break;
     }
     case EVENT_KEY_UP:

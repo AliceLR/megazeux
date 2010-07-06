@@ -23,7 +23,7 @@ table {
 	border-collapse : collapse;
 	border : 2px solid black;
 	border-spacing : 0;
-	width : 103em;
+	width : 120em;
 }
 
 td, th {
@@ -33,7 +33,7 @@ td, th {
 	border-color : gray;
 	padding : 5px;
 	color : black;
-	width : 9%;
+	width : 8.3%;
 }
 
 td {
@@ -117,6 +117,7 @@ li {
 <th>psp</th>
 <th>unix</th>
 <th>wii</th>
+<th>pandora</th>
 </tr>
 
 <tr>
@@ -131,6 +132,7 @@ li {
 <td>Playstation Portable</td>
 <td>Linux, BSD, Solaris<br/>HaikuOS, etc.</td>
 <td>Nintendo Wii</td>
+<td>Pandora</td>
 </tr>
 
 <tr>
@@ -145,6 +147,7 @@ li {
 <td>MIPS (ELF)</td>
 <td>x86 (ELF)<br/>AMD64 (ELF)<br/>PPC64 (ELF)</td>
 <td>PPC (ELF)</td>
+<td>ARM9 (ELF)</td>
 </tr>
 
 <tr>
@@ -159,6 +162,7 @@ li {
 <td>Big</td>
 <td>Varies</td>
 <td>Big</td>
+<td>Little</td>
 </tr>
 
 <tr>
@@ -166,13 +170,15 @@ li {
 <td>gcc 4.2.2<br/>binutils 2.14<br/>clib2</td>
 <td>gcc 4.2.1<br/>binutils 2.17<br/>bionic</td>
 <td>gcc 4.0.1<br/>cctools 667.3<br/>10.3 (min ver)</td>
-<td>gcc 4.1.1 (open2x)<br/>binutils 2.16.1<br/>glibc 2.3.6</td>
+<td>gcc 4.1.1<br/>binutils 2.16.1<br/>glibc 2.3.6<br/>(open2x)</td>
 <td>gcc 4.4.0<br/>binutils 2.19.1</td>
 <td>Visual Studio 2008</td>
-<td>gcc 4.4.0 (dk r26)<br/>binutils 2.19.1</td>
-<td>gcc 4.3.3 (dk r13)<br/>binutils 2.16.1</td>
+<td>gcc 4.4.0<br/>binutils 2.19.1<br/>(dk r26)</td>
+<td>gcc 4.3.3<br/>binutils 2.16.1<br/>(dk r13)</td>
 <td>Various</td>
-<td>gcc 4.4.1 (dk r18)<br/>binutils 2.19.1</td>
+<td>gcc 4.4.1<br/>binutils 2.19.1<br/>(dk r18)</td>
+<td>gcc 4.4.1<br/>binutils 2.19.51<br/>(CS 2009q3)</td>
+
 </tr>
 
 <tr>
@@ -187,6 +193,7 @@ li {
 <td class="yes">ZIP</td>
 <td class="yes">Various</td>
 <td class="yes">ZIP</td>
+<td class="no2">ZIP (PND?)</td>
 </tr>
 
 <tr>
@@ -201,6 +208,7 @@ li {
 <td class="na">N/A</td>
 <td class="yes">YES</td>
 <td class="na">N/A</td>
+<td class="yes">YES</td>
 </tr>
 
 <tr>
@@ -215,6 +223,7 @@ li {
 <td class="no">NO</td>
 <td class="yes">YES</td>
 <td class="no">NO</td>
+<td class="yes">YES</td>
 </tr>
 
 <tr>
@@ -226,6 +235,7 @@ li {
 <td class="std">ModPlug</td>
 <td class="std">ModPlug</td>
 <td class="na">N/A</td>
+<td class="std">ModPlug</td>
 <td class="std">ModPlug</td>
 <td class="std">ModPlug</td>
 <td class="std">ModPlug</td>
@@ -243,6 +253,7 @@ li {
 <td>tremor</td>
 <td class="std">libvorbis</td>
 <td class="std">libvorbis</td>
+<td class="std">libvorbis</td>
 </tr>
 
 
@@ -258,6 +269,7 @@ li {
 <td>Size</td>
 <td>Speed</td>
 <td>Size</td>
+<td>Speed</td>
 </tr>
 
 <tr>
@@ -272,6 +284,7 @@ li {
 <td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="std">NO</td>
+<td class="yes">YES</td>
 </tr>
 
 <tr>
@@ -284,6 +297,7 @@ li {
 <td class="yes">YES</td>
 <td class="no2">NO<a href="#note4">[4]</a></td>
 <td class="no2">NO<a href="#note4">[4]</a></td>
+<td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
 </tr>
@@ -300,6 +314,7 @@ li {
 <td class="no2">NO<a href="#note4">[4]</a></td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
+<td class="yes">YES</td>
 </tr>
 
 <tr>
@@ -311,6 +326,7 @@ li {
 <td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="no">NO</td>
+<td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="yes">YES</td>
@@ -328,6 +344,7 @@ li {
 <td class="yes">YES</td>
 <td class="yes">YES</td>
 <td class="std">render_gx</td>
+<td class="yes">YES</td>
 </tr>
 
 <tr>
@@ -342,6 +359,7 @@ li {
 <td class="no">NO</td>
 <td class="yes">YES</td>
 <td class="no">NO</td>
+<td class="no2">NO</td>
 </tr>
 
 <tr>
@@ -356,6 +374,7 @@ li {
 <td class="no">NO</td>
 <td class="yes">YES</td>
 <td class="no">NO</td>
+<td class="no2">NO</td>
 </tr>
 
 <tr>
@@ -370,6 +389,7 @@ li {
 <td class="na">N/A</td>
 <td class="yes">YES</td>
 <td class="na">N/A</td>
+<td class="no2">NO</td>
 </tr>
 
 <tr>
@@ -384,6 +404,7 @@ li {
 <td class="no">NO</td>
 <td class="no2">NO<a href="#note5">[5]</a></td>
 <td class="no">NO</td>
+<td class="yes">YES</td>
 </tr>
 
 
@@ -399,6 +420,7 @@ li {
 <td class="na">N/A</td>
 <td class="yes">YES</td>
 <td class="na">N/A</td>
+<td class="yes">YES</td>
 </tr>
 
 <tr>
@@ -413,6 +435,7 @@ li {
 <td class="no2">NO<a href="#note6">[6]</a></td>
 <td class="yes">YES</td>
 <td class="no2">NO<a href="#note6">[6]</a></td>
+<td class="yes">YES</td>
 </tr>
 
 <tr>
@@ -427,6 +450,7 @@ li {
 <td class="na">N/A</td>
 <td class="yes">YES</td>
 <td class="na">N/A</td>
+<td class="yes">YES</td>
 </tr>
 
 <tr>
@@ -441,6 +465,7 @@ li {
 <td class="yes">YES</td>
 <td class="std">NO</td>
 <td class="yes">YES</td>
+<td class="std">NO</td>
 </tr>
 
 </table>

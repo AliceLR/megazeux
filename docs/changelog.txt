@@ -34,6 +34,8 @@ USERS
   viewport to a size less than 80x25 but greater than the current board
   dimensions. The viewport will now always be clamped to board size.
 + Imported libmodplug 0.8.8.1 and rebased all patches.
++ Added experimental port to Pandora. See arch/pandora/README for more
+  information. (Exophase)
 
 DEVELOPERS
 
