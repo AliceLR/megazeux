@@ -935,7 +935,7 @@ static bool process_event(union event *ev)
         }
       }
 
-      key_press(status, skey, ev->key.unicode);
+      key_press(status, ckey, ev->key.unicode);
       break;
     }
     case EVENT_KEY_UP:
