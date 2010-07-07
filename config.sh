@@ -590,28 +590,6 @@ if [ "$PLATFORM" != "unix" -a "$PLATFORM" != "unix-devel" \
 fi
 
 #
-# Force disable icon branding.
-#
-if [ "$ICON" = "true" ]; then
-	if [ "$X11_PLATFORM" = "true" -a "$X11" = "false" ]; then
-		echo "Force-disabling icon branding (X11 disabled)."
-		ICON="false"
-	fi
-
-	if [ "$X11_PLATFORM" = "true" -a "$LIBPNG" = "false" ]; then
-		echo "Force-disabling icon branding (libpng disabled)."
-		ICON="false"
-	fi
-
-	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "gp2x" \
-	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" \
-	  -o "$PLATFORM" = "wii" ]; then
-		echo "Force-disabling icon branding (redundant)."
-		ICON="false"
-	fi
-fi
-
-#
 # Force disable modular DSOs.
 #
 if [ "$PLATFORM" = "gp2x" -o "$PLATFORM" = "nds" \
@@ -758,6 +736,28 @@ if [ "$X11" = "true" ]; then
 
 	# pass this along to the build system
 	echo "X11DIR=${X11DIR}" >> platform.inc
+fi
+
+#
+# Force disable icon branding.
+#
+if [ "$ICON" = "true" ]; then
+	if [ "$X11_PLATFORM" = "true" -a "$X11" = "false" ]; then
+		echo "Force-disabling icon branding (X11 disabled)."
+		ICON="false"
+	fi
+
+	if [ "$X11_PLATFORM" = "true" -a "$LIBPNG" = "false" ]; then
+		echo "Force-disabling icon branding (libpng disabled)."
+		ICON="false"
+	fi
+
+	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "gp2x" \
+	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" \
+	  -o "$PLATFORM" = "wii" ]; then
+		echo "Force-disabling icon branding (redundant)."
+		ICON="false"
+	fi
 fi
 
 #

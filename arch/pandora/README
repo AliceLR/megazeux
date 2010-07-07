@@ -1,1 +1,4 @@
 WRITE ME
+
+./config.sh --platform pandora --prefix /usr/local/pandora/arm-2009q3/usr \
+            --disable-gl --disable-modular --enable-tremor --enable-release
