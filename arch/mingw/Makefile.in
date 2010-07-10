@@ -18,6 +18,10 @@ DSOPOST    = .dll
 DSORPATH   =
 DSOSONAME  = -Wl,-soname,
 
+# Use MSVCRT directly for stdio; it's faster
+ARCH_CFLAGS   += -D__USE_MINGW_ANSI_STDIO=0
+ARCH_CXXFLAGS += -D__USE_MINGW_ANSI_STDIO=0
+
 # Drop dependency on libgcc_s_dw2-1.dll
 ARCH_LDFLAGS += -static-libgcc
 
