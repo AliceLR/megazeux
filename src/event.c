@@ -662,7 +662,7 @@ void warp_mouse_y(Uint32 y)
   status->mouse_y = y;
   status->real_mouse_y = my;
 
-  set_screen_coords(status->real_mouse_y, my, &mx_real, &my_real);
+  set_screen_coords(status->real_mouse_x, my, &mx_real, &my_real);
   real_warp_mouse(mx_real, my_real);
 }
 

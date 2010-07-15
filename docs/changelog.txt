@@ -36,6 +36,8 @@ USERS
 + Imported libmodplug 0.8.8.1 and rebased all patches.
 + Added experimental port to Pandora. See arch/pandora/README for more
   information. (Exophase)
++ Fix incorrectly changing horizontal mouse position on setting MOUSEY.
+  (Mr_Alert)
 
 DEVELOPERS
 
