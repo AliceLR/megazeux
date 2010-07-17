@@ -15,7 +15,7 @@ USERS
   correctly.
 + Fixed negative sprN_cheight et al from crashing. (Exophase)
 + Placement of objects on the player will be blocked with an error dialog
-  like DOS versions, instead of silenting failing after setup. (MZXGiant)
+  like DOS versions, instead of silently failing after setup. (MZXGiant)
 + Fixed a bug where LOAD_ROBOT would not properly parse lines of imported
   code that had leading whitespace. (MZXGiant)
 + Fixed an integer wrapping bug in debytecode, disallowed numeric literals
