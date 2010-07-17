@@ -810,7 +810,8 @@ static bool set_graphics_output(struct config_info *conf)
   return true;
 }
 
-#if defined(CONFIG_SDL) && defined(CONFIG_ICON) && !defined(__WIN32__)
+#if defined(CONFIG_PNG) && defined(CONFIG_SDL) && \
+    defined(CONFIG_ICON) && !defined(__WIN32__)
 
 static bool icon_w_h_constraint(png_uint_32 w, png_uint_32 h)
 {
@@ -851,7 +852,7 @@ static SDL_Surface *png_read_icon(const char *name)
    sdl_alloc_rgba_surface);
 }
 
-#endif // CONFIG_SDL && CONFIG_ICON && !__WIN32__
+#endif // CONFIG_PNG && CONFIG_SDL && CONFIG_ICON && !__WIN32__
 
 bool init_video(struct config_info *conf, const char *caption)
 {
@@ -931,6 +932,7 @@ bool init_video(struct config_info *conf, const char *caption)
     }
   }
 #else // !__WIN32__
+#if defined(CONFIG_PNG)
   {
     SDL_Surface *icon = png_read_icon("/usr/share/icons/megazeux.png");
     if(icon)
@@ -939,6 +941,7 @@ bool init_video(struct config_info *conf, const char *caption)
       SDL_FreeSurface(icon);
     }
   }
+#endif // CONFIG_PNG
 #endif // __WIN32__
 #endif // CONFIG_SDL && CONFIG_ICON
 

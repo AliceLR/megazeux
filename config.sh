@@ -91,7 +91,6 @@ MZXRUN="true"
 HELPSYS="true"
 UTILS="true"
 X11="true"
-X11_PLATFORM="true"
 SOFTWARE="true"
 GL_FIXED="true"
 GL_PROGRAM="true"
@@ -700,7 +699,8 @@ fi
 #
 # X11 support (linked against and needs headers installed)
 #
-if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
+if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" \
+  -o "$PLATFORM" = "pandora" ]; then
 	#
 	# Confirm the user's selection of X11, if they enabled it
 	#
@@ -718,9 +718,13 @@ if [ "$PLATFORM" = "unix" -o "$PLATFORM" = "unix-devel" ]; then
 			X11="false"
 		fi
 	fi
+
+	if [ "$ICON" = "true" -a "$X11" = "false" ]; then
+		echo "Force-disabling icon branding (X11 disabled)."
+		ICON="false"
+	fi
 else
 	echo "Force-disabling X11 (unsupported platform)."
-	X11_PLATFORM="false"
 	X11="false"
 fi
 
@@ -742,16 +746,6 @@ fi
 # Force disable icon branding.
 #
 if [ "$ICON" = "true" ]; then
-	if [ "$X11_PLATFORM" = "true" -a "$X11" = "false" ]; then
-		echo "Force-disabling icon branding (X11 disabled)."
-		ICON="false"
-	fi
-
-	if [ "$X11_PLATFORM" = "true" -a "$LIBPNG" = "false" ]; then
-		echo "Force-disabling icon branding (libpng disabled)."
-		ICON="false"
-	fi
-
 	if [ "$PLATFORM" = "darwin" -o "$PLATFORM" = "gp2x" \
 	  -o "$PLATFORM" = "psp" -o "$PLATFORM" = "nds" \
 	  -o "$PLATFORM" = "wii" ]; then
