@@ -38,6 +38,8 @@ USERS
   information. (Exophase)
 + Fix incorrectly changing horizontal mouse position on setting MOUSEY.
   (Mr_Alert)
++ Fixed overflow into protected character set when "Revert to..." is
+  selected in the character editing dialog. (MZXGiant)
 
 DEVELOPERS
 
