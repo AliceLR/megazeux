@@ -22,8 +22,8 @@ DSOSONAME  = -Wl,-soname,
 ARCH_CFLAGS   += -D__USE_MINGW_ANSI_STDIO=0
 ARCH_CXXFLAGS += -D__USE_MINGW_ANSI_STDIO=0
 
-# Drop dependency on libgcc_s_dw2-1.dll
-ARCH_LDFLAGS += -static-libgcc
+# Fix MINGW's shared library fanaticism
+ARCH_LDFLAGS += -static-libstdc++ -static-libgcc
 
 # OpenGL must be linked to MZX
 core_ldflags += -lopengl32
