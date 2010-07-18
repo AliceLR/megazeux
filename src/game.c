@@ -2427,7 +2427,19 @@ void title_screen(struct world *mzx_world)
         case IKEY_u:
         {
           if(check_for_updates)
+          {
+            int current_sfx_vol = get_sfx_volume();
+            int current_music_vol = get_music_volume();
+            set_sfx_volume(0);
+            set_music_volume(0);
+            if(mzx_world->active)
+              volume_module(0);
             check_for_updates(&mzx_world->conf);
+            set_sfx_volume(current_sfx_vol);
+            set_music_volume(current_music_vol);
+            if(mzx_world->active)
+              volume_module(src_board->volume);
+          }
           break;
         }
 
