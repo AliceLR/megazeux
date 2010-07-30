@@ -6,6 +6,14 @@
 #                  http://aegis.sourceforge.net/auug97.pdf
 ##
 
+#
+# Remove all built-in rules.
+#
+.SUFFIXES:
+ifeq ($(filter -r,$(MAKEFLAGS)),)
+MAKEFLAGS += -r
+endif
+
 .PHONY: clean help_check mzx mzx.debug build build_clean source
 
 -include platform.inc
