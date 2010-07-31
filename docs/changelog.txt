@@ -42,6 +42,10 @@ USERS
   selected in the character editing dialog. (MZXGiant)
 + Music and SFX now mute when the updater launches and are restored when
   it is complete. (MZXGiant)
++ Fix odd string behaviour when copying between strings that happen to
+  be stored close to each other in memory. This fixes a regression
+  introduced by the "crash when pasting to and from the same string"
+  fix in 2.82b.
 
 DEVELOPERS
 

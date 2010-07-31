@@ -1842,7 +1842,7 @@ static void force_string_move(struct world *mzx_world, const char *name,
 
   if(*str)
   {
-    off = (ssize_t)((*str)->value - src);
+    off = (ssize_t)(src - (*str)->value);
     if(off >= 0 && (unsigned int)off <= (*str)->length)
       src_dest_match = true;
   }
