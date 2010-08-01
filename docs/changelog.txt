@@ -46,6 +46,8 @@ USERS
   be stored close to each other in memory. This fixes a regression
   introduced by the "crash when pasting to and from the same string"
   fix in 2.82b.
++ The size/offset parameters for strings can now be specified in either
+  order (#+ vs +#) and will behave correctly.
 
 DEVELOPERS
 

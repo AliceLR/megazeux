@@ -2957,11 +2957,16 @@ static void get_string_size_offset(char *name, size_t *ssize,
   }
 
   if(size_position != -1)
+    name[size_position] = 0;
+
+  if(offset_position != -1)
+    name[offset_position] = 0;
+
+  if(size_position != -1)
   {
     ret = strtoul(name + size_position + 1, &error, 10);
     if(!error[0])
     {
-      name[size_position] = 0;
       *size_specified = true;
       *ssize = ret;
     }
@@ -2972,7 +2977,6 @@ static void get_string_size_offset(char *name, size_t *ssize,
     ret = strtoul(name + offset_position + 1, &error, 10);
     if(!error[0])
     {
-      name[offset_position] = 0;
       *offset_specified = true;
       *soffset = ret;
     }
