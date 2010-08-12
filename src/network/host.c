@@ -882,21 +882,23 @@ static bool _raw_host_connect(struct host *h, const char *hostname, int port)
 static enum proxy_status socks4a_connect(struct host *h,
  const char *target_host, int target_port)
 {
-  char handshake[64] = "\4\1\0\0\0\0\0\1anon\0x\0", *ptr = handshake;
+  char handshake[8];
   int rBuf;
-
-  if (strlen(target_host) > 42) // max length of domain to resolve is 42
-    return PROXY_CONNECTION_FAILED;
+  target_port = platform_htons(target_port);
 
   _raw_host_connect(h, conf->socks_host, conf->socks_port);
 
-  handshake[2] = target_port / 255;
-  handshake[3] = target_port % 255;
-  strcpy(ptr+13, target_host);
-  ptr += strlen(target_host);
-  *(ptr++) = 0;
-  if (!__send(h, handshake, 14 + strlen(target_host)))
+  if (!__send(h, "\4\1", 2))
     return PROXY_SEND_ERROR;
+  if (!__send(h, &target_port, 2))
+    return PROXY_SEND_ERROR;
+  if (!__send(h, "\0\0\0\1anonymous", 14))
+    return PROXY_SEND_ERROR;
+  if (!__send(h, target_host, strlen(target_host)))
+    return PROXY_SEND_ERROR;
+  if (!__send(h, "\0", 1))
+    return PROXY_SEND_ERROR;
+
   rBuf = __recv(h, handshake, 8);
   if (rBuf == -1)
     return PROXY_CONNECTION_FAILED;
@@ -908,13 +910,16 @@ static enum proxy_status socks4a_connect(struct host *h,
 static enum proxy_status socks4_connect(struct host *h,
  struct addrinfo *ai_data)
 {
-  char handshake[16] = "\4\1\0\0\0\0\0\1anon\0", *ptr = handshake;
+  char handshake[8];
   int rBuf;
 
   _raw_host_connect(h, conf->socks_host, conf->socks_port);
 
-  memcpy(ptr+2, ai_data->ai_addr->sa_data, 6);
-  if (!__send(h, handshake, 13))
+  if (!__send(h, "\4\1", 2))
+    return PROXY_SEND_ERROR;
+  if (!__send(h, ai_data->ai_addr->sa_data, 6))
+    return PROXY_SEND_ERROR;
+  if (!__send(h, "anonymous\0", 10))
     return PROXY_SEND_ERROR;
 
   rBuf = __recv(h, handshake, 8);
@@ -932,50 +937,51 @@ static enum proxy_status socks5_connect(struct host *h,
    * and we're also only supporting none or user/password auth.
    */
 
-  // Version[0x05]|Number of auth methods|auth methods
-  char handshake[10] = "\5\1\0";
+  char handshake[10];
   int rBuf;
 
   _raw_host_connect(h, conf->socks_host, conf->socks_port);
 
-  if (!__send(h, handshake, 3))
+  // Version[0x05]|Number of auth methods|auth methods
+  if (!__send(h, "\5\1\0", 3))
     return PROXY_SEND_ERROR;
+
   rBuf = __recv(h, handshake, 2);
   if (rBuf == -1)
     return PROXY_CONNECTION_FAILED;
-  if (handshake[0] != '\5')
+  if (handshake[0] != 0x5)
     return PROXY_HANDSHAKE_FAILED;
 
   // Version[0x05]|Command|0x00|address type|destination|port
   if (ai_data->ai_family == AF_INET6)
     return PROXY_ADDRESS_TYPE_UNSUPPORTED;
-  else
-  {
-    handshake[1] = '\1';
-    handshake[3] = '\1';
-    handshake[4] = ai_data->ai_addr->sa_data[2];
-    handshake[5] = ai_data->ai_addr->sa_data[3];
-    handshake[6] = ai_data->ai_addr->sa_data[4];
-    handshake[7] = ai_data->ai_addr->sa_data[5];
-    handshake[8] = ai_data->ai_addr->sa_data[0];
-    handshake[9] = ai_data->ai_addr->sa_data[1];
-    if (!__send(h, handshake, 10)) { return PROXY_SEND_ERROR; }
-  }
+
+  if (!__send(h, "\5\1\0\1", 4))
+    return PROXY_SEND_ERROR;
+  if (!__send(h, ai_data->ai_addr->sa_data+2, 4))
+    return PROXY_SEND_ERROR;
+  if (!__send(h, ai_data->ai_addr->sa_data, 2))
+    return PROXY_SEND_ERROR;
+
   rBuf = __recv(h, handshake, 10);
-  if (rBuf == -1) { return PROXY_CONNECTION_FAILED; }
+  if (rBuf == -1)
+    return PROXY_CONNECTION_FAILED;
   switch (handshake[1])
   {
-    case 0:
+    case 0x0:
       return PROXY_SUCCESS;
-    case 2:
+    case 0x1:
+    case 0x7:
+      return PROXY_UNKNOWN_ERROR;
+    case 0x2:
       return PROXY_ACCESS_DENIED;
-    case 3:
-    case 4:
-    case 6:
+    case 0x3:
+    case 0x4:
+    case 0x6:
       return PROXY_REFLECTION_FAILED;
-    case 5:
+    case 0x5:
       return PROXY_TARGET_REFUSED;
-    case 8:
+    case 0x8:
       return PROXY_ADDRESS_TYPE_UNSUPPORTED;
     default:
       return PROXY_UNKNOWN_ERROR;
