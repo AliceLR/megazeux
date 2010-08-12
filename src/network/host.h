@@ -28,7 +28,6 @@ __M_BEGIN_DECLS
 #include <stdio.h> // for FILE
 
 struct host;
-static struct config_info *conf;
 
 enum host_family
 {
@@ -81,8 +80,6 @@ enum proxy_status
   PROXY_UNKNOWN_ERROR
 };
 
-#ifdef __WIN32__
-
 /**
  * Initializes the host layer. Must be called before all other host functions.
  *
@@ -95,13 +92,6 @@ bool host_layer_init(struct config_info *conf);
  * Frees any associated operating system resources.
  */
 void host_layer_exit(void);
-
-#else
-
-static inline bool host_layer_init(struct config_info *conf) { return true; }
-static inline void host_layer_exit(void) { }
-
-#endif
 
 /**
  * Creates a host for use either as a client or a server. The new host will
@@ -173,20 +163,6 @@ UPDATER_LIBSPEC enum host_status host_recv_file(struct host *h,
 UPDATER_LIBSPEC void host_set_callbacks(struct host *h,
  void (*send_cb)(long offset), void (*recv_cb)(long offset),
  bool (*cancel_cb)(void));
-
-/**
- * Inline proxy connection routine. This is, by design, encapsulated inside
- * of the network layer, so that services inside of MZX don't have to worry
- * about management of the proxy subsystem.
- *
- * @param h            Host pipe to connect on
- * @param target_host  Endpoint host to connect to
- * @param target_port  Endpoint port to connect to
- *
- * @return             Status of proxy connection
- */
-enum proxy_status proxy_connect(struct host *h, const char *target_host,
- int target_port);
 
 #ifdef NETWORK_DEADCODE
 

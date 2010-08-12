@@ -461,46 +461,6 @@ static bool socket_load_syms(void)
   return true;
 }
 
-bool host_layer_init(struct config_info *in_conf)
-{
-  WORD version = MAKEWORD(1, 0);
-  WSADATA ws_data;
-
-  if(init_ref_count == 0)
-  {
-    if(!socket_load_syms())
-      return false;
-
-    if(socksyms.WSAStartup(version, &ws_data) < 0)
-      return false;
-  }
-
-  init_ref_count++;
-
-  conf = in_conf; // reference config ptr locally
-  return true;
-}
-
-void host_layer_exit(void)
-{
-  assert(init_ref_count > 0);
-  init_ref_count--;
-
-  if(init_ref_count != 0)
-    return;
-
-  if(socksyms.WSACleanup() == SOCKET_ERROR)
-  {
-    if(socksyms.WSAGetLastError() == WSAEINPROGRESS)
-    {
-      socksyms.WSACancelBlockingCall();
-      socksyms.WSACleanup();
-    }
-  }
-
-  socket_free_syms();
-}
-
 __network_maybe_static bool host_last_error_fatal(void)
 {
   if(socksyms.WSAGetLastError() == WSAEWOULDBLOCK)
@@ -609,6 +569,53 @@ static inline ssize_t platform_recvfrom(int s, void *buf, size_t len,
 }
 
 #endif // __WIN32__
+
+static struct config_info *conf;
+
+bool host_layer_init(struct config_info *in_conf)
+{
+#ifdef __WIN32__
+  WORD version = MAKEWORD(1, 0);
+  WSADATA ws_data;
+
+  if(init_ref_count == 0)
+  {
+    if(!socket_load_syms())
+      return false;
+
+    if(socksyms.WSAStartup(version, &ws_data) < 0)
+      return false;
+  }
+
+  init_ref_count++;
+#endif // __WIN32__
+
+  conf = in_conf;
+  return true;
+}
+
+void host_layer_exit(void)
+{
+#ifdef __WIN32__
+  assert(init_ref_count > 0);
+  init_ref_count--;
+
+  if(init_ref_count != 0)
+    return;
+
+  if(socksyms.WSACleanup() == SOCKET_ERROR)
+  {
+    if(socksyms.WSAGetLastError() == WSAEINPROGRESS)
+    {
+      socksyms.WSACancelBlockingCall();
+      socksyms.WSACleanup();
+    }
+  }
+
+  socket_free_syms();
+#endif // __WIN32__
+}
+
 
 struct host *host_create(enum host_type type, enum host_family fam)
 {
@@ -867,6 +874,167 @@ static bool host_address_op(struct host *h, const char *hostname,
   return true;
 }
 
+static bool _raw_host_connect(struct host *h, const char *hostname, int port)
+{
+  return host_address_op(h, hostname, port, NULL, connect_op);
+}
+
+static enum proxy_status socks4a_connect(struct host *h,
+ const char *target_host, int target_port)
+{
+  char handshake[64] = "\4\1\0\0\0\0\0\1anon\0x\0", *ptr = handshake;
+  int rBuf;
+
+  if (strlen(target_host) > 42) // max length of domain to resolve is 42
+    return PROXY_CONNECTION_FAILED;
+
+  _raw_host_connect(h, conf->socks_host, conf->socks_port);
+
+  handshake[2] = target_port / 255;
+  handshake[3] = target_port % 255;
+  strcpy(ptr+13, target_host);
+  ptr += strlen(target_host);
+  *(ptr++) = 0;
+  if (!__send(h, handshake, 14 + strlen(target_host)))
+    return PROXY_SEND_ERROR;
+  rBuf = __recv(h, handshake, 8);
+  if (rBuf == -1)
+    return PROXY_CONNECTION_FAILED;
+  if (handshake[1] != 90)
+    return PROXY_HANDSHAKE_FAILED;
+  return PROXY_SUCCESS;
+}
+
+static enum proxy_status socks4_connect(struct host *h,
+ struct addrinfo *ai_data)
+{
+  char handshake[16] = "\4\1\0\0\0\0\0\1anon\0", *ptr = handshake;
+  int rBuf;
+
+  _raw_host_connect(h, conf->socks_host, conf->socks_port);
+
+  memcpy(ptr+2, ai_data->ai_addr->sa_data, 6);
+  if (!__send(h, handshake, 13))
+    return PROXY_SEND_ERROR;
+
+  rBuf = __recv(h, handshake, 8);
+  if (rBuf == -1)
+    return PROXY_CONNECTION_FAILED;
+  if (handshake[1] != 90)
+    return PROXY_HANDSHAKE_FAILED;
+  return PROXY_SUCCESS;
+}
+
+static enum proxy_status socks5_connect(struct host *h,
+ struct addrinfo *ai_data)
+{
+  /* This handshake is more complicated than SOCKS4 or 4a...
+   * and we're also only supporting none or user/password auth.
+   */
+
+  // Version[0x05]|Number of auth methods|auth methods
+  char handshake[10] = "\5\1\0";
+  int rBuf;
+
+  _raw_host_connect(h, conf->socks_host, conf->socks_port);
+
+  if (!__send(h, handshake, 3))
+    return PROXY_SEND_ERROR;
+  rBuf = __recv(h, handshake, 2);
+  if (rBuf == -1)
+    return PROXY_CONNECTION_FAILED;
+  if (handshake[0] != '\5')
+    return PROXY_HANDSHAKE_FAILED;
+
+  // Version[0x05]|Command|0x00|address type|destination|port
+  if (ai_data->ai_family == AF_INET6)
+    return PROXY_ADDRESS_TYPE_UNSUPPORTED;
+  else
+  {
+    handshake[1] = '\1';
+    handshake[3] = '\1';
+    handshake[4] = ai_data->ai_addr->sa_data[2];
+    handshake[5] = ai_data->ai_addr->sa_data[3];
+    handshake[6] = ai_data->ai_addr->sa_data[4];
+    handshake[7] = ai_data->ai_addr->sa_data[5];
+    handshake[8] = ai_data->ai_addr->sa_data[0];
+    handshake[9] = ai_data->ai_addr->sa_data[1];
+    if (!__send(h, handshake, 10)) { return PROXY_SEND_ERROR; }
+  }
+  rBuf = __recv(h, handshake, 10);
+  if (rBuf == -1) { return PROXY_CONNECTION_FAILED; }
+  switch (handshake[1])
+  {
+    case 0:
+      return PROXY_SUCCESS;
+    case 2:
+      return PROXY_ACCESS_DENIED;
+    case 3:
+    case 4:
+    case 6:
+      return PROXY_REFLECTION_FAILED;
+    case 5:
+      return PROXY_TARGET_REFUSED;
+    case 8:
+      return PROXY_ADDRESS_TYPE_UNSUPPORTED;
+    default:
+      return PROXY_UNKNOWN_ERROR;
+  }
+}
+
+// SOCKS Proxy support
+static enum proxy_status proxy_connect(struct host *h, const char *target_host, int target_port)
+{
+  struct addrinfo target_hints, *target_ais, *target_ai;
+  char port_str[6];
+  int ret;
+
+  snprintf(port_str, 6, "%d", target_port);
+  port_str[5] = 0;
+
+  memset(&target_hints, 0, sizeof(struct addrinfo));
+  target_hints.ai_socktype = (h->proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM;
+  target_hints.ai_protocol = h->proto;
+  target_hints.ai_family = h->af;
+  ret = platform_getaddrinfo(target_host, port_str, &target_hints, &target_ais);
+
+  /* Some perimeter gateways block access to DNS [wifi hotspots are
+   * particularly notorious for this] so we have to fall back to SOCKS4a
+   * to force the proxy to DNS the address for us. If this fails, we abort.
+   */
+  if(ret != 0)
+    return socks4a_connect(h, target_host, target_port);
+
+  for(target_ai = target_ais; target_ai; target_ai = target_ai->ai_next)
+  {
+    if(target_ai->ai_family != AF_INET6)
+      continue;
+    if (socks5_connect(h, target_ai) == PROXY_SUCCESS)
+    {
+      platform_freeaddrinfo(target_ais);
+      return PROXY_SUCCESS;
+    }
+  }
+
+  for(target_ai = target_ais; target_ai; target_ai = target_ai->ai_next)
+  {
+    if(target_ai->ai_family != AF_INET)
+      continue;
+    if (socks5_connect(h, target_ai) == PROXY_SUCCESS)
+    {
+      platform_freeaddrinfo(target_ais);
+      return PROXY_SUCCESS;
+    }
+    if (socks4_connect(h, target_ai) == PROXY_SUCCESS)
+    {
+      platform_freeaddrinfo(target_ais);
+      return PROXY_SUCCESS;
+    }
+  }
+
+  return PROXY_CONNECTION_FAILED;
+}
+
 bool host_connect(struct host *h, const char *hostname, int port)
 {
   if (strlen(conf->socks_host) > 0)
@@ -880,11 +1048,6 @@ bool host_connect(struct host *h, const char *hostname, int port)
     return false;
   }
   return _raw_host_connect(h, hostname, port);
-}
-
-static bool _raw_host_connect(struct host *h, const char *hostname, int port)
-{
-  return host_address_op(h, hostname, port, NULL, connect_op);
 }
 
 static int http_recv_line(struct host *h, char *buffer, int len)
@@ -1317,169 +1480,6 @@ void host_set_callbacks(struct host *h, void (*send_cb)(long offset),
   assert(send_cb == NULL);
   h->recv_cb = recv_cb;
   h->cancel_cb = cancel_cb;
-}
-
-// SOCKS Proxy support
-static enum proxy_status proxy_connect(struct host *h, const char *target_host, int target_port)
-{
-  struct addrinfo target_hints, *target_ais, *target_ai;
-  char port_str[6];
-  int ret;
-
-  snprintf(port_str, 6, "%d", target_port);
-  port_str[5] = 0;
-
-  memset(&target_hints, 0, sizeof(struct addrinfo));
-  target_hints.ai_socktype = (h->proto == IPPROTO_TCP) ? SOCK_STREAM : SOCK_DGRAM;
-  target_hints.ai_protocol = h->proto;
-  target_hints.ai_family = h->af;
-  ret = platform_getaddrinfo(target_host, port_str, &target_hints, &target_ais);
-
-  /* Some perimeter gateways block access to DNS [wifi hotspots are
-   * particularly notorious for this] so we have to fall back to SOCKS4a
-   * to force the proxy to DNS the address for us. If this fails, we abort.
-   */
-  if(ret != 0)
-    return socks4a_connect(h, target_host, target_port);
-
-  for(target_ai = target_ais; target_ai; target_ai = target_ai->ai_next)
-  {
-    if(target_ai->ai_family != AF_INET6)
-      continue;
-    if (socks5_connect(h, target_ai) == PROXY_SUCCESS)
-    {
-      platform_freeaddrinfo(target_ais);
-      return PROXY_SUCCESS;
-    }
-  }
-
-  for(target_ai = target_ais; target_ai; target_ai = target_ai->ai_next)
-  {
-    if(target_ai->ai_family != AF_INET)
-      continue;
-    if (socks5_connect(h, target_ai) == PROXY_SUCCESS)
-    {
-      platform_freeaddrinfo(target_ais);
-      return PROXY_SUCCESS;
-    }
-    if (socks4_connect(h, target_ai) == PROXY_SUCCESS)
-    {
-      platform_freeaddrinfo(target_ais);
-      return PROXY_SUCCESS;
-    }
-    else
-      return PROXY_CONNECTION_FAILED;
-  }
-}
-
-static enum proxy_status socks4a_connect(struct host *h,
- const char *target_host, int target_port)
-{
-  char handshake[64] = "\4\1\0\0\0\0\0\1anon\0x\0", *ptr = handshake;
-  int rBuf;
-
-  if (strlen(target_host) > 42) // max length of domain to resolve is 42
-    return PROXY_CONNECTION_FAILED;
-
-  _raw_host_connect(h, conf->socks_host, conf->socks_port);
-
-  handshake[2] = target_port / 255;
-  handshake[3] = target_port % 255;
-  strcpy(ptr+13, target_host);
-  ptr += strlen(target_host);
-  *(ptr++) = 0;
-  if (!__send(h, handshake, 14 + strlen(target_host)))
-    return PROXY_SEND_ERROR;
-  rBuf = __recv(h, handshake, 8);
-  if (rBuf == -1)
-    return PROXY_CONNECTION_FAILED;
-  if (handshake[1] != 90)
-    return PROXY_HANDSHAKE_FAILED;
-  return PROXY_SUCCESS;
-}
-
-static enum proxy_status socks4_connect(struct host *h,
- struct addrinfo *ai_data)
-{
-  char handshake[16] = "\4\1\0\0\0\0\0\1anon\0", *ptr = handshake;
-  int rBuf;
-
-  _raw_host_connect(h, conf->socks_host, conf->socks_port);
-
-  memcpy(ptr+2, ai_data->ai_addr->sa_data, 6);
-  if (!__send(h, handshake, 13))
-    return PROXY_SEND_ERROR;
-
-  rBuf = __recv(h, handshake, 8);
-  if (rBuf == -1)
-    return PROXY_CONNECTION_FAILED;
-  if (handshake[1] != 90)
-    return PROXY_HANDSHAKE_FAILED;
-  return PROXY_SUCCESS;
-}
-
-static enum proxy_status socks5_connect(struct host *h,
- struct addrinfo *ai_data)
-{
-  /* This handshake is more complicated than SOCKS4 or 4a...
-   * and we're also only supporting none or user/password auth.
-   */
-
-  // Version[0x05]|Number of auth methods|auth methods
-  char handshake[10] = "\5\1\0";
-  int rBuf;
-
-  _raw_host_connect(h, conf->socks_host, conf->socks_port);
-
-  if (!__send(h, handshake, 3))
-    return PROXY_SEND_ERROR;
-  rBuf = __recv(h, handshake, 2);
-  if (rBuf == -1)
-    return PROXY_CONNECTION_FAILED;
-  if (handshake[0] != '\5')
-    return PROXY_HANDSHAKE_FAILED;
-
-  // Version[0x05]|Command|0x00|address type|destination|port
-  if (ai_data->ai_family == AF_INET6)
-    return PROXY_ADDRESS_TYPE_UNSUPPORTED;
-  else
-  {
-    handshake[1] = '\1';
-    handshake[3] = '\1';
-    handshake[4] = ai_data->ai_addr->sa_data[2];
-    handshake[5] = ai_data->ai_addr->sa_data[3];
-    handshake[6] = ai_data->ai_addr->sa_data[4];
-    handshake[7] = ai_data->ai_addr->sa_data[5];
-    handshake[8] = ai_data->ai_addr->sa_data[0];
-    handshake[9] = ai_data->ai_addr->sa_data[1];
-    if (!__send(h, handshake, 10)) { return PROXY_SEND_ERROR; }
-  }
-  rBuf = __recv(h, handshake, 10);
-  if (rBuf == -1) { return PROXY_CONNECTION_FAILED; }
-  switch (handshake[1])
-  {
-    case '\0':
-      return PROXY_SUCCESS;
-      break;
-    case '\1':
-    case '\7':
-      return PROXY_UNKNOWN_ERROR;
-      break;
-    case '\2':
-      return PROXY_ACCESS_DENIED;
-      break;
-    case '\3':
-    case '\4':
-    case '\6':
-      return PROXY_REFLECTION_FAILED;
-      break;
-    case '\5':
-      return PROXY_TARGET_REFUSED;
-      break;
-    case '\8':
-      return PROXY_ADDRESS_TYPE_UNSUPPORTED;
-      break;
-  }
 }
 
 #ifdef NETWORK_DEADCODE
