@@ -438,6 +438,12 @@
 
 # network_enabled = 1
 
+# MegaZeux can support connections via a SOCKS4/5 proxy to punch through
+# connections that would otherwise require some sort of pipe intermediary.
+
+# socks_host = localhost
+# socks_port = 1080
+
 # The update host is an HTTP server containing all data and metadata
 # associated with updates for MegaZeux. You normally won't want to
 # change this, but it may be useful if you are a third party distributing

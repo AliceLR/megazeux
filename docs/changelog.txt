@@ -48,6 +48,8 @@ USERS
   fix in 2.82b.
 + The size/offset parameters for strings can now be specified in either
   order (#+ vs +#) and will behave correctly.
++ Introduced SOCKS4/4a/5 support transparently into the network layer.
+  (MZXGiant)
 
 DEVELOPERS
 

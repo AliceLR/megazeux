@@ -75,6 +75,8 @@ struct config_info
   // Network layer options
 #ifdef CONFIG_NETWORK    
   bool network_enabled;
+  char socks_host[256];
+  int socks_port;
 #endif
     
 #ifdef CONFIG_UPDATER

@@ -21,12 +21,14 @@
 #define __HOST_H
 
 #include "../compat.h"
+#include "../configure.h"
 
 __M_BEGIN_DECLS
 
 #include <stdio.h> // for FILE
 
 struct host;
+static struct config_info *conf;
 
 enum host_family
 {
@@ -64,6 +66,21 @@ enum host_status
   HOST_ZLIB_INFLATE_FAILED,
 };
 
+enum proxy_status
+{
+  PROXY_SUCCESS,
+  PROXY_CONNECTION_FAILED,
+  PROXY_AUTH_FAILED,
+  PROXY_AUTH_UNSUPPORTED,
+  PROXY_SEND_ERROR,
+  PROXY_HANDSHAKE_FAILED,
+  PROXY_REFLECTION_FAILED,
+  PROXY_TARGET_REFUSED,
+  PROXY_ADDRESS_TYPE_UNSUPPORTED,
+  PROXY_ACCESS_DENIED,
+  PROXY_UNKNOWN_ERROR
+};
+
 #ifdef __WIN32__
 
 /**
@@ -71,7 +88,7 @@ enum host_status
  *
  * @return Whether initialization succeeded, or not
  */
-bool host_layer_init(void);
+bool host_layer_init(struct config_info *conf);
 
 /**
  * Shuts down the host layer.
@@ -81,7 +98,7 @@ void host_layer_exit(void);
 
 #else
 
-static inline bool host_layer_init(void) { return true; }
+static inline bool host_layer_init(struct config_info *conf) { return true; }
 static inline void host_layer_exit(void) { }
 
 #endif
@@ -156,6 +173,20 @@ UPDATER_LIBSPEC enum host_status host_recv_file(struct host *h,
 UPDATER_LIBSPEC void host_set_callbacks(struct host *h,
  void (*send_cb)(long offset), void (*recv_cb)(long offset),
  bool (*cancel_cb)(void));
+
+/**
+ * Inline proxy connection routine. This is, by design, encapsulated inside
+ * of the network layer, so that services inside of MZX don't have to worry
+ * about management of the proxy subsystem.
+ *
+ * @param h            Host pipe to connect on
+ * @param target_host  Endpoint host to connect to
+ * @param target_port  Endpoint port to connect to
+ *
+ * @return             Status of proxy connection
+ */
+enum proxy_status proxy_connect(struct host *h, const char *target_host,
+ int target_port);
 
 #ifdef NETWORK_DEADCODE
 
