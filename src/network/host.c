@@ -256,12 +256,10 @@ static inline struct hostent *platform_gethostbyname(const char *name)
   return gethostbyname(name);
 }
 
-#ifdef __amigaos__
 static inline uint16_t platform_htons(uint16_t hostshort)
 {
   return htons(hostshort);
 }
-#endif
 
 static inline int platform_listen(int sockfd, int backlog)
 {
@@ -952,10 +950,12 @@ static enum proxy_status socks5_connect(struct host *h,
   if (handshake[0] != 0x5)
     return PROXY_HANDSHAKE_FAILED;
 
-  // Version[0x05]|Command|0x00|address type|destination|port
+#ifdef CONFIG_IPV6
   if (ai_data->ai_family == AF_INET6)
     return PROXY_ADDRESS_TYPE_UNSUPPORTED;
+#endif
 
+  // Version[0x05]|Command|0x00|address type|destination|port
   if (!__send(h, "\5\1\0\1", 4))
     return PROXY_SEND_ERROR;
   if (!__send(h, ai_data->ai_addr->sa_data+2, 4))
@@ -1011,6 +1011,7 @@ static enum proxy_status proxy_connect(struct host *h, const char *target_host, 
   if(ret != 0)
     return socks4a_connect(h, target_host, target_port);
 
+#ifdef CONFIG_IPV6
   for(target_ai = target_ais; target_ai; target_ai = target_ai->ai_next)
   {
     if(target_ai->ai_family != AF_INET6)
@@ -1021,6 +1022,7 @@ static enum proxy_status proxy_connect(struct host *h, const char *target_host, 
       return PROXY_SUCCESS;
     }
   }
+#endif
 
   for(target_ai = target_ais; target_ai; target_ai = target_ai->ai_next)
   {
