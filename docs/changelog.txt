@@ -50,6 +50,10 @@ USERS
   order (#+ vs +#) and will behave correctly.
 + Introduced SOCKS4/4a/5 support transparently into the network layer.
   (MZXGiant)
++ Revert bogus cycle-ending behaviour for SHOOT, SHOOTMISSILE,
+  SHOOTSEEKER and SPITFIRE.
++ Improve cycle-ending compatibility with MZX versions prior to 2.80.
+  Fixes games such as Kya's Sword and Stones & Roks II.
 
 DEVELOPERS
 

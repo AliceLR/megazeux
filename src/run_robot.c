@@ -863,6 +863,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
   int gotoed;
 
   int old_pos; // Old position to verify gotos DID something
+  int last_label = -1;
   // Whether blocked in a given direction (2 = OUR bullet)
   int _bl[4] = { 0, 0, 0, 0 };
   char *program;
@@ -1305,6 +1306,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             set_counter(mzx_world, dest_buffer, value, id);
           }
         }
+        last_label = -1;
         break;
       }
 
@@ -1347,6 +1349,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           int value = parse_param(mzx_world, src_string, id);
           inc_counter(mzx_world, dest_buffer, value, id);
         }
+        last_label = -1;
         break;
       }
 
@@ -1371,6 +1374,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           // Set to counter
           dec_counter(mzx_world, dest_buffer, value, id);
         }
+        last_label = -1;
         break;
       }
 
@@ -2017,6 +2021,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         char dest_buffer[ROBOT_MAX_TR];
         tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
         mul_counter(mzx_world, dest_buffer, 2, id);
+        last_label = -1;
         break;
       }
 
@@ -2025,6 +2030,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         char dest_buffer[ROBOT_MAX_TR];
         tr_msg(mzx_world, cmd_ptr + 2, id, dest_buffer);
         div_counter(mzx_world, dest_buffer, 2, id);
+        last_label = -1;
         break;
       }
 
@@ -2092,6 +2098,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         char *p2 = next_param_pos(cmd_ptr + 1);
         int item_number = *(p2 + 1);
         inc_counter(mzx_world, item_to_counter[item_number], amount, 0);
+        last_label = -1;
         break;
       }
 
@@ -2107,6 +2114,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           dec_counter(mzx_world, item_to_counter[item_number], amount, 0);
         }
 
+        last_label = -1;
         break;
       }
 
@@ -2590,15 +2598,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
             if(_bl[direction])
               _bl[direction] = 3;
-
-            // Move on to the next command; the robot isn't
-            // sent anywhere, so otherwise it'll just keep
-            // re-doing the shoot if we end the cycle..
-            cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
-            if(!program[cur_robot->cur_prog_line])
-              goto end_prog;
-
-            goto breaker;
           }
         }
         break;
@@ -2638,15 +2637,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           {
             shoot_missile(mzx_world, x, y, dir_to_int(direction));
             calculate_blocked(mzx_world, x, y, id, _bl);
-
-            // Move on to the next command; the robot isn't
-            // sent anywhere, so otherwise it'll just keep
-            // re-doing the shoot if we end the cycle..
-            cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
-            if(!program[cur_robot->cur_prog_line])
-              goto end_prog;
-
-            goto breaker;
           }
         }
         break;
@@ -2662,15 +2652,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           {
             shoot_seeker(mzx_world, x, y, dir_to_int(direction));
             calculate_blocked(mzx_world, x, y, id, _bl);
-
-            // Move on to the next command; the robot isn't
-            // sent anywhere, so otherwise it'll just keep
-            // re-doing the shoot if we end the cycle..
-            cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
-            if(!program[cur_robot->cur_prog_line])
-              goto end_prog;
-
-            goto breaker;
           }
         }
         break;
@@ -2686,15 +2667,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           {
             shoot_fire(mzx_world, x, y, dir_to_int(direction));
             calculate_blocked(mzx_world, x, y, id, _bl);
-
-            // Move on to the next command; the robot isn't
-            // sent anywhere, so otherwise it'll just keep
-            // re-doing the shoot if we end the cycle..
-            cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
-            if(!program[cur_robot->cur_prog_line])
-              goto end_prog;
-
-            goto breaker;
           }
         }
         break;
@@ -3136,6 +3108,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           dec_counter(mzx_world, item_to_counter[take_type], take_num, 0);
           inc_counter(mzx_world, item_to_counter[give_type], give_num, 0);
         }
+
+        last_label = -1;
         break;
       }
 
@@ -5330,6 +5304,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         tr_msg(mzx_world, dest_string, id, dest_buffer);
 
         mul_counter(mzx_world, dest_buffer, value, id);
+        last_label = -1;
         break;
       }
 
@@ -5342,6 +5317,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         tr_msg(mzx_world, dest_string, id, dest_buffer);
 
         div_counter(mzx_world, dest_buffer, value, id);
+        last_label = -1;
         break;
       }
 
@@ -5354,6 +5330,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         tr_msg(mzx_world, dest_string, id, dest_buffer);
 
         mod_counter(mzx_world, dest_buffer, value, id);
+        last_label = -1;
         break;
       }
 
@@ -5777,6 +5754,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         }
 
         cur_robot->loop_count = loop_count + 1;
+        last_label = -1;
         break;
       }
 
@@ -5808,6 +5786,35 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       case ROBOTIC_CMD_ENABLE_MESG_EDGE: // Enable mesg edge
       {
         mzx_world->mesg_edges = 1;
+        break;
+      }
+
+      case ROBOTIC_CMD_LABEL:
+      {
+        // Prior to the port, MZX would end the cycle if a label was
+        // seen more than once in that cycle. This behaviour was
+        // exploited in certain pre-port games such as "Kya's Sword" and
+        // "Stones & Roks II", where it would interact with the SHOOT
+        // command and alter the timing when SHOOT was in a tight loop.
+
+        // We don't really care for this behaviour in the port, and the
+        // compatibility has been broken forever, so only do this for
+        // old worlds.
+
+        if(mzx_world->version <= 0x0249)
+        {
+          if(last_label == cur_robot->cur_prog_line)
+            goto breaker;
+          last_label = cur_robot->cur_prog_line;
+        }
+
+        lines_run--;
+        break;
+      }
+
+      case ROBOTIC_CMD_ZAPPED_LABEL:
+      {
+        lines_run--;
         break;
       }
     }
