@@ -59,6 +59,7 @@ DEVELOPERS
 
 + Source tarballs are now generated in XZ (LZMA2) format.
 + Make hlp2txt utility work correctly on Windows platforms.
++ Updated and repaired MSVC project for Visual Studio 2010. (MZXGiant)
 
 December 29, 2009 - MZX 2.83
 
