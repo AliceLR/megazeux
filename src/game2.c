@@ -1181,7 +1181,7 @@ void update_board(struct world *mzx_world)
 
           // Hit player and die
           status = move(mzx_world, x, y, m_dir,
-           MUST_LAVAGOOP | REACT_PLAYER | CAN_LAVAWALK);
+           MUST_LAVAGOOP | REACT_PLAYER | CAN_GOOPWALK | CAN_LAVAWALK);
 
           if(status == HIT_PLAYER)
           {

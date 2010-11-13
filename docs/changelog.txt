@@ -54,6 +54,7 @@ USERS
   SHOOTSEEKER and SPITFIRE.
 + Improve cycle-ending compatibility with MZX versions prior to 2.80.
   Fixes games such as Kya's Sword and Stones & Roks II.
++ Restored shark's ability to move in goop.
 
 DEVELOPERS
 
