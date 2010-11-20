@@ -1527,10 +1527,9 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->num_sprites = MAX_SPRITES;
   mzx_world->sprite_list = ccalloc(MAX_SPRITES, sizeof(struct sprite *));
 
-  for(i = 0; i < 256; i++)
+  for(i = 0; i < MAX_SPRITES; i++)
   {
-    mzx_world->sprite_list[i] = cmalloc(sizeof(struct sprite));
-    memset(mzx_world->sprite_list[i], 0, sizeof(struct sprite));
+    mzx_world->sprite_list[i] = ccalloc(1, sizeof(struct sprite));
   }
 
   mzx_world->collision_list = ccalloc(MAX_SPRITES, sizeof(int));
@@ -1762,7 +1761,7 @@ void clear_global_data(struct world *mzx_world)
   mzx_world->num_strings = 0;
   mzx_world->num_strings_allocated = 0;
 
-  for(i = 0; i < num_sprites; i++)
+  for(i = 0; i < MAX_SPRITES; i++)
   {
     free(sprite_list[i]);
   }
@@ -1774,6 +1773,9 @@ void clear_global_data(struct world *mzx_world)
   free(mzx_world->collision_list);
   mzx_world->collision_list = NULL;
   mzx_world->collision_count = 0;
+
+  mzx_world->active_sprites = 0;
+  mzx_world->sprite_y_order = 0;
 
   mzx_world->vlayer_size = 0;
   mzx_world->vlayer_width = 0;
