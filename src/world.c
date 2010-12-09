@@ -1729,7 +1729,6 @@ void clear_world(struct world *mzx_world)
 void clear_global_data(struct world *mzx_world)
 {
   int i;
-  int num_sprites = mzx_world->num_sprites;
   int num_counters = mzx_world->num_counters;
   int num_strings = mzx_world->num_strings;
   struct counter **counter_list = mzx_world->counter_list;
