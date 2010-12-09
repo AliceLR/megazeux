@@ -2377,7 +2377,7 @@ void title_screen(struct world *mzx_world)
               send_robot_def(mzx_world, 0, 10);
 
               if(strcmp(src_board->mod_playing, "*") &&
-               strcmp(src_board->mod_playing, old_mod_playing))
+               strcasecmp(src_board->mod_playing, old_mod_playing))
               {
                 load_board_module(src_board);
               }

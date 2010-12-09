@@ -56,6 +56,9 @@ USERS
   Fixes games such as Kya's Sword and Stones & Roks II.
 + Restored shark's ability to move in goop.
 + Clear SPR_YORDER upon loading a new world.
++ When transitioning between boards, compare the module filenames of the
+  source and destination boards case-insensitively. A difference in case
+  will no longer cause the board module to be incorrectly restarted.
 
 DEVELOPERS
 
