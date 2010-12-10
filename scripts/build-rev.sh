@@ -87,7 +87,8 @@ for CHROOT in ubuntu-i386 ubuntu-amd64; do
 	mv mzx* $MZX
 
 	pushd $MZX >/dev/null
-	dchroot -d -c $CHROOT -- debuild -us -uc >/dev/null 2>&1
+	dchroot -d -c $CHROOT -- \
+		debuild --preserve-envvar=CONFIG_FLAGS -us -uc >/dev/null 2>&1
 	popd >/dev/null
 
 	rm -rf $MZX
