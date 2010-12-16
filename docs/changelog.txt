@@ -59,6 +59,7 @@ USERS
 + When transitioning between boards, compare the module filenames of the
   source and destination boards case-insensitively. A difference in case
   will no longer cause the board module to be incorrectly restarted.
++ Fixed rare rendering corruption in the load game dialog.
 
 DEVELOPERS
 

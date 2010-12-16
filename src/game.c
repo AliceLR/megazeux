@@ -1854,7 +1854,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
            get_counter(mzx_world, "LOAD_MENU", 0))
           {
             // Restore
-            char save_file_name[64];
+            char save_file_name[64] = { 0 };
             m_show();
 
             if(!choose_file_ch(mzx_world, save_ext, save_file_name,
@@ -2243,7 +2243,7 @@ void title_screen(struct world *mzx_world)
         case IKEY_F4:
         case IKEY_r:
         {
-          char save_file_name[64];
+          char save_file_name[64] = { 0 };
 
           // Restore
           m_show();
