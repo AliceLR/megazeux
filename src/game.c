@@ -1841,9 +1841,10 @@ __editor_maybe_static void play_game(struct world *mzx_world)
                 // Save entire game
                 save_world(mzx_world, curr_sav, 1);
               }
+
+              update_event_status();
             }
           }
-          update_event_status();
           break;
         }
 
