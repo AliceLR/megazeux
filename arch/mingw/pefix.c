@@ -9,12 +9,15 @@
  * optional .edata, .idata and .rsrc sections, since these sections' headers
  * (and in the case of .rsrc, contents) also contain TimeDateStamps.
  *
- * Finally, this program works around a binutils bug which generates
+ * This program additionally works around a binutils bug which generates
  * random garbage between module names in the idata section. Normally,
  * this wouldn't affect program execution, but it does make the binaries
  * non-identical. Replacing this garbage with zeroes solves the problem.
  *
- * Copyright (C) 2009 Alistair John Strachan <alistair@devzero.co.uk>
+ * Finally, we take the opportunity to tweak DllCharacteristics so that
+ * ASLR is enabled on newer Windows operating systems.
+ *
+ * Copyright (C) 2009-2010 Alistair John Strachan <alistair@devzero.co.uk>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -259,8 +262,8 @@ static error_t walk_rvas(FILE *f, uint16_t cpu_type,
 static error_t modify_pe(FILE *f)
 {
   uint32_t rsrc_offset = 0, edata_offset = 0, idata_offset = 0;
+  uint16_t cpu_type, num_sections, dll_characteristics;
   char section_name[SECTION_NAME_LEN + 1];
-  uint16_t cpu_type, num_sections;
   uint32_t ul, idata_virtaddr;
   error_t err = SUCCESS;
   long csum_offset;
@@ -344,13 +347,30 @@ static error_t modify_pe(FILE *f)
   if(fwrite(&ul, sizeof(uint32_t), 1, f) != 1)
     return WRITE_ERROR;
 
-  // Skip Subsystem, DllCharacteristics, SizeOfStackReserve*,
-  // SizeOfStackCommit*, SizeOfHeapReserve*, SizeOfHeapCommit*,
-  // LoaderFlags, NumberOfRvaAndSizes, DataDirectory (16*(4+4))
+  // Skip Subsystem
+  if(fseek(f, 2, SEEK_CUR))
+    return READ_ERROR;
+
+  // Read DllCharacteristics
+  if(fread(&dll_characteristics, sizeof(uint16_t), 1, f) != 1)
+    return READ_ERROR;
+
+  // Switch on DYNAMIC_BASE and NX_COMPAT
+  dll_characteristics |= (0x40 | 0x100);
+
+  // Roll back and re-write DllCharacteristics
+  if(fseek(f, -2, SEEK_CUR))
+    return READ_ERROR;
+  if(fwrite(&dll_characteristics, sizeof(uint16_t), 1, f) != 1)
+    return WRITE_ERROR;
+
+  // Skip SizeOfStackReserve*, SizeOfStackCommit*, SizeOfHeapReserve*,
+  // SizeOfHeapCommit*, LoaderFlags, NumberOfRvaAndSizes,
+  // DataDirectory (16*(4+4))
   if(cpu_type == 0x014c)
-    skip = 2 + 2 + 4 + 4 + 4 + 4 + 4 + 4 + 16 * (4 + 4);
+    skip = 4 + 4 + 4 + 4 + 4 + 4 + 16 * (4 + 4);
   else if(cpu_type == 0x8664)
-    skip = 2 + 2 + 8 + 8 + 8 + 8 + 4 + 4 + 16 * (4 + 4);
+    skip = 8 + 8 + 8 + 8 + 4 + 4 + 16 * (4 + 4);
   if(fseek(f, skip, SEEK_CUR))
     return READ_ERROR;
 
