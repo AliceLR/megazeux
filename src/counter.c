@@ -2268,8 +2268,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       if(cur_robot)
       {
         // Advance the program so that loading a SAV doesn't re-run this line
-        cur_robot->cur_prog_line +=
-         cur_robot->program_bytecode[cur_robot->cur_prog_line] + 2;
+        cur_robot->cur_prog_line = robot_program_next_line(cur_robot);
       }
 
       err = fsafetranslate(char_value, translated_path);
@@ -2288,8 +2287,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
       if(cur_robot)
       {
         // Advance the program so that loading a SAV doesn't re-run this line
-        cur_robot->cur_prog_line +=
-         cur_robot->program_bytecode[cur_robot->cur_prog_line] + 2;
+        cur_robot->cur_prog_line = robot_program_next_line(cur_robot);
       }
 
       err = fsafetranslate(char_value, translated_path);

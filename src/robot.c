@@ -1289,11 +1289,10 @@ static int send_robot_direct(struct robot *cur_robot, const char *mesg,
         set_robot_position(cur_robot, return_pos);
       }
       else
-      {
-        // Contextually invalid return; skip the command
-        cur_robot->cur_prog_line +=
-         1 + robot_program[cur_robot->cur_prog_line] + 1;
-      }
+
+      // Contextually invalid return; skip the command
+      if(send_self)
+        cur_robot->cur_prog_line = robot_program_next_line(cur_robot);
     }
     else
 
@@ -1306,11 +1305,10 @@ static int send_robot_direct(struct robot *cur_robot, const char *mesg,
         cur_robot->stack_pointer = 0;
       }
       else
-      {
-        // Contextually invalid top; skip the command
-        cur_robot->cur_prog_line +=
-         1 + robot_program[cur_robot->cur_prog_line] + 1;
-      }
+
+      // Contextually invalid top; skip the command
+      if(send_self)
+        cur_robot->cur_prog_line = robot_program_next_line(cur_robot);
     }
     else
     {
@@ -3150,3 +3148,27 @@ void prepare_robot_bytecode(struct robot *cur_robot)
 }
 
 #endif /* CONFIG_DEBYTECODE */
+
+bool robot_program_next_line(struct robot *cur_robot)
+{
+  int next_line;
+
+  next_line = cur_robot->cur_prog_line +
+   1 + cur_robot->program_bytecode[cur_robot->cur_prog_line] + 1;
+
+  // Buggy? Don't advance beyond the end of the program
+  if(next_line >= cur_robot->program_bytecode_length)
+  {
+    debug("cur_prog_line was %d, next_line was %d, "
+          "program_bytecode_length was %d\n",
+     cur_robot->cur_prog_line, next_line,
+     cur_robot->program_bytecode_length);
+    return 0;
+  }
+
+  // End of program?
+  if(!cur_robot->program_bytecode[next_line])
+    return 0;
+
+  return next_line;
+}
