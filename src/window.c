@@ -2252,7 +2252,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
             num_dirs++;
           }
         }
-        else
+        else if(S_ISREG(file_info.st_mode))
         {
           // Must match one of the wildcards, also ignore the .
           if(file_name_length >= 4)

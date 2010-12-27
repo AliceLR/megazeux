@@ -2255,8 +2255,17 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
     case FOPEN_SMZX_PALETTE:
     {
-      load_palette(char_value);
-      pal_update = true;
+      char *translated_path = cmalloc(MAX_PATH);
+      int err;
+
+      err = fsafetranslate(char_value, translated_path);
+      if(err == -FSAFE_SUCCESS)
+      {
+        load_palette(translated_path);
+        pal_update = true;
+      }
+
+      free(translated_path);
       break;
     }
 

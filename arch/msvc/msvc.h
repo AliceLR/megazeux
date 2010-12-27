@@ -27,6 +27,7 @@
 #include <direct.h>
 #include <process.h>
 
+#define S_ISREG(mode) (mode & _S_ISREG)
 #define S_ISDIR(mode) (mode & _S_IFDIR)
 
 #define chdir       _chdir

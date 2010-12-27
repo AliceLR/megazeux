@@ -62,6 +62,9 @@ USERS
 + Fixed rare rendering corruption in the load game dialog.
 + Fixed a bug where SEND "robot" TO "#return" could corrupt the program
   counter of the target robot if it had a stack pointer of zero.
++ Fixed some security issues with SMZX_PALETTE and LOAD_BC counters.
++ Only list/open regular files or symlinks to regular files in file
+  dialogs. Special files are now ignored.
 
 DEVELOPERS
 
