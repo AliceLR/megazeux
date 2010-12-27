@@ -30,7 +30,7 @@
 void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
  int width, int height, int mode, int savegame)
 {
-  FILE *output_file = fopen(name, "wb");
+  FILE *output_file = fopen_unsafe(name, "wb");
 
   if(output_file)
   {
@@ -238,7 +238,7 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
 int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
  int mode, int savegame)
 {
-  FILE *input_file = fopen(name, "rb");
+  FILE *input_file = fopen_unsafe(name, "rb");
 
   if(input_file)
   {

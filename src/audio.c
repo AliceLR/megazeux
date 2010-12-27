@@ -895,7 +895,7 @@ __audio_c_maybe_static void initialize_sampled_stream(
 static struct audio_stream *construct_vorbis_stream(char *filename,
  Uint32 frequency, Uint32 volume, Uint32 repeat)
 {
-  FILE *input_file = fopen(filename, "rb");
+  FILE *input_file = fopen_unsafe(filename, "rb");
   struct audio_stream *ret_val = NULL;
   vorbis_comment *comment;
   int loopstart = -1;
@@ -1088,7 +1088,7 @@ static int load_wav_file(const char *file, struct wav_info *spec,
   SDL_AudioSpec sdlspec;
 #endif
 
-  fp = fopen(file, "rb");
+  fp = fopen_unsafe(file, "rb");
   if(!fp)
     goto exit_out;
 
@@ -1261,11 +1261,11 @@ static void convert_sam_to_wav(const char *source_name, const char *dest_name)
   Uint8 *data;
   Uint32 i;
 
-  source = fopen(source_name, "rb");
+  source = fopen_unsafe(source_name, "rb");
   if(!source)
     return;
 
-  dest = fopen(dest_name, "wb");
+  dest = fopen_unsafe(dest_name, "wb");
   if(!dest)
     goto err_close_source;
 
@@ -1336,7 +1336,7 @@ __sam_to_wav_maybe_static int check_ext_for_sam_and_convert(
      */
     if(!fsafetranslate(new_file, translated_filename_dest))
     {
-      FILE *f = fopen(translated_filename_dest, "r");
+      FILE *f = fopen_unsafe(translated_filename_dest, "r");
       if(ftell_and_rewind(f) == 0)
         convert_sam_to_wav_translate(filename, new_file);
       fclose(f);
@@ -1371,7 +1371,7 @@ int check_ext_for_gdm_and_convert(const char *filename, char *new_file)
      */
     if(!fsafetranslate(new_file, translated_filename_dest))
     {
-      FILE *f = fopen(translated_filename_dest, "r");
+      FILE *f = fopen_unsafe(translated_filename_dest, "r");
       long file_len = ftell_and_rewind(f);
 
       fclose(f);

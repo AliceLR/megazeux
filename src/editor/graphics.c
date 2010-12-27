@@ -52,7 +52,7 @@ void load_editor_palette(void)
 
 void save_palette(char *fname)
 {
-  FILE *pal_file = fopen(fname, "wb");
+  FILE *pal_file = fopen_unsafe(fname, "wb");
 
   if(pal_file)
   {
@@ -95,7 +95,7 @@ void clear_screen_no_update(void)
 
 void ec_save_set_var(char *name, Uint8 offset, Uint32 size)
 {
-  FILE *fp = fopen(name, "wb");
+  FILE *fp = fopen_unsafe(name, "wb");
 
   if(fp)
   {

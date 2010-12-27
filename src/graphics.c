@@ -133,7 +133,7 @@ void ec_read_char(Uint8 chr, char *matrix)
 
 Sint32 ec_load_set(char *name)
 {
-  FILE *fp = fopen(name, "rb");
+  FILE *fp = fopen_unsafe(name, "rb");
 
   if(fp == NULL)
    return -1;
@@ -152,7 +152,7 @@ Sint32 ec_load_set(char *name)
 __editor_maybe_static void ec_load_set_secondary(const char *name,
  Uint8 *dest)
 {
-  FILE *fp = fopen(name, "rb");
+  FILE *fp = fopen_unsafe(name, "rb");
 
   if(!fp)
     return;
@@ -168,7 +168,7 @@ __editor_maybe_static void ec_load_set_secondary(const char *name,
 Sint32 ec_load_set_var(char *name, Uint8 pos)
 {
   Uint32 size = CHARSET_SIZE;
-  FILE *fp = fopen(name, "rb");
+  FILE *fp = fopen_unsafe(name, "rb");
 
   if(!fp)
     return -1;
@@ -426,7 +426,7 @@ void load_palette(const char *fname)
   int file_size, i, r, g, b;
   FILE *pal_file;
 
-  pal_file = fopen(fname, "rb");
+  pal_file = fopen_unsafe(fname, "rb");
   if(!pal_file)
     return;
 
@@ -1569,7 +1569,7 @@ static void dump_screen_real(Uint8 *pix, struct rgb_color *pal, int count,
   FILE *file;
   int i;
 
-  file = fopen(name, "wb");
+  file = fopen_unsafe(name, "wb");
   if(!file)
     return;
 

@@ -182,7 +182,7 @@ struct audio_stream *construct_modplug_stream(char *filename, Uint32 frequency,
     }
   }
 
-  input_file = fopen(new_file, "rb");
+  input_file = fopen_unsafe(new_file, "rb");
 
   if(input_file)
   {

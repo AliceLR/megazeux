@@ -59,7 +59,7 @@ void replace_current_board(struct world *mzx_world, char *name)
 {
   int version, current_board_id = mzx_world->current_board_id;
   struct board *src_board = mzx_world->current_board;
-  FILE *input_mzb = fopen(name, "rb");
+  FILE *input_mzb = fopen_unsafe(name, "rb");
   char version_string[4];
 
   fread(version_string, 4, 1, input_mzb);
@@ -174,7 +174,7 @@ struct board *create_blank_board(void)
 
 void save_board_file(struct board *cur_board, char *name)
 {
-  FILE *board_file = fopen(name, "wb");
+  FILE *board_file = fopen_unsafe(name, "wb");
 
   if(board_file)
   {

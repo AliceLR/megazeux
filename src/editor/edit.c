@@ -2124,7 +2124,7 @@ static void __edit_world(struct world *mzx_world)
                 {
                   FILE *sfx_file;
 
-                  sfx_file = fopen(import_name, "rb");
+                  sfx_file = fopen_unsafe(import_name, "rb");
                   fread(mzx_world->custom_sfx, 69, 50, sfx_file);
                   mzx_world->custom_sfx_on = 1;
                   fclose(sfx_file);
@@ -2298,7 +2298,7 @@ static void __edit_world(struct world *mzx_world)
                 {
                   FILE *sfx_file;
 
-                  sfx_file = fopen(export_name, "wb");
+                  sfx_file = fopen_unsafe(export_name, "wb");
 
                   if(sfx_file)
                   {

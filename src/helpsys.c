@@ -34,7 +34,7 @@ static char *help;
 
 void help_open(struct world *mzx_world, const char *file_name)
 {
-  mzx_world->help_file = fopen(file_name, "rb");
+  mzx_world->help_file = fopen_unsafe(file_name, "rb");
   if(!mzx_world->help_file)
     return;
 

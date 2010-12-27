@@ -372,7 +372,7 @@ int main(int argc, char *argv[])
     goto exit_out;
   }
 
-  fp = fopen(argv[1], "r+b");
+  fp = fopen_unsafe(argv[1], "r+b");
   if(!fp)
   {
     error("Could not open '%s' for read/write.\n", argv[1]);

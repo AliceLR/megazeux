@@ -252,7 +252,7 @@ void __debug_counters(struct world *mzx_world)
       {
         FILE *fp;
 
-        fp = fopen(export_name, "wb");
+        fp = fopen_unsafe(export_name, "wb");
 
         for(i = 0; i < mzx_world->num_counters; i++)
         {

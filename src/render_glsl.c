@@ -186,7 +186,7 @@ static char *glsl_load_string(const char *filename)
   unsigned long size;
   FILE *f;
 
-  f = fopen(filename, "rb");
+  f = fopen_unsafe(filename, "rb");
   if(!f)
     goto err_out;
 

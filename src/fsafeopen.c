@@ -380,7 +380,7 @@ FILE *fsafeopen(const char *path, const char *mode)
   }
 
   // _TRY_ opening the file
-  f = fopen(newpath, mode);
+  f = fopen_unsafe(newpath, mode);
   free(newpath);
   return f;
 }

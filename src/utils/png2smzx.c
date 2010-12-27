@@ -101,7 +101,7 @@ int main (int argc, char **argv) {
 	mzmhead[5] = w >> 8;
 	mzmhead[6] = h & 0xFF;
 	mzmhead[7] = h >> 8;
-	fd = fopen(argv[2], "wb");
+	fd = fopen_unsafe(argv[2], "wb");
 	if (!fd) {
 		fprintf(stderr, "Error opening MZM file.\n");
 		free(tile);
@@ -121,7 +121,7 @@ int main (int argc, char **argv) {
 	}
 	free(tile);
 	fclose(fd);
-	fd = fopen(argv[3], "wb");
+	fd = fopen_unsafe(argv[3], "wb");
 	if (!fd) {
 		fprintf(stderr, "Error opening CHR file.\n");
 		return 1;
@@ -132,7 +132,7 @@ int main (int argc, char **argv) {
 		return 1;
 	}
 	fclose(fd);
-	fd = fopen(argv[4], "wb");
+	fd = fopen_unsafe(argv[4], "wb");
 	if (!fd) {
 		fprintf(stderr, "Error opening PAL file.\n");
 		return 1;

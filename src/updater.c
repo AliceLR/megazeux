@@ -170,6 +170,7 @@ static void delete_hook(const char *file)
 {
   struct manifest_entry *new_entry;
   struct SHA256_ctx ctx;
+  bool ret;
   FILE *f;
 
   new_entry = ccalloc(1, sizeof(struct manifest_entry));
@@ -189,15 +190,17 @@ static void delete_hook(const char *file)
     goto err_delete_p;
   strcpy(delete_p->name, file);
 
-  f = fopen(file, "rb");
+  f = fopen_unsafe(file, "rb");
   if(!f)
     goto err_delete_p_name;
   delete_p->size = (unsigned long)ftell_and_rewind(f);
 
-  if(!manifest_compute_sha256(&ctx, f, delete_p->size))
-    goto err_delete_p_name;
-  memcpy(delete_p->sha256, ctx.H, sizeof(Uint32) * 8);
+  ret = manifest_compute_sha256(&ctx, f, delete_p->size);
   fclose(f);
+  if(!ret)
+    goto err_delete_p_name;
+
+  memcpy(delete_p->sha256, ctx.H, sizeof(Uint32) * 8);
   return;
 
 err_delete_p_name:
@@ -269,11 +272,11 @@ static bool backup_original_manifest(void)
     goto err_out;
   }
 
-  input = fopen(MANIFEST_TXT, "rb");
+  input = fopen_unsafe(MANIFEST_TXT, "rb");
   if(!input)
     goto err_out;
 
-  output = fopen(MANIFEST_TXT "~", "wb");
+  output = fopen_unsafe(MANIFEST_TXT "~", "wb");
   if(!output)
     goto err_close_input;
 
@@ -401,7 +404,7 @@ static void __check_for_updates(struct config_info *conf)
     goto err_out;
 
   // Acid test: Can we write to this directory?
-  f = fopen(UPDATES_TXT, "w+b");
+  f = fopen_unsafe(UPDATES_TXT, "w+b");
   if(!f)
   {
     error("Failed to create \"" UPDATES_TXT "\". Check permissions.", 1, 8, 0);
@@ -710,7 +713,7 @@ static void __check_for_updates(struct config_info *conf)
 
   if(delete_list)
   {
-    f = fopen(DELETE_TXT, "wb");
+    f = fopen_unsafe(DELETE_TXT, "wb");
     if(!f)
     {
       error("Failed to create \"" DELETE_TXT "\". Check permissions.", 1, 8, 0);
@@ -783,7 +786,7 @@ bool updater_init(char *argv[])
 
   check_for_updates = __check_for_updates;
 
-  f = fopen(DELETE_TXT, "rb");
+  f = fopen_unsafe(DELETE_TXT, "rb");
   if(!f)
     goto err_swivel_back;
 
@@ -792,7 +795,7 @@ bool updater_init(char *argv[])
 
   for(e = delete_list; e; e = e->next)
   {
-    f = fopen(e->name, "rb");
+    f = fopen_unsafe(e->name, "rb");
     if(!f)
       continue;
 

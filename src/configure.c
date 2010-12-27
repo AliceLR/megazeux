@@ -548,7 +548,7 @@ __editor_maybe_static void __set_config_from_file(
   char *equals_position, *value;
   FILE *conf_file;
 
-  conf_file = fopen(conf_file_name, "rb");
+  conf_file = fopen_unsafe(conf_file_name, "rb");
   if(!conf_file)
     return;
 

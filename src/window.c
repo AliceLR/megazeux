@@ -2272,7 +2272,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
                 if(!strcasecmp(file_name + file_name_length - 4, ".mzx"))
                 {
-                  FILE *mzx_file = fopen(file_name, "rb");
+                  FILE *mzx_file = fopen_unsafe(file_name, "rb");
 
                   memset(file_list[num_files], ' ', 55);
                   strncpy(file_list[num_files], file_name, file_name_length);

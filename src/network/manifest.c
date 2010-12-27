@@ -187,7 +187,7 @@ static struct manifest_entry *manifest_get_local(void)
   struct manifest_entry *manifest;
   FILE *f;
 
-  f = fopen(MANIFEST_TXT, "rb");
+  f = fopen_unsafe(MANIFEST_TXT, "rb");
   if(!f)
   {
     warn("Local " MANIFEST_TXT " is missing\n");
@@ -210,7 +210,7 @@ static struct manifest_entry *manifest_get_remote(struct host *h,
 
   snprintf(url, LINE_BUF_LEN, "%s/" MANIFEST_TXT, base);
 
-  f = fopen(MANIFEST_TXT, "w+b");
+  f = fopen_unsafe(MANIFEST_TXT, "w+b");
   if(!f)
   {
     warn("Failed to open local " MANIFEST_TXT " for writing\n");
@@ -333,7 +333,7 @@ static void manifest_add_list_validate_augment(struct manifest_entry *local,
     struct manifest_entry *new_added;
     FILE *f;
 
-    f = fopen(e->name, "rb");
+    f = fopen_unsafe(e->name, "rb");
     if(f)
     {
       if(manifest_entry_check_validity(e, f))
@@ -415,7 +415,7 @@ bool manifest_entry_download_replace(struct host *h, const char *basedir,
    * write protected or in-use. In this case, it may be possible to
    * rename the original file out of the way. Try this trick first.
    */
-  f = fopen(e->name, "w+b");
+  f = fopen_unsafe(e->name, "w+b");
   if(!f)
   {
     snprintf(buf, LINE_BUF_LEN, "%s~", e->name);
@@ -428,7 +428,7 @@ bool manifest_entry_download_replace(struct host *h, const char *basedir,
     if(delete_hook)
       delete_hook(buf);
 
-    f = fopen(e->name, "w+b");
+    f = fopen_unsafe(e->name, "w+b");
     if(!f)
     {
       warn("Unable to open file '%s' for writing\n", e->name);

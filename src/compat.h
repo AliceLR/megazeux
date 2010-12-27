@@ -132,6 +132,37 @@ typedef enum
 
 __M_BEGIN_DECLS
 
+#ifdef __GNUC__
+
+// On GNU compilers we can mark fopen() as "deprecated" to remind callers
+// to properly audit calls to it.
+//
+// Any case where a file to open is specified by a game, the path must first
+// be translated, so that any case-insensitive matches will be used and 
+// safety checks will be applied. Callers should use either
+// fsafetranslate()+fopen_unsafe(), or call fsafeopen() directly.
+//
+// Any case where a file comes from the editor, or from MZX-proper, it
+// probably should not be translated. In this case fopen_unsafe() can be
+// used directly.
+
+#include <stdio.h>
+
+static inline FILE *fopen_unsafe(const char *path, const char *mode)
+ { return fopen(path, mode); }
+static inline FILE *check_fopen(const char *path, const char *mode)
+ __attribute__((deprecated));
+static inline FILE *check_fopen(const char *path, const char *mode)
+ { return fopen_unsafe(path, mode); }
+
+#define fopen(path, mode) check_fopen(path, mode)
+
+#else // !__GNUC__
+
+#define fopen_unsafe(file, mode) fopen(file, mode)
+
+#endif // __GNUC__
+
 #ifdef CONFIG_CHECK_ALLOC
 
 #include <stddef.h>

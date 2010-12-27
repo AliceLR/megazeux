@@ -185,7 +185,7 @@ static void decrypt(const char *file_name)
 
   int meter_target, meter_curr = 0;
 
-  source = fopen(file_name, "rb");
+  source = fopen_unsafe(file_name, "rb");
   file_length = ftell_and_rewind(source);
 
   meter_target = file_length + (file_length - 15) + 4;
@@ -202,7 +202,7 @@ static void decrypt(const char *file_name)
 
   src_ptr += 25;
 
-  dest = fopen(file_name, "wb");
+  dest = fopen_unsafe(file_name, "wb");
   if(!dest)
   {
     error("Cannot decrypt write-protected world.", 1, 8, 0x0DD5);
@@ -370,7 +370,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
 #ifdef CONFIG_DEBYTECODE
   if(!savegame)
   {
-    fp = fopen(file, "rb");
+    fp = fopen_unsafe(file, "rb");
     if(fp)
     {
       if(!fseek(fp, 0x1A, SEEK_SET))
@@ -391,7 +391,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
   }
 #endif
 
-  fp = fopen(file, "wb");
+  fp = fopen_unsafe(file, "wb");
   if(!fp)
   {
     error("Error saving world", 1, 8, 0x0D01);
@@ -957,7 +957,7 @@ __editor_maybe_static FILE *try_load_world(const char *file,
   FILE *fp;
   int v;
 
-  fp = fopen(file, "rb");
+  fp = fopen_unsafe(file, "rb");
   if(!fp)
   {
     error("Error loading world", 1, 8, 0x0D01);

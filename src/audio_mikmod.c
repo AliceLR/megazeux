@@ -188,7 +188,7 @@ struct audio_stream *construct_mikmod_stream(char *filename, Uint32 frequency,
   Uint32 file_size;
   struct audio_stream *ret_val = NULL;
 
-  input_file = fopen(filename, "rb");
+  input_file = fopen_unsafe(filename, "rb");
 
   if(input_file)
   {

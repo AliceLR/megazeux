@@ -1751,7 +1751,7 @@ static void export_block(struct robot_state *rstate, int region_default)
     if(export_type)
     {
       add_ext(export_name, ".bc");
-      export_file = fopen(export_name, "wb");
+      export_file = fopen_unsafe(export_name, "wb");
 
       fputc(0xFF, export_file);
 
@@ -1768,7 +1768,7 @@ static void export_block(struct robot_state *rstate, int region_default)
 #endif
     {
       add_ext(export_name, ".txt");
-      export_file = fopen(export_name, "w");
+      export_file = fopen_unsafe(export_name, "w");
 
       while(current_rline != end_rline)
       {
@@ -1797,7 +1797,7 @@ static void import_block(struct world *mzx_world, struct robot_state *rstate)
   if(choose_file(mzx_world, txt_ext, import_name, "Import Robot", 1))
     return;
 
-  import_file = fopen(import_name, "r");
+  import_file = fopen_unsafe(import_name, "r");
 
   rstate->command_buffer = line_buffer;
 
