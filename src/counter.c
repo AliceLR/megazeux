@@ -1291,7 +1291,7 @@ static int save_bc_read(struct world *mzx_world,
 static int fread_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  if(mzx_world->input_file)
+  if(!mzx_world->input_is_dir && mzx_world->input_file)
     return fgetc(mzx_world->input_file);
   return -1;
 }
@@ -1299,7 +1299,7 @@ static int fread_read(struct world *mzx_world,
 static int fread_counter_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  if(mzx_world->input_file)
+  if(!mzx_world->input_is_dir && mzx_world->input_file)
   {
     if(mzx_world->version < 0x0252)
       return fgetw(mzx_world->input_file);
@@ -1312,8 +1312,10 @@ static int fread_counter_read(struct world *mzx_world,
 static int fread_pos_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  if(mzx_world->input_file)
+  if(!mzx_world->input_is_dir && mzx_world->input_file)
     return ftell(mzx_world->input_file);
+  else if(mzx_world->input_is_dir)
+    return dir_tell(&mzx_world->input_directory);
   else
     return -1;
 }
@@ -1321,12 +1323,17 @@ static int fread_pos_read(struct world *mzx_world,
 static void fread_pos_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  if(mzx_world->input_file)
+  if(!mzx_world->input_is_dir && mzx_world->input_file)
   {
     if(value == -1)
       fseek(mzx_world->input_file, 0, SEEK_END);
     else
       fseek(mzx_world->input_file, value, SEEK_SET);
+  }
+  else if(mzx_world->input_is_dir)
+  {
+    if(value >= 0)
+      dir_seek(&mzx_world->input_directory, value);
   }
 }
 
@@ -2173,17 +2180,38 @@ int set_counter_special(struct world *mzx_world, char *char_value,
     {
       if(char_value[0])
       {
-        if(mzx_world->input_file)
+        char *translated_path = cmalloc(MAX_PATH);
+        int err;
+
+        if(!mzx_world->input_is_dir && mzx_world->input_file)
           fclose(mzx_world->input_file);
 
-        mzx_world->input_file = fsafeopen(char_value, "rb");
+        if(mzx_world->input_is_dir)
+          dir_close(&mzx_world->input_directory);
+
+        mzx_world->input_is_dir = false;
+
+        err = fsafetranslate(char_value, translated_path);
+
+        if(err == -FSAFE_MATCHED_DIRECTORY)
+        {
+          if(dir_open(&mzx_world->input_directory, translated_path))
+            mzx_world->input_is_dir = true;
+        }
+        else if(err == -FSAFE_SUCCESS)
+          mzx_world->input_file = fopen_unsafe(translated_path, "rb");
+
+        free(translated_path);
       }
       else
       {
-        if(mzx_world->input_file)
+        if(!mzx_world->input_is_dir && mzx_world->input_file)
           fclose(mzx_world->input_file);
 
-        mzx_world->input_file = NULL;
+        if(mzx_world->input_is_dir)
+          dir_close(&mzx_world->input_directory);
+
+        mzx_world->input_is_dir = false;
       }
 
       strcpy(mzx_world->input_file_name, char_value);
@@ -3043,7 +3071,8 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
   dest = find_string(mzx_world, name, &next);
 
   // TODO - Make terminating chars variable, but how..
-  if(special_name_partial("fread") && mzx_world->input_file)
+  if(special_name_partial("fread") &&
+   !mzx_world->input_is_dir && mzx_world->input_file)
   {
     FILE *input_file = mzx_world->input_file;
 
@@ -3114,6 +3143,34 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
         dest_value = dest->value;
       }
     }
+  }
+  else
+
+  if(special_name_partial("fread") && mzx_world->input_is_dir)
+  {
+    char entry[PATH_BUF_LEN];
+    bool entry_ok = false;
+
+    while(1)
+    {
+      // Read entries until there are none left
+      if(!dir_get_next_entry(&mzx_world->input_directory, entry))
+        break;
+
+      // Ignore . and ..
+      if(!strcmp(entry, ".") || !strcmp(entry, ".."))
+        continue;
+
+      // And ignore anything with '*' or '/' in the name
+      if(strchr(entry, '*') || strchr(entry, '/'))
+        continue;
+
+      entry_ok = true;
+      break;
+    }
+
+    force_string_copy(mzx_world, name, next, &dest, strlen(entry),
+     offset, offset_specified, &size, size_specified, entry);
   }
   else
 

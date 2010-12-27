@@ -2123,13 +2123,12 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
 
 static void remove_files(char *directory_name, int remove_recursively)
 {
+  struct mzx_dir current_dir;
   char *current_dir_name;
   struct stat file_info;
-  dir_t *current_dir;
   char *file_name;
 
-  current_dir = dir_open(directory_name);
-  if(!current_dir)
+  if(!dir_open(&current_dir, directory_name))
     return;
 
   current_dir_name = cmalloc(MAX_PATH);
@@ -2140,7 +2139,7 @@ static void remove_files(char *directory_name, int remove_recursively)
 
   while(1)
   {
-    if(dir_get_next_entry(current_dir, file_name) < 0)
+    if(!dir_get_next_entry(&current_dir, file_name))
       break;
 
     if(stat(file_name, &file_info) < 0)
@@ -2165,7 +2164,7 @@ static void remove_files(char *directory_name, int remove_recursively)
   free(file_name);
   free(current_dir_name);
 
-  dir_close(current_dir);
+  dir_close(&current_dir);
 }
 
 __editor_maybe_static int file_manager(struct world *mzx_world,
@@ -2173,7 +2172,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
  const char *title, int dirs_okay, int allow_new, struct element **dialog_ext,
  int num_ext, int ext_height, int allow_dir_change)
 {
-  dir_t *current_dir;
+  struct mzx_dir current_dir;
   char *file_name;
   struct stat file_info;
   char *current_dir_name;
@@ -2230,11 +2229,12 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     chosen_dir = 0;
 
     getcwd(current_dir_name, MAX_PATH);
-    current_dir = dir_open(current_dir_name);
+    if(!dir_open(&current_dir, current_dir_name))
+      goto skip_dir;
 
-    while(current_dir)
+    while(1)
     {
-      if(dir_get_next_entry(current_dir, file_name) < 0)
+      if(!dir_get_next_entry(&current_dir, file_name))
         break;
 
       file_name_length = strlen(file_name);
@@ -2317,7 +2317,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
       }
     }
 
-    dir_close(current_dir);
+    dir_close(&current_dir);
+skip_dir:
 
     qsort(file_list, num_files, sizeof(char *), sort_function);
     qsort(dir_list, num_dirs, sizeof(char *), sort_function);

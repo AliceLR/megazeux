@@ -373,58 +373,127 @@ char *strsep(char **stringp, const char *delim)
 
 #endif // __WIN32__ || __amigaos__
 
+long dir_tell(struct mzx_dir *dir)
+{
+  return dir->pos;
+}
+
 #if defined(CONFIG_NDS) || defined(CONFIG_WII)
 
 // NDS/Wii versions of these functions backend directly to libfat
 
-dir_t *dir_open(const char *path)
+bool dir_open(struct mzx_dir *dir, const char *path)
 {
-  return diropen(path);
+  char entry[PATH_BUF_LEN];
+
+  dir->d = diropen(path);
+  if(!dir->d)
+    return false;
+
+  dir->entries = 0;
+  while(dirnext(dir->d, entry, NULL) == 0)
+    dir->entries++;
+
+  dirreset(dir->d);
+  dir->pos = 0;
+  return true;
 }
 
-void dir_close(dir_t *dir)
+void dir_close(struct mzx_dir *dir)
 {
-  if(dir)
-    dirclose(dir);
+  if(dir->d)
+  {
+    dirclose(dir->d);
+    dir->d = NULL;
+    dir->entries = 0;
+    dir->pos = 0;
+  }
 }
 
-int dir_get_next_entry(dir_t *dir, char *entry)
+void dir_seek(struct mzx_dir *dir, long offset)
 {
-  if(!dir)
-    return -1;
-  return dirnext(dir, entry, NULL);
+  char entry[PATH_BUF_LEN];
+  long i;
+
+  if(!dir->d)
+    return;
+
+  dir->pos = CLAMP(offset, 0L, dir->entries);
+
+  dirreset(dir->d);
+  for(i = 0; i < dir->pos; i++)
+    dirnext(dir->d, entry, NULL);
+}
+
+bool dir_get_next_entry(struct mzx_dir *dir, char *entry)
+{
+  if(!dir->d)
+    return false;
+  dir->pos = MIN(dir->pos + 1, dir->entries);
+  return dirnext(dir->d, entry, NULL) == 0;
 }
 
 #else // !(CONFIG_NDS || CONFIG_WII)
 
-dir_t *dir_open(const char *path)
+bool dir_open(struct mzx_dir *dir, const char *path)
 {
-  return opendir(path);
+  dir->d = opendir(path);
+  if(!dir->d)
+    return false;
+
+  dir->entries = 0;
+  while(readdir(dir->d) != NULL)
+    dir->entries++;
+
+  rewinddir(dir->d);
+  dir->pos = 0;
+  return true;
 }
 
-void dir_close(dir_t *dir)
+void dir_close(struct mzx_dir *dir)
 {
-  if(dir)
-    closedir(dir);
+  if(dir->d)
+  {
+    closedir(dir->d);
+    dir->d = NULL;
+    dir->entries = 0;
+    dir->pos = 0;
+  }
 }
 
-int dir_get_next_entry(dir_t *dir, char *entry)
+void dir_seek(struct mzx_dir *dir, long offset)
+{
+  long i;
+
+  if(!dir->d)
+    return;
+
+  dir->pos = CLAMP(offset, 0L, dir->entries);
+
+  rewinddir(dir->d);
+  for(i = 0; i < dir->pos; i++)
+    readdir(dir->d);
+}
+
+bool dir_get_next_entry(struct mzx_dir *dir, char *entry)
 {
   struct dirent *inode;
 
-  if(!dir)
-    return -1;
+  if(!dir->d)
+    return false;
 
-  inode = readdir(dir);
+  dir->pos = MIN(dir->pos + 1, dir->entries);
+
+  inode = readdir(dir->d);
   if(!inode)
   {
     entry[0] = 0;
-    return -1;
+    return false;
   }
 
-  strncpy(entry, inode->d_name, MAX_PATH - 1);
-  entry[MAX_PATH - 1] = 0;
-  return 0;
+  strncpy(entry, inode->d_name, PATH_BUF_LEN - 1);
+  entry[PATH_BUF_LEN - 1] = 0;
+  return true;
 }
 
 #endif // CONFIG_NDS || CONFIG_WII

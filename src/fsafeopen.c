@@ -99,8 +99,8 @@ static int case5(char *path, char *string)
 {
   int ret = -FSAFE_BRUTE_FORCE_FAILED;
   int dirlen = string - path;
+  struct mzx_dir wd;
   char *newpath;
-  dir_t *wd;
 
   newpath = cmalloc(PATH_BUF_LEN);
 
@@ -116,13 +116,12 @@ static int case5(char *path, char *string)
     newpath[dirlen + 2 - 1] = 0;
   }
 
-  wd = dir_open(newpath);
-  if(wd != NULL)
+  if(dir_open(&wd, newpath))
   {
     while(ret != FSAFE_SUCCESS)
     {
       // somebody bad happened, or there's no new entry
-      if(dir_get_next_entry(wd, newpath) != 0)
+      if(!dir_get_next_entry(&wd, newpath))
         break;
 
       // okay, we got something, but does it match?
@@ -133,7 +132,7 @@ static int case5(char *path, char *string)
       }
     }
 
-    dir_close(wd);
+    dir_close(&wd);
   }
 
   free(newpath);

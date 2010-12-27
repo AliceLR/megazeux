@@ -587,9 +587,13 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
         fwrite(mzx_world->input_file_name, len, 1, fp);
     }
 
-    if(mzx_world->input_file)
+    if(!mzx_world->input_is_dir && mzx_world->input_file)
     {
       fputd(ftell(mzx_world->input_file), fp);
+    }
+    else if(mzx_world->input_is_dir)
+    {
+      fputd(dir_tell(&mzx_world->input_directory), fp);
     }
     else
     {
@@ -1329,17 +1333,32 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
 
     if(mzx_world->input_file_name[0] != '\0')
     {
-      mzx_world->input_file =
-       fsafeopen(mzx_world->input_file_name, "rb");
+      char *translated_path = cmalloc(MAX_PATH);
+      int err;
 
-      if(mzx_world->input_file)
+      mzx_world->input_is_dir = false;
+
+      err = fsafetranslate(mzx_world->input_file_name, translated_path);
+      if(err == -FSAFE_MATCHED_DIRECTORY)
       {
-        fseek(mzx_world->input_file, fgetd(fp), SEEK_SET);
+        if(dir_open(&mzx_world->input_directory, translated_path))
+        {
+          dir_seek(&mzx_world->input_directory, fgetd(fp));
+          mzx_world->input_is_dir = true;
+        }
+        else
+          fseek(fp, 4, SEEK_CUR);
       }
-      else
+      else if(err == -FSAFE_SUCCESS)
       {
-        fseek(fp, 4, SEEK_CUR);
+        mzx_world->input_file = fopen_unsafe(translated_path, "rb");
+        if(mzx_world->input_file)
+          fseek(mzx_world->input_file, fgetd(fp), SEEK_SET);
+        else
+          fseek(fp, 4, SEEK_CUR);
       }
+
+      free(translated_path);
     }
     else
     {
@@ -1608,6 +1627,8 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->mzx_speed = mzx_world->default_speed;
 
   mzx_world->input_file = NULL;
+  mzx_world->input_is_dir = false;
+
   mzx_world->output_file = NULL;
 
   mzx_world->target_where = TARGET_NONE;
@@ -1707,18 +1728,18 @@ void clear_world(struct world *mzx_world)
 
   clear_robot_contents(&mzx_world->global_robot);
 
-  if(mzx_world->input_file)
-  {
+  if(!mzx_world->input_is_dir && mzx_world->input_file)
     fclose(mzx_world->input_file);
-    mzx_world->input_file = NULL;
-  }
+  else if(mzx_world->input_is_dir)
+    dir_close(&mzx_world->input_directory);
+
+  mzx_world->input_file = NULL;
+  mzx_world->input_is_dir = false;
 
   if(mzx_world->output_file)
-  {
     fclose(mzx_world->output_file);
-    mzx_world->output_file = NULL;
-  }
 
+  mzx_world->output_file = NULL;
   mzx_world->active = 0;
 
   end_sample();

@@ -35,6 +35,7 @@ __M_BEGIN_DECLS
 #endif
 
 #include "sfx.h"
+#include "util.h"
 
 struct world
 {
@@ -108,10 +109,12 @@ struct world
   int divider;
   int c_divisions;
   int bi_mesg_status;
-  char input_file_name[MAX_PATH];
   char output_file_name[MAX_PATH];
-  FILE *input_file;
   FILE *output_file;
+  char input_file_name[MAX_PATH];
+  FILE *input_file;
+  bool input_is_dir;
+  struct mzx_dir input_directory;
   int commands;
   int vlayer_size;
   int vlayer_width;
