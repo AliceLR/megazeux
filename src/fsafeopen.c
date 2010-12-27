@@ -317,7 +317,7 @@ static int fsafetest(const char *path, char *newpath)
 
 int fsafetranslate(const char *path, char *newpath)
 {
-  struct stat inode;
+  struct stat file_info;
   int ret;
 
   // try to pass the basic security tests
@@ -325,24 +325,42 @@ int fsafetranslate(const char *path, char *newpath)
   if(ret == FSAFE_SUCCESS)
   {
     // see if file is already there
-    if(stat(newpath, &inode) != 0)
+    if(stat(newpath, &file_info) != 0)
     {
 #ifndef __WIN32__
-      // it isn't, so try harder
+      // it isn't, so try harder..
       ret = match(newpath);
+      if(ret == FSAFE_SUCCESS)
+      {
+        // ..and update the stat information for the new path
+        if(stat(newpath, &file_info) != 0)
+          ret = -FSAFE_MATCH_FAILED;
+      }
 #else
       // on WIN32 we can't, so fail hard
       ret = -FSAFE_MATCH_FAILED;
 #endif
     }
+
+    if(ret == FSAFE_SUCCESS)
+    {
+      // most callers don't want directories
+      if(S_ISDIR(file_info.st_mode))
+        ret = -FSAFE_MATCHED_DIRECTORY;
+    }
   }
 
 #if !defined(__WIN32__)
-  if(ret == FSAFE_SUCCESS)
-    debug("%s:%d: translated %s to %s.\n", __FILE__, __LINE__, path, newpath);
+  if(ret == -FSAFE_SUCCESS || ret == -FSAFE_MATCHED_DIRECTORY)
+  {
+    debug("%s:%d: translated %s to %s%s.\n", __FILE__, __LINE__,
+     path, newpath, (ret == -FSAFE_MATCHED_DIRECTORY) ? "/" : "");
+  }
   else
+  {
     debug("%s:%d: failed to translate %s (err %d).\n",
      __FILE__, __LINE__, path, ret);
+  }
 #endif
 
   return ret;

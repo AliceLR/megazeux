@@ -65,6 +65,8 @@ USERS
 + Fixed some security issues with SMZX_PALETTE and LOAD_BC counters.
 + Only list/open regular files or symlinks to regular files in file
   dialogs. Special files are now ignored.
++ Opening directories with FREAD_OPEN or FWRITE_OPEN is now rejected
+  properly on all platforms.
 
 DEVELOPERS
 
