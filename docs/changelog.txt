@@ -74,6 +74,9 @@ USERS
   2^32 bytes apart (only affected 64bit builds).
 + Stopped SET "var" <command> from assembling. Some invalid uses of
   command tokens were already being ignored, but this was just luck.
++ Sprites with color c?? (inherited "natural" colors) will correctly
+  inherit the colors of special characters such as the player and other
+  self-colored built-ins.
 
 DEVELOPERS
 

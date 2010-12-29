@@ -89,7 +89,8 @@ void draw_sprites(struct world *mzx_world)
   int i, i2, i3, i4, i5, i6, start_x, start_y, offset_x, offset_y;
   int skip, skip2, skip3;
   int draw_width, draw_height, ref_x, ref_y, screen_x, screen_y;
-  int bwidth, bheight, use_chars = 1;
+  int bwidth, bheight;
+  bool use_vlayer;
   struct sprite **sprite_list = mzx_world->sprite_list;
   struct sprite *draw_order[MAX_SPRITES];
   struct sprite *cur_sprite;
@@ -192,7 +193,7 @@ void draw_sprites(struct world *mzx_world)
 
       if(cur_sprite->flags & SPRITE_VLAYER)
       {
-        use_chars = 1;
+        use_vlayer = true;
         bwidth = mzx_world->vlayer_width;
         bheight = mzx_world->vlayer_height;
         src_chars = mzx_world->vlayer_chars;
@@ -200,7 +201,7 @@ void draw_sprites(struct world *mzx_world)
       }
       else
       {
-        use_chars = 0;
+        use_vlayer = false;
         bwidth = board_width;
         bheight = src_board->board_height;
         src_chars = src_board->level_param;
@@ -251,11 +252,16 @@ void draw_sprites(struct world *mzx_world)
           {
             for(i3 = 0; i3 < draw_width; i3++)
             {
-              color = src_colors[i4];
-              if(use_chars)
+              if(use_vlayer)
+              {
+                color = src_colors[i4];
                 ch = src_chars[i4];
+              }
               else
+              {
+                color = get_id_color(src_board, i4);
                 ch = get_id_char(src_board, i4);
+              }
 
               if(!(color & 0xF0))
                 color = (color & 0x0F) | (get_color_linear(i5) & 0xF0);
@@ -281,11 +287,16 @@ void draw_sprites(struct world *mzx_world)
           {
             for(i3 = 0; i3 < draw_width; i3++)
             {
-              color = src_colors[i4];
-              if(use_chars)
+              if(use_vlayer)
+              {
+                color = src_colors[i4];
                 ch = src_chars[i4];
+              }
               else
+              {
+                color = get_id_color(src_board, i4);
                 ch = get_id_char(src_board, i4);
+              }
 
               if(!(color & 0xF0))
                 color = (color & 0x0F) | (get_color_linear(i5) & 0xF0);
@@ -316,7 +327,7 @@ void draw_sprites(struct world *mzx_world)
           {
             for(i3 = 0; i3 < draw_width; i3++)
             {
-              if(use_chars)
+              if(use_vlayer)
                 ch = src_chars[i4];
               else
                 ch = get_id_char(src_board, i4);
@@ -348,7 +359,7 @@ void draw_sprites(struct world *mzx_world)
           {
             for(i3 = 0; i3 < draw_width; i3++)
             {
-              if(use_chars)
+              if(use_vlayer)
                 ch = src_chars[i4];
               else
                 ch = get_id_char(src_board, i4);
@@ -412,7 +423,7 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
   int bwidth, bheight;
   int x1, x2, y1, y2;
   int mw, mh;
-  int use_chars = 1, use_chars2 = 1;
+  bool use_vlayer, use_vlayer2;
   unsigned int x_lmask, x_gmask, y_lmask, y_gmask;
   unsigned int xl, xg, yl, yg, wl, hl, wg, hg;
   char *vlayer_chars = mzx_world->vlayer_chars;
@@ -429,12 +440,13 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
 
   if(check_sprite->flags & SPRITE_VLAYER)
   {
-    use_chars = 0;
+    use_vlayer = true;
     bwidth = vlayer_width;
     bheight = mzx_world->vlayer_height;
   }
   else
   {
+    use_vlayer = false;
     bwidth = board_width;
     bheight = src_board->board_height;
   }
@@ -497,7 +509,7 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
       // First, if ccheck is on, it won't care if the source is 32
       int c;
 
-      if(!use_chars)
+      if(use_vlayer)
       {
         c = vlayer_chars[i4];
       }
@@ -596,13 +608,13 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
 
         if(cur_sprite->flags & SPRITE_VLAYER)
         {
-          use_chars2 = 0;
+          use_vlayer2 = true;
           i4 = (y1 * vlayer_width) + x1;
           skip = vlayer_width - mw;
         }
         else
         {
-          use_chars2 = 1;
+          use_vlayer2 = false;
           i4 = (y1 * board_width) + x1;
           skip = board_width - mw;
         }
@@ -618,7 +630,7 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
             for(i3 = 0; i3 < mw; i3++)
             {
               char c1, c2;
-              if(use_chars2)
+              if(!use_vlayer2)
               {
                 c1 = get_id_char(src_board, i4);
               }
@@ -626,7 +638,7 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
               {
                 c1 = vlayer_chars[i4];
               }
-              if(use_chars)
+              if(!use_vlayer)
               {
                 c2 = get_id_char(src_board, i5);
               }
@@ -660,7 +672,7 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
             for(i3 = 0; i3 < mw; i3++)
             {
               char c1, c2;
-              if(use_chars2)
+              if(!use_vlayer2)
               {
                 c1 = get_id_char(src_board, i4);
               }
@@ -668,7 +680,7 @@ int sprite_colliding_xy(struct world *mzx_world, struct sprite *check_sprite,
               {
                 c1 = vlayer_chars[i4];
               }
-              if(use_chars)
+              if(!use_vlayer)
               {
                 c2 = get_id_char(src_board, i5);
               }
