@@ -2500,7 +2500,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           cur_robot->stack_pointer = 0;
           cur_robot->cur_prog_line = 1;
           cur_robot->label_list =
-           cache_robot_labels(cur_robot, &(cur_robot->num_labels));
+           cache_robot_labels(cur_robot, &cur_robot->num_labels);
 
           // Restart this robot if either it was just a LOAD_ROBOT
           // OR LOAD_ROBOTn was used where n is &robot_id&.
@@ -2537,7 +2537,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           cur_robot->cur_prog_line = 1;
           cur_robot->stack_pointer = 0;
           cur_robot->label_list =
-            cache_robot_labels(cur_robot, &(cur_robot->num_labels));
+           cache_robot_labels(cur_robot, &cur_robot->num_labels);
 
           // Restart this robot if either it was just a LOAD_BC
           // OR LOAD_BCn was used where n is &robot_id&.

@@ -274,7 +274,7 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
 
     // TODO: This has to be made part of what's saved one day.
     cur_robot->label_list =
-     cache_robot_labels(cur_robot, &(cur_robot->num_labels));
+     cache_robot_labels(cur_robot, &cur_robot->num_labels);
 #endif /* CONFIG_DEBYTECODE */
   }
   else
@@ -346,7 +346,7 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   if(cur_robot->used)
   {
     cur_robot->label_list =
-     cache_robot_labels(cur_robot, &(cur_robot->num_labels));
+     cache_robot_labels(cur_robot, &cur_robot->num_labels);
   }
 #endif /* !CONFIG_DEBYTECODE */
 }
@@ -2806,12 +2806,9 @@ __editor_maybe_static
 void duplicate_robot_direct(struct robot *cur_robot,
  struct robot *copy_robot, int x, int y)
 {
-  struct label *src_label, *dest_label;
   char *dest_program_location, *src_program_location;
-  int program_offset;
   int program_length;
   int num_labels;
-  int i;
 
 #ifdef CONFIG_DEBYTECODE
   prepare_robot_bytecode(cur_robot);
@@ -2829,25 +2826,8 @@ void duplicate_robot_direct(struct robot *cur_robot,
 
   memcpy(dest_program_location, src_program_location, program_length);
 
-  if(num_labels)
-    copy_robot->label_list = ccalloc(num_labels, sizeof(struct label *));
-  else
-    copy_robot->label_list = NULL;
-
-  program_offset = (int)(dest_program_location - src_program_location);
-
-  // Copy each individual label pointer over
-  for(i = 0; i < num_labels; i++)
-  {
-    copy_robot->label_list[i] = cmalloc(sizeof(struct label));
-
-    src_label = cur_robot->label_list[i];
-    dest_label = copy_robot->label_list[i];
-
-    memcpy(dest_label, src_label, sizeof(struct label));
-    // The name pointer actually has to be readjusted to match the new program
-    dest_label->name += program_offset;
-  }
+  copy_robot->label_list =
+   cache_robot_labels(cur_robot, &cur_robot->num_labels);
 
 #ifdef CONFIG_DEBYTECODE
   copy_robot->program_source = NULL;
@@ -3138,7 +3118,7 @@ void prepare_robot_bytecode(struct robot *cur_robot)
     // robot's actually used. But eventually this should be combined with
     // assemble_program.
     cur_robot->label_list =
-     cache_robot_labels(cur_robot, &(cur_robot->num_labels));
+     cache_robot_labels(cur_robot, &cur_robot->num_labels);
 
     // Can free source code now.
     free(cur_robot->program_source);

@@ -43,7 +43,7 @@ static void store_robot_to_extram(struct robot *robot)
   if(robot->used)
   {
     clear_label_cache(robot->label_list, robot->num_labels);
-    robot->label_list = cache_robot_labels(robot, &(robot->num_labels));
+    robot->label_list = cache_robot_labels(robot, &robot->num_labels);
   }
 }
 
@@ -62,7 +62,7 @@ static void retrieve_robot_from_extram(struct robot *robot)
   if(robot->used)
   {
     clear_label_cache(robot->label_list, robot->num_labels);
-    robot->label_list = cache_robot_labels(robot, &(robot->num_labels));
+    robot->label_list = cache_robot_labels(robot, &robot->num_labels);
   }
 }
 

@@ -69,6 +69,9 @@ USERS
   properly on all platforms.
 + Fixed a bug where a file would be re-opened for read/write, even if
   the file was missing or an I/O error occurred before saving.
++ Fixed a bug where MZX could occasionally crash due to label list
+  corruption when copying robots from heap locations greater than
+  2^32 bytes apart (only affected 64bit builds).
 
 DEVELOPERS
 
