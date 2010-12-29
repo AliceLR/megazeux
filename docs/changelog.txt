@@ -67,6 +67,8 @@ USERS
   dialogs. Special files are now ignored.
 + Opening directories with FREAD_OPEN or FWRITE_OPEN is now rejected
   properly on all platforms.
++ Fixed a bug where a file would be re-opened for read/write, even if
+  the file was missing or an I/O error occurred before saving.
 
 DEVELOPERS
 

@@ -2178,18 +2178,24 @@ int set_counter_special(struct world *mzx_world, char *char_value,
   {
     case FOPEN_FREAD:
     {
+      mzx_world->input_file_name[0] = 0;
+
       if(char_value[0])
       {
         char *translated_path = cmalloc(MAX_PATH);
         int err;
 
         if(!mzx_world->input_is_dir && mzx_world->input_file)
+        {
           fclose(mzx_world->input_file);
+          mzx_world->input_file = NULL;
+        }
 
         if(mzx_world->input_is_dir)
+        {
           dir_close(&mzx_world->input_directory);
-
-        mzx_world->input_is_dir = false;
+          mzx_world->input_is_dir = false;
+        }
 
         err = fsafetranslate(char_value, translated_path);
 
@@ -2201,83 +2207,101 @@ int set_counter_special(struct world *mzx_world, char *char_value,
         else if(err == -FSAFE_SUCCESS)
           mzx_world->input_file = fopen_unsafe(translated_path, "rb");
 
+        if(mzx_world->input_file || mzx_world->input_is_dir)
+          strcpy(mzx_world->input_file_name, translated_path);    
+
         free(translated_path);
       }
       else
       {
         if(!mzx_world->input_is_dir && mzx_world->input_file)
+        {
           fclose(mzx_world->input_file);
+          mzx_world->input_file = NULL;
+        }
 
         if(mzx_world->input_is_dir)
+        {
           dir_close(&mzx_world->input_directory);
-
-        mzx_world->input_is_dir = false;
+          mzx_world->input_is_dir = false;
+        }
       }
 
-      strcpy(mzx_world->input_file_name, char_value);
       break;
     }
 
     case FOPEN_FWRITE:
     {
+      mzx_world->output_file_name[0] = 0;
+
       if(char_value[0])
       {
         if(mzx_world->output_file)
           fclose(mzx_world->output_file);
 
         mzx_world->output_file = fsafeopen(char_value, "wb");
+        if(mzx_world->output_file)
+          strcpy(mzx_world->output_file_name, char_value);
       }
       else
       {
         if(mzx_world->output_file)
+        {
           fclose(mzx_world->output_file);
-
-        mzx_world->output_file = NULL;
+          mzx_world->output_file = NULL;
+        }
       }
 
-      strcpy(mzx_world->output_file_name, char_value);
       break;
     }
 
     case FOPEN_FAPPEND:
     {
+      mzx_world->output_file_name[0] = 0;
+
       if(char_value[0])
       {
         if(mzx_world->output_file)
           fclose(mzx_world->output_file);
 
         mzx_world->output_file = fsafeopen(char_value, "ab");
+        if(mzx_world->output_file)
+          strcpy(mzx_world->output_file_name, char_value);
       }
       else
       {
         if(mzx_world->output_file)
+        {
           fclose(mzx_world->output_file);
-
-        mzx_world->output_file = NULL;
+          mzx_world->output_file = NULL;
+        }
       }
 
-      strcpy(mzx_world->output_file_name, char_value);
       break;
     }
 
     case FOPEN_FMODIFY:
     {
+      mzx_world->output_file_name[0] = 0;
+
       if(char_value[0])
       {
         if(mzx_world->output_file)
           fclose(mzx_world->output_file);
 
         mzx_world->output_file = fsafeopen(char_value, "r+b");
+        if(mzx_world->output_file)
+          strcpy(mzx_world->output_file_name, char_value);
       }
       else
       {
         if(mzx_world->output_file)
+        {
           fclose(mzx_world->output_file);
-
-        mzx_world->output_file = NULL;
+          mzx_world->output_file = NULL;
+        }
       }
 
-      strcpy(mzx_world->output_file_name, char_value);
       break;
     }
 

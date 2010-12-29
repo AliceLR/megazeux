@@ -22,6 +22,7 @@
 #include <stdio.h>
 #include <string.h>
 #include <stdlib.h>
+#include <assert.h>
 #include <sys/stat.h>
 
 #ifndef _MSC_VER
@@ -1331,7 +1332,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
       mzx_world->input_file_name[len] = 0;
     }
 
-    if(mzx_world->input_file_name[0] != '\0')
+    if(mzx_world->input_file_name[0])
     {
       char *translated_path = cmalloc(MAX_PATH);
       int err;
@@ -1375,7 +1376,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
       mzx_world->output_file_name[len] = 0;
     }
 
-    if(mzx_world->output_file_name[0] != '\0')
+    if(mzx_world->output_file_name[0])
     {
       mzx_world->output_file =
        fsafeopen(mzx_world->output_file_name, "ab");
@@ -1626,10 +1627,9 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->lock_speed = 0;
   mzx_world->mzx_speed = mzx_world->default_speed;
 
-  mzx_world->input_file = NULL;
-  mzx_world->input_is_dir = false;
-
-  mzx_world->output_file = NULL;
+  assert(mzx_world->input_file == NULL);
+  assert(mzx_world->output_file == NULL);
+  assert(mzx_world->input_is_dir == false);
 
   mzx_world->target_where = TARGET_NONE;
 }
@@ -1729,17 +1729,22 @@ void clear_world(struct world *mzx_world)
   clear_robot_contents(&mzx_world->global_robot);
 
   if(!mzx_world->input_is_dir && mzx_world->input_file)
+  {
     fclose(mzx_world->input_file);
+    mzx_world->input_file = NULL;
+  }
   else if(mzx_world->input_is_dir)
+  {
     dir_close(&mzx_world->input_directory);
-
-  mzx_world->input_file = NULL;
-  mzx_world->input_is_dir = false;
+    mzx_world->input_is_dir = false;
+  }
 
   if(mzx_world->output_file)
+  {
     fclose(mzx_world->output_file);
+    mzx_world->output_file = NULL;
+  }
 
-  mzx_world->output_file = NULL;
   mzx_world->active = 0;
 
   end_sample();
