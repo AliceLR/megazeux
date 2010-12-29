@@ -1702,11 +1702,14 @@ static int match_command(struct mzx_command_rw *cmd, char *error_buffer)
            cmd->param_types[i3])
           {
             // Can allow char if imm is allowed, and can allow imm if
-            // param is allowed
+            // param is allowed.
+            // We must also ignore CMD and IGNORE_TYPE because these
+            // cause the meanings of the bits to become overloaded.
             if(!(((cmd->param_types[i3] & CHARACTER) &&
              (current_command->param_types[i2] & (IMM_S16 | IMM_U16))) ||
              (((cmd->param_types[i3] & (IMM_S16 | IMM_U16)) &&
-             (current_command->param_types[i2] & PARAM)))))
+             (current_command->param_types[i2] & PARAM)))) ||
+             (cmd->param_types[i3] & (CMD | IGNORE_TYPE)))
             {
               print_error(i3, error_buffer, cmd->param_types[i3],
                current_command->param_types[i2]);

@@ -72,6 +72,8 @@ USERS
 + Fixed a bug where MZX could occasionally crash due to label list
   corruption when copying robots from heap locations greater than
   2^32 bytes apart (only affected 64bit builds).
++ Stopped SET "var" <command> from assembling. Some invalid uses of
+  command tokens were already being ignored, but this was just luck.
 
 DEVELOPERS
 
