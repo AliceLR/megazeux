@@ -77,6 +77,9 @@ USERS
 + Sprites with color c?? (inherited "natural" colors) will correctly
   inherit the colors of special characters such as the player and other
   self-colored built-ins.
++ Debytecode's legacy expression converter should use is_string()
+  instead of its own (buggy) hand-rolled version. Fixes crash when
+  converting CoAZ.
 
 DEVELOPERS
 

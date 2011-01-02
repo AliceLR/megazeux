@@ -3700,13 +3700,13 @@ void load_string_board(struct world *mzx_world, const char *name, int w, int h,
    w, h, l, src, width);
 }
 
-int is_string(char *buffer)
+bool is_string(char *buffer)
 {
   size_t namelen, i;
 
   // String doesn't start with $, that's an immediate reject
   if(buffer[0] != '$')
-    return 0;
+    return false;
 
   // We need to stub out any part of the buffer that describes a
   // string offset or size constraint. This is because after the
@@ -3718,10 +3718,10 @@ int is_string(char *buffer)
   // For something to be a string it must not have a . in its name
   for(i = 0; i < namelen; i++)
     if(buffer[i] == '.')
-      return 0;
+      return false;
 
   // Valid string
-  return 1;
+  return true;
 }
 
 void counter_fsg(void)

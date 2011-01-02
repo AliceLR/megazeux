@@ -57,7 +57,7 @@ void load_string_board(struct world *mzx_world, const char *expression,
  int w, int h, char l, char *src, int width);
 int set_counter_special(struct world *mzx_world, char *char_value,
  int value, int id);
-int is_string(char *buffer);
+bool is_string(char *buffer);
 
 struct counter *load_counter(FILE *fp);
 struct string *load_string(FILE *fp);

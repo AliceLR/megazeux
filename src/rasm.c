@@ -26,6 +26,7 @@
 #include "rasm.h"
 #include "fsafeopen.h"
 #include "util.h"
+#include "counter.h"
 
 #ifdef CONFIG_DEBYTECODE
 
@@ -2681,30 +2682,6 @@ static char *find_comment(char *src)
   return src;
 }
 
-
-static char *skip_nested_expressions(char *src, bool skip_string_expressions)
-{
-  char terminator;
-
-  if(*src == '(')
-    terminator = ')';
-  else
-    terminator = '>';
-
-  src++;
-
-  while(*src != terminator)
-  {
-    if((*src == '(') || (skip_string_expressions && (*src == '<')))
-      src = skip_nested_expressions(src, skip_string_expressions);
-
-    src++;
-  }
-
-  return src + 1;
-}
-
-
 static int get_param(char *cmd_line)
 {
   if((cmd_line[1] == '?') && (cmd_line[2] == '?'))
@@ -5057,7 +5034,7 @@ static char *legacy_disassemble_print_string_expressions(char *src,
         char *next;
         char *base_output;
         char *name_offset;
-        bool is_string = false;
+        bool is_real_string;
 
         src++;
 
@@ -5090,51 +5067,7 @@ static char *legacy_disassemble_print_string_expressions(char *src,
           next++;
         }
 
-        if(base_output[1] == '$')
-        {
-          // Is it or isn't it a string. This is actually tricky. What
-          // has to be done is that we have to go from the start to the
-          // end, skip any intermediate expressions (or string expressions)
-          // until we find a ., then see if the next thing is a number,
-          // "length", or another expression (normal one, not string)
-          char *check_str = base_output + 1;
-
-          *output = 0;
-          is_string = true;
-
-          while(check_str != output)
-          {
-            switch(*check_str)
-            {
-              case '\\':
-                check_str++;
-                break;
-
-              case '(':
-              case '<':
-                check_str = skip_nested_expressions(check_str, true);
-                break;
-
-              case '.':
-                // If it's a number until the end, or it's "length",
-                // or it's an expression then it's not a string.
-                check_str++;
-                if((skip_decimal(check_str) == output) ||
-                 (!strcasecmp(check_str, "length")) ||
-                 ((*check_str == '(') &&
-                 (skip_nested_expressions(check_str, true) == output)))
-                {
-                  is_string = false;
-                }
-
-                break;
-
-              default:
-                check_str++;
-                break;
-            }
-          }
-        }
+        is_real_string = is_string(base_output + 1);
 
         if(!is_simple_identifier_name(name_offset, name_length, true))
         {
@@ -5144,7 +5077,7 @@ static char *legacy_disassemble_print_string_expressions(char *src,
           output += 2;
         }
 
-        if(is_string)
+        if(is_real_string)
         {
           *base_output = '<';
           *output = '>';
