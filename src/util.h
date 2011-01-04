@@ -103,6 +103,9 @@ typedef DIR dir_t;
 #endif // CONFIG_NDS || CONFIG_WII
 
 struct mzx_dir {
+#ifdef CONFIG_PSP
+  char path[PATH_BUF_LEN];
+#endif
   dir_t *d;
   long entries;
   long pos;

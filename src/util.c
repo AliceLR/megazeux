@@ -435,6 +435,7 @@ bool dir_get_next_entry(struct mzx_dir *dir, char *entry)
 
 #else // !(CONFIG_NDS || CONFIG_WII)
 
+
 bool dir_open(struct mzx_dir *dir, const char *path)
 {
   dir->d = opendir(path);
@@ -445,7 +446,15 @@ bool dir_open(struct mzx_dir *dir, const char *path)
   while(readdir(dir->d) != NULL)
     dir->entries++;
 
+#ifdef CONFIG_PSP
+  strncpy(dir->path, path, PATH_BUF_LEN);
+  dir->path[PATH_BUF_LEN - 1] = 0;
+  closedir(dir->d);
+  dir->d = opendir(path);
+#else
   rewinddir(dir->d);
+#endif
+
   dir->pos = 0;
   return true;
 }
@@ -470,7 +479,15 @@ void dir_seek(struct mzx_dir *dir, long offset)
 
   dir->pos = CLAMP(offset, 0L, dir->entries);
 
+#ifdef CONFIG_PSP
+  closedir(dir->d);
+  dir->d = opendir(dir->path);
+  if(!dir->d)
+    return;
+#else
   rewinddir(dir->d);
+#endif
+
   for(i = 0; i < dir->pos; i++)
     readdir(dir->d);
 }
