@@ -2,6 +2,29 @@ Git
 
 USERS
 
+DEVELOPERS
+
+January 05, 2011 - MZX 2.83b
+
+Another bugfix release. There are also a few (minor) new features, but a
+bump in world/board/save magic has been avoided.
+
+There's a new port to the Pandora platform from Exophase. There are no
+binaries for this platform yet, as I have not had time to set up the
+cross-compiler. Same goes for Android.
+
+Another major (internal) change this time around is that Exophase's
+experimental "debytecode" language modification has been merged. This still
+has some major bugs open against it, and missing features, so I won't be
+doing official releases yet. You can add support for this feature by
+passing "--enable-debytecode" to config.sh on all platforms.
+
+Thanks to Terryn, Exophase and MZXGiant for their contributions and to
+Lancer-X, Old-Sckool and Lachesis who reported and tracked the majority
+of bugs this time round.
+
+USERS
+
 + Fixed a bug where LOAD_ROBOT or LOAD_BC would not reset the stack
   pointer for newly loaded programs. This could cause crashes if a robot
   popped the stack in the new program.
@@ -87,6 +110,8 @@ DEVELOPERS
 + Make hlp2txt utility work correctly on Windows platforms.
 + Updated and repaired MSVC project for Visual Studio 2010. (MZXGiant)
 + Win32 binaries are built ASLR-capable (via pefix).
++ Version control was changed from SVN to Git; the repo is at:
+  http://github.com/ajs1984/megazeux
 
 December 29, 2009 - MZX 2.83
 
