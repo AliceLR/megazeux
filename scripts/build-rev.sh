@@ -11,24 +11,15 @@ shift
 REVISION=$1
 shift
 
-SVNBASE=$HOME/megazeux
+GITBASE=$HOME/megazeux
 
 if [ "$2" = "" ]; then
-	MZXBASE=$HOME/megazeux
 	OUTDIR=$1/trunk-$DATE-$REVISION
 else
-	# If there's no branch by the user's name, assume they want to
-	# override the output directory but continue to build trunk/.
-	#
-	#if [ -d $HOME/megazeux/branch/$2 ]; then
-	#	MZXBASE=$HOME/megazeux/branch/$2
-	#else
-		MZXBASE=$HOME/megazeux
-	#fi
 	OUTDIR=$1/$2-$DATE-$REVISION
 fi
 
-if [ ! -d $MZXBASE ]; then
+if [ ! -d $GITBASE ]; then
 	echo "Could not find specified Git basedir, aborting."
 	exit 1
 fi
@@ -36,7 +27,7 @@ fi
 [ -d "$OUTDIR" ] && rm -rf $OUTDIR
 mkdir -p $OUTDIR/source
 
-pushd $MZXBASE >/dev/null
+pushd $GITBASE >/dev/null
 
 git reset --hard $REVISION >/dev/null 2>&1
 if [ "$?" != "0" ]; then
@@ -47,7 +38,7 @@ fi
 rm -rf build
 make source >/dev/null 2>&1
 
-SRCPKG=$MZXBASE/build/dist/source/*.tar.xz
+SRCPKG=$GITBASE/build/dist/source/*.tar.xz
 if [ -f "$SRCPKG" ]; then
 	echo "Failed to compile source package; aborting."
 	exit 2
@@ -60,7 +51,7 @@ for PLATFORM in amiga gp2x nds psp wii windows-x86 windows-x64; do
 	tar -C/tmp/megazeux -xf $SRCPKG
 
 	pushd /tmp/megazeux/mzx* >/dev/null
-	$SVNBASE/scripts/build.sh $PLATFORM $PWD >/dev/null 2>&1
+	$GITBASE/scripts/build.sh $PLATFORM $PWD >/dev/null 2>&1
 
 	if [ -d build/dist/$PLATFORM ]; then
 		mv build/dist/$PLATFORM /tmp/megazeux
