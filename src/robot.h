@@ -150,7 +150,6 @@ static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
 }
 
 void run_robot(struct world *mzx_world, int id, int x, int y);
-bool robot_program_next_line(struct robot *cur_robot);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void duplicate_scroll_direct(struct scroll *cur_scroll,

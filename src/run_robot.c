@@ -2429,7 +2429,12 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           mzx_world->mid_prefix = 0;
           mzx_world->last_prefix = 0;
           cur_robot->pos_within_line = 0;
-          cur_robot->cur_prog_line = robot_program_next_line(cur_robot);
+          cur_robot->cur_prog_line +=
+           program[cur_robot->cur_prog_line] + 2;
+
+          if(!program[cur_robot->cur_prog_line])
+            cur_robot->cur_prog_line = 0;
+
           cur_robot->cycle_count = 0;
           cur_robot->xpos = x;
           cur_robot->ypos = y;
@@ -3246,10 +3251,11 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         while(1)
         {
           // jump command length, command length bytes, command length
-          next_prog_line = robot_program_next_line(cur_robot);
+          next_prog_line = cur_robot->cur_prog_line +
+                           program[cur_robot->cur_prog_line] + 2;
 
           // At next line- check type
-          if(!next_prog_line)
+          if(!program[next_prog_line])
             goto end_prog;
 
           next_cmd = program[next_prog_line + 1];
@@ -3271,7 +3277,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
          * we don't need to detect these.
          */
         if(!gotoed)
-          cur_robot->cur_prog_line = robot_program_next_line(cur_robot);
+          cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
 
         goto breaker;
       }
@@ -5827,7 +5833,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       break;
 
     if(!gotoed)
-      cur_robot->cur_prog_line = robot_program_next_line(cur_robot);
+      cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
 
     if(!program[cur_robot->cur_prog_line])
     {
