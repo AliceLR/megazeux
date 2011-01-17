@@ -103,6 +103,8 @@ USERS
 + Debytecode's legacy expression converter should use is_string()
   instead of its own (buggy) hand-rolled version. Fixes crash when
   converting CoAZ.
++ The shark, spitting tiger and spider built-ins no longer incorrectly
+  clamp intelligence to <=4 in the editor. (Lancer-X)
 
 DEVELOPERS
 
