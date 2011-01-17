@@ -710,7 +710,7 @@ static int pe_ghost(struct world *mzx_world, int param)
 static int pe_dragon(struct world *mzx_world, int param)
 {
   int fire_rate = (param & 0x03) + 1;
-  int hp = ((param >> 5) & 0x03) + 1;
+  int hp = ((param >> 5) & 0x07) + 1;
   int check_results[1] = { ((param >> 2) & 0x01) };
   struct dialog di;
   struct element *elements[5];
