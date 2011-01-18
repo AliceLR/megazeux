@@ -1,8 +1,8 @@
 BUILDING MEGAZEUX FOR DEBIAN
 
 MegaZeux was tested as building on Debian Unstable as of May, 2007. You must
-first rename the source directory "megazeux-2.83", for example, to match the
-required Debian standard. MegaZeux is usually shipped as "mzx283", for
+first rename the source directory "megazeux-2.83b", for example, to match the
+required Debian standard. MegaZeux is usually shipped as "mzx283b", for
 historical reasons.
 
 You can then generate a deb file for your architecture by typing:
