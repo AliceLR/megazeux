@@ -3580,7 +3580,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_SET_EDGE_COLOR: // set edge color
       {
-        mzx_world->edge_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        int new_color = parse_param(mzx_world, cmd_ptr + 1, id);
+        mzx_world->edge_color =
+         fix_color(new_color, mzx_world->edge_color);
         break;
       }
 

@@ -106,6 +106,7 @@ USERS
 + The editor no longer incorrectly clamps the intelligence of sharks,
   spitting tigers and spiders to <=4, and no longer clamps the HP of
   dragons to <=4. (Lancer-X)
++ Accept SET EDGE COLOR "string" in addition to SET EDGE COLOR c??.
 
 DEVELOPERS
 
