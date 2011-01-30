@@ -2814,13 +2814,11 @@ void duplicate_robot_direct(struct robot *cur_robot,
 {
   char *dest_program_location, *src_program_location;
   int program_length;
-  int num_labels;
 
 #ifdef CONFIG_DEBYTECODE
   prepare_robot_bytecode(cur_robot);
 #endif
   program_length = cur_robot->program_bytecode_length;
-  num_labels = cur_robot->num_labels;
 
   // Copy all the contents
   memcpy(copy_robot, cur_robot, sizeof(struct robot));

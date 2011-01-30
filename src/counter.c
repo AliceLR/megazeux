@@ -3175,7 +3175,6 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
   if(special_name_partial("fread") && mzx_world->input_is_dir)
   {
     char entry[PATH_BUF_LEN];
-    bool entry_ok = false;
 
     while(1)
     {
@@ -3191,7 +3190,6 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
       if(strchr(entry, '*') || strchr(entry, '/'))
         continue;
 
-      entry_ok = true;
       break;
     }
 
