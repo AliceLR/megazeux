@@ -2,7 +2,7 @@
 
 	default ARM7 core
 
-		Copyright (C) 2005
+		Copyright (C) 2005 - 2010
 		Michael Noland (joat)
 		Jason Rogers (dovoto)
 		Dave Murphy (WinterMute)
@@ -27,14 +27,16 @@
 		distribution.
 
 ---------------------------------------------------------------------------------*/
-
-// WIFI and MAXMOD currently disabled --kvance 2009-10-02
-
 #include <nds.h>
-/*
-#include <dswifi7.h>
-#include <maxmod7.h>
-*/
+//#include <dswifi7.h>
+//#include <maxmod7.h>
+
+//---------------------------------------------------------------------------------
+void VblankHandler(void) {
+//---------------------------------------------------------------------------------
+//	Wifi_Update();
+}
+
 
 //---------------------------------------------------------------------------------
 void VcountHandler() {
@@ -42,46 +44,47 @@ void VcountHandler() {
 	inputGetAndSend();
 }
 
-//---------------------------------------------------------------------------------
-void VblankHandler(void) {
-//---------------------------------------------------------------------------------
-// WIFI	Wifi_Update();
-}
+volatile bool exitflag = false;
 
+//---------------------------------------------------------------------------------
+void powerButtonCB() {
+//---------------------------------------------------------------------------------
+	exitflag = true;
+}
 
 //---------------------------------------------------------------------------------
 int main() {
 //---------------------------------------------------------------------------------
-
-	// read User Settings from firmware
 	readUserSettings();
 
-	powerOn(POWER_SOUND);
-
 	irqInit();
-// WIFI	irqSet(IRQ_WIFI, 0);
+	// Start the RTC tracking IRQ
+	initClockIRQ();
 	fifoInit();
 
+//	mmInstall(FIFO_MAXMOD);
 
 	SetYtrigger(80);
 
-// WIFI	installWifiFIFO();
-// MAXMOD	installSoundFIFO();
-// MAXMOD	mmInstall(FIFO_MAXMOD);
+//	installWifiFIFO();
+//	installSoundFIFO();
 
 	installSystemFIFO();
-	
+
 	irqSet(IRQ_VCOUNT, VcountHandler);
 	irqSet(IRQ_VBLANK, VblankHandler);
 
-	// Start the RTC tracking IRQ
-	initClockIRQ();
-
-// WIFI	irqEnable( IRQ_VBLANK | IRQ_VCOUNT | IRQ_NETWORK);   
-	irqEnable( IRQ_VBLANK | IRQ_VCOUNT);   
+//	irqEnable( IRQ_VBLANK | IRQ_VCOUNT | IRQ_NETWORK);
+	irqEnable( IRQ_VBLANK | IRQ_VCOUNT);
+	
+	setPowerButtonCB(powerButtonCB);   
 
 	// Keep the ARM7 mostly idle
-	while (1) swiWaitForVBlank();
+	while (!exitflag) {
+		if ( 0 == (REG_KEYINPUT & (KEY_SELECT | KEY_START | KEY_L | KEY_R))) {
+			exitflag = true;
+		}
+		swiWaitForVBlank();
+	}
+	return 0;
 }
-
-

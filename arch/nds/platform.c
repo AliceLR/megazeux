@@ -30,7 +30,6 @@
 #include "ram.h"
 #include "dlmalloc.h"
 #include "exception.h"
-#include "memory_warning_pcx.h"
 
 // from arch/nds/event.c
 extern void nds_update_input(void);
@@ -119,25 +118,21 @@ bool platform_init(void)
 
   if(!fatInitDefault())
   {
-    consoleDemoInit();
     iprintf("Unable to initialize FAT.\n"
             "Check your DLDI driver.\n");
     return false;
   }
 
   // If the "extra RAM" is missing, warn the user
-  if(!nds_ram_init(DETECT_RAM))
-    warning_screen((u8*)memory_warning_pcx);
+  if(!REG_DSIMODE)
+    if(nds_ram_init(DETECT_RAM))
+      nds_ext_lock();
 
-  nds_ext_lock();
   timer_init();
 
   // Enable vblank interrupts, but don't install the handler until the
   // graphics have initialized.
   irqEnable(IRQ_VBLANK);
-
-  // Show the default text console, in case warning messages appear.
-  consoleDemoInit();
 
   return true;
 }
@@ -151,8 +146,10 @@ void platform_quit(void)
 
 int main(int argc, char *argv[])
 {
-  static char _argv0[] = SHAREDIR "megazeux";
+  static char _argv0[] = SHAREDIR "/mzxrun.nds";
   static char *_argv[] = {_argv0};
-
+  consoleDemoInit();
   real_main(1, _argv);
+  while(true)
+    ;
 }

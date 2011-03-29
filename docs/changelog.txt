@@ -2,6 +2,8 @@ Git
 
 USERS
 
++ Fixed NDS port initialization on DSi devices. (asiekierka)
+
 DEVELOPERS
 
 January 05, 2011 - MZX 2.83b

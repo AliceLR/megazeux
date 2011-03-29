@@ -37,7 +37,7 @@ EXTRA_INCLUDES = -Iarch/nds/ndsScreens/build \
 EXTRA_LIBS = -Larch/nds/ndsScreens/lib \
              -Larch/nds/ndsLibfat/nds/lib \
              -L$(LIBNDS)/lib \
-             -lfat -lm -lndsScreens -lnds9
+             -lfat -lm -lnds9
 
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} -DARM9 -D__NDS__ -Iarch/nds
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}
