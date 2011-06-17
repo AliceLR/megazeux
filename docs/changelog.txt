@@ -3,6 +3,8 @@ Git
 USERS
 
 + Fixed NDS port initialization on DSi devices. (asiekierka)
++ Fixed a bug in the joystick code where centering an axis clears
+  the previous axis button. (iamgreaser)
 
 DEVELOPERS
 

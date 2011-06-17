@@ -393,7 +393,7 @@ static bool process_event(SDL_Event *event)
           }
         }
       }
-      else
+      else if(last_axis != -1)
       {
         key_release(status,
           input.joystick_axis_map[which][axis][last_axis]);
