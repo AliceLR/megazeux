@@ -8,6 +8,8 @@ USERS
 
 DEVELOPERS
 
++ The EGL backend now supports Mesa's EGL implementation on X11.
+
 January 05, 2011 - MZX 2.83b
 
 Another bugfix release. There are also a few (minor) new features, but a

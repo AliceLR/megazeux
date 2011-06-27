@@ -49,7 +49,7 @@
 #include <limits.h>
 #endif
 
-#ifdef CONFIG_X11
+#if defined(CONFIG_X11) && defined(CONFIG_SDL)
 #include "SDL.h"
 #include "SDL_syswm.h"
 #endif
@@ -1305,7 +1305,7 @@ static bool copy_selection_to_buffer(struct robot_state *rstate)
   return TRUE;
 }
 
-#elif defined(CONFIG_X11)
+#elif defined(CONFIG_X11) && defined(CONFIG_SDL)
 
 static int copy_buffer_to_X11_selection(const SDL_Event *event)
 {
@@ -1570,7 +1570,7 @@ err_release:
   return ret;
 }
 
-#else // !__WIN32__ && !CONFIG_X11 && !SDL_VIDEO_DRIVER_QUARTZ
+#else // !__WIN32__ && !(CONFIG_X11 && CONFIG_SDL) && !SDL_VIDEO_DRIVER_QUARTZ
 
 static inline void copy_buffer_to_selection(void) {}
 

@@ -71,20 +71,20 @@ gl1;
 
 static const struct dso_syms_map gl1_syms_map[] =
 {
-  { "glBindTexture",        (void **)&gl1.glBindTexture },
-  { "glClear",              (void **)&gl1.glClear },
-  { "glDisableClientState", (void **)&gl1.glDisableClientState },
-  { "glDrawArrays",         (void **)&gl1.glDrawArrays },
-  { "glEnable",             (void **)&gl1.glEnable },
-  { "glEnableClientState",  (void **)&gl1.glEnableClientState },
-  { "glGenTextures",        (void **)&gl1.glGenTextures },
-  { "glGetError",           (void **)&gl1.glGetError },
-  { "glGetString",          (void **)&gl1.glGetString },
-  { "glTexCoordPointer",    (void **)&gl1.glTexCoordPointer },
-  { "glTexImage2D",         (void **)&gl1.glTexImage2D },
-  { "glTexParameterf",      (void **)&gl1.glTexParameterf },
-  { "glVertexPointer",      (void **)&gl1.glVertexPointer },
-  { "glViewport",           (void **)&gl1.glViewport },
+  { "glBindTexture",        (fn_ptr *)&gl1.glBindTexture },
+  { "glClear",              (fn_ptr *)&gl1.glClear },
+  { "glDisableClientState", (fn_ptr *)&gl1.glDisableClientState },
+  { "glDrawArrays",         (fn_ptr *)&gl1.glDrawArrays },
+  { "glEnable",             (fn_ptr *)&gl1.glEnable },
+  { "glEnableClientState",  (fn_ptr *)&gl1.glEnableClientState },
+  { "glGenTextures",        (fn_ptr *)&gl1.glGenTextures },
+  { "glGetError",           (fn_ptr *)&gl1.glGetError },
+  { "glGetString",          (fn_ptr *)&gl1.glGetString },
+  { "glTexCoordPointer",    (fn_ptr *)&gl1.glTexCoordPointer },
+  { "glTexImage2D",         (fn_ptr *)&gl1.glTexImage2D },
+  { "glTexParameterf",      (fn_ptr *)&gl1.glTexParameterf },
+  { "glVertexPointer",      (fn_ptr *)&gl1.glVertexPointer },
+  { "glViewport",           (fn_ptr *)&gl1.glViewport },
   { NULL, NULL }
 };
 

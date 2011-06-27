@@ -459,11 +459,10 @@ fi
 #
 if [ "$SDL" = "false" ]; then
 	echo "Force-disabling SDL dependent components:"
-	echo " -> SOFTWARE, OVERLAY, MIKMOD, X11"
+	echo " -> SOFTWARE, OVERLAY, MIKMOD"
 	SOFTWARE="false"
 	OVERLAY="false"
 	MIKMOD="false"
-	X11="false"
 else
 	echo "#define CONFIG_SDL" >> src/config.h
 	echo "BUILD_SDL=1" >> platform.inc

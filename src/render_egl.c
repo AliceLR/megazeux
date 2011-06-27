@@ -23,17 +23,21 @@
 #include "util.h"
 
 #include <assert.h>
-
-#ifdef ANDROID
-#include "sfwrapper.h"
-#endif
-
-#ifdef ANDROID
-
 #include <dlfcn.h>
 
 static void *glso;
 static enum gl_lib_type gl_type;
+
+#ifdef ANDROID
+
+#include "sfwrapper.h"
+
+fn_ptr GL_GetProcAddress(const char *proc)
+{
+  return (fn_ptr)dlsym(glso, proc);
+}
+
+#endif /* ANDROID */
 
 bool GL_LoadLibrary(enum gl_lib_type type)
 {
@@ -49,13 +53,6 @@ bool GL_LoadLibrary(enum gl_lib_type type)
   glso = dlopen(filename, RTLD_NOW);
   return glso != NULL;
 }
-
-void *GL_GetProcAddress(const char *proc)
-{
-  return dlsym(glso, proc);
-}
-
-#endif /* ANDROID */
 
 // EGL is not directly comparable to SDL as it does not handle "windows"
 // in the traditional sense. It is expected that the platform provides a
@@ -137,6 +134,16 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
 
 #ifdef ANDROID
   window = SurfaceFlingerGetNativeWindow();
+#endif
+
+#ifdef CONFIG_X11
+  window = XCreateSimpleWindow(egl_render_data->native_display,
+                               RootWindow(egl_render_data->native_display, 0),
+                               0, 0, 640, 350, 0,
+                               BlackPixel(egl_render_data->native_display, 0),
+                               BlackPixel(egl_render_data->native_display, 0));
+  XMapWindow(egl_render_data->native_display, window);
+  XFlush(egl_render_data->native_display);
 #endif
 
   egl_render_data->surface = eglCreateWindowSurface(egl_render_data->display,
@@ -226,7 +233,11 @@ bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
   }
 #endif
 
-  egl_render_data->display = eglGetDisplay(EGL_DEFAULT_DISPLAY);
+#ifdef CONFIG_X11
+  egl_render_data->native_display = XOpenDisplay(NULL);
+#endif
+
+  egl_render_data->display = eglGetDisplay(egl_render_data->native_display);
   if(egl_render_data->display == EGL_NO_DISPLAY)
   {
     warn("eglGetDisplay failed\n");
@@ -303,5 +314,10 @@ void gl_cleanup(struct graphics_data *graphics)
 
 #ifdef ANDROID
   SurfaceFlingerDeinitialize();
+#endif
+
+#ifdef CONFIG_X11
+  XCloseDisplay(egl_render_data->native_display);
+  egl_render_data->native_display = 0;
 #endif
 }

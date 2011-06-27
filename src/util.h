@@ -79,10 +79,12 @@ CORE_LIBSPEC ssize_t get_path(const char *file_name, char *dest, unsigned int bu
 ssize_t __get_path(const char *file_name, char *dest, unsigned int buf_len);
 #endif
 
+typedef void (*fn_ptr)(void);
+
 struct dso_syms_map
 {
   const char *name;
-  void **sym_ptr;
+  fn_ptr *sym_ptr;
 };
 
 #if defined(CONFIG_NDS) || defined(CONFIG_WII)

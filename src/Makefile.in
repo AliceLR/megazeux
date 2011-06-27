@@ -147,6 +147,10 @@ endif
 ifeq (${BUILD_EGL},1)
 core_cobjs += ${core_obj}/render_egl.o
 core_ldflags := -lEGL ${core_ldflags}
+ifneq (${X11DIR},)
+core_flags += -I${X11DIR}/../include
+core_ldflags := -L${X11DIR}/../${RAWLIBDIR} -lX11 ${core_ldflags}
+endif
 endif
 
 ifeq (${BUILD_RENDER_YUV},1)
