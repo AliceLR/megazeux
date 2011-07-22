@@ -2,15 +2,9 @@ Git
 
 USERS
 
-+ Fixed NDS port initialization on DSi devices. (asiekierka)
-+ Fixed a bug in the joystick code where centering an axis clears
-  the previous axis button. (iamgreaser)
-
 DEVELOPERS
 
-+ The EGL backend now supports Mesa's EGL implementation on X11.
-
-January 05, 2011 - MZX 2.83b
+July 22, 2011 - MZX 2.83b
 
 Another bugfix release. There are also a few (minor) new features, but a
 bump in world/board/save magic has been avoided.
@@ -113,6 +107,9 @@ USERS
   spitting tigers and spiders to <=4, and no longer clamps the HP of
   dragons to <=4. (Lancer-X)
 + Accept SET EDGE COLOR "string" in addition to SET EDGE COLOR c??.
++ Fixed NDS port initialization on DSi devices. (asiekierka)
++ Fixed a bug in the joystick code where centering an axis clears
+  the previous axis button. (iamgreaser)
 
 DEVELOPERS
 
@@ -122,6 +119,7 @@ DEVELOPERS
 + Win32 binaries are built ASLR-capable (via pefix).
 + Version control was changed from SVN to Git; the repo is at:
   http://github.com/ajs1984/megazeux
++ The EGL backend now supports Mesa's EGL implementation on X11.
 
 December 29, 2009 - MZX 2.83
 
