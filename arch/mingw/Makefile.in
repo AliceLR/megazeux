@@ -29,7 +29,7 @@ ARCH_LDFLAGS += -static-libstdc++ -static-libgcc
 core_ldflags += -lopengl32
 
 # Windows needs PNG to be statically linked (inc. zlib)
-LIBPNG_LDFLAGS = `libpng12-config --static --ldflags`
+LIBPNG_LDFLAGS = `libpng-config --static --ldflags`
 
 ifdef DEBUG
 ARCH_LDFLAGS += -mconsole
