@@ -2813,12 +2813,15 @@ void duplicate_robot_direct(struct robot *cur_robot,
  struct robot *copy_robot, int x, int y)
 {
   char *dest_program_location, *src_program_location;
-  int program_length;
+  struct label *src_label, *dest_label;
+  int i, program_length, num_labels;
+  ptrdiff_t program_offset;
 
 #ifdef CONFIG_DEBYTECODE
   prepare_robot_bytecode(cur_robot);
 #endif
   program_length = cur_robot->program_bytecode_length;
+  num_labels = cur_robot->num_labels;
 
   // Copy all the contents
   memcpy(copy_robot, cur_robot, sizeof(struct robot));
@@ -2830,8 +2833,25 @@ void duplicate_robot_direct(struct robot *cur_robot,
 
   memcpy(dest_program_location, src_program_location, program_length);
 
-  copy_robot->label_list =
-   cache_robot_labels(cur_robot, &cur_robot->num_labels);
+  if(num_labels)
+    copy_robot->label_list = ccalloc(num_labels, sizeof(struct label *));
+  else
+    copy_robot->label_list = NULL;
+
+  program_offset = dest_program_location - src_program_location;
+
+  // Copy each individual label pointer over
+  for(i = 0; i < num_labels; i++)
+  {
+    copy_robot->label_list[i] = cmalloc(sizeof(struct label));
+
+    src_label = cur_robot->label_list[i];
+    dest_label = copy_robot->label_list[i];
+
+    memcpy(dest_label, src_label, sizeof(struct label));
+    // The name pointer actually has to be readjusted to match the new program
+    dest_label->name += program_offset;
+  }
 
 #ifdef CONFIG_DEBYTECODE
   copy_robot->program_source = NULL;
