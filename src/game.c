@@ -129,7 +129,7 @@ __editor_maybe_static const char *const world_ext[] = { ".MZX", NULL };
 
 __editor_maybe_static bool debug_mode;
 
-static unsigned int intro_mesg_timer;
+static unsigned int intro_mesg_timer = MESG_TIMEOUT;
 
 void set_intro_mesg_timer(unsigned int time)
 {
@@ -140,6 +140,9 @@ static void draw_intro_mesg(struct world *mzx_world)
 {
   static const char mesg1[] = "F1: Help";
   static const char mesg2[] = "Enter: Menu   Ctrl-Alt-Enter: Fullscreen";
+
+  if(intro_mesg_timer == 0)
+    return;
 
   if(mzx_world->help_file)
   {
@@ -1451,8 +1454,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
         *(lines[j] - 1) = '\n';
     }
 
-    else if(intro_mesg_timer > 0)
-      draw_intro_mesg(mzx_world);
+    draw_intro_mesg(mzx_world);
 
     // Add debug box
     if(draw_debug_box && debug_mode)
