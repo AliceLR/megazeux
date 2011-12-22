@@ -112,6 +112,8 @@ USERS
   the previous axis button. (iamgreaser)
 + Fixed a bug that allowed vlayer->board COPY BLOCK to overwrite
   player. Blocks that would overwrite the player are now ignored.
++ Fixed a 2.81e regression that allowed SENDs to self to ignore
+  LOCKSELF.
 
 DEVELOPERS
 

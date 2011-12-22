@@ -113,7 +113,7 @@ int send_robot_id(struct world *mzx_world, int id, const char *mesg,
  int ignore_lock);
 void send_robot_all(struct world *mzx_world, const char *mesg);
 int send_robot_self(struct world *mzx_world, struct robot *src_robot,
- const char *mesg);
+ const char *mesg, int ignore_lock);
 int move_dir(struct board *src_board, int *x, int *y, enum dir dir);
 void prefix_first_last_xy(struct world *mzx_world, int *fx, int *fy,
  int *lx, int *ly, int robotx, int roboty);

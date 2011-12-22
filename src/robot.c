@@ -1406,9 +1406,9 @@ int send_robot_id(struct world *mzx_world, int id, const char *mesg,
 }
 
 int send_robot_self(struct world *mzx_world, struct robot *src_robot,
- const char *mesg)
+ const char *mesg, int ignore_lock)
 {
-  return send_robot_direct(src_robot, mesg, 1, 1);
+  return send_robot_direct(src_robot, mesg, ignore_lock, 1);
 }
 
 void send_robot_all(struct world *mzx_world, const char *mesg)

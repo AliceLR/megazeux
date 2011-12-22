@@ -319,7 +319,7 @@ static void send_at_xy(struct world *mzx_world, int id, int x, int y,
     if(d_param == id)
     {
       send_robot_self(mzx_world,
-       mzx_world->current_board->robot_list[id], label_buffer);
+       mzx_world->current_board->robot_list[id], label_buffer, 0);
     }
     else
     {
@@ -362,7 +362,7 @@ static int send_self_label_tr(struct world *mzx_world, char *param, int id)
   tr_msg(mzx_world, param, id, label_buffer);
 
   if(send_robot_self(mzx_world,
-   mzx_world->current_board->robot_list[id], label_buffer))
+   mzx_world->current_board->robot_list[id], label_buffer, 1))
   {
     return 0;
   }
