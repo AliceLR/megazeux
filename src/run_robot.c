@@ -792,7 +792,7 @@ __editor_maybe_static void copy_layer_to_board(struct board *src_board,
      dest_offset++)
     {
       src_char_cur = src_char[src_offset];
-      if(src_char_cur != 32)
+      if(src_char_cur != 32 && level_id[dest_offset] != PLAYER)
       {
         level_id[dest_offset] = (char)convert_id;
         level_param[dest_offset] = src_char_cur;

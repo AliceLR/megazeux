@@ -110,6 +110,8 @@ USERS
 + Fixed NDS port initialization on DSi devices. (asiekierka)
 + Fixed a bug in the joystick code where centering an axis clears
   the previous axis button. (iamgreaser)
++ Fixed a bug that allowed vlayer->board COPY BLOCK to overwrite
+  player. Blocks that would overwrite the player are now ignored.
 
 DEVELOPERS
 
