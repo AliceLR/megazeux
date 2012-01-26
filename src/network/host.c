@@ -126,7 +126,7 @@ struct addrinfo
 #if defined(__amigaos__)
 static
 #endif
-const char *gai_strerror(int errcode)
+char *gai_strerror(int errcode)
 {
   switch(errcode)
   {

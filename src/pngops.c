@@ -126,7 +126,7 @@ void *png_read_file(const char *name, png_uint_32 *_w, png_uint_32 *_h,
   if(!info_ptr)
     goto exit_free_close;
 
-  if(setjmp(png_ptr->jmpbuf))
+  if(setjmp(png_jmpbuf(png_ptr)))
     goto exit_free_close;
 
   png_init_io(png_ptr, f);
