@@ -121,7 +121,7 @@ struct addrinfo
 
 #endif
 
-#if (defined(__GNUC__) && defined(__WIN64__)) || defined(__amigaos__)
+#if (defined(__GNUC__) && defined(__WIN32__)) || defined(__amigaos__)
 
 #if defined(__amigaos__)
 static
