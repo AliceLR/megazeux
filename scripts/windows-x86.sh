@@ -16,13 +16,13 @@ platform_build_test_hook() {
 		return
 	fi
 
-	file mzxrun.exe | egrep -q "PE32.*MS.Windows.*Intel.80386"
+	file mzxrun.exe | egrep -q "PE32.*Intel.80386.*MS.Windows"
 	if [ "$?" != "0" ]; then
 		ERRNO=1
 		return
 	fi
 
-	file megazeux.exe | egrep -q "PE32.*MS.Windows.*Intel.80386"
+	file megazeux.exe | egrep -q "PE32.*Intel.80386.*MS.Windows"
 	if [ "$?" != "0" ]; then
 		ERRNO=1
 		return
