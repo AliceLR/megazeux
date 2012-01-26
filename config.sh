@@ -270,8 +270,8 @@ if [ "$PLATFORM" = "win32"   -o "$PLATFORM" = "win64" \
   -o "$PLATFORM" = "mingw32" -o "$PLATFORM" = "mingw64" ]; then
 	[ "$PLATFORM" = "win32" -o "$PLATFORM" = "mingw32" ] && ARCHNAME=x86
 	[ "$PLATFORM" = "win64" -o "$PLATFORM" = "mingw64" ] && ARCHNAME=x64
-	[ "$PLATFORM" = "mingw32" ] && MINGWBASE=i586-mingw32msvc-
-	[ "$PLATFORM" = "mingw64" ] && MINGWBASE=amd64-mingw32msvc-
+	[ "$PLATFORM" = "mingw32" ] && MINGWBASE=i686-w64-mingw32-
+	[ "$PLATFORM" = "mingw64" ] && MINGWBASE=x86_64-w64-mingw32-
 	PLATFORM="mingw"
 	echo "#define PLATFORM \"windows-$ARCHNAME\"" > src/config.h
 	echo "SUBPLATFORM=windows-$ARCHNAME"         >> platform.inc
