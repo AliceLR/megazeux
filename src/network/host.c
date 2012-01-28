@@ -123,10 +123,7 @@ struct addrinfo
 
 #if (defined(__GNUC__) && defined(__WIN32__)) || defined(__amigaos__)
 
-#if defined(__amigaos__)
-static
-#endif
-char *gai_strerror(int errcode)
+static const char *__gai_strerror(int errcode)
 {
   switch(errcode)
   {
@@ -139,7 +136,9 @@ char *gai_strerror(int errcode)
   }
 }
 
-#endif // (__GNUC__ && __WIN64__) || __amigaos__
+#else
+#define __gai_strerror gai_strerror
+#endif
 
 #if defined(__WIN32__) || defined(__amigaos__)
 
@@ -852,7 +851,7 @@ static bool host_address_op(struct host *h, const char *hostname,
   ret = platform_getaddrinfo(hostname, port_str, &hints, &ais);
   if(ret != 0)
   {
-    warn("Failed to look up '%s' (%s)\n", hostname, gai_strerror(ret));
+    warn("Failed to look up '%s' (%s)\n", hostname, __gai_strerror(ret));
     return false;
   }
 
