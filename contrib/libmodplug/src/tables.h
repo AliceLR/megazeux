@@ -68,7 +68,7 @@ static const WORD S3MFineTuneTable[16] =
 
 
 // Sinus table
-static const SHORT ModSinusTable[64] =
+static const int16_t ModSinusTable[64] =
 {
 	0,12,25,37,49,60,71,81,90,98,106,112,117,122,125,126,
 	127,126,125,122,117,112,106,98,90,81,71,60,49,37,25,12,
@@ -77,7 +77,7 @@ static const SHORT ModSinusTable[64] =
 };
 
 // Triangle wave table (ramp down)
-static const SHORT ModRampDownTable[64] =
+static const int16_t ModRampDownTable[64] =
 {
 	0,-4,-8,-12,-16,-20,-24,-28,-32,-36,-40,-44,-48,-52,-56,-60,
 	-64,-68,-72,-76,-80,-84,-88,-92,-96,-100,-104,-108,-112,-116,-120,-124,
@@ -86,7 +86,7 @@ static const SHORT ModRampDownTable[64] =
 };
 
 // Square wave table
-static const SHORT ModSquareTable[64] =
+static const int16_t ModSquareTable[64] =
 {
 	127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,
 	127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,127,
@@ -95,7 +95,7 @@ static const SHORT ModSquareTable[64] =
 };
 
 // Random wave table
-static const SHORT ModRandomTable[64] =
+static const int16_t ModRandomTable[64] =
 {
 	98,-127,-43,88,102,41,-65,-94,125,20,-71,-86,-70,-32,-16,-96,
 	17,72,107,-5,116,-69,-62,-40,10,-61,65,109,-18,-38,-13,-76,
@@ -105,10 +105,10 @@ static const SHORT ModRandomTable[64] =
 
 
 // volume fade tables for Retrig Note:
-static const CHAR retrigTable1[16] =
+static const int8_t retrigTable1[16] =
 { 0, 0, 0, 0, 0, 0, 10, 8, 0, 0, 0, 0, 0, 0, 24, 32 };
 
-static const CHAR retrigTable2[16] =
+static const int8_t retrigTable2[16] =
 { 0, -1, -2, -4, -8, -16, 0, 0, 0, 1, 2, 4, 8, 16, 0, 0 };
 
 
@@ -125,7 +125,7 @@ static const WORD XMPeriodTable[104] =
 };
 
 
-static const DWORD XMLinearTable[768] = 
+static const uint32_t XMLinearTable[768] = 
 {
 	535232,534749,534266,533784,533303,532822,532341,531861,
 	531381,530902,530423,529944,529466,528988,528511,528034,
@@ -227,7 +227,7 @@ static const DWORD XMLinearTable[768] =
 };
 
 
-static const CHAR ft2VibratoTable[256] = 
+static const int8_t ft2VibratoTable[256] = 
 {
 	0,-2,-3,-5,-6,-8,-9,-11,-12,-14,-16,-17,-19,-20,-22,-23,
 	-24,-26,-27,-29,-30,-32,-33,-34,-36,-37,-38,-39,-41,-42,

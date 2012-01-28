@@ -16,6 +16,7 @@
 //////////////////////////////////////////////////////
 // ScreamTracker S3M file support
 
+#pragma pack(1)
 typedef struct tagS3MSAMPLESTRUCT
 {
 	BYTE type;
@@ -182,16 +183,24 @@ void CSoundFile::S3MSaveConvert(UINT *pcmd, UINT *pprm, BOOL bIT) const
 	*pprm = param;
 }
 
+static DWORD boundInput(DWORD input, DWORD smin, DWORD smax)
+{
+	if (input > smax) input = smax;
+	else if (input < smin) input = 0;
+	return(input);
+}
+
 
 BOOL CSoundFile::ReadS3M(const BYTE *lpStream, DWORD dwMemLength)
 //---------------------------------------------------------------
 {
 	UINT insnum,patnum,nins,npat;
-	DWORD insfile[128];
+	DWORD insfile[MAX_SAMPLES];
 	WORD ptr[256];
-	BYTE s[1024];
 	DWORD dwMemPos;
-	BYTE insflags[128], inspack[128];
+	BYTE insflags[MAX_SAMPLES], inspack[MAX_SAMPLES];
+
+	if ((!lpStream) || (dwMemLength <= sizeof(S3MFILEHEADER)+sizeof(S3MSAMPLESTRUCT)+64)) return FALSE;
 	S3MFILEHEADER psfh = *(S3MFILEHEADER *)lpStream;
 
 	psfh.reserved1 = bswapLE16(psfh.reserved1);
@@ -204,7 +213,6 @@ BOOL CSoundFile::ReadS3M(const BYTE *lpStream, DWORD dwMemLength)
 	psfh.scrm = bswapLE32(psfh.scrm);
 	psfh.special = bswapLE16(psfh.special);
 
-	if ((!lpStream) || (dwMemLength <= sizeof(S3MFILEHEADER)+sizeof(S3MSAMPLESTRUCT)+64)) return FALSE;
 	if (psfh.scrm != 0x4D524353) return FALSE;
 	dwMemPos = 0x60;
 	m_nType = MOD_TYPE_S3M;
@@ -257,6 +265,10 @@ BOOL CSoundFile::ReadS3M(const BYTE *lpStream, DWORD dwMemLength)
 	patnum = npat = psfh.patnum;
 	if (patnum > MAX_PATTERNS) patnum = MAX_PATTERNS;
 	memset(ptr, 0, sizeof(ptr));
+
+	// Ignore file if it has a corrupted header.
+	if (nins+npat > 256) return FALSE;
+
 	if (nins+npat)
 	{
 		memcpy(ptr, lpStream+dwMemPos, 2*(nins+npat));
@@ -280,38 +292,34 @@ BOOL CSoundFile::ReadS3M(const BYTE *lpStream, DWORD dwMemLength)
 	{
 		UINT nInd = ((DWORD)ptr[iSmp-1])*16;
 		if ((!nInd) || (nInd + 0x50 > dwMemLength)) continue;
-		memcpy(s, lpStream+nInd, 0x50);
-		memcpy(Ins[iSmp].name, s+1, 12);
-		insflags[iSmp-1] = s[0x1F];
-		inspack[iSmp-1] = s[0x1E];
-		s[0x4C] = 0;
-		lstrcpyA(m_szNames[iSmp], (LPCSTR)&s[0x30]);
-		if ((s[0]==1) && (s[0x4E]=='R') && (s[0x4F]=='S'))
+		S3MSAMPLESTRUCT pSmp;
+		memcpy(&pSmp, lpStream+nInd, 0x50);
+		memcpy(Ins[iSmp].name, &pSmp.dosname, 12);
+		insflags[iSmp-1] = pSmp.flags;
+		inspack[iSmp-1] = pSmp.pack;
+		memcpy(m_szNames[iSmp], pSmp.name, 28);
+		m_szNames[iSmp][28] = 0;
+		if ((pSmp.type==1) && (pSmp.scrs[2]=='R') && (pSmp.scrs[3]=='S'))
 		{
-			UINT j = bswapLE32(*((LPDWORD)(s+0x10)));
-			if (j > MAX_SAMPLE_LENGTH) j = MAX_SAMPLE_LENGTH;
-			if (j < 4) j = 0;
-			Ins[iSmp].nLength = j;
-			j = bswapLE32(*((LPDWORD)(s+0x14)));
-			if (j >= Ins[iSmp].nLength) j = Ins[iSmp].nLength - 1;
-			Ins[iSmp].nLoopStart = j;
-			j = bswapLE32(*((LPDWORD)(s+0x18)));
-			if (j > MAX_SAMPLE_LENGTH) j = MAX_SAMPLE_LENGTH;
-			if (j < 4) j = 0;
-			if (j > Ins[iSmp].nLength) j = Ins[iSmp].nLength;
-			Ins[iSmp].nLoopEnd = j;
-			j = s[0x1C];
-			if (j > 64) j = 64;
-			Ins[iSmp].nVolume = j << 2;
+			Ins[iSmp].nLength = boundInput(bswapLE32(pSmp.length), 4, MAX_SAMPLE_LENGTH);
+			Ins[iSmp].nLoopStart = boundInput(bswapLE32(pSmp.loopbegin), 4, Ins[iSmp].nLength - 1);
+			Ins[iSmp].nLoopEnd = boundInput(bswapLE32(pSmp.loopend), 4, Ins[iSmp].nLength);
+			Ins[iSmp].nVolume = boundInput(pSmp.vol, 0, 64) << 2;
 			Ins[iSmp].nGlobalVol = 64;
-			if (s[0x1F]&1) Ins[iSmp].uFlags |= CHN_LOOP;
-			j = bswapLE32(*((LPDWORD)(s+0x20)));
+			if (pSmp.flags&1) Ins[iSmp].uFlags |= CHN_LOOP;
+			UINT j = bswapLE32(pSmp.finetune);
 			if (!j) j = 8363;
 			if (j < 1024) j = 1024;
 			Ins[iSmp].nC4Speed = j;
-			insfile[iSmp] = ((DWORD)bswapLE16(*((LPWORD)(s+0x0E)))) << 4;
-			insfile[iSmp] += ((DWORD)(BYTE)s[0x0D]) << 20;
-			if (insfile[iSmp] > dwMemLength) insfile[iSmp] &= 0xFFFF;
+			insfile[iSmp] = (pSmp.hmem << 20) + (bswapLE16(pSmp.memseg) << 4);
+			// offset is invalid - ignore this sample.
+			if (insfile[iSmp] > dwMemLength) insfile[iSmp] = 0;
+			else if (insfile[iSmp]) {
+				// ignore duplicate samples.
+				for (int z=iSmp-1; z>=0; z--)
+					if (insfile[iSmp] == insfile[z])
+						insfile[iSmp] = 0;
+			}
 			if ((Ins[iSmp].nLoopStart >= Ins[iSmp].nLoopEnd) || (Ins[iSmp].nLoopEnd - Ins[iSmp].nLoopStart < 8))
 				Ins[iSmp].nLoopStart = Ins[iSmp].nLoopEnd = 0;
 			Ins[iSmp].nPan = 0x80;
@@ -389,7 +397,8 @@ BOOL CSoundFile::ReadS3M(const BYTE *lpStream, DWORD dwMemLength)
 		if (insflags[iRaw-1] & 2) flags |= RSF_STEREO;
 		if (inspack[iRaw-1] == 4) flags = RS_ADPCM4;
 		dwMemPos = insfile[iRaw];
-		dwMemPos += ReadSample(&Ins[iRaw], flags, (LPSTR)(lpStream + dwMemPos), dwMemLength - dwMemPos);
+		if (dwMemPos < dwMemLength)
+			dwMemPos += ReadSample(&Ins[iRaw], flags, (LPSTR)(lpStream + dwMemPos), dwMemLength - dwMemPos);
 	}
 	m_nMinPeriod = 64;
 	m_nMaxPeriod = 32767;

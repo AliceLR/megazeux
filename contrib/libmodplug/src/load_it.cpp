@@ -161,13 +161,15 @@ BOOL CSoundFile::ITInstrToMPT(const void *p, INSTRUMENTHEADER *penv, UINT trkver
 BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 //--------------------------------------------------------------
 {
-	ITFILEHEADER pifh = *(ITFILEHEADER *)lpStream;
 	DWORD dwMemPos = sizeof(ITFILEHEADER);
 	DWORD inspos[MAX_INSTRUMENTS];
 	DWORD smppos[MAX_SAMPLES];
 	DWORD patpos[MAX_PATTERNS];
 	BYTE chnmask[64];
 	MODCOMMAND lastvalue[64];
+
+	if ((!lpStream) || (dwMemLength < sizeof(ITFILEHEADER))) return FALSE;
+	ITFILEHEADER pifh = *(ITFILEHEADER *)lpStream;
 
 	pifh.id = bswapLE32(pifh.id);
 	pifh.reserved1 = bswapLE16(pifh.reserved1);
@@ -183,7 +185,6 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	pifh.msgoffset = bswapLE32(pifh.msgoffset);
 	pifh.reserved2 = bswapLE32(pifh.reserved2);
 
-	if ((!lpStream) || (dwMemLength < 0x100)) return FALSE;
 	if ((pifh.id != 0x4D504D49) || (pifh.insnum >= MAX_INSTRUMENTS)
 	 || (!pifh.smpnum) || (pifh.smpnum >= MAX_INSTRUMENTS) || (!pifh.ordnum)) return FALSE;
 	if (dwMemPos + pifh.ordnum + pifh.insnum*4
@@ -218,7 +219,7 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	}
 	if (m_nChannels < 4) m_nChannels = 4;
 	// Reading Song Message
-	if ((pifh.special & 0x01) && (pifh.msglength) && (pifh.msgoffset + pifh.msglength < dwMemLength))
+	if ((pifh.special & 0x01) && (pifh.msglength) && (pifh.msglength <= dwMemLength) && (pifh.msgoffset < dwMemLength - pifh.msglength))
 	{
 		m_lpszSongComments = new char[pifh.msglength+1];
 		if (m_lpszSongComments)
@@ -327,11 +328,11 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	for (UINT patchk=0; patchk<npatterns; patchk++)
 	{
 		memset(chnmask, 0, sizeof(chnmask));
-		if ((!patpos[patchk]) || ((DWORD)patpos[patchk] + 4 >= dwMemLength)) continue;
+		if ((!patpos[patchk]) || ((DWORD)patpos[patchk] >= dwMemLength - 4)) continue;
 		UINT len = bswapLE16(*((WORD *)(lpStream+patpos[patchk])));
 		UINT rows = bswapLE16(*((WORD *)(lpStream+patpos[patchk]+2)));
 		if ((rows < 4) || (rows > 256)) continue;
-		if (patpos[patchk]+8+len > dwMemLength) continue;
+		if (8+len > dwMemLength || patpos[patchk] > dwMemLength - (8+len)) continue;
 		UINT i = 0;
 		const BYTE *p = lpStream+patpos[patchk]+8;
 		UINT nrow = 0;
@@ -385,7 +386,7 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	// Reading Samples
 	m_nSamples = pifh.smpnum;
 	if (m_nSamples >= MAX_SAMPLES) m_nSamples = MAX_SAMPLES-1;
-	for (UINT nsmp=0; nsmp<pifh.smpnum; nsmp++) if ((smppos[nsmp]) && (smppos[nsmp] + sizeof(ITSAMPLESTRUCT) <= dwMemLength))
+	for (UINT nsmp=0; nsmp<pifh.smpnum; nsmp++) if ((smppos[nsmp]) && (smppos[nsmp] <= dwMemLength - sizeof(ITSAMPLESTRUCT)))
 	{
 		ITSAMPLESTRUCT pis = *(ITSAMPLESTRUCT *)(lpStream+smppos[nsmp]);
 		pis.id = bswapLE32(pis.id);
@@ -452,7 +453,7 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 	// Reading Patterns
 	for (UINT npat=0; npat<npatterns; npat++)
 	{
-		if ((!patpos[npat]) || ((DWORD)patpos[npat] + 4 >= dwMemLength))
+		if ((!patpos[npat]) || ((DWORD)patpos[npat] >= dwMemLength - 4))
 		{
 			PatternSize[npat] = 64;
 			Patterns[npat] = AllocatePattern(64, m_nChannels);
@@ -462,7 +463,7 @@ BOOL CSoundFile::ReadIT(const BYTE *lpStream, DWORD dwMemLength)
 		UINT len = bswapLE16(*((WORD *)(lpStream+patpos[npat])));
 		UINT rows = bswapLE16(*((WORD *)(lpStream+patpos[npat]+2)));
 		if ((rows < 4) || (rows > 256)) continue;
-		if (patpos[npat]+8+len > dwMemLength) continue;
+		if (8+len > dwMemLength || patpos[npat] > dwMemLength - (8+len)) continue;
 		PatternSize[npat] = rows;
 		if ((Patterns[npat] = AllocatePattern(rows, m_nChannels)) == NULL) continue;
 		memset(lastvalue, 0, sizeof(lastvalue));
@@ -625,7 +626,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 	dwPatNamLen = 0;
 	dwChnNamLen = 0;
 	header.id = 0x4D504D49; // IMPM
-	lstrcpynA((char *)header.songname, m_szNames[0], 27);
+	lstrcpyn((char *)header.songname, m_szNames[0], 27);
 	header.reserved1 = 0x1004;
 	header.ordnum = 0;
 	while ((header.ordnum < MAX_ORDERS) && (Order[header.ordnum] < 0xFF)) header.ordnum++;
@@ -690,7 +691,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 	if (m_lpszSongComments)
 	{
 		header.special |= 1;
-		header.msglength = (WORD)strlen(m_lpszSongComments)+1;
+		header.msglength = strlen(m_lpszSongComments)+1;
 		header.msgoffset = dwHdrPos + dwExtra + header.insnum*4 + header.patnum*4 + header.smpnum*4;
 	}
 	// Write file header
@@ -768,7 +769,7 @@ BOOL CSoundFile::SaveIT(LPCSTR lpszFileName, UINT nPacking)
 	dwPos = dwHdrPos + dwExtra + (header.insnum + header.smpnum + header.patnum) * 4;
 	if (header.special & 1)
 	{
-		dwPos += (DWORD)strlen(m_lpszSongComments) + 1;
+		dwPos += strlen(m_lpszSongComments) + 1;
 		fwrite(m_lpszSongComments, 1, strlen(m_lpszSongComments)+1, f);
 	}
 	// Writing instruments

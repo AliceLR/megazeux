@@ -602,7 +602,7 @@ public:
 	UINT GetMaxPosition() const;
 	void SetCurrentPos(UINT nPos);
 	void SetCurrentOrder(UINT nOrder);
-	void GetTitle(LPSTR s) const { lstrcpynA(s,m_szNames[0],32); }
+	void GetTitle(LPSTR s) const { lstrcpyn(s,m_szNames[0],32); }
 	LPCSTR GetTitle() const { return m_szNames[0]; }
 	UINT GetSampleName(UINT nSample,LPSTR s=NULL) const;
 	UINT GetInstrumentName(UINT nInstr,LPSTR s=NULL) const;
@@ -932,7 +932,7 @@ typedef struct WAVEEXTRAHEADER
 #define AGC_UNITY			(1 << AGC_PRECISION)
 
 // Calling conventions
-#ifdef _MSC_VER
+#ifdef MSC_VER
 #define MPPASMCALL	__cdecl
 #define MPPFASTCALL	__fastcall
 #else

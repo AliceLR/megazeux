@@ -342,7 +342,7 @@ BOOL CSoundFile::ReadMod(const BYTE *lpStream, DWORD dwMemLength)
 		LPSTR p = (LPSTR)(lpStream+dwMemPos);
 		UINT flags = 0;
 		if (dwMemPos + 5 >= dwMemLength) break;
-		if (!_strnicmp(p, "ADPCM", 5))
+		if (!strnicmp(p, "ADPCM", 5))
 		{
 			flags = 3;
 			p += 5;
@@ -437,9 +437,9 @@ BOOL CSoundFile::SaveMod(LPCSTR lpszFileName, UINT nPacking)
 	fwrite(ord, 128, 1, f);
 	// Writing signature
 	if (m_nChannels == 4)
-		lstrcpyA((LPSTR)&bTab, "M.K.");
+		lstrcpy((LPSTR)&bTab, "M.K.");
 	else
-		wsprintfA((LPSTR)&bTab, "%luCHN", m_nChannels);
+		wsprintf((LPSTR)&bTab, "%luCHN", m_nChannels);
 	fwrite(bTab, 4, 1, f);
 	// Writing patterns
 	for (UINT ipat=0; ipat<nbp; ipat++) if (Patterns[ipat])

@@ -24,18 +24,29 @@
 
 #ifdef _WIN32
 
+#ifdef MSC_VER
+#pragma warning (disable:4201)
+#pragma warning (disable:4514)
+#endif
+
 #define WIN32_LEAN_AND_MEAN
 #include <windows.h>
 #include <windowsx.h>
 #include <mmsystem.h>
 #include <stdio.h>
 #include <malloc.h>
+#include <stdint.h>
 
 #define srandom(_seed)  srand(_seed)
 #define random()        rand()
-#define sleep(_ms)      Sleep(_ms * 1000)
+#define sleep(_ms)      Sleep(_ms)
 
-static inline void ProcessPlugins(int n) {}
+inline void ProcessPlugins(int n) {}
+
+#define strncasecmp(a,b,c)  strncmp(a,b,c)
+#define strcasecmp(a,b) strcmp(a,b)
+#define strnicmp(a,b,c)		strncasecmp(a,b,c)
+#define HAVE_SINF 1
 
 #else
 
@@ -49,7 +60,6 @@ static inline void ProcessPlugins(int n) {}
 typedef int8_t CHAR;
 typedef uint8_t UCHAR;
 typedef uint8_t* PUCHAR;
-typedef int16_t SHORT;
 typedef uint16_t USHORT;
 typedef uint32_t ULONG;
 typedef uint32_t UINT;
@@ -78,9 +88,9 @@ static inline LONG MulDiv (long a, long b, long c)
 #define MODPLUG_NO_FILESAVE
 #define NO_AGC
 #define LPCTSTR LPCSTR
-#define lstrcpynA strncpy
-#define lstrcpyA strcpy
-#define lstrcmpA strcmp
+#define lstrcpyn strncpy
+#define lstrcpy strcpy
+#define lstrcmp strcmp
 #define WAVE_FORMAT_PCM 1
 //#define ENABLE_EQ
 
@@ -98,8 +108,8 @@ static inline void ProcessPlugins(int n) {}
 
 #define GlobalFreePtr(p) free((void *)(p))
 
-#define _strnicmp(a,b,c)	strncasecmp(a,b,c)
-#define wsprintfA		sprintf
+#define strnicmp(a,b,c)		strncasecmp(a,b,c)
+#define wsprintf			sprintf
 
 #ifndef FALSE
 #define FALSE	false

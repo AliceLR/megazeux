@@ -16,6 +16,10 @@ extern void Log(LPCSTR s, ...);
 
 //////////////////////////////////////////////////////////
 // OctaMed MED file support (import only)
+//
+// Lookup table for bpm values.
+static const BYTE bpmvals[10] = { 179,164,152,141,131,123,116,110,104,99 };
+
 
 // flags
 #define	MMD_FLAG_VOLHEX		0x10
@@ -243,8 +247,6 @@ typedef struct tagMMD0EXP
 static void MedConvert(MODCOMMAND *p, const MMD0SONGHEADER *pmsh)
 //---------------------------------------------------------------
 {
-	const BYTE bpmvals[9] = { 179,164,152,141,131,123,116,110,104};
-
 	UINT command = p->command;
 	UINT param = p->param;
 	switch(command)
@@ -565,7 +567,12 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 	#endif
 	} else
 	{
-		deftempo = _muldiv(deftempo, 5*715909, 2*474326);
+		if (pmsh->flags & MMD_FLAG_8CHANNEL && deftempo > 0 && deftempo <= 10)
+		{
+			deftempo = bpmvals[deftempo-1];
+		} else {
+			deftempo = _muldiv(deftempo, 5*715909, 2*474326);
+		}
 	#ifdef MED_LOG
 		Log("oldtempo: %3d bpm (bpm=%3d)\n", deftempo, bswapBE16(pmsh->deftempo));
 	#endif
@@ -642,7 +649,7 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 				const MMD2PLAYSEQ *pmps = (MMD2PLAYSEQ *)(lpStream + pseq);
 				if (!m_szNames[0][0]) memcpy(m_szNames[0], pmps->name, 31);
 				UINT n = bswapBE16(pmps->length);
-				if (pseq+n <= dwMemLength)
+				if (n < (dwMemLength - (pseq + sizeof(*pmps)) + sizeof(pmps->seq)) / sizeof(pmps->seq[0]))
 				{
 					for (UINT i=0; i<n; i++)
 					{
@@ -662,16 +669,16 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 	if (pmex)
 	{
 		// Channel Split
-		if ((m_nChannels == 4) && (pmsh->flags & 0x40))
+		if ((m_nChannels == 4) && (pmsh->flags & MMD_FLAG_8CHANNEL))
 		{
 			for (UINT i8ch=0; i8ch<4; i8ch++)
 			{
-				if (pmex->channelsplit[i8ch]) m_nChannels++;
+				if (pmex->channelsplit[i8ch]) --m_nChannels;
 			}
 		}
 		// Song Comments
-		DWORD annotxt = bswapBE32(pmex->annotxt);
-		DWORD annolen = bswapBE32(pmex->annolen);
+		uint32_t annotxt = bswapBE32(pmex->annotxt);
+		uint32_t annolen = bswapBE32(pmex->annolen);
 		if ((annotxt) && (annolen) && (annotxt + annolen > annotxt) // overflow checks.
 				&& (annotxt+annolen <= dwMemLength))
 		{
@@ -680,8 +687,8 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 			m_lpszSongComments[annolen] = 0;
 		}
 		// Song Name
-		DWORD songname = bswapBE32(pmex->songname);
-		DWORD songnamelen = bswapBE32(pmex->songnamelen);
+		uint32_t songname = bswapBE32(pmex->songname);
+		uint32_t songnamelen = bswapBE32(pmex->songnamelen);
 		if ((songname) && (songnamelen) && (songname+songnamelen > songname)
 				&& (songname+songnamelen <= dwMemLength))
 		{
@@ -707,7 +714,7 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 				if (maxnamelen > 32) maxnamelen = 32;
 				for (UINT i=0; i<ientries; i++) if (i < m_nSamples)
 				{
-					lstrcpynA(m_szNames[i+1], psznames + i*ientrysz, maxnamelen);
+					lstrcpyn(m_szNames[i+1], psznames + i*ientrysz, maxnamelen);
 					m_szNames[i+1][31] = '\0';
 				}
 			}
@@ -723,7 +730,7 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 				DWORD trktagofs = bswapBE32(ptrktags[i]);
 				if (trktagofs)
 				{
-					while (trktagofs+8 < dwMemLength)
+					while (trktagofs < dwMemLength - 8)
 					{
 						DWORD ntag = bswapBE32(*(DWORD *)(lpStream + trktagofs));
 						if (ntag == MMDTAG_END) break;
@@ -736,9 +743,9 @@ BOOL CSoundFile::ReadMed(const BYTE *lpStream, DWORD dwMemLength)
 						trktagofs += 8;
 					}
 					if (trknamelen > MAX_CHANNELNAME) trknamelen = MAX_CHANNELNAME;
-					if ((trknameofs) && (trknameofs + trknamelen < dwMemLength))
+					if ((trknameofs) && (trknamelen < dwMemLength) && (trknameofs < dwMemLength - trknamelen))
 					{
-						lstrcpynA(ChnSettings[i].szName, (LPCSTR)(lpStream+trknameofs), MAX_CHANNELNAME);
+						lstrcpyn(ChnSettings[i].szName, (LPCSTR)(lpStream+trknameofs), MAX_CHANNELNAME);
 						ChnSettings[i].szName[MAX_CHANNELNAME-1] = '\0';
 					}
 				}

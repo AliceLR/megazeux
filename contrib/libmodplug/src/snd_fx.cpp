@@ -4,13 +4,12 @@
  * Authors: Olivier Lapicque <olivierl@jps.net>
 */
 
-#include <stdlib.h>
-
 #include "stdafx.h"
+#include <stdlib.h>
 #include "sndfile.h"
 #include "tables.h"
 
-#ifdef _MSC_VER
+#ifdef MSC_VER
 #pragma warning(disable:4244)
 #endif
 
@@ -1883,7 +1882,7 @@ void CSoundFile::ProcessMidiMacro(UINT nChn, LPCSTR pszMidiMacro, UINT param)
 		case '0':
 			{
 				int oldcutoff = pChn->nCutOff;
-				if (dwParam < 0x80) pChn->nCutOff = dwParam;
+				if (dwParam < 0x80) pChn->nCutOff = (BYTE)dwParam;
 #ifndef NO_FILTER
 				oldcutoff -= pChn->nCutOff;
 
@@ -1897,7 +1896,7 @@ void CSoundFile::ProcessMidiMacro(UINT nChn, LPCSTR pszMidiMacro, UINT param)
 
 		// F0.F0.01.xx: Set Resonance
 		case '1':
-			if (dwParam < 0x80) pChn->nResonance = dwParam;
+			if (dwParam < 0x80) pChn->nResonance = (BYTE)dwParam;
 #ifndef NO_FILTER
 			SetupChannelFilter(pChn, (pChn->dwFlags & CHN_FILTER) ? FALSE : TRUE);
 #endif // NO_FILTER

@@ -13,7 +13,7 @@
 
 #ifndef NO_FILTER
 
-#if defined(_MSC_VER) && !defined(_WIN64)
+#ifdef MSC_VER
 #define _ASM_MATH
 #endif
 
