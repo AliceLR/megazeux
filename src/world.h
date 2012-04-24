@@ -50,7 +50,8 @@ __M_BEGIN_DECLS
  *  MZ2 - Ver 2.x MegaZeux             (mzx_world->version == 0x0205)
  *  MZA - Ver 2.51S1 Megazeux          (mzx_world->version == 0x0208)
  *  M\x02\x09 - 2.5.1spider2+
- *  M\x02\x3E - MZX 2.62.x
+ *  M\x02\x32 - MZX 2.62
+ *  M\x02\x3E - MZX 2.62b
  *  M\x02\x41 - MZX 2.65
  *  M\x02\x44 - MZX 2.68
  *  M\x02\x45 - MZX 2.69
@@ -67,7 +68,8 @@ __M_BEGIN_DECLS
  *  MZSV2 - Ver 2.x MegaZeux           (mzx_world->version == 0x0205)
  *  MZXSA - Ver 2.51S1 MegaZeux        (mzx_world->version == 0x0208)
  *  MZS\x02\x09 - 2.5.1spider2+
- *  MZS\x02\x3E - MZX 2.62.x
+ *  MZS\x02\x32 - MZX 2.62
+ *  MZS\x02\x3E - MZX 2.62b
  *  MZS\x02\x41 - MZX 2.65
  *  MZS\x02\x44 - MZX 2.68
  *  MZS\x02\x45 - MZX 2.69
