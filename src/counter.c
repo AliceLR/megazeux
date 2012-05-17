@@ -79,6 +79,33 @@ static unsigned int get_board_x_board_y_offset(struct world *mzx_world, int id)
   return board_y * mzx_world->current_board->board_width + board_x;
 }
 
+static int parse_counter_inputs(const char *src, int *v1, int *v2)
+{
+  char *next;
+
+  *v1 = strtol(src, &next, 10);
+  if(*next == ',')
+  {
+    *v2 = strtol(next + 1, NULL, 10);
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
+}
+
+static int translate_coordinates(const char *src,
+ unsigned int *x, unsigned int *y)
+{
+  int x2 = (int)*x, y2 = (int)*y, r = 0;
+  r = parse_counter_inputs(src, &x2, &y2);
+  *x = (unsigned int)abs(x2);
+  *y = (unsigned int)abs(y2);
+  return r;
+}
+
+
 static int local_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -172,6 +199,15 @@ static int atan_read(struct world *mzx_world,
 {
   int val = strtol(name + 4, NULL, 10);
   return (int)((atan2f((float)val, (float)mzx_world->divider) *
+   mzx_world->c_divisions) / (2 * M_PI));
+}
+
+static int atan2_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int dy = 0, dx = 0;
+  parse_counter_inputs(name + 6, &dy, &dx);
+  return (int)((atan2f((float)dy, (float)dx) *
    mzx_world->c_divisions) / (2 * M_PI));
 }
 
@@ -273,6 +309,30 @@ static int abs_read(struct world *mzx_world,
 {
   int val = strtol(name + 3, NULL, 10);
   return abs(val);
+}
+
+static int maxval_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int v1 = 0, v2 = 0;
+  parse_counter_inputs(name + 3, &v1, &v2);
+
+  if(v1 > v2)
+    return v1;
+  else
+    return v2;
+}
+
+static int minval_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int v1 = 0, v2 = 0;
+  parse_counter_inputs(name + 3, &v1, &v2);
+
+  if (v1 < v2)
+    return v1;
+  else
+    return v2;
 }
 
 static int playerfacedir_read(struct world *mzx_world,
@@ -983,23 +1043,6 @@ static int time_seconds_read(struct world *mzx_world,
   return t->tm_sec;
 }
 
-static int translate_coordinates(const char *src, unsigned int *x,
-                                 unsigned int *y)
-{
-  char *next;
-
-  *x = strtol(src, &next, 10);
-  if(*next == ',')
-  {
-    *y = strtol(next + 1, NULL, 10);
-    return 0;
-  }
-  else
-  {
-    return -1;
-  }
-}
-
 static int vch_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -1335,6 +1378,18 @@ static void fread_pos_write(struct world *mzx_world,
     if(value >= 0)
       dir_seek(&mzx_world->input_directory, value);
   }
+}
+
+static int fread_delim_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return mzx_world->fread_delimiter;
+}
+
+static void fread_delim_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  mzx_world->fread_delimiter = value % 256;
 }
 
 static int fwrite_pos_read(struct world *mzx_world,
@@ -2031,6 +2086,7 @@ static const struct function_counter builtin_counters[] =
   { "$*", 0x023E, str_num_read, str_num_write },                     // 2.62
   { "abs!", 0x0244, abs_read, NULL },                                // 2.68
   { "acos!", 0x0244, acos_read, NULL },                              // 2.68
+  { "arctan!,!", 0x0254, atan2_read, NULL },                        // 2.84
   { "asin!", 0x0244, asin_read, NULL },                              // 2.68
   { "atan!", 0x0244, atan_read, NULL },                              // 2.68
   { "bimesg", 0x0209, NULL, bimesg_write },                          // 2.51s3.2
@@ -2053,6 +2109,7 @@ static const struct function_counter builtin_counters[] =
   { "divider", 0x0244, divider_read, divider_write },                // 2.68
   { "fread", 0x0209, fread_read, NULL },                             // 2.60
   { "fread_counter", 0x0241, fread_counter_read, NULL },             // 2.65
+  { "fread_delimiter", 0x0254, fread_delim_read, fread_delim_write },// 2.84
   { "fread_open", 0x0209, fread_open_read, NULL },                   // 2.60
   { "fread_pos", 0x0209, fread_pos_read, fread_pos_write },          // 2.60
   { "fwrite", 0x0209, NULL, fwrite_write },                          // 2.60
@@ -2077,8 +2134,10 @@ static const struct function_counter builtin_counters[] =
   { "load_robot?", 0x0249, load_robot_read, NULL },                  // 2.70
   { "local?", 0x0208, local_read, local_write },                     // 2.51s1
   { "loopcount", 0, loopcount_read, loopcount_write },               // <=2.51
+  { "max!,!", 0x0254, maxval_read, NULL },                             // 2.84
   { "mboardx", 0x0208, mboardx_read, NULL },                         // 2.51s1
   { "mboardy", 0x0208, mboardy_read, NULL },                         // 2.51s1
+  { "min!,!", 0x0254, minval_read, NULL },                             // 2.84
   { "mod_frequency", 0x0251, mod_freq_read, mod_freq_write },        // 2.81
   { "mod_order", 0x023E, mod_order_read, mod_order_write },          // 2.62
   { "mod_position", 0x0251, mod_position_read, mod_position_write }, // 2.81
@@ -3096,7 +3155,6 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
 
   dest = find_string(mzx_world, name, &next);
 
-  // TODO - Make terminating chars variable, but how..
   if(special_name_partial("fread") &&
    !mzx_world->input_is_dir && mzx_world->input_file)
   {
@@ -3133,7 +3191,7 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
     }
     else
     {
-      const char terminate_char = '*';
+      const char terminate_char = mzx_world->fread_delimiter;
       char *dest_value;
       int current_char = 0;
       unsigned int read_pos = 0;
@@ -3287,7 +3345,7 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
       fwrite(dest_value + offset, size, 1, output_file);
 
       if(src_length == 6)
-        fputc('*', output_file);
+        fputc(mzx_world->fread_delimiter, output_file);
     }
   }
   else

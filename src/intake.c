@@ -592,7 +592,7 @@ int intake(struct world *mzx_world, char *string, int max_len,
 
     if(place)
     {
-      if((cur_char < 32) && (exit_type == 2))
+      if((cur_char != 0) && (cur_char < 32) && (exit_type == 2))
       {
         done = 1;
         key = cur_char;
