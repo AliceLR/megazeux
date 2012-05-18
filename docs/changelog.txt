@@ -119,6 +119,8 @@ USERS
 + Caps Lock no longer interferes with dialog box text input. (Lachesis)
 + Numbers can now be temporarily backspaced past their minimum value
   to make typing a new number more intuitive in dialogs. (Lachesis)
++ Increasing the size of a string with $str.length, $str.N, or with
+  a splice now wipes old string data with char 32s.
 + New Counter: FREAD_DELIMITER allows you to change the terminating
   char for the string FREAD function.  The terminating char still
   defaults to '*'.  A complementary FWRITE_DELIMITER counter has been
