@@ -165,7 +165,6 @@ struct number_box
   int lower_limit;
   int upper_limit;
   int mult_five;
-  int is_null;
   int *result;
 };
 

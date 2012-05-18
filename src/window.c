@@ -799,7 +799,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
       current_key =
        current_element->key_function(mzx_world, di,
        current_element, current_key);
-   }
+    }
 
     di->current_element = current_element_num;
 
@@ -1030,10 +1030,7 @@ static void draw_number_box(struct world *mzx_world, struct dialog *di,
   {
     // Draw a number
     char num_buffer[32];
-    if (!src->is_null)
-      sprintf(num_buffer, "%d", *(src->result) * increment);
-    else
-      sprintf(num_buffer, " ");
+    sprintf(num_buffer, "%d", *(src->result) * increment);
     fill_line(7, x, y, 32, DI_NUMERIC);
     write_string(num_buffer, x + 6 - (Uint32)strlen(num_buffer), y,
      DI_NUMERIC, 0);
@@ -1293,12 +1290,8 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
     case IKEY_BACKSPACE:
     {
       Sint32 result = current_value / 10;
-      if(result == 0 || result < src->lower_limit)
-      {
+      if(result < src->lower_limit)
         result = src->lower_limit;
-        if (src->upper_limit > 9)
-          src->is_null = 1;
-      }
 
       *(src->result) = result;
     }
@@ -1309,7 +1302,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
 
       if((key >= '0') && (key <= '9'))
       {
-        if(current_value == src->upper_limit || src->is_null)
+        if(current_value == src->upper_limit)
         {
           current_value = (key_char - '0');
         }
@@ -1332,19 +1325,9 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
         break;
       }
 
-      if (key != IKEY_BACKSPACE &&
-       !get_shift_status(keycode_internal) &&
-       !get_ctrl_status(keycode_internal) &&
-       !get_alt_status(keycode_internal))
-        src->is_null = 0;
-
       return key;
     }
   }
-
-  if (increment_value > 0 && src->is_null)
-    increment_value -= src->lower_limit;
-  src->is_null = 0;
 
   if(increment_value)
   {
@@ -1358,6 +1341,7 @@ static int key_number_box(struct world *mzx_world, struct dialog *di,
 
     *(src->result) = current_value;
   }
+
   return 0;
 }
 
@@ -1839,7 +1823,6 @@ struct element *construct_number_box(int x, int y,
   src->upper_limit = upper_limit;
   src->mult_five = mult_five;
   src->result = result;
-  src->is_null = 0;
   width = (int)strlen(question) + 1;
 
   if((lower_limit == 1) && (upper_limit < 10))
