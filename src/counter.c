@@ -1380,16 +1380,16 @@ static void fread_pos_write(struct world *mzx_world,
   }
 }
 
+static int fread_delim_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  return mzx_world->fread_delimiter;
+}
+
 static void fread_delim_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
   mzx_world->fread_delimiter = value % 256;
-}
-
-static void fwrite_delim_write(struct world *mzx_world,
- const struct function_counter *counter, const char *name, int value, int id)
-{
-  mzx_world->fwrite_delimiter = value % 256;
 }
 
 static int fwrite_pos_read(struct world *mzx_world,
@@ -2131,13 +2131,12 @@ static const struct function_counter builtin_counters[] =
   { "divider", 0x0244, divider_read, divider_write },                // 2.68
   { "fread", 0x0209, fread_read, NULL },                             // 2.60
   { "fread_counter", 0x0241, fread_counter_read, NULL },             // 2.65
-  { "fread_delimiter", 0x0254, NULL, fread_delim_write },            // 2.84
+  { "fread_delimiter", 0x0254, fread_delim_read, fread_delim_write },// 2.84
   { "fread_open", 0x0209, fread_open_read, NULL },                   // 2.60
   { "fread_pos", 0x0209, fread_pos_read, fread_pos_write },          // 2.60
   { "fwrite", 0x0209, NULL, fwrite_write },                          // 2.60
   { "fwrite_append", 0x0209, fwrite_append_read, NULL },             // 2.60
   { "fwrite_counter", 0x0241, NULL, fwrite_counter_write },          // 2.65
-  { "fwrite_delimiter", 0x0254, NULL, fwrite_delim_write },          // 2.84
   { "fwrite_modify", 0x0248, fwrite_modify_read, NULL },             // 2.69c
   { "fwrite_open", 0x0209, fwrite_open_read, NULL },                 // 2.60
   { "fwrite_pos", 0x0209, fwrite_pos_read, fwrite_pos_write },       // 2.60
@@ -3368,7 +3367,7 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
       fwrite(dest_value + offset, size, 1, output_file);
 
       if(src_length == 6)
-        fputc(mzx_world->fwrite_delimiter, output_file);
+        fputc(mzx_world->fread_delimiter, output_file);
     }
   }
   else

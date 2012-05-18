@@ -577,9 +577,8 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     fputw(mzx_world->divider, fp);
     // Circle divisions
     fputw(mzx_world->c_divisions, fp);
-    // FREAD and FWRITE String Delimiters
+    // FREAD String Delimiter
     fputc(mzx_world->fread_delimiter, fp);
-    fputc(mzx_world->fwrite_delimiter, fp);
     // Builtin message status
     fputc(mzx_world->bi_mesg_status, fp);
 
@@ -1323,9 +1322,8 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     mzx_world->divider = fgetw(fp);
     // Circle divisions
     mzx_world->c_divisions = fgetw(fp);
-    // FREAD and FWRITE String Delimiters
+    // FREAD String Delimiter
     mzx_world->fread_delimiter = fgetc(fp);
-    mzx_world->fwrite_delimiter = fgetc(fp);
     // Builtin message status
     mzx_world->bi_mesg_status = fgetc(fp);
 
@@ -1585,7 +1583,6 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->divider = 10000;
   mzx_world->c_divisions = 360;
   mzx_world->fread_delimiter = 42; //asterisk
-  mzx_world->fwrite_delimiter = 42;
   mzx_world->bi_mesg_status = 1;
 
   // And vlayer
