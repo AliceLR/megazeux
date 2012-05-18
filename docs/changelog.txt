@@ -89,8 +89,12 @@ USERS
 + Fixed some security issues with SMZX_PALETTE and LOAD_BC counters.
 + Only list/open regular files or symlinks to regular files in file
   dialogs. Special files are now ignored.
-+ Opening directories with FREAD_OPEN or FWRITE_OPEN is now rejected
-  properly on all platforms.
++ Opening directories with FWRITE_OPEN is now rejected properly on all
+  platforms.
++ Directories may now be opened with FREAD_OPEN.  This functionality
+  can be used in conjunction with FREAD_POS and set "$str" FREAD.
+  FREAD will set the string to "" when it has reached the end of the
+  file listing.
 + Fixed a bug where a file would be re-opened for read/write, even if
   the file was missing or an I/O error occurred before saving.
 + Fixed a bug where MZX could occasionally crash due to label list
