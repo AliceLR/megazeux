@@ -864,6 +864,10 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
       case IKEY_ESCAPE: // ESC
       {
+        //Only work on press.  Ignore autorepeat.
+        if (get_key_status(keycode_internal, IKEY_ESCAPE) != 1)
+          break;
+
         // Restore screen, set current, and return -1
         pop_context();
         return -1;

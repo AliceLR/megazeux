@@ -123,6 +123,9 @@ USERS
   a splice now wipes old string data with char 32s.
 + MZX_SPEED can now be set up to 16 by a robot or from the F2 dialog
   menu. (Lachesis)
++ Dialogs (especially "Exit gameplay - Are you sure?") now require the
+  user to have actually hit ESC to close, making escaping busyloops
+  and message loops much easier. (Lachesis)
 + New Counter: FREAD_DELIMITER allows you to change the terminating
   char for the string FREAD function.  The terminating char still
   defaults to '*'.  A complementary FWRITE_DELIMITER counter has been
