@@ -109,6 +109,7 @@ struct world
   int divider;
   int c_divisions;
   int fread_delimiter;
+  int fwrite_delimiter;
   int bi_mesg_status;
   char output_file_name[MAX_PATH];
   FILE *output_file;
