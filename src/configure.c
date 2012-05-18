@@ -176,7 +176,7 @@ static void config_set_mzx_speed(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   unsigned long new_speed = strtoul(value, NULL, 10);
-  conf->mzx_speed = CLAMP(new_speed, 1, 9);
+  conf->mzx_speed = CLAMP(new_speed, 1, 16);
 }
 
 static void config_set_pc_speaker(struct config_info *conf, char *name,

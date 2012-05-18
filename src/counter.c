@@ -516,7 +516,7 @@ static void mzx_speed_write(struct world *mzx_world,
   {
     mzx_world->lock_speed = 0;
   }
-  else if(value >= 1 && value <= 9)
+  else if(value >= 1 && value <= 16)
   {
     mzx_world->mzx_speed = value;
     mzx_world->lock_speed = 1;

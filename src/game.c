@@ -369,7 +369,7 @@ static void set_3_mesg(struct world *mzx_world, const char *str1, int num,
 
 //----------------------------
 //
-//  Speed- 123456789
+//    Speed- [   NN][^][v]
 //
 //   ( ) Digitized music on
 //   ( ) Digitized music off
@@ -411,7 +411,7 @@ static void game_settings(struct world *mzx_world)
     speed_option = 2;
     num_elements = 9;
     start_option = 8;
-    elements[8] = construct_number_box(5, 2, "Speed- ", 1, 9,
+    elements[8] = construct_number_box(5, 2, "Speed- ", 1, 16,
      0, &mzx_speed);
   }
 

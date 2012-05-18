@@ -121,6 +121,8 @@ USERS
   to make typing a new number more intuitive in dialogs. (Lachesis)
 + Increasing the size of a string with $str.length, $str.N, or with
   a splice now wipes old string data with char 32s.
++ MZX_SPEED can now be set up to 16 by a robot or from the F2 dialog
+  menu. (Lachesis)
 + New Counter: FREAD_DELIMITER allows you to change the terminating
   char for the string FREAD function.  The terminating char still
   defaults to '*'.  A complementary FWRITE_DELIMITER counter has been
