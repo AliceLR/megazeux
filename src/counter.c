@@ -210,6 +210,15 @@ static int atan_read(struct world *mzx_world,
    mzx_world->c_divisions) / (2 * M_PI));
 }
 
+static int atan2_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int dy = 0, dx = 0;
+  get_counter_params(name + 6, &dy, &dx);
+  return (int)((atan2f((float)dy, (float)dx) *
+   mzx_world->c_divisions) / (2 * M_PI));
+}
+
 static int c_divisions_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2107,6 +2116,7 @@ static const struct function_counter builtin_counters[] =
   { "$*", 0x023E, str_num_read, str_num_write },                     // 2.62
   { "abs!", 0x0244, abs_read, NULL },                                // 2.68
   { "acos!", 0x0244, acos_read, NULL },                              // 2.68
+  { "arctan!,!", 0x0254, atan2_read, NULL },                         // 2.84
   { "asin!", 0x0244, asin_read, NULL },                              // 2.68
   { "atan!", 0x0244, atan_read, NULL },                              // 2.68
   { "bimesg", 0x0209, NULL, bimesg_write },                          // 2.51s3.2
