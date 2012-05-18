@@ -4,7 +4,7 @@ USERS
 
 DEVELOPERS
 
-July 22, 2011 - MZX 2.83b
+Month Day, 2012 - MZX 2.84
 
 Another bugfix release. There are also a few (minor) new features, but a
 bump in world/board/save magic has been avoided.
@@ -24,6 +24,7 @@ Lancer-X, Old-Sckool and Lachesis who reported and tracked the majority
 of bugs this time round.
 
 USERS
+
 
 + Fixed a bug where LOAD_ROBOT or LOAD_BC would not reset the stack
   pointer for newly loaded programs. This could cause crashes if a robot
@@ -114,6 +115,20 @@ USERS
   player. Blocks that would overwrite the player are now ignored.
 + Fixed a 2.81e regression that allowed SENDs to self to ignore
   LOCKSELF.
++ Setting $str.length now makes $str the length specified. (Lachesis)
++ Caps Lock no longer interferes with dialog box text input. (Lachesis)
++ Numbers can now be temporarily backspaced past their minimum value
+  to make typing a new number more intuitive in dialogs. (Lachesis)
++ New Counter: FREAD_DELIMITER allows you to change the terminating
+  char for the string FREAD and FWRITE functions.  The terminating char
+  still defaults to '*'. (Lachesis)
++ New Counter: ARCTANdy,dx takes two values and returns the angle
+  with corrected quadrants as an alternative to using ATANdy with
+  DIVIDER as dx, which was less intuitive and never documented
+  properly. (Lachesis)
++ New Counters: MINv1,v2 and MAXv1,v2 return the minimum or maximum
+  value between two inputs, respectively. Chain several of these in
+  an expression or a loop for more arguments. (Lachesis)
 
 DEVELOPERS
 
