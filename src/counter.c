@@ -79,6 +79,41 @@ static unsigned int get_board_x_board_y_offset(struct world *mzx_world, int id)
   return board_y * mzx_world->current_board->board_width + board_x;
 }
 
+//TODO: make this work with any number of params
+static int get_counter_params(const char *src, //unsigned int num,
+ int *v1, int *v2)
+{
+  char *next;
+
+  *v1 = strtol(src, &next, 10);
+  if(*next == ',')
+  {
+    *v2 = strtol(next + 1, NULL, 10);
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
+}
+
+static int translate_coordinates(const char *src, unsigned int *x,
+                                 unsigned int *y)
+{
+  char *next;
+
+  *x = strtol(src, &next, 10);
+  if(*next == ',')
+  {
+    *y = strtol(next + 1, NULL, 10);
+    return 0;
+  }
+  else
+  {
+    return -1;
+  }
+}
+
 static int local_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -273,6 +308,30 @@ static int abs_read(struct world *mzx_world,
 {
   int val = strtol(name + 3, NULL, 10);
   return abs(val);
+}
+
+static int maxval_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int v1 = 0, v2 = 0;
+  get_counter_params(name + 3, &v1, &v2);
+
+  if(v1 > v2)
+    return v1;
+  else
+    return v2;
+}
+
+static int minval_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  int v1 = 0, v2 = 0;
+  get_counter_params(name + 3, &v1, &v2);
+
+  if (v1 < v2)
+    return v1;
+  else
+    return v2;
 }
 
 static int playerfacedir_read(struct world *mzx_world,
@@ -981,23 +1040,6 @@ static int time_seconds_read(struct world *mzx_world,
   time_t e_time = time(NULL);
   struct tm *t = localtime(&e_time);
   return t->tm_sec;
-}
-
-static int translate_coordinates(const char *src, unsigned int *x,
-                                 unsigned int *y)
-{
-  char *next;
-
-  *x = strtol(src, &next, 10);
-  if(*next == ',')
-  {
-    *y = strtol(next + 1, NULL, 10);
-    return 0;
-  }
-  else
-  {
-    return -1;
-  }
 }
 
 static int vch_read(struct world *mzx_world,
@@ -2113,8 +2155,10 @@ static const struct function_counter builtin_counters[] =
   { "load_robot?", 0x0249, load_robot_read, NULL },                  // 2.70
   { "local?", 0x0208, local_read, local_write },                     // 2.51s1
   { "loopcount", 0, loopcount_read, loopcount_write },               // <=2.51
+  { "max!,!", 0x0254, maxval_read, NULL },                           // 2.84
   { "mboardx", 0x0208, mboardx_read, NULL },                         // 2.51s1
   { "mboardy", 0x0208, mboardy_read, NULL },                         // 2.51s1
+  { "min!,!", 0x0254, minval_read, NULL },                           // 2.84
   { "mod_frequency", 0x0251, mod_freq_read, mod_freq_write },        // 2.81
   { "mod_order", 0x023E, mod_order_read, mod_order_write },          // 2.62
   { "mod_position", 0x0251, mod_position_read, mod_position_write }, // 2.81
