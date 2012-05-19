@@ -131,8 +131,9 @@ USERS
   user to have actually hit ESC to close, making escaping busyloops
   and message loops much easier. (Lachesis)
 + New Counter: FREAD_DELIMITER allows you to change the terminating
-  char for the string FREAD and FWRITE functions.  The terminating char
-  still defaults to '*'. (Lachesis)
+  char for the string FREAD function.  The terminating char still
+  defaults to '*'. A complementary FWRITE_DELIMITER function has been
+  added as well. (Lachesis)
 + New Counter: ARCTANdy,dx takes two values and returns the angle
   with corrected quadrants as an alternative to using ATANdy with
   DIVIDER as dx, which was less intuitive and never documented
