@@ -92,7 +92,13 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
       if(next >= (robot->program_bytecode_length - 2))
         current_label->position = 0;
       else
-        current_label->position = i;
+      {
+        //compatibility fix for 2.80 to 2.83
+        if (robot->world_version >= 0x0250 && robot->world_version <= 0x0253)
+          current_label->position = next + 1;
+        else
+          current_label->position = i;
+      }
 
       if(cmd == ROBOTIC_CMD_ZAPPED_LABEL)
         current_label->zapped = 1;
@@ -180,6 +186,8 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
 {
   int program_length;
   int i;
+
+  cur_robot->world_version = version;
 
 #ifdef CONFIG_DEBYTECODE
   if(version >= VERSION_PROGRAM_SOURCE)

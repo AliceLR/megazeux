@@ -130,6 +130,11 @@ USERS
 + Dialogs (especially "Exit gameplay - Are you sure?") now require the
   user to have actually hit ESC to close, making escaping busyloops
   and message loops much easier. (Lachesis)
++ Added a compatibility fix for different label caching in 2.80 through
+  2.83 that allowed constructs such as : "LABEL" / SEND "ALL" "LABEL"
+  on an unlocked robot to continue instead of getting caught in a loop.
+  The altered label caching caused #98485 Thanatos Insignia to lock up
+  in an unescapable busyloop in GIT versions. (Lachesis)
 + New Counter: FREAD_DELIMITER allows you to change the terminating
   char for the string FREAD function.  The terminating char still
   defaults to '*'. A complementary FWRITE_DELIMITER function has been

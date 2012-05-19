@@ -57,6 +57,7 @@ struct sensor
 
 struct robot
 {
+  int world_version;
 #ifdef CONFIG_DEBYTECODE
   int program_source_length;
   char *program_source;
