@@ -86,9 +86,13 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
     filename[mod_name_size - 1] = 0;
 
     if(strcasecmp(src_board->mod_playing, filename))
+    {
+      strcpy(src_board->mod_playing, filename);
       load_board_module(src_board);
+    }
 
     src_board->mod_playing[0] = '*';
+    src_board->mod_playing[1] = 0;
   }
   else
   {

@@ -135,6 +135,10 @@ USERS
   on an unlocked robot to continue instead of getting caught in a loop.
   The altered label caching caused #98485 Thanatos Insignia to lock up
   in an unescapable busyloop in GIT versions. (Lachesis)
++ MOD "[lead-in file]*" now works properly. In previous versions of the
+  port, this construct would result in the lead-in file failing to play
+  and the wildcard mod restarting when the player re-entered and re-
+  exited the board. (Lachesis)
 + New Counter: FREAD_DELIMITER allows you to change the terminating
   char for the string FREAD function.  The terminating char still
   defaults to '*'. A complementary FWRITE_DELIMITER function has been
