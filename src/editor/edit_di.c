@@ -1102,24 +1102,6 @@ void global_info(struct world *mzx_world)
     redo = 0;
     set_context(86);
 
-    if(death_board == DEATH_SAME_POS)
-    {
-      death_board = 0;
-      radio_result_1 = 0;
-    }
-
-    if(death_board == NO_DEATH_BOARD)
-    {
-      death_board = 0;
-      radio_result_1 = 1;
-    }
-
-    if(endgame_board == NO_ENDGAME_BOARD)
-    {
-      endgame_board = 0;
-      radio_result_2 = 0;
-    }
-
     dialog_result = run_dialog(mzx_world, &a_di);
     destruct_dialog(&a_di);
 
@@ -1129,6 +1111,24 @@ void global_info(struct world *mzx_world)
       {
         // Returns 1 for previous
         set_context(88);
+
+        if(death_board == DEATH_SAME_POS)
+        {
+          death_board = 0;
+          radio_result_1 = 0;
+        }
+
+        if(death_board == NO_DEATH_BOARD)
+        {
+          death_board = 0;
+          radio_result_1 = 1;
+        }
+
+        if(endgame_board == NO_ENDGAME_BOARD)
+        {
+          endgame_board = 0;
+          radio_result_2 = 0;
+        }
 
         set_confirm_buttons(b_elements);
         b_elements[2] = construct_board_list(1, 2, "Death board-",
@@ -1150,7 +1150,7 @@ void global_info(struct world *mzx_world)
         b_elements[10] = construct_check_box(30, 11, check_box_strings_1,
          1, 18, check_box_results_1);
 
-        b_elements[11] = construct_button(24, 13, "Previous", 2); //38, 9
+        b_elements[11] = construct_button(25, 13, "Previous", 2); //38, 9
 
         construct_dialog(&b_di, "Global Settings (Continued)", 10, 4,
          60, 18, b_elements, 12, 2);
