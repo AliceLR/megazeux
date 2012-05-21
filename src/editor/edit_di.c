@@ -1068,31 +1068,29 @@ void global_info(struct world *mzx_world)
   struct dialog a_di;
   struct dialog b_di;
   struct element *a_elements[15];
-  struct element *b_elements[10];
+  struct element *b_elements[12];
   int dialog_result;
   int redo = 0;
 
   do
   {
     set_confirm_buttons(a_elements);
-    a_elements[2] = construct_board_list(1, 2, "Death board-",
-     0, &death_board);
-    a_elements[3] = construct_number_box(1, 5, "Death X- ",
-     0, 32767, 0, &death_x);
-    a_elements[4] = construct_number_box(1, 6, "Death Y- ",
-     0, 32767, 0, &death_y);
-    a_elements[5] = construct_radio_button(1, 8, radio_strings_1,
-     3, 20, &radio_result_1);
-    a_elements[6] = construct_board_list(30, 2, "Endgame board-",
-     0, &endgame_board);
-    a_elements[7] = construct_number_box(30, 5, "Endgame X- ",
-     0, 32767, 0, &endgame_x);
-    a_elements[8] = construct_number_box(30, 6, "Endgame Y- ",
-     0, 32767, 0, &endgame_y);
-    a_elements[9] = construct_radio_button(30, 8, radio_strings_2,
-     2, 18, &radio_result_2);
-    a_elements[10] = construct_check_box(30, 11, check_box_strings_1,
-     1, 18, check_box_results_1);
+    a_elements[2] = construct_board_list(5, 2, "First board-",
+     0, &first_board);
+    a_elements[3] = construct_color_box(38, 3, "Edging color- ",
+     0, &edge_color);
+    a_elements[4] = construct_label(5+10+4, 5, "Lives"),
+    a_elements[5] = construct_label(32+10+3, 5, "Health"),
+    a_elements[6] = construct_number_box(5, 6, "Starting- ",
+     1, 32767, 0, &starting_lives);
+    a_elements[7] = construct_number_box(5, 7, "Maximum-  ",
+     1, 32767, 0, &lives_limit);
+    a_elements[8] = construct_number_box(32, 6, "Starting- ",
+     1, 32767, 0, &starting_health);
+    a_elements[9] = construct_number_box(32, 7, "Maximum-  ",
+     1, 32767, 0, &health_limit);
+    a_elements[10] = construct_check_box(7, 9, check_box_strings_2,
+     3, 39, check_box_results_2);
     a_elements[11] = construct_button(5, 13, "More", 2);
     a_elements[12] = construct_button(12, 13, "Edit Chars", 3);
     a_elements[13] = construct_button(25, 13, "Edit Dmg", 4);
@@ -1133,24 +1131,29 @@ void global_info(struct world *mzx_world)
         set_context(88);
 
         set_confirm_buttons(b_elements);
-        b_elements[2] = construct_board_list(6, 2, "First board-",
-         0, &first_board);
-        b_elements[3] = construct_color_box(38, 3, "Edging color- ",
-         0, &edge_color);
-        b_elements[4] = construct_number_box(6, 5, "Starting lives-  ",
-         1, 32767, 0, &starting_lives);
-        b_elements[5] = construct_number_box(6, 6, "Maximum lives-   ",
-         1, 32767, 0, &lives_limit);
-        b_elements[6] = construct_number_box(6, 8, "Starting health- ",
-         1, 32767, 0, &starting_health);
-        b_elements[7] = construct_number_box(6, 9, "Maximum health-  ",
-         1, 32767, 0, &health_limit);
-        b_elements[8] = construct_button(38, 9, "Previous", 2);
-        b_elements[9] = construct_check_box(6, 11, check_box_strings_2,
-         3, 39, check_box_results_2);
+        b_elements[2] = construct_board_list(1, 2, "Death board-",
+         0, &death_board);
+        b_elements[3] = construct_number_box(1, 5, "Death X- ",
+         0, 32767, 0, &death_x);
+        b_elements[4] = construct_number_box(1, 6, "Death Y- ",
+         0, 32767, 0, &death_y);
+        b_elements[5] = construct_radio_button(1, 8, radio_strings_1,
+         3, 20, &radio_result_1);
+        b_elements[6] = construct_board_list(30, 2, "Endgame board-",
+         0, &endgame_board);
+        b_elements[7] = construct_number_box(30, 5, "Endgame X- ",
+         0, 32767, 0, &endgame_x);
+        b_elements[8] = construct_number_box(30, 6, "Endgame Y- ",
+         0, 32767, 0, &endgame_y);
+        b_elements[9] = construct_radio_button(30, 8, radio_strings_2,
+         2, 18, &radio_result_2);
+        b_elements[10] = construct_check_box(30, 11, check_box_strings_1,
+         1, 18, check_box_results_1);
+
+        b_elements[11] = construct_button(24, 13, "Previous", 2); //38, 9
 
         construct_dialog(&b_di, "Global Settings (Continued)", 10, 4,
-         60, 18, b_elements, 10, 2);
+         60, 18, b_elements, 12, 2);
 
         dialog_result = run_dialog(mzx_world, &b_di);
         destruct_dialog(&b_di);
