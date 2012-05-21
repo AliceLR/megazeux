@@ -3388,8 +3388,11 @@ static void __edit_world(struct world *mzx_world)
         {
           if(get_alt_status(keycode_internal))
           {
-            default_palette();
-            update_palette();
+            if (!confirm(mzx_world, "LOAD DEFAULT PALETTE - Are you sure?"))
+            {
+              default_palette();
+              update_palette();
+            }
           }
           else
           {

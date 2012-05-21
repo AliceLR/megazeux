@@ -139,6 +139,7 @@ USERS
   port, this construct would result in the lead-in file failing to play
   and the wildcard mod restarting when the player re-entered and re-
   exited the board. (Lachesis)
++ ALT+D (Default palette) now requires a confirmation. (Lachesis)
 + Chars 0 and 255 can now be selected from the Edit Chars submenu of
   the Global Info menu. Using char 255 on a kind that would have
   previously denied it now gives a warning dialog. (Lachesis)
