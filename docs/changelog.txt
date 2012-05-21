@@ -141,7 +141,6 @@ USERS
   exited the board. (Lachesis)
 + ALT+D (Default palette) now requires a confirmation. (Lachesis)
 + The COMMANDS counter is now saved as a 32-bit variable. (Lachesis)
-+ LOOPCOUNT counters are now saved as 32-bit variables. (Lachesis)
 + Chars 0 and 255 can now be selected from the Edit Chars submenu of
   the Global Info menu. Using char 255 on a kind that would have
   previously denied it now gives a warning dialog. (Lachesis)

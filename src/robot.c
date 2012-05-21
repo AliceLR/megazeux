@@ -219,10 +219,7 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   // Skip local - these are in the save files now
   fseek(fp, 2, SEEK_CUR);
   cur_robot->used = fgetc(fp);
-  if(version <= 0x0253)
-    cur_robot->loop_count = fgetw(fp);
-  else
-    cur_robot->loop_count = fgetd(fp);
+  cur_robot->loop_count = fgetw(fp);
 
   // If savegame, there's some additional information to get
   if(savegame)
@@ -511,7 +508,7 @@ void save_robot(struct robot *cur_robot, FILE *fp, int savegame)
   // Junk local
   fputw(0, fp);
   fputc(cur_robot->used, fp);
-  fputd(cur_robot->loop_count, fp);
+  fputw(cur_robot->loop_count, fp);
 
   // If savegame, there's some additional information to get
   if(savegame)
