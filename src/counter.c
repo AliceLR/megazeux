@@ -1862,27 +1862,18 @@ static struct string *reallocate_string(struct world *mzx_world,
 static void force_string_length(struct world *mzx_world, const char *name,
  int next, struct string **str, size_t *length)
 {
-  unsigned int i;
-
   if(*length > MAX_STRING_LEN)
     *length = MAX_STRING_LEN;
 
   if(!*str)
     *str = add_string_preallocate(mzx_world, name, *length, next);
-  else
-  {
-    if(*length > (*str)->allocated_length)
-      *str = reallocate_string(mzx_world, *str, next, *length);
 
-    /* Wipe string if the length has increased */
-    if (*length > (*str)->length)
-    {
-      for (i = (*str)->length; i < *length; i++)
-      {
-        (*str)->value[i] = 32;
-      }
-    }
-  }
+  else if(*length > (*str)->allocated_length)
+    *str = reallocate_string(mzx_world, *str, next, *length);
+
+  /* Wipe string if the length has increased but not the allocated memory */
+  else if(*length > (*str)->length)
+    memset(&((*str)->value[(*str)->length]), ' ', (*length) - (*str)->length);
 }
 
 static void force_string_splice(struct world *mzx_world, const char *name,
