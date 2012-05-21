@@ -635,7 +635,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
       }
     }
 
-    fputw(mzx_world->commands, fp);
+    fputd(mzx_world->commands, fp);
 
     vlayer_size = mzx_world->vlayer_size;
     fputd(vlayer_size, fp);
@@ -1424,7 +1424,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
       }
     }
 
-    mzx_world->commands = fgetw(fp);
+    mzx_world->commands = fgetd(fp);
 
     vlayer_size = fgetd(fp);
     mzx_world->vlayer_width = fgetw(fp);
