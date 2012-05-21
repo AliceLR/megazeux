@@ -2174,7 +2174,11 @@ static void __edit_world(struct world *mzx_world)
       {
         if(draw_mode != 2)
         {
-          global_info(mzx_world);
+          if(get_alt_status(keycode_internal))
+            global_robot(mzx_world);
+          else
+            global_info(mzx_world);
+
           modified = 1;
         }
         else

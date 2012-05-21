@@ -150,6 +150,8 @@ USERS
 + New Counters: MINv1,v2 and MAXv1,v2 return the minimum or maximum
   value between two inputs, respectively. Chain several of these in
   an expression or a loop for more arguments. (Lachesis)
++ Pressing ALT+G from the world editor now goes directly to the Global
+  Robot without having to skip through the Global Info menu. (Lachesis)
 
 DEVELOPERS
 
