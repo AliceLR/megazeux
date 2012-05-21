@@ -245,6 +245,10 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     // MegaZeux 2.83 is the last version that won't save the ver.
     int mzm_world_version = 0x0253;
 
+    // It's not necessarily the first though
+    if (mzx_world->version < 0x0253)
+      mzm_world_version = mzx_world->version;
+
     fread(magic_string, 4, 1, input_file);
     magic_string[4] = 0;
 
