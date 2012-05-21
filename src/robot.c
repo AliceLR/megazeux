@@ -219,12 +219,15 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   // Skip local - these are in the save files now
   fseek(fp, 2, SEEK_CUR);
   cur_robot->used = fgetc(fp);
-  cur_robot->loop_count = fgetw(fp);
+  fseek(fp, 2, SEEK_CUR);
 
   // If savegame, there's some additional information to get
   if(savegame)
   {
     int stack_size;
+
+    if(version >= 0x0254)
+      cur_robot->loop_count = fgetd(fp);
 
     for(i = 0; i < 32; i++)
       cur_robot->local[i] = fgetd(fp);
@@ -288,6 +291,7 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   else
   {
     // Otherwise, allocate some stuff; local counters are 0
+    cur_robot->loop_count = 0;
     memset(cur_robot->local, 0, sizeof(int) * 32);
 
     // Give an empty stack.
@@ -508,7 +512,8 @@ void save_robot(struct robot *cur_robot, FILE *fp, int savegame)
   // Junk local
   fputw(0, fp);
   fputc(cur_robot->used, fp);
-  fputw(cur_robot->loop_count, fp);
+  // Junk loop_count
+  fputw(0, fp);
 
   // If savegame, there's some additional information to get
   if(savegame)
@@ -516,6 +521,7 @@ void save_robot(struct robot *cur_robot, FILE *fp, int savegame)
     int stack_size = cur_robot->stack_size;
 
     // Write the local counters
+    fputd(cur_robot->loop_count, fp);
     for(i = 0; i < 32; i++)
     {
       fputd(cur_robot->local[i], fp);
