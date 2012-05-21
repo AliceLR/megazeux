@@ -822,15 +822,8 @@ static int key_char_box(struct world *mzx_world, struct dialog *di,
       int current_char =
        char_selection(*(src->result));
 
-      /* DENIED
-      if((current_char == 0) ||
-       ((current_char == 255) && (!src->allow_char_255)))
-      {
-        current_char = 1;
-      }
-      */
       if((current_char == 255) && !(src->allow_char_255) &&
-       confirm(mzx_world, "Most CHAR IDs at 255 use their param for their char."))
+       confirm(mzx_world, "CHAR IDs <128 set to 255 use their param as their char."))
         current_char = -1; //don't change the char if the user cancels.
 
       if(current_char >= 0)
