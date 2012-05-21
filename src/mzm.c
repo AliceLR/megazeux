@@ -42,11 +42,7 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     if(savegame)
       savegame = 1;
 
-#ifdef CONFIG_DEBYTECODE
     fwrite("MZM3", 4, 1, output_file);
-#else
-    fwrite("MZM2", 4, 1, output_file);
-#endif
 
     fputw(width, output_file);
     fputw(height, output_file);
@@ -56,12 +52,8 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     fputc(storage_mode, output_file);
     fputc(0, output_file);
 
-#ifdef CONFIG_DEBYTECODE
     fputw(mzx_world->version, output_file);
     fseek(output_file, 3, SEEK_CUR);
-#else
-    fseek(output_file, 1, SEEK_CUR);
-#endif
 
     switch(mode)
     {
@@ -225,6 +217,7 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
           offset += line_skip;
         }
 
+
         break;
       }
     }
@@ -249,11 +242,8 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     int num_robots;
     int robots_location;
 
-#ifdef CONFIG_DEBYTECODE
-    int mzm_world_version = VERSION_PROGRAM_BYTECODE;
-#else
-    int mzm_world_version = WORLD_VERSION; // FIXME: hack
-#endif
+    // MegaZeux 2.83 is the last version that won't save the ver.
+    int mzm_world_version = 0x0253;
 
     fread(magic_string, 4, 1, input_file);
     magic_string[4] = 0;
@@ -283,11 +273,10 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     }
     else
 
-#ifdef CONFIG_DEBYTECODE
     if(!strncmp(magic_string, "MZM3", 4))
     {
       // MZM3 is like MZM2, except the robots are stored as source code if
-      // savegame_mode is 0.
+      // savegame_mode is 0 and version >= VERSION_PROGRAM_SOURCE.
       width = fgetw(input_file);
       height = fgetw(input_file);
       robots_location = fgetd(input_file);
@@ -296,10 +285,16 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
       savegame_mode = fgetc(input_file);
       mzm_world_version = fgetw(input_file);
       fseek(input_file, 3, SEEK_CUR);
+
+      // If the mzm version is newer than the MZX version, abort.
+      if (mzm_world_version > mzx_world->version)
+      {
+        fclose(input_file);
+        return -1;
+      }
     }
 
     else
-#endif /* CONFIG_DEBYTECODE */
     {
       // Failure, abort
       fclose(input_file);

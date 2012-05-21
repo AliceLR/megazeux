@@ -157,6 +157,9 @@ USERS
   an expression or a loop for more arguments. (Lachesis)
 + Pressing ALT+G from the world editor now goes directly to the Global
   Robot without having to skip through the Global Info menu. (Lachesis)
++ MZM3 has been enabled for 2.84 and all following versions.  The
+  difference between MZM3 and MZM2 is that MZM3 stores a copy of the
+  world version, allowing the robot format to change. (Lachesis)
 
 DEVELOPERS
 
