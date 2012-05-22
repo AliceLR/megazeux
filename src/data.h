@@ -169,7 +169,7 @@ static inline bool is_water(enum thing id)
 
 static inline bool is_whirlpool(enum thing id)
 {
-  return (id >= WHIRLPOOL_1) && (id <= WHIRLPOOL_2);
+  return (id >= WHIRLPOOL_1) && (id <= WHIRLPOOL_4);
 }
 
 static inline bool is_enemy(enum thing id)

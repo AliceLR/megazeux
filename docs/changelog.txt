@@ -143,6 +143,8 @@ USERS
 + The COMMANDS counter is now saved as a 32-bit variable. (Lachesis)
 + The LOOPCOUNT counter has been moved to save-only data and is now
   saved as a 32-bit variable. (Lachesis)
++ Fixed a bug where not all whirlpools were being considered as such,
+  notably during the transport board scan. (Lachesis)
 + Chars 0 and 255 can now be selected from the Edit Chars submenu of
   the Global Info menu. Using char 255 on a kind that would have
   previously denied it now gives a warning dialog. (Lachesis)
