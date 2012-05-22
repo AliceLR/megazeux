@@ -57,7 +57,7 @@ USERS
 + Fix corruption and possible crashes when using VIEWPORT SIZE to set the
   viewport to a size less than 80x25 but greater than the current board
   dimensions. The viewport will now always be clamped to board size.
-+ Imported libmodplug 0.8.8.1 and rebased all patches.
++ Imported libmodplug 0.8.8.4 and rebased all patches.
 + Added experimental port to Pandora. See arch/pandora/README for more
   information. (Exophase)
 + Fix incorrectly changing horizontal mouse position on setting MOUSEY.
@@ -150,6 +150,8 @@ USERS
 + As of MZX 2.84, BOARD_COLOR will now ignore the under color of any
   object with a BG color of 0 that is on top of something.  Worlds that
   relied on this between 2.80 and 2.83 are unaffected. (Lachesis)
++ The DIVIDER counter's documentation has been updated to explain its
+  true purpose.
 + Chars 0 and 255 can now be selected from the Edit Chars submenu of
   the Global Info menu. Using char 255 on a kind that would have
   previously denied it now gives a warning dialog. (Lachesis)
