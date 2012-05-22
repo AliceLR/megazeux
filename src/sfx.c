@@ -164,7 +164,7 @@ void play_sfx(struct world *mzx_world, int sfxn)
 void play_str(char *str, int sfx_play)
 {
   int t1, oct = 3, note = 1, dur = 18, t2, last_note = -1,
-   digi_st = -1, digi_end = -1;
+   digi_st = -1, digi_end = -1, digi_played = 0;
   char chr;
   // Note trans. table from 1-7 (a-z) to 1-12
   char nn[7] = { 10, 12, 1, 3, 5, 6, 8 };
@@ -201,7 +201,7 @@ void play_str(char *str, int sfx_play)
     if(chr == 'X')
     {
       // Rest
-      if(!sfx_play)
+      if(!sfx_play && !(digi_st > 0))
         submit_sound(F_REST,dur);
 
       continue;
@@ -254,8 +254,8 @@ void play_str(char *str, int sfx_play)
           play_sample(sam_freq[note - 1] >> oct, str + digi_st, true);
 
           str[digi_end] = close_char;
-          digi_st = -1;
-          break;
+          digi_played = 1;
+          continue;
         }
       }
       else
@@ -339,6 +339,7 @@ void play_str(char *str, int sfx_play)
       } while(1);
 
       digi_end = t1;
+      digi_played = 0;
     }
 
     if(chr == '_')
@@ -351,7 +352,7 @@ void play_str(char *str, int sfx_play)
   }
 
   // Pending digital music?
-  if(digi_st > 0)
+  if((digi_st > 0) && (digi_played == 0))
   {
     str[digi_end] = 0;
 
