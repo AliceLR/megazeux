@@ -348,7 +348,7 @@ unsigned char get_id_char(struct board *src_board, int id_offset)
   }
 }
 
-unsigned char get_id_color(struct board *src_board, int id_offset)
+unsigned char get_id_board_color(struct board *src_board, int id_offset, int ignore_under)
 {
   enum thing cell_id;
   unsigned char normal_color;
@@ -416,12 +416,17 @@ unsigned char get_id_color(struct board *src_board, int id_offset)
 
   no_spec:
 
-  if(!(normal_color & 0xF0))
+  if(!(normal_color & 0xF0) && !(ignore_under))
   {
     normal_color |=
       (src_board->level_under_color[id_offset] & 0xF0);
   }
   return normal_color;
+}
+
+unsigned char get_id_color(struct board *src_board, int id_offset)
+{
+  return get_id_board_color(src_board, id_offset, 0);
 }
 
 void id_put(struct board *src_board, unsigned char x_pos, unsigned char y_pos,

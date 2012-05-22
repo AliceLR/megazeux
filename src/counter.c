@@ -410,7 +410,12 @@ static int board_color_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
   unsigned int offset = get_board_x_board_y_offset(mzx_world, id);
-  return get_id_color(mzx_world->current_board, offset);
+  int ignore_under = 1;
+
+  if((mzx_world->version >= 0x0250) && (mzx_world->version <= 0x0253))
+    ignore_under = 0;
+
+  return get_id_board_color(mzx_world->current_board, offset, ignore_under);
 }
 
 static int board_w_read(struct world *mzx_world,

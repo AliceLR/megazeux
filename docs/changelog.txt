@@ -147,6 +147,9 @@ USERS
   notably during the transport board scan. (Lachesis)
 + The abilities of PLAY "&file&" to play at multiple frequencies and
   to parse multiple files have been restored. (Lachesis)
++ As of MZX 2.84, BOARD_COLOR will now ignore the under color of any
+  object with a BG color of 0 that is on top of something.  Worlds that
+  relied on this between 2.80 and 2.83 are unaffected. (Lachesis)
 + Chars 0 and 255 can now be selected from the Edit Chars submenu of
   the Global Info menu. Using char 255 on a kind that would have
   previously denied it now gives a warning dialog. (Lachesis)
