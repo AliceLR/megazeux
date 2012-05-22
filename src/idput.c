@@ -68,10 +68,9 @@ unsigned char missile_color = 8;
 unsigned char id_dmg[128];
 
 static unsigned char get_special_id_char(struct board *src_board,
- enum thing cell_id, int offset)
+ enum thing cell_id, char param, int offset)
 {
   char *level_id = src_board->level_id;
-  char *level_param = src_board->level_param;
   int board_width = src_board->board_width;
   int board_height = src_board->board_height;
 
@@ -185,17 +184,17 @@ static unsigned char get_special_id_char(struct board *src_board,
 
     case ICE:
     {
-      return id_chars[ice_anim + level_param[offset]];
+      return id_chars[ice_anim + param];
     }
 
     case LAVA:
     {
-      return id_chars[lava_anim + level_param[offset]];
+      return id_chars[lava_anim + param];
     }
 
     case AMMO:
     {
-      if(level_param[offset] < 10)
+      if(param < 10)
         return id_chars[low_ammo];
       else
         return id_chars[hi_ammo];
@@ -203,12 +202,12 @@ static unsigned char get_special_id_char(struct board *src_board,
 
     case LIT_BOMB:
     {
-      return id_chars[lit_bomb + (level_param[offset] & 0x0F)];
+      return id_chars[lit_bomb + (param & 0x0F)];
     }
 
     case DOOR:
     {
-      if(level_param[offset] & 1)
+      if(param & 1)
         return id_chars[vert_door];
       else
         return id_chars[horiz_door];
@@ -216,33 +215,33 @@ static unsigned char get_special_id_char(struct board *src_board,
 
     case OPEN_DOOR:
     {
-      return id_chars[open_door + (level_param[offset] & 0x1F)];
+      return id_chars[open_door + (param & 0x1F)];
     }
 
     case CW_ROTATE:
     {
-      return id_chars[cw_anim + level_param[offset]];
+      return id_chars[cw_anim + param];
     }
 
     case CCW_ROTATE:
     {
-      return id_chars[ccw_anim + level_param[offset]];
+      return id_chars[ccw_anim + param];
     }
 
     case TRANSPORT:
     {
-      switch(level_param[offset] & 0x07)
+      switch(param & 0x07)
       {
         case 0:
-          return id_chars[trans_north + ((level_param[offset] >> 3) & 0x03)];
+          return id_chars[trans_north + ((param >> 3) & 0x03)];
         case 1:
-          return id_chars[trans_south + ((level_param[offset] >> 3) & 0x03)];
+          return id_chars[trans_south + ((param >> 3) & 0x03)];
         case 2:
-          return id_chars[trans_east  + ((level_param[offset] >> 3) & 0x03)];
+          return id_chars[trans_east  + ((param >> 3) & 0x03)];
         case 3:
-          return id_chars[trans_west  + ((level_param[offset] >> 3) & 0x03)];
+          return id_chars[trans_west  + ((param >> 3) & 0x03)];
         default:
-          return id_chars[trans_all   + ((level_param[offset] >> 3) & 0x03)];
+          return id_chars[trans_all   + ((param >> 3) & 0x03)];
       }
     }
 
@@ -250,73 +249,73 @@ static unsigned char get_special_id_char(struct board *src_board,
     case MISSILE:
     case SPIKE:
     {
-      return id_chars[thick_arrow + level_param[offset]];
+      return id_chars[thick_arrow + param];
     }
 
     case LAZER:
     {
-      if(level_param[offset] & 1)
-        return id_chars[vert_lazer + ((level_param[offset] >> 1) & 0x03)];
+      if(param & 1)
+        return id_chars[vert_lazer + ((param >> 1) & 0x03)];
       else
-        return id_chars[horiz_lazer + ((level_param[offset] >> 1) & 0x03)];
+        return id_chars[horiz_lazer + ((param >> 1) & 0x03)];
     }
 
     case BULLET:
     {
-      return id_chars[bullet_char + level_param[offset]];
+      return id_chars[bullet_char + param];
     }
 
     case FIRE:
     {
-      return id_chars[fire_anim + level_param[offset]];
+      return id_chars[fire_anim + param];
     }
 
     case LIFE:
     {
-      return id_chars[life_anim + level_param[offset]];
+      return id_chars[life_anim + param];
     }
 
     case RICOCHET_PANEL:
     {
-      return id_chars[ricochet_panels + level_param[offset]];
+      return id_chars[ricochet_panels + param];
     }
 
     case MINE:
     {
-      return id_chars[mine_anim + (level_param[offset] & 0x01)];
+      return id_chars[mine_anim + (param & 0x01)];
     }
 
     case SHOOTING_FIRE:
     {
-      return id_chars[shooting_fire_anim + (level_param[offset] & 0x01)];
+      return id_chars[shooting_fire_anim + (param & 0x01)];
     }
 
     case SEEKER:
     {
-      return id_chars[seeker_anim + (level_param[offset] & 0x03)];
+      return id_chars[seeker_anim + (param & 0x03)];
     }
 
     case BULLET_GUN:
     case SPINNING_GUN:
     {
-      return id_chars[thin_arrow + ((level_param[offset] >> 3) & 0x03)];
+      return id_chars[thin_arrow + ((param >> 3) & 0x03)];
     }
 
     case MISSILE_GUN:
     {
-      return id_chars[thick_arrow + ((level_param[offset] >> 3) & 0x03)];
+      return id_chars[thick_arrow + ((param >> 3) & 0x03)];
     }
 
     case SENSOR:
     {
-      int idx = level_param[offset];
+      int idx = param;
       return (src_board->sensor_list[idx])->sensor_char;
     }
 
     case ROBOT:
     case ROBOT_PUSHABLE:
     {
-      int idx = level_param[offset];
+      int idx = param;
       return (src_board->robot_list[idx])->robot_char;
     }
 
@@ -333,47 +332,26 @@ static unsigned char get_special_id_char(struct board *src_board,
   }
 }
 
-unsigned char get_id_char(struct board *src_board, int id_offset)
+static unsigned char get_special_id_color(struct board *src_board,
+ enum thing cell_id, char color, char param)
 {
-  unsigned char cell_id, cell_char;
-  cell_id = src_board->level_id[id_offset];
-  cell_char = id_chars[cell_id];
-
-  switch(cell_char)
-  {
-    case 255: return src_board->level_param[id_offset];
-    case 0: return
-      get_special_id_char(src_board, (enum thing)cell_id, id_offset);
-    default: return cell_char;
-  }
-}
-
-unsigned char get_id_board_color(struct board *src_board, int id_offset, int ignore_under)
-{
-  enum thing cell_id;
-  unsigned char normal_color;
-  unsigned char spec_color;
-
-  cell_id = (enum thing)src_board->level_id[id_offset];
-  normal_color = src_board->level_color[id_offset];
-  spec_color = 0;
+  char normal_color = color, spec_color = 0;
   switch(cell_id)
   {
     case ENERGIZER:
-      spec_color = id_chars[energizer_glow + src_board->level_param[id_offset]];
+      spec_color = id_chars[energizer_glow + param];
       break;
 
     case EXPLOSION:
-      normal_color =
-       id_chars[explosion_colors + (src_board->level_param[id_offset] & 0x0F)];
-      goto no_spec;
+      spec_color = id_chars[explosion_colors + (param & 0x0F)];
+      break;
 
     case FIRE:
-      spec_color = id_chars[fire_colors + src_board->level_param[id_offset]];
+      spec_color = id_chars[fire_colors + param];
       break;
 
     case LIFE:
-      spec_color = id_chars[life_colors + src_board->level_param[id_offset]];
+      spec_color = id_chars[life_colors + param];
       break;
 
     case WHIRLPOOL_1:
@@ -384,13 +362,11 @@ unsigned char get_id_board_color(struct board *src_board, int id_offset, int ign
       break;
 
     case SHOOTING_FIRE:
-      spec_color =
-        id_chars[shooting_fire_colors + (src_board->level_param[id_offset]&1)];
+      spec_color = id_chars[shooting_fire_colors + (param&1)];
       break;
 
     case SEEKER:
-      spec_color =
-        id_chars[seeker_colors + (src_board->level_param[id_offset] & 0x03)];
+      spec_color = id_chars[seeker_colors + (param & 0x03)];
       break;
 
     case SCROLL:
@@ -398,12 +374,11 @@ unsigned char get_id_board_color(struct board *src_board, int id_offset, int ign
       break;
 
     case PLAYER: /* player */
-      normal_color = id_chars[player_color];
+      return id_chars[player_color];
 
     default:
-      goto no_spec;
+      return color;
   }
-
   if(!(spec_color & 0xF0))
   {
     normal_color &= 0xF0;
@@ -413,20 +388,69 @@ unsigned char get_id_board_color(struct board *src_board, int id_offset, int ign
   {
     normal_color = spec_color;
   }
+  return normal_color;
+}
 
-  no_spec:
+unsigned char get_id_char(struct board *src_board, int id_offset)
+{
+  unsigned char cell_id, cell_char;
+  cell_id = src_board->level_id[id_offset];
+  cell_char = id_chars[cell_id];
 
-  if(!(normal_color & 0xF0) && !(ignore_under))
+  switch(cell_char)
   {
-    normal_color |=
+    case 255: return src_board->level_param[id_offset];
+    case 0: return
+      get_special_id_char(src_board, (enum thing)cell_id,
+       src_board->level_param[id_offset], id_offset);
+    default: return cell_char;
+  }
+}
+
+unsigned char get_id_board_color(struct board *src_board, int id_offset, int ignore_under)
+{
+  unsigned char color = get_special_id_color(src_board,
+   (enum thing)src_board->level_id[id_offset],
+   src_board->level_color[id_offset],
+   src_board->level_param[id_offset]
+  );
+
+  if(!(color & 0xF0) && !(ignore_under))
+  {
+    color |=
       (src_board->level_under_color[id_offset] & 0xF0);
   }
-  return normal_color;
+  return color;
 }
 
 unsigned char get_id_color(struct board *src_board, int id_offset)
 {
   return get_id_board_color(src_board, id_offset, 0);
+}
+
+unsigned char get_id_under_char(struct board *src_board, int id_offset)
+{
+  unsigned char cell_id, cell_char;
+  cell_id = src_board->level_under_id[id_offset];
+  cell_char = id_chars[cell_id];
+
+  switch(cell_char)
+  {
+    case 255: return src_board->level_under_param[id_offset];
+    case 0: return
+      get_special_id_char(src_board, (enum thing)cell_id,
+       src_board->level_under_param[id_offset], id_offset);
+    default: return cell_char;
+  }
+}
+
+unsigned char get_id_under_color(struct board *src_board, int id_offset)
+{
+  return get_special_id_color(src_board,
+   (enum thing)src_board->level_under_id[id_offset],
+   src_board->level_under_color[id_offset],
+   src_board->level_under_param[id_offset]
+  );
 }
 
 void id_put(struct board *src_board, unsigned char x_pos, unsigned char y_pos,

@@ -38,6 +38,9 @@ CORE_LIBSPEC void draw_game_window(struct board *src_board,
 CORE_LIBSPEC unsigned char get_id_char(struct board *src_board, int id_offset);
 CORE_LIBSPEC unsigned char get_id_color(struct board *src_board, int id_offset);
 CORE_LIBSPEC unsigned char get_id_board_color(struct board *src_board, int id_offset, int ignore_under);
+CORE_LIBSPEC unsigned char get_id_under_char(struct board *src_board, int id_offset);
+CORE_LIBSPEC unsigned char get_id_under_color(struct board *src_board, int id_offset);
+
 
 #define bullet_char  306
 #define player_char  318
