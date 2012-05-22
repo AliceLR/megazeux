@@ -1120,6 +1120,255 @@ static void vco_write(struct world *mzx_world,
   }
 }
 
+/***** BOARD READING COUNTERS START *****/
+static int och_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset = 0;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((board->overlay_mode > 0) && (x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    return board->overlay[offset];
+  }
+
+  return -1;
+}
+
+static int oco_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset = 0;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((board->overlay_mode > 0) && (x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    return board->overlay_color[offset];
+  }
+
+  return -1;
+}
+
+// vco-syle board access
+static int bch_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset = 0;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    return get_id_char(board, offset);
+  }
+
+  return -1;
+}
+
+static int bco_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset = 0;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    return get_id_board_color(board, offset, 1); //1 == ignore_under
+  }
+
+  return -1;
+}
+
+static int bid_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    return board->level_id[offset];
+  }
+
+  return -1;
+}
+
+static void bid_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    board->level_id[offset] = value;
+  }
+}
+
+static int bpr_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    return board->level_param[offset];
+  }
+
+  return -1;
+}
+
+static void bpr_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    board->level_param[offset] = value;
+  }
+}
+
+//vco style under-board access
+static int uch_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    return get_id_under_char(board, offset);
+  }
+
+  return -1;
+}
+
+static int uco_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    return get_id_under_color(board, offset);
+  }
+
+  return -1;
+}
+
+static int uid_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    return board->level_under_id[offset];
+  }
+
+  return -1;
+}
+
+static void uid_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    board->level_under_id[offset] = value;
+  }
+}
+
+static int upr_read(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    return board->level_under_param[offset];
+  }
+
+  return -1;
+}
+
+static void upr_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  struct board *board = mzx_world->current_board;
+  unsigned int x = 0, y = 0, offset;
+  unsigned int board_width = board->board_width;
+  unsigned int board_height = board->board_height;
+  translate_coordinates(name + 3, &x, &y);
+
+  if((x < board_width) && (y < board_height))
+  {
+    offset = x + (y * board_width);
+    board->level_under_param[offset] = value;
+  }
+}
+
+/***** END THE STUPID BOARD ACCESS COUNTERS *****/
+
 static int char_byte_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -2115,7 +2364,11 @@ static const struct function_counter builtin_counters[] =
   { "arctan!,!", 0x0254, atan2_read, NULL },                         // 2.84
   { "asin!", 0x0244, asin_read, NULL },                              // 2.68
   { "atan!", 0x0244, atan_read, NULL },                              // 2.68
+  { "bch!,!", 0x0254, bch_read, NULL },                              // 2.84
+  { "bco!,!", 0x0254, bco_read, NULL },                              // 2.84
+  { "bid!,!", 0x0254, bid_read, bid_write },                         // 2.84
   { "bimesg", 0x0209, NULL, bimesg_write },                          // 2.51s3.2
+  { "bpr!,!", 0x0254, bpr_read, bpr_write },                         // 2.84
   { "blue_value", 0x0209, blue_value_read, blue_value_write },       // 2.60
   { "board_char", 0x0209, board_char_read, NULL },                   // 2.60
   { "board_color", 0x0209, board_color_read, NULL },                 // 2.60
@@ -2174,6 +2427,8 @@ static const struct function_counter builtin_counters[] =
   { "mousey", 0x0208, mousey_read, mousey_write },                   // 2.51s1
   { "multiplier", 0x0244, multiplier_read, multiplier_write },       // 2.68
   { "mzx_speed", 0x0209, mzx_speed_read, mzx_speed_write },          // 2.60
+  { "och!,!", 0x0254, och_read, NULL },                              // 2.84
+  { "oco!,!", 0x0254, oco_read, NULL },                              // 2.84
   { "overlay_char", 0x0209, overlay_char_read, NULL },               // 2.60
   { "overlay_color", 0x0209, overlay_color_read, NULL },             // 2.60
   { "overlay_mode", 0x0209, overlay_mode_read, NULL },               // 2.60
@@ -2237,6 +2492,14 @@ static const struct function_counter builtin_counters[] =
   { "time_hours", 0x0209, time_hours_read, NULL },                   // 2.60
   { "time_minutes", 0x0209, time_minutes_read, NULL },               // 2.60
   { "time_seconds", 0x0209, time_seconds_read, NULL },               // 2.60
+  { "uch!,!", 0x0254, uch_read, NULL },                              // 2.84
+  { "uco!,!", 0x0254, uco_read, NULL },                              // 2.84
+  { "uid!,!", 0x0254, uid_read, uid_write },                         // 2.84
+//  { "under_char", 0x0254, under_char_read, NULL },                   // 2.84
+//  { "under_color", 0x0254, under_color_read, NULL },                 // 2.84
+//  { "under_id", 0x0254, under_id_read, under_id_write },             // 2.84
+//  { "under_param", 0x0254, under_param_read, under_param_write },    // 2.84
+  { "upr!,!", 0x0254, upr_read, upr_write },                         // 2.84
   { "vch!,!", 0x0248, vch_read, vch_write },                         // 2.69c
   { "vco!,!", 0x0248, vco_read, vco_write },                         // 2.69c
   { "vertpld", 0, vertpld_read, NULL },                              // <=2.51
