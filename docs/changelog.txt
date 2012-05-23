@@ -152,6 +152,8 @@ USERS
   relied on this between 2.80 and 2.83 are unaffected. (Lachesis)
 + The DIVIDER counter's documentation has been updated to explain its
   true purpose.
++ Fixed an editor bug where canceling a world load could cause MZX to
+  forget the filename of the current world. (Lachesis)
 + Chars 0 and 255 can now be selected from the Edit Chars submenu of
   the Global Info menu. Using char 255 on a kind that would have
   previously denied it now gives a warning dialog. (Lachesis)

@@ -1979,12 +1979,15 @@ static void __edit_world(struct world *mzx_world)
           if(!modified || !confirm(mzx_world,
            "Load: World has not been saved, are you sure?"))
           {
-            if(!choose_file_ch(mzx_world, world_ext, current_world,
+            char load_world[MAX_PATH];
+            strcpy(load_world, current_world);
+            if(!choose_file_ch(mzx_world, world_ext, load_world,
              "Load World", 1))
             {
               int fade;
               // Load world curr_file
               end_module();
+              strcpy(current_world, load_world);
               if(!reload_world(mzx_world, current_world, &fade))
                 create_blank_world(mzx_world);
 
