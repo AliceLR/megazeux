@@ -139,6 +139,8 @@ USERS
   port, this construct would result in the lead-in file failing to play
   and the wildcard mod restarting when the player re-entered and re-
   exited the board. (Lachesis)
++ Fixed a bug where mod "*" would cause the mod to restart when entering
+  another board with the same playing mod. (Lachesis)
 + ALT+D (Default palette) now requires a confirmation. (Lachesis)
 + The COMMANDS counter is now saved as a 32-bit variable. (Lachesis)
 + The LOOPCOUNT counter has been moved to save-only data and is now
