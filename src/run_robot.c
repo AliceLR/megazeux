@@ -91,7 +91,8 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
       load_board_module(src_board);
     }
 
-    strcpy(src_board->mod_playing, "*");
+    src_board->mod_playing[0] = '*';
+    src_board->mod_playing[1] = 0;
   }
   else
   {
@@ -101,8 +102,7 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
       load_board_module(src_board);
   }
 
-  if(strcmp(src_board->mod_playing, "*"))
-    strcpy(mzx_world->real_mod_playing, filename);
+  strcpy(mzx_world->real_mod_playing, filename);
 }
 
 static void save_player_position(struct world *mzx_world, int pos)
