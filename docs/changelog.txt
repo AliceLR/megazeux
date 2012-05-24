@@ -152,6 +152,8 @@ USERS
 + As of MZX 2.84, BOARD_COLOR will now ignore the under color of any
   object with a BG color of 0 that is on top of something.  Worlds that
   relied on this between 2.80 and 2.83 are unaffected. (Lachesis)
++ Setting BIMESG to 0 will now disable Game Over's auto-centering of the
+  message row. (Lachesis)
 + The DIVIDER counter's documentation has been updated to explain its
   true purpose.
 + Fixed an editor bug where canceling a world load could cause MZX to

@@ -1254,8 +1254,14 @@ static int update(struct world *mzx_world, int game, int *fadein)
     else
     {
       set_mesg(mzx_world, "Game over");
-      src_board->b_mesg_row = 24;
-      src_board->b_mesg_col = -1;
+      /* I can't imagine anything actually relied on this obtuse misbehavior
+       * but it's good to version lock anyhow.
+       */
+      if((mzx_world->version <= 0x0253) || mzx_world->bi_mesg_status)
+      {
+        src_board->b_mesg_row = 24;
+        src_board->b_mesg_col = -1;
+      }
       if(mzx_world->game_over_sfx)
         play_sfx(mzx_world, 24);
       mzx_world->dead = 1;
