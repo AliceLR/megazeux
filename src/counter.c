@@ -1262,7 +1262,7 @@ static void bpr_write(struct world *mzx_world,
   }
 }
 
-//vco style under-board access
+//vco style under-board access.  Ignore all attempts if upper-board is A_UNDER
 static int uch_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
@@ -1271,12 +1271,11 @@ static int uch_read(struct world *mzx_world,
   unsigned int board_width = board->board_width;
   unsigned int board_height = board->board_height;
   translate_coordinates(name + 3, &x, &y);
-
-  if((x < board_width) && (y < board_height))
-  {
     offset = x + (y * board_width);
+
+  if((x < board_width) && (y < board_height) &&
+   !(flags[(int)board->level_id[offset]] & A_UNDER))
     return get_id_under_char(board, offset);
-  }
 
   return -1;
 }
@@ -1289,12 +1288,11 @@ static int uco_read(struct world *mzx_world,
   unsigned int board_width = board->board_width;
   unsigned int board_height = board->board_height;
   translate_coordinates(name + 3, &x, &y);
+  offset = x + (y * board_width);
 
-  if((x < board_width) && (y < board_height))
-  {
-    offset = x + (y * board_width);
+  if((x < board_width) && (y < board_height) &&
+   !(flags[(int)board->level_id[offset]] & A_UNDER))
     return get_id_under_color(board, offset);
-  }
 
   return -1;
 }
@@ -1307,12 +1305,11 @@ static int uid_read(struct world *mzx_world,
   unsigned int board_width = board->board_width;
   unsigned int board_height = board->board_height;
   translate_coordinates(name + 3, &x, &y);
+  offset = x + (y * board_width);
 
-  if((x < board_width) && (y < board_height))
-  {
-    offset = x + (y * board_width);
+  if((x < board_width) && (y < board_height) &&
+   !(flags[(int)board->level_id[offset]] & A_UNDER))
     return board->level_under_id[offset];
-  }
 
   return -1;
 }
@@ -1325,12 +1322,11 @@ static void uid_write(struct world *mzx_world,
   unsigned int board_width = board->board_width;
   unsigned int board_height = board->board_height;
   translate_coordinates(name + 3, &x, &y);
+  offset = x + (y * board_width);
 
-  if((x < board_width) && (y < board_height))
-  {
-    offset = x + (y * board_width);
+  if((x < board_width) && (y < board_height) &&
+   !(flags[(int)board->level_id[offset]] & A_UNDER))
     board->level_under_id[offset] = value;
-  }
 }
 
 static int upr_read(struct world *mzx_world,
@@ -1341,12 +1337,11 @@ static int upr_read(struct world *mzx_world,
   unsigned int board_width = board->board_width;
   unsigned int board_height = board->board_height;
   translate_coordinates(name + 3, &x, &y);
+  offset = x + (y * board_width);
 
-  if((x < board_width) && (y < board_height))
-  {
-    offset = x + (y * board_width);
+  if((x < board_width) && (y < board_height) &&
+   !(flags[(int)board->level_id[offset]] & A_UNDER))
     return board->level_under_param[offset];
-  }
 
   return -1;
 }
@@ -1359,12 +1354,11 @@ static void upr_write(struct world *mzx_world,
   unsigned int board_width = board->board_width;
   unsigned int board_height = board->board_height;
   translate_coordinates(name + 3, &x, &y);
+  offset = x + (y * board_width);
 
-  if((x < board_width) && (y < board_height))
-  {
-    offset = x + (y * board_width);
+  if((x < board_width) && (y < board_height) &&
+   !(flags[(int)board->level_id[offset]] & A_UNDER))
     board->level_under_param[offset] = value;
-  }
 }
 
 /***** END THE STUPID BOARD ACCESS COUNTERS *****/

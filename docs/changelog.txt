@@ -178,7 +178,9 @@ USERS
   new ones. (Lachesis)
 + New Counters: uchX,Y; ucoX,Y; uidX,Y; and uprX,Y are new shorthand
   access counters for the board's under layer.  The same limitations
-  apply to these as to their board counterparts. (Lachesis)
+  apply to these as to their board counterparts.  Additionally, these
+  counters will fail if the same spot on the normal board is occupied
+  by a floor-type (space, [dir]water, lava, fake, etc...). (Lachesis)
 + New Counters: ochX,Y and ocoX,Y are new shorthand access counters
   for the overlay.  Like OVERLAY_CHAR and OVERLAY_COLOR, these are
   read-only to discourage the user from writing to these instead of
