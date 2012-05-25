@@ -1091,11 +1091,11 @@ static int copy_block_param(struct world *mzx_world, int id, char *param, int *c
   {
     if(*(param + 1) == '+')
       type = 1;
-    if(*(param + 1) == '#')
+    else if(*(param + 1) == '#')
       type = 2;
-    if(*(param + 1) == '@')
+    else if(*(param + 1) == '@')
       type = 4;
-    if(is_string(param + 1))
+    else if(is_string(param + 1))
       type = 3;
   }
 
