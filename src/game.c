@@ -2619,6 +2619,7 @@ void set_mesg_direct(struct board *src_board, const char *str)
   strncpy(src_board->bottom_mesg, str, ROBOT_MAX_TR - 1);
   src_board->bottom_mesg[ROBOT_MAX_TR - 1] = 0;
   src_board->b_mesg_timer = MESG_TIMEOUT;
+  set_intro_mesg_timer(0);
 }
 
 // Rotate an area
