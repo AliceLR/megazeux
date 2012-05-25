@@ -917,8 +917,8 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
     }
     case 2:
     {
-      src_width = mzx_world->vlayer_width;
-      src_height = mzx_world->vlayer_height;
+      dest_width = mzx_world->vlayer_width;
+      dest_height = mzx_world->vlayer_height;
       break;
     }
     case 1:
