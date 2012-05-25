@@ -1278,6 +1278,7 @@ static void __edit_world(struct world *mzx_world)
           current_param = place_current_at_xy(mzx_world, current_id,
            current_color, current_param, cursor_board_x, cursor_board_y,
            &copy_robot, &copy_scroll, &copy_sensor, overlay_edit);
+          modified = 1;
         }
       }
     }
