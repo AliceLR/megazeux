@@ -827,6 +827,293 @@ void setup_overlay(struct board *src_board, int mode)
   src_board->overlay_mode = mode;
 }
 
+static void copy_block(struct world *mzx_world, int id, int x, int y,
+ int src_type, int dest_type, int src_x, int src_y, int width, int height,
+ int dest_x, int dest_y, char *dest, int dest_param)
+{
+  struct board *src_board = mzx_world->current_board;
+  int src_width = src_board->board_width;
+  int src_height = src_board->board_height;
+  int dest_width = src_board->board_width;
+  int dest_height = src_board->board_height;
+
+  prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+   src_width, src_height);
+
+  switch(src_type)
+  {
+    case 2:
+    {
+      src_width = mzx_world->vlayer_width;
+      src_height = mzx_world->vlayer_height;
+      break;
+    }
+    case 1:
+    {
+      if(!src_board->overlay_mode)
+        setup_overlay(src_board, 3);
+    }
+  }
+
+  switch(dest_type)
+  {
+    //string - dest_param is the terminator
+    case 3:
+    {
+      char str_buffer[ROBOT_MAX_TR];
+      prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+       src_width, src_height);
+      tr_msg(mzx_world, dest + 1, id, str_buffer);
+      switch(src_type)
+      {
+        case 0:
+        {
+          // Board to string
+          load_string_board(mzx_world, str_buffer, width, height,
+           dest_param, src_board->level_param + src_x + (src_y * src_width),
+           src_width);
+          break;
+        }
+        case 1:
+        {
+          // Overlay to string
+          load_string_board(mzx_world, str_buffer, width, height,
+           dest_param, src_board->overlay + src_x +
+           (src_y * src_width), src_width);
+          break;
+        }
+        case 2:
+        {
+          // Vlayer to string
+          load_string_board(mzx_world, str_buffer, width, height,
+           dest_param, mzx_world->vlayer_chars + src_x +
+           (src_y * src_width), src_width);
+          break;
+        }
+      }
+      return;
+    }
+    //mzm - if dest_param is !=0, the board is saved like a layer.
+    case 4:
+    {
+      char name_buffer[ROBOT_MAX_TR];
+      char *translated_name = cmalloc(MAX_PATH);
+      int err;
+
+      tr_msg(mzx_world, dest + 2, id, name_buffer);
+
+      if(dest_param && !src_type)
+        src_type = 3;
+
+      err = fsafetranslate(name_buffer, translated_name);
+      if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
+      {
+        save_mzm(mzx_world, translated_name, src_x, src_y,
+         width, height, src_type, 1);
+      }
+
+      free(translated_name);
+      return;
+    }
+    case 2:
+    {
+      src_width = mzx_world->vlayer_width;
+      src_height = mzx_world->vlayer_height;
+      break;
+    }
+    case 1:
+    {
+      if(!src_board->overlay_mode)
+        setup_overlay(src_board, 3);
+    }
+  }
+
+  prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
+   dest_width, dest_height);
+
+  // Clip and verify; the prefixers already handled the
+  // base coordinates, so just handle the width/height
+  if(width < 1)
+    width = 1;
+  if(height < 1)
+    height = 1;
+  if((src_x + width) > src_width)
+    width = src_width - src_x;
+  if((src_y + height) > src_height)
+    height = src_height - src_y;
+  if((dest_x + width) > dest_width)
+    width = dest_width - dest_x;
+  if((dest_y + height) > dest_height)
+    height = dest_height - dest_y;
+
+  debug("COPY BLOCK at %d %d for %d by %d to %d %d\n", src_x, src_y, width, height, dest_x, dest_y);
+
+  switch((dest_type << 2) | (src_type))
+  {
+    // Board to board
+    case 0:
+    {
+      char *id_buffer = cmalloc(width * height);
+      char *param_buffer = cmalloc(width * height);
+      char *color_buffer = cmalloc(width * height);
+      char *under_id_buffer = cmalloc(width * height);
+      char *under_param_buffer = cmalloc(width * height);
+      char *under_color_buffer = cmalloc(width * height);
+
+      copy_board_to_board_buffer(src_board, src_x, src_y, width,
+       height, id_buffer, param_buffer, color_buffer,
+       under_id_buffer, under_param_buffer, under_color_buffer,
+       src_board);
+      copy_board_buffer_to_board(src_board, dest_x, dest_y, width,
+       height, id_buffer, param_buffer, color_buffer,
+       under_id_buffer, under_param_buffer, under_color_buffer);
+
+      free(under_color_buffer);
+      free(under_param_buffer);
+      free(under_id_buffer);
+      free(color_buffer);
+      free(param_buffer);
+      free(id_buffer);
+      break;
+    }
+    // Overlay to board
+    case 1:
+    {
+      int overlay_offset = src_x + (src_y * src_width);
+
+      copy_layer_to_board(src_board, dest_x, dest_y, width, height,
+       src_board->overlay + overlay_offset,
+       src_board->overlay_color + overlay_offset, src_width,
+       CUSTOM_BLOCK);
+
+      break;
+    }
+    // Vlayer to board
+    case 2:
+    {
+      int vlayer_offset = src_x + (src_y * src_width);
+
+      copy_layer_to_board(src_board, dest_x, dest_y, width, height,
+       mzx_world->vlayer_chars + vlayer_offset,
+       mzx_world->vlayer_colors + vlayer_offset, src_width,
+       CUSTOM_BLOCK);
+
+      break;
+    }
+
+    // Board to overlay
+    case 4:
+    {
+      int overlay_offset = dest_x + (dest_y * dest_width);
+
+      copy_board_to_layer(src_board, src_x, src_y, width, height,
+       src_board->overlay + overlay_offset,
+       src_board->overlay_color + overlay_offset, src_width);
+
+      break;
+    }
+    // Overlay to overlay
+    case 5:
+    {
+      if(src_board->overlay_mode)
+      {
+        char *char_buffer = cmalloc(width * height);
+        char *color_buffer = cmalloc(width * height);
+        copy_layer_to_buffer(src_x, src_y, width, height,
+         src_board->overlay, src_board->overlay_color,
+         char_buffer, color_buffer, src_width);
+        copy_buffer_to_layer(dest_x, dest_y, width, height,
+         char_buffer, color_buffer, src_board->overlay,
+         src_board->overlay_color, dest_width);
+
+        free(color_buffer);
+        free(char_buffer);
+      }
+
+      break;
+    }
+    // Vlayer to overlay
+    case 6:
+    {
+      copy_layer_to_layer(src_x, src_y, dest_x, dest_y, width,
+       height, mzx_world->vlayer_chars, mzx_world->vlayer_colors,
+       src_board->overlay, src_board->overlay_color, src_width,
+       dest_width);
+
+      break;
+    }
+
+    // Board to vlayer
+    case 8:
+    {
+      int vlayer_offset = dest_x + (dest_y * dest_width);
+
+      copy_board_to_layer(src_board, src_x, src_y, width, height,
+       mzx_world->vlayer_chars + vlayer_offset,
+       mzx_world->vlayer_colors + vlayer_offset, dest_width);
+
+      break;
+    }
+    // Overlay to vlayer
+    case 9:
+    {
+      copy_layer_to_layer(src_x, src_y, dest_x, dest_y, width,
+       height, src_board->overlay, src_board->overlay_color,
+       mzx_world->vlayer_chars, mzx_world->vlayer_colors,
+       src_width, dest_width);
+
+      break;
+    }
+    // Vlayer to vlayer
+    case 10:
+    {
+      char *char_buffer = cmalloc(width * height);
+      char *color_buffer = cmalloc(width * height);
+
+      copy_layer_to_buffer(src_x, src_y, width, height,
+       mzx_world->vlayer_chars, mzx_world->vlayer_colors,
+       char_buffer, color_buffer, src_width);
+      copy_buffer_to_layer(dest_x, dest_y, width, height,
+       char_buffer, color_buffer, mzx_world->vlayer_chars,
+       mzx_world->vlayer_colors, dest_width);
+
+      free(color_buffer);
+      free(char_buffer);
+      break;
+    }
+  }
+}
+
+// Gets the type for a single copy block param. Run on all four to get big prize (????)
+static int copy_block_param(struct world *mzx_world, int id, char *param, int *coord) {
+  int type = 0;
+  if(*param)
+  {
+    if(*(param + 1) == '+')
+      type = 1;
+    if(*(param + 1) == '#')
+      type = 2;
+    if(*(param + 1) == '@')
+      type = 4;
+    if(is_string(param + 1))
+      type = 3;
+  }
+
+  if(type == 0)
+  {
+    *coord = parse_param(mzx_world, param, id);
+  }
+  else
+
+  if((type == 1) || (type == 2))
+  {
+    char src_char_buffer[ROBOT_MAX_TR];
+    tr_msg(mzx_world, param + 2, id, src_char_buffer);
+    *coord = strtol(src_char_buffer, NULL, 10);
+  }
+  return type;
+}
+
 void replace_player(struct world *mzx_world)
 {
   struct board *src_board = mzx_world->current_board;
@@ -3562,20 +3849,32 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_COPY: // copy x y x y
       {
-        int src_x = parse_param(mzx_world, cmd_ptr + 1, id);
-        char *p2 = next_param_pos(cmd_ptr + 1);
-        int src_y = parse_param(mzx_world, p2, id);
+        char *p1 = cmd_ptr + 1;
+        char *p2 = next_param_pos(p1);
         char *p3 = next_param_pos(p2);
-        int dest_x = parse_param(mzx_world, p3, id);
         char *p4 = next_param_pos(p3);
-        int dest_y = parse_param(mzx_world, p4, id);
+        int src_x, src_y, dest_x, dest_y;
 
-        prefix_first_last_xy(mzx_world, &src_x, &src_y,
-         &dest_x, &dest_y, x, y);
+        int src_type = -1, dest_type = 1;
+        int type[4] = { -1 };
 
-        copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
+        type[0] = copy_block_param(mzx_world, id, p1, &src_x);
+        type[1] = copy_block_param(mzx_world, id, p2, &src_y);
+        type[2] = copy_block_param(mzx_world, id, p3, &dest_x);
+        type[3] = copy_block_param(mzx_world, id, p4, &dest_y);
 
-        if((dest_x == x) && (dest_y == y))
+        if((type[0] == type[1]) && (type[0] <= 2))
+          src_type = type[0];
+        if((type[2] == type[3]) && (type[2] <= 2))
+          dest_type = type[2];
+
+        if((src_type < 0) || (dest_type < 0))
+          break;
+
+        copy_block(mzx_world, id, x, y, src_type, dest_type, src_x, src_y, 1, 1,
+         dest_x, dest_y, NULL, 0);
+
+        if((dest_x == x) && (dest_y == y) && (dest_type == 0))
           return;
 
         update_blocked = 1;
@@ -4447,6 +4746,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       }
 
       case ROBOTIC_CMD_COPY_BLOCK: // Copy block sx sy width height dx dy
+      case ROBOTIC_CMD_COPY_OVERLAY_BLOCK: // Copy overlay block etc
       {
         char *p1 = cmd_ptr + 1;
         char *p2 = next_param_pos(p1);
@@ -4457,251 +4757,34 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         int src_x, src_y, dest_x, dest_y;
         int width = parse_param(mzx_world, p3, id);
         int height = parse_param(mzx_world, p4, id);
-        int src_width = board_width;
-        int src_height = board_height;
-        int dest_width = board_width;
-        int dest_height = board_height;
 
-        // 0 is board, 1 is overlay, 2 is vlayer
-        // src_type cannot be overlay here...
-        int src_type = 0, dest_type = 0;
-        if((*p1) && (*(p1 + 1) == '#'))
-        {
-          char src_char_buffer[ROBOT_MAX_TR];
-          src_width = mzx_world->vlayer_width;
-          src_height = mzx_world->vlayer_height;
-          src_type = 2;
-          tr_msg(mzx_world, p1 + 2, id, src_char_buffer);
-          src_x = strtol(src_char_buffer, NULL, 10);
-        }
-        else
-        {
-          src_x = parse_param(mzx_world, p1, id);
-        }
+        // 0 is board, 1 is overlay, 2 is vlayer (dest: 3 is string, 4 is mzm)
+        int type[4] = { 0 };
+        int src_type = -1, dest_type = -1;
+        type[0] = copy_block_param(mzx_world, id, p1, &src_x);
+        type[1] = copy_block_param(mzx_world, id, p2, &src_y);
+        type[2] = copy_block_param(mzx_world, id, p5, &dest_x);
+        type[3] = copy_block_param(mzx_world, id, p6, &dest_y);
 
-        if((*p2) && (*(p2 + 1) == '#'))
+        if((type[0] == type[1]) && (type[0] <= 2))
+          src_type = type[0];
+
+        if((type[2] == type[3]) || ((type[2] > 2) && (type[3] == 0)))
+          dest_type = type[2];
+
+        //something is wrong with the params, abort
+        if((src_type < 0) || (dest_type < 0))
+          break;
+
+        if (cmd == ROBOTIC_CMD_COPY_OVERLAY_BLOCK)
         {
-          char src_char_buffer[ROBOT_MAX_TR];
-          src_width = mzx_world->vlayer_width;
-          src_height = mzx_world->vlayer_height;
-          src_type = 2;
-          tr_msg(mzx_world, p2 + 2, id, src_char_buffer);
-          src_y = strtol(src_char_buffer, NULL, 10);
-        }
-        else
-        {
-          src_y = parse_param(mzx_world, p2, id);
+          src_type ^= 1;
+          if(dest_type < 2)
+            dest_type ^= 1;
         }
 
-        if(*p5)
-        {
-          if(*(p5 + 1) == '#')
-          {
-            dest_width = mzx_world->vlayer_width;
-            dest_height = mzx_world->vlayer_height;
-            dest_type = 2;
-          }
-          else
-
-          if(*(p5 + 1) == '+')
-          {
-            dest_type = 1;
-          }
-          else
-
-          if(*(p5 + 1) == '@')
-          {
-            int copy_type = parse_param(mzx_world, p6, id);
-            char name_buffer[ROBOT_MAX_TR];
-            char *translated_name = cmalloc(MAX_PATH);
-            int err;
-
-            tr_msg(mzx_world, p5 + 2, id, name_buffer);
-            prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
-             src_width, src_height);
-
-            if(copy_type && !src_type)
-              src_type = 3;
-
-            err = fsafetranslate(name_buffer, translated_name);
-            if(err == -FSAFE_SUCCESS || err == -FSAFE_MATCH_FAILED)
-            {
-              save_mzm(mzx_world, translated_name, src_x, src_y,
-               width, height, src_type, 1);
-            }
-
-            free(translated_name);
-            break;
-          }
-          else
-
-          if(is_string(p5 + 1))
-          {
-            char str_buffer[ROBOT_MAX_TR];
-            int t_char = parse_param(mzx_world, p6, id);
-            prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
-             src_width, src_height);
-            tr_msg(mzx_world, p5 + 1, id, str_buffer);
-            switch(src_type)
-            {
-              case 0:
-              {
-                // Board to string
-                load_string_board(mzx_world, str_buffer, width, height,
-                 t_char, level_param + src_x + (src_y * board_width),
-                 board_width);
-                break;
-              }
-              case 2:
-              {
-                // Vlayer to string
-                int vlayer_width = mzx_world->vlayer_width;
-                load_string_board(mzx_world, str_buffer, width, height,
-                 t_char, mzx_world->vlayer_chars + src_x +
-                 (src_y * vlayer_width), vlayer_width);
-                break;
-              }
-            }
-            break;
-          }
-        }
-
-        if(*p6)
-        {
-          if(*(p6 + 1) == '#')
-          {
-            dest_width = mzx_world->vlayer_width;
-            dest_height = mzx_world->vlayer_height;
-            dest_type = 2;
-          }
-          else
-
-          if(*(p6 + 1) == '+')
-          {
-            dest_type = 1;
-          }
-        }
-
-        if(dest_type)
-        {
-          char dest_char_buffer[ROBOT_MAX_TR];
-          tr_msg(mzx_world, p5 + 1, id, dest_char_buffer);
-          dest_x = strtol(dest_char_buffer + 1, NULL, 10);
-          tr_msg(mzx_world, p6 + 1, id, dest_char_buffer);
-          dest_y = strtol(dest_char_buffer + 1, NULL, 10);
-        }
-        else
-        {
-          dest_x = parse_param(mzx_world, p5, id);
-          dest_y = parse_param(mzx_world, p6, id);
-        }
-
-        prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
-         src_width, src_height);
-        prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
-         dest_width, dest_height);
-
-        // Clip and verify; the prefixers already handled the
-        // base coordinates, so just handle the width/height
-        if(width < 1)
-          width = 1;
-        if(height < 1)
-          height = 1;
-        if((src_x + width) > src_width)
-          width = src_width - src_x;
-        if((src_y + height) > src_height)
-          height = src_height - src_y;
-        if((dest_x + width) > dest_width)
-          width = dest_width - dest_x;
-        if((dest_y + height) > dest_height)
-          height = dest_height - dest_y;
-
-        switch((dest_type << 2) | (src_type))
-        {
-          // Board to board
-          case 0:
-          {
-            char *id_buffer = cmalloc(width * height);
-            char *param_buffer = cmalloc(width * height);
-            char *color_buffer = cmalloc(width * height);
-            char *under_id_buffer = cmalloc(width * height);
-            char *under_param_buffer = cmalloc(width * height);
-            char *under_color_buffer = cmalloc(width * height);
-
-            copy_board_to_board_buffer(src_board, src_x, src_y, width,
-             height, id_buffer, param_buffer, color_buffer,
-             under_id_buffer, under_param_buffer, under_color_buffer,
-             src_board);
-            copy_board_buffer_to_board(src_board, dest_x, dest_y, width,
-             height, id_buffer, param_buffer, color_buffer,
-             under_id_buffer, under_param_buffer, under_color_buffer);
-            update_blocked = 1;
-
-            free(under_color_buffer);
-            free(under_param_buffer);
-            free(under_id_buffer);
-            free(color_buffer);
-            free(param_buffer);
-            free(id_buffer);
-            break;
-          }
-
-          // Vlayer to board
-          case 2:
-          {
-            int vlayer_width = mzx_world->vlayer_width;
-            int vlayer_offset = src_x + (src_y * vlayer_width);
-            copy_layer_to_board(src_board, dest_x, dest_y, width, height,
-             mzx_world->vlayer_chars + vlayer_offset,
-             mzx_world->vlayer_colors + vlayer_offset, vlayer_width,
-             CUSTOM_BLOCK);
-            update_blocked = 1;
-            break;
-          }
-
-          // Board to overlay
-          case 4:
-          {
-            int overlay_offset = dest_x + (dest_y * board_width);
-
-            if(!src_board->overlay_mode)
-              setup_overlay(src_board, 3);
-
-            copy_board_to_layer(src_board, src_x, src_y, width, height,
-             src_board->overlay + overlay_offset,
-             src_board->overlay_color + overlay_offset, board_width);
-            break;
-          }
-
-          // Board to vlayer
-          case 8:
-          {
-            int vlayer_width = mzx_world->vlayer_width;
-            int vlayer_offset = dest_x + (dest_y * vlayer_width);
-            copy_board_to_layer(src_board, src_x, src_y, width, height,
-             mzx_world->vlayer_chars + vlayer_offset,
-             mzx_world->vlayer_colors + vlayer_offset, vlayer_width);
-            break;
-          }
-
-          // Vlayer to vlayer
-          case 10:
-          {
-            char *char_buffer = cmalloc(width * height);
-            char *color_buffer = cmalloc(width * height);
-
-            copy_layer_to_buffer(src_x, src_y, width, height,
-             mzx_world->vlayer_chars, mzx_world->vlayer_colors,
-             char_buffer, color_buffer, mzx_world->vlayer_width);
-            copy_buffer_to_layer(dest_x, dest_y, width, height,
-             char_buffer, color_buffer, mzx_world->vlayer_chars,
-             mzx_world->vlayer_colors, mzx_world->vlayer_width);
-
-            free(color_buffer);
-            free(char_buffer);
-            break;
-          }
-        }
+        copy_block(mzx_world, id, x, y, src_type, dest_type, src_x, src_y,
+         width, height, dest_x, dest_y, p5, dest_y);
 
         // If we got deleted, exit
         if(id)
@@ -4720,7 +4803,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       }
 
       // Copy overlay block sx sy width height dx dy
-      case ROBOTIC_CMD_COPY_OVERLAY_BLOCK:
       {
         char *p1 = cmd_ptr + 1;
         char *p2 = next_param_pos(p1);
@@ -4869,113 +4951,6 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           dest_y = parse_param(mzx_world, p6, id);
         }
 
-        prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
-         src_width, src_height);
-        prefix_last_xy_var(mzx_world, &dest_x, &dest_y, x, y,
-         dest_width, dest_height);
-
-        // Clip and verify; the prefixers already handled the
-        // base coordinates, so just handle the width/height
-        if(width < 1)
-          width = 1;
-        if(height < 1)
-          height = 1;
-        if((src_x + width) > src_width)
-          width = src_width - src_x;
-        if((src_y + height) > src_height)
-          height = src_height - src_y;
-        if((dest_x + width) > dest_width)
-          width = dest_width - dest_x;
-        if((dest_y + height) > dest_height)
-          height = dest_height - dest_y;
-
-        switch((dest_type << 2) | (src_type))
-        {
-          // Overlay to board
-          case 1:
-          {
-            int overlay_offset = src_x + (src_y * board_width);
-
-            if(!src_board->overlay_mode)
-              setup_overlay(src_board, 3);
-
-            copy_layer_to_board(src_board, dest_x, dest_y, width, height,
-             src_board->overlay + overlay_offset,
-             src_board->overlay_color + overlay_offset, board_width,
-             CUSTOM_BLOCK);
-            update_blocked = 1;
-
-            break;
-          }
-
-          // Overlay to overlay
-          case 5:
-          {
-            if(src_board->overlay_mode)
-            {
-              char *char_buffer = cmalloc(width * height);
-              char *color_buffer = cmalloc(width * height);
-              copy_layer_to_buffer(src_x, src_y, width, height,
-               src_board->overlay, src_board->overlay_color,
-               char_buffer, color_buffer, board_width);
-              copy_buffer_to_layer(dest_x, dest_y, width, height,
-               char_buffer, color_buffer, src_board->overlay,
-               src_board->overlay_color, board_width);
-              free(color_buffer);
-              free(char_buffer);
-            }
-            break;
-          }
-
-          // Vlayer to overlay
-          case 6:
-          {
-            int vlayer_width = mzx_world->vlayer_width;
-
-            if(!src_board->overlay_mode)
-              setup_overlay(src_board, 3);
-
-            copy_layer_to_layer(src_x, src_y, dest_x, dest_y, width,
-             height, mzx_world->vlayer_chars, mzx_world->vlayer_colors,
-             src_board->overlay, src_board->overlay_color, vlayer_width,
-             board_width);
-            break;
-          }
-
-          // Overlay to vlayer
-          case 9:
-          {
-            int vlayer_width = mzx_world->vlayer_width;
-
-            if(!src_board->overlay_mode)
-              setup_overlay(src_board, 3);
-
-            copy_layer_to_layer(src_x, src_y, dest_x, dest_y, width,
-             height, src_board->overlay, src_board->overlay_color,
-             mzx_world->vlayer_chars, mzx_world->vlayer_colors,
-             board_width, vlayer_width);
-            break;
-          }
-
-          // Vlayer to vlayer
-          case 10:
-          {
-            char *char_buffer = cmalloc(width * height);
-            char *color_buffer = cmalloc(width * height);
-
-            copy_layer_to_buffer(src_x, src_y, width, height,
-             mzx_world->vlayer_chars, mzx_world->vlayer_colors,
-             char_buffer, color_buffer, mzx_world->vlayer_width);
-            copy_buffer_to_layer(dest_x, dest_y, width, height,
-             char_buffer, color_buffer, mzx_world->vlayer_chars,
-             mzx_world->vlayer_colors, mzx_world->vlayer_width);
-
-            free(color_buffer);
-            free(char_buffer);
-            break;
-          }
-        }
-        break;
       }
 
       case ROBOTIC_CMD_CLIP_INPUT: // Clip input

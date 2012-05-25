@@ -190,6 +190,9 @@ USERS
 + MZM3 has been enabled for 2.84 and all following versions.  The
   difference between MZM3 and MZM2 is that MZM3 stores a copy of the
   world version, allowing the robot format to change. (Lachesis)
++ COPY can now take + and # prefixes to its arguments. COPY BLOCK and
+  COPY OVERLAY BLOCK can now take + prefixes to their first set of
+  coordinates. (Lachesis)
 
 DEVELOPERS
 
