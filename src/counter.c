@@ -2362,7 +2362,6 @@ static const struct function_counter builtin_counters[] =
   { "bco!,!", 0x0254, bco_read, NULL },                              // 2.84
   { "bid!,!", 0x0254, bid_read, bid_write },                         // 2.84
   { "bimesg", 0x0209, NULL, bimesg_write },                          // 2.51s3.2
-  { "bpr!,!", 0x0254, bpr_read, bpr_write },                         // 2.84
   { "blue_value", 0x0209, blue_value_read, blue_value_write },       // 2.60
   { "board_char", 0x0209, board_char_read, NULL },                   // 2.60
   { "board_color", 0x0209, board_color_read, NULL },                 // 2.60
@@ -2370,6 +2369,7 @@ static const struct function_counter builtin_counters[] =
   { "board_id", 0x0241, board_id_read, board_id_write },             // 2.65
   { "board_param", 0x0241, board_param_read, board_param_write },    // 2.65
   { "board_w", 0x0241, board_w_read, NULL },                         // 2.65
+  { "bpr!,!", 0x0254, bpr_read, bpr_write },                         // 2.84
   { "bullettype", 0, bullettype_read, bullettype_write },            // <=2.51
   { "buttons", 0x0208, buttons_read, NULL },                         // 2.51s1
   { "char_byte", 0x0209, char_byte_read, char_byte_write },          // 2.60
