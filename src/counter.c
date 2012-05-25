@@ -2120,7 +2120,7 @@ static void force_string_length(struct world *mzx_world, const char *name,
     *str = reallocate_string(mzx_world, *str, next, *length);
 
   /* Wipe string if the length has increased but not the allocated memory */
-  else if(*length > (*str)->length)
+  if(*length > (*str)->length)
     memset(&((*str)->value[(*str)->length]), ' ', (*length) - (*str)->length);
 }
 
