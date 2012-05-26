@@ -1345,8 +1345,7 @@ static int upr_read(struct world *mzx_world,
   offset = x + (y * board_width);
 
   if((x < board_width) && (y < board_height) &&
-   !(flags[(int)board->level_id[offset]] & A_UNDER) &&
-   (board->level_id[offset] < 122))
+   !(flags[(int)board->level_id[offset]] & A_UNDER))
     return board->level_under_param[offset];
 
   return -1;
@@ -1363,7 +1362,8 @@ static void upr_write(struct world *mzx_world,
   offset = x + (y * board_width);
 
   if((x < board_width) && (y < board_height) &&
-   !(flags[(int)board->level_id[offset]] & A_UNDER))
+   !(flags[(int)board->level_id[offset]] & A_UNDER) &&
+   (board->level_under_id[offset] < 122))
     board->level_under_param[offset] = value;
 }
 
