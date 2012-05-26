@@ -1215,6 +1215,7 @@ static int bid_read(struct world *mzx_world,
 static void bid_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
+  char cvalue = value;
   struct board *board = mzx_world->current_board;
   unsigned int x = 0, y = 0, offset;
   unsigned int board_width = board->board_width;
@@ -1224,7 +1225,8 @@ static void bid_write(struct world *mzx_world,
   if((x < board_width) && (y < board_height))
   {
     offset = x + (y * board_width);
-    board->level_id[offset] = value;
+    if((cvalue < SENSOR) && (board->level_id[offset] < SENSOR))
+      board->level_id[offset] = value;
   }
 }
 
@@ -1317,6 +1319,7 @@ static int uid_read(struct world *mzx_world,
 static void uid_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
+  char cvalue = value;
   struct board *board = mzx_world->current_board;
   unsigned int x = 0, y = 0, offset;
   unsigned int board_width = board->board_width;
@@ -1325,7 +1328,8 @@ static void uid_write(struct world *mzx_world,
   offset = x + (y * board_width);
 
   if((x < board_width) && (y < board_height) &&
-   !(flags[(int)board->level_id[offset]] & A_UNDER))
+   !(flags[(int)board->level_id[offset]] & A_UNDER) &&
+   (cvalue < SENSOR) && (board->level_under_id[offset] < SENSOR))
     board->level_under_id[offset] = value;
 }
 
