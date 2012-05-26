@@ -1226,7 +1226,7 @@ static void bid_write(struct world *mzx_world,
   {
     offset = x + (y * board_width);
     if((cvalue < SENSOR) && (board->level_id[offset] < SENSOR))
-      board->level_id[offset] = value;
+      board->level_id[offset] = cvalue;
   }
 }
 
@@ -1260,7 +1260,8 @@ static void bpr_write(struct world *mzx_world,
   if((x < board_width) && (y < board_height))
   {
     offset = x + (y * board_width);
-    board->level_param[offset] = value;
+    if(board->level_id[offset] < 122)
+      board->level_param[offset] = value;
   }
 }
 
@@ -1330,7 +1331,7 @@ static void uid_write(struct world *mzx_world,
   if((x < board_width) && (y < board_height) &&
    !(flags[(int)board->level_id[offset]] & A_UNDER) &&
    (cvalue < SENSOR) && (board->level_under_id[offset] < SENSOR))
-    board->level_under_id[offset] = value;
+    board->level_under_id[offset] = cvalue;
 }
 
 static int upr_read(struct world *mzx_world,
@@ -1344,7 +1345,8 @@ static int upr_read(struct world *mzx_world,
   offset = x + (y * board_width);
 
   if((x < board_width) && (y < board_height) &&
-   !(flags[(int)board->level_id[offset]] & A_UNDER))
+   !(flags[(int)board->level_id[offset]] & A_UNDER) &&
+   (board->level_id[offset] < 122))
     return board->level_under_param[offset];
 
   return -1;
