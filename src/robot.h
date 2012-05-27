@@ -84,6 +84,9 @@ CORE_LIBSPEC int duplicate_scroll(struct board *src_board,
  struct scroll *cur_scroll);
 CORE_LIBSPEC int duplicate_sensor(struct board *src_board,
  struct sensor *cur_sensor);
+CORE_LIBSPEC int send_robot_id_def(struct world *mzx_world, int robot_id,
+ const char *mesg, int ignore_lock);
+CORE_LIBSPEC void send_robot_all_def(struct world *mzx_world, const char *mesg);
 CORE_LIBSPEC void send_robot_def(struct world *mzx_world, int robot_id,
  int mesg_id);
 CORE_LIBSPEC void optimize_null_objects(struct board *src_board);

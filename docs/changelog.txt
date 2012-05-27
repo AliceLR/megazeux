@@ -75,6 +75,14 @@ FEATURES
 + COPY can now take + and # prefixes to its arguments. COPY BLOCK and
   COPY OVERLAY BLOCK can now take + prefixes to their first set of
   coordinates. (Lachesis)
++ Subroutine versions of TOUCH, BOMBED, INVINCO, PUSHED, PLAYERSHOT,
+  NEUTRALSHOT, ENEMYSHOT, SHOT, PLAYERHIT, LAZER, SPITFIRE, GOOPTOUCHED,
+  PLAYERHURT, KEY[char], KEYENTER, THUD, and EDGE have been added. These
+  should ALWAYS be used in conjunction with LOCKSELF/ZAP and #RETURN or
+  #TOP to keep the robot stack under control.  Please remember that THUD
+  and EDGE ignore LOCKSELF and their subroutine versions must be ZAPped.
+  JUSTENTERED, JUSTLOADED, and the sensor labels have been excluded from
+  this due to various reasons. (Lachesis)
 
 BUGFIXES
 

@@ -1228,8 +1228,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       if(status == HIT_EDGE)
       {
         // Send to edge, if no response, then to thud.
-        if(send_robot_id(mzx_world, id, "edge", 1))
-          send_robot_id(mzx_world, id, "thud", 1);
+        if(send_robot_id_def(mzx_world, id, "edge", 1))
+          send_robot_id_def(mzx_world, id, "thud", 1);
       }
       else if(status == NO_HIT)
       {
@@ -1251,7 +1251,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           goto breaker;
       }
       else
-        send_robot_id(mzx_world, id, "thud", 1);
+        send_robot_id_def(mzx_world, id, "thud", 1);
     }
 
     if(cur_robot->cur_prog_line == 0)

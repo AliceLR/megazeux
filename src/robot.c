@@ -931,73 +931,106 @@ int find_robot(struct board *src_board, const char *name,
   return 0;
 }
 
+/* Built-in label only wrappers for send_robot_id and send_robot_all */
+int send_robot_id_def(struct world *mzx_world, int robot_id, const char *mesg,
+ int ignore_lock)
+{
+  char submesg[strlen(mesg) + 1];
+  int result = send_robot_id(mzx_world, robot_id, mesg, ignore_lock), subresult;
+
+  //now, attempt to send the subroutine version of it
+  if(mzx_world->version >= 0x0254)
+  {
+    strcpy(submesg, "#");
+    strcat(submesg, mesg);
+    subresult = send_robot_id(mzx_world, robot_id, submesg, ignore_lock);
+    if(result && !subresult)
+      result = subresult;
+  }
+  return result;
+}
+
+void send_robot_all_def(struct world *mzx_world, const char *mesg)
+{
+  char submesg[strlen(mesg) + 1];
+  send_robot_all(mzx_world, mesg);
+
+  //now, attempt to send the subroutine version of it
+  if(mzx_world->version >= 0x0254)
+  {
+    strcpy(submesg, "#");
+    strcat(submesg, mesg);
+    send_robot_all(mzx_world, submesg);
+  }
+}
+
 void send_robot_def(struct world *mzx_world, int robot_id, int mesg_id)
 {
   switch(mesg_id)
   {
     case 0:
-      send_robot_id(mzx_world, robot_id, "TOUCH", 0);
+      send_robot_id_def(mzx_world, robot_id, "TOUCH", 0);
       break;
 
     case 1:
-      send_robot_id(mzx_world, robot_id, "BOMBED", 0);
+      send_robot_id_def(mzx_world, robot_id, "BOMBED", 0);
       break;
 
     case 2:
-      send_robot_all(mzx_world, "INVINCO");
+      send_robot_all_def(mzx_world, "INVINCO");
       break;
 
     case 3:
-      send_robot_id(mzx_world, robot_id, "PUSHED", 0);
+      send_robot_id_def(mzx_world, robot_id, "PUSHED", 0);
       break;
 
     case 4:
-      if(send_robot_id(mzx_world, robot_id, "PLAYERSHOT", 0))
+      if(send_robot_id_def(mzx_world, robot_id, "PLAYERSHOT", 0))
       {
-        send_robot_id(mzx_world, robot_id, "SHOT", 0);
+        send_robot_id_def(mzx_world, robot_id, "SHOT", 0);
       }
       break;
 
     case 5:
-      if(send_robot_id(mzx_world, robot_id, "NEUTRALSHOT", 0))
+      if(send_robot_id_def(mzx_world, robot_id, "NEUTRALSHOT", 0))
       {
-        send_robot_id(mzx_world, robot_id, "SHOT", 0);
+        send_robot_id_def(mzx_world, robot_id, "SHOT", 0);
       }
       break;
 
     case 6:
-      if(send_robot_id(mzx_world, robot_id, "ENEMYSHOT", 0))
+      if(send_robot_id_def(mzx_world, robot_id, "ENEMYSHOT", 0))
       {
-        send_robot_id(mzx_world, robot_id, "SHOT", 0);
+        send_robot_id_def(mzx_world, robot_id, "SHOT", 0);
       }
       break;
 
     case 7:
-      send_robot_all(mzx_world, "PLAYERHIT");
+      send_robot_all_def(mzx_world, "PLAYERHIT");
       break;
 
     case 8:
-      send_robot_id(mzx_world, robot_id, "LAZER", 0);
+      send_robot_id_def(mzx_world, robot_id, "LAZER", 0);
       break;
 
     case 9:
-      send_robot_id(mzx_world, robot_id, "SPITFIRE", 0);
+      send_robot_id_def(mzx_world, robot_id, "SPITFIRE", 0);
       break;
 
-    case 10:
+    case 10: //no subroutine version
       send_robot_all(mzx_world, "JUSTLOADED");
       break;
 
-    case 11:
+    case 11: //no subroutine version
       send_robot_all(mzx_world, "JUSTENTERED");
       break;
 
     case 12:
-      send_robot_all(mzx_world, "GOOPTOUCHED");
+      send_robot_all_def(mzx_world, "GOOPTOUCHED");
       break;
 
     case 13:
-      send_robot_all(mzx_world, "PLAYERHURT");
+      send_robot_all_def(mzx_world, "PLAYERHURT");
       break;
   }
 }

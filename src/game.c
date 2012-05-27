@@ -1792,7 +1792,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
       if(key_char)
       {
         keylbl[3] = key_char;
-        send_robot_all(mzx_world, keylbl);
+        send_robot_all_def(mzx_world, keylbl);
       }
 
       switch(key)
@@ -2086,7 +2086,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
         {
           int enter_menu_status =
            get_counter(mzx_world, "ENTER_MENU", 0);
-          send_robot_all(mzx_world, "KeyEnter");
+          send_robot_all_def(mzx_world, "KeyEnter");
 
           if(mzx_world->version < 0x0209 || enter_menu_status)
           {
