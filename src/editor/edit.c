@@ -3574,6 +3574,7 @@ static void __edit_world(struct world *mzx_world)
           int offset = cursor_board_x + (cursor_board_y * board_width);
           enum thing d_id = (enum thing)level_id[offset];
           int d_param = level_param[offset];
+          int new_param;
 
           if(d_id == SENSOR)
           {
@@ -3592,6 +3593,14 @@ static void __edit_world(struct world *mzx_world)
           if(is_signscroll(d_id))
           {
             edit_scroll(mzx_world, src_board->scroll_list[d_param]);
+            modified = 1;
+          }
+          else
+
+          if(is_storageless(current_id) &&
+           (0 <= (new_param = change_param(mzx_world, d_id, d_param, NULL, NULL, NULL))))
+          {
+            src_board->level_param[offset] = new_param;
             modified = 1;
           }
         }
