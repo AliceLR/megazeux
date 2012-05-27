@@ -1,21 +1,26 @@
-Git
+GIT
 
-USERS
+FEATURES
+
+BUGFIXES
 
 DEVELOPERS
 
-Month Day, 2012 - MZX 2.84
 
-Another bugfix release. There are also a few (minor) new features, but a
-bump in world/board/save magic has been avoided.
+
+June 1, 2012 - MZX 2.84
+
+The first version of MegaZeux to be released in two and a half years, this
+time with a vast number of bugfixes, several new features, and hopefully
+no new bugs.
 
 There's a new port to the Pandora platform from Exophase. There are no
-binaries for this platform yet, as I have not had time to set up the
+binaries for this platform yet, as ajs has not had time to set up the
 cross-compiler. Same goes for Android.
 
 Another major (internal) change this time around is that Exophase's
 experimental "debytecode" language modification has been merged. This still
-has some major bugs open against it, and missing features, so I won't be
+has some major bugs open against it, and missing features, so we won't be
 doing official releases yet. You can add support for this feature by
 passing "--enable-debytecode" to config.sh on all platforms.
 
@@ -23,141 +28,18 @@ Thanks to Terryn, Exophase and MZXGiant for their contributions and to
 Lancer-X, Old-Sckool and Lachesis who reported and tracked the majority
 of bugs this time round.
 
-USERS
+FEATURES
 
-
-+ Fixed a bug where LOAD_ROBOT or LOAD_BC would not reset the stack
-  pointer for newly loaded programs. This could cause crashes if a robot
-  popped the stack in the new program.
-+ Fixed a bug where range checking of BOARD_X and BOARD_Y would sometimes
-  not be done correctly, leading to crashes.
-+ Strings in the debug menu list no longer interpret any color codes they
-  may contain.
-+ Fixed a bug where a string would not be interpreted correctly if it
-  used a '.' character in a splice parameter expression. Expressions such
-  as IF "$str#('$str2.length'-4)" = "blah" THEN "label" will now work
-  correctly.
-+ Fixed negative sprN_cheight et al from crashing. (Exophase)
-+ Placement of objects on the player will be blocked with an error dialog
-  like DOS versions, instead of silently failing after setup. (MZXGiant)
-+ Fixed a bug where LOAD_ROBOT would not properly parse lines of imported
-  code that had leading whitespace. (MZXGiant)
-+ Fixed an integer wrapping bug in debytecode, disallowed numeric literals
-  outside of the bounds of a signed short. (MZXGiant)
-+ Fixed a bug that would corrupt the UI palette if "set color" was run
-  against a color index over 15. (MZXGiant)
-+ If either board dimension is less than the editor viewport, the character
-  and colors used to indicate space outside of the board are taken from
-  protected sets. In game, they are taken from the game's sets.
-+ Increase limit on difference for RANDOM "A" TO "B" to UINT_MAX rather
-  than INT_MAX - 1 as it was previously. Since the entire range represented
-  by a counter is now usable, there are no cases where RANDOM will "break".
-+ Fix avalanche rings and potions to limit boulder placement to 1/18,
-  matching the AVALANCHE command.
-+ Fix corruption and possible crashes when using VIEWPORT SIZE to set the
-  viewport to a size less than 80x25 but greater than the current board
-  dimensions. The viewport will now always be clamped to board size.
-+ Imported libmodplug 0.8.8.4 and rebased all patches.
 + Added experimental port to Pandora. See arch/pandora/README for more
   information. (Exophase)
-+ Fix incorrectly changing horizontal mouse position on setting MOUSEY.
-  (Mr_Alert)
-+ Fixed overflow into protected character set when "Revert to..." is
-  selected in the character editing dialog. (MZXGiant)
-+ Music and SFX now mute when the updater launches and are restored when
-  it is complete. (MZXGiant)
-+ Fix odd string behaviour when copying between strings that happen to
-  be stored close to each other in memory. This fixes a regression
-  introduced by the "crash when pasting to and from the same string"
-  fix in 2.82b.
-+ The size/offset parameters for strings can now be specified in either
-  order (#+ vs +#) and will behave correctly.
-+ Introduced SOCKS4/4a/5 support transparently into the network layer.
-  (MZXGiant)
-+ Revert bogus cycle-ending behaviour for SHOOT, SHOOTMISSILE,
-  SHOOTSEEKER and SPITFIRE.
-+ Improve cycle-ending compatibility with MZX versions prior to 2.80.
-  Fixes games such as Kya's Sword and Stones & Roks II.
-+ Restored shark's ability to move in goop.
-+ Clear SPR_YORDER upon loading a new world.
-+ When transitioning between boards, compare the module filenames of the
-  source and destination boards case-insensitively. A difference in case
-  will no longer cause the board module to be incorrectly restarted.
-+ Fixed rare rendering corruption in the load game dialog.
-+ Fixed a bug where SEND "robot" TO "#return" could corrupt the program
-  counter of the target robot if it had a stack pointer of zero.
-+ Fixed some security issues with SMZX_PALETTE and LOAD_BC counters.
-+ Only list/open regular files or symlinks to regular files in file
-  dialogs. Special files are now ignored.
-+ Opening directories with FWRITE_OPEN is now rejected properly on all
-  platforms.
 + Directories may now be opened with FREAD_OPEN.  This functionality
   can be used in conjunction with FREAD_POS and set "$str" FREAD.
   FREAD will set the string to "" when it has reached the end of the
   file listing.
-+ Fixed a bug where a file would be re-opened for read/write, even if
-  the file was missing or an I/O error occurred before saving.
-+ Fixed a bug where MZX could occasionally crash due to label list
-  corruption when copying robots from heap locations greater than
-  2^32 bytes apart (only affected 64bit builds).
-+ Stopped SET "var" <command> from assembling. Some invalid uses of
-  command tokens were already being ignored, but this was just luck.
-+ Sprites with color c?? (inherited "natural" colors) will correctly
-  inherit the colors of special characters such as the player and other
-  self-colored built-ins.
-+ Debytecode's legacy expression converter should use is_string()
-  instead of its own (buggy) hand-rolled version. Fixes crash when
-  converting CoAZ.
-+ The editor no longer incorrectly clamps the intelligence of sharks,
-  spitting tigers and spiders to <=4, and no longer clamps the HP of
-  dragons to <=4. (Lancer-X)
-+ Accept SET EDGE COLOR "string" in addition to SET EDGE COLOR c??.
-+ Fixed NDS port initialization on DSi devices. (asiekierka)
-+ Fixed a bug in the joystick code where centering an axis clears
-  the previous axis button. (iamgreaser)
-+ Fixed a bug that allowed vlayer->board COPY BLOCK to overwrite
-  player. Blocks that would overwrite the player are now ignored.
-+ Fixed a 2.81e regression that allowed SENDs to self to ignore
-  LOCKSELF.
-+ Setting $str.length now makes $str the length specified. (Lachesis)
-+ Caps Lock no longer interferes with dialog box text input. (Lachesis)
-+ Numbers can now be temporarily backspaced past their minimum value
-  to make typing a new number more intuitive in dialogs. (Lachesis)
-+ Increasing the size of a string with $str.length, $str.N, or with
-  a splice now wipes old string data with char 32s.
 + MZX_SPEED can now be set up to 16 by a robot or from the F2 dialog
   menu. (Lachesis)
-+ Dialogs (especially "Exit gameplay - Are you sure?") now require the
-  user to have actually hit ESC to close, making escaping busyloops
-  and message loops much easier. (Lachesis)
-+ Added a compatibility fix for different label caching in 2.80 through
-  2.83 that allowed constructs such as : "LABEL" / SEND "ALL" "LABEL"
-  on an unlocked robot to continue instead of getting caught in a loop.
-  The altered label caching caused #98485 Thanatos Insignia to lock up
-  in an unescapable busyloop in GIT versions. (Lachesis)
-+ MOD "[lead-in file]*" now works properly. In previous versions of the
-  port, this construct would result in the lead-in file failing to play
-  and the wildcard mod restarting when the player re-entered and re-
-  exited the board. (Lachesis)
-+ Fixed a bug where mod "*" would cause the mod to restart when entering
-  another board with the same playing mod. (Lachesis)
-+ ALT+D (Default palette) now requires a confirmation. (Lachesis)
-+ The COMMANDS counter is now saved as a 32-bit variable. (Lachesis)
-+ The LOOPCOUNT counter has been moved to save-only data and is now
-  saved as a 32-bit variable. (Lachesis)
-+ Fixed a bug where not all whirlpools were being considered as such,
-  notably during the transport board scan. (Lachesis)
-+ The abilities of PLAY "&file&" to play at multiple frequencies and
-  to parse multiple files have been restored. (Lachesis)
-+ As of MZX 2.84, BOARD_COLOR will now ignore the under color of any
-  object with a BG color of 0 that is on top of something.  Worlds that
-  relied on this between 2.80 and 2.83 are unaffected. (Lachesis)
-+ Setting BIMESG to 0 will now disable Game Over's auto-centering of the
-  message row. (Lachesis)
-+ The DIVIDER counter's documentation has been updated to explain its
-  true purpose.
-+ Fixed an editor bug where canceling a world load could cause MZX to
-  forget the filename of the current world. (Lachesis)
++ Numbers can now be temporarily backspaced past their minimum value
+  to make typing a new number more intuitive in dialogs. (Lachesis)
 + Chars 0 and 255 can now be selected from the Edit Chars submenu of
   the Global Info menu. Using char 255 on a kind that would have
   previously denied it now gives a warning dialog. (Lachesis)
@@ -194,6 +76,130 @@ USERS
   COPY OVERLAY BLOCK can now take + prefixes to their first set of
   coordinates. (Lachesis)
 
+BUGFIXES
+
++ Fixed a bug where LOAD_ROBOT or LOAD_BC would not reset the stack
+  pointer for newly loaded programs. This could cause crashes if a robot
+  popped the stack in the new program.
++ Fixed a bug where range checking of BOARD_X and BOARD_Y would sometimes
+  not be done correctly, leading to crashes.
++ Strings in the debug menu list no longer interpret any color codes they
+  may contain.
++ Fixed a bug where a string would not be interpreted correctly if it
+  used a '.' character in a splice parameter expression. Expressions such
+  as IF "$str#('$str2.length'-4)" = "blah" THEN "label" will now work
+  correctly.
++ Fixed negative sprN_cheight et al from crashing. (Exophase)
++ Placement of objects on the player will be blocked with an error dialog
+  like DOS versions, instead of silently failing after setup. (MZXGiant)
++ Fixed a bug where LOAD_ROBOT would not properly parse lines of imported
+  code that had leading whitespace. (MZXGiant)
++ Fixed an integer wrapping bug in debytecode, disallowed numeric literals
+  outside of the bounds of a signed short. (MZXGiant)
++ Fixed a bug that would corrupt the UI palette if "set color" was run
+  against a color index over 15. (MZXGiant)
++ If either board dimension is less than the editor viewport, the character
+  and colors used to indicate space outside of the board are taken from
+  protected sets. In game, they are taken from the game's sets.
++ Increase limit on difference for RANDOM "A" TO "B" to UINT_MAX rather
+  than INT_MAX - 1 as it was previously. Since the entire range represented
+  by a counter is now usable, there are no cases where RANDOM will "break".
++ Fix avalanche rings and potions to limit boulder placement to 1/18,
+  matching the AVALANCHE command.
++ Fix corruption and possible crashes when using VIEWPORT SIZE to set the
+  viewport to a size less than 80x25 but greater than the current board
+  dimensions. The viewport will now always be clamped to board size.
++ Fix incorrectly changing horizontal mouse position on setting MOUSEY.
+  (Mr_Alert)
++ Fixed overflow into protected character set when "Revert to..." is
+  selected in the character editing dialog. (MZXGiant)
++ Music and SFX now mute when the updater launches and are restored when
+  it is complete. (MZXGiant)
++ Fix odd string behaviour when copying between strings that happen to
+  be stored close to each other in memory. This fixes a regression
+  introduced by the "crash when pasting to and from the same string"
+  fix in 2.82b.
++ The size/offset parameters for strings can now be specified in either
+  order (#+ vs +#) and will behave correctly.
++ Revert bogus cycle-ending behaviour for SHOOT, SHOOTMISSILE,
+  SHOOTSEEKER and SPITFIRE.
++ Improve cycle-ending compatibility with MZX versions prior to 2.80.
+  Fixes games such as Kya's Sword and Stones & Roks II.
++ Restored shark's ability to move in goop.
++ Clear SPR_YORDER upon loading a new world.
++ When transitioning between boards, compare the module filenames of the
+  source and destination boards case-insensitively. A difference in case
+  will no longer cause the board module to be incorrectly restarted.
++ Fixed rare rendering corruption in the load game dialog.
++ Fixed a bug where SEND "robot" TO "#return" could corrupt the program
+  counter of the target robot if it had a stack pointer of zero.
++ Fixed some security issues with SMZX_PALETTE and LOAD_BC counters.
++ Only list/open regular files or symlinks to regular files in file
+  dialogs. Special files are now ignored.
++ Opening directories with FWRITE_OPEN is now rejected properly on all
+  platforms.
++ Fixed a bug where a file would be re-opened for read/write, even if
+  the file was missing or an I/O error occurred before saving.
++ Fixed a bug where MZX could occasionally crash due to label list
+  corruption when copying robots from heap locations greater than
+  2^32 bytes apart (only affected 64bit builds).
++ Stopped SET "var" <command> from assembling. Some invalid uses of
+  command tokens were already being ignored, but this was just luck.
++ Sprites with color c?? (inherited "natural" colors) will correctly
+  inherit the colors of special characters such as the player and other
+  self-colored built-ins.
++ Debytecode's legacy expression converter should use is_string()
+  instead of its own (buggy) hand-rolled version. Fixes crash when
+  converting CoAZ.
++ The editor no longer incorrectly clamps the intelligence of sharks,
+  spitting tigers and spiders to <=4, and no longer clamps the HP of
+  dragons to <=4. (Lancer-X)
++ Accept SET EDGE COLOR "string" in addition to SET EDGE COLOR c??.
++ Fixed NDS port initialization on DSi devices. (asiekierka)
++ Fixed a bug in the joystick code where centering an axis clears
+  the previous axis button. (iamgreaser)
++ Fixed a bug that allowed vlayer->board COPY BLOCK to overwrite
+  player. Blocks that would overwrite the player are now ignored.
++ Fixed a 2.81e regression that allowed SENDs to self to ignore
+  LOCKSELF.
++ Setting $str.length now makes $str the length specified. (Lachesis)
++ Caps Lock no longer interferes with dialog box text input. (Lachesis)
++ Increasing the size of a string with $str.length, $str.N, or with
+  a splice now wipes old string data with char 32s.
++ Dialogs (especially "Exit gameplay - Are you sure?") now require the
+  user to have actually hit ESC to close, making escaping busyloops
+  and message loops much easier. (Lachesis)
++ Added a compatibility fix for different label caching in 2.80 through
+  2.83 that allowed constructs such as : "LABEL" / SEND "ALL" "LABEL"
+  on an unlocked robot to continue instead of getting caught in a loop.
+  The altered label caching caused #98485 Thanatos Insignia to lock up
+  in an unescapable busyloop in GIT versions. (Lachesis)
++ MOD "[lead-in file]*" now works properly. In previous versions of the
+  port, this construct would result in the lead-in file failing to play
+  and the wildcard mod restarting when the player re-entered and re-
+  exited the board. (Lachesis)
++ Fixed a bug where mod "*" would cause the mod to restart when entering
+  another board with the same playing mod. (Lachesis)
++ ALT+D (Default palette) now requires a confirmation. (Lachesis)
++ The COMMANDS counter is now saved as a 32-bit variable. (Lachesis)
++ The LOOPCOUNT counter has been moved to save-only data and is now
+  saved as a 32-bit variable. (Lachesis)
++ Fixed a bug where not all whirlpools were being considered as such,
+  notably during the transport board scan. (Lachesis)
++ The abilities of PLAY "&file&" to play at multiple frequencies and
+  to parse multiple files have been restored. (Lachesis)
++ As of MZX 2.84, BOARD_COLOR will now ignore the under color of any
+  object with a BG color of 0 that is on top of something.  Worlds that
+  relied on this between 2.80 and 2.83 are unaffected. (Lachesis)
++ Setting BIMESG to 0 will now disable Game Over's auto-centering of the
+  message row. (Lachesis)
++ The DIVIDER counter's documentation has been updated to explain its
+  true purpose.
++ Fixed an editor bug where canceling a world load could cause MZX to
+  forget the filename of the current world. (Lachesis)
++ Pressing ALT+M in the world editor now edits anything with parameters,
+  not just Robots, Signs/Scrolls, and Sensors.
+
 DEVELOPERS
 
 + Source tarballs are now generated in XZ (LZMA2) format.
@@ -203,6 +209,9 @@ DEVELOPERS
 + Version control was changed from SVN to Git; the repo is at:
   http://github.com/ajs1984/megazeux
 + The EGL backend now supports Mesa's EGL implementation on X11.
++ Imported libmodplug 0.8.8.4 and rebased all patches.
++ Introduced SOCKS4/4a/5 support transparently into the network layer.
+  (MZXGiant)
 
 December 29, 2009 - MZX 2.83
 
