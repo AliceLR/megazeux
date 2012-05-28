@@ -1932,6 +1932,12 @@ static int mboardy_read(struct world *mzx_world,
    scroll_y - mzx_world->current_board->viewport_y;
 }
 
+static void spacelock_write(struct world *mzx_world,
+ const struct function_counter *counter, const char *name, int value, int id)
+{
+  mzx_world->bi_shoot_status = value & 1;
+}
+
 static void bimesg_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
@@ -2459,6 +2465,7 @@ static const struct function_counter builtin_counters[] =
   { "smzx_mode", 0x0245, smzx_mode_read, smzx_mode_write },          // 2.69
   { "smzx_palette", 0x0245, smzx_palette_read, NULL },               // 2.69
   { "smzx_r!", 0x0245, smzx_r_read, smzx_r_write },                  // 2.69
+  { "spacelock", 0x0254, NULL, spacelock_write },                    // 2.84
   { "spr!_ccheck", 0x0241, NULL, spr_ccheck_write },                 // 2.65
   { "spr!_cheight", 0x0241, spr_cheight_read, spr_cheight_write },   // 2.65
   { "spr!_clist", 0x0241, NULL, spr_clist_write },                   // 2.65

@@ -986,7 +986,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
   if(game && (!mzx_world->dead))
   {
     // Shoot
-    if(get_key_status(keycode_internal, IKEY_SPACE))
+    if(get_key_status(keycode_internal, IKEY_SPACE) && mzx_world->bi_shoot_status)
     {
       if((!reload) && (!src_board->player_attack_locked))
       {

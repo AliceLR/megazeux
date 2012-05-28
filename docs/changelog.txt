@@ -43,6 +43,10 @@ FEATURES
 + Chars 0 and 255 can now be selected from the Edit Chars submenu of
   the Global Info menu. Using char 255 on a kind that would have
   previously denied it now gives a warning dialog. (Lachesis)
++ New Counter: SPACELOCK represents the default space functionality for
+  the built-in player. Setting this counter to 0 disables it, allowing
+  the player to move as normal when space is pressed. Setting it back
+  to 1 enables it again. Defaults to 1. (Lachesis)
 + New Counter: FREAD_DELIMITER allows you to change the terminating
   char for the string FREAD function.  The terminating char still
   defaults to '*'. A complementary FWRITE_DELIMITER function has been

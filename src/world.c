@@ -580,7 +580,8 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     // String FREAD and FWRITE Delimiters
     fputw(mzx_world->fread_delimiter, fp);
     fputw(mzx_world->fwrite_delimiter, fp);
-    // Builtin message status
+    // Builtin shooting/message status
+    fputc(mzx_world->bi_shoot_status, fp);
     fputc(mzx_world->bi_mesg_status, fp);
 
     // Write input file name and if open, position
@@ -1326,7 +1327,8 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     // String FREAD and FWRITE Delimiters
     mzx_world->fread_delimiter = fgetw(fp);
     mzx_world->fwrite_delimiter = fgetw(fp);
-    // Builtin message status
+    // Builtin shooting/message status
+    mzx_world->bi_shoot_status = fgetc(fp);
     mzx_world->bi_mesg_status = fgetc(fp);
 
     {
@@ -1586,6 +1588,7 @@ __editor_maybe_static void default_global_data(struct world *mzx_world)
   mzx_world->c_divisions = 360;
   mzx_world->fread_delimiter = '*';
   mzx_world->fwrite_delimiter = '*';
+  mzx_world->bi_shoot_status = 1;
   mzx_world->bi_mesg_status = 1;
 
   // And vlayer
