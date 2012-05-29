@@ -4778,7 +4778,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
         if (cmd == ROBOTIC_CMD_COPY_OVERLAY_BLOCK)
         {
-          src_type ^= 1;
+          if(src_type < 2)
+            src_type ^= 1;
           if(dest_type < 2)
             dest_type ^= 1;
         }
