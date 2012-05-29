@@ -59,8 +59,10 @@
 
 #if WORLD_VERSION == 0x0254
 
+/* Suppress a couple of annoying warnings
 #define WORLD_GLOBAL_OFFSET_OFFSET 4230
 #define MAX_BOARDS                 250
+*/
 
 enum status
 {
@@ -70,6 +72,7 @@ enum status
   SEEK_ERROR,
 };
 
+/* Commenting out some useful stuff to leave around
 static struct board_entry
 {
   unsigned int size;
@@ -101,169 +104,17 @@ static void fputud(unsigned int src, FILE *fp)
   fputc((src >> 16) & 0xFF, fp);
   fputc((src >> 24) & 0xFF, fp);
 }
+*/
 
 static enum status convert_284_to_283_board(FILE *fp, int *delta)
 {
-  char *buffer;
-  int i, byte, skip_rle_blocks = 6;
-  long file_pos, copy_len;
-
-  if(fgetc(fp) < 0)
-    return READ_ERROR;
-
-  /* get overlay status and if the overlay is enabled, increase
-   * the number of compressed data blocks to skip.
-   */
-  byte = fgetc(fp);
-  if(byte < 0)
-    return READ_ERROR;
-
-  if(byte)
-  {
-    if(fseek(fp, -1, SEEK_CUR) != 0)
-      return SEEK_ERROR;
-  }
-  else
-  {
-    if(fgetc(fp) < 0)
-      return READ_ERROR;
-    skip_rle_blocks += 2;
-  }
-
-  /* skip the compressed board data */
-  for(i = 0; i < skip_rle_blocks; i++)
-  {
-    unsigned short w = fgetus(fp);
-    unsigned short h = fgetus(fp);
-    int pos = 0;
-
-    while(pos < w * h)
-    {
-      unsigned char c = (unsigned char)fgetc(fp);
-      if(!(c & 0x80))
-        pos++;
-      else
-      {
-        c &= ~0x80;
-        pos += c;
-        fgetc(fp);
-      }
-    }
-  }
-
-  /* copy the entire rest of the file to a buffer */
-  file_pos = ftell(fp);
-  if(file_pos < 0)
-    return SEEK_ERROR;
-
-  if(fseek(fp, 0, SEEK_END) != 0)
-    return SEEK_ERROR;
-
-  copy_len = ftell(fp);
-  if(copy_len < 0)
-    return SEEK_ERROR;
-
-  if(fseek(fp, file_pos, SEEK_SET) != 0)
-    return SEEK_ERROR;
-
-  copy_len -= file_pos;
-  buffer = malloc(copy_len);
-
-  if(fread(buffer, 1, copy_len, fp) != (size_t)copy_len)
-    return READ_ERROR;
-
-  /* Roll back to file_pos */
-  if(fseek(fp, file_pos, SEEK_SET) != 0)
-    return SEEK_ERROR;
-
-  /* no changes to the board format (yet) */
-
-  /* write out rest of buffer */
-  if(fwrite(&buffer[0], 1, copy_len, fp) != (size_t)copy_len)
-    return WRITE_ERROR;
-
-  if(delta)
-    *delta = 0;
+  //well, that was easy!!
   return SUCCESS;
 }
 
 static enum status convert_284_to_283(FILE *fp)
 {
-  int num_boards, i, total_delta = 0;
-  unsigned int global_robot_offset;
-  long board_pointer_pos;
-
-  /* no global changes */
-
-  if(fseek(fp, WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET) != 0)
-    return SEEK_ERROR;
-
-  global_robot_offset = fgetud(fp);
-
-  num_boards = fgetc(fp);
-  if(num_boards < 0)
-    return READ_ERROR;
-
-  if(num_boards == 0)
-  {
-    unsigned short sfx_len = fgetus(fp);
-    if(fseek(fp, sfx_len, SEEK_CUR) != 0)
-      return SEEK_ERROR;
-
-    num_boards = fgetc(fp);
-    if(num_boards < 0)
-      return READ_ERROR;
-  }
-
-  if(fseek(fp, num_boards * BOARD_NAME_SIZE, SEEK_CUR) != 0)
-    return SEEK_ERROR;
-
-  board_pointer_pos = ftell(fp);
-  if(board_pointer_pos < 0)
-    return READ_ERROR;
-
-  for(i = 0; i < num_boards; i++)
-  {
-    board_list[i].size = fgetud(fp);
-    board_list[i].offset = fgetud(fp);
-  }
-
-  for(i = 0; i < num_boards; i++)
-  {
-    struct board_entry *board = &board_list[i];
-    enum status ret;
-    int delta;
-
-    if(board->size == 0)
-      continue;
-
-    board->offset += total_delta;
-    if(fseek(fp, board->offset, SEEK_SET) != 0)
-      return SEEK_ERROR;
-
-    ret = convert_284_to_283_board(fp, &delta);
-    if(ret != SUCCESS)
-      return ret;
-
-    board->size += delta;
-    total_delta += delta;
-  }
-
-  if(fseek(fp, WORLD_GLOBAL_OFFSET_OFFSET, SEEK_SET) != 0)
-    return SEEK_ERROR;
-
-  global_robot_offset += total_delta;
-  fputud(global_robot_offset, fp);
-
-  if(fseek(fp, board_pointer_pos, SEEK_SET) != 0)
-    return SEEK_ERROR;
-
-  for(i = 0; i < num_boards; i++)
-  {
-    fputud(board_list[i].size, fp);
-    fputud(board_list[i].offset, fp);
-  }
-
+  //no changes in format
   return SUCCESS;
 }
 
