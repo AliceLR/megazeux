@@ -837,9 +837,7 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
   int dest_width = src_board->board_width;
   int dest_height = src_board->board_height;
 
-  prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
-   src_width, src_height);
-
+  // Process for source type and handle prefixing
   switch(src_type)
   {
     case 2:
@@ -855,6 +853,10 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
     }
   }
 
+  prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
+   src_width, src_height);
+
+  // Process for dest type and handle prefixing if we aren't already done
   switch(dest_type)
   {
     //string - dest_param is the terminator
@@ -946,7 +948,8 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
   if((dest_y + height) > dest_height)
     height = dest_height - dest_y;
 
-  debug("COPY BLOCK at %d %d for %d by %d to %d %d\n", src_x, src_y, width, height, dest_x, dest_y);
+  debug("COPY BLOCK at (%d) %d %d for %d by %d to (%d) %d %d\n",
+   src_type, src_x, src_y, width, height, dest_type, dest_x, dest_y);
 
   switch((dest_type << 2) | (src_type))
   {
@@ -3871,8 +3874,16 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         if((src_type < 0) || (dest_type < 0))
           break;
 
-        copy_block(mzx_world, id, x, y, src_type, dest_type, src_x, src_y, 1, 1,
-         dest_x, dest_y, NULL, 0);
+        // Do the copy.  If it's board to board, use the original impl.
+        if((src_type == 0) && (dest_type == 0))
+        {
+          copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
+        }
+        else
+        {
+          copy_block(mzx_world, id, x, y, src_type, dest_type, src_x, src_y, 1, 1,
+           dest_x, dest_y, NULL, 0);
+        }
 
         if((dest_x == x) && (dest_y == y) && (dest_type == 0))
           return;
