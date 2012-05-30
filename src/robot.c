@@ -521,6 +521,8 @@ void save_robot(struct robot *cur_robot, FILE *fp, int savegame)
     int stack_size = cur_robot->stack_size;
 
     // Write the local counters
+    if(mzx_world->version <= 0x0253)
+      cur_robot->loop_count = CLAMP(cur_robot->loop_count, 0, (1<<16)-1);
     fputd(cur_robot->loop_count, fp);
     for(i = 0; i < 32; i++)
     {
