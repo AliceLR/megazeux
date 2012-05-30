@@ -706,7 +706,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     // First save the offset of where the board will be placed
     board_begin_position = ftell(fp);
     // Now save the board and get the size
-    board_size = save_board(cur_board, fp, savegame, mzx_world->version);
+    board_size = save_board(cur_board, fp, savegame, WORLD_VERSION);
     // board_end_position, unused
     ftell(fp);
     // Record size/offset information.
@@ -718,7 +718,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
 
   // Save for global robot position
   gl_rob_position = ftell(fp);
-  save_robot(&mzx_world->global_robot, fp, savegame, mzx_world->version);
+  save_robot(&mzx_world->global_robot, fp, savegame, WORLD_VERSION);
 
   meter_update_screen(&meter_curr, meter_target);
 
