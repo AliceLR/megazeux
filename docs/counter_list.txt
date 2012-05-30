@@ -3,8 +3,13 @@ name                      r/w      g/n/f/b    i
 "ABSn"                    r           f       *
 "ACOS"                    r           f       *
 "AMMO"                    r w         n       *
+"ARCTANdy,dx"             r w         f       *
 "ASIN"                    r           f       *
 "ATAN"                    r           f       *
+"BCHn,n"                  r           b       *
+"BCOn,n"                  r           b       *
+"BIDn,n"                  r w         b       *
+"BPRn,n"                  r w         b       *
 "BIMESG"                    w         f       *
 "BIT_PLACE"               r w         n       *
 "BLUE_VALUE"              r w         f       *
@@ -39,11 +44,13 @@ name                      r/w      g/n/f/b    i
 "FIRSTYPOS"               r w         n       *
 "FREAD"                   r           f       *
 "FREAD_COUNTER"           r           f       *
+"FREAD_DELIMITER"         r w         b       *
 "FREAD_OPEN"              r           f       *
-"FREAD_POS"                 w         b       *
+"FREAD_POS"               r w         b       *
 "FWRITE"                    w         f       *
 "FWRITE_APPEND"           r           f       *
 "FWRITE_COUNTER"          r w         f       *
+"FWRITE_DELIMITER"        r w         b       *
 "FWRITE_MODIFY"           r           f       *
 "FWRITE_OPEN"             r           f       *
 "FWRITE_POS"              r w         b       *
@@ -74,8 +81,10 @@ name                      r/w      g/n/f/b    i
 "LOBOMBS"                 r w         n       *
 "LOCALn"                  r w         b       *
 "LOOPCOUNT"               r w         b       *
+"MAXn,n"                  r w         f       *
 "MBOARDX"                 r           b       *
 "MBOARDY"                 r           b       *
+"MINn,n"                  r w         f       *
 "MOD_FREQUENCY"           r w         b       *
 "MOD_ORDER"               r w         b       *
 "MOD_POSITION"            r w         b       *
@@ -85,6 +94,8 @@ name                      r/w      g/n/f/b    i
 "MOUSEY"                  r w         b       *
 "MULTIPLIER"              r w         b       *
 "MZX_SPEED"               r w         b       *
+"OCHn,n"                  r           b       *
+"OCOn,n"                  r           b       *
 "OVERLAY_CHAR"            r           b       *
 "OVERLAY_COLOR"           r           b       *
 "OVERLAY_MODE"            r           b       *
@@ -114,6 +125,7 @@ name                      r/w      g/n/f/b    i
 "SMZX_MODE"               r w         f       *
 "SMZX_PALETTE"            r           f       *
 "SMZX_Rn"                 r w         b       *
+"SPACELOCK"                 w         f       *
 "SPR_CLISTn"              r           b       *
 "SPR_COLLISIONS"          r           b       *
 "SPR_NUM"                 r w         b       *
@@ -148,6 +160,10 @@ name                      r/w      g/n/f/b    i
 "TIME_HOURS"              r           f       *
 "TIME_MINUTES"            r           f       *
 "TIME_SECONDS"            r           f       *
+"UCHn,n"                  r           b       *
+"UCOn,n"                  r           b       *
+"UIDn,n"                  r w         b       *
+"UPRn,n"                  r w         b       *
 "VCHn,n"                  r w         b       *
 "VCOn,n"                  r w         b       *
 "VERTPLD"                 r           b       *
