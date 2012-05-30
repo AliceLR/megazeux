@@ -219,14 +219,18 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   // Skip local - these are in the save files now
   fseek(fp, 2, SEEK_CUR);
   cur_robot->used = fgetc(fp);
-  fseek(fp, 2, SEEK_CUR);
+  if(version <= 0x0253)
+    cur_robot->loop_count = fgetw(fp);
+  else
+    fseek(fp, 2, SEEK_CUR);
 
   // If savegame, there's some additional information to get
   if(savegame)
   {
     int stack_size;
 
-    cur_robot->loop_count = fgetd(fp);
+    if(version >= 0x0254)
+      cur_robot->loop_count = fgetd(fp);
 
     for(i = 0; i < 32; i++)
       cur_robot->local[i] = fgetd(fp);
@@ -442,7 +446,7 @@ struct sensor *load_sensor_allocate(FILE *fp)
   return cur_sensor;
 }
 
-void save_robot(struct robot *cur_robot, FILE *fp, int savegame)
+void save_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
 {
   int program_length;
   int i;
@@ -511,8 +515,11 @@ void save_robot(struct robot *cur_robot, FILE *fp, int savegame)
   // Junk local
   fputw(0, fp);
   fputc(cur_robot->used, fp);
-  // Junk loop_count
-  fputw(0, fp);
+  // loop_count
+  if(version <= 0x0253)
+    fputw(cur_robot->loop_count, fp);
+  else // junk
+    fputw(0, fp);
 
   // If savegame, there's some additional information to get
   if(savegame)
@@ -520,7 +527,9 @@ void save_robot(struct robot *cur_robot, FILE *fp, int savegame)
     int stack_size = cur_robot->stack_size;
 
     // Write the local counters
-    fputd(cur_robot->loop_count, fp);
+    if(version >= 0x0254)
+      fputd(cur_robot->loop_count, fp);
+
     for(i = 0; i < 32; i++)
     {
       fputd(cur_robot->local[i], fp);

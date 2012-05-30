@@ -185,7 +185,7 @@ void save_board_file(struct board *cur_board, char *name)
     fputc(WORLD_VERSION & 0xff, board_file);
 
     optimize_null_objects(cur_board);
-    save_board(cur_board, board_file, 0);
+    save_board(cur_board, board_file, 0, WORLD_VERSION);
     // Write name
     fwrite(cur_board->board_name, 25, 1, board_file);
     fclose(board_file);

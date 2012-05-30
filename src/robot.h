@@ -101,7 +101,7 @@ struct robot *load_robot_allocate(FILE *fp, int savegame, int version);
 void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version);
 struct scroll *load_scroll_allocate(FILE *fp);
 struct sensor *load_sensor_allocate(FILE *fp);
-void save_robot(struct robot *cur_robot, FILE *fp, int savegame);
+void save_robot(struct robot *cur_robot, FILE *fp, int savegame, int version);
 void save_scroll(struct scroll *cur_scroll, FILE *fp, int savegame);
 void save_sensor(struct sensor *cur_sensor, FILE *fp, int savegame);
 void clear_robot(struct robot *cur_robot);

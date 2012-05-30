@@ -145,7 +145,7 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
           for(i = 0; i < num_robots; i++)
           {
             // Save each robot
-            save_robot(robot_list[robot_numbers[i]], output_file, savegame);
+            save_robot(robot_list[robot_numbers[i]], output_file, savegame, mzx_world->version);
           }
         }
 

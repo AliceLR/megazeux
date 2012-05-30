@@ -420,7 +420,7 @@ static void save_RLE2_plane(char *plane, FILE *fp, int size)
   }
 }
 
-int save_board(struct board *cur_board, FILE *fp, int savegame)
+int save_board(struct board *cur_board, FILE *fp, int savegame, int version)
 {
   int num_robots, num_scrolls, num_sensors;
   int start_location = ftell(fp);
@@ -549,7 +549,7 @@ int save_board(struct board *cur_board, FILE *fp, int savegame)
     for(i = 1; i <= num_robots; i++)
     {
       cur_robot = cur_board->robot_list[i];
-      save_robot(cur_robot, fp, savegame);
+      save_robot(cur_robot, fp, savegame, version);
     }
   }
 

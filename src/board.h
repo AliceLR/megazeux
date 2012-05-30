@@ -33,7 +33,7 @@ __M_BEGIN_DECLS
 CORE_LIBSPEC void clear_board(struct board *cur_board);
 CORE_LIBSPEC struct board *load_board_allocate(FILE *fp, int savegame,
  int version);
-CORE_LIBSPEC int save_board(struct board *cur_board, FILE *fp, int savegame);
+CORE_LIBSPEC int save_board(struct board *cur_board, FILE *fp, int savegame, int version);
 
 int find_board(struct world *mzx_world, char *name);
 
