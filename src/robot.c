@@ -89,6 +89,8 @@ struct label **cache_robot_labels(struct robot *robot, int *num_labels)
       current_label = cmalloc(sizeof(struct label));
       current_label->name = robot_program + i + 3;
 
+      current_label->cmd_position = i + 1;
+
       if(next >= (robot->program_bytecode_length - 2))
         current_label->position = 0;
       else
@@ -1962,7 +1964,7 @@ int restore_label(struct robot *cur_robot, char *label)
 
   if(dest_label)
   {
-    cur_robot->program_bytecode[dest_label->position + 1] = ROBOTIC_CMD_LABEL;
+    cur_robot->program_bytecode[dest_label->cmd_position] = ROBOTIC_CMD_LABEL;
     dest_label->zapped = 0;
     return 1;
   }
@@ -1976,7 +1978,7 @@ int zap_label(struct robot *cur_robot, char *label)
 
   if(dest_label)
   {
-    cur_robot->program_bytecode[dest_label->position + 1] = ROBOTIC_CMD_ZAPPED_LABEL;
+    cur_robot->program_bytecode[dest_label->cmd_position] = ROBOTIC_CMD_ZAPPED_LABEL;
     dest_label->zapped = 1;
     return 1;
   }
