@@ -226,8 +226,7 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   {
     int stack_size;
 
-    if(version >= 0x0254)
-      cur_robot->loop_count = fgetd(fp);
+    cur_robot->loop_count = fgetd(fp);
 
     for(i = 0; i < 32; i++)
       cur_robot->local[i] = fgetd(fp);
