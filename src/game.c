@@ -138,7 +138,7 @@ void set_intro_mesg_timer(unsigned int time)
 
 static void draw_intro_mesg(struct world *mzx_world)
 {
-  static const char mesg1[] = "F1: Help";
+  static const char mesg1[] = "F1: Help   ";
   static const char mesg2[] = "Enter: Menu   Ctrl-Alt-Enter: Fullscreen";
 
   if(intro_mesg_timer == 0)
@@ -2163,7 +2163,10 @@ void title_screen(struct world *mzx_world)
   chdir(current_dir);
 
   if(edit_world && mzx_world->conf.startup_editor)
+  {
+    set_intro_mesg_timer(0);
     edit_world(mzx_world);
+  }
   else
   {
     if(!stat(curr_file, &file_info))
