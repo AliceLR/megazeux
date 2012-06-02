@@ -1,7 +1,6 @@
 <?xml version="1.0" encoding="UTF-8" standalone="yes"?>
 <app version="1">
 	<name>MegaZeux</name>
-	<coder>Alistair John Strachan &lt;alistair@devzero.co.uk&gt;</coder>
 	<version>%VERSION%</version>
 	<release_date>%DATE%</release_date>
 	<short_description>A simple game creation system (GCS)</short_description>
