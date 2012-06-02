@@ -1,14 +1,4 @@
-GIT
-
-FEATURES
-
-BUGFIXES
-
-DEVELOPERS
-
-
-
-June 1, 2012 - MZX 2.84
+June 01, 2012 - MZX 2.84
 
 The first version of MegaZeux to be released in two and a half years, this
 time with a vast number of bugfixes, several new features, and hopefully
