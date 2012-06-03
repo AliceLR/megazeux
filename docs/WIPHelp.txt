@@ -4771,7 +4771,7 @@ These three commands define a loop, which is a sequence of
 commands to be repeated. LOOP START marks the start of a loop.
 LOOP # will loop back to LOOP START the given number of times.
 ABORT LOOP will jump out of the loop, to the command after LOOP
-#. The loop count is kept in the local counter "loopcount".
+.#. The loop count is kept in the local counter "loopcount".
 Make sure your number in LOOP # is one less than the amount for
 which you actually want to loop, as the initial iteration
 before first hitting LOOP # is not counted in the number.
@@ -6332,12 +6332,12 @@ number is global. It can severely slow MegaZeux if set too high
 and coupled with poor coding (especially busy loops lacking
 cycle-ending commands).
 
->#COMMANDR.HLP:_lC:LOOP START
-
 ~BLOOPCOUNT (local)
 
 The counter used for looping commands in Robotic - LOOP START,
 LOOP #, and ABORT LOOP.
+
+>#COMMANDR.HLP:_lC:LOOP START
 
 ~BROBOT_ID (read-only, local)
 
@@ -8659,10 +8659,10 @@ These are the trig functions MegaZeux can directly utilise.
 ~AACOS - arccosine (inverse cosine)
 ~AATAN - arctangent (inverse tangent, takes signs into account)
 ~AARCTAN - atan2 (special form of arctangent, takes two values
-in the form of ARCTANdy,dx ("dy" is the first input, "dx" the
-second))
+~Ain the form of ARCTANdy,dx ("dy" is the first input, "dx" the
+~Asecond))
 
-NOTE: The inverse functions output degrees, not raidans.
+NOTE: The inverse functions output degrees, not radians.
 
 To use the counters you put the unit number after the counter
 name. Here's an example.  To display the cosine of 30 degrees
