@@ -42,8 +42,8 @@ DSOSONAME  = -install_name @executable_path/
 SDL_CFLAGS  ?= `${PREFIX}/bin/sdl-config --cflags`
 SDL_LDFLAGS ?= `${PREFIX}/bin/sdl-config --libs`
 
-LIBPNG_CFLAGS  ?= `${PREFIX}/bin/libpng12-config --cflags`
-LIBPNG_LDFLAGS ?= `${PREFIX}/bin/libpng12-config --libs`
+LIBPNG_CFLAGS  ?= `${PREFIX}/bin/libpng-config --cflags`
+LIBPNG_LDFLAGS ?= `${PREFIX}/bin/libpng-config --ldflags`
 
 arch/darwin/SDLMain.o: arch/darwin/SDLMain.m
 	$(if ${V},,@echo "  CC      " $<)

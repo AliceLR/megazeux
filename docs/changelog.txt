@@ -5,7 +5,10 @@ FEATURES
 BUGFIXES
 
 DEVELOPERS
-
++ Toolchain: Switched darwin libpng12 to libpng, switched darwin and
+  default ldflags to use '--ldflags' instead of '--libs'.
++ Toolchain: Allowed darwin CC/CXX compiler to be specified on the command
+  line. (ajs)
 
 
 June 1, 2012 - MZX 2.84

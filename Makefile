@@ -57,7 +57,7 @@ ZLIB_LDFLAGS ?= -L${PREFIX}/lib -lz
 
 ifeq (${LIBPNG},1)
 LIBPNG_CFLAGS  ?= `libpng-config --cflags`
-LIBPNG_LDFLAGS ?= `libpng-config --libs`
+LIBPNG_LDFLAGS ?= `libpng-config --ldflags`
 endif
 
 PTHREAD_LDFLAGS ?= -lpthread
