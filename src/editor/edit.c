@@ -1855,6 +1855,7 @@ static void __edit_world(struct world *mzx_world)
           else
           {
             char world_name[256];
+            char new_path[MAX_PATH];
             strcpy(world_name, current_world);
             if(!new_file(mzx_world, world_ext, ".mzx", world_name,
              "Save world", 1))
@@ -1862,6 +1863,10 @@ static void __edit_world(struct world *mzx_world)
               // Save entire game
               strcpy(current_world, world_name);
               save_world(mzx_world, current_world, 0);
+
+              get_path(world_name, new_path, MAX_PATH);
+              if(new_path[0])
+                chdir(new_path);
 
               modified = 0;
             }
