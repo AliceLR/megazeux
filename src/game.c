@@ -2255,6 +2255,8 @@ void title_screen(struct world *mzx_world)
         case IKEY_r:
         {
           char save_file_name[64] = { 0 };
+          char previous_dir[MAX_PATH];
+          getcwd(previous_dir, MAX_PATH);
 
           // Restore
           m_show();
@@ -2275,7 +2277,9 @@ void title_screen(struct world *mzx_world)
 
             if(!reload_savegame(mzx_world, save_file_name, &fadein))
             {
-              vquick_fadeout();
+              // Reload failed, go back to the last working directory
+              // and pretend nothing happened
+              chdir(previous_dir);
             }
             else
             {

@@ -10,6 +10,9 @@ BUGFIXES
   to the correct directory after testing.
 + MegaZeux, after saving a world to a new directory, now chdirs to the new
   current world file's directory.
++ Changed behavior where a failed save file load would fade the still-running
+  world out of focus. MegaZeux now leaves the world faded in and chdirs back
+  to the last working directory.
 
 DEVELOPERS
 + Switched debian prereq. and darwin libpng12 to libpng, switched darwin and
