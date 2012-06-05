@@ -1,8 +1,13 @@
-GIT
+GIT (MZX 2.84b)
+
+An incremental MegaZeux release introducing several major bugfixes and new
+editor features.
 
 FEATURES
 
 BUGFIXES
++ Fixed dangerous crash-causing bug where the editor would not chdir back
+  to the correct directory after testing.
 
 DEVELOPERS
 + Switched debian prereq. and darwin libpng12 to libpng, switched darwin and

@@ -3245,6 +3245,9 @@ static void __edit_world(struct world *mzx_world)
 
           if(!save_world(mzx_world, "__test.mzx", 0))
           {
+            char *return_dir = cmalloc(MAX_PATH);
+            getcwd(return_dir, MAX_PATH);
+
             save_editor_palette();
             vquick_fadeout();
             cursor_off();
@@ -3266,6 +3269,8 @@ static void __edit_world(struct world *mzx_world)
             play_game(mzx_world);
 
             mzx_world->editing = false;
+
+            chdir(return_dir);
 
             if(!reload_world(mzx_world, "__test.mzx", &fade))
             {
