@@ -4,6 +4,8 @@ An incremental MegaZeux release introducing several major bugfixes and new
 editor features.
 
 FEATURES
++ Multiple hosts may now be defined in config.txt. Update attempts will
+  be carried out in the order they are defined.
 
 BUGFIXES
 + Fixed dangerous crash-causing bug where the editor would not chdir back

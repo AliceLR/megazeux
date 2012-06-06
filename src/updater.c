@@ -338,9 +338,9 @@ static bool restore_original_manifest(bool ret)
   return true;
 }
 
-static bool reissue_connection(struct config_info *conf, struct host **h)
+static bool reissue_connection(struct config_info *conf, struct host **h, char *host_name)
 {
-  bool ret = true;
+  bool ret = false;
   int buf_len;
 
   assert(h != NULL);
@@ -355,28 +355,28 @@ static bool reissue_connection(struct config_info *conf, struct host **h)
   if(!*h)
   {
     error("Failed to create TCP client socket.", 1, 8, 0);
-    ret = false;
     goto err_out;
   }
 
   m_hide();
 
   buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
-   "Connecting to \"%s\". Please wait..", conf->update_host);
+   "Connecting to \"%s\". Please wait..", host_name);
   widget_buf[WIDGET_BUF_LEN - 1] = 0;
 
   draw_window_box(3, 11, 76, 13, DI_MAIN, DI_DARK, DI_CORNER, 1, 1);
   write_string(widget_buf, (WIDGET_BUF_LEN - buf_len) >> 1, 12, DI_TEXT, 0);
   update_screen();
 
-  if(!host_connect(*h, conf->update_host, OUTBOUND_PORT))
+  if(!host_connect(*h, host_name, OUTBOUND_PORT))
   {
     buf_len = snprintf(widget_buf, WIDGET_BUF_LEN,
-     "Connection to \"%s\" failed.", conf->update_host);
+     "Connection to \"%s\" failed.", host_name);
     widget_buf[WIDGET_BUF_LEN - 1] = 0;
     error(widget_buf, 1, 8, 0);
-    ret = false;
   }
+  else
+    ret = true;
 
   clear_screen(32, 7);
   m_show();
@@ -400,6 +400,16 @@ static void __check_for_updates(struct config_info *conf)
   bool ret = false;
   FILE *f;
 
+  int cur_host;
+  char *update_host;
+  bool try_next_host = true;
+
+  if(conf->update_host_count < 1)
+  {
+    error("No updater hosts defined! Aborting.", 1, 8, 0);
+    goto err_out;
+  }
+
   if(!swivel_current_dir(true))
     goto err_out;
 
@@ -411,7 +421,11 @@ static void __check_for_updates(struct config_info *conf)
     goto err_chdir;
   }
 
-  if(!reissue_connection(conf, &h))
+  for(cur_host = 0; (cur_host < conf->update_host_count) && try_next_host; cur_host++)
+  {
+  update_host = conf->update_hosts[cur_host];
+
+  if(!reissue_connection(conf, &h, update_host))
     goto err_host_destroy;
 
   for(retries = 0; retries < MAX_RETRIES; retries++)
@@ -423,7 +437,7 @@ static void __check_for_updates(struct config_info *conf)
     if(status == HOST_SUCCESS)
       break;
 
-    if(!reissue_connection(conf, &h))
+    if(!reissue_connection(conf, &h, update_host))
       goto err_host_destroy;
   }
 
@@ -514,7 +528,10 @@ static void __check_for_updates(struct config_info *conf)
 
     // User pressed Escape, abort all updates
     if(result < 0 || result == 2)
+    {
+      try_next_host = false;
       goto err_host_destroy;
+    }
 
     // User pressed Upgrade, use new major
     if(result == 0)
@@ -537,6 +554,7 @@ static void __check_for_updates(struct config_info *conf)
   if(!backup_original_manifest())
   {
     error("Failed to back up manifest. Check permissions.", 1, 8, 0);
+    try_next_host = false;
     goto err_free_url_base;
   }
 
@@ -560,7 +578,7 @@ static void __check_for_updates(struct config_info *conf)
     if(m_ret)
       break;
 
-    if(!reissue_connection(conf, &h))
+    if(!reissue_connection(conf, &h, update_host))
       goto err_roll_back_manifest;
   }
 
@@ -572,15 +590,19 @@ static void __check_for_updates(struct config_info *conf)
 
   if(!removed && !replaced && !added)
   {
-    struct element *elements[2];
+    struct element *elements[3];
     struct dialog di;
 
     elements[0] = construct_label(2, 2, "This client is already current.");
-    elements[1] = construct_button(15, 4, "OK", 0);
+    elements[1] = construct_button(7, 4, "OK", 0);
+    elements[2] = construct_button(13, 4, "Try next host", 1);
 
-    construct_dialog(&di, "No Updates", 22, 9, 35, 6, elements, 2, 1);
+    construct_dialog(&di, "No Updates", 22, 9, 35, 6, elements, 3, 1);
     result = run_dialog(NULL, &di);
     destruct_dialog(&di);
+
+    if((result != 1) || (cur_host + 1 >= conf->update_host_count))
+      try_next_host = false;
 
     goto err_free_update_manifests;
   }
@@ -693,10 +715,11 @@ static void __check_for_updates(struct config_info *conf)
       if(cancel_update)
       {
         error("Download was cancelled; update aborted.", 1, 8, 0);
+        try_next_host = false;
         goto err_free_delete_list;
       }
 
-      if(!reissue_connection(conf, &h))
+      if(!reissue_connection(conf, &h, update_host))
         goto err_free_delete_list;
       host_set_callbacks(h, NULL, recv_cb, cancel_cb);
     }
@@ -717,6 +740,7 @@ static void __check_for_updates(struct config_info *conf)
     if(!f)
     {
       error("Failed to create \"" DELETE_TXT "\". Check permissions.", 1, 8, 0);
+      try_next_host = false;
       goto err_free_delete_list;
     }
 
@@ -731,6 +755,7 @@ static void __check_for_updates(struct config_info *conf)
     fclose(f);
   }
 
+  try_next_host = false;
   ret = true;
 err_free_delete_list:
   manifest_list_free(&delete_list);
@@ -744,6 +769,9 @@ err_free_url_base:
   free(url_base);
 err_host_destroy:
   host_destroy(h);
+  h = NULL;
+  } //end host for loop
+
 err_chdir:
   swivel_current_dir_back(true);
 err_out:

@@ -80,7 +80,8 @@ struct config_info
 #endif
     
 #ifdef CONFIG_UPDATER
-  char update_host[256];
+  int update_host_count;
+  char **update_hosts;
   char update_branch_pin[256];
 #endif
 };

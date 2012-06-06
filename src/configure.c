@@ -77,6 +77,22 @@
 #define FULLSCREEN_DEFAULT 0
 #endif
 
+#ifndef MAX_UPDATE_HOSTS
+#define MAX_UPDATE_HOSTS 16
+#endif
+
+#ifndef UPDATE_HOST_COUNT
+#define UPDATE_HOST_COUNT 2
+#endif
+
+#ifndef UPDATE_HOST_1
+#define UPDATE_HOST_1 "updates.digitalmzx.net"
+#endif
+
+#ifndef UPDATE_HOST_2
+#define UPDATE_HOST_2 "updates.mzx.devzero.co.uk"
+#endif
+
 struct config_entry
 {
   char option_name[OPTION_NAME_LEN];
@@ -108,11 +124,27 @@ static void config_set_socks_port(struct config_info *conf, char *name,
 
 #ifdef CONFIG_UPDATER
 
+static int host_configured = 0;
+
 static void config_update_host(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  strncpy(conf->update_host, value, 256);
-  conf->update_host[256 - 1] = 0;
+  if(!host_configured || !conf->update_host_count)
+  {
+    host_configured = 1;
+    conf->update_host_count = 0;
+  }
+
+  if(conf->update_host_count < MAX_UPDATE_HOSTS)
+  {
+    conf->update_host_count++;
+    conf->update_hosts = realloc(conf->update_hosts,
+     sizeof(char *) * conf->update_host_count);
+
+    conf->update_hosts[ conf->update_host_count - 1 ] = malloc(256);
+    strncpy(conf->update_hosts[ conf->update_host_count - 1 ], value, 256);
+    conf->update_hosts[ conf->update_host_count - 1 ][256 - 1] = 0;
+  }
 }
 
 static void config_update_branch_pin(struct config_info *conf, char *name,
@@ -517,11 +549,11 @@ static const struct config_info default_options =
   1080,                         // socks_port
 #endif
 #if defined(CONFIG_UPDATER)
+  UPDATE_HOST_COUNT,            // update_host_count
+  NULL,                         // update_hosts
 #if defined(CONFIG_DEBYTECODE)
-  "updates.mzx.devzero.co.uk",  // update_host
   "Debytecode",                 // update_branch_pin
 #else /* !CONFIG_DEBYTECODE */
-  "updates.digitalmzx.net",     // update_host
   "Stable",                     // update_branch_pin
 #endif /* !CONFIG_DEBYTECODE */
 #endif /* CONFIG_UPDATER */
@@ -697,6 +729,20 @@ void set_config_from_file(struct config_info *conf, const char *conf_file_name)
 void default_config(struct config_info *conf)
 {
   memcpy(conf, &default_options, sizeof(struct config_info));
+
+#if defined(CONFIG_UPDATER)
+  // Doing this in code since I couldn't find a way to safely do this elsewhere --lachesis
+  if(!conf->update_hosts)
+  {
+    char **update_hosts = malloc(sizeof(char *) * UPDATE_HOST_COUNT);
+
+    update_hosts[0] = (char*) UPDATE_HOST_1;
+    update_hosts[1] = (char*) UPDATE_HOST_2;
+
+    conf->update_host_count = UPDATE_HOST_COUNT;
+    conf->update_hosts = update_hosts;
+  }
+#endif //CONFIG_UPDATER
 }
 
 void set_config_from_command_line(struct config_info *conf,
