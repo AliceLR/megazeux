@@ -100,14 +100,18 @@ __libspec int main(int argc, char *argv[])
 
   load_editor_config(&mzx_world, &argc, argv);
 
+  init_macros(&mzx_world);
+
   // At this point argv should have all the config options
   // of the form var=value removed, leaving only unparsed
   // parameters. Interpret the first unparsed parameter
   // as a file to load (overriding startup_file etc.)
   if(argc > 1)
-    strncpy(mzx_world.conf.startup_file, argv[1], 256);
+    split_path_filename(argv[1], mzx_world.conf.startup_path, 256,
+     mzx_world.conf.startup_file, 256);
 
-  init_macros(&mzx_world);
+  if(mzx_world.conf.startup_path)
+    strncpy(current_dir, mzx_world.conf.startup_path, MAX_PATH);
 
   chdir(current_dir);
 

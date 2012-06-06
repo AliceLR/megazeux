@@ -233,7 +233,7 @@ static void config_save_file(struct config_info *conf, char *name,
 static void config_startup_file(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  strncpy(conf->startup_file, value, 256);
+  split_path_filename(value, conf->startup_path, 256, conf->startup_file, 256);
 }
 
 static void config_system_mouse(struct config_info *conf, char *name,
@@ -533,6 +533,7 @@ static const struct config_info default_options =
   1,                            // pc_speaker_on
 
   // Game options
+  "",                           // startup_path
   "caverns.mzx",                // startup_file
   "saved.sav",                  // default_save_name
   4,                            // mzx_speed

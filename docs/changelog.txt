@@ -15,6 +15,9 @@ BUGFIXES
 + Changed behavior where a failed save file load would fade the still-running
   world out of focus. MegaZeux now leaves the world faded in and chdirs back
   to the last working directory.
++ When startup_file is defined as a directory in config.txt or at the command
+  line, MZX now chdirs to the directory instead of attempting to open it as a
+  world file.
 
 DEVELOPERS
 + Switched debian prereq. and darwin libpng12 to libpng, switched darwin and

@@ -61,6 +61,7 @@ struct config_info
   int pc_speaker_on;
 
   // Game options
+  char startup_path[256];
   char startup_file[256];
   char default_save_name[256];
   int mzx_speed;

@@ -215,8 +215,10 @@
 ### Game options ###
 
 # Name of world file that should be loaded when MZX starts.
+# You may specify a full path here and even omit the world file
+# if you do not wish for MZX to load a world at startup.
 
-# startup_file = caverns.mzx
+startup_file = /home/alice/MZX/caverns.mzx
 
 # Default save file name given when you first try to save.
 
