@@ -79,6 +79,14 @@ __libspec int main(int argc, char *argv[])
   // always possible to get back to it..
   getcwd(current_dir, MAX_PATH);
 
+#ifdef __APPLE__
+  {
+    // Mac .APPs start at / and we don't like that.
+    char *user = getlogin();
+    snprintf(current_dir, MAX_PATH, "/Users/%s", user);
+  }
+#endif // __APPLE__
+
   if(mzx_res_init(argv[0], is_editor()))
     goto err_free_res;
 
