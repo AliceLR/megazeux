@@ -451,7 +451,7 @@
 # be attempted in the order they are defined. Please note, this is not a
 # URL and should not contain protocol specifiers such as http://
 
-update_host = updates.digitalmzx.net.butts2butts
+update_host = updates.digitalmzx.net
 update_host = updates.mzx.devzero.co.uk
 
 # The update "branch" is consulted each time the updater runs. Typically,
