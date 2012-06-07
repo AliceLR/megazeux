@@ -17,20 +17,30 @@ ifeq (${ARCH},i686)
 CC        := ${CROSS_COMPILE_X86_CC}  -mmacosx-version-min=10.4
 CXX       := ${CROSS_COMPILE_X86_CXX} -mmacosx-version-min=10.4
 REAL_ARCH := i686
-else ifeq (${ARCH},amd64)
+else
+
+ifeq (${ARCH},amd64)
 CC        := ${CROSS_COMPILE_X86_CC}  -m64 -mmacosx-version-min=10.5
 CXX       := ${CROSS_COMPILE_X86_CXX} -m64 -mmacosx-version-min=10.5
 REAL_ARCH := amd64
-else ifeq (${ARCH},ppc)
+else
+
+ifeq (${ARCH},ppc)
 CC        := ${CROSS_COMPILE_PPC_CC}  -mmacosx-version-min=10.4
 CXX       := ${CROSS_COMPILE_PPC_CXX} -mmacosx-version-min=10.4
 REAL_ARCH := ppc
-else ifeq (${ARCH},ppc64)
+else
+
+ifeq (${ARCH},ppc64)
 CC        := ${CROSS_COMPILE_PPC_CC}  -m64 -mmacosx-version-min=10.4
 CXX       := ${CROSS_COMPILE_PPC_CXX} -m64 -mmacosx-version-min=10.4
 REAL_ARCH := ppc64
 else
+
 REAL_ARCH := $(error Invalid architecture selection)
+endif
+endif
+endif
 endif
 
 DSOLDFLAGS = -dynamiclib

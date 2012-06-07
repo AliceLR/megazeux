@@ -25,6 +25,8 @@ DEVELOPERS
 + Switched debian prereq. and darwin libpng12 to libpng, switched darwin and
   default ldflags to use '--ldflags' instead of '--libs'.
 + Darwin CC/CXX compiler can now be specified on the command line. (ajs)
++ Cleaned up broken ifeq structure in darwin Makefile.in so ARCHes other than
+  i686 can be built.
 
 
 June 1, 2012 - MZX 2.84
