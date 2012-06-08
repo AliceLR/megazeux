@@ -222,8 +222,8 @@ void __debug_counters(struct world *mzx_world)
           {
             if(counter_value < 1)
               counter_value = 1;
-            if(counter_value > 9)
-              counter_value = 9;
+            if(counter_value > 16)
+              counter_value = 16;
             mzx_world->mzx_speed = counter_value;
           }
           else

@@ -22,6 +22,8 @@ BUGFIXES
   world file.
 + Fixed regression where the rel commands would be ignored for board to board
   copy x y dx dy.
++ Updated MZX_SPEED in the counter debugger, where it was still getting clamped
+  from 1 to 9.
 
 DEVELOPERS
 + Switched debian prereq. and darwin libpng12 to libpng, switched darwin and
