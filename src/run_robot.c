@@ -3877,6 +3877,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
         // Do the copy.  If it's board to board, use the original impl.
         if((src_type == 0) && (dest_type == 0))
         {
+          prefix_first_last_xy(mzx_world, &src_x, &src_y, &dest_x, &dest_y, x, y);
+
           copy_xy_to_xy(mzx_world, src_x, src_y, dest_x, dest_y);
         }
         else

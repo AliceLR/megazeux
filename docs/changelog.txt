@@ -20,6 +20,8 @@ BUGFIXES
 + When startup_file is defined as a directory in config.txt or at the command
   line, MZX now chdirs to the directory instead of attempting to open it as a
   world file.
++ Fixed regression where the rel commands would be ignored for board to board
+  copy x y dx dy.
 
 DEVELOPERS
 + Switched debian prereq. and darwin libpng12 to libpng, switched darwin and
