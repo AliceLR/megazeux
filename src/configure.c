@@ -31,6 +31,7 @@
 #include "rasm.h"
 #include "fsafeopen.h"
 #include "util.h"
+#include "sys/stat.h"
 
 #if defined(CONFIG_NDS)
 #define VIDEO_OUTPUT_DEFAULT "nds"
@@ -233,7 +234,19 @@ static void config_save_file(struct config_info *conf, char *name,
 static void config_startup_file(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
-  split_path_filename(value, conf->startup_path, 256, conf->startup_file, 256);
+  // Split file from path; discard the path and save the file.
+  split_path_filename(value, NULL, 0, conf->startup_file, 256);
+}
+
+static void config_startup_path(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  struct stat stat_info;
+  if(stat(value, &stat_info) ||
+   !S_ISDIR(stat_info.st_mode))
+    return;
+
+  strncpy(conf->startup_path, value, 256);
 }
 
 static void config_system_mouse(struct config_info *conf, char *name,
@@ -468,6 +481,7 @@ static const struct config_entry config_options[] =
 #endif
   { "startup_editor", config_startup_editor },
   { "startup_file", config_startup_file },
+  { "startup_path", config_startup_path },
   { "system_mouse", config_system_mouse },
 #ifdef CONFIG_UPDATER
   { "update_branch_pin", config_update_branch_pin },

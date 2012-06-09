@@ -296,29 +296,38 @@ void split_path_filename(const char *source,
  char *destpath, unsigned int dest_buffer_len,
  char *destfile, unsigned int file_buffer_len)
 {
-  char temppath[dest_buffer_len + 1];
+  char temppath[MAX_PATH];
   struct stat path_info;
   int stat_res = stat(source, &path_info);
 
   // If the entirety of source is a directory
   if((stat_res >= 0) && S_ISDIR(path_info.st_mode))
   {
-    strncpy(destpath, source, dest_buffer_len);
-    strcpy(destfile, "");
+    if(dest_buffer_len)
+      strncpy(destpath, source, dest_buffer_len);
+
+    if(file_buffer_len)
+      strcpy(destfile, "");
   }
   else
   // If source has a directory and a file
-  if(get_path(source, temppath, dest_buffer_len))
+  if(get_path(source, temppath, MAX_PATH))
   {
     // get_path leaves off trailing /, add 1 to offset.
-    strcpy(destpath, temppath);
-    strncpy(destfile, &(source[strlen(destpath) + 1]), file_buffer_len);
+    if(dest_buffer_len)
+      strncpy(destpath, temppath, dest_buffer_len);
+
+    if(file_buffer_len)
+      strncpy(destfile, &(source[strlen(temppath) + 1]), file_buffer_len);
   }
   // Source is just a file or blank.
   else
   {
-    strcpy(destpath, "");
-    strncpy(destfile, source, file_buffer_len);
+    if(dest_buffer_len)
+      strcpy(destpath, "");
+
+    if(file_buffer_len)
+      strncpy(destfile, source, file_buffer_len);
   }
 }
 
