@@ -117,7 +117,7 @@ int suppress_errors = -1;
 void val_error(enum val_error error_id, int value)
 {
   char error_mesg[80];
-  int hi = (value & 0xFF00), lo = (value & 0xFF);
+  int hi = (value & 0xFF00) >> 8, lo = (value & 0xFF);
   int severity = 1;
   int code = 0;
 
@@ -138,7 +138,7 @@ void val_error(enum val_error error_id, int value)
     case SAVE_VERSION_OLD:
     {
       snprintf(error_mesg, 80,
-       ".SAV files from older version of MZX (%d.%d) are not supported", hi, lo);
+       ".SAV files from older versions of MZX (%d.%d) are not supported", hi, lo);
       code = 0x2101;
       break;
     }
@@ -221,7 +221,8 @@ void val_error(enum val_error error_id, int value)
     }
     case MZM_FILE_VERSION_TOO_RECENT:
     {
-      sprintf(error_mesg, "This MZM file was saved from a more recent MegaZeux world");
+      snprintf(error_mesg, 80,
+       "This MZM file was saved from a more recent MegaZeux world (%d.%d)", hi, lo);
       code = 0x6661;
       break;
     }
