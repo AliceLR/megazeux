@@ -49,6 +49,7 @@
 #include "audio.h"
 #include "extmem.h"
 #include "util.h"
+#include "validation.h"
 
 static const char magic_code[16] =
  "\xE6\x52\xEB\xF2\x6D\x4D\x4A\xB7\x87\xB2\x92\x88\xDE\x91\x24";
@@ -88,21 +89,22 @@ static inline void meter_initial_draw(int curr, int target,
 
 int fgetw(FILE *fp)
 {
-  int r = fgetc(fp);
-  r |= fgetc(fp) << 8;
-  return r;
+  int a = fgetc(fp), b = fgetc(fp);
+  if((a == EOF) || (b == EOF))
+    return EOF;
+
+  return (b << 8) | a;
 }
 
 // Get 4 bytes
 
 int fgetd(FILE *fp)
 {
-  int r = fgetc(fp);
-  r |= fgetc(fp) << 8;
-  r |= fgetc(fp) << 16;
-  r |= fgetc(fp) << 24;
+  int a = fgetc(fp), b = fgetc(fp), c = fgetc(fp), d = fgetc(fp);
+  if((a == EOF) || (b == EOF) || (c == EOF) || (d == EOF))
+    return EOF;
 
-  return r;
+  return (d << 24) | (c << 16) | (b << 8) | a;
 }
 
 // Put 2 bytes
@@ -172,6 +174,7 @@ static int get_pw_xor_code(char *password, int pro_method)
 static void decrypt(const char *file_name)
 {
   FILE *source;
+  FILE *backup;
   FILE *dest;
   int file_length;
   int pro_method;
@@ -183,6 +186,7 @@ static void decrypt(const char *file_name)
   char password[15];
   char *file_buffer;
   char *src_ptr;
+  char backup_name[ strlen(file_name) + 7 ];
 
   int meter_target, meter_curr = 0;
 
@@ -202,6 +206,12 @@ static void decrypt(const char *file_name)
   meter_update_screen(&meter_curr, meter_target);
 
   src_ptr += 25;
+
+  strcpy(backup_name, file_name);
+  strcat(backup_name, ".locked");
+  backup = fopen_unsafe(backup_name, "wb");
+  fwrite(file_buffer, file_length, 1, backup);
+  fclose(backup);
 
   dest = fopen_unsafe(file_name, "wb");
   if(!dest)
@@ -327,7 +337,7 @@ static void decrypt(const char *file_name)
   meter_restore_screen();
 }
 
-static int world_magic(const char magic_string[3])
+int world_magic(const char magic_string[3])
 {
   if(magic_string[0] == 'M')
   {
@@ -744,7 +754,7 @@ exit_close:
   return 0;
 }
 
-static int save_magic(const char magic_string[5])
+int save_magic(const char magic_string[5])
 {
   if((magic_string[0] == 'M') && (magic_string[1] == 'Z'))
   {
@@ -965,6 +975,18 @@ __editor_maybe_static FILE *try_load_world(const char *file,
   char magic[5];
   FILE *fp;
   int v;
+
+  // we'll put this here for now, but later it needs to move to reload_world
+  /* world validation handling */
+  enum val_result status = validate_world_file(file, savegame, NULL, 0);
+  if(VAL_NEED_UNLOCK == status)
+  {
+    decrypt(file);
+    status = validate_world_file(file, savegame, NULL, 1);
+  }
+  if(VAL_SUCCESS != status)
+    goto err_out;
+  /* end world validation handling */
 
   fp = fopen_unsafe(file, "rb");
   if(!fp)

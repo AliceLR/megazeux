@@ -113,6 +113,10 @@ __M_BEGIN_DECLS
 #undef  WORLD_VERSION_PREV
 #endif
 
+// These three are needed by validation.c until I figure out a better way
+CORE_LIBSPEC int world_magic(const char magic_string[3]);
+CORE_LIBSPEC int save_magic(const char magic_string[5]);
+
 CORE_LIBSPEC int save_world(struct world *mzx_world, const char *file,
  int savegame);
 CORE_LIBSPEC bool reload_world(struct world *mzx_world, const char *file,

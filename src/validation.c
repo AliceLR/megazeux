@@ -213,10 +213,41 @@ void val_error(enum val_error error_id, int value)
       code = 0x6660;
       break;
     }
+    case MZM_FILE_FROM_SAVEGAME:
+    {
+      sprintf(error_mesg, "MZM file is from a saved game and cannot be loaded to the editor");
+      code = 0x6661;
+      break;
+    }
+    case MZM_FILE_VERSION_TOO_RECENT:
+    {
+      sprintf(error_mesg, "This MZM file was saved from a more recent MegaZeux world");
+      code = 0x6661;
+      break;
+    }
   }
 
   if(severity > suppress_errors)
     error(error_mesg, 1, 8, code);
+}
+
+/* Should look at fopen_safe, which probably does this and more */
+FILE * val_fopen(const char *filename)
+{
+  struct stat stat_result;
+  int stat_op_result = stat(filename, &stat_result);
+  FILE *f;
+
+  if(stat_op_result)
+    return NULL;
+
+  if(!S_ISREG(stat_result.st_mode))
+    return NULL;
+
+  if(!(f = fopen_unsafe(filename, "r")))
+    return NULL;
+
+  return f;
 }
 
 
@@ -230,8 +261,6 @@ enum val_result validate_world_file(const char *filename,
  int savegame, int *end_of_global_offset, int decrypt_attempted)
 {
   enum val_result result = VAL_SUCCESS;
-  struct stat stat_result;
-  int stat_op_result;
 
   FILE *f;
   char magic[15];
@@ -239,10 +268,7 @@ enum val_result validate_world_file(const char *filename,
   int v, i;
 
   /* TEST 1:  Make sure it's a readable file */
-  if(
-   (stat_op_result = stat(filename, &stat_result)) ||
-   !S_ISREG(stat_result.st_mode) ||
-   !(f = fopen_unsafe(filename, "r")))
+  if(!(f = val_fopen(filename)))
   {
     val_error(FILE_DOES_NOT_EXIST, 0);
     result = VAL_MISSING;
@@ -464,6 +490,123 @@ err_invalid:
     val_error(SAVE_FILE_INVALID, 0);
   else
     val_error(WORLD_FILE_INVALID, 0);
+err_close:
+  fclose(f);
+err_out:
+  return result;
+}
+
+
+
+enum val_result validate_mzm_file(const char *filename, int savegame, int version)
+{
+  enum val_result result = VAL_SUCCESS;
+  char magic[5];
+  int v, w, h, robot_offset, num_robots, storage_mode, savegame_mode;
+  int data_offset, file_size;
+  FILE *f;
+
+  /* TEST 1:  Make sure it's a real file */
+  if(!(f = val_fopen(filename)))
+  {
+    val_error(FILE_DOES_NOT_EXIST, 0);
+    result = VAL_MISSING;
+    goto err_out;
+  }
+
+  if(1 != fread(magic, 4, 1, f))
+    goto err_invalid;
+
+  if(0x0253 > version)
+    v = version;
+  else
+    v = 0x0253;
+
+  /* TEST 2:  Read the header */
+  if(!strncmp(magic, "MZMX", 4))
+  {
+    storage_mode = 0;
+    savegame_mode = 0;
+    num_robots = 0;
+    robot_offset = 0;
+    w = fgetc(f);
+    h = fgetc(f);
+    if(fseek(f, 16, SEEK_SET))
+      goto err_invalid;
+  }
+  else
+
+  if(!strncmp(magic, "MZM2", 4))
+  {
+    w = fgetw(f);
+    h = fgetw(f);
+    robot_offset = fgetd(f);
+    num_robots = fgetc(f);
+    storage_mode = fgetc(f);
+    savegame_mode = fgetc(f);
+    if(fseek(f, 16, SEEK_SET))
+      goto err_invalid;
+  }
+  else
+
+  if(!strncmp(magic, "MZM3", 4))
+  {
+    w = fgetw(f);
+    h = fgetw(f);
+    robot_offset = fgetd(f);
+    num_robots = fgetc(f);
+    storage_mode = fgetc(f);
+    savegame_mode = fgetc(f);
+    v = fgetw(f);
+    if(fseek(f, 20, SEEK_SET))
+      goto err_invalid;
+  }
+
+  else // no magic matches
+    goto err_invalid;
+
+  data_offset = ftell(f);
+
+  /* TEST 3:  Does the header make sense? */
+  if(storage_mode > 1)
+    goto err_invalid;
+
+  if(savegame_mode > 1)
+    goto err_invalid;
+
+  if(savegame_mode > savegame)
+  {
+    val_error(MZM_FILE_FROM_SAVEGAME, 0);
+    result = VAL_VERSION;
+    goto err_close;
+  }
+  if(v > version)
+  {
+    val_error(MZM_FILE_VERSION_TOO_RECENT, v);
+    result = VAL_VERSION;
+    goto err_close;
+  }
+
+  /* TEST 4:  Is the file big enough to hold the specified
+   * dimensions, as well as the robot offset if provided?
+   */
+
+  fseek(f, 0, SEEK_END);
+  file_size = ftell(f);
+
+  if(
+   ((num_robots > 0) && (file_size < robot_offset)) ||
+   ((storage_mode == 0) && (file_size < w * h * 6 + data_offset)) ||
+   ((storage_mode == 1) && (file_size < w * h * 2 + data_offset)))
+    goto err_invalid;
+
+  /* Success!  Now let the actual loader do all of that work again. */
+
+  goto err_close;
+
+err_invalid:
+  val_error(MZM_FILE_INVALID, 0);
+  result = VAL_INVALID;
 err_close:
   fclose(f);
 err_out:
