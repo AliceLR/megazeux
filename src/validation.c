@@ -244,7 +244,7 @@ FILE * val_fopen(const char *filename)
   if(!S_ISREG(stat_result.st_mode))
     return NULL;
 
-  if(!(f = fopen_unsafe(filename, "r")))
+  if(!(f = fopen_unsafe(filename, "rb")))
     return NULL;
 
   return f;
