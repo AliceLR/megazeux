@@ -1,0 +1,1 @@
+Note: At this time, the x64 builds on MSVC are broken. Fixes are welcome.
