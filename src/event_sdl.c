@@ -449,7 +449,14 @@ void __wait_event(void)
 {
   SDL_Event event;
 
-  SDL_WaitEvent(&event);
+  // FIXME: WaitEvent with MSVC hangs the render cycle, so this is, hopefully,
+  //        a short-term fix.
+  #ifdef MSVC_H
+    SDL_PollEvent(&event);
+  #else
+    SDL_WaitEvent(&event);
+  #endif
+
   process_event(&event);
 }
 
