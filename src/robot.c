@@ -2911,7 +2911,11 @@ void duplicate_robot_direct(struct robot *cur_robot,
   }
 
 #ifdef CONFIG_DEBYTECODE
-  copy_robot->program_source = NULL;
+  // FIXME: Short-term fix to repair copy block operations that contain robots
+  //        in debytecode; freeing program_source everywhere causes the editor
+  //        to corrupt robot code on the next edit (Bug ID 316)
+  //        [ Similar change, same bug ID, made in prepare_robot_bytecode ]
+  //copy_robot->program_source = NULL;
 #endif
 
   // Give the robot an empty stack.
@@ -3201,10 +3205,14 @@ void prepare_robot_bytecode(struct robot *cur_robot)
     cur_robot->label_list =
      cache_robot_labels(cur_robot, &cur_robot->num_labels);
 
+    // FIXME: Short-term fix to repair copy block operations that contain
+    //        robots in debytecode; freeing program_source everywhere causes
+    //        the editor to corrupt robot code on the next edit (Bug ID 316)
+    //        [ Similar change, same bug ID, duplicate_robot_direct ]
     // Can free source code now.
-    free(cur_robot->program_source);
-    cur_robot->program_source = NULL;
-    cur_robot->program_source_length = 0;
+    //free(cur_robot->program_source);
+    //cur_robot->program_source = NULL;
+    //cur_robot->program_source_length = 0;
   }
 }
 
