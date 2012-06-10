@@ -98,7 +98,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/NODEFAULTLIB:libcmt %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>SDL.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;libpng12.lib;zlib.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libogg_static.lib;libpng15.lib;libvorbis_static.lib;libvorbisenc.lib;libvorbisfile_static.lib;SDL.lib;SDLmain.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>Deps\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(SolutionDir)\..\..\$(ProjectName).pdb</ProgramDatabaseFile>
       <TargetMachine>MachineX86</TargetMachine>
@@ -123,7 +123,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/NODEFAULTLIB:libcmt %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>SDL.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;libpng12.lib;zlib.lib;opengl32.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libogg_static.lib;libpng15.lib;libvorbis_static.lib;libvorbisenc.lib;libvorbisfile_static.lib;SDL.lib;SDLmain.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>Deps\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(SolutionDir)\..\..\$(ProjectName).pdb</ProgramDatabaseFile>
       <TargetMachine>MachineX86</TargetMachine>
@@ -153,7 +153,7 @@
       <PreprocessorDefinitions>__WIN32__;_CRT_SECURE_NO_WARNINGS;CORE_LIBSPEC=__declspec(dllexport)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>SDL.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;libpng12.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libogg_static.lib;libpng15.lib;libvorbis_static.lib;libvorbisenc.lib;libvorbisfile_static.lib;SDL.lib;SDLmain.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>Deps\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateManifest>false</GenerateManifest>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -182,7 +182,7 @@
       <PreprocessorDefinitions>__WIN32__;_CRT_SECURE_NO_WARNINGS;CORE_LIBSPEC=__declspec(dllexport)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>SDL.lib;ogg_static.lib;vorbis_static.lib;vorbisfile_static.lib;libpng12.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libogg_static.lib;libpng15.lib;libvorbis_static.lib;libvorbisenc.lib;libvorbisfile_static.lib;SDL.lib;SDLmain.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>Deps\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateManifest>false</GenerateManifest>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -485,6 +485,7 @@
     <ClCompile Include="..\..\src\sfx.c" />
     <ClCompile Include="..\..\src\sprite.c" />
     <ClCompile Include="..\..\src\util.c" />
+    <ClCompile Include="..\..\src\validation.c" />
     <ClCompile Include="..\..\src\window.c" />
     <ClCompile Include="..\..\src\world.c" />
   </ItemGroup>
@@ -547,6 +548,7 @@
     <ClInclude Include="..\..\src\sprite.h" />
     <ClInclude Include="..\..\src\sprite_struct.h" />
     <ClInclude Include="..\..\src\util.h" />
+    <ClInclude Include="..\..\src\validation.h" />
     <ClInclude Include="..\..\src\window.h" />
     <ClInclude Include="..\..\src\world.h" />
     <ClInclude Include="..\..\src\world_struct.h" />
