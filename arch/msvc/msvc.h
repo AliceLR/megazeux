@@ -49,7 +49,4 @@ typedef __int64 ssize_t;
 typedef _W64 int ssize_t;
 #endif
 
-#pragma message "Implement rewinddir()!"
-#define rewinddir(dirp) 0
-
 #endif // MSVC_H
