@@ -945,14 +945,14 @@ int find_robot(struct board *src_board, const char *name,
 int send_robot_id_def(struct world *mzx_world, int robot_id, const char *mesg,
  int ignore_lock)
 {
-  char submesg[strlen(mesg) + 1];
+  char submesg[ROBOT_MAX_TR];
   int result = send_robot_id(mzx_world, robot_id, mesg, ignore_lock), subresult;
 
   //now, attempt to send the subroutine version of it
   if(mzx_world->version >= 0x0254)
   {
     strcpy(submesg, "#");
-    strcat(submesg, mesg);
+    strncat(submesg, mesg, ROBOT_MAX_TR - 2);
     subresult = send_robot_id(mzx_world, robot_id, submesg, ignore_lock);
     if(result && !subresult)
       result = subresult;
@@ -962,14 +962,14 @@ int send_robot_id_def(struct world *mzx_world, int robot_id, const char *mesg,
 
 void send_robot_all_def(struct world *mzx_world, const char *mesg)
 {
-  char submesg[strlen(mesg) + 1];
+  char submesg[ROBOT_MAX_TR];
   send_robot_all(mzx_world, mesg);
 
   //now, attempt to send the subroutine version of it
   if(mzx_world->version >= 0x0254)
   {
     strcpy(submesg, "#");
-    strcat(submesg, mesg);
+    strncat(submesg, mesg, ROBOT_MAX_TR - 2);
     send_robot_all(mzx_world, submesg);
   }
 }

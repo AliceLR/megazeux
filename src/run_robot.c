@@ -948,9 +948,6 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
   if((dest_y + height) > dest_height)
     height = dest_height - dest_y;
 
-  debug("COPY BLOCK at (%d) %d %d for %d by %d to (%d) %d %d\n",
-   src_type, src_x, src_y, width, height, dest_type, dest_x, dest_y);
-
   switch((dest_type << 2) | (src_type))
   {
     // Board to board

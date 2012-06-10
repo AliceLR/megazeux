@@ -186,7 +186,7 @@ static void decrypt(const char *file_name)
   char password[15];
   char *file_buffer;
   char *src_ptr;
-  char backup_name[ strlen(file_name) + 7 ];
+  char backup_name[MAX_PATH];
 
   int meter_target, meter_curr = 0;
 
@@ -207,7 +207,7 @@ static void decrypt(const char *file_name)
 
   src_ptr += 25;
 
-  strcpy(backup_name, file_name);
+  strncpy(backup_name, file_name, MAX_PATH - 8);
   strcat(backup_name, ".locked");
   backup = fopen_unsafe(backup_name, "wb");
   fwrite(file_buffer, file_length, 1, backup);
