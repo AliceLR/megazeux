@@ -165,7 +165,6 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   char *test_buffer;
 
   int board_location = ftell(fp);
-  int minimum_rle_size;
 
   // Initialize some fields that may no longer be loaded
   // from the board file itself..
@@ -207,19 +206,8 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
 
     size = overlay_width * overlay_height;
 
-    /* Quiz! Would 2+6 RLE2s at max compression fit in the
-     * supposed data size given maximum compression?
-     */
-    minimum_rle_size = (size / 128) * 8;
-    if(minimum_rle_size > data_size)
+    if(size > MAX_BOARD_SIZE)
       goto err_invalid;
-
-    /* Can we seek that far ahead, for that matter? */
-    if(fseek(fp, minimum_rle_size, SEEK_CUR))
-      goto err_invalid;
-
-    fseek(fp, -minimum_rle_size, SEEK_CUR);
-    /* End RLE checks */
 
     cur_board->overlay = cmalloc(size);
     cur_board->overlay_color = cmalloc(size);
@@ -254,23 +242,8 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
 
   size = board_width * board_height;
 
-  if(!minimum_rle_size)
-  {
-    /* Quiz! Would 6 RLE2s at max compression fit in the
-     * supposed data size given maximum compression? Maybe
-     * redundant if the overlay isn't on but oh well.
-     */
-    minimum_rle_size = (size / 128) * 6;
-    if(minimum_rle_size > data_size)
-      goto err_invalid;
-
-    /* Can we seek that far ahead, for that matter? */
-    if(fseek(fp, minimum_rle_size, SEEK_CUR))
-      goto err_invalid;
-
-    fseek(fp, -minimum_rle_size, SEEK_CUR);
-    /* End RLE checks */
-  }
+  if(size > MAX_BOARD_SIZE)
+    goto err_invalid;
 
   cur_board->level_id = cmalloc(size);
   cur_board->level_color = cmalloc(size);
