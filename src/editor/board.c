@@ -50,7 +50,14 @@ static int board_magic(const char magic_string[4])
 static struct board *load_board_allocate_direct(FILE *fp, int version)
 {
   struct board *cur_board = cmalloc(sizeof(struct board));
-  load_board_direct(cur_board, fp, 0, version);
+  int board_start, board_end;
+
+  board_start = ftell(fp);
+  fseek(fp, 0, SEEK_END);
+  board_end = ftell(fp);
+  fseek(fp, board_start, SEEK_SET);
+
+  load_board_direct(cur_board, fp, (board_end - board_start), 0, version);
   fread(cur_board->board_name, 25, 1, fp);
   return cur_board;
 }

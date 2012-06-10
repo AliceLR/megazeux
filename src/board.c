@@ -153,7 +153,7 @@ static void create_blank_board(struct board *cur_board)
 }
 
 __editor_maybe_static int load_board_direct(struct board *cur_board,
- FILE *fp, int savegame, int version)
+ FILE *fp, int data_size, int savegame, int version)
 {
   int num_robots, num_scrolls, num_sensors, num_robots_active;
   int overlay_mode, size, board_width, board_height, i;
@@ -206,6 +206,12 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
 
     size = overlay_width * overlay_height;
 
+    /* Quiz! Would 2+6 RLE2s at max compression fit in the
+     * supposed data size given maximum compression?
+     */
+    if((size/128+1)*8 > data_size)
+      goto err_invalid;
+
     cur_board->overlay = cmalloc(size);
     cur_board->overlay_color = cmalloc(size);
 
@@ -238,6 +244,13 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   cur_board->board_height = board_height;
 
   size = board_width * board_height;
+
+  /* Quiz! Would 6 RLE2s at max compression fit in the
+   * supposed data size given maximum compression? Maybe
+   * redundant if the overlay isn't on but oh well.
+   */
+  if((size/128+1)*8 > data_size)
+    goto err_invalid;
 
   cur_board->level_id = cmalloc(size);
   cur_board->level_color = cmalloc(size);
@@ -516,7 +529,7 @@ struct board *load_board_allocate(FILE *fp, int savegame, int version)
     goto err_out;
   }
 
-  result = load_board_direct(cur_board, fp, savegame, version);
+  result = load_board_direct(cur_board, fp, board_size, savegame, version);
 
   if(result != VAL_SUCCESS)
     create_blank_board(cur_board);

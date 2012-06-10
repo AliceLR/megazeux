@@ -40,7 +40,7 @@ int find_board(struct world *mzx_world, char *name);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC int load_board_direct(struct board *cur_board, FILE *fp,
- int savegame, int version);
+int data_size, int savegame, int version);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS
