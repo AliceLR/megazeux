@@ -984,7 +984,7 @@ static void draw_menu_minimal(int overlay_edit, int draw_mode,
    level_param, current_param, src_board);
 }
 
-static void __edit_world(struct world *mzx_world)
+static void __edit_world(struct world *mzx_world, int reload_curr_file)
 {
   struct board *src_board;
   struct robot copy_robot;
@@ -992,6 +992,7 @@ static void __edit_world(struct world *mzx_world)
   struct sensor copy_sensor;
 
   int i;
+  int fade;
   int cursor_board_x = 0, cursor_board_y = 0;
   int cursor_x = 0, cursor_y = 0;
   int scroll_x = 0, scroll_y = 0;
@@ -1052,8 +1053,6 @@ static void __edit_world(struct world *mzx_world)
   set_config_from_file(&(mzx_world->conf), "editor.cnf");
   chdir(current_listening_dir);
 
-  current_world[0] = 0;
-
   copy_robot.used = 0;
   copy_sensor.used = 0;
   copy_scroll.used = 0;
@@ -1062,14 +1061,36 @@ static void __edit_world(struct world *mzx_world)
 
   set_palette_intensity(100);
 
-  if(mzx_world->active)
   {
-    clear_world(mzx_world);
-    clear_global_data(mzx_world);
-  }
-  mzx_world->active = 1;
+    struct stat stat_res;
+    strncpy(current_world, curr_file, 127);
 
-  create_blank_world(mzx_world);
+    if(
+     reload_curr_file &&
+     curr_file[0] &&
+     !stat(curr_file, &stat_res) &&
+     reload_world(mzx_world, curr_file, &fade))
+    {
+      mzx_world->current_board_id = mzx_world->first_board;
+      mzx_world->current_board =
+       mzx_world->board_list[mzx_world->current_board_id];
+      src_board = mzx_world->current_board;
+    }
+    else
+    {
+      current_world[0] = 0;
+
+      if(mzx_world->active)
+      {
+        clear_world(mzx_world);
+        clear_global_data(mzx_world);
+      }
+      mzx_world->active = 1;
+
+      create_blank_world(mzx_world);
+    }
+  }
+
   m_show();
 
   end_module();

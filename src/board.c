@@ -188,7 +188,11 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   cur_board->volume_target = 255;
 
   // board_mode, unused
-  fgetc(fp);
+  if(fgetc(fp) == EOF)
+  {
+    val_error(WORLD_BOARD_MISSING, board_location);
+    return VAL_MISSING;
+  }
 
   /* don't need to check most of this because if any of
    * it screws up, load_RLE2_plane will find out

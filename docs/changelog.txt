@@ -4,6 +4,8 @@ An incremental MegaZeux release introducing several major bugfixes and new
 editor features.
 
 FEATURES
++ IMPORTANT! Pressing 'E' or 'F9' on a title screen will now open the current
+  world for editing.  Press 'N' or 'F8' to create a new world.
 + Multiple hosts may now be defined in config.txt. Update attempts will
   be carried out in the order they are defined.
 + A startup path may be defined in config.txt.

@@ -76,11 +76,12 @@ static const char main_menu_4[] =
  "F7/U - Updater";
 
 static const char main_menu_5[] =
- "F8/E - Editor";
+ "F8/N - New World\n"
+ "F9/E - Edit World";
 
 static const char main_menu_6[] =
- "F10  - Quickload\n"
- "";  // unused
+ "F10  - Quickload\n";
+// "";  // unused
 
 static const char game_menu_1[] =
  "F1    - Help\n";
@@ -105,7 +106,8 @@ static const char game_menu_4[] =
 
 __updater_maybe_static void (*check_for_updates)(struct config_info *conf);
 
-__editor_maybe_static void (*edit_world)(struct world *mzx_world);
+__editor_maybe_static void (*edit_world)(struct world *mzx_world,
+ int reload_curr_file);
 __editor_maybe_static void (*debug_counters)(struct world *mzx_world);
 __editor_maybe_static void (*draw_debug_box)(struct world *mzx_world,
  int x, int y, int d_x, int d_y);
@@ -2165,7 +2167,7 @@ void title_screen(struct world *mzx_world)
   if(edit_world && mzx_world->conf.startup_editor)
   {
     set_intro_mesg_timer(0);
-    edit_world(mzx_world);
+    edit_world(mzx_world, 0);
   }
   else
   {
@@ -2215,6 +2217,7 @@ void title_screen(struct world *mzx_world)
 
     if(key)
     {
+      int reload_curr_world_in_editor = 1;
       switch(key)
       {
 #ifdef CONFIG_HELPSYS
@@ -2460,6 +2463,10 @@ void title_screen(struct world *mzx_world)
         }
 
         case IKEY_F8:
+        case IKEY_n:
+          reload_curr_world_in_editor = 0;
+
+        case IKEY_F9:
         case IKEY_e:
         {
           if(edit_world)
@@ -2468,7 +2475,7 @@ void title_screen(struct world *mzx_world)
             clear_sfx_queue();
             vquick_fadeout();
             set_intro_mesg_timer(0);
-            edit_world(mzx_world);
+            edit_world(mzx_world, reload_curr_world_in_editor);
 
             if(curr_file[0])
               load_world_file(mzx_world, curr_file);
@@ -2573,7 +2580,7 @@ void title_screen(struct world *mzx_world)
             write_string(main_menu_4, 30, 12, 31, 1);
           if(edit_world)
             write_string(main_menu_5, 30, 13, 31, 1);
-          write_string(main_menu_6, 30, 14, 31, 1);
+          write_string(main_menu_6, 30, 15, 31, 1);
           update_screen();
           m_show();
 
@@ -2582,7 +2589,7 @@ void title_screen(struct world *mzx_world)
             update_event_status_delay();
             update_screen();
             key = get_key(keycode_internal);
-          } while(key != IKEY_RETURN);
+          } while(key != IKEY_RETURN && key != IKEY_ESCAPE);
 
           restore_screen();
           update_screen();
