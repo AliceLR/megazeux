@@ -28,6 +28,7 @@ BUGFIXES
   copy x y dx dy.
 + Updated MZX_SPEED in the counter debugger, where it was still getting clamped
   from 1 to 9.
++ Temporary fix for MSVC bug where all window dialogs would freeze. (MZXGiant)
 
 DEVELOPERS
 + Switched debian prereq. and darwin libpng12 to libpng, switched darwin and
@@ -35,6 +36,7 @@ DEVELOPERS
 + Darwin CC/CXX compiler can now be specified on the command line. (ajs)
 + Cleaned up broken ifeq structure in darwin Makefile.in so ARCHes other than
   i686 can be built.
++ Updated MSVC dirent.h to the latest version (MZXGiant)
 
 
 June 1, 2012 - MZX 2.84
