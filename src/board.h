@@ -27,6 +27,7 @@ __M_BEGIN_DECLS
 #include "const.h"
 #include "board_struct.h"
 #include "world_struct.h"
+#include "validation.h"
 
 #define MAX_BOARDS 250
 
@@ -38,7 +39,7 @@ CORE_LIBSPEC int save_board(struct board *cur_board, FILE *fp, int savegame, int
 int find_board(struct world *mzx_world, char *name);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC void load_board_direct(struct board *cur_board, FILE *fp,
+CORE_LIBSPEC int load_board_direct(struct board *cur_board, FILE *fp,
  int savegame, int version);
 #endif // CONFIG_EDITOR
 

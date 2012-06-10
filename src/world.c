@@ -976,7 +976,6 @@ __editor_maybe_static FILE *try_load_world(const char *file,
   FILE *fp;
   int v;
 
-  // we'll put this here for now, but later it needs to move to reload_world
   /* world validation handling */
   enum val_result status = validate_world_file(file, savegame, NULL, 0);
   if(VAL_NEED_UNLOCK == status)
@@ -1514,7 +1513,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
   }
 
   // Read global robot
-  fseek(fp, gl_rob, SEEK_SET);
+  fseek(fp, gl_rob, SEEK_SET); //don't worry if this fails
   load_robot(&mzx_world->global_robot, fp, savegame, version);
 
   // Go back to where the names are

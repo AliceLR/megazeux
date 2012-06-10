@@ -53,10 +53,14 @@ enum val_error
   WORLD_FILE_VERSION_TOO_RECENT,
   WORLD_PASSWORD_PROTECTED,
   WORLD_LOCKED,
-  WORLD_TRUNCATED,
-  WORLD_CORRUPT_BOARD,
+  WORLD_BOARD_MISSING,
+  WORLD_BOARD_CORRUPT,
+  WORLD_BOARD_TRUNCATED_SAFE,
+  WORLD_ROBOT_MISSING,
   BOARD_FILE_INVALID,
-  BOARD_CORRUPT_ROBOT_DATA,
+  BOARD_ROBOT_CORRUPT,
+  BOARD_SCROLL_CORRUPT,
+  BOARD_SENSOR_CORRUPT,
   MZM_FILE_INVALID,
   MZM_FILE_FROM_SAVEGAME,
   MZM_FILE_VERSION_TOO_RECENT
@@ -71,11 +75,7 @@ CORE_LIBSPEC enum val_result validate_world_file(const char *filename, int saveg
 CORE_LIBSPEC enum val_result validate_mzm_file(const char *filename, int savegame,
  int version);
 
-/* These two only get called on files that have
- * already been verified as openable and valid
- */
-//CORE_LIBSPEC enum val_result validate_board(FILE *f, int ptr, int world_version);
-//CORE_LIBSPEC enum val_result validate_robot(FILE *f, int ptr, int world_version);
+//CORE_LIBSPEC enum val_result validate_robot(FILE *f, int ptr, int savegame, int version);
 
 __M_END_DECLS
 

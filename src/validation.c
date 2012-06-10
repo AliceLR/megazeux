@@ -181,16 +181,31 @@ void val_error(enum val_error error_id, int value)
       code = 0x0D02;
       break;
     }
-    case WORLD_TRUNCATED:
-    {
-      sprintf(error_mesg, "World is truncated, but some may have been recovered");
-      code = 0x0D02;
-      break;
-    }
-    case WORLD_CORRUPT_BOARD:
+    case WORLD_BOARD_MISSING:
     {
       snprintf(error_mesg, 80,
-       "Board # %d is truncated or corrupt", value);
+       "Board @ %d could not be found", value);
+      code = 0x0D03;
+      break;
+    }
+    case WORLD_BOARD_CORRUPT:
+    {
+      snprintf(error_mesg, 80,
+       "Board @ %d is irrecoverably truncated or corrupt", value);
+      code = 0x0D03;
+      break;
+    }
+    case WORLD_BOARD_TRUNCATED_SAFE:
+    {
+      snprintf(error_mesg, 80,
+       "Board @ %d is truncated, but could be partially recovered", value);
+      code = 0x0D03;
+      break;
+    }
+    case WORLD_ROBOT_MISSING:
+    {
+      snprintf(error_mesg, 80,
+       "Global robot could not be found @ %d", value);
       code = 0x0D03;
       break;
     }
@@ -200,10 +215,12 @@ void val_error(enum val_error error_id, int value)
       code = 0x4040;
       break;
     }
-    case BOARD_CORRUPT_ROBOT_DATA:
+    case BOARD_ROBOT_CORRUPT:
+    case BOARD_SCROLL_CORRUPT:
+    case BOARD_SENSOR_CORRUPT:
     {
       snprintf(error_mesg, 80,
-       "Robot # %d is truncated or corrupt", value);
+       "Robot @ %d is truncated or corrupt", value);
       code = 0x0D03;
       break;
     }
@@ -389,8 +406,11 @@ enum val_result validate_world_file(const char *filename,
 
     /* TEST 4:  If we think it's locked, try to decrypt it. */
     protection_method = fgetc(f);
-    if(protection_method)
+    if(protection_method > 0)
     {
+      if(protection_method > 3)
+        goto err_invalid;
+
       if(decrypt_attempted) // In the unlikely event that this will happen again
         goto err_invalid;
 

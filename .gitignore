@@ -32,3 +32,6 @@ src/utils/png2smzx.exe
 src/utils/png2smzx
 stdout.txt
 stderr.txt
+*.mzx
+*.sav
+*.mzm

@@ -26,6 +26,7 @@
 #include "const.h"
 #include "extmem.h"
 #include "util.h"
+#include "validation.h"
 
 /* 13 (not NULL terminated in format) */
 #define LEGACY_MOD_FILENAME_MAX 13
@@ -43,15 +44,22 @@ static int cmp_robots(const void *dest, const void *src)
   return strcasecmp(rdest->robot_name, rsrc->robot_name);
 }
 
-static void load_RLE2_plane(char *plane, FILE *fp, int size)
+static int load_RLE2_plane(char *plane, FILE *fp, int size)
 {
   int i, runsize;
-  char current_char;
+  int current_char;
+
+  if(size < 0)
+    return -3;
 
   for(i = 0; i < size; i++)
   {
     current_char = fgetc(fp);
-    if(!(current_char & 0x80))
+    if(current_char == EOF)
+    {
+      return -1;
+    }
+    else if(!(current_char & 0x80))
     {
       // Regular character
       plane[i] = current_char;
@@ -60,14 +68,91 @@ static void load_RLE2_plane(char *plane, FILE *fp, int size)
     {
       // A run
       runsize = current_char & 0x7F;
+      if((i + runsize) > size)
+        return -2;
+
       current_char = fgetc(fp);
+      if(current_char == EOF)
+        return -1;
+
       memset(plane + i, current_char, runsize);
       i += (runsize - 1);
     }
   }
+
+  return 0;
 }
 
-__editor_maybe_static void load_board_direct(struct board *cur_board,
+static void create_blank_board(struct board *cur_board)
+{
+  int size = 2000;
+  cur_board->overlay_mode = 0;
+  cur_board->board_width = 80;
+  cur_board->board_height = 25;
+
+  cur_board->level_id = ccalloc(1, size);
+  cur_board->level_color = ccalloc(1, size);
+  cur_board->level_param = ccalloc(1, size);
+  cur_board->level_under_id = ccalloc(1, size);
+  cur_board->level_under_color = ccalloc(1, size);
+  cur_board->level_under_param = ccalloc(1, size);
+
+  strcpy(cur_board->mod_playing, "");
+  cur_board->viewport_x = 0;
+  cur_board->viewport_y = 0;
+  cur_board->viewport_width = 80;
+  cur_board->viewport_height = 25;
+  cur_board->can_shoot = 0;
+  cur_board->can_bomb = 0;
+  cur_board->fire_burn_brown = 0;
+  cur_board->fire_burn_space = 0;
+  cur_board->fire_burn_fakes = 0;
+  cur_board->fire_burn_trees = 0;
+  cur_board->explosions_leave = 0;
+  cur_board->save_mode = 1;
+  cur_board->forest_becomes = 0;
+  cur_board->collect_bombs = 0;
+  cur_board->fire_burns = 0;
+  cur_board->board_dir[0] = 0;
+  cur_board->board_dir[1] = 0;
+  cur_board->board_dir[2] = 0;
+  cur_board->board_dir[3] = 0;
+  cur_board->restart_if_zapped = 0;
+  cur_board->time_limit = 0;
+  cur_board->last_key = 0;
+  cur_board->num_input = 0;
+  cur_board->input_size = 0;
+  strcpy(cur_board->input_string, "");
+  cur_board->player_last_dir = 0;
+  strcpy(cur_board->bottom_mesg, "Placeholder for irreparably corrupt board");
+  cur_board->b_mesg_timer = 160;
+  cur_board->lazwall_start = 0;
+  cur_board->b_mesg_row = 24;
+  cur_board->b_mesg_col = -1;
+  cur_board->scroll_x = 0;
+  cur_board->scroll_y = 0;
+  cur_board->locked_x = 0;
+  cur_board->locked_y = 0;
+  cur_board->player_ns_locked = 0;
+  cur_board->player_ew_locked = 0;
+  cur_board->player_attack_locked = 0;
+  cur_board->volume = 0;
+  cur_board->volume_inc = 0;
+  cur_board->volume_target = 0;
+
+  cur_board->num_robots = 0;
+  cur_board->num_robots_allocated = 0;
+  cur_board->robot_list = ccalloc(1, sizeof(struct robot *));
+  cur_board->robot_list_name_sorted = ccalloc(1, sizeof(struct robot *));
+  cur_board->num_scrolls = 0;
+  cur_board->num_scrolls_allocated = 0;
+  cur_board->scroll_list = ccalloc(1, sizeof(struct scroll *));
+  cur_board->num_sensors = 0;
+  cur_board->num_sensors_allocated = 0;
+  cur_board->sensor_list = ccalloc(1, sizeof(struct sensor *));
+}
+
+__editor_maybe_static int load_board_direct(struct board *cur_board,
  FILE *fp, int savegame, int version)
 {
   int num_robots, num_scrolls, num_sensors, num_robots_active;
@@ -78,6 +163,8 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
   struct sensor *cur_sensor;
 
   char *test_buffer;
+
+  int board_location = ftell(fp);
 
   // Initialize some fields that may no longer be loaded
   // from the board file itself..
@@ -103,6 +190,9 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
   // board_mode, unused
   fgetc(fp);
 
+  /* don't need to check most of this because if any of
+   * it screws up, load_RLE2_plane will find out
+   */
   overlay_mode = fgetc(fp);
 
   if(!overlay_mode)
@@ -119,13 +209,17 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
     cur_board->overlay = cmalloc(size);
     cur_board->overlay_color = cmalloc(size);
 
-    load_RLE2_plane(cur_board->overlay, fp, size);
+    if(load_RLE2_plane(cur_board->overlay, fp, size))
+      goto err_invalid;
+
     test_buffer = cmalloc(1024);
     free(test_buffer);
 
     // Skip sizes
-    fseek(fp, 4, SEEK_CUR);
-    load_RLE2_plane(cur_board->overlay_color, fp, size);
+    if(fseek(fp, 4, SEEK_CUR) ||
+     load_RLE2_plane(cur_board->overlay_color, fp, size))
+      goto err_invalid;
+
     test_buffer = cmalloc(1024);
     free(test_buffer);
   }
@@ -152,17 +246,28 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
   cur_board->level_under_color = cmalloc(size);
   cur_board->level_under_param = cmalloc(size);
 
-  load_RLE2_plane(cur_board->level_id, fp, size);
-  fseek(fp, 4, SEEK_CUR);
-  load_RLE2_plane(cur_board->level_color, fp, size);
-  fseek(fp, 4, SEEK_CUR);
-  load_RLE2_plane(cur_board->level_param, fp, size);
-  fseek(fp, 4, SEEK_CUR);
-  load_RLE2_plane(cur_board->level_under_id, fp, size);
-  fseek(fp, 4, SEEK_CUR);
-  load_RLE2_plane(cur_board->level_under_color, fp, size);
-  fseek(fp, 4, SEEK_CUR);
-  load_RLE2_plane(cur_board->level_under_param, fp, size);
+  if(load_RLE2_plane(cur_board->level_id, fp, size))
+    goto err_invalid;
+
+  if(fseek(fp, 4, SEEK_CUR) ||
+   load_RLE2_plane(cur_board->level_color, fp, size))
+    goto err_invalid;
+
+  if(fseek(fp, 4, SEEK_CUR) ||
+   load_RLE2_plane(cur_board->level_param, fp, size))
+    goto err_invalid;
+
+  if(fseek(fp, 4, SEEK_CUR) ||
+   load_RLE2_plane(cur_board->level_under_id, fp, size))
+    goto err_invalid;
+
+  if(fseek(fp, 4, SEEK_CUR) ||
+   load_RLE2_plane(cur_board->level_under_color, fp, size))
+    goto err_invalid;
+
+  if(fseek(fp, 4, SEEK_CUR) ||
+   load_RLE2_plane(cur_board->level_under_param, fp, size))
+    goto err_invalid;
 
   // Load board parameters
 
@@ -277,6 +382,10 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
   num_robots = fgetc(fp);
   num_robots_active = 0;
 
+  // Routine check to make sure we didn't hit the EOF somewhere.
+  if(num_robots == EOF)
+    goto err_invalid;
+
   cur_board->robot_list = ccalloc(num_robots + 1, sizeof(struct robot *));
   // Also allocate for name sorted list
   cur_board->robot_list_name_sorted =
@@ -327,6 +436,10 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
 
   // Load scrolls
   num_scrolls = fgetc(fp);
+
+  if(num_scrolls == EOF)
+    goto err_out;
+
   cur_board->scroll_list = ccalloc(num_scrolls + 1, sizeof(struct scroll *));
 
   if(num_scrolls)
@@ -346,6 +459,10 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
 
   // Load sensors
   num_sensors = fgetc(fp);
+
+  if(num_sensors == EOF)
+    goto err_out;
+
   cur_board->sensor_list = ccalloc(num_sensors + 1, sizeof(struct sensor *));
 
   if(num_sensors)
@@ -362,12 +479,24 @@ __editor_maybe_static void load_board_direct(struct board *cur_board,
 
   cur_board->num_sensors = num_sensors;
   cur_board->num_sensors_allocated = num_sensors;
+
+err_out:
+  return VAL_SUCCESS;
+
+err_truncated:
+  val_error(WORLD_BOARD_TRUNCATED_SAFE, board_location);
+  return VAL_SUCCESS;
+
+err_invalid:
+  val_error(WORLD_BOARD_CORRUPT, board_location);
+  return VAL_INVALID;
 }
 
 struct board *load_board_allocate(FILE *fp, int savegame, int version)
 {
   struct board *cur_board = cmalloc(sizeof(struct board));
   int board_size, board_location, last_location;
+  enum val_result result;
 
   board_size = fgetd(fp);
 
@@ -375,18 +504,29 @@ struct board *load_board_allocate(FILE *fp, int savegame, int version)
   if(!board_size)
   {
     fseek(fp, 4, SEEK_CUR);
-    free(cur_board);
-    return NULL;
+    goto err_out;
   }
 
   board_location = fgetd(fp);
   last_location = ftell(fp);
 
-  fseek(fp, board_location, SEEK_SET);
-  load_board_direct(cur_board, fp, savegame, version);
-  fseek(fp, last_location, SEEK_SET);
+  if(fseek(fp, board_location, SEEK_SET))
+  {
+    val_error(WORLD_BOARD_MISSING, board_location);
+    goto err_out;
+  }
 
+  result = load_board_direct(cur_board, fp, savegame, version);
+
+  if(result != VAL_SUCCESS)
+    create_blank_board(cur_board);
+
+  fseek(fp, last_location, SEEK_SET);
   return cur_board;
+
+err_out:
+  free(cur_board);
+  return NULL;
 }
 
 static void save_RLE2_plane(char *plane, FILE *fp, int size)
