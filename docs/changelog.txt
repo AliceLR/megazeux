@@ -7,6 +7,8 @@ FEATURES
 + Multiple hosts may now be defined in config.txt. Update attempts will
   be carried out in the order they are defined.
 + A startup path may be defined in config.txt.
++ Specifying the backup filename with a directory, ex. "backup/b", will now
+  attempt to create the directory if it does not exist.
 
 BUGFIXES
 + Mac OS X: MegaZeux now uses /Users/[username] as the default starting

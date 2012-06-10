@@ -1095,9 +1095,11 @@ static void __edit_world(struct world *mzx_world)
     if((backup_count) &&
      ((get_ticks() - backup_timestamp) > (backup_interval * 1000)))
     {
-      char backup_name_formatted[512];
+      char backup_name_formatted[MAX_PATH];
       sprintf(backup_name_formatted,
        "%s%d%s", backup_name, backup_num + 1, backup_ext);
+
+      create_path_if_not_exists(backup_name);
 
       save_world(mzx_world, backup_name_formatted, 0);
       backup_num = (backup_num + 1) % backup_count;

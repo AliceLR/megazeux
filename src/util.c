@@ -331,6 +331,25 @@ void split_path_filename(const char *source,
   }
 }
 
+int create_path_if_not_exists(const char *filename)
+{
+  struct stat stat_info;
+  char parent_directory[MAX_PATH];
+
+  if(!get_path(filename, parent_directory, MAX_PATH))
+    return 1;
+
+  if(!stat(parent_directory, &stat_info))
+    return 2;
+
+  create_path_if_not_exists(parent_directory);
+
+  if(mkdir(parent_directory, 0755))
+    return 3;
+
+  return 0;
+}
+
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
 
 /* On WIN32 with C99 defining __STRICT_ANSI__ these POSIX.1-2001 functions

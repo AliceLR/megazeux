@@ -78,9 +78,12 @@ CORE_LIBSPEC ssize_t get_path(const char *file_name, char *dest, unsigned int bu
 #ifdef CONFIG_UTILS
 ssize_t __get_path(const char *file_name, char *dest, unsigned int buf_len);
 #endif
+
 CORE_LIBSPEC void split_path_filename(const char *source,
  char *destpath, unsigned int path_buffer_len,
  char *destfile, unsigned int file_buffer_len);
+
+CORE_LIBSPEC int create_path_if_not_exists(const char *filename);
 
 typedef void (*fn_ptr)(void);
 
