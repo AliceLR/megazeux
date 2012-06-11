@@ -97,8 +97,7 @@ CORE_LIBSPEC int place_player_xy(struct world *mzx_world, int x, int y);
 CORE_LIBSPEC void setup_overlay(struct board *src_board, int mode);
 CORE_LIBSPEC void replace_player(struct world *mzx_world);
 
-void create_blank_robot(struct robot *cur_robot);
-
+void create_blank_robot(struct robot *cur_robot, int savegame);
 struct robot *load_robot_allocate(FILE *fp, int savegame, int version);
 void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version);
 struct scroll *load_scroll_allocate(FILE *fp);
@@ -110,6 +109,7 @@ void clear_robot(struct robot *cur_robot);
 void clear_scroll(struct scroll *cur_scroll);
 void clear_sensor(struct sensor *cur_sensor);
 void reallocate_scroll(struct scroll *scroll, size_t size);
+
 int find_robot(struct board *src_board, const char *name,
  int *first, int *last);
 void send_robot(struct world *mzx_world, char *name, const char *mesg,

@@ -176,6 +176,66 @@ int get_robot_id(struct board *src_board, const char *name)
   return -1;
 }
 
+void create_blank_robot(struct robot *r, int savegame)
+{
+  if(r->program_bytecode)
+    free(r->program_bytecode);
+  r->program_bytecode_length = 0;
+  r->program_bytecode = NULL;
+
+#ifdef CONFIG_DEBYTECODE
+  if(r->program_source)
+    free(r->program_source);
+  r->program_source_length = 0;
+  r->program_source = NULL;
+
+  if((r->world_version >= VERSION_PROGRAM_SOURCE) && !savegame)
+  {
+    r->program_source_length = 2;
+    r->program_source = cmalloc(2);
+    strcpy(r->program_source, "\x0A"); // Blank program? linebreak then term
+  }
+  else
+#endif
+  {
+    r->program_bytecode_length = 2;
+    r->program_bytecode = cmalloc(2);
+    strcpy(r->program_bytecode, "\xFF"); // Blank program, -1 then 0
+  }
+
+  strcpy(r->robot_name, "<<empty>>");
+  r->robot_char = 'R';
+  r->cur_prog_line = 1;
+  r->pos_within_line = 0;
+  r->robot_cycle = 1;
+  r->cycle_count = 0;
+  r->bullet_type = 0;
+  r->is_locked = 1;
+  r->can_lavawalk = 1;
+  r->walk_dir = IDLE;
+  r->last_touch_dir = IDLE;
+  r->last_shot_dir = IDLE;
+  r->xpos = -1;
+  r->ypos = -1;
+  r->status = 0;
+  r->used = 1;
+  r->loop_count = 0;
+  for(int i = 0; i<32; i++)
+    r->local[i] = 0;
+
+  if(r->label_list)
+    free(r->label_list);
+  r->num_labels = 0;
+  r->label_list = NULL;
+
+  if(r->stack)
+    free(r->stack);
+  r->stack_size = 0;
+  r->stack_pointer = 0;
+  r->stack = NULL;
+
+}
+
 struct robot *load_robot_allocate(FILE *fp, int savegame, int version)
 {
   struct robot *cur_robot = cmalloc(sizeof(struct robot));
@@ -404,7 +464,7 @@ err_invalid:
   // that were allocated, they'll be cleared later.
   val_error(BOARD_ROBOT_CORRUPT, robot_location);
 err_out:
-  cur_robot->used = 0;
+  create_blank_robot(cur_robot, savegame);
 }
 
 static void robot_stack_push(struct robot *cur_robot, int value)
@@ -470,8 +530,14 @@ static void load_scroll(struct scroll *cur_scroll, FILE *fp)
   return;
 
 scroll_err:
-  // Something screwed up, optimize it out
-  cur_scroll->used = 0;
+  // Something screwed up, slip in an empty scroll.
+  cur_scroll->num_lines = 1;
+  cur_scroll->mesg_size = 3;
+  cur_scroll->used = 1;
+  if(cur_scroll->mesg)
+    free(cur_scroll->mesg);
+  crealloc(cur_scroll->mesg, 3);
+  strcpy(cur_scroll->mesg, "\x01\x0A");
 }
 
 struct scroll *load_scroll_allocate(FILE *fp)
@@ -496,8 +562,11 @@ static void load_sensor(struct sensor *cur_sensor, FILE *fp)
   return;
 
 sensor_err:
-  // Something screwed up, optimize it out.
-  cur_sensor->used = 0;
+  // Something screwed up, insert filler
+  strcpy(cur_sensor->sensor_name, "");
+  strcpy(cur_sensor->robot_to_mesg, "");
+  cur_sensor->sensor_char = 'S';
+  cur_sensor->used = 1;
 }
 
 struct sensor *load_sensor_allocate(FILE *fp)
