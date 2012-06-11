@@ -184,28 +184,28 @@ void val_error(enum val_error error_id, int value)
     case WORLD_BOARD_MISSING:
     {
       snprintf(error_mesg, 80,
-       "Board @ %d could not be found", value);
+       "Board @ %Xh could not be found", value);
       code = 0x0D03;
       break;
     }
     case WORLD_BOARD_CORRUPT:
     {
       snprintf(error_mesg, 80,
-       "Board @ %d is irrecoverably truncated or corrupt", value);
+       "Board @ %Xh is irrecoverably truncated or corrupt", value);
       code = 0x0D03;
       break;
     }
     case WORLD_BOARD_TRUNCATED_SAFE:
     {
       snprintf(error_mesg, 80,
-       "Board @ %d is truncated, but could be partially recovered", value);
+       "Board @ %Xh is truncated, but could be partially recovered", value);
       code = 0x0D03;
       break;
     }
     case WORLD_ROBOT_MISSING:
     {
       snprintf(error_mesg, 80,
-       "Global robot could not be found @ %d", value);
+       "Robot @ %Xh could not be found", value);
       code = 0x0D03;
       break;
     }
@@ -220,7 +220,7 @@ void val_error(enum val_error error_id, int value)
     case BOARD_SENSOR_CORRUPT:
     {
       snprintf(error_mesg, 80,
-       "Robot @ %d is truncated or corrupt", value);
+       "Robot @ %Xh is truncated or corrupt", value);
       code = 0x0D03;
       break;
     }
@@ -455,7 +455,8 @@ enum val_result validate_world_file(const char *filename,
     fseek(f, WORLD_GLOBAL_OFFSET_OFFSET - 48, SEEK_SET);
     for(i = 0; i<48; i++)
     {
-      if(fgetc(f) > 63)
+      int val = fgetc(f);
+      if((val < 0) || (val > 63))
         goto err_invalid;
     }
 

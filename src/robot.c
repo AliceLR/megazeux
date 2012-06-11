@@ -38,6 +38,7 @@
 #include "world.h"
 #include "util.h"
 #include "rasm.h"
+#include "validation.h"
 
 static int cmp_labels(const void *dest, const void *src)
 {
@@ -189,6 +190,8 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   int program_length;
   int i;
 
+  int robot_location = ftell(fp);
+
   cur_robot->world_version = version;
 
 #ifdef CONFIG_DEBYTECODE
@@ -201,6 +204,12 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   {
     program_length = fgetw(fp);
     fseek(fp, 2, SEEK_CUR);
+  }
+
+  if(program_length == EOF)
+  {
+    val_error(WORLD_ROBOT_MISSING, robot_location);
+    goto err_out;
   }
 
   fread(cur_robot->robot_name, 15, 1, fp);
@@ -226,6 +235,10 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   else
     fseek(fp, 2, SEEK_CUR);
 
+  // Periodic EOF check
+  if(cur_robot->ypos == EOF)
+    goto err_invalid;
+
   // If savegame, there's some additional information to get
   if(savegame)
   {
@@ -239,6 +252,9 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
 
     stack_size = fgetd(fp);
     cur_robot->stack_pointer = fgetd(fp);
+
+    if(stack_size == EOF)
+      goto err_invalid;
 
     cur_robot->stack = ccalloc(stack_size, sizeof(int));
     for(i = 0; i < stack_size; i++)
@@ -256,7 +272,11 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
       // The program is bytecode and we have to convert it to sourcecode.
       char *program_legacy_bytecode = cmalloc(program_length);
 
-      fread(program_legacy_bytecode, program_length, 1, fp);
+      if(!fread(program_legacy_bytecode, program_length, 1, fp))
+      {
+        free(program_legacy_bytecode);
+        goto err_invalid;
+      }
 
       cur_robot->program_bytecode = NULL;
       cur_robot->program_source =
@@ -282,7 +302,9 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
       // shouldn't be possible though.
       cur_robot->program_bytecode = cmalloc(program_length);
       cur_robot->program_bytecode_length = program_length;
-      fread(cur_robot->program_bytecode, program_length, 1, fp);
+      if(!fread(cur_robot->program_bytecode, program_length, 1, fp))
+        goto err_invalid;
+
     }
 
     cur_robot->program_source = NULL;
@@ -314,7 +336,11 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
       {
         // The program is bytecode and we have to convert it to sourcecode.
         char *program_legacy_bytecode = cmalloc(program_length);
-        fread(program_legacy_bytecode, program_length, 1, fp);
+        if(!fread(program_legacy_bytecode, program_length, 1, fp))
+        {
+          free(program_legacy_bytecode);
+          goto err_invalid;
+        }
 
         // All programs length 2 are supposed to be blank, 0xFF 0x0. But
         // there's a corruption in Catacombs - this fixes that. Also somehow
@@ -344,7 +370,10 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
       // This program is source, just load it straight
       cur_robot->program_source = cmalloc(program_length + 1);
       cur_robot->program_source_length = program_length;
-      fread(cur_robot->program_source, program_length, 1, fp);
+
+      if(!fread(cur_robot->program_source, program_length, 1, fp))
+        goto err_invalid;
+
       cur_robot->program_source[program_length] = 0;
     }
 
@@ -357,7 +386,8 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
 #ifndef CONFIG_DEBYTECODE
   cur_robot->program_bytecode = cmalloc(program_length);
   cur_robot->program_bytecode_length = program_length;
-  fread(cur_robot->program_bytecode, program_length, 1, fp);
+  if(!fread(cur_robot->program_bytecode, program_length, 1, fp))
+    goto err_invalid;
 
   // Now create a label cache IF the robot is in use
   if(cur_robot->used)
@@ -366,6 +396,15 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
      cache_robot_labels(cur_robot, &cur_robot->num_labels);
   }
 #endif /* !CONFIG_DEBYTECODE */
+
+  return;
+
+err_invalid:
+  // Don't worry about the unused source and bytecode
+  // that were allocated, they'll be cleared later.
+  val_error(BOARD_ROBOT_CORRUPT, robot_location);
+err_out:
+  cur_robot->used = 0;
 }
 
 static void robot_stack_push(struct robot *cur_robot, int value)
@@ -421,8 +460,18 @@ static void load_scroll(struct scroll *cur_scroll, FILE *fp)
   cur_scroll->mesg_size = scroll_size;
   cur_scroll->used = fgetc(fp);
 
+  if(scroll_size < 0)
+    goto scroll_err;
+
   cur_scroll->mesg = cmalloc(scroll_size);
-  fread(cur_scroll->mesg, scroll_size, 1, fp);
+  if(!fread(cur_scroll->mesg, scroll_size, 1, fp))
+    goto scroll_err;
+
+  return;
+
+scroll_err:
+  // Something screwed up, optimize it out
+  cur_scroll->used = 0;
 }
 
 struct scroll *load_scroll_allocate(FILE *fp)
@@ -434,11 +483,21 @@ struct scroll *load_scroll_allocate(FILE *fp)
 
 static void load_sensor(struct sensor *cur_sensor, FILE *fp)
 {
-  fread(cur_sensor->sensor_name, 15, 1, fp);
+  if(!fread(cur_sensor->sensor_name, 15, 1, fp))
+    goto sensor_err;
+
   cur_sensor->sensor_char = fgetc(fp);
-  fread(cur_sensor->robot_to_mesg, 15, 1, fp);
+
+  if(!fread(cur_sensor->robot_to_mesg, 15, 1, fp))
+    goto sensor_err;
 
   cur_sensor->used = fgetc(fp);
+
+  return;
+
+sensor_err:
+  // Something screwed up, optimize it out.
+  cur_sensor->used = 0;
 }
 
 struct sensor *load_sensor_allocate(FILE *fp)
@@ -596,12 +655,17 @@ void clear_label_cache(struct label **label_list, int num_labels)
     }
 
     free(label_list);
+    label_list = NULL;
   }
 }
 
 void clear_robot_contents(struct robot *cur_robot)
 {
-  free(cur_robot->stack);
+  if(cur_robot->stack)
+  {
+    free(cur_robot->stack);
+    cur_robot->stack = NULL;
+  }
 
 #ifdef CONFIG_DEBYTECODE
   // If it was created by the game or loaded via a save file

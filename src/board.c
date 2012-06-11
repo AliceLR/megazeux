@@ -124,8 +124,8 @@ static void create_blank_board(struct board *cur_board)
   cur_board->input_size = 0;
   strcpy(cur_board->input_string, "");
   cur_board->player_last_dir = 0;
-  strcpy(cur_board->bottom_mesg, "Placeholder for irreparably corrupt board");
-  cur_board->b_mesg_timer = 160;
+  strcpy(cur_board->bottom_mesg, "");
+  cur_board->b_mesg_timer = 0;
   cur_board->lazwall_start = 0;
   cur_board->b_mesg_row = 24;
   cur_board->b_mesg_col = -1;
@@ -141,6 +141,7 @@ static void create_blank_board(struct board *cur_board)
   cur_board->volume_target = 0;
 
   cur_board->num_robots = 0;
+  cur_board->num_robots_active = 0;
   cur_board->num_robots_allocated = 0;
   cur_board->robot_list = ccalloc(1, sizeof(struct robot *));
   cur_board->robot_list_name_sorted = ccalloc(1, sizeof(struct robot *));
@@ -194,9 +195,6 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
     return VAL_MISSING;
   }
 
-  /* don't need to check most of this because if any of
-   * it screws up, load_RLE2_plane will find out
-   */
   overlay_mode = fgetc(fp);
 
   if(!overlay_mode)
@@ -210,14 +208,14 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
 
     size = overlay_width * overlay_height;
 
-    if(size > MAX_BOARD_SIZE)
+    if((size < 1) || (size > MAX_BOARD_SIZE))
       goto err_invalid;
 
     cur_board->overlay = cmalloc(size);
     cur_board->overlay_color = cmalloc(size);
 
     if(load_RLE2_plane(cur_board->overlay, fp, size))
-      goto err_invalid;
+      goto err_freeoverlay;
 
     test_buffer = cmalloc(1024);
     free(test_buffer);
@@ -225,7 +223,7 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
     // Skip sizes
     if(fseek(fp, 4, SEEK_CUR) ||
      load_RLE2_plane(cur_board->overlay_color, fp, size))
-      goto err_invalid;
+      goto err_freeoverlay;
 
     test_buffer = cmalloc(1024);
     free(test_buffer);
@@ -246,8 +244,8 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
 
   size = board_width * board_height;
 
-  if(size > MAX_BOARD_SIZE)
-    goto err_invalid;
+  if((size < 1) || (size > MAX_BOARD_SIZE))
+    goto err_freeoverlay;
 
   cur_board->level_id = cmalloc(size);
   cur_board->level_color = cmalloc(size);
@@ -257,27 +255,27 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   cur_board->level_under_param = cmalloc(size);
 
   if(load_RLE2_plane(cur_board->level_id, fp, size))
-    goto err_invalid;
+    goto err_freeboard;
 
   if(fseek(fp, 4, SEEK_CUR) ||
    load_RLE2_plane(cur_board->level_color, fp, size))
-    goto err_invalid;
+    goto err_freeboard;
 
   if(fseek(fp, 4, SEEK_CUR) ||
    load_RLE2_plane(cur_board->level_param, fp, size))
-    goto err_invalid;
+    goto err_freeboard;
 
   if(fseek(fp, 4, SEEK_CUR) ||
    load_RLE2_plane(cur_board->level_under_id, fp, size))
-    goto err_invalid;
+    goto err_freeboard;
 
   if(fseek(fp, 4, SEEK_CUR) ||
    load_RLE2_plane(cur_board->level_under_color, fp, size))
-    goto err_invalid;
+    goto err_freeboard;
 
   if(fseek(fp, 4, SEEK_CUR) ||
    load_RLE2_plane(cur_board->level_under_param, fp, size))
-    goto err_invalid;
+    goto err_freeboard;
 
   // Load board parameters
 
@@ -392,9 +390,9 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   num_robots = fgetc(fp);
   num_robots_active = 0;
 
-  // Routine check to make sure we didn't hit the EOF somewhere.
-  if(num_robots == EOF)
-    goto err_invalid;
+  // EOF/crazy value check
+  if((num_robots < 0) || (num_robots > 255) || (num_robots > size))
+    goto err_freeboard;
 
   cur_board->robot_list = ccalloc(num_robots + 1, sizeof(struct robot *));
   // Also allocate for name sorted list
@@ -448,7 +446,10 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   num_scrolls = fgetc(fp);
 
   if(num_scrolls == EOF)
-    goto err_out;
+    goto err_truncated;
+
+  if((num_scrolls < 0) || (num_scrolls > 255) || (num_robots + num_scrolls > size))
+    goto err_freerobots;
 
   cur_board->scroll_list = ccalloc(num_scrolls + 1, sizeof(struct scroll *));
 
@@ -471,7 +472,11 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   num_sensors = fgetc(fp);
 
   if(num_sensors == EOF)
-    goto err_out;
+    goto err_truncated;
+
+  if((num_sensors < 0) || (num_sensors > 255) ||
+   (num_scrolls + num_sensors + num_robots > size))
+    goto err_freescrolls;
 
   cur_board->sensor_list = ccalloc(num_sensors + 1, sizeof(struct sensor *));
 
@@ -490,12 +495,30 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   cur_board->num_sensors = num_sensors;
   cur_board->num_sensors_allocated = num_sensors;
 
-err_out:
   return VAL_SUCCESS;
 
 err_truncated:
   val_error(WORLD_BOARD_TRUNCATED_SAFE, board_location);
   return VAL_SUCCESS;
+
+err_freerobots:
+err_freescrolls:
+  clear_board(cur_board);
+
+err_freeboard:
+  free(cur_board->level_id);
+  free(cur_board->level_color);
+  free(cur_board->level_param);
+  free(cur_board->level_under_id);
+  free(cur_board->level_under_color);
+  free(cur_board->level_under_param);
+
+err_freeoverlay:
+  if(overlay_mode)
+  {
+    free(cur_board->overlay);
+    free(cur_board->overlay_color);
+  }
 
 err_invalid:
   val_error(WORLD_BOARD_CORRUPT, board_location);
@@ -744,7 +767,6 @@ void clear_board(struct board *cur_board)
   int num_sensors = cur_board->num_sensors;
   struct robot **robot_list = cur_board->robot_list;
   struct robot **robot_name_list = cur_board->robot_list_name_sorted;
-  struct robot *cur_robot;
   struct scroll **scroll_list = cur_board->scroll_list;
   struct sensor **sensor_list = cur_board->sensor_list;
 
@@ -762,10 +784,8 @@ void clear_board(struct board *cur_board)
   }
 
   for(i = 0; i < num_robots_active; i++)
-  {
-    cur_robot = robot_name_list[i];
-    clear_robot(cur_robot);
-  }
+    if(robot_name_list[i])
+      clear_robot(robot_name_list[i]);
 
   free(robot_name_list);
   free(robot_list);
