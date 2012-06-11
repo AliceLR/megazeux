@@ -33,9 +33,11 @@ BUGFIXES
   copy x y dx dy.
 + Updated MZX_SPEED in the counter debugger, where it was still getting clamped
   from 1 to 9.
++ COLOR FADE IN and COLOR FADE OUT (and all built-in uses of them) now correctly
+  respect any COLOR INTENSITY changes made before they are used.
 + Temporary fix for MSVC bug where all window dialogs would freeze. (MZXGiant)
-+ Fixed debytecode bug where copy block on one or more robots from the board
-  editor would corrupt the source code of all programs in the world. (MZXGiant)
++ Temporary fix: board block actions will not corrupt robot source code in DBC
+  anymore. (MZXGiant)
 
 DEVELOPERS
 + Switched debian prereq. and darwin libpng12 to libpng, switched darwin and

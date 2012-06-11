@@ -667,7 +667,7 @@ void vquick_fadeout(void)
 {
   if(!graphics.fade_status)
   {
-    Sint32 i, num_colors;
+    Sint32 i, i2, num_colors;
     Uint32 ticks;
 
     if(graphics.screen_mode >= 2)
@@ -678,10 +678,13 @@ void vquick_fadeout(void)
     memcpy(graphics.saved_intensity, graphics.current_intensity,
      sizeof(Uint32) * num_colors);
 
-    for(i = 100; i >= 0; i -= 10)
+    for(i = 10; i >= 0; i--)
     {
       ticks = get_ticks();
-      set_palette_intensity(i);
+
+      for(i2 = 0; i2 < num_colors; i2++)
+        set_color_intensity(i2, (graphics.saved_intensity[i2] * i / 10));
+
       update_palette();
       update_screen();
       ticks = get_ticks() - ticks;
@@ -708,16 +711,13 @@ void vquick_fadein(void)
     else
       num_colors = PAL_SIZE;
 
-    for(i = 0; i < 10; i++)
+    for(i = 0; i <= 10; i++)
     {
       ticks = get_ticks();
+
       for(i2 = 0; i2 < num_colors; i2++)
-      {
-        graphics.current_intensity[i2] += 10;
-        if(graphics.current_intensity[i2] > graphics.saved_intensity[i2])
-          graphics.current_intensity[i2] = graphics.saved_intensity[i2];
-        set_color_intensity(i2, graphics.current_intensity[i2]);
-      }
+        set_color_intensity(i2, (graphics.saved_intensity[i2] * i / 10));
+
       update_palette();
       update_screen();
       ticks = get_ticks() - ticks;
