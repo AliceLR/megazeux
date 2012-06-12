@@ -364,7 +364,7 @@ static void clean_path_slashes(const char *source, char *dest, int buf_size)
       i++;
   }
   dest[p] = '\0';
-  if(dest[p-1] == DIR_SEPARATOR_CHAR)
+  if((dest[p-1] == DIR_SEPARATOR_CHAR) && (dest[p-2] != ':'))
     dest[p-1] = '\0';
 }
 
