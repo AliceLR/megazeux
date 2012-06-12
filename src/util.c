@@ -364,8 +364,14 @@ static void clean_path_slashes(const char *source, char *dest, int buf_size)
       i++;
   }
   dest[p] = '\0';
-  if((dest[p-1] == DIR_SEPARATOR_CHAR) && (dest[p-2] != ':'))
+
+  if(dest[p-1] == DIR_SEPARATOR_CHAR)
     dest[p-1] = '\0';
+
+  if(dest[strlen(dest)-1] == ':')
+    strncat(dest, DIR_SEPARATOR, buf_size-1);
+
+  dest[buf_size-1] = '\0';
 }
 
 // Navigate a path name.
@@ -410,7 +416,7 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
   }
 
   if((dest[0] == '/') ||
-     ((dest[1] == ':') && (dest[2] == '\\')))
+     (dest[1] == ':'))
   {
     if(stat(dest, &stat_info) >= 0)
     {
