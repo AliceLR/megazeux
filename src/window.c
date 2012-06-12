@@ -2366,7 +2366,7 @@ skip_dir:
         if(drive_letter_bitmap & (1 << i))
         {
           dir_list[num_dirs] = cmalloc(3);
-          sprintf(dir_list[num_dirs], "%c:", 'A' + i);
+          sprintf(dir_list[num_dirs], "%c:%s", 'A' + i, DIR_SEPARATOR);
 
           num_dirs++;
 
@@ -2464,6 +2464,9 @@ skip_dir:
       case 1:
       case 4:
       {
+        if(ret[0] && (ret[strlen(ret) - 1] == ':'))
+          strcat(ret, DIR_SEPARATOR);
+
         split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
         if(ret_path[0])
           change_dir_name(current_dir_name, ret_path, MAX_PATH);
