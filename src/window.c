@@ -2240,10 +2240,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
   getcwd(previous_dir_name, MAX_PATH);
 
-  // Make ret relative for the display.
   i = (int)get_path(ret, current_dir_name, MAX_PATH);
-  if(i > 0)
-    memmove(ret, ret + i + 1, strlen(ret) - i);
 
   if(!current_dir_name || !ret || !ret[0])
     strcpy(current_dir_name, previous_dir_name);
@@ -2426,6 +2423,10 @@ skip_dir:
        current_dir_length + 1);
     }
 
+    // Make ret relative for the display.
+    split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
+    strcpy(ret, ret_file);
+
     elements[FILESEL_FILE_LIST] =
      construct_list_box(2, 2, (const char **)file_list, num_files,
      list_length, 55, 1, &chosen_file, true);
@@ -2467,8 +2468,10 @@ skip_dir:
         if(ret_path[0])
           change_dir_name(current_dir_name, ret_path, MAX_PATH);
 
-        snprintf(ret, MAX_PATH, "%s%s%s",
-         current_dir_name, DIR_SEPARATOR, ret_file);
+        if(ret_file[0])
+          snprintf(ret, MAX_PATH, "%s%s%s",
+           current_dir_name, DIR_SEPARATOR, ret_file);
+
       }
     }
 
@@ -2502,7 +2505,10 @@ skip_dir:
         // It's actually a dir, oops!
         if((stat_result >= 0) && S_ISDIR(file_info.st_mode))
         {
-          strcpy(current_dir_name, ret);
+          if(ret[strlen(ret) - 1] != DIR_SEPARATOR_CHAR)
+            change_dir_name(current_dir_name, ret_file, MAX_PATH);
+
+          strcpy(ret, "");
 
           break;
         }

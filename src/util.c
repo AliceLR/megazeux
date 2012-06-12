@@ -311,7 +311,7 @@ void split_path_filename(const char *source,
   }
   else
   // If source has a directory and a file
-  if(get_path(source, temppath, MAX_PATH))
+  if((source[0] != '\0') && get_path(source, temppath, MAX_PATH))
   {
     // get_path leaves off trailing /, add 1 to offset.
     if(dest_buffer_len)
@@ -350,9 +350,28 @@ int create_path_if_not_exists(const char *filename)
   return 0;
 }
 
+static void clean_path_slashes(const char *source, char *dest, int buf_size)
+{
+  unsigned int i;
+  int p;
+
+  for(i = 0, p = 0; (i < strlen(source)) && (source[i] != 0) && (p < buf_size-1); i++, p++)
+  {
+    dest[p] = source[i];
+    while((dest[p] == DIR_SEPARATOR_CHAR) &&
+     (source[i + 1] == DIR_SEPARATOR_CHAR) &&
+     (source[i + 1] != 0))
+      i++;
+  }
+  dest[p] = '\0';
+  if(dest[p-1] == DIR_SEPARATOR_CHAR)
+    dest[p-1] = '\0';
+}
+
 // Navigate a path name.
 int change_dir_name(char *path_name, const char *dest, int buf_size)
 {
+  struct stat stat_info;
   char path[buf_size];
   int size;
 
@@ -389,14 +408,27 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
   if((dest[0] == '/') ||
      ((dest[1] == ':') && (dest[2] == '\\')))
   {
-    strncpy(path_name, dest, buf_size);
+    if(stat(dest, &stat_info) >= 0)
+    {
+      clean_path_slashes(dest, path_name, buf_size - 1);
+      path_name[buf_size - 1] = 0;
+      return 0;
+    }
+    return -3;
+  }
+
+  snprintf(path, buf_size, "%s%s%s",
+   path_name, DIR_SEPARATOR, dest);
+  path[buf_size - 1] = 0;
+
+  if(stat(path, &stat_info) >= 0)
+  {
+    clean_path_slashes(path, path_name, buf_size - 1);
+    path_name[buf_size - 1] = 0;
     return 0;
   }
 
-  strncat(path_name, DIR_SEPARATOR, buf_size);
-  strncat(path_name, dest, buf_size);
-
-  return 0;
+  return -3;
 }
 
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)

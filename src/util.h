@@ -41,8 +41,10 @@ __M_BEGIN_DECLS
 #ifndef DIR_SEPARATOR
 #ifdef __WIN32__
 #define DIR_SEPARATOR "\\"
+#define DIR_SEPARATOR_CHAR '\\'
 #else //!__WIN32__
 #define DIR_SEPARATOR "/"
+#define DIR_SEPARATOR_CHAR '/'
 #endif
 #endif //DIR_SEPARATOR
 
