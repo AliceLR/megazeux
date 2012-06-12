@@ -2226,6 +2226,9 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   int drive_letter_bitmap;
 #endif
 
+  char ret_path[MAX_PATH];
+  char ret_file[MAX_PATH];
+
   // These are stack heavy so put them on the heap
   // This function is not performance sensitive anyway.
   file_name = cmalloc(PATH_BUF_LEN);
@@ -2460,15 +2463,12 @@ skip_dir:
       case 1:
       case 4:
       {
-        char path[MAX_PATH];
-        char file[MAX_PATH];
-
-        split_path_filename(ret, path, MAX_PATH, file, MAX_PATH);
-        if(path[0])
-          change_dir_name(current_dir_name, path, MAX_PATH);
+        split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
+        if(ret_path[0])
+          change_dir_name(current_dir_name, ret_path, MAX_PATH);
 
         snprintf(ret, MAX_PATH, "%s%s%s",
-         current_dir_name, DIR_SEPARATOR, file);
+         current_dir_name, DIR_SEPARATOR, ret_file);
       }
     }
 
@@ -2596,7 +2596,7 @@ skip_dir:
 
           confirm_string = cmalloc(MAX_PATH);
           snprintf(confirm_string, MAX_PATH,
-           "Delete %s - are you sure?", ret);
+           "Delete %s - are you sure?", ret_file);
 
           if(!confirm(mzx_world, confirm_string))
             unlink(ret);
@@ -2615,16 +2615,20 @@ skip_dir:
       // Delete directory
       case 6:
       {
-        char *file_name_ch = dir_list[chosen_dir];
-        if(strcmp(file_name_ch, "..") && strcmp(file_name_ch, "."))
+        if(strcmp(dir_list[chosen_dir], "..") &&
+         strcmp(dir_list[chosen_dir], "."))
         {
           char confirm_string[70];
           snprintf(confirm_string, 70, "Delete %s: are you sure?",
-           file_name_ch);
+           dir_list[chosen_dir]);
           confirm_string[69] = 0;
 
           if(!confirm(mzx_world, confirm_string))
           {
+            char file_name_ch[MAX_PATH];
+            snprintf(file_name_ch, MAX_PATH, "%s%s%s",
+             current_dir_name, DIR_SEPARATOR, dir_list[chosen_dir]);
+
             if(!ask_yes_no(mzx_world,
              (char *)"Delete subdirectories recursively?"))
             {
@@ -2678,13 +2682,10 @@ skip_dir:
   {
     if(strcmp(previous_dir_name, current_dir_name))
     {
-      char path[MAX_PATH];
-      char file[MAX_PATH];
-
-      split_path_filename(ret, path, MAX_PATH, file, MAX_PATH);
+      split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
 
       snprintf(ret, MAX_PATH, "%s%s%s",
-       previous_dir_name, DIR_SEPARATOR, file);
+       previous_dir_name, DIR_SEPARATOR, ret_file);
 
     }
   }
