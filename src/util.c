@@ -387,6 +387,9 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
     {
       size = get_path(path_name, path, buf_size);
 
+      if(path[strlen(path)-1] == ':')
+        strcat(path, DIR_SEPARATOR);
+
       if(size > 0)
       {
         strcpy(path_name, path);
@@ -400,6 +403,7 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
         strcpy(path_name, "/");
         return 0;
       }
+
     }
     else if (dest[1] == '\0')
       return 0;
