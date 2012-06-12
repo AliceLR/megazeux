@@ -2258,8 +2258,6 @@ void title_screen(struct world *mzx_world)
         case IKEY_r:
         {
           char save_file_name[64] = { 0 };
-          char previous_dir[MAX_PATH];
-          getcwd(previous_dir, MAX_PATH);
 
           // Restore
           m_show();
@@ -2278,13 +2276,7 @@ void title_screen(struct world *mzx_world)
             set_config_from_file(&(mzx_world->conf), "game.cnf");
             chdir(current_dir);
 
-            if(!reload_savegame(mzx_world, save_file_name, &fadein))
-            {
-              // Reload failed, go back to the last working directory
-              // and pretend nothing happened
-              chdir(previous_dir);
-            }
-            else
+            if(reload_savegame(mzx_world, save_file_name, &fadein))
             {
               src_board = mzx_world->current_board;
               // Swap in starting board

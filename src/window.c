@@ -2,6 +2,7 @@
  *
  * Copyright (C) 1996 Greg Janson
  * Copyright (C) 2004 Gilead Kutnick <exophase@adelphia.net>
+ * Copyright (C) 2012 Alice Lauren Rowan <petrifiedrowan@gmail.com>
  *
  * This program is free software; you can redistribute it and/or
  * modify it under the terms of the GNU General Public License as
@@ -2045,8 +2046,12 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
 
             case IKEY_d:
             {
+              if(current_element_num == FILESEL_DIR_LIST)
+                di->return_value = 6;
+              else
+                di->return_value = 4;
+
               di->done = 1;
-              di->return_value = 4;
               break;
             }
 
@@ -2232,10 +2237,13 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
   getcwd(previous_dir_name, MAX_PATH);
 
+  // Make ret relative for the display.
   i = (int)get_path(ret, current_dir_name, MAX_PATH);
   if(i > 0)
-    if(!chdir(current_dir_name))
-      memmove(ret, ret + i + 1, strlen(ret) - i);
+    memmove(ret, ret + i + 1, strlen(ret) - i);
+
+  if(!current_dir_name || !ret || !ret[0])
+    strcpy(current_dir_name, previous_dir_name);
 
   while(return_value == 1)
   {
@@ -2249,7 +2257,9 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
     chosen_file = 0;
     chosen_dir = 0;
 
-    getcwd(current_dir_name, MAX_PATH);
+    //FIXME: something relies on being chdired here
+    chdir(current_dir_name);
+
     if(!dir_open(&current_dir, current_dir_name))
       goto skip_dir;
 
@@ -2340,6 +2350,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
     dir_close(&current_dir);
 skip_dir:
+
+    chdir(previous_dir_name);
 
     qsort(file_list, num_files, sizeof(char *), sort_function);
     qsort(dir_list, num_dirs, sizeof(char *), sort_function);
@@ -2441,52 +2453,64 @@ skip_dir:
 
     dialog_result = run_dialog(mzx_world, &di);
 
+    // If there's a path on ret, change to it.  Make ret absolute.
     switch(dialog_result)
     {
+      case 0:
+      case 1:
+      case 4:
+      {
+        char path[MAX_PATH];
+        char file[MAX_PATH];
+
+        split_path_filename(ret, path, MAX_PATH, file, MAX_PATH);
+        if(path[0])
+          change_dir_name(current_dir_name, path, MAX_PATH);
+
+        snprintf(ret, MAX_PATH, "%s%s%s",
+         current_dir_name, DIR_SEPARATOR, file);
+      }
+    }
+
+    switch(dialog_result)
+    {
+      // Pressed Backspace
       case -2:
       {
-        if(dirs_okay)
-          chdir("..");
-
+        change_dir_name(current_dir_name, "..", MAX_PATH);
         break;
       }
 
+      // Pressed Escape
       case -1:
       {
         return_value = -1;
         break;
       }
 
+      // Entered File/Pressed Okay
       case 0:
       case 1:
       {
         int stat_result;
-        char *path;
 
         if(default_ext)
           add_ext(ret, default_ext);
 
-        path = cmalloc(MAX_PATH);
-        get_path(ret, path, MAX_PATH);
         stat_result = stat(ret, &file_info);
 
+        // It's actually a dir, oops!
         if((stat_result >= 0) && S_ISDIR(file_info.st_mode))
         {
-          chdir(ret);
-          free(path);
+          strcpy(current_dir_name, ret);
+
           break;
         }
 
+        // We're creating a new file
         if(allow_new)
         {
-          if(path[0])
-          {
-            size_t path_len = strlen(path);
-            chdir(path);
-            memmove(ret, ret + path_len + 1, strlen(ret) - path_len);
-          }
-          else
-
+          // File Exists
           if((stat_result >= 0) && (allow_new == 1))
           {
             char confirm_string[512];
@@ -2502,33 +2526,29 @@ skip_dir:
         }
         else
 
+        // It's a file, open it
         if(stat_result >= 0)
-        {
-          if(path[0])
-            chdir(path);
-
           return_value = 0;
-        }
         else
-        {
           ret[0] = 0;
-        }
 
-        free(path);
         break;
       }
 
+      // Selected a directory from the list
       case 2:
       {
-        chdir(dir_list[chosen_dir]);
+        change_dir_name(current_dir_name, dir_list[chosen_dir], MAX_PATH);
         break;
       }
 
+      // Create a new directory
       case 3:
       {
         struct element *b_elements[3];
         int b_dialog_result;
         char *new_name;
+        char full_name[MAX_PATH];
         struct dialog b_di;
 
         new_name = cmalloc(MAX_PATH);
@@ -2545,17 +2565,20 @@ skip_dir:
         b_dialog_result = run_dialog(mzx_world, &b_di);
         destruct_dialog(&b_di);
 
+        snprintf(full_name, MAX_PATH, "%s%s%s",
+          current_dir_name, DIR_SEPARATOR, new_name);
+
         if(!b_dialog_result)
         {
-          if(stat(new_name, &file_info) < 0)
+          if(stat(full_name, &file_info) < 0)
           {
-            mkdir(new_name, 0777);
+            mkdir(full_name, 0777);
           }
           else
           {
             char error_str[512];
-            sprintf(error_str, "%s already exists.", ret);
-            error(error_str, 2, 4, 0x0000);
+            sprintf(error_str, "%s already exists.", new_name);
+            error(error_str, 1, 8, 0x0000);
           }
         }
 
@@ -2563,10 +2586,11 @@ skip_dir:
         break;
       }
 
+      // Delete file
       case 4:
       {
-        if((stat(ret, &file_info) >= 0) && strcmp(ret, "..") &&
-         strcmp(ret, "."))
+        if((stat(ret, &file_info) >= 0) &&
+         strcmp(ret, "..") && strcmp(ret, "."))
         {
           char *confirm_string;
 
@@ -2582,15 +2606,17 @@ skip_dir:
         break;
       }
 
+      // ?????
       case 5:
       {
         break;
       }
 
+      // Delete directory
       case 6:
       {
         char *file_name_ch = dir_list[chosen_dir];
-        if(strcmp(file_name_ch, ".."))
+        if(strcmp(file_name_ch, "..") && strcmp(file_name_ch, "."))
         {
           char confirm_string[70];
           snprintf(confirm_string, 70, "Delete %s: are you sure?",
@@ -2645,28 +2671,21 @@ skip_dir:
   if(return_value == -1)
   {
     ret[0] = 0;
-    chdir(previous_dir_name);
   }
 
+  // If dir changes aren't allowed and current_dir changed, use previous_dir.
   if(!allow_dir_change)
   {
-    getcwd(current_dir_name, MAX_PATH);
     if(strcmp(previous_dir_name, current_dir_name))
     {
-      char *ret_buffer;
+      char path[MAX_PATH];
+      char file[MAX_PATH];
 
-      ret_buffer = cmalloc(MAX_PATH);
-      strncpy(ret_buffer, ret, MAX_PATH - 1);
-      ret_buffer[MAX_PATH - 1] = '\0';
+      split_path_filename(ret, path, MAX_PATH, file, MAX_PATH);
 
-#ifdef __WIN32__
-      snprintf(ret, MAX_PATH, "%s\\%s", current_dir_name, ret_buffer);
-#else
-      snprintf(ret, MAX_PATH, "%s/%s", current_dir_name, ret_buffer);
-#endif
+      snprintf(ret, MAX_PATH, "%s%s%s",
+       previous_dir_name, DIR_SEPARATOR, file);
 
-      chdir(previous_dir_name);
-      free(ret_buffer);
     }
   }
 

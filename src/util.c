@@ -350,6 +350,55 @@ int create_path_if_not_exists(const char *filename)
   return 0;
 }
 
+// Navigate a path name.
+int change_dir_name(char *path_name, const char *dest, int buf_size)
+{
+  char path[buf_size];
+  int size;
+
+  if(!dest)
+    return -2;
+
+  if(!path_name)
+    return -1;
+
+  if(dest[0] == '.')
+  {
+    if((dest[1] == '.') && (dest[2] == '\0'))
+    {
+      size = get_path(path_name, path, buf_size);
+
+      if(size > 0)
+      {
+        strcpy(path_name, path);
+        return 0;
+      }
+      else
+
+      //One step above root on unix-based systems
+      if(path_name[0] == '/')
+      {
+        strcpy(path_name, "/");
+        return 0;
+      }
+    }
+    else if (dest[1] == '\0')
+      return 0;
+  }
+
+  if((dest[0] == '/') ||
+     ((dest[1] == ':') && (dest[2] == '\\')))
+  {
+    strncpy(path_name, dest, buf_size);
+    return 0;
+  }
+
+  strncat(path_name, DIR_SEPARATOR, buf_size);
+  strncat(path_name, dest, buf_size);
+
+  return 0;
+}
+
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
 
 /* On WIN32 with C99 defining __STRICT_ANSI__ these POSIX.1-2001 functions

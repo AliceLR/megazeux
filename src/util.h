@@ -38,6 +38,14 @@ __M_BEGIN_DECLS
 #define CLAMP(x, low, high) \
   (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
+#ifndef DIR_SEPARATOR
+#ifdef __WIN32__
+#define DIR_SEPARATOR "\\"
+#else //!__WIN32__
+#define DIR_SEPARATOR "/"
+#endif
+#endif //DIR_SEPARATOR
+
 enum resource_id
 {
   CONFIG_TXT = 0,
@@ -84,6 +92,8 @@ CORE_LIBSPEC void split_path_filename(const char *source,
  char *destfile, unsigned int file_buffer_len);
 
 CORE_LIBSPEC int create_path_if_not_exists(const char *filename);
+
+CORE_LIBSPEC int change_dir_name(char *path_name, const char *dest, int buf_size);
 
 typedef void (*fn_ptr)(void);
 

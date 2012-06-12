@@ -23,8 +23,9 @@ BUGFIXES
 + MegaZeux, after saving a world to a new directory, now chdirs to the new
   current world file's directory.
 + Changed behavior where a failed save file load would fade the still-running
-  world out of focus. MegaZeux now leaves the world faded in and chdirs back
-  to the last working directory.
+  world out of focus. MegaZeux now leaves the world in focus.
++ All failed world/save loads leave the current world running and in the same
+  working directory.
 + When startup_file is defined as a directory at the command line, MZX chdirs
   to the directory instead of attempting to open it as a world file.  In the
   config file, the directory is pruned off since there's a new config option
@@ -35,6 +36,13 @@ BUGFIXES
   from 1 to 9.
 + COLOR FADE IN and COLOR FADE OUT (and all built-in uses of them) now correctly
   respect any COLOR INTENSITY changes made before they are used.
++ In file selection dialogs, when attempting to make a directory that already
+  exists with ALT+N, MZX now shows the correct file name and does not force the
+  user to quit MegaZeux.
++ In file selection dialogs, when pressing ALT+D with a directory selected, MZX
+  now correctly prompts to delete the selected directory instead of a file.
+
+
 + Temporary fix for MSVC bug where all window dialogs would freeze. (MZXGiant)
 + Temporary fix: board block actions will not corrupt robot source code in DBC
   anymore. (MZXGiant)
