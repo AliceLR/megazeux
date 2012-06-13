@@ -2366,7 +2366,7 @@ skip_dir:
         if(drive_letter_bitmap & (1 << i))
         {
           dir_list[num_dirs] = cmalloc(3);
-          sprintf(dir_list[num_dirs], "%c:%s", 'A' + i, DIR_SEPARATOR);
+          sprintf(dir_list[num_dirs], "%c:", 'A' + i);
 
           num_dirs++;
 

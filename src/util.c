@@ -365,13 +365,12 @@ static void clean_path_slashes(const char *source, char *dest, int buf_size)
   }
   dest[p] = '\0';
 
-  if(dest[p-1] == DIR_SEPARATOR_CHAR)
+  if(p < 2)
+    return;
+
+  if((dest[p-1] == DIR_SEPARATOR_CHAR) && (dest[p-2] != ':'))
     dest[p-1] = '\0';
 
-  if(dest[strlen(dest)-1] == ':')
-    strncat(dest, DIR_SEPARATOR, buf_size-1);
-
-  dest[buf_size-1] = '\0';
 }
 
 // Navigate a path name.
@@ -415,13 +414,22 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
       return 0;
   }
 
+  // User entered an absolute path.
   if((dest[0] == '/') ||
-     (dest[1] == ':'))
+    strchr(dest, ':'))
   {
+    strncpy(path, dest, buf_size-1);
+    path[buf_size-1] = 0;
+
+    if(path[strlen(path) - 1] == ':')
+    {
+      strncat(path, DIR_SEPARATOR, buf_size-1);
+      path[buf_size-1] = 0;
+    }
+
     if(stat(dest, &stat_info) >= 0)
     {
-      clean_path_slashes(dest, path_name, buf_size - 1);
-      path_name[buf_size - 1] = 0;
+      clean_path_slashes(path, path_name, buf_size - 1);
       return 0;
     }
     return -3;
