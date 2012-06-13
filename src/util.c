@@ -385,14 +385,55 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
   if(!path_name)
     return -1;
 
+  // Stop!  recursion time
+  if(strchr(dest, DIR_SEPARATOR_CHAR))
+  {
+    char dir_element[buf_size];
+    unsigned int i, dir_start = 0;
+    char *colon_loc = strchr(dest, ':');
+
+    strncpy(path, dest, buf_size-1);
+    path[buf_size-1] = 0;
+
+    if(path[strlen(path) - 1] == ':')
+      strcat(path, DIR_SEPARATOR);
+
+    if(stat(path, &stat_info) < 0)
+      return -20;
+
+    for(i = 0; i <= strlen(path); i++)
+    {
+      if((path[i] == DIR_SEPARATOR_CHAR) || (i == strlen(path)))
+      {
+        // Root directory.
+        if((i == 0) || (colon_loc && (colon_loc - path) < i))
+        {
+          strncpy(path_name, path, i+1);
+          path_name[i + 1] = '\0';
+        }
+        else if (i != dir_start)
+        {
+          int res;
+          strncpy(dir_element, path + dir_start, i-dir_start);
+          dir_element[i - dir_start] = '\0';
+          res = change_dir_name(path_name, dir_element, buf_size);
+          if(res)
+            return res;
+        }
+
+        dir_start = i + 1;
+      }
+    }
+
+    return 0;
+  }
+
+  // Check for the special . and ..
   if(dest[0] == '.')
   {
     if((dest[1] == '.') && (dest[2] == '\0'))
     {
       size = get_path(path_name, path, buf_size);
-
-      if(path[strlen(path)-1] == ':')
-        strcat(path, DIR_SEPARATOR);
 
       if(size > 0)
       {
@@ -411,24 +452,6 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
     }
     else if (dest[1] == '\0')
       return 0;
-  }
-
-  // User entered an absolute path.
-  if((dest[0] == '/') ||
-    strchr(dest, ':'))
-  {
-    strncpy(path, dest, buf_size-1);
-    path[buf_size-1] = 0;
-
-    if(path[strlen(path) - 1] == ':')
-      strcat(path, DIR_SEPARATOR);
-
-    if(stat(path, &stat_info) >= 0)
-    {
-      clean_path_slashes(path, path_name, buf_size - 1);
-      return 0;
-    }
-    return -3;
   }
 
   snprintf(path, buf_size, "%s%s%s",

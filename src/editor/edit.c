@@ -1061,6 +1061,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
   set_palette_intensity(100);
 
+  end_module();
+
   {
     struct stat stat_res;
     strncpy(current_world, curr_file, 127);
@@ -1075,6 +1077,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       mzx_world->current_board =
        mzx_world->board_list[mzx_world->current_board_id];
       src_board = mzx_world->current_board;
+
+      fix_mod(mzx_world, src_board);
     }
     else
     {
@@ -1088,20 +1092,19 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       mzx_world->active = 1;
 
       create_blank_world(mzx_world);
+
+      default_palette();
+      save_editor_palette();
     }
   }
 
   m_show();
-
-  end_module();
 
   synchronize_board_values(mzx_world, &src_board, &board_width, &board_height,
    &level_id, &level_param, &level_color, &overlay, &overlay_color);
 
   update_screen();
 
-  default_palette();
-  save_editor_palette();
   insta_fadein();
 
   if(mzx_world->editor_conf.bedit_hhelp)
@@ -1877,12 +1880,13 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           }
           else
           {
-            char world_name[256];
+            char world_name[MAX_PATH];
             char new_path[MAX_PATH];
             strcpy(world_name, current_world);
             if(!new_file(mzx_world, world_ext, ".mzx", world_name,
              "Save world", 1))
             {
+              debug("Save path: %s\n", world_name);
               // Save entire game
               strcpy(current_world, world_name);
               save_world(mzx_world, current_world, 0);
@@ -2008,17 +2012,28 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           if(!modified || !confirm(mzx_world,
            "Load: World has not been saved, are you sure?"))
           {
+            char last_world[MAX_PATH];
             char load_world[MAX_PATH];
+            strcpy(last_world, current_world);
             strcpy(load_world, current_world);
+
             if(!choose_file_ch(mzx_world, world_ext, load_world,
              "Load World", 1))
             {
               int fade;
-              // Load world curr_file
+
               end_module();
+
+              // Load world curr_file
               strcpy(current_world, load_world);
               if(!reload_world(mzx_world, current_world, &fade))
-                create_blank_world(mzx_world);
+              {
+                strcpy(current_world, last_world);
+
+                fix_mod(mzx_world, src_board);
+                break;
+                //create_blank_world(mzx_world);
+              }
 
               mzx_world->current_board_id = mzx_world->first_board;
               mzx_world->current_board =

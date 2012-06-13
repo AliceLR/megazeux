@@ -1785,7 +1785,7 @@ static void export_block(struct robot_state *rstate, int region_default)
 static void import_block(struct world *mzx_world, struct robot_state *rstate)
 {
   const char *txt_ext[] = { ".TXT", NULL, NULL };
-  char import_name[128];
+  char import_name[MAX_PATH];
   char line_buffer[256];
   FILE *import_file;
 #ifndef CONFIG_DEBYTECODE

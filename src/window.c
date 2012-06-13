@@ -2240,10 +2240,10 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
   getcwd(previous_dir_name, MAX_PATH);
 
-  i = (int)get_path(ret, current_dir_name, MAX_PATH);
-
-  if(!current_dir_name || !ret || !ret[0])
-    strcpy(current_dir_name, previous_dir_name);
+  strcpy(current_dir_name, previous_dir_name);
+  split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
+  if(ret_path[0])
+    change_dir_name(current_dir_name, ret_path, MAX_PATH);
 
   while(return_value == 1)
   {
@@ -2520,7 +2520,7 @@ skip_dir:
           if((stat_result >= 0) && (allow_new == 1))
           {
             char confirm_string[512];
-            sprintf(confirm_string, "%s already exists, overwrite?", ret);
+            sprintf(confirm_string, "%s already exists, overwrite?", ret_file);
             if(!ask_yes_no(mzx_world, confirm_string))
               return_value = 0;
           }
@@ -2684,7 +2684,7 @@ skip_dir:
   }
 
   // If dir changes aren't allowed and current_dir changed, use previous_dir.
-  if(!allow_dir_change)
+  if(!dirs_okay)
   {
     if(strcmp(previous_dir_name, current_dir_name))
     {
