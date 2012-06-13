@@ -520,7 +520,7 @@ err_out:
 
 
 // This is part of robot validation, don't give any messages.
-enum val_result validate_legacy_bytecode(const char *bc, int program_length)
+enum val_result validate_legacy_bytecode(char *bc, int program_length)
 {
   int i = 1;
   int cur_command_start, cur_command_length, cur_param_length;
@@ -528,7 +528,15 @@ enum val_result validate_legacy_bytecode(const char *bc, int program_length)
   if(!bc)
     goto err_invalid;
 
-  if(bc[0] != 255)
+  // First -- fix the odd robots that appear in old MZX games,
+  // such as Catacombs of Zeux.
+  if((program_length == 2) || (bc[0] != 0xFF))
+  {
+    bc[0] = 0xFF;
+    bc[1] = 0x0;
+  }
+
+  if(bc[0] != 0xFF)
     goto err_invalid;
 
   // One iteration should be a single command.
@@ -555,7 +563,6 @@ enum val_result validate_legacy_bytecode(const char *bc, int program_length)
         cur_param_length = 2;
 
       i += cur_param_length + 1;
-
     }
     i++;
 
@@ -572,6 +579,8 @@ enum val_result validate_legacy_bytecode(const char *bc, int program_length)
   return VAL_SUCCESS;
 
 err_invalid:
+  debug("Prog len: %i    i: %i   bc[0]: %i   bc[1]: %i\n",
+   program_length, i, bc[0], bc[1]);
   return VAL_INVALID;
 }
 

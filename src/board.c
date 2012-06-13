@@ -500,6 +500,7 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   {
     int robot_count = 0, scroll_count = 0, sensor_count = 0;
     char err_mesg[80] = { 0 };
+
     for(i = 0; i < (board_width * board_height); i++)
     {
       switch(cur_board->level_id[i])
@@ -529,7 +530,8 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
         }
         case SENSOR:
         {
-          sensor_count++;
+          // Wait, I forgot.  Nobody cares about sensors.
+          //sensor_count++;
           if(sensor_count > num_sensors)
           {
             cur_board->level_id[i] = CUSTOM_FLOOR;
@@ -539,26 +541,27 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
         }
       }
     }
-    if(robot_count != num_robots)
+    if(robot_count > num_robots)
     {
       snprintf(err_mesg, 80, "Board @ %Xh: found %i robots; expected %i",
        board_location, robot_count, num_robots);
       error(err_mesg, 1, 8, 0);
     }
-    if(scroll_count != num_scrolls)
+    if(scroll_count > num_scrolls)
     {
       snprintf(err_mesg, 80, "Board @ %Xh: found %i scrolls/signs; expected %i",
        board_location, scroll_count, num_scrolls);
       error(err_mesg, 1, 8, 0);
     }
-    if(sensor_count != num_sensors)
+    // This won't be reached but I'll leave it anyway.
+    if(sensor_count > num_sensors)
     {
       snprintf(err_mesg, 80, "Board @ %Xh: found %i sensors; expected %i",
        board_location, sensor_count, num_sensors);
       error(err_mesg, 1, 8, 0);
     }
     if(err_mesg[0])
-      error("Any extra robots/scrolls/signs/sensors were replaced", 1, 8, 0);
+      error("Any extra robots/scrolls/signs were replaced", 1, 8, 0);
 
   }
 

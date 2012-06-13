@@ -71,7 +71,7 @@ CORE_LIBSPEC FILE * val_fopen(const char *filename);
 
 CORE_LIBSPEC enum val_result validate_world_file(const char *filename, int savegame,
  int *end_of_global_offset, int decrypt_attempted);
-CORE_LIBSPEC enum val_result validate_legacy_bytecode(const char *bc, int program_length);
+CORE_LIBSPEC enum val_result validate_legacy_bytecode(char *bc, int program_length);
 CORE_LIBSPEC enum val_result validate_mzm_file(const char *filename, int savegame,
  int version);
 

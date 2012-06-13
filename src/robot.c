@@ -178,16 +178,14 @@ int get_robot_id(struct board *src_board, const char *name)
 
 void create_blank_robot(struct robot *r, int savegame)
 {
-  if(r->program_bytecode)
-    free(r->program_bytecode);
-  r->program_bytecode_length = 0;
+  free(r->program_bytecode);
   r->program_bytecode = NULL;
+  r->program_bytecode_length = 0;
 
 #ifdef CONFIG_DEBYTECODE
-  if(r->program_source)
-    free(r->program_source);
-  r->program_source_length = 0;
+  free(r->program_source);
   r->program_source = NULL;
+  r->program_source_length = 0;
 
   if((r->world_version >= VERSION_PROGRAM_SOURCE) && !savegame)
   {
@@ -223,13 +221,11 @@ void create_blank_robot(struct robot *r, int savegame)
   for(int i = 0; i<32; i++)
     r->local[i] = 0;
 
-  if(r->label_list)
-    free(r->label_list);
+  free(r->label_list);
   r->num_labels = 0;
   r->label_list = NULL;
 
-  if(r->stack)
-    free(r->stack);
+  free(r->stack);
   r->stack_size = 0;
   r->stack_pointer = 0;
   r->stack = NULL;
@@ -252,9 +248,15 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
 
   int robot_location = ftell(fp);
 
+  cur_robot->stack = NULL;
+  cur_robot->label_list = NULL;
+  cur_robot->program_bytecode = NULL;
+
   cur_robot->world_version = version;
 
 #ifdef CONFIG_DEBYTECODE
+  cur_robot->program_source = NULL;
+
   if(version >= VERSION_PROGRAM_SOURCE)
   {
     program_length = fgetd(fp);
@@ -338,6 +340,9 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
         goto err_invalid;
       }
 
+      if(VAL_SUCCESS != validate_legacy_bytecode(program_legacy_bytecode, program_length))
+        goto err_invalid;
+
       cur_robot->program_bytecode = NULL;
       cur_robot->program_source =
        legacy_disassemble_program(program_legacy_bytecode, program_length,
@@ -402,15 +407,8 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
           goto err_invalid;
         }
 
-        // All programs length 2 are supposed to be blank, 0xFF 0x0. But
-        // there's a corruption in Catacombs - this fixes that. Also somehow
-        // corrupt global robots that don't start with 0xFF.
-
-        if((program_length == 2) || (program_legacy_bytecode[0] != 0xFF))
-        {
-          program_legacy_bytecode[0] = 0xFF;
-          program_legacy_bytecode[1] = 0x0;
-        }
+        if(VAL_SUCCESS != validate_legacy_bytecode(program_legacy_bytecode, program_length))
+          goto err_invalid;
 
         cur_robot->program_source =
          legacy_disassemble_program(program_legacy_bytecode, program_length,
@@ -444,21 +442,23 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   }
 
 #ifndef CONFIG_DEBYTECODE
-  cur_robot->label_list = NULL;
-
-  cur_robot->program_bytecode = cmalloc(program_length);
   cur_robot->program_bytecode_length = program_length;
-  if(!fread(cur_robot->program_bytecode, program_length, 1, fp))
-    goto err_invalid;
-
-  if(VAL_SUCCESS != validate_legacy_bytecode(cur_robot->program_bytecode, program_length))
-    goto err_invalid;
-
-  // Now create a label cache IF the robot is in use
-  if(cur_robot->used)
+  if(program_length > 0)
   {
-    cur_robot->label_list =
-     cache_robot_labels(cur_robot, &cur_robot->num_labels);
+    cur_robot->program_bytecode = cmalloc(program_length);
+
+    if(!fread(cur_robot->program_bytecode, program_length, 1, fp))
+      goto err_invalid;
+
+    if(VAL_SUCCESS != validate_legacy_bytecode(cur_robot->program_bytecode, program_length))
+      goto err_invalid;
+
+    // Now create a label cache IF the robot is in use
+    if(cur_robot->used)
+    {
+      cur_robot->label_list =
+       cache_robot_labels(cur_robot, &cur_robot->num_labels);
+    }
   }
 #endif /* !CONFIG_DEBYTECODE */
 
@@ -518,9 +518,9 @@ static void load_scroll(struct scroll *cur_scroll, FILE *fp)
 {
   int scroll_size;
 
+  cur_scroll->mesg = NULL;
   cur_scroll->num_lines = fgetw(fp);
-  // Skip junk
-  fseek(fp, 2, SEEK_CUR);
+  fseek(fp, 2, SEEK_CUR); // Skip junk
   scroll_size = fgetw(fp);
   cur_scroll->mesg_size = scroll_size;
   cur_scroll->used = fgetc(fp);
@@ -539,9 +539,9 @@ scroll_err:
   cur_scroll->num_lines = 1;
   cur_scroll->mesg_size = 3;
   cur_scroll->used = 1;
-  if(cur_scroll->mesg)
-    free(cur_scroll->mesg);
-  crealloc(cur_scroll->mesg, 3);
+
+  free(cur_scroll->mesg);
+  cur_scroll->mesg = cmalloc(3);
   strcpy(cur_scroll->mesg, "\x01\x0A");
 }
 
