@@ -15,7 +15,12 @@ FEATURES
 BUGFIXES
 + World validation has been strengthened, preventing disasterous loads of most
   non-world files.  Mostly intact/valid worlds, such as HUNTDRAK.MZX, can be
-  loaded (the corrupt/missing boards will be replaced with blank boards).
+  loaded -- corrupt/missing boards will be replaced with blank boards, corrupt
+  robots will be replaced by robots with empty programs, and so on.  If more
+  robots/scrolls/signs/sensors are found on a board than their data suggests
+  there should be, the extras will be replaced with customblocks/floors. Back
+  up the version of the world with errors in this instance, as the robots'
+  code or scroll text may still be in the world data.
 + Mac OS X: MegaZeux now uses /Users/[username] as the default starting
   directory. Apps previously would always start at the filesystem root. (ajs)
 + Fixed dangerous crash-causing bug where the editor would not chdir back

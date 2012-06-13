@@ -519,6 +519,63 @@ err_out:
 }
 
 
+// This is part of robot validation, don't give any messages.
+enum val_result validate_legacy_bytecode(const char *bc, int program_length)
+{
+  int i = 1;
+  int cur_command_start, cur_command_length, cur_param_length;
+
+  if(!bc)
+    goto err_invalid;
+
+  if(bc[0] != 255)
+    goto err_invalid;
+
+  // One iteration should be a single command.
+  while(1)
+  {
+    cur_command_length = bc[i];
+    i++;
+    if(cur_command_length == 0)
+      break;
+
+    if((i + cur_command_length) > program_length)
+      goto err_invalid;
+
+    if(bc[i + cur_command_length] != cur_command_length)
+      goto err_invalid;
+
+    cur_command_start = i;
+    i++;
+
+    while(i < cur_command_start + cur_command_length)
+    {
+      cur_param_length = bc[i];
+      if(cur_param_length == 0)
+        cur_param_length = 2;
+
+      i += cur_param_length + 1;
+
+    }
+    i++;
+
+    if(i != cur_command_start + cur_command_length + 1)
+      goto err_invalid;
+
+    if(i > program_length)
+      goto err_invalid;
+  }
+
+  if(i != program_length)
+    goto err_invalid;
+
+  return VAL_SUCCESS;
+
+err_invalid:
+  return VAL_INVALID;
+}
+
+
 
 enum val_result validate_mzm_file(const char *filename, int savegame, int version)
 {

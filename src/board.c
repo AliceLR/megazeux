@@ -25,6 +25,7 @@
 #include "world.h"
 #include "const.h"
 #include "extmem.h"
+#include "error.h"
 #include "util.h"
 #include "validation.h"
 
@@ -494,6 +495,72 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
 
   cur_board->num_sensors = num_sensors;
   cur_board->num_sensors_allocated = num_sensors;
+
+  // Now do a board scan to make sure there aren't more than the data told us.
+  {
+    int robot_count = 0, scroll_count = 0, sensor_count = 0;
+    char err_mesg[80] = { 0 };
+    for(i = 0; i < (board_width * board_height); i++)
+    {
+      switch(cur_board->level_id[i])
+      {
+        case ROBOT:
+        case ROBOT_PUSHABLE:
+        {
+          robot_count++;
+          if(robot_count > num_robots)
+          {
+            cur_board->level_id[i] = CUSTOM_BLOCK;
+            cur_board->level_param[i] = 'R';
+            cur_board->level_color[i] = 0xCF;
+          }
+          break;
+        }
+        case SIGN:
+        case SCROLL:
+        {
+          scroll_count++;
+          if(scroll_count > num_scrolls)
+          {
+            cur_board->level_id[i] = CUSTOM_BLOCK;
+            cur_board->level_param[i] = 'S';
+            cur_board->level_color[i] = 0xCF;
+          }
+        }
+        case SENSOR:
+        {
+          sensor_count++;
+          if(sensor_count > num_sensors)
+          {
+            cur_board->level_id[i] = CUSTOM_FLOOR;
+            cur_board->level_param[i] = 'S';
+            cur_board->level_color[i] = 0xDF;
+          }
+        }
+      }
+    }
+    if(robot_count != num_robots)
+    {
+      snprintf(err_mesg, 80, "Board @ %Xh: found %i robots; expected %i",
+       board_location, robot_count, num_robots);
+      error(err_mesg, 1, 8, 0);
+    }
+    if(scroll_count != num_scrolls)
+    {
+      snprintf(err_mesg, 80, "Board @ %Xh: found %i scrolls/signs; expected %i",
+       board_location, scroll_count, num_scrolls);
+      error(err_mesg, 1, 8, 0);
+    }
+    if(sensor_count != num_sensors)
+    {
+      snprintf(err_mesg, 80, "Board @ %Xh: found %i sensors; expected %i",
+       board_location, sensor_count, num_sensors);
+      error(err_mesg, 1, 8, 0);
+    }
+    if(err_mesg[0])
+      error("Any extra robots/scrolls/signs/sensors were replaced", 1, 8, 0);
+
+  }
 
   return VAL_SUCCESS;
 

@@ -296,7 +296,7 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
     fseek(fp, 2, SEEK_CUR);
 
   // Periodic EOF check
-  if(cur_robot->ypos == EOF)
+  if(cur_robot->ypos < 0)
     goto err_invalid;
 
   // If savegame, there's some additional information to get
@@ -444,9 +444,14 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   }
 
 #ifndef CONFIG_DEBYTECODE
+  cur_robot->label_list = NULL;
+
   cur_robot->program_bytecode = cmalloc(program_length);
   cur_robot->program_bytecode_length = program_length;
   if(!fread(cur_robot->program_bytecode, program_length, 1, fp))
+    goto err_invalid;
+
+  if(VAL_SUCCESS != validate_legacy_bytecode(cur_robot->program_bytecode, program_length))
     goto err_invalid;
 
   // Now create a label cache IF the robot is in use
