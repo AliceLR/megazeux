@@ -82,8 +82,11 @@
  *   24 intensity, faded, coords, player under
  *+   4 counters, up to 2^31 * counter size
  *+   4 strings, up to 2^31 * max string size
- * 6660 sprites
- *   22 misc settings
+ * 4612 sprites
+ *(4096   data
+ *    4   info
+ *  512   collision list)
+ *   12 misc settings
  *+   2 fread filename, up to 514
  *    4 fread pos
  *+   2 fwrite filename, up to 514
@@ -101,13 +104,6 @@
 #define WORLD_BLOCK_1_SIZE 4129
 #define WORLD_BLOCK_2_SIZE 72
 #endif
-
-const int save_global_size = 0;
-const int save_board_size = 0;
-const int save_robot_size = 0; //the header has to be a certain size
-
-const int mzm2_header_size = 16;
-const int mzm3_header_size = 20;
 
 int suppress_errors = -1;
 
@@ -299,17 +295,12 @@ enum val_result validate_world_file(const char *filename,
     int screen_mode, num_counters, num_strings, len;
 
     if(fread(magic, 5, 1, f) != 1)
-    {
-      result = VAL_INVALID;
       goto err_invalid;
-    }
 
     v = save_magic(magic);
     if(!v)
-    {
-      result = VAL_INVALID;
       goto err_invalid;
-    }
+
     else if (v > WORLD_VERSION)
     {
       val_error(SAVE_VERSION_TOO_RECENT, v);
@@ -331,65 +322,87 @@ enum val_result validate_world_file(const char *filename,
      fseek(f, WORLD_BLOCK_1_SIZE, SEEK_CUR) ||
      fseek(f, 71, SEEK_CUR) ||
      fseek(f, (len = fgetw(f)), SEEK_CUR) ||
-     (len == EOF) ||
+     (len < 0) ||
      fseek(f, WORLD_BLOCK_2_SIZE, SEEK_CUR) ||
      fseek(f, 24, SEEK_CUR))
     {
-      result = VAL_INVALID;
+      debug("pre-counters\n");
       goto err_invalid;
     }
 
     //do counters - vvvvnnnn(name)
     num_counters = fgetd(f);
-    if(num_counters == EOF)
+    if(num_counters < 0)
+    {
+      debug("counter num\n");
       goto err_invalid;
+    }
 
     for(i = 0; i < num_counters; i++)
     {
       if(
-       fseek(f, 4, SEEK_CUR) ||
+       fseek(f, 4, SEEK_CUR) || //value
        fseek(f, (len = fgetd(f)), SEEK_CUR) ||
-       (len == EOF))
+       (len < 0))
       {
-        result = VAL_INVALID;
+        debug("counters\n");
         goto err_invalid;
       }
     }
 
     //do strings-   nnnnllll(name)(value)
     num_strings = fgetd(f);
-    if(num_strings == EOF)
+    if(num_strings < 0)
+    {
+      debug("string num\n");
       goto err_invalid;
+    }
 
     for(i = 0; i < num_strings; i++)
     {
-      int name_length = fgetd(f), value_length = fgetd(f);
+      int name_length = fgetd(f);
+      int value_length = fgetd(f);
       if(
-       (name_length == EOF) ||
-       (value_length == EOF) ||
+       (name_length < 0) ||
+       (value_length < 0) ||
        fseek(f, name_length, SEEK_CUR) ||
        fseek(f, value_length, SEEK_CUR))
+      {
+        debug("strings\n");
         goto err_invalid;
+      }
     }
 
     if(
-     fseek(f, 6660, SEEK_CUR) || //sprites
-     fseek(f, 22, SEEK_CUR) || //misc
+     fseek(f, 4612, SEEK_CUR) || //sprites
+     fseek(f, 12, SEEK_CUR) || //misc
      fseek(f, fgetw(f), SEEK_CUR) || //fread_open
      fseek(f, 4, SEEK_CUR) || //fread_pos
      fseek(f, fgetw(f), SEEK_CUR) || //fwrite_open
      fseek(f, 4, SEEK_CUR)) //fwrite_pos
+    {
+      debug("post strings\n");
       goto err_invalid;
+    }
 
     screen_mode = fgetw(f);
-    if(screen_mode > 1 &&
-     fseek(f, 768, SEEK_CUR)) //smzx palette
+    if((screen_mode > 3) || (screen_mode > 1 &&
+     fseek(f, 768, SEEK_CUR))) //smzx palette
+    {
+      debug("smzx palette\n");
       goto err_invalid;
+    }
 
     if(
      fseek(f, 4, SEEK_CUR) || //commands
-     fseek(f, fgetd(f) + 4, SEEK_CUR)) //vlayer size, width, height & data
+     ((len = fgetd(f)) < 0) || //vlayer size
+     fseek(f, 4, SEEK_CUR) || // width & height
+     fseek(f, len, SEEK_CUR) || //chars
+     fseek(f, len, SEEK_CUR)) //colors
+    {
+      debug("vlayer\n");
       goto err_invalid;
+    }
 
     /* now we should be at the global robot pointer! */
   }
