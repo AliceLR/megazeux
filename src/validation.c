@@ -573,7 +573,14 @@ enum val_result validate_legacy_bytecode(char *bc, int program_length)
       goto err_invalid;
   }
 
-  if(i != program_length)
+  if(i < program_length)
+  {
+    debug("Robot checked for %i but program length is %i; extra wiped\n",
+     program_length, i);
+    memset(bc + i, '\0', program_length-i);
+  }
+
+  if(i > program_length)
     goto err_invalid;
 
   return VAL_SUCCESS;
