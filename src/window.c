@@ -2508,11 +2508,8 @@ skip_dir:
         // It's actually a dir, oops!
         if((stat_result >= 0) && S_ISDIR(file_info.st_mode))
         {
-          if(ret[strlen(ret) - 1] != DIR_SEPARATOR_CHAR)
-            change_dir_name(current_dir_name, ret_file, MAX_PATH);
-
+          change_dir_name(current_dir_name, ret_file, MAX_PATH);
           strcpy(ret, "");
-
           break;
         }
 

@@ -355,7 +355,9 @@ static void clean_path_slashes(const char *source, char *dest, int buf_size)
   unsigned int i;
   int p;
 
-  for(i = 0, p = 0; (i < strlen(source)) && (source[i] != 0) && (p < buf_size-1); i++, p++)
+  for(i = 0, p = 0;
+   (i < strlen(source)) && (source[i] != 0) && (p < buf_size-1);
+   i++, p++)
   {
     dest[p] = source[i];
     while((dest[p] == DIR_SEPARATOR_CHAR) &&
@@ -365,10 +367,7 @@ static void clean_path_slashes(const char *source, char *dest, int buf_size)
   }
   dest[p] = '\0';
 
-  if(p < 2)
-    return;
-
-  if((dest[p-1] == DIR_SEPARATOR_CHAR) && (dest[p-2] != ':'))
+  if((p >= 2) && (dest[p-1] == DIR_SEPARATOR_CHAR) && (dest[p-2] != ':'))
     dest[p-1] = '\0';
 
 }
@@ -422,10 +421,7 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
     path[buf_size-1] = 0;
 
     if(path[strlen(path) - 1] == ':')
-    {
-      strncat(path, DIR_SEPARATOR, buf_size-1);
-      path[buf_size-1] = 0;
-    }
+      strcat(path, DIR_SEPARATOR);
 
     if(stat(dest, &stat_info) >= 0)
     {
