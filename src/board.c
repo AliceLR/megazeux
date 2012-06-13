@@ -159,6 +159,7 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
 {
   int num_robots, num_scrolls, num_sensors, num_robots_active;
   int overlay_mode, size, board_width, board_height, i;
+  int viewport_x, viewport_y, viewport_width, viewport_height;
 
   struct robot *cur_robot;
   struct scroll *cur_scroll;
@@ -295,10 +296,22 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
     cur_board->mod_playing[len] = 0;
   }
 
-  cur_board->viewport_x = fgetc(fp);
-  cur_board->viewport_y = fgetc(fp);
-  cur_board->viewport_width = fgetc(fp);
-  cur_board->viewport_height = fgetc(fp);
+  viewport_x = fgetc(fp);
+  viewport_y = fgetc(fp);
+  viewport_width = fgetc(fp);
+  viewport_height = fgetc(fp);
+
+  if(
+   (viewport_x < 0) || (viewport_x > 79) ||
+   (viewport_y < 0) || (viewport_y > 24) ||
+   (viewport_width < 1) || (viewport_width > 80) ||
+   (viewport_height < 1) || (viewport_height > 25))
+    goto err_invalid;
+
+  cur_board->viewport_x = viewport_x;
+  cur_board->viewport_y = viewport_y;
+  cur_board->viewport_width = viewport_width;
+  cur_board->viewport_height = viewport_height;
   cur_board->can_shoot = fgetc(fp);
   cur_board->can_bomb = fgetc(fp);
   cur_board->fire_burn_brown = fgetc(fp);
@@ -386,6 +399,12 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
     cur_board->volume_inc = fgetc(fp);
     cur_board->volume_target = fgetc(fp);
   }
+
+  cur_board->num_robots = 0;
+  cur_board->num_scrolls = 0;
+  cur_board->num_sensors = 0;
+  cur_board->sensor_list = NULL;
+  cur_board->scroll_list = NULL;
 
   // Load robots
   num_robots = fgetc(fp);
