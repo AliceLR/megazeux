@@ -21,6 +21,8 @@ BUGFIXES
   should be, the extras will be replaced with customblocks. Back up the version
   of the world with errors in this instance, as the robots' code or scroll text
   may still be salvageable from the world data.
++ Fixed a long-standing memory corruption bug in the shoot command introduced
+  by the port.
 + Mac OS X: MegaZeux now uses /Users/[username] as the default starting
   directory. Apps previously would always start at the filesystem root. (ajs)
 + Fixed dangerous crash-causing bug where the editor would not chdir back
