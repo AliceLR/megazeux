@@ -423,7 +423,7 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
     if(path[strlen(path) - 1] == ':')
       strcat(path, DIR_SEPARATOR);
 
-    if(stat(dest, &stat_info) >= 0)
+    if(stat(path, &stat_info) >= 0)
     {
       clean_path_slashes(path, path_name, buf_size - 1);
       return 0;
