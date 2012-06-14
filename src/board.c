@@ -402,8 +402,14 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   }
 
   cur_board->num_robots = 0;
+  cur_board->num_robots_allocated = 0;
+  cur_board->num_robots_active = 0;
   cur_board->num_scrolls = 0;
+  cur_board->num_scrolls_allocated = 0;
   cur_board->num_sensors = 0;
+  cur_board->num_sensors_allocated = 0;
+  cur_board->robot_list = NULL;
+  cur_board->robot_list_name_sorted = NULL;
   cur_board->sensor_list = NULL;
   cur_board->scroll_list = NULL;
 

@@ -600,9 +600,6 @@ enum val_result validate_legacy_bytecode(char *bc, int program_length)
   return VAL_SUCCESS;
 
 err_invalid:
-  debug("Prog len: %i    i: %i   bc[0]: %i   bc[1]: %i\n",
-   program_length, i, bc[0], bc[1]);
-
   {
     int n;
     char hex_seg[4];
@@ -618,7 +615,10 @@ err_invalid:
       strcat(err_mesg, hex_seg);
     }
 
-    debug("Bytecode: %s\n", err_mesg);
+    debug("Prog len: %i    i: %i   bc[0]: %i   bc[1]: %i\n",
+     program_length, i, bc[0], bc[1]);
+
+    debug("Bytecode: %s\n\n", err_mesg);
 
     free(err_mesg);
   }
