@@ -160,6 +160,7 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   int num_robots, num_scrolls, num_sensors, num_robots_active;
   int overlay_mode, size, board_width, board_height, i;
   int viewport_x, viewport_y, viewport_width, viewport_height;
+  int truncated = 0;
 
   struct robot *cur_robot;
   struct scroll *cur_scroll;
@@ -410,9 +411,12 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   num_robots = fgetc(fp);
   num_robots_active = 0;
 
+  if(num_robots == EOF)
+    truncated = 1;
+
   // EOF/crazy value check
   if((num_robots < 0) || (num_robots > 255) || (num_robots > size))
-    goto err_freeboard;
+    goto board_scan;
 
   cur_board->robot_list = ccalloc(num_robots + 1, sizeof(struct robot *));
   // Also allocate for name sorted list
@@ -466,10 +470,10 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   num_scrolls = fgetc(fp);
 
   if(num_scrolls == EOF)
-    goto err_truncated;
+    truncated = 1;
 
   if((num_scrolls < 0) || (num_scrolls > 255) || (num_robots + num_scrolls > size))
-    goto err_freerobots;
+    goto board_scan;
 
   cur_board->scroll_list = ccalloc(num_scrolls + 1, sizeof(struct scroll *));
 
@@ -492,11 +496,11 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   num_sensors = fgetc(fp);
 
   if(num_sensors == EOF)
-    goto err_truncated;
+    truncated = 1;
 
   if((num_sensors < 0) || (num_sensors > 255) ||
    (num_scrolls + num_sensors + num_robots > size))
-    goto err_freescrolls;
+    goto board_scan;
 
   cur_board->sensor_list = ccalloc(num_sensors + 1, sizeof(struct sensor *));
 
@@ -515,6 +519,8 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   cur_board->num_sensors = num_sensors;
   cur_board->num_sensors_allocated = num_sensors;
 
+
+board_scan:
   // Now do a board scan to make sure there aren't more than the data told us.
   {
     int robot_count = 0, scroll_count = 0, sensor_count = 0;
@@ -584,15 +590,10 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
 
   }
 
-  return VAL_SUCCESS;
+  if(truncated == 1)
+    val_error(WORLD_BOARD_TRUNCATED_SAFE, board_location);
 
-err_truncated:
-  val_error(WORLD_BOARD_TRUNCATED_SAFE, board_location);
   return VAL_SUCCESS;
-
-err_freerobots:
-err_freescrolls:
-  clear_board(cur_board);
 
 err_freeboard:
   free(cur_board->level_id);
