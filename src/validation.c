@@ -560,13 +560,14 @@ enum val_result validate_legacy_bytecode(char *bc, int program_length)
     if(cur_command_length == 0)
       break;
 
+    cur_command_start = i;
+
     if((i + cur_command_length) > program_length)
       goto err_invalid;
 
     if(bc[i + cur_command_length] != cur_command_length)
       goto err_invalid;
 
-    cur_command_start = i;
     i++;
 
     while(i < cur_command_start + cur_command_length)
@@ -601,6 +602,27 @@ enum val_result validate_legacy_bytecode(char *bc, int program_length)
 err_invalid:
   debug("Prog len: %i    i: %i   bc[0]: %i   bc[1]: %i\n",
    program_length, i, bc[0], bc[1]);
+
+  {
+    int n;
+    char hex_seg[4];
+    char *err_mesg = cmalloc(sizeof(char) * ((cur_command_length + 2) * 3 + 2));
+    err_mesg[0] = 0;
+
+    for(n = cur_command_start - 1;
+     n < (cur_command_start + cur_command_length + 1) &&
+     n < program_length;
+     n++)
+    {
+      snprintf(hex_seg, 4, "%X ", bc[n]);
+      strcat(err_mesg, hex_seg);
+    }
+
+    debug("Bytecode: %s\n", err_mesg);
+
+    free(err_mesg);
+  }
+
   return VAL_INVALID;
 }
 
