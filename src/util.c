@@ -375,22 +375,22 @@ static void clean_path_slashes(const char *source, char *dest, int buf_size)
 // Navigate a path name.
 int change_dir_name(char *path_name, const char *dest, int buf_size)
 {
-  struct stat stat_info;
   char path[buf_size];
+  char *colon_loc = strchr(dest, ':');
+  struct stat stat_info;
   int size;
 
-  if(!dest)
+  if(!dest || !dest[0])
     return -2;
 
   if(!path_name)
     return -1;
 
   // Stop!  recursion time
-  if(strchr(dest, DIR_SEPARATOR_CHAR))
+  if(strchr(dest, DIR_SEPARATOR_CHAR) || colon_loc)
   {
     char dir_element[buf_size];
     unsigned int i, dir_start = 0;
-    char *colon_loc = strchr(dest, ':');
 
     strncpy(path, dest, buf_size-1);
     path[buf_size-1] = 0;
@@ -405,8 +405,8 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
     {
       if((path[i] == DIR_SEPARATOR_CHAR) || (i == strlen(path)))
       {
-        // Root directory.
-        if((i == 0) || (colon_loc && (colon_loc - path) < i))
+        // Root directory.  Remember colon_loc is relative to dest, not path
+        if((i == 0) || (colon_loc && (size_t)(colon_loc - dest) < i))
         {
           strncpy(path_name, path, i+1);
           path_name[i + 1] = '\0';
