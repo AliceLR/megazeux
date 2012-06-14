@@ -528,13 +528,19 @@ board_scan:
 
     for(i = 0; i < (board_width * board_height); i++)
     {
+      if(cur_board->level_id[i] > 127)
+        cur_board->level_id[i] = CUSTOM_BLOCK;
+
+      if(cur_board->level_under_id[i] > 127)
+        cur_board->level_under_id[i] = CUSTOM_FLOOR;
+
       switch(cur_board->level_id[i])
       {
         case ROBOT:
         case ROBOT_PUSHABLE:
         {
           robot_count++;
-          if(robot_count > num_robots)
+          if(robot_count > cur_board->num_robots)
           {
             cur_board->level_id[i] = CUSTOM_BLOCK;
             cur_board->level_param[i] = 'R';
@@ -546,7 +552,7 @@ board_scan:
         case SCROLL:
         {
           scroll_count++;
-          if(scroll_count > num_scrolls)
+          if(scroll_count > cur_board->num_scrolls)
           {
             cur_board->level_id[i] = CUSTOM_BLOCK;
             cur_board->level_param[i] = 'S';
@@ -557,7 +563,7 @@ board_scan:
         {
           // Wait, I forgot.  Nobody cares about sensors.
           //sensor_count++;
-          if(sensor_count > num_sensors)
+          if(sensor_count > cur_board->num_sensors)
           {
             cur_board->level_id[i] = CUSTOM_FLOOR;
             cur_board->level_param[i] = 'S';
@@ -566,23 +572,23 @@ board_scan:
         }
       }
     }
-    if(robot_count > num_robots)
+    if(robot_count > cur_board->num_robots)
     {
       snprintf(err_mesg, 80, "Board @ %Xh: found %i robots; expected %i",
-       board_location, robot_count, num_robots);
+       board_location, robot_count, cur_board->num_robots);
       error(err_mesg, 1, 8, 0);
     }
-    if(scroll_count > num_scrolls)
+    if(scroll_count > cur_board->num_scrolls)
     {
       snprintf(err_mesg, 80, "Board @ %Xh: found %i scrolls/signs; expected %i",
-       board_location, scroll_count, num_scrolls);
+       board_location, scroll_count, cur_board->num_scrolls);
       error(err_mesg, 1, 8, 0);
     }
     // This won't be reached but I'll leave it anyway.
-    if(sensor_count > num_sensors)
+    if(sensor_count > cur_board->num_sensors)
     {
       snprintf(err_mesg, 80, "Board @ %Xh: found %i sensors; expected %i",
-       board_location, sensor_count, num_sensors);
+       board_location, sensor_count, cur_board->num_sensors);
       error(err_mesg, 1, 8, 0);
     }
     if(err_mesg[0])
