@@ -435,6 +435,10 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
     {
       size = get_path(path_name, path, buf_size);
 
+      // Fix ..ing to root paths
+      if(path[strlen(path) - 1] == ':')
+        strcat(path, DIR_SEPARATOR);
+
       if(size > 0)
       {
         strcpy(path_name, path);
