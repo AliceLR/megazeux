@@ -162,7 +162,7 @@ static void load_world_file(struct world *mzx_world, char *name)
   struct board *src_board;
   int fade = 0;
 
-  // Load world curr_file
+  // Load world
   end_module();
   clear_sfx_queue();
   //Clear screen
@@ -171,6 +171,8 @@ static void load_world_file(struct world *mzx_world, char *name)
   default_palette();
   if(reload_world(mzx_world, name, &fade))
   {
+    // Load was successful, so set curr_file
+    strcpy(curr_file, name);
     send_robot_def(mzx_world, 0, 10);
 
     src_board = mzx_world->current_board;
@@ -179,18 +181,22 @@ static void load_world_file(struct world *mzx_world, char *name)
     set_counter(mzx_world, "TIME", src_board->time_limit, 0);
     set_intro_mesg_timer(MESG_TIMEOUT);
   }
+  else
+  {
+    // Restart the music.
+    load_board_module(mzx_world->current_board);
+  }
 }
 
 static void load_world_selection(struct world *mzx_world)
 {
-  char world_name[512] = { 0 };
+  char world_name[MAX_PATH] = { 0 };
 
   m_show();
   if(!choose_file_ch(mzx_world, world_ext,
    world_name, "Load World", 1))
   {
-    strcpy(curr_file, world_name);
-    load_world_file(mzx_world, curr_file);
+    load_world_file(mzx_world, world_name);
   }
 }
 
@@ -1839,7 +1845,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
              (src_board->board_width * mzx_world->player_y)] ==
              SENSOR)))
             {
-              char save_game[512];
+              char save_game[MAX_PATH];
 
               strcpy(save_game, curr_sav);
 
@@ -1864,7 +1870,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
            get_counter(mzx_world, "LOAD_MENU", 0))
           {
             // Restore
-            char save_file_name[64] = { 0 };
+            char save_file_name[MAX_PATH] = { 0 };
             m_show();
 
             if(!choose_file_ch(mzx_world, save_ext, save_file_name,
@@ -2257,7 +2263,7 @@ void title_screen(struct world *mzx_world)
         case IKEY_F4:
         case IKEY_r:
         {
-          char save_file_name[64] = { 0 };
+          char save_file_name[MAX_PATH] = { 0 };
 
           // Restore
           m_show();
