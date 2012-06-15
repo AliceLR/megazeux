@@ -1692,6 +1692,17 @@ bool reload_world(struct world *mzx_world, const char *file, int *faded)
   default_global_data(mzx_world);
   *faded = 0;
 
+  // Now that the world's loaded, fix the save path.
+  {
+    char save_name[MAX_PATH];
+    char current_dir[MAX_PATH];
+    getcwd(current_dir, MAX_PATH);
+
+    split_path_filename(curr_sav, NULL, 0, save_name, MAX_PATH);
+    snprintf(curr_sav, MAX_PATH, "%s%s%s",
+     current_dir, DIR_SEPARATOR, save_name);
+  }
+
   return true;
 }
 
