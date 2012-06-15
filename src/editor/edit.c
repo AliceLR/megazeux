@@ -3045,6 +3045,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 free(under_id_buffer);
                 free(color_buffer);
                 free(param_buffer);
+                free(id_buffer);
                 break;
               }
 
@@ -3349,6 +3350,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             }
 
             unlink("__test.mzx");
+
+            free(return_dir);
           }
         }
         else
