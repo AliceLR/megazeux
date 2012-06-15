@@ -2241,6 +2241,8 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   getcwd(previous_dir_name, MAX_PATH);
 
   strcpy(current_dir_name, previous_dir_name);
+
+  // If ret is in a different dir, make that the current dir
   split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
   if(ret_path[0])
     change_dir_name(current_dir_name, ret_path, MAX_PATH);
@@ -2683,17 +2685,11 @@ skip_dir:
     ret[0] = 0;
   }
 
-  // If dir changes aren't allowed and current_dir changed, use previous_dir.
+  // If dir changes aren't allowed, strip the absolute path.
   if(!dirs_okay)
   {
-    if(strcmp(previous_dir_name, current_dir_name))
-    {
-      split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
-
-      snprintf(ret, MAX_PATH, "%s%s%s",
-       previous_dir_name, DIR_SEPARATOR, ret_file);
-
-    }
+    split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
+    strcpy(ret, ret_file);
   }
 
   free(previous_dir_name);
