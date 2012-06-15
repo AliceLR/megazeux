@@ -1028,10 +1028,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   char *level_color;
   char *overlay;
   char *overlay_color;
-  char current_world[128];
-  char mzm_name_buffer[128];
+  char current_world[MAX_PATH];
+  char mzm_name_buffer[MAX_PATH];
   char current_listening_dir[MAX_PATH];
-  char current_listening_mod[512];
+  char current_listening_mod[MAX_PATH];
   int listening_flag = 0;
   int saved_scroll_x[16] = { 0 };
   int saved_scroll_y[16] = { 0 };
@@ -1996,7 +1996,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       {
         if(get_alt_status(keycode_internal))
         {
-          char test_wav[128] = { 0, };
+          char test_wav[MAX_PATH] = { 0, };
           const char *const sam_ext[] = { ".WAV", ".SAM", ".OGG", NULL };
 
           if(!choose_file(mzx_world, sam_ext, test_wav,
@@ -2076,7 +2076,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           int import_number = import_type(mzx_world);
           if(import_number >= 0)
           {
-            char import_name[128];
+            char import_name[MAX_PATH];
             import_name[0] = 0;
 
             switch(import_number)
@@ -2289,7 +2289,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           int export_number = export_type(mzx_world);
           if(export_number >= 0)
           {
-            char export_name[128];
+            char export_name[MAX_PATH];
             export_name[0] = 0;
 
             switch(export_number)
@@ -2413,7 +2413,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             if(!listening_flag)
             {
               char current_dir[MAX_PATH];
-              char new_mod[128] = { 0 } ;
+              char new_mod[MAX_PATH] = { 0 } ;
 
               getcwd(current_dir, MAX_PATH);
               chdir(current_listening_dir);

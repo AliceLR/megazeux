@@ -153,9 +153,10 @@ bool append_world(struct world *mzx_world, const char *file)
   struct board *cur_board;
   int board_width, board_height;
   char *level_id, *level_param;
+  int input_version;
   FILE *fp;
 
-  fp = try_load_world(file, false, NULL, NULL);
+  fp = try_load_world(file, false, &input_version, NULL);
   if(!fp)
     return false;
 
@@ -195,7 +196,7 @@ bool append_world(struct world *mzx_world, const char *file)
   // Append boards
   for(i = old_num_boards; i < old_num_boards + num_boards; i++)
   {
-    mzx_world->board_list[i] = load_board_allocate(fp, 0, mzx_world->version);
+    mzx_world->board_list[i] = load_board_allocate(fp, 0, input_version);
     cur_board = mzx_world->board_list[i];
   }
 

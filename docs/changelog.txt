@@ -48,7 +48,8 @@ BUGFIXES
   user to quit MegaZeux.
 + In file selection dialogs, when pressing ALT+D with a directory selected, MZX
   now correctly prompts to delete the selected directory instead of a file.
-
++ The option to import world files in the board editor now correctly takes the
+  world version into account.
 
 + Temporary fix for MSVC bug where all window dialogs would freeze. (MZXGiant)
 + Temporary fix: board block actions will not corrupt robot source code in DBC
