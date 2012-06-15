@@ -24,6 +24,7 @@
 #include "data.h"
 #include "idput.h"
 #include "world.h"
+#include "validation.h"
 
 // This is assumed to not go over the edges.
 
@@ -231,7 +232,13 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
 int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
  int mode, int savegame)
 {
-  FILE *input_file = fopen_unsafe(name, "rb");
+  FILE *input_file;
+
+  if(!(input_file = fopen_unsafe(name, "rb")))
+  {
+    val_error(FILE_DOES_NOT_EXIST, 0);
+    goto err_out;
+  }
 
   if(input_file)
   {
@@ -241,6 +248,8 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     int savegame_mode;
     int num_robots;
     int robots_location;
+    int expected_data_size;
+    int last_position;
 
     // MegaZeux 2.83 is the last version that won't save the ver.
     int mzm_world_version = 0x0253;
@@ -249,7 +258,9 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     if (mzx_world->version < 0x0253)
       mzm_world_version = mzx_world->version;
 
-    fread(magic_string, 4, 1, input_file);
+    if(!fread(magic_string, 4, 1, input_file))
+      goto err_invalid;
+
     magic_string[4] = 0;
 
     if(!strncmp(magic_string, "MZMX", 4))
@@ -290,19 +301,36 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
       mzm_world_version = fgetw(input_file);
       fseek(input_file, 3, SEEK_CUR);
 
-      // If the mzm version is newer than the MZX version, abort.
-      if (mzm_world_version > mzx_world->version)
-      {
-        fclose(input_file);
-        return -1;
-      }
     }
 
     else
+      goto err_invalid;
+
+    expected_data_size = (width * height) * (storage_mode==1 * -4 + 6);
+    last_position = ftell(input_file);
+
+    if(
+     (savegame_mode > 1) || (savegame_mode < 0) || // Invalid save mode
+     (storage_mode > 1) || (storage_mode < 0) || // Invalid storage mode
+     (fseek(input_file, 0, SEEK_END)) || // end of file
+     (ftell(input_file) - last_position < expected_data_size) || // not enough space to store data
+     (ftell(input_file) < robots_location) || // The end of file is before the robot offset
+     (robots_location && (expected_data_size > robots_location)) || // robots offset before data end
+     (fseek(input_file, last_position, SEEK_SET))) // go back to last position
+      goto err_invalid;
+
+    // If the MZM is a save MZM but we're not loading at runtime, abort.
+    if(savegame_mode > savegame)
     {
-      // Failure, abort
-      fclose(input_file);
-      return -1;
+      val_error(MZM_FILE_FROM_SAVEGAME, 0);
+      goto err_close;
+    }
+
+    // If the mzm version is newer than the MZX version, abort.
+    if(mzm_world_version > mzx_world->version)
+    {
+      val_error(MZM_FILE_VERSION_TOO_RECENT, mzm_world_version);
+      goto err_close;
     }
 
     switch(mode)
@@ -657,6 +685,13 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
   }
 
   return 0;
+
+err_invalid:
+  val_error(MZM_FILE_INVALID, 0);
+err_close:
+  fclose(input_file);
+err_out:
+  return -1;
 }
 
 
