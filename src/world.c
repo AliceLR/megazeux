@@ -972,12 +972,12 @@ __editor_maybe_static void optimize_null_boards(struct world *mzx_world)
 __editor_maybe_static FILE *try_load_world(const char *file,
  bool savegame, int *version, char *name)
 {
-  char magic[5];
   FILE *fp;
+  char magic[5];
   int v;
 
-  /* world validation handling */
   enum val_result status = validate_world_file(file, savegame, NULL, 0);
+
   if(VAL_NEED_UNLOCK == status)
   {
     decrypt(file);
@@ -985,103 +985,39 @@ __editor_maybe_static FILE *try_load_world(const char *file,
   }
   if(VAL_SUCCESS != status)
     goto err_out;
-  /* end world validation handling */
 
+  // Validation succeeded so this should be a breeze.
   fp = fopen_unsafe(file, "rb");
   if(!fp)
   {
-    error("Error loading world", 1, 8, 0x0D01);
+    error("Post validation IO error occurred", 1, 8, 0x0D01);
     goto err_out;
   }
 
   if(savegame)
   {
-    if(fread(magic, 5, 1, fp) != 1)
-      goto err_close;
+    fread(magic, 5, 1, fp);
 
     v = save_magic(magic);
-    if(v != WORLD_VERSION)
-    {
-      const char *msg;
-
-      if(v > WORLD_VERSION)
-        msg = ".SAV files from newer versions of MZX are not supported";
-      else if(v < WORLD_VERSION)
-        msg = ".SAV files from older versions of MZX are not supported";
-      else
-        msg = "Unrecognized magic: file may not be .SAV file";
-
-      error(msg, 1, 8, 0x2101);
-      goto err_close;
-    }
   }
   else
   {
-    int protection_method;
-    char error_string[80];
-
     if(name)
       fread(name, BOARD_NAME_SIZE, 1, fp);
     else
       fseek(fp, BOARD_NAME_SIZE, SEEK_CUR);
 
-    protection_method = fgetc(fp);
-    if(protection_method)
-    {
-      int do_decrypt;
-
-      error("This world is password protected.", 1, 8, 0x0D02);
-
-      do_decrypt = confirm(NULL, "Would you like to decrypt it?");
-      if(!do_decrypt)
-      {
-        fclose(fp);
-        decrypt(file);
-        // Ah recursion.....
-        return try_load_world(file, savegame, version, name);
-      }
-
-      error("Cannot load password protected world.", 1, 8, 0x0D02);
-      goto err_close;
-    }
+    fseek(fp, 1, SEEK_CUR); // Skip protection byte.
 
     fread(magic, 1, 3, fp);
 
     v = world_magic(magic);
-    if(v == 0)
-    {
-      sprintf(error_string, "Attempt to load non-MZX world.");
-    }
-    else
-
-    if(v < 0x0205)
-    {
-      sprintf(error_string, "World is from old version (%d.%d); use converter",
-       (v & 0xFF00) >> 8, v & 0xFF);
-      v = 0;
-    }
-    else
-
-    if(v > WORLD_VERSION)
-    {
-      sprintf(error_string, "World is from more recent version (%d.%d)",
-       (v & 0xFF00) >> 8, v & 0xFF);
-      v = 0;
-    }
-
-    if(!v)
-    {
-      error(error_string, 1, 8, 0x0D02);
-      goto err_close;
-    }
   }
 
   if(version)
     *version = v;
   return fp;
 
-err_close:
-  fclose(fp);
 err_out:
   return NULL;
 }
