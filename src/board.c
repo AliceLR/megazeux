@@ -442,7 +442,12 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
       int length_check = fgetw(fp);
       fseek(fp, -2, SEEK_CUR);
       if(length_check < 0)
-        break;
+      {
+        // Send off the error and then tell validation to shut up for now
+        val_error(WORLD_ROBOT_MISSING, ftell(fp));
+        set_validation_suppression(1);
+        truncated = 1;
+      }
 
       cur_robot = load_robot_allocate(fp, savegame, version);
       if(cur_robot->used)
@@ -458,22 +463,9 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
         cur_board->robot_list[i] = NULL;
       }
     }
-    // We hit the EOF.  Don't bother trying to load any other robots.
-    // Also, this will set off the expected N robots detector.
-    if(i <= num_robots)
-    {
-      num_robots = i - 1;
-      cur_board->robot_list =
-       crealloc(cur_board->robot_list,
-       sizeof(struct robot *) * (num_robots + 1));
-      cur_board->robot_list_name_sorted =
-       crealloc(cur_board->robot_list_name_sorted,
-       sizeof(struct robot *) * num_robots);
-
-      val_error(WORLD_ROBOT_MISSING, ftell(fp));
-      truncated = 1;
-    }
   }
+
+  set_validation_suppression(-1);
 
   if(num_robots_active > 0)
   {

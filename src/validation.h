@@ -69,6 +69,8 @@ enum val_error
 CORE_LIBSPEC void val_error(enum val_error error_id, int value);
 CORE_LIBSPEC FILE * val_fopen(const char *filename);
 
+void set_validation_suppression(int level);
+
 CORE_LIBSPEC enum val_result validate_world_file(const char *filename, int savegame,
  int *end_of_global_offset, int decrypt_attempted);
 //CORE_LIBSPEC enum val_result validate_legacy_bytecode(char *bc, int program_length);

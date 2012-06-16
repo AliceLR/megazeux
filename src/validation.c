@@ -264,6 +264,10 @@ FILE * val_fopen(const char *filename)
   return f;
 }
 
+void set_validation_suppression(int level)
+{
+  suppress_errors = level;
+}
 
 
 /* This is a lot like try_load_world but much more thorough, and doesn't
