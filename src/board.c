@@ -170,6 +170,18 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
 
   int board_location = ftell(fp);
 
+  cur_board->num_robots = 0;
+  cur_board->num_robots_allocated = 0;
+  cur_board->num_robots_active = 0;
+  cur_board->num_scrolls = 0;
+  cur_board->num_scrolls_allocated = 0;
+  cur_board->num_sensors = 0;
+  cur_board->num_sensors_allocated = 0;
+  cur_board->robot_list = NULL;
+  cur_board->robot_list_name_sorted = NULL;
+  cur_board->sensor_list = NULL;
+  cur_board->scroll_list = NULL;
+
   // Initialize some fields that may no longer be loaded
   // from the board file itself..
 
@@ -401,19 +413,10 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
     cur_board->volume_target = fgetc(fp);
   }
 
-  cur_board->num_robots = 0;
-  cur_board->num_robots_allocated = 0;
-  cur_board->num_robots_active = 0;
-  cur_board->num_scrolls = 0;
-  cur_board->num_scrolls_allocated = 0;
-  cur_board->num_sensors = 0;
-  cur_board->num_sensors_allocated = 0;
-  cur_board->robot_list = NULL;
-  cur_board->robot_list_name_sorted = NULL;
-  cur_board->sensor_list = NULL;
-  cur_board->scroll_list = NULL;
 
-  // Load robots
+  /***************/
+  /* Load robots */
+  /***************/
   num_robots = fgetc(fp);
   num_robots_active = 0;
 
@@ -435,6 +438,12 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   {
     for(i = 1; i <= num_robots; i++)
     {
+      // Make sure there's robots to load here
+      int length_check = fgetw(fp);
+      fseek(fp, -2, SEEK_CUR);
+      if(length_check < 0)
+        break;
+
       cur_robot = load_robot_allocate(fp, savegame, version);
       if(cur_robot->used)
       {
@@ -449,9 +458,24 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
         cur_board->robot_list[i] = NULL;
       }
     }
+    // We hit the EOF.  Don't bother trying to load any other robots.
+    // Also, this will set off the expected N robots detector.
+    if(i <= num_robots)
+    {
+      num_robots = i - 1;
+      cur_board->robot_list =
+       crealloc(cur_board->robot_list,
+       sizeof(struct robot *) * (num_robots + 1));
+      cur_board->robot_list_name_sorted =
+       crealloc(cur_board->robot_list_name_sorted,
+       sizeof(struct robot *) * num_robots);
+
+      val_error(WORLD_ROBOT_MISSING, ftell(fp));
+      truncated = 1;
+    }
   }
 
-  if(num_robots_active)
+  if(num_robots_active > 0)
   {
     if(num_robots_active != num_robots)
     {
@@ -472,7 +496,10 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   cur_board->num_robots_allocated = num_robots;
   cur_board->num_robots_active = num_robots_active;
 
-  // Load scrolls
+
+  /****************/
+  /* Load scrolls */
+  /****************/
   num_scrolls = fgetc(fp);
 
   if(num_scrolls == EOF)
@@ -498,7 +525,10 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
   cur_board->num_scrolls = num_scrolls;
   cur_board->num_scrolls_allocated = num_scrolls;
 
-  // Load sensors
+
+  /****************/
+  /* Load sensors */
+  /****************/
   num_sensors = fgetc(fp);
 
   if(num_sensors == EOF)
