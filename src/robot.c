@@ -38,6 +38,7 @@
 #include "world.h"
 #include "util.h"
 #include "rasm.h"
+#include "legacy_rasm.h"
 #include "validation.h"
 
 static int cmp_labels(const void *dest, const void *src)
@@ -340,7 +341,7 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
         goto err_invalid;
       }
 
-      if(VAL_SUCCESS != validate_legacy_bytecode(program_legacy_bytecode, program_length))
+      if(validate_legacy_bytecode(program_legacy_bytecode, program_length))
         goto err_invalid;
 
       cur_robot->program_bytecode = NULL;

@@ -33,6 +33,7 @@
 #include "window.h"
 #include "const.h"
 #include "util.h"
+#include "legacy_rasm.h"
 
 /****************************
  * LEGACY WORLD FORMAT INFO *
@@ -245,7 +246,6 @@ void val_error(enum val_error error_id, int value)
     error(error_mesg, 1, 8, code);
 }
 
-/* Should look at fopen_safe, which probably does this and more */
 FILE * val_fopen(const char *filename)
 {
   struct stat stat_result;
@@ -279,6 +279,7 @@ enum val_result validate_world_file(const char *filename,
   FILE *f;
   char magic[15];
   int num_boards;
+  int board_name_offset;
   int v, i;
 
   /* TEST 1:  Make sure it's a readable file */
@@ -502,10 +503,13 @@ enum val_result validate_world_file(const char *filename,
   if(num_boards == 0)
     goto err_invalid;
 
+  board_name_offset = ftell(f);
+
   //Make sure board name and pointer data exists
   if(
    fseek(f, num_boards * BOARD_NAME_SIZE, SEEK_CUR) ||
-   fseek(f, num_boards * 8, SEEK_CUR))
+   fseek(f, num_boards * 8, SEEK_CUR) ||
+   ((ftell(f) - board_name_offset) != num_boards * (BOARD_NAME_SIZE + 8)))
     goto err_invalid;
 
   /* If any of the pointers are less than this pos we probably
@@ -533,7 +537,7 @@ err_out:
 
 
 // This is part of robot validation, don't give any messages.
-enum val_result validate_legacy_bytecode(char *bc, int program_length)
+/*enum val_result validate_legacy_bytecode(char *bc, int program_length)
 {
   int i = 1;
   int cur_command_start, cur_command_length, cur_param_length;
@@ -624,4 +628,4 @@ err_invalid:
   }
 
   return VAL_INVALID;
-}
+}*/
