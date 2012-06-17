@@ -229,14 +229,14 @@ void val_error(enum val_error error_id, int value)
     }
     case MZM_FILE_FROM_SAVEGAME:
     {
-      sprintf(error_mesg, "MZM file is from a saved game and cannot be loaded to the editor");
+      sprintf(error_mesg, "Runtime robots incompatible with editor -- robots will be dummied out");
       code = 0x6661;
       break;
     }
     case MZM_FILE_VERSION_TOO_RECENT:
     {
       snprintf(error_mesg, 80,
-       "This MZM file was saved from a more recent MegaZeux world (%d.%d)", hi, lo);
+       "MZM file of a more recent version (%d.%d) -- robots will be dummied out", hi, lo);
       code = 0x6661;
       break;
     }

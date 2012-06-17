@@ -4,6 +4,7 @@ An incremental MegaZeux release introducing several major bugfixes and new
 editor features.
 
 FEATURES
+
 + IMPORTANT! Pressing 'E' or 'F9' on a title screen will now open the current
   world for editing.  Press 'N' or 'F8' to create a new world.
 + Multiple hosts may now be defined in config.txt. Update attempts will
@@ -11,8 +12,10 @@ FEATURES
 + A startup path may be defined in config.txt.
 + Specifying the backup filename with a directory, ex. "backup/b", will now
   attempt to create the directory if it does not exist.
++ MZM3 loading is forward compatible (robots will be dummied out).
 
 BUGFIXES
+
 + World validation has been strengthened, preventing disasterous loads of most
   non-world files.  Mostly intact/valid worlds, such as HUNTDRAK.MZX, can be
   loaded -- corrupt/missing boards will be replaced with blank boards, corrupt
@@ -50,12 +53,15 @@ BUGFIXES
   now correctly prompts to delete the selected directory instead of a file.
 + The option to import world files in the board editor now correctly takes the
   world version into account.
++ Savegame MZMs loaded into the editor now have their robots dummied out for
+  safety purposes.
 
 + Temporary fix for MSVC bug where all window dialogs would freeze. (MZXGiant)
 + Temporary fix: board block actions will not corrupt robot source code in DBC
   anymore. (MZXGiant)
 
 DEVELOPERS
+
 + Switched debian prereq. and darwin libpng12 to libpng, switched darwin and
   default ldflags to use '--ldflags' instead of '--libs'.
 + Darwin CC/CXX compiler can now be specified on the command line. (ajs)
