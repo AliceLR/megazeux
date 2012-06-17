@@ -55,6 +55,10 @@ BUGFIXES
   world version into account.
 + Savegame MZMs loaded into the editor now have their robots dummied out for
   safety purposes.
++ Fixed bug where INPUT STRING would not terminate lines longer than 71 chars
+  after clipping them.
++ INPUT STRING and ASK do not allow either tabs (INPUT only) or line breaks
+  (both) anymore.
 
 + Temporary fix for MSVC bug where all window dialogs would freeze. (MZXGiant)
 + Temporary fix: board block actions will not corrupt robot source code in DBC

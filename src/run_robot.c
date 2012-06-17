@@ -3662,6 +3662,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       {
         char input_buffer[ROBOT_MAX_TR];
         char input_buffer_msg[71 + 1];
+        char *break_pos;
 
         m_hide();
         save_screen();
@@ -3672,9 +3673,14 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
         // Copy and clip
         strncpy(input_buffer_msg, cmd_ptr + 2, 71);
+        input_buffer_msg[71] = 0;
+
+        // No linebreak thanks bye
+        if((break_pos = strchr(input_buffer_msg, '\n')))
+          *break_pos = '\0';
 
         tr_msg(mzx_world, input_buffer_msg, id, input_buffer);
-        write_string(input_buffer, 5, 12, DI_INPUT_BOX_LABEL, 1);
+        write_string(input_buffer, 5, 12, DI_INPUT_BOX_LABEL, 0);
 
         m_show();
         src_board->input_string[0] = 0;
@@ -4314,11 +4320,16 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       case ROBOTIC_CMD_ASK: // ask yes/no
       {
         char question_buffer[ROBOT_MAX_TR];
+        char *break_pos;
         int send_status;
 
         dialog_fadein();
 
         tr_msg(mzx_world, cmd_ptr + 2, id, question_buffer);
+
+        // Kick da line break in da pants!
+        if((break_pos = strchr(question_buffer, '\n')))
+          *break_pos = '\0';
 
         if(!ask_yes_no(mzx_world, question_buffer))
           send_status = send_robot_id(mzx_world, id, "YES", 1);
