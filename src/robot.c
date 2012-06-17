@@ -244,7 +244,7 @@ struct robot *load_robot_allocate(FILE *fp, int savegame, int version)
 // is set.
 void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
 {
-  int program_length;
+  int program_length, validated_length;
   int i;
 
   int robot_location = ftell(fp);
@@ -252,6 +252,7 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   cur_robot->stack = NULL;
   cur_robot->label_list = NULL;
   cur_robot->program_bytecode = NULL;
+  cur_robot->num_labels = 0;
 
   cur_robot->world_version = version;
 
@@ -341,8 +342,16 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
         goto err_invalid;
       }
 
-      if(validate_legacy_bytecode(program_legacy_bytecode, program_length))
+      validated_length = validate_legacy_bytecode(program_legacy_bytecode, program_length);
+
+      if(validated_length <= 0)
         goto err_invalid;
+
+      else if(validated_length < program_length)
+      {
+        program_legacy_bytecode = crealloc(program_legacy_bytecode, validated_length);
+        program_length = validated_length;
+      }
 
       cur_robot->program_bytecode = NULL;
       cur_robot->program_source =
@@ -408,8 +417,16 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
           goto err_invalid;
         }
 
-        if(VAL_SUCCESS != validate_legacy_bytecode(program_legacy_bytecode, program_length))
+        validated_length = validate_legacy_bytecode(program_legacy_bytecode, program_length);
+
+        if(validated_length <= 0)
           goto err_invalid;
+
+        else if(validated_length < program_length)
+        {
+          program_legacy_bytecode = crealloc(program_legacy_bytecode, validated_length);
+          program_length = validated_length;
+        }
 
         cur_robot->program_source =
          legacy_disassemble_program(program_legacy_bytecode, program_length,
@@ -451,8 +468,16 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
     if(!fread(cur_robot->program_bytecode, program_length, 1, fp))
       goto err_invalid;
 
-    if(VAL_SUCCESS != validate_legacy_bytecode(cur_robot->program_bytecode, program_length))
+    validated_length = validate_legacy_bytecode(cur_robot->program_bytecode, program_length);
+
+    if(validated_length <= 0)
       goto err_invalid;
+
+    else if(validated_length < program_length)
+    {
+      cur_robot->program_bytecode = crealloc(cur_robot->program_bytecode, validated_length);
+      cur_robot->program_bytecode_length = validated_length;
+    }
 
     // Now create a label cache IF the robot is in use
     if(cur_robot->used)

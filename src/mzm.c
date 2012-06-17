@@ -375,7 +375,6 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
             int robot_x_locations[256];
             int robot_y_locations[256];
             int width_difference;
-            int robots_found = 0;
             int i;
 
             width_difference = width - effective_width;
@@ -392,6 +391,11 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
                   robot_y_locations[current_robot_loaded] = y + start_y;
                   current_robot_loaded++;
                 }
+                else
+
+                // Wipe a bunch of crap we don't want in MZMs with spaces
+                if(current_id >= SENSOR)
+                  current_id = 0;
 
                 src_id = (enum thing)level_id[offset];
 
@@ -416,19 +420,13 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
                   level_under_param[offset] = fgetc(input_file);
                   level_under_color[offset] = fgetc(input_file);
 
-                  if(is_robot(level_id[offset]))
-                  {
-                    robots_found++;
-                    if(robots_found > num_robots)
-                      level_id[offset] = CUSTOM_BLOCK;
-                  }
-
-                  // No we don't want any sensors or scrolls thanks
-                  if(level_id[offset] >= SENSOR && !is_robot(level_id[offset]))
-                    level_id[offset] = CUSTOM_BLOCK;
-
+                  // We don't want this on the under layer, thanks
                   if(level_under_id[offset] >= SENSOR)
-                    level_under_id[offset] = CUSTOM_FLOOR;
+                  {
+                    level_under_id[offset] = 0;
+                    level_under_param[offset] = 0;
+                    level_under_color[offset] = 7;
+                  }
                 }
                 else
                 {
@@ -508,6 +506,14 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
 
                 for(i = 0; i < num_robots; i++)
                 {
+                  int check_val = fgetw(input_file);
+                  fseek(input_file, -2, SEEK_CUR);
+                  if(check_val < 0)
+                  {
+                    val_error(WORLD_ROBOT_MISSING, ftell(input_file));
+                    set_validation_suppression(1);
+                  }
+
                   cur_robot = load_robot_allocate(input_file, savegame_mode,
                    mzm_world_version);
                   current_x = robot_x_locations[i];
@@ -704,13 +710,14 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     fclose(input_file);
   }
 
+  set_validation_suppression(-1);
   return 0;
 
 err_invalid:
   val_error(MZM_FILE_INVALID, 0);
-err_close:
   fclose(input_file);
 err_out:
+  set_validation_suppression(-1);
   return -1;
 }
 

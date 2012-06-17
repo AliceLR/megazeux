@@ -172,7 +172,9 @@ static void load_world_file(struct world *mzx_world, char *name)
   if(reload_world(mzx_world, name, &fade))
   {
     // Load was successful, so set curr_file
-    strcpy(curr_file, name);
+    if(curr_file != name)
+      strcpy(curr_file, name);
+
     send_robot_def(mzx_world, 0, 10);
 
     src_board = mzx_world->current_board;

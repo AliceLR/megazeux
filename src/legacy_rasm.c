@@ -2541,6 +2541,7 @@ void disassemble_file(char *name, char *program, int program_length,
 int validate_legacy_bytecode(char *bc, int program_length)
 {
   int i = 1;
+  int new_length = program_length;
   int cur_command_start, cur_command_length, cur_param_length;
   int cur_command, p;
 
@@ -2610,15 +2611,15 @@ int validate_legacy_bytecode(char *bc, int program_length)
 
   if(i < program_length)
   {
-    debug("Robot checked for %i but program length is %i; extra wiped\n",
+    debug("Robot checked for %i but program length is %i; extra removed\n",
      program_length, i);
-    memset(bc + i, '\0', program_length-i);
+    new_length = i;
   }
 
   if(i > program_length)
     goto err_invalid;
 
-  return 0;
+  return new_length;
 
 err_invalid:
   {
@@ -2644,5 +2645,5 @@ err_invalid:
     free(err_mesg);
   }
 
-  return -1;
+  return 0;
 }

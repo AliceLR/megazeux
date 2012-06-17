@@ -1028,10 +1028,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   char *level_color;
   char *overlay;
   char *overlay_color;
-  char current_world[MAX_PATH];
-  char mzm_name_buffer[MAX_PATH];
-  char current_listening_dir[MAX_PATH];
-  char current_listening_mod[MAX_PATH];
+  char current_world[MAX_PATH] = { 0 };
+  char mzm_name_buffer[MAX_PATH] = { 0 };
+  char current_listening_dir[MAX_PATH] = { 0 };
+  char current_listening_mod[MAX_PATH] = { 0 };
   int listening_flag = 0;
   int saved_scroll_x[16] = { 0 };
   int saved_scroll_y[16] = { 0 };
