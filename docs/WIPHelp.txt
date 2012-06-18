@@ -1844,7 +1844,7 @@ what each one does.
 >ESC:ESC       - Exit/Cancel Mode
 >Home:Home      - U/L Corner
 >Ins:Ins       - Grab
->Sp:Spacebar     - Place
+>Sp:Spacebar  - Place
 >Tab:Tab       - Draw
 >PgDn:PageDown  - Next Menu
 >PgUp:PageUp    - Previous Menu
@@ -3970,6 +3970,17 @@ like counters, but hold text information as well as numbers
 A Robotic string is any counter prefixed by a $ sign (e.g. 
 "$string").
 
+Certain characters must be inputted in specific ways to avoid
+problems with Robotic:
+
+  \0 for character 0 (this probably won't work in strings, but
+  should work in chars)
+  \t for tab (character 9)
+  \n for newline (character 10)
+  \r for carriage return (character 13)
+  \" for quotation mark
+  \\ for slash
+
 $Robotic Usage - Setting Strings
 
 ~BSET "$string" to "text"
@@ -4058,7 +4069,7 @@ numbers (past the terminator) are given a value of 0. This
 command works well with char immediates: 
 E.G. SET "$string.0" 'S' . When setting the character in a
 string it will make the string length one larger than X, so be
-careful with using very large values.
+careful when using very large values.
 
 ~B$str.length~F will give the length of the given string.
 
@@ -4723,6 +4734,13 @@ given counter by the given number (rounding down). To modulo is
 to set to the remainder when dividing. Example: 7 modulo 3 is
 equal to 1, since 7 divided by 3 gives a remainder of 1.
 
+NOTE: The modulo command may output different numbers compared
+to the modulo expression function; they may act differently
+when negative numbers are involved. For the modulo command, the
+output will give results similar to when both numbers are
+positive, but will simply have the sign of the dividend (i.e. a
+truncated modulo).
+
 >#COUNTERS.HLP:1st:Counters, Built-in Counters and Local Counters
 
 :_p2:~APLAY "string"
@@ -5149,6 +5167,11 @@ y-coordinate will be relative to the Robot. There is one other
 difference with these commands - REL COUNTERS FIRST works off
 of the counters FIRSTXPOS and FIRSTYPOS, and  REL COUNTERS LAST
 works off of the counters LASTXPOS and LASTYPOS.
+
+NOTE: Using REL COUNTERS on COPY commands, instead of its 
+first/last versions, will still force FIRSTXPOS/FIRSTYPOS and
+LASTXPOS/LASTYPOS to be used, instead of basing both coordinate
+pairs off of XPOS and YPOS.
 
 :_j1:~AJUMP MOD ORDER #
 
@@ -5806,6 +5829,11 @@ time.
 directional characters will fix ALL animations/chars of that
 object type to the given character.
 ~A*~FIt is inadvisable to use any UNUSED values.
+~A*~FUsing CHAR ID to change between actual items only works
+with values <122. For example, changing something into Ice by
+setting BOARD_ID to 160 will not work, but setting BOARD_ID to
+25 will. However, there is no such restriction with changing
+CHAR ID table values using CHANGE CHAR ID.
 ~A*~FDamage values start at 327. Not all values are listed, because
 technically you can assign damage values for things that cannot
 give damage (i.e. pretty much everything not listed in the
@@ -6197,6 +6225,17 @@ This is sent when the Robot is hit with a lazer.
 
 This is sent when the player touches Goop.
 
+~EYES
+
+This is sent when the YES button is selected in an ASK box.
+
+~ENO
+
+This is sent when either the NO button is selected in an ASK
+box, or when ESC exits an ASK box.
+
+>#COMMAND2.HLP:_a2:ASK "string"
+
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#SENSORSW.HLP:094:Sensors
 >#MAIN.HLP:072:Table of Contents
@@ -6515,7 +6554,8 @@ static and 3 is transparent.
 ~BMOD_FREQUENCY (board)
 
 Controls the frequency (in Hz) of the currently playing module/
-OGG music.
+OGG music. Note that this value is NOT saved by save files, so
+if necessary, it needs set again after a save gets loaded.
 
 >#SOUNDEFX.HLP:frq:SAM, OGG, MOD and WAV Frequencies
 
@@ -7904,8 +7944,11 @@ A quick example of subroutines:
 ~Edie
 ~Eend
 ~E: "#spacewait"
-~Ewait 15
-~E. "We don't want the space action to happen immediately again."
+~E: "spaceheld"
+~Ecycle 1
+~E. "If space is held down, progress no further."
+~E. "We want to force space to be pressed each time."
+~Eif spacepressed "spaceheld"
 ~E: "notspaceloop"
 ~Ecycle 1
 ~Eif not spacepressed "notspaceloop"
@@ -7992,17 +8035,19 @@ would return 5.
 (3/2) would return 1. Note that any fractional values will be
 truncated, i.e. have the decimal part of the number thrown out.
 ~E% Modulo~F: Outputs the remainder of the two given values, when
-both values are positive. (5%3) would return 2. Modulo acts
-differently when negative numbers are involved. If the dividend
-is negative, than the result will be the divisor minus the
-remainder (e.g. (-5%3) would return 1); if the divisor is
-negative, than the result will be the additive inverse of the
-difference of the divisor and the remainder (e.g. (5%-3) would
-return -1); if BOTH are negative, the result will be the
-additive inverse of the remainder (e.g. (-5&-3) would return
--2).
-~E^ Exponent~F: Outputs the result of multiplying the first number
-by itself [second number] times. (3^2) would return 9 (3*3).
+both values are positive. (5%3) would return 2. The modulo
+expression function and the modulo command may output different
+results if any number involved is negative; unlike the command,
+the modulo expression function uses a floored modulo.
+To explain, if the dividend is negative, than the result will
+be the divisor minus the remainder (e.g. (-5%3) would return
+1); if the divisor is negative, than the result will be the
+additive inverse of the difference of the divisor and the
+remainder (e.g. (5%-3) would return -1); if BOTH are negative,
+the result will be the additive inverse of the remainder (e.g.
+(-5%-3) would return -2).
+~E^ Exponent~F: Outputs the result of taking the first number to
+the power of the second number. (3^2) would return 9.
 ~E>> Bitshift Right~F: Shifts the first number rightward by [second
 number] of bits. Info shifted off of the boundaries will NOT
 wrap around. Using an 8-bit counter for clarity's sake, (5>>2)
@@ -8013,6 +8058,14 @@ number] of bits. Info shifted off of the boundaries will NOT
 wrap around. Using an 8-bit counter for clarity's sake, (5<<2)
 would turn 5 [00000101] into 20 [00010100] by shifting two bits
 leftward.
+~E>>> Signed Shift Right~F: Also known as Arithmetic Right Shift.
+Shifts the first number rightward by [second number] of bits,
+but unlike normal bitshift right, shifts in whatever number was
+in the leftmost bit instead of always shifting in 0s. Info
+shifted off of the boundaries still will not wrap around. Using
+an 8-bit counter for clarity's sake, (5>>>2) would turn 5
+[00000101] into 1 [00000001], while (-5>>>2) would turn -5
+[11111011] into -2 [11111110].
 ~E> Greater Than~F: If the first number is greater than the second
 number, outputs 1 (TRUE); otherwise, outputs 0 (FALSE). (3>2)
 would return 1, (2>2) would return 0.
@@ -8077,7 +8130,9 @@ expression. For example, if the previous expression was
 evaluate from left to right, so, for example, consecutive
 expressions (2+2) and ((10/5)+#)) would yield 4 for the second
 expression instead of the expected 6 (since # would evaluate to
-(10/5) and not (2+2).
+(10/5) and not (2+2). This function is slated to be removed,
+with no backwards compatibility checks to support it, so use at
+YOUR OWN RISK.
 
 >#ROBOTICR.HLP:087:Robotic Reference Manual
 >#MAIN.HLP:072:Table of Contents
@@ -8514,8 +8569,8 @@ Overlay to vlayer: ~ACOPY OVERLAY BLOCK x1 y1 w h "#x2" "#y2"
 Vlayer to board: ~ACOPY BLOCK "#x1" "#y1" w h x2 y2
 Vlayer to overlay: ~ACOPY OVERLAY BLOCK "#x1" "#y1" w h x2 y2
 
-In these, ~eCOPY BLOCK~f and ~eCOPY OVERLAY BLOCK~f are
-interchangeable.
+In the commands below, ~eCOPY BLOCK~f and ~eCOPY OVERLAY BLOCK~f
+are interchangeable.
 
 Vlayer to MZM:
 ~ACOPY (OVERLAY) BLOCK "#x1" "#y1" w h "@@name.mzm" m
@@ -8524,11 +8579,11 @@ Vlayer to string:
 Vlayer to itself:
 ~ACOPY (OVERLAY) BLOCK "#x1" "#y1" w h "#x2" "#y2"
 
-There are several ways to give the vlayer working coordinates.
+There are several ways to give the vlayer working coordinates:
 
-Pure numbers: ~E"#xxx"~F
-Counter value: ~E"#&counter&"~F
-Expressions: ~E"#('counter' + x)"~F
+Pure numbers - ~E"#xxx"~F
+Counter value - ~E"#&counter&"~F
+Expressions - ~E"#('counter' + x)"~F
 
 MZMs can be placed on the vlayer by using p02. Example:
 
@@ -8709,6 +8764,121 @@ replace in the target character set.
 #NEWINVER.HLP
 :1st: 
 $~9NEW in MegaZeux!
+
+June 20, 2012 - MZX 2.84b
+
+Less than three weeks after the last one, MegaZeux 2.84b is
+here a few weeks early to fix a key regression regarding the
+use of REL commands with the COPY x y dx dy command.  While
+several new features have been added, this release was mostly
+about rooting out as many crash bugs from MegaZeux as possible.
+An official public beta release of debytecode has been pushed
+off once again due to time constraints.
+
+Most notable as far as new features go, pressing 'E' while a
+game's title screen is running will now take you directly to
+that world in the editor. A blank new world may still be
+created with 'F8', and now with the 'N' key. The function key
+corresponding to the new 'E' functionality is 'F9'.
+
+A major new aspect of this version, which could be seen as a
+bugfix or as a new feature, is MegaZeux's ability to validate
+the MZX, MZB, MZM, and SAV file formats. Validation has been
+rigorously tested and refined, and a comprehensive list of most
+world files that fail any check is available on the MZX Wiki.
+File load crashes and force-quit "Out of memory" errors in
+these instances are nearly a thing of the past.
+
+One final major change regards the file manager dialogs (Load /
+Save Game, etc). These dialogs have been internally overhauled
+to avoid permanent directory changes unless a valid world or
+save file has been loaded.  If any bugs are experienced using
+these, they should be reported to the MZX Bug Tracker.
+
+FEATURES
+
++ Pressing 'E' or 'F9' on a title screen will now open the
+  current world for editing.  Press 'N' or 'F8' to create a new
+  world.
++ Multiple hosts may now be defined in config.txt. Update
+  attempts will be carried out in the order they are defined.
++ A startup path may be defined in config.txt ("startup_path").
++ Specifying the backup filename with a directory, ex.
+  "backup/file", will now silently attempt to create the
+  directory if it does not exist.
++ MZM3 is now forward compatible (robots will be dummied out).
+
+BUGFIXES
+
++ World validation has been strengthened, preventing
+  disasterous loads of most non-world files.  Mostly
+  intact/valid worlds, such as HUNTDRAK.MZX, can be loaded --
+  corrupt/missing boards will be replaced with blank boards,
+  corrupt robots will be replaced by robots with empty
+  programs, and so on.  If more robots/scrolls/signs are found
+  on a board than their data suggests there should be, the
+  extras will be replaced with customblocks. Back up the
+  version of the world with errors in this instance, as the
+  robots' code or scroll text may still be salvageable from the
+  world data.
++ Fixed a long-standing memory corruption bug in the shoot
+  command introduced by the port.
++ Mac OS X: MegaZeux now uses /Users/[username] as the default
+  starting directory. Apps previously would always start at the
+  filesystem root. (ajs)
++ Fixed dangerous crash-causing bug where the editor would not
+  chdir back to the correct directory after testing.
++ MegaZeux, after saving a world to a new directory, now chdirs
+  to the new current world file's directory.
++ Changed behavior where a failed save file load would fade the
+  still-running world out of focus. MegaZeux now leaves the
+  world in focus.
++ All failed world/save loads leave the current world running
+  and in the same working directory.
++ When startup_file is defined as a directory at the command
+  line, MZX chdirs to the directory instead of attempting to
+  open it as a world file.  In the config file, the directory
+  is pruned off since there's a new config option for the
+  startup path.
++ Fixed regression where the rel commands would be ignored for
+  board to board copy x y dx dy.
++ Updated MZX_SPEED in the counter debugger, where it was still
+  getting clamped from 1 to 9.
++ COLOR FADE IN and COLOR FADE OUT (and all built-in uses of
+  them) now correctly respect any COLOR INTENSITY changes made
+  before they are used.
++ In file selection dialogs, when attempting to make a
+  directory that already exists with ALT+N, MZX now shows the
+  correct file name and does not force the user to quit
+  MegaZeux.
++ In file selection dialogs, when pressing ALT+D with a
+  directory selected, MZX now correctly prompts to delete the
+  selected directory instead of a file.
++ The option to import world files in the board editor now
+  correctly takes the world version into account.
++ Savegame MZMs loaded into the editor now have their robots
+  dummied out for safety purposes.
++ Fixed bug where INPUT STRING would not terminate lines longer
+  than 71 chars after clipping them.
++ INPUT STRING and ASK do not allow either tabs (INPUT only) or
+  line breaks (both) anymore.
+
++ Temporary fix for MSVC bug where all window dialogs would
+  freeze. (MZXGiant)
++ Temporary fix: board block actions will not corrupt robot
+  source code in DBC anymore. (MZXGiant)
+
+DEVELOPERS
+
++ Switched debian prereq. and darwin libpng12 to libpng,
+  switched darwin and default ldflags to use '--ldflags'
+  instead of '--libs'.
++ Darwin CC/CXX compiler can now be specified on the command
+  line. (ajs)
++ Cleaned up broken ifeq structure in darwin Makefile.in so
+  ARCHes other than i686 can be built.
++ Updated MSVC dirent.h to the latest version (MZXGiant)
++ Added updated MSVC dependencies. (MZXGiant)
 
 June 01, 2012 - MZX 2.84
 
