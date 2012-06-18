@@ -1,13 +1,3 @@
-GIT
-
-FEATURES
-
-BUGFIXES
-
-DEVELOPERS
-
-
-
 June 20, 2012 - MZX 2.84b
 
 Less than three weeks after the last one, MegaZeux 2.84b is here a few weeks
