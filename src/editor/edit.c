@@ -3318,8 +3318,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
             if(!reload_world(mzx_world, "__test.mzx", &fade))
             {
-              create_blank_world(mzx_world);
+              if(!reload_world(mzx_world, current_world, &fade))
+                create_blank_world(mzx_world);
+
               current_board_id = mzx_world->current_board_id;
+              cursor_x = 0;
+              cursor_y = 0;
+              scroll_x = 0;
+              scroll_y = 0;
               modified = 0;
             }
 
