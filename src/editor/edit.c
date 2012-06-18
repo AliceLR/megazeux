@@ -1063,9 +1063,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
   end_module();
 
+  debug("%s\n", curr_file);
+
   {
     struct stat stat_res;
-    strncpy(current_world, curr_file, 127);
 
     if(
      reload_curr_file &&
@@ -1073,6 +1074,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
      !stat(curr_file, &stat_res) &&
      reload_world(mzx_world, curr_file, &fade))
     {
+      strncpy(current_world, curr_file, MAX_PATH);
+
       mzx_world->current_board_id = mzx_world->first_board;
       mzx_world->current_board =
        mzx_world->board_list[mzx_world->current_board_id];
@@ -3322,10 +3325,11 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 create_blank_world(mzx_world);
 
               current_board_id = mzx_world->current_board_id;
-              cursor_x = 0;
-              cursor_y = 0;
-              scroll_x = 0;
-              scroll_y = 0;
+              board_width = mzx_world->current_board->board_width;
+              board_height = mzx_world->current_board->board_height;
+
+              fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+               cursor_x, cursor_y, board_width, board_height, edit_screen_height);
               modified = 0;
             }
 
