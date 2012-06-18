@@ -5278,24 +5278,20 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
           break;
         }
 
-        /* Because reload_swap() requires that the world be cleared before
-         * loading the new world, we only allow the user to retry a failed
-         * swap or exit the program, at this point. By the time we get to
-         * the strcpy() below, the world must have been successfully swapped.
-         */
+        /* If the swap world fails, give them Fail and Retry.
+         * World validation prevents the bad swap from clearing data. */
         do
         {
           int fade; // FIXME: Hack!
           redo_load = 0;
           if(!reload_swap(mzx_world, translated_name, &fade))
-            redo_load = error("Error swapping to next world", 1, 7, 0x2C01);
+            redo_load = error("Error swapping to next world", 1, 3, 0x2C01);
         } while(redo_load == 2);
 
         // User asked to "Fail" on error message above
         if(redo_load == 1)
           break;
 
-        strcpy(curr_file, translated_name);
         mzx_world->swapped = 1;
         free(translated_name);
         return;

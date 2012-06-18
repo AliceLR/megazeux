@@ -1667,6 +1667,8 @@ bool reload_savegame(struct world *mzx_world, const char *file, int *faded)
 bool reload_swap(struct world *mzx_world, const char *file, int *faded)
 {
   char name[BOARD_NAME_SIZE];
+  char full_path[MAX_PATH];
+  char file_name[MAX_PATH];
   int version;
   FILE *fp;
 
@@ -1682,6 +1684,12 @@ bool reload_swap(struct world *mzx_world, const char *file, int *faded)
   mzx_world->current_board_id = mzx_world->first_board;
   set_current_board_ext(mzx_world,
    mzx_world->board_list[mzx_world->current_board_id]);
+
+  // Give curr_file a full path
+  getcwd(full_path, MAX_PATH);
+  split_path_filename(file, NULL, 0, file_name, MAX_PATH);
+  snprintf(curr_file, MAX_PATH, "%s%s%s",
+   full_path, DIR_SEPARATOR, file_name);
 
   return true;
 }
