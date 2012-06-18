@@ -1,18 +1,49 @@
-GIT (MZX 2.84b)
-
-An incremental MegaZeux release introducing several major bugfixes and new
-editor features.
+GIT
 
 FEATURES
 
-+ IMPORTANT! Pressing 'E' or 'F9' on a title screen will now open the current
-  world for editing.  Press 'N' or 'F8' to create a new world.
+BUGFIXES
+
+DEVELOPERS
+
+
+
+June 20, 2012 - MZX 2.84b
+
+Less than three weeks after the last one, MegaZeux 2.84b is here a few weeks
+early to fix a key regression regarding the use of REL commands with the
+COPY x y dx dy command.  While several new features have been added, this
+release was mostly about rooting out as many crash bugs from MegaZeux as
+possible.  An official public beta release of debytecode has been pushed off
+once again due to time constraints.
+
+Most notable as far as new features go, pressing 'E' while a game's  title
+screen is running will now take you directly to that world in the editor. A
+blank new world may still be created with 'F8', and now with the 'N' key. The
+function key corresponding to the new 'E' functionality is 'F9'.
+
+A major new aspect of this version, which could be seen as a bugfix or as a
+new feature, is MegaZeux's ability to validate the MZX, MZB, MZM, and SAV file
+formats. Validation has been rigorously tested and refined, and a comprehensive
+list of most world files that fail any check is available on the MZX Wiki. File
+load crashes and force-quit "Out of memory" errors in these instances are nearly
+a thing of the past.
+
+One final major change regards the file manager dialogs (Load Save Game, etc).
+These dialogs have been internally overhauled to avoid permanent directory
+changes unless a valid world or save file has been loaded.  If any bugs are
+experienced using these, they should be reported to the MZX Bug Tracker.
+
+FEATURES
+
++ Pressing 'E' or 'F9' on a title screen will now open the current world for
+  editing.  Press 'N' or 'F8' to create a new world.
 + Multiple hosts may now be defined in config.txt. Update attempts will
   be carried out in the order they are defined.
-+ A startup path may be defined in config.txt.
-+ Specifying the backup filename with a directory, ex. "backup/b", will now
-  attempt to create the directory if it does not exist.
-+ MZM3 loading is forward compatible (robots will be dummied out).
++ A startup path may be defined in config.txt ("startup_path").
++ Specifying the backup filename with a directory, ex. "backup/file", will now
+  silently attempt to create the directory if it does not exist.
++ MZM3 is now forward compatible (robots will be dummied out).
 
 BUGFIXES
 
@@ -73,6 +104,8 @@ DEVELOPERS
   i686 can be built.
 + Updated MSVC dirent.h to the latest version (MZXGiant)
 + Added updated MSVC dependencies. (MZXGiant)
+
+
 
 June 1, 2012 - MZX 2.84
 
