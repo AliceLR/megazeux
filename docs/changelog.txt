@@ -80,6 +80,8 @@ BUGFIXES
   after clipping them.
 + INPUT STRING and ASK do not allow either tabs (INPUT only) or line breaks
   (both) anymore.
++ Fixed bug where putting a scroll/sign in the editor buffer and then selecting
+  something else could cause a crash on leaving the editor.
 
 + Temporary fix for MSVC bug where all window dialogs would freeze. (MZXGiant)
 + Temporary fix: board block actions will not corrupt robot source code in DBC

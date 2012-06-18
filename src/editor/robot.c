@@ -78,6 +78,8 @@ void create_blank_sensor_direct(struct sensor *cur_sensor)
 void clear_scroll_contents(struct scroll *cur_scroll)
 {
   free(cur_scroll->mesg);
+  cur_scroll->mesg = NULL;
+  cur_scroll->used = 0;
 }
 
 void replace_scroll(struct board *src_board, struct scroll *src_scroll,
