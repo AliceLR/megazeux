@@ -300,7 +300,6 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
       savegame_mode = fgetc(input_file);
       mzm_world_version = fgetw(input_file);
       fseek(input_file, 3, SEEK_CUR);
-
     }
 
     else
@@ -323,14 +322,12 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     if(mzm_world_version > mzx_world->version)
     {
       val_error(MZM_FILE_VERSION_TOO_RECENT, mzm_world_version);
-//      goto err_close;
     }
 
     // If the MZM is a save MZM but we're not loading at runtime, show a message.
     if(savegame_mode > savegame)
     {
       val_error(MZM_FILE_FROM_SAVEGAME, 0);
-//      goto err_close;
     }
 
     switch(mode)
@@ -468,11 +465,12 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
               // dynamically created MZMs in the editor is still useful, we'll just
               // dummy out the robots.
 
-              if(savegame_mode && ((savegame == 0) ||
-               (mzx_world->version < mzm_world_version)))
+              if((savegame_mode > savegame) ||
+               (mzx_world->version < mzm_world_version))
               {
                 fseek(input_file, robots_location, SEEK_SET);
 
+                set_validation_suppression(1);
                 for(i = 0; i < num_robots; i++)
                 {
                   current_x = robot_x_locations[i];
@@ -488,7 +486,6 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
                   // different code).
                   if(current_x != -1)
                   {
-                    set_validation_suppression(1);
                     cur_robot = load_robot_allocate(input_file, savegame_mode,
                      mzm_world_version);
 
@@ -496,9 +493,9 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
                     level_id[offset] = CUSTOM_BLOCK;
                     level_param[offset] = cur_robot->robot_char;
                     clear_robot(cur_robot);
-                    set_validation_suppression(-1);
                   }
                 }
+                set_validation_suppression(-1);
               }
               else
               {
