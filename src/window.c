@@ -2018,12 +2018,15 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
           {
             case IKEY_r:
             {
-              char *new_name = cmalloc(MAX_PATH);
-              int offset = 56;
-              int width = 29;
+              //char *new_name = cmalloc(MAX_PATH);
+              //int offset = 56;
+              //int width = 29;
 
               if(current_element_num == FILESEL_DIR_LIST)
-              {
+                di->return_value = 7;
+              else
+                di->return_value = 5;
+              /*{
                 offset = 0; // no game name
                 width = 14;
               }
@@ -2033,7 +2036,7 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
 
               intake(mzx_world, new_name, width,
                src->e.x + di->x, src->e.y + di->y + *(src->result)
-               - src->scroll_offset, DI_ACTIVELIST, 2, 0, NULL, 0,
+               - src->scroll_offset, DI_ACTIVELIST, 1, 0, NULL, 0,
                NULL);
               rename(file_name + offset, new_name);
 
@@ -2041,7 +2044,10 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
               di->return_value = 5;
 
               free(new_name);
-              return 0;
+              return 0;*/
+
+              di->done = 1;
+              break;
             }
 
             case IKEY_d:
@@ -2310,6 +2316,10 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
                   memset(file_list[num_files], ' ', 55);
                   strncpy(file_list[num_files], file_name, file_name_length);
                   file_list[num_files][file_name_length] = ' ';
+                  // Display names that are too long with ...
+                  if(file_name_length > 29)
+                    strncpy(file_list[num_files] + 26, "... ", 4);
+
                   fread(file_list[num_files] + 30, 1, 24, mzx_file);
                   file_list[num_files][55] = 0;
                   fclose(mzx_file);
@@ -2317,6 +2327,10 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
                 else
                 {
                   strncpy(file_list[num_files], file_name, file_name_length);
+                  // Display names that are too long with ...
+                  if(file_name_length > 55)
+                    strncpy(file_list[num_files] + 52, "...", 3);
+
                   file_list[num_files][file_name_length] = '\0';
                 }
                 strncpy(file_list[num_files] + 56, file_name,
@@ -2554,10 +2568,11 @@ skip_dir:
       case 3:
       {
         struct element *b_elements[3];
+        struct dialog b_di;
         int b_dialog_result;
+
         char *new_name;
         char full_name[MAX_PATH];
-        struct dialog b_di;
 
         new_name = cmalloc(MAX_PATH);
         new_name[0] = 0;
@@ -2614,9 +2629,19 @@ skip_dir:
         break;
       }
 
-      // ?????
+      // Rename file
       case 5:
       {
+        /*struct element *b_elements[3];
+        struct dialog b_di;
+        int b_dialog_result;
+
+        char *new_name = cmalloc[MAX_PATH];
+
+        h
+
+
+        free(new_name);*/
         break;
       }
 
@@ -2649,6 +2674,12 @@ skip_dir:
             }
           }
         }
+        break;
+      }
+
+      // Rename directory
+      case 7:
+      {
         break;
       }
     }
