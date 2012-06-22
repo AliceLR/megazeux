@@ -2547,7 +2547,7 @@ int validate_legacy_bytecode(char *bc, int program_length)
   int cur_command, p;
 
   if(!bc)
-    goto err_invalid;
+    return 0;
 
   // First -- fix the odd robots that appear in old MZX games,
   // such as Catacombs of Zeux.
