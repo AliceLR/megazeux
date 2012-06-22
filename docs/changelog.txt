@@ -4,6 +4,10 @@ FEATURES
 
 BUGFIXES
 
++ Fixed a bug in the 'glsl' renderer that caused the cursor color to be
+  ignored (always white). This caused the cursor to not be visible if
+  shown on a white background.
+
 DEVELOPERS
 
 
