@@ -7,6 +7,10 @@ BUGFIXES
 + Fixed a bug in the 'glsl' renderer that caused the cursor color to be
   ignored (always white). This caused the cursor to not be visible if
   shown on a white background.
++ Setting $string.length will not cause memory corruption anymore.  In
+  addition, its pre-2.84 behavior of intentionally allocating the string
+  past the length it is being set to has been restored, but the length
+  will still be set to the correct value.
 
 DEVELOPERS
 

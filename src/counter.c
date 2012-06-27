@@ -2201,7 +2201,7 @@ static void str_num_write(struct world *mzx_world,
   if(dot_ptr)
   {
     struct string *src;
-    size_t old_length, new_length;
+    size_t old_length, new_length, alloc_length;
     int next, write_value = false;
     int str_num = 0;
 
@@ -2224,9 +2224,6 @@ static void str_num_write(struct world *mzx_world,
 
       new_length = value;
 
-      /* 2.83 would set the length to value+1 */
-      if(mzx_world->version <= 0x0253)
-        new_length++;
     }
     else
     {
@@ -2249,27 +2246,25 @@ static void str_num_write(struct world *mzx_world,
      * and we're asking to extend its length, increase the length by a power
      * of two rather than just by the amount necessary.
      */
-    /* This is undesirable, as the user expects this to set the length
-     * to the value given and anything that relies on the length being set
-     * to a specific value would in turn not work.
-     */
-    if(mzx_world->version <= 0x0253 && src != NULL)
+    alloc_length = new_length + 1;
+
+    if(src != NULL)
     {
       old_length = src->allocated_length;
 
-      if(new_length > old_length)
+      if(alloc_length > old_length)
       {
         unsigned int i;
 
         for(i = 1 << 31; i != 0; i >>= 1)
-          if(new_length & i)
+          if(alloc_length & i)
             break;
 
-        new_length = i << 1;
+        alloc_length = i << 1;
       }
     }
 
-    force_string_length(mzx_world, name, next, &src, &new_length);
+    force_string_length(mzx_world, name, next, &src, &alloc_length);
 
     if(write_value)
     {
@@ -2279,8 +2274,12 @@ static void str_num_write(struct world *mzx_world,
     }
     else
     {
-      src->value[value] = 0;
+      src->value[new_length] = 0;
       src->length = new_length;
+
+      // Before 2.84, the length would be set to the alloc_length
+      if(mzx_world->version < 0x0254)
+        src->length = alloc_length;
     }
   }
   else
