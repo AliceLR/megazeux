@@ -18,11 +18,10 @@ BUGFIXES
   by itself.
 + Fixed MegaZeux crash that could occur when exiting the editor to a world file
   that failed validation.
++ Rolled string->storage_space into string->name to prevent buffer overflow
+  errors and crashes. (Mr_Alert)
 
 DEVELOPERS
-
-+ Rolled string->storage_space into string->name to prevent buffer overflow
-  errors. (Mr_Alert)
 
 
 
