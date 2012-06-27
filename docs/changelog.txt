@@ -11,6 +11,9 @@ BUGFIXES
   addition, its pre-2.84 behavior of intentionally allocating the string
   past the length it is being set to has been restored, but the length
   will still be set to the correct value.
++ Added bounds check to INC "$string" "value".  Attempts to increase a
+  string past its maximum length (1 megabyte, or 1048576 bytes) will now
+  fail.
 
 DEVELOPERS
 

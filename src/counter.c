@@ -3770,6 +3770,9 @@ void inc_string(struct world *mzx_world, const char *name, struct string *src,
   if(dest)
   {
     size_t new_length = src->length + dest->length;
+    if(new_length > MAX_STRING_LEN)
+      return;
+
     // Concatenate
     if(new_length > dest->allocated_length)
     {
