@@ -19,6 +19,9 @@ BUGFIXES
 
 DEVELOPERS
 
++ Rolled string->storage_space into string->name to prevent buffer overflow
+  errors. (Mr_Alert)
+
 
 
 June 20, 2012 - MZX 2.84b

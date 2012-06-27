@@ -2086,7 +2086,7 @@ static struct string *add_string_preallocate(struct world *mzx_world,
   dest->allocated_length = length;
   dest->length = length;
 
-  dest->value = dest->storage_space + name_length;
+  dest->value = dest->name + name_length + 1;
   if(length > 0)
     memset(dest->value, ' ', length);
 
@@ -4136,11 +4136,11 @@ struct string *load_string(FILE *fp)
   int str_length = fgetd(fp);
 
   struct string *src_string =
-   cmalloc(sizeof(struct string) + name_length + str_length - 1);
+   cmalloc(sizeof(struct string) + name_length + str_length);
 
   fread(src_string->name, name_length, 1, fp);
 
-  src_string->value = src_string->storage_space + name_length;
+  src_string->value = src_string->name + name_length + 1;
 
   fread(src_string->value, str_length, 1, fp);
   src_string->name[name_length] = 0;
