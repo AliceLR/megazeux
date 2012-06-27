@@ -3784,7 +3784,7 @@ void inc_string(struct world *mzx_world, const char *name, struct string *src,
       {
         char *old_dest_value = dest->value;
         dest = reallocate_string(mzx_world, dest, next, new_length);
-        src->value += (int)(dest->value - old_dest_value);
+        src->value += (dest->value - old_dest_value);
       }
       else
       {

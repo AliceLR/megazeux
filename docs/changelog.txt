@@ -14,6 +14,8 @@ BUGFIXES
 + Added bounds check to INC "$string" "value".  Attempts to increase a
   string past its maximum length (1 megabyte, or 1048576 bytes) will now
   fail.
++ Fixed MegaZeux crash that could sometimes occur when a string was increased
+  by itself.
 
 DEVELOPERS
 
