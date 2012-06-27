@@ -185,8 +185,9 @@ static void load_world_file(struct world *mzx_world, char *name)
   }
   else
   {
-    // Restart the music.
-    load_board_module(mzx_world->current_board);
+    // Restart the music if we still have a world in memory.
+    if(mzx_world->current_board)
+      load_board_module(mzx_world->current_board);
   }
 }
 

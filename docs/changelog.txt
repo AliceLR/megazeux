@@ -16,6 +16,8 @@ BUGFIXES
   fail.
 + Fixed MegaZeux crash that could sometimes occur when a string was increased
   by itself.
++ Fixed MegaZeux crash that could occur when exiting the editor to a world file
+  that failed validation.
 
 DEVELOPERS
 

@@ -1712,6 +1712,8 @@ void clear_world(struct world *mzx_world)
     clear_board(board_list[i]);
   }
   free(board_list);
+  mzx_world->current_board = NULL;
+  mzx_world->board_list = NULL;
 
   clear_robot_contents(&mzx_world->global_robot);
 
