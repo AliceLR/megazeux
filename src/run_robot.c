@@ -864,8 +864,6 @@ static void copy_block(struct world *mzx_world, int id, int x, int y,
     case 3:
     {
       char str_buffer[ROBOT_MAX_TR];
-      prefix_first_xy_var(mzx_world, &src_x, &src_y, x, y,
-       src_width, src_height);
       tr_msg(mzx_world, dest + 1, id, str_buffer);
       switch(src_type)
       {
