@@ -57,6 +57,7 @@ static struct board *load_board_allocate_direct(FILE *fp, int version)
   board_end = ftell(fp);
   fseek(fp, board_start, SEEK_SET);
 
+  cur_board->world_version = version;
   load_board_direct(cur_board, fp, (board_end - board_start), 0, version);
   fread(cur_board->board_name, 25, 1, fp);
   return cur_board;

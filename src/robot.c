@@ -233,10 +233,13 @@ void create_blank_robot(struct robot *r, int savegame)
 
 }
 
-struct robot *load_robot_allocate(FILE *fp, int savegame, int version)
+struct robot *load_robot_allocate(FILE *fp, int savegame, int file_version,
+ int world_version)
 {
   struct robot *cur_robot = cmalloc(sizeof(struct robot));
-  load_robot(cur_robot, fp, savegame, version);
+
+  cur_robot->world_version = world_version;
+  load_robot(cur_robot, fp, savegame, file_version);
   return cur_robot;
 }
 
@@ -253,8 +256,6 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   cur_robot->label_list = NULL;
   cur_robot->program_bytecode = NULL;
   cur_robot->num_labels = 0;
-
-  cur_robot->world_version = version;
 
 #ifdef CONFIG_DEBYTECODE
   cur_robot->program_source = NULL;

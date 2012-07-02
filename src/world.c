@@ -1443,7 +1443,8 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
 
   for(i = 0; i < num_boards; i++)
   {
-    mzx_world->board_list[i] = load_board_allocate(fp, savegame, version);
+    mzx_world->board_list[i] =
+     load_board_allocate(fp, savegame, version, mzx_world->version);
     store_board_to_extram(mzx_world->board_list[i]);
     meter_update_screen(&meter_curr, meter_target);
   }

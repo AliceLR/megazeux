@@ -98,7 +98,8 @@ CORE_LIBSPEC void setup_overlay(struct board *src_board, int mode);
 CORE_LIBSPEC void replace_player(struct world *mzx_world);
 
 void create_blank_robot(struct robot *cur_robot, int savegame);
-struct robot *load_robot_allocate(FILE *fp, int savegame, int version);
+struct robot *load_robot_allocate(FILE *fp, int savegame, int file_version,
+ int world_version);
 void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version);
 struct scroll *load_scroll_allocate(FILE *fp);
 struct sensor *load_sensor_allocate(FILE *fp);

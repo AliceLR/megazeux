@@ -29,6 +29,7 @@ __M_BEGIN_DECLS
 struct board
 {
   int size;
+  int world_version;
 
   char board_name[32];
 

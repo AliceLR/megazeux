@@ -449,7 +449,7 @@ __editor_maybe_static int load_board_direct(struct board *cur_board,
         truncated = 1;
       }
 
-      cur_robot = load_robot_allocate(fp, savegame, version);
+      cur_robot = load_robot_allocate(fp, savegame, version, cur_board->world_version);
       if(cur_robot->used)
       {
         cur_board->robot_list[i] = cur_robot;
@@ -649,7 +649,8 @@ err_invalid:
   return VAL_INVALID;
 }
 
-struct board *load_board_allocate(FILE *fp, int savegame, int version)
+struct board *load_board_allocate(FILE *fp, int savegame,
+ int file_version, int world_version)
 {
   struct board *cur_board = cmalloc(sizeof(struct board));
   int board_size, board_location, last_location;
@@ -673,7 +674,8 @@ struct board *load_board_allocate(FILE *fp, int savegame, int version)
     goto err_out;
   }
 
-  result = load_board_direct(cur_board, fp, board_size, savegame, version);
+  cur_board->world_version = world_version;
+  result = load_board_direct(cur_board, fp, board_size, savegame, file_version);
 
   if(result != VAL_SUCCESS)
     create_blank_board(cur_board);

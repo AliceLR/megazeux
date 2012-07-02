@@ -21,6 +21,9 @@ BUGFIXES
 + Rolled string->storage_space into string->name to prevent buffer overflow
   errors and crashes. (Mr_Alert)
 + Fixed a bug where copy block $string would apply REL vars twice.
++ Thanatos Insignia will now play without freezing both normally AND after
+  loading a save.  Robots will not be incorrectly versioned with the save
+  format magic any longer.
 
 DEVELOPERS
 

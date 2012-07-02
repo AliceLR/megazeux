@@ -487,7 +487,7 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
                   if(current_x != -1)
                   {
                     cur_robot = load_robot_allocate(input_file, savegame_mode,
-                     mzm_world_version);
+                     mzm_world_version, mzx_world->version);
 
                     offset = current_x + (current_y * board_width);
                     level_id[offset] = CUSTOM_BLOCK;
@@ -512,7 +512,7 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
                   }
 
                   cur_robot = load_robot_allocate(input_file, savegame_mode,
-                   mzm_world_version);
+                   mzm_world_version, mzx_world->version);
                   current_x = robot_x_locations[i];
                   current_y = robot_y_locations[i];
                   cur_robot->xpos = current_x;
