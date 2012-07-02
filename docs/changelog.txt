@@ -2,6 +2,9 @@ GIT
 
 FEATURES
 
++ Maximum string length has been increased from 1 megabyte (1048576 bytes) to
+  4 megabytes (4194304 bytes).
+
 BUGFIXES
 
 + Fixed a bug in the 'glsl' renderer that caused the cursor color to be
