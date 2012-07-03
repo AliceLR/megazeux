@@ -3658,7 +3658,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           }
           else
 
-          if(is_storageless(current_id) &&
+          if(is_storageless(d_id) &&
            (0 <= (new_param = change_param(mzx_world, d_id, d_param, NULL, NULL, NULL))))
           {
             src_board->level_param[offset] = new_param;

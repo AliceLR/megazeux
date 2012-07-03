@@ -27,6 +27,7 @@ BUGFIXES
 + Thanatos Insignia will now play without freezing both normally AND after
   loading a save.  Robots will not be incorrectly versioned with the save
   format magic any longer.
++ Fixed bug where ALT+M wouldn't always edit non-sensors/signs/scrolls/robots.
 
 DEVELOPERS
 
