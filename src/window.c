@@ -2494,6 +2494,8 @@ skip_dir:
       }
     }
 
+    ret[MAX_PATH - 1] = 0;
+
     switch(dialog_result)
     {
       // Pressed Backspace

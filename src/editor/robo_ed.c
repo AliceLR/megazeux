@@ -1688,7 +1688,7 @@ static void export_block(struct robot_state *rstate, int region_default)
   struct robot_line *end_rline;
   int export_region = region_default;
   int export_type = 0;
-  char export_name[64];
+  char export_name[MAX_PATH];
   int num_formats = 1;
   int num_elements;
   const char *export_ext[] = { ".TXT", NULL, NULL };
