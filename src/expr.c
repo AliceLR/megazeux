@@ -238,12 +238,15 @@ static int parse_argument(struct world *mzx_world, char **_argument,
       return OP_EQUAL;
     }
 
-    // Inequality (there will be a = afterwards)
+    // Inequality (if there is no =, we do one's compliment)
     case '!':
     {
-      *type = 1;
-      *_argument = argument + 2;
-      return OP_NOT_EQUAL;
+      if(*(argument + 1) == '=')
+      {
+        *type = 1;
+        *_argument = argument + 2;
+        return OP_NOT_EQUAL;
+      }
     }
 
     // One's complement
