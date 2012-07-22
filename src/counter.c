@@ -2223,6 +2223,7 @@ static void str_num_write(struct world *mzx_world,
         return;
 
       new_length = value;
+      alloc_length = new_length + 1;
 
     }
     else
@@ -2234,6 +2235,7 @@ static void str_num_write(struct world *mzx_world,
 
       // Tentatively increase the string's length to cater for this write
       new_length = str_num + 1;
+      alloc_length = new_length;
 
       src = find_string(mzx_world, name, &next);
       write_value = true;
@@ -2246,7 +2248,6 @@ static void str_num_write(struct world *mzx_world,
      * and we're asking to extend its length, increase the length by a power
      * of two rather than just by the amount necessary.
      */
-    alloc_length = new_length + 1;
 
     if(src != NULL)
     {
