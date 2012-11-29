@@ -34,6 +34,8 @@ BUGFIXES
 + ALT+M now edits the overlay instead of the board in overlay editing.
 + Quick-load (F10 during gameplay) will not work if the load menu (F4) has
   been disabled with the LOAD_MENU counter.
++ Fixed a bug where the listening mod directory would stay the same as the
+  directory the editor was opened in.
 
 DEVELOPERS
 

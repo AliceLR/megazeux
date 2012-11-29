@@ -2429,7 +2429,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               {
                 load_module(new_mod, false, 255);
                 strcpy(current_listening_mod, new_mod);
-                getcwd(current_listening_dir, MAX_PATH);
+                get_path(new_mod, current_listening_dir, MAX_PATH);
                 listening_flag = 1;
               }
 
