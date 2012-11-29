@@ -36,6 +36,7 @@ BUGFIXES
   been disabled with the LOAD_MENU counter.
 + Fixed a bug where the listening mod directory would stay the same as the
   directory the editor was opened in.
++ The listening mod now continues to play after world and board changes.
 
 DEVELOPERS
 

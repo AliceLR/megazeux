@@ -140,9 +140,13 @@ static void fix_board(struct world *mzx_world, int new_board)
   mzx_world->current_board = mzx_world->board_list[new_board];
 }
 
-static void fix_mod(struct world *mzx_world, struct board *src_board)
+static void fix_mod(struct world *mzx_world, struct board *src_board,
+ int *listening_flag)
 {
-  load_board_module(src_board);
+  // Passing a ref in case we want to properly end it here at some point
+  if(!(*listening_flag))
+    load_board_module(src_board);
+
   strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
 }
 
@@ -1081,7 +1085,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
        mzx_world->board_list[mzx_world->current_board_id];
       src_board = mzx_world->current_board;
 
-      fix_mod(mzx_world, src_board);
+      fix_mod(mzx_world, src_board, &listening_flag);
     }
     else
     {
@@ -1341,7 +1345,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           synchronize_board_values(mzx_world, &src_board, &board_width,
            &board_height, &level_id, &level_param, &level_color, &overlay,
            &overlay_color);
-          fix_mod(mzx_world, src_board);
+          fix_mod(mzx_world, src_board, &listening_flag);
           fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
            cursor_x, cursor_y, board_width, board_height, edit_screen_height);
         }
@@ -1977,7 +1981,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               if(strcmp(src_board->mod_playing, "*") &&
                strcasecmp(src_board->mod_playing,
                mzx_world->real_mod_playing))
-                fix_mod(mzx_world, src_board);
+                fix_mod(mzx_world, src_board, &listening_flag);
 
               if(!src_board->overlay_mode)
                 overlay_edit = 0;
@@ -2027,7 +2031,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             {
               int fade;
 
-              end_module();
+              //end_module();
 
               // Load world curr_file
               strcpy(current_world, load_world);
@@ -2035,7 +2039,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               {
                 strcpy(current_world, last_world);
 
-                fix_mod(mzx_world, src_board);
+                fix_mod(mzx_world, src_board, &listening_flag);
                 break;
                 //create_blank_world(mzx_world);
               }
@@ -2054,7 +2058,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                &board_height, &level_id, &level_param, &level_color,
                &overlay, &overlay_color);
 
-              fix_mod(mzx_world, src_board);
+              fix_mod(mzx_world, src_board, &listening_flag);
 
               fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
                &scroll_y, cursor_x, cursor_y, board_width, board_height,
@@ -2100,7 +2104,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                   if(strcmp(src_board->mod_playing, "*") &&
                    strcasecmp(src_board->mod_playing,
                    mzx_world->real_mod_playing))
-                    fix_mod(mzx_world, src_board);
+                    fix_mod(mzx_world, src_board, &listening_flag);
 
                   fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
                    &scroll_y, cursor_x, cursor_y, board_width, board_height,
@@ -3351,15 +3355,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
             insta_fadein();
 
-            fix_mod(mzx_world, src_board);
-
-            if(listening_flag)
-            {
-              getcwd(current_dir, MAX_PATH);
-              chdir(current_listening_dir);
-              load_module(current_listening_mod, true, 255);
-              chdir(current_dir);
-            }
+            fix_mod(mzx_world, src_board, &listening_flag);
 
             unlink("__test.mzx");
 
@@ -3432,7 +3428,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                &board_height, &level_id, &level_param, &level_color, &overlay,
                &overlay_color);
 
-              fix_mod(mzx_world, src_board);
+              fix_mod(mzx_world, src_board, &listening_flag);
 
               fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
                &scroll_y, cursor_x, cursor_y, board_width, board_height,
@@ -3488,7 +3484,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 if(strcmp(src_board->mod_playing, "*") &&
                  strcasecmp(src_board->mod_playing,
                  mzx_world->real_mod_playing))
-                  fix_mod(mzx_world, src_board);
+                  fix_mod(mzx_world, src_board, &listening_flag);
 
                 fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
                  &scroll_y, cursor_x, cursor_y, board_width, board_height,
