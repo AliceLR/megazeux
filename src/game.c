@@ -2057,30 +2057,34 @@ __editor_maybe_static void play_game(struct world *mzx_world)
         // Quick load
         case IKEY_F10:
         {
-          struct stat file_info;
-
-          if(!stat(curr_sav, &file_info))
+          if(mzx_world->version < 0x0252 ||
+           get_counter(mzx_world, "LOAD_MENU", 0))
           {
-            // Load game
-            fadein = 0;
-            if(!reload_savegame(mzx_world, curr_sav, &fadein))
+            struct stat file_info;
+
+            if(!stat(curr_sav, &file_info))
             {
-              vquick_fadeout();
-              return;
+              // Load game
+              fadein = 0;
+              if(!reload_savegame(mzx_world, curr_sav, &fadein))
+              {
+                vquick_fadeout();
+                return;
+              }
+
+              // Reset this
+              src_board = mzx_world->current_board;
+
+              find_player(mzx_world);
+
+              // Swap in starting board
+              load_board_module(src_board);
+              strcpy(mzx_world->real_mod_playing,
+               src_board->mod_playing);
+
+              send_robot_def(mzx_world, 0, 10);
+              fadein ^= 1;
             }
-
-            // Reset this
-            src_board = mzx_world->current_board;
-
-            find_player(mzx_world);
-
-            // Swap in starting board
-            load_board_module(src_board);
-            strcpy(mzx_world->real_mod_playing,
-             src_board->mod_playing);
-
-            send_robot_def(mzx_world, 0, 10);
-            fadein ^= 1;
           }
           break;
         }
