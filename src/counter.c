@@ -2730,7 +2730,8 @@ int set_counter_special(struct world *mzx_world, char *char_value,
             insta_fadeout();
           else
             insta_fadein();
-          mzx_world->swapped = 1;
+          // Let game.c handle the rest for now
+          mzx_world->swapped = 2;
         }
       }
 

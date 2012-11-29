@@ -37,6 +37,7 @@ BUGFIXES
 + Fixed a bug where the listening mod directory would stay the same as the
   directory the editor was opened in.
 + The listening mod now continues to play after world and board changes.
++ LOAD_GAME will not incorrectly trigger JUSTENTERED anymore.
 
 DEVELOPERS
 

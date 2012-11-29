@@ -1513,8 +1513,10 @@ static int update(struct world *mzx_world, int game, int *fadein)
     // JUSTENTERED label will take priority if a robot defines it.
     // This differs from pressing P on the title screen, where the
     // order of precedence is swapped.
+    // If swapped==2, we came here from LOAD_GAME; don't JUSTENTERED
     send_robot_def(mzx_world, 0, 10);
-    send_robot_def(mzx_world, 0, 11);
+    if(mzx_world->swapped != 2)
+      send_robot_def(mzx_world, 0, 11);
 
     return 1;
   }
