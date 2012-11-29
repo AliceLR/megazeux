@@ -1844,6 +1844,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               }
               else
               {
+                draw_mode = 0;
                 overlay_edit = 1;
                 current_param = 32;
                 current_color = 7;
@@ -1851,6 +1852,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             }
             else
             {
+              draw_mode = 0;
               overlay_edit = 0;
               current_id = SPACE;
               current_param = 0;
