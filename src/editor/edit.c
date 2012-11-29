@@ -3307,8 +3307,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             src_board = mzx_world->board_list[current_board_id];
             fix_board(mzx_world, current_board_id);
             set_counter(mzx_world, "TIME", src_board->time_limit, 0);
-            send_robot_def(mzx_world, 0, 11);
-            send_robot_def(mzx_world, 0, 10);
+            send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
+            send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
             find_player(mzx_world);
 
             mzx_world->player_restart_x = mzx_world->player_x;

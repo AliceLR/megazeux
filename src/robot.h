@@ -35,6 +35,21 @@ __M_BEGIN_DECLS
 #define ROBOT_START_STACK 4
 #define ROBOT_MAX_STACK   65536
 
+#define LABEL_TOUCH 0
+#define LABEL_BOMBED 1
+#define LABEL_INVINCO 2
+#define LABEL_PUSHED 3
+#define LABEL_PLAYERSHOT 4
+#define LABEL_NEUTRALSHOT 5
+#define LABEL_ENEMYSHOT 6
+#define LABEL_PLAYERHIT 7
+#define LABEL_LAZER 8
+#define LABEL_SPITFIRE 9
+#define LABEL_JUSTLOADED 10
+#define LABEL_JUSTENTERED 11
+#define LABEL_GOOPTOUCHED 12
+#define LABEL_PLAYERHURT 13
+
 #ifdef CONFIG_DEBYTECODE
 
 // This is the version where programs became source code instead of

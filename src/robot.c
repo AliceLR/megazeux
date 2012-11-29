@@ -1143,68 +1143,68 @@ void send_robot_def(struct world *mzx_world, int robot_id, int mesg_id)
 {
   switch(mesg_id)
   {
-    case 0:
+    case LABEL_TOUCH:
       send_robot_id_def(mzx_world, robot_id, "TOUCH", 0);
       break;
 
-    case 1:
+    case LABEL_BOMBED:
       send_robot_id_def(mzx_world, robot_id, "BOMBED", 0);
       break;
 
-    case 2:
+    case LABEL_INVINCO:
       send_robot_all_def(mzx_world, "INVINCO");
       break;
 
-    case 3:
+    case LABEL_PUSHED:
       send_robot_id_def(mzx_world, robot_id, "PUSHED", 0);
       break;
 
-    case 4:
+    case LABEL_PLAYERSHOT:
       if(send_robot_id_def(mzx_world, robot_id, "PLAYERSHOT", 0))
       {
         send_robot_id_def(mzx_world, robot_id, "SHOT", 0);
       }
       break;
 
-    case 5:
+    case LABEL_NEUTRALSHOT:
       if(send_robot_id_def(mzx_world, robot_id, "NEUTRALSHOT", 0))
       {
         send_robot_id_def(mzx_world, robot_id, "SHOT", 0);
       }
       break;
 
-    case 6:
+    case LABEL_ENEMYSHOT:
       if(send_robot_id_def(mzx_world, robot_id, "ENEMYSHOT", 0))
       {
         send_robot_id_def(mzx_world, robot_id, "SHOT", 0);
       }
       break;
 
-    case 7:
+    case LABEL_PLAYERHIT:
       send_robot_all_def(mzx_world, "PLAYERHIT");
       break;
 
-    case 8:
+    case LABEL_LAZER:
       send_robot_id_def(mzx_world, robot_id, "LAZER", 0);
       break;
 
-    case 9:
+    case LABEL_SPITFIRE:
       send_robot_id_def(mzx_world, robot_id, "SPITFIRE", 0);
       break;
 
-    case 10: //no subroutine version
+    case LABEL_JUSTLOADED: //no subroutine version
       send_robot_all(mzx_world, "JUSTLOADED");
       break;
 
-    case 11: //no subroutine version
+    case LABEL_JUSTENTERED: //no subroutine version
       send_robot_all(mzx_world, "JUSTENTERED");
       break;
 
-    case 12:
+    case LABEL_GOOPTOUCHED:
       send_robot_all_def(mzx_world, "GOOPTOUCHED");
       break;
 
-    case 13:
+    case LABEL_PLAYERHURT:
       send_robot_all_def(mzx_world, "PLAYERHURT");
       break;
   }

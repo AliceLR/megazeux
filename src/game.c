@@ -175,7 +175,7 @@ static void load_world_file(struct world *mzx_world, char *name)
     if(curr_file != name)
       strcpy(curr_file, name);
 
-    send_robot_def(mzx_world, 0, 10);
+    send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
     src_board = mzx_world->current_board;
     load_board_module(src_board);
@@ -534,7 +534,7 @@ static void give_potion(struct world *mzx_world, enum potion type)
     case POTION_INVINCO:
     {
       set_mesg(mzx_world, "* Invinco *");
-      send_robot_def(mzx_world, 0, 2);
+      send_robot_def(mzx_world, 0, LABEL_INVINCO);
       set_counter(mzx_world, "INVINCO", 113, 0);
       break;
     }
@@ -1514,9 +1514,9 @@ static int update(struct world *mzx_world, int game, int *fadein)
     // This differs from pressing P on the title screen, where the
     // order of precedence is swapped.
     // If swapped==2, we came here from LOAD_GAME; don't JUSTENTERED
-    send_robot_def(mzx_world, 0, 10);
+    send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
     if(mzx_world->swapped != 2)
-      send_robot_def(mzx_world, 0, 11);
+      send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
 
     return 1;
   }
@@ -1714,7 +1714,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
       place_player_xy(mzx_world, target_x, target_y);
     }
 
-    send_robot_def(mzx_world, 0, 11);
+    send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
     mzx_world->player_restart_x = mzx_world->player_x;
     mzx_world->player_restart_y = mzx_world->player_y;
     // Now... Set player_last_dir for direction FACED
@@ -1899,7 +1899,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
               find_player(mzx_world);
 
               strcpy(curr_sav, save_file_name);
-              send_robot_def(mzx_world, 0, 10);
+              send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
               fadein ^= 1;
             }
 
@@ -2084,7 +2084,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
               strcpy(mzx_world->real_mod_playing,
                src_board->mod_playing);
 
-              send_robot_def(mzx_world, 0, 10);
+              send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
               fadein ^= 1;
             }
           }
@@ -2306,7 +2306,7 @@ void title_screen(struct world *mzx_world)
               // do not send JUSTENTERED when loading a SAV game from the
               // title screen or when no game is loaded; here we ONLY send
               // JUSTLOADED.
-              send_robot_def(mzx_world, 0, 10);
+              send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
               set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
@@ -2399,8 +2399,8 @@ void title_screen(struct world *mzx_world)
 
               // send both JUSTENTERED and JUSTLOADED respectively; the
               // JUSTLOADED label will take priority if a robot defines it
-              send_robot_def(mzx_world, 0, 11);
-              send_robot_def(mzx_world, 0, 10);
+              send_robot_def(mzx_world, 0, LABEL_JUSTENTERED);
+              send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
               if(strcmp(src_board->mod_playing, "*") &&
                strcasecmp(src_board->mod_playing, old_mod_playing))
@@ -2526,7 +2526,7 @@ void title_screen(struct world *mzx_world)
             // do not send JUSTENTERED when loading a SAV game from the
             // title screen or when no game is loaded; here we ONLY send
             // JUSTLOADED.
-            send_robot_def(mzx_world, 0, 10);
+            send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 
             set_counter(mzx_world, "TIME", src_board->time_limit, 0);
 
@@ -3046,7 +3046,7 @@ int move_player(struct world *mzx_world, int dir)
         // Pushable robot needs to be sent the touch label
         if(d_id == ROBOT_PUSHABLE)
           send_robot_def(mzx_world,
-           src_board->level_param[d_offset], 0);
+           src_board->level_param[d_offset], LABEL_TOUCH);
 
         if(!push(mzx_world, player_x, player_y, dir, 0))
         {
@@ -3244,7 +3244,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
     {
       play_sfx(mzx_world, 48);
       set_mesg(mzx_world, "There is goop in your way!");
-      send_robot_def(mzx_world, 0, 12);
+      send_robot_def(mzx_world, 0, LABEL_GOOPTOUCHED);
       break;
     }
 
@@ -3252,7 +3252,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
     {
       play_sfx(mzx_world, 16);
       set_mesg(mzx_world, "Energize!");
-      send_robot_def(mzx_world, 0, 2);
+      send_robot_def(mzx_world, 0, LABEL_INVINCO);
       set_counter(mzx_world, "INVINCO", 113, 0);
       remove = 1;
       break;
@@ -3530,7 +3530,7 @@ int grab_item(struct world *mzx_world, int offset, int dir)
       src_board->robot_list[idx]->last_touch_dir =
        int_to_dir(flip_dir(dir));
 
-      send_robot_def(mzx_world, param, 0);
+      send_robot_def(mzx_world, param, LABEL_TOUCH);
       break;
     }
 

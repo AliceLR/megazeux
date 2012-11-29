@@ -2968,7 +2968,7 @@ static int hurt_player(struct world *mzx_world, int value)
   if(get_counter(mzx_world, "INVINCO", 0) <= 0)
   {
     struct board *src_board = mzx_world->current_board;
-    send_robot_def(mzx_world, 0, 13);
+    send_robot_def(mzx_world, 0, LABEL_PLAYERHURT);
     if(src_board->restart_if_zapped)
     {
       int player_restart_x = mzx_world->player_restart_x;
