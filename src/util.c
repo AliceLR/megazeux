@@ -377,7 +377,7 @@ static void clean_path_slashes(const char *source, char *dest, int buf_size)
 int change_dir_name(char *path_name, const char *dest, int buf_size)
 {
   char path[buf_size];
-  char *colon_loc = strchr(dest, ':');
+  char *colon_loc;
   struct stat stat_info;
   int size;
 
@@ -386,6 +386,8 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
 
   if(!path_name)
     return -1;
+
+  colon_loc = strchr(dest, ':');
 
   // Stop!  recursion time
   if(strchr(dest, DIR_SEPARATOR_CHAR) || colon_loc)

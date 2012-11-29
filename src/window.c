@@ -2562,7 +2562,9 @@ skip_dir:
       // Selected a directory from the list
       case 2:
       {
-        change_dir_name(current_dir_name, dir_list[chosen_dir], MAX_PATH);
+        if(dir_list && dir_list[chosen_dir])
+          change_dir_name(current_dir_name, dir_list[chosen_dir], MAX_PATH);
+
         break;
       }
 
