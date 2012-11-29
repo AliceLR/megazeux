@@ -1178,7 +1178,6 @@ static int update(struct world *mzx_world, int game, int *fadein)
     load_board_module(src_board);
     strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
   }
-
   update_music = 0;
 
   if(!slowed)
@@ -1338,6 +1337,11 @@ static int update(struct world *mzx_world, int game, int *fadein)
     }
   }
 
+  // We need to do this before the rest of the graphics code to fix some
+  // teleport glitch(es)
+  if(pal_update)
+    update_palette();
+
   if(mzx_world->target_where != TARGET_TELEPORT)
   {
     int top_x, top_y;
@@ -1480,8 +1484,7 @@ static int update(struct world *mzx_world, int game, int *fadein)
        mzx_world->player_y);
     }
 
-    if(pal_update)
-      update_palette();
+    // note-- pal_update was previously here
 
     update_screen();
   }
