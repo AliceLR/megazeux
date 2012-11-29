@@ -2404,14 +2404,16 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               {
                 strcpy(src_board->mod_playing, new_mod);
                 strcpy(mzx_world->real_mod_playing, new_mod);
-                load_board_module(src_board);
+                fix_mod(mzx_world, src_board, &listening_flag);
+                //load_board_module(src_board);
               }
             }
             else
             {
-              end_module();
+              //end_module();
               src_board->mod_playing[0] = 0;
               mzx_world->real_mod_playing[0] = 0;
+              fix_mod(mzx_world, src_board, &listening_flag);
             }
             modified = 1;
           }

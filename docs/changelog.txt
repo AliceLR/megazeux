@@ -36,7 +36,8 @@ BUGFIXES
   been disabled with the LOAD_MENU counter.
 + Fixed a bug where the listening mod directory would stay the same as the
   directory the editor was opened in.
-+ The listening mod now continues to play after world and board changes.
++ The listening mod now continues to play after world and board changes, and
+  also after the board mod has been changed.
 + LOAD_GAME will not incorrectly trigger JUSTENTERED anymore.
 + Palette/intensity changes made on the same cycle as a teleport player command
   are now properly taken into account.
