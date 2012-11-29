@@ -143,11 +143,15 @@ static void fix_board(struct world *mzx_world, int new_board)
 static void fix_mod(struct world *mzx_world, struct board *src_board,
  int *listening_flag)
 {
-  // Passing a ref in case we want to properly end it here at some point
-  if(!(*listening_flag))
-    load_board_module(src_board);
+  // We don't want * in the real_mod_playing
+  if(strcmp(src_board->mod_playing, "*"))
+  {
+    // Passing a ref in case we want to properly end it here at some point
+    if(!(*listening_flag))
+      load_board_module(src_board);
 
-  strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+    strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
+  }
 }
 
 #define NUM_MENUS 6
@@ -2405,12 +2409,10 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 strcpy(src_board->mod_playing, new_mod);
                 strcpy(mzx_world->real_mod_playing, new_mod);
                 fix_mod(mzx_world, src_board, &listening_flag);
-                //load_board_module(src_board);
               }
             }
             else
             {
-              //end_module();
               src_board->mod_playing[0] = 0;
               mzx_world->real_mod_playing[0] = 0;
               fix_mod(mzx_world, src_board, &listening_flag);
@@ -3617,10 +3619,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         if(get_shift_status(keycode_internal) ||
          (key == IKEY_KP_MULTIPLY))
         {
-          if(src_board->mod_playing[0])
-            end_module();
           src_board->mod_playing[0] = '*';
           src_board->mod_playing[1] = 0;
+          fix_mod(mzx_world, src_board, &listening_flag);
 
           modified = 1;
         }
