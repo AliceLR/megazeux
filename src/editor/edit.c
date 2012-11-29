@@ -3635,36 +3635,50 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         if(get_alt_status(keycode_internal))
         {
           int offset = cursor_board_x + (cursor_board_y * board_width);
-          enum thing d_id = (enum thing)level_id[offset];
-          int d_param = level_param[offset];
-          int new_param;
 
-          if(d_id == SENSOR)
+          if(!overlay_edit)
           {
-            edit_sensor(mzx_world, src_board->sensor_list[d_param]);
-            modified = 1;
+            enum thing d_id = (enum thing)level_id[offset];
+            int d_param = level_param[offset];
+            int new_param;
+
+            if(d_id == SENSOR)
+            {
+              edit_sensor(mzx_world, src_board->sensor_list[d_param]);
+              modified = 1;
+            }
+            else
+
+            if(is_robot(d_id))
+            {
+              edit_robot(mzx_world, src_board->robot_list[d_param]);
+              modified = 1;
+            }
+            else
+
+            if(is_signscroll(d_id))
+            {
+              edit_scroll(mzx_world, src_board->scroll_list[d_param]);
+              modified = 1;
+            }
+            else
+
+            if(is_storageless(d_id) &&
+             (0 <= (new_param = change_param(mzx_world, d_id, d_param, NULL, NULL, NULL))))
+            {
+              src_board->level_param[offset] = new_param;
+              modified = 1;
+            }
           }
           else
-
-          if(is_robot(d_id))
           {
-            edit_robot(mzx_world, src_board->robot_list[d_param]);
-            modified = 1;
-          }
-          else
+            int o_ch = src_board->overlay[offset];
+            int new_ch;
 
-          if(is_signscroll(d_id))
-          {
-            edit_scroll(mzx_world, src_board->scroll_list[d_param]);
-            modified = 1;
-          }
-          else
-
-          if(is_storageless(d_id) &&
-           (0 <= (new_param = change_param(mzx_world, d_id, d_param, NULL, NULL, NULL))))
-          {
-            src_board->level_param[offset] = new_param;
-            modified = 1;
+            if((new_ch = char_selection(o_ch)) >= 0)
+            {
+              src_board->overlay[offset] = new_ch;
+            }
           }
         }
         else
