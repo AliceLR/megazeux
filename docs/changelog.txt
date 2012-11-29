@@ -29,6 +29,8 @@ BUGFIXES
   format magic any longer.
 + Fixed bug where ALT+M wouldn't always edit non-sensors/signs/scrolls/robots.
 + Fixed bug where ! could not be used as a substitute operator for ~.
++ Fixed a bug where tab-draw and block actions would carry between board and
+  overlay editing. ALT+O now sets the drawing mode back to normal on a switch.
 
 DEVELOPERS
 
