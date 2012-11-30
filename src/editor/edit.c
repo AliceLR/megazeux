@@ -3788,6 +3788,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   m_hide();
   clear_screen(32, 7);
   insta_fadeout();
+  set_screen_mode(0);
   strcpy(curr_file, current_world);
 
   // Clear the copy stuff.

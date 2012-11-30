@@ -43,6 +43,9 @@ BUGFIXES
 + LOAD_GAME will not incorrectly trigger JUSTENTERED anymore.
 + Palette/intensity changes made on the same cycle as a teleport player command
   are now properly taken into account.
++ SMZX mode is now disabled when leaving the editor if it was enabled in the
+  editor via F11.
+
 
 DEVELOPERS
 
