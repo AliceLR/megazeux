@@ -47,7 +47,8 @@ BUGFIXES
   leave the color intensity at 0.
 + SMZX mode is now disabled when leaving the editor if it was enabled in the
   editor via F11.
-
++ Fixed potential crash bug where robot bytecode files were not being validated
+  before being loaded with LOAD_BC.
 
 DEVELOPERS
 

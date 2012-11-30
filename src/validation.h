@@ -63,10 +63,12 @@ enum val_error
   BOARD_SENSOR_CORRUPT,
   MZM_FILE_INVALID,
   MZM_FILE_FROM_SAVEGAME,
-  MZM_FILE_VERSION_TOO_RECENT
+  MZM_FILE_VERSION_TOO_RECENT,
+  LOAD_BC_CORRUPT
 };
 
 CORE_LIBSPEC void val_error(enum val_error error_id, int value);
+CORE_LIBSPEC void val_error_str(enum val_error error_id, int value, char *string);
 CORE_LIBSPEC FILE * val_fopen(const char *filename);
 
 void set_validation_suppression(int level);

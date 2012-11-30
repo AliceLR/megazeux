@@ -2794,6 +2794,13 @@ int set_counter_special(struct world *mzx_world, char *char_value,
           fread(program_legacy_bytecode, program_bytecode_length, 1,
            bc_file);
 
+          if(validate_legacy_bytecode(program_legacy_bytecode, program_bytecode_length) <= 0)
+          {
+            val_error_str(LOAD_BC_CORRUPT, 0, char_value);
+            free(program_legacy_bytecode);
+            break;
+          }
+
           cur_robot->program_source =
            legacy_disassemble_program(program_legacy_bytecode,
            program_bytecode_length, &(cur_robot->program_source_length),
@@ -2878,7 +2885,6 @@ int set_counter_special(struct world *mzx_world, char *char_value,
     case FOPEN_LOAD_BC:
     {
       FILE *bc_file = fsafeopen(char_value, "rb");
-      int new_size;
 
       if(bc_file)
       {
@@ -2887,12 +2893,22 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
         if(cur_robot)
         {
-          new_size = ftell_and_rewind(bc_file);
+          int new_size = ftell_and_rewind(bc_file);
+          char *program_bytecode = malloc(new_size + 1);
+
+          fread(program_bytecode, new_size, 1, bc_file);
+
+          if(validate_legacy_bytecode(program_bytecode, new_size) <= 0)
+          {
+            val_error_str(LOAD_BC_CORRUPT, 0, char_value);
+            free(program_bytecode);
+            break;
+          }
 
           reallocate_robot(cur_robot, new_size);
           clear_label_cache(cur_robot->label_list, cur_robot->num_labels);
 
-          fread(cur_robot->program_bytecode, new_size, 1, bc_file);
+          memcpy(cur_robot->program_bytecode, program_bytecode, new_size);
           cur_robot->cur_prog_line = 1;
           cur_robot->stack_pointer = 0;
           cur_robot->label_list =

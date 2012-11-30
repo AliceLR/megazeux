@@ -113,6 +113,11 @@ int suppress_errors = -1;
 /* error messages */
 void val_error(enum val_error error_id, int value)
 {
+  val_error_str(error_id, value, NULL);
+}
+
+void val_error_str(enum val_error error_id, int value, char *string)
+{
   char error_mesg[80];
   int hi = (value & 0xFF00) >> 8, lo = (value & 0xFF);
   int severity = 1;
@@ -238,6 +243,13 @@ void val_error(enum val_error error_id, int value)
       snprintf(error_mesg, 80,
        "MZM file of a more recent version (%d.%d) -- robots will be dummied out", hi, lo);
       code = 0x6661;
+      break;
+    }
+    case LOAD_BC_CORRUPT:
+    {
+      snprintf(error_mesg, 80,
+       "Bytecode file '%s' failed validation check", string);
+      code = 0xD0D0;
       break;
     }
   }
