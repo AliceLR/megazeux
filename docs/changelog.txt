@@ -42,7 +42,9 @@ BUGFIXES
   also after the board mod has been changed by ALT+N or Shift+8/*.
 + LOAD_GAME will not incorrectly trigger JUSTENTERED anymore.
 + Palette/intensity changes made on the same cycle as a teleport player command
-  are now properly taken into account.
+  are now properly taken into account. This fixes a game-stopping regression in
+  Sponkgo's Legendary Journey where leaving the second stage's bonus area would
+  leave the color intensity at 0.
 + SMZX mode is now disabled when leaving the editor if it was enabled in the
   editor via F11.
 
