@@ -59,7 +59,7 @@ int set_counter_special(struct world *mzx_world, char *char_value,
  int value, int id);
 bool is_string(char *buffer);
 
-struct counter *load_counter(FILE *fp);
+struct counter *load_counter(struct world *mzx_world, FILE *fp);
 struct string *load_string(FILE *fp);
 void save_counter(FILE *fp, struct counter *src_counter);
 void save_string(FILE *fp, struct string *src_string);

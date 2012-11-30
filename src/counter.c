@@ -4131,7 +4131,7 @@ void counter_fsg(void)
   }
 }
 
-struct counter *load_counter(FILE *fp)
+struct counter *load_counter(struct world *mzx_world, FILE *fp)
 {
   int value = fgetd(fp);
   int name_length = fgetd(fp);
@@ -4139,6 +4139,14 @@ struct counter *load_counter(FILE *fp)
   struct counter *src_counter =
    cmalloc(sizeof(struct counter) + name_length);
   fread(src_counter->name, name_length, 1, fp);
+
+  if(!strncasecmp(src_counter->name, "mzx_speed", name_length))
+  {
+    mzx_world->mzx_speed = value;
+    free(src_counter);
+    return NULL;
+  }
+
   src_counter->name[name_length] = 0;
   src_counter->value = value;
 

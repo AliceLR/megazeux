@@ -524,6 +524,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
 
   if(savegame)
   {
+    struct counter *mzx_speed;
     int vlayer_size;
 
     for(i = 0; i < 16; i++)
@@ -538,12 +539,18 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     fputc(mzx_world->under_player_color, fp);
     fputc(mzx_world->under_player_param, fp);
 
-    // Write counters
-    fputd(mzx_world->num_counters, fp);
+    // Write regular counters + mzx_speed
+    fputd(mzx_world->num_counters + 1, fp);
     for(i = 0; i < mzx_world->num_counters; i++)
     {
       save_counter(fp, mzx_world->counter_list[i]);
     }
+
+    mzx_speed = malloc(sizeof(struct counter) + sizeof("mzx_speed") - 1);
+    mzx_speed->value = mzx_world->mzx_speed;
+    strcpy(mzx_speed->name, "mzx_speed");
+    save_counter(fp, mzx_speed);
+    free(mzx_speed);
 
     // Write strings
     fputd(mzx_world->num_strings, fp);
@@ -1195,6 +1202,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     int vlayer_size;
     int num_counters, num_strings;
     int screen_mode;
+    int j;
 
     for(i = 0; i < 16; i++)
     {
@@ -1215,9 +1223,21 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     mzx_world->num_counters_allocated = num_counters;
     mzx_world->counter_list = ccalloc(num_counters, sizeof(struct counter *));
 
-    for(i = 0; i < num_counters; i++)
+    for(i = 0, j = 0; i < num_counters; i++)
     {
-      mzx_world->counter_list[i] = load_counter(fp);
+      struct counter *counter = load_counter(mzx_world, fp);
+
+      /* We loaded a special counter, this doesn't need to be
+       * loaded into the regular list.
+       */
+      if(!counter)
+      {
+        mzx_world->num_counters--;
+        continue;
+      }
+
+      mzx_world->counter_list[j] = counter;
+      j++;
     }
 
     // Setup gateway functions
