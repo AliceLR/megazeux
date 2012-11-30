@@ -524,7 +524,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
 
   if(savegame)
   {
-    struct counter *mzx_speed;
+    struct counter *mzx_speed, *lock_speed;
     int vlayer_size;
 
     for(i = 0; i < 16; i++)
@@ -540,7 +540,7 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     fputc(mzx_world->under_player_param, fp);
 
     // Write regular counters + mzx_speed
-    fputd(mzx_world->num_counters + 1, fp);
+    fputd(mzx_world->num_counters + 2, fp);
     for(i = 0; i < mzx_world->num_counters; i++)
     {
       save_counter(fp, mzx_world->counter_list[i]);
@@ -551,6 +551,11 @@ int save_world(struct world *mzx_world, const char *file, int savegame)
     strcpy(mzx_speed->name, "mzx_speed");
     save_counter(fp, mzx_speed);
     free(mzx_speed);
+    lock_speed = malloc(sizeof(struct counter) + sizeof("_____lock_speed") - 1);
+    lock_speed->value = mzx_world->lock_speed;
+    strcpy(lock_speed->name, "_____lock_speed");
+    save_counter(fp, lock_speed);
+    free(lock_speed);
 
     // Write strings
     fputd(mzx_world->num_strings, fp);

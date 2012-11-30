@@ -4140,9 +4140,16 @@ struct counter *load_counter(struct world *mzx_world, FILE *fp)
    cmalloc(sizeof(struct counter) + name_length);
   fread(src_counter->name, name_length, 1, fp);
 
+  // Let's not have too many of these things, hopefully
   if(!strncasecmp(src_counter->name, "mzx_speed", name_length))
   {
     mzx_world->mzx_speed = value;
+    free(src_counter);
+    return NULL;
+  }
+  if(!strncasecmp(src_counter->name, "_____lock_speed", name_length))
+  {
+    mzx_world->lock_speed = value;
     free(src_counter);
     return NULL;
   }
