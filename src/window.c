@@ -1912,6 +1912,25 @@ int confirm(struct world *mzx_world, const char *str)
 }
 
 // Shell for run_dialog()
+int confirm_input(struct world *mzx_world, const char *name,
+ const char *label, char *str)
+{
+  struct dialog di;
+  struct element *elements[3];
+  int dialog_result;
+
+  elements[0] = construct_input_box(2, 2, label, 32, 0, str);
+  elements[1] = construct_button(15, 4, "OK", 0);
+  elements[2] = construct_button(37, 4, "Cancel", -1);
+  construct_dialog(&di, name, 11, 8, 57, 7, elements, 3, 0);
+
+  dialog_result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  return dialog_result;
+}
+
+// Shell for run_dialog()
 int ask_yes_no(struct world *mzx_world, char *str)
 {
   struct dialog di;
@@ -2018,33 +2037,10 @@ static int file_dialog_function(struct world *mzx_world, struct dialog *di,
           {
             case IKEY_r:
             {
-              //char *new_name = cmalloc(MAX_PATH);
-              //int offset = 56;
-              //int width = 29;
-
               if(current_element_num == FILESEL_DIR_LIST)
                 di->return_value = 7;
               else
                 di->return_value = 5;
-              /*{
-                offset = 0; // no game name
-                width = 14;
-              }
-
-              strncpy(new_name, file_name + offset, MAX_PATH);
-              new_name[MAX_PATH - 1] = '\0';
-
-              intake(mzx_world, new_name, width,
-               src->e.x + di->x, src->e.y + di->y + *(src->result)
-               - src->scroll_offset, DI_ACTIVELIST, 1, 0, NULL, 0,
-               NULL);
-              rename(file_name + offset, new_name);
-
-              di->done = 1;
-              di->return_value = 5;
-
-              free(new_name);
-              return 0;*/
 
               di->done = 1;
               break;
@@ -2571,32 +2567,18 @@ skip_dir:
       // Create a new directory
       case 3:
       {
-        struct element *b_elements[3];
-        struct dialog b_di;
-        int b_dialog_result;
-
         char *new_name;
         char full_name[MAX_PATH];
 
         new_name = cmalloc(MAX_PATH);
         new_name[0] = 0;
 
-        b_elements[0] = construct_input_box(2, 2,
-         "New directory name: ", 32, 0, new_name);
-        b_elements[1] = construct_button(15, 4, "OK", 0);
-        b_elements[2] = construct_button(37, 4, "Cancel", -1);
-
-        construct_dialog(&b_di, "Create New Directory",
-         11, 8, 57, 7, b_elements, 3, 0);
-
-        b_dialog_result = run_dialog(mzx_world, &b_di);
-        destruct_dialog(&b_di);
-
-        snprintf(full_name, MAX_PATH, "%s%s%s",
-          current_dir_name, DIR_SEPARATOR, new_name);
-
-        if(!b_dialog_result)
+        if(!confirm_input(mzx_world, "Create New Directory",
+         "New directory name:", new_name))
         {
+          snprintf(full_name, MAX_PATH, "%s%s%s",
+            current_dir_name, DIR_SEPARATOR, new_name);
+
           if(stat(full_name, &file_info) < 0)
           {
             mkdir(full_name, 0777);
@@ -2636,16 +2618,28 @@ skip_dir:
       // Rename file
       case 5:
       {
-        /*struct element *b_elements[3];
-        struct dialog b_di;
-        int b_dialog_result;
+        char *old_path = cmalloc(MAX_PATH);
+        char *new_path = cmalloc(MAX_PATH);
+        char *new_name = cmalloc(MAX_PATH);
 
-        char *new_name = cmalloc[MAX_PATH];
+        strncpy(new_name, file_list[chosen_file] + 56, MAX_PATH);
 
-        h
+        if(!confirm_input(mzx_world, "Rename File", "New file name:", new_name))
+        {
+          snprintf(old_path, MAX_PATH, "%s%s%s", current_dir_name,
+           DIR_SEPARATOR, file_list[chosen_file] + 56);
+          snprintf(new_path, MAX_PATH, "%s%s%s", current_dir_name,
+           DIR_SEPARATOR, new_name);
 
+          if(strcmp(old_path, new_path))
+            if(rename(old_path, new_path))
+              error("File rename failed.", 0, 8, 0x0000);
 
-        free(new_name);*/
+        }
+
+        free(old_path);
+        free(new_path);
+        free(new_name);
         break;
       }
 
@@ -2682,8 +2676,31 @@ skip_dir:
       }
 
       // Rename directory
+      // I didn't just copy the rename file code and change a couple of things, no siree
       case 7:
       {
+        char *old_path = cmalloc(MAX_PATH);
+        char *new_path = cmalloc(MAX_PATH);
+        char *new_name = cmalloc(MAX_PATH);
+
+        strncpy(new_name, dir_list[chosen_dir], MAX_PATH);
+
+        if(!confirm_input(mzx_world, "Rename Directory", "New dir name:", new_name))
+        {
+          snprintf(old_path, MAX_PATH, "%s%s%s", current_dir_name,
+           DIR_SEPARATOR, dir_list[chosen_dir]);
+          snprintf(new_path, MAX_PATH, "%s%s%s", current_dir_name,
+           DIR_SEPARATOR, new_name);
+
+          if(strcmp(old_path, new_path))
+            if(rename(old_path, new_path))
+              error("Directory rename failed.", 0, 8, 0x0000);
+
+        }
+
+        free(old_path);
+        free(new_path);
+        free(new_name);
         break;
       }
     }

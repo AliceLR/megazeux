@@ -43,7 +43,10 @@ CORE_LIBSPEC int draw_window_box(int x1, int y1, int x2, int y2, int color,
 CORE_LIBSPEC int char_selection(int current);
 
 // Shell for run_dialog() (returns 0 for ok, 1 for cancel, -1 for ESC)
+// Confirm_input is the same but takes an additional label name and input/output str
 CORE_LIBSPEC int confirm(struct world *mzx_world, const char *str);
+CORE_LIBSPEC int confirm_input(struct world *mzx_world, const char *title,
+ const char *label, char *str);
 CORE_LIBSPEC int ask_yes_no(struct world *mzx_world, char *str);
 
 int draw_window_box_ext(int x1, int y1, int x2, int y2, int color,

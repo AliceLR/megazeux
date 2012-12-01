@@ -51,6 +51,10 @@ BUGFIXES
   before being loaded with LOAD_BC.
 + Fixed minor message box bug dating back to DOS where a message box starting
   with an unavailable option would begin with the cursor on a blank line.
++ Fixed crash that happened when typing over bounds while renaming a file in a
+  file manager dialog.  File and directory renaming now use a popup dialog akin
+  to ALT+N.
+
 
 DEVELOPERS
 
