@@ -2691,7 +2691,7 @@ skip_dir:
           break;
         }
 
-        if(!confirm_input(mzx_world, "Rename Directory", "New dir name:", new_name))
+        if(!confirm_input(mzx_world, "Rename Directory", "New directory name:", new_name))
         {
           snprintf(old_path, MAX_PATH, "%s%s%s", current_dir_name,
            DIR_SEPARATOR, dir_list[chosen_dir]);
