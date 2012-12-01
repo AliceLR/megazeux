@@ -2685,6 +2685,12 @@ skip_dir:
 
         strncpy(new_name, dir_list[chosen_dir], MAX_PATH);
 
+        if(!strcmp(new_name, ".") || !strcmp(new_name, ".."))
+        {
+          error("You can't do that.  I won't let you.", 0, 8, 0x0000);
+          break;
+        }
+
         if(!confirm_input(mzx_world, "Rename Directory", "New dir name:", new_name))
         {
           snprintf(old_path, MAX_PATH, "%s%s%s", current_dir_name,
