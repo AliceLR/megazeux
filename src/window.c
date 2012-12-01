@@ -2647,7 +2647,7 @@ skip_dir:
       case 6:
       {
         if(strcmp(dir_list[chosen_dir], "..") &&
-         strcmp(dir_list[chosen_dir], "."))
+         strcmp(dir_list[chosen_dir], ".") && dir_list[chosen_dir][1] != ':')
         {
           char confirm_string[70];
           snprintf(confirm_string, 70, "Delete %s: are you sure?",
@@ -2679,34 +2679,32 @@ skip_dir:
       // I didn't just copy the rename file code and change a couple of things, no siree
       case 7:
       {
-        char *old_path = cmalloc(MAX_PATH);
-        char *new_path = cmalloc(MAX_PATH);
-        char *new_name = cmalloc(MAX_PATH);
-
-        strncpy(new_name, dir_list[chosen_dir], MAX_PATH);
-
-        if(!strcmp(new_name, ".") || !strcmp(new_name, ".."))
+        if(strcmp(dir_list[chosen_dir], "..") &&
+         strcmp(dir_list[chosen_dir], ".") && dir_list[chosen_dir][1] != ':')
         {
-          error("You can't do that.  I won't let you.", 0, 8, 0x0000);
-          break;
+          char *old_path = cmalloc(MAX_PATH);
+          char *new_path = cmalloc(MAX_PATH);
+          char *new_name = cmalloc(MAX_PATH);
+
+          strncpy(new_name, dir_list[chosen_dir], MAX_PATH);
+
+          if(!confirm_input(mzx_world, "Rename Directory", "New directory name:", new_name))
+          {
+            snprintf(old_path, MAX_PATH, "%s%s%s", current_dir_name,
+             DIR_SEPARATOR, dir_list[chosen_dir]);
+            snprintf(new_path, MAX_PATH, "%s%s%s", current_dir_name,
+             DIR_SEPARATOR, new_name);
+
+            if(strcmp(old_path, new_path))
+              if(rename(old_path, new_path))
+                error("Directory rename failed.", 0, 8, 0x0000);
+
+          }
+
+          free(old_path);
+          free(new_path);
+          free(new_name);
         }
-
-        if(!confirm_input(mzx_world, "Rename Directory", "New directory name:", new_name))
-        {
-          snprintf(old_path, MAX_PATH, "%s%s%s", current_dir_name,
-           DIR_SEPARATOR, dir_list[chosen_dir]);
-          snprintf(new_path, MAX_PATH, "%s%s%s", current_dir_name,
-           DIR_SEPARATOR, new_name);
-
-          if(strcmp(old_path, new_path))
-            if(rename(old_path, new_path))
-              error("Directory rename failed.", 0, 8, 0x0000);
-
-        }
-
-        free(old_path);
-        free(new_path);
-        free(new_name);
         break;
       }
     }
