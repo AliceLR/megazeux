@@ -49,6 +49,8 @@ BUGFIXES
   editor via F11.
 + Fixed potential crash bug where robot bytecode files were not being validated
   before being loaded with LOAD_BC.
++ Fixed minor message box bug dating back to DOS where a message box starting
+  with an unavailable option would begin with the cursor on a blank line.
 
 DEVELOPERS
 

@@ -2441,6 +2441,10 @@ void robot_box_display(struct world *mzx_world, char *program,
 
   pos = 0;
 
+  // If we're starting on an unavailable option, try to seek down
+  if(program[pos + 1] == 249)
+    pos = robot_box_down(program, pos, 1);
+
   // Loop
   do
   {
