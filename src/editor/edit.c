@@ -3788,8 +3788,12 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   m_hide();
   clear_screen(32, 7);
   insta_fadeout();
-  set_screen_mode(0);
   strcpy(curr_file, current_world);
+
+  // Fix the screen, if the file wasn't saved then the
+  // loader can't do this later
+  set_screen_mode(0);
+  default_palette();
 
   // Clear the copy stuff.
   if(copy_robot.used)
