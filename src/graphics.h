@@ -92,6 +92,7 @@ struct renderer
 struct graphics_data
 {
   Uint32 screen_mode;
+  char *default_caption;
   struct char_element text_video[SCREEN_W * SCREEN_H];
   Uint8 charset[CHAR_SIZE * CHARSET_SIZE * NUM_CHARSETS];
   struct rgb_color palette[SMZX_PAL_SIZE];
@@ -159,6 +160,7 @@ CORE_LIBSPEC void move_cursor(Uint32 x, Uint32 y);
 CORE_LIBSPEC bool init_video(struct config_info *conf, const char *caption);
 CORE_LIBSPEC bool has_video_initialized(void);
 CORE_LIBSPEC void update_screen(void);
+CORE_LIBSPEC void set_window_caption(const char *caption);
 
 CORE_LIBSPEC void ec_read_char(Uint8 chr, char *matrix);
 CORE_LIBSPEC void ec_change_char(Uint8 chr, char *matrix);

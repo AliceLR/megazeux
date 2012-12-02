@@ -32,6 +32,8 @@ __M_BEGIN_DECLS
 
 CORE_LIBSPEC void title_screen(struct world *mzx_world);
 CORE_LIBSPEC void find_player(struct world *mzx_world);
+CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
+ struct robot *robot, int editor);
 
 void set_intro_mesg_timer(unsigned int time);
 void calculate_xytop(struct world *mzx_world, int *x, int *y);

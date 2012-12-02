@@ -48,6 +48,7 @@
 #include "game2.h"
 #include "sprite.h"
 #include "world.h"
+#include "board.h"
 #include "robot.h"
 #include "fsafeopen.h"
 #include "extmem.h"
@@ -58,6 +59,9 @@
 // Number of cycles to make player idle before repeating a
 // directional move
 #define REPEAT_WAIT 2
+
+#define MAX_CAPTION_SIZE 120
+#define CAPTION_SPACER "::"
 
 static const char main_menu_1[] =
  "Enter- Menu\n"
@@ -157,6 +161,73 @@ static void draw_intro_mesg(struct world *mzx_world)
   }
 }
 
+static void strip_caption_string(char *output, char *input) {
+  unsigned int i, j;
+  for (i = 0, j = 0; i < strlen(input); i++) {
+    if(input[i] < 32 || input[i] > 126)
+      continue;
+
+    if(input[i] == '~' || input[i] == '@')
+    {
+      i++;
+      if(input[i - 1] != input[i])
+        continue;
+    }
+
+    output[j] = input[i];
+    j++;
+  }
+  output[j] = '\0';
+  return;
+}
+
+__editor_maybe_static void set_caption(struct world *mzx_world, struct board *board,
+ struct robot *robot, int editor)
+{
+  char *caption = cmalloc(MAX_CAPTION_SIZE);
+  char *buffer = cmalloc(MAX_CAPTION_SIZE);
+  char *stripped_name = cmalloc(MAX_CAPTION_SIZE);
+  caption[0] = '\0';
+
+  if(robot)
+  {
+    strip_caption_string(stripped_name, robot->robot_name);
+    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s %s", caption,
+     stripped_name, CAPTION_SPACER);
+    strcpy(caption, buffer);
+  }
+
+  if(board)
+  {
+    strip_caption_string(stripped_name, board->board_name);
+    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s %s", caption,
+     stripped_name, CAPTION_SPACER);
+    strcpy(caption, buffer);
+  }
+
+  if(mzx_world)
+  {
+    strip_caption_string(stripped_name, mzx_world->name);
+    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s %s", caption,
+     stripped_name, CAPTION_SPACER);
+    strcpy(caption, buffer);
+  }
+
+  snprintf(buffer, MAX_CAPTION_SIZE, "%s %s", caption, graphics.default_caption);
+  strcpy(caption, buffer);
+
+  if(editor)
+  {
+    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s", caption, "(editor)");
+    strcpy(caption, buffer);
+  }
+
+  set_window_caption(caption);
+
+  free(caption);
+  free(buffer);
+}
+
 static void load_world_file(struct world *mzx_world, char *name)
 {
   struct board *src_board;
@@ -174,6 +245,8 @@ static void load_world_file(struct world *mzx_world, char *name)
     // Load was successful, so set curr_file
     if(curr_file != name)
       strcpy(curr_file, name);
+
+    set_caption(mzx_world, NULL, NULL, 0);
 
     send_robot_def(mzx_world, 0, LABEL_JUSTLOADED);
 

@@ -1125,6 +1125,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
   do
   {
+    set_caption(mzx_world, src_board, NULL, 1);
+
     find_player(mzx_world);
 
     if((backup_count) &&
@@ -3794,6 +3796,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   // loader can't do this later
   set_screen_mode(0);
   default_palette();
+
+  set_caption(mzx_world, NULL, NULL, 0);
 
   // Clear the copy stuff.
   if(copy_robot.used)

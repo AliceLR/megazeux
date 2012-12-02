@@ -28,6 +28,7 @@
 #include <math.h>
 
 #include "../rasm.h"
+#include "../game.h"
 #include "../world.h"
 #include "../event.h"
 #include "../window.h"
@@ -3221,6 +3222,8 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   struct robot_line *current_rline = NULL;
   char arg_types[32], *next;
 #endif
+
+  set_caption(mzx_world, mzx_world->current_board, cur_robot, 1);
 
   rstate.current_line = 0;
   rstate.current_rline = &base;

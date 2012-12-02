@@ -854,6 +854,13 @@ static SDL_Surface *png_read_icon(const char *name)
 
 #endif // CONFIG_PNG && CONFIG_SDL && CONFIG_ICON && !__WIN32__
 
+void set_window_caption(const char *caption)
+{
+#ifdef CONFIG_SDL
+  SDL_WM_SetCaption(caption, "");
+#endif
+}
+
 bool init_video(struct config_info *conf, const char *caption)
 {
   graphics.screen_mode = 0;
@@ -871,6 +878,10 @@ bool init_video(struct config_info *conf, const char *caption)
     return false;
 
 #ifdef CONFIG_SDL
+  graphics.default_caption = cmalloc(32);
+  strncpy(graphics.default_caption, caption, 32);
+  graphics.default_caption[31] = '\0';
+
   SDL_WM_SetCaption(caption, "");
 #endif
 
