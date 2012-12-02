@@ -17,6 +17,9 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+// TODO: Confirmation dialog for mainstream releases (currently DBC-only)
+// FIXME: Confirmation dialog appears when the source hasn't been modified sometimes
+
 // Reconstructed robot editor. This is only a shell - the actual
 // robot assembly/disassembly code is in rasm.cpp.
 
