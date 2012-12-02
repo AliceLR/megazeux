@@ -119,6 +119,7 @@ struct robot_state
 
 #ifdef CONFIG_DEBYTECODE
   bool program_modified;
+  bool confirm_changes;
   struct robot *cur_robot;
 #else
   enum validity_types default_invalid;

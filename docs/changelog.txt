@@ -8,6 +8,9 @@ FEATURES
   based on context.
 + Fire Burns Space and Fire Burns Forever are now off by default.
 
++ Debytecode: The robotic editor now asks for a confirmation to save the program
+  on exit.
+
 BUGFIXES
 
 + Fixed a bug in the 'glsl' renderer that caused the cursor color to be

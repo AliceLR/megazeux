@@ -3249,6 +3249,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
   rstate.size = 0;
   rstate.cur_robot = cur_robot;
   rstate.program_modified = false;
+  rstate.confirm_changes = false;
   base.next = NULL;
 #else
   rstate.size = 2;
@@ -3379,6 +3380,7 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
     {
       update_program_status(&rstate, rstate.base->next, NULL);
       rstate.program_modified = false;
+      rstate.confirm_changes = true;
     }
 #endif
 
@@ -3972,8 +3974,18 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
         update_current_line(&rstate);
 
 #ifdef CONFIG_DEBYTECODE
-        cur_robot->program_source = package_program(rstate.base->next,
-         NULL, &(cur_robot->program_source_length), cur_robot->program_source);
+        if(rstate.confirm_changes)
+        {
+          int confirm_changes_res = ask_yes_no(mzx_world, "Program modified.  Save changes?");
+
+          if(confirm_changes_res < 0)
+            key = 0;
+
+          if(!confirm_changes_res)
+            cur_robot->program_source = package_program(rstate.base->next,
+             NULL, &(cur_robot->program_source_length), cur_robot->program_source);
+
+        }
 #endif
         if(validate_lines(&rstate, 0))
           key = 0;
