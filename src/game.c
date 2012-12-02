@@ -163,6 +163,8 @@ static void draw_intro_mesg(struct world *mzx_world)
 
 static void strip_caption_string(char *output, char *input) {
   unsigned int i, j;
+  output[0] = '\0';
+
   for (i = 0, j = 0; i < strlen(input); i++) {
     if(input[i] < 32 || input[i] > 126)
       continue;
@@ -175,8 +177,14 @@ static void strip_caption_string(char *output, char *input) {
     }
 
     output[j] = input[i];
-    j++;
+
+    if (output[j] != ' ' || (j > 0 && output[j - 1] != ' '))
+      j++;
   }
+
+  if(j > 0 && output[j - 1] == ' ')
+    j--;
+
   output[j] = '\0';
   return;
 }
@@ -192,14 +200,20 @@ __editor_maybe_static void set_caption(struct world *mzx_world, struct board *bo
   if(robot)
   {
     strip_caption_string(stripped_name, robot->robot_name);
-    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s %s", caption,
-     stripped_name, CAPTION_SPACER);
+    if(!strlen(stripped_name))
+      strcpy(stripped_name, "Untitled robot");
+
+    snprintf(buffer, MAX_CAPTION_SIZE, "%s %s (%i,%i) %s", caption,
+     stripped_name, robot->xpos, robot->ypos, CAPTION_SPACER);
     strcpy(caption, buffer);
   }
 
   if(board)
   {
     strip_caption_string(stripped_name, board->board_name);
+    if(!strlen(stripped_name))
+      strcpy(stripped_name, "Untitled board");
+
     snprintf(buffer, MAX_CAPTION_SIZE, "%s %s %s", caption,
      stripped_name, CAPTION_SPACER);
     strcpy(caption, buffer);
@@ -208,6 +222,9 @@ __editor_maybe_static void set_caption(struct world *mzx_world, struct board *bo
   if(mzx_world)
   {
     strip_caption_string(stripped_name, mzx_world->name);
+    if(!strlen(stripped_name))
+      strcpy(stripped_name, "Untitled world");
+
     snprintf(buffer, MAX_CAPTION_SIZE, "%s %s %s", caption,
      stripped_name, CAPTION_SPACER);
     strcpy(caption, buffer);
