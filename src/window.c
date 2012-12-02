@@ -1921,7 +1921,7 @@ int confirm_input(struct world *mzx_world, const char *name,
 
   elements[0] = construct_input_box(2, 2, label, 32, 0, str);
   elements[1] = construct_button(15, 4, "OK", 0);
-  elements[2] = construct_button(37, 4, "Cancel", -1);
+  elements[2] = construct_button(37, 4, "Cancel", 1);
   construct_dialog(&di, name, 11, 8, 57, 7, elements, 3, 0);
 
   dialog_result = run_dialog(mzx_world, &di);
