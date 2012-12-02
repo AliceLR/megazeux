@@ -3976,7 +3976,8 @@ void robot_editor(struct world *mzx_world, struct robot *cur_robot)
 #ifdef CONFIG_DEBYTECODE
         if(rstate.confirm_changes)
         {
-          int confirm_changes_res = ask_yes_no(mzx_world, "Program modified.  Save changes?");
+          char confirm_prompt[80] = "Program modified. Save changes?";
+          int confirm_changes_res = ask_yes_no(mzx_world, confirm_prompt);
 
           if(confirm_changes_res < 0)
             key = 0;

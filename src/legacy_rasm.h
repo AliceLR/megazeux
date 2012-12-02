@@ -61,6 +61,8 @@ CORE_LIBSPEC int get_color(char *cmd_line);
 
 extern const char special_first_char[256];
 
+int validate_legacy_bytecode(char *bc, int program_length);
+
 #ifdef CONFIG_DEBYTECODE
 
 int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
@@ -71,8 +73,6 @@ int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
 char *assemble_file(char *name, int *size);
 void disassemble_file(char *name, char *program, int program_length,
  int allow_ignores, int base);
-
-int validate_legacy_bytecode(char *bc, int program_length);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC int legacy_assemble_line(char *cpos, char *output_buffer,
