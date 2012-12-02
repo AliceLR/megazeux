@@ -117,14 +117,14 @@ struct board *create_blank_board(void)
   cur_board->can_shoot = 1;
   cur_board->can_bomb = 1;
   cur_board->fire_burn_brown = 0;
-  cur_board->fire_burn_space = 1;
+  cur_board->fire_burn_space = 0;
   cur_board->fire_burn_fakes = 1;
   cur_board->fire_burn_trees = 1;
   cur_board->explosions_leave = EXPL_LEAVE_ASH;
   cur_board->save_mode = CAN_SAVE;
   cur_board->forest_becomes = FOREST_TO_FLOOR;
   cur_board->collect_bombs = 1;
-  cur_board->fire_burns = FIRE_BURNS_FOREVER;
+  cur_board->fire_burns = FIRE_BURNS_LIMITED;
 
   for(i = 0; i < 4; i++)
   {
