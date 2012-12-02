@@ -1919,7 +1919,12 @@ int confirm_input(struct world *mzx_world, const char *name,
   struct element *elements[3];
   int dialog_result;
 
-  elements[0] = construct_input_box(2, 2, label, 32, 0, str);
+  int input_length = 32;
+
+  // Don't pass anything through that isn't this big plz
+  str[input_length] = '\0';
+
+  elements[0] = construct_input_box(2, 2, label, input_length, 0, str);
   elements[1] = construct_button(15, 4, "OK", 0);
   elements[2] = construct_button(37, 4, "Cancel", 1);
   construct_dialog(&di, name, 11, 8, 57, 7, elements, 3, 0);
@@ -2317,7 +2322,6 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
                     strncpy(file_list[num_files] + 26, "... ", 4);
 
                   fread(file_list[num_files] + 30, 1, 24, mzx_file);
-                  file_list[num_files][55] = 0;
                   fclose(mzx_file);
                 }
                 else
@@ -2329,6 +2333,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
                   file_list[num_files][file_name_length] = '\0';
                 }
+                file_list[num_files][55] = 0;
                 strncpy(file_list[num_files] + 56, file_name,
                  file_name_length);
                 (file_list[num_files] + 56)[file_name_length] = '\0';
@@ -2438,6 +2443,7 @@ skip_dir:
     // Make ret relative for the display.
     split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
     strcpy(ret, ret_file);
+    ret[55] = '\0'; // Just in case
 
     elements[FILESEL_FILE_LIST] =
      construct_list_box(2, 2, (const char **)file_list, num_files,
@@ -2513,6 +2519,17 @@ skip_dir:
       case 1:
       {
         int stat_result;
+
+        if(!ret_file[0])
+          break;
+
+        // Unfortunately, ret isn't reliable when the file name is 55+ chars,
+        // so if the focus is directly on the list and they don't match, use
+        // the complete name
+        if(di.current_element == FILESEL_FILE_LIST &&
+         strcmp(ret_file, file_list[chosen_file] + 56))
+          snprintf(ret, MAX_PATH, "%s%s%s",
+           current_dir_name, DIR_SEPARATOR, file_list[chosen_file] + 56);
 
         if(default_ext)
           add_ext(ret, default_ext);
