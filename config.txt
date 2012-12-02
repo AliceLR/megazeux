@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# Jun 5th, 2012
+# Dec 2nd, 2012
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -260,6 +260,42 @@
 
 # board_editor_hide_help = 1
 
+# The length of the char editor undo history. Defaults to 10.
+
+# undo_history_size = 10
+
+# Defaults for new boards. Put these in a game's editor.cnf to customize
+# for each individual game.  Viewport width/height must be set before offset,
+# and board width/height must be set before any viewport vars.
+# Options for the majority of these are 0 or 1, for off and on.
+# Options for explosions_leave: space, ash, fire
+# Options for saving: enabled, disabled, sensoronly
+# Options for overlay: enabled, disabled, static, transparent
+
+# board_default_board_width = 100
+# board_default_board_height = 100
+# board_default_viewport_w = 80
+# board_default_viewport_h = 25
+# board_default_viewport_x = 0
+# board_default_viewport_y = 0
+# board_default_can_shoot = 1
+# board_default_can_bomb = 1
+# board_default_fire_burns_spaces = 0
+# board_default_fire_burns_fakes = 1
+# board_default_fire_burns_trees = 1
+# board_default_fire_burns_brown = 0
+# board_default_fire_burns_forever = 0
+# board_default_forest_to_floor = 0
+# board_default_collect_bombs = 0
+# board_default_restart_if_hurt = 0
+# board_default_player_locked_ns = 0
+# board_default_player_locked_ew = 0
+# board_default_player_locked_att = 0
+# board_default_time_limit = 0
+# board_default_explosions_leave = ash
+# board_default_saving = enabled
+# board_default_overlay = enabled
+
 
 ### Robot editor options ###
 
@@ -350,6 +386,7 @@
 # help and horizontal border by default.
 
 # robot_editor_hide_help = 0
+
 
 # Backup options
 

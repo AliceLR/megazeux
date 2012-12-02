@@ -1016,7 +1016,7 @@ int add_board(struct world *mzx_world, int current)
   }
 
   mzx_world->num_boards++;
-  new_board = create_blank_board();
+  new_board = create_blank_board(&(mzx_world->editor_conf));
   mzx_world->board_list[current] = new_board;
   strncpy(new_board->board_name, temp_board_str, BOARD_NAME_SIZE - 1);
   new_board->board_name[BOARD_NAME_SIZE - 1] = '\0';

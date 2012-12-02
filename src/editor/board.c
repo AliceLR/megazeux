@@ -24,6 +24,7 @@
 #include "../world.h"
 
 #include "world.h"
+#include "configure.h"
 
 #include <string.h>
 
@@ -91,48 +92,53 @@ void replace_current_board(struct world *mzx_world, char *name)
   fclose(input_mzb);
 }
 
-struct board *create_blank_board(void)
+struct board *create_blank_board(struct editor_config_info *conf)
 {
   struct board *cur_board = cmalloc(sizeof(struct board));
+  int layer_size = conf->board_width * conf->board_height;
   int i;
 
   cur_board->size = 0;
   cur_board->board_name[0] = 0;
-  cur_board->board_width = 100;
-  cur_board->board_height = 100;
-  cur_board->overlay_mode = 1;
-  cur_board->level_id = cmalloc(100 * 100);
-  cur_board->level_param = cmalloc(100 * 100);
-  cur_board->level_color = cmalloc(100 * 100);
-  cur_board->level_under_id = cmalloc(100 * 100);
-  cur_board->level_under_param = cmalloc(100 * 100);
-  cur_board->level_under_color = cmalloc(100 * 100);
-  cur_board->overlay = cmalloc(100 * 100);
-  cur_board->overlay_color = cmalloc(100 * 100);
+  cur_board->board_width =       conf->board_width;
+  cur_board->board_height =      conf->board_height;
+  cur_board->overlay_mode =      conf->overlay_enabled;
+  cur_board->level_id =          cmalloc(layer_size);
+  cur_board->level_param =       cmalloc(layer_size);
+  cur_board->level_color =       cmalloc(layer_size);
+  cur_board->level_under_id =    cmalloc(layer_size);
+  cur_board->level_under_param = cmalloc(layer_size);
+  cur_board->level_under_color = cmalloc(layer_size);
+  if(cur_board->overlay_mode)
+  {
+    cur_board->overlay =         cmalloc(layer_size);
+    cur_board->overlay_color =   cmalloc(layer_size);
+  }
   cur_board->mod_playing[0] = 0;
-  cur_board->viewport_x = 0;
-  cur_board->viewport_y = 0;
-  cur_board->viewport_width = 80;
-  cur_board->viewport_height = 25;
-  cur_board->can_shoot = 1;
-  cur_board->can_bomb = 1;
-  cur_board->fire_burn_brown = 0;
-  cur_board->fire_burn_space = 0;
-  cur_board->fire_burn_fakes = 1;
-  cur_board->fire_burn_trees = 1;
-  cur_board->explosions_leave = EXPL_LEAVE_ASH;
-  cur_board->save_mode = CAN_SAVE;
-  cur_board->forest_becomes = FOREST_TO_FLOOR;
-  cur_board->collect_bombs = 1;
-  cur_board->fire_burns = FIRE_BURNS_LIMITED;
+
+  cur_board->viewport_x =        conf->viewport_x;
+  cur_board->viewport_y =        conf->viewport_y;
+  cur_board->viewport_width =    conf->viewport_w;
+  cur_board->viewport_height =   conf->viewport_h;
+  cur_board->can_shoot =         conf->can_shoot;
+  cur_board->can_bomb =          conf->can_bomb;
+  cur_board->fire_burn_brown =   conf->fire_burns_brown;
+  cur_board->fire_burn_space =   conf->fire_burns_spaces;
+  cur_board->fire_burn_fakes =   conf->fire_burns_fakes;
+  cur_board->fire_burn_trees =   conf->fire_burns_trees;
+  cur_board->explosions_leave =  conf->explosions_leave;
+  cur_board->save_mode =         conf->saving_enabled;
+  cur_board->forest_becomes =    conf->forest_to_floor;
+  cur_board->collect_bombs =     conf->collect_bombs;
+  cur_board->fire_burns =        conf->fire_burns_forever;
 
   for(i = 0; i < 4; i++)
   {
     cur_board->board_dir[i] = NO_BOARD;
   }
 
-  cur_board->restart_if_zapped = 0;
-  cur_board->time_limit = 0;
+  cur_board->restart_if_zapped = conf->restart_if_hurt;
+  cur_board->time_limit =        conf->time_limit;
   cur_board->last_key = '?';
   cur_board->num_input = 0;
   cur_board->input_size = 0;
@@ -147,9 +153,9 @@ struct board *create_blank_board(void)
   cur_board->scroll_y = 0;
   cur_board->locked_x = -1;
   cur_board->locked_y = -1;
-  cur_board->player_ns_locked = 0;
-  cur_board->player_ew_locked = 0;
-  cur_board->player_attack_locked = 0;
+  cur_board->player_ns_locked =     conf->player_locked_ns;
+  cur_board->player_ew_locked =     conf->player_locked_ew;
+  cur_board->player_attack_locked = conf->player_locked_att;
   cur_board->volume = 255;
   cur_board->volume_inc = 0;
   cur_board->volume_target = 255;
@@ -166,14 +172,17 @@ struct board *create_blank_board(void)
   cur_board->num_sensors_allocated = 0;
   cur_board->sensor_list = cmalloc(sizeof(struct sensor *));
 
-  memset(cur_board->level_id, 0, 100 * 100);
-  memset(cur_board->level_color, 7, 100 * 100);
-  memset(cur_board->level_param, 0, 100 * 100);
-  memset(cur_board->level_under_id, 0, 100 * 100);
-  memset(cur_board->level_under_color, 7, 100 * 100);
-  memset(cur_board->level_under_param, 0, 100 * 100);
-  memset(cur_board->overlay, 32, 100 * 100);
-  memset(cur_board->overlay_color, 7, 100 * 100);
+  memset(cur_board->level_id, 0, layer_size);
+  memset(cur_board->level_color, 7, layer_size);
+  memset(cur_board->level_param, 0, layer_size);
+  memset(cur_board->level_under_id, 0, layer_size);
+  memset(cur_board->level_under_color, 7, layer_size);
+  memset(cur_board->level_under_param, 0, layer_size);
+  if(cur_board->overlay_mode)
+  {
+    memset(cur_board->overlay, 32, layer_size);
+    memset(cur_board->overlay_color, 7, layer_size);
+  }
 
   cur_board->level_id[0] = 127;
 

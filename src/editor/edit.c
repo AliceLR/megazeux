@@ -3525,7 +3525,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           if(!confirm(mzx_world, "Clear board - Are you sure?"))
           {
             clear_board(src_board);
-            src_board = create_blank_board();
+            src_board = create_blank_board(&(mzx_world->editor_conf));
             mzx_world->current_board->robot_list[0] = &mzx_world->global_robot;
             mzx_world->board_list[mzx_world->current_board_id] = src_board;
             mzx_world->current_board = src_board;

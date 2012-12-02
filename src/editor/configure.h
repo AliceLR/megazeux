@@ -33,6 +33,9 @@ struct editor_config_info
   int editor_space_toggles;
   int bedit_hhelp;
 
+  // Char editor options
+  int undo_history_size;
+
   // Robot editor options
   bool editor_enter_splits;
   char color_codes[32];
@@ -51,6 +54,32 @@ struct editor_config_info
   int num_extended_macros;
   int num_macros_allocated;
   struct ext_macro **extended_macros;
+
+  // Defaults for new boards
+  int viewport_x;
+  int viewport_y;
+  int viewport_w;
+  int viewport_h;
+  int board_width;
+  int board_height;
+  int can_shoot;
+  int can_bomb;
+  int fire_burns_spaces;
+  int fire_burns_fakes;
+  int fire_burns_trees;
+  int fire_burns_brown;
+  int fire_burns_forever;
+  int forest_to_floor;
+  int collect_bombs;
+  int restart_if_hurt;
+  int player_locked_ns;
+  int player_locked_ew;
+  int player_locked_att;
+  int time_limit;
+  int explosions_leave;
+  int saving_enabled;
+  int overlay_enabled;
+
 };
 
 typedef void (* editor_config_function)(struct editor_config_info *conf,
