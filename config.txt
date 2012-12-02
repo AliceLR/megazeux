@@ -264,16 +264,18 @@
 
 # undo_history_size = 10
 
-# Defaults for new boards. Put these in a game's editor.cnf to customize
-# for each individual game.  Viewport width/height must be set before offset,
-# and board width/height must be set before any viewport vars.
+# Defaults for new boards. Put these in [filename].editor.cnf to customize
+# for each individual game, E.G. caverns.editor.cnf.  Viewport width/height
+# must be set before offset, and board width/height must be set before any
+# viewport vars.
+
 # Options for the majority of these are 0 or 1, for off and on.
 # Options for explosions_leave: space, ash, fire
 # Options for saving: enabled, disabled, sensoronly
 # Options for overlay: enabled, disabled, static, transparent
 
-# board_default_board_width = 100
-# board_default_board_height = 100
+# board_default_width = 100
+# board_default_height = 100
 # board_default_viewport_w = 80
 # board_default_viewport_h = 25
 # board_default_viewport_x = 0

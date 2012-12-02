@@ -992,6 +992,25 @@ static void draw_menu_minimal(int overlay_edit, int draw_mode,
    level_param, current_param, src_board);
 }
 
+// Wrapper for reload_world so we can load an editor config
+static bool editor_reload_world(struct world *mzx_world, const char *file,
+ int *faded)
+{
+  struct stat file_info;
+  char config_file_name[MAX_PATH];
+  size_t file_name_len = strlen(file) - 4;
+
+  bool world_loaded = reload_world(mzx_world, file, faded);
+
+  strncpy(config_file_name, file, file_name_len);
+  strncpy(config_file_name + file_name_len, ".editor.cnf", 12);
+
+  if(world_loaded && stat(config_file_name, &file_info) >= 0)
+    set_editor_config_from_file(&(mzx_world->editor_conf), config_file_name);
+
+  return world_loaded;
+}
+
 static void __edit_world(struct world *mzx_world, int reload_curr_file)
 {
   struct board *src_board;
@@ -1080,7 +1099,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
      reload_curr_file &&
      curr_file[0] &&
      !stat(curr_file, &stat_res) &&
-     reload_world(mzx_world, curr_file, &fade))
+     editor_reload_world(mzx_world, curr_file, &fade))
     {
       strncpy(current_world, curr_file, MAX_PATH);
 
@@ -2041,7 +2060,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
               // Load world curr_file
               strcpy(current_world, load_world);
-              if(!reload_world(mzx_world, current_world, &fade))
+              if(!editor_reload_world(mzx_world, current_world, &fade))
               {
                 strcpy(current_world, last_world);
 
@@ -3331,9 +3350,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
             chdir(return_dir);
 
-            if(!reload_world(mzx_world, "__test.mzx", &fade))
+            if(!editor_reload_world(mzx_world, "__test.mzx", &fade))
             {
-              if(!reload_world(mzx_world, current_world, &fade))
+              if(!editor_reload_world(mzx_world, current_world, &fade))
                 create_blank_world(mzx_world);
 
               current_board_id = mzx_world->current_board_id;
