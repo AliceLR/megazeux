@@ -22,38 +22,25 @@
 #define __EDITOR_CONFIGURE_H
 
 #include "../compat.h"
+#include "../const.h"
 
 __M_BEGIN_DECLS
 
 #include "macro.h"
+
+struct jump_point
+{
+  int board_id;
+  int dest_x;
+  int dest_y;
+  char name[BOARD_NAME_SIZE + 1];
+};
 
 struct editor_config_info
 {
   // Board editor options
   int editor_space_toggles;
   int bedit_hhelp;
-
-  // Char editor options
-  int undo_history_size;
-
-  // Robot editor options
-  bool editor_enter_splits;
-  char color_codes[32];
-  int color_coding_on;
-  int default_invalid_status;
-  int redit_hhelp;
-
-  // Backup options
-  int backup_count;
-  int backup_interval;
-  char backup_name[256];
-  char backup_ext[256];
-
-  // Macro options
-  char default_macros[5][64];
-  int num_extended_macros;
-  int num_macros_allocated;
-  struct ext_macro **extended_macros;
 
   // Defaults for new boards
   int viewport_x;
@@ -80,6 +67,31 @@ struct editor_config_info
   int saving_enabled;
   int overlay_enabled;
 
+  // Char editor options
+  int undo_history_size;
+
+  // Robot editor options
+  bool editor_enter_splits;
+  char color_codes[32];
+  int color_coding_on;
+  int default_invalid_status;
+  int redit_hhelp;
+
+  // Backup options
+  int backup_count;
+  int backup_interval;
+  char backup_name[256];
+  char backup_ext[256];
+
+  // Macro options
+  char default_macros[5][64];
+  int num_extended_macros;
+  int num_macros_allocated;
+  struct ext_macro **extended_macros;
+
+  // Jump points
+  int num_jump_points;
+  struct jump_point **jump_points;
 };
 
 typedef void (* editor_config_function)(struct editor_config_info *conf,

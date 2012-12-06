@@ -65,6 +65,31 @@
 #define EDIT_SCREEN_EXTENDED 24
 #define EDIT_SCREEN_NORMAL   19
 
+void free_editor_config(struct world *mzx_world)
+{
+  int i;
+
+  // Extended Macros
+  if(mzx_world->editor_conf.extended_macros)
+  {
+    for(i = 0; i < mzx_world->editor_conf.num_extended_macros; i++)
+      free_macro(mzx_world->editor_conf.extended_macros[i]);
+
+    free(mzx_world->editor_conf.extended_macros);
+    mzx_world->editor_conf.extended_macros = NULL;
+  }
+
+  // Jump Points
+  if(mzx_world->editor_conf.jump_points)
+  {
+    for(i = 0; i < mzx_world->editor_conf.num_jump_points; i++)
+      free(mzx_world->editor_conf.jump_points[i]);
+
+    free(mzx_world->editor_conf.jump_points);
+    mzx_world->editor_conf.jump_points = NULL;
+  }
+}
+
 void load_editor_config(struct world *mzx_world, int *argc, char *argv[])
 {
   default_editor_config(&mzx_world->editor_conf);

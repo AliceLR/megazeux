@@ -181,7 +181,8 @@ err_network_layer_exit:
   network_layer_exit(&mzx_world.conf);
   if(mzx_world.update_done)
     free(mzx_world.update_done);
-  free_extended_macros(&mzx_world);
+  free_config(&mzx_world.conf);
+  free_editor_config(&mzx_world);
 err_free_res:
   mzx_res_free();
   platform_quit();

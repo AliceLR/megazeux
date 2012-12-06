@@ -28,6 +28,7 @@ __M_BEGIN_DECLS
 
 #include "../world_struct.h"
 
+EDITOR_LIBSPEC void free_editor_config(struct world *mzx_world);
 EDITOR_LIBSPEC void load_editor_config(struct world *mzx_world, int *argc,
  char *argv[]);
 EDITOR_LIBSPEC void editor_init(void);

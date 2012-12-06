@@ -221,6 +221,46 @@ static void config_undo_history_size(struct editor_config_info *conf,
   conf->undo_history_size = strtol(value, NULL, 10);
 }
 
+static void config_saved_positions(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  int p = conf->num_jump_points;
+  char *board_id = NULL, *board_x = NULL, *board_y = NULL;
+
+  if(!(board_id = strchr(value, ',')))
+    return;
+  board_id[0] = '\0';
+  board_id++;
+
+  if(!(board_x = strchr(board_id, ',')))
+    return;
+  board_x[0] = '\0';
+  board_x++;
+
+  if(!(board_y = strchr(board_x, ',')))
+    return;
+  board_y[0] = '\0';
+  board_y++;
+
+  // Verification of this will have to be done when the editor
+  // attempts to do a jump.
+
+  // Add to the list
+
+  if(conf->num_jump_points == 0)
+    conf->jump_points = cmalloc(0);
+
+  conf->num_jump_points++;
+  conf->jump_points = crealloc(conf->jump_points,
+   sizeof(struct jump_point) * conf->num_jump_points);
+
+  conf->jump_points[p]->board_id = strtol(board_id, NULL, 10);
+  conf->jump_points[p]->dest_x = strtol(board_x, NULL, 10);
+  conf->jump_points[p]->dest_y = strtol(board_y, NULL, 10);
+  strncpy(conf->jump_points[p]->name, value, BOARD_NAME_SIZE);
+  conf->jump_points[p]->name[BOARD_NAME_SIZE] = '\0';
+}
+
 /******************/
 /* BOARD DEFAULTS */
 /******************/
@@ -450,6 +490,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "editor_space_toggles", config_editor_space_toggles },
   { "macro_*", config_macro },
   { "robot_editor_hide_help", redit_hhelp },
+  { "saved_position", config_saved_positions },
   { "undo_history_size", config_undo_history_size },
 };
 
@@ -486,28 +527,6 @@ static const struct editor_config_info default_editor_options =
   0,                            // editor_space_toggles
   0,                            // board_editor_hide_help
 
-  // Char editor options
-  10,                           // Undo history size
-
-  // Robot editor options
-  true,
-  { 11, 10, 10, 14, 255, 3, 11, 2, 14, 0, 15, 11, 7, 15, 1, 2, 3 },
-  1,                            // color_coding_on
-  1,                            // default_invalid_status
-  0,                            // robot_editor_hide_help
-
-  // Backup options
-  3,                            // backup_count
-  60,                           // backup_interval
-  "backup",                     // backup_name
-  ".mzx",                       // backup_ext
-
-  // Macro options
-  { "char ", "color ", "goto ", "send ", ": playershot^" },
-  0,                            // num_extended_macros
-  0,
-  NULL,
-
   // Defaults for new boards
   0,                            // viewport_x
   0,                            // viewport_y
@@ -532,6 +551,33 @@ static const struct editor_config_info default_editor_options =
   1,                            // explosions_leave (default = ash)
   0,                            // saving_enabled (default = enabled)
   1,                            // overlay_enabled (default = enabled)
+
+  // Char editor options
+  10,                           // Undo history size
+
+  // Robot editor options
+  true,
+  { 11, 10, 10, 14, 255, 3, 11, 2, 14, 0, 15, 11, 7, 15, 1, 2, 3 },
+  1,                            // color_coding_on
+  1,                            // default_invalid_status
+  0,                            // robot_editor_hide_help
+
+  // Backup options
+  3,                            // backup_count
+  60,                           // backup_interval
+  "backup",                     // backup_name
+  ".mzx",                       // backup_ext
+
+  // Macro options
+  { "char ", "color ", "goto ", "send ", ": playershot^" },
+  0,                            // num_extended_macros
+  0,
+  NULL,
+
+  // Jump points
+  0,
+  NULL,
+
 };
 
 static void editor_config_change_option(void *conf, char *name, char *value,

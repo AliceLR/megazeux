@@ -765,3 +765,18 @@ void set_config_from_command_line(struct config_info *conf,
 {
   __set_config_from_command_line(config_change_option, conf, argc, argv);
 }
+
+void free_config(struct config_info *conf)
+{
+  int i;
+
+  // Auto-Updater hosts
+  if(conf->update_hosts)
+  {
+    for(i = 0; i < conf->update_host_count; i++)
+      free(conf->update_hosts[i]);
+
+    free(conf->update_hosts);
+    conf->update_hosts = NULL;
+  }
+}

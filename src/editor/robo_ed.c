@@ -4279,16 +4279,3 @@ void init_macros(struct world *mzx_world)
 {
   memcpy(macros, mzx_world->editor_conf.default_macros, 5 * 64);
 }
-
-void free_extended_macros(struct world *mzx_world)
-{
-  int i;
-
-  if(!mzx_world->editor_conf.extended_macros)
-    return;
-
-  for(i = 0; i < mzx_world->editor_conf.num_extended_macros; i++)
-    free_macro(mzx_world->editor_conf.extended_macros[i]);
-
-  free(mzx_world->editor_conf.extended_macros);
-}
