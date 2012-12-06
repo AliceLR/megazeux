@@ -878,7 +878,6 @@ bool init_video(struct config_info *conf, const char *caption)
     return false;
 
 #ifdef CONFIG_SDL
-  graphics.default_caption = cmalloc(32);
   strncpy(graphics.default_caption, caption, 32);
   graphics.default_caption[31] = '\0';
 

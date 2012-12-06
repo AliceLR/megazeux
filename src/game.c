@@ -241,6 +241,7 @@ __editor_maybe_static void set_caption(struct world *mzx_world, struct board *bo
 
   set_window_caption(caption);
 
+  free(stripped_name);
   free(caption);
   free(buffer);
 }
