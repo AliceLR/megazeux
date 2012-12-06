@@ -91,7 +91,7 @@ struct editor_config_info
 
   // Jump points
   int num_jump_points;
-  struct jump_point **jump_points;
+  struct jump_point *jump_points;
 };
 
 typedef void (* editor_config_function)(struct editor_config_info *conf,

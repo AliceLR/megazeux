@@ -82,9 +82,6 @@ void free_editor_config(struct world *mzx_world)
   // Jump Points
   if(mzx_world->editor_conf.jump_points)
   {
-    for(i = 0; i < mzx_world->editor_conf.num_jump_points; i++)
-      free(mzx_world->editor_conf.jump_points[i]);
-
     free(mzx_world->editor_conf.jump_points);
     mzx_world->editor_conf.jump_points = NULL;
   }

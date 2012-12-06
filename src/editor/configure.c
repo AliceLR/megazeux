@@ -254,11 +254,11 @@ static void config_saved_positions(struct editor_config_info *conf,
   conf->jump_points = crealloc(conf->jump_points,
    sizeof(struct jump_point) * conf->num_jump_points);
 
-  conf->jump_points[p]->board_id = strtol(board_id, NULL, 10);
-  conf->jump_points[p]->dest_x = strtol(board_x, NULL, 10);
-  conf->jump_points[p]->dest_y = strtol(board_y, NULL, 10);
-  strncpy(conf->jump_points[p]->name, value, BOARD_NAME_SIZE);
-  conf->jump_points[p]->name[BOARD_NAME_SIZE] = '\0';
+  conf->jump_points[p].board_id = strtol(board_id, NULL, 10);
+  conf->jump_points[p].dest_x = strtol(board_x, NULL, 10);
+  conf->jump_points[p].dest_y = strtol(board_y, NULL, 10);
+  strncpy(conf->jump_points[p].name, value, BOARD_NAME_SIZE);
+  conf->jump_points[p].name[BOARD_NAME_SIZE] = '\0';
 }
 
 /******************/
