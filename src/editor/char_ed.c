@@ -69,6 +69,10 @@ static int num_files = 1;
 
 static int char_copy_use_offset = 0;
 
+static Uint8 **history = NULL;
+static int history_size = 0;
+static int history_pos = 0;
+
 static void fill_region(char *buffer, int x, int y,
  int buffer_width, int buffer_height, int check, int draw)
 {
@@ -495,6 +499,117 @@ static void replace_filenum(char *src, char *dest, int num)
   *dest_ptr = 0;
 }
 
+
+/****************/
+/* UNDO HISTORY */
+/****************/
+
+// It's nice to have this stuff separated out in functions
+// so it can maybe be replaced with something that gobbles
+// less memory at a later point.
+
+// We're saving the CURRENT frame here, not the previous.
+static void save_history(void)
+{
+  if(history_size < 2)
+    return;
+
+  if(!history)
+  {
+    int i;
+    history = ccalloc(history_size, sizeof(Uint8 *));
+
+    for(i = 0; i < history_size; i++)
+      history[i] = NULL;
+
+    // Decrement it so the first save populates pos 0
+    history_pos--;
+  }
+
+  if(history_pos == (history_size - 1))
+  {
+    Uint8 **buffer = ccalloc(history_size, sizeof(Uint8 *));
+
+    // We're about to overwrite this version of the char set,
+    // so free it.
+    free(history[0]);
+
+    memcpy(buffer, history + 1,
+     sizeof(Uint8 *) * (history_size - 1));
+    memcpy(history, buffer,
+     sizeof(Uint8 *) * (history_size - 1));
+    free(buffer);
+  }
+  else
+    history_pos++;
+
+  // If we have it, we might as well keep it
+  if(!history[history_pos])
+    history[history_pos] = cmalloc(14 * 256);
+
+  ec_mem_save_set(history[history_pos]);
+
+  // If there's still space on the undo buffer, free the next
+  // slot and put a null so we can't redo undone history.
+  if(history_pos < (history_size - 1))
+  {
+    free(history[history_pos + 1]);
+    history[history_pos + 1] = NULL;
+  }
+}
+
+static void restore_history(void)
+{
+  if(history_size < 2)
+    return;
+
+  if(history_pos < 1)
+    return;
+
+  history_pos--;
+
+  ec_mem_load_set(history[history_pos]);
+}
+
+static void redo_history(void)
+{
+  if(history_size < 2)
+    return;
+
+  if(history_pos == (history_size - 1))
+    return;
+
+  // If the next point in history isn't null
+  if(history[history_pos + 1])
+  {
+    history_pos++;
+
+    ec_mem_load_set(history[history_pos]);
+  }
+}
+
+static void free_history(void)
+{
+  int i;
+
+  if(history)
+  {
+    for(i = 0; i < history_size; i++)
+      if(history[i])
+        free(history[i]);
+
+    free(history);
+  }
+  history = NULL;
+  history_pos = 0;
+}
+
+/********************/
+/* END UNDO HISTORY */
+/********************/
+
+
+
 int char_editor(struct world *mzx_world)
 {
   int x = 0;
@@ -512,7 +627,6 @@ int char_editor(struct world *mzx_world)
   int dialog_x, dialog_y;
   int chars_show_width;
   char *buffer = cmalloc(8 * 14 * 32);
-  char *previous = cmalloc(8 * 14 * 32);
   char mini_buffer[32];
   int last_x = -1, last_y = 0;
   int block_x = 0;
@@ -531,6 +645,11 @@ int char_editor(struct world *mzx_world)
   int current_pixel = 0;
   char smzx_colors[4] = { 0x8, 0x2, 0x3, 0x7 };
   unsigned char saved_rgb[4][3];
+
+  // Prepare the history
+  history_pos = 0;
+  history_size = mzx_world->editor_conf.undo_history_size;
+  save_history();
 
   if(screen_mode)
   {
@@ -557,7 +676,6 @@ int char_editor(struct world *mzx_world)
   expand_buffer(buffer, current_width,
    current_height, highlight_width, highlight_height,
    current_char, screen_mode);
-  memcpy(previous, buffer, buffer_size);
 
   save_screen();
 
@@ -956,8 +1074,6 @@ int char_editor(struct world *mzx_world)
            block_start_x + (block_start_y * buffer_width);
           int wrap;
 
-          memcpy(previous, buffer, buffer_size);
-
           for(i = 0; i < block_height; i++,
            buffer_ptr += buffer_width)
           {
@@ -970,6 +1086,8 @@ int char_editor(struct world *mzx_world)
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
            current_char, screen_mode);
+
+          save_history();
         }
         else
         {
@@ -991,8 +1109,6 @@ int char_editor(struct world *mzx_world)
            block_start_x + (block_start_y * buffer_width);
           int wrap;
 
-          memcpy(previous, buffer, buffer_size);
-
           for(i = 0; i < block_height; i++,
            buffer_ptr += buffer_width)
           {
@@ -1005,6 +1121,8 @@ int char_editor(struct world *mzx_world)
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
            current_char, screen_mode);
+
+          save_history();
         }
         else
         {
@@ -1026,7 +1144,6 @@ int char_editor(struct world *mzx_world)
            block_start_x + (block_start_y * buffer_width);
           char *wrap_row = cmalloc(block_width);
 
-          memcpy(previous, buffer, buffer_size);
           memcpy(wrap_row, buffer_ptr, block_width);
 
           for(i = 0; i < block_height - 1; i++,
@@ -1040,6 +1157,8 @@ int char_editor(struct world *mzx_world)
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
            current_char, screen_mode);
+
+          save_history();
 
           free(wrap_row);
         }
@@ -1064,7 +1183,6 @@ int char_editor(struct world *mzx_world)
            buffer_width);
           char *wrap_row = cmalloc(block_width);
 
-          memcpy(previous, buffer, buffer_size);
           memcpy(wrap_row, buffer_ptr, block_width);
 
           for(i = 0; i < block_height - 1; i++,
@@ -1078,6 +1196,8 @@ int char_editor(struct world *mzx_world)
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
            current_char, screen_mode);
+
+          save_history();
 
           free(wrap_row);
         }
@@ -1099,7 +1219,6 @@ int char_editor(struct world *mzx_world)
         current_char -= highlight_width;
         expand_buffer(buffer, current_width, current_height,
          highlight_width, highlight_height, current_char, screen_mode);
-        memcpy(previous, buffer, buffer_size);
         break;
       }
 
@@ -1109,13 +1228,11 @@ int char_editor(struct world *mzx_world)
         current_char += highlight_width;
         expand_buffer(buffer, current_width, current_height,
          highlight_width, highlight_height, current_char, screen_mode);
-        memcpy(previous, buffer, buffer_size);
         break;
       }
 
       case IKEY_SPACE:
       {
-        memcpy(previous, buffer, buffer_size);
         if(screen_mode)
           buffer[x + (y * buffer_width)] = current_pixel;
         else
@@ -1124,6 +1241,8 @@ int char_editor(struct world *mzx_world)
         collapse_buffer(buffer, current_width,
          current_height, highlight_width, highlight_height,
          current_char, screen_mode);
+
+        save_history();
         break;
       }
 
@@ -1221,7 +1340,6 @@ int char_editor(struct world *mzx_world)
         expand_buffer(buffer, current_width, current_height,
          highlight_width, highlight_height, current_char, screen_mode);
 
-        memcpy(previous, buffer, buffer_size);
         break;
       }
 
@@ -1235,7 +1353,6 @@ int char_editor(struct world *mzx_world)
       {
         char *buffer_ptr = buffer +
          block_start_x + (block_start_y * buffer_width);
-        memcpy(previous, buffer, buffer_size);
 
         for(i = 0; i < block_height; i++,
          buffer_ptr += buffer_width)
@@ -1245,11 +1362,14 @@ int char_editor(struct world *mzx_world)
         collapse_buffer(buffer, current_width,
          current_height, highlight_width, highlight_height,
          current_char, screen_mode);
+
+        save_history();
         break;
       }
 
       case IKEY_F2:
       {
+        // Copy buffer
         char *buffer_ptr = buffer +
          block_start_x + (block_start_y * buffer_width);
         char *dest_ptr = char_copy_buffer;
@@ -1284,6 +1404,7 @@ int char_editor(struct world *mzx_world)
 
       case IKEY_F3:
       {
+        // Paste buffer
         int copy_width = char_copy_width;
         int copy_height = char_copy_height;
         int dest_x = x;
@@ -1300,8 +1421,6 @@ int char_editor(struct world *mzx_world)
         buffer_ptr = buffer +
          dest_x + (dest_y * buffer_width);
 
-        memcpy(previous, buffer, buffer_size);
-
         if((dest_x + copy_width) > buffer_width)
           copy_width = buffer_width - dest_x;
 
@@ -1317,18 +1436,19 @@ int char_editor(struct world *mzx_world)
         collapse_buffer(buffer, current_width,
          current_height, highlight_width, highlight_height,
          current_char, screen_mode);
+
+        save_history();
         break;
       }
 
       case IKEY_m:
       {
+        // Mirror
         int temp, i2;
         int start_offset = block_start_x +
          (block_start_y * buffer_width);
         int previous_offset;
         int end_offset;
-
-        memcpy(previous, buffer, buffer_size);
 
         for(i = 0; i < block_height; i++)
         {
@@ -1348,6 +1468,7 @@ int char_editor(struct world *mzx_world)
          current_height, highlight_width, highlight_height,
          current_char, screen_mode);
 
+        save_history();
         break;
       }
 
@@ -1358,8 +1479,6 @@ int char_editor(struct world *mzx_world)
           // Flood fill
           int check = buffer[x + (y * buffer_width)];
           int fill = check ^ 1;
-
-          memcpy(previous, buffer, buffer_size);
 
           if(screen_mode)
             fill = current_pixel;
@@ -1375,13 +1494,12 @@ int char_editor(struct world *mzx_world)
         }
         else
         {
+          // Flip
           char *temp_buffer = cmalloc(sizeof(char) * block_width);
           int start_offset = block_start_x +
            (block_start_y * buffer_width);
           int end_offset = start_offset +
            ((block_height - 1) * buffer_width);
-
-          memcpy(previous, buffer, buffer_size);
 
           for(i = 0; i < (block_height / 2); i++,
            start_offset += buffer_width, end_offset -= buffer_width)
@@ -1401,6 +1519,7 @@ int char_editor(struct world *mzx_world)
           free(temp_buffer);
         }
 
+        save_history();
         break;
       }
 
@@ -1425,9 +1544,9 @@ int char_editor(struct world *mzx_world)
 
       case IKEY_n:
       {
+        // Negative
         char *buffer_ptr = buffer +
          block_start_x + (block_start_y * buffer_width);
-        memcpy(previous, buffer, buffer_size);
 
         if(screen_mode)
         {
@@ -1455,6 +1574,22 @@ int char_editor(struct world *mzx_world)
         collapse_buffer(buffer, current_width,
          current_height, highlight_width, highlight_height,
          current_char, screen_mode);
+
+        save_history();
+        break;
+      }
+
+      case IKEY_r:
+      {
+        // Redo
+        if(get_alt_status(keycode_internal))
+        {
+          redo_history();
+
+          expand_buffer(buffer, current_width, current_height,
+           highlight_width, highlight_height, current_char,
+           screen_mode);
+        }
         break;
       }
 
@@ -1463,24 +1598,20 @@ int char_editor(struct world *mzx_world)
         // Undo
         if(get_alt_status(keycode_internal))
         {
-          char *swap = cmalloc(sizeof(char) * buffer_size);
-          memcpy(swap, buffer, buffer_size);
-          memcpy(buffer, previous, buffer_size);
-          memcpy(previous, swap, buffer_size);
-          collapse_buffer(buffer, current_width,
-           current_height, highlight_width, highlight_height,
-           current_char, screen_mode);
-          free(swap);
+          restore_history();
+
+          expand_buffer(buffer, current_width, current_height,
+           highlight_width, highlight_height, current_char,
+           screen_mode);
         }
         break;
       }
 
       case IKEY_F4:
       {
+        // ASCII Default
         int char_offset = current_char;
         int skip = 32 - highlight_width;
-
-        memcpy(previous, buffer, buffer_size);
 
         for(i = 0; i < highlight_height; i++,
          char_offset += skip)
@@ -1493,6 +1624,8 @@ int char_editor(struct world *mzx_world)
           }
         }
 
+        save_history();
+
         expand_buffer(buffer, current_width, current_height,
          highlight_width, highlight_height, current_char, screen_mode);
 
@@ -1501,10 +1634,9 @@ int char_editor(struct world *mzx_world)
 
       case IKEY_F5:
       {
+        // MZX Default
         int char_offset = current_char;
         int skip = 32 - highlight_width;
-
-        memcpy(previous, buffer, buffer_size);
 
         for(i = 0; i < highlight_height; i++,
          char_offset += skip)
@@ -1520,6 +1652,7 @@ int char_editor(struct world *mzx_world)
         expand_buffer(buffer, current_width, current_height,
          highlight_width, highlight_height, current_char, screen_mode);
 
+        save_history();
         break;
       }
 
@@ -1634,8 +1767,10 @@ int char_editor(struct world *mzx_world)
                 char_offset += char_size;
             }
 
-          expand_buffer(buffer, current_width, current_height,
-           highlight_width, highlight_height, current_char, screen_mode);
+            save_history();
+
+            expand_buffer(buffer, current_width, current_height,
+             highlight_width, highlight_height, current_char, screen_mode);
           }
         }
         break;
@@ -1706,8 +1841,6 @@ int char_editor(struct world *mzx_world)
 
     if(draw_new)
     {
-      memcpy(previous, buffer, buffer_size);
-
       switch(draw)
       {
         case 1:
@@ -1728,6 +1861,8 @@ int char_editor(struct world *mzx_world)
       collapse_buffer(buffer, current_width,
        current_height, highlight_width, highlight_height,
        current_char, screen_mode);
+
+      save_history();
     }
   } while(key != IKEY_ESCAPE);
 
@@ -1749,7 +1884,8 @@ int char_editor(struct world *mzx_world)
     set_screen_mode(screen_mode);
   }
 
-  free(previous);
+  free_history();
+
   free(buffer);
 
   return current_char;

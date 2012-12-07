@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# Dec 2nd, 2012
+# Dec 6th, 2012
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -260,7 +260,10 @@
 
 # board_editor_hide_help = 1
 
-# The length of the char editor undo history. Defaults to 10.
+# The length of the char editor undo history. Each step of the
+# history stores the whole char set, so it may be wise to use a
+# lower number here on memory-scarce platforms. Please note that
+# the current step is part of the history. Defaults to 10.
 
 # undo_history_size = 10
 

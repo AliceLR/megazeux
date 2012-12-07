@@ -166,6 +166,7 @@ CORE_LIBSPEC void ec_read_char(Uint8 chr, char *matrix);
 CORE_LIBSPEC void ec_change_char(Uint8 chr, char *matrix);
 CORE_LIBSPEC Sint32 ec_load_set_var(char *name, Uint8 pos);
 CORE_LIBSPEC void ec_mem_load_set(Uint8 *chars);
+CORE_LIBSPEC void ec_mem_save_set(Uint8 *chars);
 
 CORE_LIBSPEC void update_palette(void);
 CORE_LIBSPEC void set_gui_palette(void);
@@ -217,7 +218,6 @@ void get_screen(struct char_element *dest);
 void ec_change_byte(Uint8 chr, Uint8 byte, Uint8 new_value);
 Uint8 ec_read_byte(Uint8 chr, Uint8 byte);
 Sint32 ec_load_set(char *name);
-void ec_mem_save_set(Uint8 *chars);
 
 void set_color_intensity(Uint32 color, Uint32 percent);
 Uint32 get_color_intensity(Uint32 color);

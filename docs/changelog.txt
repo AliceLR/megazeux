@@ -7,6 +7,8 @@ FEATURES
 + The title bar now displays the world, editing board, and editing robot names
   based on context.
 + Fire Burns Space and Fire Burns Forever are now off by default.
++ You may now specify the size of the undo history in the char editor, and the
+  history affects the entire char set. Undo is still ALT+U, redo is now ALT+R.
 
 + Debytecode: The robotic editor now asks for a confirmation to save the program
   on exit.
