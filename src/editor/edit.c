@@ -93,6 +93,53 @@ void load_editor_config(struct world *mzx_world, int *argc, char *argv[])
   set_editor_config_from_file(&mzx_world->editor_conf,
    mzx_res_get_by_id(CONFIG_TXT));
   set_editor_config_from_command_line(&mzx_world->editor_conf, argc, argv);
+
+  // Backup the config
+  memcpy(&mzx_world->editor_conf_backup, &mzx_world->editor_conf,
+   sizeof(struct editor_config_info));
+}
+
+// Wrapper for reload_world so we can load an editor config
+static bool editor_reload_world(struct world *mzx_world, const char *file,
+ int *faded)
+{
+  struct stat file_info;
+  struct editor_config_info *conf = &(mzx_world->editor_conf);
+  struct editor_config_info *backup = &(mzx_world->editor_conf_backup);
+  size_t file_name_len = strlen(file) - 4;
+  char config_file_name[MAX_PATH];
+
+  bool world_loaded = reload_world(mzx_world, file, faded);
+
+  if(!world_loaded)
+    return world_loaded;
+
+  // Part 1: Reset as much of the config file as we can, also clear up
+  // any jump points that were put in the global files.
+
+  // We don't want to lose these.  If they're any different, the backup
+  // version has already been freed/reallocated, so just copy the pointer.
+  backup->extended_macros = conf->extended_macros;
+
+  if(backup->jump_points && (conf->jump_points != backup->jump_points))
+    free(backup->jump_points);
+
+  if(conf->jump_points)
+    free(conf->jump_points);
+
+  backup->jump_points = NULL;
+
+  memcpy(conf, backup, sizeof(struct editor_config_info));
+
+  // Part 2: Now load the new world.editor.cnf.
+
+  strncpy(config_file_name, file, file_name_len);
+  strncpy(config_file_name + file_name_len, ".editor.cnf", 12);
+
+  if(world_loaded && stat(config_file_name, &file_info) >= 0)
+    set_editor_config_from_file(conf, config_file_name);
+
+  return world_loaded;
 }
 
 /* Edit menu- (w/box ends on sides) Current menu name is highlighted. The
@@ -1012,25 +1059,6 @@ static void draw_menu_minimal(int overlay_edit, int draw_mode,
   draw_menu_status(overlay_edit, EDIT_SCREEN_EXTENDED, draw_mode,
    current_color, current_id, sensor_char, robot_char, level_id,
    level_param, current_param, src_board);
-}
-
-// Wrapper for reload_world so we can load an editor config
-static bool editor_reload_world(struct world *mzx_world, const char *file,
- int *faded)
-{
-  struct stat file_info;
-  char config_file_name[MAX_PATH];
-  size_t file_name_len = strlen(file) - 4;
-
-  bool world_loaded = reload_world(mzx_world, file, faded);
-
-  strncpy(config_file_name, file, file_name_len);
-  strncpy(config_file_name + file_name_len, ".editor.cnf", 12);
-
-  if(world_loaded && stat(config_file_name, &file_info) >= 0)
-    set_editor_config_from_file(&(mzx_world->editor_conf), config_file_name);
-
-  return world_loaded;
 }
 
 static void __edit_world(struct world *mzx_world, int reload_curr_file)

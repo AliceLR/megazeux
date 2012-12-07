@@ -192,6 +192,7 @@ struct world
 
 #ifdef CONFIG_EDITOR
   struct editor_config_info editor_conf;
+  struct editor_config_info editor_conf_backup;
   bool editing;
 #endif
 
