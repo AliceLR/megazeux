@@ -121,13 +121,11 @@ static bool editor_reload_world(struct world *mzx_world, const char *file,
   // version has already been freed/reallocated, so just copy the pointer.
   backup->extended_macros = conf->extended_macros;
 
-  if(backup->jump_points && (conf->jump_points != backup->jump_points))
-    free(backup->jump_points);
+  // Same for jump points, except we don't want to keep them
+  backup->jump_points = NULL;
 
   if(conf->jump_points)
     free(conf->jump_points);
-
-  backup->jump_points = NULL;
 
   memcpy(conf, backup, sizeof(struct editor_config_info));
 
