@@ -536,8 +536,9 @@ static void save_history(void)
 
     memcpy(buffer, history + 1,
      sizeof(Uint8 *) * (history_size - 1));
+    buffer[history_size - 1] = NULL;
     memcpy(history, buffer,
-     sizeof(Uint8 *) * (history_size - 1));
+     sizeof(Uint8 *) * history_size);
     free(buffer);
   }
   else
@@ -1056,6 +1057,8 @@ int char_editor(struct world *mzx_world)
           collapse_buffer(buffer, current_width,
            current_height, highlight_width, highlight_height,
            current_char, screen_mode);
+
+          save_history();
         }
       }
     }
