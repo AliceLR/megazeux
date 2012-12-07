@@ -1084,6 +1084,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   int block_dest_x = -1, block_dest_y = -1;
   int block_command = -1;
   struct board *block_board = NULL;
+  int new_board = -1;
   int text_place;
   int text_start_x = -1;
   int modified = 0;
@@ -1431,6 +1432,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       {
         int i, move_amount = 1;
 
+        if(get_shift_status(keycode_internal))
+        {
+          if(src_board->board_dir[0] != NO_BOARD)
+            new_board = src_board->board_dir[0];
+
+          break;
+        }
+
         if(get_alt_status(keycode_internal))
           move_amount = 10;
 
@@ -1461,6 +1470,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       case IKEY_DOWN:
       {
         int i, move_amount = 1;
+
+        if(get_shift_status(keycode_internal))
+        {
+          if(src_board->board_dir[1] != NO_BOARD)
+            new_board = src_board->board_dir[1];
+
+          break;
+        }
 
         if(get_alt_status(keycode_internal))
           move_amount = 10;
@@ -1494,6 +1511,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       case IKEY_LEFT:
       {
         int i, move_amount = 1;
+
+        if(get_shift_status(keycode_internal))
+        {
+          if(src_board->board_dir[3] != NO_BOARD)
+            new_board = src_board->board_dir[3];
+
+          break;
+        }
 
         if(get_alt_status(keycode_internal))
           move_amount = 10;
@@ -1532,6 +1557,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       case IKEY_RIGHT:
       {
         int i, move_amount = 1;
+
+        if(get_shift_status(keycode_internal))
+        {
+          if(src_board->board_dir[2] != NO_BOARD)
+            new_board = src_board->board_dir[2];
+
+          break;
+        }
 
         if(get_alt_status(keycode_internal))
           move_amount = 10;
@@ -2038,39 +2071,43 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             draw_mode = 3;
           }
           else
-          {
-            int new_board =
+            new_board =
              choose_board(mzx_world, mzx_world->current_board_id,
              "Select current board:", 0);
 
-            if(new_board >= 0)
-            {
-              fix_board(mzx_world, new_board);
-
-              synchronize_board_values(mzx_world, &src_board, &board_width,
-               &board_height, &level_id, &level_param, &level_color, &overlay,
-               &overlay_color);
-
-              if(strcmp(src_board->mod_playing, "*") &&
-               strcasecmp(src_board->mod_playing,
-               mzx_world->real_mod_playing))
-                fix_mod(mzx_world, src_board, &listening_flag);
-
-              if(!src_board->overlay_mode)
-                overlay_edit = 0;
-
-              fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
-               &scroll_y, cursor_x, cursor_y, board_width, board_height,
-               edit_screen_height);
-
-              modified = 1;
-            }
-          }
         }
         else
         {
           text_place = 1;
         }
+        break;
+      }
+
+      case IKEY_KP_MINUS:
+      case IKEY_MINUS:
+      {
+        if(draw_mode != 2)
+        {
+          if(mzx_world->current_board_id > 0)
+            new_board = mzx_world->current_board_id - 1;
+        }
+        else
+          text_place = 1;
+
+        break;
+      }
+
+      case IKEY_KP_PLUS:
+      case IKEY_EQUALS:
+      {
+        if(draw_mode != 2)
+        {
+          if(mzx_world->current_board_id < mzx_world->num_boards - 1)
+            new_board = mzx_world->current_board_id + 1;
+        }
+        else
+          text_place = 1;
+
         break;
       }
 
@@ -3494,21 +3531,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           if(i < MAX_BOARDS)
           {
             if(add_board(mzx_world, i) >= 0)
-            {
-              fix_board(mzx_world, i);
-
-              synchronize_board_values(mzx_world, &src_board, &board_width,
-               &board_height, &level_id, &level_param, &level_color, &overlay,
-               &overlay_color);
-
-              fix_mod(mzx_world, src_board, &listening_flag);
-
-              fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
-               &scroll_y, cursor_x, cursor_y, board_width, board_height,
-               edit_screen_height);
-
-              modified = 1;
-            }
+              new_board = i;
           }
         }
         else
@@ -3548,23 +3571,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
               if(del_board == current_board_id)
               {
-                fix_board(mzx_world, 0);
-
-                synchronize_board_values(mzx_world, &src_board, &board_width,
-                 &board_height, &level_id, &level_param, &level_color,
-                 &overlay, &overlay_color);
-
-                if(strcmp(src_board->mod_playing, "*") &&
-                 strcasecmp(src_board->mod_playing,
-                 mzx_world->real_mod_playing))
-                  fix_mod(mzx_world, src_board, &listening_flag);
-
-                fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
-                 &scroll_y, cursor_x, cursor_y, board_width, board_height,
-                 edit_screen_height);
-
-                if(!src_board->overlay_mode)
-                  overlay_edit = 0;
+                new_board = 0;
               }
               else
               {
@@ -3817,6 +3824,33 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         if(draw_mode == 2)
           text_place = 1;
       }
+    }
+
+    if(new_board >= 0)
+    {
+      // Hopefully we won't be getting anything out of range but just in case
+      new_board = CLAMP(new_board, 0, mzx_world->num_boards - 1);
+      fix_board(mzx_world, new_board);
+
+      synchronize_board_values(mzx_world, &src_board, &board_width,
+       &board_height, &level_id, &level_param, &level_color, &overlay,
+       &overlay_color);
+
+      if(strcmp(src_board->mod_playing, "*") &&
+       strcasecmp(src_board->mod_playing,
+       mzx_world->real_mod_playing))
+        fix_mod(mzx_world, src_board, &listening_flag);
+
+      if(!src_board->overlay_mode)
+        overlay_edit = 0;
+
+      fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x,
+       &scroll_y, cursor_x, cursor_y, board_width, board_height,
+       edit_screen_height);
+
+      new_board = -1;
+
+      modified = 1;
     }
 
     if(text_place)

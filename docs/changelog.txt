@@ -9,6 +9,9 @@ FEATURES
 + Fire Burns Space and Fire Burns Forever are now off by default.
 + You may now specify the size of the undo history in the char editor, and the
   history affects the entire char set. Undo is still ALT+U, redo is now ALT+R.
++ You may now use the -/+ keys in the world editor to move to the previous/next
+  boards in the board list, and Shift+Arrows to change to the boards linked by
+  board edge.
 
 + Debytecode: The robotic editor now asks for a confirmation to save the program
   on exit.
