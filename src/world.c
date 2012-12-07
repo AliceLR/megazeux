@@ -837,6 +837,111 @@ __editor_maybe_static void set_update_done(struct world *mzx_world)
   }
 }
 
+static void refactor_board_list(struct world *mzx_world,
+ struct board **new_board_list, int new_list_size,
+ int *board_id_translation_list)
+{
+  int i;
+  int i2;
+  int offset;
+  char *level_id;
+  char *level_param;
+  int d_param, d_flag;
+  int board_width;
+  int board_height;
+  int relocate_current = 1;
+
+  int num_boards = mzx_world->num_boards;
+  struct board **board_list = mzx_world->board_list;
+  struct board *cur_board;
+
+  if(board_list[mzx_world->current_board_id] == NULL)
+    relocate_current = 0;
+
+  free(board_list);
+  board_list =
+   crealloc(new_board_list, sizeof(struct board *) * new_list_size);
+
+  mzx_world->num_boards = new_list_size;
+  mzx_world->num_boards_allocated = new_list_size;
+
+  // Fix all entrances and exits in each board
+  for(i = 0; i < new_list_size; i++)
+  {
+    cur_board = board_list[i];
+    board_width = cur_board->board_width;
+    board_height = cur_board->board_height;
+    level_id = cur_board->level_id;
+    level_param = cur_board->level_param;
+
+    // Fix entrances
+    for(offset = 0; offset < board_width * board_height; offset++)
+    {
+      d_flag = flags[(int)level_id[offset]];
+
+      if(d_flag & A_ENTRANCE)
+      {
+        d_param = level_param[offset];
+        if(d_param < num_boards)
+          level_param[offset] = board_id_translation_list[d_param];
+        else
+          level_param[offset] = NO_BOARD;
+      }
+    }
+
+    // Fix exits
+    for(i2 = 0; i2 < 4; i2++)
+    {
+      d_param = cur_board->board_dir[i2];
+
+      if(d_param < new_list_size)
+        cur_board->board_dir[i2] = board_id_translation_list[d_param];
+      else
+        cur_board->board_dir[i2] = NO_BOARD;
+    }
+  }
+
+  // Fix current board
+  if(relocate_current)
+  {
+    d_param = mzx_world->current_board_id;
+    d_param = board_id_translation_list[d_param];
+    mzx_world->current_board_id = d_param;
+    mzx_world->current_board = board_list[d_param];
+  }
+
+  d_param = mzx_world->first_board;
+  if(d_param >= num_boards)
+    d_param = num_boards - 1;
+
+  d_param = board_id_translation_list[d_param];
+  mzx_world->first_board = d_param;
+
+  d_param = mzx_world->endgame_board;
+
+  if(d_param != NO_BOARD)
+  {
+    if(d_param >= num_boards)
+      d_param = num_boards - 1;
+
+    d_param = board_id_translation_list[d_param];
+    mzx_world->endgame_board = d_param;
+  }
+
+  d_param = mzx_world->death_board;
+
+  if((d_param != NO_BOARD) && (d_param != DEATH_SAME_POS))
+  {
+    if(d_param >= num_boards)
+      d_param = num_boards - 1;
+
+    d_param = board_id_translation_list[d_param];
+    mzx_world->death_board = d_param;
+  }
+
+  mzx_world->board_list = board_list;
+}
+
 __editor_maybe_static void optimize_null_boards(struct world *mzx_world)
 {
   // Optimize out null objects while keeping a translation list mapping
@@ -878,105 +983,43 @@ __editor_maybe_static void optimize_null_boards(struct world *mzx_world)
 
   if(i2 < num_boards)
   {
-    int offset;
-    char *level_id;
-    char *level_param;
-    int d_param, d_flag;
-    int board_width;
-    int board_height;
-    int relocate_current = 1;
-    int i3;
-
-    if(board_list[mzx_world->current_board_id] == NULL)
-      relocate_current = 0;
-
-    free(board_list);
-    board_list =
-     crealloc(optimized_board_list, sizeof(struct board *) * i2);
-
-    mzx_world->num_boards = i2;
-    mzx_world->num_boards_allocated = i2;
-
-    // Fix all entrances and exits in each board
-    for(i = 0; i < i2; i++)
-    {
-      cur_board = board_list[i];
-      board_width = cur_board->board_width;
-      board_height = cur_board->board_height;
-      level_id = cur_board->level_id;
-      level_param = cur_board->level_param;
-
-      // Fix entrances
-      for(offset = 0; offset < board_width * board_height; offset++)
-      {
-        d_flag = flags[(int)level_id[offset]];
-
-        if(d_flag & A_ENTRANCE)
-        {
-          d_param = level_param[offset];
-          if(d_param < num_boards)
-            level_param[offset] = board_id_translation_list[d_param];
-          else
-            level_param[offset] = NO_BOARD;
-        }
-      }
-
-      // Fix exits
-      for(i3 = 0; i3 < 4; i3++)
-      {
-        d_param = cur_board->board_dir[i3];
-
-        if(d_param < i2)
-          cur_board->board_dir[i3] = board_id_translation_list[d_param];
-        else
-          cur_board->board_dir[i3] = NO_BOARD;
-      }
-    }
-
-    // Fix current board
-    if(relocate_current)
-    {
-      d_param = mzx_world->current_board_id;
-      d_param = board_id_translation_list[d_param];
-      mzx_world->current_board_id = d_param;
-      mzx_world->current_board = board_list[d_param];
-    }
-
-    d_param = mzx_world->first_board;
-    if(d_param >= num_boards)
-      d_param = num_boards - 1;
-
-    d_param = board_id_translation_list[d_param];
-    mzx_world->first_board = d_param;
-
-    d_param = mzx_world->endgame_board;
-
-    if(d_param != NO_BOARD)
-    {
-      if(d_param >= num_boards)
-        d_param = num_boards - 1;
-
-      d_param = board_id_translation_list[d_param];
-      mzx_world->endgame_board = d_param;
-    }
-
-    d_param = mzx_world->death_board;
-
-    if((d_param != NO_BOARD) && (d_param != DEATH_SAME_POS))
-    {
-      if(d_param >= num_boards)
-        d_param = num_boards - 1;
-
-      d_param = board_id_translation_list[d_param];
-      mzx_world->death_board = d_param;
-    }
-
-    mzx_world->board_list = board_list;
+    refactor_board_list(mzx_world, optimized_board_list, i2,
+     board_id_translation_list);
   }
   else
   {
     free(optimized_board_list);
   }
+
+  free(board_id_translation_list);
+}
+
+__editor_maybe_static
+void move_current_board(struct world *mzx_world, int new_position)
+{
+  int i, i2;
+  int num_boards = mzx_world->num_boards;
+  int old_position = mzx_world->current_board_id;
+  struct board **board_list = mzx_world->board_list;
+  struct board **new_board_list = ccalloc(num_boards, sizeof(struct board *));
+  int *board_id_translation_list = ccalloc(num_boards, sizeof(int));
+
+  // Copy the list and shift all boards necessary
+  for(i = 0; i < num_boards; i++)
+  {
+    i2 = i - (i >= new_position) +
+     (i >= (old_position + (old_position > new_position)));
+
+    board_id_translation_list[i] = i2;
+    new_board_list[i] = board_list[i2];
+  }
+
+  // Insert the old board
+  board_id_translation_list[new_position] = old_position;
+  new_board_list[new_position] = board_list[old_position];
+
+  refactor_board_list(mzx_world, new_board_list, num_boards,
+   board_id_translation_list);
 
   free(board_id_translation_list);
 }

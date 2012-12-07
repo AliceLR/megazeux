@@ -243,8 +243,8 @@ static const char *const menu_lines[NUM_MENUS][2]=
     " Alt+S:Status Info  Alt+C:Char Edit  Alt+E:Palette  Alt+F:Sound Effects"
   },
   {
-    " Alt+Z:Clear   X:Exits\t  Alt+P:Size/Pos  I:Info  A:Add  D:Delete  V:View",
-    " Alt+I:Import  Alt+X:Export  B:Select board  Alt+O:Edit Overlay"
+    " Alt+Z:Clear   X:Exits       Alt+P:Size/Pos  I:Info  A:Add  M:Move  D:Delete",
+    " Alt+I:Import  Alt+X:Export  Alt+O:Overlay   V:View  B, +/-, Shift+\x12\x1d:Select"
   },
   {
     " F3:Terrain  F4:Item\tF5:Creature  F6:Puzzle  F7:Transport  F8:Element",
@@ -3707,61 +3707,81 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
       case IKEY_m:
       {
-        if(get_alt_status(keycode_internal))
+        if(draw_mode != 2)
         {
-          int offset = cursor_board_x + (cursor_board_y * board_width);
-
-          if(!overlay_edit)
+          // Modify
+          if(get_alt_status(keycode_internal))
           {
-            enum thing d_id = (enum thing)level_id[offset];
-            int d_param = level_param[offset];
-            int new_param;
+            int offset = cursor_board_x + (cursor_board_y * board_width);
 
-            if(d_id == SENSOR)
+            if(!overlay_edit)
             {
-              edit_sensor(mzx_world, src_board->sensor_list[d_param]);
-              modified = 1;
+              enum thing d_id = (enum thing)level_id[offset];
+              int d_param = level_param[offset];
+              int new_param;
+
+              if(d_id == SENSOR)
+              {
+                edit_sensor(mzx_world, src_board->sensor_list[d_param]);
+                modified = 1;
+              }
+              else
+
+              if(is_robot(d_id))
+              {
+                edit_robot(mzx_world, src_board->robot_list[d_param]);
+                modified = 1;
+              }
+              else
+
+              if(is_signscroll(d_id))
+              {
+                edit_scroll(mzx_world, src_board->scroll_list[d_param]);
+                modified = 1;
+              }
+              else
+
+              if(is_storageless(d_id) &&
+               (0 <= (new_param = change_param(mzx_world, d_id, d_param, NULL, NULL, NULL))))
+              {
+                src_board->level_param[offset] = new_param;
+                modified = 1;
+              }
             }
             else
-
-            if(is_robot(d_id))
             {
-              edit_robot(mzx_world, src_board->robot_list[d_param]);
-              modified = 1;
-            }
-            else
+              int o_ch = src_board->overlay[offset];
+              int new_ch;
 
-            if(is_signscroll(d_id))
-            {
-              edit_scroll(mzx_world, src_board->scroll_list[d_param]);
-              modified = 1;
-            }
-            else
-
-            if(is_storageless(d_id) &&
-             (0 <= (new_param = change_param(mzx_world, d_id, d_param, NULL, NULL, NULL))))
-            {
-              src_board->level_param[offset] = new_param;
-              modified = 1;
+              if((new_ch = char_selection(o_ch)) >= 0)
+              {
+                src_board->overlay[offset] = new_ch;
+              }
             }
           }
+          // Move current board
           else
           {
-            int o_ch = src_board->overlay[offset];
-            int new_ch;
+            int new_position;
 
-            if((new_ch = char_selection(o_ch)) >= 0)
+            if(mzx_world->current_board_id == 0)
+              break;
+
+            new_position =
+             choose_board(mzx_world, mzx_world->current_board_id,
+             "Move board to position:", 0);
+
+            if((new_position > 0) && (new_position < mzx_world->num_boards) &&
+             (new_position != mzx_world->current_board_id))
             {
-              src_board->overlay[offset] = new_ch;
+              move_current_board(mzx_world, new_position);
+              new_board = new_position;
             }
           }
         }
         else
-
-        if(draw_mode == 2)
-        {
           text_place = 1;
-        }
+
         break;
       }
 

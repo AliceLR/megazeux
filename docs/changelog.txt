@@ -12,6 +12,8 @@ FEATURES
 + You may now use the -/+ keys in the world editor to move to the previous/next
   boards in the board list, and Shift+Arrows to change to the boards linked by
   board edge.
++ You may now move the current board anywhere in the board list with M. You may
+  not move the title screen board.
 
 + Debytecode: The robotic editor now asks for a confirmation to save the program
   on exit.
