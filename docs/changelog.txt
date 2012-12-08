@@ -16,6 +16,8 @@ FEATURES
   not move the title screen board.
 + View mode in the board editor (V) will start from the current location of the
   screen now, rather than at the top-left corner.
++ png2smzx now requires less arguments and has an option to skip a char (generally
+  char 32 will be useful to skip).
 
 + Debytecode: The robotic editor now asks for a confirmation to save the program
   on exit.

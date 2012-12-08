@@ -15,13 +15,17 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+#include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <stdio.h>
 #include <errno.h>
 
 #include "pngops.h"
 #include "smzxconv.h"
+
+#ifndef MAX_PATH
+#define MAX_PATH 512
+#endif
 
 // FIXME: Fix this better
 int error(const char *string, unsigned int type, unsigned int options,
@@ -54,18 +58,102 @@ int main (int argc, char **argv) {
 		0, 0, /* Height */
 		0, 0, 0, 0, 0, 1, 0, 0 /* Stuff */
 	};
+        char input_file_name[MAX_PATH] = { '\0' };
+        char output_mzm_name[MAX_PATH] = { '\0' };
+        char output_chr_name[MAX_PATH] = { '\0' };
+        char output_pal_name[MAX_PATH] = { '\0' };
+        char output_base_name[MAX_PATH] = { '\0' };
+        char ext[5] = { '\0' };
+
+        int skip_char = -1;
+
 	png_uint_32 w, h, i, t;
 	rgba_color *img;
 	mzx_tile *tile;
 	mzx_glyph chr[256];
 	mzx_color pal[256];
 	smzx_converter *c;
-	if (argc != 5) {
-		fprintf(stderr, "Usage: %s <in.png> <out.mzm> <out.chr> "
-			"<out.pal>\n", argv[0]);
+
+	if (argc < 2 || argv[1][0] == '-') {
+		fprintf(stderr, "png2smzx Image Conversion Utility\n\n"
+
+                        "Usage: %s <in.png> [<out> | <out.mzm> "
+			"[<out.chr] [<out.pal>]] [options]\n\n"
+
+			"Options:\n"
+
+			"--skip-char=[value 0-255]	Skip this "
+			"char in the conversion process.\n"
+                        "\n"
+		, argv[0]);
 		return 1;
 	}
-	img = (rgba_color *)read_png(argv[1], &w, &h);
+
+        strncpy(input_file_name, argv[1], MAX_PATH);
+        input_file_name[MAX_PATH - 1] = '\0';
+
+        // Read the input files
+        for(i = 2; i < (unsigned int) argc; i++)
+        {
+          strncpy(ext, (argv[i] + strlen(argv[i]) - 4), 5);
+
+          if(!strcasecmp(ext, ".mzm"))
+            strncpy(output_mzm_name, argv[i], MAX_PATH);
+          if(!strcasecmp(ext, ".chr"))
+            strncpy(output_chr_name, argv[i], MAX_PATH);
+          if(!strcasecmp(ext, ".pal"))
+            strncpy(output_pal_name, argv[i], MAX_PATH);
+
+          if(!strncasecmp(argv[i], "--skip-char", 11) &&
+           (argv[i][11] == '=') && argv[i][12])
+          {
+            skip_char = strtol(argv[i] + 12, NULL, 10) % 256;
+            fprintf(stderr, "Skipping char %i.", skip_char);
+          }
+        }
+        output_mzm_name[MAX_PATH - 1] = '\0';
+        output_chr_name[MAX_PATH - 1] = '\0';
+        output_pal_name[MAX_PATH - 1] = '\0';
+
+        // Fill in the missing filenames
+        if(output_mzm_name[0])
+        {
+          strncpy(output_base_name, output_mzm_name,
+           strlen(output_mzm_name) - 4);
+          output_base_name[strlen(output_mzm_name) - 4] = '\0';
+        }
+        else
+        {
+          if(argc >= 3 && argv[2] && argv[2][0] != '-')
+            strncpy(output_base_name, argv[2], MAX_PATH - 5);
+
+          else
+            strncpy(output_base_name, input_file_name, MAX_PATH - 5);
+
+          output_base_name[MAX_PATH - 6] = '\0';
+
+          strcpy(output_mzm_name, output_base_name);
+          strcpy(output_mzm_name + strlen(output_mzm_name), ".mzm");
+
+          output_pal_name[0] = '\0';
+          output_chr_name[0] = '\0';
+        }
+
+        if(!output_chr_name[0])
+        {
+          strcpy(output_chr_name, output_base_name);
+          strcpy(output_chr_name + strlen(output_chr_name), ".chr");
+        }
+
+        if(!output_pal_name[0])
+        {
+          strcpy(output_pal_name, output_base_name);
+          strcpy(output_pal_name + strlen(output_pal_name), ".pal");
+        }
+
+
+        // Do stuff
+	img = (rgba_color *)read_png(input_file_name, &w, &h);
 	if (!img) {
 		fprintf(stderr, "Error reading image.\n");
 		return 1;
@@ -81,7 +169,7 @@ int main (int argc, char **argv) {
 	}
 	w /= 8;
 	h /= 14;
-	c = smzx_convert_init(w, h, 0, -1, 256, 0, 16);
+	c = smzx_convert_init(w, h, 0, skip_char, 256, 0, 16);
 	if (!c) {
 		fprintf(stderr, "Error initializing converter.\n");
 		free(img);
@@ -101,7 +189,7 @@ int main (int argc, char **argv) {
 	mzmhead[5] = w >> 8;
 	mzmhead[6] = h & 0xFF;
 	mzmhead[7] = h >> 8;
-	fd = fopen_unsafe(argv[2], "wb");
+	fd = fopen_unsafe(output_mzm_name, "wb");
 	if (!fd) {
 		fprintf(stderr, "Error opening MZM file.\n");
 		free(tile);
@@ -121,7 +209,7 @@ int main (int argc, char **argv) {
 	}
 	free(tile);
 	fclose(fd);
-	fd = fopen_unsafe(argv[3], "wb");
+	fd = fopen_unsafe(output_chr_name, "wb");
 	if (!fd) {
 		fprintf(stderr, "Error opening CHR file.\n");
 		return 1;
@@ -132,7 +220,7 @@ int main (int argc, char **argv) {
 		return 1;
 	}
 	fclose(fd);
-	fd = fopen_unsafe(argv[4], "wb");
+	fd = fopen_unsafe(output_pal_name, "wb");
 	if (!fd) {
 		fprintf(stderr, "Error opening PAL file.\n");
 		return 1;
