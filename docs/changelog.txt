@@ -14,6 +14,8 @@ FEATURES
   board edge.
 + You may now move the current board anywhere in the board list with M. You may
   not move the title screen board.
++ View mode in the board editor (V) will start from the current location of the
+  screen now, rather than at the top-left corner.
 
 + Debytecode: The robotic editor now asks for a confirmation to save the program
   on exit.

@@ -239,36 +239,44 @@ static const char draw_names[7][10] =
 static const char *const menu_lines[NUM_MENUS][2]=
 {
   {
-    " L:Load\tS:Save  G:Global Info    Alt+R:Restart  Alt+T:Test",
+    " L:Load     S:Save  G:Global Info    Alt+R:Restart  Alt+T:Test",
     " Alt+S:Status Info  Alt+C:Char Edit  Alt+E:Palette  Alt+F:Sound Effects"
   },
   {
     " Alt+Z:Clear   X:Exits       Alt+P:Size/Pos  I:Info  A:Add  M:Move  D:Delete",
-    " Alt+I:Import  Alt+X:Export  Alt+O:Overlay   V:View  B, +/-, Shift+\x12\x1d:Select"
+    " Alt+I:Import  Alt+X:Export  Alt+O:Overlay   V:View  B:Select Board"
   },
   {
-    " F3:Terrain  F4:Item\tF5:Creature  F6:Puzzle  F7:Transport  F8:Element",
-    " F9:Misc\tF10:Objects  P:Parameter  C:Color"
+    " F3:Terrain  F4:Item      F5:Creature  F6:Puzzle  F7:Transport  F8:Element",
+    " F9:Misc     F10:Objects  P:Parameter  C:Color"
   },
   {
     " \x12\x1d:Move  Space:Place  Enter:Modify+Grab  Alt+M:Modify  Ins:Grab  Del:Delete",
-    " F:Fill   Tab:Draw\tF2:Text\t\t  Alt+B:Block   Alt+\x12\x1d:Move 10"
+          " F:Fill   Tab:Draw     F2:Text            Alt+B:Block   Alt+\x12\x1d:Move 10"
   },
   {
     " Shift+F1:Show InvisWalls  Shift+F2:Show robots  Shift+F3:Show Fakes",
     " Shift+F4:Show Spaces"
   },
   {
-    " F1:Help    Home\\End:Corner  Alt+A:Select Char Set  Alt+D:Default Colors",
-    " ESC:Exit   Alt+L:Test SAM   Alt+Y:Debug Mode\t  Alt+N:Music    *:Mod *"
+    " F1:Help    Home/End:Corner  Alt+A:Select Char Set  Alt+D:Default Colors",
+    " ESC:Exit   Alt+L:Test SAM   Alt+Y:Debug Mode       Alt+N:Music    *:Mod *"
   }
 };
 
 static const char *const overlay_menu_lines[4] =
 {
   " OVERLAY EDITING- (Alt+O to end)",
-  " \x12\x1d:Move  Space:Place  Ins:Grab  Enter:Character  Del:Delete\t   F:Fill",
-  " C:Color  Alt+B:Block  Tab:Draw  Alt+\x12\x1d:Move 10   Alt+S:Show level  F2:Text",
+  " \x12\x1d:Move  Enter:Character  Space:Place  Ins:Grab  Del:Delete        F:Fill",
+  " C:Color  Alt+\x12\x1d:Move 10   Alt+B:Block  Tab:Draw  Alt+S:Show level  F2:Text",
+  "Character"
+};
+
+static const char *const vlayer_menu_lines[4] =
+{
+  " VLAYER EDITING- (Alt+V to end)",
+  " \x12\x1d:Move  Enter:Character  Space:Place  Ins:Grab  Del:Delete  F:Fill",
+  " C:Color  Alt+\x12\x1d:Move 10   Alt+B:Block  Tab:Draw  Alt+P:Size  F2:Text",
   "Character"
 };
 
@@ -3343,7 +3351,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           // View mode
           int viewport_width = src_board->viewport_width;
           int viewport_height = src_board->viewport_height;
-          int v_scroll_x = 0, v_scroll_y = 0;
+          int v_scroll_x = scroll_x;
+          int v_scroll_y = CLAMP(scroll_y, 0,
+           src_board->board_height - src_board->viewport_height);
           int v_key;
 
           cursor_off();
@@ -3397,6 +3407,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
         {
           text_place = 1;
         }
+        break;
       }
 
       case IKEY_t:
