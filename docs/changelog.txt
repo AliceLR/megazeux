@@ -75,9 +75,12 @@ BUGFIXES
   The limit for typing in a file name is still 55 chars.  You may not enter a
   blank line as a file name anymore.
 
-
-
 DEVELOPERS
+
++ Overhauled txt2hlp. Error messages now differentiate between hyperlinks and
+  labels and will take the display chars ~ and & into account. Eventually, the
+  goal should be to get rid of txt2hlp altogether and have MZX load straight
+  from the .txt file.
 
 
 
