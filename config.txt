@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# Dec 6th, 2012
+# Dec 7th, 2012
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -247,6 +247,12 @@
 # can only be deleted with the Delete key.
 
 # editor_space_toggles = 1
+
+# Whether or not the editor should center the viewport on the
+# cursor in tab draw mode. Enabled by default, uncomment the
+# following line to disable.
+
+# editor_tab_focuses_view = 0
 
 # If this is set to 1 (the default), enter can be used to split
 # a line in the robot editor. However, the classic behaviour is

@@ -3884,6 +3884,14 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       modified = 1;
     }
 
+    if(draw_mode == 1 && mzx_world->editor_conf.editor_tab_focuses_view)
+    {
+      scroll_x = CLAMP(cursor_board_x - 40,
+       0, MAX(0, src_board->board_width - 80));
+      scroll_y = CLAMP(cursor_board_y - (edit_screen_height / 2),
+       0, MAX(0, src_board->board_height - edit_screen_height));
+    }
+
     if(text_place)
     {
       key = get_key(keycode_unicode);

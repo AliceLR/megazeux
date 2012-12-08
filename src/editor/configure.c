@@ -215,6 +215,12 @@ static void config_editor_enter_splits(struct editor_config_info *conf,
   conf->editor_enter_splits = strtol(value, NULL, 10);
 }
 
+static void config_editor_tab_focus(struct editor_config_info *conf,
+ char *name, char *value, char *extended_data)
+{
+  conf->editor_tab_focuses_view = CLAMP(strtol(value, NULL, 10), 0, 1);
+}
+
 static void config_undo_history_size(struct editor_config_info *conf,
  char *name, char *value, char *extended_data)
 {
@@ -488,6 +494,7 @@ static const struct editor_config_entry editor_config_options[] =
   { "default_invalid_status", config_default_invald },
   { "editor_enter_splits", config_editor_enter_splits },
   { "editor_space_toggles", config_editor_space_toggles },
+  { "editor_tab_focuses_view", config_editor_tab_focus },
   { "macro_*", config_macro },
   { "robot_editor_hide_help", redit_hhelp },
   { "saved_position", config_saved_positions },
@@ -526,6 +533,7 @@ static const struct editor_config_info default_editor_options =
   // Board editor options
   0,                            // editor_space_toggles
   0,                            // board_editor_hide_help
+  1,                            // editor_tab_focuses_view
 
   // Defaults for new boards
   0,                            // viewport_x

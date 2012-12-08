@@ -41,6 +41,7 @@ struct editor_config_info
   // Board editor options
   int editor_space_toggles;
   int bedit_hhelp;
+  int editor_tab_focuses_view;
 
   // Defaults for new boards
   int viewport_x;
