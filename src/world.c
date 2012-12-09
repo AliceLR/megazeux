@@ -1007,15 +1007,23 @@ void move_current_board(struct world *mzx_world, int new_position)
   // Copy the list and shift all boards necessary
   for(i = 0; i < num_boards; i++)
   {
+    // This works easier if we start with the new table and
+    // figure out where to copy from the old table.
     i2 = i - (i >= new_position) +
      (i >= (old_position + (old_position > new_position)));
 
-    board_id_translation_list[i] = i2;
-    new_board_list[i] = board_list[i2];
+    // As it turns out, we'll always have a duplicate of something
+    // else where the new position is this way, ignore it so we
+    // don't mess up the translation table.
+    if(i != new_position)
+    {
+      board_id_translation_list[i2] = i;
+      new_board_list[i] = board_list[i2];
+    }
   }
 
   // Insert the old board
-  board_id_translation_list[new_position] = old_position;
+  board_id_translation_list[old_position] = new_position;
   new_board_list[new_position] = board_list[old_position];
 
   refactor_board_list(mzx_world, new_board_list, num_boards,
