@@ -108,6 +108,7 @@ int main(int argc, char *argv[])
   // Global info-
   int end_of_file = 0;        // Have we hit @ yet?
   long biggest_file = 0;      // For help allocation
+  int global_line_num = 0;    // For error/warning info
 
   printf("\n\n");
 
@@ -277,12 +278,12 @@ int main(int argc, char *argv[])
         tstr[str_len] = '\0';
 
         if(str_len == 1) // 1 len not allowed
-          printf("Error- Link target length of 1 on line %d, file %s.\n",
-                 current_line_num, curr_file);
+          printf("Error- Link target length of 1 on line %d (g:%d), file %s.\n",
+                 current_line_num, global_line_num, curr_file);
 
         if(str_len == 10) // 10 len not allowed
-          printf("Error- Link target length of 10 on line %d, file %s.\n",
-                 current_line_num, curr_file);
+          printf("Error- Link target length of 10 on line %d (g:%d), file %s.\n",
+                 current_line_num, global_line_num, curr_file);
 
         fputc(str_len, dest);
         file_len++;
@@ -291,6 +292,7 @@ int main(int argc, char *argv[])
         file_len += (str_len + 1);
 
         //Now do actual message after the label/file.
+        current_char = fgetc(source);
         break;
       }
 
@@ -320,12 +322,12 @@ int main(int argc, char *argv[])
         tstr[str_len] = '\0';
 
         if(str_len == 1) //1 len not allowed
-          printf("Error- Label length of 1 on line %d, file %s.\n",
-                 current_line_num, curr_file);
+          printf("Error- Label length of 1 on line %d (g:%d), file %s.\n",
+                 current_line_num, global_line_num, curr_file);
 
         if(str_len == 10) //10 len not allowed
-          printf("Error- Label length of 10 on line %d, file %s.\n",
-                 current_line_num, curr_file);
+          printf("Error- Label length of 10 on line %d (g:%d), file %s.\n",
+                 current_line_num, global_line_num, curr_file);
 
         fputc(str_len, dest);
         file_len++;
@@ -334,7 +336,7 @@ int main(int argc, char *argv[])
         file_len += (str_len + 1);
 
         //Is this a context-link?
-        if((str_len == 4) && isdigit(tstr[0]) &&
+        if((str_len == 3) && isdigit(tstr[0]) &&
            isdigit(tstr[1]) && isdigit(tstr[2]))
         {
           //Yep.
@@ -343,10 +345,15 @@ int main(int argc, char *argv[])
           curr_link_ref++;
         }
 
-        // If there isn't a :, don't put a message
+        // If there isn't a :, don't put a message, end line
         if(current_char != ':')
+        {
+          fputc('\n', source);
+          file_len++;
           display_line = 0;
+        }
 
+        current_char = fgetc(source);
         break;
       }
 
@@ -354,6 +361,7 @@ int main(int argc, char *argv[])
       // End
       case '@':
       {
+        save_last_file:
         end_of_file = 1;
       }
       // New file
@@ -433,39 +441,47 @@ int main(int argc, char *argv[])
     }
 
     // Now parse the line for display text.
-    while(!feof(source) && (current_char != '\n') && display_line)
+    if(display_line)
     {
-      fputc(current_char, dest);
-      file_len++;
-
-      // This won't be true unless there are two non ~/@ chars
-      // adjacent, two ~s adjacent, or two @s adjacent
-      if(
-       ((current_char == '~') ^ (previous_char != '~')) &&
-       ((current_char == '@') ^ (previous_char != '@')))
+      while(!feof(source) && (current_char != '\n') && display_line)
       {
-        // Clear this so we don't miscount the next char
-        previous_char = '\0';
-        line_display_len++;
-      }
-      else
-        previous_char = current_char;
+        fputc(current_char, dest);
+        file_len++;
 
-      current_char = fgetc(source);
+        // This won't be true unless there are two non ~/@ chars
+        // adjacent, two ~s adjacent, or two @s adjacent
+        if(
+         ((current_char == '~') ^ (previous_char != '~')) &&
+         ((current_char == '@') ^ (previous_char != '@')))
+        {
+          // Clear this so we don't miscount the next char
+          previous_char = '\0';
+         line_display_len++;
+        }
+        else
+          previous_char = current_char;
+
+        current_char = fgetc(source);
+      }
+
+      // End the line!
+      fputc('\n', dest);
+      file_len++;
     }
 
-    // Now put an \n
-    fputc('\n', dest);
-    file_len++;
-
     if(line_display_len > 64)
-      printf("Warning: Line %d over 64 chars in file %s.\n",
-       current_line_num, curr_file);
+      printf("Warning: Line %d (g:%d) over 64 chars in file %s.\n",
+       current_line_num, global_line_num, curr_file);
 
     //Done with this line.
     current_line_num++;
+    global_line_num++;
 
   } while(!feof(source));
+
+  // Abrupt file end!
+  printf("Warning: Encountered end of file before end of file marker '@'\n");
+  goto save_last_file;
 
   alldone:
 
