@@ -88,6 +88,12 @@ struct string
   UT_hash_handle sh;
 #endif
 
+  // Back reference to the string's position in the list, mandatory
+  // because we're not using a search to find it with uthash. We'll
+  // add it for both though so there doesn't have to be a UTHASH ifdef
+  // in world.c
+  int list_ind;
+
   size_t length;
   size_t allocated_length;
   char *value;

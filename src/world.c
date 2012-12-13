@@ -1308,6 +1308,7 @@ static void load_world(struct world *mzx_world, FILE *fp, const char *file,
     for(i = 0; i < num_strings; i++)
     {
       mzx_world->string_list[i] = load_string(fp);
+      mzx_world->string_list[i]->list_ind = i;
     }
 
     // Allocate space for sprites and clist

@@ -1979,7 +1979,14 @@ static struct string *find_string(struct world *mzx_world, const char *name,
 
 #ifdef CONFIG_UTHASH
   current = hash_find_string(name);
-  *next = mzx_world->num_strings;
+
+  // When reallocing we need to replace the old pointer so we don't
+  // leave invalid shit around
+  if(current)
+    *next = current->list_ind;
+  else
+    *next = mzx_world->num_strings;
+
   return current;
 
 #else
@@ -2126,6 +2133,7 @@ static struct string *add_string_preallocate(struct world *mzx_world,
   if(length > 0)
     memset(dest->value, ' ', length);
 
+  dest->list_ind = position;
   mzx_world->string_list[position] = dest;
   mzx_world->num_strings = count + 1;
 
