@@ -25,6 +25,10 @@
 
 __M_BEGIN_DECLS
 
+#ifdef CONFIG_UTHASH
+#include "uthash.h"
+#endif
+
 struct world;
 struct counter;
 
@@ -36,7 +40,12 @@ typedef int (*gateway_dec_function)(struct world *mzx_world,
 
 struct counter
 {
+#ifdef CONFIG_UTHASH
+  UT_hash_handle hh;
+#endif
+
   int value;
+  char *name_p;
   gateway_write_function gateway_write;
   gateway_dec_function gateway_dec;
   char name[1];
@@ -76,8 +85,13 @@ struct counter
 
 struct string
 {
+#ifdef CONFIG_UTHASH
+  UT_hash_handle hh;
+#endif
+
   size_t length;
   size_t allocated_length;
+  char *name_p;
   char *value;
 
   char name[1];

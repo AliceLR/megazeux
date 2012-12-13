@@ -62,6 +62,7 @@ usage() {
 	echo "  --disable-sdl         Disables SDL dependencies and features."
 	echo "  --enable-egl          Enables EGL backend (if SDL disabled)."
 	echo "  --disable-check-alloc Disables memory allocator error handling."
+	echo "  --disable-uthash      Disables hash counter/string lookups."
 	echo "  --enable-debytecode   Enable experimental 'debytecode' transform."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
@@ -111,6 +112,7 @@ METER="false"
 SDL="true"
 EGL="false"
 CHECK_ALLOC="true"
+UTHASH="true"
 DEBYTECODE="false"
 
 #
@@ -242,6 +244,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--disable-check-alloc" ] && CHECK_ALLOC="false"
 	[ "$1" = "--enable-check-alloc" ]  && CHECK_ALLOC="true"
+
+	[ "$1" = "--enable-uthash" ]  && UTHASH="true"
+	[ "$1" = "--disable-uthash" ] && UTHASH="false"
 
 	[ "$1" = "--enable-debytecode" ]  && DEBYTECODE="true"
 	[ "$1" = "--disable-debytecode" ] && DEBYTECODE="false"
@@ -953,6 +958,16 @@ if [ "$CHECK_ALLOC" = "true" ]; then
 	echo "#define CONFIG_CHECK_ALLOC" >> src/config.h
 else
 	echo "Memory allocation error checking disabled."
+fi
+
+#
+# Allow use of uthash.h in counter/string lookups, if enabled
+#
+if [ "$UTHASH" = "true" ]; then
+	echo "uthash counter/string lookup enabled."
+	echo "#define CONFIG_UTHASH" >> src/config.h
+else
+	echo "uthash counter/string lookup disabled (using binary search)."
 fi
 
 #
