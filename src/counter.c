@@ -4288,18 +4288,11 @@ void save_string(FILE *fp, struct string *src_string)
 void free_counter_list(struct counter **counter_list, int num_counters)
 {
 #ifdef CONFIG_UTHASH
-  struct counter *src_counter, *temp;
+  HASH_CLEAR(ch, counter_head);
+#endif
 
-  HASH_ITER(ch, counter_head, src_counter, temp)
-  {
-    HASH_DELETE(ch, counter_head, src_counter);
-    free(src_counter);
-  }
-
-#else
   for(int i = 0; i < num_counters; i++)
     free(counter_list[i]);
-#endif
 
   free(counter_list);
 }
@@ -4307,18 +4300,11 @@ void free_counter_list(struct counter **counter_list, int num_counters)
 void free_string_list(struct string **string_list, int num_strings)
 {
 #ifdef CONFIG_UTHASH
-  struct string *src_string, *temp;
+  HASH_CLEAR(sh, string_head);
+#endif
 
-  HASH_ITER(sh, string_head, src_string, temp)
-  {
-    HASH_DELETE(sh, string_head, src_string);
-    free(src_string);
-  }
-
-#else
   for(int i = 0; i < num_strings; i++)
     free(string_list[i]);
-#endif
 
   free(string_list);
 }
