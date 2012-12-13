@@ -83,7 +83,10 @@ DEVELOPERS
   labels and will take the display chars ~ and & into account. Eventually, the
   goal should be to get rid of txt2hlp altogether and have MZX load straight
   from the .txt file.
-
++ Added compile option to use uthash for counter/string lookups as opposed to
+  binary search. Ideally, this will vastly improve lookup speeds for large
+  numbers of counters/strings, but will consume more memory. (thanks to Lancer-X
+  for the modified uthash header file)
 
 
 June 20, 2012 - MZX 2.84b

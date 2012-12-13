@@ -1832,23 +1832,16 @@ void clear_global_data(struct world *mzx_world)
   mzx_world->vlayer_chars = NULL;
   mzx_world->vlayer_colors = NULL;
 
-  for(i = 0; i < num_counters; i++)
-  {
-    free(counter_list[i]);
-  }
-  free(counter_list);
+  // Let counter.c handle this
+  free_counter_list(counter_list, num_counters);
   mzx_world->counter_list = NULL;
+
+  // Let counter.c handle this
+  free_string_list(string_list, num_strings);
+  mzx_world->string_list = NULL;
 
   mzx_world->num_counters = 0;
   mzx_world->num_counters_allocated = 0;
-
-  for(i = 0; i < num_strings; i++)
-  {
-    free(string_list[i]);
-  }
-
-  free(string_list);
-  mzx_world->string_list = NULL;
   mzx_world->num_strings = 0;
   mzx_world->num_strings_allocated = 0;
 

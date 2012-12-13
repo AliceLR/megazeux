@@ -21,12 +21,26 @@ NEGLIGENCE OR OTHERWISE) ARISING IN ANY WAY OUT OF THE USE OF THIS
 SOFTWARE, EVEN IF ADVISED OF THE POSSIBILITY OF SUCH DAMAGE.
 */
 
-#ifndef UTHASH_H
-#define UTHASH_H 
+#ifndef UTHASH_CASEINSENSITIVE_H
+#define UTHASH_CASEINSENSITIVE_H 
 
 #include <string.h>   /* memcmp,strlen */
 #include <stddef.h>   /* ptrdiff_t */
 #include <stdlib.h>   /* exit() */
+#include <ctype.h> /* tolower() */
+
+inline static int memcasecmp(const void *A, const void *B, int len)
+{
+  const char *a = A;
+  const char *b = B;
+  int i;
+  for (i = 0; i < len; i++) {
+    if (tolower(*a) != tolower(*b)) return tolower(*a) - tolower(*b);
+    a++;
+    b++;
+  }
+  return 0;
+}
 
 /* These macros use decltype or the earlier __typeof GNU extension.
    As decltype is only available in newer compilers (VS2010 or gcc 4.3+
@@ -340,7 +354,7 @@ do {                                                                            
   unsigned _hb_keylen=keylen;                                                    \
   char *_hb_key=(char*)(key);                                                    \
   (hashv) = 0;                                                                   \
-  while (_hb_keylen--)  { (hashv) = ((hashv) * 33) + *_hb_key++; }               \
+  while (_hb_keylen--)  { (hashv) = ((hashv) * 33) + tolower(*_hb_key++); }               \
   bkt = (hashv) & (num_bkts-1);                                                  \
 } while (0)
 
@@ -353,7 +367,7 @@ do {                                                                            
   char *_hs_key=(char*)(key);                                                    \
   hashv = 0;                                                                     \
   for(_sx_i=0; _sx_i < keylen; _sx_i++)                                          \
-      hashv ^= (hashv << 5) + (hashv >> 2) + _hs_key[_sx_i];                     \
+      hashv ^= (hashv << 5) + (hashv >> 2) + tolower(_hs_key[_sx_i]);                     \
   bkt = hashv & (num_bkts-1);                                                    \
 } while (0)
 
@@ -363,7 +377,7 @@ do {                                                                            
   char *_hf_key=(char*)(key);                                                    \
   hashv = 2166136261UL;                                                          \
   for(_fn_i=0; _fn_i < keylen; _fn_i++)                                          \
-      hashv = (hashv * 16777619) ^ _hf_key[_fn_i];                               \
+      hashv = (hashv * 16777619) ^ tolower(_hf_key[_fn_i]);                               \
   bkt = hashv & (num_bkts-1);                                                    \
 } while(0) 
  
@@ -373,7 +387,7 @@ do {                                                                            
   char *_ho_key=(char*)(key);                                                    \
   hashv = 0;                                                                     \
   for(_ho_i=0; _ho_i < keylen; _ho_i++) {                                        \
-      hashv += _ho_key[_ho_i];                                                   \
+      hashv += tolower(_ho_key[_ho_i]);                                                   \
       hashv += (hashv << 10);                                                    \
       hashv ^= (hashv >> 6);                                                     \
   }                                                                              \
@@ -404,15 +418,15 @@ do {                                                                            
   _hj_i = _hj_j = 0x9e3779b9;                                                    \
   _hj_k = (unsigned)keylen;                                                                \
   while (_hj_k >= 12) {                                                          \
-    _hj_i +=    (_hj_key[0] + ( (unsigned)_hj_key[1] << 8 )                      \
-        + ( (unsigned)_hj_key[2] << 16 )                                         \
-        + ( (unsigned)_hj_key[3] << 24 ) );                                      \
-    _hj_j +=    (_hj_key[4] + ( (unsigned)_hj_key[5] << 8 )                      \
-        + ( (unsigned)_hj_key[6] << 16 )                                         \
-        + ( (unsigned)_hj_key[7] << 24 ) );                                      \
-    hashv += (_hj_key[8] + ( (unsigned)_hj_key[9] << 8 )                         \
-        + ( (unsigned)_hj_key[10] << 16 )                                        \
-        + ( (unsigned)_hj_key[11] << 24 ) );                                     \
+    _hj_i +=    (tolower(_hj_key[0]) + ( (unsigned)tolower(_hj_key[1]) << 8 )                      \
+        + ( (unsigned)tolower(_hj_key[2]) << 16 )                                         \
+        + ( (unsigned)tolower(_hj_key[3]) << 24 ) );                                      \
+    _hj_j +=    (tolower(_hj_key[4]) + ( (unsigned)tolower(_hj_key[5]) << 8 )                      \
+        + ( (unsigned)tolower(_hj_key[6]) << 16 )                                         \
+        + ( (unsigned)tolower(_hj_key[7]) << 24 ) );                                      \
+    hashv += (tolower(_hj_key[8]) + ( (unsigned)tolower(_hj_key[9]) << 8 )                         \
+        + ( (unsigned)tolower(_hj_key[10]) << 16 )                                        \
+        + ( (unsigned)tolower(_hj_key[11]) << 24 ) );                                     \
                                                                                  \
      HASH_JEN_MIX(_hj_i, _hj_j, hashv);                                          \
                                                                                  \
@@ -421,17 +435,17 @@ do {                                                                            
   }                                                                              \
   hashv += keylen;                                                               \
   switch ( _hj_k ) {                                                             \
-     case 11: hashv += ( (unsigned)_hj_key[10] << 24 );                          \
-     case 10: hashv += ( (unsigned)_hj_key[9] << 16 );                           \
-     case 9:  hashv += ( (unsigned)_hj_key[8] << 8 );                            \
-     case 8:  _hj_j += ( (unsigned)_hj_key[7] << 24 );                           \
-     case 7:  _hj_j += ( (unsigned)_hj_key[6] << 16 );                           \
-     case 6:  _hj_j += ( (unsigned)_hj_key[5] << 8 );                            \
-     case 5:  _hj_j += _hj_key[4];                                               \
-     case 4:  _hj_i += ( (unsigned)_hj_key[3] << 24 );                           \
-     case 3:  _hj_i += ( (unsigned)_hj_key[2] << 16 );                           \
-     case 2:  _hj_i += ( (unsigned)_hj_key[1] << 8 );                            \
-     case 1:  _hj_i += _hj_key[0];                                               \
+     case 11: hashv += ( (unsigned)tolower(_hj_key[10]) << 24 );                          \
+     case 10: hashv += ( (unsigned)tolower(_hj_key[9]) << 16 );                           \
+     case 9:  hashv += ( (unsigned)tolower(_hj_key[8]) << 8 );                            \
+     case 8:  _hj_j += ( (unsigned)tolower(_hj_key[7]) << 24 );                           \
+     case 7:  _hj_j += ( (unsigned)tolower(_hj_key[6]) << 16 );                           \
+     case 6:  _hj_j += ( (unsigned)tolower(_hj_key[5]) << 8 );                            \
+     case 5:  _hj_j += tolower(_hj_key[4]);                                               \
+     case 4:  _hj_i += ( (unsigned)tolower(_hj_key[3]) << 24 );                           \
+     case 3:  _hj_i += ( (unsigned)tolower(_hj_key[2]) << 16 );                           \
+     case 2:  _hj_i += ( (unsigned)tolower(_hj_key[1]) << 8 );                            \
+     case 1:  _hj_i += tolower(_hj_key[0]);                                               \
   }                                                                              \
   HASH_JEN_MIX(_hj_i, _hj_j, hashv);                                             \
   bkt = hashv & (num_bkts-1);                                                    \
@@ -445,8 +459,8 @@ do {                                                                            
 #endif
 
 #if !defined (get16bits)
-#define get16bits(d) ((((uint32_t)(((const uint8_t *)(d))[1])) << 8)             \
-                       +(uint32_t)(((const uint8_t *)(d))[0]) )
+#define get16bits(d) ((((uint32_t)tolower((((const uint8_t *)(d))[1]))) << 8)             \
+                       +(uint32_t)tolower((((const uint8_t *)(d))[0])) )
 #endif
 #define HASH_SFH(key,keylen,num_bkts,hashv,bkt)                                  \
 do {                                                                             \
@@ -470,14 +484,14 @@ do {                                                                            
   switch (_sfh_rem) {                                                            \
     case 3: hashv += get16bits (_sfh_key);                                       \
             hashv ^= hashv << 16;                                                \
-            hashv ^= _sfh_key[sizeof (uint16_t)] << 18;                          \
+            hashv ^= tolower(_sfh_key[sizeof (uint16_t)]) << 18;                          \
             hashv += hashv >> 11;                                                \
             break;                                                               \
     case 2: hashv += get16bits (_sfh_key);                                       \
             hashv ^= hashv << 11;                                                \
             hashv += hashv >> 17;                                                \
             break;                                                               \
-    case 1: hashv += *_sfh_key;                                                  \
+    case 1: hashv += tolower(*_sfh_key);                                                  \
             hashv ^= hashv << 10;                                                \
             hashv += hashv >> 1;                                                 \
   }                                                                              \
@@ -574,7 +588,7 @@ do {                                                                   \
 #endif  /* HASH_USING_NO_STRICT_ALIASING */
 
 /* key comparison function; return 0 if keys equal */
-#define HASH_KEYCMP(a,b,len) memcmp(a,b,len) 
+#define HASH_KEYCMP(a,b,len) memcasecmp(a,b,len) 
 
 /* iterate over items in a known bucket to find desired item */
 #define HASH_FIND_IN_BKT(tbl,hh,head,keyptr,keylen_in,out)                       \

@@ -43,6 +43,34 @@
 #include "world.h"
 #include "util.h"
 
+#ifdef CONFIG_UTHASH
+#include "uthash_caseinsensitive.h"
+struct counter *counter_head = NULL; // NULL is important
+struct string *string_head = NULL; // NULL is important
+
+// Wrapper functions for uthash macros
+static void hash_add_counter(struct counter *src)
+{
+  HASH_ADD_KEYPTR(ch, counter_head, src->name, strlen(src->name), src);
+}
+static struct counter *hash_find_counter(const char *name)
+{
+  struct counter *counter = NULL;
+  HASH_FIND(ch, counter_head, name, strlen(name), counter);
+  return counter;
+}
+static void hash_add_string(struct string *src)
+{
+  HASH_ADD_KEYPTR(sh, string_head, src->name, strlen(src->name), src);
+}
+static struct string *hash_find_string(const char *name)
+{
+  struct string *string = NULL;
+  HASH_FIND(sh, string_head, name, strlen(name), string);
+  return string;
+}
+#endif
+
 #ifndef M_PI
 #define M_PI 3.14159265358979323846
 #endif
@@ -1947,10 +1975,17 @@ static void bimesg_write(struct world *mzx_world,
 static struct string *find_string(struct world *mzx_world, const char *name,
  int *next)
 {
+  struct string *current;
+
+#ifdef CONFIG_UTHASH
+  current = hash_find_string(name);
+  *next = mzx_world->num_strings;
+  return current;
+
+#else
+  struct string **base = mzx_world->string_list;
   int bottom = 0, top = (mzx_world->num_strings) - 1, middle = 0;
   int cmpval = 0;
-  struct string **base = mzx_world->string_list;
-  struct string *current;
 
   while(bottom <= top)
   {
@@ -1981,6 +2016,7 @@ static struct string *find_string(struct world *mzx_world, const char *name,
     *next = middle;
 
   return NULL;
+#endif
 }
 
 static int str_num_read(struct world *mzx_world,
@@ -2093,6 +2129,10 @@ static struct string *add_string_preallocate(struct world *mzx_world,
   mzx_world->string_list[position] = dest;
   mzx_world->num_strings = count + 1;
 
+#ifdef CONFIG_UTHASH
+  hash_add_string(dest);
+#endif
+
   return dest;
 }
 
@@ -2101,6 +2141,13 @@ static struct string *reallocate_string(struct world *mzx_world,
 {
   // Find the base length (take out the current length)
   int base_length = (int)(src->value - (char *)src);
+
+#ifdef CONFIG_UTHASH
+  struct string *result = hash_find_string(src->name);
+
+  if(result)
+    HASH_DELETE(sh, string_head, result);
+#endif
 
   src = crealloc(src, base_length + length);
   src->value = (char *)src + base_length;
@@ -2116,6 +2163,11 @@ static struct string *reallocate_string(struct world *mzx_world,
   src->allocated_length = length;
 
   mzx_world->string_list[pos] = src;
+
+#ifdef CONFIG_UTHASH
+  hash_add_string(src);
+#endif
+
   return src;
 }
 
@@ -3112,10 +3164,17 @@ static int builtin_gateway(struct world *mzx_world, struct counter *counter,
 static struct counter *find_counter(struct world *mzx_world, const char *name,
  int *next)
 {
+  struct counter *current;
+
+#ifdef CONFIG_UTHASH
+  current = hash_find_counter(name);
+  *next = mzx_world->num_counters;
+  return current;
+
+#else
+  struct counter **base = mzx_world->counter_list;
   int bottom = 0, top = (mzx_world->num_counters) - 1, middle = 0;
   int cmpval = 0;
-  struct counter **base = mzx_world->counter_list;
-  struct counter *current;
 
   while(bottom <= top)
   {
@@ -3139,6 +3198,7 @@ static struct counter *find_counter(struct world *mzx_world, const char *name,
     *next = middle;
 
   return NULL;
+#endif
 }
 
 // Setup builtin gateway functions
@@ -3307,12 +3367,17 @@ static void add_counter(struct world *mzx_world, const char *name,
 
   cdest = cmalloc(sizeof(struct counter) + strlen(name));
   strcpy(cdest->name, name);
+
   cdest->value = value;
   cdest->gateway_write = NULL;
   cdest->gateway_dec = NULL;
 
   mzx_world->counter_list[position] = cdest;
   mzx_world->num_counters = count + 1;
+
+#ifdef CONFIG_UTHASH
+  hash_add_counter(cdest);
+#endif
 }
 
 static void add_string(struct world *mzx_world, const char *name,
@@ -4160,6 +4225,10 @@ struct counter *load_counter(struct world *mzx_world, FILE *fp)
   src_counter->gateway_write = NULL;
   src_counter->gateway_dec = NULL;
 
+#ifdef CONFIG_UTHASH
+  hash_add_counter(src_counter);
+#endif
+
   return src_counter;
 }
 
@@ -4180,6 +4249,10 @@ struct string *load_string(FILE *fp)
 
   src_string->length = str_length;
   src_string->allocated_length = str_length;
+
+#ifdef CONFIG_UTHASH
+  hash_add_string(src_string);
+#endif
 
   return src_string;
 }
@@ -4202,4 +4275,42 @@ void save_string(FILE *fp, struct string *src_string)
   fputd((int)str_length, fp);
   fwrite(src_string->name, name_length, 1, fp);
   fwrite(src_string->value, str_length, 1, fp);
+}
+
+void free_counter_list(struct counter **counter_list, int num_counters)
+{
+#ifdef CONFIG_UTHASH
+  struct counter *src_counter, *temp;
+
+  HASH_ITER(ch, counter_head, src_counter, temp)
+  {
+    HASH_DELETE(ch, counter_head, src_counter);
+    free(src_counter);
+  }
+
+#else
+  for(int i = 0; i < num_counters; i++)
+    free(counter_list[i]);
+#endif
+
+  free(counter_list);
+}
+
+void free_string_list(struct string **string_list, int num_strings)
+{
+#ifdef CONFIG_UTHASH
+  struct string *src_string, *temp;
+
+  HASH_ITER(sh, string_head, src_string, temp)
+  {
+    HASH_DELETE(sh, string_head, src_string);
+    free(src_string);
+  }
+
+#else
+  for(int i = 0; i < num_strings; i++)
+    free(string_list[i]);
+#endif
+
+  free(string_list);
 }

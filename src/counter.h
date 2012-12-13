@@ -63,6 +63,8 @@ struct counter *load_counter(struct world *mzx_world, FILE *fp);
 struct string *load_string(FILE *fp);
 void save_counter(FILE *fp, struct counter *src_counter);
 void save_string(FILE *fp, struct string *src_string);
+void free_counter_list(struct counter **counter_list, int num_counters);
+void free_string_list(struct string **string_list, int num_strings);
 
 // Even old games tended to use at least this many.
 #define MIN_COUNTER_ALLOCATE 32
