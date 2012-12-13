@@ -1705,7 +1705,7 @@ int char_editor(struct world *mzx_world)
           };
 
           if(!file_manager(mzx_world, chr_ext, ".chr", export_string,
-           "Export character set(s)", 1, 1, elements, 3, 2, 0))
+           "Export character set(s)", 1, 1, elements, 3, 2))
           {
             int num_files_present = num_files;
 
@@ -1750,7 +1750,7 @@ int char_editor(struct world *mzx_world)
           };
 
           if(!file_manager(mzx_world, chr_ext, NULL, import_string,
-           "Import character set(s)", 1, 2, elements, 3, 2, 0))
+           "Import character set(s)", 1, 2, elements, 3, 2))
           {
             int num_files_present = num_files;
 

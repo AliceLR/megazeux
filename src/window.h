@@ -297,8 +297,7 @@ CORE_LIBSPEC struct element *construct_input_box(int x, int y,
 CORE_LIBSPEC int file_manager(struct world *mzx_world,
  const char *const *wildcards, const char *default_ext, char *ret,
  const char *title, int dirs_okay, int allow_new,
- struct element **dialog_ext, int num_ext, int ext_height,
- int allow_dir_change);
+ struct element **dialog_ext, int num_ext, int ext_height);
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_HELPSYS

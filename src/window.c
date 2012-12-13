@@ -2005,6 +2005,7 @@ static int sort_function(const void *dest_str_ptr, const void *src_str_ptr)
 
 // Shell for list_menu() (copies file chosen to ret and returns -1 for ESC)
 // dirs_okay of 1 means drive and directory changing is allowed.
+// dirs_okay of 2 means only subdirectories of the current dir are allowed
 
 #define FILESEL_MAX_ELEMENTS  64
 #define FILESEL_BASE_ELEMENTS 7
@@ -2203,8 +2204,9 @@ static void remove_files(char *directory_name, int remove_recursively)
 __editor_maybe_static int file_manager(struct world *mzx_world,
  const char *const *wildcards, const char *default_ext, char *ret,
  const char *title, int dirs_okay, int allow_new, struct element **dialog_ext,
- int num_ext, int ext_height, int allow_dir_change)
+ int num_ext, int ext_height)
 {
+  // dirs_okay -- 0:none -- 1:all -- 2:subdirsonly
   struct mzx_dir current_dir;
   char *file_name;
   struct stat file_info;
@@ -2279,12 +2281,16 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
 
       file_name_length = strlen(file_name);
 
+      // Exclude . and hidden files
       if((stat(file_name, &file_info) >= 0) &&
        ((file_name[0] != '.') || (file_name[1] == '.')))
       {
         if(S_ISDIR(file_info.st_mode))
         {
-          if(dirs_okay)
+          // Exclude .. from base dir in subdirsonly mode
+          if(dirs_okay &&
+           !(dirs_okay == 2 && !strcmp(file_name, "..") &&
+             !strcmp(current_dir_name, previous_dir_name) ))
           {
             dir_list[num_dirs] = cmalloc(file_name_length + 1);
             strncpy(dir_list[num_dirs], file_name, file_name_length);
@@ -2374,7 +2380,7 @@ skip_dir:
     qsort(dir_list, num_dirs, sizeof(char *), sort_function);
 
 #ifdef __WIN32__
-    if(dirs_okay)
+    if(dirs_okay == 1)
     {
       drive_letter_bitmap = GetLogicalDrives();
 
@@ -2401,7 +2407,7 @@ skip_dir:
 #endif
 
 #ifdef CONFIG_WII
-    if(dirs_okay)
+    if(dirs_okay == 1)
     {
       for(i = 0; i < STD_MAX; i++)
       {
@@ -2726,6 +2732,27 @@ skip_dir:
       }
     }
 
+    // No unallowed paths kthx
+    if(dirs_okay != 1)
+    {
+      // If the base path isn't part of the return path, or if there's an
+      // unallowed subdirectory.
+      if(strncmp(previous_dir_name, current_dir_name, strlen(previous_dir_name)) ||
+         (!dirs_okay &&
+          strstr(current_dir_name + strlen(previous_dir_name), DIR_SEPARATOR)))
+      {
+        debug("some1 dropped da ball!!!!!!11\n");
+        strcpy(current_dir_name, previous_dir_name);
+        return_value = 1;
+        ret[0] = 0;
+      }
+      else
+      {
+        strcpy(ret_file, ret + strlen(previous_dir_name) + 1);
+        strcpy(ret, ret_file);
+      }
+    }
+
     // Hack - don't allow the added elements to be destroyed
     di.num_elements = FILESEL_BASE_ELEMENTS;
     last_element = di.current_element;
@@ -2758,13 +2785,6 @@ skip_dir:
     ret[0] = 0;
   }
 
-  // If dir changes aren't allowed, strip the absolute path.
-  if(!dirs_okay)
-  {
-    split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
-    strcpy(ret, ret_file);
-  }
-
   free(previous_dir_name);
   free(current_dir_name);
   free(file_name);
@@ -2776,14 +2796,14 @@ int choose_file_ch(struct world *mzx_world, const char *const *wildcards,
  char *ret, const char *title, int dirs_okay)
 {
   return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
-   0, NULL, 0, 0, 1);
+   0, NULL, 0, 0);
 }
 
 int new_file(struct world *mzx_world, const char *const *wildcards,
  const char *default_ext, char *ret, const char *title, int dirs_okay)
 {
   return file_manager(mzx_world, wildcards, default_ext, ret, title, dirs_okay,
-   1, NULL, 0, 0, 0);
+   1, NULL, 0, 0);
 }
 
 #if defined(CONFIG_UPDATER) || defined(CONFIG_LOADSAVE_METER)

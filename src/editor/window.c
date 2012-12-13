@@ -1101,5 +1101,5 @@ int choose_file(struct world *mzx_world, const char *const *wildcards,
  char *ret, const char *title, int dirs_okay)
 {
   return file_manager(mzx_world, wildcards, NULL, ret, title, dirs_okay,
-   0, NULL, 0, 0, 0);
+   0, NULL, 0, 0);
 }

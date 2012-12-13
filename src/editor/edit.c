@@ -2249,7 +2249,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
                 if(!file_manager(mzx_world, chr_ext, NULL, import_name,
                  "Choose character set to import", 1, 0,
-                 elements, 1, 2, 0))
+                 elements, 1, 2))
                 {
                   ec_load_set_var(import_name, char_offset);
                 }
@@ -2446,7 +2446,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 };
 
                 if(!file_manager(mzx_world, chr_ext, NULL, export_name,
-                 "Export character set", 1, 1, elements, 2, 2, 0))
+                 "Export character set", 1, 1, elements, 2, 2))
                 {
                   add_ext(export_name, ".chr");
                   ec_save_set_var(export_name, char_offset,
@@ -2518,7 +2518,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               char new_mod[MAX_PATH] = { 0 };
 
               if(!choose_file(mzx_world, mod_ext, new_mod,
-               "Choose a module file", 0))
+               "Choose a module file", 2)) // 2:subdirsonly
               {
                 strcpy(src_board->mod_playing, new_mod);
                 strcpy(mzx_world->real_mod_playing, new_mod);
@@ -2545,9 +2545,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               getcwd(current_dir, MAX_PATH);
               chdir(current_listening_dir);
 
-              if(!file_manager(mzx_world, mod_gdm_ext, NULL, new_mod,
-               "Choose a module file (listening only)", 1, 0,
-               NULL, 0, 0, 1))
+              if(!choose_file(mzx_world, mod_gdm_ext, new_mod,
+               "Choose a module file (listening only)", 1))
               {
                 load_module(new_mod, false, 255);
                 strcpy(current_listening_mod, new_mod);
