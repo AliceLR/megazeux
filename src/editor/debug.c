@@ -40,7 +40,7 @@
 #define VAR_LIST_WIDTH 58
 #define VAR_LIST_HEIGHT 21
 
-#define BUTTONS_X 62
+#define BUTTONS_X 66
 #define BUTTONS_Y 18
 
 #define CVALUE_SIZE 11
@@ -136,23 +136,23 @@ static void unescape_string(char *buf, int *len)
 // We'll read off of these when we construct the tree
 int num_world_vars = 16;
 const char world_var_list[16][20] = {
+  "bimesg", //no read
+  "commands",
+  "divider",
+  "fread_delimiter", //no read
+  "fwrite_delimiter", //no read
+  "mod_frequency",
+  "mod_name*",
+  "mod_order",
+  "mod_position",
+  "multiplier",
+  "mzx_speed",
   "smzx_mode*",
+  "spacelock", //no read
   "vlayer_size*",
   "vlayer_height*",
   "vlayer_width*",
-  "mod_name*",
-  "mod_order",
-  "mod_frequency",
-  "mod_position",
-  "mzx_speed",
-  "commands",
-  "multiplier",
-  "divider",
-  "bimesg", //no read
-  "spacelock", //no read
-  "fread_delimiter", //no read
-  "fwrite_delimiter", //no read
-};
+  };
 int num_board_vars = 11;
 const char board_var_list[11][20] = {
   "board_name*",
@@ -160,25 +160,27 @@ const char board_var_list[11][20] = {
   "board_w*",
   "input*",
   "inputsize*",
-  "scrolledx*",
-  "scrolledy*",
-  "playerx*",
-  "playery*",
   "playerfacedir",
   "playerlastdir",
+  "playerx*",
+  "playery*",
+  "scrolledx*",
+  "scrolledy*",
 };
 // Locals are added onto the end later.
-int num_robot_vars = 9;
-const char robot_var_list[9][12] = {
+int num_robot_vars = 11;
+const char robot_var_list[11][12] = {
   "robot_name*",
+  "bullettype",
+  "lava_walk",
+  "loopcount",
+  "thisx*",
+  "thisy*",
   "this_char*",
   "this_color*",
   "playerdist*",
   "horizpld*",
   "vertpld*",
-  "bullettype",
-  "lava_walk",
-  "loopcount"
 };
 // Sprite parent has yorder, collisions, and clist#
 // The following will all be added to the end of 'sprN_'
@@ -194,8 +196,8 @@ const char sprite_var_list[15][10] = {
   "cy",
   "cwidth",
   "cheight",
-  "off",
   "ccheck",
+  "off",
   "overlaid",
   "static",
   "vlayer",
@@ -457,7 +459,7 @@ static void build_var_list(struct debug_node *node,
 
     (*var_list) = crealloc(*var_list, vars_size + added_size);
 
-    memcpy((*var_list) + vars_size, node->counters, added_size);
+    memcpy((*var_list) + *num_vars, node->counters, added_size);
     (*num_vars) += node->num_counters;
   }
 
@@ -473,7 +475,7 @@ static void build_var_buffer(char **var_buffer, const char *name,
 {
   char *var;
 
-  if(index < 1)
+  if(index == -1)
   {
     (*var_buffer) = cmalloc(VAR_LIST_WIDTH + strlen(name) + 1);
     var = (*var_buffer) + VAR_LIST_WIDTH;
@@ -481,14 +483,14 @@ static void build_var_buffer(char **var_buffer, const char *name,
   else
   {
     (*var_buffer) = cmalloc(VAR_LIST_WIDTH + 2 + strlen(name) + 1);
+    (*var_buffer)[VAR_LIST_WIDTH] = '\0';
+    (*var_buffer)[VAR_LIST_WIDTH + 1] = (char)index;
     var = (*var_buffer) + VAR_LIST_WIDTH + 2;
-    var[VAR_LIST_WIDTH] = '\0';
-    var[VAR_LIST_WIDTH + 1] = (char)index;
   }
 
   // Display
   memset((*var_buffer), ' ', VAR_LIST_WIDTH);
-  strncpy((*var_buffer), name, VAR_LIST_WIDTH);
+  strncpy((*var_buffer), name, strlen(name));
   (*var_buffer)[VAR_LIST_WIDTH - 1] = '\0';
 
   // Internal
@@ -632,7 +634,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   int num_counter_nodes = 27;
   int num_string_nodes = 27;
   int num_sprite_nodes = 256;
-  int num_robot_nodes = mzx_world->current_board->num_robots;
+  int num_robot_nodes = mzx_world->current_board->num_robots + 1;
 
   struct debug_node *counter_nodes =
    ccalloc(num_counter_nodes, sizeof(struct debug_node));
@@ -684,7 +686,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
     }
 
     if(*num == alloc)
-      *list = crealloc(*list, (alloc = MAX(alloc * 2, 32)) * sizeof(char *));
+      (*list) = crealloc(*list, (alloc = MAX(alloc * 2, 32)) * sizeof(char *));
 
     build_var_buffer( &(*list)[*num], mzx_world->counter_list[i]->name,
      mzx_world->counter_list[i]->value, NULL, -1);
@@ -765,19 +767,18 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   /* Sprites */
   /***********/
 
-  (*list) = ccalloc(mzx_world->collision_count + 2, sizeof(char *));
+  sprites->counters = ccalloc(mzx_world->collision_count + 2, sizeof(char *));
 
-  build_var_buffer( &(*list)[0], "spr_yorder", mzx_world->sprite_y_order, NULL, 0);
-  build_var_buffer( &(*list)[1], "spr_collisions*", mzx_world->collision_count, NULL, 0);
+  build_var_buffer( &(sprites->counters)[0], "spr_yorder", mzx_world->sprite_y_order, NULL, 0);
+  build_var_buffer( &(sprites->counters)[1], "spr_collisions*", mzx_world->collision_count, NULL, 0);
 
   for(i = 0; i < mzx_world->collision_count; i++)
   {
     snprintf(var, 20, "spr_collision%i*", i);
-    build_var_buffer( &(*list)[i + 2], var,
+    build_var_buffer( &(sprites->counters)[i + 2], var,
      mzx_world->collision_list[i], NULL, 0);
   }
   sprites->num_counters = i + 2;
-  sprites->counters = (*list);
 
   for(i = 0, j = 0; j < num_sprite_nodes; i++, j++)
   {
@@ -788,8 +789,9 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
       continue;
     }
 
+    list = &(sprite_nodes[j].counters);
     (*list) = ccalloc(num_sprite_vars, sizeof(char *));
-
+	
     for(n = 0; n < num_sprite_vars; n++)
     {
       snprintf(var, 20, "spr%i_%s", i, sprite_var_list[n]);
@@ -802,7 +804,6 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
     sprite_nodes[j].num_nodes = 0;
     sprite_nodes[j].nodes = NULL;
     sprite_nodes[j].num_counters = num_sprite_vars;
-    sprite_nodes[j].counters = (*list);
   }
   if(num_sprite_nodes)
   {
@@ -819,29 +820,25 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   /* World */
   /*********/
 
-  (*list) = ccalloc(num_world_vars, sizeof(char *));
-
+  world->counters = ccalloc(num_world_vars, sizeof(char *));
   for(n = 0; n < num_world_vars; n++)
   {
-    build_var_buffer( &(*list)[n], world_var_list[n], 0, NULL, 0);
-    read_var(mzx_world, (*list)[n]);
+    build_var_buffer( &(world->counters)[n], world_var_list[n], 0, NULL, 0);
+    read_var(mzx_world, (world->counters)[n]);
   }
   world->num_counters = num_world_vars;
-  world->counters = (*list);
 
   /*********/
   /* Board */
   /*********/
 
-  (*list) = ccalloc(num_board_vars, sizeof(char *));
-
+  board->counters = ccalloc(num_board_vars, sizeof(char *));
   for(n = 0; n < num_board_vars; n++)
   {
-    build_var_buffer( &(*list)[n], board_var_list[n], 0, NULL, 0);
-    read_var(mzx_world, (*list)[n]);
+    build_var_buffer( &(board->counters)[n], board_var_list[n], 0, NULL, 0);
+    read_var(mzx_world, (board->counters)[n]);
   }
   board->num_counters = num_board_vars;
-  board->counters = (*list);
 
   /**********/
   /* Robots */
@@ -849,14 +846,20 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 
   for(i = 0, j = 0; j < num_robot_nodes; i++, j++)
   {
-    if(!robot_list[i] || !robot_list[i]->used)
+    struct robot *robot;
+    if(i == 0)
+       robot = &(mzx_world->global_robot);
+    else
+       robot = robot_list[i - 1];
+    
+    if(!robot)
     {
       j--;
       num_robot_nodes--;
       continue;
     }
-
-    (*list) = ccalloc(num_robot_vars + 32, sizeof(char *));
+    list = &(robot_nodes[j].counters);
+    *list = ccalloc(num_robot_vars + 32, sizeof(char *));
 
     for(n = 0; n < num_robot_vars; n++)
     {
@@ -867,7 +870,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
     {
       sprintf(var, "local%i", n);
       build_var_buffer( &(*list)[n + num_robot_vars], var,
-       robot_list[i]->local[n], NULL, i&255);
+       robot->local[n], NULL, i&255);
     }
 
     snprintf(var, 14, "%i:%s", i, robot_list[i]->robot_name);
@@ -876,7 +879,6 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
     robot_nodes[j].num_nodes = 0;
     robot_nodes[j].nodes = NULL;
     robot_nodes[j].num_counters = num_robot_vars + 32;
-    robot_nodes[j].counters = (*list);
   }
   // And finish robots... all done!
   if(num_robot_nodes)
@@ -1031,15 +1033,9 @@ void __debug_counters(struct world *mzx_world)
   // also known as crash_stack
   build_debug_tree(mzx_world, &root);
 
-  root.nodes[0].opened = true;
-  root.nodes[1].opened = true;
   build_tree_list(&root, &tree_list, &tree_size, 0);
 
-  //build_var_list(&(root.nodes[0]), &var_list, &num_vars);
-
-  num_vars = 1;
-  var_list = cmalloc(sizeof(char *));
-  build_var_buffer(var_list, "HEALTH", 100, NULL, -1);
+  build_var_list(&(root.nodes[node_selected]), &var_list, &num_vars);
 
   do
   {
@@ -1051,17 +1047,14 @@ void __debug_counters(struct world *mzx_world)
     elements[1] = construct_list_box(
      TREE_LIST_X, TREE_LIST_Y, (const char **)tree_list, tree_size,
      TREE_LIST_HEIGHT, TREE_LIST_WIDTH, 2, &node_selected, false);
-    elements[2] = construct_button(BUTTONS_X, BUTTONS_Y + 0, "Search", 3);
-    elements[3] = construct_button(BUTTONS_X, BUTTONS_Y + 2, "Export", 4);
-    elements[4] = construct_button(BUTTONS_X, BUTTONS_Y + 4, "Done", -1);
+    elements[2] = construct_button(BUTTONS_X + 0, BUTTONS_Y + 0, "Search", 3);
+    elements[3] = construct_button(BUTTONS_X + 0, BUTTONS_Y + 2, "Export", 4);
+    elements[4] = construct_button(BUTTONS_X + 1, BUTTONS_Y + 4, "Done", -1);
 
     construct_dialog_ext(&di, "Debug Variables", 0, 0,
      80, 25, elements, 5, 0, 0, window_focus, NULL);
 
     dialog_result = run_dialog(mzx_world, &di);
-
-    /*
-    */
 
     switch(dialog_result)
     {
@@ -1111,6 +1104,8 @@ void __debug_counters(struct world *mzx_world)
         char new_value[70];
         char name[70] = { 0 };
         int id = 0;
+
+        window_focus = 0; // Var list
 
         if(var[0] == '$')
         {
@@ -1163,8 +1158,6 @@ void __debug_counters(struct world *mzx_world)
             write_var(mzx_world, var_list[var_selected], counter_value, NULL);
           }
         }
-
-        window_focus = 0; // Var list
 
         restore_screen();
         break;
