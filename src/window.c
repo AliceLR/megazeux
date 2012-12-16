@@ -1073,7 +1073,7 @@ static void draw_list_box(struct world *mzx_world, struct dialog *di,
   for(i = 0; i < num_draw; i++)
   {
     fill_line(choice_length, x, y + i, 32, DI_LIST);
-    strncpy(name_buffer, choices[scroll_offset + i], MAX_NAME_BUFFER - 1);
+    strncpy(name_buffer, choices[scroll_offset + i], draw_width);
     name_buffer[MAX_NAME_BUFFER - 1] = '\0';
     name_buffer[draw_width - 1] = 0;
 

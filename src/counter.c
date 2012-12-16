@@ -3799,6 +3799,7 @@ int get_string(struct world *mzx_world, const char *name, struct string *dest,
     if(offset + size > src->length)
       size = src->length - offset;
 
+    dest->list_ind = src->list_ind;
     dest->value = src->value + offset;
     dest->length = size;
     return 1;

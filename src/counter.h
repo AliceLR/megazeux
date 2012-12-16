@@ -31,22 +31,22 @@ __M_BEGIN_DECLS
 #include "counter_struct.h"
 
 CORE_LIBSPEC int match_function_counter(const char *dest, const char *src);
+CORE_LIBSPEC int get_counter(struct world *mzx_world, const char *name, int id);
 CORE_LIBSPEC void set_counter(struct world *mzx_world, const char *name,
  int value, int id);
-CORE_LIBSPEC void set_string(struct world *mzx_world, const char *name, 
+CORE_LIBSPEC int get_string(struct world *mzx_world, const char *name,
+ struct string *dest, int id);
+CORE_LIBSPEC void set_string(struct world *mzx_world, const char *name,
  struct string *src, int id);
 CORE_LIBSPEC void counter_fsg(void);
 
 void initialize_gateway_functions(struct world *mzx_world);
-int get_counter(struct world *mzx_world, const char *name, int id);
 void inc_counter(struct world *mzx_world, const char *name, int value, int id);
 void dec_counter(struct world *mzx_world, const char *name, int value, int id);
 void mul_counter(struct world *mzx_world, const char *name, int value, int id);
 void div_counter(struct world *mzx_world, const char *name, int value, int id);
 void mod_counter(struct world *mzx_world, const char *name, int value, int id);
 
-int get_string(struct world *mzx_world, const char *name, struct string *dest,
- int id);
 void inc_string(struct world *mzx_world, const char *name, struct string *src,
  int id);
 void dec_string_int(struct world *mzx_world, const char *name, int value,
