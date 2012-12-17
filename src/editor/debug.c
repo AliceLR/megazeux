@@ -19,6 +19,8 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+//FIXME: Strings/counters with special chars in names -- maybe don't bother?
+
 #include "debug.h"
 #include "window.h"
 
@@ -40,6 +42,7 @@
 #define VAR_LIST_Y 2
 #define VAR_LIST_WIDTH 58
 #define VAR_LIST_HEIGHT 21
+#define VAR_LIST_VAR 60
 #define BUTTONS_X 62
 #define BUTTONS_Y 20
 #define CVALUE_SIZE 11
@@ -219,6 +222,8 @@ const char sprite_var_list[15][10] = {
   "vlayer",
 };
 
+static void brk(char *v) { }
+
 static void read_var(struct world *mzx_world, char *var_buffer)
 {
   int int_value = 0;
@@ -226,9 +231,11 @@ static void read_var(struct world *mzx_world, char *var_buffer)
   char buf[SVALUE_SIZE + 1] = { 0 };
   
   // Var info is stored after the visible portion of the buffer
-  char *var = var_buffer + VAR_LIST_WIDTH;
+  char *var = var_buffer + VAR_LIST_VAR;
 
-  if(var[0])
+  brk(var);
+
+  if(var[-2])
   {
     if(var[0] == '$')
     {
@@ -248,15 +255,15 @@ static void read_var(struct world *mzx_world, char *var_buffer)
   // It's a built-in var.  Since some of these don't have
   // read functions, we have to map several manually.
   {
-    size_t real_len = strlen(var + 2);
-    char *real_var = cmalloc(real_len + 1);
-    int index = var[1];
+    size_t len = strlen(var);
+    char *real_var = cmalloc(len + 1);
+    int index = var[-1];
 
-    strncpy(real_var, var + 2, real_len);
-    real_var[real_len] = 0;
+    strncpy(real_var, var, len);
+    real_var[len] = 0;
 
-    if(real_var[real_len - 1] == '*')
-      real_var[real_len - 1] = 0;
+    if(real_var[len - 1] == '*')
+      real_var[len - 1] = 0;
 
     if(!strcmp(real_var, "bimesg"))
       int_value = mzx_world->bi_mesg_status;
@@ -348,9 +355,9 @@ static void read_var(struct world *mzx_world, char *var_buffer)
 
 static void write_var(struct world *mzx_world, char *var_buffer, int int_val, char *char_val)
 {
-  char *var = var_buffer + VAR_LIST_WIDTH;
+  char *var = var_buffer + VAR_LIST_VAR;
 
-  if(var[0])
+  if(var[-2])
   {
     if(var[0] == '$')
     {
@@ -371,17 +378,10 @@ static void write_var(struct world *mzx_world, char *var_buffer, int int_val, ch
   else
   {
     // It's a built-in var
-    size_t real_len = strlen(var + 2);
-    char *real_var = cmalloc(real_len + 1);
-    int index = var[1];
+    int index = var[-1];
 
-    strncpy(real_var, var + 2, real_len);
-    real_var[real_len] = 0;
-
-    if(real_var[real_len - 1] != '*')
-      set_counter(mzx_world, real_var, int_val, index);
-
-    free(real_var);
+    if(var[strlen(var) - 1] != '*')
+      set_counter(mzx_world, var, int_val, index);
   }
 
   // Now update var_buffer to reflect the new value.
@@ -394,18 +394,17 @@ static void build_var_buffer(char **var_buffer, const char *name,
 {
   char *var;
 
+  (*var_buffer) = cmalloc(VAR_LIST_VAR + strlen(name) + 1);
+  var = (*var_buffer) + VAR_LIST_VAR;
+
+  // Counter/String
   if(index == -1)
-  {
-    (*var_buffer) = cmalloc(VAR_LIST_WIDTH + strlen(name) + 1);
-    var = (*var_buffer) + VAR_LIST_WIDTH;
-  }
+    var[-2] = 1;
+  // Variable
   else
-  {
-    (*var_buffer) = cmalloc(VAR_LIST_WIDTH + 2 + strlen(name) + 1);
-    (*var_buffer)[VAR_LIST_WIDTH] = '\0';
-    (*var_buffer)[VAR_LIST_WIDTH + 1] = (char)index;
-    var = (*var_buffer) + VAR_LIST_WIDTH + 2;
-  }
+    var[-2] = 0;
+
+  var[-1] = (char)index;
 
   // Display
   memset((*var_buffer), ' ', VAR_LIST_WIDTH);
@@ -697,7 +696,7 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
     if(stop_node == node && stop_position == i)
       return -1;
 
-    var = node->counters[i] + VAR_LIST_WIDTH;
+    var = node->counters[i] + VAR_LIST_VAR;
 
     if(search_flags & VAR_SEARCH_NAMES)
     {
@@ -1454,7 +1453,7 @@ void __debug_counters(struct world *mzx_world)
         if(var_selected < num_vars)
         {
           // We keep the actual var name hidden here.
-          char *var = var_list[var_selected] + VAR_LIST_WIDTH;
+          char *var = var_list[var_selected] + VAR_LIST_VAR;
 
           char new_value[70];
           char name[70] = { 0 };
@@ -1471,14 +1470,13 @@ void __debug_counters(struct world *mzx_world)
           }
           else
           {
-            if(var[0])
+            if(var[-2])
             {
               snprintf(name, 69, "Edit: counter %s", var);
             }
             else
             {
-              id = var[1];
-              var += 2;
+              id = var[-1];
 
               if(var[strlen(var)-1] == '*')
                 break;
@@ -1601,7 +1599,7 @@ void __debug_counters(struct world *mzx_world)
             {
               for(i = 0; i < num_vars; i++)
               {
-                if(!strcmp(var_list[i] + VAR_LIST_WIDTH, search_node->counters[search_pos] + VAR_LIST_WIDTH))
+                if(!strcmp(var_list[i] + VAR_LIST_VAR, search_node->counters[search_pos] + VAR_LIST_VAR))
                 {
                   search_pos = i;
                   break;
