@@ -2,6 +2,13 @@ GIT
 
 FEATURES
 
++ The functionality of the F11 counter/string debugger has been expanded to
+  include sprites, robots, and miscellaneous world/board variables. The ability
+  to modify many of these variables is limited and a large portion are read-only.
+  In addition, you may view counters/strings by starting letter, add new counters
+  and strings, hide empty counters/strings (does not affect built-in variables),
+  and search by variable name and contents. Export is still limited to counters
+  and strings only.
 + Maximum string length has been increased from 1 megabyte (1048576 bytes) to
   4 megabytes (4194304 bytes).
 + Board mods may now be selected from subdirectories of the game's folder in the
