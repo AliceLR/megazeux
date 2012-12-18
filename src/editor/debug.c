@@ -615,53 +615,51 @@ static void free_tree_list(char **tree_list, int tree_size)
 
 // Let's implement some variations on strstr first
 // Find the first occurence of substring sub in memory block A of size len
+// We use a jump index to speed up matches by quite a bit
 static void *memstrind(void *A, char *sub, int *sub_ind, size_t len) {
   char *a = (char *)A;
   size_t i = strlen(sub) - 1, j;
   while(i < len) {
     for(j = 0; j < strlen(sub); j++)
-      if(a[i-j] != sub[strlen(sub)-j])
+      if(a[i-j] != sub[strlen(sub)-1-j])
         break;
     if(j == strlen(sub))
       return (void *) &(a[i-j]);
-    i += sub_ind[(unsigned)a[i-j]];
+    i += sub_ind[(unsigned)a[i-j]] - j;
   }
   return NULL;
 }
-
 // This requires that the index was built case-insensitively and indexed by tolower()
 static void *memcasestrind(void *A, char *sub, int *sub_ind, size_t len) {
   char *a = (char *)A;
   size_t i = strlen(sub) - 1, j;
   while(i < len) {
     for(j = 0; j < strlen(sub); j++)
-      if(tolower(a[i-j]) != tolower(sub[strlen(sub)-j-1]))
+      if(tolower(a[i-j]) != tolower(sub[strlen(sub)-1-j]))
         break;
     if(j == strlen(sub))
       return (void *) &(a[i-j]);
-    i += sub_ind[(unsigned)a[i-j]];
+    i += sub_ind[(unsigned)tolower(a[i-j])] - j;
   }
   return NULL;
 }
 
-
 static int find_variable(struct world *mzx_world, struct debug_node *node,
- struct debug_node **matched_node, int *matched_pos,
- char *match_text, int *match_text_index, int search_flags,
- struct debug_node *stop_node, int stop_position)
+ char **search_var, struct debug_node **search_node, int *search_pos,
+ char *match_text, int *match_text_index, int search_flags, char *stop_var)
 {
-  void *v;
-  char *var;
   int i;
+  char *var;
+  void *v = NULL;
   int start = 0, stop = node->num_counters, inc = 1;
 
   if(search_flags & VAR_SEARCH_REVERSE)
   {
     for(i = node->num_nodes - 1; i >= 0; i--)
     {
-      int r = find_variable(mzx_world, &(node->nodes[i]), matched_node,
-       matched_pos, match_text, match_text_index, search_flags,
-       stop_node, stop_position);
+      int r = find_variable(mzx_world, &(node->nodes[i]), search_var,
+       search_node, search_pos, match_text, match_text_index, search_flags,
+       stop_var);
       if(r)
         return r;
     }
@@ -670,31 +668,15 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
     inc = -1;
   }
 
-  // If the stop node is empty and we started
-  if(!(*matched_node) && (stop_node == node) && !(node->num_counters))
-    return -1;
-
-  // If the starting node is empty, start
-  if(*matched_node == node && !(node->num_counters))
-  {
-    *matched_node = NULL;
-    *matched_pos = 0;
-  }
-
   for(i = start; i != stop; i += inc)
   {
-    if(*matched_node)
+    if(*search_var)
     {
-      if(*matched_node == node && i == *matched_pos)
-      {
-        *matched_node = NULL;
-        *matched_pos = 0;
-      }
+      if(node->counters[i] == *search_var)
+        *search_var = NULL;
+
       continue;
     }
-
-    if(stop_node == node && stop_position == i)
-      return -1;
 
     var = node->counters[i] + VAR_LIST_VAR;
 
@@ -707,8 +689,8 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
     }
     if((search_flags & VAR_SEARCH_VALUES) && !v)
     {
-      int length;
-      char *value;
+      int length = 0;
+      char *value = NULL;
       struct string temp;
       if(var[0] == '$')
       {
@@ -720,10 +702,10 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
       {
         // We'll use the version printed on the var list itself.
         // The only time this should go wrong is with excessively long mod paths.
-        if(var[0])
-          value = node->counters[i] + MIN(strlen(var), CVALUE_COL_OFFSET);
+        if(var[-2])
+          value = node->counters[i] + CVALUE_COL_OFFSET;
         else
-          value = node->counters[i] + MIN(strlen(var), SVALUE_COL_OFFSET);
+          value = node->counters[i] + MAX(strlen(var), SVALUE_COL_OFFSET);
 
         length = strlen(value);
       }
@@ -736,19 +718,23 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
 
     if(v)
     {
-      *matched_node = node;
-      *matched_pos = i;
+      *search_var = node->counters[i];
+      *search_node = node;
+      *search_pos = i;
       return 1;
     }
+
+    if(node->counters[i] == stop_var)
+      return -1;
   }
 
   if(!(search_flags & VAR_SEARCH_REVERSE))
   {
     for(i = 0; i < node->num_nodes; i++)
     {
-      int r = find_variable(mzx_world, &(node->nodes[i]), matched_node,
-       matched_pos, match_text, match_text_index, search_flags,
-       stop_node, stop_position);
+      int r = find_variable(mzx_world, &(node->nodes[i]), search_var,
+       search_node, search_pos, match_text, match_text_index, search_flags,
+       stop_var);
       if(r)
         return r;
     }
@@ -756,61 +742,82 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
   return 0;
 }
 
+static char *find_first_var(struct debug_node *node)
+{
+  char *res = NULL;
+  if(node->num_counters)
+    res = node->counters[0];
+  if(node->num_nodes && !res)
+    for(int i = 0; i < node->num_nodes && !res; i++)
+      res = find_first_var(&(node->nodes[i]));
+  return res;
+}
+static char *find_last_var(struct debug_node *node)
+{
+  char *res = NULL;
+  if(node->num_nodes)
+    for(int i = node->num_nodes - 1; i >= 0 && !res; i--)
+      res = find_last_var(&(node->nodes[i]));
+  if(node->num_counters && !res)
+    res = node->counters[node->num_counters - 1];
+
+  return res;
+}
+
+// TODO: instead of matched node/pos and stop node/pos, use var_buffer refs
 static int start_var_search(struct world *mzx_world, struct debug_node *node,
- struct debug_node **matched_node, int *matched_pos,
+ char **search_var, struct debug_node **search_node, int *search_pos,
  char *match_text, int search_flags)
 {
   int result = 0;
-  int stop_position = 0;
-  struct debug_node *stop_node = NULL;
+  char *stop_var = NULL;
 
-  // Index the chars in the search text for faster search
-  char *s = match_text, *end = match_text + strlen(match_text) - 1;
-  int index[256];
-
+  // Build the index that's gonna save our bacon when we search through 1m counters
+  char *s = match_text, *last = match_text + strlen(match_text) - 1;
+  int index[256] = { 0 };
   while(*s)
   {
     if(search_flags & VAR_SEARCH_CASESENS)
-      index[(unsigned)(*s)] = (end - strrchr(match_text, *s));
+    {
+      char *ch = strrchr(match_text, *s);
+      if(ch)
+        index[(unsigned)(*s)] = (last - ch);
+    }
     else
     {
       char *low = strrchr(match_text, tolower(*s));
       char *high = strrchr(match_text, toupper(*s));
-      if(low > high)
-        index[(unsigned)tolower(*s)] = (end - low);
+      if(low && low > high)
+        index[(unsigned)tolower(*s)] = (last - low);
       else
-        index[(unsigned)tolower(*s)] = (end - high);
+      if(high)
+        index[(unsigned)tolower(*s)] = (last - high);
     }
     s++;
   }
   for(int i = 0; i < 256; i++)
-    if(index[i] == 0)
+    if(index[i] <= 0 || index[i] > (signed)strlen(match_text))
       index[i] = strlen(match_text);
 
   // Set up where the search should stop
   if(search_flags & VAR_SEARCH_WRAP)
   {
-    stop_position = *matched_pos;
-    stop_node = *matched_node;
+    stop_var = *search_var;
   }
   else
+  // No wrap, use start if reverse, otherwise use end
   if(search_flags & VAR_SEARCH_REVERSE)
   {
-    stop_position = 0;
-    stop_node = node;
+    stop_var = find_first_var(node);
   }
   else
   {
-    stop_node = node;
-    while(stop_node->num_nodes)
-      stop_node = &(stop_node->nodes[stop_node->num_nodes - 1]);
-
-    stop_position = stop_node->num_counters - 1;
+    stop_var = find_last_var(node);
   }
 
   while(!result)
-    result = find_variable(mzx_world, node, matched_node, matched_pos,
-     match_text, index, search_flags, stop_node, stop_position);
+    result = find_variable(mzx_world, node, search_var, search_node,
+     search_pos, match_text, index, search_flags, stop_var);
      
   debug("%i\n", result);
      
@@ -1556,7 +1563,6 @@ void __debug_counters(struct world *mzx_world)
       // Search (Ctrl+F)
       case 2:
       {
-        break;
         if(search_dialog(mzx_world, "Search variables (Ctrl+F, repeat Ctrl+R)", search_text, &search_flags))
         {
           break;
@@ -1568,20 +1574,17 @@ void __debug_counters(struct world *mzx_world)
       {
         int res = 0;
         struct debug_node *search_targ = &root;
-        break;
+        char *search_var = var_list[var_selected];
+
         if(!strlen(search_text))
           break;
 
-        search_node = focus;
-        search_pos = var_selected;
-
-        // If we're doing a local search, we don't want the whole tree
+        // Local search?
         if(search_flags & VAR_SEARCH_LOCAL)
-          search_targ = search_node;
+          search_targ = focus;
 
-        res = start_var_search(mzx_world, search_targ, &search_node, &search_pos, search_text, search_flags);
+        res = start_var_search(mzx_world, search_targ, &search_var, &search_node, &search_pos, search_text, search_flags);
 
-        
         switch(res)
         {
           default:
@@ -1593,20 +1596,20 @@ void __debug_counters(struct world *mzx_world)
           {
             struct debug_node *node;
 
-            // First, if we're dealing with a local search, fix the
-            // return values so they reflect the local context.
-            if(search_flags & VAR_SEARCH_LOCAL)
+            // First, is it in the current list? Override!
+            for(i = 0; i < num_vars; i++)
             {
-              for(i = 0; i < num_vars; i++)
+              if(!strcmp(var_list[i] + VAR_LIST_VAR, search_var + VAR_LIST_VAR))
               {
-                if(!strcmp(var_list[i] + VAR_LIST_VAR, search_node->counters[search_pos] + VAR_LIST_VAR))
-                {
-                  search_pos = i;
-                  break;
-                }
+                search_pos = i;
+                search_node = focus;
+                break;
               }
-              search_node = focus;
             }
+
+            // Nothing in the local context in a local search?  Abandon ship!
+            if((search_flags & VAR_SEARCH_LOCAL) && (search_node != focus))
+              break;
 
             // Open all parents
             node = search_node;
