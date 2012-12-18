@@ -112,9 +112,9 @@ static void copy_substring_escaped(struct string *str, char *buf,
 
 static void unescape_string(char *buf, int *len)
 {
-  size_t i, j, old_len = strlen(buf);
+  size_t i = 0, j, old_len = strlen(buf);
 
-  for(i = 0, j = 0; j < old_len; i++, j++)
+  for(j = 0; j < old_len; i++, j++)
   {
     if(buf[j] != '\\')
     {
@@ -616,37 +616,42 @@ static void free_tree_list(char **tree_list, int tree_size)
 // Let's implement some variations on strstr first
 // Find the first occurence of substring sub in memory block A of size len
 // We use a jump index to speed up matches by quite a bit
-static void *memstrind(void *A, char *sub, int *sub_ind, size_t len) {
-  char *a = (char *)A;
-  size_t i = strlen(sub) - 1, j;
-  while(i < len) {
-    for(j = 0; j < strlen(sub); j++)
-      if(a[i-j] != sub[strlen(sub)-1-j])
-        break;
-    if(j == strlen(sub))
-      return (void *) &(a[i-j]);
-    i += sub_ind[(unsigned)a[i-j]] - j;
+static void *memmemind(void *A, void *B, int *index, size_t a_len, size_t b_len) {
+  unsigned char *a = (unsigned char *)A;
+  unsigned char *b = (unsigned char *)B;
+  size_t i = b_len - 1;
+  int j;
+  while(i < a_len) {
+    j = b_len - 1;
+    while(j >= 0 && a[i] == b[j])
+      j--, i--;
+    if(j == -1)
+      return (void *)(a + i);
+    i += MAX(1, index[a[i]]) + (b_len - j - 1);
   }
   return NULL;
 }
 // This requires that the index was built case-insensitively and indexed by tolower()
-static void *memcasestrind(void *A, char *sub, int *sub_ind, size_t len) {
-  char *a = (char *)A;
-  size_t i = strlen(sub) - 1, j;
-  while(i < len) {
-    for(j = 0; j < strlen(sub); j++)
-      if(tolower(a[i-j]) != tolower(sub[strlen(sub)-1-j]))
-        break;
-    if(j == strlen(sub))
-      return (void *) &(a[i-j]);
-    i += sub_ind[(unsigned)tolower(a[i-j])] - j;
+static void *memmemcaseind(void *A, char *B, int *index, size_t a_len, size_t b_len) {
+  unsigned char *a = (unsigned char *)A;
+  unsigned char *b = (unsigned char *)B;
+  size_t i = b_len - 1;
+  int j;
+  while(i < a_len) {
+    j = b_len - 1;
+    while(j >= 0 && tolower(a[i]) == tolower(b[j]))
+      j--, i--;
+    if(j == -1)
+      return (void *)(a + i);
+    i += MAX(1, index[tolower(a[i])]) + (b_len - j - 1);
   }
   return NULL;
 }
 
 static int find_variable(struct world *mzx_world, struct debug_node *node,
  char **search_var, struct debug_node **search_node, int *search_pos,
- char *match_text, int *match_text_index, int search_flags, char *stop_var)
+ char *match_text, int *match_text_index, size_t match_length,
+ int search_flags, char *stop_var)
 {
   int i;
   char *var;
@@ -658,8 +663,8 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
     for(i = node->num_nodes - 1; i >= 0; i--)
     {
       int r = find_variable(mzx_world, &(node->nodes[i]), search_var,
-       search_node, search_pos, match_text, match_text_index, search_flags,
-       stop_var);
+       search_node, search_pos, match_text, match_text_index, match_length,
+       search_flags, stop_var);
       if(r)
         return r;
     }
@@ -683,9 +688,9 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
     if(search_flags & VAR_SEARCH_NAMES)
     {
       if(search_flags & VAR_SEARCH_CASESENS)
-        v = memstrind(var, match_text, match_text_index, strlen(var));
+        v = memmemind(var, match_text, match_text_index, strlen(var), match_length);
       else
-        v = memcasestrind(var, match_text, match_text_index, strlen(var));
+        v = memmemcaseind(var, match_text, match_text_index, strlen(var), match_length);
     }
     if((search_flags & VAR_SEARCH_VALUES) && !v)
     {
@@ -705,15 +710,22 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
         if(var[-2])
           value = node->counters[i] + CVALUE_COL_OFFSET;
         else
-          value = node->counters[i] + MAX(strlen(var), SVALUE_COL_OFFSET);
+        {
+          if(!strcmp(var, "robot_name*") ||
+             !strcmp(var, "board_name*") ||
+             !strcmp(var, "mod_path*"))
+             value = node->counters[i] + SVALUE_COL_OFFSET;
+          else
+            value = node->counters[i] + CVALUE_COL_OFFSET;
+        }
 
         length = strlen(value);
       }
 
       if(search_flags & VAR_SEARCH_CASESENS)
-        v = memstrind(value, match_text, match_text_index, length);
+        v = memmemind(value, match_text, match_text_index, length, match_length);
       else
-        v = memcasestrind(value, match_text, match_text_index, length);
+        v = memmemcaseind(value, match_text, match_text_index, length, match_length);
     }
 
     if(v)
@@ -733,8 +745,8 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
     for(i = 0; i < node->num_nodes; i++)
     {
       int r = find_variable(mzx_world, &(node->nodes[i]), search_var,
-       search_node, search_pos, match_text, match_text_index, search_flags,
-       stop_var);
+       search_node, search_pos, match_text, match_text_index, match_length,
+       search_flags, stop_var);
       if(r)
         return r;
     }
@@ -764,18 +776,17 @@ static char *find_last_var(struct debug_node *node)
   return res;
 }
 
-// TODO: instead of matched node/pos and stop node/pos, use var_buffer refs
 static int start_var_search(struct world *mzx_world, struct debug_node *node,
  char **search_var, struct debug_node **search_node, int *search_pos,
- char *match_text, int search_flags)
+ char *match_text, size_t match_length, int search_flags)
 {
   int result = 0;
   char *stop_var = NULL;
 
   // Build the index that's gonna save our bacon when we search through 1m counters
-  char *s = match_text, *last = match_text + strlen(match_text) - 1;
+  char *s = match_text, *last = match_text + match_length - 1;
   int index[256] = { 0 };
-  while(*s)
+  while(s < last)
   {
     if(search_flags & VAR_SEARCH_CASESENS)
     {
@@ -796,8 +807,8 @@ static int start_var_search(struct world *mzx_world, struct debug_node *node,
     s++;
   }
   for(int i = 0; i < 256; i++)
-    if(index[i] <= 0 || index[i] > (signed)strlen(match_text))
-      index[i] = strlen(match_text);
+    if(index[i] <= 0 || index[i] > (int)match_length)
+      index[i] = match_length;
 
   // Set up where the search should stop
   if(search_flags & VAR_SEARCH_WRAP)
@@ -817,7 +828,7 @@ static int start_var_search(struct world *mzx_world, struct debug_node *node,
 
   while(!result)
     result = find_variable(mzx_world, node, search_var, search_node,
-     search_pos, match_text, index, search_flags, stop_var);
+     search_pos, match_text, index, match_length, search_flags, stop_var);
      
   debug("%i\n", result);
      
@@ -1398,7 +1409,7 @@ void __debug_counters(struct world *mzx_world)
   int num_vars = 0, tree_size = 0;
   char **var_list = NULL, **tree_list = NULL;
 
-  int window_focus = 0, last_window_focus = 0;
+  int window_focus = 0;
   int node_selected = 0, var_selected = 0;
   int dialog_result;
   int num_elements = 7;
@@ -1425,7 +1436,6 @@ void __debug_counters(struct world *mzx_world)
 
   do
   {
-    last_window_focus = window_focus;
     last_node_selected = node_selected;
 
     elements[0] = construct_list_box(
@@ -1446,9 +1456,6 @@ void __debug_counters(struct world *mzx_world)
 
     dialog_result = run_dialog(mzx_world, &di);
 
-    if(dialog_result >= 0)
-      window_focus = dialog_result;
-
     if(node_selected != last_node_selected)
       focus = find_node(&root, tree_list[node_selected] + TREE_LIST_WIDTH);
 
@@ -1457,6 +1464,7 @@ void __debug_counters(struct world *mzx_world)
       // Var list
       case 0:
       {
+        window_focus = 0;
         if(var_selected < num_vars)
         {
           // We keep the actual var name hidden here.
@@ -1575,23 +1583,25 @@ void __debug_counters(struct world *mzx_world)
         int res = 0;
         struct debug_node *search_targ = &root;
         char *search_var = var_list[var_selected];
+        char search_text_unescaped[VAR_SEARCH_MAX + 1] = { 0 };
+        size_t search_text_length = 0;
 
-        if(!strlen(search_text))
+        strcpy(search_text_unescaped, search_text);
+        unescape_string(search_text_unescaped, (int *)(&search_text_length));
+
+        if(!search_text_length)
           break;
 
         // Local search?
         if(search_flags & VAR_SEARCH_LOCAL)
           search_targ = focus;
 
-        res = start_var_search(mzx_world, search_targ, &search_var, &search_node, &search_pos, search_text, search_flags);
+        res = start_var_search(mzx_world, search_targ,
+         &search_var, &search_node, &search_pos,
+         search_text_unescaped, search_text_length, search_flags);
 
         switch(res)
         {
-          default:
-          {
-            window_focus = last_window_focus;
-            break;
-          }
           case 1:
           {
             struct debug_node *node;
