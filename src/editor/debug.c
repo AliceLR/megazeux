@@ -224,8 +224,6 @@ const char sprite_var_list[15][10] = {
   "vlayer",
 };
 
-static void brk(char *v) { }
-
 static void read_var(struct world *mzx_world, char *var_buffer)
 {
   int int_value = 0;
@@ -237,7 +235,6 @@ static void read_var(struct world *mzx_world, char *var_buffer)
 
   if(var[-2])
   {
-    brk(var);
     var[-1] = 1;
 
     if(var[0] == '$')
@@ -408,6 +405,7 @@ static void build_var_buffer(char **var_buffer, const char *name,
   // Counter/String
   if(index == -1)
   {
+    var[-1] = 1;
     var[-2] = 1;
     // If counter==0 or string length==0, either way
     if(!int_value)
@@ -416,8 +414,8 @@ static void build_var_buffer(char **var_buffer, const char *name,
   // Variable
   else
   {
-    var[-2] = 0;
     var[-1] = (char)index;
+    var[-2] = 0;
   }
 
   // Display
@@ -1109,8 +1107,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
     if(*num == alloc)
       *list = crealloc(*list, (alloc = MAX(alloc * 2, 32)) * sizeof(char *));
 
-    copy_substring_escaped(mzx_world->string_list[i],
-     buf, 79);
+    copy_substring_escaped(mzx_world->string_list[i], buf, 79);
 
     build_var_buffer( &(*list)[*num], mzx_world->string_list[i]->name,
      strlen(buf), buf, -1);
@@ -1822,8 +1819,11 @@ void __debug_counters(struct world *mzx_world)
       // Toggle Empties
       case 4:
       {
-        char *current = var_list[var_selected];
+        char *current;
         hide_empty_vars = !hide_empty_vars;
+
+        if(num_vars)
+          current = var_list[var_selected];
 
         rebuild_var_list(focus, &var_list, &num_vars, hide_empty_vars);
         var_selected = 0;
