@@ -1383,6 +1383,7 @@ static void input_counter_value(struct world *mzx_world, char *var_buffer)
     if(var[-2])
     {
       snprintf(name, 69, "Edit: counter %s", var);
+      sprintf(new_value, "%d", get_counter(mzx_world, var, id));
     }
     else
     {
@@ -1392,9 +1393,11 @@ static void input_counter_value(struct world *mzx_world, char *var_buffer)
         return;
 
       snprintf(name, 69, "Edit: variable %s", var);
-    }
 
-    sprintf(new_value, "%d", get_counter(mzx_world, var, id));
+      // Just strcpy it off of the var_buffer so we don't need
+      // a special if/else chain for the write-only variables
+      strcpy(new_value, var_buffer + CVALUE_COL_OFFSET);
+    }
   }
 
   save_screen();
