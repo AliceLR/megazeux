@@ -1718,6 +1718,9 @@ void __debug_counters(struct world *mzx_world)
           {
             struct debug_node *node;
 
+            // This could result in some not-so-good things happening
+            hide_empty_vars = 0;
+
             // First, is it in the current list? Override!
             for(i = 0; i < num_vars; i++)
             {
