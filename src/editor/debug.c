@@ -19,6 +19,7 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
+//FIXME: "Hide empties" sometimes hides things that aren't empty (fixed?)
 //FIXME: Strings/counters with special chars in names -- maybe don't bother?
 
 #include "debug.h"
@@ -234,10 +235,9 @@ static void read_var(struct world *mzx_world, char *var_buffer)
   // Var info is stored after the visible portion of the buffer
   char *var = var_buffer + VAR_LIST_VAR;
 
-  brk(var);
-
   if(var[-2])
   {
+    brk(var);
     var[-1] = 1;
 
     if(var[0] == '$')
@@ -572,7 +572,7 @@ static void build_var_list(struct debug_node *node,
         // If it's a counter/string, not built-in
         if(node->counters[i][VAR_LIST_VAR - 2])
           // If empty
-          if(!node->counters[i][VAR_LIST_VAR - 1])
+          if(!(node->counters[i][VAR_LIST_VAR - 1]))
             continue;
 
         copy_src[j] = node->counters[i];
@@ -1110,7 +1110,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
       *list = crealloc(*list, (alloc = MAX(alloc * 2, 32)) * sizeof(char *));
 
     copy_substring_escaped(mzx_world->string_list[i],
-     buf, MIN(79, mzx_world->string_list[i]->length));
+     buf, 79);
 
     build_var_buffer( &(*list)[*num], mzx_world->string_list[i]->name,
      strlen(buf), buf, -1);
@@ -1784,6 +1784,9 @@ void __debug_counters(struct world *mzx_world)
           // Hope it was worth it!
           repopulate_tree(mzx_world, &root);
 
+          // The new counter is empty, so
+          hide_empty_vars = 0;
+
           // Find the counter/string we just made
           select_var_buffer(&root, add_name, &focus, &var_selected);
 
@@ -1819,10 +1822,20 @@ void __debug_counters(struct world *mzx_world)
       // Toggle Empties
       case 4:
       {
+        char *current = var_list[var_selected];
         hide_empty_vars = !hide_empty_vars;
 
         rebuild_var_list(focus, &var_list, &num_vars, hide_empty_vars);
         var_selected = 0;
+
+        for(i = 0; i < num_vars; i++)
+        {
+          if(var_list[i] == current)
+          {
+            var_selected = i;
+            break;
+          }
+        }
 
         label[0] = '\0';
         get_node_name(focus, label, 80);
