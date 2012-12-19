@@ -930,38 +930,6 @@ static int start_var_search(struct world *mzx_world, struct debug_node *node,
 /******* MAKE THE TREE CODE *******/
 /**********************************/
 
-/*
-// Doesn't work
-static void merge_sort(const void *targ, size_t num, size_t size_of_1,
- int(* fcn)(const void *a, const void *b))
-{
-  unsigned int i, a, b, j, w;
-  char *t = (char *)targ, *A, *B, *buf = cmalloc(num * size_of_1);
-
-  for(w = 1; w < num; w *= 2) {
-    for(i = 0; i < num; i += 2 * w) {
-      for(a = i, b = i + w, j = i; j < i + 2 * w && j < num; j++) {
-        A = t + a * size_of_1;
-        B = t + b * size_of_1;
-        if((b < MIN(i + 2 * w, num)) && ((a >= i + w) || (fcn((void *)A, (void *)B) > 0)))
-        {
-          memcpy(buf + j, B, size_of_1);
-          b++;
-        }
-        else
-        {
-          memcpy(buf + j, A, size_of_1);
-          a++;
-        }
-      }
-      memcpy(t + i * size_of_1, buf, w * 2 * size_of_1);
-    }
-  }
-
-  free(buf);
-}
-*/
-
 static int counter_sort_fcn(const void *a, const void *b)
 {
   return strcasecmp(
@@ -1014,11 +982,9 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   struct robot **robot_list = mzx_world->current_board->robot_list;
 
   qsort(
-  //merge_sort(
    mzx_world->counter_list, (size_t)num_counters, sizeof(struct counter *),
    counter_sort_fcn);
   qsort(
-  //merge_sort(
    mzx_world->string_list, (size_t)num_strings, sizeof(struct string *),
    string_sort_fcn);
 
