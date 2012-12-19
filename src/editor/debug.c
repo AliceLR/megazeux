@@ -725,7 +725,7 @@ static void *memmemind(void *A, void *B, int *index, size_t a_len, size_t b_len)
   return NULL;
 }
 // This requires that the index was built case-insensitively and indexed by tolower()
-static void *memmemcaseind(void *A, char *B, int *index, size_t a_len, size_t b_len) {
+static void *memmemcaseind(void *A, void *B, int *index, size_t a_len, size_t b_len) {
   unsigned char *a = (unsigned char *)A;
   unsigned char *b = (unsigned char *)B;
   size_t i = b_len - 1;
@@ -922,9 +922,7 @@ static int start_var_search(struct world *mzx_world, struct debug_node *node,
   while(!result)
     result = find_variable(mzx_world, node, search_var, search_node,
      search_pos, match_text, index, match_length, search_flags, stop_var);
-     
-  debug("%i\n", result);
-     
+
   return result;
 }
 
