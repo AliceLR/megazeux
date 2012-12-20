@@ -1180,11 +1180,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 
   for(i = 0, j = 0; j < num_robot_nodes; i++, j++)
   {
-    struct robot *robot;
-    if(i == 0)
-       robot = &(mzx_world->global_robot);
-    else
-       robot = robot_list[i];
+    struct robot *robot = robot_list[i];
     
     if(!robot || !robot->used)
     {

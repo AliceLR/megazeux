@@ -330,6 +330,10 @@ static int this_color_read(struct world *mzx_world,
   int y = cur_robot->ypos;
   int offset = x + (y * src_board->board_width);
 
+  // No global
+  if(id == 0)
+    return -1;
+
   return src_board->level_color[offset];
 }
 

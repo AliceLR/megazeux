@@ -83,6 +83,8 @@ BUGFIXES
 + Files with names longer than 55 chars may now be selected in file managers.
   The limit for typing in a file name is still 55 chars.  You may not enter a
   blank line as a file name anymore.
++ Fixed segfault when attempting to read THIS_COLOR for the global robot. It will
+  now always return -1.
 
 DEVELOPERS
 
