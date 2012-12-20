@@ -2,100 +2,108 @@ GIT
 
 FEATURES
 
-+ The functionality of the F11 counter/string debugger has been expanded to
-  include sprites, robots, and miscellaneous world/board variables. The ability
-  to modify many of these variables is limited and a large portion are read-only.
-  In addition, you may view counters/strings by starting letter, add new counters
-  and strings, hide empty counters/strings (does not affect built-in variables),
-  and search by variable name and contents. Export is still limited to counters
-  and strings only.
-+ Maximum string length has been increased from 1 megabyte (1048576 bytes) to
-  4 megabytes (4194304 bytes).
-+ Board mods may now be selected from subdirectories of the game's folder in the
-  ALT+N dialog.
-+ The title bar now displays the world, editing board, and editing robot names
-  based on context.
-+ Fire Burns Space and Fire Burns Forever are now off by default.
-+ You may now specify the size of the undo history in the char editor, and the
-  history affects the entire char set. Undo is still ALT+U, redo is now ALT+R.
-+ You may now use the -/+ keys in the world editor to move to the previous/next
-  boards in the board list, and Shift+Arrows to change to the boards linked by
-  board edge.
-+ You may now move the current board anywhere in the board list with M. You may
-  not move the title screen board.
-+ View mode in the board editor (V) will start from the current location of the
-  screen now, rather than at the top-left corner.
-+ png2smzx now requires less arguments and has an option to skip a char (generally
-  char 32 will be useful to skip).
++ The functionality of the F11 counter/string debugger has been
+  expanded to include sprites, robots, and miscellaneous world
+  and board variables. The ability to modify many of these vars
+  is limited and a large portion are read-only. In addition, you
+  may add new counters and strings, hide empty counters/strings
+  (does not affect built-in variables), and search by name and
+  contents. Export is still limited to counters and strings.
++ Max string length has been increased from 1MiB (1048576 bytes)
+  to 4MiB (4194304 bytes).
++ Board mods may now be selected from subdirectories of the game
+  folder in the ALT+N dialog.
++ The title bar now displays the world and editing board/robot
+  names based on context.
++ Fire Burns Space and Fire Burns Forever are off by default.
++ You may now specify the size of the undo history in the char
+  editor, and the history affects the entire char set. Undo is
+  still ALT+U, redo is now ALT+R.
++ You may now use the -/+ keys in the world editor to move to
+  the previous/next boards in the board list, and Shift+Arrows
+  to change to the boards linked by board edge.
++ You may now move the current board anywhere in the board list
+  with M. You may not move the title screen board.
++ View mode in the board editor (V) will start from the current
+  location of the screen now rather than at the top-left corner.
++ png2smzx now requires less arguments and has an option to skip
+  a char (generally char 32 will be useful to skip).
 
-+ Debytecode: The robotic editor now asks for a confirmation to save the program
-  on exit.
++ Debytecode: The robotic editor now asks for a confirmation to
+  save the program on exit.
 
 BUGFIXES
 
-+ Fixed a bug in the 'glsl' renderer that caused the cursor color to be
-  ignored (always white). This caused the cursor to not be visible if
-  shown on a white background.
-+ Setting $string.length will not cause memory corruption anymore.  In
-  addition, its pre-2.84 behavior of intentionally allocating the string
-  past the length it is being set to has been restored, but the length
-  will still be set to the correct value.
-+ Added bounds check to INC "$string" "value".  Attempts to increase a
-  string past its maximum length (1 megabyte, or 1048576 bytes) will now
-  fail.
-+ Fixed MegaZeux crash that could sometimes occur when a string was increased
-  by itself.
-+ Fixed MegaZeux crash that could occur when exiting the editor to a world file
-  that failed validation.
-+ Rolled string->storage_space into string->name to prevent buffer overflow
-  errors and crashes. (Mr_Alert)
-+ Fixed crash that would occur when attempting to select a directory in the
-  ALT+N dialog.
-+ Fixed a bug where copy block $string would apply REL vars twice.
-+ Thanatos Insignia will now play without freezing both normally AND after
-  loading a save.  Robots will not be incorrectly versioned with the save
-  format magic any longer.
-+ Fixed bug where ALT+M wouldn't always edit non-sensors/signs/scrolls/robots.
-+ Fixed bug where ! could not be used as a substitute operator for ~.
-+ Fixed a bug where tab-draw and block actions would carry between board and
-  overlay editing. ALT+O now sets the drawing mode back to normal on a switch.
-+ ALT+M now edits the overlay instead of the board in overlay editing.
-+ Quick-load (F10 during gameplay) will not work if the load menu (F4) has
-  been disabled with the LOAD_MENU counter.
-+ Fixed a bug where the listening mod directory would stay the same as the
-  directory the editor was opened in.
-+ The listening mod now continues to play after world and board changes, and
-  also after the board mod has been changed by ALT+N or Shift+8/*.
++ Fixed a bug in the 'glsl' renderer that caused the cursor
+  color to be ignored (always white). This caused the cursor to
+  not be visible if shown on a white background. (ajs)
++ Setting $string.length will not cause memory corruption now.
+  In addition, its pre-2.84 behavior of intentionally allocating
+  the string past the set length has been restored, but the
+  length itself will still be set to the correct value.
++ Added bounds check to INC "$string" "value". Attempts to
+  increase a string past its maximum length (4 MiB, or 4194304
+  bytes) will now fail.
++ Fixed MegaZeux crash that could sometimes occur when a string
+  was increased by itself.
++ Fixed MegaZeux crash that could occur when exiting the editor
+  to a world file that failed validation.
++ Rolled string->storage_space into string->name to prevent
+  buffer overflow errors and crashes. (Mr_Alert)
++ Fixed crash that would occur when attempting to type in a dir
+  in the ALT+N dialog.
++ Fixed a bug where copy block $string would apply REL twice.
++ Thanatos Insignia (DoZ Q1 2011, 98485) will now play without
+  freezing both normally AND after loading a save. Robots will
+  not be incorrectly versioned with the save format magic now.
++ Fixed bug where ALT+M wouldn't always edit non-stored types.
++ Fixed bug where ! could not be used as a substitute for ~.
++ Fixed a bug where tab-draw and block actions would carry
+  between board and overlay editing. ALT+O now sets the drawing
+  mode back to normal on a switch.
++ ALT+M now edits the overlay instead of the board while editing
+  the overlay.
++ Quick-load (F10 during gameplay) will not work if the load
+  menu (F4) has been disabled with the LOAD_MENU counter.
++ Fixed a bug where the listening mod directory would stay the
+  same as the directory the editor was opened in.
++ The listening mod now continues to play after world and board
+  changes, and also after the board mod has been changed by
+  ALT+N or Shift+8/*.
 + LOAD_GAME will not incorrectly trigger JUSTENTERED anymore.
-+ Palette/intensity changes made on the same cycle as a teleport player command
-  are now properly taken into account. This fixes a game-stopping regression in
-  Sponkgo's Legendary Journey where leaving the second stage's bonus area would
-  leave the color intensity at 0.
-+ SMZX mode is now disabled when leaving the editor if it was enabled in the
-  editor via F11.
-+ Fixed potential crash bug where robot bytecode files were not being validated
-  before being loaded with LOAD_BC.
-+ Fixed minor message box bug dating back to DOS where a message box starting
-  with an unavailable option would begin with the cursor on a blank line.
-+ Fixed crash that happened when typing over bounds while renaming a file in a
-  file manager dialog.  File and directory renaming now use a popup dialog akin
-  to ALT+N.
-+ Files with names longer than 55 chars may now be selected in file managers.
-  The limit for typing in a file name is still 55 chars.  You may not enter a
-  blank line as a file name anymore.
-+ Fixed segfault when attempting to read THIS_COLOR for the global robot. It will
-  now always return -1.
++ Palette/intensity changes made on the same cycle as a teleport
+  player command are now properly taken into account. This fixes
+  a game-stopping regression in Sponkgo's Legendary Journey
+  where leaving the second stage's bonus area would leave the
+  color intensity at 0.
++ SMZX mode is now disabled when leaving the editor if it was
+  enabled in the editor via F11.
++ Fixed potential crash bug where robot bytecode files were not
+  being validated before being loaded with LOAD_BC.
++ Fixed minor message box bug dating back to DOS where a message
+  box starting with an unavailable option would begin with the
+  cursor on a blank line.
++ Fixed crash that happened when typing over bounds while
+  renaming a file in a file manager dialog. File and directory
+  renaming now use a popup dialog akin to ALT+N.
++ Files with names longer than 55 chars may now be selected in
+  file managers. The limit for typing in a file name is still 55
+  chars.  You may not enter a blank line as a file name anymore.
++ Fixed segfault when attempting to read THIS_COLOR for the
+  global robot. It will now always return -1.
 
 DEVELOPERS
 
-+ Overhauled txt2hlp. Error messages now differentiate between hyperlinks and
-  labels and will take the display chars ~ and & into account. Eventually, the
-  goal should be to get rid of txt2hlp altogether and have MZX load straight
-  from the .txt file.
-+ Added compile option to use uthash for counter/string lookups as opposed to
-  binary search. Ideally, this will vastly improve lookup speeds for large
-  numbers of counters/strings, but will consume more memory. (thanks to Lancer-X
-  for the modified uthash header file)
++ Overhauled txt2hlp. Error messages now differentiate between
+  hyperlinks and labels and will take the display chars ~ and &
+  into account. Eventually, the goal should be to get rid of
+  txt2hlp altogether and have MZX load straight from the .txt
+  file.
++ Added compile option to use uthash for counter/string lookups
+  as opposed to binary search. Ideally, this will vastly improve
+  lookup speeds for large numbers of counters/strings, but will
+  consume more memory. (thanks to Lancer-X for the modified
+  uthash header file)
 
 
 June 20, 2012 - MZX 2.84b
