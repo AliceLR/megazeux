@@ -855,6 +855,12 @@ static void refactor_board_list(struct world *mzx_world,
   struct board **board_list = mzx_world->board_list;
   struct board *cur_board;
 
+/* SAVED POSITIONS
+#ifdef CONFIG_EDITOR
+  refactor_saved_positions(mzx_world, board_id_translation_list);
+#endif
+*/
+
   if(board_list[mzx_world->current_board_id] == NULL)
     relocate_current = 0;
 

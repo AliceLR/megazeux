@@ -24,7 +24,7 @@
 
 __M_BEGIN_DECLS
 
-#define OPTION_NAME_LEN 32
+#define OPTION_NAME_LEN 33
 
 enum ratio_type
 {

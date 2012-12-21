@@ -614,3 +614,202 @@ void set_editor_config_from_command_line(struct editor_config_info *conf,
 {
   __set_config_from_command_line(editor_config_change_option, conf, argc, argv);
 }
+
+void save_local_editor_config(struct editor_config_info *conf,
+ const char *mzx_file_path)
+{
+  int mzx_file_len = strlen(mzx_file_path) - 4;
+  char config_file_name[MAX_PATH];
+
+  char buf[60] = { 0 };
+  char buf2[20] = { 0 };
+
+  const char *comment =
+    "\n############################################################";
+  const char *comment_a =
+    "\n#####  Editor generated configuration - do not modify  #####";
+  const char *comment_b =
+    "\n#####        End editor generated configuration        #####";
+  FILE *fp;
+
+  if(mzx_file_len <= 0)
+    return;
+
+  // Get our filename
+  strncpy(config_file_name, mzx_file_path, mzx_file_len);
+  strncpy(config_file_name + mzx_file_len, ".editor.cnf", 12);
+
+  // Does it exist?
+  fp = fopen_unsafe(config_file_name, "rb");
+  if(fp)
+  {
+    char *a, *b;
+    char *config_file = NULL;
+    char *config_file_b = NULL;
+    int config_file_size = 0;
+    int config_file_size_b = 0;
+
+    config_file_size = ftell_and_rewind(fp);
+    config_file = cmalloc(config_file_size + 1);
+    config_file[config_file_size] = 0;
+
+    fread(config_file, 1, config_file_size, fp);
+    fclose(fp);
+
+    a = strstr(config_file, comment_a);
+    b = strstr(config_file, comment_b);
+
+    // Start of special section
+    if(a)
+    {
+      a[0] = '\0';
+      a = strrchr(config_file, '\n');
+      if(a)
+      {
+        if(a > config_file && a[-1] == '\r')
+          a[-1] = '\0';
+        else
+          a[0] = '\0';
+
+        config_file_size = strlen(config_file);
+      }
+      else
+      {
+        config_file[0] = '\0';
+        config_file_size = 0;
+      }
+
+      // End of special section
+      // Skip matched line and comment line afterward
+      if(b && (b = strchr(b + 1, '\n')) && (b = strchr(b + 1, '\n')))
+      {
+        config_file_b = b + 1;
+        config_file_size_b = strlen(config_file_b);
+      }
+    }
+
+    fp = fopen_unsafe(config_file_name, "wb");
+
+    if(config_file_size)
+      fwrite(config_file, 1, config_file_size, fp);
+    if(config_file_size_b)
+      fwrite(config_file_b, 1, config_file_size_b, fp);
+
+    fclose(fp);
+    free(config_file);
+  }
+
+  fp = fopen_unsafe(config_file_name, "a");
+
+  fwrite(comment, 1, strlen(comment), fp);
+  fwrite(comment_a, 1, strlen(comment_a), fp);
+  fwrite(comment, 1, strlen(comment), fp);
+  fwrite("\n\n", 1, 2, fp);
+
+  sprintf(buf, "board_default_width = %i\n", conf->board_width);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_height = %i\n", conf->board_height);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_viewport_w = %i\n", conf->viewport_w);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_viewport_h = %i\n", conf->viewport_h);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_viewport_x = %i\n", conf->viewport_x);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_viewport_y = %i\n", conf->viewport_y);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_can_shoot = %i\n", conf->can_shoot);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_can_bomb = %i\n", conf->can_bomb);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_fire_burns_spaces = %i\n", conf->fire_burns_spaces);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_fire_burns_fakes = %i\n", conf->fire_burns_fakes);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_fire_burns_trees = %i\n", conf->fire_burns_trees);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_fire_burns_brown = %i\n", conf->fire_burns_brown);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_fire_burns_forever = %i\n", conf->fire_burns_forever);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_forest_to_floor = %i\n", conf->forest_to_floor);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_collect_bombs = %i\n", conf->collect_bombs);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_restart_if_hurt = %i\n", conf->restart_if_hurt);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_player_locked_ns = %i\n", conf->player_locked_ns);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_player_locked_ew = %i\n", conf->player_locked_ew);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_player_locked_att = %i\n", conf->player_locked_att);
+  fwrite(buf, 1, strlen(buf), fp);
+  sprintf(buf, "board_default_time_limit = %i\n", conf->time_limit);
+  fwrite(buf, 1, strlen(buf), fp);
+
+  switch(conf->explosions_leave)
+  {
+    case EXPL_LEAVE_SPACE:
+      strcpy(buf2, "space");
+      break;
+    case EXPL_LEAVE_ASH:
+      strcpy(buf2, "ash");
+      break;
+    case EXPL_LEAVE_FIRE:
+      strcpy(buf2, "fire");
+      break;
+  }
+  sprintf(buf, "board_default_explosions_leave = %s\n", buf2);
+  fwrite(buf, 1, strlen(buf), fp);
+
+  switch(conf->saving_enabled)
+  {
+    case CANT_SAVE:
+      strcpy(buf2, "disabled");
+      break;
+    case CAN_SAVE:
+      strcpy(buf2, "enabled");
+      break;
+    case CAN_SAVE_ON_SENSOR:
+      strcpy(buf2, "sensoronly");
+      break;
+  }
+  sprintf(buf, "board_default_saving = %s\n", buf2);
+  fwrite(buf, 1, strlen(buf), fp);
+
+  switch(conf->overlay_enabled)
+  {
+    case OVERLAY_OFF:
+      strcpy(buf2, "disabled");
+      break;
+    case OVERLAY_ON:
+      strcpy(buf2, "enabled");
+      break;
+    case OVERLAY_STATIC:
+      strcpy(buf2, "static");
+      break;
+    case OVERLAY_TRANSPARENT:
+      strcpy(buf2, "transparent");
+      break;
+  }
+  sprintf(buf, "board_default_overlay = %s\n", buf2);
+  fwrite(buf, 1, strlen(buf), fp);
+
+  if(conf->num_jump_points)
+  {
+    fwrite("\n", 1, 1, fp);
+    for(int i = 0; i < conf->num_jump_points; i++)
+    {
+      struct jump_point *j = &(conf->jump_points[i]);
+      sprintf(buf, "saved_position = %s,%i,%i,%i\n", j->name, j->board_id, j->dest_x, j->dest_y);
+    }
+  }
+
+  fwrite(comment, 1, strlen(comment), fp);
+  fwrite(comment_b, 1, strlen(comment_b), fp);
+  fwrite(comment, 1, strlen(comment), fp);
+  fwrite("\n", 1, 1, fp);
+
+  fclose(fp);
+
+}

@@ -104,6 +104,9 @@ void default_editor_config(struct editor_config_info *conf);
 void set_editor_config_from_command_line(struct editor_config_info *conf,
  int *argc, char *argv[]);
 
+void save_local_editor_config(struct editor_config_info *conf,
+ const char *mzx_file_path);
+
 __M_END_DECLS
 
 #endif // __EDITOR_CONFIGURE_H

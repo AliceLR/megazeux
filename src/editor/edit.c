@@ -1152,10 +1152,13 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   {
     struct stat stat_res;
 
+    if(curr_file[0] &&
+     stat(curr_file, &stat_res))
+      curr_file[0] = '\0';
+
     if(
      reload_curr_file &&
      curr_file[0] &&
-     !stat(curr_file, &stat_res) &&
      editor_reload_world(mzx_world, curr_file, &fade))
     {
       strncpy(current_world, curr_file, MAX_PATH);
@@ -2012,6 +2015,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
               debug("Save path: %s\n", world_name);
               // Save entire game
               strcpy(current_world, world_name);
+              strcpy(curr_file, current_world);
               save_world(mzx_world, current_world, 0);
 
               get_path(world_name, new_path, MAX_PATH);
@@ -2161,6 +2165,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
                 break;
                 //create_blank_world(mzx_world);
               }
+              strcpy(curr_file, current_world);
 
               mzx_world->current_board_id = mzx_world->first_board;
               mzx_world->current_board =
