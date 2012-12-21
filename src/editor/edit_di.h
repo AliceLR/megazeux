@@ -29,6 +29,7 @@ __M_BEGIN_DECLS
 #include "../world_struct.h"
 #include "../window.h"
 
+int board_goto(struct world *mzx_world, int *cursor_board_x, int *cursor_board_y);
 void board_info(struct world *mzx_world);
 void board_exits(struct world *mzx_world);
 void global_info(struct world *mzx_world);

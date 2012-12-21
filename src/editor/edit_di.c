@@ -1310,3 +1310,49 @@ void global_robot(struct world *mzx_world)
     restore_screen();
   }
 }
+
+/*
+* +-Goto-------------------------------+
+* |
+* |  X-[00000][-][+]  Y-[00000][-][+]  |
+* |
+* |      [  Ok  ]        [Cancel]      |
+* |
+* +------------------------------------+
+*/
+
+int board_goto(struct world *mzx_world,
+ int *cursor_board_x, int *cursor_board_y)
+{
+  int result = 0;
+  int num_elements = 4;
+  int goto_x = *cursor_board_x;
+  int goto_y = *cursor_board_y;
+  struct element *elements[num_elements];
+  struct dialog di;
+
+  struct board *cur_board = mzx_world->current_board;
+  int board_width = cur_board->board_width;
+  int board_height = cur_board->board_height;
+
+  elements[0] = construct_button( 7, 4, "  Ok  ", 0);
+  elements[1] = construct_button(23, 4, "Cancel", 1);
+  elements[2] = construct_number_box( 3, 2, "X-",
+   0, board_width - 1, 0, &goto_x);
+  elements[3] = construct_number_box(20, 2, "Y-",
+   0, board_height - 1, 0, &goto_y);
+
+  construct_dialog(&di, "Goto board location",
+   21, 7, 38, 7, elements, num_elements, 2);
+
+  result = run_dialog(mzx_world, &di);
+  destruct_dialog(&di);
+
+  if(!result)
+  {
+    *cursor_board_x = goto_x;
+    *cursor_board_y = goto_y;
+  }
+
+  return result;
+}

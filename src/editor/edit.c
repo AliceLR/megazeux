@@ -180,19 +180,19 @@ static void fix_scroll(int *cursor_board_x, int *cursor_board_y,
  int *scroll_x, int *scroll_y, int cursor_x, int cursor_y,
  int board_width, int board_height, int edit_screen_height)
 {
+  // the bounds checks need to be done in this order
   if(*scroll_x + 80 > board_width)
-  {
     *scroll_x = (board_width - 80);
-    if(*scroll_x < 0)
-      *scroll_x = 0;
-  }
+
+  if(*scroll_x < 0)
+    *scroll_x = 0;
 
   if(*scroll_y + edit_screen_height > board_height)
-  {
     *scroll_y = (board_height - edit_screen_height);
-    if(*scroll_y < 0)
-      *scroll_y = 0;
-  }
+
+  if(*scroll_y < 0)
+    *scroll_y = 0;
+
 
   if(*cursor_board_x >= board_width)
     *cursor_board_x = (board_width - 1);
@@ -243,8 +243,8 @@ static const char *const menu_lines[NUM_MENUS][2]=
     " Alt+S:Status Info  Alt+C:Char Edit  Alt+E:Palette  Alt+F:Sound Effects"
   },
   {
-    " Alt+Z:Clear   X:Exits       Alt+P:Size/Pos  I:Info  A:Add  M:Move  D:Delete",
-    " Alt+I:Import  Alt+X:Export  Alt+O:Overlay   V:View  B:Select Board"
+    " Alt+Z:Clear  Alt+I:Import  Alt+P:Size/Pos  I:Info   M:Move  A:Add  D:Delete",
+    " Ctrl+G:Goto  Alt+X:Export  Alt+O:Overlay   X:Exits  V:View  B:Select Board"
   },
   {
     " F3:Terrain  F4:Item      F5:Creature  F6:Puzzle  F7:Transport  F8:Element",
@@ -2353,6 +2353,19 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
       {
         if(draw_mode != 2)
         {
+          if(get_ctrl_status(keycode_internal))
+          {
+            if(!board_goto(mzx_world, &cursor_board_x, &cursor_board_y))
+            {
+              // This will get fixed if necessary.
+              scroll_x = cursor_board_x - 39;
+              scroll_y = cursor_board_y - edit_screen_height / 2;
+
+              fix_scroll(&cursor_board_x, &cursor_board_y, &scroll_x, &scroll_y,
+               cursor_x, cursor_y, board_width, board_height, edit_screen_height);
+            }
+          }
+          else
           if(get_alt_status(keycode_internal))
             global_robot(mzx_world);
           else
