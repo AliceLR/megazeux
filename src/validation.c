@@ -120,6 +120,7 @@ void val_error_str(enum val_error error_id, int value, char *string)
 {
   char error_mesg[80];
   int hi = (value & 0xFF00) >> 8, lo = (value & 0xFF);
+  int opts = ERROR_OPT_OK;
   int severity = 1;
   int code = 0;
 
@@ -249,13 +250,15 @@ void val_error_str(enum val_error error_id, int value, char *string)
     {
       snprintf(error_mesg, 80,
        "Bytecode file '%s' failed validation check", string);
+      // This can easily result in hard-to-escape loops
+      opts |= ERROR_OPT_EXIT;
       code = 0xD0D0;
       break;
     }
   }
 
   if(severity > suppress_errors)
-    error(error_mesg, 1, 8, code);
+    error(error_mesg, 1, opts, code);
 }
 
 FILE * val_fopen(const char *filename)

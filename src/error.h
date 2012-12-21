@@ -24,6 +24,12 @@
 
 #include "compat.h"
 
+#define ERROR_OPT_FAIL  1
+#define ERROR_OPT_RETRY 2
+#define ERROR_OPT_EXIT  4
+#define ERROR_OPT_OK    8
+#define ERROR_OPT_HELP  16
+
 __M_BEGIN_DECLS
 
 //Call for an error OR a warning. Type=0 for a warning, 1 for a recoverable

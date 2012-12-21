@@ -29,7 +29,6 @@
 #include "graphics.h"
 #include "event.h"
 
-
 // Error type names by type code:
 static const char *const error_type_names[] =
 {
@@ -83,22 +82,22 @@ int error(const char *string, unsigned int type, unsigned int options,
   // Add options
   write_string("Press", 4, 13, 78, 0);
 
-  if(options & 1)
+  if(options & ERROR_OPT_FAIL)
   {
     write_string(", F for Fail", t1, 13, 78, 0);
     t1 += 12;
   }
-  if(options & 2)
+  if(options & ERROR_OPT_RETRY)
   {
     write_string(", R to Retry", t1, 13, 78, 0);
     t1 += 12;
   }
-  if(options & 4)
+  if(options & ERROR_OPT_EXIT)
   {
     write_string(", E to Exit", t1, 13, 78, 0);
     t1 += 11;
   }
-  if(options & 8)
+  if(options & ERROR_OPT_OK)
   {
     write_string(", O for OK", t1, 13, 78, 0);
     t1 += 10;
@@ -129,41 +128,41 @@ int error(const char *string, unsigned int type, unsigned int options,
     {
       case IKEY_f:
         fail:
-        if(!(options & 1)) break;
-        ret = 1;
+        if(!(options & ERROR_OPT_FAIL)) break;
+        ret = ERROR_OPT_FAIL;
         break;
       case IKEY_r:
         retry:
-        if(!(options & 2)) break;
-        ret = 2;
+        if(!(options & ERROR_OPT_RETRY)) break;
+        ret = ERROR_OPT_RETRY;
         break;
       case IKEY_e:
         exit:
-        if(!(options & 4)) break;
-        ret = 4;
+        if(!(options & ERROR_OPT_EXIT)) break;
+        ret = ERROR_OPT_EXIT;
         break;
       case IKEY_o:
         ok:
-        if(!(options & 8)) break;
-        ret = 8;
+        if(!(options & ERROR_OPT_OK)) break;
+        ret = ERROR_OPT_OK;
         break;
       case IKEY_h:
-        if(!(options & 16)) break;
+        if(!(options & ERROR_OPT_HELP)) break;
         // Call help
         break;
       case IKEY_ESCAPE:
         // Escape. Order of options this applies to-
         // Fail, Ok, Retry, Exit.
-        if(options & 1) goto fail;
-        if(options & 8) goto ok;
-        if(options & 2) goto retry;
+        if(options & ERROR_OPT_FAIL ) goto fail;
+        if(options & ERROR_OPT_OK   ) goto ok;
+        if(options & ERROR_OPT_RETRY) goto retry;
         goto exit;
       case IKEY_RETURN:
         // Enter. Order of options this applies to-
         // OK, Retry, Fail, Exit.
-        if(options & 8) goto ok;
-        if(options & 2) goto retry;
-        if(options & 1) goto fail;
+        if(options & ERROR_OPT_OK   ) goto ok;
+        if(options & ERROR_OPT_RETRY) goto retry;
+        if(options & ERROR_OPT_FAIL ) goto fail;
         goto exit;
     }
   } while(ret == 0);
@@ -175,7 +174,7 @@ int error(const char *string, unsigned int type, unsigned int options,
 
   restore_screen();
   m_show();
-  if(ret == 4) // Exit the program
+  if(ret == ERROR_OPT_EXIT) // Exit the program
   {
     platform_quit();
     exit(-1);
