@@ -189,9 +189,11 @@ static void strip_caption_string(char *output, char *input) {
   return;
 }
 
-__editor_maybe_static void set_caption(struct world *mzx_world, struct board *board,
+__editor_maybe_static
+void set_caption(struct world *mzx_world, struct board *board,
  struct robot *robot, int editor)
 {
+  char *default_caption = get_default_caption();
   char *caption = cmalloc(MAX_CAPTION_SIZE);
   char *buffer = cmalloc(MAX_CAPTION_SIZE);
   char *stripped_name = cmalloc(MAX_CAPTION_SIZE);
@@ -230,7 +232,7 @@ __editor_maybe_static void set_caption(struct world *mzx_world, struct board *bo
     strcpy(caption, buffer);
   }
 
-  snprintf(buffer, MAX_CAPTION_SIZE, "%s %s", caption, graphics.default_caption);
+  snprintf(buffer, MAX_CAPTION_SIZE, "%s %s", caption, default_caption);
   strcpy(caption, buffer);
 
   if(editor)

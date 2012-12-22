@@ -32,8 +32,6 @@ __M_BEGIN_DECLS
 
 CORE_LIBSPEC void title_screen(struct world *mzx_world);
 CORE_LIBSPEC void find_player(struct world *mzx_world);
-CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
- struct robot *robot, int editor);
 
 void set_intro_mesg_timer(unsigned int time);
 void calculate_xytop(struct world *mzx_world, int *x, int *y);
@@ -51,6 +49,8 @@ extern bool pal_update;
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void play_game(struct world *mzx_world);
 CORE_LIBSPEC void draw_viewport(struct world *src_board);
+CORE_LIBSPEC void set_caption(struct world *mzx_world, struct board *board,
+ struct robot *robot, int editor);
 
 CORE_LIBSPEC extern bool debug_mode;
 CORE_LIBSPEC extern const char *const world_ext[2];

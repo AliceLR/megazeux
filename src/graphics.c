@@ -860,6 +860,10 @@ void set_window_caption(const char *caption)
   SDL_WM_SetCaption(caption, "");
 #endif
 }
+char *get_default_caption(void)
+{
+  return graphics.default_caption;
+}
 
 bool init_video(struct config_info *conf, const char *caption)
 {

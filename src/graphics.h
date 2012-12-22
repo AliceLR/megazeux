@@ -193,6 +193,8 @@ CORE_LIBSPEC void m_show(void);
 
 CORE_LIBSPEC void set_mouse_mul(int width_mul, int height_mul);
 
+char *get_default_caption(void);
+
 void color_string_ext(const char *string, Uint32 x, Uint32 y,
  Uint8 color, Uint32 offset, Uint32 c_offset, bool respect_newline);
 void color_string_ext_special(const char *string, Uint32 x, Uint32 y,
