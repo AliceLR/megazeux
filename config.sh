@@ -508,6 +508,9 @@ if [ "$PLATFORM" = "nds" ]; then
 	echo "Force-disabling software renderer on NDS."
 	echo "Building custom NDS renderer."
 	SOFTWARE="false"
+
+    echo "Force-disabling hash tables on NDS."
+    UTHASH="false"
 fi
 
 #
