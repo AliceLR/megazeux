@@ -1,5 +1,5 @@
 Name:		megazeux
-Version:	2.84
+Version:	2.84c
 Release:	1%{?dist}
 
 Summary:	A simple game creation system (GCS)
@@ -7,7 +7,7 @@ Summary:	A simple game creation system (GCS)
 Group:		Amusements/Games
 License:	GPLv2+
 URL:		http://digitalmzx.net/
-Source:		megazeux-2.84.tar.bz2
+Source:		megazeux-2.84c.tar.bz2
 BuildRoot:	%{_tmppath}/%{name}-%{version}-%{release}-root
 
 BuildRequires:	SDL-devel
@@ -55,6 +55,9 @@ rm -rf "$RPM_BUILD_ROOT"
 %{_sysconfdir}/megazeux-config
 
 %changelog
+* Sat Dec 22 2012 Alistair John Strachan <alistair@devzero.co.uk> 2.84c-1
+- new upstream version
+
 * Sat Jun 02 2012 Alistair John Strachan <alistair@devzero.co.uk> 2.84-1
 - new upstream version
 
