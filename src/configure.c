@@ -78,6 +78,7 @@
 #define FULLSCREEN_DEFAULT 0
 #endif
 
+#ifdef CONFIG_UPDATER
 #ifndef MAX_UPDATE_HOSTS
 #define MAX_UPDATE_HOSTS 16
 #endif
@@ -93,6 +94,7 @@
 #ifndef UPDATE_HOST_2
 #define UPDATE_HOST_2 "updates.mzx.devzero.co.uk"
 #endif
+#endif /* CONFIG_UPDATER */
 
 struct config_entry
 {
@@ -768,15 +770,15 @@ void set_config_from_command_line(struct config_info *conf,
 
 void free_config(struct config_info *conf)
 {
-  int i;
-
+#ifdef CONFIG_UPDATER
   // Auto-Updater hosts
   if(conf->update_hosts)
   {
-    for(i = 0; i < conf->update_host_count; i++)
+    for(int i = 0; i < conf->update_host_count; i++)
       free(conf->update_hosts[i]);
 
     free(conf->update_hosts);
     conf->update_hosts = NULL;
   }
+#endif
 }
