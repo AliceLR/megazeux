@@ -837,7 +837,8 @@ __editor_maybe_static void set_update_done(struct world *mzx_world)
   }
 }
 
-static void refactor_board_list(struct world *mzx_world,
+__editor_maybe_static
+void refactor_board_list(struct world *mzx_world,
  struct board **new_board_list, int new_list_size,
  int *board_id_translation_list)
 {
@@ -948,7 +949,8 @@ static void refactor_board_list(struct world *mzx_world,
   mzx_world->board_list = board_list;
 }
 
-__editor_maybe_static void optimize_null_boards(struct world *mzx_world)
+__editor_maybe_static
+void optimize_null_boards(struct world *mzx_world)
 {
   // Optimize out null objects while keeping a translation list mapping
   // board numbers from the old list to the new list.
@@ -996,44 +998,6 @@ __editor_maybe_static void optimize_null_boards(struct world *mzx_world)
   {
     free(optimized_board_list);
   }
-
-  free(board_id_translation_list);
-}
-
-__editor_maybe_static
-void move_current_board(struct world *mzx_world, int new_position)
-{
-  int i, i2;
-  int num_boards = mzx_world->num_boards;
-  int old_position = mzx_world->current_board_id;
-  struct board **board_list = mzx_world->board_list;
-  struct board **new_board_list = ccalloc(num_boards, sizeof(struct board *));
-  int *board_id_translation_list = ccalloc(num_boards, sizeof(int));
-
-  // Copy the list and shift all boards necessary
-  for(i = 0; i < num_boards; i++)
-  {
-    // This works easier if we start with the new table and
-    // figure out where to copy from the old table.
-    i2 = i - (i >= new_position) +
-     (i >= (old_position + (old_position > new_position)));
-
-    // As it turns out, we'll always have a duplicate of something
-    // else where the new position is this way, ignore it so we
-    // don't mess up the translation table.
-    if(i != new_position)
-    {
-      board_id_translation_list[i2] = i;
-      new_board_list[i] = board_list[i2];
-    }
-  }
-
-  // Insert the old board
-  board_id_translation_list[old_position] = new_position;
-  new_board_list[new_position] = board_list[old_position];
-
-  refactor_board_list(mzx_world, new_board_list, num_boards,
-   board_id_translation_list);
 
   free(board_id_translation_list);
 }

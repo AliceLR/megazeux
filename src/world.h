@@ -141,9 +141,12 @@ void fputd(int src, FILE *fp);
 CORE_LIBSPEC FILE *try_load_world(const char *file, bool savegame,
  int *version, char *name);
 CORE_LIBSPEC void default_global_data(struct world *mzx_world);
-CORE_LIBSPEC void optimize_null_boards(struct world *mzx_world);
-CORE_LIBSPEC void move_current_board(struct world *mzx_world, int new_position);
 CORE_LIBSPEC void set_update_done(struct world *mzx_world);
+
+CORE_LIBSPEC void refactor_board_list(struct world *mzx_world,
+ struct board **new_board_list, int new_list_size,
+ int *board_id_translation_list);
+CORE_LIBSPEC void optimize_null_boards(struct world *mzx_world);
 #endif // CONFIG_EDITOR
 
 __M_END_DECLS
