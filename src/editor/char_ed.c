@@ -623,7 +623,6 @@ int char_editor(struct world *mzx_world)
   int info_x, info_y;
   int buffer_width = current_width * 8;
   int buffer_height = current_height * 14;
-  int buffer_size = buffer_width * buffer_height;
   int dialog_width, dialog_height;
   int dialog_x, dialog_y;
   int chars_show_width;
@@ -684,7 +683,6 @@ int char_editor(struct world *mzx_world)
   {
     buffer_width = current_width * 8;
     buffer_height = current_height * 14;
-    buffer_size = buffer_width * buffer_height;
 
     if((current_height == 1) &&
      (current_width <= 3))
