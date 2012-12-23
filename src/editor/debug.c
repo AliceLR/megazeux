@@ -773,9 +773,18 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
     inc = -1;
   }
 
+  if(*search_node)
+  {
+    if(node == *search_node)
+    {
+      *search_var = NULL;
+      *search_node = NULL;
+    }
+  }
+
   for(i = start; i != stop; i += inc)
   {
-    if(*search_var)
+    if(*search_var || *search_node)
     {
       if(node->counters[i] == *search_var)
         *search_var = NULL;
@@ -1575,7 +1584,6 @@ void __debug_counters(struct world *mzx_world)
   struct debug_node *focus;
   int hide_empty_vars = 0;
   
-  struct debug_node *search_node = NULL;
   char search_text[VAR_SEARCH_MAX + 1] = { 0 };
   int search_flags = VAR_SEARCH_NAMES + VAR_SEARCH_VALUES + VAR_SEARCH_WRAP;
   int search_pos = 0;
@@ -1634,7 +1642,7 @@ void __debug_counters(struct world *mzx_world)
         // Tree list
         window_focus = 1;
         
-        if(last_node_selected != node_selected && (focus->num_counters || focus->show_child_contents))
+        if(last_node_selected != node_selected)// && (focus->num_counters || focus->show_child_contents))
         {
           rebuild_var_list(focus, &var_list, &num_vars, hide_empty_vars);
           var_selected = 0;
@@ -1672,6 +1680,7 @@ void __debug_counters(struct world *mzx_world)
       {
         int res = 0;
         char *search_var = NULL;
+        struct debug_node *search_node = NULL;
         struct debug_node *search_targ = &root;
         char search_text_unescaped[VAR_SEARCH_MAX + 1] = { 0 };
         size_t search_text_length = 0;
@@ -1679,6 +1688,9 @@ void __debug_counters(struct world *mzx_world)
         // This will be almost always
         if(var_selected < num_vars)
           search_var = var_list[var_selected];
+        // Only if the current view is empty
+        else
+          search_node = focus;
 
         strcpy(search_text_unescaped, search_text);
         unescape_string(search_text_unescaped, (int *)(&search_text_length));
