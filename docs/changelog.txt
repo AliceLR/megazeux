@@ -1,5 +1,23 @@
 Dec 22, 2012 - MZX 2.84c
 
+Hey all, new version of MegaZeux here! And hopefully without any
+crashes this time around!  Haha yeah right.
+
+The most notable thing this release (besides fixed crash bugs,
+as usual) is the new counter debugger! Give it a try and tell us
+what you think!
+
+Counter binary search has been replaced with a hash table in
+versions of MegaZeux for most platforms. This has resulted in
+slightly faster counter lookups, and MUCH faster creation of
+counters, since MegaZeux doesn't have to keep the list ordered.
+The hash table is turned off for NDS builds for now due to tight
+memory constraints.
+
+Otherwise, most of the new features are editor enhancements and
+modifications. Notable mentions are reordering the board list
+with 'M' and a custom undo history size.
+
 FEATURES
 
 + The functionality of the F11 counter/string debugger has been
