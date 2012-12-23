@@ -1101,18 +1101,19 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   /* Sprites */
   /***********/
 
-  sprites->counters = ccalloc(mzx_world->collision_count + 2, sizeof(char *));
+  sprites->counters = ccalloc(mzx_world->collision_count + 3, sizeof(char *));
 
-  build_var_buffer( &(sprites->counters)[0], "spr_yorder", mzx_world->sprite_y_order, NULL, 0);
-  build_var_buffer( &(sprites->counters)[1], "spr_collisions*", mzx_world->collision_count, NULL, 0);
+  build_var_buffer( &(sprites->counters)[0], "spr_num", mzx_world->sprite_num, NULL, 0);
+  build_var_buffer( &(sprites->counters)[1], "spr_yorder", mzx_world->sprite_y_order, NULL, 0);
+  build_var_buffer( &(sprites->counters)[2], "spr_collisions*", mzx_world->collision_count, NULL, 0);
 
   for(i = 0; i < mzx_world->collision_count; i++)
   {
     snprintf(var, 20, "spr_collision%i*", i);
-    build_var_buffer( &(sprites->counters)[i + 2], var,
+    build_var_buffer( &(sprites->counters)[i + 3], var,
      mzx_world->collision_list[i], NULL, 0);
   }
-  sprites->num_counters = i + 2;
+  sprites->num_counters = i + 3;
 
   for(i = 0, j = 0; j < num_sprite_nodes; i++, j++)
   {
