@@ -1671,10 +1671,14 @@ void __debug_counters(struct world *mzx_world)
       case -3:
       {
         int res = 0;
+        char *search_var = NULL;
         struct debug_node *search_targ = &root;
-        char *search_var = var_list[var_selected];
         char search_text_unescaped[VAR_SEARCH_MAX + 1] = { 0 };
         size_t search_text_length = 0;
+
+        // This will be almost always
+        if(var_selected < num_vars)
+          search_var = var_list[var_selected];
 
         strcpy(search_text_unescaped, search_text);
         unescape_string(search_text_unescaped, (int *)(&search_text_length));
