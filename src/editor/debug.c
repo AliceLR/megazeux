@@ -155,9 +155,13 @@ static void unescape_string(char *buf, int *len)
  ***********************/
 
 // We'll read off of these when we construct the tree
-int num_world_vars = 16;
-const char world_var_list[16][20] = {
+int num_world_vars = 20;
+const char *world_var_list[20] = {
   "bimesg", //no read
+  "blue_value",
+  "green_value",
+  "red_value",
+  "c_divisions",
   "commands",
   "divider",
   "fread_delimiter", //no read
@@ -174,23 +178,25 @@ const char world_var_list[16][20] = {
   "vlayer_height*",
   "vlayer_width*",
   };
-int num_board_vars = 9;
-const char board_var_list[9][20] = {
+int num_board_vars = 11;
+const char *board_var_list[11] = {
   "board_name*",
   "board_h*",
   "board_w*",
 //  "input*",
 //  "inputsize*",
+  "overlay_mode*",
   "playerfacedir",
   "playerlastdir",
   "playerx*",
   "playery*",
   "scrolledx*",
   "scrolledy*",
+  "timereset",
 };
 // Locals are added onto the end later.
 int num_robot_vars = 11;
-const char robot_var_list[11][12] = {
+const char *robot_var_list[11] = {
   "robot_name*",
   "bullettype",
   "lava_walk",
@@ -206,7 +212,7 @@ const char robot_var_list[11][12] = {
 // Sprite parent has yorder, collisions, and clist#
 // The following will all be added to the end of 'sprN_'
 int num_sprite_vars = 15;
-const char sprite_var_list[15][10] = {
+const char *sprite_var_list[15] = {
   "x",
   "y",
   "refx",
@@ -474,6 +480,7 @@ struct debug_node
 {
    char name[15];
    bool opened;
+   bool refresh_on_focus;
    bool show_child_contents;
    int num_nodes;
    int num_counters;
@@ -1233,17 +1240,19 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
   struct debug_node root_node =
   {
     "",
-    true,
-    false,
+    true,  //opened
+    false, //refresh_on_focus
+    false, //show_child_contents
     num_root_nodes,
     0,
-    NULL,
+    NULL,  //parent
     root_nodes,
     NULL
   };
 
   struct debug_node counters = {
     "Counters",
+    false,
     false,
     true,
     0,
@@ -1255,6 +1264,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
 
   struct debug_node strings = {
     "Strings",
+    false,
     false,
     true,
     0,
@@ -1268,6 +1278,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
     "Sprites",
     false,
     false,
+    false,
     0,
     0,
     root,
@@ -1278,6 +1289,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
   struct debug_node world = {
     "World",
     false,
+    true,
     false,
     0,
     0,
@@ -1289,6 +1301,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
   struct debug_node board = {
     "Board",
     false,
+    true,
     false,
     0,
     0,
@@ -1299,6 +1312,7 @@ static void build_debug_tree(struct world *mzx_world, struct debug_node *root)
 
   struct debug_node robots = {
     "Robots",
+    false,
     false,
     false,
     0,
@@ -1853,6 +1867,9 @@ void __debug_counters(struct world *mzx_world)
         break;
       }
     }
+    if(focus->refresh_on_focus)
+      for(i = 0; i < focus->num_counters; i++)
+        read_var(mzx_world, focus->counters[i]);
 
     destruct_dialog(&di);
 
