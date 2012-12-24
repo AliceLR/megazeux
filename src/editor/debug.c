@@ -1505,18 +1505,32 @@ static int new_counter_dialog(struct world *mzx_world, char *name)
     // String
     if(name[0] == '$')
     {
-      //set string -- int_val is the length here
       struct string temp;
       memset(&temp, '\0', sizeof(struct string));
-      temp.value = (char *)""; //tee hee
 
-      set_string(mzx_world, name, &temp, 0);
+      if(strchr(name, '.') || strchr(name, '+') || strchr(name, '#'))
+      {
+        confirm(mzx_world, "Characters .+# not allowed in string name.");
+        return 0;
+      }
+
+      if(!get_string(mzx_world, name, &temp, 0))
+      {
+        //Doesn't exist -- set string
+        temp.value = (char *)""; //tee hee
+        temp.length = 0;
+
+        set_string(mzx_world, name, &temp, 0);
+      }
+
       return 1;
     }
     // Counter
     else
     {
-      set_counter(mzx_world, name, 0, 0);
+      if(!get_counter(mzx_world, name, 0))
+        set_counter(mzx_world, name, 0, 0);
+
       return 1;
     }
   }
@@ -1543,31 +1557,53 @@ static int counter_debugger_idle_function(struct world *mzx_world,
 
   switch(key)
   {
+    // Search dialog
     case IKEY_f:
     {
       if(get_ctrl_status(keycode_internal))
       {
         di->return_value = 2;
         di->done = 1;
+        return 0;
       }
       break;
     }
+    // Repeat search
     case IKEY_r:
     {
       if(get_ctrl_status(keycode_internal))
       {
         di->return_value = -3;
         di->done = 1;
+        return 0;
       }
       break;
     }
-    default:
+    // Hide empties
+    case IKEY_h:
     {
-      return key;
+      if(get_alt_status(keycode_internal))
+      {
+        di->return_value = 4;
+        di->done = 1;
+        return 0;
+      }
+      break;
+    }
+    // New counter/string
+    case IKEY_n:
+    {
+      if(get_alt_status(keycode_internal))
+      {
+        di->return_value = 3;
+        di->done = 1;
+        return 0;
+      }
+      break;
     }
   }
 
-  return 0;
+  return key;
 }
 
 struct debug_node root;
