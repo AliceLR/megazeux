@@ -183,8 +183,8 @@ PUT [color] [thing] [param] # #                         |     NO      |
 PUT [color] [thing] [param] [dir]                       |     NO      |
 PUT [color] [char] OVERLAY # #                          |     NO      |
 PUT [color] [thing] [param] [dir] PLAYER                |     NO      |
-PUT PLAYER # #                                          |     NO      |
-PUT PLAYER [dir]                                        |     NO      |
+PUT PLAYER # #                                          |    YES(9)   |
+PUT PLAYER [dir]                                        |    YES(9)   |
 PUT "@FILENAME.XXX" Image_File [param] # #              |     NO      |
 PUT [color] Sprite [param] # #                          |     NO      |
 REL COUNTERS                                            |     NO      |
@@ -263,6 +263,7 @@ ZAP "label" #                                           |     NO      |
 (3) = While it never ends the cycle in current MZX worlds, it can end the cycle in special cases in pre-port MZX worlds. If a loop consists of a label, a send to the same label, and none of the following commands: DEC, DIVIDE, DOUBLE, GIVE, HALF, INC, LOOP FOR #, MODULO, MULTIPLY, SET, TAKE, TRADE, then the label itself will end the cycle.
 (4) = Considering "copyrobot" commands are executed always, even if no match is found, this may not be correct.
 (5) = Attempting to jump to labels that do not exist does not consume a cycle.
-(6) = Does not end a cycle if # is 0.
+(6) = Does not end a cycle if all # is/are 0.
 (7) = A special case exists where it currently executes a cycle end going through a transporter.
 (8) = A special case exists for the SAVE_GAME and SAVE_WORLD "special" counters which do end the cycle if used.
+(9) = Does not end a cycle if any or all of the affected objects do not move.
