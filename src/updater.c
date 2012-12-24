@@ -388,21 +388,10 @@ err_out:
 
 static void __check_for_updates(struct config_info *conf)
 {
-  char **list_entries, buffer[LINE_BUF_LEN], *url_base, *value;
-  struct manifest_entry *removed, *replaced, *added, *e;
-  int i = 0, entries = 0, buf_len, result;
-  char update_branch[LINE_BUF_LEN];
-  const char *version = VERSION;
-  int list_entry_width = 0;
-  enum host_status status;
-  struct host *h = NULL;
-  unsigned int retries;
-  bool ret = false;
-  FILE *f;
-
   int cur_host;
   char *update_host;
   bool try_next_host = true;
+  bool ret = false;
 
   if(conf->update_host_count < 1)
   {
@@ -413,16 +402,27 @@ static void __check_for_updates(struct config_info *conf)
   if(!swivel_current_dir(true))
     goto err_out;
 
-  // Acid test: Can we write to this directory?
-  f = fopen_unsafe(UPDATES_TXT, "w+b");
-  if(!f)
-  {
-    error("Failed to create \"" UPDATES_TXT "\". Check permissions.", 1, 8, 0);
-    goto err_chdir;
-  }
-
   for(cur_host = 0; (cur_host < conf->update_host_count) && try_next_host; cur_host++)
   {
+    char **list_entries, buffer[LINE_BUF_LEN], *url_base, *value;
+    struct manifest_entry *removed, *replaced, *added, *e;
+    int i = 0, entries = 0, buf_len, result;
+    char update_branch[LINE_BUF_LEN];
+    const char *version = VERSION;
+    int list_entry_width = 0;
+    enum host_status status;
+    struct host *h = NULL;
+    unsigned int retries;
+    FILE *f;
+
+    // Acid test: Can we write to this directory?
+    f = fopen_unsafe(UPDATES_TXT, "w+b");
+    if(!f)
+    {
+      error("Failed to create \"" UPDATES_TXT "\". Check permissions.", 1, 8, 0);
+      goto err_chdir;
+    }
+
     update_host = conf->update_hosts[cur_host];
 
     if(!reissue_connection(conf, &h, update_host))
@@ -769,7 +769,6 @@ err_free_url_base:
     free(url_base);
 err_host_destroy:
     host_destroy(h);
-    h = NULL;
   } //end host for loop
 
 err_chdir:
