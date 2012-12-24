@@ -1,3 +1,12 @@
+GIT
+
+FEATURES
+
+BUGFIXES
+
+DEVELOPERS
+
+
 December 24, 2012 - MZX 2.84c
 
 Hey all, new version of MegaZeux here! And hopefully without any

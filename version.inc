@@ -5,5 +5,5 @@
 # NOTE: TARGET must NOT be kept in quotes, and spaces CANNOT be used.
 #
 
-VERSION="2.84c"
-TARGET=mzx284c
+VERSION="GIT"
+TARGET=mzxgit
