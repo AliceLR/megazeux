@@ -588,6 +588,9 @@ static void __check_for_updates(struct config_info *conf)
       goto err_roll_back_manifest;
     }
 
+    // At this point, we have a successful manifest, so we won't need another host
+    try_next_host = false;
+
     if(!removed && !replaced && !added)
     {
       struct element *elements[3];
@@ -601,8 +604,8 @@ static void __check_for_updates(struct config_info *conf)
       result = run_dialog(NULL, &di);
       destruct_dialog(&di);
 
-      if((result != 1) || (cur_host + 1 >= conf->update_host_count))
-        try_next_host = false;
+      if((result == 1) && (cur_host < conf->update_host_count))
+        try_next_host = true;
 
       goto err_free_update_manifests;
     }
@@ -715,7 +718,6 @@ static void __check_for_updates(struct config_info *conf)
         if(cancel_update)
         {
           error("Download was cancelled; update aborted.", 1, 8, 0);
-          try_next_host = false;
           goto err_free_delete_list;
         }
 
@@ -740,7 +742,6 @@ static void __check_for_updates(struct config_info *conf)
       if(!f)
       {
         error("Failed to create \"" DELETE_TXT "\". Check permissions.", 1, 8, 0);
-        try_next_host = false;
         goto err_free_delete_list;
       }
 
