@@ -1224,7 +1224,10 @@ enum host_status host_recv_file(struct host *h, const char *url,
   if(line_len != 15 ||
    strncmp(line, "HTTP/1.", 7) != 0 ||
    strcmp(&line[7 + 1], " 200 OK") != 0)
+  {
+    warn("Invalid status: %s\nFailed for url '%s'\n", line, url);
     return -HOST_HTTP_INVALID_STATUS;
+  }
 
   // Now parse the HTTP headers, extracting only the pertinent fields
 

@@ -118,8 +118,11 @@ __libspec int main(int argc, char *argv[])
     split_path_filename(argv[1], mzx_world.conf.startup_path, 256,
      mzx_world.conf.startup_file, 256);
 
-  if(mzx_world.conf.startup_path)
+  if(mzx_world.conf.startup_path && strlen(mzx_world.conf.startup_path))
+  {
+    debug("Config: Using '%s' as startup path\n", mzx_world.conf.startup_path);
     strncpy(current_dir, mzx_world.conf.startup_path, MAX_PATH);
+  }
 
   chdir(current_dir);
 
