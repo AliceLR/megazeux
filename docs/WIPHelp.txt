@@ -3370,7 +3370,8 @@ last search can be done with Ctrl+R. Options:
 -Search names: Searches counter and string names.
 -Search values: Searches counter and string values.
 -Case sensitive: Returns results only if case matches.
--Reverse: Searches from top to bottom.
+-Reverse: Searches from bottom to top (as opposed to the
+default top to bottom).
 -Wrap search: If no results are found, starts from the opposite
 end and searches until a result is found or the original search
 location is reached.
@@ -3379,14 +3380,16 @@ of the current list will not be searched.
 
 ~ANew~F: Creates a new counter or string with the given name. Its
 value will be 0 for a new counter, and blank for a new string.
-Any counter or string that already exists with the given name
-will be replaced; you will not be asked for confirmation in
-this case.
+If any counter or string already exists with the given name,
+this will be ignored and the original counter/string will keep
+its original value; you will not be notified of any such
+conflicts. This menu can be directly accessed with Alt+N.
 
 ~AToggle Empties~F: Sets whether counters with values of 0 and
 blank strings are shown in the display lists. Defaults to Show
 (i.e. counters and strings with these values will be shown).
-Searching forces this setting to Show.
+Searching forces this setting to Show. This menu can be
+directly accessed with Alt+H.
 
 ~AExport~F: Exports a text file list of SET commands that would set
 the current user-defined counters and strings, and the built-in
@@ -9050,7 +9053,7 @@ replace in the target character set.
 :1st: 
 $~9NEW in MegaZeux!
 
-Dec 22, 2012 - MZX 2.84c
+December 24, 2012 - MZX 2.84c
 
 Hey all, new version of MegaZeux here! And hopefully without
 any crashes this time around!  Haha yeah right.

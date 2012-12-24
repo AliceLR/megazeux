@@ -1,4 +1,4 @@
-Dec 22, 2012 - MZX 2.84c
+December 24, 2012 - MZX 2.84c
 
 Hey all, new version of MegaZeux here! And hopefully without any
 crashes this time around!  Haha yeah right.
