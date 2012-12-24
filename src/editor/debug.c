@@ -751,7 +751,7 @@ static void *memmemcaseind(void *A, void *B, int *index, size_t a_len, size_t b_
 static int find_variable(struct world *mzx_world, struct debug_node *node,
  char **search_var, struct debug_node **search_node, int *search_pos,
  char *match_text, int *match_text_index, size_t match_length,
- int search_flags, char *stop_var)
+ int search_flags, char **stop_var)
 {
   int i;
   char *var;
@@ -845,8 +845,11 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
       return 1;
     }
 
-    if(node->counters[i] == stop_var)
+    if(node->counters[i] == *stop_var)
       return -1;
+
+    if(!*stop_var)
+      *stop_var = node->counters[i];
   }
 
   if(!(search_flags & VAR_SEARCH_REVERSE))
@@ -937,7 +940,7 @@ static int start_var_search(struct world *mzx_world, struct debug_node *node,
 
   while(!result)
     result = find_variable(mzx_world, node, search_var, search_node,
-     search_pos, match_text, index, match_length, search_flags, stop_var);
+     search_pos, match_text, index, match_length, search_flags, &stop_var);
 
   return result;
 }
@@ -1718,7 +1721,7 @@ void __debug_counters(struct world *mzx_world)
             // First, is it in the current list? Override!
             for(i = 0; i < num_vars; i++)
             {
-              if(!strcmp(var_list[i] + VAR_LIST_VAR, search_var + VAR_LIST_VAR))
+              if(var_list[i] == search_var)
               {
                 search_pos = i;
                 search_node = focus;
@@ -1732,7 +1735,7 @@ void __debug_counters(struct world *mzx_world)
 
             // Open all parents
             node = search_node;
-            while(node->parent)
+            while(node && node->parent)
             {
               node = node->parent;
               node->opened = true;
