@@ -126,6 +126,9 @@ static void unescape_string(char *buf, int *len)
 
     j++;
 
+    if(j == old_len)
+      break;
+
     if(buf[j] == 'n')
       buf[i] = '\n';
     else if(buf[j] == 'r')
@@ -134,7 +137,7 @@ static void unescape_string(char *buf, int *len)
       buf[i] = '\t';
     else if(buf[j] == '\\')
       buf[i] = '\\';
-    else if(buf[j] == 'x')
+    else if(buf[j] == 'x' && (j + 2 < old_len))
     {
       char t = buf[j + 3];
       buf[j + 3] = '\0';
