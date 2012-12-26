@@ -43,6 +43,10 @@ static struct break_point **break_points = NULL;
 static bool step = false;
 static int selected = 0;
 
+static char line_buffer[256] = { 0 };
+static int line_size = 0;
+static int line_num = 0;
+
 /*********************/
 /* Breakpoint editor */
 /*********************/
@@ -314,9 +318,6 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
 
   char *program;
   char *cmd_ptr;
-  char *cmd_text;
-  int line_num;
-  int size = 0;
 
   if(!robo_debugger_enabled)
     return 0;
@@ -335,10 +336,8 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
     char *c;
     char *next;
     int print_ignores = 1, base = 10;
-    cmd_text = cmalloc(256);
-    cmd_text[255] = 0;
 
-    disassemble_line(cmd_ptr, &next, cmd_text, NULL, &size, print_ignores, NULL, NULL, base);
+    disassemble_line(cmd_ptr, &next, line_buffer, NULL, &line_size, print_ignores, NULL, NULL, base);
 
     if(!step)
     {
@@ -349,7 +348,7 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
         if(strlen(b->match_name) && !strstr(cur_robot->robot_name, b->match_name))
           continue;
 
-        if(!boyer_moore_search((void *)cmd_text, strlen(cmd_text),
+        if(!boyer_moore_search((void *)line_buffer, strlen(line_buffer),
          (void *)b->match_string, strlen(b->match_string), b->index, false))
           continue;
 
@@ -379,18 +378,18 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
     struct element *elements[num_elements];
     struct dialog di;
 
-    char info[76] = { 0 };
-    char label[4][76] = { { 0 } };
-    char *cmd_pos = cmd_text;
+    char info[77] = { 0 };
+    char label[4][77] = { { 0 } };
+    char *line_pos = line_buffer;
 
-    snprintf(info, 75, "Matched robot `%s` (#%i) at line %i (size %i):",
-     cur_robot->robot_name, id, line_num, size);
-    info[75] = 0;
-    for(i = 0; cmd_pos < cmd_text + strlen(cmd_text) && i < 4; i++)
+    snprintf(info, 76, "Matched robot `%s` (#%i) at line %i (size %i):",
+     cur_robot->robot_name, id, line_num, line_size);
+    info[76] = 0;
+    for(i = 0; line_pos < line_buffer + strlen(line_buffer) && i < 4; i++)
     {
-      strncpy(label[i], cmd_pos, MIN(strlen(cmd_pos) + 1, 75));
-      label[i][75] = 0;
-      cmd_pos += 75;
+      strncpy(label[i], line_pos, MIN(strlen(line_pos) + 1, 76));
+      label[i][76] = 0;
+      line_pos += 76;
     }
 
     elements[0]  = construct_button(3,  7, "Continue", -1);
@@ -471,8 +470,6 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
       }
     }
   } while(!done);
-
-  free(cmd_text);
 
   return stop_robot;
 }
