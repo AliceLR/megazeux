@@ -42,6 +42,7 @@ static struct break_point **break_points = NULL;
 
 static bool step = false;
 static int selected = 0;
+static int position = 1;
 
 static char line_buffer[256] = { 0 };
 static int line_size = 0;
@@ -304,6 +305,20 @@ static int debug_robot_idle_function(struct world *mzx_world,
       di->done = 1;
       return 0;
     }
+    case IKEY_PAGEUP:
+    {
+      position = 0;
+      di->return_value = -2; //do nothing
+      di->done = 1;
+      return 0;
+    }
+    case IKEY_PAGEDOWN:
+    {
+      position = 1;
+      di->return_value = -2; //do nothing
+      di->done = 1;
+      return 1;
+    }
   }
   return key;
 }
@@ -373,39 +388,52 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
 
   // Open debug dialog
   do {
-    int dialog_result;
-    int num_elements = 11;
+    int button_line;
+    int num_lines = 0;
+    int num_elements = 10;
     struct element *elements[num_elements];
+
+    int dialog_y = 0;
+    int dialog_result;
     struct dialog di;
 
     char info[77] = { 0 };
     char label[4][77] = { { 0 } };
     char *line_pos = line_buffer;
 
-    snprintf(info, 76, "Matched robot `%s` (#%i) at line %i (size %i):",
+    snprintf(info, 76, "Robot Debugger - matched `%s` (#%i) at line %i (size %i):",
      cur_robot->robot_name, id, line_num, line_size);
     info[76] = 0;
-    for(i = 0; line_pos < line_buffer + strlen(line_buffer) && i < 4; i++)
+    for(i = 0; i < 4; i++)
     {
-      strncpy(label[i], line_pos, MIN(strlen(line_pos) + 1, 76));
-      label[i][76] = 0;
-      line_pos += 76;
+      if(line_pos < line_buffer + strlen(line_buffer))
+      {
+        label[i][76] = 0;
+        strncpy(label[i], line_pos, MIN(strlen(line_pos) + 1, 76));
+        line_pos += 76;
+        num_lines++;
+      }
+      else
+        label[i][0] = 0;
+
+      elements[9 - i] = construct_label(2, num_lines, label[i]);
+      // FIXME: hack
+      ((struct label_element *)(elements[9 - i]))->respect_colors = false;
     }
 
-    elements[0]  = construct_button(3,  7, "Continue", -1);
-    elements[1]  = construct_button(15, 7, "Next", 0);
-    elements[2]  = construct_button(23, 7, "Stop", 1);
-    elements[3]  = construct_button(31, 7, "Stop all", 2);
-    elements[4]  = construct_button(52, 7, "Counters", 3);
-    elements[5]  = construct_button(64, 7, "Breakpoints", 4);
-    elements[6]  = construct_label(2, 1, info);
-    elements[7]  = construct_label(2, 2, label[0]);
-    elements[8]  = construct_label(2, 3, label[1]);
-    elements[9]  = construct_label(2, 4, label[2]);
-    elements[10] = construct_label(2, 5, label[3]);
+    button_line = num_lines + 2;
+    if(position)
+      dialog_y = 25 - (num_lines + 4);
 
-    construct_dialog_ext(&di, "Robot Debugger", 0, 6,
-     80, 10, elements, num_elements, 0, 0, selected,
+    elements[0]  = construct_button( 3, button_line, "Continue", -1);
+    elements[1]  = construct_button(15, button_line, "Next", 0);
+    elements[2]  = construct_button(23, button_line, "Stop", 1);
+    elements[3]  = construct_button(31, button_line, "Stop all", 2);
+    elements[4]  = construct_button(52, button_line, "Counters", 3);
+    elements[5]  = construct_button(64, button_line, "Breakpoints", 4);
+
+    construct_dialog_ext(&di, info, 0, dialog_y,
+     80, num_lines + 4, elements, num_elements, 0, 0, selected,
      debug_robot_idle_function);
 
     m_show();
@@ -414,10 +442,16 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
 
     destruct_dialog(&di);
 
-    selected = dialog_result + 1;
+    if(dialog_result != -2)
+      selected = dialog_result + 1;
 
     switch(dialog_result)
     {
+      // Do nothing
+      case -2:
+      {
+        break;
+      }
       // Escape/Continue
       case -1:
       {

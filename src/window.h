@@ -91,6 +91,7 @@ struct label_element
 {
   struct element e;
   const char *text;
+  bool respect_colors;
 };
 
 struct box

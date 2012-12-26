@@ -932,7 +932,10 @@ static void draw_label(struct world *mzx_world, struct dialog *di,
   int x = di->x + e->x;
   int y = di->y + e->y;
 
-  color_string_ext(src->text, x, y, DI_TEXT, 256, 16, true);
+  if(src->respect_colors)
+    color_string_ext(src->text, x, y, DI_TEXT, 256, 16, true);
+  else
+    write_string_ext(src->text, x, y, DI_TEXT, true, 256, 16);
 }
 
 static void draw_input_box(struct world *mzx_world, struct dialog *di,
@@ -1778,6 +1781,7 @@ struct element *construct_label(int x, int y, const char *text)
 {
   struct label_element *src = cmalloc(sizeof(struct label_element));
   src->text = text;
+  src->respect_colors = true;
   construct_element(&(src->e), x, y, (int)strlen(text), 1,
    draw_label, NULL, NULL, NULL, NULL);
 
