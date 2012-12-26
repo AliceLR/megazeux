@@ -29,6 +29,7 @@
 #include "../util.h"
 
 #include "../world_struct.h"
+#include "../board_struct.h"
 #include "../robot_struct.h"
 #include "../legacy_rasm.h"
 
@@ -433,16 +434,23 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
         break;
       }
       // Stop all
-      case 1:
+      case 2:
       {
-        for(i = 0; i < mzx_world->current_board->num_robots; i++)
+        struct board *cur_board = mzx_world->current_board;
+        // We pretty much need to simulate exactly what happens when
+        // a robot hits the end command, here.
+        for(i = 0; i < cur_board->num_robots; i++)
         {
-          mzx_world->current_board->robot_list[i]->status = 1;
-          mzx_world->current_board->robot_list[i]->cur_prog_line = 0;
+          struct robot *r = cur_board->robot_list[i];
+          if(r)
+          {
+            r->status = 1;
+            r->cur_prog_line = 0;
+          }
         }
       }
       // Stop
-      case 2:
+      case 1:
       {
         stop_robot = true;
         step = false;
