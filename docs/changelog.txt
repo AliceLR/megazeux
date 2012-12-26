@@ -2,7 +2,14 @@ GIT
 
 FEATURES
 
++ Added a built-in robot debugger. See the Debug Mode section of
+  the help file for details.
+
 BUGFIXES
+
++ Fixed counter debugger issue where counters and strings
+  starting with chars over 'Z' would cause everything in their
+  section to be placed into the '#' list.
 
 DEVELOPERS
 

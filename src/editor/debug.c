@@ -965,16 +965,16 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 
   for(i = 0, n = 0; i < num_counters; i++)
   {
-    char first = toupper(mzx_world->counter_list[i]->name[0]);
+    char first = tolower(mzx_world->counter_list[i]->name[0]);
     // We need to switch child nodes
-    if((first > n+64 && n<27) || i == 0)
+    if((first > n+96 && n<27) || i == 0)
     {
-      if(first < 'A')
+      if(first < 'a')
         n = 0;
-      else if(first > 'Z')
+      else if(first > 'z')
         n = 27;
       else
-        n = (int)first - 64;
+        n = (int)first - 96;
       num = &(counter_nodes[n % 27].num_counters);
       list = &(counter_nodes[n % 27].counters);
       alloc = *num;
@@ -1014,18 +1014,18 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   // sorted them, it's only polite (and also will make MZX not crash)
   for(i = 0, n = 0; i < num_strings; i++)
   {
-    char first = toupper(mzx_world->string_list[i]->name[1]);
+    char first = tolower(mzx_world->string_list[i]->name[1]);
     mzx_world->string_list[i]->list_ind = i;
 
     // We need to switch child nodes
-    if((first > n+64 && n<27) || i == 0)
+    if((first > n+96 && n<27) || i == 0)
     {
-      if(first < 'A')
+      if(first < 'a')
         n = 0;
-      else if(first > 'Z')
+      else if(first > 'z')
         n = 27;
       else
-        n = (int)first - 64;
+        n = (int)first - 96;
       num = &(string_nodes[n % 27].num_counters);
       list = &(string_nodes[n % 27].counters);
       alloc = *num;
