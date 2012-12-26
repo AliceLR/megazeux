@@ -476,7 +476,9 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
 }
 
 
-static void *memrchr(const void *mem, char ch, size_t len)
+// Okay I seriously can't be bothered here to figure out
+// which platforms actually have this function and which don't
+static void *boyer_moore_memrchr(const void *mem, char ch, size_t len)
 {
   char *e = (char *)mem + len;
   while(--e != (char *)mem)
@@ -499,14 +501,14 @@ void boyer_moore_index(void *B, size_t b_len,
   {
     if(!ignore_case)
     {
-      c1 = memrchr(b, *s, b_len);
+      c1 = boyer_moore_memrchr(b, *s, b_len);
       if(c1)
         index[(unsigned)(*s)] = (last - c1);
     }
     else
     {
-      c1 = memrchr(b, tolower(*s), b_len);
-      c2 = memrchr(b, toupper(*s), b_len);
+      c1 = boyer_moore_memrchr(b, tolower(*s), b_len);
+      c2 = boyer_moore_memrchr(b, toupper(*s), b_len);
       if(c1 && c1 > c2)
         index[(unsigned)tolower(*s)] = (last - c1);
       else
