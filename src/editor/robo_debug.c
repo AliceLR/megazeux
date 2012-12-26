@@ -21,6 +21,7 @@
 #include <string.h>
 
 #include "robo_debug.h"
+#include "debug.h"
 
 #include "../event.h"
 #include "../graphics.h"
@@ -37,6 +38,9 @@ static int robo_debugger_override = 0;
 static int num_break_points = 0;
 static int num_break_points_allocated = 0;
 static struct break_point **break_points = NULL;
+
+static bool step = false;
+static int selected = 0;
 
 /*********************/
 /* Breakpoint editor */
@@ -229,6 +233,16 @@ void __edit_breakpoints(struct world *mzx_world)
   m_hide();
 }
 
+// Turn off the debugger without clearing the breakpoints
+// For now we'll just have this disable the step, since starting
+// with the debugger on may have very useful applications
+void pause_robot_debugger(void)
+{
+  //robo_debugger_enabled = 0;
+  step = false;
+}
+
+// Called when the editor exits
 void free_breakpoints(void)
 {
   for(int i = 0; i < num_break_points; i++)
@@ -243,35 +257,214 @@ void free_breakpoints(void)
 
   robo_debugger_enabled = 0;
   robo_debugger_override = 0;
+  step = false;
 }
-
 
 /********************/
 /* Robotic debugger */
 /********************/
 
-int __debug_robot(struct world *mzx_world, struct robot *cur_robot,
- char *cmd_ptr)
+static int debug_robot_idle_function(struct world *mzx_world,
+ struct dialog *di, int key)
 {
-  if(!mzx_world->editing || !robo_debugger_enabled)
+  switch(key)
+  {
+    case IKEY_c:
+    {
+      di->return_value = -1;
+      di->done = 1;
+      return 0;
+    }
+    case IKEY_n:
+    {
+      di->return_value = 0;
+      di->done = 1;
+      return 0;
+    }
+    case IKEY_s:
+    {
+      if(get_alt_status(keycode_internal))
+        di->return_value = 2;
+      else
+        di->return_value = 1;
+      di->done = 1;
+      return 0;
+    }
+    case IKEY_F11:
+    {
+      if(get_alt_status(keycode_internal))
+        di->return_value = 4;
+      else
+        di->return_value = 3;
+      di->done = 1;
+      return 0;
+    }
+  }
+  return key;
+}
+
+// FIXME: make it NOT come here every command while editing, maybe. Just a thought
+// If the return value != 0, the robot ignores the current command and ends
+int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
+{
+  int i;
+  bool done = false;
+  bool stop_robot = false;
+
+  char *program;
+  char *cmd_ptr;
+  char *cmd_text;
+  int line_num;
+  int size = 0;
+
+  if(!robo_debugger_enabled)
     return 0;
+
+  program = cur_robot->program_bytecode;
+  cmd_ptr = program + cur_robot->cur_prog_line;
 
 #ifdef CONFIG_DEBYTECODE
   {
     confirm(mzx_world, "Robotic debugger not yet supported by debytecode");
     robo_debugger_enabled = 0;
-
     return 0;
   }
 #else //!CONFIG_DEBYTECODE
   {
-    // decompile command
-    // for each breakpoint, do a search through the decompiled command
-    // if we didn't find a match, return
+    char *c;
+    char *next;
+    int print_ignores = 1, base = 10;
+    cmd_text = cmalloc(256);
+    cmd_text[255] = 0;
+
+    disassemble_line(cmd_ptr, &next, cmd_text, NULL, &size, print_ignores, NULL, NULL, base);
+
+    if(!step)
+    {
+      bool match = false;
+      for(i = 0; i < num_break_points; i++)
+      {
+        struct break_point *b = break_points[i];
+        if(strlen(b->match_name) && !strstr(cur_robot->robot_name, b->match_name))
+          continue;
+
+        if(!boyer_moore_search((void *)cmd_text, strlen(cmd_text),
+         (void *)b->match_string, strlen(b->match_string), b->index, false))
+          continue;
+
+        match = true;
+        break;
+      }
+
+      if(!match)
+        return 0;
+    }
+
+    // figure out our line number
+    line_num = 1;
+    c = program + 1;
+    while(c < cmd_ptr)
+    {
+      c += *c + 2;
+      line_num++;
+    }
   }
 #endif
 
-  // control loop!
+  // Open debug dialog
+  do {
+    int dialog_result;
+    int num_elements = 11;
+    struct element *elements[num_elements];
+    struct dialog di;
 
-  return 0;
+    char info[76] = { 0 };
+    char label[4][76] = { { 0 } };
+    char *cmd_pos = cmd_text;
+
+    snprintf(info, 75, "Matched robot `%s` (#%i) at line %i (size %i):",
+     cur_robot->robot_name, id, line_num, size);
+    info[75] = 0;
+    for(i = 0; cmd_pos < cmd_text + strlen(cmd_text) && i < 4; i++)
+    {
+      strncpy(label[i], cmd_pos, MIN(strlen(cmd_pos) + 1, 75));
+      label[i][75] = 0;
+      cmd_pos += 75;
+    }
+
+    elements[0]  = construct_button(3,  7, "Continue", -1);
+    elements[1]  = construct_button(15, 7, "Next", 0);
+    elements[2]  = construct_button(23, 7, "Stop", 1);
+    elements[3]  = construct_button(31, 7, "Stop all", 2);
+    elements[4]  = construct_button(52, 7, "Counters", 3);
+    elements[5]  = construct_button(64, 7, "Breakpoints", 4);
+    elements[6]  = construct_label(2, 1, info);
+    elements[7]  = construct_label(2, 2, label[0]);
+    elements[8]  = construct_label(2, 3, label[1]);
+    elements[9]  = construct_label(2, 4, label[2]);
+    elements[10] = construct_label(2, 5, label[3]);
+
+    construct_dialog_ext(&di, "Robot Debugger", 0, 6,
+     80, 10, elements, num_elements, 0, 0, selected,
+     debug_robot_idle_function);
+
+    m_show();
+    dialog_result = run_dialog(mzx_world, &di);
+    m_hide();
+
+    destruct_dialog(&di);
+
+    selected = dialog_result + 1;
+
+    switch(dialog_result)
+    {
+      // Escape/Continue
+      case -1:
+      {
+        step = false;
+        done = true;
+        break;
+      }
+      // Step
+      case 0:
+      {
+        step = true;
+        done = true;
+        break;
+      }
+      // Stop all
+      case 1:
+      {
+        for(i = 0; i < mzx_world->current_board->num_robots; i++)
+        {
+          mzx_world->current_board->robot_list[i]->status = 1;
+          mzx_world->current_board->robot_list[i]->cur_prog_line = 0;
+        }
+      }
+      // Stop
+      case 2:
+      {
+        stop_robot = true;
+        step = false;
+        done = true;
+        break;
+      }
+      // Counter debugger
+      case 3:
+      {
+        __debug_counters(mzx_world);
+        break;
+      }
+      // Edit breakpoints
+      case 4:
+      {
+        __edit_breakpoints(mzx_world);
+        break;
+      }
+    }
+  } while(!done);
+
+  free(cmd_text);
+
+  return stop_robot;
 }

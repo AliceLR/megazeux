@@ -121,7 +121,7 @@ __editor_maybe_static void (*edit_breakpoints)(struct world *mzx_world);
 static const char *const save_ext[] = { ".SAV", NULL };
 static int update_music;
 
-static bool editing = true;
+bool editing = true;
 
 //Bit 1- +1
 //Bit 2- -1

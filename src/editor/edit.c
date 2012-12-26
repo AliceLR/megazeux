@@ -3457,9 +3457,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             load_board_module(src_board);
 
             mzx_world->editing = true;
+            pause_robot_debugger();
 
             play_game(mzx_world);
-            free_breakpoints();
 
             mzx_world->editing = false;
 
@@ -3950,6 +3950,9 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   clear_screen(32, 7);
   insta_fadeout();
   strcpy(curr_file, current_world);
+
+  // Free the robot debugger data
+  free_breakpoints();
 
   // Fix the screen, if the file wasn't saved then the
   // loader can't do this later

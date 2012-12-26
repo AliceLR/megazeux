@@ -45,6 +45,7 @@ int take_key(struct world *mzx_world, int color);
 int give_key(struct world *mzx_world, int color);
 
 extern bool pal_update;
+extern bool editing;
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void play_game(struct world *mzx_world);
@@ -61,7 +62,7 @@ CORE_LIBSPEC extern void (*draw_debug_box)(struct world *mzx_world,
  int x, int y, int d_x, int d_y);
 
 CORE_LIBSPEC extern int (*debug_robot)(struct world *mzx_world,
- struct robot *cur_robot, char *cmd_ptr);
+ struct robot *cur_robot, int id);
 CORE_LIBSPEC extern void (*edit_breakpoints)(struct world *mzx_world);
 #endif // CONFIG_EDITOR
 
