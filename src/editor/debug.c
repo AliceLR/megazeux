@@ -19,7 +19,6 @@
  * Foundation, Inc., 51 Franklin Street, Fifth Floor, Boston, MA 02110-1301 USA
  */
 
-//FIXME: "Hide empties" sometimes hides things that aren't empty (fixed?)
 //FIXME: Strings/counters with special chars in names -- maybe don't bother?
 
 #include "debug.h"
@@ -31,6 +30,7 @@
 #include "../window.h"
 #include "../intake.h"
 #include "../event.h"
+#include "../util.h"
 #include "../world.h"
 
 #include <string.h>
@@ -716,41 +716,6 @@ static int select_var_buffer(struct debug_node *node, char *var_name,
 /* Counter search */
 /******************/
 
-// Let's implement some variations on strstr first
-// Find the first occurence of substring sub in memory block A of size len
-// We use a jump index to speed up matches by quite a bit
-static void *memmemind(void *A, void *B, int *index, size_t a_len, size_t b_len) {
-  unsigned char *a = (unsigned char *)A;
-  unsigned char *b = (unsigned char *)B;
-  size_t i = b_len - 1;
-  int j;
-  while(i < a_len) {
-    j = b_len - 1;
-    while(j >= 0 && a[i] == b[j])
-      j--, i--;
-    if(j == -1)
-      return (void *)(a + i);
-    i += MAX(1, index[a[i]]) + (b_len - j - 1);
-  }
-  return NULL;
-}
-// This requires that the index was built case-insensitively and indexed by tolower()
-static void *memmemcaseind(void *A, void *B, int *index, size_t a_len, size_t b_len) {
-  unsigned char *a = (unsigned char *)A;
-  unsigned char *b = (unsigned char *)B;
-  size_t i = b_len - 1;
-  int j;
-  while(i < a_len) {
-    j = b_len - 1;
-    while(j >= 0 && tolower(a[i]) == tolower(b[j]))
-      j--, i--;
-    if(j == -1)
-      return (void *)(a + i);
-    i += MAX(1, index[tolower(a[i])]) + (b_len - j - 1);
-  }
-  return NULL;
-}
-
 static int find_variable(struct world *mzx_world, struct debug_node *node,
  char **search_var, struct debug_node **search_node, int *search_pos,
  char *match_text, int *match_text_index, size_t match_length,
@@ -760,6 +725,7 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
   char *var;
   void *v = NULL;
   int start = 0, stop = node->num_counters, inc = 1;
+  bool ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
 
   if(search_flags & VAR_SEARCH_REVERSE)
   {
@@ -799,10 +765,8 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
 
     if(search_flags & VAR_SEARCH_NAMES)
     {
-      if(search_flags & VAR_SEARCH_CASESENS)
-        v = memmemind(var, match_text, match_text_index, strlen(var), match_length);
-      else
-        v = memmemcaseind(var, match_text, match_text_index, strlen(var), match_length);
+      v = boyer_moore_search(var, strlen(var), match_text, match_length,
+           match_text_index, ignore_case);
     }
     if((search_flags & VAR_SEARCH_VALUES) && !v)
     {
@@ -834,10 +798,8 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
         length = strlen(value);
       }
 
-      if(search_flags & VAR_SEARCH_CASESENS)
-        v = memmemind(value, match_text, match_text_index, length, match_length);
-      else
-        v = memmemcaseind(value, match_text, match_text_index, length, match_length);
+      v = boyer_moore_search(value, length, match_text, match_length,
+           match_text_index, ignore_case);
     }
 
     if(v)
@@ -899,31 +861,10 @@ static int start_var_search(struct world *mzx_world, struct debug_node *node,
   char *stop_var = NULL;
 
   // Build the index that's gonna save our bacon when we search through 1m counters
-  char *s = match_text, *last = match_text + match_length - 1;
   int index[256] = { 0 };
-  while(s < last)
-  {
-    if(search_flags & VAR_SEARCH_CASESENS)
-    {
-      char *ch = strrchr(match_text, *s);
-      if(ch)
-        index[(unsigned)(*s)] = (last - ch);
-    }
-    else
-    {
-      char *low = strrchr(match_text, tolower(*s));
-      char *high = strrchr(match_text, toupper(*s));
-      if(low && low > high)
-        index[(unsigned)tolower(*s)] = (last - low);
-      else
-      if(high)
-        index[(unsigned)tolower(*s)] = (last - high);
-    }
-    s++;
-  }
-  for(int i = 0; i < 256; i++)
-    if(index[i] <= 0 || index[i] > (int)match_length)
-      index[i] = match_length;
+  bool ignore_case = (search_flags & VAR_SEARCH_CASESENS) == 0;
+
+  boyer_moore_index(match_text, match_length, index, ignore_case);
 
   // Set up where the search should stop
   if(search_flags & VAR_SEARCH_WRAP)

@@ -1291,6 +1291,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     // Get command number
     cmd = cmd_ptr[0];
 
+    if(debug_robot && mzx_world->editing)
+    {
+      // Returns 1 if the user chose to stop the program.
+      if(debug_robot(mzx_world, cur_robot, cmd_ptr))
+        cmd = ROBOTIC_CMD_END;
+    }
+
     // Act according to command
     switch(cmd)
     {

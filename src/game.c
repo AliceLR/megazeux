@@ -116,6 +116,10 @@ __editor_maybe_static void (*debug_counters)(struct world *mzx_world);
 __editor_maybe_static void (*draw_debug_box)(struct world *mzx_world,
  int x, int y, int d_x, int d_y);
 
+__editor_maybe_static int (*debug_robot)(struct world *mzx_world, struct
+ robot *cur_robot, char *cmd_ptr);
+__editor_maybe_static void (*edit_breakpoints)(struct world *mzx_world);
+
 static const char *const save_ext[] = { ".SAV", NULL };
 static int update_music;
 
@@ -2187,11 +2191,20 @@ __editor_maybe_static void play_game(struct world *mzx_world)
           break;
         }
 
-        // Debug counter editor
         case IKEY_F11:
         {
-          if(debug_counters && editing)
-            debug_counters(mzx_world);
+          // Breakpoint editor
+          if(get_alt_status(keycode_internal))
+          {
+            if(edit_breakpoints && editing)
+              edit_breakpoints(mzx_world);
+          }
+          // Debug counter editor
+          else
+          {
+            if(debug_counters && editing)
+              debug_counters(mzx_world);
+          }
           break;
         }
 

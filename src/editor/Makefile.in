@@ -27,12 +27,12 @@ ${editor_obj}/%.o: ${editor_src}/%.c
 	${CC} -MD ${core_cflags} ${editor_flags} ${editor_spec} -c $< -o $@
 
 editor_objs := \
-  ${editor_obj}/board.o ${editor_obj}/block.o ${editor_obj}/configure.o  \
-  ${editor_obj}/char_ed.o ${editor_obj}/debug.o ${editor_obj}/edit.o     \
-  ${editor_obj}/edit_di.o ${editor_obj}/fill.o ${editor_obj}/graphics.o  \
-  ${editor_obj}/macro.o ${editor_obj}/pal_ed.o ${editor_obj}/param.o     \
-  ${editor_obj}/robo_ed.o ${editor_obj}/robot.o ${editor_obj}/sfx_edit.o \
-  ${editor_obj}/window.o ${editor_obj}/world.o
+  ${editor_obj}/board.o ${editor_obj}/block.o ${editor_obj}/configure.o    \
+  ${editor_obj}/char_ed.o ${editor_obj}/debug.o ${editor_obj}/edit.o       \
+  ${editor_obj}/edit_di.o ${editor_obj}/fill.o ${editor_obj}/graphics.o    \
+  ${editor_obj}/macro.o ${editor_obj}/pal_ed.o ${editor_obj}/param.o       \
+  ${editor_obj}/robo_debug.o ${editor_obj}/robo_ed.o ${editor_obj}/robot.o \
+  ${editor_obj}/sfx_edit.o ${editor_obj}/window.o ${editor_obj}/world.o
 
 -include ${editor_objs:.o=.d}
 

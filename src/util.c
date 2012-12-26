@@ -475,6 +475,85 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
   return -3;
 }
 
+
+static void *memrchr(const void *mem, char ch, size_t len)
+{
+  char *e = (char *)mem + len;
+  while(--e != (char *)mem)
+    if(*e == ch)
+      return (void *)e;
+  return NULL;
+}
+
+// Index must be an array of 256 ints
+void boyer_moore_index(void *B, size_t b_len,
+ int *index, bool ignore_case)
+{
+  char *b = (char *)B;
+
+  char *s = b;
+  char *last = b + b_len - 1;
+  char *c1, *c2;
+
+  while(s < last)
+  {
+    if(!ignore_case)
+    {
+      c1 = memrchr(b, *s, b_len);
+      if(c1)
+        index[(unsigned)(*s)] = (last - c1);
+    }
+    else
+    {
+      c1 = memrchr(b, tolower(*s), b_len);
+      c2 = memrchr(b, toupper(*s), b_len);
+      if(c1 && c1 > c2)
+        index[(unsigned)tolower(*s)] = (last - c1);
+      else
+      if(c2)
+        index[(unsigned)tolower(*s)] = (last - c2);
+    }
+    s++;
+  }
+  for(int i = 0; i < 256; i++)
+    if(index[i] <= 0 || index[i] > (int)b_len)
+      index[i] = b_len;
+}
+
+// Search for substring B in haystack A. The index greatly increases the
+// search speed, especially for large needles. This is actually a reduced
+// Boyer-Moore search, as the original version uses two separate indexes.
+void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_len,
+ int *index, bool ignore_case)
+{
+  unsigned char *a = (unsigned char *)A;
+  unsigned char *b = (unsigned char *)B;
+  size_t i = b_len - 1;
+  int j;
+  if(!ignore_case) {
+    while(i < a_len) {
+      j = b_len - 1;
+      while(j >= 0 && a[i] == b[j])
+        j--, i--;
+      if(j == -1)
+        return (void *)(a + i);
+      i += MAX(1, index[a[i]]) + (b_len - j - 1);
+    }
+  }
+  else {
+    while(i < a_len) {
+      j = b_len - 1;
+      while(j >= 0 && tolower(a[i]) == tolower(b[j]))
+        j--, i--;
+      if(j == -1)
+        return (void *)(a + i);
+      i += MAX(1, index[tolower(a[i])]) + (b_len - j - 1);
+    }
+  }
+  return NULL;
+}
+
+
 #if defined(__WIN32__) && defined(__STRICT_ANSI__)
 
 /* On WIN32 with C99 defining __STRICT_ANSI__ these POSIX.1-2001 functions

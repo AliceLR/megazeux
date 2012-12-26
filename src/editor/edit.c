@@ -38,6 +38,7 @@
 #include "../world.h"
 #include "../util.h"
 #include "debug.h"
+#include "robo_debug.h"
 
 #include "block.h"
 #include "board.h"
@@ -3458,6 +3459,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             mzx_world->editing = true;
 
             play_game(mzx_world);
+            free_breakpoints();
 
             mzx_world->editing = false;
 
@@ -3968,6 +3970,8 @@ void editor_init(void)
   edit_world = __edit_world;
   draw_debug_box = __draw_debug_box;
   debug_counters = __debug_counters;
+  edit_breakpoints = __edit_breakpoints;
+  debug_robot = __debug_robot;
   load_editor_charsets();
 }
 
