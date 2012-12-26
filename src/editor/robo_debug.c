@@ -181,6 +181,7 @@ void __edit_breakpoints(struct world *mzx_world)
         break;
       }
       // Edit
+      case 0:
       case 2:
       {
         if(selected < num_break_points)
@@ -252,7 +253,7 @@ void free_breakpoints(void)
 int __debug_robot(struct world *mzx_world, struct robot *cur_robot,
  char *cmd_ptr)
 {
-  if(!robo_debugger_enabled)
+  if(!mzx_world->editing || !robo_debugger_enabled)
     return 0;
 
 #ifdef CONFIG_DEBYTECODE

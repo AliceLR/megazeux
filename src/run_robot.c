@@ -51,6 +51,9 @@
 #define parsedir(a, b, c, d) \
  parsedir(mzx_world, a, b, c, d, _bl[0], _bl[1], _bl[2], _bl[3])
 
+__editor_maybe_static
+int (*debug_robot)(struct world *mzx_world, struct robot *cur_robot, char *cmd_ptr);
+
 static const char *const item_to_counter[9] =
 {
   "GEMS",
@@ -1291,7 +1294,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     // Get command number
     cmd = cmd_ptr[0];
 
-    if(debug_robot && mzx_world->editing)
+    if(debug_robot)
     {
       // Returns 1 if the user chose to stop the program.
       if(debug_robot(mzx_world, cur_robot, cmd_ptr))

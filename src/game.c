@@ -116,8 +116,6 @@ __editor_maybe_static void (*debug_counters)(struct world *mzx_world);
 __editor_maybe_static void (*draw_debug_box)(struct world *mzx_world,
  int x, int y, int d_x, int d_y);
 
-__editor_maybe_static int (*debug_robot)(struct world *mzx_world, struct
- robot *cur_robot, char *cmd_ptr);
 __editor_maybe_static void (*edit_breakpoints)(struct world *mzx_world);
 
 static const char *const save_ext[] = { ".SAV", NULL };
