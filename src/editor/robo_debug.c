@@ -177,7 +177,7 @@ void __edit_breakpoints(struct world *mzx_world)
              num_break_points_allocated * sizeof(struct break_point *));
           }
 
-          boyer_moore_index(temp->match_string, strlen(temp->match_string), temp->index, false);
+          boyer_moore_index(temp->match_string, strlen(temp->match_string), temp->index, true);
 
           break_points[num_break_points] = temp;
           num_break_points++;
@@ -199,7 +199,7 @@ void __edit_breakpoints(struct world *mzx_world)
           struct break_point *temp = break_points[selected];
 
           if(!edit_breakpoint_dialog(mzx_world, temp, "Edit Breakpoint"))
-            boyer_moore_index(temp->match_string, strlen(temp->match_string), temp->index, false);
+            boyer_moore_index(temp->match_string, strlen(temp->match_string), temp->index, true);
         }
         break;
       }
@@ -364,7 +364,7 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
           continue;
 
         if(!boyer_moore_search((void *)line_buffer, strlen(line_buffer),
-         (void *)b->match_string, strlen(b->match_string), b->index, false))
+         (void *)b->match_string, strlen(b->match_string), b->index, true))
           continue;
 
         match = true;
@@ -472,13 +472,15 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
         struct board *cur_board = mzx_world->current_board;
         // We pretty much need to simulate exactly what happens when
         // a robot hits the end command, here.
-        for(i = 0; i < cur_board->num_robots; i++)
+        for(i = 0; i < cur_board->num_robots + 1; i++)
         {
           struct robot *r = cur_board->robot_list[i];
           if(r)
           {
             r->status = 1;
+            r->walk_dir = 0;
             r->cur_prog_line = 0;
+            r->pos_within_line = 0;
           }
         }
       }
