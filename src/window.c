@@ -764,7 +764,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
         else
 
         if((element_under != -1) &&
-         (current_element->click_function))
+         ((di->elements[element_under])->click_function))
         {
           current_element_num = element_under;
           current_element = di->elements[element_under];

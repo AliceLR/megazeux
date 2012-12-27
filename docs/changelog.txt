@@ -10,6 +10,8 @@ BUGFIXES
 + Fixed counter debugger issue where counters and strings
   starting with chars over 'Z' would cause everything in their
   section to be placed into the '#' list.
++ Dialog window labels can not be put into focus by clicking
+  them with the mouse anymore.
 
 DEVELOPERS
 

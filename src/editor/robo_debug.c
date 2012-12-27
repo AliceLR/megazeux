@@ -505,5 +505,7 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
     }
   } while(!done);
 
+  update_event_status();
+
   return stop_robot;
 }
