@@ -401,8 +401,8 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
     char label[4][77] = { { 0 } };
     char *line_pos = line_buffer;
 
-    snprintf(info, 76, "Robot Debugger - matched `%s` (#%i) at line %i (size %i):",
-     cur_robot->robot_name, id, line_num, line_size);
+    snprintf(info, 76, "Robot Debugger - matched `%s` (%i@%i,%i) at line %i:",
+     cur_robot->robot_name, id, cur_robot->xpos, cur_robot->ypos, line_num);
     info[76] = 0;
     for(i = 0; i < 4; i++)
     {
