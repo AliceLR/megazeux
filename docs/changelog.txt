@@ -4,6 +4,7 @@ FEATURES
 
 + Added a built-in robot debugger. See the Debug Mode section of
   the help file for details.
++ The enter menu can be closed with escape now.
 
 BUGFIXES
 

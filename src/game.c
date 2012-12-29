@@ -2235,7 +2235,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
               update_event_status_delay();
               update_screen();
               key = get_key(keycode_internal);
-            } while(key != IKEY_RETURN);
+            } while(key != IKEY_RETURN && key != IKEY_ESCAPE);
 
             wait_for_key_release(key);
 
