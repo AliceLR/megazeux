@@ -774,3 +774,15 @@ void key_release(struct buffered_status *status, enum keycode key)
   status->unicode_repeat = 0;
   status->key_release = key;
 }
+
+void wait_for_key_release(Uint32 index)
+{
+  while(get_key_status(keycode_internal, index) >= 1)
+    update_event_status_delay();
+}
+
+void wait_for_mouse_release(Uint32 mouse_button)
+{
+  while(get_mouse_status())
+    update_event_status_delay();
+}

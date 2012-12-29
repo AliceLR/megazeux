@@ -108,6 +108,8 @@ CORE_LIBSPEC void initialize_joysticks(void);
 CORE_LIBSPEC void key_press(struct buffered_status *status, enum keycode key,
  Uint16 unicode_key);
 CORE_LIBSPEC void key_release(struct buffered_status *status, enum keycode key);
+CORE_LIBSPEC void wait_for_key_release(Uint32 index);
+CORE_LIBSPEC void wait_for_mouse_release(Uint32 mouse_button);
 
 // Implemented by "drivers" (SDL, Wii, and NDS currently)
 void __wait_event(void);

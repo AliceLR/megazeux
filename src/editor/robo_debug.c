@@ -279,13 +279,13 @@ static int debug_robot_idle_function(struct world *mzx_world,
     {
       di->return_value = -1;
       di->done = 1;
-      return 0;
+      break;
     }
     case IKEY_n:
     {
       di->return_value = 0;
       di->done = 1;
-      return 0;
+      break;
     }
     case IKEY_s:
     {
@@ -294,7 +294,7 @@ static int debug_robot_idle_function(struct world *mzx_world,
       else
         di->return_value = 1;
       di->done = 1;
-      return 0;
+      break;
     }
     case IKEY_F11:
     {
@@ -310,16 +310,23 @@ static int debug_robot_idle_function(struct world *mzx_world,
       position = 0;
       di->return_value = -2; //do nothing
       di->done = 1;
-      return 0;
+      break;
     }
     case IKEY_PAGEDOWN:
     {
       position = 1;
       di->return_value = -2; //do nothing
       di->done = 1;
-      return 1;
+      break;
     }
   }
+
+  if(di->done)
+  {
+    wait_for_key_release(key);
+    return 0;
+  }
+
   return key;
 }
 

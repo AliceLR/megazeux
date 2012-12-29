@@ -753,6 +753,8 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
           current_element = di->elements[element_under];
           highlight_element(mzx_world, di, element_under);
 
+          wait_for_mouse_release(mouse_press);
+
           new_key = current_element->click_function(mzx_world, di,
            current_element, mouse_press,
            mouse_x - di->x - current_element->x,
@@ -771,6 +773,8 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
 
           if(current_element->click_function)
           {
+            wait_for_mouse_release(mouse_press);
+
             new_key = current_element->click_function(mzx_world, di,
              current_element, mouse_press,
              mouse_x - di->x - current_element->x,
@@ -870,6 +874,7 @@ int run_dialog(struct world *mzx_world, struct dialog *di)
           break;
 
         // Restore screen, set current, and return -1
+        wait_for_key_release(IKEY_ESCAPE);
         pop_context();
         return -1;
       }
@@ -1217,6 +1222,7 @@ static int key_button(struct world *mzx_world, struct dialog *di,
       // Flag that the dialog is done processing
       di->done = 1;
       di->return_value = src->return_value;
+      wait_for_key_release(key);
       break;
     }
 
