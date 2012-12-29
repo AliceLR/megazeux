@@ -1982,10 +1982,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
               // Load game
               fadein = 0;
               if(!reload_savegame(mzx_world, save_file_name, &fadein))
-              {
-                vquick_fadeout();
-                return;
-              }
+                break;
 
               // Reset this
               src_board = mzx_world->current_board;
@@ -2167,10 +2164,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
               // Load game
               fadein = 0;
               if(!reload_savegame(mzx_world, curr_sav, &fadein))
-              {
-                vquick_fadeout();
-                return;
-              }
+                break;
 
               // Reset this
               src_board = mzx_world->current_board;
