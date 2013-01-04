@@ -18,6 +18,8 @@ BUGFIXES
 + Load (F4)/quickload (F10) on invalid save files in-game leaves
   the current game running instead of exiting to the titlescreen
   or editor.
++ Fixed issue where counter debugger would display wrong values
+  for the robot LOCAL counters.
 
 DEVELOPERS
 

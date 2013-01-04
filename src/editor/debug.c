@@ -1164,7 +1164,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
     {
       sprintf(var, "local%i", n);
       build_var_buffer( &(*list)[n + num_robot_vars], var,
-       robot->local[n], NULL, i&255);
+       robot->local[(n-1)&31], NULL, i&255);
     }
 
     snprintf(var, 14, "%i:%s", i, robot_list[i]->robot_name);
