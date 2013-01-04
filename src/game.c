@@ -3020,6 +3020,7 @@ int move_player(struct world *mzx_world, int dir)
     // Not edge
     int d_offset = new_x + (new_y * src_board->board_width);
     enum thing d_id = (enum thing)src_board->level_id[d_offset];
+    enum thing u_id = (enum thing)src_board->level_under_id[d_offset];
     int d_flag = flags[(int)d_id];
 
     if(d_flag & A_SPEC_STOOD)
@@ -3124,9 +3125,9 @@ int move_player(struct world *mzx_world, int dir)
         {
           // Kill/move
           id_remove_top(mzx_world, new_x, new_y);
-          if((d_id != GOOP) &&
-           (!src_board->restart_if_zapped)) // Not onto goop
-          if(!src_board->restart_if_zapped)
+
+          // Not onto goop.. (under is now top)
+          if(u_id != GOOP && !src_board->restart_if_zapped)
           {
             place_player(mzx_world, new_x, new_y, dir);
             return 0;

@@ -28,6 +28,8 @@ BUGFIXES
   'Cancel' was selected.
 + Fixed bug where chars 254 and 255 would not be reverted back
   to their defaults via F4/F5.
++ Fixed bug where player would move onto goop when walking into
+  enemys on top of goop.
 
 DEVELOPERS
 
