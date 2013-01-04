@@ -26,6 +26,8 @@ BUGFIXES
   testing until the world was manually reloaded.
 + Fixed issue where the Board Info dialog would not close when
   'Cancel' was selected.
++ Fixed bug where chars 254 and 255 would not be reverted back
+  to their defaults via F4/F5.
 
 DEVELOPERS
 

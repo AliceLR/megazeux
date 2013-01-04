@@ -1620,7 +1620,7 @@ int char_editor(struct world *mzx_world)
           for(i2 = 0; i2 < highlight_width; i2++,
            char_offset++)
           {
-            char_offset = char_offset % 254; // Wrap away from the protected set
+            char_offset = char_offset % 256; // Wrap away from the protected set
             ec_load_char_ascii(char_offset);
           }
         }
@@ -1645,7 +1645,7 @@ int char_editor(struct world *mzx_world)
           for(i2 = 0; i2 < highlight_width; i2++,
            char_offset++)
           {
-            char_offset = char_offset % 254; // Wrap away from the protected set
+            char_offset = char_offset % 256; // Wrap away from the protected set
             ec_load_char_mzx(char_offset);
           }
         }
