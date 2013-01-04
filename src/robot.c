@@ -304,6 +304,10 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
   if(cur_robot->ypos < 0)
     goto err_invalid;
 
+  // Fix xpos and ypos for global robot
+  cur_robot->xpos = -(cur_robot->xpos >= 32768) | cur_robot->xpos;
+  cur_robot->ypos = -(cur_robot->ypos >= 32768) | cur_robot->ypos;
+
   // If savegame, there's some additional information to get
   if(savegame)
   {

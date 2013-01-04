@@ -20,6 +20,8 @@ BUGFIXES
   or editor.
 + Fixed issue where counter debugger would display wrong values
   for the robot LOCAL counters.
++ Fixed robot editor issue where global robot coords would be
+  reloaded as 65535.
 
 DEVELOPERS
 
