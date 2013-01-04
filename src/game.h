@@ -67,7 +67,8 @@ CORE_LIBSPEC extern void (*edit_breakpoints)(struct world *mzx_world);
 #endif // CONFIG_EDITOR
 
 #ifdef CONFIG_UPDATER
-CORE_LIBSPEC extern void (*check_for_updates)(struct config_info *conf);
+CORE_LIBSPEC extern void (*check_for_updates)(struct world *mzx_world,
+ struct config_info *conf);
 #endif
 
 __M_END_DECLS

@@ -1,5 +1,9 @@
 GIT
 
++ FIXME: Updater needs help file section and context
++ FIXME: Robot debugger needs to be linked to context
++ FIXME: Counter debugger needs to be linked to context
+
 FEATURES
 
 + Added a built-in robot debugger. See the Debug Mode section of
@@ -8,6 +12,8 @@ FEATURES
 
 BUGFIXES
 
++ Fixed crash bug when attempting to view the help file in the
+  updater.
 + Fixed counter debugger issue where counters and strings
   starting with chars over 'Z' would cause everything in their
   section to be placed into the '#' list.

@@ -386,7 +386,7 @@ err_out:
   return ret;
 }
 
-static void __check_for_updates(struct config_info *conf)
+static void __check_for_updates(struct world *mzx_world, struct config_info *conf)
 {
   int cur_host;
   char *update_host;
@@ -523,7 +523,7 @@ static void __check_for_updates(struct config_info *conf)
       elements[5] = construct_button(36, 11, "Cancel", 2);
 
       construct_dialog(&di, "New Major Version", 11, 6, 55, 14, elements, 6, 3);
-      result = run_dialog(NULL, &di);
+      result = run_dialog(mzx_world, &di);
       destruct_dialog(&di);
 
       // User pressed Escape, abort all updates
@@ -601,7 +601,7 @@ static void __check_for_updates(struct config_info *conf)
       elements[2] = construct_button(13, 4, "Try next host", 1);
 
       construct_dialog(&di, "No Updates", 22, 9, 35, 6, elements, 3, 1);
-      result = run_dialog(NULL, &di);
+      result = run_dialog(mzx_world, &di);
       destruct_dialog(&di);
 
       if((result == 1) && (cur_host < conf->update_host_count))
@@ -790,7 +790,7 @@ err_out:
     elements[1] = construct_button(23, 4, "OK", 0);
 
     construct_dialog(&di, "Update Successful", 14, 9, 51, 6, elements, 2, 1);
-    run_dialog(NULL, &di);
+    run_dialog(mzx_world, &di);
     destruct_dialog(&di);
 
     execv(process_argv[0], argv);
