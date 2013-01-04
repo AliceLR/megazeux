@@ -787,8 +787,8 @@ void board_info(struct world *mzx_world)
   do
   {
     elements[0] = construct_button(13, 18, "OK", 0);
-    elements[1] = construct_button(19, 18, "Cancel", 1);
-    elements[2] = construct_button(29, 18, "Set as defaults", 2);
+    elements[1] = construct_button(19, 18, "Cancel", -1);
+    elements[2] = construct_button(29, 18, "Set as defaults", 1);
     elements[3] = construct_input_box(9, 1, "Board name- ",
      BOARD_NAME_SIZE - 1, 0, title_string);
     elements[4] = construct_check_box(5, 2, check_box_strings,
@@ -809,7 +809,7 @@ void board_info(struct world *mzx_world)
     destruct_dialog(&di);
 
     // Save defaults
-    if(dialog_result == 2)
+    if(dialog_result == 1)
     {
       struct editor_config_info *conf = &(mzx_world->editor_conf);
       conf->can_shoot = check_box_results[0];

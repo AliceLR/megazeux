@@ -22,6 +22,10 @@ BUGFIXES
   for the robot LOCAL counters.
 + Fixed robot editor issue where global robot coords would be
   reloaded as 65535.
++ Fixed issue where board defaults would be reset after leaving
+  testing until the world was manually reloaded.
++ Fixed issue where the Board Info dialog would not close when
+  'Cancel' was selected.
 
 DEVELOPERS
 

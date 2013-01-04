@@ -3465,7 +3465,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
             chdir(return_dir);
 
-            if(!editor_reload_world(mzx_world, "__test.mzx", &fade))
+            if(!reload_world(mzx_world, "__test.mzx", &fade))
             {
               if(!editor_reload_world(mzx_world, current_world, &fade))
                 create_blank_world(mzx_world);
