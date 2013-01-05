@@ -2419,6 +2419,7 @@ void title_screen(struct world *mzx_world)
               mzx_world->player_restart_y = mzx_world->player_y;
               vquick_fadeout();
 
+              update_event_status();
               play_game(mzx_world);
 
               // Done playing- load world again

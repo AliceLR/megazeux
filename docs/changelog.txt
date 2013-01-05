@@ -36,6 +36,8 @@ BUGFIXES
   to their defaults via F4/F5.
 + Fixed bug where player would move onto goop when walking into
   enemys on top of goop.
++ Fixed bug where 'enter' would be detected in a loaded save file
+  when loading from a title screen.
 
 DEVELOPERS
 
