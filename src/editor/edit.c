@@ -1133,7 +1133,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
   const char *mzm_ext[] = { ".MZM", NULL };
 
   getcwd(current_listening_dir, MAX_PATH);
-
   chdir(config_dir);
   set_config_from_file(&(mzx_world->conf), "editor.cnf");
   chdir(current_listening_dir);
@@ -3456,12 +3455,8 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
             strcpy(mzx_world->real_mod_playing, src_board->mod_playing);
             load_board_module(src_board);
 
-            mzx_world->editing = true;
             pause_robot_debugger();
-
             play_game(mzx_world);
-
-            mzx_world->editing = false;
 
             chdir(return_dir);
 
@@ -3966,6 +3961,7 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
     clear_robot_contents(&copy_robot);
   if(copy_scroll.used)
     clear_scroll_contents(&copy_scroll);
+
 }
 
 void editor_init(void)

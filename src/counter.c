@@ -2813,23 +2813,36 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 
       if(cur_robot)
       {
-        cur_robot->program_source = legacy_convert_file(char_value,
-         &(cur_robot->program_source_length),
+        int new_length = 0;
+        char *new_source = legacy_convert_file(char_value,
+         &new_length,
          mzx_world->conf.disassemble_extras,
          mzx_world->conf.disassemble_base);
 
-        // TODO: Move this outside of here.
-        free(cur_robot->program_bytecode);
-        cur_robot->program_bytecode = NULL;
-        cur_robot->stack_pointer = 0;
-        cur_robot->cur_prog_line = 1;
+        if(new_source)
+        {
+          if(cur_robot->program_source)
+            free(cur_robot->program_source);
 
-        prepare_robot_bytecode(cur_robot);
+          cur_robot->program_source = new_source;
+          cur_robot->program_source_length = new_length;
 
-        // Restart this robot if either it was just a LOAD_ROBOT
-        // OR LOAD_ROBOTn was used where n is &robot_id&.
-        if(value == -1 || value == id)
-          return 1;
+          // TODO: Move this outside of here.
+          if(cur_robot->program_bytecode)
+          {
+            free(cur_robot->program_bytecode);
+            cur_robot->program_bytecode = NULL;
+            cur_robot->stack_pointer = 0;
+            cur_robot->cur_prog_line = 1;
+          }
+
+          prepare_robot_bytecode(cur_robot);
+
+          // Restart this robot if either it was just a LOAD_ROBOT
+          // OR LOAD_ROBOTn was used where n is &robot_id&.
+          if(value == -1 || value == id)
+            return 1;
+        }
       }
       break;
     }

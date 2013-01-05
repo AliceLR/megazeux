@@ -1896,11 +1896,6 @@ __editor_maybe_static void play_game(struct world *mzx_world)
     {
       int key_char = get_key(keycode_unicode);
 
-#ifdef CONFIG_EDITOR
-      if(edit_world)
-        editing = mzx_world->editing;
-#endif
-
       if(key_char)
       {
         keylbl[3] = key_char;
@@ -2285,8 +2280,10 @@ void title_screen(struct world *mzx_world)
 
   if(edit_world && mzx_world->conf.startup_editor)
   {
+    editing = true;
     set_intro_mesg_timer(0);
     edit_world(mzx_world, 0);
+    editing = false;
   }
   else
   {
@@ -2587,7 +2584,10 @@ void title_screen(struct world *mzx_world)
             clear_sfx_queue();
             vquick_fadeout();
             set_intro_mesg_timer(0);
+
+            editing = true;
             edit_world(mzx_world, reload_curr_world_in_editor);
+            editing = false;
 
             if(curr_file[0])
               load_world_file(mzx_world, curr_file);

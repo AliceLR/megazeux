@@ -3084,11 +3084,21 @@ void duplicate_robot_direct(struct robot *cur_robot,
   }
 
 #ifdef CONFIG_DEBYTECODE
-  // FIXME: Short-term fix to repair copy block operations that contain robots
-  //        in debytecode; freeing program_source everywhere causes the editor
-  //        to corrupt robot code on the next edit (Bug ID 316)
-  //        [ Similar change, same bug ID, made in prepare_robot_bytecode ]
-  //copy_robot->program_source = NULL;
+  // If we're in the editor, we want to give the new robot a brand new duplicate
+  // of our source code.
+  if(editing)
+  {
+    copy_robot->program_source = cmalloc(cur_robot->program_source_length);
+    memcpy(copy_robot->program_source, cur_robot->program_source,
+     cur_robot->program_source_length);
+    copy_robot->program_source_length = cur_robot->program_source_length;
+  }
+  // Otherwise we want to at least know it doesn't exist
+  else
+  {
+    copy_robot->program_source = NULL;
+    copy_robot->program_source_length = 0;
+  }
 #endif
 
   // Give the robot an empty stack.
@@ -3378,14 +3388,13 @@ void prepare_robot_bytecode(struct robot *cur_robot)
     cur_robot->label_list =
      cache_robot_labels(cur_robot, &cur_robot->num_labels);
 
-    // FIXME: Short-term fix to repair copy block operations that contain
-    //        robots in debytecode; freeing program_source everywhere causes
-    //        the editor to corrupt robot code on the next edit (Bug ID 316)
-    //        [ Similar change, same bug ID, duplicate_robot_direct ]
-    // Can free source code now.
-    //free(cur_robot->program_source);
-    //cur_robot->program_source = NULL;
-    //cur_robot->program_source_length = 0;
+    // Can free source code if we're not in the editor.
+    if(!editing)
+    {
+      free(cur_robot->program_source);
+      cur_robot->program_source = NULL;
+      cur_robot->program_source_length = 0;
+    }
   }
 }
 
