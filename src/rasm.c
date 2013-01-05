@@ -4986,6 +4986,47 @@ static char *legacy_disassemble_print_expression(char *src, char **_output,
   return next;
 }
 
+// Similar to counter.c's is_string() but keeps track of the expr stack.
+// is_string() is designed for post-tr_msg strings and will not work
+// with disassembled code.  It also expects there to be a terminator,
+// which our disassembled code won't have.
+static bool legacy_disassembled_field_is_string(char *src, char *end)
+{
+  int level = 0;
+
+  if(*src != '$')
+    return false;
+
+  while(src < end)
+  {
+    switch(*src)
+    {
+      case '\\':
+      {
+        src++;
+        break;
+      }
+      case '(':
+      {
+        level++;
+        break;
+      }
+      case ')':
+      {
+        level--;
+        break;
+      }
+      case '.':
+      {
+        if(level <= 0)
+          return false;
+      }
+    }
+    src++;
+  }
+  return true;
+}
+
 // If you don't want an early terminator then give this -1.
 static char *legacy_disassemble_print_string_expressions(char *src,
  char **_output, int *_string_length, int early_terminator,
@@ -5067,7 +5108,7 @@ static char *legacy_disassemble_print_string_expressions(char *src,
           next++;
         }
 
-        is_real_string = is_string(base_output + 1);
+        is_real_string = legacy_disassembled_field_is_string(name_offset, output);
 
         if(!is_simple_identifier_name(name_offset, name_length, true))
         {
