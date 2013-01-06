@@ -518,6 +518,12 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
                   cur_robot->xpos = current_x;
                   cur_robot->ypos = current_y;
 
+#ifdef CONFIG_DEBYTECODE
+                  // If we're loading source code at runtime, we need to compile it
+                  if(savegame_mode < savegame)
+                    prepare_robot_bytecode(cur_robot);
+#endif
+
                   if(current_x != -1)
                   {
                     new_param = find_free_robot(src_board);

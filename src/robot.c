@@ -380,6 +380,8 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
       // Save file loads bytecode. This also means that we can't ever
       // ever edit save files, so make them null. In practice this
       // shouldn't be possible though.
+
+      // TODO: We need to validate new bytecode too
       cur_robot->program_bytecode = cmalloc(program_length);
       cur_robot->program_bytecode_length = program_length;
       if(!fread(cur_robot->program_bytecode, program_length, 1, fp))
