@@ -111,6 +111,9 @@ static bool editor_reload_world(struct world *mzx_world, const char *file,
   char config_file_name[MAX_PATH];
 
   bool world_loaded = reload_world(mzx_world, file, faded);
+  
+  // Since we finished loading the world, it's internally the current version.
+  mzx_world->version = WORLD_VERSION;
 
   if(!world_loaded)
     return world_loaded;

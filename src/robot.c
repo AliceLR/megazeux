@@ -395,6 +395,7 @@ void load_robot(struct robot *cur_robot, FILE *fp, int savegame, int version)
     // TODO: This has to be made part of what's saved one day.
     cur_robot->label_list =
      cache_robot_labels(cur_robot, &cur_robot->num_labels);
+
 #endif /* CONFIG_DEBYTECODE */
   }
   else

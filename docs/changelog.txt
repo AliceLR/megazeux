@@ -36,8 +36,10 @@ BUGFIXES
   to their defaults via F4/F5.
 + Fixed bug where player would move onto goop when walking into
   enemys on top of goop.
-+ Fixed bug where 'enter' would be detected in a loaded save file
++ Fixed bug where 'enter' would be detected in loaded save files
   when loading from a title screen.
++ Fixed issue where a world would be considered its file version
+  in the editor until testing, for MZM loading, etc.
 
 DEVELOPERS
 
