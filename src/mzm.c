@@ -53,7 +53,7 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     fputc(storage_mode, output_file);
     fputc(0, output_file);
 
-    fputw(mzx_world->version, output_file);
+    fputw(WORLD_VERSION, output_file);
     fseek(output_file, 3, SEEK_CUR);
 
     switch(mode)
@@ -146,7 +146,7 @@ void save_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
           for(i = 0; i < num_robots; i++)
           {
             // Save each robot
-            save_robot(robot_list[robot_numbers[i]], output_file, savegame, mzx_world->version);
+            save_robot(robot_list[robot_numbers[i]], output_file, savegame, WORLD_VERSION);
           }
         }
 
@@ -251,12 +251,9 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     int expected_data_size;
     int last_position;
 
-    // MegaZeux 2.83 is the last version that won't save the ver.
+    // MegaZeux 2.83 is the last version that won't save the ver,
+    // so if we don't have a ver, just act like it's 2.83
     int mzm_world_version = 0x0253;
-
-    // It's not necessarily the first though
-    if (mzx_world->version < 0x0253)
-      mzm_world_version = mzx_world->version;
 
     if(!fread(magic_string, 4, 1, input_file))
       goto err_invalid;
@@ -319,7 +316,7 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
       goto err_invalid;
 
     // If the mzm version is newer than the MZX version, show a message.
-    if(mzm_world_version > mzx_world->version)
+    if(mzm_world_version > WORLD_VERSION)
     {
       val_error(MZM_FILE_VERSION_TOO_RECENT, mzm_world_version);
     }
@@ -466,7 +463,7 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
               // dummy out the robots.
 
               if((savegame_mode > savegame) ||
-               (mzx_world->version < mzm_world_version))
+               (WORLD_VERSION < mzm_world_version))
               {
                 fseek(input_file, robots_location, SEEK_SET);
 

@@ -38,8 +38,9 @@ BUGFIXES
   enemys on top of goop.
 + Fixed bug where 'enter' would be detected in loaded save files
   when loading from a title screen.
-+ Fixed issue where a world would be considered its file version
-  in the editor until testing, for MZM loading, etc.
++ Fixed issue where MZX was using the world file version instead
+  of the internal MZX version when saving MZMs and determining
+  whether it could load MZMs both within the editor and in game.
 
 DEVELOPERS
 
