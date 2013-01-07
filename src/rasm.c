@@ -5595,7 +5595,7 @@ char *legacy_convert_file(char *file_name, int *_disasm_length,
 
     int disasm_line_length;
 
-    while(fgets(source_buffer, 256, legacy_source_file))
+    while(fsafegets(source_buffer, 256, legacy_source_file))
     {
       // Assemble line
       legacy_assemble_line(source_buffer, bytecode_buffer, errors,
