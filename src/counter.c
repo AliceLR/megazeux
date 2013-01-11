@@ -500,28 +500,28 @@ static void board_param_write(struct world *mzx_world,
 static int red_value_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
+  int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   return get_red_component(cur_color);
 }
 
 static int green_value_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
+  int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   return get_green_component(cur_color);
 }
 
 static int blue_value_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
+  int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   return get_blue_component(cur_color);
 }
 
 static void red_value_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
+  int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   set_red_component(cur_color, value);
   pal_update = true;
 }
@@ -529,7 +529,7 @@ static void red_value_write(struct world *mzx_world,
 static void green_value_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
+  int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   set_green_component(cur_color, value);
   pal_update = true;
 }
@@ -537,7 +537,7 @@ static void green_value_write(struct world *mzx_world,
 static void blue_value_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  int cur_color = get_counter(mzx_world, "current_color", id) & 0xFF;
+  int cur_color = get_counter(mzx_world, "current_color", id) & (SMZX_PAL_SIZE - 1);
   set_blue_component(cur_color, value);
   pal_update = true;
 }
@@ -611,28 +611,28 @@ static void smzx_mode_write(struct world *mzx_world,
 static int smzx_r_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  int cur_color = strtol(name + 6, NULL, 10);
+  int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   return get_red_component(cur_color);
 }
 
 static int smzx_g_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  int cur_color = strtol(name + 6, NULL, 10);
+  int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   return get_green_component(cur_color);
 }
 
 static int smzx_b_read(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int id)
 {
-  int cur_color = strtol(name + 6, NULL, 10);
+  int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   return get_blue_component(cur_color);
 }
 
 static void smzx_r_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  int cur_color = strtol(name + 6, NULL, 10);
+  int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   set_red_component(cur_color, value);
   pal_update = true;
 }
@@ -640,7 +640,7 @@ static void smzx_r_write(struct world *mzx_world,
 static void smzx_g_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  int cur_color = strtol(name + 6, NULL, 10);
+  int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   set_green_component(cur_color, value);
   pal_update = true;
 }
@@ -648,7 +648,7 @@ static void smzx_g_write(struct world *mzx_world,
 static void smzx_b_write(struct world *mzx_world,
  const struct function_counter *counter, const char *name, int value, int id)
 {
-  int cur_color = strtol(name + 6, NULL, 10);
+  int cur_color = strtol(name + 6, NULL, 10) & (SMZX_PAL_SIZE - 1);
   set_blue_component(cur_color, value);
   pal_update = true;
 }

@@ -14,6 +14,8 @@ BUGFIXES
 
 + Fixed crash bug when attempting to view the help file in the
   updater.
++ Fixed crash bug when attempting to use SMZX_R/G/B with out-of-
+  range indexes.
 + Fixed counter debugger issue where counters and strings
   starting with chars over 'Z' would cause everything in their
   section to be placed into the '#' list.
