@@ -184,23 +184,23 @@ void create_blank_robot(struct robot *r, int savegame)
   r->program_bytecode_length = 0;
 
 #ifdef CONFIG_DEBYTECODE
-  free(r->program_source);
-  r->program_source = NULL;
-  r->program_source_length = 0;
-
-  if((r->world_version >= VERSION_PROGRAM_SOURCE) && !savegame)
   {
+    free(r->program_source);
+
     r->program_source_length = 2;
     r->program_source = cmalloc(2);
-    strcpy(r->program_source, "\x0A"); // Blank program? linebreak then term
+    strcpy(r->program_source, "\x0A"); // Linebreak then term
+
+    // Compile our blank program please, snicker
+    prepare_robot_bytecode(r);
   }
-  else
-#endif
+#else /* !CONFIG_DEBYTECODE */
   {
     r->program_bytecode_length = 2;
     r->program_bytecode = cmalloc(2);
     strcpy(r->program_bytecode, "\xFF"); // Blank program, -1 then 0
   }
+#endif
 
   strcpy(r->robot_name, "<<empty>>");
   r->robot_char = 'R';
