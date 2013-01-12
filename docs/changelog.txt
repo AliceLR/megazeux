@@ -8,6 +8,11 @@ FEATURES
 
 + Added a built-in robot debugger. See the Debug Mode section of
   the help file for details.
++ Kinds specified as 255 on the char ID table are now treated as
+  custom* kinds when placed and selected in the editor. If you
+  switched a kind to char ID 255 in a game that already had that
+  kind, the parameters will not be changed (and the kinds will
+  still be char 0 if they were already placed in the world).
 + The enter menu can be closed with escape now.
 
 BUGFIXES

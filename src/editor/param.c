@@ -34,12 +34,14 @@
 #include "../robot.h"
 #include "../rasm.h"
 #include "../event.h"
+#include "../idput.h"
 
 #include "edit.h"
 #include "edit_di.h"
 #include "param.h"
 #include "robo_ed.h"
 #include "window.h"
+#include "world.h"
 
 static const char *const potion_fx[16] =
 {
@@ -1107,45 +1109,60 @@ int edit_robot(struct world *mzx_world, struct robot *cur_robot)
 // use default or load up a new robot/scroll/sign.
 int edit_param(struct world *mzx_world, int id, int param)
 {
-  if(def_params[id] == -2)
+  // Switch default params to handle the basic stuff
+  switch(def_params[id])
   {
     // No editing allowed
-    // If has a param, return it, otherwise return 0
-    if(param > -1)
-      return param;
+    case -2:
+    {
+      // If the char ID is 255 fall through; char ID 255 things act like customs
+      if(id_chars[id] != 255)
+      {
+        // If has a param, return it, otherwise return 0
+        if(param > -1)
+          return param;
 
-    return 0;
-  }
-
-  if(def_params[id] == -3)
-  {
-    int new_param = param;
-
-    if(new_param < 0)
-      new_param = 177;
-
+        return 0;
+      }
+    }
     // Character
-    new_param = char_selection(new_param);
+    case -3:
+    {
+      int new_param = param;
 
-    if(new_param < 0)
-      new_param = param;
+      // Use default char.
+      if(new_param < 0)
+      {
+        char def = get_default_id_char(id);
 
-    return new_param;
-  }
+        // If this type is custom* by default (usually the case here), use 177
+        if(def == 255)
+          new_param = 177;
+        else
+          new_param = def;
+      }
 
-  if(def_params[id] == -4)
-  {
-    int new_param = param;
+      new_param = char_selection(new_param);
+
+      if(new_param < 0)
+        new_param = param;
+
+      return new_param;
+    }
     // Board
-    if(new_param < 0)
-      new_param = 0;
+    case -4:
+    {
+      int new_param = param;
+      if(new_param < 0)
+        new_param = 0;
 
-    new_param = choose_board(mzx_world, new_param,
-     "Choose destination board", 0);
-    if(new_param < 0)
-      new_param = param;
+      new_param = choose_board(mzx_world, new_param,
+       "Choose destination board", 0);
+      if(new_param < 0)
+        new_param = param;
 
-    return new_param;
+      return new_param;
+    }
   }
 
   if(param < 0)

@@ -361,3 +361,8 @@ void move_current_board(struct world *mzx_world, int new_position)
 
   free(board_id_translation_list);
 }
+
+char get_default_id_char(int id)
+{
+  return def_id_chars[id];
+}
