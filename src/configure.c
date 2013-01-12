@@ -87,12 +87,8 @@
 #define UPDATE_HOST_COUNT 2
 #endif
 
-#ifndef UPDATE_HOST_1
-#define UPDATE_HOST_1 "updates.digitalmzx.net"
-#endif
-
-#ifndef UPDATE_HOST_2
-#define UPDATE_HOST_2 "updates.mzx.devzero.co.uk"
+#ifndef UPDATE_HOSTS
+#define UPDATE_HOSTS { "updates.digitalmzx.net", "updates.mzx.devzero.co.uk" }
 #endif
 #endif /* CONFIG_UPDATER */
 
@@ -134,19 +130,23 @@ static void config_update_host(struct config_info *conf, char *name,
 {
   if(!host_configured || !conf->update_host_count)
   {
-    host_configured = 1;
+    // Free the defaults, we don't want them anymore
+    for(int i = 0; i < conf->update_host_count; i++)
+      free(conf->update_hosts[i]);
+
     conf->update_host_count = 0;
+    host_configured = 1;
   }
 
   if(conf->update_host_count < MAX_UPDATE_HOSTS)
   {
-    conf->update_host_count++;
-    conf->update_hosts = realloc(conf->update_hosts,
-     sizeof(char *) * conf->update_host_count);
+    conf->update_hosts = crealloc(conf->update_hosts,
+     sizeof(char *) * (conf->update_host_count + 1));
 
-    conf->update_hosts[ conf->update_host_count - 1 ] = malloc(256);
-    strncpy(conf->update_hosts[ conf->update_host_count - 1 ], value, 256);
-    conf->update_hosts[ conf->update_host_count - 1 ][256 - 1] = 0;
+    conf->update_hosts[conf->update_host_count] = cmalloc(128);
+    strncpy(conf->update_hosts[conf->update_host_count], value, 128);
+    conf->update_hosts[conf->update_host_count][127] = 0;
+    conf->update_host_count++;
   }
 }
 
@@ -748,13 +748,17 @@ void default_config(struct config_info *conf)
   memcpy(conf, &default_options, sizeof(struct config_info));
 
 #if defined(CONFIG_UPDATER)
-  // Doing this in code since I couldn't find a way to safely do this elsewhere --lachesis
+  // No update hosts?  Add defaults!
   if(!conf->update_hosts)
   {
-    char **update_hosts = malloc(sizeof(char *) * UPDATE_HOST_COUNT);
+    char **update_hosts = cmalloc(sizeof(char *) * UPDATE_HOST_COUNT);
+    const char *def_hosts[] = UPDATE_HOSTS;
 
-    update_hosts[0] = (char*) UPDATE_HOST_1;
-    update_hosts[1] = (char*) UPDATE_HOST_2;
+    for(int i = 0; i < UPDATE_HOST_COUNT; i++)
+    {
+      update_hosts[i] = cmalloc(strlen(def_hosts[i]) + 1);
+      strcpy(update_hosts[i], def_hosts[i]);
+    }
 
     conf->update_host_count = UPDATE_HOST_COUNT;
     conf->update_hosts = update_hosts;

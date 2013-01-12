@@ -1,5 +1,5 @@
 # Configuration file for MegaZeux
-# Dec 7th, 2012
+# Jan 11th, 2013
 
 # Comments begin with #. Whitespace is ignored. Empty lines are
 # ignored as well.
@@ -503,8 +503,11 @@
 # be attempted in the order they are defined. Please note, this is not a
 # URL and should not contain protocol specifiers such as http://
 
-update_host = updates.digitalmzx.net
-update_host = updates.mzx.devzero.co.uk
+# By default, MZX will attempt to connect to updates.digitalmzx.net,
+# followed by updates.mzx.devzero.co.uk.
+
+# update_host = updates.digitalmzx.net
+# update_host = updates.mzx.devzero.co.uk
 
 # The update "branch" is consulted each time the updater runs. Typically,
 # there are only two branches, "Stable" and "Unstable". Please note, this

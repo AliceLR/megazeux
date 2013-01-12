@@ -16,6 +16,8 @@ BUGFIXES
   updater.
 + Fixed crash bug when attempting to use SMZX_R/G/B with out-of-
   range indexes.
++ Fixed crash on exit when the config file did not explicitly
+  specify update hosts.
 + Fixed counter debugger issue where counters and strings
   starting with chars over 'Z' would cause everything in their
   section to be placed into the '#' list.
