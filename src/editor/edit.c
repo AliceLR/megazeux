@@ -174,7 +174,11 @@ static void synchronize_board_values(struct world *mzx_world,
   *level_color = (*src_board)->level_color;
   *overlay = (*src_board)->overlay;
   *overlay_color = (*src_board)->overlay_color;
+
   clear_screen_no_update();
+
+  // Fix the window caption for the editor
+  set_caption(mzx_world, *src_board, NULL, 1);
 }
 
 static void fix_scroll(int *cursor_board_x, int *cursor_board_y,
@@ -1204,8 +1208,6 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
 
   do
   {
-    set_caption(mzx_world, src_board, NULL, 1);
-
     find_player(mzx_world);
 
     if((backup_count) &&
@@ -2336,6 +2338,11 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
           // If this is the first board, patch the title into the world name
           if(mzx_world->current_board_id == 0)
             strcpy(mzx_world->name, src_board->board_name);
+
+          // Mostly doing this to update the caption
+          synchronize_board_values(mzx_world, &src_board, &board_width,
+           &board_height, &level_id, &level_param, &level_color,
+           &overlay, &overlay_color);
 
           if(!src_board->overlay_mode)
             overlay_edit = 0;

@@ -248,12 +248,16 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     int savegame_mode;
     int num_robots;
     int robots_location;
+
+    int data_start;
     int expected_data_size;
-    int last_position;
+    int file_length;
 
     // MegaZeux 2.83 is the last version that won't save the ver,
     // so if we don't have a ver, just act like it's 2.83
     int mzm_world_version = 0x0253;
+
+    file_length = ftell_and_rewind(input_file);
 
     if(!fread(magic_string, 4, 1, input_file))
       goto err_invalid;
@@ -302,26 +306,26 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
     else
       goto err_invalid;
 
-    expected_data_size = (width * height) * (storage_mode==1 * -4 + 6);
-    last_position = ftell(input_file);
+    data_start = ftell(input_file);
+    expected_data_size = (width * height) * (storage_mode ? 2 : 6);
 
+    // Validate
     if(
-     (savegame_mode > 1) || (savegame_mode < 0) || // Invalid save mode
-     (storage_mode > 1) || (storage_mode < 0) || // Invalid storage mode
-     (fseek(input_file, 0, SEEK_END)) || // end of file
-     (ftell(input_file) - last_position < expected_data_size) || // not enough space to store data
-     (ftell(input_file) < robots_location) || // The end of file is before the robot offset
-     (robots_location && (expected_data_size > robots_location)) || // robots offset before data end
-     (fseek(input_file, last_position, SEEK_SET))) // go back to last position
+     (savegame_mode > 1) || (savegame_mode < 0) // Invalid save mode
+     || (storage_mode > 1) || (storage_mode < 0) // Invalid storage mode
+     || (file_length - data_start < expected_data_size) // not enough space to store data
+     || (file_length < robots_location) // The end of file is before the robot offset
+     || (robots_location && (expected_data_size + data_start > robots_location)) // robots offset before data end
+     )
       goto err_invalid;
 
-    // If the mzm version is newer than the MZX version, show a message.
+    // If the mzm version is newer than the MZX version, show a message and continue.
     if(mzm_world_version > WORLD_VERSION)
     {
       val_error(MZM_FILE_VERSION_TOO_RECENT, mzm_world_version);
     }
 
-    // If the MZM is a save MZM but we're not loading at runtime, show a message.
+    // If the MZM is a save MZM but we're not loading at runtime, show a message and continue.
     if(savegame_mode > savegame)
     {
       val_error(MZM_FILE_FROM_SAVEGAME, 0);
@@ -379,30 +383,34 @@ int load_mzm(struct world *mzx_world, char *name, int start_x, int start_y,
               {
                 current_id = (enum thing)fgetc(input_file);
 
-                if(is_robot(current_id))
-                {
-                  robot_x_locations[current_robot_loaded] = x + start_x;
-                  robot_y_locations[current_robot_loaded] = y + start_y;
-                  current_robot_loaded++;
-                }
-                else
-
-                // Wipe a bunch of crap we don't want in MZMs with spaces
                 if(current_id >= SENSOR)
-                  current_id = 0;
+                {
+                  if(is_robot(current_id))
+                  {
+                    robot_x_locations[current_robot_loaded] = x + start_x;
+                    robot_y_locations[current_robot_loaded] = y + start_y;
+                    current_robot_loaded++;
+                  }
+                  // Wipe a bunch of crap we don't want in MZMs with spaces
+                  else
+                    current_id = 0;
+                }
 
                 src_id = (enum thing)level_id[offset];
 
-                if(src_id == SENSOR)
-                  clear_sensor_id(src_board, level_param[offset]);
-                else
+                if(src_id >= SENSOR)
+                {
+                  if(src_id == SENSOR)
+                    clear_sensor_id(src_board, level_param[offset]);
+                  else
 
-                if(is_signscroll(src_id))
-                  clear_scroll_id(src_board, level_param[offset]);
-                else
+                  if(is_signscroll(src_id))
+                    clear_scroll_id(src_board, level_param[offset]);
+                  else
 
-                if(is_robot(src_id))
-                  clear_robot_id(src_board, level_param[offset]);
+                  if(is_robot(src_id))
+                    clear_robot_id(src_board, level_param[offset]);
+                }
 
                 // Don't allow the player to be overwritten
                 if(src_id != PLAYER)

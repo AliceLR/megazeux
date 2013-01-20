@@ -50,6 +50,8 @@ BUGFIXES
 + Fixed issue where MZX was using the world file version instead
   of the internal MZX version when saving MZMs and determining
   whether it could load MZMs both within the editor and in game.
++ Changed the caption behavior in the world editor as to refresh
+  only when board values are synchronized.
 
 DEVELOPERS
 
