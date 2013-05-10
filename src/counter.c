@@ -3571,6 +3571,9 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
       long current_pos, file_size;
       size_t actual_read;
 
+      // You know what would be great, is not trying to allocate 4GB of memory
+      read_count = CLAMP(read_count, 0, MAX_STRING_LEN);
+
       /* This is hacky, but we don't want to prematurely allocate more space
        * to the string than can possibly be read from the file. So we save the
        * old file pointer, figure out the length of the current input file,
