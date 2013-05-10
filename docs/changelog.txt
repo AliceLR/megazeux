@@ -17,6 +17,7 @@ FEATURES
 
 BUGFIXES
 
++ Fixed crash bug when using ALT+Z (Clear Board).
 + Fixed crash bug when attempting to view the help file in the
   updater.
 + Fixed crash bug when attempting to use SMZX_R/G/B with out-of-
