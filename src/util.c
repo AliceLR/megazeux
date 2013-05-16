@@ -481,7 +481,7 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
 static void *boyer_moore_memrchr(const void *mem, char ch, size_t len)
 {
   char *e = (char *)mem + len;
-  while(--e != (char *)mem)
+  while(e-- != (char *)mem)
     if(*e == ch)
       return (void *)e;
   return NULL;
