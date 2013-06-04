@@ -1621,7 +1621,10 @@ void quit_audio(void)
   free(audio.pcs_stream);
 }
 
-__editor_maybe_static void load_module(char *filename, bool safely,
+/* If the mod was successfully changed, return 1.  This value is used
+*  to determine whether to change real_mod_playing.
+*/
+__editor_maybe_static int load_module(char *filename, bool safely,
  int volume)
 {
   char translated_filename[MAX_PATH];
@@ -1631,14 +1634,14 @@ __editor_maybe_static void load_module(char *filename, bool safely,
   if(!filename || !filename[0])
   {
     end_module();
-    return;
+    return 1;
   }
 
   // Should never happen, but let's find out
   if(!strcmp(filename, "*"))
   {
     warn("Passed '*' as a file to load! Report this!\n");
-    return;
+    return 0;
   }
 
   if(safely)
@@ -1646,7 +1649,7 @@ __editor_maybe_static void load_module(char *filename, bool safely,
     if(fsafetranslate(filename, translated_filename) != FSAFE_SUCCESS)
     {
       warn("Module filename '%s' failed safety checks\n", filename);
-      return;
+      return 0;
     }
 
     filename = translated_filename;
@@ -1662,11 +1665,12 @@ __editor_maybe_static void load_module(char *filename, bool safely,
   audio.primary_stream = a_src;
 
   UNLOCK();
+  return 1;
 }
 
-void load_board_module(struct board *src_board)
+int load_board_module(struct board *src_board)
 {
-  load_module(src_board->mod_playing, true, src_board->volume);
+  return load_module(src_board->mod_playing, true, src_board->volume);
 }
 
 void end_module(void)

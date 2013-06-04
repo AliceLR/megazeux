@@ -84,6 +84,7 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
 {
   struct board *src_board = mzx_world->current_board;
   size_t mod_name_size = strlen(filename);
+  int change_real_mod = 0;
 
   if((mod_name_size > 1) && (filename[mod_name_size - 1] == '*'))
   {
@@ -92,7 +93,7 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
     if(strcasecmp(src_board->mod_playing, filename))
     {
       strcpy(src_board->mod_playing, filename);
-      load_board_module(src_board);
+      change_real_mod = load_board_module(src_board);
     }
 
     strcpy(src_board->mod_playing, "*");
@@ -102,10 +103,10 @@ static void magic_load_mod(struct world *mzx_world, char *filename)
     strcpy(src_board->mod_playing, filename);
 
     if(filename[0] != '*')
-      load_board_module(src_board);
+      change_real_mod = load_board_module(src_board);
   }
 
-  if(filename[0] != '*')
+  if(change_real_mod && filename[0] != '*')
     strcpy(mzx_world->real_mod_playing, filename);
 }
 

@@ -57,6 +57,8 @@ BUGFIXES
 + Fixed bug where, when exiting gameplay, the world would keep
   running on the title screen if MegaZeux lost read access to
   the world file.
++ Fixed minor bug where trying to load a nonexistant mod would
+  change MOD_NAME's output while the previous mod still played.
 
 DEVELOPERS
 

@@ -120,7 +120,7 @@ extern struct audio audio;
 CORE_LIBSPEC void init_audio(struct config_info *conf);
 CORE_LIBSPEC void quit_audio(void);
 CORE_LIBSPEC void end_module(void);
-CORE_LIBSPEC void load_board_module(struct board *src_board);
+CORE_LIBSPEC int  load_board_module(struct board *src_board);
 CORE_LIBSPEC void play_sample(int freq, char *filename, bool safely);
 
 void end_sample(void);
@@ -154,7 +154,7 @@ void init_audio_platform(struct config_info *conf);
 void quit_audio_platform(void);
 
 #ifdef CONFIG_EDITOR
-CORE_LIBSPEC void load_module(char *filename, bool safely, int volume);
+CORE_LIBSPEC int load_module(char *filename, bool safely, int volume);
 #endif
 
 #ifdef CONFIG_MODPLUG
