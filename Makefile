@@ -139,6 +139,14 @@ CXXFLAGS += -fstack-protector-all
 endif
 endif
 
+#
+# Linux-arm needs this flag for modular builds.
+#
+ifeq (${SUBPLATFORM},linux-arm)
+CFLAGS += -fPIC
+CXXFLAGS += -fPIC
+endif
+
 endif
 endif
 
