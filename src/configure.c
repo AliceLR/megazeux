@@ -130,8 +130,10 @@ static void config_update_host(struct config_info *conf, char *name,
 {
   if(!host_configured || !conf->update_host_count)
   {
+    int i;
+
     // Free the defaults, we don't want them anymore
-    for(int i = 0; i < conf->update_host_count; i++)
+    for(i = 0; i < conf->update_host_count; i++)
       free(conf->update_hosts[i]);
 
     conf->update_host_count = 0;
@@ -753,8 +755,9 @@ void default_config(struct config_info *conf)
   {
     char **update_hosts = cmalloc(sizeof(char *) * UPDATE_HOST_COUNT);
     const char *def_hosts[] = UPDATE_HOSTS;
+    int i;
 
-    for(int i = 0; i < UPDATE_HOST_COUNT; i++)
+    for(i = 0; i < UPDATE_HOST_COUNT; i++)
     {
       update_hosts[i] = cmalloc(strlen(def_hosts[i]) + 1);
       strcpy(update_hosts[i], def_hosts[i]);
@@ -778,7 +781,9 @@ void free_config(struct config_info *conf)
   // Auto-Updater hosts
   if(conf->update_hosts)
   {
-    for(int i = 0; i < conf->update_host_count; i++)
+    int i;
+
+    for(i = 0; i < conf->update_host_count; i++)
       free(conf->update_hosts[i]);
 
     free(conf->update_hosts);

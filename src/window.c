@@ -2264,7 +2264,7 @@ __editor_maybe_static int file_manager(struct world *mzx_world,
   // If ret is in a different dir, make that the current dir
   split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
   if(ret_path[0])
-    change_dir_name(current_dir_name, ret_path, MAX_PATH);
+    change_dir_name(current_dir_name, ret_path);
 
   while(return_value == 1)
   {
@@ -2503,7 +2503,7 @@ skip_dir:
 
         split_path_filename(ret, ret_path, MAX_PATH, ret_file, MAX_PATH);
         if(ret_path[0])
-          change_dir_name(current_dir_name, ret_path, MAX_PATH);
+          change_dir_name(current_dir_name, ret_path);
 
         if(ret_file[0])
           snprintf(ret, MAX_PATH, "%s%s%s",
@@ -2519,7 +2519,7 @@ skip_dir:
       // Pressed Backspace
       case -2:
       {
-        change_dir_name(current_dir_name, "..", MAX_PATH);
+        change_dir_name(current_dir_name, "..");
         break;
       }
 
@@ -2555,7 +2555,7 @@ skip_dir:
         // It's actually a dir, oops!
         if((stat_result >= 0) && S_ISDIR(file_info.st_mode))
         {
-          change_dir_name(current_dir_name, ret_file, MAX_PATH);
+          change_dir_name(current_dir_name, ret_file);
           strcpy(ret, "");
           break;
         }
@@ -2592,7 +2592,7 @@ skip_dir:
       case 2:
       {
         if(dir_list && dir_list[chosen_dir])
-          change_dir_name(current_dir_name, dir_list[chosen_dir], MAX_PATH);
+          change_dir_name(current_dir_name, dir_list[chosen_dir]);
 
         break;
       }

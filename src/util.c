@@ -374,11 +374,11 @@ static void clean_path_slashes(const char *source, char *dest, int buf_size)
 }
 
 // Navigate a path name.
-int change_dir_name(char *path_name, const char *dest, int buf_size)
+int change_dir_name(char *path_name, const char *dest)
 {
-  char path[buf_size];
-  char *colon_loc;
   struct stat stat_info;
+  char path[MAX_PATH];
+  char *colon_loc;
   int size;
 
   if(!dest || !dest[0])
@@ -392,11 +392,11 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
   // Stop!  recursion time
   if(strchr(dest, DIR_SEPARATOR_CHAR) || colon_loc)
   {
-    char dir_element[buf_size];
+    char dir_element[MAX_PATH];
     unsigned int i, dir_start = 0;
 
-    strncpy(path, dest, buf_size-1);
-    path[buf_size-1] = 0;
+    strncpy(path, dest, MAX_PATH - 1);
+    path[MAX_PATH - 1] = 0;
 
     if(path[strlen(path) - 1] == ':')
       strcat(path, DIR_SEPARATOR);
@@ -419,7 +419,7 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
           int res;
           strncpy(dir_element, path + dir_start, i-dir_start);
           dir_element[i - dir_start] = '\0';
-          res = change_dir_name(path_name, dir_element, buf_size);
+          res = change_dir_name(path_name, dir_element);
           if(res)
             return res;
         }
@@ -436,7 +436,7 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
   {
     if((dest[1] == '.') && (dest[2] == '\0'))
     {
-      size = get_path(path_name, path, buf_size);
+      size = get_path(path_name, path, MAX_PATH);
 
       // Fix ..ing to root paths
       if(path[strlen(path) - 1] == ':')
@@ -461,14 +461,13 @@ int change_dir_name(char *path_name, const char *dest, int buf_size)
       return 0;
   }
 
-  snprintf(path, buf_size, "%s%s%s",
-   path_name, DIR_SEPARATOR, dest);
-  path[buf_size - 1] = 0;
+  snprintf(path, MAX_PATH, "%s%s%s", path_name, DIR_SEPARATOR, dest);
+  path[MAX_PATH - 1] = 0;
 
   if(stat(path, &stat_info) >= 0)
   {
-    clean_path_slashes(path, path_name, buf_size - 1);
-    path_name[buf_size - 1] = 0;
+    clean_path_slashes(path, path_name, MAX_PATH - 1);
+    path_name[MAX_PATH - 1] = 0;
     return 0;
   }
 
@@ -492,6 +491,7 @@ void boyer_moore_index(void *B, size_t b_len,
  int *index, bool ignore_case)
 {
   char *b = (char *)B;
+  int i;
 
   char *s = b;
   char *last = b + b_len - 1;
@@ -517,7 +517,7 @@ void boyer_moore_index(void *B, size_t b_len,
     }
     s++;
   }
-  for(int i = 0; i < 256; i++)
+  for(i = 0; i < 256; i++)
     if(index[i] <= 0 || index[i] > (int)b_len)
       index[i] = b_len;
 }

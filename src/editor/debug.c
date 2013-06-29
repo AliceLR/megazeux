@@ -539,7 +539,9 @@ static void build_tree_list(struct debug_node *node,
 // Free the tree list and all of its lines.
 static void free_tree_list(char **tree_list, int tree_size)
 {
-  for(int i = 0; i < tree_size; i++)
+  int i;
+
+  for(i = 0; i < tree_size; i++)
     free(tree_list[i]);
 
   free(tree_list);
@@ -603,10 +605,12 @@ static void build_var_list(struct debug_node *node,
       free(copy_src);
   }
 
-  if(node->num_nodes && node->show_child_contents)
-    for(int i = 0; i < node->num_nodes; i++)
+  if (node->num_nodes && node->show_child_contents)
+  {
+    int i;
+    for(i = 0; i < node->num_nodes; i++)
       build_var_list(&(node->nodes[i]), var_list, num_vars, hide_empty);
-
+  }
 }
 static void rebuild_var_list(struct debug_node *node,
  char ***var_list, int *num_vars, int hide_empty)
@@ -834,19 +838,30 @@ static int find_variable(struct world *mzx_world, struct debug_node *node,
 static char *find_first_var(struct debug_node *node)
 {
   char *res = NULL;
+
   if(node->num_counters)
     res = node->counters[0];
+
   if(node->num_nodes && !res)
-    for(int i = 0; i < node->num_nodes && !res; i++)
+  {
+    int i;
+    for(i = 0; i < node->num_nodes && !res; i++)
       res = find_first_var(&(node->nodes[i]));
+  }
+
   return res;
 }
 static char *find_last_var(struct debug_node *node)
 {
   char *res = NULL;
+
   if(node->num_nodes)
-    for(int i = node->num_nodes - 1; i >= 0 && !res; i--)
+  {
+    int i;
+    for(i = node->num_nodes - 1; i >= 0 && !res; i--)
       res = find_last_var(&(node->nodes[i]));
+  }
+
   if(node->num_counters && !res)
     res = node->counters[node->num_counters - 1];
 
@@ -1376,8 +1391,7 @@ static int search_dialog(struct world *mzx_world,
  const char *title, char *string, int *search_flags)
 {
   int result = 0;
-  int num_elements = 7;
-  struct element *elements[num_elements];
+  struct element *elements[7];
   struct dialog di;
 
   const char *name_opt[] = { "Search names" };
@@ -1403,8 +1417,8 @@ static int search_dialog(struct world *mzx_world,
   elements[6] = construct_check_box(34, 3, local_opt,   1, strlen(local_opt[0]),   &local);
 
   construct_dialog_ext(&di, title, VAR_SEARCH_DIALOG_X, VAR_SEARCH_DIALOG_Y,
-   VAR_SEARCH_DIALOG_W, VAR_SEARCH_DIALOG_H, elements, num_elements, 0, 0, 0,
-   search_dialog_idle_function);
+   VAR_SEARCH_DIALOG_W, VAR_SEARCH_DIALOG_H, elements, ARRAY_SIZE(elements),
+   0, 0, 0, search_dialog_idle_function);
 
   result = run_dialog(mzx_world, &di);
 
@@ -1425,8 +1439,7 @@ static int search_dialog(struct world *mzx_world,
 static int new_counter_dialog(struct world *mzx_world, char *name)
 {
   int result;
-  int num_elements = 3;
-  struct element *elements[num_elements];
+  struct element *elements[3];
   struct dialog di;
 
   elements[0] = construct_input_box(2, 2, "Name:", VAR_ADD_MAX, 0, name);
@@ -1434,8 +1447,8 @@ static int new_counter_dialog(struct world *mzx_world, char *name)
   elements[2] = construct_button(23, 4, "Cancel", -1);
   
   construct_dialog_ext(&di, "New Counter/String", VAR_ADD_DIALOG_X, VAR_ADD_DIALOG_Y,
-   VAR_ADD_DIALOG_W, VAR_ADD_DIALOG_H, elements, num_elements, 0, 0, 0,
-   NULL);
+   VAR_ADD_DIALOG_W, VAR_ADD_DIALOG_H, elements, ARRAY_SIZE(elements),
+   0, 0, 0, NULL);
 
   result = run_dialog(mzx_world, &di);
 
@@ -1559,8 +1572,7 @@ void __debug_counters(struct world *mzx_world)
   int window_focus = 0;
   int node_selected = 0, var_selected = 0;
   int dialog_result;
-  int num_elements = 8;
-  struct element *elements[num_elements];
+  struct element *elements[8];
   struct dialog di;
   
   char label[80] = "Counters";
@@ -1599,7 +1611,7 @@ void __debug_counters(struct world *mzx_world)
     elements[7] = construct_label(VAR_LIST_X, VAR_LIST_Y - 1, label);
 
     construct_dialog_ext(&di, "Debug Variables", 0, 0,
-     80, 25, elements, num_elements, 0, 0, window_focus,
+     80, 25, elements, ARRAY_SIZE(elements), 0, 0, window_focus,
      counter_debugger_idle_function);
 
     dialog_result = run_dialog(mzx_world, &di);
@@ -1886,9 +1898,6 @@ void __debug_counters(struct world *mzx_world)
   // to because clear_debug_tree already did it.
   free(var_list);
 }
-
-
-
 
 /********************/
 /* HAHAHA DEBUG BOX */

@@ -38,6 +38,8 @@ __M_BEGIN_DECLS
 #define CLAMP(x, low, high) \
   (((x) > (high)) ? (high) : (((x) < (low)) ? (low) : (x)))
 
+#define ARRAY_SIZE(x) (sizeof(x) / sizeof(x[0]))
+
 #ifndef DIR_SEPARATOR
 #ifdef __WIN32__
 #define DIR_SEPARATOR "\\"
@@ -95,7 +97,7 @@ CORE_LIBSPEC void split_path_filename(const char *source,
 
 CORE_LIBSPEC int create_path_if_not_exists(const char *filename);
 
-CORE_LIBSPEC int change_dir_name(char *path_name, const char *dest, int buf_size);
+CORE_LIBSPEC int change_dir_name(char *path_name, const char *dest);
 
 typedef void (*fn_ptr)(void);
 
