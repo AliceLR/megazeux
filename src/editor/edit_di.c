@@ -1325,10 +1325,9 @@ int board_goto(struct world *mzx_world,
  int *cursor_board_x, int *cursor_board_y)
 {
   int result = 0;
-  int num_elements = 4;
   int goto_x = *cursor_board_x;
   int goto_y = *cursor_board_y;
-  struct element *elements[num_elements];
+  struct element *elements[4];
   struct dialog di;
 
   struct board *cur_board = mzx_world->current_board;
@@ -1343,7 +1342,7 @@ int board_goto(struct world *mzx_world,
    0, board_height - 1, 0, &goto_y);
 
   construct_dialog(&di, "Goto board location",
-   21, 7, 38, 7, elements, num_elements, 2);
+   21, 7, 38, 7, elements, ARRAY_SIZE(elements), 2);
 
   result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);

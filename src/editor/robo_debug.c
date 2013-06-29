@@ -56,8 +56,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
  struct break_point *br, const char *title)
 {
   int result;
-  int num_elements = 4;
-  struct element *elements[num_elements];
+  struct element *elements[4];
   struct dialog di;
 
   elements[0] = construct_input_box(2, 2, "Match robot name (optional):", 14, 0, br->match_name);
@@ -66,7 +65,7 @@ static int edit_breakpoint_dialog(struct world *mzx_world,
   elements[3] = construct_button(23, 5, "Cancel", -1);
   
   construct_dialog_ext(&di, title, 0, 6,
-   80, 8, elements, num_elements, 0, 0, 0, NULL);
+   80, 8, elements, ARRAY_SIZE(elements), 0, 0, 0, NULL);
 
   result = run_dialog(mzx_world, &di);
   destruct_dialog(&di);
@@ -119,8 +118,7 @@ void __edit_breakpoints(struct world *mzx_world)
   int i;
 
   int result = 0;
-  int num_elements = 8;
-  struct element *elements[num_elements];
+  struct element *elements[8];
   struct dialog di;
 
   int selected = 0;
@@ -156,8 +154,8 @@ void __edit_breakpoints(struct world *mzx_world)
     elements[6] = construct_label(2, 1, "Name substr.");
     elements[7] = construct_label(17, 1, "Line substring");
 
-    construct_dialog_ext(&di, "Edit Breakpoints", 0, 0, 80, 25, elements, num_elements, 0, 0, focus,
-     edit_breakpoints_idle_function);
+    construct_dialog_ext(&di, "Edit Breakpoints", 0, 0, 80, 25, elements,
+     ARRAY_SIZE(elements), 0, 0, focus, edit_breakpoints_idle_function);
 
     result = run_dialog(mzx_world, &di);
 
@@ -251,7 +249,9 @@ void pause_robot_debugger(void)
 // Called when the editor exits
 void free_breakpoints(void)
 {
-  for(int i = 0; i < num_break_points; i++)
+  int i;
+
+  for(i = 0; i < num_break_points; i++)
     free(break_points[i]);
 
   if(break_points)
@@ -397,8 +397,7 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
   do {
     int button_line;
     int num_lines = 0;
-    int num_elements = 10;
-    struct element *elements[num_elements];
+    struct element *elements[10];
 
     int dialog_y = 0;
     int dialog_result;
@@ -440,7 +439,7 @@ int __debug_robot(struct world *mzx_world, struct robot *cur_robot, int id)
     elements[5]  = construct_button(64, button_line, "Breakpoints", 4);
 
     construct_dialog_ext(&di, info, 0, dialog_y,
-     80, num_lines + 4, elements, num_elements, 0, 0, selected,
+     80, num_lines + 4, elements, ARRAY_SIZE(elements), 0, 0, selected,
      debug_robot_idle_function);
 
     m_show();

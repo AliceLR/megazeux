@@ -179,6 +179,8 @@ int get_robot_id(struct board *src_board, const char *name)
 
 void create_blank_robot(struct robot *r, int savegame)
 {
+  int i;
+
   free(r->program_bytecode);
   r->program_bytecode = NULL;
   r->program_bytecode_length = 0;
@@ -219,7 +221,7 @@ void create_blank_robot(struct robot *r, int savegame)
   r->status = 0;
   r->used = 1;
   r->loop_count = 0;
-  for(int i = 0; i<32; i++)
+  for(i = 0; i<32; i++)
     r->local[i] = 0;
 
   free(r->label_list);

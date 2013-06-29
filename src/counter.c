@@ -4308,11 +4308,13 @@ void save_string(FILE *fp, struct string *src_string)
 
 void free_counter_list(struct counter **counter_list, int num_counters)
 {
+  int i;
+
 #ifdef CONFIG_UTHASH
   HASH_CLEAR(ch, counter_head);
 #endif
 
-  for(int i = 0; i < num_counters; i++)
+  for(i = 0; i < num_counters; i++)
     free(counter_list[i]);
 
   free(counter_list);
@@ -4320,11 +4322,13 @@ void free_counter_list(struct counter **counter_list, int num_counters)
 
 void free_string_list(struct string **string_list, int num_strings)
 {
+  int i;
+
 #ifdef CONFIG_UTHASH
   HASH_CLEAR(sh, string_head);
 #endif
 
-  for(int i = 0; i < num_strings; i++)
+  for(i = 0; i < num_strings; i++)
     free(string_list[i]);
 
   free(string_list);

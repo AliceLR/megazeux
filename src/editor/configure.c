@@ -797,8 +797,10 @@ void save_local_editor_config(struct editor_config_info *conf,
 
   if(conf->num_jump_points)
   {
+    int i;
+
     fwrite("\n", 1, 1, fp);
-    for(int i = 0; i < conf->num_jump_points; i++)
+    for(i = 0; i < conf->num_jump_points; i++)
     {
       struct jump_point *j = &(conf->jump_points[i]);
       sprintf(buf, "saved_position = %s,%i,%i,%i\n", j->name, j->board_id, j->dest_x, j->dest_y);
