@@ -35,9 +35,15 @@
 #define getcwd      _getcwd
 #define rmdir       _rmdir
 #define snprintf    _snprintf
-#define strcasecmp  _stricmp
-#define strncasecmp _strnicmp
 #define unlink      _unlink
+
+#ifndef strcasecmp
+#define strcasecmp  _stricmp
+#endif
+
+#ifndef strncasecmp
+#define strncasecmp _strnicmp
+#endif
 
 #define mkdir(name,mode) _mkdir(name)
 

@@ -1,5 +1,5 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
-<Project DefaultTargets="Build" ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+<Project DefaultTargets="Build" ToolsVersion="12.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
   <ItemGroup Label="ProjectConfigurations">
     <ProjectConfiguration Include="Debug|Win32">
       <Configuration>Debug</Configuration>
@@ -38,21 +38,25 @@
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>false</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Label="Configuration" Condition="'$(Configuration)|$(Platform)'=='Release|X64'">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <PropertyGroup Condition="'$(Configuration)|$(Platform)'=='Debug|X64'" Label="Configuration">
     <ConfigurationType>DynamicLibrary</ConfigurationType>
     <CharacterSet>MultiByte</CharacterSet>
     <WholeProgramOptimization>true</WholeProgramOptimization>
+    <PlatformToolset>v120</PlatformToolset>
   </PropertyGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.props" />
   <ImportGroup Label="ExtensionSettings">
@@ -205,6 +209,7 @@
     <ClInclude Include="..\..\src\editor\pal_ed.h" />
     <ClInclude Include="..\..\src\editor\param.h" />
     <ClInclude Include="..\..\src\editor\robot.h" />
+    <ClInclude Include="..\..\src\editor\robo_debug.h" />
     <ClInclude Include="..\..\src\editor\robo_ed.h" />
     <ClInclude Include="..\..\src\editor\sfx_edit.h" />
     <ClInclude Include="..\..\src\editor\window.h" />
@@ -224,6 +229,7 @@
     <ClCompile Include="..\..\src\editor\pal_ed.c" />
     <ClCompile Include="..\..\src\editor\param.c" />
     <ClCompile Include="..\..\src\editor\robot.c" />
+    <ClCompile Include="..\..\src\editor\robo_debug.c" />
     <ClCompile Include="..\..\src\editor\robo_ed.c" />
     <ClCompile Include="..\..\src\editor\sfx_edit.c" />
     <ClCompile Include="..\..\src\editor\window.c" />
