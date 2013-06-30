@@ -927,9 +927,9 @@ bool init_video(struct config_info *conf, const char *caption)
       SDL_SysWMinfo info;
 
       SDL_VERSION(&info.version);
-      SDL_GetWMInfo(&info);
+      SDL_GetWindowWMInfo(NULL, &info);
 
-      SendMessage(info.window, WM_SETICON, ICON_BIG, (LPARAM)icon);
+      SendMessage(info.info.win.window, WM_SETICON, ICON_BIG, (LPARAM)icon);
     }
   }
 #else // !__WIN32__

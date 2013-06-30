@@ -286,12 +286,7 @@ static bool process_event(SDL_Event *event)
     {
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
-      {
-        if(event->key.keysym.unicode)
-          ckey = IKEY_UNICODE;
-        else
-          break;
-      }
+        break;
 
       if((ckey == IKEY_RETURN) &&
        get_alt_status(keycode_internal) &&
@@ -345,7 +340,7 @@ static bool process_event(SDL_Event *event)
         }
       }
 
-      key_press(status, ckey, event->key.keysym.unicode);
+      key_press(status, ckey, event->key.keysym.sym);
       break;
     }
 
@@ -353,12 +348,7 @@ static bool process_event(SDL_Event *event)
     {
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
-      {
-        if(status->keymap[IKEY_UNICODE])
-          ckey = IKEY_UNICODE;
-        else
-          break;
-      }
+        break;
 
       if(ckey == IKEY_NUMLOCK)
       {
