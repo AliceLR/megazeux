@@ -30,7 +30,7 @@
 
 struct gp2x_render_data
 {
-  SDL_Surface *screen;
+  struct sdl_render_data sdl;
   Uint32 halfmask;
   Uint16 buffer[320*350];
 };
@@ -227,8 +227,7 @@ static void gp2x_free_video(struct graphics_data *graphics)
 static bool gp2x_check_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, bool fullscreen, bool resize)
 {
-  return SDL_VideoModeOK(width, height, 16,
-   sdl_flags(depth, fullscreen, resize));
+  return true;
 }
 
 static bool gp2x_set_video_mode(struct graphics_data *graphics,
@@ -238,11 +237,29 @@ static bool gp2x_set_video_mode(struct graphics_data *graphics,
   SDL_PixelFormat *format;
   Uint32 halfmask;
 
-  render_data->screen = SDL_SetVideoMode(width, height, 16,
+  render_data->sdl.window = SDL_CreateWindow("MegaZeux",
+   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
    sdl_flags(depth, fullscreen, resize));
-  if(render_data->screen)
+
+  if(!render_data->sdl.window)
   {
-    format = render_data->screen->format;
+    warn("Failed to set video mode: %s\n", SDL_GetError());
+    return false;
+  }
+
+  render_data->sdl.renderer =
+   SDL_CreateRenderer(render_data->sdl.window, -1, SDL_RENDERER_SOFTWARE);
+
+  if(!render_data->sdl.renderer)
+  {
+    warn("Failed to set video mode: %s\n", SDL_GetError());
+    return false;
+  }
+
+  render_data->sdl.screen = SDL_GetWindowSurface(render_data->sdl.window);
+  if(render_data->sdl.screen)
+  {
+    format = render_data->sdl.screen->format;
     halfmask = (format->Rmask >> 1) & format->Rmask;
     halfmask |= (format->Gmask >> 1) & format->Gmask;
     halfmask |= (format->Bmask >> 1) & format->Bmask;
@@ -262,7 +279,7 @@ static void gp2x_update_colors(struct graphics_data *graphics,
   for(i = 0; i < count; i++)
   {
     graphics->flat_intensity_palette[i] =
-     SDL_MapRGBA(render_data->screen->format, palette[i].r, palette[i].g,
+     SDL_MapRGBA(render_data->sdl.screen->format, palette[i].r, palette[i].g,
      palette[i].b, 255);
   }
 }
@@ -313,11 +330,12 @@ static void gp2x_render_mouse(struct graphics_data *graphics,
 static void gp2x_sync_screen(struct graphics_data *graphics)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
-  Uint32 line_advance = render_data->screen->pitch / 2;
-  Uint16 *dest = (Uint16*)render_data->screen->pixels;
+  Uint32 line_advance = render_data->sdl.screen->pitch / 2;
+  Uint16 *dest = (Uint16*)render_data->sdl.screen->pixels;
   Uint16 *src = render_data->buffer;
   Uint32 i, j, skip = 0;
-  SDL_LockSurface(render_data->screen);
+
+  SDL_LockSurface(render_data->sdl.screen);
   for(i = 0; i < 240; i++)
   {
     skip += 35 - 24;
@@ -339,8 +357,9 @@ static void gp2x_sync_screen(struct graphics_data *graphics)
     src += 320;
     dest += line_advance;
   }
-  SDL_UnlockSurface(render_data->screen);
-  SDL_RenderPresent(render_data->screen);
+
+  SDL_UnlockSurface(render_data->sdl.screen);
+  SDL_RenderPresent(render_data->sdl.renderer);
 }
 
 void render_gp2x_register(struct renderer *renderer)
