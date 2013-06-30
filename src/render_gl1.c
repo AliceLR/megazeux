@@ -95,6 +95,9 @@ struct gl1_render_data
 #ifdef CONFIG_EGL
   struct egl_render_data egl;
 #endif
+#ifdef CONFIG_SDL
+  struct sdl_render_data sdl;
+#endif
   Uint32 *pixels;
   Uint32 w;
   Uint32 h;

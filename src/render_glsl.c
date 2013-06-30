@@ -134,6 +134,9 @@ struct glsl_render_data
 #ifdef CONFIG_EGL
   struct egl_render_data egl;
 #endif
+#ifdef CONFIG_SDL
+  struct sdl_render_data sdl;
+#endif
   Uint32 *pixels;
   Uint32 charset_texture[CHAR_H * CHARSET_SIZE * CHAR_W * 2];
   Uint32 background_texture[SCREEN_W * SCREEN_H];
