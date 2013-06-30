@@ -34,6 +34,7 @@ struct sdl_render_data
 {
   SDL_Renderer *renderer;
   SDL_Surface *screen;
+  SDL_Surface *shadow;
   SDL_Window *window;
 };
 

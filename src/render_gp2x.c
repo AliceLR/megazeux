@@ -35,6 +35,13 @@ struct gp2x_render_data
   Uint16 buffer[320*350];
 };
 
+static SDL_Surface *
+gp2x_get_screen_surface(struct gp2x_render_data *render_data)
+{
+  return render_data->sdl.shadow ?
+   render_data->sdl.shadow : render_data->sdl.screen;
+}
+
 static void gp2x_set_colors_mzx (struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg)
 {
@@ -235,7 +242,7 @@ static bool gp2x_set_video_mode(struct graphics_data *graphics,
 {
   struct gp2x_render_data *render_data = graphics->render_data;
   SDL_PixelFormat *format;
-  Uint32 halfmask;
+  Uint32 halfmask, fmt;
 
   render_data->sdl.window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
@@ -243,7 +250,7 @@ static bool gp2x_set_video_mode(struct graphics_data *graphics,
 
   if(!render_data->sdl.window)
   {
-    warn("Failed to set video mode: %s\n", SDL_GetError());
+    warn("Failed to create window: %s\n", SDL_GetError());
     return false;
   }
 
@@ -252,35 +259,62 @@ static bool gp2x_set_video_mode(struct graphics_data *graphics,
 
   if(!render_data->sdl.renderer)
   {
-    warn("Failed to set video mode: %s\n", SDL_GetError());
+    warn("Failed to create renderer: %s\n", SDL_GetError());
     return false;
   }
 
   render_data->sdl.screen = SDL_GetWindowSurface(render_data->sdl.window);
-  if(render_data->sdl.screen)
+  if(!render_data->sdl.screen)
   {
-    format = render_data->sdl.screen->format;
-    halfmask = (format->Rmask >> 1) & format->Rmask;
-    halfmask |= (format->Gmask >> 1) & format->Gmask;
-    halfmask |= (format->Bmask >> 1) & format->Bmask;
-    render_data->halfmask = halfmask;
-    return true;
+    warn("Failed to get window surface: %s\n", SDL_GetError());
+    return false;
   }
 
-  return false;
+  /* If running on a real GP2X, the window's pixel format will presumably
+   * be RGB565. However, to enable testing this renderer on other systems,
+   * where SDL does not provide a 16-bit format, allocate a shadow surface
+   * and blit from it at present time.
+   */
+  fmt = SDL_GetWindowPixelFormat(render_data->sdl.window);
+  if(fmt != SDL_PIXELFORMAT_RGB565)
+  {
+    Uint32 Rmask, Gmask, Bmask, Amask;
+    int bpp;
+
+    SDL_PixelFormatEnumToMasks(SDL_PIXELFORMAT_RGB565,
+                               &bpp, &Rmask, &Gmask, &Bmask, &Amask);
+
+    render_data->sdl.shadow = SDL_CreateRGBSurface(0,
+     graphics->resolution_width, graphics->resolution_height, bpp,
+     Rmask, Gmask, Bmask, Amask);
+    format = render_data->sdl.shadow->format;
+  }
+  else
+  {
+    render_data->sdl.shadow = NULL;
+    format = render_data->sdl.screen->format;
+  }
+
+  halfmask = (format->Rmask >> 1) & format->Rmask;
+  halfmask |= (format->Gmask >> 1) & format->Gmask;
+  halfmask |= (format->Bmask >> 1) & format->Bmask;
+  render_data->halfmask = halfmask;
+
+  return true;
 }
 
 static void gp2x_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, Uint32 count)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
+  SDL_Surface *screen = gp2x_get_screen_surface(render_data);
   Uint32 i;
 
   for(i = 0; i < count; i++)
   {
     graphics->flat_intensity_palette[i] =
-     SDL_MapRGBA(render_data->sdl.screen->format, palette[i].r, palette[i].g,
-     palette[i].b, 255);
+     SDL_MapRGBA(screen->format, palette[i].r, palette[i].g,
+      palette[i].b, 255);
   }
 }
 
@@ -330,12 +364,14 @@ static void gp2x_render_mouse(struct graphics_data *graphics,
 static void gp2x_sync_screen(struct graphics_data *graphics)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
-  Uint32 line_advance = render_data->sdl.screen->pitch / 2;
-  Uint16 *dest = (Uint16*)render_data->sdl.screen->pixels;
+  SDL_Surface *screen = gp2x_get_screen_surface(render_data);
+
+  Uint32 line_advance = screen->pitch / 2;
+  Uint16 *dest = (Uint16*)screen->pixels;
   Uint16 *src = render_data->buffer;
   Uint32 i, j, skip = 0;
 
-  SDL_LockSurface(render_data->sdl.screen);
+  SDL_LockSurface(screen);
   for(i = 0; i < 240; i++)
   {
     skip += 35 - 24;
@@ -358,7 +394,15 @@ static void gp2x_sync_screen(struct graphics_data *graphics)
     dest += line_advance;
   }
 
-  SDL_UnlockSurface(render_data->sdl.screen);
+  SDL_UnlockSurface(screen);
+
+  if(render_data->sdl.shadow)
+  {
+    SDL_BlitSurface(render_data->sdl.shadow,
+     &render_data->sdl.shadow->clip_rect, render_data->sdl.screen,
+     &render_data->sdl.screen->clip_rect);
+  }
+
   SDL_RenderPresent(render_data->sdl.renderer);
 }
 

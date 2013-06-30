@@ -69,7 +69,7 @@ static bool soft_set_video_mode(struct graphics_data *graphics,
 
   if(!render_data.window)
   {
-    warn("Failed to set video mode: %s\n", SDL_GetError());
+    warn("Failed to create window: %s\n", SDL_GetError());
     return false;
   }
 
@@ -78,11 +78,17 @@ static bool soft_set_video_mode(struct graphics_data *graphics,
 
   if(!render_data.renderer)
   {
-    warn("Failed to set video mode: %s\n", SDL_GetError());
+    warn("Failed to create renderer: %s\n", SDL_GetError());
     return false;
   }
 
   render_data.screen = SDL_GetWindowSurface(render_data.window);
+  if(!render_data.screen)
+  {
+    warn("Failed to get window surface: %s\n", SDL_GetError());
+    return false;
+  }
+
   graphics->render_data = &render_data;
   return true;
 }
