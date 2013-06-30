@@ -27,7 +27,7 @@ ARCH_CFLAGS   += -fno-strict-aliasing
 ARCH_CXXFLAGS += -fno-strict-aliasing
 
 # Amiga needs PNG to be statically linked (inc. zlib)
-LIBPNG_LDFLAGS = `libpng12-config --static --ldflags`
+LIBPNG_LDFLAGS = $(shell libpng12-config --static --ldflags)
 
 #
 # Need to nest Amiga binaries in a subdir

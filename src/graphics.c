@@ -857,7 +857,7 @@ static SDL_Surface *png_read_icon(const char *name)
 void set_window_caption(const char *caption)
 {
 #ifdef CONFIG_SDL
-  SDL_WM_SetCaption(caption, "");
+//  SDL_WM_SetCaption(caption, "");
 #endif
 }
 char *get_default_caption(void)
@@ -884,8 +884,7 @@ bool init_video(struct config_info *conf, const char *caption)
 #ifdef CONFIG_SDL
   strncpy(graphics.default_caption, caption, 32);
   graphics.default_caption[31] = '\0';
-
-  SDL_WM_SetCaption(caption, "");
+  set_window_caption(caption);
 #endif
 
   // These values (the defaults, actually) are special and tell MZX to try
@@ -939,7 +938,7 @@ bool init_video(struct config_info *conf, const char *caption)
     SDL_Surface *icon = png_read_icon("/usr/share/icons/megazeux.png");
     if(icon)
     {
-      SDL_WM_SetIcon(icon, NULL);
+//      SDL_WM_SetIcon(icon, NULL);
       SDL_FreeSurface(icon);
     }
   }

@@ -27,13 +27,15 @@ int sdl_flags(int depth, bool fullscreen, bool resize)
 
   if(fullscreen)
   {
-    flags |= SDL_FULLSCREEN;
+    flags |= SDL_WINDOW_FULLSCREEN;
+#if !SDL_VERSION_ATLEAST(2,0,0)
     if(depth == 8)
       flags |= SDL_HWPALETTE;
+#endif
   }
   else
     if(resize)
-      flags |= SDL_RESIZABLE;
+      flags |= SDL_WINDOW_RESIZABLE;
 
   return flags;
 }
@@ -43,30 +45,27 @@ int sdl_flags(int depth, bool fullscreen, bool resize)
 bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize)
 {
-  return SDL_SetVideoMode(width, height, depth,
-   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, resize))) != NULL;
+  graphics->render_data = SDL_CreateWindow("MegaZeux",
+   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
+   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, resize)));
+
+  return graphics->render_data != NULL;
 }
 
 bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize)
 {
-  return SDL_VideoModeOK(width, height, depth,
-   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, resize)));
+  return true;
 }
 
 void gl_set_attributes(struct graphics_data *graphics)
 {
   SDL_GL_SetAttribute(SDL_GL_DOUBLEBUFFER, 1);
-
-  if(graphics->gl_vsync == 0)
-    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 0);
-  else if(graphics->gl_vsync >= 1)
-    SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, 1);
 }
 
 bool gl_swap_buffers(struct graphics_data *graphics)
 {
-  SDL_GL_SwapBuffers();
+  SDL_GL_SwapWindow(graphics->render_data);
   return true;
 }
 

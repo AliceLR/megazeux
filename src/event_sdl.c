@@ -28,6 +28,30 @@ extern struct input_status input;
 
 static bool numlock_status_initialized;
 
+/* FIXME: When SDL 2.0 is released, invert this macro set */
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+
+typedef SDL_Keycode SDLKey;
+
+#define SDLK_KP0	SDLK_KP_0
+#define SDLK_KP1	SDLK_KP_1
+#define SDLK_KP2	SDLK_KP_2
+#define SDLK_KP3	SDLK_KP_3
+#define SDLK_KP4	SDLK_KP_4
+#define SDLK_KP5	SDLK_KP_5
+#define SDLK_KP6	SDLK_KP_6
+#define SDLK_KP7	SDLK_KP_7
+#define SDLK_KP8	SDLK_KP_8
+#define SDLK_KP9	SDLK_KP_9
+#define SDLK_NUMLOCK	SDLK_NUMLOCKCLEAR
+#define SDLK_SCROLLOCK	SDLK_SCROLLLOCK
+#define SDLK_LSUPER	SDLK_LGUI
+#define SDLK_RSUPER	SDLK_RGUI
+#define SDLK_BREAK	SDLK_PAUSE
+
+#endif /* SDL_VERSION_ATLEAST(2,0,0) */
+
 static enum keycode convert_SDL_internal(SDLKey key)
 {
   switch(key)
@@ -183,9 +207,30 @@ static bool process_event(SDL_Event *event)
       break;
     }
 
-    case SDL_VIDEORESIZE:
+    case SDL_WINDOWEVENT:
     {
-      resize_screen(event->resize.w, event->resize.h);
+      switch(event->window.event)
+      {
+        case SDL_WINDOWEVENT_RESIZED:
+          resize_screen(event->window.data1, event->window.data2);
+          break;
+        case SDL_WINDOWEVENT_FOCUS_LOST:
+          // Pause while minimized
+          if(input.unfocus_pause)
+          {
+            // Wait for SDL_APPACTIVE with gain of 1
+            while(1)
+            {
+              SDL_WaitEvent(event);
+
+              if(event->type == SDL_WINDOWEVENT &&
+                 event->window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
+                break;
+            }
+          }
+          break;
+      }
+
       break;
     }
 
@@ -198,16 +243,16 @@ static bool process_event(SDL_Event *event)
        &min_y, &max_x, &max_y);
 
       if(mx > 639)
-        SDL_WarpMouse(max_x, my_real);
+        SDL_WarpMouseInWindow(NULL, max_x, my_real);
 
       if(mx < 0)
-        SDL_WarpMouse(min_x, my_real);
+        SDL_WarpMouseInWindow(NULL, min_x, my_real);
 
       if(my > 349)
-        SDL_WarpMouse(mx_real, max_y);
+        SDL_WarpMouseInWindow(NULL, mx_real, max_y);
 
       if(my < 0)
-        SDL_WarpMouse(mx_real, min_y);
+        SDL_WarpMouseInWindow(NULL, mx_real, min_y);
 
       status->real_mouse_x = mx;
       status->real_mouse_y = my;
@@ -340,24 +385,6 @@ static bool process_event(SDL_Event *event)
       break;
     }
 
-    case SDL_ACTIVEEVENT:
-    {
-      if(input.unfocus_pause)
-      {
-        // Pause while minimized
-        if(event->active.state & (SDL_APPACTIVE | SDL_APPINPUTFOCUS))
-        {
-          // Wait for SDL_APPACTIVE with gain of 1
-          do
-          {
-            SDL_WaitEvent(event);
-          } while((event->type != SDL_ACTIVEEVENT) ||
-           (event->active.state & ~(SDL_APPACTIVE | SDL_APPINPUTFOCUS)));
-        }
-      }
-      break;
-    }
-
     case SDL_JOYAXISMOTION:
     {
       int axis_value = event->jaxis.value;
@@ -460,7 +487,7 @@ void __wait_event(void)
 
 void real_warp_mouse(Uint32 x, Uint32 y)
 {
-  SDL_WarpMouse(x, y);
+  SDL_WarpMouseInWindow(NULL, x, y);
 }
 
 void initialize_joysticks(void)

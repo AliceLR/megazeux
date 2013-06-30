@@ -16,8 +16,14 @@ ARCH_LDFLAGS    = -L$(PANDORA_LIBPATH)
 
 LIBPNG_CFLAGS   = -I$(PANDORA_INCPATH)/libpng12
 LIBPNG_LDFLAGS  = -lpng12 -lz
-SDL_CFLAGS      = `$(TOOLCHAIN)/usr/bin/sdl-config --cflags`
-SDL_LDFLAGS     = `$(TOOLCHAIN)/usr/bin/sdl-config --libs`
+
+ifeq (${BUILD_LIBSDL2},)
+SDL_CFLAGS      = $(shell $(TOOLCHAIN)/usr/bin/sdl-config --cflags)
+SDL_LDFLAGS     = $(shell $(TOOLCHAIN)/usr/bin/sdl-config --libs)
+else
+SDL_CFLAGS      = $(shell $(TOOLCHAIN)/usr/bin/sdl2-config --cflags)
+SDL_LDFLAGS     = $(shell $(TOOLCHAIN)/usr/bin/sdl2-config --libs)
+endif
 
 DSOLDFLAGS      = -shared
 DSOPRE          = lib

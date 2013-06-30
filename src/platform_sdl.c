@@ -72,7 +72,6 @@ bool platform_init(void)
     return false;
   }
 
-  SDL_EnableUNICODE(1);
   return true;
 }
 

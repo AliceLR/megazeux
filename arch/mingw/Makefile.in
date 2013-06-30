@@ -29,7 +29,14 @@ ARCH_LDFLAGS += -static-libstdc++ -static-libgcc
 core_ldflags += -lopengl32
 
 # Windows needs PNG to be statically linked (inc. zlib)
-LIBPNG_LDFLAGS = `libpng-config --static --ldflags`
+LIBPNG_LDFLAGS = $(shell libpng-config --static --ldflags)
+
+ifeq (${BUILD_LIBSDL2},)
+SDL_PREFIX := ${shell sdl-config --prefix}
+else
+SDL_PREFIX := ${shell sdl2-config --prefix}
+endif
+
 
 ifdef DEBUG
 ARCH_LDFLAGS += -mconsole
@@ -56,7 +63,7 @@ clean:
 # Windows builds must copy SDL.dll and create a directx.bat
 #
 build: ${build}
-	${CP} ${shell sdl-config --prefix}/bin/SDL.dll ${build}
+	${CP} ${SDL_PREFIX} /bin/SDL.dll ${build}
 	${PEFIX} ${build}/SDL.dll
 	${CP} arch/mingw/directx.bat ${build}
 ifeq (${BUILD_UTILS},1)

@@ -340,7 +340,7 @@ static void gp2x_sync_screen(struct graphics_data *graphics)
     dest += line_advance;
   }
   SDL_UnlockSurface(render_data->screen);
-  SDL_Flip(render_data->screen);
+  SDL_RenderPresent(render_data->screen);
 }
 
 void render_gp2x_register(struct renderer *renderer)

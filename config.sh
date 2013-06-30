@@ -64,6 +64,7 @@ usage() {
 	echo "  --disable-check-alloc Disables memory allocator error handling."
 	echo "  --disable-uthash      Disables hash counter/string lookups."
 	echo "  --enable-debytecode   Enable experimental 'debytecode' transform."
+	echo "  --enable-libsdl2      Enable experimental SDL 2.0 support."
 	echo
 	echo "e.g.: ./config.sh --platform unix --prefix /usr"
 	echo "                  --sysconfdir /etc --disable-x11"
@@ -114,6 +115,7 @@ EGL="false"
 CHECK_ALLOC="true"
 UTHASH="true"
 DEBYTECODE="false"
+LIBSDL2="false"
 
 #
 # User may override above settings
@@ -250,6 +252,9 @@ while [ "$1" != "" ]; do
 
 	[ "$1" = "--enable-debytecode" ]  && DEBYTECODE="true"
 	[ "$1" = "--disable-debytecode" ] && DEBYTECODE="false"
+
+	[ "$1" = "--enable-libsdl2" ]  && LIBSDL2="true"
+	[ "$1" = "--disable-libsdl2" ] && LIBSDL2="false"
 
 	if [ "$1" = "--help" ]; then
 		usage
@@ -630,6 +635,14 @@ if [ "$DEBYTECODE" = "true" ]; then
 fi
 
 #
+# Force disable overlay renders with SDL 2.0 (no API support).
+#
+if [ "$LIBSDL2" = "true" ]; then
+	echo "Force-disabling overlay renderers (SDL 2.0)."
+	OVERLAY="false"
+fi
+
+#
 # As GNU ld supports recursive dylib dependency tracking, we don't need to
 # explicitly link to as many libraries as the authors would have us provide.
 #
@@ -982,6 +995,16 @@ if [ "$DEBYTECODE" = "true" ]; then
 	echo "BUILD_DEBYTECODE=1" >> platform.inc
 else
 	echo "Experimental 'debytecode' transform disabled."
+fi
+
+#
+# Experimental SDL 2.0 support, if enabled
+#
+if [ "$LIBSDL2" = "true" ]; then
+	echo "Experimental SDL 2.0 support enabled."
+	echo "BUILD_LIBSDL2=1" >> platform.inc
+else
+	echo "Experimental SDL 2.0 support disabled."
 fi
 
 echo

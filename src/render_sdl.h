@@ -30,11 +30,19 @@ __M_BEGIN_DECLS
 
 int sdl_flags(int depth, bool fullscreen, bool resize);
 
+struct sdl_render_data
+{
+  SDL_Renderer *renderer;
+  SDL_Surface *screen;
+  SDL_Window *window;
+};
+
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 
 #include "render_gl.h"
 
-#define GL_STRIP_FLAGS(A) ((A & (SDL_FULLSCREEN | SDL_RESIZABLE)) | SDL_OPENGL)
+#define GL_STRIP_FLAGS(A) \
+  ((A & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE)) | SDL_WINDOW_OPENGL)
 
 bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize);
