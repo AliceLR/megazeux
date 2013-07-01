@@ -53,7 +53,7 @@ void render_graph32s(Uint32 *pixels, Uint32 pitch,
 void render_cursor(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
  Uint32 color, Uint8 lines, Uint8 offset);
 void render_mouse(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
- Uint32 mask, Uint8 w, Uint8 h);
+ Uint32 mask, Uint32 amask, Uint8 w, Uint8 h);
 
 void get_screen_coords_centered(struct graphics_data *graphics, int screen_x,
  int screen_y, int *x, int *y, int *min_x, int *min_y, int *max_x, int *max_y);

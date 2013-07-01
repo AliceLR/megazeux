@@ -242,59 +242,12 @@ static bool gp2x_set_video_mode(struct graphics_data *graphics,
 {
   struct gp2x_render_data *render_data = graphics->render_data;
   SDL_PixelFormat *format;
-  Uint32 halfmask, fmt;
+  Uint32 halfmask;
 
-  render_data->sdl.window = SDL_CreateWindow("MegaZeux",
-   SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
-   sdl_flags(depth, fullscreen, resize));
-
-  if(!render_data->sdl.window)
-  {
-    warn("Failed to create window: %s\n", SDL_GetError());
+  if(!sdl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
     return false;
-  }
 
-  render_data->sdl.renderer =
-   SDL_CreateRenderer(render_data->sdl.window, -1, SDL_RENDERER_SOFTWARE);
-
-  if(!render_data->sdl.renderer)
-  {
-    warn("Failed to create renderer: %s\n", SDL_GetError());
-    return false;
-  }
-
-  render_data->sdl.screen = SDL_GetWindowSurface(render_data->sdl.window);
-  if(!render_data->sdl.screen)
-  {
-    warn("Failed to get window surface: %s\n", SDL_GetError());
-    return false;
-  }
-
-  /* If running on a real GP2X, the window's pixel format will presumably
-   * be RGB565. However, to enable testing this renderer on other systems,
-   * where SDL does not provide a 16-bit format, allocate a shadow surface
-   * and blit from it at present time.
-   */
-  fmt = SDL_GetWindowPixelFormat(render_data->sdl.window);
-  if(fmt != SDL_PIXELFORMAT_RGB565)
-  {
-    Uint32 Rmask, Gmask, Bmask, Amask;
-    int bpp;
-
-    SDL_PixelFormatEnumToMasks(SDL_PIXELFORMAT_RGB565,
-                               &bpp, &Rmask, &Gmask, &Bmask, &Amask);
-
-    render_data->sdl.shadow = SDL_CreateRGBSurface(0,
-     graphics->resolution_width, graphics->resolution_height, bpp,
-     Rmask, Gmask, Bmask, Amask);
-    format = render_data->sdl.shadow->format;
-  }
-  else
-  {
-    render_data->sdl.shadow = NULL;
-    format = render_data->sdl.screen->format;
-  }
-
+  format = gp2x_get_screen_surface(render_data)->format;
   halfmask = (format->Rmask >> 1) & format->Rmask;
   halfmask |= (format->Gmask >> 1) & format->Gmask;
   halfmask |= (format->Bmask >> 1) & format->Bmask;
@@ -358,7 +311,8 @@ static void gp2x_render_mouse(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
-  render_mouse((Uint32 *)render_data->buffer, 640, 8, x, y, 0xFFFFFFFF, w, h);
+  render_mouse((Uint32 *)render_data->buffer, 640, 8, x, y, 0xFFFFFFFF,
+   0x0, w, h);
 }
 
 static void gp2x_sync_screen(struct graphics_data *graphics)

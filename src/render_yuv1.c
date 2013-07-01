@@ -69,7 +69,7 @@ static void yuv1_render_mouse(struct graphics_data *graphics,
 
   SDL_LockYUVOverlay(render_data->overlay);
   render_mouse((Uint32 *)render_data->overlay->pixels[0],
-   render_data->overlay->pitches[0], 32, x, y, 0xFFFFFFFF, w, h);
+   render_data->overlay->pitches[0], 32, x, y, 0xFFFFFFFF, 0x0, w, h);
   SDL_UnlockYUVOverlay(render_data->overlay);
 }
 

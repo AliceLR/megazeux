@@ -28,15 +28,17 @@ __M_BEGIN_DECLS
 
 #include "SDL.h"
 
-int sdl_flags(int depth, bool fullscreen, bool resize);
-
 struct sdl_render_data
 {
   SDL_Renderer *renderer;
+  SDL_Palette *palette;
   SDL_Surface *screen;
   SDL_Surface *shadow;
   SDL_Window *window;
 };
+
+bool sdl_set_video_mode(struct graphics_data *graphics, int width, int height,
+ int depth, bool fullscreen, bool resize);
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 
