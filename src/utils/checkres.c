@@ -30,6 +30,7 @@
 #endif
 
 // From MZX itself
+#define SKIP_SDL
 #include "../fsafeopen.h"
 #include "../const.h"
 #include "../util.h"
