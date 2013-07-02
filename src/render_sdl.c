@@ -159,6 +159,7 @@ bool sdl_set_video_mode(struct graphics_data *graphics, int width, int height,
     render_data->palette = NULL;
   }
 
+  graphics->window_id = SDL_GetWindowID(render_data->window);
   return true;
 
 err_free_palette:
@@ -214,6 +215,7 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
     return false;
   }
 
+  graphics->window_id = SDL_GetWindowID(render_data->window);
   render_data->screen = NULL;
   return true;
 }

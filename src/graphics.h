@@ -129,6 +129,7 @@ struct graphics_data
   Uint32 flat_intensity_palette[SMZX_PAL_SIZE];
   struct renderer renderer;
   void *render_data;
+  Uint32 window_id;
 };
 
 CORE_LIBSPEC void color_string(const char *string, Uint32 x, Uint32 y,
