@@ -28,31 +28,29 @@ extern struct input_status input;
 
 static bool numlock_status_initialized;
 
-/* FIXME: When SDL 2.0 is released, invert this macro set */
+#if !SDL_VERSION_ATLEAST(2,0,0)
 
-#if SDL_VERSION_ATLEAST(2,0,0)
+typedef SDLKey SDL_Keycode;
 
-typedef SDL_Keycode SDLKey;
-
-#define SDLK_KP0	SDLK_KP_0
-#define SDLK_KP1	SDLK_KP_1
-#define SDLK_KP2	SDLK_KP_2
-#define SDLK_KP3	SDLK_KP_3
-#define SDLK_KP4	SDLK_KP_4
-#define SDLK_KP5	SDLK_KP_5
-#define SDLK_KP6	SDLK_KP_6
-#define SDLK_KP7	SDLK_KP_7
-#define SDLK_KP8	SDLK_KP_8
-#define SDLK_KP9	SDLK_KP_9
-#define SDLK_NUMLOCK	SDLK_NUMLOCKCLEAR
-#define SDLK_SCROLLOCK	SDLK_SCROLLLOCK
-#define SDLK_LSUPER	SDLK_LGUI
-#define SDLK_RSUPER	SDLK_RGUI
-#define SDLK_BREAK	SDLK_PAUSE
+#define SDLK_KP_0         SDLK_KP0
+#define SDLK_KP_1         SDLK_KP1
+#define SDLK_KP_2         SDLK_KP2
+#define SDLK_KP_3         SDLK_KP3
+#define SDLK_KP_4         SDLK_KP4
+#define SDLK_KP_5         SDLK_KP5
+#define SDLK_KP_6         SDLK_KP6
+#define SDLK_KP_7         SDLK_KP7
+#define SDLK_KP_8         SDLK_KP8
+#define SDLK_KP_9         SDLK_KP9
+#define SDLK_NUMLOCKCLEAR SDLK_NUMLOCK
+#define SDLK_SCROLLLOCK   SDLK_SCROLLOCK
+#define SDLK_LGUI         SDLK_LSUPER
+#define SDLK_RGUI         SDLK_RSUPER
+#define SDLK_PAUSE        SDLK_BREAK
 
 #endif /* SDL_VERSION_ATLEAST(2,0,0) */
 
-static enum keycode convert_SDL_internal(SDLKey key)
+static enum keycode convert_SDL_internal(SDL_Keycode key)
 {
   switch(key)
   {
@@ -110,16 +108,16 @@ static enum keycode convert_SDL_internal(SDLKey key)
     case SDLK_y: return IKEY_y;
     case SDLK_z: return IKEY_z;
     case SDLK_DELETE: return IKEY_DELETE;
-    case SDLK_KP0: return IKEY_KP0;
-    case SDLK_KP1: return IKEY_KP1;
-    case SDLK_KP2: return IKEY_KP2;
-    case SDLK_KP3: return IKEY_KP3;
-    case SDLK_KP4: return IKEY_KP4;
-    case SDLK_KP5: return IKEY_KP5;
-    case SDLK_KP6: return IKEY_KP6;
-    case SDLK_KP7: return IKEY_KP7;
-    case SDLK_KP8: return IKEY_KP8;
-    case SDLK_KP9: return IKEY_KP9;
+    case SDLK_KP_0: return IKEY_KP0;
+    case SDLK_KP_1: return IKEY_KP1;
+    case SDLK_KP_2: return IKEY_KP2;
+    case SDLK_KP_3: return IKEY_KP3;
+    case SDLK_KP_4: return IKEY_KP4;
+    case SDLK_KP_5: return IKEY_KP5;
+    case SDLK_KP_6: return IKEY_KP6;
+    case SDLK_KP_7: return IKEY_KP7;
+    case SDLK_KP_8: return IKEY_KP8;
+    case SDLK_KP_9: return IKEY_KP9;
     case SDLK_KP_PERIOD: return IKEY_KP_PERIOD;
     case SDLK_KP_DIVIDE: return IKEY_KP_DIVIDE;
     case SDLK_KP_MULTIPLY: return IKEY_KP_MULTIPLY;
@@ -143,17 +141,17 @@ static enum keycode convert_SDL_internal(SDLKey key)
     case SDLK_F10: return IKEY_F10;
     case SDLK_F11: return IKEY_F11;
     case SDLK_F12: return IKEY_F12;
-    case SDLK_NUMLOCK: return IKEY_NUMLOCK;
+    case SDLK_NUMLOCKCLEAR: return IKEY_NUMLOCK;
     case SDLK_CAPSLOCK: return IKEY_CAPSLOCK;
-    case SDLK_SCROLLOCK: return IKEY_SCROLLOCK;
+    case SDLK_SCROLLLOCK: return IKEY_SCROLLOCK;
     case SDLK_LSHIFT: return IKEY_LSHIFT;
     case SDLK_LCTRL: return IKEY_LCTRL;
     case SDLK_RALT: return IKEY_RALT;
     case SDLK_LALT: return IKEY_LALT;
-    case SDLK_LSUPER: return IKEY_LSUPER;
-    case SDLK_RSUPER: return IKEY_RSUPER;
+    case SDLK_LGUI: return IKEY_LSUPER;
+    case SDLK_RGUI: return IKEY_RSUPER;
     case SDLK_SYSREQ: return IKEY_SYSREQ;
-    case SDLK_BREAK: return IKEY_BREAK;
+    case SDLK_PAUSE: return IKEY_BREAK;
     case SDLK_MENU: return IKEY_MENU;
 #ifndef CONFIG_PANDORA
     case SDLK_HOME: return IKEY_HOME;
