@@ -236,6 +236,7 @@ static bool process_event(SDL_Event *event)
 
     case SDL_MOUSEMOTION:
     {
+      SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
       int mx_real = event->motion.x;
       int my_real = event->motion.y;
       int mx, my, min_x, min_y, max_x, max_y;
@@ -243,16 +244,16 @@ static bool process_event(SDL_Event *event)
        &min_y, &max_x, &max_y);
 
       if(mx > 639)
-        SDL_WarpMouseInWindow(NULL, max_x, my_real);
+        SDL_WarpMouseInWindow(window, max_x, my_real);
 
       if(mx < 0)
-        SDL_WarpMouseInWindow(NULL, min_x, my_real);
+        SDL_WarpMouseInWindow(window, min_x, my_real);
 
       if(my > 349)
-        SDL_WarpMouseInWindow(NULL, mx_real, max_y);
+        SDL_WarpMouseInWindow(window, mx_real, max_y);
 
       if(my < 0)
-        SDL_WarpMouseInWindow(NULL, mx_real, min_y);
+        SDL_WarpMouseInWindow(window, mx_real, min_y);
 
       status->real_mouse_x = mx;
       status->real_mouse_y = my;
@@ -477,7 +478,8 @@ void __wait_event(void)
 
 void real_warp_mouse(Uint32 x, Uint32 y)
 {
-  SDL_WarpMouseInWindow(NULL, x, y);
+  SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
+  SDL_WarpMouseInWindow(window, x, y);
 }
 
 void initialize_joysticks(void)
