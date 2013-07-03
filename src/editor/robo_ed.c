@@ -1311,20 +1311,27 @@ static bool copy_selection_to_buffer(struct robot_state *rstate)
 
 #elif defined(CONFIG_X11) && defined(CONFIG_SDL)
 
+#if SDL_VERSION_ATLEAST(2,0,0)
 static int copy_buffer_to_X11_selection(void *userdata, SDL_Event *event)
+#else
+static int copy_buffer_to_X11_selection(const SDL_Event *event)
+#endif
 {
   XSelectionRequestEvent *request;
+#if SDL_VERSION_ATLEAST(2,0,0)
   SDL_Window *window = userdata;
+#endif
   char *dest_data, *dest_ptr;
+  XEvent response, *xevent;
   SDL_SysWMinfo info;
   int i, line_length;
   Display *display;
-  XEvent response;
 
   if(event->type != SDL_SYSWMEVENT)
     return 1;
 
-  if(event->syswm.msg->msg.x11.event.type != SelectionRequest || !copy_buffer)
+  xevent = SDL_SysWMmsg_GetXEvent(event->syswm.msg);
+  if(xevent->type != SelectionRequest || !copy_buffer)
     return 0;
 
   SDL_VERSION(&info.version);
@@ -1347,7 +1354,7 @@ static int copy_buffer_to_X11_selection(void *userdata, SDL_Event *event)
   memcpy(dest_ptr, copy_buffer[i], line_length);
   dest_ptr[line_length] = 0;
 
-  request = &(event->syswm.msg->msg.x11.event.xselectionrequest);
+  request = &(SDL_SysWMmsg_GetXEvent(event->syswm.msg)->xselectionrequest);
   response.xselection.type = SelectionNotify;
   response.xselection.display = request->display;
   response.xselection.selection = request->selection;

@@ -33,10 +33,11 @@ LIBPNG_LDFLAGS = $(shell libpng-config --static --ldflags)
 
 ifeq (${BUILD_LIBSDL2},)
 SDL_PREFIX := ${shell sdl-config --prefix}
+SDL_DLL := SDL.dll
 else
 SDL_PREFIX := ${shell sdl2-config --prefix}
+SDL_DLL := SDL2.dll
 endif
-
 
 ifdef DEBUG
 ARCH_LDFLAGS += -mconsole
@@ -60,11 +61,11 @@ clean:
 	${RM} -f ${pefix} arch/mingw/pefix.o arch/mingw/pefix.d
 
 #
-# Windows builds must copy SDL.dll and create a directx.bat
+# Windows builds must copy $SDL_DLL and create a directx.bat
 #
 build: ${build}
-	${CP} ${SDL_PREFIX} /bin/SDL.dll ${build}
-	${PEFIX} ${build}/SDL.dll
+	${CP} ${SDL_PREFIX}/bin/${SDL_DLL} ${build}
+	${PEFIX} ${build}/${SDL_DLL}
 	${CP} arch/mingw/directx.bat ${build}
 ifeq (${BUILD_UTILS},1)
 	${CP} arch/mingw/checkres* ${build}/utils

@@ -62,12 +62,6 @@ static bool soft_init_video(struct graphics_data *graphics,
   return set_video_mode();
 }
 
-static bool soft_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
-{
-  return true;
-}
-
 static void soft_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, Uint32 count)
 {
@@ -93,7 +87,12 @@ static void soft_update_colors(struct graphics_data *graphics,
       sdlpal[i].g = palette[i].g;
       sdlpal[i].b = palette[i].b;
     }
+
+#if SDL_VERSION_ATLEAST(2,0,0)
     SDL_SetPaletteColors(render_data->palette, sdlpal, 0, count);
+#else
+    SDL_SetColors(render_data->screen, sdlpal, 0, count);
+#endif
   }
 }
 
@@ -189,14 +188,18 @@ static void soft_sync_screen(struct graphics_data *graphics)
      &render_data->screen->clip_rect);
   }
 
+#if SDL_VERSION_ATLEAST(2,0,0)
   SDL_RenderPresent(render_data->renderer);
+#else
+  SDL_Flip(render_data->screen);
+#endif
 }
 
 void render_soft_register(struct renderer *renderer)
 {
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = soft_init_video;
-  renderer->check_video_mode = soft_check_video_mode;
+  renderer->check_video_mode = sdl_check_video_mode;
   renderer->set_video_mode = sdl_set_video_mode;
   renderer->update_colors = soft_update_colors;
   renderer->resize_screen = resize_screen_standard;

@@ -231,12 +231,6 @@ static void gp2x_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static bool gp2x_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
-{
-  return true;
-}
-
 static bool gp2x_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, bool fullscreen, bool resize)
 {
@@ -357,7 +351,11 @@ static void gp2x_sync_screen(struct graphics_data *graphics)
      &render_data->sdl.screen->clip_rect);
   }
 
+#if SDL_VERSION_ATLEAST(2,0,0)
   SDL_RenderPresent(render_data->sdl.renderer);
+#else
+  SDL_Flip(render_data->sdl.screen);
+#endif
 }
 
 void render_gp2x_register(struct renderer *renderer)
@@ -365,7 +363,7 @@ void render_gp2x_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gp2x_init_video;
   renderer->free_video = gp2x_free_video;
-  renderer->check_video_mode = gp2x_check_video_mode;
+  renderer->check_video_mode = sdl_check_video_mode;
   renderer->set_video_mode = gp2x_set_video_mode;
   renderer->update_colors = gp2x_update_colors;
   renderer->resize_screen = resize_screen_standard;

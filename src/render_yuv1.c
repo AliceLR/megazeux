@@ -19,6 +19,7 @@
 
 #include "graphics.h"
 #include "render.h"
+#include "render_sdl.h"
 #include "render_yuv.h"
 #include "renderers.h"
 

@@ -183,18 +183,22 @@ static bool process_event(SDL_Event *event)
       break;
     }
 
+#if SDL_VERSION_ATLEAST(2,0,0)
     case SDL_WINDOWEVENT:
     {
       switch(event->window.event)
       {
         case SDL_WINDOWEVENT_RESIZED:
+        {
           resize_screen(event->window.data1, event->window.data2);
           break;
+        }
+
         case SDL_WINDOWEVENT_FOCUS_LOST:
+        {
           // Pause while minimized
           if(input.unfocus_pause)
           {
-            // Wait for SDL_APPACTIVE with gain of 1
             while(1)
             {
               SDL_WaitEvent(event);
@@ -205,10 +209,36 @@ static bool process_event(SDL_Event *event)
             }
           }
           break;
+        }
       }
 
       break;
     }
+#else // !SDL_VERSION_ATLEAST(2,0,0)
+    case SDL_VIDEORESIZE:
+    {
+      resize_screen(event->resize.w, event->resize.h);
+      break;
+    }
+
+    case SDL_ACTIVEEVENT:
+    {
+      if(input.unfocus_pause)
+      {
+        // Pause while minimized
+        if(event->active.state & (SDL_APPACTIVE | SDL_APPINPUTFOCUS))
+        {
+          // Wait for SDL_APPACTIVE with gain of 1
+          do
+          {
+            SDL_WaitEvent(event);
+          } while((event->type != SDL_ACTIVEEVENT) ||
+           (event->active.state & ~(SDL_APPACTIVE | SDL_APPINPUTFOCUS)));
+        }
+      }
+      break;
+    }
+#endif // !SDL_VERSION_ATLEAST(2,0,0)
 
     case SDL_MOUSEMOTION:
     {
@@ -263,7 +293,14 @@ static bool process_event(SDL_Event *event)
     {
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
-        break;
+      {
+#if !SDL_VERSION_ATLEAST(2,0,0)
+        if(event->key.keysym.unicode)
+          ckey = IKEY_UNICODE;
+        else
+#endif
+          break;
+      }
 
       if((ckey == IKEY_RETURN) &&
        get_alt_status(keycode_internal) &&
@@ -317,7 +354,11 @@ static bool process_event(SDL_Event *event)
         }
       }
 
+#if SDL_VERSION_ATLEAST(2,0,0)
       key_press(status, ckey, event->key.keysym.sym);
+#else
+      key_press(status, ckey, event->key.keysym.unicode);
+#endif
       break;
     }
 
@@ -325,7 +366,14 @@ static bool process_event(SDL_Event *event)
     {
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
-        break;
+      {
+#if !SDL_VERSION_ATLEAST(2,0,0)
+        if(status->keymap[IKEY_UNICODE])
+          ckey = IKEY_UNICODE;
+        else
+#endif
+          break;
+      }
 
       if(ckey == IKEY_NUMLOCK)
       {

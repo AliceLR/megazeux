@@ -21,7 +21,10 @@
 
 #include "SDL.h"
 
-static int sdl_flags(int depth, bool fullscreen, bool resize)
+#ifndef CONFIG_RENDER_YUV
+static
+#endif
+int sdl_flags(int depth, bool fullscreen, bool resize)
 {
   int flags = 0;
 
@@ -44,6 +47,8 @@ bool sdl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize)
 {
   struct sdl_render_data *render_data = graphics->render_data;
+
+#if SDL_VERSION_ATLEAST(2,0,0)
   bool matched = false;
   Uint32 fmt;
 
@@ -160,8 +165,22 @@ bool sdl_set_video_mode(struct graphics_data *graphics, int width, int height,
   }
 
   graphics->window_id = SDL_GetWindowID(render_data->window);
+
+#else // !SDL_VERSION_ATLEAST(2,0,0)
+
+  render_data->screen = SDL_SetVideoMode(width, height, depth,
+   sdl_flags(depth, fullscreen, resize));
+
+  if(!render_data->screen)
+    return false;
+
+  render_data->shadow = NULL;
+
+#endif // !SDL_VERSION_ATLEAST(2,0,0)
+
   return true;
 
+#if SDL_VERSION_ATLEAST(2,0,0)
 err_free_palette:
   SDL_FreePalette(render_data->palette);
   render_data->palette = NULL;
@@ -173,6 +192,18 @@ err_destroy_window:
   render_data->window = NULL;
 err_out:
   return false;
+#endif // SDL_VERSION_ATLEAST(2,0,0)
+}
+
+bool sdl_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, bool fullscreen, bool resize)
+{
+#if SDL_VERSION_ATLEAST(2,0,0)
+  return true;
+#else
+  return SDL_VideoModeOK(width, height, depth,
+   sdl_flags(depth, fullscreen, resize));
+#endif
 }
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
@@ -181,6 +212,8 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize)
 {
   struct sdl_render_data *render_data = graphics->render_data;
+
+#if SDL_VERSION_ATLEAST(2,0,0)
   SDL_GLContext context;
 
   render_data->window = SDL_CreateWindow("MegaZeux",
@@ -216,14 +249,30 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   }
 
   graphics->window_id = SDL_GetWindowID(render_data->window);
+
+#else // !SDL_VERSION_ATLEAST(2,0,0)
+
+  if(!SDL_SetVideoMode(width, height, depth,
+       GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, resize))))
+    return false;
+
+#endif // !SDL_VERSION_ATLEAST(2,0,0)
+
   render_data->screen = NULL;
+  render_data->shadow = NULL;
+
   return true;
 }
 
 bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize)
 {
+#if SDL_VERSION_ATLEAST(2,0,0)
   return true;
+#else
+  return SDL_VideoModeOK(width, height, depth,
+   GL_STRIP_FLAGS(sdl_flags(depth, fullscreen, resize)));
+#endif
 }
 
 void gl_set_attributes(struct graphics_data *graphics)
@@ -238,8 +287,12 @@ void gl_set_attributes(struct graphics_data *graphics)
 
 bool gl_swap_buffers(struct graphics_data *graphics)
 {
+#if SDL_VERSION_ATLEAST(2,0,0)
   struct sdl_render_data *render_data = graphics->render_data;
   SDL_GL_SwapWindow(render_data->window);
+#else
+  SDL_GL_SwapBuffers();
+#endif
   return true;
 }
 

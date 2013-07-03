@@ -30,15 +30,24 @@ __M_BEGIN_DECLS
 
 struct sdl_render_data
 {
+#if SDL_VERSION_ATLEAST(2,0,0)
   SDL_Renderer *renderer;
   SDL_Palette *palette;
+  SDL_Window *window;
+#endif
   SDL_Surface *screen;
   SDL_Surface *shadow;
-  SDL_Window *window;
 };
+
+#ifdef CONFIG_RENDER_YUV
+int sdl_flags(int depth, bool fullscreen, bool resize);
+#endif
 
 bool sdl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize);
+
+bool sdl_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, bool fullscreen, bool resize);
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 
