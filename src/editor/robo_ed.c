@@ -1320,6 +1320,8 @@ static int copy_buffer_to_X11_selection(const SDL_Event *event)
   XSelectionRequestEvent *request;
 #if SDL_VERSION_ATLEAST(2,0,0)
   SDL_Window *window = userdata;
+#else
+  SDL_Window *window = NULL;
 #endif
   char *dest_data, *dest_ptr;
   XEvent response, *xevent;
