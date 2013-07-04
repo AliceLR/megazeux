@@ -857,7 +857,8 @@ static SDL_Surface *png_read_icon(const char *name)
 void set_window_caption(const char *caption)
 {
 #ifdef CONFIG_SDL
-  SDL_WM_SetCaption(caption, "");
+  SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
+  SDL_SetWindowTitle(window, caption);
 #endif
 }
 char *get_default_caption(void)
@@ -881,31 +882,12 @@ bool init_video(struct config_info *conf, const char *caption)
   if(!set_graphics_output(conf))
     return false;
 
-#ifdef CONFIG_SDL
-  strncpy(graphics.default_caption, caption, 32);
-  graphics.default_caption[31] = '\0';
-
-  SDL_WM_SetCaption(caption, "");
-#endif
-
   // These values (the defaults, actually) are special and tell MZX to try
   // to use the current desktop resolution as the fullscreen resolution
   if(conf->resolution_width == -1 && conf->resolution_height == -1)
   {
     graphics.resolution_width = 640;
     graphics.resolution_height = 480;
-
-#ifdef CONFIG_SDL
-#if !(SDL_MAJOR_VERSION == 1 && SDL_MINOR_VERSION == 2 && SDL_PATCHLEVEL < 10)
-    // We'll only do this for hardware scaling renderers
-    if(strcmp(conf->video_output, "software") != 0)
-    {
-      const SDL_VideoInfo *video_info = SDL_GetVideoInfo();
-      graphics.resolution_width = video_info->current_w;
-      graphics.resolution_height = video_info->current_h;
-    }
-#endif
-#endif // CONFIG_SDL
   }
 
   if(!graphics.renderer.init_video(&graphics, conf))
@@ -921,6 +903,10 @@ bool init_video(struct config_info *conf, const char *caption)
   }
 
 #ifdef CONFIG_SDL
+  strncpy(graphics.default_caption, caption, 32);
+  graphics.default_caption[31] = '\0';
+  set_window_caption(caption);
+
   if(!graphics.system_mouse)
     SDL_ShowCursor(SDL_DISABLE);
 #endif
@@ -937,12 +923,14 @@ bool init_video(struct config_info *conf, const char *caption)
     HICON icon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(1));
     if(icon)
     {
+      SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
       SDL_SysWMinfo info;
 
       SDL_VERSION(&info.version);
-      SDL_GetWMInfo(&info);
+      SDL_GetWindowWMInfo(window, &info);
 
-      SendMessage(info.window, WM_SETICON, ICON_BIG, (LPARAM)icon);
+      SendMessage(SDL_SysWMinfo_GetWND(&info),
+       WM_SETICON, ICON_BIG, (LPARAM)icon);
     }
   }
 #else // !__WIN32__
@@ -951,7 +939,8 @@ bool init_video(struct config_info *conf, const char *caption)
     SDL_Surface *icon = png_read_icon("/usr/share/icons/megazeux.png");
     if(icon)
     {
-      SDL_WM_SetIcon(icon, NULL);
+      SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
+      SDL_SetWindowIcon(window, icon);
       SDL_FreeSurface(icon);
     }
   }

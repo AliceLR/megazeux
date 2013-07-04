@@ -39,8 +39,13 @@ MKDIR   ?= mkdir
 MV      ?= mv
 RM      ?= rm
 
-SDL_CFLAGS  ?= `sdl-config --cflags`
-SDL_LDFLAGS ?= `sdl-config --libs`
+ifeq (${BUILD_LIBSDL2},)
+SDL_CFLAGS  ?= $(shell sdl-config --cflags)
+SDL_LDFLAGS ?= $(shell sdl-config --libs)
+else
+SDL_CFLAGS  ?= $(shell sdl2-config --cflags | sed 's,-I,-isystem ,g')
+SDL_LDFLAGS ?= $(shell sdl2-config --libs)
+endif
 
 VORBIS_CFLAGS  ?= -I${PREFIX}/include -DOV_EXCLUDE_STATIC_CALLBACKS
 ifneq (${TREMOR},1)
@@ -56,8 +61,8 @@ ZLIB_CFLAGS  ?= -I${PREFIX}/include
 ZLIB_LDFLAGS ?= -L${PREFIX}/lib -lz
 
 ifeq (${LIBPNG},1)
-LIBPNG_CFLAGS  ?= `libpng-config --cflags`
-LIBPNG_LDFLAGS ?= `libpng-config --ldflags`
+LIBPNG_CFLAGS  ?= $(shell libpng-config --cflags)
+LIBPNG_LDFLAGS ?= $(shell libpng-config --ldflags)
 endif
 
 PTHREAD_LDFLAGS ?= -lpthread

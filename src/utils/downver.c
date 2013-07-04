@@ -42,6 +42,7 @@
 #include <strings.h>
 #endif
 
+#define SKIP_SDL
 #include "world.h"
 #include "util.h"
 

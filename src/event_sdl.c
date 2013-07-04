@@ -28,7 +28,7 @@ extern struct input_status input;
 
 static bool numlock_status_initialized;
 
-static enum keycode convert_SDL_internal(SDLKey key)
+static enum keycode convert_SDL_internal(SDL_Keycode key)
 {
   switch(key)
   {
@@ -54,9 +54,7 @@ static enum keycode convert_SDL_internal(SDLKey key)
     case SDLK_8: return IKEY_8;
     case SDLK_9: return IKEY_9;
     case SDLK_SEMICOLON: return IKEY_SEMICOLON;
-#if SDL_MAJOR_VERSION == 1 && SDL_MINOR_VERSION <= 2
     case SDLK_EQUALS: return IKEY_EQUALS;
-#endif
     case SDLK_LEFTBRACKET: return IKEY_LEFTBRACKET;
     case SDLK_BACKSLASH: return IKEY_BACKSLASH;
     case SDLK_RIGHTBRACKET: return IKEY_RIGHTBRACKET;
@@ -88,16 +86,16 @@ static enum keycode convert_SDL_internal(SDLKey key)
     case SDLK_y: return IKEY_y;
     case SDLK_z: return IKEY_z;
     case SDLK_DELETE: return IKEY_DELETE;
-    case SDLK_KP0: return IKEY_KP0;
-    case SDLK_KP1: return IKEY_KP1;
-    case SDLK_KP2: return IKEY_KP2;
-    case SDLK_KP3: return IKEY_KP3;
-    case SDLK_KP4: return IKEY_KP4;
-    case SDLK_KP5: return IKEY_KP5;
-    case SDLK_KP6: return IKEY_KP6;
-    case SDLK_KP7: return IKEY_KP7;
-    case SDLK_KP8: return IKEY_KP8;
-    case SDLK_KP9: return IKEY_KP9;
+    case SDLK_KP_0: return IKEY_KP0;
+    case SDLK_KP_1: return IKEY_KP1;
+    case SDLK_KP_2: return IKEY_KP2;
+    case SDLK_KP_3: return IKEY_KP3;
+    case SDLK_KP_4: return IKEY_KP4;
+    case SDLK_KP_5: return IKEY_KP5;
+    case SDLK_KP_6: return IKEY_KP6;
+    case SDLK_KP_7: return IKEY_KP7;
+    case SDLK_KP_8: return IKEY_KP8;
+    case SDLK_KP_9: return IKEY_KP9;
     case SDLK_KP_PERIOD: return IKEY_KP_PERIOD;
     case SDLK_KP_DIVIDE: return IKEY_KP_DIVIDE;
     case SDLK_KP_MULTIPLY: return IKEY_KP_MULTIPLY;
@@ -121,17 +119,17 @@ static enum keycode convert_SDL_internal(SDLKey key)
     case SDLK_F10: return IKEY_F10;
     case SDLK_F11: return IKEY_F11;
     case SDLK_F12: return IKEY_F12;
-    case SDLK_NUMLOCK: return IKEY_NUMLOCK;
+    case SDLK_NUMLOCKCLEAR: return IKEY_NUMLOCK;
     case SDLK_CAPSLOCK: return IKEY_CAPSLOCK;
-    case SDLK_SCROLLOCK: return IKEY_SCROLLOCK;
+    case SDLK_SCROLLLOCK: return IKEY_SCROLLOCK;
     case SDLK_LSHIFT: return IKEY_LSHIFT;
     case SDLK_LCTRL: return IKEY_LCTRL;
     case SDLK_RALT: return IKEY_RALT;
     case SDLK_LALT: return IKEY_LALT;
-    case SDLK_LSUPER: return IKEY_LSUPER;
-    case SDLK_RSUPER: return IKEY_RSUPER;
+    case SDLK_LGUI: return IKEY_LSUPER;
+    case SDLK_RGUI: return IKEY_RSUPER;
     case SDLK_SYSREQ: return IKEY_SYSREQ;
-    case SDLK_BREAK: return IKEY_BREAK;
+    case SDLK_PAUSE: return IKEY_BREAK;
     case SDLK_MENU: return IKEY_MENU;
 #ifndef CONFIG_PANDORA
     case SDLK_HOME: return IKEY_HOME;
@@ -185,14 +183,66 @@ static bool process_event(SDL_Event *event)
       break;
     }
 
+#if SDL_VERSION_ATLEAST(2,0,0)
+    case SDL_WINDOWEVENT:
+    {
+      switch(event->window.event)
+      {
+        case SDL_WINDOWEVENT_RESIZED:
+        {
+          resize_screen(event->window.data1, event->window.data2);
+          break;
+        }
+
+        case SDL_WINDOWEVENT_FOCUS_LOST:
+        {
+          // Pause while minimized
+          if(input.unfocus_pause)
+          {
+            while(1)
+            {
+              SDL_WaitEvent(event);
+
+              if(event->type == SDL_WINDOWEVENT &&
+                 event->window.event == SDL_WINDOWEVENT_FOCUS_GAINED)
+                break;
+            }
+          }
+          break;
+        }
+      }
+
+      break;
+    }
+#else // !SDL_VERSION_ATLEAST(2,0,0)
     case SDL_VIDEORESIZE:
     {
       resize_screen(event->resize.w, event->resize.h);
       break;
     }
 
+    case SDL_ACTIVEEVENT:
+    {
+      if(input.unfocus_pause)
+      {
+        // Pause while minimized
+        if(event->active.state & (SDL_APPACTIVE | SDL_APPINPUTFOCUS))
+        {
+          // Wait for SDL_APPACTIVE with gain of 1
+          do
+          {
+            SDL_WaitEvent(event);
+          } while((event->type != SDL_ACTIVEEVENT) ||
+           (event->active.state & ~(SDL_APPACTIVE | SDL_APPINPUTFOCUS)));
+        }
+      }
+      break;
+    }
+#endif // !SDL_VERSION_ATLEAST(2,0,0)
+
     case SDL_MOUSEMOTION:
     {
+      SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
       int mx_real = event->motion.x;
       int my_real = event->motion.y;
       int mx, my, min_x, min_y, max_x, max_y;
@@ -200,16 +250,16 @@ static bool process_event(SDL_Event *event)
        &min_y, &max_x, &max_y);
 
       if(mx > 639)
-        SDL_WarpMouse(max_x, my_real);
+        SDL_WarpMouseInWindow(window, max_x, my_real);
 
       if(mx < 0)
-        SDL_WarpMouse(min_x, my_real);
+        SDL_WarpMouseInWindow(window, min_x, my_real);
 
       if(my > 349)
-        SDL_WarpMouse(mx_real, max_y);
+        SDL_WarpMouseInWindow(window, mx_real, max_y);
 
       if(my < 0)
-        SDL_WarpMouse(mx_real, min_y);
+        SDL_WarpMouseInWindow(window, mx_real, min_y);
 
       status->real_mouse_x = mx;
       status->real_mouse_y = my;
@@ -241,14 +291,41 @@ static bool process_event(SDL_Event *event)
 
     case SDL_KEYDOWN:
     {
+      Uint16 unicode;
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+      // FIXME: SDL 2.0 finally implements proper key repeat.
+      // We should probably use it instead of our hand-rolled stuff.
+      if(event->key.repeat)
+        break;
+#endif
+
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
       {
-        if(event->key.keysym.unicode)
-          ckey = IKEY_UNICODE;
-        else
+#if !SDL_VERSION_ATLEAST(2,0,0)
+        if(!event->key.keysym.unicode)
           break;
+#endif
+        ckey = IKEY_UNICODE;
       }
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+      // SDL 2.0 sends the raw key and translated 'text' as separate events.
+      // There is no longer a UNICODE mode that sends both at once.
+      // Because of the way the SDL 1.2 assumption is embedded deeply in
+      // the MZX event queue processor, emulate the 1.2 behaviour by waiting
+      // for a TEXTINPUT event after a KEYDOWN.
+      if(SDL_WaitEventTimeout(event, 1))
+      {
+        if(event->type == SDL_TEXTINPUT)
+          unicode = event->text.text[0] | event->text.text[1] << 8;
+        else
+          SDL_PushEvent(event);
+      }
+#else
+      unicode = event->key.keysym.unicode;
+#endif
 
       if((ckey == IKEY_RETURN) &&
        get_alt_status(keycode_internal) &&
@@ -302,19 +379,27 @@ static bool process_event(SDL_Event *event)
         }
       }
 
-      key_press(status, ckey, event->key.keysym.unicode);
+      key_press(status, ckey, unicode);
       break;
     }
 
     case SDL_KEYUP:
     {
+#if SDL_VERSION_ATLEAST(2,0,0)
+      // FIXME: SDL 2.0 finally implements proper key repeat.
+      // We should probably use it instead of our hand-rolled stuff.
+      if(event->key.repeat)
+        break;
+#endif
+
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
       {
-        if(status->keymap[IKEY_UNICODE])
-          ckey = IKEY_UNICODE;
-        else
+#if !SDL_VERSION_ATLEAST(2,0,0)
+        if(!status->keymap[IKEY_UNICODE])
           break;
+#endif
+        ckey = IKEY_UNICODE;
       }
 
       if(ckey == IKEY_NUMLOCK)
@@ -339,24 +424,6 @@ static bool process_event(SDL_Event *event)
         status->unicode_repeat = 0;
       }
       status->key_release = ckey;
-      break;
-    }
-
-    case SDL_ACTIVEEVENT:
-    {
-      if(input.unfocus_pause)
-      {
-        // Pause while minimized
-        if(event->active.state & (SDL_APPACTIVE | SDL_APPINPUTFOCUS))
-        {
-          // Wait for SDL_APPACTIVE with gain of 1
-          do
-          {
-            SDL_WaitEvent(event);
-          } while((event->type != SDL_ACTIVEEVENT) ||
-           (event->active.state & ~(SDL_APPACTIVE | SDL_APPINPUTFOCUS)));
-        }
-      }
       break;
     }
 
@@ -462,7 +529,8 @@ void __wait_event(void)
 
 void real_warp_mouse(Uint32 x, Uint32 y)
 {
-  SDL_WarpMouse(x, y);
+  SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
+  SDL_WarpMouseInWindow(window, x, y);
 }
 
 void initialize_joysticks(void)

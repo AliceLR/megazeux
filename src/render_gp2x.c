@@ -30,10 +30,17 @@
 
 struct gp2x_render_data
 {
-  SDL_Surface *screen;
+  struct sdl_render_data sdl;
   Uint32 halfmask;
   Uint16 buffer[320*350];
 };
+
+static SDL_Surface *
+gp2x_get_screen_surface(struct gp2x_render_data *render_data)
+{
+  return render_data->sdl.shadow ?
+   render_data->sdl.shadow : render_data->sdl.screen;
+}
 
 static void gp2x_set_colors_mzx (struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg)
@@ -224,13 +231,6 @@ static void gp2x_free_video(struct graphics_data *graphics)
   graphics->render_data = NULL;
 }
 
-static bool gp2x_check_video_mode(struct graphics_data *graphics,
- int width, int height, int depth, bool fullscreen, bool resize)
-{
-  return SDL_VideoModeOK(width, height, 16,
-   sdl_flags(depth, fullscreen, resize));
-}
-
 static bool gp2x_set_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, bool fullscreen, bool resize)
 {
@@ -238,32 +238,30 @@ static bool gp2x_set_video_mode(struct graphics_data *graphics,
   SDL_PixelFormat *format;
   Uint32 halfmask;
 
-  render_data->screen = SDL_SetVideoMode(width, height, 16,
-   sdl_flags(depth, fullscreen, resize));
-  if(render_data->screen)
-  {
-    format = render_data->screen->format;
-    halfmask = (format->Rmask >> 1) & format->Rmask;
-    halfmask |= (format->Gmask >> 1) & format->Gmask;
-    halfmask |= (format->Bmask >> 1) & format->Bmask;
-    render_data->halfmask = halfmask;
-    return true;
-  }
+  if(!sdl_set_video_mode(graphics, width, height, depth, fullscreen, resize))
+    return false;
 
-  return false;
+  format = gp2x_get_screen_surface(render_data)->format;
+  halfmask = (format->Rmask >> 1) & format->Rmask;
+  halfmask |= (format->Gmask >> 1) & format->Gmask;
+  halfmask |= (format->Bmask >> 1) & format->Bmask;
+  render_data->halfmask = halfmask;
+
+  return true;
 }
 
 static void gp2x_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, Uint32 count)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
+  SDL_Surface *screen = gp2x_get_screen_surface(render_data);
   Uint32 i;
 
   for(i = 0; i < count; i++)
   {
     graphics->flat_intensity_palette[i] =
-     SDL_MapRGBA(render_data->screen->format, palette[i].r, palette[i].g,
-     palette[i].b, 255);
+     SDL_MapRGBA(screen->format, palette[i].r, palette[i].g,
+      palette[i].b, 255);
   }
 }
 
@@ -307,17 +305,21 @@ static void gp2x_render_mouse(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
-  render_mouse((Uint32 *)render_data->buffer, 640, 8, x, y, 0xFFFFFFFF, w, h);
+  render_mouse((Uint32 *)render_data->buffer, 640, 8, x, y, 0xFFFFFFFF,
+   0x0, w, h);
 }
 
 static void gp2x_sync_screen(struct graphics_data *graphics)
 {
   struct gp2x_render_data *render_data = graphics->render_data;
-  Uint32 line_advance = render_data->screen->pitch / 2;
-  Uint16 *dest = (Uint16*)render_data->screen->pixels;
+  SDL_Surface *screen = gp2x_get_screen_surface(render_data);
+
+  Uint32 line_advance = screen->pitch / 2;
+  Uint16 *dest = (Uint16*)screen->pixels;
   Uint16 *src = render_data->buffer;
   Uint32 i, j, skip = 0;
-  SDL_LockSurface(render_data->screen);
+
+  SDL_LockSurface(screen);
   for(i = 0; i < 240; i++)
   {
     skip += 35 - 24;
@@ -339,8 +341,21 @@ static void gp2x_sync_screen(struct graphics_data *graphics)
     src += 320;
     dest += line_advance;
   }
-  SDL_UnlockSurface(render_data->screen);
-  SDL_Flip(render_data->screen);
+
+  SDL_UnlockSurface(screen);
+
+  if(render_data->sdl.shadow)
+  {
+    SDL_BlitSurface(render_data->sdl.shadow,
+     &render_data->sdl.shadow->clip_rect, render_data->sdl.screen,
+     &render_data->sdl.screen->clip_rect);
+  }
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+  SDL_RenderPresent(render_data->sdl.renderer);
+#else
+  SDL_Flip(render_data->sdl.screen);
+#endif
 }
 
 void render_gp2x_register(struct renderer *renderer)
@@ -348,7 +363,7 @@ void render_gp2x_register(struct renderer *renderer)
   memset(renderer, 0, sizeof(struct renderer));
   renderer->init_video = gp2x_init_video;
   renderer->free_video = gp2x_free_video;
-  renderer->check_video_mode = gp2x_check_video_mode;
+  renderer->check_video_mode = sdl_check_video_mode;
   renderer->set_video_mode = gp2x_set_video_mode;
   renderer->update_colors = gp2x_update_colors;
   renderer->resize_screen = resize_screen_standard;

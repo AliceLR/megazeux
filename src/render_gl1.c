@@ -95,6 +95,9 @@ struct gl1_render_data
 #ifdef CONFIG_EGL
   struct egl_render_data egl;
 #endif
+#ifdef CONFIG_SDL
+  struct sdl_render_data sdl;
+#endif
   Uint32 *pixels;
   Uint32 w;
   Uint32 h;
@@ -284,7 +287,7 @@ static void gl1_render_mouse(struct graphics_data *graphics,
   struct gl1_render_data *render_data = graphics->render_data;
 
   render_mouse(render_data->pixels, render_data->w * 4, 32, x, y, 0xFFFFFFFF,
-   w, h);
+   0x0, w, h);
 }
 
 static void gl1_sync_screen(struct graphics_data *graphics)

@@ -1311,23 +1311,33 @@ static bool copy_selection_to_buffer(struct robot_state *rstate)
 
 #elif defined(CONFIG_X11) && defined(CONFIG_SDL)
 
+#if SDL_VERSION_ATLEAST(2,0,0)
+static int copy_buffer_to_X11_selection(void *userdata, SDL_Event *event)
+#else
 static int copy_buffer_to_X11_selection(const SDL_Event *event)
+#endif
 {
   XSelectionRequestEvent *request;
+#if SDL_VERSION_ATLEAST(2,0,0)
+  SDL_Window *window = userdata;
+#else
+  SDL_Window *window = NULL;
+#endif
   char *dest_data, *dest_ptr;
+  XEvent response, *xevent;
   SDL_SysWMinfo info;
   int i, line_length;
   Display *display;
-  XEvent response;
 
   if(event->type != SDL_SYSWMEVENT)
     return 1;
 
-  if(event->syswm.msg->event.xevent.type != SelectionRequest || !copy_buffer)
+  xevent = SDL_SysWMmsg_GetXEvent(event->syswm.msg);
+  if(xevent->type != SelectionRequest || !copy_buffer)
     return 0;
 
   SDL_VERSION(&info.version);
-  SDL_GetWMInfo(&info);
+  SDL_GetWindowWMInfo(window, &info);
 
   display = info.info.x11.display;
   dest_data = cmalloc(copy_buffer_total_length + 1);
@@ -1346,7 +1356,7 @@ static int copy_buffer_to_X11_selection(const SDL_Event *event)
   memcpy(dest_ptr, copy_buffer[i], line_length);
   dest_ptr[line_length] = 0;
 
-  request = &(event->syswm.msg->event.xevent.xselectionrequest);
+  request = &(SDL_SysWMmsg_GetXEvent(event->syswm.msg)->xselectionrequest);
   response.xselection.type = SelectionNotify;
   response.xselection.display = request->display;
   response.xselection.selection = request->selection;
@@ -1368,27 +1378,29 @@ static int copy_buffer_to_X11_selection(const SDL_Event *event)
 
 static void copy_buffer_to_selection(void)
 {
+  SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
   SDL_SysWMinfo info;
 
   SDL_VERSION(&info.version);
 
-  if(!SDL_GetWMInfo(&info) || (info.subsystem != SDL_SYSWM_X11))
+  if(!SDL_GetWindowWMInfo(window, &info) || (info.subsystem != SDL_SYSWM_X11))
     return;
 
   XSetSelectionOwner(info.info.x11.display, XA_PRIMARY,
     info.info.x11.window, CurrentTime);
 
   SDL_EventState(SDL_SYSWMEVENT, SDL_ENABLE);
-  SDL_SetEventFilter(copy_buffer_to_X11_selection);
+  SDL_SetEventFilter(copy_buffer_to_X11_selection, window);
 }
 
 static bool copy_selection_to_buffer(struct robot_state *rstate)
 {
+  SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
   int selection_format, line_length, ret_type;
   char line_buffer[COMMAND_BUFFER_LEN];
   unsigned long int nbytes, overflow;
   unsigned char *src_data, *src_ptr;
-  Window window, owner;
+  Window xwindow, owner;
   Atom selection_type;
   SDL_SysWMinfo info;
   Display *display;
@@ -1396,20 +1408,20 @@ static bool copy_selection_to_buffer(struct robot_state *rstate)
 
   SDL_VERSION(&info.version);
 
-  if(!SDL_GetWMInfo(&info) || (info.subsystem != SDL_SYSWM_X11))
+  if(!SDL_GetWindowWMInfo(window, &info) || (info.subsystem != SDL_SYSWM_X11))
     return ret;
 
   display = info.info.x11.display;
-  window = info.info.x11.window;
+  xwindow = info.info.x11.window;
   owner = XGetSelectionOwner(display, XA_PRIMARY);
 
-  if((owner == None) || (owner == window))
+  if((owner == None) || (owner == xwindow))
     return ret;
 
   XConvertSelection(display, XA_PRIMARY, XA_STRING, None,
     owner, CurrentTime);
 
-  info.info.x11.lock_func();
+  XLockDisplay(display);
 
   ret_type =
     XGetWindowProperty(display, owner,
@@ -1441,7 +1453,7 @@ static bool copy_selection_to_buffer(struct robot_state *rstate)
   ret = true;
 
 err_unlock:
-  info.info.x11.unlock_func();
+  XUnlockDisplay(display);
   return ret;
 }
 

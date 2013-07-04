@@ -24,6 +24,7 @@
 #include "platform.h"
 #include "graphics.h"
 #include "render.h"
+#include "util.h"
 
 static void set_colors8_mzx (struct graphics_data *graphics,
  Uint32 *char_colors, Uint8 bg, Uint8 fg)
@@ -543,7 +544,7 @@ void render_cursor(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
 }
 
 void render_mouse(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
- Uint32 mask, Uint8 w, Uint8 h)
+ Uint32 mask, Uint32 amask, Uint8 w, Uint8 h)
 {
   int i,j;
   Uint8 size = w * bpp / 32;
@@ -553,7 +554,10 @@ void render_mouse(Uint32 *pixels, Uint32 pitch, Uint8 bpp, Uint32 x, Uint32 y,
   for(i = 0; i < h; i++)
   {
     for(j = 0; j < size; j++)
-      *(dest++) ^= mask;
+    {
+      *dest = amask | (*dest ^ mask);
+      dest++;
+    }
     dest += line_advance_sub;
   }
 }

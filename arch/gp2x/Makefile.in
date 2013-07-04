@@ -12,7 +12,7 @@ BINEXT = .gpe
 #
 # GP2X binaries must be statically linked.
 #
-LIBPNG_LDFLAGS = `libpng12-config --static --ldflags`
+LIBPNG_LDFLAGS = $(shell libpng12-config --static --ldflags)
 ARCH_EXE_LDFLAGS = -static
 
 #

@@ -28,13 +28,33 @@ __M_BEGIN_DECLS
 
 #include "SDL.h"
 
+struct sdl_render_data
+{
+#if SDL_VERSION_ATLEAST(2,0,0)
+  SDL_Renderer *renderer;
+  SDL_Palette *palette;
+  SDL_Window *window;
+#endif
+  SDL_Surface *screen;
+  SDL_Surface *shadow;
+};
+
+#ifdef CONFIG_RENDER_YUV
 int sdl_flags(int depth, bool fullscreen, bool resize);
+#endif
+
+bool sdl_set_video_mode(struct graphics_data *graphics, int width, int height,
+ int depth, bool fullscreen, bool resize);
+
+bool sdl_check_video_mode(struct graphics_data *graphics, int width,
+ int height, int depth, bool fullscreen, bool resize);
 
 #if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 
 #include "render_gl.h"
 
-#define GL_STRIP_FLAGS(A) ((A & (SDL_FULLSCREEN | SDL_RESIZABLE)) | SDL_OPENGL)
+#define GL_STRIP_FLAGS(A) \
+  ((A & (SDL_WINDOW_FULLSCREEN | SDL_WINDOW_RESIZABLE)) | SDL_WINDOW_OPENGL)
 
 bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
  int depth, bool fullscreen, bool resize);
