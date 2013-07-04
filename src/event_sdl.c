@@ -54,9 +54,7 @@ static enum keycode convert_SDL_internal(SDLKey key)
     case SDLK_8: return IKEY_8;
     case SDLK_9: return IKEY_9;
     case SDLK_SEMICOLON: return IKEY_SEMICOLON;
-#if SDL_MAJOR_VERSION == 1 && SDL_MINOR_VERSION <= 2
     case SDLK_EQUALS: return IKEY_EQUALS;
-#endif
     case SDLK_LEFTBRACKET: return IKEY_LEFTBRACKET;
     case SDLK_BACKSLASH: return IKEY_BACKSLASH;
     case SDLK_RIGHTBRACKET: return IKEY_RIGHTBRACKET;
