@@ -291,16 +291,41 @@ static bool process_event(SDL_Event *event)
 
     case SDL_KEYDOWN:
     {
+      Uint16 unicode;
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+      // FIXME: SDL 2.0 finally implements proper key repeat.
+      // We should probably use it instead of our hand-rolled stuff.
+      if(event->key.repeat)
+        break;
+#endif
+
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
       {
 #if !SDL_VERSION_ATLEAST(2,0,0)
-        if(event->key.keysym.unicode)
-          ckey = IKEY_UNICODE;
-        else
-#endif
+        if(!event->key.keysym.unicode)
           break;
+#endif
+        ckey = IKEY_UNICODE;
       }
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+      // SDL 2.0 sends the raw key and translated 'text' as separate events.
+      // There is no longer a UNICODE mode that sends both at once.
+      // Because of the way the SDL 1.2 assumption is embedded deeply in
+      // the MZX event queue processor, emulate the 1.2 behaviour by waiting
+      // for a TEXTINPUT event after a KEYDOWN.
+      if(SDL_WaitEventTimeout(event, 1))
+      {
+        if(event->type == SDL_TEXTINPUT)
+          unicode = event->text.text[0] | event->text.text[1] << 8;
+        else
+          SDL_PushEvent(event);
+      }
+#else
+      unicode = event->key.keysym.unicode;
+#endif
 
       if((ckey == IKEY_RETURN) &&
        get_alt_status(keycode_internal) &&
@@ -354,25 +379,27 @@ static bool process_event(SDL_Event *event)
         }
       }
 
-#if SDL_VERSION_ATLEAST(2,0,0)
-      key_press(status, ckey, event->key.keysym.sym);
-#else
-      key_press(status, ckey, event->key.keysym.unicode);
-#endif
+      key_press(status, ckey, unicode);
       break;
     }
 
     case SDL_KEYUP:
     {
+#if SDL_VERSION_ATLEAST(2,0,0)
+      // FIXME: SDL 2.0 finally implements proper key repeat.
+      // We should probably use it instead of our hand-rolled stuff.
+      if(event->key.repeat)
+        break;
+#endif
+
       ckey = convert_SDL_internal(event->key.keysym.sym);
       if(!ckey)
       {
 #if !SDL_VERSION_ATLEAST(2,0,0)
-        if(status->keymap[IKEY_UNICODE])
-          ckey = IKEY_UNICODE;
-        else
-#endif
+        if(!status->keymap[IKEY_UNICODE])
           break;
+#endif
+        ckey = IKEY_UNICODE;
       }
 
       if(ckey == IKEY_NUMLOCK)
