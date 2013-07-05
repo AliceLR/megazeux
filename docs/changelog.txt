@@ -64,6 +64,12 @@ DEVELOPERS
 
 + Fixed linking bug when attempting to make a modular build of
   MegaZeux in Debian/armhf. (Insidious)
++ Added SDL 2.0 support. At the moment, the overlay renderers
+  are not accelerated by SDL 2.0 and may be slower than their
+  SDL 1.2 counterparts. Other minor inconsistencies may exist
+  between the two versions. (ajs)
+
+
 
 December 24, 2012 - MZX 2.84c
 
