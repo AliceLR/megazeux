@@ -34,44 +34,50 @@ static void yuv1_render_graph(struct graphics_data *graphics)
 {
   struct yuv_render_data *render_data = graphics->render_data;
   Uint32 mode = graphics->screen_mode;
+  Uint32 *pixels;
+  int pitch;
 
-  SDL_LockYUVOverlay(render_data->overlay);
+  yuv_lock_overlay(render_data);
+
+  pixels = yuv_get_pixels_pitch(render_data, &pitch);
 
   if(!mode)
-  {
-    render_graph32((Uint32 *)render_data->overlay->pixels[0],
-     render_data->overlay->pitches[0], graphics, set_colors32[mode]);
-  }
+    render_graph32(pixels, pitch, graphics, set_colors32[mode]);
   else
-  {
-    render_graph32s((Uint32 *)render_data->overlay->pixels[0],
-     render_data->overlay->pitches[0], graphics, set_colors32[mode]);
-  }
+    render_graph32s(pixels, pitch, graphics, set_colors32[mode]);
 
-  SDL_UnlockYUVOverlay(render_data->overlay);
+  yuv_unlock_overlay(render_data);
 }
 
 static void yuv1_render_cursor(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
 {
   struct yuv_render_data *render_data = graphics->render_data;
+  Uint32 *pixels;
+  int pitch;
 
-  SDL_LockYUVOverlay(render_data->overlay);
-  render_cursor((Uint32 *)render_data->overlay->pixels[0],
-   render_data->overlay->pitches[0], 32, x, y,
+  yuv_lock_overlay(render_data);
+
+  pixels = yuv_get_pixels_pitch(render_data, &pitch);
+  render_cursor(pixels, pitch, 32, x, y,
    graphics->flat_intensity_palette[color], lines, offset);
-  SDL_UnlockYUVOverlay(render_data->overlay);
+
+  yuv_unlock_overlay(render_data);
 }
 
 static void yuv1_render_mouse(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
   struct yuv_render_data *render_data = graphics->render_data;
+  Uint32 *pixels;
+  int pitch;
 
-  SDL_LockYUVOverlay(render_data->overlay);
-  render_mouse((Uint32 *)render_data->overlay->pixels[0],
-   render_data->overlay->pitches[0], 32, x, y, 0xFFFFFFFF, 0x0, w, h);
-  SDL_UnlockYUVOverlay(render_data->overlay);
+  yuv_lock_overlay(render_data);
+
+  pixels = yuv_get_pixels_pitch(render_data, &pitch);
+  render_mouse(pixels, pitch, 32, x, y, 0xFFFFFFFF, 0x0, w, h);
+
+  yuv_unlock_overlay(render_data);
 }
 
 void render_yuv1_register(struct renderer *renderer)
