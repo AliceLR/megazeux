@@ -39,12 +39,19 @@ __M_BEGIN_DECLS
 
 struct yuv_render_data
 {
-  SDL_Surface *screen;
+#if SDL_VERSION_ATLEAST(2,0,0)
+  SDL_Renderer *renderer;
+  SDL_Texture *texture;
+  SDL_Window *window;
+#else
   SDL_Overlay *overlay;
+#endif
+  SDL_Surface *screen;
   Uint32 y0mask;
   Uint32 y1mask;
   Uint32 uvmask;
   enum ratio_type ratio;
+  bool is_yuy2;
 };
 
 bool yuv_set_video_mode_size(struct graphics_data *graphics,
@@ -56,7 +63,10 @@ bool yuv_check_video_mode(struct graphics_data *graphics,
  int width, int height, int depth, bool fullscreen, bool resize);
 void yuv_update_colors(struct graphics_data *graphics,
  struct rgb_color *palette, Uint32 count);
-void yuv_sync_screen (struct graphics_data *graphics);
+void yuv_sync_screen(struct graphics_data *graphics);
+void yuv_lock_overlay(struct yuv_render_data *render_data);
+void yuv_unlock_overlay(struct yuv_render_data *render_data);
+Uint32 *yuv_get_pixels_pitch(struct yuv_render_data *render_data, int *pitch);
 
 __M_END_DECLS
 

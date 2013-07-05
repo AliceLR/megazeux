@@ -635,14 +635,6 @@ if [ "$DEBYTECODE" = "true" ]; then
 fi
 
 #
-# Force disable overlay renders with SDL 2.0 (no API support).
-#
-if [ "$LIBSDL2" = "true" ]; then
-	echo "Force-disabling overlay renderers (SDL 2.0)."
-	OVERLAY="false"
-fi
-
-#
 # As GNU ld supports recursive dylib dependency tracking, we don't need to
 # explicitly link to as many libraries as the authors would have us provide.
 #

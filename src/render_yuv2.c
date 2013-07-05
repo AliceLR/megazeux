@@ -28,70 +28,79 @@ static bool yuv2_set_video_mode(struct graphics_data *graphics,
 {
   struct yuv_render_data *render_data = graphics->render_data;
 
-  if(yuv_set_video_mode_size(graphics, width, height, depth, fullscreen,
+  if(!yuv_set_video_mode_size(graphics, width, height, depth, fullscreen,
    resize, YUV2_OVERLAY_WIDTH, YUV2_OVERLAY_HEIGHT))
+    return false;
+
+  if(render_data->is_yuy2)
   {
-    if(render_data->overlay->format == SDL_YUY2_OVERLAY)
-    {
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-      render_data->y0mask = 0xFF000000;
-      render_data->y1mask = 0x0000FF00;
+    render_data->y0mask = 0xFF000000;
+    render_data->y1mask = 0x0000FF00;
 #else
-      render_data->y0mask = 0x000000FF;
-      render_data->y1mask = 0x00FF0000;
+    render_data->y0mask = 0x000000FF;
+    render_data->y1mask = 0x00FF0000;
 #endif
-    }
-    else
-    {
+  }
+  else
+  {
 #if PLATFORM_BYTE_ORDER == PLATFORM_BIG_ENDIAN
-      render_data->y0mask = 0x00FF0000;
-      render_data->y1mask = 0x000000FF;
+    render_data->y0mask = 0x00FF0000;
+    render_data->y1mask = 0x000000FF;
 #else
-      render_data->y0mask = 0x0000FF00;
-      render_data->y1mask = 0xFF000000;
+    render_data->y0mask = 0x0000FF00;
+    render_data->y1mask = 0xFF000000;
 #endif
-    }
-    render_data->uvmask = ~(render_data->y0mask | render_data->y1mask);
-    return true;
   }
 
-  return false;
+  render_data->uvmask = ~(render_data->y0mask | render_data->y1mask);
+  return true;
 }
 
 static void yuv2_render_graph(struct graphics_data *graphics)
 {
   struct yuv_render_data *render_data = graphics->render_data;
+  Uint32 *pixels;
+  int pitch;
 
-  SDL_LockYUVOverlay(render_data->overlay);
+  yuv_lock_overlay(render_data);
 
-  render_graph16((Uint16 *)render_data->overlay->pixels[0],
-   render_data->overlay->pitches[0], graphics,
+  pixels = yuv_get_pixels_pitch(render_data, &pitch);
+  render_graph16((Uint16 *)pixels, pitch, graphics,
    yuv2_set_colors[graphics->screen_mode]);
 
-  SDL_UnlockYUVOverlay(render_data->overlay);
+  yuv_unlock_overlay(render_data);
 }
 
 static void yuv2_render_cursor(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint8 color, Uint8 lines, Uint8 offset)
 {
   struct yuv_render_data *render_data = graphics->render_data;
+  Uint32 *pixels;
+  int pitch;
 
-  SDL_LockYUVOverlay(render_data->overlay);
-  render_cursor((Uint32 *)render_data->overlay->pixels[0],
-   render_data->overlay->pitches[0], 16, x, y,
+  yuv_lock_overlay(render_data);
+
+  pixels = yuv_get_pixels_pitch(render_data, &pitch);
+  render_cursor(pixels, pitch, 16, x, y,
    graphics->flat_intensity_palette[color], lines, offset);
-  SDL_UnlockYUVOverlay(render_data->overlay);
+
+  yuv_unlock_overlay(render_data);
 }
 
 static void yuv2_render_mouse(struct graphics_data *graphics,
  Uint32 x, Uint32 y, Uint8 w, Uint8 h)
 {
   struct yuv_render_data *render_data = graphics->render_data;
+  Uint32 *pixels;
+  int pitch;
 
-  SDL_LockYUVOverlay(render_data->overlay);
-  render_mouse((Uint32 *)render_data->overlay->pixels[0],
-   render_data->overlay->pitches[0], 16, x, y, 0xFFFFFFFF, 0x0, w, h);
-  SDL_UnlockYUVOverlay(render_data->overlay);
+  yuv_lock_overlay(render_data);
+
+  pixels = yuv_get_pixels_pitch(render_data, &pitch);
+  render_mouse(pixels, pitch, 16, x, y, 0xFFFFFFFF, 0x0, w, h);
+
+  yuv_unlock_overlay(render_data);
 }
 
 void render_yuv2_register(struct renderer *renderer)
