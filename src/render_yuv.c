@@ -47,16 +47,46 @@ bool yuv_set_video_mode_size(struct graphics_data *graphics,
 
   if(!render_data->renderer)
   {
-    warn("Failed to create renderer: %s\n", SDL_GetError());
-    goto err_destroy_window;
+    render_data->renderer =
+     SDL_CreateRenderer(render_data->window, -1, SDL_RENDERER_SOFTWARE);
+
+    if(!render_data->renderer)
+    {
+      warn("Failed to create renderer: %s\n", SDL_GetError());
+      goto err_destroy_window;
+    }
+
+    warn("Accelerated renderer not available. Overlay will be SLOW!\n");
   }
 
   render_data->screen = SDL_GetWindowSurface(render_data->window);
 
   if(!render_data->screen)
   {
-    warn("Failed to get window surface: %s\n", SDL_GetError());
-    goto err_destroy_renderer;
+    /* Sometimes the accelerated renderer will be created, but doesn't
+     * allow the surface to be returned. This seems like an SDL bug, but
+     * we'll work around it here.
+     */
+    SDL_DestroyRenderer(render_data->renderer);
+
+    render_data->renderer =
+     SDL_CreateRenderer(render_data->window, -1, SDL_RENDERER_SOFTWARE);
+
+    if(!render_data->renderer)
+    {
+      warn("Failed to create renderer: %s\n", SDL_GetError());
+      goto err_destroy_window;
+    }
+
+    render_data->screen = SDL_GetWindowSurface(render_data->window);
+
+    if(!render_data->screen)
+    {
+      warn("Failed to get window surface: %s\n", SDL_GetError());
+      goto err_destroy_renderer;
+    }
+
+    warn("Accelerated renderer not available. Overlay will be SLOW!\n");
   }
 
   if(render_data->screen->format->BitsPerPixel != 32)
