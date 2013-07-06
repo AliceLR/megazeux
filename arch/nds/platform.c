@@ -31,6 +31,10 @@
 #include "dlmalloc.h"
 #include "exception.h"
 
+#ifndef REG_DSIMODE
+#define REG_DSIMODE 0x04004000
+#endif
+
 // from arch/nds/event.c
 extern void nds_update_input(void);
 

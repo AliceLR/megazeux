@@ -21,6 +21,8 @@
 
 #include "SDL.h"
 
+Uint32 sdl_window_id;
+
 #ifndef CONFIG_RENDER_YUV
 static
 #endif
@@ -164,7 +166,7 @@ bool sdl_set_video_mode(struct graphics_data *graphics, int width, int height,
     render_data->palette = NULL;
   }
 
-  graphics->window_id = SDL_GetWindowID(render_data->window);
+  sdl_window_id = SDL_GetWindowID(render_data->window);
 
 #else // !SDL_VERSION_ATLEAST(2,0,0)
 

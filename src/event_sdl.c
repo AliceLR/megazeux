@@ -21,6 +21,7 @@
 #include "event.h"
 #include "platform.h"
 #include "graphics.h"
+#include "render_sdl.h"
 
 #include "SDL.h"
 
@@ -242,7 +243,7 @@ static bool process_event(SDL_Event *event)
 
     case SDL_MOUSEMOTION:
     {
-      SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
+      SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
       int mx_real = event->motion.x;
       int my_real = event->motion.y;
       int mx, my, min_x, min_y, max_x, max_y;
@@ -529,7 +530,7 @@ void __wait_event(void)
 
 void real_warp_mouse(Uint32 x, Uint32 y)
 {
-  SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
+  SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
   SDL_WarpMouseInWindow(window, x, y);
 }
 

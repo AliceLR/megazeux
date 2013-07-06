@@ -503,17 +503,17 @@ void boyer_moore_index(void *B, size_t b_len,
     {
       c1 = boyer_moore_memrchr(b, *s, b_len);
       if(c1)
-        index[(unsigned)(*s)] = (last - c1);
+        index[(int)*s] = (last - c1);
     }
     else
     {
-      c1 = boyer_moore_memrchr(b, tolower(*s), b_len);
-      c2 = boyer_moore_memrchr(b, toupper(*s), b_len);
+      c1 = boyer_moore_memrchr(b, tolower((int)*s), b_len);
+      c2 = boyer_moore_memrchr(b, toupper((int)*s), b_len);
       if(c1 && c1 > c2)
-        index[(unsigned)tolower(*s)] = (last - c1);
+        index[tolower((int)*s)] = (last - c1);
       else
       if(c2)
-        index[(unsigned)tolower(*s)] = (last - c2);
+        index[tolower((int)*s)] = (last - c2);
     }
     s++;
   }
@@ -539,17 +539,17 @@ void *boyer_moore_search(void *A, size_t a_len, void *B, size_t b_len,
         j--, i--;
       if(j == -1)
         return (void *)(a + i);
-      i += MAX(1, index[a[i]]) + (b_len - j - 1);
+      i += MAX(1, index[(int)a[i]]) + (b_len - j - 1);
     }
   }
   else {
     while(i < a_len) {
       j = b_len - 1;
-      while(j >= 0 && tolower(a[i]) == tolower(b[j]))
+      while(j >= 0 && tolower((int)a[i]) == tolower((int)b[j]))
         j--, i--;
       if(j == -1)
         return (void *)(a + i);
-      i += MAX(1, index[tolower(a[i])]) + (b_len - j - 1);
+      i += MAX(1, index[tolower((int)a[i])]) + (b_len - j - 1);
     }
   }
   return NULL;

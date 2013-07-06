@@ -56,6 +56,7 @@
 #if defined(CONFIG_X11) && defined(CONFIG_SDL)
 #include "SDL.h"
 #include "SDL_syswm.h"
+#include "render_sdl.h"
 #endif
 
 #define combine_colors(a, b)  \
@@ -1378,7 +1379,7 @@ static int copy_buffer_to_X11_selection(const SDL_Event *event)
 
 static void copy_buffer_to_selection(void)
 {
-  SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
+  SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
   SDL_SysWMinfo info;
 
   SDL_VERSION(&info.version);
@@ -1395,7 +1396,7 @@ static void copy_buffer_to_selection(void)
 
 static bool copy_selection_to_buffer(struct robot_state *rstate)
 {
-  SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
+  SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
   int selection_format, line_length, ret_type;
   char line_buffer[COMMAND_BUFFER_LEN];
   unsigned long int nbytes, overflow;

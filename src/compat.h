@@ -267,10 +267,12 @@ static inline void SDL_SetWindowIcon(SDL_Window *window, SDL_Surface *icon)
    SDL_WM_SetIcon(icon, NULL);
 }
 
+#if defined(CONFIG_RENDER_GL_FIXED) || defined(CONFIG_RENDER_GL_PROGRAM)
 static inline int SDL_GL_SetSwapInterval(int interval)
 {
   return SDL_GL_SetAttribute(SDL_GL_SWAP_CONTROL, interval);
 }
+#endif
 
 #ifdef CONFIG_X11
 static inline XEvent *SDL_SysWMmsg_GetXEvent(SDL_SysWMmsg *msg)

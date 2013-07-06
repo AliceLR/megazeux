@@ -204,7 +204,7 @@ static inline void set_sfx_volume(int volume) {}
 static inline void end_sample(void) {}
 static inline void end_module(void) {}
 static inline void load_module(char *filename, bool safely, int volume) {}
-static inline void load_board_module(struct board *src_board) {}
+static inline int load_board_module(struct board *src_board) { return 1; }
 static inline void volume_module(int vol) {}
 static inline void set_position(int pos) {}
 static inline void jump_module(int order) {}
