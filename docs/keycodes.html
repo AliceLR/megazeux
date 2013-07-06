@@ -86,22 +86,22 @@
     sup {
       font-size: .5em;
     }
-    sup.esc {
+    sup.esc:after {
       content: "A";
     }
-    sup.f12 {
+    sup.f12:after {
       content: "B";
     }
-    sup.badkey {
+    sup.badkey:after {
       content: "C";
     }
-    sup.diffsdl2 {
+    sup.diffsdl2:after {
       content: "D";
     }
-    sup.badsdl2 {
+    sup.badsdl2:after {
       content: "E";
     }
-    sup.capslock {
+    sup.capslock:after {
       content: "F";
     }
     span.annotation {
@@ -122,7 +122,9 @@
    <p>
     On small displays the numpad will appear above the rest
     of the keyboard. For a static full-size display, edit this
-    HTML file and remove /* and */ from the fifth line.
+    HTML file and remove /* and */ from the fifth line. If the
+    superscript annotations are not appearing, please download
+    a version of your web browser that supports pseudo-elements.
    </p>
 
    <hr/>
@@ -144,96 +146,96 @@
    <tr>
     <td class="bad">
       NLock
-      <b>69<sup class="badkey"/></b>
-      <p>300<sup class="badkey"/></p>
+      <b>69<sup class="badkey">&nbsp;</sup></b>
+      <p>300<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td class="warn">
       /
       <b>53</p>
-      <p>267<sup class="badkey"/></p>
+      <p>267<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td class="warn">
       *
       <b>55</p>
-      <p>268<sup class="badkey"/></p>
+      <p>268<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td class="warn">
       -
       <b>74</p>
-      <p>269<sup class="badkey"/></p>
+      <p>269<sup class="badkey">&nbsp;</sup></p>
     </td>
    </tr>
    <tr>
     <td class="warn">
       Home7
       <b>71</b>
-      <p>263<sup class="badkey"/></p>
+      <p>263<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td class="warn">
       Up8
       <b>72</b>
-      <p>264<sup class="badkey"/></p>
+      <p>264<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td class="warn">
       PgUp7
       <b>73</b>
-      <p>265<sup class="badkey"/></p>
+      <p>265<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td rowspan="2" class="warn">
       +
       <b>78</b>
-      <p>270<sup class="badkey"/></p>
+      <p>270<sup class="badkey">&nbsp;</sup></p>
     </td>
    </tr>
    <tr>
     <td class="warn">
       Left4
       <b>75</b>
-      <p>260<sup class="badkey"/></p>
+      <p>260<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td class="warn">
       Num5
       <b>76</b>
-      <p>261<sup class="badkey"/></p>
+      <p>261<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td class="warn">
       Right6
       <b>77</b>
-      <p>262<sup class="badkey"/></p>
+      <p>262<sup class="badkey">&nbsp;</sup></p>
     </td>
    </tr>
    <tr>
     <td class="warn">
       End1
       <b>79</b>
-      <p>257<sup class="badkey"/></p>
+      <p>257<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td class="warn">
       Down2
       <b>80</b>
-      <p>258<sup class="badkey"/></p>
+      <p>258<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td class="warn">
       PgDn3
       <b>81</b>
-      <p>259<sup class="badkey"/></p>
+      <p>259<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td rowspan="2" class="warn">
       Return
       <b>28</b>
-      <p>271<sup class="badkey"/></p>
+      <p>271<sup class="badkey">&nbsp;</sup></p>
     </td>
    </tr>
    <tr>
     <td colspan="2" class="warn">
       Insert 0
       <b>82</b>
-      <p>256<sup class="badkey"/></p>
+      <p>256<sup class="badkey">&nbsp;</sup></p>
     </td>
     <td class="warn">
       Delete .
       <b>83</b>
-      <p>266<sup class="badkey"/></p>
+      <p>266<sup class="badkey">&nbsp;</sup></p>
     </td>
    </tr>
   </table>
@@ -241,7 +243,7 @@
   <table>
    <tr>
     <td class="bad">
-      Esc<sup class="esc"></sup>
+      Esc<sup class="esc">&nbsp;</sup>
       <b>1</b>
       <p>27</p>
     </td>
@@ -307,7 +309,7 @@
       <p>292</p>
     </td>
     <td class="bad">
-      F12<sup class="f12"></sup>
+      F12<sup class="f12">&nbsp;</sup>
       <b>?</b>
       <p>?</p>
     </td>
@@ -315,8 +317,8 @@
     </td>
     <td class="bad">
       SysRq
-      <b>?<sup class="badkey"></sup><sup class="diffsdl2"/></b>
-      <p>316<sup class="badkey"></sup><sup class="diffsdl2"/></p>
+      <b>?<sup class="badkey">&nbsp;</sup><sup class="diffsdl2">&nbsp;</sup></b>
+      <p>316<sup class="badkey">&nbsp;</sup><sup class="diffsdl2">&nbsp;</sup></p>
     </td>
     <td class="warn">
       ScLock
@@ -325,8 +327,8 @@
     </td>
     <td class="warn">
       Break
-      <b>197<sup class="diffsdl2"/></b>
-      <p>318<sup class="diffsdl2"/></p>
+      <b>197<sup class="diffsdl2">&nbsp;</sup></b>
+      <p>318<sup class="diffsdl2">&nbsp;</sup></p>
     </td>
     <td class="space">
     </td>
@@ -527,7 +529,7 @@
   <table>
    <tr>
     <td class="extrawide">
-      Caps Lock<sup class="capslock"></sup>
+      Caps Lock<sup class="capslock">&nbsp;</sup>
       <b>58</b>
       <p>301</p>
     </td>
@@ -716,8 +718,8 @@
     </td>
     <td class="wide bad">
       R. Click
-      <b>93<sup class="badsdl2"/></b>
-      <p>319<sup class="badsdl2"/></p>
+      <b>93<sup class="badsdl2">&nbsp;</sup></b>
+      <p>319<sup class="badsdl2">&nbsp;</sup></p>
     </td>
     <td class="wide">
       R. Control
@@ -786,7 +788,7 @@
   <hr/>
   <div>
    <p>
-    <sup class="esc"></sup>
+    <sup class="esc">&nbsp;</sup>
     <span class="annotation">
      Escape is used to exit gameplay and therefore can never
      actually be <i>used as a part of</i> gameplay. This will
@@ -795,7 +797,7 @@
    </p>
 
    <p>
-    <sup class="f12"></sup>
+    <sup class="f12">&nbsp;</sup>
     <span class="annotation">
      F12 is currently used as the screenshot key. Other
      function keys (F13-F16) are not supported by MegaZeux.
@@ -803,7 +805,7 @@
    </p>
 
    <p>
-    <sup class="badkey"></sup>
+    <sup class="badkey">&nbsp;</sup>
     <span class="annotation">
      The results for this value can vary between systems or
      may not be detected at all by MegaZeux. Personal use only.
@@ -812,7 +814,7 @@
    </p>
 
    <p>
-    <sup class="diffsdl2"></sup>
+    <sup class="diffsdl2">&nbsp;</sup>
     <span class="annotation">
      The result of this key is or may be different between SDL
      1.2 and SDL 2.0. In the case of Break, the original KEY_CODE
@@ -822,7 +824,7 @@
    </p>
 
    <p>
-    <sup class="badsdl2"></sup>
+    <sup class="badsdl2">&nbsp;</sup>
     <span class="annotation">
      This key does NOT work in SDL 2.0 at all in any useful way.
      The values shown are SDL 1.2 values.
@@ -830,7 +832,7 @@
    </p>
 
    <p>
-    <sup class="capslock"></sup>
+    <sup class="capslock">&nbsp;</sup>
     <span class="annotation">
      SDL 1.2 and SDL 2.0 handle Caps Lock differently&mdash;SDL 1.2
      would hold the key code, even if MegaZeux was put out of focus
