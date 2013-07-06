@@ -250,7 +250,7 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
     return false;
   }
 
-  graphics->window_id = SDL_GetWindowID(render_data->window);
+  sdl_window_id = SDL_GetWindowID(render_data->window);
 
 #else // !SDL_VERSION_ATLEAST(2,0,0)
 
