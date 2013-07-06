@@ -264,7 +264,7 @@ static error_t modify_pe(FILE *f)
   uint32_t rsrc_offset = 0, edata_offset = 0, idata_offset = 0;
   uint16_t cpu_type, num_sections, dll_characteristics;
   char section_name[SECTION_NAME_LEN + 1];
-  uint32_t ul, idata_virtaddr;
+  uint32_t ul, idata_virtaddr = 0;
   error_t err = SUCCESS;
   long csum_offset;
   int skip = 0;

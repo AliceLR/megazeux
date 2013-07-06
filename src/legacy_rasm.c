@@ -2543,7 +2543,7 @@ int validate_legacy_bytecode(char *bc, int program_length)
 {
   int i = 1;
   int new_length = program_length;
-  int cur_command_start, cur_command_length, cur_param_length;
+  int cur_command_start = 0, cur_command_length = 0, cur_param_length = 0;
   int cur_command, p;
 
   if(!bc)

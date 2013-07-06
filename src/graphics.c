@@ -47,6 +47,7 @@
 #ifdef CONFIG_ICON
 #include "SDL_syswm.h"
 #endif // CONFIG_ICON
+#include "render_sdl.h"
 #endif // CONFIG_SDL
 
 #include "util.h"
@@ -857,7 +858,7 @@ static SDL_Surface *png_read_icon(const char *name)
 void set_window_caption(const char *caption)
 {
 #ifdef CONFIG_SDL
-  SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
+  SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
   SDL_SetWindowTitle(window, caption);
 #endif
 }
@@ -923,7 +924,7 @@ bool init_video(struct config_info *conf, const char *caption)
     HICON icon = LoadIcon(GetModuleHandle(NULL), MAKEINTRESOURCE(1));
     if(icon)
     {
-      SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
+      SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
       SDL_SysWMinfo info;
 
       SDL_VERSION(&info.version);
@@ -939,7 +940,7 @@ bool init_video(struct config_info *conf, const char *caption)
     SDL_Surface *icon = png_read_icon("/usr/share/icons/megazeux.png");
     if(icon)
     {
-      SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
+      SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
       SDL_SetWindowIcon(window, icon);
       SDL_FreeSurface(icon);
     }

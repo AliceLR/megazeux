@@ -925,9 +925,9 @@ static int string_sort_fcn(const void *a, const void *b)
 // (Re)make the child nodes
 static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 {
-  int i, j, n, *num, alloc;
+  int i, j, n, *num = NULL, alloc = 0;
 
-  char ***list;
+  char ***list = NULL;
   char var[20] = { 0 };
   char buf[80] = { 0 };
 
@@ -980,7 +980,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 
   for(i = 0, n = 0; i < num_counters; i++)
   {
-    char first = tolower(mzx_world->counter_list[i]->name[0]);
+    char first = tolower((int)mzx_world->counter_list[i]->name[0]);
     // We need to switch child nodes
     if((first > n+96 && n<27) || i == 0)
     {
@@ -1029,7 +1029,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
   // sorted them, it's only polite (and also will make MZX not crash)
   for(i = 0, n = 0; i < num_strings; i++)
   {
-    char first = tolower(mzx_world->string_list[i]->name[1]);
+    char first = tolower((int)mzx_world->string_list[i]->name[1]);
     mzx_world->string_list[i]->list_ind = i;
 
     // We need to switch child nodes
@@ -1811,7 +1811,7 @@ void __debug_counters(struct world *mzx_world)
       // Toggle Empties
       case 4:
       {
-        char *current;
+        char *current = NULL;
         hide_empty_vars = !hide_empty_vars;
 
         if(num_vars)
