@@ -250,7 +250,7 @@ ${build}:
 	${CP} assets/default.chr assets/edit.chr ${build}/assets
 	${CP} assets/smzx.pal ${build}/assets
 	${CP} docs/COPYING.DOC docs/changelog.txt docs/port.txt ${build}/docs
-	${CP} docs/macro.txt docs/keycodes.png ${build}/docs
+	${CP} docs/macro.txt docs/keycodes.html ${build}/docs
 	${CP} docs/platform_matrix.html ${build}/docs
 	${CP} ${mzxrun} ${build}
 	@if test -f ${mzxrun}.debug; then \

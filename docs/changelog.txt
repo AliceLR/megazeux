@@ -68,6 +68,8 @@ DEVELOPERS
   are not accelerated by SDL 2.0 and may be slower than their
   SDL 1.2 counterparts. Other minor inconsistencies may exist
   between the two versions. (ajs)
++ Keycode help diagram replaced with an HTML file (from the
+  older PNG file). This will make future updates much easier.
 
 
 
