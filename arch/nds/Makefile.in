@@ -15,10 +15,10 @@ endif
 #
 # Stolen from ds_rules
 #
-CC      := arm-eabi-gcc
-CXX     := arm-eabi-g++
-AR      := arm-eabi-ar
-OBJCOPY := arm-eabi-objcopy
+CC      := arm-none-eabi-gcc
+CXX     := arm-none-eabi-g++
+AR      := arm-none-eabi-ar
+OBJCOPY := arm-none-eabi-objcopy
 LIBNDS  := $(DEVKITPRO)/libnds
 
 #
@@ -30,14 +30,13 @@ STRIP  = /bin/true
 # Override library paths.
 #
 
-EXTRA_INCLUDES = -Iarch/nds/ndsScreens/build \
-                 -Iarch/nds/ndsLibfat/nds/include \
-                 -I$(LIBNDS)/include
+EXTRA_INCLUDES = -isystem arch/nds/ndsScreens/build \
+                 -isystem $(DEVKITPRO)/libfat-nds/include \
+                 -isystem $(LIBNDS)/include
 
 EXTRA_LIBS = -Larch/nds/ndsScreens/lib \
-             -Larch/nds/ndsLibfat/nds/lib \
-             -L$(LIBNDS)/lib \
-             -lfat -lm -lnds9
+             -L$(DEVKITPRO)/libfat-nds/lib \
+             -L$(LIBNDS)/lib -lfat -lm -lnds9
 
 ARCH_CFLAGS   += ${EXTRA_INCLUDES} -DARM9 -D__NDS__ -Iarch/nds
 ARCH_CXXFLAGS += ${ARCH_CFLAGS}

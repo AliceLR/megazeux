@@ -2,8 +2,6 @@ PREPARATION
 
 You need to extract the following additional libraries here:
 
-  - ndsDebug (??)
-  - ndsLibfat (1.0.4)
   - ndsScreens (source packaged with MZX)
 
 If you can't find the require versions online, or can't build them, you
@@ -11,14 +9,12 @@ can use the prebuilts available from:
 
 scripts/deps/nds.zip
 
-You need to build or install the devkitARM toolchain (r26).
-
+You need to build or install the devkitARM toolchain.
 
 CONFIGURING
 
 See CONFIG.NDS for an optimal `config.sh' configure line. You need
 to ensure DEVKITPRO and DEVKITARM are both defined and valid.
-
 
 BUILDING
 

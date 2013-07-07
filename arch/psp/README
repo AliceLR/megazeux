@@ -3,13 +3,25 @@ BUILDING MEGAZEUX FOR PSP
 As of 2.81d, MegaZeux can be built for PSP. The only supported toolchain for
 this is devkitPSP.
 
+PREPARING TO BUILD
+
+Before starting, we need to add another path to the PATH variable, so that
+the psp SDK and, ultimately, Tremor and SDL may be correctly detected. You
+should have the $DEVKITPRO and $DEVKITPSP variables defined correctly. The
+following instructions assume that these variables are present. Enter the
+following:
+
+export DEVKITPRO=$HOME/bin/devkitpro  # for example
+export DEVKITPSP=$DEVKITPRO/devkitPSP # for example
+export PATH=$DEVKITPSP/bin:$PATH
+
 BUILDING DEPENDENCIES
 
 MegaZeux depends on libTremor and SDL, on the PSP platform. Check these modules
-out from the ps2dev SVN repositories.
+out from the pspdev github mirror:
 
-svn co svn://svn.pspdev.org/psp/trunk/libTremor
-svn co svn://svn.pspdev.org/psp/trunk/SDL
+git clone https://github.com/pspdev/psp-ports.git
+cd psp-ports
 
 First, build libTremor:
 
@@ -32,13 +44,7 @@ cd ..
 
 BUILDING MEGAZEUX FROM SOURCES
 
-Extract the latest version of MegaZeux, or obtain it from SVN. Before starting,
-we need to add another path to the PATH variable, so that SDL may be correctly
-detected. You should have the $DEVKITPRO and $DEVKITPSP variables defined
-correctly. I will assume that these exist and are correct. Enter the
-following:
-
-export PATH=$DEVKITPSP/psp/bin:$PATH
+Extract the latest version of MegaZeux, or obtain it from Git.
 
 cd megazeux
 ./config.sh --platform psp --prefix $PSPDEV/psp --optimize-size \

@@ -107,28 +107,16 @@ struct dso_syms_map
   fn_ptr *sym_ptr;
 };
 
-#if defined(CONFIG_NDS) || defined(CONFIG_WII)
-
-#include <sys/dir.h>
-
-#define PATH_BUF_LEN FILENAME_MAX
-typedef DIR_ITER dir_t;
-
-#else // !(CONFIG_NDS || CONFIG_WII)
-
 #include <sys/types.h>
 #include <dirent.h>
 
 #define PATH_BUF_LEN MAX_PATH
-typedef DIR dir_t;
-
-#endif // CONFIG_NDS || CONFIG_WII
 
 struct mzx_dir {
 #ifdef CONFIG_PSP
   char path[PATH_BUF_LEN];
 #endif
-  dir_t *d;
+  DIR *d;
   long entries;
   long pos;
 };
