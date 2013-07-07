@@ -102,7 +102,7 @@
     </ClCompile>
     <Link>
       <AdditionalOptions>/NODEFAULTLIB:libcmt %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>libogg_static.lib;libpng15.lib;libvorbis_static.lib;libvorbisenc.lib;libvorbisfile_static.lib;SDL.lib;SDLmain.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libogg_static.lib;libpng16.lib;libvorbis_static.lib;libvorbisfile_static.lib;SDL2.lib;SDL2main.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>Deps\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(SolutionDir)\..\..\$(ProjectName).pdb</ProgramDatabaseFile>
       <TargetMachine>MachineX86</TargetMachine>
@@ -112,7 +112,7 @@
     <ClCompile>
       <InlineFunctionExpansion>Disabled</InlineFunctionExpansion>
       <WholeProgramOptimization>false</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>../../arch/msvc;Deps/include;Deps/include/SDL;Deps/include/libpng12;../../contrib/libmodplug/src;../../contrib/libmodplug/src/libmodplug;../../contrib/gdm2s3m/src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../arch/msvc;Deps/include;Deps/include/SDL2;../../contrib/libmodplug/src;../../contrib/libmodplug/src/libmodplug;../../contrib/gdm2s3m/src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <StringPooling>true</StringPooling>
       <ExceptionHandling>
       </ExceptionHandling>
@@ -126,8 +126,7 @@
       <Optimization>Disabled</Optimization>
     </ClCompile>
     <Link>
-      <AdditionalOptions>/NODEFAULTLIB:libcmt %(AdditionalOptions)</AdditionalOptions>
-      <AdditionalDependencies>libogg_static.lib;libpng15.lib;libvorbis_static.lib;libvorbisenc.lib;libvorbisfile_static.lib;SDL.lib;SDLmain.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libogg_static.lib;libpng16.lib;libvorbis_static.lib;libvorbisfile_static.lib;SDL2.lib;SDL2main.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>Deps\lib\x86;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <ProgramDatabaseFile>$(SolutionDir)\..\..\$(ProjectName).pdb</ProgramDatabaseFile>
       <TargetMachine>MachineX86</TargetMachine>
@@ -157,7 +156,7 @@
       <PreprocessorDefinitions>__WIN32__;_CRT_SECURE_NO_WARNINGS;CORE_LIBSPEC=__declspec(dllexport)</PreprocessorDefinitions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libogg_static.lib;libpng15.lib;libvorbis_static.lib;libvorbisenc.lib;libvorbisfile_static.lib;SDL.lib;SDLmain.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libogg_static.lib;libpng16.lib;libvorbis_static.lib;libvorbisfile_static.lib;SDL2.lib;SDL2main.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>Deps\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateManifest>false</GenerateManifest>
       <GenerateDebugInformation>false</GenerateDebugInformation>
@@ -172,25 +171,27 @@
       <Optimization>MaxSpeed</Optimization>
       <InlineFunctionExpansion>AnySuitable</InlineFunctionExpansion>
       <WholeProgramOptimization>true</WholeProgramOptimization>
-      <AdditionalIncludeDirectories>../../arch/msvc;Deps/include;Deps/include/SDL;Deps/include/libpng12;../../contrib/libmodplug/src;../../contrib/libmodplug/src/libmodplug;../../contrib/gdm2s3m/src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
+      <AdditionalIncludeDirectories>../../arch/msvc;Deps/include;Deps/include/SDL2;../../contrib/libmodplug/src;../../contrib/libmodplug/src/libmodplug;../../contrib/gdm2s3m/src;%(AdditionalIncludeDirectories)</AdditionalIncludeDirectories>
       <ExceptionHandling>
       </ExceptionHandling>
       <RuntimeLibrary>MultiThreaded</RuntimeLibrary>
       <FunctionLevelLinking>true</FunctionLevelLinking>
       <FloatingPointModel>Fast</FloatingPointModel>
-      <AdditionalOptions> /J</AdditionalOptions>
       <WarningLevel>Level3</WarningLevel>
       <DebugInformationFormat>
       </DebugInformationFormat>
       <CompileAs>CompileAsC</CompileAs>
-      <PreprocessorDefinitions>__WIN32__;_CRT_SECURE_NO_WARNINGS;CORE_LIBSPEC=__declspec(dllexport)</PreprocessorDefinitions>
+      <PreprocessorDefinitions>__WIN32__;_CRT_SECURE_NO_WARNINGS;CORE_LIBSPEC=__declspec(dllexport);NEED_PNG_WRITE_SCREEN</PreprocessorDefinitions>
+      <AdditionalOptions>
+      </AdditionalOptions>
     </ClCompile>
     <Link>
-      <AdditionalDependencies>libogg_static.lib;libpng15.lib;libvorbis_static.lib;libvorbisenc.lib;libvorbisfile_static.lib;SDL.lib;SDLmain.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
+      <AdditionalDependencies>libogg_static.lib;libpng16.lib;libvorbis_static.lib;libvorbisfile_static.lib;SDL2.lib;SDL2main.lib;zlib.lib;%(AdditionalDependencies)</AdditionalDependencies>
       <AdditionalLibraryDirectories>Deps\lib\x64;%(AdditionalLibraryDirectories)</AdditionalLibraryDirectories>
       <GenerateManifest>false</GenerateManifest>
       <GenerateDebugInformation>false</GenerateDebugInformation>
       <TargetMachine>MachineX64</TargetMachine>
+      <AdditionalOptions>/NODEFAULTLIB:libcmt /NODEFAULTLIB:libcmtd</AdditionalOptions>
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
