@@ -32,6 +32,7 @@ mzxrun.exe
 mzxrun
 platform.inc
 SDL.dll
+SDL2.dll
 src/.build/
 src/config.h
 src/editor/.build/
