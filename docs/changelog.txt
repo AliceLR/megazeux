@@ -70,7 +70,7 @@ DEVELOPERS
   between the two versions. (ajs)
 + Keycode help diagram replaced with an HTML file (from the
   older PNG file). This will make future updates much easier.
-
++ Updated NDS, Wii and PSP ports to latest devkitpro toolchains.
 
 
 December 24, 2012 - MZX 2.84c

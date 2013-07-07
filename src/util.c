@@ -642,64 +642,6 @@ long dir_tell(struct mzx_dir *dir)
   return dir->pos;
 }
 
-#if defined(CONFIG_NDS) || defined(CONFIG_WII)
-
-// NDS/Wii versions of these functions backend directly to libfat
-
-bool dir_open(struct mzx_dir *dir, const char *path)
-{
-  char entry[PATH_BUF_LEN];
-
-  dir->d = diropen(path);
-  if(!dir->d)
-    return false;
-
-  dir->entries = 0;
-  while(dirnext(dir->d, entry, NULL) == 0)
-    dir->entries++;
-
-  dirreset(dir->d);
-  dir->pos = 0;
-  return true;
-}
-
-void dir_close(struct mzx_dir *dir)
-{
-  if(dir->d)
-  {
-    dirclose(dir->d);
-    dir->d = NULL;
-    dir->entries = 0;
-    dir->pos = 0;
-  }
-}
-
-void dir_seek(struct mzx_dir *dir, long offset)
-{
-  char entry[PATH_BUF_LEN];
-  long i;
-
-  if(!dir->d)
-    return;
-
-  dir->pos = CLAMP(offset, 0L, dir->entries);
-
-  dirreset(dir->d);
-  for(i = 0; i < dir->pos; i++)
-    dirnext(dir->d, entry, NULL);
-}
-
-bool dir_get_next_entry(struct mzx_dir *dir, char *entry)
-{
-  if(!dir->d)
-    return false;
-  dir->pos = MIN(dir->pos + 1, dir->entries);
-  return dirnext(dir->d, entry, NULL) == 0;
-}
-
-#else // !(CONFIG_NDS || CONFIG_WII)
-
-
 bool dir_open(struct mzx_dir *dir, const char *path)
 {
   dir->d = opendir(path);
@@ -776,8 +718,6 @@ bool dir_get_next_entry(struct mzx_dir *dir, char *entry)
   entry[PATH_BUF_LEN - 1] = 0;
   return true;
 }
-
-#endif // CONFIG_NDS || CONFIG_WII
 
 #if defined(CONFIG_AUDIO) || defined(CONFIG_EDITOR)
 

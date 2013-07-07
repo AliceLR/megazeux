@@ -1,9 +1,9 @@
 BUILDING MEGAZEUX FOR WII
 
 As of 2.82b, MegaZeux can be built for the Wii. You will need the devkitPPC
-toolchain, and libogc. You will also need the following in this directory:
+toolchain, libogc and libfat-ogc. You will also need the following in this
+directory:
 
-  - libfat
   - libogg (audio only)
   - libvorbis (audio only)
 
