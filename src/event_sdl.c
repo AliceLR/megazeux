@@ -343,7 +343,7 @@ static bool process_event(SDL_Event *event)
 
       if(ckey == IKEY_NUMLOCK)
       {
-#ifdef __WIN32__
+#if !SDL_VERSION_ATLEAST(2,0,0) && defined(__WIN32__)
         status->numlock_status = true;
 #endif
         break;
@@ -405,7 +405,7 @@ static bool process_event(SDL_Event *event)
 
       if(ckey == IKEY_NUMLOCK)
       {
-#ifdef __WIN32__
+#if !SDL_VERSION_ATLEAST(2,0,0) && defined(__WIN32__)
         status->numlock_status = false;
 #else
         status->numlock_status = !status->numlock_status;
