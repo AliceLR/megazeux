@@ -1379,7 +1379,11 @@ static int copy_buffer_to_X11_selection(const SDL_Event *event)
 
 static void copy_buffer_to_selection(void)
 {
+#if SDL_VERSION_ATLEAST(2,0,0)
   SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
+#else
+  SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
+#endif
   SDL_SysWMinfo info;
 
   SDL_VERSION(&info.version);
@@ -1396,7 +1400,11 @@ static void copy_buffer_to_selection(void)
 
 static bool copy_selection_to_buffer(struct robot_state *rstate)
 {
+#if SDL_VERSION_ATLEAST(2,0,0)
   SDL_Window *window = SDL_GetWindowFromID(sdl_window_id);
+#else
+  SDL_Window *window = SDL_GetWindowFromID(graphics.window_id);
+#endif
   int selection_format, line_length, ret_type;
   char line_buffer[COMMAND_BUFFER_LEN];
   unsigned long int nbytes, overflow;
