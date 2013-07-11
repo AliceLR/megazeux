@@ -292,7 +292,7 @@ static bool process_event(SDL_Event *event)
 
     case SDL_KEYDOWN:
     {
-      Uint16 unicode;
+      Uint16 unicode = 0;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
       // FIXME: SDL 2.0 finally implements proper key repeat.
