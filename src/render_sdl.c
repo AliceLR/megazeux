@@ -21,7 +21,7 @@
 
 #include "SDL.h"
 
-Uint32 sdl_window_id;
+CORE_LIBSPEC Uint32 sdl_window_id;
 
 #ifndef CONFIG_RENDER_YUV
 static
