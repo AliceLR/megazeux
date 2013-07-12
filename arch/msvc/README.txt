@@ -51,10 +51,10 @@ writing, Visual Studio 2013 Preview was the minimum working version required
 to open it. You must also build MZX's dependencies into a "Deps" folder
 alongside the solution, or use these prebuilt Deps:
 
-http://mzx.devzero.co.uk/junk/MegaZeux-VC9-x86-x64-deps.zip
+https://github.com/AliceLR/megazeux/raw/master/scripts/deps/msvc.zip
 
 There may be instability with the MSVC binary that is not present in the GCC
 builds. If you find such instability, please report it (fixes are also
 welcome).
 
---ajs (20130628)
+--ajs (20130711)
