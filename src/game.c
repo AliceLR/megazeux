@@ -1318,12 +1318,9 @@ static int update(struct world *mzx_world, int game, int *fadein)
 
     mzx_world->was_zapped = 0;
   }
-  else
-  {
-    // Place the player and clean up clones
-    // just in case the player was moved while the game was slowed
-    find_player(mzx_world);
-  }
+
+  // Find the player and clean up clones
+  find_player(mzx_world);
 
   // Death and game over
   if(get_counter(mzx_world, "LIVES", 0) == 0)
@@ -3677,6 +3674,7 @@ void find_player(struct world *mzx_world)
   int board_height = src_board->board_height;
   char *level_id = src_board->level_id;
   int dx, dy, offset;
+  int found_player = 0;
 
   if(mzx_world->player_x >= board_width)
     mzx_world->player_x = 0;
@@ -3693,14 +3691,22 @@ void find_player(struct world *mzx_world)
       {
         if((enum thing)level_id[offset] == PLAYER)
         {
-          mzx_world->player_x = dx;
-          mzx_world->player_y = dy;
-          return;
+          if(!found_player)
+          {
+            mzx_world->player_x = dx;
+            mzx_world->player_y = dy;
+            found_player = 1;
+          }
+          else
+          {
+            offs_remove_id(mzx_world, offset);
+          }
         }
       }
     }
 
-    replace_player(mzx_world);
+    if(!found_player)
+      replace_player(mzx_world);
   }
 }
 
