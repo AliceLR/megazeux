@@ -14,6 +14,9 @@ FEATURES
   kind, the parameters will not be changed (and the kinds will
   still be char 0 if they were already placed in the world).
 + The enter menu can be closed with escape now.
++ In the editor, the Backspace key now removes the top layer
+  and brings the under layer to the top, as a compliment to Del.
+  This does not affect the text entry behavior.
 
 BUGFIXES
 

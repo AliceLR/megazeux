@@ -1692,6 +1692,15 @@ static void __edit_world(struct world *mzx_world, int reload_curr_file)
            &copy_scroll, &copy_sensor, overlay_edit);
           modified = 1;
         }
+        else
+        {
+          if((cursor_board_x != mzx_world->player_x) ||
+           (cursor_board_y != mzx_world->player_y))
+          {
+            id_remove_top(mzx_world, cursor_board_x, cursor_board_y);
+            modified = 1;
+          }
+        }
         break;
       }
 
