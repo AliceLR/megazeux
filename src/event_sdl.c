@@ -290,6 +290,34 @@ static bool process_event(SDL_Event *event)
       break;
     }
 
+#if SDL_VERSION_ATLEAST(2,0,0)
+    // emulate the X11-style "wheel is a button" that SDL 1.2 used
+    case SDL_MOUSEWHEEL:
+    {
+      SDL_Event fake_event;
+
+      fake_event.type = SDL_MOUSEBUTTONDOWN;
+      fake_event.button.windowID = event->wheel.windowID;
+      fake_event.button.which = event->wheel.which;
+      fake_event.button.state = SDL_PRESSED;
+      fake_event.button.x = 0;
+      fake_event.button.y = 0;
+
+      if(event->wheel.y < 0)
+        fake_event.button.button = MOUSE_BUTTON_WHEELDOWN;
+      else
+        fake_event.button.button = MOUSE_BUTTON_WHEELUP;
+
+      SDL_PushEvent(&fake_event);
+
+      fake_event.type = SDL_MOUSEBUTTONUP;
+      fake_event.button.state = SDL_RELEASED;
+
+      SDL_PushEvent(&fake_event);
+      break;
+    }
+#endif // SDL_VERSION_ATLEAST(2,0,0)
+
     case SDL_KEYDOWN:
     {
       Uint16 unicode = 0;
