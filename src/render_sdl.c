@@ -54,6 +54,15 @@ bool sdl_set_video_mode(struct graphics_data *graphics, int width, int height,
   bool matched = false;
   Uint32 fmt;
 
+  if(render_data->palette)
+    SDL_FreePalette(render_data->palette);
+
+  if(render_data->renderer)
+    SDL_DestroyRenderer(render_data->renderer);
+
+  if(render_data->window)
+    SDL_DestroyWindow(render_data->window);
+
   render_data->window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
    sdl_flags(depth, fullscreen, resize));
@@ -216,7 +225,14 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   struct sdl_render_data *render_data = graphics->render_data;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
-  SDL_GLContext context;
+  if(render_data->context)
+    SDL_GL_DeleteContext(render_data->context);
+
+  if(render_data->renderer)
+    SDL_DestroyRenderer(render_data->renderer);
+
+  if(render_data->window)
+    SDL_DestroyWindow(render_data->window);
 
   render_data->window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
@@ -225,7 +241,7 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   if(!render_data->window)
   {
     warn("Failed to create window: %s\n", SDL_GetError());
-    return false;
+    goto err_out;
   }
 
   render_data->renderer =
@@ -234,20 +250,21 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   if(!render_data->renderer)
   {
     warn("Failed to create renderer: %s\n", SDL_GetError());
-    return false;
+    goto err_destroy_window;
   }
 
-  context = SDL_GL_CreateContext(render_data->window);
-  if(!context)
+  render_data->context = SDL_GL_CreateContext(render_data->window);
+
+  if(!render_data->context)
   {
     warn("Failed to create context: %s\n", SDL_GetError());
-    return false;
+    goto err_destroy_renderer;
   }
 
-  if(SDL_GL_MakeCurrent(render_data->window, context))
+  if(SDL_GL_MakeCurrent(render_data->window, render_data->context))
   {
     warn("Failed to make context current: %s\n", SDL_GetError());
-    return false;
+    goto err_delete_context;
   }
 
   sdl_window_id = SDL_GetWindowID(render_data->window);
@@ -264,6 +281,20 @@ bool gl_set_video_mode(struct graphics_data *graphics, int width, int height,
   render_data->shadow = NULL;
 
   return true;
+
+#if SDL_VERSION_ATLEAST(2,0,0)
+err_delete_context:
+  SDL_GL_DeleteContext(render_data->context);
+  render_data->context = NULL;
+err_destroy_renderer:
+  SDL_DestroyRenderer(render_data->renderer);
+  render_data->renderer = NULL;
+err_destroy_window:
+  SDL_DestroyWindow(render_data->window);
+  render_data->window = NULL;
+err_out:
+  return false;
+#endif // SDL_VERSION_ATLEAST(2,0,0)
 }
 
 bool gl_check_video_mode(struct graphics_data *graphics, int width, int height,

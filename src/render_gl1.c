@@ -115,7 +115,9 @@ static bool gl1_init_video(struct graphics_data *graphics,
   if(!GL_LoadLibrary(GL_LIB_FIXED))
     goto err_free_render_data;
 
+  memset(render_data, 0, sizeof(struct gl1_render_data));
   graphics->render_data = render_data;
+
   render_data->ratio = conf->video_ratio;
 
   graphics->gl_vsync = conf->gl_vsync;

@@ -34,6 +34,7 @@ struct sdl_render_data
   SDL_Renderer *renderer;
   SDL_Palette *palette;
   SDL_Window *window;
+  SDL_GLContext context;
 #endif
   SDL_Surface *screen;
   SDL_Surface *shadow;

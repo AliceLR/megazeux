@@ -40,6 +40,9 @@ static bool soft_init_video(struct graphics_data *graphics,
 {
   static struct sdl_render_data render_data;
 
+  memset(&render_data, 0, sizeof(struct sdl_render_data));
+  graphics->render_data = &render_data;
+
   graphics->allow_resize = 0;
   graphics->bits_per_pixel = 32;
 
@@ -56,8 +59,6 @@ static bool soft_init_video(struct graphics_data *graphics,
   // We have 8-bit, 16-bit, and 32-bit software renderers
   if(conf->force_bpp == 8 || conf->force_bpp == 16 || conf->force_bpp == 32)
     graphics->bits_per_pixel = conf->force_bpp;
-
-  graphics->render_data = &render_data;
 
   return set_video_mode();
 }

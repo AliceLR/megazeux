@@ -376,6 +376,7 @@ static bool glsl_init_video(struct graphics_data *graphics,
   if(!GL_LoadLibrary(GL_LIB_PROGRAMMABLE))
     goto err_free;
 
+  memset(render_data, 0, sizeof(struct glsl_render_data));
   graphics->render_data = render_data;
 
   graphics->gl_vsync = conf->gl_vsync;

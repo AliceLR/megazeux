@@ -211,6 +211,7 @@ static bool gp2x_init_video(struct graphics_data *graphics,
   if(!render_data)
     return false;
 
+  memset(render_data, 0, sizeof(struct gp2x_render_data));
   graphics->render_data = render_data;
 
   graphics->allow_resize = 0;

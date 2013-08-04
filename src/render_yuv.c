@@ -32,6 +32,12 @@ bool yuv_set_video_mode_size(struct graphics_data *graphics,
   struct yuv_render_data *render_data = graphics->render_data;
 
 #if SDL_VERSION_ATLEAST(2,0,0)
+  if(render_data->renderer)
+    SDL_DestroyRenderer(render_data->renderer);
+
+  if(render_data->window)
+    SDL_DestroyWindow(render_data->window);
+
   render_data->window = SDL_CreateWindow("MegaZeux",
    SDL_WINDOWPOS_CENTERED, SDL_WINDOWPOS_CENTERED, width, height,
    sdl_flags(depth, fullscreen, resize));
@@ -154,6 +160,8 @@ bool yuv_init_video(struct graphics_data *graphics, struct config_info *conf)
   struct yuv_render_data *render_data = cmalloc(sizeof(struct yuv_render_data));
   if(!render_data)
     return false;
+
+  memset(render_data, 0, sizeof(struct yuv_render_data));
 
   graphics->render_data = render_data;
   graphics->allow_resize = conf->allow_resize;

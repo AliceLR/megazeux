@@ -862,56 +862,14 @@ void set_window_caption(const char *caption)
   SDL_SetWindowTitle(window, caption);
 #endif
 }
+
 char *get_default_caption(void)
 {
   return graphics.default_caption;
 }
 
-bool init_video(struct config_info *conf, const char *caption)
+static void set_window_icon(void)
 {
-  graphics.screen_mode = 0;
-  graphics.fullscreen = conf->fullscreen;
-  graphics.resolution_width = conf->resolution_width;
-  graphics.resolution_height = conf->resolution_height;
-  graphics.window_width = conf->window_width;
-  graphics.window_height = conf->window_height;
-  graphics.mouse_status = false;
-  graphics.cursor_timestamp = get_ticks();
-  graphics.cursor_flipflop = 1;
-  graphics.system_mouse = conf->system_mouse;
-
-  if(!set_graphics_output(conf))
-    return false;
-
-  // These values (the defaults, actually) are special and tell MZX to try
-  // to use the current desktop resolution as the fullscreen resolution
-  if(conf->resolution_width == -1 && conf->resolution_height == -1)
-  {
-    graphics.resolution_width = 640;
-    graphics.resolution_height = 480;
-  }
-
-  if(!graphics.renderer.init_video(&graphics, conf))
-  {
-    // Try falling back to the first registered renderer
-    strcpy(conf->video_output, "");
-    if(!set_graphics_output(conf))
-      return false;
-
-    // Fallback failed; bail out
-    if(!graphics.renderer.init_video(&graphics, conf))
-      return false;
-  }
-
-#ifdef CONFIG_SDL
-  strncpy(graphics.default_caption, caption, 32);
-  graphics.default_caption[31] = '\0';
-  set_window_caption(caption);
-
-  if(!graphics.system_mouse)
-    SDL_ShowCursor(SDL_DISABLE);
-#endif
-
 #if defined(CONFIG_SDL) && defined(CONFIG_ICON)
 #ifdef __WIN32__
   {
@@ -948,6 +906,51 @@ bool init_video(struct config_info *conf, const char *caption)
 #endif // CONFIG_PNG
 #endif // __WIN32__
 #endif // CONFIG_SDL && CONFIG_ICON
+}
+
+bool init_video(struct config_info *conf, const char *caption)
+{
+  graphics.screen_mode = 0;
+  graphics.fullscreen = conf->fullscreen;
+  graphics.resolution_width = conf->resolution_width;
+  graphics.resolution_height = conf->resolution_height;
+  graphics.window_width = conf->window_width;
+  graphics.window_height = conf->window_height;
+  graphics.mouse_status = false;
+  graphics.cursor_timestamp = get_ticks();
+  graphics.cursor_flipflop = 1;
+  graphics.system_mouse = conf->system_mouse;
+
+  if(!set_graphics_output(conf))
+    return false;
+
+  // These values (the defaults, actually) are special and tell MZX to try
+  // to use the current desktop resolution as the fullscreen resolution
+  if(conf->resolution_width == -1 && conf->resolution_height == -1)
+  {
+    graphics.resolution_width = 640;
+    graphics.resolution_height = 480;
+  }
+
+  strncpy(graphics.default_caption, caption, 32);
+  graphics.default_caption[31] = '\0';
+
+  if(!graphics.renderer.init_video(&graphics, conf))
+  {
+    // Try falling back to the first registered renderer
+    strcpy(conf->video_output, "");
+    if(!set_graphics_output(conf))
+      return false;
+
+    // Fallback failed; bail out
+    if(!graphics.renderer.init_video(&graphics, conf))
+      return false;
+  }
+
+#ifdef CONFIG_SDL
+  if(!graphics.system_mouse)
+    SDL_ShowCursor(SDL_DISABLE);
+#endif
 
   ec_load_set_secondary(mzx_res_get_by_id(MZX_DEFAULT_CHR),
    graphics.default_charset);
@@ -971,6 +974,7 @@ bool set_video_mode(void)
   int target_depth = graphics.bits_per_pixel;
   bool fullscreen = graphics.fullscreen;
   bool resize = graphics.allow_resize;
+  bool ret;
 
   if(fullscreen)
   {
@@ -999,8 +1003,16 @@ bool set_video_mode(void)
     graphics.fullscreen = fullscreen;
   }
 
-  return graphics.renderer.set_video_mode(&graphics,
+  ret = graphics.renderer.set_video_mode(&graphics,
    target_width, target_height, target_depth, fullscreen, resize);
+
+  if(ret)
+  {
+    set_window_caption(graphics.default_caption);
+    set_window_icon();
+  }
+
+  return ret;
 }
 
 #if 0
