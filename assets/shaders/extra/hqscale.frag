@@ -1,66 +1,90 @@
+/*
+   4xGLSLHqFilter shader
+
+   Copyright (C) 2005 guest(r) - guest.r@gmail.com
+
+   This program is free software; you can redistribute it and/or
+   modify it under the terms of the GNU General Public License
+   as published by the Free Software Foundation; either version 2
+   of the License, or (at your option) any later version.
+
+   This program is distributed in the hope that it will be useful,
+   but WITHOUT ANY WARRANTY; without even the implied warranty of
+   MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+   GNU General Public License for more details.
+
+   You should have received a copy of the GNU General Public License
+   along with this program; if not, write to the Free Software
+   Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
+*/
+
 uniform sampler2D baseMap;
 
 varying vec2 vTexcoord;
+
+varying vec4 vT1;
+varying vec4 vT2;
+varying vec4 vT3;
+varying vec4 vT4;
+varying vec4 vT5;
+varying vec4 vT6;
+
+/* Default Vertex shader */
+const vec3 dt = vec3(1.0, 1.0, 1.0);
+
+const float mx = 1.0;        // start smoothing wt.
+const float k = -1.10;       // wt. decrease factor
+const float max_w = 0.75;    // max filter weigth
+const float min_w = 0.03;    // min filter weigth
+const float lum_add = 0.33;  // effects smoothing
+
 #define XS 1024.0
 #define YS 512.0
-#define AX1 -0.5/XS
-#define AY1 -0.5/YS
-#define AX2 0.5/XS
-#define AY2 0.5/YS
-#define POW 7.5
-#define PADD 0.0000002
-#define XBLUR1 -0.5/XS
-#define YBLUR1 -0.5/YS
-#define XBLUR2 0.5/XS
-#define YBLUR2 0.5/YS
-#define XBLUR3 -.5/XS
-#define YBLUR3 -.5/YS
-#define XBLUR4 .5/XS
-#define YBLUR4 .5/YS
-#define F1 8.0
-#define F2 0.0
-#define F3 0.0
-#define F4 0.0
-#define F5 7.0
-#define F6 0.0
-#define F7 0.0
-#define F8 -2.0
-#define F9 0.0
-#define FT 13.0
-void main( void )
-{
-   
-   vec4 c = (texture2D( baseMap, vTexcoord+vec2(((XBLUR1+XBLUR2)/2.0), (YBLUR1+YBLUR2)/2.0)) *F5 + 
-               /*texture2D( baseMap, vTexcoord+vec2(((XBLUR1+XBLUR2)/2.0), YBLUR1))              *F2 +*/ 
-             texture2D( baseMap, vTexcoord+vec2(((XBLUR1+XBLUR2)/2.0), YBLUR2))              *F8 + 
-               /*texture2D( baseMap, vTexcoord+vec2(XBLUR1,                (YBLUR1+YBLUR2)/2.0)) *F4 +*/
-               /*texture2D( baseMap, vTexcoord+vec2(XBLUR2,                (YBLUR1+YBLUR2)/2.0)) *F6 +*/
-             texture2D( baseMap, vTexcoord+vec2(XBLUR3,                YBLUR3))              *F1
-               /*texture2D( baseMap, vTexcoord+vec2(XBLUR4,                YBLUR3))              *F3 +*/
-               /*texture2D( baseMap, vTexcoord+vec2(XBLUR3,                YBLUR4))              *F7 +*/
-               /*texture2D( baseMap, vTexcoord+vec2(XBLUR4,                YBLUR4))              *F9  */
-													)/FT;
-   float d1, d2, d3, d4, dt, w1, w2, w3, w4, wt;
-   vec4 final;
-   vec4 c1 = texture2D( baseMap, vec2(floor(vTexcoord.x*XS)/XS+AX1, 
-floor(vTexcoord.y*YS)/YS+AY1));
-   vec4 c2 = texture2D( baseMap, vec2(floor(vTexcoord.x*XS)/XS+AX2, 
-floor(vTexcoord.y*YS)/YS+AY1));
-   vec4 c3 = texture2D( baseMap, vec2(floor(vTexcoord.x*XS)/XS+AX1, 
-floor(vTexcoord.y*YS)/YS+AY2));
-   vec4 c4 = texture2D( baseMap, vec2(floor(vTexcoord.x*XS)/XS+AX2, 
-floor(vTexcoord.y*YS)/YS+AY2));
-   d1 = (c1.x - c.x)*(c1.x - c.x) + (c1.y - c.y)*(c1.y - c.y) + (c1.z - c.z)*(c1.z - c.z);
-   d2 = (c2.x - c.x)*(c2.x - c.x) + (c2.y - c.y)*(c2.y - c.y) + (c2.z - c.z)*(c2.z - c.z);
-   d3 = (c3.x - c.x)*(c3.x - c.x) + (c3.y - c.y)*(c3.y - c.y) + (c3.z - c.z)*(c3.z - c.z);
-   d4 = (c4.x - c.x)*(c4.x - c.x) + (c4.y - c.y)*(c4.y - c.y) + (c4.z - c.z)*(c4.z - c.z);
-   dt = d1+d2+d3+d4;
-   w1 = pow(dt-d1, POW)+PADD;
-   w2 = pow(dt-d2, POW)+PADD;
-   w3 = pow(dt-d3, POW)+PADD;
-   w4 = pow(dt-d4, POW)+PADD;
-   wt = w1+w2+w3+w4;
-   final = ((c1*w1 + c2*w2 + c3*w3 + c4*w4) / wt);
-   gl_FragColor = final;
+#define AX 0.5/XS
+#define AY 0.5/YS
 
+void main(void)
+{
+    /* FIXME: Would be faster if we just disabled GL_LINEAR,
+     *        then we don't need this floor() junk..
+     */
+    vec3 c  = texture2D(baseMap, vec2(floor(vTexcoord.x*XS)/XS+AX, floor(vTexcoord.y*YS)/YS+AY)).xyz;
+    vec3 i1 = texture2D(baseMap, vec2(floor(vT1.x*XS)/XS+AX, floor(vT1.y*YS)/YS+AY)).xyz;
+    vec3 i2 = texture2D(baseMap, vec2(floor(vT2.x*XS)/XS+AX, floor(vT2.y*YS)/YS+AY)).xyz;
+    vec3 i3 = texture2D(baseMap, vec2(floor(vT3.x*XS)/XS+AX, floor(vT3.y*YS)/YS+AY)).xyz;
+    vec3 i4 = texture2D(baseMap, vec2(floor(vT4.x*XS)/XS+AX, floor(vT4.y*YS)/YS+AY)).xyz;
+    vec3 o1 = texture2D(baseMap, vec2(floor(vT5.x*XS)/XS+AX, floor(vT5.y*YS)/YS+AY)).xyz;
+    vec3 o3 = texture2D(baseMap, vec2(floor(vT6.x*XS)/XS+AX, floor(vT6.y*YS)/YS+AY)).xyz;
+    vec3 o2 = texture2D(baseMap, vec2(floor(vT5.z*XS)/XS+AX, floor(vT5.w*YS)/YS+AY)).xyz;
+    vec3 o4 = texture2D(baseMap, vec2(floor(vT6.z*XS)/XS+AX, floor(vT6.w*YS)/YS+AY)).xyz;
+    vec3 s1 = texture2D(baseMap, vec2(floor(vT1.z*XS)/XS+AX, floor(vT1.w*YS)/YS+AY)).xyz;
+    vec3 s2 = texture2D(baseMap, vec2(floor(vT2.z*XS)/XS+AX, floor(vT2.w*YS)/YS+AY)).xyz;
+    vec3 s3 = texture2D(baseMap, vec2(floor(vT3.z*XS)/XS+AX, floor(vT3.w*YS)/YS+AY)).xyz;
+    vec3 s4 = texture2D(baseMap, vec2(floor(vT4.z*XS)/XS+AX, floor(vT4.w*YS)/YS+AY)).xyz;
+
+    float ko1=dot(abs(o1-c),dt);
+    float ko2=dot(abs(o2-c),dt);
+    float ko3=dot(abs(o3-c),dt);
+    float ko4=dot(abs(o4-c),dt);
+
+    float k1=min(dot(abs(i1-i3),dt),max(ko1,ko3));
+    float k2=min(dot(abs(i2-i4),dt),max(ko2,ko4));
+
+    float w1 = k2; if(ko3<ko1) w1*=ko3/ko1;
+    float w2 = k1; if(ko4<ko2) w2*=ko4/ko2;
+    float w3 = k2; if(ko1<ko3) w3*=ko1/ko3;
+    float w4 = k1; if(ko2<ko4) w4*=ko2/ko4;
+
+    c=(w1*o1+w2*o2+w3*o3+w4*o4+0.001*c)/(w1+w2+w3+w4+0.001);
+    w1 = k*dot(abs(i1-c)+abs(i3-c),dt)/(0.125*dot(i1+i3,dt)+lum_add);
+    w2 = k*dot(abs(i2-c)+abs(i4-c),dt)/(0.125*dot(i2+i4,dt)+lum_add);
+    w3 = k*dot(abs(s1-c)+abs(s3-c),dt)/(0.125*dot(s1+s3,dt)+lum_add);
+    w4 = k*dot(abs(s2-c)+abs(s4-c),dt)/(0.125*dot(s2+s4,dt)+lum_add);
+
+    w1 = clamp(w1+mx,min_w,max_w);
+    w2 = clamp(w2+mx,min_w,max_w);
+    w3 = clamp(w3+mx,min_w,max_w);
+    w4 = clamp(w4+mx,min_w,max_w);
+
+    gl_FragColor = vec4((w1*(i1+i3)+w2*(i2+i4)+w3*(s1+s3)+w4*(s2+s4)+c)/(2.0*(w1+w2+w3+w4)+1.0), 1.0);
 }
