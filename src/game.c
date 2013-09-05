@@ -3667,8 +3667,6 @@ int grab_item(struct world *mzx_world, int offset, int dir)
   return remove; // Not grabbed
 }
 
-// FIXME: this function clears up player clones but spaces
-// can be left where the player clones were.
 void find_player(struct world *mzx_world)
 {
   struct board *src_board = mzx_world->current_board;
@@ -3684,28 +3682,32 @@ void find_player(struct world *mzx_world)
   if(mzx_world->player_y >= board_height)
     mzx_world->player_y = 0;
 
-  for(dy = 0, offset = 0; dy < board_height; dy++)
+  if((enum thing)level_id[mzx_world->player_x +
+   (mzx_world->player_y * board_width)] != PLAYER)
   {
-    for(dx = 0; dx < board_width; dx++, offset++)
+    for(dy = 0, offset = 0; dy < board_height; dy++)
     {
-      if((enum thing)level_id[offset] == PLAYER)
+      for(dx = 0; dx < board_width; dx++, offset++)
       {
-        if(!found_player)
+        if((enum thing)level_id[offset] == PLAYER)
         {
-          mzx_world->player_x = dx;
-          mzx_world->player_y = dy;
-          found_player = 1;
-        }
-        else
-        {
-          offs_remove_id(mzx_world, offset);
+          if(!found_player)
+          {
+            mzx_world->player_x = dx;
+            mzx_world->player_y = dy;
+            found_player = 1;
+          }
+          else
+          {
+            offs_remove_id(mzx_world, offset);
+          }
         }
       }
     }
-  }
 
-  if(!found_player)
-    replace_player(mzx_world);
+    if(!found_player)
+      replace_player(mzx_world);
+  }
 }
 
 int take_key(struct world *mzx_world, int color)

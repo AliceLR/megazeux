@@ -62,10 +62,7 @@ BUGFIXES
   the world file.
 + Fixed minor bug where trying to load a nonexistant mod would
   change MOD_NAME's output while the previous mod still played.
-+ Added a temporary fix for the player clone bug involving
-  transporters and wind. The use of both together can result in
-  spaces appearing where there were previously floors, but no
-  player clones should appear anymore.
++ Fixed player clone bug with transporters and wind.
 
 DEVELOPERS
 
