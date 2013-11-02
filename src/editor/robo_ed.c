@@ -1814,7 +1814,7 @@ static void import_block(struct world *mzx_world, struct robot_state *rstate)
   if(choose_file(mzx_world, txt_ext, import_name, "Import Robot", 1))
     return;
 
-  import_file = fopen_unsafe(import_name, "r");
+  import_file = fopen_unsafe(import_name, "rb");
 
   rstate->command_buffer = line_buffer;
 

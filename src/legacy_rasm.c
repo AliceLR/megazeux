@@ -2004,7 +2004,7 @@ int legacy_assemble_line(char *cpos, char *output_buffer, char *error_buffer,
 
 char *assemble_file(char *name, int *size)
 {
-  FILE *input_file = fsafeopen(name, "r");
+  FILE *input_file = fsafeopen(name, "rb");
   char line_buffer[256];
   char bytecode_buffer[256];
   char error_buffer[256];
