@@ -62,6 +62,9 @@ BUGFIXES
   the world file.
 + Fixed minor bug where trying to load a nonexistant mod would
   change MOD_NAME's output while the previous mod still played.
++ Fixed a Windows-only bug, where attempting to load a Robotic
+  file in the Robot Editor or with LOAD_ROBOT would not load the
+  entire file if the file contained 0x1A (char 26).
 
 DEVELOPERS
 
