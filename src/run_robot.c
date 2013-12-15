@@ -5687,6 +5687,9 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
     cur_robot->pos_within_line = 0;
     first_cmd = 0;
 
+    if(!((lines_run + 1) & RUN_ROBOT_POLL_INTERVAL))
+      run_robot_poll_event(mzx_world, cur_robot);
+
     if(!cur_robot->cur_prog_line)
       break;
 
