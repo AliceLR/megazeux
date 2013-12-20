@@ -737,7 +737,7 @@ void update_board(struct world *mzx_world)
           {
             if(slow_down) break;
             // Animate every other cycle
-            if(current_param & 0x06)
+            if((current_param & 0x06) == 0x06)
             {
               // Otherwise, erase anim bits
               level_param[level_offset] = current_param & 0xF9;
