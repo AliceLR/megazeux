@@ -2478,7 +2478,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       case ROBOTIC_CMD_VOLUME2:
       case ROBOTIC_CMD_VOLUME: // Volume
       {
-        int volume = parse_param(mzx_world, cmd_ptr + 1, id);
+        int volume =
+         CLAMP(parse_param(mzx_world, cmd_ptr + 1, id), 0, 255);
 
         src_board->volume = volume;
         src_board->volume_target = volume;
