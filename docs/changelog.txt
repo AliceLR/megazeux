@@ -66,8 +66,9 @@ BUGFIXES
   file in the Robot Editor or with LOAD_ROBOT would not load the
   entire file if the file contained 0x1A (char 26).
 + Fixed a bug where the lazer animation would fail to complete.
-+ Fixed bug where the VOLUME # input would not be clamped, with
-  out-of-range values resulting in ear-piercing white noise.
++ Fixed bug where the VOLUME # and MOD FADE # # inputs could go
+  out of range, resulting in ear-piercing white noise. Inputs
+  now wrap between 0 and 255 for compatibility reasons.
 
 DEVELOPERS
 

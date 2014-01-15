@@ -2478,8 +2478,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
       case ROBOTIC_CMD_VOLUME2:
       case ROBOTIC_CMD_VOLUME: // Volume
       {
-        int volume =
-         CLAMP(parse_param(mzx_world, cmd_ptr + 1, id), 0, 255);
+        int volume = parse_param(mzx_world, cmd_ptr + 1, id) & 255;
 
         src_board->volume = volume;
         src_board->volume_target = volume;
@@ -5230,7 +5229,7 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
 
       case ROBOTIC_CMD_MOD_FADE_TO: // Mod fade #t #s
       {
-        int volume_target = parse_param(mzx_world, cmd_ptr + 1, id);
+        int volume_target = parse_param(mzx_world, cmd_ptr + 1, id) & 255;
         char *p2 = next_param_pos(cmd_ptr + 1);
         int volume = src_board->volume;
         int volume_inc = parse_param(mzx_world, p2, id);
