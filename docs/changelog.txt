@@ -71,6 +71,7 @@ BUGFIXES
   now wrap between 0 and 255 for compatibility reasons.
 + Fixed bug where certain unicode values could crash MZX in the
   character selection dialog.
++ Fixed bug where : "keyN" would not work on the Pandora.
 
 DEVELOPERS
 

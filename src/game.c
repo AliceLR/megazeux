@@ -1894,7 +1894,7 @@ __editor_maybe_static void play_game(struct world *mzx_world)
 
     if(key)
     {
-      int key_char = get_key(keycode_unicode);
+      int key_char = get_key(keycode_internal);
 
       if(key_char)
       {
