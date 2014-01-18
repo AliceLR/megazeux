@@ -511,7 +511,7 @@ __editor_maybe_static int char_selection_ext(int current, int allow_multichar,
         // If this is from 32 to 255, jump there.
         int key_char = get_key(keycode_unicode);
 
-        if(key_char >= 32)
+        if(key_char >= 32 && key_char <= 255)
           current = key_char;
 
         break;

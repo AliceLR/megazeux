@@ -69,6 +69,8 @@ BUGFIXES
 + Fixed bug where the VOLUME # and MOD FADE # # inputs could go
   out of range, resulting in ear-piercing white noise. Inputs
   now wrap between 0 and 255 for compatibility reasons.
++ Fixed bug where certain unicode values could crash MZX in the
+  character selection dialog.
 
 DEVELOPERS
 
