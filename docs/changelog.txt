@@ -72,6 +72,8 @@ BUGFIXES
 + Fixed bug where certain unicode values could crash MZX in the
   character selection dialog.
 + Fixed bug where : "keyN" would not work on the Pandora.
++ Fixed a bug where FREAD could create a string larger than the
+  maximum string size.
 
 DEVELOPERS
 

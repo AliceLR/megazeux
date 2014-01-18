@@ -3618,7 +3618,8 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
         {
           current_char = fgetc(input_file);
 
-          if((current_char == terminate_char) || (current_char == EOF))
+          if((current_char == terminate_char) || (current_char == EOF) ||
+           (read_pos + offset == MAX_STRING_LEN))
           {
             if(offset == 0 && !offset_specified)
               dest->length = read_pos;
@@ -3629,7 +3630,9 @@ void set_string(struct world *mzx_world, const char *name, struct string *src,
         }
 
         new_allocated = allocated;
-        allocated *= 2;
+
+        if((allocated *= 2) > MAX_STRING_LEN)
+          allocated = MAX_STRING_LEN;
 
         dest = reallocate_string(mzx_world, dest, next, allocated);
         dest_value = dest->value;
