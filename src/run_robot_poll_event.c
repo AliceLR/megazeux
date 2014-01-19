@@ -19,6 +19,7 @@
 
 #include "event.h"
 #include "error.h"
+#include "counter.h"
 #include "robot.h"
 #include "world_struct.h"
 #include "board_struct.h"
