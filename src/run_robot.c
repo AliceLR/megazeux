@@ -2901,6 +2901,15 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
               _bl[dir_to_int(direction)] = 3;
           }
         }
+        // Compatibility -- old port versions erroneously ended the cycle here
+        // and several games depend on it.
+        if(mzx_world->version >= 0x0250 && mzx_world->version < 0x0254)
+        {
+          // Continue to the next line.
+          cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+          goto breaker;
+        }
+
         break;
       }
 
