@@ -74,32 +74,48 @@ char asc[17] = "0123456789ABCDEF";
 static void copy_substring_escaped(struct string *str, char *buf,
  unsigned int size)
 {
-  unsigned int i, j;
+  unsigned int i, j, left;
 
   for(i = 0, j = 0; j < str->length && i < size; i++, j++)
   {
+    left = size - i;
     if(str->value[j] == '\\')
     {
+      if(left < 3)
+        break;
+        
       buf[i++] = '\\';
       buf[i] = '\\';
     }
     else if(str->value[j] == '\n')
     {
+      if(left < 3)
+        break;
+        
       buf[i++] = '\\';
       buf[i] = 'n';
     }
     else if(str->value[j] == '\r')
     {
+      if(left < 3)
+        break;
+        
       buf[i++] = '\\';
       buf[i] = 'r';
     }
     else if(str->value[j] == '\t')
     {
+      if(left < 3)
+        break;
+        
       buf[i++] = '\\';
       buf[i] = 't';
     }
     else if(str->value[j] < 32 || str->value[j] > 126)
     {
+      if(left < 5)
+        break;
+        
       buf[i++] = '\\';
       buf[i++] = 'x';
       buf[i++] = asc[str->value[j] >> 4];
@@ -115,6 +131,7 @@ static void copy_substring_escaped(struct string *str, char *buf,
 static void unescape_string(char *buf, int *len)
 {
   size_t i = 0, j, old_len = strlen(buf);
+  char t;
 
   for(j = 0; j < old_len; i++, j++)
   {
@@ -137,9 +154,12 @@ static void unescape_string(char *buf, int *len)
       buf[i] = '\t';
     else if(buf[j] == '\\')
       buf[i] = '\\';
-    else if(buf[j] == 'x' && (j + 2 < old_len))
+    else if(buf[j] == 'x')
     {
-      char t = buf[j + 3];
+      if(j + 2 > old_len)
+        break;
+
+      t = buf[j + 3];
       buf[j + 3] = '\0';
       buf[i] = (char)strtol(buf + j + 1, NULL, 16);
       buf[j + 3] = t;

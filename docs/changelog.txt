@@ -76,6 +76,8 @@ BUGFIXES
   maximum string size.
 + In the sprite section of the counter debugger, the spr_clistN
   values were incorrectly labelled as "spr_collisionN". Fixed.
++ Fixed counter debugger crash when selecting certain strings
+  containing escaped values.
 
 DEVELOPERS
 
