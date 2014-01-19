@@ -1087,7 +1087,7 @@ static void repopulate_tree(struct world *mzx_world, struct debug_node *root)
 
   for(i = 0; i < mzx_world->collision_count; i++)
   {
-    snprintf(var, 20, "spr_collision%i*", i);
+    snprintf(var, 20, "spr_clist%i*", i);
     build_var_buffer( &(sprites->counters)[i + 3], var,
      mzx_world->collision_list[i], NULL, 0);
   }

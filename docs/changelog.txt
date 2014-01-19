@@ -74,6 +74,8 @@ BUGFIXES
 + Fixed bug where : "keyN" would not work on the Pandora.
 + Fixed a bug where FREAD could create a string larger than the
   maximum string size.
++ In the sprite section of the counter debugger, the spr_clistN
+  values were incorrectly labelled as "spr_collisionN". Fixed.
 
 DEVELOPERS
 
