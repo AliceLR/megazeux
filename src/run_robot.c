@@ -2901,9 +2901,8 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
               _bl[dir_to_int(direction)] = 3;
           }
         }
-        // Compatibility -- old port versions erroneously ended the cycle here
-        // and several games depend on it.
-        if(mzx_world->version >= 0x0250 && mzx_world->version < 0x0254)
+        // MZX 2.83 erroneously ended the cycle here, some games depend on it...
+        if(mzx_world->version == 0x0253)
         {
           // Continue to the next line.
           cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
@@ -2949,6 +2948,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             calculate_blocked(mzx_world, x, y, id, _bl);
           }
         }
+        // MZX 2.83 erroneously ended the cycle here, some games depend on it...
+        if(mzx_world->version == 0x0253)
+        {
+          // Continue to the next line.
+          cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+          goto breaker;
+        }
         break;
       }
 
@@ -2964,6 +2970,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             calculate_blocked(mzx_world, x, y, id, _bl);
           }
         }
+        // MZX 2.83 erroneously ended the cycle here, some games depend on it...
+        if(mzx_world->version == 0x0253)
+        {
+          // Continue to the next line.
+          cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+          goto breaker;
+        }
         break;
       }
 
@@ -2978,6 +2991,13 @@ void run_robot(struct world *mzx_world, int id, int x, int y)
             shoot_fire(mzx_world, x, y, dir_to_int(direction));
             calculate_blocked(mzx_world, x, y, id, _bl);
           }
+        }
+        // MZX 2.83 erroneously ended the cycle here, some games depend on it...
+        if(mzx_world->version == 0x0253)
+        {
+          // Continue to the next line.
+          cur_robot->cur_prog_line += program[cur_robot->cur_prog_line] + 2;
+          goto breaker;
         }
         break;
       }
