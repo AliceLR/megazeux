@@ -78,8 +78,11 @@ BUGFIXES
   values were incorrectly labelled as "spr_collisionN". Fixed.
 + Fixed counter debugger crash when selecting certain strings
   containing escaped values.
-+ Added compatibility for the cycle-ending SHOOT command from
-  MegaZeux versions 2.80 through 2.83.
++ Added compatibility for the cycle-ending SHOOT, SHOOTMISSILE,
+  SHOOTSEEKER, and SPITFIRE commands from MegaZeux 2.83.
++ Fixed crash bug when attempting to use file counters with
+  paths equal to or longer than 512 chars in length. MegaZeux
+  will now ignore such paths.
 
 DEVELOPERS
 

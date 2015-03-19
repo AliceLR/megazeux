@@ -2594,6 +2594,9 @@ int set_counter_special(struct world *mzx_world, char *char_value,
 {
   struct robot *cur_robot = get_robot_by_id(mzx_world, id);
 
+  if(strlen(char_value) >= MAX_PATH)
+    return 0; // haha nope
+  
   switch(mzx_world->special_counter_return)
   {
     case FOPEN_FREAD:
