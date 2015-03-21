@@ -87,7 +87,8 @@ BUGFIXES
 DEVELOPERS
 
 + Fixed linking bug when attempting to make a modular build of
-  MegaZeux in Debian/armhf. (Insidious)
+  MegaZeux in Debian/armhf. -fPIC is now enabled for modular
+  builds on all platforms. (Insidious, ajs)
 + Added SDL 2.0 support. At the moment, the overlay renderers
   are not accelerated by SDL 2.0 and may be slower than their
   SDL 1.2 counterparts. Other minor inconsistencies may exist

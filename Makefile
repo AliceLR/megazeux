@@ -146,9 +146,9 @@ endif
 endif
 
 #
-# Linux-arm needs this flag for modular builds.
+# Enabling this across the board for modular builds.
 #
-ifeq (${SUBPLATFORM},linux-arm)
+ifeq (${BUILD_MODULAR},1)
 CFLAGS += -fPIC
 CXXFLAGS += -fPIC
 endif
