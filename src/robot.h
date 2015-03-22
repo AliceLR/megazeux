@@ -35,8 +35,6 @@ __M_BEGIN_DECLS
 #define ROBOT_START_STACK 4
 #define ROBOT_MAX_STACK   65536
 
-#define RUN_ROBOT_POLL_INTERVAL 65535
-
 #define LABEL_TOUCH 0
 #define LABEL_BOMBED 1
 #define LABEL_INVINCO 2
@@ -173,7 +171,6 @@ static inline char *tr_msg(struct world *mzx_world, char *mesg, int id,
 }
 
 void run_robot(struct world *mzx_world, int id, int x, int y);
-void run_robot_poll_event(struct world *mzx_world, struct robot *cur_robot);
 
 #ifdef CONFIG_EDITOR
 CORE_LIBSPEC void duplicate_scroll_direct(struct scroll *cur_scroll,
