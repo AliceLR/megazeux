@@ -28,7 +28,7 @@ void run_robot_poll_event(struct world *mzx_world, struct robot *cur_robot)
 {
   update_event_status();
   
-  if(/*get_key_status(keycode_internal, IKEY_ESCAPE) || */get_key_status(keycode_internal, IKEY_BREAK))
+  if(get_key_status(keycode_internal, IKEY_ESCAPE) || get_key_status(keycode_internal, IKEY_BREAK))
   {
     struct board *cur_board = mzx_world->current_board;
 
@@ -45,9 +45,6 @@ void run_robot_poll_event(struct world *mzx_world, struct robot *cur_robot)
       }
     }
 
-    set_counter(mzx_world, "LIVES", 0, 0);
-    set_counter(mzx_world, "HEALTH", 0, 0);
-
-    error("Robot execution halted.", 1, 8, 0);
+    error("Robot execution halted. Please report this error to the game author.", 1, 8, 0);
   }
 }
