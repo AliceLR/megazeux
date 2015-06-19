@@ -917,7 +917,7 @@ static int find_entry(const char **choices, char *name, int total_num)
     else
 #endif
 
-    cmpval = strncasecmp(name, choices[current_entry], name_length);
+    cmpval = strncasecmp(name, choices[current_entry]+(int)(choices[current_entry][0] == '$'), name_length);
 
     if(cmpval == 0)
     {
