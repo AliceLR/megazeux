@@ -76,6 +76,7 @@ struct input_status
   
   enum keycode joystick_button_map[16][256];
   enum keycode joystick_axis_map[16][16][2];
+  enum keycode joystick_hat_map[16][4];
 
   bool unfocus_pause;
 };
@@ -131,6 +132,8 @@ Uint32 get_last_key_released(enum keycode_type type);
 void map_joystick_axis(int joystick, int axis, enum keycode min_key,
  enum keycode max_key);
 void map_joystick_button(int joystick, int button, enum keycode key);
+void map_joystick_hat(int joystick, enum keycode up_key, enum keycode down_key,
+ enum keycode left_key, enum keycode right_key);
 void set_unfocus_pause(bool value);
 void set_num_buffered_events(Uint8 value);
 

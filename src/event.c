@@ -744,6 +744,15 @@ void map_joystick_button(int joystick, int button, enum keycode key)
   input.joystick_button_map[joystick][button] = key;
 }
 
+void map_joystick_hat(int joystick, enum keycode up_key, enum keycode down_key,
+ enum keycode left_key, enum keycode right_key)
+{
+  input.joystick_hat_map[joystick][0] = up_key;
+  input.joystick_hat_map[joystick][1] = down_key;
+  input.joystick_hat_map[joystick][2] = left_key;
+  input.joystick_hat_map[joystick][3] = right_key;
+}
+
 void set_unfocus_pause(bool value)
 {
   input.unfocus_pause = value;

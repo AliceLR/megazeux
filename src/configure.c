@@ -343,6 +343,23 @@ static void joy_button_set(struct config_info *conf, char *name,
   map_joystick_button(joy_num - 1, joy_button - 1, (enum keycode)joy_key);
 }
 
+static void joy_hat_set(struct config_info *conf, char *name,
+ char *value, char *extended_data)
+{
+  unsigned int joy_num;
+  unsigned long joy_key_up, joy_key_down, joy_key_left, joy_key_right;
+  
+  sscanf(name, "joy%uhat", &joy_num);
+  sscanf(value, "%l, %l, %l, %l", &joy_key_up, &joy_key_down,
+   &joy_key_left, &joy_key_right);
+  
+  joy_num = CLAMP(joy_num, 1, 16);
+  
+  map_joystick_hat(joy_num - 1, (enum keycode)joy_key_up,
+   (enum keycode)joy_key_down, (enum keycode)joy_key_left,
+   (enum keycode)joy_key_right);
+}
+
 static void pause_on_unfocus(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
@@ -464,6 +481,7 @@ static const struct config_entry config_options[] =
   { "include*", include_config },
   { "joy!axis!", joy_axis_set },
   { "joy!button!", joy_button_set },
+  { "joy!hat", joy_hat_set },
   { "mask_midchars", config_mask_midchars },
   { "modplug_resample_mode", config_mp_resample_mode },
   { "music_on", config_set_music },

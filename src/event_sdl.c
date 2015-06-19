@@ -522,6 +522,50 @@ static bool process_event(SDL_Event *event)
 
       break;
     }
+    
+    case SDL_JOYHATMOTION:
+    {
+      int which = event->jhat.which;
+      int dir = event->jhat.value;
+      enum keycode key_up = input.joystick_hat_map[which][0];
+      enum keycode key_down = input.joystick_hat_map[which][1];
+      enum keycode key_left = input.joystick_hat_map[which][2];
+      enum keycode key_right = input.joystick_hat_map[which][3];
+      
+      //if(dir & SDL_HAT_CENTERED)
+      {
+        key_release(status, key_up);
+        key_release(status, key_down);
+        key_release(status, key_left);
+        key_release(status, key_right);
+      }
+    
+      if(dir & SDL_HAT_UP)
+      {
+        key_press(status, key_up, key_up);
+      //  key_release(status, key_down);
+      }
+      
+      if(dir & SDL_HAT_DOWN)
+      {
+        key_press(status, key_down, key_down);
+        //key_release(status, key_up);
+      }
+      
+      if(dir & SDL_HAT_LEFT)
+      {
+        key_press(status, key_left, key_left);
+        //key_release(status, key_right);
+      }
+      
+      if(dir & SDL_HAT_RIGHT)
+      {
+        key_press(status, key_right, key_right);
+        //key_release(status, key_left);
+      }
+      
+      break;
+    }
 
     default:
       return false;

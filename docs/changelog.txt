@@ -17,6 +17,7 @@ FEATURES
 + In the editor, the Backspace key now removes the top layer
   and brings the under layer to the top, as a compliment to Del.
   This does not affect the text entry behavior.
++ Tentative joypad POV hat support added: joyNhat = U, D, L, R
 
 BUGFIXES
 

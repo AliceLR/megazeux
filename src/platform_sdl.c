@@ -68,6 +68,8 @@ bool platform_init(void)
 
   if(SDL_Init(flags) < 0)
   {
+    debug("Failed to initialize SDL; attempting with joystick support disabled: %s\n", SDL_GetError());
+    
     // try again without joystick support
     flags &= ~SDL_INIT_JOYSTICK;
 
