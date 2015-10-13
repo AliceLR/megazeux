@@ -8292,24 +8292,24 @@ In expressions, the following operators may be used:
 
 Binary operators (value-argument-value):
 
- +  Addition
- -  Subtraction
- *  Multiplication
- /  Division
- %  Modulo
- ^  Exponent (A^B is A to the Bth order/power)
- >> Bitshift Right (logical, not arithmetic)
- << Bitshift Left (logical, not arithmetic)
+ +   Addition
+ -   Subtraction
+ *   Multiplication
+ /   Division
+ %   Modulo
+ ^   Exponent (A^B is A to the Bth order/power)
+ >>  Bitshift Right (logical, not arithmetic)
+ <<  Bitshift Left (logical, not arithmetic)
  >>> Signed Shift Right (arithmetic)
- >  Greater Than
- <  Less Than
- >= Greater Than or Equal To
- <= Less Than or Equal To
- =  Equal To
- != Not Equal To
- a  Bitwise AND (not logical AND)
- o  Bitwise OR (not logical OR)
- x  Bitwise XOR (not logical XOR)
+ >   Greater Than
+ <   Less Than
+ >=  Greater Than or Equal To
+ <=  Less Than or Equal To
+ =   Equal To
+ !=  Not Equal To
+ a   Bitwise AND (not logical AND)
+ o   Bitwise OR (not logical OR)
+ x   Bitwise XOR (not logical XOR)
 
 ~E+ Addition~F: Outputs the sum of the two given values. (3+2)
 would return 5.
