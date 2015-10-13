@@ -8300,6 +8300,7 @@ Binary operators (value-argument-value):
  ^  Exponent (A^B is A to the Bth order/power)
  >> Bitshift Right (logical, not arithmetic)
  << Bitshift Left (logical, not arithmetic)
+ >>> Signed Shift Right (arithmetic)
  >  Greater Than
  <  Less Than
  >= Greater Than or Equal To
