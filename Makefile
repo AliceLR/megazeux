@@ -305,6 +305,7 @@ assets/help.fil: ${txt2hlp} docs/WIPHelp.txt
 
 help_check: ${hlp2txt} assets/help.fil
 	@src/utils/hlp2txt assets/help.fil help.txt
+	@echo @ >> help.txt
 	@diff -q docs/WIPHelp.txt help.txt
 	@rm -f help.txt
 
