@@ -3870,7 +3870,7 @@ easily circumvented by using constant expressions. Constant
 expressions also allow larger hexadecimal numbers and octal
 numbers; please view the expressions section for more detail.
 
->#EXPRESS.HLP:1st:Expressions
+>#EXPRESS.HLP:exp:Expressions
 
 :col:~E[color]
 
@@ -8279,7 +8279,7 @@ quotes; such will cause MegaZeux to misinterpret your
 expression in different ways, depending on which you used.
 Therefore, using expressions for nesting is another benefit.
 
-Example: We set "r" to 1, "in" to 8 and ""out18" to 11. We want
+Example: We set "r" to 1, "in" to 8 and "out18" to 11. We want
 to output the value of "out18".
 "(&out&&r&in&&)" would output (0r&in&).
 "('out'r''in'')" would output ('out'r''in'')
