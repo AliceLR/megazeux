@@ -347,10 +347,10 @@ static void joy_hat_set(struct config_info *conf, char *name,
  char *value, char *extended_data)
 {
   unsigned int joy_num;
-  unsigned long joy_key_up, joy_key_down, joy_key_left, joy_key_right;
+  unsigned int joy_key_up, joy_key_down, joy_key_left, joy_key_right;
   
   sscanf(name, "joy%uhat", &joy_num);
-  sscanf(value, "%l, %l, %l, %l", &joy_key_up, &joy_key_down,
+  sscanf(value, "%u, %u, %u, %u", &joy_key_up, &joy_key_down,
    &joy_key_left, &joy_key_right);
   
   joy_num = CLAMP(joy_num, 1, 16);
